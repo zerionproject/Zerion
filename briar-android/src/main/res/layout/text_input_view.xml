@@ -23,6 +23,17 @@
 			android:layout_weight="1"
 			app:maxTextLines="4" />
 
+		<ImageButton
+			android:id="@+id/voiceMessageButton"
+			android:layout_width="@dimen/text_input_height"
+			android:layout_height="@dimen/text_input_height"
+			android:layout_gravity="bottom"
+			android:background="?android:attr/selectableItemBackgroundBorderless"
+			android:contentDescription="@string/voice_message"
+			app:srcCompat="@drawable/ic_mic_24dp"
+			app:tint="?android:attr/textColorSecondary"
+			android:visibility="gone" />
+
 		<com.professor.zerion.android.view.CompositeSendButton
 			android:id="@+id/compositeSendButton"
 			android:layout_width="@dimen/text_input_height"

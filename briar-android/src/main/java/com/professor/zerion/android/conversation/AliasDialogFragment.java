@@ -32,8 +32,6 @@ import static com.professor.zerion.android.util.UiUtils.showSoftKeyboard;
 
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
-// TODO: we can probably switch to androidx DialogFragment here but need to
-//  test this properly
 public class AliasDialogFragment extends AppCompatDialogFragment {
 
 	final static String TAG = AliasDialogFragment.class.getName();
