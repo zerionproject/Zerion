@@ -1,0 +1,61 @@
+apply plugin: 'java-library'
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+apply plugin: 'ru.vyarus.animalsniffer'
+apply plugin: 'idea'
+apply plugin: 'witness'
+apply from: 'witness.gradle'
+apply from: '../dagger.gradle'
+
+dependencies {
+	api project(':bramble-api')
+
+	api "org.briarproject:onionwrapper-core:$onionwrapper_version"
+
+	implementation "org.bouncycastle:bcprov-jdk15to18:$bouncy_castle_version"
+	//noinspection GradleDependency
+	implementation 'com.h2database:h2:1.4.192' // The last version that supports Java 1.6
+	implementation 'org.bitlet:weupnp:0.1.4'
+	implementation 'net.i2p.crypto:eddsa:0.2.0'
+	implementation 'org.whispersystems:curve25519-java:0.5.0'
+	implementation 'org.briarproject:socks-socket:0.1'
+	implementation "com.squareup.okhttp3:okhttp:$okhttp_version"
+	implementation "com.fasterxml.jackson.core:jackson-databind:$jackson_version"
+
+	annotationProcessor "com.google.dagger:dagger-compiler:$dagger_version"
+
+	testImplementation project(path: ':bramble-api', configuration: 'testOutput')
+
+	testImplementation 'org.hsqldb:hsqldb:2.3.5' // The last version that supports Java 1.6
+	testImplementation 'net.jodah:concurrentunit:0.4.6'
+	testImplementation "junit:junit:$junit_version"
+	testImplementation "org.jmock:jmock:$jmock_version"
+	testImplementation "org.jmock:jmock-junit4:$jmock_version"
+	testImplementation "org.jmock:jmock-imposters:$jmock_version"
+	testImplementation "com.squareup.okhttp3:mockwebserver:$mockwebserver_version"
+
+	testAnnotationProcessor "com.google.dagger:dagger-compiler:$dagger_version"
+
+	signature 'org.codehaus.mojo.signature:java16:1.1@signature'
+}
+
+animalsniffer {
+	// Allow requireNonNull: Android desugaring rewrites it (so it's safe for us to use),
+	// and it gets used when passing method references instead of lambdas with Java 11.
+	// Note that this line allows *all* methods from java.util.Objects.
+	// That's the best that we can do with the configuration options that Animal Sniffer offers.
+	ignore 'java.util.Objects'
+}
+
+// needed to make test output available to bramble-java
+configurations {
+	testOutput.extendsFrom(testCompile)
+}
+task jarTest(type: Jar, dependsOn: testClasses) {
+	from sourceSets.test.output, sourceSets.main.output
+	classifier = 'test'
+}
+artifacts {
+	testOutput jarTest
+}
