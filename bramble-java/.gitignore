@@ -1,0 +1,4 @@
+bin
+build
+.settings
+src/main/resources/*.zip

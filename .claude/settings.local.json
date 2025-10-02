@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gradlew.bat assembleDebug:*)",
+      "Bash(./gradlew.bat:*)",
+      "Bash(find:*)",
+      "Bash(xcopy:*)",
+      "Bash(dir:*)",
+      "Bash(xargs rm:*)",
+      "Bash(java:*)",
+      "Bash(../gradlew.bat clean:*)",
+      "Bash(../gradlew.bat assembleDebug:*)",
+      "Bash(findstr:*)",
+      "Bash(del \".idea\\caches\\*.*\" /q)",
+      "Bash(../gradlew.bat --stop)",
+      "Read(//c/Users/Iron/Desktop/Briar Fork/**)",
+      "Read(//c/Users/Iron/Desktop/**)",
+      "Bash(for:*)",
+      "Bash(do cp \"C:\\Users\\Iron\\Desktop\\Briar Fork\\briar-master\\new logo splash\\logo_splash.png\" \"C:\\Users\\Iron\\Desktop\\Briar Fork\\briar-master\\briar-android\\src\\main\\res\\drawable-$dir\\logo_splash.png\")",
+      "Bash(done)",
+      "Bash(do cp \"C:\\Users\\Iron\\Desktop\\Briar Fork\\briar-master\\new logo splash\\logo.png\" \"C:\\Users\\Iron\\Desktop\\Briar Fork\\briar-master\\briar-android\\src\\main\\res\\drawable-$dir\\logo.png\")",
+      "Bash(do cp \"C:\\Users\\Iron\\Desktop\\replace icon logo\\res\\mipmap-$dir\\ic_launcher.png\" \"C:\\Users\\Iron\\Desktop\\Briar Fork\\briar-master\\briar-android\\src\\main\\res\\mipmap-$dir\\ic_launcher.png\")",
+      "Bash(do)",
+      "Bash(do cp \"C:\\Users\\Iron\\Desktop\\Briar Fork\\briar-master\\briar-android\\src\\main\\res\\mipmap-$dir\\ic_launcher.png\" \"C:\\Users\\Iron\\Desktop\\Briar Fork\\briar-master\\briar-android\\src\\main\\res\\mipmap-$dir\\ic_launcher_round.png\")",
+      "Bash(cp:*)",
+      "Bash(do cp \"C:\\Users\\Iron\\Desktop\\Briar Fork\\briar-master\\replace\\res\\mipmap-$dir\\ic_launcher.png\" \"C:\\Users\\Iron\\Desktop\\Briar Fork\\briar-master\\briar-android\\src\\main\\res\\mipmap-$dir\\ic_launcher.png\")",
+      "Bash(do cp \"C:\\Users\\Iron\\Desktop\\Briar Fork\\briar-master\\replace\\res\\mipmap-$dir\\ic_launcher_background.png\" \"C:\\Users\\Iron\\Desktop\\Briar Fork\\briar-master\\briar-android\\src\\main\\res\\mipmap-$dir\\ic_launcher_background.png\")",
+      "Bash(do cp \"C:\\Users\\Iron\\Desktop\\Briar Fork\\briar-master\\replace\\res\\mipmap-$dir\\ic_launcher_foreground.png\" \"C:\\Users\\Iron\\Desktop\\Briar Fork\\briar-master\\briar-android\\src\\main\\res\\mipmap-$dir\\ic_launcher_foreground.png\")",
+      "Bash(do cp \"C:\\Users\\Iron\\Desktop\\Briar Fork\\briar-master\\replace\\res\\mipmap-$dir\\ic_launcher_monochrome.png\" \"C:\\Users\\Iron\\Desktop\\Briar Fork\\briar-master\\briar-android\\src\\main\\res\\mipmap-$dir\\ic_launcher_monochrome.png\")",
+      "Bash(do cp \"C:\\Users\\Iron\\Desktop\\Briar Fork\\briar-master\\replace\\res\\mipmap-$dir\\ic_launcher.png\" \"C:\\Users\\Iron\\Desktop\\Briar Fork\\briar-master\\briar-android\\src\\main\\res\\mipmap-$dir\\ic_launcher_round.png\")",
+      "Bash(git add:*)",
+      "Bash(rm:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
