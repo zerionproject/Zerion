@@ -1,0 +1,24 @@
+# Keep the H2 classes that are loaded via reflection
+-keep class org.h2.Driver { *; }
+-keep class org.h2.engine.Engine { *; }
+-keep class org.h2.store.fs.** { *; }
+# Don't warn about unused dependencies of H2 classes
+-dontwarn org.h2.**
+-dontnote org.h2.**
+
+-keep class dagger.** { *; }
+-dontwarn dagger.**
+-dontnote dagger.**
+
+-keep class net.i2p.crypto.eddsa.** { *; }
+
+-keep class org.whispersystems.curve25519.** { *; }
+
+-dontwarn sun.misc.Unsafe
+-dontnote com.google.common.**
+
+-dontwarn com.fasterxml.jackson.databind.ext.Java7SupportImpl
+
+# Keep all Jackson-serialisable classes and their members
+-keep interface com.fasterxml.jackson.databind.annotation.JsonSerialize
+-keep @com.fasterxml.jackson.databind.annotation.JsonSerialize class * { *; }

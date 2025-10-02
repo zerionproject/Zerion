@@ -1,0 +1,17 @@
+apply plugin: 'java-library'
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+apply plugin: 'ru.vyarus.animalsniffer'
+apply plugin: 'witness'
+apply from: 'witness.gradle'
+
+dependencies {
+	implementation project(':bramble-api')
+
+	signature 'org.codehaus.mojo.signature:java16:1.1@signature'
+
+	testImplementation project(path: ':bramble-api', configuration: 'testOutput')
+
+	testImplementation "junit:junit:$junit_version"
+}

@@ -1,0 +1,93 @@
+apply plugin: 'com.android.library'
+apply plugin: 'witness'
+apply from: 'witness.gradle'
+
+android {
+	compileSdkVersion 34
+	buildToolsVersion '34.0.0'
+
+	packagingOptions {
+		doNotStrip '**/*.so'
+	}
+
+	defaultConfig {
+		minSdkVersion 21
+		targetSdkVersion 33
+		versionCode 10514
+		versionName "1.5.14"
+		consumerProguardFiles 'proguard-rules.txt'
+
+		testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+		testInstrumentationRunnerArguments disableAnalytics: 'true'
+	}
+
+	compileOptions {
+		sourceCompatibility JavaVersion.VERSION_1_8
+		targetCompatibility JavaVersion.VERSION_1_8
+	}
+
+	lintOptions {
+		// FIXME
+		warning "LintError"
+		warning "InvalidPackage"
+		warning "MissingPermission"
+		warning "InlinedApi", "ObsoleteSdkInt", "Override", "NewApi", "UnusedAttribute"
+	}
+}
+
+configurations {
+	tor
+}
+
+dependencies {
+	api 'org.briarproject:dont-kill-me-lib:0.2.8'
+
+	// In theory this dependency shouldn't be needed, but without it Android Studio's linter will
+	// complain about unresolved symbols for bramble-api test classes in bramble-android tests,
+	// even though the bramble-api test classes are provided by the testImplementation dependency
+	// below and the compiler can find them
+	implementation project(':bramble-api')
+
+	implementation project(':bramble-core')
+
+	implementation 'androidx.annotation:annotation:1.5.0'
+	implementation "org.briarproject:onionwrapper-android:$onionwrapper_version"
+
+	tor "org.briarproject:tor-android:$tor_version"
+	tor "org.briarproject:lyrebird-android:$lyrebird_version"
+
+	annotationProcessor "com.google.dagger:dagger-compiler:$dagger_version"
+
+	compileOnly 'javax.annotation:jsr250-api:1.0'
+
+	testImplementation project(path: ':bramble-api', configuration: 'testOutput')
+
+	testImplementation "junit:junit:$junit_version"
+	testImplementation "org.jmock:jmock:$jmock_version"
+	testImplementation "org.jmock:jmock-junit4:$jmock_version"
+	testImplementation "org.jmock:jmock-imposters:$jmock_version"
+}
+
+def torLibsDir = 'src/main/jniLibs'
+
+task cleanTorBinaries {
+	outputs.dir torLibsDir
+	doLast {
+		delete fileTree(torLibsDir)
+	}
+}
+
+clean.dependsOn cleanTorBinaries
+
+task unpackTorBinaries {
+	outputs.dir torLibsDir
+	doLast {
+		copy {
+			from configurations.tor.collect { zipTree(it) }
+			into torLibsDir
+		}
+	}
+	dependsOn cleanTorBinaries
+}
+
+preBuild.dependsOn unpackTorBinaries
