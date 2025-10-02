@@ -138,6 +138,16 @@
 		<item quantity="other">%d new blog posts.</item>
 	</plurals>
 
+	<!-- Voice Messages -->
+	<string name="voice_message">Voice message</string>
+	<string name="play_pause">Play/Pause</string>
+	<string name="recording_voice">Recording voice message…</string>
+	<string name="voice_message_error">Voice recording failed</string>
+	<string name="voice_message_cancelled">Recording cancelled</string>
+	<string name="voice_message_too_short">Voice message too short</string>
+	<string name="microphone_permission_required">Microphone permission is required for voice messages</string>
+	<string name="hold_to_record">Hold to record, release to send</string>
+
 	<!-- Misc -->
 	<string name="now">now</string>
 	<string name="show">Show</string>

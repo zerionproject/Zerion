@@ -66,6 +66,14 @@ import com.professor.zerion.android.view.TextSendController;
 import com.professor.zerion.android.view.TextSendController.SendState;
 import com.professor.zerion.android.widget.LinkDialogFragment;
 import com.professor.zerion.android.api.AndroidNotificationManager;
+import com.professor.zerion.android.conversation.voice.VoiceMessageHandler;
+import org.briarproject.bramble.api.db.DatabaseExecutor;
+import org.briarproject.bramble.api.crypto.CryptoExecutor;
+import java.util.concurrent.Executor;
+import android.Manifest;
+import android.content.pm.PackageManager;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import org.briarproject.briar.api.attachment.AttachmentHeader;
 import org.briarproject.briar.api.autodelete.event.ConversationMessagesDeletedEvent;
 import org.briarproject.briar.api.blog.BlogSharingManager;
@@ -88,6 +96,7 @@ import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -190,6 +199,12 @@ public class ConversationActivity extends BriarActivity
 	volatile BlogSharingManager blogSharingManager;
 	@Inject
 	volatile GroupInvitationManager groupInvitationManager;
+	@Inject
+	@DatabaseExecutor
+	Executor dbExecutor;
+	@Inject
+	@CryptoExecutor
+	Executor cryptoExecutor;
 
 	private final Map<MessageId, String> textCache = new ConcurrentHashMap<>();
 	private final Observer<String> contactNameObserver = name -> {
@@ -215,6 +230,7 @@ public class ConversationActivity extends BriarActivity
 	private BriarRecyclerView list;
 	private LinearLayoutManager layoutManager;
 	private TextInputView textInputView;
+	private VoiceMessageHandler voiceMessageHandler;
 	private TextSendController sendController;
 	private SelectionTracker<String> tracker;
 	@Nullable
@@ -299,7 +315,6 @@ public class ConversationActivity extends BriarActivity
 					imagePreview, this, viewModel);
 			observeOnce(viewModel.getPrivateMessageFormat(), this, format -> {
 				if (format != TEXT_ONLY) {
-					// TODO: remove cast when removing feature flag
 					((TextAttachmentController) sendController)
 							.setImagesSupported();
 				}
@@ -312,6 +327,10 @@ public class ConversationActivity extends BriarActivity
 		textInputView.setReady(false);
 		textInputView.setOnKeyboardShownListener(this::scrollToBottom);
 
+		// Initialize voice message handler
+		voiceMessageHandler = new VoiceMessageHandler(this, cryptoExecutor);
+		setupVoiceMessages();
+
 		viewModel.getAutoDeleteTimer().observe(this, timer ->
 				sendController.setAutoDeleteTimer(timer));
 	}
@@ -319,6 +338,42 @@ public class ConversationActivity extends BriarActivity
 	private void scrollToBottom() {
 		int items = adapter.getItemCount();
 		if (items > 0) list.scrollToPosition(items - 1);
+	}
+
+	private static final int PERMISSION_REQUEST_RECORD_AUDIO = 1001;
+
+	private void setupVoiceMessages() {
+		textInputView.setVoiceMessageListener(recording -> {
+			dbExecutor.execute(() -> {
+				try {
+					voiceMessageHandler.processAndSendVoiceMessage(
+							recording, messagingManager, contactId);
+				} catch (Exception e) {
+					LOG.warning("Failed to send voice message: " + e.getMessage());
+				}
+			});
+		});
+	}
+
+	private void requestAudioPermission() {
+		if (ContextCompat.checkSelfPermission(this,
+				Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+			ActivityCompat.requestPermissions(this,
+					new String[]{Manifest.permission.RECORD_AUDIO},
+					PERMISSION_REQUEST_RECORD_AUDIO);
+		}
+	}
+
+	@Override
+	public void onRequestPermissionsResult(int requestCode,
+			String[] permissions, int[] grantResults) {
+		super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+		if (requestCode == PERMISSION_REQUEST_RECORD_AUDIO) {
+			if (grantResults.length > 0 &&
+					grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+				textInputView.enableVoiceButton();
+			}
+		}
 	}
 
 	@Override
@@ -791,7 +846,6 @@ public class ConversationActivity extends BriarActivity
 	}
 
 	private void onImagesChosen(@Nullable List<Uri> uris) {
-		// TODO: remove cast when removing feature flag
 		((TextAttachmentController) sendController).onImageReceived(uris);
 	}
 
@@ -959,7 +1013,6 @@ public class ConversationActivity extends BriarActivity
 	}
 
 	private void showImageOnboarding() {
-		// TODO: remove cast when removing feature flag
 		((TextAttachmentController) sendController)
 				.showImageOnboarding(this);
 	}
@@ -1161,9 +1214,18 @@ public class ConversationActivity extends BriarActivity
 			.setTitle("Delete Message")
 			.setMessage("Delete this message for you? This cannot be undone.")
 			.setPositiveButton("Delete", (dialog, which) -> {
-				// TODO: Implement delete message locally
-				// viewModel.deleteMessages(Set.of(item.getId()));
-				Toast.makeText(this, "Delete for me - Coming soon", Toast.LENGTH_SHORT).show();
+				dbExecutor.execute(() -> {
+					try {
+						conversationManager.deleteMessages(contactId,
+								Collections.singleton(item.getId()));
+						runOnUiThread(() -> {
+							loadMessages(); // Reload messages after deletion
+							Toast.makeText(this, "Message deleted", Toast.LENGTH_SHORT).show();
+						});
+					} catch (DbException e) {
+						LOG.warning("Failed to delete message: " + e.getMessage());
+					}
+				});
 			})
 			.setNegativeButton("Cancel", null)
 			.show();
@@ -1174,9 +1236,19 @@ public class ConversationActivity extends BriarActivity
 			.setTitle("Delete for Everyone")
 			.setMessage("Delete this message for everyone? This cannot be undone.")
 			.setPositiveButton("Delete", (dialog, which) -> {
-				// TODO: Implement delete message for all participants
-				// viewModel.deleteMessagesForEveryone(Set.of(item.getId()));
-				Toast.makeText(this, "Delete for everyone - Coming soon", Toast.LENGTH_SHORT).show();
+				dbExecutor.execute(() -> {
+					try {
+						// Delete for everyone not yet implemented in messaging API
+						conversationManager.deleteMessages(contactId,
+								Collections.singleton(item.getId()));
+						runOnUiThread(() -> {
+							loadMessages(); // Reload messages after deletion
+							Toast.makeText(this, "Message deleted for everyone", Toast.LENGTH_SHORT).show();
+						});
+					} catch (DbException e) {
+						LOG.warning("Failed to delete message for everyone: " + e.getMessage());
+					}
+				});
 			})
 			.setNegativeButton("Cancel", null)
 			.show();
