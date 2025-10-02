@@ -15,6 +15,9 @@ import android.widget.ImageButton;
 import com.professor.zerion.R;
 import com.professor.zerion.android.conversation.ConversationItem;
 import com.professor.zerion.android.view.EmojiTextInputView.OnKeyboardShownListener;
+import com.professor.zerion.android.conversation.voice.VoiceMessageRecorder;
+import java.io.File;
+import java.util.concurrent.Executors;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
@@ -38,6 +41,16 @@ public class TextInputView extends LinearLayout {
 	private View replyPreview;
 	@Nullable
 	private ConversationItem replyingToItem;
+	@Nullable
+	private VoiceMessageRecorder voiceRecorder;
+	@Nullable
+	private VoiceMessageListener voiceMessageListener;
+	@Nullable
+	private ImageButton voiceButton;
+
+	public interface VoiceMessageListener {
+		void onVoiceMessageRecorded(File recording);
+	}
 
 	public TextInputView(Context context) {
 		this(context, null);
@@ -70,6 +83,14 @@ public class TextInputView extends LinearLayout {
 		textInput = findViewById(R.id.emojiTextInput);
 		textInput.setAllowEmptyText(allowEmptyText);
 		if (hint != null) textInput.setHint(hint);
+
+		// Initialize voice message button
+		voiceButton = findViewById(R.id.voiceMessageButton);
+		if (voiceButton != null) {
+			voiceButton.setVisibility(View.GONE); // Hidden by default until permission granted
+			voiceRecorder = new VoiceMessageRecorder(context, Executors.newSingleThreadExecutor());
+			voiceButton.setOnClickListener(v -> handleVoiceButtonClick());
+		}
 	}
 
 	@LayoutRes
@@ -188,6 +209,55 @@ public class TextInputView extends LinearLayout {
 	@Nullable
 	public ConversationItem getReplyingToItem() {
 		return replyingToItem;
+	}
+
+	public void setVoiceMessageListener(VoiceMessageListener listener) {
+		this.voiceMessageListener = listener;
+	}
+
+	public void enableVoiceButton() {
+		if (voiceButton != null) {
+			voiceButton.setVisibility(View.VISIBLE);
+		}
+	}
+
+	private void handleVoiceButtonClick() {
+		if (voiceRecorder == null || voiceMessageListener == null) return;
+
+		if (voiceRecorder.isRecording()) {
+			// Stop recording
+			voiceRecorder.stopRecording();
+			File recording = voiceRecorder.getRecordingFile();
+			if (recording != null && recording.exists()) {
+				voiceMessageListener.onVoiceMessageRecorded(recording);
+			}
+			voiceButton.setImageResource(R.drawable.ic_mic_24dp);
+		} else {
+			// Start recording with callback
+			voiceRecorder.startRecording(new VoiceMessageRecorder.RecordingCallback() {
+				@Override
+				public void onRecordingStarted() {
+					// Recording started
+				}
+				@Override
+				public void onRecordingProgress(int durationMs, int amplitudeDb) {
+					// Update UI with progress if needed
+				}
+				@Override
+				public void onRecordingCompleted(File audioFile, int durationMs) {
+					// Will be handled when stop is clicked
+				}
+				@Override
+				public void onRecordingError(String error) {
+					// Handle error
+				}
+				@Override
+				public void onRecordingCancelled() {
+					// Handle cancellation
+				}
+			});
+			voiceButton.setImageResource(android.R.drawable.ic_media_pause);
+		}
 	}
 
 }

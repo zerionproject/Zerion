@@ -29,7 +29,10 @@
       "Bash(do cp \"C:\\Users\\Iron\\Desktop\\Briar Fork\\briar-master\\replace\\res\\mipmap-$dir\\ic_launcher_monochrome.png\" \"C:\\Users\\Iron\\Desktop\\Briar Fork\\briar-master\\briar-android\\src\\main\\res\\mipmap-$dir\\ic_launcher_monochrome.png\")",
       "Bash(do cp \"C:\\Users\\Iron\\Desktop\\Briar Fork\\briar-master\\replace\\res\\mipmap-$dir\\ic_launcher.png\" \"C:\\Users\\Iron\\Desktop\\Briar Fork\\briar-master\\briar-android\\src\\main\\res\\mipmap-$dir\\ic_launcher_round.png\")",
       "Bash(git add:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(git push:*)",
+      "Bash(../gradlew.bat compileOfficialDebugJavaWithJavac:*)",
+      "Bash(del \"briar-android\\src\\main\\res\\layout\\voice_message_view.xml\")"
     ],
     "deny": [],
     "ask": []

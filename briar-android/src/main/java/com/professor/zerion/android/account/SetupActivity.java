@@ -4,6 +4,8 @@ import android.annotation.TargetApi;
 import android.content.Intent;
 import android.os.Bundle;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.BaseActivity;
@@ -65,9 +67,17 @@ public class SetupActivity extends BaseActivity
 		} else if (state == DOZE) {
 			setInputStateHidden(this);
 			showDozeFragment();
-		} else if (state == CREATED || state == FAILED) {
-			// TODO: Show an error if failed
+		} else if (state == CREATED) {
 			showApp();
+		} else if (state == FAILED) {
+			// Show error dialog on failure
+			new MaterialAlertDialogBuilder(this)
+				.setTitle("Setup Failed")
+				.setMessage("Failed to create account. Please try again.")
+				.setPositiveButton("Retry", (dialog, which) -> recreate())
+				.setNegativeButton(R.string.cancel, (dialog, which) -> finish())
+				.setCancelable(false)
+				.show();
 		}
 	}
 
