@@ -1,0 +1,87 @@
+package com.professor.zerion.android.attachment.media;
+
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+
+import com.professor.zerion.android.vault.utils.MetadataStripper;
+
+import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
+import javax.inject.Inject;
+
+import static android.graphics.Bitmap.CompressFormat.JPEG;
+import static android.graphics.BitmapFactory.decodeStream;
+import static java.util.logging.Level.WARNING;
+import static org.briarproject.bramble.util.IoUtils.tryToClose;
+import static org.briarproject.briar.api.attachment.MediaConstants.MAX_IMAGE_SIZE;
+
+class ImageCompressorImpl implements ImageCompressor {
+
+
+	private static final int MAX_ATTACHMENT_DIMENSION = 1000;
+
+	private final ImageSizeCalculator imageSizeCalculator;
+	private final MetadataStripper metadataStripper;
+
+	@Inject
+	ImageCompressorImpl(ImageSizeCalculator imageSizeCalculator,
+			Context context) {
+		this.imageSizeCalculator = imageSizeCalculator;
+		this.metadataStripper = new MetadataStripper(context);
+	}
+
+	@Override
+	public InputStream compressImage(InputStream is, String contentType)
+			throws IOException {
+		try {
+			Bitmap bitmap =
+					createBitmap(is, contentType, MAX_ATTACHMENT_DIMENSION);
+			return compressImage(bitmap);
+		} finally {
+			tryToClose(is, null, WARNING);
+		}
+	}
+
+	@Override
+	public InputStream compressImage(Bitmap bitmap) throws IOException {
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		for (int quality = 100; quality >= 0; quality -= 10) {
+			if (!bitmap.compress(JPEG, quality, out))
+				throw new IOException();
+			if (out.size() <= MAX_IMAGE_SIZE) {
+							byte[] imageData = out.toByteArray();
+				byte[] strippedData = metadataStripper.stripMetadata(
+						imageData, "image/jpeg");
+				return new ByteArrayInputStream(strippedData);
+			}
+			out.reset();
+		}
+		throw new IOException();
+	}
+
+	private Bitmap createBitmap(InputStream is, String contentType, int maxSize)
+			throws IOException {
+		is = new BufferedInputStream(is);
+		Size size = imageSizeCalculator.getSize(is, contentType);
+		if (size.hasError()) throw new IOException();
+		int dimension = Math.max(size.getWidth(), size.getHeight());
+		int inSampleSize = 1;
+		while (dimension > maxSize) {
+			inSampleSize *= 2;
+			dimension /= 2;
+		}
+		BitmapFactory.Options options = new BitmapFactory.Options();
+		options.inSampleSize = inSampleSize;
+		if (contentType.equals("image/png"))
+			options.inPreferredConfig = Bitmap.Config.RGB_565;
+		Bitmap bitmap = decodeStream(is, null, options);
+		if (bitmap == null) throw new IOException();
+		return bitmap;
+	}
+
+}

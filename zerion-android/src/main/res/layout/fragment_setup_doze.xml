@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="@drawable/bg_zerion_gradient">
+
+	<ScrollView
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:fillViewport="true">
+
+		<androidx.constraintlayout.widget.ConstraintLayout
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:paddingHorizontal="24dp"
+			android:paddingVertical="36dp">
+
+			<!-- Zerion logo -->
+			<ImageView
+				android:id="@+id/logo"
+				android:layout_width="100dp"
+				android:layout_height="100dp"
+				android:src="@drawable/splash_screen"
+				android:layout_marginBottom="32dp"
+				android:importantForAccessibility="no"
+				app:layout_constraintTop_toTopOf="parent"
+				app:layout_constraintStart_toStartOf="parent"
+				app:layout_constraintEnd_toEndOf="parent"
+				app:layout_constraintBottom_toTopOf="@+id/dozeView"
+				app:layout_constraintVertical_chainStyle="packed" />
+
+		<com.professor.zerion.android.account.DozeView
+			android:id="@+id/dozeView"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:paddingBottom="@dimen/margin_large"
+			app:layout_constraintBottom_toTopOf="@+id/huaweiProtectedAppsView"
+			app:layout_constraintEnd_toEndOf="parent"
+			app:layout_constraintStart_toStartOf="parent"
+			app:layout_constraintTop_toBottomOf="@+id/logo" />
+
+		<com.professor.zerion.android.account.HuaweiProtectedAppsView
+			android:id="@+id/huaweiProtectedAppsView"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:paddingBottom="@dimen/margin_large"
+			app:layout_constraintBottom_toTopOf="@+id/huaweiAppLaunchView"
+			app:layout_constraintEnd_toEndOf="parent"
+			app:layout_constraintStart_toStartOf="parent"
+			app:layout_constraintTop_toBottomOf="@+id/dozeView" />
+
+		<com.professor.zerion.android.account.HuaweiAppLaunchView
+			android:id="@+id/huaweiAppLaunchView"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:paddingBottom="@dimen/margin_large"
+			app:layout_constraintBottom_toTopOf="@+id/xiaomiRecentAppsView"
+			app:layout_constraintEnd_toEndOf="parent"
+			app:layout_constraintStart_toStartOf="parent"
+			app:layout_constraintTop_toBottomOf="@+id/huaweiProtectedAppsView" />
+
+		<com.professor.zerion.android.account.XiaomiRecentAppsView
+			android:id="@+id/xiaomiRecentAppsView"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:paddingBottom="@dimen/margin_large"
+			app:layout_constraintBottom_toTopOf="@+id/xiaomiLockAppsView"
+			app:layout_constraintEnd_toEndOf="parent"
+			app:layout_constraintStart_toStartOf="parent"
+			app:layout_constraintTop_toBottomOf="@+id/huaweiAppLaunchView" />
+
+		<com.professor.zerion.android.account.XiaomiLockAppsView
+			android:id="@+id/xiaomiLockAppsView"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:paddingBottom="@dimen/margin_large"
+			app:layout_constraintBottom_toTopOf="@+id/next"
+			app:layout_constraintEnd_toEndOf="parent"
+			app:layout_constraintStart_toStartOf="parent"
+			app:layout_constraintTop_toBottomOf="@+id/xiaomiRecentAppsView" />
+
+		<com.google.android.material.button.MaterialButton
+			android:id="@+id/next"
+			style="@style/Zerion.Button.Primary"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:enabled="false"
+			android:text="@string/create_account_button"
+			app:layout_constraintBottom_toBottomOf="parent"
+			app:layout_constraintEnd_toEndOf="parent"
+			app:layout_constraintStart_toStartOf="parent"
+			tools:enabled="true" />
+
+		<com.google.android.material.progressindicator.CircularProgressIndicator
+			android:id="@+id/progress"
+			style="@style/Zerion.Progress.Circular"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:visibility="invisible"
+			app:layout_constraintBottom_toBottomOf="@+id/next"
+			app:layout_constraintEnd_toEndOf="parent"
+			app:layout_constraintStart_toStartOf="parent"
+			app:layout_constraintTop_toTopOf="@+id/next" />
+
+	</androidx.constraintlayout.widget.ConstraintLayout>
+
+</ScrollView>
+
+</FrameLayout>

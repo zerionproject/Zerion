@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:fitsSystemWindows="true"
+    android:background="@drawable/bg_zerion_gradient">
+
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:gravity="center">
+
+    <!-- Title -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/vault_unlock_title"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/white"
+        android:layout_marginBottom="8dp"
+        android:layout_marginTop="40dp" />
+
+    <!-- Subtitle -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Enter your master password"
+        android:textSize="14sp"
+        android:textColor="#B3FFFFFF"
+        android:layout_marginBottom="40dp"
+        android:gravity="center" />
+
+    <!-- Password Input -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/vault_password_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/vault_password_hint"
+        android:layout_marginBottom="24dp"
+        android:background="@android:color/transparent"
+        app:endIconMode="password_toggle"
+        app:endIconTint="@color/zerion_cyan"
+        app:boxStrokeColor="@color/zerion_cyan"
+        app:boxStrokeWidth="2dp"
+        app:boxStrokeErrorColor="@color/zerion_cyan"
+        app:hintTextColor="@color/zerion_cyan"
+        app:boxBackgroundColor="#00000000"
+        app:boxBackgroundMode="outline"
+        app:boxCornerRadiusTopStart="12dp"
+        app:boxCornerRadiusTopEnd="12dp"
+        app:boxCornerRadiusBottomStart="12dp"
+        app:boxCornerRadiusBottomEnd="12dp">
+
+        <com.professor.zerion.android.vault.ui.SecurePasswordEditText
+            android:id="@+id/vault_password_input"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textPassword"
+            android:textColor="@android:color/white"
+            android:background="@android:color/transparent"
+            android:imeOptions="actionDone"
+            android:maxLines="1"
+            android:padding="16dp" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Unlock Button -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/vault_unlock_button"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="@string/vault_unlock_button"
+        android:textSize="16sp"
+        style="@style/Zerion.Button.Primary"
+        app:cornerRadius="8dp" />
+
+    <!-- Progress Bar -->
+    <ProgressBar
+        android:id="@+id/progress_bar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:indeterminateTint="@color/zerion_cyan"
+        android:visibility="gone" />
+
+</LinearLayout>
+
+</ScrollView>

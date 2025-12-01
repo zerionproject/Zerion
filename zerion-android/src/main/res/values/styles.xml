@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
+
+	<style name="BriarToolbar" parent="Widget.Material3.Toolbar">
+		<item name="android:background">@color/zerion_dark_bg</item>
+		<item name="titleTextColor">@color/zerion_text_secondary</item>
+		<item name="subtitleTextColor">@color/zerion_text_secondary</item>
+		<item name="android:theme">@style/BriarToolbarTheme</item>
+		<item name="popupTheme">@style/PopupMenu</item>
+	</style>
+
+	<style name="BriarToolbarTheme">
+		<item name="colorControlNormal">@android:color/white</item>
+		<item name="actionOverflowButtonStyle">@style/OverflowButtonStyle</item>
+	</style>
+
+	<style name="OverflowButtonStyle" parent="Widget.AppCompat.ActionButton.Overflow">
+		<item name="android:tint">@android:color/white</item>
+	</style>
+
+	<style name="PopupMenu" parent="Theme.Material3.Dark">
+		<item name="android:colorBackground">@color/zerion_card_bg</item>
+		<item name="android:textColor">@android:color/white</item>
+		<item name="android:textColorPrimary">@android:color/white</item>
+		<item name="android:textColorSecondary">#B3FFFFFF</item>
+		<item name="colorSurface">@color/zerion_card_bg</item>
+		<item name="colorOnSurface">@android:color/white</item>
+	</style>
+
+	<style name="ZerionButton" parent="Widget.Material3.Button">
+		<item name="android:layout_width">match_parent</item>
+		<item name="android:layout_height">wrap_content</item>
+		<item name="android:textSize">@dimen/text_size_medium</item>
+		<item name="android:padding">@dimen/margin_large</item>
+		<item name="android:minHeight">@dimen/button_size</item>
+		<item name="cornerRadius">6dp</item>
+	</style>
+
+	<style name="ZerionButtonFlat" parent="Widget.Material3.Button.TextButton">
+		<item name="android:textSize">@dimen/text_size_medium</item>
+	</style>
+
+	<style name="ZerionButtonFlat.Negative" parent="ZerionButtonFlat">
+		<item name="android:textColor">@color/zerion_button_text_negative</item>
+		<item name="iconTint">@color/zerion_button_text_negative</item>
+	</style>
+
+	<style name="ZerionButtonFlat.Positive" parent="ZerionButtonFlat">
+		<item name="android:textColor">@color/zerion_button_text_positive</item>
+		<item name="iconTint">@color/zerion_button_text_positive</item>
+	</style>
+
+	<style name="ZerionButtonFlat.Neutral" parent="ZerionButtonFlat">
+		<item name="android:textColor">@color/zerion_button_text_neutral</item>
+		<item name="iconTint">@color/zerion_button_text_neutral</item>
+	</style>
+
+	<style name="ZerionButtonFlat.Positive.Tiny" parent="ZerionButtonFlat.Positive">
+		<item name="android:textSize">@dimen/text_size_tiny</item>
+		<item name="android:padding">@dimen/margin_medium</item>
+		<item name="android:minWidth">@dimen/button_size</item>
+	</style>
+
+	<style name="ZerionButtonOutline" parent="Widget.Material3.Button.OutlinedButton">
+		<item name="android:layout_width">match_parent</item>
+		<item name="android:layout_height">wrap_content</item>
+		<item name="android:textSize">@dimen/text_size_medium</item>
+		<item name="android:padding">@dimen/margin_large</item>
+		<item name="android:backgroundTint">@color/window_background</item>
+		<item name="android:minHeight">@dimen/button_size</item>
+		<item name="cornerRadius">6dp</item>
+	</style>
+
+	<style name="BriarButtonOutline.Negative" parent="ZerionButtonOutline">
+		<item name="android:textColor">@color/zerion_button_text_negative</item>
+	</style>
+
+	<style name="BriarButtonOutline.Positive" parent="ZerionButtonOutline">
+		<item name="android:textColor">@color/zerion_button_text_positive</item>
+	</style>
+
+	<style name="BriarButtonOutline.Neutral" parent="ZerionButtonOutline">
+		<item name="android:textColor">@color/zerion_button_text_neutral</item>
+	</style>
+
+	<!-- Borderless EditText style for professional look -->
+	<style name="Zerion.EditText" parent="Widget.AppCompat.EditText">
+		<item name="android:background">@android:color/transparent</item>
+		<item name="android:textColor">@android:color/white</item>
+		<item name="android:textColorHint">#80FFFFFF</item>
+		<item name="android:padding">12dp</item>
+	</style>
+
+	<style name="Divider">
+		<item name="android:background">@color/divider</item>
+	</style>
+
+	<style name="Divider.Horizontal" parent="Divider">
+		<item name="android:layout_width">match_parent</item>
+		<item name="android:layout_height">1px</item>
+	</style>
+
+	<style name="Divider.ContactList" parent="Divider">
+		<item name="android:layout_width">match_parent</item>
+		<item name="android:layout_height">1px</item>
+	</style>
+
+	<style name="Divider.ThreadItem" parent="Divider">
+		<item name="android:layout_width">match_parent</item>
+		<item name="android:layout_height">@dimen/forum_nested_line_width</item>
+		<item name="android:background">@color/thread_indicator</item>
+	</style>
+
+	<style name="CircularProgress" parent="Widget.Material3.CircularProgressIndicator">
+		<item name="android:indeterminate">true</item>
+		<item name="indicatorColor">@color/zerion_cyan</item>
+	</style>
+
+	<style name="CircularProgress.Large" parent="Widget.Material3.CircularProgressIndicator">
+		<item name="android:indeterminate">true</item>
+		<item name="indicatorColor">@color/zerion_cyan</item>
+		<item name="indicatorSize">76dp</item>
+	</style>
+
+
+	<style name="BriarAvatar">
+		<item name="civ_border_width">0dp</item>
+		<item name="civ_border_color">@android:color/transparent</item>
+	</style>
+
+	<style name="TextMessage">
+		<item name="android:textIsSelectable">true</item>
+		<item name="android:textSize">@dimen/text_size_medium</item>
+		<item name="android:textColor">?android:attr/textColorPrimary</item>
+	</style>
+
+	<style name="TextMessage.Notice">
+		<item name="android:textIsSelectable">true</item>
+		<item name="android:textSize">@dimen/text_size_small</item>
+		<item name="android:textColor">?android:attr/textColorSecondary</item>
+		<item name="android:textStyle">italic</item>
+	</style>
+
+	<style name="TextMessage.Timestamp">
+		<item name="android:textIsSelectable">false</item>
+		<item name="android:textSize">@dimen/text_size_tiny</item>
+		<item name="android:textColor">?android:attr/textColorTertiary</item>
+		<item name="android:maxLines">1</item>
+	</style>
+
+	<style name="DiscussionLevelIndicator">
+		<item name="android:layout_height">match_parent</item>
+		<item name="android:layout_width">@dimen/forum_nested_line_width</item>
+		<item name="android:layout_marginLeft">5dp</item>
+		<item name="android:layout_marginStart">5dp</item>
+		<item name="android:background">@color/thread_indicator</item>
+		<item name="android:visibility">gone</item>
+	</style>
+
+	<style name="BriarCard" parent="CardView">
+		<item name="cardUseCompatPadding">true</item>
+		<item name="cardBackgroundColor">@color/card_background</item>
+		<item name="android:layout_margin">@dimen/margin_small</item>
+	</style>
+
+	<style name="StepBubble">
+		<item name="android:layout_width">28dp</item>
+		<item name="android:layout_height">28dp</item>
+		<item name="android:background">@drawable/bubble_current</item>
+		<item name="android:gravity">center</item>
+		<item name="android:textColor">?colorOnTertiary</item>
+		<item name="android:textSize">18sp</item>
+	</style>
+
+	<style name="StepBubble.Upcoming">
+		<item name="android:background">@drawable/bubble_future</item>
+		<item name="android:textColor">?colorOnSurface</item>
+	</style>
+
+	<style name="StepBubble.Completed">
+		<item name="android:background">@drawable/bubble_completed</item>
+		<item name="android:scaleType">center</item>
+		<item name="tint">?colorOnTertiaryContainer</item>
+		<item name="srcCompat">@drawable/ic_check_white</item>
+	</style>
+
+	<style name="Preference.SwitchPreferenceCompat"
+		parent="@style/Preference.SwitchPreferenceCompat.Material"
+		tools:ignore="ResourceCycle">
+		<item name="widgetLayout">@layout/preference_switch</item>
+	</style>
+
+	<!-- Emoji Keyboard Animation Style -->
+	<style name="emoji_fade_animation_style">
+		<item name="android:windowEnterAnimation">@android:anim/fade_in</item>
+		<item name="android:windowExitAnimation">@android:anim/fade_out</item>
+	</style>
+
+</resources>
