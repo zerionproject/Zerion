@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Professional In-Chat Request/Invitation Design -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content"
+	android:background="@drawable/list_item_background_selectable"
+	android:orientation="vertical"
+	android:paddingHorizontal="4dp"
+	android:paddingVertical="2dp">
+
+	<include layout="@layout/list_item_conversation_top_notice_in" />
+
+	<!-- Request message text (if any) -->
+	<com.vanniktech.emoji.EmojiTextView
+		android:id="@+id/msgText"
+		style="@style/TextMessage"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:layout_marginStart="@dimen/message_bubble_margin_tail"
+		android:layout_marginLeft="@dimen/message_bubble_margin_tail"
+		android:layout_marginTop="@dimen/message_bubble_margin"
+		android:layout_marginEnd="@dimen/message_bubble_margin_non_tail"
+		android:layout_marginRight="@dimen/message_bubble_margin_non_tail"
+		android:background="@drawable/msg_in_top"
+		android:elevation="@dimen/message_bubble_elevation"
+		android:textColor="?android:attr/textColorPrimary"
+		android:textColorLink="@color/briar_text_link"
+		tools:text="Short message"
+		tools:visibility="visible" />
+
+	<!-- Request Card -->
+	<com.google.android.material.card.MaterialCardView
+		android:id="@+id/request_card"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:layout_marginStart="@dimen/message_bubble_margin_tail"
+		android:layout_marginLeft="@dimen/message_bubble_margin_tail"
+		android:layout_marginTop="4dp"
+		android:layout_marginEnd="@dimen/message_bubble_margin_non_tail"
+		android:layout_marginRight="@dimen/message_bubble_margin_non_tail"
+		android:layout_marginBottom="@dimen/message_bubble_margin"
+		app:cardBackgroundColor="@color/zerion_card_bg"
+		app:cardCornerRadius="16dp"
+		app:cardElevation="2dp"
+		app:strokeColor="@color/zerion_cyan"
+		app:strokeWidth="1dp">
+
+		<androidx.constraintlayout.widget.ConstraintLayout
+			android:id="@+id/layout"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:padding="12dp">
+
+			<!-- Request icon -->
+			<ImageView
+				android:id="@+id/request_icon"
+				android:layout_width="32dp"
+				android:layout_height="32dp"
+				android:background="@drawable/badge_circle_cyan"
+				android:padding="6dp"
+				android:src="@drawable/ic_group"
+				app:layout_constraintStart_toStartOf="parent"
+				app:layout_constraintTop_toTopOf="parent"
+				app:tint="@android:color/white"
+				tools:ignore="ContentDescription" />
+
+			<!-- Request text -->
+			<com.vanniktech.emoji.EmojiTextView
+				android:id="@+id/text"
+				android:layout_width="0dp"
+				android:layout_height="wrap_content"
+				android:layout_marginStart="12dp"
+				android:textColor="@android:color/white"
+				android:textSize="14sp"
+				app:layout_constraintBottom_toBottomOf="@+id/request_icon"
+				app:layout_constraintEnd_toEndOf="parent"
+				app:layout_constraintStart_toEndOf="@+id/request_icon"
+				app:layout_constraintTop_toTopOf="@+id/request_icon"
+				tools:text="@string/introduction_request_received" />
+
+			<!-- Action buttons container -->
+			<LinearLayout
+				android:id="@+id/buttons_container"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:layout_marginTop="12dp"
+				android:gravity="end"
+				android:orientation="horizontal"
+				app:layout_constraintEnd_toEndOf="parent"
+				app:layout_constraintStart_toStartOf="parent"
+				app:layout_constraintTop_toBottomOf="@+id/request_icon">
+
+				<com.google.android.material.button.MaterialButton
+					android:id="@+id/declineButton"
+					style="@style/Widget.Material3.Button.OutlinedButton"
+					android:layout_width="wrap_content"
+					android:layout_height="36dp"
+					android:layout_marginEnd="8dp"
+					android:text="@string/decline"
+					android:textColor="@color/zerion_text_secondary"
+					android:textSize="12sp"
+					app:cornerRadius="18dp"
+					app:strokeColor="@color/zerion_text_secondary"
+					app:strokeWidth="1dp" />
+
+				<com.google.android.material.button.MaterialButton
+					android:id="@+id/acceptButton"
+					style="@style/Zerion.Button.Primary"
+					android:layout_width="wrap_content"
+					android:layout_height="36dp"
+					android:text="@string/accept"
+					android:textSize="12sp"
+					app:cornerRadius="18dp" />
+
+			</LinearLayout>
+
+			<!-- Timestamp and auto-delete indicator -->
+			<LinearLayout
+				android:id="@+id/meta_container"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:layout_marginTop="8dp"
+				android:gravity="center_vertical"
+				android:orientation="horizontal"
+				app:layout_constraintEnd_toEndOf="parent"
+				app:layout_constraintTop_toBottomOf="@+id/buttons_container">
+
+				<TextView
+					android:id="@+id/time"
+					style="@style/TextMessage.Timestamp"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:textColor="@color/zerion_text_secondary"
+					tools:text="Dec 24, 13:37" />
+
+				<ImageView
+					android:id="@+id/bomb"
+					android:layout_width="14dp"
+					android:layout_height="14dp"
+					android:layout_marginStart="4dp"
+					android:layout_marginLeft="4dp"
+					android:visibility="gone"
+					app:srcCompat="@drawable/ic_bomb"
+					app:tint="@color/zerion_text_secondary"
+					tools:ignore="ContentDescription"
+					tools:visibility="visible" />
+
+			</LinearLayout>
+
+		</androidx.constraintlayout.widget.ConstraintLayout>
+
+	</com.google.android.material.card.MaterialCardView>
+
+</LinearLayout>

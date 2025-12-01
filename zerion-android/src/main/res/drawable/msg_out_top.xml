@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+	<!-- Shadow layer -->
+	<item
+		android:left="2dp"
+		android:top="2dp">
+		<shape android:shape="rectangle">
+			<corners
+				android:bottomLeftRadius="0dp"
+				android:bottomRightRadius="0dp"
+				android:topLeftRadius="@dimen/message_bubble_radius_top_outer"
+				android:topRightRadius="@dimen/message_bubble_radius_top_inner"/>
+			<solid android:color="#4D003366"/>
+		</shape>
+	</item>
+
+	<!-- Gradient bubble -->
+	<item
+		android:bottom="2dp"
+		android:right="2dp">
+		<shape android:shape="rectangle">
+			<corners
+				android:bottomLeftRadius="0dp"
+				android:bottomRightRadius="0dp"
+				android:topLeftRadius="@dimen/message_bubble_radius_top_outer"
+				android:topRightRadius="@dimen/message_bubble_radius_top_inner"/>
+			<padding
+				android:bottom="@dimen/message_bubble_padding_top"
+				android:left="@dimen/message_bubble_padding_sides"
+				android:right="@dimen/message_bubble_padding_sides"
+				android:top="@dimen/message_bubble_padding_top"/>
+			<gradient
+				android:angle="135"
+				android:startColor="#009BFF"
+				android:endColor="#005CFF"
+				android:type="linear"/>
+			<stroke
+				android:width="@dimen/message_bubble_stroke"
+				android:color="#005CFF"/>
+		</shape>
+	</item>
+</layer-list>

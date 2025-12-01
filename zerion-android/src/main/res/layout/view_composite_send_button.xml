@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="wrap_content"
+	android:layout_height="44dp"
+	android:layout_gravity="bottom"
+	android:orientation="horizontal"
+	android:gravity="center_vertical"
+	tools:parentTag="com.professor.zerion.android.view.CompositeSendButton"
+	tools:showIn="@layout/text_input_view">
+
+	<!-- Attachment button - ALWAYS VISIBLE -->
+	<androidx.appcompat.widget.AppCompatImageButton
+		android:id="@+id/attachmentButton"
+		android:layout_width="44dp"
+		android:layout_height="44dp"
+		android:background="?attr/selectableItemBackground"
+		android:clickable="true"
+		android:contentDescription="@string/add_attachment"
+		android:enabled="true"
+		android:focusable="true"
+		android:padding="10dp"
+		android:scaleType="center"
+		android:visibility="visible"
+		app:srcCompat="@drawable/ic_add_circle"
+		app:tint="@color/zerion_cyan" />
+
+	<!-- Send button container - tightly next to + button with no gap -->
+	<FrameLayout
+		android:layout_width="44dp"
+		android:layout_height="44dp"
+		android:layout_marginStart="0dp">
+
+		<!-- Voice button - VISIBLE when input is empty -->
+		<androidx.appcompat.widget.AppCompatImageButton
+			android:id="@+id/voiceButton"
+			android:layout_width="44dp"
+			android:layout_height="44dp"
+			android:background="?attr/selectableItemBackground"
+			android:clickable="true"
+			android:contentDescription="@string/record_voice_message"
+			android:enabled="true"
+			android:focusable="true"
+			android:padding="10dp"
+			android:scaleType="center"
+			android:visibility="visible"
+			app:srcCompat="@drawable/ic_mic_24dp"
+			app:tint="@color/zerion_cyan" />
+
+		<!-- Send button - INVISIBLE (not GONE) when input empty, VISIBLE when text present -->
+		<androidx.appcompat.widget.AppCompatImageButton
+			android:id="@+id/sendButton"
+			android:layout_width="44dp"
+			android:layout_height="44dp"
+			android:background="?attr/selectableItemBackground"
+			android:clickable="true"
+			android:contentDescription="@string/send"
+			android:enabled="false"
+			android:focusable="true"
+			android:padding="10dp"
+			android:scaleType="center"
+			android:visibility="invisible"
+			app:srcCompat="@drawable/social_send_now_white"
+			app:tint="@color/zerion_cyan" />
+
+		<!-- ProgressBar for loading states - overlays send button -->
+		<ProgressBar
+			android:id="@+id/progressBar"
+			style="@style/Zerion.Progress.Circular"
+			android:layout_width="44dp"
+			android:layout_height="44dp"
+			android:visibility="invisible" />
+
+	</FrameLayout>
+
+</LinearLayout>

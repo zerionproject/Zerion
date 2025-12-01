@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+	<item
+		android:id="@+id/action_vault_settings"
+		android:title="@string/vault_settings_title"
+		android:visible="false" />
+
+	<item
+		android:id="@+id/action_lock"
+		android:title="@string/lock_button"
+		android:visible="false" />
+
+	<item
+		android:id="@+id/action_sign_out"
+		android:title="@string/sign_out_button" />
+
+</menu>

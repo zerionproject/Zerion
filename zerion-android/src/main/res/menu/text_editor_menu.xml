@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <!-- Save option in overflow menu -->
+    <item
+        android:id="@+id/action_save"
+        android:title="Save"
+        android:icon="@drawable/ic_check_circle"
+        app:showAsAction="never" />
+
+    <!-- Save with Password -->
+    <item
+        android:id="@+id/action_save_with_password"
+        android:title="Save with Password"
+        android:icon="@drawable/ic_lock"
+        app:showAsAction="never" />
+
+</menu>

@@ -1,0 +1,195 @@
+package com.professor.zerion.android.conversation;
+
+import android.content.res.ColorStateList;
+import android.view.View;
+import android.view.ViewGroup;
+
+import com.professor.zerion.R;
+import com.professor.zerion.android.attachment.AttachmentItem;
+import org.briarproject.bramble.api.db.DatabaseExecutor;
+import org.briarproject.briar.api.attachment.AttachmentReader;
+import org.briarproject.nullsafety.NotNullByDefault;
+
+import java.util.concurrent.Executor;
+
+import androidx.annotation.Nullable;
+import androidx.annotation.UiThread;
+import androidx.constraintlayout.widget.ConstraintSet;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.RecyclerView.RecycledViewPool;
+
+import static android.view.View.GONE;
+import static android.view.View.VISIBLE;
+import static androidx.constraintlayout.widget.ConstraintSet.WRAP_CONTENT;
+import static androidx.core.content.ContextCompat.getColor;
+import static androidx.core.widget.ImageViewCompat.setImageTintList;
+
+@UiThread
+@NotNullByDefault
+class ConversationMessageViewHolder extends ConversationItemViewHolder {
+
+	private final ImageAdapter adapter;
+	private final ViewGroup statusLayout;
+	private final View voiceMessageView;
+	private final int timeColor, timeColorBubble;
+	private final ConstraintSet textConstraints = new ConstraintSet();
+	private final ConstraintSet imageConstraints = new ConstraintSet();
+	private final ConstraintSet imageTextConstraints = new ConstraintSet();
+
+	@Nullable
+	private VoiceMessageViewHolder voiceHolder;
+	private final AttachmentReader attachmentReader;
+	private final Executor dbExecutor;
+
+	ConversationMessageViewHolder(View v, ConversationListener listener,
+			boolean isIncoming, RecycledViewPool imageViewPool,
+			ImageItemDecoration imageItemDecoration,
+			AttachmentReader attachmentReader,
+			@DatabaseExecutor Executor dbExecutor) {
+		super(v, listener, isIncoming);
+		this.attachmentReader = attachmentReader;
+		this.dbExecutor = dbExecutor;
+		statusLayout = v.findViewById(R.id.statusLayout);
+		voiceMessageView = v.findViewById(R.id.voiceMessageView);
+
+		RecyclerView list = v.findViewById(R.id.imageList);
+		list.setRecycledViewPool(imageViewPool);
+		adapter = new ImageAdapter(v.getContext(), listener);
+		list.setAdapter(adapter);
+		list.addItemDecoration(imageItemDecoration);
+
+		timeColor = time.getCurrentTextColor();
+		timeColorBubble =
+				getColor(v.getContext(), R.color.msg_status_bubble_foreground);
+
+		textConstraints.clone(v.getContext(),
+				R.layout.list_item_conversation_msg_in_content);
+		imageConstraints.clone(v.getContext(),
+				R.layout.list_item_conversation_msg_image);
+		imageTextConstraints.clone(v.getContext(),
+				R.layout.list_item_conversation_msg_image_text);
+
+		textConstraints
+				.setHorizontalBias(R.id.statusLayout, isIncoming() ? 1 : 0);
+		imageConstraints
+				.setHorizontalBias(R.id.statusLayout, isIncoming() ? 1 : 0);
+		imageTextConstraints
+				.setHorizontalBias(R.id.statusLayout, isIncoming() ? 1 : 0);
+	}
+
+	@Override
+	void bind(ConversationItem conversationItem, boolean selected) {
+		super.bind(conversationItem, selected);
+		ConversationMessageItem item =
+				(ConversationMessageItem) conversationItem;
+
+		boolean hasVoiceMessage = hasVoiceMessage(item);
+
+		if (hasVoiceMessage) {
+			bindVoiceMessage(item);
+		} else if (item.getAttachments().isEmpty()) {
+			bindTextItem();
+		} else {
+			bindImageItem(item);
+		}
+	}
+
+	private boolean hasVoiceMessage(ConversationMessageItem item) {
+		String messageText = item.getText();
+		if (messageText != null && com.professor.zerion.android.conversation.voice.VoiceMessageFormat.isVoiceMessage(messageText)) {
+			return true;
+		}
+
+		if (item.getAttachments().isEmpty()) return false;
+		for (AttachmentItem attachment : item.getAttachments()) {
+			String contentType = attachment.getHeader().getContentType();
+			if ("audio/opus".equals(contentType) ||
+					"audio/3gpp".equals(contentType) ||
+					"audio/3gp".equals(contentType)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private void bindVoiceMessage(ConversationMessageItem item) {
+		adapter.clear();
+
+		if (voiceHolder != null) {
+			voiceHolder.onRecycled();
+		}
+
+		voiceHolder = new VoiceMessageViewHolder(voiceMessageView,
+				attachmentReader, dbExecutor);
+
+		String messageText = item.getText();
+		if (messageText != null && com.professor.zerion.android.conversation.voice.VoiceMessageFormat.isVoiceMessage(messageText)) {
+			// SECURITY: Pass GroupId and MessageId for AAD context verification
+			voiceHolder.bindEncryptedVoice(messageText, item.getGroupId(), item.getId());
+		} else {
+			AttachmentItem voiceAttachment = item.getAttachments().get(0);
+			voiceHolder.bind(voiceAttachment);
+		}
+
+		resetStatusLayoutForText();
+		textConstraints.applyTo(layout);
+
+		voiceMessageView.setVisibility(VISIBLE);
+		text.setVisibility(GONE);
+	}
+
+	private void bindTextItem() {
+		voiceMessageView.setVisibility(GONE);
+		text.setVisibility(VISIBLE);
+		resetStatusLayoutForText();
+		textConstraints.applyTo(layout);
+		adapter.clear();
+
+		if (voiceHolder != null) {
+			voiceHolder.onRecycled();
+			voiceHolder = null;
+		}
+	}
+
+	private void bindImageItem(ConversationMessageItem item) {
+		voiceMessageView.setVisibility(GONE);
+		text.setVisibility(item.getText() == null ? GONE : VISIBLE);
+
+		if (voiceHolder != null) {
+			voiceHolder.onRecycled();
+			voiceHolder = null;
+		}
+
+		ConstraintSet constraintSet;
+		if (item.getText() == null) {
+			statusLayout.setBackgroundResource(R.drawable.msg_status_bubble);
+			time.setTextColor(timeColorBubble);
+			setImageTintList(bomb, ColorStateList.valueOf(timeColorBubble));
+			constraintSet = imageConstraints;
+		} else {
+			resetStatusLayoutForText();
+			constraintSet = imageTextConstraints;
+		}
+
+		if (item.getAttachments().size() == 1) {
+			AttachmentItem attachment = item.getAttachments().get(0);
+			int width = attachment.getThumbnailWidth();
+			int height = attachment.getThumbnailHeight();
+			constraintSet.constrainWidth(R.id.imageList, width);
+			constraintSet.constrainHeight(R.id.imageList, height);
+		} else {
+			constraintSet.constrainWidth(R.id.imageList, WRAP_CONTENT);
+			constraintSet.constrainHeight(R.id.imageList, WRAP_CONTENT);
+		}
+		constraintSet.applyTo(layout);
+		adapter.setConversationItem(item);
+	}
+
+	private void resetStatusLayoutForText() {
+		statusLayout.setBackgroundResource(0);
+		statusLayout.setPadding(0, 0, 0, 0);
+		time.setTextColor(timeColor);
+		setImageTintList(bomb, ColorStateList.valueOf(timeColor));
+	}
+
+}
