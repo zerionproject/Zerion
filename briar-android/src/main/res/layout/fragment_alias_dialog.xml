@@ -19,6 +19,7 @@
 
 	<com.google.android.material.textfield.TextInputLayout
 		android:id="@+id/aliasEditLayout"
+		style="@style/Zerion.TextInput"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
 		android:layout_marginTop="16dp"
@@ -45,16 +46,16 @@
 		android:gravity="end"
 		android:orientation="horizontal">
 
-		<Button
+		<com.google.android.material.button.MaterialButton
 			android:id="@+id/cancelButton"
-			style="@style/BriarButtonFlat.Negative"
+			style="@style/Zerion.Button.Text"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
 			android:text="@string/cancel" />
 
-		<Button
+		<com.google.android.material.button.MaterialButton
 			android:id="@+id/setButton"
-			style="@style/BriarButtonFlat.Positive"
+			style="@style/Zerion.Button.Text"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
 			android:text="@string/change" />

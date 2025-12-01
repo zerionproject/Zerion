@@ -12,7 +12,7 @@
 
 	<SwitchPreferenceCompat
 		android:defaultValue="true"
-		android:enabled="false"
+		android:enabled="true"
 		android:key="notifyPrivateMessages"
 		android:persistent="false"
 		android:summary="@string/notify_private_messages_setting_summary"
@@ -22,7 +22,7 @@
 
 	<SwitchPreferenceCompat
 		android:defaultValue="true"
-		android:enabled="false"
+		android:enabled="true"
 		android:key="notifyGroupMessages"
 		android:persistent="false"
 		android:summary="@string/notify_group_messages_setting_summary"
@@ -32,7 +32,7 @@
 
 	<SwitchPreferenceCompat
 		android:defaultValue="true"
-		android:enabled="false"
+		android:enabled="true"
 		android:key="notifyVibration"
 		android:persistent="false"
 		android:title="@string/notify_vibration_setting"

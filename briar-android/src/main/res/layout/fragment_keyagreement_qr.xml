@@ -23,13 +23,14 @@
 			android:layout_width="match_parent"
 			android:layout_height="0dp"
 			android:layout_weight="1"
+			android:background="@drawable/bg_zerion_gradient"
 			android:padding="@dimen/margin_large"
 			android:visibility="invisible"
 			tools:visibility="visible">
 
 			<com.google.android.material.progressindicator.CircularProgressIndicator
 				android:id="@+id/connect_progress"
-				style="@style/CircularProgress.Large"
+				style="@style/Zerion.Progress.Circular"
 				android:layout_width="wrap_content"
 				android:layout_height="wrap_content"
 				app:layout_constraintBottom_toTopOf="@+id/connect_status"
@@ -44,6 +45,9 @@
 				android:layout_height="wrap_content"
 				android:layout_marginTop="@dimen/margin_large"
 				android:gravity="center"
+				android:textColor="#FFFFFF"
+				android:textSize="16sp"
+				android:textStyle="bold"
 				app:layout_constraintBottom_toTopOf="@+id/info_view"
 				app:layout_constraintEnd_toEndOf="parent"
 				app:layout_constraintStart_toStartOf="parent"

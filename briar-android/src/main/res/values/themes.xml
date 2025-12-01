@@ -100,4 +100,15 @@
 		<item name="android:windowNoTitle">true</item>
 	</style>
 
+	<!-- Preference text colors for Settings -->
+	<style name="Preference.Zerion" parent="Preference">
+		<item name="android:textColor">#FFFFFF</item>
+	</style>
+
+	<style name="PreferenceThemeOverlay.v14" parent="PreferenceThemeOverlay.v14.Material">
+		<item name="android:textColorPrimary">#FFFFFF</item>
+		<item name="android:textColorSecondary">#B3FFFFFF</item>
+		<item name="colorAccent">#26B7F0</item>
+	</style>
+
 </resources>

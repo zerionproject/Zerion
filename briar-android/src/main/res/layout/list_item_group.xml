@@ -87,9 +87,9 @@
 		app:layout_constraintTop_toBottomOf="@+id/messageCountView"
 		tools:text="This group is empty, but has a long status text" />
 
-	<Button
+	<com.google.android.material.button.MaterialButton
 		android:id="@+id/removeButton"
-		style="@style/BriarButtonFlat.Negative"
+		style="@style/Zerion.Button.Negative"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
 		android:text="@string/groups_remove"

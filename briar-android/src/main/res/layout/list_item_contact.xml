@@ -5,9 +5,13 @@
 	android:id="@+id/linearLayout4"
 	android:layout_width="match_parent"
 	android:layout_height="wrap_content"
-	android:background="?attr/selectableItemBackground"
+	android:layout_marginHorizontal="12dp"
+	android:layout_marginVertical="6dp"
+	android:background="@drawable/bg_contact_card"
+	android:elevation="2dp"
 	android:clickable="true"
-	android:focusable="true">
+	android:focusable="true"
+	android:padding="12dp">
 
 	<FrameLayout
 		android:id="@+id/avatarFrameView"
@@ -33,9 +37,10 @@
 		android:layout_width="wrap_content"
 		android:layout_height="@dimen/unread_bubble_size"
 		android:background="@drawable/bubble"
+		android:backgroundTint="#26B7F0"
 		android:gravity="center"
 		android:minWidth="@dimen/unread_bubble_size"
-		android:textColor="@color/briar_text_primary_inverse"
+		android:textColor="#FFFFFF"
 		android:textSize="@dimen/unread_bubble_text_size"
 		android:textStyle="bold"
 		app:layout_constraintEnd_toEndOf="@+id/avatarFrameView"
@@ -53,8 +58,9 @@
 		android:layout_marginRight="@dimen/margin_medium"
 		android:paddingStart="@dimen/margin_medium"
 		android:paddingEnd="@dimen/margin_medium"
-		android:textColor="?android:attr/textColorPrimary"
+		android:textColor="#FFFFFF"
 		android:textSize="@dimen/text_size_medium"
+		android:textStyle="bold"
 		app:layout_constraintBottom_toTopOf="@+id/trustIndicatorDescription"
 		app:layout_constraintEnd_toStartOf="@+id/bulbView"
 		app:layout_constraintHorizontal_bias="0.5"
@@ -83,7 +89,7 @@
 		android:layout_marginRight="8dp"
 		android:paddingStart="@dimen/margin_medium"
 		android:paddingEnd="@dimen/margin_medium"
-		android:textColor="?android:attr/textColorSecondary"
+		android:textColor="#B3FFFFFF"
 		android:textSize="@dimen/text_size_small"
 		app:layout_constraintBottom_toTopOf="@+id/dateView"
 		app:layout_constraintEnd_toStartOf="@+id/bulbView"
@@ -102,7 +108,7 @@
 		android:layout_marginBottom="10dp"
 		android:paddingStart="@dimen/margin_medium"
 		android:paddingEnd="@dimen/margin_medium"
-		android:textColor="?android:attr/textColorSecondary"
+		android:textColor="#80FFFFFF"
 		android:textSize="@dimen/text_size_small"
 		app:layout_constraintBottom_toTopOf="@id/divider"
 		app:layout_constraintEnd_toStartOf="@+id/bulbView"
@@ -124,8 +130,9 @@
 
 	<View
 		android:id="@+id/divider"
-		style="@style/Divider.ContactList"
 		android:layout_width="0dp"
+		android:layout_height="0dp"
+		android:visibility="gone"
 		app:layout_constraintBottom_toBottomOf="parent"
 		app:layout_constraintEnd_toEndOf="parent"
 		app:layout_constraintStart_toStartOf="@+id/nameView" />

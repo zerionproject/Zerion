@@ -11,6 +11,7 @@ import android.os.StrictMode.ThreadPolicy;
 import android.os.StrictMode.VmPolicy;
 import android.preference.PreferenceManager;
 
+import com.google.android.material.color.DynamicColors;
 import com.vanniktech.emoji.EmojiManager;
 import com.vanniktech.emoji.google.GoogleEmojiProvider;
 
@@ -59,6 +60,9 @@ public class BriarApplicationImpl extends Application
 	@Override
 	public void onCreate() {
 		super.onCreate();
+
+		// Apply Material 3 Dynamic Colors if available
+		DynamicColors.applyToActivitiesIfAvailable(this);
 
 		if (IS_DEBUG_BUILD) enableStrictMode();
 

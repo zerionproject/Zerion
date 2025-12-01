@@ -5,12 +5,14 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
 
+import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.textfield.TextInputLayout;
 
 import org.briarproject.bramble.util.StringUtils;
@@ -58,6 +60,17 @@ public class CreateGroupFragment extends BaseFragment {
 
 		View v = inflater.inflate(R.layout.fragment_create_group, container,
 				false);
+
+		// ZERION FIX: Set up toolbar with back navigation
+		MaterialToolbar toolbar = v.findViewById(R.id.toolbar);
+		if (toolbar != null) {
+			toolbar.setTitle(R.string.groups_create_group_title);
+			toolbar.setNavigationIcon(R.drawable.ic_arrow_back);
+			toolbar.setNavigationOnClickListener(view -> {
+				requireActivity().onBackPressed();
+			});
+		}
+
 		nameEntry = v.findViewById(R.id.name);
 		nameEntry.addTextChangedListener(new TextWatcher() {
 

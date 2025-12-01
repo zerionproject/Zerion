@@ -12,6 +12,10 @@
 			android:id="@+id/nav_btn_groups"
 			android:icon="@drawable/ic_group"
 			android:title="@string/groups_button" />
+		<item
+			android:id="@+id/nav_btn_vault"
+			android:icon="@drawable/ic_vault"
+			android:title="@string/vault_button" />
 	</group>
 
 	<group android:checkableBehavior="single">

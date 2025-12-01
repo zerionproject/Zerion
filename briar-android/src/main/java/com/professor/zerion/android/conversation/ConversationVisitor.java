@@ -5,11 +5,7 @@ import android.content.Context;
 import org.briarproject.bramble.api.sync.MessageId;
 import com.professor.zerion.R;
 import com.professor.zerion.android.attachment.AttachmentItem;
-import org.briarproject.briar.api.blog.BlogInvitationRequest;
-import org.briarproject.briar.api.blog.BlogInvitationResponse;
 import org.briarproject.briar.api.conversation.ConversationMessageVisitor;
-import org.briarproject.briar.api.forum.ForumInvitationRequest;
-import org.briarproject.briar.api.forum.ForumInvitationResponse;
 import org.briarproject.briar.api.introduction.IntroductionRequest;
 import org.briarproject.briar.api.introduction.IntroductionResponse;
 import org.briarproject.briar.api.messaging.PrivateMessageHeader;
@@ -25,8 +21,6 @@ import androidx.annotation.UiThread;
 import androidx.lifecycle.LiveData;
 
 import static java.util.Collections.emptyList;
-import static com.professor.zerion.android.conversation.ConversationRequestItem.RequestType.BLOG;
-import static com.professor.zerion.android.conversation.ConversationRequestItem.RequestType.FORUM;
 import static com.professor.zerion.android.conversation.ConversationRequestItem.RequestType.GROUP;
 import static com.professor.zerion.android.conversation.ConversationRequestItem.RequestType.INTRODUCTION;
 import static com.professor.zerion.android.util.UiUtils.getContactDisplayName;
@@ -72,120 +66,6 @@ class ConversationVisitor implements
 			if (text != null) item.setText(text);
 		}
 		return item;
-	}
-
-	@Override
-	public ConversationItem visitBlogInvitationRequest(
-			BlogInvitationRequest r) {
-		if (r.isLocal()) {
-			String text = ctx.getString(R.string.blogs_sharing_invitation_sent,
-					r.getName(), contactName.getValue());
-			return new ConversationNoticeItem(
-					R.layout.list_item_conversation_notice_out, text,
-					contactName, r);
-		} else {
-			String text = ctx.getString(
-					R.string.blogs_sharing_invitation_received,
-					contactName.getValue(), r.getName());
-			return new ConversationRequestItem(
-					R.layout.list_item_conversation_request, text, contactName,
-					BLOG, r);
-		}
-	}
-
-	@Override
-	public ConversationItem visitBlogInvitationResponse(
-			BlogInvitationResponse r) {
-		if (r.isLocal()) {
-			String text;
-			if (r.wasAccepted()) {
-				text = ctx.getString(
-						R.string.blogs_sharing_response_accepted_sent,
-						contactName.getValue());
-			} else if (r.isAutoDecline()) {
-				text = ctx.getString(
-						R.string.blogs_sharing_response_declined_auto,
-						contactName.getValue());
-			} else {
-				text = ctx.getString(
-						R.string.blogs_sharing_response_declined_sent,
-						contactName.getValue());
-			}
-			return new ConversationNoticeItem(
-					R.layout.list_item_conversation_notice_out, text,
-					contactName, r);
-		} else {
-			String text;
-			if (r.wasAccepted()) {
-				text = ctx.getString(
-						R.string.blogs_sharing_response_accepted_received,
-						contactName.getValue());
-			} else {
-				text = ctx.getString(
-						R.string.blogs_sharing_response_declined_received,
-						contactName.getValue());
-			}
-			return new ConversationNoticeItem(
-					R.layout.list_item_conversation_notice_in, text,
-					contactName, r);
-		}
-	}
-
-	@Override
-	public ConversationItem visitForumInvitationRequest(
-			ForumInvitationRequest r) {
-		if (r.isLocal()) {
-			String text = ctx.getString(R.string.forum_invitation_sent,
-					r.getName(), contactName.getValue());
-			return new ConversationNoticeItem(
-					R.layout.list_item_conversation_notice_out, text,
-					contactName, r);
-		} else {
-			String text = ctx.getString(
-					R.string.forum_invitation_received,
-					contactName.getValue(), r.getName());
-			return new ConversationRequestItem(
-					R.layout.list_item_conversation_request, text, contactName,
-					FORUM, r);
-		}
-	}
-
-	@Override
-	public ConversationItem visitForumInvitationResponse(
-			ForumInvitationResponse r) {
-		if (r.isLocal()) {
-			String text;
-			if (r.wasAccepted()) {
-				text = ctx.getString(
-						R.string.forum_invitation_response_accepted_sent,
-						contactName.getValue());
-			} else if (r.isAutoDecline()) {
-				text = ctx.getString(
-						R.string.forum_invitation_response_declined_auto,
-						contactName.getValue());
-			} else {
-				text = ctx.getString(
-						R.string.forum_invitation_response_declined_sent,
-						contactName.getValue());
-			}
-			return new ConversationNoticeItem(
-					R.layout.list_item_conversation_notice_out, text,
-					contactName, r);
-		} else {
-			String text;
-			if (r.wasAccepted()) {
-				text = ctx.getString(
-						R.string.forum_invitation_response_accepted_received,
-						contactName.getValue());
-			} else {
-				text = ctx.getString(
-						R.string.forum_invitation_response_declined_received,
-						contactName.getValue());
-			}
-			return new ConversationNoticeItem(
-					R.layout.list_item_conversation_notice_in, text,
-					contactName, r);
-		}
 	}
 
 	@Override

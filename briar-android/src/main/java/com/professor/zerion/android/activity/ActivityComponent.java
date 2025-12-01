@@ -93,6 +93,8 @@ public interface ActivityComponent {
 
 	void inject(ImageActivity activity);
 
+	void inject(com.professor.zerion.android.vault.ui.VaultActivity activity);
+
 
 	void inject(CreateGroupActivity activity);
 

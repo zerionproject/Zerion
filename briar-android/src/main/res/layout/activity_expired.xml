@@ -34,9 +34,9 @@
 			android:text="@string/create_new_account"
 			android:textSize="@dimen/text_size_large" />
 
-		<Button
+		<com.google.android.material.button.MaterialButton
 			android:id="@+id/download_briar_button"
-			style="@style/BriarButton"
+			style="@style/Zerion.Button.Primary"
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
 			android:layout_margin="@dimen/margin_medium"
