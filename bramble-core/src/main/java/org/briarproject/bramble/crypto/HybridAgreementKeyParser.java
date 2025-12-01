@@ -1,0 +1,64 @@
+package org.briarproject.bramble.crypto;
+
+import org.briarproject.bramble.api.crypto.HybridAgreementPrivateKey;
+import org.briarproject.bramble.api.crypto.HybridAgreementPublicKey;
+import org.briarproject.bramble.api.crypto.KeyParser;
+import org.briarproject.bramble.api.crypto.PrivateKey;
+import org.briarproject.bramble.api.crypto.PublicKey;
+import org.briarproject.nullsafety.NotNullByDefault;
+
+import java.security.GeneralSecurityException;
+
+import static org.briarproject.bramble.api.crypto.PostQuantumConstants.HYBRID_AGREEMENT_PRIVATE_KEY_BYTES;
+import static org.briarproject.bramble.api.crypto.PostQuantumConstants.HYBRID_AGREEMENT_PUBLIC_KEY_BYTES;
+
+/**
+ * Parser for hybrid agreement keys (X25519 + ML-KEM-768).
+ */
+@NotNullByDefault
+class HybridAgreementKeyParser implements KeyParser {
+
+	private final MlKem768 mlKem768;
+
+	HybridAgreementKeyParser(MlKem768 mlKem768) {
+		this.mlKem768 = mlKem768;
+	}
+
+	@Override
+	public PublicKey parsePublicKey(byte[] encodedKey)
+			throws GeneralSecurityException {
+		if (encodedKey.length != HYBRID_AGREEMENT_PUBLIC_KEY_BYTES) {
+			throw new GeneralSecurityException(
+					"Invalid hybrid agreement public key length: " +
+							encodedKey.length + ", expected: " +
+							HYBRID_AGREEMENT_PUBLIC_KEY_BYTES);
+		}
+
+		// Validate X25519 component (32 bytes at start)
+		// X25519 public keys are always valid if they're 32 bytes
+
+		// Validate ML-KEM-768 component (1184 bytes after X25519)
+		byte[] mlKemPubKey = new byte[1184];
+		System.arraycopy(encodedKey, 32, mlKemPubKey, 0, 1184);
+		if (!mlKem768.isValidPublicKey(mlKemPubKey)) {
+			throw new GeneralSecurityException(
+					"Invalid ML-KEM-768 public key component");
+		}
+
+		return new HybridAgreementPublicKey(encodedKey);
+	}
+
+	@Override
+	public PrivateKey parsePrivateKey(byte[] encodedKey)
+			throws GeneralSecurityException {
+		if (encodedKey.length != HYBRID_AGREEMENT_PRIVATE_KEY_BYTES) {
+			throw new GeneralSecurityException(
+					"Invalid hybrid agreement private key length: " +
+							encodedKey.length + ", expected: " +
+							HYBRID_AGREEMENT_PRIVATE_KEY_BYTES);
+		}
+
+		// Private keys are validated by their structure/length
+		return new HybridAgreementPrivateKey(encodedKey);
+	}
+}

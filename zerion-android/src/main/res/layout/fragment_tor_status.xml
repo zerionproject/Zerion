@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="@drawable/bg_zerion_gradient"
+	android:orientation="vertical"
+	android:padding="24dp">
+
+	<TextView
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:text="Network Status"
+		android:textColor="#FFFFFF"
+		android:textSize="24sp"
+		android:textStyle="bold"
+		android:layout_marginBottom="24dp"/>
+
+	<com.google.android.material.card.MaterialCardView
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:layout_marginBottom="16dp"
+		app:cardBackgroundColor="#1E1E1E"
+		app:cardCornerRadius="12dp"
+		app:cardElevation="4dp">
+
+		<LinearLayout
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:orientation="vertical"
+			android:padding="16dp">
+
+			<LinearLayout
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:orientation="horizontal"
+				android:gravity="center_vertical">
+
+				<ImageView
+					android:id="@+id/torStatusIcon"
+					android:layout_width="24dp"
+					android:layout_height="24dp"
+					android:src="@drawable/transport_tor"
+					app:tint="#26B7F0"/>
+
+				<TextView
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:layout_marginStart="12dp"
+					android:text="Tor Network"
+					android:textColor="#FFFFFF"
+					android:textSize="18sp"
+					android:textStyle="bold"/>
+
+				<TextView
+					android:id="@+id/torStatusText"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:text="Connected"
+					android:textColor="#4CAF50"
+					android:textSize="14sp"
+					android:textStyle="bold"
+					tools:text="Connected"/>
+
+			</LinearLayout>
+
+			<View
+				android:layout_width="match_parent"
+				android:layout_height="1dp"
+				android:layout_marginTop="12dp"
+				android:layout_marginBottom="12dp"
+				android:background="#333333"/>
+
+			<TextView
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:text="Connection Information"
+				android:textColor="#AAAAAA"
+				android:textSize="12sp"
+				android:textStyle="bold"
+				android:layout_marginBottom="8dp"/>
+
+			<LinearLayout
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:orientation="horizontal"
+				android:layout_marginBottom="8dp">
+
+				<TextView
+					android:layout_width="100dp"
+					android:layout_height="wrap_content"
+					android:text="Status:"
+					android:textColor="#AAAAAA"
+					android:textSize="14sp"/>
+
+				<TextView
+					android:id="@+id/torConnectionStatus"
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:text="Active"
+					android:textColor="#FFFFFF"
+					android:textSize="14sp"
+					tools:text="Active"/>
+
+			</LinearLayout>
+
+			<LinearLayout
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:orientation="horizontal">
+
+				<TextView
+					android:layout_width="100dp"
+					android:layout_height="wrap_content"
+					android:text="Onion Address:"
+					android:textColor="#AAAAAA"
+					android:textSize="14sp"/>
+
+				<TextView
+					android:id="@+id/torOnionAddress"
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:text="Generating..."
+					android:textColor="#26B7F0"
+					android:textSize="12sp"
+					android:fontFamily="monospace"
+					android:breakStrategy="simple"
+					android:singleLine="false"
+					tools:text="abcdef123456.onion"/>
+
+			</LinearLayout>
+
+		</LinearLayout>
+
+	</com.google.android.material.card.MaterialCardView>
+
+	<com.google.android.material.card.MaterialCardView
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		app:cardBackgroundColor="#1E1E1E"
+		app:cardCornerRadius="12dp"
+		app:cardElevation="4dp">
+
+		<LinearLayout
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:orientation="vertical"
+			android:padding="16dp">
+
+			<TextView
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:text="Network Mode"
+				android:textColor="#FFFFFF"
+				android:textSize="16sp"
+				android:textStyle="bold"
+				android:layout_marginBottom="8dp"/>
+
+			<TextView
+				android:id="@+id/networkModeDescription"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:text="All communication is routed through the Tor network for privacy and security. Your connection is encrypted and anonymous."
+				android:textColor="#CCCCCC"
+				android:textSize="14sp"
+				android:lineSpacingMultiplier="1.2"/>
+
+		</LinearLayout>
+
+	</com.google.android.material.card.MaterialCardView>
+
+</LinearLayout>

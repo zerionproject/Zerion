@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="@drawable/bg_zerion_gradient">
+
+	<!-- Logo at top -->
+	<ImageView
+		android:id="@+id/logoView"
+		android:layout_width="120dp"
+		android:layout_height="120dp"
+		android:layout_marginTop="80dp"
+		android:scaleType="centerInside"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toTopOf="parent"
+		app:srcCompat="@drawable/logo"
+		tools:ignore="ContentDescription" />
+
+	<!-- Lock icon with progress -->
+	<ImageView
+		android:id="@+id/imageView"
+		android:layout_width="96dp"
+		android:layout_height="96dp"
+		android:layout_marginTop="48dp"
+		android:scaleType="center"
+		app:layout_constraintBottom_toTopOf="@+id/textView"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toBottomOf="@+id/logoView"
+		app:layout_constraintVertical_chainStyle="packed"
+		app:srcCompat="@drawable/startup_lock"
+		app:tint="#26B7F0"
+		tools:ignore="ContentDescription" />
+
+	<!-- Circular progress indicator (hidden - cleaner UI) -->
+	<com.google.android.material.progressindicator.CircularProgressIndicator
+		android:id="@+id/progressBar"
+		style="@style/Zerion.Progress.Circular"
+		android:layout_width="120dp"
+		android:layout_height="120dp"
+		android:visibility="gone"
+		app:trackThickness="3dp"
+		app:layout_constraintBottom_toBottomOf="@+id/imageView"
+		app:layout_constraintEnd_toEndOf="@+id/imageView"
+		app:layout_constraintStart_toStartOf="@+id/imageView"
+		app:layout_constraintTop_toTopOf="@+id/imageView"
+		tools:progress="50" />
+
+	<!-- Status text -->
+	<TextView
+		android:id="@+id/textView"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_margin="24dp"
+		android:gravity="center"
+		android:paddingLeft="@dimen/margin_large"
+		android:paddingRight="@dimen/margin_large"
+		android:text="@string/startup_open_database"
+		android:textColor="#FFFFFF"
+		android:textSize="18sp"
+		android:textStyle="bold"
+		app:layout_constraintBottom_toTopOf="@+id/subtextView"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toBottomOf="@+id/imageView" />
+
+	<!-- Subtext for context -->
+	<TextView
+		android:id="@+id/subtextView"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_marginTop="8dp"
+		android:gravity="center"
+		android:paddingLeft="@dimen/margin_large"
+		android:paddingRight="@dimen/margin_large"
+		android:text="Please wait while we decrypt your secure database..."
+		android:textColor="#B3FFFFFF"
+		android:textSize="14sp"
+		app:layout_constraintBottom_toBottomOf="parent"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toBottomOf="@+id/textView"
+		app:layout_constraintVertical_bias="0.0" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

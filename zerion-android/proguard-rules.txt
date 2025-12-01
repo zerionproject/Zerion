@@ -1,0 +1,158 @@
+# Android defaults and rules from ../bramble-android/proguard-rules.txt are also applied
+
+# ============================================================================
+# SECURITY HARDENING - Phase 2.6
+# ============================================================================
+# Enable obfuscation for anti-reverse-engineering
+# Keep only what's absolutely necessary for Android/DI to function
+# ============================================================================
+
+# Keep minimal attributes for crash reports, remove source file names in release
+-keepattributes *Annotation*, Signature, InnerClasses, EnclosingMethod
+# Remove SourceFile and LineNumberTable in release for better obfuscation
+# (will make crash reports less detailed but harder to reverse engineer)
+
+# ============================================================================
+# DAGGER 2 DEPENDENCY INJECTION
+# ============================================================================
+# Keep Dagger-generated classes and injection points
+-keep class **_Factory { *; }
+-keep class **_MembersInjector { *; }
+-keep class **_Provide*Factory { *; }
+-keep class dagger.** { *; }
+-keep class javax.inject.** { *; }
+
+# Keep @Inject constructors
+-keepclasseswithmembernames class * {
+    @javax.inject.Inject <init>(...);
+}
+
+# Keep @Inject fields
+-keepclasseswithmembernames class * {
+    @javax.inject.Inject <fields>;
+}
+
+# Keep @Inject methods
+-keepclasseswithmembernames class * {
+    @javax.inject.Inject <methods>;
+}
+
+# Keep Dagger components and modules
+-keep @dagger.Component class * { *; }
+-keep @dagger.Subcomponent class * { *; }
+-keep @dagger.Module class * { *; }
+-keep @javax.inject.Singleton class * { *; }
+
+# ============================================================================
+# ANDROID FRAMEWORK REQUIREMENTS
+# ============================================================================
+# Keep Activities, Services, BroadcastReceivers, ContentProviders
+-keep public class * extends android.app.Activity
+-keep public class * extends android.app.Service
+-keep public class * extends android.content.BroadcastReceiver
+-keep public class * extends android.content.ContentProvider
+-keep public class * extends android.app.Application
+-keep public class * extends androidx.fragment.app.Fragment
+-keep public class * extends android.view.View
+
+# Keep ViewModel classes for lifecycle
+-keep class * extends androidx.lifecycle.ViewModel {
+    <init>(...);
+}
+-keep class * extends androidx.lifecycle.AndroidViewModel {
+    <init>(...);
+}
+
+# Keep custom Views with constructors needed by XML inflation
+-keepclasseswithmembers class * {
+    public <init>(android.content.Context, android.util.AttributeSet);
+}
+-keepclasseswithmembers class * {
+    public <init>(android.content.Context, android.util.AttributeSet, int);
+}
+
+# Keep native methods (JNI)
+-keepclasseswithmembernames class * {
+    native <methods>;
+}
+
+# Keep Parcelable implementations
+-keep class * implements android.os.Parcelable {
+    public static final android.os.Parcelable$Creator *;
+}
+
+# Keep Serializable classes
+-keepclassmembers class * implements java.io.Serializable {
+    static final long serialVersionUID;
+    private static final java.io.ObjectStreamField[] serialPersistentFields;
+    private void writeObject(java.io.ObjectOutputStream);
+    private void readObject(java.io.ObjectInputStream);
+    java.lang.Object writeReplace();
+    java.lang.Object readResolve();
+}
+
+# ============================================================================
+# BRIARPROJECT API
+# ============================================================================
+# Keep Briar API interfaces that are used via reflection or across modules
+-keep,includedescriptorclasses class com.professor.zerion.api.android.** { *; }
+
+# ============================================================================
+# VAULT PACKAGE - EXTRA OBFUSCATION
+# ============================================================================
+# Vault crypto and storage classes - obfuscate everything except DI and Android framework requirements
+# (already covered by rules above, this comment documents the strategy)
+# - VaultManager, VaultKeystore, etc. will be obfuscated
+# - Only @Inject annotated members will be kept
+# - ViewModel constructors will be kept
+# - Everything else gets obfuscated for maximum protection
+
+# ============================================================================
+# SECURITY PACKAGE - EXTRA OBFUSCATION
+# ============================================================================
+# Security-related classes should be heavily obfuscated
+# (already covered by rules above)
+
+# ============================================================================
+# PANIC/WIPE PACKAGE - EXTRA OBFUSCATION
+# ============================================================================
+# Anti-forensics and panic wipe functionality should be obfuscated
+# (already covered by rules above)
+
+# QR codes
+-keep class com.google.zxing.Result
+-keepclassmembers enum * {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
+
+# RSS libraries
+-keep,includedescriptorclasses class com.rometools.rome.feed.synd.impl.** { *; }
+-keep,includedescriptorclasses class com.rometools.rome.io.impl.** { *; }
+-dontwarn javax.xml.stream.**
+-dontwarn org.jaxen.**
+-dontwarn java.nio.**
+-dontwarn org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement
+-dontwarn org.slf4j.impl.**
+
+# OkHttp does some shenanigans with Android's SSL classes
+-dontnote com.android.org.conscrypt.SSLParametersImpl
+-dontnote org.apache.harmony.xnet.provider.jsse.SSLParametersImpl
+-dontnote sun.security.ssl.SSLContextImpl
+-dontwarn org.conscrypt.OpenSSLProvider
+-dontwarn org.conscrypt.Conscrypt
+
+# HTML sanitiser
+-keep class org.jsoup.safety.Whitelist
+
+# KeyboardAwareLinearLayout uses reflection on android.View
+-dontnote org.thoughtcrime.securesms.components.KeyboardAwareLinearLayout
+
+# Emoji
+-keep class com.vanniktech.emoji.**
+
+# Glide
+-dontwarn com.bumptech.glide.load.engine.cache.DiskLruCacheWrapper
+
+# Dependency injection annotations, needed for UI tests on older API levels
+-keep class javax.inject.**

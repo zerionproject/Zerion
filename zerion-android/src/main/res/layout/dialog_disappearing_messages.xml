@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="@drawable/bg_zerion_gradient">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/menu_item_disappearing_messages"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/white"
+        android:paddingBottom="16dp" />
+
+    <RadioGroup
+        android:id="@+id/disappearing_messages_radio_group"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <RadioButton
+            android:id="@+id/timer_30_seconds"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="30 seconds"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:buttonTint="@color/zerion_cyan" />
+
+        <RadioButton
+            android:id="@+id/timer_5_minutes"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="5 minutes"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:buttonTint="@color/zerion_cyan" />
+
+        <RadioButton
+            android:id="@+id/timer_30_minutes"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="30 minutes"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:buttonTint="@color/zerion_cyan" />
+
+        <RadioButton
+            android:id="@+id/timer_1_hour"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="1 hour"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:buttonTint="@color/zerion_cyan" />
+
+        <RadioButton
+            android:id="@+id/timer_8_hours"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="8 hours"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:buttonTint="@color/zerion_cyan" />
+
+        <RadioButton
+            android:id="@+id/timer_12_hours"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="12 hours"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:buttonTint="@color/zerion_cyan" />
+
+        <RadioButton
+            android:id="@+id/timer_24_hours"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="24 hours"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:buttonTint="@color/zerion_cyan" />
+
+        <RadioButton
+            android:id="@+id/timer_1_week"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="1 week"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:buttonTint="@color/zerion_cyan" />
+
+        <RadioButton
+            android:id="@+id/timer_4_weeks"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="4 weeks"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:buttonTint="@color/zerion_cyan" />
+
+        <RadioButton
+            android:id="@+id/timer_off"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="Off"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:buttonTint="@color/zerion_cyan"
+            android:checked="true" />
+
+    </RadioGroup>
+
+</LinearLayout>

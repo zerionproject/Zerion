@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+	<!-- Shadow layer -->
+	<item
+		android:left="2dp"
+		android:top="2dp">
+		<shape android:shape="rectangle">
+			<corners
+				android:bottomLeftRadius="@dimen/message_bubble_radius_big"
+				android:bottomRightRadius="@dimen/message_bubble_radius_big"
+				android:topLeftRadius="@dimen/message_bubble_radius_top_outer"
+				android:topRightRadius="@dimen/message_bubble_radius_top_inner"/>
+			<solid android:color="#4D003366"/>
+		</shape>
+	</item>
+
+	<!-- Solid bubble without border -->
+	<item
+		android:bottom="2dp"
+		android:right="2dp">
+		<shape android:shape="rectangle">
+			<corners
+				android:bottomLeftRadius="@dimen/message_bubble_radius_big"
+				android:bottomRightRadius="@dimen/message_bubble_radius_big"
+				android:topLeftRadius="@dimen/message_bubble_radius_top_outer"
+				android:topRightRadius="@dimen/message_bubble_radius_top_inner"/>
+			<padding
+				android:bottom="12dp"
+				android:left="12dp"
+				android:right="12dp"
+				android:top="12dp"/>
+			<solid android:color="@color/zerion_message_sent"/>
+		</shape>
+	</item>
+</layer-list>

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="@android:color/transparent"
+	android:orientation="vertical"
+	android:padding="@dimen/margin_large">
+
+	<com.google.android.material.textfield.TextInputLayout
+		android:id="@+id/nameLayout"
+		style="@style/Zerion.TextInput"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:hint="@string/groups_create_group_hint"
+		app:errorEnabled="true">
+
+		<com.google.android.material.textfield.TextInputEditText
+			android:id="@+id/name"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:textColor="@android:color/white"
+			android:textColorHint="#80FFFFFF"
+			android:imeOptions="flagNoPersonalizedLearning"
+			android:importantForAutofill="no"
+			android:inputType="text|textCapSentences"
+			android:maxLines="1" />
+
+		<requestFocus />
+
+	</com.google.android.material.textfield.TextInputLayout>
+
+	<com.google.android.material.button.MaterialButton
+		android:id="@+id/button"
+		style="@style/Zerion.Button.Primary"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:enabled="false"
+		android:text="@string/groups_create_group_button"
+		tools:enabled="true" />
+
+	<com.google.android.material.progressindicator.CircularProgressIndicator
+		android:id="@+id/progressBar"
+		style="@style/Zerion.Progress.Circular"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_gravity="center"
+		android:indeterminate="true"
+		android:visibility="gone"
+		tools:visibility="visible" />
+
+</LinearLayout>

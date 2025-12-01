@@ -1,0 +1,125 @@
+package org.briarproject.briar.messaging;
+
+import org.briarproject.bramble.api.FormatException;
+import org.briarproject.bramble.api.client.ClientHelper;
+import org.briarproject.bramble.api.data.BdfList;
+import org.briarproject.bramble.api.sync.GroupId;
+import org.briarproject.bramble.api.sync.Message;
+import org.briarproject.briar.api.messaging.VoiceSignal;
+import org.briarproject.briar.api.messaging.VoiceSignalFactory;
+import org.briarproject.briar.api.messaging.VoiceSignalType;
+import org.briarproject.nullsafety.NotNullByDefault;
+
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
+import javax.inject.Inject;
+
+import static org.briarproject.briar.messaging.MessageTypes.VOICE_SIGNAL;
+
+/**
+ * Implementation of VoiceSignalFactory.
+ * Creates voice call signaling messages with BDF serialization format:
+ * [VOICE_SIGNAL, signalType, callId, payload, durationMs]
+ */
+@Immutable
+@NotNullByDefault
+class VoiceSignalFactoryImpl implements VoiceSignalFactory {
+
+	// Maximum call ID length (UUID format)
+	private static final int MAX_CALL_ID_LENGTH = 64;
+	// Maximum payload size (SDP/ICE data)
+	private static final int MAX_PAYLOAD_LENGTH = 16384;
+
+	private final ClientHelper clientHelper;
+
+	@Inject
+	VoiceSignalFactoryImpl(ClientHelper clientHelper) {
+		this.clientHelper = clientHelper;
+	}
+
+	@Override
+	public VoiceSignal createCallOffer(GroupId groupId, long timestamp,
+			String callId, String sdpOffer) throws FormatException {
+		validateCallId(callId);
+		validatePayload(sdpOffer);
+		return createSignal(groupId, timestamp, VoiceSignalType.CALL_OFFER,
+				callId, sdpOffer, null);
+	}
+
+	@Override
+	public VoiceSignal createCallAnswer(GroupId groupId, long timestamp,
+			String callId, String sdpAnswer) throws FormatException {
+		validateCallId(callId);
+		validatePayload(sdpAnswer);
+		return createSignal(groupId, timestamp, VoiceSignalType.CALL_ANSWER,
+				callId, sdpAnswer, null);
+	}
+
+	@Override
+	public VoiceSignal createCallReject(GroupId groupId, long timestamp,
+			String callId) throws FormatException {
+		validateCallId(callId);
+		return createSignal(groupId, timestamp, VoiceSignalType.CALL_REJECT,
+				callId, null, null);
+	}
+
+	@Override
+	public VoiceSignal createCallEnd(GroupId groupId, long timestamp,
+			String callId, @Nullable Long durationMs) throws FormatException {
+		validateCallId(callId);
+		if (durationMs != null && durationMs < 0) {
+			throw new IllegalArgumentException("Duration cannot be negative");
+		}
+		return createSignal(groupId, timestamp, VoiceSignalType.CALL_END,
+				callId, null, durationMs);
+	}
+
+	@Override
+	public VoiceSignal createIceCandidate(GroupId groupId, long timestamp,
+			String callId, String iceCandidate) throws FormatException {
+		validateCallId(callId);
+		validatePayload(iceCandidate);
+		return createSignal(groupId, timestamp, VoiceSignalType.ICE_CANDIDATE,
+				callId, iceCandidate, null);
+	}
+
+	@Override
+	public VoiceSignal createCallBusy(GroupId groupId, long timestamp,
+			String callId) throws FormatException {
+		validateCallId(callId);
+		return createSignal(groupId, timestamp, VoiceSignalType.CALL_BUSY,
+				callId, null, null);
+	}
+
+	private VoiceSignal createSignal(GroupId groupId, long timestamp,
+			VoiceSignalType signalType, String callId,
+			@Nullable String payload, @Nullable Long durationMs)
+			throws FormatException {
+		// Serialise the voice signal message
+		// Format: [VOICE_SIGNAL, signalType, callId, payload, durationMs]
+		BdfList body = BdfList.of(
+				VOICE_SIGNAL,
+				signalType.getValue(),
+				callId,
+				payload,
+				durationMs
+		);
+		Message m = clientHelper.createMessage(groupId, timestamp, body);
+		return new VoiceSignal(m, signalType, callId, payload, durationMs, null);
+	}
+
+	private void validateCallId(String callId) {
+		if (callId == null || callId.isEmpty()) {
+			throw new IllegalArgumentException("Call ID cannot be empty");
+		}
+		if (callId.length() > MAX_CALL_ID_LENGTH) {
+			throw new IllegalArgumentException("Call ID too long");
+		}
+	}
+
+	private void validatePayload(@Nullable String payload) {
+		if (payload != null && payload.length() > MAX_PAYLOAD_LENGTH) {
+			throw new IllegalArgumentException("Payload too long");
+		}
+	}
+}

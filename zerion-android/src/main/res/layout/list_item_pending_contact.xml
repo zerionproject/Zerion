@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Professional Pending Contact list item design -->
+<com.google.android.material.card.MaterialCardView
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:id="@+id/pending_contact_card"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content"
+	android:layout_marginHorizontal="12dp"
+	android:layout_marginVertical="6dp"
+	app:cardBackgroundColor="@color/zerion_card_bg"
+	app:cardCornerRadius="16dp"
+	app:cardElevation="4dp"
+	app:strokeWidth="0dp">
+
+	<androidx.constraintlayout.widget.ConstraintLayout
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:padding="16dp">
+
+		<!-- Avatar with connection indicator -->
+		<FrameLayout
+			android:id="@+id/avatar_container"
+			android:layout_width="56dp"
+			android:layout_height="56dp"
+			app:layout_constraintStart_toStartOf="parent"
+			app:layout_constraintTop_toTopOf="parent"
+			app:layout_constraintBottom_toBottomOf="parent">
+
+			<com.professor.zerion.android.view.TextAvatarView
+				android:id="@+id/avatar"
+				android:layout_width="56dp"
+				android:layout_height="56dp" />
+
+			<!-- Status indicator dot -->
+			<View
+				android:id="@+id/status_indicator"
+				android:layout_width="16dp"
+				android:layout_height="16dp"
+				android:layout_gravity="bottom|end"
+				android:background="@drawable/status_indicator_connecting"
+				tools:visibility="visible" />
+
+		</FrameLayout>
+
+		<!-- Contact name - prominent display -->
+		<TextView
+			android:id="@+id/name"
+			android:layout_width="0dp"
+			android:layout_height="wrap_content"
+			android:layout_marginStart="16dp"
+			android:layout_marginEnd="8dp"
+			android:layout_marginTop="4dp"
+			android:ellipsize="end"
+			android:maxLines="1"
+			android:textColor="#FFFFFF"
+			android:textSize="17sp"
+			android:textStyle="bold"
+			app:layout_constraintEnd_toStartOf="@+id/time"
+			app:layout_constraintStart_toEndOf="@+id/avatar_container"
+			app:layout_constraintTop_toTopOf="@+id/avatar_container"
+			app:layout_constraintBottom_toTopOf="@+id/status_container"
+			app:layout_constraintVertical_chainStyle="packed"
+			app:layout_constraintVertical_bias="0.4"
+			tools:text="Victor" />
+
+		<!-- Status text with icon -->
+		<LinearLayout
+			android:id="@+id/status_container"
+			android:layout_width="0dp"
+			android:layout_height="wrap_content"
+			android:layout_marginStart="16dp"
+			android:layout_marginTop="4dp"
+			android:layout_marginEnd="8dp"
+			android:gravity="center_vertical"
+			android:orientation="horizontal"
+			app:layout_constraintEnd_toStartOf="@+id/removeButton"
+			app:layout_constraintStart_toEndOf="@+id/avatar_container"
+			app:layout_constraintTop_toBottomOf="@+id/name"
+			app:layout_constraintBottom_toBottomOf="@+id/avatar_container">
+
+			<!-- Animated connecting indicator -->
+			<com.google.android.material.progressindicator.CircularProgressIndicator
+				android:id="@+id/connecting_indicator"
+				android:layout_width="16dp"
+				android:layout_height="16dp"
+				android:indeterminate="true"
+				app:indicatorColor="@color/zerion_cyan"
+				app:indicatorSize="16dp"
+				app:trackThickness="2dp"
+				app:trackColor="@android:color/transparent"
+				android:visibility="gone"
+				tools:visibility="visible" />
+
+			<TextView
+				android:id="@+id/status"
+				android:layout_width="0dp"
+				android:layout_height="wrap_content"
+				android:layout_weight="1"
+				android:layout_marginStart="8dp"
+				android:ellipsize="end"
+				android:maxLines="1"
+				android:textColor="@color/zerion_text_secondary"
+				android:textSize="14sp"
+				tools:text="Waiting for contact to come online..." />
+
+		</LinearLayout>
+
+		<!-- Time badge -->
+		<TextView
+			android:id="@+id/time"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:textColor="@color/zerion_text_secondary"
+			android:textSize="12sp"
+			app:layout_constraintEnd_toStartOf="@+id/removeButton"
+			app:layout_constraintTop_toTopOf="@+id/name"
+			app:layout_constraintBottom_toBottomOf="@+id/name"
+			tools:text="2m" />
+
+		<!-- Remove button -->
+		<com.google.android.material.button.MaterialButton
+			android:id="@+id/removeButton"
+			style="@style/Widget.Material3.Button.IconButton"
+			android:layout_width="44dp"
+			android:layout_height="44dp"
+			android:contentDescription="@string/groups_remove"
+			app:icon="@drawable/ic_close"
+			app:iconSize="22dp"
+			app:iconTint="@color/zerion_text_secondary"
+			app:rippleColor="@color/zerion_purple"
+			app:layout_constraintBottom_toBottomOf="parent"
+			app:layout_constraintEnd_toEndOf="parent"
+			app:layout_constraintTop_toTopOf="parent" />
+
+	</androidx.constraintlayout.widget.ConstraintLayout>
+
+</com.google.android.material.card.MaterialCardView>
