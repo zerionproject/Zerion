@@ -3,7 +3,8 @@
 	xmlns:app="http://schemas.android.com/apk/res-auto"
 	xmlns:tools="http://schemas.android.com/tools"
 	android:layout_width="match_parent"
-	android:layout_height="match_parent">
+	android:layout_height="match_parent"
+	android:background="@drawable/bg_zerion_gradient">
 
 	<androidx.constraintlayout.widget.ConstraintLayout
 		android:layout_width="match_parent"
@@ -32,6 +33,7 @@
 			android:layout_marginEnd="16dp"
 			android:layout_marginRight="16dp"
 			android:text="@string/hotspot_error_intro"
+			android:textColor="#FFFFFF"
 			android:textSize="@dimen/text_size_medium"
 			app:layout_constraintEnd_toEndOf="parent"
 			app:layout_constraintStart_toEndOf="@+id/errorIcon"
@@ -42,11 +44,12 @@
 			android:layout_width="0dp"
 			android:layout_height="wrap_content"
 			android:layout_marginVertical="16dp"
-			android:background="@color/briar_orange_200"
+			android:background="#1A2830"
 			android:gravity="center"
-			android:padding="8dp"
-			android:textColor="@color/briar_text_primary"
+			android:padding="12dp"
+			android:textColor="#26B7F0"
 			android:textSize="@dimen/text_size_medium"
+			android:textStyle="bold"
 			android:typeface="monospace"
 			app:layout_constraintEnd_toEndOf="parent"
 			app:layout_constraintHorizontal_bias="0.0"
@@ -54,9 +57,9 @@
 			app:layout_constraintTop_toBottomOf="@+id/errorMessageIntro"
 			tools:text="@string/hotspot_error_no_wifi_direct" />
 
-		<Button
+		<com.google.android.material.button.MaterialButton
 			android:id="@+id/feedbackButton"
-			style="@style/BriarButtonOutline.Neutral"
+			style="@style/Zerion.Button.Text"
 			android:layout_marginTop="16dp"
 			android:text="@string/send_feedback"
 			app:layout_constraintEnd_toEndOf="parent"

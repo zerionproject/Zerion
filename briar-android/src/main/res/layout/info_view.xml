@@ -4,7 +4,7 @@
 	xmlns:tools="http://schemas.android.com/tools"
 	android:layout_width="match_parent"
 	android:layout_height="wrap_content"
-	tools:parentTag="androidx.cardview.widget.CardView">
+	tools:parentTag="com.google.android.material.card.MaterialCardView">
 
 	<TextView
 		android:id="@+id/info_text"
@@ -14,8 +14,9 @@
 		android:contentDescription="@string/info"
 		android:drawablePadding="@dimen/margin_medium"
 		android:gravity="center_vertical"
+		android:textColor="#FFFFFF"
 		app:drawableStartCompat="@drawable/ic_info_dark"
-		app:drawableTint="?attr/colorControlNormal"
+		app:drawableTint="#26B7F0"
 		tools:text="Did you know that if you took all the veins out of your body and laid them out end to end, you would die?" />
 
 </merge>

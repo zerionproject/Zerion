@@ -16,14 +16,10 @@ public interface TestDataCreator {
 	 * contact.
 	 * @param avatarPercent Percentage of contacts
 	 * that will use a random profile image. Between 0 and 100.
-	 * @param numBlogPosts Number of blog posts to create.
-	 * @param numForums Number of forums to create.
-	 * @param numForumPosts Number of forum posts to create per forum.
 	 * @param numPrivateGroups Number of private groups to create.
 	 * @param numPrivateGroupMessages Number of messages to create per private group.
 	 */
 	void createTestData(int numContacts, int numPrivateMsgs, int avatarPercent,
-			int numBlogPosts, int numForums, int numForumPosts,
 			int numPrivateGroups, int numPrivateGroupMessages);
 
 	@IoExecutor

@@ -18,7 +18,7 @@
 		app:fab_fabDrawable="@drawable/ic_action_add"
 		app:fab_fabRippleColor="@android:color/transparent"
 		app:fab_menu="@menu/contact_list_actions"
-		app:fab_miniFabTextBackground="?attr/colorPrimary"
+		app:fab_miniFabTextBackground="@drawable/fab_text_background"
 		app:layout_anchorGravity="bottom|right|end"
 		app:layout_behavior="com.professor.zerion.android.view.SnackbarAwareBehavior" />
 

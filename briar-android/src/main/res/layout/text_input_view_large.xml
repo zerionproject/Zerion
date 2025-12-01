@@ -5,8 +5,9 @@
 	android:layout_width="match_parent"
 	android:layout_height="wrap_content">
 
-	<androidx.cardview.widget.CardView
+	<com.google.android.material.card.MaterialCardView
 		android:id="@+id/input_layout"
+		style="@style/Zerion.Card"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
 		android:layout_marginStart="@dimen/margin_medium"
@@ -14,11 +15,9 @@
 		android:layout_marginTop="@dimen/margin_medium"
 		android:layout_marginEnd="@dimen/margin_medium"
 		android:layout_marginRight="@dimen/margin_medium"
-		android:elevation="@dimen/cardview_default_elevation"
 		android:minHeight="@dimen/text_input_height"
 		app:cardBackgroundColor="@color/card_background"
-		app:cardCornerRadius="0dp"
-		app:cardUseCompatPadding="false">
+		app:cardCornerRadius="0dp">
 
 		<com.professor.zerion.android.view.EmojiTextInputView
 			android:id="@+id/emojiTextInput"
@@ -27,11 +26,11 @@
 			app:textPaddingBottom="10dp"
 			app:textPaddingEnd="@dimen/margin_medium" />
 
-	</androidx.cardview.widget.CardView>
+	</com.google.android.material.card.MaterialCardView>
 
-	<Button
+	<com.google.android.material.button.MaterialButton
 		android:id="@+id/compositeSendButton"
-		style="@style/BriarButton"
+		style="@style/Zerion.Button.Primary"
 		android:layout_margin="@dimen/margin_medium"
 		tools:text="@string/send" />
 

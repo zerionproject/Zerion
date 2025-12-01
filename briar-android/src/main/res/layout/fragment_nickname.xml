@@ -4,6 +4,7 @@
 	xmlns:tools="http://schemas.android.com/tools"
 	android:layout_width="match_parent"
 	android:layout_height="match_parent"
+	android:background="@drawable/bg_zerion_gradient"
 	android:orientation="vertical">
 
 	<ScrollView
@@ -39,6 +40,8 @@
 				android:layout_height="wrap_content"
 				android:layout_margin="8dp"
 				android:text="@string/send_link_title"
+				android:textColor="#FFFFFF"
+				android:textStyle="bold"
 				app:layout_constraintBottom_toTopOf="@+id/imageView"
 				app:layout_constraintEnd_toStartOf="@+id/guideline"
 				app:layout_constraintStart_toStartOf="parent"
@@ -72,6 +75,8 @@
 				android:layout_height="wrap_content"
 				android:layout_margin="8dp"
 				android:text="@string/add_contact_choose_nickname"
+				android:textColor="#FFFFFF"
+				android:textStyle="bold"
 				app:layout_constraintBottom_toTopOf="@+id/imageView"
 				app:layout_constraintEnd_toEndOf="parent"
 				app:layout_constraintStart_toEndOf="@+id/guideline"
@@ -112,7 +117,9 @@
 				android:layout_marginLeft="8dp"
 				android:gravity="left|start"
 				android:text="@string/nickname_intro"
+				android:textColor="#FFFFFF"
 				android:textSize="16sp"
+				android:textStyle="bold"
 				app:layout_constraintBottom_toBottomOf="@+id/nicknameIcon"
 				app:layout_constraintEnd_toEndOf="parent"
 				app:layout_constraintStart_toEndOf="@+id/nicknameIcon"
@@ -120,11 +127,12 @@
 
 			<com.google.android.material.textfield.TextInputLayout
 				android:id="@+id/contactNameLayout"
+				style="@style/Zerion.TextInput.Transparent"
 				android:layout_width="0dp"
 				android:layout_height="wrap_content"
 				android:layout_marginTop="16dp"
+				android:hint="@string/add_contact_choose_a_nickname"
 				app:errorEnabled="true"
-				app:hintEnabled="false"
 				app:layout_constraintBottom_toTopOf="@+id/space"
 				app:layout_constraintEnd_toEndOf="parent"
 				app:layout_constraintHorizontal_bias="0.5"
@@ -135,7 +143,8 @@
 					android:id="@+id/contactNameInput"
 					android:layout_width="match_parent"
 					android:layout_height="match_parent"
-					android:hint="@string/add_contact_choose_a_nickname"
+					android:textColor="@android:color/white"
+					android:textColorHint="#80FFFFFF"
 					android:imeOptions="flagNoPersonalizedLearning"
 					android:importantForAutofill="no"
 					android:inputType="text|textCapWords" />
@@ -156,12 +165,13 @@
 
 	</ScrollView>
 
-	<com.professor.zerion.android.view.BriarButton
+	<com.google.android.material.button.MaterialButton
 		android:id="@+id/addButton"
+		style="@style/Zerion.Button.Primary"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
 		android:layout_marginHorizontal="16dp"
-		app:buttonStyle="@style/BriarButton"
-		app:text="@string/add_contact_button" />
+		android:layout_marginBottom="16dp"
+		android:text="@string/add_contact_button" />
 
 </LinearLayout>

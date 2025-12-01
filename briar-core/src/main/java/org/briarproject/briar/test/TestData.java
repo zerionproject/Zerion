@@ -2,7 +2,6 @@ package org.briarproject.briar.test;
 
 import static org.briarproject.bramble.api.identity.AuthorConstants.MAX_AUTHOR_NAME_LENGTH;
 import static org.briarproject.bramble.util.StringUtils.getRandomString;
-import static org.briarproject.briar.api.forum.ForumConstants.MAX_FORUM_NAME_LENGTH;
 
 public interface TestData {
 
@@ -59,10 +58,10 @@ public interface TestData {
 			"The Undiscovered Country",
 			"The Place to Be",
 			"Forum Romanum",
-			getRandomString(MAX_FORUM_NAME_LENGTH),
-			getRandomString(MAX_FORUM_NAME_LENGTH),
-			getRandomString(MAX_FORUM_NAME_LENGTH),
-			getRandomString(MAX_FORUM_NAME_LENGTH),
+			getRandomString(MAX_AUTHOR_NAME_LENGTH),
+			getRandomString(MAX_AUTHOR_NAME_LENGTH),
+			getRandomString(MAX_AUTHOR_NAME_LENGTH),
+			getRandomString(MAX_AUTHOR_NAME_LENGTH),
 	};
 
 }
