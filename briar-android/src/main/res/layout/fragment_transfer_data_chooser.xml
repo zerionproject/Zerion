@@ -43,9 +43,9 @@
 				app:layout_constraintStart_toStartOf="parent"
 				app:layout_constraintTop_toBottomOf="@+id/imageView" />
 
-			<Button
+			<com.google.android.material.button.MaterialButton
 				android:id="@+id/buttonLearnMore"
-				style="@style/BriarButtonFlat.Positive"
+				style="@style/Zerion.Button.Text"
 				android:layout_width="wrap_content"
 				android:layout_height="wrap_content"
 				android:layout_marginBottom="@dimen/margin_large"
@@ -62,9 +62,9 @@
 
 	</ScrollView>
 
-	<Button
+	<com.google.android.material.button.MaterialButton
 		android:id="@+id/sendButton"
-		style="@style/BriarButton"
+		style="@style/Zerion.Button.Primary"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
 		android:layout_marginHorizontal="@dimen/margin_large"
@@ -74,9 +74,9 @@
 		app:layout_constraintEnd_toEndOf="parent"
 		app:layout_constraintStart_toStartOf="parent" />
 
-	<Button
+	<com.google.android.material.button.MaterialButton
 		android:id="@+id/receiveButton"
-		style="@style/BriarButton"
+		style="@style/Zerion.Button.Primary"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
 		android:layout_marginHorizontal="@dimen/margin_large"

@@ -19,8 +19,9 @@
 
 	</ScrollView>
 
-	<CheckBox
+	<com.google.android.material.checkbox.MaterialCheckBox
 		android:id="@+id/screen_filter_checkbox"
+		style="@style/Zerion.Checkbox"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
 		android:layout_marginTop="@dimen/margin_large"

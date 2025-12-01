@@ -4,6 +4,7 @@
 	xmlns:tools="http://schemas.android.com/tools"
 	android:layout_width="match_parent"
 	android:layout_height="match_parent"
+	android:background="@drawable/bg_zerion_gradient"
 	android:orientation="vertical">
 
 	<ScrollView
@@ -14,7 +15,8 @@
 
 		<androidx.constraintlayout.widget.ConstraintLayout
 			android:layout_width="match_parent"
-			android:layout_height="wrap_content">
+			android:layout_height="wrap_content"
+			android:padding="@dimen/margin_large">
 
 			<ImageView
 				android:id="@+id/imageView"
@@ -38,8 +40,11 @@
 				android:layout_marginHorizontal="@dimen/margin_xlarge"
 				android:layout_marginTop="@dimen/margin_xlarge"
 				android:layout_marginBottom="@dimen/margin_large"
+				android:gravity="center"
 				android:text="@string/hotspot_intro"
-				android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
+				android:textColor="#FFFFFF"
+				android:textSize="16sp"
+				android:textStyle="bold"
 				app:layout_constraintBottom_toBottomOf="parent"
 				app:layout_constraintEnd_toEndOf="parent"
 				app:layout_constraintStart_toStartOf="parent"
@@ -51,17 +56,17 @@
 
 	<androidx.constraintlayout.widget.ConstraintLayout
 		android:layout_width="match_parent"
-		android:layout_height="wrap_content">
+		android:layout_height="wrap_content"
+		android:padding="16dp">
 
-		<Button
+		<com.google.android.material.button.MaterialButton
 			android:id="@+id/startButton"
-			style="@style/BriarButton"
+			style="@style/Zerion.Button.Primary"
 			android:layout_width="0dp"
 			android:layout_height="wrap_content"
 			android:layout_marginHorizontal="@dimen/margin_large"
 			android:text="@string/hotspot_button_start_sharing"
 			app:icon="@drawable/ic_wifi_tethering"
-			app:iconTint="?attr/colorOnPrimary"
 			app:layout_constraintBottom_toBottomOf="parent"
 			app:layout_constraintEnd_toEndOf="parent"
 			app:layout_constraintStart_toStartOf="parent"
@@ -69,7 +74,7 @@
 
 		<com.google.android.material.progressindicator.CircularProgressIndicator
 			android:id="@+id/progressBar"
-			style="@style/CircularProgress"
+			style="@style/Zerion.Progress.Circular"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
 			android:visibility="invisible"
@@ -87,6 +92,7 @@
 			android:layout_marginStart="@dimen/margin_large"
 			android:layout_marginLeft="@dimen/margin_large"
 			android:text="@string/hotspot_progress_text_start"
+			android:textColor="#FFFFFF"
 			android:visibility="invisible"
 			app:layout_constraintBottom_toBottomOf="@+id/startButton"
 			app:layout_constraintEnd_toEndOf="@+id/startButton"

@@ -7,7 +7,7 @@
 
 	<com.google.android.material.appbar.MaterialToolbar
 		android:id="@+id/toolbar"
-		style="@style/BriarToolbar"
+		style="@style/Zerion.Toolbar"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
 		app:layout_constraintEnd_toEndOf="parent"
@@ -53,9 +53,9 @@
 				tools:checked="true"
 				tools:enabled="true" />
 
-			<Button
+			<com.google.android.material.button.MaterialButton
 				android:id="@+id/buttonLearnMore"
-				style="@style/BriarButtonFlat.Positive"
+				style="@style/Zerion.Button.Text"
 				android:layout_width="wrap_content"
 				android:layout_height="wrap_content"
 				android:padding="16dp"

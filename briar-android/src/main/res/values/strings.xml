@@ -74,6 +74,7 @@
 	<string name="nav_drawer_close_description">Close the navigation drawer</string>
 	<string name="contact_list_button">Contacts</string>
 	<string name="groups_button">Private Groups</string>
+	<string name="vault_button">Vault</string>
 	<string name="forums_button">Forums</string>
 	<string name="blogs_button">Blogs</string>
 	<!-- This is part of the main menu. The app will be locked when this is tapped. -->
@@ -147,6 +148,35 @@
 	<string name="voice_message_too_short">Voice message too short</string>
 	<string name="microphone_permission_required">Microphone permission is required for voice messages</string>
 	<string name="hold_to_record">Hold to record, release to send</string>
+
+	<!-- Vault -->
+	<string name="vault_note_title_hint">Note Title</string>
+	<string name="vault_note_content_hint">Enter your secure note here...</string>
+	<string name="vault_delete_note">Delete Note</string>
+	<string name="vault_delete_confirm_message">Are you sure you want to delete this note? This action cannot be undone.</string>
+	<string name="vault_save_note">Save Note</string>
+	<string name="vault_lock_note">Password Protect</string>
+	<string name="vault_note_password_hint">Note Password (optional)</string>
+	<string name="vault_progress_saving">Saving...</string>
+	<string name="vault_progress_loading">Loading...</string>
+	<string name="vault_error_title_empty">Title cannot be empty</string>
+	<string name="vault_error_password_empty">Password cannot be empty</string>
+	<string name="vault_error_password_short">Password must be at least 4 characters</string>
+	<string name="vault_success_note_saved">Note saved successfully</string>
+	<string name="vault_success_note_deleted">Note deleted</string>
+	<string name="vault_unsaved_changes_title">Unsaved Changes</string>
+	<string name="vault_unsaved_changes_message">You have unsaved changes. Do you want to save them?</string>
+	<string name="vault_button_save">Save</string>
+	<string name="vault_button_discard">Discard</string>
+	<string name="vault_button_cancel">Cancel</string>
+	<string name="vault_settings">Vault Settings</string>
+	<string name="vault_settings_title">Vault Settings</string>
+	<string name="vault_onboarding_title">Secure Vault</string>
+	<string name="vault_onboarding_subtitle">Your Ultra-Secure Digital Safe</string>
+	<string name="vault_dashboard_title">Vault Dashboard</string>
+	<string name="vault_recent_items">Recent Items</string>
+	<string name="vault_empty_state">Your vault is empty</string>
+	<string name="vault_empty_state_subtitle">Add items to keep them secure</string>
 
 	<!-- Misc -->
 	<string name="now">now</string>
@@ -555,7 +585,8 @@
 	<string name="display_settings_title">Display</string>
 	<string name="pref_theme_title">Theme</string>
 	<string name="pref_theme_light">Light</string>
-	<string name="pref_theme_dark">Dark</string>
+	<!-- ZERION FIX: Changed from "Dark" to "Zerion Dark" for branding -->
+	<string name="pref_theme_dark">Zerion Dark</string>
 	<string name="pref_theme_system">System default</string>
 
 	<!-- Settings Connections -->
@@ -946,5 +977,45 @@
 	<string name="screenshot_message_2">Hi Alice! Thanks for telling me about Zerion!</string>
 	<!-- This is a message to be used in screenshots. -->
 	<string name="screenshot_message_3">No problem, hope you like it 😀</string>
+
+	<!-- Vault -->
+	<string name="vault_title">Secure Vault</string>
+	<string name="vault_setup_title">Set Up Vault</string>
+	<string name="vault_unlock_title">Unlock Vault</string>
+	<string name="vault_password_hint">Enter vault password</string>
+	<string name="vault_confirm_password_hint">Confirm password</string>
+	<string name="vault_create_button">Create Vault</string>
+	<string name="vault_unlock_button">Unlock</string>
+	<string name="vault_password_mismatch">Passwords do not match</string>
+	<string name="vault_password_too_short">Password must be at least 8 characters</string>
+	<string name="vault_unlock_failed">Invalid password</string>
+	<string name="vault_locked">Vault locked</string>
+	<string name="vault_auto_lock">Vault auto-locked due to inactivity</string>
+	<string name="vault_biometric_prompt_title">Unlock Vault</string>
+	<string name="vault_biometric_prompt_subtitle">Use your biometric to unlock</string>
+	<string name="vault_delete_confirm">Delete Item</string>
+	<string name="vault_empty">Your vault is empty</string>
+	<string name="vault_add_note">Add Note</string>
+	<string name="vault_add_image">Add Image</string>
+	<string name="vault_add_document">Add Document</string>
+	<string name="vault_note_saved">Note saved securely</string>
+	<string name="vault_note_deleted">Note deleted</string>
+	<string name="vault_wipe_title">Wipe Vault</string>
+	<string name="vault_wipe_message">This will permanently delete all vault data. Are you absolutely sure?</string>
+	<string name="vault_wipe_confirm">Yes, delete everything</string>
+	<string name="vault_rate_limit">Too many failed attempts. Please wait %d seconds.</string>
+	<string name="vault_change_password">Change Password</string>
+	<string name="vault_enable_biometric">Enable Biometric Unlock</string>
+	<string name="vault_auto_lock_timeout">Auto-lock Timeout</string>
+
+	<!-- Security strings -->
+	<string name="security_threat_detected">Security threat detected. Please check your device for malicious software.</string>
+	<string name="pref_screenshot_protection_title">Screenshot Protection</string>
+	<string name="pref_screenshot_protection_summary">Prevent screenshots and screen recordings of sensitive content</string>
+	<string name="security_warning_title">Security Warning</string>
+	<string name="tor_status_title">Tor Network Status</string>
+	<string name="tor_status_connected">Connected to Tor network</string>
+	<string name="tor_status_disconnected">Disconnected from Tor network</string>
+	<string name="tor_status_connecting">Connecting to Tor network…</string>
 
 </resources>

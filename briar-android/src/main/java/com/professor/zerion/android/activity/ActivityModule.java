@@ -1,6 +1,7 @@
 package com.professor.zerion.android.activity;
 
 import android.app.Activity;
+import android.content.Context;
 
 import com.professor.zerion.android.controller.BriarController;
 import com.professor.zerion.android.controller.BriarControllerImpl;

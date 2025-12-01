@@ -51,7 +51,7 @@
 
 	<ProgressBar
 		android:id="@+id/progressBar"
-		style="@style/CircularProgress"
+		style="@style/Zerion.Progress.Circular"
 		android:layout_width="@dimen/text_input_height"
 		android:layout_height="@dimen/text_input_height"
 		android:visibility="invisible" />

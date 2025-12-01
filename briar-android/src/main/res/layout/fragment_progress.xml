@@ -4,6 +4,7 @@
 	xmlns:tools="http://schemas.android.com/tools"
 	android:layout_width="match_parent"
 	android:layout_height="match_parent"
+	android:background="@drawable/bg_zerion_gradient"
 	android:fillViewport="true">
 
 	<androidx.constraintlayout.widget.ConstraintLayout
@@ -13,7 +14,7 @@
 
 		<com.google.android.material.progressindicator.CircularProgressIndicator
 			android:id="@+id/progress"
-			style="@style/CircularProgress.Large"
+			style="@style/Zerion.Progress.Circular"
 			android:layout_width="@dimen/hero_square"
 			android:layout_height="@dimen/hero_square"
 			android:indeterminate="true"
@@ -31,7 +32,9 @@
 			android:layout_height="wrap_content"
 			android:layout_marginTop="@dimen/margin_xlarge"
 			android:gravity="center"
-			android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
+			android:textColor="#FFFFFF"
+			android:textSize="16sp"
+			android:textStyle="bold"
 			app:layout_constraintBottom_toBottomOf="parent"
 			app:layout_constraintEnd_toEndOf="parent"
 			app:layout_constraintStart_toStartOf="parent"

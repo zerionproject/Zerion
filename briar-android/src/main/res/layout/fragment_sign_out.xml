@@ -22,10 +22,9 @@
 
 	<com.google.android.material.progressindicator.CircularProgressIndicator
 		android:id="@+id/progressBar"
-		style="@style/CircularProgress.Large"
+		style="@style/Zerion.Progress.Circular"
 		android:layout_width="0dp"
 		android:layout_height="0dp"
-		app:indicatorColor="@color/briar_accent"
 		app:layout_constraintBottom_toBottomOf="@+id/imageView"
 		app:layout_constraintEnd_toEndOf="@+id/imageView"
 		app:layout_constraintStart_toStartOf="@+id/imageView"

@@ -261,6 +261,8 @@ public class NavDrawerActivity extends BriarActivity implements
 			startFragment(ContactListFragment.newInstance());
 		} else if (fragmentId == R.id.nav_btn_groups) {
 			startFragment(GroupListFragment.newInstance());
+		} else if (fragmentId == R.id.nav_btn_vault) {
+			startActivity(new Intent(this, com.professor.zerion.android.vault.ui.VaultActivity.class));
 		} else if (fragmentId == R.id.nav_btn_settings) {
 			startActivity(new Intent(this, SettingsActivity.class));
 		} else if (fragmentId == R.id.nav_btn_signout) {

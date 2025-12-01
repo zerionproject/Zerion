@@ -62,8 +62,8 @@
 		<item>zh-TW</item>
 	</string-array>
 
+	<!-- ZERION FIX: Removed Light theme, keeping only Zerion Dark and System Default -->
 	<string-array name="pref_theme_entries">
-		<item>@string/pref_theme_light</item>
 		<item>@string/pref_theme_dark</item>
 		<item>@string/pref_theme_system</item>
 	</string-array>
@@ -71,7 +71,6 @@
 	<string name="pref_theme_dark_value" translatable="false">dark</string>
 	<string name="pref_theme_system_value" translatable="false">system</string>
 	<string-array name="pref_theme_values">
-		<item>@string/pref_theme_light_value</item>
 		<item>@string/pref_theme_dark_value</item>
 		<item>@string/pref_theme_system_value</item>
 	</string-array>

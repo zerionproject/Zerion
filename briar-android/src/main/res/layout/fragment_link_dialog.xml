@@ -80,9 +80,9 @@
 
 	</ScrollView>
 
-	<Button
+	<com.google.android.material.button.MaterialButton
 		android:id="@+id/cancelButton"
-		style="@style/BriarButtonFlat.Positive"
+		style="@style/Zerion.Button.Text"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
 		android:text="@string/cancel"
@@ -94,9 +94,9 @@
 		app:layout_constraintTop_toBottomOf="@+id/scrollView"
 		app:layout_constraintVertical_bias="1.0" />
 
-	<Button
+	<com.google.android.material.button.MaterialButton
 		android:id="@+id/openButton"
-		style="@style/BriarButtonFlat.Negative"
+		style="@style/Zerion.Button.Negative"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
 		android:text="@string/link_warning_open_link"

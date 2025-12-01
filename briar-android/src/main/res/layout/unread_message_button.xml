@@ -6,9 +6,9 @@
 
 	<com.google.android.material.floatingactionbutton.FloatingActionButton
 		android:id="@+id/fab"
+		style="@style/Zerion.FAB.Small"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
-		app:fabSize="mini"
 		app:useCompatPadding="true" />
 
 	<TextView
