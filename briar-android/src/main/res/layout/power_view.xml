@@ -16,6 +16,7 @@
 		android:layout_marginEnd="@dimen/margin_large"
 		android:layout_marginRight="@dimen/margin_large"
 		android:textSize="@dimen/text_size_medium"
+		android:textColor="#FFFFFF"
 		app:layout_constraintEnd_toEndOf="parent"
 		app:layout_constraintStart_toStartOf="parent"
 		app:layout_constraintTop_toTopOf="parent"
@@ -31,7 +32,7 @@
 		app:layout_constraintStart_toStartOf="parent"
 		app:layout_constraintTop_toTopOf="@+id/button"
 		app:srcCompat="@drawable/ic_check_white"
-		app:tint="?attr/colorControlNormal"
+		app:tint="#26B7F0"
 		tools:ignore="ContentDescription" />
 
 	<Button
@@ -40,6 +41,10 @@
 		android:layout_width="0dp"
 		android:layout_height="wrap_content"
 		android:layout_margin="@dimen/margin_medium"
+		android:textColor="#FFFFFF"
+		android:backgroundTint="#33FFFFFF"
+		app:strokeColor="#26B7F0"
+		app:strokeWidth="1dp"
 		app:layout_constraintEnd_toStartOf="@+id/helpButton"
 		app:layout_constraintStart_toEndOf="@+id/checkImage"
 		app:layout_constraintTop_toBottomOf="@+id/textView"
@@ -56,6 +61,6 @@
 		app:layout_constraintEnd_toEndOf="parent"
 		app:layout_constraintTop_toTopOf="@+id/button"
 		app:srcCompat="@drawable/ic_info_white"
-		app:tint="@color/briar_button_text_positive" />
+		app:tint="#26B7F0" />
 
 </merge>

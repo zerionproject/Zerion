@@ -116,8 +116,6 @@ public class TestDataActivity extends BriarActivity {
 	private void createTestData() {
 		testDataCreator.createTestData(contactsSeekBar.getProgress() + 1,
 				messagesSeekBar.getProgress(), avatarsSeekBar.getProgress(),
-				blogPostsSeekBar.getProgress(), forumsSeekBar.getProgress(),
-				forumPostsSeekBar.getProgress(),
 				privateGroupsSeekBar.getProgress(),
 				privateGroupPostsSeekBar.getProgress());
 		Intent intent = new Intent(this, ENTRY_ACTIVITY);

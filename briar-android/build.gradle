@@ -144,6 +144,10 @@ dependencies {
 	}
 	implementation 'org.nanohttpd:nanohttpd:2.3.1'
 
+	// Argon2id for secure vault password hashing
+	// TODO: Re-enable after fixing Witness plugin dependency verification
+	// implementation 'com.lambdapioneer.argon2kt:argon2kt:1.4.0'
+
 	annotationProcessor "com.google.dagger:dagger-compiler:$dagger_version"
 	annotationProcessor "com.github.bumptech.glide:compiler:$glideVersion"
 

@@ -57,7 +57,8 @@
 		android:logo="@mipmap/ic_launcher_round"
 		android:networkSecurityConfig="@xml/network_security_config"
 		android:supportsRtl="true"
-		android:theme="@style/BriarTheme"
+		android:theme="@style/Theme.Zerion"
+		android:enableOnBackInvokedCallback="true"
 		tools:ignore="GoogleAppIndexingWarning,UnusedAttribute">
 
 		<receiver
@@ -107,7 +108,8 @@
 		<activity
 			android:name="com.professor.zerion.android.account.SetupActivity"
 			android:exported="false"
-			android:theme="@style/BriarTheme.NoActionBar" />
+			android:theme="@style/BriarTheme.NoActionBar"
+			android:windowSoftInputMode="adjustResize" />
 
 		<activity
 			android:name="com.professor.zerion.android.splash.SplashScreenActivity"
@@ -384,6 +386,18 @@
 			<meta-data
 				android:name="android.support.PARENT_ACTIVITY"
 				android:value="com.professor.zerion.android.conversation.ConversationActivity" />
+		</activity>
+
+		<activity
+			android:name="com.professor.zerion.android.vault.ui.VaultActivity"
+			android:exported="false"
+			android:label="Secure Vault"
+			android:parentActivityName="com.professor.zerion.android.navdrawer.NavDrawerActivity"
+			android:theme="@style/BriarTheme.NoActionBar"
+			android:windowSoftInputMode="adjustResize|stateHidden">
+			<meta-data
+				android:name="android.support.PARENT_ACTIVITY"
+				android:value="com.professor.zerion.android.navdrawer.NavDrawerActivity" />
 		</activity>
 
 	</application>

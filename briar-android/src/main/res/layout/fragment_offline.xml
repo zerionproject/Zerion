@@ -62,17 +62,17 @@
 
 	</ScrollView>
 
-	<Button
+	<com.google.android.material.button.MaterialButton
 		android:id="@+id/checkButton"
-		style="@style/BriarButtonOutline.Neutral"
+		style="@style/Zerion.Button.Text"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
 		android:layout_marginHorizontal="16dp"
 		android:text="@string/tor_offline_button_check" />
 
-	<Button
+	<com.google.android.material.button.MaterialButton
 		android:id="@+id/button"
-		style="@style/BriarButton"
+		style="@style/Zerion.Button.Primary"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
 		android:layout_marginHorizontal="16dp"

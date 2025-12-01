@@ -29,13 +29,6 @@ import org.briarproject.bramble.api.sync.MessageId;
 import org.briarproject.bramble.api.system.Clock;
 import org.briarproject.briar.api.avatar.AvatarManager;
 import org.briarproject.briar.api.avatar.AvatarMessageEncoder;
-import org.briarproject.briar.api.blog.Blog;
-import org.briarproject.briar.api.blog.BlogManager;
-import org.briarproject.briar.api.blog.BlogPost;
-import org.briarproject.briar.api.blog.BlogPostFactory;
-import org.briarproject.briar.api.forum.Forum;
-import org.briarproject.briar.api.forum.ForumManager;
-import org.briarproject.briar.api.forum.ForumPost;
 import org.briarproject.briar.api.messaging.MessagingManager;
 import org.briarproject.briar.api.messaging.PrivateMessage;
 import org.briarproject.briar.api.messaging.PrivateMessageFactory;
@@ -51,7 +44,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -86,7 +78,6 @@ public class TestDataCreatorImpl implements TestDataCreator {
 	private final Clock clock;
 	private final GroupFactory groupFactory;
 	private final PrivateMessageFactory privateMessageFactory;
-	private final BlogPostFactory blogPostFactory;
 
 	private final DatabaseComponent db;
 	private final IdentityManager identityManager;
@@ -94,8 +85,6 @@ public class TestDataCreatorImpl implements TestDataCreator {
 	private final ContactManager contactManager;
 	private final TransportPropertyManager transportPropertyManager;
 	private final MessagingManager messagingManager;
-	private final BlogManager blogManager;
-	private final ForumManager forumManager;
 	private final PrivateGroupManager privateGroupManager;
 	private final PrivateGroupFactory privateGroupFactory;
 	private final GroupMessageFactory groupMessageFactory;
@@ -115,13 +104,12 @@ public class TestDataCreatorImpl implements TestDataCreator {
 	TestDataCreatorImpl(AuthorFactory authorFactory, Clock clock,
 			GroupFactory groupFactory,
 			PrivateMessageFactory privateMessageFactory,
-			BlogPostFactory blogPostFactory, DatabaseComponent db,
+			DatabaseComponent db,
 			IdentityManager identityManager,
 			CryptoComponent crypto,
 			ContactManager contactManager,
 			TransportPropertyManager transportPropertyManager,
-			MessagingManager messagingManager, BlogManager blogManager,
-			ForumManager forumManager,
+			MessagingManager messagingManager,
 			PrivateGroupManager privateGroupManager,
 			PrivateGroupFactory privateGroupFactory,
 			GroupMessageFactory groupMessageFactory,
@@ -134,15 +122,12 @@ public class TestDataCreatorImpl implements TestDataCreator {
 		this.clock = clock;
 		this.groupFactory = groupFactory;
 		this.privateMessageFactory = privateMessageFactory;
-		this.blogPostFactory = blogPostFactory;
 		this.db = db;
 		this.identityManager = identityManager;
 		this.crypto = crypto;
 		this.contactManager = contactManager;
 		this.transportPropertyManager = transportPropertyManager;
 		this.messagingManager = messagingManager;
-		this.blogManager = blogManager;
-		this.forumManager = forumManager;
 		this.privateGroupManager = privateGroupManager;
 		this.privateGroupFactory = privateGroupFactory;
 		this.groupMessageFactory = groupMessageFactory;
@@ -155,8 +140,7 @@ public class TestDataCreatorImpl implements TestDataCreator {
 
 	@Override
 	public void createTestData(int numContacts, int numPrivateMsgs,
-			int avatarPercent, int numBlogPosts, int numForums,
-			int numForumPosts, int numPrivateGroups,
+			int avatarPercent, int numPrivateGroups,
 			int numPrivateGroupMessages) {
 		if (numContacts == 0) throw new IllegalArgumentException();
 		if (avatarPercent < 0 || avatarPercent > 100)
@@ -164,7 +148,7 @@ public class TestDataCreatorImpl implements TestDataCreator {
 		ioExecutor.execute(() -> {
 			try {
 				createTestDataOnIoExecutor(numContacts, numPrivateMsgs,
-						avatarPercent, numBlogPosts, numForums, numForumPosts,
+						avatarPercent,
 						numPrivateGroups, numPrivateGroupMessages);
 			} catch (DbException e) {
 				logException(LOG, WARNING, e);
@@ -174,16 +158,10 @@ public class TestDataCreatorImpl implements TestDataCreator {
 
 	@IoExecutor
 	private void createTestDataOnIoExecutor(int numContacts, int numPrivateMsgs,
-			int avatarPercent, int numBlogPosts, int numForums,
-			int numForumPosts, int numPrivateGroups,
+			int avatarPercent, int numPrivateGroups,
 			int numPrivateGroupMessages) throws DbException {
 		List<Contact> contacts = createContacts(numContacts, avatarPercent);
 		createPrivateMessages(contacts, numPrivateMsgs);
-		createBlogPosts(contacts, numBlogPosts);
-		List<Forum> forums = createForums(contacts, numForums);
-		for (Forum forum : forums) {
-			createRandomForumPosts(forum, contacts, numForumPosts);
-		}
 		List<PrivateGroup> groups =
 				createPrivateGroups(contacts, numPrivateGroups);
 		for (PrivateGroup group : groups) {
@@ -412,85 +390,6 @@ public class TestDataCreatorImpl implements TestDataCreator {
 		}
 	}
 
-	private void createBlogPosts(List<Contact> contacts, int numBlogPosts)
-			throws DbException {
-		if (!featureFlags.shouldEnableBlogsInCore()) return;
-		LocalAuthor localAuthor = identityManager.getLocalAuthor();
-		Blog ours = blogManager.getPersonalBlog(localAuthor);
-		for (Contact contact : contacts) {
-			Blog theirs = blogManager.getPersonalBlog(contact.getAuthor());
-			shareGroup(contact.getId(), ours.getId());
-			shareGroup(contact.getId(), theirs.getId());
-		}
-		for (int i = 0; i < numBlogPosts; i++) {
-			Contact contact = contacts.get(random.nextInt(contacts.size()));
-			LocalAuthor author = localAuthors.get(contact);
-			addBlogPost(contact.getId(), author, i);
-		}
-		if (LOG.isLoggable(INFO)) {
-			LOG.info("Created " + numBlogPosts + " blog posts.");
-		}
-	}
-
-	private void addBlogPost(ContactId contactId, LocalAuthor author, int num)
-			throws DbException {
-		Blog blog = blogManager.getPersonalBlog(author);
-		long timestamp = clock.currentTimeMillis() - (long) num * 60 * 1000;
-		String text = getRandomText();
-		try {
-			BlogPost blogPost = blogPostFactory.createBlogPost(blog.getId(),
-					timestamp, null, author, text);
-			db.transaction(false, txn ->
-					db.receiveMessage(txn, contactId, blogPost.getMessage()));
-		} catch (FormatException | GeneralSecurityException e) {
-			throw new AssertionError(e);
-		}
-	}
-
-	private List<Forum> createForums(List<Contact> contacts, int numForums)
-			throws DbException {
-		if (!featureFlags.shouldEnableForumsInCore()) return emptyList();
-		List<Forum> forums = new ArrayList<>(numForums);
-		for (int i = 0; i < numForums; i++) {
-			// create forum
-			String name = GROUP_NAMES[random.nextInt(GROUP_NAMES.length)];
-			Forum forum = forumManager.addForum(name);
-
-			// share with all contacts
-			for (Contact contact : contacts) {
-				shareGroup(contact.getId(), forum.getId());
-			}
-			forums.add(forum);
-		}
-		if (LOG.isLoggable(INFO)) {
-			LOG.info("Created " + numForums + " forums.");
-		}
-		return forums;
-	}
-
-	private void createRandomForumPosts(Forum forum, List<Contact> contacts,
-			int numForumPosts) throws DbException {
-		List<ForumPost> posts = new ArrayList<>();
-		for (int i = 0; i < numForumPosts; i++) {
-			Contact contact = contacts.get(random.nextInt(contacts.size()));
-			LocalAuthor author = localAuthors.get(contact);
-			long timestamp = clock.currentTimeMillis() - (long) i * 60 * 1000;
-			String text = getRandomText();
-			MessageId parent = null;
-			if (random.nextBoolean() && posts.size() > 0) {
-				ForumPost parentPost = posts.get(random.nextInt(posts.size()));
-				parent = parentPost.getMessage().getId();
-			}
-			ForumPost post = forumManager.createLocalPost(forum.getId(), text,
-					timestamp, parent, author);
-			posts.add(post);
-			db.transaction(false, txn ->
-					db.receiveMessage(txn, contact.getId(), post.getMessage()));
-		}
-		if (LOG.isLoggable(INFO)) {
-			LOG.info("Created " + numForumPosts + " forum posts.");
-		}
-	}
 
 	private List<PrivateGroup> createPrivateGroups(List<Contact> contacts,
 			int numPrivateGroups) throws DbException {

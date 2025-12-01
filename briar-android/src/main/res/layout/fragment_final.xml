@@ -61,9 +61,9 @@
 
 	</ScrollView>
 
-	<Button
+	<com.google.android.material.button.MaterialButton
 		android:id="@+id/button"
-		style="@style/BriarButton"
+		style="@style/Zerion.Button.Primary"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
 		android:layout_marginHorizontal="@dimen/margin_large"

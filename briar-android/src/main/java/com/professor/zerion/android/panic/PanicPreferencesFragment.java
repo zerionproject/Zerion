@@ -111,16 +111,19 @@ public class PanicPreferencesFragment extends PreferenceFragmentCompat
 			return true;
 		});
 
+		// ZERION FIX: Disable Play Store redirect when no panic apps installed
+		// This prevents unwanted Play Store launches (Issue #6)
 		if (entries.size() <= 1) {
 			panicAppPref.setOnPreferenceClickListener(preference -> {
-				Intent intent = new Intent(ACTION_VIEW);
-				intent.setData(Uri.parse(
-						"market://details?id=info.guardianproject.ripple"));
-				intent.addFlags(FLAG_ACTIVITY_NEW_TASK);
-				if (intent.resolveActivity(getActivity().getPackageManager())
-						!= null) {
-					startActivity(intent);
-				}
+				// Show informative message instead of opening Play Store
+				new MaterialAlertDialogBuilder(requireContext(),
+						R.style.BriarDialogTheme)
+						.setTitle(R.string.panic_app_setting_title)
+						.setMessage("No panic trigger apps are currently installed. " +
+								"You can install Ripple (Panic Button) from F-Droid or " +
+								"other trusted sources to enable this feature.")
+						.setPositiveButton(android.R.string.ok, null)
+						.show();
 				return true;
 			});
 		} else {

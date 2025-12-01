@@ -12,8 +12,4 @@ public interface FeatureFlags {
 	boolean shouldEnableDisappearingMessages();
 
 	boolean shouldEnablePrivateGroupsInCore();
-
-	boolean shouldEnableForumsInCore();
-
-	boolean shouldEnableBlogsInCore();
 }

@@ -4,6 +4,7 @@
 	xmlns:tools="http://schemas.android.com/tools"
 	android:layout_width="match_parent"
 	android:layout_height="match_parent"
+	android:background="@drawable/bg_zerion_gradient"
 	android:orientation="vertical">
 
 	<ScrollView
@@ -38,6 +39,8 @@
 				android:layout_height="wrap_content"
 				android:layout_margin="8dp"
 				android:text="@string/send_link_title"
+				android:textColor="#FFFFFF"
+				android:textStyle="bold"
 				app:layout_constraintBottom_toTopOf="@+id/imageView"
 				app:layout_constraintEnd_toStartOf="@+id/guideline"
 				app:layout_constraintStart_toStartOf="parent"
@@ -70,8 +73,9 @@
 				android:layout_width="wrap_content"
 				android:layout_height="wrap_content"
 				android:layout_margin="8dp"
-				android:alpha="0.5"
 				android:text="@string/add_contact_choose_nickname"
+				android:textColor="#80FFFFFF"
+				android:textStyle="bold"
 				app:layout_constraintBottom_toTopOf="@+id/imageView"
 				app:layout_constraintEnd_toEndOf="parent"
 				app:layout_constraintStart_toEndOf="@+id/guideline"
@@ -109,7 +113,9 @@
 				android:layout_marginLeft="8dp"
 				android:gravity="left|start"
 				android:text="@string/your_link"
+				android:textColor="#FFFFFF"
 				android:textSize="16sp"
+				android:textStyle="bold"
 				app:layout_constraintBottom_toBottomOf="@+id/yourLinkIcon"
 				app:layout_constraintEnd_toEndOf="parent"
 				app:layout_constraintStart_toEndOf="@+id/yourLinkIcon"
@@ -120,21 +126,22 @@
 				android:layout_width="0dp"
 				android:layout_height="wrap_content"
 				android:layout_marginTop="16dp"
-				android:background="@android:color/white"
+				android:background="#1A2830"
 				android:ellipsize="end"
-				android:padding="8dp"
+				android:padding="12dp"
 				android:singleLine="true"
-				android:textColor="@color/briar_primary"
+				android:textColor="#26B7F0"
 				android:textIsSelectable="true"
-				android:textSize="18sp"
+				android:textSize="16sp"
+				android:textStyle="bold"
 				app:layout_constraintEnd_toEndOf="parent"
 				app:layout_constraintStart_toStartOf="parent"
 				app:layout_constraintTop_toBottomOf="@+id/yourLinkIcon"
 				tools:text="briar://scnsdflamslkfjgluoblmksdfbwevlewajfdlkjewwhqliafskfjhskdjhvoieiv" />
 
-			<Button
+			<com.google.android.material.button.MaterialButton
 				android:id="@+id/copyButton"
-				style="@style/BriarButtonFlat.Positive.Tiny"
+				style="@style/Zerion.Button.Text"
 				android:layout_width="wrap_content"
 				android:layout_height="wrap_content"
 				android:enabled="false"
@@ -147,9 +154,9 @@
 				app:layout_constraintStart_toStartOf="parent"
 				app:layout_constraintTop_toBottomOf="@+id/linkView" />
 
-			<Button
+			<com.google.android.material.button.MaterialButton
 				android:id="@+id/shareButton"
-				style="@style/BriarButtonFlat.Positive.Tiny"
+				style="@style/Zerion.Button.Text"
 				android:layout_width="wrap_content"
 				android:layout_height="wrap_content"
 				android:enabled="false"
@@ -181,7 +188,9 @@
 				android:layout_marginLeft="8dp"
 				android:gravity="left|start"
 				android:text="@string/contact_link_intro"
+				android:textColor="#FFFFFF"
 				android:textSize="16sp"
+				android:textStyle="bold"
 				app:layout_constraintBottom_toBottomOf="@+id/linkInputIcon"
 				app:layout_constraintEnd_toEndOf="parent"
 				app:layout_constraintStart_toEndOf="@+id/linkInputIcon"
@@ -189,11 +198,12 @@
 
 			<com.google.android.material.textfield.TextInputLayout
 				android:id="@+id/linkInputLayout"
+				style="@style/Zerion.TextInput"
 				android:layout_width="0dp"
 				android:layout_height="wrap_content"
 				android:layout_marginTop="16dp"
+				android:hint="@string/contact_link_hint"
 				app:errorEnabled="true"
-				app:hintEnabled="false"
 				app:layout_constraintEnd_toEndOf="parent"
 				app:layout_constraintStart_toStartOf="parent"
 				app:layout_constraintTop_toBottomOf="@+id/linkInputIcon">
@@ -202,16 +212,17 @@
 					android:id="@+id/linkInput"
 					android:layout_width="match_parent"
 					android:layout_height="match_parent"
-					android:hint="@string/contact_link_hint"
+					android:textColor="@android:color/white"
+					android:textColorHint="#80FFFFFF"
 					android:imeOptions="flagNoPersonalizedLearning"
 					android:importantForAutofill="no"
 					android:inputType="textUri" />
 
 			</com.google.android.material.textfield.TextInputLayout>
 
-			<Button
+			<com.google.android.material.button.MaterialButton
 				android:id="@+id/pasteButton"
-				style="@style/BriarButtonFlat.Positive.Tiny"
+				style="@style/Zerion.Button.Text"
 				android:layout_width="wrap_content"
 				android:layout_height="wrap_content"
 				android:text="@string/paste_button"
@@ -229,6 +240,8 @@
 				android:layout_width="match_parent"
 				android:layout_height="wrap_content"
 				android:layout_marginTop="16dp"
+				app:cardBackgroundColor="#33FFFFFF"
+				app:cardElevation="0dp"
 				app:layout_constraintEnd_toEndOf="parent"
 				app:layout_constraintStart_toStartOf="parent"
 				app:layout_constraintTop_toBottomOf="@+id/pasteButton" />
@@ -236,12 +249,13 @@
 		</androidx.constraintlayout.widget.ConstraintLayout>
 	</ScrollView>
 
-	<Button
+	<com.google.android.material.button.MaterialButton
 		android:id="@+id/addButton"
-		style="@style/BriarButton"
+		style="@style/Zerion.Button.Primary"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
 		android:layout_marginHorizontal="16dp"
+		android:layout_marginBottom="16dp"
 		android:enabled="false"
 		android:text="@string/continue_button"
 		app:layout_constraintBottom_toBottomOf="parent"

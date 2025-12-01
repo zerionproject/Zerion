@@ -4,6 +4,7 @@ import com.professor.zerion.android.contact.add.remote.AddContactViewModel;
 import com.professor.zerion.android.contact.add.remote.PendingContactListViewModel;
 import com.professor.zerion.android.conversation.ConversationViewModel;
 import com.professor.zerion.android.conversation.ImageViewModel;
+import com.professor.zerion.android.vault.ui.VaultViewModel;
 
 import javax.inject.Singleton;
 
@@ -39,6 +40,12 @@ public abstract class ViewModelModule {
 	@ViewModelKey(PendingContactListViewModel.class)
 	abstract ViewModel bindPendingRequestsViewModel(
 			PendingContactListViewModel pendingContactListViewModel);
+
+	@Binds
+	@IntoMap
+	@ViewModelKey(VaultViewModel.class)
+	abstract ViewModel bindVaultViewModel(
+			VaultViewModel vaultViewModel);
 
 	@Binds
 	@Singleton

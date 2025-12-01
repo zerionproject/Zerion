@@ -9,7 +9,7 @@
 
 	<com.google.android.material.appbar.MaterialToolbar
 		android:id="@+id/toolbar"
-		style="@style/BriarToolbar"
+		style="@style/Zerion.Toolbar"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
 		android:elevation="4dp"
@@ -59,9 +59,9 @@
 
 	</androidx.core.widget.NestedScrollView>
 
-	<Button
+	<com.google.android.material.button.MaterialButton
 		android:id="@+id/button"
-		style="@style/BriarButtonFlat.Positive"
+		style="@style/Zerion.Button.Text"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
 		android:layout_gravity="end"

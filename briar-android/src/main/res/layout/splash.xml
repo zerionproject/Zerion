@@ -4,6 +4,13 @@
 	android:layout_width="match_parent"
 	android:layout_height="match_parent">
 
+	<!-- Matrix Rain Background -->
+	<com.professor.zerion.android.view.MatrixRainView
+		android:id="@+id/matrix_rain_view"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent" />
+
+	<!-- Logo with Decode Effect -->
 	<ImageView
 		android:id="@+id/logoView"
 		android:layout_width="wrap_content"

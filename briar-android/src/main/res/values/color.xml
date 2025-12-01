@@ -88,7 +88,7 @@
 
 	<color name="preference_category_background">@color/window_background</color>
 
-	<color name="briar_button_text_positive">@color/briar_blue_400</color>
+	<color name="briar_button_text_positive">@color/zerion_cyan</color>
 	<color name="briar_button_text_neutral">@color/briar_night_500</color>
 	<color name="briar_button_text_negative">@color/briar_red_500</color>
 	<color name="briar_button_text_disabled">#28000000</color>
@@ -101,8 +101,8 @@
 
 
 
-	<color name="md_theme_primary">@color/briar_lime_500</color>
-	<color name="md_theme_onPrimary">@color/briar_lime_950</color>
+	<color name="md_theme_primary">@color/briar_night_700</color>
+	<color name="md_theme_onPrimary">@android:color/white</color>
 	<color name="md_theme_primaryContainer">@color/briar_night_700</color>
 	<color name="md_theme_onPrimaryContainer">@android:color/white</color>
 	<color name="md_theme_inversePrimary">#98DA27</color>
@@ -116,4 +116,11 @@
 	<color name="md_theme_onSurface">#191D12</color>
 	<color name="md_theme_surfaceDim">@color/briar_gray_200_new</color>
 	<color name="md_theme_error">@color/briar_red_600</color>
+
+	<!-- Zerion brand colors -->
+	<color name="zerion_cyan">#26B7F0</color>
+	<color name="zerion_aqua">#00D2D3</color>
+	<color name="zerion_deep_blue">#3478F6</color>
+	<color name="zerion_dark_bg">#0B0F10</color>
+	<color name="zerion_card_bg">#1A2830</color>
 </resources>

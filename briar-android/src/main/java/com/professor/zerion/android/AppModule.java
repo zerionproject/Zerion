@@ -48,6 +48,10 @@ import com.professor.zerion.android.privategroup.conversation.GroupConversationM
 import com.professor.zerion.android.privategroup.list.GroupListModule;
 import com.professor.zerion.android.removabledrive.TransferDataModule;
 import com.professor.zerion.android.reporting.DevReportModule;
+import com.professor.zerion.android.vault.VaultManager;
+import com.professor.zerion.android.security.SecurityManager;
+import com.professor.zerion.android.security.AntiForensics;
+import com.professor.zerion.android.network.TorStatusMonitor;
 import com.professor.zerion.android.settings.SettingsModule;
 import com.professor.zerion.android.sharing.SharingModule;
 import com.professor.zerion.android.test.TestAvatarCreatorImpl;
@@ -136,6 +140,12 @@ public class AppModule {
 	@Singleton
 	Application providesApplication() {
 		return application;
+	}
+
+	@Provides
+	@Singleton
+	Context provideContext() {
+		return application.getApplicationContext();
 	}
 
 	@Provides
@@ -273,6 +283,30 @@ public class AppModule {
 
 	@Provides
 	@Singleton
+	VaultManager provideVaultManager(Context context) {
+		return new VaultManager(context);
+	}
+
+	@Provides
+	@Singleton
+	SecurityManager provideSecurityManager(Application app) {
+		return new SecurityManager(app);
+	}
+
+	@Provides
+	@Singleton
+	AntiForensics provideAntiForensics(Context context) {
+		return new AntiForensics(context);
+	}
+
+	@Provides
+	@Singleton
+	TorStatusMonitor provideTorStatusMonitor(Context context) {
+		return new TorStatusMonitor(context);
+	}
+
+	@Provides
+	@Singleton
 	AndroidNotificationManager provideAndroidNotificationManager(
 			LifecycleManager lifecycleManager, EventBus eventBus,
 			AndroidNotificationManagerImpl notificationManager) {
@@ -348,16 +382,6 @@ public class AppModule {
 
 			@Override
 			public boolean shouldEnablePrivateGroupsInCore() {
-				return true;
-			}
-
-			@Override
-			public boolean shouldEnableForumsInCore() {
-				return true;
-			}
-
-			@Override
-			public boolean shouldEnableBlogsInCore() {
 				return true;
 			}
 		};

@@ -76,7 +76,6 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import org.briarproject.briar.api.attachment.AttachmentHeader;
 import org.briarproject.briar.api.autodelete.event.ConversationMessagesDeletedEvent;
-import org.briarproject.briar.api.blog.BlogSharingManager;
 import org.briarproject.briar.api.client.ProtocolStateException;
 import org.briarproject.briar.api.client.SessionId;
 import org.briarproject.briar.api.conversation.ConversationManager;
@@ -86,7 +85,6 @@ import org.briarproject.briar.api.conversation.ConversationRequest;
 import org.briarproject.briar.api.conversation.ConversationResponse;
 import org.briarproject.briar.api.conversation.DeletionResult;
 import org.briarproject.briar.api.conversation.event.ConversationMessageReceivedEvent;
-import org.briarproject.briar.api.forum.ForumSharingManager;
 import org.briarproject.briar.api.introduction.IntroductionManager;
 import org.briarproject.briar.api.messaging.MessagingManager;
 import org.briarproject.briar.api.messaging.PrivateMessageHeader;
@@ -193,10 +191,6 @@ public class ConversationActivity extends BriarActivity
 	volatile EventBus eventBus;
 	@Inject
 	volatile IntroductionManager introductionManager;
-	@Inject
-	volatile ForumSharingManager forumSharingManager;
-	@Inject
-	volatile BlogSharingManager blogSharingManager;
 	@Inject
 	volatile GroupInvitationManager groupInvitationManager;
 	@Inject
@@ -1074,12 +1068,6 @@ public class ConversationActivity extends BriarActivity
 						respondToIntroductionRequest(item.getSessionId(),
 								accept);
 						break;
-					case FORUM:
-						respondToForumRequest(item.getSessionId(), accept);
-						break;
-					case BLOG:
-						respondToBlogRequest(item.getSessionId(), accept);
-						break;
 					case GROUP:
 						respondToGroupRequest(item.getSessionId(), accept);
 						break;
@@ -1258,18 +1246,6 @@ public class ConversationActivity extends BriarActivity
 	private void respondToIntroductionRequest(SessionId sessionId,
 			boolean accept) throws DbException {
 		introductionManager.respondToIntroduction(contactId, sessionId, accept);
-	}
-
-	@DatabaseExecutor
-	private void respondToForumRequest(SessionId id, boolean accept)
-			throws DbException {
-		forumSharingManager.respondToInvitation(contactId, id, accept);
-	}
-
-	@DatabaseExecutor
-	private void respondToBlogRequest(SessionId id, boolean accept)
-			throws DbException {
-		blogSharingManager.respondToInvitation(contactId, id, accept);
 	}
 
 	@DatabaseExecutor
