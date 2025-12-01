@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto">
+
+	<com.professor.zerion.android.settings.AvatarPreference android:key="pref_key_avatar" />
+
+	<Preference
+		android:title="@string/display_settings_title"
+		app:fragment="com.professor.zerion.android.settings.DisplayFragment"
+		app:icon="@drawable/ic_settings_brightness" />
+
+	<Preference
+		android:title="@string/network_settings_title"
+		app:fragment="com.professor.zerion.android.settings.ConnectionsFragment"
+		app:icon="@drawable/ic_connect_without_contact" />
+
+	<Preference
+		android:title="@string/security_settings_title"
+		app:fragment="com.professor.zerion.android.settings.SecurityFragment"
+		app:icon="@drawable/ic_settings_security" />
+
+	<Preference
+		android:title="@string/notification_settings_title"
+		app:fragment="com.professor.zerion.android.settings.NotificationsFragment"
+		app:icon="@drawable/ic_notifications" />
+
+<PreferenceCategory
+		android:key="pref_key_dev"
+		android:layout="@layout/preferences_category"
+		android:title="Developer Options"
+		app:allowDividerAbove="true">
+
+		<Preference
+			android:key="pref_key_test_data"
+			android:title="Create test data">
+
+			<intent
+				android:targetClass="com.professor.zerion.android.test.TestDataActivity"
+				android:targetPackage="@string/app_package" />
+		</Preference>
+
+		<Preference
+			android:key="pref_key_explode"
+			android:title="Crash" />
+
+	</PreferenceCategory>
+
+	<Preference
+		android:title="@string/about_title"
+		app:allowDividerAbove="true"
+		app:fragment="com.professor.zerion.android.settings.AboutFragment"
+		app:icon="@drawable/ic_info_dark" />
+
+</PreferenceScreen>

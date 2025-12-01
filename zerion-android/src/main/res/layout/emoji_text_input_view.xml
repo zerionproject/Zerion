@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content"
+	android:orientation="horizontal"
+	tools:parentTag="android.widget.LinearLayout">
+
+	<!-- Frame layout to overlay emoji button inside text field -->
+	<FrameLayout
+		android:layout_width="0dp"
+		android:layout_height="wrap_content"
+		android:layout_weight="1"
+		android:layout_gravity="center_vertical">
+
+		<com.vanniktech.emoji.EmojiEditText
+			android:id="@+id/input_text"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:background="@drawable/text_input_background"
+			android:imeOptions="flagNoPersonalizedLearning|actionSend"
+			android:inputType="textMultiLine|textCapSentences|textAutoCorrect"
+			android:maxLines="6"
+			android:minHeight="44dp"
+			android:paddingStart="32dp"
+			android:paddingTop="12dp"
+			android:paddingEnd="16dp"
+			android:paddingBottom="12dp"
+			android:scrollbars="vertical"
+			android:textColor="?android:attr/textColorPrimary"
+			tools:text="Line 1\nLine 2\nLine 3" />
+
+		<!-- Emoji toggle button overlaid inside the text field -->
+		<androidx.appcompat.widget.AppCompatImageButton
+			android:id="@+id/emoji_toggle"
+			android:layout_width="40dp"
+			android:layout_height="40dp"
+			android:layout_gravity="start|center_vertical"
+			android:layout_marginStart="-2dp"
+			android:background="?attr/selectableItemBackgroundBorderless"
+			android:padding="8dp"
+			android:scaleType="center"
+			android:contentDescription="@string/toggle_emoji_keyboard"
+			app:srcCompat="@drawable/ic_emoji_toggle"
+			app:tint="@color/zerion_cyan" />
+
+	</FrameLayout>
+
+</merge>

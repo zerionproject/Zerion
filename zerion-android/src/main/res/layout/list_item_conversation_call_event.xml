@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Call Event Item Layout
+    Displays voice call events in Signal/Molly style:
+    - Centered horizontally
+    - Compact rounded bubble
+    - Phone icon + event text
+    - Dim color scheme (system message style)
+    - No avatar, no delivery status
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content"
+	android:gravity="center_horizontal"
+	android:orientation="vertical"
+	android:paddingTop="4dp"
+	android:paddingBottom="4dp">
+
+	<!-- Centered call event bubble -->
+	<androidx.constraintlayout.widget.ConstraintLayout
+		android:id="@+id/layout"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:background="@drawable/bg_call_event_bubble"
+		android:minWidth="120dp">
+
+		<!-- Phone icon -->
+		<ImageView
+			android:id="@+id/callIcon"
+			android:layout_width="14dp"
+			android:layout_height="14dp"
+			android:layout_marginStart="0dp"
+			android:contentDescription="@string/voice_call"
+			app:srcCompat="@drawable/ic_phone_white"
+			app:tint="@color/zerion_text_secondary"
+			app:layout_constraintStart_toStartOf="parent"
+			app:layout_constraintTop_toTopOf="@+id/callEventText"
+			app:layout_constraintBottom_toBottomOf="@+id/callEventText" />
+
+		<!-- Call event text (e.g., "Secure voice call — 3 min 21 sec") -->
+		<TextView
+			android:id="@+id/callEventText"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_marginStart="6dp"
+			android:textSize="13sp"
+			android:textColor="@color/zerion_text_secondary"
+			android:fontFamily="sans-serif"
+			android:maxLines="2"
+			android:ellipsize="end"
+			app:layout_constraintStart_toEndOf="@+id/callIcon"
+			app:layout_constraintTop_toTopOf="parent"
+			app:layout_constraintEnd_toEndOf="parent"
+			app:layout_constraintHorizontal_bias="0"
+			tools:text="Secure voice call — 3 min 21 sec" />
+
+		<!-- Timestamp (below call event text) -->
+		<TextView
+			android:id="@+id/time"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_marginTop="2dp"
+			android:textSize="11sp"
+			android:textColor="@color/zerion_text_secondary"
+			android:alpha="0.6"
+			app:layout_constraintStart_toStartOf="@+id/callEventText"
+			app:layout_constraintTop_toBottomOf="@+id/callEventText"
+			tools:text="14:23" />
+
+	</androidx.constraintlayout.widget.ConstraintLayout>
+
+</LinearLayout>

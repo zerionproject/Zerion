@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="140dp"
+    android:background="@color/zerion_surface_elevated"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- User Profile Section -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <!-- User Avatar -->
+        <de.hdodenhof.circleimageview.CircleImageView
+            android:id="@+id/user_avatar"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:src="@drawable/ic_person"
+            app:civ_border_width="0dp" />
+
+        <!-- User Info -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="16dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/user_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="User Name"
+                android:textColor="@android:color/white"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/user_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Online"
+                android:textColor="@color/zerion_primary_accent"
+                android:textSize="14sp" />
+
+        </LinearLayout>
+
+        <!-- Settings Icon -->
+        <ImageButton
+            android:id="@+id/settings_button"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_settings"
+            android:tint="@android:color/white"
+            android:contentDescription="Settings" />
+
+    </LinearLayout>
+
+    <!-- Zerion Brand Text -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="ZERION"
+        android:textColor="@color/zerion_primary_accent"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.1" />
+
+</LinearLayout>

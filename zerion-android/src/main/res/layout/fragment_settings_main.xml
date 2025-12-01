@@ -1,0 +1,525 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/transparent"
+    android:clickable="false"
+    android:focusable="false">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:clickable="false"
+        android:focusable="false">
+
+        <!-- Compact Avatar Header (if exists) -->
+        <LinearLayout
+            android:id="@+id/avatar_card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="20dp"
+            android:paddingBottom="20dp"
+            android:gravity="center_vertical"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackground">
+
+            <de.hdodenhof.circleimageview.CircleImageView
+                android:id="@+id/avatar_image"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:src="@drawable/ic_person"
+                app:civ_border_width="0dp" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginStart="16dp">
+
+                <TextView
+                    android:id="@+id/username_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Username"
+                    android:textSize="17sp"
+                    android:textColor="?android:attr/textColorPrimary"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/change_avatar_button"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Change Avatar"
+                    android:textColor="?attr/colorPrimary"
+                    android:textSize="14sp"
+                    android:minHeight="0dp"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="4dp"
+                    android:paddingStart="0dp"
+                    android:paddingEnd="8dp" />
+
+            </LinearLayout>
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_chevron_right"
+                app:tint="?android:attr/textColorSecondary" />
+
+        </LinearLayout>
+
+        <!-- Thin divider -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:background="?android:attr/listDivider"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp" />
+
+        <!-- SETTINGS Section -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="SETTINGS"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="?attr/colorPrimary"
+            android:letterSpacing="0.05"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="8dp" />
+
+        <!-- Display Settings -->
+        <LinearLayout
+            android:id="@+id/display_card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="14dp"
+            android:gravity="center_vertical"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackground">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_settings_brightness"
+                app:tint="?android:attr/textColorPrimary"
+                android:layout_marginEnd="16dp" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/display_settings_title"
+                    android:textSize="16sp"
+                    android:textColor="?android:attr/textColorPrimary" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Language and theme"
+                    android:textSize="13sp"
+                    android:textColor="?android:attr/textColorSecondary"
+                    android:layout_marginTop="2dp" />
+
+            </LinearLayout>
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_chevron_right"
+                app:tint="?android:attr/textColorSecondary" />
+
+        </LinearLayout>
+
+        <!-- Divider -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:background="?android:attr/listDivider"
+            android:layout_marginStart="56dp"
+            android:layout_marginEnd="16dp" />
+
+        <!-- Network Settings -->
+        <LinearLayout
+            android:id="@+id/network_card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="14dp"
+            android:gravity="center_vertical"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackground">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_connect_without_contact"
+                app:tint="?android:attr/textColorPrimary"
+                android:layout_marginEnd="16dp" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/network_settings_title"
+                    android:textSize="16sp"
+                    android:textColor="?android:attr/textColorPrimary" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Tor connection settings"
+                    android:textSize="13sp"
+                    android:textColor="?android:attr/textColorSecondary"
+                    android:layout_marginTop="2dp" />
+
+            </LinearLayout>
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_chevron_right"
+                app:tint="?android:attr/textColorSecondary" />
+
+        </LinearLayout>
+
+        <!-- Divider -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:background="?android:attr/listDivider"
+            android:layout_marginStart="56dp"
+            android:layout_marginEnd="16dp" />
+
+        <!-- Security Settings -->
+        <LinearLayout
+            android:id="@+id/security_card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="14dp"
+            android:gravity="center_vertical"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackground">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_settings_security"
+                app:tint="?android:attr/textColorPrimary"
+                android:layout_marginEnd="16dp" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/security_settings_title"
+                    android:textSize="16sp"
+                    android:textColor="?android:attr/textColorPrimary" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Lock, password, and panic settings"
+                    android:textSize="13sp"
+                    android:textColor="?android:attr/textColorSecondary"
+                    android:layout_marginTop="2dp" />
+
+            </LinearLayout>
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_chevron_right"
+                app:tint="?android:attr/textColorSecondary" />
+
+        </LinearLayout>
+
+        <!-- Divider -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:background="?android:attr/listDivider"
+            android:layout_marginStart="56dp"
+            android:layout_marginEnd="16dp" />
+
+        <!-- Notification Settings -->
+        <LinearLayout
+            android:id="@+id/notifications_card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="14dp"
+            android:gravity="center_vertical"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackground">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_notifications"
+                app:tint="?android:attr/textColorPrimary"
+                android:layout_marginEnd="16dp" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/notification_settings_title"
+                    android:textSize="16sp"
+                    android:textColor="?android:attr/textColorPrimary" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Alerts, sounds, and vibration"
+                    android:textSize="13sp"
+                    android:textColor="?android:attr/textColorSecondary"
+                    android:layout_marginTop="2dp" />
+
+            </LinearLayout>
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_chevron_right"
+                app:tint="?android:attr/textColorSecondary" />
+
+        </LinearLayout>
+
+        <!-- Section divider (thicker for spacing) -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="8dp"
+            android:background="@android:color/transparent" />
+
+        <!-- DEVELOPER OPTIONS (if enabled) -->
+        <TextView
+            android:id="@+id/dev_section_header"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="DEVELOPER"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="?attr/colorPrimary"
+            android:letterSpacing="0.05"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="8dp"
+            android:visibility="gone" />
+
+        <!-- Test Data -->
+        <LinearLayout
+            android:id="@+id/test_data_card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="14dp"
+            android:gravity="center_vertical"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackground"
+            android:visibility="gone">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_settings"
+                app:tint="?android:attr/textColorPrimary"
+                android:layout_marginEnd="16dp" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Create test data"
+                android:textSize="16sp"
+                android:textColor="?android:attr/textColorPrimary" />
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_chevron_right"
+                app:tint="?android:attr/textColorSecondary" />
+
+        </LinearLayout>
+
+        <!-- Divider for test data -->
+        <View
+            android:id="@+id/test_data_divider"
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:background="?android:attr/listDivider"
+            android:layout_marginStart="56dp"
+            android:layout_marginEnd="16dp"
+            android:visibility="gone" />
+
+        <!-- Crash Button -->
+        <LinearLayout
+            android:id="@+id/crash_card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="14dp"
+            android:gravity="center_vertical"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackground"
+            android:visibility="gone">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_warning"
+                app:tint="?attr/colorError"
+                android:layout_marginEnd="16dp" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Crash (Debug)"
+                android:textSize="16sp"
+                android:textColor="?attr/colorError" />
+
+        </LinearLayout>
+
+        <!-- Section divider (thicker for spacing) -->
+        <View
+            android:id="@+id/dev_section_divider"
+            android:layout_width="match_parent"
+            android:layout_height="8dp"
+            android:background="@android:color/transparent"
+            android:visibility="gone" />
+
+        <!-- ABOUT Section -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="ABOUT"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="?attr/colorPrimary"
+            android:letterSpacing="0.05"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="8dp" />
+
+        <!-- About -->
+        <LinearLayout
+            android:id="@+id/about_card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="14dp"
+            android:gravity="center_vertical"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackground">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_info_dark"
+                app:tint="?android:attr/textColorPrimary"
+                android:layout_marginEnd="16dp" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/about_title"
+                    android:textSize="16sp"
+                    android:textColor="?android:attr/textColorPrimary" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="App version and information"
+                    android:textSize="13sp"
+                    android:textColor="?android:attr/textColorSecondary"
+                    android:layout_marginTop="2dp" />
+
+            </LinearLayout>
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_chevron_right"
+                app:tint="?android:attr/textColorSecondary" />
+
+        </LinearLayout>
+
+        <!-- Bottom padding for scrolling comfort -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="16dp"
+            android:background="@android:color/transparent" />
+
+    </LinearLayout>
+
+</ScrollView>

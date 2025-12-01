@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:id="@+id/constraintLayout"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="@drawable/bg_zerion_gradient"
+	android:fitsSystemWindows="true"
+	tools:context=".android.navdrawer.NavDrawerActivity">
+
+	<!-- Top App Bar (56dp height + status bar insets) -->
+	<androidx.constraintlayout.widget.ConstraintLayout
+		android:id="@+id/appBar"
+		android:layout_width="0dp"
+		android:layout_height="56dp"
+		android:background="@android:color/transparent"
+		android:elevation="0dp"
+		android:paddingStart="4dp"
+		android:paddingEnd="4dp"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toTopOf="parent">
+
+		<!-- Profile Icon (Left) - 48x48dp tap target -->
+		<com.google.android.material.card.MaterialCardView
+			android:id="@+id/profileIcon"
+			android:layout_width="40dp"
+			android:layout_height="40dp"
+			android:layout_marginStart="12dp"
+			android:clickable="true"
+			android:focusable="true"
+			android:foreground="?attr/selectableItemBackgroundBorderless"
+			app:cardCornerRadius="20dp"
+			app:cardElevation="0dp"
+			app:cardBackgroundColor="@color/zerion_cyan"
+			app:layout_constraintBottom_toBottomOf="parent"
+			app:layout_constraintStart_toStartOf="parent"
+			app:layout_constraintTop_toTopOf="parent">
+
+			<de.hdodenhof.circleimageview.CircleImageView
+				android:id="@+id/profileAvatar"
+				android:layout_width="match_parent"
+				android:layout_height="match_parent"
+				android:src="@drawable/ic_person"
+				android:scaleType="centerCrop" />
+
+		</com.google.android.material.card.MaterialCardView>
+
+		<!-- Screen Title (Center) -->
+		<TextView
+			android:id="@+id/toolbarTitle"
+			android:layout_width="0dp"
+			android:layout_height="wrap_content"
+			android:layout_marginStart="16dp"
+			android:layout_marginEnd="16dp"
+			android:gravity="center"
+			android:text="@string/contact_list_button"
+			android:textColor="@android:color/white"
+			android:textSize="20sp"
+			android:textStyle="bold"
+			android:singleLine="true"
+			android:ellipsize="end"
+			app:layout_constraintBottom_toBottomOf="parent"
+			app:layout_constraintEnd_toStartOf="@+id/searchButton"
+			app:layout_constraintStart_toEndOf="@+id/profileIcon"
+			app:layout_constraintTop_toTopOf="parent" />
+
+		<!-- Network Status Button -->
+		<ImageButton
+			android:id="@+id/searchButton"
+			android:layout_width="48dp"
+			android:layout_height="48dp"
+			android:background="?attr/selectableItemBackgroundBorderless"
+			android:contentDescription="@string/network_status_title"
+			android:padding="12dp"
+			android:src="@drawable/transport_tor"
+			app:layout_constraintBottom_toBottomOf="parent"
+			app:layout_constraintEnd_toStartOf="@+id/menuButton"
+			app:layout_constraintTop_toTopOf="parent"
+			app:tint="@android:color/white" />
+
+		<!-- Menu Button (3-dot) -->
+		<ImageButton
+			android:id="@+id/menuButton"
+			android:layout_width="48dp"
+			android:layout_height="48dp"
+			android:layout_marginEnd="4dp"
+			android:background="?attr/selectableItemBackgroundBorderless"
+			android:contentDescription="@string/settings_button"
+			android:padding="12dp"
+			android:src="@drawable/ic_more_vert_accent"
+			app:layout_constraintBottom_toBottomOf="parent"
+			app:layout_constraintEnd_toEndOf="parent"
+			app:layout_constraintTop_toTopOf="parent"
+			app:tint="@android:color/white" />
+
+	</androidx.constraintlayout.widget.ConstraintLayout>
+
+		<androidx.constraintlayout.widget.ConstraintLayout
+			android:id="@+id/expiryWarning"
+			android:layout_width="0dp"
+			android:layout_height="wrap_content"
+			android:background="@color/briar_warning_background"
+			android:orientation="horizontal"
+			android:padding="@dimen/margin_medium"
+			android:visibility="gone"
+			app:layout_constraintEnd_toEndOf="parent"
+			app:layout_constraintStart_toStartOf="parent"
+			app:layout_constraintTop_toBottomOf="@+id/appBar"
+			tools:visibility="visible">
+
+			<TextView
+				android:id="@+id/expiryWarningText"
+				android:layout_width="0dp"
+				android:layout_height="wrap_content"
+				android:text="@plurals/expiry_warning"
+				android:textColor="@color/briar_text_primary_inverse"
+				android:textSize="@dimen/text_size_small"
+				app:layout_constraintEnd_toStartOf="@+id/expiryWarningClose"
+				app:layout_constraintStart_toStartOf="parent"
+				app:layout_constraintTop_toTopOf="parent" />
+
+			<ImageView
+				android:id="@+id/expiryWarningClose"
+				android:layout_width="24dp"
+				android:layout_height="0dp"
+				android:contentDescription="@string/close"
+				android:scaleType="center"
+				app:layout_constraintBottom_toBottomOf="parent"
+				app:layout_constraintEnd_toEndOf="parent"
+				app:layout_constraintTop_toTopOf="parent"
+				app:srcCompat="@drawable/ic_close"
+				app:tint="@color/briar_text_tertiary_inverse" />
+
+		</androidx.constraintlayout.widget.ConstraintLayout>
+
+	<!-- Content Container -->
+	<androidx.fragment.app.FragmentContainerView
+		android:id="@+id/fragmentContainer"
+		android:name="com.professor.zerion.android.contact.ContactListFragment"
+		android:layout_width="0dp"
+		android:layout_height="0dp"
+		app:layout_constraintBottom_toTopOf="@+id/bottomNavigation"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toBottomOf="@+id/expiryWarning" />
+
+	<!-- Bottom Navigation (Text-Only Tabs - 64dp height) -->
+	<LinearLayout
+		android:id="@+id/bottomNavigation"
+		android:layout_width="0dp"
+		android:layout_height="64dp"
+		android:background="#1A000000"
+		android:orientation="horizontal"
+		android:elevation="8dp"
+		app:layout_constraintBottom_toBottomOf="parent"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintStart_toStartOf="parent">
+
+		<!-- Contacts Tab -->
+		<TextView
+			android:id="@+id/tabContacts"
+			android:layout_width="0dp"
+			android:layout_height="match_parent"
+			android:layout_weight="1"
+			android:background="?attr/selectableItemBackground"
+			android:clickable="true"
+			android:focusable="true"
+			android:gravity="center"
+			android:text="@string/contact_list_button"
+			android:textColor="@android:color/white"
+			android:textSize="14sp"
+			android:textStyle="bold" />
+
+		<!-- Group Chats Tab -->
+		<TextView
+			android:id="@+id/tabGroupChats"
+			android:layout_width="0dp"
+			android:layout_height="match_parent"
+			android:layout_weight="1"
+			android:background="?attr/selectableItemBackground"
+			android:clickable="true"
+			android:focusable="true"
+			android:gravity="center"
+			android:text="@string/groups_button"
+			android:textColor="#80FFFFFF"
+			android:textSize="14sp" />
+
+		<!-- Vault Tab -->
+		<TextView
+			android:id="@+id/tabVault"
+			android:layout_width="0dp"
+			android:layout_height="match_parent"
+			android:layout_weight="1"
+			android:background="?attr/selectableItemBackground"
+			android:clickable="true"
+			android:focusable="true"
+			android:gravity="center"
+			android:text="@string/vault_button"
+			android:textColor="#80FFFFFF"
+			android:textSize="14sp" />
+
+	</LinearLayout>
+
+	<!-- FAB (Add Contact or Group) -->
+	<com.google.android.material.floatingactionbutton.FloatingActionButton
+		android:id="@+id/fabCompose"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_marginEnd="16dp"
+		android:layout_marginBottom="80dp"
+		android:contentDescription="@string/add_contact_button"
+		android:src="@drawable/ic_add_24dp"
+		app:backgroundTint="@color/zerion_cyan"
+		app:fabSize="normal"
+		app:layout_constraintBottom_toBottomOf="parent"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:tint="@android:color/white" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
