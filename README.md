@@ -65,10 +65,9 @@ Any attempt to reconnect with weaker security is automatically blocked.
 
 ## Download Zerion
 
-**Coming soon:**
+**[Download APK](https://github.com/zerionproject/Zerion/releases/latest)**
 
-- F-Droid
-- Direct APK download
+- F-Droid (pending review)
 
 ---
 
