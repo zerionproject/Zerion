@@ -12,10 +12,14 @@ import android.os.Looper;
 import org.briarproject.nullsafety.NotNullByDefault;
 import org.briarproject.nullsafety.NullSafety;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
@@ -32,10 +36,23 @@ public class VoiceMessageRecorder {
 	private static final int SAMPLE_RATE = 8000;
 	private static final int CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO;
 	private static final int AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT;
-	private static final int CHUNK_SIZE = 4096;
+	// Recording buffer size for AudioRecord
+	private static final int CHUNK_SIZE = 1024;
 
-	private static final int MAX_DURATION_MS = 18000;
+	// Voice message size constraints for Briar's message limit
+	// Briar text message limit: ~30KB after base64 decoding = ~22.5KB binary
+	// With mu-law compression: 8KB/sec (instead of 16KB/sec raw PCM)
+	// Max voice duration: ~2.5 seconds to fit in single message
+	//
+	// For LONGER messages (5+ minutes), we'd need the attachment system which is
+	// a significant architectural change. For now, limit to what fits in a message.
+	//
+	// Future TODO: Implement voice attachments using MessagingManager.addLocalAttachment()
+	// to support longer recordings (similar to how images work)
+	private static final int MAX_DURATION_MS = 300_000; // 5 minutes UI limit (actual limit enforced by payload size)
 	private static final int MIN_DURATION_MS = 300;
+	private static final int MAX_RAW_AUDIO_SIZE = 4_800_000; // 5 min at 8kHz 16-bit = 4.8MB PCM (before compression)
+	private static final int MAX_ENCRYPTED_PAYLOAD_SIZE = 21_500; // Must fit in Briar message after base64
 
 	private static final int PROGRESS_UPDATE_INTERVAL_MS = 100;
 
@@ -48,6 +65,11 @@ public class VoiceMessageRecorder {
 	private Thread recordingThread;
 	private final AtomicBoolean isRecording = new AtomicBoolean(false);
 	private final AtomicBoolean isCancelled = new AtomicBoolean(false);
+
+	// Buffer to accumulate all PCM audio, then compress and encrypt at the end
+	private ByteArrayOutputStream accumulatedPcm;
+	private byte[] currentGroupId;
+	private EncryptedChunkCallback currentEncryptedCallback;
 
 	private MediaRecorder mediaRecorder;
 	private File outputFile;
@@ -117,14 +139,12 @@ public class VoiceMessageRecorder {
 			throw new IllegalStateException("AudioRecord initialization failed");
 		}
 
-		encryptor = new StreamingAudioEncryptor();
+		// Store groupId and callback for use when recording completes
+		currentGroupId = Arrays.copyOf(groupId, groupId.length);
+		currentEncryptedCallback = callback;
 
-		// SECURITY: Set AAD context with GroupId for replay protection
-		// MessageId will be zero bytes (placeholder) since message doesn't exist yet
-		// The actual MessageId binding happens via the message storage in Bramble
-		byte[] formatVersion = new byte[]{1};
-		byte[] messageIdPlaceholder = new byte[0];  // Empty - message not created yet
-		encryptor.setAADContext(formatVersion, groupId, messageIdPlaceholder);
+		// Initialize accumulator for PCM audio
+		accumulatedPcm = new ByteArrayOutputStream();
 
 		isRecording.set(true);
 		isCancelled.set(false);
@@ -134,41 +154,25 @@ public class VoiceMessageRecorder {
 
 		mainHandler.post(callback::onRecordingStarted);
 
-		byte[] iv = encryptor.getIV();
-
-		// Wrap the session key using AES-GCM with a key derived from groupId
-		// This produces a 48-byte wrapped key (32 bytes ciphertext + 16 bytes GCM tag)
-		byte[] wrappedKey;
-		try {
-			javax.crypto.SecretKey wrapKey = deriveWrapKey(groupId);
-			wrappedKey = encryptor.getEncryptedKey(wrapKey);
-			// Zeroize wrap key
-			byte[] wrapKeyBytes = wrapKey.getEncoded();
-			java.util.Arrays.fill(wrapKeyBytes, (byte) 0);
-
-			// Debug log to verify wrapped key length
-			LOG.info("✓ Wrapped key length = " + wrappedKey.length + " bytes (expected 48)");
-		} catch (Exception e) {
-			throw new RuntimeException("Failed to wrap session key", e);
-		}
-
-		mainHandler.post(() -> callback.onEncryptionInit(iv, wrappedKey));
-
-		recordingThread = new Thread(() -> streamingRecordingLoop(callback));
+		// Recording loop - accumulates audio, encrypts at the end
+		recordingThread = new Thread(() -> accumulatingRecordingLoop(callback));
 		recordingThread.start();
 	}
 
 	@android.annotation.SuppressLint("MissingPermission")
-	private void streamingRecordingLoop(EncryptedChunkCallback callback) {
+	private void accumulatingRecordingLoop(EncryptedChunkCallback callback) {
 		byte[] buffer = new byte[CHUNK_SIZE];
 		long lastProgressUpdate = System.currentTimeMillis();
-		int totalChunks = 0;
 
 		try {
 			while (isRecording.get() && !isCancelled.get()) {
 				long currentDuration = System.currentTimeMillis() - recordingStartTime;
 				if (currentDuration >= MAX_DURATION_MS) {
-					LOG.info("Max recording duration reached");
+					break;
+				}
+
+				// Check if we've accumulated too much audio
+				if (accumulatedPcm.size() >= MAX_RAW_AUDIO_SIZE) {
 					break;
 				}
 
@@ -181,18 +185,8 @@ public class VoiceMessageRecorder {
 				} else if (bytesRead > 0) {
 					int amplitude = calculateAmplitude(buffer, bytesRead);
 
-					StreamingAudioEncryptor.EncryptedChunk encryptedChunk =
-							encryptor.encryptChunk(buffer, bytesRead);
-
-					Arrays.fill(buffer, 0, bytesRead, (byte) 0);
-
-					mainHandler.post(() -> callback.onEncryptedChunk(
-							encryptedChunk.ciphertext,
-							encryptedChunk.ciphertext.length,
-							encryptedChunk.tag
-					));
-
-					totalChunks++;
+					// Accumulate the PCM audio
+					accumulatedPcm.write(buffer, 0, bytesRead);
 
 					long now = System.currentTimeMillis();
 					if (now - lastProgressUpdate >= PROGRESS_UPDATE_INTERVAL_MS) {
@@ -206,34 +200,149 @@ public class VoiceMessageRecorder {
 			int finalDuration = (int) (System.currentTimeMillis() - recordingStartTime);
 
 			if (isCancelled.get()) {
-				LOG.info("Recording cancelled by user");
 				mainHandler.post(callback::onCancelled);
 			} else if (finalDuration < MIN_DURATION_MS) {
-				LOG.warning("Recording too short: " + finalDuration + "ms");
 				mainHandler.post(() -> callback.onError(
 						new IllegalStateException("Recording too short (min " + MIN_DURATION_MS + "ms)")
 				));
 			} else {
-				LOG.info("Recording completed: " + finalDuration + "ms, " + totalChunks + " chunks");
-
-				final int finalChunkCount = totalChunks;
-				try {
-					byte[] globalMAC = encryptor.computeGlobalMAC(finalChunkCount, finalDuration);
-					mainHandler.post(() -> callback.onEncryptionFinal(globalMAC, finalDuration, finalChunkCount));
-					Arrays.fill(globalMAC, (byte) 0);
-				} catch (Exception e) {
-					LOG.severe("Failed to generate global MAC: " + e.getMessage());
-					mainHandler.post(() -> callback.onError(e));
-				}
+				compressAndEncrypt(callback, finalDuration);
 			}
 
 		} catch (Exception e) {
-			LOG.severe("Recording error: " + e.getMessage());
 			mainHandler.post(() -> callback.onError(e));
 		} finally {
 			Arrays.fill(buffer, (byte) 0);
 			cleanup();
 		}
+	}
+
+	/**
+	 * Compress PCM audio using mu-law encoding (2:1 compression) and encrypt.
+	 * Mu-law converts 16-bit samples to 8-bit, halving the size.
+	 */
+	private void compressAndEncrypt(EncryptedChunkCallback callback, int durationMs) {
+		try {
+			byte[] pcmData = accumulatedPcm.toByteArray();
+
+			// Mu-law encode: convert 16-bit PCM to 8-bit mu-law
+			byte[] muLawData = pcmToMuLaw(pcmData);
+
+			// Zeroize original PCM
+			Arrays.fill(pcmData, (byte) 0);
+
+			// Check if compressed size fits in message limit
+			// Encrypted overhead: 85 bytes fixed + 20 bytes per chunk
+			// We'll use one or two large chunks
+			int maxPayloadData = MAX_ENCRYPTED_PAYLOAD_SIZE - 100; // Reserve for overhead
+			if (muLawData.length > maxPayloadData) {
+				LOG.warning("Compressed audio too large: " + muLawData.length + " > " + maxPayloadData + " bytes");
+				// More accurate: mu-law at 8kHz = 8KB/sec, so ~2.5 seconds max
+				mainHandler.post(() -> callback.onError(
+						new IllegalStateException("Voice message too long. Please keep it under 3 seconds.")));
+				Arrays.fill(muLawData, (byte) 0);
+				return;
+			}
+
+			// Initialize encryptor
+			encryptor = new StreamingAudioEncryptor();
+			byte[] formatVersion = new byte[]{1};
+			byte[] messageIdPlaceholder = new byte[0];
+			encryptor.setAADContext(formatVersion, currentGroupId, messageIdPlaceholder);
+
+			byte[] iv = encryptor.getIV();
+
+			// Wrap the session key
+			javax.crypto.SecretKey wrapKey = deriveWrapKey(currentGroupId);
+			byte[] wrappedKey = encryptor.getEncryptedKey(wrapKey);
+			byte[] wrapKeyBytes = wrapKey.getEncoded();
+			java.util.Arrays.fill(wrapKeyBytes, (byte) 0);
+
+			// Send initialization
+			mainHandler.post(() -> callback.onEncryptionInit(iv, wrappedKey));
+
+			// Encrypt in a single chunk (or split if needed)
+			int chunkSize = 4096;
+			int totalChunks = 0;
+			int offset = 0;
+
+			while (offset < muLawData.length) {
+				int len = Math.min(chunkSize, muLawData.length - offset);
+				byte[] chunkData = new byte[len];
+				System.arraycopy(muLawData, offset, chunkData, 0, len);
+
+				StreamingAudioEncryptor.EncryptedChunk encryptedChunk =
+						encryptor.encryptChunk(chunkData, len);
+
+				Arrays.fill(chunkData, (byte) 0);
+
+				final byte[] ciphertext = encryptedChunk.ciphertext;
+				final byte[] tag = encryptedChunk.tag;
+				mainHandler.post(() -> callback.onEncryptedChunk(ciphertext, ciphertext.length, tag));
+
+				totalChunks++;
+				offset += len;
+			}
+
+			// Zeroize compressed audio
+			Arrays.fill(muLawData, (byte) 0);
+
+			// Generate and send global MAC
+			// CRITICAL: Copy the MAC before posting since post is async and we zeroize after
+			byte[] globalMAC = encryptor.computeGlobalMAC(totalChunks, durationMs);
+			final byte[] globalMACCopy = Arrays.copyOf(globalMAC, globalMAC.length);
+			Arrays.fill(globalMAC, (byte) 0);  // Zeroize original immediately
+			final int finalChunkCount = totalChunks;
+			mainHandler.post(() -> {
+				callback.onEncryptionFinal(globalMACCopy, durationMs, finalChunkCount);
+				// Callback will make its own copy, then we can zeroize
+				Arrays.fill(globalMACCopy, (byte) 0);
+			});
+
+		} catch (Exception e) {
+			mainHandler.post(() -> callback.onError(e));
+		}
+	}
+
+	/**
+	 * Convert 16-bit PCM to 8-bit mu-law encoding (ITU-T G.711).
+	 * This gives 2:1 compression ratio.
+	 */
+	private byte[] pcmToMuLaw(byte[] pcmData) {
+		// PCM is 16-bit little-endian, so 2 bytes per sample
+		int numSamples = pcmData.length / 2;
+		byte[] muLawData = new byte[numSamples];
+
+		for (int i = 0; i < numSamples; i++) {
+			// Read 16-bit sample (little-endian)
+			int sample = (pcmData[i * 2] & 0xFF) | (pcmData[i * 2 + 1] << 8);
+
+			// Convert to mu-law
+			muLawData[i] = linearToMuLaw((short) sample);
+		}
+
+		return muLawData;
+	}
+
+	/**
+	 * Convert 16-bit linear sample to 8-bit mu-law.
+	 */
+	private byte linearToMuLaw(short sample) {
+		final int MULAW_MAX = 0x1FFF;
+		final int MULAW_BIAS = 33;
+
+		int sign = (sample >> 8) & 0x80;
+		if (sign != 0) sample = (short) -sample;
+		if (sample > MULAW_MAX) sample = MULAW_MAX;
+
+		sample = (short) (sample + MULAW_BIAS);
+		int exponent = 7;
+		for (int expMask = 0x4000; (sample & expMask) == 0 && exponent > 0; exponent--, expMask >>= 1) {}
+
+		int mantissa = (sample >> (exponent + 3)) & 0x0F;
+		byte muLawByte = (byte) ~(sign | (exponent << 4) | mantissa);
+
+		return muLawByte;
 	}
 
 	private int calculateAmplitude(byte[] buffer, int length) {
@@ -253,14 +362,11 @@ public class VoiceMessageRecorder {
 	}
 
 	public void stopStreamingRecording() {
-		if (isRecording.compareAndSet(true, false)) {
-			LOG.info("Stopping streaming recording");
-		}
+		isRecording.compareAndSet(true, false);
 	}
 
 	public void cancelStreamingRecording() {
 		if (isRecording.get()) {
-			LOG.info("Cancelling streaming recording");
 			isCancelled.set(true);
 			isRecording.set(false);
 		}
@@ -273,8 +379,7 @@ public class VoiceMessageRecorder {
 					audioRecord.stop();
 				}
 				audioRecord.release();
-			} catch (IllegalStateException e) {
-				LOG.warning("Error releasing AudioRecord: " + e.getMessage());
+			} catch (IllegalStateException ignored) {
 			}
 			audioRecord = null;
 		}
@@ -293,6 +398,21 @@ public class VoiceMessageRecorder {
 			}
 			recordingThread = null;
 		}
+
+		// Clean up accumulated audio buffer
+		if (accumulatedPcm != null) {
+			try {
+				accumulatedPcm.reset();
+			} catch (Exception ignored) {}
+			accumulatedPcm = null;
+		}
+
+		// Zeroize groupId
+		if (currentGroupId != null) {
+			Arrays.fill(currentGroupId, (byte) 0);
+			currentGroupId = null;
+		}
+		currentEncryptedCallback = null;
 
 		isRecording.set(false);
 		isCancelled.set(false);

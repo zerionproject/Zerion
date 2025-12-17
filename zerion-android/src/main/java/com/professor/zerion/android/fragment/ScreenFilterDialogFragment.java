@@ -77,7 +77,7 @@ public class ScreenFilterDialogFragment extends DialogFragment {
 		Activity activity = getActivity();
 		if (activity == null) throw new IllegalStateException();
 		MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(
-				activity, R.style.BriarDialogThemeNoFilter);
+				activity, R.style.ZerionDialogThemeNoFilter);
 		builder.setTitle(R.string.screen_filter_title);
 		Bundle args = getArguments();
 		if (args == null) throw new IllegalStateException();

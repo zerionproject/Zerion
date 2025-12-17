@@ -21,7 +21,7 @@
 
 		<com.google.android.material.appbar.MaterialToolbar
 			android:id="@+id/toolbar"
-			style="@style/BriarToolbar"
+			style="@style/ZerionToolbar"
 			android:layout_width="match_parent"
 			android:layout_height="?attr/actionBarSize"
 			android:background="@android:color/transparent"

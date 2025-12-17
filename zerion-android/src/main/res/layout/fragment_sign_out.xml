@@ -17,7 +17,7 @@
 		app:layout_constraintVertical_bias="0.5"
 		app:layout_constraintVertical_chainStyle="packed"
 		app:srcCompat="@drawable/startup_lock"
-		app:tint="@color/briar_accent"
+		app:tint="@color/zerion_accent"
 		tools:ignore="ContentDescription" />
 
 	<com.google.android.material.progressindicator.CircularProgressIndicator

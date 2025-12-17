@@ -30,7 +30,7 @@
 		<item name="colorOnSurfaceVariant">#B3FFFFFF</item>
 
 		<!-- Error Colors -->
-		<item name="colorError">@color/briar_red_500</item>
+		<item name="colorError">@color/zerion_red_500</item>
 		<item name="colorOnError">@android:color/white</item>
 
 		<!-- Outline & Border -->

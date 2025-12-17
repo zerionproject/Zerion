@@ -138,7 +138,7 @@ public abstract class ZerionActivity extends BaseActivity {
 
 	protected void showDozeDialog(@StringRes int message) {
 		MaterialAlertDialogBuilder b =
-				new MaterialAlertDialogBuilder(this, R.style.BriarDialogTheme);
+				new MaterialAlertDialogBuilder(this, R.style.ZerionDialogTheme);
 		b.setMessage(message);
 		b.setView(R.layout.checkbox);
 		b.setPositiveButton(R.string.fix,

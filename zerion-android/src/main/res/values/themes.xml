@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
 
-	<style name="BriarTheme" parent="Theme.Material3.Dark">
+	<style name="ZerionTheme" parent="Theme.Material3.Dark">
 		<item name="colorPrimary">@color/zerion_cyan</item>
 		<item name="colorOnPrimary">@android:color/white</item>
 		<item name="colorPrimaryContainer">@color/zerion_card_bg</item>
@@ -28,14 +28,15 @@
 		<item name="android:textColorLink">@color/zerion_cyan</item>
 		<item name="android:windowAnimationStyle">@style/ActivityAnimation</item>
 		<item name="windowActionModeOverlay">true</item>
-		<item name="toolbarStyle">@style/BriarToolbar</item>
-		<item name="alertDialogTheme">@style/BriarDialogTheme.Neutral</item>
+		<item name="toolbarStyle">@style/ZerionToolbar</item>
+		<item name="alertDialogTheme">@style/ZerionDialogTheme.Neutral</item>
 		<item name="preferenceTheme">@style/PreferenceThemeOverlay.v14</item>
 
 		<!-- Set toolbar icon colors to Zerion cyan for unified look -->
 		<item name="colorControlNormal">@color/zerion_cyan</item>
 		<item name="colorControlActivated">@color/zerion_cyan</item>
 		<item name="colorControlHighlight">@color/zerion_cyan</item>
+		<item name="selectableItemBackground">?android:attr/selectableItemBackground</item>
 		<item name="android:editTextStyle">@style/Zerion.EditText</item>
 		<item name="android:listDivider">@android:color/transparent</item>
 		<item name="android:divider">@android:color/transparent</item>
@@ -43,13 +44,13 @@
 		<item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
 	</style>
 
-	<style name="BriarTheme.NoActionBar" parent="BriarTheme">
+	<style name="ZerionTheme.NoActionBar" parent="ZerionTheme">
 		<item name="windowActionBar">false</item>
 		<item name="windowNoTitle">true</item>
-		<item name="toolbarStyle">@style/BriarToolbar</item>
+		<item name="toolbarStyle">@style/ZerionToolbar</item>
 	</style>
 
-	<style name="BriarTheme.ActionBarOverlay" parent="BriarTheme.NoActionBar">
+	<style name="ZerionTheme.ActionBarOverlay" parent="ZerionTheme.NoActionBar">
 		<item name="android:windowActionBarOverlay">true</item>
 	</style>
 
@@ -60,7 +61,7 @@
 		<item name="android:activityCloseExitAnimation">@anim/screen_new_out</item>
 	</style>
 
-	<style name="BriarDialogTheme" parent="Theme.Material3.Dark.Dialog">
+	<style name="ZerionDialogTheme" parent="Theme.Material3.Dark.Dialog">
 		<item name="colorPrimary">@color/zerion_cyan</item>
 		<item name="colorSurface">@color/zerion_card_bg</item>
 		<item name="colorOnSurface">@android:color/white</item>
@@ -76,7 +77,7 @@
 		<item name="android:filterTouchesWhenObscured">true</item>
 	</style>
 
-	<style name="BriarFullScreenDialogTheme" parent="BriarDialogTheme">
+	<style name="ZerionFullScreenDialogTheme" parent="ZerionDialogTheme">
 		<item name="android:windowIsFloating">false</item>
 		<item name="android:windowAnimationStyle">@style/FullScreenDialogAnimation</item>
 	</style>
@@ -87,12 +88,12 @@
 	</style>
 
 	<!-- Use this with care. Only used for the screen filter warning dialog -->
-	<style name="BriarDialogThemeNoFilter" parent="BriarDialogTheme">
+	<style name="ZerionDialogThemeNoFilter" parent="ZerionDialogTheme">
 		<item name="android:filterTouchesWhenObscured">false</item>
 	</style>
 
 	<!-- Uses neutral colors for the buttons -->
-	<style name="BriarDialogTheme.Neutral" parent="BriarDialogTheme">
+	<style name="ZerionDialogTheme.Neutral" parent="ZerionDialogTheme">
 		<item name="buttonBarPositiveButtonStyle">@style/ZerionButtonFlat.Neutral</item>
 		<item name="buttonBarNeutralButtonStyle">@style/ZerionButtonFlat.Neutral</item>
 		<item name="buttonBarNegativeButtonStyle">@style/ZerionButtonFlat.Neutral</item>
@@ -103,7 +104,7 @@
 		<item name="android:windowExitAnimation">@anim/fade_out</item>
 	</style>
 
-	<style name="OnboardingDialogTheme" parent="BriarDialogTheme">
+	<style name="OnboardingDialogTheme" parent="ZerionDialogTheme">
 		<item name="android:background">@color/zerion_card_bg</item>
 		<item name="android:textColorPrimary">@android:color/white</item>
 		<item name="colorSurface">@color/zerion_card_bg</item>

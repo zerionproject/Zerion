@@ -10,6 +10,7 @@ import org.briarproject.bramble.api.contact.PendingContactState;
 import org.briarproject.bramble.api.contact.event.PendingContactAddedEvent;
 import org.briarproject.bramble.api.contact.event.PendingContactRemovedEvent;
 import org.briarproject.bramble.api.contact.event.PendingContactStateChangedEvent;
+import org.briarproject.bramble.api.crypto.CryptoComponent;
 import org.briarproject.bramble.api.crypto.KeyPair;
 import org.briarproject.bramble.api.crypto.SecretKey;
 import org.briarproject.bramble.api.crypto.TransportCrypto;
@@ -43,6 +44,7 @@ import org.briarproject.bramble.api.rendezvous.event.RendezvousPollEvent;
 import org.briarproject.bramble.api.system.Clock;
 import org.briarproject.bramble.api.system.TaskScheduler;
 import org.briarproject.bramble.api.system.Wakeful;
+import org.briarproject.bramble.api.transport.KeyManager;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.security.GeneralSecurityException;
@@ -65,6 +67,8 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.logging.Level.INFO;
 import static java.util.logging.Level.WARNING;
 import static java.util.logging.Logger.getLogger;
+import static org.briarproject.bramble.api.Bytes.compare;
+import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.HYBRID_COMMITMENT_LABEL;
 import static org.briarproject.bramble.api.contact.PendingContactState.ADDING_CONTACT;
 import static org.briarproject.bramble.api.contact.PendingContactState.FAILED;
 import static org.briarproject.bramble.api.contact.PendingContactState.OFFLINE;
@@ -87,6 +91,8 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 	private final IdentityManager identityManager;
 	private final TransportCrypto transportCrypto;
 	private final RendezvousCrypto rendezvousCrypto;
+	private final CryptoComponent crypto;
+	private final KeyManager keyManager;
 	private final PluginManager pluginManager;
 	private final ConnectionManager connectionManager;
 	private final EventBus eventBus;
@@ -105,6 +111,10 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 	@Nullable
 	private KeyPair handshakeKeyPair = null;
 	@Nullable
+	private KeyPair hybridHandshakeKeyPair = null;
+	@Nullable
+	private byte[] ourHybridCommitment = null;
+	@Nullable
 	private Cancellable pollTask = null;
 
 	@Inject
@@ -114,6 +124,8 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 			IdentityManager identityManager,
 			TransportCrypto transportCrypto,
 			RendezvousCrypto rendezvousCrypto,
+			CryptoComponent crypto,
+			KeyManager keyManager,
 			PluginManager pluginManager,
 			ConnectionManager connectionManager,
 			EventBus eventBus,
@@ -123,6 +135,8 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 		this.identityManager = identityManager;
 		this.transportCrypto = transportCrypto;
 		this.rendezvousCrypto = rendezvousCrypto;
+		this.crypto = crypto;
+		this.keyManager = keyManager;
 		this.pluginManager = pluginManager;
 		this.connectionManager = connectionManager;
 		this.eventBus = eventBus;
@@ -166,16 +180,49 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 			return;
 		}
 		try {
-			if (handshakeKeyPair == null) {
-				handshakeKeyPair = db.transactionWithResult(true,
-						identityManager::getHandshakeKeys);
+			SecretKey rendezvousKey;
+			boolean alice;
+
+			if (p.isPostQuantum()) {
+				// Hybrid (PQ) pending contact - use commitment-based rendezvous
+				// Since the link only contains a commitment hash (not a real key),
+				// we cannot do key agreement. Instead, both parties derive the
+				// same rendezvous key from their commitments.
+				if (hybridHandshakeKeyPair == null) {
+					hybridHandshakeKeyPair = db.transactionWithResult(true,
+							identityManager::getHybridHandshakeKeys);
+					if (hybridHandshakeKeyPair != null) {
+						// Compute our own commitment from our hybrid public key
+						ourHybridCommitment = crypto.hash(HYBRID_COMMITMENT_LABEL,
+								hybridHandshakeKeyPair.getPublic().getEncoded());
+					}
+				}
+				if (hybridHandshakeKeyPair == null || ourHybridCommitment == null) {
+					broadcastState(p.getId(), FAILED);
+					return;
+				}
+				byte[] theirCommitment = p.getPublicKey().getEncoded();
+				rendezvousKey = rendezvousCrypto.deriveHybridRendezvousKey(
+						theirCommitment, ourHybridCommitment);
+				alice = compare(ourHybridCommitment, theirCommitment) < 0;
+				final SecretKey finalRendezvousKey = rendezvousKey;
+				final boolean finalAlice = alice;
+				db.transaction(false, txn ->
+						keyManager.addHybridPendingContact(txn, p.getId(),
+								finalRendezvousKey, finalAlice));
+			} else {
+				if (handshakeKeyPair == null) {
+					handshakeKeyPair = db.transactionWithResult(true,
+							identityManager::getHandshakeKeys);
+				}
+				SecretKey staticMasterKey = transportCrypto
+						.deriveStaticMasterKey(p.getPublicKey(), handshakeKeyPair);
+				rendezvousKey = rendezvousCrypto
+						.deriveRendezvousKey(staticMasterKey);
+				alice = transportCrypto
+						.isAlice(p.getPublicKey(), handshakeKeyPair);
 			}
-			SecretKey staticMasterKey = transportCrypto
-					.deriveStaticMasterKey(p.getPublicKey(), handshakeKeyPair);
-			SecretKey rendezvousKey = rendezvousCrypto
-					.deriveRendezvousKey(staticMasterKey);
-			boolean alice = transportCrypto
-					.isAlice(p.getPublicKey(), handshakeKeyPair);
+
 			CryptoState cs = new CryptoState(rendezvousKey, alice, expiry);
 			requireNull(cryptoStates.put(p.getId(), cs));
 			for (PluginState ps : pluginStates.values()) {
@@ -189,7 +236,6 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 			if (cs.numEndpoints == 0) broadcastState(p.getId(), OFFLINE);
 			else broadcastState(p.getId(), WAITING_FOR_CONNECTION);
 			if (cryptoStates.size() == 1) {
-				LOG.info("Starting poller");
 				requireNull(pollTask);
 				pollTask = scheduler.scheduleWithFixedDelay(this::poll, worker,
 						POLLING_INTERVAL_MS, POLLING_INTERVAL_MS, MILLISECONDS);
@@ -213,10 +259,8 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 		return plugin.createRendezvousEndpoint(k, cs.alice, h);
 	}
 
-	// Worker
 	@Wakeful
 	private void poll() {
-		LOG.info("Polling");
 		removeExpiredPendingContacts();
 		for (PluginState ps : pluginStates.values()) poll(ps);
 	}
@@ -244,7 +288,6 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 			if (endpoint != null) tryToClose(endpoint, LOG, INFO);
 		}
 		if (cryptoStates.isEmpty()) {
-			LOG.info("Stopping poller");
 			requireNonNull(pollTask).cancel();
 			pollTask = null;
 		}

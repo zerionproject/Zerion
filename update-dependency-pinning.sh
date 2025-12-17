@@ -8,8 +8,7 @@ PROJECTS=(
     'bramble-java'
     'briar-api'
     'briar-core'
-    'briar-android'
-    'briar-headless'
+    'zerion-android'
 )
 
 # clear witness files to prevent errors when upgrading dependencies

@@ -13,6 +13,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
@@ -43,6 +44,11 @@ public interface MessagingManager extends ConversationClient {
 	 * Stores a local private message.
 	 */
 	void addLocalMessage(Transaction txn, PrivateMessage m) throws DbException;
+
+	/**
+	 * Stores a local voice signal message.
+	 */
+	void addLocalVoiceSignal(VoiceSignal signal) throws DbException;
 
 	/**
 	 * Stores a local attachment message.
@@ -85,6 +91,21 @@ public interface MessagingManager extends ConversationClient {
 	 */
 	@Nullable
 	String getMessageText(Transaction txn, MessageId m) throws DbException;
+
+	/**
+	 * Returns a map of message IDs to message text for all messages with text
+	 * in the given contact's conversation. This is more efficient than calling
+	 * getMessageText() individually for each message.
+	 */
+	Map<MessageId, String> getMessageTexts(ContactId c) throws DbException;
+
+	/**
+	 * Returns a map of message IDs to message text for all messages with text
+	 * in the given contact's conversation. This is more efficient than calling
+	 * getMessageText() individually for each message.
+	 */
+	Map<MessageId, String> getMessageTexts(Transaction txn, ContactId c)
+			throws DbException;
 
 	/**
 	 * Returns the private message format supported by the given contact.

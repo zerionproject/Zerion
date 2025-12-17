@@ -36,8 +36,11 @@ captures/
 # Keystore files
 *.jks
 *.keystore
+keystore.properties
 
 # OS-specific files
 .DS_Store
 Thumbs.db
 nul
+
+.claude/

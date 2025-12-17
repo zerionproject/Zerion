@@ -46,7 +46,6 @@ import androidx.lifecycle.MutableLiveData;
 @NotNullByDefault
 public class ContactsViewModel extends DbViewModel implements EventListener {
 
-
 	protected final ContactManager contactManager;
 	private final AuthorManager authorManager;
 	protected final ConversationManager conversationManager;

@@ -140,7 +140,7 @@ public class GroupActivity extends
 	}
 
 	private void showClearChatDialog() {
-		new MaterialAlertDialogBuilder(this, R.style.BriarDialogTheme)
+		new MaterialAlertDialogBuilder(this, R.style.ZerionDialogTheme)
 				.setTitle(getString(R.string.clear_chat_dialog_title))
 				.setMessage(getString(R.string.clear_chat_dialog_message))
 				.setNegativeButton(R.string.clear_chat, (dialog, which) -> clearGroupChat())
@@ -191,7 +191,7 @@ public class GroupActivity extends
 
 	private void showLeaveGroupDialog() {
 		MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(
-				this, R.style.BriarDialogTheme);
+				this, R.style.ZerionDialogTheme);
 		builder.setTitle(getString(R.string.groups_leave_dialog_title));
 		builder.setMessage(getString(R.string.groups_leave_dialog_message));
 		builder.setNegativeButton(R.string.dialog_button_leave,
@@ -202,7 +202,7 @@ public class GroupActivity extends
 
 	private void showDissolveGroupDialog() {
 		MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(
-				this, R.style.BriarDialogTheme);
+				this, R.style.ZerionDialogTheme);
 		builder.setTitle(getString(R.string.groups_dissolve_dialog_title));
 		builder.setMessage(getString(R.string.groups_dissolve_dialog_message));
 		builder.setNegativeButton(R.string.groups_dissolve_button,
@@ -217,7 +217,7 @@ public class GroupActivity extends
 
 	private void onGroupDissolved() {
 		MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(
-				this, R.style.BriarDialogTheme);
+				this, R.style.ZerionDialogTheme);
 		builder.setTitle(getString(R.string.groups_dissolved_dialog_title));
 		builder.setMessage(getString(R.string.groups_dissolved_dialog_message));
 		builder.setNeutralButton(R.string.ok, null);

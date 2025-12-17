@@ -19,7 +19,7 @@ public class ZerionNotificationBuilder extends NotificationCompat.Builder {
 		this.context = context;
 		setAutoCancel(true);
 
-		setLights(ContextCompat.getColor(context, R.color.briar_lime_400),
+		setLights(ContextCompat.getColor(context, R.color.zerion_lime_400),
 				750, 500);
 		setVisibility(VISIBILITY_PRIVATE);
 	}

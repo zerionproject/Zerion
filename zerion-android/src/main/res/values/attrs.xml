@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+	<!-- Theme attributes for programmatic access -->
+	<attr name="colorControlNormal" format="color" />
+	<attr name="selectableItemBackground" format="reference" />
+
 	<integer name="animationSpeed">@android:integer/config_mediumAnimTime</integer>
 
 	<integer name="splashScreenDuration">500</integer>

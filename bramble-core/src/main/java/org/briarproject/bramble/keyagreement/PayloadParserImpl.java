@@ -1,7 +1,6 @@
 package org.briarproject.bramble.keyagreement;
 
 import org.briarproject.bramble.api.FormatException;
-import org.briarproject.bramble.api.Pair;
 import org.briarproject.bramble.api.UnsupportedVersionException;
 import org.briarproject.bramble.api.data.BdfList;
 import org.briarproject.bramble.api.data.BdfReader;
@@ -9,12 +8,6 @@ import org.briarproject.bramble.api.data.BdfReaderFactory;
 import org.briarproject.bramble.api.keyagreement.Payload;
 import org.briarproject.bramble.api.keyagreement.PayloadParser;
 import org.briarproject.bramble.api.keyagreement.TransportDescriptor;
-import org.briarproject.bramble.api.plugin.BluetoothConstants;
-import org.briarproject.bramble.api.plugin.LanTcpConstants;
-import org.briarproject.bramble.api.plugin.TransportId;
-import org.briarproject.bramble.api.qrcode.QrCodeClassifier;
-import org.briarproject.bramble.api.qrcode.QrCodeClassifier.QrCodeType;
-import org.briarproject.bramble.api.qrcode.WrongQrCodeTypeException;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.ByteArrayInputStream;
@@ -26,41 +19,39 @@ import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
 
 import static org.briarproject.bramble.api.keyagreement.KeyAgreementConstants.COMMIT_LENGTH;
-import static org.briarproject.bramble.api.keyagreement.KeyAgreementConstants.QR_FORMAT_VERSION;
-import static org.briarproject.bramble.api.keyagreement.KeyAgreementConstants.TRANSPORT_ID_BLUETOOTH;
-import static org.briarproject.bramble.api.keyagreement.KeyAgreementConstants.TRANSPORT_ID_LAN;
-import static org.briarproject.bramble.api.qrcode.QrCodeClassifier.QrCodeType.BQP;
+import static org.briarproject.bramble.api.keyagreement.KeyAgreementConstants.PROTOCOL_VERSION;
 import static org.briarproject.bramble.util.StringUtils.ISO_8859_1;
 
 @Immutable
 @NotNullByDefault
 class PayloadParserImpl implements PayloadParser {
 
+	private static final int FORMAT_ID_MASK = 0xE0;
+	private static final int VERSION_MASK = 0x1F;
+	private static final int BQP_FORMAT_ID = 0;
+
 	private final BdfReaderFactory bdfReaderFactory;
-	private final QrCodeClassifier qrCodeClassifier;
 
 	@Inject
-	PayloadParserImpl(BdfReaderFactory bdfReaderFactory,
-			QrCodeClassifier qrCodeClassifier) {
+	PayloadParserImpl(BdfReaderFactory bdfReaderFactory) {
 		this.bdfReaderFactory = bdfReaderFactory;
-		this.qrCodeClassifier = qrCodeClassifier;
 	}
 
 	@Override
 	public Payload parse(String payloadString) throws IOException {
-		Pair<QrCodeType, Integer> typeAndVersion =
-				qrCodeClassifier.classifyQrCode(payloadString);
-		QrCodeType qrCodeType = typeAndVersion.getFirst();
-		if (qrCodeType != BQP) throw new WrongQrCodeTypeException(qrCodeType);
-		int formatVersion = typeAndVersion.getSecond();
-		if (formatVersion != QR_FORMAT_VERSION) {
-			boolean tooOld = formatVersion < QR_FORMAT_VERSION;
-			throw new UnsupportedVersionException(tooOld);
-		}
+		if (payloadString.isEmpty()) throw new FormatException();
 		byte[] raw = payloadString.getBytes(ISO_8859_1);
 		ByteArrayInputStream in = new ByteArrayInputStream(raw);
-		// First byte: the format identifier and version (already parsed)
-		if (in.read() == -1) throw new AssertionError();
+		// First byte: the format identifier and version
+		int firstByte = in.read();
+		if (firstByte == -1) throw new FormatException();
+		int formatId = (firstByte & FORMAT_ID_MASK) >> 5;
+		int formatVersion = firstByte & VERSION_MASK;
+		if (formatId != BQP_FORMAT_ID) throw new FormatException();
+		if (formatVersion != PROTOCOL_VERSION) {
+			boolean tooOld = formatVersion < PROTOCOL_VERSION;
+			throw new UnsupportedVersionException(tooOld);
+		}
 		// The rest of the payload is a BDF list with one or more elements
 		BdfReader r = bdfReaderFactory.createReader(in);
 		BdfList payload = r.readList();
@@ -69,19 +60,9 @@ class PayloadParserImpl implements PayloadParser {
 		// First element: the public key commitment
 		byte[] commitment = payload.getRaw(0);
 		if (commitment.length != COMMIT_LENGTH) throw new FormatException();
-		// Remaining elements: transport descriptors
+		// Remaining elements: transport descriptors (Bluetooth and LAN removed)
 		List<TransportDescriptor> recognised = new ArrayList<>();
-		for (int i = 1; i < payload.size(); i++) {
-			BdfList descriptor = payload.getList(i);
-			int transportId = descriptor.getInt(0);
-			if (transportId == TRANSPORT_ID_BLUETOOTH) {
-				TransportId id = BluetoothConstants.ID;
-				recognised.add(new TransportDescriptor(id, descriptor));
-			} else if (transportId == TRANSPORT_ID_LAN) {
-				TransportId id = LanTcpConstants.ID;
-				recognised.add(new TransportDescriptor(id, descriptor));
-			}
-		}
+		// Transport parsing disabled - Bluetooth and LAN transports removed
 		return new Payload(commitment, recognised);
 	}
 }

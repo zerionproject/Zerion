@@ -21,7 +21,9 @@ With hybrid post-quantum cryptography, hardware-backed vault protection, and adv
 - **Tor-only networking** — Your IP address is never exposed to contacts
 - **Direct peer-to-peer architecture** — No central servers
 - **Encrypted Vault** for passwords, documents, media, and notes
-- **Post-quantum hardened** — Hybrid ML-KEM + X25519, ML-DSA + Ed25519
+- **Post-quantum hardened** — Hybrid ML-KEM-768 + X25519, ML-DSA-65 + Ed25519
+- **Briar compatible** — Communicate with Briar users via explicit contact type selection
+- **Downgrade attack protection** — PQ contacts stay PQ-secure forever
 - **Anti-forensics protection** against mobile extraction tools
 - **Open-source and auditable**
 
@@ -46,6 +48,19 @@ No STUN, no TURN, no VoIP servers — just private communication between devices
 A hardware-backed encrypted vault for passwords, notes, photos, videos, and documents.
 Uses Argon2id, AES-256-GCM, and StrongBox/Keystore integration for strong protection.
 
+### Briar Compatibility
+
+When adding a contact, you choose the security level:
+- **Zerion (Post-Quantum)**: Full post-quantum security (ML-KEM-768 + X25519) for Zerion-to-Zerion communication
+- **Briar-compatible (Classical)**: Classical security (X25519) for communication with Briar users
+
+Your chat settings show the security level for each contact.
+
+### Downgrade Attack Protection
+
+Once a contact is established with post-quantum security, it stays that way.
+Any attempt to reconnect with weaker security is automatically blocked.
+
 ---
 
 ## Download Zerion
@@ -57,11 +72,26 @@ Uses Argon2id, AES-256-GCM, and StrongBox/Keystore integration for strong protec
 
 ---
 
-## Useful Links
+## Development Status
 
-- [Technical Whitepaper](ZERION_TECHNICAL_WHITEPAPER.md) — Complete architecture & crypto design
-- [Post-Quantum Messaging Details](docs/PHASE2_POST_QUANTUM_MESSAGING.md)
-- [P2P Voice Calling Specification](P2P_Voice_Calls_Documentation.md)
+Zerion is under active development. Current focus areas:
+
+**In Progress:**
+- P2P video calls
+- File transfer improvements
+- UI/UX refinements
+
+**Planned:**
+- Multi-device sync
+- Offline messaging queue enhancements
+
+---
+
+## Documentation
+
+- [Technical Whitepaper](docs/ZERION_TECHNICAL_WHITEPAPER.md) — Complete architecture & crypto design
+- [Post-Quantum Messaging](docs/POST_QUANTUM_MESSAGING.md) — PQ implementation details
+- [P2P Voice Calls](docs/P2P_Voice_Calls_Documentation.md) — Voice calling specification
 
 ---
 

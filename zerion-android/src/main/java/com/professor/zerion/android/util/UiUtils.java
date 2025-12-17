@@ -243,7 +243,7 @@ public class UiUtils {
 		Spannable readMore = new SpannableString(
 				ctx.getString(R.string.read_more) + ellipsis);
 		ForegroundColorSpan fg = new ForegroundColorSpan(
-				ContextCompat.getColor(ctx, R.color.briar_text_link));
+				ContextCompat.getColor(ctx, R.color.zerion_text_link));
 		readMore.setSpan(fg, 0, readMore.length(),
 				Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 		builder.append(readMore);

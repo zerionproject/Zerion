@@ -140,7 +140,7 @@ public class VoiceMessageView extends FrameLayout {
 		public WaveformView(Context context, @Nullable AttributeSet attrs) {
 			super(context, attrs);
 			paint = new Paint();
-			paint.setColor(ContextCompat.getColor(context, R.color.briar_primary));
+			paint.setColor(ContextCompat.getColor(context, R.color.zerion_primary));
 			paint.setStyle(Paint.Style.FILL);
 			rect = new RectF();
 		}

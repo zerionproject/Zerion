@@ -26,12 +26,11 @@ public class AboutFragment extends Fragment {
 
 	final static String TAG = AboutFragment.class.getName();
 
-	private TextView briarVersion;
+	private TextView zerionVersion;
 	private TextView torVersion;
-	private TextView briarWebsite;
-	private TextView briarSourceCode;
-	private TextView briarChangelog;
-	private TextView briarPrivacyPolicy;
+	private TextView zerionWebsite;
+	private TextView zerionSourceCode;
+	private TextView zerionPrivacyPolicy;
 
 	@Nullable
 	@Override
@@ -46,31 +45,26 @@ public class AboutFragment extends Fragment {
 	public void onStart() {
 		super.onStart();
 		requireActivity().setTitle(R.string.about_title);
-		briarVersion = requireActivity().findViewById(R.id.BriarVersion);
-		briarVersion.setText(
+		zerionVersion = requireActivity().findViewById(R.id.zerion_version);
+		zerionVersion.setText(
 				getString(R.string.zerion_version, BuildConfig.VERSION_NAME));
 		torVersion = requireActivity().findViewById(R.id.TorVersion);
 		torVersion.setText(
 				getString(R.string.tor_version, BuildConfig.TorVersion));
-		briarWebsite = requireActivity().findViewById(R.id.BriarWebsite);
-		briarSourceCode = requireActivity().findViewById(R.id.BriarSourceCode);
-		briarChangelog = requireActivity().findViewById(R.id.BriarChangelog);
-		briarPrivacyPolicy =
-				requireActivity().findViewById(R.id.BriarPrivacyPolicy);
-		briarWebsite.setOnClickListener(View -> {
-			String url = "https://zerionapp.com";
+		zerionWebsite = requireActivity().findViewById(R.id.zerion_website);
+		zerionSourceCode = requireActivity().findViewById(R.id.zerion_source_code);
+		zerionPrivacyPolicy =
+				requireActivity().findViewById(R.id.zerion_privacy_policy);
+		zerionWebsite.setOnClickListener(v -> {
+			String url = "https://zerion.chat";
 			goToUrl(url);
 		});
-		briarSourceCode.setOnClickListener(View -> {
-			String url = "https://github.com/zerion/zerion";
+		zerionSourceCode.setOnClickListener(v -> {
+			String url = "https://github.com/zerionproject";
 			goToUrl(url);
 		});
-		briarChangelog.setOnClickListener(View -> {
-			String url = "https://zerionapp.com/changelog";
-			goToUrl(url);
-		});
-		briarPrivacyPolicy.setOnClickListener(View -> {
-			String url = "https://zerionapp.com/privacy";
+		zerionPrivacyPolicy.setOnClickListener(v -> {
+			String url = "https://zerion.chat/privacy-policy.html";
 			goToUrl(url);
 		});
 	}

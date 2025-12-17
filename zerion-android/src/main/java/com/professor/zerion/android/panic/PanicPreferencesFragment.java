@@ -117,7 +117,7 @@ public class PanicPreferencesFragment extends PreferenceFragmentCompat
 		if (entries.size() <= 1) {
 			panicAppPref.setOnPreferenceClickListener(preference -> {
 				new MaterialAlertDialogBuilder(requireContext(),
-						R.style.BriarDialogTheme)
+						R.style.ZerionDialogTheme)
 						.setTitle(R.string.panic_app_setting_title)
 						.setMessage("No panic trigger apps are currently installed. " +
 								"You can install Ripple (Panic Button) from F-Droid or " +
@@ -199,7 +199,7 @@ public class PanicPreferencesFragment extends PreferenceFragmentCompat
 		};
 
 		MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(
-				requireContext(), R.style.BriarDialogTheme);
+				requireContext(), R.style.ZerionDialogTheme);
 		builder.setTitle(getString(R.string.dialog_title_connect_panic_app));
 
 		CharSequence app = getString(R.string.unknown_app);

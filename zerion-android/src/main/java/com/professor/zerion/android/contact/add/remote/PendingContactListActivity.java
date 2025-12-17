@@ -75,7 +75,7 @@ public class PendingContactListActivity extends ZerionActivity
 		list.showProgressBar();
 
 		offlineSnackbar = new ZerionSnackbarBuilder()
-				.setBackgroundColor(R.color.briar_red_500)
+				.setBackgroundColor(R.color.zerion_error_red)
 				.make(list, R.string.offline_state, LENGTH_INDEFINITE);
 	}
 
@@ -109,7 +109,7 @@ public class PendingContactListActivity extends ZerionActivity
 		OnClickListener removeListener = (dialog, which) ->
 				removePendingContact(item.getPendingContact().getId());
 		MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(
-				PendingContactListActivity.this, R.style.BriarDialogTheme);
+				PendingContactListActivity.this, R.style.ZerionDialogTheme);
 		builder.setTitle(
 				getString(R.string.dialog_title_remove_pending_contact));
 		builder.setMessage(

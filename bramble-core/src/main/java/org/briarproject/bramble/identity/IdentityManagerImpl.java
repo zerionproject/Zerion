@@ -39,27 +39,14 @@ class IdentityManagerImpl implements IdentityManager, OpenDatabaseHook {
 	private final AuthorFactory authorFactory;
 	private final Clock clock;
 
-	/**
-	 * The user's identity, or null if no identity has been registered or
-	 * loaded. If non-null, this identity always has handshake keys.
-	 */
 	@Nullable
 	private volatile Identity cachedIdentity = null;
 
-	/**
-	 * True if {@code cachedIdentity} was registered via
-	 * {@link #registerIdentity(Identity)} and should be stored when
-	 * {@link #onDatabaseOpened(Transaction)} is called.
-	 */
-
 	private volatile boolean shouldStoreIdentity = false;
 
-	/**
-	 * True if the handshake keys in {@code cachedIdentity} were generated
-	 * when the identity was loaded and should be stored when
-	 * {@link #onDatabaseOpened(Transaction)} is called.
-	 */
 	private volatile boolean shouldStoreKeys = false;
+
+	private volatile boolean shouldStoreHybridKeys = false;
 
 	@Inject
 	IdentityManagerImpl(DatabaseComponent db, CryptoComponent crypto,
@@ -74,12 +61,20 @@ class IdentityManagerImpl implements IdentityManager, OpenDatabaseHook {
 	public Identity createIdentity(String name) {
 		long start = now();
 		LocalAuthor localAuthor = authorFactory.createLocalAuthor(name);
-		KeyPair handshakeKeyPair = crypto.generateAgreementKeyPair();
-		PublicKey handshakePub = handshakeKeyPair.getPublic();
-		PrivateKey handshakePriv = handshakeKeyPair.getPrivate();
+
+		// Generate classical X25519 handshake keys (for Briar compatibility)
+		KeyPair classicalKeyPair = crypto.generateAgreementKeyPair();
+		PublicKey classicalPub = classicalKeyPair.getPublic();
+		PrivateKey classicalPriv = classicalKeyPair.getPrivate();
+
+		// Generate hybrid PQ handshake keys (for Zerion-to-Zerion)
+		KeyPair hybridKeyPair = crypto.generateHybridAgreementKeyPair();
+		PublicKey hybridPub = hybridKeyPair.getPublic();
+		PrivateKey hybridPriv = hybridKeyPair.getPrivate();
+
 		logDuration(LOG, "Creating identity", start);
-		return new Identity(localAuthor, handshakePub, handshakePriv,
-				clock.currentTimeMillis());
+		return new Identity(localAuthor, classicalPub, classicalPriv,
+				hybridPub, hybridPriv, clock.currentTimeMillis());
 	}
 
 	@Override
@@ -87,26 +82,28 @@ class IdentityManagerImpl implements IdentityManager, OpenDatabaseHook {
 		if (!i.hasHandshakeKeyPair()) throw new IllegalArgumentException();
 		cachedIdentity = i;
 		shouldStoreIdentity = true;
-		LOG.info("Identity registered");
 	}
 
 	@Override
 	public void onDatabaseOpened(Transaction txn) throws DbException {
 		Identity cached = getCachedIdentity(txn);
 		if (shouldStoreIdentity) {
-			// The identity was registered at startup - store it
 			db.addIdentity(txn, cached);
-			LOG.info("Identity stored");
 		} else if (shouldStoreKeys) {
-			// Handshake keys were generated when loading the identity -
-			// store them
 			PublicKey handshakePub =
 					requireNonNull(cached.getHandshakePublicKey());
 			PrivateKey handshakePriv =
 					requireNonNull(cached.getHandshakePrivateKey());
 			db.setHandshakeKeyPair(txn, cached.getId(), handshakePub,
 					handshakePriv);
-			LOG.info("Handshake key pair stored");
+		}
+		if (shouldStoreHybridKeys && cached.hasHybridHandshakeKeyPair()) {
+			PublicKey hybridPub =
+					requireNonNull(cached.getHybridHandshakePublicKey());
+			PrivateKey hybridPriv =
+					requireNonNull(cached.getHybridHandshakePrivateKey());
+			db.setHybridHandshakeKeyPair(txn, cached.getId(), hybridPub,
+					hybridPriv);
 		}
 	}
 
@@ -132,6 +129,28 @@ class IdentityManagerImpl implements IdentityManager, OpenDatabaseHook {
 		return new KeyPair(handshakePub, handshakePriv);
 	}
 
+	@Override
+	@Nullable
+	public KeyPair getHybridHandshakeKeys(Transaction txn) throws DbException {
+		Identity cached = getCachedIdentity(txn);
+		if (!cached.hasHybridHandshakeKeyPair()) {
+			return null;
+		}
+		PublicKey hybridPub = requireNonNull(cached.getHybridHandshakePublicKey());
+		PrivateKey hybridPriv = requireNonNull(cached.getHybridHandshakePrivateKey());
+		return new KeyPair(hybridPub, hybridPriv);
+	}
+
+	@Override
+	public Identity getIdentity(Transaction txn) throws DbException {
+		return getCachedIdentity(txn);
+	}
+
+	@Override
+	public boolean supportsPostQuantum(Transaction txn) throws DbException {
+		return getCachedIdentity(txn).supportsPostQuantum();
+	}
+
 	/**
 	 * Loads the identity if necessary and returns it. If
 	 * {@code cachedIdentity} was not already set by calling
@@ -148,24 +167,34 @@ class IdentityManagerImpl implements IdentityManager, OpenDatabaseHook {
 		return cached;
 	}
 
-	/**
-	 * Loads and returns the identity, generating a handshake key pair if
-	 * necessary and setting {@code shouldStoreKeys} if a handshake key pair
-	 * was generated.
-	 */
 	private Identity loadIdentityWithKeyPair(Transaction txn)
 			throws DbException {
 		Collection<Identity> identities = db.getIdentities(txn);
 		if (identities.size() != 1) throw new DbException();
 		Identity i = identities.iterator().next();
-		LOG.info("Identity loaded");
-		if (i.hasHandshakeKeyPair()) return i;
-		KeyPair handshakeKeyPair = crypto.generateAgreementKeyPair();
-		PublicKey handshakePub = handshakeKeyPair.getPublic();
-		PrivateKey handshakePriv = handshakeKeyPair.getPrivate();
-		LOG.info("Handshake key pair generated");
-		shouldStoreKeys = true;
-		return new Identity(i.getLocalAuthor(), handshakePub, handshakePriv,
+
+		PublicKey classicalPub = i.getHandshakePublicKey();
+		PrivateKey classicalPriv = i.getHandshakePrivateKey();
+		PublicKey hybridPub = i.getHybridHandshakePublicKey();
+		PrivateKey hybridPriv = i.getHybridHandshakePrivateKey();
+
+		if (!i.hasHandshakeKeyPair()) {
+			KeyPair classicalKeyPair = crypto.generateAgreementKeyPair();
+			classicalPub = classicalKeyPair.getPublic();
+			classicalPriv = classicalKeyPair.getPrivate();
+			shouldStoreKeys = true;
+		}
+
+		if (!i.hasHybridHandshakeKeyPair()) {
+			KeyPair hybridKeyPair = crypto.generateHybridAgreementKeyPair();
+			hybridPub = hybridKeyPair.getPublic();
+			hybridPriv = hybridKeyPair.getPrivate();
+			shouldStoreHybridKeys = true;
+		}
+
+		return new Identity(i.getLocalAuthor(),
+				classicalPub, classicalPriv,
+				hybridPub, hybridPriv,
 				i.getTimeCreated());
 	}
 }

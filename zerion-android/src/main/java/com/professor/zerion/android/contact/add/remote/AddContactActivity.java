@@ -32,6 +32,9 @@ public class AddContactActivity extends ZerionActivity implements
 	ViewModelProvider.Factory viewModelFactory;
 	private AddContactViewModel viewModel;
 
+	@Nullable
+	private String pendingIncomingLink = null;
+
 	@Override
 	public void injectActivity(ActivityComponent component) {
 		component.inject(this);
@@ -51,6 +54,21 @@ public class AddContactActivity extends ZerionActivity implements
 		}
 
 		viewModel.onCreate();
+
+		// When contact type is selected, navigate to link exchange
+		viewModel.getContactTypeSelected().observeEvent(this, selected -> {
+			if (selected) {
+				LinkExchangeFragment f = new LinkExchangeFragment();
+				showNextFragment(f);
+				// If we had a pending link from an intent, handle it now
+				if (pendingIncomingLink != null) {
+					handleIncomingLink(pendingIncomingLink);
+					pendingIncomingLink = null;
+				}
+			}
+		});
+
+		// When remote link is entered, navigate to nickname
 		viewModel.getRemoteLinkEntered().observeEvent(this, entered -> {
 			if (entered) {
 				NicknameFragment f = new NicknameFragment();
@@ -64,7 +82,8 @@ public class AddContactActivity extends ZerionActivity implements
 		}
 
 		if (state == null) {
-			showInitialFragment(new LinkExchangeFragment());
+			// Start with contact type selection
+			showInitialFragment(new ContactTypeSelectionFragment());
 		}
 	}
 
@@ -75,8 +94,22 @@ public class AddContactActivity extends ZerionActivity implements
 		if (ACTION_SEND.equals(action) || ACTION_VIEW.equals(action)) {
 			String text = i.getStringExtra(EXTRA_TEXT);
 			String uri = i.getDataString();
-			if (text != null) handleIncomingLink(text);
-			else if (uri != null) handleIncomingLink(uri);
+			if (text != null) handleOrDeferIncomingLink(text);
+			else if (uri != null) handleOrDeferIncomingLink(uri);
+		}
+	}
+
+	private void handleOrDeferIncomingLink(String link) {
+		// If contact type is not yet selected, defer handling until it is
+		if (viewModel.getContactType() == null) {
+			if (viewModel.isValidRemoteContactLink(link)) {
+				pendingIncomingLink = link;
+			} else {
+				Toast.makeText(this, R.string.invalid_link, LENGTH_LONG)
+						.show();
+			}
+		} else {
+			handleIncomingLink(link);
 		}
 	}
 

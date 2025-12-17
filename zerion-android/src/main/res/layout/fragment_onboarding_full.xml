@@ -39,7 +39,7 @@
 				app:layout_constraintVertical_bias="0.25"
 				app:layout_constraintVertical_chainStyle="packed"
 				app:srcCompat="@drawable/ic_info_white"
-				app:tint="@color/briar_text_secondary_inverse"
+				app:tint="@color/zerion_text_secondary_inverse"
 				tools:ignore="ContentDescription" />
 
 			<TextView
@@ -48,7 +48,7 @@
 				android:layout_height="wrap_content"
 				android:layout_marginTop="@dimen/margin_xlarge"
 				android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
-				android:textColor="@color/briar_text_secondary_inverse"
+				android:textColor="@color/zerion_text_secondary_inverse"
 				app:layout_constraintBottom_toBottomOf="parent"
 				app:layout_constraintEnd_toEndOf="parent"
 				app:layout_constraintStart_toStartOf="parent"

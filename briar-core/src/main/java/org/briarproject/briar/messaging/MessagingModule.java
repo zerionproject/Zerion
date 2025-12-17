@@ -12,6 +12,7 @@ import org.briarproject.bramble.api.versioning.ClientVersioningManager;
 import org.briarproject.briar.api.conversation.ConversationManager;
 import org.briarproject.briar.api.messaging.MessagingManager;
 import org.briarproject.briar.api.messaging.PrivateMessageFactory;
+import org.briarproject.briar.api.messaging.VoiceSignalFactory;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -37,6 +38,13 @@ public class MessagingModule {
 	PrivateMessageFactory providePrivateMessageFactory(
 			PrivateMessageFactoryImpl privateMessageFactory) {
 		return privateMessageFactory;
+	}
+
+	@Provides
+	@Singleton
+	VoiceSignalFactory provideVoiceSignalFactory(
+			VoiceSignalFactoryImpl voiceSignalFactory) {
+		return voiceSignalFactory;
 	}
 
 	@Provides

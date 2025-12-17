@@ -1,11 +1,13 @@
 package com.professor.zerion.android.conversation;
 
 import org.briarproject.bramble.api.contact.ContactId;
+import org.briarproject.bramble.api.sync.MessageId;
 import org.briarproject.briar.api.conversation.ConversationMessageHeader;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -13,27 +15,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
-/**
- * Global cache for conversation messages to enable instant chat loading.
- * Pre-loads messages before opening ConversationActivity for Signal/SimpleX-level UX.
- *
- * Usage:
- * 1. Call preLoad() when user is about to open a conversation (e.g., on item click)
- * 2. In ConversationActivity.onCreate(), call getSnapshot() to get cached messages instantly
- * 3. Background load will update the cache with fresh data
- */
 @ThreadSafe
 @NotNullByDefault
 public class ConversationCache {
 
 	private static final int MAX_CACHED_MESSAGES = 50;
 	private static final int MAX_CACHED_CONVERSATIONS = 10;
-	private static final long CACHE_EXPIRY_MS = 60_000; // 1 minute
+	private static final long CACHE_EXPIRY_MS = 300_000;
 
-	// Thread-safe singleton
 	private static volatile ConversationCache instance;
 
-	// Cache storage
 	private final Map<ContactId, CachedConversation> cache = new ConcurrentHashMap<>();
 	private final List<ContactId> accessOrder = Collections.synchronizedList(new ArrayList<>());
 
@@ -55,6 +46,15 @@ public class ConversationCache {
 	 * Called from background thread before opening ConversationActivity.
 	 */
 	public void put(ContactId contactId, List<ConversationMessageHeader> headers) {
+		put(contactId, headers, null);
+	}
+
+	/**
+	 * Store pre-loaded messages AND texts for a conversation.
+	 * Called from background thread for optimal performance.
+	 */
+	public void put(ContactId contactId, List<ConversationMessageHeader> headers,
+			@Nullable Map<MessageId, String> texts) {
 		// Evict oldest if at capacity
 		synchronized (accessOrder) {
 			if (cache.size() >= MAX_CACHED_CONVERSATIONS && !cache.containsKey(contactId)) {
@@ -76,7 +76,19 @@ public class ConversationCache {
 			limitedHeaders = new ArrayList<>(headers);
 		}
 
-		cache.put(contactId, new CachedConversation(limitedHeaders, System.currentTimeMillis()));
+		cache.put(contactId, new CachedConversation(limitedHeaders, texts, System.currentTimeMillis()));
+	}
+
+	/**
+	 * Get cached texts for instant display.
+	 * Returns empty map if no cache.
+	 */
+	public Map<MessageId, String> getCachedTexts(ContactId contactId) {
+		CachedConversation cached = cache.get(contactId);
+		if (cached == null) {
+			return new HashMap<>();
+		}
+		return new HashMap<>(cached.texts);
 	}
 
 	/**
@@ -172,10 +184,13 @@ public class ConversationCache {
 	 */
 	private static class CachedConversation {
 		final List<ConversationMessageHeader> headers;
+		final Map<MessageId, String> texts;
 		long timestamp;
 
-		CachedConversation(List<ConversationMessageHeader> headers, long timestamp) {
+		CachedConversation(List<ConversationMessageHeader> headers,
+				@Nullable Map<MessageId, String> texts, long timestamp) {
 			this.headers = Collections.synchronizedList(new ArrayList<>(headers));
+			this.texts = texts != null ? new ConcurrentHashMap<>(texts) : new ConcurrentHashMap<>();
 			this.timestamp = timestamp;
 		}
 	}

@@ -14,7 +14,6 @@ import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.contact.add.remote.PendingContactListActivity;
 import com.professor.zerion.android.conversation.ConversationActivity;
-import com.professor.zerion.android.conversation.ConversationCache;
 import com.professor.zerion.android.fragment.BaseFragment;
 import com.professor.zerion.android.util.ZerionSnackbarBuilder;
 import com.professor.zerion.android.view.ZerionRecyclerView;
@@ -87,9 +86,8 @@ public class ContactListFragment extends BaseFragment
 
 		viewModel.getContactListItems()
 				.observe(getViewLifecycleOwner(), result -> {
-					result.onError(this::handleException).onSuccess(items -> {
-						adapter.submitList(items);
-					});
+					result.onError(this::handleException)
+							.onSuccess(adapter::submitList);
 				});
 		viewModel.getHasPendingContacts()
 				.observe(getViewLifecycleOwner(), hasPending -> {
@@ -102,13 +100,8 @@ public class ContactListFragment extends BaseFragment
 
 	@Override
 	public void onItemClick(View view, ContactListItem item) {
-		ContactId contactId = item.getContact().getId();
-
-		// OPTIMIZATION: Pre-load messages in background before opening activity
-		// This allows ConversationActivity to display instantly from cache
-		viewModel.preLoadConversation(contactId);
-
 		Intent i = new Intent(getActivity(), ConversationActivity.class);
+		ContactId contactId = item.getContact().getId();
 		i.putExtra(CONTACT_ID, contactId.getInt());
 		startActivity(i);
 	}

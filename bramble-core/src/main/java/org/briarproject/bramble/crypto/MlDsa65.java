@@ -14,12 +14,8 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.util.Arrays;
-import java.util.logging.Logger;
 
 import javax.annotation.concurrent.Immutable;
-
-import static java.util.logging.Level.INFO;
-import static java.util.logging.Logger.getLogger;
 
 /**
  * ML-DSA-65 (formerly Dilithium-III) Digital Signature Algorithm.
@@ -46,15 +42,10 @@ import static java.util.logging.Logger.getLogger;
 @Immutable
 class MlDsa65 {
 
-	private static final Logger LOG = getLogger(MlDsa65.class.getName());
-
 	private final SecureRandom secureRandom;
 
 	MlDsa65(SecureRandom secureRandom) {
 		this.secureRandom = secureRandom;
-		if (LOG.isLoggable(INFO)) {
-			LOG.info("ML-DSA-65 initialized (NIST FIPS 204)");
-		}
 	}
 
 	/**
