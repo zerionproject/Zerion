@@ -1,0 +1,10 @@
+Initial release
+
+• End-to-end encrypted messaging and groups
+• ZVault encrypted storage for passwords, notes, and files
+• P2P voice calls over Tor hidden services
+• Voice notes
+• Post-quantum cryptography (ML-KEM-768 + X25519, ML-DSA-65 + Ed25519)
+• Briar compatibility mode
+• Downgrade attack protection
+• Anti-forensics protection
