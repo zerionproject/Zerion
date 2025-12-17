@@ -1,0 +1,32 @@
+Zerion is a secure messaging app and encrypted vault designed for people who need private, anonymous, censorship-resistant communication.
+
+Unlike traditional messengers, Zerion uses no servers, no accounts, no phone numbers, and no cloud services. All communication flows directly between devices using the Tor network, protecting users from surveillance, metadata collection, and IP exposure.
+
+MESSAGING
+• End-to-end encrypted private chats and groups
+• Disappearing messages with auto-delete timers
+• Voice notes
+• P2P voice calls over Tor hidden services
+• Image and file attachments
+• Metadata removal
+
+ZVAULT - ENCRYPTED VAULT
+• Hardware-backed encrypted storage (StrongBox/Keystore)
+• Store passwords, notes, photos, videos, and documents
+• Argon2id key derivation
+• AES-256-GCM encryption
+• Biometric unlock support
+
+POST-QUANTUM CRYPTOGRAPHY
+• Hybrid ML-KEM-768 + X25519 key exchange
+• ML-DSA-65 + Ed25519 signatures
+• Downgrade attack protection - PQ contacts stay PQ-secure forever
+
+PRIVACY & SECURITY
+• No phone number, email, or registration required
+• No central servers - direct peer-to-peer communication
+• Tor-only networking - your IP is never exposed to contacts
+• Briar compatibility mode for communication with Briar users
+• Anti-forensics protection against mobile extraction tools
+
+Zerion collects zero personal data. Not by policy — by cryptographic design.

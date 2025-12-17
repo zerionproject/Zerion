@@ -1,0 +1,38 @@
+Categories:
+  - Internet
+  - Security
+License: GPL-3.0-only
+AuthorName: Zerion Project
+AuthorWebSite: https://github.com/zerionproject
+SourceCode: https://github.com/zerionproject/Zerion
+IssueTracker: https://github.com/zerionproject/Zerion/issues
+
+AutoName: Zerion
+
+RepoType: git
+Repo: https://github.com/zerionproject/Zerion.git
+
+Builds:
+  - versionName: 1.5.14
+    versionCode: 10514
+    commit: v1.0.0
+    subdir: zerion-android
+    submodules: true
+    sudo:
+      - apt-get update
+      - apt-get install -y openjdk-17-jdk-headless
+    gradle:
+      - official
+    rm:
+      - briar-android
+    prebuild:
+      - sed -i -e '/keystoreProperties/d' build.gradle
+
+AntiFeatures:
+  NonFreeNet:
+    en-US: Connects to Tor network for anonymity
+
+AutoUpdateMode: None
+UpdateCheckMode: Tags
+CurrentVersion: 1.5.14
+CurrentVersionCode: 10514
