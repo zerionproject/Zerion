@@ -16,9 +16,11 @@ public class VoiceMessagePayloadBuilder {
 	private static final int WRAPPED_KEY_LENGTH = 48;
 	private static final int TAG_LENGTH = 16;
 	private static final int INT_LENGTH = 4;
-	private static final int MAX_CHUNK_SIZE = 1_000_000;
-	private static final int MAX_DURATION_MS = 600_000;
-	private static final int MAX_VOICE_MESSAGE_SIZE = 2_000_000;
+	private static final int MAX_CHUNK_SIZE = 8_192;
+	private static final int MAX_DURATION_MS = 60_000; // 1 minute max (but payload size is the real limit)
+	// Must fit within Briar's text message limit after base64 encoding
+	// Briar max text = 30,720 bytes, after base64 decode = ~22,500 bytes
+	private static final int MAX_VOICE_MESSAGE_SIZE = 22_500;
 
 	public static byte getFormatVersion() {
 		return FORMAT_VERSION;

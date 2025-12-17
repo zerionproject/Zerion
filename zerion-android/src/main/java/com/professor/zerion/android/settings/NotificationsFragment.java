@@ -78,6 +78,10 @@ public class NotificationsFragment extends Fragment {
 	private SwitchMaterial notifyVibrationSwitch;
 	private MaterialCardView notifySoundCard;
 	private TextView notifySoundValue;
+	private MaterialCardView notifyPrivateMessagesCard;
+	private MaterialCardView notifyGroupMessagesCard;
+	private MaterialCardView notifyVoiceCallsCard;
+	private MaterialCardView notifyVibrationCard;
 
 	@Override
 	public void onAttach(@NonNull Context context) {
@@ -107,6 +111,10 @@ public class NotificationsFragment extends Fragment {
 		notifyVibrationSwitch = view.findViewById(R.id.notify_vibration_switch);
 		notifySoundCard = view.findViewById(R.id.notify_sound_card);
 		notifySoundValue = view.findViewById(R.id.notify_sound_value);
+		notifyPrivateMessagesCard = view.findViewById(R.id.notify_private_messages_card);
+		notifyGroupMessagesCard = view.findViewById(R.id.notify_group_messages_card);
+		notifyVoiceCallsCard = view.findViewById(R.id.notify_voice_calls_card);
+		notifyVibrationCard = view.findViewById(R.id.notify_vibration_card);
 
 
 		if (SDK_INT < NOTIFICATION_CHANNEL_API) {
@@ -197,21 +205,48 @@ public class NotificationsFragment extends Fragment {
 
 	@TargetApi(NOTIFICATION_CHANNEL_API)
 	private void setupAndroidOAndLaterNotifications() {
+		// On Android O+, notification settings are controlled via system channels
+		// Set up click listeners on cards to open system notification settings
 
-		notifyPrivateMessagesSwitch.setEnabled(false);
+		// Private messages - opens contact channel settings
+		notifyPrivateMessagesSwitch.setClickable(false);
 		notifyPrivateMessagesSwitch.setChecked(true);
+		notifyPrivateMessagesCard.setOnClickListener(v ->
+				openChannelSettings(CONTACT_CHANNEL_ID));
 
-		notifyGroupMessagesSwitch.setEnabled(false);
+		// Group messages - opens group channel settings
+		notifyGroupMessagesSwitch.setClickable(false);
 		notifyGroupMessagesSwitch.setChecked(true);
+		notifyGroupMessagesCard.setOnClickListener(v ->
+				openChannelSettings(GROUP_CHANNEL_ID));
 
-		notifyVoiceCallsSwitch.setEnabled(false);
+		// Voice calls - opens contact channel settings (voice calls use same channel)
+		notifyVoiceCallsSwitch.setClickable(false);
 		notifyVoiceCallsSwitch.setChecked(true);
+		notifyVoiceCallsCard.setOnClickListener(v ->
+				openChannelSettings(CONTACT_CHANNEL_ID));
 
+		// Vibration and sound are per-channel on Android O+
+		// Show them and have them open the app notification settings
+		notifyVibrationSwitch.setClickable(false);
+		notifyVibrationSwitch.setChecked(true);
+		notifyVibrationCard.setOnClickListener(v -> openAppNotificationSettings());
 
-		notifyVibrationSwitch.setVisibility(View.GONE);
-		notifySoundCard.setVisibility(View.GONE);
+		notifySoundValue.setText(R.string.notify_sound_setting_system);
+		notifySoundCard.setOnClickListener(v -> openAppNotificationSettings());
+	}
 
-
+	@TargetApi(NOTIFICATION_CHANNEL_API)
+	private void openAppNotificationSettings() {
+		Intent intent = new Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+				.putExtra(android.provider.Settings.EXTRA_APP_PACKAGE,
+						requireContext().getPackageName());
+		Context ctx = requireContext();
+		if (intent.resolveActivity(ctx.getPackageManager()) != null) {
+			startActivity(intent);
+		} else {
+			Toast.makeText(ctx, R.string.error_start_activity, LENGTH_SHORT).show();
+		}
 	}
 
 	@TargetApi(NOTIFICATION_CHANNEL_API)

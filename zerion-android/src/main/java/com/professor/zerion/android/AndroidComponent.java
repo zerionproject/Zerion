@@ -29,7 +29,6 @@ import org.briarproject.bramble.api.plugin.PluginManager;
 import org.briarproject.bramble.api.settings.SettingsManager;
 import org.briarproject.bramble.api.system.AndroidExecutor;
 import org.briarproject.bramble.api.system.Clock;
-import org.briarproject.bramble.mailbox.ModularMailboxModule;
 import org.briarproject.bramble.plugin.file.RemovableDriveModule;
 import org.briarproject.bramble.system.ClockModule;
 import org.briarproject.briar.BriarCoreEagerSingletons;
@@ -86,7 +85,6 @@ import dagger.Component;
 		AttachmentModule.class,
 		ClockModule.class,
 		MediaModule.class,
-		ModularMailboxModule.class,
 		RemovableDriveModule.class
 })
 public interface AndroidComponent
@@ -191,6 +189,8 @@ public interface AndroidComponent
 	com.professor.zerion.android.vault.VaultManager vaultManager();
 
 	com.professor.zerion.android.security.SecurityManager securityManager();
+
+	com.professor.zerion.android.network.TorStatusMonitor torStatusMonitor();
 
 	@AppModule.UiPrefs
 	SharedPreferences uiPreferences();

@@ -101,7 +101,7 @@
 			android:id="@+id/expiryWarning"
 			android:layout_width="0dp"
 			android:layout_height="wrap_content"
-			android:background="@color/briar_warning_background"
+			android:background="@color/zerion_warning_background"
 			android:orientation="horizontal"
 			android:padding="@dimen/margin_medium"
 			android:visibility="gone"
@@ -115,7 +115,7 @@
 				android:layout_width="0dp"
 				android:layout_height="wrap_content"
 				android:text="@plurals/expiry_warning"
-				android:textColor="@color/briar_text_primary_inverse"
+				android:textColor="@color/zerion_text_primary_inverse"
 				android:textSize="@dimen/text_size_small"
 				app:layout_constraintEnd_toStartOf="@+id/expiryWarningClose"
 				app:layout_constraintStart_toStartOf="parent"
@@ -131,7 +131,7 @@
 				app:layout_constraintEnd_toEndOf="parent"
 				app:layout_constraintTop_toTopOf="parent"
 				app:srcCompat="@drawable/ic_close"
-				app:tint="@color/briar_text_tertiary_inverse" />
+				app:tint="@color/zerion_text_tertiary_inverse" />
 
 		</androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -151,7 +151,7 @@
 		android:id="@+id/bottomNavigation"
 		android:layout_width="0dp"
 		android:layout_height="64dp"
-		android:background="#1A000000"
+		android:background="@color/zerion_card_bg"
 		android:orientation="horizontal"
 		android:elevation="8dp"
 		app:layout_constraintBottom_toBottomOf="parent"
@@ -184,7 +184,7 @@
 			android:focusable="true"
 			android:gravity="center"
 			android:text="@string/groups_button"
-			android:textColor="#80FFFFFF"
+			android:textColor="@color/zerion_text_secondary"
 			android:textSize="14sp" />
 
 		<!-- Vault Tab -->
@@ -198,7 +198,7 @@
 			android:focusable="true"
 			android:gravity="center"
 			android:text="@string/vault_button"
-			android:textColor="#80FFFFFF"
+			android:textColor="@color/zerion_text_secondary"
 			android:textSize="14sp" />
 
 	</LinearLayout>

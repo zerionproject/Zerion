@@ -5,6 +5,7 @@ import org.briarproject.briar.autodelete.AutoDeleteModule;
 import org.briarproject.briar.avatar.AvatarModule;
 import org.briarproject.briar.client.BriarClientModule;
 import org.briarproject.briar.conversation.ConversationModule;
+import org.briarproject.briar.conversation.voice.VoiceCallModule;
 import org.briarproject.briar.identity.IdentityModule;
 import org.briarproject.briar.introduction.IntroductionModule;
 import org.briarproject.briar.messaging.MessagingModule;
@@ -27,7 +28,8 @@ import dagger.Module;
 		MessagingModule.class,
 		PrivateGroupModule.class,
 		SharingModule.class,
-		TestModule.class
+		TestModule.class,
+		VoiceCallModule.class
 })
 public class BriarCoreModule {
 }

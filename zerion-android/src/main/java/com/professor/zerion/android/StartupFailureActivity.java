@@ -44,9 +44,6 @@ public class StartupFailureActivity extends BaseActivity implements
 			case CLOCK_ERROR:
 				errorRes = R.string.startup_failed_clock_error;
 				break;
-			case DATABASE_CORRUPT:
-				errorRes = R.string.startup_failed_database_corrupt;
-				break;
 			case DATA_TOO_OLD_ERROR:
 				errorRes = R.string.startup_failed_data_too_old_error;
 				break;

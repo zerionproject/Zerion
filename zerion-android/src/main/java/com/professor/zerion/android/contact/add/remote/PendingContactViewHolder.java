@@ -64,8 +64,8 @@ class PendingContactViewHolder extends ViewHolder {
 		// Default colors
 		int cyanColor = ContextCompat.getColor(status.getContext(), R.color.zerion_cyan);
 		int secondaryColor = ContextCompat.getColor(status.getContext(), R.color.zerion_text_secondary);
-		int errorColor = ContextCompat.getColor(status.getContext(), R.color.briar_red_500);
-		int successColor = ContextCompat.getColor(status.getContext(), R.color.briar_lime_600);
+		int errorColor = ContextCompat.getColor(status.getContext(), R.color.zerion_error_red);
+		int successColor = ContextCompat.getColor(status.getContext(), R.color.zerion_success_green);
 
 		// Default state
 		boolean showSpinner = false;

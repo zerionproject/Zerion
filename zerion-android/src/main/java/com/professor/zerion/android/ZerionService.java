@@ -166,8 +166,8 @@ public class ZerionService extends Service {
 
 	@Override
 	protected void attachBaseContext(Context base) {
-		super.attachBaseContext(Localizer.getInstance().setLocale(base));
-		Localizer.getInstance().setLocale(this);
+		// PERFORMANCE: Use applyLocaleToContext() - NO disk I/O
+		super.attachBaseContext(Localizer.getInstance().applyLocaleToContext(base));
 	}
 
 	private void showStartupFailure(StartResult result) {

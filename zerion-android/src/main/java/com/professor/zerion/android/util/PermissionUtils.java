@@ -65,7 +65,7 @@ public class PermissionUtils {
 	public static void showDenialDialog(FragmentActivity ctx,
 			@StringRes int title, @StringRes int body, Runnable onDenied) {
 		MaterialAlertDialogBuilder builder =
-				new MaterialAlertDialogBuilder(ctx, R.style.BriarDialogTheme);
+				new MaterialAlertDialogBuilder(ctx, R.style.ZerionDialogTheme);
 		builder.setTitle(title);
 		builder.setMessage(body);
 		builder.setPositiveButton(R.string.ok, getGoToSettingsListener(ctx));
@@ -77,7 +77,7 @@ public class PermissionUtils {
 	public static void showRationale(FragmentActivity ctx, @StringRes int title,
 			@StringRes int body, @Nullable Runnable onOk) {
 		MaterialAlertDialogBuilder builder =
-				new MaterialAlertDialogBuilder(ctx, R.style.BriarDialogTheme);
+				new MaterialAlertDialogBuilder(ctx, R.style.ZerionDialogTheme);
 		builder.setTitle(title);
 		builder.setMessage(body);
 		builder.setNeutralButton(R.string.continue_button, (dialog, which) -> {

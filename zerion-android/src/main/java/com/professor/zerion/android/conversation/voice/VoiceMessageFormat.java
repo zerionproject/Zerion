@@ -16,8 +16,13 @@ public class VoiceMessageFormat {
 	private static final String VOICE_SUFFIX = "]";
 	private static final Pattern VOICE_PATTERN =
 		Pattern.compile("\\[VOICE:(\\d+):([A-Za-z0-9+/=]+)\\]");
-	private static final int MAX_BINARY_PAYLOAD_SIZE = 300_000;
-	private static final int MAX_BASE64_TEXT_SIZE = 400_000;
+	// Briar message limit: MAX_MESSAGE_BODY_LENGTH (32KB) - 2048 = 30,720 bytes
+	// We need to stay within this limit for the entire text message
+	// Reserve 30 bytes for "[VOICE:duration:" prefix and "]" suffix
+	// So max base64 text: ~30,690 bytes
+	// Base64 decode ratio: 3/4, so max binary: ~23,000 bytes
+	private static final int MAX_BINARY_PAYLOAD_SIZE = 22_500;
+	private static final int MAX_BASE64_TEXT_SIZE = 30_700;
 	private static final int BASE64_OVERHEAD_FACTOR = 4;
 
 	public static class ParsedVoiceMessage {

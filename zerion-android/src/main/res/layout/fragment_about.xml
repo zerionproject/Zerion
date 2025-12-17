@@ -6,7 +6,7 @@
 	android:padding="16dp">
 
 	<TextView
-		android:id="@+id/BriarVersion"
+		android:id="@+id/zerion_version"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
 		android:text="@string/zerion_version"
@@ -21,7 +21,7 @@
 		android:text="@string/tor_version"
 		android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
 		app:layout_constraintStart_toStartOf="parent"
-		app:layout_constraintTop_toBottomOf="@+id/BriarVersion" />
+		app:layout_constraintTop_toBottomOf="@+id/zerion_version" />
 
 	<TextView
 		android:id="@+id/LinksTitle"
@@ -34,7 +34,7 @@
 		app:layout_constraintTop_toBottomOf="@+id/TorVersion" />
 
 	<TextView
-		android:id="@+id/BriarWebsite"
+		android:id="@+id/zerion_website"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
 		android:text="@string/zerion_website"
@@ -43,31 +43,22 @@
 		app:layout_constraintTop_toBottomOf="@+id/LinksTitle" />
 
 	<TextView
-		android:id="@+id/BriarSourceCode"
+		android:id="@+id/zerion_source_code"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
 		android:text="@string/zerion_source_code"
 		android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
 		app:layout_constraintStart_toStartOf="parent"
-		app:layout_constraintTop_toBottomOf="@+id/BriarWebsite" />
+		app:layout_constraintTop_toBottomOf="@+id/zerion_website" />
 
 	<TextView
-		android:id="@+id/BriarChangelog"
-		android:layout_width="match_parent"
-		android:layout_height="wrap_content"
-		android:text="@string/zerion_changelog"
-		android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
-		app:layout_constraintStart_toStartOf="parent"
-		app:layout_constraintTop_toBottomOf="@+id/BriarSourceCode" />
-
-	<TextView
-		android:id="@+id/BriarPrivacyPolicy"
+		android:id="@+id/zerion_privacy_policy"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
 		android:text="@string/zerion_privacy_policy"
 		android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
 		app:layout_constraintStart_toStartOf="parent"
-		app:layout_constraintTop_toBottomOf="@+id/BriarChangelog" />
+		app:layout_constraintTop_toBottomOf="@+id/zerion_source_code" />
 
 	<TextView
 		android:id="@+id/TranslatorThanks"
@@ -77,6 +68,6 @@
 		android:text="@string/translator_thanks"
 		android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
 		app:layout_constraintStart_toStartOf="parent"
-		app:layout_constraintTop_toBottomOf="@+id/BriarPrivacyPolicy" />
+		app:layout_constraintTop_toBottomOf="@+id/zerion_privacy_policy" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

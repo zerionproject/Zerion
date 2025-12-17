@@ -12,10 +12,10 @@
 		android:bottom="1px"/>
 
 	<solid
-		android:color="@color/briar_accent"/>
+		android:color="@color/zerion_accent"/>
 
 	<stroke
-		android:color="@color/briar_text_primary_inverse"
+		android:color="@color/zerion_text_primary_inverse"
 	    android:width="@dimen/avatar_border_width"/>
 
 </shape>

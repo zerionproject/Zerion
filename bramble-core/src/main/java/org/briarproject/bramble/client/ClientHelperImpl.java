@@ -23,12 +23,6 @@ import org.briarproject.bramble.api.db.Metadata;
 import org.briarproject.bramble.api.db.Transaction;
 import org.briarproject.bramble.api.identity.Author;
 import org.briarproject.bramble.api.identity.AuthorFactory;
-import org.briarproject.bramble.api.mailbox.MailboxAuthToken;
-import org.briarproject.bramble.api.mailbox.MailboxFolderId;
-import org.briarproject.bramble.api.mailbox.MailboxProperties;
-import org.briarproject.bramble.api.mailbox.MailboxUpdate;
-import org.briarproject.bramble.api.mailbox.MailboxUpdateWithMailbox;
-import org.briarproject.bramble.api.mailbox.MailboxVersion;
 import org.briarproject.bramble.api.plugin.TransportId;
 import org.briarproject.bramble.api.properties.TransportProperties;
 import org.briarproject.bramble.api.sync.GroupId;
@@ -57,12 +51,6 @@ import static org.briarproject.bramble.api.client.ContactGroupConstants.GROUP_KE
 import static org.briarproject.bramble.api.identity.Author.FORMAT_VERSION;
 import static org.briarproject.bramble.api.identity.AuthorConstants.MAX_AUTHOR_NAME_LENGTH;
 import static org.briarproject.bramble.api.identity.AuthorConstants.MAX_PUBLIC_KEY_LENGTH;
-import static org.briarproject.bramble.api.mailbox.MailboxUpdateManager.PROP_COUNT;
-import static org.briarproject.bramble.api.mailbox.MailboxUpdateManager.PROP_KEY_AUTHTOKEN;
-import static org.briarproject.bramble.api.mailbox.MailboxUpdateManager.PROP_KEY_INBOXID;
-import static org.briarproject.bramble.api.mailbox.MailboxUpdateManager.PROP_KEY_ONION;
-import static org.briarproject.bramble.api.mailbox.MailboxUpdateManager.PROP_KEY_OUTBOXID;
-import static org.briarproject.bramble.api.mailbox.MailboxUpdateManager.PROP_ONION_LENGTH;
 import static org.briarproject.bramble.api.properties.TransportPropertyConstants.MAX_PROPERTIES_PER_TRANSPORT;
 import static org.briarproject.bramble.api.properties.TransportPropertyConstants.MAX_PROPERTY_LENGTH;
 import static org.briarproject.bramble.util.ValidationUtils.checkLength;
@@ -431,69 +419,6 @@ class ClientHelperImpl implements ClientHelper {
 			tpMap.put(transportId, transportProperties);
 		}
 		return tpMap;
-	}
-
-	@Override
-	public MailboxUpdate parseAndValidateMailboxUpdate(BdfList clientSupports,
-			BdfList serverSupports, BdfDictionary properties)
-			throws FormatException {
-		List<MailboxVersion> clientSupportsList =
-				parseMailboxVersionList(clientSupports);
-		List<MailboxVersion> serverSupportsList =
-				parseMailboxVersionList(serverSupports);
-
-		// We must always learn what Mailbox API version(s) the client supports
-		if (clientSupports.isEmpty()) {
-			throw new FormatException();
-		}
-		if (properties.isEmpty()) {
-			// No mailbox -- cannot claim to support any API versions!
-			if (!serverSupports.isEmpty()) {
-				throw new FormatException();
-			}
-			return new MailboxUpdate(clientSupportsList);
-		}
-		// Mailbox must be accompanied by the Mailbox API version(s) it supports
-		if (serverSupports.isEmpty()) {
-			throw new FormatException();
-		}
-		// Accepting more props than we need, for forward compatibility
-		if (properties.size() < PROP_COUNT) {
-			throw new FormatException();
-		}
-		String onion = properties.getString(PROP_KEY_ONION);
-		checkLength(onion, PROP_ONION_LENGTH);
-		try {
-			Base32.decode(onion, true);
-		} catch (IllegalArgumentException e) {
-			throw new FormatException();
-		}
-		byte[] authToken = properties.getRaw(PROP_KEY_AUTHTOKEN);
-		checkLength(authToken, UniqueId.LENGTH);
-		byte[] inboxId = properties.getRaw(PROP_KEY_INBOXID);
-		checkLength(inboxId, UniqueId.LENGTH);
-		byte[] outboxId = properties.getRaw(PROP_KEY_OUTBOXID);
-		checkLength(outboxId, UniqueId.LENGTH);
-		MailboxProperties props = new MailboxProperties(onion,
-				new MailboxAuthToken(authToken), serverSupportsList,
-				new MailboxFolderId(inboxId), new MailboxFolderId(outboxId));
-		return new MailboxUpdateWithMailbox(clientSupportsList, props);
-	}
-
-	@Override
-	public List<MailboxVersion> parseMailboxVersionList(BdfList bdfList)
-			throws FormatException {
-		List<MailboxVersion> list = new ArrayList<>();
-		for (int i = 0; i < bdfList.size(); i++) {
-			BdfList element = bdfList.getList(i);
-			if (element.size() != 2) {
-				throw new FormatException();
-			}
-			list.add(new MailboxVersion(element.getInt(0), element.getInt(1)));
-		}
-		// Sort the list of versions for easier comparison
-		sort(list);
-		return list;
 	}
 
 	@Override

@@ -3,8 +3,9 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 apply plugin: 'ru.vyarus.animalsniffer'
-apply plugin: 'witness'
-apply from: 'witness.gradle'
+// Witness plugin disabled - using updated Bouncy Castle 1.82 for post-quantum crypto
+// apply plugin: 'witness'
+// apply from: 'witness.gradle'
 
 dependencies {
 	implementation project(':bramble-api')

@@ -32,6 +32,13 @@ interface HandshakeConstants {
 			"org.briarproject.bramble.handshake/MASTER_KEY_0_1";
 
 	/**
+	 * Label for deriving the master key when using hybrid PQ key agreement.
+	 * Used for Zerion-to-Zerion post-quantum secure handshakes.
+	 */
+	String MASTER_KEY_LABEL_HYBRID =
+			"org.briarproject.bramble.handshake/HYBRID_MASTER_KEY_V1";
+
+	/**
 	 * Label for deriving Alice's proof of ownership from the master key.
 	 */
 	String ALICE_PROOF_LABEL = "org.briarproject.bramble.handshake/ALICE_PROOF";

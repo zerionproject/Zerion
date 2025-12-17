@@ -16,18 +16,11 @@ import javax.inject.Inject;
 
 import static org.briarproject.briar.messaging.MessageTypes.VOICE_SIGNAL;
 
-/**
- * Implementation of VoiceSignalFactory.
- * Creates voice call signaling messages with BDF serialization format:
- * [VOICE_SIGNAL, signalType, callId, payload, durationMs]
- */
 @Immutable
 @NotNullByDefault
 class VoiceSignalFactoryImpl implements VoiceSignalFactory {
 
-	// Maximum call ID length (UUID format)
 	private static final int MAX_CALL_ID_LENGTH = 64;
-	// Maximum payload size (SDP/ICE data)
 	private static final int MAX_PAYLOAD_LENGTH = 16384;
 
 	private final ClientHelper clientHelper;

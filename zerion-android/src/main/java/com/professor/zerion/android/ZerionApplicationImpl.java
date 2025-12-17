@@ -42,9 +42,10 @@ public class ZerionApplicationImpl extends Application
 		if (prefs == null)
 			prefs = EarlyPrefs.get(base);
 		Localizer.initialize(prefs);
+		// PERFORMANCE: Use applyLocaleToContext() - NO disk I/O
+		// Do NOT call setLocale() here as it can trigger LocaleManager writes
 		super.attachBaseContext(
-				Localizer.getInstance().setLocale(base));
-		Localizer.getInstance().setLocale(this);
+				Localizer.getInstance().applyLocaleToContext(base));
 		setTheme(base, prefs);
 	}
 
@@ -100,7 +101,8 @@ public class ZerionApplicationImpl extends Application
 	@Override
 	public void onConfigurationChanged(@NonNull Configuration newConfig) {
 		super.onConfigurationChanged(newConfig);
-		Localizer.getInstance().setLocale(this);
+		// Apply locale in-memory only - no disk I/O needed here
+		Localizer.getInstance().applyLocaleToContext(this);
 	}
 
 	private void setTheme(Context ctx, SharedPreferences prefs) {

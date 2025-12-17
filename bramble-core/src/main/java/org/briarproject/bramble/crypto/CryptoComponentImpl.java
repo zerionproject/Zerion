@@ -13,6 +13,10 @@ import org.briarproject.bramble.api.crypto.AgreementPrivateKey;
 import org.briarproject.bramble.api.crypto.AgreementPublicKey;
 import org.briarproject.bramble.api.crypto.CryptoComponent;
 import org.briarproject.bramble.api.crypto.DecryptionException;
+import org.briarproject.bramble.api.crypto.HybridAgreementPublicKey;
+import org.briarproject.bramble.api.crypto.HybridEncapsulationResult;
+import org.briarproject.bramble.api.crypto.HybridSignaturePrivateKey;
+import org.briarproject.bramble.api.crypto.HybridSignaturePublicKey;
 import org.briarproject.bramble.api.crypto.KeyPair;
 import org.briarproject.bramble.api.crypto.KeyParser;
 import org.briarproject.bramble.api.crypto.KeyStrengthener;
@@ -41,13 +45,14 @@ import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 import static java.lang.System.arraycopy;
-import static java.util.logging.Level.INFO;
 import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.api.crypto.CryptoConstants.KEY_TYPE_AGREEMENT;
 import static org.briarproject.bramble.api.crypto.CryptoConstants.KEY_TYPE_SIGNATURE;
 import static org.briarproject.bramble.api.crypto.DecryptionResult.INVALID_CIPHERTEXT;
 import static org.briarproject.bramble.api.crypto.DecryptionResult.INVALID_PASSWORD;
 import static org.briarproject.bramble.api.crypto.DecryptionResult.KEY_STRENGTHENER_ERROR;
+import static org.briarproject.bramble.api.crypto.PostQuantumConstants.KEY_TYPE_HYBRID_AGREEMENT;
+import static org.briarproject.bramble.api.crypto.PostQuantumConstants.KEY_TYPE_HYBRID_SIGNATURE;
 import static org.briarproject.bramble.util.ByteUtils.INT_32_BYTES;
 import static org.briarproject.bramble.util.LogUtils.logDuration;
 import static org.briarproject.bramble.util.LogUtils.now;
@@ -74,26 +79,18 @@ class CryptoComponentImpl implements CryptoComponent {
 	private final KeyParser agreementKeyParser, signatureKeyParser;
 	private final MessageEncrypter messageEncrypter;
 
+	// Hybrid post-quantum cryptography components
+	private final HybridKeyAgreement hybridKeyAgreement;
+	private final HybridSignature hybridSignature;
+	private final KeyParser hybridAgreementKeyParser;
+	private final KeyParser hybridSignatureKeyParser;
+
 	@Inject
 	CryptoComponentImpl(SecureRandomProvider secureRandomProvider,
 			PasswordBasedKdf passwordBasedKdf) {
-		if (LOG.isLoggable(INFO)) {
-			SecureRandom defaultSecureRandom = new SecureRandom();
-			String name = defaultSecureRandom.getProvider().getName();
-			String algorithm = defaultSecureRandom.getAlgorithm();
-			LOG.info("Default SecureRandom: " + name + " " + algorithm);
-		}
 		Provider provider = secureRandomProvider.getProvider();
-		if (provider == null) {
-			LOG.info("Using default");
-		} else {
+		if (provider != null) {
 			installSecureRandomProvider(provider);
-			if (LOG.isLoggable(INFO)) {
-				SecureRandom installedSecureRandom = new SecureRandom();
-				String name = installedSecureRandom.getProvider().getName();
-				String algorithm = installedSecureRandom.getAlgorithm();
-				LOG.info("Installed SecureRandom: " + name + " " + algorithm);
-			}
 		}
 		secureRandom = new SecureRandom();
 		this.passwordBasedKdf = passwordBasedKdf;
@@ -104,6 +101,13 @@ class CryptoComponentImpl implements CryptoComponent {
 		agreementKeyParser = new AgreementKeyParser();
 		signatureKeyParser = new SignatureKeyParser();
 		messageEncrypter = new MessageEncrypter(secureRandom);
+
+		hybridKeyAgreement = new HybridKeyAgreement(secureRandom);
+		hybridSignature = new HybridSignature(secureRandom);
+		MlKem768 mlKem768 = new MlKem768(secureRandom);
+		MlDsa65 mlDsa65 = new MlDsa65(secureRandom);
+		hybridAgreementKeyParser = new HybridAgreementKeyParser(mlKem768);
+		hybridSignatureKeyParser = new HybridSignatureKeyParser(mlDsa65);
 	}
 
 	// Based on https://android-developers.googleblog.com/2013/08/some-securerandom-thoughts.html
@@ -502,6 +506,137 @@ class CryptoComponentImpl implements CryptoComponent {
 		arraycopy(checksum, 0, address, publicKey.length, ONION_CHECKSUM_BYTES);
 		address[address.length - 1] = ONION_HS_PROTOCOL_VERSION;
 		return Base32.encode(address).toLowerCase(Locale.US);
+	}
+
+	// ==================== Hybrid Post-Quantum Methods ====================
+
+	@Override
+	public KeyPair generateHybridAgreementKeyPair() {
+		long start = now();
+		KeyPair keyPair = hybridKeyAgreement.generateKeyPair();
+		logDuration(LOG, "Generating hybrid agreement key pair", start);
+		return keyPair;
+	}
+
+	@Override
+	public KeyParser getHybridAgreementKeyParser() {
+		return hybridAgreementKeyParser;
+	}
+
+	@Override
+	public KeyPair generateHybridSignatureKeyPair() {
+		long start = now();
+		KeyPair keyPair = hybridSignature.generateKeyPair();
+		logDuration(LOG, "Generating hybrid signature key pair", start);
+		return keyPair;
+	}
+
+	@Override
+	public KeyParser getHybridSignatureKeyParser() {
+		return hybridSignatureKeyParser;
+	}
+
+	@Override
+	public byte[] hybridSign(String label, byte[] toSign, PrivateKey privateKey)
+			throws GeneralSecurityException {
+		if (!privateKey.getKeyType().equals(KEY_TYPE_HYBRID_SIGNATURE)) {
+			throw new IllegalArgumentException(
+					"Expected hybrid signature key, got: " + privateKey.getKeyType());
+		}
+		long start = now();
+		// Prepend label to message for domain separation
+		byte[] labeledMessage = createLabeledMessage(label, toSign);
+		byte[] signature = hybridSignature.sign(labeledMessage,
+				(HybridSignaturePrivateKey) privateKey);
+		logDuration(LOG, "Hybrid signing", start);
+		return signature;
+	}
+
+	@Override
+	public boolean verifyHybridSignature(byte[] signature, String label,
+			byte[] signed, PublicKey publicKey) throws GeneralSecurityException {
+		if (!publicKey.getKeyType().equals(KEY_TYPE_HYBRID_SIGNATURE)) {
+			throw new IllegalArgumentException(
+					"Expected hybrid signature key, got: " + publicKey.getKeyType());
+		}
+		long start = now();
+		// Recreate labeled message for verification
+		byte[] labeledMessage = createLabeledMessage(label, signed);
+		boolean valid = hybridSignature.verify(signature, labeledMessage,
+				(HybridSignaturePublicKey) publicKey);
+		logDuration(LOG, "Hybrid signature verification", start);
+		return valid;
+	}
+
+	@Override
+	public HybridEncapsulationResult hybridEncapsulate(PublicKey theirPublicKey)
+			throws GeneralSecurityException {
+		if (!theirPublicKey.getKeyType().equals(KEY_TYPE_HYBRID_AGREEMENT)) {
+			throw new IllegalArgumentException(
+					"Expected hybrid agreement key, got: " + theirPublicKey.getKeyType());
+		}
+		long start = now();
+		HybridKeyAgreement.HybridEncapsulation enc = hybridKeyAgreement.encapsulate(
+				(HybridAgreementPublicKey) theirPublicKey);
+		logDuration(LOG, "Hybrid KEM encapsulation", start);
+		return new HybridEncapsulationResult(enc.getCiphertext(), enc.getSharedSecret());
+	}
+
+	@Override
+	public SecretKey deriveHybridSharedSecret(String label,
+			PublicKey theirPublicKey, KeyPair ourKeyPair, byte[] kemCiphertext,
+			byte[]... inputs) throws GeneralSecurityException {
+		if (!theirPublicKey.getKeyType().equals(KEY_TYPE_HYBRID_AGREEMENT)) {
+			throw new IllegalArgumentException(
+					"Expected hybrid agreement public key, got: " + theirPublicKey.getKeyType());
+		}
+		if (!ourKeyPair.getPublic().getKeyType().equals(KEY_TYPE_HYBRID_AGREEMENT)) {
+			throw new IllegalArgumentException(
+					"Expected hybrid agreement key pair");
+		}
+		long start = now();
+		SecretKey secret = hybridKeyAgreement.deriveSharedSecret(label,
+				(HybridAgreementPublicKey) theirPublicKey,
+				ourKeyPair, kemCiphertext, inputs);
+		logDuration(LOG, "Hybrid shared secret derivation (initiator)", start);
+		return secret;
+	}
+
+	@Override
+	public SecretKey deriveHybridSharedSecretAsResponder(String label,
+			PublicKey theirPublicKey, KeyPair ourKeyPair, byte[] kemSecret,
+			byte[]... inputs) throws GeneralSecurityException {
+		if (!theirPublicKey.getKeyType().equals(KEY_TYPE_HYBRID_AGREEMENT)) {
+			throw new IllegalArgumentException(
+					"Expected hybrid agreement public key, got: " + theirPublicKey.getKeyType());
+		}
+		if (!ourKeyPair.getPublic().getKeyType().equals(KEY_TYPE_HYBRID_AGREEMENT)) {
+			throw new IllegalArgumentException(
+					"Expected hybrid agreement key pair");
+		}
+		long start = now();
+		SecretKey secret = hybridKeyAgreement.deriveSharedSecretAsResponder(label,
+				(HybridAgreementPublicKey) theirPublicKey,
+				ourKeyPair, kemSecret, inputs);
+		logDuration(LOG, "Hybrid shared secret derivation (responder)", start);
+		return secret;
+	}
+
+	/**
+	 * Creates a labeled message for signature domain separation.
+	 */
+	private byte[] createLabeledMessage(String label, byte[] message) {
+		byte[] labelBytes = StringUtils.toUtf8(label);
+		byte[] result = new byte[INT_32_BYTES + labelBytes.length + INT_32_BYTES + message.length];
+		int offset = 0;
+		ByteUtils.writeUint32(labelBytes.length, result, offset);
+		offset += INT_32_BYTES;
+		arraycopy(labelBytes, 0, result, offset, labelBytes.length);
+		offset += labelBytes.length;
+		ByteUtils.writeUint32(message.length, result, offset);
+		offset += INT_32_BYTES;
+		arraycopy(message, 0, result, offset, message.length);
+		return result;
 	}
 
 }

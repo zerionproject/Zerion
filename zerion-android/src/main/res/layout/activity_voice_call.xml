@@ -103,7 +103,7 @@
             android:layout_width="20dp"
             android:layout_height="20dp"
             android:src="@drawable/ic_signal_3"
-            app:tint="@color/briar_lime_500" />
+            app:tint="@color/zerion_lime_500" />
 
         <TextView
             android:id="@+id/latency_badge"
@@ -112,7 +112,7 @@
             android:layout_marginStart="8dp"
             android:text="120ms"
             android:textSize="12sp"
-            android:textColor="@color/briar_lime_500" />
+            android:textColor="@color/zerion_lime_500" />
 
         <TextView
             android:id="@+id/packet_loss_badge"
@@ -121,7 +121,7 @@
             android:layout_marginStart="8dp"
             android:text="Loss: 2%"
             android:textSize="12sp"
-            android:textColor="@color/briar_orange_500"
+            android:textColor="@color/zerion_orange_500"
             android:visibility="gone" />
 
         <TextView

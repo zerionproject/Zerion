@@ -240,6 +240,14 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 	public ContactId addContact(Transaction transaction, Author remote,
 			AuthorId local, @Nullable PublicKey handshake, boolean verified)
 			throws DbException {
+		// Default to classical (non-PQ) for backward compatibility
+		return addContact(transaction, remote, local, handshake, verified, false);
+	}
+
+	@Override
+	public ContactId addContact(Transaction transaction, Author remote,
+			AuthorId local, @Nullable PublicKey handshake, boolean verified,
+			boolean postQuantum) throws DbException {
 		if (transaction.isReadOnly()) throw new IllegalArgumentException();
 		T txn = unbox(transaction);
 		if (!db.containsIdentity(txn, local))
@@ -248,7 +256,8 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 			throw new ContactExistsException(local, remote);
 		if (db.containsContact(txn, remote.getId(), local))
 			throw new ContactExistsException(local, remote);
-		ContactId c = db.addContact(txn, remote, local, handshake, verified);
+		ContactId c = db.addContact(txn, remote, local, handshake, verified,
+				postQuantum);
 		transaction.attach(new ContactAddedEvent(c, verified));
 		return c;
 	}
@@ -1257,6 +1266,17 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		if (!db.containsIdentity(txn, local))
 			throw new NoSuchIdentityException();
 		db.setHandshakeKeyPair(txn, local, publicKey, privateKey);
+	}
+
+	@Override
+	public void setHybridHandshakeKeyPair(Transaction transaction,
+			AuthorId local, PublicKey publicKey, PrivateKey privateKey)
+			throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		T txn = unbox(transaction);
+		if (!db.containsIdentity(txn, local))
+			throw new NoSuchIdentityException();
+		db.setHybridHandshakeKeyPair(txn, local, publicKey, privateKey);
 	}
 
 	@Override

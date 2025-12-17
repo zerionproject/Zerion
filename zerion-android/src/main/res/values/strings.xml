@@ -10,8 +10,10 @@
 	<string name="setup_next">Next</string>
 	<string name="setup_password_intro">Choose a Password</string>
 	<string name="setup_password_explanation">Your Zerion account is stored encrypted on your device, not in the cloud. If you forget your password or uninstall Zerion, there\'s no way to recover your account.\n\nChoose a long password that\'s hard to guess, such as four random words, or ten random letters, numbers and symbols.</string>
+	<string name="dnkm_doze_title">Background Connections</string>
 	<string name="dnkm_doze_intro">To receive messages, Zerion needs to stay connected in the background.</string>
 	<string name="dnkm_doze_explanation">To receive messages, Zerion needs to stay connected in the background. Please disable battery optimizations so Zerion can stay connected.</string>
+	<string name="dnkm_doze_button">Allow Connections</string>
 	<string name="choose_nickname">Choose your nickname</string>
 	<string name="choose_password">Choose your password</string>
 	<string name="confirm_password">Confirm your password</string>
@@ -39,7 +41,12 @@
 	<string name="dnkm_xiaomi_dialog_body_old">1. Open the recent apps list (also called the app switcher)\n\n2. Swipe down on the image of Zerion to show the padlock icon\n\n3. If the padlock is not locked, tap to lock it</string>
 	<string name="dnkm_xiaomi_dialog_body_new">1. Open the recent apps list (also called the app switcher)\n\n2. If Zerion has a small image of a padlock next to its name then you don\'t need to do anything\n\n3. If there\'s no padlock, press and hold the image of Zerion until the padlock button appears, then tap it</string>
 	<string name="dnkm_xiaomi_lock_apps_text">Please tap the button below to open the security settings. Tap \"Boost speed\", then tap \"Lock apps\", and make sure Zerion is set to \"Locked\".</string>
+	<string name="dnkm_xiaomi_lock_apps_button">Open Security Settings</string>
 	<string name="dnkm_xiaomi_lock_apps_help">If Zerion is not set to \"Locked\" in the \"Lock apps\" screen, it will be unable to run in the background.</string>
+	<string name="dnkm_xiaomi_lock_apps_error_toast">Could not open security settings</string>
+	<string name="dnkm_huawei_protected_error_toast">Could not open protected apps settings</string>
+	<string name="dnkm_huawei_app_launch_button">Open App Launch Settings</string>
+	<string name="dnkm_huawei_app_launch_error_toast">Could not open app launch settings</string>
 	<string name="dnkm_warning_dozed_1">Zerion was unable to run in the background</string>
 
 	<!-- Login -->
@@ -118,10 +125,21 @@
 	<string name="connected">Connected</string>
 	<string name="disabled">Disabled</string>
 	<string name="active">Active</string>
-	<string name="generating">Generating...</string>
+	<string name="generating">Generating…</string>
 	<string name="not_available">Not available</string>
-t<string name="tor_hidden_services_active">Secure connection via Tor hidden services</string>
-	<string name="tor_hidden_services_connecting">Connecting to Tor hidden services...</string>
+	<string name="tor_hidden_services_active">Secure connection via Tor hidden services</string>
+	<string name="tor_hidden_services_connecting">Connecting to Tor hidden services…</string>
+
+	<!-- Network Status Labels -->
+	<string name="network_status_label">Status:</string>
+	<string name="network_uptime_label">Uptime:</string>
+	<string name="network_hidden_service_label">Hidden Service:</string>
+	<string name="network_bandwidth_title">Real-Time Bandwidth</string>
+	<string name="network_session_stats">Session Statistics</string>
+	<string name="network_total_download">Total Download</string>
+	<string name="network_total_upload">Total Upload</string>
+	<string name="network_mode_title">Secure Network Mode</string>
+	<string name="network_mode_description">All communication is routed through the Tor network for maximum privacy and security. Your connection is encrypted end-to-end and your identity remains anonymous.</string>
 
 	<!-- Notifications -->
 	<string name="reminder_notification_title">Signed out of Zerion</string>
@@ -157,9 +175,11 @@ t<string name="tor_hidden_services_active">Secure connection via Tor hidden serv
 	<string name="voice_message_cancelled">Recording cancelled</string>
 	<string name="slide_to_cancel">← Slide to cancel</string>
 	<string name="voice_message_too_short">Voice message too short</string>
+	<string name="voice_message_too_long">Voice message too long. Keep it under 3 seconds.</string>
 	<string name="microphone_permission_required">Microphone permission is required for voice messages</string>
 	<string name="hold_to_record">Hold to record, release to send</string>
 	<string name="voice_message_loading">Loading…</string>
+	<string name="sending_voice_message">Sending…</string>
 
 	<!-- Vault -->
 	<string name="vault_note_title_hint">Note Title</string>
@@ -649,8 +669,17 @@ t<string name="tor_hidden_services_active">Secure connection via Tor hidden serv
 	<!-- How and when Zerion will connect to Tor: E.g. "Don't connect to the Internet (in China)" or "Use Tor network with bridges (in Belarus)" -->
 	<string name="tor_network_setting_summary">Automatic: %1$s (in %2$s)</string>
 	<string name="tor_mobile_data_title">Use mobile data</string>
-	<string name="tor_only_when_charging_title">Connect to the Internet only when charging</string>
-	<string name="tor_only_when_charging_summary">Disables Internet connection when device is running on battery</string>
+	<string name="tor_mobile_data_summary">Allow connections over cellular network</string>
+	<string name="tor_info_message">Zerion uses Tor network exclusively for secure, anonymous communication. All connections are routed through Tor.</string>
+
+	<!-- Orbot Proxy Settings -->
+	<string name="proxy_section_title">PROXY</string>
+	<string name="orbot_proxy_title">Use Orbot proxy</string>
+	<string name="orbot_proxy_summary">Route Tor traffic through Orbot app</string>
+	<string name="orbot_proxy_settings">Proxy settings</string>
+	<string name="orbot_host_label">Host address</string>
+	<string name="orbot_port_label">Port</string>
+	<string name="orbot_info_message">Orbot provides additional privacy by using its own Tor connection. Install Orbot from F-Droid or Google Play and start it before enabling this option.</string>
 
 	<!-- Settings Security and Panic -->
 	<string name="security_settings_title">Security</string>
@@ -716,6 +745,7 @@ t<string name="tor_hidden_services_active">Secure connection via Tor hidden serv
 	<string name="notify_sound_setting">Sound</string>
 	<string name="notify_sound_setting_default">Default ringtone</string>
 	<string name="notify_sound_setting_disabled">None</string>
+	<string name="notify_sound_setting_system">Tap to open system settings</string>
 	<string name="choose_ringtone_title">Choose ringtone</string>
 	<string name="cannot_load_ringtone">Cannot load ringtone</string>
 
@@ -803,8 +833,7 @@ t<string name="tor_hidden_services_active">Secure connection via Tor hidden serv
 	<string name="tor_version">Tor version: %s</string>
 	<string name="links">Links</string>
 	<string name="zerion_website">\u2022 <a href="https://zerion.chat">Website</a></string>
-	<string name="zerion_source_code">\u2022 <a href="https://github.com/ProfessorYega/zerion">Source code</a></string>
-	<string name="zerion_changelog">\u2022 <a href="https://github.com/ProfessorYega/zerion">Changelog</a></string>
+	<string name="zerion_source_code">\u2022 <a href="https://github.com/zerionproject">Source code</a></string>
 	<string name="zerion_privacy_policy">\u2022 <a href="https://zerion.chat/privacy-policy.html">Privacy Policy</a></string>
 	<!-- Here translators can add their names or Transifex usernames(eg "Thanks to all the contributors at the Localization Lab, especially Tom, Matthew and Jerry") -->
 	<string name="translator_thanks">Thanks to all the contributors at the Localization Lab</string>
@@ -1067,6 +1096,14 @@ t<string name="tor_hidden_services_active">Secure connection via Tor hidden serv
 	<string name="tor_status_disconnected">Disconnected from Tor network</string>
 	<string name="tor_status_connecting">Connecting to Tor network…</string>
 
+	<!-- Post-Quantum Security Level strings -->
+	<string name="security_level_post_quantum">Post-Quantum Security</string>
+	<string name="security_level_post_quantum_short">PQ</string>
+	<string name="security_level_classical">Classical Security</string>
+	<string name="security_level_classical_short">Classic</string>
+	<string name="security_level_post_quantum_description">This contact uses hybrid post-quantum cryptography (X25519 + ML-KEM-768), providing protection against future quantum computer attacks.</string>
+	<string name="security_level_classical_description">This contact uses classical cryptography, compatible with Briar. Upgrade both apps to Zerion for post-quantum security.</string>
+
 	<!-- Voice Call strings -->
 	<string name="voice_call">Voice call</string>
 
@@ -1107,5 +1144,17 @@ t<string name="tor_hidden_services_active">Secure connection via Tor hidden serv
 	<string name="mute">Mute</string>
 	<string name="speaker">Speaker</string>
 	<string name="end_call">End call</string>
+
+	<!-- Contact Type Selection -->
+	<string name="contact_type_selection_title">Choose Connection Type</string>
+	<string name="contact_type_selection_subtitle">Select how you want to connect with your contact</string>
+	<string name="contact_type_zerion_title">Zerion</string>
+	<string name="contact_type_zerion_badge">Post-Quantum Security</string>
+	<string name="contact_type_zerion_description">Connect with other Zerion users using hybrid post-quantum cryptography. Provides protection against future quantum computer attacks.</string>
+	<string name="contact_type_briar_title">Briar Compatible</string>
+	<string name="contact_type_briar_badge">Classical Security</string>
+	<string name="contact_type_briar_description">Connect with Briar users using classical cryptography. Use this option when adding contacts who use Briar instead of Zerion.</string>
+	<string name="recommended">Recommended</string>
+	<string name="contact_type_info">Choose Zerion for maximum security, or Briar Compatible to connect with Briar users.</string>
 
 </resources>

@@ -77,6 +77,28 @@ public interface KeyManager {
 			throws DbException, GeneralSecurityException;
 
 	/**
+	 * Informs the key manager that a new hybrid (post-quantum) pending contact
+	 * has been added. Stores a set of handshake mode transport keys derived
+	 * from the given rendezvous key for communicating with the pending contact
+	 * over each transport and returns the key set IDs.
+	 * <p/>
+	 * This method is used for hybrid pending contacts where the link only
+	 * contains a commitment hash, so key agreement cannot be performed
+	 * directly. Instead, the rendezvous key is derived from both parties'
+	 * commitments.
+	 * <p/>
+	 * {@link StreamContext StreamContexts} for the pending contact can be
+	 * created after this method has returned.
+	 *
+	 * @param rendezvousKey The key derived from both parties' commitments
+	 * @param alice True if the local party is Alice (determined by comparing
+	 *              commitments lexicographically)
+	 */
+	Map<TransportId, KeySetId> addHybridPendingContact(Transaction txn,
+			PendingContactId p, SecretKey rendezvousKey, boolean alice)
+			throws DbException;
+
+	/**
 	 * Marks the given transport keys as usable for outgoing streams.
 	 */
 	void activateKeys(Transaction txn, Map<TransportId, KeySetId> keys)

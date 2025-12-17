@@ -9,7 +9,7 @@
 
 	<de.hdodenhof.circleimageview.CircleImageView
 		android:id="@+id/avatarView"
-		style="@style/BriarAvatar"
+		style="@style/ZerionAvatar"
 		android:layout_width="@dimen/listitem_picture_size_small"
 		android:layout_height="@dimen/listitem_picture_size_small"
 		android:layout_gravity="center_vertical"

@@ -50,8 +50,6 @@ public interface AndroidNotificationManager {
     void updateForegroundNotification(boolean locked);
     void showHotspotNotification();
     void clearHotspotNotification();
-    void showMailboxProblemNotification();
-    void clearMailboxProblemNotification();
 
     void clearBlogPostNotification(GroupId g);
     void showBlogPostNotification(GroupId g);

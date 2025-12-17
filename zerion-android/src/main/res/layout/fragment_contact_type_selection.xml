@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="@drawable/bg_zerion_gradient"
+	android:orientation="vertical"
+	android:padding="@dimen/margin_large">
+
+	<TextView
+		android:id="@+id/title"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:layout_marginTop="@dimen/margin_large"
+		android:gravity="center"
+		android:text="@string/contact_type_selection_title"
+		android:textColor="@android:color/white"
+		android:textSize="24sp"
+		android:textStyle="bold" />
+
+	<TextView
+		android:id="@+id/subtitle"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:layout_marginTop="@dimen/margin_medium"
+		android:layout_marginBottom="@dimen/margin_xlarge"
+		android:gravity="center"
+		android:text="@string/contact_type_selection_subtitle"
+		android:textColor="#B0FFFFFF"
+		android:textSize="16sp" />
+
+	<!-- Zerion (PQ) Option -->
+	<androidx.cardview.widget.CardView
+		android:id="@+id/zerionCard"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:layout_marginBottom="@dimen/margin_large"
+		app:cardBackgroundColor="#1A3A4A"
+		app:cardCornerRadius="16dp"
+		app:cardElevation="4dp">
+
+		<LinearLayout
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:orientation="vertical"
+			android:padding="@dimen/margin_large">
+
+			<LinearLayout
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:orientation="horizontal"
+				android:gravity="center_vertical">
+
+				<ImageView
+					android:layout_width="48dp"
+					android:layout_height="48dp"
+					android:src="@drawable/ic_shield_lock"
+					app:tint="#26B7F0"
+					tools:ignore="ContentDescription" />
+
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:layout_marginStart="@dimen/margin_medium"
+					android:orientation="vertical">
+
+					<TextView
+						android:layout_width="wrap_content"
+						android:layout_height="wrap_content"
+						android:text="@string/contact_type_zerion_title"
+						android:textColor="@android:color/white"
+						android:textSize="18sp"
+						android:textStyle="bold" />
+
+					<TextView
+						android:layout_width="wrap_content"
+						android:layout_height="wrap_content"
+						android:layout_marginTop="4dp"
+						android:text="@string/contact_type_zerion_badge"
+						android:textColor="#26B7F0"
+						android:textSize="12sp"
+						android:textStyle="bold" />
+
+				</LinearLayout>
+
+				<TextView
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:background="@drawable/bg_recommended_badge"
+					android:paddingHorizontal="12dp"
+					android:paddingVertical="4dp"
+					android:text="@string/recommended"
+					android:textColor="@android:color/white"
+					android:textSize="11sp"
+					android:textStyle="bold" />
+
+			</LinearLayout>
+
+			<TextView
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:layout_marginTop="@dimen/margin_medium"
+				android:text="@string/contact_type_zerion_description"
+				android:textColor="#B0FFFFFF"
+				android:textSize="14sp" />
+
+		</LinearLayout>
+
+	</androidx.cardview.widget.CardView>
+
+	<!-- Briar (Classical) Option -->
+	<androidx.cardview.widget.CardView
+		android:id="@+id/briarCard"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		app:cardBackgroundColor="#1A3A4A"
+		app:cardCornerRadius="16dp"
+		app:cardElevation="4dp">
+
+		<LinearLayout
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:orientation="vertical"
+			android:padding="@dimen/margin_large">
+
+			<LinearLayout
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:orientation="horizontal"
+				android:gravity="center_vertical">
+
+				<ImageView
+					android:layout_width="48dp"
+					android:layout_height="48dp"
+					android:src="@drawable/ic_link"
+					app:tint="#80FFFFFF"
+					tools:ignore="ContentDescription" />
+
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:layout_marginStart="@dimen/margin_medium"
+					android:orientation="vertical">
+
+					<TextView
+						android:layout_width="wrap_content"
+						android:layout_height="wrap_content"
+						android:text="@string/contact_type_briar_title"
+						android:textColor="@android:color/white"
+						android:textSize="18sp"
+						android:textStyle="bold" />
+
+					<TextView
+						android:layout_width="wrap_content"
+						android:layout_height="wrap_content"
+						android:layout_marginTop="4dp"
+						android:text="@string/contact_type_briar_badge"
+						android:textColor="#80FFFFFF"
+						android:textSize="12sp" />
+
+				</LinearLayout>
+
+			</LinearLayout>
+
+			<TextView
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:layout_marginTop="@dimen/margin_medium"
+				android:text="@string/contact_type_briar_description"
+				android:textColor="#80FFFFFF"
+				android:textSize="14sp" />
+
+		</LinearLayout>
+
+	</androidx.cardview.widget.CardView>
+
+	<View
+		android:layout_width="match_parent"
+		android:layout_height="0dp"
+		android:layout_weight="1" />
+
+	<com.professor.zerion.android.view.InfoView
+		android:id="@+id/infoView"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:layout_marginBottom="@dimen/margin_medium"
+		app:cardBackgroundColor="#33FFFFFF"
+		app:cardElevation="0dp" />
+
+</LinearLayout>

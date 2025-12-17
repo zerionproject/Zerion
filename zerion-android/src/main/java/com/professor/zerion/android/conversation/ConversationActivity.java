@@ -30,20 +30,10 @@ import org.briarproject.bramble.api.Pair;
 import org.briarproject.bramble.api.connection.ConnectionRegistry;
 import org.briarproject.bramble.api.contact.ContactId;
 import org.briarproject.bramble.api.contact.ContactManager;
-import org.briarproject.bramble.api.contact.event.ContactRemovedEvent;
 import org.briarproject.bramble.api.db.DatabaseExecutor;
 import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.db.NoSuchContactException;
-import org.briarproject.bramble.api.event.Event;
-import org.briarproject.bramble.api.event.EventBus;
-import org.briarproject.bramble.api.event.EventListener;
-import org.briarproject.bramble.api.plugin.event.ContactConnectedEvent;
-import org.briarproject.bramble.api.plugin.event.ContactDisconnectedEvent;
-import org.briarproject.bramble.api.sync.ClientId;
+import org.briarproject.bramble.api.sync.GroupId;
 import org.briarproject.bramble.api.sync.MessageId;
-import org.briarproject.bramble.api.sync.event.MessagesAckedEvent;
-import org.briarproject.bramble.api.sync.event.MessagesSentEvent;
-import org.briarproject.bramble.api.versioning.event.ClientVersionUpdatedEvent;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
@@ -57,6 +47,7 @@ import com.professor.zerion.android.privategroup.conversation.GroupActivity;
 import com.professor.zerion.android.removabledrive.RemovableDriveActivity;
 import com.professor.zerion.android.util.ActivityLaunchers.GetMultipleImagesAdvanced;
 import com.professor.zerion.android.util.ActivityLaunchers.OpenMultipleImageDocumentsAdvanced;
+import com.professor.zerion.android.conversation.voice.VoiceRecordingController;
 import com.professor.zerion.android.util.ZerionSnackbarBuilder;
 import com.professor.zerion.android.view.ZerionRecyclerView;
 import com.professor.zerion.android.view.ImagePreview;
@@ -70,16 +61,12 @@ import com.professor.zerion.android.api.AndroidNotificationManager;
 import org.briarproject.bramble.api.db.DatabaseExecutor;
 import java.util.concurrent.Executor;
 import org.briarproject.briar.api.attachment.AttachmentHeader;
-import org.briarproject.briar.api.autodelete.event.ConversationMessagesDeletedEvent;
-import org.briarproject.briar.api.client.ProtocolStateException;
-import org.briarproject.briar.api.client.SessionId;
-import org.briarproject.briar.api.conversation.ConversationManager;
 import org.briarproject.briar.api.conversation.ConversationMessageHeader;
 import org.briarproject.briar.api.conversation.ConversationMessageVisitor;
 import org.briarproject.briar.api.conversation.ConversationRequest;
 import org.briarproject.briar.api.conversation.ConversationResponse;
-import org.briarproject.briar.api.conversation.DeletionResult;
 import org.briarproject.briar.api.conversation.event.ConversationMessageReceivedEvent;
+import org.briarproject.briar.api.client.SessionId;
 import org.briarproject.briar.api.introduction.IntroductionManager;
 import org.briarproject.briar.api.messaging.MessagingManager;
 import org.briarproject.briar.api.messaging.PrivateMessageHeader;
@@ -99,7 +86,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Inject;
 
 import androidx.activity.result.ActivityResultLauncher;
-import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 import androidx.appcompat.widget.ActionMenuView;
@@ -149,9 +135,10 @@ import static org.briarproject.briar.api.messaging.PrivateMessageFormat.TEXT_ONL
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
 public class ConversationActivity extends ZerionActivity
-		implements BaseFragmentListener, EventListener, ConversationListener,
+		implements BaseFragmentListener, ConversationListener,
 		TextCache, AttachmentCache, AttachmentListener, ActionMode.Callback,
-		AttachmentPickerDialog.AttachmentPickerListener {
+		AttachmentPickerDialog.AttachmentPickerListener,
+		VoiceRecordingController.VoiceRecordingHost {
 
 	public static final String CONTACT_ID = "zerion.CONTACT_ID";
 
@@ -170,22 +157,17 @@ public class ConversationActivity extends ZerionActivity
 	FeatureFlags featureFlags;
 
 	@Inject
-	volatile ContactManager contactManager;
-	@Inject
-	volatile MessagingManager messagingManager;
-	@Inject
-	volatile ConversationManager conversationManager;
-	@Inject
-	volatile EventBus eventBus;
-	@Inject
-	volatile IntroductionManager introductionManager;
-	@Inject
-	volatile GroupInvitationManager groupInvitationManager;
-	@Inject
 	@DatabaseExecutor
 	Executor dbExecutor;
 
+	@Inject
+	GroupInvitationManager groupInvitationManager;
+
+	@Inject
+	IntroductionManager introductionManager;
+
 	private final Map<MessageId, String> textCache = new ConcurrentHashMap<>();
+
 	private final Observer<String> contactNameObserver = name -> {
 		requireNonNull(name);
 		loadMessages();
@@ -253,8 +235,10 @@ public class ConversationActivity extends ZerionActivity
 		viewModel.setContactId(contactId);
 		attachmentRetriever = viewModel.getAttachmentRetriever();
 
-		voiceRecorder = new com.professor.zerion.android.conversation.voice.VoiceMessageRecorder(
-				this, dbExecutor);
+		// Initialize voice recording controller
+		voiceRecordingController = new VoiceRecordingController(this, dbExecutor);
+		voiceRecordingController.initRecorder(this);
+		getLifecycle().addObserver(voiceRecordingController);
 
 		setContentView(R.layout.activity_conversation);
 
@@ -292,12 +276,6 @@ public class ConversationActivity extends ZerionActivity
 				new ConversationScrollListener(adapter, viewModel);
 		list.getRecyclerView().addOnScrollListener(scrollListener);
 
-		SwipeToReplyCallback swipeCallback = new SwipeToReplyCallback(this,
-			this::onSwipeToReply);
-		ItemTouchHelper itemTouchHelper = new ItemTouchHelper(swipeCallback);
-		itemTouchHelper.attachToRecyclerView(list.getRecyclerView());
-
-
 		textInputView = findViewById(R.id.text_input_container);
 		if (featureFlags.shouldEnableImageAttachments()) {
 			ImagePreview imagePreview = findViewById(R.id.imagePreview);
@@ -331,21 +309,70 @@ public class ConversationActivity extends ZerionActivity
 			});
 		}
 
-		// Initialize voice recording overlay views
-		voiceRecordingOverlay = findViewById(R.id.voiceRecordingOverlay);
-		recordingTimer = findViewById(R.id.recording_time);
-		recordingPulse = findViewById(R.id.recording_pulse);
-		cancelRecordingButton = findViewById(R.id.cancel_recording_button);
-		sendVoiceButton = findViewById(R.id.send_voice_button);
-		if (cancelRecordingButton != null) {
-			cancelRecordingButton.setOnClickListener(v -> stopVoiceRecording());
-		}
-		if (sendVoiceButton != null) {
-			sendVoiceButton.setOnClickListener(v -> finishVoiceRecording());
-		}
+		// Bind voice recording UI views to controller
+		voiceRecordingController.bindViews(
+				findViewById(R.id.voiceRecordingOverlay),
+				findViewById(R.id.recording_time),
+				findViewById(R.id.recording_pulse),
+				findViewById(R.id.cancel_recording_button),
+				findViewById(R.id.send_voice_button),
+				textInputView);
 
 		viewModel.getAutoDeleteTimer().observe(this, timer ->
 				sendController.setAutoDeleteTimer(timer));
+
+		// Observe message headers from ViewModel
+		viewModel.getMessageHeaders().observe(this, this::onMessageHeadersLoaded);
+
+		// Observe message text loading
+		viewModel.getMessageTextLoaded().observeEvent(this, pair -> {
+			if (pair != null) {
+				displayMessageText(pair.getFirst(), pair.getSecond());
+			}
+		});
+
+		// Observe chat cleared event
+		viewModel.getChatCleared().observeEvent(this, cleared -> {
+			if (cleared != null && cleared) {
+				adapter.clear();
+			}
+		});
+
+		// Observe message deletion events
+		viewModel.getMessagesDeleted().observeEvent(this, messageIds -> {
+			if (messageIds != null) {
+				adapter.incrementRevision();
+				adapter.removeItems(messageIds);
+			}
+		});
+
+		// Observe message marking events (sent/seen)
+		viewModel.getMessagesMarked().observeEvent(this, event -> {
+			if (event != null) {
+				onMessagesMarked(event.messageIds, event.sent, event.seen);
+			}
+		});
+
+		// Observe connection status changes (moved from EventBus)
+		viewModel.isContactConnected().observe(this, connected -> {
+			if (connected != null) {
+				updateConnectionStatusUI(connected);
+			}
+		});
+
+		// Observe new messages received (moved from EventBus)
+		viewModel.getNewMessageReceived().observeEvent(this, header -> {
+			if (header != null) {
+				onNewConversationMessage(header);
+			}
+		});
+
+		// Observe client version updates (moved from EventBus)
+		viewModel.getClientVersionUpdated().observeEvent(this, clientId -> {
+			if (clientId != null && clientId.equals(MessagingManager.CLIENT_ID)) {
+				viewModel.recheckFeaturesAndOnboarding(contactId);
+			}
+		});
 	}
 
 	private void setupCameraAndAttachmentButtons() {
@@ -374,17 +401,9 @@ public class ConversationActivity extends ZerionActivity
 	private static final int REQUEST_RECORD_AUDIO = 1006;
 	private static final int REQUEST_VOICE_CALL = 1007;
 	private Uri photoUri;
-	private com.professor.zerion.android.conversation.voice.VoiceMessageRecorder voiceRecorder;
-	private boolean isRecording = false;
-	private android.animation.ValueAnimator pulseAnimator;
 
-	// Voice recording overlay views
-	private View voiceRecordingOverlay;
-	private TextView recordingTimer;
-	private View recordingPulse;
-	private androidx.appcompat.widget.AppCompatImageButton cancelRecordingButton;
-	private androidx.appcompat.widget.AppCompatImageButton sendVoiceButton;
-	private long recordingStartTime = 0;
+	// Voice recording controller (manages recording UI and state)
+	private VoiceRecordingController voiceRecordingController;
 
 	private void launchCamera() {
 		Intent takePictureIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
@@ -620,7 +639,6 @@ public class ConversationActivity extends ZerionActivity
 	@Override
 	public void onStart() {
 		super.onStart();
-		eventBus.addListener(this);
 		notificationManager.blockContactNotification(contactId);
 		notificationManager.clearContactNotification(contactId);
 		displayContactOnlineStatus();
@@ -634,13 +652,7 @@ public class ConversationActivity extends ZerionActivity
 	public void onStop() {
 		super.onStop();
 
-		// SECURITY: Zeroize voice recording state if activity stops during recording
-		if (isRecording && voiceRecorder != null) {
-			voiceRecorder.cancelStreamingRecording();
-			isRecording = false;
-			viewModel.cancelVoiceRecording();  // Will zeroize all crypto material
-			hideRecordingBar();
-		}
+		// Voice recording cleanup is handled by VoiceRecordingController lifecycle observer
 
 		// Stop VoiceCallService to prevent crash when returning from background
 		try {
@@ -651,7 +663,6 @@ public class ConversationActivity extends ZerionActivity
 			// Ignore if service wasn't running
 		}
 
-		eventBus.removeListener(this);
 		notificationManager.unblockContactNotification(contactId);
 		viewModel.getContactDisplayName().removeObserver(contactNameObserver);
 		list.stopPeriodicUpdate();
@@ -804,7 +815,13 @@ public class ConversationActivity extends ZerionActivity
 
 	@UiThread
 	private void displayContactOnlineStatus() {
-		if (connectionRegistry.isConnected(contactId)) {
+		// Check initial status and trigger observer
+		viewModel.checkConnectionStatus(connectionRegistry);
+	}
+
+	@UiThread
+	private void updateConnectionStatusUI(boolean connected) {
+		if (connected) {
 			toolbarStatus.setImageResource(R.drawable.contact_online);
 			toolbarStatus.setContentDescription(getString(R.string.online));
 		} else {
@@ -814,141 +831,61 @@ public class ConversationActivity extends ZerionActivity
 	}
 
 	private void loadMessages() {
-		// OPTIMIZATION: Try to display cached messages instantly first
-		List<ConversationMessageHeader> cachedHeaders =
-				ConversationCache.getInstance().getSnapshot(contactId);
-		if (cachedHeaders != null && !cachedHeaders.isEmpty()) {
-			// Display cached messages immediately (0ms delay)
-			// Get revision inside displayMessages to avoid race condition
-			displayMessagesFromCache(cachedHeaders);
-		}
-
-		// Then load fresh data from DB in background
-		runOnDbThread(() -> {
-			try {
-				Collection<ConversationMessageHeader> headers =
-						conversationManager.getMessageHeaders(contactId);
-				List<ConversationMessageHeader> sorted =
-						new ArrayList<>(headers);
-				sort(sorted, (a, b) ->
-						Long.compare(b.getTimestamp(), a.getTimestamp()));
-
-				// Update cache for next time
-				ConversationCache.getInstance().put(contactId, sorted);
-
-				// Only eagerly load if not already displayed from cache
-				if (!sorted.isEmpty() && cachedHeaders == null) {
-					ConversationMessageHeader latest = sorted.get(0);
-					if (latest instanceof PrivateMessageHeader) {
-						eagerlyLoadMessageSize((PrivateMessageHeader) latest);
-					}
-				}
-
-				// Always display from DB to ensure we have latest data and hide spinner
-				displayMessagesFromDb(sorted, cachedHeaders != null);
-			} catch (NoSuchContactException e) {
-				finishOnUiThread();
-			} catch (DbException e) {
-				handleSecurityException(e);
-			}
-		});
+		// Trigger message loading via ViewModel
+		viewModel.loadMessageHeaders();
 	}
 
-	/**
-	 * Display cached messages instantly without revision check.
-	 * This provides immediate UI feedback while DB loads in background.
-	 */
-	private void displayMessagesFromCache(
+	private void onMessageHeadersLoaded(Collection<ConversationMessageHeader> headers) {
+		if (headers == null) return;
+		int revision = adapter.getRevision();
+		// Sort headers by timestamp in *descending* order
+		List<ConversationMessageHeader> sorted = new ArrayList<>(headers);
+		sort(sorted, (a, b) -> Long.compare(b.getTimestamp(), a.getTimestamp()));
+		displayMessages(revision, sorted);
+	}
+
+	private void displayMessages(int revision,
 			Collection<ConversationMessageHeader> headers) {
 		runOnUiThreadUnlessDestroyed(() -> {
-			adapter.incrementRevision();
-			textInputView.setReady(true);
-			List<ConversationItem> items = createItems(headers);
-			adapter.replaceAll(items);
-			list.showData();
-			if (layoutManagerState == null) {
-				scrollToBottom();
+			if (revision == adapter.getRevision()) {
+				adapter.incrementRevision();
+				textInputView.setReady(true);
+				// start observing onboarding after enabling
+				if (featureFlags.shouldEnableImageAttachments()) {
+					viewModel.showImageOnboarding().observeEvent(this,
+							show -> { if (show) showImageOnboarding(); });
+				}
+				List<ConversationItem> items = createItems(headers);
+				adapter.replaceAll(items);
+				list.showData();
+				if (layoutManagerState == null) {
+					scrollToBottom();
+				} else {
+					// Restore the previous scroll position
+					layoutManager.onRestoreInstanceState(layoutManagerState);
+				}
 			} else {
-				layoutManager.onRestoreInstanceState(layoutManagerState);
+				// Concurrent update, reload
+				loadMessages();
 			}
 		});
 	}
 
 	/**
-	 * Display messages from database. Always hides spinner and enables input.
-	 * @param hadCache true if we already displayed cached messages
+	 * Creates ConversationItems from headers loaded from the database.
+	 * Attention: Call this only after contactName has been initialized.
 	 */
-	private void displayMessagesFromDb(
-			Collection<ConversationMessageHeader> headers, boolean hadCache) {
-		runOnUiThreadUnlessDestroyed(() -> {
-			// Always ensure input is ready when messages are loaded from DB
-			textInputView.setReady(true);
-
-			// If we had cache and content is same size, just ensure spinner is hidden
-			if (hadCache && adapter.getItemCount() == headers.size()) {
-				list.showData();
-				return;
-			}
-
-			adapter.incrementRevision();
-			if (featureFlags.shouldEnableImageAttachments()) {
-				viewModel.showImageOnboarding().observeEvent(this,
-						show -> { if (show) showImageOnboarding(); });
-			}
-			List<ConversationItem> items = createItems(headers);
-			adapter.replaceAll(items);
-			list.showData();
-			if (layoutManagerState == null) {
-				scrollToBottom();
-			} else {
-				layoutManager.onRestoreInstanceState(layoutManagerState);
-			}
-		});
-	}
-
-	@DatabaseExecutor
-	private void eagerlyLoadMessageSize(PrivateMessageHeader h) {
-		try {
-			MessageId id = h.getId();
-			if (h.hasText()) {
-				String text = textCache.get(id);
-				if (text == null) {
-					text = messagingManager.getMessageText(id);
-					textCache.put(id, requireNonNull(text));
-				}
-			}
-			List<AttachmentHeader> headers = h.getAttachmentHeaders();
-			if (headers.size() == 1) {
-				AttachmentHeader header = headers.get(0);
-				attachmentRetriever
-						.cacheAttachmentItemWithSize(h.getId(), header);
-			}
-		} catch (DbException e) {
-			handleSecurityException(e);
-		}
-	}
-
 	private List<ConversationItem> createItems(
 			Collection<ConversationMessageHeader> headers) {
 		List<ConversationItem> items = new ArrayList<>(headers.size());
-		for (ConversationMessageHeader h : headers) {
-			ConversationItem item = h.accept(visitor);
-			if (item != null) {
-				items.add(item);
-			}
-		}
+		for (ConversationMessageHeader h : headers)
+			items.add(h.accept(visitor));
 		return items;
 	}
 
 	private void loadMessageText(MessageId m) {
-		runOnDbThread(() -> {
-			try {
-				String text = messagingManager.getMessageText(m);
-				displayMessageText(m, requireNonNull(text));
-			} catch (DbException e) {
-				handleSecurityException(e);
-			}
-		});
+		// Delegate to ViewModel - result observed via getMessageTextLoaded()
+		viewModel.loadMessageText(m);
 	}
 
 	private void displayMessageText(MessageId m, String text) {
@@ -957,16 +894,16 @@ public class ConversationActivity extends ZerionActivity
 			Pair<Integer, ConversationMessageItem> pair =
 					adapter.getMessageItem(m);
 			if (pair != null) {
-				if (text != null && !text.startsWith("VOICE_CALL:")) {
-					boolean scroll = shouldScrollWhenUpdatingMessage();
-					pair.getSecond().setText(text);
-					adapter.notifyItemChanged(pair.getFirst());
-					if (scroll) scrollToBottom();
-				}
+				boolean scroll = shouldScrollWhenUpdatingMessage();
+				pair.getSecond().setText(text);
+				adapter.notifyItemChanged(pair.getFirst());
+				if (scroll) scrollToBottom();
 			}
 		});
 	}
 
+	// When a message's text or attachments are loaded, scroll to the bottom
+	// if the conversation is visible and we were previously at the bottom
 	private boolean shouldScrollWhenUpdatingMessage() {
 		return getLifecycle().getCurrentState().isAtLeast(STARTED)
 				&& adapter.isScrolledToBottom(layoutManager);
@@ -982,55 +919,6 @@ public class ConversationActivity extends ZerionActivity
 		}
 	}
 
-	@Override
-	public void eventOccurred(Event e) {
-		if (e instanceof ContactRemovedEvent) {
-			ContactRemovedEvent c = (ContactRemovedEvent) e;
-			if (c.getContactId().equals(contactId)) {
-				supportFinishAfterTransition();
-			}
-		} else if (e instanceof ConversationMessageReceivedEvent) {
-			ConversationMessageReceivedEvent<?> p =
-					(ConversationMessageReceivedEvent<?>) e;
-			if (p.getContactId().equals(contactId)) {
-				onNewConversationMessage(p.getMessageHeader());
-			}
-		} else if (e instanceof MessagesSentEvent) {
-			MessagesSentEvent m = (MessagesSentEvent) e;
-			if (m.getContactId().equals(contactId)) {
-				markMessages(m.getMessageIds(), true, false);
-			}
-		} else if (e instanceof MessagesAckedEvent) {
-			MessagesAckedEvent m = (MessagesAckedEvent) e;
-			if (m.getContactId().equals(contactId)) {
-				markMessages(m.getMessageIds(), true, true);
-			}
-		} else if (e instanceof ConversationMessagesDeletedEvent) {
-			ConversationMessagesDeletedEvent m =
-					(ConversationMessagesDeletedEvent) e;
-			if (m.getContactId().equals(contactId)) {
-				onConversationMessagesDeleted(m.getMessageIds());
-			}
-		} else if (e instanceof ContactConnectedEvent) {
-			ContactConnectedEvent c = (ContactConnectedEvent) e;
-			if (c.getContactId().equals(contactId)) {
-				displayContactOnlineStatus();
-			}
-		} else if (e instanceof ContactDisconnectedEvent) {
-			ContactDisconnectedEvent c = (ContactDisconnectedEvent) e;
-			if (c.getContactId().equals(contactId)) {
-				displayContactOnlineStatus();
-			}
-		} else if (e instanceof ClientVersionUpdatedEvent) {
-			ClientVersionUpdatedEvent c = (ClientVersionUpdatedEvent) e;
-			if (c.getContactId().equals(contactId)) {
-				ClientId clientId = c.getClientVersion().getClientId();
-				if (clientId.equals(MessagingManager.CLIENT_ID)) {
-					viewModel.recheckFeaturesAndOnboarding(contactId);
-				}
-			}
-		}
-	}
 
 	@UiThread
 	private void addConversationItem(ConversationItem item) {
@@ -1042,42 +930,19 @@ public class ConversationActivity extends ZerionActivity
 
 	@UiThread
 	private void onNewConversationMessage(ConversationMessageHeader h) {
-		// Update cache with new message for instant load next time
-		ConversationCache.getInstance().addMessage(contactId, h);
-
-		// NOTE: Voice call signals are now handled via dedicated VOICE_SIGNAL message type
-		// which routes directly to VoiceCallService via VoiceSignalReceivedEvent.
-		// ConversationActivity no longer needs to intercept voice signals.
-		// Legacy text-based signals (VOICE_CALL:) are handled by VoiceCallService
-		// for backward compatibility.
-
 		if (h instanceof ConversationRequest ||
 				h instanceof ConversationResponse) {
 			// contact name might not have been loaded
 			observeOnce(viewModel.getContactDisplayName(), this,
-					name -> {
-						ConversationItem item = h.accept(visitor);
-						if (item != null) addConversationItem(item);
-					});
+					name -> addConversationItem(h.accept(visitor)));
 		} else {
 			// visitor also loads message text and attachments (if existing)
-			// Returns null for voice signaling messages (should be hidden)
-			ConversationItem item = h.accept(visitor);
-			if (item != null) addConversationItem(item);
+			addConversationItem(h.accept(visitor));
 		}
 	}
 
 	@UiThread
-	private void onConversationMessagesDeleted(
-			Collection<MessageId> messageIds) {
-		// Invalidate cache when messages deleted
-		ConversationCache.getInstance().invalidate(contactId);
-		adapter.incrementRevision();
-		adapter.removeItems(messageIds);
-	}
-
-	@UiThread
-	private void markMessages(Collection<MessageId> messageIds, boolean sent,
+	private void onMessagesMarked(Collection<MessageId> messageIds, boolean sent,
 			boolean seen) {
 		adapter.incrementRevision();
 		Set<MessageId> messages = new HashSet<>(messageIds);
@@ -1123,13 +988,19 @@ public class ConversationActivity extends ZerionActivity
 		return text;
 	}
 
+	/**
+	 * Called by {@link PrivateMessageHeader#accept(ConversationMessageVisitor)}
+	 */
 	@Override
 	public List<AttachmentItem> getAttachmentItems(PrivateMessageHeader h) {
 		List<LiveData<AttachmentItem>> liveDataList =
 				attachmentRetriever.getAttachmentItems(h);
 		List<AttachmentItem> items = new ArrayList<>(liveDataList.size());
 		for (LiveData<AttachmentItem> liveData : liveDataList) {
+			// first remove all our observers to avoid having more than one
+			// in case we reload the conversation, e.g. after deleting messages
 			liveData.removeObservers(this);
+			// add a new observer
 			liveData.observe(this, new AttachmentObserver(h.getId(), liveData));
 			items.add(requireNonNull(liveData.getValue()));
 		}
@@ -1176,16 +1047,20 @@ public class ConversationActivity extends ZerionActivity
 	}
 
 	@Override
-	public void onSwipeToReply(ConversationItem item) {
-		// Reply functionality - shows quoted message in input field
-		if (item instanceof ConversationMessageItem) {
-			ConversationMessageItem messageItem = (ConversationMessageItem) item;
-			// Show reply preview in input area (works for text and media messages)
-			textInputView.showReplyPreview(item);
-			// Focus on text input
-			textInputView.setReady(true);
-			textInputView.showSoftKeyboard();
+	public List<AttachmentItem> loadAttachmentsForItem(ConversationMessageItem item) {
+		// If attachments already loaded, return them
+		if (!item.needsAttachmentLoading()) {
+			return item.getAttachments();
 		}
+
+		// Load attachments lazily using getAttachmentItems (triggers observer setup)
+		PrivateMessageHeader header = item.getHeader();
+		if (header != null) {
+			List<AttachmentItem> attachments = getAttachmentItems(header);
+			item.setAttachments(attachments);
+			return attachments;
+		}
+		return item.getAttachments();
 	}
 
 	private void showAvatarFullScreen(com.professor.zerion.android.contact.ContactItem contactItem) {
@@ -1212,174 +1087,101 @@ public class ConversationActivity extends ZerionActivity
 	}
 
 	private void startVoiceRecording() {
-		if (!isRecording && voiceRecorder != null) {
-			isRecording = true;
-			showRecordingBar();
-		}
+		voiceRecordingController.startRecording();
 	}
 
-	private void showRecordingBar() {
-		// Hide normal text input mode
-		if (textInputView != null) {
-			textInputView.setVisibility(View.GONE);
-		}
-		// Show recording overlay with timer and send button (replaces text input)
-		if (voiceRecordingOverlay != null) {
-			voiceRecordingOverlay.setVisibility(View.VISIBLE);
-		}
-		// Start pulse animation for recording indicator
-		startPulseAnimation();
-		recordingStartTime = System.currentTimeMillis();
+	// ==================== VoiceRecordingHost Interface Implementation ====================
 
-		try {
-			// SECURITY: Get GroupId for AAD context before encryption starts
-			org.briarproject.bramble.api.sync.GroupId groupId = viewModel.prepareVoiceRecording();
-			byte[] groupIdBytes = groupId.getBytes();
+	@Override
+	public void onRecordingComplete() {
+		// Recording finished and message sent
+	}
 
-			voiceRecorder.startStreamingRecording(groupIdBytes, new com.professor.zerion.android.conversation.voice.EncryptedChunkCallback() {
-				@Override
-				public void onRecordingStarted() {
-					// Silent operation
+	@Override
+	public void onRecordingCancelled() {
+		// Recording was cancelled by user
+	}
+
+	@Override
+	public void onRecordingError(Exception e) {
+		runOnUiThread(() -> {
+			String errorMessage = e.getMessage();
+			if (errorMessage == null || errorMessage.isEmpty()) {
+				errorMessage = getString(R.string.voice_message_error);
+			}
+			// Show user-friendly error message
+			Snackbar.make(list, errorMessage, Snackbar.LENGTH_LONG).show();
+		});
+	}
+
+	@Override
+	public org.briarproject.bramble.api.sync.GroupId getGroupIdForRecording() {
+		return viewModel.prepareVoiceRecording();
+	}
+
+	@Override
+	public void onEncryptionInit(byte[] iv, byte[] sessionKey) {
+		viewModel.onEncryptionInit(iv, sessionKey);
+	}
+
+	@Override
+	public void onEncryptedChunk(byte[] encrypted, int len, byte[] tagPart) {
+		viewModel.appendEncryptedAudioChunk(encrypted, len, tagPart);
+	}
+
+	@Override
+	public void onEncryptionFinal(byte[] globalMAC, int totalDurationMs, int chunkCount) {
+		viewModel.finalizeEncryptedVoiceMessage(globalMAC, totalDurationMs, chunkCount);
+	}
+
+	@Override
+	public void cancelVoiceRecordingInViewModel() {
+		viewModel.cancelVoiceRecording();
+	}
+
+	// ==================== Attachment Recording Callbacks ====================
+
+	@Override
+	public void onAttachmentRecordingComplete(java.io.File audioFile, int durationMs, String mimeType) {
+		// Attachment recording completed - file will be stored via storeVoiceAttachment
+		// Show feedback to user
+		int seconds = durationMs / 1000;
+		String message = getString(R.string.voice_message) + " (" + seconds + "s)";
+		Snackbar.make(list, message, Snackbar.LENGTH_SHORT).show();
+	}
+
+	@Override
+	public void storeVoiceAttachment(android.net.Uri audioUri) {
+		// Store the audio file as an attachment and send
+		viewModel.storeVoiceAttachment(audioUri).observe(this, result -> {
+			if (result != null && result.isFinished()) {
+				// Check for errors in the result
+				boolean hasErrors = false;
+				for (com.professor.zerion.android.attachment.AttachmentItemResult itemResult : result.getItemResults()) {
+					if (itemResult.hasError()) {
+						hasErrors = true;
+						String errorMsg = itemResult.getErrorMsg();
+						if (errorMsg != null) {
+							Snackbar.make(list, errorMsg, Snackbar.LENGTH_LONG).show();
+						}
+						break;
+					}
 				}
 
-				@Override
-				public void onEncryptionInit(byte[] iv, byte[] sessionKey) {
-					// CRITICAL: Copy arrays before passing to ViewModel to avoid race condition
-					// The ViewModel schedules work on a background thread, so we must copy first
-					byte[] ivCopy = java.util.Arrays.copyOf(iv, iv.length);
-					byte[] sessionKeyCopy = java.util.Arrays.copyOf(sessionKey, sessionKey.length);
-					viewModel.onEncryptionInit(ivCopy, sessionKeyCopy);
-					// Now safe to zeroize the original arrays
-					java.util.Arrays.fill(iv, (byte) 0);
-					java.util.Arrays.fill(sessionKey, (byte) 0);
-				}
-
-				@Override
-				public void onEncryptedChunk(byte[] encrypted, int len, byte[] tagPart) {
-					// CRITICAL: Copy arrays before passing to ViewModel to avoid race condition
-					byte[] encryptedCopy = java.util.Arrays.copyOf(encrypted, encrypted.length);
-					byte[] tagCopy = java.util.Arrays.copyOf(tagPart, tagPart.length);
-					viewModel.appendEncryptedAudioChunk(encryptedCopy, len, tagCopy);
-					// Now safe to zeroize the original arrays
-					java.util.Arrays.fill(encrypted, (byte) 0);
-					java.util.Arrays.fill(tagPart, (byte) 0);
-				}
-
-				@Override
-				public void onEncryptionFinal(byte[] globalMAC, int totalDurationMs, int chunkCount) {
-					// CRITICAL: Copy array before passing to ViewModel to avoid race condition
-					byte[] globalMACCopy = java.util.Arrays.copyOf(globalMAC, globalMAC.length);
-					viewModel.finalizeEncryptedVoiceMessage(globalMACCopy, chunkCount);
-					// Now safe to zeroize the original array
-					java.util.Arrays.fill(globalMAC, (byte) 0);
-					runOnUiThread(() -> {
-						isRecording = false;
-						hideRecordingBar();
-					});
-				}
-
-				@Override
-				public void onRecordingProgress(int durationMs, int amplitudeDb) {
-					runOnUiThread(() -> {
-						// Update timer display
-						int seconds = durationMs / 1000;
-						int minutes = seconds / 60;
-						int secs = seconds % 60;
-						if (recordingTimer != null) {
-							recordingTimer.setText(String.format("%d:%02d", minutes, secs));
+				if (!hasErrors) {
+					// Send the voice attachment
+					Long timerValue = viewModel.getAutoDeleteTimer().getValue();
+					long expectedTimer = timerValue != null ? timerValue : 0L;
+					viewModel.sendVoiceAttachment(expectedTimer).observe(this, sendState -> {
+						if (sendState == com.professor.zerion.android.view.TextSendController.SendState.SENT) {
+							// Success - attachment sent
+						} else if (sendState == com.professor.zerion.android.view.TextSendController.SendState.ERROR) {
+							Snackbar.make(list, R.string.voice_message_error, Snackbar.LENGTH_LONG).show();
 						}
 					});
 				}
-
-				@Override
-				public void onError(Exception e) {
-					runOnUiThread(() -> {
-						handleSecurityException(e);
-						isRecording = false;
-						hideRecordingBar();
-					});
-				}
-
-				@Override
-				public void onCancelled() {
-					runOnUiThread(() -> {
-						isRecording = false;
-						hideRecordingBar();
-					});
-				}
-			});
-		} catch (Exception e) {
-			handleSecurityException(e);
-			hideRecordingBar();
-			isRecording = false;
-		}
-	}
-
-	private void hideRecordingBar() {
-		// Hide recording overlay
-		if (voiceRecordingOverlay != null) {
-			voiceRecordingOverlay.setVisibility(View.GONE);
-		}
-		// Show normal text input mode again
-		if (textInputView != null) {
-			textInputView.setVisibility(View.VISIBLE);
-		}
-		// Stop pulse animation
-		stopPulseAnimation();
-		// Reset timer display
-		if (recordingTimer != null) {
-			recordingTimer.setText("0:00");
-		}
-	}
-
-	private void stopVoiceRecording() {
-		if (voiceRecorder != null && isRecording) {
-			try {
-				// User cancelled - cleanup crypto material
-				voiceRecorder.cancelStreamingRecording();
-				viewModel.cancelVoiceRecording();  // SECURITY: Zeroize all crypto material
-			} catch (Exception e) {
-				handleSecurityException(e);
 			}
-			isRecording = false;
-			hideRecordingBar();
-		}
-	}
-
-	private void finishVoiceRecording() {
-		if (voiceRecorder != null && isRecording) {
-			try {
-				// User clicked send button - finalize recording
-				voiceRecorder.stopStreamingRecording();
-			} catch (Exception e) {
-				handleSecurityException(e);
-			}
-			// isRecording will be set to false in onEncryptionFinal callback
-		}
-	}
-
-	private void startPulseAnimation() {
-		if (recordingPulse != null) {
-			pulseAnimator = android.animation.ValueAnimator.ofFloat(1.0f, 0.3f);
-			pulseAnimator.setDuration(800);
-			pulseAnimator.setRepeatMode(android.animation.ValueAnimator.REVERSE);
-			pulseAnimator.setRepeatCount(android.animation.ValueAnimator.INFINITE);
-			pulseAnimator.addUpdateListener(animation -> {
-				float alpha = (float) animation.getAnimatedValue();
-				recordingPulse.setAlpha(alpha);
-			});
-			pulseAnimator.start();
-		}
-	}
-
-	private void stopPulseAnimation() {
-		if (pulseAnimator != null) {
-			pulseAnimator.cancel();
-			pulseAnimator = null;
-		}
-		if (recordingPulse != null) {
-			recordingPulse.setAlpha(1.0f);
-		}
+		});
 	}
 
 	private void askToClearChat() {
@@ -1387,20 +1189,8 @@ public class ConversationActivity extends ZerionActivity
 				.setTitle("Clear Chat")
 				.setMessage("Delete all messages in this conversation?")
 				.setPositiveButton("Clear", (dialog, which) -> {
-					runOnDbThread(() -> {
-						try {
-							Collection<ConversationMessageHeader> headers =
-									conversationManager.getMessageHeaders(contactId);
-							List<MessageId> ids = new ArrayList<>();
-							for (ConversationMessageHeader h : headers) {
-								ids.add(h.getId());
-							}
-							conversationManager.deleteMessages(contactId, ids);
-							runOnUiThread(() -> adapter.clear());
-						} catch (DbException e) {
-							handleSecurityException(e);
-						}
-					});
+					// Delegate to ViewModel - result observed via getChatCleared()
+					viewModel.clearChat();
 				})
 				.setNegativeButton(android.R.string.cancel, null)
 				.show();
@@ -1422,14 +1212,8 @@ public class ConversationActivity extends ZerionActivity
 				.setTitle("Remove Contact")
 				.setMessage("Remove this contact? All messages will be deleted.")
 				.setPositiveButton("Remove", (dialog, which) -> {
-					runOnDbThread(() -> {
-						try {
-							contactManager.removeContact(contactId);
-							finishOnUiThread();
-						} catch (DbException e) {
-							handleSecurityException(e);
-						}
-					});
+					// Delegate to ViewModel - isContactDeleted() observer will finish activity
+					viewModel.removeContact();
 				})
 				.setNegativeButton(android.R.string.cancel, null)
 				.show();
@@ -1443,14 +1227,10 @@ public class ConversationActivity extends ZerionActivity
 				.setTitle("Delete Messages")
 				.setMessage("Delete " + selected.size() + " message(s)?")
 				.setPositiveButton("Delete", (dialog, which) -> {
-					runOnDbThread(() -> {
-						try {
-							conversationManager.deleteMessages(contactId, selected);
-						} catch (DbException e) {
-							handleSecurityException(e);
-						}
-					});
+					// Close action mode first
 					if (actionMode != null) actionMode.finish();
+					// Delegate to ViewModel - getMessagesDeleted() observer handles UI update
+					viewModel.deleteMessages(selected);
 				})
 				.setNegativeButton(android.R.string.cancel, null)
 				.show();
@@ -1474,26 +1254,15 @@ public class ConversationActivity extends ZerionActivity
 	}
 
 	private void onAddedPrivateMessage(PrivateMessageHeader h) {
-		runOnDbThread(() -> {
-			try {
-				// Cache the text first
-				if (h.hasText()) {
-					String text = messagingManager.getMessageText(h.getId());
-					textCache.put(h.getId(), requireNonNull(text));
-				}
-
-				// Convert header to ConversationItem and add to adapter
-				ConversationItem item = h.accept(visitor);
-				if (item != null) {
-					runOnUiThreadUnlessDestroyed(() -> {
-						adapter.add(item);
-						scrollToBottom();
-					});
-				}
-			} catch (DbException e) {
-				handleSecurityException(e);
-			}
-		});
+		// Convert header to ConversationItem using visitor
+		// The visitor will trigger text/attachment loading via existing observers
+		ConversationItem item = h.accept(visitor);
+		if (item != null) {
+			runOnUiThreadUnlessDestroyed(() -> {
+				adapter.add(item);
+				scrollToBottom();
+			});
+		}
 	}
 
 	private void showImageOnboarding() {
@@ -1518,13 +1287,45 @@ public class ConversationActivity extends ZerionActivity
 
 	@Override
 	public void respondToRequest(ConversationRequestItem item, boolean accept) {
-		// Respond to introduction or group invitation request
+		item.setAnswered();
+		SessionId sessionId = item.getSessionId();
+		ConversationRequestItem.RequestType type = item.getRequestType();
+
+		dbExecutor.execute(() -> {
+			try {
+				if (type == ConversationRequestItem.RequestType.GROUP) {
+					groupInvitationManager.respondToInvitation(contactId, sessionId, accept);
+				} else if (type == ConversationRequestItem.RequestType.INTRODUCTION) {
+					introductionManager.respondToIntroduction(contactId, sessionId, accept);
+				}
+				runOnUiThread(() -> {
+					if (accept) {
+						if (type == ConversationRequestItem.RequestType.GROUP) {
+							Snackbar.make(list, R.string.groups_invitations_joined, Snackbar.LENGTH_SHORT).show();
+						}
+					} else {
+						if (type == ConversationRequestItem.RequestType.GROUP) {
+							Snackbar.make(list, R.string.groups_invitations_declined, Snackbar.LENGTH_SHORT).show();
+						}
+					}
+					adapter.notifyDataSetChanged();
+				});
+			} catch (DbException e) {
+				runOnUiThread(() -> handleException(e));
+			}
+		});
 	}
 
 	@Override
 	public void openRequestedShareable(ConversationRequestItem item) {
-		// Open shareable based on request type (introduction or group invitation)
-		// This would launch the appropriate activity
+		if (item.getRequestType() == ConversationRequestItem.RequestType.GROUP) {
+			GroupId groupId = item.getRequestedGroupId();
+			if (groupId != null) {
+				Intent intent = new Intent(this, GroupActivity.class);
+				intent.putExtra(GroupActivity.GROUP_ID, groupId.getBytes());
+				startActivity(intent);
+			}
+		}
 	}
 
 	@Override

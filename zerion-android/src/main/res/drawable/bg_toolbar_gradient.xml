@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
-	<!-- Zerion toolbar gradient for depth - blue tone -->
+	<!-- Zerion toolbar gradient for depth - professional dark -->
 	<gradient
 		android:angle="90"
-		android:startColor="#0D1520"
-		android:endColor="#0B0E15"
+		android:startColor="#13161C"
+		android:endColor="#0F1014"
 		android:type="linear" />
 </shape>

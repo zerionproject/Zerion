@@ -121,17 +121,24 @@ public class VoiceMessageViewHolder {
 				com.professor.zerion.android.conversation.voice.VoiceMessagePayloadParser.ParsedPayload payload =
 					com.professor.zerion.android.conversation.voice.VoiceMessagePayloadParser.parse(parsed.getPayload());
 
-				// SECURITY: Set AAD context for verification - prevents replay/transplant attacks
+				// SECURITY: Set AAD context for verification
+				// NOTE: Use empty messageId to match what was used during encryption
+				// (the message doesn't exist yet when encryption happens)
 				byte[] formatVersion = new byte[]{1};
 				byte[] groupIdBytes = groupId.getBytes();
-				byte[] messageIdBytes = messageId.getBytes();
+				byte[] emptyMessageId = new byte[0];
 
-				byte[] decryptedPcm = com.professor.zerion.android.conversation.voice.StreamingAudioDecryptor.decryptAll(
+				// Decrypt the mu-law encoded audio
+				byte[] decryptedMuLaw = com.professor.zerion.android.conversation.voice.StreamingAudioDecryptor.decryptAll(
 					payload.wrappedKey, payload.iv, payload.chunks, payload.tags,
 					payload.chunks.size(), payload.durationMs, payload.globalMAC,
-					formatVersion, groupIdBytes, messageIdBytes);
+					formatVersion, groupIdBytes, emptyMessageId);
 
 				payload.zeroize();
+
+				// Decode mu-law back to 16-bit PCM
+				byte[] decryptedPcm = com.professor.zerion.android.conversation.voice.AudioCodec.muLawToPcm(decryptedMuLaw);
+				java.util.Arrays.fill(decryptedMuLaw, (byte) 0);
 
 				byte[] wavData = com.professor.zerion.android.conversation.voice.WavHeaderGenerator.addWavHeader(decryptedPcm);
 
@@ -144,7 +151,6 @@ public class VoiceMessageViewHolder {
 
 			} catch (Exception e) {
 				// SECURITY: MAC verification or decryption failure
-				// Show user-facing error without revealing cryptographic details
 				uiHandler.post(() -> showErrorState("Verification failed"));
 			}
 		});

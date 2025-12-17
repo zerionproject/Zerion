@@ -39,7 +39,7 @@
 		<item name="colorOnSurfaceVariant">#B3FFFFFF</item>
 
 		<!-- Error Colors -->
-		<item name="colorError">@color/briar_red_500</item>
+		<item name="colorError">@color/zerion_red_500</item>
 		<item name="colorOnError">@android:color/white</item>
 
 		<!-- Outline & Border -->
@@ -170,7 +170,7 @@
 
 	<!-- Negative Button: Red text for destructive actions -->
 	<style name="Zerion.Button.Negative" parent="Widget.Material3.Button.TextButton">
-		<item name="android:textColor">@color/briar_red_500</item>
+		<item name="android:textColor">@color/zerion_red_500</item>
 		<item name="rippleColor">#33FF0000</item>
 		<item name="android:textAllCaps">false</item>
 		<item name="android:textSize">14sp</item>

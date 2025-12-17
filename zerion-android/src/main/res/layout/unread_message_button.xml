@@ -23,7 +23,7 @@
 		android:elevation="7dp"
 		android:gravity="center"
 		android:minWidth="@dimen/unread_bubble_size"
-		android:textColor="@color/briar_text_primary_inverse"
+		android:textColor="@color/zerion_text_primary_inverse"
 		android:textSize="@dimen/unread_bubble_text_size"
 		android:textStyle="bold"
 		tools:text="12" />

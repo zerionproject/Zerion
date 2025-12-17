@@ -406,11 +406,11 @@ public class VoiceCallActivity extends AppCompatActivity {
 
 			int latencyColor;
 			if (latency < 150) {
-				latencyColor = ContextCompat.getColor(this, R.color.briar_lime_500);
+				latencyColor = ContextCompat.getColor(this, R.color.zerion_success_green);
 			} else if (latency < 300) {
-				latencyColor = ContextCompat.getColor(this, R.color.briar_orange_500);
+				latencyColor = ContextCompat.getColor(this, R.color.zerion_warning);
 			} else {
-				latencyColor = ContextCompat.getColor(this, R.color.briar_red_500);
+				latencyColor = ContextCompat.getColor(this, R.color.zerion_error_red);
 			}
 			latencyBadge.setTextColor(latencyColor);
 
@@ -420,8 +420,8 @@ public class VoiceCallActivity extends AppCompatActivity {
 				packetLossBadge.setVisibility(View.VISIBLE);
 
 				int lossColor = packetLoss < 5.0 ?
-						ContextCompat.getColor(this, R.color.briar_orange_500) :
-						ContextCompat.getColor(this, R.color.briar_red_500);
+						ContextCompat.getColor(this, R.color.zerion_warning) :
+						ContextCompat.getColor(this, R.color.zerion_error_red);
 				packetLossBadge.setTextColor(lossColor);
 			} else {
 				packetLossBadge.setVisibility(View.GONE);
@@ -434,23 +434,23 @@ public class VoiceCallActivity extends AppCompatActivity {
 			switch (signalQuality) {
 				case NetworkMetrics.SIGNAL_EXCELLENT:
 					signalIcon = R.drawable.ic_signal_5;
-					signalColor = ContextCompat.getColor(this, R.color.briar_lime_500);
+					signalColor = ContextCompat.getColor(this, R.color.zerion_success_green);
 					break;
 				case NetworkMetrics.SIGNAL_GOOD:
 					signalIcon = R.drawable.ic_signal_4;
-					signalColor = ContextCompat.getColor(this, R.color.briar_lime_500);
+					signalColor = ContextCompat.getColor(this, R.color.zerion_success_green);
 					break;
 				case NetworkMetrics.SIGNAL_FAIR:
 					signalIcon = R.drawable.ic_signal_3;
-					signalColor = ContextCompat.getColor(this, R.color.briar_orange_500);
+					signalColor = ContextCompat.getColor(this, R.color.zerion_warning);
 					break;
 				case NetworkMetrics.SIGNAL_POOR:
 					signalIcon = R.drawable.ic_signal_2;
-					signalColor = ContextCompat.getColor(this, R.color.briar_orange_500);
+					signalColor = ContextCompat.getColor(this, R.color.zerion_warning);
 					break;
 				default:
 					signalIcon = R.drawable.ic_signal_1;
-					signalColor = ContextCompat.getColor(this, R.color.briar_red_500);
+					signalColor = ContextCompat.getColor(this, R.color.zerion_error_red);
 					break;
 			}
 

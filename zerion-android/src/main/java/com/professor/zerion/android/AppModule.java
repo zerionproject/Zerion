@@ -16,9 +16,9 @@ import org.briarproject.bramble.api.crypto.CryptoComponent;
 import org.briarproject.bramble.api.crypto.KeyStrengthener;
 import org.briarproject.bramble.api.crypto.PublicKey;
 import org.briarproject.bramble.api.db.DatabaseConfig;
+import org.briarproject.bramble.api.reporting.DevConfig;
 import org.briarproject.bramble.api.event.EventBus;
 import org.briarproject.bramble.api.lifecycle.LifecycleManager;
-import org.briarproject.bramble.api.mailbox.MailboxDirectory;
 import org.briarproject.bramble.api.plugin.PluginConfig;
 import org.briarproject.bramble.api.plugin.TorControlPort;
 import org.briarproject.bramble.api.plugin.TorDirectory;
@@ -27,7 +27,6 @@ import org.briarproject.bramble.api.plugin.TransportId;
 import org.briarproject.bramble.api.plugin.duplex.DuplexPluginFactory;
 import org.briarproject.bramble.api.plugin.simplex.SimplexPluginFactory;
 import org.briarproject.bramble.plugin.file.AndroidRemovableDrivePluginFactory;
-import org.briarproject.bramble.plugin.file.MailboxPluginFactory;
 import org.briarproject.bramble.plugin.tor.AndroidTorPluginFactory;
 import org.briarproject.bramble.util.AndroidUtils;
 import org.briarproject.bramble.util.StringUtils;
@@ -108,7 +107,96 @@ public class AppModule {
 	@Retention(RUNTIME)
 	public @interface UiPrefs {}
 
+	/**
+	 * Lazy holder for EncryptedSharedPreferences.
+	 * Initialization ideally happens on background thread during eager singleton injection.
+	 * When accessed before background init completes (e.g., during SplashScreen injection),
+	 * falls back to synchronous init with StrictMode bypass.
+	 */
+	static class SecurePrefsHolder {
+		private static volatile SharedPreferences securePrefs;
+		private static volatile SharedPreferences uiPrefs;
+		private static final Object lock = new Object();
+
+		static void initialize(Application app) {
+			synchronized (lock) {
+				if (securePrefs == null) {
+					initializeInternal(app);
+				}
+			}
+		}
+
+		/**
+		 * Initialize with StrictMode bypass for fallback scenarios.
+		 * Called when prefs are accessed before background init completes.
+		 * Bypasses disk read/write and custom slow call (keystore crypto) violations.
+		 */
+		static void initializeWithStrictModeBypass(Application app) {
+			synchronized (lock) {
+				if (securePrefs == null) {
+					// Save current policy and permit all I/O and slow calls
+					// EncryptedSharedPreferences uses Android Keystore which triggers:
+					// - DiskRead violations (keystore access)
+					// - CustomSlowCall violations (keystore crypto operations)
+					StrictMode.ThreadPolicy oldPolicy = StrictMode.getThreadPolicy();
+					StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder(oldPolicy)
+							.permitDiskReads()
+							.permitDiskWrites()
+							.permitCustomSlowCalls()
+							.build());
+					try {
+						initializeInternal(app);
+					} finally {
+						StrictMode.setThreadPolicy(oldPolicy);
+					}
+				}
+			}
+		}
+
+		private static void initializeInternal(Application app) {
+			try {
+				MasterKey masterKey = new MasterKey.Builder(app.getApplicationContext())
+						.setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+						.build();
+
+				securePrefs = EncryptedSharedPreferences.create(
+						app.getApplicationContext(),
+						"secure_prefs",
+						masterKey,
+						EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+						EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+				);
+
+				uiPrefs = EncryptedSharedPreferences.create(
+						app.getApplicationContext(),
+						"ui_prefs",
+						masterKey,
+						EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+						EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+				);
+			} catch (Exception e) {
+				throw new RuntimeException("EncryptedSharedPreferences init failed", e);
+			}
+		}
+
+		static SharedPreferences getSecurePrefs() {
+			if (securePrefs == null) {
+				throw new IllegalStateException("SecurePrefs not initialized");
+			}
+			return securePrefs;
+		}
+
+		static SharedPreferences getUiPrefs() {
+			if (uiPrefs == null) {
+				throw new IllegalStateException("UiPrefs not initialized");
+			}
+			return uiPrefs;
+		}
+	}
+
 	static class EagerSingletons {
+		@Inject
+		Application application;
 		@Inject
 		AndroidNotificationManager androidNotificationManager;
 		@Inject
@@ -126,6 +214,11 @@ public class AppModule {
 
 		@Inject
 		void init() {
+			// Initialize encrypted preferences on background thread FIRST
+			// This MUST happen before any component accesses the preferences
+			SecurePrefsHolder.initialize(application);
+
+			// Now safe to do migration which uses the preferences
 			preferencesMigration.migrateVaultSettingsIfNeeded();
 		}
 	}
@@ -156,28 +249,34 @@ public class AppModule {
 	@Provides
 	@Singleton
 	DatabaseConfig provideDatabaseConfig(Application app) {
-		StrictMode.ThreadPolicy tp = StrictMode.allowThreadDiskReads();
-		StrictMode.allowThreadDiskWrites();
-		File dbDir = app.getApplicationContext().getDir("db", MODE_PRIVATE);
-		File keyDir = app.getApplicationContext().getDir("key", MODE_PRIVATE);
-		StrictMode.setThreadPolicy(tp);
-		KeyStrengthener keyStrengthener = SDK_INT >= 23
-				? new AndroidKeyStrengthener() : null;
-		return new AndroidDatabaseConfig(dbDir, keyDir, keyStrengthener);
-	}
-
-	@Provides
-	@Singleton
-	@MailboxDirectory
-	File provideMailboxDirectory(Application app) {
-		return app.getDir("mailbox", MODE_PRIVATE);
+		// Temporarily allow disk access for directory creation
+		// This is unavoidable as DatabaseConfig is consumed by bramble-core
+		StrictMode.ThreadPolicy oldPolicy = StrictMode.allowThreadDiskReads();
+		try {
+			StrictMode.allowThreadDiskWrites();
+			File dbDir = app.getApplicationContext().getDir("db", MODE_PRIVATE);
+			File keyDir = app.getApplicationContext().getDir("key", MODE_PRIVATE);
+			KeyStrengthener keyStrengthener = SDK_INT >= 23
+					? new AndroidKeyStrengthener() : null;
+			return new AndroidDatabaseConfig(dbDir, keyDir, keyStrengthener);
+		} finally {
+			StrictMode.setThreadPolicy(oldPolicy);
+		}
 	}
 
 	@Provides
 	@Singleton
 	@TorDirectory
 	File provideTorDirectory(Application app) {
-		return app.getDir("tor", MODE_PRIVATE);
+		// Temporarily allow disk access for directory creation
+		// This is unavoidable as the File is consumed by bramble-core
+		StrictMode.ThreadPolicy oldPolicy = StrictMode.allowThreadDiskReads();
+		try {
+			StrictMode.allowThreadDiskWrites();
+			return app.getDir("tor", MODE_PRIVATE);
+		} finally {
+			StrictMode.setThreadPolicy(oldPolicy);
+		}
 	}
 
 	@Provides
@@ -205,8 +304,7 @@ public class AppModule {
 	@Provides
 	@Singleton
 	PluginConfig providePluginConfig(AndroidTorPluginFactory tor,
-			AndroidRemovableDrivePluginFactory drive,
-			MailboxPluginFactory mailbox, FeatureFlags featureFlags) {
+			AndroidRemovableDrivePluginFactory drive, FeatureFlags featureFlags) {
 		@NotNullByDefault
 		PluginConfig pluginConfig = new PluginConfig() {
 
@@ -218,7 +316,6 @@ public class AppModule {
 			@Override
 			public Collection<SimplexPluginFactory> getSimplexFactories() {
 				List<SimplexPluginFactory> simplex = new ArrayList<>();
-				simplex.add(mailbox);
 				simplex.add(drive);
 				return simplex;
 			}
@@ -242,54 +339,41 @@ public class AppModule {
 		return testAvatarCreator;
 	}
 
+	/**
+	 * Provides SecurePrefs from the lazy holder.
+	 * The actual initialization happens on background thread during eager singleton init.
+	 * If accessed before initialization, falls back to synchronous init with StrictMode bypass.
+	 */
 	@Provides
 	@Singleton
 	@SecurePrefs
 	SharedPreferences provideSecurePreferences(Application app) {
-		StrictMode.ThreadPolicy tp = StrictMode.allowThreadDiskReads();
-		StrictMode.allowThreadDiskWrites();
-		try {
-			MasterKey masterKey = new MasterKey.Builder(app.getApplicationContext())
-					.setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-					.build();
-
-			return EncryptedSharedPreferences.create(
-					app.getApplicationContext(),
-					"secure_prefs",
-					masterKey,
-					EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-					EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-			);
-		} catch (Exception e) {
-			throw new RuntimeException("EncryptedSharedPreferences init failed", e);
-		} finally {
-			StrictMode.setThreadPolicy(tp);
+		// Try to get from pre-initialized holder first (fast path, no I/O)
+		if (SecurePrefsHolder.securePrefs != null) {
+			return SecurePrefsHolder.securePrefs;
 		}
+		// Fallback: initialize synchronously with StrictMode bypass
+		// This can happen during Activity injection before app fully starts
+		SecurePrefsHolder.initializeWithStrictModeBypass(app);
+		return SecurePrefsHolder.getSecurePrefs();
 	}
 
+	/**
+	 * Provides UiPrefs from the lazy holder.
+	 * The actual initialization happens on background thread during eager singleton init.
+	 * If accessed before initialization, falls back to synchronous init with StrictMode bypass.
+	 */
 	@Provides
 	@Singleton
 	@UiPrefs
 	SharedPreferences provideUiPreferences(Application app) {
-		StrictMode.ThreadPolicy tp = StrictMode.allowThreadDiskReads();
-		StrictMode.allowThreadDiskWrites();
-		try {
-			MasterKey masterKey = new MasterKey.Builder(app.getApplicationContext())
-					.setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-					.build();
-
-			return EncryptedSharedPreferences.create(
-					app.getApplicationContext(),
-					"ui_prefs",
-					masterKey,
-					EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-					EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-			);
-		} catch (Exception e) {
-			throw new RuntimeException("EncryptedSharedPreferences init failed", e);
-		} finally {
-			StrictMode.setThreadPolicy(tp);
+		// Try to get from pre-initialized holder first (fast path, no I/O)
+		if (SecurePrefsHolder.uiPrefs != null) {
+			return SecurePrefsHolder.uiPrefs;
 		}
+		// Fallback: initialize synchronously with StrictMode bypass
+		SecurePrefsHolder.initializeWithStrictModeBypass(app);
+		return SecurePrefsHolder.getUiPrefs();
 	}
 
 	@Provides
@@ -301,7 +385,18 @@ public class AppModule {
 	@Provides
 	@Singleton
 	VaultManager provideVaultManager(Context context) {
-		return new VaultManager(context);
+		// VaultManager -> SecureFileIO constructor calls getNoBackupFilesDir()
+		// which does disk I/O, so bypass StrictMode
+		StrictMode.ThreadPolicy oldPolicy = StrictMode.getThreadPolicy();
+		StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder(oldPolicy)
+				.permitDiskReads()
+				.permitDiskWrites()
+				.build());
+		try {
+			return new VaultManager(context);
+		} finally {
+			StrictMode.setThreadPolicy(oldPolicy);
+		}
 	}
 
 	@Provides
@@ -409,5 +504,47 @@ public class AppModule {
 	Thread.UncaughtExceptionHandler provideUncaughtExceptionHandler() {
 		return (thread, throwable) -> {
 		};
+	}
+
+	@Provides
+	@Singleton
+	DevConfig provideDevConfig(Application app, CryptoComponent crypto) {
+		// Temporarily allow disk access for directory creation
+		StrictMode.ThreadPolicy oldPolicy = StrictMode.allowThreadDiskReads();
+		final File reportDir;
+		try {
+			StrictMode.allowThreadDiskWrites();
+			reportDir = app.getApplicationContext().getDir("reports", MODE_PRIVATE);
+		} finally {
+			StrictMode.setThreadPolicy(oldPolicy);
+		}
+		@NotNullByDefault
+		DevConfig devConfig = new DevConfig() {
+			@Override
+			public PublicKey getDevPublicKey() {
+				// Return a dummy public key - dev reporting disabled
+				try {
+					return crypto.getSignatureKeyParser().parsePublicKey(new byte[32]);
+				} catch (Exception e) {
+					throw new RuntimeException("Failed to create dev public key", e);
+				}
+			}
+
+			@Override
+			public String getDevOnionAddress() {
+				return "";
+			}
+
+			@Override
+			public File getReportDir() {
+				return reportDir;
+			}
+
+			@Override
+			public File getLogcatFile() {
+				return new File(reportDir, "logcat.txt");
+			}
+		};
+		return devConfig;
 	}
 }

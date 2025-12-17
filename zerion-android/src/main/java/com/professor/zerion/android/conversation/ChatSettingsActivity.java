@@ -55,6 +55,8 @@ public class ChatSettingsActivity extends ZerionActivity {
 	private TextView trustIndicatorText;
 	private SwitchMaterial muteNotificationsSwitch;
 	private SwitchMaterial vibrationSwitch;
+	private TextView securityLevelTitle;
+	private TextView securityLevelDescription;
 
 
 	@Override
@@ -92,6 +94,8 @@ public class ChatSettingsActivity extends ZerionActivity {
 		trustIndicatorText = findViewById(R.id.trust_indicator_text);
 		muteNotificationsSwitch = findViewById(R.id.mute_notifications_switch);
 		vibrationSwitch = findViewById(R.id.vibration_switch);
+		securityLevelTitle = findViewById(R.id.security_level_title);
+		securityLevelDescription = findViewById(R.id.security_level_description);
 
 		viewModel.getContactItem().observe(this, contactItem -> {
 			if (contactItem != null) {
@@ -101,6 +105,17 @@ public class ChatSettingsActivity extends ZerionActivity {
 				contactStatus.setText(R.string.offline);
 
 				contactAvatar.setOnClickListener(v -> showAvatarFullScreen(contactItem));
+
+				// Update security level display
+				if (contactItem.isPostQuantum()) {
+					securityLevelTitle.setText(R.string.security_level_post_quantum);
+					securityLevelDescription.setText(
+							R.string.security_level_post_quantum_description);
+				} else {
+					securityLevelTitle.setText(R.string.security_level_classical);
+					securityLevelDescription.setText(
+							R.string.security_level_classical_description);
+				}
 			}
 		});
 
