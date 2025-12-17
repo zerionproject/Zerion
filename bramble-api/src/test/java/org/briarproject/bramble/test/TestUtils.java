@@ -20,12 +20,6 @@ import org.briarproject.bramble.api.identity.Author;
 import org.briarproject.bramble.api.identity.AuthorId;
 import org.briarproject.bramble.api.identity.Identity;
 import org.briarproject.bramble.api.identity.LocalAuthor;
-import org.briarproject.bramble.api.mailbox.MailboxAuthToken;
-import org.briarproject.bramble.api.mailbox.MailboxFolderId;
-import org.briarproject.bramble.api.mailbox.MailboxProperties;
-import org.briarproject.bramble.api.mailbox.MailboxUpdate;
-import org.briarproject.bramble.api.mailbox.MailboxUpdateWithMailbox;
-import org.briarproject.bramble.api.mailbox.MailboxVersion;
 import org.briarproject.bramble.api.plugin.TransportId;
 import org.briarproject.bramble.api.properties.TransportProperties;
 import org.briarproject.bramble.api.sync.ClientId;
@@ -228,19 +222,6 @@ public class TestUtils {
 				getAgreementPublicKey(), verified);
 	}
 
-	public static MailboxProperties getMailboxProperties(boolean owner,
-			List<MailboxVersion> serverSupports) {
-		String onion = getRandomString(56);
-		MailboxAuthToken authToken = new MailboxAuthToken(getRandomId());
-		if (owner) {
-			return new MailboxProperties(onion, authToken, serverSupports);
-		}
-		MailboxFolderId inboxId = new MailboxFolderId(getRandomId());
-		MailboxFolderId outboxId = new MailboxFolderId(getRandomId());
-		return new MailboxProperties(onion, authToken, serverSupports,
-				inboxId, outboxId);
-	}
-
 	public static void writeBytes(File file, byte[] bytes)
 			throws IOException {
 		FileOutputStream outputStream = new FileOutputStream(file);
@@ -297,34 +278,6 @@ public class TestUtils {
 		String optionalTests = System.getenv("OPTIONAL_TESTS");
 		return optionalTests != null &&
 				asList(optionalTests.split(",")).contains(testClass.getName());
-	}
-
-	public static boolean mailboxUpdateEqual(@Nullable MailboxUpdate a,
-			@Nullable MailboxUpdate b) {
-		if (a == null || b == null) {
-			return a == b;
-		}
-		if (!a.hasMailbox() && !b.hasMailbox()) {
-			return a.getClientSupports().equals(b.getClientSupports());
-		} else if (a.hasMailbox() && b.hasMailbox()) {
-			MailboxUpdateWithMailbox am = (MailboxUpdateWithMailbox) a;
-			MailboxUpdateWithMailbox bm = (MailboxUpdateWithMailbox) b;
-			return am.getClientSupports().equals(bm.getClientSupports()) &&
-					mailboxPropertiesEqual(am.getMailboxProperties(),
-							bm.getMailboxProperties());
-		}
-		return false;
-	}
-
-	public static boolean mailboxPropertiesEqual(@Nullable MailboxProperties a,
-			@Nullable MailboxProperties b) {
-		if (a == null || b == null) {
-			return a == b;
-		}
-		return a.getOnion().equals(b.getOnion()) &&
-				a.getAuthToken().equals(b.getAuthToken()) &&
-				a.isOwner() == b.isOwner() &&
-				a.getServerSupports().equals(b.getServerSupports());
 	}
 
 	public static boolean hasEvent(Transaction txn,

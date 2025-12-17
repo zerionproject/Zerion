@@ -18,9 +18,6 @@ import org.briarproject.bramble.api.event.Event;
 import org.briarproject.bramble.api.event.EventListener;
 import org.briarproject.bramble.api.lifecycle.Service;
 import org.briarproject.bramble.api.lifecycle.ServiceException;
-import org.briarproject.bramble.api.mailbox.MailboxStatus;
-import org.briarproject.bramble.api.mailbox.event.MailboxProblemEvent;
-import org.briarproject.bramble.api.mailbox.event.OwnMailboxConnectionStatusEvent;
 import org.briarproject.bramble.api.settings.Settings;
 import org.briarproject.bramble.api.settings.SettingsManager;
 import org.briarproject.bramble.api.settings.event.SettingsUpdatedEvent;
@@ -182,7 +179,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		nc.setLockscreenVisibility(VISIBILITY_SECRET);
 		nc.enableVibration(true);
 		nc.enableLights(true);
-		nc.setLightColor(getColor(appContext, R.color.briar_lime_400));
+		nc.setLightColor(getColor(appContext, R.color.zerion_lime_400));
 		notificationManager.createNotificationChannel(nc);
 	}
 
@@ -194,7 +191,6 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 			clearForumPostNotification();
 			clearBlogPostNotification();
 			clearContactAddedNotification();
-			clearMailboxProblemNotification();
 			return null;
 		});
 		try {
@@ -258,13 +254,6 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		} else if (e instanceof ContactAddedEvent) {
 			ContactAddedEvent c = (ContactAddedEvent) e;
 			if (!c.isVerified()) showContactAddedNotification();
-		} else if (e instanceof MailboxProblemEvent) {
-			showMailboxProblemNotification();
-		} else if (e instanceof OwnMailboxConnectionStatusEvent) {
-			MailboxStatus s = ((OwnMailboxConnectionStatusEvent) e).getStatus();
-			if (s.getAttemptsSinceSuccess() == 0) {
-				clearMailboxProblemNotification();
-			}
 		} else if (e instanceof VoiceSignalReceivedEvent) {
 			// Handle incoming voice call signals via the new dedicated event
 			VoiceSignalReceivedEvent voiceEvent = (VoiceSignalReceivedEvent) e;
@@ -291,7 +280,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		NotificationCompat.Builder b =
 				new NotificationCompat.Builder(appContext, ONGOING_CHANNEL_ID);
 		b.setSmallIcon(icon);
-		b.setColor(getColor(appContext, R.color.briar_primary));
+		b.setColor(getColor(appContext, R.color.zerion_primary));
 		b.setContentTitle(appContext.getText(title));
 		b.setContentText(appContext.getText(text));
 		b.setWhen(0);
@@ -340,7 +329,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 			ZerionNotificationBuilder b = new ZerionNotificationBuilder(
 					appContext, CONTACT_CHANNEL_ID);
 			b.setSmallIcon(R.drawable.logo);
-			b.setColorRes(R.color.briar_primary);
+			b.setColorRes(R.color.zerion_primary);
 			b.setContentTitle(appContext.getText(R.string.app_name));
 			b.setContentText(appContext.getResources().getQuantityString(
 					R.plurals.private_message_notification_text, contactTotal,
@@ -442,7 +431,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 			ZerionNotificationBuilder b =
 					new ZerionNotificationBuilder(appContext, GROUP_CHANNEL_ID);
 			b.setSmallIcon(R.drawable.logo);
-			b.setColorRes(R.color.briar_primary);
+			b.setColorRes(R.color.zerion_primary);
 			b.setContentTitle(appContext.getText(R.string.app_name));
 			b.setContentText(appContext.getResources().getQuantityString(
 					R.plurals.group_message_notification_text, groupTotal,
@@ -533,7 +522,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		ZerionNotificationBuilder b =
 				new ZerionNotificationBuilder(appContext, CONTACT_CHANNEL_ID);
 		b.setSmallIcon(R.drawable.logo);
-		b.setColorRes(R.color.briar_primary);
+		b.setColorRes(R.color.zerion_primary);
 		b.setContentTitle(appContext.getText(R.string.app_name));
 		b.setContentText(appContext.getResources().getQuantityString(
 				R.plurals.contact_added_notification_text, contactAddedTotal,
@@ -574,7 +563,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		NotificationCompat.Builder b =
 				new NotificationCompat.Builder(appContext, REMINDER_CHANNEL_ID);
 		b.setSmallIcon(R.drawable.logo);
-		b.setColor(getColor(appContext, R.color.briar_primary));
+		b.setColor(getColor(appContext, R.color.zerion_primary));
 		b.setContentTitle(
 				appContext.getText(R.string.reminder_notification_title));
 		b.setContentText(
@@ -695,7 +684,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		ZerionNotificationBuilder b =
 				new ZerionNotificationBuilder(appContext, HOTSPOT_CHANNEL_ID);
 		b.setSmallIcon(R.drawable.logo);
-		b.setColorRes(R.color.briar_brand_green);
+		b.setColorRes(R.color.zerion_brand_green);
 		b.setContentTitle(
 				appContext.getText(R.string.hotspot_notification_title));
 		b.setNotificationCategory(CATEGORY_SERVICE);
@@ -708,14 +697,6 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	public void clearHotspotNotification() {
 		final int HOTSPOT_NOTIFICATION_ID = 11;
 		notificationManager.cancel(HOTSPOT_NOTIFICATION_ID);
-	}
-
-	@Override
-	public void showMailboxProblemNotification() {
-	}
-
-	@Override
-	public void clearMailboxProblemNotification() {
 	}
 
 	private void checkForIncomingCall(PrivateMessageReceivedEvent event) {

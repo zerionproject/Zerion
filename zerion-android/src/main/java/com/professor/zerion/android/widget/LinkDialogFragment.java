@@ -52,7 +52,7 @@ public class LinkDialogFragment extends DialogFragment {
 		Bundle args = requireArguments();
 		url = requireNonNull(args.getString("url"));
 
-		setStyle(STYLE_NO_TITLE, R.style.BriarDialogTheme);
+		setStyle(STYLE_NO_TITLE, R.style.ZerionDialogTheme);
 	}
 
 	@Override

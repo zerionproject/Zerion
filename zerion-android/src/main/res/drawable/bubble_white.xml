@@ -7,10 +7,10 @@
 		android:radius="@dimen/unread_bubble_size"/>
 
 	<solid
-		android:color="@color/briar_text_primary_inverse"/>
+		android:color="@color/zerion_text_primary_inverse"/>
 
 	<stroke
-		android:color="@color/briar_text_primary"
+		android:color="@color/zerion_text_primary_inverse"
 	    android:width="1dp"/>
 
 </shape>

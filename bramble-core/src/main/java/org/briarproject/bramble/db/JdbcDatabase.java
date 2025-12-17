@@ -6,6 +6,8 @@ import org.briarproject.bramble.api.contact.PendingContact;
 import org.briarproject.bramble.api.contact.PendingContactId;
 import org.briarproject.bramble.api.crypto.AgreementPrivateKey;
 import org.briarproject.bramble.api.crypto.AgreementPublicKey;
+import org.briarproject.bramble.api.crypto.HybridAgreementPrivateKey;
+import org.briarproject.bramble.api.crypto.HybridAgreementPublicKey;
 import org.briarproject.bramble.api.crypto.PrivateKey;
 import org.briarproject.bramble.api.crypto.PublicKey;
 import org.briarproject.bramble.api.crypto.SecretKey;
@@ -101,7 +103,7 @@ import static org.briarproject.bramble.util.LogUtils.now;
 abstract class JdbcDatabase implements Database<Connection> {
 
 	// Package access for testing
-	static final int CODE_SCHEMA_VERSION = 50;
+	static final int CODE_SCHEMA_VERSION = 53;
 
 	/**
 	 * The maximum number of idle connections to keep open.
@@ -129,6 +131,8 @@ abstract class JdbcDatabase implements Database<Connection> {
 					+ " privateKey _BINARY NOT NULL,"
 					+ " handshakePublicKey _BINARY," // Null if not generated
 					+ " handshakePrivateKey _BINARY," // Null if not generated
+					+ " hybridHandshakePublicKey _BINARY," // PQ keys, null if legacy
+					+ " hybridHandshakePrivateKey _BINARY," // PQ keys, null if legacy
 					+ " created BIGINT NOT NULL,"
 					+ " PRIMARY KEY (authorId))";
 
@@ -143,6 +147,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 					+ " handshakePublicKey _BINARY," // Null if key is unknown
 					+ " localAuthorId _HASH NOT NULL,"
 					+ " verified BOOLEAN NOT NULL,"
+					+ " postQuantum BOOLEAN NOT NULL DEFAULT FALSE,"
 					+ " syncVersions _BINARY DEFAULT '00' NOT NULL,"
 					+ " PRIMARY KEY (contactId),"
 					+ " FOREIGN KEY (localAuthorId)"
@@ -280,6 +285,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 					+ " publicKey _BINARY NOT NULL,"
 					+ " alias _STRING NOT NULL,"
 					+ " timestamp BIGINT NOT NULL,"
+					+ " formatVersion INT NOT NULL DEFAULT 0,"
 					+ " PRIMARY KEY (pendingContactId))";
 
 	private static final String CREATE_OUTGOING_KEYS =
@@ -499,7 +505,10 @@ abstract class JdbcDatabase implements Database<Connection> {
 				new Migration46_47(dbTypes),
 				new Migration47_48(),
 				new Migration48_49(),
-				new Migration49_50()
+				new Migration49_50(),
+				new Migration50_51(),
+				new Migration51_52(),
+				new Migration52_53()
 		);
 	}
 
@@ -703,14 +712,22 @@ abstract class JdbcDatabase implements Database<Connection> {
 	public ContactId addContact(Connection txn, Author remote, AuthorId local,
 			@Nullable PublicKey handshake, boolean verified)
 			throws DbException {
+		// Delegate to full method with postQuantum=false for backward compat
+		return addContact(txn, remote, local, handshake, verified, false);
+	}
+
+	@Override
+	public ContactId addContact(Connection txn, Author remote, AuthorId local,
+			@Nullable PublicKey handshake, boolean verified, boolean postQuantum)
+			throws DbException {
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		try {
 			// Create a contact row
 			String sql = "INSERT INTO contacts"
 					+ " (authorId, formatVersion, name, publicKey,"
-					+ " localAuthorId, handshakePublicKey, verified)"
-					+ " VALUES (?, ?, ?, ?, ?, ?, ?)";
+					+ " localAuthorId, handshakePublicKey, verified, postQuantum)"
+					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 			ps = txn.prepareStatement(sql);
 			ps.setBytes(1, remote.getId().getBytes());
 			ps.setInt(2, remote.getFormatVersion());
@@ -720,6 +737,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 			if (handshake == null) ps.setNull(6, BINARY);
 			else ps.setBytes(6, handshake.getEncoded());
 			ps.setBoolean(7, verified);
+			ps.setBoolean(8, postQuantum);
 			int affected = ps.executeUpdate();
 			if (affected != 1) throw new DbStateException();
 			ps.close();
@@ -823,8 +841,10 @@ abstract class JdbcDatabase implements Database<Connection> {
 		try {
 			String sql = "INSERT INTO localAuthors"
 					+ " (authorId, formatVersion, name, publicKey, privateKey,"
-					+ " handshakePublicKey, handshakePrivateKey, created)"
-					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+					+ " handshakePublicKey, handshakePrivateKey,"
+					+ " hybridHandshakePublicKey, hybridHandshakePrivateKey,"
+					+ " created)"
+					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 			ps = txn.prepareStatement(sql);
 			LocalAuthor local = i.getLocalAuthor();
 			ps.setBytes(1, local.getId().getBytes());
@@ -832,11 +852,17 @@ abstract class JdbcDatabase implements Database<Connection> {
 			ps.setString(3, local.getName());
 			ps.setBytes(4, local.getPublicKey().getEncoded());
 			ps.setBytes(5, local.getPrivateKey().getEncoded());
+			// Classical handshake keys
 			if (i.getHandshakePublicKey() == null) ps.setNull(6, BINARY);
 			else ps.setBytes(6, i.getHandshakePublicKey().getEncoded());
 			if (i.getHandshakePrivateKey() == null) ps.setNull(7, BINARY);
 			else ps.setBytes(7, i.getHandshakePrivateKey().getEncoded());
-			ps.setLong(8, i.getTimeCreated());
+			// Hybrid PQ handshake keys
+			if (i.getHybridHandshakePublicKey() == null) ps.setNull(8, BINARY);
+			else ps.setBytes(8, i.getHybridHandshakePublicKey().getEncoded());
+			if (i.getHybridHandshakePrivateKey() == null) ps.setNull(9, BINARY);
+			else ps.setBytes(9, i.getHybridHandshakePrivateKey().getEncoded());
+			ps.setLong(10, i.getTimeCreated());
 			int affected = ps.executeUpdate();
 			if (affected != 1) throw new DbStateException();
 			ps.close();
@@ -1008,13 +1034,14 @@ abstract class JdbcDatabase implements Database<Connection> {
 		PreparedStatement ps = null;
 		try {
 			String sql = "INSERT INTO pendingContacts (pendingContactId,"
-					+ " publicKey, alias, timestamp)"
-					+ " VALUES (?, ?, ?, ?)";
+					+ " publicKey, alias, timestamp, formatVersion)"
+					+ " VALUES (?, ?, ?, ?, ?)";
 			ps = txn.prepareStatement(sql);
 			ps.setBytes(1, p.getId().getBytes());
 			ps.setBytes(2, p.getPublicKey().getEncoded());
 			ps.setString(3, p.getAlias());
 			ps.setLong(4, p.getTimestamp());
+			ps.setInt(5, p.getFormatVersion());
 			int affected = ps.executeUpdate();
 			if (affected != 1) throw new DbStateException();
 			ps.close();
@@ -1486,7 +1513,8 @@ abstract class JdbcDatabase implements Database<Connection> {
 		ResultSet rs = null;
 		try {
 			String sql = "SELECT authorId, formatVersion, name, alias,"
-					+ " publicKey, handshakePublicKey, localAuthorId, verified"
+					+ " publicKey, handshakePublicKey, localAuthorId, verified,"
+					+ " postQuantum"
 					+ " FROM contacts"
 					+ " WHERE contactId = ?";
 			ps = txn.prepareStatement(sql);
@@ -1501,6 +1529,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 			byte[] handshakePub = rs.getBytes(6);
 			AuthorId localAuthorId = new AuthorId(rs.getBytes(7));
 			boolean verified = rs.getBoolean(8);
+			boolean postQuantum = rs.getBoolean(9);
 			rs.close();
 			ps.close();
 			Author author =
@@ -1508,7 +1537,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 			PublicKey handshakePublicKey = handshakePub == null ?
 					null : new AgreementPublicKey(handshakePub);
 			return new Contact(c, author, localAuthorId, alias,
-					handshakePublicKey, verified);
+					handshakePublicKey, verified, postQuantum);
 		} catch (SQLException e) {
 			tryToClose(rs, LOG, WARNING);
 			tryToClose(ps, LOG, WARNING);
@@ -1523,7 +1552,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 		try {
 			String sql = "SELECT contactId, authorId, formatVersion, name,"
 					+ " alias, publicKey, handshakePublicKey, localAuthorId,"
-					+ " verified"
+					+ " verified, postQuantum"
 					+ " FROM contacts";
 			s = txn.createStatement();
 			rs = s.executeQuery(sql);
@@ -1538,12 +1567,13 @@ abstract class JdbcDatabase implements Database<Connection> {
 				byte[] handshakePub = rs.getBytes(7);
 				AuthorId localAuthorId = new AuthorId(rs.getBytes(8));
 				boolean verified = rs.getBoolean(9);
+				boolean postQuantum = rs.getBoolean(10);
 				Author author =
 						new Author(authorId, formatVersion, name, publicKey);
 				PublicKey handshakePublicKey = handshakePub == null ?
 						null : new AgreementPublicKey(handshakePub);
 				contacts.add(new Contact(contactId, author, localAuthorId,
-						alias, handshakePublicKey, verified));
+						alias, handshakePublicKey, verified, postQuantum));
 			}
 			rs.close();
 			s.close();
@@ -1585,7 +1615,8 @@ abstract class JdbcDatabase implements Database<Connection> {
 		ResultSet rs = null;
 		try {
 			String sql = "SELECT contactId, formatVersion, name, alias,"
-					+ " publicKey, handshakePublicKey, localAuthorId, verified"
+					+ " publicKey, handshakePublicKey, localAuthorId, verified,"
+					+ " postQuantum"
 					+ " FROM contacts"
 					+ " WHERE authorId = ?";
 			ps = txn.prepareStatement(sql);
@@ -1601,12 +1632,13 @@ abstract class JdbcDatabase implements Database<Connection> {
 				byte[] handshakePub = rs.getBytes(6);
 				AuthorId localAuthorId = new AuthorId(rs.getBytes(7));
 				boolean verified = rs.getBoolean(8);
+				boolean postQuantum = rs.getBoolean(9);
 				Author author =
 						new Author(remote, formatVersion, name, publicKey);
 				PublicKey handshakePublicKey = handshakePub == null ?
 						null : new AgreementPublicKey(handshakePub);
 				contacts.add(new Contact(contactId, author, localAuthorId,
-						alias, handshakePublicKey, verified));
+						alias, handshakePublicKey, verified, postQuantum));
 			}
 			rs.close();
 			ps.close();
@@ -1626,7 +1658,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 		ResultSet rs = null;
 		try {
 			String sql = "SELECT contactId, authorId, formatVersion, name,"
-					+ " alias, publicKey, verified"
+					+ " alias, publicKey, verified, postQuantum"
 					+ " FROM contacts"
 					+ " WHERE handshakePublicKey = ? AND localAuthorId = ?";
 			ps = txn.prepareStatement(sql);
@@ -1645,13 +1677,14 @@ abstract class JdbcDatabase implements Database<Connection> {
 			String alias = rs.getString(5);
 			PublicKey publicKey = new SignaturePublicKey(rs.getBytes(6));
 			boolean verified = rs.getBoolean(7);
+			boolean postQuantum = rs.getBoolean(8);
 			if (rs.next()) throw new DbStateException();
 			rs.close();
 			ps.close();
 			Author author =
 					new Author(authorId, formatVersion, name, publicKey);
 			return new Contact(contactId, author, localAuthorId, alias,
-					handshakePublicKey, verified);
+					handshakePublicKey, verified, postQuantum);
 		} catch (SQLException e) {
 			tryToClose(rs, LOG, WARNING);
 			tryToClose(ps, LOG, WARNING);
@@ -1788,7 +1821,9 @@ abstract class JdbcDatabase implements Database<Connection> {
 		ResultSet rs = null;
 		try {
 			String sql = "SELECT formatVersion, name, publicKey, privateKey,"
-					+ " handshakePublicKey, handshakePrivateKey, created"
+					+ " handshakePublicKey, handshakePrivateKey,"
+					+ " hybridHandshakePublicKey, hybridHandshakePrivateKey,"
+					+ " created"
 					+ " FROM localAuthors"
 					+ " WHERE authorId = ?";
 			ps = txn.prepareStatement(sql);
@@ -1801,17 +1836,26 @@ abstract class JdbcDatabase implements Database<Connection> {
 			PrivateKey privateKey = new SignaturePrivateKey(rs.getBytes(4));
 			byte[] handshakePub = rs.getBytes(5);
 			byte[] handshakePriv = rs.getBytes(6);
-			long created = rs.getLong(7);
+			byte[] hybridPub = rs.getBytes(7);
+			byte[] hybridPriv = rs.getBytes(8);
+			long created = rs.getLong(9);
 			if (rs.next()) throw new DbStateException();
 			rs.close();
 			ps.close();
 			LocalAuthor local = new LocalAuthor(a, formatVersion, name,
 					publicKey, privateKey);
+			// Classical handshake keys
 			PublicKey handshakePublicKey = handshakePub == null ?
 					null : new AgreementPublicKey(handshakePub);
 			PrivateKey handshakePrivateKey = handshakePriv == null ?
 					null : new AgreementPrivateKey(handshakePriv);
+			// Hybrid PQ handshake keys
+			PublicKey hybridHandshakePublicKey = hybridPub == null ?
+					null : new HybridAgreementPublicKey(hybridPub);
+			PrivateKey hybridHandshakePrivateKey = hybridPriv == null ?
+					null : new HybridAgreementPrivateKey(hybridPriv);
 			return new Identity(local, handshakePublicKey, handshakePrivateKey,
+					hybridHandshakePublicKey, hybridHandshakePrivateKey,
 					created);
 		} catch (SQLException e) {
 			tryToClose(rs, LOG, WARNING);
@@ -1828,6 +1872,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 		try {
 			String sql = "SELECT authorId, formatVersion, name, publicKey,"
 					+ " privateKey, handshakePublicKey, handshakePrivateKey,"
+					+ " hybridHandshakePublicKey, hybridHandshakePrivateKey,"
 					+ " created"
 					+ " FROM localAuthors";
 			ps = txn.prepareStatement(sql);
@@ -1841,15 +1886,24 @@ abstract class JdbcDatabase implements Database<Connection> {
 				PrivateKey privateKey = new SignaturePrivateKey(rs.getBytes(5));
 				byte[] handshakePub = rs.getBytes(6);
 				byte[] handshakePriv = rs.getBytes(7);
-				long created = rs.getLong(8);
+				byte[] hybridPub = rs.getBytes(8);
+				byte[] hybridPriv = rs.getBytes(9);
+				long created = rs.getLong(10);
 				LocalAuthor local = new LocalAuthor(authorId, formatVersion,
 						name, publicKey, privateKey);
+				// Classical handshake keys
 				PublicKey handshakePublicKey = handshakePub == null ?
 						null : new AgreementPublicKey(handshakePub);
 				PrivateKey handshakePrivateKey = handshakePriv == null ?
 						null : new AgreementPrivateKey(handshakePriv);
+				// Hybrid PQ handshake keys
+				PublicKey hybridHandshakePublicKey = hybridPub == null ?
+						null : new HybridAgreementPublicKey(hybridPub);
+				PrivateKey hybridHandshakePrivateKey = hybridPriv == null ?
+						null : new HybridAgreementPrivateKey(hybridPriv);
 				identities.add(new Identity(local, handshakePublicKey,
-						handshakePrivateKey, created));
+						handshakePrivateKey, hybridHandshakePublicKey,
+						hybridHandshakePrivateKey, created));
 			}
 			rs.close();
 			ps.close();
@@ -2587,7 +2641,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		try {
-			String sql = "SELECT publicKey, alias, timestamp"
+			String sql = "SELECT publicKey, alias, timestamp, formatVersion"
 					+ " FROM pendingContacts"
 					+ " WHERE pendingContactId = ?";
 			ps = txn.prepareStatement(sql);
@@ -2597,7 +2651,8 @@ abstract class JdbcDatabase implements Database<Connection> {
 			PublicKey publicKey = new AgreementPublicKey(rs.getBytes(1));
 			String alias = rs.getString(2);
 			long timestamp = rs.getLong(3);
-			return new PendingContact(p, publicKey, alias, timestamp);
+			int formatVersion = rs.getInt(4);
+			return new PendingContact(p, publicKey, alias, timestamp, formatVersion);
 		} catch (SQLException e) {
 			tryToClose(rs, LOG, WARNING);
 			tryToClose(ps, LOG, WARNING);
@@ -2611,8 +2666,8 @@ abstract class JdbcDatabase implements Database<Connection> {
 		Statement s = null;
 		ResultSet rs = null;
 		try {
-			String sql = "SELECT pendingContactId, publicKey, alias, timestamp"
-					+ " FROM pendingContacts";
+			String sql = "SELECT pendingContactId, publicKey, alias, timestamp,"
+					+ " formatVersion FROM pendingContacts";
 			s = txn.createStatement();
 			rs = s.executeQuery(sql);
 			List<PendingContact> pendingContacts = new ArrayList<>();
@@ -2621,8 +2676,9 @@ abstract class JdbcDatabase implements Database<Connection> {
 				PublicKey publicKey = new AgreementPublicKey(rs.getBytes(2));
 				String alias = rs.getString(3);
 				long timestamp = rs.getLong(4);
+				int formatVersion = rs.getInt(5);
 				pendingContacts.add(new PendingContact(id, publicKey, alias,
-						timestamp));
+						timestamp, formatVersion));
 			}
 			rs.close();
 			s.close();
@@ -3496,6 +3552,28 @@ abstract class JdbcDatabase implements Database<Connection> {
 		try {
 			String sql = "UPDATE localAuthors"
 					+ " SET handshakePublicKey = ?, handshakePrivateKey = ?"
+					+ " WHERE authorId = ?";
+			ps = txn.prepareStatement(sql);
+			ps.setBytes(1, publicKey.getEncoded());
+			ps.setBytes(2, privateKey.getEncoded());
+			ps.setBytes(3, local.getBytes());
+			int affected = ps.executeUpdate();
+			if (affected < 0 || affected > 1) throw new DbStateException();
+			ps.close();
+		} catch (SQLException e) {
+			tryToClose(ps, LOG, WARNING);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	public void setHybridHandshakeKeyPair(Connection txn, AuthorId local,
+			PublicKey publicKey, PrivateKey privateKey) throws DbException {
+		PreparedStatement ps = null;
+		try {
+			String sql = "UPDATE localAuthors"
+					+ " SET hybridHandshakePublicKey = ?,"
+					+ " hybridHandshakePrivateKey = ?"
 					+ " WHERE authorId = ?";
 			ps = txn.prepareStatement(sql);
 			ps.setBytes(1, publicKey.getEncoded());

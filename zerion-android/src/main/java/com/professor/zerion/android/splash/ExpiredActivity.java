@@ -48,9 +48,9 @@ public class ExpiredActivity extends AppCompatActivity
 
 	@Override
 	protected void attachBaseContext(Context base) {
+		// PERFORMANCE: Use applyLocaleToContext() - NO disk I/O
 		super.attachBaseContext(
-				Localizer.getInstance().setLocale(base));
-		Localizer.getInstance().setLocale(this);
+				Localizer.getInstance().applyLocaleToContext(base));
 	}
 
 	@Override

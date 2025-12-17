@@ -18,7 +18,8 @@ public interface ConnectionManager {
 	void manageIncomingConnection(TransportId t, TransportConnectionReader r);
 
 	/**
-	 * Manages an incoming connection from a contact via a mailbox.
+	 * Manages an incoming connection from a contact over a simplex transport
+	 * with tag recognition control.
 	 * <p>
 	 * This method does not mark the tag as recognised until after the data
 	 * has been read from the {@link TransportConnectionReader}, at which
@@ -47,9 +48,9 @@ public interface ConnectionManager {
 			TransportConnectionWriter w);
 
 	/**
-	 * Manages an outgoing connection to a contact via a mailbox. The IDs of
-	 * any messages sent or acked are added to the given
-	 * {@link OutgoingSessionRecord}.
+	 * Manages an outgoing connection to a contact over a simplex transport
+	 * with session tracking. The IDs of any messages sent or acked are added
+	 * to the given {@link OutgoingSessionRecord}.
 	 */
 	void manageOutgoingConnection(ContactId c, TransportId t,
 			TransportConnectionWriter w, OutgoingSessionRecord sessionRecord);

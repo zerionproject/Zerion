@@ -16,12 +16,8 @@ import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec;
 
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
-import java.util.logging.Logger;
 
 import javax.annotation.concurrent.Immutable;
-
-import static java.util.logging.Level.INFO;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.api.crypto.PostQuantumConstants.HYBRID_SIGNATURE_BYTES;
 import static org.briarproject.bramble.api.crypto.PostQuantumConstants.ML_DSA_65_SIGNATURE_BYTES;
 
@@ -49,7 +45,6 @@ import static org.briarproject.bramble.api.crypto.PostQuantumConstants.ML_DSA_65
 @Immutable
 class HybridSignature {
 
-	private static final Logger LOG = getLogger(HybridSignature.class.getName());
 	private static final int SIGNATURE_KEY_PAIR_BITS = 256;
 	private static final EdDSAParameterSpec ED25519_SPEC =
 			EdDSANamedCurveTable.getByName("Ed25519");
@@ -63,9 +58,6 @@ class HybridSignature {
 		this.ed25519KeyPairGenerator = new KeyPairGenerator();
 		this.ed25519KeyPairGenerator.initialize(SIGNATURE_KEY_PAIR_BITS, secureRandom);
 		this.mlDsa65 = new MlDsa65(secureRandom);
-		if (LOG.isLoggable(INFO)) {
-			LOG.info("Hybrid signature initialized (Ed25519 + ML-DSA-65)");
-		}
 	}
 
 	/**

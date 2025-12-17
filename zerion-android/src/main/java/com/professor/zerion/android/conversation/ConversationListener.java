@@ -3,7 +3,10 @@ package com.professor.zerion.android.conversation;
 import android.view.View;
 
 import com.professor.zerion.android.attachment.AttachmentItem;
+import org.briarproject.briar.api.messaging.PrivateMessageHeader;
 import org.briarproject.nullsafety.NotNullByDefault;
+
+import java.util.List;
 
 import androidx.annotation.UiThread;
 
@@ -24,6 +27,10 @@ interface ConversationListener {
 
 	void onMessageLongClick(ConversationItem item);
 
-	void onSwipeToReply(ConversationItem item);
+	/**
+	 * Called when ViewHolder needs to load attachments for a message.
+	 * Returns attachments synchronously from cache, or triggers async load.
+	 */
+	List<AttachmentItem> loadAttachmentsForItem(ConversationMessageItem item);
 
 }

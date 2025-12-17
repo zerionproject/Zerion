@@ -4,8 +4,10 @@ import com.professor.zerion.android.attachment.AttachmentItem;
 import org.briarproject.briar.api.messaging.PrivateMessageHeader;
 import org.briarproject.nullsafety.NotNullByDefault;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.NotThreadSafe;
 
 import androidx.annotation.LayoutRes;
@@ -16,16 +18,59 @@ import androidx.lifecycle.LiveData;
 @NotNullByDefault
 class ConversationMessageItem extends ConversationItem {
 
-	private final List<AttachmentItem> attachments;
+	// Attachments loaded lazily for performance
+	private List<AttachmentItem> attachments;
+	// Store header for lazy attachment loading
+	@Nullable
+	private final PrivateMessageHeader header;
+	// Track if attachments have been loaded
+	private boolean attachmentsLoaded = false;
 
 	ConversationMessageItem(@LayoutRes int layoutRes, PrivateMessageHeader h,
 			LiveData<String> contactName, List<AttachmentItem> attachments) {
 		super(layoutRes, h, contactName);
 		this.attachments = attachments;
+		this.header = h;
+		this.attachmentsLoaded = !attachments.isEmpty() || h.getAttachmentHeaders().isEmpty();
+	}
+
+	/**
+	 * Constructor for lazy loading - attachments will be loaded when ViewHolder binds.
+	 */
+	ConversationMessageItem(@LayoutRes int layoutRes, PrivateMessageHeader h,
+			LiveData<String> contactName) {
+		super(layoutRes, h, contactName);
+		this.attachments = new ArrayList<>();
+		this.header = h;
+		this.attachmentsLoaded = h.getAttachmentHeaders().isEmpty();
 	}
 
 	List<AttachmentItem> getAttachments() {
 		return attachments;
+	}
+
+	/**
+	 * Check if this item has attachment headers that haven't been loaded yet.
+	 */
+	boolean needsAttachmentLoading() {
+		return !attachmentsLoaded && header != null && !header.getAttachmentHeaders().isEmpty();
+	}
+
+	/**
+	 * Get the header for lazy attachment loading.
+	 */
+	@Nullable
+	PrivateMessageHeader getHeader() {
+		return header;
+	}
+
+	/**
+	 * Set attachments after lazy loading.
+	 */
+	@UiThread
+	void setAttachments(List<AttachmentItem> attachments) {
+		this.attachments = attachments;
+		this.attachmentsLoaded = true;
 	}
 
 	@UiThread

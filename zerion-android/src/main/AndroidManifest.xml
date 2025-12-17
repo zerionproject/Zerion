@@ -30,7 +30,7 @@
 
 	<!-- Location permission removed - not needed for Tor-only transport -->
 	<uses-permission-sdk-23 android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
-	<uses-permission-sdk-23 android:name="android.permission.USE_BIOMETRIC" />
+	<!-- USE_BIOMETRIC is provided by androidx.biometric library -->
 	<uses-permission-sdk-23 android:name="android.permission.FOREGROUND_SERVICE" />
 	<uses-permission-sdk-23 android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 	<uses-permission-sdk-23 android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
@@ -83,20 +83,20 @@
 		<activity
 			android:name="com.professor.zerion.android.login.StartupActivity"
 			android:exported="false"
-			android:theme="@style/BriarTheme.NoActionBar"
+			android:theme="@style/ZerionTheme.NoActionBar"
 			android:windowSoftInputMode="adjustResize" />
 
 		<activity
 			android:name="com.professor.zerion.android.account.SetupActivity"
 			android:exported="false"
-			android:theme="@style/BriarTheme.NoActionBar"
+			android:theme="@style/ZerionTheme.NoActionBar"
 			android:windowSoftInputMode="adjustResize" />
 
 		<activity
 			android:name="com.professor.zerion.android.splash.SplashScreenActivity"
 			android:exported="true"
 			android:label="@string/app_name"
-			android:theme="@style/BriarTheme.NoActionBar">
+			android:theme="@style/ZerionTheme.NoActionBar">
 			<intent-filter>
 				<action android:name="android.intent.action.MAIN" />
 
@@ -108,7 +108,7 @@
 			android:name="com.professor.zerion.android.navdrawer.NavDrawerActivity"
 			android:exported="true"
 			android:launchMode="singleTask"
-			android:theme="@style/BriarTheme.NoActionBar"
+			android:theme="@style/ZerionTheme.NoActionBar"
 			android:windowSoftInputMode="adjustResize">
 			<intent-filter android:label="@string/add_contact_remotely_title_case">
 				<action android:name="android.intent.action.VIEW" />
@@ -130,7 +130,7 @@
 			android:exported="false"
 			android:label="@string/app_name"
 			android:parentActivityName="com.professor.zerion.android.navdrawer.NavDrawerActivity"
-			android:theme="@style/BriarTheme.NoActionBar"
+			android:theme="@style/ZerionTheme.NoActionBar"
 			android:windowSoftInputMode="adjustResize|stateUnchanged">
 			<meta-data
 				android:name="android.support.PARENT_ACTIVITY"
@@ -141,7 +141,7 @@
 			android:name=".android.conversation.ImageActivity"
 			android:exported="false"
 			android:parentActivityName="com.professor.zerion.android.conversation.ConversationActivity"
-			android:theme="@style/BriarTheme.ActionBarOverlay">
+			android:theme="@style/ZerionTheme.ActionBarOverlay">
 			<meta-data
 				android:name="android.support.PARENT_ACTIVITY"
 				android:value="com.professor.zerion.android.conversation.ConversationActivity" />
@@ -151,7 +151,7 @@
 			android:name="com.professor.zerion.android.conversation.ChatSettingsActivity"
 			android:exported="false"
 			android:parentActivityName="com.professor.zerion.android.conversation.ConversationActivity"
-			android:theme="@style/BriarTheme.NoActionBar">
+			android:theme="@style/ZerionTheme.NoActionBar">
 			<meta-data
 				android:name="android.support.PARENT_ACTIVITY"
 				android:value="com.professor.zerion.android.conversation.ConversationActivity" />
@@ -161,7 +161,7 @@
 			android:name="com.professor.zerion.android.conversation.AllMediaActivity"
 			android:exported="false"
 			android:parentActivityName="com.professor.zerion.android.conversation.ConversationActivity"
-			android:theme="@style/BriarTheme.NoActionBar">
+			android:theme="@style/ZerionTheme.NoActionBar">
 			<meta-data
 				android:name="android.support.PARENT_ACTIVITY"
 				android:value="com.professor.zerion.android.conversation.ConversationActivity" />
@@ -183,7 +183,7 @@
 			android:exported="false"
 			android:label="@string/app_name"
 			android:parentActivityName="com.professor.zerion.android.navdrawer.NavDrawerActivity"
-			android:theme="@style/BriarTheme.NoActionBar"
+			android:theme="@style/ZerionTheme.NoActionBar"
 			android:windowSoftInputMode="adjustResize|stateHidden">
 			<meta-data
 				android:name="android.support.PARENT_ACTIVITY"
@@ -249,7 +249,7 @@
 			android:finishOnTaskLaunch="true"
 			android:label="@string/startup_failed_activity_title"
 			android:launchMode="singleInstance"
-			android:process=":briar_startup_failure"
+			android:process=":zerion_startup_failure"
 			android:windowSoftInputMode="adjustResize|stateHidden" />
 
 		<activity
@@ -288,15 +288,7 @@
 				android:value="com.professor.zerion.android.settings.SettingsActivity" />
 		</activity>
 
-		<activity
-			android:name="com.professor.zerion.android.test.TestDataActivity"
-			android:exported="false"
-			android:label="Create test data"
-			android:parentActivityName="com.professor.zerion.android.settings.SettingsActivity">
-			<meta-data
-				android:name="android.support.PARENT_ACTIVITY"
-				android:value="com.professor.zerion.android.settings.SettingsActivity" />
-		</activity>
+		<!-- TestDataActivity moved to debug/AndroidManifest.xml for debug builds only -->
 
 		<activity
 			android:name="com.professor.zerion.android.panic.PanicPreferencesActivity"
@@ -335,14 +327,14 @@
 			android:exported="false"
 			android:label="@string/lock_unlock"
 			android:launchMode="singleTask"
-			android:theme="@style/BriarTheme.NoActionBar"
+			android:theme="@style/ZerionTheme.NoActionBar"
 			android:windowSoftInputMode="adjustResize" />
 
 		<activity
 			android:name=".android.contact.add.remote.AddContactActivity"
 			android:exported="false"
 			android:label="@string/add_contact_remotely_title_case"
-			android:theme="@style/BriarTheme.NoActionBar"
+			android:theme="@style/ZerionTheme.NoActionBar"
 			android:windowSoftInputMode="adjustResize|stateHidden" />
 
 
@@ -360,14 +352,14 @@
 			android:name=".android.contact.add.remote.PendingContactListActivity"
 			android:exported="false"
 			android:label="@string/pending_contact_requests"
-			android:theme="@style/BriarTheme" />
+			android:theme="@style/ZerionTheme" />
 
 		<activity
 			android:name="com.professor.zerion.android.vault.ui.VaultActivity"
 			android:exported="false"
 			android:label="Secure Vault"
 			android:parentActivityName="com.professor.zerion.android.navdrawer.NavDrawerActivity"
-			android:theme="@style/BriarTheme.NoActionBar"
+			android:theme="@style/ZerionTheme.NoActionBar"
 			android:windowSoftInputMode="adjustResize|stateHidden">
 			<meta-data
 				android:name="android.support.PARENT_ACTIVITY"
@@ -383,7 +375,7 @@
 			android:screenOrientation="portrait"
 			android:showWhenLocked="true"
 			android:turnScreenOn="true"
-			android:theme="@style/BriarTheme.NoActionBar" />
+			android:theme="@style/ZerionTheme.NoActionBar" />
 
 		<!-- Voice Call Service - supports microphone and special_use for permission fallback -->
 		<service

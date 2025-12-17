@@ -7,6 +7,9 @@ import org.briarproject.bramble.api.contact.HandshakeManager;
 import org.briarproject.bramble.api.contact.PendingContact;
 import org.briarproject.bramble.api.contact.PendingContactId;
 import org.briarproject.bramble.api.crypto.AgreementPublicKey;
+import org.briarproject.bramble.api.crypto.CryptoComponent;
+import org.briarproject.bramble.api.crypto.HybridAgreementPublicKey;
+import org.briarproject.bramble.api.crypto.HybridEncapsulationResult;
 import org.briarproject.bramble.api.crypto.KeyPair;
 import org.briarproject.bramble.api.crypto.PublicKey;
 import org.briarproject.bramble.api.crypto.SecretKey;
@@ -28,24 +31,44 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.util.List;
+import java.util.logging.Logger;
 
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
+import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.api.crypto.CryptoConstants.MAX_AGREEMENT_PUBLIC_KEY_BYTES;
+import static org.briarproject.bramble.api.crypto.PostQuantumConstants.HYBRID_AGREEMENT_PUBLIC_KEY_BYTES;
+import static org.briarproject.bramble.api.crypto.PostQuantumConstants.ML_KEM_768_CIPHERTEXT_BYTES;
 import static org.briarproject.bramble.contact.HandshakeConstants.PROOF_BYTES;
 import static org.briarproject.bramble.contact.HandshakeConstants.PROTOCOL_MAJOR_VERSION;
 import static org.briarproject.bramble.contact.HandshakeConstants.PROTOCOL_MINOR_VERSION;
 import static org.briarproject.bramble.contact.HandshakeRecordTypes.RECORD_TYPE_EPHEMERAL_PUBLIC_KEY;
+import static org.briarproject.bramble.contact.HandshakeRecordTypes.RECORD_TYPE_HYBRID_STATIC_KEY;
+import static org.briarproject.bramble.contact.HandshakeRecordTypes.RECORD_TYPE_KEM_CIPHERTEXT;
 import static org.briarproject.bramble.contact.HandshakeRecordTypes.RECORD_TYPE_MINOR_VERSION;
 import static org.briarproject.bramble.contact.HandshakeRecordTypes.RECORD_TYPE_PROOF_OF_OWNERSHIP;
+import static org.briarproject.bramble.api.Bytes.compare;
+import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.HYBRID_COMMITMENT_LABEL;
 import static org.briarproject.bramble.util.ValidationUtils.checkLength;
 
+/**
+ * Handshake manager that supports both classical and post-quantum key exchange.
+ * <p>
+ * The handshake protocol selects keys based on the pending contact's format version:
+ * <ul>
+ *   <li>Version 0 (classical): Uses X25519 keys (Briar-compatible)</li>
+ *   <li>Version 1 (hybrid): Uses X25519 + ML-KEM-768 keys (PQ-secure)</li>
+ * </ul>
+ */
 @Immutable
 @NotNullByDefault
 class HandshakeManagerImpl implements HandshakeManager {
+
+	private static final Logger LOG =
+			getLogger(HandshakeManagerImpl.class.getName());
 
 	// Ignore records with current protocol version, unknown record type
 	private static final RecordPredicate IGNORE = r ->
@@ -55,7 +78,9 @@ class HandshakeManagerImpl implements HandshakeManager {
 	private static boolean isKnownRecordType(byte type) {
 		return type == RECORD_TYPE_EPHEMERAL_PUBLIC_KEY ||
 				type == RECORD_TYPE_PROOF_OF_OWNERSHIP ||
-				type == RECORD_TYPE_MINOR_VERSION;
+				type == RECORD_TYPE_MINOR_VERSION ||
+				type == RECORD_TYPE_HYBRID_STATIC_KEY ||
+				type == RECORD_TYPE_KEM_CIPHERTEXT;
 	}
 
 	private final TransactionManager db;
@@ -63,6 +88,8 @@ class HandshakeManagerImpl implements HandshakeManager {
 	private final ContactManager contactManager;
 	private final TransportCrypto transportCrypto;
 	private final HandshakeCrypto handshakeCrypto;
+	private final CryptoComponent crypto;
+	private final PendingContactFactory pendingContactFactory;
 	private final RecordReaderFactory recordReaderFactory;
 	private final RecordWriterFactory recordWriterFactory;
 
@@ -72,6 +99,8 @@ class HandshakeManagerImpl implements HandshakeManager {
 			ContactManager contactManager,
 			TransportCrypto transportCrypto,
 			HandshakeCrypto handshakeCrypto,
+			CryptoComponent crypto,
+			PendingContactFactory pendingContactFactory,
 			RecordReaderFactory recordReaderFactory,
 			RecordWriterFactory recordWriterFactory) {
 		this.db = db;
@@ -79,6 +108,8 @@ class HandshakeManagerImpl implements HandshakeManager {
 		this.contactManager = contactManager;
 		this.transportCrypto = transportCrypto;
 		this.handshakeCrypto = handshakeCrypto;
+		this.crypto = crypto;
+		this.pendingContactFactory = pendingContactFactory;
 		this.recordReaderFactory = recordReaderFactory;
 		this.recordWriterFactory = recordWriterFactory;
 	}
@@ -86,14 +117,45 @@ class HandshakeManagerImpl implements HandshakeManager {
 	@Override
 	public HandshakeResult handshake(PendingContactId p, InputStream in,
 			StreamWriter out) throws DbException, IOException {
-		Pair<PublicKey, KeyPair> keys = db.transactionWithResult(true, txn -> {
+		// Get pending contact and select appropriate keys based on format version
+		HandshakeContext ctx = db.transactionWithResult(true, txn -> {
 			PendingContact pendingContact =
 					contactManager.getPendingContact(txn, p);
-			KeyPair keyPair = identityManager.getHandshakeKeys(txn);
-			return new Pair<>(pendingContact.getPublicKey(), keyPair);
+			KeyPair keyPair;
+			KeyPair hybridKeyPair = null;
+
+			if (pendingContact.isPostQuantum()) {
+				hybridKeyPair = identityManager.getHybridHandshakeKeys(txn);
+				if (hybridKeyPair == null) {
+					keyPair = identityManager.getHandshakeKeys(txn);
+				} else {
+					keyPair = hybridKeyPair;
+				}
+			} else {
+				keyPair = identityManager.getHandshakeKeys(txn);
+			}
+
+			return new HandshakeContext(pendingContact, keyPair, hybridKeyPair);
 		});
-		PublicKey theirStaticPublicKey = keys.getFirst();
-		KeyPair ourStaticKeyPair = keys.getSecond();
+
+		// Check if this is a hybrid PQ handshake
+		boolean isHybrid = ctx.pendingContact.isPostQuantum() &&
+				ctx.hybridKeyPair != null;
+
+		if (isHybrid) {
+			return performHybridHandshake(ctx, in, out);
+		} else {
+			return performClassicalHandshake(ctx, in, out);
+		}
+	}
+
+	/**
+	 * Performs a classical X25519 handshake (Briar-compatible).
+	 */
+	private HandshakeResult performClassicalHandshake(HandshakeContext ctx,
+			InputStream in, StreamWriter out) throws IOException {
+		PublicKey theirStaticPublicKey = ctx.pendingContact.getPublicKey();
+		KeyPair ourStaticKeyPair = ctx.keyPair;
 		boolean alice = transportCrypto.isAlice(theirStaticPublicKey,
 				ourStaticKeyPair);
 		RecordReader recordReader = recordReaderFactory.createRecordReader(in);
@@ -120,8 +182,6 @@ class HandshakeManagerImpl implements HandshakeManager {
 						theirStaticPublicKey, theirEphemeralPublicKey,
 						ourStaticKeyPair, ourEphemeralKeyPair, alice);
 			} else {
-				// TODO: Remove this branch after a reasonable migration
-				//  period (added 2023-03-10).
 				masterKey = handshakeCrypto.deriveMasterKey_0_0(
 						theirStaticPublicKey, theirEphemeralPublicKey,
 						ourStaticKeyPair, ourEphemeralKeyPair, alice);
@@ -143,6 +203,158 @@ class HandshakeManagerImpl implements HandshakeManager {
 		if (!handshakeCrypto.verifyOwnership(masterKey, !alice, theirProof))
 			throw new FormatException();
 		return new HandshakeResult(masterKey, alice);
+	}
+
+	/**
+	 * Performs a hybrid post-quantum handshake (Zerion-to-Zerion).
+	 * <p>
+	 * Protocol:
+	 * 1. Exchange full hybrid static keys (link only contained commitment)
+	 * 2. Verify received key matches commitment from link
+	 * 3. Exchange hybrid ephemeral keys
+	 * 4. Alice performs KEM encapsulation and sends ciphertext to Bob
+	 * 5. Derive hybrid master key combining ECDH and KEM secrets
+	 * 6. Exchange proofs of ownership
+	 */
+	private HandshakeResult performHybridHandshake(HandshakeContext ctx,
+			InputStream in, StreamWriter out) throws IOException {
+		byte[] theirCommitment = ctx.pendingContact.getPublicKey().getEncoded();
+		KeyPair ourHybridStaticKeyPair = ctx.hybridKeyPair;
+
+		RecordReader recordReader = recordReaderFactory.createRecordReader(in);
+		RecordWriter recordWriter = recordWriterFactory
+				.createRecordWriter(out.getOutputStream());
+
+		byte[] ourCommitment = crypto.hash(HYBRID_COMMITMENT_LABEL,
+				ourHybridStaticKeyPair.getPublic().getEncoded());
+		boolean alice = compare(ourCommitment, theirCommitment) < 0;
+
+		PublicKey theirHybridStaticKey;
+		if (alice) {
+			sendHybridStaticKey(recordWriter, ourHybridStaticKeyPair.getPublic());
+			theirHybridStaticKey = receiveHybridStaticKey(recordReader);
+		} else {
+			theirHybridStaticKey = receiveHybridStaticKey(recordReader);
+			sendHybridStaticKey(recordWriter, ourHybridStaticKeyPair.getPublic());
+		}
+
+		if (!pendingContactFactory.verifyHybridKeyCommitment(
+				theirHybridStaticKey, theirCommitment)) {
+			throw new FormatException();
+		}
+
+		KeyPair ourHybridEphemeralKeyPair =
+				handshakeCrypto.generateHybridEphemeralKeyPair();
+
+		PublicKey theirHybridEphemeralKey;
+		if (alice) {
+			sendMinorVersion(recordWriter);
+			sendHybridStaticKey(recordWriter, ourHybridEphemeralKeyPair.getPublic());
+			theirHybridEphemeralKey = receiveHybridEphemeralKey(recordReader);
+		} else {
+			theirHybridEphemeralKey = receiveHybridEphemeralKey(recordReader);
+			sendMinorVersion(recordWriter);
+			sendHybridStaticKey(recordWriter, ourHybridEphemeralKeyPair.getPublic());
+		}
+
+		byte[] kemCiphertext;
+		byte[] kemSecret;
+		try {
+			if (alice) {
+				HybridEncapsulationResult encResult =
+						handshakeCrypto.hybridEncapsulate(theirHybridStaticKey);
+				kemCiphertext = encResult.getCiphertext();
+				kemSecret = encResult.getSharedSecret();
+				sendKemCiphertext(recordWriter, kemCiphertext);
+			} else {
+				kemCiphertext = receiveKemCiphertext(recordReader);
+				kemSecret = new byte[0];
+			}
+		} catch (GeneralSecurityException e) {
+			throw new FormatException();
+		}
+
+		SecretKey masterKey;
+		try {
+			masterKey = handshakeCrypto.deriveHybridMasterKey(
+					theirHybridStaticKey, theirHybridEphemeralKey,
+					ourHybridStaticKeyPair, ourHybridEphemeralKeyPair,
+					kemCiphertext, kemSecret, alice);
+		} catch (GeneralSecurityException e) {
+			throw new FormatException();
+		}
+
+		byte[] ourProof = handshakeCrypto.proveOwnership(masterKey, alice);
+		byte[] theirProof;
+		if (alice) {
+			sendProof(recordWriter, ourProof);
+			theirProof = receiveProof(recordReader);
+		} else {
+			theirProof = receiveProof(recordReader);
+			sendProof(recordWriter, ourProof);
+		}
+
+		out.sendEndOfStream();
+		recordReader.readRecord(r -> false, IGNORE);
+
+		if (!handshakeCrypto.verifyOwnership(masterKey, !alice, theirProof)) {
+			throw new FormatException();
+		}
+
+		return new HandshakeResult(masterKey, alice);
+	}
+
+	private void sendHybridStaticKey(RecordWriter w, PublicKey k)
+			throws IOException {
+		w.writeRecord(new Record(PROTOCOL_MAJOR_VERSION,
+				RECORD_TYPE_HYBRID_STATIC_KEY, k.getEncoded()));
+		w.flush();
+	}
+
+	private PublicKey receiveHybridStaticKey(RecordReader r) throws IOException {
+		Record rec = readRecord(r,
+				singletonList(RECORD_TYPE_HYBRID_STATIC_KEY));
+		byte[] key = rec.getPayload();
+		checkLength(key, HYBRID_AGREEMENT_PUBLIC_KEY_BYTES,
+				HYBRID_AGREEMENT_PUBLIC_KEY_BYTES);
+		return new HybridAgreementPublicKey(key);
+	}
+
+	private PublicKey receiveHybridEphemeralKey(RecordReader r)
+			throws IOException {
+		// First should be minor version, then ephemeral key (using HYBRID_STATIC_KEY type)
+		Record first = readRecord(r, asList(RECORD_TYPE_MINOR_VERSION,
+				RECORD_TYPE_HYBRID_STATIC_KEY));
+		if (first.getRecordType() == RECORD_TYPE_MINOR_VERSION) {
+			// Read the actual ephemeral key record
+			Record second = readRecord(r,
+					singletonList(RECORD_TYPE_HYBRID_STATIC_KEY));
+			byte[] key = second.getPayload();
+			checkLength(key, HYBRID_AGREEMENT_PUBLIC_KEY_BYTES,
+					HYBRID_AGREEMENT_PUBLIC_KEY_BYTES);
+			return new HybridAgreementPublicKey(key);
+		} else {
+			// They didn't send minor version (older protocol)
+			byte[] key = first.getPayload();
+			checkLength(key, HYBRID_AGREEMENT_PUBLIC_KEY_BYTES,
+					HYBRID_AGREEMENT_PUBLIC_KEY_BYTES);
+			return new HybridAgreementPublicKey(key);
+		}
+	}
+
+	private void sendKemCiphertext(RecordWriter w, byte[] ciphertext)
+			throws IOException {
+		w.writeRecord(new Record(PROTOCOL_MAJOR_VERSION,
+				RECORD_TYPE_KEM_CIPHERTEXT, ciphertext));
+		w.flush();
+	}
+
+	private byte[] receiveKemCiphertext(RecordReader r) throws IOException {
+		Record rec = readRecord(r, singletonList(RECORD_TYPE_KEM_CIPHERTEXT));
+		byte[] ciphertext = rec.getPayload();
+		checkLength(ciphertext, ML_KEM_768_CIPHERTEXT_BYTES,
+				ML_KEM_768_CIPHERTEXT_BYTES);
+		return ciphertext;
 	}
 
 	private void sendPublicKey(RecordWriter w, PublicKey k) throws IOException {
@@ -234,5 +446,21 @@ class HandshakeManagerImpl implements HandshakeManager {
 		Record rec = r.readRecord(accept, IGNORE);
 		if (rec == null) throw new EOFException();
 		return rec;
+	}
+
+	/**
+	 * Helper class to hold handshake context data.
+	 */
+	private static class HandshakeContext {
+		final PendingContact pendingContact;
+		final KeyPair keyPair;
+		final KeyPair hybridKeyPair;
+
+		HandshakeContext(PendingContact pendingContact, KeyPair keyPair,
+				KeyPair hybridKeyPair) {
+			this.pendingContact = pendingContact;
+			this.keyPair = keyPair;
+			this.hybridKeyPair = hybridKeyPair;
+		}
 	}
 }

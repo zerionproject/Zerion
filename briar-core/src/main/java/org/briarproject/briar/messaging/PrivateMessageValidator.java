@@ -37,6 +37,7 @@ import static org.briarproject.briar.api.messaging.MessagingConstants.MAX_PRIVAT
 import static org.briarproject.briar.client.MessageTrackerConstants.MSG_KEY_READ;
 import static org.briarproject.briar.messaging.MessageTypes.ATTACHMENT;
 import static org.briarproject.briar.messaging.MessageTypes.PRIVATE_MESSAGE;
+import static org.briarproject.briar.messaging.MessageTypes.VOICE_SIGNAL;
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_ATTACHMENT_HEADERS;
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_AUTO_DELETE_TIMER;
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_HAS_TEXT;
@@ -90,6 +91,9 @@ class PrivateMessageValidator implements MessageValidator {
 					context = validatePrivateMessage(m, list);
 				} else if (messageType == ATTACHMENT) {
 					context = validateAttachment(m, list, bytesRead);
+				} else if (messageType == VOICE_SIGNAL) {
+					if (!reader.eof()) throw new FormatException();
+					context = validateVoiceSignal(m, list);
 				} else {
 					throw new InvalidMessageException();
 				}
@@ -167,6 +171,41 @@ class PrivateMessageValidator implements MessageValidator {
 		meta.put(MSG_KEY_MSG_TYPE, ATTACHMENT);
 		meta.put(MSG_KEY_DESCRIPTOR_LENGTH, descriptorLength);
 		meta.put(MSG_KEY_CONTENT_TYPE, contentType);
+		return new BdfMessageContext(meta);
+	}
+
+	private BdfMessageContext validateVoiceSignal(Message m, BdfList body)
+			throws FormatException {
+		// Voice signal format: [VOICE_SIGNAL, signalType, callId, payload, durationMs]
+		// Minimum size is 3 (type, signalType, callId), max is 5
+		checkSize(body, 3, 5);
+		int signalType = body.getInt(1);
+		// Validate signal type is in valid range (0-5)
+		if (signalType < 0 || signalType > 5) {
+			throw new FormatException();
+		}
+		String callId = body.getString(2);
+		// Call ID max length is 64 (UUID format)
+		checkLength(callId, 1, 64);
+		// Optional payload (SDP/ICE data) - max 16KB
+		if (body.size() > 3) {
+			String payload = body.getOptionalString(3);
+			if (payload != null) {
+				checkLength(payload, 0, 16384);
+			}
+		}
+		// Optional duration (for CALL_END)
+		if (body.size() > 4) {
+			Long durationMs = body.getOptionalLong(4);
+			if (durationMs != null && durationMs < 0) {
+				throw new FormatException();
+			}
+		}
+		// Return the metadata
+		BdfDictionary meta = new BdfDictionary();
+		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
+		meta.put(MSG_KEY_LOCAL, false);
+		meta.put(MSG_KEY_MSG_TYPE, VOICE_SIGNAL);
 		return new BdfMessageContext(meta);
 	}
 }

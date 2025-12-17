@@ -73,6 +73,11 @@ public class NavDrawerActivity extends ZerionActivity implements
 
 	private NavDrawerViewModel navDrawerViewModel;
 
+	// Track network status view state
+	private boolean isShowingNetworkStatus = false;
+	private int previousTab = TAB_CONTACTS;
+	private String previousTitle = null;
+
 	@Inject
 	ViewModelProvider.Factory viewModelFactory;
 
@@ -151,36 +156,69 @@ public class NavDrawerActivity extends ZerionActivity implements
 
 	private void setupClickListeners() {
 		profileIcon.setOnClickListener(v -> openSettings());
-		searchButton.setOnClickListener(v -> openSearch());
+		searchButton.setOnClickListener(v -> toggleNetworkStatus());
 		menuButton.setOnClickListener(v -> showOverflowMenu());
 
-		tabContacts.setOnClickListener(v -> switchTab(TAB_CONTACTS));
-		tabGroupChats.setOnClickListener(v -> switchTab(TAB_GROUPS));
-		tabVault.setOnClickListener(v -> switchTab(TAB_VAULT));
+		tabContacts.setOnClickListener(v -> onTabClicked(TAB_CONTACTS));
+		tabGroupChats.setOnClickListener(v -> onTabClicked(TAB_GROUPS));
+		tabVault.setOnClickListener(v -> onTabClicked(TAB_VAULT));
 
 		fabCompose.setOnClickListener(v -> handleComposeFab());
 	}
 
+	private void onTabClicked(int tab) {
+		// If showing network status, exit it first
+		if (isShowingNetworkStatus) {
+			isShowingNetworkStatus = false;
+			findViewById(R.id.bottomNavigation).setVisibility(VISIBLE);
+			// Force switch since we're coming from network status
+			switchTab(tab, true);
+		} else {
+			switchTab(tab);
+		}
+	}
+
 	private void switchTab(int tab) {
-		if (currentTab == tab) return;
+		switchTab(tab, false);
+	}
+
+	private void switchTab(int tab, boolean forceSwitch) {
+		// Only skip if same tab AND not forcing (force is used when returning from network status)
+		if (currentTab == tab && !forceSwitch) return;
 
 		currentTab = tab;
 		updateTabUI();
 
+		BaseFragment fragment;
 		switch (tab) {
 			case TAB_CONTACTS:
 				toolbarTitle.setText(R.string.contact_list_button);
-				startFragment(ContactListFragment.newInstance());
+				fragment = ContactListFragment.newInstance();
 				break;
 			case TAB_GROUPS:
 				toolbarTitle.setText(R.string.groups_button);
-				startFragment(GroupListFragment.newInstance());
+				fragment = GroupListFragment.newInstance();
 				break;
 			case TAB_VAULT:
 				toolbarTitle.setText(R.string.vault_button);
-				startFragment(VaultDashboardFragment.newInstance());
+				fragment = VaultDashboardFragment.newInstance();
 				break;
+			default:
+				return;
 		}
+
+		// Replace fragment without adding to backstack for tab switches
+		showTabFragment(fragment);
+	}
+
+	private void showTabFragment(BaseFragment f) {
+		getSupportFragmentManager()
+				.beginTransaction()
+				.setCustomAnimations(R.anim.fade_in, R.anim.fade_out)
+				.replace(R.id.fragmentContainer, f, f.getUniqueTag())
+				.commit();
+
+		updateFabVisibilityForFragment(f);
 	}
 
 	private void updateTabUI() {
@@ -204,15 +242,48 @@ public class NavDrawerActivity extends ZerionActivity implements
 		startActivity(new Intent(this, SettingsActivity.class));
 	}
 
-	private void openSearch() {
-		FragmentManager fm = getSupportFragmentManager();
-		androidx.fragment.app.Fragment frag = fm.findFragmentById(R.id.fragmentContainer);
+	private void toggleNetworkStatus() {
+		if (isShowingNetworkStatus) {
+			// Return to previous state
+			isShowingNetworkStatus = false;
 
-		if (frag instanceof TorStatusFragment) {
-			switchTab(TAB_CONTACTS);
+			// Show bottom navigation first
+			findViewById(R.id.bottomNavigation).setVisibility(VISIBLE);
+
+			// Force switch back to the previous tab (even if currentTab equals previousTab)
+			switchTab(previousTab, true);
+
+			// Update FAB visibility based on tab
+			if (previousTab == TAB_CONTACTS || previousTab == TAB_GROUPS) {
+				fabCompose.setVisibility(VISIBLE);
+			}
 		} else {
-			startFragment(new TorStatusFragment());
+			// Save current state before showing network status
+			previousTab = currentTab;
+			previousTitle = toolbarTitle.getText().toString();
+			isShowingNetworkStatus = true;
+
+			// Update UI for network status view
+			toolbarTitle.setText(R.string.network_status_title);
+
+			// Hide bottom navigation when showing network status
+			findViewById(R.id.bottomNavigation).setVisibility(GONE);
+
+			// Hide FAB when showing network status
+			fabCompose.setVisibility(GONE);
+
+			// Show network status fragment (don't add to backstack)
+			showNetworkStatusFragment();
 		}
+	}
+
+	private void showNetworkStatusFragment() {
+		TorStatusFragment fragment = new TorStatusFragment();
+		getSupportFragmentManager()
+				.beginTransaction()
+				.setCustomAnimations(R.anim.fade_in, R.anim.fade_out)
+				.replace(R.id.fragmentContainer, fragment, TorStatusFragment.TAG)
+				.commit();
 	}
 
 	private void showOverflowMenu() {
@@ -325,6 +396,13 @@ public class NavDrawerActivity extends ZerionActivity implements
 	@Override
 	public void onBackPressed() {
 		FragmentManager fm = getSupportFragmentManager();
+
+		// Handle network status view - go back to previous state
+		if (isShowingNetworkStatus) {
+			toggleNetworkStatus();
+			return;
+		}
+
 		if (fm.findFragmentByTag(SignOutFragment.TAG) != null) {
 			finish();
 		} else if (fm.getBackStackEntryCount() == 0 &&
@@ -342,18 +420,18 @@ public class NavDrawerActivity extends ZerionActivity implements
 		startFragment(new SignOutFragment());
 	}
 
+	/**
+	 * Used for non-tab fragments like VaultSettings, SignOut, etc.
+	 * These are added to backstack so user can navigate back.
+	 */
 	private void startFragment(BaseFragment f) {
-		androidx.fragment.app.FragmentTransaction tx = getSupportFragmentManager()
+		getSupportFragmentManager()
 				.beginTransaction()
 				.setCustomAnimations(R.anim.fade_in, R.anim.fade_out,
 						R.anim.fade_in, R.anim.fade_out)
-				.replace(R.id.fragmentContainer, f, f.getUniqueTag());
-
-		if (!(f instanceof TorStatusFragment)) {
-			tx.addToBackStack(f.getUniqueTag());
-		}
-
-		tx.commit();
+				.replace(R.id.fragmentContainer, f, f.getUniqueTag())
+				.addToBackStack(f.getUniqueTag())
+				.commit();
 
 		updateFabVisibilityForFragment(f);
 	}

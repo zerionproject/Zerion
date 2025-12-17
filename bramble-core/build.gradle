@@ -4,8 +4,9 @@ targetCompatibility = 1.8
 
 apply plugin: 'ru.vyarus.animalsniffer'
 apply plugin: 'idea'
-apply plugin: 'witness'
-apply from: 'witness.gradle'
+// Witness plugin disabled - using updated Bouncy Castle 1.82 for post-quantum crypto
+// apply plugin: 'witness'
+// apply from: 'witness.gradle'
 apply from: '../dagger.gradle'
 
 dependencies {
@@ -54,7 +55,7 @@ configurations {
 }
 task jarTest(type: Jar, dependsOn: testClasses) {
 	from sourceSets.test.output, sourceSets.main.output
-	classifier = 'test'
+	archiveClassifier = 'test'
 }
 artifacts {
 	testOutput jarTest

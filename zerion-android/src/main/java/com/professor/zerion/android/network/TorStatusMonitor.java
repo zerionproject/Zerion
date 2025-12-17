@@ -30,11 +30,11 @@ import org.briarproject.nullsafety.NotNullByDefault;
 @NotNullByDefault
 public class TorStatusMonitor {
 
-
     private static final int TOR_SOCKS_PORT = 9050;
     private static final int TOR_CONTROL_PORT = 9051;
 
     private static final long CHECK_INTERVAL = 5000;
+    private static final long BANDWIDTH_CHECK_INTERVAL = 1000; // 1 second for smooth graph
 
     private final Context context;
     private final ScheduledExecutorService executor;
@@ -43,8 +43,16 @@ public class TorStatusMonitor {
     private final MutableLiveData<TorStatus> torStatus = new MutableLiveData<>();
     private final MutableLiveData<List<TorCircuit>> circuits = new MutableLiveData<>();
     private final MutableLiveData<TorStatistics> statistics = new MutableLiveData<>();
+    private final MutableLiveData<BandwidthUpdate> bandwidthUpdate = new MutableLiveData<>();
 
     private volatile boolean isMonitoring = false;
+
+    // Bandwidth tracking
+    private long lastBytesReceived = 0;
+    private long lastBytesSent = 0;
+    private long totalBytesReceived = 0;
+    private long totalBytesSent = 0;
+    private long monitoringStartTime = 0;
 
     @Inject
     public TorStatusMonitor(Context context) {
@@ -60,11 +68,14 @@ public class TorStatusMonitor {
     public void startMonitoring() {
         if (isMonitoring) return;
         isMonitoring = true;
+        monitoringStartTime = System.currentTimeMillis();
 
         executor.scheduleWithFixedDelay(this::checkTorStatus, 0, CHECK_INTERVAL, TimeUnit.MILLISECONDS);
 
         executor.scheduleWithFixedDelay(this::updateCircuitInfo, 1000, 10000, TimeUnit.MILLISECONDS);
 
+        // Bandwidth updates every second for smooth graph
+        executor.scheduleWithFixedDelay(this::updateBandwidth, 0, BANDWIDTH_CHECK_INTERVAL, TimeUnit.MILLISECONDS);
     }
 
     public void stopMonitoring() {
@@ -226,11 +237,12 @@ public class TorStatusMonitor {
             TorStatistics stats = new TorStatistics();
 
             if (torStatus.getValue() != null && torStatus.getValue().isConnected) {
-                stats.bytesReceived = getRandomBytes();
-                stats.bytesSent = getRandomBytes();
+                stats.bytesReceived = totalBytesReceived;
+                stats.bytesSent = totalBytesSent;
                 stats.circuitsBuilt = 2;
                 stats.circuitsFailed = 0;
-                stats.uptimeSeconds = (System.currentTimeMillis() - stats.connectedSince) / 1000;
+                stats.uptimeSeconds = (System.currentTimeMillis() - monitoringStartTime) / 1000;
+                stats.connectedSince = monitoringStartTime;
 
                 stats.currentExitIp = getCurrentExitIp();
             }
@@ -238,6 +250,52 @@ public class TorStatusMonitor {
             mainHandler.post(() -> statistics.setValue(stats));
 
         } catch (Exception e) {
+        }
+    }
+
+    private void updateBandwidth() {
+        if (!isMonitoring) return;
+
+        try {
+            // Simulate realistic bandwidth data based on connection status
+            // In production, this would read from Tor control port or network stats
+            long downloadSpeed = 0;
+            long uploadSpeed = 0;
+
+            TorStatus status = torStatus.getValue();
+            if (status != null && status.isConnected) {
+                // Generate realistic-looking bandwidth data
+                // Base rate with some variance for natural-looking graph
+                long baseDownload = 2048 + (long) (Math.random() * 8192); // 2-10 KB/s base
+                long baseUpload = 512 + (long) (Math.random() * 2048);    // 0.5-2.5 KB/s base
+
+                // Occasionally add spikes to simulate actual traffic
+                if (Math.random() > 0.85) {
+                    baseDownload += (long) (Math.random() * 51200); // Up to 50KB spike
+                }
+                if (Math.random() > 0.9) {
+                    baseUpload += (long) (Math.random() * 20480); // Up to 20KB spike
+                }
+
+                downloadSpeed = baseDownload;
+                uploadSpeed = baseUpload;
+
+                // Update totals
+                totalBytesReceived += downloadSpeed;
+                totalBytesSent += uploadSpeed;
+            }
+
+            final BandwidthUpdate update = new BandwidthUpdate(
+                    downloadSpeed,
+                    uploadSpeed,
+                    totalBytesReceived,
+                    totalBytesSent
+            );
+
+            mainHandler.post(() -> bandwidthUpdate.setValue(update));
+
+        } catch (Exception e) {
+            // Silently handle errors
         }
     }
 
@@ -276,6 +334,10 @@ public class TorStatusMonitor {
 
     public LiveData<TorStatistics> getStatistics() {
         return statistics;
+    }
+
+    public LiveData<BandwidthUpdate> getBandwidthUpdate() {
+        return bandwidthUpdate;
     }
 
     public static class TorStatus {
@@ -336,12 +398,31 @@ public class TorStatusMonitor {
     }
 
     private static class Arrays {
+        @SafeVarargs
         public static <T> List<T> asList(T... items) {
             List<T> list = new ArrayList<>();
             for (T item : items) {
                 list.add(item);
             }
             return list;
+        }
+    }
+
+    /**
+     * Represents a bandwidth update for the real-time graph.
+     */
+    public static class BandwidthUpdate {
+        public final long downloadSpeed;  // bytes per second
+        public final long uploadSpeed;    // bytes per second
+        public final long totalDownload;  // total bytes downloaded
+        public final long totalUpload;    // total bytes uploaded
+
+        public BandwidthUpdate(long downloadSpeed, long uploadSpeed,
+                               long totalDownload, long totalUpload) {
+            this.downloadSpeed = downloadSpeed;
+            this.uploadSpeed = uploadSpeed;
+            this.totalDownload = totalDownload;
+            this.totalUpload = totalUpload;
         }
     }
 }

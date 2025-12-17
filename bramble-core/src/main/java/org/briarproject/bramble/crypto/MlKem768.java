@@ -15,12 +15,8 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.util.Arrays;
-import java.util.logging.Logger;
 
 import javax.annotation.concurrent.Immutable;
-
-import static java.util.logging.Level.INFO;
-import static java.util.logging.Logger.getLogger;
 
 /**
  * ML-KEM-768 (formerly Kyber-768) Key Encapsulation Mechanism.
@@ -48,15 +44,10 @@ import static java.util.logging.Logger.getLogger;
 @Immutable
 class MlKem768 {
 
-	private static final Logger LOG = getLogger(MlKem768.class.getName());
-
 	private final SecureRandom secureRandom;
 
 	MlKem768(SecureRandom secureRandom) {
 		this.secureRandom = secureRandom;
-		if (LOG.isLoggable(INFO)) {
-			LOG.info("ML-KEM-768 initialized (NIST FIPS 203)");
-		}
 	}
 
 	/**

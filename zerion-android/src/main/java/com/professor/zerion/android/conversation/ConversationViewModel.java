@@ -16,6 +16,13 @@ import org.briarproject.bramble.api.db.TransactionManager;
 import org.briarproject.bramble.api.event.Event;
 import org.briarproject.bramble.api.event.EventBus;
 import org.briarproject.bramble.api.event.EventListener;
+import org.briarproject.bramble.api.sync.event.MessagesAckedEvent;
+import org.briarproject.bramble.api.sync.event.MessagesSentEvent;
+import org.briarproject.bramble.api.contact.event.ContactRemovedEvent;
+import org.briarproject.bramble.api.plugin.event.ContactConnectedEvent;
+import org.briarproject.bramble.api.plugin.event.ContactDisconnectedEvent;
+import org.briarproject.bramble.api.versioning.event.ClientVersionUpdatedEvent;
+import org.briarproject.bramble.api.sync.ClientId;
 import org.briarproject.bramble.api.lifecycle.LifecycleManager;
 import org.briarproject.bramble.api.settings.Settings;
 import org.briarproject.bramble.api.settings.SettingsManager;
@@ -37,8 +44,10 @@ import org.briarproject.briar.api.attachment.AttachmentHeader;
 import org.briarproject.briar.api.autodelete.AutoDeleteManager;
 import org.briarproject.briar.api.autodelete.UnexpectedTimerException;
 import org.briarproject.briar.api.autodelete.event.AutoDeleteTimerMirroredEvent;
+import org.briarproject.briar.api.autodelete.event.ConversationMessagesDeletedEvent;
 import org.briarproject.briar.api.avatar.event.AvatarUpdatedEvent;
 import org.briarproject.briar.api.conversation.ConversationManager;
+import org.briarproject.briar.api.conversation.ConversationMessageHeader;
 import org.briarproject.briar.api.identity.AuthorInfo;
 import org.briarproject.briar.api.identity.AuthorManager;
 import org.briarproject.briar.api.messaging.MessagingManager;
@@ -49,8 +58,11 @@ import org.briarproject.briar.api.messaging.PrivateMessageHeader;
 import org.briarproject.briar.api.messaging.event.AttachmentReceivedEvent;
 import org.briarproject.nullsafety.NotNullByDefault;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Executor;
 
 import javax.inject.Inject;
@@ -119,6 +131,37 @@ public class ConversationViewModel extends DbViewModel
 	private final MutableLiveData<ConversationItem> replyTarget =
 			new MutableLiveData<>();
 
+	// Message loading state
+	private final MutableLiveData<Collection<ConversationMessageHeader>> messageHeaders =
+			new MutableLiveData<>();
+	private final MutableLiveData<Boolean> messagesLoading = new MutableLiveData<>(false);
+	private final MutableLiveEvent<Pair<MessageId, String>> messageTextLoaded =
+			new MutableLiveEvent<>();
+	private final MutableLiveEvent<Boolean> chatCleared = new MutableLiveEvent<>();
+	private final MutableLiveEvent<Collection<MessageId>> messagesDeleted =
+			new MutableLiveEvent<>();
+	private final MutableLiveEvent<MarkMessagesEvent> messagesMarked =
+			new MutableLiveEvent<>();
+	private final MutableLiveData<Boolean> contactConnected =
+			new MutableLiveData<>();
+	private final MutableLiveEvent<ConversationMessageHeader> newMessageReceived =
+			new MutableLiveEvent<>();
+	private final MutableLiveEvent<ClientId> clientVersionUpdated =
+			new MutableLiveEvent<>();
+
+	// Event for marking messages sent/seen
+	static class MarkMessagesEvent {
+		final Collection<MessageId> messageIds;
+		final boolean sent;
+		final boolean seen;
+
+		MarkMessagesEvent(Collection<MessageId> messageIds, boolean sent, boolean seen) {
+			this.messageIds = messageIds;
+			this.sent = sent;
+			this.seen = seen;
+		}
+	}
+
 	@Inject
 	ConversationViewModel(Application application,
 			@DatabaseExecutor Executor dbExecutor,
@@ -173,12 +216,53 @@ public class ConversationViewModel extends DbViewModel
 		} else if (e instanceof AutoDeleteTimerMirroredEvent) {
 			AutoDeleteTimerMirroredEvent a = (AutoDeleteTimerMirroredEvent) e;
 			if (a.getContactId().equals(contactId)) {
-				autoDeleteTimer.setValue(a.getNewTimer());
+				autoDeleteTimer.postValue(a.getNewTimer());
 			}
 		} else if (e instanceof AvatarUpdatedEvent) {
 			AvatarUpdatedEvent a = (AvatarUpdatedEvent) e;
 			if (a.getContactId().equals(contactId)) {
 				updateAvatar(a);
+			}
+		} else if (e instanceof MessagesSentEvent) {
+			MessagesSentEvent m = (MessagesSentEvent) e;
+			if (m.getContactId().equals(contactId)) {
+				markMessages(m.getMessageIds(), true, false);
+			}
+		} else if (e instanceof MessagesAckedEvent) {
+			MessagesAckedEvent m = (MessagesAckedEvent) e;
+			if (m.getContactId().equals(contactId)) {
+				markMessages(m.getMessageIds(), true, true);
+			}
+		} else if (e instanceof ConversationMessagesDeletedEvent) {
+			ConversationMessagesDeletedEvent m = (ConversationMessagesDeletedEvent) e;
+			if (m.getContactId().equals(contactId)) {
+				messagesDeleted.postEvent(m.getMessageIds());
+			}
+		} else if (e instanceof ContactRemovedEvent) {
+			ContactRemovedEvent c = (ContactRemovedEvent) e;
+			if (c.getContactId().equals(contactId)) {
+				contactDeleted.postValue(true);
+			}
+		} else if (e instanceof ContactConnectedEvent) {
+			ContactConnectedEvent c = (ContactConnectedEvent) e;
+			if (c.getContactId().equals(contactId)) {
+				contactConnected.postValue(true);
+			}
+		} else if (e instanceof ContactDisconnectedEvent) {
+			ContactDisconnectedEvent c = (ContactDisconnectedEvent) e;
+			if (c.getContactId().equals(contactId)) {
+				contactConnected.postValue(false);
+			}
+		} else if (e instanceof ClientVersionUpdatedEvent) {
+			ClientVersionUpdatedEvent c = (ClientVersionUpdatedEvent) e;
+			if (c.getContactId().equals(contactId)) {
+				clientVersionUpdated.postEvent(c.getClientVersion().getClientId());
+			}
+		} else if (e instanceof org.briarproject.briar.api.conversation.event.ConversationMessageReceivedEvent) {
+			org.briarproject.briar.api.conversation.event.ConversationMessageReceivedEvent<?> p =
+					(org.briarproject.briar.api.conversation.event.ConversationMessageReceivedEvent<?>) e;
+			if (p.getContactId().equals(contactId)) {
+				newMessageReceived.postEvent(p.getMessageHeader());
 			}
 		}
 	}
@@ -402,55 +486,90 @@ public class ConversationViewModel extends DbViewModel
 
 	@UiThread
 	void onEncryptionInit(byte[] iv, byte[] sessionKey) {
-		runOnDbThread(() -> {
+		// SYNC: Store directly on UI thread to avoid race conditions
+		// These fields are only accessed from UI thread callbacks and DB thread (sequentially)
+		synchronized (encryptedVoiceChunks) {
 			currentIv = java.util.Arrays.copyOf(iv, iv.length);
 			wrappedKey = java.util.Arrays.copyOf(sessionKey, sessionKey.length);
 			voiceRecordingStartTime = System.currentTimeMillis();
-		});
+		}
 	}
 
 	@UiThread
 	void appendEncryptedAudioChunk(byte[] encrypted, int len, byte[] tagPart) {
-		runOnDbThread(() -> {
+		// SYNC: Store directly on UI thread to avoid race conditions
+		synchronized (encryptedVoiceChunks) {
 			// Store each chunk with its actual length (not concatenated)
 			byte[] chunk = java.util.Arrays.copyOf(encrypted, len);
 			encryptedVoiceChunks.add(chunk);
 			encryptedChunkTags.add(java.util.Arrays.copyOf(tagPart, tagPart.length));
-		});
+		}
 	}
 
 	@UiThread
-	void finalizeEncryptedVoiceMessage(byte[] globalMAC, int chunkCount) {
+	void finalizeEncryptedVoiceMessage(byte[] globalMAC, int totalDurationMs, int chunkCount) {
+		// SYNC: Capture all data under lock on UI thread, then pass copies to DB thread
+		// CRITICAL: Use totalDurationMs from recorder - this MUST match the value used for globalMAC computation
+		// Previously we recalculated duration here which caused MAC verification failures!
+		final byte[] ivCopy;
+		final byte[] wrappedKeyCopy;
+		final java.util.List<byte[]> chunksCopy;
+		final java.util.List<byte[]> tagsCopy;
+
+		synchronized (encryptedVoiceChunks) {
+			if (currentIv == null || wrappedKey == null || encryptedVoiceChunks.isEmpty()) {
+				// Data not ready - abort
+				zeroizeVoiceRecordingState();
+				return;
+			}
+
+			ivCopy = java.util.Arrays.copyOf(currentIv, currentIv.length);
+			wrappedKeyCopy = java.util.Arrays.copyOf(wrappedKey, wrappedKey.length);
+
+			// CRITICAL: Deep copy chunks and tags - shallow copy would be zeroized by zeroizeVoiceRecordingState()
+			chunksCopy = new java.util.ArrayList<>(encryptedVoiceChunks.size());
+			for (byte[] chunk : encryptedVoiceChunks) {
+				chunksCopy.add(java.util.Arrays.copyOf(chunk, chunk.length));
+			}
+			tagsCopy = new java.util.ArrayList<>(encryptedChunkTags.size());
+			for (byte[] tag : encryptedChunkTags) {
+				tagsCopy.add(java.util.Arrays.copyOf(tag, tag.length));
+			}
+
+			// Zeroize immediately after copying
+			zeroizeVoiceRecordingState();
+		}
+
+		final byte[] globalMACCopy = java.util.Arrays.copyOf(globalMAC, globalMAC.length);
+
 		runOnDbThread(() -> {
 			try {
-				int durationMs = (int) (System.currentTimeMillis() - voiceRecordingStartTime);
-
 				storeEncryptedVoiceMessage(
-					currentIv,
-					wrappedKey,
-					encryptedVoiceChunks,
-					encryptedChunkTags,
-					durationMs,
-					globalMAC
+					ivCopy,
+					wrappedKeyCopy,
+					chunksCopy,
+					tagsCopy,
+					totalDurationMs,  // Use duration from recorder, not recalculated
+					globalMACCopy
 				);
-
 			} catch (Exception e) {
 				handleException(e);
-			} finally {
-				// SECURITY: Zeroize all sensitive data after completion
-				zeroizeVoiceRecordingState();
 			}
+			// Note: storeEncryptedVoiceMessage already zeroizes its parameters in finally block
 		});
 	}
 
 	@UiThread
 	void cancelVoiceRecording() {
 		// SECURITY: Zeroize all crypto material when recording is cancelled
-		runOnDbThread(this::zeroizeVoiceRecordingState);
+		synchronized (encryptedVoiceChunks) {
+			zeroizeVoiceRecordingState();
+		}
 	}
 
 	private void zeroizeVoiceRecordingState() {
 		// SECURITY: Strict cleanup of all cryptographic material
+		// NOTE: Caller must hold lock on encryptedVoiceChunks
 		if (currentIv != null) {
 			java.util.Arrays.fill(currentIv, (byte) 0);
 			currentIv = null;
@@ -490,9 +609,7 @@ public class ConversationViewModel extends DbViewModel
 				conversationManager.getTimestampForOutgoingMessage(txn, requireNonNull(contactId)));
 
 			// Create private message with encrypted voice payload
-			// Store the base64-encoded payload in the message text using VoiceMessageFormat
 			// Format: [VOICE:durationMs:base64payload]
-			// The receiver can parse this using VoiceMessageFormat.parse()
 			String messageText = com.professor.zerion.android.conversation.voice.VoiceMessageFormat
 				.format(durationMs, payload);
 
@@ -519,6 +636,8 @@ public class ConversationViewModel extends DbViewModel
 
 		} catch (DbException e) {
 			handleException(e);
+		} catch (Exception e) {
+			handleException(new DbException(e));
 		} finally {
 			// SECURITY: Zeroize all sensitive data after DB storage
 			if (payload != null) {
@@ -534,6 +653,183 @@ public class ConversationViewModel extends DbViewModel
 				java.util.Arrays.fill(tag, (byte) 0);
 			}
 		}
+	}
+
+	// ==================== Voice Attachment Support (For Longer Recordings) ====================
+
+	/**
+	 * Store a voice recording as an attachment (for recordings > 3 seconds).
+	 * This uses the same attachment infrastructure as images, providing:
+	 * - Battle-tested security (TEMPORARY → PERMANENT lifecycle)
+	 * - Same encryption as other messages
+	 * - Automatic cleanup of orphaned attachments
+	 *
+	 * @param audioUri URI of the recorded audio file
+	 * @return LiveData tracking the attachment creation progress
+	 */
+	@UiThread
+	LiveData<AttachmentResult> storeVoiceAttachment(android.net.Uri audioUri) {
+		java.util.Collection<android.net.Uri> uris = java.util.Collections.singleton(audioUri);
+		return attachmentCreator.storeAttachments(messagingGroupId, uris);
+	}
+
+	/**
+	 * Send a voice message as an attachment.
+	 * Call this after storeVoiceAttachment completes successfully.
+	 *
+	 * @param expectedTimer Expected auto-delete timer value
+	 * @return LiveData tracking the send state
+	 */
+	@UiThread
+	LiveData<SendState> sendVoiceAttachment(long expectedTimer) {
+		java.util.List<AttachmentHeader> headers = attachmentCreator.getAttachmentHeadersForSending();
+		if (headers.isEmpty()) {
+			MutableLiveData<SendState> errorResult = new MutableLiveData<>();
+			errorResult.setValue(SendState.ERROR);
+			return errorResult;
+		}
+		// Send as attachment without text
+		return sendMessage(null, headers, expectedTimer, null);
+	}
+
+	/**
+	 * Cancel voice attachment creation.
+	 */
+	@UiThread
+	void cancelVoiceAttachment() {
+		attachmentCreator.cancel();
+	}
+
+	// ==================== Message Operations (Moved from Activity) ====================
+
+	/**
+	 * Load all message headers for the current conversation.
+	 * Results are posted to messageHeaders LiveData.
+	 */
+	void loadMessageHeaders() {
+		if (contactId == null) return;
+		messagesLoading.setValue(true);
+		final ContactId c = contactId;
+		runOnDbThread(() -> {
+			try {
+				Collection<ConversationMessageHeader> headers =
+						conversationManager.getMessageHeaders(c);
+				messageHeaders.postValue(headers);
+			} catch (NoSuchContactException e) {
+				contactDeleted.postValue(true);
+			} catch (DbException e) {
+				handleException(e);
+			} finally {
+				messagesLoading.postValue(false);
+			}
+		});
+	}
+
+	/**
+	 * Load message text for a specific message.
+	 * Result is posted to messageTextLoaded LiveEvent.
+	 */
+	void loadMessageText(MessageId messageId) {
+		runOnDbThread(() -> {
+			try {
+				String text = messagingManager.getMessageText(messageId);
+				if (text != null) {
+					messageTextLoaded.postEvent(new Pair<>(messageId, text));
+				}
+			} catch (DbException e) {
+				handleException(e);
+			}
+		});
+	}
+
+	/**
+	 * Delete selected messages from the conversation.
+	 */
+	void deleteMessages(Collection<MessageId> messageIds) {
+		if (contactId == null || messageIds.isEmpty()) return;
+		final ContactId c = contactId;
+		// Post deletion immediately for UI responsiveness
+		messagesDeleted.postEvent(messageIds);
+		runOnDbThread(() -> {
+			try {
+				conversationManager.deleteMessages(c, messageIds);
+			} catch (DbException e) {
+				handleException(e);
+			}
+		});
+	}
+
+	/**
+	 * Clear all messages in the conversation.
+	 */
+	void clearChat() {
+		if (contactId == null) return;
+		final ContactId c = contactId;
+		runOnDbThread(() -> {
+			try {
+				Collection<ConversationMessageHeader> headers =
+						conversationManager.getMessageHeaders(c);
+				List<MessageId> ids = new ArrayList<>();
+				for (ConversationMessageHeader h : headers) {
+					ids.add(h.getId());
+				}
+				if (!ids.isEmpty()) {
+					conversationManager.deleteMessages(c, ids);
+				}
+				chatCleared.postEvent(true);
+			} catch (DbException e) {
+				handleException(e);
+			}
+		});
+	}
+
+	/**
+	 * Remove the contact entirely.
+	 */
+	void removeContact() {
+		if (contactId == null) return;
+		final ContactId c = contactId;
+		runOnDbThread(() -> {
+			try {
+				contactManager.removeContact(c);
+				contactDeleted.postValue(true);
+			} catch (DbException e) {
+				handleException(e);
+			}
+		});
+	}
+
+	/**
+	 * Mark messages as sent/seen. Called from EventBus event handlers.
+	 */
+	void markMessages(Collection<MessageId> messageIds, boolean sent, boolean seen) {
+		messagesMarked.postEvent(new MarkMessagesEvent(messageIds, sent, seen));
+	}
+
+	// ==================== LiveData Getters for Message Operations ====================
+
+	LiveData<Collection<ConversationMessageHeader>> getMessageHeaders() {
+		return messageHeaders;
+	}
+
+	LiveData<Boolean> isMessagesLoading() {
+		return messagesLoading;
+	}
+
+	LiveEvent<Pair<MessageId, String>> getMessageTextLoaded() {
+		return messageTextLoaded;
+	}
+
+	LiveEvent<Boolean> getChatCleared() {
+		return chatCleared;
+	}
+
+	LiveEvent<Collection<MessageId>> getMessagesDeleted() {
+		return messagesDeleted;
+	}
+
+	LiveEvent<MarkMessagesEvent> getMessagesMarked() {
+		return messagesMarked;
 	}
 
 	void cleanupVoiceCallMessages(String callId) {
@@ -616,5 +912,29 @@ public class ConversationViewModel extends DbViewModel
 	@UiThread
 	void clearReplyTarget() {
 		replyTarget.setValue(null);
+	}
+
+	// ==================== Event LiveData Getters ====================
+
+	LiveData<Boolean> isContactConnected() {
+		return contactConnected;
+	}
+
+	LiveEvent<ConversationMessageHeader> getNewMessageReceived() {
+		return newMessageReceived;
+	}
+
+	LiveEvent<ClientId> getClientVersionUpdated() {
+		return clientVersionUpdated;
+	}
+
+	/**
+	 * Check initial connection status from ConnectionRegistry.
+	 * Called when Activity starts to set initial state.
+	 */
+	void checkConnectionStatus(org.briarproject.bramble.api.connection.ConnectionRegistry registry) {
+		if (contactId != null) {
+			contactConnected.postValue(registry.isConnected(contactId));
+		}
 	}
 }

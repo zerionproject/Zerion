@@ -5,6 +5,7 @@ import android.app.Application;
 import org.briarproject.bramble.api.FormatException;
 import org.briarproject.bramble.api.UnsupportedVersionException;
 import org.briarproject.bramble.api.contact.ContactManager;
+import org.briarproject.bramble.api.contact.ContactType;
 import org.briarproject.bramble.api.contact.PendingContact;
 import org.briarproject.bramble.api.db.DatabaseExecutor;
 import org.briarproject.bramble.api.db.DbException;
@@ -38,10 +39,14 @@ public class AddContactViewModel extends DbViewModel {
 			new MutableLiveData<>();
 	private final MutableLiveEvent<Boolean> remoteLinkEntered =
 			new MutableLiveEvent<>();
+	private final MutableLiveEvent<Boolean> contactTypeSelected =
+			new MutableLiveEvent<>();
 	private final MutableLiveData<LiveResult<Boolean>> addContactResult =
 			new MutableLiveData<>();
 	@Nullable
 	private String remoteHandshakeLink;
+	@Nullable
+	private ContactType selectedContactType;
 
 	@Inject
 	AddContactViewModel(Application application,
@@ -55,13 +60,38 @@ public class AddContactViewModel extends DbViewModel {
 	}
 
 	void onCreate() {
-		if (handshakeLink.getValue() == null) loadHandshakeLink();
+		// Don't load link until contact type is selected
 	}
 
-	private void loadHandshakeLink() {
+	/**
+	 * Sets the explicitly chosen contact type and loads the appropriate link.
+	 */
+	void setContactType(ContactType contactType) {
+		selectedContactType = contactType;
+		loadHandshakeLink(contactType);
+		contactTypeSelected.setEvent(true);
+	}
+
+	/**
+	 * Returns the selected contact type, or null if not yet selected.
+	 */
+	@Nullable
+	ContactType getContactType() {
+		return selectedContactType;
+	}
+
+	/**
+	 * Returns an event that fires when the contact type is selected.
+	 */
+	LiveEvent<Boolean> getContactTypeSelected() {
+		return contactTypeSelected;
+	}
+
+	private void loadHandshakeLink(ContactType contactType) {
 		runOnDbThread(() -> {
 			try {
-				handshakeLink.postValue(contactManager.getHandshakeLink());
+				handshakeLink.postValue(
+						contactManager.getHandshakeLink(contactType));
 			} catch (DbException e) {
 				handleException(e);
 			}

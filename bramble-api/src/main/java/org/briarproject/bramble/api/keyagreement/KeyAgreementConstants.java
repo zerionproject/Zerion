@@ -1,7 +1,5 @@
 package org.briarproject.bramble.api.keyagreement;
 
-import org.briarproject.bramble.api.mailbox.MailboxConstants;
-
 public interface KeyAgreementConstants {
 
 	/**
@@ -9,17 +7,6 @@ public interface KeyAgreementConstants {
 	 */
 	byte PROTOCOL_VERSION = 4;
 
-	/**
-	 * The QR code format identifier, used to distinguish BQP QR codes from
-	 * QR codes used for other purposes. See
-	 * {@link MailboxConstants#QR_FORMAT_ID}.
-	 */
-	byte QR_FORMAT_ID = 0;
-
-	/**
-	 * The QR code format version.
-	 */
-	byte QR_FORMAT_VERSION = PROTOCOL_VERSION;
 
 	/**
 	 * The length of the BQP key commitment in bytes.

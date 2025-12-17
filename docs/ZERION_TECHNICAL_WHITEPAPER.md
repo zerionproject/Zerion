@@ -755,6 +755,96 @@ zerion://AQIDBAAFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIj...
 - Derived from public key
 - Grouped for readability
 
+### 6.5 Version Negotiation (Briar Compatibility)
+
+Zerion implements automatic version negotiation to maintain backward compatibility with Briar while enabling post-quantum security for Zerion-to-Zerion communication.
+
+**Link Format Versions**:
+
+| Version | Key Type | Security Level | Compatible With |
+|---------|----------|----------------|-----------------|
+| **0** | X25519 (32 bytes) | Classical (128-bit) | Briar, Zerion |
+| **1** | Hybrid commitment (32 bytes) | Post-Quantum (192-bit) | Zerion only |
+
+**Version Detection Flow**:
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    VERSION NEGOTIATION FLOW                              │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  1. Link Creation:                                                       │
+│     • Zerion creates VERSION 1 links (hybrid PQ commitment)              │
+│     • Briar creates VERSION 0 links (classical X25519)                   │
+│                                                                          │
+│  2. Link Parsing:                                                        │
+│     • Parse incoming link → Extract version (0 or 1)                     │
+│     • Store version in PendingContact.formatVersion                      │
+│                                                                          │
+│  3. Handshake Selection:                                                 │
+│     • VERSION 0 → Use classical X25519 keys (Briar-compatible)           │
+│     • VERSION 1 → Use hybrid ML-KEM-768 + X25519 keys (PQ-secure)        │
+│                                                                          │
+│  4. Contact Creation:                                                    │
+│     • Store postQuantum flag based on handshake type                     │
+│     • Display security level in Chat Settings UI                         │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+**Communication Scenarios**:
+- **Zerion ↔ Zerion**: Both use VERSION 1 links → Hybrid PQ handshake → `postQuantum=true`
+- **Zerion ↔ Briar**: Briar uses VERSION 0 link → Classical handshake → `postQuantum=false`
+
+### 6.6 Downgrade Attack Prevention
+
+Once a contact is established with post-quantum security, subsequent handshakes with the same remote author must also use PQ to prevent downgrade attacks.
+
+**Protection Mechanism**:
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    DOWNGRADE ATTACK PREVENTION                           │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  When completing a handshake for a new contact:                          │
+│                                                                          │
+│  1. Check existing contacts with same AuthorId                           │
+│  2. If any existing contact has postQuantum=true:                        │
+│     • New handshake MUST also be PQ (formatVersion=1)                    │
+│     • Classical handshake attempt → SecurityDowngradeException           │
+│  3. If no existing PQ contacts → Allow either classical or PQ            │
+│                                                                          │
+│  Attack Scenario Blocked:                                                │
+│  ┌──────────────┐         ┌──────────────┐                               │
+│  │   Zerion A   │←──PQ──→│   Zerion B   │  (established with PQ)         │
+│  └──────────────┘         └──────────────┘                               │
+│         ↓                                                                 │
+│  [Attacker deletes contact, sends classical link]                        │
+│         ↓                                                                 │
+│  ┌──────────────────────────────────────┐                                │
+│  │  SecurityDowngradeException thrown!  │  ← Attack blocked              │
+│  └──────────────────────────────────────┘                                │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+**Database Schema**:
+```sql
+-- Contacts table includes postQuantum flag
+contacts(
+    contact_id INTEGER PRIMARY KEY,
+    author_id BINARY(32),
+    ...
+    postQuantum BOOLEAN NOT NULL DEFAULT FALSE
+)
+
+-- PendingContacts table includes formatVersion
+pendingContacts(
+    pending_contact_id BINARY(32) PRIMARY KEY,
+    ...
+    formatVersion INT NOT NULL DEFAULT 0
+)
+```
+
 ---
 
 ## 7. P2P VOICE CALLING
@@ -1569,8 +1659,8 @@ Attachment File
 - **Bramble Protocol**: v1
 - **Transport Protocol**: v2
 - **Sync Protocol**: v2
-- **Handshake Protocol**: v1
-- **Database Schema**: v42
+- **Handshake Protocol**: v1 (classical) / v2 (hybrid PQ)
+- **Database Schema**: v52
 
 ### 10.5 Network Parameters
 
@@ -2095,14 +2185,15 @@ Zerion provides military-grade security through:
 ---
 
 **Document Information**:
-- **Version**: 2.0
-- **Date**: November 26, 2025
+- **Version**: 2.1
+- **Date**: December 16, 2025
 - **Status**: Production
 - **Classification**: Public Technical Documentation
 - **Author**: Zerion Development Team
-- **Contact**: https://github.com/zerion-project
+- **Contact**: https://github.com/zerionproject/Zerion
 
 **Document History**:
+- v2.1 (2025-12-16): **Version Negotiation & Security Hardening** - Added Briar compatibility via explicit contact type selection, downgrade attack prevention, contact security level tracking (postQuantum flag), UI security indicator in Chat Settings
 - v2.0 (2025-11-26): **Full hybrid post-quantum cryptography** - Phase 2 complete with ML-KEM-768 + X25519 key exchange and ML-DSA-65 + Ed25519 signatures (NIST FIPS 203/204)
 - v1.4 (2025-11-26): Post-quantum Phase 1 - Argon2id KDF migration, BLAKE2b-384 hash option, automatic Scrypt→Argon2id migration
 - v1.3 (2025-11-26): Updated voice calling with dedicated VOICE_SIGNAL protocol, Opus codec, screenshot protection, speakerphone improvements
@@ -2112,6 +2203,6 @@ Zerion provides military-grade security through:
 
 ---
 
-*This whitepaper is based on analysis of the Zerion codebase as of commit 9345341. For the most current information, please refer to the source code repository and official documentation.*
+*This whitepaper is based on the Zerion codebase. For the most current information, please refer to the source code repository and official documentation.*
 
 **End of Document**

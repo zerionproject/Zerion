@@ -31,4 +31,11 @@ interface RendezvousConstants {
 	 */
 	String KEY_MATERIAL_LABEL =
 			"org.briarproject.bramble.rendezvous/KEY_MATERIAL";
+
+	/**
+	 * Label for deriving the rendezvous key for hybrid (PQ) pending contacts
+	 * from their commitment hashes.
+	 */
+	String HYBRID_RENDEZVOUS_KEY_LABEL =
+			"org.briarproject.bramble.rendezvous/HYBRID_RENDEZVOUS_KEY";
 }

@@ -112,6 +112,9 @@ class TorPlugin implements DuplexPlugin, EventListener {
 
 	private volatile Settings settings = null;
 
+	// Track last reported state to debounce Observer callbacks
+	private volatile State lastReportedState = null;
+
 	TorPlugin(Executor ioExecutor,
 			Executor wakefulIoExecutor,
 			NetworkManager networkManager,
@@ -152,7 +155,12 @@ class TorPlugin implements DuplexPlugin, EventListener {
 			public void onState(TorState torState) {
 				State s = state.getState(torState);
 				if (s == ACTIVE) backoff.reset();
-				callback.pluginStateChanged(s);
+				// Debounce: only notify if state actually changed
+				// This prevents flooding the UI thread with duplicate events
+				if (s != lastReportedState) {
+					lastReportedState = s;
+					callback.pluginStateChanged(s);
+				}
 			}
 
 			@Override
@@ -598,7 +606,12 @@ class TorPlugin implements DuplexPlugin, EventListener {
 			int oldReasons = reasonsDisabled;
 			reasonsDisabled = reasons;
 			if (!wasChecked || reasons != oldReasons) {
-				callback.pluginStateChanged(getState());
+				State s = getState();
+				// Debounce: only notify if state actually changed
+				if (s != lastReportedState) {
+					lastReportedState = s;
+					callback.pluginStateChanged(s);
+				}
 			}
 		}
 

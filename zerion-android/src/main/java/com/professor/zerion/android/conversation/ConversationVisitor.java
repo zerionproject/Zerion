@@ -27,7 +27,6 @@ import static com.professor.zerion.android.util.UiUtils.getContactDisplayName;
 
 import com.professor.zerion.android.conversation.voice.VoiceCallSignal;
 
-@UiThread
 @NotNullByDefault
 class ConversationVisitor implements
 		ConversationMessageVisitor<ConversationItem> {
@@ -38,6 +37,8 @@ class ConversationVisitor implements
 	private final LiveData<String> contactName;
 	@Nullable
 	private final ConversationViewModel viewModel;
+	// When true, attachments are loaded lazily at ViewHolder bind time
+	private volatile boolean lazyAttachmentMode = false;
 
 	ConversationVisitor(Context ctx, TextCache textCache,
 			AttachmentCache attachmentCache, LiveData<String> contactName,
@@ -47,6 +48,15 @@ class ConversationVisitor implements
 		this.attachmentCache = attachmentCache;
 		this.contactName = contactName;
 		this.viewModel = viewModel;
+	}
+
+	/**
+	 * Enable/disable lazy attachment loading mode.
+	 * When enabled, attachments are NOT loaded during visitor.accept() -
+	 * they will be loaded when ViewHolder binds for better performance.
+	 */
+	void setLazyAttachmentMode(boolean lazy) {
+		this.lazyAttachmentMode = lazy;
 	}
 
 	@Override
@@ -68,21 +78,34 @@ class ConversationVisitor implements
 			}
 		}
 
-		ConversationItem item;
-		List<AttachmentItem> attachments;
-		if (h.getAttachmentHeaders().isEmpty()) {
-			attachments = emptyList();
+		ConversationMessageItem item;
+		// PERFORMANCE: In lazy mode, skip attachment loading here - do it at ViewHolder bind
+		if (lazyAttachmentMode) {
+			// Use lazy constructor - attachments will be loaded when ViewHolder binds
+			if (h.isLocal()) {
+				item = new ConversationMessageItem(
+						R.layout.list_item_conversation_msg_out, h, contactName);
+			} else {
+				item = new ConversationMessageItem(
+						R.layout.list_item_conversation_msg_in, h, contactName);
+			}
 		} else {
-			attachments = attachmentCache.getAttachmentItems(h);
-		}
-		if (h.isLocal()) {
-			item = new ConversationMessageItem(
-					R.layout.list_item_conversation_msg_out, h, contactName,
-					attachments);
-		} else {
-			item = new ConversationMessageItem(
-					R.layout.list_item_conversation_msg_in, h, contactName,
-					attachments);
+			// Normal mode - load attachments now (for new incoming messages)
+			List<AttachmentItem> attachments;
+			if (h.getAttachmentHeaders().isEmpty()) {
+				attachments = emptyList();
+			} else {
+				attachments = attachmentCache.getAttachmentItems(h);
+			}
+			if (h.isLocal()) {
+				item = new ConversationMessageItem(
+						R.layout.list_item_conversation_msg_out, h, contactName,
+						attachments);
+			} else {
+				item = new ConversationMessageItem(
+						R.layout.list_item_conversation_msg_in, h, contactName,
+						attachments);
+			}
 		}
 		if (h.hasText()) {
 			String text = textCache.getText(h.getId());
@@ -105,20 +128,26 @@ class ConversationVisitor implements
 		return item;
 	}
 
+	// Helper to get contact name with fallback for early loading
+	private String getContactNameOrDefault() {
+		String name = contactName.getValue();
+		return name != null ? name : "";
+	}
+
 	@Override
 	public ConversationItem visitGroupInvitationRequest(
 			GroupInvitationRequest r) {
 		if (r.isLocal()) {
 			String text = ctx.getString(
 					R.string.groups_invitations_invitation_sent,
-					contactName.getValue(), r.getName());
+					getContactNameOrDefault(), r.getName());
 			return new ConversationNoticeItem(
 					R.layout.list_item_conversation_notice_out, text,
 					contactName, r);
 		} else {
 			String text = ctx.getString(
 					R.string.groups_invitations_invitation_received,
-					contactName.getValue(), r.getName());
+					getContactNameOrDefault(), r.getName());
 			return new ConversationRequestItem(
 					R.layout.list_item_conversation_request, text, contactName,
 					GROUP, r);
@@ -133,15 +162,15 @@ class ConversationVisitor implements
 			if (r.wasAccepted()) {
 				text = ctx.getString(
 						R.string.groups_invitations_response_accepted_sent,
-						contactName.getValue());
+						getContactNameOrDefault());
 			} else if (r.isAutoDecline()) {
 				text = ctx.getString(
 						R.string.groups_invitations_response_declined_auto,
-						contactName.getValue());
+						getContactNameOrDefault());
 			} else {
 				text = ctx.getString(
 						R.string.groups_invitations_response_declined_sent,
-						contactName.getValue());
+						getContactNameOrDefault());
 			}
 			return new ConversationNoticeItem(
 					R.layout.list_item_conversation_notice_out, text,
@@ -151,11 +180,11 @@ class ConversationVisitor implements
 			if (r.wasAccepted()) {
 				text = ctx.getString(
 						R.string.groups_invitations_response_accepted_received,
-						contactName.getValue());
+						getContactNameOrDefault());
 			} else {
 				text = ctx.getString(
 						R.string.groups_invitations_response_declined_received,
-						contactName.getValue());
+						getContactNameOrDefault());
 			}
 			return new ConversationNoticeItem(
 					R.layout.list_item_conversation_notice_in, text,
@@ -168,7 +197,7 @@ class ConversationVisitor implements
 		String name = getContactDisplayName(r.getNameable(), r.getAlias());
 		if (r.isLocal()) {
 			String text = ctx.getString(R.string.introduction_request_sent,
-					contactName.getValue(), name);
+					getContactNameOrDefault(), name);
 			return new ConversationNoticeItem(
 					R.layout.list_item_conversation_notice_out, text,
 					contactName, r);
@@ -177,14 +206,14 @@ class ConversationVisitor implements
 			if (r.wasAnswered()) {
 				text = ctx.getString(
 						R.string.introduction_request_answered_received,
-						contactName.getValue(), name);
+						getContactNameOrDefault(), name);
 			} else if (r.isContact()) {
 				text = ctx.getString(
 						R.string.introduction_request_exists_received,
-						contactName.getValue(), name);
+						getContactNameOrDefault(), name);
 			} else {
 				text = ctx.getString(R.string.introduction_request_received,
-						contactName.getValue(), name);
+						getContactNameOrDefault(), name);
 			}
 			return new ConversationRequestItem(
 					R.layout.list_item_conversation_request, text, contactName,
@@ -223,17 +252,17 @@ class ConversationVisitor implements
 			if (r.wasAccepted()) {
 				text = ctx.getString(
 						R.string.introduction_response_accepted_received,
-						contactName.getValue(),
+						getContactNameOrDefault(),
 						introducedAuthor);
 			} else if (r.isIntroducer()) {
 				text = ctx.getString(
 						R.string.introduction_response_declined_received,
-						contactName.getValue(),
+						getContactNameOrDefault(),
 						introducedAuthor);
 			} else {
 				text = ctx.getString(
 						R.string.introduction_response_declined_received_by_introducee,
-						contactName.getValue(),
+						getContactNameOrDefault(),
 						introducedAuthor);
 			}
 			return new ConversationNoticeItem(

@@ -5,6 +5,7 @@ import org.briarproject.bramble.api.Pair;
 import org.briarproject.bramble.api.contact.Contact;
 import org.briarproject.bramble.api.contact.ContactId;
 import org.briarproject.bramble.api.contact.ContactManager;
+import org.briarproject.bramble.api.contact.ContactType;
 import org.briarproject.bramble.api.contact.PendingContact;
 import org.briarproject.bramble.api.contact.PendingContactId;
 import org.briarproject.bramble.api.contact.PendingContactState;
@@ -15,6 +16,7 @@ import org.briarproject.bramble.api.crypto.SecretKey;
 import org.briarproject.bramble.api.db.DatabaseComponent;
 import org.briarproject.bramble.api.db.DbException;
 import org.briarproject.bramble.api.db.NoSuchContactException;
+import org.briarproject.bramble.api.db.SecurityDowngradeException;
 import org.briarproject.bramble.api.db.Transaction;
 import org.briarproject.bramble.api.event.Event;
 import org.briarproject.bramble.api.event.EventListener;
@@ -86,11 +88,16 @@ class ContactManagerImpl implements ContactManager, EventListener {
 			boolean alice, boolean verified, boolean active)
 			throws DbException, GeneralSecurityException {
 		PendingContact pendingContact = db.getPendingContact(txn, p);
+		// Preserve the PQ status when converting pending contact to contact
+		boolean postQuantum = pendingContact.isPostQuantum();
+		// Check for downgrade attack: if any existing contact with this author
+		// used PQ security, the new handshake must also use PQ
+		checkForSecurityDowngrade(txn, remote.getId(), postQuantum);
 		db.removePendingContact(txn, p);
 		states.remove(p);
 		PublicKey theirPublicKey = pendingContact.getPublicKey();
-		ContactId c =
-				db.addContact(txn, remote, local, theirPublicKey, verified);
+		ContactId c = db.addContact(txn, remote, local, theirPublicKey,
+				verified, postQuantum);
 		String alias = pendingContact.getAlias();
 		if (!alias.equals(remote.getName())) db.setContactAlias(txn, c, alias);
 		KeyPair ourKeyPair = identityManager.getHandshakeKeys(txn);
@@ -99,6 +106,24 @@ class ContactManagerImpl implements ContactManager, EventListener {
 		Contact contact = db.getContact(txn, c);
 		for (ContactHook hook : hooks) hook.addingContact(txn, contact);
 		return c;
+	}
+
+	/**
+	 * Checks if adding a contact with the given security level would be a
+	 * downgrade attack. If any existing contact with the same author used
+	 * post-quantum security, the new contact must also use PQ.
+	 *
+	 * @throws SecurityDowngradeException if a downgrade is detected
+	 */
+	private void checkForSecurityDowngrade(Transaction txn, AuthorId remoteId,
+			boolean newIsPostQuantum) throws DbException {
+		Collection<Contact> existingContacts =
+				db.getContactsByAuthorId(txn, remoteId);
+		for (Contact existing : existingContacts) {
+			if (existing.isPostQuantum() && !newIsPostQuantum) {
+				throw new SecurityDowngradeException(remoteId, true, false);
+			}
+		}
 	}
 
 	@Override
@@ -126,8 +151,36 @@ class ContactManagerImpl implements ContactManager, EventListener {
 
 	@Override
 	public String getHandshakeLink(Transaction txn) throws DbException {
-		KeyPair keyPair = identityManager.getHandshakeKeys(txn);
-		return pendingContactFactory.createHandshakeLink(keyPair.getPublic());
+		// Default to Zerion (PQ) contact type for backward compatibility
+		return getHandshakeLink(txn, ContactType.ZERION);
+	}
+
+	@Override
+	public String getHandshakeLink(ContactType contactType) throws DbException {
+		return db.transactionWithResult(true, txn ->
+				getHandshakeLink(txn, contactType));
+	}
+
+	@Override
+	public String getHandshakeLink(Transaction txn, ContactType contactType)
+			throws DbException {
+		if (contactType == ContactType.ZERION) {
+			// Use hybrid keys for Zerion-to-Zerion post-quantum handshakes.
+			// The link contains a 32-byte commitment to the full hybrid key.
+			// The full 1,216-byte key is exchanged over Tor during the handshake.
+			KeyPair hybridKeyPair = identityManager.getHybridHandshakeKeys(txn);
+			if (hybridKeyPair != null) {
+				return pendingContactFactory.createHandshakeLink(
+						hybridKeyPair.getPublic());
+			}
+			// If no hybrid keys available, throw exception - no silent fallback
+			throw new DbException(new IllegalStateException(
+					"Hybrid keys not available for Zerion contact type"));
+		} else {
+			// Use classical keys for Briar-compatible contacts
+			KeyPair keyPair = identityManager.getHandshakeKeys(txn);
+			return pendingContactFactory.createHandshakeLink(keyPair.getPublic());
+		}
 	}
 
 	@Override
@@ -138,9 +191,17 @@ class ContactManagerImpl implements ContactManager, EventListener {
 				pendingContactFactory.createPendingContact(link, alias);
 		AuthorId local = identityManager.getLocalAuthor(txn).getId();
 		db.addPendingContact(txn, p, local);
-		KeyPair ourKeyPair = identityManager.getHandshakeKeys(txn);
-		keyManager.addPendingContact(txn, p.getId(), p.getPublicKey(),
-				ourKeyPair);
+		// For classical (Briar-compatible) links, we have the full X25519
+		// public key in the link and can derive transport keys immediately.
+		// For hybrid (PQ) links, the link only contains a commitment hash -
+		// the full hybrid key exchange happens over Tor during the handshake.
+		if (p.isClassical()) {
+			KeyPair ourKeyPair = identityManager.getHandshakeKeys(txn);
+			keyManager.addPendingContact(txn, p.getId(), p.getPublicKey(),
+					ourKeyPair);
+		}
+		// For hybrid pending contacts, transport keys will be derived later
+		// when the full hybrid public key is received over Tor
 		return p;
 	}
 

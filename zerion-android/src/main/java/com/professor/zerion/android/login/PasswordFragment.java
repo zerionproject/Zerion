@@ -247,7 +247,7 @@ public class PasswordFragment extends BaseFragment implements TextWatcher {
 
 	private void onForgottenPasswordClick() {
 		MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(
-				requireContext(), R.style.BriarDialogTheme);
+				requireContext(), R.style.ZerionDialogTheme);
 		builder.setTitle(R.string.dialog_title_lost_password);
 		builder.setBackgroundInsetStart(25);
 		builder.setBackgroundInsetEnd(25);
@@ -302,7 +302,7 @@ public class PasswordFragment extends BaseFragment implements TextWatcher {
 				setError(input, warningMsg, true);
 
 				MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(
-						requireContext(), R.style.BriarDialogTheme);
+						requireContext(), R.style.ZerionDialogTheme);
 				builder.setTitle(R.string.dialog_title_critical_warning);
 				builder.setMessage(getString(R.string.dialog_message_critical_warning, result.attemptsRemaining));
 				builder.setPositiveButton(R.string.dialog_button_understand, null);
@@ -316,7 +316,7 @@ public class PasswordFragment extends BaseFragment implements TextWatcher {
 
 	private void onWipeTriggered() {
 		MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(
-				requireContext(), R.style.BriarDialogTheme);
+				requireContext(), R.style.ZerionDialogTheme);
 		builder.setTitle(R.string.dialog_title_max_attempts);
 		builder.setMessage(R.string.dialog_message_max_attempts);
 		builder.setPositiveButton(android.R.string.ok, (dialog, which) -> {
@@ -332,7 +332,7 @@ public class PasswordFragment extends BaseFragment implements TextWatcher {
 		progress.setVisibility(INVISIBLE);
 
 		MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(
-				requireContext(), R.style.BriarDialogTheme);
+				requireContext(), R.style.ZerionDialogTheme);
 		builder.setTitle(R.string.dialog_title_cannot_check_password);
 		builder.setMessage(R.string.dialog_message_cannot_check_password);
 		builder.setPositiveButton(android.R.string.ok, null);

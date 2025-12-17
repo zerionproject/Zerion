@@ -33,15 +33,6 @@ import static java.util.logging.Level.INFO;
 import static java.util.logging.Level.WARNING;
 import static java.util.logging.Logger.getLogger;
 
-/**
- * Implementation of VoiceCallConnectionManager that creates real
- * Tor v3 hidden services using Briar's rendezvous endpoint infrastructure.
- * <p>
- * This manager maintains a registry of active endpoints and connections,
- * ensuring proper cleanup when calls end.
- * <p>
- * Thread-safe: All public methods can be called from any thread.
- */
 @Singleton
 @ThreadSafe
 @NotNullByDefault
@@ -53,20 +44,16 @@ class VoiceCallConnectionManagerImpl implements VoiceCallConnectionManager {
 	private final PluginManager pluginManager;
 	private final VoiceCallCrypto crypto;
 
-	// Active rendezvous endpoints (for incoming calls)
 	private final ConcurrentMap<String, RendezvousEndpoint> activeEndpoints =
 			new ConcurrentHashMap<>();
 
-	// Track endpoint creation times for cleanup (5 minute TTL)
 	private final ConcurrentMap<String, Long> endpointCreationTimes =
 			new ConcurrentHashMap<>();
-	private static final long ENDPOINT_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+	private static final long ENDPOINT_TIMEOUT_MS = 5 * 60 * 1000;
 
-	// Active connections (for outgoing calls)
 	private final ConcurrentMap<String, DuplexTransportConnection> activeConnections =
 			new ConcurrentHashMap<>();
 
-	// Cleanup scheduler for expired endpoints
 	private final ScheduledExecutorService cleanupScheduler =
 			Executors.newSingleThreadScheduledExecutor();
 

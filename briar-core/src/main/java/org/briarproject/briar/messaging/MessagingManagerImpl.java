@@ -41,8 +41,12 @@ import org.briarproject.briar.api.messaging.MessagingManager;
 import org.briarproject.briar.api.messaging.PrivateMessage;
 import org.briarproject.briar.api.messaging.PrivateMessageFormat;
 import org.briarproject.briar.api.messaging.PrivateMessageHeader;
+import org.briarproject.briar.api.messaging.VoiceSignal;
+import org.briarproject.briar.api.messaging.VoiceSignalHeader;
+import org.briarproject.briar.api.messaging.VoiceSignalType;
 import org.briarproject.briar.api.messaging.event.AttachmentReceivedEvent;
 import org.briarproject.briar.api.messaging.event.PrivateMessageReceivedEvent;
+import org.briarproject.briar.api.messaging.event.VoiceSignalReceivedEvent;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.ByteArrayOutputStream;
@@ -192,6 +196,8 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				incomingPrivateMessage(txn, m, metaDict, hasText, headers);
 			} else if (messageType == ATTACHMENT) {
 				incomingAttachment(txn, m);
+			} else if (messageType == MessageTypes.VOICE_SIGNAL) {
+				incomingVoiceSignal(txn, m, metaDict);
 			} else {
 				throw new InvalidMessageException();
 			}
@@ -290,6 +296,47 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		logDuration(LOG, "Receiving attachment", start);
 	}
 
+	/**
+	 * Handle incoming voice signal message.
+	 * Parse the signal data and fire VoiceSignalReceivedEvent so that
+	 * VoiceCallService and AndroidNotificationManager can handle incoming calls.
+	 */
+	private void incomingVoiceSignal(Transaction txn, Message m,
+			BdfDictionary meta) throws DbException, FormatException {
+		long start = now();
+		GroupId groupId = m.getGroupId();
+		long timestamp = meta.getLong(MSG_KEY_TIMESTAMP);
+		boolean local = meta.getBoolean(MSG_KEY_LOCAL);
+
+		// Parse the voice signal body: [VOICE_SIGNAL, signalType, callId, payload, durationMs]
+		BdfList body = clientHelper.getMessageAsList(txn, m.getId());
+		if (body.size() < 3) {
+			throw new FormatException();
+		}
+
+		int signalTypeValue = body.getInt(1);
+		String callId = body.getString(2);
+		String payload = body.getOptionalString(3);
+		Long durationMs = body.getOptionalLong(4);
+
+		VoiceSignalType signalType = VoiceSignalType.fromValue(signalTypeValue);
+
+		// Create the voice signal header
+		VoiceSignalHeader header = new VoiceSignalHeader(
+				m.getId(), groupId, timestamp, local,
+				signalType, callId, payload, durationMs);
+
+		// Get the contact ID and fire the event
+		ContactId contactId = getContactId(txn, groupId);
+		VoiceSignalReceivedEvent event =
+				new VoiceSignalReceivedEvent(header, contactId);
+		txn.attach(event);
+
+		// Voice signals are NOT tracked in conversation counts
+		// because they should not appear in the UI
+		logDuration(LOG, "Receiving voice signal", start);
+	}
+
 	@Override
 	public void addLocalMessage(PrivateMessage m) throws DbException {
 		db.transaction(false, txn -> addLocalMessage(txn, m));
@@ -332,6 +379,24 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		} catch (FormatException e) {
 			throw new AssertionError(e);
 		}
+	}
+
+	@Override
+	public void addLocalVoiceSignal(VoiceSignal signal) throws DbException {
+		db.transaction(false, txn -> {
+			try {
+				BdfDictionary meta = new BdfDictionary();
+				meta.put(MSG_KEY_TIMESTAMP, signal.getMessage().getTimestamp());
+				meta.put(MSG_KEY_LOCAL, true);
+				meta.put(MSG_KEY_READ, true);
+				meta.put(MSG_KEY_MSG_TYPE, MessageTypes.VOICE_SIGNAL);
+				clientHelper.addLocalMessage(txn, signal.getMessage(), meta, true,
+						false);
+				conversationManager.trackOutgoingMessage(txn, signal.getMessage());
+			} catch (FormatException e) {
+				throw new AssertionError(e);
+			}
+		});
 	}
 
 	@Override
@@ -479,6 +544,48 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		} catch (FormatException e) {
 			throw new DbException(e);
 		}
+	}
+
+	@Override
+	public Map<MessageId, String> getMessageTexts(ContactId c) throws DbException {
+		return db.transactionWithResult(true, txn -> getMessageTexts(txn, c));
+	}
+
+	@Override
+	public Map<MessageId, String> getMessageTexts(Transaction txn, ContactId c)
+			throws DbException {
+		long start = now();
+		Map<MessageId, String> texts = new java.util.HashMap<>();
+		try {
+			GroupId g = getContactGroup(db.getContact(txn, c)).getId();
+			Map<MessageId, BdfDictionary> metadata =
+					clientHelper.getMessageMetadataAsDictionary(txn, g);
+			for (Entry<MessageId, BdfDictionary> entry : metadata.entrySet()) {
+				MessageId id = entry.getKey();
+				BdfDictionary meta = entry.getValue();
+				// Skip non-private messages (attachments, voice signals)
+				Integer messageType = meta.getOptionalInt(MSG_KEY_MSG_TYPE);
+				if (messageType != null && messageType != PRIVATE_MESSAGE) continue;
+				// Check if message has text
+				boolean hasText = messageType == null ||
+						meta.getBoolean(MSG_KEY_HAS_TEXT, false);
+				if (!hasText) continue;
+				// Load the message text
+				try {
+					BdfList body = clientHelper.getMessageAsList(txn, id);
+					String text;
+					if (body.size() == 1) text = body.getString(0); // Legacy
+					else text = body.getOptionalString(1);
+					if (text != null) texts.put(id, text);
+				} catch (FormatException e) {
+					// Skip malformed messages
+				}
+			}
+		} catch (FormatException e) {
+			throw new DbException(e);
+		}
+		logDuration(LOG, "Bulk loading " + texts.size() + " message texts", start);
+		return texts;
 	}
 
 	@Override

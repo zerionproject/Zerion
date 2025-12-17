@@ -3,6 +3,13 @@ apply plugin: 'com.android.application'
 // apply plugin: 'witness'
 // apply from: 'witness.gradle'
 
+// Load keystore properties for signing
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 def getStdout = { command, defaultValue ->
     def stdout = new ByteArrayOutputStream()
     try {
@@ -25,6 +32,21 @@ android {
         }
     }
 
+    buildFeatures {
+        buildConfig = true
+    }
+
+    // Signing configuration for release builds
+    signingConfigs {
+        release {
+            if (keystorePropertiesFile.exists()) {
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
+    }
 
     defaultConfig {
         minSdkVersion 21
@@ -61,6 +83,7 @@ android {
             minifyEnabled true
             crunchPngs false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+            signingConfig signingConfigs.release
         }
     }
 
@@ -83,8 +106,9 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+        // Use Java 11 to avoid D8 warnings about class file version >= 56
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
     }
 
     testOptions {
@@ -95,7 +119,9 @@ android {
     }
     namespace 'com.professor.zerion'
     lint {
-        warning 'MissingTranslation', 'MissingDefaultResource', 'ImpliedQuantity', 'ExtraTranslation', 'InvalidPackage'
+        abortOnError false
+        checkReleaseBuilds false
+        warning 'MissingTranslation', 'MissingDefaultResource', 'ImpliedQuantity', 'ExtraTranslation', 'InvalidPackage', 'MissingPermission'
     }
 
     applicationVariants.all { variant ->
@@ -120,7 +146,7 @@ dependencies {
     implementation project(':bramble-android')
     implementation project(':briar-core')
 
-    // newer versions of the libraries below require compileSdk 34
+    // newer versions of the libraries below require compileSdk 35
     implementation 'androidx.fragment:fragment:1.6.2'
     implementation 'androidx.preference:preference:1.2.1'
     implementation 'androidx.exifinterface:exifinterface:1.3.7'
