@@ -78,10 +78,20 @@ public interface DatabaseComponent extends TransactionManager {
 
 	/**
 	 * Stores a contact associated with the given local and remote pseudonyms,
-	 * and returns an ID for the contact.
+	 * and returns an ID for the contact. Uses classical (non-PQ) security.
 	 */
 	ContactId addContact(Transaction txn, Author remote, AuthorId local,
 			@Nullable PublicKey handshake, boolean verified) throws DbException;
+
+	/**
+	 * Stores a contact associated with the given local and remote pseudonyms,
+	 * and returns an ID for the contact.
+	 *
+	 * @param postQuantum true if contact was established with hybrid PQ crypto
+	 */
+	ContactId addContact(Transaction txn, Author remote, AuthorId local,
+			@Nullable PublicKey handshake, boolean verified, boolean postQuantum)
+			throws DbException;
 
 	/**
 	 * Stores a group.
@@ -773,6 +783,12 @@ public interface DatabaseComponent extends TransactionManager {
 	 * Sets the handshake key pair for the identity with the given ID.
 	 */
 	void setHandshakeKeyPair(Transaction txn, AuthorId local,
+			PublicKey publicKey, PrivateKey privateKey) throws DbException;
+
+	/**
+	 * Sets the hybrid (PQ) handshake key pair for the identity with the given ID.
+	 */
+	void setHybridHandshakeKeyPair(Transaction txn, AuthorId local,
 			PublicKey publicKey, PrivateKey privateKey) throws DbException;
 
 	/**

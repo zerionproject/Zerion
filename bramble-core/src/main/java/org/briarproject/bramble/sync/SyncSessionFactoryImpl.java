@@ -26,7 +26,6 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
 
-import static org.briarproject.bramble.api.mailbox.MailboxConstants.MAX_FILE_PAYLOAD_BYTES;
 
 @Immutable
 @NotNullByDefault
@@ -80,12 +79,12 @@ class SyncSessionFactoryImpl implements SyncSessionFactory {
 	public SyncSession createSimplexOutgoingSession(ContactId c, TransportId t,
 			long maxLatency, StreamWriter streamWriter,
 			OutgoingSessionRecord sessionRecord) {
+		// Mailbox feature removed - use standard simplex session instead
 		OutputStream out = streamWriter.getOutputStream();
 		SyncRecordWriter recordWriter =
 				recordWriterFactory.createRecordWriter(out);
-		return new MailboxOutgoingSession(db, eventBus, c, t, maxLatency,
-				streamWriter, recordWriter, sessionRecord,
-				MAX_FILE_PAYLOAD_BYTES);
+		return new SimplexOutgoingSession(db, eventBus, c, t,
+				maxLatency, streamWriter, recordWriter);
 	}
 
 	@Override

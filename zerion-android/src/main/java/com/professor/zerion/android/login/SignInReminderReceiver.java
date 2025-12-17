@@ -12,21 +12,31 @@ import com.professor.zerion.android.ZerionApplication;
 import com.professor.zerion.android.api.AndroidNotificationManager;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 
 import static android.content.Intent.ACTION_BOOT_COMPLETED;
 import static android.content.Intent.ACTION_MY_PACKAGE_REPLACED;
 import static com.professor.zerion.android.settings.NotificationsFragment.PREF_NOTIFY_SIGN_IN;
 import static com.professor.zerion.android.api.AndroidNotificationManager.ACTION_DISMISS_REMINDER;
 
+/**
+ * BroadcastReceiver that shows a sign-in reminder notification after boot or package update.
+ *
+ * IMPORTANT: This receiver uses Provider<T> for heavy dependencies to avoid
+ * triggering disk/crypto I/O during DI injection on the main thread.
+ * All heavy work happens inside goAsync() on a background thread.
+ */
 public class SignInReminderReceiver extends BroadcastReceiver {
 
+	// Use Provider<T> to defer resolution until we're on a background thread
+	// This avoids StrictMode violations during DI injection
 	@Inject
-	AccountManager accountManager;
+	Provider<AccountManager> accountManagerProvider;
 	@Inject
-	AndroidNotificationManager notificationManager;
+	Provider<AndroidNotificationManager> notificationManagerProvider;
 	@Inject
 	@AppModule.UiPrefs
-	SharedPreferences uiPrefs;
+	Provider<SharedPreferences> uiPrefsProvider;
 
 	@Override
 	public void onReceive(Context ctx, Intent intent) {
@@ -36,17 +46,37 @@ public class SignInReminderReceiver extends BroadcastReceiver {
 
 		String action = intent.getAction();
 		if (action == null) return;
-		if (action.equals(ACTION_BOOT_COMPLETED) ||
-				action.equals(ACTION_MY_PACKAGE_REPLACED)) {
-			if (accountManager.accountExists() &&
-					!accountManager.hasDatabaseKey()) {
-				if (uiPrefs.getBoolean(PREF_NOTIFY_SIGN_IN, true)) {
-					notificationManager.showSignInNotification();
+
+		// Use goAsync() for ALL actions to ensure heavy work happens off main thread
+		// Provider.get() triggers actual dependency resolution which may do disk/crypto I/O
+		final PendingResult pendingResult = goAsync();
+
+		new Thread(() -> {
+			try {
+				// Now safe to resolve providers - we're on a background thread
+				AndroidNotificationManager notificationManager = notificationManagerProvider.get();
+
+				if (action.equals(ACTION_DISMISS_REMINDER)) {
+					notificationManager.clearSignInNotification();
+					return;
 				}
+
+				if (action.equals(ACTION_BOOT_COMPLETED) ||
+						action.equals(ACTION_MY_PACKAGE_REPLACED)) {
+					AccountManager accountManager = accountManagerProvider.get();
+					SharedPreferences uiPrefs = uiPrefsProvider.get();
+
+					if (accountManager.accountExists() &&
+							!accountManager.hasDatabaseKey()) {
+						if (uiPrefs.getBoolean(PREF_NOTIFY_SIGN_IN, true)) {
+							notificationManager.showSignInNotification();
+						}
+					}
+				}
+			} finally {
+				pendingResult.finish();
 			}
-		} else if (action.equals(ACTION_DISMISS_REMINDER)) {
-			notificationManager.clearSignInNotification();
-		}
+		}, "SignInReminderReceiver").start();
 	}
 
 }

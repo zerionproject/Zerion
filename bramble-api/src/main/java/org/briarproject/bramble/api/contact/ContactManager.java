@@ -103,15 +103,47 @@ public interface ContactManager {
 
 	/**
 	 * Returns the handshake link that needs to be sent to a contact we want
-	 * to add.
+	 * to add. Uses the default format (hybrid PQ).
+	 *
+	 * @deprecated Use {@link #getHandshakeLink(ContactType)} instead to
+	 * explicitly specify the contact type.
 	 */
+	@Deprecated
 	String getHandshakeLink() throws DbException;
 
 	/**
 	 * Returns the handshake link that needs to be sent to a contact we want
-	 * to add.
+	 * to add. Uses the default format (hybrid PQ).
+	 *
+	 * @deprecated Use {@link #getHandshakeLink(Transaction, ContactType)}
+	 * instead to explicitly specify the contact type.
 	 */
+	@Deprecated
 	String getHandshakeLink(Transaction txn) throws DbException;
+
+	/**
+	 * Returns the handshake link for adding a contact of the specified type.
+	 * <p>
+	 * The link format depends on the contact type:
+	 * <ul>
+	 *   <li>{@link ContactType#ZERION}: Hybrid PQ link (v1) with commitment</li>
+	 *   <li>{@link ContactType#BRIAR}: Classical link (v0) with X25519 key</li>
+	 * </ul>
+	 *
+	 * @param contactType The explicitly chosen contact type
+	 * @return The handshake link appropriate for the contact type
+	 */
+	String getHandshakeLink(ContactType contactType) throws DbException;
+
+	/**
+	 * Returns the handshake link for adding a contact of the specified type.
+	 *
+	 * @param txn The database transaction
+	 * @param contactType The explicitly chosen contact type
+	 * @return The handshake link appropriate for the contact type
+	 */
+	String getHandshakeLink(Transaction txn, ContactType contactType)
+			throws DbException;
 
 	/**
 	 * Creates a {@link PendingContact} from the given handshake link and

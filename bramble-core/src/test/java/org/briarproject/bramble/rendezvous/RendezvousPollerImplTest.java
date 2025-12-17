@@ -7,6 +7,7 @@ import org.briarproject.bramble.api.contact.PendingContactState;
 import org.briarproject.bramble.api.contact.event.PendingContactAddedEvent;
 import org.briarproject.bramble.api.contact.event.PendingContactRemovedEvent;
 import org.briarproject.bramble.api.contact.event.PendingContactStateChangedEvent;
+import org.briarproject.bramble.api.crypto.CryptoComponent;
 import org.briarproject.bramble.api.crypto.KeyPair;
 import org.briarproject.bramble.api.crypto.SecretKey;
 import org.briarproject.bramble.api.crypto.TransportCrypto;
@@ -28,6 +29,7 @@ import org.briarproject.bramble.api.rendezvous.event.RendezvousConnectionOpenedE
 import org.briarproject.bramble.api.rendezvous.event.RendezvousPollEvent;
 import org.briarproject.bramble.api.system.Clock;
 import org.briarproject.bramble.api.system.TaskScheduler;
+import org.briarproject.bramble.api.transport.KeyManager;
 import org.briarproject.bramble.test.BrambleMockTestCase;
 import org.briarproject.bramble.test.CaptureArgumentAction;
 import org.briarproject.bramble.test.DbExpectations;
@@ -68,12 +70,15 @@ public class RendezvousPollerImplTest extends BrambleMockTestCase {
 			context.mock(TransportCrypto.class);
 	private final RendezvousCrypto rendezvousCrypto =
 			context.mock(RendezvousCrypto.class);
+	private final CryptoComponent crypto =
+			context.mock(CryptoComponent.class);
 	private final PluginManager pluginManager =
 			context.mock(PluginManager.class);
 	private final ConnectionManager connectionManager =
 			context.mock(ConnectionManager.class);
 	private final EventBus eventBus = context.mock(EventBus.class);
 	private final Clock clock = context.mock(Clock.class);
+	private final KeyManager keyManager = context.mock(KeyManager.class);
 	private final DuplexPlugin plugin = context.mock(DuplexPlugin.class);
 	private final KeyMaterialSource keyMaterialSource =
 			context.mock(KeyMaterialSource.class);
@@ -95,7 +100,8 @@ public class RendezvousPollerImplTest extends BrambleMockTestCase {
 	private final RendezvousPollerImpl rendezvousPoller =
 			new RendezvousPollerImpl(ioExecutor, scheduler, db,
 					identityManager, transportCrypto, rendezvousCrypto,
-					pluginManager, connectionManager, eventBus, clock);
+					crypto, keyManager, pluginManager, connectionManager,
+					eventBus, clock);
 
 	@Test
 	public void testAddsPendingContactsAndSchedulesPollingAtStartup()

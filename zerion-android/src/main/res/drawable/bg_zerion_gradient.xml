@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
-	<!-- Zerion gradient: dark background with subtle blue undertone -->
+	<!-- Zerion gradient: professional dark background with subtle depth -->
 	<gradient
-		android:angle="135"
-		android:startColor="#0B0E15"
-		android:centerColor="#0D1520"
-		android:endColor="#0F1A2B"
+		android:angle="180"
+		android:startColor="#0F1014"
+		android:centerColor="#101318"
+		android:endColor="#13161C"
 		android:type="linear" />
 </shape>

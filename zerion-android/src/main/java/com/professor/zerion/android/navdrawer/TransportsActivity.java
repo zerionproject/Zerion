@@ -194,8 +194,8 @@ public class TransportsActivity extends ZerionActivity {
 
 	@ColorRes
 	private int getIconColor(State state) {
-		if (state == ACTIVE) return R.color.briar_lime_400;
-		else if (state == ENABLING) return R.color.briar_orange_500;
+		if (state == ACTIVE) return R.color.zerion_lime_400;
+		else if (state == ENABLING) return R.color.zerion_orange_500;
 		else return android.R.color.tertiary_text_light;
 	}
 

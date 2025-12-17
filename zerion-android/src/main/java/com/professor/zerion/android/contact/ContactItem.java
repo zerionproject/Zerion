@@ -37,4 +37,12 @@ public class ContactItem {
 		return connected;
 	}
 
+	/**
+	 * Returns true if this contact was established using post-quantum
+	 * cryptography, providing protection against future quantum attacks.
+	 */
+	public boolean isPostQuantum() {
+		return contact.isPostQuantum();
+	}
+
 }

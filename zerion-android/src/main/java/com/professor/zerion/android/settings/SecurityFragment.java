@@ -71,7 +71,19 @@ public class SecurityFragment extends Fragment {
 		getAndroidComponent(context).inject(this);
 		viewModel = new ViewModelProvider(requireActivity(), viewModelFactory)
 				.get(SettingsViewModel.class);
-		wipePasswordManager = WipePasswordManager.getInstance(context);
+		// NOTE: Do not initialize WipePasswordManager here - it does crypto/disk I/O
+		// It will be initialized lazily when needed via getWipePasswordManager()
+	}
+
+	/**
+	 * Lazy getter for WipePasswordManager to avoid crypto/disk I/O on main thread during onAttach.
+	 */
+	@Nullable
+	private WipePasswordManager getWipePasswordManager() {
+		if (wipePasswordManager == null) {
+			wipePasswordManager = WipePasswordManager.getInstance(requireContext());
+		}
+		return wipePasswordManager;
 	}
 
 	@Nullable
@@ -118,7 +130,8 @@ public class SecurityFragment extends Fragment {
 
 
 		wipePasswordCard.setOnClickListener(v -> {
-			if (wipePasswordManager.isWipePasswordEnabled()) {
+			WipePasswordManager mgr = getWipePasswordManager();
+			if (mgr != null && mgr.isWipePasswordEnabled()) {
 				showWipePasswordRemoveDialog();
 			} else {
 				showWipePasswordSetDialog();
@@ -210,7 +223,8 @@ public class SecurityFragment extends Fragment {
 	}
 
 	private void updateWipePasswordSummary() {
-		if (wipePasswordManager.isWipePasswordEnabled()) {
+		WipePasswordManager mgr = getWipePasswordManager();
+		if (mgr != null && mgr.isWipePasswordEnabled()) {
 			wipePasswordSummary.setText(R.string.wipe_password_summary_enabled);
 		} else {
 			wipePasswordSummary.setText(R.string.wipe_password_summary_disabled);
@@ -262,7 +276,8 @@ public class SecurityFragment extends Fragment {
 					}
 
 
-					if (wipePasswordManager.setWipePassword(password1)) {
+					WipePasswordManager mgr = getWipePasswordManager();
+					if (mgr != null && mgr.setWipePassword(password1)) {
 						showToast(R.string.wipe_password_set_success);
 						updateWipePasswordSummary();
 					} else {
@@ -279,7 +294,8 @@ public class SecurityFragment extends Fragment {
 				.setMessage(R.string.wipe_password_remove_message)
 				.setIcon(R.drawable.ic_warning)
 				.setPositiveButton(R.string.remove, (dialog, which) -> {
-					if (wipePasswordManager.removeWipePassword()) {
+					WipePasswordManager mgr = getWipePasswordManager();
+					if (mgr != null && mgr.removeWipePassword()) {
 						showToast(R.string.wipe_password_remove_success);
 						updateWipePasswordSummary();
 					} else {

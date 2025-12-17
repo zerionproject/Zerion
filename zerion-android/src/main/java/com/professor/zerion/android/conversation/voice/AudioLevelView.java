@@ -13,9 +13,6 @@ import com.professor.zerion.R;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
-/**
- * Simple audio level indicator showing animated bars (Signal/Molly style)
- */
 @NotNullByDefault
 public class AudioLevelView extends View {
 
@@ -39,7 +36,7 @@ public class AudioLevelView extends View {
 		super(context, attrs, defStyleAttr);
 
 		paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-		paint.setColor(ContextCompat.getColor(context, R.color.briar_lime_600));
+		paint.setColor(ContextCompat.getColor(context, R.color.zerion_lime_600));
 		paint.setStyle(Paint.Style.FILL);
 		paint.setStrokeCap(Paint.Cap.ROUND);
 

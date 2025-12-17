@@ -76,9 +76,22 @@ public class VaultManager {
 
 		this.lastActivityTime = System.currentTimeMillis();
 
-		try {
-			loadVaultHeader();
-		} catch (Exception e) {
+		// NOTE: Do NOT call loadVaultHeader() here - it does disk I/O
+		// The header will be loaded lazily on first access (vaultExists(), unlockVault(), etc.)
+		// This avoids StrictMode violations during DI initialization
+	}
+
+	/**
+	 * Ensures vault header is loaded. Call this before operations that need the header.
+	 * This is called lazily to avoid disk I/O during constructor execution.
+	 */
+	private void ensureHeaderLoaded() {
+		if (currentHeader == null && fileIO.exists(HEADER_FILE)) {
+			try {
+				loadVaultHeader();
+			} catch (Exception e) {
+				// Header load failed - vault may be corrupted
+			}
 		}
 	}
 

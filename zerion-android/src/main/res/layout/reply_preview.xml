@@ -11,7 +11,7 @@
         android:layout_width="4dp"
         android:layout_height="match_parent"
         android:layout_marginEnd="8dp"
-        android:background="@color/briar_primary" />
+        android:background="@color/zerion_primary" />
 
     <LinearLayout
         android:layout_width="0dp"
@@ -23,7 +23,7 @@
             android:id="@+id/reply_author"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="@color/briar_primary"
+            android:textColor="@color/zerion_primary"
             android:textSize="12sp"
             android:textStyle="bold" />
 

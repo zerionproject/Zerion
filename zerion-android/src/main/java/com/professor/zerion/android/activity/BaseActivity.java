@@ -97,9 +97,10 @@ public abstract class BaseActivity extends AppCompatActivity
 
 	@Override
 	protected void attachBaseContext(Context base) {
+		// PERFORMANCE: Use applyLocaleToContext() - NO disk I/O
+		// Do NOT call setLocale() here as it can trigger LocaleManager writes
 		super.attachBaseContext(
-				Localizer.getInstance().setLocale(base));
-		Localizer.getInstance().setLocale(this);
+				Localizer.getInstance().applyLocaleToContext(base));
 	}
 
 	public ActivityComponent getActivityComponent() {

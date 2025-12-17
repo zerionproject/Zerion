@@ -28,9 +28,8 @@ public interface SyncSessionFactory {
 			long maxLatency, boolean eager, StreamWriter streamWriter);
 
 	/**
-	 * Creates a session for sending data to a contact via a mailbox. The IDs
-	 * of any messages sent or acked will be added to the given
-	 * {@link OutgoingSessionRecord}.
+	 * Creates a session for sending data to a contact over a simplex transport
+	 * with a session record for tracking sent/acked messages.
 	 */
 	SyncSession createSimplexOutgoingSession(ContactId c, TransportId t,
 			long maxLatency, StreamWriter streamWriter,

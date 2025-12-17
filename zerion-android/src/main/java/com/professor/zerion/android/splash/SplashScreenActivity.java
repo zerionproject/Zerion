@@ -57,7 +57,11 @@ public class SplashScreenActivity extends BaseActivity {
 				WindowManager.LayoutParams.FLAG_SECURE
 		);
 		getWindow().setExitTransition(new Fade());
-		setDefaultValues(this, R.xml.panic_preferences, false);
+
+		// Move setDefaultValues to background thread to avoid disk I/O on main thread
+		// This is a one-time operation that reads XML and writes to SharedPreferences
+		androidExecutor.runOnBackgroundThread(() ->
+				setDefaultValues(this, R.xml.panic_preferences, false));
 
 		if (accountManager.hasDatabaseKey()) {
 			startNextActivity(ENTRY_ACTIVITY);

@@ -14,16 +14,36 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
+import java.util.logging.Logger;
 
 import androidx.annotation.Nullable;
 
 import static java.util.Arrays.asList;
+import static java.util.logging.Level.WARNING;
+import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.util.AndroidUtils.getSupportedImageContentTypes;
 import static org.briarproject.bramble.util.IoUtils.tryToClose;
 import static com.professor.zerion.android.attachment.media.ImageCompressor.MIME_TYPE;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @NotNullByDefault
 class AttachmentCreationTask {
+
+	private static final Logger LOG =
+			getLogger(AttachmentCreationTask.class.getName());
+
+	// Supported audio MIME types for voice attachments
+	private static final Set<String> SUPPORTED_AUDIO_TYPES = new HashSet<>(asList(
+			"audio/opus",
+			"audio/ogg",
+			"audio/aac",
+			"audio/mp4",
+			"audio/mpeg",
+			"audio/3gpp",
+			"audio/3gp"
+	));
 
 
 	private final MessagingManager messagingManager;
@@ -88,9 +108,15 @@ class AttachmentCreationTask {
 			throws IOException, DbException {
 		String contentType = contentResolver.getType(uri);
 		if (contentType == null) throw new IOException("null content type");
-		if (!asList(getSupportedImageContentTypes()).contains(contentType)) {
+
+		// Check if it's a supported audio type
+		boolean isAudio = SUPPORTED_AUDIO_TYPES.contains(contentType);
+		boolean isImage = asList(getSupportedImageContentTypes()).contains(contentType);
+
+		if (!isAudio && !isImage) {
 			throw new UnsupportedMimeTypeException(contentType, uri);
 		}
+
 		InputStream is;
 		try {
 			is = contentResolver.openInputStream(uri);
@@ -98,11 +124,21 @@ class AttachmentCreationTask {
 		} catch (SecurityException e) {
 			throw new IOException(e);
 		}
-		is = imageCompressor.compressImage(is, contentType);
+
+		String finalMimeType;
+		if (isAudio) {
+			// Audio files are stored directly without compression
+			finalMimeType = contentType;
+		} else {
+			// Images are compressed
+			is = imageCompressor.compressImage(is, contentType);
+			finalMimeType = MIME_TYPE;
+		}
+
 		long timestamp = System.currentTimeMillis();
 		AttachmentHeader h = messagingManager.addLocalAttachment(groupId,
-				timestamp, MIME_TYPE, is);
-		tryToClose(is);
+				timestamp, finalMimeType, is);
+		tryToClose(is, LOG, WARNING);
 		return h;
 	}
 

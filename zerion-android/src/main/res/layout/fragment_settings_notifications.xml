@@ -77,9 +77,12 @@
 
         <!-- Private Messages -->
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/notify_private_messages_card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
+            android:clickable="true"
+            android:focusable="true"
             app:cardCornerRadius="8dp"
             app:cardElevation="1dp">
 
@@ -131,9 +134,12 @@
 
         <!-- Group Messages -->
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/notify_group_messages_card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
+            android:clickable="true"
+            android:focusable="true"
             app:cardCornerRadius="8dp"
             app:cardElevation="1dp">
 
@@ -185,9 +191,12 @@
 
         <!-- Voice Calls -->
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/notify_voice_calls_card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp"
+            android:clickable="true"
+            android:focusable="true"
             app:cardCornerRadius="8dp"
             app:cardElevation="1dp">
 
@@ -249,9 +258,12 @@
 
         <!-- Vibration -->
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/notify_vibration_card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
+            android:clickable="true"
+            android:focusable="true"
             app:cardCornerRadius="8dp"
             app:cardElevation="1dp">
 

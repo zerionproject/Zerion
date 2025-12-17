@@ -1,10 +1,14 @@
-Folder-Description:
-===================
-* `briar-*`: Specifically for the Briar app (Phone/Desktop/Headless)
-* `bramble-*`: The protocol stack - not necessarily Briar-dependent
+# Zerion Project Structure
+
+## Folder Description
+
+* `zerion-android`: The Android app
+* `bramble-*`: The protocol stack (cross-platform)
+* `briar-*`: Core messaging and sync functionality
 
 ---
 
-* `*-api`: public stuff that can be referenced from other packages and modules - mostly interfaces + a few utility classes
-* `*-core`: implementations of api that are portable across Android/Desktop/Headless
-* `*-java`: implementations of api that are specific to Desktop & Headless
+* `*-api`: Public interfaces and utility classes
+* `*-core`: Cross-platform implementations
+* `*-android`: Android-specific implementations
+* `*-java`: Desktop/headless implementations

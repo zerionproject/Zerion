@@ -16,7 +16,7 @@
 
 		<de.hdodenhof.circleimageview.CircleImageView
 			android:id="@+id/avatarImage"
-			style="@style/BriarAvatar"
+			style="@style/ZerionAvatar"
 			android:layout_width="@dimen/listitem_picture_size"
 			android:layout_height="@dimen/listitem_picture_size"
 			android:layout_margin="16dp"
@@ -36,7 +36,7 @@
 			android:layout_marginRight="16dp"
 			android:paddingStart="@dimen/margin_medium"
 			android:paddingEnd="@dimen/margin_medium"
-			android:textColor="@color/briar_text_primary_inverse"
+			android:textColor="@color/zerion_text_primary_inverse"
 			android:textSize="@dimen/text_size_medium"
 			app:layout_constraintBottom_toTopOf="@+id/avatarExplanation"
 			app:layout_constraintEnd_toEndOf="parent"
@@ -57,7 +57,7 @@
 			android:paddingStart="@dimen/margin_medium"
 			android:paddingEnd="@dimen/margin_medium"
 			android:text="@string/change_profile_picture"
-			android:textColor="@color/briar_text_secondary_inverse"
+			android:textColor="@color/zerion_text_secondary_inverse"
 			android:textSize="@dimen/text_size_small"
 			app:layout_constraintBottom_toBottomOf="parent"
 			app:layout_constraintEnd_toEndOf="parent"

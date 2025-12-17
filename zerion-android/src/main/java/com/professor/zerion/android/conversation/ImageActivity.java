@@ -242,7 +242,7 @@ public class ImageActivity extends ZerionActivity
 				viewModel.onSaveImageError();
 			}
 		};
-		Builder builder = new Builder(this, R.style.BriarDialogTheme);
+		Builder builder = new Builder(this, R.style.ZerionDialogTheme);
 		builder.setTitle(getString(R.string.dialog_title_save_image));
 		builder.setMessage(getString(R.string.dialog_message_save_image));
 		builder.setIcon(getDialogIcon(this, R.drawable.ic_security));
@@ -261,7 +261,7 @@ public class ImageActivity extends ZerionActivity
 		int stringRes = error ?
 				R.string.save_image_error : R.string.save_image_success;
 		int colorRes = error ?
-				R.color.briar_red_500 : R.color.briar_primary;
+				R.color.zerion_error_red : R.color.zerion_cyan;
 		new ZerionSnackbarBuilder()
 				.setBackgroundColor(colorRes)
 				.make(layout, stringRes, LENGTH_LONG)

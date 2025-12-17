@@ -7,7 +7,6 @@ import org.briarproject.bramble.api.db.DatabaseComponent;
 import org.briarproject.bramble.api.lifecycle.LifecycleManager;
 import org.briarproject.bramble.api.properties.TransportPropertyManager;
 import org.briarproject.bramble.api.transport.KeyManager;
-import org.briarproject.bramble.mailbox.ModularMailboxModule;
 import org.briarproject.bramble.test.BrambleCoreIntegrationTestModule;
 import org.briarproject.bramble.test.BrambleIntegrationTestComponent;
 import org.briarproject.bramble.test.TestDnsModule;
@@ -22,7 +21,6 @@ import dagger.Component;
 @Component(modules = {
 		BrambleCoreIntegrationTestModule.class,
 		BrambleCoreModule.class,
-		ModularMailboxModule.class,
 		TestDnsModule.class,
 		TestSocksModule.class,
 		TestPluginConfigModule.class,

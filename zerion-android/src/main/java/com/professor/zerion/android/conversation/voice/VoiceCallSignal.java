@@ -17,55 +17,23 @@ import javax.crypto.spec.SecretKeySpec;
 import static java.util.logging.Level.WARNING;
 import static java.util.logging.Logger.getLogger;
 
-/**
- * Structured voice call signaling message format.
- *
- * SECURITY PROPERTIES:
- * - No in-band spoofing via chat: user-generated messages cannot be misinterpreted
- *   as call signals because they can't produce the binary prefix or structured envelope.
- * - Authenticity: HMAC-SHA256 with session key prevents tampering by parties without
- *   the voice call key. (Note: endpoint compromise is out of scope - a malicious client
- *   with access to the key can still forge signals.)
- * - Replay mitigation: Timestamp window + callId binding limits replay attacks.
- * - DoS protection: Maximum payload length enforced.
- *
- * Wire format: WIRE_PREFIX + canonical_json + ":" + hmac
- *
- * The binary prefix uses control characters that:
- * 1. Cannot be typed by normal users
- * 2. Include version byte for protocol evolution
- * 3. Enable fast detection without full parsing
- *
- * JSON CANONICALIZATION:
- * - Fixed field order: t, c, ts, then optional fields alphabetically (k, o, p, r)
- * - No whitespace
- * - UTF-8 encoding
- * - Deterministic escaping
- */
 @NotNullByDefault
 public class VoiceCallSignal {
 
 	private static final Logger LOG = getLogger(VoiceCallSignal.class.getName());
 
-	// Signal prefix - uses control characters that cannot be typed normally
-	// Format: 0x00 + "ZSIG" + version byte + 0x00
 	private static final String SIGNAL_PREFIX = "\u0000ZSIG\u0001\u0000";
 
-	// Wire format prefix
 	public static final String WIRE_PREFIX = SIGNAL_PREFIX;
 
-	// Security limits
-	private static final int MAX_PAYLOAD_LENGTH = 2048; // Prevent DoS via huge payloads
-	private static final int MAX_REASON_LENGTH = 128;   // Limit reason field
+	private static final int MAX_PAYLOAD_LENGTH = 2048;
+	private static final int MAX_REASON_LENGTH = 128;
 
-	// Timestamp validation window (configurable for device clock skew)
-	private static final long TIMESTAMP_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+	private static final long TIMESTAMP_WINDOW_MS = 10 * 60 * 1000;
 
-	// HMAC configuration
 	private static final String HMAC_ALGORITHM = "HmacSHA256";
-	private static final int HMAC_OUTPUT_LENGTH = 32; // Full 256 bits for security
+	private static final int HMAC_OUTPUT_LENGTH = 32;
 
-	// Signal types
 	public enum SignalType {
 		CALL_OFFER("offer"),
 		CALL_ANSWER("answer"),

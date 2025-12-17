@@ -4,6 +4,7 @@ import org.briarproject.bramble.api.FormatException;
 import org.briarproject.bramble.api.contact.ContactManager;
 import org.briarproject.bramble.api.contact.HandshakeManager.HandshakeResult;
 import org.briarproject.bramble.api.contact.PendingContact;
+import org.briarproject.bramble.api.crypto.CryptoComponent;
 import org.briarproject.bramble.api.crypto.KeyPair;
 import org.briarproject.bramble.api.crypto.PrivateKey;
 import org.briarproject.bramble.api.crypto.PublicKey;
@@ -57,6 +58,10 @@ public class HandshakeManagerImplTest extends BrambleMockTestCase {
 			context.mock(TransportCrypto.class);
 	private final HandshakeCrypto handshakeCrypto =
 			context.mock(HandshakeCrypto.class);
+	private final CryptoComponent crypto =
+			context.mock(CryptoComponent.class);
+	private final PendingContactFactory pendingContactFactory =
+			context.mock(PendingContactFactory.class);
 	private final RecordReaderFactory recordReaderFactory =
 			context.mock(RecordReaderFactory.class);
 	private final RecordWriterFactory recordWriterFactory =
@@ -86,7 +91,8 @@ public class HandshakeManagerImplTest extends BrambleMockTestCase {
 
 	private final HandshakeManagerImpl handshakeManager =
 			new HandshakeManagerImpl(db, identityManager, contactManager,
-					transportCrypto, handshakeCrypto, recordReaderFactory,
+					transportCrypto, handshakeCrypto, crypto,
+					pendingContactFactory, recordReaderFactory,
 					recordWriterFactory);
 
 	@Test

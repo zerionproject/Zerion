@@ -57,30 +57,51 @@ public class Localizer {
 		return Locale.forLanguageTag(tag);
 	}
 
-	public Context setLocale(Context context) {
-		if (SDK_INT >= 33) {
-			LocaleManager localeManager = context.getSystemService(LocaleManager.class);
-			if (localeManager != null) {
-				localeManager.setApplicationLocales(
-						new LocaleList(locale));
-			}
-			return context;
-		}
-
+	/**
+	 * Apply locale to context in-memory only - NO disk I/O.
+	 * Use this in attachBaseContext() to avoid blocking the main thread.
+	 * This method only creates a configuration context with the locale,
+	 * without calling LocaleManager.setApplicationLocales().
+	 */
+	public Context applyLocaleToContext(Context context) {
 		Resources res = context.getResources();
-		Configuration conf = res.getConfiguration();
+		Configuration conf = new Configuration(res.getConfiguration());
 		Locale currentLocale;
 		if (SDK_INT >= 24) {
 			currentLocale = conf.getLocales().get(0);
 		} else {
 			currentLocale = conf.locale;
 		}
-		if (locale.equals(currentLocale))
+		if (locale.equals(currentLocale)) {
 			return context;
+		}
 		Locale.setDefault(locale);
 		conf.setLocale(locale);
-		context = context.createConfigurationContext(conf);
-		res.updateConfiguration(conf, res.getDisplayMetrics());
-		return context;
+		return context.createConfigurationContext(conf);
+	}
+
+	/**
+	 * Full locale setting including LocaleManager for Android 13+.
+	 * Use this when user explicitly changes language in settings.
+	 * WARNING: This triggers disk I/O on Android 13+ - do NOT call from attachBaseContext().
+	 */
+	public void setLocaleWithPersistence(Context context) {
+		if (SDK_INT >= 33) {
+			LocaleManager localeManager = context.getSystemService(LocaleManager.class);
+			if (localeManager != null) {
+				localeManager.setApplicationLocales(new LocaleList(locale));
+			}
+		}
+	}
+
+	/**
+	 * @deprecated Use {@link #applyLocaleToContext(Context)} in attachBaseContext()
+	 * and {@link #setLocaleWithPersistence(Context)} when changing settings.
+	 */
+	@Deprecated
+	public Context setLocale(Context context) {
+		// For backwards compatibility, just apply locale to context
+		// without the LocaleManager call to avoid disk I/O
+		return applyLocaleToContext(context);
 	}
 }

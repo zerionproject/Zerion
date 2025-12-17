@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Override for Android 12+ to disable system splash screen -->
-    <style name="BriarTheme.NoActionBar" parent="BriarTheme">
+    <style name="ZerionTheme.NoActionBar" parent="ZerionTheme">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
-        <item name="toolbarStyle">@style/BriarToolbar</item>
+        <item name="toolbarStyle">@style/ZerionToolbar</item>
         <!-- Disable Android 12+ splash screen completely -->
         <item name="android:windowSplashScreenAnimationDuration">0</item>
         <item name="android:windowSplashScreenBackground">@color/zerion_dark_bg</item>

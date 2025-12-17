@@ -6,7 +6,6 @@ import org.briarproject.bramble.api.client.ClientHelper;
 import org.briarproject.bramble.api.connection.ConnectionManager;
 import org.briarproject.bramble.api.event.EventBus;
 import org.briarproject.bramble.api.identity.IdentityManager;
-import org.briarproject.bramble.mailbox.ModularMailboxModule;
 
 import javax.inject.Singleton;
 
@@ -16,7 +15,6 @@ import dagger.Component;
 @Component(modules = {
 		BrambleCoreIntegrationTestModule.class,
 		BrambleCoreModule.class,
-		ModularMailboxModule.class,
 		TestDnsModule.class,
 		TestSocksModule.class,
 		TestPluginConfigModule.class,

@@ -17,6 +17,8 @@ public interface CryptoComponent {
 
 	SecureRandom getSecureRandom();
 
+	// ==================== Classical Key Operations ====================
+
 	KeyPair generateAgreementKeyPair();
 
 	KeyParser getAgreementKeyParser();
@@ -26,6 +28,119 @@ public interface CryptoComponent {
 	KeyParser getSignatureKeyParser();
 
 	KeyParser getMessageKeyParser();
+
+	// ==================== Hybrid Post-Quantum Key Operations ====================
+
+	/**
+	 * Generates a hybrid key pair for key agreement (X25519 + ML-KEM-768).
+	 * <p>
+	 * The resulting keys provide post-quantum security through the ML-KEM-768
+	 * component while maintaining classical security through X25519. Both
+	 * algorithms must be broken to compromise the key exchange.
+	 *
+	 * @return A KeyPair containing HybridAgreementPublicKey and HybridAgreementPrivateKey
+	 */
+	KeyPair generateHybridAgreementKeyPair();
+
+	/**
+	 * Returns a parser for hybrid agreement keys.
+	 *
+	 * @return A KeyParser that can parse HybridAgreementPublicKey and HybridAgreementPrivateKey
+	 */
+	KeyParser getHybridAgreementKeyParser();
+
+	/**
+	 * Generates a hybrid key pair for digital signatures (Ed25519 + ML-DSA-65).
+	 * <p>
+	 * The resulting keys provide post-quantum security through the ML-DSA-65
+	 * component while maintaining classical security through Ed25519. Both
+	 * signatures must be forged to compromise authenticity.
+	 *
+	 * @return A KeyPair containing HybridSignaturePublicKey and HybridSignaturePrivateKey
+	 */
+	KeyPair generateHybridSignatureKeyPair();
+
+	/**
+	 * Returns a parser for hybrid signature keys.
+	 *
+	 * @return A KeyParser that can parse HybridSignaturePublicKey and HybridSignaturePrivateKey
+	 */
+	KeyParser getHybridSignatureKeyParser();
+
+	/**
+	 * Signs the given data with a hybrid private key (Ed25519 + ML-DSA-65).
+	 * <p>
+	 * Produces a concatenated signature where both Ed25519 and ML-DSA-65
+	 * signatures must verify for the overall signature to be valid.
+	 *
+	 * @param label A namespaced label for domain separation
+	 * @param toSign The data to sign
+	 * @param privateKey The hybrid private key (must be HybridSignaturePrivateKey)
+	 * @return The hybrid signature (3,373 bytes: Ed25519 64 + ML-DSA-65 3,309)
+	 * @throws GeneralSecurityException If signing fails
+	 */
+	byte[] hybridSign(String label, byte[] toSign, PrivateKey privateKey)
+			throws GeneralSecurityException;
+
+	/**
+	 * Verifies a hybrid signature.
+	 * <p>
+	 * Both the Ed25519 and ML-DSA-65 component signatures must be valid
+	 * for the verification to succeed.
+	 *
+	 * @param signature The hybrid signature to verify
+	 * @param label A namespaced label for domain separation
+	 * @param signed The signed data
+	 * @param publicKey The signer's hybrid public key (must be HybridSignaturePublicKey)
+	 * @return true if both component signatures are valid
+	 * @throws GeneralSecurityException If verification fails due to invalid keys
+	 */
+	boolean verifyHybridSignature(byte[] signature, String label, byte[] signed,
+			PublicKey publicKey) throws GeneralSecurityException;
+
+	/**
+	 * Performs hybrid key encapsulation to a remote party's public key.
+	 * <p>
+	 * This is the initiator's operation in the hybrid key exchange. The returned
+	 * encapsulation contains the KEM ciphertext to send and the partial shared
+	 * secret to combine with ECDH.
+	 *
+	 * @param theirPublicKey The remote party's hybrid public key
+	 * @return The encapsulation result (ciphertext + partial secret)
+	 * @throws GeneralSecurityException If encapsulation fails
+	 */
+	HybridEncapsulationResult hybridEncapsulate(PublicKey theirPublicKey)
+			throws GeneralSecurityException;
+
+	/**
+	 * Derives a hybrid shared secret as the initiator (who received KEM ciphertext).
+	 *
+	 * @param label A namespaced label for domain separation
+	 * @param theirPublicKey The remote party's hybrid public key
+	 * @param ourKeyPair Our hybrid key pair
+	 * @param kemCiphertext The KEM ciphertext from the remote party
+	 * @param inputs Additional inputs for key derivation
+	 * @return The derived shared secret
+	 * @throws GeneralSecurityException If key agreement fails
+	 */
+	SecretKey deriveHybridSharedSecret(String label, PublicKey theirPublicKey,
+			KeyPair ourKeyPair, byte[] kemCiphertext, byte[]... inputs)
+			throws GeneralSecurityException;
+
+	/**
+	 * Derives a hybrid shared secret as the responder (who generated KEM ciphertext).
+	 *
+	 * @param label A namespaced label for domain separation
+	 * @param theirPublicKey The initiator's hybrid public key
+	 * @param ourKeyPair Our hybrid key pair
+	 * @param kemSecret The KEM shared secret from our encapsulation
+	 * @param inputs Additional inputs for key derivation
+	 * @return The derived shared secret
+	 * @throws GeneralSecurityException If key agreement fails
+	 */
+	SecretKey deriveHybridSharedSecretAsResponder(String label,
+			PublicKey theirPublicKey, KeyPair ourKeyPair, byte[] kemSecret,
+			byte[]... inputs) throws GeneralSecurityException;
 
 	/**
 	 * Derives another secret key from the given secret key.

@@ -13,12 +13,8 @@ import org.whispersystems.curve25519.Curve25519;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.util.Arrays;
-import java.util.logging.Logger;
 
 import javax.annotation.concurrent.Immutable;
-
-import static java.util.logging.Level.INFO;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.api.crypto.PostQuantumConstants.HYBRID_SHARED_SECRET_LABEL;
 import static org.briarproject.bramble.util.ByteUtils.INT_32_BYTES;
 
@@ -68,8 +64,6 @@ import static org.briarproject.bramble.util.ByteUtils.INT_32_BYTES;
 @Immutable
 class HybridKeyAgreement {
 
-	private static final Logger LOG = getLogger(HybridKeyAgreement.class.getName());
-
 	private final SecureRandom secureRandom;
 	private final Curve25519 curve25519;
 	private final MlKem768 mlKem768;
@@ -78,9 +72,6 @@ class HybridKeyAgreement {
 		this.secureRandom = secureRandom;
 		this.curve25519 = Curve25519.getInstance("java");
 		this.mlKem768 = new MlKem768(secureRandom);
-		if (LOG.isLoggable(INFO)) {
-			LOG.info("Hybrid key agreement initialized (X25519 + ML-KEM-768)");
-		}
 	}
 
 	/**
@@ -233,7 +224,8 @@ class HybridKeyAgreement {
 	 * Combines X25519 and ML-KEM shared secrets using BLAKE2b.
 	 * <p>
 	 * The combination includes public keys to bind the secret to the
-	 * specific key exchange instance.
+	 * specific key exchange instance. Public keys are added in canonical
+	 * (lexicographic) order to ensure both parties compute the same hash.
 	 */
 	private SecretKey combineSecrets(String label,
 			byte[] x25519Secret,
@@ -262,14 +254,24 @@ class HybridKeyAgreement {
 		digest.update(length, 0, length.length);
 		digest.update(kemSecret, 0, kemSecret.length);
 
-		// Add public keys (binds the secret to this key exchange)
-		ByteUtils.writeUint32(theirPublicKey.length, length, 0);
-		digest.update(length, 0, length.length);
-		digest.update(theirPublicKey, 0, theirPublicKey.length);
+		// Add public keys in canonical (lexicographic) order to ensure both
+		// parties compute the same hash regardless of which key is "ours"
+		byte[] firstKey, secondKey;
+		if (compareBytes(ourPublicKey, theirPublicKey) < 0) {
+			firstKey = ourPublicKey;
+			secondKey = theirPublicKey;
+		} else {
+			firstKey = theirPublicKey;
+			secondKey = ourPublicKey;
+		}
 
-		ByteUtils.writeUint32(ourPublicKey.length, length, 0);
+		ByteUtils.writeUint32(firstKey.length, length, 0);
 		digest.update(length, 0, length.length);
-		digest.update(ourPublicKey, 0, ourPublicKey.length);
+		digest.update(firstKey, 0, firstKey.length);
+
+		ByteUtils.writeUint32(secondKey.length, length, 0);
+		digest.update(length, 0, length.length);
+		digest.update(secondKey, 0, secondKey.length);
 
 		// Add any additional inputs
 		for (byte[] input : additionalInputs) {
@@ -283,6 +285,20 @@ class HybridKeyAgreement {
 		digest.doFinal(output, 0);
 
 		return new SecretKey(output);
+	}
+
+	/**
+	 * Lexicographically compares two byte arrays.
+	 * Returns negative if a < b, positive if a > b, zero if equal.
+	 */
+	private int compareBytes(byte[] a, byte[] b) {
+		int minLen = Math.min(a.length, b.length);
+		for (int i = 0; i < minLen; i++) {
+			// Compare as unsigned bytes
+			int diff = (a[i] & 0xFF) - (b[i] & 0xFF);
+			if (diff != 0) return diff;
+		}
+		return a.length - b.length;
 	}
 
 	/**

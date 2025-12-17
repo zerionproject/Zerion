@@ -40,7 +40,7 @@
 			android:layout_height="match_parent"
 			android:layout_marginEnd="6dp"
 			android:layout_marginRight="6dp"
-			android:background="@color/briar_primary" />
+			android:background="@color/zerion_primary" />
 
 		<TextView
 			android:id="@+id/replyText"
@@ -93,7 +93,7 @@
 		android:layout_marginRight="@dimen/message_bubble_padding_sides_inner"
 		android:layout_marginBottom="@dimen/message_bubble_padding_bottom_inner"
 		android:textColor="?android:attr/textColorPrimary"
-		android:textColorLink="@color/briar_text_link"
+		android:textColorLink="@color/zerion_text_link"
 		app:layout_constrainedWidth="true"
 		app:layout_constraintBottom_toTopOf="@+id/statusLayout"
 		app:layout_constraintEnd_toEndOf="parent"

@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
+import java.util.logging.Logger;
 
 import javax.inject.Inject;
 
@@ -29,6 +30,8 @@ import androidx.lifecycle.MutableLiveData;
 
 import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
+import static java.util.logging.Level.WARNING;
+import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.util.AndroidUtils.getSupportedImageContentTypes;
 import static org.briarproject.bramble.util.IoUtils.tryToClose;
 import static com.professor.zerion.android.attachment.AttachmentItem.State.AVAILABLE;
@@ -38,6 +41,9 @@ import static com.professor.zerion.android.attachment.AttachmentItem.State.MISSI
 
 @NotNullByDefault
 class AttachmentRetrieverImpl implements AttachmentRetriever {
+
+	private static final Logger LOG =
+			getLogger(AttachmentRetrieverImpl.class.getName());
 
 	@DatabaseExecutor
 	private final Executor dbExecutor;
@@ -187,7 +193,7 @@ class AttachmentRetrieverImpl implements AttachmentRetriever {
 		if (needsSize) {
 			InputStream is = new BufferedInputStream(a.getStream());
 			Size size = imageSizeCalculator.getSize(is, h.getContentType());
-			tryToClose(is);
+			tryToClose(is, LOG, WARNING);
 			item = createAttachmentItem(h, size);
 		} else {
 			String extension =

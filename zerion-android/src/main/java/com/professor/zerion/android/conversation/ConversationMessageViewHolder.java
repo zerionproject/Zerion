@@ -83,6 +83,11 @@ class ConversationMessageViewHolder extends ConversationItemViewHolder {
 		ConversationMessageItem item =
 				(ConversationMessageItem) conversationItem;
 
+		// PERFORMANCE: Load attachments lazily at bind time (not during initial list build)
+		if (item.needsAttachmentLoading()) {
+			listener.loadAttachmentsForItem(item);
+		}
+
 		boolean hasVoiceMessage = hasVoiceMessage(item);
 
 		if (hasVoiceMessage) {

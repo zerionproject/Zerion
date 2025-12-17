@@ -169,6 +169,25 @@ class KeyManagerImpl implements KeyManager, Service, EventListener {
 	}
 
 	@Override
+	public Map<TransportId, KeySetId> addHybridPendingContact(Transaction txn,
+			PendingContactId p, SecretKey rendezvousKey, boolean alice)
+			throws DbException {
+		// For hybrid (PQ) pending contacts, we use the rendezvous key derived
+		// from commitments as the root key for transport key derivation.
+		// This is different from classical contacts where we derive keys from
+		// X25519 key agreement.
+		SecretKey rootKey =
+				transportCrypto.deriveHandshakeRootKey(rendezvousKey, true);
+		Map<TransportId, KeySetId> ids = new HashMap<>();
+		for (Entry<TransportId, TransportKeyManager> e : managers.entrySet()) {
+			TransportId t = e.getKey();
+			TransportKeyManager m = e.getValue();
+			ids.put(t, m.addHandshakeKeys(txn, p, rootKey, alice));
+		}
+		return ids;
+	}
+
+	@Override
 	public void activateKeys(Transaction txn, Map<TransportId, KeySetId> keys)
 			throws DbException {
 		for (Entry<TransportId, KeySetId> e : keys.entrySet()) {

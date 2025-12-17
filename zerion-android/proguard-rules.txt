@@ -156,3 +156,80 @@
 
 # Dependency injection annotations, needed for UI tests on older API levels
 -keep class javax.inject.**
+
+# ============================================================================
+# BOUNCYCASTLE POST-QUANTUM CRYPTOGRAPHY
+# ============================================================================
+# ML-KEM-768 and ML-DSA-65 classes use reflection internally
+-keep class org.bouncycastle.** { *; }
+-keep class org.bouncycastle.pqc.** { *; }
+-keep class org.bouncycastle.pqc.crypto.** { *; }
+-keep class org.bouncycastle.pqc.crypto.mlkem.** { *; }
+-keep class org.bouncycastle.pqc.crypto.mldsa.** { *; }
+-dontwarn org.bouncycastle.**
+
+# Keep Briar/Zerion crypto classes that interact with BouncyCastle
+-keep class org.briarproject.bramble.crypto.** { *; }
+-keep class org.briarproject.bramble.api.crypto.** { *; }
+
+# ============================================================================
+# BRAMBLE/BRIAR CORE CLASSES
+# ============================================================================
+# Keep all Bramble and Briar interfaces and implementations
+-keep class org.briarproject.bramble.** { *; }
+-keep class org.briarproject.briar.** { *; }
+-keep interface org.briarproject.bramble.** { *; }
+-keep interface org.briarproject.briar.** { *; }
+
+# Keep all Zerion Android classes
+-keep class com.professor.zerion.** { *; }
+
+# Keep eager singletons that are loaded at startup
+-keep class org.briarproject.bramble.BrambleCoreEagerSingletons { *; }
+-keep class org.briarproject.bramble.BrambleAndroidEagerSingletons { *; }
+-keep class org.briarproject.briar.BriarCoreEagerSingletons { *; }
+
+# ============================================================================
+# H2 DATABASE - CRITICAL FOR RELEASE BUILDS
+# ============================================================================
+# H2 Database driver is loaded via Class.forName("org.h2.Driver")
+# Without these rules, the release APK crashes after onboarding with
+# "unable to open database" error
+-keep class org.h2.** { *; }
+-keepclassmembers class org.h2.** { *; }
+-keep class org.h2.Driver { *; }
+-keep class org.h2.engine.** { *; }
+-keep class org.h2.jdbc.** { *; }
+-keep class org.h2.store.** { *; }
+-keep class org.h2.store.fs.** { *; }
+-keep class org.h2.security.** { *; }
+-keep class org.h2.util.** { *; }
+-keep class org.h2.mvstore.** { *; }
+-keep class org.h2.value.** { *; }
+-keep class org.h2.command.** { *; }
+-keep class org.h2.expression.** { *; }
+-keep class org.h2.index.** { *; }
+-keep class org.h2.table.** { *; }
+-keep class org.h2.result.** { *; }
+-keep class org.h2.schema.** { *; }
+-keep class org.h2.message.** { *; }
+-keep class org.h2.api.** { *; }
+-keep class org.h2.compress.** { *; }
+-keep class org.h2.constraint.** { *; }
+-keep class org.h2.fulltext.** { *; }
+-keep class org.h2.func.** { *; }
+-keep class org.h2.tools.** { *; }
+-dontwarn org.h2.**
+-dontnote org.h2.**
+
+# Keep JDBC driver registration (critical for Class.forName)
+-keepnames class * implements java.sql.Driver
+-keep class java.sql.** { *; }
+-keep class javax.sql.** { *; }
+
+# ============================================================================
+# ED25519 / CURVE25519 CRYPTOGRAPHY
+# ============================================================================
+# These are loaded via reflection
+-keep class net.i2p.crypto.eddsa.** { *; }
+-keep class org.whispersystems.curve25519.** { *; }
