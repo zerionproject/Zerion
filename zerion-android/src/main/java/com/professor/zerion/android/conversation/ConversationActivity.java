@@ -168,9 +168,15 @@ public class ConversationActivity extends ZerionActivity
 
 	private final Map<MessageId, String> textCache = new ConcurrentHashMap<>();
 
+	private boolean messagesLoaded = false;
+
 	private final Observer<String> contactNameObserver = name -> {
 		requireNonNull(name);
-		loadMessages();
+		// Only load messages once to prevent flickering on activity resume
+		if (!messagesLoaded) {
+			messagesLoaded = true;
+			loadMessages();
+		}
 	};
 
 	private final ActivityResultLauncher<String[]> docLauncher =
@@ -714,6 +720,9 @@ public class ConversationActivity extends ZerionActivity
 			intent.putExtra(CONTACT_ID, contactId.getInt());
 			startActivity(intent);
 			return true;
+		} else if (itemId == R.id.action_disappearing_messages) {
+			showDisappearingMessagesDialog();
+			return true;
 		} else if (itemId == R.id.action_clear_chat) {
 			askToClearChat();
 			return true;
@@ -1182,6 +1191,62 @@ public class ConversationActivity extends ZerionActivity
 				}
 			}
 		});
+	}
+
+	private void showDisappearingMessagesDialog() {
+		View dialogView = getLayoutInflater().inflate(
+				R.layout.dialog_disappearing_messages, null);
+		android.widget.RadioGroup radioGroup = dialogView.findViewById(
+				R.id.disappearing_messages_radio_group);
+
+		// Get current timer and pre-select the appropriate option
+		Long currentTimer = viewModel.getAutoDeleteTimer().getValue();
+		if (currentTimer != null) {
+			int selectedId = getRadioIdForTimer(currentTimer);
+			radioGroup.check(selectedId);
+		}
+
+		new MaterialAlertDialogBuilder(this)
+				.setView(dialogView)
+				.setPositiveButton(android.R.string.ok, (dialog, which) -> {
+					int selectedId = radioGroup.getCheckedRadioButtonId();
+					long timer = getTimerForRadioId(selectedId);
+					viewModel.setAutoDeleteTimer(timer);
+				})
+				.setNegativeButton(android.R.string.cancel, null)
+				.show();
+	}
+
+	private int getRadioIdForTimer(long timer) {
+		if (timer <= 0) return R.id.timer_off;
+		long seconds = timer / 1000;
+		long minutes = seconds / 60;
+		long hours = minutes / 60;
+		long days = hours / 24;
+		long weeks = days / 7;
+
+		if (seconds <= 30) return R.id.timer_30_seconds;
+		if (minutes <= 5) return R.id.timer_5_minutes;
+		if (minutes <= 30) return R.id.timer_30_minutes;
+		if (hours <= 1) return R.id.timer_1_hour;
+		if (hours <= 8) return R.id.timer_8_hours;
+		if (hours <= 12) return R.id.timer_12_hours;
+		if (hours <= 24) return R.id.timer_24_hours;
+		if (weeks <= 1) return R.id.timer_1_week;
+		return R.id.timer_4_weeks;
+	}
+
+	private long getTimerForRadioId(int radioId) {
+		if (radioId == R.id.timer_30_seconds) return 30 * 1000L;
+		if (radioId == R.id.timer_5_minutes) return 5 * 60 * 1000L;
+		if (radioId == R.id.timer_30_minutes) return 30 * 60 * 1000L;
+		if (radioId == R.id.timer_1_hour) return 60 * 60 * 1000L;
+		if (radioId == R.id.timer_8_hours) return 8 * 60 * 60 * 1000L;
+		if (radioId == R.id.timer_12_hours) return 12 * 60 * 60 * 1000L;
+		if (radioId == R.id.timer_24_hours) return 24 * 60 * 60 * 1000L;
+		if (radioId == R.id.timer_1_week) return 7 * 24 * 60 * 60 * 1000L;
+		if (radioId == R.id.timer_4_weeks) return 4 * 7 * 24 * 60 * 60 * 1000L;
+		return -1L; // NO_AUTO_DELETE_TIMER
 	}
 
 	private void askToClearChat() {
