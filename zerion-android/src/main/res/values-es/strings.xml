@@ -162,6 +162,8 @@
   <string name="set_contact_alias">Cambiar nombre del contacto</string>
   <string name="set_contact_alias_hint">Nombre del contacto</string>
   <string name="menu_item_disappearing_messages">Mensajes con caducidad</string>
+  <string name="disappearing_messages_setting_description">Los mensajes desaparecerán automáticamente después del tiempo seleccionado</string>
+  <string name="off">Desactivado</string>
   <!--The first placeholder will show a duration like "7 days". The second placeholder at the end will add "Tap to learn more."-->
   <string name="auto_delete_msg_you_enabled">Tus mensajes desaparecerán después de %1$s. %2$s</string>
   <!--The placeholder at the end will add "Tap to learn more."-->
@@ -909,5 +911,63 @@
 
 	<!-- Voice Call strings -->
 	<string name="voice_call">Llamada de voz</string>
+
+	<!-- Post-Quantum Security Level strings -->
+	<string name="security_level_post_quantum">Seguridad Post-Cuántica</string>
+	<string name="security_level_post_quantum_short">PQ</string>
+	<string name="security_level_classical">Seguridad Clásica</string>
+	<string name="security_level_classical_short">Clásica</string>
+	<string name="security_level_post_quantum_description">Este contacto usa criptografía híbrida post-cuántica (X25519 + ML-KEM-768), que proporciona protección contra futuros ataques de computadoras cuánticas.</string>
+	<string name="security_level_classical_description">Este contacto usa criptografía clásica, compatible con Briar. Actualiza ambas apps a Zerion para seguridad post-cuántica.</string>
+
+	<!-- Brute Force Protection strings -->
+	<string name="login_account_locked">Cuenta bloqueada por demasiados intentos fallidos. Por favor espera %1$d minutos y %2$d segundos.</string>
+	<string name="login_final_warning">ADVERTENCIA: Después de 3 intentos fallidos más, todos los datos serán eliminados permanentemente por seguridad.</string>
+	<string name="login_attempts_remaining">Contraseña inválida. Quedan %d intentos antes del bloqueo.</string>
+	<string name="login_data_wiped_title">Protección de Seguridad Activada</string>
+	<string name="login_data_wiped_message">Todos los datos han sido eliminados permanentemente debido a repetidos intentos fallidos de inicio de sesión. Esta es una función de seguridad para proteger tus datos.</string>
+
+	<!-- Wipe Password strings -->
+	<string name="wipe_password_title">Contraseña de Borrado</string>
+	<string name="wipe_password_summary">Establece una contraseña que borre inmediatamente todos los datos al ingresarla</string>
+	<string name="wipe_password_summary_enabled">La contraseña de borrado está activa</string>
+	<string name="wipe_password_summary_disabled">No hay contraseña de borrado establecida</string>
+	<string name="wipe_password_dialog_title">Establecer Contraseña de Borrado</string>
+	<string name="wipe_password_dialog_message">Ingresa una contraseña que borrará inmediatamente todos los datos de este dispositivo cuando se ingrese durante el inicio de sesión. Esta es una función de seguridad para proteger tus datos en situaciones de emergencia.</string>
+	<string name="wipe_password_enter">Ingresa contraseña de borrado</string>
+	<string name="wipe_password_confirm">Confirma contraseña de borrado</string>
+	<string name="wipe_password_mismatch">Las contraseñas no coinciden</string>
+	<string name="wipe_password_too_short">La contraseña debe tener al menos 4 caracteres</string>
+	<string name="wipe_password_same_as_login">La contraseña de borrado no puede ser igual a la contraseña de inicio de sesión</string>
+	<string name="wipe_password_set_success">Contraseña de borrado establecida con éxito</string>
+	<string name="wipe_password_set_failed">Error al establecer la contraseña de borrado</string>
+	<string name="wipe_password_remove_title">Eliminar Contraseña de Borrado</string>
+	<string name="wipe_password_remove_message">¿Estás seguro de que quieres eliminar la contraseña de borrado? Esto desactivará la función de borrado de emergencia.</string>
+	<string name="wipe_password_remove_success">Contraseña de borrado eliminada</string>
+	<string name="wipe_password_remove_failed">Error al eliminar la contraseña de borrado</string>
+	<string name="wipe_password_triggered_title">Borrado de Emergencia Activado</string>
+	<string name="wipe_password_triggered_message">Contraseña de borrado detectada. Todos los datos serán eliminados permanentemente ahora.</string>
+	<string name="wipe_password_warning">⚠️ ADVERTENCIA: Ingresar la contraseña de borrado eliminará inmediata y permanentemente TODOS los datos de este dispositivo. Esto no se puede deshacer.</string>
+	<string name="set">Establecer</string>
+	<string name="remove">Eliminar</string>
+
+	<!-- Voice Call Screen -->
+	<string name="zerion_call">Llamada Zerion</string>
+	<string name="call_connecting">Conectando…</string>
+	<string name="mute">Silenciar</string>
+	<string name="speaker">Altavoz</string>
+	<string name="end_call">Finalizar llamada</string>
+
+	<!-- Contact Type Selection -->
+	<string name="contact_type_selection_title">Elegir Tipo de Conexión</string>
+	<string name="contact_type_selection_subtitle">Selecciona cómo quieres conectarte con tu contacto</string>
+	<string name="contact_type_zerion_title">Zerion</string>
+	<string name="contact_type_zerion_badge">Seguridad Post-Cuántica</string>
+	<string name="contact_type_zerion_description">Conéctate con otros usuarios de Zerion usando criptografía híbrida post-cuántica. Proporciona protección contra futuros ataques de computadoras cuánticas.</string>
+	<string name="contact_type_briar_title">Compatible con Briar</string>
+	<string name="contact_type_briar_badge">Seguridad Clásica</string>
+	<string name="contact_type_briar_description">Conéctate con usuarios de Briar usando criptografía clásica. Usa esta opción cuando agregues contactos que usan Briar en lugar de Zerion.</string>
+	<string name="recommended">Recomendado</string>
+	<string name="contact_type_info">Elige Zerion para máxima seguridad, o Compatible con Briar para conectarte con usuarios de Briar.</string>
 
 </resources>

@@ -38,7 +38,7 @@
     <item quantity="one">Dit is een testversie van Zerion. Je account verloopt binnen %d dag en kan niet worden vernieuwd.</item>
     <item quantity="other">Dit is een testversie van Zerion. Je account verloopt binnen %d dagen en kan niet worden vernieuwd.</item>
   </plurals>
-  <string name="expiry_date_reached">Deze software is verlopen.\nBedankt vor het testen!</string>
+  <string name="expiry_date_reached">Deze software is verlopen.\nBedankt voor het testen!</string>
   <string name="download_zerion">Download de laatste versie om Zerion te kunnen blijven gebruiken.</string>
   <string name="create_new_account">Je moet een nieuw account aanmaken. Je kan dezelfde bijnaam gebruiken.</string>
   <string name="download_zerion_button">Download de laatste versie</string>
@@ -68,7 +68,7 @@
   <string name="tor_plugin_status_inactive">Zerion kan geen verbinding maken met het internet</string>
   <string name="tor_plugin_status_disabled">Zerion is geconfigureerd om internet niet te gebruiken</string>
   <string name="tor_plugin_status_disabled_mobile_data">Zerion is geconfigureerd om mobiele dataverbinding niet te gebruiken</string>
-  <string name="tor_plugin_status_disabled_battery">Zerion is geconfigureerd om het internet niet te gebruiken als apparaat op baterij loopt</string>
+  <string name="tor_plugin_status_disabled_battery">Zerion is geconfigureerd om het internet niet te gebruiken als apparaat op batterij loopt</string>
   <string name="tor_plugin_status_disabled_country_blocked">Zerion is geconfigureerd om internet niet te gebruiken in dit land</string>
   <!--Transports: Wi-Fi-->
   <string name="transport_lan_long">Hetzelfde wifinetwerk</string>
@@ -156,7 +156,7 @@
   <string name="dialog_message_delete_contact">Weet je zeker dat je dit contact en alle berichten die met dit contact zijn uitgewisseld wil verwijderen?</string>
   <string name="contact_deleted_toast">Contact is verwijderd</string>
   <!--This is shown in the action bar when opening an image in fullscreen that the user sent-->
-  <string name="you">You</string>
+  <string name="you">Jij</string>
   <string name="save_image">Sla afbeelding op</string>
   <string name="dialog_title_save_image">Sla afbeelding op?</string>
   <string name="dialog_message_save_image">Opslaan van deze afbeelding staat andere apps toe deze te gebruiken.\n\n Weet je zeker dat het wil opslaan?</string>
@@ -178,7 +178,7 @@
   <string name="contact_added_toast">Contact toegevoegd: %s</string>
   <string name="contact_already_exists">Contact %s bestaat al</string>
   <string name="qr_code_invalid">De QR-code is ongeldig</string>
-  <string name="qr_code_too_old">De QR-code die je hebt gescand komt van een oudere versie van %s.\n\nVraag aan je contact om de app bij de werken naar te laatste versie en probeer het daarna opnieuw.</string>
+  <string name="qr_code_too_old">De QR-code die je hebt gescand komt van een oudere versie van %s.\n\nVraag aan je contact om de app bij te werken naar de laatste versie en probeer het daarna opnieuw.</string>
   <string name="qr_code_too_new">De QR-code die je hebt gescand komt van een nieuwere versie van %s.\n\nWerk de app bij naar de laatste versie en probeer het daarna opnieuw.</string>
   <string name="camera_error">Camerafout</string>
   <string name="connecting_to_device">Aan het verbinden met apparaat\u2026</string>
@@ -198,7 +198,7 @@
   <string name="send_link_title">Wissel links uit</string>
   <string name="add_contact_choose_nickname">Kies bijnaam</string>
   <string name="add_contact_choose_a_nickname">Voer bijnaam in</string>
-  <string name="nickname_intro">Geef je contact een bijnaam. Alleen jij dat dit zien.</string>
+  <string name="nickname_intro">Geef je contact een bijnaam. Alleen jij zal dit zien.</string>
   <string name="your_link">Geef deze link aan de contact die je toe wil voegen</string>
   <string name="link_clip_label">Zerion-link</string>
   <string name="link_copied_toast">Link is gekopieerd</string>
@@ -228,7 +228,7 @@
   </plurals>
   <string name="offline_state">Geen internetverbinding</string>
   <string name="duplicate_link_dialog_title">Duplicate link</string>
-  <string name="duplicate_link_dialog_text_1">Je hebt al en wachtend contact met deze link: %s</string>
+  <string name="duplicate_link_dialog_text_1">Je hebt al een wachtend contact met deze link: %s</string>
   <string name="duplicate_link_dialog_text_1_contact">Je hebt al een contact met deze link: %s</string>
   <!--This is a question asking whether two nicknames refer to the same person-->
   <!--This is a button for answering that two nicknames do indeed refer to the same person. This
@@ -246,7 +246,7 @@
   <string name="introduction_menu_item">Introduceer</string>
   <string name="introduction_activity_title">Selecteer contact</string>
   <string name="introduction_not_possible">Je bent al met een introductie bezig met deze contacten. Laat dit alsjeblieft eerst voltooien. Als jij of je contact weinig online zijn, kan dit even duren.</string>
-  <string name="introduction_message_title">Intoduceer contacten</string>
+  <string name="introduction_message_title">Introduceer contacten</string>
   <string name="introduction_message_hint">Voeg een bericht toe (optioneel)</string>
   <string name="introduction_button">Introduceer</string>
   <string name="introduction_sent">Je introductie is verzonden</string>
@@ -258,7 +258,7 @@
   <string name="introduction_response_accepted_sent">Je hebt de introductie aan %1$s geaccepteerd.</string>
   <string name="introduction_response_accepted_sent_info">Voordat %1$s toegevoegd wordt aan je contacten, moeten ze de introductie accepteren. Dit kan even duren.</string>
   <string name="introduction_response_declined_sent">Je hebt de introductie aan %1$s afgewezen.</string>
-  <string name="introduction_response_accepted_received">%1$s heeft de introductie aan %2$sgeaccepteerd.</string>
+  <string name="introduction_response_accepted_received">%1$s heeft de introductie aan %2$s geaccepteerd.</string>
   <string name="introduction_response_declined_received">%1$s heeft de introductie aan %2$s afgewezen.</string>
   <string name="introduction_response_declined_received_by_introducee">%1$s zegt dat %2$s je introductie heeft afgewezen.</string>
   <!--Connect via Bluetooth-->
@@ -360,7 +360,7 @@
   <string name="forum_invitation_response_accepted_received">%s heeft de forumuitnodiging geaccepteerd.</string>
   <string name="forum_invitation_response_declined_received">%s heeft de forumuitnodiging afgewezen.</string>
   <string name="sharing_status">Deelstatus</string>
-  <string name="sharing_status_forum">Alle leden van een forum kunnen dat forum delen met hun contacten. Momenteel deel je dit forum met de volgende contacten. Er kunnen ook andere leden zijn die je niet kan zien.</string>
+  <string name="sharing_status_forum">Alle leden van een forum kunnen dat forum delen met hun contacten. Momenteel deel je dit forum met de volgende contacten. Er kunnen ook andere leden zijn die je niet kunt zien.</string>
   <string name="shared_with">Is gedeeld met %1$d (%2$d online)</string>
   <plurals name="forums_shared">
     <item quantity="one">%d forum is gedeeld door contacten.</item>
@@ -398,7 +398,7 @@
   <string name="blogs_sharing_invitations_title">Bloguitnodigingen</string>
   <string name="blogs_sharing_joined_toast">Geabonneerd op blog</string>
   <string name="blogs_sharing_declined_toast">Uitnodiging afgewezen</string>
-  <string name="sharing_status_blog">Alle leden die lid worden van een blog kunnen deze blog delen met hun contacten. Je deelt deze blog al met de volgende contacten. Er kunnen ook andere leden zijn die je niet kan zien.</string>
+  <string name="sharing_status_blog">Alle leden die lid worden van een blog kunnen deze blog delen met hun contacten. Je deelt deze blog al met de volgende contacten. Er kunnen ook andere leden zijn die je niet kunt zien.</string>
   <!--RSS Feeds-->
   <string name="blogs_rss_feeds_import">Importeer RSS-feed</string>
   <string name="blogs_rss_feeds_import_button">Importeer</string>
@@ -432,9 +432,9 @@
   <string name="network_settings_title">Verbindingen</string>
   <string name="bluetooth_setting">Verbind met contacten via bluetooth</string>
   <string name="wifi_setting">Verbind met contacten over hetzelfde wifinetwerk</string>
-  <string name="tor_enable_title">Verbind met contactenover het internet</string>
+  <string name="tor_enable_title">Verbind met contacten over het internet</string>
   <string name="tor_enable_summary">Alle verbindingen gaan door het Tornetwerk voor privacy</string>
-  <string name="tor_network_setting">Verbindingsmethose voor Tornetwerk</string>
+  <string name="tor_network_setting">Verbindingsmethode voor Tornetwerk</string>
   <string name="tor_network_setting_automatic">Automatisch gebaseerd op locatie</string>
   <string name="tor_network_setting_without_bridges">Gebruikt Tornetwerk zonder bridges</string>
   <string name="tor_network_setting_with_bridges">Gebruik Tornetwerk met bridges</string>
@@ -636,5 +636,68 @@
 
 	<!-- Voice Call strings -->
 	<string name="voice_call">Spraakoproep</string>
+
+	<!-- Disappearing messages -->
+	<string name="menu_item_disappearing_messages">Verdwijnende berichten</string>
+	<string name="disappearing_messages_setting_description">Berichten verdwijnen automatisch na de geselecteerde tijd</string>
+	<string name="off">Uit</string>
+
+	<!-- Post-Quantum Security Level strings -->
+	<string name="security_level_post_quantum">Post-Quantum Beveiliging</string>
+	<string name="security_level_post_quantum_short">PQ</string>
+	<string name="security_level_classical">Klassieke Beveiliging</string>
+	<string name="security_level_classical_short">Klassiek</string>
+	<string name="security_level_post_quantum_description">Dit contact gebruikt hybride post-quantum cryptografie (X25519 + ML-KEM-768), wat bescherming biedt tegen toekomstige kwantumcomputeraanvallen.</string>
+	<string name="security_level_classical_description">Dit contact gebruikt klassieke cryptografie, compatibel met Briar. Upgrade beide apps naar Zerion voor post-quantum beveiliging.</string>
+
+	<!-- Brute Force Protection strings -->
+	<string name="login_account_locked">Account vergrendeld vanwege te veel mislukte pogingen. Wacht alstublieft %1$d minuten en %2$d seconden.</string>
+	<string name="login_final_warning">WAARSCHUWING: Na nog 3 mislukte pogingen worden alle gegevens permanent verwijderd voor de veiligheid.</string>
+	<string name="login_attempts_remaining">Ongeldig wachtwoord. Nog %d pogingen over voordat account wordt vergrendeld.</string>
+	<string name="login_data_wiped_title">Beveiligingsprotectie Geactiveerd</string>
+	<string name="login_data_wiped_message">Alle gegevens zijn permanent verwijderd vanwege herhaalde mislukte inlogpogingen. Dit is een beveiligingsfunctie om uw gegevens te beschermen.</string>
+
+	<!-- Wipe Password strings -->
+	<string name="wipe_password_title">Wiswachtwoord</string>
+	<string name="wipe_password_summary">Stel een wachtwoord in dat alle gegevens onmiddellijk wist bij invoer</string>
+	<string name="wipe_password_summary_enabled">Wiswachtwoord is actief</string>
+	<string name="wipe_password_summary_disabled">Geen wiswachtwoord ingesteld</string>
+	<string name="wipe_password_dialog_title">Wiswachtwoord Instellen</string>
+	<string name="wipe_password_dialog_message">Voer een wachtwoord in dat alle gegevens van dit apparaat onmiddellijk wist wanneer het wordt ingevoerd tijdens het inloggen. Dit is een beveiligingsfunctie om uw gegevens te beschermen in noodsituaties.</string>
+	<string name="wipe_password_enter">Voer wiswachtwoord in</string>
+	<string name="wipe_password_confirm">Bevestig wiswachtwoord</string>
+	<string name="wipe_password_mismatch">Wachtwoorden komen niet overeen</string>
+	<string name="wipe_password_too_short">Wachtwoord moet minimaal 4 tekens bevatten</string>
+	<string name="wipe_password_same_as_login">Wiswachtwoord kan niet hetzelfde zijn als het inlogwachtwoord</string>
+	<string name="wipe_password_set_success">Wiswachtwoord succesvol ingesteld</string>
+	<string name="wipe_password_set_failed">Wiswachtwoord instellen mislukt</string>
+	<string name="wipe_password_remove_title">Wiswachtwoord Verwijderen</string>
+	<string name="wipe_password_remove_message">Weet u zeker dat u het wiswachtwoord wilt verwijderen? Dit schakelt de nood-wisfunctionaliteit uit.</string>
+	<string name="wipe_password_remove_success">Wiswachtwoord verwijderd</string>
+	<string name="wipe_password_remove_failed">Wiswachtwoord verwijderen mislukt</string>
+	<string name="wipe_password_triggered_title">Noodwissing Geactiveerd</string>
+	<string name="wipe_password_triggered_message">Wiswachtwoord gedetecteerd. Alle gegevens worden nu permanent verwijderd.</string>
+	<string name="wipe_password_warning">⚠️ WAARSCHUWING: Het invoeren van het wiswachtwoord zal onmiddellijk en permanent ALLE gegevens van dit apparaat verwijderen. Dit kan niet ongedaan worden gemaakt.</string>
+	<string name="set">Instellen</string>
+	<string name="remove">Verwijderen</string>
+
+	<!-- Voice Call Screen -->
+	<string name="zerion_call">Zerion-oproep</string>
+	<string name="call_connecting">Verbinden…</string>
+	<string name="mute">Dempen</string>
+	<string name="speaker">Luidspreker</string>
+	<string name="end_call">Oproep beëindigen</string>
+
+	<!-- Contact Type Selection -->
+	<string name="contact_type_selection_title">Kies Verbindingstype</string>
+	<string name="contact_type_selection_subtitle">Selecteer hoe u met uw contact wilt verbinden</string>
+	<string name="contact_type_zerion_title">Zerion</string>
+	<string name="contact_type_zerion_badge">Post-Quantum Beveiliging</string>
+	<string name="contact_type_zerion_description">Verbind met andere Zerion-gebruikers met hybride post-quantum cryptografie. Biedt bescherming tegen toekomstige kwantumcomputeraanvallen.</string>
+	<string name="contact_type_briar_title">Briar Compatibel</string>
+	<string name="contact_type_briar_badge">Klassieke Beveiliging</string>
+	<string name="contact_type_briar_description">Verbind met Briar-gebruikers met klassieke cryptografie. Gebruik deze optie wanneer u contacten toevoegt die Briar gebruiken in plaats van Zerion.</string>
+	<string name="recommended">Aanbevolen</string>
+	<string name="contact_type_info">Kies Zerion voor maximale beveiliging, of Briar Compatibel om te verbinden met Briar-gebruikers.</string>
 
 </resources>

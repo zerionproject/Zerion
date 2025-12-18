@@ -167,14 +167,12 @@ public class ConversationActivity extends ZerionActivity
 	IntroductionManager introductionManager;
 
 	private final Map<MessageId, String> textCache = new ConcurrentHashMap<>();
-
-	private boolean messagesLoaded = false;
+	private boolean messagesInitiallyLoaded = false;
 
 	private final Observer<String> contactNameObserver = name -> {
 		requireNonNull(name);
-		// Only load messages once to prevent flickering on activity resume
-		if (!messagesLoaded) {
-			messagesLoaded = true;
+		if (!messagesInitiallyLoaded) {
+			messagesInitiallyLoaded = true;
 			loadMessages();
 		}
 	};
@@ -1199,19 +1197,16 @@ public class ConversationActivity extends ZerionActivity
 		android.widget.RadioGroup radioGroup = dialogView.findViewById(
 				R.id.disappearing_messages_radio_group);
 
-		// Get current timer and pre-select the appropriate option
 		Long currentTimer = viewModel.getAutoDeleteTimer().getValue();
 		if (currentTimer != null) {
-			int selectedId = getRadioIdForTimer(currentTimer);
-			radioGroup.check(selectedId);
+			radioGroup.check(getRadioIdForTimer(currentTimer));
 		}
 
 		new MaterialAlertDialogBuilder(this)
 				.setView(dialogView)
 				.setPositiveButton(android.R.string.ok, (dialog, which) -> {
-					int selectedId = radioGroup.getCheckedRadioButtonId();
-					long timer = getTimerForRadioId(selectedId);
-					viewModel.setAutoDeleteTimer(timer);
+					viewModel.setAutoDeleteTimer(getTimerForRadioId(
+							radioGroup.getCheckedRadioButtonId()));
 				})
 				.setNegativeButton(android.R.string.cancel, null)
 				.show();
@@ -1222,9 +1217,7 @@ public class ConversationActivity extends ZerionActivity
 		long seconds = timer / 1000;
 		long minutes = seconds / 60;
 		long hours = minutes / 60;
-		long days = hours / 24;
-		long weeks = days / 7;
-
+		long weeks = hours / 24 / 7;
 		if (seconds <= 30) return R.id.timer_30_seconds;
 		if (minutes <= 5) return R.id.timer_5_minutes;
 		if (minutes <= 30) return R.id.timer_30_minutes;
@@ -1246,17 +1239,14 @@ public class ConversationActivity extends ZerionActivity
 		if (radioId == R.id.timer_24_hours) return 24 * 60 * 60 * 1000L;
 		if (radioId == R.id.timer_1_week) return 7 * 24 * 60 * 60 * 1000L;
 		if (radioId == R.id.timer_4_weeks) return 4 * 7 * 24 * 60 * 60 * 1000L;
-		return -1L; // NO_AUTO_DELETE_TIMER
+		return -1L;
 	}
 
 	private void askToClearChat() {
 		new MaterialAlertDialogBuilder(this)
 				.setTitle("Clear Chat")
 				.setMessage("Delete all messages in this conversation?")
-				.setPositiveButton("Clear", (dialog, which) -> {
-					// Delegate to ViewModel - result observed via getChatCleared()
-					viewModel.clearChat();
-				})
+				.setPositiveButton("Clear", (dialog, which) -> viewModel.clearChat())
 				.setNegativeButton(android.R.string.cancel, null)
 				.show();
 	}

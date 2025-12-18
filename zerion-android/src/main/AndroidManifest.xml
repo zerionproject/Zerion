@@ -51,6 +51,7 @@
 		android:supportsRtl="true"
 		android:theme="@style/Theme.Zerion"
 		android:enableOnBackInvokedCallback="true"
+		android:extractNativeLibs="true"
 		tools:ignore="GoogleAppIndexingWarning,UnusedAttribute">
 
 		<receiver
