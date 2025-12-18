@@ -36,7 +36,7 @@ public class CompositeSendButton extends LinearLayout {
 		sendButton = findViewById(R.id.sendButton);
 		attachmentButton = findViewById(R.id.attachmentButton);
 		voiceButton = findViewById(R.id.voiceButton);
-		bombBadge = null;
+		bombBadge = findViewById(R.id.bombBadge);
 		progressBar = findViewById(R.id.progressBar);
 
 		hasImageSupport = true;
@@ -83,6 +83,10 @@ public class CompositeSendButton extends LinearLayout {
 
 	public void setOnVoiceLongClickListener(@Nullable OnLongClickListener l) {
 		voiceButton.setOnLongClickListener(l);
+	}
+
+	public void setOnSendLongClickListener(@Nullable OnLongClickListener l) {
+		sendButton.setOnLongClickListener(l);
 	}
 
 	public void setImagesSupported() {
