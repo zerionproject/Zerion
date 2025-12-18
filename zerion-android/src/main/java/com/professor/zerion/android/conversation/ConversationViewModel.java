@@ -837,6 +837,10 @@ public class ConversationViewModel extends DbViewModel
 
 	void setAutoDeleteTimerEnabled(boolean enabled) {
 		long timer = enabled ? DEFAULT_TIMER_DURATION : NO_AUTO_DELETE_TIMER;
+		setAutoDeleteTimer(timer);
+	}
+
+	void setAutoDeleteTimer(long timer) {
 		final ContactId c = requireNonNull(contactId);
 		runOnDbThread(() -> {
 			try {
