@@ -602,11 +602,9 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 	public DeletionResult deleteAllMessages(Transaction txn, ContactId c)
 			throws DbException {
 		GroupId g = getContactGroup(db.getContact(txn, c)).getId();
-		// this indiscriminately deletes all raw messages in this group
-		// also attachments
+		// Use removeMessage for permanent deletion (prevents messages reappearing via sync)
 		for (MessageId messageId : db.getMessageIds(txn, g)) {
-			db.deleteMessage(txn, messageId);
-			db.deleteMessageMetadata(txn, messageId);
+			db.removeMessage(txn, messageId);
 		}
 		messageTracker.initializeGroupCount(txn, g);
 		return new DeletionResult();
@@ -639,15 +637,17 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			if (messageType != null && messageType == PRIVATE_MESSAGE) {
 				for (AttachmentHeader h : parseAttachmentHeaders(g, meta)) {
 					try {
-						db.deleteMessage(txn, h.getMessageId());
-						db.deleteMessageMetadata(txn, h.getMessageId());
+						// Use removeMessage for permanent deletion (prevents message reappearing)
+						db.removeMessage(txn, h.getMessageId());
 					} catch (NoSuchMessageException e) {
 						// Continue
 					}
 				}
 			}
-			db.deleteMessage(txn, m);
-			db.deleteMessageMetadata(txn, m);
+			// Use removeMessage for permanent deletion instead of deleteMessage
+			// deleteMessage only sets raw=NULL which allows messages to reappear via sync
+			// removeMessage removes the entire record permanently
+			db.removeMessage(txn, m);
 		} catch (FormatException e) {
 			throw new DbException(e);
 		}
