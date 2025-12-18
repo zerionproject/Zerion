@@ -57,6 +57,8 @@ public class ChatSettingsActivity extends ZerionActivity {
 	private SwitchMaterial vibrationSwitch;
 	private TextView securityLevelTitle;
 	private TextView securityLevelDescription;
+	private LinearLayout disappearingMessagesOption;
+	private TextView disappearingMessagesValue;
 
 
 	@Override
@@ -96,6 +98,18 @@ public class ChatSettingsActivity extends ZerionActivity {
 		vibrationSwitch = findViewById(R.id.vibration_switch);
 		securityLevelTitle = findViewById(R.id.security_level_title);
 		securityLevelDescription = findViewById(R.id.security_level_description);
+		disappearingMessagesOption = findViewById(R.id.disappearing_messages_option);
+		disappearingMessagesValue = findViewById(R.id.disappearing_messages_value);
+
+		// Set up disappearing messages click handler
+		disappearingMessagesOption.setOnClickListener(v -> showDisappearingMessagesDialog());
+
+		// Observe auto-delete timer changes
+		viewModel.getAutoDeleteTimer().observe(this, timer -> {
+			if (timer != null) {
+				disappearingMessagesValue.setText(getTimerDisplayText(timer));
+			}
+		});
 
 		viewModel.getContactItem().observe(this, contactItem -> {
 			if (contactItem != null) {
@@ -194,5 +208,80 @@ public class ChatSettingsActivity extends ZerionActivity {
 		dialog.findViewById(R.id.dialog_background).setOnClickListener(v -> dialog.dismiss());
 
 		dialog.show();
+	}
+
+	private void showDisappearingMessagesDialog() {
+		View dialogView = getLayoutInflater().inflate(
+				R.layout.dialog_disappearing_messages, null);
+		RadioGroup radioGroup = dialogView.findViewById(
+				R.id.disappearing_messages_radio_group);
+
+		// Get current timer and pre-select the appropriate option
+		Long currentTimer = viewModel.getAutoDeleteTimer().getValue();
+		if (currentTimer != null) {
+			int selectedId = getRadioIdForTimer(currentTimer);
+			radioGroup.check(selectedId);
+		}
+
+		new MaterialAlertDialogBuilder(this)
+				.setView(dialogView)
+				.setPositiveButton(android.R.string.ok, (dialog, which) -> {
+					int selectedId = radioGroup.getCheckedRadioButtonId();
+					long timer = getTimerForRadioId(selectedId);
+					viewModel.setAutoDeleteTimer(timer);
+				})
+				.setNegativeButton(android.R.string.cancel, null)
+				.show();
+	}
+
+	private String getTimerDisplayText(long timer) {
+		if (timer <= 0) return getString(R.string.off);
+		long seconds = timer / 1000;
+		long minutes = seconds / 60;
+		long hours = minutes / 60;
+		long days = hours / 24;
+		long weeks = days / 7;
+
+		if (seconds <= 30) return "30 seconds";
+		if (minutes <= 5) return "5 minutes";
+		if (minutes <= 30) return "30 minutes";
+		if (hours <= 1) return "1 hour";
+		if (hours <= 8) return "8 hours";
+		if (hours <= 12) return "12 hours";
+		if (hours <= 24) return "24 hours";
+		if (weeks <= 1) return "1 week";
+		return "4 weeks";
+	}
+
+	private int getRadioIdForTimer(long timer) {
+		if (timer <= 0) return R.id.timer_off;
+		long seconds = timer / 1000;
+		long minutes = seconds / 60;
+		long hours = minutes / 60;
+		long days = hours / 24;
+		long weeks = days / 7;
+
+		if (seconds <= 30) return R.id.timer_30_seconds;
+		if (minutes <= 5) return R.id.timer_5_minutes;
+		if (minutes <= 30) return R.id.timer_30_minutes;
+		if (hours <= 1) return R.id.timer_1_hour;
+		if (hours <= 8) return R.id.timer_8_hours;
+		if (hours <= 12) return R.id.timer_12_hours;
+		if (hours <= 24) return R.id.timer_24_hours;
+		if (weeks <= 1) return R.id.timer_1_week;
+		return R.id.timer_4_weeks;
+	}
+
+	private long getTimerForRadioId(int radioId) {
+		if (radioId == R.id.timer_30_seconds) return 30 * 1000L;
+		if (radioId == R.id.timer_5_minutes) return 5 * 60 * 1000L;
+		if (radioId == R.id.timer_30_minutes) return 30 * 60 * 1000L;
+		if (radioId == R.id.timer_1_hour) return 60 * 60 * 1000L;
+		if (radioId == R.id.timer_8_hours) return 8 * 60 * 60 * 1000L;
+		if (radioId == R.id.timer_12_hours) return 12 * 60 * 60 * 1000L;
+		if (radioId == R.id.timer_24_hours) return 24 * 60 * 60 * 1000L;
+		if (radioId == R.id.timer_1_week) return 7 * 24 * 60 * 60 * 1000L;
+		if (radioId == R.id.timer_4_weeks) return 4 * 7 * 24 * 60 * 60 * 1000L;
+		return -1L; // NO_AUTO_DELETE_TIMER
 	}
 }
