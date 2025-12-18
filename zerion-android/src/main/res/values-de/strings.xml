@@ -157,6 +157,8 @@
   <string name="set_contact_alias">Kontaktnamen ändern</string>
   <string name="set_contact_alias_hint">Name des Kontakts</string>
   <string name="menu_item_disappearing_messages">Selbstlöschende Nachrichten</string>
+  <string name="disappearing_messages_setting_description">Nachrichten verschwinden automatisch nach der ausgewählten Zeit</string>
+  <string name="off">Aus</string>
   <!--The first placeholder will show a duration like "7 days". The second placeholder at the end will add "Tap to learn more."-->
   <string name="auto_delete_msg_you_enabled">Deine Nachrichten werden nach %1$s gelöscht. %2$s</string>
   <!--The placeholder at the end will add "Tap to learn more."-->
@@ -895,5 +897,63 @@
 
 	<!-- Voice Call strings -->
 	<string name="voice_call">Sprachanruf</string>
+
+	<!-- Post-Quantum Security Level strings -->
+	<string name="security_level_post_quantum">Post-Quantum-Sicherheit</string>
+	<string name="security_level_post_quantum_short">PQ</string>
+	<string name="security_level_classical">Klassische Sicherheit</string>
+	<string name="security_level_classical_short">Klassisch</string>
+	<string name="security_level_post_quantum_description">Dieser Kontakt verwendet hybride Post-Quantum-Kryptografie (X25519 + ML-KEM-768), die Schutz vor zukünftigen Quantencomputerangriffen bietet.</string>
+	<string name="security_level_classical_description">Dieser Kontakt verwendet klassische Kryptografie, kompatibel mit Briar. Aktualisiere beide Apps auf Zerion für Post-Quantum-Sicherheit.</string>
+
+	<!-- Brute Force Protection strings -->
+	<string name="login_account_locked">Konto gesperrt aufgrund zu vieler Fehlversuche. Bitte warte %1$d Minuten und %2$d Sekunden.</string>
+	<string name="login_final_warning">WARNUNG: Nach 3 weiteren Fehlversuchen werden alle Daten dauerhaft gelöscht.</string>
+	<string name="login_attempts_remaining">Ungültiges Passwort. Noch %d Versuche bis zur Sperrung.</string>
+	<string name="login_data_wiped_title">Sicherheitsschutz aktiviert</string>
+	<string name="login_data_wiped_message">Alle Daten wurden aufgrund wiederholter fehlgeschlagener Anmeldeversuche dauerhaft gelöscht. Dies ist eine Sicherheitsfunktion zum Schutz deiner Daten.</string>
+
+	<!-- Wipe Password strings -->
+	<string name="wipe_password_title">Lösch-Passwort</string>
+	<string name="wipe_password_summary">Lege ein Passwort fest, das bei Eingabe sofort alle Daten löscht</string>
+	<string name="wipe_password_summary_enabled">Lösch-Passwort ist aktiv</string>
+	<string name="wipe_password_summary_disabled">Kein Lösch-Passwort festgelegt</string>
+	<string name="wipe_password_dialog_title">Lösch-Passwort festlegen</string>
+	<string name="wipe_password_dialog_message">Gib ein Passwort ein, das bei Eingabe während der Anmeldung sofort alle Daten von diesem Gerät löscht. Dies ist eine Sicherheitsfunktion zum Schutz deiner Daten in Notfallsituationen.</string>
+	<string name="wipe_password_enter">Lösch-Passwort eingeben</string>
+	<string name="wipe_password_confirm">Lösch-Passwort bestätigen</string>
+	<string name="wipe_password_mismatch">Passwörter stimmen nicht überein</string>
+	<string name="wipe_password_too_short">Passwort muss mindestens 4 Zeichen haben</string>
+	<string name="wipe_password_same_as_login">Lösch-Passwort darf nicht mit dem Anmeldepasswort übereinstimmen</string>
+	<string name="wipe_password_set_success">Lösch-Passwort erfolgreich festgelegt</string>
+	<string name="wipe_password_set_failed">Lösch-Passwort konnte nicht festgelegt werden</string>
+	<string name="wipe_password_remove_title">Lösch-Passwort entfernen</string>
+	<string name="wipe_password_remove_message">Bist du sicher, dass du das Lösch-Passwort entfernen möchtest? Dies deaktiviert die Notfall-Löschfunktion.</string>
+	<string name="wipe_password_remove_success">Lösch-Passwort entfernt</string>
+	<string name="wipe_password_remove_failed">Lösch-Passwort konnte nicht entfernt werden</string>
+	<string name="wipe_password_triggered_title">Notfall-Löschung aktiviert</string>
+	<string name="wipe_password_triggered_message">Lösch-Passwort erkannt. Alle Daten werden jetzt dauerhaft gelöscht.</string>
+	<string name="wipe_password_warning">⚠️ WARNUNG: Die Eingabe des Lösch-Passworts wird sofort und dauerhaft ALLE Daten von diesem Gerät löschen. Dies kann nicht rückgängig gemacht werden.</string>
+	<string name="set">Festlegen</string>
+	<string name="remove">Entfernen</string>
+
+	<!-- Voice Call Screen -->
+	<string name="zerion_call">Zerion-Anruf</string>
+	<string name="call_connecting">Verbinden…</string>
+	<string name="mute">Stumm</string>
+	<string name="speaker">Lautsprecher</string>
+	<string name="end_call">Anruf beenden</string>
+
+	<!-- Contact Type Selection -->
+	<string name="contact_type_selection_title">Verbindungstyp wählen</string>
+	<string name="contact_type_selection_subtitle">Wähle, wie du dich mit deinem Kontakt verbinden möchtest</string>
+	<string name="contact_type_zerion_title">Zerion</string>
+	<string name="contact_type_zerion_badge">Post-Quantum-Sicherheit</string>
+	<string name="contact_type_zerion_description">Verbinde dich mit anderen Zerion-Nutzern mit hybrider Post-Quantum-Kryptografie. Bietet Schutz vor zukünftigen Quantencomputerangriffen.</string>
+	<string name="contact_type_briar_title">Briar-kompatibel</string>
+	<string name="contact_type_briar_badge">Klassische Sicherheit</string>
+	<string name="contact_type_briar_description">Verbinde dich mit Briar-Nutzern mit klassischer Kryptografie. Verwende diese Option, wenn du Kontakte hinzufügst, die Briar statt Zerion nutzen.</string>
+	<string name="recommended">Empfohlen</string>
+	<string name="contact_type_info">Wähle Zerion für maximale Sicherheit oder Briar-kompatibel, um dich mit Briar-Nutzern zu verbinden.</string>
 
 </resources>
