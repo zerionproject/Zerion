@@ -854,6 +854,17 @@
 	<string name="disappearing_messages_setting_description">Messages will automatically disappear after the selected time</string>
 	<string name="off">Off</string>
 
+	<!-- Disappearing Messages Timer Selection -->
+	<string name="seconds_short">sec</string>
+	<string name="minutes_short">min</string>
+	<string name="hour_short">hour</string>
+	<string name="hours_short">hours</string>
+	<string name="week_short">week</string>
+	<string name="weeks_short">weeks</string>
+	<string name="disappearing_message_timer_title">Send with disappearing timer</string>
+	<string name="disappearing_timer_off">Disappearing timer disabled for this message</string>
+	<string name="disappearing_timer_set">Message will disappear after %s</string>
+
 	<!-- Settings Actions -->
 	<string name="pref_category_actions">Actions</string>
 	<string name="share_app_link">Share download link</string>

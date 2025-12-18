@@ -63,6 +63,12 @@ public class TextAttachmentController extends TextSendController
 
 		sendButton = (CompositeSendButton) compositeSendButton;
 		sendButton.setOnAttachmentClickListener(view -> onImageButtonClicked());
+
+		// Long-press on send button to show disappearing messages timer selection
+		sendButton.setOnSendLongClickListener(view -> {
+			showDisappearingTimerPopup();
+			return true;
+		});
 	}
 
 	public void setOnAttachmentClickListener(android.view.View.OnClickListener listener) {
@@ -99,7 +105,11 @@ public class TextAttachmentController extends TextSendController
 
 	@Override
 	protected boolean isBombVisible() {
-		return super.isBombVisible() && (!textIsEmpty || !imageUris.isEmpty());
+		// Show bomb badge if either:
+		// 1. The conversation has disappearing messages enabled (super.isBombVisible())
+		// 2. A one-time timer was selected via long-press (expectedTimer != NO_AUTO_DELETE_TIMER)
+		boolean hasOneTimeTimer = expectedTimer != -1L; // NO_AUTO_DELETE_TIMER = -1
+		return (super.isBombVisible() || hasOneTimeTimer) && (!textIsEmpty || !imageUris.isEmpty());
 	}
 
 	@Override
@@ -135,6 +145,53 @@ public class TextAttachmentController extends TextSendController
 
 	public void setImagesSupported() {
 		sendButton.setImagesSupported();
+	}
+
+	/**
+	 * Shows a popup menu to select a disappearing message timer for one-time use.
+	 * This allows users to send a message with a specific timer without changing
+	 * the conversation's default timer setting.
+	 */
+	private void showDisappearingTimerPopup() {
+		Context ctx = textInput.getContext();
+		String[] timerOptions = {
+			ctx.getString(R.string.off),
+			"30 " + ctx.getString(R.string.seconds_short),
+			"5 " + ctx.getString(R.string.minutes_short),
+			"30 " + ctx.getString(R.string.minutes_short),
+			"1 " + ctx.getString(R.string.hour_short),
+			"8 " + ctx.getString(R.string.hours_short),
+			"12 " + ctx.getString(R.string.hours_short),
+			"24 " + ctx.getString(R.string.hours_short),
+			"1 " + ctx.getString(R.string.week_short),
+			"4 " + ctx.getString(R.string.weeks_short)
+		};
+
+		long[] timerValues = {
+			-1L, // NO_AUTO_DELETE_TIMER
+			30 * 1000L,
+			5 * 60 * 1000L,
+			30 * 60 * 1000L,
+			60 * 60 * 1000L,
+			8 * 60 * 60 * 1000L,
+			12 * 60 * 60 * 1000L,
+			24 * 60 * 60 * 1000L,
+			7 * 24 * 60 * 60 * 1000L,
+			4 * 7 * 24 * 60 * 60 * 1000L
+		};
+
+		new Builder(ctx, R.style.ZerionDialogTheme)
+			.setTitle(R.string.disappearing_message_timer_title)
+			.setItems(timerOptions, (dialog, which) -> {
+				expectedTimer = timerValues[which];
+				// Show toast to confirm selection
+				String message = which == 0 ?
+					ctx.getString(R.string.disappearing_timer_off) :
+					ctx.getString(R.string.disappearing_timer_set, timerOptions[which]);
+				Toast.makeText(ctx, message, Toast.LENGTH_SHORT).show();
+				updateViewState();
+			})
+			.show();
 	}
 
 	private void onImageButtonClicked() {
