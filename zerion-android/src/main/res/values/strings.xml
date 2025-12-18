@@ -851,6 +851,8 @@
 		Your contact can also change this setting for the both of you.</string>
 	<string name="learn_more">Learn more</string>
 	<string name="disappearing_messages_summary">Make future messages in this conversation automatically disappear after 7\u00A0days.</string>
+	<string name="disappearing_messages_setting_description">Messages will automatically disappear after the selected time</string>
+	<string name="off">Off</string>
 
 	<!-- Settings Actions -->
 	<string name="pref_category_actions">Actions</string>
