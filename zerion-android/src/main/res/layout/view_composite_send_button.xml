@@ -64,6 +64,18 @@
 			app:srcCompat="@drawable/social_send_now_white"
 			app:tint="@color/zerion_cyan" />
 
+		<!-- Bomb badge - indicates disappearing messages are enabled -->
+		<ImageView
+			android:id="@+id/bombBadge"
+			android:layout_width="16dp"
+			android:layout_height="16dp"
+			android:layout_gravity="top|end"
+			android:layout_marginTop="4dp"
+			android:layout_marginEnd="4dp"
+			android:visibility="invisible"
+			app:srcCompat="@drawable/ic_bomb"
+			app:tint="@color/zerion_warning" />
+
 		<!-- ProgressBar for loading states - overlays send button -->
 		<ProgressBar
 			android:id="@+id/progressBar"
