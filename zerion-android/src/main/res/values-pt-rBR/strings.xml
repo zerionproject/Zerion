@@ -162,6 +162,8 @@
   <string name="set_contact_alias">Alterar nome do contato</string>
   <string name="set_contact_alias_hint">Nome de contato</string>
   <string name="menu_item_disappearing_messages">Mensagens efêmeras</string>
+  <string name="disappearing_messages_setting_description">As mensagens desaparecerão automaticamente após o tempo selecionado</string>
+  <string name="off">Desligado</string>
   <!--The first placeholder will show a duration like "7 days". The second placeholder at the end will add "Tap to learn more."-->
   <string name="auto_delete_msg_you_enabled">Suas mensagens vão desaparecer após %1$s. %2$s</string>
   <!--The placeholder at the end will add "Tap to learn more."-->
@@ -909,5 +911,63 @@
 
 	<!-- Voice Call strings -->
 	<string name="voice_call">Chamada de voz</string>
+
+	<!-- Post-Quantum Security Level strings -->
+	<string name="security_level_post_quantum">Segurança Pós-Quântica</string>
+	<string name="security_level_post_quantum_short">PQ</string>
+	<string name="security_level_classical">Segurança Clássica</string>
+	<string name="security_level_classical_short">Clássica</string>
+	<string name="security_level_post_quantum_description">Este contato usa criptografia híbrida pós-quântica (X25519 + ML-KEM-768), que oferece proteção contra futuros ataques de computadores quânticos.</string>
+	<string name="security_level_classical_description">Este contato usa criptografia clássica, compatível com Briar. Atualize ambos os apps para Zerion para segurança pós-quântica.</string>
+
+	<!-- Brute Force Protection strings -->
+	<string name="login_account_locked">Conta bloqueada devido a muitas tentativas falhas. Por favor aguarde %1$d minutos e %2$d segundos.</string>
+	<string name="login_final_warning">AVISO: Após mais 3 tentativas falhas, todos os dados serão permanentemente excluídos por segurança.</string>
+	<string name="login_attempts_remaining">Senha inválida. %d tentativas restantes antes do bloqueio.</string>
+	<string name="login_data_wiped_title">Proteção de Segurança Ativada</string>
+	<string name="login_data_wiped_message">Todos os dados foram permanentemente excluídos devido a repetidas tentativas de login falhas. Esta é uma função de segurança para proteger seus dados.</string>
+
+	<!-- Wipe Password strings -->
+	<string name="wipe_password_title">Senha de Limpeza</string>
+	<string name="wipe_password_summary">Defina uma senha que apague imediatamente todos os dados quando digitada</string>
+	<string name="wipe_password_summary_enabled">A senha de limpeza está ativa</string>
+	<string name="wipe_password_summary_disabled">Nenhuma senha de limpeza definida</string>
+	<string name="wipe_password_dialog_title">Definir Senha de Limpeza</string>
+	<string name="wipe_password_dialog_message">Digite uma senha que apagará imediatamente todos os dados deste dispositivo quando digitada durante o login. Esta é uma função de segurança para proteger seus dados em situações de emergência.</string>
+	<string name="wipe_password_enter">Digite a senha de limpeza</string>
+	<string name="wipe_password_confirm">Confirme a senha de limpeza</string>
+	<string name="wipe_password_mismatch">As senhas não coincidem</string>
+	<string name="wipe_password_too_short">A senha deve ter pelo menos 4 caracteres</string>
+	<string name="wipe_password_same_as_login">A senha de limpeza não pode ser igual à senha de login</string>
+	<string name="wipe_password_set_success">Senha de limpeza definida com sucesso</string>
+	<string name="wipe_password_set_failed">Falha ao definir a senha de limpeza</string>
+	<string name="wipe_password_remove_title">Remover Senha de Limpeza</string>
+	<string name="wipe_password_remove_message">Tem certeza de que deseja remover a senha de limpeza? Isso desativará a função de limpeza de emergência.</string>
+	<string name="wipe_password_remove_success">Senha de limpeza removida</string>
+	<string name="wipe_password_remove_failed">Falha ao remover a senha de limpeza</string>
+	<string name="wipe_password_triggered_title">Limpeza de Emergência Ativada</string>
+	<string name="wipe_password_triggered_message">Senha de limpeza detectada. Todos os dados serão permanentemente excluídos agora.</string>
+	<string name="wipe_password_warning">⚠️ AVISO: Digitar a senha de limpeza excluirá imediata e permanentemente TODOS os dados deste dispositivo. Isso não pode ser desfeito.</string>
+	<string name="set">Definir</string>
+	<string name="remove">Remover</string>
+
+	<!-- Voice Call Screen -->
+	<string name="zerion_call">Chamada Zerion</string>
+	<string name="call_connecting">Conectando…</string>
+	<string name="mute">Silenciar</string>
+	<string name="speaker">Alto-falante</string>
+	<string name="end_call">Encerrar chamada</string>
+
+	<!-- Contact Type Selection -->
+	<string name="contact_type_selection_title">Escolher Tipo de Conexão</string>
+	<string name="contact_type_selection_subtitle">Selecione como você quer se conectar com seu contato</string>
+	<string name="contact_type_zerion_title">Zerion</string>
+	<string name="contact_type_zerion_badge">Segurança Pós-Quântica</string>
+	<string name="contact_type_zerion_description">Conecte-se com outros usuários do Zerion usando criptografia híbrida pós-quântica. Oferece proteção contra futuros ataques de computadores quânticos.</string>
+	<string name="contact_type_briar_title">Compatível com Briar</string>
+	<string name="contact_type_briar_badge">Segurança Clássica</string>
+	<string name="contact_type_briar_description">Conecte-se com usuários do Briar usando criptografia clássica. Use esta opção ao adicionar contatos que usam Briar em vez de Zerion.</string>
+	<string name="recommended">Recomendado</string>
+	<string name="contact_type_info">Escolha Zerion para máxima segurança, ou Compatível com Briar para se conectar com usuários do Briar.</string>
 
 </resources>
