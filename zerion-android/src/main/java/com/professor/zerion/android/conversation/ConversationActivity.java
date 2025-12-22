@@ -168,9 +168,11 @@ public class ConversationActivity extends ZerionActivity
 
 	private final Map<MessageId, String> textCache = new ConcurrentHashMap<>();
 	private boolean messagesInitiallyLoaded = false;
+	private boolean contactNameReady = false;
 
 	private final Observer<String> contactNameObserver = name -> {
 		requireNonNull(name);
+		contactNameReady = true;
 		if (!messagesInitiallyLoaded) {
 			messagesInitiallyLoaded = true;
 			loadMessages();
@@ -650,6 +652,10 @@ public class ConversationActivity extends ZerionActivity
 		list.startPeriodicUpdate();
 		IntentFilter filter = new IntentFilter("com.professor.zerion.CLEANUP_VOICE_CALL");
 		LocalBroadcastManager.getInstance(this).registerReceiver(voiceCallCleanupReceiver, filter);
+
+		if (contactNameReady) {
+			loadMessages();
+		}
 	}
 
 	@Override
