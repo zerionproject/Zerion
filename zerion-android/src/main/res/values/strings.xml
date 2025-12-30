@@ -360,6 +360,7 @@
 	<string name="mailbox_qr_code_for_contact">The QR code you have scanned comes from Zerion Mailbox.\n\nIf you want to link a Mailbox, please choose Settings > Mailbox from the Zerion menu.</string>
 	<string name="qr_code_format_unknown">The QR code you have scanned is not meant for adding a Zerion contact.\n\nPlease scan the QR code shown on your contact\'s screen.</string>
 	<string name="camera_error">Camera error</string>
+	<string name="no_camera_app">No camera app available</string>
 	<string name="connecting_to_device">Connecting to device\u2026</string>
 	<string name="authenticating_with_device">Authenticating with device\u2026</string>
 	<string name="connection_error_title">Could not connect to your contact</string>
@@ -1099,6 +1100,9 @@
 	<string name="vault_change_password">Change Password</string>
 	<string name="vault_enable_biometric">Enable Biometric Unlock</string>
 	<string name="vault_auto_lock_timeout">Auto-lock Timeout</string>
+	<string name="vault_select_image">Select Image</string>
+	<string name="vault_select_document">Select Document</string>
+	<string name="vault_export_error">Failed to export item</string>
 
 	<!-- Security strings -->
 	<string name="security_threat_detected">Security threat detected. Please check your device for malicious software.</string>
