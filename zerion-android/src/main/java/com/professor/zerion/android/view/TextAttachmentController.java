@@ -160,7 +160,7 @@ public class TextAttachmentController extends TextSendController
 		Context ctx = textInput.getContext();
 		String[] timerOptions = {
 			ctx.getString(R.string.off),
-			"30 " + ctx.getString(R.string.seconds_short),
+			"1 " + ctx.getString(R.string.minutes_short),
 			"5 " + ctx.getString(R.string.minutes_short),
 			"30 " + ctx.getString(R.string.minutes_short),
 			"1 " + ctx.getString(R.string.hour_short),
@@ -173,7 +173,7 @@ public class TextAttachmentController extends TextSendController
 
 		long[] timerValues = {
 			-1L, // NO_AUTO_DELETE_TIMER
-			30 * 1000L,
+			60 * 1000L,
 			5 * 60 * 1000L,
 			30 * 60 * 1000L,
 			60 * 60 * 1000L,
