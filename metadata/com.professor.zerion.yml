@@ -13,8 +13,8 @@ RepoType: git
 Repo: https://github.com/zerionproject/Zerion.git
 
 Builds:
-  - versionName: 1.5.14
-    versionCode: 10514
+  - versionName: 1.0.0
+    versionCode: 10000
     commit: v1.0.0
     subdir: zerion-android
     submodules: true
@@ -34,5 +34,5 @@ AntiFeatures:
 
 AutoUpdateMode: None
 UpdateCheckMode: Tags
-CurrentVersion: 1.5.14
-CurrentVersionCode: 10514
+CurrentVersion: 1.0.0
+CurrentVersionCode: 10000
