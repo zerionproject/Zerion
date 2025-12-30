@@ -47,12 +47,11 @@ public class TorStatusMonitor {
 
     private volatile boolean isMonitoring = false;
 
-    // Bandwidth tracking
-    private long lastBytesReceived = 0;
-    private long lastBytesSent = 0;
     private long totalBytesReceived = 0;
     private long totalBytesSent = 0;
     private long monitoringStartTime = 0;
+    private long connectionStartTime = 0;
+    private boolean wasConnected = false;
 
     @Inject
     public TorStatusMonitor(Context context) {
@@ -106,6 +105,13 @@ public class TorStatusMonitor {
                     bootstrapProgress = getBootstrapProgress();
                 }
             }
+
+            if (isConnected && !wasConnected) {
+                connectionStartTime = System.currentTimeMillis();
+            } else if (!isConnected) {
+                connectionStartTime = 0;
+            }
+            wasConnected = isConnected;
 
             final TorStatus status = new TorStatus(isConnected, statusMessage, bootstrapProgress);
             mainHandler.post(() -> torStatus.setValue(status));
@@ -201,53 +207,21 @@ public class TorStatusMonitor {
         try {
             List<TorCircuit> circuitList = new ArrayList<>();
 
-            if (torStatus.getValue() != null && torStatus.getValue().isConnected) {
+            TorStatus status = torStatus.getValue();
+            if (status != null && status.isConnected) {
                 circuitList.add(new TorCircuit(
                         1,
                         "BUILT",
                         Arrays.asList(
-                                new TorNode("Guard", "Netherlands", "185.220.101.45"),
-                                new TorNode("Middle", "Germany", "109.70.100.22"),
-                                new TorNode("Exit", "Sweden", "185.65.205.10")
+                                new TorNode("Guard", "Unknown", ""),
+                                new TorNode("Middle", "Unknown", ""),
+                                new TorNode("Exit", "Unknown", "")
                         ),
-                        System.currentTimeMillis() - 120000
-                ));
-
-                circuitList.add(new TorCircuit(
-                        2,
-                        "BUILDING",
-                        Arrays.asList(
-                                new TorNode("Guard", "France", "51.15.43.205"),
-                                new TorNode("Middle", "Switzerland", "185.220.103.7")
-                        ),
-                        System.currentTimeMillis() - 5000
+                        connectionStartTime > 0 ? connectionStartTime : System.currentTimeMillis()
                 ));
             }
 
             mainHandler.post(() -> circuits.setValue(circuitList));
-
-            updateStatistics();
-
-        } catch (Exception e) {
-        }
-    }
-
-    private void updateStatistics() {
-        try {
-            TorStatistics stats = new TorStatistics();
-
-            if (torStatus.getValue() != null && torStatus.getValue().isConnected) {
-                stats.bytesReceived = totalBytesReceived;
-                stats.bytesSent = totalBytesSent;
-                stats.circuitsBuilt = 2;
-                stats.circuitsFailed = 0;
-                stats.uptimeSeconds = (System.currentTimeMillis() - monitoringStartTime) / 1000;
-                stats.connectedSince = monitoringStartTime;
-
-                stats.currentExitIp = getCurrentExitIp();
-            }
-
-            mainHandler.post(() -> statistics.setValue(stats));
 
         } catch (Exception e) {
         }
@@ -257,30 +231,11 @@ public class TorStatusMonitor {
         if (!isMonitoring) return;
 
         try {
-            // Simulate realistic bandwidth data based on connection status
-            // In production, this would read from Tor control port or network stats
-            long downloadSpeed = 0;
-            long uploadSpeed = 0;
+            long[] bandwidth = getNetworkBandwidth();
+            long downloadSpeed = bandwidth[0];
+            long uploadSpeed = bandwidth[1];
 
-            TorStatus status = torStatus.getValue();
-            if (status != null && status.isConnected) {
-                // Generate realistic-looking bandwidth data
-                // Base rate with some variance for natural-looking graph
-                long baseDownload = 2048 + (long) (Math.random() * 8192); // 2-10 KB/s base
-                long baseUpload = 512 + (long) (Math.random() * 2048);    // 0.5-2.5 KB/s base
-
-                // Occasionally add spikes to simulate actual traffic
-                if (Math.random() > 0.85) {
-                    baseDownload += (long) (Math.random() * 51200); // Up to 50KB spike
-                }
-                if (Math.random() > 0.9) {
-                    baseUpload += (long) (Math.random() * 20480); // Up to 20KB spike
-                }
-
-                downloadSpeed = baseDownload;
-                uploadSpeed = baseUpload;
-
-                // Update totals
+            if (downloadSpeed > 0 || uploadSpeed > 0) {
                 totalBytesReceived += downloadSpeed;
                 totalBytesSent += uploadSpeed;
             }
@@ -294,8 +249,81 @@ public class TorStatusMonitor {
 
             mainHandler.post(() -> bandwidthUpdate.setValue(update));
 
+            updateStatisticsRealtime();
+
         } catch (Exception e) {
-            // Silently handle errors
+        }
+    }
+
+    private long lastRxBytes = 0;
+    private long lastTxBytes = 0;
+    private long lastBandwidthCheck = 0;
+
+    private long[] getNetworkBandwidth() {
+        try {
+            long currentRx = android.net.TrafficStats.getTotalRxBytes();
+            long currentTx = android.net.TrafficStats.getTotalTxBytes();
+            long currentTime = System.currentTimeMillis();
+
+            if (currentRx == android.net.TrafficStats.UNSUPPORTED ||
+                currentTx == android.net.TrafficStats.UNSUPPORTED) {
+                return new long[]{0, 0};
+            }
+
+            if (lastBandwidthCheck == 0) {
+                lastRxBytes = currentRx;
+                lastTxBytes = currentTx;
+                lastBandwidthCheck = currentTime;
+                return new long[]{0, 0};
+            }
+
+            long timeDelta = currentTime - lastBandwidthCheck;
+            if (timeDelta <= 0) {
+                return new long[]{0, 0};
+            }
+
+            long rxDelta = currentRx - lastRxBytes;
+            long txDelta = currentTx - lastTxBytes;
+
+            long downloadSpeed = (rxDelta * 1000) / timeDelta;
+            long uploadSpeed = (txDelta * 1000) / timeDelta;
+
+            lastRxBytes = currentRx;
+            lastTxBytes = currentTx;
+            lastBandwidthCheck = currentTime;
+
+            TorStatus status = torStatus.getValue();
+            if (status == null || !status.isConnected) {
+                return new long[]{0, 0};
+            }
+
+            return new long[]{Math.max(0, downloadSpeed), Math.max(0, uploadSpeed)};
+
+        } catch (Exception e) {
+            return new long[]{0, 0};
+        }
+    }
+
+    private void updateStatisticsRealtime() {
+        try {
+            TorStatistics stats = new TorStatistics();
+            TorStatus status = torStatus.getValue();
+
+            if (status != null && status.isConnected && connectionStartTime > 0) {
+                stats.bytesReceived = totalBytesReceived;
+                stats.bytesSent = totalBytesSent;
+                List<TorCircuit> currentCircuits = circuits.getValue();
+                stats.circuitsBuilt = currentCircuits != null ? currentCircuits.size() : 0;
+                stats.circuitsFailed = 0;
+                stats.uptimeSeconds = (System.currentTimeMillis() - connectionStartTime) / 1000;
+                stats.connectedSince = connectionStartTime;
+                stats.currentExitIp = "Hidden";
+            } else {
+                stats.uptimeSeconds = 0;
+            }
+
+            mainHandler.post(() -> statistics.setValue(stats));
+        } catch (Exception e) {
         }
     }
 
@@ -318,10 +346,6 @@ public class TorStatusMonitor {
         } catch (Exception e) {
             return "Unknown";
         }
-    }
-
-    private long getRandomBytes() {
-        return (long) (Math.random() * 1000000);
     }
 
     public LiveData<TorStatus> getTorStatus() {

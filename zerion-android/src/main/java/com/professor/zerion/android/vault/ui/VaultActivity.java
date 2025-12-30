@@ -1,24 +1,31 @@
 package com.professor.zerion.android.vault.ui;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.WindowManager;
+import android.widget.Toast;
 
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
 import com.professor.zerion.android.fragment.BaseFragment;
-import com.professor.zerion.android.vault.VaultManager;
+import com.professor.zerion.android.vault.model.VaultItem;
 
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
 import javax.inject.Inject;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.util.ArrayList;
+
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
+import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
@@ -27,11 +34,19 @@ import androidx.lifecycle.ViewModelProvider;
 @ParametersNotNullByDefault
 public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFragmentListener {
 
+	public static final String EXTRA_PICKER_MODE = "picker_mode";
+	public static final String EXTRA_PICKER_TYPE = "picker_type";
+	public static final String PICKER_TYPE_GALLERY = "gallery";
+	public static final String PICKER_TYPE_DOCUMENTS = "documents";
+	public static final String RESULT_SELECTED_URIS = "selected_uris";
+
 	@Inject
 	ViewModelProvider.Factory viewModelFactory;
 
 	private VaultViewModel viewModel;
 	private VaultViewModel.VaultState currentState = null;
+	private boolean isPickerMode = false;
+	private String pickerType = null;
 
 	@Override
 	public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -45,12 +60,25 @@ public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFr
 
 		setContentView(R.layout.activity_vault);
 
+		// Check if we're in picker mode
+		Intent intent = getIntent();
+		isPickerMode = intent.getBooleanExtra(EXTRA_PICKER_MODE, false);
+		pickerType = intent.getStringExtra(EXTRA_PICKER_TYPE);
+
 		androidx.appcompat.widget.Toolbar toolbar = findViewById(R.id.toolbar);
 		setSupportActionBar(toolbar);
 		ActionBar actionBar = getSupportActionBar();
 		if (actionBar != null) {
 			actionBar.setDisplayHomeAsUpEnabled(true);
-			actionBar.setTitle("Zvault");
+			if (isPickerMode) {
+				if (PICKER_TYPE_GALLERY.equals(pickerType)) {
+					actionBar.setTitle(R.string.vault_select_image);
+				} else {
+					actionBar.setTitle(R.string.vault_select_document);
+				}
+			} else {
+				actionBar.setTitle("Zvault");
+			}
 		}
 
 		viewModel = new ViewModelProvider(this, viewModelFactory)
@@ -85,7 +113,11 @@ public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFr
 					showUnlockFragment();
 					break;
 				case UNLOCKED:
-					showVaultDashboard();
+					if (isPickerMode) {
+						showPickerFragment();
+					} else {
+						showVaultDashboard();
+					}
 					break;
 			}
 		});
@@ -154,8 +186,91 @@ public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFr
 		} else if (state == VaultViewModel.VaultState.LOCKED) {
 			showUnlockFragment();
 		} else {
-			showVaultDashboard();
+			if (isPickerMode) {
+				showPickerFragment();
+			} else {
+				showVaultDashboard();
+			}
 		}
+	}
+
+	private void showPickerFragment() {
+		if (PICKER_TYPE_GALLERY.equals(pickerType)) {
+			VaultGalleryFragment fragment = VaultGalleryFragment.newInstance();
+			fragment.setPickerMode(true);
+			showFragment(fragment, "gallery_picker");
+		} else {
+			VaultDocumentsFragment fragment = VaultDocumentsFragment.newInstance();
+			fragment.setPickerMode(true);
+			showFragment(fragment, "documents_picker");
+		}
+	}
+
+	public boolean isPickerMode() {
+		return isPickerMode;
+	}
+
+	public void onItemSelected(VaultItem item) {
+		// Decrypt and export the item to a temp file, then return its URI
+		viewModel.getMediaContent(item.id, new VaultViewModel.MediaContentCallback() {
+			@Override
+			public void onContentRetrieved(byte[] content) {
+				new Thread(() -> {
+					try {
+						// Create temp file in cache directory
+						File cacheDir = new File(getCacheDir(), "vault_share");
+						if (!cacheDir.exists()) {
+							cacheDir.mkdirs();
+						}
+
+						// Clean up old temp files
+						File[] oldFiles = cacheDir.listFiles();
+						if (oldFiles != null) {
+							for (File f : oldFiles) {
+								f.delete();
+							}
+						}
+
+						File tempFile = new File(cacheDir, item.name);
+						FileOutputStream fos = new FileOutputStream(tempFile);
+						fos.write(content);
+						fos.close();
+
+						// Clear content from memory
+						java.util.Arrays.fill(content, (byte) 0);
+
+						Uri uri = FileProvider.getUriForFile(
+								VaultActivity.this,
+								getPackageName() + ".fileprovider",
+								tempFile
+						);
+
+						runOnUiThread(() -> {
+							ArrayList<Uri> uris = new ArrayList<>();
+							uris.add(uri);
+							Intent resultIntent = new Intent();
+							resultIntent.putParcelableArrayListExtra(RESULT_SELECTED_URIS, uris);
+							setResult(RESULT_OK, resultIntent);
+							finish();
+						});
+
+					} catch (Exception e) {
+						runOnUiThread(() -> {
+							Toast.makeText(VaultActivity.this,
+									R.string.vault_export_error,
+									Toast.LENGTH_SHORT).show();
+						});
+					}
+				}).start();
+			}
+
+			@Override
+			public void onError(String error) {
+				Toast.makeText(VaultActivity.this,
+						error,
+						Toast.LENGTH_SHORT).show();
+			}
+		});
 	}
 
 	private void showSetupFragment() {

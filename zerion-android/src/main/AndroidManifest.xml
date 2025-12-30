@@ -412,6 +412,10 @@
 			<action android:name="android.intent.action.VIEW" />
 			<data android:scheme="http" />
 		</intent>
+		<!-- Camera intent for Android 11+ package visibility -->
+		<intent>
+			<action android:name="android.media.action.IMAGE_CAPTURE" />
+		</intent>
 		<!-- white-listing the intents below does not seem necessary,
 		but they are still included in case modified Android versions require it -->
 		<intent>

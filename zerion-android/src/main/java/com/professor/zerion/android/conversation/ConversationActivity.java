@@ -3,7 +3,6 @@ package com.professor.zerion.android.conversation;
 import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
@@ -20,6 +19,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
@@ -44,7 +44,7 @@ import com.professor.zerion.android.conversation.ConversationVisitor.TextCache;
 import com.professor.zerion.android.fragment.BaseFragment.BaseFragmentListener;
 import com.professor.zerion.android.introduction.IntroductionActivity;
 import com.professor.zerion.android.privategroup.conversation.GroupActivity;
-import com.professor.zerion.android.removabledrive.RemovableDriveActivity;
+import com.professor.zerion.android.vault.ui.VaultActivity;
 import com.professor.zerion.android.util.ActivityLaunchers.GetMultipleImagesAdvanced;
 import com.professor.zerion.android.util.ActivityLaunchers.OpenMultipleImageDocumentsAdvanced;
 import com.professor.zerion.android.conversation.voice.VoiceRecordingController;
@@ -58,7 +58,6 @@ import com.professor.zerion.android.view.TextSendController;
 import com.professor.zerion.android.view.TextSendController.SendState;
 import com.professor.zerion.android.widget.LinkDialogFragment;
 import com.professor.zerion.android.api.AndroidNotificationManager;
-import org.briarproject.bramble.api.db.DatabaseExecutor;
 import java.util.concurrent.Executor;
 import org.briarproject.briar.api.attachment.AttachmentHeader;
 import org.briarproject.briar.api.conversation.ConversationMessageHeader;
@@ -88,7 +87,6 @@ import javax.inject.Inject;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
-import androidx.appcompat.widget.ActionMenuView;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.ActivityOptionsCompat;
@@ -103,11 +101,8 @@ import androidx.recyclerview.selection.SelectionTracker.SelectionObserver;
 import androidx.recyclerview.selection.StorageStrategy;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.vectordrawable.graphics.drawable.VectorDrawableCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import de.hdodenhof.circleimageview.CircleImageView;
-
-import java.util.Arrays;
 
 import static android.view.Gravity.RIGHT;
 import static androidx.core.app.ActivityOptionsCompat.makeSceneTransitionAnimation;
@@ -116,7 +111,6 @@ import static androidx.recyclerview.widget.SortedList.INVALID_POSITION;
 import static java.util.Collections.sort;
 import static java.util.Objects.requireNonNull;
 import static org.briarproject.bramble.util.StringUtils.fromHexString;
-import static org.briarproject.bramble.util.StringUtils.isNullOrEmpty;
 import static org.briarproject.bramble.util.StringUtils.join;
 import static com.professor.zerion.android.activity.RequestCodes.REQUEST_INTRODUCTION;
 import static com.professor.zerion.android.conversation.ImageActivity.ATTACHMENTS;
@@ -412,20 +406,21 @@ public class ConversationActivity extends ZerionActivity
 
 	private void launchCamera() {
 		Intent takePictureIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
-		if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
-			try {
-				java.io.File photoFile = new java.io.File(new java.io.File(getFilesDir(), "camera"),
-						"temp_" + System.currentTimeMillis() + ".jpg");
-				if (!photoFile.getParentFile().exists()) {
-					photoFile.getParentFile().mkdirs();
-				}
-				photoUri = androidx.core.content.FileProvider.getUriForFile(this,
-						"com.professor.zerion.fileprovider", photoFile);
-				takePictureIntent.putExtra(android.provider.MediaStore.EXTRA_OUTPUT, photoUri);
-				startActivityForResult(takePictureIntent, REQUEST_TAKE_PHOTO);
-			} catch (Exception e) {
-				handleSecurityException(e);
+		try {
+			java.io.File photoFile = new java.io.File(new java.io.File(getFilesDir(), "camera"),
+					"temp_" + System.currentTimeMillis() + ".jpg");
+			if (!photoFile.getParentFile().exists()) {
+				photoFile.getParentFile().mkdirs();
 			}
+			photoUri = androidx.core.content.FileProvider.getUriForFile(this,
+					"com.professor.zerion.fileprovider", photoFile);
+			takePictureIntent.putExtra(android.provider.MediaStore.EXTRA_OUTPUT, photoUri);
+			takePictureIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+			startActivityForResult(takePictureIntent, REQUEST_TAKE_PHOTO);
+		} catch (android.content.ActivityNotFoundException e) {
+			Toast.makeText(this, R.string.no_camera_app, Toast.LENGTH_SHORT).show();
+		} catch (Exception e) {
+			handleSecurityException(e);
 		}
 	}
 
@@ -636,6 +631,12 @@ public class ConversationActivity extends ZerionActivity
 			if (photoUri != null && sendController instanceof TextAttachmentController) {
 				List<Uri> uris = new ArrayList<>();
 				uris.add(photoUri);
+				viewModel.storeAttachments(uris, false);
+			}
+		} else if ((request == REQUEST_VAULT_GALLERY || request == REQUEST_VAULT_DOCUMENTS)
+				&& result == RESULT_OK && data != null) {
+			ArrayList<Uri> uris = data.getParcelableArrayListExtra(VaultActivity.RESULT_SELECTED_URIS);
+			if (uris != null && !uris.isEmpty()) {
 				viewModel.storeAttachments(uris, false);
 			}
 		}
@@ -1042,7 +1043,10 @@ public class ConversationActivity extends ZerionActivity
 
 	@Override
 	public void onVaultGallerySelected() {
-		// Open vault gallery
+		Intent intent = new Intent(this, VaultActivity.class);
+		intent.putExtra(VaultActivity.EXTRA_PICKER_MODE, true);
+		intent.putExtra(VaultActivity.EXTRA_PICKER_TYPE, VaultActivity.PICKER_TYPE_GALLERY);
+		startActivityForResult(intent, REQUEST_VAULT_GALLERY);
 	}
 
 	@Override
@@ -1053,7 +1057,10 @@ public class ConversationActivity extends ZerionActivity
 
 	@Override
 	public void onVaultDocumentsSelected() {
-		// Open vault documents
+		Intent intent = new Intent(this, VaultActivity.class);
+		intent.putExtra(VaultActivity.EXTRA_PICKER_MODE, true);
+		intent.putExtra(VaultActivity.EXTRA_PICKER_TYPE, VaultActivity.PICKER_TYPE_DOCUMENTS);
+		startActivityForResult(intent, REQUEST_VAULT_DOCUMENTS);
 	}
 
 	@Override
