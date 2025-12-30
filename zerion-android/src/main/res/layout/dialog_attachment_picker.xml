@@ -16,6 +16,35 @@
         android:textColor="@android:color/white"
         android:paddingBottom="16dp" />
 
+    <!-- Take Photo -->
+    <LinearLayout
+        android:id="@+id/attachment_camera"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="?attr/selectableItemBackground"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_camera_24dp"
+            app:tint="@color/zerion_cyan" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="16dp"
+            android:text="@string/attachment_take_photo"
+            android:textColor="@android:color/white"
+            android:textSize="16sp" />
+    </LinearLayout>
+
     <!-- Phone Gallery -->
     <LinearLayout
         android:id="@+id/attachment_phone_gallery"

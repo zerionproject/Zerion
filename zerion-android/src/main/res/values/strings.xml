@@ -257,6 +257,7 @@
 	<string name="take_photo">Take photo</string>
 	<string name="add_attachment">Add attachment</string>
 	<string name="toggle_emoji_keyboard">Toggle emoji keyboard</string>
+	<string name="attachment_take_photo">Take Photo</string>
 	<string name="attachment_from_phone_gallery">Phone Gallery</string>
 	<string name="attachment_from_vault_gallery">Vault Gallery</string>
 	<string name="attachment_from_phone_documents">Phone Documents</string>
