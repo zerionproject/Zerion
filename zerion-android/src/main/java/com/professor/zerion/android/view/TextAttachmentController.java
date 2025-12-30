@@ -338,9 +338,10 @@ public class TextAttachmentController extends TextSendController
 			super(superState);
 		}
 
+		@SuppressWarnings("unchecked")
 		private SavedState(Parcel in) {
 			super(in);
-			imageUris = in.readArrayList(Uri.class.getClassLoader());
+			imageUris = (List<Uri>) in.readArrayList(Uri.class.getClassLoader());
 		}
 
 		@Override
