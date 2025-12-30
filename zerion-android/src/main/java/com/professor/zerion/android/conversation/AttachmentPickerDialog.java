@@ -22,6 +22,7 @@ import org.briarproject.nullsafety.ParametersNotNullByDefault;
 public class AttachmentPickerDialog extends BottomSheetDialogFragment {
 
 	public interface AttachmentPickerListener {
+		void onCameraSelected();
 		void onPhoneGallerySelected();
 		void onVaultGallerySelected();
 		void onPhoneDocumentsSelected();
@@ -53,6 +54,14 @@ public class AttachmentPickerDialog extends BottomSheetDialogFragment {
 		View view = LayoutInflater.from(getContext())
 				.inflate(R.layout.dialog_attachment_picker, null);
 		dialog.setContentView(view);
+
+		LinearLayout camera = view.findViewById(R.id.attachment_camera);
+		camera.setOnClickListener(v -> {
+			if (listener != null) {
+				listener.onCameraSelected();
+			}
+			dismiss();
+		});
 
 		LinearLayout phoneGallery = view.findViewById(R.id.attachment_phone_gallery);
 		phoneGallery.setOnClickListener(v -> {
