@@ -74,7 +74,12 @@ import org.briarproject.briar.api.privategroup.invitation.GroupInvitationManager
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
+import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.Locale;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -86,6 +91,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Inject;
 
 import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 import androidx.appcompat.widget.ActionMenuView;
@@ -93,6 +99,7 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.ActivityOptionsCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
@@ -174,7 +181,12 @@ public class ConversationActivity extends ZerionActivity
 	private final ActivityResultLauncher<String> contentLauncher =
 			registerForActivityResult(new GetMultipleImagesAdvanced(),
 					this::onImagesChosen);
+	private final ActivityResultLauncher<Uri> cameraLauncher =
+			registerForActivityResult(new ActivityResultContracts.TakePicture(),
+					this::onPhotoTaken);
 
+	@Nullable
+	private Uri cameraPhotoUri;
 	private AttachmentRetriever attachmentRetriever;
 	private ConversationViewModel viewModel;
 	private ConversationVisitor visitor;
@@ -1020,6 +1032,40 @@ public class ConversationActivity extends ZerionActivity
 			if (attachmentItem.getState().isFinal())
 				liveData.removeObserver(this);
 		}
+	}
+
+	@Override
+	public void onCameraSelected() {
+		try {
+			File photoFile = createImageFile();
+			cameraPhotoUri = FileProvider.getUriForFile(this,
+					getPackageName() + ".fileprovider", photoFile);
+			cameraLauncher.launch(cameraPhotoUri);
+		} catch (IOException e) {
+			new ZerionSnackbarBuilder()
+					.setBackgroundColor(R.color.zerion_error_red)
+					.make(list, R.string.image_attach_error, Snackbar.LENGTH_LONG)
+					.show();
+		}
+	}
+
+	private File createImageFile() throws IOException {
+		String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
+				.format(new Date());
+		String imageFileName = "ZERION_" + timeStamp + "_";
+		File storageDir = new File(getCacheDir(), "camera_photos");
+		if (!storageDir.exists()) {
+			storageDir.mkdirs();
+		}
+		return File.createTempFile(imageFileName, ".jpg", storageDir);
+	}
+
+	private void onPhotoTaken(Boolean success) {
+		if (success && cameraPhotoUri != null) {
+			List<Uri> uris = Collections.singletonList(cameraPhotoUri);
+			onImagesChosen(uris);
+		}
+		cameraPhotoUri = null;
 	}
 
 	@Override
