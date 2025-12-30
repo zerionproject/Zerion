@@ -42,9 +42,14 @@ public class VaultDocumentsFragment extends BaseFragment {
 	private LinearLayout emptyState;
 	private FloatingActionButton fabAdd;
 	private VaultDocumentsAdapter adapter;
+	private boolean isPickerMode = false;
 
 	public static VaultDocumentsFragment newInstance() {
 		return new VaultDocumentsFragment();
+	}
+
+	public void setPickerMode(boolean pickerMode) {
+		this.isPickerMode = pickerMode;
 	}
 
 	@Override
@@ -83,16 +88,30 @@ public class VaultDocumentsFragment extends BaseFragment {
 		adapter = new VaultDocumentsAdapter(new VaultDocumentsAdapter.OnDocumentClickListener() {
 			@Override
 			public void onDocumentClick(VaultItem item) {
-				Toast.makeText(requireContext(), "Opening " + item.name + "...", Toast.LENGTH_SHORT).show();
-				openDocumentInSecureViewer(item);
+				if (isPickerMode) {
+					// In picker mode, select and return the item
+					selectItemForPicker(item);
+				} else {
+					Toast.makeText(requireContext(), "Opening " + item.name + "...", Toast.LENGTH_SHORT).show();
+					openDocumentInSecureViewer(item);
+				}
 			}
 
 			@Override
 			public void onDocumentLongClick(VaultItem item) {
-				showDocumentOptions(item);
+				if (!isPickerMode) {
+					showDocumentOptions(item);
+				}
 			}
 		});
 		documentsList.setAdapter(adapter);
+	}
+
+	private void selectItemForPicker(VaultItem item) {
+		Activity activity = getActivity();
+		if (activity instanceof VaultActivity) {
+			((VaultActivity) activity).onItemSelected(item);
+		}
 	}
 
 	private void openDocumentInSecureViewer(VaultItem item) {
@@ -396,7 +415,12 @@ public class VaultDocumentsFragment extends BaseFragment {
 	}
 
 	private void setupClickListeners() {
-		fabAdd.setOnClickListener(v -> showAddDocumentOptions());
+		if (isPickerMode) {
+			// Hide FAB in picker mode
+			fabAdd.setVisibility(View.GONE);
+		} else {
+			fabAdd.setOnClickListener(v -> showAddDocumentOptions());
+		}
 	}
 
 	private void showAddDocumentOptions() {

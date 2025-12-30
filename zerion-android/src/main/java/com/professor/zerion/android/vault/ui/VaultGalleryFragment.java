@@ -51,9 +51,14 @@ public class VaultGalleryFragment extends BaseFragment {
 	private TextView emptyText;
 	private FloatingActionButton fabAdd;
 	private VaultGalleryAdapter adapter;
+	private boolean isPickerMode = false;
 
 	public static VaultGalleryFragment newInstance() {
 		return new VaultGalleryFragment();
+	}
+
+	public void setPickerMode(boolean pickerMode) {
+		this.isPickerMode = pickerMode;
 	}
 
 	@Override
@@ -92,19 +97,38 @@ public class VaultGalleryFragment extends BaseFragment {
 		adapter = new VaultGalleryAdapter(viewModel, new VaultGalleryAdapter.OnImageClickListener() {
 			@Override
 			public void onImageClick(VaultItem item) {
-				openMediaViewer(item);
+				if (isPickerMode) {
+					// In picker mode, select and return the item
+					selectItemForPicker(item);
+				} else {
+					openMediaViewer(item);
+				}
 			}
 
 			@Override
 			public void onImageLongClick(VaultItem item) {
-				showItemOptions(item);
+				if (!isPickerMode) {
+					showItemOptions(item);
+				}
 			}
 		});
 		galleryGrid.setAdapter(adapter);
 	}
 
 	private void setupClickListeners() {
-		fabAdd.setOnClickListener(v -> showAddImageDialog());
+		if (isPickerMode) {
+			// Hide FAB in picker mode
+			fabAdd.setVisibility(View.GONE);
+		} else {
+			fabAdd.setOnClickListener(v -> showAddImageDialog());
+		}
+	}
+
+	private void selectItemForPicker(VaultItem item) {
+		Activity activity = getActivity();
+		if (activity instanceof VaultActivity) {
+			((VaultActivity) activity).onItemSelected(item);
+		}
 	}
 
 	private void openMediaViewer(VaultItem item) {

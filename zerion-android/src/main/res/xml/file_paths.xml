@@ -3,6 +3,12 @@
 	<cache-path
 		name="camera_photos"
 		path="camera_photos/" />
+	<cache-path
+		name="vault_share"
+		path="vault_share/" />
+	<cache-path
+		name="zenc_share"
+		path="zenc_share/" />
 	<files-path
 		name="camera"
 		path="camera/" />
