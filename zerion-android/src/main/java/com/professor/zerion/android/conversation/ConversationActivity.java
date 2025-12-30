@@ -167,17 +167,6 @@ public class ConversationActivity extends ZerionActivity
 	IntroductionManager introductionManager;
 
 	private final Map<MessageId, String> textCache = new ConcurrentHashMap<>();
-	private boolean messagesInitiallyLoaded = false;
-	private boolean contactNameReady = false;
-
-	private final Observer<String> contactNameObserver = name -> {
-		requireNonNull(name);
-		contactNameReady = true;
-		if (!messagesInitiallyLoaded) {
-			messagesInitiallyLoaded = true;
-			loadMessages();
-		}
-	};
 
 	private final ActivityResultLauncher<String[]> docLauncher =
 			registerForActivityResult(new OpenMultipleImageDocumentsAdvanced(),
@@ -327,10 +316,17 @@ public class ConversationActivity extends ZerionActivity
 		viewModel.getAutoDeleteTimer().observe(this, timer ->
 				sendController.setAutoDeleteTimer(timer));
 
+		// Observe message texts - populate cache before headers arrive
+		viewModel.getMessageTexts().observe(this, texts -> {
+			if (texts != null) {
+				textCache.putAll(texts);
+			}
+		});
+
 		// Observe message headers from ViewModel
 		viewModel.getMessageHeaders().observe(this, this::onMessageHeadersLoaded);
 
-		// Observe message text loading
+		// Observe individual message text loading (for newly sent messages)
 		viewModel.getMessageTextLoaded().observeEvent(this, pair -> {
 			if (pair != null) {
 				displayMessageText(pair.getFirst(), pair.getSecond());
@@ -347,6 +343,9 @@ public class ConversationActivity extends ZerionActivity
 		// Observe message deletion events
 		viewModel.getMessagesDeleted().observeEvent(this, messageIds -> {
 			if (messageIds != null) {
+				for (MessageId msgId : messageIds) {
+					textCache.remove(msgId);
+				}
 				adapter.incrementRevision();
 				adapter.removeItems(messageIds);
 			}
@@ -648,14 +647,10 @@ public class ConversationActivity extends ZerionActivity
 		notificationManager.blockContactNotification(contactId);
 		notificationManager.clearContactNotification(contactId);
 		displayContactOnlineStatus();
-		viewModel.getContactDisplayName().observe(this, contactNameObserver);
 		list.startPeriodicUpdate();
 		IntentFilter filter = new IntentFilter("com.professor.zerion.CLEANUP_VOICE_CALL");
 		LocalBroadcastManager.getInstance(this).registerReceiver(voiceCallCleanupReceiver, filter);
-
-		if (contactNameReady) {
-			loadMessages();
-		}
+		loadMessages();
 	}
 
 	@Override
@@ -674,7 +669,6 @@ public class ConversationActivity extends ZerionActivity
 		}
 
 		notificationManager.unblockContactNotification(contactId);
-		viewModel.getContactDisplayName().removeObserver(contactNameObserver);
 		list.stopPeriodicUpdate();
 		try {
 			LocalBroadcastManager.getInstance(this).unregisterReceiver(voiceCallCleanupReceiver);
@@ -850,49 +844,39 @@ public class ConversationActivity extends ZerionActivity
 
 	private void onMessageHeadersLoaded(Collection<ConversationMessageHeader> headers) {
 		if (headers == null) return;
-		int revision = adapter.getRevision();
-		// Sort headers by timestamp in *descending* order
 		List<ConversationMessageHeader> sorted = new ArrayList<>(headers);
 		sort(sorted, (a, b) -> Long.compare(b.getTimestamp(), a.getTimestamp()));
-		displayMessages(revision, sorted);
+		displayMessages(sorted);
 	}
 
-	private void displayMessages(int revision,
-			Collection<ConversationMessageHeader> headers) {
+	private void displayMessages(Collection<ConversationMessageHeader> headers) {
 		runOnUiThreadUnlessDestroyed(() -> {
-			if (revision == adapter.getRevision()) {
-				adapter.incrementRevision();
-				textInputView.setReady(true);
-				// start observing onboarding after enabling
-				if (featureFlags.shouldEnableImageAttachments()) {
-					viewModel.showImageOnboarding().observeEvent(this,
-							show -> { if (show) showImageOnboarding(); });
-				}
-				List<ConversationItem> items = createItems(headers);
-				adapter.replaceAll(items);
-				list.showData();
-				if (layoutManagerState == null) {
-					scrollToBottom();
-				} else {
-					// Restore the previous scroll position
-					layoutManager.onRestoreInstanceState(layoutManagerState);
-				}
+			adapter.incrementRevision();
+			textInputView.setReady(true);
+			if (featureFlags.shouldEnableImageAttachments()) {
+				viewModel.showImageOnboarding().observeEvent(this,
+						show -> { if (show) showImageOnboarding(); });
+			}
+			List<ConversationItem> items = createItems(headers);
+			adapter.replaceAll(items);
+			list.showData();
+			if (layoutManagerState == null) {
+				scrollToBottom();
 			} else {
-				// Concurrent update, reload
-				loadMessages();
+				layoutManager.onRestoreInstanceState(layoutManagerState);
 			}
 		});
 	}
 
-	/**
-	 * Creates ConversationItems from headers loaded from the database.
-	 * Attention: Call this only after contactName has been initialized.
-	 */
 	private List<ConversationItem> createItems(
 			Collection<ConversationMessageHeader> headers) {
 		List<ConversationItem> items = new ArrayList<>(headers.size());
-		for (ConversationMessageHeader h : headers)
-			items.add(h.accept(visitor));
+		for (ConversationMessageHeader h : headers) {
+			ConversationItem item = h.accept(visitor);
+			if (item != null) {
+				items.add(item);
+			}
+		}
 		return items;
 	}
 

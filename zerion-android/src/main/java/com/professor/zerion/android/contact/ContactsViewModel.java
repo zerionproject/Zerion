@@ -24,6 +24,7 @@ import com.professor.zerion.android.viewmodel.DbViewModel;
 import com.professor.zerion.android.viewmodel.LiveResult;
 import org.briarproject.briar.api.avatar.event.AvatarUpdatedEvent;
 import org.briarproject.briar.api.client.MessageTracker;
+import org.briarproject.briar.api.autodelete.event.ConversationMessagesDeletedEvent;
 import org.briarproject.briar.api.conversation.ConversationManager;
 import org.briarproject.briar.api.conversation.event.ConversationMessageTrackedEvent;
 import org.briarproject.briar.api.identity.AuthorInfo;
@@ -131,7 +132,25 @@ public class ContactsViewModel extends DbViewModel implements EventListener {
 			ContactAliasChangedEvent c = (ContactAliasChangedEvent) e;
 			updateItem(c.getContactId(),
 					item -> new ContactListItem(item, c.getAlias()), false);
+		} else if (e instanceof ConversationMessagesDeletedEvent) {
+			ConversationMessagesDeletedEvent d =
+					(ConversationMessagesDeletedEvent) e;
+			reloadGroupCount(d.getContactId());
 		}
+	}
+
+	private void reloadGroupCount(ContactId contactId) {
+		runOnDbThread(() -> {
+			try {
+				MessageTracker.GroupCount count =
+						conversationManager.getGroupCount(contactId);
+				androidExecutor.runOnUiThread(() ->
+						updateItem(contactId,
+								item -> new ContactListItem(item, count), true));
+			} catch (DbException e) {
+				handleException(e);
+			}
+		});
 	}
 
 	public LiveData<LiveResult<List<ContactListItem>>> getContactListItems() {

@@ -37,6 +37,7 @@ import static androidx.customview.view.AbsSavedState.EMPTY_STATE;
 import static androidx.lifecycle.Lifecycle.State.DESTROYED;
 import static com.professor.zerion.android.util.UiUtils.resolveColorAttribute;
 import static com.professor.zerion.android.view.TextSendController.SendState.SENT;
+import static org.briarproject.briar.api.autodelete.AutoDeleteConstants.NO_AUTO_DELETE_TIMER;
 import static org.briarproject.briar.api.messaging.MessagingConstants.MAX_ATTACHMENTS_PER_MESSAGE;
 
 @UiThread
@@ -135,7 +136,10 @@ public class TextAttachmentController extends TextSendController
 	@Override
 	protected void onSendStateChanged(SendState sendState) {
 		super.onSendStateChanged(sendState);
-		if (sendState == SENT) reset();
+		if (sendState == SENT) {
+			expectedTimer = NO_AUTO_DELETE_TIMER;
+			reset();
+		}
 	}
 
 	@Override
