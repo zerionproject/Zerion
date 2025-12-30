@@ -62,6 +62,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executor;
 
@@ -133,6 +134,8 @@ public class ConversationViewModel extends DbViewModel
 
 	// Message loading state
 	private final MutableLiveData<Collection<ConversationMessageHeader>> messageHeaders =
+			new MutableLiveData<>();
+	private final MutableLiveData<Map<MessageId, String>> messageTexts =
 			new MutableLiveData<>();
 	private final MutableLiveData<Boolean> messagesLoading = new MutableLiveData<>(false);
 	private final MutableLiveEvent<Pair<MessageId, String>> messageTextLoaded =
@@ -236,6 +239,9 @@ public class ConversationViewModel extends DbViewModel
 		} else if (e instanceof ConversationMessagesDeletedEvent) {
 			ConversationMessagesDeletedEvent m = (ConversationMessagesDeletedEvent) e;
 			if (m.getContactId().equals(contactId)) {
+				for (MessageId id : m.getMessageIds()) {
+					ConversationCache.getInstance().removeMessage(contactId, id);
+				}
 				messagesDeleted.postEvent(m.getMessageIds());
 			}
 		} else if (e instanceof ContactRemovedEvent) {
@@ -440,12 +446,14 @@ public class ConversationViewModel extends DbViewModel
 				return privateMessageFactory.createPrivateMessage(groupId,
 						timestamp, text, headers);
 			} else {
-				long timer = autoDeleteManager
+				long conversationTimer = autoDeleteManager
 						.getAutoDeleteTimer(txn, contactId, timestamp);
-				if (timer != expectedTimer)
+				if (expectedTimer == NO_AUTO_DELETE_TIMER &&
+						conversationTimer != NO_AUTO_DELETE_TIMER) {
 					throw new UnexpectedTimerException();
+				}
 				return privateMessageFactory.createPrivateMessage(groupId,
-						timestamp, text, headers, timer);
+						timestamp, text, headers, expectedTimer);
 			}
 		} catch (FormatException e) {
 			throw new AssertionError(e);
@@ -703,8 +711,8 @@ public class ConversationViewModel extends DbViewModel
 	// ==================== Message Operations (Moved from Activity) ====================
 
 	/**
-	 * Load all message headers for the current conversation.
-	 * Results are posted to messageHeaders LiveData.
+	 * Load all message headers and texts for the current conversation.
+	 * Results are posted to messageHeaders and messageTexts LiveData.
 	 */
 	void loadMessageHeaders() {
 		if (contactId == null) return;
@@ -714,6 +722,8 @@ public class ConversationViewModel extends DbViewModel
 			try {
 				Collection<ConversationMessageHeader> headers =
 						conversationManager.getMessageHeaders(c);
+				Map<MessageId, String> texts = messagingManager.getMessageTexts(c);
+				messageTexts.postValue(texts);
 				messageHeaders.postValue(headers);
 			} catch (NoSuchContactException e) {
 				contactDeleted.postValue(true);
@@ -810,6 +820,10 @@ public class ConversationViewModel extends DbViewModel
 
 	LiveData<Collection<ConversationMessageHeader>> getMessageHeaders() {
 		return messageHeaders;
+	}
+
+	LiveData<Map<MessageId, String>> getMessageTexts() {
+		return messageTexts;
 	}
 
 	LiveData<Boolean> isMessagesLoading() {
