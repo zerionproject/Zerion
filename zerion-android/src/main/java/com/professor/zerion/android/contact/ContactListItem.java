@@ -61,6 +61,12 @@ public class ContactListItem extends ContactItem
 				item.isConnected(), item.empty, item.unread, item.timestamp);
 	}
 
+	ContactListItem(ContactListItem item, GroupCount count) {
+		this(item.getContact(), item.getAuthorInfo(), item.isConnected(),
+				count.getMsgCount() == 0, count.getUnreadCount(),
+				count.getLatestMsgTime());
+	}
+
 	boolean isEmpty() {
 		return empty;
 	}
