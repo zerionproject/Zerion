@@ -35,7 +35,8 @@
 		<!-- Set toolbar icon colors to Zerion cyan for unified look -->
 		<item name="colorControlNormal">@color/zerion_cyan</item>
 		<item name="colorControlActivated">@color/zerion_cyan</item>
-		<item name="colorControlHighlight">@color/zerion_cyan</item>
+		<!-- Use subtle gray ripple instead of blue for list items -->
+		<item name="colorControlHighlight">#1AFFFFFF</item>
 		<item name="selectableItemBackground">?android:attr/selectableItemBackground</item>
 		<item name="android:editTextStyle">@style/Zerion.EditText</item>
 		<item name="android:listDivider">@android:color/transparent</item>
