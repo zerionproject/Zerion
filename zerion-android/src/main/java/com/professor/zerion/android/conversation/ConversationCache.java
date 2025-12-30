@@ -147,14 +147,12 @@ public class ConversationCache {
 		}
 	}
 
-	/**
-	 * Remove a message from the cache.
-	 */
-	public void removeMessage(ContactId contactId, org.briarproject.bramble.api.sync.MessageId messageId) {
+	public void removeMessage(ContactId contactId, MessageId messageId) {
 		CachedConversation cached = cache.get(contactId);
 		if (cached != null) {
 			synchronized (cached) {
 				cached.headers.removeIf(h -> h.getId().equals(messageId));
+				cached.texts.remove(messageId);
 			}
 		}
 	}
