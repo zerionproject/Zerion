@@ -28,6 +28,9 @@ import javax.inject.Inject;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
 import static java.util.logging.Level.WARNING;
@@ -44,6 +47,24 @@ class AttachmentRetrieverImpl implements AttachmentRetriever {
 
 	private static final Logger LOG =
 			getLogger(AttachmentRetrieverImpl.class.getName());
+
+	private static final Set<String> SUPPORTED_AUDIO_TYPES = new HashSet<>(asList(
+			"audio/opus",
+			"audio/ogg",
+			"audio/aac",
+			"audio/mp4",
+			"audio/mpeg",
+			"audio/3gpp",
+			"audio/3gp"
+	));
+
+	private static final Set<String> SUPPORTED_VIDEO_TYPES = new HashSet<>(asList(
+			"video/mp4",
+			"video/3gpp",
+			"video/webm",
+			"video/x-matroska",
+			"video/quicktime"
+	));
 
 	@DatabaseExecutor
 	private final Executor dbExecutor;
@@ -94,14 +115,19 @@ class AttachmentRetrieverImpl implements AttachmentRetriever {
 		boolean needsSize = headers.size() == 1;
 		List<String> supported = asList(getSupportedImageContentTypes());
 		for (AttachmentHeader h : headers) {
-			if ("audio/opus".equals(h.getContentType()) ||
-				"audio/3gpp".equals(h.getContentType()) ||
-				"audio/3gp".equals(h.getContentType())) {
+			String contentType = h.getContentType();
+			if (SUPPORTED_AUDIO_TYPES.contains(contentType)) {
 				AttachmentItem item = new AttachmentItem(h, "", AVAILABLE);
 				items.add(new MutableLiveData<>(item));
 				continue;
 			}
-			if (!supported.contains(h.getContentType())) {
+			if (SUPPORTED_VIDEO_TYPES.contains(contentType)) {
+				AttachmentItem item = new AttachmentItem(h, defaultSize, defaultSize,
+						"mp4", defaultSize, defaultSize, AVAILABLE);
+				items.add(new MutableLiveData<>(item));
+				continue;
+			}
+			if (!supported.contains(contentType)) {
 				AttachmentItem item = new AttachmentItem(h, "", ERROR);
 				items.add(new MutableLiveData<>(item));
 				continue;
@@ -190,14 +216,27 @@ class AttachmentRetrieverImpl implements AttachmentRetriever {
 			boolean needsSize) {
 		AttachmentItem item;
 		AttachmentHeader h = a.getHeader();
+		String contentType = h.getContentType();
+
+		if (SUPPORTED_AUDIO_TYPES.contains(contentType)) {
+			item = new AttachmentItem(h, "", AVAILABLE);
+			return item;
+		}
+
+		if (SUPPORTED_VIDEO_TYPES.contains(contentType)) {
+			item = new AttachmentItem(h, defaultSize, defaultSize,
+					"mp4", defaultSize, defaultSize, AVAILABLE);
+			return item;
+		}
+
 		if (needsSize) {
 			InputStream is = new BufferedInputStream(a.getStream());
-			Size size = imageSizeCalculator.getSize(is, h.getContentType());
+			Size size = imageSizeCalculator.getSize(is, contentType);
 			tryToClose(is, LOG, WARNING);
 			item = createAttachmentItem(h, size);
 		} else {
 			String extension =
-					imageHelper.getExtensionFromMimeType(h.getContentType());
+					imageHelper.getExtensionFromMimeType(contentType);
 			State state = AVAILABLE;
 			if (extension == null) {
 				extension = "";

@@ -16,6 +16,8 @@ import com.professor.zerion.android.util.ActivityLaunchers.GetImageAdvanced;
 import com.professor.zerion.android.util.ActivityLaunchers.OpenImageDocumentAdvanced;
 import com.professor.zerion.android.view.AuthorView;
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.signature.ObjectKey;
 import com.google.android.material.card.MaterialCardView;
 
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
@@ -146,7 +148,14 @@ public class SettingsFragment extends Fragment {
 		if (info.getAuthorInfo().getAvatarHeader() != null) {
 			Glide.with(this)
 					.load(info.getAuthorInfo().getAvatarHeader())
+					.diskCacheStrategy(DiskCacheStrategy.NONE)
+					.skipMemoryCache(true)
+					.signature(new ObjectKey(System.currentTimeMillis()))
+					.placeholder(R.drawable.ic_person)
+					.error(R.drawable.ic_person)
 					.into(avatarImage);
+		} else {
+			avatarImage.setImageResource(R.drawable.ic_person);
 		}
 	}
 

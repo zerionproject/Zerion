@@ -47,6 +47,7 @@ import com.professor.zerion.android.network.TorStatusMonitor;
 import com.professor.zerion.android.settings.SettingsModule;
 import com.professor.zerion.android.sharing.SharingModule;
 import com.professor.zerion.android.test.TestAvatarCreatorImpl;
+import com.professor.zerion.android.util.TorPortManager;
 import com.professor.zerion.android.viewmodel.ViewModelModule;
 import com.professor.zerion.android.api.AndroidNotificationManager;
 import com.professor.zerion.android.api.DozeWatchdog;
@@ -79,8 +80,6 @@ import static android.os.Build.VERSION.SDK_INT;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
-import static org.briarproject.bramble.api.plugin.TorConstants.DEFAULT_CONTROL_PORT;
-import static org.briarproject.bramble.api.plugin.TorConstants.DEFAULT_SOCKS_PORT;
 import static com.professor.zerion.android.TestingConstants.IS_DEBUG_BUILD;
 
 @Module(includes = {
@@ -281,24 +280,27 @@ public class AppModule {
 
 	@Provides
 	@Singleton
+	TorPortManager provideTorPortManager(Application app) {
+		// TorPortManager handles dynamic port selection to avoid conflicts with Briar
+		return new TorPortManager(app);
+	}
+
+	@Provides
+	@Singleton
 	@TorSocksPort
-	int provideTorSocksPort() {
-		if (!IS_DEBUG_BUILD) {
-			return DEFAULT_SOCKS_PORT;
-		} else {
-			return DEFAULT_SOCKS_PORT + 2;
-		}
+	int provideTorSocksPort(TorPortManager portManager) {
+		int port = portManager.getSocksPort();
+		// Add offset for debug builds to allow running alongside release
+		return IS_DEBUG_BUILD ? port + 2 : port;
 	}
 
 	@Provides
 	@Singleton
 	@TorControlPort
-	int provideTorControlPort() {
-		if (!IS_DEBUG_BUILD) {
-			return DEFAULT_CONTROL_PORT;
-		} else {
-			return DEFAULT_CONTROL_PORT + 2;
-		}
+	int provideTorControlPort(TorPortManager portManager) {
+		int port = portManager.getControlPort();
+		// Add offset for debug builds to allow running alongside release
+		return IS_DEBUG_BUILD ? port + 2 : port;
 	}
 
 	@Provides
@@ -414,8 +416,9 @@ public class AppModule {
 
 	@Provides
 	@Singleton
-	TorStatusMonitor provideTorStatusMonitor(Context context) {
-		return new TorStatusMonitor(context);
+	TorStatusMonitor provideTorStatusMonitor(Context context,
+			@TorSocksPort int torSocksPort) {
+		return new TorStatusMonitor(context, torSocksPort);
 	}
 
 	@Provides

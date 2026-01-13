@@ -20,6 +20,7 @@ import com.professor.zerion.android.conversation.ConversationActivity;
 import com.professor.zerion.android.conversation.ConversationSettingsDialog;
 import com.professor.zerion.android.conversation.ImageActivity;
 import com.professor.zerion.android.conversation.ImageFragment;
+import com.professor.zerion.android.conversation.VideoPlayerActivity;
 import com.professor.zerion.android.fragment.ScreenFilterDialogFragment;
 import com.professor.zerion.android.introduction.ContactChooserFragment;
 import com.professor.zerion.android.introduction.IntroductionActivity;
@@ -88,6 +89,8 @@ public interface ActivityComponent {
 	void inject(AllMediaActivity activity);
 
 	void inject(ImageActivity activity);
+
+	void inject(VideoPlayerActivity activity);
 
 	void inject(com.professor.zerion.android.vault.ui.VaultActivity activity);
 

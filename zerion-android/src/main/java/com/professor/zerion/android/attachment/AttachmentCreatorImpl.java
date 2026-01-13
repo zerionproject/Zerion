@@ -126,6 +126,9 @@ class AttachmentCreatorImpl implements AttachmentCreator {
 		} else if (t instanceof FileTooBigException) {
 			int mb = MAX_IMAGE_SIZE / 1024 / 1024;
 			errorMsg = app.getString(R.string.image_attach_error_too_big, mb);
+		} else if (t instanceof IOException) {
+			int mb = MAX_IMAGE_SIZE / 1024 / 1024;
+			errorMsg = app.getString(R.string.image_attach_error_too_big, mb);
 		} else {
 			errorMsg = null;
 		}
@@ -152,6 +155,18 @@ class AttachmentCreatorImpl implements AttachmentCreator {
 			headers.add(itemResult.getItem().getHeader());
 		}
 		return headers;
+	}
+
+	@Override
+	@UiThread
+	public boolean hasValidAttachments() {
+		if (itemResults.isEmpty()) return false;
+		for (AttachmentItemResult itemResult : itemResults) {
+			if (itemResult.hasError() || itemResult.getItem() == null) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	@Override
@@ -193,7 +208,6 @@ class AttachmentCreatorImpl implements AttachmentCreator {
 				try {
 					messagingManager.removeAttachment(header);
 				} catch (DbException e) {
-					/* silent */
 				}
 			}
 		});

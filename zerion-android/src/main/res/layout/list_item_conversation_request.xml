@@ -80,12 +80,11 @@
 				app:layout_constraintTop_toTopOf="@+id/request_icon"
 				tools:text="@string/introduction_request_received" />
 
-			<!-- Action buttons container -->
 			<LinearLayout
 				android:id="@+id/buttons_container"
 				android:layout_width="match_parent"
 				android:layout_height="wrap_content"
-				android:layout_marginTop="12dp"
+				android:layout_marginTop="16dp"
 				android:gravity="end"
 				android:orientation="horizontal"
 				app:layout_constraintEnd_toEndOf="parent"
@@ -95,24 +94,33 @@
 				<com.google.android.material.button.MaterialButton
 					android:id="@+id/declineButton"
 					style="@style/Widget.Material3.Button.OutlinedButton"
-					android:layout_width="wrap_content"
-					android:layout_height="36dp"
+					android:layout_width="0dp"
+					android:layout_height="40dp"
+					android:layout_weight="1"
 					android:layout_marginEnd="8dp"
+					android:minWidth="100dp"
 					android:text="@string/decline"
 					android:textColor="@color/zerion_text_secondary"
-					android:textSize="12sp"
-					app:cornerRadius="18dp"
+					android:textSize="14sp"
+					android:textStyle="bold"
+					app:cornerRadius="20dp"
 					app:strokeColor="@color/zerion_text_secondary"
 					app:strokeWidth="1dp" />
 
 				<com.google.android.material.button.MaterialButton
 					android:id="@+id/acceptButton"
-					style="@style/Zerion.Button.Primary"
-					android:layout_width="wrap_content"
-					android:layout_height="36dp"
+					android:layout_width="0dp"
+					android:layout_height="40dp"
+					android:layout_weight="1"
+					android:minWidth="100dp"
 					android:text="@string/accept"
-					android:textSize="12sp"
-					app:cornerRadius="18dp" />
+					android:textColor="@android:color/white"
+					android:textSize="14sp"
+					android:textStyle="bold"
+					android:insetTop="0dp"
+					android:insetBottom="0dp"
+					app:backgroundTint="@color/zerion_cyan"
+					app:cornerRadius="20dp" />
 
 			</LinearLayout>
 

@@ -28,6 +28,9 @@ public interface AttachmentCreator {
 	List<AttachmentHeader> getAttachmentHeadersForSending();
 
 	@UiThread
+	boolean hasValidAttachments();
+
+	@UiThread
 	void onAttachmentsSent(MessageId id);
 
 	@UiThread
