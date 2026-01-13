@@ -136,8 +136,14 @@
 	<string name="network_hidden_service_label">Hidden Service:</string>
 	<string name="network_bandwidth_title">Real-Time Bandwidth</string>
 	<string name="network_session_stats">Session Statistics</string>
+	<string name="network_session_duration">Duration:</string>
 	<string name="network_total_download">Total Download</string>
 	<string name="network_total_upload">Total Upload</string>
+	<string name="network_peak_download">Peak Download</string>
+	<string name="network_peak_upload">Peak Upload</string>
+	<string name="network_avg_download">Avg Download</string>
+	<string name="network_avg_upload">Avg Upload</string>
+	<string name="clear">Clear</string>
 	<string name="network_mode_title">Secure Network Mode</string>
 	<string name="network_mode_description">All communication is routed through the Tor network for maximum privacy and security. Your connection is encrypted end-to-end and your identity remains anonymous.</string>
 
@@ -253,11 +259,17 @@
 	<string name="image_attach">Attach image</string>
 	<string name="image_attach_error">Could not attach image(s)</string>
 	<string name="image_attach_error_too_big">Image too big. Limit is %d MB.</string>
+	<string name="image_attach_error_too_big_kb">Image too big. Limit is %d KB.</string>
 	<string name="image_attach_error_invalid_mime_type">Image format unsupported: %s</string>
 	<string name="take_photo">Take photo</string>
 	<string name="add_attachment">Add attachment</string>
 	<string name="toggle_emoji_keyboard">Toggle emoji keyboard</string>
 	<string name="attachment_take_photo">Take Photo</string>
+	<string name="attachment_record_video">Record Video</string>
+	<string name="play_video">Play video</string>
+	<string name="rewind">Rewind</string>
+	<string name="fast_forward">Fast forward</string>
+	<string name="video_playback_error">Unable to play video</string>
 	<string name="attachment_from_phone_gallery">Phone Gallery</string>
 	<string name="attachment_from_vault_gallery">Vault Gallery</string>
 	<string name="attachment_from_phone_documents">Phone Documents</string>
@@ -560,6 +572,7 @@
 	<string name="no_contacts_selector_action">Please come back here after adding a contact</string>
 	<string name="forum_shared_snackbar">Forum shared with chosen contacts</string>
 	<string name="forum_share_message">Add a message (optional)</string>
+	<string name="forum_share_hint_short">Type your message here…</string>
 	<string name="forum_share_error">There was an error sharing this forum.</string>
 	<string name="forum_invitation_received">%1$s has shared the forum \"%2$s\" with you.</string>
 	<string name="forum_invitation_sent">You have shared the forum \"%1$s\" with %2$s.</string>

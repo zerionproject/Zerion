@@ -1,9 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ImageView xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
 	xmlns:tools="http://schemas.android.com/tools"
-	android:id="@+id/imageView"
 	android:layout_width="@dimen/message_bubble_image_default"
-	android:layout_height="@dimen/message_bubble_image_default"
-	android:scaleType="centerCrop"
-	tools:ignore="ContentDescription"
-	tools:srcCompat="@tools:sample/avatars" />
+	android:layout_height="@dimen/message_bubble_image_default">
+
+	<ImageView
+		android:id="@+id/imageView"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:scaleType="centerCrop"
+		tools:ignore="ContentDescription"
+		tools:srcCompat="@tools:sample/avatars" />
+
+	<ImageView
+		android:id="@+id/playOverlay"
+		android:layout_width="48dp"
+		android:layout_height="48dp"
+		android:layout_gravity="center"
+		android:background="@drawable/video_play_background"
+		android:padding="12dp"
+		android:src="@drawable/ic_play_arrow_24dp"
+		android:visibility="gone"
+		tools:ignore="ContentDescription" />
+
+</FrameLayout>

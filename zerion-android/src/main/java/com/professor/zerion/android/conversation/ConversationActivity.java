@@ -32,6 +32,7 @@ import org.briarproject.bramble.api.contact.ContactId;
 import org.briarproject.bramble.api.contact.ContactManager;
 import org.briarproject.bramble.api.db.DatabaseExecutor;
 import org.briarproject.bramble.api.db.DbException;
+import org.briarproject.bramble.api.lifecycle.IoExecutor;
 import org.briarproject.bramble.api.sync.GroupId;
 import org.briarproject.bramble.api.sync.MessageId;
 import com.professor.zerion.R;
@@ -39,6 +40,7 @@ import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
 import com.professor.zerion.android.attachment.AttachmentItem;
 import com.professor.zerion.android.attachment.AttachmentRetriever;
+import com.professor.zerion.android.attachment.media.VideoThumbnailExtractor;
 import com.professor.zerion.android.conversation.ConversationVisitor.AttachmentCache;
 import com.professor.zerion.android.conversation.ConversationVisitor.TextCache;
 import com.professor.zerion.android.fragment.BaseFragment.BaseFragmentListener;
@@ -160,6 +162,10 @@ public class ConversationActivity extends ZerionActivity
 	@Inject
 	IntroductionManager introductionManager;
 
+	@Inject
+	@IoExecutor
+	Executor ioExecutor;
+
 	private final Map<MessageId, String> textCache = new ConcurrentHashMap<>();
 
 	private final ActivityResultLauncher<String[]> docLauncher =
@@ -268,6 +274,9 @@ public class ConversationActivity extends ZerionActivity
 		textInputView = findViewById(R.id.text_input_container);
 		if (featureFlags.shouldEnableImageAttachments()) {
 			ImagePreview imagePreview = findViewById(R.id.imagePreview);
+			VideoThumbnailExtractor videoThumbnailExtractor =
+					new VideoThumbnailExtractor(this);
+			imagePreview.setVideoThumbnailExtractor(videoThumbnailExtractor, ioExecutor);
 			sendController = new TextAttachmentController(textInputView,
 					imagePreview, this, viewModel);
 			observeOnce(viewModel.getPrivateMessageFormat(), this, format -> {
@@ -399,7 +408,9 @@ public class ConversationActivity extends ZerionActivity
 	private static final int REQUEST_VAULT_DOCUMENTS = 1005;
 	private static final int REQUEST_RECORD_AUDIO = 1006;
 	private static final int REQUEST_VOICE_CALL = 1007;
+	private static final int REQUEST_RECORD_VIDEO = 1008;
 	private Uri photoUri;
+	private Uri videoUri;
 
 	// Voice recording controller (manages recording UI and state)
 	private VoiceRecordingController voiceRecordingController;
@@ -417,6 +428,29 @@ public class ConversationActivity extends ZerionActivity
 			takePictureIntent.putExtra(android.provider.MediaStore.EXTRA_OUTPUT, photoUri);
 			takePictureIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
 			startActivityForResult(takePictureIntent, REQUEST_TAKE_PHOTO);
+		} catch (android.content.ActivityNotFoundException e) {
+			Toast.makeText(this, R.string.no_camera_app, Toast.LENGTH_SHORT).show();
+		} catch (Exception e) {
+			handleSecurityException(e);
+		}
+	}
+
+	private void launchVideoRecorder() {
+		Intent takeVideoIntent = new Intent(android.provider.MediaStore.ACTION_VIDEO_CAPTURE);
+		try {
+			java.io.File videoFile = new java.io.File(new java.io.File(getFilesDir(), "camera"),
+					"temp_" + System.currentTimeMillis() + ".mp4");
+			if (!videoFile.getParentFile().exists()) {
+				videoFile.getParentFile().mkdirs();
+			}
+			videoUri = androidx.core.content.FileProvider.getUriForFile(this,
+					"com.professor.zerion.fileprovider", videoFile);
+			takeVideoIntent.putExtra(android.provider.MediaStore.EXTRA_OUTPUT, videoUri);
+			takeVideoIntent.putExtra(android.provider.MediaStore.EXTRA_VIDEO_QUALITY, 0);
+			takeVideoIntent.putExtra(android.provider.MediaStore.EXTRA_DURATION_LIMIT, 60);
+			takeVideoIntent.putExtra(android.provider.MediaStore.EXTRA_SIZE_LIMIT, 10L * 1024 * 1024);
+			takeVideoIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+			startActivityForResult(takeVideoIntent, REQUEST_RECORD_VIDEO);
 		} catch (android.content.ActivityNotFoundException e) {
 			Toast.makeText(this, R.string.no_camera_app, Toast.LENGTH_SHORT).show();
 		} catch (Exception e) {
@@ -631,13 +665,19 @@ public class ConversationActivity extends ZerionActivity
 			if (photoUri != null && sendController instanceof TextAttachmentController) {
 				List<Uri> uris = new ArrayList<>();
 				uris.add(photoUri);
-				viewModel.storeAttachments(uris, false);
+				((TextAttachmentController) sendController).onImageReceived(uris);
+			}
+		} else if (request == REQUEST_RECORD_VIDEO && result == RESULT_OK) {
+			if (videoUri != null && sendController instanceof TextAttachmentController) {
+				List<Uri> uris = new ArrayList<>();
+				uris.add(videoUri);
+				((TextAttachmentController) sendController).onImageReceived(uris);
 			}
 		} else if ((request == REQUEST_VAULT_GALLERY || request == REQUEST_VAULT_DOCUMENTS)
 				&& result == RESULT_OK && data != null) {
 			ArrayList<Uri> uris = data.getParcelableArrayListExtra(VaultActivity.RESULT_SELECTED_URIS);
-			if (uris != null && !uris.isEmpty()) {
-				viewModel.storeAttachments(uris, false);
+			if (uris != null && !uris.isEmpty() && sendController instanceof TextAttachmentController) {
+				((TextAttachmentController) sendController).onImageReceived(uris);
 			}
 		}
 	}
@@ -1025,7 +1065,6 @@ public class ConversationActivity extends ZerionActivity
 
 	@Override
 	public void onCameraSelected() {
-		// Check camera permission
 		if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA)
 				!= PackageManager.PERMISSION_GRANTED) {
 			ActivityCompat.requestPermissions(this,
@@ -1033,6 +1072,18 @@ public class ConversationActivity extends ZerionActivity
 					REQUEST_CAMERA_PERMISSION);
 		} else {
 			launchCamera();
+		}
+	}
+
+	@Override
+	public void onVideoSelected() {
+		if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA)
+				!= PackageManager.PERMISSION_GRANTED) {
+			ActivityCompat.requestPermissions(this,
+					new String[]{android.Manifest.permission.CAMERA},
+					REQUEST_CAMERA_PERMISSION);
+		} else {
+			launchVideoRecorder();
 		}
 	}
 
@@ -1315,7 +1366,7 @@ public class ConversationActivity extends ZerionActivity
 			uris = uris.subList(0, MAX_ATTACHMENTS_PER_MESSAGE);
 		}
 
-		viewModel.storeAttachments(uris, false);
+		controller.onImageReceived(uris);
 	}
 
 	private void onAddedPrivateMessage(PrivateMessageHeader h) {
@@ -1397,18 +1448,25 @@ public class ConversationActivity extends ZerionActivity
 	public void onAttachmentClicked(View view, ConversationMessageItem messageItem,
 			AttachmentItem attachmentItem) {
 		if (attachmentItem.getState() != AttachmentItem.State.ERROR) {
-			Intent intent = new Intent(this, ImageActivity.class);
-			intent.putExtra(CONTACT_ID, contactId.getInt());
-			intent.putExtra(NAME, viewModel.getContactDisplayName().getValue());
-			intent.putExtra(ITEM_ID, messageItem.getId().getBytes());
-			intent.putExtra(DATE, messageItem.getTime());
-			intent.putExtra(ATTACHMENT_POSITION, messageItem.getAttachments().indexOf(attachmentItem));
-			intent.putParcelableArrayListExtra(ATTACHMENTS,
-					new ArrayList<>(messageItem.getAttachments()));
+			if (attachmentItem.isVideo()) {
+				Intent intent = new Intent(this, VideoPlayerActivity.class);
+				intent.putExtra(VideoPlayerActivity.ATTACHMENT, attachmentItem);
+				intent.putExtra(VideoPlayerActivity.ITEM_ID, messageItem.getId().getBytes());
+				startActivity(intent);
+			} else {
+				Intent intent = new Intent(this, ImageActivity.class);
+				intent.putExtra(CONTACT_ID, contactId.getInt());
+				intent.putExtra(NAME, viewModel.getContactDisplayName().getValue());
+				intent.putExtra(ITEM_ID, messageItem.getId().getBytes());
+				intent.putExtra(DATE, messageItem.getTime());
+				intent.putExtra(ATTACHMENT_POSITION, messageItem.getAttachments().indexOf(attachmentItem));
+				intent.putParcelableArrayListExtra(ATTACHMENTS,
+						new ArrayList<>(messageItem.getAttachments()));
 
-			ActivityOptionsCompat options =
-					makeSceneTransitionAnimation(this, view, "image");
-			startActivity(intent, options.toBundle());
+				ActivityOptionsCompat options =
+						makeSceneTransitionAnimation(this, view, "image");
+				startActivity(intent, options.toBundle());
+			}
 		}
 	}
 

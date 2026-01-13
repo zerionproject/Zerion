@@ -11,10 +11,13 @@ import android.view.WindowManager;
 import com.professor.zerion.R;
 import com.professor.zerion.android.attachment.AttachmentItem;
 import com.professor.zerion.android.conversation.glide.Radii;
+import org.briarproject.bramble.api.db.DatabaseExecutor;
+import org.briarproject.briar.api.attachment.AttachmentReader;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executor;
 
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView.Adapter;
@@ -32,10 +35,23 @@ class ImageAdapter extends Adapter<ImageViewHolder> {
 	private final int radiusBig, radiusSmall;
 	private final boolean isRtl;
 	@Nullable
+	private final AttachmentReader attachmentReader;
+	@Nullable
+	@DatabaseExecutor
+	private final Executor dbExecutor;
+	@Nullable
 	private ConversationMessageItem conversationItem;
 
 	ImageAdapter(Context ctx, ConversationListener listener) {
+		this(ctx, listener, null, null);
+	}
+
+	ImageAdapter(Context ctx, ConversationListener listener,
+			@Nullable AttachmentReader attachmentReader,
+			@Nullable @DatabaseExecutor Executor dbExecutor) {
 		this.listener = listener;
+		this.attachmentReader = attachmentReader;
+		this.dbExecutor = dbExecutor;
 		imageSize = getImageSize(ctx);
 		Resources res = ctx.getResources();
 		radiusBig =
@@ -50,7 +66,8 @@ class ImageAdapter extends Adapter<ImageViewHolder> {
 		View v = LayoutInflater.from(viewGroup.getContext()).inflate(
 				R.layout.list_item_image, viewGroup, false);
 		requireNonNull(conversationItem);
-		return new ImageViewHolder(v, imageSize, conversationItem.getId());
+		return new ImageViewHolder(v, imageSize, conversationItem.getId(),
+				attachmentReader, dbExecutor);
 	}
 
 	@Override

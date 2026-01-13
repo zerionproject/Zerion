@@ -56,7 +56,7 @@
 	<color name="item_background_highlight">@color/zerion_card_bg</color>
 	<color name="zerion_warning_background">@color/zerion_error_red</color>
 	<color name="action_bar_text">@android:color/white</color>
-	<color name="private_message_date_inverse">@color/zerion_cyan</color>
+	<color name="private_message_date_inverse">@android:color/white</color>
 	<color name="forum_avatar_shadow">#99000000</color>
 
 	<color name="color_primary">@color/zerion_cyan</color>
@@ -153,4 +153,7 @@
 	<color name="zerion_error_red">@color/zerion_destructive</color>
 	<color name="zerion_success_green">@color/zerion_success</color>
 	<color name="zerion_purple">#8B5CF6</color> <!-- Purple accent for UI interactions -->
+
+	<!-- Video player -->
+	<color name="video_controls_background">#B3000000</color> <!-- 70% black -->
 </resources>

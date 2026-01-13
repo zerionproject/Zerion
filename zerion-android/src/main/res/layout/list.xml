@@ -1,8 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.professor.zerion.android.view.ZerionRecyclerView xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
 	xmlns:app="http://schemas.android.com/apk/res-auto"
-	android:id="@+id/list"
 	android:layout_width="match_parent"
 	android:layout_height="match_parent"
-	android:background="@android:color/transparent"
-	app:scrollToEnd="false" />
+	android:fitsSystemWindows="true"
+	android:background="@color/zerion_dark_bg">
+
+	<com.professor.zerion.android.view.ZerionRecyclerView
+		android:id="@+id/list"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:background="@android:color/transparent"
+		app:scrollToEnd="false" />
+
+</FrameLayout>
