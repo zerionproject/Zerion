@@ -10,6 +10,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.signature.ObjectKey;
 
 import org.briarproject.bramble.api.identity.Author;
 import org.briarproject.bramble.api.identity.AuthorId;
@@ -110,6 +111,8 @@ public class AuthorView extends ConstraintLayout {
 			Glide.with(v)
 					.load(info.getAvatarHeader())
 					.diskCacheStrategy(DiskCacheStrategy.NONE)
+					.skipMemoryCache(true)
+					.signature(new ObjectKey(info.getAvatarHeader().getMessageId().getBytes()))
 					.error(identicon)
 					.into(v)
 					.waitForLayout();

@@ -34,9 +34,10 @@ class RecordReaderImpl implements RecordReader {
 		in.readFully(header);
 		byte protocolVersion = header[0];
 		byte recordType = header[1];
-		int payloadLength = ByteUtils.readUint16(header, 2);
-		if (payloadLength < 0 || payloadLength > MAX_RECORD_PAYLOAD_BYTES)
+		long payloadLengthLong = ByteUtils.readUint32(header, 2);
+		if (payloadLengthLong < 0 || payloadLengthLong > MAX_RECORD_PAYLOAD_BYTES)
 			throw new FormatException();
+		int payloadLength = (int) payloadLengthLong;
 		byte[] payload = new byte[payloadLength];
 		in.readFully(payload);
 		return new Record(protocolVersion, recordType, payload);

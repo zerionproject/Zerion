@@ -40,6 +40,10 @@ class ImagePreviewItem {
 		return item;
 	}
 
+	public Uri getUri() {
+		return uri;
+	}
+
 	@Override
 	public boolean equals(@Nullable Object o) {
 		return o instanceof ImagePreviewItem &&

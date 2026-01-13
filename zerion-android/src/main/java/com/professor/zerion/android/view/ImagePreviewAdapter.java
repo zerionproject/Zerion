@@ -6,13 +6,16 @@ import android.view.ViewGroup;
 
 import com.professor.zerion.R;
 import com.professor.zerion.android.attachment.AttachmentItemResult;
+import com.professor.zerion.android.attachment.media.VideoThumbnailExtractor;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.Executor;
 
 import androidx.annotation.LayoutRes;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView.Adapter;
 
 import static androidx.recyclerview.widget.RecyclerView.NO_POSITION;
@@ -24,12 +27,24 @@ class ImagePreviewAdapter extends Adapter<ImagePreviewViewHolder> {
 	private final List<ImagePreviewItem> items;
 	@LayoutRes
 	private final int layout;
+	@Nullable
+	private final VideoThumbnailExtractor videoThumbnailExtractor;
+	@Nullable
+	private final Executor ioExecutor;
 
 	ImagePreviewAdapter(Collection<ImagePreviewItem> items) {
+		this(items, null, null);
+	}
+
+	ImagePreviewAdapter(Collection<ImagePreviewItem> items,
+			@Nullable VideoThumbnailExtractor videoThumbnailExtractor,
+			@Nullable Executor ioExecutor) {
 		this.items = new ArrayList<>(items);
 		this.layout = items.size() == 1 ?
 				R.layout.list_item_image_preview_single :
 				R.layout.list_item_image_preview;
+		this.videoThumbnailExtractor = videoThumbnailExtractor;
+		this.ioExecutor = ioExecutor;
 	}
 
 	@Override
@@ -37,7 +52,7 @@ class ImagePreviewAdapter extends Adapter<ImagePreviewViewHolder> {
 			int type) {
 		View v = LayoutInflater.from(viewGroup.getContext())
 				.inflate(layout, viewGroup, false);
-		return new ImagePreviewViewHolder(v);
+		return new ImagePreviewViewHolder(v, videoThumbnailExtractor, ioExecutor);
 	}
 
 	@Override

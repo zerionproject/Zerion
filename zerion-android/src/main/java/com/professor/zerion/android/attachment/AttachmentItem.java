@@ -109,6 +109,16 @@ public class AttachmentItem implements Parcelable {
 		return header.getContentType();
 	}
 
+	public boolean isVideo() {
+		String mimeType = header.getContentType();
+		return mimeType != null && mimeType.startsWith("video/");
+	}
+
+	public boolean isAudio() {
+		String mimeType = header.getContentType();
+		return mimeType != null && mimeType.startsWith("audio/");
+	}
+
 	public String getExtension() {
 		return extension;
 	}

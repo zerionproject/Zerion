@@ -32,8 +32,9 @@ public interface SyncConstants {
 
 	/**
 	 * The maximum length of a message body in bytes.
+	 * Supports attachments up to 10MB.
 	 */
-	int MAX_MESSAGE_BODY_LENGTH = 32 * 1024; // 32 KiB
+	int MAX_MESSAGE_BODY_LENGTH = 10 * 1024 * 1024;
 
 	/**
 	 * The maximum length of a message in bytes.

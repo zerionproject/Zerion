@@ -6,9 +6,11 @@ import android.view.LayoutInflater;
 
 import com.professor.zerion.R;
 import com.professor.zerion.android.attachment.AttachmentItemResult;
+import com.professor.zerion.android.attachment.media.VideoThumbnailExtractor;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.Collection;
+import java.util.concurrent.Executor;
 
 import androidx.annotation.Nullable;
 import androidx.constraintlayout.widget.ConstraintLayout;
@@ -27,6 +29,10 @@ public class ImagePreview extends ConstraintLayout {
 
 	@Nullable
 	private ImagePreviewListener listener;
+	@Nullable
+	private VideoThumbnailExtractor videoThumbnailExtractor;
+	@Nullable
+	private Executor ioExecutor;
 
 	public ImagePreview(Context context) {
 		this(context, null);
@@ -58,6 +64,13 @@ public class ImagePreview extends ConstraintLayout {
 		this.listener = listener;
 	}
 
+	public void setVideoThumbnailExtractor(
+			VideoThumbnailExtractor videoThumbnailExtractor,
+			Executor ioExecutor) {
+		this.videoThumbnailExtractor = videoThumbnailExtractor;
+		this.ioExecutor = ioExecutor;
+	}
+
 	void showPreview(Collection<ImagePreviewItem> items) {
 		if (listener == null) throw new IllegalStateException();
 		if (items.size() == 1) {
@@ -66,7 +79,8 @@ public class ImagePreview extends ConstraintLayout {
 			imageList.setLayoutParams(params);
 		}
 		setVisibility(VISIBLE);
-		ImagePreviewAdapter adapter = new ImagePreviewAdapter(items);
+		ImagePreviewAdapter adapter = new ImagePreviewAdapter(items,
+				videoThumbnailExtractor, ioExecutor);
 		imageList.setAdapter(adapter);
 	}
 

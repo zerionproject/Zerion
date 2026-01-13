@@ -34,7 +34,6 @@ class AttachmentCreationTask {
 	private static final Logger LOG =
 			getLogger(AttachmentCreationTask.class.getName());
 
-	// Supported audio MIME types for voice attachments
 	private static final Set<String> SUPPORTED_AUDIO_TYPES = new HashSet<>(asList(
 			"audio/opus",
 			"audio/ogg",
@@ -43,6 +42,14 @@ class AttachmentCreationTask {
 			"audio/mpeg",
 			"audio/3gpp",
 			"audio/3gp"
+	));
+
+	private static final Set<String> SUPPORTED_VIDEO_TYPES = new HashSet<>(asList(
+			"video/mp4",
+			"video/3gpp",
+			"video/webm",
+			"video/x-matroska",
+			"video/quicktime"
 	));
 
 
@@ -109,11 +116,11 @@ class AttachmentCreationTask {
 		String contentType = contentResolver.getType(uri);
 		if (contentType == null) throw new IOException("null content type");
 
-		// Check if it's a supported audio type
 		boolean isAudio = SUPPORTED_AUDIO_TYPES.contains(contentType);
+		boolean isVideo = SUPPORTED_VIDEO_TYPES.contains(contentType);
 		boolean isImage = asList(getSupportedImageContentTypes()).contains(contentType);
 
-		if (!isAudio && !isImage) {
+		if (!isAudio && !isVideo && !isImage) {
 			throw new UnsupportedMimeTypeException(contentType, uri);
 		}
 
@@ -126,11 +133,9 @@ class AttachmentCreationTask {
 		}
 
 		String finalMimeType;
-		if (isAudio) {
-			// Audio files are stored directly without compression
+		if (isAudio || isVideo) {
 			finalMimeType = contentType;
 		} else {
-			// Images are compressed
 			is = imageCompressor.compressImage(is, contentType);
 			finalMimeType = MIME_TYPE;
 		}

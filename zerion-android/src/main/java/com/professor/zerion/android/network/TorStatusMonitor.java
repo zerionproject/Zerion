@@ -24,19 +24,18 @@ import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import org.briarproject.bramble.api.plugin.TorSocksPort;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 @Singleton
 @NotNullByDefault
 public class TorStatusMonitor {
 
-    private static final int TOR_SOCKS_PORT = 9050;
-    private static final int TOR_CONTROL_PORT = 9051;
-
     private static final long CHECK_INTERVAL = 5000;
     private static final long BANDWIDTH_CHECK_INTERVAL = 1000; // 1 second for smooth graph
 
     private final Context context;
+    private final int torSocksPort;
     private final ScheduledExecutorService executor;
     private final Handler mainHandler;
 
@@ -52,10 +51,17 @@ public class TorStatusMonitor {
     private long monitoringStartTime = 0;
     private long connectionStartTime = 0;
     private boolean wasConnected = false;
+    private long sessionStartTime = 0;
+    private long peakDownloadSpeed = 0;
+    private long peakUploadSpeed = 0;
+    private long bandwidthSampleCount = 0;
+    private long totalDownloadSpeedSum = 0;
+    private long totalUploadSpeedSum = 0;
 
     @Inject
-    public TorStatusMonitor(Context context) {
+    public TorStatusMonitor(Context context, @TorSocksPort int torSocksPort) {
         this.context = context.getApplicationContext();
+        this.torSocksPort = torSocksPort;
         this.executor = Executors.newScheduledThreadPool(2);
         this.mainHandler = new Handler(Looper.getMainLooper());
 
@@ -68,12 +74,14 @@ public class TorStatusMonitor {
         if (isMonitoring) return;
         isMonitoring = true;
         monitoringStartTime = System.currentTimeMillis();
+        if (sessionStartTime == 0) {
+            sessionStartTime = monitoringStartTime;
+        }
 
         executor.scheduleWithFixedDelay(this::checkTorStatus, 0, CHECK_INTERVAL, TimeUnit.MILLISECONDS);
 
         executor.scheduleWithFixedDelay(this::updateCircuitInfo, 1000, 10000, TimeUnit.MILLISECONDS);
 
-        // Bandwidth updates every second for smooth graph
         executor.scheduleWithFixedDelay(this::updateBandwidth, 0, BANDWIDTH_CHECK_INTERVAL, TimeUnit.MILLISECONDS);
     }
 
@@ -124,7 +132,7 @@ public class TorStatusMonitor {
     private boolean isTorSocksActive() {
         try {
             java.net.Socket socket = new java.net.Socket();
-            socket.connect(new InetSocketAddress("127.0.0.1", TOR_SOCKS_PORT), 1000);
+            socket.connect(new InetSocketAddress("127.0.0.1", torSocksPort), 1000);
             socket.close();
             return true;
         } catch (Exception e) {
@@ -135,7 +143,7 @@ public class TorStatusMonitor {
     private boolean testTorConnection() {
         try {
             Proxy proxy = new Proxy(Proxy.Type.SOCKS,
-                    new InetSocketAddress("127.0.0.1", TOR_SOCKS_PORT));
+                    new InetSocketAddress("127.0.0.1", torSocksPort));
 
             URL url = new URL("https://check.torproject.org/api/ip");
             HttpURLConnection conn = (HttpURLConnection) url.openConnection(proxy);
@@ -240,6 +248,12 @@ public class TorStatusMonitor {
                 totalBytesSent += uploadSpeed;
             }
 
+            peakDownloadSpeed = Math.max(peakDownloadSpeed, downloadSpeed);
+            peakUploadSpeed = Math.max(peakUploadSpeed, uploadSpeed);
+            bandwidthSampleCount++;
+            totalDownloadSpeedSum += downloadSpeed;
+            totalUploadSpeedSum += uploadSpeed;
+
             final BandwidthUpdate update = new BandwidthUpdate(
                     downloadSpeed,
                     uploadSpeed,
@@ -249,20 +263,21 @@ public class TorStatusMonitor {
 
             mainHandler.post(() -> bandwidthUpdate.setValue(update));
 
-            updateStatisticsRealtime();
+            updateStatisticsRealtime(downloadSpeed, uploadSpeed);
 
         } catch (Exception e) {
         }
     }
 
+    private final int appUid = android.os.Process.myUid();
     private long lastRxBytes = 0;
     private long lastTxBytes = 0;
     private long lastBandwidthCheck = 0;
 
     private long[] getNetworkBandwidth() {
         try {
-            long currentRx = android.net.TrafficStats.getTotalRxBytes();
-            long currentTx = android.net.TrafficStats.getTotalTxBytes();
+            long currentRx = android.net.TrafficStats.getUidRxBytes(appUid);
+            long currentTx = android.net.TrafficStats.getUidTxBytes(appUid);
             long currentTime = System.currentTimeMillis();
 
             if (currentRx == android.net.TrafficStats.UNSUPPORTED ||
@@ -304,14 +319,25 @@ public class TorStatusMonitor {
         }
     }
 
-    private void updateStatisticsRealtime() {
+    private void updateStatisticsRealtime(long currentDownloadSpeed, long currentUploadSpeed) {
         try {
             TorStatistics stats = new TorStatistics();
             TorStatus status = torStatus.getValue();
 
+            stats.sessionStartTime = sessionStartTime;
+            stats.bytesReceived = totalBytesReceived;
+            stats.bytesSent = totalBytesSent;
+            stats.peakDownloadSpeed = peakDownloadSpeed;
+            stats.peakUploadSpeed = peakUploadSpeed;
+            stats.currentDownloadSpeed = currentDownloadSpeed;
+            stats.currentUploadSpeed = currentUploadSpeed;
+
+            if (bandwidthSampleCount > 0) {
+                stats.averageDownloadSpeed = totalDownloadSpeedSum / bandwidthSampleCount;
+                stats.averageUploadSpeed = totalUploadSpeedSum / bandwidthSampleCount;
+            }
+
             if (status != null && status.isConnected && connectionStartTime > 0) {
-                stats.bytesReceived = totalBytesReceived;
-                stats.bytesSent = totalBytesSent;
                 List<TorCircuit> currentCircuits = circuits.getValue();
                 stats.circuitsBuilt = currentCircuits != null ? currentCircuits.size() : 0;
                 stats.circuitsFailed = 0;
@@ -330,7 +356,7 @@ public class TorStatusMonitor {
     private String getCurrentExitIp() {
         try {
             Proxy proxy = new Proxy(Proxy.Type.SOCKS,
-                    new InetSocketAddress("127.0.0.1", TOR_SOCKS_PORT));
+                    new InetSocketAddress("127.0.0.1", torSocksPort));
 
             URL url = new URL("https://api.ipify.org");
             HttpURLConnection conn = (HttpURLConnection) url.openConnection(proxy);
@@ -362,6 +388,24 @@ public class TorStatusMonitor {
 
     public LiveData<BandwidthUpdate> getBandwidthUpdate() {
         return bandwidthUpdate;
+    }
+
+    public void resetStatistics() {
+        totalBytesReceived = 0;
+        totalBytesSent = 0;
+        sessionStartTime = System.currentTimeMillis();
+        peakDownloadSpeed = 0;
+        peakUploadSpeed = 0;
+        bandwidthSampleCount = 0;
+        totalDownloadSpeedSum = 0;
+        totalUploadSpeedSum = 0;
+        lastRxBytes = 0;
+        lastTxBytes = 0;
+        lastBandwidthCheck = 0;
+        mainHandler.post(() -> {
+            bandwidthUpdate.setValue(new BandwidthUpdate(0, 0, 0, 0));
+            statistics.setValue(new TorStatistics());
+        });
     }
 
     public static class TorStatus {
@@ -410,6 +454,13 @@ public class TorStatusMonitor {
         public long uptimeSeconds = 0;
         public long connectedSince = System.currentTimeMillis();
         public String currentExitIp = "Unknown";
+        public long sessionStartTime = 0;
+        public long peakDownloadSpeed = 0;
+        public long peakUploadSpeed = 0;
+        public long averageDownloadSpeed = 0;
+        public long averageUploadSpeed = 0;
+        public long currentDownloadSpeed = 0;
+        public long currentUploadSpeed = 0;
     }
 
     public void cleanup() {

@@ -30,7 +30,7 @@ class RecordWriterImpl implements RecordWriter {
 		byte[] payload = r.getPayload();
 		header[0] = r.getProtocolVersion();
 		header[1] = r.getRecordType();
-		ByteUtils.writeUint16(payload.length, header, 2);
+		ByteUtils.writeUint32(payload.length, header, 2);
 		out.write(header);
 		out.write(payload);
 		bytesWritten += RECORD_HEADER_BYTES + payload.length;

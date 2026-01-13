@@ -127,6 +127,10 @@ public class TextAttachmentController extends TextSendController
 	public void onSendEvent() {
 		if (canSend()) {
 			if (loadingUris) throw new AssertionError();
+			if (!imageUris.isEmpty() && !attachmentManager.hasValidAttachments()) {
+				onError(null);
+				return;
+			}
 			listener.onSendClick(textInput.getText(),
 					attachmentManager.getAttachmentHeadersForSending(),
 					expectedTimer).observe(listener, this::onSendStateChanged);
@@ -144,7 +148,7 @@ public class TextAttachmentController extends TextSendController
 
 	@Override
 	protected boolean canSendEmptyText() {
-		return !imageUris.isEmpty();
+		return !imageUris.isEmpty() && attachmentManager.hasValidAttachments();
 	}
 
 	public void setImagesSupported() {

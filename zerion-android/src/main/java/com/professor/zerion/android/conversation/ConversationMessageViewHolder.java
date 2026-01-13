@@ -54,7 +54,7 @@ class ConversationMessageViewHolder extends ConversationItemViewHolder {
 
 		RecyclerView list = v.findViewById(R.id.imageList);
 		list.setRecycledViewPool(imageViewPool);
-		adapter = new ImageAdapter(v.getContext(), listener);
+		adapter = new ImageAdapter(v.getContext(), listener, attachmentReader, dbExecutor);
 		list.setAdapter(adapter);
 		list.addItemDecoration(imageItemDecoration);
 

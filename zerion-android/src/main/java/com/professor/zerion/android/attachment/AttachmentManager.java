@@ -20,6 +20,8 @@ public interface AttachmentManager {
 
 	List<AttachmentHeader> getAttachmentHeadersForSending();
 
+	boolean hasValidAttachments();
+
 	void cancel();
 
 }

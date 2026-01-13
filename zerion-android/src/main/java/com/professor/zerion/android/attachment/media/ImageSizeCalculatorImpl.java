@@ -40,8 +40,7 @@ class ImageSizeCalculatorImpl implements ImageSizeCalculator {
 				size = getSizeFromExif(is);
 				is.reset();
 			} catch (IOException e) {
-				/* silent */
-			}
+							}
 		}
 		if (size.hasError()) {
 			is.mark(READ_LIMIT);
@@ -49,8 +48,7 @@ class ImageSizeCalculatorImpl implements ImageSizeCalculator {
 				size = getSizeFromBitmap(is);
 				is.reset();
 			} catch (IOException e) {
-				/* silent */
-			}
+							}
 		}
 		return size;
 	}
