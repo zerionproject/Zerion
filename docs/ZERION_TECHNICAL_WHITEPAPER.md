@@ -14,16 +14,17 @@ Zerion (formerly a Briar fork) is an end-to-end encrypted, peer-to-peer secure m
 2. [Messaging Architecture](#2-messaging-architecture)
 3. [Tor Integration](#3-tor-integration)
 4. [End-to-End Encryption](#4-end-to-end-encryption)
-5. [Vault Feature - Secure File Storage](#5-vault-feature---secure-file-storage)
-6. [Contact Discovery & Addition](#6-contact-discovery--addition)
-7. [P2P Voice Calling](#7-p2p-voice-calling)
-8. [Data Storage Security](#8-data-storage-security)
-9. [Feature Highlights](#9-feature-highlights)
-10. [Security Properties](#10-security-properties)
-11. [Technical Specifications](#11-technical-specifications)
-12. [Architecture Diagrams](#12-architecture-diagrams)
-13. [File Path Reference](#13-file-path-reference)
-14. [Conclusion](#14-conclusion)
+5. [Post-Compromise Security](#5-post-compromise-security)
+6. [Vault Feature - Secure File Storage](#6-vault-feature---secure-file-storage)
+7. [Contact Discovery & Addition](#7-contact-discovery--addition)
+8. [P2P Voice Calling](#8-p2p-voice-calling)
+9. [Data Storage Security](#9-data-storage-security)
+10. [Feature Highlights](#10-feature-highlights)
+11. [Security Properties](#11-security-properties)
+12. [Technical Specifications](#12-technical-specifications)
+13. [Architecture Diagrams](#13-architecture-diagrams)
+14. [File Path Reference](#14-file-path-reference)
+15. [Conclusion](#15-conclusion)
 
 ---
 
@@ -494,9 +495,139 @@ Time Period N+1 (Next)
 
 ---
 
-## 5. VAULT FEATURE - SECURE FILE STORAGE
+## 5. POST-COMPROMISE SECURITY
 
-### 5.1 Vault Key Derivation
+### 5.1 Overview
+
+Post-Compromise Security (PCS) ensures that even if an attacker temporarily compromises a device and extracts cryptographic keys, the security of future messages is automatically restored after a bounded number of messages. This is a critical property for high-risk users operating in adversarial environments.
+
+**Current Status**: Design complete (see `docs/PCS_DESIGN.md`), implementation pending.
+
+### 5.2 Design Goals
+
+| Goal | Description |
+|------|-------------|
+| Per-message keys | Each message encrypted with unique key |
+| Forward secrecy | Compromise of key N does not expose N-1 |
+| Recovery bound | Security restored within K messages |
+| Backward compatible | Works with legacy clients |
+| Quantum safe | Maintains ML-KEM-768 + X25519 hybrid security |
+
+### 5.3 Architecture
+
+Zerion PCS implements a Double Ratchet algorithm with two operational modes:
+
+**Mode 1: Symmetric-Only Ratchet**
+```
+Root Key (RK)
+    │
+    ▼
+Chain Key (CK) ──► CK₁ ──► CK₂ ──► CK₃ ...
+                    │       │       │
+                    ▼       ▼       ▼
+                   MK₁     MK₂     MK₃
+                    │       │       │
+                    ▼       ▼       ▼
+                  Msg 1   Msg 2   Msg 3
+```
+
+- Per-message key derivation from chain key
+- Forward secrecy within session
+- Recovery on time-period rotation (~42 hours)
+
+**Mode 2: Full Double Ratchet (Future)**
+- Adds DH ratchet step per message exchange
+- Maximum PCS: recovery within 1 round-trip
+- Higher bandwidth (32-byte DH public key per message)
+
+### 5.4 Key Derivation Functions
+
+All KDF operations use BLAKE2b with explicit domain separation:
+
+```
+KDF_CK(chain_key) → (new_chain_key, message_key)
+
+new_chain_key = BLAKE2b-256(
+  label: "org.briarproject.zerion/PCS_CHAIN_KEY",
+  key: chain_key,
+  input: 0x01
+)
+
+message_key = BLAKE2b-256(
+  label: "org.briarproject.zerion/PCS_MESSAGE_KEY",
+  key: chain_key,
+  input: 0x02
+)
+```
+
+### 5.5 Message Header Extensions
+
+PCS messages include additional header fields:
+
+| Field | Size | Description |
+|-------|------|-------------|
+| Version | 1 byte | 0x06 for PCS protocol |
+| Flags | 1 byte | DH ratchet present, PCS capability |
+| Message Number | 4 bytes | Chain position counter |
+| Previous Chain Length | 4 bytes | For out-of-order handling |
+| DH Public Key | 32 bytes | Optional, Mode 2 only |
+
+**Minimum overhead**: 10 bytes per message
+**Maximum overhead**: 50 bytes per message (with DH key)
+
+### 5.6 Out-of-Order Message Handling
+
+PCS maintains bounded storage of skipped message keys:
+
+```java
+MAX_SKIP = 1000           // Maximum skipped keys per contact
+MAX_SKIP_AGE = 7 days     // Automatic pruning
+```
+
+When a message arrives out of order:
+1. Calculate skipped key positions
+2. Derive and store skipped keys (bounded)
+3. Decrypt with correct key
+4. Delete used key immediately
+
+### 5.7 Capability Negotiation
+
+PCS is negotiated during handshake and persisted per-contact:
+
+| Alice PCS | Bob PCS | Result |
+|-----------|---------|--------|
+| Yes | Yes | PCS enabled (v6) |
+| Yes | No | Legacy mode (v5) |
+| No | Yes | Legacy mode (v5) |
+
+**Downgrade Protection**: Once PCS is established, downgrade is blocked unless:
+- User explicitly resets conversation
+- Contact is re-added after deletion
+
+### 5.8 Security Properties
+
+| Property | Mode 1 | Mode 2 |
+|----------|--------|--------|
+| Forward Secrecy | ✅ | ✅ |
+| Post-Compromise Recovery | Time-based (~42h) | 1 round-trip |
+| Quantum Resistance | ✅ (via handshake) | ✅ |
+| Out-of-order tolerance | ✅ | ✅ |
+
+### 5.9 Implementation Status
+
+| Phase | Status | Description |
+|-------|--------|-------------|
+| Phase 1 | **Design Complete** | Symmetric ratchet, capability negotiation |
+| Phase 2 | Planned | Full Double Ratchet with DH |
+| Phase 3 | Future | ML-KEM Braid (post-quantum ratchet) |
+
+For complete technical specification, see `docs/PCS_DESIGN.md`.
+
+---
+
+## 6. VAULT FEATURE - SECURE FILE STORAGE
+
+### 6.1 Vault Key Derivation
 
 **Multi-Layer Security**:
 
@@ -535,7 +666,7 @@ Vault Master Key (256-bit)
 - **Adaptive**: Calibrates to device specs
 - **Password Verification MAC**: Fast wrong-password detection
 
-### 5.2 Item Encryption
+### 6.2 Item Encryption
 
 **Per-Item Security**:
 
@@ -576,7 +707,7 @@ vault/
         └── content.bin
 ```
 
-### 5.3 Vault Security Features
+### 6.3 Vault Security Features
 
 **Auto-Lock**:
 - Timeout: 60 seconds of inactivity
@@ -608,7 +739,7 @@ System.gc(); // Force garbage collection
 - Camera information removed
 - Timestamp normalization
 
-### 5.4 Vault Item Types
+### 6.4 Vault Item Types
 
 **Supported Types**:
 
@@ -632,7 +763,7 @@ System.gc(); // Force garbage collection
    - Preview support
    - File type detection
 
-### 5.5 Export/Import
+### 6.5 Export/Import
 
 **Export Process**:
 ```
@@ -651,9 +782,9 @@ System.gc(); // Force garbage collection
 
 ---
 
-## 6. CONTACT DISCOVERY & ADDITION
+## 7. CONTACT DISCOVERY & ADDITION
 
-### 6.1 QR Code Method
+### 7.1 QR Code Method
 
 **Process Flow**:
 
@@ -686,7 +817,7 @@ User A                          User B
 - Transport descriptors (Tor .onion)
 - Encoded as Base64
 
-### 6.2 Link-Based Addition
+### 7.2 Link-Based Addition
 
 **Link Format**:
 ```
@@ -704,7 +835,7 @@ zerion://AQIDBAAFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIj...
 - Email, chat, etc.
 - Same security as QR (commitment scheme)
 
-### 6.3 Pending Contacts
+### 7.3 Pending Contacts
 
 **States**:
 
@@ -730,7 +861,7 @@ zerion://AQIDBAAFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIj...
 - Automatic retry logic
 - Error reporting
 
-### 6.4 Contact Verification
+### 7.4 Contact Verification
 
 **Trust Model**:
 
@@ -755,7 +886,7 @@ zerion://AQIDBAAFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIj...
 - Derived from public key
 - Grouped for readability
 
-### 6.5 Version Negotiation (Briar Compatibility)
+### 7.5 Version Negotiation (Briar Compatibility)
 
 Zerion implements automatic version negotiation to maintain backward compatibility with Briar while enabling post-quantum security for Zerion-to-Zerion communication.
 
@@ -795,7 +926,7 @@ Zerion implements automatic version negotiation to maintain backward compatibili
 - **Zerion ↔ Zerion**: Both use VERSION 1 links → Hybrid PQ handshake → `postQuantum=true`
 - **Zerion ↔ Briar**: Briar uses VERSION 0 link → Classical handshake → `postQuantum=false`
 
-### 6.6 Downgrade Attack Prevention
+### 7.6 Downgrade Attack Prevention
 
 Once a contact is established with post-quantum security, subsequent handshakes with the same remote author must also use PQ to prevent downgrade attacks.
 
@@ -847,9 +978,9 @@ pendingContacts(
 
 ---
 
-## 7. P2P VOICE CALLING
+## 8. P2P VOICE CALLING
 
-### 7.1 Overview
+### 8.1 Overview
 
 Zerion provides **end-to-end encrypted peer-to-peer voice calling** over Tor, offering private and anonymous real-time voice communication between contacts. Voice calls use a **dedicated signaling protocol** separate from text messaging, with additional real-time audio streaming capabilities.
 
@@ -865,7 +996,7 @@ Zerion provides **end-to-end encrypted peer-to-peer voice calling** over Tor, of
 - **Speakerphone toggle** with configurable volume boost
 - No third-party servers or relays
 
-### 7.2 Voice Call Architecture
+### 8.2 Voice Call Architecture
 
 **Primary Service**: `VoiceCallService.java`
 
@@ -886,7 +1017,7 @@ Zerion provides **end-to-end encrypted peer-to-peer voice calling** over Tor, of
 [Real-time Audio]                               [Real-time Audio]
 ```
 
-### 7.3 Audio Configuration
+### 8.3 Audio Configuration
 
 **Audio Format**: Opus Codec Compressed Audio
 - **Sample Rate**: 16 kHz
@@ -915,7 +1046,7 @@ Zerion uses the Opus codec implemented via the Concentus pure Java library:
 
 **Trade-off**: Slightly higher CPU usage for compression/decompression in exchange for dramatically lower bandwidth requirements, making voice calls more reliable over Tor.
 
-### 7.4 Call Encryption
+### 8.4 Call Encryption
 
 **Encryption Method**: AES-256-GCM (Galois/Counter Mode)
 
@@ -973,7 +1104,7 @@ Raw PCM Audio (320 samples, 640 bytes)
 - **Replay Protection**: Frame sequence numbers prevent replay attacks
 - **End-to-End**: Only caller and callee possess decryption keys
 
-### 7.5 P2P Connection Management
+### 8.5 P2P Connection Management
 
 **Connection Establishment**:
 1. **Tor Circuit Setup**: Both devices establish Tor hidden service connections
@@ -1006,7 +1137,7 @@ Error states: CONNECTION_ERROR, REJECTED, TIMEOUT
 - **Adaptive Handling**: Quality degradation warnings
 - **Automatic Reconnection**: Recovery from temporary network failures
 
-### 7.6 Audio Processing Pipeline
+### 8.6 Audio Processing Pipeline
 
 **Recording Pipeline** (Sender):
 ```
@@ -1055,7 +1186,7 @@ Speaker/Earpiece Output
 
 **CRITICAL**: These effects are automatically enabled by the `VOICE_COMMUNICATION` audio source. Manual initialization causes double processing and robot-like audio distortion.
 
-### 7.7 Call State Management
+### 8.7 Call State Management
 
 **Call States**:
 - **IDLE**: No active call
@@ -1075,7 +1206,7 @@ Speaker/Earpiece Output
 - **Active Call**: Ongoing notification showing call duration
 - **Call Ended**: Toast notification with reason (ended, declined, error, etc.)
 
-### 7.8 User Interface
+### 8.8 User Interface
 
 **Primary Activity**: `VoiceCallActivity.java`
 
@@ -1109,7 +1240,7 @@ Speaker/Earpiece Output
 "Connected" + [Duration Timer]
 ```
 
-### 7.9 Security & Privacy Properties
+### 8.9 Security & Privacy Properties
 
 **Encryption Security**:
 - **Algorithm**: AES-256-GCM (NIST-approved, industry-standard)
@@ -1136,7 +1267,7 @@ Speaker/Earpiece Output
 - **No Telemetry**: Call quality metrics not transmitted to third parties
 - **Anonymous Calling**: No personally identifiable information required
 
-### 7.10 Performance Characteristics
+### 8.10 Performance Characteristics
 
 **Audio Quality**:
 - **Bitrate**: ~16 kbps (Opus VOIP mode)
@@ -1163,7 +1294,7 @@ Speaker/Earpiece Output
 - **Connection Type**: WiFi or 3G/4G/5G cellular
 - **Tor Circuit**: Stable 3-hop circuit required
 
-### 7.11 Technical Implementation Files
+### 8.11 Technical Implementation Files
 
 **Core Service**:
 - `VoiceCallService.java`: Main service managing P2P voice calls, audio streaming, encryption, and connection management
@@ -1189,7 +1320,7 @@ Speaker/Earpiece Output
 **Data Models**:
 - Voice call state management integrated into Bramble transport layer
 
-### 7.12 Voice Signaling Protocol
+### 8.12 Voice Signaling Protocol
 
 **Dedicated Message Type**:
 Voice call signaling uses a dedicated `VOICE_SIGNAL` message type (type=2) completely separate from text messages (type=0). This ensures:
@@ -1214,9 +1345,9 @@ CALL_BUSY (5)     - Callee is in another call
 
 ---
 
-## 8. DATA STORAGE SECURITY
+## 9. DATA STORAGE SECURITY
 
-### 8.1 Database Encryption
+### 9.1 Database Encryption
 
 **Encryption Architecture** (Post-Quantum Hardened):
 
@@ -1256,7 +1387,7 @@ Encrypted Database File
 - **BLAKE2b**: Hash function maintains 128-bit PQ security at 256-bit output
 - **Overall**: 128-bit post-quantum security for database encryption
 
-### 8.2 KDF Migration (Scrypt → Argon2id)
+### 9.2 KDF Migration (Scrypt → Argon2id)
 
 **Automatic Migration Protocol**:
 ```
@@ -1331,7 +1462,7 @@ settings(
 )
 ```
 
-### 7.2 Secure File Deletion
+### 9.3 Secure File Deletion
 
 **Multi-Pass Overwrite**:
 
@@ -1353,7 +1484,7 @@ Pass 3: Random data
 - fsync() after each pass
 - Directory sync for persistence
 
-### 7.3 Attachment Storage
+### 9.4 Attachment Storage
 
 **Encrypted Attachments**:
 
@@ -1379,7 +1510,7 @@ Attachment File
 └── ...
 ```
 
-### 7.4 Memory Security
+### 9.5 Memory Security
 
 **Key Lifecycle Management**:
 
@@ -1406,9 +1537,9 @@ Attachment File
 
 ---
 
-## 9. FEATURE HIGHLIGHTS
+## 10. FEATURE HIGHLIGHTS
 
-### 9.1 Disappearing Messages
+### 10.1 Disappearing Messages
 
 **Configuration**:
 - Timer options: 5 min, 1 hour, 1 day, 1 week, custom
@@ -1431,7 +1562,7 @@ Attachment File
      └── Notify remote peer
 ```
 
-### 8.2 Voice Messages
+### 10.2 Voice Messages
 
 **Technical Details**:
 - **Codec**: Opus (high quality, low bitency)
@@ -1446,7 +1577,7 @@ Attachment File
 - Progress bar
 - Duration display
 
-### 8.3 Rich Attachments
+### 10.3 Rich Attachments
 
 **Supported Types**:
 - Images (JPEG, PNG, GIF, WebP)
@@ -1475,7 +1606,7 @@ Attachment File
 - Documents: 10 MB
 - Configurable by user
 
-### 8.4 Network Resilience
+### 10.4 Network Resilience
 
 **Offline Capabilities**:
 - Messages queued locally
@@ -1495,7 +1626,7 @@ Attachment File
 - Adaptive sync frequency
 - WiFi-only mode (optional)
 
-### 8.5 User Experience
+### 10.5 User Experience
 
 **Material Design 3**:
 - Modern UI
@@ -1516,9 +1647,9 @@ Attachment File
 
 ---
 
-## 10. SECURITY PROPERTIES
+## 11. SECURITY PROPERTIES
 
-### 10.1 Threat Model
+### 11.1 Threat Model
 
 **Protected Against**:
 
@@ -1543,7 +1674,7 @@ Attachment File
 - **Signatures**: Hybrid ML-DSA-65 + Ed25519 (NIST Level 3)
 - **Defense-in-Depth**: Both classical AND PQ algorithms must be broken
 
-### 9.2 Cryptographic Security
+### 11.2 Cryptographic Security
 
 **Key Strengths**:
 - **Hybrid Key Exchange**: ML-KEM-768 (1,184 bytes) + X25519 (32 bytes)
@@ -1571,7 +1702,7 @@ Attachment File
    - Message authentication via MACs
    - Contact verification via fingerprints
 
-### 9.3 Privacy Properties
+### 11.3 Privacy Properties
 
 **Anonymity**:
 - All connections via Tor
@@ -1594,9 +1725,9 @@ Attachment File
 
 ---
 
-## 11. TECHNICAL SPECIFICATIONS
+## 12. TECHNICAL SPECIFICATIONS
 
-### 11.1 System Requirements
+### 12.1 System Requirements
 
 **Minimum**:
 - Android 5.0 (API 21)
@@ -1610,7 +1741,7 @@ Attachment File
 - 500 MB storage
 - WiFi connectivity
 
-### 10.2 Performance Characteristics
+### 12.2 Performance Characteristics
 
 **Cryptographic Operations**:
 - Key generation: ~50ms
@@ -1630,7 +1761,7 @@ Attachment File
 - Active messaging: ~5-10% per hour
 - Background sync: ~1-3% per hour
 
-### 10.3 Cryptographic Specifications
+### 12.3 Cryptographic Specifications
 
 | Component | Algorithm | Key/Output Size | Post-Quantum Security |
 |-----------|-----------|-----------------|----------------------|
@@ -1654,7 +1785,7 @@ Attachment File
 | Signature Private Key | 32 bytes | 4,032 bytes | **4,064 bytes** |
 | Signature | 64 bytes | 3,309 bytes | **3,373 bytes** |
 
-### 10.4 Protocol Versions
+### 12.4 Protocol Versions
 
 - **Bramble Protocol**: v1
 - **Transport Protocol**: v2
@@ -1662,7 +1793,7 @@ Attachment File
 - **Handshake Protocol**: v1 (classical) / v2 (hybrid PQ)
 - **Database Schema**: v52
 
-### 10.5 Network Parameters
+### 12.5 Network Parameters
 
 | Parameter | Value | Notes |
 |-----------|-------|-------|
@@ -1676,9 +1807,9 @@ Attachment File
 
 ---
 
-## 12. ARCHITECTURE DIAGRAMS
+## 13. ARCHITECTURE DIAGRAMS
 
-### 12.1 System Architecture
+### 13.1 System Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -1710,7 +1841,7 @@ Attachment File
                  [Tor Network]
 ```
 
-### 11.2 Message Flow Diagram
+### 13.2 Message Flow Diagram
 
 ```
 ┌──────────┐                                    ┌──────────┐
@@ -1749,7 +1880,7 @@ Attachment File
                                               └─────────────┘
 ```
 
-### 11.3 Vault Encryption Layers
+### 13.3 Vault Encryption Layers
 
 ```
 User Password ────┐
@@ -1783,7 +1914,7 @@ User Password ────┐
         └──────────────┘ └──────────────┘ └──────────────┘
 ```
 
-### 11.4 Tor Connection Flow
+### 13.4 Tor Connection Flow
 
 ```
 ┌────────────┐
@@ -1823,9 +1954,9 @@ User Password ────┐
 
 ---
 
-## 13. FILE PATH REFERENCE
+## 14. FILE PATH REFERENCE
 
-### 13.1 Core Application Files
+### 14.1 Core Application Files
 
 **Onboarding & Setup**:
 ```
@@ -1938,7 +2069,7 @@ briar-android/src/main/java/com/professor/zerion/android/contact/add/
 └── remote/AddContactViewModel.java
 ```
 
-### 13.2 Configuration Files
+### 14.2 Configuration Files
 
 **Build Configuration**:
 ```
@@ -1962,9 +2093,9 @@ briar-android/src/main/AndroidManifest.xml
 
 ---
 
-## 14. CONCLUSION
+## 15. CONCLUSION
 
-### 14.1 Summary of Security Features
+### 15.1 Summary of Security Features
 
 Zerion provides military-grade security through:
 
@@ -1995,7 +2126,7 @@ Zerion provides military-grade security through:
    - Automatic key rotation
    - Secure key deletion
 
-### 14.2 Unique Features
+### 15.2 Unique Features
 
 **Vault Integration**:
 - Unified secure storage
@@ -2026,7 +2157,7 @@ Zerion provides military-grade security through:
 - No analytics
 - Open source (auditable)
 
-### 14.3 Use Cases
+### 15.3 Use Cases
 
 **High-Security Communication**:
 - Journalists and sources
@@ -2046,7 +2177,7 @@ Zerion provides military-grade security through:
 - Censorship circumvention
 - Traffic analysis resistance
 
-### 13.4 Post-Quantum Cryptography Status
+### 15.4 Post-Quantum Cryptography Status
 
 **Two-Phase Post-Quantum Migration - COMPLETE**:
 
@@ -2126,7 +2257,7 @@ Zerion provides military-grade security through:
 - Secure element support
 - Zero-knowledge architecture
 
-### 13.5 Compliance & Auditing
+### 15.5 Compliance & Auditing
 
 **Security Audit Status**:
 - Code review ongoing

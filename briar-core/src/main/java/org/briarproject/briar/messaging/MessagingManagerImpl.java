@@ -403,7 +403,6 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 	public AttachmentHeader addLocalAttachment(GroupId groupId, long timestamp,
 			String contentType, InputStream in)
 			throws DbException, IOException {
-		// TODO: Support large messages
 		ByteArrayOutputStream bodyOut = new ByteArrayOutputStream();
 		byte[] descriptor =
 				clientHelper.toByteArray(BdfList.of(ATTACHMENT, contentType));
@@ -419,7 +418,6 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		meta.put(MSG_KEY_CONTENT_TYPE, contentType);
 		meta.put(MSG_KEY_DESCRIPTOR_LENGTH, descriptor.length);
 		Message m = clientHelper.createMessage(groupId, timestamp, body);
-		// Mark attachments as temporary, not shared until we're ready to send
 		db.transaction(false, txn ->
 				clientHelper.addLocalMessage(txn, m, meta, false, true));
 		return new AttachmentHeader(groupId, m.getId(), contentType);

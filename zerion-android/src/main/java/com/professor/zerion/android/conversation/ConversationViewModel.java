@@ -361,6 +361,12 @@ public class ConversationViewModel extends DbViewModel
 		attachmentCreator.cancel();
 	}
 
+	@Override
+	@UiThread
+	public boolean hasValidAttachments() {
+		return attachmentCreator.hasValidAttachments();
+	}
+
 	@DatabaseExecutor
 	private void checkFeaturesAndOnboarding(ContactId c) throws DbException {
 		PrivateMessageFormat format = db.transactionWithResult(true, txn ->
@@ -395,6 +401,12 @@ public class ConversationViewModel extends DbViewModel
 			List<AttachmentHeader> headers, long expectedTimer,
 			@Nullable ConversationItem replyToItem) {
 		MutableLiveData<SendState> liveData = new MutableLiveData<>();
+		boolean hasText = text != null && !text.trim().isEmpty();
+		boolean hasAttachments = headers != null && !headers.isEmpty();
+		if (!hasText && !hasAttachments) {
+			liveData.setValue(ERROR);
+			return liveData;
+		}
 		runOnDbThread(() -> {
 			try {
 				db.transaction(false, txn -> {

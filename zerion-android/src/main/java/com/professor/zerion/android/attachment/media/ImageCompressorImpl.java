@@ -22,8 +22,7 @@ import static org.briarproject.briar.api.attachment.MediaConstants.MAX_IMAGE_SIZ
 
 class ImageCompressorImpl implements ImageCompressor {
 
-
-	private static final int MAX_ATTACHMENT_DIMENSION = 1000;
+	private static final int MAX_ATTACHMENT_DIMENSION = 4096;
 
 	private final ImageSizeCalculator imageSizeCalculator;
 	private final MetadataStripper metadataStripper;
@@ -50,16 +49,12 @@ class ImageCompressorImpl implements ImageCompressor {
 	@Override
 	public InputStream compressImage(Bitmap bitmap) throws IOException {
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		for (int quality = 100; quality >= 0; quality -= 10) {
-			if (!bitmap.compress(JPEG, quality, out))
-				throw new IOException();
-			if (out.size() <= MAX_IMAGE_SIZE) {
-							byte[] imageData = out.toByteArray();
-				byte[] strippedData = metadataStripper.stripMetadata(
-						imageData, "image/jpeg");
-				return new ByteArrayInputStream(strippedData);
-			}
-			out.reset();
+		if (!bitmap.compress(JPEG, 85, out))
+			throw new IOException();
+		if (out.size() <= MAX_IMAGE_SIZE) {
+			byte[] imageData = out.toByteArray();
+			byte[] strippedData = metadataStripper.stripMetadata(imageData, "image/jpeg");
+			return new ByteArrayInputStream(strippedData);
 		}
 		throw new IOException();
 	}

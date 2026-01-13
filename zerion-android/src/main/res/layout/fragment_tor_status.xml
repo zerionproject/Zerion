@@ -13,17 +13,6 @@
 		android:orientation="vertical"
 		android:padding="20dp">
 
-		<!-- Header -->
-		<TextView
-			android:layout_width="match_parent"
-			android:layout_height="wrap_content"
-			android:text="@string/network_status_title"
-			android:textColor="#FFFFFF"
-			android:textSize="24sp"
-			android:textStyle="bold"
-			android:layout_marginBottom="20dp"/>
-
-		<!-- Connection Status Card -->
 		<com.google.android.material.card.MaterialCardView
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
@@ -35,274 +24,64 @@
 			<LinearLayout
 				android:layout_width="match_parent"
 				android:layout_height="wrap_content"
-				android:orientation="vertical"
-				android:padding="16dp">
+				android:orientation="horizontal"
+				android:padding="16dp"
+				android:gravity="center_vertical">
+
+				<ImageView
+					android:id="@+id/torStatusIcon"
+					android:layout_width="32dp"
+					android:layout_height="32dp"
+					android:src="@drawable/transport_tor"
+					app:tint="#26B7F0"/>
 
 				<LinearLayout
-					android:layout_width="match_parent"
+					android:layout_width="0dp"
 					android:layout_height="wrap_content"
-					android:orientation="horizontal"
-					android:gravity="center_vertical">
-
-					<ImageView
-						android:id="@+id/torStatusIcon"
-						android:layout_width="28dp"
-						android:layout_height="28dp"
-						android:src="@drawable/transport_tor"
-						app:tint="#26B7F0"/>
+					android:layout_weight="1"
+					android:layout_marginStart="12dp"
+					android:orientation="vertical">
 
 					<TextView
-						android:layout_width="0dp"
+						android:layout_width="wrap_content"
 						android:layout_height="wrap_content"
-						android:layout_weight="1"
-						android:layout_marginStart="12dp"
 						android:text="@string/transport_tor"
 						android:textColor="#FFFFFF"
 						android:textSize="18sp"
 						android:textStyle="bold"/>
 
 					<TextView
-						android:id="@+id/torStatusText"
-						android:layout_width="wrap_content"
-						android:layout_height="wrap_content"
-						android:text="@string/connected"
-						android:textColor="#4CAF50"
-						android:textSize="14sp"
-						android:textStyle="bold"
-						tools:text="Connected"/>
-
-				</LinearLayout>
-
-				<View
-					android:layout_width="match_parent"
-					android:layout_height="1dp"
-					android:layout_marginTop="12dp"
-					android:layout_marginBottom="12dp"
-					android:background="#333333"/>
-
-				<!-- Connection Info Grid -->
-				<LinearLayout
-					android:layout_width="match_parent"
-					android:layout_height="wrap_content"
-					android:orientation="horizontal"
-					android:layout_marginBottom="8dp">
-
-					<TextView
-						android:layout_width="110dp"
-						android:layout_height="wrap_content"
-						android:text="@string/network_status_label"
-						android:textColor="#AAAAAA"
-						android:textSize="13sp"/>
-
-					<TextView
-						android:id="@+id/torConnectionStatus"
-						android:layout_width="0dp"
-						android:layout_height="wrap_content"
-						android:layout_weight="1"
-						android:text="@string/active"
-						android:textColor="#FFFFFF"
-						android:textSize="13sp"
-						tools:text="Active"/>
-
-				</LinearLayout>
-
-				<LinearLayout
-					android:layout_width="match_parent"
-					android:layout_height="wrap_content"
-					android:orientation="horizontal"
-					android:layout_marginBottom="8dp">
-
-					<TextView
-						android:layout_width="110dp"
-						android:layout_height="wrap_content"
-						android:text="@string/network_uptime_label"
-						android:textColor="#AAAAAA"
-						android:textSize="13sp"/>
-
-					<TextView
-						android:id="@+id/torUptime"
-						android:layout_width="0dp"
-						android:layout_height="wrap_content"
-						android:layout_weight="1"
-						android:text="--"
-						android:textColor="#FFFFFF"
-						android:textSize="13sp"
-						tools:text="2h 34m"/>
-
-				</LinearLayout>
-
-				<LinearLayout
-					android:layout_width="match_parent"
-					android:layout_height="wrap_content"
-					android:orientation="horizontal">
-
-					<TextView
-						android:layout_width="110dp"
-						android:layout_height="wrap_content"
-						android:text="@string/network_hidden_service_label"
-						android:textColor="#AAAAAA"
-						android:textSize="13sp"/>
-
-					<TextView
 						android:id="@+id/torOnionAddress"
-						android:layout_width="0dp"
+						android:layout_width="wrap_content"
 						android:layout_height="wrap_content"
-						android:layout_weight="1"
 						android:text="@string/generating"
-						android:textColor="#26B7F0"
-						android:textSize="12sp"
-						android:fontFamily="monospace"
-						android:breakStrategy="simple"
-						android:singleLine="false"
-						tools:text="Active"/>
+						android:textColor="#888888"
+						android:textSize="11sp"
+						android:layout_marginTop="2dp"
+						tools:text="Hidden service active"/>
 
 				</LinearLayout>
 
-			</LinearLayout>
-
-		</com.google.android.material.card.MaterialCardView>
-
-		<!-- Real-Time Bandwidth Graph Card -->
-		<com.google.android.material.card.MaterialCardView
-			android:layout_width="match_parent"
-			android:layout_height="wrap_content"
-			android:layout_marginBottom="16dp"
-			app:cardBackgroundColor="@android:color/transparent"
-			app:cardCornerRadius="16dp"
-			app:cardElevation="0dp">
-
-			<LinearLayout
-				android:layout_width="match_parent"
-				android:layout_height="wrap_content"
-				android:orientation="vertical">
-
 				<TextView
-					android:layout_width="match_parent"
+					android:id="@+id/torStatusText"
+					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
-					android:text="@string/network_bandwidth_title"
-					android:textColor="#FFFFFF"
-					android:textSize="16sp"
+					android:text="@string/connected"
+					android:textColor="#4CAF50"
+					android:textSize="14sp"
 					android:textStyle="bold"
-					android:layout_marginBottom="12dp"/>
-
-				<com.professor.zerion.android.view.NetworkGraphView
-					android:id="@+id/networkGraph"
-					android:layout_width="match_parent"
-					android:layout_height="200dp"/>
+					tools:text="Connected"/>
 
 			</LinearLayout>
 
 		</com.google.android.material.card.MaterialCardView>
 
-		<!-- Bandwidth Statistics Card -->
-		<com.google.android.material.card.MaterialCardView
+		<com.professor.zerion.android.view.NetworkGraphView
+			android:id="@+id/networkGraph"
 			android:layout_width="match_parent"
-			android:layout_height="wrap_content"
-			android:layout_marginBottom="16dp"
-			app:cardBackgroundColor="#1E1E1E"
-			app:cardCornerRadius="16dp"
-			app:cardElevation="4dp">
+			android:layout_height="160dp"
+			android:layout_marginBottom="16dp"/>
 
-			<LinearLayout
-				android:layout_width="match_parent"
-				android:layout_height="wrap_content"
-				android:orientation="vertical"
-				android:padding="16dp">
-
-				<TextView
-					android:layout_width="match_parent"
-					android:layout_height="wrap_content"
-					android:text="@string/network_session_stats"
-					android:textColor="#FFFFFF"
-					android:textSize="16sp"
-					android:textStyle="bold"
-					android:layout_marginBottom="12dp"/>
-
-				<LinearLayout
-					android:layout_width="match_parent"
-					android:layout_height="wrap_content"
-					android:orientation="horizontal">
-
-					<!-- Download Stats -->
-					<LinearLayout
-						android:layout_width="0dp"
-						android:layout_height="wrap_content"
-						android:layout_weight="1"
-						android:orientation="vertical"
-						android:gravity="center">
-
-						<View
-							android:layout_width="8dp"
-							android:layout_height="8dp"
-							android:background="@drawable/circle_cyan"
-							android:layout_marginBottom="6dp"/>
-
-						<TextView
-							android:layout_width="wrap_content"
-							android:layout_height="wrap_content"
-							android:text="@string/network_total_download"
-							android:textColor="#AAAAAA"
-							android:textSize="12sp"/>
-
-						<TextView
-							android:id="@+id/totalDownload"
-							android:layout_width="wrap_content"
-							android:layout_height="wrap_content"
-							android:text="0 B"
-							android:textColor="#FFFFFF"
-							android:textSize="18sp"
-							android:textStyle="bold"
-							android:layout_marginTop="4dp"
-							tools:text="1.24 MB"/>
-
-					</LinearLayout>
-
-					<View
-						android:layout_width="1dp"
-						android:layout_height="match_parent"
-						android:background="#333333"/>
-
-					<!-- Upload Stats -->
-					<LinearLayout
-						android:layout_width="0dp"
-						android:layout_height="wrap_content"
-						android:layout_weight="1"
-						android:orientation="vertical"
-						android:gravity="center">
-
-						<View
-							android:layout_width="8dp"
-							android:layout_height="8dp"
-							android:background="@drawable/circle_green"
-							android:layout_marginBottom="6dp"/>
-
-						<TextView
-							android:layout_width="wrap_content"
-							android:layout_height="wrap_content"
-							android:text="@string/network_total_upload"
-							android:textColor="#AAAAAA"
-							android:textSize="12sp"/>
-
-						<TextView
-							android:id="@+id/totalUpload"
-							android:layout_width="wrap_content"
-							android:layout_height="wrap_content"
-							android:text="0 B"
-							android:textColor="#FFFFFF"
-							android:textSize="18sp"
-							android:textStyle="bold"
-							android:layout_marginTop="4dp"
-							tools:text="456 KB"/>
-
-					</LinearLayout>
-
-				</LinearLayout>
-
-			</LinearLayout>
-
-		</com.google.android.material.card.MaterialCardView>
-
-		<!-- Network Mode Card -->
 		<com.google.android.material.card.MaterialCardView
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
@@ -313,41 +92,71 @@
 			<LinearLayout
 				android:layout_width="match_parent"
 				android:layout_height="wrap_content"
-				android:orientation="vertical"
+				android:orientation="horizontal"
 				android:padding="16dp">
 
 				<LinearLayout
-					android:layout_width="match_parent"
+					android:layout_width="0dp"
 					android:layout_height="wrap_content"
-					android:orientation="horizontal"
-					android:gravity="center_vertical"
-					android:layout_marginBottom="8dp">
-
-					<ImageView
-						android:layout_width="20dp"
-						android:layout_height="20dp"
-						android:src="@drawable/ic_lock"
-						app:tint="#4CAF50"/>
+					android:layout_weight="1"
+					android:orientation="vertical"
+					android:gravity="center">
 
 					<TextView
 						android:layout_width="wrap_content"
 						android:layout_height="wrap_content"
-						android:layout_marginStart="8dp"
-						android:text="@string/network_mode_title"
-						android:textColor="#FFFFFF"
-						android:textSize="16sp"
-						android:textStyle="bold"/>
+						android:text="@string/network_total_download"
+						android:textColor="#AAAAAA"
+						android:textSize="11sp"/>
+
+					<TextView
+						android:id="@+id/totalDownload"
+						android:layout_width="wrap_content"
+						android:layout_height="wrap_content"
+						android:text="0 B"
+						android:textColor="#26B7F0"
+						android:textSize="18sp"
+						android:textStyle="bold"
+						android:layout_marginTop="4dp"
+						tools:text="1.24 MB"/>
 
 				</LinearLayout>
 
-				<TextView
-					android:id="@+id/networkModeDescription"
-					android:layout_width="match_parent"
+				<LinearLayout
+					android:layout_width="0dp"
 					android:layout_height="wrap_content"
-					android:text="@string/network_mode_description"
-					android:textColor="#CCCCCC"
-					android:textSize="13sp"
-					android:lineSpacingMultiplier="1.3"/>
+					android:layout_weight="1"
+					android:orientation="vertical"
+					android:gravity="center">
+
+					<TextView
+						android:layout_width="wrap_content"
+						android:layout_height="wrap_content"
+						android:text="@string/network_total_upload"
+						android:textColor="#AAAAAA"
+						android:textSize="11sp"/>
+
+					<TextView
+						android:id="@+id/totalUpload"
+						android:layout_width="wrap_content"
+						android:layout_height="wrap_content"
+						android:text="0 B"
+						android:textColor="#4CAF50"
+						android:textSize="18sp"
+						android:textStyle="bold"
+						android:layout_marginTop="4dp"
+						tools:text="456 KB"/>
+
+				</LinearLayout>
+
+				<ImageView
+					android:id="@+id/clearStatsButton"
+					android:layout_width="24dp"
+					android:layout_height="24dp"
+					android:src="@drawable/ic_refresh"
+					android:background="?attr/selectableItemBackgroundBorderless"
+					android:contentDescription="@string/clear"
+					app:tint="#666666"/>
 
 			</LinearLayout>
 

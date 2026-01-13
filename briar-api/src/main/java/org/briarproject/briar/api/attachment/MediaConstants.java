@@ -1,21 +1,17 @@
 package org.briarproject.briar.api.attachment;
 
-import static org.briarproject.bramble.api.sync.SyncConstants.MAX_MESSAGE_BODY_LENGTH;
-
 public interface MediaConstants {
 
-	// Metadata keys for messages
 	String MSG_KEY_CONTENT_TYPE = "contentType";
 	String MSG_KEY_DESCRIPTOR_LENGTH = "descriptorLength";
 
-	/**
-	 * The maximum length of an attachment's content type in UTF-8 bytes.
-	 */
 	int MAX_CONTENT_TYPE_BYTES = 80;
 
-	/**
-	 * The maximum allowed size of image attachments.
-	 * TODO: Different limit for GIFs?
-	 */
-	int MAX_IMAGE_SIZE = MAX_MESSAGE_BODY_LENGTH - 100; // 6 * 1024 * 1024;
+	int CHUNK_SIZE = 512 * 1024;
+	int MAX_CHUNK_COUNT = 100;
+	int MAX_PARALLEL_CHUNKS = 2;
+
+	int ATTACHMENT_DESCRIPTOR_OVERHEAD = 100;
+	int MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024;
+	int MAX_IMAGE_SIZE = MAX_ATTACHMENT_SIZE - ATTACHMENT_DESCRIPTOR_OVERHEAD;
 }

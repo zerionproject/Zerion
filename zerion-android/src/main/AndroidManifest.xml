@@ -149,6 +149,17 @@
 		</activity>
 
 		<activity
+			android:name=".android.conversation.VideoPlayerActivity"
+			android:exported="false"
+			android:parentActivityName="com.professor.zerion.android.conversation.ConversationActivity"
+			android:theme="@style/Theme.AppCompat.NoActionBar"
+			android:configChanges="orientation|screenSize|keyboardHidden">
+			<meta-data
+				android:name="android.support.PARENT_ACTIVITY"
+				android:value="com.professor.zerion.android.conversation.ConversationActivity" />
+		</activity>
+
+		<activity
 			android:name="com.professor.zerion.android.conversation.ChatSettingsActivity"
 			android:exported="false"
 			android:parentActivityName="com.professor.zerion.android.conversation.ConversationActivity"

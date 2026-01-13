@@ -9,8 +9,14 @@ public interface TorConstants {
 	// Transport properties
 	String PROP_ONION_V3 = "onion3";
 
-	int DEFAULT_SOCKS_PORT = 59050;
-	int DEFAULT_CONTROL_PORT = 59051;
+	// Zerion uses different default ports to avoid conflicts with Briar
+	// Briar uses 59050/59051, Zerion uses 59060/59061
+	int DEFAULT_SOCKS_PORT = 59060;
+	int DEFAULT_CONTROL_PORT = 59061;
+
+	// Port range for dynamic port selection if defaults are unavailable
+	int MIN_DYNAMIC_PORT = 59100;
+	int MAX_DYNAMIC_PORT = 59199;
 
 	int CONNECT_TO_PROXY_TIMEOUT = (int) SECONDS.toMillis(5);
 	int EXTRA_CONNECT_TIMEOUT = (int) SECONDS.toMillis(120);

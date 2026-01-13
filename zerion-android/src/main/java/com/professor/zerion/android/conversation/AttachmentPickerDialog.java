@@ -23,6 +23,7 @@ public class AttachmentPickerDialog extends BottomSheetDialogFragment {
 
 	public interface AttachmentPickerListener {
 		void onCameraSelected();
+		void onVideoSelected();
 		void onPhoneGallerySelected();
 		void onVaultGallerySelected();
 		void onPhoneDocumentsSelected();
@@ -59,6 +60,14 @@ public class AttachmentPickerDialog extends BottomSheetDialogFragment {
 		camera.setOnClickListener(v -> {
 			if (listener != null) {
 				listener.onCameraSelected();
+			}
+			dismiss();
+		});
+
+		LinearLayout video = view.findViewById(R.id.attachment_video);
+		video.setOnClickListener(v -> {
+			if (listener != null) {
+				listener.onVideoSelected();
 			}
 			dismiss();
 		});
