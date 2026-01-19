@@ -22,11 +22,11 @@ Builds:
       - apt-get update
       - apt-get install -y openjdk-17-jdk-headless
     gradle:
-      - official
+      - officialRelease
+    gradleprops:
+      - fdroid=true
     rm:
       - briar-android
-    prebuild:
-      - sed -i -e '/keystoreProperties/d' build.gradle
 
 AntiFeatures:
   NonFreeNet:
