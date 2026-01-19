@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content"
+	android:background="@drawable/bg_donation_dialog"
+	android:paddingTop="@dimen/margin_xlarge"
+	android:paddingBottom="@dimen/margin_large"
+	android:paddingHorizontal="@dimen/margin_large">
+
+	<!-- Heart icon with glow effect -->
+	<ImageView
+		android:id="@+id/donationIcon"
+		android:layout_width="80dp"
+		android:layout_height="80dp"
+		android:src="@drawable/ic_donation_heart"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toTopOf="parent"
+		tools:ignore="ContentDescription" />
+
+	<!-- Title -->
+	<TextView
+		android:id="@+id/donationTitle"
+		android:layout_width="0dp"
+		android:layout_height="wrap_content"
+		android:layout_marginTop="@dimen/margin_large"
+		android:fontFamily="sans-serif-medium"
+		android:gravity="center"
+		android:text="@string/donation_title"
+		android:textColor="@android:color/white"
+		android:textSize="22sp"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toBottomOf="@id/donationIcon" />
+
+	<!-- Subtitle -->
+	<TextView
+		android:id="@+id/donationSubtitle"
+		android:layout_width="0dp"
+		android:layout_height="wrap_content"
+		android:layout_marginTop="@dimen/margin_medium"
+		android:gravity="center"
+		android:lineSpacingExtra="4dp"
+		android:text="@string/donation_subtitle"
+		android:textColor="@color/zerion_text_secondary"
+		android:textSize="@dimen/text_size_medium"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toBottomOf="@id/donationTitle" />
+
+	<!-- Donate button - Primary action -->
+	<com.google.android.material.button.MaterialButton
+		android:id="@+id/buttonDonate"
+		style="@style/Widget.Material3.Button"
+		android:layout_width="0dp"
+		android:layout_height="52dp"
+		android:layout_marginTop="@dimen/margin_xlarge"
+		android:backgroundTint="@color/zerion_cyan"
+		android:fontFamily="sans-serif-medium"
+		android:text="@string/donation_button_donate"
+		android:textAllCaps="false"
+		android:textColor="@android:color/white"
+		android:textSize="@dimen/text_size_medium"
+		app:cornerRadius="12dp"
+		app:icon="@drawable/ic_donation_heart_small"
+		app:iconGravity="textStart"
+		app:iconPadding="@dimen/margin_medium"
+		app:iconTint="@android:color/white"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toBottomOf="@id/donationSubtitle" />
+
+	<!-- Later button - Secondary action -->
+	<com.google.android.material.button.MaterialButton
+		android:id="@+id/buttonLater"
+		style="@style/Widget.Material3.Button.TextButton"
+		android:layout_width="wrap_content"
+		android:layout_height="48dp"
+		android:layout_marginTop="@dimen/margin_small"
+		android:fontFamily="sans-serif-medium"
+		android:text="@string/donation_button_later"
+		android:textAllCaps="false"
+		android:textColor="@color/zerion_text_secondary"
+		android:textSize="@dimen/text_size_small"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toBottomOf="@id/buttonDonate"
+		app:rippleColor="@color/zerion_card_bg" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
