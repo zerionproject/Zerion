@@ -3,10 +3,11 @@ apply plugin: 'com.android.application'
 // apply plugin: 'witness'
 // apply from: 'witness.gradle'
 
-// Load keystore properties for signing
+// Load keystore properties for signing (skip for F-Droid builds)
+def isFdroidBuild = project.hasProperty('fdroid')
 def keystorePropertiesFile = rootProject.file("keystore.properties")
 def keystoreProperties = new Properties()
-if (keystorePropertiesFile.exists()) {
+if (!isFdroidBuild && keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
 
@@ -36,10 +37,10 @@ android {
         buildConfig = true
     }
 
-    // Signing configuration for release builds
+    // Signing configuration for release builds (skipped for F-Droid builds)
     signingConfigs {
         release {
-            if (keystorePropertiesFile.exists()) {
+            if (!isFdroidBuild && keystorePropertiesFile.exists()) {
                 storeFile file(keystoreProperties['storeFile'])
                 storePassword keystoreProperties['storePassword']
                 keyAlias keystoreProperties['keyAlias']
@@ -58,11 +59,22 @@ android {
         buildConfigField "String", "TorVersion", "\"$tor_version\""
 
         vectorDrawables.useSupportLibrary = true
-        buildConfigField "String", "GitHash",
-            "\"${getStdout(['git', 'rev-parse', '--short=7', 'HEAD'], 'No commit hash')}\""
-        def now = (long) (System.currentTimeMillis() / 1000)
-        buildConfigField "Long", "BuildTimestamp",
-            "${getStdout(['git', 'log', '-n', '1', '--format=%ct'], now)}000L"
+
+        // For reproducible builds (F-Droid): use -Pfdroid flag to disable dynamic values
+        // Usage: ./gradlew assembleRelease -Pfdroid
+        def isFdroid = project.hasProperty('fdroid')
+        if (isFdroid) {
+            // Static values for reproducible F-Droid builds
+            buildConfigField "String", "GitHash", "\"release\""
+            buildConfigField "Long", "BuildTimestamp", "0L"
+        } else {
+            // Dynamic values for development builds
+            buildConfigField "String", "GitHash",
+                "\"${getStdout(['git', 'rev-parse', '--short=7', 'HEAD'], 'No commit hash')}\""
+            def now = (long) (System.currentTimeMillis() / 1000)
+            buildConfigField "Long", "BuildTimestamp",
+                "${getStdout(['git', 'log', '-n', '1', '--format=%ct'], now)}000L"
+        }
         testInstrumentationRunner 'com.professor.zerion.android.BriarTestRunner'
         testInstrumentationRunnerArguments disableAnalytics: 'true'
         multiDexEnabled true
@@ -83,7 +95,10 @@ android {
             minifyEnabled true
             crunchPngs false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
-            signingConfig signingConfigs.release
+            // Only use signing config for non-F-Droid builds (F-Droid signs with their own key)
+            if (!isFdroidBuild) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 
