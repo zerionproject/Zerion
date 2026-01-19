@@ -4,6 +4,12 @@
 	<string name="app_name" translatable="false">Zerion</string>
 	<string name="app_package" translatable="false">com.professor.zerion</string>
 
+	<!-- Donation Dialog -->
+	<string name="donation_title">Do you like the app?</string>
+	<string name="donation_subtitle">Your support helps us keep Zerion free, private, and secure for everyone. Every contribution makes a difference.</string>
+	<string name="donation_button_donate">Support Zerion</string>
+	<string name="donation_button_later">Maybe Later</string>
+
 	<!-- Setup -->
 	<string name="setup_title">Welcome to Zerion</string>
 	<string name="setup_name_explanation">Your nickname will be shown next to any content you post. You can\'t change it after creating your account.</string>

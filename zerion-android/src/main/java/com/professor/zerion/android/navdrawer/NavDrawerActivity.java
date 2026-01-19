@@ -28,9 +28,11 @@ import com.professor.zerion.android.logout.SignOutFragment;
 import com.professor.zerion.android.privategroup.creation.CreateGroupActivity;
 import com.professor.zerion.android.privategroup.list.GroupListFragment;
 import com.professor.zerion.android.settings.SettingsActivity;
+import com.professor.zerion.android.donation.DonationManager;
 import com.professor.zerion.android.vault.VaultManager;
 import com.professor.zerion.android.vault.ui.VaultDashboardFragment;
 import com.professor.zerion.android.view.AuthorView;
+import com.professor.zerion.android.widget.DonationDialogFragment;
 import de.hdodenhof.circleimageview.CircleImageView;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
@@ -86,6 +88,9 @@ public class NavDrawerActivity extends ZerionActivity implements
 
 	@Inject
 	VaultManager vaultManager;
+
+	@Inject
+	DonationManager donationManager;
 
 	private MaterialCardView profileIcon;
 	private CircleImageView profileAvatar;
@@ -348,6 +353,25 @@ public class NavDrawerActivity extends ZerionActivity implements
 		if (IS_DEBUG_BUILD) {
 			navDrawerViewModel.checkExpiryWarning();
 		}
+		// Check if we should show donation dialog (randomly once a month)
+		checkAndShowDonationDialog();
+	}
+
+	private void checkAndShowDonationDialog() {
+		if (donationManager.shouldShowDonationDialog()) {
+			// Delay slightly to let the UI settle
+			getWindow().getDecorView().postDelayed(() -> {
+				if (!isFinishing() && !isDestroyed()) {
+					showDonationDialog();
+				}
+			}, 1500);
+		}
+	}
+
+	private void showDonationDialog() {
+		DonationDialogFragment dialog = DonationDialogFragment.newInstance();
+		dialog.show(getSupportFragmentManager(), DonationDialogFragment.TAG);
+		donationManager.onDialogShown();
 	}
 
 	@Override

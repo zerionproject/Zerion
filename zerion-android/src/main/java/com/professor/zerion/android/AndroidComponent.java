@@ -192,6 +192,8 @@ public interface AndroidComponent
 
 	com.professor.zerion.android.network.TorStatusMonitor torStatusMonitor();
 
+	com.professor.zerion.android.donation.DonationManager donationManager();
+
 	@AppModule.UiPrefs
 	SharedPreferences uiPreferences();
 
