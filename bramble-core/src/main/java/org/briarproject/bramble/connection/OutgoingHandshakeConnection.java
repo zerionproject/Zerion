@@ -35,10 +35,12 @@ class OutgoingHandshakeConnection extends HandshakeConnection
 			ContactExchangeManager contactExchangeManager,
 			ConnectionManager connectionManager,
 			PendingContactId pendingContactId,
-			TransportId transportId, DuplexTransportConnection connection) {
+			TransportId transportId, DuplexTransportConnection connection,
+			boolean classical) {
 		super(keyManager, connectionRegistry, streamReaderFactory,
 				streamWriterFactory, handshakeManager, contactExchangeManager,
-				connectionManager, pendingContactId, transportId, connection);
+				connectionManager, pendingContactId, transportId, connection,
+				classical);
 	}
 
 	@Override
@@ -47,7 +49,6 @@ class OutgoingHandshakeConnection extends HandshakeConnection
 		StreamContext ctxOut =
 				allocateStreamContext(pendingContactId, transportId);
 		if (ctxOut == null) {
-			LOG.warning("Could not allocate stream context");
 			onError();
 			return;
 		}
@@ -66,25 +67,17 @@ class OutgoingHandshakeConnection extends HandshakeConnection
 		StreamContext ctxIn = recogniseTag(reader, transportId);
 		// Unrecognised tags are suspicious in this case
 		if (ctxIn == null) {
-			LOG.warning("Unrecognised tag for returning stream");
 			onError();
 			return;
 		}
 		// Check that the stream comes from the expected pending contact
 		PendingContactId inPendingContactId = ctxIn.getPendingContactId();
-		if (inPendingContactId == null) {
-			LOG.warning("Expected rendezvous tag, got contact tag");
-			onError();
-			return;
-		}
-		if (!inPendingContactId.equals(pendingContactId)) {
-			LOG.warning("Wrong pending contact ID for returning stream");
+		if (inPendingContactId == null || !inPendingContactId.equals(pendingContactId)) {
 			onError();
 			return;
 		}
 		// Close the connection if it's redundant
 		if (!connectionRegistry.registerConnection(pendingContactId)) {
-			LOG.info("Redundant rendezvous connection");
 			onError();
 			return;
 		}
@@ -94,9 +87,10 @@ class OutgoingHandshakeConnection extends HandshakeConnection
 					reader.getInputStream(), ctxIn);
 			HandshakeResult result =
 					handshakeManager.handshake(pendingContactId, in, out);
+			// Auto-verify contacts after successful handshake (QR verification removed)
 			Contact contact = contactExchangeManager.exchangeContacts(
 					pendingContactId, connection, result.getMasterKey(),
-					result.isAlice(), false);
+					result.isAlice(), true, classical);
 			connectionRegistry.unregisterConnection(pendingContactId, true);
 			// Reuse the connection as a transport connection
 			connectionManager.manageOutgoingConnection(contact.getId(),

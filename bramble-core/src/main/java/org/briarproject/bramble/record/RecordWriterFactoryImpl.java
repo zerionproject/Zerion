@@ -9,6 +9,17 @@ class RecordWriterFactoryImpl implements RecordWriterFactory {
 
 	@Override
 	public RecordWriter createRecordWriter(OutputStream out) {
+		// Default to extended format for Zerion↔Zerion communication.
+		// Classical format should be explicitly requested for Briar compatibility.
 		return new RecordWriterImpl(out);
+	}
+
+	@Override
+	public RecordWriter createRecordWriter(OutputStream out, boolean classical) {
+		if (classical) {
+			return new ClassicalRecordWriterImpl(out);
+		} else {
+			return new RecordWriterImpl(out);
+		}
 	}
 }

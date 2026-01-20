@@ -37,19 +37,20 @@ interface TransportKeyManager {
 	boolean canSendOutgoingStreams(PendingContactId p);
 
 	@Nullable
-	StreamContext getStreamContext(Transaction txn, ContactId c)
-			throws DbException;
+	StreamContext getStreamContext(Transaction txn, ContactId c,
+			boolean classical) throws DbException;
 
 	@Nullable
-	StreamContext getStreamContext(Transaction txn, PendingContactId p)
-			throws DbException;
+	StreamContext getStreamContext(Transaction txn, PendingContactId p,
+			boolean classical) throws DbException;
 
 	@Nullable
-	StreamContext getStreamContext(Transaction txn, byte[] tag)
-			throws DbException;
+	StreamContext getStreamContext(Transaction txn, byte[] tag,
+			boolean classical) throws DbException;
 
 	@Nullable
-	StreamContext getStreamContextOnly(Transaction txn, byte[] tag);
+	StreamContext getStreamContextOnly(Transaction txn, byte[] tag,
+			boolean classical);
 
 	void markTagAsRecognised(Transaction txn, byte[] tag) throws DbException;
 

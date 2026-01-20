@@ -28,10 +28,12 @@ public interface ContactExchangeManager {
 	 * as a contact, replacing the given pending contact.
 	 *
 	 * @param alice Whether the local peer takes the role of Alice
+	 * @param classical If true, use classical (Briar-compatible) record format
 	 * @return The newly added contact
 	 * @throws ContactExistsException If the contact already exists
 	 */
 	Contact exchangeContacts(PendingContactId p, DuplexTransportConnection conn,
-			SecretKey masterKey, boolean alice, boolean verified)
+			SecretKey masterKey, boolean alice, boolean verified,
+			boolean classical)
 			throws IOException, DbException;
 }

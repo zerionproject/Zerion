@@ -16,10 +16,11 @@ import java.security.GeneralSecurityException;
 import java.util.Locale;
 
 import static java.lang.System.arraycopy;
-import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.BASE32_LINK_BYTES;
+import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.BASE32_LINK_BYTES_CLASSICAL;
 import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.FORMAT_VERSION;
+import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.FORMAT_VERSION_CLASSICAL;
 import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.ID_LABEL;
-import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.RAW_LINK_BYTES;
+import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.RAW_LINK_BYTES_CLASSICAL;
 import static org.briarproject.bramble.api.crypto.CryptoConstants.KEY_TYPE_AGREEMENT;
 import static org.briarproject.bramble.api.crypto.CryptoConstants.KEY_TYPE_SIGNATURE;
 import static org.briarproject.bramble.api.crypto.CryptoConstants.MAX_AGREEMENT_PUBLIC_KEY_BYTES;
@@ -80,8 +81,23 @@ public class PendingContactFactoryImplTest extends BrambleMockTestCase {
 	}
 
 	@Test
-	public void testAcceptsValidLinkWithPrefix() throws Exception {
+	public void testAcceptsValidLinkWithBriarPrefix() throws Exception {
 		testAcceptsValidLink("briar://" + encodeLink());
+	}
+
+	@Test
+	public void testAcceptsValidLinkWithZerionPrefix() throws Exception {
+		testAcceptsValidLink("zerion://" + encodeLink());
+	}
+
+	@Test
+	public void testAcceptsValidLinkWithQueryParams() throws Exception {
+		testAcceptsValidLink("briar://" + encodeLink() + "?foo=bar");
+	}
+
+	@Test
+	public void testAcceptsValidLinkWithZerionPrefixAndQueryParams() throws Exception {
+		testAcceptsValidLink("zerion://" + encodeLink() + "?foo=bar&baz=qux");
 	}
 
 	@Test
@@ -90,8 +106,13 @@ public class PendingContactFactoryImplTest extends BrambleMockTestCase {
 	}
 
 	@Test
-	public void testAcceptsValidLinkWithPrefixAndRubbish() throws Exception {
+	public void testAcceptsValidLinkWithBriarPrefixAndRubbish() throws Exception {
 		testAcceptsValidLink("before briar://" + encodeLink() + " after");
+	}
+
+	@Test
+	public void testAcceptsValidLinkWithZerionPrefixAndRubbish() throws Exception {
+		testAcceptsValidLink("before zerion://" + encodeLink() + " after");
 	}
 
 	private void testAcceptsValidLink(String link) throws Exception {
@@ -167,16 +188,16 @@ public class PendingContactFactoryImplTest extends BrambleMockTestCase {
 	}
 
 	private String encodeLink() {
-		return encodeLink(FORMAT_VERSION);
+		return encodeLink(FORMAT_VERSION_CLASSICAL);
 	}
 
 	private String encodeLink(int formatVersion) {
-		byte[] rawLink = new byte[RAW_LINK_BYTES];
+		byte[] rawLink = new byte[RAW_LINK_BYTES_CLASSICAL];
 		rawLink[0] = (byte) formatVersion;
 		byte[] publicKeyBytes = publicKey.getEncoded();
 		arraycopy(publicKeyBytes, 0, rawLink, 1, publicKeyBytes.length);
 		String base32 = Base32.encode(rawLink).toLowerCase(Locale.US);
-		assertEquals(BASE32_LINK_BYTES, base32.length());
+		assertEquals(BASE32_LINK_BYTES_CLASSICAL, base32.length());
 		return base32;
 	}
 }

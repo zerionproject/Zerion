@@ -37,9 +37,14 @@ public interface ConnectionManager {
 	/**
 	 * Manages an incoming handshake connection from a pending contact over a
 	 * duplex transport.
+	 *
+	 * @param p the pending contact ID
+	 * @param t the transport ID
+	 * @param d the duplex transport connection
+	 * @param classical if true, use classical (Briar-compatible) record format
 	 */
 	void manageIncomingConnection(PendingContactId p, TransportId t,
-			DuplexTransportConnection d);
+			DuplexTransportConnection d, boolean classical);
 
 	/**
 	 * Manages an outgoing connection to a contact over a simplex transport.
@@ -64,9 +69,14 @@ public interface ConnectionManager {
 	/**
 	 * Manages an outgoing handshake connection to a pending contact over a
 	 * duplex transport.
+	 *
+	 * @param p the pending contact ID
+	 * @param t the transport ID
+	 * @param d the duplex transport connection
+	 * @param classical if true, use classical (Briar-compatible) record format
 	 */
 	void manageOutgoingConnection(PendingContactId p, TransportId t,
-			DuplexTransportConnection d);
+			DuplexTransportConnection d, boolean classical);
 
 	/**
 	 * An interface for controlling whether a tag should be marked as

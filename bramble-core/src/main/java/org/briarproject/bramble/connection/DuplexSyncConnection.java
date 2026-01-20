@@ -104,6 +104,6 @@ abstract class DuplexSyncConnection extends SyncConnection
 		ContactId c = requireNonNull(ctx.getContactId());
 		return syncSessionFactory.createDuplexOutgoingSession(c,
 				ctx.getTransportId(), w.getMaxLatency(), w.getMaxIdleTime(),
-				streamWriter, priority);
+				streamWriter, priority, ctx.isClassical());
 	}
 }

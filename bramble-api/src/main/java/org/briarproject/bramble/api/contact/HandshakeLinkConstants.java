@@ -81,11 +81,13 @@ public interface HandshakeLinkConstants {
 	int RAW_LINK_BYTES = RAW_LINK_BYTES_HYBRID;
 
 	/**
-	 * Regular expression for matching handshake links, including or excluding
-	 * the 'zerion://' prefix. Supports both classical and hybrid format lengths.
+	 * Regular expression for matching handshake links.
+	 * Accepts both 'zerion://' and 'briar://' prefixes for interoperability,
+	 * as well as bare base32 strings without any prefix.
+	 * Also handles optional query parameters (e.g., ?foo=bar).
 	 */
 	Pattern LINK_REGEX =
-			Pattern.compile("(zerion://)?([a-z2-7]{" + BASE32_LINK_BYTES + "})");
+			Pattern.compile("(?:(?:zerion|briar)://)?([a-z2-7]{" + BASE32_LINK_BYTES + "})(?:\\?.*)?");
 
 	// ==================== Labels ====================
 

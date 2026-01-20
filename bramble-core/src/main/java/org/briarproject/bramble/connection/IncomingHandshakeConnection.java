@@ -34,10 +34,12 @@ class IncomingHandshakeConnection extends HandshakeConnection
 			ContactExchangeManager contactExchangeManager,
 			ConnectionManager connectionManager,
 			PendingContactId pendingContactId,
-			TransportId transportId, DuplexTransportConnection connection) {
+			TransportId transportId, DuplexTransportConnection connection,
+			boolean classical) {
 		super(keyManager, connectionRegistry, streamReaderFactory,
 				streamWriterFactory, handshakeManager, contactExchangeManager,
-				connectionManager, pendingContactId, transportId, connection);
+				connectionManager, pendingContactId, transportId, connection,
+				classical);
 	}
 
 	@Override
@@ -45,13 +47,11 @@ class IncomingHandshakeConnection extends HandshakeConnection
 		// Read and recognise the tag
 		StreamContext ctxIn = recogniseTag(reader, transportId);
 		if (ctxIn == null) {
-			LOG.info("Unrecognised tag");
 			onError(false);
 			return;
 		}
 		PendingContactId inPendingContactId = ctxIn.getPendingContactId();
 		if (inPendingContactId == null) {
-			LOG.warning("Expected rendezvous tag, got contact tag");
 			onError(true);
 			return;
 		}
@@ -59,13 +59,11 @@ class IncomingHandshakeConnection extends HandshakeConnection
 		StreamContext ctxOut =
 				allocateStreamContext(pendingContactId, transportId);
 		if (ctxOut == null) {
-			LOG.warning("Could not allocate stream context");
 			onError(true);
 			return;
 		}
 		// Close the connection if it's redundant
 		if (!connectionRegistry.registerConnection(pendingContactId)) {
-			LOG.info("Redundant rendezvous connection");
 			onError(true);
 			return;
 		}
@@ -79,8 +77,10 @@ class IncomingHandshakeConnection extends HandshakeConnection
 			out.getOutputStream().flush();
 			HandshakeResult result =
 					handshakeManager.handshake(pendingContactId, in, out);
+			// Auto-verify contacts after successful handshake (QR verification removed)
 			contactExchangeManager.exchangeContacts(pendingContactId,
-					connection, result.getMasterKey(), result.isAlice(), false);
+					connection, result.getMasterKey(), result.isAlice(), true,
+					classical);
 			connectionRegistry.unregisterConnection(pendingContactId, true);
 			// Reuse the connection as a transport connection
 			connectionManager.manageIncomingConnection(transportId, connection);
