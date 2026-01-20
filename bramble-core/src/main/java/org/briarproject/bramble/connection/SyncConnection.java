@@ -59,6 +59,6 @@ class SyncConnection extends Connection {
 				r.getInputStream(), ctx);
 		ContactId c = requireNonNull(ctx.getContactId());
 		return syncSessionFactory
-				.createIncomingSession(c, streamReader, handler);
+				.createIncomingSession(c, streamReader, handler, ctx.isClassical());
 	}
 }

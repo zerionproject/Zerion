@@ -90,10 +90,11 @@ class ConnectionManagerImpl implements ConnectionManager {
 
 	@Override
 	public void manageIncomingConnection(PendingContactId p, TransportId t,
-			DuplexTransportConnection d) {
+			DuplexTransportConnection d, boolean classical) {
 		ioExecutor.execute(new IncomingHandshakeConnection(keyManager,
 				connectionRegistry, streamReaderFactory, streamWriterFactory,
-				handshakeManager, contactExchangeManager, this, p, t, d));
+				handshakeManager, contactExchangeManager, this, p, t, d,
+				classical));
 	}
 
 	@Override
@@ -124,9 +125,10 @@ class ConnectionManagerImpl implements ConnectionManager {
 
 	@Override
 	public void manageOutgoingConnection(PendingContactId p, TransportId t,
-			DuplexTransportConnection d) {
+			DuplexTransportConnection d, boolean classical) {
 		ioExecutor.execute(new OutgoingHandshakeConnection(keyManager,
 				connectionRegistry, streamReaderFactory, streamWriterFactory,
-				handshakeManager, contactExchangeManager, this, p, t, d));
+				handshakeManager, contactExchangeManager, this, p, t, d,
+				classical));
 	}
 }

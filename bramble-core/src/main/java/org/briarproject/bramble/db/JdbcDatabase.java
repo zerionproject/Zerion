@@ -103,7 +103,7 @@ import static org.briarproject.bramble.util.LogUtils.now;
 abstract class JdbcDatabase implements Database<Connection> {
 
 	// Package access for testing
-	static final int CODE_SCHEMA_VERSION = 53;
+	static final int CODE_SCHEMA_VERSION = 54;
 
 	/**
 	 * The maximum number of idle connections to keep open.
@@ -508,7 +508,8 @@ abstract class JdbcDatabase implements Database<Connection> {
 				new Migration49_50(),
 				new Migration50_51(),
 				new Migration51_52(),
-				new Migration52_53()
+				new Migration52_53(),
+				new Migration53_54()
 		);
 	}
 

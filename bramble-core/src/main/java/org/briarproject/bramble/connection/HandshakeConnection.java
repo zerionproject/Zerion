@@ -32,6 +32,12 @@ abstract class HandshakeConnection extends Connection {
 	final DuplexTransportConnection connection;
 	final TransportConnectionReader reader;
 	final TransportConnectionWriter writer;
+	/**
+	 * If true, use classical (Briar-compatible) record format with 4-byte
+	 * header and uint16 length. If false, use extended format with 6-byte
+	 * header and uint32 length for post-quantum payloads.
+	 */
+	final boolean classical;
 
 	HandshakeConnection(KeyManager keyManager,
 			ConnectionRegistry connectionRegistry,
@@ -41,7 +47,8 @@ abstract class HandshakeConnection extends Connection {
 			ContactExchangeManager contactExchangeManager,
 			ConnectionManager connectionManager,
 			PendingContactId pendingContactId,
-			TransportId transportId, DuplexTransportConnection connection) {
+			TransportId transportId, DuplexTransportConnection connection,
+			boolean classical) {
 		super(keyManager, connectionRegistry, streamReaderFactory,
 				streamWriterFactory);
 		this.handshakeManager = handshakeManager;
@@ -50,6 +57,7 @@ abstract class HandshakeConnection extends Connection {
 		this.pendingContactId = pendingContactId;
 		this.transportId = transportId;
 		this.connection = connection;
+		this.classical = classical;
 		reader = connection.getReader();
 		writer = connection.getWriter();
 	}

@@ -203,11 +203,12 @@ public class HandshakeManagerImplTest extends BrambleMockTestCase {
 			oneOf(transportCrypto).isAlice(theirStaticPublicKey,
 					ourStaticKeyPair);
 			will(returnValue(alice));
-			oneOf(recordReaderFactory).createRecordReader(in);
+			// Classical handshake uses classical record format (true)
+			oneOf(recordReaderFactory).createRecordReader(in, true);
 			will(returnValue(recordReader));
 			oneOf(streamWriter).getOutputStream();
 			will(returnValue(out));
-			oneOf(recordWriterFactory).createRecordWriter(out);
+			oneOf(recordWriterFactory).createRecordWriter(out, true);
 			will(returnValue(recordWriter));
 			oneOf(handshakeCrypto).generateEphemeralKeyPair();
 			will(returnValue(ourEphemeralKeyPair));

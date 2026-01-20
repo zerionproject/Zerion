@@ -53,19 +53,20 @@ class SyncSessionFactoryImpl implements SyncSessionFactory {
 
 	@Override
 	public SyncSession createIncomingSession(ContactId c, InputStream in,
-			PriorityHandler handler) {
+			PriorityHandler handler, boolean classical) {
 		SyncRecordReader recordReader =
-				recordReaderFactory.createRecordReader(in);
+				recordReaderFactory.createRecordReader(in, classical);
 		return new IncomingSession(db, dbExecutor, eventBus, c, recordReader,
 				handler);
 	}
 
 	@Override
 	public SyncSession createSimplexOutgoingSession(ContactId c, TransportId t,
-			long maxLatency, boolean eager, StreamWriter streamWriter) {
+			long maxLatency, boolean eager, StreamWriter streamWriter,
+			boolean classical) {
 		OutputStream out = streamWriter.getOutputStream();
 		SyncRecordWriter recordWriter =
-				recordWriterFactory.createRecordWriter(out);
+				recordWriterFactory.createRecordWriter(out, classical);
 		if (eager) {
 			return new EagerSimplexOutgoingSession(db, eventBus, c, t,
 					maxLatency, streamWriter, recordWriter);
@@ -78,11 +79,11 @@ class SyncSessionFactoryImpl implements SyncSessionFactory {
 	@Override
 	public SyncSession createSimplexOutgoingSession(ContactId c, TransportId t,
 			long maxLatency, StreamWriter streamWriter,
-			OutgoingSessionRecord sessionRecord) {
+			OutgoingSessionRecord sessionRecord, boolean classical) {
 		// Mailbox feature removed - use standard simplex session instead
 		OutputStream out = streamWriter.getOutputStream();
 		SyncRecordWriter recordWriter =
-				recordWriterFactory.createRecordWriter(out);
+				recordWriterFactory.createRecordWriter(out, classical);
 		return new SimplexOutgoingSession(db, eventBus, c, t,
 				maxLatency, streamWriter, recordWriter);
 	}
@@ -90,10 +91,10 @@ class SyncSessionFactoryImpl implements SyncSessionFactory {
 	@Override
 	public SyncSession createDuplexOutgoingSession(ContactId c, TransportId t,
 			long maxLatency, int maxIdleTime, StreamWriter streamWriter,
-			@Nullable Priority priority) {
+			@Nullable Priority priority, boolean classical) {
 		OutputStream out = streamWriter.getOutputStream();
 		SyncRecordWriter recordWriter =
-				recordWriterFactory.createRecordWriter(out);
+				recordWriterFactory.createRecordWriter(out, classical);
 		return new DuplexOutgoingSession(db, dbExecutor, eventBus, clock, c, t,
 				maxLatency, maxIdleTime, streamWriter, recordWriter, priority);
 	}

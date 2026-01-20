@@ -9,8 +9,10 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.OutputStream;
 
+import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
 
+@Immutable
 @NotNullByDefault
 class SyncRecordWriterFactoryImpl implements SyncRecordWriterFactory {
 
@@ -26,7 +28,14 @@ class SyncRecordWriterFactoryImpl implements SyncRecordWriterFactory {
 
 	@Override
 	public SyncRecordWriter createRecordWriter(OutputStream out) {
+		// Default to extended format for Zerion↔Zerion communication
 		RecordWriter writer = recordWriterFactory.createRecordWriter(out);
+		return new SyncRecordWriterImpl(messageFactory, writer);
+	}
+
+	@Override
+	public SyncRecordWriter createRecordWriter(OutputStream out, boolean classical) {
+		RecordWriter writer = recordWriterFactory.createRecordWriter(out, classical);
 		return new SyncRecordWriterImpl(messageFactory, writer);
 	}
 }

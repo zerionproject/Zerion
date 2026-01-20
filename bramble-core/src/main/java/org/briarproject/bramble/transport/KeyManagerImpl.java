@@ -214,32 +214,80 @@ class KeyManagerImpl implements KeyManager, Service, EventListener {
 	public StreamContext getStreamContext(ContactId c, TransportId t)
 			throws DbException {
 		return withManager(t, m ->
-				db.transactionWithNullableResult(false, txn ->
-						m.getStreamContext(txn, c)));
+				db.transactionWithNullableResult(false, txn -> {
+					// Look up the contact to determine if it's classical
+					org.briarproject.bramble.api.contact.Contact contact =
+							db.getContact(txn, c);
+					boolean classical = contact.isClassical();
+					return m.getStreamContext(txn, c, classical);
+				}));
 	}
 
 	@Override
 	public StreamContext getStreamContext(PendingContactId p, TransportId t)
 			throws DbException {
 		return withManager(t, m ->
-				db.transactionWithNullableResult(false, txn ->
-						m.getStreamContext(txn, p)));
+				db.transactionWithNullableResult(false, txn -> {
+					// Look up the pending contact to determine if it's classical
+					org.briarproject.bramble.api.contact.PendingContact pending =
+							db.getPendingContact(txn, p);
+					// classical = !postQuantum
+					boolean classical = !pending.isPostQuantum();
+					return m.getStreamContext(txn, p, classical);
+				}));
 	}
 
 	@Override
 	public StreamContext getStreamContext(TransportId t, byte[] tag)
 			throws DbException {
 		return withManager(t, m ->
-				db.transactionWithNullableResult(false, txn ->
-						m.getStreamContext(txn, tag)));
+				db.transactionWithNullableResult(false, txn -> {
+					// For incoming streams, we need to look up the contact/pending
+					// contact to determine the classical flag. First get the context
+					// without the classical flag to find the contact ID.
+					StreamContext tempCtx = m.getStreamContextOnly(txn, tag, false);
+					if (tempCtx == null) return null;
+
+					boolean classical;
+					if (tempCtx.getContactId() != null) {
+						org.briarproject.bramble.api.contact.Contact contact =
+								db.getContact(txn, tempCtx.getContactId());
+						classical = contact.isClassical();
+					} else if (tempCtx.getPendingContactId() != null) {
+						org.briarproject.bramble.api.contact.PendingContact pending =
+								db.getPendingContact(txn, tempCtx.getPendingContactId());
+						classical = !pending.isPostQuantum();
+					} else {
+						classical = false; // Default to extended format
+					}
+					return m.getStreamContext(txn, tag, classical);
+				}));
 	}
 
 	@Override
 	public StreamContext getStreamContextOnly(TransportId t, byte[] tag)
 			throws DbException {
 		return withManager(t, m ->
-				db.transactionWithNullableResult(false, txn ->
-						m.getStreamContextOnly(txn, tag)));
+				db.transactionWithNullableResult(false, txn -> {
+					// For incoming streams, we need to look up the contact/pending
+					// contact to determine the classical flag. First get a temp context.
+					StreamContext tempCtx = m.getStreamContextOnly(txn, tag, false);
+					if (tempCtx == null) return null;
+
+					boolean classical;
+					if (tempCtx.getContactId() != null) {
+						org.briarproject.bramble.api.contact.Contact contact =
+								db.getContact(txn, tempCtx.getContactId());
+						classical = contact.isClassical();
+					} else if (tempCtx.getPendingContactId() != null) {
+						org.briarproject.bramble.api.contact.PendingContact pending =
+								db.getPendingContact(txn, tempCtx.getPendingContactId());
+						classical = !pending.isPostQuantum();
+					} else {
+						classical = false; // Default to extended format
+					}
+					return m.getStreamContextOnly(txn, tag, classical);
+				}));
 	}
 
 	@Override
