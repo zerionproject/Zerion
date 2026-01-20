@@ -1,11 +1,32 @@
-Briar is a messaging app designed for activists, journalists, and anyone else who needs a safe, easy and robust way to communicate. Unlike traditional messaging apps, Briar doesn't rely on a central server - messages are synchronized directly between the users' devices. If the Internet's down, Briar can sync via Bluetooth, Wi-Fi or memory cards, keeping the information flowing in a crisis. If the Internet's up, Briar can sync via the Tor network, protecting users and their relationships from surveillance.
+Zerion is a secure messaging app and encrypted vault designed for people who need private, anonymous, censorship-resistant communication.
 
-The app features private messages, groups and forums as well as blogs. Support for the Tor network is built into the app. Everything you do in Briar is only stored on your device unless you decide to share it with other users.
+Unlike traditional messengers, Zerion uses no servers, no accounts, no phone numbers, and no cloud services. All communication flows directly between devices using the Tor network, protecting users from surveillance, metadata collection, and IP exposure.
 
-There are no advertisements and no tracking. The source code of the app is completely open for anyone to inspect and has already been professionally audited. All releases of Briar are reproducible, making it possible to verify that the published source code exactly matches the app published here. Development is done by a small non-profit team.
+MESSAGING
+• End-to-end encrypted private chats and groups
+• Disappearing messages with auto-delete timers
+• Voice notes
+• P2P voice calls over Tor hidden services
+• Image and file attachments
+• Metadata removal
 
-Privacy policy: https://briarproject.org/privacy
+ZVAULT - ENCRYPTED VAULT
+• Hardware-backed encrypted storage (StrongBox/Keystore)
+• Store passwords, notes, photos, videos, and documents
+• Argon2id key derivation
+• AES-256-GCM encryption
+• Biometric unlock support
 
-User manual: https://briarproject.org/manual
+POST-QUANTUM CRYPTOGRAPHY
+• Hybrid ML-KEM-768 + X25519 key exchange
+• ML-DSA-65 + Ed25519 signatures
+• Downgrade attack protection - PQ contacts stay PQ-secure forever
 
-Source code: https://code.briarproject.org/briar/briar
+PRIVACY & SECURITY
+• No phone number, email, or registration required
+• No central servers - direct peer-to-peer communication
+• Tor-only networking - your IP is never exposed to contacts
+• Briar compatibility mode for communication with Briar users
+• Anti-forensics protection against mobile extraction tools
+
+Zerion collects zero personal data. Not by policy — by cryptographic design.
