@@ -1,1 +1,1 @@
-Secure messaging, anywhere.
+Post-quantum secure messenger and encrypted vault over Tor
