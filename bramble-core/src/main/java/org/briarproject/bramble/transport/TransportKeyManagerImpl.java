@@ -351,21 +351,21 @@ class TransportKeyManagerImpl implements TransportKeyManager {
 	}
 
 	@Override
-	public StreamContext getStreamContext(Transaction txn, ContactId c)
-			throws DbException {
-		return getStreamContext(txn, c, null);
+	public StreamContext getStreamContext(Transaction txn, ContactId c,
+			boolean classical) throws DbException {
+		return getStreamContext(txn, c, null, classical);
 	}
 
 	@Override
-	public StreamContext getStreamContext(Transaction txn, PendingContactId p)
-			throws DbException {
-		return getStreamContext(txn, null, p);
+	public StreamContext getStreamContext(Transaction txn, PendingContactId p,
+			boolean classical) throws DbException {
+		return getStreamContext(txn, null, p, classical);
 	}
 
 	@Nullable
 	private StreamContext getStreamContext(Transaction txn,
-			@Nullable ContactId c, @Nullable PendingContactId p)
-			throws DbException {
+			@Nullable ContactId c, @Nullable PendingContactId p,
+			boolean classical) throws DbException {
 		lock.lock();
 		try {
 			// Look up the outgoing keys for the contact
@@ -375,10 +375,11 @@ class TransportKeyManagerImpl implements TransportKeyManager {
 			MutableOutgoingKeys outKeys = keys.getCurrentOutgoingKeys();
 			if (!outKeys.isActive()) throw new AssertionError();
 			if (outKeys.getStreamCounter() > MAX_32_BIT_UNSIGNED) return null;
-			// Create a stream context
+			// Create a stream context with the classical flag
 			StreamContext ctx = new StreamContext(c, p, transportId,
 					outKeys.getTagKey(), outKeys.getHeaderKey(),
-					outKeys.getStreamCounter(), keys.isHandshakeMode());
+					outKeys.getStreamCounter(), keys.isHandshakeMode(),
+					classical);
 			// Increment the stream counter and write it back to the DB
 			outKeys.incrementStreamCounter();
 			db.incrementStreamCounter(txn, transportId, ks.getKeySetId());
@@ -389,11 +390,11 @@ class TransportKeyManagerImpl implements TransportKeyManager {
 	}
 
 	@Override
-	public StreamContext getStreamContext(Transaction txn, byte[] tag)
-			throws DbException {
+	public StreamContext getStreamContext(Transaction txn, byte[] tag,
+			boolean classical) throws DbException {
 		lock.lock();
 		try {
-			StreamContext ctx = streamContextFromTag(tag);
+			StreamContext ctx = streamContextFromTag(tag, classical);
 			if (ctx == null) return null;
 			markTagAsRecognised(txn, tag);
 			return ctx;
@@ -403,10 +404,11 @@ class TransportKeyManagerImpl implements TransportKeyManager {
 	}
 
 	@Override
-	public StreamContext getStreamContextOnly(Transaction txn, byte[] tag) {
+	public StreamContext getStreamContextOnly(Transaction txn, byte[] tag,
+			boolean classical) {
 		lock.lock();
 		try {
-			return streamContextFromTag(tag);
+			return streamContextFromTag(tag, classical);
 		} finally {
 			lock.unlock();
 		}
@@ -414,16 +416,16 @@ class TransportKeyManagerImpl implements TransportKeyManager {
 
 	@GuardedBy("lock")
 	@Nullable
-	private StreamContext streamContextFromTag(byte[] tag) {
+	private StreamContext streamContextFromTag(byte[] tag, boolean classical) {
 		// Look up the incoming keys for the tag
 		TagContext tagCtx = inContexts.get(new Bytes(tag));
 		if (tagCtx == null) return null;
 		MutableIncomingKeys inKeys = tagCtx.inKeys;
-		// Create a stream context
+		// Create a stream context with the classical flag
 		return new StreamContext(tagCtx.contactId,
 				tagCtx.pendingContactId, transportId,
 				inKeys.getTagKey(), inKeys.getHeaderKey(),
-				tagCtx.streamNumber, tagCtx.handshakeMode);
+				tagCtx.streamNumber, tagCtx.handshakeMode, classical);
 	}
 
 	@Override

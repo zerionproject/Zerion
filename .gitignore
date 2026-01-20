@@ -43,5 +43,9 @@ keystore.properties
 Thumbs.db
 nul
 
+# IDE/Editor directories
+.vs/
+.vscode/
+
 # Claude Code
 .claude/

@@ -112,19 +112,20 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 	public Contact exchangeContacts(DuplexTransportConnection conn,
 			SecretKey masterKey, boolean alice,
 			boolean verified) throws IOException, DbException {
-		return exchange(null, conn, masterKey, alice, verified);
+		// Default to extended format for non-pending contact exchanges
+		return exchange(null, conn, masterKey, alice, verified, false);
 	}
 
 	@Override
 	public Contact exchangeContacts(PendingContactId p,
 			DuplexTransportConnection conn, SecretKey masterKey, boolean alice,
-			boolean verified) throws IOException, DbException {
-		return exchange(p, conn, masterKey, alice, verified);
+			boolean verified, boolean classical) throws IOException, DbException {
+		return exchange(p, conn, masterKey, alice, verified, classical);
 	}
 
 	private Contact exchange(@Nullable PendingContactId p,
 			DuplexTransportConnection conn, SecretKey masterKey, boolean alice,
-			boolean verified) throws IOException, DbException {
+			boolean verified, boolean classical) throws IOException, DbException {
 		// Get the transport connection's input and output streams
 		InputStream in = conn.getReader().getInputStream();
 		OutputStream out = conn.getWriter().getOutputStream();
@@ -140,17 +141,17 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 		SecretKey remoteHeaderKey =
 				contactExchangeCrypto.deriveHeaderKey(masterKey, !alice);
 
-		// Create the readers
+		// Create the readers - use classical format for Briar compatibility
 		InputStream streamReader = streamReaderFactory
 				.createContactExchangeStreamReader(in, remoteHeaderKey);
 		RecordReader recordReader =
-				recordReaderFactory.createRecordReader(streamReader);
+				recordReaderFactory.createRecordReader(streamReader, classical);
 
-		// Create the writers
+		// Create the writers - use classical format for Briar compatibility
 		StreamWriter streamWriter = streamWriterFactory
 				.createContactExchangeStreamWriter(out, localHeaderKey);
 		RecordWriter recordWriter = recordWriterFactory
-				.createRecordWriter(streamWriter.getOutputStream());
+				.createRecordWriter(streamWriter.getOutputStream(), classical);
 
 		// Create our signature
 		byte[] localSignature = contactExchangeCrypto
@@ -194,8 +195,6 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 		Contact contact = addContact(p, remoteInfo.author, localAuthor,
 				masterKey, timestamp, alice, verified, remoteInfo.properties);
 
-		// Contact exchange succeeded
-		LOG.info("Contact exchange succeeded");
 		return contact;
 	}
 
@@ -208,14 +207,12 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 		recordWriter.writeRecord(new Record(PROTOCOL_VERSION, CONTACT_INFO,
 				clientHelper.toByteArray(payload)));
 		recordWriter.flush();
-		LOG.info("Sent contact info");
 	}
 
 	private ContactInfo receiveContactInfo(RecordReader recordReader)
 			throws IOException {
 		Record record = recordReader.readRecord(ACCEPT, IGNORE);
 		if (record == null) throw new EOFException();
-		LOG.info("Received contact info");
 		BdfList payload = clientHelper.toList(record.getPayload());
 		checkSize(payload, 4);
 		Author author = clientHelper.parseAndValidateAuthor(payload.getList(0));
