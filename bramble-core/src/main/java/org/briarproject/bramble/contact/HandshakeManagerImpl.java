@@ -31,14 +31,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.util.List;
-import java.util.logging.Logger;
 
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.api.crypto.CryptoConstants.MAX_AGREEMENT_PUBLIC_KEY_BYTES;
 import static org.briarproject.bramble.api.crypto.PostQuantumConstants.HYBRID_AGREEMENT_PUBLIC_KEY_BYTES;
 import static org.briarproject.bramble.api.crypto.PostQuantumConstants.ML_KEM_768_CIPHERTEXT_BYTES;
@@ -66,9 +64,6 @@ import static org.briarproject.bramble.util.ValidationUtils.checkLength;
 @Immutable
 @NotNullByDefault
 class HandshakeManagerImpl implements HandshakeManager {
-
-	private static final Logger LOG =
-			getLogger(HandshakeManagerImpl.class.getName());
 
 	// Ignore records with current protocol version, unknown record type
 	private static final RecordPredicate IGNORE = r ->
@@ -151,6 +146,9 @@ class HandshakeManagerImpl implements HandshakeManager {
 
 	/**
 	 * Performs a classical X25519 handshake (Briar-compatible).
+	 * <p>
+	 * Uses classical record format (4-byte header, uint16 length) for
+	 * wire compatibility with Briar.
 	 */
 	private HandshakeResult performClassicalHandshake(HandshakeContext ctx,
 			InputStream in, StreamWriter out) throws IOException {
@@ -158,9 +156,10 @@ class HandshakeManagerImpl implements HandshakeManager {
 		KeyPair ourStaticKeyPair = ctx.keyPair;
 		boolean alice = transportCrypto.isAlice(theirStaticPublicKey,
 				ourStaticKeyPair);
-		RecordReader recordReader = recordReaderFactory.createRecordReader(in);
+		// Use classical (Briar-compatible) record format: 4-byte header, uint16 length
+		RecordReader recordReader = recordReaderFactory.createRecordReader(in, true);
 		RecordWriter recordWriter = recordWriterFactory
-				.createRecordWriter(out.getOutputStream());
+				.createRecordWriter(out.getOutputStream(), true);
 		KeyPair ourEphemeralKeyPair =
 				handshakeCrypto.generateEphemeralKeyPair();
 		Pair<Byte, PublicKey> theirMinorVersionAndKey;
@@ -208,6 +207,9 @@ class HandshakeManagerImpl implements HandshakeManager {
 	/**
 	 * Performs a hybrid post-quantum handshake (Zerion-to-Zerion).
 	 * <p>
+	 * Uses extended record format (6-byte header, uint32 length) to support
+	 * large payloads like hybrid keys (1,216 bytes) and KEM ciphertexts (1,088 bytes).
+	 * <p>
 	 * Protocol:
 	 * 1. Exchange full hybrid static keys (link only contained commitment)
 	 * 2. Verify received key matches commitment from link
@@ -221,9 +223,10 @@ class HandshakeManagerImpl implements HandshakeManager {
 		byte[] theirCommitment = ctx.pendingContact.getPublicKey().getEncoded();
 		KeyPair ourHybridStaticKeyPair = ctx.hybridKeyPair;
 
-		RecordReader recordReader = recordReaderFactory.createRecordReader(in);
+		// Use extended record format: 6-byte header, uint32 length (for large PQ payloads)
+		RecordReader recordReader = recordReaderFactory.createRecordReader(in, false);
 		RecordWriter recordWriter = recordWriterFactory
-				.createRecordWriter(out.getOutputStream());
+				.createRecordWriter(out.getOutputStream(), false);
 
 		byte[] ourCommitment = crypto.hash(HYBRID_COMMITMENT_LABEL,
 				ourHybridStaticKeyPair.getPublic().getEncoded());

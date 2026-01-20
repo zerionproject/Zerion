@@ -82,11 +82,11 @@ class OutgoingSimplexSyncConnection extends SyncConnection implements Runnable {
 			// Use eager retransmission if the transport is lossy and cheap
 			return syncSessionFactory.createSimplexOutgoingSession(c,
 					ctx.getTransportId(), w.getMaxLatency(),
-					w.isLossyAndCheap(), streamWriter);
+					w.isLossyAndCheap(), streamWriter, ctx.isClassical());
 		} else {
 			return syncSessionFactory.createSimplexOutgoingSession(c,
 					ctx.getTransportId(), w.getMaxLatency(), streamWriter,
-					sessionRecord);
+					sessionRecord, ctx.isClassical());
 		}
 	}
 }

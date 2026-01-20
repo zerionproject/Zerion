@@ -85,6 +85,8 @@ class PendingContactFactoryImpl implements PendingContactFactory {
 
 	/**
 	 * Creates a classical handshake link with the X25519 public key embedded.
+	 * Uses zerion:// prefix. Briar users must copy just the base32 part
+	 * (Briar's regex accepts links without prefix).
 	 */
 	private String createClassicalHandshakeLink(PublicKey k) {
 		byte[] encoded = k.getEncoded();
@@ -128,8 +130,8 @@ class PendingContactFactoryImpl implements PendingContactFactory {
 		Matcher matcher = LINK_REGEX.matcher(link);
 		if (!matcher.find()) throw new FormatException();
 
-		// Discard 'zerion://' and anything before or after the link
-		link = matcher.group(2);
+		// Extract the base32 payload (group 1), discarding scheme and query params
+		link = matcher.group(1);
 		byte[] raw = Base32.decode(link, false);
 
 		if (raw.length < 1) throw new FormatException();

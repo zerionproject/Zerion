@@ -236,7 +236,7 @@ public class TransportKeyManagerImplTest extends BrambleMockTestCase {
 		TransportKeyManager transportKeyManager = new TransportKeyManagerImpl(
 				db, transportCrypto, dbExecutor, scheduler, clock, transportId,
 				maxLatency);
-		assertNull(transportKeyManager.getStreamContext(txn, contactId));
+		assertNull(transportKeyManager.getStreamContext(txn, contactId, false));
 		assertFalse(transportKeyManager.canSendOutgoingStreams(contactId));
 	}
 
@@ -248,7 +248,7 @@ public class TransportKeyManagerImplTest extends BrambleMockTestCase {
 		TransportKeyManager transportKeyManager = new TransportKeyManagerImpl(
 				db, transportCrypto, dbExecutor, scheduler, clock, transportId,
 				maxLatency);
-		assertNull(transportKeyManager.getStreamContext(txn, pendingContactId));
+		assertNull(transportKeyManager.getStreamContext(txn, pendingContactId, false));
 		assertFalse(transportKeyManager.canSendOutgoingStreams(
 				pendingContactId));
 	}
@@ -269,7 +269,7 @@ public class TransportKeyManagerImplTest extends BrambleMockTestCase {
 		assertEquals(keySetId, transportKeyManager.addRotationKeys(
 				txn, contactId, rootKey, timestamp, alice, true));
 		assertFalse(transportKeyManager.canSendOutgoingStreams(contactId));
-		assertNull(transportKeyManager.getStreamContext(txn, contactId));
+		assertNull(transportKeyManager.getStreamContext(txn, contactId, false));
 	}
 
 	@Test
@@ -303,7 +303,7 @@ public class TransportKeyManagerImplTest extends BrambleMockTestCase {
 		assertEquals(MAX_32_BIT_UNSIGNED, ctx.getStreamNumber());
 		// The second request should return null, the counter is exhausted
 		assertFalse(transportKeyManager.canSendOutgoingStreams(contactId));
-		assertNull(transportKeyManager.getStreamContext(txn, contactId));
+		assertNull(transportKeyManager.getStreamContext(txn, contactId, false));
 	}
 
 	@Test
@@ -375,7 +375,7 @@ public class TransportKeyManagerImplTest extends BrambleMockTestCase {
 		assertEquals(REORDERING_WINDOW_SIZE * 3, tags.size());
 		byte[] tag = tags.get(0);
 		// The first request should return a stream context
-		StreamContext ctx = transportKeyManager.getStreamContext(txn, tag);
+		StreamContext ctx = transportKeyManager.getStreamContext(txn, tag, false);
 		assertNotNull(ctx);
 		assertEquals(contactId, ctx.getContactId());
 		assertEquals(transportId, ctx.getTransportId());
@@ -385,7 +385,7 @@ public class TransportKeyManagerImplTest extends BrambleMockTestCase {
 		// Another tag should have been encoded
 		assertEquals(REORDERING_WINDOW_SIZE * 3 + 1, tags.size());
 		// The second request should return null, the tag has already been used
-		assertNull(transportKeyManager.getStreamContext(txn, tag));
+		assertNull(transportKeyManager.getStreamContext(txn, tag, false));
 	}
 
 	@Test
@@ -436,14 +436,14 @@ public class TransportKeyManagerImplTest extends BrambleMockTestCase {
 		assertEquals(REORDERING_WINDOW_SIZE * 3, tags.size());
 		byte[] tag = tags.get(0);
 		// Repeated request should return same stream context
-		StreamContext ctx = transportKeyManager.getStreamContextOnly(txn, tag);
+		StreamContext ctx = transportKeyManager.getStreamContextOnly(txn, tag, false);
 		assertNotNull(ctx);
 		assertEquals(contactId, ctx.getContactId());
 		assertEquals(transportId, ctx.getTransportId());
 		assertEquals(tagKey, ctx.getTagKey());
 		assertEquals(headerKey, ctx.getHeaderKey());
 		assertEquals(0L, ctx.getStreamNumber());
-		ctx = transportKeyManager.getStreamContextOnly(txn, tag);
+		ctx = transportKeyManager.getStreamContextOnly(txn, tag, false);
 		assertNotNull(ctx);
 		assertEquals(contactId, ctx.getContactId());
 		assertEquals(transportId, ctx.getTransportId());
@@ -455,7 +455,7 @@ public class TransportKeyManagerImplTest extends BrambleMockTestCase {
 		// Another tag should have been encoded
 		assertEquals(REORDERING_WINDOW_SIZE * 3 + 1, tags.size());
 		// Finally ensure the used tag is not recognised again
-		assertNull(transportKeyManager.getStreamContextOnly(txn, tag));
+		assertNull(transportKeyManager.getStreamContextOnly(txn, tag, false));
 	}
 
 	@Test
@@ -539,7 +539,7 @@ public class TransportKeyManagerImplTest extends BrambleMockTestCase {
 				txn, contactId, rootKey, timestamp, alice, false));
 		// The keys are inactive so no stream context should be returned
 		assertFalse(transportKeyManager.canSendOutgoingStreams(contactId));
-		assertNull(transportKeyManager.getStreamContext(txn, contactId));
+		assertNull(transportKeyManager.getStreamContext(txn, contactId, false));
 		transportKeyManager.activateKeys(txn, keySetId);
 		// The keys are active so a stream context should be returned
 		assertTrue(transportKeyManager.canSendOutgoingStreams(contactId));
@@ -602,11 +602,11 @@ public class TransportKeyManagerImplTest extends BrambleMockTestCase {
 				txn, contactId, rootKey, timestamp, alice, false));
 		// The keys are inactive so no stream context should be returned
 		assertFalse(transportKeyManager.canSendOutgoingStreams(contactId));
-		assertNull(transportKeyManager.getStreamContext(txn, contactId));
+		assertNull(transportKeyManager.getStreamContext(txn, contactId, false));
 		// Recognising an incoming tag should activate the outgoing keys
 		assertEquals(REORDERING_WINDOW_SIZE * 3, tags.size());
 		byte[] tag = tags.get(0);
-		StreamContext ctx = transportKeyManager.getStreamContext(txn, tag);
+		StreamContext ctx = transportKeyManager.getStreamContext(txn, tag, false);
 		assertNotNull(ctx);
 		assertEquals(contactId, ctx.getContactId());
 		assertEquals(transportId, ctx.getTransportId());
@@ -615,7 +615,7 @@ public class TransportKeyManagerImplTest extends BrambleMockTestCase {
 		assertEquals(0L, ctx.getStreamNumber());
 		// The keys are active so a stream context should be returned
 		assertTrue(transportKeyManager.canSendOutgoingStreams(contactId));
-		ctx = transportKeyManager.getStreamContext(txn, contactId);
+		ctx = transportKeyManager.getStreamContext(txn, contactId, false);
 		assertNotNull(ctx);
 		assertEquals(contactId, ctx.getContactId());
 		assertEquals(transportId, ctx.getTransportId());

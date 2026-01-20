@@ -173,9 +173,14 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 
 	// Worker
 	private void addPendingContact(PendingContact p) {
+		LOG.info("Adding pending contact: " + p.getAlias() +
+				", version=" + p.getFormatVersion() +
+				", isClassical=" + p.isClassical() +
+				", isPQ=" + p.isPostQuantum());
 		long now = clock.currentTimeMillis();
 		long expiry = p.getTimestamp() + RENDEZVOUS_TIMEOUT_MS;
 		if (expiry <= now) {
+			LOG.warning("Pending contact expired: " + p.getAlias());
 			broadcastState(p.getId(), FAILED);
 			return;
 		}
@@ -185,14 +190,10 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 
 			if (p.isPostQuantum()) {
 				// Hybrid (PQ) pending contact - use commitment-based rendezvous
-				// Since the link only contains a commitment hash (not a real key),
-				// we cannot do key agreement. Instead, both parties derive the
-				// same rendezvous key from their commitments.
 				if (hybridHandshakeKeyPair == null) {
 					hybridHandshakeKeyPair = db.transactionWithResult(true,
 							identityManager::getHybridHandshakeKeys);
 					if (hybridHandshakeKeyPair != null) {
-						// Compute our own commitment from our hybrid public key
 						ourHybridCommitment = crypto.hash(HYBRID_COMMITMENT_LABEL,
 								hybridHandshakeKeyPair.getPublic().getEncoded());
 					}
@@ -211,6 +212,7 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 						keyManager.addHybridPendingContact(txn, p.getId(),
 								finalRendezvousKey, finalAlice));
 			} else {
+				// Classical pending contact - use X25519 key agreement
 				if (handshakeKeyPair == null) {
 					handshakeKeyPair = db.transactionWithResult(true,
 							identityManager::getHandshakeKeys);
@@ -223,7 +225,9 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 						.isAlice(p.getPublicKey(), handshakeKeyPair);
 			}
 
-			CryptoState cs = new CryptoState(rendezvousKey, alice, expiry);
+			// classical = !postQuantum (for Briar compatibility)
+			boolean classical = !p.isPostQuantum();
+			CryptoState cs = new CryptoState(rendezvousKey, alice, expiry, classical);
 			requireNull(cryptoStates.put(p.getId(), cs));
 			for (PluginState ps : pluginStates.values()) {
 				RendezvousEndpoint endpoint =
@@ -255,7 +259,7 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 		TransportId t = plugin.getId();
 		KeyMaterialSource k =
 				rendezvousCrypto.createKeyMaterialSource(cs.rendezvousKey, t);
-		Handler h = new Handler(p, t, true);
+		Handler h = new Handler(p, t, true, cs.classical);
 		return plugin.createRendezvousEndpoint(k, cs.alice, h);
 	}
 
@@ -304,7 +308,9 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 				ps.endpoints.entrySet()) {
 			TransportProperties props =
 					e.getValue().getRemoteTransportProperties();
-			Handler h = new Handler(e.getKey(), t, false);
+			CryptoState cs = cryptoStates.get(e.getKey());
+			boolean classical = cs != null && cs.classical;
+			Handler h = new Handler(e.getKey(), t, false, classical);
 			properties.add(new Pair<>(props, h));
 		}
 		List<PendingContactId> polled = new ArrayList<>(ps.endpoints.keySet());
@@ -353,13 +359,15 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 
 	// Worker
 	private void poll(PendingContactId p) {
+		CryptoState cs = cryptoStates.get(p);
+		boolean classical = cs != null && cs.classical;
 		for (PluginState ps : pluginStates.values()) {
 			RendezvousEndpoint endpoint = ps.endpoints.get(p);
 			if (endpoint != null) {
 				TransportId t = ps.plugin.getId();
 				TransportProperties props =
 						endpoint.getRemoteTransportProperties();
-				Handler h = new Handler(p, t, false);
+				Handler h = new Handler(p, t, false, classical);
 				lastPollTimes.put(p, clock.currentTimeMillis());
 				eventBus.broadcast(
 						new RendezvousPollEvent(t, singletonList(p)));
@@ -458,14 +466,19 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 		private final SecretKey rendezvousKey;
 		private final boolean alice;
 		private final long expiry;
+		/**
+		 * True for classical (Briar-compatible) contacts, false for PQ contacts.
+		 */
+		private final boolean classical;
 
 		private int numEndpoints = 0;
 
 		private CryptoState(SecretKey rendezvousKey, boolean alice,
-				long expiry) {
+				long expiry, boolean classical) {
 			this.rendezvousKey = rendezvousKey;
 			this.alice = alice;
 			this.expiry = expiry;
+			this.classical = classical;
 		}
 	}
 
@@ -474,22 +487,26 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 		private final PendingContactId pendingContactId;
 		private final TransportId transportId;
 		private final boolean incoming;
+		private final boolean classical;
 
 		private Handler(PendingContactId pendingContactId,
-				TransportId transportId, boolean incoming) {
+				TransportId transportId, boolean incoming, boolean classical) {
 			this.pendingContactId = pendingContactId;
 			this.transportId = transportId;
 			this.incoming = incoming;
+			this.classical = classical;
 		}
 
 		@Override
 		public void handleConnection(DuplexTransportConnection c) {
+			LOG.info("Handler.handleConnection: classical=" + classical +
+					", incoming=" + incoming);
 			if (incoming) {
 				connectionManager.manageIncomingConnection(pendingContactId,
-						transportId, c);
+						transportId, c, classical);
 			} else {
 				connectionManager.manageOutgoingConnection(pendingContactId,
-						transportId, c);
+						transportId, c, classical);
 			}
 		}
 
