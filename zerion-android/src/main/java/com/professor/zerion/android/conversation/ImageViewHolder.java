@@ -16,6 +16,7 @@ import com.professor.zerion.android.conversation.glide.ZerionImageTransformation
 import com.bumptech.glide.Glide;
 import com.professor.zerion.android.conversation.glide.Radii;
 import org.briarproject.briar.api.attachment.Attachment;
+import org.briarproject.briar.api.attachment.AttachmentNotYetAvailableException;
 import org.briarproject.briar.api.attachment.AttachmentReader;
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -41,6 +42,9 @@ class ImageViewHolder extends ViewHolder {
 
 	@DrawableRes
 	private static final int ERROR_RES = R.drawable.ic_image_broken;
+
+	private static final int MAX_THUMBNAIL_RETRY_ATTEMPTS = 5;
+	private static final long THUMBNAIL_RETRY_DELAY_MS = 300;
 
 	protected final ImageView imageView;
 	@Nullable
@@ -137,6 +141,13 @@ class ImageViewHolder extends ViewHolder {
 			return;
 		}
 
+		loadVideoThumbnailWithRetry(a, r, 0);
+	}
+
+	private void loadVideoThumbnailWithRetry(AttachmentItem a, Radii r,
+			int attemptNumber) {
+		if (dbExecutor == null || attachmentReader == null) return;
+
 		dbExecutor.execute(() -> {
 			try {
 				Attachment attachment = attachmentReader.getAttachment(a.getHeader());
@@ -178,6 +189,21 @@ class ImageViewHolder extends ViewHolder {
 								.transition(withCrossFade())
 								.into(imageView);
 					});
+				} else {
+					imageView.post(() -> {
+						imageView.setImageResource(R.drawable.ic_video);
+						imageView.setScaleType(FIT_CENTER);
+					});
+				}
+			} catch (AttachmentNotYetAvailableException e) {
+				if (attemptNumber < MAX_THUMBNAIL_RETRY_ATTEMPTS) {
+					try {
+						Thread.sleep(THUMBNAIL_RETRY_DELAY_MS);
+					} catch (InterruptedException ie) {
+						Thread.currentThread().interrupt();
+						return;
+					}
+					loadVideoThumbnailWithRetry(a, r, attemptNumber + 1);
 				} else {
 					imageView.post(() -> {
 						imageView.setImageResource(R.drawable.ic_video);

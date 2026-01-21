@@ -47,17 +47,13 @@ import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
 
 import static java.util.Collections.emptyList;
-import static java.util.logging.Level.FINE;
-import static java.util.logging.Level.INFO;
 import static java.util.logging.Level.WARNING;
 import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.api.plugin.Plugin.PREF_PLUGIN_ENABLE;
 import static org.briarproject.bramble.api.plugin.Plugin.State.ACTIVE;
 import static org.briarproject.bramble.api.plugin.Plugin.State.DISABLED;
 import static org.briarproject.bramble.api.plugin.Plugin.State.STARTING_STOPPING;
-import static org.briarproject.bramble.util.LogUtils.logDuration;
 import static org.briarproject.bramble.util.LogUtils.logException;
-import static org.briarproject.bramble.util.LogUtils.now;
 
 @ThreadSafe
 @NotNullByDefault
@@ -102,8 +98,6 @@ class PluginManagerImpl implements PluginManager, Service {
 	@Override
 	public void startService() {
 		if (used.getAndSet(true)) throw new IllegalStateException();
-		// Instantiate the simplex plugins and start them asynchronously
-		LOG.info("Starting simplex plugins");
 		for (SimplexPluginFactory f : pluginConfig.getSimplexFactories()) {
 			TransportId t = f.getId();
 			SimplexPlugin s = f.createPlugin(new Callback(t));
@@ -118,8 +112,6 @@ class PluginManagerImpl implements PluginManager, Service {
 				wakefulIoExecutor.execute(new PluginStarter(s, startLatch));
 			}
 		}
-		// Instantiate the duplex plugins and start them asynchronously
-		LOG.info("Starting duplex plugins");
 		for (DuplexPluginFactory f : pluginConfig.getDuplexFactories()) {
 			TransportId t = f.getId();
 			DuplexPlugin d = f.createPlugin(new Callback(t));
@@ -139,25 +131,15 @@ class PluginManagerImpl implements PluginManager, Service {
 	@Override
 	public void stopService() throws ServiceException {
 		CountDownLatch stopLatch = new CountDownLatch(plugins.size());
-		// Stop the simplex plugins
-		LOG.info("Stopping simplex plugins");
 		for (SimplexPlugin s : simplexPlugins) {
 			CountDownLatch startLatch = startLatches.get(s.getId());
-			// Don't need the wakeful executor here as we wait for the plugin
-			// to stop before returning
 			ioExecutor.execute(new PluginStopper(s, startLatch, stopLatch));
 		}
-		// Stop the duplex plugins
-		LOG.info("Stopping duplex plugins");
 		for (DuplexPlugin d : duplexPlugins) {
 			CountDownLatch startLatch = startLatches.get(d.getId());
-			// Don't need the wakeful executor here as we wait for the plugin
-			// to stop before returning
 			ioExecutor.execute(new PluginStopper(d, startLatch, stopLatch));
 		}
-		// Wait for all the plugins to stop
 		try {
-			LOG.info("Waiting for all the plugins to stop");
 			stopLatch.await();
 		} catch (InterruptedException e) {
 			throw new ServiceException(e);
@@ -207,9 +189,7 @@ class PluginManagerImpl implements PluginManager, Service {
 
 	private void mergeSettings(Settings s, String namespace) {
 		try {
-			long start = now();
 			settingsManager.mergeSettings(s, namespace);
-			logDuration(LOG, "Merging settings", start);
 		} catch (DbException e) {
 			logException(LOG, WARNING, e);
 		}
@@ -228,12 +208,7 @@ class PluginManagerImpl implements PluginManager, Service {
 		@Override
 		public void run() {
 			try {
-				long start = now();
 				plugin.start();
-				if (LOG.isLoggable(FINE)) {
-					logDuration(LOG, "Starting plugin " + plugin.getId(),
-							start);
-				}
 			} catch (PluginException e) {
 				if (LOG.isLoggable(WARNING)) {
 					LOG.warning("Plugin " + plugin.getId() + " did not start");
@@ -259,21 +234,10 @@ class PluginManagerImpl implements PluginManager, Service {
 
 		@Override
 		public void run() {
-			if (LOG.isLoggable(INFO))
-				LOG.info("Trying to stop plugin " + plugin.getId());
 			try {
-				// Wait for the plugin to finish starting
 				startLatch.await();
-				// Stop the plugin
-				long start = now();
 				plugin.stop();
-				if (LOG.isLoggable(FINE)) {
-					logDuration(LOG, "Stopping plugin " + plugin.getId(),
-							start);
-				}
 			} catch (InterruptedException e) {
-				LOG.warning("Interrupted while waiting for plugin to stop");
-				// This task runs on an executor, so don't reset the interrupt
 			} catch (PluginException e) {
 				if (LOG.isLoggable(WARNING)) {
 					LOG.warning("Plugin " + plugin.getId() + " did not stop");
@@ -349,10 +313,6 @@ class PluginManagerImpl implements PluginManager, Service {
 				if (newState != state) {
 					State oldState = state;
 					state = newState;
-					if (LOG.isLoggable(INFO)) {
-						LOG.info(id + " changed from state " + oldState
-								+ " to " + newState);
-					}
 					eventBus.broadcast(new TransportStateEvent(id, newState));
 					if (newState == ACTIVE) {
 						eventBus.broadcast(new TransportActiveEvent(id));
@@ -360,9 +320,6 @@ class PluginManagerImpl implements PluginManager, Service {
 						eventBus.broadcast(new TransportInactiveEvent(id));
 					}
 				} else if (newState == DISABLED) {
-					// Broadcast an event even though the state hasn't changed,
-					// as the reasons for the plugin being disabled may have
-					// changed
 					eventBus.broadcast(new TransportStateEvent(id, newState));
 				}
 			}
@@ -380,7 +337,6 @@ class PluginManagerImpl implements PluginManager, Service {
 
 		@Override
 		public void handleWriter(TransportConnectionWriter w) {
-			// TODO: Support simplex plugins that write to incoming connections
 			throw new UnsupportedOperationException();
 		}
 	}

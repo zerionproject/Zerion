@@ -16,19 +16,41 @@
 	android:background="@drawable/msg_in"
 	android:elevation="@dimen/message_bubble_elevation">
 
+	<!-- Placeholder for replyPreviewContainer to avoid ConstraintSet warnings -->
+	<LinearLayout
+		android:id="@+id/replyPreviewContainer"
+		android:layout_width="0dp"
+		android:layout_height="wrap_content"
+		android:orientation="horizontal"
+		android:visibility="gone"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toTopOf="parent" />
+
 	<androidx.recyclerview.widget.RecyclerView
 		android:id="@+id/imageList"
 		android:layout_width="@dimen/message_bubble_image_default"
 		android:layout_height="@dimen/message_bubble_image_default"
 		android:orientation="vertical"
 		app:layoutManager="androidx.recyclerview.widget.StaggeredGridLayoutManager"
-		app:layout_constraintBottom_toTopOf="@+id/text"
+		app:layout_constraintBottom_toTopOf="@+id/voiceMessageView"
 		app:layout_constraintEnd_toEndOf="parent"
 		app:layout_constraintStart_toStartOf="parent"
-		app:layout_constraintTop_toTopOf="parent"
+		app:layout_constraintTop_toBottomOf="@+id/replyPreviewContainer"
 		app:spanCount="2"
 		tools:ignore="ContentDescription"
 		tools:listitem="@layout/list_item_image" />
+
+	<!-- Placeholder for voiceMessageView to avoid ConstraintSet warnings -->
+	<View
+		android:id="@+id/voiceMessageView"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:visibility="gone"
+		app:layout_constraintBottom_toTopOf="@+id/text"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toBottomOf="@+id/imageList" />
 
 	<com.vanniktech.emoji.EmojiTextView
 		android:id="@+id/text"
@@ -46,7 +68,7 @@
 		app:layout_constraintEnd_toEndOf="@+id/imageList"
 		app:layout_constraintHorizontal_bias="0.0"
 		app:layout_constraintStart_toStartOf="parent"
-		app:layout_constraintTop_toBottomOf="@+id/imageList"
+		app:layout_constraintTop_toBottomOf="@+id/voiceMessageView"
 		tools:text="The text of a message which can sometimes be a bit longer as well" />
 
 	<LinearLayout

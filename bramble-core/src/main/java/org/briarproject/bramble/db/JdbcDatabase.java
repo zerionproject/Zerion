@@ -72,7 +72,6 @@ import static java.sql.Types.INTEGER;
 import static java.sql.Types.VARCHAR;
 import static java.util.Arrays.asList;
 import static java.util.logging.Level.FINE;
-import static java.util.logging.Level.INFO;
 import static java.util.logging.Level.WARNING;
 import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.api.db.DatabaseComponent.NO_CLEANUP_DEADLINE;
@@ -102,7 +101,6 @@ import static org.briarproject.bramble.util.LogUtils.now;
 @NotNullByDefault
 abstract class JdbcDatabase implements Database<Connection> {
 
-	// Package access for testing
 	static final int CODE_SCHEMA_VERSION = 54;
 
 	/**
@@ -422,9 +420,6 @@ abstract class JdbcDatabase implements Database<Connection> {
 				initialiseSettings(txn);
 				compact = false;
 			}
-			if (LOG.isLoggable(INFO)) {
-				LOG.info("db dirty? " + wasDirtyOnInitialisation);
-			}
 			createIndexes(txn);
 			setDirty(txn, true);
 			commitTransaction(txn);
@@ -472,16 +467,11 @@ abstract class JdbcDatabase implements Database<Connection> {
 		if (dataSchemaVersion == CODE_SCHEMA_VERSION) return false;
 		if (CODE_SCHEMA_VERSION < dataSchemaVersion)
 			throw new DataTooNewException();
-		// Apply any suitable migrations in order
 		for (Migration<Connection> m : getMigrations()) {
 			int start = m.getStartVersion(), end = m.getEndVersion();
 			if (start == dataSchemaVersion) {
-				if (LOG.isLoggable(INFO))
-					LOG.info("Migrating from schema " + start + " to " + end);
 				if (listener != null) listener.onDatabaseMigration();
-				// Apply the migration
 				m.migrate(txn);
-				// Store the new schema version
 				storeSchemaVersion(txn, end);
 				dataSchemaVersion = end;
 			}
@@ -491,7 +481,6 @@ abstract class JdbcDatabase implements Database<Connection> {
 		return true;
 	}
 
-	// Package access for testing
 	List<Migration<Connection>> getMigrations() {
 		return asList(
 				new Migration38_39(),
@@ -687,21 +676,15 @@ abstract class JdbcDatabase implements Database<Connection> {
 			openConnections -= connectionPool.size();
 			connectionPool.clear();
 			while (openConnections > 0) {
-				if (LOG.isLoggable(INFO)) {
-					LOG.info("Waiting for " + openConnections
-							+ " connections to be closed");
-				}
 				try {
 					connectionsChanged.await();
 				} catch (InterruptedException e) {
-					LOG.warning("Interrupted while closing connections");
 					interrupted = true;
 				}
 				for (Connection c : connectionPool) tryToClose(c, LOG, WARNING);
 				openConnections -= connectionPool.size();
 				connectionPool.clear();
 			}
-			LOG.info("All connections closed");
 		} finally {
 			connectionsLock.unlock();
 		}

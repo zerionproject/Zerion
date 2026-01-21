@@ -53,7 +53,6 @@ import javax.net.SocketFactory;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
-import static java.util.logging.Level.INFO;
 import static java.util.logging.Level.WARNING;
 import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.api.plugin.Plugin.State.ACTIVE;
@@ -79,7 +78,6 @@ import static org.briarproject.bramble.api.plugin.TorConstants.REASON_MOBILE_DAT
 import static org.briarproject.bramble.plugin.tor.TorRendezvousCrypto.SEED_BYTES;
 import static org.briarproject.bramble.util.IoUtils.tryToClose;
 import static org.briarproject.bramble.util.LogUtils.logException;
-import static org.briarproject.bramble.util.PrivacyUtils.scrubOnion;
 import static org.briarproject.bramble.util.StringUtils.isNullOrEmpty;
 import static org.briarproject.onionwrapper.CircumventionProvider.BridgeType.MEEK;
 import static org.briarproject.onionwrapper.CircumventionProvider.BridgeType.SNOWFLAKE;
@@ -111,8 +109,6 @@ class TorPlugin implements DuplexPlugin, EventListener {
 	protected final PluginState state = new PluginState();
 
 	private volatile Settings settings = null;
-
-	// Track last reported state to debounce Observer callbacks
 	private volatile State lastReportedState = null;
 
 	TorPlugin(Executor ioExecutor,
@@ -146,7 +142,6 @@ class TorPlugin implements DuplexPlugin, EventListener {
 		} else {
 			socketTimeout = maxIdleTime * 2;
 		}
-		// Don't execute more than one connection status check at a time
 		connectionStatusExecutor =
 				new PoliteExecutor("TorPlugin", ioExecutor, 1);
 		tor.setObserver(new Observer() {
@@ -155,8 +150,6 @@ class TorPlugin implements DuplexPlugin, EventListener {
 			public void onState(TorState torState) {
 				State s = state.getState(torState);
 				if (s == ACTIVE) backoff.reset();
-				// Debounce: only notify if state actually changed
-				// This prevents flooding the UI thread with duplicate events
 				if (s != lastReportedState) {
 					lastReportedState = s;
 					callback.pluginStateChanged(s);
@@ -195,33 +188,26 @@ class TorPlugin implements DuplexPlugin, EventListener {
 	@Override
 	public void start() throws PluginException {
 		if (used.getAndSet(true)) throw new IllegalStateException();
-		// Load the settings
 		settings = callback.getSettings();
-		// Start Tor
 		try {
 			tor.start();
 		} catch (InterruptedException e) {
-			LOG.warning("Interrupted while starting Tor");
 			Thread.currentThread().interrupt();
 			throw new PluginException();
 		} catch (IOException e) {
 			throw new PluginException(e);
 		}
-		// Check whether we're online
 		updateConnectionStatus(networkManager.getNetworkStatus(),
 				batteryManager.isCharging());
-		// Bind a server socket to receive incoming hidden service connections
 		bind();
 	}
 
 	private void bind() {
 		ioExecutor.execute(() -> {
-			// If there's already a port number stored in config, reuse it
 			String portString = settings.get(PREF_TOR_PORT);
 			int port;
 			if (isNullOrEmpty(portString)) port = 0;
 			else port = Integer.parseInt(portString);
-			// Bind a server socket to receive connections from Tor
 			ServerSocket ss = null;
 			try {
 				ss = new ServerSocket();
@@ -232,19 +218,15 @@ class TorPlugin implements DuplexPlugin, EventListener {
 				return;
 			}
 			if (!state.setServerSocket(ss)) {
-				LOG.info("Closing redundant server socket");
 				tryToClose(ss, LOG, WARNING);
 				return;
 			}
-			// Store the port number
 			int localPort = ss.getLocalPort();
 			Settings s = new Settings();
 			s.put(PREF_TOR_PORT, String.valueOf(localPort));
 			callback.mergeSettings(s);
-			// Create a hidden service if necessary
 			ioExecutor.execute(() -> publishHiddenService(localPort));
 			backoff.reset();
-			// Accept incoming hidden service connections from Tor
 			acceptContactConnections(ss);
 		});
 	}
@@ -252,7 +234,6 @@ class TorPlugin implements DuplexPlugin, EventListener {
 	private void publishHiddenService(int localPort) {
 		if (!tor.isTorRunning()) return;
 		String privKey = settings.get(HS_PRIVATE_KEY_V3);
-		LOG.info("Creating v3 hidden service");
 		HiddenServiceProperties hsProps;
 		try {
 			hsProps = tor.publishHiddenService(localPort, 80, privKey);
@@ -260,15 +241,10 @@ class TorPlugin implements DuplexPlugin, EventListener {
 			logException(LOG, WARNING, e);
 			return;
 		}
-		if (LOG.isLoggable(INFO)) {
-			LOG.info("V3 hidden service " + scrubOnion(hsProps.onion));
-		}
 		if (privKey == null) {
-			// Publish the hidden service's onion hostname in transport props
 			TransportProperties p = new TransportProperties();
 			p.put(PROP_ONION_V3, hsProps.onion);
 			callback.mergeLocalProperties(p);
-			// Save the hidden service's private key for next time
 			Settings s = new Settings();
 			s.put(HS_PRIVATE_KEY_V3, hsProps.privKey);
 			callback.mergeSettings(s);
@@ -282,12 +258,9 @@ class TorPlugin implements DuplexPlugin, EventListener {
 				s = ss.accept();
 				s.setSoTimeout(socketTimeout);
 			} catch (IOException e) {
-				// This is expected when the server socket is closed
-				LOG.info("Server socket closed");
 				state.clearServerSocket(ss);
 				return;
 			}
-			LOG.info("Connection received");
 			backoff.reset();
 			callback.handleConnection(new TorTransportConnection(this, s));
 		}
@@ -316,7 +289,6 @@ class TorPlugin implements DuplexPlugin, EventListener {
 		} catch (IOException e) {
 			logException(LOG, WARNING, e);
 		} catch (InterruptedException e) {
-			LOG.warning("Interrupted while stopping Tor");
 			Thread.currentThread().interrupt();
 		}
 	}
@@ -366,29 +338,15 @@ class TorPlugin implements DuplexPlugin, EventListener {
 		if (getState() != ACTIVE) return null;
 		String onion3 = p.get(PROP_ONION_V3);
 		if (onion3 != null && !ONION_V3.matcher(onion3).matches()) {
-			// Don't scrub the address so we can find the problem
-			if (LOG.isLoggable(INFO)) {
-				LOG.info("Invalid v3 hostname: " + onion3);
-			}
 			onion3 = null;
 		}
 		if (onion3 == null) return null;
 		Socket s = null;
 		try {
-			if (LOG.isLoggable(INFO)) {
-				LOG.info("Connecting to v3 " + scrubOnion(onion3));
-			}
 			s = torSocketFactory.createSocket(onion3 + ".onion", 80);
 			s.setSoTimeout(socketTimeout);
-			if (LOG.isLoggable(INFO)) {
-				LOG.info("Connected to v3 " + scrubOnion(onion3));
-			}
 			return new TorTransportConnection(this, s);
 		} catch (IOException e) {
-			if (LOG.isLoggable(INFO)) {
-				LOG.info("Could not connect to v3 "
-						+ scrubOnion(onion3) + ": " + e);
-			}
 			tryToClose(s, LOG, WARNING);
 			return null;
 		}
@@ -434,15 +392,12 @@ class TorPlugin implements DuplexPlugin, EventListener {
 			int port = ss.getLocalPort();
 			ioExecutor.execute(() -> {
 				try {
-					//noinspection InfiniteLoopStatement
 					while (true) {
 						Socket s = ss.accept();
 						incoming.handleConnection(
 								new TorTransportConnection(this, s));
 					}
 				} catch (IOException e) {
-					// This is expected when the server socket is closed
-					LOG.info("Rendezvous server socket closed");
 				}
 			});
 			tor.publishHiddenService(port, 80, blob);
@@ -473,7 +428,6 @@ class TorPlugin implements DuplexPlugin, EventListener {
 		if (e instanceof SettingsUpdatedEvent) {
 			SettingsUpdatedEvent s = (SettingsUpdatedEvent) e;
 			if (s.getNamespace().equals(ID.getString())) {
-				LOG.info("Tor settings updated");
 				settings = s.getSettings();
 				updateConnectionStatus(networkManager.getNetworkStatus(),
 						batteryManager.isCharging());
@@ -508,38 +462,22 @@ class TorPlugin implements DuplexPlugin, EventListener {
 							DEFAULT_PREF_TOR_ONLY_WHEN_CHARGING);
 			boolean automatic = network == PREF_TOR_NETWORK_AUTOMATIC;
 
-			if (LOG.isLoggable(INFO)) {
-				LOG.info("Online: " + online + ", wifi: " + wifi
-						+ ", IPv6 only: " + ipv6Only);
-				if (country.isEmpty()) LOG.info("Country code unknown");
-				else LOG.info("Country code: " + country);
-				LOG.info("Charging: " + charging);
-			}
-
 			int reasonsDisabled = 0;
 			boolean enableNetwork = false, enableConnectionPadding = false;
 			List<BridgeType> bridgeTypes = emptyList();
 
-			if (!online) {
-				LOG.info("Disabling network, device is offline");
-			} else {
+			if (online) {
 				if (!enabledByUser) {
-					LOG.info("User has disabled Tor");
 					reasonsDisabled |= REASON_USER;
 				}
 				if (!charging && onlyWhenCharging) {
-					LOG.info("Configured not to use battery");
 					reasonsDisabled |= REASON_BATTERY;
 				}
 				if (!useMobile && !wifi) {
-					LOG.info("Configured not to use mobile data");
 					reasonsDisabled |= REASON_MOBILE_DATA;
 				}
 
-				if (reasonsDisabled != 0) {
-					LOG.info("Disabling network due to settings");
-				} else {
-					LOG.info("Enabling network");
+				if (reasonsDisabled == 0) {
 					enableNetwork = true;
 					if (network == PREF_TOR_NETWORK_WITH_BRIDGES ||
 							(automatic && bridgesByDefault)) {
@@ -549,17 +487,9 @@ class TorPlugin implements DuplexPlugin, EventListener {
 							bridgeTypes = circumventionProvider
 									.getSuitableBridgeTypes(country);
 						}
-						if (LOG.isLoggable(INFO)) {
-							LOG.info("Using bridge types " + bridgeTypes);
-						}
-					} else {
-						LOG.info("Not using bridges");
 					}
 					if (wifi && charging) {
-						LOG.info("Enabling connection padding");
 						enableConnectionPadding = true;
-					} else {
-						LOG.info("Disabling connection padding");
 					}
 				}
 			}
@@ -607,7 +537,6 @@ class TorPlugin implements DuplexPlugin, EventListener {
 			reasonsDisabled = reasons;
 			if (!wasChecked || reasons != oldReasons) {
 				State s = getState();
-				// Debounce: only notify if state actually changed
 				if (s != lastReportedState) {
 					lastReportedState = s;
 					callback.pluginStateChanged(s);
@@ -615,14 +544,12 @@ class TorPlugin implements DuplexPlugin, EventListener {
 			}
 		}
 
-		// Doesn't affect getState()
 		private synchronized boolean setServerSocket(ServerSocket ss) {
 			if (serverSocket != null || !tor.isTorRunning()) return false;
 			serverSocket = ss;
 			return true;
 		}
 
-		// Doesn't affect getState()
 		private synchronized void clearServerSocket(ServerSocket ss) {
 			if (serverSocket == ss) serverSocket = null;
 		}
@@ -632,11 +559,6 @@ class TorPlugin implements DuplexPlugin, EventListener {
 		}
 
 		private synchronized State getState(TorState torState) {
-			// Treat TorState.STARTED as State.STARTING_STOPPING because it's
-			// only seen during startup, before TorWrapper#enableNetwork() is
-			// called for the first time. TorState.NOT_STARTED and
-			// TorState.STOPPED are mapped to State.STARTING_STOPPING because
-			// that's the State before we've started and after we've stopped.
 			if (torState == TorState.NOT_STARTED ||
 					torState == TorState.STARTING ||
 					torState == TorState.STARTED ||
@@ -648,7 +570,6 @@ class TorPlugin implements DuplexPlugin, EventListener {
 			if (reasonsDisabled != 0) return DISABLED;
 			if (torState == TorState.CONNECTING) return ENABLING;
 			if (torState == TorState.CONNECTED) return ACTIVE;
-			// The plugin is enabled in settings but the device is offline
 			return INACTIVE;
 		}
 

@@ -21,12 +21,10 @@ import java.util.logging.Logger;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 
-import static java.util.logging.Level.INFO;
 import static java.util.logging.Level.WARNING;
 import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.db.JdbcUtils.tryToClose;
 import static org.briarproject.bramble.util.IoUtils.isNonEmptyDirectory;
-import static org.briarproject.bramble.util.LogUtils.logFileOrDir;
 
 /**
  * Contains all the H2-specific code for the database.
@@ -66,39 +64,25 @@ class H2Database extends JdbcDatabase {
 			throws DbException {
 		this.key = key;
 		File dir = config.getDatabaseDirectory();
-		if (LOG.isLoggable(INFO)) {
-			LOG.info("Contents of account directory before opening DB:");
-			logFileOrDir(LOG, INFO, dir.getParentFile());
-		}
 		boolean reopen = isNonEmptyDirectory(dir);
-		if (LOG.isLoggable(INFO)) LOG.info("Reopening DB: " + reopen);
-		if (!reopen && dir.mkdirs()) LOG.info("Created database directory");
+		if (!reopen) dir.mkdirs();
 		super.open("org.h2.Driver", reopen, key, listener);
-		if (LOG.isLoggable(INFO)) {
-			LOG.info("Contents of account directory after opening DB:");
-			logFileOrDir(LOG, INFO, dir.getParentFile());
-		}
 		return reopen;
 	}
 
 	@Override
 	public void close() throws DbException {
-		// H2 will close the database when the last connection closes
 		Connection c = null;
 		Statement s = null;
 		try {
 			c = createConnection();
 			closeAllConnections();
-			LOG.info("Compacting DB");
 			s = c.createStatement();
 			s.execute("SHUTDOWN COMPACT");
-			LOG.info("Finished compacting DB");
 			s.close();
 			c.close();
-			// Reopen the DB to mark it as clean after compacting
 			c = createConnection();
 			setDirty(c, false);
-			LOG.info("Marked DB as clean");
 			c.close();
 		} catch (SQLException e) {
 			tryToClose(s, LOG, WARNING);
@@ -113,7 +97,6 @@ class H2Database extends JdbcDatabase {
 		if (key == null) throw new DbClosedException();
 		Properties props = new Properties();
 		props.setProperty("user", "user");
-		// Separate the file password from the user password with a space
 		String hex = StringUtils.toHexString(key.getBytes());
 		props.put("password", hex + " password");
 		return DriverManager.getConnection(getUrl(), props);
@@ -132,7 +115,6 @@ class H2Database extends JdbcDatabase {
 			closeAllConnections();
 			s = c.createStatement();
 			s.execute("SHUTDOWN COMPACT");
-			LOG.info("Finished compacting DB");
 			s.close();
 			c.close();
 		} catch (SQLException e) {

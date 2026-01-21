@@ -77,9 +77,12 @@ import static org.briarproject.briar.api.attachment.MediaConstants.MSG_KEY_DESCR
 import static org.briarproject.briar.api.autodelete.AutoDeleteConstants.NO_AUTO_DELETE_TIMER;
 import static org.briarproject.briar.api.messaging.PrivateMessageFormat.TEXT_IMAGES;
 import static org.briarproject.briar.api.messaging.PrivateMessageFormat.TEXT_IMAGES_AUTO_DELETE;
+import static org.briarproject.briar.api.messaging.PrivateMessageFormat.TEXT_IMAGES_CHUNKED;
 import static org.briarproject.briar.api.messaging.PrivateMessageFormat.TEXT_ONLY;
 import static org.briarproject.briar.client.MessageTrackerConstants.MSG_KEY_READ;
 import static org.briarproject.briar.messaging.MessageTypes.ATTACHMENT;
+import static org.briarproject.briar.messaging.MessageTypes.ATTACHMENT_CHUNK;
+import static org.briarproject.briar.messaging.MessageTypes.ATTACHMENT_MANIFEST;
 import static org.briarproject.briar.messaging.MessageTypes.PRIVATE_MESSAGE;
 import static org.briarproject.briar.messaging.MessagingConstants.MISSING_ATTACHMENT_CLEANUP_DURATION_MS;
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_ATTACHMENT_HEADERS;
@@ -106,6 +109,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 	private final ClientVersioningManager clientVersioningManager;
 	private final ContactGroupFactory contactGroupFactory;
 	private final AutoDeleteManager autoDeleteManager;
+	private final StreamingAttachmentWriter streamingAttachmentWriter;
 
 	@Inject
 	MessagingManagerImpl(
@@ -116,7 +120,8 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			ConversationManager conversationManager,
 			MessageTracker messageTracker,
 			ContactGroupFactory contactGroupFactory,
-			AutoDeleteManager autoDeleteManager) {
+			AutoDeleteManager autoDeleteManager,
+			StreamingAttachmentWriter streamingAttachmentWriter) {
 		this.db = db;
 		this.clientHelper = clientHelper;
 		this.metadataParser = metadataParser;
@@ -125,6 +130,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		this.clientVersioningManager = clientVersioningManager;
 		this.contactGroupFactory = contactGroupFactory;
 		this.autoDeleteManager = autoDeleteManager;
+		this.streamingAttachmentWriter = streamingAttachmentWriter;
 	}
 
 	@Override
@@ -196,6 +202,10 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				incomingPrivateMessage(txn, m, metaDict, hasText, headers);
 			} else if (messageType == ATTACHMENT) {
 				incomingAttachment(txn, m);
+			} else if (messageType == ATTACHMENT_MANIFEST) {
+				incomingAttachmentManifest(txn, m);
+			} else if (messageType == ATTACHMENT_CHUNK) {
+				incomingAttachmentChunk(txn, m);
 			} else if (messageType == MessageTypes.VOICE_SIGNAL) {
 				incomingVoiceSignal(txn, m, metaDict);
 			} else {
@@ -296,6 +306,20 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		logDuration(LOG, "Receiving attachment", start);
 	}
 
+	private void incomingAttachmentManifest(Transaction txn, Message m)
+			throws DbException {
+		long start = now();
+		ContactId contactId = getContactId(txn, m.getGroupId());
+		txn.attach(new AttachmentReceivedEvent(m.getId(), contactId));
+		logDuration(LOG, "Receiving attachment manifest", start);
+	}
+
+	private void incomingAttachmentChunk(Transaction txn, Message m)
+			throws DbException {
+		long start = now();
+		logDuration(LOG, "Receiving attachment chunk", start);
+	}
+
 	/**
 	 * Handle incoming voice signal message.
 	 * Parse the signal data and fire VoiceSignalReceivedEvent so that
@@ -369,6 +393,8 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			for (AttachmentHeader a : m.getAttachmentHeaders()) {
 				db.setMessageShared(txn, a.getMessageId());
 				db.setMessagePermanent(txn, a.getMessageId());
+				// For chunked attachments (manifests), also share all chunks
+				shareAttachmentChunks(txn, a.getMessageId());
 			}
 			clientHelper.addLocalMessage(txn, m.getMessage(), meta, true,
 					false);
@@ -378,6 +404,25 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			conversationManager.trackOutgoingMessage(txn, m.getMessage());
 		} catch (FormatException e) {
 			throw new AssertionError(e);
+		}
+	}
+
+	private void shareAttachmentChunks(Transaction txn, MessageId attachmentId)
+			throws DbException, FormatException {
+		BdfDictionary attachmentMeta =
+				clientHelper.getMessageMetadataAsDictionary(txn, attachmentId);
+		Integer msgType = attachmentMeta.getOptionalInt(MSG_KEY_MSG_TYPE);
+		if (msgType == null || msgType != ATTACHMENT_MANIFEST) {
+			return;
+		}
+		Message manifestMessage = clientHelper.getMessage(txn, attachmentId);
+		BdfList manifestBody = clientHelper.toList(manifestMessage.getBody());
+		BdfList chunkIdList = manifestBody.getList(5);
+		for (int i = 0; i < chunkIdList.size(); i++) {
+			byte[] chunkIdBytes = chunkIdList.getRaw(i);
+			MessageId chunkId = new MessageId(chunkIdBytes);
+			db.setMessageShared(txn, chunkId);
+			db.setMessagePermanent(txn, chunkId);
 		}
 	}
 
@@ -421,6 +466,14 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		db.transaction(false, txn ->
 				clientHelper.addLocalMessage(txn, m, meta, false, true));
 		return new AttachmentHeader(groupId, m.getId(), contentType);
+	}
+
+	@Override
+	public AttachmentHeader addLocalAttachmentStreaming(GroupId groupId,
+			long timestamp, String contentType, InputStream is, long totalSize,
+			ProgressCallback progressCallback) throws DbException, IOException {
+		return streamingAttachmentWriter.storeAttachment(groupId, timestamp,
+				contentType, is, totalSize, progressCallback);
 	}
 
 	@Override
@@ -591,7 +644,8 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			ContactId c) throws DbException {
 		int minorVersion = clientVersioningManager
 				.getClientMinorVersion(txn, c, CLIENT_ID, 0);
-		if (minorVersion >= 3) return TEXT_IMAGES_AUTO_DELETE;
+		if (minorVersion >= 4) return TEXT_IMAGES_CHUNKED;
+		else if (minorVersion >= 3) return TEXT_IMAGES_AUTO_DELETE;
 		else if (minorVersion >= 1) return TEXT_IMAGES;
 		else return TEXT_ONLY;
 	}

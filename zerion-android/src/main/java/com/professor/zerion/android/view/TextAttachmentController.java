@@ -106,10 +106,7 @@ public class TextAttachmentController extends TextSendController
 
 	@Override
 	protected boolean isBombVisible() {
-		// Show bomb badge if either:
-		// 1. The conversation has disappearing messages enabled (super.isBombVisible())
-		// 2. A one-time timer was selected via long-press (expectedTimer != NO_AUTO_DELETE_TIMER)
-		boolean hasOneTimeTimer = expectedTimer != -1L; // NO_AUTO_DELETE_TIMER = -1
+		boolean hasOneTimeTimer = expectedTimer != -1L;
 		return (super.isBombVisible() || hasOneTimeTimer) && (!textIsEmpty || !imageUris.isEmpty());
 	}
 
@@ -155,11 +152,6 @@ public class TextAttachmentController extends TextSendController
 		sendButton.setImagesSupported();
 	}
 
-	/**
-	 * Shows a popup menu to select a disappearing message timer for one-time use.
-	 * This allows users to send a message with a specific timer without changing
-	 * the conversation's default timer setting.
-	 */
 	private void showDisappearingTimerPopup() {
 		Context ctx = textInput.getContext();
 		String[] timerOptions = {
@@ -176,7 +168,7 @@ public class TextAttachmentController extends TextSendController
 		};
 
 		long[] timerValues = {
-			-1L, // NO_AUTO_DELETE_TIMER
+			-1L,
 			60 * 1000L,
 			5 * 60 * 1000L,
 			30 * 60 * 1000L,
@@ -192,7 +184,6 @@ public class TextAttachmentController extends TextSendController
 			.setTitle(R.string.disappearing_message_timer_title)
 			.setItems(timerOptions, (dialog, which) -> {
 				expectedTimer = timerValues[which];
-				// Show toast to confirm selection
 				String message = which == 0 ?
 					ctx.getString(R.string.disappearing_timer_off) :
 					ctx.getString(R.string.disappearing_timer_set, timerOptions[which]);
@@ -249,8 +240,12 @@ public class TextAttachmentController extends TextSendController
 				} else {
 					boolean noError = onNewAttachmentItemResults(
 							attachmentResult.getItemResults());
-					if (noError && attachmentResult.isFinished()) {
-						onAllAttachmentsCreated();
+					if (attachmentResult.isFinished()) {
+						if (noError) {
+							onAllAttachmentsCreated();
+						}
+						result.removeObserver(this);
+					} else if (!noError) {
 						result.removeObserver(this);
 					}
 				}

@@ -32,8 +32,9 @@ public interface MessagingManager extends ConversationClient {
 
 	/**
 	 * The current minor version of the messaging client.
+	 * Version 4 adds support for chunked attachments (video/audio).
 	 */
-	int MINOR_VERSION = 3;
+	int MINOR_VERSION = 4;
 
 	/**
 	 * Stores a local private message.
@@ -52,11 +53,36 @@ public interface MessagingManager extends ConversationClient {
 
 	/**
 	 * Stores a local attachment message.
+	 * Note: This method loads the entire attachment into memory. For large
+	 * files (videos, audio), use addLocalAttachmentStreaming() instead.
 	 *
 	 * @throws FileTooBigException If the attachment is too big
 	 */
 	AttachmentHeader addLocalAttachment(GroupId groupId, long timestamp,
 			String contentType, InputStream is) throws DbException, IOException;
+
+	/**
+	 * Stores a local attachment message using streaming to avoid loading
+	 * the entire file into memory. Suitable for large files like videos.
+	 *
+	 * @param groupId The group ID for the conversation
+	 * @param timestamp The message timestamp
+	 * @param contentType The MIME type of the attachment
+	 * @param is The input stream containing the attachment data
+	 * @param totalSize The total size of the attachment in bytes
+	 * @param progressCallback Optional callback for progress updates (0.0-1.0)
+	 * @throws FileTooBigException If the attachment exceeds the maximum size
+	 */
+	AttachmentHeader addLocalAttachmentStreaming(GroupId groupId, long timestamp,
+			String contentType, InputStream is, long totalSize,
+			@Nullable ProgressCallback progressCallback) throws DbException, IOException;
+
+	/**
+	 * Callback interface for attachment upload progress.
+	 */
+	interface ProgressCallback {
+		void onProgress(float progress);
+	}
 
 	/**
 	 * Removes an unsent attachment.

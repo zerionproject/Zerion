@@ -7,11 +7,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.util.logging.Logger;
-
-import static java.util.logging.Level.INFO;
-import static java.util.logging.Level.WARNING;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.api.plugin.TorConstants.DEFAULT_CONTROL_PORT;
 import static org.briarproject.bramble.api.plugin.TorConstants.DEFAULT_SOCKS_PORT;
 import static org.briarproject.bramble.api.plugin.TorConstants.MAX_DYNAMIC_PORT;
@@ -23,8 +18,6 @@ import static org.briarproject.bramble.api.plugin.TorConstants.MIN_DYNAMIC_PORT;
  */
 @NotNullByDefault
 public class TorPortManager {
-
-	private static final Logger LOG = getLogger(TorPortManager.class.getName());
 
 	private static final String PREFS_NAME = "zerion_tor_ports";
 	private static final String PREF_SOCKS_PORT = "socks_port";
@@ -48,28 +41,19 @@ public class TorPortManager {
 		int savedControlPort = prefs.getInt(PREF_CONTROL_PORT, -1);
 
 		if (savedSocksPort > 0 && savedControlPort > 0) {
-			// Check if saved ports are still available
 			if (isPortAvailable(savedSocksPort) && isPortAvailable(savedControlPort)) {
 				socksPort = savedSocksPort;
 				controlPort = savedControlPort;
-				LOG.log(INFO, "Using saved Tor ports: SOCKS={0}, Control={1}",
-						new Object[]{socksPort, controlPort});
 				return;
 			}
-			LOG.log(WARNING, "Saved ports no longer available, finding new ports");
 		}
 
-		// Try default ports first
 		if (isPortAvailable(DEFAULT_SOCKS_PORT) && isPortAvailable(DEFAULT_CONTROL_PORT)) {
 			socksPort = DEFAULT_SOCKS_PORT;
 			controlPort = DEFAULT_CONTROL_PORT;
 			savePorts();
-			LOG.log(INFO, "Using default Tor ports: SOCKS={0}, Control={1}",
-					new Object[]{socksPort, controlPort});
 			return;
 		}
-
-		LOG.log(INFO, "Default ports unavailable, searching for available ports...");
 
 		// Find available ports in the dynamic range
 		socksPort = findAvailablePort(MIN_DYNAMIC_PORT);
@@ -85,14 +69,9 @@ public class TorPortManager {
 
 		if (socksPort > 0 && controlPort > 0) {
 			savePorts();
-			LOG.log(INFO, "Using dynamic Tor ports: SOCKS={0}, Control={1}",
-					new Object[]{socksPort, controlPort});
 		} else {
-			// Fallback to defaults even if they might conflict
-			// Tor will handle the error
 			socksPort = DEFAULT_SOCKS_PORT;
 			controlPort = DEFAULT_CONTROL_PORT;
-			LOG.log(WARNING, "Could not find available ports, using defaults which may conflict");
 		}
 	}
 

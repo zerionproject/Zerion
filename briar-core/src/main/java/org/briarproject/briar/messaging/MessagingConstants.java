@@ -12,6 +12,13 @@ interface MessagingConstants {
 	String MSG_KEY_ATTACHMENT_HEADERS = "attachmentHeaders";
 	String MSG_KEY_AUTO_DELETE_TIMER = "autoDeleteTimer";
 
+	// Metadata keys for chunked attachments
+	String MSG_KEY_CHUNK_INDEX = "chunkIndex";
+	String MSG_KEY_CHUNK_COUNT = "chunkCount";
+	String MSG_KEY_MANIFEST_ID = "manifestId";
+	String MSG_KEY_TOTAL_SIZE = "totalSize";
+	String MSG_KEY_ROOT_HASH = "rootHash";
+
 	/**
 	 * How long to keep incoming attachments that aren't listed by any private
 	 * message before deleting them.

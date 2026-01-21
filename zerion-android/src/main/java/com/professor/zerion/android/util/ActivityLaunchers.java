@@ -84,6 +84,30 @@ public class ActivityLaunchers {
 		}
 	}
 
+	public static class GetMultipleMediaAdvanced extends GetMultipleContents {
+		@NonNull
+		@Override
+		public Intent createIntent(Context context, String input) {
+			Intent i = super.createIntent(context, input);
+			putShowAdvancedExtra(i);
+			i.setType("*/*");
+			i.addFlags(FLAG_GRANT_READ_URI_PERMISSION);
+			String[] imageTypes = getSupportedImageContentTypes();
+			String[] videoTypes = new String[] {
+					"video/mp4",
+					"video/3gpp",
+					"video/webm",
+					"video/x-matroska",
+					"video/quicktime"
+			};
+			String[] allTypes = new String[imageTypes.length + videoTypes.length];
+			System.arraycopy(imageTypes, 0, allTypes, 0, imageTypes.length);
+			System.arraycopy(videoTypes, 0, allTypes, imageTypes.length, videoTypes.length);
+			i.putExtra(EXTRA_MIME_TYPES, allTypes);
+			return i;
+		}
+	}
+
 	public static class OpenImageDocumentAdvanced extends OpenDocument {
 		@NonNull
 		@Override
