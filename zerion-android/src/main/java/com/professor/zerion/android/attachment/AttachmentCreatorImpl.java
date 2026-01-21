@@ -14,6 +14,7 @@ import org.briarproject.briar.api.attachment.Attachment;
 import org.briarproject.briar.api.attachment.AttachmentHeader;
 import org.briarproject.briar.api.attachment.FileTooBigException;
 import org.briarproject.briar.api.messaging.MessagingManager;
+import org.briarproject.briar.api.messaging.PrivateMessageFormat;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.IOException;
@@ -22,8 +23,12 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
+import java.util.logging.Logger;
 
 import javax.inject.Inject;
+
+import static java.util.logging.Level.WARNING;
+import static java.util.logging.Logger.getLogger;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
@@ -32,11 +37,12 @@ import androidx.lifecycle.MutableLiveData;
 
 import static com.professor.zerion.android.attachment.AttachmentItem.State.ERROR;
 import static com.professor.zerion.android.util.UiUtils.observeForeverOnce;
-import static org.briarproject.briar.api.attachment.MediaConstants.MAX_IMAGE_SIZE;
 
 @NotNullByDefault
 class AttachmentCreatorImpl implements AttachmentCreator {
 
+	private static final Logger LOG =
+			getLogger(AttachmentCreatorImpl.class.getName());
 
 	private final Application app;
 	@IoExecutor
@@ -69,7 +75,8 @@ class AttachmentCreatorImpl implements AttachmentCreator {
 	@Override
 	@UiThread
 	public LiveData<AttachmentResult> storeAttachments(
-			LiveData<GroupId> groupId, Collection<Uri> newUris) {
+			LiveData<GroupId> groupId, Collection<Uri> newUris,
+			PrivateMessageFormat messageFormat) {
 		if (task != null || result != null || !uris.isEmpty()) {
 			throw new IllegalStateException();
 		}
@@ -81,7 +88,7 @@ class AttachmentCreatorImpl implements AttachmentCreator {
 			boolean needsSize = uris.size() == 1;
 			task = new AttachmentCreationTask(messagingManager,
 					app.getContentResolver(), this, imageCompressor, id,
-					uris, needsSize);
+					uris, needsSize, messageFormat);
 			ioExecutor.execute(() -> task.storeAttachments());
 		});
 		return result;
@@ -104,13 +111,18 @@ class AttachmentCreatorImpl implements AttachmentCreator {
 		try {
 			Attachment a = retriever.getMessageAttachment(h);
 			AttachmentItem item = retriever.createAttachmentItem(a, needsSize);
-			if (item.getState() == ERROR) throw new IOException();
+			if (item.getState() == ERROR) {
+				throw new IOException("AttachmentItem state is ERROR for: " +
+						h.getContentType());
+			}
 			AttachmentItemResult itemResult =
 					new AttachmentItemResult(uri, item);
 			itemResults.add(itemResult);
 			MutableLiveData<AttachmentResult> result = this.result;
 			if (result != null) result.postValue(getResult(false));
 		} catch (IOException | DbException e) {
+			LOG.log(WARNING, "Error in onAttachmentHeaderReceived: " +
+					e.getClass().getSimpleName() + " - " + e.getMessage(), e);
 			onAttachmentError(uri, e);
 		}
 	}
@@ -118,25 +130,63 @@ class AttachmentCreatorImpl implements AttachmentCreator {
 	@Override
 	@IoExecutor
 	public void onAttachmentError(Uri uri, Throwable t) {
-		String errorMsg;
-		if (t instanceof UnsupportedMimeTypeException) {
-			String mimeType = ((UnsupportedMimeTypeException) t).getMimeType();
-			errorMsg = app.getString(
-					R.string.image_attach_error_invalid_mime_type, mimeType);
-		} else if (t instanceof FileTooBigException) {
-			int mb = MAX_IMAGE_SIZE / 1024 / 1024;
-			errorMsg = app.getString(R.string.image_attach_error_too_big, mb);
-		} else if (t instanceof IOException) {
-			int mb = MAX_IMAGE_SIZE / 1024 / 1024;
-			errorMsg = app.getString(R.string.image_attach_error_too_big, mb);
-		} else {
-			errorMsg = null;
-		}
+		String errorMsg = getErrorMessage(uri, t);
 		AttachmentItemResult itemResult =
 				new AttachmentItemResult(uri, errorMsg);
 		itemResults.add(itemResult);
 		MutableLiveData<AttachmentResult> result = this.result;
 		if (result != null) result.postValue(getResult(false));
+	}
+
+	private String getErrorMessage(Uri uri, Throwable t) {
+		String mimeType = app.getContentResolver().getType(uri);
+		boolean isVideo = mimeType != null && mimeType.startsWith("video/");
+		boolean isAudio = mimeType != null && mimeType.startsWith("audio/");
+
+		if (t instanceof ChunkedAttachmentsNotSupportedException) {
+			ChunkedAttachmentsNotSupportedException e =
+					(ChunkedAttachmentsNotSupportedException) t;
+			if (e.isVideo()) {
+				return app.getString(R.string.video_not_supported_by_contact);
+			} else if (e.isAudio()) {
+				return app.getString(R.string.audio_not_supported_by_contact);
+			}
+			return app.getString(R.string.video_not_supported_by_contact);
+		} else if (t instanceof UnsupportedMimeTypeException) {
+			String type = ((UnsupportedMimeTypeException) t).getMimeType();
+			return app.getString(R.string.image_attach_error_invalid_mime_type, type);
+		} else if (t instanceof FileTooBigException) {
+			int mb = org.briarproject.briar.api.attachment.MediaConstants.MAX_ATTACHMENT_SIZE / 1024 / 1024;
+			if (isVideo) {
+				return app.getString(R.string.video_attach_error_too_big, mb);
+			} else if (isAudio) {
+				return app.getString(R.string.audio_attach_error_too_big, mb);
+			} else {
+				return app.getString(R.string.image_attach_error_too_big, mb);
+			}
+		} else if (t instanceof IOException) {
+			String msg = t.getMessage();
+			if (msg != null && msg.contains("file size")) {
+				return app.getString(R.string.media_attach_error_unknown_size);
+			}
+			if (isVideo) {
+				return app.getString(R.string.video_attach_error);
+			} else if (isAudio) {
+				return app.getString(R.string.audio_attach_error);
+			} else {
+				return app.getString(R.string.image_attach_error);
+			}
+		} else if (t instanceof org.briarproject.bramble.api.db.DbException) {
+			// Handle DbException for video/audio appropriately
+			if (isVideo) {
+				return app.getString(R.string.video_attach_error);
+			} else if (isAudio) {
+				return app.getString(R.string.audio_attach_error);
+			} else {
+				return app.getString(R.string.image_attach_error);
+			}
+		}
+		return null;
 	}
 
 	@Override
@@ -218,4 +268,17 @@ class AttachmentCreatorImpl implements AttachmentCreator {
 		return new AttachmentResult(items, finished);
 	}
 
+	@Override
+	@IoExecutor
+	public void onAttachmentProgress(Uri uri, float progress) {
+		MutableLiveData<AttachmentResult> result = this.result;
+		if (result != null) {
+			result.postValue(getResultWithProgress(progress));
+		}
+	}
+
+	private AttachmentResult getResultWithProgress(float progress) {
+		Collection<AttachmentItemResult> items = new ArrayList<>(itemResults);
+		return new AttachmentResult(items, false, progress);
+	}
 }

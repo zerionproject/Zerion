@@ -89,7 +89,7 @@ class AvatarValidator implements MessageValidator {
 		BdfDictionary meta = new BdfDictionary();
 		meta.put(MSG_KEY_VERSION, version);
 		meta.put(MSG_KEY_CONTENT_TYPE, contentType);
-		meta.put(MSG_KEY_DESCRIPTOR_LENGTH, descriptorLength);
+		meta.put(MSG_KEY_DESCRIPTOR_LENGTH, (int) descriptorLength);
 		return meta;
 	}
 

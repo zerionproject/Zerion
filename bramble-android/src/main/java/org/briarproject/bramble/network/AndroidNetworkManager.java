@@ -52,7 +52,6 @@ import static java.net.NetworkInterface.getNetworkInterfaces;
 import static java.util.Collections.list;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static java.util.logging.Level.INFO;
 import static java.util.logging.Level.WARNING;
 import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.util.AndroidUtils.registerReceiver;
@@ -138,13 +137,11 @@ class AndroidNetworkManager implements NetworkManager, Service {
 			// than assuming we don't. Likewise, assume the connection is
 			// IPv6-only. Fall back to the WifiManager to detect whether we
 			// have a wifi connection.
-			LOG.info("ConnectivityManager is broken, guessing connectivity");
 			boolean connected = true, wifi = false, ipv6Only = true;
 			WifiManager wm = (WifiManager) app.getSystemService(WIFI_SERVICE);
 			if (wm != null) {
 				WifiInfo info = wm.getConnectionInfo();
 				if (info != null && info.getIpAddress() != 0) {
-					LOG.info("Connected to wifi");
 					wifi = true;
 					ipv6Only = false;
 				}
@@ -165,12 +162,10 @@ class AndroidNetworkManager implements NetworkManager, Service {
 		try {
 			Network net = connectivityManager.getActiveNetwork();
 			if (net == null) {
-				LOG.info("No active network");
 				return false;
 			}
 			LinkProperties props = connectivityManager.getLinkProperties(net);
 			if (props == null) {
-				LOG.info("No link properties for active network");
 				return false;
 			}
 			boolean hasIpv6Unicast = false;
@@ -197,7 +192,6 @@ class AndroidNetworkManager implements NetworkManager, Service {
 		try {
 			Enumeration<NetworkInterface> interfaces = getNetworkInterfaces();
 			if (interfaces == null) {
-				LOG.info("No network interfaces");
 				return false;
 			}
 			boolean hasIpv6Unicast = false;
@@ -233,7 +227,6 @@ class AndroidNetworkManager implements NetworkManager, Service {
 		@Override
 		public void onReceive(Context ctx, Intent i) {
 			String action = i.getAction();
-			if (LOG.isLoggable(INFO)) LOG.info("Received broadcast " + action);
 			updateConnectionStatus();
 			if (isSleepOrDozeEvent(action)) {
 				// Allow time for the network to be enabled or disabled

@@ -25,23 +25,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.logging.Logger;
-
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
 
 import static java.util.Collections.emptyList;
-import static java.util.logging.Level.INFO;
-import static java.util.logging.Logger.getLogger;
 
 @ThreadSafe
 @NotNullByDefault
 class ConnectionRegistryImpl implements ConnectionRegistry {
-
-	private static final Logger LOG =
-			getLogger(ConnectionRegistryImpl.class.getName());
 
 	private final EventBus eventBus;
 	private final Map<TransportId, List<TransportId>> transportPrefs;
@@ -75,10 +68,6 @@ class ConnectionRegistryImpl implements ConnectionRegistry {
 
 	private void registerConnection(ContactId c, TransportId t,
 			InterruptibleConnection conn, boolean incoming) {
-		if (LOG.isLoggable(INFO)) {
-			if (incoming) LOG.info("Incoming connection registered: " + t);
-			else LOG.info("Outgoing connection registered: " + t);
-		}
 		boolean firstConnection;
 		synchronized (lock) {
 			List<ConnectionRecord> recs = contactConnections.get(c);
@@ -91,7 +80,6 @@ class ConnectionRegistryImpl implements ConnectionRegistry {
 		}
 		eventBus.broadcast(new ConnectionOpenedEvent(c, t, incoming));
 		if (firstConnection) {
-			LOG.info("Contact connected");
 			eventBus.broadcast(new ContactConnectedEvent(c));
 		}
 	}
@@ -99,7 +87,6 @@ class ConnectionRegistryImpl implements ConnectionRegistry {
 	@Override
 	public void setPriority(ContactId c, TransportId t,
 			InterruptibleConnection conn, Priority priority) {
-		if (LOG.isLoggable(INFO)) LOG.info("Setting connection priority: " + t);
 		List<InterruptibleConnection> toInterrupt;
 		boolean interruptNewConnection = false;
 		synchronized (lock) {
@@ -125,11 +112,9 @@ class ConnectionRegistryImpl implements ConnectionRegistry {
 			}
 		}
 		if (interruptNewConnection) {
-			LOG.info("Interrupting new connection");
 			conn.interruptOutgoingSession();
 		}
 		for (InterruptibleConnection old : toInterrupt) {
-			LOG.info("Interrupting old connection");
 			old.interruptOutgoingSession();
 		}
 	}
@@ -149,10 +134,6 @@ class ConnectionRegistryImpl implements ConnectionRegistry {
 	@Override
 	public void unregisterConnection(ContactId c, TransportId t,
 			InterruptibleConnection conn, boolean incoming, boolean exception) {
-		if (LOG.isLoggable(INFO)) {
-			if (incoming) LOG.info("Incoming connection unregistered: " + t);
-			else LOG.info("Outgoing connection unregistered: " + t);
-		}
 		boolean lastConnection;
 		synchronized (lock) {
 			List<ConnectionRecord> recs = contactConnections.get(c);
@@ -163,7 +144,6 @@ class ConnectionRegistryImpl implements ConnectionRegistry {
 		eventBus.broadcast(
 				new ConnectionClosedEvent(c, t, incoming, exception));
 		if (lastConnection) {
-			LOG.info("Contact disconnected");
 			eventBus.broadcast(new ContactDisconnectedEvent(c));
 		}
 	}
@@ -180,9 +160,6 @@ class ConnectionRegistryImpl implements ConnectionRegistry {
 						break;
 					}
 				}
-			}
-			if (LOG.isLoggable(INFO)) {
-				LOG.info(contactIds.size() + " contacts connected: " + t);
 			}
 			return contactIds;
 		}
@@ -202,10 +179,6 @@ class ConnectionRegistryImpl implements ConnectionRegistry {
 						break;
 					}
 				}
-			}
-			if (LOG.isLoggable(INFO)) {
-				LOG.info(contactIds.size()
-						+ " contacts connected or better: " + t);
 			}
 			return contactIds;
 		}

@@ -18,6 +18,7 @@ import com.google.android.exoplayer2.ui.PlayerView;
 import org.briarproject.bramble.api.db.DatabaseExecutor;
 import org.briarproject.briar.api.attachment.Attachment;
 import org.briarproject.briar.api.attachment.AttachmentHeader;
+import org.briarproject.briar.api.attachment.AttachmentNotYetAvailableException;
 import org.briarproject.briar.api.attachment.AttachmentReader;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
@@ -48,6 +49,9 @@ public class VideoPlayerActivity extends ZerionActivity {
 			"video/mp4", "video/webm", "video/3gpp", "video/quicktime",
 			"video/x-matroska", "video/mpeg", "video/avi"
 	};
+
+	private static final int MAX_RETRY_ATTEMPTS = 10;
+	private static final long RETRY_DELAY_MS = 500;
 
 	@Inject
 	AttachmentReader attachmentReader;
@@ -190,6 +194,7 @@ public class VideoPlayerActivity extends ZerionActivity {
 		}
 
 		String mimeType = attachment.getMimeType();
+
 		if (!isSupportedVideoType(mimeType)) {
 			showError(getString(R.string.video_playback_error));
 			return;
@@ -205,13 +210,25 @@ public class VideoPlayerActivity extends ZerionActivity {
 		showLoading(true);
 
 		final String finalExt = ext;
+		final String finalMimeType = mimeType;
+		final AttachmentHeader header = attachment.getHeader();
+
+		loadVideoWithRetry(header, finalExt, finalMimeType, 0);
+	}
+
+	private void loadVideoWithRetry(AttachmentHeader header, String ext,
+			String mimeType, int attemptNumber) {
+		if (isFinishing() || isDestroyed()) {
+			isLoadingVideo = false;
+			return;
+		}
+
 		dbExecutor.execute(() -> {
 			try {
-				AttachmentHeader header = attachment.getHeader();
 				Attachment att = attachmentReader.getAttachment(header);
 				InputStream is = att.getStream();
 
-				tempVideoFile = File.createTempFile(TEMP_VIDEO_PREFIX, "." + finalExt, getCacheDir());
+				tempVideoFile = File.createTempFile(TEMP_VIDEO_PREFIX, "." + ext, getCacheDir());
 
 				FileOutputStream fos = new FileOutputStream(tempVideoFile);
 				byte[] buffer = new byte[8192];
@@ -219,12 +236,14 @@ public class VideoPlayerActivity extends ZerionActivity {
 				while ((bytesRead = is.read(buffer)) != -1) {
 					fos.write(buffer, 0, bytesRead);
 				}
+				fos.flush();
+				fos.getFD().sync();
 				fos.close();
 				is.close();
 
 				if (!tempVideoFile.exists() || tempVideoFile.length() == 0) {
 					cleanupTempFile();
-					throw new Exception();
+					throw new Exception("Empty temp file");
 				}
 
 				Uri videoUri = Uri.fromFile(tempVideoFile);
@@ -235,6 +254,22 @@ public class VideoPlayerActivity extends ZerionActivity {
 					startPlayback(videoUri);
 				});
 
+			} catch (AttachmentNotYetAvailableException e) {
+				if (attemptNumber < MAX_RETRY_ATTEMPTS) {
+					try {
+						Thread.sleep(RETRY_DELAY_MS);
+					} catch (InterruptedException ie) {
+						Thread.currentThread().interrupt();
+					}
+					loadVideoWithRetry(header, ext, mimeType, attemptNumber + 1);
+				} else {
+					cleanupTempFile();
+					runOnUiThread(() -> {
+						isLoadingVideo = false;
+						showLoading(false);
+						showError(getString(R.string.video_still_downloading));
+					});
+				}
 			} catch (Exception e) {
 				cleanupTempFile();
 				runOnUiThread(() -> {

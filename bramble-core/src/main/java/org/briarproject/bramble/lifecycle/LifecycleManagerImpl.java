@@ -24,8 +24,6 @@ import java.util.logging.Logger;
 import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
 
-import static java.util.logging.Level.FINE;
-import static java.util.logging.Level.INFO;
 import static java.util.logging.Level.WARNING;
 import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.api.lifecycle.LifecycleManager.LifecycleState.COMPACTING_DATABASE;
@@ -45,9 +43,7 @@ import static org.briarproject.bramble.api.lifecycle.LifecycleManager.StartResul
 import static org.briarproject.bramble.api.lifecycle.LifecycleManager.StartResult.SUCCESS;
 import static org.briarproject.bramble.api.system.Clock.MAX_REASONABLE_TIME_MS;
 import static org.briarproject.bramble.api.system.Clock.MIN_REASONABLE_TIME_MS;
-import static org.briarproject.bramble.util.LogUtils.logDuration;
 import static org.briarproject.bramble.util.LogUtils.logException;
-import static org.briarproject.bramble.util.LogUtils.now;
 
 @ThreadSafe
 @NotNullByDefault
@@ -81,72 +77,44 @@ class LifecycleManagerImpl implements LifecycleManager, MigrationListener {
 
 	@Override
 	public void registerService(Service s) {
-		if (LOG.isLoggable(INFO))
-			LOG.info("Registering service " + s.getClass().getSimpleName());
 		services.add(s);
 	}
 
 	@Override
 	public void registerOpenDatabaseHook(OpenDatabaseHook hook) {
-		if (LOG.isLoggable(INFO)) {
-			LOG.info("Registering open database hook "
-					+ hook.getClass().getSimpleName());
-		}
 		openDatabaseHooks.add(hook);
 	}
 
 	@Override
 	public void registerForShutdown(ExecutorService e) {
-		LOG.info("Registering executor " + e.getClass().getSimpleName());
 		executors.add(e);
 	}
 
 	@Override
 	public StartResult startServices(SecretKey dbKey) {
 		if (!state.compareAndSet(CREATED, STARTING)) {
-			LOG.warning("Already running");
 			return ALREADY_RUNNING;
 		}
 		long now = clock.currentTimeMillis();
 		if (now < MIN_REASONABLE_TIME_MS || now > MAX_REASONABLE_TIME_MS) {
-			if (LOG.isLoggable(WARNING)) {
-				LOG.warning("System clock is unreasonable: " + now);
-			}
 			return CLOCK_ERROR;
 		}
 		try {
-			LOG.info("Opening database");
-			long start = now();
-			boolean reopened = db.open(dbKey, this);
-			if (reopened) logDuration(LOG, "Reopening database", start);
-			else logDuration(LOG, "Creating database", start);
+			db.open(dbKey, this);
 
 			db.transaction(false, txn -> {
-				long start1 = now();
 				db.removeTemporaryMessages(txn);
-				logDuration(LOG, "Removing temporary messages", start1);
 				for (OpenDatabaseHook hook : openDatabaseHooks) {
-					start1 = now();
 					hook.onDatabaseOpened(txn);
-					if (LOG.isLoggable(FINE)) {
-						logDuration(LOG, "Calling open database hook "
-								+ hook.getClass().getSimpleName(), start1);
-					}
 				}
 			});
 
-			LOG.info("Starting services");
 			state.set(STARTING_SERVICES);
 			dbLatch.countDown();
 			eventBus.broadcast(new LifecycleEvent(STARTING_SERVICES));
 
 			for (Service s : services) {
-				start = now();
 				s.startService();
-				if (LOG.isLoggable(FINE)) {
-					logDuration(LOG, "Starting service "
-							+ s.getClass().getSimpleName(), start);
-				}
 			}
 
 			state.set(RUNNING);
@@ -183,34 +151,21 @@ class LifecycleManagerImpl implements LifecycleManager, MigrationListener {
 	@Override
 	public void stopServices() {
 		if (!state.compareAndSet(RUNNING, STOPPING)) {
-			LOG.warning("Not running");
 			return;
 		}
-		LOG.info("Stopping services");
 		eventBus.broadcast(new LifecycleEvent(STOPPING));
 		for (Service s : services) {
 			try {
-				long start = now();
 				s.stopService();
-				if (LOG.isLoggable(FINE)) {
-					logDuration(LOG, "Stopping service "
-							+ s.getClass().getSimpleName(), start);
-				}
 			} catch (ServiceException e) {
 				logException(LOG, WARNING, e);
 			}
 		}
 		for (ExecutorService e : executors) {
-			if (LOG.isLoggable(FINE)) {
-				LOG.fine("Stopping executor "
-						+ e.getClass().getSimpleName());
-			}
 			e.shutdownNow();
 		}
 		try {
-			long start = now();
 			db.close();
-			logDuration(LOG, "Closing database", start);
 		} catch (DbException e) {
 			logException(LOG, WARNING, e);
 		}

@@ -267,6 +267,14 @@
 	<string name="image_attach_error_too_big">Image too big. Limit is %d MB.</string>
 	<string name="image_attach_error_too_big_kb">Image too big. Limit is %d KB.</string>
 	<string name="image_attach_error_invalid_mime_type">Image format unsupported: %s</string>
+	<string name="video_attach_error">Could not attach video</string>
+	<string name="video_attach_error_too_big">Video too big. Maximum size is %d MB.</string>
+	<string name="video_not_supported_by_contact">Video requires Zerion on both devices. This contact uses Briar or an older Zerion version.</string>
+	<string name="audio_attach_error">Could not attach audio</string>
+	<string name="audio_attach_error_too_big">Audio file too big. Maximum size is %d MB.</string>
+	<string name="audio_not_supported_by_contact">Audio files require Zerion on both devices. This contact uses Briar or an older Zerion version.</string>
+	<string name="media_attach_error_unknown_size">Could not determine file size</string>
+	<string name="attachment_uploading">Uploading attachment\u2026 %d%%</string>
 	<string name="take_photo">Take photo</string>
 	<string name="add_attachment">Add attachment</string>
 	<string name="toggle_emoji_keyboard">Toggle emoji keyboard</string>
@@ -276,6 +284,7 @@
 	<string name="rewind">Rewind</string>
 	<string name="fast_forward">Fast forward</string>
 	<string name="video_playback_error">Unable to play video</string>
+	<string name="video_still_downloading">Video still downloading, please try again later</string>
 	<string name="attachment_from_phone_gallery">Phone Gallery</string>
 	<string name="attachment_from_vault_gallery">Vault Gallery</string>
 	<string name="attachment_from_phone_documents">Phone Documents</string>
@@ -289,6 +298,7 @@
 	<string name="clear_chat_success">Chat cleared successfully</string>
 	<string name="delete_failed">Failed to delete messages</string>
 	<string name="group_clear_not_supported">Group messages cannot be individually deleted due to Zerion\'s protocol design</string>
+	<string name="group_attachments_not_supported">Attachments are not yet supported in group chats. You can send photos and videos in 1:1 conversations.</string>
 	<string name="block_user">Block User</string>
 	<string name="sound_and_notifications">Sound &amp; Notifications</string>
 	<string name="mute_notifications">Mute Notifications</string>

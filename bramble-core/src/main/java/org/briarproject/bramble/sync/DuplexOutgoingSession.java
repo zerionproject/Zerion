@@ -46,7 +46,6 @@ import javax.annotation.concurrent.ThreadSafe;
 
 import static java.lang.Boolean.TRUE;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.logging.Level.INFO;
 import static java.util.logging.Level.WARNING;
 import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.api.lifecycle.LifecycleManager.LifecycleState.STOPPING;
@@ -164,24 +163,19 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 					if (task == null) {
 						now = clock.currentTimeMillis();
 						if (now >= nextSendTime.get()) {
-							// Check for retransmittable messages
-							LOG.info("Checking for retransmittable messages");
 							setNextSendTime(Long.MAX_VALUE);
 							generateBatch();
 							generateOffer();
 						}
 						if (now >= nextKeepalive) {
-							// Flush the stream to keep it alive
-							LOG.info("Sending keepalive");
 							recordWriter.flush();
 							dataToFlush = false;
 							nextKeepalive = now + maxIdleTime;
 						}
 					} else if (task == CLOSE) {
-						LOG.info("Closed");
 						break;
 					} else if (task == NEXT_SEND_TIME_DECREASED) {
-						LOG.info("Next send time decreased");
+						// No action needed
 					} else {
 						task.run();
 						dataToFlush = true;
@@ -189,7 +183,6 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 				}
 				streamWriter.sendEndOfStream();
 			} catch (InterruptedException e) {
-				LOG.info("Interrupted while waiting for a record to write");
 				Thread.currentThread().interrupt();
 			}
 		} finally {
@@ -278,8 +271,6 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 			try {
 				Ack a = db.transactionWithNullableResult(false, txn ->
 						db.generateAck(txn, contactId, MAX_MESSAGE_IDS));
-				if (LOG.isLoggable(INFO))
-					LOG.info("Generated ack: " + (a != null));
 				if (a != null) writerTasks.add(new WriteAck(a));
 			} catch (DbException e) {
 				logException(LOG, WARNING, e);
@@ -301,7 +292,6 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 		public void run() throws IOException {
 			if (interrupted) return;
 			recordWriter.writeAck(ack);
-			LOG.info("Sent ack");
 			generateAck();
 		}
 	}
@@ -324,8 +314,6 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 									maxLatency));
 							return batch;
 						});
-				if (LOG.isLoggable(INFO))
-					LOG.info("Generated batch: " + (b != null));
 				if (b != null) writerTasks.add(new WriteBatch(b));
 			} catch (DbException e) {
 				logException(LOG, WARNING, e);
@@ -347,7 +335,6 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 		public void run() throws IOException {
 			if (interrupted) return;
 			for (Message m : batch) recordWriter.writeMessage(m);
-			LOG.info("Sent batch");
 			generateBatch();
 		}
 	}
@@ -368,8 +355,6 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 							maxLatency));
 					return offer;
 				});
-				if (LOG.isLoggable(INFO))
-					LOG.info("Generated offer: " + (o != null));
 				if (o != null) writerTasks.add(new WriteOffer(o));
 			} catch (DbException e) {
 				logException(LOG, WARNING, e);
@@ -391,7 +376,6 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 		public void run() throws IOException {
 			if (interrupted) return;
 			recordWriter.writeOffer(offer);
-			LOG.info("Sent offer");
 			generateOffer();
 		}
 	}
@@ -407,8 +391,6 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 			try {
 				Request r = db.transactionWithNullableResult(false, txn ->
 						db.generateRequest(txn, contactId, MAX_MESSAGE_IDS));
-				if (LOG.isLoggable(INFO))
-					LOG.info("Generated request: " + (r != null));
 				if (r != null) writerTasks.add(new WriteRequest(r));
 			} catch (DbException e) {
 				logException(LOG, WARNING, e);
@@ -430,7 +412,6 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 		public void run() throws IOException {
 			if (interrupted) return;
 			recordWriter.writeRequest(request);
-			LOG.info("Sent request");
 			generateRequest();
 		}
 	}

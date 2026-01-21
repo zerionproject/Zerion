@@ -25,8 +25,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Logger;
-
 import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.ThreadSafe;
 
@@ -37,8 +35,6 @@ import static android.content.Context.ALARM_SERVICE;
 import static android.os.Build.VERSION.SDK_INT;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.logging.Level.INFO;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.system.AlarmConstants.EXTRA_PID;
 import static org.briarproject.bramble.system.AlarmConstants.REQUEST_ALARM;
 import static org.briarproject.bramble.util.AndroidUtils.getImmutableFlags;
@@ -46,9 +42,6 @@ import static org.briarproject.bramble.util.AndroidUtils.getImmutableFlags;
 @ThreadSafe
 @NotNullByDefault
 class AndroidTaskScheduler implements TaskScheduler, Service, AlarmListener {
-
-	private static final Logger LOG =
-			getLogger(AndroidTaskScheduler.class.getName());
 
 	private static final long ALARM_MS = INTERVAL_FIFTEEN_MINUTES;
 
@@ -102,12 +95,8 @@ class AndroidTaskScheduler implements TaskScheduler, Service, AlarmListener {
 			int extraPid = intent.getIntExtra(EXTRA_PID, -1);
 			int currentPid = Process.myPid();
 			if (extraPid == currentPid) {
-				LOG.info("Alarm");
 				rescheduleAlarm();
 				runDueTasks();
-			} else if (LOG.isLoggable(INFO)) {
-				LOG.info("Ignoring alarm with PID " + extraPid
-						+ ", current PID is " + currentPid);
 			}
 		}, "TaskAlarm");
 	}
@@ -158,13 +147,7 @@ class AndroidTaskScheduler implements TaskScheduler, Service, AlarmListener {
 				due.add(tasks.remove());
 			}
 		}
-		if (LOG.isLoggable(INFO)) {
-			LOG.info("Running " + due.size() + " due tasks");
-		}
 		for (ScheduledTask s : due) {
-			if (LOG.isLoggable(INFO)) {
-				LOG.info("Task is " + (now - s.dueMillis) + " ms overdue");
-			}
 			s.run();
 		}
 	}

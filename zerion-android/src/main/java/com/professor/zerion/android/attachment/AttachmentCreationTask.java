@@ -1,7 +1,15 @@
 package com.professor.zerion.android.attachment;
 
 import android.content.ContentResolver;
+import android.database.Cursor;
+import android.media.MediaExtractor;
+import android.media.MediaFormat;
+import android.media.MediaMetadataRetriever;
 import android.net.Uri;
+import android.os.ParcelFileDescriptor;
+import android.provider.OpenableColumns;
+import android.util.Log;
+import android.webkit.MimeTypeMap;
 
 import org.briarproject.bramble.api.db.DbException;
 import org.briarproject.bramble.api.lifecycle.IoExecutor;
@@ -9,6 +17,7 @@ import org.briarproject.bramble.api.sync.GroupId;
 import com.professor.zerion.android.attachment.media.ImageCompressor;
 import org.briarproject.briar.api.attachment.AttachmentHeader;
 import org.briarproject.briar.api.messaging.MessagingManager;
+import org.briarproject.briar.api.messaging.PrivateMessageFormat;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.IOException;
@@ -24,6 +33,7 @@ import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.util.AndroidUtils.getSupportedImageContentTypes;
 import static org.briarproject.bramble.util.IoUtils.tryToClose;
 import static com.professor.zerion.android.attachment.media.ImageCompressor.MIME_TYPE;
+import static org.briarproject.briar.api.attachment.MediaConstants.MAX_ATTACHMENT_SIZE;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -49,7 +59,9 @@ class AttachmentCreationTask {
 			"video/3gpp",
 			"video/webm",
 			"video/x-matroska",
-			"video/quicktime"
+			"video/quicktime",
+			"video/mpeg",
+			"video/avi"
 	));
 
 
@@ -59,6 +71,7 @@ class AttachmentCreationTask {
 	private final GroupId groupId;
 	private final Collection<Uri> uris;
 	private final boolean needsSize;
+	private final PrivateMessageFormat messageFormat;
 	@Nullable
 	private volatile AttachmentCreator attachmentCreator;
 
@@ -68,7 +81,8 @@ class AttachmentCreationTask {
 			ContentResolver contentResolver,
 			AttachmentCreator attachmentCreator,
 			ImageCompressor imageCompressor,
-			GroupId groupId, Collection<Uri> uris, boolean needsSize) {
+			GroupId groupId, Collection<Uri> uris, boolean needsSize,
+			PrivateMessageFormat messageFormat) {
 		this.messagingManager = messagingManager;
 		this.contentResolver = contentResolver;
 		this.imageCompressor = imageCompressor;
@@ -76,6 +90,7 @@ class AttachmentCreationTask {
 		this.uris = uris;
 		this.needsSize = needsSize;
 		this.attachmentCreator = attachmentCreator;
+		this.messageFormat = messageFormat;
 	}
 
 	void cancel() {
@@ -101,7 +116,7 @@ class AttachmentCreationTask {
 			if (attachmentCreator != null) {
 				attachmentCreator.onAttachmentHeaderReceived(uri, h, needsSize);
 			}
-		} catch (DbException | IOException e) {
+		} catch (DbException | IOException | ChunkedAttachmentsNotSupportedException e) {
 			AttachmentCreator attachmentCreator = this.attachmentCreator;
 			if (attachmentCreator != null) {
 				attachmentCreator.onAttachmentError(uri, e);
@@ -112,8 +127,12 @@ class AttachmentCreationTask {
 
 	@IoExecutor
 	private AttachmentHeader storeAttachment(Uri uri)
-			throws IOException, DbException {
+			throws IOException, DbException, ChunkedAttachmentsNotSupportedException {
 		String contentType = contentResolver.getType(uri);
+		// Fallback: get MIME type from file extension if ContentResolver returns null
+		if (contentType == null) {
+			contentType = getMimeTypeFromExtension(uri);
+		}
 		if (contentType == null) throw new IOException("null content type");
 
 		boolean isAudio = SUPPORTED_AUDIO_TYPES.contains(contentType);
@@ -124,27 +143,192 @@ class AttachmentCreationTask {
 			throw new UnsupportedMimeTypeException(contentType, uri);
 		}
 
+		if (isAudio || isVideo) {
+			if (!messageFormat.supportsChunkedAttachments()) {
+				throw new ChunkedAttachmentsNotSupportedException(contentType);
+			}
+			return storeMediaAttachmentStreaming(uri, contentType);
+		}
+
+		return storeImageAttachment(uri, contentType);
+	}
+
+	@IoExecutor
+	private AttachmentHeader storeMediaAttachmentStreaming(Uri uri, String contentType)
+			throws IOException, DbException {
+		long fileSize = getFileSize(uri);
+		if (fileSize <= 0) {
+			throw new IOException("Could not determine file size");
+		}
+		if (fileSize > MAX_ATTACHMENT_SIZE) {
+			throw new org.briarproject.briar.api.attachment.FileTooBigException();
+		}
+
+		// Log video metadata for codec debugging
+		if (contentType != null && contentType.startsWith("video/")) {
+			logSenderVideoMetadata(uri, contentType, fileSize);
+		}
+
 		InputStream is;
 		try {
 			is = contentResolver.openInputStream(uri);
-			if (is == null) throw new IOException();
+			if (is == null) throw new IOException("Could not open input stream");
 		} catch (SecurityException e) {
 			throw new IOException(e);
 		}
 
-		String finalMimeType;
-		if (isAudio || isVideo) {
-			finalMimeType = contentType;
-		} else {
-			is = imageCompressor.compressImage(is, contentType);
-			finalMimeType = MIME_TYPE;
+		long timestamp = System.currentTimeMillis();
+
+		MessagingManager.ProgressCallback progressCallback = progress -> {
+			AttachmentCreator creator = this.attachmentCreator;
+			if (creator != null) {
+				creator.onAttachmentProgress(uri, progress);
+			}
+		};
+
+		try {
+			return messagingManager.addLocalAttachmentStreaming(
+					groupId, timestamp, contentType, is, fileSize, progressCallback);
+		} finally {
+			tryToClose(is, LOG, WARNING);
 		}
+	}
+
+	@IoExecutor
+	private AttachmentHeader storeImageAttachment(Uri uri, String contentType)
+			throws IOException, DbException {
+		InputStream is;
+		try {
+			is = contentResolver.openInputStream(uri);
+			if (is == null) throw new IOException("Could not open input stream");
+		} catch (SecurityException e) {
+			throw new IOException(e);
+		}
+
+		is = imageCompressor.compressImage(is, contentType);
 
 		long timestamp = System.currentTimeMillis();
 		AttachmentHeader h = messagingManager.addLocalAttachment(groupId,
-				timestamp, finalMimeType, is);
+				timestamp, MIME_TYPE, is);
 		tryToClose(is, LOG, WARNING);
 		return h;
 	}
 
+	private long getFileSize(Uri uri) {
+		long size = -1;
+		Cursor cursor = null;
+		try {
+			cursor = contentResolver.query(uri, null, null, null, null);
+			if (cursor != null && cursor.moveToFirst()) {
+				int sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE);
+				if (sizeIndex != -1 && !cursor.isNull(sizeIndex)) {
+					size = cursor.getLong(sizeIndex);
+				}
+			}
+		} catch (Exception e) {
+			LOG.log(WARNING, "Failed to query file size", e);
+		} finally {
+			if (cursor != null) {
+				cursor.close();
+			}
+		}
+		return size;
+	}
+
+	@Nullable
+	private String getMimeTypeFromExtension(Uri uri) {
+		String path = uri.getPath();
+		if (path == null) return null;
+		int dotIndex = path.lastIndexOf('.');
+		if (dotIndex == -1) return null;
+		String extension = path.substring(dotIndex + 1).toLowerCase();
+		return MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
+	}
+
+	private void logSenderVideoMetadata(Uri uri, String contentType, long fileSize) {
+		ParcelFileDescriptor pfd = null;
+		try {
+			StringBuilder info = new StringBuilder();
+			String uriScheme = uri.getScheme();
+			boolean isGallery = "content".equals(uriScheme);
+			String tag = isGallery ? "SENDER_GALLERY" : "SENDER_FILE";
+
+			info.append("[").append(tag).append("] ");
+			info.append("uri=").append(uri.toString()).append(", ");
+			info.append("contentType=").append(contentType).append(", ");
+			info.append("fileSize=").append(fileSize).append("bytes, ");
+
+			// Use MediaMetadataRetriever with content URI
+			MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+			try {
+				pfd = contentResolver.openFileDescriptor(uri, "r");
+				if (pfd != null) {
+					retriever.setDataSource(pfd.getFileDescriptor());
+					String duration = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
+					String bitrate = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE);
+					String width = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH);
+					String height = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT);
+					String mimeType = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_MIMETYPE);
+
+					if (width != null && height != null) {
+						info.append("resolution=").append(width).append("x").append(height).append(", ");
+					}
+					if (duration != null) {
+						info.append("duration=").append(duration).append("ms, ");
+					}
+					if (bitrate != null) {
+						info.append("bitrate=").append(bitrate).append(", ");
+					}
+					if (mimeType != null) {
+						info.append("extractedMime=").append(mimeType).append(", ");
+					}
+				}
+			} finally {
+				retriever.release();
+			}
+
+			// Try to get codec info using MediaExtractor
+			MediaExtractor extractor = new MediaExtractor();
+			try {
+				pfd = contentResolver.openFileDescriptor(uri, "r");
+				if (pfd != null) {
+					extractor.setDataSource(pfd.getFileDescriptor());
+					for (int i = 0; i < extractor.getTrackCount(); i++) {
+						MediaFormat format = extractor.getTrackFormat(i);
+						String mime = format.getString(MediaFormat.KEY_MIME);
+						info.append("track").append(i).append("=").append(mime);
+						if (mime != null && mime.startsWith("video/")) {
+							if (format.containsKey(MediaFormat.KEY_PROFILE)) {
+								info.append(" profile=").append(format.getInteger(MediaFormat.KEY_PROFILE));
+							}
+							if (format.containsKey(MediaFormat.KEY_LEVEL)) {
+								info.append(" level=").append(format.getInteger(MediaFormat.KEY_LEVEL));
+							}
+							// Check for HEVC
+							if (mime.contains("hevc") || mime.contains("hev1") || mime.contains("hvc1")) {
+								info.append(" [HEVC/H.265]");
+							} else if (mime.contains("avc") || mime.contains("h264")) {
+								info.append(" [AVC/H.264]");
+							}
+						}
+						info.append(", ");
+					}
+				}
+			} finally {
+				extractor.release();
+			}
+
+			Log.i("VideoCodecInfo", info.toString());
+
+		} catch (Exception e) {
+			Log.e("VideoCodecInfo", "[SENDER] Failed to extract metadata from " + uri + ": " + e.getMessage());
+		} finally {
+			if (pfd != null) {
+				try {
+					pfd.close();
+				} catch (Exception ignored) {
+				}
+			}
+		}
+	}
 }
