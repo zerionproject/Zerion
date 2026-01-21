@@ -191,7 +191,6 @@ public class VoiceAttachmentHandler {
 				});
 			} else if (outputFile != null && outputFile.exists()) {
 				long fileSize = outputFile.length();
-				LOG.info("Voice attachment recorded: " + duration + "ms, " + fileSize + " bytes");
 
 				if (fileSize > MAX_FILE_SIZE_BYTES) {
 					deleteOutputFile();

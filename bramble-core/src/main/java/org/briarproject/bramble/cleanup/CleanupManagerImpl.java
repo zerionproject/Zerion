@@ -34,7 +34,6 @@ import javax.inject.Inject;
 
 import static java.lang.Math.max;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.logging.Level.INFO;
 import static java.util.logging.Level.WARNING;
 import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.api.db.DatabaseComponent.NO_CLEANUP_DEADLINE;
@@ -104,9 +103,6 @@ class CleanupManagerImpl implements CleanupManager, Service, EventListener {
 	private void scheduleTask(CleanupTask task) {
 		long now = clock.currentTimeMillis();
 		long delay = max(0, task.deadline - now + BATCH_DELAY_MS);
-		if (LOG.isLoggable(INFO)) {
-			LOG.info("Scheduling cleanup task in " + delay + " ms");
-		}
 		taskScheduler.schedule(() -> deleteMessagesAndScheduleNextTask(task),
 				dbExecutor, delay, MILLISECONDS);
 	}
@@ -133,9 +129,6 @@ class CleanupManagerImpl implements CleanupManager, Service, EventListener {
 		for (Entry<GroupId, Collection<MessageId>> e : ids.entrySet()) {
 			GroupId groupId = e.getKey();
 			Collection<MessageId> messageIds = e.getValue();
-			if (LOG.isLoggable(INFO)) {
-				LOG.info(messageIds.size() + " messages to delete");
-			}
 			for (MessageId m : messageIds) db.stopCleanupTimer(txn, m);
 			Group group = db.getGroup(txn, groupId);
 			ClientMajorVersion cv = new ClientMajorVersion(group.getClientId(),

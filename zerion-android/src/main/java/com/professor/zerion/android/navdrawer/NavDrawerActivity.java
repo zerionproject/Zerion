@@ -369,9 +369,13 @@ public class NavDrawerActivity extends ZerionActivity implements
 	}
 
 	private void showDonationDialog() {
-		DonationDialogFragment dialog = DonationDialogFragment.newInstance();
-		dialog.show(getSupportFragmentManager(), DonationDialogFragment.TAG);
-		donationManager.onDialogShown();
+		// Check lifecycle state to avoid IllegalStateException after onSaveInstanceState
+		if (getLifecycle().getCurrentState().isAtLeast(
+				androidx.lifecycle.Lifecycle.State.RESUMED)) {
+			DonationDialogFragment dialog = DonationDialogFragment.newInstance();
+			dialog.show(getSupportFragmentManager(), DonationDialogFragment.TAG);
+			donationManager.onDialogShown();
+		}
 	}
 
 	@Override

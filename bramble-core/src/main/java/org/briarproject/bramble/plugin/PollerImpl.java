@@ -47,7 +47,6 @@ import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.logging.Level.INFO;
 import static java.util.logging.Level.WARNING;
 import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.util.LogUtils.logException;
@@ -215,7 +214,6 @@ class PollerImpl implements Poller, EventListener {
 	@IoExecutor
 	private void poll(Plugin p) {
 		TransportId t = p.getId();
-		if (LOG.isLoggable(INFO)) LOG.info("Polling plugin " + t);
 		try {
 			Map<ContactId, TransportProperties> remote =
 					transportPropertyManager.getRemoteProperties(t);

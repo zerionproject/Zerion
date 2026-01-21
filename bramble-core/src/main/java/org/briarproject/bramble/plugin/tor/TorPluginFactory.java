@@ -30,7 +30,6 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import javax.net.SocketFactory;
 
-import static java.util.logging.Level.INFO;
 import static java.util.logging.Logger.getLogger;
 
 @Immutable
@@ -116,10 +115,6 @@ abstract class TorPluginFactory implements DuplexPluginFactory {
 		if (architecture == null) {
 			LOG.warning("Tor is not supported on this architecture");
 			return null;
-		}
-
-		if (LOG.isLoggable(INFO)) {
-			LOG.info("The selected architecture for Tor is " + architecture);
 		}
 
 		Backoff backoff = backoffFactory.createBackoff(MIN_POLLING_INTERVAL,

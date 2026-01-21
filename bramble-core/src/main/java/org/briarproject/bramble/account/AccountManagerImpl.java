@@ -74,18 +74,12 @@ class AccountManagerImpl implements AccountManager {
 		return databaseKey;
 	}
 
-	// Package access for testing
 	@GuardedBy("stateChangeLock")
 	@Nullable
 	String loadEncryptedDatabaseKey() {
 		String key = readDbKeyFromFile(dbKeyFile);
 		if (key == null) {
-			LOG.info("No database key in primary file");
 			key = readDbKeyFromFile(dbKeyBackupFile);
-			if (key == null) LOG.info("No database key in backup file");
-			else LOG.warning("Found database key in backup file");
-		} else {
-			LOG.info("Found database key in primary file");
 		}
 		return key;
 	}
@@ -94,7 +88,6 @@ class AccountManagerImpl implements AccountManager {
 	@Nullable
 	private String readDbKeyFromFile(File f) {
 		if (!f.exists()) {
-			LOG.info("Key file does not exist");
 			return null;
 		}
 		try {
@@ -109,38 +102,21 @@ class AccountManagerImpl implements AccountManager {
 		}
 	}
 
-	// Package access for testing
 	@GuardedBy("stateChangeLock")
 	boolean storeEncryptedDatabaseKey(String hex) {
-		LOG.info("Storing database key in file");
-		// Create the directory if necessary
-		if (databaseConfig.getDatabaseKeyDirectory().mkdirs())
-			LOG.info("Created database key directory");
-		// If only the backup file exists, rename it so we don't overwrite it
+		databaseConfig.getDatabaseKeyDirectory().mkdirs();
 		if (dbKeyBackupFile.exists() && !dbKeyFile.exists()) {
-			if (dbKeyBackupFile.renameTo(dbKeyFile))
-				LOG.info("Renamed old backup");
-			else LOG.warning("Failed to rename old backup");
+			dbKeyBackupFile.renameTo(dbKeyFile);
 		}
 		try {
-			// Write to the backup file
 			writeDbKeyToFile(hex, dbKeyBackupFile);
-			LOG.info("Stored database key in backup file");
-			// Delete the old primary file, if it exists
 			if (dbKeyFile.exists()) {
-				if (dbKeyFile.delete()) LOG.info("Deleted primary file");
-				else LOG.warning("Failed to delete primary file");
+				dbKeyFile.delete();
 			}
-			// The backup file becomes the new primary
-			if (dbKeyBackupFile.renameTo(dbKeyFile)) {
-				LOG.info("Renamed backup file to primary");
-			} else {
-				LOG.warning("Failed to rename backup file to primary");
-				return false; // Don't overwrite our only copy
+			if (!dbKeyBackupFile.renameTo(dbKeyFile)) {
+				return false;
 			}
-			// Write a second copy to the backup file
 			writeDbKeyToFile(hex, dbKeyBackupFile);
-			LOG.info("Stored second copy of database key in backup file");
 			return true;
 		} catch (IOException e) {
 			logException(LOG, WARNING, e);
@@ -188,7 +164,6 @@ class AccountManagerImpl implements AccountManager {
 	@Override
 	public void deleteAccount() {
 		synchronized (stateChangeLock) {
-			LOG.info("Deleting account");
 			IoUtils.deleteFileOrDir(databaseConfig.getDatabaseKeyDirectory());
 			IoUtils.deleteFileOrDir(databaseConfig.getDatabaseDirectory());
 			databaseKey = null;
@@ -207,25 +182,20 @@ class AccountManagerImpl implements AccountManager {
 			throws DecryptionException {
 		String hex = loadEncryptedDatabaseKey();
 		if (hex == null) {
-			LOG.warning("Failed to load encrypted database key");
 			throw new DecryptionException(INVALID_CIPHERTEXT);
 		}
 		byte[] ciphertext;
 		try {
 			ciphertext = fromHexString(hex);
 		} catch (FormatException e) {
-			LOG.warning("Encrypted database key has invalid format");
 			throw new DecryptionException(INVALID_CIPHERTEXT);
 		}
 		KeyStrengthener keyStrengthener = databaseConfig.getKeyStrengthener();
 		byte[] plaintext = crypto.decryptWithPassword(ciphertext, password,
 				keyStrengthener);
 		SecretKey key = new SecretKey(plaintext);
-		// If the DB key was encrypted with a weak key and a key strengthener
-		// is now available, re-encrypt the DB key with a strengthened key
 		if (keyStrengthener != null &&
 				!crypto.isEncryptedWithStrengthenedKey(ciphertext)) {
-			LOG.info("Re-encrypting database key with strengthened key");
 			encryptAndStoreDatabaseKey(key, password);
 		}
 		return key;

@@ -345,7 +345,11 @@ public class ConversationViewModel extends DbViewModel
 		if (restart) {
 			return attachmentCreator.getLiveAttachments();
 		} else {
-			return attachmentCreator.storeAttachments(messagingGroupId, uris);
+			PrivateMessageFormat format = privateMessageFormat.getValue();
+			if (format == null) {
+				format = TEXT_IMAGES;
+			}
+			return attachmentCreator.storeAttachments(messagingGroupId, uris, format);
 		}
 	}
 
@@ -690,7 +694,11 @@ public class ConversationViewModel extends DbViewModel
 	@UiThread
 	LiveData<AttachmentResult> storeVoiceAttachment(android.net.Uri audioUri) {
 		java.util.Collection<android.net.Uri> uris = java.util.Collections.singleton(audioUri);
-		return attachmentCreator.storeAttachments(messagingGroupId, uris);
+		PrivateMessageFormat format = privateMessageFormat.getValue();
+		if (format == null) {
+			format = TEXT_IMAGES;
+		}
+		return attachmentCreator.storeAttachments(messagingGroupId, uris, format);
 	}
 
 	/**
