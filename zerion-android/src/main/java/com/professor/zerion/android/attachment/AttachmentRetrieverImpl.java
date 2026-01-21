@@ -10,6 +10,7 @@ import com.professor.zerion.android.attachment.media.ImageSizeCalculator;
 import com.professor.zerion.android.attachment.media.Size;
 import org.briarproject.briar.api.attachment.Attachment;
 import org.briarproject.briar.api.attachment.AttachmentHeader;
+import org.briarproject.briar.api.attachment.AttachmentNotYetAvailableException;
 import org.briarproject.briar.api.attachment.AttachmentReader;
 import org.briarproject.briar.api.messaging.PrivateMessageHeader;
 import org.briarproject.nullsafety.NotNullByDefault;
@@ -63,7 +64,9 @@ class AttachmentRetrieverImpl implements AttachmentRetriever {
 			"video/3gpp",
 			"video/webm",
 			"video/x-matroska",
-			"video/quicktime"
+			"video/quicktime",
+			"video/mpeg",
+			"video/avi"
 	));
 
 	@DatabaseExecutor
@@ -205,6 +208,8 @@ class AttachmentRetrieverImpl implements AttachmentRetriever {
 			item = createAttachmentItem(a, needsSize);
 		} catch (NoSuchMessageException e) {
 			item = new AttachmentItem(h, defaultSize, defaultSize, MISSING);
+		} catch (AttachmentNotYetAvailableException e) {
+			item = new AttachmentItem(h, defaultSize, defaultSize, LOADING);
 		} catch (DbException e) {
 			item = new AttachmentItem(h, "", ERROR);
 		}

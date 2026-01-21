@@ -48,6 +48,7 @@ import com.professor.zerion.android.introduction.IntroductionActivity;
 import com.professor.zerion.android.privategroup.conversation.GroupActivity;
 import com.professor.zerion.android.vault.ui.VaultActivity;
 import com.professor.zerion.android.util.ActivityLaunchers.GetMultipleImagesAdvanced;
+import com.professor.zerion.android.util.ActivityLaunchers.GetMultipleMediaAdvanced;
 import com.professor.zerion.android.util.ActivityLaunchers.OpenMultipleImageDocumentsAdvanced;
 import com.professor.zerion.android.conversation.voice.VoiceRecordingController;
 import com.professor.zerion.android.util.ZerionSnackbarBuilder;
@@ -70,6 +71,7 @@ import org.briarproject.briar.api.conversation.event.ConversationMessageReceived
 import org.briarproject.briar.api.client.SessionId;
 import org.briarproject.briar.api.introduction.IntroductionManager;
 import org.briarproject.briar.api.messaging.MessagingManager;
+import org.briarproject.briar.api.messaging.PrivateMessageFormat;
 import org.briarproject.briar.api.messaging.PrivateMessageHeader;
 import org.briarproject.briar.api.privategroup.invitation.GroupInvitationManager;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
@@ -173,6 +175,10 @@ public class ConversationActivity extends ZerionActivity
 					this::onImagesChosen);
 	private final ActivityResultLauncher<String> contentLauncher =
 			registerForActivityResult(new GetMultipleImagesAdvanced(),
+					this::onImagesChosen);
+	// Launcher for picking images AND videos (for contacts supporting chunked attachments)
+	private final ActivityResultLauncher<String> mediaLauncher =
+			registerForActivityResult(new GetMultipleMediaAdvanced(),
 					this::onImagesChosen);
 
 	private AttachmentRetriever attachmentRetriever;
@@ -409,8 +415,10 @@ public class ConversationActivity extends ZerionActivity
 	private static final int REQUEST_RECORD_AUDIO = 1006;
 	private static final int REQUEST_VOICE_CALL = 1007;
 	private static final int REQUEST_RECORD_VIDEO = 1008;
+	private static final int REQUEST_VIDEO_CAMERA_PERMISSION = 1009;
 	private Uri photoUri;
 	private Uri videoUri;
+	private java.io.File recordedVideoFile;
 
 	// Voice recording controller (manages recording UI and state)
 	private VoiceRecordingController voiceRecordingController;
@@ -438,13 +446,13 @@ public class ConversationActivity extends ZerionActivity
 	private void launchVideoRecorder() {
 		Intent takeVideoIntent = new Intent(android.provider.MediaStore.ACTION_VIDEO_CAPTURE);
 		try {
-			java.io.File videoFile = new java.io.File(new java.io.File(getFilesDir(), "camera"),
+			recordedVideoFile = new java.io.File(new java.io.File(getFilesDir(), "camera"),
 					"temp_" + System.currentTimeMillis() + ".mp4");
-			if (!videoFile.getParentFile().exists()) {
-				videoFile.getParentFile().mkdirs();
+			if (!recordedVideoFile.getParentFile().exists()) {
+				recordedVideoFile.getParentFile().mkdirs();
 			}
 			videoUri = androidx.core.content.FileProvider.getUriForFile(this,
-					"com.professor.zerion.fileprovider", videoFile);
+					"com.professor.zerion.fileprovider", recordedVideoFile);
 			takeVideoIntent.putExtra(android.provider.MediaStore.EXTRA_OUTPUT, videoUri);
 			takeVideoIntent.putExtra(android.provider.MediaStore.EXTRA_VIDEO_QUALITY, 0);
 			takeVideoIntent.putExtra(android.provider.MediaStore.EXTRA_DURATION_LIMIT, 60);
@@ -455,6 +463,111 @@ public class ConversationActivity extends ZerionActivity
 			Toast.makeText(this, R.string.no_camera_app, Toast.LENGTH_SHORT).show();
 		} catch (Exception e) {
 			handleSecurityException(e);
+		}
+	}
+
+	private void processRecordedVideo() {
+		ioExecutor.execute(() -> {
+			try {
+				if (recordedVideoFile == null || !recordedVideoFile.exists()) {
+					runOnUiThread(() -> Toast.makeText(this,
+							R.string.video_attach_error, Toast.LENGTH_SHORT).show());
+					return;
+				}
+
+				// Create a finalized copy in the camera directory (accessible by FileProvider)
+				java.io.File cameraDir = new java.io.File(getFilesDir(), "camera");
+				if (!cameraDir.exists()) {
+					cameraDir.mkdirs();
+				}
+				java.io.File finalizedFile = new java.io.File(cameraDir,
+						"final_" + System.currentTimeMillis() + ".mp4");
+
+				// Copy the recorded file to ensure it's fully written and MP4 is finalized
+				try (java.io.FileInputStream fis = new java.io.FileInputStream(recordedVideoFile);
+					 java.io.FileOutputStream fos = new java.io.FileOutputStream(finalizedFile)) {
+					byte[] buffer = new byte[8192];
+					int bytesRead;
+					while ((bytesRead = fis.read(buffer)) != -1) {
+						fos.write(buffer, 0, bytesRead);
+					}
+					fos.flush();
+					fos.getFD().sync();
+				}
+
+				// Verify the copied file is valid
+				if (!finalizedFile.exists() || finalizedFile.length() == 0) {
+					runOnUiThread(() -> Toast.makeText(this,
+							R.string.video_attach_error, Toast.LENGTH_SHORT).show());
+					return;
+				}
+
+				// Log video metadata for debugging codec info
+				logVideoMetadata("SENDER_RECORDED", finalizedFile);
+
+				// Get a proper content URI for the finalized file
+				Uri finalizedUri = androidx.core.content.FileProvider.getUriForFile(this,
+						"com.professor.zerion.fileprovider", finalizedFile);
+
+				runOnUiThread(() -> {
+					if (sendController instanceof TextAttachmentController) {
+						List<Uri> uris = new ArrayList<>();
+						uris.add(finalizedUri);
+						((TextAttachmentController) sendController).onImageReceived(uris);
+					}
+				});
+
+				// Clean up the original recorded file
+				if (recordedVideoFile.exists()) {
+					recordedVideoFile.delete();
+				}
+				recordedVideoFile = null;
+
+			} catch (Exception e) {
+				runOnUiThread(() -> Toast.makeText(this,
+						R.string.video_attach_error, Toast.LENGTH_SHORT).show());
+			}
+		});
+	}
+
+	private void logVideoMetadata(String tag, java.io.File videoFile) {
+		try {
+			android.media.MediaExtractor extractor = new android.media.MediaExtractor();
+			extractor.setDataSource(videoFile.getAbsolutePath());
+
+			StringBuilder info = new StringBuilder();
+			info.append("[").append(tag).append("] ");
+			info.append("size=").append(videoFile.length()).append("bytes, ");
+
+			for (int i = 0; i < extractor.getTrackCount(); i++) {
+				android.media.MediaFormat format = extractor.getTrackFormat(i);
+				String mime = format.getString(android.media.MediaFormat.KEY_MIME);
+				info.append("track").append(i).append("=").append(mime);
+
+				if (mime != null && mime.startsWith("video/")) {
+					if (format.containsKey(android.media.MediaFormat.KEY_WIDTH)) {
+						info.append(" ").append(format.getInteger(android.media.MediaFormat.KEY_WIDTH));
+						info.append("x").append(format.getInteger(android.media.MediaFormat.KEY_HEIGHT));
+					}
+					if (format.containsKey(android.media.MediaFormat.KEY_FRAME_RATE)) {
+						info.append(" ").append(format.getInteger(android.media.MediaFormat.KEY_FRAME_RATE)).append("fps");
+					}
+				}
+				info.append(", ");
+			}
+
+			android.media.MediaMetadataRetriever retriever = new android.media.MediaMetadataRetriever();
+			retriever.setDataSource(videoFile.getAbsolutePath());
+			String duration = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION);
+			if (duration != null) {
+				info.append("duration=").append(duration).append("ms");
+			}
+			retriever.release();
+			extractor.release();
+
+			android.util.Log.i("VideoCodecInfo", info.toString());
+		} catch (Exception e) {
+			android.util.Log.e("VideoCodecInfo", "[" + tag + "] Failed to extract metadata: " + e.getMessage());
 		}
 	}
 
@@ -628,6 +741,11 @@ public class ConversationActivity extends ZerionActivity
 					grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 				launchCamera();
 			}
+		} else if (requestCode == REQUEST_VIDEO_CAMERA_PERMISSION) {
+			if (grantResults.length > 0 &&
+					grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+				launchVideoRecorder();
+			}
 		} else if (requestCode == REQUEST_RECORD_AUDIO) {
 			// For Android 14+, we request both RECORD_AUDIO and FOREGROUND_SERVICE_MICROPHONE
 			// Check if at least RECORD_AUDIO was granted (both required for foreground service)
@@ -668,10 +786,8 @@ public class ConversationActivity extends ZerionActivity
 				((TextAttachmentController) sendController).onImageReceived(uris);
 			}
 		} else if (request == REQUEST_RECORD_VIDEO && result == RESULT_OK) {
-			if (videoUri != null && sendController instanceof TextAttachmentController) {
-				List<Uri> uris = new ArrayList<>();
-				uris.add(videoUri);
-				((TextAttachmentController) sendController).onImageReceived(uris);
+			if (recordedVideoFile != null && sendController instanceof TextAttachmentController) {
+				processRecordedVideo();
 			}
 		} else if ((request == REQUEST_VAULT_GALLERY || request == REQUEST_VAULT_DOCUMENTS)
 				&& result == RESULT_OK && data != null) {
@@ -1077,11 +1193,18 @@ public class ConversationActivity extends ZerionActivity
 
 	@Override
 	public void onVideoSelected() {
+		PrivateMessageFormat format = viewModel.getPrivateMessageFormat().getValue();
+		if (format == null || !format.supportsChunkedAttachments()) {
+			Toast.makeText(this, R.string.video_not_supported_by_contact,
+					Toast.LENGTH_LONG).show();
+			return;
+		}
+
 		if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA)
 				!= PackageManager.PERMISSION_GRANTED) {
 			ActivityCompat.requestPermissions(this,
 					new String[]{android.Manifest.permission.CAMERA},
-					REQUEST_CAMERA_PERMISSION);
+					REQUEST_VIDEO_CAMERA_PERMISSION);
 		} else {
 			launchVideoRecorder();
 		}
@@ -1089,7 +1212,12 @@ public class ConversationActivity extends ZerionActivity
 
 	@Override
 	public void onPhoneGallerySelected() {
-		contentLauncher.launch("image/*");
+		PrivateMessageFormat format = viewModel.getPrivateMessageFormat().getValue();
+		if (format != null && format.supportsChunkedAttachments()) {
+			mediaLauncher.launch("*/*");
+		} else {
+			contentLauncher.launch("image/*");
+		}
 	}
 
 	@Override

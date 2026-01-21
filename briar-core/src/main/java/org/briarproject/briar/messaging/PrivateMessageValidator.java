@@ -18,9 +18,13 @@ import org.briarproject.bramble.api.system.Clock;
 import org.briarproject.briar.attachment.CountingInputStream;
 import org.briarproject.nullsafety.NotNullByDefault;
 
+import org.briarproject.bramble.api.sync.MessageId;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collection;
 
 import javax.annotation.concurrent.Immutable;
 
@@ -36,9 +40,15 @@ import static org.briarproject.briar.api.messaging.MessagingConstants.MAX_ATTACH
 import static org.briarproject.briar.api.messaging.MessagingConstants.MAX_PRIVATE_MESSAGE_TEXT_LENGTH;
 import static org.briarproject.briar.client.MessageTrackerConstants.MSG_KEY_READ;
 import static org.briarproject.briar.messaging.MessageTypes.ATTACHMENT;
+import static org.briarproject.briar.messaging.MessageTypes.ATTACHMENT_CHUNK;
+import static org.briarproject.briar.messaging.MessageTypes.ATTACHMENT_MANIFEST;
 import static org.briarproject.briar.messaging.MessageTypes.PRIVATE_MESSAGE;
 import static org.briarproject.briar.messaging.MessageTypes.VOICE_SIGNAL;
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_ATTACHMENT_HEADERS;
+import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_CHUNK_COUNT;
+import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_CHUNK_INDEX;
+import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_ROOT_HASH;
+import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_TOTAL_SIZE;
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_AUTO_DELETE_TIMER;
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_HAS_TEXT;
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_LOCAL;
@@ -94,6 +104,11 @@ class PrivateMessageValidator implements MessageValidator {
 				} else if (messageType == VOICE_SIGNAL) {
 					if (!reader.eof()) throw new FormatException();
 					context = validateVoiceSignal(m, list);
+				} else if (messageType == ATTACHMENT_MANIFEST) {
+					if (!reader.eof()) throw new FormatException();
+					context = validateAttachmentManifest(m, list);
+				} else if (messageType == ATTACHMENT_CHUNK) {
+					context = validateAttachmentChunk(m, list, bytesRead);
 				} else {
 					throw new InvalidMessageException();
 				}
@@ -131,6 +146,10 @@ class PrivateMessageValidator implements MessageValidator {
 		BdfList headers = body.getList(2);
 		if (text == null) checkSize(headers, 1, MAX_ATTACHMENTS_PER_MESSAGE);
 		else checkSize(headers, 0, MAX_ATTACHMENTS_PER_MESSAGE);
+
+		// Collect attachment message IDs as dependencies - the private message
+		// depends on all attachments being available before it can be delivered
+		Collection<MessageId> dependencies = new ArrayList<>();
 		for (int i = 0; i < headers.size(); i++) {
 			BdfList header = headers.getList(i);
 			// Message ID, content type
@@ -139,7 +158,9 @@ class PrivateMessageValidator implements MessageValidator {
 			checkLength(id, UniqueId.LENGTH);
 			String contentType = header.getString(1);
 			checkLength(contentType, 1, MAX_CONTENT_TYPE_BYTES);
+			dependencies.add(new MessageId(id));
 		}
+
 		long timer = NO_AUTO_DELETE_TIMER;
 		if (body.size() == 4) {
 			timer = validateAutoDeleteTimer(body.getOptionalLong(3));
@@ -155,7 +176,11 @@ class PrivateMessageValidator implements MessageValidator {
 		if (timer != NO_AUTO_DELETE_TIMER) {
 			meta.put(MSG_KEY_AUTO_DELETE_TIMER, timer);
 		}
-		return new BdfMessageContext(meta);
+		// Return with dependencies to ensure attachments are synced before message
+		if (dependencies.isEmpty()) {
+			return new BdfMessageContext(meta);
+		}
+		return new BdfMessageContext(meta, dependencies);
 	}
 
 	private BdfMessageContext validateAttachment(Message m, BdfList descriptor,
@@ -169,7 +194,7 @@ class PrivateMessageValidator implements MessageValidator {
 		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
 		meta.put(MSG_KEY_LOCAL, false);
 		meta.put(MSG_KEY_MSG_TYPE, ATTACHMENT);
-		meta.put(MSG_KEY_DESCRIPTOR_LENGTH, descriptorLength);
+		meta.put(MSG_KEY_DESCRIPTOR_LENGTH, (int) descriptorLength);
 		meta.put(MSG_KEY_CONTENT_TYPE, contentType);
 		return new BdfMessageContext(meta);
 	}
@@ -206,6 +231,80 @@ class PrivateMessageValidator implements MessageValidator {
 		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
 		meta.put(MSG_KEY_LOCAL, false);
 		meta.put(MSG_KEY_MSG_TYPE, VOICE_SIGNAL);
+		return new BdfMessageContext(meta);
+	}
+
+	private BdfMessageContext validateAttachmentManifest(Message m, BdfList body)
+			throws FormatException {
+		checkSize(body, 6);
+
+		String contentType = body.getString(1);
+		checkLength(contentType, 1, MAX_CONTENT_TYPE_BYTES);
+
+		long totalSize = body.getLong(2);
+		if (totalSize <= 0 || totalSize > 10 * 1024 * 1024) {
+			throw new FormatException();
+		}
+
+		int chunkCount = body.getInt(3);
+		if (chunkCount <= 0 || chunkCount > 100) {
+			throw new FormatException();
+		}
+
+		byte[] rootHash = body.getRaw(4);
+		checkLength(rootHash, 32);
+
+		BdfList chunkIds = body.getList(5);
+		if (chunkIds.size() != chunkCount) {
+			throw new FormatException();
+		}
+
+		// Collect chunk message IDs as dependencies - the manifest depends on
+		// all chunks being available before it can be delivered
+		Collection<MessageId> dependencies = new ArrayList<>(chunkCount);
+		for (int i = 0; i < chunkIds.size(); i++) {
+			byte[] chunkId = chunkIds.getRaw(i);
+			checkLength(chunkId, UniqueId.LENGTH);
+			dependencies.add(new MessageId(chunkId));
+		}
+
+		BdfDictionary meta = new BdfDictionary();
+		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
+		meta.put(MSG_KEY_LOCAL, false);
+		meta.put(MSG_KEY_MSG_TYPE, ATTACHMENT_MANIFEST);
+		meta.put(MSG_KEY_CONTENT_TYPE, contentType);
+		meta.put(MSG_KEY_TOTAL_SIZE, totalSize);
+		meta.put(MSG_KEY_CHUNK_COUNT, chunkCount);
+		meta.put(MSG_KEY_ROOT_HASH, rootHash);
+		// Return with dependencies to ensure chunks are synced before manifest
+		return new BdfMessageContext(meta, dependencies);
+	}
+
+	private BdfMessageContext validateAttachmentChunk(Message m, BdfList header,
+			long headerLength) throws FormatException {
+		checkSize(header, 3);
+
+		int chunkIndex = header.getInt(1);
+		if (chunkIndex < 0 || chunkIndex >= 100) {
+			throw new FormatException();
+		}
+
+		int chunkDataLength = header.getInt(2);
+		if (chunkDataLength <= 0 || chunkDataLength > 512 * 1024) {
+			throw new FormatException();
+		}
+
+		int expectedBodyLength = (int) headerLength + chunkDataLength;
+		if (m.getBody().length != expectedBodyLength) {
+			throw new FormatException();
+		}
+
+		BdfDictionary meta = new BdfDictionary();
+		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
+		meta.put(MSG_KEY_LOCAL, false);
+		meta.put(MSG_KEY_MSG_TYPE, ATTACHMENT_CHUNK);
+		meta.put(MSG_KEY_CHUNK_INDEX, chunkIndex);
+		meta.put(MSG_KEY_DESCRIPTOR_LENGTH, (int) headerLength);
 		return new BdfMessageContext(meta);
 	}
 }
