@@ -101,7 +101,7 @@ import static org.briarproject.bramble.util.LogUtils.now;
 @NotNullByDefault
 abstract class JdbcDatabase implements Database<Connection> {
 
-	static final int CODE_SCHEMA_VERSION = 54;
+	static final int CODE_SCHEMA_VERSION = 57;
 
 	/**
 	 * The maximum number of idle connections to keep open.
@@ -146,6 +146,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 					+ " localAuthorId _HASH NOT NULL,"
 					+ " verified BOOLEAN NOT NULL,"
 					+ " postQuantum BOOLEAN NOT NULL DEFAULT FALSE,"
+					+ " pcsEnabled BOOLEAN NOT NULL DEFAULT FALSE,"
 					+ " syncVersions _BINARY DEFAULT '00' NOT NULL,"
 					+ " PRIMARY KEY (contactId),"
 					+ " FOREIGN KEY (localAuthorId)"
@@ -498,7 +499,10 @@ abstract class JdbcDatabase implements Database<Connection> {
 				new Migration50_51(),
 				new Migration51_52(),
 				new Migration52_53(),
-				new Migration53_54()
+				new Migration53_54(),
+				new Migration54_55(dbTypes),
+				new Migration55_56(),
+				new Migration56_57(dbTypes)
 		);
 	}
 
@@ -696,22 +700,32 @@ abstract class JdbcDatabase implements Database<Connection> {
 	public ContactId addContact(Connection txn, Author remote, AuthorId local,
 			@Nullable PublicKey handshake, boolean verified)
 			throws DbException {
-		// Delegate to full method with postQuantum=false for backward compat
-		return addContact(txn, remote, local, handshake, verified, false);
+		// Delegate to full method with postQuantum=false, pcsEnabled=false
+		return addContact(txn, remote, local, handshake, verified, false, false);
 	}
 
 	@Override
 	public ContactId addContact(Connection txn, Author remote, AuthorId local,
 			@Nullable PublicKey handshake, boolean verified, boolean postQuantum)
 			throws DbException {
+		// Delegate to full method with pcsEnabled=false
+		return addContact(txn, remote, local, handshake, verified, postQuantum,
+				false);
+	}
+
+	@Override
+	public ContactId addContact(Connection txn, Author remote, AuthorId local,
+			@Nullable PublicKey handshake, boolean verified, boolean postQuantum,
+			boolean pcsEnabled) throws DbException {
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		try {
 			// Create a contact row
 			String sql = "INSERT INTO contacts"
 					+ " (authorId, formatVersion, name, publicKey,"
-					+ " localAuthorId, handshakePublicKey, verified, postQuantum)"
-					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+					+ " localAuthorId, handshakePublicKey, verified, postQuantum,"
+					+ " pcsEnabled)"
+					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 			ps = txn.prepareStatement(sql);
 			ps.setBytes(1, remote.getId().getBytes());
 			ps.setInt(2, remote.getFormatVersion());
@@ -722,6 +736,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 			else ps.setBytes(6, handshake.getEncoded());
 			ps.setBoolean(7, verified);
 			ps.setBoolean(8, postQuantum);
+			ps.setBoolean(9, pcsEnabled);
 			int affected = ps.executeUpdate();
 			if (affected != 1) throw new DbStateException();
 			ps.close();
@@ -1498,7 +1513,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 		try {
 			String sql = "SELECT authorId, formatVersion, name, alias,"
 					+ " publicKey, handshakePublicKey, localAuthorId, verified,"
-					+ " postQuantum"
+					+ " postQuantum, pcsEnabled"
 					+ " FROM contacts"
 					+ " WHERE contactId = ?";
 			ps = txn.prepareStatement(sql);
@@ -1514,6 +1529,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 			AuthorId localAuthorId = new AuthorId(rs.getBytes(7));
 			boolean verified = rs.getBoolean(8);
 			boolean postQuantum = rs.getBoolean(9);
+			boolean pcsEnabled = rs.getBoolean(10);
 			rs.close();
 			ps.close();
 			Author author =
@@ -1521,7 +1537,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 			PublicKey handshakePublicKey = handshakePub == null ?
 					null : new AgreementPublicKey(handshakePub);
 			return new Contact(c, author, localAuthorId, alias,
-					handshakePublicKey, verified, postQuantum);
+					handshakePublicKey, verified, postQuantum, pcsEnabled);
 		} catch (SQLException e) {
 			tryToClose(rs, LOG, WARNING);
 			tryToClose(ps, LOG, WARNING);
@@ -1536,7 +1552,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 		try {
 			String sql = "SELECT contactId, authorId, formatVersion, name,"
 					+ " alias, publicKey, handshakePublicKey, localAuthorId,"
-					+ " verified, postQuantum"
+					+ " verified, postQuantum, pcsEnabled"
 					+ " FROM contacts";
 			s = txn.createStatement();
 			rs = s.executeQuery(sql);
@@ -1552,12 +1568,14 @@ abstract class JdbcDatabase implements Database<Connection> {
 				AuthorId localAuthorId = new AuthorId(rs.getBytes(8));
 				boolean verified = rs.getBoolean(9);
 				boolean postQuantum = rs.getBoolean(10);
+				boolean pcsEnabled = rs.getBoolean(11);
 				Author author =
 						new Author(authorId, formatVersion, name, publicKey);
 				PublicKey handshakePublicKey = handshakePub == null ?
 						null : new AgreementPublicKey(handshakePub);
 				contacts.add(new Contact(contactId, author, localAuthorId,
-						alias, handshakePublicKey, verified, postQuantum));
+						alias, handshakePublicKey, verified, postQuantum,
+						pcsEnabled));
 			}
 			rs.close();
 			s.close();
@@ -1600,7 +1618,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 		try {
 			String sql = "SELECT contactId, formatVersion, name, alias,"
 					+ " publicKey, handshakePublicKey, localAuthorId, verified,"
-					+ " postQuantum"
+					+ " postQuantum, pcsEnabled"
 					+ " FROM contacts"
 					+ " WHERE authorId = ?";
 			ps = txn.prepareStatement(sql);
@@ -1617,12 +1635,14 @@ abstract class JdbcDatabase implements Database<Connection> {
 				AuthorId localAuthorId = new AuthorId(rs.getBytes(7));
 				boolean verified = rs.getBoolean(8);
 				boolean postQuantum = rs.getBoolean(9);
+				boolean pcsEnabled = rs.getBoolean(10);
 				Author author =
 						new Author(remote, formatVersion, name, publicKey);
 				PublicKey handshakePublicKey = handshakePub == null ?
 						null : new AgreementPublicKey(handshakePub);
 				contacts.add(new Contact(contactId, author, localAuthorId,
-						alias, handshakePublicKey, verified, postQuantum));
+						alias, handshakePublicKey, verified, postQuantum,
+						pcsEnabled));
 			}
 			rs.close();
 			ps.close();
@@ -1642,7 +1662,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 		ResultSet rs = null;
 		try {
 			String sql = "SELECT contactId, authorId, formatVersion, name,"
-					+ " alias, publicKey, verified, postQuantum"
+					+ " alias, publicKey, verified, postQuantum, pcsEnabled"
 					+ " FROM contacts"
 					+ " WHERE handshakePublicKey = ? AND localAuthorId = ?";
 			ps = txn.prepareStatement(sql);
@@ -1662,13 +1682,14 @@ abstract class JdbcDatabase implements Database<Connection> {
 			PublicKey publicKey = new SignaturePublicKey(rs.getBytes(6));
 			boolean verified = rs.getBoolean(7);
 			boolean postQuantum = rs.getBoolean(8);
+			boolean pcsEnabled = rs.getBoolean(9);
 			if (rs.next()) throw new DbStateException();
 			rs.close();
 			ps.close();
 			Author author =
 					new Author(authorId, formatVersion, name, publicKey);
 			return new Contact(contactId, author, localAuthorId, alias,
-					handshakePublicKey, verified, postQuantum);
+					handshakePublicKey, verified, postQuantum, pcsEnabled);
 		} catch (SQLException e) {
 			tryToClose(rs, LOG, WARNING);
 			tryToClose(ps, LOG, WARNING);
@@ -3500,6 +3521,25 @@ abstract class JdbcDatabase implements Database<Connection> {
 	}
 
 	@Override
+	public void setContactPcsEnabled(Connection txn, ContactId c,
+			boolean pcsEnabled) throws DbException {
+		PreparedStatement ps = null;
+		try {
+			String sql = "UPDATE contacts SET pcsEnabled = ?"
+					+ " WHERE contactId = ?";
+			ps = txn.prepareStatement(sql);
+			ps.setBoolean(1, pcsEnabled);
+			ps.setInt(2, c.getInt());
+			int affected = ps.executeUpdate();
+			if (affected < 0 || affected > 1) throw new DbStateException();
+			ps.close();
+		} catch (SQLException e) {
+			tryToClose(ps, LOG, WARNING);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
 	public void setGroupVisibility(Connection txn, ContactId c, GroupId g,
 			boolean shared) throws DbException {
 		PreparedStatement ps = null;
@@ -3889,6 +3929,359 @@ abstract class JdbcDatabase implements Database<Connection> {
 				if (rows < 0 || rows > 1) throw new DbStateException();
 			ps.close();
 		} catch (SQLException e) {
+			tryToClose(ps, LOG, WARNING);
+			throw new DbException(e);
+		}
+	}
+
+	// ==================== PCS (Post-Compromise Security) Methods ====================
+
+	@Override
+	public void setPcsSessionState(Connection txn, ContactId c, int direction,
+			SecretKey chainKey, int messageNumber, int previousChainLength)
+			throws DbException {
+		PreparedStatement ps = null;
+		try {
+			// Use MERGE for upsert (H2/HyperSQL compatible)
+			String sql = "MERGE INTO pcsSessionState"
+					+ " (contactId, direction, chainKey, messageNumber, previousChainLength)"
+					+ " KEY (contactId, direction)"
+					+ " VALUES (?, ?, ?, ?, ?)";
+			ps = txn.prepareStatement(sql);
+			ps.setInt(1, c.getInt());
+			ps.setInt(2, direction);
+			ps.setBytes(3, chainKey.getBytes());
+			ps.setInt(4, messageNumber);
+			ps.setInt(5, previousChainLength);
+			int affected = ps.executeUpdate();
+			if (affected < 0 || affected > 1) throw new DbStateException();
+			ps.close();
+		} catch (SQLException e) {
+			tryToClose(ps, LOG, WARNING);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	@Nullable
+	public Object[] getPcsSessionState(Connection txn, ContactId c,
+			int direction) throws DbException {
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			String sql = "SELECT chainKey, messageNumber, previousChainLength"
+					+ " FROM pcsSessionState"
+					+ " WHERE contactId = ? AND direction = ?";
+			ps = txn.prepareStatement(sql);
+			ps.setInt(1, c.getInt());
+			ps.setInt(2, direction);
+			rs = ps.executeQuery();
+			if (!rs.next()) {
+				rs.close();
+				ps.close();
+				return null;
+			}
+			byte[] chainKeyBytes = rs.getBytes(1);
+			int messageNumber = rs.getInt(2);
+			int previousChainLength = rs.getInt(3);
+			rs.close();
+			ps.close();
+			return new Object[]{chainKeyBytes, messageNumber, previousChainLength};
+		} catch (SQLException e) {
+			tryToClose(rs, LOG, WARNING);
+			tryToClose(ps, LOG, WARNING);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	public boolean containsPcsSessionState(Connection txn, ContactId c)
+			throws DbException {
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			String sql = "SELECT 1 FROM pcsSessionState WHERE contactId = ?";
+			ps = txn.prepareStatement(sql);
+			ps.setInt(1, c.getInt());
+			rs = ps.executeQuery();
+			boolean found = rs.next();
+			rs.close();
+			ps.close();
+			return found;
+		} catch (SQLException e) {
+			tryToClose(rs, LOG, WARNING);
+			tryToClose(ps, LOG, WARNING);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	public void addPcsSkippedKey(Connection txn, ContactId c, int direction,
+			int messageNumber, SecretKey messageKey, long timestamp)
+			throws DbException {
+		PreparedStatement ps = null;
+		try {
+			String sql = "INSERT INTO pcsSkippedKeys"
+					+ " (contactId, direction, messageNumber, messageKey, timestamp)"
+					+ " VALUES (?, ?, ?, ?, ?)";
+			ps = txn.prepareStatement(sql);
+			ps.setInt(1, c.getInt());
+			ps.setInt(2, direction);
+			ps.setInt(3, messageNumber);
+			ps.setBytes(4, messageKey.getBytes());
+			ps.setLong(5, timestamp);
+			int affected = ps.executeUpdate();
+			if (affected != 1) throw new DbStateException();
+			ps.close();
+		} catch (SQLException e) {
+			tryToClose(ps, LOG, WARNING);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	@Nullable
+	public SecretKey getPcsSkippedKey(Connection txn, ContactId c,
+			int direction, int messageNumber) throws DbException {
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			// Select and delete atomically using transaction
+			String selectSql = "SELECT messageKey FROM pcsSkippedKeys"
+					+ " WHERE contactId = ? AND direction = ? AND messageNumber = ?";
+			ps = txn.prepareStatement(selectSql);
+			ps.setInt(1, c.getInt());
+			ps.setInt(2, direction);
+			ps.setInt(3, messageNumber);
+			rs = ps.executeQuery();
+			if (!rs.next()) {
+				rs.close();
+				ps.close();
+				return null;
+			}
+			byte[] keyBytes = rs.getBytes(1);
+			rs.close();
+			ps.close();
+
+			// Delete the key (one-time use)
+			String deleteSql = "DELETE FROM pcsSkippedKeys"
+					+ " WHERE contactId = ? AND direction = ? AND messageNumber = ?";
+			ps = txn.prepareStatement(deleteSql);
+			ps.setInt(1, c.getInt());
+			ps.setInt(2, direction);
+			ps.setInt(3, messageNumber);
+			int affected = ps.executeUpdate();
+			if (affected != 1) throw new DbStateException();
+			ps.close();
+
+			return new SecretKey(keyBytes);
+		} catch (SQLException e) {
+			tryToClose(rs, LOG, WARNING);
+			tryToClose(ps, LOG, WARNING);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	public int getPcsSkippedKeyCount(Connection txn, ContactId c, int direction)
+			throws DbException {
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			String sql = "SELECT COUNT(*) FROM pcsSkippedKeys"
+					+ " WHERE contactId = ? AND direction = ?";
+			ps = txn.prepareStatement(sql);
+			ps.setInt(1, c.getInt());
+			ps.setInt(2, direction);
+			rs = ps.executeQuery();
+			if (!rs.next()) throw new DbStateException();
+			int count = rs.getInt(1);
+			rs.close();
+			ps.close();
+			return count;
+		} catch (SQLException e) {
+			tryToClose(rs, LOG, WARNING);
+			tryToClose(ps, LOG, WARNING);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	public int prunePcsSkippedKeys(Connection txn, long maxAge)
+			throws DbException {
+		PreparedStatement ps = null;
+		try {
+			long threshold = clock.currentTimeMillis() - maxAge;
+			String sql = "DELETE FROM pcsSkippedKeys WHERE timestamp < ?";
+			ps = txn.prepareStatement(sql);
+			ps.setLong(1, threshold);
+			int affected = ps.executeUpdate();
+			ps.close();
+			return affected;
+		} catch (SQLException e) {
+			tryToClose(ps, LOG, WARNING);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	public void removePcsState(Connection txn, ContactId c) throws DbException {
+		PreparedStatement ps = null;
+		try {
+			// Delete skipped keys first (no FK constraint dependency)
+			String sql = "DELETE FROM pcsSkippedKeys WHERE contactId = ?";
+			ps = txn.prepareStatement(sql);
+			ps.setInt(1, c.getInt());
+			ps.executeUpdate();
+			ps.close();
+
+			// Delete session state
+			sql = "DELETE FROM pcsSessionState WHERE contactId = ?";
+			ps = txn.prepareStatement(sql);
+			ps.setInt(1, c.getInt());
+			ps.executeUpdate();
+			ps.close();
+		} catch (SQLException e) {
+			tryToClose(ps, LOG, WARNING);
+			throw new DbException(e);
+		}
+	}
+
+	// ==================== PCS Mode 2 (DH Ratchet) Methods ====================
+
+	@Override
+	public void setPcsMode2SessionState(Connection txn, ContactId c, int direction,
+			SecretKey chainKey, int messageNumber, int previousChainLength,
+			@Nullable SecretKey rootKey, @Nullable PrivateKey dhPrivateKey,
+			@Nullable PublicKey dhPublicKey, @Nullable PublicKey dhRemotePublicKey,
+			boolean mode2Enabled) throws DbException {
+		PreparedStatement ps = null;
+		try {
+			String sql = "MERGE INTO pcsSessionState"
+					+ " (contactId, direction, chainKey, messageNumber, previousChainLength,"
+					+ " mode2Enabled, rootKey, dhPrivateKey, dhPublicKey, dhRemotePublicKey)"
+					+ " KEY (contactId, direction)"
+					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+			ps = txn.prepareStatement(sql);
+			ps.setInt(1, c.getInt());
+			ps.setInt(2, direction);
+			ps.setBytes(3, chainKey.getBytes());
+			ps.setInt(4, messageNumber);
+			ps.setInt(5, previousChainLength);
+			ps.setBoolean(6, mode2Enabled);
+			ps.setBytes(7, rootKey != null ? rootKey.getBytes() : null);
+			ps.setBytes(8, dhPrivateKey != null ? dhPrivateKey.getEncoded() : null);
+			ps.setBytes(9, dhPublicKey != null ? dhPublicKey.getEncoded() : null);
+			ps.setBytes(10, dhRemotePublicKey != null ? dhRemotePublicKey.getEncoded() : null);
+			int affected = ps.executeUpdate();
+			if (affected < 0 || affected > 1) throw new DbStateException();
+			ps.close();
+		} catch (SQLException e) {
+			tryToClose(ps, LOG, WARNING);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	@Nullable
+	public Object[] getPcsMode2SessionState(Connection txn, ContactId c,
+			int direction) throws DbException {
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			String sql = "SELECT chainKey, messageNumber, previousChainLength,"
+					+ " rootKey, dhPrivateKey, dhPublicKey, dhRemotePublicKey, mode2Enabled"
+					+ " FROM pcsSessionState"
+					+ " WHERE contactId = ? AND direction = ?";
+			ps = txn.prepareStatement(sql);
+			ps.setInt(1, c.getInt());
+			ps.setInt(2, direction);
+			rs = ps.executeQuery();
+			if (!rs.next()) {
+				rs.close();
+				ps.close();
+				return null;
+			}
+			byte[] chainKeyBytes = rs.getBytes(1);
+			int messageNumber = rs.getInt(2);
+			int previousChainLength = rs.getInt(3);
+			byte[] rootKeyBytes = rs.getBytes(4);
+			byte[] dhPrivateKeyBytes = rs.getBytes(5);
+			byte[] dhPublicKeyBytes = rs.getBytes(6);
+			byte[] dhRemotePublicKeyBytes = rs.getBytes(7);
+			boolean mode2Enabled = rs.getBoolean(8);
+			rs.close();
+			ps.close();
+			return new Object[]{
+					chainKeyBytes, messageNumber, previousChainLength,
+					rootKeyBytes, dhPrivateKeyBytes, dhPublicKeyBytes,
+					dhRemotePublicKeyBytes, mode2Enabled
+			};
+		} catch (SQLException e) {
+			tryToClose(rs, LOG, WARNING);
+			tryToClose(ps, LOG, WARNING);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	public void addPcsMode2SkippedKey(Connection txn, byte[] chainId,
+			int messageNumber, SecretKey messageKey, long timestamp)
+			throws DbException {
+		PreparedStatement ps = null;
+		try {
+			String sql = "INSERT INTO pcsSkippedKeys"
+					+ " (contactId, direction, messageNumber, messageKey, timestamp, chainId)"
+					+ " VALUES (0, 0, ?, ?, ?, ?)";
+			ps = txn.prepareStatement(sql);
+			ps.setInt(1, messageNumber);
+			ps.setBytes(2, messageKey.getBytes());
+			ps.setLong(3, timestamp);
+			ps.setBytes(4, chainId);
+			int affected = ps.executeUpdate();
+			if (affected != 1) throw new DbStateException();
+			ps.close();
+		} catch (SQLException e) {
+			tryToClose(ps, LOG, WARNING);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	@Nullable
+	public SecretKey getPcsMode2SkippedKey(Connection txn, byte[] chainId,
+			int messageNumber) throws DbException {
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			// Select the key
+			String sql = "SELECT messageKey FROM pcsSkippedKeys"
+					+ " WHERE chainId = ? AND messageNumber = ?";
+			ps = txn.prepareStatement(sql);
+			ps.setBytes(1, chainId);
+			ps.setInt(2, messageNumber);
+			rs = ps.executeQuery();
+			if (!rs.next()) {
+				rs.close();
+				ps.close();
+				return null;
+			}
+			byte[] keyBytes = rs.getBytes(1);
+			rs.close();
+			ps.close();
+
+			// Delete the key (one-time use)
+			sql = "DELETE FROM pcsSkippedKeys"
+					+ " WHERE chainId = ? AND messageNumber = ?";
+			ps = txn.prepareStatement(sql);
+			ps.setBytes(1, chainId);
+			ps.setInt(2, messageNumber);
+			ps.executeUpdate();
+			ps.close();
+
+			return new SecretKey(keyBytes);
+		} catch (SQLException e) {
+			tryToClose(rs, LOG, WARNING);
 			tryToClose(ps, LOG, WARNING);
 			throw new DbException(e);
 		}

@@ -240,14 +240,24 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 	public ContactId addContact(Transaction transaction, Author remote,
 			AuthorId local, @Nullable PublicKey handshake, boolean verified)
 			throws DbException {
-		// Default to classical (non-PQ) for backward compatibility
-		return addContact(transaction, remote, local, handshake, verified, false);
+		// Default to classical (non-PQ), PCS disabled for backward compatibility
+		return addContact(transaction, remote, local, handshake, verified,
+				false, false);
 	}
 
 	@Override
 	public ContactId addContact(Transaction transaction, Author remote,
 			AuthorId local, @Nullable PublicKey handshake, boolean verified,
 			boolean postQuantum) throws DbException {
+		// Default to PCS disabled for backward compatibility
+		return addContact(transaction, remote, local, handshake, verified,
+				postQuantum, false);
+	}
+
+	@Override
+	public ContactId addContact(Transaction transaction, Author remote,
+			AuthorId local, @Nullable PublicKey handshake, boolean verified,
+			boolean postQuantum, boolean pcsEnabled) throws DbException {
 		if (transaction.isReadOnly()) throw new IllegalArgumentException();
 		T txn = unbox(transaction);
 		if (!db.containsIdentity(txn, local))
@@ -257,7 +267,7 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		if (db.containsContact(txn, remote.getId(), local))
 			throw new ContactExistsException(local, remote);
 		ContactId c = db.addContact(txn, remote, local, handshake, verified,
-				postQuantum);
+				postQuantum, pcsEnabled);
 		transaction.attach(new ContactAddedEvent(c, verified));
 		return c;
 	}
@@ -1158,6 +1168,16 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 	}
 
 	@Override
+	public void setContactPcsEnabled(Transaction transaction, ContactId c,
+			boolean pcsEnabled) throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		T txn = unbox(transaction);
+		if (!db.containsContact(txn, c))
+			throw new NoSuchContactException();
+		db.setContactPcsEnabled(txn, c, pcsEnabled);
+	}
+
+	@Override
 	public void setGroupVisibility(Transaction transaction, ContactId c,
 			GroupId g, Visibility v) throws DbException {
 		if (transaction.isReadOnly()) throw new IllegalArgumentException();
@@ -1345,6 +1365,135 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 			if (db.containsTransport(txn, t))
 				db.updateTransportKeys(txn, ks);
 		}
+	}
+
+	// ==================== PCS (Post-Compromise Security) Methods ====================
+
+	@Override
+	public void setPcsSessionState(Transaction transaction, ContactId c,
+			int direction, SecretKey chainKey, int messageNumber,
+			int previousChainLength) throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		T txn = unbox(transaction);
+		if (!db.containsContact(txn, c))
+			throw new NoSuchContactException();
+		db.setPcsSessionState(txn, c, direction, chainKey, messageNumber,
+				previousChainLength);
+	}
+
+	@Override
+	@Nullable
+	public Object[] getPcsSessionState(Transaction transaction, ContactId c,
+			int direction) throws DbException {
+		T txn = unbox(transaction);
+		if (!db.containsContact(txn, c))
+			throw new NoSuchContactException();
+		return db.getPcsSessionState(txn, c, direction);
+	}
+
+	@Override
+	public boolean containsPcsSessionState(Transaction transaction, ContactId c)
+			throws DbException {
+		T txn = unbox(transaction);
+		if (!db.containsContact(txn, c))
+			throw new NoSuchContactException();
+		return db.containsPcsSessionState(txn, c);
+	}
+
+	@Override
+	public void addPcsSkippedKey(Transaction transaction, ContactId c,
+			int direction, int messageNumber, SecretKey messageKey,
+			long timestamp) throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		T txn = unbox(transaction);
+		if (!db.containsContact(txn, c))
+			throw new NoSuchContactException();
+		db.addPcsSkippedKey(txn, c, direction, messageNumber, messageKey,
+				timestamp);
+	}
+
+	@Override
+	@Nullable
+	public SecretKey getPcsSkippedKey(Transaction transaction, ContactId c,
+			int direction, int messageNumber) throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		T txn = unbox(transaction);
+		if (!db.containsContact(txn, c))
+			throw new NoSuchContactException();
+		return db.getPcsSkippedKey(txn, c, direction, messageNumber);
+	}
+
+	@Override
+	public int getPcsSkippedKeyCount(Transaction transaction, ContactId c,
+			int direction) throws DbException {
+		T txn = unbox(transaction);
+		if (!db.containsContact(txn, c))
+			throw new NoSuchContactException();
+		return db.getPcsSkippedKeyCount(txn, c, direction);
+	}
+
+	@Override
+	public int prunePcsSkippedKeys(Transaction transaction, long maxAge)
+			throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		T txn = unbox(transaction);
+		return db.prunePcsSkippedKeys(txn, maxAge);
+	}
+
+	@Override
+	public void removePcsState(Transaction transaction, ContactId c)
+			throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		T txn = unbox(transaction);
+		if (!db.containsContact(txn, c))
+			throw new NoSuchContactException();
+		db.removePcsState(txn, c);
+	}
+
+	// ==================== PCS Mode 2 (DH Ratchet) Methods ====================
+
+	@Override
+	public void setPcsMode2SessionState(Transaction transaction, ContactId c,
+			int direction, SecretKey chainKey, int messageNumber,
+			int previousChainLength, @Nullable SecretKey rootKey,
+			@Nullable PrivateKey dhPrivateKey, @Nullable PublicKey dhPublicKey,
+			@Nullable PublicKey dhRemotePublicKey, boolean mode2Enabled)
+			throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		T txn = unbox(transaction);
+		if (!db.containsContact(txn, c))
+			throw new NoSuchContactException();
+		db.setPcsMode2SessionState(txn, c, direction, chainKey, messageNumber,
+				previousChainLength, rootKey, dhPrivateKey, dhPublicKey,
+				dhRemotePublicKey, mode2Enabled);
+	}
+
+	@Override
+	@Nullable
+	public Object[] getPcsMode2SessionState(Transaction transaction, ContactId c,
+			int direction) throws DbException {
+		T txn = unbox(transaction);
+		if (!db.containsContact(txn, c))
+			throw new NoSuchContactException();
+		return db.getPcsMode2SessionState(txn, c, direction);
+	}
+
+	@Override
+	public void addPcsMode2SkippedKey(Transaction transaction, byte[] chainId,
+			int messageNumber, SecretKey messageKey, long timestamp)
+			throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		T txn = unbox(transaction);
+		db.addPcsMode2SkippedKey(txn, chainId, messageNumber, messageKey, timestamp);
+	}
+
+	@Override
+	@Nullable
+	public SecretKey getPcsMode2SkippedKey(Transaction transaction, byte[] chainId,
+			int messageNumber) throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		T txn = unbox(transaction);
+		return db.getPcsMode2SkippedKey(txn, chainId, messageNumber);
 	}
 
 	private class CommitActionVisitor implements Visitor {

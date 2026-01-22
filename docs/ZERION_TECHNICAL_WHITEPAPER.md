@@ -533,7 +533,23 @@ Chain Key (CK) ──► CK₁ ──► CK₂ ──► CK₃ ...
 
 - Per-message key derivation from chain key
 - Forward secrecy within session
-- Recovery on time-period rotation (~42 hours)
+- Recovery on time-period rotation (see table below)
+
+**Key Rotation Periods by Transport**
+
+The rotation period is calculated as: `MAX_LATENCY + MAX_CLOCK_DIFFERENCE`
+
+| Transport | MAX_LATENCY | Clock Tolerance | Rotation Period | Source |
+|-----------|-------------|-----------------|-----------------|--------|
+| Tor | 30 seconds | 24 hours | ~24 hours | `TorPluginFactory.java:42` |
+| Bluetooth | 30 seconds | 24 hours | ~24 hours | `AndroidBluetoothPluginFactory.java:33` |
+| LAN TCP | 30 seconds | 24 hours | ~24 hours | `AndroidLanTcpPluginFactory.java:27` |
+| WAN TCP | 30 seconds | 24 hours | ~24 hours | `DesktopWanTcpPluginFactory.java` |
+| Removable Drive | 28 days | 24 hours | ~29 days | `RemovableDrivePluginFactory.java:20` |
+
+**Constants Reference**:
+- `MAX_CLOCK_DIFFERENCE = 24 hours` (`TransportConstants.java:69`)
+- Formula: `timePeriodLength = maxLatency + MAX_CLOCK_DIFFERENCE` (`TransportKeyManagerImpl.java:75-88`)
 
 **Mode 2: Full Double Ratchet (Future)**
 - Adds DH ratchet step per message exchange
@@ -609,7 +625,7 @@ PCS is negotiated during handshake and persisted per-contact:
 | Property | Mode 1 | Mode 2 |
 |----------|--------|--------|
 | Forward Secrecy | ✅ | ✅ |
-| Post-Compromise Recovery | Time-based (~42h) | 1 round-trip |
+| Post-Compromise Recovery | Time-based (~24h for Tor) | 1 round-trip |
 | Quantum Resistance | ✅ (via handshake) | ✅ |
 | Out-of-order tolerance | ✅ | ✅ |
 

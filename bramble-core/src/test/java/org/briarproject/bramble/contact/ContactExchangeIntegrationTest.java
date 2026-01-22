@@ -141,7 +141,7 @@ public class ContactExchangeIntegrationTest extends BrambleTestCase {
 			try {
 				alice.getContactExchangeManager().exchangeContacts(
 						bobFromAlice.getId(), aliceConnection, masterKey, true,
-						verified);
+						verified, false);
 				aliceFinished.countDown();
 			} catch (Exception e) {
 				fail();
@@ -151,7 +151,7 @@ public class ContactExchangeIntegrationTest extends BrambleTestCase {
 			try {
 				bob.getContactExchangeManager().exchangeContacts(
 						aliceFromBob.getId(), bobConnection, masterKey, false,
-						verified);
+						verified, false);
 				bobFinished.countDown();
 			} catch (Exception e) {
 				fail();
