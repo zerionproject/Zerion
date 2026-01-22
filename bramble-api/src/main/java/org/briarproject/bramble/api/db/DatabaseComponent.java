@@ -85,13 +85,24 @@ public interface DatabaseComponent extends TransactionManager {
 
 	/**
 	 * Stores a contact associated with the given local and remote pseudonyms,
-	 * and returns an ID for the contact.
+	 * and returns an ID for the contact. PCS defaults to disabled.
 	 *
 	 * @param postQuantum true if contact was established with hybrid PQ crypto
 	 */
 	ContactId addContact(Transaction txn, Author remote, AuthorId local,
 			@Nullable PublicKey handshake, boolean verified, boolean postQuantum)
 			throws DbException;
+
+	/**
+	 * Stores a contact associated with the given local and remote pseudonyms,
+	 * and returns an ID for the contact.
+	 *
+	 * @param postQuantum true if contact was established with hybrid PQ crypto
+	 * @param pcsEnabled true if Post-Compromise Security (symmetric ratchet) is enabled
+	 */
+	ContactId addContact(Transaction txn, Author remote, AuthorId local,
+			@Nullable PublicKey handshake, boolean verified, boolean postQuantum,
+			boolean pcsEnabled) throws DbException;
 
 	/**
 	 * Stores a group.
@@ -739,6 +750,15 @@ public interface DatabaseComponent extends TransactionManager {
 			throws DbException;
 
 	/**
+	 * Sets whether Post-Compromise Security (PCS) is enabled for a contact.
+	 * <p>
+	 * When PCS is enabled, the symmetric ratchet provides forward secrecy
+	 * for each message. Both peers must support PCS for it to be enabled.
+	 */
+	void setContactPcsEnabled(Transaction txn, ContactId c, boolean pcsEnabled)
+			throws DbException;
+
+	/**
 	 * Sets the given group's visibility to the given contact.
 	 */
 	void setGroupVisibility(Transaction txn, ContactId c, GroupId g,
@@ -831,4 +851,152 @@ public interface DatabaseComponent extends TransactionManager {
 	 */
 	void updateTransportKeys(Transaction txn, Collection<TransportKeySet> keys)
 			throws DbException;
+
+	// ==================== PCS (Post-Compromise Security) Methods ====================
+
+	/**
+	 * Direction constant for PCS send chain.
+	 */
+	int PCS_DIRECTION_SEND = 0;
+
+	/**
+	 * Direction constant for PCS receive chain.
+	 */
+	int PCS_DIRECTION_RECEIVE = 1;
+
+	/**
+	 * Stores or updates the PCS session state for the given contact and direction.
+	 *
+	 * @param c The contact ID
+	 * @param direction PCS_DIRECTION_SEND or PCS_DIRECTION_RECEIVE
+	 * @param chainKey The current chain key (32 bytes)
+	 * @param messageNumber The current message number
+	 * @param previousChainLength The length of the previous chain
+	 */
+	void setPcsSessionState(Transaction txn, ContactId c, int direction,
+			SecretKey chainKey, int messageNumber, int previousChainLength)
+			throws DbException;
+
+	/**
+	 * Returns the PCS session state for the given contact and direction,
+	 * or null if no state exists.
+	 * <p/>
+	 * Read-only.
+	 *
+	 * @return Array of [chainKey bytes, messageNumber, previousChainLength],
+	 *         or null if no state exists
+	 */
+	@Nullable
+	Object[] getPcsSessionState(Transaction txn, ContactId c, int direction)
+			throws DbException;
+
+	/**
+	 * Checks if PCS session state exists for the given contact.
+	 * <p/>
+	 * Read-only.
+	 */
+	boolean containsPcsSessionState(Transaction txn, ContactId c)
+			throws DbException;
+
+	/**
+	 * Stores a skipped message key for later retrieval.
+	 *
+	 * @param c The contact ID
+	 * @param direction PCS_DIRECTION_SEND or PCS_DIRECTION_RECEIVE
+	 * @param messageNumber The message number this key corresponds to
+	 * @param messageKey The message key (32 bytes)
+	 * @param timestamp When this key was derived (for expiration)
+	 */
+	void addPcsSkippedKey(Transaction txn, ContactId c, int direction,
+			int messageNumber, SecretKey messageKey, long timestamp)
+			throws DbException;
+
+	/**
+	 * Retrieves and deletes a skipped message key.
+	 * <p/>
+	 * The key is deleted after retrieval to ensure one-time use.
+	 *
+	 * @return The message key, or null if not found
+	 */
+	@Nullable
+	SecretKey getPcsSkippedKey(Transaction txn, ContactId c, int direction,
+			int messageNumber) throws DbException;
+
+	/**
+	 * Returns the number of skipped keys stored for the given contact and direction.
+	 * <p/>
+	 * Read-only.
+	 */
+	int getPcsSkippedKeyCount(Transaction txn, ContactId c, int direction)
+			throws DbException;
+
+	/**
+	 * Removes all expired skipped keys (older than the given threshold).
+	 *
+	 * @param maxAge Maximum key age in milliseconds
+	 * @return The number of keys removed
+	 */
+	int prunePcsSkippedKeys(Transaction txn, long maxAge) throws DbException;
+
+	/**
+	 * Removes all PCS state for the given contact.
+	 * Called when a contact is deleted or conversation is reset.
+	 */
+	void removePcsState(Transaction txn, ContactId c) throws DbException;
+
+	// ==================== PCS Mode 2 (DH Ratchet) Methods ====================
+
+	/**
+	 * Stores or updates the full PCS Mode 2 session state including DH ratchet keys.
+	 *
+	 * @param c The contact ID
+	 * @param direction PCS_DIRECTION_SEND or PCS_DIRECTION_RECEIVE
+	 * @param chainKey The current chain key (32 bytes)
+	 * @param messageNumber The current message number
+	 * @param previousChainLength The length of the previous chain
+	 * @param rootKey The KDF_RK root key (32 bytes), or null for Mode 1
+	 * @param dhPrivateKey Our DH private key, or null for Mode 1
+	 * @param dhPublicKey Our DH public key, or null for Mode 1
+	 * @param dhRemotePublicKey Their DH public key, or null if not yet received
+	 * @param mode2Enabled True if Mode 2 (DH ratchet) is enabled
+	 */
+	void setPcsMode2SessionState(Transaction txn, ContactId c, int direction,
+			SecretKey chainKey, int messageNumber, int previousChainLength,
+			@Nullable SecretKey rootKey, @Nullable PrivateKey dhPrivateKey,
+			@Nullable PublicKey dhPublicKey, @Nullable PublicKey dhRemotePublicKey,
+			boolean mode2Enabled) throws DbException;
+
+	/**
+	 * Returns the full PCS Mode 2 session state for the given contact and direction,
+	 * or null if no state exists.
+	 *
+	 * @return Array of [chainKey bytes, messageNumber, previousChainLength,
+	 *         rootKey bytes (nullable), dhPrivateKey bytes (nullable),
+	 *         dhPublicKey bytes (nullable), dhRemotePublicKey bytes (nullable),
+	 *         mode2Enabled], or null if no state exists
+	 */
+	@Nullable
+	Object[] getPcsMode2SessionState(Transaction txn, ContactId c, int direction)
+			throws DbException;
+
+	/**
+	 * Stores a skipped message key for Mode 2 with chain ID.
+	 *
+	 * @param chainId Hash identifying the chain (includes DH public key)
+	 * @param messageNumber The message number this key corresponds to
+	 * @param messageKey The message key (32 bytes)
+	 * @param timestamp When this key was derived (for expiration)
+	 */
+	void addPcsMode2SkippedKey(Transaction txn, byte[] chainId, int messageNumber,
+			SecretKey messageKey, long timestamp) throws DbException;
+
+	/**
+	 * Retrieves and deletes a skipped message key by chain ID.
+	 * The key is deleted after retrieval to ensure one-time use.
+	 *
+	 * @return The message key, or null if not found
+	 */
+	@Nullable
+	SecretKey getPcsMode2SkippedKey(Transaction txn, byte[] chainId,
+			int messageNumber) throws DbException;
 }

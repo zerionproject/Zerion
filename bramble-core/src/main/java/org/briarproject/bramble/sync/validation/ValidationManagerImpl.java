@@ -39,6 +39,7 @@ import java.util.logging.Logger;
 import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
 
+import static java.util.logging.Level.FINE;
 import static java.util.logging.Level.INFO;
 import static java.util.logging.Level.WARNING;
 import static org.briarproject.bramble.api.sync.validation.IncomingMessageHook.DeliveryAction.ACCEPT_DO_NOT_SHARE;
@@ -233,8 +234,8 @@ class ValidationManagerImpl implements ValidationManager, Service,
 		if (v == null) {
 			if (LOG.isLoggable(WARNING)) LOG.warning("No validator for " + cv);
 		} else {
-			if (LOG.isLoggable(INFO)) {
-				LOG.info("Validating message for " + cv.getClientId());
+			if (LOG.isLoggable(FINE)) {
+				LOG.fine("Validating message for " + cv.getClientId());
 			}
 			try {
 				MessageContext context = v.validateMessage(m, g);
@@ -326,8 +327,8 @@ class ValidationManagerImpl implements ValidationManager, Service,
 		ClientMajorVersion cv = new ClientMajorVersion(c, majorVersion);
 		IncomingMessageHook hook = hooks.get(cv);
 		if (hook == null) return ACCEPT_DO_NOT_SHARE;
-		if (LOG.isLoggable(INFO)) {
-			LOG.info("Delivering message for " + c);
+		if (LOG.isLoggable(FINE)) {
+			LOG.fine("Delivering message for " + c);
 		}
 		try {
 			return hook.incomingMessage(txn, m, meta);

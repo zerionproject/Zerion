@@ -6,6 +6,8 @@ import org.briarproject.bramble.api.crypto.PasswordStrengthEstimator;
 import org.briarproject.bramble.api.crypto.StreamDecrypterFactory;
 import org.briarproject.bramble.api.crypto.StreamEncrypterFactory;
 import org.briarproject.bramble.api.crypto.TransportCrypto;
+import org.briarproject.bramble.api.crypto.pcs.PcsRatchet;
+import org.briarproject.bramble.api.crypto.pcs.SkippedKeyStore;
 import org.briarproject.bramble.api.system.SecureRandomProvider;
 
 import java.security.SecureRandom;
@@ -45,16 +47,18 @@ public class CryptoModule {
 
 	@Provides
 	StreamDecrypterFactory provideStreamDecrypterFactory(
-			Provider<AuthenticatedCipher> cipherProvider) {
-		return new StreamDecrypterFactoryImpl(cipherProvider);
+			Provider<AuthenticatedCipher> cipherProvider,
+			PcsRatchet pcsRatchet, SkippedKeyStore skippedKeyStore) {
+		return new StreamDecrypterFactoryImpl(cipherProvider, pcsRatchet,
+				skippedKeyStore);
 	}
 
 	@Provides
 	StreamEncrypterFactory provideStreamEncrypterFactory(
 			CryptoComponent crypto, TransportCrypto transportCrypto,
-			Provider<AuthenticatedCipher> cipherProvider) {
+			Provider<AuthenticatedCipher> cipherProvider, PcsRatchet pcsRatchet) {
 		return new StreamEncrypterFactoryImpl(crypto, transportCrypto,
-				cipherProvider);
+				cipherProvider, pcsRatchet);
 	}
 
 	@Provides

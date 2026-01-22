@@ -1,9 +1,14 @@
 package org.briarproject.bramble.crypto;
 
+import org.briarproject.bramble.api.contact.ContactId;
 import org.briarproject.bramble.api.crypto.SecretKey;
 import org.briarproject.bramble.api.crypto.StreamDecrypter;
 import org.briarproject.bramble.api.crypto.StreamDecrypterFactory;
+import org.briarproject.bramble.api.crypto.pcs.PcsRatchet;
+import org.briarproject.bramble.api.crypto.pcs.PcsSessionState;
+import org.briarproject.bramble.api.crypto.pcs.SkippedKeyStore;
 import org.briarproject.bramble.api.transport.StreamContext;
+import org.briarproject.bramble.crypto.pcs.DatabaseSkippedKeyStore;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.InputStream;
@@ -17,16 +22,39 @@ import javax.inject.Provider;
 class StreamDecrypterFactoryImpl implements StreamDecrypterFactory {
 
 	private final Provider<AuthenticatedCipher> cipherProvider;
+	private final PcsRatchet pcsRatchet;
+	private final SkippedKeyStore skippedKeyStore;
 
 	@Inject
-	StreamDecrypterFactoryImpl(Provider<AuthenticatedCipher> cipherProvider) {
+	StreamDecrypterFactoryImpl(Provider<AuthenticatedCipher> cipherProvider,
+			PcsRatchet pcsRatchet, SkippedKeyStore skippedKeyStore) {
 		this.cipherProvider = cipherProvider;
+		this.pcsRatchet = pcsRatchet;
+		this.skippedKeyStore = skippedKeyStore;
 	}
 
 	@Override
 	public StreamDecrypter createStreamDecrypter(InputStream in,
 			StreamContext ctx) {
 		AuthenticatedCipher cipher = cipherProvider.get();
+
+		// Check if PCS is enabled for this context
+		if (ctx.isPcsEnabled()) {
+			PcsSessionState pcsState = ctx.getPcsState();
+			ContactId contactId = ctx.getContactId();
+			if (pcsState == null || contactId == null) {
+				throw new IllegalStateException(
+						"PCS enabled but no state or contact provided");
+			}
+			// Create chain ID for skipped key store
+			byte[] chainId = DatabaseSkippedKeyStore.createChainId(
+					contactId, false); // false = receive direction
+			return new PcsStreamDecrypterImpl(in, cipher, pcsRatchet,
+					skippedKeyStore, chainId, ctx.getStreamNumber(),
+					ctx.getHeaderKey(), pcsState, null);
+		}
+
+		// Standard (non-PCS) decrypter
 		return new StreamDecrypterImpl(in, cipher, ctx.getStreamNumber(),
 				ctx.getHeaderKey());
 	}
