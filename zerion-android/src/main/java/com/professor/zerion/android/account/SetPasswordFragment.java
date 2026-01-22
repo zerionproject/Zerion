@@ -23,20 +23,14 @@ import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
 import javax.annotation.Nullable;
 
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts.RequestPermission;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import static android.Manifest.permission.POST_NOTIFICATIONS;
 import static android.content.Context.INPUT_METHOD_SERVICE;
-import static android.content.pm.PackageManager.PERMISSION_GRANTED;
-import static android.os.Build.VERSION.SDK_INT;
 import static android.view.View.GONE;
 import static android.view.View.INVISIBLE;
 import static android.view.View.VISIBLE;
-import static androidx.core.content.ContextCompat.checkSelfPermission;
 import static org.briarproject.bramble.api.crypto.PasswordStrengthEstimator.QUITE_WEAK;
 import static org.briarproject.bramble.api.crypto.PasswordStrengthEstimator.STRONG;
 import static com.professor.zerion.android.util.UiUtils.hideViewOnSmallScreen;
@@ -61,10 +55,6 @@ public class SetPasswordFragment extends SetupFragment {
 	private Button nextButton;
 
 	private final Handler mainHandler = new Handler(Looper.getMainLooper());
-
-	private final ActivityResultLauncher<String> requestPermissionLauncher =
-			registerForActivityResult(new RequestPermission(), isGranted ->
-					setPassword());
 
 	public static SetPasswordFragment newInstance() {
 		return new SetPasswordFragment();
@@ -145,7 +135,7 @@ public class SetPasswordFragment extends SetupFragment {
 
 		hideViewOnSmallScreen(requireView().findViewById(R.id.logo));
 
-		if (SDK_INT >= 23 && Settings.canDrawOverlays(requireContext())) {
+		if (Settings.canDrawOverlays(requireContext())) {
 			strengthMeter.setVisibility(GONE);
 		}
 	}
@@ -180,7 +170,7 @@ public class SetPasswordFragment extends SetupFragment {
 
 			boolean passwordsMatch = sanitized1.equals(sanitized2);
 
-			if (SDK_INT < 23 || !Settings.canDrawOverlays(requireContext())) {
+			if (!Settings.canDrawOverlays(requireContext())) {
 				strengthMeter.setVisibility(!sanitized1.isEmpty() ? VISIBLE : INVISIBLE);
 			}
 
@@ -243,14 +233,14 @@ public class SetPasswordFragment extends SetupFragment {
 	private char[] getPasswordChars(TextInputEditText editText) {
 		int length = editText.length();
 		char[] chars = new char[length];
-		if (length > 0) {
+		if (length > 0 && editText.getText() != null) {
 			editText.getText().getChars(0, length, chars, 0);
 		}
 		return chars;
 	}
 
 	private String sanitizePassword(String password) {
-		if (password == null || password.isEmpty()) return "";
+		if (password.isEmpty()) return "";
 
 		String normalized = Normalizer.normalize(password, Normalizer.Form.NFC);
 
@@ -288,10 +278,10 @@ public class SetPasswordFragment extends SetupFragment {
 	}
 
 	private void clearPasswordFields() {
-		if (passwordEntry != null) {
+		if (passwordEntry != null && passwordEntry.getText() != null) {
 			passwordEntry.getText().clear();
 		}
-		if (passwordConfirmation != null) {
+		if (passwordConfirmation != null && passwordConfirmation.getText() != null) {
 			passwordConfirmation.getText().clear();
 		}
 	}

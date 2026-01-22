@@ -21,6 +21,7 @@ import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
 
+import org.briarproject.bramble.api.connection.ConnectionRegistry;
 import org.briarproject.bramble.api.contact.ContactId;
 import org.briarproject.briar.api.identity.AuthorInfo;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
@@ -42,6 +43,8 @@ public class ChatSettingsActivity extends ZerionActivity {
 
 	@Inject
 	ViewModelProvider.Factory viewModelFactory;
+	@Inject
+	ConnectionRegistry connectionRegistry;
 
 	private ConversationViewModel viewModel;
 	private ContactId contactId;
@@ -78,6 +81,7 @@ public class ChatSettingsActivity extends ZerionActivity {
 		contactId = new ContactId(id);
 
 		viewModel.setContactId(contactId);
+		viewModel.checkConnectionStatus(connectionRegistry);
 		prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
 
 		setContentView(R.layout.activity_chat_settings);

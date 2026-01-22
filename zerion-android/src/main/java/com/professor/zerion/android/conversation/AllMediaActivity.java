@@ -7,6 +7,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -16,22 +17,35 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.google.android.material.tabs.TabLayout;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
 import com.professor.zerion.android.attachment.AttachmentItem;
+import com.professor.zerion.android.attachment.AttachmentRetriever;
 
 import org.briarproject.bramble.api.contact.ContactId;
+import org.briarproject.bramble.api.db.DatabaseExecutor;
+import org.briarproject.bramble.api.db.DbException;
+import org.briarproject.bramble.api.sync.MessageId;
+import org.briarproject.briar.api.attachment.Attachment;
 import org.briarproject.briar.api.attachment.AttachmentHeader;
+import org.briarproject.briar.api.conversation.ConversationManager;
+import org.briarproject.briar.api.conversation.ConversationMessageHeader;
+import org.briarproject.briar.api.messaging.PrivateMessageHeader;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.Executor;
 
 import javax.inject.Inject;
 
+import static com.bumptech.glide.load.engine.DiskCacheStrategy.NONE;
 import static com.professor.zerion.android.conversation.ConversationActivity.CONTACT_ID;
 
 @MethodsNotNullByDefault
@@ -44,14 +58,24 @@ public class AllMediaActivity extends ZerionActivity {
 
 	@Inject
 	ViewModelProvider.Factory viewModelFactory;
+	@Inject
+	ConversationManager conversationManager;
+	@Inject
+	@DatabaseExecutor
+	Executor dbExecutor;
 
 	private ConversationViewModel viewModel;
+	private AttachmentRetriever attachmentRetriever;
 	private ContactId contactId;
 	private RecyclerView mediaGrid;
 	private MediaAdapter adapter;
 	private TabLayout tabLayout;
+	private ProgressBar loadingIndicator;
+	private LinearLayout emptyState;
+	private TextView emptyText;
 
 	private int currentTab = TAB_ALL;
+	private final List<MediaItem> allMediaItems = new ArrayList<>();
 
 	@Override
 	public void injectActivity(ActivityComponent component) {
@@ -70,6 +94,7 @@ public class AllMediaActivity extends ZerionActivity {
 		contactId = new ContactId(id);
 
 		viewModel.setContactId(contactId);
+		attachmentRetriever = viewModel.getAttachmentRetriever();
 
 		setContentView(R.layout.activity_all_media);
 
@@ -78,6 +103,10 @@ public class AllMediaActivity extends ZerionActivity {
 		if (getSupportActionBar() != null) {
 			getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 		}
+
+		loadingIndicator = findViewById(R.id.loading_indicator);
+		emptyState = findViewById(R.id.empty_state);
+		emptyText = findViewById(R.id.empty_text);
 
 		tabLayout = findViewById(R.id.tab_layout);
 		tabLayout.addTab(tabLayout.newTab().setText(R.string.all));
@@ -88,7 +117,7 @@ public class AllMediaActivity extends ZerionActivity {
 			@Override
 			public void onTabSelected(TabLayout.Tab tab) {
 				currentTab = tab.getPosition();
-				loadMedia();
+				filterAndDisplayMedia();
 			}
 
 			@Override
@@ -107,8 +136,109 @@ public class AllMediaActivity extends ZerionActivity {
 	}
 
 	private void loadMedia() {
-		List<MediaItem> mediaItems = new ArrayList<>();
-		adapter.setItems(mediaItems);
+		showLoading(true);
+
+		dbExecutor.execute(() -> {
+			try {
+				Collection<ConversationMessageHeader> headers =
+						conversationManager.getMessageHeaders(contactId);
+
+				List<MediaItem> mediaItems = new ArrayList<>();
+
+				for (ConversationMessageHeader header : headers) {
+					if (header instanceof PrivateMessageHeader) {
+						PrivateMessageHeader pmh = (PrivateMessageHeader) header;
+						List<AttachmentHeader> attachments = pmh.getAttachmentHeaders();
+
+						for (AttachmentHeader ah : attachments) {
+							String contentType = ah.getContentType();
+							boolean isImage = contentType.startsWith("image/");
+							boolean isVideo = contentType.startsWith("video/");
+							boolean isDocument = !isImage && !isVideo;
+
+							MediaItem item = new MediaItem(
+									ah,
+									isImage,
+									isVideo,
+									isDocument,
+									pmh.getTimestamp(),
+									pmh.getId()
+							);
+							mediaItems.add(item);
+						}
+					}
+				}
+
+				Collections.sort(mediaItems, (a, b) ->
+						Long.compare(b.timestamp, a.timestamp));
+
+				runOnUiThread(() -> {
+					allMediaItems.clear();
+					allMediaItems.addAll(mediaItems);
+					filterAndDisplayMedia();
+					showLoading(false);
+				});
+
+			} catch (DbException e) {
+				runOnUiThread(() -> {
+					showLoading(false);
+					showEmpty(true);
+				});
+			}
+		});
+	}
+
+	private void filterAndDisplayMedia() {
+		List<MediaItem> filtered = new ArrayList<>();
+
+		for (MediaItem item : allMediaItems) {
+			switch (currentTab) {
+				case TAB_ALL:
+					filtered.add(item);
+					break;
+				case TAB_IMAGES:
+					if (item.isImage || item.isVideo) {
+						filtered.add(item);
+					}
+					break;
+				case TAB_DOCUMENTS:
+					if (item.isDocument) {
+						filtered.add(item);
+					}
+					break;
+			}
+		}
+
+		adapter.setItems(filtered);
+		showEmpty(filtered.isEmpty());
+		updateEmptyText();
+	}
+
+	private void updateEmptyText() {
+		switch (currentTab) {
+			case TAB_ALL:
+				emptyText.setText(R.string.no_media);
+				break;
+			case TAB_IMAGES:
+				emptyText.setText(R.string.no_images);
+				break;
+			case TAB_DOCUMENTS:
+				emptyText.setText(R.string.no_documents);
+				break;
+		}
+	}
+
+	private void showLoading(boolean show) {
+		loadingIndicator.setVisibility(show ? View.VISIBLE : View.GONE);
+		if (show) {
+			mediaGrid.setVisibility(View.GONE);
+			emptyState.setVisibility(View.GONE);
+		}
+	}
+
+	private void showEmpty(boolean show) {
+		emptyState.setVisibility(show ? View.VISIBLE : View.GONE);
+		mediaGrid.setVisibility(show ? View.GONE : View.VISIBLE);
 	}
 
 	@Override
@@ -118,14 +248,22 @@ public class AllMediaActivity extends ZerionActivity {
 	}
 
 	private static class MediaItem {
-		final AttachmentItem attachment;
+		final AttachmentHeader header;
 		final boolean isImage;
+		final boolean isVideo;
+		final boolean isDocument;
 		final long timestamp;
+		final MessageId messageId;
+		AttachmentItem attachmentItem;
 
-		MediaItem(AttachmentItem attachment, boolean isImage, long timestamp) {
-			this.attachment = attachment;
+		MediaItem(AttachmentHeader header, boolean isImage, boolean isVideo,
+				boolean isDocument, long timestamp, MessageId messageId) {
+			this.header = header;
 			this.isImage = isImage;
+			this.isVideo = isVideo;
+			this.isDocument = isDocument;
 			this.timestamp = timestamp;
+			this.messageId = messageId;
 		}
 	}
 
@@ -160,38 +298,109 @@ public class AllMediaActivity extends ZerionActivity {
 		class MediaViewHolder extends RecyclerView.ViewHolder {
 			private final ImageView thumbnail;
 			private final LinearLayout documentOverlay;
-			private final ImageView documentIcon;
 			private final TextView documentName;
 
 			MediaViewHolder(@NonNull View itemView) {
 				super(itemView);
 				thumbnail = itemView.findViewById(R.id.thumbnail);
 				documentOverlay = itemView.findViewById(R.id.document_overlay);
-				documentIcon = itemView.findViewById(R.id.document_icon);
 				documentName = itemView.findViewById(R.id.document_name);
 			}
 
 			void bind(MediaItem item) {
-				if (item.isImage) {
+				if (item.isImage || item.isVideo) {
 					documentOverlay.setVisibility(View.GONE);
 					thumbnail.setVisibility(View.VISIBLE);
-					thumbnail.setImageResource(R.drawable.ic_image);
+
+					if (item.isVideo) {
+						thumbnail.setImageResource(R.drawable.ic_video);
+					} else {
+						thumbnail.setImageResource(R.drawable.ic_image);
+					}
+
+					loadThumbnail(item, thumbnail);
+
 				} else {
 					thumbnail.setVisibility(View.GONE);
 					documentOverlay.setVisibility(View.VISIBLE);
 
-					String fileName = item.attachment.getHeader().getContentType();
-					if (fileName.contains("/")) {
-						fileName = fileName.substring(fileName.lastIndexOf("/") + 1);
-					}
-					documentName.setText(fileName);
+					String contentType = item.header.getContentType();
+					String extension = getExtensionFromMimeType(contentType);
+					documentName.setText(extension.toUpperCase());
 				}
 
-				itemView.setOnClickListener(v -> {
-					Intent intent = new Intent(AllMediaActivity.this, ImageActivity.class);
-					startActivity(intent);
+				itemView.setOnClickListener(v -> openMedia(item));
+			}
+
+			private void loadThumbnail(MediaItem item, ImageView imageView) {
+				Glide.with(imageView)
+						.load(item.header)
+						.diskCacheStrategy(NONE)
+						.error(R.drawable.ic_image)
+						.centerCrop()
+						.into(imageView);
+
+				dbExecutor.execute(() -> {
+					try {
+						attachmentRetriever.cacheAttachmentItemWithSize(
+								item.messageId, item.header);
+
+						Attachment att = attachmentRetriever.getMessageAttachment(item.header);
+						AttachmentItem ai = attachmentRetriever.createAttachmentItem(att, true);
+						item.attachmentItem = ai;
+					} catch (DbException ignored) {
+					}
 				});
 			}
 		}
+	}
+
+	private void openMedia(MediaItem item) {
+		if (item.attachmentItem == null) {
+			dbExecutor.execute(() -> {
+				try {
+					Attachment att = attachmentRetriever.getMessageAttachment(item.header);
+					AttachmentItem ai = attachmentRetriever.createAttachmentItem(att, true);
+					item.attachmentItem = ai;
+					runOnUiThread(() -> launchMediaViewer(item));
+				} catch (DbException ignored) {
+				}
+			});
+		} else {
+			launchMediaViewer(item);
+		}
+	}
+
+	private void launchMediaViewer(MediaItem item) {
+		if (item.attachmentItem == null) return;
+
+		if (item.isImage) {
+			ArrayList<AttachmentItem> attachments = new ArrayList<>();
+			attachments.add(item.attachmentItem);
+
+			Intent intent = new Intent(this, ImageActivity.class);
+			intent.putParcelableArrayListExtra(ImageActivity.ATTACHMENTS, attachments);
+			intent.putExtra(ImageActivity.ATTACHMENT_POSITION, 0);
+			intent.putExtra(ImageActivity.NAME, "");
+			intent.putExtra(ImageActivity.DATE, item.timestamp);
+			startActivity(intent);
+		} else if (item.isVideo) {
+			Intent intent = new Intent(this, VideoPlayerActivity.class);
+			intent.putExtra(VideoPlayerActivity.ATTACHMENT, item.attachmentItem);
+			intent.putExtra(VideoPlayerActivity.ITEM_ID, item.messageId.getBytes());
+			startActivity(intent);
+		}
+	}
+
+	private String getExtensionFromMimeType(@Nullable String mimeType) {
+		if (mimeType == null) return "FILE";
+		if (mimeType.contains("/")) {
+			String ext = mimeType.substring(mimeType.lastIndexOf("/") + 1);
+			if (ext.length() > 4) {
+				return ext.substring(0, 4);
+			}
+			return ext;
+		}
+		return "FILE";
 	}
 }
