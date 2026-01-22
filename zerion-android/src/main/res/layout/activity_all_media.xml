@@ -31,11 +31,50 @@
         app:tabSelectedTextColor="@color/zerion_cyan"
         app:tabTextColor="?android:attr/textColorSecondary" />
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/media_grid"
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:padding="4dp"
-        tools:listitem="@layout/item_media_thumbnail" />
+        android:layout_height="match_parent">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/media_grid"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="4dp"
+            tools:listitem="@layout/item_media_thumbnail" />
+
+        <ProgressBar
+            android:id="@+id/loading_indicator"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/empty_state"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:visibility="gone">
+
+            <ImageView
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:src="@drawable/ic_image"
+                android:tint="@color/zerion_cyan"
+                android:contentDescription="@string/all_media" />
+
+            <TextView
+                android:id="@+id/empty_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/no_media"
+                android:textColor="?android:attr/textColorSecondary"
+                android:textSize="16sp" />
+
+        </LinearLayout>
+
+    </FrameLayout>
 
 </LinearLayout>
