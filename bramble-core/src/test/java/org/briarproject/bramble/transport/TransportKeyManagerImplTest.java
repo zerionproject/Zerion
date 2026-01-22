@@ -294,7 +294,7 @@ public class TransportKeyManagerImplTest extends BrambleMockTestCase {
 		// The first request should return a stream context
 		assertTrue(transportKeyManager.canSendOutgoingStreams(contactId));
 		StreamContext ctx = transportKeyManager.getStreamContext(txn,
-				contactId);
+				contactId, false);
 		assertNotNull(ctx);
 		assertEquals(contactId, ctx.getContactId());
 		assertEquals(transportId, ctx.getTransportId());
@@ -324,7 +324,7 @@ public class TransportKeyManagerImplTest extends BrambleMockTestCase {
 				transportKeyManager.canSendOutgoingStreams(contactId));
 		// The tag should not be recognised
 		assertNull(transportKeyManager.getStreamContext(txn,
-				new byte[TAG_LENGTH]));
+				new byte[TAG_LENGTH], false));
 	}
 
 	@Test
@@ -544,7 +544,7 @@ public class TransportKeyManagerImplTest extends BrambleMockTestCase {
 		// The keys are active so a stream context should be returned
 		assertTrue(transportKeyManager.canSendOutgoingStreams(contactId));
 		StreamContext ctx = transportKeyManager.getStreamContext(txn,
-				contactId);
+				contactId, false);
 		assertNotNull(ctx);
 		assertEquals(contactId, ctx.getContactId());
 		assertEquals(transportId, ctx.getTransportId());

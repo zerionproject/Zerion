@@ -1,9 +1,9 @@
 # Zerion Post-Compromise Security (PCS) Technical Design
 
-**Version:** 1.0-DRAFT
-**Date:** 2026-01-13
-**Status:** PENDING REVIEW
-**Author:** Claude Code
+**Version:** 1.1
+**Date:** 2026-01-22
+**Status:** IMPLEMENTED - Phase 1 Complete, Phase 2 Complete
+**Author:** Zerion Project
 
 ---
 
@@ -53,8 +53,24 @@ This document specifies the Post-Compromise Security (PCS) implementation for Ze
 | Key Agreement | X25519 + ML-KEM-768 hybrid | `HybridKeyAgreement.java` |
 | Symmetric Cipher | XSalsa20-Poly1305 | `XSalsa20Poly1305AuthenticatedCipher.java` |
 | KDF | BLAKE2b (label-prefixed) | `CryptoComponentImpl.java` |
-| Key Rotation | Time-period based (~42 hours) | `TransportKeyManagerImpl.java` |
+| Key Rotation | Time-period based (see table below) | `TransportKeyManagerImpl.java` |
 | Session State | Per-contact key sets | `TransportKeys.java` |
+
+**Key Rotation Periods by Transport**
+
+The rotation period is calculated as: `timePeriodLength = MAX_LATENCY + MAX_CLOCK_DIFFERENCE`
+
+| Transport | MAX_LATENCY | Clock Tolerance | Rotation Period | Source |
+|-----------|-------------|-----------------|-----------------|--------|
+| Tor | 30 seconds | 24 hours | ~24 hours | `TorPluginFactory.java:42` |
+| Bluetooth | 30 seconds | 24 hours | ~24 hours | `AndroidBluetoothPluginFactory.java:33` |
+| LAN TCP | 30 seconds | 24 hours | ~24 hours | `AndroidLanTcpPluginFactory.java:27` |
+| WAN TCP | 30 seconds | 24 hours | ~24 hours | `DesktopWanTcpPluginFactory.java` |
+| Removable Drive | 28 days | 24 hours | ~29 days | `RemovableDrivePluginFactory.java:20` |
+
+**Constants Reference**:
+- `MAX_CLOCK_DIFFERENCE = 24 hours` (`TransportConstants.java:69`)
+- Formula in `TransportKeyManagerImpl.java:75-88`
 
 ### 2.2 Current Key Hierarchy
 
@@ -83,7 +99,7 @@ Root Key = deriveKey("CONTACT_ROOT_KEY", staticMasterKey)
 1. **No symmetric ratchet**: Same root key used across all messages in a time period
 2. **No DH ratchet**: No per-message ephemeral key exchange
 3. **Time-based only**: Key rotation is time-period bound, not message-count bound
-4. **Long session vulnerability**: Compromise exposes all messages within ~42 hour window
+4. **Long session vulnerability**: Compromise exposes all messages within rotation window (~24h for Tor, ~29 days for removable drive)
 
 ---
 
@@ -224,37 +240,44 @@ Version History:
 
 ### 5.2 State Variables
 
+**Implemented as `PcsSessionState.java`:**
+
 ```java
 class PcsSessionState {
-    // DH Ratchet Keys (Mode 2 only)
-    KeyPair DHs;           // Our current DH ratchet key pair
-    PublicKey DHr;         // Their current DH ratchet public key
+    // Chain key (combined send/receive for simplicity)
+    SecretKey chainKey;        // 32-byte chain key
 
-    // Root Chain
-    SecretKey RK;          // 32-byte root key
+    // Message counter
+    int messageNumber;         // Current message counter (0, 1, 2, ...)
 
-    // Sending Chain
-    SecretKey CKs;         // 32-byte sending chain key
-    int Ns;                // Send message counter (0, 1, 2, ...)
+    // Previous chain length (for skipped key calculation)
+    int previousChainLength;
 
-    // Receiving Chain
-    SecretKey CKr;         // 32-byte receiving chain key
-    int Nr;                // Receive message counter
+    // Root key (Mode 2 only)
+    @Nullable SecretKey rootKey;
 
-    // Previous Chain
-    int PN;                // Previous chain length (for skipped key calc)
+    // DH Ratchet State (Mode 2 only)
+    @Nullable DhRatchetState dhState;
 
-    // Skipped Keys (bounded)
-    Map<SkippedKeyId, SecretKey> MKSKIPPED;  // Max 1000 entries
-
-    // Protocol State
-    int protocolVersion;   // 6 for PCS
-    boolean pcsNegotiated; // True if peer supports PCS
-    long epoch;            // Current epoch (for hybrid ratchet)
+    // Helper methods
+    boolean isMode2();         // Returns dhState != null && rootKey != null
+    PcsSessionState advance(SecretKey newChainKey);
+    PcsSessionState afterDhRatchet(SecretKey newRootKey, SecretKey newChainKey, DhRatchetState newDhState);
 }
 
-record SkippedKeyId(byte[] dhPublicKey, int messageNumber) {}
+class DhRatchetState {
+    KeyPair dhKeyPair;              // Our current DH ratchet key pair
+    @Nullable PublicKey remoteKey;  // Their current DH ratchet public key
+
+    boolean hasRemotePublicKey();
+    DhRatchetState withNewKeyPair(KeyPair newKeyPair);
+    DhRatchetState withRemoteKey(PublicKey newRemoteKey);
+}
 ```
+
+**Skipped keys stored via `SkippedKeyStore` interface:**
+- `InMemorySkippedKeyStore` - For testing
+- `DatabaseSkippedKeyStore` - For production (DB-backed)
 
 ### 5.3 State Transitions
 
@@ -278,26 +301,31 @@ record SkippedKeyId(byte[] dhPublicKey, int messageNumber) {}
 
 All KDF operations use BLAKE2b with explicit domain separation labels.
 
-**KDF_RK: Root Key Derivation**
+**KDF_RK: Root Key Derivation (Mode 2)**
+
+**Implemented in `PcsRatchetImpl.kdfRk()`:**
 ```
 KDF_RK(rk, dh_out) → (new_rk, chain_key)
 
   Input:
     rk: 32-byte root key
-    dh_out: 32-byte DH output (or KEM shared secret)
+    dh_out: 32-byte DH output (X25519 shared secret)
 
   Output:
     new_rk: 32-byte new root key
     chain_key: 32-byte chain key
 
-  Derivation:
-    temp = BLAKE2b-512(
-      label: "org.briarproject.zerion/PCS_ROOT_KDF",
+  Derivation (using separate deriveKey calls with domain separation):
+    new_rk = deriveKey(
+      label: "org.briarproject.zerion/PCS_DH_RATCHET",
       key: rk,
-      input: dh_out
+      inputs: [dh_out, 0x01]  // Root key derivation
     )
-    new_rk = temp[0:32]
-    chain_key = temp[32:64]
+    chain_key = deriveKey(
+      label: "org.briarproject.zerion/PCS_DH_RATCHET",
+      key: rk,
+      inputs: [dh_out, 0x02]  // Chain key derivation
+    )
 ```
 
 **KDF_CK: Chain Key Derivation**
@@ -373,34 +401,37 @@ All KDF labels MUST be unique and include the full domain:
 
 ### 7.1 PCS Message Header
 
+**Implemented in `PcsStreamEncrypterImpl` and `PcsStreamDecrypterImpl`:**
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    PCS Message Header                        │
 ├─────────────────────────────────────────────────────────────┤
 │ Version (1 byte)                                             │
-│   0x06 = PCS protocol version                                │
+│   0x01 = PCS header version                                  │
 ├─────────────────────────────────────────────────────────────┤
 │ Flags (1 byte)                                               │
-│   Bit 0: DH ratchet present (1 = yes)                        │
-│   Bit 1: PCS capability (1 = supported)                      │
+│   Bit 0 (FLAG_PCS_ENABLED): PCS enabled (always 1)           │
+│   Bit 1 (FLAG_DH_RATCHET): DH public key present             │
 │   Bit 2-7: Reserved (must be 0)                              │
 ├─────────────────────────────────────────────────────────────┤
 │ Message Number (4 bytes, big-endian)                         │
-│   Current chain message counter (Ns or Nr)                   │
+│   Current chain message counter (0, 1, 2, ...)               │
 ├─────────────────────────────────────────────────────────────┤
 │ Previous Chain Length (4 bytes, big-endian)                  │
-│   Message count in previous sending chain (PN)               │
+│   Message count in previous sending chain                    │
 ├─────────────────────────────────────────────────────────────┤
 │ DH Ratchet Public Key (32 bytes, optional)                   │
-│   Present only if Flags bit 0 is set                         │
+│   Present only if FLAG_DH_RATCHET is set                     │
 │   X25519 public key for DH ratchet step                      │
-├─────────────────────────────────────────────────────────────┤
-│ Epoch (8 bytes, optional, Phase 2)                           │
-│   For future ML-KEM Braid integration                        │
 └─────────────────────────────────────────────────────────────┘
 
-Minimum header size: 10 bytes (no DH key)
-Maximum header size: 50 bytes (with DH key and epoch)
+Constants from PcsConstants.java:
+  PCS_HEADER_MIN_SIZE = 10 bytes (no DH key)
+  PCS_HEADER_MAX_SIZE = 42 bytes (with DH key)
+  DH_PUBLIC_KEY_SIZE = 32 bytes (X25519)
+  FLAG_PCS_ENABLED = 0x01
+  FLAG_DH_RATCHET = 0x02
 ```
 
 ### 7.2 Header Encryption
@@ -567,53 +598,44 @@ Downgrade is only permitted if:
 
 ### 10.1 Database Schema
 
+**Implemented in `JdbcDatabase.java` (schema version 57):**
+
 ```sql
-CREATE TABLE pcs_session_state (
-    contact_id BLOB NOT NULL PRIMARY KEY,
-    protocol_version INTEGER NOT NULL,
-    pcs_negotiated INTEGER NOT NULL,
-
-    -- Root chain
-    root_key BLOB NOT NULL,
-
-    -- Sending chain
-    send_chain_key BLOB,
-    send_counter INTEGER NOT NULL DEFAULT 0,
-
-    -- Receiving chain
-    recv_chain_key BLOB,
-    recv_counter INTEGER NOT NULL DEFAULT 0,
-
-    -- Previous chain
-    prev_chain_length INTEGER NOT NULL DEFAULT 0,
-
-    -- DH ratchet (Mode 2)
-    dh_private_key BLOB,
-    dh_public_key BLOB,
-    dh_remote_public_key BLOB,
-
-    -- Metadata
-    created_at INTEGER NOT NULL,
-    updated_at INTEGER NOT NULL,
-
-    FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE
+-- PCS Session State table (per contact, per direction)
+CREATE TABLE pcsSessionState (
+    contactId _HASH NOT NULL,
+    direction INT NOT NULL,           -- 0=send, 1=receive
+    chainKey _SECRET NOT NULL,
+    messageNumber INT NOT NULL,
+    previousChainLength INT NOT NULL,
+    mode2Enabled INT NOT NULL DEFAULT 0,
+    rootKey _SECRET,                  -- Mode 2 only
+    dhPrivateKey _BINARY,             -- Mode 2 only (X25519 private key)
+    dhPublicKey _BINARY,              -- Mode 2 only (X25519 public key)
+    dhRemotePublicKey _BINARY,        -- Mode 2 only (peer's X25519 public key)
+    PRIMARY KEY (contactId, direction),
+    FOREIGN KEY (contactId) REFERENCES contacts(contactId) ON DELETE CASCADE
 );
 
-CREATE TABLE pcs_skipped_keys (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    contact_id BLOB NOT NULL,
-    dh_public_key BLOB NOT NULL,
-    message_number INTEGER NOT NULL,
-    message_key BLOB NOT NULL,
-    created_at INTEGER NOT NULL,
-
-    UNIQUE(contact_id, dh_public_key, message_number),
-    FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE
+-- PCS Skipped Keys table (for out-of-order messages)
+CREATE TABLE pcsSkippedKeys (
+    contactId _HASH NOT NULL,
+    chainId _HASH NOT NULL,           -- Identifies the chain (hash of chain key + DH key)
+    messageNumber INT NOT NULL,
+    messageKey _SECRET NOT NULL,
+    timestamp BIGINT NOT NULL,
+    PRIMARY KEY (contactId, chainId, messageNumber),
+    FOREIGN KEY (contactId) REFERENCES contacts(contactId) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_skipped_keys_contact ON pcs_skipped_keys(contact_id);
-CREATE INDEX idx_skipped_keys_created ON pcs_skipped_keys(created_at);
+CREATE INDEX pcsSkippedKeysTimestamp ON pcsSkippedKeys(timestamp);
 ```
+
+**Key operations:**
+- `setPcsSessionState()` / `getPcsSessionState()` - Mode 1 state persistence
+- `setPcsMode2SessionState()` / `getPcsMode2SessionState()` - Mode 2 state persistence
+- `addPcsSkippedKey()` / `getPcsSkippedKey()` - Skipped key management
+- `deletePcsSkippedKey()` / `deletePcsSkippedKeysBefore()` - Key cleanup
 
 ### 10.2 State Synchronization
 
@@ -773,7 +795,9 @@ SecretKey deriveMessageKey(SecretKey chainKey) {
 
 ## 13. Implementation Roadmap
 
-### Phase 1: Symmetric Ratchet (Core PCS)
+### Phase 1: Symmetric Ratchet (Core PCS) - COMPLETED
+
+**Status:** Implemented and tested
 
 **Scope:**
 - Implement symmetric ratchet (KDF_CK)
@@ -783,28 +807,54 @@ SecretKey deriveMessageKey(SecretKey chainKey) {
 - State persistence
 - Skipped key management
 
-**Files to Create:**
-- `PcsSessionState.java` - State container
-- `PcsRatchet.java` - Ratchet operations
-- `PcsHeaderCodec.java` - Header encoding/decoding
-- `PcsCapabilityNegotiator.java` - Negotiation logic
+**Files Created:**
+- `bramble-api/.../crypto/pcs/PcsSessionState.java` - State container
+- `bramble-api/.../crypto/pcs/PcsRatchet.java` - Ratchet interface
+- `bramble-api/.../crypto/pcs/PcsConstants.java` - Protocol constants
+- `bramble-api/.../crypto/pcs/PcsException.java` - Exception handling
+- `bramble-api/.../crypto/pcs/SkippedKeyStore.java` - Skipped key interface
+- `bramble-api/.../crypto/pcs/DhRatchetState.java` - DH ratchet state
+- `bramble-core/.../crypto/pcs/PcsRatchetImpl.java` - Ratchet implementation
+- `bramble-core/.../crypto/pcs/PcsStateManager.java` - State persistence
+- `bramble-core/.../crypto/pcs/InMemorySkippedKeyStore.java` - In-memory key store
+- `bramble-core/.../crypto/pcs/DatabaseSkippedKeyStore.java` - DB-backed key store
+- `bramble-core/.../crypto/PcsStreamEncrypterImpl.java` - PCS stream encrypter
+- `bramble-core/.../crypto/PcsStreamDecrypterImpl.java` - PCS stream decrypter
 
-**Files to Modify:**
-- `TransportKeyManagerImpl.java` - Integrate PCS state
-- `StreamEncrypterImpl.java` - Use per-message keys
-- `StreamDecrypterImpl.java` - Use per-message keys
-- `TransportCryptoImpl.java` - Add PCS KDF functions
-- Database schema
+**Files Modified:**
+- `bramble-core/.../db/JdbcDatabase.java` - Schema v56 with PCS tables
+- `bramble-core/.../db/Migration55_56.java` - PCS migration
+- `bramble-core/.../db/Migration56_57.java` - Mode 2 migration
+- Database interfaces updated with PCS methods
 
-### Phase 2: DH Ratchet (Full Double Ratchet)
+### Phase 2: DH Ratchet (Full Double Ratchet) - COMPLETED
+
+**Status:** Implemented and tested
 
 **Scope:**
-- Add DH ratchet step
+- Add DH ratchet step (X25519)
 - Per-message ephemeral keys
 - Full PCS with 1-RTT recovery
+- Mode 2 state persistence
 
-**Additional Files:**
-- `DhRatchet.java` - DH ratchet operations
+**Implementation Details:**
+- `PcsRatchetImpl.java` - Contains both Mode 1 (symmetric) and Mode 2 (DH ratchet)
+- `DhRatchetState.java` - DH key pair and remote public key management
+- `PcsStreamEncrypterImpl.java` - Embeds DH public key in PCS header when Mode 2
+- `PcsStreamDecrypterImpl.java` - Extracts DH public key and performs ratchet step
+
+**Key Methods:**
+- `PcsRatchet.initializeMode2AsInitiator()` - Initialize as conversation initiator
+- `PcsRatchet.initializeMode2AsResponder()` - Initialize with peer's public key
+- `PcsRatchet.performSendDhRatchet()` - Generate new DH key pair for sending
+- `PcsRatchet.performReceiveDhRatchet()` - Process received DH public key
+- `PcsRatchet.kdfRk()` - Root key derivation from DH output
+
+**Test Coverage:**
+- `PcsRatchetImplTest.java` - Unit tests for symmetric ratchet
+- `PcsStreamIntegrationTest.java` - Integration tests for Mode 1
+- `PcsMode2IntegrationTest.java` - Integration tests for Mode 2
+- `PcsMode2AdvancedTest.java` - Edge cases (upgrade, out-of-order, skipped keys)
 
 ### Phase 3: Post-Quantum Ratchet (Future)
 
