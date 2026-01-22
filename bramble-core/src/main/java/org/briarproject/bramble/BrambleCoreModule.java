@@ -6,6 +6,7 @@ import org.briarproject.bramble.connection.ConnectionModule;
 import org.briarproject.bramble.contact.ContactModule;
 import org.briarproject.bramble.crypto.CryptoExecutorModule;
 import org.briarproject.bramble.crypto.CryptoModule;
+import org.briarproject.bramble.crypto.pcs.PcsModule;
 import org.briarproject.bramble.data.DataModule;
 import org.briarproject.bramble.db.DatabaseExecutorModule;
 import org.briarproject.bramble.db.DatabaseModule;
@@ -35,6 +36,7 @@ import dagger.Module;
 		ContactModule.class,
 		CryptoModule.class,
 		CryptoExecutorModule.class,
+		PcsModule.class,
 		DataModule.class,
 		DatabaseModule.class,
 		DatabaseExecutorModule.class,

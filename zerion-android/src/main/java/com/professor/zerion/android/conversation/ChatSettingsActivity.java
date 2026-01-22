@@ -116,8 +116,6 @@ public class ChatSettingsActivity extends ZerionActivity {
 				setAvatar(contactAvatar, contactItem);
 				contactName.setText(contactItem.getContact().getAuthor().getName());
 
-				contactStatus.setText(R.string.offline);
-
 				contactAvatar.setOnClickListener(v -> showAvatarFullScreen(contactItem));
 
 				// Update security level display
@@ -130,6 +128,13 @@ public class ChatSettingsActivity extends ZerionActivity {
 					securityLevelDescription.setText(
 							R.string.security_level_classical_description);
 				}
+			}
+		});
+
+		// Observe contact connection status
+		viewModel.isContactConnected().observe(this, connected -> {
+			if (connected != null) {
+				contactStatus.setText(connected ? R.string.online : R.string.offline);
 			}
 		});
 

@@ -5,6 +5,8 @@ import org.briarproject.bramble.api.crypto.SecretKey;
 import org.briarproject.bramble.api.crypto.StreamEncrypter;
 import org.briarproject.bramble.api.crypto.StreamEncrypterFactory;
 import org.briarproject.bramble.api.crypto.TransportCrypto;
+import org.briarproject.bramble.api.crypto.pcs.PcsRatchet;
+import org.briarproject.bramble.api.crypto.pcs.PcsSessionState;
 import org.briarproject.bramble.api.transport.StreamContext;
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -25,14 +27,17 @@ class StreamEncrypterFactoryImpl implements StreamEncrypterFactory {
 	private final CryptoComponent crypto;
 	private final TransportCrypto transportCrypto;
 	private final Provider<AuthenticatedCipher> cipherProvider;
+	private final PcsRatchet pcsRatchet;
 
 	@Inject
 	StreamEncrypterFactoryImpl(CryptoComponent crypto,
 			TransportCrypto transportCrypto,
-			Provider<AuthenticatedCipher> cipherProvider) {
+			Provider<AuthenticatedCipher> cipherProvider,
+			PcsRatchet pcsRatchet) {
 		this.crypto = crypto;
 		this.transportCrypto = transportCrypto;
 		this.cipherProvider = cipherProvider;
+		this.pcsRatchet = pcsRatchet;
 	}
 
 	@Override
@@ -45,6 +50,20 @@ class StreamEncrypterFactoryImpl implements StreamEncrypterFactory {
 				streamNumber);
 		byte[] streamHeaderNonce = new byte[STREAM_HEADER_NONCE_LENGTH];
 		crypto.getSecureRandom().nextBytes(streamHeaderNonce);
+
+		// Check if PCS is enabled for this context
+		if (ctx.isPcsEnabled()) {
+			PcsSessionState pcsState = ctx.getPcsState();
+			if (pcsState == null) {
+				throw new IllegalStateException(
+						"PCS enabled but no state provided");
+			}
+			return new PcsStreamEncrypterImpl(out, cipher, pcsRatchet,
+					streamNumber, tag, streamHeaderNonce, ctx.getHeaderKey(),
+					pcsState, null);
+		}
+
+		// Standard (non-PCS) encrypter
 		SecretKey frameKey = crypto.generateSecretKey();
 		return new StreamEncrypterImpl(out, cipher, streamNumber, tag,
 				streamHeaderNonce, ctx.getHeaderKey(), frameKey);

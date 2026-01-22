@@ -3,6 +3,7 @@ package org.briarproject.bramble.api.transport;
 import org.briarproject.bramble.api.contact.ContactId;
 import org.briarproject.bramble.api.contact.PendingContactId;
 import org.briarproject.bramble.api.crypto.SecretKey;
+import org.briarproject.bramble.api.crypto.pcs.PcsSessionState;
 import org.briarproject.bramble.api.plugin.TransportId;
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -24,6 +25,9 @@ public class StreamContext {
 	private final long streamNumber;
 	private final boolean handshakeMode;
 	private final boolean classical;
+	private final boolean pcsEnabled;
+	@Nullable
+	private final PcsSessionState pcsState;
 
 	/**
 	 * Creates a StreamContext with the default (extended) record format.
@@ -34,7 +38,7 @@ public class StreamContext {
 			TransportId transportId, SecretKey tagKey, SecretKey headerKey,
 			long streamNumber, boolean handshakeMode) {
 		this(contactId, pendingContactId, transportId, tagKey, headerKey,
-				streamNumber, handshakeMode, false);
+				streamNumber, handshakeMode, false, false, null);
 	}
 
 	/**
@@ -47,7 +51,28 @@ public class StreamContext {
 			@Nullable PendingContactId pendingContactId,
 			TransportId transportId, SecretKey tagKey, SecretKey headerKey,
 			long streamNumber, boolean handshakeMode, boolean classical) {
+		this(contactId, pendingContactId, transportId, tagKey, headerKey,
+				streamNumber, handshakeMode, classical, false, null);
+	}
+
+	/**
+	 * Creates a StreamContext with full configuration including PCS support.
+	 *
+	 * @param classical true for Briar-compatible 4-byte header format,
+	 *                  false for extended 6-byte header format
+	 * @param pcsEnabled true if Post-Compromise Security is enabled
+	 * @param pcsState the PCS session state (required if pcsEnabled is true)
+	 */
+	public StreamContext(@Nullable ContactId contactId,
+			@Nullable PendingContactId pendingContactId,
+			TransportId transportId, SecretKey tagKey, SecretKey headerKey,
+			long streamNumber, boolean handshakeMode, boolean classical,
+			boolean pcsEnabled, @Nullable PcsSessionState pcsState) {
 		requireExactlyOneNull(contactId, pendingContactId);
+		if (pcsEnabled && pcsState == null) {
+			throw new IllegalArgumentException(
+					"PCS state required when PCS is enabled");
+		}
 		this.contactId = contactId;
 		this.pendingContactId = pendingContactId;
 		this.transportId = transportId;
@@ -56,6 +81,8 @@ public class StreamContext {
 		this.streamNumber = streamNumber;
 		this.handshakeMode = handshakeMode;
 		this.classical = classical;
+		this.pcsEnabled = pcsEnabled;
+		this.pcsState = pcsState;
 	}
 
 	@Nullable
@@ -95,5 +122,23 @@ public class StreamContext {
 	 */
 	public boolean isClassical() {
 		return classical;
+	}
+
+	/**
+	 * Returns true if Post-Compromise Security (PCS) is enabled for this stream.
+	 * <p>
+	 * When PCS is enabled, each frame is encrypted with a unique key derived
+	 * from the PCS symmetric ratchet, providing forward secrecy per message.
+	 */
+	public boolean isPcsEnabled() {
+		return pcsEnabled;
+	}
+
+	/**
+	 * Returns the PCS session state, or null if PCS is not enabled.
+	 */
+	@Nullable
+	public PcsSessionState getPcsState() {
+		return pcsState;
 	}
 }

@@ -32,6 +32,7 @@ public class Contact {
 	private final PublicKey handshakePublicKey;
 	private final boolean verified;
 	private final boolean postQuantum;
+	private final boolean pcsEnabled;
 
 	/**
 	 * Creates a contact with classical (non-PQ) cryptography.
@@ -40,17 +41,32 @@ public class Contact {
 	public Contact(ContactId id, Author author, AuthorId localAuthorId,
 			@Nullable String alias, @Nullable PublicKey handshakePublicKey,
 			boolean verified) {
-		this(id, author, localAuthorId, alias, handshakePublicKey, verified, false);
+		this(id, author, localAuthorId, alias, handshakePublicKey, verified,
+				false, false);
 	}
 
 	/**
 	 * Creates a contact with the specified security level.
+	 * For backward compatibility - PCS defaults to disabled.
 	 *
 	 * @param postQuantum true if established with hybrid PQ cryptography
 	 */
 	public Contact(ContactId id, Author author, AuthorId localAuthorId,
 			@Nullable String alias, @Nullable PublicKey handshakePublicKey,
 			boolean verified, boolean postQuantum) {
+		this(id, author, localAuthorId, alias, handshakePublicKey, verified,
+				postQuantum, false);
+	}
+
+	/**
+	 * Creates a contact with full security configuration.
+	 *
+	 * @param postQuantum true if established with hybrid PQ cryptography
+	 * @param pcsEnabled true if Post-Compromise Security (symmetric ratchet) is enabled
+	 */
+	public Contact(ContactId id, Author author, AuthorId localAuthorId,
+			@Nullable String alias, @Nullable PublicKey handshakePublicKey,
+			boolean verified, boolean postQuantum, boolean pcsEnabled) {
 		if (alias != null) {
 			int aliasLength = toUtf8(alias).length;
 			if (aliasLength == 0 || aliasLength > MAX_AUTHOR_NAME_LENGTH)
@@ -63,6 +79,7 @@ public class Contact {
 		this.handshakePublicKey = handshakePublicKey;
 		this.verified = verified;
 		this.postQuantum = postQuantum;
+		this.pcsEnabled = pcsEnabled;
 	}
 
 	public ContactId getId() {
@@ -108,6 +125,16 @@ public class Contact {
 	 */
 	public boolean isClassical() {
 		return !postQuantum;
+	}
+
+	/**
+	 * Returns true if Post-Compromise Security (PCS) is enabled for this contact.
+	 * <p>
+	 * When PCS is enabled, the symmetric ratchet provides forward secrecy
+	 * for each message, limiting the impact of key compromise.
+	 */
+	public boolean isPcsEnabled() {
+		return pcsEnabled;
 	}
 
 	@Override
