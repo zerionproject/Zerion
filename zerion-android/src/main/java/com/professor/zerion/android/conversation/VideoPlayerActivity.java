@@ -39,10 +39,11 @@ import androidx.annotation.Nullable;
 
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
+@SuppressWarnings("deprecation")
 public class VideoPlayerActivity extends ZerionActivity {
 
-	public static final String ATTACHMENT = "attachment";
-	public static final String ITEM_ID = "itemId";
+	static final String ATTACHMENT = "attachment";
+	static final String ITEM_ID = "itemId";
 
 	private static final String TEMP_VIDEO_PREFIX = "zerion_video_";
 	private static final String[] SUPPORTED_VIDEO_TYPES = {
@@ -155,6 +156,7 @@ public class VideoPlayerActivity extends ZerionActivity {
 		}
 	}
 
+	@SuppressWarnings("ResultOfMethodCallIgnored")
 	private void cleanupOrphanedTempFiles() {
 		try {
 			File cacheDir = getCacheDir();
@@ -168,7 +170,7 @@ public class VideoPlayerActivity extends ZerionActivity {
 					file.delete();
 				}
 			}
-		} catch (SecurityException e) {
+		} catch (SecurityException ignored) {
 		}
 	}
 
@@ -209,15 +211,11 @@ public class VideoPlayerActivity extends ZerionActivity {
 		isLoadingVideo = true;
 		showLoading(true);
 
-		final String finalExt = ext;
-		final String finalMimeType = mimeType;
-		final AttachmentHeader header = attachment.getHeader();
-
-		loadVideoWithRetry(header, finalExt, finalMimeType, 0);
+		loadVideoWithRetry(attachment.getHeader(), ext, 0);
 	}
 
 	private void loadVideoWithRetry(AttachmentHeader header, String ext,
-			String mimeType, int attemptNumber) {
+			int attemptNumber) {
 		if (isFinishing() || isDestroyed()) {
 			isLoadingVideo = false;
 			return;
@@ -261,7 +259,7 @@ public class VideoPlayerActivity extends ZerionActivity {
 					} catch (InterruptedException ie) {
 						Thread.currentThread().interrupt();
 					}
-					loadVideoWithRetry(header, ext, mimeType, attemptNumber + 1);
+					loadVideoWithRetry(header, ext, attemptNumber + 1);
 				} else {
 					cleanupTempFile();
 					runOnUiThread(() -> {
@@ -360,13 +358,14 @@ public class VideoPlayerActivity extends ZerionActivity {
 		}
 	}
 
+	@SuppressWarnings("ResultOfMethodCallIgnored")
 	private void cleanupTempFile() {
 		if (tempVideoFile != null) {
 			try {
 				if (tempVideoFile.exists()) {
 					tempVideoFile.delete();
 				}
-			} catch (SecurityException e) {
+			} catch (SecurityException ignored) {
 			}
 			tempVideoFile = null;
 		}
