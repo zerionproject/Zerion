@@ -291,6 +291,9 @@
 	<string name="attachment_from_vault_documents">Vault Documents</string>
 	<string name="scroll_to_bottom">Scroll to bottom</string>
 	<string name="all_media">All Media</string>
+	<string name="no_media">No media shared yet</string>
+	<string name="no_images">No images shared yet</string>
+	<string name="no_documents">No documents shared yet</string>
 	<string name="chat_settings">Chat Settings</string>
 	<string name="clear_chat">Clear Chat</string>
 	<string name="clear_chat_dialog_title">Clear Chat History?</string>
