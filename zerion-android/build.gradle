@@ -27,14 +27,15 @@ def getStdout = { command, defaultValue ->
 android {
     compileSdk 35
     buildToolsVersion '35.0.0'
-    packagingOptions {
+    packaging {
         jniLibs {
             keepDebugSymbols += ['**/*.so']
         }
-        // Exclude baseline profiles for F-Droid reproducible builds
-        // These files are non-deterministic and differ between builds
-        exclude 'assets/dexopt/baseline.prof'
-        exclude 'assets/dexopt/baseline.profm'
+        resources {
+            // Exclude baseline profiles for F-Droid reproducible builds
+            // These files are non-deterministic and differ between builds
+            excludes += ['assets/dexopt/baseline.prof', 'assets/dexopt/baseline.profm']
+        }
     }
 
     buildFeatures {
