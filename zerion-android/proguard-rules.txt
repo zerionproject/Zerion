@@ -1,6 +1,17 @@
 # Android defaults and rules from ../bramble-android/proguard-rules.txt are also applied
 
 # ============================================================================
+# F-DROID REPRODUCIBLE BUILD SUPPORT
+# ============================================================================
+# These rules help ensure deterministic DEX output for reproducible builds
+
+# Use deterministic source file attribute (removes non-deterministic R8 map ID)
+-renamesourcefileattribute SourceFile
+
+# Ensure deterministic class member ordering
+-keepattributes SourceFile,LineNumberTable
+
+# ============================================================================
 # SECURITY HARDENING - Phase 2.6
 # ============================================================================
 # Enable obfuscation for anti-reverse-engineering
