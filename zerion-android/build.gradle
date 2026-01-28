@@ -35,7 +35,8 @@ android {
             resources {
                 excludes += [
                     "assets/dexopt/baseline.prof",
-                    "assets/dexopt/baseline.profm"
+                    "assets/dexopt/baseline.profm",
+                    "META-INF/version-control-info.textproto"
                 ]
             }
         }
