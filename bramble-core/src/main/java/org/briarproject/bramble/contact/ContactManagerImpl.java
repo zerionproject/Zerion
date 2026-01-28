@@ -10,9 +10,14 @@ import org.briarproject.bramble.api.contact.PendingContact;
 import org.briarproject.bramble.api.contact.PendingContactId;
 import org.briarproject.bramble.api.contact.PendingContactState;
 import org.briarproject.bramble.api.contact.event.PendingContactStateChangedEvent;
+import org.briarproject.bramble.api.crypto.CryptoComponent;
 import org.briarproject.bramble.api.crypto.KeyPair;
 import org.briarproject.bramble.api.crypto.PublicKey;
 import org.briarproject.bramble.api.crypto.SecretKey;
+import org.briarproject.bramble.api.crypto.pcs.DhRatchetState;
+import org.briarproject.bramble.api.crypto.pcs.PcsSessionState;
+import org.briarproject.bramble.api.crypto.pcs.PqRatchetState;
+import org.briarproject.bramble.crypto.pcs.PcsStateManager;
 import org.briarproject.bramble.api.db.DatabaseComponent;
 import org.briarproject.bramble.api.db.DbException;
 import org.briarproject.bramble.api.db.NoSuchContactException;
@@ -39,6 +44,7 @@ import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
 
 import static org.briarproject.bramble.api.contact.PendingContactState.WAITING_FOR_CONNECTION;
+import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_ENABLED;
 import static org.briarproject.bramble.api.identity.AuthorConstants.MAX_AUTHOR_NAME_LENGTH;
 import static org.briarproject.bramble.util.StringUtils.toUtf8;
 
@@ -50,6 +56,8 @@ class ContactManagerImpl implements ContactManager, EventListener {
 	private final KeyManager keyManager;
 	private final IdentityManager identityManager;
 	private final PendingContactFactory pendingContactFactory;
+	private final CryptoComponent crypto;
+	private final PcsStateManager pcsStateManager;
 
 	private final List<ContactHook> hooks = new CopyOnWriteArrayList<>();
 	private final Map<PendingContactId, PendingContactState> states =
@@ -59,11 +67,15 @@ class ContactManagerImpl implements ContactManager, EventListener {
 	ContactManagerImpl(DatabaseComponent db,
 			KeyManager keyManager,
 			IdentityManager identityManager,
-			PendingContactFactory pendingContactFactory) {
+			PendingContactFactory pendingContactFactory,
+			CryptoComponent crypto,
+			PcsStateManager pcsStateManager) {
 		this.db = db;
 		this.keyManager = keyManager;
 		this.identityManager = identityManager;
 		this.pendingContactFactory = pendingContactFactory;
+		this.crypto = crypto;
+		this.pcsStateManager = pcsStateManager;
 	}
 
 	@Override
@@ -75,8 +87,18 @@ class ContactManagerImpl implements ContactManager, EventListener {
 	public ContactId addContact(Transaction txn, Author remote, AuthorId local,
 			SecretKey rootKey, long timestamp, boolean alice, boolean verified,
 			boolean active) throws DbException {
-		ContactId c = db.addContact(txn, remote, local, null, verified);
+		return addContact(txn, remote, local, rootKey, timestamp, alice,
+				verified, active, false);
+	}
+
+	@Override
+	public ContactId addContact(Transaction txn, Author remote, AuthorId local,
+			SecretKey rootKey, long timestamp, boolean alice, boolean verified,
+			boolean active, boolean mode3Capable) throws DbException {
+		ContactId c = db.addContact(txn, remote, local, null, verified, false,
+				false, mode3Capable);
 		keyManager.addRotationKeys(txn, c, rootKey, timestamp, alice, active);
+		initializePcsState(txn, c, rootKey, mode3Capable);
 		Contact contact = db.getContact(txn, c);
 		for (ContactHook hook : hooks) hook.addingContact(txn, contact);
 		return c;
@@ -87,8 +109,16 @@ class ContactManagerImpl implements ContactManager, EventListener {
 			Author remote, AuthorId local, SecretKey rootKey, long timestamp,
 			boolean alice, boolean verified, boolean active)
 			throws DbException, GeneralSecurityException {
+		return addContact(txn, p, remote, local, rootKey, timestamp, alice,
+				verified, active, false);
+	}
+
+	@Override
+	public ContactId addContact(Transaction txn, PendingContactId p,
+			Author remote, AuthorId local, SecretKey rootKey, long timestamp,
+			boolean alice, boolean verified, boolean active, boolean mode3Capable)
+			throws DbException, GeneralSecurityException {
 		PendingContact pendingContact = db.getPendingContact(txn, p);
-		// Preserve the PQ status when converting pending contact to contact
 		boolean postQuantum = pendingContact.isPostQuantum();
 		// Check for downgrade attack: if any existing contact with this author
 		// used PQ security, the new handshake must also use PQ
@@ -96,13 +126,15 @@ class ContactManagerImpl implements ContactManager, EventListener {
 		db.removePendingContact(txn, p);
 		states.remove(p);
 		PublicKey theirPublicKey = pendingContact.getPublicKey();
+		// pcsEnabled defaults to false; mode3Capable is negotiated during handshake
 		ContactId c = db.addContact(txn, remote, local, theirPublicKey,
-				verified, postQuantum);
+				verified, postQuantum, false, mode3Capable);
 		String alias = pendingContact.getAlias();
 		if (!alias.equals(remote.getName())) db.setContactAlias(txn, c, alias);
 		KeyPair ourKeyPair = identityManager.getHandshakeKeys(txn);
 		keyManager.addContact(txn, c, theirPublicKey, ourKeyPair);
 		keyManager.addRotationKeys(txn, c, rootKey, timestamp, alice, active);
+		initializePcsState(txn, c, rootKey, mode3Capable);
 		Contact contact = db.getContact(txn, c);
 		for (ContactHook hook : hooks) hook.addingContact(txn, contact);
 		return c;
@@ -151,7 +183,6 @@ class ContactManagerImpl implements ContactManager, EventListener {
 
 	@Override
 	public String getHandshakeLink(Transaction txn) throws DbException {
-		// Default to Zerion (PQ) contact type for backward compatibility
 		return getHandshakeLink(txn, ContactType.ZERION);
 	}
 
@@ -165,22 +196,14 @@ class ContactManagerImpl implements ContactManager, EventListener {
 	public String getHandshakeLink(Transaction txn, ContactType contactType)
 			throws DbException {
 		if (contactType == ContactType.ZERION) {
-			// Use hybrid keys for Zerion-to-Zerion post-quantum handshakes.
-			// The link contains a 32-byte commitment to the full hybrid key.
-			// The full 1,216-byte key is exchanged over Tor during the handshake.
 			KeyPair hybridKeyPair = identityManager.getHybridHandshakeKeys(txn);
 			if (hybridKeyPair != null) {
 				return pendingContactFactory.createHandshakeLink(
 						hybridKeyPair.getPublic());
 			}
-			// If no hybrid keys available, throw exception - no silent fallback
-			throw new DbException(new IllegalStateException(
-					"Hybrid keys not available for Zerion contact type"));
-		} else {
-			// Use classical keys for Briar-compatible contacts
-			KeyPair keyPair = identityManager.getHandshakeKeys(txn);
-			return pendingContactFactory.createHandshakeLink(keyPair.getPublic());
 		}
+		KeyPair keyPair = identityManager.getHandshakeKeys(txn);
+		return pendingContactFactory.createHandshakeLink(keyPair.getPublic());
 	}
 
 	@Override
@@ -347,5 +370,23 @@ class ContactManagerImpl implements ContactManager, EventListener {
 					(PendingContactStateChangedEvent) e;
 			states.put(p.getId(), p.getPendingContactState());
 		}
+	}
+
+	private void initializePcsState(Transaction txn, ContactId contactId,
+			SecretKey rootKey, boolean mode3Capable) throws DbException {
+		if (!mode3Capable || !MODE3_ENABLED) {
+			return;
+		}
+		KeyPair dhKeyPair = crypto.generateAgreementKeyPair();
+		DhRatchetState dhState = new DhRatchetState(dhKeyPair, null);
+		PcsSessionState sendState = PcsSessionState.createInitialMode3(
+				rootKey, rootKey, dhState);
+		PcsSessionState receiveState = PcsSessionState.createInitialMode3(
+				rootKey, rootKey, dhState);
+		pcsStateManager.initializeMode2State(txn, contactId, sendState,
+				receiveState);
+		PqRatchetState pqState = PqRatchetState.createReady(
+				System.currentTimeMillis());
+		pcsStateManager.savePqState(txn, contactId, pqState);
 	}
 }

@@ -101,7 +101,7 @@ import static org.briarproject.bramble.util.LogUtils.now;
 @NotNullByDefault
 abstract class JdbcDatabase implements Database<Connection> {
 
-	static final int CODE_SCHEMA_VERSION = 57;
+	static final int CODE_SCHEMA_VERSION = 60;
 
 	/**
 	 * The maximum number of idle connections to keep open.
@@ -145,8 +145,9 @@ abstract class JdbcDatabase implements Database<Connection> {
 					+ " handshakePublicKey _BINARY," // Null if key is unknown
 					+ " localAuthorId _HASH NOT NULL,"
 					+ " verified BOOLEAN NOT NULL,"
-					+ " postQuantum BOOLEAN NOT NULL DEFAULT FALSE,"
-					+ " pcsEnabled BOOLEAN NOT NULL DEFAULT FALSE,"
+					+ " postQuantum BOOLEAN DEFAULT FALSE NOT NULL,"
+					+ " pcsEnabled BOOLEAN DEFAULT FALSE NOT NULL,"
+					+ " mode3Capable BOOLEAN DEFAULT FALSE NOT NULL,"
 					+ " syncVersions _BINARY DEFAULT '00' NOT NULL,"
 					+ " PRIMARY KEY (contactId),"
 					+ " FOREIGN KEY (localAuthorId)"
@@ -284,7 +285,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 					+ " publicKey _BINARY NOT NULL,"
 					+ " alias _STRING NOT NULL,"
 					+ " timestamp BIGINT NOT NULL,"
-					+ " formatVersion INT NOT NULL DEFAULT 0,"
+					+ " formatVersion INT DEFAULT 0 NOT NULL,"
 					+ " PRIMARY KEY (pendingContactId))";
 
 	private static final String CREATE_OUTGOING_KEYS =
@@ -329,6 +330,70 @@ abstract class JdbcDatabase implements Database<Connection> {
 					+ " FOREIGN KEY (keySetId)"
 					+ " REFERENCES outgoingKeys (keySetId)"
 					+ " ON DELETE CASCADE)";
+
+	// PCS (Post-Compromise Security) tables
+	private static final String CREATE_PCS_SESSION_STATE =
+			"CREATE TABLE pcsSessionState"
+					+ " (contactId INT NOT NULL,"
+					+ " direction SMALLINT NOT NULL," // 0=send, 1=receive
+					+ " chainKey _SECRET NOT NULL,"
+					+ " messageNumber INT NOT NULL,"
+					+ " previousChainLength INT NOT NULL,"
+					+ " mode2Enabled BOOLEAN DEFAULT FALSE NOT NULL,"
+					+ " rootKey _SECRET," // Null for Mode 1 sessions
+					+ " dhPrivateKey _SECRET," // Null for Mode 1 sessions
+					+ " dhPublicKey _BINARY," // Null for Mode 1 sessions
+					+ " dhRemotePublicKey _BINARY," // Null until received
+					+ " mode3Enabled BOOLEAN DEFAULT FALSE NOT NULL,"
+					+ " pqEpoch BIGINT DEFAULT 0 NOT NULL,"
+					+ " PRIMARY KEY (contactId, direction),"
+					+ " FOREIGN KEY (contactId)"
+					+ " REFERENCES contacts (contactId)"
+					+ " ON DELETE CASCADE)";
+
+	private static final String CREATE_PCS_SKIPPED_KEYS =
+			"CREATE TABLE pcsSkippedKeys"
+					+ " (contactId INT NOT NULL,"
+					+ " direction SMALLINT NOT NULL," // 0=send, 1=receive
+					+ " messageNumber INT NOT NULL,"
+					+ " messageKey _SECRET NOT NULL,"
+					+ " timestamp BIGINT NOT NULL,"
+					+ " chainId _HASH," // Null for Mode 1 sessions
+					+ " PRIMARY KEY (contactId, direction, messageNumber),"
+					+ " FOREIGN KEY (contactId)"
+					+ " REFERENCES contacts (contactId)"
+					+ " ON DELETE CASCADE)";
+
+	private static final String CREATE_PQ_RATCHET_STATE =
+			"CREATE TABLE pqRatchetState"
+					+ " (contactId INT NOT NULL,"
+					+ " currentEpoch BIGINT DEFAULT 0 NOT NULL,"
+					+ " epochStartTime BIGINT NOT NULL,"
+					+ " messagesSinceEpoch INT DEFAULT 0 NOT NULL,"
+					+ " state INT DEFAULT 0 NOT NULL,"
+					+ " isInitiator BOOLEAN DEFAULT FALSE NOT NULL,"
+					+ " chunksSent INT DEFAULT 0 NOT NULL,"
+					+ " chunksReceived INT DEFAULT 0 NOT NULL,"
+					+ " ourEkSeed _BINARY,"
+					+ " ourEkVector _BINARY,"
+					+ " ourDecapsKey _SECRET,"
+					+ " theirEkSeed _BINARY,"
+					+ " theirEkHash _BINARY,"
+					+ " theirEkVector _BINARY,"
+					+ " ciphertext _BINARY,"
+					+ " pendingChunks _BINARY,"
+					+ " PRIMARY KEY (contactId),"
+					+ " FOREIGN KEY (contactId)"
+					+ " REFERENCES contacts (contactId)"
+					+ " ON DELETE CASCADE)";
+
+	private static final String INDEX_PCS_SKIPPED_KEYS_BY_TIMESTAMP =
+			"CREATE INDEX IF NOT EXISTS pcsSkippedKeysByTimestamp"
+					+ " ON pcsSkippedKeys (contactId, timestamp)";
+
+	private static final String INDEX_PCS_SKIPPED_KEYS_BY_CHAIN_ID =
+			"CREATE INDEX IF NOT EXISTS pcsSkippedKeysByChainId"
+					+ " ON pcsSkippedKeys (chainId, messageNumber)";
 
 	private static final String INDEX_CONTACTS_BY_AUTHOR_ID =
 			"CREATE INDEX IF NOT EXISTS contactsByAuthorId"
@@ -502,7 +567,10 @@ abstract class JdbcDatabase implements Database<Connection> {
 				new Migration53_54(),
 				new Migration54_55(dbTypes),
 				new Migration55_56(),
-				new Migration56_57(dbTypes)
+				new Migration56_57(dbTypes),
+				new Migration57_58(dbTypes),
+				new Migration58_59(),
+				new Migration59_60()
 		);
 	}
 
@@ -548,6 +616,10 @@ abstract class JdbcDatabase implements Database<Connection> {
 			s.executeUpdate(dbTypes.replaceTypes(CREATE_PENDING_CONTACTS));
 			s.executeUpdate(dbTypes.replaceTypes(CREATE_OUTGOING_KEYS));
 			s.executeUpdate(dbTypes.replaceTypes(CREATE_INCOMING_KEYS));
+			// PCS (Post-Compromise Security) tables
+			s.executeUpdate(dbTypes.replaceTypes(CREATE_PCS_SESSION_STATE));
+			s.executeUpdate(dbTypes.replaceTypes(CREATE_PCS_SKIPPED_KEYS));
+			s.executeUpdate(dbTypes.replaceTypes(CREATE_PQ_RATCHET_STATE));
 			s.close();
 		} catch (SQLException e) {
 			tryToClose(s, LOG, WARNING);
@@ -567,6 +639,9 @@ abstract class JdbcDatabase implements Database<Connection> {
 			s.executeUpdate(INDEX_STATUSES_BY_CONTACT_ID_TIMESTAMP);
 			s.executeUpdate(INDEX_STATUSES_BY_CONTACT_ID_TX_COUNT_TIMESTAMP);
 			s.executeUpdate(INDEX_MESSAGES_BY_CLEANUP_DEADLINE);
+			// PCS indexes
+			s.executeUpdate(INDEX_PCS_SKIPPED_KEYS_BY_TIMESTAMP);
+			s.executeUpdate(INDEX_PCS_SKIPPED_KEYS_BY_CHAIN_ID);
 			s.close();
 		} catch (SQLException e) {
 			tryToClose(s, LOG, WARNING);
@@ -700,32 +775,37 @@ abstract class JdbcDatabase implements Database<Connection> {
 	public ContactId addContact(Connection txn, Author remote, AuthorId local,
 			@Nullable PublicKey handshake, boolean verified)
 			throws DbException {
-		// Delegate to full method with postQuantum=false, pcsEnabled=false
-		return addContact(txn, remote, local, handshake, verified, false, false);
+		return addContact(txn, remote, local, handshake, verified, false, false, false);
 	}
 
 	@Override
 	public ContactId addContact(Connection txn, Author remote, AuthorId local,
 			@Nullable PublicKey handshake, boolean verified, boolean postQuantum)
 			throws DbException {
-		// Delegate to full method with pcsEnabled=false
 		return addContact(txn, remote, local, handshake, verified, postQuantum,
-				false);
+				false, false);
 	}
 
 	@Override
 	public ContactId addContact(Connection txn, Author remote, AuthorId local,
 			@Nullable PublicKey handshake, boolean verified, boolean postQuantum,
 			boolean pcsEnabled) throws DbException {
+		return addContact(txn, remote, local, handshake, verified, postQuantum,
+				pcsEnabled, false);
+	}
+
+	@Override
+	public ContactId addContact(Connection txn, Author remote, AuthorId local,
+			@Nullable PublicKey handshake, boolean verified, boolean postQuantum,
+			boolean pcsEnabled, boolean mode3Capable) throws DbException {
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		try {
-			// Create a contact row
 			String sql = "INSERT INTO contacts"
 					+ " (authorId, formatVersion, name, publicKey,"
 					+ " localAuthorId, handshakePublicKey, verified, postQuantum,"
-					+ " pcsEnabled)"
-					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+					+ " pcsEnabled, mode3Capable)"
+					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 			ps = txn.prepareStatement(sql);
 			ps.setBytes(1, remote.getId().getBytes());
 			ps.setInt(2, remote.getFormatVersion());
@@ -737,10 +817,10 @@ abstract class JdbcDatabase implements Database<Connection> {
 			ps.setBoolean(7, verified);
 			ps.setBoolean(8, postQuantum);
 			ps.setBoolean(9, pcsEnabled);
+			ps.setBoolean(10, mode3Capable);
 			int affected = ps.executeUpdate();
 			if (affected != 1) throw new DbStateException();
 			ps.close();
-			// Get the new (highest) contact ID
 			sql = "SELECT contactId FROM contacts"
 					+ " ORDER BY contactId DESC LIMIT 1";
 			ps = txn.prepareStatement(sql);
@@ -1513,7 +1593,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 		try {
 			String sql = "SELECT authorId, formatVersion, name, alias,"
 					+ " publicKey, handshakePublicKey, localAuthorId, verified,"
-					+ " postQuantum, pcsEnabled"
+					+ " postQuantum, pcsEnabled, mode3Capable"
 					+ " FROM contacts"
 					+ " WHERE contactId = ?";
 			ps = txn.prepareStatement(sql);
@@ -1530,6 +1610,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 			boolean verified = rs.getBoolean(8);
 			boolean postQuantum = rs.getBoolean(9);
 			boolean pcsEnabled = rs.getBoolean(10);
+			boolean mode3Capable = rs.getBoolean(11);
 			rs.close();
 			ps.close();
 			Author author =
@@ -1537,7 +1618,8 @@ abstract class JdbcDatabase implements Database<Connection> {
 			PublicKey handshakePublicKey = handshakePub == null ?
 					null : new AgreementPublicKey(handshakePub);
 			return new Contact(c, author, localAuthorId, alias,
-					handshakePublicKey, verified, postQuantum, pcsEnabled);
+					handshakePublicKey, verified, postQuantum, pcsEnabled,
+					mode3Capable);
 		} catch (SQLException e) {
 			tryToClose(rs, LOG, WARNING);
 			tryToClose(ps, LOG, WARNING);
@@ -1552,7 +1634,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 		try {
 			String sql = "SELECT contactId, authorId, formatVersion, name,"
 					+ " alias, publicKey, handshakePublicKey, localAuthorId,"
-					+ " verified, postQuantum, pcsEnabled"
+					+ " verified, postQuantum, pcsEnabled, mode3Capable"
 					+ " FROM contacts";
 			s = txn.createStatement();
 			rs = s.executeQuery(sql);
@@ -1569,13 +1651,14 @@ abstract class JdbcDatabase implements Database<Connection> {
 				boolean verified = rs.getBoolean(9);
 				boolean postQuantum = rs.getBoolean(10);
 				boolean pcsEnabled = rs.getBoolean(11);
+				boolean mode3Capable = rs.getBoolean(12);
 				Author author =
 						new Author(authorId, formatVersion, name, publicKey);
 				PublicKey handshakePublicKey = handshakePub == null ?
 						null : new AgreementPublicKey(handshakePub);
 				contacts.add(new Contact(contactId, author, localAuthorId,
 						alias, handshakePublicKey, verified, postQuantum,
-						pcsEnabled));
+						pcsEnabled, mode3Capable));
 			}
 			rs.close();
 			s.close();
@@ -1618,7 +1701,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 		try {
 			String sql = "SELECT contactId, formatVersion, name, alias,"
 					+ " publicKey, handshakePublicKey, localAuthorId, verified,"
-					+ " postQuantum, pcsEnabled"
+					+ " postQuantum, pcsEnabled, mode3Capable"
 					+ " FROM contacts"
 					+ " WHERE authorId = ?";
 			ps = txn.prepareStatement(sql);
@@ -1636,13 +1719,14 @@ abstract class JdbcDatabase implements Database<Connection> {
 				boolean verified = rs.getBoolean(8);
 				boolean postQuantum = rs.getBoolean(9);
 				boolean pcsEnabled = rs.getBoolean(10);
+				boolean mode3Capable = rs.getBoolean(11);
 				Author author =
 						new Author(remote, formatVersion, name, publicKey);
 				PublicKey handshakePublicKey = handshakePub == null ?
 						null : new AgreementPublicKey(handshakePub);
 				contacts.add(new Contact(contactId, author, localAuthorId,
 						alias, handshakePublicKey, verified, postQuantum,
-						pcsEnabled));
+						pcsEnabled, mode3Capable));
 			}
 			rs.close();
 			ps.close();
@@ -1662,7 +1746,8 @@ abstract class JdbcDatabase implements Database<Connection> {
 		ResultSet rs = null;
 		try {
 			String sql = "SELECT contactId, authorId, formatVersion, name,"
-					+ " alias, publicKey, verified, postQuantum, pcsEnabled"
+					+ " alias, publicKey, verified, postQuantum, pcsEnabled,"
+					+ " mode3Capable"
 					+ " FROM contacts"
 					+ " WHERE handshakePublicKey = ? AND localAuthorId = ?";
 			ps = txn.prepareStatement(sql);
@@ -1683,13 +1768,15 @@ abstract class JdbcDatabase implements Database<Connection> {
 			boolean verified = rs.getBoolean(7);
 			boolean postQuantum = rs.getBoolean(8);
 			boolean pcsEnabled = rs.getBoolean(9);
+			boolean mode3Capable = rs.getBoolean(10);
 			if (rs.next()) throw new DbStateException();
 			rs.close();
 			ps.close();
 			Author author =
 					new Author(authorId, formatVersion, name, publicKey);
 			return new Contact(contactId, author, localAuthorId, alias,
-					handshakePublicKey, verified, postQuantum, pcsEnabled);
+					handshakePublicKey, verified, postQuantum, pcsEnabled,
+					mode3Capable);
 		} catch (SQLException e) {
 			tryToClose(rs, LOG, WARNING);
 			tryToClose(ps, LOG, WARNING);
@@ -4282,6 +4369,139 @@ abstract class JdbcDatabase implements Database<Connection> {
 			return new SecretKey(keyBytes);
 		} catch (SQLException e) {
 			tryToClose(rs, LOG, WARNING);
+			tryToClose(ps, LOG, WARNING);
+			throw new DbException(e);
+		}
+	}
+
+	// ==================== PCS Mode 3 (PQ Ratchet) Methods ====================
+
+	@Override
+	public void setPqRatchetState(Connection txn, ContactId c, long currentEpoch,
+			long epochStartTime, int messagesSinceEpoch, int state,
+			boolean isInitiator, int chunksSent, int chunksReceived,
+			@Nullable byte[] ourEkSeed, @Nullable byte[] ourEkVector,
+			@Nullable byte[] ourDecapsKey, @Nullable byte[] theirEkSeed,
+			@Nullable byte[] theirEkHash, @Nullable byte[] theirEkVector,
+			@Nullable byte[] ciphertext, @Nullable byte[] pendingChunks)
+			throws DbException {
+		PreparedStatement ps = null;
+		try {
+			String sql = "MERGE INTO pqRatchetState"
+					+ " (contactId, currentEpoch, epochStartTime, messagesSinceEpoch,"
+					+ " state, isInitiator, chunksSent, chunksReceived,"
+					+ " ourEkSeed, ourEkVector, ourDecapsKey,"
+					+ " theirEkSeed, theirEkHash, theirEkVector,"
+					+ " ciphertext, pendingChunks)"
+					+ " KEY (contactId)"
+					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+			ps = txn.prepareStatement(sql);
+			ps.setInt(1, c.getInt());
+			ps.setLong(2, currentEpoch);
+			ps.setLong(3, epochStartTime);
+			ps.setInt(4, messagesSinceEpoch);
+			ps.setInt(5, state);
+			ps.setBoolean(6, isInitiator);
+			ps.setInt(7, chunksSent);
+			ps.setInt(8, chunksReceived);
+			ps.setBytes(9, ourEkSeed);
+			ps.setBytes(10, ourEkVector);
+			ps.setBytes(11, ourDecapsKey);
+			ps.setBytes(12, theirEkSeed);
+			ps.setBytes(13, theirEkHash);
+			ps.setBytes(14, theirEkVector);
+			ps.setBytes(15, ciphertext);
+			ps.setBytes(16, pendingChunks);
+			int affected = ps.executeUpdate();
+			if (affected < 0 || affected > 1) throw new DbStateException();
+			ps.close();
+		} catch (SQLException e) {
+			tryToClose(ps, LOG, WARNING);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	@Nullable
+	public Object[] getPqRatchetState(Connection txn, ContactId c)
+			throws DbException {
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			String sql = "SELECT currentEpoch, epochStartTime, messagesSinceEpoch,"
+					+ " state, isInitiator, chunksSent, chunksReceived,"
+					+ " ourEkSeed, ourEkVector, ourDecapsKey,"
+					+ " theirEkSeed, theirEkHash, theirEkVector,"
+					+ " ciphertext, pendingChunks"
+					+ " FROM pqRatchetState"
+					+ " WHERE contactId = ?";
+			ps = txn.prepareStatement(sql);
+			ps.setInt(1, c.getInt());
+			rs = ps.executeQuery();
+			if (!rs.next()) {
+				rs.close();
+				ps.close();
+				return null;
+			}
+			Object[] result = new Object[]{
+					rs.getLong(1),
+					rs.getLong(2),
+					rs.getInt(3),
+					rs.getInt(4),
+					rs.getBoolean(5),
+					rs.getInt(6),
+					rs.getInt(7),
+					rs.getBytes(8),
+					rs.getBytes(9),
+					rs.getBytes(10),
+					rs.getBytes(11),
+					rs.getBytes(12),
+					rs.getBytes(13),
+					rs.getBytes(14),
+					rs.getBytes(15)
+			};
+			rs.close();
+			ps.close();
+			return result;
+		} catch (SQLException e) {
+			tryToClose(rs, LOG, WARNING);
+			tryToClose(ps, LOG, WARNING);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	public boolean containsPqRatchetState(Connection txn, ContactId c)
+			throws DbException {
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			String sql = "SELECT 1 FROM pqRatchetState WHERE contactId = ?";
+			ps = txn.prepareStatement(sql);
+			ps.setInt(1, c.getInt());
+			rs = ps.executeQuery();
+			boolean exists = rs.next();
+			rs.close();
+			ps.close();
+			return exists;
+		} catch (SQLException e) {
+			tryToClose(rs, LOG, WARNING);
+			tryToClose(ps, LOG, WARNING);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	public void removePqRatchetState(Connection txn, ContactId c)
+			throws DbException {
+		PreparedStatement ps = null;
+		try {
+			String sql = "DELETE FROM pqRatchetState WHERE contactId = ?";
+			ps = txn.prepareStatement(sql);
+			ps.setInt(1, c.getInt());
+			ps.executeUpdate();
+			ps.close();
+		} catch (SQLException e) {
 			tryToClose(ps, LOG, WARNING);
 			throw new DbException(e);
 		}

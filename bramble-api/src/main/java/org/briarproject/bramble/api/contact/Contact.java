@@ -33,6 +33,7 @@ public class Contact {
 	private final boolean verified;
 	private final boolean postQuantum;
 	private final boolean pcsEnabled;
+	private final boolean mode3Capable;
 
 	/**
 	 * Creates a contact with classical (non-PQ) cryptography.
@@ -42,7 +43,7 @@ public class Contact {
 			@Nullable String alias, @Nullable PublicKey handshakePublicKey,
 			boolean verified) {
 		this(id, author, localAuthorId, alias, handshakePublicKey, verified,
-				false, false);
+				false, false, false);
 	}
 
 	/**
@@ -55,7 +56,7 @@ public class Contact {
 			@Nullable String alias, @Nullable PublicKey handshakePublicKey,
 			boolean verified, boolean postQuantum) {
 		this(id, author, localAuthorId, alias, handshakePublicKey, verified,
-				postQuantum, false);
+				postQuantum, false, false);
 	}
 
 	/**
@@ -67,6 +68,21 @@ public class Contact {
 	public Contact(ContactId id, Author author, AuthorId localAuthorId,
 			@Nullable String alias, @Nullable PublicKey handshakePublicKey,
 			boolean verified, boolean postQuantum, boolean pcsEnabled) {
+		this(id, author, localAuthorId, alias, handshakePublicKey, verified,
+				postQuantum, pcsEnabled, false);
+	}
+
+	/**
+	 * Creates a contact with full security configuration including Mode 3 capability.
+	 *
+	 * @param postQuantum true if established with hybrid PQ cryptography
+	 * @param pcsEnabled true if Post-Compromise Security (symmetric ratchet) is enabled
+	 * @param mode3Capable true if both peers negotiated Mode 3 (Triple Ratchet) support
+	 */
+	public Contact(ContactId id, Author author, AuthorId localAuthorId,
+			@Nullable String alias, @Nullable PublicKey handshakePublicKey,
+			boolean verified, boolean postQuantum, boolean pcsEnabled,
+			boolean mode3Capable) {
 		if (alias != null) {
 			int aliasLength = toUtf8(alias).length;
 			if (aliasLength == 0 || aliasLength > MAX_AUTHOR_NAME_LENGTH)
@@ -80,6 +96,7 @@ public class Contact {
 		this.verified = verified;
 		this.postQuantum = postQuantum;
 		this.pcsEnabled = pcsEnabled;
+		this.mode3Capable = mode3Capable;
 	}
 
 	public ContactId getId() {
@@ -135,6 +152,19 @@ public class Contact {
 	 */
 	public boolean isPcsEnabled() {
 		return pcsEnabled;
+	}
+
+	/**
+	 * Returns true if this contact supports Mode 3 (Triple Ratchet).
+	 * <p>
+	 * Mode 3 combines the Double Ratchet (DH) with a Post-Quantum ratchet
+	 * (ML-KEM-768) for quantum-resistant post-compromise security.
+	 * <p>
+	 * This flag is only set when both peers explicitly negotiated Mode 3
+	 * support during the handshake.
+	 */
+	public boolean isMode3Capable() {
+		return mode3Capable;
 	}
 
 	@Override

@@ -105,6 +105,18 @@ public interface DatabaseComponent extends TransactionManager {
 			boolean pcsEnabled) throws DbException;
 
 	/**
+	 * Stores a contact associated with the given local and remote pseudonyms,
+	 * and returns an ID for the contact.
+	 *
+	 * @param postQuantum true if contact was established with hybrid PQ crypto
+	 * @param pcsEnabled true if Post-Compromise Security (symmetric ratchet) is enabled
+	 * @param mode3Capable true if both peers support Mode 3 (Triple Ratchet)
+	 */
+	ContactId addContact(Transaction txn, Author remote, AuthorId local,
+			@Nullable PublicKey handshake, boolean verified, boolean postQuantum,
+			boolean pcsEnabled, boolean mode3Capable) throws DbException;
+
+	/**
 	 * Stores a group.
 	 */
 	void addGroup(Transaction txn, Group g) throws DbException;
@@ -999,4 +1011,23 @@ public interface DatabaseComponent extends TransactionManager {
 	@Nullable
 	SecretKey getPcsMode2SkippedKey(Transaction txn, byte[] chainId,
 			int messageNumber) throws DbException;
+
+	// ==================== PCS Mode 3 (PQ Ratchet) Methods ====================
+
+	void setPqRatchetState(Transaction txn, ContactId c, long currentEpoch,
+			long epochStartTime, int messagesSinceEpoch, int state,
+			boolean isInitiator, int chunksSent, int chunksReceived,
+			@Nullable byte[] ourEkSeed, @Nullable byte[] ourEkVector,
+			@Nullable byte[] ourDecapsKey, @Nullable byte[] theirEkSeed,
+			@Nullable byte[] theirEkHash, @Nullable byte[] theirEkVector,
+			@Nullable byte[] ciphertext, @Nullable byte[] pendingChunks)
+			throws DbException;
+
+	@Nullable
+	Object[] getPqRatchetState(Transaction txn, ContactId c) throws DbException;
+
+	boolean containsPqRatchetState(Transaction txn, ContactId c)
+			throws DbException;
+
+	void removePqRatchetState(Transaction txn, ContactId c) throws DbException;
 }

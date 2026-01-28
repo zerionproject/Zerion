@@ -1,6 +1,8 @@
 package org.briarproject.bramble.crypto.pcs;
 
+import org.briarproject.bramble.api.crypto.pcs.MlKemProvider;
 import org.briarproject.bramble.api.crypto.pcs.PcsRatchet;
+import org.briarproject.bramble.api.crypto.pcs.PqRatchet;
 import org.briarproject.bramble.api.crypto.pcs.SkippedKeyStore;
 
 import javax.inject.Singleton;
@@ -8,13 +10,6 @@ import javax.inject.Singleton;
 import dagger.Module;
 import dagger.Provides;
 
-/**
- * Dagger module for Post-Compromise Security (PCS) components.
- * <p>
- * This module provides the symmetric ratchet implementation (Mode 1)
- * and the skipped key store. For production use, the SkippedKeyStore
- * should be replaced with a database-backed implementation.
- */
 @Module
 public class PcsModule {
 
@@ -32,5 +27,23 @@ public class PcsModule {
 	@Provides
 	PcsHeaderCodec providePcsHeaderCodec() {
 		return new PcsHeaderCodec();
+	}
+
+	@Provides
+	@Singleton
+	MlKemProvider provideMlKemProvider(MlKemProviderImpl provider) {
+		return provider;
+	}
+
+	@Provides
+	@Singleton
+	PqRatchet providePqRatchet(PqRatchetImpl pqRatchet) {
+		return pqRatchet;
+	}
+
+	@Provides
+	@Singleton
+	ChunkingManager provideChunkingManager() {
+		return new ChunkingManager();
 	}
 }

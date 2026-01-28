@@ -76,12 +76,11 @@ public class SyncRecordReaderImplTest extends BrambleMockTestCase {
 		reader.readMessage();
 	}
 
-	@Test(expected = FormatException.class)
-	public void testFormatExceptionIfMessageIsTooLarge() throws Exception {
-		expectReadRecord(createMessage(MESSAGE_HEADER_LENGTH
-				+ MAX_MESSAGE_BODY_LENGTH + 1));
-
-		reader.readMessage();
+	@Test(expected = IllegalArgumentException.class)
+	public void testIllegalArgumentIfMessageExceedsRecordPayload() throws Exception {
+		// Creating a Record with payload exceeding MAX_RECORD_PAYLOAD_BYTES
+		// throws IllegalArgumentException in the Record constructor
+		createMessage(MESSAGE_HEADER_LENGTH + MAX_MESSAGE_BODY_LENGTH + 1);
 	}
 
 	@Test

@@ -4,6 +4,7 @@ import org.briarproject.bramble.api.contact.ContactId;
 import org.briarproject.bramble.api.contact.PendingContactId;
 import org.briarproject.bramble.api.crypto.SecretKey;
 import org.briarproject.bramble.api.crypto.pcs.PcsSessionState;
+import org.briarproject.bramble.api.crypto.pcs.PqRatchetState;
 import org.briarproject.bramble.api.plugin.TransportId;
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -28,6 +29,8 @@ public class StreamContext {
 	private final boolean pcsEnabled;
 	@Nullable
 	private final PcsSessionState pcsState;
+	@Nullable
+	private final PqRatchetState pqRatchetState;
 
 	/**
 	 * Creates a StreamContext with the default (extended) record format.
@@ -38,7 +41,7 @@ public class StreamContext {
 			TransportId transportId, SecretKey tagKey, SecretKey headerKey,
 			long streamNumber, boolean handshakeMode) {
 		this(contactId, pendingContactId, transportId, tagKey, headerKey,
-				streamNumber, handshakeMode, false, false, null);
+				streamNumber, handshakeMode, false, false, null, null);
 	}
 
 	/**
@@ -52,7 +55,7 @@ public class StreamContext {
 			TransportId transportId, SecretKey tagKey, SecretKey headerKey,
 			long streamNumber, boolean handshakeMode, boolean classical) {
 		this(contactId, pendingContactId, transportId, tagKey, headerKey,
-				streamNumber, handshakeMode, classical, false, null);
+				streamNumber, handshakeMode, classical, false, null, null);
 	}
 
 	/**
@@ -68,6 +71,25 @@ public class StreamContext {
 			TransportId transportId, SecretKey tagKey, SecretKey headerKey,
 			long streamNumber, boolean handshakeMode, boolean classical,
 			boolean pcsEnabled, @Nullable PcsSessionState pcsState) {
+		this(contactId, pendingContactId, transportId, tagKey, headerKey,
+				streamNumber, handshakeMode, classical, pcsEnabled, pcsState, null);
+	}
+
+	/**
+	 * Creates a StreamContext with full configuration including Mode 3 support.
+	 *
+	 * @param classical true for Briar-compatible 4-byte header format,
+	 *                  false for extended 6-byte header format
+	 * @param pcsEnabled true if Post-Compromise Security is enabled
+	 * @param pcsState the PCS session state (required if pcsEnabled is true)
+	 * @param pqRatchetState the PQ ratchet state for Mode 3 (optional)
+	 */
+	public StreamContext(@Nullable ContactId contactId,
+			@Nullable PendingContactId pendingContactId,
+			TransportId transportId, SecretKey tagKey, SecretKey headerKey,
+			long streamNumber, boolean handshakeMode, boolean classical,
+			boolean pcsEnabled, @Nullable PcsSessionState pcsState,
+			@Nullable PqRatchetState pqRatchetState) {
 		requireExactlyOneNull(contactId, pendingContactId);
 		if (pcsEnabled && pcsState == null) {
 			throw new IllegalArgumentException(
@@ -83,6 +105,7 @@ public class StreamContext {
 		this.classical = classical;
 		this.pcsEnabled = pcsEnabled;
 		this.pcsState = pcsState;
+		this.pqRatchetState = pqRatchetState;
 	}
 
 	@Nullable
@@ -140,5 +163,13 @@ public class StreamContext {
 	@Nullable
 	public PcsSessionState getPcsState() {
 		return pcsState;
+	}
+
+	/**
+	 * Returns the PQ ratchet state for Mode 3, or null if Mode 3 is not active.
+	 */
+	@Nullable
+	public PqRatchetState getPqRatchetState() {
+		return pqRatchetState;
 	}
 }

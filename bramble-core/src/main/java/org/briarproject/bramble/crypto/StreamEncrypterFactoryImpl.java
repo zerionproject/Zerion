@@ -7,6 +7,8 @@ import org.briarproject.bramble.api.crypto.StreamEncrypterFactory;
 import org.briarproject.bramble.api.crypto.TransportCrypto;
 import org.briarproject.bramble.api.crypto.pcs.PcsRatchet;
 import org.briarproject.bramble.api.crypto.pcs.PcsSessionState;
+import org.briarproject.bramble.api.crypto.pcs.PqRatchet;
+import org.briarproject.bramble.api.crypto.pcs.PqRatchetState;
 import org.briarproject.bramble.api.transport.StreamContext;
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -28,16 +30,19 @@ class StreamEncrypterFactoryImpl implements StreamEncrypterFactory {
 	private final TransportCrypto transportCrypto;
 	private final Provider<AuthenticatedCipher> cipherProvider;
 	private final PcsRatchet pcsRatchet;
+	private final PqRatchet pqRatchet;
 
 	@Inject
 	StreamEncrypterFactoryImpl(CryptoComponent crypto,
 			TransportCrypto transportCrypto,
 			Provider<AuthenticatedCipher> cipherProvider,
-			PcsRatchet pcsRatchet) {
+			PcsRatchet pcsRatchet,
+			PqRatchet pqRatchet) {
 		this.crypto = crypto;
 		this.transportCrypto = transportCrypto;
 		this.cipherProvider = cipherProvider;
 		this.pcsRatchet = pcsRatchet;
+		this.pqRatchet = pqRatchet;
 	}
 
 	@Override
@@ -51,22 +56,29 @@ class StreamEncrypterFactoryImpl implements StreamEncrypterFactory {
 		byte[] streamHeaderNonce = new byte[STREAM_HEADER_NONCE_LENGTH];
 		crypto.getSecureRandom().nextBytes(streamHeaderNonce);
 
-		// Check if PCS is enabled for this context
-		if (ctx.isPcsEnabled()) {
-			PcsSessionState pcsState = ctx.getPcsState();
-			if (pcsState == null) {
-				throw new IllegalStateException(
-						"PCS enabled but no state provided");
-			}
-			return new PcsStreamEncrypterImpl(out, cipher, pcsRatchet,
-					streamNumber, tag, streamHeaderNonce, ctx.getHeaderKey(),
-					pcsState, null);
+		if (!ctx.isPcsEnabled()) {
+			SecretKey frameKey = crypto.generateSecretKey();
+			return new StreamEncrypterImpl(out, cipher, streamNumber, tag,
+					streamHeaderNonce, ctx.getHeaderKey(), frameKey);
 		}
 
-		// Standard (non-PCS) encrypter
-		SecretKey frameKey = crypto.generateSecretKey();
-		return new StreamEncrypterImpl(out, cipher, streamNumber, tag,
-				streamHeaderNonce, ctx.getHeaderKey(), frameKey);
+		PcsSessionState pcsState = ctx.getPcsState();
+		if (pcsState == null) {
+			throw new IllegalStateException("PCS enabled but no state");
+		}
+
+		PqRatchetState pqState = ctx.getPqRatchetState();
+		boolean isMode3 = pcsState.isMode3() && pqState != null;
+
+		if (isMode3) {
+			return new PcsStreamEncrypterImpl(out, cipher, pcsRatchet,
+					streamNumber, tag, streamHeaderNonce, ctx.getHeaderKey(),
+					pcsState, null, pqRatchet, pqState, null);
+		}
+
+		return new PcsStreamEncrypterImpl(out, cipher, pcsRatchet,
+				streamNumber, tag, streamHeaderNonce, ctx.getHeaderKey(),
+				pcsState, null);
 	}
 
 	@Override

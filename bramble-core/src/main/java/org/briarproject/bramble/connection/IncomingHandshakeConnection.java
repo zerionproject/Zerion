@@ -77,10 +77,9 @@ class IncomingHandshakeConnection extends HandshakeConnection
 			out.getOutputStream().flush();
 			HandshakeResult result =
 					handshakeManager.handshake(pendingContactId, in, out);
-			// Auto-verify contacts after successful handshake (QR verification removed)
 			contactExchangeManager.exchangeContacts(pendingContactId,
 					connection, result.getMasterKey(), result.isAlice(), true,
-					classical);
+					classical, result.isMode3Capable());
 			connectionRegistry.unregisterConnection(pendingContactId, true);
 			// Reuse the connection as a transport connection
 			connectionManager.manageIncomingConnection(transportId, connection);

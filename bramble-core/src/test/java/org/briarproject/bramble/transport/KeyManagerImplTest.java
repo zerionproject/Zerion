@@ -11,6 +11,7 @@ import org.briarproject.bramble.api.crypto.KeyPair;
 import org.briarproject.bramble.api.crypto.PublicKey;
 import org.briarproject.bramble.api.crypto.SecretKey;
 import org.briarproject.bramble.api.crypto.TransportCrypto;
+import org.briarproject.bramble.crypto.pcs.PcsStateManager;
 import org.briarproject.bramble.api.db.DatabaseComponent;
 import org.briarproject.bramble.api.db.Transaction;
 import org.briarproject.bramble.api.plugin.PluginConfig;
@@ -21,6 +22,7 @@ import org.briarproject.bramble.api.transport.StreamContext;
 import org.briarproject.bramble.test.BrambleMockTestCase;
 import org.briarproject.bramble.test.DbExpectations;
 import org.jmock.Expectations;
+import org.jmock.imposters.ByteBuddyClassImposteriser;
 import org.jmock.lib.concurrent.DeterministicExecutor;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,6 +38,7 @@ import static org.briarproject.bramble.api.transport.TransportConstants.TAG_LENG
 import static org.briarproject.bramble.test.TestUtils.getAgreementPrivateKey;
 import static org.briarproject.bramble.test.TestUtils.getAgreementPublicKey;
 import static org.briarproject.bramble.test.TestUtils.getContactId;
+import static org.briarproject.bramble.test.TestUtils.getSignaturePublicKey;
 import static org.briarproject.bramble.test.TestUtils.getRandomBytes;
 import static org.briarproject.bramble.test.TestUtils.getRandomId;
 import static org.briarproject.bramble.test.TestUtils.getSecretKey;
@@ -45,53 +48,84 @@ import static org.junit.Assert.assertNull;
 
 public class KeyManagerImplTest extends BrambleMockTestCase {
 
-	private final DatabaseComponent db = context.mock(DatabaseComponent.class);
-	private final PluginConfig pluginConfig = context.mock(PluginConfig.class);
-	private final TransportKeyManagerFactory transportKeyManagerFactory =
-			context.mock(TransportKeyManagerFactory.class);
-	private final TransportKeyManager transportKeyManager =
-			context.mock(TransportKeyManager.class);
-	private final TransportCrypto transportCrypto =
-			context.mock(TransportCrypto.class);
+	private DatabaseComponent db;
+	private PluginConfig pluginConfig;
+	private TransportKeyManagerFactory transportKeyManagerFactory;
+	private TransportKeyManager transportKeyManager;
+	private TransportCrypto transportCrypto;
+	private PcsStateManager pcsStateManager;
 
-	private final DeterministicExecutor executor = new DeterministicExecutor();
-	private final Transaction txn = new Transaction(null, false);
-	private final ContactId contactId = getContactId();
-	private final PendingContactId pendingContactId =
-			new PendingContactId(getRandomId());
-	private final KeySetId keySetId = new KeySetId(345);
-	private final TransportId transportId = getTransportId();
-	private final TransportId unknownTransportId = getTransportId();
-	private final StreamContext contactStreamContext =
-			new StreamContext(contactId, null, transportId, getSecretKey(),
-					getSecretKey(), 1, false);
-	private final StreamContext pendingContactStreamContext =
-			new StreamContext(null, pendingContactId, transportId,
-					getSecretKey(), getSecretKey(), 1, true);
-	private final byte[] tag = getRandomBytes(TAG_LENGTH);
-	private final PublicKey theirPublicKey = getAgreementPublicKey();
-	private final KeyPair ourKeyPair =
-			new KeyPair(getAgreementPublicKey(), getAgreementPrivateKey());
-	private final SecretKey staticMasterKey = getSecretKey();
-	private final SecretKey rootKey = getSecretKey();
-	private final Random random = new Random();
+	private DeterministicExecutor executor;
+	private Transaction txn;
+	private ContactId contactId;
+	private PendingContactId pendingContactId;
+	private KeySetId keySetId;
+	private TransportId transportId;
+	private TransportId unknownTransportId;
+	private StreamContext contactStreamContext;
+	private StreamContext pendingContactStreamContext;
+	private byte[] tag;
+	private PublicKey theirPublicKey;
+	private KeyPair ourKeyPair;
+	private SecretKey staticMasterKey;
+	private SecretKey rootKey;
+	private Random random;
 
 	// Mock contact for testing - classical contact (isPostQuantum=false)
-	private final AuthorId authorId = new AuthorId(getRandomId());
-	private final Author author = new Author(authorId, 1, "Test Author",
-			getAgreementPublicKey());
-	private final Contact contact = new Contact(contactId, author, authorId,
-			null, null, false, false); // postQuantum=false -> isClassical()=true
+	private AuthorId authorId;
+	private Author author;
+	private Contact contact;
 
 	// Mock pending contact for testing - classical (formatVersion=0)
-	private final PendingContact pendingContact = new PendingContact(
-			pendingContactId, theirPublicKey, "Pending",
-			System.currentTimeMillis(), 0); // formatVersion=0 (classical)
+	private PendingContact pendingContact;
 
 	private KeyManagerImpl keyManager;
 
 	@Before
-	public void testStartService() throws Exception {
+	public void setUp() throws Exception {
+		// Enable mocking of concrete classes
+		context.setImposteriser(ByteBuddyClassImposteriser.INSTANCE);
+
+		// Create mocks
+		db = context.mock(DatabaseComponent.class);
+		pluginConfig = context.mock(PluginConfig.class);
+		transportKeyManagerFactory = context.mock(TransportKeyManagerFactory.class);
+		transportKeyManager = context.mock(TransportKeyManager.class);
+		transportCrypto = context.mock(TransportCrypto.class);
+		pcsStateManager = context.mock(PcsStateManager.class);
+
+		// Initialize test data
+		executor = new DeterministicExecutor();
+		txn = new Transaction(null, false);
+		contactId = getContactId();
+		pendingContactId = new PendingContactId(getRandomId());
+		keySetId = new KeySetId(345);
+		transportId = getTransportId();
+		unknownTransportId = getTransportId();
+		contactStreamContext = new StreamContext(contactId, null, transportId,
+				getSecretKey(), getSecretKey(), 1, false);
+		pendingContactStreamContext = new StreamContext(null, pendingContactId,
+				transportId, getSecretKey(), getSecretKey(), 1, true);
+		tag = getRandomBytes(TAG_LENGTH);
+		theirPublicKey = getAgreementPublicKey();
+		ourKeyPair = new KeyPair(getAgreementPublicKey(), getAgreementPrivateKey());
+		staticMasterKey = getSecretKey();
+		rootKey = getSecretKey();
+		random = new Random();
+
+		authorId = new AuthorId(getRandomId());
+		author = new Author(authorId, 1, "Test Author", getSignaturePublicKey());
+		contact = new Contact(contactId, author, authorId,
+				null, null, false, false); // postQuantum=false -> isClassical()=true
+
+		pendingContact = new PendingContact(pendingContactId, theirPublicKey,
+				"Pending", System.currentTimeMillis(), 0); // formatVersion=0 (classical)
+
+		// Start the key manager service
+		startService();
+	}
+
+	private void startService() throws Exception {
 		Transaction txn = new Transaction(null, false);
 		SimplexPluginFactory pluginFactory =
 				context.mock(SimplexPluginFactory.class);
@@ -114,7 +148,8 @@ public class KeyManagerImplTest extends BrambleMockTestCase {
 		}});
 
 		keyManager = new KeyManagerImpl(db, executor,
-				pluginConfig, transportCrypto, transportKeyManagerFactory);
+				pluginConfig, transportCrypto, transportKeyManagerFactory,
+				pcsStateManager);
 
 		context.checking(new DbExpectations() {{
 			oneOf(db).addTransport(txn, transportId, maxLatency);
@@ -204,14 +239,12 @@ public class KeyManagerImplTest extends BrambleMockTestCase {
 
 	@Test
 	public void testGetStreamContextForContact() throws Exception {
-		// The implementation now looks up the contact to get the classical flag
-		// before calling transportKeyManager.getStreamContext
 		context.checking(new DbExpectations() {{
 			oneOf(db).transactionWithNullableResult(with(false),
 					withNullableDbCallable(txn));
 			oneOf(db).getContact(txn, contactId);
 			will(returnValue(contact));
-			oneOf(transportKeyManager).getStreamContext(txn, contactId, true); // classical=true
+			oneOf(transportKeyManager).getStreamContext(txn, contactId, true);
 			will(returnValue(contactStreamContext));
 		}});
 

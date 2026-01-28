@@ -40,7 +40,7 @@ public class RecordWriterImplTest extends BrambleTestCase {
 		assertEquals(RECORD_HEADER_BYTES + payloadLength, written.length);
 		assertEquals(protocolVersion, written[0]);
 		assertEquals(recordType, written[1]);
-		assertEquals(payloadLength, ByteUtils.readUint16(written, 2));
+		assertEquals(payloadLength, ByteUtils.readUint32(written, 2));
 		byte[] writtenPayload = new byte[payloadLength];
 		System.arraycopy(written, RECORD_HEADER_BYTES, writtenPayload, 0,
 				payloadLength);
