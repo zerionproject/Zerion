@@ -37,6 +37,12 @@ android {
         buildConfig = true
     }
 
+    // Disable Google dependency metadata for F-Droid reproducible builds
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
+    }
+
     // Signing configuration for release builds (skipped for F-Droid builds)
     signingConfigs {
         release {
