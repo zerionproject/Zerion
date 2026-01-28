@@ -173,10 +173,6 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 
 	// Worker
 	private void addPendingContact(PendingContact p) {
-		LOG.info("Adding pending contact: " + p.getAlias() +
-				", version=" + p.getFormatVersion() +
-				", isClassical=" + p.isClassical() +
-				", isPQ=" + p.isPostQuantum());
 		long now = clock.currentTimeMillis();
 		long expiry = p.getTimestamp() + RENDEZVOUS_TIMEOUT_MS;
 		if (expiry <= now) {
@@ -499,8 +495,6 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 
 		@Override
 		public void handleConnection(DuplexTransportConnection c) {
-			LOG.info("Handler.handleConnection: classical=" + classical +
-					", incoming=" + incoming);
 			if (incoming) {
 				connectionManager.manageIncomingConnection(pendingContactId,
 						transportId, c, classical);

@@ -6,6 +6,7 @@ import org.briarproject.bramble.api.crypto.StreamDecrypter;
 import org.briarproject.bramble.api.crypto.StreamDecrypterFactory;
 import org.briarproject.bramble.api.crypto.pcs.PcsRatchet;
 import org.briarproject.bramble.api.crypto.pcs.PcsSessionState;
+import org.briarproject.bramble.api.crypto.pcs.PqRatchetState;
 import org.briarproject.bramble.api.crypto.pcs.SkippedKeyStore;
 import org.briarproject.bramble.api.transport.StreamContext;
 import org.briarproject.bramble.crypto.pcs.DatabaseSkippedKeyStore;
@@ -38,25 +39,22 @@ class StreamDecrypterFactoryImpl implements StreamDecrypterFactory {
 			StreamContext ctx) {
 		AuthenticatedCipher cipher = cipherProvider.get();
 
-		// Check if PCS is enabled for this context
-		if (ctx.isPcsEnabled()) {
-			PcsSessionState pcsState = ctx.getPcsState();
-			ContactId contactId = ctx.getContactId();
-			if (pcsState == null || contactId == null) {
-				throw new IllegalStateException(
-						"PCS enabled but no state or contact provided");
-			}
-			// Create chain ID for skipped key store
-			byte[] chainId = DatabaseSkippedKeyStore.createChainId(
-					contactId, false); // false = receive direction
-			return new PcsStreamDecrypterImpl(in, cipher, pcsRatchet,
-					skippedKeyStore, chainId, ctx.getStreamNumber(),
-					ctx.getHeaderKey(), pcsState, null);
+		if (!ctx.isPcsEnabled()) {
+			return new StreamDecrypterImpl(in, cipher, ctx.getStreamNumber(),
+					ctx.getHeaderKey());
 		}
 
-		// Standard (non-PCS) decrypter
-		return new StreamDecrypterImpl(in, cipher, ctx.getStreamNumber(),
-				ctx.getHeaderKey());
+		PcsSessionState pcsState = ctx.getPcsState();
+		ContactId contactId = ctx.getContactId();
+		if (pcsState == null || contactId == null) {
+			throw new IllegalStateException("PCS enabled but no state or contact");
+		}
+
+		byte[] chainId = DatabaseSkippedKeyStore.createChainId(contactId, false);
+
+		return new PcsStreamDecrypterImpl(in, cipher, pcsRatchet,
+				skippedKeyStore, chainId, ctx.getStreamNumber(),
+				ctx.getHeaderKey(), pcsState, null);
 	}
 
 	@Override

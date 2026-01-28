@@ -121,6 +121,18 @@ interface Database<T> {
 			boolean pcsEnabled) throws DbException;
 
 	/**
+	 * Stores a contact associated with the given local and remote pseudonyms,
+	 * and returns an ID for the contact.
+	 *
+	 * @param postQuantum true if contact was established with hybrid PQ crypto
+	 * @param pcsEnabled true if Post-Compromise Security (symmetric ratchet) is enabled
+	 * @param mode3Capable true if both peers negotiated Mode 3 (Triple Ratchet) support
+	 */
+	ContactId addContact(T txn, Author remote, AuthorId local,
+			@Nullable PublicKey handshake, boolean verified, boolean postQuantum,
+			boolean pcsEnabled, boolean mode3Capable) throws DbException;
+
+	/**
 	 * Stores a group.
 	 */
 	void addGroup(T txn, Group g) throws DbException;
@@ -1069,4 +1081,60 @@ interface Database<T> {
 	@Nullable
 	SecretKey getPcsMode2SkippedKey(T txn, byte[] chainId, int messageNumber)
 			throws DbException;
+
+	// ==================== PCS Mode 3 (PQ Ratchet) Methods ====================
+
+	/**
+	 * Stores or updates the PQ ratchet state for the given contact.
+	 *
+	 * @param c The contact ID
+	 * @param currentEpoch Current epoch number
+	 * @param epochStartTime When the current epoch started
+	 * @param messagesSinceEpoch Number of messages since epoch started
+	 * @param state Current PQ epoch state value
+	 * @param isInitiator True if this peer initiated the current epoch
+	 * @param chunksSent Number of chunks sent in current epoch
+	 * @param chunksReceived Number of chunks received in current epoch
+	 * @param ourEkSeed Our encapsulation key seed (32 bytes), or null
+	 * @param ourEkVector Our encapsulation key vector (1152 bytes), or null
+	 * @param ourDecapsKey Our decapsulation key (2400 bytes), or null
+	 * @param theirEkSeed Their encapsulation key seed, or null
+	 * @param theirEkHash Hash of their encapsulation key, or null
+	 * @param theirEkVector Their encapsulation key vector, or null
+	 * @param ciphertext ML-KEM ciphertext, or null
+	 * @param pendingChunks Pending chunks data, or null
+	 */
+	void setPqRatchetState(T txn, ContactId c, long currentEpoch,
+			long epochStartTime, int messagesSinceEpoch, int state,
+			boolean isInitiator, int chunksSent, int chunksReceived,
+			@Nullable byte[] ourEkSeed, @Nullable byte[] ourEkVector,
+			@Nullable byte[] ourDecapsKey, @Nullable byte[] theirEkSeed,
+			@Nullable byte[] theirEkHash, @Nullable byte[] theirEkVector,
+			@Nullable byte[] ciphertext, @Nullable byte[] pendingChunks)
+			throws DbException;
+
+	/**
+	 * Returns the PQ ratchet state for the given contact, or null if no state exists.
+	 * <p/>
+	 * Read-only.
+	 *
+	 * @return Array of [currentEpoch, epochStartTime, messagesSinceEpoch, state,
+	 *         isInitiator, chunksSent, chunksReceived, ourEkSeed, ourEkVector,
+	 *         ourDecapsKey, theirEkSeed, theirEkHash, theirEkVector, ciphertext,
+	 *         pendingChunks], or null if no state exists
+	 */
+	@Nullable
+	Object[] getPqRatchetState(T txn, ContactId c) throws DbException;
+
+	/**
+	 * Checks if PQ ratchet state exists for the given contact.
+	 * <p/>
+	 * Read-only.
+	 */
+	boolean containsPqRatchetState(T txn, ContactId c) throws DbException;
+
+	/**
+	 * Removes all PQ ratchet state for the given contact.
+	 */
+	void removePqRatchetState(T txn, ContactId c) throws DbException;
 }

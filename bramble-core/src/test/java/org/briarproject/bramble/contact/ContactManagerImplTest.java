@@ -5,8 +5,10 @@ import org.briarproject.bramble.api.contact.Contact;
 import org.briarproject.bramble.api.contact.ContactId;
 import org.briarproject.bramble.api.contact.PendingContact;
 import org.briarproject.bramble.api.contact.PendingContactState;
+import org.briarproject.bramble.api.crypto.CryptoComponent;
 import org.briarproject.bramble.api.crypto.KeyPair;
 import org.briarproject.bramble.api.crypto.SecretKey;
+import org.briarproject.bramble.crypto.pcs.PcsStateManager;
 import org.briarproject.bramble.api.db.DatabaseComponent;
 import org.briarproject.bramble.api.db.NoSuchContactException;
 import org.briarproject.bramble.api.db.Transaction;
@@ -17,6 +19,8 @@ import org.briarproject.bramble.api.identity.LocalAuthor;
 import org.briarproject.bramble.api.transport.KeyManager;
 import org.briarproject.bramble.test.BrambleMockTestCase;
 import org.briarproject.bramble.test.DbExpectations;
+import org.jmock.imposters.ByteBuddyClassImposteriser;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Collection;
@@ -42,29 +46,51 @@ import static org.junit.Assert.assertTrue;
 
 public class ContactManagerImplTest extends BrambleMockTestCase {
 
-	private final DatabaseComponent db = context.mock(DatabaseComponent.class);
-	private final KeyManager keyManager = context.mock(KeyManager.class);
-	private final IdentityManager identityManager =
-			context.mock(IdentityManager.class);
-	private final PendingContactFactory pendingContactFactory =
-			context.mock(PendingContactFactory.class);
+	private DatabaseComponent db;
+	private KeyManager keyManager;
+	private IdentityManager identityManager;
+	private PendingContactFactory pendingContactFactory;
+	private CryptoComponent crypto;
+	private PcsStateManager pcsStateManager;
 
-	private final Author remote = getAuthor();
-	private final LocalAuthor localAuthor = getLocalAuthor();
-	private final AuthorId local = localAuthor.getId();
-	private final boolean verified = false, active = true;
-	private final Contact contact = getContact(remote, local, verified);
-	private final ContactId contactId = contact.getId();
-	private final KeyPair handshakeKeyPair =
-			new KeyPair(getAgreementPublicKey(), getAgreementPrivateKey());
-	private final PendingContact pendingContact = getPendingContact();
-	private final SecretKey rootKey = getSecretKey();
-	private final long timestamp = System.currentTimeMillis();
-	private final boolean alice = new Random().nextBoolean();
+	private Author remote;
+	private LocalAuthor localAuthor;
+	private AuthorId local;
+	private boolean verified = false, active = true;
+	private Contact contact;
+	private ContactId contactId;
+	private KeyPair handshakeKeyPair;
+	private PendingContact pendingContact;
+	private SecretKey rootKey;
+	private long timestamp;
+	private boolean alice;
 
-	private final ContactManagerImpl contactManager =
-			new ContactManagerImpl(db, keyManager, identityManager,
-					pendingContactFactory);
+	private ContactManagerImpl contactManager;
+
+	@Before
+	public void setUp() {
+		context.setImposteriser(ByteBuddyClassImposteriser.INSTANCE);
+		db = context.mock(DatabaseComponent.class);
+		keyManager = context.mock(KeyManager.class);
+		identityManager = context.mock(IdentityManager.class);
+		pendingContactFactory = context.mock(PendingContactFactory.class);
+		crypto = context.mock(CryptoComponent.class);
+		pcsStateManager = context.mock(PcsStateManager.class);
+
+		remote = getAuthor();
+		localAuthor = getLocalAuthor();
+		local = localAuthor.getId();
+		contact = getContact(remote, local, verified);
+		contactId = contact.getId();
+		handshakeKeyPair = new KeyPair(getAgreementPublicKey(), getAgreementPrivateKey());
+		pendingContact = getPendingContact();
+		rootKey = getSecretKey();
+		timestamp = System.currentTimeMillis();
+		alice = new Random().nextBoolean();
+
+		contactManager = new ContactManagerImpl(db, keyManager, identityManager,
+				pendingContactFactory, crypto, pcsStateManager);
+	}
 
 	@Test
 	public void testAddContact() throws Exception {
@@ -72,7 +98,7 @@ public class ContactManagerImplTest extends BrambleMockTestCase {
 
 		context.checking(new DbExpectations() {{
 			oneOf(db).transactionWithResult(with(false), withDbCallable(txn));
-			oneOf(db).addContact(txn, remote, local, null, verified);
+			oneOf(db).addContact(txn, remote, local, null, verified, false, false, false);
 			will(returnValue(contactId));
 			oneOf(keyManager).addRotationKeys(txn, contactId, rootKey,
 					timestamp, alice, active);
@@ -202,14 +228,15 @@ public class ContactManagerImplTest extends BrambleMockTestCase {
 	@Test
 	public void testGetHandshakeLink() throws Exception {
 		Transaction txn = new Transaction(null, true);
-		String link = "briar://" + getRandomBase32String(BASE32_LINK_BYTES);
+		String link = "zerion://" + getRandomBase32String(BASE32_LINK_BYTES);
+		KeyPair hybridKeyPair = handshakeKeyPair;
 
 		context.checking(new DbExpectations() {{
 			oneOf(db).transactionWithResult(with(true), withDbCallable(txn));
-			oneOf(identityManager).getHandshakeKeys(txn);
-			will(returnValue(handshakeKeyPair));
+			oneOf(identityManager).getHybridHandshakeKeys(txn);
+			will(returnValue(hybridKeyPair));
 			oneOf(pendingContactFactory).createHandshakeLink(
-					handshakeKeyPair.getPublic());
+					hybridKeyPair.getPublic());
 			will(returnValue(link));
 		}});
 

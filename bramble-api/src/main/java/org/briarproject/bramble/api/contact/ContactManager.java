@@ -50,6 +50,26 @@ public interface ContactManager {
 
 	/**
 	 * Stores a contact associated with the given local and remote pseudonyms,
+	 * derives and stores rotation mode transport keys for each transport, and
+	 * returns an ID for the contact.
+	 *
+	 * @param rootKey The root key for a set of rotation mode transport keys
+	 * @param timestamp The timestamp for deriving rotation mode transport
+	 * keys from the root key
+	 * @param alice True if the local party is Alice
+	 * @param verified True if the contact's identity has been verified, which
+	 * is true if the contact was added in person or false if the contact was
+	 * introduced or added remotely
+	 * @param active True if the rotation mode transport keys can be used for
+	 * outgoing streams
+	 * @param mode3Capable True if both peers support Mode 3 (Triple Ratchet)
+	 */
+	ContactId addContact(Transaction txn, Author remote, AuthorId local,
+			SecretKey rootKey, long timestamp, boolean alice, boolean verified,
+			boolean active, boolean mode3Capable) throws DbException;
+
+	/**
+	 * Stores a contact associated with the given local and remote pseudonyms,
 	 * replacing the given pending contact, derives and stores handshake mode
 	 * and rotation mode transport keys for each transport, and returns an ID
 	 * for the contact.
@@ -69,6 +89,30 @@ public interface ContactManager {
 	ContactId addContact(Transaction txn, PendingContactId p, Author remote,
 			AuthorId local, SecretKey rootKey, long timestamp, boolean alice,
 			boolean verified, boolean active)
+			throws DbException, GeneralSecurityException;
+
+	/**
+	 * Stores a contact associated with the given local and remote pseudonyms,
+	 * replacing the given pending contact, derives and stores handshake mode
+	 * and rotation mode transport keys for each transport, and returns an ID
+	 * for the contact.
+	 *
+	 * @param rootKey The root key for a set of rotation mode transport keys
+	 * @param timestamp The timestamp for deriving rotation mode transport
+	 * keys from the root key
+	 * @param alice True if the local party is Alice
+	 * @param verified True if the contact's identity has been verified, which
+	 * is true if the contact was added in person or false if the contact was
+	 * introduced or added remotely
+	 * @param active True if the rotation mode transport keys can be used for
+	 * outgoing streams
+	 * @param mode3Capable True if both peers support Mode 3 (Triple Ratchet)
+	 * @throws GeneralSecurityException If the pending contact's handshake
+	 * public key is invalid
+	 */
+	ContactId addContact(Transaction txn, PendingContactId p, Author remote,
+			AuthorId local, SecretKey rootKey, long timestamp, boolean alice,
+			boolean verified, boolean active, boolean mode3Capable)
 			throws DbException, GeneralSecurityException;
 
 	/**

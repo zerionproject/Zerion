@@ -56,11 +56,16 @@ import static org.briarproject.bramble.api.plugin.TransportId.MAX_TRANSPORT_ID_L
 import static org.briarproject.bramble.api.properties.TransportPropertyConstants.MAX_PROPERTY_LENGTH;
 import static org.briarproject.bramble.api.sync.ClientId.MAX_CLIENT_ID_LENGTH;
 import static org.briarproject.bramble.api.sync.SyncConstants.MAX_GROUP_DESCRIPTOR_LENGTH;
-import static org.briarproject.bramble.api.sync.SyncConstants.MAX_MESSAGE_BODY_LENGTH;
 import static org.briarproject.bramble.util.IoUtils.copyAndClose;
 import static org.briarproject.bramble.util.StringUtils.getRandomString;
 
 public class TestUtils {
+
+	/**
+	 * Maximum message body length for tests. Smaller than production limit
+	 * to ensure HSQLDB compatibility and fast test execution.
+	 */
+	public static final int MAX_TEST_MESSAGE_BODY_LENGTH = 64 * 1024; // 64 KB
 
 	private static final AtomicInteger nextTestDir =
 			new AtomicInteger((int) (Math.random() * 1000 * 1000));
@@ -175,7 +180,7 @@ public class TestUtils {
 	}
 
 	public static Message getMessage(GroupId groupId) {
-		int bodyLength = 1 + random.nextInt(MAX_MESSAGE_BODY_LENGTH);
+		int bodyLength = 1 + random.nextInt(MAX_TEST_MESSAGE_BODY_LENGTH);
 		return getMessage(groupId, bodyLength, timestamp);
 	}
 
