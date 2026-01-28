@@ -33,9 +33,8 @@ android {
         }
         // Exclude baseline profiles for F-Droid reproducible builds
         // These files are non-deterministic and differ between builds
-        if (project.hasProperty('fdroid')) {
-            resources.excludes += ['assets/dexopt/baseline.prof', 'assets/dexopt/baseline.profm']
-        }
+        exclude 'assets/dexopt/baseline.prof'
+        exclude 'assets/dexopt/baseline.profm'
     }
 
     buildFeatures {
