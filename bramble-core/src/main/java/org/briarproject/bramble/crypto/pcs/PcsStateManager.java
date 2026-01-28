@@ -8,7 +8,10 @@ import org.briarproject.bramble.api.crypto.PrivateKey;
 import org.briarproject.bramble.api.crypto.PublicKey;
 import org.briarproject.bramble.api.crypto.SecretKey;
 import org.briarproject.bramble.api.crypto.pcs.DhRatchetState;
+import org.briarproject.bramble.api.crypto.pcs.MlKemKeyPair;
 import org.briarproject.bramble.api.crypto.pcs.PcsSessionState;
+import org.briarproject.bramble.api.crypto.pcs.PqEpochState;
+import org.briarproject.bramble.api.crypto.pcs.PqRatchetState;
 import org.briarproject.bramble.api.db.DatabaseComponent;
 import org.briarproject.bramble.api.db.DbException;
 import org.briarproject.bramble.api.db.Transaction;
@@ -23,6 +26,7 @@ import javax.inject.Inject;
 
 import static java.util.logging.Level.WARNING;
 import static java.util.logging.Logger.getLogger;
+import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_ENABLED;
 import static org.briarproject.bramble.api.db.DatabaseComponent.PCS_DIRECTION_RECEIVE;
 import static org.briarproject.bramble.api.db.DatabaseComponent.PCS_DIRECTION_SEND;
 
@@ -106,16 +110,30 @@ public class PcsStateManager {
 		PcsSessionState initial = PcsSessionState.createInitial(rootKey);
 		try {
 			db.transaction(false, txn -> {
-				db.setPcsSessionState(txn, contactId, PCS_DIRECTION_SEND,
-						initial.getChainKey(), initial.getMessageNumber(),
-						initial.getPreviousChainLength());
-				db.setPcsSessionState(txn, contactId, PCS_DIRECTION_RECEIVE,
-						initial.getChainKey(), initial.getMessageNumber(),
-						initial.getPreviousChainLength());
+				initializeState(txn, contactId, initial);
 			});
 		} catch (DbException e) {
 			LOG.log(WARNING, "Failed to initialize PCS state", e);
 		}
+	}
+
+	/**
+	 * Initializes PCS Mode 1 state within an existing transaction.
+	 */
+	public void initializeState(Transaction txn, ContactId contactId,
+			SecretKey rootKey) throws DbException {
+		PcsSessionState initial = PcsSessionState.createInitial(rootKey);
+		initializeState(txn, contactId, initial);
+	}
+
+	private void initializeState(Transaction txn, ContactId contactId,
+			PcsSessionState initial) throws DbException {
+		db.setPcsSessionState(txn, contactId, PCS_DIRECTION_SEND,
+				initial.getChainKey(), initial.getMessageNumber(),
+				initial.getPreviousChainLength());
+		db.setPcsSessionState(txn, contactId, PCS_DIRECTION_RECEIVE,
+				initial.getChainKey(), initial.getMessageNumber(),
+				initial.getPreviousChainLength());
 	}
 
 	/**
@@ -131,12 +149,21 @@ public class PcsStateManager {
 			PcsSessionState sendState, PcsSessionState receiveState) {
 		try {
 			db.transaction(false, txn -> {
-				saveMode2State(txn, contactId, PCS_DIRECTION_SEND, sendState);
-				saveMode2State(txn, contactId, PCS_DIRECTION_RECEIVE, receiveState);
+				initializeMode2State(txn, contactId, sendState, receiveState);
 			});
 		} catch (DbException e) {
 			LOG.log(WARNING, "Failed to initialize Mode 2 PCS state", e);
 		}
+	}
+
+	/**
+	 * Initializes PCS Mode 2 state within an existing transaction.
+	 */
+	public void initializeMode2State(Transaction txn, ContactId contactId,
+			PcsSessionState sendState, PcsSessionState receiveState)
+			throws DbException {
+		saveMode2State(txn, contactId, PCS_DIRECTION_SEND, sendState);
+		saveMode2State(txn, contactId, PCS_DIRECTION_RECEIVE, receiveState);
 	}
 
 	/**
@@ -153,6 +180,15 @@ public class PcsStateManager {
 			LOG.log(WARNING, "Failed to check PCS state", e);
 			return false;
 		}
+	}
+
+	/**
+	 * Checks if PCS state has been initialized for a contact within an
+	 * existing transaction.
+	 */
+	public boolean hasState(Transaction txn, ContactId contactId)
+			throws DbException {
+		return db.containsPcsSessionState(txn, contactId);
 	}
 
 	/**
@@ -316,5 +352,114 @@ public class PcsStateManager {
 				state.getChainKey(), state.getMessageNumber(),
 				state.getPreviousChainLength(), state.getRootKey(),
 				dhPrivateKey, dhPublicKey, dhRemotePublicKey, state.isMode2());
+	}
+
+	// ==================== Mode 3 (PQ Ratchet) Methods ====================
+
+	@Nullable
+	public PqRatchetState loadPqState(ContactId contactId) {
+		if (!MODE3_ENABLED) return null;
+		try {
+			return db.transactionWithNullableResult(true, txn ->
+					loadPqState(txn, contactId));
+		} catch (DbException e) {
+			LOG.log(WARNING, "Failed to load PQ state", e);
+			return null;
+		}
+	}
+
+	@Nullable
+	public PqRatchetState loadPqState(Transaction txn, ContactId contactId)
+			throws DbException {
+		if (!MODE3_ENABLED) return null;
+		Object[] result = db.getPqRatchetState(txn, contactId);
+		if (result == null) return null;
+		return parsePqState(result);
+	}
+
+	public void savePqState(ContactId contactId, PqRatchetState state) {
+		if (!MODE3_ENABLED) return;
+		try {
+			db.transaction(false, txn -> savePqState(txn, contactId, state));
+		} catch (DbException e) {
+			LOG.log(WARNING, "Failed to save PQ state", e);
+		}
+	}
+
+	public void savePqState(Transaction txn, ContactId contactId,
+			PqRatchetState state) throws DbException {
+		if (!MODE3_ENABLED) return;
+
+		MlKemKeyPair ourKeyPair = state.getOurKeyPair();
+		byte[] ourEkSeed = ourKeyPair != null ? ourKeyPair.getEkSeed() : null;
+		byte[] ourEkVector = ourKeyPair != null ? ourKeyPair.getEkVector() : null;
+		byte[] ourDecapsKey = ourKeyPair != null ?
+				ourKeyPair.getDecapsulationKey() : null;
+
+		db.setPqRatchetState(txn, contactId,
+				state.getCurrentEpoch(),
+				state.getEpochStartTime(),
+				state.getMessagesSinceEpoch(),
+				state.getState().getValue(),
+				state.isInitiator(),
+				state.getChunksSent(),
+				state.getChunksReceived(),
+				ourEkSeed, ourEkVector, ourDecapsKey,
+				state.getTheirEkSeed(),
+				state.getTheirEkHash(),
+				state.getTheirEkVector(),
+				state.getCiphertext(),
+				state.getPendingChunks());
+	}
+
+	public boolean hasPqState(ContactId contactId) {
+		if (!MODE3_ENABLED) return false;
+		try {
+			return db.transactionWithResult(true, txn ->
+					db.containsPqRatchetState(txn, contactId));
+		} catch (DbException e) {
+			LOG.log(WARNING, "Failed to check PQ state", e);
+			return false;
+		}
+	}
+
+	public void removePqState(ContactId contactId) {
+		if (!MODE3_ENABLED) return;
+		try {
+			db.transaction(false, txn ->
+					db.removePqRatchetState(txn, contactId));
+		} catch (DbException e) {
+			LOG.log(WARNING, "Failed to remove PQ state", e);
+		}
+	}
+
+	@Nullable
+	private PqRatchetState parsePqState(Object[] result) {
+		long currentEpoch = (Long) result[0];
+		long epochStartTime = (Long) result[1];
+		int messagesSinceEpoch = (Integer) result[2];
+		int stateValue = (Integer) result[3];
+		boolean isInitiator = (Boolean) result[4];
+		int chunksSent = (Integer) result[5];
+		int chunksReceived = (Integer) result[6];
+		byte[] ourEkSeed = (byte[]) result[7];
+		byte[] ourEkVector = (byte[]) result[8];
+		byte[] ourDecapsKey = (byte[]) result[9];
+		byte[] theirEkSeed = (byte[]) result[10];
+		byte[] theirEkHash = (byte[]) result[11];
+		byte[] theirEkVector = (byte[]) result[12];
+		byte[] ciphertext = (byte[]) result[13];
+		byte[] pendingChunks = (byte[]) result[14];
+
+		PqEpochState state = PqEpochState.fromValue(stateValue);
+		MlKemKeyPair ourKeyPair = null;
+		if (ourEkSeed != null && ourEkVector != null && ourDecapsKey != null) {
+			ourKeyPair = MlKemKeyPair.fromComponents(ourEkSeed, ourEkVector, ourDecapsKey);
+		}
+
+		return PqRatchetState.fromDatabase(
+				currentEpoch, epochStartTime, messagesSinceEpoch, state,
+				isInitiator, chunksSent, chunksReceived, ourKeyPair,
+				theirEkSeed, theirEkHash, theirEkVector, ciphertext, pendingChunks);
 	}
 }

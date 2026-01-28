@@ -24,4 +24,11 @@ interface HandshakeRecordTypes {
 	 * The ciphertext is 1,088 bytes (ML-KEM-768).
 	 */
 	byte RECORD_TYPE_KEM_CIPHERTEXT = 4;
+
+	/**
+	 * Record type for advertising Mode 3 (Triple Ratchet) capability.
+	 * Sent during hybrid handshakes when MODE3_ENABLED is true.
+	 * The payload is a single byte: 0x01 indicates Mode 3 support.
+	 */
+	byte RECORD_TYPE_MODE3_CAPABILITY = 5;
 }

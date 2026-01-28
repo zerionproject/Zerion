@@ -36,4 +36,19 @@ public interface ContactExchangeManager {
 			SecretKey masterKey, boolean alice, boolean verified,
 			boolean classical)
 			throws IOException, DbException;
+
+	/**
+	 * Exchanges contact information with a remote peer and adds the peer
+	 * as a contact, replacing the given pending contact.
+	 *
+	 * @param alice Whether the local peer takes the role of Alice
+	 * @param classical If true, use classical (Briar-compatible) record format
+	 * @param mode3Capable If true, both peers support Mode 3 (Triple Ratchet)
+	 * @return The newly added contact
+	 * @throws ContactExistsException If the contact already exists
+	 */
+	Contact exchangeContacts(PendingContactId p, DuplexTransportConnection conn,
+			SecretKey masterKey, boolean alice, boolean verified,
+			boolean classical, boolean mode3Capable)
+			throws IOException, DbException;
 }

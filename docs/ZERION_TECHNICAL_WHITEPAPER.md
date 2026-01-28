@@ -501,7 +501,7 @@ Time Period N+1 (Next)
 
 Post-Compromise Security (PCS) ensures that even if an attacker temporarily compromises a device and extracts cryptographic keys, the security of future messages is automatically restored after a bounded number of messages. This is a critical property for high-risk users operating in adversarial environments.
 
-**Current Status**: Design complete (see `docs/PCS_DESIGN.md`), implementation pending.
+**Current Status**: IMPLEMENTED - All Phases Complete including Mode 3 Triple Ratchet (see `docs/PCS_DESIGN.md`).
 
 ### 5.2 Design Goals
 
@@ -551,10 +551,17 @@ The rotation period is calculated as: `MAX_LATENCY + MAX_CLOCK_DIFFERENCE`
 - `MAX_CLOCK_DIFFERENCE = 24 hours` (`TransportConstants.java:69`)
 - Formula: `timePeriodLength = maxLatency + MAX_CLOCK_DIFFERENCE` (`TransportKeyManagerImpl.java:75-88`)
 
-**Mode 2: Full Double Ratchet (Future)**
+**Mode 2: Full Double Ratchet (Implemented)**
 - Adds DH ratchet step per message exchange
 - Maximum PCS: recovery within 1 round-trip
 - Higher bandwidth (32-byte DH public key per message)
+
+**Mode 3: Triple Ratchet (Active for Zerion↔Zerion)**
+- Combines DH ratchet (X25519) + PQ ratchet (ML-KEM-768)
+- Post-quantum forward secrecy and PCS
+- PQ epoch rotation every 25 messages or 24 hours
+- Chunked transmission (256-byte chunks optimized for Tor)
+- Zerion↔Briar contacts use Mode 1/2 for compatibility
 
 ### 5.4 Key Derivation Functions
 
@@ -622,20 +629,26 @@ PCS is negotiated during handshake and persisted per-contact:
 
 ### 5.8 Security Properties
 
-| Property | Mode 1 | Mode 2 |
-|----------|--------|--------|
-| Forward Secrecy | ✅ | ✅ |
-| Post-Compromise Recovery | Time-based (~24h for Tor) | 1 round-trip |
-| Quantum Resistance | ✅ (via handshake) | ✅ |
-| Out-of-order tolerance | ✅ | ✅ |
+| Property | Mode 1 | Mode 2 | Mode 3 |
+|----------|--------|--------|--------|
+| Forward Secrecy | ✅ | ✅ | ✅ |
+| Post-Compromise Recovery | Time-based (~24h for Tor) | 1 round-trip | 1 round-trip |
+| Quantum Resistance | ✅ (via handshake) | ✅ (via handshake) | ✅ (per-epoch ML-KEM) |
+| Out-of-order tolerance | ✅ | ✅ | ✅ |
+| PQ Forward Secrecy | ❌ | ❌ | ✅ |
 
 ### 5.9 Implementation Status
 
 | Phase | Status | Description |
 |-------|--------|-------------|
-| Phase 1 | **Design Complete** | Symmetric ratchet, capability negotiation |
-| Phase 2 | Planned | Full Double Ratchet with DH |
-| Phase 3 | Future | ML-KEM Braid (post-quantum ratchet) |
+| Phase 1-3 | **Complete** | Symmetric ratchet, capability negotiation, session state |
+| Phase 4a | **Complete** | Mode 2 Double Ratchet with DH |
+| Phase 4b | **Complete** | Mode 3 infrastructure (ML-KEM-768, chunking) |
+| Phase 4c | **Complete** | Mode 3 capability negotiation |
+| Phase 4d | **Complete** | Mode 3 Triple Ratchet activation |
+
+**Mode 3 Active**: Zerion↔Zerion contacts automatically use Triple Ratchet.
+Zerion↔Briar contacts continue using Mode 1/2 for compatibility.
 
 For complete technical specification, see `docs/PCS_DESIGN.md`.
 

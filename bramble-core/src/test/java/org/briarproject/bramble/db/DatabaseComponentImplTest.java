@@ -191,7 +191,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					localAuthor.getId());
 			will(returnValue(false));
 			oneOf(database).addContact(txn, author, localAuthor.getId(),
-					null, true);
+					null, true, false, false, false);
 			will(returnValue(contactId));
 			oneOf(eventBus).broadcast(with(any(ContactAddedEvent.class)));
 			// getContacts()
