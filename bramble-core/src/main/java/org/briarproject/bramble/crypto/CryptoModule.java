@@ -7,6 +7,7 @@ import org.briarproject.bramble.api.crypto.StreamDecrypterFactory;
 import org.briarproject.bramble.api.crypto.StreamEncrypterFactory;
 import org.briarproject.bramble.api.crypto.TransportCrypto;
 import org.briarproject.bramble.api.crypto.pcs.PcsRatchet;
+import org.briarproject.bramble.api.crypto.pcs.PqRatchet;
 import org.briarproject.bramble.api.crypto.pcs.SkippedKeyStore;
 import org.briarproject.bramble.api.system.SecureRandomProvider;
 
@@ -56,9 +57,10 @@ public class CryptoModule {
 	@Provides
 	StreamEncrypterFactory provideStreamEncrypterFactory(
 			CryptoComponent crypto, TransportCrypto transportCrypto,
-			Provider<AuthenticatedCipher> cipherProvider, PcsRatchet pcsRatchet) {
+			Provider<AuthenticatedCipher> cipherProvider, PcsRatchet pcsRatchet,
+			PqRatchet pqRatchet) {
 		return new StreamEncrypterFactoryImpl(crypto, transportCrypto,
-				cipherProvider, pcsRatchet);
+				cipherProvider, pcsRatchet, pqRatchet);
 	}
 
 	@Provides

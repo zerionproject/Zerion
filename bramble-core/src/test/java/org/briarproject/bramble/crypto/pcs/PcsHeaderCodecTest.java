@@ -122,7 +122,7 @@ public class PcsHeaderCodecTest {
 			codec.decode(header);
 			fail("Expected PcsException for invalid version");
 		} catch (PcsException e) {
-			assertTrue(e.getMessage().contains("Unsupported PCS version"));
+			assertTrue(e.getMessage().contains("Unsupported version"));
 		}
 	}
 

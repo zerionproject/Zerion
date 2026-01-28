@@ -120,12 +120,28 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 	public Contact exchangeContacts(PendingContactId p,
 			DuplexTransportConnection conn, SecretKey masterKey, boolean alice,
 			boolean verified, boolean classical) throws IOException, DbException {
-		return exchange(p, conn, masterKey, alice, verified, classical);
+		return exchange(p, conn, masterKey, alice, verified, classical, false);
+	}
+
+	@Override
+	public Contact exchangeContacts(PendingContactId p,
+			DuplexTransportConnection conn, SecretKey masterKey, boolean alice,
+			boolean verified, boolean classical, boolean mode3Capable)
+			throws IOException, DbException {
+		return exchange(p, conn, masterKey, alice, verified, classical,
+				mode3Capable);
 	}
 
 	private Contact exchange(@Nullable PendingContactId p,
 			DuplexTransportConnection conn, SecretKey masterKey, boolean alice,
 			boolean verified, boolean classical) throws IOException, DbException {
+		return exchange(p, conn, masterKey, alice, verified, classical, false);
+	}
+
+	private Contact exchange(@Nullable PendingContactId p,
+			DuplexTransportConnection conn, SecretKey masterKey, boolean alice,
+			boolean verified, boolean classical, boolean mode3Capable)
+			throws IOException, DbException {
 		// Get the transport connection's input and output streams
 		InputStream in = conn.getReader().getInputStream();
 		OutputStream out = conn.getWriter().getOutputStream();
@@ -193,7 +209,8 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 
 		// Add the contact
 		Contact contact = addContact(p, remoteInfo.author, localAuthor,
-				masterKey, timestamp, alice, verified, remoteInfo.properties);
+				masterKey, timestamp, alice, verified, remoteInfo.properties,
+				mode3Capable);
 
 		return contact;
 	}
@@ -229,7 +246,8 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 	private Contact addContact(@Nullable PendingContactId pendingContactId,
 			Author remoteAuthor, LocalAuthor localAuthor, SecretKey masterKey,
 			long timestamp, boolean alice, boolean verified,
-			Map<TransportId, TransportProperties> remoteProperties)
+			Map<TransportId, TransportProperties> remoteProperties,
+			boolean mode3Capable)
 			throws DbException, FormatException {
 		Transaction txn = db.startTransaction(false);
 		try {
@@ -237,11 +255,11 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			if (pendingContactId == null) {
 				contactId = contactManager.addContact(txn, remoteAuthor,
 						localAuthor.getId(), masterKey, timestamp, alice,
-						verified, true);
+						verified, true, mode3Capable);
 			} else {
 				contactId = contactManager.addContact(txn, pendingContactId,
 						remoteAuthor, localAuthor.getId(), masterKey,
-						timestamp, alice, verified, true);
+						timestamp, alice, verified, true, mode3Capable);
 			}
 			transportPropertyManager.addRemoteProperties(txn, contactId,
 					remoteProperties);

@@ -1,59 +1,63 @@
 package org.briarproject.bramble.crypto.pcs;
 
 import org.briarproject.bramble.api.crypto.pcs.PcsException;
+import org.briarproject.bramble.api.crypto.pcs.PqChunk;
 import org.briarproject.nullsafety.NotNullByDefault;
 
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.DH_PUBLIC_KEY_SIZE;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.FLAG_DH_RATCHET;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.FLAG_PCS_ENABLED;
+import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.FLAG_PQ_CHUNK;
+import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.FLAG_PQ_ENABLED;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MESSAGE_NUMBER_SIZE;
+import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_ENABLED;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PCS_HEADER_MAX_SIZE;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PCS_HEADER_MIN_SIZE;
+import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PCS_MODE3_HEADER_MAX_SIZE;
+import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PCS_MODE3_HEADER_MIN_SIZE;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PCS_PROTOCOL_VERSION;
+import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PQ_CHUNK_HEADER_SIZE;
+import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PQ_CHUNK_SIZE;
+import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PQ_EPOCH_SIZE;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PREVIOUS_CHAIN_LENGTH_SIZE;
 
 /**
  * Codec for encoding and decoding PCS message headers.
- * <p>
- * Header format (Mode 1, symmetric-only):
- * <pre>
- * +----------+-------+---------------+--------------------+
- * | Version  | Flags | Message Num   | Prev Chain Length  |
- * | (1 byte) | (1 b) | (4 bytes, BE) | (4 bytes, BE)      |
- * +----------+-------+---------------+--------------------+
- * </pre>
- * <p>
- * Header format (Mode 2, with DH ratchet):
- * <pre>
- * +----------+-------+---------------+--------------------+------------------+
- * | Version  | Flags | Message Num   | Prev Chain Length  | DH Public Key    |
- * | (1 byte) | (1 b) | (4 bytes, BE) | (4 bytes, BE)      | (32 bytes)       |
- * +----------+-------+---------------+--------------------+------------------+
- * </pre>
  */
 @Immutable
 @NotNullByDefault
 public class PcsHeaderCodec {
 
-	/**
-	 * Decoded PCS header information.
-	 */
 	public static class PcsHeader {
 		private final int version;
 		private final byte flags;
 		private final int messageNumber;
 		private final int previousChainLength;
-		private final byte[] dhPublicKey; // null for Mode 1
+		@Nullable
+		private final byte[] dhPublicKey;
+		private final long pqEpoch;
+		@Nullable
+		private final PqChunk pqChunk;
 
 		public PcsHeader(int version, byte flags, int messageNumber,
-				int previousChainLength, byte[] dhPublicKey) {
+				int previousChainLength, @Nullable byte[] dhPublicKey) {
+			this(version, flags, messageNumber, previousChainLength,
+					dhPublicKey, 0, null);
+		}
+
+		public PcsHeader(int version, byte flags, int messageNumber,
+				int previousChainLength, @Nullable byte[] dhPublicKey,
+				long pqEpoch, @Nullable PqChunk pqChunk) {
 			this.version = version;
 			this.flags = flags;
 			this.messageNumber = messageNumber;
 			this.previousChainLength = previousChainLength;
 			this.dhPublicKey = dhPublicKey;
+			this.pqEpoch = pqEpoch;
+			this.pqChunk = pqChunk;
 		}
 
 		public int getVersion() {
@@ -72,6 +76,14 @@ public class PcsHeaderCodec {
 			return (flags & FLAG_DH_RATCHET) != 0;
 		}
 
+		public boolean isPqEnabled() {
+			return (flags & FLAG_PQ_ENABLED) != 0;
+		}
+
+		public boolean hasPqChunk() {
+			return (flags & FLAG_PQ_CHUNK) != 0;
+		}
+
 		public int getMessageNumber() {
 			return messageNumber;
 		}
@@ -80,8 +92,18 @@ public class PcsHeaderCodec {
 			return previousChainLength;
 		}
 
+		@Nullable
 		public byte[] getDhPublicKey() {
 			return dhPublicKey;
+		}
+
+		public long getPqEpoch() {
+			return pqEpoch;
+		}
+
+		@Nullable
+		public PqChunk getPqChunk() {
+			return pqChunk;
 		}
 	}
 
@@ -150,68 +172,148 @@ public class PcsHeaderCodec {
 		return header;
 	}
 
-	/**
-	 * Decodes a PCS header from bytes.
-	 *
-	 * @param data The header bytes
-	 * @return The decoded header
-	 * @throws PcsException If the header is invalid
-	 */
+	public byte[] encodeMode3Header(int messageNumber, int previousChainLength,
+			byte[] dhPublicKey, long pqEpoch, @Nullable PqChunk pqChunk) {
+		if (!MODE3_ENABLED) {
+			throw new IllegalStateException("Mode 3 not enabled");
+		}
+		if (dhPublicKey.length != DH_PUBLIC_KEY_SIZE) {
+			throw new IllegalArgumentException("Invalid DH key size");
+		}
+
+		int headerSize = PCS_MODE3_HEADER_MIN_SIZE;
+		byte flags = (byte) (FLAG_PCS_ENABLED | FLAG_DH_RATCHET | FLAG_PQ_ENABLED);
+
+		if (pqChunk != null) {
+			flags |= FLAG_PQ_CHUNK;
+			headerSize = PCS_MODE3_HEADER_MIN_SIZE + PQ_CHUNK_HEADER_SIZE +
+					pqChunk.getLength();
+		}
+
+		byte[] header = new byte[headerSize];
+		int offset = 0;
+
+		header[offset++] = (byte) PCS_PROTOCOL_VERSION;
+		header[offset++] = flags;
+
+		writeUint32(messageNumber, header, offset);
+		offset += MESSAGE_NUMBER_SIZE;
+
+		writeUint32(previousChainLength, header, offset);
+		offset += PREVIOUS_CHAIN_LENGTH_SIZE;
+
+		System.arraycopy(dhPublicKey, 0, header, offset, DH_PUBLIC_KEY_SIZE);
+		offset += DH_PUBLIC_KEY_SIZE;
+
+		writeUint32((int) pqEpoch, header, offset);
+		offset += PQ_EPOCH_SIZE;
+
+		if (pqChunk != null) {
+			header[offset++] = pqChunk.getType();
+			header[offset++] = (byte) pqChunk.getIndex();
+			writeUint16(pqChunk.getLength(), header, offset);
+			offset += 2;
+			System.arraycopy(pqChunk.getData(), 0, header, offset,
+					pqChunk.getLength());
+		}
+
+		return header;
+	}
+
 	public PcsHeader decode(byte[] data) throws PcsException {
 		if (data.length < PCS_HEADER_MIN_SIZE) {
-			throw new PcsException(
-					"PCS header too short: " + data.length + " bytes " +
-					"(minimum: " + PCS_HEADER_MIN_SIZE + ")");
+			throw new PcsException("Header too short");
 		}
 
 		int offset = 0;
 
-		// Version (1 byte)
 		int version = data[offset++] & 0xFF;
 		if (version != PCS_PROTOCOL_VERSION) {
-			throw new PcsException(
-					"Unsupported PCS version: " + version +
-					" (expected: " + PCS_PROTOCOL_VERSION + ")");
+			throw new PcsException("Unsupported version: " + version);
 		}
 
-		// Flags (1 byte)
 		byte flags = data[offset++];
 
-		// Message number (4 bytes, big-endian)
 		int messageNumber = readUint32(data, offset);
 		offset += MESSAGE_NUMBER_SIZE;
 
-		// Previous chain length (4 bytes, big-endian)
 		int previousChainLength = readUint32(data, offset);
 		offset += PREVIOUS_CHAIN_LENGTH_SIZE;
 
-		// DH public key (32 bytes, optional)
 		byte[] dhPublicKey = null;
 		if ((flags & FLAG_DH_RATCHET) != 0) {
 			if (data.length < PCS_HEADER_MAX_SIZE) {
-				throw new PcsException(
-						"PCS header with DH flag too short: " + data.length +
-						" bytes (expected: " + PCS_HEADER_MAX_SIZE + ")");
+				throw new PcsException("DH header too short");
 			}
 			dhPublicKey = new byte[DH_PUBLIC_KEY_SIZE];
 			System.arraycopy(data, offset, dhPublicKey, 0, DH_PUBLIC_KEY_SIZE);
+			offset += DH_PUBLIC_KEY_SIZE;
+		}
+
+		long pqEpoch = 0;
+		PqChunk pqChunk = null;
+
+		if ((flags & FLAG_PQ_ENABLED) != 0) {
+			if (!MODE3_ENABLED) {
+				throw new PcsException("Mode 3 not enabled");
+			}
+			if (data.length < offset + PQ_EPOCH_SIZE) {
+				throw new PcsException("PQ header too short");
+			}
+			pqEpoch = readUint32(data, offset) & 0xFFFFFFFFL;
+			offset += PQ_EPOCH_SIZE;
+
+			if ((flags & FLAG_PQ_CHUNK) != 0) {
+				if (data.length < offset + PQ_CHUNK_HEADER_SIZE) {
+					throw new PcsException("PQ chunk header too short");
+				}
+				byte chunkType = data[offset++];
+				int chunkIndex = data[offset++] & 0xFF;
+				int chunkLength = readUint16(data, offset);
+				offset += 2;
+
+				if (chunkLength > PQ_CHUNK_SIZE) {
+					throw new PcsException("PQ chunk too large");
+				}
+				if (data.length < offset + chunkLength) {
+					throw new PcsException("PQ chunk data too short");
+				}
+
+				byte[] chunkData = new byte[chunkLength];
+				System.arraycopy(data, offset, chunkData, 0, chunkLength);
+				pqChunk = new PqChunk(chunkType, chunkIndex, chunkData);
+			}
 		}
 
 		return new PcsHeader(version, flags, messageNumber, previousChainLength,
-				dhPublicKey);
+				dhPublicKey, pqEpoch, pqChunk);
 	}
 
-	/**
-	 * Returns the size of the header based on flags.
-	 *
-	 * @param hasDhRatchet Whether the header includes a DH public key
-	 * @return The header size in bytes
-	 */
 	public int getHeaderSize(boolean hasDhRatchet) {
 		return hasDhRatchet ? PCS_HEADER_MAX_SIZE : PCS_HEADER_MIN_SIZE;
 	}
 
+	public int getMode3HeaderSize(@Nullable PqChunk pqChunk) {
+		if (!MODE3_ENABLED) {
+			throw new IllegalStateException("Mode 3 not enabled");
+		}
+		if (pqChunk == null) {
+			return PCS_MODE3_HEADER_MIN_SIZE;
+		}
+		return PCS_MODE3_HEADER_MIN_SIZE + PQ_CHUNK_HEADER_SIZE +
+				pqChunk.getLength();
+	}
+
 	// ==================== Helper Methods ====================
+
+	private static void writeUint16(int value, byte[] dest, int offset) {
+		dest[offset] = (byte) (value >> 8);
+		dest[offset + 1] = (byte) value;
+	}
+
+	private static int readUint16(byte[] src, int offset) {
+		return ((src[offset] & 0xFF) << 8) | (src[offset + 1] & 0xFF);
+	}
 
 	private static void writeUint32(int value, byte[] dest, int offset) {
 		dest[offset] = (byte) (value >> 24);

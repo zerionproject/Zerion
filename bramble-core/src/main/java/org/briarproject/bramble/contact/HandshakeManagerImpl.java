@@ -1,5 +1,8 @@
 package org.briarproject.bramble.contact;
 
+import static java.util.logging.Level.INFO;
+import static java.util.logging.Logger.getLogger;
+
 import org.briarproject.bramble.api.FormatException;
 import org.briarproject.bramble.api.Pair;
 import org.briarproject.bramble.api.contact.ContactManager;
@@ -43,13 +46,15 @@ import static org.briarproject.bramble.api.crypto.PostQuantumConstants.ML_KEM_76
 import static org.briarproject.bramble.contact.HandshakeConstants.PROOF_BYTES;
 import static org.briarproject.bramble.contact.HandshakeConstants.PROTOCOL_MAJOR_VERSION;
 import static org.briarproject.bramble.contact.HandshakeConstants.PROTOCOL_MINOR_VERSION;
+import static org.briarproject.bramble.api.Bytes.compare;
+import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.HYBRID_COMMITMENT_LABEL;
+import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_ENABLED;
 import static org.briarproject.bramble.contact.HandshakeRecordTypes.RECORD_TYPE_EPHEMERAL_PUBLIC_KEY;
 import static org.briarproject.bramble.contact.HandshakeRecordTypes.RECORD_TYPE_HYBRID_STATIC_KEY;
 import static org.briarproject.bramble.contact.HandshakeRecordTypes.RECORD_TYPE_KEM_CIPHERTEXT;
 import static org.briarproject.bramble.contact.HandshakeRecordTypes.RECORD_TYPE_MINOR_VERSION;
+import static org.briarproject.bramble.contact.HandshakeRecordTypes.RECORD_TYPE_MODE3_CAPABILITY;
 import static org.briarproject.bramble.contact.HandshakeRecordTypes.RECORD_TYPE_PROOF_OF_OWNERSHIP;
-import static org.briarproject.bramble.api.Bytes.compare;
-import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.HYBRID_COMMITMENT_LABEL;
 import static org.briarproject.bramble.util.ValidationUtils.checkLength;
 
 /**
@@ -65,6 +70,9 @@ import static org.briarproject.bramble.util.ValidationUtils.checkLength;
 @NotNullByDefault
 class HandshakeManagerImpl implements HandshakeManager {
 
+	private static final java.util.logging.Logger LOG =
+			getLogger(HandshakeManagerImpl.class.getName());
+
 	// Ignore records with current protocol version, unknown record type
 	private static final RecordPredicate IGNORE = r ->
 			r.getProtocolVersion() == PROTOCOL_MAJOR_VERSION &&
@@ -75,7 +83,8 @@ class HandshakeManagerImpl implements HandshakeManager {
 				type == RECORD_TYPE_PROOF_OF_OWNERSHIP ||
 				type == RECORD_TYPE_MINOR_VERSION ||
 				type == RECORD_TYPE_HYBRID_STATIC_KEY ||
-				type == RECORD_TYPE_KEM_CIPHERTEXT;
+				type == RECORD_TYPE_KEM_CIPHERTEXT ||
+				type == RECORD_TYPE_MODE3_CAPABILITY;
 	}
 
 	private final TransactionManager db;
@@ -112,7 +121,6 @@ class HandshakeManagerImpl implements HandshakeManager {
 	@Override
 	public HandshakeResult handshake(PendingContactId p, InputStream in,
 			StreamWriter out) throws DbException, IOException {
-		// Get pending contact and select appropriate keys based on format version
 		HandshakeContext ctx = db.transactionWithResult(true, txn -> {
 			PendingContact pendingContact =
 					contactManager.getPendingContact(txn, p);
@@ -133,7 +141,6 @@ class HandshakeManagerImpl implements HandshakeManager {
 			return new HandshakeContext(pendingContact, keyPair, hybridKeyPair);
 		});
 
-		// Check if this is a hybrid PQ handshake
 		boolean isHybrid = ctx.pendingContact.isPostQuantum() &&
 				ctx.hybridKeyPair != null;
 
@@ -144,19 +151,12 @@ class HandshakeManagerImpl implements HandshakeManager {
 		}
 	}
 
-	/**
-	 * Performs a classical X25519 handshake (Briar-compatible).
-	 * <p>
-	 * Uses classical record format (4-byte header, uint16 length) for
-	 * wire compatibility with Briar.
-	 */
 	private HandshakeResult performClassicalHandshake(HandshakeContext ctx,
 			InputStream in, StreamWriter out) throws IOException {
 		PublicKey theirStaticPublicKey = ctx.pendingContact.getPublicKey();
 		KeyPair ourStaticKeyPair = ctx.keyPair;
 		boolean alice = transportCrypto.isAlice(theirStaticPublicKey,
 				ourStaticKeyPair);
-		// Use classical (Briar-compatible) record format: 4-byte header, uint16 length
 		RecordReader recordReader = recordReaderFactory.createRecordReader(in, true);
 		RecordWriter recordWriter = recordWriterFactory
 				.createRecordWriter(out.getOutputStream(), true);
@@ -204,26 +204,11 @@ class HandshakeManagerImpl implements HandshakeManager {
 		return new HandshakeResult(masterKey, alice);
 	}
 
-	/**
-	 * Performs a hybrid post-quantum handshake (Zerion-to-Zerion).
-	 * <p>
-	 * Uses extended record format (6-byte header, uint32 length) to support
-	 * large payloads like hybrid keys (1,216 bytes) and KEM ciphertexts (1,088 bytes).
-	 * <p>
-	 * Protocol:
-	 * 1. Exchange full hybrid static keys (link only contained commitment)
-	 * 2. Verify received key matches commitment from link
-	 * 3. Exchange hybrid ephemeral keys
-	 * 4. Alice performs KEM encapsulation and sends ciphertext to Bob
-	 * 5. Derive hybrid master key combining ECDH and KEM secrets
-	 * 6. Exchange proofs of ownership
-	 */
 	private HandshakeResult performHybridHandshake(HandshakeContext ctx,
 			InputStream in, StreamWriter out) throws IOException {
 		byte[] theirCommitment = ctx.pendingContact.getPublicKey().getEncoded();
 		KeyPair ourHybridStaticKeyPair = ctx.hybridKeyPair;
 
-		// Use extended record format: 6-byte header, uint32 length (for large PQ payloads)
 		RecordReader recordReader = recordReaderFactory.createRecordReader(in, false);
 		RecordWriter recordWriter = recordWriterFactory
 				.createRecordWriter(out.getOutputStream(), false);
@@ -297,14 +282,28 @@ class HandshakeManagerImpl implements HandshakeManager {
 			sendProof(recordWriter, ourProof);
 		}
 
+		// Send Mode3Capability before EOF (new peers will read it during drain)
+		boolean mode3Capable = false;
+		if (MODE3_ENABLED) {
+			sendMode3Capability(recordWriter);
+		}
+
+		// Match old Zerion ordering: sendEOF → drain → verify
+		// This ensures backward compatibility with older builds
 		out.sendEndOfStream();
+
+		// Drain remaining records from peer (reads Mode3Capability if present)
+		if (MODE3_ENABLED) {
+			mode3Capable = receiveMode3Capability(recordReader);
+		}
 		recordReader.readRecord(r -> false, IGNORE);
 
+		// Verify proof AFTER drain (matches old Zerion ordering)
 		if (!handshakeCrypto.verifyOwnership(masterKey, !alice, theirProof)) {
 			throw new FormatException();
 		}
 
-		return new HandshakeResult(masterKey, alice);
+		return new HandshakeResult(masterKey, alice, mode3Capable);
 	}
 
 	private void sendHybridStaticKey(RecordWriter w, PublicKey k)
@@ -329,7 +328,6 @@ class HandshakeManagerImpl implements HandshakeManager {
 		Record first = readRecord(r, asList(RECORD_TYPE_MINOR_VERSION,
 				RECORD_TYPE_HYBRID_STATIC_KEY));
 		if (first.getRecordType() == RECORD_TYPE_MINOR_VERSION) {
-			// Read the actual ephemeral key record
 			Record second = readRecord(r,
 					singletonList(RECORD_TYPE_HYBRID_STATIC_KEY));
 			byte[] key = second.getPayload();
@@ -438,6 +436,25 @@ class HandshakeManagerImpl implements HandshakeManager {
 				RECORD_TYPE_MINOR_VERSION,
 				new byte[] {PROTOCOL_MINOR_VERSION}));
 		w.flush();
+	}
+
+	private void sendMode3Capability(RecordWriter w) throws IOException {
+		w.writeRecord(new Record(PROTOCOL_MAJOR_VERSION,
+				RECORD_TYPE_MODE3_CAPABILITY,
+				new byte[] {0x01}));
+		w.flush();
+	}
+
+	private boolean receiveMode3Capability(RecordReader r) throws IOException {
+		RecordPredicate accept = rec ->
+				rec.getProtocolVersion() == PROTOCOL_MAJOR_VERSION &&
+						rec.getRecordType() == RECORD_TYPE_MODE3_CAPABILITY;
+		Record rec = r.readRecord(accept, IGNORE);
+		if (rec == null) {
+			return false;
+		}
+		byte[] payload = rec.getPayload();
+		return payload != null && payload.length == 1 && payload[0] == 0x01;
 	}
 
 	private Record readRecord(RecordReader r, List<Byte> expectedTypes)

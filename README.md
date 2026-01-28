@@ -10,7 +10,7 @@ Zerion is a secure messaging app and encrypted vault designed for people who nee
 
 Unlike traditional messengers, Zerion uses no servers, no accounts, no phone numbers, and no cloud services. All communication flows directly between devices using the Tor network, protecting users from surveillance, metadata collection, and IP exposure.
 
-With hybrid post-quantum cryptography, post-compromise security (Double Ratchet), hardware-backed vault protection, and advanced anti-forensics features, Zerion provides strong security even against sophisticated adversaries.
+With hybrid post-quantum cryptography, post-compromise security (Triple Ratchet with ML-KEM-768), hardware-backed vault protection, and advanced anti-forensics features, Zerion provides strong security even against sophisticated adversaries.
 
 ---
 
@@ -18,7 +18,7 @@ With hybrid post-quantum cryptography, post-compromise security (Double Ratchet)
 
 - **Truly anonymous** — No phone number, email, or registration
 - **End-to-end encrypted** messaging, groups, voice notes, and P2P calls
-- **Post-Compromise Security** — Double Ratchet with X25519 DH for per-message key evolution
+- **Post-Compromise Security** — Triple Ratchet (X25519 DH + ML-KEM-768 PQ) for per-message key evolution
 - **Tor-only networking** — Your IP address is never exposed to contacts
 - **Direct peer-to-peer architecture** — No central servers
 - **Encrypted Vault** for passwords, documents, media, and notes
@@ -41,7 +41,7 @@ Disappearing messages and metadata removal ensure conversations remain confident
 
 ### Post-Compromise Security (PCS)
 
-Zerion implements a Double Ratchet protocol for post-compromise security:
+Zerion implements a Triple Ratchet protocol for post-compromise security:
 
 - **Forward secrecy**: Past messages stay private even if your device is later compromised
 - **Post-compromise recovery**: If an attacker compromises your device, security is restored after one message round-trip
@@ -49,7 +49,8 @@ Zerion implements a Double Ratchet protocol for post-compromise security:
 
 **Ratchet Modes:**
 - **Mode 1 (Symmetric ratchet)**: Used with Briar contacts for compatibility. Provides forward secrecy.
-- **Mode 2 (Double Ratchet)**: Used between Zerion users. Provides both forward secrecy and post-compromise security via X25519 DH ratchet.
+- **Mode 2 (Double Ratchet)**: X25519 DH ratchet for forward secrecy and post-compromise security.
+- **Mode 3 (Triple Ratchet)**: Active for Zerion↔Zerion contacts. Adds ML-KEM-768 post-quantum ratchet on top of Mode 2 for quantum-resistant post-compromise security.
 
 ### P2P Voice Calls
 
@@ -64,7 +65,7 @@ Uses Argon2id, AES-256-GCM, and StrongBox/Keystore integration for strong protec
 ### Briar-Compatible Mode
 
 When adding a contact, you choose the security level:
-- **Zerion (Post-Quantum)**: Full post-quantum security (ML-KEM-768 + X25519) + PCS Mode 2 (Double Ratchet) for Zerion-to-Zerion communication
+- **Zerion (Post-Quantum)**: Full post-quantum security (ML-KEM-768 + X25519) + PCS Mode 3 (Triple Ratchet) for Zerion-to-Zerion communication with quantum-resistant post-compromise security
 - **Briar-compatible (Classical)**: Classical security (X25519) + PCS Mode 1 (symmetric ratchet) for communication with Briar users
 
 Your chat settings show the security level for each contact.
@@ -102,8 +103,8 @@ Zerion is under active development. Current focus areas:
 ## Documentation
 
 - [Technical Whitepaper](docs/ZERION_TECHNICAL_WHITEPAPER.md) — Complete architecture & crypto design
-- [Post-Quantum Messaging](docs/POST_QUANTUM_MESSAGING.md) — PQ implementation details
-- [PCS Design](docs/PCS_DESIGN.md) — Post-Compromise Security (Double Ratchet) specification
+- [PCS Design](docs/PCS_DESIGN.md) — Post-Compromise Security (Triple Ratchet) specification
+- [Triple Ratchet Design](docs/TRIPLE_RATCHET_DESIGN.md) — Mode 3 ML-KEM-768 ratchet specification
 - [P2P Voice Calls](docs/P2P_Voice_Calls_Documentation.md) — Voice calling specification
 
 ---

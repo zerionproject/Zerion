@@ -32,14 +32,14 @@ public interface SyncConstants {
 
 	/**
 	 * The maximum length of a message body in bytes.
-	 * Supports attachments up to 10MB.
+	 * Derived from MAX_RECORD_PAYLOAD_BYTES minus header to ensure messages fit.
 	 */
-	int MAX_MESSAGE_BODY_LENGTH = 10 * 1024 * 1024;
+	int MAX_MESSAGE_BODY_LENGTH = MAX_RECORD_PAYLOAD_BYTES - MESSAGE_HEADER_LENGTH;
 
 	/**
 	 * The maximum length of a message in bytes.
 	 */
-	int MAX_MESSAGE_LENGTH = MESSAGE_HEADER_LENGTH + MAX_MESSAGE_BODY_LENGTH;
+	int MAX_MESSAGE_LENGTH = MAX_RECORD_PAYLOAD_BYTES;
 
 	/**
 	 * The maximum number of message IDs in an ack, offer or request record.

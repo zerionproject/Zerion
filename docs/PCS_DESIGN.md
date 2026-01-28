@@ -1,9 +1,13 @@
 # Zerion Post-Compromise Security (PCS) Technical Design
 
-**Version:** 1.1
-**Date:** 2026-01-22
-**Status:** IMPLEMENTED - Phase 1 Complete, Phase 2 Complete
+**Version:** 1.3
+**Date:** 2026-01-23
+**Status:** IMPLEMENTED - All Phases Complete (Phase 4d: Mode 3 Active)
 **Author:** Zerion Project
+
+**Related Documents:**
+- [TRIPLE_RATCHET_DESIGN.md](TRIPLE_RATCHET_DESIGN.md) - Mode 3 (Post-Quantum Ratchet) specification
+- [THREAT_MODEL.md](THREAT_MODEL.md) - Explicit threat model and weakness documentation
 
 ---
 
@@ -39,8 +43,11 @@ This document specifies the Post-Compromise Security (PCS) implementation for Ze
 
 ### Non-Goals
 
-- Full Triple Ratchet (ML-KEM Braid): Deferred due to bandwidth constraints on Tor
 - Group messaging PCS: Separate design required
+
+### Completed Goals (Phase 4d)
+
+- **Full Triple Ratchet (ML-KEM Braid)**: Now active for Zerion-to-Zerion communications
 
 ---
 
@@ -788,8 +795,10 @@ SecretKey deriveMessageKey(SecretKey chainKey) {
 | Per-message keys | Yes | Yes | Yes |
 | DH Ratchet | Mode 2 | Yes | Yes |
 | PQ Handshake | ML-KEM-768 | ML-KEM-768 | ML-KEM |
-| PQ Ratchet | No (Phase 2) | Triple Ratchet | Periodic |
+| PQ Ratchet | Mode 3 (Active) | Triple Ratchet | Periodic |
 | Auth | Deniable | Deniable | Non-deniable |
+
+Mode 3 (Triple Ratchet) is implemented and active. See [TRIPLE_RATCHET_DESIGN.md](TRIPLE_RATCHET_DESIGN.md).
 
 ---
 
@@ -856,17 +865,35 @@ SecretKey deriveMessageKey(SecretKey chainKey) {
 - `PcsMode2IntegrationTest.java` - Integration tests for Mode 2
 - `PcsMode2AdvancedTest.java` - Edge cases (upgrade, out-of-order, skipped keys)
 
-### Phase 3: Post-Quantum Ratchet (Future)
+### Phase 3: Post-Quantum Ratchet (Mode 3 - Triple Ratchet) - IMPLEMENTED AND ACTIVE
+
+**Status:** Implemented, tested, and active (MODE3_ENABLED = true)
 
 **Scope:**
-- ML-KEM Braid integration
-- Triple Ratchet style PCS
-- Full quantum-safe forward secrecy and PCS
+- ML-KEM-768 Braid integration (Sparse Post-Quantum Ratchet)
+- Triple Ratchet style PCS with hybrid key derivation
+- Full quantum-safe forward secrecy and PCS for ongoing conversations
 
-**Deferred due to:**
-- Bandwidth constraints on Tor (1KB+ per message)
-- Complexity of chunking protocol
-- Battery/performance impact
+**Design Document:** See [TRIPLE_RATCHET_DESIGN.md](TRIPLE_RATCHET_DESIGN.md) for complete specification.
+
+**Threat Model:** See [THREAT_MODEL.md](THREAT_MODEL.md) for explicit weakness documentation.
+
+**Key Design Decisions:**
+- Sparse ratcheting: PQ epoch every 25 messages OR 24 hours
+- Chunked transmission: 256-byte chunks (11 chunks per epoch)
+- Average overhead: ~179 bytes/message (acceptable for Tor)
+- Hybrid derivation: `SK = KDF(X25519_output || ML-KEM_output)`
+
+**Implementation Phases (all complete):**
+- Phase 4a: Core ML-KEM implementation - COMPLETE
+- Phase 4b: Integration with PCS streams - COMPLETE
+- Phase 4c: Testing and verification - COMPLETE
+- Phase 4d: General release (MODE3_ENABLED = true) - COMPLETE
+
+**Previous concerns (resolved):**
+- Bandwidth constraints on Tor → Sparse ratcheting + chunking (~3x overhead, acceptable)
+- Complexity of chunking protocol → Simplified design with 11 chunks vs Signal's 71
+- Battery/performance impact → Verified acceptable in testing
 
 ---
 

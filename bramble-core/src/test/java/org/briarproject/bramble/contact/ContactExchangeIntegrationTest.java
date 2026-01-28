@@ -4,6 +4,7 @@ import org.briarproject.bramble.BrambleCoreIntegrationTestEagerSingletons;
 import org.briarproject.bramble.api.Pair;
 import org.briarproject.bramble.api.contact.Contact;
 import org.briarproject.bramble.api.contact.ContactManager;
+import org.briarproject.bramble.api.contact.ContactType;
 import org.briarproject.bramble.api.contact.PendingContact;
 import org.briarproject.bramble.api.contact.PendingContactState;
 import org.briarproject.bramble.api.contact.event.ContactAddedEvent;
@@ -189,7 +190,8 @@ public class ContactExchangeIntegrationTest extends BrambleTestCase {
 				aliceFromBob.getId(), DUPLEX_TRANSPORT_ID, bobConnection, true);
 		assertTrue(aliceFinished.await(TIMEOUT, MILLISECONDS));
 		assertTrue(bobFinished.await(TIMEOUT, MILLISECONDS));
-		assertContacts(false, true);
+		// After successful handshake, contacts are auto-verified (QR verification removed)
+		assertContacts(true, true);
 		assertNoPendingContacts();
 	}
 
@@ -198,7 +200,8 @@ public class ContactExchangeIntegrationTest extends BrambleTestCase {
 			ContactExchangeIntegrationTestComponent remote) throws Exception {
 		EventWaiter waiter = new EventWaiter();
 		local.getEventBus().addListener(waiter);
-		String link = remote.getContactManager().getHandshakeLink();
+		// Use BRIAR contact type for classical key exchange (backward compatible)
+		String link = remote.getContactManager().getHandshakeLink(ContactType.BRIAR);
 		String alias = remote.getIdentityManager().getLocalAuthor().getName();
 		PendingContact pendingContact =
 				local.getContactManager().addPendingContact(link, alias);

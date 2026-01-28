@@ -1,5 +1,6 @@
 package org.briarproject.bramble.transport;
 
+import org.briarproject.bramble.api.contact.Contact;
 import org.briarproject.bramble.api.contact.ContactId;
 import org.briarproject.bramble.api.contact.PendingContactId;
 import org.briarproject.bramble.api.contact.event.ContactRemovedEvent;
@@ -8,6 +9,9 @@ import org.briarproject.bramble.api.crypto.KeyPair;
 import org.briarproject.bramble.api.crypto.PublicKey;
 import org.briarproject.bramble.api.crypto.SecretKey;
 import org.briarproject.bramble.api.crypto.TransportCrypto;
+import org.briarproject.bramble.api.crypto.pcs.PcsSessionState;
+import org.briarproject.bramble.api.crypto.pcs.PqRatchetState;
+import org.briarproject.bramble.crypto.pcs.PcsStateManager;
 import org.briarproject.bramble.api.db.DatabaseComponent;
 import org.briarproject.bramble.api.db.DatabaseExecutor;
 import org.briarproject.bramble.api.db.DbException;
@@ -39,6 +43,7 @@ import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
 
 import static java.util.logging.Level.INFO;
+import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_ENABLED;
 import static org.briarproject.bramble.api.sync.SyncConstants.MAX_TRANSPORT_LATENCY;
 
 @ThreadSafe
@@ -52,6 +57,7 @@ class KeyManagerImpl implements KeyManager, Service, EventListener {
 	private final Executor dbExecutor;
 	private final PluginConfig pluginConfig;
 	private final TransportCrypto transportCrypto;
+	private final PcsStateManager pcsStateManager;
 
 	private final ConcurrentHashMap<TransportId, TransportKeyManager> managers;
 	private final AtomicBoolean used = new AtomicBoolean(false);
@@ -61,11 +67,13 @@ class KeyManagerImpl implements KeyManager, Service, EventListener {
 			@DatabaseExecutor Executor dbExecutor,
 			PluginConfig pluginConfig,
 			TransportCrypto transportCrypto,
-			TransportKeyManagerFactory transportKeyManagerFactory) {
+			TransportKeyManagerFactory transportKeyManagerFactory,
+			PcsStateManager pcsStateManager) {
 		this.db = db;
 		this.dbExecutor = dbExecutor;
 		this.pluginConfig = pluginConfig;
 		this.transportCrypto = transportCrypto;
+		this.pcsStateManager = pcsStateManager;
 		managers = new ConcurrentHashMap<>();
 		for (PluginFactory<?> f : pluginConfig.getSimplexFactories()) {
 			TransportKeyManager m = transportKeyManagerFactory.
@@ -172,10 +180,6 @@ class KeyManagerImpl implements KeyManager, Service, EventListener {
 	public Map<TransportId, KeySetId> addHybridPendingContact(Transaction txn,
 			PendingContactId p, SecretKey rendezvousKey, boolean alice)
 			throws DbException {
-		// For hybrid (PQ) pending contacts, we use the rendezvous key derived
-		// from commitments as the root key for transport key derivation.
-		// This is different from classical contacts where we derive keys from
-		// X25519 key agreement.
 		SecretKey rootKey =
 				transportCrypto.deriveHandshakeRootKey(rendezvousKey, true);
 		Map<TransportId, KeySetId> ids = new HashMap<>();
@@ -215,11 +219,11 @@ class KeyManagerImpl implements KeyManager, Service, EventListener {
 			throws DbException {
 		return withManager(t, m ->
 				db.transactionWithNullableResult(false, txn -> {
-					// Look up the contact to determine if it's classical
-					org.briarproject.bramble.api.contact.Contact contact =
-							db.getContact(txn, c);
+					Contact contact = db.getContact(txn, c);
 					boolean classical = contact.isClassical();
-					return m.getStreamContext(txn, c, classical);
+					StreamContext baseCtx = m.getStreamContext(txn, c, classical);
+					if (baseCtx == null) return null;
+					return enrichWithPcsState(txn, baseCtx, c, contact.isMode3Capable());
 				}));
 	}
 
@@ -228,10 +232,8 @@ class KeyManagerImpl implements KeyManager, Service, EventListener {
 			throws DbException {
 		return withManager(t, m ->
 				db.transactionWithNullableResult(false, txn -> {
-					// Look up the pending contact to determine if it's classical
 					org.briarproject.bramble.api.contact.PendingContact pending =
 							db.getPendingContact(txn, p);
-					// classical = !postQuantum
 					boolean classical = !pending.isPostQuantum();
 					return m.getStreamContext(txn, p, classical);
 				}));
@@ -242,25 +244,30 @@ class KeyManagerImpl implements KeyManager, Service, EventListener {
 			throws DbException {
 		return withManager(t, m ->
 				db.transactionWithNullableResult(false, txn -> {
-					// For incoming streams, we need to look up the contact/pending
-					// contact to determine the classical flag. First get the context
-					// without the classical flag to find the contact ID.
 					StreamContext tempCtx = m.getStreamContextOnly(txn, tag, false);
 					if (tempCtx == null) return null;
 
 					boolean classical;
+					boolean mode3Capable = false;
 					if (tempCtx.getContactId() != null) {
 						org.briarproject.bramble.api.contact.Contact contact =
 								db.getContact(txn, tempCtx.getContactId());
 						classical = contact.isClassical();
+						mode3Capable = contact.isMode3Capable();
 					} else if (tempCtx.getPendingContactId() != null) {
 						org.briarproject.bramble.api.contact.PendingContact pending =
 								db.getPendingContact(txn, tempCtx.getPendingContactId());
 						classical = !pending.isPostQuantum();
 					} else {
-						classical = false; // Default to extended format
+						classical = false;
 					}
-					return m.getStreamContext(txn, tag, classical);
+					StreamContext baseCtx = m.getStreamContext(txn, tag, classical);
+					if (baseCtx == null) return null;
+					if (baseCtx.getContactId() != null) {
+						return enrichWithPcsReceiveState(txn, baseCtx,
+								baseCtx.getContactId(), mode3Capable);
+					}
+					return baseCtx;
 				}));
 	}
 
@@ -269,8 +276,6 @@ class KeyManagerImpl implements KeyManager, Service, EventListener {
 			throws DbException {
 		return withManager(t, m ->
 				db.transactionWithNullableResult(false, txn -> {
-					// For incoming streams, we need to look up the contact/pending
-					// contact to determine the classical flag. First get a temp context.
 					StreamContext tempCtx = m.getStreamContextOnly(txn, tag, false);
 					if (tempCtx == null) return null;
 
@@ -284,7 +289,7 @@ class KeyManagerImpl implements KeyManager, Service, EventListener {
 								db.getPendingContact(txn, tempCtx.getPendingContactId());
 						classical = !pending.isPostQuantum();
 					} else {
-						classical = false; // Default to extended format
+						classical = false;
 					}
 					return m.getStreamContextOnly(txn, tag, classical);
 				}));
@@ -338,5 +343,69 @@ class KeyManagerImpl implements KeyManager, Service, EventListener {
 	private interface ManagerTask<T> {
 		@Nullable
 		T run(TransportKeyManager m) throws DbException;
+	}
+
+	private StreamContext enrichWithPcsState(Transaction txn,
+			StreamContext baseCtx, ContactId contactId, boolean mode3Capable)
+			throws DbException {
+		if (!MODE3_ENABLED || !mode3Capable) {
+			return baseCtx;
+		}
+		if (!pcsStateManager.hasState(txn, contactId)) {
+			return baseCtx;
+		}
+		PcsSessionState pcsState = pcsStateManager.loadSendState(txn, contactId);
+		if (pcsState == null) {
+			return baseCtx;
+		}
+		PqRatchetState pqState = null;
+		if (pcsState.isMode2()) {
+			pcsState = pcsState.enableMode3();
+			pqState = pcsStateManager.loadPqState(txn, contactId);
+		}
+		return new StreamContext(
+				baseCtx.getContactId(),
+				baseCtx.getPendingContactId(),
+				baseCtx.getTransportId(),
+				baseCtx.getTagKey(),
+				baseCtx.getHeaderKey(),
+				baseCtx.getStreamNumber(),
+				baseCtx.isHandshakeMode(),
+				baseCtx.isClassical(),
+				true,
+				pcsState,
+				pqState);
+	}
+
+	private StreamContext enrichWithPcsReceiveState(Transaction txn,
+			StreamContext baseCtx, ContactId contactId, boolean mode3Capable)
+			throws DbException {
+		if (!MODE3_ENABLED || !mode3Capable) {
+			return baseCtx;
+		}
+		if (!pcsStateManager.hasState(txn, contactId)) {
+			return baseCtx;
+		}
+		PcsSessionState pcsState = pcsStateManager.loadReceiveState(txn, contactId);
+		if (pcsState == null) {
+			return baseCtx;
+		}
+		PqRatchetState pqState = null;
+		if (pcsState.isMode2()) {
+			pcsState = pcsState.enableMode3();
+			pqState = pcsStateManager.loadPqState(txn, contactId);
+		}
+		return new StreamContext(
+				baseCtx.getContactId(),
+				baseCtx.getPendingContactId(),
+				baseCtx.getTransportId(),
+				baseCtx.getTagKey(),
+				baseCtx.getHeaderKey(),
+				baseCtx.getStreamNumber(),
+				baseCtx.isHandshakeMode(),
+				baseCtx.isClassical(),
+				true,
+				pcsState,
+				pqState);
 	}
 }

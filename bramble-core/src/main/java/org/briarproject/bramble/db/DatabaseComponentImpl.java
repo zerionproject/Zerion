@@ -258,6 +258,16 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 	public ContactId addContact(Transaction transaction, Author remote,
 			AuthorId local, @Nullable PublicKey handshake, boolean verified,
 			boolean postQuantum, boolean pcsEnabled) throws DbException {
+		// Default to mode3Capable=false for backward compatibility
+		return addContact(transaction, remote, local, handshake, verified,
+				postQuantum, pcsEnabled, false);
+	}
+
+	@Override
+	public ContactId addContact(Transaction transaction, Author remote,
+			AuthorId local, @Nullable PublicKey handshake, boolean verified,
+			boolean postQuantum, boolean pcsEnabled, boolean mode3Capable)
+			throws DbException {
 		if (transaction.isReadOnly()) throw new IllegalArgumentException();
 		T txn = unbox(transaction);
 		if (!db.containsIdentity(txn, local))
@@ -267,7 +277,7 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		if (db.containsContact(txn, remote.getId(), local))
 			throw new ContactExistsException(local, remote);
 		ContactId c = db.addContact(txn, remote, local, handshake, verified,
-				postQuantum, pcsEnabled);
+				postQuantum, pcsEnabled, mode3Capable);
 		transaction.attach(new ContactAddedEvent(c, verified));
 		return c;
 	}
@@ -1494,6 +1504,56 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		if (transaction.isReadOnly()) throw new IllegalArgumentException();
 		T txn = unbox(transaction);
 		return db.getPcsMode2SkippedKey(txn, chainId, messageNumber);
+	}
+
+	// ==================== PCS Mode 3 (PQ Ratchet) Methods ====================
+
+	@Override
+	public void setPqRatchetState(Transaction transaction, ContactId c,
+			long currentEpoch, long epochStartTime, int messagesSinceEpoch,
+			int state, boolean isInitiator, int chunksSent, int chunksReceived,
+			@Nullable byte[] ourEkSeed, @Nullable byte[] ourEkVector,
+			@Nullable byte[] ourDecapsKey, @Nullable byte[] theirEkSeed,
+			@Nullable byte[] theirEkHash, @Nullable byte[] theirEkVector,
+			@Nullable byte[] ciphertext, @Nullable byte[] pendingChunks)
+			throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		T txn = unbox(transaction);
+		if (!db.containsContact(txn, c))
+			throw new NoSuchContactException();
+		db.setPqRatchetState(txn, c, currentEpoch, epochStartTime,
+				messagesSinceEpoch, state, isInitiator, chunksSent, chunksReceived,
+				ourEkSeed, ourEkVector, ourDecapsKey, theirEkSeed, theirEkHash,
+				theirEkVector, ciphertext, pendingChunks);
+	}
+
+	@Override
+	@Nullable
+	public Object[] getPqRatchetState(Transaction transaction, ContactId c)
+			throws DbException {
+		T txn = unbox(transaction);
+		if (!db.containsContact(txn, c))
+			throw new NoSuchContactException();
+		return db.getPqRatchetState(txn, c);
+	}
+
+	@Override
+	public boolean containsPqRatchetState(Transaction transaction, ContactId c)
+			throws DbException {
+		T txn = unbox(transaction);
+		if (!db.containsContact(txn, c))
+			throw new NoSuchContactException();
+		return db.containsPqRatchetState(txn, c);
+	}
+
+	@Override
+	public void removePqRatchetState(Transaction transaction, ContactId c)
+			throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		T txn = unbox(transaction);
+		if (!db.containsContact(txn, c))
+			throw new NoSuchContactException();
+		db.removePqRatchetState(txn, c);
 	}
 
 	private class CommitActionVisitor implements Visitor {
