@@ -31,11 +31,12 @@ android {
         jniLibs {
             keepDebugSymbols += ['**/*.so']
         }
-        resources {
-            // Exclude baseline profiles for F-Droid reproducible builds
-            // These files are non-deterministic and differ between builds
-            excludes += ['assets/dexopt/baseline.prof', 'assets/dexopt/baseline.profm']
-        }
+    }
+
+    // Exclude baseline profiles from assets for F-Droid reproducible builds
+    // These files are non-deterministic and differ between builds
+    aaptOptions {
+        ignoreAssetsPattern '!dexopt'
     }
 
     buildFeatures {
