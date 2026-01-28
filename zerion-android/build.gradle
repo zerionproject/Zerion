@@ -31,12 +31,14 @@ android {
         jniLibs {
             keepDebugSymbols += ['**/*.so']
         }
-    }
-
-    // Exclude baseline profiles from assets for F-Droid reproducible builds
-    // These files are non-deterministic and differ between builds
-    aaptOptions {
-        ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:<dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~:dexopt:baseline.prof:baseline.profm'
+        if (isFdroidBuild) {
+            resources {
+                excludes += [
+                    "assets/dexopt/baseline.prof",
+                    "assets/dexopt/baseline.profm"
+                ]
+            }
+        }
     }
 
     buildFeatures {
@@ -162,8 +164,15 @@ android {
     }
 }
 
+// Exclude profileinstaller to prevent non-deterministic baseline profiles (F-Droid reproducibility)
+if (isFdroidBuild) {
+    configurations.all {
+        exclude group: 'androidx.profileinstaller', module: 'profileinstaller'
+    }
+}
+
 dependencies {
-    // 
+    //
     implementation project(':bramble-api')
 
     implementation project(':bramble-core')
@@ -294,4 +303,10 @@ task verifyTranslations {
 
 project.afterEvaluate {
     preBuild.dependsOn.add(verifyTranslations)
+
+    // Disable ART/Baseline profile tasks for F-Droid reproducible builds
+    if (isFdroidBuild) {
+        tasks.matching { it.name.toLowerCase().contains("artprofile") }.configureEach { it.enabled = false }
+        tasks.matching { it.name.toLowerCase().contains("baselineprofile") }.configureEach { it.enabled = false }
+    }
 }
