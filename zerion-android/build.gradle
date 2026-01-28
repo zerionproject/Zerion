@@ -31,6 +31,11 @@ android {
         jniLibs {
             keepDebugSymbols += ['**/*.so']
         }
+        // Exclude baseline profiles for F-Droid reproducible builds
+        // These files are non-deterministic and differ between builds
+        if (project.hasProperty('fdroid')) {
+            resources.excludes += ['assets/dexopt/baseline.prof', 'assets/dexopt/baseline.profm']
+        }
     }
 
     buildFeatures {
@@ -157,10 +162,7 @@ android {
 }
 
 dependencies {
-    // In theory this dependency shouldn't be needed, but without it Android Studio's linter will
-    // complain about unresolved symbols for bramble-api test classes in zerion-android tests,
-    // even though the bramble-api test classes are provided by the testImplementation dependency
-    // below and the compiler can find them
+    // 
     implementation project(':bramble-api')
 
     implementation project(':bramble-core')
@@ -204,7 +206,6 @@ dependencies {
     implementation "com.google.android.exoplayer:exoplayer-ui:$exoplayerVersion"
 
     // Argon2id for secure vault password hashing
-    // TODO: Re-enable after fixing Witness plugin dependency verification
     // implementation 'com.lambdapioneer.argon2kt:argon2kt:1.4.0'
 
     annotationProcessor "com.google.dagger:dagger-compiler:$dagger_version"
