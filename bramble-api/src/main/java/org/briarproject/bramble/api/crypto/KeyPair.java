@@ -4,9 +4,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.Immutable;
 
-/**
- * A key pair consisting of a {@link PublicKey} and a {@link PrivateKey}.
- */
+
 @Immutable
 @NotNullByDefault
 public class KeyPair {

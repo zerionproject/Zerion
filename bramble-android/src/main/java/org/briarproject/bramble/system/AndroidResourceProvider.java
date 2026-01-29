@@ -24,7 +24,6 @@ class AndroidResourceProvider implements ResourceProvider {
 	@Override
 	public InputStream getResourceInputStream(String name, String extension) {
 		Resources res = appContext.getResources();
-		// extension is ignored on Android, resources are retrieved without it
 		int resId =
 				res.getIdentifier(name, "raw", appContext.getPackageName());
 		return res.openRawResource(resId);

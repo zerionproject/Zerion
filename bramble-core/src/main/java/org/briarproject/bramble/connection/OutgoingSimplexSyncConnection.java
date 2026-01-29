@@ -18,9 +18,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import java.io.IOException;
 
 import javax.annotation.Nullable;
-
-import static java.util.logging.Level.WARNING;
-import static org.briarproject.bramble.util.LogUtils.logException;
 import static org.briarproject.nullsafety.NullSafety.requireNonNull;
 
 @NotNullByDefault
@@ -52,19 +49,15 @@ class OutgoingSimplexSyncConnection extends SyncConnection implements Runnable {
 
 	@Override
 	public void run() {
-		// Allocate a stream context
 		StreamContext ctx = allocateStreamContext(contactId, transportId);
 		if (ctx == null) {
-			LOG.warning("Could not allocate stream context");
 			onError();
 			return;
 		}
 		try {
-			// Create and run the outgoing session
 			createSimplexOutgoingSession(ctx, writer).run();
 			writer.dispose(false);
 		} catch (IOException e) {
-			logException(LOG, WARNING, e);
 			onError();
 		}
 	}
@@ -79,7 +72,6 @@ class OutgoingSimplexSyncConnection extends SyncConnection implements Runnable {
 				w.getOutputStream(), ctx);
 		ContactId c = requireNonNull(ctx.getContactId());
 		if (sessionRecord == null) {
-			// Use eager retransmission if the transport is lossy and cheap
 			return syncSessionFactory.createSimplexOutgoingSession(c,
 					ctx.getTransportId(), w.getMaxLatency(),
 					w.isLossyAndCheap(), streamWriter, ctx.isClassical());

@@ -17,13 +17,9 @@ import androidx.lifecycle.LiveData;
 @NotThreadSafe
 @NotNullByDefault
 class ConversationMessageItem extends ConversationItem {
-
-	// Attachments loaded lazily for performance
 	private List<AttachmentItem> attachments;
-	// Store header for lazy attachment loading
 	@Nullable
 	private final PrivateMessageHeader header;
-	// Track if attachments have been loaded
 	private boolean attachmentsLoaded = false;
 
 	ConversationMessageItem(@LayoutRes int layoutRes, PrivateMessageHeader h,
@@ -34,9 +30,7 @@ class ConversationMessageItem extends ConversationItem {
 		this.attachmentsLoaded = !attachments.isEmpty() || h.getAttachmentHeaders().isEmpty();
 	}
 
-	/**
-	 * Constructor for lazy loading - attachments will be loaded when ViewHolder binds.
-	 */
+	
 	ConversationMessageItem(@LayoutRes int layoutRes, PrivateMessageHeader h,
 			LiveData<String> contactName) {
 		super(layoutRes, h, contactName);
@@ -49,24 +43,18 @@ class ConversationMessageItem extends ConversationItem {
 		return attachments;
 	}
 
-	/**
-	 * Check if this item has attachment headers that haven't been loaded yet.
-	 */
+	
 	boolean needsAttachmentLoading() {
 		return !attachmentsLoaded && header != null && !header.getAttachmentHeaders().isEmpty();
 	}
 
-	/**
-	 * Get the header for lazy attachment loading.
-	 */
+	
 	@Nullable
 	PrivateMessageHeader getHeader() {
 		return header;
 	}
 
-	/**
-	 * Set attachments after lazy loading.
-	 */
+	
 	@UiThread
 	void setAttachments(List<AttachmentItem> attachments) {
 		this.attachments = attachments;

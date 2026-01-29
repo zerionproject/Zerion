@@ -23,7 +23,7 @@ public class CreateGroupMessageFragment extends BaseMessageFragment {
 	@Override
 	@StringRes
 	protected int getHintText() {
-		return R.string.forum_share_message;
+		return R.string.share_message;
 	}
 
 	@Override

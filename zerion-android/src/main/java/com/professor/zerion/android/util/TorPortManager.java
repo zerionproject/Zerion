@@ -12,10 +12,7 @@ import static org.briarproject.bramble.api.plugin.TorConstants.DEFAULT_SOCKS_POR
 import static org.briarproject.bramble.api.plugin.TorConstants.MAX_DYNAMIC_PORT;
 import static org.briarproject.bramble.api.plugin.TorConstants.MIN_DYNAMIC_PORT;
 
-/**
- * Manages Tor port selection to avoid conflicts with other apps like Briar.
- * Checks if ports are available and dynamically selects alternatives if needed.
- */
+
 @NotNullByDefault
 public class TorPortManager {
 
@@ -32,11 +29,8 @@ public class TorPortManager {
 		initializePorts();
 	}
 
-	/**
-	 * Initialize ports - either from saved preferences or by finding available ports.
-	 */
+	
 	private void initializePorts() {
-		// Try to load saved ports first
 		int savedSocksPort = prefs.getInt(PREF_SOCKS_PORT, -1);
 		int savedControlPort = prefs.getInt(PREF_CONTROL_PORT, -1);
 
@@ -54,11 +48,8 @@ public class TorPortManager {
 			savePorts();
 			return;
 		}
-
-		// Find available ports in the dynamic range
 		socksPort = findAvailablePort(MIN_DYNAMIC_PORT);
 		if (socksPort > 0) {
-			// Control port is next to SOCKS port
 			int preferredControlPort = socksPort + 1;
 			if (isPortAvailable(preferredControlPort)) {
 				controlPort = preferredControlPort;
@@ -75,9 +66,7 @@ public class TorPortManager {
 		}
 	}
 
-	/**
-	 * Check if a port is available for binding.
-	 */
+	
 	private boolean isPortAvailable(int port) {
 		if (port < 1 || port > 65535) return false;
 
@@ -93,15 +82,12 @@ public class TorPortManager {
 				try {
 					socket.close();
 				} catch (IOException e) {
-					// Ignore
 				}
 			}
 		}
 	}
 
-	/**
-	 * Find an available port starting from the given port.
-	 */
+	
 	private int findAvailablePort(int startPort) {
 		for (int port = startPort; port <= MAX_DYNAMIC_PORT; port++) {
 			if (isPortAvailable(port)) {
@@ -111,9 +97,7 @@ public class TorPortManager {
 		return -1;
 	}
 
-	/**
-	 * Save the selected ports to preferences.
-	 */
+	
 	private void savePorts() {
 		prefs.edit()
 				.putInt(PREF_SOCKS_PORT, socksPort)
@@ -121,23 +105,17 @@ public class TorPortManager {
 				.apply();
 	}
 
-	/**
-	 * Get the SOCKS port to use for Tor.
-	 */
+	
 	public int getSocksPort() {
 		return socksPort;
 	}
 
-	/**
-	 * Get the control port to use for Tor.
-	 */
+	
 	public int getControlPort() {
 		return controlPort;
 	}
 
-	/**
-	 * Force re-selection of ports. Call this if there's a port conflict at runtime.
-	 */
+	
 	public void resetPorts() {
 		prefs.edit()
 				.remove(PREF_SOCKS_PORT)

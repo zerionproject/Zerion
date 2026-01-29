@@ -64,8 +64,6 @@ Umepoteza nenosiri.</string>
   <string name="nav_drawer_close_description">Funga njia ya Usambazaji </string>
   <string name="contact_list_button">Mawasiliano </string>
   <string name="groups_button">Vikundi vya kibinafsi</string>
-  <string name="forums_button">Ukumbi</string>
-  <string name="blogs_button">Blogi</string>
   <!--This is part of the main menu. The app will be locked when this is tapped.-->
   <string name="lock_button">Funga programu</string>
   <string name="settings_button">Mipangilio</string>
@@ -165,14 +163,12 @@ Umepoteza nenosiri.</string>
   <string name="messaging_too_many_attachments_toast">Taswira ya kwanza %d ndio itakayotumwa</string>
   <!--Adding Contacts-->
   <string name="add_contact_title">Ongeza mawasaliano ya walio karibu </string>
-  <string name="face_to_face">Ni lazima ukutane na mtu unaye taka kumuongeza kwenye mawasiliano.\n\nHii ita kuepusha na mtu mwengine kuweza kusoma ujembo wako huko mbeleni.</string>
   <string name="continue_button">Endelea</string>
   <string name="try_again_button">Jaribu tena </string>
   <string name="waiting_for_contact_to_scan">Usubiri kwa mawasiliano waku skani  na kuunganishwa\u2026</string>
   <string name="exchanging_contact_details">Kubadilishana mawasiliano taharifa\u2026</string>
   <string name="contact_added_toast">Mawasiliano yameongezwa:%s</string>
   <string name="contact_already_exists">Wasiliano%s tayari lipo.</string>
-  <string name="qr_code_invalid">The QR nambari sio sahihi </string>
   <string name="qr_code_too_old">Nambari ya QR ulio skana inatokea kwenye toleo la zamani %s.\n\nTafathali wasiliana na mwenzio au boreshe kwenye toleo jipya na ujaribu tena .</string>
   <string name="qr_code_too_new">Nambari ya QR ulio skana Inatoka kwenye toleo jipya %s.\n\nTafathali boresha kuwa kwenye toleo jipya na ujaribu tena .</string>
   <string name="camera_error">Kamera Hitilafu</string>
@@ -309,93 +305,22 @@ Umepoteza nenosiri.</string>
   <string name="groups_reveal_visible_revealed_by_contact">Mahusiano ya mawasiliano yanaonekana kwenye kikundi (Yanaonyeshwa na %s)</string>
   <string name="groups_reveal_invisible">Mawaliano yanaonekana kwenye hichi kikundi </string>
   <!--Forums-->
-  <string name="no_forums">Hakuna Mikutano yaku onyesha </string>
-  <string name="no_forums_action">Bonyeza + ikoni kutenege ukumbi , au uliza mawasiliano yako wakuunge kwenye ukumbi</string>
-  <string name="create_forum_title">Tengeneza Ukimbi </string>
-  <string name="choose_forum_hint">Chagua jina la mkutano wako</string>
-  <string name="create_forum_button">Tengeneza Ukimbi</string>
-  <string name="forum_created_toast">Ukumbi Umetengenezwa</string>
-  <string name="no_forum_posts">Hakuna chapisho lakuonyesha </string>
   <string name="no_posts">Hakuna Chapisho </string>
-  <string name="forum_new_message_hint">Chapisho jipaya</string>
-  <string name="forum_message_reply_hint">Jibu jipya</string>
   <string name="btn_reply">Jibu</string>
-  <string name="forum_leave">Toka kwenye ukumbi</string>
-  <string name="dialog_title_leave_forum">Thibitisha kutoka kwenye Ukumbi</string>
-  <string name="dialog_message_leave_forum">unauwakika unataka toka kwenye ukumbi?\n\nNa mawasiliano ambayo uliyaweka kwenye hichi kikundi hawataweza endelea pata taharifa . </string>
   <string name="dialog_button_leave">Toka</string>
-  <string name="forum_left_toast">ondoka kwenye Ukumbi </string>
   <!--Forum Sharing-->
-  <string name="forum_share_button">Sambaza Ukumbi</string>
   <string name="contacts_selected">Mawasiliano yalio chaguliwa </string>
   <string name="activity_share_toolbar_header">Chagua Mawasiliano </string>
   <string name="no_contacts_selector">hakuna mawasiliano yakuonyesha </string>
   <string name="no_contacts_selector_action">Tafathali rudi tena hapa baada ya kuongeza mawasiliano </string>
-  <string name="forum_shared_snackbar">Jukwaa tulilochangia kwa mawasiliano yaliyochaguliwa</string>
-  <string name="forum_share_message">Ungeza Ujumbe (hiari)</string>
-  <string name="forum_share_error">kulikuwa na hitilafu wakati changia huu ukumbi </string>
-  <string name="forum_invitation_received">%1$samechangia jukwaa\"%2$s\" na wewe.</string>
-  <string name="forum_invitation_sent">Umechangia  jukwaa\"%1$s\" na %2$s.</string>
-  <string name="forum_invitations_title">Mwaliko wa jukwaa</string>
-  <string name="forum_invitation_exists">Umekubali mwaliko wa ukumbi huu tayari.\n\nNa kukubali mialiko zaidi itakufanya uwe na mawasiliano yako katika jukwaa yawe ya haraka na yakuaminika.</string>
-  <string name="forum_joined_toast">umejiunga kwenye jukwaa</string>
-  <string name="forum_declined_toast">Mwaliko umekataliwa</string>
   <string name="shared_by_format">Umetumwa na %s</string>
-  <string name="forum_invitation_already_sharing">Tayari imesha sambazwa</string>
-  <string name="forum_invitation_response_accepted_sent">Umekubali mwaliko wa jukwaa kutoka kwa %s.</string>
-  <string name="forum_invitation_response_declined_sent">Umekata mwaliko wa jukwaa kutoka kwa %s.</string>
-  <string name="forum_invitation_response_accepted_received">%sKakubali mwaliko wa jukwaa.</string>
-  <string name="forum_invitation_response_declined_received">%skakata mwaliko wa jukwaa.</string>
   <string name="sharing_status">Tawanya hali </string>
-  <string name="sharing_status_forum">Mwana kikundi yoyote anaweza kuwataarifu watu wengine. Una tumia jukwaa hili na marafiki zako . Na kuna watu wengine wanaweza kutoona pia .</string>
   <string name="shared_with">Umesabazwa na %1$d(%2$dmkondoni)</string>
   <string name="nobody">Hakuna mtu </string>
   <!--Blogs-->
-  <string name="blogs_other_blog_empty_state">Hakuna chapisho lakuonyesha </string>
   <string name="read_more">Soma zaidi </string>
-  <string name="blogs_write_blog_post">Andika chapisho la Blogi </string>
-  <string name="blogs_write_blog_post_body_hint">Andika chapisho lako la blogi </string>
-  <string name="blogs_publish_blog_post">kuchapisha </string>
-  <string name="blogs_blog_post_created">Chapisho la blogi limesha tengenezwa </string>
-  <string name="blogs_blog_post_received">Chapisho jipya la blogi limepokelewa </string>
-  <string name="blogs_blog_post_scroll_to">Tembeza kwa</string>
-  <string name="blogs_feed_empty_state">Hakuna chapisho lakuonyesha </string>
-  <string name="blogs_feed_empty_state_action">Taarifa zote kutoka kwenye Mawasaliano yako na blogi unazo zifwatilia zitatokea hapa\n\nBonyeza kalamu ikoni kuandika taarifa </string>
-  <string name="blogs_remove_blog">Ondoa blogi </string>
-  <string name="blogs_remove_blog_dialog_message">unauhakika unataka kuondoa hii blogi?\n\nMachapisho yataondolewa kutoka kwenye kifaa chako lakini sio kutoka kwenye vifaa vya watu wengine.\n\nMawasiliano yoyote utakaokuwa umewashirikisha blogi hii wataweza kutopata taarifa mpya.</string>
-  <string name="blogs_remove_blog_ok">Ondoa</string>
-  <string name="blogs_blog_removed">Blogi imeondolewa </string>
-  <string name="blogs_reblog_comment_hint">Weka maoni(hiari)</string>
-  <string name="blogs_reblog_button">Chapisha tena </string>
   <!--Blog Sharing-->
-  <string name="blogs_sharing_share">Sambaza Blogi</string>
-  <string name="blogs_sharing_error">kulikuwa na hitilafu wakati wakuchangia blogi.</string>
-  <string name="blogs_sharing_button">tuma kwa wengine Blogi</string>
-  <string name="blogs_sharing_snackbar">Tuma blogi kwa mawasiliano yaliyochaguliwa </string>
-  <string name="blogs_sharing_response_accepted_sent">Umekubali mwaliko wa Blogi kutoka %s.</string>
-  <string name="blogs_sharing_response_declined_sent">Umekataa mwaliko wa blogi kutoka kwa %s.</string>
-  <string name="blogs_sharing_response_accepted_received">%skakubali mwaliko wa blogi.</string>
-  <string name="blogs_sharing_response_declined_received">%skakata mwaliko wa blogi.</string>
-  <string name="blogs_sharing_invitation_received">%1$s kamwalika kwenye blogi\"%2$s\" na wewe.</string>
-  <string name="blogs_sharing_invitation_sent">Umemwalika kwenye blogi \"%1$s\" pia%2$s.</string>
-  <string name="blogs_sharing_invitations_title">Mwaliko wa Blogi</string>
-  <string name="blogs_sharing_joined_toast">Jisajili kwenye Blogi</string>
-  <string name="blogs_sharing_declined_toast">mwaliko umekataliwa</string>
-  <string name="sharing_status_blog">Yeyote anayejisajili kwenye blogi anaweza akaisambaza kwa mawasiliano yake. Unashirikisha kwa mawasiliano yafuatayo. Kuna wengine watajisajili lakini usiweze kuwaona.</string>
   <!--RSS Feeds-->
-  <string name="blogs_rss_feeds_import">Ingiza RSS taarifa</string>
-  <string name="blogs_rss_feeds_import_button">Ingiza</string>
-  <string name="blogs_rss_feeds_import_hint">Ingiza URL za RSS taarifa</string>
-  <string name="blogs_rss_feeds_import_error">Samahani! Kulikuwa na hitilafu wakati wakuingiza taarifa </string>
-  <string name="blogs_rss_feeds_manage_imported">Zilizoingizwa</string>
-  <string name="blogs_rss_feeds_manage_author">Mwandishi:</string>
-  <string name="blogs_rss_feeds_manage_updated">huwisho la mwisho
-</string>
-  <string name="blogs_rss_remove_feed">Ondoa taarifa</string>
-  <string name="blogs_rss_remove_feed_dialog_message">Unauhakika unataka kutoa hii taarifa?\n\nChapisho lako litaondolewa kwenye kifaa chako ila sio kwenye vifaa vya watu wengine.\n\nMawasiliano yoyote utliokwisha kuyaunganisha wanaweza wasiendelea kupata taarifa. </string>
-  <string name="blogs_rss_remove_feed_ok">Ondoa</string>
-  <string name="blogs_rss_feeds_manage_empty_state">Hakuna RSS taharifa zaku onyesha\n\nBonyeza + ikoni kuleta taharifa </string>
-  <string name="blogs_rss_feeds_manage_error">Kulikuwa na tatizo la kufungua taharifa . Tafathali jaribu baadae kidogo.</string>
   <!--Settings Profile Picture-->
   <!--Settings Display-->
   <string name="pref_language_title">Lugha &amp;mkoa</string>
@@ -472,12 +397,6 @@ Umepoteza nenosiri.</string>
   <string name="notify_group_messages_setting_title">Ujumbe wa kikundi</string>
   <string name="notify_group_messages_setting_summary">Onyesha arifa za ujumbe wa kikundi.</string>
   <string name="notify_group_messages_setting_summary_26">Hakiki ujumbe wa kikundi </string>
-  <string name="notify_forum_posts_setting_title">chapisho Ukumbi </string>
-  <string name="notify_forum_posts_setting_summary">Onyesha  tahadhari kwa chapisho la jukwaa</string>
-  <string name="notify_forum_posts_setting_summary_26"> Hakiki taarifa za chapisho la jukwaa</string>
-  <string name="notify_blog_posts_setting_title">chapisho blogi</string>
-  <string name="notify_blog_posts_setting_summary">Arifu kwa chapisho ya  blogi </string>
-  <string name="notify_blog_posts_setting_summary_26">Hakiki taharifa za chapisho kwenye blogi </string>
   <string name="notify_vibration_setting">mtetemo </string>
   <string name="notify_sound_setting">Sauti</string>
   <string name="notify_sound_setting_default">Mwiito mkuu </string>
@@ -523,8 +442,6 @@ Umepoteza nenosiri.</string>
   <string name="permission_camera_location_title">Kamera na Eneo</string>
   <string name="permission_camera_location_request_body">Ili kuchanganua nambari ya QR, Zerion inahitaji ufikiaji wa kamera. \n\nKugundua vifaa vya Bluetooth, Zerion inahitaji idhini ya kufikia eneo lako. \n\nZerion hahifadhi eneo lako au kushiriki na mtu yeyote.</string>
   <string name="permission_camera_denied_body">Umekataa ufikiaji wa kamera, lakini kuongeza anwani kunahitaji kutumia kamera. \n\nTafadhali fikiria kutoa idhini ya kufikia.</string>
-  <string name="qr_code">msimbo wa QR</string>
-  <string name="show_qr_code_fullscreen">Onyesha skrini nzima ya msimbo wa QR</string>
   <!--App Locking-->
   <string name="lock_unlock">Fungua Zerion</string>
   <string name="lock_unlock_verbose">Ingiza PIN ya kifaa chako, fumbo au nywila kufungua Zerion </string>

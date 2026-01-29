@@ -186,12 +186,9 @@ public class EmojiTextInputView extends LinearLayout implements
 
 	@Override
 	public void setGravity(int gravity) {
-		// Guard against NPE - setGravity can be called from LinearLayout constructor
-		// before our editText is initialized
 		if (editText != null) {
 			editText.setGravity(gravity);
 		} else {
-			// Store for later application after initialization
 			super.setGravity(gravity);
 		}
 	}

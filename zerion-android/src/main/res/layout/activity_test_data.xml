@@ -102,103 +102,13 @@
 			app:layout_constraintTop_toBottomOf="@+id/textViewAvatars" />
 
 		<TextView
-			android:id="@+id/textViewBlogPosts"
-			android:layout_width="match_parent"
-			android:layout_height="wrap_content"
-			android:layout_margin="@dimen/margin_medium"
-			android:text="Number of blog posts"
-			app:layout_constraintStart_toStartOf="parent"
-			app:layout_constraintTop_toBottomOf="@+id/seekBarAvatars" />
-
-		<SeekBar
-			android:id="@+id/seekBarBlogPosts"
-			android:layout_width="0dp"
-			android:layout_height="wrap_content"
-			android:max="50"
-			android:paddingTop="5dp"
-			android:progress="20"
-			app:layout_constraintEnd_toStartOf="@+id/TextViewBlogPostsSb"
-			app:layout_constraintStart_toStartOf="parent"
-			app:layout_constraintTop_toBottomOf="@+id/textViewBlogPosts" />
-
-		<TextView
-			android:id="@+id/TextViewBlogPostsSb"
-			android:layout_width="wrap_content"
-			android:layout_height="wrap_content"
-			android:ems="2"
-			android:text="20"
-			app:layout_constraintBottom_toBottomOf="@+id/seekBarBlogPosts"
-			app:layout_constraintEnd_toEndOf="parent"
-			app:layout_constraintTop_toBottomOf="@+id/textViewBlogPosts" />
-
-		<TextView
-			android:id="@+id/textViewForums"
-			android:layout_width="match_parent"
-			android:layout_height="wrap_content"
-			android:layout_margin="@dimen/margin_medium"
-			android:text="Number of forums"
-			app:layout_constraintStart_toStartOf="parent"
-			app:layout_constraintTop_toBottomOf="@+id/seekBarBlogPosts" />
-
-		<SeekBar
-			android:id="@+id/seekBarForums"
-			android:layout_width="0dp"
-			android:layout_height="wrap_content"
-			android:max="50"
-			android:paddingTop="5dp"
-			android:progress="5"
-			app:layout_constraintEnd_toStartOf="@+id/TextViewForumsSb"
-			app:layout_constraintStart_toStartOf="parent"
-			app:layout_constraintTop_toBottomOf="@+id/textViewForums" />
-
-		<TextView
-			android:id="@+id/TextViewForumsSb"
-			android:layout_width="wrap_content"
-			android:layout_height="wrap_content"
-			android:ems="2"
-			android:text="5"
-			app:layout_constraintBottom_toBottomOf="@+id/seekBarForums"
-			app:layout_constraintEnd_toEndOf="parent"
-			app:layout_constraintTop_toBottomOf="@+id/textViewForums" />
-
-		<TextView
-			android:id="@+id/textViewForumMessages"
-			android:layout_width="match_parent"
-			android:layout_height="wrap_content"
-			android:layout_margin="@dimen/margin_medium"
-			android:text="Number of forum messages"
-			app:layout_constraintStart_toStartOf="parent"
-			app:layout_constraintTop_toBottomOf="@+id/seekBarForums" />
-
-		<SeekBar
-			android:id="@+id/seekBarForumMessages"
-			android:layout_width="0dp"
-			android:layout_height="wrap_content"
-			android:max="50"
-			android:paddingTop="5dp"
-			android:progress="20"
-			app:layout_constraintEnd_toStartOf="@+id/TextViewForumMessagesSb"
-			app:layout_constraintStart_toStartOf="parent"
-			app:layout_constraintTop_toBottomOf="@+id/textViewForumMessages" />
-
-		<TextView
-			android:id="@+id/TextViewForumMessagesSb"
-			android:layout_width="wrap_content"
-			android:layout_height="wrap_content"
-			android:ems="2"
-			android:text="20"
-			app:layout_constraintBottom_toBottomOf="@+id/seekBarForumMessages"
-			app:layout_constraintEnd_toEndOf="parent"
-			app:layout_constraintTop_toBottomOf="@+id/textViewForumMessages" />
-
-		<TextView
 			android:id="@+id/textViewPrivateGroups"
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
 			android:layout_margin="@dimen/margin_medium"
 			android:text="Number of private groups"
 			app:layout_constraintStart_toStartOf="parent"
-			app:layout_constraintTop_toBottomOf="@+id/seekBarForumMessages" />
+			app:layout_constraintTop_toBottomOf="@+id/seekBarAvatars" />
 
 		<SeekBar
 			android:id="@+id/seekBarPrivateGroups"

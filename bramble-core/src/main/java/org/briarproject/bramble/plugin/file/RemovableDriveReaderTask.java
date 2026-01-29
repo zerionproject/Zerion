@@ -10,17 +10,10 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.Executor;
-import java.util.logging.Logger;
-
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.api.plugin.file.RemovableDriveConstants.ID;
 
 @NotNullByDefault
 class RemovableDriveReaderTask extends RemovableDriveTaskImpl {
-
-	private final static Logger LOG =
-			getLogger(RemovableDriveReaderTask.class.getName());
-
 	RemovableDriveReaderTask(
 			Executor eventExecutor,
 			PluginManager pluginManager,
@@ -37,7 +30,6 @@ class RemovableDriveReaderTask extends RemovableDriveTaskImpl {
 		TransportConnectionReader r =
 				getPlugin().createReader(transportProperties);
 		if (r == null) {
-			LOG.warning("Failed to create reader");
 			registry.removeReader(this);
 			setSuccess(false);
 			return;

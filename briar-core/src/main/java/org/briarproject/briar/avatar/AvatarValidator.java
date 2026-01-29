@@ -50,7 +50,6 @@ class AvatarValidator implements MessageValidator {
 	@Override
 	public MessageContext validateMessage(Message m, Group g)
 			throws InvalidMessageException {
-		// Reject the message if it's too far in the future
 		long now = clock.currentTimeMillis();
 		if (m.getTimestamp() - now > MAX_CLOCK_DIFFERENCE) {
 			throw new InvalidMessageException(
@@ -73,19 +72,13 @@ class AvatarValidator implements MessageValidator {
 
 	private BdfDictionary validateUpdate(BdfList body, long descriptorLength)
 			throws FormatException {
-		// 0.0: Message Type, Version, Content-Type
 		checkSize(body, 3);
-		// Message Type
 		int messageType = body.getInt(0);
 		if (messageType != MSG_TYPE_UPDATE) throw new FormatException();
-		// Version
 		long version = body.getLong(1);
 		if (version < 0) throw new FormatException();
-		// Content-Type
 		String contentType = body.getString(2);
 		checkLength(contentType, 1, MAX_CONTENT_TYPE_BYTES);
-
-		// Return the metadata
 		BdfDictionary meta = new BdfDictionary();
 		meta.put(MSG_KEY_VERSION, version);
 		meta.put(MSG_KEY_CONTENT_TYPE, contentType);

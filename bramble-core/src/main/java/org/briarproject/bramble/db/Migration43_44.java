@@ -5,16 +5,9 @@ import org.briarproject.bramble.api.db.DbException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.logging.Logger;
-
-import static java.util.logging.Level.WARNING;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.db.JdbcUtils.tryToClose;
 
 class Migration43_44 implements Migration<Connection> {
-
-	private static final Logger LOG = getLogger(Migration43_44.class.getName());
-
 	private final DatabaseTypes dbTypes;
 
 	Migration43_44(DatabaseTypes dbTypes) {
@@ -51,7 +44,7 @@ class Migration43_44 implements Migration<Connection> {
 			s.execute("ALTER TABLE outgoingKeys"
 					+ " ADD COLUMN alice BOOLEAN");
 		} catch (SQLException e) {
-			tryToClose(s, LOG, WARNING);
+			tryToClose(s);
 			throw new DbException(e);
 		}
 	}

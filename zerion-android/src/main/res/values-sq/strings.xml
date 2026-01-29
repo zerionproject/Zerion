@@ -68,8 +68,6 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   <string name="nav_drawer_close_description">Mbylle sirtarin e lëvizjeve</string>
   <string name="contact_list_button">Kontakte</string>
   <string name="groups_button">Grupe Private</string>
-  <string name="forums_button">Forume</string>
-  <string name="blogs_button">Blogje</string>
   <!--This is part of the main menu. The app will be locked when this is tapped.-->
   <string name="lock_button">Kyçe Aplikacionin</string>
   <string name="settings_button">Rregullime</string>
@@ -104,14 +102,6 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   <plurals name="group_message_notification_text">
     <item quantity="one">Mesazh i ri grupi.</item>
     <item quantity="other">%d mesazhe të rinj grupi.</item>
-  </plurals>
-  <plurals name="forum_post_notification_text">
-    <item quantity="one">Postim i ri forumi</item>
-    <item quantity="other">%d postime të rinj forumi.</item>
-  </plurals>
-  <plurals name="blog_post_notification_text">
-    <item quantity="one">Postim i ri blogu.</item>
-    <item quantity="other">%d postime të reja blogu.</item>
   </plurals>
   <!--Misc-->
   <string name="now">tani</string>
@@ -213,7 +203,6 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   <!--Adding Contacts-->
   <string name="add_contact_title">Shtoni Kontakt Atypari</string>
   <string name="add_contact_error_two_way">A skanuat, që të dy palët, kodet QR të njëri-tjetrit?</string>
-  <string name="face_to_face">Duhet të takoheni me personin që doni ta shtoni si kontakt.\n\nKjo do të pengojë cilindo të hiqet si ju ose të lexojë në të ardhmen mesazhet tuaj.</string>
   <string name="continue_button">Vazhdo</string>
   <string name="try_again_button">Riprovoni</string>
   <string name="waiting_for_contact_to_scan">Po pritet që kontakti ta skanojë dhe të lidhet\u2026</string>
@@ -221,17 +210,11 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   <string name="contact_added_toast">Kontakti u shtua: %s</string>
   <string name="contact_already_exists">Kontakti %s ekziston tashmë</string>
   <string name="contact_already_exists_general">Kontakti ekziston tashmë</string>
-  <string name="qr_code_invalid">Kodi QR është i pavlefshëm</string>
-  <string name="qr_code_too_old_1">Kodi QR që keni skanuar vjen prej një versioni të vjetër të Zerion-it.\n\nJu lutemi, kërkojini kontaktit tuaj ta përmirësojë me versionin më të ri dhe mandej riprovoni.</string>
-  <string name="qr_code_too_new_1">Kodi QR që keni skanuar vjen prej një versioni më të ri të Zerion-it.\n\nJu lutemi, përmirësojeni me versionin më të ri dhe mandej riprovoni.</string>
-  <string name="mailbox_qr_code_for_contact">Kodi QR që keni skanuar vjen prej Kutisë Postare të Zerion-it.\n\nNëse doni një lidhje për te Kutia Postare, ju lutemi, zgjidhni Rregullime &gt; Kuti Postare, që nga menuja e Zerion-it.</string>
-  <string name="qr_code_format_unknown">Kodi QR që keni skanuar s’është menduar për shtim të një kontakti Zerion.\n\nJu lutemi, skanoni kodin QR të shfaqur te ekrani i kontaktit tuaj.</string>
   <string name="camera_error">Gabim kamere</string>
   <string name="connecting_to_device">Po lidhet me pajisjen\u2026</string>
   <string name="authenticating_with_device">Po bëhet mirëfilltësimi me pajisjen\u2026</string>
   <string name="connection_error_title">S’u lidh dot te kontakti juaj</string>
   <string name="connection_error_feedback">Nëse problemi vazhdon, ju lutemi, <a href="feedback">na njoftoni</a>, që të mund të përmirësojmë aplikacionin.</string>
-  <string name="info_both_must_scan">Duhet të skanoni, të dy palët, kodet QR të njëri-tjetrit</string>
   <!--Adding Contacts Remotely-->
   <string name="add_contact_remotely_title_case">Shtoni Kontakt në Largësi</string>
   <string name="add_contact_nearby_title">Shtoni kontakt atypari</string>
@@ -383,109 +366,26 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   <string name="groups_reveal_visible_revealed_by_contact">Marrëdhënia e kontaktit është e dukshme për grupin (shfaqur nga %s)</string>
   <string name="groups_reveal_invisible">Marrëdhënia me kontaktin s\’është e dukshme për grupin</string>
   <!--Forums-->
-  <string name="no_forums">S\’ka forume për shfaqje</string>
-  <string name="no_forums_action">Prekni ikonën + që të krijoni një forum, ose kërkojuni kontakteve tuaj të ndajnë forume me ju</string>
-  <string name="create_forum_title">Krijoje Forumin</string>
-  <string name="choose_forum_hint">Zgjidhni një emër për forumin tuaj</string>
-  <string name="create_forum_button">Krijoje Forumin</string>
-  <string name="forum_created_toast">Forumi u krijua</string>
-  <string name="no_forum_posts">S\’ka postime për shfaqje</string>
   <string name="no_posts">S\’ka postime</string>
   <plurals name="posts">
     <item quantity="one">%d postim</item>
     <item quantity="other">%d postime</item>
   </plurals>
-  <string name="forum_new_message_hint">Postim i Ri</string>
-  <string name="forum_message_reply_hint">Përgjigje e Re</string>
   <string name="btn_reply">Përgjigju</string>
-  <string name="forum_leave">Braktiseni Forumin</string>
-  <string name="dialog_title_leave_forum">Ripohoni Braktisjen e Forumit</string>
-  <string name="dialog_message_leave_forum">Jeni i sigurt se doni ta braktisni këtë forum?\n\nÇfarëdo kontaktesh me të cilët e keni ndarë këtë forum mundet të reshtin së marri përditësime.</string>
   <string name="dialog_button_leave">Braktise</string>
-  <string name="forum_left_toast">E braktisët forumin</string>
   <!--Forum Sharing-->
-  <string name="forum_share_button">Ndajeni Forumin Me të Tjerë</string>
   <string name="contacts_selected">Kontaktet u përzgjodhën</string>
   <string name="activity_share_toolbar_header">Zgjidhni Kontakte</string>
   <string name="no_contacts_selector">S’ka kontakte për shfaqje</string>
   <string name="no_contacts_selector_action">Ju lutemi, rikthehuni këtu pasi të shtoni një kontakt</string>
-  <string name="forum_shared_snackbar">Forumi u nda me kontaktet e zgjedhur</string>
-  <string name="forum_share_message">Shtoni një mesazh (në daçi)</string>
-  <string name="forum_share_error">Pati një gabim në ndarjen e këtij forumi me të tjerët.</string>
-  <string name="forum_invitation_received">%1$s ndau me ju forumin \"%2$s\".</string>
-  <string name="forum_invitation_sent">Ndatë me \"%2$s\" forumin %1$s.</string>
-  <string name="forum_invitations_title">Ftesa Forumi</string>
-  <string name="forum_invitation_exists">Keni pranuar tashmë një ftesë për te ky forum.\n\nPranimi i më tepër ftesave do ta bëjë lidhjen tuaj me këtë forum më të shpejtë dhe më të qëndrueshme.</string>
-  <string name="forum_joined_toast">Hytë në forum</string>
-  <string name="forum_declined_toast">Ftesa u hodh poshtë</string>
   <string name="shared_by_format">Ndarë nga %s</string>
-  <string name="forum_invitation_already_sharing">Ndarë tashmë</string>
-  <string name="forum_invitation_already_invited">Ftesë e dërguar tashmë</string>
-  <string name="forum_invitation_invite_received">Ftesë e marrë tashmë</string>
-  <string name="forum_invitation_not_supported">Nuk mbulohet prej këtij kontakti</string>
-  <string name="forum_invitation_error">Gabim. Kjo është një e metë dhe jo për fajin tuaj</string>
-  <string name="forum_invitation_response_accepted_sent">Pranuat ftesën e forumit nga %s.</string>
-  <string name="forum_invitation_response_declined_sent">Hodhët poshtë ftesën e forumit nga %s.</string>
-  <string name="forum_invitation_response_declined_auto">Ftesa për në forum nga %s u hodh poshtë automatikisht.</string>
-  <string name="forum_invitation_response_accepted_received">%s pranoi ftesën e forumit.</string>
-  <string name="forum_invitation_response_declined_received">%s e hodhi poshtë ftesën e forumit.</string>
   <string name="sharing_status">Gjendje Ndarjeje Me të Tjerë</string>
-  <string name="sharing_status_forum">Cilido anëtar i grupit mund ta ndajë me të tjerët. Këtë forum po e ndani me kontaktet vijuese. Mund të ketë edhe anëtarë të tjerët, të cilët s\’mund t\’i shihni.</string>
   <string name="shared_with">E ndarë me %1$d (%2$d në linjë)</string>
-  <plurals name="forums_shared">
-    <item quantity="one">%d forum ndarë nga kontakte</item>
-    <item quantity="other">%d forum ndarë nga kontakte</item>
-  </plurals>
   <string name="nobody">Askush</string>
   <!--Blogs-->
-  <string name="blogs_other_blog_empty_state">S\’ka postime për shfaqje</string>
   <string name="read_more">lexoni më tepër</string>
-  <string name="blogs_write_blog_post">Shkruani Postim Blogu</string>
-  <string name="blogs_write_blog_post_body_hint">Shtypni postimin tuaj të blogut</string>
-  <string name="blogs_publish_blog_post">Botoje</string>
-  <string name="blogs_blog_post_created">Postimi i Blogut u Krijua</string>
-  <string name="blogs_blog_post_received">U morën Postime të Reja Blogu</string>
-  <string name="blogs_blog_post_scroll_to">Kalo Te</string>
-  <string name="blogs_feed_empty_state">S\’ka postime për shfaqje</string>
-  <string name="blogs_feed_empty_state_action">Këtu do të shfaqet postimet nga kontaktet tuaja dhe blogjet që ndiqni\n\nQë të shkruani një postim, prekni ikonën penë</string>
-  <string name="blogs_remove_blog">Hiqe Blogun</string>
-  <string name="blogs_remove_blog_dialog_message">Jeni i sigurt se doni të hiqet ky blog?\n\nPostimet do të hiqen nga pajisja juaj, por jo nga pajisjet e personave të tjerë.\n\nÇfarëdo kontaktesh me të cilët e keni ndarë këtë blog mund të reshtin së marri përditësime.</string>
-  <string name="blogs_remove_blog_ok">Hiqe</string>
-  <string name="blogs_blog_removed">Blogu u hoq</string>
-  <string name="blogs_reblog_comment_hint">Shtoni një koment (në daçi)</string>
-  <string name="blogs_reblog_button">Riblogojeni</string>
   <!--Blog Sharing-->
-  <string name="blogs_sharing_share">Ndajeni Blogun Me të Tjerë</string>
-  <string name="blogs_sharing_error">Pati një gabim në ndarjen e këtij blogu me të tjerë.</string>
-  <string name="blogs_sharing_button">Ndaje Blogun Me të Tjerë</string>
-  <string name="blogs_sharing_snackbar">Blogu u nda me kontaktet e zgjedhur</string>
-  <string name="blogs_sharing_response_accepted_sent">Pranuat ftesën e blogut nga %s.</string>
-  <string name="blogs_sharing_response_declined_sent">Hodhët poshtë ftesën e blogut nga %s.</string>
-  <string name="blogs_sharing_response_declined_auto">Ftesa për te blogu nga %s u hodh poshtë automatikisht.</string>
-  <string name="blogs_sharing_response_accepted_received">%s pranoi ftesën e blogut.</string>
-  <string name="blogs_sharing_response_declined_received">%s hodhi poshtë ftesë blogu.</string>
-  <string name="blogs_sharing_invitation_received">%1$s ndau me ju \"%2$s\".</string>
-  <string name="blogs_sharing_invitation_sent">Ndatë blogun \"%1$s\" me %2$s.</string>
-  <string name="blogs_sharing_invitations_title">Ftesa Blogu</string>
-  <string name="blogs_sharing_joined_toast">U pajtuat te blogu</string>
-  <string name="blogs_sharing_declined_toast">Ftesa u hodh poshtë</string>
-  <string name="sharing_status_blog">Cilido që pajtohet te një blog mund ta ndajë atë me kontaktet e veta. Këtë blog po e ndani me kontaktet vijuese. Mund të ketë edhe pajtimtarë të tjerë, të cilët s\’mund t\’i shihni.</string>
   <!--RSS Feeds-->
-  <string name="blogs_rss_feeds_import">Importoni Prurje RSS</string>
-  <string name="blogs_rss_feeds_import_button">Importo</string>
-  <string name="blogs_rss_feeds_import_hint">Jepni URL-në e prurjes RSS</string>
-  <string name="blogs_rss_feeds_import_progress">Po importohet Prurje RSS…</string>
-  <string name="blogs_rss_feeds_import_error">Na ndjeni! Pati një gabim me importimin e prurjes tuaj.</string>
-  <string name="blogs_rss_feeds_import_title">Importo prurje nga kartelë</string>
-  <string name="blogs_rss_feeds">Prurje RSS</string>
-  <string name="blogs_rss_feeds_manage_imported">Të importuara:</string>
-  <string name="blogs_rss_feeds_manage_author">Autor:</string>
-  <string name="blogs_rss_feeds_manage_updated">Përditësuar Së Fundi:</string>
-  <string name="blogs_rss_remove_feed">Hiqe Prurjen</string>
-  <string name="blogs_rss_remove_feed_dialog_message">Jeni i sigurt se doni të hiqet kjo prurje?\n\nPostimet do të hiqen nga pajisja juaj, por jo nga pajisjet e personave të tjerë.\n\nÇfarëdo kontaktesh me të cilët e keni ndarë këtë prurje mund të reshtin së marri përditësime.</string>
-  <string name="blogs_rss_remove_feed_ok">Hiqe</string>
-  <string name="blogs_rss_feeds_manage_empty_state">S’ka prurje RSS për shfaqje\n\nPrekni ikonën + që të importohet një prurje</string>
-  <string name="blogs_rss_feeds_manage_error">Pati një problem me ngarkimin e prurjeve tuaja. Ju lutemi, riprovoni më vonë.</string>
   <!--Settings Profile Picture-->
   <string name="change_profile_picture">Që të ndryshoni foton e profilit tuaj, prekeni</string>
   <string name="dialog_confirm_profile_picture_title">Ndryshoni foto profili</string>
@@ -565,12 +465,6 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   <string name="notify_group_messages_setting_title">Mesazhe grupi</string>
   <string name="notify_group_messages_setting_summary">Shfaq sinjalizime për mesazhe grupi</string>
   <string name="notify_group_messages_setting_summary_26">Formësoni sinjalizimet për mesazhi grupi</string>
-  <string name="notify_forum_posts_setting_title">Postime forumi</string>
-  <string name="notify_forum_posts_setting_summary">Shfaq sinjalizime për postime forumi</string>
-  <string name="notify_forum_posts_setting_summary_26">Formësoni sinjalizimet për postime forumi</string>
-  <string name="notify_blog_posts_setting_title">Postime blogu</string>
-  <string name="notify_blog_posts_setting_summary">Shfaq sinjalizime për postime blogu</string>
-  <string name="notify_blog_posts_setting_summary_26">Formësoni sinjalizime për postime blogu</string>
   <string name="notify_vibration_setting">Dridhu</string>
   <string name="notify_sound_setting">Tingull</string>
   <string name="notify_sound_setting_default">Zilja parazgjedhje</string>
@@ -590,10 +484,6 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   <string name="mailbox_setup_connecting">Po bëhet lidhja me Kutinë postare…</string>
   <!--This string is shown when connecting to a Mailbox for the first time. The placeholder will be replaced with a duration, e.g. "2 minutes".-->
   <string name="mailbox_setup_connecting_info">Kjo mund të dojë deri në %1s</string>
-  <string name="mailbox_qr_code_too_old">Kodi QR që keni skanuar vjen prej një versioni të vjetër të Kutisë Postare të Zerion-it.\n\nJu lutemi, përditësojeni Kutinë Postare të Zerion-it me versionin më të ri dhe mandej riprovoni.</string>
-  <string name="mailbox_qr_code_too_new">Kodi QR që keni skanuar vjen prej një versioni më të ri të Kutisë Postare të Zerion-it.\n\nJu lutemi, përmirësojeni Zerion-in me versionin më të ri dhe mandej riprovoni.</string>
-  <string name="contact_qr_code_for_mailbox">Kodi QR që keni skanuar është për shtim të një kontakti Zerion.\n\nNëse doni të shtoni një kontakt, ju lutemi, kaloni te lista e kontakteve dhe prekni ikonën +.</string>
-  <string name="mailbox_setup_qr_code_wrong_description">Kodi QR që keni skanuar s’vjen prej Kutisë Postare të Zerion-it.\n\nJu lutemi, hapni aplikacionin Kuti Postare Zerion në pajisjen tuaj me Kutinë Postare dhe skanoni kodin QR që paraqitet.</string>
   <string name="mailbox_setup_already_paired_title">Kuti postare tashmë e lidhur</string>
   <string name="mailbox_setup_already_paired_description">Shkëputeni Kutinë postare në pajisjen tuaj tjetër dhe riprovoni.</string>
   <string name="mailbox_setup_io_error_title">S’u bë dot lidhje</string>
@@ -743,8 +633,6 @@ Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
   <string name="permission_bluetooth_title">Leje pajisjesh atypari</string>
   <string name="permission_bluetooth_body">Që të përdoret komunikim Bluetooth, Zerion-i lyp leje të gjejë dhe të lidhet me pajisje atypari.</string>
   <string name="permission_bluetooth_denied_body">Keni mohuar hyrje te pajisje atyprai, por Zerion-i ka nevojë për këtë leje, që të përdorë Bluetooth-in.\n\nJu lutemi, shihni mundësinë e akordimit të hyrjes.</string>
-  <string name="qr_code">Kod QR</string>
-  <string name="show_qr_code_fullscreen">Shfaqe kodin QR sa tërë ekrani</string>
   <!--App Locking-->
   <string name="lock_unlock">Shkyçe Zerion-in</string>
   <string name="lock_unlock_verbose">Që të shkyçet Zerion-i, jepni PIN-in, rregullsinë ose fjalëkalimin e pajisjes tuaj</string>
@@ -777,9 +665,7 @@ Zerion-i i përdor ato paralelisht.</string>
   <string name="wifi_settings_request_enable_body">Që të krijohet një hotspot Wi-Fi, Zerion-it i duhet të përdorë Wi-Fi-n. Ju lutemi, aktivizojeni.</string>
   <string name="hotspot_tab_manual">Dorazi</string>
   <!--The placeholder to be inserted into the string 'hotspot_manual_wifi': People can connect by %s-->
-  <string name="hotspot_scanning_a_qr_code">duke skanuar një kod QR</string>
   <!--Wi-Fi setup-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_wifi">Telefoni juaj po ofron një hotspot Wi-Fi. Personat që duan të shkarkojnë Zerion-in, mund të lidhen me hotspot-in duke shtuar te te rregullimet e pajisjeve të tyre për Wi-Fi-n hollësitë më poshtë ose duke %s. Kur të jenë lidhur me hotspot-in, shtypni “Pasuesi”.</string>
   <string name="hotspot_manual_wifi_ssid">Emër rrjet</string>
   <string name="hotspot_qr_wifi">Telefoni juaj po ofron një hotspot Wi-Fi. Persona që duan të shkarkojnë Zerion-in mund të lidhen me hotspot-in duke skanuar këtë kod QR. Kur të jenë lidhur me hotspot-in, shtypni “Pasuesi”.</string>
@@ -789,7 +675,6 @@ Zerion-i i përdor ato paralelisht.</string>
     <item quantity="other">%s pajisje të lidhura</item>
   </plurals>
   <!--Download link-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_site">Telefoni juaj po ofron një hotspot Wi-Fi. Persona që duan të shkarkojnë Zerion-in mund të lidhen me hotspot-in duke shtypur lidhjen vijuese në një shfletues ose %s.</string>
   <string name="hotspot_manual_site_address">Adresë (URL)</string>
   <string name="hotspot_qr_site">Telefoni juaj po ofron një hotspot Wi-Fi. Persona që janë të lidhur me hotspot-in mund të shkarkojnë Zerion-in duke skanuar këtë kod QR.</string>

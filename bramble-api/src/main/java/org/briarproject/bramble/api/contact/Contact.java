@@ -11,14 +11,7 @@ import javax.annotation.concurrent.Immutable;
 import static org.briarproject.bramble.api.identity.AuthorConstants.MAX_AUTHOR_NAME_LENGTH;
 import static org.briarproject.bramble.util.StringUtils.toUtf8;
 
-/**
- * Represents an established contact.
- * <p>
- * The {@code postQuantum} flag indicates whether this contact was established
- * using hybrid post-quantum cryptography (X25519 + ML-KEM-768). Once a contact
- * is established with PQ, subsequent handshakes must also use PQ to prevent
- * downgrade attacks.
- */
+
 @Immutable
 @NotNullByDefault
 public class Contact {
@@ -35,10 +28,7 @@ public class Contact {
 	private final boolean pcsEnabled;
 	private final boolean mode3Capable;
 
-	/**
-	 * Creates a contact with classical (non-PQ) cryptography.
-	 * For backward compatibility with existing code.
-	 */
+	
 	public Contact(ContactId id, Author author, AuthorId localAuthorId,
 			@Nullable String alias, @Nullable PublicKey handshakePublicKey,
 			boolean verified) {
@@ -46,12 +36,7 @@ public class Contact {
 				false, false, false);
 	}
 
-	/**
-	 * Creates a contact with the specified security level.
-	 * For backward compatibility - PCS defaults to disabled.
-	 *
-	 * @param postQuantum true if established with hybrid PQ cryptography
-	 */
+	
 	public Contact(ContactId id, Author author, AuthorId localAuthorId,
 			@Nullable String alias, @Nullable PublicKey handshakePublicKey,
 			boolean verified, boolean postQuantum) {
@@ -59,12 +44,7 @@ public class Contact {
 				postQuantum, false, false);
 	}
 
-	/**
-	 * Creates a contact with full security configuration.
-	 *
-	 * @param postQuantum true if established with hybrid PQ cryptography
-	 * @param pcsEnabled true if Post-Compromise Security (symmetric ratchet) is enabled
-	 */
+	
 	public Contact(ContactId id, Author author, AuthorId localAuthorId,
 			@Nullable String alias, @Nullable PublicKey handshakePublicKey,
 			boolean verified, boolean postQuantum, boolean pcsEnabled) {
@@ -72,13 +52,7 @@ public class Contact {
 				postQuantum, pcsEnabled, false);
 	}
 
-	/**
-	 * Creates a contact with full security configuration including Mode 3 capability.
-	 *
-	 * @param postQuantum true if established with hybrid PQ cryptography
-	 * @param pcsEnabled true if Post-Compromise Security (symmetric ratchet) is enabled
-	 * @param mode3Capable true if both peers negotiated Mode 3 (Triple Ratchet) support
-	 */
+	
 	public Contact(ContactId id, Author author, AuthorId localAuthorId,
 			@Nullable String alias, @Nullable PublicKey handshakePublicKey,
 			boolean verified, boolean postQuantum, boolean pcsEnabled,
@@ -125,44 +99,22 @@ public class Contact {
 		return verified;
 	}
 
-	/**
-	 * Returns true if this contact was established using hybrid post-quantum
-	 * cryptography (X25519 + ML-KEM-768).
-	 * <p>
-	 * Once a contact is established with PQ security, subsequent handshakes
-	 * must also use PQ to prevent downgrade attacks.
-	 */
+	
 	public boolean isPostQuantum() {
 		return postQuantum;
 	}
 
-	/**
-	 * Returns true if this contact uses classical (non-PQ) cryptography.
-	 * These contacts are compatible with Briar.
-	 */
+	
 	public boolean isClassical() {
 		return !postQuantum;
 	}
 
-	/**
-	 * Returns true if Post-Compromise Security (PCS) is enabled for this contact.
-	 * <p>
-	 * When PCS is enabled, the symmetric ratchet provides forward secrecy
-	 * for each message, limiting the impact of key compromise.
-	 */
+	
 	public boolean isPcsEnabled() {
 		return pcsEnabled;
 	}
 
-	/**
-	 * Returns true if this contact supports Mode 3 (Triple Ratchet).
-	 * <p>
-	 * Mode 3 combines the Double Ratchet (DH) with a Post-Quantum ratchet
-	 * (ML-KEM-768) for quantum-resistant post-compromise security.
-	 * <p>
-	 * This flag is only set when both peers explicitly negotiated Mode 3
-	 * support during the handshake.
-	 */
+	
 	public boolean isMode3Capable() {
 		return mode3Capable;
 	}

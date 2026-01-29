@@ -88,7 +88,6 @@ abstract class RemovableDriveTaskImpl implements RemovableDriveTask {
 
 	void addDone(long done) {
 		synchronized (lock) {
-			// Done and total come from different sources; make them consistent
 			done = min(state.getDone() + done, state.getTotal());
 			state = new State(done, state.getTotal(), state.isFinished(),
 					state.isSuccess());

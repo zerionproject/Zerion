@@ -13,14 +13,7 @@ import javax.annotation.concurrent.NotThreadSafe;
 import static org.briarproject.bramble.api.record.Record.MAX_RECORD_PAYLOAD_BYTES_CLASSICAL;
 import static org.briarproject.bramble.api.record.Record.RECORD_HEADER_BYTES_CLASSICAL;
 
-/**
- * Record writer using classical (Briar-compatible) format.
- * <p>
- * Wire format: [version:1][type:1][length_hi:1][length_lo:1][payload...]
- * <p>
- * This format uses a 4-byte header with uint16 payload length,
- * compatible with Briar's record protocol.
- */
+
 @NotThreadSafe
 @NotNullByDefault
 class ClassicalRecordWriterImpl implements RecordWriter {
@@ -44,7 +37,6 @@ class ClassicalRecordWriterImpl implements RecordWriter {
 		}
 		header[0] = r.getProtocolVersion();
 		header[1] = r.getRecordType();
-		// Write uint16 length (Briar-compatible)
 		ByteUtils.writeUint16(payload.length, header, 2);
 		out.write(header);
 		out.write(payload);

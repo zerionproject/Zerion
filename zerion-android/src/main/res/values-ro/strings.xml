@@ -68,8 +68,6 @@
   <string name="nav_drawer_close_description">Închideți sertarul de navigare</string>
   <string name="contact_list_button">Contacte</string>
   <string name="groups_button">Grupuri private</string>
-  <string name="forums_button">Forumuri</string>
-  <string name="blogs_button">Bloguri</string>
   <!--This is part of the main menu. The app will be locked when this is tapped.-->
   <string name="lock_button">Blocați aplicația</string>
   <string name="settings_button">Setări</string>
@@ -106,16 +104,6 @@
     <item quantity="one">Mesaj nou de grup.</item>
     <item quantity="few">%d mesaje de grup noi.</item>
     <item quantity="other">%d mesaje de grup noi.</item>
-  </plurals>
-  <plurals name="forum_post_notification_text">
-    <item quantity="one">Postare nouă pe forum.</item>
-    <item quantity="few">%d postări noi pe forum.</item>
-    <item quantity="other">%d postări noi pe forum.</item>
-  </plurals>
-  <plurals name="blog_post_notification_text">
-    <item quantity="one">Postare nouă pe blog.</item>
-    <item quantity="few">%d postări noi pe blog.</item>
-    <item quantity="other">%d postări noi pe blog.</item>
   </plurals>
   <!--Misc-->
   <string name="now">acum</string>
@@ -220,7 +208,6 @@
   <!--Adding Contacts-->
   <string name="add_contact_title">Adăugați un contact din apropiere</string>
   <string name="add_contact_error_two_way">Ați scanat amândoi codurile QR ale celuilalt?</string>
-  <string name="face_to_face">Trebuie să vă întâlniți cu persoana pe care doriți să o adăugați la contacte.\n\nAcest pas împiedică alte persoane să se substituie dvs. sau să citească mesajele dvs. în viitor.</string>
   <string name="continue_button">Continuați</string>
   <string name="try_again_button">Încercați din nou</string>
   <string name="waiting_for_contact_to_scan">Se așteaptă scanarea de către contact și conectarea acestuia\u2026</string>
@@ -228,17 +215,11 @@
   <string name="contact_added_toast">Contact adăugat: %s</string>
   <string name="contact_already_exists">Contactul %s există deja</string>
   <string name="contact_already_exists_general">Contactul există deja</string>
-  <string name="qr_code_invalid">Codul QR este nevalid!</string>
-  <string name="qr_code_too_old_1">Codul QR pe care l-ați scanat provine de la o versiune Zerion mai veche.\n\nSolicitați contactului să actualizeze aplicația la cea mai recentă versiune, după care încercați din nou.</string>
-  <string name="qr_code_too_new_1">Codul QR pe care l-ați scanat provine de la o versiune Zerion mai nouă.\n\nActualizați aplicația la cea mai recentă versiune, după care încercați din nou.</string>
-  <string name="mailbox_qr_code_for_contact">Codul QR pe care l-ați scanat provine de la o Cutie poștală Zerion.\n\nDacă doriți să conectați Cutia poștală, vă rugăm să mergeți în Setări &gt; Cutie Poștală în meniul Zerion..</string>
-  <string name="qr_code_format_unknown">Codul QR pe care l-ați scanat nu este menit pentru a adăuga un contact Zerion.\n\nVă rugăm să scanați codul QR afișat pe ecranul contactului dumneavoastră.</string>
   <string name="camera_error">Eroare cameră</string>
   <string name="connecting_to_device">Se conectează la dispozitiv\u2026</string>
   <string name="authenticating_with_device">Se realizează autentificarea cu dispozitivul\u2026</string>
   <string name="connection_error_title">Nu a fost posibilă conectarea cu contactul dvs.</string>
   <string name="connection_error_feedback">Dacă problema persistă, <a href="feedback">trimiteți feedback</a> pentru a ne ajuta să îmbunătățim aplicația.</string>
-  <string name="info_both_must_scan">Trebuie să scanați amândoi codurile QR ale celuilalt.</string>
   <!--Adding Contacts Remotely-->
   <string name="add_contact_remotely_title_case">Adăugați contact de la distanță</string>
   <string name="add_contact_nearby_title">Adaugă un contact din apropiere</string>
@@ -393,111 +374,27 @@
   <string name="groups_reveal_visible_revealed_by_contact">Relația de contact este vizibilă grupului (dezvăluită de %s)</string>
   <string name="groups_reveal_invisible">Relația de contact nu este vizibilă grupului</string>
   <!--Forums-->
-  <string name="no_forums">Nu sunt forumuri de afișat</string>
-  <string name="no_forums_action">Atingeți pictograma + pentru a crea un forum sau solicitați-le contactelor dvs. să partajeze grupuri cu dvs.</string>
-  <string name="create_forum_title">Creați un forum</string>
-  <string name="choose_forum_hint">Alegeți un nume pentru forumul dvs.</string>
-  <string name="create_forum_button">Creați un forum</string>
-  <string name="forum_created_toast">Forum creat</string>
-  <string name="no_forum_posts">Nu sunt postări de afișat</string>
   <string name="no_posts">Nu sunt postări</string>
   <plurals name="posts">
     <item quantity="one">%d postare</item>
     <item quantity="few">%d postări</item>
     <item quantity="other">%d postări</item>
   </plurals>
-  <string name="forum_new_message_hint">Postare nouă</string>
-  <string name="forum_message_reply_hint">Răspuns nou</string>
   <string name="btn_reply">Răspundeți</string>
-  <string name="forum_leave">Părăsiți forumul</string>
-  <string name="dialog_title_leave_forum">Confirmați părăsirea forumului</string>
-  <string name="dialog_message_leave_forum">Sigur doriți să părăsiți acest forum?\n\nS-ar putea ca orice contact cu care ați partajat acest forum să nu mai primească actualizări.</string>
   <string name="dialog_button_leave">Părăsiți</string>
-  <string name="forum_left_toast">Ați părăsit forumul</string>
   <!--Forum Sharing-->
-  <string name="forum_share_button">Partajați forumul</string>
   <string name="contacts_selected">Contacte selectate</string>
   <string name="activity_share_toolbar_header">Alegeți contactele</string>
   <string name="no_contacts_selector">Nu sunt contacte de afișat</string>
   <string name="no_contacts_selector_action">Reveniți aici după adăugarea unui contact</string>
-  <string name="forum_shared_snackbar">Forum partajat cu contactele selectate</string>
-  <string name="forum_share_message">Adăugați un mesaj (opțional)</string>
-  <string name="forum_share_error">A apărut o eroare la partajarea acestui forum.</string>
-  <string name="forum_invitation_received">%1$s a partajat forumul „%2$s” cu dvs.</string>
-  <string name="forum_invitation_sent">Ați partajat forumul „%1$s” cu %2$s.</string>
-  <string name="forum_invitations_title">Invitații la forum</string>
-  <string name="forum_invitation_exists">Ați acceptat deja o invitație la acest forum.\n\nAcceptarea mai multor invitații va face conexiunea dvs. la forum mai rapidă și mai fiabilă.</string>
-  <string name="forum_joined_toast">S-a alăturat forumului</string>
-  <string name="forum_declined_toast">Invitația a fost refuzată</string>
   <string name="shared_by_format">Partajat de %s</string>
-  <string name="forum_invitation_already_sharing">Deja partajat</string>
-  <string name="forum_invitation_already_invited">Invitație deja trimisă</string>
-  <string name="forum_invitation_invite_received">Invitație deja primită</string>
-  <string name="forum_invitation_not_supported">Nu este susținut de acest contact</string>
-  <string name="forum_invitation_error">Eroare. Aceasta este o eroare și nu este vina dumneavoastră</string>
-  <string name="forum_invitation_response_accepted_sent">Ați acceptat invitația la forum de la %s.</string>
-  <string name="forum_invitation_response_declined_sent">Ați refuzat invitația la forum de la %s.</string>
-  <string name="forum_invitation_response_declined_auto">Invitația la forumu de la %s a fost refuzată automat.</string>
-  <string name="forum_invitation_response_accepted_received">%s a acceptat invitația la forum.</string>
-  <string name="forum_invitation_response_declined_received">%s a refuzat invitația la forum.</string>
   <string name="sharing_status">Starea partajării</string>
-  <string name="sharing_status_forum">Orice membru al unui forum îl poate partaja cu contactele sale. Partajați acest forum cu următoarele contacte. Pot exista și alți membri pe care să nu îi puteți vedea.</string>
   <string name="shared_with">Partajat cu %1$d (%2$d online)</string>
-  <plurals name="forums_shared">
-    <item quantity="one">%d forum partajat de contacte</item>
-    <item quantity="few">%d forumuri partajate de contacte</item>
-    <item quantity="other">%d forumuri partajate de contacte</item>
-  </plurals>
   <string name="nobody">Nimeni</string>
   <!--Blogs-->
-  <string name="blogs_other_blog_empty_state">Nu sunt postări de afișat</string>
   <string name="read_more">citiți mai multe</string>
-  <string name="blogs_write_blog_post">Scrieți postare pe blog</string>
-  <string name="blogs_write_blog_post_body_hint">Introduceți postarea pe blog</string>
-  <string name="blogs_publish_blog_post">Publicați</string>
-  <string name="blogs_blog_post_created">Postare pe blog creată</string>
-  <string name="blogs_blog_post_received">S-a primit o nouă postare pe blog</string>
-  <string name="blogs_blog_post_scroll_to">Derulați la</string>
-  <string name="blogs_feed_empty_state">Nu sunt postări de afișat</string>
-  <string name="blogs_feed_empty_state_action">Postările de la contactele dvs. și de pe blogurile la care sunteți abonat vor apărea aici\n\nAtingeți pictograma stilou pentru a crea o postare</string>
-  <string name="blogs_remove_blog">Eliminați blog</string>
-  <string name="blogs_remove_blog_dialog_message">Sigur doriți să eliminați acest blog?\n\nPostările vor fi eliminate de pe dispozitivul dvs., dar nu și de pe dispozitivele celorlalți.\n\nS-ar putea ca persoanele de contact cu care ați partajat acest blog să nu mai primească actualizări.</string>
-  <string name="blogs_remove_blog_ok">Eliminați</string>
-  <string name="blogs_blog_removed">Blog eliminat</string>
-  <string name="blogs_reblog_comment_hint">Adăugați un comentariu (opțional)</string>
-  <string name="blogs_reblog_button">Republicați postarea</string>
   <!--Blog Sharing-->
-  <string name="blogs_sharing_share">Partajați blog</string>
-  <string name="blogs_sharing_error">A apărut o eroare la partajarea acestui blog.</string>
-  <string name="blogs_sharing_button">Partajați blog</string>
-  <string name="blogs_sharing_snackbar">Blog partajat cu contactele selectate</string>
-  <string name="blogs_sharing_response_accepted_sent">Ați acceptat invitația la blog de la %s.</string>
-  <string name="blogs_sharing_response_declined_sent">Ați refuzat invitația la blog de la %s.</string>
-  <string name="blogs_sharing_response_declined_auto">Invitația la blog de la %s a fost refuzată automat.</string>
-  <string name="blogs_sharing_response_accepted_received">%s a acceptat invitația la blog.</string>
-  <string name="blogs_sharing_response_declined_received">%s a refuzat invitația la blog.</string>
-  <string name="blogs_sharing_invitation_received">%1$s a partajat blogul „%2$s” cu dvs.</string>
-  <string name="blogs_sharing_invitation_sent">Ați partajat blogul „%1$s” cu %2$s.</string>
-  <string name="blogs_sharing_invitations_title">Invitații la blog</string>
-  <string name="blogs_sharing_joined_toast">Abonat la blog</string>
-  <string name="blogs_sharing_declined_toast">Invitație refuzată</string>
-  <string name="sharing_status_blog">Orice abonat la un blog îl poate partaja cu persoanele sale de contact. În prezent, partajați acest blog cu contactele prezentate în continuare. Pot exista și alți abonați pe care să nu îi puteți vedea.</string>
   <!--RSS Feeds-->
-  <string name="blogs_rss_feeds_import">Importați flux RSS</string>
-  <string name="blogs_rss_feeds_import_button">Importați</string>
-  <string name="blogs_rss_feeds_import_hint">Introduceți adresa URL a fluxului RSS</string>
-  <string name="blogs_rss_feeds_import_progress">Importarea RSS Feed…</string>
-  <string name="blogs_rss_feeds_import_error">Ne pare rău, dar a apărut o eroare la importarea fluxului dvs.</string>
-  <string name="blogs_rss_feeds_import_title">Importați feed din fișier</string>
-  <string name="blogs_rss_feeds">Fluxuri RSS</string>
-  <string name="blogs_rss_feeds_manage_imported">Importat:</string>
-  <string name="blogs_rss_feeds_manage_author">Autor:</string>
-  <string name="blogs_rss_feeds_manage_updated">Ultima actualizare:</string>
-  <string name="blogs_rss_remove_feed">Eliminați flux</string>
-  <string name="blogs_rss_remove_feed_dialog_message">Sigur doriți să eliminați acest flux?\n\nPostările vor fi eliminate de pe dispozitivul dvs., dar nu și de pe dispozitivele celorlalți.\n\nS-ar putea ca persoanele de contact cu care ați partajat acest flux să nu mai primească actualizări..</string>
-  <string name="blogs_rss_remove_feed_ok">Eliminați</string>
-  <string name="blogs_rss_feeds_manage_empty_state">Nu sunt fluxuri RSS de afișat\n\nAtingeți pictograma + pentru a importa un flux</string>
-  <string name="blogs_rss_feeds_manage_error">A apărut o eroare la încărcarea fluxurilor dvs. Încercați din nou mai târziu.</string>
   <!--Settings Profile Picture-->
   <string name="change_profile_picture">Atingeți pentru a schimba poza dvs. de profil</string>
   <string name="dialog_confirm_profile_picture_title">Modificați poza de profil</string>
@@ -577,12 +474,6 @@
   <string name="notify_group_messages_setting_title">Mesaje de grup</string>
   <string name="notify_group_messages_setting_summary">Afișați alerte pentru mesajele de grup</string>
   <string name="notify_group_messages_setting_summary_26">Configurați alerte pentru mesajele de grup</string>
-  <string name="notify_forum_posts_setting_title">Postări pe forum</string>
-  <string name="notify_forum_posts_setting_summary">Afișați alerte pentru mesajele de pe forum</string>
-  <string name="notify_forum_posts_setting_summary_26">Configurați alerte pentru mesajele de pe forum</string>
-  <string name="notify_blog_posts_setting_title">Postări pe blog</string>
-  <string name="notify_blog_posts_setting_summary">Afișați alerte pentru mesajele de pe blog</string>
-  <string name="notify_blog_posts_setting_summary_26">Configurați alerte pentru mesajele de pe blog</string>
   <string name="notify_vibration_setting">Vibrație</string>
   <string name="notify_sound_setting">Sunet</string>
   <string name="notify_sound_setting_default">Sunet implicit</string>
@@ -602,10 +493,6 @@
   <string name="mailbox_setup_connecting">Se conectează la Cutia poștală…</string>
   <!--This string is shown when connecting to a Mailbox for the first time. The placeholder will be replaced with a duration, e.g. "2 minutes".-->
   <string name="mailbox_setup_connecting_info">Asta ar putea dura până la %1s</string>
-  <string name="mailbox_qr_code_too_old">Codul QR pe care l-ați scanat provine de la o versiune de Cutie poștală Zerion mai veche.\n\nActualizați Cutia poștală la cea mai recentă versiune, după care încercați din nou.</string>
-  <string name="mailbox_qr_code_too_new">Codul QR pe care l-ați scanat provine de la o versiune de Cutie poștală Zerion mai nouă.\n\nActualizați Zerion la cea mai recentă versiune, după care încercați din nou.</string>
-  <string name="contact_qr_code_for_mailbox">Codul QR pe care l-ați scanat este pentru a adăuga un contact Zerion.\n\nDacă doriți să adăugați un contact, vă rugăm să mergeți la lista de contacte și să apăsați +.</string>
-  <string name="mailbox_setup_qr_code_wrong_description">Codul QR pe care l-ați scanat nu provine de la o Cutie poștală Zerion.\n\nVă rugăm să deschideți aplicația de Cutie poștală Zerion pe dispozitivul pe care este instalată și scanați codul QR pe care îl afișează.</string>
   <string name="mailbox_setup_already_paired_title">Cutia poștală este deja conectată</string>
   <string name="mailbox_setup_already_paired_description">Anulați conectarea cutiei poștale la celălalt dispozitiv și încercați din nou.</string>
   <string name="mailbox_setup_io_error_title">Nu s-a reușit conectarea</string>
@@ -756,8 +643,6 @@
   <string name="permission_bluetooth_title">Permisiunea dispozitivelor apropiate</string>
   <string name="permission_bluetooth_body">Pentru a utiliza comunicarea Bluetooth, Zerion are nevoie de permisiunea de a găsi și de a se conecta la dispozitivele din apropiere.</string>
   <string name="permission_bluetooth_denied_body">Ați refuzat accesul la dispozitivele din apropiere, dar Zerion are nevoie de această permisiune pentru a utiliza Bluetooth.\n\nVă rugăm să luați în considerare acordarea accesului.</string>
-  <string name="qr_code">Cod QR</string>
-  <string name="show_qr_code_fullscreen">Afișați codul QR pe tot ecranul</string>
   <!--App Locking-->
   <string name="lock_unlock">Deblocarea Zerion</string>
   <string name="lock_unlock_verbose">Introduceți codul PIN, modelul sau parola pentru a debloca aplicația Zerion</string>
@@ -787,9 +672,7 @@
   <string name="wifi_settings_request_enable_body">Pentru a crea un hotspot Wi-Fi, Zerion trebuie să folosească Wi-Fi. Vă rugăm să activați funcția.</string>
   <string name="hotspot_tab_manual">Manual</string>
   <!--The placeholder to be inserted into the string 'hotspot_manual_wifi': People can connect by %s-->
-  <string name="hotspot_scanning_a_qr_code">se scanează un cod QR</string>
   <!--Wi-Fi setup-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_wifi">Telefonul dvs. oferă un hotspot Wi-Fi. Persoanele care doresc să descarce Zerion se pot conecta la hotspot adăugându-l la setările Wi-Fi folosind detaliile de mai jos sau prin %s. După ce s-au conectat la hotspot, atingeți „Înainte”.</string>
   <string name="hotspot_manual_wifi_ssid">Numele rețelei</string>
   <string name="hotspot_qr_wifi">Telefonul dvs. oferă un hotspot Wi-Fi. Persoanele care doresc să descarce Zerion se pot conecta la hotspot scanând acest cod QR. După ce s-au conectat la hotspot, atingeți „Înainte”.</string>
@@ -800,7 +683,6 @@
     <item quantity="other">%s dispozitive conectate</item>
   </plurals>
   <!--Download link-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_site">Telefonul dvs. oferă un hotspot Wi-Fi. Persoanele care sunt conectate la hotspot pot descărca Zerion introducând linkul de mai jos într-un browser sau %s.</string>
   <string name="hotspot_manual_site_address">Adresa (URL)</string>
   <string name="hotspot_qr_site">Telefonul dvs. oferă un hotspot Wi-Fi. Persoanele care sunt conectate la hotspot pot descărca Zerion prin scanarea acestui cod QR.</string>

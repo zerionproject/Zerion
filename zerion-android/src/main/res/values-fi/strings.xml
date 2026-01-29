@@ -50,8 +50,6 @@
   <string name="nav_drawer_close_description">Sulje navigointilaatikko</string>
   <string name="contact_list_button">Yhteystiedot</string>
   <string name="groups_button">Yksityiset ryhmät</string>
-  <string name="forums_button">Foorumit</string>
-  <string name="blogs_button">Blogit</string>
   <!--This is part of the main menu. The app will be locked when this is tapped.-->
   <string name="lock_button">Lukitse sovellus</string>
   <string name="settings_button">Asetukset</string>
@@ -72,14 +70,6 @@
   <plurals name="group_message_notification_text">
     <item quantity="one">Uusi ryhmäviesti.</item>
     <item quantity="other">%d uutta ryhmäviestiä.</item>
-  </plurals>
-  <plurals name="forum_post_notification_text">
-    <item quantity="one">Uusi foorumiviesti.</item>
-    <item quantity="other">%d uutta foorumiviestiä.</item>
-  </plurals>
-  <plurals name="blog_post_notification_text">
-    <item quantity="one">Uusi blogikirjoitus.</item>
-    <item quantity="other">%d uutta blogikirjoitusta.</item>
   </plurals>
   <!--Misc-->
   <string name="now">nyt</string>
@@ -119,14 +109,12 @@
   <!--This is shown in the action bar when opening an image in fullscreen that the user sent-->
   <string name="save_image">Tallenna kuva</string>
   <!--Adding Contacts-->
-  <string name="face_to_face">Sinun täytyy tavata käyttäjä, jonka haluat lisätä yhteystietoihisi.\n\nTämä estää sen, että joku voisi esittää olevansa sinä tai lukea viestejäsi tulevaisuudessa</string>
   <string name="continue_button">Jatka</string>
   <string name="try_again_button">Yritä uudelleen</string>
   <string name="waiting_for_contact_to_scan">Odotetaan, että käyttäjä skannaa ja saa yhteyden\u2026</string>
   <string name="exchanging_contact_details">Yhteystietoja vaihdetaan\u2026</string>
   <string name="contact_added_toast">Yhteystieto lisätty: %s</string>
   <string name="contact_already_exists">Yhteystieto %s on jo olemassa</string>
-  <string name="qr_code_invalid">QR koodi on virheellinen</string>
   <string name="camera_error">Kameravirhe</string>
   <string name="connecting_to_device">Yhdistetään laitteeseen\u2026</string>
   <string name="authenticating_with_device">Tunnistaudutaan laitteen kanssa\u2026</string>
@@ -226,100 +214,26 @@
   <string name="groups_reveal_visible_revealed_by_contact">Yhteys käyttäjään on näkyvissä ryhmän jäsenille (käyttäjän %s paljastamana)</string>
   <string name="groups_reveal_invisible">Yhteys käyttäjään ei ole näkyvissä ryhmän jäsenille</string>
   <!--Forums-->
-  <string name="no_forums">Ei foorumeita</string>
-  <string name="no_forums_action">Napauta + nappia luodaksesi foorumin tai pyydä yhteyshenkilöltä kutsua foorumiin</string>
-  <string name="create_forum_title">Luo foorumi</string>
-  <string name="choose_forum_hint">Valitse nimi foorumillesi</string>
-  <string name="create_forum_button">Luo foorumi</string>
-  <string name="forum_created_toast">Foorumi luotu</string>
-  <string name="no_forum_posts">Ei kirjoituksia</string>
   <string name="no_posts">Ei kirjoituksia</string>
   <plurals name="posts">
     <item quantity="one">%d viesti</item>
     <item quantity="other">%d viestiä</item>
   </plurals>
-  <string name="forum_new_message_hint">Uusi julkaisu</string>
-  <string name="forum_message_reply_hint">Uusi vastaus</string>
   <string name="btn_reply">Vastaa</string>
-  <string name="forum_leave">Lähde foorumista</string>
-  <string name="dialog_title_leave_forum">Vahvista foorumista lähteminen</string>
-  <string name="dialog_message_leave_forum">Oletko varma, että haluat lähteä tästä foorumista?\n\nKäyttäjät, jotka olet kutsunut tähän foorumiin, eivät välttämättä tule enää saamaan päivityksiä.</string>
   <string name="dialog_button_leave">Lähde</string>
-  <string name="forum_left_toast">Lähti foorumista</string>
   <!--Forum Sharing-->
-  <string name="forum_share_button">Jaa foorumi</string>
   <string name="contacts_selected">Yhteystiedot valittu</string>
   <string name="activity_share_toolbar_header">Valitse yhteystiedot</string>
   <string name="no_contacts_selector">Ei yhteystietoja</string>
   <string name="no_contacts_selector_action">Tule takaisin kun olet lisännyt yhteystiedon</string>
-  <string name="forum_shared_snackbar">Foorumi jaettu valittujen käyttäjien kanssa</string>
-  <string name="forum_share_message">Lisää viesti (valinnainen)</string>
-  <string name="forum_share_error">Tämän foorumin jakamisessa tapahtui virhe.</string>
-  <string name="forum_invitation_received">%1$s on jakanut \"%2$s\" -nimisen foorumin kanssasi.</string>
-  <string name="forum_invitation_sent">Olet jakanut \"%1$s\" -nimisen foorumin käyttäjälle %2$s.</string>
-  <string name="forum_invitations_title">Kutsut liittyä foorumeihin</string>
-  <string name="forum_invitation_exists">Olet jo hyväksynyt kutsun liittyä tähän foorumiin.\n\nUseamman kutsun hyväksyminen tekee foorumista nopeamman ja luotettavamman.</string>
-  <string name="forum_joined_toast">Liittyi foorumiin</string>
-  <string name="forum_declined_toast">Kutsu hylätty</string>
   <string name="shared_by_format">Jakanut %s</string>
-  <string name="forum_invitation_already_sharing">On jo jakamassa</string>
-  <string name="forum_invitation_response_accepted_sent">Olet hyväksynyt käyttäjän %s lähettämän foorumikutsun.</string>
-  <string name="forum_invitation_response_declined_sent">Olet kieltäytynyt käyttäjän %s lähettämästä foorumikutsusta.</string>
-  <string name="forum_invitation_response_accepted_received">%s hyväksyi foorumikutsun.</string>
-  <string name="forum_invitation_response_declined_received">%s kieltäytyi foorumikutsusta.</string>
   <string name="sharing_status">Jaetaan tilaa</string>
-  <string name="sharing_status_forum">Kuka tahansa foorumin jäsen voi jakaa sen tuntemilleen käyttäjille. Olet jakamassa tämän foorumin seuraaville käyttäjille. Voi myös olla muita jäseniä, joita sinä et näe.</string>
   <string name="shared_with">Jaettu %1$d kanssa (%2$d verkossa)</string>
-  <plurals name="forums_shared">
-    <item quantity="one">%d foorumi jaettu</item>
-    <item quantity="other">%d foorumia jaettu</item>
-  </plurals>
   <string name="nobody">Ei kukaan</string>
   <!--Blogs-->
-  <string name="blogs_other_blog_empty_state">Ei kirjoituksia</string>
   <string name="read_more">lue lisää</string>
-  <string name="blogs_write_blog_post">Julkaise blogikirjoitus</string>
-  <string name="blogs_write_blog_post_body_hint">Kirjoita blogikirjoitus</string>
-  <string name="blogs_publish_blog_post">Julkaise</string>
-  <string name="blogs_blog_post_created">Blogikirjoitus julkaistu</string>
-  <string name="blogs_blog_post_received">Uusi blogikirjoitus vastaanotettu</string>
-  <string name="blogs_blog_post_scroll_to">Vieritä kohtaan</string>
-  <string name="blogs_feed_empty_state">Ei kirjoituksia</string>
-  <string name="blogs_feed_empty_state_action">Yhteyshenkilöitesi ja seuraamiesi blogien kirjoitukset tulevat näkymään tässä\n\nNapauta kynää kirjoittaaksesi jotain</string>
-  <string name="blogs_remove_blog">Poista blogi</string>
-  <string name="blogs_remove_blog_dialog_message">Oletko varma, että haluat poistaa tämän blogin?\n\nKirjoitukset poistuvat sinun laitteelta, mutta ei muiden laitteilta.\n\nKäyttäjät joiden kanssa olet jakanut tämän blogin eivät välttämättä saa uusia päivityksiä.</string>
-  <string name="blogs_remove_blog_ok">Poista</string>
-  <string name="blogs_blog_removed">Blogi poistettu</string>
-  <string name="blogs_reblog_comment_hint">Lisää kommentti (valinnainen)</string>
-  <string name="blogs_reblog_button">Jaa blogikirjoitus</string>
   <!--Blog Sharing-->
-  <string name="blogs_sharing_share">Jaa blogi</string>
-  <string name="blogs_sharing_error">Tämän blogin jakamisessa tapahtui virhe.</string>
-  <string name="blogs_sharing_button">Jaa blogi</string>
-  <string name="blogs_sharing_snackbar">Blogi jaettu valittujen käyttäjien kanssa</string>
-  <string name="blogs_sharing_response_accepted_sent">Olet hyväksynyt käyttäjän %s lähettämän blogikutsun.</string>
-  <string name="blogs_sharing_response_declined_sent">Olet kieltäytynyt käyttäjän %s lähettämästä blogikutsusta.</string>
-  <string name="blogs_sharing_response_accepted_received">%s hyväksyi blogikutsun.</string>
-  <string name="blogs_sharing_response_declined_received">%s kieltäytyi blogikutsusta.</string>
-  <string name="blogs_sharing_invitation_received">%1$s on jakanut \"%2$s\" -nimisen blogin kanssasi.</string>
-  <string name="blogs_sharing_invitation_sent">Olet jakanut \"%1$s\" -nimisen blogin käyttäjälle %2$s.</string>
-  <string name="blogs_sharing_invitations_title">Blogi kutsut</string>
-  <string name="blogs_sharing_joined_toast">Blogi tilattu</string>
-  <string name="blogs_sharing_declined_toast">Kutsu hylätty</string>
-  <string name="sharing_status_blog">Kuka tahansa joka tilaa blogin voi jakaa sen tuntemilleen käyttäjille. Olet jakamassa tämän blogin seuraaville käyttäjille. Voi myös olla muita blogin tilaajia, joita sinä et näe.</string>
   <!--RSS Feeds-->
-  <string name="blogs_rss_feeds_import">Tuo RSS syöte</string>
-  <string name="blogs_rss_feeds_import_button">Tuo</string>
-  <string name="blogs_rss_feeds_import_hint">Syötä RSS syötteen URL osoite</string>
-  <string name="blogs_rss_feeds_import_error">Pahoittelemme! Syötteen noutamisessa tapahtui virhe.</string>
-  <string name="blogs_rss_feeds_manage_imported">Tuotu:</string>
-  <string name="blogs_rss_feeds_manage_author">Tekijä:</string>
-  <string name="blogs_rss_feeds_manage_updated">Viimeksi päivitetty:</string>
-  <string name="blogs_rss_remove_feed">Poista syöte</string>
-  <string name="blogs_rss_remove_feed_dialog_message">Oletko varma, että haluat poistaa tämän syötteen?\n\nKirjoitukset poistuvat sinun laitteelta, mutta ei muiden laitteilta.\n\nKäyttäjät joiden kanssa olet jakanut tämän syötteen eivät välttämättä saa uusia päivityksiä.</string>
-  <string name="blogs_rss_remove_feed_ok">Poista</string>
-  <string name="blogs_rss_feeds_manage_empty_state">Ei RSS syötteitä\n\nNapauta + nappia lisätäksesi syötteen</string>
-  <string name="blogs_rss_feeds_manage_error">Syötteiden lataamisessa tapahtui virhe. Yritä myöhemmin uudelleen.</string>
   <!--Settings Display-->
   <string name="pref_language_title">Kieli &amp; alue</string>
   <string name="pref_language_changed">Tämä asetus otetaan käyttöön kun uudelleenkäynnistät Zerionin. Kirjaudu ulos ja käynnistä Zerion uudelleen.</string>
@@ -391,12 +305,6 @@
   <string name="notify_group_messages_setting_title">Ryhmäviestit</string>
   <string name="notify_group_messages_setting_summary">Näytä ilmoitukset ryhmäviesteistä</string>
   <string name="notify_group_messages_setting_summary_26">Aseta ilmoitukset ryhmäviesteille</string>
-  <string name="notify_forum_posts_setting_title">Foorumikirjoitukset</string>
-  <string name="notify_forum_posts_setting_summary">Näytä ilmoitukset foorumikirjoituksista</string>
-  <string name="notify_forum_posts_setting_summary_26">Aseta ilmoitukset foorumikirjoituksille</string>
-  <string name="notify_blog_posts_setting_title">Blogikirjoitukset</string>
-  <string name="notify_blog_posts_setting_summary">Näytä ilmoitukset blogikirjoituksista</string>
-  <string name="notify_blog_posts_setting_summary_26">Aseta ilmoitukset blogikirjoituksille</string>
   <string name="notify_vibration_setting">Värinä</string>
   <string name="notify_sound_setting">Ääni</string>
   <string name="notify_sound_setting_default">Oletussoittoääni</string>
@@ -436,8 +344,6 @@
   <string name="permission_camera_title">Kameran käyttöoikeus</string>
   <string name="permission_camera_request_body">Skannatakseen QR koodin, Zerion tarvitsee luvan käyttää kameraa.</string>
   <string name="permission_camera_denied_body">Olet kieltänyt käyttämästä kameraa, mutta yhteyshenkilöiden lisääminen vaatii kameran käyttöä.\n\nOle hyvä ja harkitse kameraluvan myöntämistä.</string>
-  <string name="qr_code">QR-koodi</string>
-  <string name="show_qr_code_fullscreen">Näytä QR-koodi koko näytöllä</string>
   <!--App Locking-->
   <string name="lock_unlock">Avaa Zerionin lukitus</string>
   <string name="lock_unlock_verbose">Syötä laitteesi PIN, kuvio tai salasana avataksesi Zerion</string>

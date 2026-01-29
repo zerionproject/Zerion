@@ -224,10 +224,10 @@ public abstract class ThreadListActivity<I extends ThreadItem, A extends ThreadI
 	private void updateTextInput() {
 		MessageId replyId = getViewModel().getReplyId();
 		if (replyId != null) {
-			textInput.setHint(R.string.forum_message_reply_hint);
+			textInput.setHint(R.string.message_reply_hint);
 			textInput.showSoftKeyboard();
 		} else {
-			textInput.setHint(R.string.forum_new_message_hint);
+			textInput.setHint(R.string.new_message_hint);
 		}
 		adapter.setHighlightedItem(replyId);
 	}

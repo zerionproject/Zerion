@@ -5,16 +5,9 @@ import org.briarproject.bramble.api.db.DbException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.logging.Logger;
-
-import static java.util.logging.Level.WARNING;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.db.JdbcUtils.tryToClose;
 
 class Migration41_42 implements Migration<Connection> {
-
-	private static final Logger LOG = getLogger(Migration41_42.class.getName());
-
 	private final DatabaseTypes dbTypes;
 
 	Migration41_42(DatabaseTypes dbTypes) {
@@ -90,7 +83,7 @@ class Migration41_42 implements Migration<Connection> {
 					+ " REFERENCES outgoingHandshakeKeys (keySetId)"
 					+ " ON DELETE CASCADE)"));
 		} catch (SQLException e) {
-			tryToClose(s, LOG, WARNING);
+			tryToClose(s);
 			throw new DbException(e);
 		}
 	}

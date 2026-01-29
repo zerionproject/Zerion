@@ -69,10 +69,6 @@ class IntroductionValidator extends BdfMessageValidator {
 
 	private BdfMessageContext validateRequestMessage(Message m, BdfList body)
 			throws FormatException {
-		// Client version 0.0: Message type, optional previous message ID,
-		// author, optional text.
-		// Client version 0.1: Message type, optional previous message ID,
-		// author, optional text, optional auto-delete timer.
 		checkSize(body, 4, 5);
 
 		byte[] previousMessageId = body.getOptionalRaw(1);
@@ -101,11 +97,6 @@ class IntroductionValidator extends BdfMessageValidator {
 
 	private BdfMessageContext validateAcceptMessage(Message m, BdfList body)
 			throws FormatException {
-		// Client version 0.0: Message type, session ID, optional previous
-		// message ID, ephemeral public key, timestamp, transport properties.
-		// Client version 0.1: Message type, session ID, optional previous
-		// message ID, ephemeral public key, timestamp, transport properties,
-		// optional auto-delete timer.
 		checkSize(body, 6, 7);
 
 		byte[] sessionIdBytes = body.getRaw(1);
@@ -144,10 +135,6 @@ class IntroductionValidator extends BdfMessageValidator {
 
 	private BdfMessageContext validateDeclineMessage(MessageType type,
 			Message m, BdfList body) throws FormatException {
-		// Client version 0.0: Message type, session ID, optional previous
-		// message ID.
-		// Client version 0.1: Message type, session ID, optional previous
-		// message ID, optional auto-delete timer.
 		checkSize(body, 3, 4);
 
 		byte[] sessionIdBytes = body.getRaw(1);

@@ -5,16 +5,9 @@ import org.briarproject.bramble.api.db.DbException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.logging.Logger;
-
-import static java.util.logging.Level.WARNING;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.db.JdbcUtils.tryToClose;
 
 class Migration42_43 implements Migration<Connection> {
-
-	private static final Logger LOG = getLogger(Migration42_43.class.getName());
-
 	private final DatabaseTypes dbTypes;
 
 	Migration42_43(DatabaseTypes dbTypes) {
@@ -45,7 +38,7 @@ class Migration42_43 implements Migration<Connection> {
 			s.execute("ALTER TABLE contacts"
 					+ " DROP COLUMN active");
 		} catch (SQLException e) {
-			tryToClose(s, LOG, WARNING);
+			tryToClose(s);
 			throw new DbException(e);
 		}
 	}

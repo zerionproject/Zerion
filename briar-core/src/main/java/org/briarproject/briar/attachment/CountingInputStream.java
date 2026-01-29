@@ -7,10 +7,7 @@ import java.io.InputStream;
 
 import javax.annotation.concurrent.NotThreadSafe;
 
-/**
- * An {@link InputStream} that wraps another InputStream, counting the bytes
- * read and only allowing a limited number of bytes to be read.
- */
+
 @NotThreadSafe
 @NotNullByDefault
 public class CountingInputStream extends InputStream {

@@ -7,22 +7,13 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.logging.Logger;
-
 import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.ThreadSafe;
-
-import static java.util.logging.Level.INFO;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.api.plugin.BluetoothConstants.ID;
 
 @NotNullByDefault
 @ThreadSafe
 class BluetoothConnectionLimiterImpl implements BluetoothConnectionLimiter {
-
-	private static final Logger LOG =
-			getLogger(BluetoothConnectionLimiterImpl.class.getName());
-
 	private final EventBus eventBus;
 
 	private final Object lock = new Object();
@@ -41,7 +32,6 @@ class BluetoothConnectionLimiterImpl implements BluetoothConnectionLimiter {
 		synchronized (lock) {
 			limitingInProgress++;
 		}
-		LOG.info("Limiting started");
 		eventBus.broadcast(new CloseSyncConnectionsEvent(ID));
 	}
 
@@ -53,17 +43,14 @@ class BluetoothConnectionLimiterImpl implements BluetoothConnectionLimiter {
 				throw new IllegalStateException();
 			}
 		}
-		LOG.info("Limiting ended");
 	}
 
 	@Override
 	public boolean canOpenContactConnection() {
 		synchronized (lock) {
 			if (limitingInProgress > 0) {
-				LOG.info("Can't open contact connection while limiting");
 				return false;
 			} else {
-				LOG.info("Can open contact connection");
 				return true;
 			}
 		}
@@ -73,9 +60,6 @@ class BluetoothConnectionLimiterImpl implements BluetoothConnectionLimiter {
 	public void connectionOpened(DuplexTransportConnection conn) {
 		synchronized (lock) {
 			connections.add(conn);
-			if (LOG.isLoggable(INFO)) {
-				LOG.info("Connection opened, " + connections.size() + " open");
-			}
 		}
 	}
 
@@ -83,9 +67,6 @@ class BluetoothConnectionLimiterImpl implements BluetoothConnectionLimiter {
 	public void connectionClosed(DuplexTransportConnection conn) {
 		synchronized (lock) {
 			connections.remove(conn);
-			if (LOG.isLoggable(INFO)) {
-				LOG.info("Connection closed, " + connections.size() + " open");
-			}
 		}
 	}
 
@@ -93,7 +74,6 @@ class BluetoothConnectionLimiterImpl implements BluetoothConnectionLimiter {
 	public void allConnectionsClosed() {
 		synchronized (lock) {
 			connections.clear();
-			LOG.info("All connections closed");
 		}
 	}
 }

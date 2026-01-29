@@ -67,7 +67,6 @@ class PrivateGroupFactoryImpl implements PrivateGroupFactory {
 
 	@Override
 	public PrivateGroup parsePrivateGroup(Group g) throws FormatException {
-		// Creator, group name, salt
 		BdfList descriptor = clientHelper.toList(g.getDescriptor());
 		checkSize(descriptor, 3);
 		BdfList creatorList = descriptor.getList(0);

@@ -66,8 +66,6 @@
   <string name="nav_drawer_close_description">Закрити панель навігації</string>
   <string name="contact_list_button">Контакти</string>
   <string name="groups_button">Приватні групи</string>
-  <string name="forums_button">Форуми</string>
-  <string name="blogs_button">Блоги</string>
   <!--This is part of the main menu. The app will be locked when this is tapped.-->
   <string name="lock_button">Заблокувати програму</string>
   <string name="settings_button">Налаштування</string>
@@ -106,18 +104,6 @@
     <item quantity="few">%d нові групові повідомлення.</item>
     <item quantity="many">%d нових групових повідомлень.</item>
     <item quantity="other">%d нового групового повідомлення.</item>
-  </plurals>
-  <plurals name="forum_post_notification_text">
-    <item quantity="one">Новий допис на форумі.</item>
-    <item quantity="few">%d нові дописи на форумі.</item>
-    <item quantity="many">%d нових дописів на форумі.</item>
-    <item quantity="other">%d нового допису на форумі.</item>
-  </plurals>
-  <plurals name="blog_post_notification_text">
-    <item quantity="one">Новий допис у блозі.</item>
-    <item quantity="few">%d нові дописи у блозі.</item>
-    <item quantity="many"> %d нових дописів у блозі.</item>
-    <item quantity="other">%d нового допису у блозі.</item>
   </plurals>
   <!--Misc-->
   <string name="now">зараз</string>
@@ -225,7 +211,6 @@
   <!--Adding Contacts-->
   <string name="add_contact_title">Додати контакт поблизу</string>
   <string name="add_contact_error_two_way">Чи Ви відсканували QR коди один одного?</string>
-  <string name="face_to_face">Ви маєте зустрітися з особою, яку ви бажаєте додати до списку контактів.\n\nЦе виключить можливість у майбутньому будь-кому видавати себе за вас або читати ваші повідомлення.</string>
   <string name="continue_button">Продовжити</string>
   <string name="try_again_button">Спробувати ще раз</string>
   <string name="waiting_for_contact_to_scan">Чекаємо, поки контакт відсканує та з\'єднається\u2026</string>
@@ -233,17 +218,11 @@
   <string name="contact_added_toast">Додали контакт: %s</string>
   <string name="contact_already_exists">Контакт %s вже існує</string>
   <string name="contact_already_exists_general">Контакт вже існує</string>
-  <string name="qr_code_invalid">QR-код неправильний</string>
-  <string name="qr_code_too_old_1">QR-код, який ви просканували, належить до старої версії Zerion.\n\nПопросіть ваш контакт оновити програму до останньої версії, а потім спробуйте ще раз.</string>
-  <string name="qr_code_too_new_1">QR-код, який ви просканували, належить до новішої версії Zerion.\n\nПерейдіть на останню версію і спробуйте ще раз.</string>
-  <string name="mailbox_qr_code_for_contact">QR-код, який ви просканували, походить з поштової скриньки Zerion.\n\nЯкщо ви хочете прив\'язати поштову скриньку, будь ласка, виберіть Налаштування &gt; Поштова скринька в меню Zerion.</string>
-  <string name="qr_code_format_unknown">Просканований вами QR-код не призначений для додавання контакту Zerion.\n\nБудь ласка, проскануйте QR-код, показаний на екрані вашого контакту.</string>
   <string name="camera_error">Помилка камери</string>
   <string name="connecting_to_device">З\'єднання з пристроєм\u2026</string>
   <string name="authenticating_with_device">Автентифікація з пристроєм\u2026</string>
   <string name="connection_error_title">Неможливо з\'єднатися з вашим контактом</string>
   <string name="connection_error_feedback">Якщо ця проблема збережеться, будь ласка, <a href="feedback">надішліть відгук</a>, щоб допомогти нам вдосконалити цей додаток.</string>
-  <string name="info_both_must_scan">Ви повинні відсканувати QR-коди один одного</string>
   <!--Adding Contacts Remotely-->
   <string name="add_contact_remotely_title_case">Додати контакт віддалено</string>
   <string name="add_contact_nearby_title">Додати контакт поблизу</string>
@@ -401,13 +380,6 @@
   <string name="groups_reveal_visible_revealed_by_contact">Зв\'язки між контактами видимі групі (видимість встановлено %s)</string>
   <string name="groups_reveal_invisible">Зв\'язки між контактами невидимі групі</string>
   <!--Forums-->
-  <string name="no_forums">Немає форумів до показу</string>
-  <string name="no_forums_action">Натисніть на символ \"+\", щоб створити форум або попросіть у своїх контактів поділитися з вами форумами.</string>
-  <string name="create_forum_title">Створити форум</string>
-  <string name="choose_forum_hint">Оберіть назву для свого форуму</string>
-  <string name="create_forum_button">Створити форум</string>
-  <string name="forum_created_toast">Форум було створено</string>
-  <string name="no_forum_posts">Немає дописів для показу</string>
   <string name="no_posts">Поки немає жодного допису</string>
   <plurals name="posts">
     <item quantity="one">%d допис</item>
@@ -415,99 +387,21 @@
     <item quantity="many">%d дописів</item>
     <item quantity="other">%d допису</item>
   </plurals>
-  <string name="forum_new_message_hint">Новий допис</string>
-  <string name="forum_message_reply_hint">Нова відповідь</string>
   <string name="btn_reply">Відповісти</string>
-  <string name="forum_leave">Залишити форум</string>
-  <string name="dialog_title_leave_forum">Підтвердити, що ви залишаєте форум</string>
-  <string name="dialog_message_leave_forum">Ви впевнені, що хочете залишити цей форум?\n\nБудь-хто з контактів, з якими ви поділилися цим формумом можуть припинити отримувати оноволення.</string>
   <string name="dialog_button_leave">Залишити</string>
-  <string name="forum_left_toast">Залишили форум</string>
   <!--Forum Sharing-->
-  <string name="forum_share_button">Поділитися форумом</string>
   <string name="contacts_selected">Обрані контакти</string>
   <string name="activity_share_toolbar_header">Обрати контакти</string>
   <string name="no_contacts_selector">Немає контактів для показу</string>
   <string name="no_contacts_selector_action">Будь ласка, поверніться сюди після додання контакту</string>
-  <string name="forum_shared_snackbar">Форум поширений обраним контактам</string>
-  <string name="forum_share_message">Додати повідомлення (необов\'язково)</string>
-  <string name="forum_share_error">Виникла помилка під час поширення цього форуму.</string>
-  <string name="forum_invitation_received">%1$s поділився з вами форумом \"%2$s\"</string>
-  <string name="forum_invitation_sent">Ви поділилися форумом \"%1$s\" з %2$s</string>
-  <string name="forum_invitations_title">Запрошення до форуму</string>
-  <string name="forum_invitation_exists">Ви вже прийняли запрошення до цього форуму.\n\nПриймаючи більше запрошень, ви робите своє з\'єднання з форумом швидшим та надійнішим.</string>
-  <string name="forum_joined_toast">До форуму долучилися</string>
-  <string name="forum_declined_toast">Запрошення було відхилено</string>
   <string name="shared_by_format">Поширено %s</string>
-  <string name="forum_invitation_already_sharing">Вже поширюється</string>
-  <string name="forum_invitation_already_invited">Запрошення вже відправлене</string>
-  <string name="forum_invitation_invite_received">Запрошення вже отримано</string>
-  <string name="forum_invitation_not_supported">Не підтримується цим контактом</string>
-  <string name="forum_invitation_error">Помилка. Це збій програми, а не ваша провина</string>
-  <string name="forum_invitation_response_accepted_sent">Ви прийняли запрошення до форуму від %s.</string>
-  <string name="forum_invitation_response_declined_sent">Ви відхилили запрошення до форуму від %s.</string>
-  <string name="forum_invitation_response_declined_auto">Запрошення до форуму від %s відхилено автоматично.</string>
-  <string name="forum_invitation_response_accepted_received">%s прийняв запрошення до форуму.</string>
-  <string name="forum_invitation_response_declined_received">%s відхилив запрошення до форуму.</string>
   <string name="sharing_status">Поширення статусу</string>
-  <string name="sharing_status_forum">Будь-який учасник форуму може поділитися ним зі своїми контактами. Ви ділитеся цим форумом із наступними контактами. Також можуть бути й інші учасники, яких ви можете не бачити.</string>
   <string name="shared_with">Поширено серед %1$d (%2$d онлайн)</string>
-  <plurals name="forums_shared">
-    <item quantity="one">%d форум поширений контактами</item>
-    <item quantity="few">%d форуми поширені контактами</item>
-    <item quantity="many">%d форумів поширених контактами</item>
-    <item quantity="other">%d форуму поширеного контактами</item>
-  </plurals>
   <string name="nobody">Нікого</string>
   <!--Blogs-->
-  <string name="blogs_other_blog_empty_state">Немає дописів для показу</string>
   <string name="read_more">дізнатися більше</string>
-  <string name="blogs_write_blog_post">Написати допис у блозі</string>
-  <string name="blogs_write_blog_post_body_hint">Надрукуйте свій допис для блогу</string>
-  <string name="blogs_publish_blog_post">Опублікувати</string>
-  <string name="blogs_blog_post_created">Допис до блогу створено</string>
-  <string name="blogs_blog_post_received">Отримано новий допис блогу</string>
-  <string name="blogs_blog_post_scroll_to">Прокрутити до</string>
-  <string name="blogs_feed_empty_state">Немає дописів для відображення</string>
-  <string name="blogs_feed_empty_state_action">Тут будуть з\'являтися дописи від ваших контактів та блоги, на які ви підписані.\n\nНатисніть на піктограму \"Ручка\", щоб створити допис</string>
-  <string name="blogs_remove_blog">Видалити блог</string>
-  <string name="blogs_remove_blog_dialog_message">Ви впевнені, що хочете видалити цей блог?\n\nДописи буде видалено з вашого пристрою, але не з пристроїв інших осіб.\n\nБудь-які контакти, поміж яких ви поширили цей блог, можуть припинити отримувати оновлення.</string>
-  <string name="blogs_remove_blog_ok">Видалити</string>
-  <string name="blogs_blog_removed">Блог було видалено</string>
-  <string name="blogs_reblog_comment_hint">Додати коментар (за бажанням)</string>
-  <string name="blogs_reblog_button">Поширити з блогу</string>
   <!--Blog Sharing-->
-  <string name="blogs_sharing_share">Поділитися блогом</string>
-  <string name="blogs_sharing_error">Виникла помилка під час поширення цього блогу.</string>
-  <string name="blogs_sharing_button">Поділитися блогом</string>
-  <string name="blogs_sharing_snackbar">Блог було поширено поміж обраних контактів</string>
-  <string name="blogs_sharing_response_accepted_sent">Ви прийняли запрошення до блогу від %s.</string>
-  <string name="blogs_sharing_response_declined_sent">Ви відхилили запрошення до блогу від %s.</string>
-  <string name="blogs_sharing_response_declined_auto">Запрошення до блогу від %s відхилено автоматично.</string>
-  <string name="blogs_sharing_response_accepted_received">%s прийняв запрошення до блогу.</string>
-  <string name="blogs_sharing_response_declined_received">%s відхилив запрошення до блогу.</string>
-  <string name="blogs_sharing_invitation_received">%1$s поділився з вами блогом \"%2$s\".</string>
-  <string name="blogs_sharing_invitation_sent">Ви поділилися блогом \"%1$s\" з %2$s.</string>
-  <string name="blogs_sharing_invitations_title">Запрошення до блогу</string>
-  <string name="blogs_sharing_joined_toast">Ви підписані на блог</string>
-  <string name="blogs_sharing_declined_toast">Запрошення було відхилено</string>
-  <string name="sharing_status_blog">Будь-яка особа, що підписується на блог, може поділитися ним зі своїми контактами. Ви ділитеся цим блогом з наступними контактами. Також можуть бути й інші підписники, яких ви можете не бачити.</string>
   <!--RSS Feeds-->
-  <string name="blogs_rss_feeds_import">Імпортувати RSS-стрічку</string>
-  <string name="blogs_rss_feeds_import_button">Імпортувати</string>
-  <string name="blogs_rss_feeds_import_hint">Введіть URL-посилання RSS-стрічки</string>
-  <string name="blogs_rss_feeds_import_progress">Імпортується стрічка RSS…</string>
-  <string name="blogs_rss_feeds_import_error">Нам шкода! Виникла помилка під час імпорту вашої стрічки.</string>
-  <string name="blogs_rss_feeds_import_title">Імпортувати стрічку з файлу</string>
-  <string name="blogs_rss_feeds">RSS-стрічки</string>
-  <string name="blogs_rss_feeds_manage_imported">Імпортовано:</string>
-  <string name="blogs_rss_feeds_manage_author">Автор:</string>
-  <string name="blogs_rss_feeds_manage_updated">Востаннє оновлювалося:</string>
-  <string name="blogs_rss_remove_feed">Видалити стрічку</string>
-  <string name="blogs_rss_remove_feed_dialog_message">Ви впевнені, що хочете видалити цю стрічку?\n\nДописи буде видалено з вашого пристрою, але не з пристроїв інших осіб.\n\nБудь-хто з контактів, з якими ви поділилися цією стрічкою, можуть припинити отримувати оноволення.</string>
-  <string name="blogs_rss_remove_feed_ok">Вилучити</string>
-  <string name="blogs_rss_feeds_manage_empty_state">Немає RSS-стрічок до відображення\n\nНатисніть на символ \"+\", щоб імпортувати стрічку</string>
-  <string name="blogs_rss_feeds_manage_error">Під час завантаження ваших стрічок виникла проблема. Будь ласка, спробуйте пізніше.</string>
   <!--Settings Profile Picture-->
   <string name="change_profile_picture">Торкніться, щоб змінити зображення профілю</string>
   <string name="dialog_confirm_profile_picture_title">Змінити зображення профілю</string>
@@ -587,12 +481,6 @@
   <string name="notify_group_messages_setting_title">Групові повідомлення</string>
   <string name="notify_group_messages_setting_summary">Показувати сповіщення для повідомлень у групі</string>
   <string name="notify_group_messages_setting_summary_26">Налаштувати сповіщення для повідомлень у групі</string>
-  <string name="notify_forum_posts_setting_title">Дописи на форумі</string>
-  <string name="notify_forum_posts_setting_summary">Показувати сповіщення для дописів на форумі</string>
-  <string name="notify_forum_posts_setting_summary_26">Налаштувати сповіщення для дописів на форумі</string>
-  <string name="notify_blog_posts_setting_title">Дописи у блозі</string>
-  <string name="notify_blog_posts_setting_summary">Показувати сповіщення для дописів у блозі</string>
-  <string name="notify_blog_posts_setting_summary_26">Налаштувати сповіщення для дописів у блозі</string>
   <string name="notify_vibration_setting">Вібрація</string>
   <string name="notify_sound_setting">Звук</string>
   <string name="notify_sound_setting_default">Усталена мелодія</string>
@@ -612,10 +500,6 @@
   <string name="mailbox_setup_connecting">Під\'єднується до Mailbox…</string>
   <!--This string is shown when connecting to a Mailbox for the first time. The placeholder will be replaced with a duration, e.g. "2 minutes".-->
   <string name="mailbox_setup_connecting_info">Це може зайняти до %1s</string>
-  <string name="mailbox_qr_code_too_old">Просканований вами QR-код належить до старої версії Zerion Mailbox. Будь ласка, оновіть Zerion Mailbox до останньої версії, а потім спробуйте ще раз.</string>
-  <string name="mailbox_qr_code_too_new">Просканований вами QR-код належить до новішої версії поштової скриньки Zerion. Будь ласка, оновіть Zerion до останньої версії, а потім спробуйте ще раз.</string>
-  <string name="contact_qr_code_for_mailbox">QR-код, який ви просканували, призначений для додавання контакту Zerion.\n\nЯкщо ви хочете додати контакт, перейдіть до списку контактів і торкніться іконки +.</string>
-  <string name="mailbox_setup_qr_code_wrong_description">Просканований вами QR-код не від Zerion Mailbox.\n\nБудь ласка, відкрийте програму Zerion Mailbox на своєму поштовому пристрої та проскануйте поданий QR-код.</string>
   <string name="mailbox_setup_already_paired_title">Mailbox уже під\'єднано</string>
   <string name="mailbox_setup_already_paired_description">Від\'єднайте Mailbox від свого іншого пристрою й повторіть спробу.</string>
   <string name="mailbox_setup_io_error_title">Не вдалося з\'єднатися</string>
@@ -766,8 +650,6 @@
   <string name="permission_bluetooth_title">Дозволи на пристроях поблизу</string>
   <string name="permission_bluetooth_body">Щоб використовувати Bluetooth-зв\'язок, Zerion потребує дозволу на пошук і під\'єднання до пристроїв, розташованих поблизу.</string>
   <string name="permission_bluetooth_denied_body">Ви заборонили доступ до сусідніх пристроїв, але Zerion потребує цього дозволу для використання Bluetooth.\n\nПодумайте, будь ласка, над тим, щоб дозволити доступ.</string>
-  <string name="qr_code">QR-код</string>
-  <string name="show_qr_code_fullscreen">Вивести QR-код на весь екран</string>
   <!--App Locking-->
   <string name="lock_unlock">Розблокувати Zerion</string>
   <string name="lock_unlock_verbose">Введіть PIN-код свого пристрою, графічний ключ або пароль, щоб розблокувати Zerion</string>
@@ -797,9 +679,7 @@
   <string name="wifi_settings_request_enable_body">Будь ласка, ввімкніть Wi-Fi, щоб Zerion міг створити точку доступу.</string>
   <string name="hotspot_tab_manual">Вручну</string>
   <!--The placeholder to be inserted into the string 'hotspot_manual_wifi': People can connect by %s-->
-  <string name="hotspot_scanning_a_qr_code">просканувавши QR-код</string>
   <!--Wi-Fi setup-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_wifi">Ваш телефон надає точку доступу Wi-Fi. Щоб інші змогли завантажити Zerion, їм слід додати з\'єднання з цією точкою доступу в налаштуваннях Wi-Fi свого пристрою, ввівши дані внизу чи %s. Коли вони з\'єднаються з точкою доступу, натисніть «Далі».</string>
   <string name="hotspot_manual_wifi_ssid">Назва мережі</string>
   <string name="hotspot_qr_wifi">Ваш телефон надає точку доступу Wi-Fi. Щоб інші змогли завантажити Zerion, їм слід з\'єднатися з точкою доступу, просканувавши цей QR-код. Коли вони з\'єднаються з точкою доступу, натисніть «Далі».</string>
@@ -811,7 +691,6 @@
     <item quantity="other">%s пристроїв з\'єднано</item>
   </plurals>
   <!--Download link-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_site">Ваш телефон надає точку доступу Wi-Fi. З\'єднані з нею можуть завантажити Zerion, ввівши наступне посилання у вебпереглядач або %s.</string>
   <string name="hotspot_manual_site_address">Адреса (URL)</string>
   <string name="hotspot_qr_site">Ваш телефон надає точку доступу Wi-Fi. З\'єднані з нею можуть завантажити Zerion, просканувавши цей QR-код.</string>

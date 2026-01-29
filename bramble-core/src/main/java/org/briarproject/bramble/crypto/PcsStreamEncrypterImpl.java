@@ -207,14 +207,11 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 			if (pqChunk != null) {
 				pqState = pqRatchet.processChunkSent(pqState);
 			}
-			// Increment PQ epoch message counter
 			pqState = pqRatchet.incrementMessageCount(pqState);
-			// Check if a new epoch should start
 			if (pqRatchet.shouldStartNewEpoch(pqState,
 					System.currentTimeMillis())) {
 				pqState = pqRatchet.startEpochAsInitiator(pqState);
 			}
-			// Check if epoch is complete and mix PQ secret into root key
 			if (pqRatchet.isEpochComplete(pqState) &&
 					sendState.getRootKey() != null) {
 				try {
@@ -226,7 +223,6 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 					pqState = pqRatchet.completeEpoch(pqState,
 							System.currentTimeMillis());
 				} catch (Exception e) {
-					// Epoch completion failed, continue without PQ update
 				}
 			}
 			if (pqStateCallback != null) {
@@ -294,6 +290,19 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 		}
 		out.write(streamHeaderCiphertext);
 		writeStreamHeader = false;
+	}
+
+	@Override
+	public int getMaxPayloadLength() {
+		int pcsHeaderSize;
+		if (MODE3_ENABLED && sendState.isMode3()) {
+			pcsHeaderSize = PCS_MODE3_HEADER_MAX_SIZE;
+		} else if (sendState.isMode2()) {
+			pcsHeaderSize = PCS_HEADER_MAX_SIZE;
+		} else {
+			pcsHeaderSize = PCS_HEADER_MIN_SIZE;
+		}
+		return MAX_PAYLOAD_LENGTH - pcsHeaderSize;
 	}
 
 	@Override

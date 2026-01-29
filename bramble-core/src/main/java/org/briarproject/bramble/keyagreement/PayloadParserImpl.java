@@ -42,7 +42,6 @@ class PayloadParserImpl implements PayloadParser {
 		if (payloadString.isEmpty()) throw new FormatException();
 		byte[] raw = payloadString.getBytes(ISO_8859_1);
 		ByteArrayInputStream in = new ByteArrayInputStream(raw);
-		// First byte: the format identifier and version
 		int firstByte = in.read();
 		if (firstByte == -1) throw new FormatException();
 		int formatId = (firstByte & FORMAT_ID_MASK) >> 5;
@@ -52,17 +51,13 @@ class PayloadParserImpl implements PayloadParser {
 			boolean tooOld = formatVersion < PROTOCOL_VERSION;
 			throw new UnsupportedVersionException(tooOld);
 		}
-		// The rest of the payload is a BDF list with one or more elements
 		BdfReader r = bdfReaderFactory.createReader(in);
 		BdfList payload = r.readList();
 		if (payload.isEmpty()) throw new FormatException();
 		if (!r.eof()) throw new FormatException();
-		// First element: the public key commitment
 		byte[] commitment = payload.getRaw(0);
 		if (commitment.length != COMMIT_LENGTH) throw new FormatException();
-		// Remaining elements: transport descriptors (Bluetooth and LAN removed)
 		List<TransportDescriptor> recognised = new ArrayList<>();
-		// Transport parsing disabled - Bluetooth and LAN transports removed
 		return new Payload(commitment, recognised);
 	}
 }

@@ -28,7 +28,6 @@ class SyncRecordReaderFactoryImpl implements SyncRecordReaderFactory {
 
 	@Override
 	public SyncRecordReader createRecordReader(InputStream in) {
-		// Default to extended format for Zerion↔Zerion communication
 		RecordReader reader = recordReaderFactory.createRecordReader(in);
 		return new SyncRecordReaderImpl(messageFactory, reader);
 	}

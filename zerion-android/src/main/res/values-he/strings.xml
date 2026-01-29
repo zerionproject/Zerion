@@ -53,8 +53,6 @@
   <string name="nav_drawer_close_description">סגור את מגירת הניווט</string>
   <string name="contact_list_button">אנשי קשר</string>
   <string name="groups_button">קבוצות פרטיות</string>
-  <string name="forums_button">פורומים</string>
-  <string name="blogs_button">בלוגים</string>
   <!--This is part of the main menu. The app will be locked when this is tapped.-->
   <string name="lock_button">נעל יישום</string>
   <string name="settings_button">הגדרות</string>
@@ -93,18 +91,6 @@
     <item quantity="two">%d הודעות קבוצתיות חדשות.</item>
     <item quantity="many">%d הודעות קבוצתיות חדשות.</item>
     <item quantity="other">%d הודעות קבוצתיות חדשות.</item>
-  </plurals>
-  <plurals name="forum_post_notification_text">
-    <item quantity="one">רשומת פורום חדשה.</item>
-    <item quantity="two">%d רשומות פורום חדשות.</item>
-    <item quantity="many">%d רשומות פורום חדשות.</item>
-    <item quantity="other">%d רשומות פורום חדשות.</item>
-  </plurals>
-  <plurals name="blog_post_notification_text">
-    <item quantity="one">רשומת בלוג חדשה.</item>
-    <item quantity="two">%d רשומות בלוג חדשות.</item>
-    <item quantity="many">%d רשומות בלוג חדשות.</item>
-    <item quantity="other">%d רשומות בלוג חדשות.</item>
   </plurals>
   <!--Misc-->
   <string name="now">עכשיו</string>
@@ -180,14 +166,12 @@
   <string name="menu_contact">צרו קשר</string>
   <!--Adding Contacts-->
   <string name="add_contact_title">הוסף איש קשר בקרבה</string>
-  <string name="face_to_face">אתה חייב להיפגש עם האדם שאותו אתה רוצה להוסיף כאיש קשר.\n\nזה ימנע מכל אחד להתחזות אליך או לקרוא את ההודעות שלך בעתיד.</string>
   <string name="continue_button">המשך</string>
   <string name="try_again_button">ניסיון חוזר</string>
   <string name="waiting_for_contact_to_scan">ממתין שאיש הקשר יסרוק ויתחבר\u2026</string>
   <string name="exchanging_contact_details">מחליף פרטי איש קשר\u2026</string>
   <string name="contact_added_toast">נוסף איש קשר: %s</string>
   <string name="contact_already_exists">איש הקשר %s קיים כבר</string>
-  <string name="qr_code_invalid">קוד ה־QR אינו תקף</string>
   <string name="qr_code_too_old">קוד ה־QR שסרקת מגיע מגרסה ישנה יותר של %s.\n\nאנא בקש מאיש הקשר שלך לשדרג את הגרסה האחרונה ואז נסה שוב.</string>
   <string name="qr_code_too_new">קוד ה־QR שסרקת מגיע מגרסה חדשה יותר של %s.\n\nאנא שדרג אל הגרסה האחרונה ואז נסה שוב.</string>
   <string name="camera_error">שגיאת מצלמה</string>
@@ -243,13 +227,9 @@
   <string name="duplicate_link_dialog_text_1">יש לך כבר איש קשר ממתין עם קישור זה: %s</string>
   <string name="duplicate_link_dialog_text_1_contact">יש לך כבר איש קשר עם קישור זה: %s</string>
   <!--This is a question asking whether two nicknames refer to the same person-->
-  <!--This is a button for answering that two nicknames do indeed refer to the same person. This
-	string will be used in a dialog button, so if the translation of this string is longer than 20
-	characters, please use "Yes" instead, and use "No" for the "Different Person" button-->
+  <!--This is a button for answering that two nicknames do indeed refer to the same person. This -->
   <string name="same_person_button">אותו איש</string>
-  <!--This is a button for answering that two nicknames refer to different people. This string
-	will be used in a dialog button, so if the translation of this string longer than 20 characters,
-	please use "No" instead, and use "Yes" for the "Same Person" button-->
+  <!--This is a button for answering that two nicknames refer to different people. This string -->
   <string name="different_person_button">איש שונה</string>
   <string name="pending_contact_updated_toast">איש קשר ממתין עודכן</string>
   <!--Introductions-->
@@ -328,21 +308,11 @@
   <string name="sharing_status_groups">רק היוצר יכול להזמין חברי קבוצה חדשים אל הקבוצה. להלן כל חברי הקבוצה הנוכחיים.</string>
   <!--Private Groups Revealing Contacts-->
   <string name="groups_reveal_contacts">חשוף אנשי קשר</string>
-  <string name="groups_reveal_dialog_message">אתם יכולים לבחור אם לחשוף את אנשי הקשר שלכם למשתתפים הנוכחיים והעתידיים של קבוצה זו.
-
-חשיפת אנשי הקשר תגרום לחיבור עם הקבוצה להיות מהיר ואמין יותר, כי תוכלו לתקשר עם אנשי הקשר שנחשפו גם אם יוצר הקבוצה אינו מחובר.</string>
   <string name="groups_reveal_visible">יחסים עם אנשי קשר גלויים לקבוצה</string>
   <string name="groups_reveal_visible_revealed_by_us">יחסים עם אנשי קשר גלויים לקבוצה (נחשפים על ידך)</string>
   <string name="groups_reveal_visible_revealed_by_contact">יחסים עם אנשי קשר גלויים לקבוצה (נחשפים על ידי %s)</string>
   <string name="groups_reveal_invisible">יחסים עם אנשי קשר אינם גלויים לקבוצה</string>
   <!--Forums-->
-  <string name="no_forums">אין פורומים להראות</string>
-  <string name="no_forums_action">הקש על הצלמית + כדי ליצור פורום, או בקש מאנשי הקשר שלך לשתף איתך פורומים</string>
-  <string name="create_forum_title">צור פורום</string>
-  <string name="choose_forum_hint">בחר שם עבור הפורום שלך</string>
-  <string name="create_forum_button">צור פורום</string>
-  <string name="forum_created_toast">פורום נוצר</string>
-  <string name="no_forum_posts">אין רשומות להראות</string>
   <string name="no_posts">אין רשומות</string>
   <plurals name="posts">
     <item quantity="one">רשומה %d</item>
@@ -350,93 +320,21 @@
     <item quantity="many">%d רשומות</item>
     <item quantity="other">%d רשומות</item>
   </plurals>
-  <string name="forum_new_message_hint">רשומה חדשה</string>
-  <string name="forum_message_reply_hint">תשובה חדשה</string>
   <string name="btn_reply">השב</string>
-  <string name="forum_leave">עזוב פורום</string>
-  <string name="dialog_title_leave_forum">אשר עזיבת פורום</string>
-  <string name="dialog_message_leave_forum">האם אכן ברצונך לעזוב פורום זה?\n\nכל אנשי הקשר ששיתפת איתם פורום זה עשויים להפסיק לקבל עדכונים.</string>
   <string name="dialog_button_leave">עזיבה</string>
-  <string name="forum_left_toast">עזב פורום</string>
   <!--Forum Sharing-->
-  <string name="forum_share_button">שתף פורום</string>
   <string name="contacts_selected">אנשי קשר נבחרו</string>
   <string name="activity_share_toolbar_header">בחר אנשי קשר</string>
   <string name="no_contacts_selector">אין אנשי קשר להראות</string>
   <string name="no_contacts_selector_action">אנא חזור לכאן לאחר הוספת איש קשר</string>
-  <string name="forum_shared_snackbar">פורום שותף עם אנשי קשר נבחרים</string>
-  <string name="forum_share_message">הוסף הודעה (רשותי)</string>
-  <string name="forum_share_error">הייתה שגיאה בשיתוף פורום זה.</string>
-  <string name="forum_invitation_received">%1$s שיתף את הפורום \"%2$s\" איתך.</string>
-  <string name="forum_invitation_sent">שיתפת את הפורום \"%1$s\" עם %2$s.</string>
-  <string name="forum_invitations_title">הזמנות לפורום</string>
-  <string name="forum_invitation_exists">הסכמת כבר אל הזמנה לפורום זה.\n\nהסכמה אל יותר הזמנות תהפוך את החיבור שלך אל הפורום למהיר יותר ולאמין יותר.</string>
-  <string name="forum_joined_toast">הצטרף אל פורום</string>
-  <string name="forum_declined_toast">הזמנה סורבה</string>
   <string name="shared_by_format">שותף  על ידי %s</string>
-  <string name="forum_invitation_already_sharing">משתף כבר</string>
-  <string name="forum_invitation_response_accepted_sent">הסכמת אל ההזמנה לפורום מאת %s.</string>
-  <string name="forum_invitation_response_declined_sent">סירבת אל ההזמנה לפורום מאת %s.</string>
-  <string name="forum_invitation_response_accepted_received">%s הסכים אל ההזמנה לפורום.</string>
-  <string name="forum_invitation_response_declined_received">%s סירב אל ההזמנה לפורום.</string>
   <string name="sharing_status">מעמד שיתוף</string>
-  <string name="sharing_status_forum">כל חבר פורום יכול לשתף את הפורום עם אנשי הקשר שלו. אתה משתף פורום זה עם אנשי הקשר הבאים. יתכן שיש חברי פורום אחרים שאינך יכול לראות.</string>
   <string name="shared_with">משותף עם %1$d (%2$d מחוברים)</string>
-  <plurals name="forums_shared">
-    <item quantity="one">פורום %d משותף ע״י אנשי קשר</item>
-    <item quantity="two">%d פורומים משותפים ע״י אנשי קשר</item>
-    <item quantity="many">%d פורומים משותפים ע״י אנשי קשר</item>
-    <item quantity="other">%d פורומים משותפים ע״י אנשי קשר</item>
-  </plurals>
   <string name="nobody">אף אחד</string>
   <!--Blogs-->
-  <string name="blogs_other_blog_empty_state">אין רשומות להראות</string>
   <string name="read_more">קרא עוד</string>
-  <string name="blogs_write_blog_post">כתוב רשומת בלוג</string>
-  <string name="blogs_write_blog_post_body_hint">הקלד את רשומת הבלוג שלך</string>
-  <string name="blogs_publish_blog_post">פרסום</string>
-  <string name="blogs_blog_post_created">רשומת בלוג נוצרה</string>
-  <string name="blogs_blog_post_received">רשומת בלוג חדשה התקבלה</string>
-  <string name="blogs_blog_post_scroll_to">גלול אל</string>
-  <string name="blogs_feed_empty_state">אין רשומות להראות</string>
-  <string name="blogs_feed_empty_state_action">רשומות מאנשי הקשר שלך ומבלוגים שאתה רשום כמנוי אליהם יופיעו כאן
-
-הקש על צלמית העט כדי לכתוב רשומה</string>
-  <string name="blogs_remove_blog">הסר בלוג</string>
-  <string name="blogs_remove_blog_dialog_message">האם אתה בטוח שאתה רוצה להסיר בלוג זה?\n\nרשומות יוסרו ממכשירך אבל לא ממכשירים של אנשים אחרים.\n\nאנשי קשר כלשהם ששיתפת איתם בלוג זה עלולים להפסיק לקבל עדכונים.</string>
-  <string name="blogs_remove_blog_ok">הסר</string>
-  <string name="blogs_blog_removed">בלוג הוסר</string>
-  <string name="blogs_reblog_comment_hint">הוספת תגובה (רשות)</string>
-  <string name="blogs_reblog_button">פרסם מחדש</string>
   <!--Blog Sharing-->
-  <string name="blogs_sharing_share">שתף בלוג</string>
-  <string name="blogs_sharing_error">הייתה שגיאה בשיתוף בלוג זה.</string>
-  <string name="blogs_sharing_button">שתף בלוג</string>
-  <string name="blogs_sharing_snackbar">בלוג שותף עם אנשי קשר נבחרים</string>
-  <string name="blogs_sharing_response_accepted_sent">הסכמת אל ההזמנה לבלוג מאת %s.</string>
-  <string name="blogs_sharing_response_declined_sent">סירבת אל ההזמנה לבלוג מאת %s.</string>
-  <string name="blogs_sharing_response_accepted_received">%s הסכים אל ההזמנה לבלוג.</string>
-  <string name="blogs_sharing_response_declined_received">%s סירב אל ההזמנה לבלוג.</string>
-  <string name="blogs_sharing_invitation_received">%1$s שיתף את הבלוג \"%2$s\" איתך.</string>
-  <string name="blogs_sharing_invitation_sent">שיתפת את הבלוג \"%1$s\" עם %2$s.</string>
-  <string name="blogs_sharing_invitations_title">הזמנות לבלוג</string>
-  <string name="blogs_sharing_joined_toast">רשום כמנוי אל בלוג</string>
-  <string name="blogs_sharing_declined_toast">הזמנה סורבה</string>
-  <string name="sharing_status_blog">כל אחד שנרשם כמנוי אל בלוג יכול לשתף אותו עם אנשי הקשר שלו. אתה משתף בלוג זה עם אנשי הקשר הבאים. יתכן שיש מנויים אחרים שאינך יכול לראות.</string>
   <!--RSS Feeds-->
-  <string name="blogs_rss_feeds_import">ייבא הזנת RSS</string>
-  <string name="blogs_rss_feeds_import_button">ייבא</string>
-  <string name="blogs_rss_feeds_import_hint">הכנס את כתובת האתר של הזנת ה־RSS</string>
-  <string name="blogs_rss_feeds_import_error">אנחנו מצטערים! הייתה שגיאה ביבוא ההזנה שלך.</string>
-  <string name="blogs_rss_feeds">הזנות RSS</string>
-  <string name="blogs_rss_feeds_manage_imported">מיובא:</string>
-  <string name="blogs_rss_feeds_manage_author">מחבר:</string>
-  <string name="blogs_rss_feeds_manage_updated">עודכן לאחרונה:</string>
-  <string name="blogs_rss_remove_feed">הסר הזנה</string>
-  <string name="blogs_rss_remove_feed_dialog_message">האם אכן ברצונך להסיר הזנה זו?\n\nרשומות יוסרו ממכשירך אבל לא ממכשירים של אנשים אחרים.\n\nאנשי קשר כלשהם ששיתפת איתם הזנה זו עלולים להפסיק לקבל עדכונים.</string>
-  <string name="blogs_rss_remove_feed_ok">הסר</string>
-  <string name="blogs_rss_feeds_manage_empty_state">אין הזנות RSS להראות\n\nהקש על הצלמית + כדי לייבא הזנה</string>
-  <string name="blogs_rss_feeds_manage_error">הייתה בעיה בטעינת ההזנות שלך. אנא נסה שוב מאוחר יותר.</string>
   <!--Settings Profile Picture-->
   <string name="change_profile_picture">הקש כדי לשנות את תמונת הפרופיל שלך</string>
   <string name="dialog_confirm_profile_picture_title">שנה תמונת פרופיל</string>
@@ -517,12 +415,6 @@
   <string name="notify_group_messages_setting_title">הודעות קבוצתיות</string>
   <string name="notify_group_messages_setting_summary">הראה התרעות עבור הודעות קבוצתיות</string>
   <string name="notify_group_messages_setting_summary_26">הגדר התרעות עבור הודעות קבוצתיות</string>
-  <string name="notify_forum_posts_setting_title">רשומות פורום</string>
-  <string name="notify_forum_posts_setting_summary">הראה התראות עבור רשומות פורום</string>
-  <string name="notify_forum_posts_setting_summary_26">הגדר התראות עבור רשומות פורום</string>
-  <string name="notify_blog_posts_setting_title">רשומות בלוג</string>
-  <string name="notify_blog_posts_setting_summary">הראה התראות עבור רשומות בלוג</string>
-  <string name="notify_blog_posts_setting_summary_26">הגדר התראות עבור רשומות בלוג</string>
   <string name="notify_vibration_setting">רטט</string>
   <string name="notify_sound_setting">צליל</string>
   <string name="notify_sound_setting_default">צלצול ברירת מחדל</string>
@@ -583,8 +475,6 @@
   <string name="permission_camera_location_request_body">כדי לסרוק את קוד ה־QR, היישום Zerion צריך הרשאה אל המצלמה.\n\nכדי לגלות מכשירי שן־כחולה, Zerion צריך הרשאה להשיג גישה אל מיקומך.\n\nZerion אינו מאחסן את מיקומך או משתף אותו עם אף אחד.</string>
   <string name="permission_camera_denied_body">דחית גישה אל המצלמה, אבל הוספת אנשי קשר דורשת שימוש במצלמה.\n\nאנא שקול הענקת גישה.</string>
   <string name="permission_location_denied_body">דחית גישה אל המיקום שלך, אבל Zerion צריך הרשאה זו כדי לגלות מכשירי Bluetooth.\n\nאנא שקול להעניק גישה.</string>
-  <string name="qr_code">קוד QR</string>
-  <string name="show_qr_code_fullscreen">הראה קוד QR במסך מלא</string>
   <!--App Locking-->
   <string name="lock_unlock">בטל נעילת Zerion</string>
   <string name="lock_unlock_verbose">אנא הכנס PIN, דפוס או סיסמה של מכשריך כדי לבטל נעילת Zerion</string>
@@ -599,9 +489,7 @@
   <string name="hotspot_button_connected">הבא</string>
   <!--The placeholder to be inserted into the string 'hotspot_manual_wifi': People can connect by %s-->
   <!--Wi-Fi setup-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <!--Download link-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <!--e.g. Download Zerion 1.2.20-->
   <string name="website_troubleshooting_title">פתרון תקלות</string>
   <!--error handling-->

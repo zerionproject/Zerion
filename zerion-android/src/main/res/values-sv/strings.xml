@@ -64,8 +64,6 @@ Vänlige installera Zerion på en nyare enhet.</string>
   <string name="nav_drawer_close_description">Stäng navigeringsfacket</string>
   <string name="contact_list_button">Kontakter</string>
   <string name="groups_button">Privatgrupper</string>
-  <string name="forums_button">Forum</string>
-  <string name="blogs_button">Bloggar</string>
   <!--This is part of the main menu. The app will be locked when this is tapped.-->
   <string name="lock_button">Lås appen</string>
   <string name="settings_button">Inställningar</string>
@@ -100,14 +98,6 @@ Vänlige installera Zerion på en nyare enhet.</string>
   <plurals name="group_message_notification_text">
     <item quantity="one">Nytt gruppmeddelande.</item>
     <item quantity="other">%d nya gruppmeddelanden.</item>
-  </plurals>
-  <plurals name="forum_post_notification_text">
-    <item quantity="one">Ett nytt foruminlägg.</item>
-    <item quantity="other">%dnya foruminlägg.</item>
-  </plurals>
-  <plurals name="blog_post_notification_text">
-    <item quantity="one">Ett nytt blogginlägg.</item>
-    <item quantity="other">%d nya blogginlägg.</item>
   </plurals>
   <!--Misc-->
   <string name="now">nu</string>
@@ -209,7 +199,6 @@ Vänlige installera Zerion på en nyare enhet.</string>
   <!--Adding Contacts-->
   <string name="add_contact_title">Lägg till en närvarande kontakt</string>
   <string name="add_contact_error_two_way">Skannade ni båda varandras QR-koder?</string>
-  <string name="face_to_face">Du måste personligen träffa den som du vill lägga till som kontakt.\n\nDetta för att undvika att någon senare låtsas vara du eller läser dina meddelanden.</string>
   <string name="continue_button">Fortsätt</string>
   <string name="try_again_button">Försök igen</string>
   <string name="waiting_for_contact_to_scan">Väntar på att kontakten ska skanna och ansluta\u2026</string>
@@ -217,10 +206,6 @@ Vänlige installera Zerion på en nyare enhet.</string>
   <string name="contact_added_toast">Kontakt tillagd: %s</string>
   <string name="contact_already_exists">Kontakten %s finns redan</string>
   <string name="contact_already_exists_general">Kontakten finns redan</string>
-  <string name="qr_code_invalid">QR-koden är felaktig</string>
-  <string name="qr_code_too_old_1">QR-koden som du har skannat kommer från en äldre version av Zerion.\n\nVar vänlig och be din kontakt att uppgradera till den senaste versionen och försök sedan igen.</string>
-  <string name="qr_code_too_new_1">QR-koden som du har skannat kommer från en äldre version av Zerion.\n\nVänligen uppgradera till den senaste versionen och försök igen.</string>
-  <string name="mailbox_qr_code_for_contact">QR-koden du skannade kommer från Zerion Mailbox.\n\nOm du vill länka en Mailbox, välj Inställningar &gt; Mailbox från Zerion-menyn.</string>
   <string name="camera_error">Kamerafel</string>
   <string name="connecting_to_device">Ansluter till enhet\u2026</string>
   <string name="authenticating_with_device">Autentiserar med enhet\u2026</string>
@@ -375,103 +360,26 @@ Vänlige installera Zerion på en nyare enhet.</string>
   <string name="groups_reveal_visible_revealed_by_contact">Kontaktrelationer är synliga för gruppen (avslöjade av %s)</string>
   <string name="groups_reveal_invisible">Kontaktrelationer är ej synliga för gruppen</string>
   <!--Forums-->
-  <string name="no_forums">Inga forum</string>
-  <string name="no_forums_action">Tryck på plus-ikonen (+) för att skapa ett forum. Du kan också fråga en kontakt om att bli inbjuden till ett forum.</string>
-  <string name="create_forum_title">Skapa forum</string>
-  <string name="choose_forum_hint">Sätt ett namn på ditt forum</string>
-  <string name="create_forum_button">Skapa forum</string>
-  <string name="forum_created_toast">Forum skapat</string>
-  <string name="no_forum_posts">Inga inlägg</string>
   <string name="no_posts">Inga inlägg</string>
   <plurals name="posts">
     <item quantity="one">%d inlägg</item>
     <item quantity="other">%d inlägg</item>
   </plurals>
-  <string name="forum_new_message_hint">Nytt inlägg</string>
-  <string name="forum_message_reply_hint">Nytt svar</string>
   <string name="btn_reply">Svara</string>
-  <string name="forum_leave">Lämna forum</string>
-  <string name="dialog_title_leave_forum">Bekräfta lämna forum</string>
-  <string name="dialog_message_leave_forum">Är du säker på att du vill lämna det här forumet?\n\nKontakter som du har bjudit in till det här forumet kommer kanske inte längre få uppdateringar från det.</string>
   <string name="dialog_button_leave">Tillbaka</string>
-  <string name="forum_left_toast">Lämnade forumet</string>
   <!--Forum Sharing-->
-  <string name="forum_share_button">Bjud in till forum</string>
   <string name="contacts_selected">Kontakter valda</string>
   <string name="activity_share_toolbar_header">Välj kontakter</string>
   <string name="no_contacts_selector">Inga kontakter</string>
   <string name="no_contacts_selector_action">Vänligen återvänd hit när du lagt till en kontakt</string>
-  <string name="forum_shared_snackbar">Bjud in valda kontakter till forumet</string>
-  <string name="forum_share_message">Lägg till ett meddelande (valfritt)</string>
-  <string name="forum_share_error">Något gick fel vid inbjudan till forum.</string>
-  <string name="forum_invitation_received">%1$shar bjudit in dig till forumet \"%2$s\".</string>
-  <string name="forum_invitation_sent">Du har bjudit in %2$still forumet \"%1$s\".</string>
-  <string name="forum_invitations_title">Foruminbjudningar</string>
-  <string name="forum_invitation_exists">Du har redan godkänt en inbjudan till det här forumet.\n\nOm du godkänner fler inbjudningar så kommer din anslutning till forumet bli snabbare och mer pålitlig.</string>
-  <string name="forum_joined_toast">Gick med i forumet</string>
-  <string name="forum_declined_toast">Inbjudan avvisades</string>
   <string name="shared_by_format">Delad av %s</string>
-  <string name="forum_invitation_already_sharing">Delas redan</string>
-  <string name="forum_invitation_response_accepted_sent">Du godkände foruminbjudan från %s.</string>
-  <string name="forum_invitation_response_declined_sent">Du avvisade foruminbjudan från %s.</string>
-  <string name="forum_invitation_response_declined_auto">Foruminbjudan från %s avböjdes automatiskt.</string>
-  <string name="forum_invitation_response_accepted_received">%s godkände foruminbjudan.</string>
-  <string name="forum_invitation_response_declined_received">%s avvisade foruminbjudan.</string>
   <string name="sharing_status">Delningsstatus</string>
-  <string name="sharing_status_forum">Alla medlemmar i ett forum kan bjuda in sina kontakter. Du har bjudit in följande kontakter till detta forum. Det kan finnas fler forummedlemmar som du inte kan se.</string>
   <string name="shared_with">Delas med %1$d (%2$d uppkopplade)</string>
-  <plurals name="forums_shared">
-    <item quantity="one">%dforum delas med kontakter</item>
-    <item quantity="other">%dforum delas med kontakter </item>
-  </plurals>
   <string name="nobody">Ingen</string>
   <!--Blogs-->
-  <string name="blogs_other_blog_empty_state">Inga inlägg</string>
   <string name="read_more">läs mer</string>
-  <string name="blogs_write_blog_post">Skriv blogginlägg</string>
-  <string name="blogs_write_blog_post_body_hint">Skriv ditt inlägg</string>
-  <string name="blogs_publish_blog_post">Publicera</string>
-  <string name="blogs_blog_post_created">Blogginlägg skapades</string>
-  <string name="blogs_blog_post_received">Nytt blogginlägg togs emot</string>
-  <string name="blogs_blog_post_scroll_to">Rulla till</string>
-  <string name="blogs_feed_empty_state">Inga inlägg</string>
-  <string name="blogs_feed_empty_state_action">Inlägg från dina kontakter och bloggar du följer kommer att dyka upp här\n\nTryck på penna-ikonen för att skriva ett inlägg</string>
-  <string name="blogs_remove_blog">Radera blogg</string>
-  <string name="blogs_remove_blog_dialog_message">Är du säker på att du vill radera den här bloggen?\n\nInläggen kommer att radera från din enhet, men inte från andras enheter.\n\nKontakter som du har delat den här bloggen med kommer kanske inte längre få uppdateringar från det.</string>
-  <string name="blogs_remove_blog_ok">&amp;Ta bort</string>
-  <string name="blogs_blog_removed">Blogg raderad</string>
-  <string name="blogs_reblog_comment_hint">Lägg till kommentar (valfritt)</string>
-  <string name="blogs_reblog_button">Återblogga</string>
   <!--Blog Sharing-->
-  <string name="blogs_sharing_share">Dela blogg</string>
-  <string name="blogs_sharing_error">Något gick fel när bloggen skulle delas.</string>
-  <string name="blogs_sharing_button">Dela blogg</string>
-  <string name="blogs_sharing_snackbar">Dela bloggen med valda kontakter</string>
-  <string name="blogs_sharing_response_accepted_sent">Du godkände blogginbjudan från %s.</string>
-  <string name="blogs_sharing_response_declined_sent">Du avvisade blogginbjudan från %s.</string>
-  <string name="blogs_sharing_response_declined_auto">Blogginbjudan från %s avböjdes automatiskt.</string>
-  <string name="blogs_sharing_response_accepted_received">%sgodkände blogginbjudan.</string>
-  <string name="blogs_sharing_response_declined_received">%savvisade blogginbjudan.</string>
-  <string name="blogs_sharing_invitation_received">%1$shar delat bloggen \"%2$s\" med dig.</string>
-  <string name="blogs_sharing_invitation_sent">Du har delat bloggen \"%1$s\" med %2$s.</string>
-  <string name="blogs_sharing_invitations_title">Blogginbjudningar</string>
-  <string name="blogs_sharing_joined_toast">Bloggen följs</string>
-  <string name="blogs_sharing_declined_toast">Inbjudan avvisades</string>
-  <string name="sharing_status_blog">Alla följare av en blogg kan dela med sig av den med sina kontakter. Du delar med dig av den här bloggen med följande kontakter. Det kan finnas fler bloggföljare som du inte kan se.</string>
   <!--RSS Feeds-->
-  <string name="blogs_rss_feeds_import">Importera RSS-flöde</string>
-  <string name="blogs_rss_feeds_import_button">Importera</string>
-  <string name="blogs_rss_feeds_import_hint">Skriv URL till RSS-flödet</string>
-  <string name="blogs_rss_feeds_import_error">Tyvärr! Något gick fel när flödet skulle importeras.</string>
-  <string name="blogs_rss_feeds">RSS-flöden</string>
-  <string name="blogs_rss_feeds_manage_imported">Importerade:</string>
-  <string name="blogs_rss_feeds_manage_author">Författare:</string>
-  <string name="blogs_rss_feeds_manage_updated">Senast uppdaterad:</string>
-  <string name="blogs_rss_remove_feed">Ta bort flöde</string>
-  <string name="blogs_rss_remove_feed_dialog_message">Är du säker på att du vill ta bort det här flödet?\n\nInlägg kommer att tas bort från din enhet, men inte från andras.\n\nKontakter som du har delat det här flödet med kommer kanske inte längre få uppdateringar från det.</string>
-  <string name="blogs_rss_remove_feed_ok">&amp;Ta bort</string>
-  <string name="blogs_rss_feeds_manage_empty_state">Inga RSS-flöden\n\nTryck plus-ikonen (+) för att importera ett flöde</string>
-  <string name="blogs_rss_feeds_manage_error">Något gick fel när dina flöden skulle laddas. Försök ingen senare.</string>
   <!--Settings Profile Picture-->
   <string name="change_profile_picture">Tryck för att ändra din profilbild</string>
   <string name="dialog_confirm_profile_picture_title">Ändra profilbild</string>
@@ -551,12 +459,6 @@ Vänlige installera Zerion på en nyare enhet.</string>
   <string name="notify_group_messages_setting_title">Gruppmeddelanden</string>
   <string name="notify_group_messages_setting_summary">Visa aviseringar för gruppmeddelanden</string>
   <string name="notify_group_messages_setting_summary_26">Konfigurera aviseringar för gruppmeddelanden</string>
-  <string name="notify_forum_posts_setting_title">Foruminlägg</string>
-  <string name="notify_forum_posts_setting_summary">Visa aviseringar för foruminlägg</string>
-  <string name="notify_forum_posts_setting_summary_26">Konfigurera aviseringar för foruminlägg</string>
-  <string name="notify_blog_posts_setting_title">Blogginlägg</string>
-  <string name="notify_blog_posts_setting_summary">Visa aviseringar för blogginlägg</string>
-  <string name="notify_blog_posts_setting_summary_26">Konfigurera aviseringar för blogginlägg</string>
   <string name="notify_vibration_setting">Vibrera</string>
   <string name="notify_sound_setting">Ljud</string>
   <string name="notify_sound_setting_default">Förvald ringsignal</string>
@@ -715,8 +617,6 @@ Vänlige installera Zerion på en nyare enhet.</string>
   <string name="permission_location_setting_title">Platsinställningar</string>
   <string name="permission_location_setting_body">Din enhets platsinställning måste vara påslagen för att hitta andra enheter via Bluetooth. Aktivera plats för att fortsätta. Du kan inaktivera den igen efteråt.</string>
   <string name="permission_location_setting_button">Aktivera plats</string>
-  <string name="qr_code">QR-kod</string>
-  <string name="show_qr_code_fullscreen">Visa QR-koden i fullskärm</string>
   <!--App Locking-->
   <string name="lock_unlock">Lås upp Zerion</string>
   <string name="lock_unlock_verbose">Lås upp Zerion med din enhets pinkod, grafiska lösenord, eller lösenord.</string>
@@ -742,9 +642,7 @@ Vänlige installera Zerion på en nyare enhet.</string>
   <string name="wifi_settings_request_enable_body">För att skapa en Wi-Fi-hotspot måste Zerion använda Wi-Fi. Vänligen aktivera det.</string>
   <string name="hotspot_tab_manual">Manuellt</string>
   <!--The placeholder to be inserted into the string 'hotspot_manual_wifi': People can connect by %s-->
-  <string name="hotspot_scanning_a_qr_code">skanna en QR-kod</string>
   <!--Wi-Fi setup-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_wifi">Din telefon tillhandahåller en Wi-Fi-hotspot. Personer som vill hämta Zerion kan ansluta till hotspoten genom att lägga till den bland Wi-Fi-inställningarna i deras enhet med hjälp av detaljerna nedan eller genom %s. När du har anslutit till hotspoten, tryck ”Nästa”.</string>
   <string name="hotspot_manual_wifi_ssid">Nätverksnamn</string>
   <string name="hotspot_qr_wifi">Din telefon tillhandahåller en Wi-Fi-hotspot. Personer som vill hämta Zerion kan ansluta till hotspoten genom att skanna denna QR-kod. När de har anslutit till hotspoten, tryck ”Nästa”.</string>
@@ -754,7 +652,6 @@ Vänlige installera Zerion på en nyare enhet.</string>
     <item quantity="other">%s enheter anslutna</item>
   </plurals>
   <!--Download link-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_site">Din telefon tillhandahåller en Wi-Fi-hotspot. Personer som är ansluta till hotspoten genom kan hämta Zerion genom att skriva in följande länk i en webbläsare eller %s.</string>
   <string name="hotspot_manual_site_address">Adress (URL)</string>
   <string name="hotspot_qr_site">Din telfon tillhandahåller en Wi-Fi-hotspot. Personer som är anslutna till hotstpoen kan hämta Zerion genom att skanna denna QR-kod.</string>

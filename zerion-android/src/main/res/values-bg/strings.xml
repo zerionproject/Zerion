@@ -65,8 +65,6 @@
   <string name="nav_drawer_close_description">Затваря навигационната лента</string>
   <string name="contact_list_button">Контакти</string>
   <string name="groups_button">Частни групи</string>
-  <string name="forums_button">Форуми</string>
-  <string name="blogs_button">Блогове</string>
   <!--This is part of the main menu. The app will be locked when this is tapped.-->
   <string name="lock_button">Заключване</string>
   <string name="settings_button">Настройки</string>
@@ -101,14 +99,6 @@
   <plurals name="group_message_notification_text">
     <item quantity="one">Ново групово съобщение.</item>
     <item quantity="other">%d нови групови съобщения.</item>
-  </plurals>
-  <plurals name="forum_post_notification_text">
-    <item quantity="one">Нова публикация във форум.</item>
-    <item quantity="other">%d нови публикации във форуми.</item>
-  </plurals>
-  <plurals name="blog_post_notification_text">
-    <item quantity="one">Нова публикация в блог.</item>
-    <item quantity="other">%d нови публикации в блогове.</item>
   </plurals>
   <!--Misc-->
   <string name="now">току-що</string>
@@ -210,7 +200,6 @@
   <!--Adding Contacts-->
   <string name="add_contact_title">Добавяне на контакт на живо</string>
   <string name="add_contact_error_two_way">Сканирахте ли взаимно кодовете си за QR?</string>
-  <string name="face_to_face">Трябва да се срещнете лично с човека, чиито контакт искате да добавите.\n\nТака никой не може да се представи за вас или да чете съобщенията ви в бъдеще.</string>
   <string name="continue_button">Напред</string>
   <string name="try_again_button">Нов опит</string>
   <string name="waiting_for_contact_to_scan">Изчакване контактът да сканира и да се свърже\u2026</string>
@@ -218,17 +207,11 @@
   <string name="contact_added_toast">Добавен контакт: %s</string>
   <string name="contact_already_exists">Контактът %s вече съществува</string>
   <string name="contact_already_exists_general">Контактът вече съществува</string>
-  <string name="qr_code_invalid">Кодът за QR е недействителен</string>
-  <string name="qr_code_too_old_1">Сканираният код за QR е от по-ранно издание на Zerion.\n\nНека вашия контакт инсталира последното издание и да пробва отново.</string>
-  <string name="qr_code_too_new_1">Сканираният код за QR е от по-ново издание на Zerion.\n\nИнсталирайте последното издание и пробвайте отново.</string>
-  <string name="mailbox_qr_code_for_contact">Сканираният код за QR е от Zerion Пощенска кутия.\n\nАко искате да свържете Пощенска кутия използвайте Настройки &gt; Пощенска кутия от менюто.</string>
-  <string name="qr_code_format_unknown">Сканираният код за QR не е предназначен за добавяне на контакт в Zerion.\n\nЗа тази цел използвайте кода, на екрана на контакта ви.</string>
   <string name="camera_error">Грешка в камерата</string>
   <string name="connecting_to_device">Свързване с устройство\u2026</string>
   <string name="authenticating_with_device">Удостоверяване с устройство\u2026</string>
   <string name="connection_error_title">Не може да бъде установена връзка с контакта</string>
   <string name="connection_error_feedback">Ако проблемът продължава, <a href="feedback">изпратете обратна връзка</a>, за да ни помогнете да подобрим приложението.</string>
-  <string name="info_both_must_scan">Трябва взаимно да сканирате кодовете си за QR</string>
   <!--Adding Contacts Remotely-->
   <string name="add_contact_remotely_title_case">Добавяне на контакт отдалечено</string>
   <string name="add_contact_nearby_title">Добавяне на контакт на живо</string>
@@ -380,109 +363,26 @@
   <string name="groups_reveal_visible_revealed_by_contact">Отношенията ви с контакта са видими за групата (разкрити от %s)</string>
   <string name="groups_reveal_invisible">Отношенията ви с контакта не са видими за групата</string>
   <!--Forums-->
-  <string name="no_forums">Няма форуми</string>
-  <string name="no_forums_action">Докоснете иконата с +, за да създадете свой или поискайте от контактите си да споделят форум с вас</string>
-  <string name="create_forum_title">Създаване на форум</string>
-  <string name="choose_forum_hint">Име на форума</string>
-  <string name="create_forum_button">Създаване на форум</string>
-  <string name="forum_created_toast">Форумът е създаден</string>
-  <string name="no_forum_posts">Няма публикации</string>
   <string name="no_posts">Няма публикации</string>
   <plurals name="posts">
     <item quantity="one">%d публикация</item>
     <item quantity="other">%d публикации</item>
   </plurals>
-  <string name="forum_new_message_hint">Публикация</string>
-  <string name="forum_message_reply_hint">Отговор</string>
   <string name="btn_reply">Отговаряне</string>
-  <string name="forum_leave">Напускане на форума</string>
-  <string name="dialog_title_leave_forum">Потвърждение на напускане на форум</string>
-  <string name="dialog_message_leave_forum">Сигурни ли сте, че искате да напуснете този форум?\n\nКонтактите, с които сте го споделили може да спрат да получават публикации.</string>
   <string name="dialog_button_leave">Напускане</string>
-  <string name="forum_left_toast">Напуснахте форума</string>
   <!--Forum Sharing-->
-  <string name="forum_share_button">Споделяне форума</string>
   <string name="contacts_selected">Избрани контакти</string>
   <string name="activity_share_toolbar_header">Избиране на контакти</string>
   <string name="no_contacts_selector">Няма контакти</string>
   <string name="no_contacts_selector_action">Върнете се след като добавите контакти</string>
-  <string name="forum_shared_snackbar">Форумът е споделен с избраните контакти</string>
-  <string name="forum_share_message">Добавете съобщение (незадължително)</string>
-  <string name="forum_share_error">Грешка при споделянето на форума.</string>
-  <string name="forum_invitation_received">%1$s сподели с вас форума „%2$s“.</string>
-  <string name="forum_invitation_sent">Споделихте форума „%1$s“ с/ъс %2$s.</string>
-  <string name="forum_invitations_title">Покани за членство във форум</string>
-  <string name="forum_invitation_exists">Вече приехте покана за този форум.\n\nС приемане на повече покани връзката с групата става по-бърза и надеждна.</string>
-  <string name="forum_joined_toast">Присъединихте се към форума</string>
-  <string name="forum_declined_toast">Поканата е отказана</string>
   <string name="shared_by_format">Споделен от %s</string>
-  <string name="forum_invitation_already_sharing">Вече е споделен</string>
-  <string name="forum_invitation_already_invited">Поканата вече е изпратена</string>
-  <string name="forum_invitation_invite_received">Поканата вече е получена</string>
-  <string name="forum_invitation_not_supported">Не се поддържа от този контакт</string>
-  <string name="forum_invitation_error">Грешка. Това е дефект и не е причинено от вас</string>
-  <string name="forum_invitation_response_accepted_sent">Приехте поканата от %s за членство във форум.</string>
-  <string name="forum_invitation_response_declined_sent">Отказахте поканата на %s за членство във форум.</string>
-  <string name="forum_invitation_response_declined_auto">Поканата от %s за членство във форум е отказана автоматично.</string>
-  <string name="forum_invitation_response_accepted_received">%s прие поканата за форум.</string>
-  <string name="forum_invitation_response_declined_received">%s отказа поканата за форум.</string>
   <string name="sharing_status">Състояние на споделяне</string>
-  <string name="sharing_status_forum">Всеки участник във форума може да го сподели с контактите си. Споделяте този форум със следните контакти. Възможно е да има и други, които не можете да видите.</string>
   <string name="shared_with">Споделено с %1$d (на линия %2$d)</string>
-  <plurals name="forums_shared">
-    <item quantity="one">%d форум, споделен от контакти</item>
-    <item quantity="other">%d форума споделени от контакти</item>
-  </plurals>
   <string name="nobody">Никого</string>
   <!--Blogs-->
-  <string name="blogs_other_blog_empty_state">Няма публикации</string>
   <string name="read_more">повече</string>
-  <string name="blogs_write_blog_post">Нова публикация в блога</string>
-  <string name="blogs_write_blog_post_body_hint">Въведете своята публикация</string>
-  <string name="blogs_publish_blog_post">Публикуване</string>
-  <string name="blogs_blog_post_created">Публикацията в блога е създадена</string>
-  <string name="blogs_blog_post_received">Получена е нова публикация в блога</string>
-  <string name="blogs_blog_post_scroll_to">Плъзване до нея</string>
-  <string name="blogs_feed_empty_state">Няма публикации</string>
-  <string name="blogs_feed_empty_state_action">Тук се показват публикациите от вашите контакти и блоговете, за които имате абонамент.\n\nЗа да направите вие публикация, докоснете иконата на писалка.</string>
-  <string name="blogs_remove_blog">Премахване на блог</string>
-  <string name="blogs_remove_blog_dialog_message">Сигурни ли сте, че желаете да премахнете блога?\n\nПубликациите ще бъдат премахнати от устройството ви, но не и от устройствата на другите хора.\n\nКонтактите, с които сте споделили този блог може да спрат да получават обновявания.</string>
-  <string name="blogs_remove_blog_ok">Премахване</string>
-  <string name="blogs_blog_removed">Блогът е премахнат</string>
-  <string name="blogs_reblog_comment_hint">Добавете съобщение (незадължително)</string>
-  <string name="blogs_reblog_button">Препубликуване</string>
   <!--Blog Sharing-->
-  <string name="blogs_sharing_share">Споделяне на блог</string>
-  <string name="blogs_sharing_error">Грешка при споделяне блога.</string>
-  <string name="blogs_sharing_button">Споделяне на блог</string>
-  <string name="blogs_sharing_snackbar">Блогът е споделен с избраните контакти</string>
-  <string name="blogs_sharing_response_accepted_sent">Приехте поканата на %s за абонамент за блог.</string>
-  <string name="blogs_sharing_response_declined_sent">Отказахте поканата на %s за абонамент за блог.</string>
-  <string name="blogs_sharing_response_declined_auto">Поканата на %s за абонамент за блог е отказана автоматично.</string>
-  <string name="blogs_sharing_response_accepted_received">%s прие поканата за абонамент за блог.</string>
-  <string name="blogs_sharing_response_declined_received">%s отказа поканата за абонамент за блог.</string>
-  <string name="blogs_sharing_invitation_received">%1$s сподели с вас блога „%2$s“.</string>
-  <string name="blogs_sharing_invitation_sent">Споделихте блога „%1$s“ с/ъс %2$s.</string>
-  <string name="blogs_sharing_invitations_title">Покани за абонамент за блог</string>
-  <string name="blogs_sharing_joined_toast">Абонирахте се за блогa</string>
-  <string name="blogs_sharing_declined_toast">Поканата е отказана</string>
-  <string name="sharing_status_blog">Всеки абонат на блога може да го сподели с контактите си. Споделяте този блог със следните контакти. Възможно е да има и други, които не можете да видите.</string>
   <!--RSS Feeds-->
-  <string name="blogs_rss_feeds_import">Внасяне на емисия на RSS</string>
-  <string name="blogs_rss_feeds_import_button">Внасяне</string>
-  <string name="blogs_rss_feeds_import_hint">Aдрес на емисия</string>
-  <string name="blogs_rss_feeds_import_progress">Внасяне на емисия на RSS</string>
-  <string name="blogs_rss_feeds_import_error">Грешка при внасяне на емисията.</string>
-  <string name="blogs_rss_feeds_import_title">Внасяне на емисия от файл</string>
-  <string name="blogs_rss_feeds">Емисии на RSS</string>
-  <string name="blogs_rss_feeds_manage_imported">Внесена:</string>
-  <string name="blogs_rss_feeds_manage_author">Автор:</string>
-  <string name="blogs_rss_feeds_manage_updated">Последно обновяване:</string>
-  <string name="blogs_rss_remove_feed">Премахване на емисия</string>
-  <string name="blogs_rss_remove_feed_dialog_message">Сигурни ли сте, че желаете да премахнете емисията?\n\nПубликациите ще бъдат премахнати от устройството ви, но не и от устройствата на другите хора.\n\nКонтактите, с които сте споделили тази емисия може да спрат да получават обновявания.</string>
-  <string name="blogs_rss_remove_feed_ok">Премахване</string>
-  <string name="blogs_rss_feeds_manage_empty_state">Няма емисии на RSS\n\nДокоснете иконата с +, за да внесете емисия</string>
-  <string name="blogs_rss_feeds_manage_error">Възникна проблем при зареждането на емисиите ви. Моля, опитайте пак по-късно.</string>
   <!--Settings Profile Picture-->
   <string name="change_profile_picture">Докоснете за смяна на профилната снимка</string>
   <string name="dialog_confirm_profile_picture_title">Смяна на профилна снимка</string>
@@ -562,12 +462,6 @@
   <string name="notify_group_messages_setting_title">Групови съобщения</string>
   <string name="notify_group_messages_setting_summary">Известия за групови съобщения</string>
   <string name="notify_group_messages_setting_summary_26">Настройки на известия за групови съобщения</string>
-  <string name="notify_forum_posts_setting_title">Публикации във форуми</string>
-  <string name="notify_forum_posts_setting_summary">Известия за публикации във форуми</string>
-  <string name="notify_forum_posts_setting_summary_26">Настройки на известия за публикации във форуми</string>
-  <string name="notify_blog_posts_setting_title">Публикации в блогове</string>
-  <string name="notify_blog_posts_setting_summary">Известия за публикации в блогове</string>
-  <string name="notify_blog_posts_setting_summary_26">Настройки на известия за публикации в блог</string>
   <string name="notify_vibration_setting">Вибрация</string>
   <string name="notify_sound_setting">Звук</string>
   <string name="notify_sound_setting_default">Подразбиран тон на звънене</string>
@@ -586,10 +480,6 @@
   <string name="mailbox_setup_connecting">Свързване с Пощенска кутия…</string>
   <!--This string is shown when connecting to a Mailbox for the first time. The placeholder will be replaced with a duration, e.g. "2 minutes".-->
   <string name="mailbox_setup_connecting_info">Може да отнеме %1s</string>
-  <string name="mailbox_qr_code_too_old">Сканираният код за QR е от по-ранно издание на Zerion Пощенска кутия.\n\nИнсталирайте последното издание и пробвайте отново.</string>
-  <string name="mailbox_qr_code_too_new">Сканираният код за QR е от по-ново издание на Zerion Пощенска кутия.\n\nИнсталирайте последното издание на Zerion и пробвайте отново.</string>
-  <string name="contact_qr_code_for_mailbox">Сканираният код за QR е предназначен за добавяне на контакт в Zerion.\n\nАко желаете да добавите контакт отворете списъка с контакти и дикоснете иконата с +.</string>
-  <string name="mailbox_setup_qr_code_wrong_description">Сканираният код за QR не е от Zerion Пощенска кутия.\n\n Отворете приложението Zerion Пощенска кутия на устройството, на което е инсталирано и сканирайте кода зя QR, който то предостави.</string>
   <string name="mailbox_setup_already_paired_title">Пощенската кутия е вече свързана</string>
   <string name="mailbox_setup_already_paired_description">Прекъснете връзката с пощенската кутия от другото устройство и опитайте отново.</string>
   <string name="mailbox_setup_io_error_title">Грешка при свързване</string>
@@ -735,8 +625,6 @@
   <string name="permission_bluetooth_title">Разрешение за устройства наблизо</string>
   <string name="permission_bluetooth_body">За да извършва разговори чрез Bluetooth, Zerion се нуждае от разрешение да намира и да се свързва с устройства наблизо.</string>
   <string name="permission_bluetooth_denied_body">Отказахте достъп до устройства наблизо, но достъп е необходим за използване на Bluetooth.\n\nОбмислете дали да не дадете разрешение.</string>
-  <string name="qr_code">Код за QR</string>
-  <string name="show_qr_code_fullscreen">Код за QR на цял екран</string>
   <!--App Locking-->
   <string name="lock_unlock">Отключете Zerion</string>
   <string name="lock_unlock_verbose">Въведете своя PIN, фигура или парола</string>
@@ -766,9 +654,7 @@
   <string name="wifi_settings_request_enable_body">За да създаде безжична точка за достъп, Zerion се нуждае от безжична мрежа. Включете Wi-Fi.</string>
   <string name="hotspot_tab_manual">Ръчно</string>
   <!--The placeholder to be inserted into the string 'hotspot_manual_wifi': People can connect by %s-->
-  <string name="hotspot_scanning_a_qr_code">като сканират код за QR</string>
   <!--Wi-Fi setup-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_wifi">Устройството ви създава безжична точка за достъп. Хората, които желаят да изтеглят Zerion могат да се свържат към нея като добавят в настройките за Wi-Fi на техните устройства параметрите по-долу или %s. Когато те се свържат към точката за достъп натиснете „Напред“.</string>
   <string name="hotspot_manual_wifi_ssid">Наименование на мрежата</string>
   <string name="hotspot_qr_wifi">Устройството ви създава безжична точка за достъп. Хората, които желаят да изтеглят Zerion могат да се свържат към нея като сканират този код за QR. Когато те се свържат към точката за достъп натиснете „Напред“.</string>
@@ -778,7 +664,6 @@
     <item quantity="other">%s свързани устройства</item>
   </plurals>
   <!--Download link-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_site">Устройството ви създава безжична точка за достъп. Хората, които са свързани към нея могат да изтеглят Zerion от следния адрес или %s.</string>
   <string name="hotspot_manual_site_address">Адрес (URL)</string>
   <string name="hotspot_qr_site">Устройството ви създава безжична точка за достъп. Хората, които са свързани към нея могат да изтеглят Zerion като сканират този код за QR.</string>

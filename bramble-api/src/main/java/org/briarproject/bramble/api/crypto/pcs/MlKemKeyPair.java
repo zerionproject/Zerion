@@ -52,18 +52,9 @@ public class MlKemKeyPair {
 		return ekVector;
 	}
 
-	/**
-	 * Reconstructs MlKemKeyPair from stored components.
-	 * The encapsulation key is reconstructed from ekSeed + ekVector.
-	 *
-	 * @param ekSeed The encapsulation key seed (32 bytes)
-	 * @param ekVector The encapsulation key vector (1152 bytes)
-	 * @param decapsulationKey The decapsulation key (2400 bytes)
-	 * @return A new MlKemKeyPair instance
-	 */
+	
 	public static MlKemKeyPair fromComponents(byte[] ekSeed, byte[] ekVector,
 			byte[] decapsulationKey) {
-		// Reconstruct encapsulation key from ekSeed + ekVector
 		byte[] encapsulationKey = new byte[MLKEM_ENCAPSULATION_KEY_SIZE];
 		System.arraycopy(ekSeed, 0, encapsulationKey, 0, ekSeed.length);
 		System.arraycopy(ekVector, 0, encapsulationKey, ekSeed.length, ekVector.length);

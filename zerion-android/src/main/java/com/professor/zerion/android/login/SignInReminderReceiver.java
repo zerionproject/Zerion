@@ -19,17 +19,8 @@ import static android.content.Intent.ACTION_MY_PACKAGE_REPLACED;
 import static com.professor.zerion.android.settings.NotificationsFragment.PREF_NOTIFY_SIGN_IN;
 import static com.professor.zerion.android.api.AndroidNotificationManager.ACTION_DISMISS_REMINDER;
 
-/**
- * BroadcastReceiver that shows a sign-in reminder notification after boot or package update.
- *
- * IMPORTANT: This receiver uses Provider<T> for heavy dependencies to avoid
- * triggering disk/crypto I/O during DI injection on the main thread.
- * All heavy work happens inside goAsync() on a background thread.
- */
-public class SignInReminderReceiver extends BroadcastReceiver {
 
-	// Use Provider<T> to defer resolution until we're on a background thread
-	// This avoids StrictMode violations during DI injection
+public class SignInReminderReceiver extends BroadcastReceiver {
 	@Inject
 	Provider<AccountManager> accountManagerProvider;
 	@Inject
@@ -46,14 +37,10 @@ public class SignInReminderReceiver extends BroadcastReceiver {
 
 		String action = intent.getAction();
 		if (action == null) return;
-
-		// Use goAsync() for ALL actions to ensure heavy work happens off main thread
-		// Provider.get() triggers actual dependency resolution which may do disk/crypto I/O
 		final PendingResult pendingResult = goAsync();
 
 		new Thread(() -> {
 			try {
-				// Now safe to resolve providers - we're on a background thread
 				AndroidNotificationManager notificationManager = notificationManagerProvider.get();
 
 				if (action.equals(ACTION_DISMISS_REMINDER)) {

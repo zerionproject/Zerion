@@ -7,9 +7,7 @@ import javax.annotation.concurrent.Immutable;
 
 import static org.briarproject.bramble.api.crypto.CryptoConstants.KEY_TYPE_AGREEMENT;
 
-/**
- * Type-safe wrapper for a private key used for key agreement.
- */
+
 @Immutable
 @NotNullByDefault
 public class AgreementPrivateKey extends Bytes implements PrivateKey {

@@ -9,7 +9,6 @@ import android.content.res.Configuration;
 import android.os.StrictMode;
 import android.os.StrictMode.ThreadPolicy;
 import android.os.StrictMode.VmPolicy;
-import android.util.Log;
 import com.google.android.material.color.DynamicColors;
 import com.vanniktech.emoji.EmojiManager;
 import com.vanniktech.emoji.google.GoogleEmojiProvider;
@@ -22,9 +21,6 @@ import com.professor.zerion.R;
 import com.professor.zerion.android.util.UiUtils;
 
 import java.lang.Thread.UncaughtExceptionHandler;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import androidx.annotation.NonNull;
 
 import static android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND;
@@ -42,8 +38,6 @@ public class ZerionApplicationImpl extends Application
 		if (prefs == null)
 			prefs = EarlyPrefs.get(base);
 		Localizer.initialize(prefs);
-		// PERFORMANCE: Use applyLocaleToContext() - NO disk I/O
-		// Do NOT call setLocale() here as it can trigger LocaleManager writes
 		super.attachBaseContext(
 				Localizer.getInstance().applyLocaleToContext(base));
 		setTheme(base, prefs);
@@ -52,8 +46,6 @@ public class ZerionApplicationImpl extends Application
 	@Override
 	public void onCreate() {
 		super.onCreate();
-
-		// Suppress known harmless Bouncy Castle warning on Android 6.0+
 		suppressBouncyCastleWarning();
 
 		DynamicColors.applyToActivitiesIfAvailable(this);
@@ -68,24 +60,16 @@ public class ZerionApplicationImpl extends Application
 		EmojiManager.install(new GoogleEmojiProvider());
 	}
 
-	/**
-	 * Suppresses the "String#value field is not present on Android >= 6.0" warning
-	 * from Bouncy Castle. This is a known limitation - BC tries to use reflection
-	 * to clear sensitive strings from memory, which doesn't work on modern Android
-	 * but fails safely.
-	 */
+	
 	private void suppressBouncyCastleWarning() {
-		// Suppress Bouncy Castle Strings class logging
-		Logger.getLogger("org.bouncycastle.util.Strings").setLevel(Level.OFF);
+		java.util.logging.Logger.getLogger("org.bouncycastle.util.Strings")
+				.setLevel(java.util.logging.Level.OFF);
 	}
 
 	protected AndroidComponent createApplicationComponent() {
 		AndroidComponent androidComponent = DaggerAndroidComponent.builder()
 				.appModule(new AppModule(this))
 				.build();
-
-		// Defer heavy eager singleton injection to background thread
-		// to avoid blocking the main thread during app startup
 		new Thread(() -> {
 			BrambleCoreEagerSingletons.Helper
 					.injectEagerSingletons(androidComponent);
@@ -101,7 +85,6 @@ public class ZerionApplicationImpl extends Application
 	@Override
 	public void onConfigurationChanged(@NonNull Configuration newConfig) {
 		super.onConfigurationChanged(newConfig);
-		// Apply locale in-memory only - no disk I/O needed here
 		Localizer.getInstance().applyLocaleToContext(this);
 	}
 

@@ -96,17 +96,12 @@ public class SetPasswordFragment extends SetupFragment {
 						passwordConfirmation.setFocusable(false);
 					}
 				});
-
-		// Setup keyboard insets handling
 		setupKeyboardInsetsHandling(v);
 
 		return v;
 	}
 
-	/**
-	 * Modern Android keyboard insets handling.
-	 * Ensures input fields are always visible above keyboard.
-	 */
+	
 	private void setupKeyboardInsetsHandling(View rootView) {
 		View scrollContent = rootView.findViewById(R.id.scroll_content);
 		if (scrollContent == null) return;
@@ -114,8 +109,6 @@ public class SetPasswordFragment extends SetupFragment {
 		ViewCompat.setOnApplyWindowInsetsListener(scrollContent, (v, windowInsets) -> {
 			Insets ime = windowInsets.getInsets(WindowInsetsCompat.Type.ime());
 			Insets systemBars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
-
-			// Apply padding to push content above keyboard
 			int bottomPadding = Math.max(ime.bottom, systemBars.bottom);
 			v.setPadding(
 					v.getPaddingLeft(),

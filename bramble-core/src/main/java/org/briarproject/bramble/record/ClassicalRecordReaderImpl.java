@@ -17,14 +17,7 @@ import javax.annotation.concurrent.NotThreadSafe;
 import static org.briarproject.bramble.api.record.Record.MAX_RECORD_PAYLOAD_BYTES_CLASSICAL;
 import static org.briarproject.bramble.api.record.Record.RECORD_HEADER_BYTES_CLASSICAL;
 
-/**
- * Record reader using classical (Briar-compatible) format.
- * <p>
- * Wire format: [version:1][type:1][length_hi:1][length_lo:1][payload...]
- * <p>
- * This format uses a 4-byte header with uint16 payload length,
- * compatible with Briar's record protocol.
- */
+
 @NotThreadSafe
 @NotNullByDefault
 class ClassicalRecordReaderImpl implements RecordReader {
@@ -42,7 +35,6 @@ class ClassicalRecordReaderImpl implements RecordReader {
 		in.readFully(header);
 		byte protocolVersion = header[0];
 		byte recordType = header[1];
-		// Read uint16 length (Briar-compatible)
 		int payloadLength = ByteUtils.readUint16(header, 2);
 		if (payloadLength < 0 || payloadLength > MAX_RECORD_PAYLOAD_BYTES_CLASSICAL)
 			throw new FormatException();

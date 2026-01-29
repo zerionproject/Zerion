@@ -1,8 +1,6 @@
 package org.briarproject.briar.introduction;
 
 interface IntroductionConstants {
-
-	// Message metadata keys
 	String MSG_KEY_MESSAGE_TYPE = "messageType";
 	String MSG_KEY_SESSION_ID = "sessionId";
 	String MSG_KEY_TIMESTAMP = "timestamp";
@@ -11,8 +9,6 @@ interface IntroductionConstants {
 	String MSG_KEY_AVAILABLE_TO_ANSWER = "availableToAnswer";
 	String MSG_KEY_AUTO_DELETE_TIMER = "autoDeleteTimer";
 	String MSG_KEY_IS_AUTO_DECLINE = "isAutoDecline";
-
-	// Session Keys
 	String SESSION_KEY_SESSION_ID = "sessionId";
 	String SESSION_KEY_ROLE = "role";
 	String SESSION_KEY_STATE = "state";
@@ -20,14 +16,10 @@ interface IntroductionConstants {
 	String SESSION_KEY_LOCAL_TIMESTAMP = "localTimestamp";
 	String SESSION_KEY_LAST_LOCAL_MESSAGE_ID = "lastLocalMessageId";
 	String SESSION_KEY_LAST_REMOTE_MESSAGE_ID = "lastRemoteMessageId";
-
-	// Session Keys Introducer
 	String SESSION_KEY_INTRODUCEE_A = "introduceeA";
 	String SESSION_KEY_INTRODUCEE_B = "introduceeB";
 	String SESSION_KEY_GROUP_ID = "groupId";
 	String SESSION_KEY_AUTHOR = "author";
-
-	// Session Keys Introducee
 	String SESSION_KEY_INTRODUCER = "introducer";
 	String SESSION_KEY_LOCAL = "local";
 	String SESSION_KEY_REMOTE = "remote";

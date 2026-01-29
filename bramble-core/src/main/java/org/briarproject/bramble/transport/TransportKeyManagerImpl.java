@@ -28,29 +28,20 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.logging.Logger;
-
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.ThreadSafe;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.logging.Level.WARNING;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.api.transport.TransportConstants.MAX_CLOCK_DIFFERENCE;
 import static org.briarproject.bramble.api.transport.TransportConstants.PROTOCOL_VERSION;
 import static org.briarproject.bramble.api.transport.TransportConstants.TAG_LENGTH;
 import static org.briarproject.bramble.util.ByteUtils.MAX_32_BIT_UNSIGNED;
-import static org.briarproject.bramble.util.LogUtils.logException;
 import static org.briarproject.nullsafety.NullSafety.requireExactlyOneNull;
 
 @ThreadSafe
 @NotNullByDefault
 class TransportKeyManagerImpl implements TransportKeyManager {
-
-	private static final Logger LOG =
-			getLogger(TransportKeyManagerImpl.class.getName());
-
 	private final DatabaseComponent db;
 	private final TransportCrypto transportCrypto;
 	private final Executor dbExecutor;
@@ -94,20 +85,15 @@ class TransportKeyManagerImpl implements TransportKeyManager {
 		long now = clock.currentTimeMillis();
 		lock.lock();
 		try {
-			// Load the transport keys from the DB
 			Collection<TransportKeySet> loaded =
 					db.getTransportKeys(txn, transportId);
-			// Update the keys to the current time period
 			UpdateResult updateResult = updateKeys(loaded, now);
-			// Initialise mutable state for all contacts
 			addKeys(updateResult.current);
-			// Write any updated keys back to the DB
 			if (!updateResult.updated.isEmpty())
 				db.updateTransportKeys(txn, updateResult.updated);
 		} finally {
 			lock.unlock();
 		}
-		// Schedule the next key update
 		scheduleKeyUpdate(now);
 	}
 
@@ -174,8 +160,6 @@ class TransportKeyManagerImpl implements TransportKeyManager {
 
 	@GuardedBy("lock")
 	private void considerReplacingOutgoingKeys(MutableTransportKeySet ks) {
-		// Use the active outgoing keys with the highest key set ID, preferring
-		// rotation keys to handshake keys
 		if (ks.getKeys().getCurrentOutgoingKeys().isActive()) {
 			MutableTransportKeySet old = getOutgoingKeySet(ks.getContactId(),
 					ks.getPendingContactId());
@@ -209,7 +193,6 @@ class TransportKeyManagerImpl implements TransportKeyManager {
 		try {
 			db.transaction(false, this::updateKeys);
 		} catch (DbException e) {
-			logException(LOG, WARNING, e);
 		}
 	}
 
@@ -219,17 +202,12 @@ class TransportKeyManagerImpl implements TransportKeyManager {
 			throws DbException {
 		lock.lock();
 		try {
-			// Work out what time period the timestamp belongs to
 			long timePeriod = timestamp / timePeriodLength;
-			// Derive the transport keys
 			TransportKeys k = transportCrypto.deriveRotationKeys(transportId,
 					rootKey, timePeriod, alice, active);
-			// Update the keys to the current time period if necessary
 			timePeriod = clock.currentTimeMillis() / timePeriodLength;
 			k = transportCrypto.updateTransportKeys(k, timePeriod);
-			// Write the keys back to the DB
 			KeySetId keySetId = db.addTransportKeys(txn, c, k);
-			// Initialise mutable state for the keys
 			addKeys(keySetId, c, null, new MutableTransportKeys(k));
 			return keySetId;
 		} finally {
@@ -242,14 +220,10 @@ class TransportKeyManagerImpl implements TransportKeyManager {
 			SecretKey rootKey, boolean alice) throws DbException {
 		lock.lock();
 		try {
-			// Work out what time period we're in
 			long timePeriod = clock.currentTimeMillis() / timePeriodLength;
-			// Derive the transport keys
 			TransportKeys k = transportCrypto.deriveHandshakeKeys(transportId,
 					rootKey, timePeriod, alice);
-			// Write the keys back to the DB
 			KeySetId keySetId = db.addTransportKeys(txn, c, k);
-			// Initialise mutable state for the keys
 			addKeys(keySetId, c, null, new MutableTransportKeys(k));
 			return keySetId;
 		} finally {
@@ -262,14 +236,10 @@ class TransportKeyManagerImpl implements TransportKeyManager {
 			SecretKey rootKey, boolean alice) throws DbException {
 		lock.lock();
 		try {
-			// Work out what time period we're in
 			long timePeriod = clock.currentTimeMillis() / timePeriodLength;
-			// Derive the transport keys
 			TransportKeys k = transportCrypto.deriveHandshakeKeys(transportId,
 					rootKey, timePeriod, alice);
-			// Write the keys back to the DB
 			KeySetId keySetId = db.addTransportKeys(txn, p, k);
-			// Initialise mutable state for the keys
 			addKeys(keySetId, null, p, new MutableTransportKeys(k));
 			return keySetId;
 		} finally {
@@ -296,7 +266,6 @@ class TransportKeyManagerImpl implements TransportKeyManager {
 	public void removeContact(ContactId c) {
 		lock.lock();
 		try {
-			// Remove mutable state for the contact
 			Iterator<TagContext> it = inContexts.values().iterator();
 			while (it.hasNext())
 				if (c.equals(it.next().contactId)) it.remove();
@@ -313,7 +282,6 @@ class TransportKeyManagerImpl implements TransportKeyManager {
 	public void removePendingContact(PendingContactId p) {
 		lock.lock();
 		try {
-			// Remove mutable state for the pending contact
 			Iterator<TagContext> it = inContexts.values().iterator();
 			while (it.hasNext())
 				if (p.equals(it.next().pendingContactId)) it.remove();
@@ -368,19 +336,16 @@ class TransportKeyManagerImpl implements TransportKeyManager {
 			boolean classical) throws DbException {
 		lock.lock();
 		try {
-			// Look up the outgoing keys for the contact
 			MutableTransportKeySet ks = getOutgoingKeySet(c, p);
 			if (ks == null) return null;
 			MutableTransportKeys keys = ks.getKeys();
 			MutableOutgoingKeys outKeys = keys.getCurrentOutgoingKeys();
 			if (!outKeys.isActive()) throw new AssertionError();
 			if (outKeys.getStreamCounter() > MAX_32_BIT_UNSIGNED) return null;
-			// Create a stream context with the classical flag
 			StreamContext ctx = new StreamContext(c, p, transportId,
 					outKeys.getTagKey(), outKeys.getHeaderKey(),
 					outKeys.getStreamCounter(), keys.isHandshakeMode(),
 					classical);
-			// Increment the stream counter and write it back to the DB
 			outKeys.incrementStreamCounter();
 			db.incrementStreamCounter(txn, transportId, ks.getKeySetId());
 			return ctx;
@@ -417,11 +382,9 @@ class TransportKeyManagerImpl implements TransportKeyManager {
 	@GuardedBy("lock")
 	@Nullable
 	private StreamContext streamContextFromTag(byte[] tag, boolean classical) {
-		// Look up the incoming keys for the tag
 		TagContext tagCtx = inContexts.get(new Bytes(tag));
 		if (tagCtx == null) return null;
 		MutableIncomingKeys inKeys = tagCtx.inKeys;
-		// Create a stream context with the classical flag
 		return new StreamContext(tagCtx.contactId,
 				tagCtx.pendingContactId, transportId,
 				inKeys.getTagKey(), inKeys.getHeaderKey(),
@@ -434,10 +397,8 @@ class TransportKeyManagerImpl implements TransportKeyManager {
 		TagContext tagCtx = inContexts.remove(new Bytes(tag));
 		if (tagCtx == null) return;
 		MutableIncomingKeys inKeys = tagCtx.inKeys;
-		// Update the reordering window
 		ReorderingWindow window = inKeys.getWindow();
 		Change change = window.setSeen(tagCtx.streamNumber);
-		// Add tags for any stream numbers added to the window
 		for (long streamNumber : change.getAdded()) {
 			byte[] addTag = new byte[TAG_LENGTH];
 			transportCrypto.encodeTag(addTag, inKeys.getTagKey(),
@@ -447,7 +408,6 @@ class TransportKeyManagerImpl implements TransportKeyManager {
 					streamNumber, tagCtx.handshakeMode);
 			inContexts.put(new Bytes(addTag), tagCtx1);
 		}
-		// Remove tags for any stream numbers removed from the window
 		for (long streamNumber : change.getRemoved()) {
 			if (streamNumber == tagCtx.streamNumber) continue;
 			byte[] removeTag = new byte[TAG_LENGTH];
@@ -455,16 +415,13 @@ class TransportKeyManagerImpl implements TransportKeyManager {
 					PROTOCOL_VERSION, streamNumber);
 			inContexts.remove(new Bytes(removeTag));
 		}
-		// Write the window back to the DB
 		db.setReorderingWindow(txn, tagCtx.keySetId, transportId,
 				inKeys.getTimePeriod(), window.getBase(),
 				window.getBitmap());
-		// If the outgoing keys are inactive, activate them
 		MutableTransportKeySet ks = keys.get(tagCtx.keySetId);
 		MutableOutgoingKeys outKeys =
 				ks.getKeys().getCurrentOutgoingKeys();
 		if (!outKeys.isActive()) {
-			LOG.info("Activating outgoing keys");
 			outKeys.activate();
 			considerReplacingOutgoingKeys(ks);
 			db.setTransportKeysActive(txn, transportId, tagCtx.keySetId);
@@ -477,7 +434,6 @@ class TransportKeyManagerImpl implements TransportKeyManager {
 		long now = clock.currentTimeMillis();
 		lock.lock();
 		try {
-			// Update the keys to the current time period
 			Collection<TransportKeySet> snapshot = new ArrayList<>(keys.size());
 			for (MutableTransportKeySet ks : keys.values()) {
 				snapshot.add(new TransportKeySet(ks.getKeySetId(),
@@ -485,19 +441,16 @@ class TransportKeyManagerImpl implements TransportKeyManager {
 						ks.getKeys().snapshot()));
 			}
 			UpdateResult updateResult = updateKeys(snapshot, now);
-			// Rebuild the mutable state for all contacts
 			inContexts.clear();
 			contactOutContexts.clear();
 			pendingContactOutContexts.clear();
 			keys.clear();
 			addKeys(updateResult.current);
-			// Write any updated keys back to the DB
 			if (!updateResult.updated.isEmpty())
 				db.updateTransportKeys(txn, updateResult.updated);
 		} finally {
 			lock.unlock();
 		}
-		// Schedule the next key update
 		scheduleKeyUpdate(now);
 	}
 

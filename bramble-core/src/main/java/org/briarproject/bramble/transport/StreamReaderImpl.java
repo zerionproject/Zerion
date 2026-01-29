@@ -10,9 +10,7 @@ import javax.annotation.concurrent.NotThreadSafe;
 
 import static org.briarproject.bramble.api.transport.TransportConstants.MAX_PAYLOAD_LENGTH;
 
-/**
- * An {@link InputStream} that unpacks payload data from transport frames.
- */
+
 @NotThreadSafe
 @NotNullByDefault
 class StreamReaderImpl extends InputStream {

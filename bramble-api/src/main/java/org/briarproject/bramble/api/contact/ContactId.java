@@ -5,10 +5,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
-/**
- * Type-safe wrapper for an integer that uniquely identifies a contact within
- * the scope of the local device.
- */
+
 @Immutable
 @NotNullByDefault
 public class ContactId {

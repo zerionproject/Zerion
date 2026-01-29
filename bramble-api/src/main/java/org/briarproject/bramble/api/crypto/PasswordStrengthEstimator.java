@@ -11,9 +11,6 @@ public interface PasswordStrengthEstimator {
 	float QUITE_STRONG = 0.75f;
 	float STRONG = 1;
 
-	/**
-	 * Returns an estimate between 0 (weakest) and 1 (strongest), inclusive,
-	 * of the strength of the given password.
-	 */
+	
 	float estimateStrength(String password);
 }

@@ -134,7 +134,6 @@ public class ZerionRecyclerView extends FrameLayout {
 	public void setLayoutManager(RecyclerView.LayoutManager layout) {
 		if (recyclerView == null) initViews();
 		recyclerView.setLayoutManager(layout);
-		// OPTIMIZATION: Enable layout prefetch for smoother scrolling
 		if (layout instanceof androidx.recyclerview.widget.LinearLayoutManager) {
 			((androidx.recyclerview.widget.LinearLayoutManager) layout)
 					.setInitialPrefetchItemCount(10);
@@ -143,8 +142,6 @@ public class ZerionRecyclerView extends FrameLayout {
 
 	public void setAdapter(Adapter adapter) {
 		if (recyclerView == null) initViews();
-
-		// OPTIMIZATION: Set item view cache size for better scroll performance
 		recyclerView.setItemViewCacheSize(20);
 		recyclerView.setDrawingCacheEnabled(true);
 		recyclerView.setDrawingCacheQuality(View.DRAWING_CACHE_QUALITY_HIGH);

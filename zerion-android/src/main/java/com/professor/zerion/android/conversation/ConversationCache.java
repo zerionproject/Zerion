@@ -41,21 +41,14 @@ public class ConversationCache {
 		return instance;
 	}
 
-	/**
-	 * Store pre-loaded messages for a conversation.
-	 * Called from background thread before opening ConversationActivity.
-	 */
+	
 	public void put(ContactId contactId, List<ConversationMessageHeader> headers) {
 		put(contactId, headers, null);
 	}
 
-	/**
-	 * Store pre-loaded messages AND texts for a conversation.
-	 * Called from background thread for optimal performance.
-	 */
+	
 	public void put(ContactId contactId, List<ConversationMessageHeader> headers,
 			@Nullable Map<MessageId, String> texts) {
-		// Evict oldest if at capacity
 		synchronized (accessOrder) {
 			if (cache.size() >= MAX_CACHED_CONVERSATIONS && !cache.containsKey(contactId)) {
 				if (!accessOrder.isEmpty()) {
@@ -63,12 +56,9 @@ public class ConversationCache {
 					cache.remove(oldest);
 				}
 			}
-			// Update access order
 			accessOrder.remove(contactId);
 			accessOrder.add(contactId);
 		}
-
-		// Limit to last N messages (most recent)
 		List<ConversationMessageHeader> limitedHeaders;
 		if (headers.size() > MAX_CACHED_MESSAGES) {
 			limitedHeaders = new ArrayList<>(headers.subList(0, MAX_CACHED_MESSAGES));
@@ -79,10 +69,7 @@ public class ConversationCache {
 		cache.put(contactId, new CachedConversation(limitedHeaders, texts, System.currentTimeMillis()));
 	}
 
-	/**
-	 * Get cached texts for instant display.
-	 * Returns empty map if no cache.
-	 */
+	
 	public Map<MessageId, String> getCachedTexts(ContactId contactId) {
 		CachedConversation cached = cache.get(contactId);
 		if (cached == null) {
@@ -91,18 +78,13 @@ public class ConversationCache {
 		return new HashMap<>(cached.texts);
 	}
 
-	/**
-	 * Get cached messages for instant display.
-	 * Returns null if no cache or cache is expired.
-	 */
+	
 	@Nullable
 	public List<ConversationMessageHeader> getSnapshot(ContactId contactId) {
 		CachedConversation cached = cache.get(contactId);
 		if (cached == null) {
 			return null;
 		}
-
-		// Check expiry
 		if (System.currentTimeMillis() - cached.timestamp > CACHE_EXPIRY_MS) {
 			cache.remove(contactId);
 			synchronized (accessOrder) {
@@ -110,8 +92,6 @@ public class ConversationCache {
 			}
 			return null;
 		}
-
-		// Update access order
 		synchronized (accessOrder) {
 			accessOrder.remove(contactId);
 			accessOrder.add(contactId);
@@ -120,25 +100,19 @@ public class ConversationCache {
 		return new ArrayList<>(cached.headers);
 	}
 
-	/**
-	 * Check if cache has valid data for a conversation.
-	 */
+	
 	public boolean hasValidCache(ContactId contactId) {
 		CachedConversation cached = cache.get(contactId);
 		if (cached == null) return false;
 		return System.currentTimeMillis() - cached.timestamp <= CACHE_EXPIRY_MS;
 	}
 
-	/**
-	 * Add a new message to the cache (for real-time updates).
-	 */
+	
 	public void addMessage(ContactId contactId, ConversationMessageHeader header) {
 		CachedConversation cached = cache.get(contactId);
 		if (cached != null) {
 			synchronized (cached) {
-				// Add to beginning (most recent)
 				cached.headers.add(0, header);
-				// Trim if over limit
 				while (cached.headers.size() > MAX_CACHED_MESSAGES) {
 					cached.headers.remove(cached.headers.size() - 1);
 				}
@@ -157,9 +131,7 @@ public class ConversationCache {
 		}
 	}
 
-	/**
-	 * Invalidate cache for a conversation (e.g., on significant changes).
-	 */
+	
 	public void invalidate(ContactId contactId) {
 		cache.remove(contactId);
 		synchronized (accessOrder) {
@@ -167,9 +139,7 @@ public class ConversationCache {
 		}
 	}
 
-	/**
-	 * Clear all cached data.
-	 */
+	
 	public void clearAll() {
 		cache.clear();
 		synchronized (accessOrder) {
@@ -177,9 +147,7 @@ public class ConversationCache {
 		}
 	}
 
-	/**
-	 * Internal class to hold cached conversation data.
-	 */
+	
 	private static class CachedConversation {
 		final List<ConversationMessageHeader> headers;
 		final Map<MessageId, String> texts;

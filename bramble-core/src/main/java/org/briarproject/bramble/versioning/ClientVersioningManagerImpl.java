@@ -130,7 +130,6 @@ class ClientVersioningManagerImpl implements ClientVersioningManager,
 	public void onDatabaseOpened(Transaction txn) throws DbException {
 		if (db.containsGroup(txn, localGroup.getId())) return;
 		db.addGroup(txn, localGroup);
-		// Set things up for any pre-existing contacts
 		for (Contact c : db.getContacts(txn)) addingContact(txn, c);
 	}
 
@@ -156,13 +155,10 @@ class ClientVersioningManagerImpl implements ClientVersioningManager,
 
 	@Override
 	public void addingContact(Transaction txn, Contact c) throws DbException {
-		// Create a group and share it with the contact
 		Group g = getContactGroup(c);
 		db.addGroup(txn, g);
 		db.setGroupVisibility(txn, c.getId(), g.getId(), SHARED);
-		// Attach the contact ID to the group
 		clientHelper.setContactId(txn, g.getId(), c.getId());
-		// Create and store the first local update
 		List<ClientVersion> versions = new ArrayList<>(clients);
 		Collections.sort(versions);
 		storeFirstUpdate(txn, g.getId(), versions);
@@ -177,58 +173,46 @@ class ClientVersioningManagerImpl implements ClientVersioningManager,
 	public DeliveryAction incomingMessage(Transaction txn, Message m,
 			Metadata meta) throws DbException, InvalidMessageException {
 		try {
-			// Parse the new remote update
 			Update newRemoteUpdate = parseUpdate(clientHelper.toList(m));
 			List<ClientState> newRemoteStates = newRemoteUpdate.states;
 			long newRemoteUpdateVersion = newRemoteUpdate.updateVersion;
-			// Find the latest local and remote updates, if any
 			LatestUpdates latest = findLatestUpdates(txn, m.getGroupId());
-			// If this update is obsolete, delete it and return
 			if (latest.remote != null
 					&& latest.remote.updateVersion > newRemoteUpdateVersion) {
 				db.deleteMessage(txn, m.getId());
 				db.deleteMessageMetadata(txn, m.getId());
 				return ACCEPT_DO_NOT_SHARE;
 			}
-			// Load and parse the latest local update
 			if (latest.local == null) throw new DbException();
 			Update oldLocalUpdate = loadUpdate(txn, latest.local.messageId);
 			List<ClientState> oldLocalStates = oldLocalUpdate.states;
 			long oldLocalUpdateVersion = oldLocalUpdate.updateVersion;
-			// Load and parse the previous remote update, if any
 			List<ClientState> oldRemoteStates;
 			if (latest.remote == null) {
 				oldRemoteStates = emptyList();
 			} else {
 				oldRemoteStates =
 						loadUpdate(txn, latest.remote.messageId).states;
-				// Delete the previous remote update
 				db.deleteMessage(txn, latest.remote.messageId);
 				db.deleteMessageMetadata(txn, latest.remote.messageId);
 			}
-			// Update the local states from the remote states if necessary
 			List<ClientState> newLocalStates = updateStatesFromRemoteStates(
 					oldLocalStates, newRemoteStates);
 			if (!oldLocalStates.equals(newLocalStates)) {
-				// Delete the latest local update
 				db.deleteMessage(txn, latest.local.messageId);
 				db.deleteMessageMetadata(txn, latest.local.messageId);
-				// Store a new local update
 				storeUpdate(txn, m.getGroupId(), newLocalStates,
 						oldLocalUpdateVersion + 1);
 			}
-			// Calculate the old and new client visibilities
 			Map<ClientMajorVersion, Visibility> before =
 					getVisibilities(oldLocalStates, oldRemoteStates);
 			Map<ClientMajorVersion, Visibility> after =
 					getVisibilities(newLocalStates, newRemoteStates);
-			// Call hooks for any visibilities that have changed
 			ContactId c = clientHelper.getContactId(txn, m.getGroupId());
 			if (!before.equals(after)) {
 				Contact contact = db.getContact(txn, c);
 				callVisibilityHooks(txn, contact, before, after);
 			}
-			// Broadcast events for any client version update
 			for (ClientState cs : newRemoteStates) {
 				if (!oldRemoteStates.contains(cs)) {
 					txn.attach(
@@ -265,10 +249,7 @@ class ClientVersioningManagerImpl implements ClientVersioningManager,
 				cv.getMinorVersion());
 	}
 
-	/**
-	 * Stores the local client versions and returns true if an update needs to
-	 * be sent to contacts.
-	 */
+	
 	private boolean updateClientVersions(Transaction txn,
 			List<ClientVersion> newVersions) throws DbException {
 		Collection<MessageId> ids = db.getMessageIds(txn, localGroup.getId());
@@ -311,37 +292,29 @@ class ClientVersioningManagerImpl implements ClientVersioningManager,
 	private void clientVersionsUpdated(Transaction txn, Contact c,
 			List<ClientVersion> versions) throws DbException {
 		try {
-			// Find the latest local and remote updates
 			Group g = getContactGroup(c);
 			LatestUpdates latest = findLatestUpdates(txn, g.getId());
-			// Load and parse the latest local update
 			if (latest.local == null) throw new DbException();
 			Update oldLocalUpdate = loadUpdate(txn, latest.local.messageId);
 			List<ClientState> oldLocalStates = oldLocalUpdate.states;
 			long oldLocalUpdateVersion = oldLocalUpdate.updateVersion;
-			// Load and parse the latest remote update, if any
 			List<ClientState> remoteStates;
 			if (latest.remote == null) remoteStates = emptyList();
 			else remoteStates = loadUpdate(txn, latest.remote.messageId).states;
-			// Update the local states if necessary
 			List<ClientState> newLocalStates =
 					updateStatesFromLocalVersions(oldLocalStates, versions);
 			newLocalStates = updateStatesFromRemoteStates(newLocalStates,
 					remoteStates);
 			if (!oldLocalStates.equals(newLocalStates)) {
-				// Delete the latest local update
 				db.deleteMessage(txn, latest.local.messageId);
 				db.deleteMessageMetadata(txn, latest.local.messageId);
-				// Store a new local update
 				storeUpdate(txn, g.getId(), newLocalStates,
 						oldLocalUpdateVersion + 1);
 			}
-			// Calculate the old and new client visibilities
 			Map<ClientMajorVersion, Visibility> before =
 					getVisibilities(oldLocalStates, remoteStates);
 			Map<ClientMajorVersion, Visibility> after =
 					getVisibilities(newLocalStates, remoteStates);
-			// Call hooks for any visibilities that have changed
 			callVisibilityHooks(txn, c, before, after);
 		} catch (FormatException e) {
 			throw new DbException(e);
@@ -358,8 +331,6 @@ class ClientVersioningManagerImpl implements ClientVersioningManager,
 			throws DbException, FormatException {
 		Contact contact = db.getContact(txn, c);
 		Group g = getContactGroup(contact);
-		// Contact may be in the process of being added or removed, so
-		// contact group may not exist
 		if (!db.containsGroup(txn, g.getId())) return null;
 		return findLatestUpdates(txn, g.getId());
 	}
@@ -395,7 +366,6 @@ class ClientVersioningManagerImpl implements ClientVersioningManager,
 
 	private List<ClientState> parseClientStates(BdfList body)
 			throws FormatException {
-		// Client states, update version
 		BdfList states = body.getList(0);
 		int size = states.size();
 		List<ClientState> parsed = new ArrayList<>(size);
@@ -406,7 +376,6 @@ class ClientVersioningManagerImpl implements ClientVersioningManager,
 
 	private ClientState parseClientState(BdfList clientState)
 			throws FormatException {
-		// Client ID, major version, minor version, active
 		ClientId clientId = new ClientId(clientState.getString(0));
 		int majorVersion = clientState.getInt(1);
 		int minorVersion = clientState.getInt(2);
@@ -415,7 +384,6 @@ class ClientVersioningManagerImpl implements ClientVersioningManager,
 	}
 
 	private long parseUpdateVersion(BdfList body) throws FormatException {
-		// Client states, update version
 		return body.getLong(1);
 	}
 

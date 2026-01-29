@@ -21,15 +21,13 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 @NotNullByDefault
 class Receiver implements ReadHandler {
 
-	private static final int READ_TIMEOUT = 5 * 60 * 1000; // Milliseconds
+	private static final int READ_TIMEOUT = 5 * 60 * 1000;
 	private static final int MAX_WINDOW_SIZE = 8 * Data.MAX_PAYLOAD_LENGTH;
 
 	private final Clock clock;
 	private final Sender sender;
 	private final Lock windowLock = new ReentrantLock();
 	private final Condition dataFrameAvailable = windowLock.newCondition();
-
-	// The following are locking: windowLock
 	private final SortedSet<Data> dataFrames;
 	private int windowSize = MAX_WINDOW_SIZE;
 
@@ -50,19 +48,16 @@ class Receiver implements ReadHandler {
 			long now = clock.currentTimeMillis(), end = now + READ_TIMEOUT;
 			while (now < end && valid) {
 				if (dataFrames.isEmpty()) {
-					// Wait for a data frame
 					dataFrameAvailable.await(end - now, MILLISECONDS);
 				} else {
 					Data d = dataFrames.first();
 					if (d.getSequenceNumber() == nextSequenceNumber) {
 						dataFrames.remove(d);
-						// Update the window
 						windowSize += d.getPayloadLength();
 						sender.sendAck(0, windowSize);
 						nextSequenceNumber++;
 						return d;
 					} else {
-						// Wait for the next in-order data frame
 						dataFrameAvailable.await(end - now, MILLISECONDS);
 					}
 				}
@@ -97,7 +92,6 @@ class Receiver implements ReadHandler {
 				sender.handleAck(b);
 				break;
 			default:
-				// Ignore unknown frame type
 		}
 	}
 
@@ -105,24 +99,19 @@ class Receiver implements ReadHandler {
 		windowLock.lock();
 		try {
 			if (b.length < Data.MIN_LENGTH || b.length > Data.MAX_LENGTH) {
-				// Ignore data frame with invalid length
 				return;
 			}
 			Data d = new Data(b);
 			int payloadLength = d.getPayloadLength();
-			if (payloadLength > windowSize) return; // No space in the window
+			if (payloadLength > windowSize) return;
 			if (d.getChecksum() != d.calculateChecksum()) {
-				// Ignore data frame with invalid checksum
 				return;
 			}
 			long sequenceNumber = d.getSequenceNumber();
 			if (sequenceNumber == 0) {
-				// Window probe
 			} else if (sequenceNumber < nextSequenceNumber) {
-				// Duplicate data frame
 			} else if (d.isLastFrame()) {
 				finalSequenceNumber = sequenceNumber;
-				// Remove any data frames with higher sequence numbers
 				Iterator<Data> it = dataFrames.iterator();
 				while (it.hasNext()) {
 					Data d1 = it.next();
@@ -139,7 +128,6 @@ class Receiver implements ReadHandler {
 					dataFrameAvailable.signalAll();
 				}
 			}
-			// Acknowledge the data frame even if it's a duplicate
 			sender.sendAck(sequenceNumber, windowSize);
 		} finally {
 			windowLock.unlock();

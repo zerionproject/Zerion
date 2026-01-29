@@ -28,7 +28,6 @@ class SyncRecordWriterFactoryImpl implements SyncRecordWriterFactory {
 
 	@Override
 	public SyncRecordWriter createRecordWriter(OutputStream out) {
-		// Default to extended format for Zerion↔Zerion communication
 		RecordWriter writer = recordWriterFactory.createRecordWriter(out);
 		return new SyncRecordWriterImpl(messageFactory, writer);
 	}

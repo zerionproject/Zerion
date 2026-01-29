@@ -22,8 +22,6 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
-import java.util.logging.Logger;
-
 import javax.inject.Inject;
 
 import androidx.lifecycle.LiveData;
@@ -34,8 +32,6 @@ import java.util.Set;
 
 import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
-import static java.util.logging.Level.WARNING;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.util.AndroidUtils.getSupportedImageContentTypes;
 import static org.briarproject.bramble.util.IoUtils.tryToClose;
 import static com.professor.zerion.android.attachment.AttachmentItem.State.AVAILABLE;
@@ -45,10 +41,6 @@ import static com.professor.zerion.android.attachment.AttachmentItem.State.MISSI
 
 @NotNullByDefault
 class AttachmentRetrieverImpl implements AttachmentRetriever {
-
-	private static final Logger LOG =
-			getLogger(AttachmentRetrieverImpl.class.getName());
-
 	private static final Set<String> SUPPORTED_AUDIO_TYPES = new HashSet<>(asList(
 			"audio/opus",
 			"audio/ogg",
@@ -237,7 +229,7 @@ class AttachmentRetrieverImpl implements AttachmentRetriever {
 		if (needsSize) {
 			InputStream is = new BufferedInputStream(a.getStream());
 			Size size = imageSizeCalculator.getSize(is, contentType);
-			tryToClose(is, LOG, WARNING);
+			tryToClose(is);
 			item = createAttachmentItem(h, size);
 		} else {
 			String extension =

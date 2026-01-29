@@ -27,10 +27,7 @@ interface ConversationListener {
 
 	void onMessageLongClick(ConversationItem item);
 
-	/**
-	 * Called when ViewHolder needs to load attachments for a message.
-	 * Returns attachments synchronously from cache, or triggers async load.
-	 */
+	
 	List<AttachmentItem> loadAttachmentsForItem(ConversationMessageItem item);
 
 }

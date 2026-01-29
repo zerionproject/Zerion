@@ -141,19 +141,13 @@ class MessageTrackerImpl implements MessageTracker {
 	public boolean setReadFlag(Transaction txn, GroupId g, MessageId m,
 			boolean read) throws DbException {
 		try {
-			// check current read status of message
 			BdfDictionary old =
 					clientHelper.getMessageMetadataAsDictionary(txn, m);
 			boolean wasRead = old.getBoolean(MSG_KEY_READ, false);
-
-			// if status changed
 			if (wasRead != read) {
-				// mark individual message as read
 				BdfDictionary meta = new BdfDictionary();
 				meta.put(MSG_KEY_READ, read);
 				clientHelper.mergeMessageMetadata(txn, m, meta);
-
-				// update unread counter in group metadata
 				GroupCount c = getGroupCount(txn, g);
 				int unreadCount = c.getUnreadCount() + (read ? -1 : 1);
 				if (unreadCount < 0) throw new DbException();

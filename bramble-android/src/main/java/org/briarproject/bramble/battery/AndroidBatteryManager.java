@@ -13,8 +13,6 @@ import org.briarproject.bramble.api.event.EventBus;
 import org.briarproject.bramble.api.lifecycle.Service;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Logger;
-
 import javax.inject.Inject;
 
 import androidx.annotation.RequiresApi;
@@ -28,15 +26,9 @@ import static android.os.PowerManager.ACTION_DEVICE_IDLE_MODE_CHANGED;
 import static android.os.PowerManager.ACTION_DEVICE_LIGHT_IDLE_MODE_CHANGED;
 import static android.os.PowerManager.ACTION_LOW_POWER_STANDBY_ENABLED_CHANGED;
 import static android.os.PowerManager.ACTION_POWER_SAVE_MODE_CHANGED;
-import static java.util.logging.Level.INFO;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.util.AndroidUtils.registerReceiver;
 
 class AndroidBatteryManager implements BatteryManager, Service {
-
-	private static final Logger LOG =
-			getLogger(AndroidBatteryManager.class.getName());
-
 	private final Context appContext;
 	private final EventBus eventBus;
 	private final AtomicBoolean used = new AtomicBoolean(false);
@@ -51,7 +43,6 @@ class AndroidBatteryManager implements BatteryManager, Service {
 
 	@Override
 	public boolean isCharging() {
-		// Get the sticky intent for ACTION_BATTERY_CHANGED
 		IntentFilter filter = new IntentFilter(ACTION_BATTERY_CHANGED);
 		Intent i = registerReceiver(appContext, null, filter);
 		if (i == null) return false;
@@ -85,34 +76,12 @@ class AndroidBatteryManager implements BatteryManager, Service {
 
 		@Override
 		public void onReceive(Context ctx, Intent i) {
-			String action = i.getAction();
-			if (LOG.isLoggable(INFO)) LOG.info("Received broadcast " + action);
-			if (ACTION_POWER_CONNECTED.equals(action))
-				eventBus.broadcast(new BatteryEvent(true));
-			else if (ACTION_POWER_DISCONNECTED.equals(action))
-				eventBus.broadcast(new BatteryEvent(false));
-			else if (SDK_INT >= 23 &&
-					ACTION_DEVICE_IDLE_MODE_CHANGED.equals(action) &&
-					LOG.isLoggable(INFO)) {
-				LOG.info("Device idle mode changed to: " +
-						getPowerManager(ctx).isDeviceIdleMode());
-			} else if (SDK_INT >= 23 &&
-					ACTION_POWER_SAVE_MODE_CHANGED.equals(action) &&
-					LOG.isLoggable(INFO)) {
-				LOG.info("Power save mode changed to: " +
-						getPowerManager(ctx).isPowerSaveMode());
-			} else if (SDK_INT >= 33 && LOG.isLoggable(INFO) &&
-					ACTION_LOW_POWER_STANDBY_ENABLED_CHANGED.equals(action)) {
-				PowerManager powerManager =
-						ctx.getSystemService(PowerManager.class);
-				LOG.info("Low power standby now is: " +
-						powerManager.isLowPowerStandbyEnabled());
-			} else if (SDK_INT >= 33 && LOG.isLoggable(INFO) &&
-					ACTION_DEVICE_LIGHT_IDLE_MODE_CHANGED.equals(action)) {
-				PowerManager powerManager = getPowerManager(ctx);
-				LOG.info("Light idle mode now is: " +
-						powerManager.isDeviceLightIdleMode());
-			}
+			int status = i.getIntExtra(
+					android.os.BatteryManager.EXTRA_STATUS, -1);
+			boolean charging =
+					status == android.os.BatteryManager.BATTERY_STATUS_CHARGING ||
+					status == android.os.BatteryManager.BATTERY_STATUS_FULL;
+			eventBus.broadcast(new BatteryEvent(charging));
 		}
 	}
 

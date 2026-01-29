@@ -57,12 +57,7 @@ public class Localizer {
 		return Locale.forLanguageTag(tag);
 	}
 
-	/**
-	 * Apply locale to context in-memory only - NO disk I/O.
-	 * Use this in attachBaseContext() to avoid blocking the main thread.
-	 * This method only creates a configuration context with the locale,
-	 * without calling LocaleManager.setApplicationLocales().
-	 */
+	
 	public Context applyLocaleToContext(Context context) {
 		Resources res = context.getResources();
 		Configuration conf = new Configuration(res.getConfiguration());
@@ -80,11 +75,7 @@ public class Localizer {
 		return context.createConfigurationContext(conf);
 	}
 
-	/**
-	 * Full locale setting including LocaleManager for Android 13+.
-	 * Use this when user explicitly changes language in settings.
-	 * WARNING: This triggers disk I/O on Android 13+ - do NOT call from attachBaseContext().
-	 */
+	
 	public void setLocaleWithPersistence(Context context) {
 		if (SDK_INT >= 33) {
 			LocaleManager localeManager = context.getSystemService(LocaleManager.class);
@@ -94,14 +85,9 @@ public class Localizer {
 		}
 	}
 
-	/**
-	 * @deprecated Use {@link #applyLocaleToContext(Context)} in attachBaseContext()
-	 * and {@link #setLocaleWithPersistence(Context)} when changing settings.
-	 */
+	
 	@Deprecated
 	public Context setLocale(Context context) {
-		// For backwards compatibility, just apply locale to context
-		// without the LocaleManager call to avoid disk I/O
 		return applyLocaleToContext(context);
 	}
 }

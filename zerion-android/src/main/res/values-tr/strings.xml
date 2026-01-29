@@ -67,8 +67,6 @@
   <string name="nav_drawer_close_description">Gezinme çekmecesini kapat</string>
   <string name="contact_list_button">Kişiler</string>
   <string name="groups_button">Özel gruplar</string>
-  <string name="forums_button">Forumlar</string>
-  <string name="blogs_button">Günlükler</string>
   <!--This is part of the main menu. The app will be locked when this is tapped.-->
   <string name="lock_button">Uygulamayı kilitle</string>
   <string name="settings_button">Ayarlar</string>
@@ -103,14 +101,6 @@
   <plurals name="group_message_notification_text">
     <item quantity="one">Yeni grup iletisi.</item>
     <item quantity="other">%d yeni grup iletisi.</item>
-  </plurals>
-  <plurals name="forum_post_notification_text">
-    <item quantity="one">Yeni forum yazısı.</item>
-    <item quantity="other">%d yeni forum yazısı.</item>
-  </plurals>
-  <plurals name="blog_post_notification_text">
-    <item quantity="one">Yeni günlük yazısı.</item>
-    <item quantity="other">%d yeni günlük yazısı.</item>
   </plurals>
   <!--Misc-->
   <string name="now">şimdi</string>
@@ -212,7 +202,6 @@
   <!--Adding Contacts-->
   <string name="add_contact_title">Yakındaki kişiyi ekle</string>
   <string name="add_contact_error_two_way">Birbirinizin kare kodunu taradınız mı?</string>
-  <string name="face_to_face">Kişi olarak eklemek istediğiniz kişiyle fiziksel olarak buluşmanız gerekir.\n\nBöylece gelecekte başkaları sizin kimliğinize bürünemez veya iletilerinizi okuyamaz.</string>
   <string name="continue_button">İlerle</string>
   <string name="try_again_button">Yeniden dene</string>
   <string name="waiting_for_contact_to_scan">Kişinin kodu taraması ve bağlantı kurması bekleniyor\u2026</string>
@@ -220,17 +209,11 @@
   <string name="contact_added_toast">Kişi eklendi: %s</string>
   <string name="contact_already_exists"> %s kişisi zaten var</string>
   <string name="contact_already_exists_general">Kişi zaten var</string>
-  <string name="qr_code_invalid">Kare kod geçersiz</string>
-  <string name="qr_code_too_old_1">Taradığınız kare kod eski bir Zerion sürümünden geliyor.\n\nLütfen kişinize uygulamayı güncel sürümüne yükseltip yeniden denemesini söyleyin.</string>
-  <string name="qr_code_too_new_1">Taradığınız kare kod daha yeni bir Zerion sürümünden geliyor.\n\nLütfen uygulamayı güncel sürümüne yükseltip yeniden deneyin.</string>
-  <string name="mailbox_qr_code_for_contact">Taradığınız kare kod Zerion Mailbox uygulamasından geliyor.\n\nMailbox ile bağlantı kurmak istiyorsanız, Zerion menüsünden Ayarlar &gt; Mailbox bölümüne gidin.</string>
-  <string name="qr_code_format_unknown">Taradığınız kare kod bir Zerion kişisi eklemek için değil.\n\nLütfen kişi ekranında görüntülenen kare kodu tarayın.</string>
   <string name="camera_error">Kamera sorunu</string>
   <string name="connecting_to_device">Aygıt ile bağlantı kuruluyor\u2026</string>
   <string name="authenticating_with_device">Aygıt üzerinde kimlik doğrulanıyor\u2026</string>
   <string name="connection_error_title">Kişinizle bağlantı kurulamadı</string>
   <string name="connection_error_feedback">Sorun sürerse, uygulamayı geliştirmemize yardımcı olmak için <a href="feedback">bize bildirin</a>.</string>
-  <string name="info_both_must_scan">Birbirinizin kare kodlarını taramalısınız.</string>
   <!--Adding Contacts Remotely-->
   <string name="add_contact_remotely_title_case">Uzaktaki kişiyi ekle</string>
   <string name="add_contact_nearby_title">Yakındaki kişiyi ekle</string>
@@ -382,109 +365,26 @@
   <string name="groups_reveal_visible_revealed_by_contact">Kişi ilişkileri grup tarafından görülebilir (%s görünür yaptı)</string>
   <string name="groups_reveal_invisible">Kişi ilişkisi grup tarafından görülemez</string>
   <!--Forums-->
-  <string name="no_forums">Görüntülenebilecek bir forum yok</string>
-  <string name="no_forums_action">Bir forum oluşturmak için + simgesine dokunun ya da kişilerinizden forumları sizinle paylaşmalarını isteyin</string>
-  <string name="create_forum_title">Forum oluştur</string>
-  <string name="choose_forum_hint">Forumunuza bir ad verin</string>
-  <string name="create_forum_button">Forum oluştur</string>
-  <string name="forum_created_toast">Forum oluşturuldu</string>
-  <string name="no_forum_posts">Görüntülenebilecek bir gönderi yok</string>
   <string name="no_posts">Herhangi bir yazı yok</string>
   <plurals name="posts">
     <item quantity="one">%d yazı</item>
     <item quantity="other">%d yazı</item>
   </plurals>
-  <string name="forum_new_message_hint">Yeni yazı</string>
-  <string name="forum_message_reply_hint">Yeni yanıt</string>
   <string name="btn_reply">Yanıtla</string>
-  <string name="forum_leave">Forumdan ayrıl</string>
-  <string name="dialog_title_leave_forum">Forumdan ayrılmayı onayla</string>
-  <string name="dialog_message_leave_forum">Bu forumdan ayrılmak istediğinize emin misiniz?\n\nBu forumu paylaştığınız kişilerin güncellemeleri alması durabilir.</string>
   <string name="dialog_button_leave">Ayrıl</string>
-  <string name="forum_left_toast">Forumdan ayrıldı</string>
   <!--Forum Sharing-->
-  <string name="forum_share_button">Forumu paylaş</string>
   <string name="contacts_selected">Seçilmiş kişiler</string>
   <string name="activity_share_toolbar_header">Kişi seçin</string>
   <string name="no_contacts_selector">Görüntülenebilecek bir kişi yok</string>
   <string name="no_contacts_selector_action">Bir kişi ekledikten sonra lütfen buraya geri dönün</string>
-  <string name="forum_shared_snackbar">Forum, seçilmiş kişiler ile paylaşıldı</string>
-  <string name="forum_share_message">Bir ileti ekle (isteğe bağlı)</string>
-  <string name="forum_share_error">Forum paylaşılırken bir sorun çıktı.</string>
-  <string name="forum_invitation_received">%1$s sizinle \"%2$s\" forumunu paylaştı.</string>
-  <string name="forum_invitation_sent">\"%1$s\" forumunu %2$s ile paylaştınız.</string>
-  <string name="forum_invitations_title">Forum davetleri</string>
-  <string name="forum_invitation_exists">Bu forum için bir daveti zaten kabul etmişsiniz.\n\nDaha fazla daveti kabul etmeniz, forumla bağlantınızı daha hızlı ve güvenilir yapar.</string>
-  <string name="forum_joined_toast">Foruma katıldı</string>
-  <string name="forum_declined_toast">Davet reddedildi</string>
   <string name="shared_by_format">%s tarafından paylaşıldı</string>
-  <string name="forum_invitation_already_sharing">Zaten paylaşılıyor</string>
-  <string name="forum_invitation_already_invited">Davet zaten gönderilmiş</string>
-  <string name="forum_invitation_invite_received">Davet zaten alınmış</string>
-  <string name="forum_invitation_not_supported">Bu kişi tarafından desteklenmiyor</string>
-  <string name="forum_invitation_error">Hata. Bu bir hata ama sizden kaynaklanmıyor</string>
-  <string name="forum_invitation_response_accepted_sent">%s kişisinin forum davetini kabul ettiniz.</string>
-  <string name="forum_invitation_response_declined_sent">%s kişisinin forum davetini reddettiniz.</string>
-  <string name="forum_invitation_response_declined_auto">%s kişisinin forum daveti otomatik olarak reddedildi.</string>
-  <string name="forum_invitation_response_accepted_received">%s forum davetini kabul etti.</string>
-  <string name="forum_invitation_response_declined_received">%s forum davetini reddetti.</string>
   <string name="sharing_status">Paylaşım durumu</string>
-  <string name="sharing_status_forum">Bir forumun herhangi bir üyesi o forumu arkadaşlarıyla paylaşabilir. Bu forumu aşağıdaki kişilerle paylaşıyorsunuz. Göremediğiniz diğer üyeler de olabilir</string>
   <string name="shared_with">%1$d ile paylaşıldı (%2$d çevrim içi)</string>
-  <plurals name="forums_shared">
-    <item quantity="one">%d forum kişiler tarafından paylaşılmış</item>
-    <item quantity="other">%d forum kişiler tarafından paylaşılmış</item>
-  </plurals>
   <string name="nobody">Hiç kimse</string>
   <!--Blogs-->
-  <string name="blogs_other_blog_empty_state">Görüntülenebilecek bir yazı yok</string>
   <string name="read_more">diğerlerini oku</string>
-  <string name="blogs_write_blog_post">Günlük yazısı yaz</string>
-  <string name="blogs_write_blog_post_body_hint">Günlük yazınızı yazın</string>
-  <string name="blogs_publish_blog_post">Yayınla</string>
-  <string name="blogs_blog_post_created">Günlük yazısı oluşturuldu</string>
-  <string name="blogs_blog_post_received">Yeni günlük yazısı alındı</string>
-  <string name="blogs_blog_post_scroll_to">Şuraya kaydır</string>
-  <string name="blogs_feed_empty_state">Görüntülenebilecek bir yazı yok</string>
-  <string name="blogs_feed_empty_state_action">Kişilerinizden veya abone olduğunuz günlüklerden gelen yazılar burada görüntülenir.\n\nBir yazı yazmak için kalem simgesine dokunun</string>
-  <string name="blogs_remove_blog">Günlüğü sil</string>
-  <string name="blogs_remove_blog_dialog_message">Bu günlüğü silmek istediğinize emin misiniz?\n\nYazılar sizin aygıtınızdan değil, diğer insanların aygıtlarından silinir.\n\nBu günlüğü paylaştığınız kişilerin güncellemeleri alması durabilir.</string>
-  <string name="blogs_remove_blog_ok">Sil</string>
-  <string name="blogs_blog_removed">Günlük kaldırıldı</string>
-  <string name="blogs_reblog_comment_hint">Bir yorum ekle (isteğe bağlı)</string>
-  <string name="blogs_reblog_button">Yeniden yayınla</string>
   <!--Blog Sharing-->
-  <string name="blogs_sharing_share">Günlüğü paylaş</string>
-  <string name="blogs_sharing_error">Günlük paylaşılırken bir sorun çıktı.</string>
-  <string name="blogs_sharing_button">Günlüğü paylaş</string>
-  <string name="blogs_sharing_snackbar">Günlük seçilmiş kişilerle paylaşıldı</string>
-  <string name="blogs_sharing_response_accepted_sent">%s kişisinin günlük davetini kabul ettiniz.</string>
-  <string name="blogs_sharing_response_declined_sent">%s kişisinin günlük davetini reddettiniz.</string>
-  <string name="blogs_sharing_response_declined_auto">%s kişisinin günlük daveti otomatik olarak reddedildi.</string>
-  <string name="blogs_sharing_response_accepted_received">%s günlük davetini kabul etti.</string>
-  <string name="blogs_sharing_response_declined_received">%s günlük davetini reddetti.</string>
-  <string name="blogs_sharing_invitation_received">%1$s sizinle \"%2$s\" günlüğünü paylaştı.</string>
-  <string name="blogs_sharing_invitation_sent">\"%1$s\" günlüğünü %2$s ile paylaştınız.</string>
-  <string name="blogs_sharing_invitations_title">Günlük davetleri</string>
-  <string name="blogs_sharing_joined_toast">Günlüğe abone olundu</string>
-  <string name="blogs_sharing_declined_toast">Davet reddedildi</string>
-  <string name="sharing_status_blog">Bir günlüğe abone olan herkes, günlüğü kişileriyle paylaşabilir. Bu günlüğü şu kişilerle paylaşıyorsunuz. Göremediğiniz diğer aboneler de olabilir.</string>
   <!--RSS Feeds-->
-  <string name="blogs_rss_feeds_import">RSS akışını içe aktar</string>
-  <string name="blogs_rss_feeds_import_button">İçe aktar</string>
-  <string name="blogs_rss_feeds_import_hint">RSS akışının adresini yazın</string>
-  <string name="blogs_rss_feeds_import_progress">RSS akışı içe aktarılıyor…</string>
-  <string name="blogs_rss_feeds_import_error">Üzgünüz! RSS akışınız içe aktarılırken bir sorun çıktı.</string>
-  <string name="blogs_rss_feeds_import_title">Akışı dosyadan içe aktar</string>
-  <string name="blogs_rss_feeds">RSS akışları</string>
-  <string name="blogs_rss_feeds_manage_imported">İçe aktarıldı:</string>
-  <string name="blogs_rss_feeds_manage_author">Yazar:</string>
-  <string name="blogs_rss_feeds_manage_updated">Son güncellenme:</string>
-  <string name="blogs_rss_remove_feed">Akışı sil</string>
-  <string name="blogs_rss_remove_feed_dialog_message">Bu akışı silmek istediğinize emin misiniz?\n\nYazılar sizin aygıtınızdan değil, diğer insanların aygıtlarından silinir.\n\nBu akışı paylaştığınız kişilerin güncellemeleri alması durabilir.</string>
-  <string name="blogs_rss_remove_feed_ok">Sil</string>
-  <string name="blogs_rss_feeds_manage_empty_state">Görüntülenebilecek bir RSS akışı yok\n\nBir akışı içe aktarmak için + simgesine dokunun</string>
-  <string name="blogs_rss_feeds_manage_error">Akışlarınız yüklenirken bir sorun çıktı. Lütfen bir süre sonra yeniden deneyin.</string>
   <!--Settings Profile Picture-->
   <string name="change_profile_picture">Profil görselinizi değiştirmek için dokunun</string>
   <string name="dialog_confirm_profile_picture_title">Profil görselinizi değiştirin</string>
@@ -564,12 +464,6 @@
   <string name="notify_group_messages_setting_title">Grup iletileri</string>
   <string name="notify_group_messages_setting_summary">Grup iletisi uyarıları görüntülensin</string>
   <string name="notify_group_messages_setting_summary_26">Grup iletisi uyarılarını yapılandır</string>
-  <string name="notify_forum_posts_setting_title">Forum yazıları</string>
-  <string name="notify_forum_posts_setting_summary">Forum yazısı uyarıları görüntülensin</string>
-  <string name="notify_forum_posts_setting_summary_26">Forum yazısı uyarılarını yapılandır</string>
-  <string name="notify_blog_posts_setting_title">Günlük yazıları</string>
-  <string name="notify_blog_posts_setting_summary">Günlük yazısı uyarıları görüntülensin</string>
-  <string name="notify_blog_posts_setting_summary_26">Günlük yazısı uyarılarını yapılandır</string>
   <string name="notify_vibration_setting">Titreşim</string>
   <string name="notify_sound_setting">Ses</string>
   <string name="notify_sound_setting_default">Varsayılan zil sesi</string>
@@ -589,10 +483,6 @@
   <string name="mailbox_setup_connecting">Mailbox ile bağlantı kuruluyor…</string>
   <!--This string is shown when connecting to a Mailbox for the first time. The placeholder will be replaced with a duration, e.g. "2 minutes".-->
   <string name="mailbox_setup_connecting_info">Bu işlem %1s kadar sürebilir</string>
-  <string name="mailbox_qr_code_too_old">Taradığınız kare kod daha eski bir Zerion Mailbox sürümünden geliyor.\n\nLütfen Zerion Mailbox uygulamasının güncel sürümüne yükseltip yeniden deneyin.</string>
-  <string name="mailbox_qr_code_too_new">Taradığınız kare kod daha yeni bir Zerion Mailbox sürümünden geliyor.\n\nLütfen Zerion uygulamasını güncel sürümüne yükseltip yeniden deneyin.</string>
-  <string name="contact_qr_code_for_mailbox">Taradığınız kare kod bir Zerion kişisi eklemek için.\n\nBir kişi eklemek istiyorsanız kişi listesine gidin ve + simgesine dokunun.</string>
-  <string name="mailbox_setup_qr_code_wrong_description">Taradığınız kare kod Zerion Mailbox uygulamasından gelmiyor.\n\nLütfen Mailbox aygıtında Zerion Mailbox uygulamasını açın ve görüntülenen kare kodu o uygulama ile tarayın.</string>
   <string name="mailbox_setup_already_paired_title">Mailbox zaten bağlanmış</string>
   <string name="mailbox_setup_already_paired_description">Diğer aygıttan Mailbox bağlantısını kaldırıp yeniden deneyin</string>
   <string name="mailbox_setup_io_error_title">Bağlantı kurulamadı</string>
@@ -743,8 +633,6 @@
   <string name="permission_bluetooth_title">Yakındaki aygıtlara erişme izni</string>
   <string name="permission_bluetooth_body">Zerion Bluetooth iletişimini kullanabilmek için yakındaki aygıtları bulma ve bağlanma iznine gerek duyuyor.</string>
   <string name="permission_bluetooth_denied_body">Yakındaki aygıtlara erişme izni vermemişsiniz. Ancak Zerion yakındaki aygıtları bulabilmek için Bluetooth bağlantısını kullanmaya gerek duyuyor.\n\nLütfen yakındaki aygıtlara erişme izni vermeyi değerlendirin.</string>
-  <string name="qr_code">Kare kod</string>
-  <string name="show_qr_code_fullscreen">Kare kod tam ekranda görüntülensin</string>
   <!--App Locking-->
   <string name="lock_unlock">Zerion kilidini aç</string>
   <string name="lock_unlock_verbose">Zerion kilidini açmak için aygıtınızın PIN kodunu ya da parolasını yazın ya da desenini çizin</string>
@@ -774,9 +662,7 @@
   <string name="wifi_settings_request_enable_body">Zerion bir Wi-Fi erişim noktası oluşturabilmek için Wi-Fi kullanmaya gerek duyuyor. Lütfen Wi-Fi özelliğini açın.</string>
   <string name="hotspot_tab_manual">El ile</string>
   <!--The placeholder to be inserted into the string 'hotspot_manual_wifi': People can connect by %s-->
-  <string name="hotspot_scanning_a_qr_code">Bir kare kodu tarayarak</string>
   <!--Wi-Fi setup-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_wifi">Telefonunuz bir Wi-Fi erişim noktası sunuyor. Zerion uygulamasını indirmek isteyen kişiler, aşağıdaki bilgileri kendi aygıtlarındaki Wi-Fi ayarlarına ekleyerek ya da %s ile bu erişim noktasına bağlanabilirler. Kişiler erişim noktasına bağlandıklarında \'Sonraki\' üzerine basın.</string>
   <string name="hotspot_manual_wifi_ssid">Ağ adı</string>
   <string name="hotspot_qr_wifi">Telefonunuz bir Wi-Fi erişim noktası sunuyor. Zerion indirmek isteyen kişiler bu erişim noktasına kare kodu tarayarak bağlanabilir. Kişiler erişim noktasına bağlandıklarında \'İleri\' üzerine basın.</string>
@@ -786,7 +672,6 @@
     <item quantity="other">%s aygıt bağlı</item>
   </plurals>
   <!--Download link-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_site">Telefonunuz bir Wi-Fi erişim noktası sunuyor. Erişim noktasına bağlı kişiler, şu bağlantıyı tarayıcı adres satırına yazarak ya da %s ile Zerion uygulamasını indirebilirler. </string>
   <string name="hotspot_manual_site_address">Adres (URL)</string>
   <string name="hotspot_qr_site">Telefonunuz bir Wi-Fi erişim noktası sunuyor. Erişim noktasına bağlı kişiler kare kodu tarayarak Zerion uygulamasını indirebilirler. </string>

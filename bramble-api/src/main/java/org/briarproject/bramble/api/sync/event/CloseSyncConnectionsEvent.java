@@ -6,10 +6,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.Immutable;
 
-/**
- * An event that is broadcast when all sync connections using a given
- * transport should be closed.
- */
+
 @Immutable
 @NotNullByDefault
 public class CloseSyncConnectionsEvent extends Event {

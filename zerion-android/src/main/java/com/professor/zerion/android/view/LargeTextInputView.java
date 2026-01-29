@@ -55,10 +55,8 @@ public class LargeTextInputView extends TextInputView {
 			ViewGroup.LayoutParams inputParams = textInput.getLayoutParams();
 			inputParams.height = MATCH_PARENT;
 			textInput.setLayoutParams(inputParams);
-			// Text starts at top when expanded
 			textInput.setGravity(android.view.Gravity.TOP);
 		} else {
-			// Text at bottom for compact mode
 			textInput.setGravity(BOTTOM);
 		}
 	}

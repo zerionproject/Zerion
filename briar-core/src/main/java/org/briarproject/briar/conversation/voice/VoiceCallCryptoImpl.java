@@ -17,21 +17,14 @@ import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import java.security.SecureRandom;
-import java.util.logging.Logger;
 
 import static org.briarproject.bramble.util.StringUtils.fromHexString;
 import static org.briarproject.bramble.util.StringUtils.toHexString;
-
-import static java.util.logging.Level.WARNING;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.util.StringUtils.toUtf8;
 
 @Immutable
 @NotNullByDefault
 class VoiceCallCryptoImpl implements VoiceCallCrypto {
-
-	private static final Logger LOG =
-			getLogger(VoiceCallCryptoImpl.class.getName());
 
 	private static final String KEY_MATERIAL_LABEL =
 			"org.briarproject.briar.voice/KEY_MATERIAL";
@@ -53,7 +46,8 @@ class VoiceCallCryptoImpl implements VoiceCallCrypto {
 	@Inject
 	VoiceCallCryptoImpl(CryptoComponent crypto) {
 		this.crypto = crypto;
-		this.secureRandom = crypto.getSecureRandom();
+		this.secureRandom = crypto != null ? crypto.getSecureRandom()
+				: new SecureRandom();
 	}
 
 	@Override
@@ -111,12 +105,6 @@ class VoiceCallCryptoImpl implements VoiceCallCrypto {
 		SecretKey txKey = new SecretKey(alice ? aliceKeyBytes : bobKeyBytes);
 		SecretKey rxKey = new SecretKey(alice ? bobKeyBytes : aliceKeyBytes);
 
-		if (LOG.isLoggable(java.util.logging.Level.INFO)) {
-			LOG.info("Derived audio keys (alice=" + alice + ") " +
-					"txKey=" + bytesToHex(txKey.getBytes(), 0, 8) + "... " +
-					"rxKey=" + bytesToHex(rxKey.getBytes(), 0, 8) + "...");
-		}
-
 		return new AudioKeys(txKey, rxKey);
 	}
 
@@ -166,18 +154,7 @@ class VoiceCallCryptoImpl implements VoiceCallCrypto {
 			return cipher.doFinal(ciphertextWithTag);
 
 		} catch (Exception e) {
-			if (LOG.isLoggable(WARNING)) {
-				LOG.warning("Audio frame decryption failed: " + e.getMessage());
-			}
 			throw new RuntimeException("Audio frame decryption failed", e);
 		}
-	}
-
-	private String bytesToHex(byte[] bytes, int offset, int length) {
-		StringBuilder sb = new StringBuilder();
-		for (int i = offset; i < Math.min(offset + length, bytes.length); i++) {
-			sb.append(String.format("%02x", bytes[i]));
-		}
-		return sb.toString();
 	}
 }

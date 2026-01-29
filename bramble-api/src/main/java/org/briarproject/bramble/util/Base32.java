@@ -16,14 +16,12 @@ public class Base32 {
 		int byteMask = 0x80, codeMask = 0x10;
 		while (byteIndex < b.length) {
 			if ((b[byteIndex] & byteMask) != 0) currentCode |= codeMask;
-			// After every 8 bits, move on to the next byte
 			if (byteMask == 0x01) {
 				byteMask = 0x80;
 				byteIndex++;
 			} else {
 				byteMask >>>= 1;
 			}
-			// After every 5 bits, move on to the next digit
 			if (codeMask == 0x01) {
 				s.append(DIGITS[currentCode]);
 				codeMask = 0x10;
@@ -32,7 +30,6 @@ public class Base32 {
 				codeMask >>>= 1;
 			}
 		}
-		// If we're part-way through a digit, output it
 		if (codeMask != 0x10) s.append(DIGITS[currentCode]);
 		return s.toString();
 	}
@@ -44,7 +41,6 @@ public class Base32 {
 		while (digitIndex < digitCount) {
 			int code = decodeDigit(s.charAt(digitIndex));
 			if ((code & codeMask) != 0) currentByte |= byteMask;
-			// After every 8 bits, move on to the next byte
 			if (byteMask == 0x01) {
 				b.write(currentByte);
 				byteMask = 0x80;
@@ -52,7 +48,6 @@ public class Base32 {
 			} else {
 				byteMask >>>= 1;
 			}
-			// After every 5 bits, move on to the next digit
 			if (codeMask == 0x01) {
 				codeMask = 0x10;
 				digitIndex++;
@@ -60,7 +55,6 @@ public class Base32 {
 				codeMask >>>= 1;
 			}
 		}
-		// If any extra bits were used for encoding, they should all be zero
 		if (strict && byteMask != 0x80 && currentByte != 0x00)
 			throw new IllegalArgumentException();
 		return b.toByteArray();

@@ -18,40 +18,7 @@ import static org.briarproject.bramble.api.keyagreement.KeyAgreementConstants.MA
 import static org.briarproject.bramble.api.keyagreement.KeyAgreementConstants.PROTOCOL_VERSION;
 import static org.briarproject.bramble.api.keyagreement.KeyAgreementConstants.SHARED_SECRET_LABEL;
 
-/**
- * Implementation of the BQP protocol.
- * <p/>
- * Alice:
- * <ul>
- * <li>Send A_KEY</li>
- * <li>Receive B_KEY
- * <ul>
- * <li>Check B_KEY matches B_COMMIT</li>
- * </ul></li>
- * <li>Calculate s</li>
- * <li>Send A_CONFIRM</li>
- * <li>Receive B_CONFIRM
- * <ul>
- * <li>Check B_CONFIRM matches expected</li>
- * </ul></li>
- * <li>Derive master</li>
- * </ul><p/>
- * Bob:
- * <ul>
- * <li>Receive A_KEY
- * <ul>
- * <li>Check A_KEY matches A_COMMIT</li>
- * </ul></li>
- * <li>Send B_KEY</li>
- * <li>Calculate s</li>
- * <li>Receive A_CONFIRM
- * <ul>
- * <li>Check A_CONFIRM matches expected</li>
- * </ul></li>
- * <li>Send B_CONFIRM</li>
- * <li>Derive master</li>
- * </ul>
- */
+
 @NotNullByDefault
 class KeyAgreementProtocol {
 
@@ -87,20 +54,12 @@ class KeyAgreementProtocol {
 		this.alice = alice;
 	}
 
-	/**
-	 * Perform the BQP protocol.
-	 *
-	 * @return the negotiated master key.
-	 * @throws AbortException when the protocol may have been tampered with.
-	 * @throws IOException for all other other connection errors.
-	 */
+	
 	SecretKey perform() throws AbortException, IOException {
 		try {
 			PublicKey theirPublicKey;
 			if (alice) {
 				sendKey();
-				// Alice waits here for Bob to scan her QR code, determine his
-				// role, receive her key and respond with his key
 				callbacks.connectionWaiting();
 				theirPublicKey = receiveKey();
 			} else {

@@ -7,9 +7,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.Immutable;
 
-/**
- * An event that is broadcast when the {@link State state} of a plugin changes.
- */
+
 @Immutable
 @NotNullByDefault
 public class TransportStateEvent extends Event {

@@ -27,10 +27,7 @@ import javax.inject.Inject;
 import static android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static androidx.preference.PreferenceManager.setDefaultValues;
-import static java.lang.System.currentTimeMillis;
 import static com.professor.zerion.android.ZerionApplication.ENTRY_ACTIVITY;
-import static com.professor.zerion.android.TestingConstants.EXPIRY_DATE;
-import static com.professor.zerion.android.TestingConstants.IS_DEBUG_BUILD;
 
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
@@ -57,9 +54,6 @@ public class SplashScreenActivity extends BaseActivity {
 				WindowManager.LayoutParams.FLAG_SECURE
 		);
 		getWindow().setExitTransition(new Fade());
-
-		// Move setDefaultValues to background thread to avoid disk I/O on main thread
-		// This is a one-time operation that reads XML and writes to SharedPreferences
 		androidExecutor.runOnBackgroundThread(() ->
 				setDefaultValues(this, R.xml.panic_preferences, false));
 
@@ -76,11 +70,7 @@ public class SplashScreenActivity extends BaseActivity {
 			mainHandler.postDelayed(() -> {
 				if (isFinishing()) return;
 
-				if (BuildConfig.DEBUG && IS_DEBUG_BUILD && currentTimeMillis() >= EXPIRY_DATE) {
-					startNextActivity(ExpiredActivity.class);
-				} else {
 					startNextActivity(ENTRY_ACTIVITY);
-				}
 				supportFinishAfterTransition();
 			}, duration);
 		}

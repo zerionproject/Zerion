@@ -35,10 +35,8 @@ class PrivateMessageFactoryImpl implements PrivateMessageFactory {
 	@Override
 	public PrivateMessage createLegacyPrivateMessage(GroupId groupId,
 			long timestamp, String text) throws FormatException {
-		// Validate the arguments
 		if (utf8IsTooLong(text, MAX_PRIVATE_MESSAGE_TEXT_LENGTH))
 			throw new IllegalArgumentException();
-		// Serialise the message
 		BdfList body = BdfList.of(text);
 		Message m = clientHelper.createMessage(groupId, timestamp, body);
 		return new PrivateMessage(m);
@@ -50,7 +48,6 @@ class PrivateMessageFactoryImpl implements PrivateMessageFactory {
 			throws FormatException {
 		validateTextAndAttachmentHeaders(text, headers);
 		BdfList attachmentList = serialiseAttachmentHeaders(headers);
-		// Serialise the message
 		BdfList body = BdfList.of(PRIVATE_MESSAGE, text, attachmentList);
 		Message m = clientHelper.createMessage(groupId, timestamp, body);
 		return new PrivateMessage(m, text != null, headers);
@@ -62,7 +59,6 @@ class PrivateMessageFactoryImpl implements PrivateMessageFactory {
 			long autoDeleteTimer) throws FormatException {
 		validateTextAndAttachmentHeaders(text, headers);
 		BdfList attachmentList = serialiseAttachmentHeaders(headers);
-		// Serialise the message
 		Long timer = autoDeleteTimer == NO_AUTO_DELETE_TIMER ?
 				null : autoDeleteTimer;
 		BdfList body = BdfList.of(PRIVATE_MESSAGE, text, attachmentList, timer);

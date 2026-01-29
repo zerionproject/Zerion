@@ -205,29 +205,18 @@ public class NotificationsFragment extends Fragment {
 
 	@TargetApi(NOTIFICATION_CHANNEL_API)
 	private void setupAndroidOAndLaterNotifications() {
-		// On Android O+, notification settings are controlled via system channels
-		// Set up click listeners on cards to open system notification settings
-
-		// Private messages - opens contact channel settings
 		notifyPrivateMessagesSwitch.setClickable(false);
 		notifyPrivateMessagesSwitch.setChecked(true);
 		notifyPrivateMessagesCard.setOnClickListener(v ->
 				openChannelSettings(CONTACT_CHANNEL_ID));
-
-		// Group messages - opens group channel settings
 		notifyGroupMessagesSwitch.setClickable(false);
 		notifyGroupMessagesSwitch.setChecked(true);
 		notifyGroupMessagesCard.setOnClickListener(v ->
 				openChannelSettings(GROUP_CHANNEL_ID));
-
-		// Voice calls - opens contact channel settings (voice calls use same channel)
 		notifyVoiceCallsSwitch.setClickable(false);
 		notifyVoiceCallsSwitch.setChecked(true);
 		notifyVoiceCallsCard.setOnClickListener(v ->
 				openChannelSettings(CONTACT_CHANNEL_ID));
-
-		// Vibration and sound are per-channel on Android O+
-		// Show them and have them open the app notification settings
 		notifyVibrationSwitch.setClickable(false);
 		notifyVibrationSwitch.setChecked(true);
 		notifyVibrationCard.setOnClickListener(v -> openAppNotificationSettings());

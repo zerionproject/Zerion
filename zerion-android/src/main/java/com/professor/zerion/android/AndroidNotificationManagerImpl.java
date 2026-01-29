@@ -156,10 +156,6 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 						R.string.contact_list_button);
 				createNotificationChannel(GROUP_CHANNEL_ID,
 						R.string.groups_button);
-				createNotificationChannel(FORUM_CHANNEL_ID,
-						R.string.forums_button);
-				createNotificationChannel(BLOG_CHANNEL_ID,
-						R.string.blogs_button);
 				return null;
 			};
 			try {
@@ -188,8 +184,6 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		Future<Void> f = androidExecutor.runOnUiThread(() -> {
 			clearContactNotification();
 			clearGroupMessageNotification();
-			clearForumPostNotification();
-			clearBlogPostNotification();
 			clearContactAddedNotification();
 			return null;
 		});
@@ -212,14 +206,6 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		notificationManager.cancel(GROUP_MESSAGE_NOTIFICATION_ID);
 	}
 
-	@UiThread
-	private void clearForumPostNotification() {
-	}
-
-	@UiThread
-	private void clearBlogPostNotification() {
-	}
-
 	@Override
 	public void clearContactAddedNotification() {
 		contactAddedTotal = 0;
@@ -240,8 +226,6 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 						(ConversationResponse) p.getMessageHeader();
 				if (r.isAutoDecline()) return;
 			}
-
-			// Check for incoming voice calls
 			if (e instanceof PrivateMessageReceivedEvent) {
 				PrivateMessageReceivedEvent pm = (PrivateMessageReceivedEvent) e;
 				checkForIncomingCall(pm);
@@ -255,7 +239,6 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 			ContactAddedEvent c = (ContactAddedEvent) e;
 			if (!c.isVerified()) showContactAddedNotification();
 		} else if (e instanceof VoiceSignalReceivedEvent) {
-			// Handle incoming voice call signals via the new dedicated event
 			VoiceSignalReceivedEvent voiceEvent = (VoiceSignalReceivedEvent) e;
 			VoiceSignalHeader header = voiceEvent.getSignalHeader();
 			if (header.getSignalType() == VoiceSignalType.CALL_OFFER) {
@@ -475,38 +458,6 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	}
 
 	@Override
-	public void showForumPostNotification(GroupId g) {
-	}
-
-	@Override
-	public void clearForumPostNotification(GroupId g) {
-	}
-
-	@UiThread
-	private void updateForumPostNotification(boolean mayAlertAgain) {
-	}
-
-	@Override
-	public void clearAllForumPostNotifications() {
-	}
-
-	@Override
-	public void showBlogPostNotification(GroupId g) {
-	}
-
-	@Override
-	public void clearBlogPostNotification(GroupId g) {
-	}
-
-	@UiThread
-	private void updateBlogPostNotification(boolean mayAlertAgain) {
-	}
-
-	@Override
-	public void clearAllBlogPostNotifications() {
-	}
-
-	@Override
 	public void showContactAddedNotification(ContactId c) {
 		androidExecutor.runOnUiThread(() -> showContactAddedNotification());
 	}
@@ -627,22 +578,6 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	}
 
 	@Override
-	public void blockForumPostNotification(GroupId g) {
-	}
-
-	@Override
-	public void unblockForumPostNotification(GroupId g) {
-	}
-
-	@Override
-	public void blockAllForumPostNotifications() {
-	}
-
-	@Override
-	public void unblockAllForumPostNotifications() {
-	}
-
-	@Override
 	public void blockAllGroupMessageNotifications() {
 		androidExecutor.runOnUiThread((Runnable) () -> blockGroups = true);
 	}
@@ -650,22 +585,6 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	@Override
 	public void unblockAllGroupMessageNotifications() {
 		androidExecutor.runOnUiThread((Runnable) () -> blockGroups = false);
-	}
-
-	@Override
-	public void blockBlogPostNotification(GroupId g) {
-	}
-
-	@Override
-	public void unblockBlogPostNotification(GroupId g) {
-	}
-
-	@Override
-	public void blockAllBlogPostNotifications() {
-	}
-
-	@Override
-	public void unblockAllBlogPostNotifications() {
 	}
 
 	@Override
@@ -708,8 +627,6 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 				if (messageText == null || !isVoiceCallSignal(messageText)) {
 					return;
 				}
-
-				// Decode and parse voice call signal
 				String decoded = decodeVoiceCallSignal(messageText);
 				if (decoded == null) return;
 
@@ -717,17 +634,12 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 				if (parts.length < 2) return;
 
 				String signalType = parts[1];
-
-				// Only launch UI for CALL_OFFER (incoming call)
 				if ("CALL_OFFER".equals(signalType)) {
 					String remoteCallId = parts.length > 2 ? parts[2] : null;
 					String voiceCallKey = parts.length > 3 ? parts[3] : null;
 
 					ContactId contactId = event.getContactId();
 					Contact contact = contactManager.getContact(contactId);
-
-					// Launch VoiceCallActivity with incoming call intent
-					// Use the actual constant key names from VoiceCallActivity
 					androidExecutor.runOnUiThread(() -> {
 						Intent intent = new Intent(appContext,
 								com.professor.zerion.android.conversation.voice.VoiceCallActivity.class);
@@ -745,7 +657,6 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 					});
 				}
 			} catch (DbException e) {
-				// Failed to read message - ignore
 			}
 		});
 	}
@@ -777,10 +688,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		}
 	}
 
-	/**
-	 * Handle incoming voice call from the new VoiceSignalReceivedEvent.
-	 * This launches VoiceCallActivity when a CALL_OFFER signal is received.
-	 */
+	
 	private void handleIncomingVoiceCall(ContactId contactId,
 			VoiceSignalHeader header) {
 		androidExecutor.runOnBackgroundThread(() -> {
@@ -816,7 +724,6 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 					appContext.startActivity(intent);
 				});
 			} catch (DbException e) {
-				// Failed to get contact info - cannot launch call UI
 			}
 		});
 	}

@@ -5,9 +5,7 @@ import dagger.Provides;
 
 import javax.inject.Singleton;
 
-/**
- * Dagger module for voice call components.
- */
+
 @Module
 public class VoiceCallModule {
 

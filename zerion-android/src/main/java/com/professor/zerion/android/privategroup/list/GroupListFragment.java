@@ -69,8 +69,6 @@ public class GroupListFragment extends BaseFragment implements
 		requireActivity().setTitle(R.string.groups_button);
 
 		View v = inflater.inflate(R.layout.fragment_group_list, container, false);
-
-		// Setup list
 		adapter = new GroupListAdapter(this);
 		list = v.findViewById(R.id.list);
 		list.setEmptyImage(R.drawable.il_empty_state_group_list);
@@ -84,15 +82,11 @@ public class GroupListFragment extends BaseFragment implements
 					if (requireNonNull(items).size() == 0) list.showData();
 				})
 		);
-
-		// Setup FAB
 		FloatingActionButton fab = v.findViewById(R.id.fab_add_group);
 		fab.setOnClickListener(view -> {
 			Intent i = new Intent(getContext(), CreateGroupActivity.class);
 			startActivity(i);
 		});
-
-		// Setup floating invitation banner (replaces Snackbar)
 		invitationBanner = v.findViewById(R.id.invitation_banner);
 		invitationText = v.findViewById(R.id.invitation_text);
 		invitationBanner.setOnClickListener(this);

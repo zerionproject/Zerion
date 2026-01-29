@@ -18,7 +18,6 @@ class KeyMaterialSourceImpl implements KeyMaterialSource {
 	private final Salsa20Engine cipher = new Salsa20Engine();
 
 	KeyMaterialSourceImpl(SecretKey sourceKey) {
-		// Initialise the stream cipher with an all-zero nonce
 		KeyParameter k = new KeyParameter(sourceKey.getBytes());
 		cipher.init(true, new ParametersWithIV(k, new byte[8]));
 	}

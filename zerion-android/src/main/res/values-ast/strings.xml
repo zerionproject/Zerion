@@ -37,8 +37,6 @@
   <string name="nav_drawer_close_description">Zarrar el caxón de navegación</string>
   <string name="contact_list_button">Contactos</string>
   <string name="groups_button">Grupos privaos</string>
-  <string name="forums_button">Foros</string>
-  <string name="blogs_button">Blogs</string>
   <!--This is part of the main menu. The app will be locked when this is tapped.-->
   <string name="lock_button">Bloquiar App</string>
   <string name="settings_button">Preferencies</string>
@@ -55,14 +53,6 @@
   <plurals name="group_message_notification_text">
     <item quantity="one">Mensaxe de grupu nuevu.</item>
     <item quantity="other">%d mensaxes de grupu nuevos.</item>
-  </plurals>
-  <plurals name="forum_post_notification_text">
-    <item quantity="one">Mensaxe de foru nuevu.</item>
-    <item quantity="other">%d mensaxes de foru nuevos.</item>
-  </plurals>
-  <plurals name="blog_post_notification_text">
-    <item quantity="one">Una publicación del blog nueva.</item>
-    <item quantity="other">%d publicaciones del blog nueves.</item>
   </plurals>
   <!--Misc-->
   <string name="now">agora</string>
@@ -140,25 +130,12 @@
   <!--Private Groups Revealing Contacts-->
   <string name="groups_reveal_contacts">Revelar contautos</string>
   <!--Forums-->
-  <string name="create_forum_title">Crear foru</string>
-  <string name="choose_forum_hint">Escueyi un nome pal foru</string>
-  <string name="create_forum_button">Crear foru</string>
-  <string name="forum_created_toast">Creóse\'l foru</string>
-  <string name="no_forum_posts">Nun hai mensaxes qu\'amosar</string>
   <!--Forum Sharing-->
   <string name="nobody">Naide</string>
   <!--Blogs-->
-  <string name="blogs_other_blog_empty_state">Nun hai mensaxes qu\'amosar</string>
   <string name="read_more">lleer más</string>
-  <string name="blogs_publish_blog_post">Publicar</string>
-  <string name="blogs_feed_empty_state">Nun hai mensaxes qu\'amosar</string>
-  <string name="blogs_remove_blog_ok">Desaniciar</string>
   <!--Blog Sharing-->
   <!--RSS Feeds-->
-  <string name="blogs_rss_feeds_import">Importar canal RSS</string>
-  <string name="blogs_rss_feeds_import_button">Importar</string>
-  <string name="blogs_rss_feeds_manage_author">Autor:</string>
-  <string name="blogs_rss_remove_feed_ok">Desaniciar</string>
   <!--Settings Display-->
   <!--Settings Network-->
   <string name="network_settings_title">Redes</string>

@@ -6,11 +6,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.Immutable;
 
-/**
- * An elliptic curve public key that uses the encoding defined in "SEC 1:
- * Elliptic Curve Cryptography", section 2.3 (Certicom Corporation, May 2009).
- * Point compression is not used.
- */
+
 @Immutable
 @NotNullByDefault
 class Sec1PublicKey implements PublicKey {

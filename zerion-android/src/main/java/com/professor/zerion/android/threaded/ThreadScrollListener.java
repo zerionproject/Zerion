@@ -9,8 +9,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 
 import static androidx.recyclerview.widget.RecyclerView.NO_POSITION;
 import static java.util.Objects.requireNonNull;
-import static java.util.logging.Level.INFO;
-
 @NotNullByDefault
 class ThreadScrollListener<I extends ThreadItem>
 		extends ZerionRecyclerViewScrollListener<ThreadItemAdapter<I>, I> {

@@ -2,15 +2,10 @@ package org.briarproject.bramble.api.plugin;
 
 import org.briarproject.bramble.util.StringUtils;
 
-/**
- * Type-safe wrapper for a namespaced string that uniquely identifies a
- * transport plugin.
- */
+
 public class TransportId {
 
-	/**
-	 * The maximum length of a transport identifier in UTF-8 bytes.
-	 */
+	
 	public static int MAX_TRANSPORT_ID_LENGTH = 100;
 
 	private final String id;

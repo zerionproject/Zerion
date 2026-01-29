@@ -26,7 +26,6 @@ public class AndroidSystemModule {
 	private final ScheduledExecutorService scheduledExecutorService;
 
 	public AndroidSystemModule() {
-		// Discard tasks that are submitted during shutdown
 		RejectedExecutionHandler policy =
 				new ScheduledThreadPoolExecutor.DiscardPolicy();
 		scheduledExecutorService = new ScheduledThreadPoolExecutor(1, policy);

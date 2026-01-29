@@ -18,8 +18,6 @@ import static org.briarproject.bramble.util.NetworkUtils.getNetworkInterfaces;
 @Immutable
 @NotNullByDefault
 abstract class AbstractSecureRandomProvider implements SecureRandomProvider {
-
-	// Contribute whatever slightly unpredictable info we have to the pool
 	protected void writeToEntropyPool(DataOutputStream out) throws IOException {
 		out.writeLong(System.currentTimeMillis());
 		out.writeLong(System.nanoTime());

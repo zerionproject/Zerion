@@ -2,11 +2,7 @@ package org.briarproject.bramble.api.reporting;
 
 public interface ReportingConstants {
 
-	/**
-	 * Public key for reporting crashes and feedback to the developers. This
-	 * is an ECIES key on the brainpoolp512r1 curve, encoded in SEC 1 format
-	 * without point compression.
-	 */
+	
 	String DEV_PUBLIC_KEY_HEX =
 			"0457AD1619FBD433D5E13D5560697054"
 					+ "6E8FC5F4EF83A8C18718E8BF59BB601F"
@@ -17,10 +13,7 @@ public interface ReportingConstants {
 					+ "4FF006F215D83A66B3AEBAD674C4C1C4"
 					+ "218121A38FA1FDD4A51E77588D90BD9652";
 
-	/**
-	 * Hidden service address for reporting crashes and feedback to the
-	 * developers.
-	 */
+	
 	String DEV_ONION_ADDRESS =
 			"b2nkt5doeamvdmjzfz7g42hk5vdtlnktlgzhel2bgjcc4v4jhnx2qrqd.onion";
 }

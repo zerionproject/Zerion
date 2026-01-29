@@ -19,11 +19,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.concurrent.Executor;
-
-import static java.util.logging.Level.WARNING;
 import static org.briarproject.bramble.api.sync.SyncConstants.PRIORITY_NONCE_BYTES;
-import static org.briarproject.bramble.util.LogUtils.logException;
-
 @NotNullByDefault
 class OutgoingDuplexSyncConnection extends DuplexSyncConnection
 		implements Runnable {
@@ -48,79 +44,59 @@ class OutgoingDuplexSyncConnection extends DuplexSyncConnection
 
 	@Override
 	public void run() {
-		// Allocate a stream context
 		StreamContext ctx = allocateStreamContext(contactId, transportId);
 		if (ctx == null) {
-			LOG.warning("Could not allocate stream context");
 			onWriteError();
 			return;
 		}
 		if (ctx.isHandshakeMode()) {
-			// TODO: Support handshake mode for contacts
-			LOG.warning("Cannot use handshake mode stream context");
 			onWriteError();
 			return;
 		}
-		// Start the incoming session on another thread
 		Priority priority = generatePriority();
 		ioExecutor.execute(() -> runIncomingSession(priority));
 		try {
-			// Create and run the outgoing session
 			SyncSession out =
 					createDuplexOutgoingSession(ctx, writer, priority);
 			setOutgoingSession(out);
 			out.run();
 			writer.dispose(false);
 		} catch (IOException e) {
-			logException(LOG, WARNING, e);
 			onWriteError();
 		}
 	}
 
 	private void runIncomingSession(Priority priority) {
-		// Read and recognise the tag
 		StreamContext ctx = recogniseTag(reader, transportId);
-		// Unrecognised tags are suspicious in this case
 		if (ctx == null) {
-			LOG.warning("Unrecognised tag for returning stream");
 			onReadError();
 			return;
 		}
-		// Check that the stream comes from the expected contact
 		ContactId inContactId = ctx.getContactId();
 		if (inContactId == null) {
-			LOG.warning("Expected contact tag, got rendezvous tag");
 			onReadError();
 			return;
 		}
 		if (!contactId.equals(inContactId)) {
-			LOG.warning("Wrong contact ID for returning stream");
 			onReadError();
 			return;
 		}
 		if (ctx.isHandshakeMode()) {
-			// TODO: Support handshake mode for contacts
-			LOG.warning("Received handshake tag, expected rotation mode");
 			onReadError();
 			return;
 		}
 		connectionRegistry.registerOutgoingConnection(contactId, transportId,
 				this, priority);
 		try {
-			// Store any transport properties discovered from the connection
 			transportPropertyManager.addRemotePropertiesFromConnection(
 					contactId, transportId, remote);
-			// We don't expect to receive a priority for this connection
-			PriorityHandler handler = p ->
-					LOG.info("Ignoring priority for outgoing connection");
-			// Create and run the incoming session
+			PriorityHandler handler = p -> {};
 			createIncomingSession(ctx, reader, handler).run();
 			reader.dispose(false, true);
 			interruptOutgoingSession();
 			connectionRegistry.unregisterConnection(contactId, transportId,
 					this, false, false);
 		} catch (DbException | IOException e) {
-			logException(LOG, WARNING, e);
 			onReadError();
 			connectionRegistry.unregisterConnection(contactId, transportId,
 					this, false, true);
@@ -128,7 +104,6 @@ class OutgoingDuplexSyncConnection extends DuplexSyncConnection
 	}
 
 	private void onReadError() {
-		// 'Recognised' is always true for outgoing connections
 		onReadError(true);
 	}
 

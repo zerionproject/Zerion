@@ -43,7 +43,6 @@ class PayloadEncoderImpl implements PayloadEncoder {
 		try {
 			w.writeList(payload);
 		} catch (IOException e) {
-			// Shouldn't happen with ByteArrayOutputStream
 			throw new AssertionError(e);
 		}
 		return out.toByteArray();

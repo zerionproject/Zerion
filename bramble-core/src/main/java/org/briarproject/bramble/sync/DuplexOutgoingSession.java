@@ -39,49 +39,28 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.logging.Logger;
-
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
 import static java.lang.Boolean.TRUE;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.logging.Level.WARNING;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.api.lifecycle.LifecycleManager.LifecycleState.STOPPING;
 import static org.briarproject.bramble.api.record.Record.RECORD_HEADER_BYTES;
 import static org.briarproject.bramble.api.sync.Group.Visibility.SHARED;
 import static org.briarproject.bramble.api.sync.SyncConstants.MAX_MESSAGE_IDS;
 import static org.briarproject.bramble.api.sync.SyncConstants.MAX_MESSAGE_LENGTH;
 import static org.briarproject.bramble.api.sync.SyncConstants.SUPPORTED_VERSIONS;
-import static org.briarproject.bramble.util.LogUtils.logException;
 
-/**
- * An outgoing {@link SyncSession} suitable for duplex transports. The session
- * offers messages before sending them, keeps its output stream open when there
- * are no records to send, and reacts to events that make records available to
- * send.
- */
 @ThreadSafe
 @NotNullByDefault
 class DuplexOutgoingSession implements SyncSession, EventListener {
-
-	private static final Logger LOG =
-			getLogger(DuplexOutgoingSession.class.getName());
-
 	private static final ThrowingRunnable<IOException> CLOSE = () -> {
 	};
 	private static final ThrowingRunnable<IOException>
 			NEXT_SEND_TIME_DECREASED = () -> {
 	};
 
-	/**
-	 * The batch capacity must be at least {@link Record#RECORD_HEADER_BYTES}
-	 * + {@link SyncConstants#MAX_MESSAGE_LENGTH} to ensure that maximum-size
-	 * messages can be selected for transmission. Larger batches will mean
-	 * fewer round-trips between the DB and the output stream, but each
-	 * round-trip will block the DB for longer.
-	 */
+	
 	private static final int BATCH_CAPACITY =
 			(RECORD_HEADER_BYTES + MAX_MESSAGE_LENGTH) * 2;
 
@@ -131,11 +110,8 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 	public void run() throws IOException {
 		eventBus.addListener(this);
 		try {
-			// Send our supported protocol versions
 			recordWriter.writeVersions(new Versions(SUPPORTED_VERSIONS));
-			// Send our connection priority, if this is an outgoing connection
 			if (priority != null) recordWriter.writePriority(priority);
-			// Start a query for each type of record
 			generateAck();
 			generateBatch();
 			generateOffer();
@@ -143,21 +119,17 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 			long now = clock.currentTimeMillis();
 			long nextKeepalive = now + maxIdleTime;
 			boolean dataToFlush = true;
-			// Write records until interrupted
 			try {
 				while (!interrupted) {
-					// Work out how long we should wait for a record
 					now = clock.currentTimeMillis();
 					long keepaliveWait = Math.max(0, nextKeepalive - now);
 					long sendWait = Math.max(0, nextSendTime.get() - now);
 					long wait = Math.min(keepaliveWait, sendWait);
-					// Flush any unflushed data if we're going to wait
 					if (wait > 0 && dataToFlush && writerTasks.isEmpty()) {
 						recordWriter.flush();
 						dataToFlush = false;
 						nextKeepalive = now + maxIdleTime;
 					}
-					// Wait for a record
 					ThrowingRunnable<IOException> task = writerTasks.poll(wait,
 							MILLISECONDS);
 					if (task == null) {
@@ -175,7 +147,6 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 					} else if (task == CLOSE) {
 						break;
 					} else if (task == NEXT_SEND_TIME_DECREASED) {
-						// No action needed
 					} else {
 						task.run();
 						dataToFlush = true;
@@ -228,9 +199,6 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 			if (c.getContactId().equals(contactId)) interrupt();
 		} else if (e instanceof MessageSharedEvent) {
 			MessageSharedEvent m = (MessageSharedEvent) e;
-			// If the contact is present in the map (ie the value is not null)
-			// and the value is true, the message's group is shared with the
-			// contact and therefore the message may now be sendable
 			if (m.getGroupVisibility().get(contactId) == TRUE) {
 				generateOffer();
 			}
@@ -273,7 +241,6 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 						db.generateAck(txn, contactId, MAX_MESSAGE_IDS));
 				if (a != null) writerTasks.add(new WriteAck(a));
 			} catch (DbException e) {
-				logException(LOG, WARNING, e);
 				interrupt();
 			}
 		}
@@ -316,7 +283,6 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 						});
 				if (b != null) writerTasks.add(new WriteBatch(b));
 			} catch (DbException e) {
-				logException(LOG, WARNING, e);
 				interrupt();
 			}
 		}
@@ -357,7 +323,6 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 				});
 				if (o != null) writerTasks.add(new WriteOffer(o));
 			} catch (DbException e) {
-				logException(LOG, WARNING, e);
 				interrupt();
 			}
 		}
@@ -393,7 +358,6 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 						db.generateRequest(txn, contactId, MAX_MESSAGE_IDS));
 				if (r != null) writerTasks.add(new WriteRequest(r));
 			} catch (DbException e) {
-				logException(LOG, WARNING, e);
 				interrupt();
 			}
 		}

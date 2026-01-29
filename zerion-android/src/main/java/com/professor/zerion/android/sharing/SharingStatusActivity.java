@@ -34,10 +34,6 @@ import javax.inject.Inject;
 import androidx.annotation.CallSuper;
 import androidx.annotation.StringRes;
 import androidx.recyclerview.widget.LinearLayoutManager;
-
-import static java.util.logging.Level.WARNING;
-import static org.briarproject.bramble.util.LogUtils.logException;
-
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
 abstract class SharingStatusActivity extends ZerionActivity
@@ -139,7 +135,6 @@ abstract class SharingStatusActivity extends ZerionActivity
 				}
 				displaySharedWith(contactItems);
 			} catch (DbException e) {
-				// Database exception occurred
 			}
 		});
 	}

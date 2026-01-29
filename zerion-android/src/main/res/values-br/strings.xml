@@ -26,8 +26,6 @@
   <!--Navigation Drawer-->
   <string name="contact_list_button">Darempredoù</string>
   <string name="groups_button">Strolladoù prevez</string>
-  <string name="forums_button">Foromoù</string>
-  <string name="blogs_button">Blogoù</string>
   <!--This is part of the main menu. The app will be locked when this is tapped.-->
   <string name="lock_button">Prennañ an arload</string>
   <string name="settings_button">Arventennoù</string>
@@ -50,20 +48,6 @@
     <item quantity="few">%d a gemennadennoù strollad nevez.</item>
     <item quantity="many">%d a gemennadennoù strollad nevez.</item>
     <item quantity="other">%d a gemennadennoù strollad nevez.</item>
-  </plurals>
-  <plurals name="forum_post_notification_text">
-    <item quantity="one">Postadenn forom nevez.</item>
-    <item quantity="two">%da bostadennoù forom nevez.</item>
-    <item quantity="few">%da bostadennoù forom nevez.</item>
-    <item quantity="many">%da bostadennoù forom nevez.</item>
-    <item quantity="other">%da bostadennoù forom nevez.</item>
-  </plurals>
-  <plurals name="blog_post_notification_text">
-    <item quantity="one">Postadenn blog nevez.</item>
-    <item quantity="two">%d a bostadennoù blog nevez.</item>
-    <item quantity="few">%d a bostadennoù blog nevez.</item>
-    <item quantity="many">%d a bostadennoù blog nevez.</item>
-    <item quantity="other">%d a bostadennoù blog nevez.</item>
   </plurals>
   <!--Misc-->
   <string name="now">bremañ</string>
@@ -150,12 +134,9 @@
   <!--Private Groups Revealing Contacts-->
   <!--Forums-->
   <!--Forum Sharing-->
-  <string name="forum_share_message">Ouzhpennañ ur gemennadenn (diret)</string>
   <!--Blogs-->
-  <string name="blogs_remove_blog_ok">Dilemel</string>
   <!--Blog Sharing-->
   <!--RSS Feeds-->
-  <string name="blogs_rss_remove_feed_ok">Dilemel</string>
   <!--Settings Display-->
   <!--Settings Network-->
   <!--How and when Tor will connect after Automatic: E.g. Don't connect (in China) or Use Tor with bridges (in Belarus)-->

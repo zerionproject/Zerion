@@ -9,10 +9,7 @@ import java.util.Collection;
 
 import javax.annotation.concurrent.Immutable;
 
-/**
- * An event that is broadcast when a transport plugin is polled for connections
- * to one or more pending contacts.
- */
+
 @Immutable
 @NotNullByDefault
 public class RendezvousPollEvent extends Event {

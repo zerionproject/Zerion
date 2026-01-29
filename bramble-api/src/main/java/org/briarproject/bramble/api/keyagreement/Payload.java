@@ -7,9 +7,7 @@ import java.util.List;
 
 import javax.annotation.concurrent.Immutable;
 
-/**
- * A BQP payload.
- */
+
 @Immutable
 @NotNullByDefault
 public class Payload implements Comparable<Payload> {
@@ -22,16 +20,12 @@ public class Payload implements Comparable<Payload> {
 		this.descriptors = descriptors;
 	}
 
-	/**
-	 * Returns the commitment contained in this payload.
-	 */
+	
 	public byte[] getCommitment() {
 		return commitment.getBytes();
 	}
 
-	/**
-	 * Returns the transport descriptors contained in this payload.
-	 */
+	
 	public List<TransportDescriptor> getTransportDescriptors() {
 		return descriptors;
 	}

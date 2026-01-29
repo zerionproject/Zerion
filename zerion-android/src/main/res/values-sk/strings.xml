@@ -69,8 +69,6 @@
   <string name="nav_drawer_close_description">Zavrieť navigačnú lištu</string>
   <string name="contact_list_button">Kontakty</string>
   <string name="groups_button">Súkromné skupiny</string>
-  <string name="forums_button">Fóra</string>
-  <string name="blogs_button">Blogy</string>
   <!--This is part of the main menu. The app will be locked when this is tapped.-->
   <string name="lock_button">Zamknúť aplikáciu</string>
   <string name="settings_button">Nastavenia</string>
@@ -109,18 +107,6 @@
     <item quantity="few">%d nové skupinové správy.</item>
     <item quantity="many">%d nových skupinových správ.</item>
     <item quantity="other">%d nových skupinových správ.</item>
-  </plurals>
-  <plurals name="forum_post_notification_text">
-    <item quantity="one">Nový príspevok na fóre.</item>
-    <item quantity="few">%d nové príspevky na fóre.</item>
-    <item quantity="many">%d nových príspevkov na fóre.</item>
-    <item quantity="other">%d nových príspevkov na fóre.</item>
-  </plurals>
-  <plurals name="blog_post_notification_text">
-    <item quantity="one">Nový príspevok na blogu.</item>
-    <item quantity="few">%d nové príspevky na blogu.</item>
-    <item quantity="many">%d nových príspevkov na blogu.</item>
-    <item quantity="other">%d nových príspevkov na blogu.</item>
   </plurals>
   <!--Misc-->
   <string name="now">teraz</string>
@@ -228,7 +214,6 @@
   <!--Adding Contacts-->
   <string name="add_contact_title">Pridať kontakt v blízkosti</string>
   <string name="add_contact_error_two_way">Naskenovali ste si navzájom QR kódy?</string>
-  <string name="face_to_face">S osobou, ktorú chcete pridať ako kontakt sa musíte sa stretnúť osobne.\n\nTým sa zabráni tomu, aby sa niekto za vás vydával alebo čítal vaše správy v budúcnosti.</string>
   <string name="continue_button">Pokračovať</string>
   <string name="try_again_button">Skúsiť znova</string>
   <string name="waiting_for_contact_to_scan">Čaká sa, kým kontakt naskenuje a pripojí sa\u2026</string>
@@ -236,17 +221,11 @@
   <string name="contact_added_toast">Kontakt pridaný: %s</string>
   <string name="contact_already_exists">Kontakt %s už existuje</string>
   <string name="contact_already_exists_general">Kontakt už existuje</string>
-  <string name="qr_code_invalid">QR kód nie je platný</string>
-  <string name="qr_code_too_old_1">QR kód, ktorý ste naskenovali, pochádza zo staršej verzie aplikácie Zerion.\n\nProsím, požiadajte svoj kontakt o aktualizáciu na najnovšiu verziu a potom to skúste znova.</string>
-  <string name="qr_code_too_new_1">QR kód, ktorý ste naskenovali, pochádza z novšej verzie aplikácie Zerion.\n\nProsím, aktualizujte prosím na najnovšiu verziu a potom to skúste znova.</string>
-  <string name="mailbox_qr_code_for_contact">QR kód, ktorý ste naskenovali, pochádza z Zerion Mailbox.\n\nAk chcete prepojiť Mailbox, vyberte prosím Nastavenia &gt; Mailbox z ponuky Zerion.</string>
-  <string name="qr_code_format_unknown">QR kód, ktorý ste naskenovali, nie je určený na pridanie kontaktu Zerion.\n\nNaskenujte QR kód zobrazený na obrazovke kontaktu.</string>
   <string name="camera_error">Chyba kamery</string>
   <string name="connecting_to_device">Pripájanie k zariadeniu\u2026</string>
   <string name="authenticating_with_device">Overovanie so zariadením\u2026</string>
   <string name="connection_error_title">Nepodarilo sa pripojiť k vášmu kontaktu</string>
   <string name="connection_error_feedback">Ak tento problém pretrváva, pošlite nám prosím <a href="feedback">spätnú väzbu</a>, ktorá nám pomôže aplikáciu vylepšiť.</string>
-  <string name="info_both_must_scan">Obaja si musíte navzájom naskenovať QR kódy.</string>
   <!--Adding Contacts Remotely-->
   <string name="add_contact_remotely_title_case">Pridať vzdialený kontakt</string>
   <string name="add_contact_nearby_title">Pridať kontakt v blízkosti</string>
@@ -404,13 +383,6 @@
   <string name="groups_reveal_visible_revealed_by_contact">Vzťah s kontaktom je viditeľný pre skupinu (odhalený používateľom %s )</string>
   <string name="groups_reveal_invisible">Vzťah s kontaktom nie je viditeľný pre skupinu</string>
   <!--Forums-->
-  <string name="no_forums">Žiadne fóra na zobrazenie</string>
-  <string name="no_forums_action">Ťuknutím na ikonu + vytvoríte fórum alebo požiadajte svoje kontakty, aby s vami zdieľali fóra</string>
-  <string name="create_forum_title">Vytvoriť fórum</string>
-  <string name="choose_forum_hint">Vyberte si názov pre vaše fórum</string>
-  <string name="create_forum_button">Vytvoriť fórum</string>
-  <string name="forum_created_toast">Fórum bolo vytvorené</string>
-  <string name="no_forum_posts">Žiadne články na zobrazenie</string>
   <string name="no_posts">Žiadne príspevky</string>
   <plurals name="posts">
     <item quantity="one">%dpríspevok</item>
@@ -418,99 +390,21 @@
     <item quantity="many">%dpríspevkov</item>
     <item quantity="other">%d príspevkov</item>
   </plurals>
-  <string name="forum_new_message_hint">Nový príspevok</string>
-  <string name="forum_message_reply_hint">Nová odpoveď</string>
   <string name="btn_reply">Odpovedať</string>
-  <string name="forum_leave">Opustiť fórum</string>
-  <string name="dialog_title_leave_forum">Potvrdiť opustenie fóra</string>
-  <string name="dialog_message_leave_forum">Ste si istí, že chcete opustiť toto fórum?\n\nVšetkým kontaktom, s ktorými ste zdieľali toto fórum, môžu prestať chodiť aktualizácie.</string>
   <string name="dialog_button_leave">Odísť</string>
-  <string name="forum_left_toast">Opustené fórum</string>
   <!--Forum Sharing-->
-  <string name="forum_share_button">Zdieľať fórum</string>
   <string name="contacts_selected">Vybraté kontakty</string>
   <string name="activity_share_toolbar_header">Vyberte kontakty</string>
   <string name="no_contacts_selector">Žiadne kontakty na zobrazenie</string>
   <string name="no_contacts_selector_action">Po pridaní kontaktu sa sem prosím vráťte</string>
-  <string name="forum_shared_snackbar">Fórum je zdieľané s vybranými kontaktmi</string>
-  <string name="forum_share_message">Pridať správu (nepovinné)</string>
-  <string name="forum_share_error">Pri zdieľaní tohto fóra došlo k chybe.</string>
-  <string name="forum_invitation_received">%1$s s vami zdieľa fórum \"%2$s\".</string>
-  <string name="forum_invitation_sent">Zdieľali ste fórum \"%1$s\" s používateľom %2$s.</string>
-  <string name="forum_invitations_title">Pozvánky na fórum</string>
-  <string name="forum_invitation_exists">Už ste prijali pozvánku do tohto fóra.\n\nPrijatím ďalších pozvánok sa vaše pripojenie k fóru zrýchli a bude spoľahlivejšie.</string>
-  <string name="forum_joined_toast">Pripojený do fóra</string>
-  <string name="forum_declined_toast">Pozvánka odmietnutá</string>
   <string name="shared_by_format">Zdieľal používateľ %s</string>
-  <string name="forum_invitation_already_sharing">Už zdieľate</string>
-  <string name="forum_invitation_already_invited">Pozvánka už bola odoslaná</string>
-  <string name="forum_invitation_invite_received">Pozvánka už bola doručená</string>
-  <string name="forum_invitation_not_supported">Nie je podporované týmto kontaktom</string>
-  <string name="forum_invitation_error">Chyba. Toto je chyba a nie je to vaša chyba</string>
-  <string name="forum_invitation_response_accepted_sent">Prijali ste pozvanie do fóra od %s.</string>
-  <string name="forum_invitation_response_declined_sent">Odmietli ste pozvanie do fóra od %s.</string>
-  <string name="forum_invitation_response_declined_auto">Pozvánka do fóra od používateľa %s bola automaticky odmietnutá.</string>
-  <string name="forum_invitation_response_accepted_received">Používateľ %sprijal pozvanie do fóra.</string>
-  <string name="forum_invitation_response_declined_received">Používateľ %s odmietol pozvanie do fóra.</string>
   <string name="sharing_status">Stav zdieľania</string>
-  <string name="sharing_status_forum">Každý člen fóra ho môže zdieľať so svojimi kontaktmi. Toto fórum zdieľate s nasledujúcimi kontaktmi. Môžu tam byť aj ďalší členovia, ktorých nevidíte.</string>
   <string name="shared_with">Zdieľané s %1$d (%2$donline)</string>
-  <plurals name="forums_shared">
-    <item quantity="one">%d fórum zdieľané prostredníctvom kontaktov</item>
-    <item quantity="few">%d fóra zdieľané prostredníctvom kontaktov</item>
-    <item quantity="many">%d fór zdieľaných prostredníctvom kontaktov</item>
-    <item quantity="other">%d fór zdieľaných prostredníctvom kontaktov</item>
-  </plurals>
   <string name="nobody">Nikto</string>
   <!--Blogs-->
-  <string name="blogs_other_blog_empty_state">Žiadne články na zobrazenie</string>
   <string name="read_more">čítať viac</string>
-  <string name="blogs_write_blog_post">Napísať príspevok do blogu</string>
-  <string name="blogs_write_blog_post_body_hint">Napíšte svoj príspevok na blog</string>
-  <string name="blogs_publish_blog_post">Zverejniť</string>
-  <string name="blogs_blog_post_created">Príspevok na blogu bol vytvorený</string>
-  <string name="blogs_blog_post_received">Prijatý nový príspevok na blogu</string>
-  <string name="blogs_blog_post_scroll_to">Prejsť na</string>
-  <string name="blogs_feed_empty_state">Žiadne články na zobrazenie</string>
-  <string name="blogs_feed_empty_state_action">Zobrazia sa tu príspevky od vašich kontaktov a blogov, ktoré odoberáte\n\nŤuknutím na ikonu pera napíšete príspevok.</string>
-  <string name="blogs_remove_blog">Odstrániť blog</string>
-  <string name="blogs_remove_blog_dialog_message">Ste si istí, že chcete odstrániť tento blog?\n\nPríspevky budú odstránené z vášho zariadenia, ale nie zo zariadení iných ľudí.\n\nVšetky kontakty, s ktorými ste zdieľali tento blog, môžu prestať dostávať aktualizácie.</string>
-  <string name="blogs_remove_blog_ok">Odstrániť</string>
-  <string name="blogs_blog_removed">Blog odstránený</string>
-  <string name="blogs_reblog_comment_hint">Pridať komentár (nepovinné)</string>
-  <string name="blogs_reblog_button">Zdieľať blog</string>
   <!--Blog Sharing-->
-  <string name="blogs_sharing_share">Zdieľať blog</string>
-  <string name="blogs_sharing_error">Pri zdieľaní tohto blogu došlo k chybe.</string>
-  <string name="blogs_sharing_button">Zdieľať blog</string>
-  <string name="blogs_sharing_snackbar">Blog zdieľaný s vybranými kontaktmi</string>
-  <string name="blogs_sharing_response_accepted_sent">Prijali ste pozvanie na blog od %s.</string>
-  <string name="blogs_sharing_response_declined_sent">Odmietli ste pozvanie na blog od %s.</string>
-  <string name="blogs_sharing_response_declined_auto">Pozvánka na blog od používateľa %s bola automaticky odmietnutá.</string>
-  <string name="blogs_sharing_response_accepted_received">%s prijal pozvanie na blog.</string>
-  <string name="blogs_sharing_response_declined_received">%s odmietol pozvanie na blog.</string>
-  <string name="blogs_sharing_invitation_received">%1$szdieľal s vami blog \"%2$s\".</string>
-  <string name="blogs_sharing_invitation_sent">Zdieľali ste blog \"%1$s\" s používateľom%2$s.</string>
-  <string name="blogs_sharing_invitations_title">Pozvánky na blog</string>
-  <string name="blogs_sharing_joined_toast">Prihlásený na blog</string>
-  <string name="blogs_sharing_declined_toast">Pozvánka odmietnutá</string>
-  <string name="sharing_status_blog">Ktokoľvek, kto sa prihlási na odber blogu, ho môže zdieľať so svojimi kontaktmi. Tento blog zdieľate s nasledujúcimi kontaktmi. Môžu existovať aj ďalší odberatelia, ktorých nevidíte.</string>
   <!--RSS Feeds-->
-  <string name="blogs_rss_feeds_import">Importovať RSS kanál</string>
-  <string name="blogs_rss_feeds_import_button">Importovať</string>
-  <string name="blogs_rss_feeds_import_hint">Zadajte adresu URL RSS kanálu</string>
-  <string name="blogs_rss_feeds_import_progress">Importovanie RSS kanála...</string>
-  <string name="blogs_rss_feeds_import_error">Je nám to ľúto! Pri importovaní vášho kanála došlo k chybe.</string>
-  <string name="blogs_rss_feeds_import_title">Importovať kanál zo súboru</string>
-  <string name="blogs_rss_feeds">Kanály RSS</string>
-  <string name="blogs_rss_feeds_manage_imported">Importované:</string>
-  <string name="blogs_rss_feeds_manage_author">Autor:</string>
-  <string name="blogs_rss_feeds_manage_updated">Naposledy aktualizované:</string>
-  <string name="blogs_rss_remove_feed">Odstrániť kanál</string>
-  <string name="blogs_rss_remove_feed_dialog_message">Ste si istí, že chcete odstrániť tento kanál?\n\nPríspevky budú odstránené z vášho zariadenia, ale nie zo zariadení iných ľudí.\n\nVšetky kontakty, s ktorými ste zdieľali tento kanál, môžu prestať dostávať aktualizácie.</string>
-  <string name="blogs_rss_remove_feed_ok">Odstrániť</string>
-  <string name="blogs_rss_feeds_manage_empty_state">Žiadne RSS kanály na zobrazenie\n\nŤuknutím na ikonu + naimportujte kanál</string>
-  <string name="blogs_rss_feeds_manage_error">Vyskytol sa problém s načítaním vašich kanálov. Skúste to prosím neskôr.</string>
   <!--Settings Profile Picture-->
   <string name="change_profile_picture">Ťuknutím zmeníte svoj profilový obrázok</string>
   <string name="dialog_confirm_profile_picture_title">Zmeniť profilový obrázok</string>
@@ -590,12 +484,6 @@
   <string name="notify_group_messages_setting_title">Skupinové správy</string>
   <string name="notify_group_messages_setting_summary">Zobraziť upozornenia pre skupinové správy</string>
   <string name="notify_group_messages_setting_summary_26">Nastaviť upozornenia pre skupinové správy</string>
-  <string name="notify_forum_posts_setting_title">Príspevky vo fóre</string>
-  <string name="notify_forum_posts_setting_summary">Zobraziť upozornenia na príspevky vo fóre</string>
-  <string name="notify_forum_posts_setting_summary_26">Nastaviť upozornenia na príspevky vo fóre</string>
-  <string name="notify_blog_posts_setting_title">Príspevky na blogu</string>
-  <string name="notify_blog_posts_setting_summary">Zobraziť upozornenia pre príspevky v blogu</string>
-  <string name="notify_blog_posts_setting_summary_26">Nastaviť upozornenia pre príspevky v blogu</string>
   <string name="notify_vibration_setting">Vibrovať</string>
   <string name="notify_sound_setting">Zvuk</string>
   <string name="notify_sound_setting_default">Predvolené zvonenie</string>
@@ -615,10 +503,6 @@
   <string name="mailbox_setup_connecting">Pripájanie na Mailbox...</string>
   <!--This string is shown when connecting to a Mailbox for the first time. The placeholder will be replaced with a duration, e.g. "2 minutes".-->
   <string name="mailbox_setup_connecting_info">Toto môže trvať až %1s</string>
-  <string name="mailbox_qr_code_too_old">QR kód, ktorý ste naskenovali, pochádza zo staršej verzie aplikácie Zerion Mailbox.\n\nProsím, aktualizujte Zerion Mailbox na najnovšiu verziu a potom to skúste znova.</string>
-  <string name="mailbox_qr_code_too_new">QR kód, ktorý ste naskenovali, pochádza z novšej verzie aplikácie Zerion Mailbox.\n\nProsím, aktualizujte Zerion na najnovšiu verziu a potom to skúste znova.</string>
-  <string name="contact_qr_code_for_mailbox">Naskenovaný QR kód slúži na pridanie kontaktu Zerion.\n\nAk chcete pridať kontakt, prejdite do zoznamu kontaktov a ťuknite na ikonu +.</string>
-  <string name="mailbox_setup_qr_code_wrong_description">QR kód, ktorý ste naskenovali, nepochádza z aplikácie Zerion Mailbox.\n\nProsím, otvorte aplikáciu Zerion Mailbox na svojom Mailbox zariadení a naskenujte QR kód, ktorý sa v nej nachádza.</string>
   <string name="mailbox_setup_already_paired_title">Mailbox je už prepojený</string>
   <string name="mailbox_setup_already_paired_description">Odpojte Mailbox na vašom druhom zariadení a skúste to znova.</string>
   <string name="mailbox_setup_io_error_title">Nepodarilo sa pripojiť</string>
@@ -770,8 +654,6 @@
   <string name="permission_bluetooth_title">Povolenie pre blízke zariadenia</string>
   <string name="permission_bluetooth_body">Na používanie komunikácie Bluetooth potrebuje zariadenie Zerion povolenie na vyhľadávanie a pripojenie k blízkym zariadeniam.</string>
   <string name="permission_bluetooth_denied_body">Odmietli ste prístup k blízkym zariadeniam, ale Zerion potrebuje toto povolenie na používanie Bluetooth.\n\nProsím, zvážte udelenie prístupu.</string>
-  <string name="qr_code">QR kód</string>
-  <string name="show_qr_code_fullscreen">Zobraziť QR kód na celú obrazovku</string>
   <!--App Locking-->
   <string name="lock_unlock">Odomknúť Zerion</string>
   <string name="lock_unlock_verbose">Na odomknutie zariadenia Zerion zadajte PIN, vzor alebo heslo.</string>
@@ -801,9 +683,7 @@
   <string name="wifi_settings_request_enable_body">Ak chcete vytvoriť prístupový bod Wi-Fi, zariadenie Zerion musí používať Wi-Fi. Povoľte ho.</string>
   <string name="hotspot_tab_manual">Manuálne</string>
   <!--The placeholder to be inserted into the string 'hotspot_manual_wifi': People can connect by %s-->
-  <string name="hotspot_scanning_a_qr_code">naskenovaním QR kódu</string>
   <!--Wi-Fi setup-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_wifi">Váš telefón poskytuje prístupový bod Wi-Fi. Ľudia, ktorí si chcú stiahnuť Zerion, sa môžu pripojiť k vášmu prístupovému bodu pridaním nižšie uvedených údajov do nastavení Wi-Fi svojho zariadenia alebo pomocou %s. Po ich pripojení k prístupovému bodu stlačte tlačidlo \"Ďalej\".</string>
   <string name="hotspot_manual_wifi_ssid">Názov siete</string>
   <string name="hotspot_qr_wifi">Váš telefón poskytuje prístupový bod Wi-Fi. Ľudia, ktorí si chcú stiahnuť program Zerion, sa môžu pripojiť k prístupovému bodu naskenovaním tohto QR kódu. Po ich pripojení k prístupovému bodu stlačte tlačidlo \'Ďalej\'.</string>
@@ -815,7 +695,6 @@
     <item quantity="other">%spripojených zariadení</item>
   </plurals>
   <!--Download link-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_site">Váš telefón poskytuje prístupový bod Wi-Fi. Ľudia, ktorí sú pripojení k prístupovému bodu, si môžu stiahnuť aplikáciu Zerion zadaním nasledujúceho odkazu do webového prehliadača alebo %s.</string>
   <string name="hotspot_manual_site_address">Adresa (URL)</string>
   <string name="hotspot_qr_site">Váš telefón poskytuje prístupový bod Wi-Fi. Ľudia, ktorí sú pripojení k prístupovému bodu, si môžu stiahnuť Zerion naskenovaním tohto QR kódu.</string>

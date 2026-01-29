@@ -9,6 +9,7 @@ import java.io.OutputStream;
 
 import static org.briarproject.bramble.api.transport.TransportConstants.FRAME_HEADER_LENGTH;
 import static org.briarproject.bramble.api.transport.TransportConstants.MAC_LENGTH;
+import static org.briarproject.bramble.api.transport.TransportConstants.MAX_PAYLOAD_LENGTH;
 import static org.briarproject.bramble.api.transport.TransportConstants.STREAM_HEADER_LENGTH;
 import static org.briarproject.bramble.util.ByteUtils.INT_16_BYTES;
 
@@ -37,6 +38,11 @@ class TestStreamEncrypter implements StreamEncrypter {
 		out.write(payload, 0, payloadLength);
 		out.write(new byte[paddingLength]);
 		out.write(new byte[MAC_LENGTH]);
+	}
+
+	@Override
+	public int getMaxPayloadLength() {
+		return MAX_PAYLOAD_LENGTH;
 	}
 
 	@Override

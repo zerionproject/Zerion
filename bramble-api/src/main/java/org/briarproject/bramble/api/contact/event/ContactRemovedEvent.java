@@ -6,9 +6,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.Immutable;
 
-/**
- * An event that is broadcast when a contact is removed.
- */
+
 @Immutable
 @NotNullByDefault
 public class ContactRemovedEvent extends Event {
