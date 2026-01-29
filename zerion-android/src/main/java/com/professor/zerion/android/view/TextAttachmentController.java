@@ -64,8 +64,6 @@ public class TextAttachmentController extends TextSendController
 
 		sendButton = (CompositeSendButton) compositeSendButton;
 		sendButton.setOnAttachmentClickListener(view -> onImageButtonClicked());
-
-		// Long-press on send button to show disappearing messages timer selection
 		sendButton.setOnSendLongClickListener(view -> {
 			showDisappearingTimerPopup();
 			return true;

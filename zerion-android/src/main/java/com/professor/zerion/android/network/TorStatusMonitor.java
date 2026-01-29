@@ -32,7 +32,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 public class TorStatusMonitor {
 
     private static final long CHECK_INTERVAL = 5000;
-    private static final long BANDWIDTH_CHECK_INTERVAL = 1000; // 1 second for smooth graph
+    private static final long BANDWIDTH_CHECK_INTERVAL = 1000;
 
     private final Context context;
     private final int torSocksPort;
@@ -483,14 +483,12 @@ public class TorStatusMonitor {
         }
     }
 
-    /**
-     * Represents a bandwidth update for the real-time graph.
-     */
+    
     public static class BandwidthUpdate {
-        public final long downloadSpeed;  // bytes per second
-        public final long uploadSpeed;    // bytes per second
-        public final long totalDownload;  // total bytes downloaded
-        public final long totalUpload;    // total bytes uploaded
+        public final long downloadSpeed;
+        public final long uploadSpeed;
+        public final long totalDownload;
+        public final long totalUpload;
 
         public BandwidthUpdate(long downloadSpeed, long uploadSpeed,
                                long totalDownload, long totalUpload) {

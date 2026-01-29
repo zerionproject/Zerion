@@ -15,19 +15,13 @@ import static org.briarproject.bramble.api.sync.Group.Visibility.VISIBLE;
 enum State {
 
 	START(0, INVISIBLE),
-	/**
-	 * The local user has been invited to the shareable, but not yet responded.
-	 */
+	
 	LOCAL_INVITED(1, INVISIBLE),
-	/**
-	 * The remote user has been invited to the shareable, but not yet responded.
-	 */
+	
 	REMOTE_INVITED(2, VISIBLE),
 	SHARING(3, SHARED),
 	LOCAL_LEFT(4, INVISIBLE),
-	/**
-	 * The local user has left the shareable, but the remote user hasn't.
-	 */
+	
 	REMOTE_HANGING(5, INVISIBLE);
 
 	private final int value;

@@ -53,7 +53,7 @@ class SettingsStore extends PreferenceDataStore {
 			try {
 				settingsManager.mergeSettings(s, namespace);
 			} catch (DbException e) {
-				/* silent */
+				
 			}
 		});
 	}

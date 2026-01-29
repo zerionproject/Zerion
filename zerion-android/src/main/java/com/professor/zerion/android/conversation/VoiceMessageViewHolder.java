@@ -27,8 +27,6 @@ import androidx.annotation.UiThread;
 @UiThread
 @NotNullByDefault
 public class VoiceMessageViewHolder {
-
-	// Loading states for instant UI feedback
 	private static final int STATE_LOADING = 0;
 	private static final int STATE_READY = 1;
 	private static final int STATE_ERROR = 2;
@@ -85,8 +83,6 @@ public class VoiceMessageViewHolder {
 	public void bind(AttachmentItem item) {
 		stop();
 		isPlaying = false;
-
-		// OPTIMIZATION: Show loading state immediately
 		showLoadingState();
 
 		dbExecutor.execute(() -> {
@@ -105,8 +101,6 @@ public class VoiceMessageViewHolder {
 	                                 org.briarproject.bramble.api.sync.MessageId messageId) {
 		stop();
 		isPlaying = false;
-
-		// OPTIMIZATION: Show loading state immediately for instant UI feedback
 		showLoadingState();
 
 		dbExecutor.execute(() -> {
@@ -120,23 +114,15 @@ public class VoiceMessageViewHolder {
 			try {
 				com.professor.zerion.android.conversation.voice.VoiceMessagePayloadParser.ParsedPayload payload =
 					com.professor.zerion.android.conversation.voice.VoiceMessagePayloadParser.parse(parsed.getPayload());
-
-				// SECURITY: Set AAD context for verification
-				// NOTE: Use empty messageId to match what was used during encryption
-				// (the message doesn't exist yet when encryption happens)
 				byte[] formatVersion = new byte[]{1};
 				byte[] groupIdBytes = groupId.getBytes();
 				byte[] emptyMessageId = new byte[0];
-
-				// Decrypt the mu-law encoded audio
 				byte[] decryptedMuLaw = com.professor.zerion.android.conversation.voice.StreamingAudioDecryptor.decryptAll(
 					payload.wrappedKey, payload.iv, payload.chunks, payload.tags,
 					payload.chunks.size(), payload.durationMs, payload.globalMAC,
 					formatVersion, groupIdBytes, emptyMessageId);
 
 				payload.zeroize();
-
-				// Decode mu-law back to 16-bit PCM
 				byte[] decryptedPcm = com.professor.zerion.android.conversation.voice.AudioCodec.muLawToPcm(decryptedMuLaw);
 				java.util.Arrays.fill(decryptedMuLaw, (byte) 0);
 
@@ -150,7 +136,6 @@ public class VoiceMessageViewHolder {
 				java.util.Arrays.fill(wavData, (byte) 0);
 
 			} catch (Exception e) {
-				// SECURITY: MAC verification or decryption failure
 				uiHandler.post(() -> showErrorState("Verification failed"));
 			}
 		});
@@ -178,8 +163,6 @@ public class VoiceMessageViewHolder {
 
 					duration = mediaPlayer.getDuration();
 					updateDurationText(duration);
-
-					// OPTIMIZATION: Show ready state - user can now play
 					showReadyState();
 
 					mediaPlayer.setOnCompletionListener(mp -> {
@@ -281,23 +264,17 @@ public class VoiceMessageViewHolder {
 		durationText.setText(String.format("%d:%02d", minutes, secs));
 	}
 
-	/**
-	 * OPTIMIZATION: Show loading placeholder immediately while decryption happens
-	 * This gives instant visual feedback to users
-	 */
+	
 	private void showLoadingState() {
 		loadingState = STATE_LOADING;
 		playPauseButton.setEnabled(false);
 		playPauseButton.setIconResource(R.drawable.ic_play_arrow_24dp);
 		progressBar.setProgress(0);
 		progressBar.setEnabled(false);
-		// Show decrypting indicator with animated dots
 		durationText.setText("Decrypting...");
 	}
 
-	/**
-	 * Called when voice message is ready to play
-	 */
+	
 	private void showReadyState() {
 		loadingState = STATE_READY;
 		playPauseButton.setEnabled(true);
@@ -305,9 +282,7 @@ public class VoiceMessageViewHolder {
 		updatePlayPauseButton();
 	}
 
-	/**
-	 * Called when decryption/verification fails
-	 */
+	
 	private void showErrorState(String message) {
 		loadingState = STATE_ERROR;
 		playPauseButton.setEnabled(false);

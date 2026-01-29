@@ -60,10 +60,7 @@ import static org.briarproject.bramble.util.ValidationUtils.checkSize;
 @NotNullByDefault
 class ClientHelperImpl implements ClientHelper {
 
-	/**
-	 * Length in bytes of the random salt used for creating local messages for
-	 * storing metadata.
-	 */
+	
 	private static final int SALT_LENGTH = 32;
 
 	private final DatabaseComponent db;
@@ -429,7 +426,7 @@ class ClientHelperImpl implements ClientHelper {
 					getGroupMetadataAsDictionary(txn, contactGroupId);
 			return new ContactId(meta.getInt(GROUP_KEY_CONTACT_ID));
 		} catch (FormatException e) {
-			throw new DbException(e); // Invalid group metadata
+			throw new DbException(e);
 		}
 	}
 

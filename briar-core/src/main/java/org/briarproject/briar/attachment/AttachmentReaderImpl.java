@@ -24,20 +24,11 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.logging.Logger;
-
 import javax.inject.Inject;
-
-import static java.util.logging.Level.WARNING;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.briar.api.attachment.MediaConstants.MSG_KEY_CONTENT_TYPE;
 import static org.briarproject.briar.api.attachment.MediaConstants.MSG_KEY_DESCRIPTOR_LENGTH;
 
 public class AttachmentReaderImpl implements AttachmentReader {
-
-	private static final Logger LOG =
-			getLogger(AttachmentReaderImpl.class.getName());
-
 	private static final int ATTACHMENT = 1;
 	private static final int ATTACHMENT_MANIFEST = 3;
 	private static final int ATTACHMENT_CHUNK = 4;
@@ -68,8 +59,6 @@ public class AttachmentReaderImpl implements AttachmentReader {
 		Message message = clientHelper.getMessage(txn, m);
 
 		if (!message.getGroupId().equals(h.getGroupId())) {
-			LOG.warning("getAttachment: groupId mismatch - expected " +
-					h.getGroupId() + " but got " + message.getGroupId());
 			throw new NoSuchMessageException();
 		}
 
@@ -83,8 +72,6 @@ public class AttachmentReaderImpl implements AttachmentReader {
 
 			String contentType = meta.getString(MSG_KEY_CONTENT_TYPE);
 			if (!contentType.equals(h.getContentType())) {
-				LOG.warning("getAttachment: contentType mismatch - expected " +
-						h.getContentType() + " but got " + contentType);
 				throw new NoSuchMessageException();
 			}
 
@@ -120,7 +107,6 @@ public class AttachmentReaderImpl implements AttachmentReader {
 		BdfList chunkIdList = manifestBody.getList(5);
 
 		if (chunkIdList.size() != chunkCount) {
-			LOG.warning("Chunk count mismatch");
 			throw new NoSuchMessageException();
 		}
 
@@ -158,7 +144,6 @@ public class AttachmentReaderImpl implements AttachmentReader {
 				int dataLength = chunkHeader.getInt(2);
 
 				if (body.length != headerLength + dataLength) {
-					LOG.warning("Chunk body length mismatch");
 					throw new NoSuchMessageException();
 				}
 
@@ -175,7 +160,6 @@ public class AttachmentReaderImpl implements AttachmentReader {
 
 			byte[] computedRootHash = computeMerkleRoot(chunkHashes);
 			if (!Arrays.equals(expectedRootHash, computedRootHash)) {
-				LOG.warning("Merkle root hash verification failed");
 				throw new NoSuchMessageException();
 			}
 
@@ -183,7 +167,6 @@ public class AttachmentReaderImpl implements AttachmentReader {
 			return new Attachment(h, new ByteArrayInputStream(data));
 
 		} catch (IOException e) {
-			LOG.log(WARNING, "Failed to reassemble chunked attachment", e);
 			throw new DbException(e);
 		}
 	}

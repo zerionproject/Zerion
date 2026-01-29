@@ -17,10 +17,6 @@ public interface PluginConfig {
 
 	boolean shouldPoll();
 
-	/**
-	 * Returns a map representing transport preferences. For each entry in the
-	 * map, connections via the transports identified by the value are
-	 * preferred to connections via the transport identified by the key.
-	 */
+	
 	Map<TransportId, List<TransportId>> getTransportPreferences();
 }

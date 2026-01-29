@@ -16,7 +16,6 @@ import javax.inject.Inject;
 
 import static android.graphics.Bitmap.CompressFormat.JPEG;
 import static android.graphics.BitmapFactory.decodeStream;
-import static java.util.logging.Level.WARNING;
 import static org.briarproject.bramble.util.IoUtils.tryToClose;
 import static org.briarproject.briar.api.attachment.MediaConstants.MAX_IMAGE_SIZE;
 
@@ -42,7 +41,7 @@ class ImageCompressorImpl implements ImageCompressor {
 					createBitmap(is, contentType, MAX_ATTACHMENT_DIMENSION);
 			return compressImage(bitmap);
 		} finally {
-			tryToClose(is, null, WARNING);
+			tryToClose(is);
 		}
 	}
 

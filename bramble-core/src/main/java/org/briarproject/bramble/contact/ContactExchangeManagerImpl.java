@@ -39,13 +39,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.GeneralSecurityException;
 import java.util.Map;
-import java.util.logging.Logger;
-
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
-
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.api.identity.AuthorConstants.MAX_SIGNATURE_LENGTH;
 import static org.briarproject.bramble.api.system.Clock.MIN_REASONABLE_TIME_MS;
 import static org.briarproject.bramble.contact.ContactExchangeConstants.PROTOCOL_VERSION;
@@ -56,16 +52,9 @@ import static org.briarproject.bramble.util.ValidationUtils.checkSize;
 @Immutable
 @NotNullByDefault
 class ContactExchangeManagerImpl implements ContactExchangeManager {
-
-	private static final Logger LOG =
-			getLogger(ContactExchangeManagerImpl.class.getName());
-
-	// Accept records with current protocol version, known record type
 	private static final RecordPredicate ACCEPT = r ->
 			r.getProtocolVersion() == PROTOCOL_VERSION &&
 					isKnownRecordType(r.getRecordType());
-
-	// Ignore records with current protocol version, unknown record type
 	private static final RecordPredicate IGNORE = r ->
 			r.getProtocolVersion() == PROTOCOL_VERSION &&
 					!isKnownRecordType(r.getRecordType());
@@ -112,7 +101,6 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 	public Contact exchangeContacts(DuplexTransportConnection conn,
 			SecretKey masterKey, boolean alice,
 			boolean verified) throws IOException, DbException {
-		// Default to extended format for non-pending contact exchanges
 		return exchange(null, conn, masterKey, alice, verified, false);
 	}
 
@@ -142,38 +130,25 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			DuplexTransportConnection conn, SecretKey masterKey, boolean alice,
 			boolean verified, boolean classical, boolean mode3Capable)
 			throws IOException, DbException {
-		// Get the transport connection's input and output streams
 		InputStream in = conn.getReader().getInputStream();
 		OutputStream out = conn.getWriter().getOutputStream();
-
-		// Get the local author and transport properties
 		LocalAuthor localAuthor = identityManager.getLocalAuthor();
 		Map<TransportId, TransportProperties> localProperties =
 				transportPropertyManager.getLocalProperties();
-
-		// Derive the header keys for the transport streams
 		SecretKey localHeaderKey =
 				contactExchangeCrypto.deriveHeaderKey(masterKey, alice);
 		SecretKey remoteHeaderKey =
 				contactExchangeCrypto.deriveHeaderKey(masterKey, !alice);
-
-		// Create the readers - use classical format for Briar compatibility
 		InputStream streamReader = streamReaderFactory
 				.createContactExchangeStreamReader(in, remoteHeaderKey);
 		RecordReader recordReader =
 				recordReaderFactory.createRecordReader(streamReader, classical);
-
-		// Create the writers - use classical format for Briar compatibility
 		StreamWriter streamWriter = streamWriterFactory
 				.createContactExchangeStreamWriter(out, localHeaderKey);
 		RecordWriter recordWriter = recordWriterFactory
 				.createRecordWriter(streamWriter.getOutputStream(), classical);
-
-		// Create our signature
 		byte[] localSignature = contactExchangeCrypto
 				.sign(localAuthor.getPrivateKey(), masterKey, alice);
-
-		// Exchange contact info
 		long localTimestamp = clock.currentTimeMillis();
 		ContactInfo remoteInfo;
 		if (alice) {
@@ -185,29 +160,17 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			sendContactInfo(recordWriter, localAuthor, localProperties,
 					localSignature, localTimestamp);
 		}
-
-		// Send EOF on the outgoing stream
 		streamWriter.sendEndOfStream();
-
-		// Skip any remaining records from the incoming stream
 		recordReader.readRecord(r -> false, IGNORE);
-
-		// Verify the contact's signature
 		PublicKey remotePublicKey = remoteInfo.author.getPublicKey();
 		if (!contactExchangeCrypto.verify(remotePublicKey,
 				masterKey, !alice, remoteInfo.signature)) {
-			LOG.warning("Invalid signature");
 			throw new FormatException();
 		}
-
-		// The agreed timestamp is the minimum of the peers' timestamps
 		long timestamp = Math.min(localTimestamp, remoteInfo.timestamp);
 		if (timestamp < MIN_REASONABLE_TIME_MS) {
-			LOG.warning("Timestamp is too old");
 			throw new FormatException();
 		}
-
-		// Add the contact
 		Contact contact = addContact(p, remoteInfo.author, localAuthor,
 				masterKey, timestamp, alice, verified, remoteInfo.properties,
 				mode3Capable);
@@ -267,7 +230,6 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			db.commitTransaction(txn);
 			return contact;
 		} catch (GeneralSecurityException e) {
-			// Pending contact's public key is invalid
 			throw new FormatException();
 		} finally {
 			db.endTransaction(txn);

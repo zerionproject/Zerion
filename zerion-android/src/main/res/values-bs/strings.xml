@@ -47,8 +47,6 @@
   <string name="nav_drawer_close_description">Zatvori navigacionu ladicu</string>
   <string name="contact_list_button">Kontakti</string>
   <string name="groups_button">Privatne Grupe</string>
-  <string name="forums_button">Forumi</string>
-  <string name="blogs_button">Blogovi</string>
   <!--This is part of the main menu. The app will be locked when this is tapped.-->
   <string name="lock_button">Zaključaj aplikaciju</string>
   <string name="settings_button">Podešavanja</string>
@@ -118,14 +116,12 @@
   <string name="dialog_message_image_support">Dodirni ovu ikonu da priložiš fotografije</string>
   <!--Adding Contacts-->
   <string name="add_contact_title">Dodaj kontakt u blizini vas</string>
-  <string name="face_to_face">Morate se sresti sa osobom koju želite da dodate kao kontakt.\n\nOvo će spriječiti bilo koga da se predstavi kao vi ili da ubuduće čita poruke.</string>
   <string name="continue_button">Nastavi</string>
   <string name="try_again_button">Probajte ponovo</string>
   <string name="waiting_for_contact_to_scan">Čekam da kontakt skenira i poveže se\u2026</string>
   <string name="exchanging_contact_details">Razmjenjujem detalje o kontaktu\u2026</string>
   <string name="contact_added_toast">Dodani kontakt: %s</string>
   <string name="contact_already_exists">Kontakt %s već postoji</string>
-  <string name="qr_code_invalid">QR kod nije validan</string>
   <string name="qr_code_too_old">Skenirani QR kod pripada staroj verziji  %s.\n\nMolimo vas da zatražite od vašeg kontakta da ažurira aplikaciju na posljednjiu verziju, a zatim pokušajte ponovo</string>
   <string name="qr_code_too_new">QR kod koji skenirate pripada novijoj verziji  %s.\n\nMolimo vas nadogradite aplikaciju na posljednju verziju, a zatim pokušajte ponovo.</string>
   <string name="camera_error">Greska kamere</string>
@@ -252,92 +248,22 @@
   <string name="groups_reveal_visible_revealed_by_contact">Veze kontakata su vidljive grupi (otkriveno od strane %s)</string>
   <string name="groups_reveal_invisible">Veze kontakata nisu vidljive grupi</string>
   <!--Forums-->
-  <string name="no_forums">Nema foruma za prikazivanje</string>
-  <string name="no_forums_action">Dotaknite + ikonu da kreirate forum, ili pitajte vaše kontakte da podijele forume sa vama</string>
-  <string name="create_forum_title">Kreiraj forum</string>
-  <string name="choose_forum_hint">Izaberite ime za vaš forum</string>
-  <string name="create_forum_button">Kreiraj forum</string>
-  <string name="forum_created_toast">Forum je kreiran</string>
-  <string name="no_forum_posts">Nema postova za prikazivanje</string>
   <string name="no_posts">Nema postova</string>
-  <string name="forum_new_message_hint">Novi post</string>
-  <string name="forum_message_reply_hint">Novi odgovor</string>
   <string name="btn_reply">Odgovor</string>
-  <string name="forum_leave">Napusti forum</string>
-  <string name="dialog_title_leave_forum">Potvrdite napuštanje foruma</string>
-  <string name="dialog_message_leave_forum">Jeste li sigurni da želite da napustite ovaj forum?\n\nKontakti sa kojima ste podijelili ovaj forum možda prestanu dobijati novosti.</string>
   <string name="dialog_button_leave">Napusti</string>
-  <string name="forum_left_toast">Napušten forum</string>
   <!--Forum Sharing-->
-  <string name="forum_share_button">Podijeli forum</string>
   <string name="contacts_selected">Kontakti selektovani</string>
   <string name="activity_share_toolbar_header">Izaberite kontakte</string>
   <string name="no_contacts_selector">Nema kontakata za prikazivanje</string>
   <string name="no_contacts_selector_action">Molimo vas vratite se ovdje nakon dodavanja kontakta</string>
-  <string name="forum_shared_snackbar">Forum je podijeljen sa selektovanim kontaktima</string>
-  <string name="forum_share_message">Dodajte poruku (opciono)</string>
-  <string name="forum_share_error">Došlo je do greške prilikom dijeljenja ovog foruma.</string>
-  <string name="forum_invitation_received">%1$s je podijelio-la forum \"%2$s\" sa vama.</string>
-  <string name="forum_invitation_sent">Podijelili ste forum \"%1$s\" sa %2$s.</string>
-  <string name="forum_invitations_title">Pozivnice za forum</string>
-  <string name="forum_invitation_exists">Već ste prihvatili poziv u ovaj forum.\n\nPrihvatanje dodatnih poziva će učiniti vašu vezu sa forumom bržom i pouzdanijom.</string>
-  <string name="forum_joined_toast">Forumu ste pristupili</string>
-  <string name="forum_declined_toast">Poziv odbijen</string>
   <string name="shared_by_format">Podijelio-la %s</string>
-  <string name="forum_invitation_already_sharing">Već se dijeli</string>
-  <string name="forum_invitation_response_accepted_sent">Prihvatili ste poziv u forum od %s.</string>
-  <string name="forum_invitation_response_declined_sent">Odbili ste poziv u forum od  %s.</string>
-  <string name="forum_invitation_response_accepted_received">1%s prihvata vaš poziv u forum.</string>
-  <string name="forum_invitation_response_declined_received">%s odbija vaš poziv u forum.</string>
   <string name="sharing_status">Status dijeljenja</string>
-  <string name="sharing_status_forum">Bilo koji član foruma može forum podijeliti sa svojim kontaktima. Vi dijelite forum sa slijedećim kontaktima. Moguće je da ima drugih članova koje ne vidite.</string>
   <string name="shared_with">Pdijeljeno sa %1$d (%2$d na vezi)</string>
   <string name="nobody">Niko</string>
   <!--Blogs-->
-  <string name="blogs_other_blog_empty_state">Nema postova za prikazivanje</string>
   <string name="read_more">pročitaj više</string>
-  <string name="blogs_write_blog_post">Napiši Blog Post</string>
-  <string name="blogs_write_blog_post_body_hint">Ukucajte vaš blog post</string>
-  <string name="blogs_publish_blog_post">Objavi</string>
-  <string name="blogs_blog_post_created">Blog post je kreiran</string>
-  <string name="blogs_blog_post_received">Primljen je novi blog post</string>
-  <string name="blogs_blog_post_scroll_to">Skroluj do</string>
-  <string name="blogs_feed_empty_state">Nema postova za prikazivanje</string>
-  <string name="blogs_feed_empty_state_action">Postovi od vaših kontakata i blogova na koje se prijavite će se prikazivati ovdje.\n\nDotaknite ikonu olovke da napišete post</string>
-  <string name="blogs_remove_blog">Ukloni blog</string>
-  <string name="blogs_remove_blog_dialog_message">Jeste li sigurni da želite da uklonite blog?\n\nPostovi će biti uklonjeni sa vašeg uređaja ali ne is uređaja drugih ljudi.\n\nKontakti kojima ste podijelili ovaj blog će možda prestati da dobijaju novosti.</string>
-  <string name="blogs_remove_blog_ok">Ukloni</string>
-  <string name="blogs_blog_removed">Blog je uklonjen</string>
-  <string name="blogs_reblog_comment_hint">Dodajte komentar (opciono)</string>
-  <string name="blogs_reblog_button">Rebloguj</string>
   <!--Blog Sharing-->
-  <string name="blogs_sharing_share">Podijeli blog</string>
-  <string name="blogs_sharing_error">Došlo je do greške pri podjeli bloga.</string>
-  <string name="blogs_sharing_button">Podijeli blog</string>
-  <string name="blogs_sharing_snackbar">Blog je podijeljen sa izabranim kontaktima</string>
-  <string name="blogs_sharing_response_accepted_sent">Prihvatili ste blog pozivnicu od %s.</string>
-  <string name="blogs_sharing_response_declined_sent">Odbili ste blog pozivnicu od %s.</string>
-  <string name="blogs_sharing_response_accepted_received">%s je prihvatio-la blog pozivnicu.</string>
-  <string name="blogs_sharing_response_declined_received">%s je odbio-la blog pozivnicu.</string>
-  <string name="blogs_sharing_invitation_received">%1$s je podijelio-la blog \"%2$s\" sa vama.</string>
-  <string name="blogs_sharing_invitation_sent">Podijelili ste blog \"%1$s\" sa %2$s.</string>
-  <string name="blogs_sharing_invitations_title">Blog Pozivnice</string>
-  <string name="blogs_sharing_joined_toast">Prijavljeni ste na blog</string>
-  <string name="blogs_sharing_declined_toast">Poziv odbijen</string>
-  <string name="sharing_status_blog">Bilo ko, ko se prijavi za ovaj blog, može blog da podijeli sa svojim kontaktima. Vi dijelite blog sa slijedećim kontaktima. Moguće je da ima još potpisnika koje nemožete da vidite.</string>
   <!--RSS Feeds-->
-  <string name="blogs_rss_feeds_import">Uvezi RSS kanal</string>
-  <string name="blogs_rss_feeds_import_button">Uvezi</string>
-  <string name="blogs_rss_feeds_import_hint">Unesi URL od RSS kanala</string>
-  <string name="blogs_rss_feeds_import_error">Žao nam je! Došlo je do greške pri unosu vašeg kanala.</string>
-  <string name="blogs_rss_feeds_manage_imported">Uvezeno:</string>
-  <string name="blogs_rss_feeds_manage_author">Autor:</string>
-  <string name="blogs_rss_feeds_manage_updated">Zadnje ažuriranje:</string>
-  <string name="blogs_rss_remove_feed">Uklonite kanal</string>
-  <string name="blogs_rss_remove_feed_dialog_message">Jeste li sigurni da želite da uklonite kanal?\n\nPostovi će biti uklonjeni sa vašeg uređaja ali ne is uređaja drugih ljudi.\n\nKontakti kojima ste podijelili ovaj blog će možda prestati da dobijaju novosti.</string>
-  <string name="blogs_rss_remove_feed_ok">Ukloni</string>
-  <string name="blogs_rss_feeds_manage_empty_state">Nema RSS kanala za prikazivanje\n\nDotaknite + ikonu da uvezete kanal</string>
-  <string name="blogs_rss_feeds_manage_error">Došlo je do problema pri učitavanju vaših kanala. Probajte opet kasnije.</string>
   <!--Settings Profile Picture-->
   <!--Settings Display-->
   <string name="pref_language_title">Jezik i regija</string>
@@ -404,12 +330,6 @@
   <string name="notify_group_messages_setting_title">Grupne poruke</string>
   <string name="notify_group_messages_setting_summary">Prikaži upozorenja za grupne poruke</string>
   <string name="notify_group_messages_setting_summary_26">Podesite upozorenja za grupne poruke</string>
-  <string name="notify_forum_posts_setting_title">Forum postovi</string>
-  <string name="notify_forum_posts_setting_summary">Prikaži upozorenja za forum postove</string>
-  <string name="notify_forum_posts_setting_summary_26">Podesite upozorenja za forum postove</string>
-  <string name="notify_blog_posts_setting_title">Blog postovi</string>
-  <string name="notify_blog_posts_setting_summary">Prikaži upozorenja na blog postove</string>
-  <string name="notify_blog_posts_setting_summary_26">Podesite upozorenja za blog postove</string>
   <string name="notify_vibration_setting">Vibriranje</string>
   <string name="notify_sound_setting">Zvuk</string>
   <string name="notify_sound_setting_default">Podrazumijevana melodija</string>
@@ -453,8 +373,6 @@
   <string name="permission_camera_location_title">Kamera i locationkacija</string>
   <string name="permission_camera_location_request_body">Da bi skenirao QR kod, Zerion treba pristup vašoj kameri.\n\nDa bi otkrio Bluetooth uređaj, Brair treba douzvolu za pristup vašoj lokaciji.\n\nZerion neće snimati vašu lokaciju ili je dijeliti sa bilo kime.</string>
   <string name="permission_camera_denied_body">Uskratili ste pristup kameri, ali dodavanje kontakata zahtijeva pristup kameri.\n\nMolim vas da uzmete u obzir odobravanja pristupa.</string>
-  <string name="qr_code">QR kod</string>
-  <string name="show_qr_code_fullscreen">Prikazi QR kod na puni ekran</string>
   <!--App Locking-->
   <string name="lock_unlock">Otključaj Zerion</string>
   <string name="lock_unlock_verbose">Unesite PIN uređaja, figuru ili lozinku</string>

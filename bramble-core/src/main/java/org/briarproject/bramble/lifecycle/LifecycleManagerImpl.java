@@ -19,13 +19,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.logging.Logger;
-
 import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
-
-import static java.util.logging.Level.WARNING;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.api.lifecycle.LifecycleManager.LifecycleState.COMPACTING_DATABASE;
 import static org.briarproject.bramble.api.lifecycle.LifecycleManager.LifecycleState.CREATED;
 import static org.briarproject.bramble.api.lifecycle.LifecycleManager.LifecycleState.MIGRATING_DATABASE;
@@ -43,15 +38,9 @@ import static org.briarproject.bramble.api.lifecycle.LifecycleManager.StartResul
 import static org.briarproject.bramble.api.lifecycle.LifecycleManager.StartResult.SUCCESS;
 import static org.briarproject.bramble.api.system.Clock.MAX_REASONABLE_TIME_MS;
 import static org.briarproject.bramble.api.system.Clock.MIN_REASONABLE_TIME_MS;
-import static org.briarproject.bramble.util.LogUtils.logException;
-
 @ThreadSafe
 @NotNullByDefault
 class LifecycleManagerImpl implements LifecycleManager, MigrationListener {
-
-	private static final Logger LOG =
-			getLogger(LifecycleManagerImpl.class.getName());
-
 	private final DatabaseComponent db;
 	private final EventBus eventBus;
 	private final Clock clock;
@@ -122,16 +111,12 @@ class LifecycleManagerImpl implements LifecycleManager, MigrationListener {
 			eventBus.broadcast(new LifecycleEvent(RUNNING));
 			return SUCCESS;
 		} catch (DataTooOldException e) {
-			logException(LOG, WARNING, e);
 			return DATA_TOO_OLD_ERROR;
 		} catch (DataTooNewException e) {
-			logException(LOG, WARNING, e);
 			return DATA_TOO_NEW_ERROR;
 		} catch (DbException e) {
-			logException(LOG, WARNING, e);
 			return DB_ERROR;
 		} catch (ServiceException e) {
-			logException(LOG, WARNING, e);
 			return SERVICE_ERROR;
 		}
 	}
@@ -158,7 +143,6 @@ class LifecycleManagerImpl implements LifecycleManager, MigrationListener {
 			try {
 				s.stopService();
 			} catch (ServiceException e) {
-				logException(LOG, WARNING, e);
 			}
 		}
 		for (ExecutorService e : executors) {
@@ -167,7 +151,6 @@ class LifecycleManagerImpl implements LifecycleManager, MigrationListener {
 		try {
 			db.close();
 		} catch (DbException e) {
-			logException(LOG, WARNING, e);
 		}
 		state.set(STOPPED);
 		shutdownLatch.countDown();

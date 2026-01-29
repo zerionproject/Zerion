@@ -24,25 +24,16 @@ import org.briarproject.onionwrapper.LocationUtils;
 
 import java.io.File;
 import java.util.concurrent.Executor;
-import java.util.logging.Logger;
-
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import javax.net.SocketFactory;
-
-import static java.util.logging.Logger.getLogger;
-
 @Immutable
 @NotNullByDefault
 abstract class TorPluginFactory implements DuplexPluginFactory {
-
-	protected static final Logger LOG =
-			getLogger(TorPluginFactory.class.getName());
-
-	protected static final int MAX_LATENCY = 30 * 1000; // 30 seconds
-	protected static final int MAX_IDLE_TIME = 30 * 1000; // 30 seconds
-	private static final int MIN_POLLING_INTERVAL = 30 * 1000; // 30 seconds
-	private static final int MAX_POLLING_INTERVAL = 5 * 60 * 1000; // 5 mins
+	protected static final int MAX_LATENCY = 30 * 1000;
+	protected static final int MAX_IDLE_TIME = 30 * 1000;
+	private static final int MIN_POLLING_INTERVAL = 30 * 1000;
+	private static final int MAX_POLLING_INTERVAL = 5 * 60 * 1000;
 	private static final double BACKOFF_BASE = 1.2;
 
 	protected final Executor ioExecutor, eventExecutor, wakefulIoExecutor;
@@ -110,10 +101,8 @@ abstract class TorPluginFactory implements DuplexPluginFactory {
 
 	@Override
 	public DuplexPlugin createPlugin(PluginCallback callback) {
-		// Check that we have a Tor binary for this architecture
 		String architecture = getArchitectureForTorBinary();
 		if (architecture == null) {
-			LOG.warning("Tor is not supported on this architecture");
 			return null;
 		}
 

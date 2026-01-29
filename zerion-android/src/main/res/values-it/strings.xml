@@ -68,8 +68,6 @@
   <string name="nav_drawer_close_description">Chiudi la barra di navigazione</string>
   <string name="contact_list_button">Contatti</string>
   <string name="groups_button">Gruppi privati</string>
-  <string name="forums_button">Forum</string>
-  <string name="blogs_button">Blog</string>
   <!--This is part of the main menu. The app will be locked when this is tapped.-->
   <string name="lock_button">Blocca app</string>
   <string name="settings_button">Impostazioni</string>
@@ -106,16 +104,6 @@
     <item quantity="one">Nuovo messaggio di gruppo.</item>
     <item quantity="many">%d nuovi messaggi di gruppo.</item>
     <item quantity="other">%d nuovi messaggi di gruppo.</item>
-  </plurals>
-  <plurals name="forum_post_notification_text">
-    <item quantity="one">Nuovo messaggio sul forum.</item>
-    <item quantity="many">%d nuovi messaggi sul forum.</item>
-    <item quantity="other">%d nuovi messaggi sul forum.</item>
-  </plurals>
-  <plurals name="blog_post_notification_text">
-    <item quantity="one">Nuovo post sul blog.</item>
-    <item quantity="many">%d nuovi post sul blog</item>
-    <item quantity="other">%d nuovi post sul blog</item>
   </plurals>
   <!--Misc-->
   <string name="now">ora</string>
@@ -220,7 +208,6 @@
   <!--Adding Contacts-->
   <string name="add_contact_title">Aggiungi contatti vicino</string>
   <string name="add_contact_error_two_way">Avete scansionato il codice QR di ciascuno?</string>
-  <string name="face_to_face">Devi incontrarti con la persona che vuoi aggiungere come contatto.\n\nQuesto evita che qualcuno ti impersoni o legga i tuoi messaggi in futuro.</string>
   <string name="continue_button">Continua</string>
   <string name="try_again_button">Riprova</string>
   <string name="waiting_for_contact_to_scan">Aspettando il contatto per la scansione ed il collegamento\u2026</string>
@@ -228,17 +215,11 @@
   <string name="contact_added_toast">Contatto aggiunto: %s</string>
   <string name="contact_already_exists">Il contatto %s esiste già</string>
   <string name="contact_already_exists_general">Il contatto esiste già</string>
-  <string name="qr_code_invalid">Il codice QR non è valido</string>
-  <string name="qr_code_too_old_1">Il codice QR che hai scansionato proviene da una versione più vecchia di Zerion.\n\nChiedi al tuo contatto di aggiornare all\'ultima versione e poi riprova.</string>
-  <string name="qr_code_too_new_1">Il codice QR che hai scansionato proviene da una versione più recente di Zerion.\n\nAggiorna all\'ultima versione e poi riprova.</string>
-  <string name="mailbox_qr_code_for_contact">Il codice QR che hai scansionato proviene da Zerion Mailbox\n\nSe vuoi collegare una casella postale, scegli Impostazioni &gt; Casella postale dal menu di Zerion.</string>
-  <string name="qr_code_format_unknown">Il codice QR che hai scansionato non è fatto per l\'aggiunta di un contatto Zerion.\n\nScansiona il codice QR mostrato nello schermo del tuo contatto.</string>
   <string name="camera_error">Errore fotocamera</string>
   <string name="connecting_to_device">Connessione al dispositivo\u2026</string>
   <string name="authenticating_with_device">Autenticazione con il dispositivo\u2026</string>
   <string name="connection_error_title">Impossibile connettersi al tuo contatto</string>
   <string name="connection_error_feedback">Se il problema persiste, <a href="feedback">invia un feedback</a> per aiutarci a migliorare l\'app.</string>
-  <string name="info_both_must_scan">Dovete entrambi scansionare il codice QR a vicenda</string>
   <!--Adding Contacts Remotely-->
   <string name="add_contact_remotely_title_case">Aggiungi contatto distante</string>
   <string name="add_contact_nearby_title">Aggiungi contatto vicino</string>
@@ -393,111 +374,27 @@
   <string name="groups_reveal_visible_revealed_by_contact">La relazione fra i contatti è visibile al gruppo (rivelata da %s)</string>
   <string name="groups_reveal_invisible">La relazione fra i contatti non è visibile al gruppo</string>
   <!--Forums-->
-  <string name="no_forums">Nessun forum da mostrare</string>
-  <string name="no_forums_action">Tocca l\'icona + per creare un forum, o chiedi ai tuoi contatti di condividerne con te</string>
-  <string name="create_forum_title">Crea Forum</string>
-  <string name="choose_forum_hint">Scegli un nome per il tuo forum</string>
-  <string name="create_forum_button">Crea Forum</string>
-  <string name="forum_created_toast">Forum creato</string>
-  <string name="no_forum_posts">Nessun post da mostrare</string>
   <string name="no_posts">Nessun post.</string>
   <plurals name="posts">
     <item quantity="one">%d post</item>
     <item quantity="many">%d post</item>
     <item quantity="other">%d post</item>
   </plurals>
-  <string name="forum_new_message_hint">Nuovo post</string>
-  <string name="forum_message_reply_hint">Nuova Risposta</string>
   <string name="btn_reply">Rispondi</string>
-  <string name="forum_leave">Lascia Forum</string>
-  <string name="dialog_title_leave_forum">Conferma l\'abbandono del forum</string>
-  <string name="dialog_message_leave_forum">Sei sicuro che vuoi lasciare questo forum?\n\nTutti i contatti con cui hai condiviso questo forum potrebbero smettere di ricevere aggiornamenti.</string>
   <string name="dialog_button_leave">Lascia</string>
-  <string name="forum_left_toast">Forum lasciato</string>
   <!--Forum Sharing-->
-  <string name="forum_share_button">Condividi Forum</string>
   <string name="contacts_selected">Contatti selezionati</string>
   <string name="activity_share_toolbar_header">Scegli Contatti</string>
   <string name="no_contacts_selector">Nessun contatto da mostrare</string>
   <string name="no_contacts_selector_action">Torna qui dopo avere aggiunto un contatto</string>
-  <string name="forum_shared_snackbar">Forum condiviso con i contatti scelti</string>
-  <string name="forum_share_message">Aggiungi un messaggio (facoltativo)</string>
-  <string name="forum_share_error">C\'è stato un errore nella condivisione di questo forum.</string>
-  <string name="forum_invitation_received">%1$s ha condiviso il forum \"%2$s\" con te.</string>
-  <string name="forum_invitation_sent">Hai condiviso il forum \"%1$s\" con %2$s.</string>
-  <string name="forum_invitations_title">Inviti Forum</string>
-  <string name="forum_invitation_exists">Hai già accettato un invito a questo forum.\n\nAccettare più inviti renderà la tua connessione a questo forum più veloce e affidabile.</string>
-  <string name="forum_joined_toast">Unito al forum</string>
-  <string name="forum_declined_toast">Invito declinato</string>
   <string name="shared_by_format">Condiviso da %s</string>
-  <string name="forum_invitation_already_sharing">Già in condivisione</string>
-  <string name="forum_invitation_already_invited">Invito già spedito</string>
-  <string name="forum_invitation_invite_received">Invito già ricevuto</string>
-  <string name="forum_invitation_not_supported">Non supportato da questo contatto</string>
-  <string name="forum_invitation_error">Errore. Si tratta di un bug, non è colpa tua</string>
-  <string name="forum_invitation_response_accepted_sent">Hai accettato l\'invito al forum da %s</string>
-  <string name="forum_invitation_response_declined_sent">Hai declinato l\'invito al forum da %s</string>
-  <string name="forum_invitation_response_declined_auto">L\'invito di %s al forum è stato rifiutato automaticamente.</string>
-  <string name="forum_invitation_response_accepted_received">%s ha accettato il tuo invito al forum.</string>
-  <string name="forum_invitation_response_declined_received">%s ha declinato il tuo invito al forum.</string>
   <string name="sharing_status">Stato Condivisione</string>
-  <string name="sharing_status_forum">Ogni membro del forum può condividere con esso i suoi contatti. Stai condividendo questo forum con i seguenti contatti. Ci potrebbero inoltre essere altri membri che non puoi vedere.</string>
   <string name="shared_with">Condiviso con %1$d (%2$d online)</string>
-  <plurals name="forums_shared">
-    <item quantity="one">%d forum condiviso dai contatti</item>
-    <item quantity="many">%d forum condivisi dai contatti</item>
-    <item quantity="other">%d forum condivisi dai contatti</item>
-  </plurals>
   <string name="nobody">Nessuno</string>
   <!--Blogs-->
-  <string name="blogs_other_blog_empty_state">Nessun post da mostrare</string>
   <string name="read_more">leggi ancora</string>
-  <string name="blogs_write_blog_post">Scrivere un post sul blog</string>
-  <string name="blogs_write_blog_post_body_hint">Scrivi il tuo post del blog</string>
-  <string name="blogs_publish_blog_post">Pubblica</string>
-  <string name="blogs_blog_post_created">Post blog creato</string>
-  <string name="blogs_blog_post_received">Ricevuto nuovo post del blog</string>
-  <string name="blogs_blog_post_scroll_to">Scorri a</string>
-  <string name="blogs_feed_empty_state">Nessun post da mostrare</string>
-  <string name="blogs_feed_empty_state_action">I post dei tuoi contatti e i blog a cui ti iscrivi appariranno qui\n\nTocca l\'icona penna per scrivere un post</string>
-  <string name="blogs_remove_blog">Rimuovi Blog</string>
-  <string name="blogs_remove_blog_dialog_message">Sei sicuro di voler rimuovere questo blog?\n\nI post saranno rimossi dal tuo dispositivo ma non dai dispositivi delle altre persone.\n\nTutti i contatti con cui hai condiviso questo blog potrebbero smettere di ricevere aggiornamenti.</string>
-  <string name="blogs_remove_blog_ok">Rimuovi</string>
-  <string name="blogs_blog_removed">Blog rimosso</string>
-  <string name="blogs_reblog_comment_hint">Aggiungi un commento (facoltativo)</string>
-  <string name="blogs_reblog_button">Reblog</string>
   <!--Blog Sharing-->
-  <string name="blogs_sharing_share">Condividi Blog</string>
-  <string name="blogs_sharing_error">C\'è stato un errore nella condivisione di questo blog.</string>
-  <string name="blogs_sharing_button">Condividi Blog</string>
-  <string name="blogs_sharing_snackbar">Blog condiviso con i contatti selezionati</string>
-  <string name="blogs_sharing_response_accepted_sent">Hai accettato l\'invito al blog da %s.</string>
-  <string name="blogs_sharing_response_declined_sent">Hai declinato l\'invito al blog da %s.</string>
-  <string name="blogs_sharing_response_declined_auto">L\'invito di %s al blog è stato rifiutato automaticamente.</string>
-  <string name="blogs_sharing_response_accepted_received">%s ha accettato l\'invito al blog.</string>
-  <string name="blogs_sharing_response_declined_received">%s ha declinato l\'invito al blog.</string>
-  <string name="blogs_sharing_invitation_received">%1$s ha condiviso il blog \"%2$s\" con te.</string>
-  <string name="blogs_sharing_invitation_sent">Hai condiviso il blog \"%1$s\" con %2$s.</string>
-  <string name="blogs_sharing_invitations_title">Inviti Blog</string>
-  <string name="blogs_sharing_joined_toast">Iscritto al blog</string>
-  <string name="blogs_sharing_declined_toast">Invito declinato</string>
-  <string name="sharing_status_blog">Chiunque si iscrive ad un blog può condividerlo con i suoi contatti. Stai condividendo questo blog con i seguenti contatti. Ci potrebbero inoltre essere altri membri che non puoi vedere.</string>
   <!--RSS Feeds-->
-  <string name="blogs_rss_feeds_import">Importa RSS Feed</string>
-  <string name="blogs_rss_feeds_import_button">Importa</string>
-  <string name="blogs_rss_feeds_import_hint">Inserire l\'URL dell\'RSS feed</string>
-  <string name="blogs_rss_feeds_import_progress">Importazione RSS Feed…</string>
-  <string name="blogs_rss_feeds_import_error">Ci dispiace! C\'è stato un errore nell\'importazione del tuo feed.</string>
-  <string name="blogs_rss_feeds_import_title">Importa feed da file</string>
-  <string name="blogs_rss_feeds">Flussi RSS</string>
-  <string name="blogs_rss_feeds_manage_imported">Importato:</string>
-  <string name="blogs_rss_feeds_manage_author">Autore:</string>
-  <string name="blogs_rss_feeds_manage_updated">Ultimo Aggiornamento:</string>
-  <string name="blogs_rss_remove_feed">Rimuovi feed</string>
-  <string name="blogs_rss_remove_feed_dialog_message">Sei sicuro di voler rimuovere questo feed?\n\nI post saranno rimossi dal tuo dispositivo ma non dai dispositivi delle altre persone.\n\nTutti i contatti con cui hai condiviso questo feed potrebbero smettere di ricevere aggiornamenti.</string>
-  <string name="blogs_rss_remove_feed_ok">Rimuovi</string>
-  <string name="blogs_rss_feeds_manage_empty_state">Nessun feed RSS da mostrare\n\nClicca l\'icona + per importare un feed</string>
-  <string name="blogs_rss_feeds_manage_error">C\'è stato un problema nel caricare i tuoi feeds. Per favore riprova fra poco.</string>
   <!--Settings Profile Picture-->
   <string name="change_profile_picture">Tocca per cambiare l\'immagine del profilo</string>
   <string name="dialog_confirm_profile_picture_title">Cambia immagine profilo</string>
@@ -577,12 +474,6 @@
   <string name="notify_group_messages_setting_title">Messaggi di gruppo</string>
   <string name="notify_group_messages_setting_summary">Mostra avvisi per messaggi di gruppo</string>
   <string name="notify_group_messages_setting_summary_26">Configurare avvisi per messaggi di gruppo</string>
-  <string name="notify_forum_posts_setting_title">Post di forum</string>
-  <string name="notify_forum_posts_setting_summary">Mostra avvisi per i post di forum</string>
-  <string name="notify_forum_posts_setting_summary_26">Configurare avvisi per post di forum</string>
-  <string name="notify_blog_posts_setting_title">Post di blog</string>
-  <string name="notify_blog_posts_setting_summary">Mostra avvisi per post di blog</string>
-  <string name="notify_blog_posts_setting_summary_26">Configurare avvisi per post di blog</string>
   <string name="notify_vibration_setting">Vibrazione</string>
   <string name="notify_sound_setting">Suono</string>
   <string name="notify_sound_setting_default">Suoneria di default</string>
@@ -602,10 +493,6 @@
   <string name="mailbox_setup_connecting">Connessione alla casella postale…</string>
   <!--This string is shown when connecting to a Mailbox for the first time. The placeholder will be replaced with a duration, e.g. "2 minutes".-->
   <string name="mailbox_setup_connecting_info">Potrebbe impiegarci %1s</string>
-  <string name="mailbox_qr_code_too_old">Il codice QR che hai scansionato proviene da una versione più vecchia di Zerion Mailbox.\n\nAggiorna Zerion Mailbox all\'ultima versione e poi riprova.</string>
-  <string name="mailbox_qr_code_too_new">Il codice QR che hai scansionato proviene da una versione più recente di Zerion Mailbox.\n\nAggiorna Zerion all\'ultima versione e poi riprova.</string>
-  <string name="contact_qr_code_for_mailbox">Il codice QR che hai scansionato è fatto per l\'aggiunta di un contatto Zerion.\n\nSe vuoi aggiungere un contatto, vai nell\'elenco dei contatti e tocca l\'icona + .</string>
-  <string name="mailbox_setup_qr_code_wrong_description">Il codice QR che hai scansionato non proviene da Zerion Mailbox.\n\nApri l\'app Zerion Mailbox sul tuo dispositivo della casella postale e scansiona il codice QR mostrato.</string>
   <string name="mailbox_setup_already_paired_title">Casella postale già collegata</string>
   <string name="mailbox_setup_already_paired_description">Scollega la casella postale sul tuo altro dispositivo e riprova.</string>
   <string name="mailbox_setup_io_error_title">Impossibile connettere</string>
@@ -756,8 +643,6 @@
   <string name="permission_bluetooth_title">Autorizzazione dispositivi vicini</string>
   <string name="permission_bluetooth_body">Per usare comunicazioni Bluetooth, Zerion deve avere l\'autorizzazione di trovare e connettersi a dispositivi vicini.</string>
   <string name="permission_bluetooth_denied_body">Hai negato l\'accesso a dispositivi vicini, ma Zerion ha bisogno di questa autorizzazione per usare il Bluetooth.\n\nConsidera la possibilità di concedere l\'accesso.</string>
-  <string name="qr_code">Codice QR</string>
-  <string name="show_qr_code_fullscreen">Mostra codice QR a tutto schermo</string>
   <!--App Locking-->
   <string name="lock_unlock">Sblocca Zerion</string>
   <string name="lock_unlock_verbose">Inserisci il PIN, sequenza o password del dispositivo per sbloccare Zerion</string>
@@ -787,9 +672,7 @@
   <string name="wifi_settings_request_enable_body">Per creare un hotspot Wi-Fi, Zerion deve usare il Wi-Fi. Prima attivalo.</string>
   <string name="hotspot_tab_manual">Manuale</string>
   <!--The placeholder to be inserted into the string 'hotspot_manual_wifi': People can connect by %s-->
-  <string name="hotspot_scanning_a_qr_code">scansionando un codice QR</string>
   <!--Wi-Fi setup-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_wifi">Il tuo telefono sta fornendo un hotspot Wi-Fi. Le persone che vogliono scaricare Zerion possono connettersi all\'hotspot aggiungendolo nelle impostazioni Wi-Fi del loro dispositivo con i dettagli sottostanti o %s. Quando sono connessi all\'hotspot, premi \'Avanti\'.</string>
   <string name="hotspot_manual_wifi_ssid">Nome della rete</string>
   <string name="hotspot_qr_wifi">Il tuo telefono sta fornendo un hotspot Wi-Fi. Le persone che vogliono scaricare Zerion possono connettersi all\'hotspot scaricando questo codice QR. Quando sono connessi all\'hotspot, premi \'Avanti\'.</string>
@@ -800,7 +683,6 @@
     <item quantity="other">%s dispositivi connessi</item>
   </plurals>
   <!--Download link-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_site">Il tuo telefono sta fornendo un hotspot Wi-Fi. Le persone connesse all\'hotspot possono scaricare Zerion digitando il seguente collegamento in un browser web o %s.</string>
   <string name="hotspot_manual_site_address">Indirizzo (URL)</string>
   <string name="hotspot_qr_site">Il tuo telefono sta fornendo un hotspot Wi-Fi. Le persone connesse all\'hotspot possono scaricare Zerion scansionando questo codice QR.</string>

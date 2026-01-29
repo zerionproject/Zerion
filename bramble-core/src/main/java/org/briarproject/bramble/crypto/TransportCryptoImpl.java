@@ -82,19 +82,16 @@ class TransportCryptoImpl implements TransportCrypto {
 	public TransportKeys deriveRotationKeys(TransportId t,
 			SecretKey rootKey, long timePeriod, boolean weAreAlice,
 			boolean active) {
-		// Keys for the previous period are derived from the root key
 		SecretKey inTagPrev = deriveTagKey(rootKey, t, !weAreAlice);
 		SecretKey inHeaderPrev = deriveHeaderKey(rootKey, t, !weAreAlice);
 		SecretKey outTagPrev = deriveTagKey(rootKey, t, weAreAlice);
 		SecretKey outHeaderPrev = deriveHeaderKey(rootKey, t, weAreAlice);
-		// Derive the keys for the current and next periods
 		SecretKey inTagCurr = rotateKey(inTagPrev, timePeriod);
 		SecretKey inHeaderCurr = rotateKey(inHeaderPrev, timePeriod);
 		SecretKey inTagNext = rotateKey(inTagCurr, timePeriod + 1);
 		SecretKey inHeaderNext = rotateKey(inHeaderCurr, timePeriod + 1);
 		SecretKey outTagCurr = rotateKey(outTagPrev, timePeriod);
 		SecretKey outHeaderCurr = rotateKey(outHeaderPrev, timePeriod);
-		// Initialise the reordering windows and stream counters
 		IncomingKeys inPrev = new IncomingKeys(inTagPrev, inHeaderPrev,
 				timePeriod - 1);
 		IncomingKeys inCurr = new IncomingKeys(inTagCurr, inHeaderCurr,
@@ -103,7 +100,6 @@ class TransportCryptoImpl implements TransportCrypto {
 				timePeriod + 1);
 		OutgoingKeys outCurr = new OutgoingKeys(outTagCurr, outHeaderCurr,
 				timePeriod, active);
-		// Collect and return the keys
 		return new TransportKeys(t, inPrev, inCurr, inNext, outCurr);
 	}
 
@@ -195,11 +191,8 @@ class TransportCryptoImpl implements TransportCrypto {
 		SecretKey rootKey = k.getRootKey();
 		boolean weAreAlice = k.isAlice();
 		if (elapsed <= 0) {
-			// The keys are for the given period or later - don't update them
 			return k;
 		} else if (elapsed == 1) {
-			// The keys are one period old - shift by one period, keeping the
-			// reordering windows for keys we retain
 			IncomingKeys inPrev = k.getCurrentIncomingKeys();
 			IncomingKeys inCurr = k.getNextIncomingKeys();
 			IncomingKeys inNext = deriveIncomingHandshakeKeys(t, rootKey,
@@ -209,8 +202,6 @@ class TransportCryptoImpl implements TransportCrypto {
 			return new TransportKeys(t, inPrev, inCurr, inNext, outCurr,
 					rootKey, weAreAlice);
 		} else if (elapsed == 2) {
-			// The keys are two periods old - shift by two periods, keeping
-			// the reordering windows for keys we retain
 			IncomingKeys inPrev = k.getNextIncomingKeys();
 			IncomingKeys inCurr = deriveIncomingHandshakeKeys(t, rootKey,
 					weAreAlice, timePeriod);
@@ -221,7 +212,6 @@ class TransportCryptoImpl implements TransportCrypto {
 			return new TransportKeys(t, inPrev, inCurr, inNext, outCurr,
 					rootKey, weAreAlice);
 		} else {
-			// The keys are more than two periods old - derive fresh keys
 			return deriveHandshakeKeys(t, rootKey, timePeriod, weAreAlice);
 		}
 	}
@@ -234,7 +224,6 @@ class TransportCryptoImpl implements TransportCrypto {
 		OutgoingKeys outCurr = k.getCurrentOutgoingKeys();
 		long startPeriod = outCurr.getTimePeriod();
 		boolean active = outCurr.isActive();
-		// Rotate the keys
 		for (long p = startPeriod + 1; p <= timePeriod; p++) {
 			inPrev = inCurr;
 			inCurr = inNext;
@@ -245,7 +234,6 @@ class TransportCryptoImpl implements TransportCrypto {
 			SecretKey outCurrHeader = rotateKey(outCurr.getHeaderKey(), p);
 			outCurr = new OutgoingKeys(outCurrTag, outCurrHeader, p, active);
 		}
-		// Collect and return the keys
 		return new TransportKeys(k.getTransportId(), inPrev, inCurr, inNext,
 				outCurr);
 	}
@@ -258,13 +246,9 @@ class TransportCryptoImpl implements TransportCrypto {
 			throw new IllegalArgumentException();
 		if (streamNumber < 0 || streamNumber > MAX_32_BIT_UNSIGNED)
 			throw new IllegalArgumentException();
-		// Initialise the PRF
 		Digest prf = new Blake2bDigest(tagKey.getBytes(), 32, null, null);
-		// The output of the PRF must be long enough to use as a tag
 		int macLength = prf.getDigestSize();
 		if (macLength < TAG_LENGTH) throw new IllegalStateException();
-		// The input is the protocol version as a 16-bit integer, followed by
-		// the stream number as a 64-bit integer
 		byte[] protocolVersionBytes = new byte[INT_16_BYTES];
 		writeUint16(protocolVersion, protocolVersionBytes, 0);
 		prf.update(protocolVersionBytes, 0, protocolVersionBytes.length);
@@ -273,7 +257,6 @@ class TransportCryptoImpl implements TransportCrypto {
 		prf.update(streamNumberBytes, 0, streamNumberBytes.length);
 		byte[] mac = new byte[macLength];
 		prf.doFinal(mac, 0);
-		// The output is the first TAG_LENGTH bytes of the MAC
 		arraycopy(mac, 0, tag, 0, TAG_LENGTH);
 	}
 }

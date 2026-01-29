@@ -53,7 +53,6 @@ import static com.professor.zerion.android.ZerionService.EXTRA_START_RESULT;
 import static com.professor.zerion.android.TestingConstants.IS_DEBUG_BUILD;
 import static com.professor.zerion.android.activity.RequestCodes.REQUEST_PASSWORD;
 import static com.professor.zerion.android.navdrawer.IntentRouter.handleExternalIntent;
-import static com.professor.zerion.android.util.UiUtils.getDaysUntilExpiry;
 
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
@@ -74,8 +73,6 @@ public class NavDrawerActivity extends ZerionActivity implements
 	private static final int TAB_VAULT = 2;
 
 	private NavDrawerViewModel navDrawerViewModel;
-
-	// Track network status view state
 	private boolean isShowingNetworkStatus = false;
 	private int previousTab = TAB_CONTACTS;
 	private String previousTitle = null;
@@ -119,10 +116,6 @@ public class NavDrawerActivity extends ZerionActivity implements
 		setContentView(R.layout.activity_nav_drawer);
 
 		ZerionApplication app = (ZerionApplication) getApplication();
-		if (IS_DEBUG_BUILD && !app.isInstrumentationTest()) {
-			navDrawerViewModel.showExpiryWarning()
-					.observe(this, this::showExpiryWarning);
-		}
 		navDrawerViewModel.shouldAskForDozeWhitelisting().observe(this, ask -> {
 			if (ask) showDozeDialog(R.string.dnkm_doze_intro);
 		});
@@ -172,11 +165,9 @@ public class NavDrawerActivity extends ZerionActivity implements
 	}
 
 	private void onTabClicked(int tab) {
-		// If showing network status, exit it first
 		if (isShowingNetworkStatus) {
 			isShowingNetworkStatus = false;
 			findViewById(R.id.bottomNavigation).setVisibility(VISIBLE);
-			// Force switch since we're coming from network status
 			switchTab(tab, true);
 		} else {
 			switchTab(tab);
@@ -188,7 +179,6 @@ public class NavDrawerActivity extends ZerionActivity implements
 	}
 
 	private void switchTab(int tab, boolean forceSwitch) {
-		// Only skip if same tab AND not forcing (force is used when returning from network status)
 		if (currentTab == tab && !forceSwitch) return;
 
 		currentTab = tab;
@@ -211,8 +201,6 @@ public class NavDrawerActivity extends ZerionActivity implements
 			default:
 				return;
 		}
-
-		// Replace fragment without adding to backstack for tab switches
 		showTabFragment(fragment);
 	}
 
@@ -249,35 +237,19 @@ public class NavDrawerActivity extends ZerionActivity implements
 
 	private void toggleNetworkStatus() {
 		if (isShowingNetworkStatus) {
-			// Return to previous state
 			isShowingNetworkStatus = false;
-
-			// Show bottom navigation first
 			findViewById(R.id.bottomNavigation).setVisibility(VISIBLE);
-
-			// Force switch back to the previous tab (even if currentTab equals previousTab)
 			switchTab(previousTab, true);
-
-			// Update FAB visibility based on tab
 			if (previousTab == TAB_CONTACTS || previousTab == TAB_GROUPS) {
 				fabCompose.setVisibility(VISIBLE);
 			}
 		} else {
-			// Save current state before showing network status
 			previousTab = currentTab;
 			previousTitle = toolbarTitle.getText().toString();
 			isShowingNetworkStatus = true;
-
-			// Update UI for network status view
 			toolbarTitle.setText(R.string.network_status_title);
-
-			// Hide bottom navigation when showing network status
 			findViewById(R.id.bottomNavigation).setVisibility(GONE);
-
-			// Hide FAB when showing network status
 			fabCompose.setVisibility(GONE);
-
-			// Show network status fragment (don't add to backstack)
 			showNetworkStatusFragment();
 		}
 	}
@@ -353,13 +325,11 @@ public class NavDrawerActivity extends ZerionActivity implements
 		if (IS_DEBUG_BUILD) {
 			navDrawerViewModel.checkExpiryWarning();
 		}
-		// Check if we should show donation dialog (randomly once a month)
 		checkAndShowDonationDialog();
 	}
 
 	private void checkAndShowDonationDialog() {
 		if (donationManager.shouldShowDonationDialog()) {
-			// Delay slightly to let the UI settle
 			getWindow().getDecorView().postDelayed(() -> {
 				if (!isFinishing() && !isDestroyed()) {
 					showDonationDialog();
@@ -369,7 +339,6 @@ public class NavDrawerActivity extends ZerionActivity implements
 	}
 
 	private void showDonationDialog() {
-		// Check lifecycle state to avoid IllegalStateException after onSaveInstanceState
 		if (getLifecycle().getCurrentState().isAtLeast(
 				androidx.lifecycle.Lifecycle.State.RESUMED)) {
 			DonationDialogFragment dialog = DonationDialogFragment.newInstance();
@@ -424,8 +393,6 @@ public class NavDrawerActivity extends ZerionActivity implements
 	@Override
 	public void onBackPressed() {
 		FragmentManager fm = getSupportFragmentManager();
-
-		// Handle network status view - go back to previous state
 		if (isShowingNetworkStatus) {
 			toggleNetworkStatus();
 			return;
@@ -448,10 +415,7 @@ public class NavDrawerActivity extends ZerionActivity implements
 		startFragment(new SignOutFragment());
 	}
 
-	/**
-	 * Used for non-tab fragments like VaultSettings, SignOut, etc.
-	 * These are added to backstack so user can navigate back.
-	 */
+	
 	private void startFragment(BaseFragment f) {
 		getSupportFragmentManager()
 				.beginTransaction()
@@ -482,29 +446,4 @@ public class NavDrawerActivity extends ZerionActivity implements
 	private void setLockMenuItemVisible(boolean visible) {
 	}
 
-	private void showExpiryWarning(boolean show) {
-		long daysUntilExpiry = getDaysUntilExpiry();
-		if (daysUntilExpiry < 0) {
-			signOut();
-			return;
-		}
-
-		View expiryWarning = findViewById(R.id.expiryWarning);
-		if (show) {
-			TextView expiryWarningText =
-					expiryWarning.findViewById(R.id.expiryWarningText);
-			String text = getResources().getQuantityString(
-					R.plurals.expiry_warning, (int) daysUntilExpiry,
-					(int) daysUntilExpiry);
-			expiryWarningText.setText(text);
-
-			ImageView expiryWarningClose =
-					expiryWarning.findViewById(R.id.expiryWarningClose);
-			expiryWarningClose.setOnClickListener(v ->
-					navDrawerViewModel.expiryWarningDismissed());
-			expiryWarning.setVisibility(VISIBLE);
-		} else {
-			expiryWarning.setVisibility(GONE);
-		}
-	}
 }

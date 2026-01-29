@@ -68,7 +68,7 @@ public class ChunkedAttachmentManager {
 	private final ConcurrentHashMap<MessageId, TransferState> activeTransfers;
 	private final ConcurrentHashMap<String, PeerRateLimit> peerRateLimits;
 	private final ConcurrentHashMap<String, AtomicInteger> peerTransferCounts;
-	private final ConcurrentHashMap<MessageId, Long> completedTransfers; // attachmentId -> completion time
+	private final ConcurrentHashMap<MessageId, Long> completedTransfers;
 	private final File chunksDir;
 	private final File stateDir;
 	private final AtomicLong totalIncompleteBytes = new AtomicLong(0);

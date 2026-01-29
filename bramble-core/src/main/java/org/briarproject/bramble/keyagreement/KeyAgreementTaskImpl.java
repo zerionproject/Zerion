@@ -23,21 +23,11 @@ import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
 import java.io.IOException;
-import java.util.logging.Logger;
-
 import javax.inject.Inject;
-
-import static java.util.logging.Level.WARNING;
-import static org.briarproject.bramble.util.LogUtils.logException;
-
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
 class KeyAgreementTaskImpl extends Thread implements KeyAgreementTask,
 		KeyAgreementProtocol.Callbacks, KeyAgreementConnector.Callbacks {
-
-	private static final Logger LOG =
-			Logger.getLogger(KeyAgreementTaskImpl.class.getName());
-
 	private final CryptoComponent crypto;
 	private final KeyAgreementCrypto keyAgreementCrypto;
 	private final EventBus eventBus;
@@ -97,19 +87,12 @@ class KeyAgreementTaskImpl extends Thread implements KeyAgreementTask,
 	@Override
 	public void run() {
 		boolean alice = localPayload.compareTo(remotePayload) < 0;
-
-		// Open connection to remote device
 		KeyAgreementTransport transport =
 				connector.connect(remotePayload, alice);
 		if (transport == null) {
-			LOG.warning("Key agreement failed. Transport was null.");
-			// Notify caller that the connection failed
 			eventBus.broadcast(new KeyAgreementFailedEvent());
 			return;
 		}
-
-		// Run BQP protocol over the connection
-		LOG.info("Starting BQP protocol");
 		KeyAgreementProtocol protocol = new KeyAgreementProtocol(this, crypto,
 				keyAgreementCrypto, payloadEncoder, transport, remotePayload,
 				localPayload, localKeyPair, alice);
@@ -118,16 +101,10 @@ class KeyAgreementTaskImpl extends Thread implements KeyAgreementTask,
 			KeyAgreementResult result =
 					new KeyAgreementResult(masterKey, transport.getConnection(),
 							transport.getTransportId(), alice);
-			LOG.info("Finished BQP protocol");
-			// Broadcast result to caller
 			eventBus.broadcast(new KeyAgreementFinishedEvent(result));
 		} catch (AbortException e) {
-			logException(LOG, WARNING, e);
-			// Notify caller that the protocol was aborted
 			eventBus.broadcast(new KeyAgreementAbortedEvent(e.receivedAbort));
 		} catch (IOException e) {
-			logException(LOG, WARNING, e);
-			// Notify caller that the connection failed
 			eventBus.broadcast(new KeyAgreementFailedEvent());
 		}
 	}
@@ -139,10 +116,6 @@ class KeyAgreementTaskImpl extends Thread implements KeyAgreementTask,
 
 	@Override
 	public void initialRecordReceived() {
-		// We send this here instead of when we create the protocol, so that
-		// if device A makes a connection after getting device B's payload and
-		// starts its protocol, device A's UI doesn't change to prevent device B
-		// from getting device A's payload.
 		eventBus.broadcast(new KeyAgreementStartedEvent());
 	}
 }

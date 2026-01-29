@@ -10,16 +10,12 @@ import static org.briarproject.bramble.api.crypto.CryptoConstants.KEY_TYPE_SIGNA
 import static org.briarproject.bramble.api.identity.AuthorConstants.MAX_AUTHOR_NAME_LENGTH;
 import static org.briarproject.bramble.util.StringUtils.toUtf8;
 
-/**
- * A pseudonym for a user.
- */
+
 @Immutable
 @NotNullByDefault
 public class Author implements Nameable {
 
-	/**
-	 * The current version of the author structure.
-	 */
+	
 	public static final int FORMAT_VERSION = 1;
 
 	private final AuthorId id;
@@ -40,31 +36,23 @@ public class Author implements Nameable {
 		this.publicKey = publicKey;
 	}
 
-	/**
-	 * Returns the author's unique identifier.
-	 */
+	
 	public AuthorId getId() {
 		return id;
 	}
 
-	/**
-	 * Returns the version of the author structure used to create the author.
-	 */
+	
 	public int getFormatVersion() {
 		return formatVersion;
 	}
 
-	/**
-	 * Returns the author's name.
-	 */
+	
 	@Override
 	public String getName() {
 		return name;
 	}
 
-	/**
-	 * Returns the public key used to verify the pseudonym's signatures.
-	 */
+	
 	public PublicKey getPublicKey() {
 		return publicKey;
 	}

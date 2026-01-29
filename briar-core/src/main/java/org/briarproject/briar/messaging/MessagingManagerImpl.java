@@ -59,19 +59,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.logging.Logger;
-
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
 
 import static java.util.Collections.emptyList;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.api.client.ContactGroupConstants.GROUP_KEY_CONTACT_ID;
 import static org.briarproject.bramble.api.sync.SyncConstants.MAX_MESSAGE_BODY_LENGTH;
 import static org.briarproject.bramble.api.sync.validation.IncomingMessageHook.DeliveryAction.ACCEPT_DO_NOT_SHARE;
 import static org.briarproject.bramble.util.IoUtils.copyAndClose;
-import static org.briarproject.bramble.util.LogUtils.logDuration;
-import static org.briarproject.bramble.util.LogUtils.now;
 import static org.briarproject.briar.api.attachment.MediaConstants.MSG_KEY_CONTENT_TYPE;
 import static org.briarproject.briar.api.attachment.MediaConstants.MSG_KEY_DESCRIPTOR_LENGTH;
 import static org.briarproject.briar.api.autodelete.AutoDeleteConstants.NO_AUTO_DELETE_TIMER;
@@ -97,10 +92,6 @@ import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_TIMEST
 class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		ConversationClient, OpenDatabaseHook, ContactHook,
 		ClientVersioningHook, CleanupHook {
-
-	private static final Logger LOG =
-			getLogger(MessagingManagerImpl.class.getName());
-
 	private final DatabaseComponent db;
 	private final ClientHelper clientHelper;
 	private final MetadataParser metadataParser;
@@ -143,27 +134,21 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 
 	@Override
 	public void onDatabaseOpened(Transaction txn) throws DbException {
-		// Create a local group to indicate that we've set this client up
 		Group localGroup = contactGroupFactory.createLocalGroup(CLIENT_ID,
 				MAJOR_VERSION);
 		if (db.containsGroup(txn, localGroup.getId())) return;
 		db.addGroup(txn, localGroup);
-		// Set things up for any pre-existing contacts
 		for (Contact c : db.getContacts(txn)) addingContact(txn, c);
 	}
 
 	@Override
 	public void addingContact(Transaction txn, Contact c) throws DbException {
-		// Create a group to share with the contact
 		Group g = getContactGroup(c);
 		db.addGroup(txn, g);
-		// Apply the client's visibility to the contact group
 		Visibility client = clientVersioningManager.getClientVisibility(txn,
 				c.getId(), CLIENT_ID, MAJOR_VERSION);
 		db.setGroupVisibility(txn, c.getId(), g.getId(), client);
-		// Attach the contact ID to the group
 		clientHelper.setContactId(txn, g.getId(), c.getId());
-		// Initialize the group count with current time
 		messageTracker.initializeGroupCount(txn, g.getId());
 	}
 
@@ -181,7 +166,6 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 	@Override
 	public void onClientVisibilityChanging(Transaction txn, Contact c,
 			Visibility v) throws DbException {
-		// Apply the client's visibility to the contact group
 		Group g = getContactGroup(c);
 		db.setGroupVisibility(txn, c.getId(), g.getId(), v);
 	}
@@ -191,7 +175,6 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			Metadata meta) throws DbException, InvalidMessageException {
 		try {
 			BdfDictionary metaDict = metadataParser.parse(meta);
-			// Message type is null for version 0.0 private messages
 			Integer messageType = metaDict.getOptionalInt(MSG_KEY_MSG_TYPE);
 			if (messageType == null) {
 				incomingPrivateMessage(txn, m, metaDict, true, emptyList());
@@ -220,7 +203,6 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 	private void incomingPrivateMessage(Transaction txn, Message m,
 			BdfDictionary meta, boolean hasText, List<AttachmentHeader> headers)
 			throws DbException, FormatException {
-		long start = now();
 		GroupId groupId = m.getGroupId();
 		long timestamp = meta.getLong(MSG_KEY_TIMESTAMP);
 		boolean local = meta.getBoolean(MSG_KEY_LOCAL);
@@ -241,7 +223,6 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		autoDeleteManager.receiveAutoDeleteTimer(txn, contactId, timer,
 				timestamp);
 		if (!headers.isEmpty()) stopAttachmentCleanupTimers(txn, m, headers);
-		logDuration(LOG, "Receiving private message", start);
 	}
 
 	private List<AttachmentHeader> parseAttachmentHeaders(GroupId g,
@@ -261,14 +242,16 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 	private void stopAttachmentCleanupTimers(Transaction txn, Message m,
 			List<AttachmentHeader> headers)
 			throws DbException, FormatException {
-		// Fetch the IDs of all remote attachments
-		BdfDictionary query = BdfDictionary.of(
+		BdfDictionary queryLegacy = BdfDictionary.of(
 				new BdfEntry(MSG_KEY_MSG_TYPE, ATTACHMENT),
 				new BdfEntry(MSG_KEY_LOCAL, false));
-		Collection<MessageId> results =
-				clientHelper.getMessageIds(txn, m.getGroupId(), query);
-		// Stop the cleanup timers of any attachments that have already
-		// been delivered
+		Collection<MessageId> results = new HashSet<>(
+				clientHelper.getMessageIds(txn, m.getGroupId(), queryLegacy));
+		BdfDictionary queryManifest = BdfDictionary.of(
+				new BdfEntry(MSG_KEY_MSG_TYPE, ATTACHMENT_MANIFEST),
+				new BdfEntry(MSG_KEY_LOCAL, false));
+		results.addAll(
+				clientHelper.getMessageIds(txn, m.getGroupId(), queryManifest));
 		for (AttachmentHeader h : headers) {
 			MessageId id = h.getMessageId();
 			if (results.contains(id)) db.stopCleanupTimer(txn, id);
@@ -277,12 +260,8 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 
 	private void incomingAttachment(Transaction txn, Message m)
 			throws DbException {
-		long start = now();
 		ContactId contactId = getContactId(txn, m.getGroupId());
 		txn.attach(new AttachmentReceivedEvent(m.getId(), contactId));
-		// If no private messages that list this attachment have been
-		// delivered, start the cleanup timer. It will be stopped when a
-		// private message that lists this attachment is delivered
 		BdfDictionary query = BdfDictionary.of(
 				new BdfEntry(MSG_KEY_MSG_TYPE, PRIVATE_MESSAGE),
 				new BdfEntry(MSG_KEY_LOCAL, false));
@@ -296,43 +275,51 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 					if (h.getMessageId().equals(m.getId())) return;
 				}
 			}
-			// No private messages list this attachment - start the timer
 			db.setCleanupTimerDuration(txn, m.getId(),
 					MISSING_ATTACHMENT_CLEANUP_DURATION_MS);
 			db.startCleanupTimer(txn, m.getId());
 		} catch (FormatException e) {
 			throw new DbException(e);
 		}
-		logDuration(LOG, "Receiving attachment", start);
 	}
 
 	private void incomingAttachmentManifest(Transaction txn, Message m)
 			throws DbException {
-		long start = now();
 		ContactId contactId = getContactId(txn, m.getGroupId());
 		txn.attach(new AttachmentReceivedEvent(m.getId(), contactId));
-		logDuration(LOG, "Receiving attachment manifest", start);
+		BdfDictionary query = BdfDictionary.of(
+				new BdfEntry(MSG_KEY_MSG_TYPE, PRIVATE_MESSAGE),
+				new BdfEntry(MSG_KEY_LOCAL, false));
+		try {
+			Map<MessageId, BdfDictionary> results = clientHelper
+					.getMessageMetadataAsDictionary(txn, m.getGroupId(), query);
+			for (BdfDictionary meta : results.values()) {
+				List<AttachmentHeader> headers =
+						parseAttachmentHeaders(m.getGroupId(), meta);
+				for (AttachmentHeader h : headers) {
+					if (h.getMessageId().equals(m.getId())) return;
+				}
+			}
+			db.setCleanupTimerDuration(txn, m.getId(),
+					MISSING_ATTACHMENT_CLEANUP_DURATION_MS);
+			db.startCleanupTimer(txn, m.getId());
+		} catch (FormatException e) {
+			throw new DbException(e);
+		}
 	}
 
 	private void incomingAttachmentChunk(Transaction txn, Message m)
 			throws DbException {
-		long start = now();
-		logDuration(LOG, "Receiving attachment chunk", start);
+		ContactId contactId = getContactId(txn, m.getGroupId());
+		txn.attach(new AttachmentReceivedEvent(m.getId(), contactId));
 	}
 
-	/**
-	 * Handle incoming voice signal message.
-	 * Parse the signal data and fire VoiceSignalReceivedEvent so that
-	 * VoiceCallService and AndroidNotificationManager can handle incoming calls.
-	 */
+	
 	private void incomingVoiceSignal(Transaction txn, Message m,
 			BdfDictionary meta) throws DbException, FormatException {
-		long start = now();
 		GroupId groupId = m.getGroupId();
 		long timestamp = meta.getLong(MSG_KEY_TIMESTAMP);
 		boolean local = meta.getBoolean(MSG_KEY_LOCAL);
-
-		// Parse the voice signal body: [VOICE_SIGNAL, signalType, callId, payload, durationMs]
 		BdfList body = clientHelper.getMessageAsList(txn, m.getId());
 		if (body.size() < 3) {
 			throw new FormatException();
@@ -344,21 +331,13 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		Long durationMs = body.getOptionalLong(4);
 
 		VoiceSignalType signalType = VoiceSignalType.fromValue(signalTypeValue);
-
-		// Create the voice signal header
 		VoiceSignalHeader header = new VoiceSignalHeader(
 				m.getId(), groupId, timestamp, local,
 				signalType, callId, payload, durationMs);
-
-		// Get the contact ID and fire the event
 		ContactId contactId = getContactId(txn, groupId);
 		VoiceSignalReceivedEvent event =
 				new VoiceSignalReceivedEvent(header, contactId);
 		txn.attach(event);
-
-		// Voice signals are NOT tracked in conversation counts
-		// because they should not appear in the UI
-		logDuration(LOG, "Receiving voice signal", start);
 	}
 
 	@Override
@@ -389,11 +368,9 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 					meta.put(MSG_KEY_AUTO_DELETE_TIMER, timer);
 				}
 			}
-			// Mark attachments as shared and permanent now we're ready to send
 			for (AttachmentHeader a : m.getAttachmentHeaders()) {
 				db.setMessageShared(txn, a.getMessageId());
 				db.setMessagePermanent(txn, a.getMessageId());
-				// For chunked attachments (manifests), also share all chunks
 				shareAttachmentChunks(txn, a.getMessageId());
 			}
 			clientHelper.addLocalMessage(txn, m.getMessage(), meta, true,
@@ -534,7 +511,6 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			BdfDictionary meta = metadata.get(id);
 			if (meta == null) continue;
 			try {
-				// Message type is null for version 0.0 private messages
 				Integer messageType = meta.getOptionalInt(MSG_KEY_MSG_TYPE);
 				if (messageType != null && messageType != PRIVATE_MESSAGE)
 					continue;
@@ -590,7 +566,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 	public String getMessageText(Transaction txn, MessageId m) throws DbException {
 		try {
 			BdfList body = clientHelper.getMessageAsList(txn, m);
-			if (body.size() == 1) return body.getString(0); // Legacy format
+			if (body.size() == 1) return body.getString(0);
 			else return body.getOptionalString(1);
 		} catch (FormatException e) {
 			throw new DbException(e);
@@ -605,7 +581,6 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 	@Override
 	public Map<MessageId, String> getMessageTexts(Transaction txn, ContactId c)
 			throws DbException {
-		long start = now();
 		Map<MessageId, String> texts = new java.util.HashMap<>();
 		try {
 			GroupId g = getContactGroup(db.getContact(txn, c)).getId();
@@ -614,28 +589,23 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			for (Entry<MessageId, BdfDictionary> entry : metadata.entrySet()) {
 				MessageId id = entry.getKey();
 				BdfDictionary meta = entry.getValue();
-				// Skip non-private messages (attachments, voice signals)
 				Integer messageType = meta.getOptionalInt(MSG_KEY_MSG_TYPE);
 				if (messageType != null && messageType != PRIVATE_MESSAGE) continue;
-				// Check if message has text
 				boolean hasText = messageType == null ||
 						meta.getBoolean(MSG_KEY_HAS_TEXT, false);
 				if (!hasText) continue;
-				// Load the message text
 				try {
 					BdfList body = clientHelper.getMessageAsList(txn, id);
 					String text;
-					if (body.size() == 1) text = body.getString(0); // Legacy
+					if (body.size() == 1) text = body.getString(0);
 					else text = body.getOptionalString(1);
 					if (text != null) texts.put(id, text);
 				} catch (FormatException e) {
-					// Skip malformed messages
 				}
 			}
 		} catch (FormatException e) {
 			throw new DbException(e);
 		}
-		logDuration(LOG, "Bulk loading " + texts.size() + " message texts", start);
 		return texts;
 	}
 
@@ -654,7 +624,6 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 	public DeletionResult deleteAllMessages(Transaction txn, ContactId c)
 			throws DbException {
 		GroupId g = getContactGroup(db.getContact(txn, c)).getId();
-		// Use removeMessage for permanent deletion (prevents messages reappearing via sync)
 		for (MessageId messageId : db.getMessageIds(txn, g)) {
 			db.removeMessage(txn, messageId);
 		}
@@ -689,16 +658,11 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			if (messageType != null && messageType == PRIVATE_MESSAGE) {
 				for (AttachmentHeader h : parseAttachmentHeaders(g, meta)) {
 					try {
-						// Use removeMessage for permanent deletion (prevents message reappearing)
 						db.removeMessage(txn, h.getMessageId());
 					} catch (NoSuchMessageException e) {
-						// Continue
 					}
 				}
 			}
-			// Use removeMessage for permanent deletion instead of deleteMessage
-			// deleteMessage only sets raw=NULL which allows messages to reappear via sync
-			// removeMessage removes the entire record permanently
 			db.removeMessage(txn, m);
 		} catch (FormatException e) {
 			throw new DbException(e);

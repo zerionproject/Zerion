@@ -19,10 +19,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.IOException;
 import java.io.InputStream;
-
-import static java.util.logging.Level.WARNING;
-import static org.briarproject.bramble.util.LogUtils.logException;
-
 @NotNullByDefault
 class OutgoingHandshakeConnection extends HandshakeConnection
 		implements Runnable {
@@ -45,43 +41,35 @@ class OutgoingHandshakeConnection extends HandshakeConnection
 
 	@Override
 	public void run() {
-		// Allocate the outgoing stream context
 		StreamContext ctxOut =
 				allocateStreamContext(pendingContactId, transportId);
 		if (ctxOut == null) {
 			onError();
 			return;
 		}
-		// Flush the output stream to send the outgoing stream header
 		StreamWriter out;
 		try {
 			out = streamWriterFactory.createStreamWriter(
 					writer.getOutputStream(), ctxOut);
 			out.getOutputStream().flush();
 		} catch (IOException e) {
-			logException(LOG, WARNING, e);
 			onError();
 			return;
 		}
-		// Read and recognise the tag
 		StreamContext ctxIn = recogniseTag(reader, transportId);
-		// Unrecognised tags are suspicious in this case
 		if (ctxIn == null) {
 			onError();
 			return;
 		}
-		// Check that the stream comes from the expected pending contact
 		PendingContactId inPendingContactId = ctxIn.getPendingContactId();
 		if (inPendingContactId == null || !inPendingContactId.equals(pendingContactId)) {
 			onError();
 			return;
 		}
-		// Close the connection if it's redundant
 		if (!connectionRegistry.registerConnection(pendingContactId)) {
 			onError();
 			return;
 		}
-		// Handshake and exchange contacts
 		try {
 			InputStream in = streamReaderFactory.createStreamReader(
 					reader.getInputStream(), ctxIn);
@@ -91,18 +79,15 @@ class OutgoingHandshakeConnection extends HandshakeConnection
 					pendingContactId, connection, result.getMasterKey(),
 					result.isAlice(), true, classical, result.isMode3Capable());
 			connectionRegistry.unregisterConnection(pendingContactId, true);
-			// Reuse the connection as a transport connection
 			connectionManager.manageOutgoingConnection(contact.getId(),
 					transportId, connection);
 		} catch (IOException | DbException e) {
-			logException(LOG, WARNING, e);
 			onError();
 			connectionRegistry.unregisterConnection(pendingContactId, false);
 		}
 	}
 
 	private void onError() {
-		// 'Recognised' is always true for outgoing connections
 		onError(true);
 	}
 }

@@ -11,9 +11,7 @@ import java.util.concurrent.TimeUnit;
 
 import javax.annotation.concurrent.ThreadSafe;
 
-/**
- * A {@link TaskScheduler} that uses a {@link ScheduledExecutorService}.
- */
+
 @ThreadSafe
 @NotNullByDefault
 class TaskSchedulerImpl implements TaskScheduler {

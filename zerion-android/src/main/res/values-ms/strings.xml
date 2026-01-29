@@ -15,7 +15,6 @@
   <string name="expiry_date_reached">Aplikasi ini telah tamat tempoh.\nSila pasang ulang versi baru.</string>
   <!--Navigation Drawer-->
   <string name="contact_list_button">Kenalan</string>
-  <string name="forums_button">Forum</string>
   <string name="settings_button">Tetapan</string>
   <string name="sign_out_button">Daftar Keluar</string>
   <!--Transports-->
@@ -52,9 +51,6 @@
   <!--Private Group Invitations-->
   <!--Private Groups Revealing Contacts-->
   <!--Forums-->
-  <string name="create_forum_title">Cipta forum baru</string>
-  <string name="choose_forum_name">Pilih nama untuk forum anda:</string>
-  <string name="forum_created_toast">Forum telah dicipta</string>
   <!--Forum Sharing-->
   <!--Blogs-->
   <!--Blog Sharing-->

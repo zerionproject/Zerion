@@ -50,9 +50,6 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
 import static java.lang.Math.max;
-import static org.briarproject.bramble.util.LogUtils.logDuration;
-import static org.briarproject.bramble.util.LogUtils.now;
-
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
 class GroupViewModel extends ThreadListViewModel<GroupMessageItem> {

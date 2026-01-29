@@ -34,7 +34,6 @@ class MetadataParserImpl implements MetadataParser {
 		BdfDictionary d = new BdfDictionary();
 		try {
 			for (Entry<String, byte[]> e : m.entrySet()) {
-				// Special case: if key is being removed, value is null
 				if (e.getValue() == REMOVE) d.put(e.getKey(), NULL_VALUE);
 				else d.put(e.getKey(), parseValue(e.getValue()));
 			}

@@ -8,9 +8,7 @@ import javax.annotation.concurrent.Immutable;
 import static org.briarproject.bramble.api.crypto.CryptoConstants.KEY_TYPE_AGREEMENT;
 import static org.briarproject.bramble.api.crypto.CryptoConstants.MAX_AGREEMENT_PUBLIC_KEY_BYTES;
 
-/**
- * Type-safe wrapper for a public key used for key agreement.
- */
+
 @Immutable
 @NotNullByDefault
 public class AgreementPublicKey extends Bytes implements PublicKey {

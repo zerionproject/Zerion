@@ -19,9 +19,6 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import javax.annotation.Nullable;
-
-import static java.util.logging.Level.WARNING;
-import static org.briarproject.bramble.util.LogUtils.logException;
 import static org.briarproject.nullsafety.NullSafety.requireNonNull;
 
 @NotNullByDefault
@@ -47,7 +44,6 @@ class SyncConnection extends Connection {
 		try {
 			return keyManager.getStreamContext(contactId, transportId);
 		} catch (DbException e) {
-			logException(LOG, WARNING, e);
 			return null;
 		}
 	}

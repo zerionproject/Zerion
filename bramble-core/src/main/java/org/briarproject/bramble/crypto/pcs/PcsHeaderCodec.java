@@ -24,9 +24,7 @@ import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PQ_CHUNK_SIZE
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PQ_EPOCH_SIZE;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PREVIOUS_CHAIN_LENGTH_SIZE;
 
-/**
- * Codec for encoding and decoding PCS message headers.
- */
+
 @Immutable
 @NotNullByDefault
 public class PcsHeaderCodec {
@@ -107,41 +105,20 @@ public class PcsHeaderCodec {
 		}
 	}
 
-	/**
-	 * Encodes a Mode 1 (symmetric-only) PCS header.
-	 *
-	 * @param messageNumber The message number in the current chain
-	 * @param previousChainLength The length of the previous chain
-	 * @return The encoded header bytes (10 bytes)
-	 */
+	
 	public byte[] encodeMode1Header(int messageNumber, int previousChainLength) {
 		byte[] header = new byte[PCS_HEADER_MIN_SIZE];
 		int offset = 0;
-
-		// Version (1 byte)
 		header[offset++] = (byte) PCS_PROTOCOL_VERSION;
-
-		// Flags (1 byte) - PCS enabled, no DH ratchet
 		header[offset++] = FLAG_PCS_ENABLED;
-
-		// Message number (4 bytes, big-endian)
 		writeUint32(messageNumber, header, offset);
 		offset += MESSAGE_NUMBER_SIZE;
-
-		// Previous chain length (4 bytes, big-endian)
 		writeUint32(previousChainLength, header, offset);
 
 		return header;
 	}
 
-	/**
-	 * Encodes a Mode 2 (with DH ratchet) PCS header.
-	 *
-	 * @param messageNumber The message number in the current chain
-	 * @param previousChainLength The length of the previous chain
-	 * @param dhPublicKey The DH public key for this message (32 bytes)
-	 * @return The encoded header bytes (42 bytes)
-	 */
+	
 	public byte[] encodeMode2Header(int messageNumber, int previousChainLength,
 			byte[] dhPublicKey) {
 		if (dhPublicKey.length != DH_PUBLIC_KEY_SIZE) {
@@ -151,22 +128,12 @@ public class PcsHeaderCodec {
 
 		byte[] header = new byte[PCS_HEADER_MAX_SIZE];
 		int offset = 0;
-
-		// Version (1 byte)
 		header[offset++] = (byte) PCS_PROTOCOL_VERSION;
-
-		// Flags (1 byte) - PCS enabled + DH ratchet present
 		header[offset++] = (byte) (FLAG_PCS_ENABLED | FLAG_DH_RATCHET);
-
-		// Message number (4 bytes, big-endian)
 		writeUint32(messageNumber, header, offset);
 		offset += MESSAGE_NUMBER_SIZE;
-
-		// Previous chain length (4 bytes, big-endian)
 		writeUint32(previousChainLength, header, offset);
 		offset += PREVIOUS_CHAIN_LENGTH_SIZE;
-
-		// DH public key (32 bytes)
 		System.arraycopy(dhPublicKey, 0, header, offset, DH_PUBLIC_KEY_SIZE);
 
 		return header;
@@ -303,8 +270,6 @@ public class PcsHeaderCodec {
 		return PCS_MODE3_HEADER_MIN_SIZE + PQ_CHUNK_HEADER_SIZE +
 				pqChunk.getLength();
 	}
-
-	// ==================== Helper Methods ====================
 
 	private static void writeUint16(int value, byte[] dest, int offset) {
 		dest[offset] = (byte) (value >> 8);

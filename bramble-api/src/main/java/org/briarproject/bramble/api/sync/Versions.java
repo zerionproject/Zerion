@@ -6,10 +6,7 @@ import java.util.List;
 
 import javax.annotation.concurrent.Immutable;
 
-/**
- * A record telling the recipient which versions of the sync protocol the
- * sender supports.
- */
+
 @Immutable
 @NotNullByDefault
 public class Versions {

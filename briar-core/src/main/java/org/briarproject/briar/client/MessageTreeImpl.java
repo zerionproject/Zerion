@@ -41,11 +41,9 @@ public class MessageTreeImpl<T extends MessageTree.MessageNode>
 
 	@Override
 	public synchronized void add(Collection<T> nodes) {
-		// add all nodes to the node map
 		for (T node : nodes) {
 			nodeMap.put(node.getId(), new ArrayList<>());
 		}
-		// parse the nodes for dependencies
 		for (T node : nodes) {
 			parseNode(node);
 		}
@@ -69,7 +67,6 @@ public class MessageTreeImpl<T extends MessageTree.MessageNode>
 			roots.add(node);
 			markAsUnsorted(roots);
 		} else {
-			// retrieve the parent's children
 			List<T> pChildren = nodeMap.get(node.getParentId());
 			pChildren.add(node);
 			markAsUnsorted(pChildren);
@@ -79,7 +76,6 @@ public class MessageTreeImpl<T extends MessageTree.MessageNode>
 	@GuardedBy("this")
 	private void sortUnsorted() {
 		for (List<T> list : unsortedLists) {
-			//noinspection Java8ListSort
 			Collections.sort(list, comparator);
 		}
 		unsortedLists.clear();

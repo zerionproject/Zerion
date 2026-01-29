@@ -81,20 +81,16 @@ class TransportPropertyManagerImpl implements TransportPropertyManager,
 	public void onDatabaseOpened(Transaction txn) throws DbException {
 		if (db.containsGroup(txn, localGroup.getId())) return;
 		db.addGroup(txn, localGroup);
-		// Set things up for any pre-existing contacts
 		for (Contact c : db.getContacts(txn)) addingContact(txn, c);
 	}
 
 	@Override
 	public void addingContact(Transaction txn, Contact c) throws DbException {
-		// Create a group to share with the contact
 		Group g = getContactGroup(c);
 		db.addGroup(txn, g);
-		// Apply the client's visibility to the contact group
 		Visibility client = clientVersioningManager.getClientVisibility(txn,
 				c.getId(), CLIENT_ID, MAJOR_VERSION);
 		db.setGroupVisibility(txn, c.getId(), g.getId(), client);
-		// Copy the latest local properties into the group
 		Map<TransportId, TransportProperties> local = getLocalProperties(txn);
 		for (Entry<TransportId, TransportProperties> e : local.entrySet()) {
 			storeMessage(txn, g.getId(), e.getKey(), e.getValue(), 1,
@@ -110,7 +106,6 @@ class TransportPropertyManagerImpl implements TransportPropertyManager,
 	@Override
 	public void onClientVisibilityChanging(Transaction txn, Contact c,
 			Visibility v) throws DbException {
-		// Apply the client's visibility to the contact group
 		Group g = getContactGroup(c);
 		db.setGroupVisibility(txn, c.getId(), g.getId(), v);
 	}
@@ -119,17 +114,14 @@ class TransportPropertyManagerImpl implements TransportPropertyManager,
 	public DeliveryAction incomingMessage(Transaction txn, Message m,
 			Metadata meta) throws DbException, InvalidMessageException {
 		try {
-			// Find the latest update for this transport, if any
 			BdfDictionary d = metadataParser.parse(meta);
 			TransportId t = new TransportId(d.getString(MSG_KEY_TRANSPORT_ID));
 			LatestUpdate latest = findLatest(txn, m.getGroupId(), t, false);
 			if (latest != null) {
 				if (d.getLong(MSG_KEY_VERSION) > latest.version) {
-					// This update is newer - delete the previous update
 					db.deleteMessage(txn, latest.messageId);
 					db.deleteMessageMetadata(txn, latest.messageId);
 				} else {
-					// We've already received a newer update - delete this one
 					db.deleteMessage(txn, m.getId());
 					db.deleteMessageMetadata(txn, m.getId());
 					return ACCEPT_DO_NOT_SHARE;
@@ -196,9 +188,7 @@ class TransportPropertyManagerImpl implements TransportPropertyManager,
 			Transaction txn) throws DbException {
 		try {
 			Map<TransportId, TransportProperties> local = new HashMap<>();
-			// Find the latest local update for each transport
 			Map<TransportId, LatestUpdate> latest = findLatestLocal(txn);
-			// Retrieve and parse the latest local properties
 			for (Entry<TransportId, LatestUpdate> e : latest.entrySet()) {
 				BdfList message = clientHelper.getMessageAsList(txn,
 						e.getValue().messageId, false);
@@ -216,11 +206,9 @@ class TransportPropertyManagerImpl implements TransportPropertyManager,
 		try {
 			return db.transactionWithResult(true, txn -> {
 				TransportProperties p = null;
-				// Find the latest local update
 				LatestUpdate latest = findLatest(txn, localGroup.getId(), t,
 						true);
 				if (latest != null) {
-					// Retrieve and parse the latest local properties
 					BdfList message = clientHelper.getMessageAsList(txn,
 							latest.messageId, false);
 					p = parseProperties(message);
@@ -265,25 +253,21 @@ class TransportPropertyManagerImpl implements TransportPropertyManager,
 			TransportId t) throws DbException {
 		Group g = getContactGroup(c);
 		try {
-			// Find the latest remote update
 			TransportProperties remote;
 			LatestUpdate latest = findLatest(txn, g.getId(), t, false);
 			if (latest == null) {
 				remote = new TransportProperties();
 			} else {
-				// Retrieve and parse the latest remote properties
 				BdfList message = clientHelper.getMessageAsList(txn,
 						latest.messageId, false);
 				remote = parseProperties(message);
 			}
-			// Merge in any discovered properties
 			BdfDictionary meta =
 					clientHelper.getGroupMetadataAsDictionary(txn, g.getId());
 			BdfDictionary d = meta.getOptionalDictionary(GROUP_KEY_DISCOVERED);
 			if (d == null) return remote;
 			TransportProperties merged =
 					clientHelper.parseAndValidateTransportProperties(d);
-			// Received properties override discovered properties
 			merged.putAll(remote);
 			return merged;
 		} catch (FormatException e) {
@@ -303,7 +287,6 @@ class TransportPropertyManagerImpl implements TransportPropertyManager,
 			throws DbException {
 		try {
 			db.transaction(false, txn -> {
-				// Merge the new properties with any existing properties
 				TransportProperties merged;
 				boolean changed;
 				LatestUpdate latest = findLatest(txn, localGroup.getId(), t,
@@ -311,7 +294,6 @@ class TransportPropertyManagerImpl implements TransportPropertyManager,
 				if (latest == null) {
 					merged = new TransportProperties(p);
 					Iterator<String> it = merged.values().iterator();
-					//noinspection Java8CollectionRemoveIf
 					while (it.hasNext()) {
 						if (isNullOrEmpty(it.next())) it.remove();
 					}
@@ -329,13 +311,10 @@ class TransportPropertyManagerImpl implements TransportPropertyManager,
 					changed = !merged.equals(old);
 				}
 				if (changed) {
-					// Store the merged properties in the local group
 					long version = latest == null ? 1 : latest.version + 1;
 					storeMessage(txn, localGroup.getId(), t, merged, version,
 							true, false);
-					// Delete the previous update, if any
 					if (latest != null) db.removeMessage(txn, latest.messageId);
-					// Store the merged properties in each contact's group
 					for (Contact c : db.getContacts(txn)) {
 						storeLocalProperties(txn, c, t, merged);
 					}
@@ -352,7 +331,6 @@ class TransportPropertyManagerImpl implements TransportPropertyManager,
 		Group g = getContactGroup(c);
 		LatestUpdate latest = findLatest(txn, g.getId(), t, true);
 		long version = latest == null ? 1 : latest.version + 1;
-		// Reflect any remote properties we've discovered
 		BdfDictionary meta = clientHelper.getGroupMetadataAsDictionary(txn,
 				g.getId());
 		BdfDictionary discovered =
@@ -370,7 +348,6 @@ class TransportPropertyManagerImpl implements TransportPropertyManager,
 			}
 		}
 		storeMessage(txn, g.getId(), t, combined, version, true, true);
-		// Delete the previous update, if any
 		if (latest != null) db.removeMessage(txn, latest.messageId);
 	}
 
@@ -434,7 +411,6 @@ class TransportPropertyManagerImpl implements TransportPropertyManager,
 
 	private TransportProperties parseProperties(BdfList message)
 			throws FormatException {
-		// Transport ID, version, properties
 		BdfDictionary dictionary = message.getDictionary(2);
 		return clientHelper.parseAndValidateTransportProperties(dictionary);
 	}

@@ -11,9 +11,7 @@ import java.util.Map;
 
 import javax.annotation.concurrent.Immutable;
 
-/**
- * An event that is broadcast when a message is shared.
- */
+
 @Immutable
 @NotNullByDefault
 public class MessageSharedEvent extends Event {
@@ -37,13 +35,7 @@ public class MessageSharedEvent extends Event {
 		return groupId;
 	}
 
-	/**
-	 * Returns the IDs of all contacts for which the visibility of the
-	 * message's group is either {@link Visibility#SHARED shared} or
-	 * {@link Visibility#VISIBLE visible}. The value in the map is true if the
-	 * group is {@link Visibility#SHARED shared} or false if the group is
-	 * {@link Visibility#VISIBLE visible}.
-	 */
+	
 	public Map<ContactId, Boolean> getGroupVisibility() {
 		return groupVisibility;
 	}

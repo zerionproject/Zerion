@@ -15,8 +15,6 @@ import javax.annotation.concurrent.ThreadSafe;
 class ShutdownManagerImpl implements ShutdownManager {
 
 	protected final Lock lock = new ReentrantLock();
-
-	// The following are locking: lock
 	protected final Map<Integer, Thread> hooks;
 	private int nextHandle = 0;
 

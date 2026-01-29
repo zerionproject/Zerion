@@ -25,7 +25,7 @@
 		android:layout_width="@dimen/blogs_avatar_icon_size"
 		android:layout_height="@dimen/blogs_avatar_icon_size"
 		android:background="@drawable/bubble_white"
-		android:contentDescription="@string/blogs_reblog_button"
+		android:contentDescription="@string/reblog_button"
 		android:padding="2dp"
 		android:scaleType="fitCenter"
 		android:visibility="invisible"

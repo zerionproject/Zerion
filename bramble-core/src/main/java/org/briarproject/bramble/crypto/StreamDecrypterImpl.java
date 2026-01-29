@@ -58,15 +58,11 @@ class StreamDecrypterImpl implements StreamDecrypter {
 
 	@Override
 	public int readFrame(byte[] payload) throws IOException {
-		// The buffer must be big enough for a full-size frame
 		if (payload.length < MAX_PAYLOAD_LENGTH)
 			throw new IllegalArgumentException();
 		if (finalFrame) return -1;
-		// Don't allow the frame counter to wrap
 		if (frameNumber < 0) throw new IOException();
-		// Read the stream header if required
 		if (frameKey == null) readStreamHeader();
-		// Read the frame header
 		int offset = 0;
 		while (offset < FRAME_HEADER_LENGTH) {
 			int read = in.read(frameCiphertext, offset,
@@ -74,7 +70,6 @@ class StreamDecrypterImpl implements StreamDecrypter {
 			if (read == -1) throw new EOFException();
 			offset += read;
 		}
-		// Decrypt and authenticate the frame header
 		FrameEncoder.encodeNonce(frameNonce, frameNumber, true);
 		try {
 			cipher.init(false, frameKey, frameNonce);
@@ -85,13 +80,11 @@ class StreamDecrypterImpl implements StreamDecrypter {
 		} catch (GeneralSecurityException e) {
 			throw new FormatException();
 		}
-		// Decode and validate the frame header
 		finalFrame = FrameEncoder.isFinalFrame(frameHeader);
 		int payloadLength = FrameEncoder.getPayloadLength(frameHeader);
 		int paddingLength = FrameEncoder.getPaddingLength(frameHeader);
 		if (payloadLength + paddingLength > MAX_PAYLOAD_LENGTH)
 			throw new FormatException();
-		// Read the payload and padding
 		int frameLength = FRAME_HEADER_LENGTH + payloadLength + paddingLength
 				+ MAC_LENGTH;
 		while (offset < frameLength) {
@@ -99,7 +92,6 @@ class StreamDecrypterImpl implements StreamDecrypter {
 			if (read == -1) throw new EOFException();
 			offset += read;
 		}
-		// Decrypt and authenticate the payload and padding
 		FrameEncoder.encodeNonce(frameNonce, frameNumber, false);
 		try {
 			cipher.init(false, frameKey, frameNonce);
@@ -110,7 +102,6 @@ class StreamDecrypterImpl implements StreamDecrypter {
 		} catch (GeneralSecurityException e) {
 			throw new FormatException();
 		}
-		// If there's any padding it must be all zeroes
 		for (int i = 0; i < paddingLength; i++)
 			if (payload[payloadLength + i] != 0) throw new FormatException();
 		frameNumber++;
@@ -120,7 +111,6 @@ class StreamDecrypterImpl implements StreamDecrypter {
 	private void readStreamHeader() throws IOException {
 		byte[] streamHeaderCiphertext = new byte[STREAM_HEADER_LENGTH];
 		byte[] streamHeaderPlaintext = new byte[STREAM_HEADER_PLAINTEXT_LENGTH];
-		// Read the stream header
 		int offset = 0;
 		while (offset < STREAM_HEADER_LENGTH) {
 			int read = in.read(streamHeaderCiphertext, offset,
@@ -128,11 +118,9 @@ class StreamDecrypterImpl implements StreamDecrypter {
 			if (read == -1) throw new EOFException();
 			offset += read;
 		}
-		// Extract the nonce
 		byte[] streamHeaderNonce = new byte[STREAM_HEADER_NONCE_LENGTH];
 		System.arraycopy(streamHeaderCiphertext, 0, streamHeaderNonce, 0,
 				STREAM_HEADER_NONCE_LENGTH);
-		// Decrypt and authenticate the stream header
 		try {
 			cipher.init(false, streamHeaderKey, streamHeaderNonce);
 			int decrypted = cipher.process(streamHeaderCiphertext,
@@ -144,16 +132,13 @@ class StreamDecrypterImpl implements StreamDecrypter {
 		} catch (GeneralSecurityException e) {
 			throw new FormatException();
 		}
-		// Check the protocol version
 		int receivedProtocolVersion =
 				ByteUtils.readUint16(streamHeaderPlaintext, 0);
 		if (receivedProtocolVersion != PROTOCOL_VERSION)
 			throw new FormatException();
-		// Check the stream number
 		long receivedStreamNumber = ByteUtils.readUint64(streamHeaderPlaintext,
 				INT_16_BYTES);
 		if (receivedStreamNumber != streamNumber) throw new FormatException();
-		// Extract the frame key
 		byte[] frameKeyBytes = new byte[SecretKey.LENGTH];
 		System.arraycopy(streamHeaderPlaintext, INT_16_BYTES + INT_64_BYTES,
 				frameKeyBytes, 0, SecretKey.LENGTH);

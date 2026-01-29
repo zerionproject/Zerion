@@ -67,8 +67,6 @@
   <string name="nav_drawer_close_description">ন্যাভিগেশন ড্রয়ার বন্ধ করুন</string>
   <string name="contact_list_button">যোগাযোগ</string>
   <string name="groups_button">ব্যক্তিগত গ্রুপ</string>
-  <string name="forums_button">ফোরাম</string>
-  <string name="blogs_button">ব্লগ</string>
   <!--This is part of the main menu. The app will be locked when this is tapped.-->
   <string name="lock_button">অ্যাপ লক করুন</string>
   <string name="settings_button">সেটিংস</string>
@@ -103,14 +101,6 @@
   <plurals name="group_message_notification_text">
     <item quantity="one">1 টি নতুন গ্রুপ বার্তা ।</item>
     <item quantity="other">%d টি নতুন গ্রুপ বার্তা ।</item>
-  </plurals>
-  <plurals name="forum_post_notification_text">
-    <item quantity="one">1 টি নতুন ফোরাম পোস্ট ।</item>
-    <item quantity="other">%d টি নতুন ফোরাম পোস্ট ।</item>
-  </plurals>
-  <plurals name="blog_post_notification_text">
-    <item quantity="one">1 টি নতুন ব্লগ পোস্ট ।</item>
-    <item quantity="other">%d টি নতুন ব্লগ পোস্ট ।</item>
   </plurals>
   <!--Misc-->
   <string name="now">এখন</string>
@@ -212,7 +202,6 @@
   <!--Adding Contacts-->
   <string name="add_contact_title">নিকটবর্তী কন্টাক্ট যোগ করুন</string>
   <string name="add_contact_error_two_way">আপনারা কি একে অপরের QR কোড স্ক্যান করেছেন?</string>
-  <string name="face_to_face">আপনাকে সেই ব্যক্তির সাথে দেখা করতে হবে যাকে আপনি কন্টাক্ট হিসেবে যোগ করতে চান। \n\nএটি ভবিষ্যতে কাউকে আপনার প্রতিরূপ তৈরি করা বা আপনার বার্তা পড়া থেকে রোধ করবে।</string>
   <string name="continue_button">চালিয়ে যান</string>
   <string name="try_again_button">আবার চেষ্টা কর</string>
   <string name="waiting_for_contact_to_scan">কন্টাক্ট স্ক্যান করতে এবং সংযোগ করতে অপেক্ষা করা হচ্ছে\u2026</string>
@@ -220,17 +209,11 @@
   <string name="contact_added_toast">যোগাযোগ যোগ: %s</string>
   <string name="contact_already_exists">যোগাযোগ %s ইতোমধ্যে বিদ্যমান</string>
   <string name="contact_already_exists_general">কন্টাক্ট ইতিমধ্যেই আছে</string>
-  <string name="qr_code_invalid">QR কোড </string>
-  <string name="qr_code_too_old_1">আপনি যে QR কোডটি স্ক্যান করেছেন তা Zerion-এর একটি পুরানো ভার্সন থেকে এসেছে। \n\nঅনুগ্রহ করে আপনার কন্টাক্টকে সর্বশেষ ভার্সনে আপগ্রেড করতে বলুন এবং তারপর আবার চেষ্টা করুন।</string>
-  <string name="qr_code_too_new_1">আপনি যে QR কোডটি স্ক্যান করেছেন তা Zerion-এর একটি নতুন ভার্সন থেকে এসেছে। \n\nঅনুগ্রহ করে সর্বশেষ ভার্সনে আপগ্রেড করুন এবং তারপর আবার চেষ্টা করুন।</string>
-  <string name="mailbox_qr_code_for_contact">আপনি যে QR কোডটি স্ক্যান করেছেন তা Zerion মেইল বক্স থেকে এসেছে। \n\nযদি আপনি একটি মেইল বক্স লিঙ্ক করতে চান, তাহলে Zerion মেনু থেকে সেটিংস &gt; মেইল বক্স নির্বাচন করুন।</string>
-  <string name="qr_code_format_unknown">আপনি যে QR কোডটি স্ক্যান করেছেন তা Zerion কন্টাক্ট যোগ করার জন্য নয়। \n\nদয়া করে আপনার কন্টাক্টের স্ক্রিনে প্রদর্শিত QR কোডটি স্ক্যান করুন।</string>
   <string name="camera_error">ক্যামেরার ত্রুটি</string>
   <string name="connecting_to_device">ডিভাইসে সংযোগ করা হচ্ছে\u2026</string>
   <string name="authenticating_with_device">ডিভাইসের সাথে যাচাই করা হচ্ছে\u2026</string>
   <string name="connection_error_title">আপনার কন্টাক্টের সাথে সংযোগ করা যায়নি</string>
   <string name="connection_error_feedback">যদি এই সমস্যা চলতে থাকে, অনুগ্রহ করে আমাদেরকে <a href="feedback">ফিডব্যাক পাঠান</a> যাতে আমরা অ্যাপটি উন্নত করতে পারি।</string>
-  <string name="info_both_must_scan">আপনাদের উভয়কে একে অপরের QR কোড স্ক্যান করতে হবে</string>
   <!--Adding Contacts Remotely-->
   <string name="add_contact_remotely_title_case">দূরে আছে এমন কন্টাক্ট যোগ করুন</string>
   <string name="add_contact_nearby_title">নিকটবর্তী কন্টাক্ট যোগ করুন</string>
@@ -382,109 +365,26 @@
   <string name="groups_reveal_visible_revealed_by_contact">কন্টাক্টের সাথে সম্পর্ক গ্রুপের কাছে দৃশ্যমান (%s  প্রকাশ করেছেন)</string>
   <string name="groups_reveal_invisible">কন্টাক্টের সাথে সম্পর্ক গ্রুপের কাছে দৃশ্যমান নয়</string>
   <!--Forums-->
-  <string name="no_forums">প্রদর্শন করার জন্য কোনো ফোরাম নেই</string>
-  <string name="no_forums_action">ফোরাম তৈরি করতে + আইকনে ট্যাপ করুন, অথবা আপনার কন্টাক্টদের বলুন ফোরাম শেয়ার করতে।</string>
-  <string name="create_forum_title">ফোরাম তৈরি করুন</string>
-  <string name="choose_forum_hint">আপনার ফোরামের জন্য একটি নাম নির্বাচন করুন</string>
-  <string name="create_forum_button">ফোরাম তৈরি করুন</string>
-  <string name="forum_created_toast">ফোরাম তৈরি হয়েছে</string>
-  <string name="no_forum_posts">দেখানোর জন্য কোন পোস্ট নেই</string>
   <string name="no_posts">কোন পোস্ট নেই</string>
   <plurals name="posts">
     <item quantity="one">%d টি পোষ্ট</item>
     <item quantity="other">%d টি পোষ্ট</item>
   </plurals>
-  <string name="forum_new_message_hint">নতুন পোস্ট</string>
-  <string name="forum_message_reply_hint">নতুন উত্তর</string>
   <string name="btn_reply">উত্তর</string>
-  <string name="forum_leave">ফোরাম ছেড়ে দিন</string>
-  <string name="dialog_title_leave_forum">ফোরাম ছেড়ে যাওয়া নিশ্চিত করুন</string>
-  <string name="dialog_message_leave_forum">আপনি কি নিশ্চিত যে আপনি এই ফোরাম ত্যাগ করতে চান? \n\nআপনি এই ফোরামে যে কোন পরিচিতি শেয়ার করেছেন তা হালনাগাদ পাওয়া বন্ধ করতে পারে ।</string>
   <string name="dialog_button_leave">ত্যাগ</string>
-  <string name="forum_left_toast">বাম ফোরাম</string>
   <!--Forum Sharing-->
-  <string name="forum_share_button">শেয়ার ফোরাম</string>
   <string name="contacts_selected">নির্বাচিত পরিচিতি</string>
   <string name="activity_share_toolbar_header">পরিচিতি নির করুন</string>
   <string name="no_contacts_selector">প্রদর্শন করার জন্য কোন যোগাযোগ নেই</string>
   <string name="no_contacts_selector_action">একটি পরিচিতি যোগ করার পর দয়া করে এখানে ফিরে আসুন</string>
-  <string name="forum_shared_snackbar">ফোরাম নির্বাচিত পরিচিতি সঙ্গে ভাগ</string>
-  <string name="forum_share_message">একটি বার্তা যুক্ত করুন (ঐচ্ছিক)</string>
-  <string name="forum_share_error">এই ফোরামে অংশীদারি করতে একটি ত্রুটি ঘটেছে </string>
-  <string name="forum_invitation_received">%1$s আপনার সাথে \"%2$s\" ফোরাম শেয়ার করেছেন।</string>
-  <string name="forum_invitation_sent">আপনি \"%1$s\" ফোরাম %2$sএর সাথে শেয়ার করেছেন।</string>
-  <string name="forum_invitations_title">ফোরামের আমন্ত্রণ</string>
-  <string name="forum_invitation_exists">আপনি ইতিমধ্যেই এই ফোরামের একটি আমন্ত্রণ গ্রহণ করেছেন। \n\nআরও আমন্ত্রণ গ্রহণ করলে ফোরামের সাথে আপনার সংযোগ আরও দ্রুত এবং নির্ভরযোগ্য হবে।</string>
-  <string name="forum_joined_toast">ফোরামে যোগদান </string>
-  <string name="forum_declined_toast">আমন্ত্রণ প্রত্যাখ্যান করা হয়েছে</string>
   <string name="shared_by_format">শেয়ার করেছেন %s</string>
-  <string name="forum_invitation_already_sharing">ইতোমধ্যে শেয়ার করা হচ্ছে</string>
-  <string name="forum_invitation_already_invited">ইতিমধ্যেই আমন্ত্রণ পাঠানো হয়েছে</string>
-  <string name="forum_invitation_invite_received">আমন্ত্রণ ইতিমধ্যে গ্রহণ করা হয়েছে</string>
-  <string name="forum_invitation_not_supported">এই কন্টাক্ট এটি সমর্থন করে না</string>
-  <string name="forum_invitation_error">ত্রুটি। এটি একটি বাগ এবং এর জন্য আপনি দায়ী নন</string>
-  <string name="forum_invitation_response_accepted_sent">আপনি %s-এর ফোরাম আমন্ত্রণ গ্রহণ করেছেন।</string>
-  <string name="forum_invitation_response_declined_sent">আপনি %s-এর ফোরাম আমন্ত্রণ প্রত্যাখ্যান করেছেন।</string>
-  <string name="forum_invitation_response_declined_auto">%s থেকে প্রাপ্ত আমন্ত্রণ স্বয়ংক্রিয়ভাবে প্রত্যাখ্যাত হয়েছে।</string>
-  <string name="forum_invitation_response_accepted_received">%s ফোরাম আমন্ত্রণ গ্রহণ করেছে।</string>
-  <string name="forum_invitation_response_declined_received">%s ফোরাম আমন্ত্রণ প্রত্যাখ্যান করেছে।</string>
   <string name="sharing_status">শেয়ারিং অবস্থা</string>
-  <string name="sharing_status_forum">ফোরামের যেকোনো সদস্য তাদের কন্টাক্টদের সঙ্গে এটি শেয়ার করতে পারেন। আপনি এই ফোরামটি নিম্নলিখিত কন্টাক্টদের সঙ্গে শেয়ার করছেন। এছাড়াও এখানে এমন সদস্য থাকতে পারে যাদের আপনি দেখতে পাচ্ছেন না।</string>
   <string name="shared_with">শেয়ার করেছেন %1$d (%2$d অনলাইনে আছেন)</string>
-  <plurals name="forums_shared">
-    <item quantity="one">কন্টাক্টদের দ্বারা শেয়ার করা ফোরাম %d</item>
-    <item quantity="other">কন্টাক্টদের দ্বারা শেয়ার করা ফোরাম %d</item>
-  </plurals>
   <string name="nobody">কেউ না</string>
   <!--Blogs-->
-  <string name="blogs_other_blog_empty_state">দেখানোর জন্য কোন পোস্ট নেই</string>
   <string name="read_more">আরো পড়ুন</string>
-  <string name="blogs_write_blog_post">ব্লগ পোস্ট লিখুন</string>
-  <string name="blogs_write_blog_post_body_hint">আপনার ব্লগ পোস্ট টাইপ করুন</string>
-  <string name="blogs_publish_blog_post">প্রকাশ </string>
-  <string name="blogs_blog_post_created">ব্লগ পোস্ট তৈরি করা হয়েছে</string>
-  <string name="blogs_blog_post_received">নতুন ব্লগ পোস্ট পেয়েছে</string>
-  <string name="blogs_blog_post_scroll_to">স্ক্রোল করুন</string>
-  <string name="blogs_feed_empty_state">দেখানোর জন্য কোন পোস্ট নেই</string>
-  <string name="blogs_feed_empty_state_action">আপনার পরিচিতিগুলির এবং আপনার সাবস্ক্রাইব করা ব্লগগুলির পোস্টগুলি এখানে উপস্থিত হবে \n\nএকটি পোস্ট লিখতে কলম আইকনে আলতো চাপুন</string>
-  <string name="blogs_remove_blog">ব্লগ মুছে ফেলুন</string>
-  <string name="blogs_remove_blog_dialog_message">আপনি কি নিশ্চিত যে আপনি এই ব্লগটি সরাতে চান? \n\nআপনার ডিভাইস থেকে পোস্টগুলি সরানো হবে তবে অন্যের ডিভাইসগুলির থেকে নয়। \n\nআপনি যে কোনও পরিচিতি দিয়ে এই ব্লগটি শেয়ার করেছেন তা আপডেটগুলি পাওয়া বন্ধ করতে পারে।</string>
-  <string name="blogs_remove_blog_ok">অপসারণ</string>
-  <string name="blogs_blog_removed">ব্লগ মুছে ফেলা হয়েছে</string>
-  <string name="blogs_reblog_comment_hint">একটি মন্তব্য যোগ করুন (ঐচ্ছিক)</string>
-  <string name="blogs_reblog_button">ব্লগ করুন</string>
   <!--Blog Sharing-->
-  <string name="blogs_sharing_share">ব্লগ শেয়ার করুন</string>
-  <string name="blogs_sharing_error">এই ব্লগে শেয়ার করার সময় একটি ত্রুটি ঘটেছে ।</string>
-  <string name="blogs_sharing_button">ব্লগ শেয়ার করুন</string>
-  <string name="blogs_sharing_snackbar">ব্লগটি নির্বাচিত পরিচিতি সঙ্গে শেয়ার করুন</string>
-  <string name="blogs_sharing_response_accepted_sent">আপনি %s থেকে ব্লগের আমন্ত্রণ গ্রহণ করেছেন।</string>
-  <string name="blogs_sharing_response_declined_sent">আপনি %s থেকে ব্লগের আমন্ত্রণ প্রত্যাখ্যান করেছেন।</string>
-  <string name="blogs_sharing_response_declined_auto">%s থেকে প্রাপ্ত ব্লগের আমন্ত্রণ স্বয়ংক্রিয়ভাবে প্রত্যাখ্যাত হয়েছে।</string>
-  <string name="blogs_sharing_response_accepted_received">%s ব্লগের আমন্ত্রণ গ্রহণ করেছেন</string>
-  <string name="blogs_sharing_response_declined_received">%s ব্লগের আমন্ত্রণ প্রত্যাখ্যান করেছেন।</string>
-  <string name="blogs_sharing_invitation_received">%1$s আপনার সাথে \"%2$s\" ব্লগ শেয়ার করেছেন।</string>
-  <string name="blogs_sharing_invitation_sent">আপনি \"%1$s\" ব্লগটি %2$s এর সাথে শেয়ার করেছেন।</string>
-  <string name="blogs_sharing_invitations_title">ব্লগ আমন্ত্রণ</string>
-  <string name="blogs_sharing_joined_toast">ব্লগে সাবস্ক্রাইব করা হয়েছে।</string>
-  <string name="blogs_sharing_declined_toast">আমন্ত্রণ প্রত্যাখ্যান করা হয়েছে</string>
-  <string name="sharing_status_blog">কেউ একটি ব্লগে সাবস্ক্রাইব করলে সেটি তাদের কন্টাক্টদের সঙ্গে শেয়ার করতে পারে। আপনি এই ব্লগটি নিম্নলিখিত কন্টাক্টদের সঙ্গে শেয়ার করছেন। এছাড়াও এমন সাবস্ক্রাইবার থাকতে পারে যাদের আপনি দেখতে পাচ্ছেন না।</string>
   <!--RSS Feeds-->
-  <string name="blogs_rss_feeds_import">RSS ফিড আমদানি করুন</string>
-  <string name="blogs_rss_feeds_import_button">আমদানি</string>
-  <string name="blogs_rss_feeds_import_hint">RSS এর ফিড URL লিখুন</string>
-  <string name="blogs_rss_feeds_import_progress">RSS ফিড আমদানি করা হচ্ছে...</string>
-  <string name="blogs_rss_feeds_import_error">আমরা দুঃখিত! আপনার ফীডটি আমদানি করতে সমস্যা হয়েছে ।</string>
-  <string name="blogs_rss_feeds_import_title">ফাইল থেকে ফিড আমদানি করুন</string>
-  <string name="blogs_rss_feeds">RSS ফিড সমূহ</string>
-  <string name="blogs_rss_feeds_manage_imported">আমদানি:</string>
-  <string name="blogs_rss_feeds_manage_author">লেখক:</string>
-  <string name="blogs_rss_feeds_manage_updated">সর্বশেষ হালনাগাদ করা হয়েছে:</string>
-  <string name="blogs_rss_remove_feed">ফিড সরান</string>
-  <string name="blogs_rss_remove_feed_dialog_message">আপনি কি নিশ্চিত যে, আপনি এই ফিডটি মুছে ফেলতে চান? \n\nপোস্টগুলি আপনার ডিভাইস থেকে মুছে ফেলা হবে কিন্তু অন্যদের ডিভাইস থেকে নয়। \n\nযে কন্টাক্টদের আপনি এই ফিডটি শেয়ার করেছেন, তাদের আপডেট পাওয়া বন্ধ হয়ে যেতে পারে।</string>
-  <string name="blogs_rss_remove_feed_ok">অপসারণ</string>
-  <string name="blogs_rss_feeds_manage_empty_state">দেখানোর মত কোনও RSS ফিড নেই।\n\nফিড আমদানি করতে + আইকনে ট্যাপ করুন</string>
-  <string name="blogs_rss_feeds_manage_error">আপনার ফিডগুলি লোড করতে একটি সমস্যা হয়েছে। দয়া করে পরে আবার চেষ্টা করুন।</string>
   <!--Settings Profile Picture-->
   <string name="change_profile_picture">আপনার প্রোফাইলের ছবি পরিবর্তন করতে ট্যাপ করুন</string>
   <string name="dialog_confirm_profile_picture_title">প্রোফাইলের ছবি পরিবর্তন করুন</string>
@@ -564,12 +464,6 @@
   <string name="notify_group_messages_setting_title">গ্রুপ বার্তা</string>
   <string name="notify_group_messages_setting_summary">গ্রুপ বার্তার জন্য এলার্টস প্রদর্শন করা হবে</string>
   <string name="notify_group_messages_setting_summary_26">গ্রুপ বার্তার জন্য এলার্টস কনফিগার করুন</string>
-  <string name="notify_forum_posts_setting_title">ফোরাম পোস্ট</string>
-  <string name="notify_forum_posts_setting_summary">ফোরাম পোস্ট জন্য এলার্টস দেখান</string>
-  <string name="notify_forum_posts_setting_summary_26">ফোরাম পোস্টের জন্য এলার্টস কনফিগার করুন</string>
-  <string name="notify_blog_posts_setting_title">ব্লগ পোস্ট</string>
-  <string name="notify_blog_posts_setting_summary">ব্লগ পোস্টের জন্য এলার্টস দেখান</string>
-  <string name="notify_blog_posts_setting_summary_26">ব্লগ পোস্টের জন্য এলার্টস কনফিগার করুন</string>
   <string name="notify_vibration_setting">কাম্পান</string>
   <string name="notify_sound_setting">শব্দ</string>
   <string name="notify_sound_setting_default">ডিফল্ট রিংটোন</string>
@@ -589,10 +483,6 @@
   <string name="mailbox_setup_connecting">মেইলবক্সে সংযোগ করা হচ্ছে...</string>
   <!--This string is shown when connecting to a Mailbox for the first time. The placeholder will be replaced with a duration, e.g. "2 minutes".-->
   <string name="mailbox_setup_connecting_info">এতে %1s সময় লাগতে পারে</string>
-  <string name="mailbox_qr_code_too_old">আপনি যে QR কোডটি স্ক্যান করেছেন, তা Zerion Mailbox-এর পুরনো সংস্করণ থেকে এসেছে। \n\nদয়া করে Zerion Mailbox-টি সর্বশেষ সংস্করণে আপগ্রেড করুন এবং তারপর আবার চেষ্টা করুন।</string>
-  <string name="mailbox_qr_code_too_new">আপনি যে QR কোডটি স্ক্যান করেছেন, তা Zerion Mailbox-এর নতুন সংস্করণ থেকে এসেছে। \n\nদয়া করে Zerion-টি সর্বশেষ সংস্করণে আপগ্রেড করুন এবং তারপর আবার চেষ্টা করুন।</string>
-  <string name="contact_qr_code_for_mailbox">আপনি যে QR কোডটি স্ক্যান করেছেন, তা Zerion কন্টাক্ট যুক্ত করার জন্য। \n\nযদি আপনি একটি কন্টাক্ট যুক্ত করতে চান, তবে দয়া করে কন্টাক্ট লিস্টে গিয়ে + আইকনে ট্যাপ করুন।</string>
-  <string name="mailbox_setup_qr_code_wrong_description">আপনি যে QR কোডটি স্ক্যান করেছেন, তা Zerion Mailbox থেকে আসেনি। \n\nদয়া করে আপনার মেইল বক্স ডিভাইসে Zerion Mailbox অ্যাপটি খুলুন এবং সেখানে প্রদর্শিত QR কোডটি স্ক্যান করুন।</string>
   <string name="mailbox_setup_already_paired_title">মেইল বক্স ইতিমধ্যে লিঙ্ক করা রয়েছে।</string>
   <string name="mailbox_setup_already_paired_description">আপনার অন্য ডিভাইসে Mailbox আনলিঙ্ক করুন এবং আবার চেষ্টা করুন।</string>
   <string name="mailbox_setup_io_error_title">সংযোগ করতে পারছে না</string>
@@ -746,8 +636,6 @@
   <string name="permission_bluetooth_title">আশেপাশের ডিভাইসের অনুমতিসমূহ</string>
   <string name="permission_bluetooth_body">Zerion এর ব্লুটুথ যোগাযোগ ব্যবহার করার জন্য কাছে থাকা ডিভাইসগুলো খুঁজে পেতে এবং সংযুক্ত করতে অনুমতিসমূহ প্রয়োজন।</string>
   <string name="permission_bluetooth_denied_body">আপনি আশেপাশের ডিভাইসে অ্যাক্সেস প্রত্যাখ্যান করেছেন, কিন্তু ব্লুটুথ ব্যবহার করার জন্য Zerion এর এই অনুমতিসমূহ প্রয়োজন।\n\nঅনুগ্রহ করে অ্যাক্সেস দেওয়ার কথা বিবেচনা করুন।</string>
-  <string name="qr_code">QR কোড</string>
-  <string name="show_qr_code_fullscreen">QR কোড ফুলস্ক্রিনে দেখান</string>
   <!--App Locking-->
   <string name="lock_unlock">Zerion আনলক করুন</string>
   <string name="lock_unlock_verbose">Zerion আনলক করতে আপনার ডিভাইসের PIN, প্যাটার্ন বা পাসওয়ার্ড লিখুন </string>
@@ -776,9 +664,7 @@
   <string name="wifi_settings_request_enable_body">Wi-Fi হটস্পট তৈরি করতে, Zerion-এর Wi-Fi ব্যবহার করা প্রয়োজন। অনুগ্রহ করে এটি চালু করুন।</string>
   <string name="hotspot_tab_manual">নিজে করুন</string>
   <!--The placeholder to be inserted into the string 'hotspot_manual_wifi': People can connect by %s-->
-  <string name="hotspot_scanning_a_qr_code">QR কোড স্ক্যান করে</string>
   <!--Wi-Fi setup-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_wifi">আপনার ফোন একটি Wi-Fi হটস্পট তৈরি করছে। যারা Zerion ডাউনলোড করতে চায়, তারা তাদের ডিভাইসের Wi-Fi সেটিংসে নীচের নির্দেশনা ব্যবহার করে অথবা %s-এর মাধ্যমে হটস্পটে সংযোগ করতে পারে । তারা হটস্পটে সংযুক্ত হওয়ার পর, \'পরবর্তী\' বোতাম চাপুন।</string>
   <string name="hotspot_manual_wifi_ssid">নেটওয়ার্কের নাম</string>
   <string name="hotspot_qr_wifi">আপনার ফোন একটি Wi-Fi হটস্পট তৈরি করছে। যারা Zerion ডাউনলোড করতে চায়, তারা এই QR কোড স্ক্যান করে হটস্পটে সংযোগ করতে পারে। তারা হটস্পটে সংযুক্ত হওয়ার পর, \'পরবর্তী\' বোতাম চাপুন।</string>
@@ -788,7 +674,6 @@
     <item quantity="other">%s টি ডিভাইস যুক্ত হয়েছে</item>
   </plurals>
   <!--Download link-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_site">আপনার ফোন একটি Wi-Fi হটস্পট তৈরিকরছে। যারা হটস্পটে সংযুক্ত রয়েছে, তারা একটি ওয়েব ব্রাউজারে নিচের লিঙ্কটি টাইপ করে অথবা %s Zerion ডাউনলোড করতে পারে।</string>
   <string name="hotspot_manual_site_address">ঠিকানা (লিংক)</string>
   <string name="hotspot_qr_site">আপনার ফোন একটি Wi-Fi হটস্পট তৈরি করছে। যারা হটস্পটে সংযুক্ত রয়েছে, তারা এই QR কোড স্ক্যান করে Zerion ডাউনলোড করতে পারে।</string>

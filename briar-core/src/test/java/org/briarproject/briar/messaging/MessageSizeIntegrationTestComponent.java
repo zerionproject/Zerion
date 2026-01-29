@@ -10,7 +10,6 @@ import org.briarproject.briar.autodelete.AutoDeleteModule;
 import org.briarproject.briar.avatar.AvatarModule;
 import org.briarproject.briar.client.BriarClientModule;
 import org.briarproject.briar.conversation.ConversationModule;
-import org.briarproject.briar.forum.ForumModule;
 import org.briarproject.briar.identity.IdentityModule;
 
 import javax.inject.Singleton;
@@ -25,7 +24,6 @@ import dagger.Component;
 		AutoDeleteModule.class,
 		AvatarModule.class,
 		ConversationModule.class,
-		ForumModule.class,
 		IdentityModule.class,
 		MessagingModule.class,
 		TestDnsModule.class,
@@ -39,8 +37,6 @@ interface MessageSizeIntegrationTestComponent
 
 	void inject(AvatarModule.EagerSingletons init);
 
-	void inject(ForumModule.EagerSingletons init);
-
 	void inject(MessagingModule.EagerSingletons init);
 
 	class Helper {
@@ -50,7 +46,6 @@ interface MessageSizeIntegrationTestComponent
 			BrambleCoreIntegrationTestEagerSingletons.Helper
 					.injectEagerSingletons(c);
 			c.inject(new AvatarModule.EagerSingletons());
-			c.inject(new ForumModule.EagerSingletons());
 			c.inject(new MessagingModule.EagerSingletons());
 		}
 	}

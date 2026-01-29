@@ -39,13 +39,10 @@ import java.security.Provider;
 import java.security.SecureRandom;
 import java.security.Security;
 import java.util.Locale;
-import java.util.logging.Logger;
-
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 import static java.lang.System.arraycopy;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.api.crypto.CryptoConstants.KEY_TYPE_AGREEMENT;
 import static org.briarproject.bramble.api.crypto.CryptoConstants.KEY_TYPE_SIGNATURE;
 import static org.briarproject.bramble.api.crypto.DecryptionResult.INVALID_CIPHERTEXT;
@@ -54,19 +51,13 @@ import static org.briarproject.bramble.api.crypto.DecryptionResult.KEY_STRENGTHE
 import static org.briarproject.bramble.api.crypto.PostQuantumConstants.KEY_TYPE_HYBRID_AGREEMENT;
 import static org.briarproject.bramble.api.crypto.PostQuantumConstants.KEY_TYPE_HYBRID_SIGNATURE;
 import static org.briarproject.bramble.util.ByteUtils.INT_32_BYTES;
-import static org.briarproject.bramble.util.LogUtils.logDuration;
-import static org.briarproject.bramble.util.LogUtils.now;
 import static org.briarproject.bramble.util.StringUtils.US_ASCII;
 
 @NotNullByDefault
 class CryptoComponentImpl implements CryptoComponent {
-
-	private static final Logger LOG =
-			getLogger(CryptoComponentImpl.class.getName());
-
 	private static final int SIGNATURE_KEY_PAIR_BITS = 256;
-	private static final int STORAGE_IV_BYTES = 24; // 196 bits
-	private static final int PBKDF_SALT_BYTES = 32; // 256 bits
+	private static final int STORAGE_IV_BYTES = 24;
+	private static final int PBKDF_SALT_BYTES = 32;
 	private static final byte PBKDF_FORMAT_SCRYPT = 0;
 	private static final byte PBKDF_FORMAT_SCRYPT_STRENGTHENED = 1;
 	private static final byte ONION_HS_PROTOCOL_VERSION = 3;
@@ -78,8 +69,6 @@ class CryptoComponentImpl implements CryptoComponent {
 	private final KeyPairGenerator signatureKeyPairGenerator;
 	private final KeyParser agreementKeyParser, signatureKeyParser;
 	private final MessageEncrypter messageEncrypter;
-
-	// Hybrid post-quantum cryptography components
 	private final HybridKeyAgreement hybridKeyAgreement;
 	private final HybridSignature hybridSignature;
 	private final KeyParser hybridAgreementKeyParser;
@@ -109,21 +98,17 @@ class CryptoComponentImpl implements CryptoComponent {
 		hybridAgreementKeyParser = new HybridAgreementKeyParser(mlKem768);
 		hybridSignatureKeyParser = new HybridSignatureKeyParser(mlDsa65);
 	}
-
-	// Based on https://android-developers.googleblog.com/2013/08/some-securerandom-thoughts.html
 	private void installSecureRandomProvider(Provider provider) {
 		Provider[] providers = Security.getProviders("SecureRandom.SHA1PRNG");
 		if (providers == null || providers.length == 0
 				|| !provider.getClass().equals(providers[0].getClass())) {
 			Security.insertProviderAt(provider, 1);
 		}
-		// Check the new provider is the default when no algorithm is specified
 		SecureRandom random = new SecureRandom();
 		if (!provider.getClass().equals(random.getProvider().getClass())) {
 			throw new SecurityException("Wrong SecureRandom provider: "
 					+ random.getProvider().getClass());
 		}
-		// Check the new provider is the default when SHA1PRNG is specified
 		try {
 			random = SecureRandom.getInstance("SHA1PRNG");
 		} catch (NoSuchAlgorithmException e) {
@@ -153,22 +138,17 @@ class CryptoComponentImpl implements CryptoComponent {
 	public SecureRandom getSecureRandom() {
 		return secureRandom;
 	}
-
-	// Package access for testing
 	byte[] performRawKeyAgreement(PrivateKey priv, PublicKey pub)
 			throws GeneralSecurityException {
 		if (!priv.getKeyType().equals(KEY_TYPE_AGREEMENT))
 			throw new IllegalArgumentException();
 		if (!pub.getKeyType().equals(KEY_TYPE_AGREEMENT))
 			throw new IllegalArgumentException();
-		long start = now();
 		byte[] secret = curve25519.calculateAgreement(pub.getEncoded(),
 				priv.getEncoded());
-		// If the shared secret is all zeroes, the public key is invalid
 		byte allZero = 0;
 		for (byte b : secret) allZero |= b;
 		if (allZero == 0) throw new GeneralSecurityException();
-		logDuration(LOG, "Deriving shared secret", start);
 		return secret;
 	}
 
@@ -235,10 +215,8 @@ class CryptoComponentImpl implements CryptoComponent {
 		PrivateKey ourStaticPrivateKey = ourStaticKeyPair.getPrivate();
 		PrivateKey ourEphemeralPrivateKey = ourEphemeralKeyPair.getPrivate();
 		byte[][] hashInputs = new byte[inputs.length + 3][];
-		// Alice static/Bob static
 		hashInputs[0] = performRawKeyAgreement(ourStaticPrivateKey,
 				theirStaticPublicKey);
-		// Alice static/Bob ephemeral, Bob static/Alice ephemeral
 		if (alice) {
 			hashInputs[1] = performRawKeyAgreement(ourStaticPrivateKey,
 					theirEphemeralPublicKey);
@@ -264,10 +242,8 @@ class CryptoComponentImpl implements CryptoComponent {
 		PrivateKey ourStaticPrivateKey = ourStaticKeyPair.getPrivate();
 		PrivateKey ourEphemeralPrivateKey = ourEphemeralKeyPair.getPrivate();
 		byte[][] hashInputs = new byte[inputs.length + 3][];
-		// Alice ephemeral/Bob ephemeral
 		hashInputs[0] = performRawKeyAgreement(ourEphemeralPrivateKey,
 				theirEphemeralPublicKey);
-		// Alice static/Bob ephemeral, Bob static/Alice ephemeral
 		if (alice) {
 			hashInputs[1] = performRawKeyAgreement(ourStaticPrivateKey,
 					theirEphemeralPublicKey);
@@ -359,7 +335,6 @@ class CryptoComponentImpl implements CryptoComponent {
 			byte[]... inputs) {
 		byte[] expected = mac(label, macKey, inputs);
 		if (mac.length != expected.length) return false;
-		// Constant-time comparison
 		int cmp = 0;
 		for (int i = 0; i < mac.length; i++) cmp |= mac[i] ^ expected[i];
 		return cmp == 0;
@@ -370,38 +345,27 @@ class CryptoComponentImpl implements CryptoComponent {
 			@Nullable KeyStrengthener keyStrengthener) {
 		AuthenticatedCipher cipher = new XSalsa20Poly1305AuthenticatedCipher();
 		int macBytes = cipher.getMacBytes();
-		// Generate a random salt
 		byte[] salt = new byte[PBKDF_SALT_BYTES];
 		secureRandom.nextBytes(salt);
-		// Calibrate the KDF
 		int cost = passwordBasedKdf.chooseCostParameter();
-		// Derive the encryption key from the password
 		SecretKey key = passwordBasedKdf.deriveKey(password, salt, cost);
 		if (keyStrengthener != null) key = keyStrengthener.strengthenKey(key);
-		// Generate a random IV
 		byte[] iv = new byte[STORAGE_IV_BYTES];
 		secureRandom.nextBytes(iv);
-		// The output contains the format version, salt, cost parameter, IV,
-		// ciphertext and MAC
 		int outputLen = 1 + salt.length + INT_32_BYTES + iv.length
 				+ input.length + macBytes;
 		byte[] output = new byte[outputLen];
 		int outputOff = 0;
-		// Format version
 		byte formatVersion = keyStrengthener == null
 				? PBKDF_FORMAT_SCRYPT : PBKDF_FORMAT_SCRYPT_STRENGTHENED;
 		output[outputOff] = formatVersion;
 		outputOff++;
-		// Salt
 		arraycopy(salt, 0, output, outputOff, salt.length);
 		outputOff += salt.length;
-		// Cost parameter
 		ByteUtils.writeUint32(cost, output, outputOff);
 		outputOff += INT_32_BYTES;
-		// IV
 		arraycopy(iv, 0, output, outputOff, iv.length);
 		outputOff += iv.length;
-		// Initialise the cipher and encrypt the plaintext
 		try {
 			cipher.init(true, key, iv);
 			cipher.process(input, 0, input.length, output, outputOff);
@@ -417,51 +381,40 @@ class CryptoComponentImpl implements CryptoComponent {
 			throws DecryptionException {
 		AuthenticatedCipher cipher = new XSalsa20Poly1305AuthenticatedCipher();
 		int macBytes = cipher.getMacBytes();
-		// The input contains the format version, salt, cost parameter, IV,
-		// ciphertext and MAC
 		if (input.length < 1 + PBKDF_SALT_BYTES + INT_32_BYTES
 				+ STORAGE_IV_BYTES + macBytes) {
 			throw new DecryptionException(INVALID_CIPHERTEXT);
 		}
 		int inputOff = 0;
-		// Format version
 		byte formatVersion = input[inputOff];
 		inputOff++;
-		// Check whether we support this format version
 		if (formatVersion != PBKDF_FORMAT_SCRYPT &&
 				formatVersion != PBKDF_FORMAT_SCRYPT_STRENGTHENED) {
 			throw new DecryptionException(INVALID_CIPHERTEXT);
 		}
-		// Salt
 		byte[] salt = new byte[PBKDF_SALT_BYTES];
 		arraycopy(input, inputOff, salt, 0, salt.length);
 		inputOff += salt.length;
-		// Cost parameter
 		long cost = ByteUtils.readUint32(input, inputOff);
 		inputOff += INT_32_BYTES;
 		if (cost < 2 || cost > Integer.MAX_VALUE) {
 			throw new DecryptionException(INVALID_CIPHERTEXT);
 		}
-		// IV
 		byte[] iv = new byte[STORAGE_IV_BYTES];
 		arraycopy(input, inputOff, iv, 0, iv.length);
 		inputOff += iv.length;
-		// Derive the decryption key from the password
 		SecretKey key = passwordBasedKdf.deriveKey(password, salt, (int) cost);
 		if (formatVersion == PBKDF_FORMAT_SCRYPT_STRENGTHENED) {
 			if (keyStrengthener == null || !keyStrengthener.isInitialised()) {
-				// Can't derive the same strengthened key
 				throw new DecryptionException(KEY_STRENGTHENER_ERROR);
 			}
 			key = keyStrengthener.strengthenKey(key);
 		}
-		// Initialise the cipher
 		try {
 			cipher.init(false, key, iv);
 		} catch (GeneralSecurityException e) {
 			throw new RuntimeException(e);
 		}
-		// Try to decrypt the ciphertext (may be invalid)
 		try {
 			int inputLen = input.length - inputOff;
 			byte[] output = new byte[inputLen - macBytes];
@@ -508,13 +461,9 @@ class CryptoComponentImpl implements CryptoComponent {
 		return Base32.encode(address).toLowerCase(Locale.US);
 	}
 
-	// ==================== Hybrid Post-Quantum Methods ====================
-
 	@Override
 	public KeyPair generateHybridAgreementKeyPair() {
-		long start = now();
 		KeyPair keyPair = hybridKeyAgreement.generateKeyPair();
-		logDuration(LOG, "Generating hybrid agreement key pair", start);
 		return keyPair;
 	}
 
@@ -525,9 +474,7 @@ class CryptoComponentImpl implements CryptoComponent {
 
 	@Override
 	public KeyPair generateHybridSignatureKeyPair() {
-		long start = now();
 		KeyPair keyPair = hybridSignature.generateKeyPair();
-		logDuration(LOG, "Generating hybrid signature key pair", start);
 		return keyPair;
 	}
 
@@ -543,12 +490,9 @@ class CryptoComponentImpl implements CryptoComponent {
 			throw new IllegalArgumentException(
 					"Expected hybrid signature key, got: " + privateKey.getKeyType());
 		}
-		long start = now();
-		// Prepend label to message for domain separation
 		byte[] labeledMessage = createLabeledMessage(label, toSign);
 		byte[] signature = hybridSignature.sign(labeledMessage,
 				(HybridSignaturePrivateKey) privateKey);
-		logDuration(LOG, "Hybrid signing", start);
 		return signature;
 	}
 
@@ -559,12 +503,9 @@ class CryptoComponentImpl implements CryptoComponent {
 			throw new IllegalArgumentException(
 					"Expected hybrid signature key, got: " + publicKey.getKeyType());
 		}
-		long start = now();
-		// Recreate labeled message for verification
 		byte[] labeledMessage = createLabeledMessage(label, signed);
 		boolean valid = hybridSignature.verify(signature, labeledMessage,
 				(HybridSignaturePublicKey) publicKey);
-		logDuration(LOG, "Hybrid signature verification", start);
 		return valid;
 	}
 
@@ -575,10 +516,8 @@ class CryptoComponentImpl implements CryptoComponent {
 			throw new IllegalArgumentException(
 					"Expected hybrid agreement key, got: " + theirPublicKey.getKeyType());
 		}
-		long start = now();
 		HybridKeyAgreement.HybridEncapsulation enc = hybridKeyAgreement.encapsulate(
 				(HybridAgreementPublicKey) theirPublicKey);
-		logDuration(LOG, "Hybrid KEM encapsulation", start);
 		return new HybridEncapsulationResult(enc.getCiphertext(), enc.getSharedSecret());
 	}
 
@@ -594,11 +533,9 @@ class CryptoComponentImpl implements CryptoComponent {
 			throw new IllegalArgumentException(
 					"Expected hybrid agreement key pair");
 		}
-		long start = now();
 		SecretKey secret = hybridKeyAgreement.deriveSharedSecret(label,
 				(HybridAgreementPublicKey) theirPublicKey,
 				ourKeyPair, kemCiphertext, inputs);
-		logDuration(LOG, "Hybrid shared secret derivation (initiator)", start);
 		return secret;
 	}
 
@@ -614,17 +551,13 @@ class CryptoComponentImpl implements CryptoComponent {
 			throw new IllegalArgumentException(
 					"Expected hybrid agreement key pair");
 		}
-		long start = now();
 		SecretKey secret = hybridKeyAgreement.deriveSharedSecretAsResponder(label,
 				(HybridAgreementPublicKey) theirPublicKey,
 				ourKeyPair, kemSecret, inputs);
-		logDuration(LOG, "Hybrid shared secret derivation (responder)", start);
 		return secret;
 	}
 
-	/**
-	 * Creates a labeled message for signature domain separation.
-	 */
+	
 	private byte[] createLabeledMessage(String label, byte[] message) {
 		byte[] labelBytes = StringUtils.toUtf8(label);
 		byte[] result = new byte[INT_32_BYTES + labelBytes.length + INT_32_BYTES + message.length];

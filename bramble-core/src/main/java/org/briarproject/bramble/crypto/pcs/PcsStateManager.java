@@ -18,34 +18,17 @@ import org.briarproject.bramble.api.db.Transaction;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.security.GeneralSecurityException;
-import java.util.logging.Logger;
-
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
-
-import static java.util.logging.Level.WARNING;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_ENABLED;
 import static org.briarproject.bramble.api.db.DatabaseComponent.PCS_DIRECTION_RECEIVE;
 import static org.briarproject.bramble.api.db.DatabaseComponent.PCS_DIRECTION_SEND;
 
-/**
- * Manages persistence of PCS session state in the database.
- * <p>
- * This class provides methods to load, save, and initialize PCS session
- * state for contacts. It handles both send and receive chains independently,
- * and supports both Mode 1 (symmetric ratchet) and Mode 2 (DH ratchet).
- * <p>
- * Thread-safe through database transaction isolation.
- */
+
 @ThreadSafe
 @NotNullByDefault
 public class PcsStateManager {
-
-	private static final Logger LOG =
-			getLogger(PcsStateManager.class.getName());
-
 	private final DatabaseComponent db;
 	private final CryptoComponent crypto;
 
@@ -55,57 +38,29 @@ public class PcsStateManager {
 		this.crypto = crypto;
 	}
 
-	/**
-	 * Loads the send chain state for a contact.
-	 *
-	 * @param contactId The contact ID
-	 * @return The session state, or null if not initialized
-	 */
+	
 	@Nullable
 	public PcsSessionState loadSendState(ContactId contactId) {
 		return loadState(contactId, PCS_DIRECTION_SEND);
 	}
 
-	/**
-	 * Loads the receive chain state for a contact.
-	 *
-	 * @param contactId The contact ID
-	 * @return The session state, or null if not initialized
-	 */
+	
 	@Nullable
 	public PcsSessionState loadReceiveState(ContactId contactId) {
 		return loadState(contactId, PCS_DIRECTION_RECEIVE);
 	}
 
-	/**
-	 * Saves the send chain state for a contact.
-	 *
-	 * @param contactId The contact ID
-	 * @param state The session state to save
-	 */
+	
 	public void saveSendState(ContactId contactId, PcsSessionState state) {
 		saveState(contactId, PCS_DIRECTION_SEND, state);
 	}
 
-	/**
-	 * Saves the receive chain state for a contact.
-	 *
-	 * @param contactId The contact ID
-	 * @param state The session state to save
-	 */
+	
 	public void saveReceiveState(ContactId contactId, PcsSessionState state) {
 		saveState(contactId, PCS_DIRECTION_RECEIVE, state);
 	}
 
-	/**
-	 * Initializes PCS Mode 1 state for a contact with the given root key.
-	 * <p>
-	 * This should be called when PCS is first enabled for a contact,
-	 * typically during handshake when both peers agree to use PCS.
-	 *
-	 * @param contactId The contact ID
-	 * @param rootKey The shared root key derived from the handshake
-	 */
+	
 	public void initializeState(ContactId contactId, SecretKey rootKey) {
 		PcsSessionState initial = PcsSessionState.createInitial(rootKey);
 		try {
@@ -113,13 +68,10 @@ public class PcsStateManager {
 				initializeState(txn, contactId, initial);
 			});
 		} catch (DbException e) {
-			LOG.log(WARNING, "Failed to initialize PCS state", e);
 		}
 	}
 
-	/**
-	 * Initializes PCS Mode 1 state within an existing transaction.
-	 */
+	
 	public void initializeState(Transaction txn, ContactId contactId,
 			SecretKey rootKey) throws DbException {
 		PcsSessionState initial = PcsSessionState.createInitial(rootKey);
@@ -136,15 +88,7 @@ public class PcsStateManager {
 				initial.getPreviousChainLength());
 	}
 
-	/**
-	 * Initializes PCS Mode 2 state for a contact with DH ratchet.
-	 * <p>
-	 * This should be called when both peers have negotiated Mode 2 support.
-	 *
-	 * @param contactId The contact ID
-	 * @param sendState The send chain state (with our DH key pair)
-	 * @param receiveState The receive chain state (with their DH public key)
-	 */
+	
 	public void initializeMode2State(ContactId contactId,
 			PcsSessionState sendState, PcsSessionState receiveState) {
 		try {
@@ -152,13 +96,10 @@ public class PcsStateManager {
 				initializeMode2State(txn, contactId, sendState, receiveState);
 			});
 		} catch (DbException e) {
-			LOG.log(WARNING, "Failed to initialize Mode 2 PCS state", e);
 		}
 	}
 
-	/**
-	 * Initializes PCS Mode 2 state within an existing transaction.
-	 */
+	
 	public void initializeMode2State(Transaction txn, ContactId contactId,
 			PcsSessionState sendState, PcsSessionState receiveState)
 			throws DbException {
@@ -166,53 +107,32 @@ public class PcsStateManager {
 		saveMode2State(txn, contactId, PCS_DIRECTION_RECEIVE, receiveState);
 	}
 
-	/**
-	 * Checks if PCS state has been initialized for a contact.
-	 *
-	 * @param contactId The contact ID
-	 * @return True if PCS state exists for this contact
-	 */
+	
 	public boolean hasState(ContactId contactId) {
 		try {
 			return db.transactionWithResult(true, txn ->
 					db.containsPcsSessionState(txn, contactId));
 		} catch (DbException e) {
-			LOG.log(WARNING, "Failed to check PCS state", e);
 			return false;
 		}
 	}
 
-	/**
-	 * Checks if PCS state has been initialized for a contact within an
-	 * existing transaction.
-	 */
+	
 	public boolean hasState(Transaction txn, ContactId contactId)
 			throws DbException {
 		return db.containsPcsSessionState(txn, contactId);
 	}
 
-	/**
-	 * Removes all PCS state for a contact.
-	 * <p>
-	 * This should be called when PCS is disabled or the contact is removed.
-	 *
-	 * @param contactId The contact ID
-	 */
+	
 	public void removeState(ContactId contactId) {
 		try {
 			db.transaction(false, txn ->
 					db.removePcsState(txn, contactId));
 		} catch (DbException e) {
-			LOG.log(WARNING, "Failed to remove PCS state", e);
 		}
 	}
 
-	/**
-	 * Loads and saves state within an existing transaction.
-	 * <p>
-	 * Use these methods when you need to update state as part of a
-	 * larger transaction (e.g., when processing a message).
-	 */
+	
 	@Nullable
 	public PcsSessionState loadSendState(Transaction txn, ContactId contactId)
 			throws DbException {
@@ -235,15 +155,12 @@ public class PcsStateManager {
 		saveState(txn, contactId, PCS_DIRECTION_RECEIVE, state);
 	}
 
-	// ==================== Private Methods ====================
-
 	@Nullable
 	private PcsSessionState loadState(ContactId contactId, int direction) {
 		try {
 			return db.transactionWithNullableResult(true, txn ->
 					loadState(txn, contactId, direction));
 		} catch (DbException e) {
-			LOG.log(WARNING, "Failed to load PCS state", e);
 			return null;
 		}
 	}
@@ -251,12 +168,10 @@ public class PcsStateManager {
 	@Nullable
 	private PcsSessionState loadState(Transaction txn, ContactId contactId,
 			int direction) throws DbException {
-		// Try Mode 2 first
 		Object[] result = db.getPcsMode2SessionState(txn, contactId, direction);
 		if (result != null) {
 			return parseMode2State(result);
 		}
-		// Fallback to Mode 1
 		result = db.getPcsSessionState(txn, contactId, direction);
 		if (result == null) return null;
 
@@ -282,11 +197,8 @@ public class PcsStateManager {
 		SecretKey chainKey = new SecretKey(chainKeyBytes);
 
 		if (!mode2Enabled || rootKeyBytes == null) {
-			// Mode 1 state stored in Mode 2 table
 			return new PcsSessionState(chainKey, messageNumber, previousChainLength);
 		}
-
-		// Mode 2 state
 		SecretKey rootKey = new SecretKey(rootKeyBytes);
 		DhRatchetState dhState = null;
 
@@ -304,8 +216,6 @@ public class PcsStateManager {
 
 				dhState = new DhRatchetState(dhKeyPair, dhRemotePublicKey);
 			} catch (GeneralSecurityException e) {
-				LOG.log(WARNING, "Failed to parse DH keys from database", e);
-				// Fall back to Mode 1
 				return new PcsSessionState(chainKey, messageNumber, previousChainLength);
 			}
 		}
@@ -320,7 +230,6 @@ public class PcsStateManager {
 			db.transaction(false, txn ->
 					saveState(txn, contactId, direction, state));
 		} catch (DbException e) {
-			LOG.log(WARNING, "Failed to save PCS state", e);
 		}
 	}
 
@@ -354,8 +263,6 @@ public class PcsStateManager {
 				dhPrivateKey, dhPublicKey, dhRemotePublicKey, state.isMode2());
 	}
 
-	// ==================== Mode 3 (PQ Ratchet) Methods ====================
-
 	@Nullable
 	public PqRatchetState loadPqState(ContactId contactId) {
 		if (!MODE3_ENABLED) return null;
@@ -363,7 +270,6 @@ public class PcsStateManager {
 			return db.transactionWithNullableResult(true, txn ->
 					loadPqState(txn, contactId));
 		} catch (DbException e) {
-			LOG.log(WARNING, "Failed to load PQ state", e);
 			return null;
 		}
 	}
@@ -382,7 +288,6 @@ public class PcsStateManager {
 		try {
 			db.transaction(false, txn -> savePqState(txn, contactId, state));
 		} catch (DbException e) {
-			LOG.log(WARNING, "Failed to save PQ state", e);
 		}
 	}
 
@@ -418,7 +323,6 @@ public class PcsStateManager {
 			return db.transactionWithResult(true, txn ->
 					db.containsPqRatchetState(txn, contactId));
 		} catch (DbException e) {
-			LOG.log(WARNING, "Failed to check PQ state", e);
 			return false;
 		}
 	}
@@ -429,7 +333,6 @@ public class PcsStateManager {
 			db.transaction(false, txn ->
 					db.removePqRatchetState(txn, contactId));
 		} catch (DbException e) {
-			LOG.log(WARNING, "Failed to remove PQ state", e);
 		}
 	}
 

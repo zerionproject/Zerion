@@ -19,15 +19,10 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.logging.Logger;
-
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 import javax.inject.Inject;
-
-import static java.util.logging.Level.WARNING;
 import static org.briarproject.bramble.api.crypto.DecryptionResult.INVALID_CIPHERTEXT;
-import static org.briarproject.bramble.util.LogUtils.logException;
 import static org.briarproject.bramble.util.StringUtils.UTF_8;
 import static org.briarproject.bramble.util.StringUtils.fromHexString;
 import static org.briarproject.bramble.util.StringUtils.toHexString;
@@ -35,10 +30,6 @@ import static org.briarproject.bramble.util.StringUtils.toHexString;
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
 class AccountManagerImpl implements AccountManager {
-
-	private static final Logger LOG =
-			Logger.getLogger(AccountManagerImpl.class.getName());
-
 	private static final String DB_KEY_FILENAME = "db.key";
 	private static final String DB_KEY_BACKUP_FILENAME = "db.key.bak";
 
@@ -97,7 +88,6 @@ class AccountManagerImpl implements AccountManager {
 			reader.close();
 			return key;
 		} catch (IOException e) {
-			logException(LOG, WARNING, e);
 			return null;
 		}
 	}
@@ -119,7 +109,6 @@ class AccountManagerImpl implements AccountManager {
 			writeDbKeyToFile(hex, dbKeyBackupFile);
 			return true;
 		} catch (IOException e) {
-			logException(LOG, WARNING, e);
 			return false;
 		}
 	}

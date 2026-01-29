@@ -1,8 +1,4 @@
 package org.briarproject.bramble.contact;
-
-import static java.util.logging.Level.INFO;
-import static java.util.logging.Logger.getLogger;
-
 import org.briarproject.bramble.api.FormatException;
 import org.briarproject.bramble.api.Pair;
 import org.briarproject.bramble.api.contact.ContactManager;
@@ -57,23 +53,10 @@ import static org.briarproject.bramble.contact.HandshakeRecordTypes.RECORD_TYPE_
 import static org.briarproject.bramble.contact.HandshakeRecordTypes.RECORD_TYPE_PROOF_OF_OWNERSHIP;
 import static org.briarproject.bramble.util.ValidationUtils.checkLength;
 
-/**
- * Handshake manager that supports both classical and post-quantum key exchange.
- * <p>
- * The handshake protocol selects keys based on the pending contact's format version:
- * <ul>
- *   <li>Version 0 (classical): Uses X25519 keys (Briar-compatible)</li>
- *   <li>Version 1 (hybrid): Uses X25519 + ML-KEM-768 keys (PQ-secure)</li>
- * </ul>
- */
+
 @Immutable
 @NotNullByDefault
 class HandshakeManagerImpl implements HandshakeManager {
-
-	private static final java.util.logging.Logger LOG =
-			getLogger(HandshakeManagerImpl.class.getName());
-
-	// Ignore records with current protocol version, unknown record type
 	private static final RecordPredicate IGNORE = r ->
 			r.getProtocolVersion() == PROTOCOL_MAJOR_VERSION &&
 					!isKnownRecordType(r.getRecordType());
@@ -281,24 +264,15 @@ class HandshakeManagerImpl implements HandshakeManager {
 			theirProof = receiveProof(recordReader);
 			sendProof(recordWriter, ourProof);
 		}
-
-		// Send Mode3Capability before EOF (new peers will read it during drain)
 		boolean mode3Capable = false;
 		if (MODE3_ENABLED) {
 			sendMode3Capability(recordWriter);
 		}
-
-		// Match old Zerion ordering: sendEOF → drain → verify
-		// This ensures backward compatibility with older builds
 		out.sendEndOfStream();
-
-		// Drain remaining records from peer (reads Mode3Capability if present)
 		if (MODE3_ENABLED) {
 			mode3Capable = receiveMode3Capability(recordReader);
 		}
 		recordReader.readRecord(r -> false, IGNORE);
-
-		// Verify proof AFTER drain (matches old Zerion ordering)
 		if (!handshakeCrypto.verifyOwnership(masterKey, !alice, theirProof)) {
 			throw new FormatException();
 		}
@@ -324,7 +298,6 @@ class HandshakeManagerImpl implements HandshakeManager {
 
 	private PublicKey receiveHybridEphemeralKey(RecordReader r)
 			throws IOException {
-		// First should be minor version, then ephemeral key (using HYBRID_STATIC_KEY type)
 		Record first = readRecord(r, asList(RECORD_TYPE_MINOR_VERSION,
 				RECORD_TYPE_HYBRID_STATIC_KEY));
 		if (first.getRecordType() == RECORD_TYPE_MINOR_VERSION) {
@@ -335,7 +308,6 @@ class HandshakeManagerImpl implements HandshakeManager {
 					HYBRID_AGREEMENT_PUBLIC_KEY_BYTES);
 			return new HybridAgreementPublicKey(key);
 		} else {
-			// They didn't send minor version (older protocol)
 			byte[] key = first.getPayload();
 			checkLength(key, HYBRID_AGREEMENT_PUBLIC_KEY_BYTES,
 					HYBRID_AGREEMENT_PUBLIC_KEY_BYTES);
@@ -364,44 +336,22 @@ class HandshakeManagerImpl implements HandshakeManager {
 		w.flush();
 	}
 
-	/**
-	 * Receives the remote peer's protocol minor version and ephemeral public
-	 * key.
-	 * <p>
-	 * In version 0.1 of the protocol, each peer sends a minor version record
-	 * followed by an ephemeral public key record.
-	 * <p>
-	 * In version 0.0 of the protocol, each peer sends an ephemeral public key
-	 * record without a preceding minor version record.
-	 * <p>
-	 * Therefore the remote peer's minor version must be non-zero if a minor
-	 * version record is received, and is assumed to be zero if no minor
-	 * version record is received.
-	 */
+	
 	private Pair<Byte, PublicKey> receiveMinorVersionAndKey(RecordReader r)
 			throws IOException {
 		byte theirMinorVersion;
 		PublicKey theirEphemeralPublicKey;
-		// The first record can be either a minor version record or an
-		// ephemeral public key record
 		Record first = readRecord(r, asList(RECORD_TYPE_MINOR_VERSION,
 				RECORD_TYPE_EPHEMERAL_PUBLIC_KEY));
 		if (first.getRecordType() == RECORD_TYPE_MINOR_VERSION) {
-			// The payload must be a single byte giving the remote peer's
-			// protocol minor version, which must be non-zero
 			byte[] payload = first.getPayload();
 			checkLength(payload, 1);
 			theirMinorVersion = payload[0];
 			if (theirMinorVersion == 0) throw new FormatException();
-			// The second record must be an ephemeral public key record
 			Record second = readRecord(r,
 					singletonList(RECORD_TYPE_EPHEMERAL_PUBLIC_KEY));
 			theirEphemeralPublicKey = parsePublicKey(second);
 		} else {
-			// The remote peer did not send a minor version record, so the
-			// remote peer's protocol minor version is assumed to be zero
-			// TODO: Remove this branch after a reasonable migration period
-			//  (added 2023-03-10).
 			theirMinorVersion = 0;
 			theirEphemeralPublicKey = parsePublicKey(first);
 		}
@@ -459,7 +409,6 @@ class HandshakeManagerImpl implements HandshakeManager {
 
 	private Record readRecord(RecordReader r, List<Byte> expectedTypes)
 			throws IOException {
-		// Accept records with current protocol version, expected types only
 		RecordPredicate accept = rec ->
 				rec.getProtocolVersion() == PROTOCOL_MAJOR_VERSION &&
 						expectedTypes.contains(rec.getRecordType());
@@ -468,9 +417,7 @@ class HandshakeManagerImpl implements HandshakeManager {
 		return rec;
 	}
 
-	/**
-	 * Helper class to hold handshake context data.
-	 */
+	
 	private static class HandshakeContext {
 		final PendingContact pendingContact;
 		final KeyPair keyPair;

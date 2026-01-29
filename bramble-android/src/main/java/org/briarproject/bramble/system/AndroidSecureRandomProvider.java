@@ -50,7 +50,6 @@ class AndroidSecureRandomProvider extends UnixSecureRandomProvider {
 		ContentResolver contentResolver = appContext.getContentResolver();
 		String id = Settings.Secure.getString(contentResolver, ANDROID_ID);
 		if (id != null) out.writeUTF(id);
-		// On API 31 and higher we need permission to access bonded devices
 		if (SDK_INT < 31) {
 			Parcel parcel = Parcel.obtain();
 			BluetoothAdapter bt = BluetoothAdapter.getDefaultAdapter();
@@ -67,7 +66,6 @@ class AndroidSecureRandomProvider extends UnixSecureRandomProvider {
 
 	@Override
 	protected void writeSeed() {
-		// Silence strict mode
 		StrictMode.ThreadPolicy tp = StrictMode.allowThreadDiskWrites();
 		super.writeSeed();
 		StrictMode.setThreadPolicy(tp);

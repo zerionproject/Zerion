@@ -14,25 +14,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Collection;
-import java.util.logging.Logger;
-
 import javax.annotation.concurrent.Immutable;
 
 import static java.util.Collections.singletonMap;
-import static java.util.logging.Level.WARNING;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.api.plugin.Plugin.State.ACTIVE;
 import static org.briarproject.bramble.api.plugin.file.RemovableDriveConstants.ID;
 import static org.briarproject.bramble.api.plugin.file.RemovableDriveConstants.PROP_SUPPORTED;
-import static org.briarproject.bramble.util.LogUtils.logException;
-
 @Immutable
 @NotNullByDefault
 abstract class AbstractRemovableDrivePlugin implements SimplexPlugin {
-
-	private static final Logger LOG =
-			getLogger(AbstractRemovableDrivePlugin.class.getName());
-
 	private final long maxLatency;
 	private final PluginCallback callback;
 
@@ -59,7 +49,6 @@ abstract class AbstractRemovableDrivePlugin implements SimplexPlugin {
 
 	@Override
 	public int getMaxIdleTime() {
-		// Unused for simplex transports
 		throw new UnsupportedOperationException();
 	}
 
@@ -110,7 +99,6 @@ abstract class AbstractRemovableDrivePlugin implements SimplexPlugin {
 		try {
 			return new TransportInputStreamReader(openInputStream(p));
 		} catch (IOException e) {
-			logException(LOG, WARNING, e);
 			return null;
 		}
 	}
@@ -120,7 +108,6 @@ abstract class AbstractRemovableDrivePlugin implements SimplexPlugin {
 		try {
 			return new TransportOutputStreamWriter(this, openOutputStream(p));
 		} catch (IOException e) {
-			logException(LOG, WARNING, e);
 			return null;
 		}
 	}

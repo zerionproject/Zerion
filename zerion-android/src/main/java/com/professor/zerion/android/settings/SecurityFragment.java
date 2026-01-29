@@ -71,13 +71,9 @@ public class SecurityFragment extends Fragment {
 		getAndroidComponent(context).inject(this);
 		viewModel = new ViewModelProvider(requireActivity(), viewModelFactory)
 				.get(SettingsViewModel.class);
-		// NOTE: Do not initialize WipePasswordManager here - it does crypto/disk I/O
-		// It will be initialized lazily when needed via getWipePasswordManager()
 	}
 
-	/**
-	 * Lazy getter for WipePasswordManager to avoid crypto/disk I/O on main thread during onAttach.
-	 */
+	
 	@Nullable
 	private WipePasswordManager getWipePasswordManager() {
 		if (wipePasswordManager == null) {
@@ -115,7 +111,6 @@ public class SecurityFragment extends Fragment {
 		screenshotProtectionSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
 			if (buttonView.isPressed()) {
 				uiPrefs.edit().putBoolean(PREF_SCREENSHOT_PROTECTION, isChecked).apply();
-				// Apply immediately to current activity
 				securityManager.applyScreenshotProtection(requireActivity());
 			}
 		});

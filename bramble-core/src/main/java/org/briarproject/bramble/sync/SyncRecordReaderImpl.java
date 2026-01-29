@@ -39,13 +39,9 @@ import static org.briarproject.bramble.api.sync.SyncConstants.PROTOCOL_VERSION;
 @NotThreadSafe
 @NotNullByDefault
 class SyncRecordReaderImpl implements SyncRecordReader {
-
-	// Accept records with current protocol version, known record type
 	private static final RecordPredicate ACCEPT = r ->
 			r.getProtocolVersion() == PROTOCOL_VERSION &&
 					isKnownRecordType(r.getRecordType());
-
-	// Ignore records with current protocol version, unknown record type
 	private static final RecordPredicate IGNORE = r ->
 			r.getProtocolVersion() == PROTOCOL_VERSION &&
 					!isKnownRecordType(r.getRecordType());
@@ -72,14 +68,7 @@ class SyncRecordReaderImpl implements SyncRecordReader {
 		return nextRecord.getRecordType();
 	}
 
-	/**
-	 * Returns true if there's another record available or false if we've
-	 * reached the end of the input stream.
-	 * <p>
-	 * If a record is available, it's been read into the buffer by the time
-	 * eof() returns, so the method that called eof() can access the record
-	 * from the buffer, for example to check its type or extract its payload.
-	 */
+	
 	@Override
 	public boolean eof() throws IOException {
 		if (nextRecord != null) return false;
@@ -129,7 +118,6 @@ class SyncRecordReaderImpl implements SyncRecordReader {
 			throw new FormatException();
 		if (payload.length > MAX_MESSAGE_LENGTH)
 			throw new FormatException();
-		// Validate timestamp
 		long timestamp = ByteUtils.readUint64(payload, UniqueId.LENGTH);
 		if (timestamp < 0) throw new FormatException();
 		nextRecord = null;

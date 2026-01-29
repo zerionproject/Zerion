@@ -7,11 +7,7 @@ import java.lang.ref.WeakReference;
 import javax.annotation.concurrent.GuardedBy;
 import javax.inject.Provider;
 
-/**
- * A {@link Provider} that keeps a {@link WeakReference} to the last provided
- * instance and provides the same instance again until the instance is garbage
- * collected.
- */
+
 @NotNullByDefault
 public abstract class WeakSingletonProvider<T> implements Provider<T> {
 

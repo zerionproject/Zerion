@@ -49,7 +49,6 @@ class GroupMessageFactoryImpl implements GroupMessageFactory {
 	private GroupMessage createJoinMessage(GroupId groupId, long timestamp,
 			LocalAuthor member, @Nullable BdfList invite) {
 		try {
-			// Generate the signature
 			BdfList memberList = clientHelper.toList(member);
 			BdfList toSign = BdfList.of(
 					groupId,
@@ -59,8 +58,6 @@ class GroupMessageFactoryImpl implements GroupMessageFactory {
 			);
 			byte[] memberSignature = clientHelper.sign(SIGNING_LABEL_JOIN,
 					toSign, member.getPrivateKey());
-
-			// Compose the message
 			BdfList body = BdfList.of(
 					JOIN.getInt(),
 					memberList,
@@ -81,7 +78,6 @@ class GroupMessageFactoryImpl implements GroupMessageFactory {
 			@Nullable MessageId parentId, LocalAuthor member, String text,
 			MessageId previousMsgId) {
 		try {
-			// Generate the signature
 			BdfList memberList = clientHelper.toList(member);
 			BdfList toSign = BdfList.of(
 					groupId,
@@ -93,8 +89,6 @@ class GroupMessageFactoryImpl implements GroupMessageFactory {
 			);
 			byte[] signature = clientHelper.sign(SIGNING_LABEL_POST, toSign,
 					member.getPrivateKey());
-
-			// Compose the message
 			BdfList body = BdfList.of(
 					POST.getInt(),
 					memberList,

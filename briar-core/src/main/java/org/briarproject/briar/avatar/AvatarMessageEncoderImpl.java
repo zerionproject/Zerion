@@ -42,23 +42,16 @@ class AvatarMessageEncoderImpl implements AvatarMessageEncoder {
 	public Pair<Message, BdfDictionary> encodeUpdateMessage(GroupId groupId,
 			long version, String contentType, InputStream in)
 			throws IOException {
-		// 0.0: Message Type, Version, Content-Type
 		BdfList list = BdfList.of(MSG_TYPE_UPDATE, version, contentType);
 		byte[] descriptor = clientHelper.toByteArray(list);
-
-		// add BdfList and stream content to body
 		ByteArrayOutputStream bodyOut = new ByteArrayOutputStream();
 		bodyOut.write(descriptor);
 		copyAndClose(in, bodyOut);
 		if (bodyOut.size() > MAX_MESSAGE_BODY_LENGTH)
 			throw new FileTooBigException();
-
-		// assemble message
 		byte[] body = bodyOut.toByteArray();
 		long timestamp = clock.currentTimeMillis();
 		Message m = clientHelper.createMessage(groupId, timestamp, body);
-
-		// encode metadata
 		BdfDictionary meta = new BdfDictionary();
 		meta.put(MSG_KEY_VERSION, version);
 		meta.put(MSG_KEY_CONTENT_TYPE, contentType);

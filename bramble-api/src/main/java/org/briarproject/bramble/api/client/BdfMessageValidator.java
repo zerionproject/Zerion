@@ -11,31 +11,18 @@ import org.briarproject.bramble.api.sync.MessageContext;
 import org.briarproject.bramble.api.sync.validation.MessageValidator;
 import org.briarproject.bramble.api.system.Clock;
 import org.briarproject.nullsafety.NotNullByDefault;
-
-import java.util.logging.Logger;
-
 import javax.annotation.concurrent.Immutable;
-
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.api.transport.TransportConstants.MAX_CLOCK_DIFFERENCE;
 
 @Immutable
 @NotNullByDefault
 public abstract class BdfMessageValidator implements MessageValidator {
-
-	protected static final Logger LOG =
-			getLogger(BdfMessageValidator.class.getName());
-
 	protected final ClientHelper clientHelper;
 	protected final MetadataEncoder metadataEncoder;
 	protected final Clock clock;
 	protected final boolean canonical;
 
-	/**
-	 * Transitional alternative to
-	 * {@link #BdfMessageValidator(ClientHelper, MetadataEncoder, Clock)} that
-	 * accepts messages in non-canonical form, for backward compatibility.
-	 */
+	
 	@Deprecated
 	protected BdfMessageValidator(ClientHelper clientHelper,
 			MetadataEncoder metadataEncoder, Clock clock, boolean canonical) {
@@ -56,7 +43,6 @@ public abstract class BdfMessageValidator implements MessageValidator {
 	@Override
 	public MessageContext validateMessage(Message m, Group g)
 			throws InvalidMessageException {
-		// Reject the message if it's too far in the future
 		long now = clock.currentTimeMillis();
 		if (m.getTimestamp() - now > MAX_CLOCK_DIFFERENCE) {
 			throw new InvalidMessageException(

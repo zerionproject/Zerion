@@ -40,16 +40,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
-
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
 
 import static java.lang.Math.min;
 import static java.util.Collections.singletonMap;
-import static java.util.logging.Level.INFO;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.api.Bytes.compare;
 import static org.briarproject.bramble.api.sync.validation.IncomingMessageHook.DeliveryAction.ACCEPT_DO_NOT_SHARE;
 import static org.briarproject.bramble.api.sync.validation.IncomingMessageHook.DeliveryAction.DEFER;
@@ -69,10 +65,6 @@ import static org.briarproject.nullsafety.NullSafety.requireNonNull;
 class TransportKeyAgreementManagerImpl extends BdfIncomingMessageHook
 		implements TransportKeyAgreementManager, OpenDatabaseHook, ContactHook,
 		ClientVersioningHook {
-
-	private static final Logger LOG =
-			getLogger(TransportKeyAgreementManagerImpl.class.getName());
-
 	private final ContactGroupFactory contactGroupFactory;
 	private final ClientVersioningManager clientVersioningManager;
 	private final IdentityManager identityManager;
@@ -124,10 +116,8 @@ class TransportKeyAgreementManagerImpl extends BdfIncomingMessageHook
 		Collection<Contact> contacts = db.getContacts(txn);
 		if (!db.containsGroup(txn, localGroup.getId())) {
 			db.addGroup(txn, localGroup);
-			// Set things up for any pre-existing contacts
 			for (Contact c : contacts) addingContact(txn, c);
 		}
-		// Find any contacts and transports that need keys
 		Map<ContactId, Collection<TransportId>> transportsWithKeys =
 				db.getTransportsWithKeys(txn);
 		for (Contact c : contacts) {
@@ -135,11 +125,9 @@ class TransportKeyAgreementManagerImpl extends BdfIncomingMessageHook
 					transportsWithKeys.get(c.getId());
 			for (TransportId t : transports) {
 				if (withKeys == null || !withKeys.contains(t)) {
-					// We need keys for this contact and transport
 					GroupId contactGroupId = getContactGroup(c).getId();
 					SavedSession ss = loadSession(txn, contactGroupId, t);
 					if (ss == null) {
-						// Start a session by sending our key message
 						startSession(txn, contactGroupId, t);
 					}
 				}
@@ -149,12 +137,9 @@ class TransportKeyAgreementManagerImpl extends BdfIncomingMessageHook
 
 	@Override
 	public void addingContact(Transaction txn, Contact c) throws DbException {
-		// Create a group to share with the contact
 		Group g = getContactGroup(c);
 		db.addGroup(txn, g);
-		// Attach the contact ID to the group
 		clientHelper.setContactId(txn, g.getId(), c.getId());
-		// Apply the client's visibility to the contact group
 		Visibility client = clientVersioningManager.getClientVisibility(txn,
 				c.getId(), CLIENT_ID, MAJOR_VERSION);
 		db.setGroupVisibility(txn, c.getId(), g.getId(), client);
@@ -168,7 +153,6 @@ class TransportKeyAgreementManagerImpl extends BdfIncomingMessageHook
 	@Override
 	public void onClientVisibilityChanging(Transaction txn, Contact c,
 			Visibility v) throws DbException {
-		// Apply the client's visibility to the contact group
 		Group g = getContactGroup(c);
 		db.setGroupVisibility(txn, c.getId(), g.getId(), v);
 	}
@@ -180,11 +164,7 @@ class TransportKeyAgreementManagerImpl extends BdfIncomingMessageHook
 		MessageType type =
 				MessageType.fromValue(meta.getInt(MSG_KEY_MESSAGE_TYPE));
 		TransportId t = new TransportId(meta.getString(MSG_KEY_TRANSPORT_ID));
-		if (LOG.isLoggable(INFO)) {
-			LOG.info("Received " + type + " message for " + t);
-		}
 		if (!transports.contains(t)) {
-			// Defer handling the message until we support the transport
 			return DEFER;
 		}
 		SavedSession ss = loadSession(txn, m.getGroupId(), t);
@@ -200,38 +180,25 @@ class TransportKeyAgreementManagerImpl extends BdfIncomingMessageHook
 		boolean haveKeys = db.containsTransportKeys(txn, c, t);
 		if (ss == null) {
 			if (haveKeys) {
-				// We have keys but no session, so we must have derived keys
-				// when adding the contact. If the contact didn't support
-				// the transport when they added us, they wouldn't have
-				// derived keys at that time. If they later added support for
-				// the transport then they would have started a session, so a
-				// key message is valid in this case
 				return handleKeyMessageForNewSession(txn, c, t, m, meta);
 			} else {
-				// We don't have keys, so we should have created a session at
-				// startup
 				throw new IllegalStateException();
 			}
 		} else if (ss.session.getState() == AWAIT_KEY) {
 			if (haveKeys) {
-				// We have keys, so we shouldn't be in the AWAIT_KEY state,
-				// even if the contact didn't derive keys when adding us and
-				// later started a session
 				throw new IllegalStateException();
 			} else {
-				// This is the key message we're waiting for
 				return handleKeyMessageForExistingSession(txn, c, t, m, meta,
 						ss);
 			}
 		} else {
-			return REJECT; // Not valid in this state
+			return REJECT;
 		}
 	}
 
 	private DeliveryAction handleActivateMessage(Transaction txn,
 			TransportId t, @Nullable SavedSession ss) throws DbException {
 		if (ss != null && ss.session.getState() == AWAIT_ACTIVATE) {
-			// Activate the keys and finish the session
 			KeySetId keySetId = requireNonNull(ss.session.getKeySetId());
 			keyManager.activateKeys(txn, singletonMap(t, keySetId));
 			Session session = new Session(ACTIVATED,
@@ -239,7 +206,7 @@ class TransportKeyAgreementManagerImpl extends BdfIncomingMessageHook
 			saveSession(txn, t, ss.storageId, session);
 			return ACCEPT_DO_NOT_SHARE;
 		} else {
-			return REJECT; // Not valid in this state
+			return REJECT;
 		}
 	}
 
@@ -256,7 +223,7 @@ class TransportKeyAgreementManagerImpl extends BdfIncomingMessageHook
 		try {
 			rootKey = crypto.deriveRootKey(localKeyPair, remotePublicKey);
 		} catch (GeneralSecurityException e) {
-			return REJECT; // Invalid public key
+			return REJECT;
 		}
 		boolean alice = isLocalPartyAlice(txn, db.getContact(txn, c));
 		KeySetId keySetId = keyManager.addRotationKeys(txn, c, t, rootKey,
@@ -281,7 +248,7 @@ class TransportKeyAgreementManagerImpl extends BdfIncomingMessageHook
 		try {
 			rootKey = crypto.deriveRootKey(localKeyPair, remotePublicKey);
 		} catch (GeneralSecurityException e) {
-			return REJECT; // Invalid public key
+			return REJECT;
 		}
 		boolean alice = isLocalPartyAlice(txn, db.getContact(txn, c));
 		KeySetId keySetId = keyManager.addRotationKeys(txn, c, t, rootKey,
@@ -315,17 +282,12 @@ class TransportKeyAgreementManagerImpl extends BdfIncomingMessageHook
 					clientHelper.getMessageIds(txn, contactGroupId, query);
 			if (ids.size() > 1) throw new DbException();
 			if (ids.isEmpty()) {
-				if (LOG.isLoggable(INFO)) LOG.info("No session for " + t);
 				return null;
 			}
 			MessageId storageId = ids.iterator().next();
 			BdfDictionary bdfSession =
 					clientHelper.getMessageMetadataAsDictionary(txn, storageId);
 			Session session = sessionParser.parseSession(bdfSession);
-			if (LOG.isLoggable(INFO)) {
-				LOG.info("Loaded session in state " + session.getState()
-						+ " for " + t);
-			}
 			return new SavedSession(session, storageId);
 		} catch (FormatException e) {
 			throw new DbException(e);
@@ -343,10 +305,6 @@ class TransportKeyAgreementManagerImpl extends BdfIncomingMessageHook
 
 	private void saveSession(Transaction txn, TransportId t,
 			MessageId storageId, Session session) throws DbException {
-		if (LOG.isLoggable(INFO)) {
-			LOG.info("Saving session in state " + session.getState()
-					+ " for " + t);
-		}
 		BdfDictionary meta = sessionEncoder.encodeSession(session, t);
 		try {
 			clientHelper.mergeMessageMetadata(txn, storageId, meta);

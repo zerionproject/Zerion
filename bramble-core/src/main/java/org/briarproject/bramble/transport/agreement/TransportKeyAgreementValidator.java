@@ -51,7 +51,6 @@ class TransportKeyAgreementValidator extends BdfMessageValidator {
 	private BdfMessageContext validateKeyMessage(long timestamp, BdfList body)
 			throws FormatException {
 		if (timestamp < MIN_REASONABLE_TIME_MS) throw new FormatException();
-		// Message type, transport ID, public key
 		checkSize(body, 3);
 		String transportId = body.getString(1);
 		checkLength(transportId, 1, MAX_TRANSPORT_ID_LENGTH);
@@ -65,7 +64,6 @@ class TransportKeyAgreementValidator extends BdfMessageValidator {
 
 	private BdfMessageContext validateActivateMessage(BdfList body)
 			throws FormatException {
-		// Message type, transport ID, previous message ID
 		checkSize(body, 3);
 		String transportId = body.getString(1);
 		checkLength(transportId, 1, MAX_TRANSPORT_ID_LENGTH);

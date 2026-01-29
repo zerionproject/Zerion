@@ -10,8 +10,6 @@ import javax.annotation.concurrent.Immutable;
 @Immutable
 @NotNullByDefault
 class SlipDecoder implements ReadHandler {
-
-	// https://tools.ietf.org/html/rfc1055
 	private static final byte END = (byte) 192, ESC = (byte) 219;
 	private static final byte TEND = (byte) 220, TESC = (byte) 221;
 

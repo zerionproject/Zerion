@@ -79,7 +79,6 @@ public class MessageEncrypter {
 
 	KeyPair generateKeyPair() {
 		AsymmetricCipherKeyPair keyPair = generator.generateKeyPair();
-		// Return a wrapper that uses the SEC 1 encoding
 		ECPublicKeyParameters ecPublicKey =
 				(ECPublicKeyParameters) keyPair.getPublic();
 		PublicKey publicKey = new Sec1PublicKey(KEY_TYPE, ecPublicKey);

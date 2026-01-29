@@ -65,8 +65,6 @@
   <string name="nav_drawer_close_description">關閉導航</string>
   <string name="contact_list_button">聯絡人</string>
   <string name="groups_button">私人群組</string>
-  <string name="forums_button">論壇</string>
-  <string name="blogs_button">博客</string>
   <!--This is part of the main menu. The app will be locked when this is tapped.-->
   <string name="lock_button">鎖定程式</string>
   <string name="settings_button">設置</string>
@@ -99,12 +97,6 @@
   </plurals>
   <plurals name="group_message_notification_text">
     <item quantity="other">%d 條新群組消息。</item>
-  </plurals>
-  <plurals name="forum_post_notification_text">
-    <item quantity="other">%d 條新論壇帖子。</item>
-  </plurals>
-  <plurals name="blog_post_notification_text">
-    <item quantity="other">%d 條新博文。</item>
   </plurals>
   <!--Misc-->
   <string name="now">現在</string>
@@ -203,24 +195,17 @@
   <!--Adding Contacts-->
   <string name="add_contact_title">添加附近的聯絡人</string>
   <string name="add_contact_error_two_way">你們互相掃瞄彼此的二維碼了嗎? </string>
-  <string name="face_to_face">您必須面對面添加聯絡人。\n\n這樣將防止他人冒充您的身份並查看您的信息。</string>
   <string name="continue_button">繼續</string>
   <string name="try_again_button">重試</string>
   <string name="waiting_for_contact_to_scan">等待聯絡人掃描並連接\u2026</string>
   <string name="exchanging_contact_details">正在交換聯絡人詳細信息\u2026</string>
   <string name="contact_added_toast">已添加聯絡人：%s</string>
   <string name="contact_already_exists">聯絡人 %s 已存在</string>
-  <string name="qr_code_invalid">二維碼無效</string>
-  <string name="qr_code_too_old_1">您所掃的二維碼已是舊版本\n\n 請通知您的聯絡人更新至最新版後再試試</string>
-  <string name="qr_code_too_new_1">您所掃的二維碼為較新的版本\n\n 請更新至最新版後再試試</string>
-  <string name="mailbox_qr_code_for_contact">您所掃二維碼來自 Zerion Mailbox\n\n 若要連接 Mailbox，請到 Zerion 主選單選取Mailbox設定。</string>
-  <string name="qr_code_format_unknown">您所掃二維碼並非用於新增聯絡人\n\n 請確認這是您的聯絡人畫面上的二維碼</string>
   <string name="camera_error">相機出錯</string>
   <string name="connecting_to_device">正在連接至裝置\u2026</string>
   <string name="authenticating_with_device">正在驗證裝置\u2026</string>
   <string name="connection_error_title">無法連接到您的聯絡人</string>
   <string name="connection_error_feedback">如果該問題仍存在，請 <a href="feedback">發送反饋</a> 幫助我們改善程式。</string>
-  <string name="info_both_must_scan">你們必須互相掃瞄彼此的二維碼</string>
   <!--Adding Contacts Remotely-->
   <string name="add_contact_remotely_title_case">添加遠處的聯絡人</string>
   <string name="add_contact_nearby_title">添加附近的聯絡人</string>
@@ -369,107 +354,25 @@
   <string name="groups_reveal_visible_revealed_by_contact">群組可見聯絡人關係（由 %s 設定）</string>
   <string name="groups_reveal_invisible">群組不可見聯絡人關係</string>
   <!--Forums-->
-  <string name="no_forums">尚無論壇可供展示</string>
-  <string name="no_forums_action">輕按 + 號創建論壇，或讓您的聯絡人分享論壇給您</string>
-  <string name="create_forum_title">創建論壇</string>
-  <string name="choose_forum_hint">爲論壇命名</string>
-  <string name="create_forum_button">創建論壇</string>
-  <string name="forum_created_toast">論壇已創建</string>
-  <string name="no_forum_posts">尚無帖子可供展示</string>
   <string name="no_posts">沒有帖子</string>
   <plurals name="posts">
     <item quantity="other">%d 條帖子</item>
   </plurals>
-  <string name="forum_new_message_hint">新帖子</string>
-  <string name="forum_message_reply_hint">新回覆</string>
   <string name="btn_reply">回覆</string>
-  <string name="forum_leave">退出論壇</string>
-  <string name="dialog_title_leave_forum">確認退出論壇</string>
-  <string name="dialog_message_leave_forum">確認要退出該論壇嗎？那些經過您的分享而加入該論壇的聯絡人可能不會再收到更新。</string>
   <string name="dialog_button_leave">退出</string>
-  <string name="forum_left_toast">已退出論壇</string>
   <!--Forum Sharing-->
-  <string name="forum_share_button">分享論壇</string>
   <string name="contacts_selected">已選擇聯絡人</string>
   <string name="activity_share_toolbar_header">選擇聯絡人</string>
   <string name="no_contacts_selector">尚無聯絡人可供顯示</string>
   <string name="no_contacts_selector_action">請添加聯絡人後再來</string>
-  <string name="forum_shared_snackbar">論壇已分享給選中的聯絡人</string>
-  <string name="forum_share_message">附加消息（選填）</string>
-  <string name="forum_share_error">分享該論壇時發生錯誤。</string>
-  <string name="forum_invitation_received">%1$s 已將論壇 “%2$s” 分享給您。</string>
-  <string name="forum_invitation_sent">您已將論壇 “%1$s” 分享給 %2$s。</string>
-  <string name="forum_invitations_title">論壇邀請</string>
-  <string name="forum_invitation_exists">您接受了加入該論壇的一份邀請。\n\n接受更多邀請將會使您連接論壇更快速更可靠。</string>
-  <string name="forum_joined_toast">已加入論壇</string>
-  <string name="forum_declined_toast">邀請已謝絕</string>
   <string name="shared_by_format">由 %s 分享</string>
-  <string name="forum_invitation_already_sharing">已在分享</string>
-  <string name="forum_invitation_already_invited">已發送邀請</string>
-  <string name="forum_invitation_invite_received">已收到邀請</string>
-  <string name="forum_invitation_not_supported">此聯絡人無法使用</string>
-  <string name="forum_invitation_error">出錯，出了點問題與您無關</string>
-  <string name="forum_invitation_response_accepted_sent">您接受了來自 %s的論壇邀請</string>
-  <string name="forum_invitation_response_declined_sent">您謝絕了來自 %s的論壇邀請</string>
-  <string name="forum_invitation_response_declined_auto">來自%s論壇的邀請已自動拒絕</string>
-  <string name="forum_invitation_response_accepted_received">%s 接受了論壇邀請。</string>
-  <string name="forum_invitation_response_declined_received">%s 謝絕了論壇邀請。</string>
   <string name="sharing_status">分享狀態</string>
-  <string name="sharing_status_forum">論壇的任何成員都可以將論壇分享給他們的聯絡人。您正在分享該論壇給下列聯絡人。可能有您所不可見的其他成員存在。</string>
   <string name="shared_with">已與 %1$d 分享（%2$d 在線）</string>
-  <plurals name="forums_shared">
-    <item quantity="other">%d 個論壇由聯絡人分享</item>
-  </plurals>
   <string name="nobody">沒有人</string>
   <!--Blogs-->
-  <string name="blogs_other_blog_empty_state">尚無博文可供展示</string>
   <string name="read_more">閱讀全文</string>
-  <string name="blogs_write_blog_post">寫博文</string>
-  <string name="blogs_write_blog_post_body_hint">輸入博文內容</string>
-  <string name="blogs_publish_blog_post">發佈</string>
-  <string name="blogs_blog_post_created">博文已創建</string>
-  <string name="blogs_blog_post_received">收到新博文</string>
-  <string name="blogs_blog_post_scroll_to">滑動至</string>
-  <string name="blogs_feed_empty_state">尚無博文可供展示</string>
-  <string name="blogs_feed_empty_state_action">此處將顯示您的聯絡人和您所訂閱博客的博文\n\n輕按鋼筆圖標來寫一篇博文</string>
-  <string name="blogs_remove_blog">刪除博客</string>
-  <string name="blogs_remove_blog_dialog_message">確認要刪除該博客嗎？\n\n博文將會從您的裝置刪除，但仍會存在於其他人的裝置上。\n\n那些經過您的分享而訂閱該博客的聯絡人可能不會再收到更新。</string>
-  <string name="blogs_remove_blog_ok">刪除</string>
-  <string name="blogs_blog_removed">博客已刪除</string>
-  <string name="blogs_reblog_comment_hint">添加評論（選填）</string>
-  <string name="blogs_reblog_button">轉載</string>
   <!--Blog Sharing-->
-  <string name="blogs_sharing_share">分享博客</string>
-  <string name="blogs_sharing_error">分享該博客時發生錯誤。</string>
-  <string name="blogs_sharing_button">分享博客</string>
-  <string name="blogs_sharing_snackbar">博客已分享給選中的聯絡人</string>
-  <string name="blogs_sharing_response_accepted_sent">您接受了來自 %s 的博客邀請。</string>
-  <string name="blogs_sharing_response_declined_sent">您謝絕了來自 %s 的博客邀請。</string>
-  <string name="blogs_sharing_response_declined_auto">來自%s的部落格邀請已自動回絕</string>
-  <string name="blogs_sharing_response_accepted_received">%s 接受了博客邀請。</string>
-  <string name="blogs_sharing_response_declined_received">%s 謝絕了博客邀請。</string>
-  <string name="blogs_sharing_invitation_received">%1$s 向您分享博客 “%2$s”。</string>
-  <string name="blogs_sharing_invitation_sent">您已將博客 “%1$s” 分享給 %2$s 。</string>
-  <string name="blogs_sharing_invitations_title">博客邀請</string>
-  <string name="blogs_sharing_joined_toast">已訂閱博客</string>
-  <string name="blogs_sharing_declined_toast">邀請已謝絕</string>
-  <string name="sharing_status_blog">任何訂閱博客的人都可以將它分享給他的聯絡人。您正在將該博客分享給下列聯絡人。可能有您所不可見的其他訂閱者存在。</string>
   <!--RSS Feeds-->
-  <string name="blogs_rss_feeds_import">導入 RSS 訂閱源</string>
-  <string name="blogs_rss_feeds_import_button">導入</string>
-  <string name="blogs_rss_feeds_import_hint">輸入 RSS 訂閱源鏈接</string>
-  <string name="blogs_rss_feeds_import_progress">滙入 RSS 消息來源</string>
-  <string name="blogs_rss_feeds_import_error">抱歉！導入訂閱源時發生錯誤。</string>
-  <string name="blogs_rss_feeds_import_title">透過檔案滙入消息源</string>
-  <string name="blogs_rss_feeds">RSS 消息源</string>
-  <string name="blogs_rss_feeds_manage_imported">已導入：</string>
-  <string name="blogs_rss_feeds_manage_author">作者：</string>
-  <string name="blogs_rss_feeds_manage_updated">最後更新於：</string>
-  <string name="blogs_rss_remove_feed">刪除訂閱源</string>
-  <string name="blogs_rss_remove_feed_dialog_message">確認要刪除該訂閱源嗎？\n\n博文將從您的裝置上移除，但仍將存在於其他人的裝置。\n\n那些經過您的分享而訂閱該源的聯絡人可能不會再收到更新。</string>
-  <string name="blogs_rss_remove_feed_ok">刪除</string>
-  <string name="blogs_rss_feeds_manage_empty_state">尚無訂閱源可供顯示\n\n輕按 + 號導入訂閱源</string>
-  <string name="blogs_rss_feeds_manage_error">加載訂閱源時出錯。請稍候再試。</string>
   <!--Settings Profile Picture-->
   <string name="change_profile_picture">輕觸更改使用者圖像</string>
   <string name="dialog_confirm_profile_picture_title">更改使用者圖像</string>
@@ -549,12 +452,6 @@
   <string name="notify_group_messages_setting_title">羣消息</string>
   <string name="notify_group_messages_setting_summary">顯示羣消息通知</string>
   <string name="notify_group_messages_setting_summary_26">設置羣消息通知</string>
-  <string name="notify_forum_posts_setting_title">論壇帖子</string>
-  <string name="notify_forum_posts_setting_summary">顯示論壇帖子通知</string>
-  <string name="notify_forum_posts_setting_summary_26">設置論壇帖子通知</string>
-  <string name="notify_blog_posts_setting_title">博文</string>
-  <string name="notify_blog_posts_setting_summary">顯示博文通知</string>
-  <string name="notify_blog_posts_setting_summary_26">設置博文通知</string>
   <string name="notify_vibration_setting">震動</string>
   <string name="notify_sound_setting">聲音</string>
   <string name="notify_sound_setting_default">默認鈴聲</string>
@@ -574,10 +471,6 @@
   <string name="mailbox_setup_connecting">Mailbox 連接中...</string>
   <!--This string is shown when connecting to a Mailbox for the first time. The placeholder will be replaced with a duration, e.g. "2 minutes".-->
   <string name="mailbox_setup_connecting_info">它要花上 %1s的時間</string>
-  <string name="mailbox_qr_code_too_old">您所掃的二維碼為舊版的 Zerion Mailbox \n\n 請更新至最新版後再試試</string>
-  <string name="mailbox_qr_code_too_new">您所掃的二維碼為較新版的 Zerion Mailbox \n\n 請更新至最新版後再試試</string>
-  <string name="contact_qr_code_for_mailbox">您所掃瞄的二維碼是為了添增 Zerion 聯絡人 .\n\n 要新增聯絡人，請到聯絡人清單下輕觸 + 圖示</string>
-  <string name="mailbox_setup_qr_code_wrong_description">您所掃的二維碼並非來自 Zerion Mailbox \n\n 請在 Mailbox 設備上打開 Zerion Mailbox 應用再掃它所提供的二維碼。 </string>
   <string name="mailbox_setup_already_paired_title">Mailbox 已連接</string>
   <string name="mailbox_setup_already_paired_description">解除其它設備的 Mailbox 鏈接後再試試</string>
   <string name="mailbox_setup_io_error_title">無法連接</string>
@@ -727,8 +620,6 @@
   <string name="permission_bluetooth_title">精近設備授權</string>
   <string name="permission_bluetooth_body">使用藍牙通訊時，Zerion 必須取得授權去搜尋與連接鄰近的設備</string>
   <string name="permission_bluetooth_denied_body">您拒絕鄰近設備的取用，但  Zerion 必須要有此授權方能使用藍牙功能\n\n 請同意此權限</string>
-  <string name="qr_code">二維碼</string>
-  <string name="show_qr_code_fullscreen">全熒幕顯示二維碼</string>
   <!--App Locking-->
   <string name="lock_unlock">解鎖 Zerion</string>
   <string name="lock_unlock_verbose">輸入您裝置的 PIN 碼，圖案或密碼以解鎖 Zerion</string>
@@ -756,9 +647,7 @@
   <string name="wifi_settings_request_enable_body">要建立 Wi-Fi 熱點，Zerion 必項使用 Wi-Fi , 請打開它</string>
   <string name="hotspot_tab_manual">手動</string>
   <!--The placeholder to be inserted into the string 'hotspot_manual_wifi': People can connect by %s-->
-  <string name="hotspot_scanning_a_qr_code">掃瞄二維碼</string>
   <!--Wi-Fi setup-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_wifi">您的手機正提供 Wi-Fi 熱點。想下载 Zerion 的人先連上此熱點，其操作是在自己設備的 Wi-Fi 設置使用進階或借由 %s。順利連接熱點，請按 “下一步”。</string>
   <string name="hotspot_manual_wifi_ssid">網路名稱</string>
   <string name="hotspot_qr_wifi">您的手機正提供 Wi-Fi 熱點。想下载 Zerion 的人可掃瞄二維碼來連上此熱點。順利連接熱點，請按 “下一步”。</string>
@@ -767,7 +656,6 @@
     <item quantity="other">%s 個設備連接</item>
   </plurals>
   <!--Download link-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_site">您的手機正提供 Wi-Fi 熱點，連上此熱點的設備可打開瀏覽器鏈接或 %s以下載 Zerion  </string>
   <string name="hotspot_manual_site_address">網址 (URL)</string>
   <string name="hotspot_qr_site">您的手機提供了 Wi-Fi 熱點，連上此熱點的設備可借由掃這個二維碼來下載 Zerion </string>

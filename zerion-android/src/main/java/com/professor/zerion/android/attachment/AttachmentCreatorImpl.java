@@ -23,13 +23,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
-import java.util.logging.Logger;
-
 import javax.inject.Inject;
-
-import static java.util.logging.Level.WARNING;
-import static java.util.logging.Logger.getLogger;
-
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 import androidx.lifecycle.LiveData;
@@ -40,10 +34,6 @@ import static com.professor.zerion.android.util.UiUtils.observeForeverOnce;
 
 @NotNullByDefault
 class AttachmentCreatorImpl implements AttachmentCreator {
-
-	private static final Logger LOG =
-			getLogger(AttachmentCreatorImpl.class.getName());
-
 	private final Application app;
 	@IoExecutor
 	private final Executor ioExecutor;
@@ -121,8 +111,6 @@ class AttachmentCreatorImpl implements AttachmentCreator {
 			MutableLiveData<AttachmentResult> result = this.result;
 			if (result != null) result.postValue(getResult(false));
 		} catch (IOException | DbException e) {
-			LOG.log(WARNING, "Error in onAttachmentHeaderReceived: " +
-					e.getClass().getSimpleName() + " - " + e.getMessage(), e);
 			onAttachmentError(uri, e);
 		}
 	}
@@ -177,7 +165,6 @@ class AttachmentCreatorImpl implements AttachmentCreator {
 				return app.getString(R.string.image_attach_error);
 			}
 		} else if (t instanceof org.briarproject.bramble.api.db.DbException) {
-			// Handle DbException for video/audio appropriately
 			if (isVideo) {
 				return app.getString(R.string.video_attach_error);
 			} else if (isAudio) {

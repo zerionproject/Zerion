@@ -10,30 +10,18 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.annotation.Nullable;
 
-import static java.util.logging.Level.WARNING;
-import static org.briarproject.bramble.util.LogUtils.logException;
-
 @NotNullByDefault
 public class IoUtils {
-
-	private static final Logger LOG = Logger.getLogger(IoUtils.class.getName());
 
 	public static void deleteFileOrDir(File f) {
 		if (f.isFile()) {
 			delete(f);
 		} else if (f.isDirectory()) {
 			File[] children = f.listFiles();
-			if (children == null) {
-				if (LOG.isLoggable(WARNING)) {
-					LOG.warning("Could not list files in "
-							+ f.getAbsolutePath());
-				}
-			} else {
+			if (children != null) {
 				for (File child : children) deleteFileOrDir(child);
 			}
 			delete(f);
@@ -41,8 +29,7 @@ public class IoUtils {
 	}
 
 	public static void delete(File f) {
-		if (!f.delete() && LOG.isLoggable(WARNING))
-			LOG.warning("Could not delete " + f.getAbsolutePath());
+		f.delete();
 	}
 
 	public static void copyAndClose(InputStream in, OutputStream out) {
@@ -57,35 +44,29 @@ public class IoUtils {
 			out.flush();
 			out.close();
 		} catch (IOException e) {
-			tryToClose(in, LOG, WARNING);
-			tryToClose(out, LOG, WARNING);
+			tryToClose(in);
+			tryToClose(out);
 		}
 	}
 
-	public static void tryToClose(@Nullable Closeable c, Logger logger,
-			Level level) {
+	public static void tryToClose(@Nullable Closeable c) {
 		try {
 			if (c != null) c.close();
 		} catch (IOException e) {
-			logException(logger, level, e);
 		}
 	}
 
-	public static void tryToClose(@Nullable Socket s, Logger logger,
-			Level level) {
+	public static void tryToClose(@Nullable Socket s) {
 		try {
 			if (s != null) s.close();
 		} catch (IOException e) {
-			logException(logger, level, e);
 		}
 	}
 
-	public static void tryToClose(@Nullable ServerSocket ss, Logger logger,
-			Level level) {
+	public static void tryToClose(@Nullable ServerSocket ss) {
 		try {
 			if (ss != null) ss.close();
 		} catch (IOException e) {
-			logException(logger, level, e);
 		}
 	}
 
@@ -98,8 +79,6 @@ public class IoUtils {
 		}
 	}
 
-	// Workaround for a bug in Android 7, see
-	// https://android-review.googlesource.com/#/c/271775/
 	public static InputStream getInputStream(Socket s) throws IOException {
 		try {
 			return s.getInputStream();
@@ -108,8 +87,6 @@ public class IoUtils {
 		}
 	}
 
-	// Workaround for a bug in Android 7, see
-	// https://android-review.googlesource.com/#/c/271775/
 	public static OutputStream getOutputStream(Socket s) throws IOException {
 		try {
 			return s.getOutputStream();

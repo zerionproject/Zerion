@@ -56,8 +56,6 @@
   <string name="nav_drawer_close_description">Itxi nabigazio-tiradera</string>
   <string name="contact_list_button">Kontaktuak</string>
   <string name="groups_button">Talde pribatuak</string>
-  <string name="forums_button">Foroak</string>
-  <string name="blogs_button">Blogak</string>
   <!--This is part of the main menu. The app will be locked when this is tapped.-->
   <string name="lock_button">Blokeatu aplikazioa</string>
   <string name="settings_button">Ezarpenak</string>
@@ -80,14 +78,6 @@
   <plurals name="group_message_notification_text">
     <item quantity="one">Talde mezu berri bat.</item>
     <item quantity="other">%d talde mezu berri.</item>
-  </plurals>
-  <plurals name="forum_post_notification_text">
-    <item quantity="one">Foro sarrera berri bat.</item>
-    <item quantity="other">%d foro sarrera berri.</item>
-  </plurals>
-  <plurals name="blog_post_notification_text">
-    <item quantity="one">Blog sarrera berri bat.</item>
-    <item quantity="other">%d blog sarrera berri.</item>
   </plurals>
   <!--Misc-->
   <string name="now">orain</string>
@@ -161,14 +151,12 @@
   <string name="messaging_too_many_attachments_toast">Lehen %d irudiak bidaliko dira, gehiagorik ez</string>
   <!--Adding Contacts-->
   <string name="add_contact_title">Gehitu inguruko kontaktua</string>
-  <string name="face_to_face">Kontaktu gisa gehitu nahi duzun pertsonarekin aurrez aurre egon behar duzu.\n\nHonek etorkizunean inork zure itxurak egitea edo zure mezuak irakurtzea eragotziko du.</string>
   <string name="continue_button">Jarraitu</string>
   <string name="try_again_button">Saiatu berriro</string>
   <string name="waiting_for_contact_to_scan">Kontaktuak eskaneatu dezan eta konektatu dadin zain\u2026</string>
   <string name="exchanging_contact_details">Kontaktu-xehetasunak trukatzen\u2016</string>
   <string name="contact_added_toast">Kontaktua gehitu da: %s</string>
   <string name="contact_already_exists">%s kontaktua badago aurretik ere</string>
-  <string name="qr_code_invalid">QR kodea baliogabea da</string>
   <string name="qr_code_too_old">Eskaneatu duzun QR kodea %s aplikazioaren bertsio zaharrago batetik dator.\n\nEskatu mesedez zure kontaktuari azken bertsiora eguneratu dezala eta saiatu berriro.</string>
   <string name="qr_code_too_new">Eskaneatu duzun QR kodea %s aplikazioaren bertsio berriago batetik dator.\n\nEguneratu azken bertsiora eta saiatu berriro.</string>
   <string name="camera_error">Kameraren errorea</string>
@@ -308,101 +296,26 @@
   <string name="groups_reveal_visible_revealed_by_contact">Kontaktuen erlazioa taldean ikusgai dago (%s erabiltzaileak erazagututa)</string>
   <string name="groups_reveal_invisible">Kontaktuen erlazioa ez dago taldean ikusgai</string>
   <!--Forums-->
-  <string name="no_forums">Ez dago erakusteko fororik</string>
-  <string name="no_forums_action">Sakatu + ikonoa foro bat sortzeko, edo eskatu kontaktuei zurekin foroak partekatzeko</string>
-  <string name="create_forum_title">Sortu foroa</string>
-  <string name="choose_forum_hint">Aukeratu zure foroaren izena</string>
-  <string name="create_forum_button">Sortu foroa</string>
-  <string name="forum_created_toast">Foroa sortu da</string>
-  <string name="no_forum_posts">Ez dago erakusteko sarrerarik</string>
   <string name="no_posts">Ez dago sarrerarik</string>
   <plurals name="posts">
     <item quantity="one">Sarrera %d</item>
     <item quantity="other">%d sarrera</item>
   </plurals>
-  <string name="forum_new_message_hint">Sarrera berria</string>
-  <string name="forum_message_reply_hint">Erantzun berria</string>
   <string name="btn_reply">Erantzun</string>
-  <string name="forum_leave">Atera forotik</string>
-  <string name="dialog_title_leave_forum">Baieztatu forotik ateratzea</string>
-  <string name="dialog_message_leave_forum">Ziur zaude foro honetatik atera nahi duzula?\n\nForo hau beste norbaitekin partekatu baduzu agian ez dituzte eguneratzeak jasoko.</string>
   <string name="dialog_button_leave">Atera</string>
-  <string name="forum_left_toast">Forotik atera da</string>
   <!--Forum Sharing-->
-  <string name="forum_share_button">Partekatu foroa</string>
   <string name="contacts_selected">Kontaktuak hautatuta</string>
   <string name="activity_share_toolbar_header">Aukeratu kontaktuak</string>
   <string name="no_contacts_selector">Ez dago erakusteko kontakturik</string>
   <string name="no_contacts_selector_action">Itzuli hona kontakturen bat gehitu eta gero</string>
-  <string name="forum_shared_snackbar">Foroa hautatutako kontaktuekin partekatu da</string>
-  <string name="forum_share_message">Gehitu mezu bat (aukerakoa)</string>
-  <string name="forum_share_error">Errorea gertatu da foro hau partekatzean.</string>
-  <string name="forum_invitation_received">%1$s erabiltzaileak \"%2$s\" foroa partekatu du zurekin.</string>
-  <string name="forum_invitation_sent">\"%1$s\" foroa partekatu duzu %2$s erabiltzailearekin.</string>
-  <string name="forum_invitations_title">Fororako gonbidapenak</string>
-  <string name="forum_invitation_exists">Foro honetarako gonbidapen bat onartu duzu jada.\n\nGonbidapen gehiago onartzeak foroarekin konexioa azkarrago eta egonkorragoa egingo du.</string>
-  <string name="forum_joined_toast">Forora elkartuta</string>
-  <string name="forum_declined_toast">Gonbidapena errefusatu da</string>
   <string name="shared_by_format">%s erabiltzaileak partekatuta</string>
-  <string name="forum_invitation_already_sharing">Dagoeneko partekatzen</string>
-  <string name="forum_invitation_response_accepted_sent"> %s erabiltzailearen fororako gonbidapena onartu duzu.</string>
-  <string name="forum_invitation_response_declined_sent">%s erabiltzailearen fororako gonbidapena errefusatu duzu.</string>
-  <string name="forum_invitation_response_accepted_received">%s erabiltzaileak fororako gonbidapena onartu du.</string>
-  <string name="forum_invitation_response_declined_received"> %s erabiltzaileak fororako gonbidapena errefusatu du.</string>
   <string name="sharing_status">Partekatze egoera</string>
-  <string name="sharing_status_forum">Foroko edozein kidek partekatu dezake bere kontaktuekin. Honako erabiltzaileekin partekatzen duzu zuk. Ikusten ez dituzun kide gehiago egon daitezke.</string>
   <string name="shared_with">%1$d(r)ekin partekatuta (%2$d konektatuta)</string>
-  <plurals name="forums_shared">
-    <item quantity="one">Kontaktuek partekatutako foro %d</item>
-    <item quantity="other">Kontaktuek partekatutako %d foro</item>
-  </plurals>
   <string name="nobody">Inor ez</string>
   <!--Blogs-->
-  <string name="blogs_other_blog_empty_state">Ez dago erakusteko sarrerarik</string>
   <string name="read_more">irakurri gehiago</string>
-  <string name="blogs_write_blog_post">Idatzi blog sarrera</string>
-  <string name="blogs_write_blog_post_body_hint">Idatzi zure blog sarrera</string>
-  <string name="blogs_publish_blog_post">Argitaratu</string>
-  <string name="blogs_blog_post_created">Blog sarrera sortu da</string>
-  <string name="blogs_blog_post_received">Blog sarrera berria jaso da</string>
-  <string name="blogs_blog_post_scroll_to">Korritu hona</string>
-  <string name="blogs_feed_empty_state">Ez dago erakusteko sarrerarik</string>
-  <string name="blogs_feed_empty_state_action">Zure kontaktuen eta harpidetutako blogetako sarrerak hemen agertuko dira\n\nSakatu arkatzaren ikonoa sarrera bat idazteko</string>
-  <string name="blogs_remove_blog">Kendu bloga</string>
-  <string name="blogs_remove_blog_dialog_message">Ziur zaude blog hau kendu nahi duzula?\n\nSarrerak zure gailutik kenduko dira baina ez besteen gailuetatik.\n\nBlog hau beste inorekin partekatu baduzu agian eguneratzeak jasotzeari utziko diote.</string>
-  <string name="blogs_remove_blog_ok">Kendu</string>
-  <string name="blogs_blog_removed">Bloga kendu da</string>
-  <string name="blogs_reblog_comment_hint">Gehitu iruzkin bat (aukerakoa)</string>
-  <string name="blogs_reblog_button">Birblogeatu</string>
   <!--Blog Sharing-->
-  <string name="blogs_sharing_share">Partekatu bloga</string>
-  <string name="blogs_sharing_error">Errorea gertatu da blog hau partekatzean.</string>
-  <string name="blogs_sharing_button">Partekatu bloga</string>
-  <string name="blogs_sharing_snackbar">Bloga hautatutako kontaktuekin partekatu da</string>
-  <string name="blogs_sharing_response_accepted_sent">%s erabiltzailearen blogerako gonbidapena onartu duzu.</string>
-  <string name="blogs_sharing_response_declined_sent">%s erabiltzailearen blogerako gonbidapena errefusatu duzu.</string>
-  <string name="blogs_sharing_response_accepted_received">%s erabiltzaileak blogerako gonbidapena onartu du.</string>
-  <string name="blogs_sharing_response_declined_received">%s erabiltzaileak blogerako gonbidapena errefusatu du.</string>
-  <string name="blogs_sharing_invitation_received">%1$s erabiltzaileak \"%2$s\" bloga zurekin partekatu du.</string>
-  <string name="blogs_sharing_invitation_sent">\"%1$s\" bloga partekatu duzu %2$s erabiltzailearekin.</string>
-  <string name="blogs_sharing_invitations_title">Blogetarako gonbidapenak</string>
-  <string name="blogs_sharing_joined_toast">Blogera harpidetuta</string>
-  <string name="blogs_sharing_declined_toast">Gonbidapena errefusatu da</string>
-  <string name="sharing_status_blog">Blog batera harpidetzen den edonork berau parteka dezake bere kontaktuekin. Zuk honako kontaktuekin partekatzen duzu. Ikusten ez dituzun harpidedun gehiago egon daitezke.</string>
   <!--RSS Feeds-->
-  <string name="blogs_rss_feeds_import">Inportatu RSS jarioa</string>
-  <string name="blogs_rss_feeds_import_button">Inportatu</string>
-  <string name="blogs_rss_feeds_import_hint">Sartu RSS jarioaren URLa</string>
-  <string name="blogs_rss_feeds_import_error">Sentitzen dugu! Zure jarioa inportatzean errore bat gertatu da.</string>
-  <string name="blogs_rss_feeds">RSS iturriak</string>
-  <string name="blogs_rss_feeds_manage_imported">Inportatuta:</string>
-  <string name="blogs_rss_feeds_manage_author">Egilea:</string>
-  <string name="blogs_rss_feeds_manage_updated">Azken eguneratzea:</string>
-  <string name="blogs_rss_remove_feed">Kendu jarioa</string>
-  <string name="blogs_rss_remove_feed_dialog_message">Ziur zaude jario hau kendu nahi duzula?\n\nSarrerak zure gailutik kenduko dira baina ez besteen gailuetatik.\n\nJario hau beste inorekin partekatu baduzu agian eguneratzeak jasotzeari utziko diote.</string>
-  <string name="blogs_rss_remove_feed_ok">Kendu</string>
-  <string name="blogs_rss_feeds_manage_empty_state">Ez dago erakusteko RSS jariorik\n\nSakatu + ikonoa jario bat inportatzeko</string>
-  <string name="blogs_rss_feeds_manage_error">Arazo bat egon da zure jarioak kargatzean. Saiatu berriro geroago.</string>
   <!--Settings Profile Picture-->
   <!--Settings Display-->
   <string name="pref_language_title">Hizkuntza eta eskualdea</string>
@@ -469,12 +382,6 @@
   <string name="notify_group_messages_setting_title">Taldeetako mezuak</string>
   <string name="notify_group_messages_setting_summary">Erakutsi taldeetako mezuen alertak</string>
   <string name="notify_group_messages_setting_summary_26">Konfiguratu taldeetako mezuen alertak</string>
-  <string name="notify_forum_posts_setting_title">Foroetako sarrerak</string>
-  <string name="notify_forum_posts_setting_summary">Erakutsi foroetako sarreren alertak</string>
-  <string name="notify_forum_posts_setting_summary_26">Konfiguratu foroetako sarreren alertak</string>
-  <string name="notify_blog_posts_setting_title">Blogetako sarrerak</string>
-  <string name="notify_blog_posts_setting_summary">Erakutsi blogetako sarreren alertak</string>
-  <string name="notify_blog_posts_setting_summary_26">Konfiguratu blogetako sarreren alertak</string>
   <string name="notify_vibration_setting">Bibratu</string>
   <string name="notify_sound_setting">Soinua</string>
   <string name="notify_sound_setting_default">Lehenetsitako dei-doinua</string>
@@ -519,8 +426,6 @@
   <string name="permission_camera_location_title">Kamera eta kokapena</string>
   <string name="permission_camera_location_request_body">QR kodea eskaneatzeko, Zerion aplikazioak zure kamera atzitzeko baimena behar du.\n\nBluetooth gailuak aurkitzeko, Zerion aplikazioak zure kokapena atzitzeko baimena behar du.\n\n Zerion-ek ez du zure kokapena gordetzen ezta inorekin partekatzen.</string>
   <string name="permission_camera_denied_body">Kamera atzitzeko baimena ukatu duzu, baina kontaktuak gehitzeko kamera erabili behar da.\n\nMesedez baimendu kamera atzitzea.</string>
-  <string name="qr_code">QR kodea</string>
-  <string name="show_qr_code_fullscreen">Erakutsi QR kodea pantaila osoan</string>
   <!--App Locking-->
   <string name="lock_unlock">Desblokeatu Zerion</string>
   <string name="lock_unlock_verbose">Sartu zure gailuaren PIN zenbakia, eredua edo pasahitza Zerion desblokeatzeko</string>

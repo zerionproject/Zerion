@@ -18,9 +18,7 @@ interface TransportKeyAgreementConstants {
 	String SESSION_KEY_LOCAL_TIMESTAMP = "localTimestamp";
 	String SESSION_KEY_KEY_SET_ID = "keySetId";
 
-	/**
-	 * Label for deriving the root key from key pairs.
-	 */
+	
 	String ROOT_KEY_LABEL =
 			"org.briarproject.bramble.transport.agreement/ROOT_KEY";
 

@@ -63,7 +63,7 @@ class HuaweiAppLaunchView extends PowerView {
 				setChecked(true);
 				return;
 			} catch (Exception e) {
-				/* silent */
+				
 			}
 		}
 		Toast.makeText(context, R.string.dnkm_huawei_app_launch_error_toast,

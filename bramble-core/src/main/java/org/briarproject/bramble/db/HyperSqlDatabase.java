@@ -15,26 +15,14 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.logging.Logger;
-
 import javax.annotation.Nullable;
 import javax.inject.Inject;
-
-import static java.util.logging.Level.INFO;
-import static java.util.logging.Level.WARNING;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.db.JdbcUtils.tryToClose;
 import static org.briarproject.bramble.util.IoUtils.isNonEmptyDirectory;
 
-/**
- * Contains all the HSQLDB-specific code for the database.
- */
+
 @NotNullByDefault
 class HyperSqlDatabase extends JdbcDatabase {
-
-	private static final Logger LOG =
-			getLogger(HyperSqlDatabase.class.getName());
-
 	private static final String HASH_TYPE = "BINARY(32)";
 	private static final String SECRET_TYPE = "BINARY(32)";
 	private static final String BINARY_TYPE = "BINARY";
@@ -68,8 +56,6 @@ class HyperSqlDatabase extends JdbcDatabase {
 		this.key = key;
 		File dir = config.getDatabaseDirectory();
 		boolean reopen = isNonEmptyDirectory(dir);
-		if (LOG.isLoggable(INFO)) LOG.info("Reopening DB: " + reopen);
-		if (!reopen && dir.mkdirs()) LOG.info("Created database directory");
 		super.open("org.hsqldb.jdbc.JDBCDriver", reopen, key, listener);
 		return reopen;
 	}
@@ -87,8 +73,8 @@ class HyperSqlDatabase extends JdbcDatabase {
 			s.close();
 			c.close();
 		} catch (SQLException e) {
-			tryToClose(s, LOG, WARNING);
-			tryToClose(c, LOG, WARNING);
+			tryToClose(s);
+			tryToClose(c);
 			throw new DbException(e);
 		}
 	}
@@ -113,8 +99,8 @@ class HyperSqlDatabase extends JdbcDatabase {
 			s.close();
 			c.close();
 		} catch (SQLException e) {
-			tryToClose(s, LOG, WARNING);
-			tryToClose(c, LOG, WARNING);
+			tryToClose(s);
+			tryToClose(c);
 			throw new DbException(e);
 		}
 	}

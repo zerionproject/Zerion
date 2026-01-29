@@ -15,30 +15,16 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.logging.Logger;
-
-import static java.util.logging.Level.WARNING;
 import static org.briarproject.bramble.api.keyagreement.KeyAgreementConstants.PROTOCOL_VERSION;
 import static org.briarproject.bramble.api.keyagreement.RecordTypes.ABORT;
 import static org.briarproject.bramble.api.keyagreement.RecordTypes.CONFIRM;
 import static org.briarproject.bramble.api.keyagreement.RecordTypes.KEY;
-import static org.briarproject.bramble.util.LogUtils.logException;
 
-/**
- * Handles the sending and receiving of BQP records.
- */
 @NotNullByDefault
 class KeyAgreementTransport {
-
-	private static final Logger LOG =
-			Logger.getLogger(KeyAgreementTransport.class.getName());
-
-	// Accept records with current protocol version, known record type
 	private static final RecordPredicate ACCEPT = r ->
 			r.getProtocolVersion() == PROTOCOL_VERSION &&
 					isKnownRecordType(r.getRecordType());
-
-	// Ignore records with current protocol version, unknown record type
 	private static final RecordPredicate IGNORE = r ->
 			r.getProtocolVersion() == PROTOCOL_VERSION &&
 					!isKnownRecordType(r.getRecordType());
@@ -89,7 +75,6 @@ class KeyAgreementTransport {
 		try {
 			writeRecord(ABORT, new byte[0]);
 		} catch (IOException e) {
-			logException(LOG, WARNING, e);
 			exception = true;
 		}
 		tryToClose(exception);
@@ -100,7 +85,6 @@ class KeyAgreementTransport {
 			kac.getConnection().getReader().dispose(exception, true);
 			kac.getConnection().getWriter().dispose(exception);
 		} catch (IOException e) {
-			logException(LOG, WARNING, e);
 		}
 	}
 

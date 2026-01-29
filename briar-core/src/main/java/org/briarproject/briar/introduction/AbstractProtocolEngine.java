@@ -107,7 +107,6 @@ abstract class AbstractProtocolEngine<S extends Session<?>>
 			m = messageEncoder.encodeRequestMessage(s.getContactGroupId(),
 					timestamp, s.getLastLocalMessageId(), author, text, timer);
 			sendMessage(txn, REQUEST, s.getSessionId(), m, true, timer);
-			// Set the auto-delete timer duration on the local message
 			if (timer != NO_AUTO_DELETE_TIMER) {
 				db.setCleanupTimerDuration(txn, m.getId(), timer);
 			}
@@ -134,7 +133,6 @@ abstract class AbstractProtocolEngine<S extends Session<?>>
 					ephemeralPublicKey, acceptTimestamp, transportProperties,
 					timer);
 			sendMessage(txn, ACCEPT, s.getSessionId(), m, visible, timer);
-			// Set the auto-delete timer duration on the message
 			if (timer != NO_AUTO_DELETE_TIMER) {
 				db.setCleanupTimerDuration(txn, m.getId(), timer);
 			}
@@ -161,12 +159,10 @@ abstract class AbstractProtocolEngine<S extends Session<?>>
 					timer);
 			sendMessage(txn, DECLINE, s.getSessionId(), m, visible, timer,
 					isAutoDecline);
-			// Set the auto-delete timer duration on the local message
 			if (timer != NO_AUTO_DELETE_TIMER) {
 				db.setCleanupTimerDuration(txn, m.getId(), timer);
 			}
 			if (isAutoDecline) {
-				// Broadcast an event, so the auto-decline becomes visible
 				IntroduceeSession session = (IntroduceeSession) s;
 				Author author = session.getRemote().author;
 				AuthorInfo authorInfo =
@@ -291,7 +287,6 @@ abstract class AbstractProtocolEngine<S extends Session<?>>
 			throws DbException {
 		int minorVersion = clientVersioningManager.getClientMinorVersion(txn, c,
 				CLIENT_ID, MAJOR_VERSION);
-		// Auto-delete was added in client version 0.1
 		return minorVersion >= 1;
 	}
 }

@@ -12,22 +12,12 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
-import java.util.logging.Logger;
-
 import javax.annotation.concurrent.GuardedBy;
 import javax.inject.Inject;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static java.util.logging.Level.INFO;
-import static java.util.logging.Logger.getLogger;
-import static org.briarproject.bramble.util.LogUtils.logException;
-
 class TimeoutMonitorImpl implements TimeoutMonitor {
-
-	private static final Logger LOG =
-			getLogger(TimeoutMonitorImpl.class.getName());
-
 	private static final long CHECK_INTERVAL_MS = SECONDS.toMillis(10);
 
 	private final TaskScheduler scheduler;
@@ -73,7 +63,6 @@ class TimeoutMonitorImpl implements TimeoutMonitor {
 			}
 		}
 		if (toCancel != null) {
-			LOG.info("Cancelling timeout monitor task");
 			toCancel.cancel();
 		}
 	}
@@ -87,11 +76,9 @@ class TimeoutMonitorImpl implements TimeoutMonitor {
 		}
 		for (TimeoutInputStream stream : snapshot) {
 			if (stream.hasTimedOut()) {
-				LOG.info("Input stream has timed out");
 				try {
 					stream.close();
 				} catch (IOException e) {
-					logException(LOG, INFO, e);
 				}
 			}
 		}

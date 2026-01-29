@@ -26,26 +26,16 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
-import java.util.logging.Logger;
-
 import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
 
 import static java.lang.Math.max;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.logging.Level.WARNING;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.api.db.DatabaseComponent.NO_CLEANUP_DEADLINE;
-import static org.briarproject.bramble.util.LogUtils.logException;
-
 @ThreadSafe
 @NotNullByDefault
 class CleanupManagerImpl implements CleanupManager, Service, EventListener {
-
-	private static final Logger LOG =
-			getLogger(CleanupManagerImpl.class.getName());
-
 	private final Executor dbExecutor;
 	private final DatabaseComponent db;
 	private final TaskScheduler taskScheduler;
@@ -120,7 +110,6 @@ class CleanupManagerImpl implements CleanupManager, Service, EventListener {
 				maybeScheduleTask(deadline);
 			}
 		} catch (DbException e) {
-			logException(LOG, WARNING, e);
 		}
 	}
 

@@ -22,8 +22,6 @@ import androidx.lifecycle.MutableLiveData;
 
 import static android.widget.Toast.LENGTH_SHORT;
 import static com.professor.zerion.android.settings.SettingsFragment.SETTINGS_NAMESPACE;
-import static com.professor.zerion.android.api.AndroidNotificationManager.PREF_NOTIFY_BLOG;
-import static com.professor.zerion.android.api.AndroidNotificationManager.PREF_NOTIFY_FORUM;
 import static com.professor.zerion.android.api.AndroidNotificationManager.PREF_NOTIFY_GROUP;
 import static com.professor.zerion.android.api.AndroidNotificationManager.PREF_NOTIFY_PRIVATE;
 import static com.professor.zerion.android.api.AndroidNotificationManager.PREF_NOTIFY_RINGTONE_NAME;
@@ -42,10 +40,6 @@ class NotificationsManager {
 	private final MutableLiveData<Boolean> notifyPrivateMessages =
 			new MutableLiveData<>();
 	private final MutableLiveData<Boolean> notifyGroupMessages =
-			new MutableLiveData<>();
-	private final MutableLiveData<Boolean> notifyForumPosts =
-			new MutableLiveData<>();
-	private final MutableLiveData<Boolean> notifyBlogPosts =
 			new MutableLiveData<>();
 	private final MutableLiveData<Boolean> notifyVibration =
 			new MutableLiveData<>();
@@ -67,10 +61,6 @@ class NotificationsManager {
 				PREF_NOTIFY_PRIVATE, true));
 		notifyGroupMessages.postValue(settings.getBoolean(
 				PREF_NOTIFY_GROUP, true));
-		notifyForumPosts.postValue(settings.getBoolean(
-				PREF_NOTIFY_FORUM, true));
-		notifyBlogPosts.postValue(settings.getBoolean(
-				PREF_NOTIFY_BLOG, true));
 		notifyVibration.postValue(settings.getBoolean(
 				PREF_NOTIFY_VIBRATION, true));
 		ringtoneName = settings.get(PREF_NOTIFY_RINGTONE_NAME);
@@ -104,7 +94,7 @@ class NotificationsManager {
 			try {
 				settingsManager.mergeSettings(s, SETTINGS_NAMESPACE);
 			} catch (DbException e) {
-				/* silent */
+				
 			}
 		});
 	}
@@ -115,14 +105,6 @@ class NotificationsManager {
 
 	LiveData<Boolean> getNotifyGroupMessages() {
 		return notifyGroupMessages;
-	}
-
-	LiveData<Boolean> getNotifyForumPosts() {
-		return notifyForumPosts;
-	}
-
-	LiveData<Boolean> getNotifyBlogPosts() {
-		return notifyBlogPosts;
 	}
 
 	LiveData<Boolean> getNotifyVibration() {

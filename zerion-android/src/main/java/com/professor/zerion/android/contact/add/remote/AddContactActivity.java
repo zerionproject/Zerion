@@ -54,21 +54,16 @@ public class AddContactActivity extends ZerionActivity implements
 		}
 
 		viewModel.onCreate();
-
-		// When contact type is selected, navigate to link exchange
 		viewModel.getContactTypeSelected().observeEvent(this, selected -> {
 			if (selected) {
 				LinkExchangeFragment f = new LinkExchangeFragment();
 				showNextFragment(f);
-				// If we had a pending link from an intent, handle it now
 				if (pendingIncomingLink != null) {
 					handleIncomingLink(pendingIncomingLink);
 					pendingIncomingLink = null;
 				}
 			}
 		});
-
-		// When remote link is entered, navigate to nickname
 		viewModel.getRemoteLinkEntered().observeEvent(this, entered -> {
 			if (entered) {
 				NicknameFragment f = new NicknameFragment();
@@ -82,7 +77,6 @@ public class AddContactActivity extends ZerionActivity implements
 		}
 
 		if (state == null) {
-			// Start with contact type selection
 			showInitialFragment(new ContactTypeSelectionFragment());
 		}
 	}
@@ -100,7 +94,6 @@ public class AddContactActivity extends ZerionActivity implements
 	}
 
 	private void handleOrDeferIncomingLink(String link) {
-		// If contact type is not yet selected, defer handling until it is
 		if (viewModel.getContactType() == null) {
 			if (viewModel.isValidRemoteContactLink(link)) {
 				pendingIncomingLink = link;

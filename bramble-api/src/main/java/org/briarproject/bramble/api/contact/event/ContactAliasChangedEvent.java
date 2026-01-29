@@ -7,9 +7,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
-/**
- * An event that is broadcast when the alias for a contact changed.
- */
+
 @Immutable
 @NotNullByDefault
 public class ContactAliasChangedEvent extends Event {

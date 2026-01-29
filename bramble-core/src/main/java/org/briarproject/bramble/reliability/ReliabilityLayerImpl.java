@@ -12,21 +12,12 @@ import java.io.OutputStream;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.logging.Logger;
-
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.logging.Level.WARNING;
-import static org.briarproject.bramble.util.LogUtils.logException;
-
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
 class ReliabilityLayerImpl implements ReliabilityLayer, WriteHandler {
 
-	private static final int TICK_INTERVAL = 500; // Milliseconds
-
-	private static final Logger LOG =
-			Logger.getLogger(ReliabilityLayerImpl.class.getName());
-
+	private static final int TICK_INTERVAL = 500;
 	private final Executor executor;
 	private final Clock clock;
 	private final WriteHandler writeHandler;
@@ -70,16 +61,14 @@ class ReliabilityLayerImpl implements ReliabilityLayer, WriteHandler {
 						sender.tick();
 						while (next <= now) next += TICK_INTERVAL;
 					} else {
-						if (b.length == 0) return; // Poison pill
+						if (b.length == 0) return;
 						writeHandler.handleWrite(b);
 					}
 				}
 			} catch (InterruptedException e) {
-				LOG.warning("Interrupted while waiting to write");
 				Thread.currentThread().interrupt();
 				running = false;
 			} catch (IOException e) {
-				logException(LOG, WARNING, e);
 				running = false;
 			}
 		});
@@ -89,7 +78,7 @@ class ReliabilityLayerImpl implements ReliabilityLayer, WriteHandler {
 	public void stop() {
 		running = false;
 		receiver.invalidate();
-		writes.add(new byte[0]); // Poison pill
+		writes.add(new byte[0]);
 	}
 
 	@Override
@@ -101,14 +90,10 @@ class ReliabilityLayerImpl implements ReliabilityLayer, WriteHandler {
 	public OutputStream getOutputStream() {
 		return outputStream;
 	}
-
-	// The lower layer calls this method to pass data up to the SLIP decoder
 	@Override
 	public void handleRead(byte[] b) throws IOException {
 		if (running) decoder.handleRead(b);
 	}
-
-	// The SLIP encoder calls this method to pass data down to the lower layer
 	@Override
 	public void handleWrite(byte[] b) {
 		if (running && b.length > 0) writes.add(b);

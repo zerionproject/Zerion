@@ -9,13 +9,7 @@ import java.io.OutputStream;
 
 import javax.annotation.concurrent.NotThreadSafe;
 
-import static org.briarproject.bramble.api.transport.TransportConstants.MAX_PAYLOAD_LENGTH;
 
-/**
- * An {@link OutputStream} that packs data into transport frames, writing a
- * frame whenever there is a full frame to write or the {@link #flush()} method
- * is called.
- */
 @NotThreadSafe
 @NotNullByDefault
 class StreamWriterImpl extends OutputStream implements StreamWriter {
@@ -27,7 +21,7 @@ class StreamWriterImpl extends OutputStream implements StreamWriter {
 
 	StreamWriterImpl(StreamEncrypter encrypter) {
 		this.encrypter = encrypter;
-		payload = new byte[MAX_PAYLOAD_LENGTH];
+		payload = new byte[encrypter.getMaxPayloadLength()];
 	}
 
 	@Override

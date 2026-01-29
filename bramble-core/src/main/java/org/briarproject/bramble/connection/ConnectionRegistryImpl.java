@@ -95,16 +95,13 @@ class ConnectionRegistryImpl implements ConnectionRegistry {
 			toInterrupt = new ArrayList<>(recs.size());
 			for (ConnectionRecord rec : recs) {
 				if (rec.conn == conn) {
-					// Store the priority of this connection
 					rec.priority = priority;
 				} else if (rec.priority != null) {
 					int compare = compareConnections(t, priority,
 							rec.transportId, rec.priority);
 					if (compare == -1) {
-						// The old connection is better than the new one
 						interruptNewConnection = true;
 					} else if (compare == 1 && !rec.interrupted) {
-						// The new connection is better than the old one
 						toInterrupt.add(rec.conn);
 						rec.interrupted = true;
 					}

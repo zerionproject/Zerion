@@ -40,7 +40,6 @@ class MetadataEncoderImpl implements MetadataEncoder {
 		try {
 			for (Entry<String, Object> e : d.entrySet()) {
 				if (e.getValue() == NULL_VALUE) {
-					// Special case: if value is null, key is being removed
 					m.put(e.getKey(), REMOVE);
 				} else {
 					encodeObject(writer, e.getValue());

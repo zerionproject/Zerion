@@ -36,23 +36,15 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Logger;
-
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
-
-import static java.util.logging.Level.INFO;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_ENABLED;
 import static org.briarproject.bramble.api.sync.SyncConstants.MAX_TRANSPORT_LATENCY;
 
 @ThreadSafe
 @NotNullByDefault
 class KeyManagerImpl implements KeyManager, Service, EventListener {
-
-	private static final Logger LOG =
-			Logger.getLogger(KeyManagerImpl.class.getName());
-
 	private final DatabaseComponent db;
 	private final Executor dbExecutor;
 	private final PluginConfig pluginConfig;
@@ -334,7 +326,6 @@ class KeyManagerImpl implements KeyManager, Service, EventListener {
 			throws DbException {
 		TransportKeyManager m = managers.get(t);
 		if (m == null) {
-			if (LOG.isLoggable(INFO)) LOG.info("No key manager for " + t);
 			return null;
 		}
 		return task.run(m);

@@ -78,8 +78,6 @@ public class StringUtils {
 	public static String truncateUtf8(String s, int maxUtf8Length) {
 		byte[] utf8 = toUtf8(s);
 		if (utf8.length <= maxUtf8Length) return s;
-		// Don't be strict when converting back, so that if we truncate a
-		// multi-byte character the whole character gets dropped
 		try {
 			return fromUtf8(utf8, 0, maxUtf8Length, false);
 		} catch (FormatException e) {
@@ -87,9 +85,7 @@ public class StringUtils {
 		}
 	}
 
-	/**
-	 * Converts the given byte array to a hex character array.
-	 */
+	
 	private static char[] toHexChars(byte[] bytes) {
 		char[] hex = new char[bytes.length * 2];
 		for (int i = 0, j = 0; i < bytes.length; i++) {
@@ -99,16 +95,12 @@ public class StringUtils {
 		return hex;
 	}
 
-	/**
-	 * Converts the given byte array to a hex string.
-	 */
+	
 	public static String toHexString(byte[] bytes) {
 		return new String(toHexChars(bytes));
 	}
 
-	/**
-	 * Converts the given hex string to a byte array.
-	 */
+	
 	public static byte[] fromHexString(String hex) throws FormatException {
 		int len = hex.length();
 		if (len % 2 != 0)
@@ -133,9 +125,7 @@ public class StringUtils {
 		return s.trim();
 	}
 
-	/**
-	 * Returns true if the string is longer than maxLength
-	 */
+	
 	public static boolean utf8IsTooLong(String s, int maxLength) {
 		return toUtf8(s).length > maxLength;
 	}
@@ -176,8 +166,6 @@ public class StringUtils {
 		}
 		return new String(c);
 	}
-
-	// see https://stackoverflow.com/a/38947571
 	static boolean startsWithIgnoreCase(String s, String prefix) {
 		return s.regionMatches(true, 0, prefix, 0, prefix.length());
 	}

@@ -9,21 +9,13 @@ import javax.annotation.concurrent.Immutable;
 @NotNullByDefault
 enum State {
 
-	/**
-	 * We've sent a key message and are awaiting the contact's key message.
-	 */
+	
 	AWAIT_KEY(0),
 
-	/**
-	 * We've exchanged key messages, derived the transport keys and sent an
-	 * activate message, and now we're awaiting the contact's activate message.
-	 */
+	
 	AWAIT_ACTIVATE(1),
 
-	/**
-	 * We've exchanged key messages and activate messages, and have derived and
-	 * activated the transport keys. This is the end state.
-	 */
+	
 	ACTIVATED(2);
 
 	private final int value;

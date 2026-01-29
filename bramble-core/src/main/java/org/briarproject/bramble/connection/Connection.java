@@ -13,21 +13,11 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.logging.Logger;
-
 import javax.annotation.Nullable;
-
-import static java.util.logging.Level.WARNING;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.api.transport.TransportConstants.TAG_LENGTH;
 import static org.briarproject.bramble.util.IoUtils.read;
-import static org.briarproject.bramble.util.LogUtils.logException;
-
 @NotNullByDefault
 abstract class Connection {
-
-	protected static final Logger LOG = getLogger(Connection.class.getName());
-
 	final KeyManager keyManager;
 	final ConnectionRegistry connectionRegistry;
 	final StreamReaderFactory streamReaderFactory;
@@ -49,7 +39,6 @@ abstract class Connection {
 			byte[] tag = readTag(reader.getInputStream());
 			return keyManager.getStreamContext(transportId, tag);
 		} catch (IOException | DbException e) {
-			logException(LOG, WARNING, e);
 			return null;
 		}
 	}
@@ -64,7 +53,6 @@ abstract class Connection {
 		try {
 			reader.dispose(true, recognised);
 		} catch (IOException e) {
-			logException(LOG, WARNING, e);
 		}
 	}
 
@@ -72,7 +60,6 @@ abstract class Connection {
 		try {
 			writer.dispose(true);
 		} catch (IOException e) {
-			logException(LOG, WARNING, e);
 		}
 	}
 }

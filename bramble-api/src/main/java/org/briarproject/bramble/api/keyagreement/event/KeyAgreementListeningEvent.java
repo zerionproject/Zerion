@@ -6,9 +6,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.Immutable;
 
-/**
- * An event that is broadcast when a BQP task is listening.
- */
+
 @Immutable
 @NotNullByDefault
 public class KeyAgreementListeningEvent extends Event {

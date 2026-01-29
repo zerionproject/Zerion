@@ -24,9 +24,9 @@ public class DevReportServer {
 	private static final String FILE_PREFIX = "report-";
 	private static final String FILE_SUFFIX = ".enc";
 	private static final int MAX_REPORT_LENGTH = 1024 * 1024;
-	private static final int MIN_REQUEST_INTERVAL_MS = 60 * 1000; // 1 minute
+	private static final int MIN_REQUEST_INTERVAL_MS = 60 * 1000;
 	private static final int MAX_TOKENS = 1000;
-	private static final int SOCKET_TIMEOUT_MS = 60 * 1000; // 1 minute
+	private static final int SOCKET_TIMEOUT_MS = 60 * 1000;
 
 	private final InetSocketAddress listenAddress;
 	private final File reportDir;
@@ -94,7 +94,6 @@ public class DevReportServer {
 		}
 
 		private void waitForToken() throws InterruptedException {
-			// Wait for a token to become available and remove it
 			semaphore.acquire();
 		}
 
@@ -102,7 +101,6 @@ public class DevReportServer {
 		public void run() {
 			try {
 				while (true) {
-					// If the bucket isn't full, add a token
 					if (semaphore.availablePermits() < MAX_TOKENS) {
 						System.out.println("Adding token to bucket");
 						semaphore.release();

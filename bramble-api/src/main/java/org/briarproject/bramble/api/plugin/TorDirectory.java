@@ -11,10 +11,7 @@ import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-/**
- * Annotation for injecting the {@link File directory} where the Tor plugin
- * should store its state.
- */
+
 @Qualifier
 @Target({FIELD, METHOD, PARAMETER})
 @Retention(RUNTIME)

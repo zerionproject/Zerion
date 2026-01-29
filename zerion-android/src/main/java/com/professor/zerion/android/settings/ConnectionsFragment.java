@@ -57,8 +57,6 @@ public class ConnectionsFragment extends Fragment {
 
 	private String[] torNetworkEntries;
 	private String[] torNetworkValues;
-
-	// Orbot proxy settings
 	private String orbotHost = DEFAULT_ORBOT_HOST;
 	private int orbotPort = DEFAULT_ORBOT_PORT;
 
@@ -91,26 +89,18 @@ public class ConnectionsFragment extends Fragment {
 
 		torNetworkEntries = getResources().getStringArray(R.array.tor_network_setting_names);
 		torNetworkValues = getResources().getStringArray(R.array.tor_network_setting_values);
-
-		// Tor Network selection
 		torNetworkCard.setOnClickListener(v -> showTorNetworkDialog());
-
-		// Mobile data switch
 		torMobileSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
 			if (buttonView.isPressed()) {
 				connectionsManager.torStore.putBoolean(PREF_TOR_MOBILE, isChecked);
 			}
 		});
-
-		// Orbot proxy switch
 		orbotProxySwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
 			if (buttonView.isPressed()) {
 				connectionsManager.torStore.putBoolean(PREF_KEY_ORBOT_ENABLED, isChecked);
 				updateOrbotSettingsVisibility(isChecked);
 			}
 		});
-
-		// Orbot settings card
 		orbotSettingsCard.setOnClickListener(v -> showOrbotSettingsDialog());
 
 		observeSettings();
@@ -202,8 +192,6 @@ public class ConnectionsFragment extends Fragment {
 		layout.setOrientation(LinearLayout.VERTICAL);
 		int padding = (int) (16 * getResources().getDisplayMetrics().density);
 		layout.setPadding(padding, padding, padding, 0);
-
-		// Host input
 		TextView hostLabel = new TextView(context);
 		hostLabel.setText(R.string.orbot_host_label);
 		layout.addView(hostLabel);
@@ -213,8 +201,6 @@ public class ConnectionsFragment extends Fragment {
 		hostInput.setText(orbotHost);
 		hostInput.setHint(DEFAULT_ORBOT_HOST);
 		layout.addView(hostInput);
-
-		// Port input
 		TextView portLabel = new TextView(context);
 		portLabel.setText(R.string.orbot_port_label);
 		LinearLayout.LayoutParams portLabelParams = new LinearLayout.LayoutParams(
@@ -242,7 +228,6 @@ public class ConnectionsFragment extends Fragment {
 						newPort = Integer.parseInt(portInput.getText().toString().trim());
 						if (newPort < 1 || newPort > 65535) newPort = DEFAULT_ORBOT_PORT;
 					} catch (NumberFormatException e) {
-						// Use default
 					}
 
 					connectionsManager.torStore.putString(PREF_KEY_ORBOT_HOST, newHost);
