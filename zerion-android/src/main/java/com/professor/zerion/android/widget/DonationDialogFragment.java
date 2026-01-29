@@ -23,10 +23,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
 
-/**
- * A modern donation dialog that appears randomly once a month.
- * Shows options to donate or dismiss for later.
- */
+
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
 public class DonationDialogFragment extends DialogFragment {
@@ -83,7 +80,6 @@ public class DonationDialogFragment extends DialogFragment {
 		if (dialog != null) {
 			Window window = dialog.getWindow();
 			if (window != null) {
-				// Set dialog width to 90% of screen width
 				int width = (int) (getResources().getDisplayMetrics().widthPixels * 0.9);
 				window.setLayout(width, WindowManager.LayoutParams.WRAP_CONTENT);
 				window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
@@ -97,7 +93,6 @@ public class DonationDialogFragment extends DialogFragment {
 		try {
 			startActivity(intent);
 		} catch (Exception e) {
-			// Browser not available, silently fail
 		}
 	}
 

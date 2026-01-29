@@ -37,8 +37,6 @@ class ConnectionsManager {
 	private final MutableLiveData<Boolean> torEnabled = new MutableLiveData<>();
 	private final MutableLiveData<String> torNetwork = new MutableLiveData<>();
 	private final MutableLiveData<Boolean> torMobile = new MutableLiveData<>();
-
-	// Orbot proxy settings
 	private final MutableLiveData<Boolean> orbotEnabled = new MutableLiveData<>();
 	private final MutableLiveData<String> orbotHost = new MutableLiveData<>();
 	private final MutableLiveData<Integer> orbotPort = new MutableLiveData<>();
@@ -68,8 +66,6 @@ class ConnectionsManager {
 
 		torMobile.postValue(settings.getBoolean(PREF_TOR_MOBILE,
 				DEFAULT_PREF_TOR_MOBILE));
-
-		// Orbot proxy settings
 		orbotEnabled.postValue(settings.getBoolean(PREF_KEY_ORBOT_ENABLED, false));
 		String host = settings.get(PREF_KEY_ORBOT_HOST);
 		orbotHost.postValue(host != null ? host : DEFAULT_ORBOT_HOST);

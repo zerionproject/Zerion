@@ -49,17 +49,14 @@ class ConversationAdapter
 		this.attachmentReader = attachmentReader;
 		this.dbExecutor = dbExecutor;
 		imageViewPool = new RecycledViewPool();
-		// Increase pool size for smoother scrolling
 		imageViewPool.setMaxRecycledViews(R.layout.list_item_conversation_msg_in, 15);
 		imageViewPool.setMaxRecycledViews(R.layout.list_item_conversation_msg_out, 15);
 		imageItemDecoration = new ImageItemDecoration(ctx);
-		// Enable stable IDs for better RecyclerView performance
 		setHasStableIds(true);
 	}
 
 	@Override
 	public long getItemId(int position) {
-		// Use message ID hash for stable IDs - enables RecyclerView optimizations
 		return items.get(position).getId().hashCode();
 	}
 

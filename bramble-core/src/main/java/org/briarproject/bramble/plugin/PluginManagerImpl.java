@@ -40,28 +40,19 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Logger;
-
 import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
 
 import static java.util.Collections.emptyList;
-import static java.util.logging.Level.WARNING;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.api.plugin.Plugin.PREF_PLUGIN_ENABLE;
 import static org.briarproject.bramble.api.plugin.Plugin.State.ACTIVE;
 import static org.briarproject.bramble.api.plugin.Plugin.State.DISABLED;
 import static org.briarproject.bramble.api.plugin.Plugin.State.STARTING_STOPPING;
-import static org.briarproject.bramble.util.LogUtils.logException;
 
 @ThreadSafe
 @NotNullByDefault
 class PluginManagerImpl implements PluginManager, Service {
-
-	private static final Logger LOG =
-			getLogger(PluginManagerImpl.class.getName());
-
 	private final Executor ioExecutor, wakefulIoExecutor;
 	private final EventBus eventBus;
 	private final PluginConfig pluginConfig;
@@ -102,8 +93,6 @@ class PluginManagerImpl implements PluginManager, Service {
 			TransportId t = f.getId();
 			SimplexPlugin s = f.createPlugin(new Callback(t));
 			if (s == null) {
-				if (LOG.isLoggable(WARNING))
-					LOG.warning("Could not create plugin for " + t);
 			} else {
 				plugins.put(t, s);
 				simplexPlugins.add(s);
@@ -116,8 +105,6 @@ class PluginManagerImpl implements PluginManager, Service {
 			TransportId t = f.getId();
 			DuplexPlugin d = f.createPlugin(new Callback(t));
 			if (d == null) {
-				if (LOG.isLoggable(WARNING))
-					LOG.warning("Could not create plugin for " + t);
 			} else {
 				plugins.put(t, d);
 				duplexPlugins.add(d);
@@ -191,7 +178,6 @@ class PluginManagerImpl implements PluginManager, Service {
 		try {
 			settingsManager.mergeSettings(s, namespace);
 		} catch (DbException e) {
-			logException(LOG, WARNING, e);
 		}
 	}
 
@@ -210,10 +196,6 @@ class PluginManagerImpl implements PluginManager, Service {
 			try {
 				plugin.start();
 			} catch (PluginException e) {
-				if (LOG.isLoggable(WARNING)) {
-					LOG.warning("Plugin " + plugin.getId() + " did not start");
-					logException(LOG, WARNING, e);
-				}
 			} finally {
 				startLatch.countDown();
 			}
@@ -239,10 +221,6 @@ class PluginManagerImpl implements PluginManager, Service {
 				plugin.stop();
 			} catch (InterruptedException e) {
 			} catch (PluginException e) {
-				if (LOG.isLoggable(WARNING)) {
-					LOG.warning("Plugin " + plugin.getId() + " did not stop");
-					logException(LOG, WARNING, e);
-				}
 			} finally {
 				stopLatch.countDown();
 			}
@@ -266,7 +244,6 @@ class PluginManagerImpl implements PluginManager, Service {
 			try {
 				return settingsManager.getSettings(id.getString());
 			} catch (DbException e) {
-				logException(LOG, WARNING, e);
 				return new Settings();
 			}
 		}
@@ -276,7 +253,6 @@ class PluginManagerImpl implements PluginManager, Service {
 			try {
 				return transportPropertyManager.getLocalProperties(id);
 			} catch (DbException e) {
-				logException(LOG, WARNING, e);
 				return new TransportProperties();
 			}
 		}
@@ -288,7 +264,6 @@ class PluginManagerImpl implements PluginManager, Service {
 						transportPropertyManager.getRemoteProperties(id);
 				return remote.values();
 			} catch (DbException e) {
-				logException(LOG, WARNING, e);
 				return emptyList();
 			}
 		}
@@ -303,7 +278,6 @@ class PluginManagerImpl implements PluginManager, Service {
 			try {
 				transportPropertyManager.mergeLocalProperties(id, p);
 			} catch (DbException e) {
-				logException(LOG, WARNING, e);
 			}
 		}
 

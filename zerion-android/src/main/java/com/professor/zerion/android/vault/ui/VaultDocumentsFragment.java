@@ -89,7 +89,6 @@ public class VaultDocumentsFragment extends BaseFragment {
 			@Override
 			public void onDocumentClick(VaultItem item) {
 				if (isPickerMode) {
-					// In picker mode, select and return the item
 					selectItemForPicker(item);
 				} else {
 					Toast.makeText(requireContext(), "Opening " + item.name + "...", Toast.LENGTH_SHORT).show();
@@ -416,7 +415,6 @@ public class VaultDocumentsFragment extends BaseFragment {
 
 	private void setupClickListeners() {
 		if (isPickerMode) {
-			// Hide FAB in picker mode
 			fabAdd.setVisibility(View.GONE);
 		} else {
 			fabAdd.setOnClickListener(v -> showAddDocumentOptions());

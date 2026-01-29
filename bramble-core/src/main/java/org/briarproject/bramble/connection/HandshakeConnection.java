@@ -17,10 +17,6 @@ import org.briarproject.bramble.api.transport.StreamWriterFactory;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.Nullable;
-
-import static java.util.logging.Level.WARNING;
-import static org.briarproject.bramble.util.LogUtils.logException;
-
 @NotNullByDefault
 abstract class HandshakeConnection extends Connection {
 
@@ -32,11 +28,7 @@ abstract class HandshakeConnection extends Connection {
 	final DuplexTransportConnection connection;
 	final TransportConnectionReader reader;
 	final TransportConnectionWriter writer;
-	/**
-	 * If true, use classical (Briar-compatible) record format with 4-byte
-	 * header and uint16 length. If false, use extended format with 6-byte
-	 * header and uint32 length for post-quantum payloads.
-	 */
+	
 	final boolean classical;
 
 	HandshakeConnection(KeyManager keyManager,
@@ -68,7 +60,6 @@ abstract class HandshakeConnection extends Connection {
 		try {
 			return keyManager.getStreamContext(pendingContactId, transportId);
 		} catch (DbException e) {
-			logException(LOG, WARNING, e);
 			return null;
 		}
 	}

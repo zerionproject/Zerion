@@ -74,14 +74,12 @@ class PrivateMessageValidator implements MessageValidator {
 	@Override
 	public MessageContext validateMessage(Message m, Group g)
 			throws InvalidMessageException {
-		// Reject the message if it's too far in the future
 		long now = clock.currentTimeMillis();
 		if (m.getTimestamp() - now > MAX_CLOCK_DIFFERENCE) {
 			throw new InvalidMessageException(
 					"Timestamp is too far in the future");
 		}
 		try {
-			// TODO: Support large messages
 			InputStream in = new ByteArrayInputStream(m.getBody());
 			CountingInputStream countIn =
 					new CountingInputStream(in, MAX_MESSAGE_BODY_LENGTH);
@@ -90,11 +88,9 @@ class PrivateMessageValidator implements MessageValidator {
 			long bytesRead = countIn.getBytesRead();
 			BdfMessageContext context;
 			if (list.size() == 1) {
-				// Legacy private message
 				if (!reader.eof()) throw new FormatException();
 				context = validateLegacyPrivateMessage(m, list);
 			} else {
-				// Private message or attachment
 				int messageType = list.getInt(0);
 				if (messageType == PRIVATE_MESSAGE) {
 					if (!reader.eof()) throw new FormatException();
@@ -122,11 +118,9 @@ class PrivateMessageValidator implements MessageValidator {
 
 	private BdfMessageContext validateLegacyPrivateMessage(Message m,
 			BdfList body) throws FormatException {
-		// Client version 0.0: Private message text
 		checkSize(body, 1);
 		String text = body.getString(0);
 		checkLength(text, 0, MAX_PRIVATE_MESSAGE_TEXT_LENGTH);
-		// Return the metadata
 		BdfDictionary meta = new BdfDictionary();
 		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
 		meta.put(MSG_KEY_LOCAL, false);
@@ -136,23 +130,15 @@ class PrivateMessageValidator implements MessageValidator {
 
 	private BdfMessageContext validatePrivateMessage(Message m, BdfList body)
 			throws FormatException {
-		// Client version 0.1 to 0.2: Message type, optional private message
-		// text, attachment headers.
-		// Client version 0.3: Message type, optional private message text,
-		// attachment headers, optional auto-delete timer.
 		checkSize(body, 3, 4);
 		String text = body.getOptionalString(1);
 		checkLength(text, 0, MAX_PRIVATE_MESSAGE_TEXT_LENGTH);
 		BdfList headers = body.getList(2);
 		if (text == null) checkSize(headers, 1, MAX_ATTACHMENTS_PER_MESSAGE);
 		else checkSize(headers, 0, MAX_ATTACHMENTS_PER_MESSAGE);
-
-		// Collect attachment message IDs as dependencies - the private message
-		// depends on all attachments being available before it can be delivered
 		Collection<MessageId> dependencies = new ArrayList<>();
 		for (int i = 0; i < headers.size(); i++) {
 			BdfList header = headers.getList(i);
-			// Message ID, content type
 			checkSize(header, 2);
 			byte[] id = header.getRaw(0);
 			checkLength(id, UniqueId.LENGTH);
@@ -165,7 +151,6 @@ class PrivateMessageValidator implements MessageValidator {
 		if (body.size() == 4) {
 			timer = validateAutoDeleteTimer(body.getOptionalLong(3));
 		}
-		// Return the metadata
 		BdfDictionary meta = new BdfDictionary();
 		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
 		meta.put(MSG_KEY_LOCAL, false);
@@ -176,7 +161,6 @@ class PrivateMessageValidator implements MessageValidator {
 		if (timer != NO_AUTO_DELETE_TIMER) {
 			meta.put(MSG_KEY_AUTO_DELETE_TIMER, timer);
 		}
-		// Return with dependencies to ensure attachments are synced before message
 		if (dependencies.isEmpty()) {
 			return new BdfMessageContext(meta);
 		}
@@ -185,11 +169,9 @@ class PrivateMessageValidator implements MessageValidator {
 
 	private BdfMessageContext validateAttachment(Message m, BdfList descriptor,
 			long descriptorLength) throws FormatException {
-		// Message type, content type
 		checkSize(descriptor, 2);
 		String contentType = descriptor.getString(1);
 		checkLength(contentType, 1, MAX_CONTENT_TYPE_BYTES);
-		// Return the metadata
 		BdfDictionary meta = new BdfDictionary();
 		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
 		meta.put(MSG_KEY_LOCAL, false);
@@ -201,32 +183,25 @@ class PrivateMessageValidator implements MessageValidator {
 
 	private BdfMessageContext validateVoiceSignal(Message m, BdfList body)
 			throws FormatException {
-		// Voice signal format: [VOICE_SIGNAL, signalType, callId, payload, durationMs]
-		// Minimum size is 3 (type, signalType, callId), max is 5
 		checkSize(body, 3, 5);
 		int signalType = body.getInt(1);
-		// Validate signal type is in valid range (0-5)
 		if (signalType < 0 || signalType > 5) {
 			throw new FormatException();
 		}
 		String callId = body.getString(2);
-		// Call ID max length is 64 (UUID format)
 		checkLength(callId, 1, 64);
-		// Optional payload (SDP/ICE data) - max 16KB
 		if (body.size() > 3) {
 			String payload = body.getOptionalString(3);
 			if (payload != null) {
 				checkLength(payload, 0, 16384);
 			}
 		}
-		// Optional duration (for CALL_END)
 		if (body.size() > 4) {
 			Long durationMs = body.getOptionalLong(4);
 			if (durationMs != null && durationMs < 0) {
 				throw new FormatException();
 			}
 		}
-		// Return the metadata
 		BdfDictionary meta = new BdfDictionary();
 		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
 		meta.put(MSG_KEY_LOCAL, false);
@@ -258,9 +233,6 @@ class PrivateMessageValidator implements MessageValidator {
 		if (chunkIds.size() != chunkCount) {
 			throw new FormatException();
 		}
-
-		// Collect chunk message IDs as dependencies - the manifest depends on
-		// all chunks being available before it can be delivered
 		Collection<MessageId> dependencies = new ArrayList<>(chunkCount);
 		for (int i = 0; i < chunkIds.size(); i++) {
 			byte[] chunkId = chunkIds.getRaw(i);
@@ -276,7 +248,6 @@ class PrivateMessageValidator implements MessageValidator {
 		meta.put(MSG_KEY_TOTAL_SIZE, totalSize);
 		meta.put(MSG_KEY_CHUNK_COUNT, chunkCount);
 		meta.put(MSG_KEY_ROOT_HASH, rootHash);
-		// Return with dependencies to ensure chunks are synced before manifest
 		return new BdfMessageContext(meta, dependencies);
 	}
 

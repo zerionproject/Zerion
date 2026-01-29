@@ -9,9 +9,7 @@ import java.util.Collection;
 
 import javax.annotation.concurrent.Immutable;
 
-/**
- * An event that is broadcast when the visibility of a group is updated.
- */
+
 @Immutable
 @NotNullByDefault
 public class GroupVisibilityUpdatedEvent extends Event {
@@ -29,9 +27,7 @@ public class GroupVisibilityUpdatedEvent extends Event {
 		return visibility;
 	}
 
-	/**
-	 * Returns the contacts affected by the update.
-	 */
+	
 	public Collection<ContactId> getAffectedContacts() {
 		return affected;
 	}

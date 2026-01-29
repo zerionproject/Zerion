@@ -37,7 +37,6 @@ class ConversationVisitor implements
 	private final LiveData<String> contactName;
 	@Nullable
 	private final ConversationViewModel viewModel;
-	// When true, attachments are loaded lazily at ViewHolder bind time
 	private volatile boolean lazyAttachmentMode = false;
 
 	ConversationVisitor(Context ctx, TextCache textCache,
@@ -50,11 +49,7 @@ class ConversationVisitor implements
 		this.viewModel = viewModel;
 	}
 
-	/**
-	 * Enable/disable lazy attachment loading mode.
-	 * When enabled, attachments are NOT loaded during visitor.accept() -
-	 * they will be loaded when ViewHolder binds for better performance.
-	 */
+	
 	void setLazyAttachmentMode(boolean lazy) {
 		this.lazyAttachmentMode = lazy;
 	}
@@ -64,24 +59,18 @@ class ConversationVisitor implements
 	public ConversationItem visitPrivateMessageHeader(PrivateMessageHeader h) {
 		if (h.hasText()) {
 			String text = textCache.getText(h.getId());
-			// Filter out voice signaling messages - they should NOT appear in chat
-			// Check for both legacy "VOICE_CALL:" format and new ZSIG format
 			if (text != null) {
 				if (text.startsWith("VOICE_CALL:")) {
-					// Legacy format - show as call event for history
 					return parseVoiceCallMessage(text, h);
 				}
 				if (VoiceCallSignal.isSignal(text)) {
-					// New ZSIG format - hide completely (signaling only)
 					return null;
 				}
 			}
 		}
 
 		ConversationMessageItem item;
-		// PERFORMANCE: In lazy mode, skip attachment loading here - do it at ViewHolder bind
 		if (lazyAttachmentMode) {
-			// Use lazy constructor - attachments will be loaded when ViewHolder binds
 			if (h.isLocal()) {
 				item = new ConversationMessageItem(
 						R.layout.list_item_conversation_msg_out, h, contactName);
@@ -90,7 +79,6 @@ class ConversationVisitor implements
 						R.layout.list_item_conversation_msg_in, h, contactName);
 			}
 		} else {
-			// Normal mode - load attachments now (for new incoming messages)
 			List<AttachmentItem> attachments;
 			if (h.getAttachmentHeaders().isEmpty()) {
 				attachments = emptyList();
@@ -109,7 +97,6 @@ class ConversationVisitor implements
 		}
 		if (h.hasText()) {
 			String text = textCache.getText(h.getId());
-			// Don't display voice signaling text
 			if (text != null && !text.startsWith("VOICE_CALL:") &&
 					!VoiceCallSignal.isSignal(text)) {
 				item.setText(text);
@@ -127,8 +114,6 @@ class ConversationVisitor implements
 
 		return item;
 	}
-
-	// Helper to get contact name with fallback for early loading
 	private String getContactNameOrDefault() {
 		String name = contactName.getValue();
 		return name != null ? name : "";

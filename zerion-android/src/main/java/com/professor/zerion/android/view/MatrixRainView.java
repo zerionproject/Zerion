@@ -13,19 +13,13 @@ import android.view.WindowInsets;
 
 import java.util.Random;
 
-/**
- * Matrix-style digital rain animation for login screen.
- * Designed to stay full-screen and not be affected by keyboard/status bar.
- * Features smooth fade at top to blend with status bar text.
- */
+
 public class MatrixRainView extends View {
 
 	private static final int COLOR_TURQUOISE = 0xFF00E1FF;
 	private static final int COLOR_CYAN = 0xFF00B8FF;
 	private static final int COLOR_DEEP_BLUE = 0xFF0066FF;
 	private static final int COLOR_BACKGROUND = 0xFF0B0E15;
-
-	// Top offset for status bar area fade effect
 	private int statusBarFadeHeight = 80;
 
 	private static final String CHARS = "ｦｧｨｩｪｫｬｭｮｯｰｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -121,8 +115,6 @@ public class MatrixRainView extends View {
 		super.onDraw(canvas);
 
 		if (yPositions == null) return;
-
-		// Fill background
 		canvas.drawColor(COLOR_BACKGROUND);
 
 		for (int i = 0; i < numColumns; i++) {
@@ -133,11 +125,8 @@ public class MatrixRainView extends View {
 				int y = (int) ((yPos - j) * fontSize);
 
 				if (y > -fontSize && y < getHeight()) {
-					// Trail fade (original effect)
 					float trailFade = 1.0f - (j / (float) (numRows * 0.8f));
 					trailFade = Math.max(0.1f, Math.min(1.0f, trailFade));
-
-					// Top fade effect - reduce brightness near status bar
 					float topFade = 1.0f;
 					if (y < statusBarFadeHeight) {
 						topFade = (float) y / statusBarFadeHeight;
@@ -180,10 +169,7 @@ public class MatrixRainView extends View {
 		}
 	}
 
-	/**
-	 * Set the status bar height for proper fade effect.
-	 * Should be called from the hosting fragment/activity.
-	 */
+	
 	public void setStatusBarHeight(int height) {
 		this.statusBarFadeHeight = Math.max(height, 60);
 	}

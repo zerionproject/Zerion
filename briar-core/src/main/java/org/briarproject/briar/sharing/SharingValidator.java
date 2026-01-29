@@ -57,10 +57,6 @@ abstract class SharingValidator extends BdfMessageValidator {
 
 	private BdfMessageContext validateInviteMessage(Message m, BdfList body)
 			throws FormatException {
-		// Client version 0.0: Message type, optional previous message ID,
-		// descriptor, optional text.
-		// Client version 0.1: Message type, optional previous message ID,
-		// descriptor, optional text, optional auto-delete timer.
 		checkSize(body, 4, 5);
 		byte[] previousMessageId = body.getOptionalRaw(1);
 		checkLength(previousMessageId, UniqueId.LENGTH);
@@ -108,10 +104,6 @@ abstract class SharingValidator extends BdfMessageValidator {
 
 	private BdfMessageContext validateAcceptOrDeclineMessage(MessageType type,
 			Message m, BdfList body) throws FormatException {
-		// Client version 0.0: Message type, shareable ID, optional previous
-		// message ID.
-		// Client version 0.1: Message type, shareable ID, optional previous
-		// message ID, optional auto-delete timer.
 		checkSize(body, 3, 4);
 		byte[] shareableId = body.getRaw(1);
 		checkLength(shareableId, UniqueId.LENGTH);

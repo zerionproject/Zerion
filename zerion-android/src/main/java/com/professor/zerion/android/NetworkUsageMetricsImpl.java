@@ -6,10 +6,6 @@ import android.os.Process;
 import org.briarproject.bramble.api.lifecycle.Service;
 import com.professor.zerion.android.api.NetworkUsageMetrics;
 import org.briarproject.nullsafety.NotNullByDefault;
-
-
-import static org.briarproject.bramble.util.LogUtils.now;
-
 @NotNullByDefault
 class NetworkUsageMetricsImpl implements NetworkUsageMetrics, Service {
 
@@ -18,7 +14,7 @@ class NetworkUsageMetricsImpl implements NetworkUsageMetrics, Service {
 
 	@Override
 	public void startService() {
-		startTime = now();
+		startTime = System.currentTimeMillis();
 		int uid = Process.myUid();
 		rxBytes = TrafficStats.getUidRxBytes(uid);
 		txBytes = TrafficStats.getUidTxBytes(uid);
@@ -30,7 +26,7 @@ class NetworkUsageMetricsImpl implements NetworkUsageMetrics, Service {
 
 	@Override
 	public Metrics getMetrics() {
-		long sessionDurationMs = now() - startTime;
+		long sessionDurationMs = System.currentTimeMillis() - startTime;
 		int uid = Process.myUid();
 		long rx = TrafficStats.getUidRxBytes(uid) - rxBytes;
 		long tx = TrafficStats.getUidTxBytes(uid) - txBytes;

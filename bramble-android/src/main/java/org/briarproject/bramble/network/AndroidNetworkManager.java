@@ -34,8 +34,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.logging.Logger;
-
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 
@@ -52,20 +50,12 @@ import static java.net.NetworkInterface.getNetworkInterfaces;
 import static java.util.Collections.list;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static java.util.logging.Level.WARNING;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.util.AndroidUtils.registerReceiver;
-import static org.briarproject.bramble.util.LogUtils.logException;
 import static org.briarproject.nullsafety.NullSafety.requireNonNull;
 
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
 class AndroidNetworkManager implements NetworkManager, Service {
-
-	private static final Logger LOG =
-			getLogger(AndroidNetworkManager.class.getName());
-
-	// See android.net.wifi.WifiManager
 	private static final String WIFI_AP_STATE_CHANGED_ACTION =
 			"android.net.wifi.WIFI_AP_STATE_CHANGED";
 
@@ -94,7 +84,6 @@ class AndroidNetworkManager implements NetworkManager, Service {
 	@Override
 	public void startService() {
 		if (used.getAndSet(true)) throw new IllegalStateException();
-		// Register to receive network status events
 		networkStateReceiver = new NetworkStateReceiver();
 		IntentFilter filter = new IntentFilter();
 		filter.addAction(CONNECTIVITY_ACTION);
@@ -114,15 +103,9 @@ class AndroidNetworkManager implements NetworkManager, Service {
 
 	@Override
 	public NetworkStatus getNetworkStatus() {
-		// https://issuetracker.google.com/issues/175055271
 		try {
 			NetworkInfo net = connectivityManager.getActiveNetworkInfo();
 			boolean connected = net != null && net.isConnected();
-			// Research into Android's behavior to check network connectivity
-			// (https://code.briarproject.org/briar/public-mesh-research/-/issues/19)
-			// has shown that NetworkInfo#isConnected() returns true if the device
-			// is connected to any Wifi, independent of whether any specific IP
-			// address can be reached using it or any domain names can be resolved.
 			boolean wifi = false, ipv6Only = false;
 			if (connected) {
 				wifi = net.getType() == TYPE_WIFI;
@@ -131,12 +114,6 @@ class AndroidNetworkManager implements NetworkManager, Service {
 			}
 			return new NetworkStatus(connected, wifi, ipv6Only);
 		} catch (SecurityException e) {
-			logException(LOG, WARNING, e);
-			// Without the ConnectivityManager we can't detect whether we have
-			// internet access. Assume we do, which is probably less harmful
-			// than assuming we don't. Likewise, assume the connection is
-			// IPv6-only. Fall back to the WifiManager to detect whether we
-			// have a wifi connection.
 			boolean connected = true, wifi = false, ipv6Only = true;
 			WifiManager wm = (WifiManager) app.getSystemService(WIFI_SERVICE);
 			if (wm != null) {
@@ -150,15 +127,9 @@ class AndroidNetworkManager implements NetworkManager, Service {
 		}
 	}
 
-	/**
-	 * Returns true if the
-	 * {@link ConnectivityManager#getActiveNetwork() active network} has an
-	 * IPv6 unicast address and no IPv4 addresses. The active network is
-	 * assumed not to be a loopback interface.
-	 */
+	
 	@TargetApi(23)
 	private boolean isActiveNetworkIpv6Only() {
-		// https://issuetracker.google.com/issues/175055271
 		try {
 			Network net = connectivityManager.getActiveNetwork();
 			if (net == null) {
@@ -176,18 +147,11 @@ class AndroidNetworkManager implements NetworkManager, Service {
 			}
 			return hasIpv6Unicast;
 		} catch (SecurityException e) {
-			logException(LOG, WARNING, e);
 			return false;
 		}
 	}
 
-	/**
-	 * Returns true if the device has at least one network interface with an
-	 * IPv6 unicast address and no interfaces with IPv4 addresses, excluding
-	 * loopback interfaces and interfaces that are
-	 * {@link NetworkInterface#isUp() down}. If this method returns true and
-	 * the device has internet access then it's via IPv6 only.
-	 */
+	
 	private boolean areAllAvailableNetworksIpv6Only() {
 		try {
 			Enumeration<NetworkInterface> interfaces = getNetworkInterfaces();
@@ -204,7 +168,6 @@ class AndroidNetworkManager implements NetworkManager, Service {
 			}
 			return hasIpv6Unicast;
 		} catch (SocketException e) {
-			logException(LOG, WARNING, e);
 			return false;
 		}
 	}
@@ -229,11 +192,8 @@ class AndroidNetworkManager implements NetworkManager, Service {
 			String action = i.getAction();
 			updateConnectionStatus();
 			if (isSleepOrDozeEvent(action)) {
-				// Allow time for the network to be enabled or disabled
 				scheduleConnectionStatusUpdate(1, MINUTES);
 			} else if (isApEvent(action)) {
-				// The state change may be broadcast before the AP address is
-				// visible, so delay handling the event
 				scheduleConnectionStatusUpdate(5, SECONDS);
 			}
 		}

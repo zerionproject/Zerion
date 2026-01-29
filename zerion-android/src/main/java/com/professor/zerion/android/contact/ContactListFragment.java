@@ -128,7 +128,6 @@ public class ContactListFragment extends BaseFragment
 		if (snackbar != null) return;
 		View v = requireView();
 		int stringRes = R.string.pending_contact_requests_snackbar;
-		// Calculate FAB margin: 80dp margin + 56dp FAB size = 136dp, use 72dp to position above FAB
 		int bottomMargin = (int) (72 * getResources().getDisplayMetrics().density);
 		snackbar = new ZerionSnackbarBuilder()
 				.setAction(R.string.show, view -> showPendingContactList())

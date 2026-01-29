@@ -58,8 +58,6 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   <string name="nav_drawer_close_description">Tampar lo panèl de navigacion</string>
   <string name="contact_list_button">Contactes</string>
   <string name="groups_button">Grops privats</string>
-  <string name="forums_button">Fòrums</string>
-  <string name="blogs_button">Blòges</string>
   <!--This is part of the main menu. The app will be locked when this is tapped.-->
   <string name="lock_button">Verrolhar l’aplicacion</string>
   <string name="settings_button">Paramètres</string>
@@ -82,14 +80,6 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   <plurals name="group_message_notification_text">
     <item quantity="one">Novèl messatge gropat</item>
     <item quantity="other">%d novèls messatges gropats</item>
-  </plurals>
-  <plurals name="forum_post_notification_text">
-    <item quantity="one">Novèla publicacion al fòrum</item>
-    <item quantity="other">%d novèlas publicacions al fòrum</item>
-  </plurals>
-  <plurals name="blog_post_notification_text">
-    <item quantity="one">Novèl article sul blòg</item>
-    <item quantity="other">%d novèls article sul blòg</item>
   </plurals>
   <!--Misc-->
   <string name="now">Ara</string>
@@ -158,14 +148,12 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   <string name="messaging_too_many_attachments_toast">Solament los %d primièrs imatges seràn enviats</string>
   <!--Adding Contacts-->
   <string name="add_contact_title">Ajustar un contacte a proximitat</string>
-  <string name="face_to_face">Vos cal vos amassar amb la persona que volètz apondre als contactes.\n\n Aquò es fach per evitar qu’òm vos raube l’identitat e que vòstres messatges sián legits per d’autres.</string>
   <string name="continue_button">Contunhar</string>
   <string name="try_again_button">Tornar ensajar</string>
   <string name="waiting_for_contact_to_scan">En espèra de la numerizacion e de la connexion al contacte\u2026</string>
   <string name="exchanging_contact_details">Escambi dels detalhs del contacte\u2026</string>
   <string name="contact_added_toast">Contacte apondut : %s</string>
   <string name="contact_already_exists">Lo contacte %s existís ja</string>
-  <string name="qr_code_invalid">Lo QR còdi es invalid</string>
   <string name="qr_code_too_old">Lo còdi QR qu’avètz numerizat ven d’una version anciana de %s.\n\nMercés de demandar a vòstre contact d’installar la darrièra version puèi tornatz ensajar.</string>
   <string name="qr_code_too_new">Lo còdi QR qu’avètz numerizat ven d’una version mai recenta de %s.\n\nMercés d’installar la darrièra version puèi tornatz ensajar.</string>
   <string name="camera_error">Error de camèra</string>
@@ -220,13 +208,9 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   <string name="duplicate_link_dialog_text_1_contact">Avètz ja un contacte amb aqueste ligam : %s</string>
   <!--This is a question asking whether two nicknames refer to the same person-->
   <string name="duplicate_link_dialog_text_2">Son %s e %s la meteissa persona ?</string>
-  <!--This is a button for answering that two nicknames do indeed refer to the same person. This
-	string will be used in a dialog button, so if the translation of this string is longer than 20
-	characters, please use "Yes" instead, and use "No" for the "Different Person" button-->
+  <!--This is a button for answering that two nicknames do indeed refer to the same person. This -->
   <string name="same_person_button">Meteissa persona</string>
-  <!--This is a button for answering that two nicknames refer to different people. This string
-	will be used in a dialog button, so if the translation of this string longer than 20 characters,
-	please use "No" instead, and use "Yes" for the "Same Person" button-->
+  <!--This is a button for answering that two nicknames refer to different people. This string -->
   <string name="different_person_button">Persona diferenta</string>
   <string name="duplicate_link_dialog_text_3">%s e %s vos envia lo meteis ligam.\n\nUn d’eles poiriá ensajar de descobrir quines son vòstres contactes.\n\n Digatz-los pas qu’avètz recebut lo meteis ligam de qualqu’un mai.</string>
   <string name="pending_contact_updated_toast">Contact en espèra actualizat</string>
@@ -305,103 +289,26 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   <string name="groups_reveal_visible_revealed_by_contact">Vòstre ligam – revelat per %s – amb lo contacte es invisible pel grop</string>
   <string name="groups_reveal_invisible">Vòstre ligam amb lo contacte es invisible pel grop</string>
   <!--Forums-->
-  <string name="no_forums">Cap de forum de mostrar</string>
-  <string name="no_forums_action">Tocatz l’icòna + per crear un forum, o demandatz a un contacte de partejar des forums amb vos</string>
-  <string name="create_forum_title">Crear un fòrum</string>
-  <string name="choose_forum_hint">Donar un nom al fòrum</string>
-  <string name="create_forum_button">Crear un fòrum</string>
-  <string name="forum_created_toast">Fòrum creat</string>
-  <string name="no_forum_posts">Cap d’article a mostrar</string>
   <string name="no_posts">Cap publicacion</string>
   <plurals name="posts">
     <item quantity="one">%d publicacion</item>
     <item quantity="other">%d publicacions</item>
   </plurals>
-  <string name="forum_new_message_hint">Nòva responsa</string>
-  <string name="forum_message_reply_hint">Nòva responsa</string>
   <string name="btn_reply">Respondre</string>
-  <string name="forum_leave">Quitar lo fòrum</string>
-  <string name="dialog_title_leave_forum">Confirmar la sortida del fòrum</string>
-  <string name="dialog_message_leave_forum">Volètz vertadièrament quitar aqueste forum ?\n\nTotes los contactes qu’avètz convidats a aqueste forum quitaràn de recebre las mesas a jorn.</string>
   <string name="dialog_button_leave">Quitar</string>
-  <string name="forum_left_toast">Quitar lo forum</string>
   <!--Forum Sharing-->
-  <string name="forum_share_button">Partejar lo fòrum</string>
   <string name="contacts_selected">Contactes seleccionats</string>
   <string name="activity_share_toolbar_header">Causissètz de contactes</string>
   <string name="no_contacts_selector">Cap de contacte de mostrar</string>
   <string name="no_contacts_selector_action">Tornatz aquí aprèp aver ajustat un contacte</string>
-  <string name="forum_shared_snackbar">Fòrom partejat amb los contactes causits</string>
-  <string name="forum_share_message">Apondre un messatge (opcional)</string>
-  <string name="forum_share_error">Error en partejar lo fòrum</string>
-  <string name="forum_invitation_received">%1$s a partejat lo fòrom « %2$s » amb vos.</string>
-  <string name="forum_invitation_sent">Avètz partejat lo fòrom « %1$s » amb %2$s.</string>
-  <string name="forum_invitations_title">Convidacion al fòrum</string>
-  <string name="forum_invitation_exists">Acceptèretz ja una invitacion a aqueste forum.\n\n Acceptar mai d’invitacion farà venir vòstra connexion al forum mai rapida e fisabla.</string>
-  <string name="forum_joined_toast">Arribèt al forum</string>
-  <string name="forum_declined_toast">Invitacion declinada</string>
   <string name="shared_by_format">Partejat per %s</string>
-  <string name="forum_invitation_already_sharing">Ja a partejar</string>
-  <string name="forum_invitation_response_accepted_sent">Avètz acceptat la convidacion al fòrum de %s.</string>
-  <string name="forum_invitation_response_declined_sent">Avètz refusat la convidacion al fòrum de %s.</string>
-  <string name="forum_invitation_response_accepted_received">%s a acceptat la convidacion al fòrum.</string>
-  <string name="forum_invitation_response_declined_received">%s a refusat la convidacion al fòrum.</string>
   <string name="sharing_status">Estat del partatge</string>
-  <string name="sharing_status_forum">Totes los participants d’un fòrum pòdon lo partejar amb lors contactes. Partejatz aqueste fòrum amb los contactes seguents. I a benlèu mai de monde que podètz pas veire.</string>
   <string name="shared_with">Partejat amb %1$d (%2$d en linha)</string>
-  <plurals name="forums_shared">
-    <item quantity="one">%d fòrum partejat amb de contactes</item>
-    <item quantity="other">%d fòrums partejats amb de contactes</item>
-  </plurals>
   <string name="nobody">Degun</string>
   <!--Blogs-->
-  <string name="blogs_other_blog_empty_state">Cap d’article a mostrar</string>
   <string name="read_more">Legir la seguida</string>
-  <string name="blogs_write_blog_post">Escriure un article de blòg</string>
-  <string name="blogs_write_blog_post_body_hint">Escrivètz vòstre article de blòg</string>
-  <string name="blogs_publish_blog_post">Publicar</string>
-  <string name="blogs_blog_post_created">Article salvat</string>
-  <string name="blogs_blog_post_received">Nòu article recebut</string>
-  <string name="blogs_blog_post_scroll_to">Anar a</string>
-  <string name="blogs_feed_empty_state">Cap d’article a mostrar</string>
-  <string name="blogs_feed_empty_state_action">Las publicacions de vòstres contactes e blògues que seguissètz apareisseràn aquí\n\nTocatz lo gredon per escriure una publicacion</string>
-  <string name="blogs_remove_blog">Suprimir lo blòg</string>
-  <string name="blogs_remove_blog_dialog_message">Volètz vertadièrament levar aqueste blòg ?\n\nLas publicacions seràn levadas de vòstre aparelh mas pas dels aparelhs del monde.\n\nTotes los contactes qu’avètz partejat aqueste blòg quitaràn benlèu de recebre las mesas a jorn.</string>
-  <string name="blogs_remove_blog_ok">Suprimir</string>
-  <string name="blogs_blog_removed">Blòg tirat</string>
-  <string name="blogs_reblog_comment_hint">Apondre un comentari (opcional)</string>
-  <string name="blogs_reblog_button">Partejar</string>
   <!--Blog Sharing-->
-  <string name="blogs_sharing_share">Partejar lo blòg</string>
-  <string name="blogs_sharing_error">Error en partejar lo blòg</string>
-  <string name="blogs_sharing_button">Fai virar</string>
-  <string name="blogs_sharing_snackbar">Blòg partejat amb los contactes seleccionats</string>
-  <string name="blogs_sharing_response_accepted_sent">Avètz acceptat la convidacion al blòg a %s.</string>
-  <string name="blogs_sharing_response_declined_sent">Avètz refusat la convidacion al blòg a %s.</string>
-  <string name="blogs_sharing_response_accepted_received">%s a acceptat la convidacion al blòg.</string>
-  <string name="blogs_sharing_response_declined_received">%s a refusat la convidacion al blòg.</string>
-  <string name="blogs_sharing_invitation_received">%1$s a partejat lo blòg « %2$s » amb vos.</string>
-  <string name="blogs_sharing_invitation_sent">Avètz partejat lo blòg « %1$s » amb %2$s.</string>
-  <string name="blogs_sharing_invitations_title">Convidacion al blòg</string>
-  <string name="blogs_sharing_joined_toast">S’abonar al blòg</string>
-  <string name="blogs_sharing_declined_toast">Invitacion declinada</string>
-  <string name="sharing_status_blog">Qual que siá seguidor d’un blòg pòt lo partejar amb sos contactes. Partejatz lo blòg amb los contactes seguents. I a benlèu mai de monde qu’o seguen que vesètz pas.</string>
   <!--RSS Feeds-->
-  <string name="blogs_rss_feeds_import">Importar de fluxes RSS</string>
-  <string name="blogs_rss_feeds_import_button">Importar</string>
-  <string name="blogs_rss_feeds_import_hint">Marcar l’URL del flux RSS</string>
-  <string name="blogs_rss_feeds_import_error">Una error s’es produisida en importar lo flux</string>
-  <string name="blogs_rss_feeds_manage_imported">Importat :</string>
-  <string name="blogs_rss_feeds_manage_author">Autor :</string>
-  <string name="blogs_rss_feeds_manage_updated">Darrièra mesa a jorn :</string>
-  <string name="blogs_rss_remove_feed">Suprimir lo flux</string>
-  <string name="blogs_rss_remove_feed_dialog_message">Volètz vertadièrament levar aqueste flux ?\n\nLas publicacions seràn 
-levadas de vòstre aparelh mas pas dels aparelhs del monde.\n\nTotes los 
-contactes qu’avètz partejat aqueste flux quitaràn benlèu de recebre las mesas
- a jorn.</string>
-  <string name="blogs_rss_remove_feed_ok">Suprimir</string>
-  <string name="blogs_rss_feeds_manage_empty_state">Cap de flux RSS de far veire.\n\nTocatz l’icòna + per n’importar un</string>
-  <string name="blogs_rss_feeds_manage_error">Error en cargar vòstres fluxes. Ensajatz mai tard.</string>
   <!--Settings Profile Picture-->
   <!--Settings Display-->
   <string name="pref_language_title">Lenga &amp; region</string>
@@ -468,12 +375,6 @@ contactes qu’avètz partejat aqueste flux quitaràn benlèu de recebre las mes
   <string name="notify_group_messages_setting_title">Messatges gropats</string>
   <string name="notify_group_messages_setting_summary">Notificar los messatges gropats</string>
   <string name="notify_group_messages_setting_summary_26">Configuratz las alèrtas pels messatges de grop</string>
-  <string name="notify_forum_posts_setting_title">Publicacions al fòrum</string>
-  <string name="notify_forum_posts_setting_summary">Notificar las publicacions al fòrum</string>
-  <string name="notify_forum_posts_setting_summary_26">Configurar las alèrtas d’articles de forum</string>
-  <string name="notify_blog_posts_setting_title">Articles de blòg</string>
-  <string name="notify_blog_posts_setting_summary">Notificar los articles de blòg</string>
-  <string name="notify_blog_posts_setting_summary_26">Configurar las alèrtas d’articles de blòg</string>
   <string name="notify_vibration_setting">Vibracion</string>
   <string name="notify_sound_setting">Sonariá</string>
   <string name="notify_sound_setting_default">Sonariá per defaut</string>
@@ -519,8 +420,6 @@ parteja pas amb degun.</string>
   <string name="permission_camera_location_title">Camèra e localizacion</string>
   <string name="permission_camera_location_request_body">Per numerizar un còdi QR, Zerion deu accedir a la camèra.\n\nPer trobar de periferics Bluetooth, Zerion deu aver l’autorizacion d’accedir a vòstra posicion.\n\n Zerion garda pas vòstra posicion e la parteja pas amb degun.</string>
   <string name="permission_camera_denied_body">Avètz regetat l’accès a la camèra, mas per ajustar de contacte cal utilizar la camèra.\n\n Mercés de li donar l’accès</string>
-  <string name="qr_code">Còdi QR</string>
-  <string name="show_qr_code_fullscreen">Mostrar lo còdi QR en ecran complèt</string>
   <!--App Locking-->
   <string name="lock_unlock">Desverrolhar Zerion</string>
   <string name="lock_unlock_verbose">Picatz vòstre PIN, esquèma o senhal per desverrollhar Zerion</string>

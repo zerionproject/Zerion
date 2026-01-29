@@ -18,11 +18,8 @@ import org.briarproject.bramble.api.sync.MessageId;
 import org.briarproject.bramble.test.BrambleIntegrationTest;
 import org.briarproject.bramble.test.TestUtils;
 import org.briarproject.briar.api.autodelete.AutoDeleteManager;
-import org.briarproject.briar.api.blog.BlogFactory;
-import org.briarproject.briar.api.blog.BlogPostFactory;
 import org.briarproject.briar.api.client.MessageTracker;
 import org.briarproject.briar.api.conversation.ConversationMessageHeader;
-import org.briarproject.briar.api.forum.ForumPostFactory;
 import org.briarproject.briar.api.privategroup.GroupMessageFactory;
 import org.briarproject.briar.api.privategroup.PrivateGroupFactory;
 import org.briarproject.briar.api.privategroup.invitation.GroupInvitationFactory;
@@ -75,13 +72,6 @@ public abstract class BriarIntegrationTest<C extends BriarIntegrationTestCompone
 	protected GroupMessageFactory groupMessageFactory;
 	@Inject
 	protected GroupInvitationFactory groupInvitationFactory;
-	@Inject
-	protected BlogFactory blogFactory;
-	@Inject
-	protected BlogPostFactory blogPostFactory;
-	@Inject
-	protected ForumPostFactory forumPostFactory;
-
 	protected C c0, c1, c2;
 
 	private final File testDir = TestUtils.getTestDirectory();

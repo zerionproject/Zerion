@@ -123,30 +123,21 @@ public class PasswordFragment extends BaseFragment implements TextWatcher {
 		password.addTextChangedListener(this);
 		v.findViewById(R.id.btn_forgotten)
 				.setOnClickListener(view -> onForgottenPasswordClick());
-
-		// Setup keyboard insets handling for Signal/SimpleX quality UX
 		setupKeyboardInsetsHandling(v);
 
 		return v;
 	}
 
-	/**
-	 * Modern Android keyboard insets handling.
-	 * Ensures password field is always visible above keyboard.
-	 */
+	
 	private void setupKeyboardInsetsHandling(View rootView) {
 		View loginContent = rootView.findViewById(R.id.login_content);
 		com.professor.zerion.android.view.MatrixRainView matrixRainView =
 				rootView.findViewById(R.id.matrix_rain_view);
 
 		if (loginContent == null) return;
-
-		// Apply window insets to content only, not to Matrix background
 		ViewCompat.setOnApplyWindowInsetsListener(loginContent, (v, windowInsets) -> {
 			Insets ime = windowInsets.getInsets(WindowInsetsCompat.Type.ime());
 			Insets systemBars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
-
-			// Apply padding to push content above keyboard
 			int bottomPadding = Math.max(ime.bottom, systemBars.bottom);
 			v.setPadding(
 					v.getPaddingLeft(),
@@ -154,19 +145,14 @@ public class PasswordFragment extends BaseFragment implements TextWatcher {
 					v.getPaddingRight(),
 					bottomPadding
 			);
-
-			// Set status bar height on Matrix view for fade effect
 			if (matrixRainView != null) {
 				matrixRainView.setStatusBarHeight(systemBars.top);
 			}
 
 			return windowInsets;
 		});
-
-		// Ensure Matrix rain doesn't respond to insets (stays full screen)
 		if (matrixRainView != null) {
 			ViewCompat.setOnApplyWindowInsetsListener(matrixRainView, (v, windowInsets) -> {
-				// Matrix animation should ignore all insets - stays full screen
 				v.setPadding(0, 0, 0, 0);
 				return windowInsets;
 			});

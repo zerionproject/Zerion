@@ -14,15 +14,7 @@ class DatabaseTypes {
 		this.stringType = stringType;
 	}
 
-	/**
-	 * Replaces database type placeholders in a statement with the actual types.
-	 * These placeholders are currently supported:
-	 * <li> _HASH
-	 * <li> _SECRET
-	 * <li> _BINARY
-	 * <li> _COUNTER
-	 * <li> _STRING
-	 */
+	
 	String replaceTypes(String s) {
 		s = s.replaceAll("_HASH", hashType);
 		s = s.replaceAll("_SECRET", secretType);

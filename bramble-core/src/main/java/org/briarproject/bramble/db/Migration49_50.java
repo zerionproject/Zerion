@@ -5,16 +5,9 @@ import org.briarproject.bramble.api.db.DbException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.logging.Logger;
-
-import static java.util.logging.Level.WARNING;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.db.JdbcUtils.tryToClose;
 
 class Migration49_50 implements Migration<Connection> {
-
-	private static final Logger LOG = getLogger(Migration49_50.class.getName());
-
 	@Override
 	public int getStartVersion() {
 		return 49;
@@ -38,7 +31,7 @@ class Migration49_50 implements Migration<Connection> {
 					+ " SET NULL");
 			s.execute("UPDATE statuses SET maxLatency = NULL");
 		} catch (SQLException e) {
-			tryToClose(s, LOG, WARNING);
+			tryToClose(s);
 			throw new DbException(e);
 		}
 	}

@@ -7,10 +7,7 @@ import javax.annotation.concurrent.Immutable;
 
 import static org.briarproject.bramble.api.transport.TransportConstants.REORDERING_WINDOW_SIZE;
 
-/**
- * Contains transport keys for receiving streams from a given contact or
- * pending contact over a given transport in a given time period.
- */
+
 @Immutable
 @NotNullByDefault
 public class IncomingKeys {

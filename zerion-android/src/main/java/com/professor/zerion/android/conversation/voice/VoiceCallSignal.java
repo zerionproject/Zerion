@@ -7,21 +7,13 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-
-import static java.util.logging.Level.WARNING;
-import static java.util.logging.Logger.getLogger;
-
 @NotNullByDefault
 public class VoiceCallSignal {
-
-	private static final Logger LOG = getLogger(VoiceCallSignal.class.getName());
-
 	private static final String SIGNAL_PREFIX = "\u0000ZSIG\u0001\u0000";
 
 	public static final String WIRE_PREFIX = SIGNAL_PREFIX;
@@ -60,16 +52,12 @@ public class VoiceCallSignal {
 			return null;
 		}
 	}
-
-	// Validation patterns (simple, no catastrophic backtracking)
 	private static final Pattern UUID_PATTERN = Pattern.compile(
 			"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$");
 	private static final Pattern BASE64_PATTERN = Pattern.compile(
 			"^[A-Za-z0-9+/=]{32,256}$"); // Min 32, max 256 chars
 	private static final Pattern ONION_PATTERN = Pattern.compile(
 			"^[a-z2-7]{56}\\.onion$");
-
-	// Signal fields
 	private final SignalType type;
 	private final String callId;
 	private final long timestamp;
@@ -89,8 +77,6 @@ public class VoiceCallSignal {
 		this.onionPort = onionPort;
 		this.reason = reason;
 	}
-
-	// Getters
 	public SignalType getType() { return type; }
 	public String getCallId() { return callId; }
 	public long getTimestamp() { return timestamp; }
@@ -99,9 +85,7 @@ public class VoiceCallSignal {
 	@Nullable public Integer getOnionPort() { return onionPort; }
 	@Nullable public String getReason() { return reason; }
 
-	/**
-	 * Creates a CALL_OFFER signal.
-	 */
+	
 	public static VoiceCallSignal createOffer(String callId, String voiceCallKey) {
 		validateCallId(callId);
 		validateVoiceCallKey(voiceCallKey);
@@ -109,9 +93,7 @@ public class VoiceCallSignal {
 				System.currentTimeMillis(), voiceCallKey, null, null, null);
 	}
 
-	/**
-	 * Creates a CALL_ANSWER signal.
-	 */
+	
 	public static VoiceCallSignal createAnswer(String callId, String onionAddress, int onionPort) {
 		validateCallId(callId);
 		validateOnionAddress(onionAddress);
@@ -120,9 +102,7 @@ public class VoiceCallSignal {
 				System.currentTimeMillis(), null, onionAddress, onionPort, null);
 	}
 
-	/**
-	 * Creates a CALL_REJECT signal.
-	 */
+	
 	public static VoiceCallSignal createReject(String callId, @Nullable String reason) {
 		validateCallId(callId);
 		if (reason != null && reason.length() > MAX_REASON_LENGTH) {
@@ -132,9 +112,7 @@ public class VoiceCallSignal {
 				System.currentTimeMillis(), null, null, null, reason);
 	}
 
-	/**
-	 * Creates a CALL_END signal.
-	 */
+	
 	public static VoiceCallSignal createEnd(String callId, @Nullable String reason) {
 		validateCallId(callId);
 		if (reason != null && reason.length() > MAX_REASON_LENGTH) {
@@ -144,53 +122,31 @@ public class VoiceCallSignal {
 				System.currentTimeMillis(), null, null, null, reason);
 	}
 
-	/**
-	 * Serializes this signal to wire format with HMAC authentication.
-	 *
-	 * @param hmacKey The voice call key used for HMAC computation.
-	 *                For CALL_OFFER, this is the key being sent.
-	 *                For other signals, this should be the established session key.
-	 * @return Wire format string: WIRE_PREFIX + canonical_json + ":" + hmac_hex
-	 */
+	
 	public String toWireFormat(byte[] hmacKey) {
 		String jsonStr = toCanonicalJson();
 		String hmac = computeHmac(jsonStr, hmacKey);
 		return WIRE_PREFIX + jsonStr + ":" + hmac;
 	}
 
-	/**
-	 * Serializes this signal to wire format.
-	 * Uses the voice call key embedded in CALL_OFFER signals for HMAC.
-	 * For other signal types, caller must use toWireFormat(byte[] hmacKey).
-	 */
+	
 	public String toWireFormat() {
-		// For CALL_OFFER, we can derive HMAC key from the voice call key being sent
-		// For other types, we use a fallback (the callId as key material)
-		// This maintains backward compatibility while adding integrity
 		byte[] hmacKey;
 		if (voiceCallKey != null) {
 			hmacKey = voiceCallKey.getBytes(StandardCharsets.UTF_8);
 		} else {
-			// Fallback: use callId as key material (still provides integrity binding)
 			hmacKey = callId.getBytes(StandardCharsets.UTF_8);
 		}
 		return toWireFormat(hmacKey);
 	}
 
-	/**
-	 * Produces canonical JSON with fixed field order for deterministic HMAC.
-	 * Field order: t, c, ts, then optional fields alphabetically (k, o, p, r)
-	 */
+	
 	private String toCanonicalJson() {
 		StringBuilder json = new StringBuilder();
 		json.append("{");
-
-		// Required fields in fixed order
 		json.append("\"c\":\"").append(escapeJson(callId)).append("\",");
 		json.append("\"t\":\"").append(type.getWireValue()).append("\",");
 		json.append("\"ts\":").append(timestamp);
-
-		// Optional fields in alphabetical order
 		if (voiceCallKey != null) {
 			json.append(",\"k\":\"").append(escapeJson(voiceCallKey)).append("\"");
 		}
@@ -208,29 +164,19 @@ public class VoiceCallSignal {
 		return json.toString();
 	}
 
-	/**
-	 * Checks if a message is a voice call signal.
-	 * This is a fast check that doesn't parse the full message.
-	 */
+	
 	public static boolean isSignal(String message) {
 		if (message == null) {
 			return false;
 		}
-		int minLength = WIRE_PREFIX.length() + 20; // prefix + minimal json + hmac
+		int minLength = WIRE_PREFIX.length() + 20;
 		if (message.length() < minLength || message.length() > MAX_PAYLOAD_LENGTH) {
 			return false;
 		}
 		return message.startsWith(WIRE_PREFIX);
 	}
 
-	/**
-	 * Parses a wire format message into a VoiceCallSignal.
-	 * Returns null if parsing fails, validation fails, or HMAC verification fails.
-	 *
-	 * @param wireMessage The wire format message
-	 * @param hmacKey The key for HMAC verification (typically the voice call key)
-	 * @return Parsed signal or null if invalid
-	 */
+	
 	@Nullable
 	public static VoiceCallSignal fromWireFormat(String wireMessage, byte[] hmacKey) {
 		if (!isSignal(wireMessage)) {
@@ -238,10 +184,7 @@ public class VoiceCallSignal {
 		}
 
 		try {
-			// Remove prefix
 			String payload = wireMessage.substring(WIRE_PREFIX.length());
-
-			// Split json and hmac
 			int lastColon = payload.lastIndexOf(':');
 			if (lastColon < 0 || lastColon == payload.length() - 1) {
 				return null;
@@ -249,28 +192,18 @@ public class VoiceCallSignal {
 
 			String jsonStr = payload.substring(0, lastColon);
 			String receivedHmac = payload.substring(lastColon + 1);
-
-			// Verify HMAC
 			String expectedHmac = computeHmac(jsonStr, hmacKey);
 			if (!constantTimeEquals(expectedHmac, receivedHmac)) {
-				LOG.log(WARNING, "Signal HMAC verification failed");
 				return null;
 			}
-
-			// Parse JSON
 			return parseJson(jsonStr);
 
 		} catch (Exception e) {
-			LOG.log(WARNING, "Signal parsing failed: " + e.getMessage());
 			return null;
 		}
 	}
 
-	/**
-	 * Parses a wire format message, deriving HMAC key from the signal content.
-	 * For CALL_OFFER, extracts the voice call key from the JSON for verification.
-	 * For other types, uses callId as fallback key material.
-	 */
+	
 	@Nullable
 	public static VoiceCallSignal fromWireFormat(String wireMessage) {
 		if (!isSignal(wireMessage)) {
@@ -278,10 +211,7 @@ public class VoiceCallSignal {
 		}
 
 		try {
-			// Remove prefix
 			String payload = wireMessage.substring(WIRE_PREFIX.length());
-
-			// Split json and hmac
 			int lastColon = payload.lastIndexOf(':');
 			if (lastColon < 0 || lastColon == payload.length() - 1) {
 				return null;
@@ -289,10 +219,6 @@ public class VoiceCallSignal {
 
 			String jsonStr = payload.substring(0, lastColon);
 			String receivedHmac = payload.substring(lastColon + 1);
-
-			// Extract key material for HMAC verification
-			// For CALL_OFFER, use the voice call key from the payload
-			// For other types, use callId
 			String voiceKey = extractJsonString(jsonStr, "k");
 			String callId = extractJsonString(jsonStr, "c");
 
@@ -304,32 +230,22 @@ public class VoiceCallSignal {
 			} else {
 				return null;
 			}
-
-			// Verify HMAC
 			String expectedHmac = computeHmac(jsonStr, hmacKey);
 			if (!constantTimeEquals(expectedHmac, receivedHmac)) {
-				LOG.log(WARNING, "Signal HMAC verification failed");
 				return null;
 			}
-
-			// Parse JSON with full validation
 			return parseJson(jsonStr);
 
 		} catch (Exception e) {
-			LOG.log(WARNING, "Signal parsing failed: " + e.getMessage());
 			return null;
 		}
 	}
 
-	/**
-	 * Parses the JSON payload into a VoiceCallSignal with full validation.
-	 */
+	
 	@Nullable
 	private static VoiceCallSignal parseJson(String json) {
 		try {
-			// Length check first
 			if (json.length() > MAX_PAYLOAD_LENGTH) {
-				LOG.log(WARNING, "Signal JSON exceeds maximum length");
 				return null;
 			}
 
@@ -345,17 +261,12 @@ public class VoiceCallSignal {
 			if (type == null) {
 				return null;
 			}
-
-			// Validate call ID
 			if (!isValidCallId(callId)) {
 				return null;
 			}
-
-			// Check timestamp is reasonable (within window, accounting for clock skew)
 			long now = System.currentTimeMillis();
 			long timeDiff = Math.abs(now - timestamp);
 			if (timeDiff > TIMESTAMP_WINDOW_MS) {
-				LOG.log(WARNING, "Signal timestamp outside window: diff=" + timeDiff + "ms");
 				return null;
 			}
 
@@ -363,13 +274,9 @@ public class VoiceCallSignal {
 			String onionAddress = extractJsonString(json, "o");
 			Integer onionPort = extractJsonInt(json, "p");
 			String reason = extractJsonString(json, "r");
-
-			// Truncate reason if too long
 			if (reason != null && reason.length() > MAX_REASON_LENGTH) {
 				reason = reason.substring(0, MAX_REASON_LENGTH);
 			}
-
-			// Validate type-specific fields
 			switch (type) {
 				case CALL_OFFER:
 					if (voiceCallKey == null || !isValidVoiceCallKey(voiceCallKey)) {
@@ -386,7 +293,6 @@ public class VoiceCallSignal {
 					break;
 				case CALL_REJECT:
 				case CALL_END:
-					// No additional required fields
 					break;
 				default:
 					return null;
@@ -399,22 +305,18 @@ public class VoiceCallSignal {
 			return null;
 		}
 	}
-
-	// JSON extraction helpers (simple implementation without dependencies)
 	@Nullable
 	private static String extractJsonString(String json, String key) {
 		String pattern = "\"" + key + "\":\"";
 		int start = json.indexOf(pattern);
 		if (start < 0) return null;
 		start += pattern.length();
-
-		// Find closing quote, handling escapes
 		int end = start;
 		while (end < json.length()) {
 			char c = json.charAt(end);
 			if (c == '"') break;
 			if (c == '\\' && end + 1 < json.length()) {
-				end += 2; // Skip escaped character
+				end += 2;
 			} else {
 				end++;
 			}
@@ -429,8 +331,6 @@ public class VoiceCallSignal {
 		int start = json.indexOf(pattern);
 		if (start < 0) return null;
 		start += pattern.length();
-
-		// Skip any whitespace (though our canonical format has none)
 		while (start < json.length() && Character.isWhitespace(json.charAt(start))) {
 			start++;
 		}
@@ -458,8 +358,6 @@ public class VoiceCallSignal {
 		if (value < Integer.MIN_VALUE || value > Integer.MAX_VALUE) return null;
 		return value.intValue();
 	}
-
-	// Validation methods
 	private static void validateCallId(String callId) {
 		if (!isValidCallId(callId)) {
 			throw new IllegalArgumentException("Invalid call ID format");
@@ -501,17 +399,13 @@ public class VoiceCallSignal {
 		return port > 0 && port <= 65535;
 	}
 
-	/**
-	 * Computes HMAC-SHA256 for authenticity verification.
-	 */
+	
 	private static String computeHmac(String data, byte[] key) {
 		try {
 			Mac mac = Mac.getInstance(HMAC_ALGORITHM);
 			SecretKeySpec keySpec = new SecretKeySpec(key, HMAC_ALGORITHM);
 			mac.init(keySpec);
 			byte[] hmacBytes = mac.doFinal(data.getBytes(StandardCharsets.UTF_8));
-
-			// Convert to hex string (full 256 bits)
 			StringBuilder hex = new StringBuilder(HMAC_OUTPUT_LENGTH * 2);
 			for (byte b : hmacBytes) {
 				hex.append(String.format("%02x", b));
@@ -522,9 +416,7 @@ public class VoiceCallSignal {
 		}
 	}
 
-	/**
-	 * Constant-time comparison to prevent timing attacks.
-	 */
+	
 	private static boolean constantTimeEquals(String a, String b) {
 		if (a == null || b == null) {
 			return false;
@@ -540,17 +432,13 @@ public class VoiceCallSignal {
 		for (int i = 0; i < aBytes.length; i++) {
 			result |= aBytes[i] ^ bBytes[i];
 		}
-
-		// Clear sensitive data
 		Arrays.fill(aBytes, (byte) 0);
 		Arrays.fill(bBytes, (byte) 0);
 
 		return result == 0;
 	}
 
-	/**
-	 * JSON string escaping for canonical output.
-	 */
+	
 	private static String escapeJson(String s) {
 		StringBuilder sb = new StringBuilder(s.length() + 16);
 		for (int i = 0; i < s.length(); i++) {
@@ -574,9 +462,7 @@ public class VoiceCallSignal {
 		return sb.toString();
 	}
 
-	/**
-	 * JSON string unescaping.
-	 */
+	
 	private static String unescapeJson(String s) {
 		StringBuilder sb = new StringBuilder(s.length());
 		for (int i = 0; i < s.length(); i++) {

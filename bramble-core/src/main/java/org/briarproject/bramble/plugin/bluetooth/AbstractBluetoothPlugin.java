@@ -34,15 +34,9 @@ import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Logger;
-
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.ThreadSafe;
-
-import static java.util.logging.Level.INFO;
-import static java.util.logging.Level.WARNING;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.api.keyagreement.KeyAgreementConstants.TRANSPORT_ID_BLUETOOTH;
 import static org.briarproject.bramble.api.plugin.BluetoothConstants.DEFAULT_PREF_ADDRESS_IS_REFLECTED;
 import static org.briarproject.bramble.api.plugin.BluetoothConstants.DEFAULT_PREF_EVER_CONNECTED;
@@ -58,7 +52,6 @@ import static org.briarproject.bramble.api.plugin.Plugin.State.DISABLED;
 import static org.briarproject.bramble.api.plugin.Plugin.State.INACTIVE;
 import static org.briarproject.bramble.api.plugin.Plugin.State.STARTING_STOPPING;
 import static org.briarproject.bramble.api.properties.TransportPropertyConstants.REFLECTED_PROPERTY_PREFIX;
-import static org.briarproject.bramble.util.LogUtils.logException;
 import static org.briarproject.bramble.util.PrivacyUtils.scrubMacAddress;
 import static org.briarproject.bramble.util.StringUtils.isNullOrEmpty;
 import static org.briarproject.bramble.util.StringUtils.macToBytes;
@@ -68,10 +61,6 @@ import static org.briarproject.bramble.util.StringUtils.macToString;
 @ParametersNotNullByDefault
 abstract class AbstractBluetoothPlugin<S, SS> implements BluetoothPlugin,
 		EventListener {
-
-	private static final Logger LOG =
-			getLogger(AbstractBluetoothPlugin.class.getName());
-
 	private final BluetoothConnectionLimiter connectionLimiter;
 	final BluetoothConnectionFactory<S> connectionFactory;
 
@@ -89,13 +78,7 @@ abstract class AbstractBluetoothPlugin<S, SS> implements BluetoothPlugin,
 
 	private volatile String contactConnectionsUuid = null;
 
-	/**
-	 * Override and return true, if the plugin is now allowed to access the
-	 * Bluetooth hardware.
-	 * If this returns false, the plugin must be
-	 * {@link org.briarproject.bramble.api.plugin.Plugin.State#DISABLED}
-	 * in {@link #start()} and not attempt to access Bluetooth hardware.
-	 */
+	
 	protected boolean isBluetoothAccessible() {
 		return true;
 	}
@@ -104,10 +87,7 @@ abstract class AbstractBluetoothPlugin<S, SS> implements BluetoothPlugin,
 
 	abstract boolean isAdapterEnabled();
 
-	/**
-	 * Returns the local Bluetooth address, or null if no valid address can
-	 * be found.
-	 */
+	
 	@Nullable
 	abstract String getBluetoothAddress();
 
@@ -147,19 +127,14 @@ abstract class AbstractBluetoothPlugin<S, SS> implements BluetoothPlugin,
 	}
 
 	void onAdapterEnabled() {
-		LOG.info("Bluetooth enabled");
-		// We may not have been able to get the local address before
 		ioExecutor.execute(this::updateProperties);
 		if (getState() == INACTIVE) bind();
 	}
 
 	void onAdapterDisabled() {
-		LOG.info("Bluetooth disabled");
 		connectionLimiter.allConnectionsClosed();
-		// The server socket may not have been closed automatically
 		SS ss = state.clearServerSocket();
 		if (ss != null) {
-			LOG.info("Closing server socket");
 			tryToClose(ss);
 		}
 	}
@@ -187,7 +162,6 @@ abstract class AbstractBluetoothPlugin<S, SS> implements BluetoothPlugin,
 				DEFAULT_PREF_PLUGIN_ENABLE);
 		everConnected.set(settings.getBoolean(PREF_EVER_CONNECTED,
 				DEFAULT_PREF_EVER_CONNECTED));
-		// disable plugin, if conditions for enabling are not met
 		if (enabledByUser && !isBluetoothAccessible()) {
 			enabledByUser = false;
 			settings.putBoolean(PREF_PLUGIN_ENABLE, false);
@@ -209,16 +183,13 @@ abstract class AbstractBluetoothPlugin<S, SS> implements BluetoothPlugin,
 		ioExecutor.execute(() -> {
 			if (getState() != INACTIVE) return;
 			if (contactConnectionsUuid == null) updateProperties();
-			// Bind a server socket to accept connections from contacts
 			SS ss;
 			try {
 				ss = openServerSocket(contactConnectionsUuid);
 			} catch (IOException e) {
-				logException(LOG, WARNING, e);
 				return;
 			}
 			if (!state.setServerSocket(ss)) {
-				LOG.info("Closing redundant server socket");
 				tryToClose(ss);
 				return;
 			}
@@ -237,16 +208,9 @@ abstract class AbstractBluetoothPlugin<S, SS> implements BluetoothPlugin,
 		boolean changed = false;
 		if (address == null || isReflected) {
 			address = getBluetoothAddress();
-			if (LOG.isLoggable(INFO)) {
-				LOG.info("Local address " + scrubMacAddress(address));
-			}
 			if (address == null) {
 				if (everConnected.get()) {
 					address = getReflectedAddress();
-					if (LOG.isLoggable(INFO)) {
-						LOG.info("Reflected address " +
-								scrubMacAddress(address));
-					}
 					if (address != null) {
 						changed = true;
 						isReflected = true;
@@ -266,9 +230,6 @@ abstract class AbstractBluetoothPlugin<S, SS> implements BluetoothPlugin,
 		contactConnectionsUuid = uuid;
 		if (changed) {
 			p = new TransportProperties();
-			// If we previously used a reflected address and there's no longer
-			// a reflected address with enough votes to be used, we'll continue
-			// to use the old reflected address until there's a new winner
 			if (address != null) p.put(PROP_ADDRESS, address);
 			p.put(PROP_UUID, uuid);
 			callback.mergeLocalProperties(p);
@@ -280,14 +241,12 @@ abstract class AbstractBluetoothPlugin<S, SS> implements BluetoothPlugin,
 
 	@Nullable
 	private String getReflectedAddress() {
-		// Count the number of votes for each reflected address
 		String key = REFLECTED_PROPERTY_PREFIX + PROP_ADDRESS;
 		Multiset<String> votes = new Multiset<>();
 		for (TransportProperties p : callback.getRemoteProperties()) {
 			String address = p.get(key);
 			if (address != null && isValidAddress(address)) votes.add(address);
 		}
-		// If an address gets more than half of the votes, accept it
 		int total = votes.getTotal();
 		for (String address : votes.keySet()) {
 			if (votes.getCount(address) * 2 > total) return address;
@@ -301,12 +260,9 @@ abstract class AbstractBluetoothPlugin<S, SS> implements BluetoothPlugin,
 			try {
 				conn = acceptConnection(ss);
 			} catch (IOException e) {
-				// This is expected when the server socket is closed
-				LOG.info("Server socket closed");
 				state.clearServerSocket();
 				return;
 			}
-			LOG.info("Connection received");
 			connectionLimiter.connectionOpened(conn);
 			backoff.reset();
 			setEverConnected();
@@ -320,7 +276,6 @@ abstract class AbstractBluetoothPlugin<S, SS> implements BluetoothPlugin,
 				Settings s = new Settings();
 				s.putBoolean(PREF_EVER_CONNECTED, true);
 				callback.mergeSettings(s);
-				// Contacts may already have sent a reflected address
 				updateProperties();
 			});
 		}
@@ -379,30 +334,17 @@ abstract class AbstractBluetoothPlugin<S, SS> implements BluetoothPlugin,
 
 	@Nullable
 	private DuplexTransportConnection connect(String address, String uuid) {
-		// Validate the address
 		if (!isValidAddress(address)) {
-			if (LOG.isLoggable(WARNING))
-				// Not scrubbing here to be able to figure out the problem
-				LOG.warning("Invalid address " + address);
 			return null;
 		}
-		// Validate the UUID
 		try {
 			UUID.fromString(uuid);
 		} catch (IllegalArgumentException e) {
-			if (LOG.isLoggable(WARNING)) LOG.warning("Invalid UUID " + uuid);
 			return null;
 		}
-		if (LOG.isLoggable(INFO))
-			LOG.info("Connecting to " + scrubMacAddress(address));
 		try {
-			DuplexTransportConnection conn = connectTo(address, uuid);
-			if (LOG.isLoggable(INFO))
-				LOG.info("Connected to " + scrubMacAddress(address));
-			return conn;
+			return connectTo(address, uuid);
 		} catch (IOException e) {
-			if (LOG.isLoggable(INFO))
-				LOG.info("Could not connect to " + scrubMacAddress(address));
 			return null;
 		}
 	}
@@ -428,15 +370,11 @@ abstract class AbstractBluetoothPlugin<S, SS> implements BluetoothPlugin,
 	@Override
 	public KeyAgreementListener createKeyAgreementListener(byte[] commitment) {
 		if (getState() != ACTIVE) return null;
-		// No truncation necessary because COMMIT_LENGTH = 16
 		String uuid = UUID.nameUUIDFromBytes(commitment).toString();
-		if (LOG.isLoggable(INFO)) LOG.info("Key agreement UUID " + uuid);
-		// Bind a server socket for receiving key agreement connections
 		SS ss;
 		try {
 			ss = openServerSocket(uuid);
 		} catch (IOException e) {
-			logException(LOG, WARNING, e);
 			return null;
 		}
 		if (getState() != ACTIVE) {
@@ -460,25 +398,17 @@ abstract class AbstractBluetoothPlugin<S, SS> implements BluetoothPlugin,
 	public DuplexTransportConnection createKeyAgreementConnection(
 			byte[] commitment, BdfList descriptor) {
 		if (getState() != ACTIVE) return null;
-		// No truncation necessary because COMMIT_LENGTH = 16
 		String uuid = UUID.nameUUIDFromBytes(commitment).toString();
 		DuplexTransportConnection conn;
 		if (descriptor.size() == 1) {
-			if (LOG.isLoggable(INFO)) {
-				LOG.info("Discovering address for key agreement UUID " +
-						uuid);
-			}
 			conn = discoverAndConnect(uuid);
 		} else {
 			String address;
 			try {
 				address = parseAddress(descriptor);
 			} catch (FormatException e) {
-				LOG.info("Invalid address in key agreement descriptor");
 				return null;
 			}
-			if (LOG.isLoggable(INFO))
-				LOG.info("Connecting to key agreement UUID " + uuid);
 			conn = connect(address, uuid);
 		}
 		if (conn != null) {
@@ -557,14 +487,11 @@ abstract class AbstractBluetoothPlugin<S, SS> implements BluetoothPlugin,
 		SS ss = state.setEnabledByUser(shouldEnable);
 		State s = getState();
 		if (ss != null) {
-			LOG.info("Disabled by user, closing server socket");
 			tryToClose(ss);
 		} else if (s == INACTIVE) {
 			if (isAdapterEnabled()) {
-				LOG.info("Enabled by user, opening server socket");
 				bind();
 			} else {
-				LOG.info("Enabled by user but adapter is disabled");
 			}
 		}
 	}
@@ -581,7 +508,6 @@ abstract class AbstractBluetoothPlugin<S, SS> implements BluetoothPlugin,
 		@Override
 		public KeyAgreementConnection accept() throws IOException {
 			DuplexTransportConnection conn = acceptConnection(ss);
-			if (LOG.isLoggable(INFO)) LOG.info(ID + ": Incoming connection");
 			connectionLimiter.connectionOpened(conn);
 			return new KeyAgreementConnection(conn, ID);
 		}

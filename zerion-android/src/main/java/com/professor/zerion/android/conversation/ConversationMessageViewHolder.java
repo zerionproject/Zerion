@@ -82,8 +82,6 @@ class ConversationMessageViewHolder extends ConversationItemViewHolder {
 		super.bind(conversationItem, selected);
 		ConversationMessageItem item =
 				(ConversationMessageItem) conversationItem;
-
-		// PERFORMANCE: Load attachments lazily at bind time (not during initial list build)
 		if (item.needsAttachmentLoading()) {
 			listener.loadAttachmentsForItem(item);
 		}
@@ -129,7 +127,6 @@ class ConversationMessageViewHolder extends ConversationItemViewHolder {
 
 		String messageText = item.getText();
 		if (messageText != null && com.professor.zerion.android.conversation.voice.VoiceMessageFormat.isVoiceMessage(messageText)) {
-			// SECURITY: Pass GroupId and MessageId for AAD context verification
 			voiceHolder.bindEncryptedVoice(messageText, item.getGroupId(), item.getId());
 		} else {
 			AttachmentItem voiceAttachment = item.getAttachments().get(0);

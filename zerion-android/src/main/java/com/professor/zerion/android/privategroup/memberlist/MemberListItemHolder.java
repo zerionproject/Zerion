@@ -44,8 +44,6 @@ class MemberListItemHolder extends RecyclerView.ViewHolder {
 		} else {
 			bulb.setVisibility(GONE);
 		}
-
-		// Only show creator text for group creators
 		if (item.isCreator()) {
 			creator.setVisibility(VISIBLE);
 			if (item.getStatus() == OURSELVES) {

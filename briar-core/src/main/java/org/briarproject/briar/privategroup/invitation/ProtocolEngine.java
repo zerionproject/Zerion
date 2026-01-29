@@ -16,12 +16,7 @@ interface ProtocolEngine<S extends Session<?>> {
 
 	S onJoinAction(Transaction txn, S session) throws DbException;
 
-	/**
-	 * Leaves the group or declines an invitation.
-	 *
-	 * @param isAutoDecline true if automatically declined due to deletion
-	 * and false if initiated by the user.
-	 */
+	
 	S onLeaveAction(Transaction txn, S session, boolean isAutoDecline)
 			throws DbException;
 

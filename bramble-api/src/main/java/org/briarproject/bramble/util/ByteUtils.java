@@ -2,23 +2,19 @@ package org.briarproject.bramble.util;
 
 public class ByteUtils {
 
-	/**
-	 * The maximum value that can be represented as an unsigned 16-bit integer.
-	 */
-	public static final int MAX_16_BIT_UNSIGNED = 65535; // 2^16 - 1
+	
+	public static final int MAX_16_BIT_UNSIGNED = 65535;
 
-	/**
-	 * The maximum value that can be represented as an unsigned 32-bit integer.
-	 */
-	public static final long MAX_32_BIT_UNSIGNED = 4294967295L; // 2^32 - 1
+	
+	public static final long MAX_32_BIT_UNSIGNED = 4294967295L;
 
-	/** The number of bytes needed to encode a 16-bit integer. */
+	
 	public static final int INT_16_BYTES = 2;
 
-	/** The number of bytes needed to encode a 32-bit integer. */
+	
 	public static final int INT_32_BYTES = 4;
 
-	/** The number of bytes needed to encode a 64-bit integer. */
+	
 	public static final int INT_64_BYTES = 8;
 
 	public static void writeUint16(int src, byte[] dest, int offset) {

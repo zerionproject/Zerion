@@ -98,17 +98,14 @@ class IntroduceeSession extends Session<IntroduceeState>
 	static IntroduceeSession addLocalAuth(IntroduceeSession s,
 			IntroduceeState state, Message m, SecretKey masterKey,
 			SecretKey aliceMacKey, SecretKey bobMacKey) {
-		// add mac key and sent message
 		Local local = new Local(s.local.alice, m.getId(), m.getTimestamp(),
 				s.local.ephemeralPublicKey, s.local.ephemeralPrivateKey,
 				s.local.transportProperties, s.local.acceptTimestamp,
 				s.local.alice ? aliceMacKey.getBytes() : bobMacKey.getBytes());
-		// just add the mac key
 		Remote remote = new Remote(s.remote.alice, s.remote.author,
 				s.remote.lastMessageId, s.remote.ephemeralPublicKey,
 				s.remote.transportProperties, s.remote.acceptTimestamp,
 				s.remote.alice ? aliceMacKey.getBytes() : bobMacKey.getBytes());
-		// add master key
 		return new IntroduceeSession(s.getSessionId(), state,
 				s.getRequestTimestamp(), s.contactGroupId, s.introducer, local,
 				remote, masterKey.getBytes(), s.transportKeys);
@@ -228,10 +225,7 @@ class IntroduceeSession extends Session<IntroduceeState>
 			this.ephemeralPrivateKey = ephemeralPrivateKey;
 		}
 
-		/**
-		 * Returns a copy of the given Local, updating the last message ID
-		 * and timestamp and clearing the ephemeral keys.
-		 */
+		
 		private static Local clear(Local s,
 				@Nullable MessageId lastMessageId, long lastMessageTimestamp) {
 			return new Local(s.alice, lastMessageId, lastMessageTimestamp,
@@ -253,18 +247,13 @@ class IntroduceeSession extends Session<IntroduceeState>
 			this.author = author;
 		}
 
-		/**
-		 * Returns a copy of the given Remote, updating the last message ID.
-		 */
+		
 		private Remote(Remote s, @Nullable MessageId lastMessageId) {
 			this(s.alice, s.author, lastMessageId, s.ephemeralPublicKey,
 					s.transportProperties, s.acceptTimestamp, s.macKey);
 		}
 
-		/**
-		 * Returns a copy of the given Remote, updating the last message ID
-		 * and clearing the ephemeral keys.
-		 */
+		
 		private static Remote clear(Remote s,
 				@Nullable MessageId lastMessageId) {
 			return new Remote(s.alice, s.author, lastMessageId, null,

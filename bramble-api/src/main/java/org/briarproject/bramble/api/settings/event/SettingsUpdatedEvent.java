@@ -6,9 +6,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.Immutable;
 
-/**
- * An event that is broadcast when one or more settings are updated.
- */
+
 @Immutable
 @NotNullByDefault
 public class SettingsUpdatedEvent extends Event {

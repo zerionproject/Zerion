@@ -7,17 +7,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.security.SecureRandomSpi;
-import java.util.logging.Logger;
-
-import static java.util.logging.Level.WARNING;
-import static java.util.logging.Logger.getLogger;
-import static org.briarproject.bramble.util.LogUtils.logException;
-
 public class UnixSecureRandomSpi extends SecureRandomSpi {
-
-	private static final Logger LOG =
-			getLogger(UnixSecureRandomSpi.class.getName());
-
 	private static final File RANDOM_DEVICE = new File("/dev/urandom");
 
 	private final File inputDevice, outputDevice;
@@ -41,8 +31,6 @@ public class UnixSecureRandomSpi extends SecureRandomSpi {
 			out.flush();
 			out.close();
 		} catch (IOException e) {
-			// On some devices /dev/urandom isn't writable - this isn't fatal
-			logException(LOG, WARNING, e);
 		}
 	}
 

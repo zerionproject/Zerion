@@ -34,8 +34,6 @@ import static org.briarproject.nullsafety.NullSafety.requireNonNull;
 
 @NotNullByDefault
 public class AndroidUtils {
-
-	// Fake Bluetooth address returned by BluetoothAdapter on API 23 and later
 	private static final String FAKE_BLUETOOTH_ADDRESS = "02:00:00:00:00:00";
 
 	private static final String STORED_REPORTS = "dev-reports";
@@ -57,16 +55,12 @@ public class AndroidUtils {
 
 	public static Pair<String, String> getBluetoothAddressAndMethod(Context ctx,
 			BluetoothAdapter adapter) {
-		// If we don't have permission to access the adapter's address, let
-		// the caller know we can't find it
 		if (!hasBtConnectPermission(ctx)) return new Pair<>("", "");
-		// Return the adapter's address if it's valid and not fake
 		@SuppressLint("HardwareIds")
 		String address = adapter.getAddress();
 		if (isValidBluetoothAddress(address)) {
 			return new Pair<>(address, "adapter");
 		}
-		// Return the address from settings if it's valid and not fake
 		if (SDK_INT < 33) {
 			try {
 				address = Settings.Secure.getString(ctx.getContentResolver(),
@@ -75,16 +69,12 @@ public class AndroidUtils {
 					return new Pair<>(address, "settings");
 				}
 			} catch (SecurityException e) {
-				// Some custom ROMs throw this exception on SDK_INT < 33.
-				// Fall through
 			}
 		}
-		// Try to get the address via reflection
 		address = getBluetoothAddressByReflection(adapter);
 		if (isValidBluetoothAddress(address)) {
 			return new Pair<>(requireNonNull(address), "reflection");
 		}
-		// Let the caller know we can't find the address
 		return new Pair<>("", "");
 	}
 
@@ -102,7 +92,6 @@ public class AndroidUtils {
 					adapter.getClass().getDeclaredField("mService");
 			mServiceField.setAccessible(true);
 			Object mService = mServiceField.get(adapter);
-			// mService may be null when Bluetooth is disabled
 			if (mService == null) throw new NoSuchFieldException();
 			Method getAddressMethod =
 					mService.getClass().getMethod("getAddress");
@@ -128,9 +117,7 @@ public class AndroidUtils {
 		return new File(ctx.getFilesDir(), STORED_LOGCAT);
 	}
 
-	/**
-	 * Returns an array of supported content types for image attachments.
-	 */
+	
 	public static String[] getSupportedImageContentTypes() {
 		return new String[] {"image/jpeg", "image/png", "image/gif", "image/webp"};
 	}
@@ -146,10 +133,7 @@ public class AndroidUtils {
 		return flags;
 	}
 
-	/**
-	 * Could be replaced to a similar call in ContextCompat once we
-	 * use and upgrade to version 1.9.0 or higher of the AndroidX Core library.
-	 */
+	
 	@Nullable
 	@SuppressLint("UnspecifiedRegisterReceiverFlag") // we specify where needed
 	public static Intent registerReceiver(Context ctx,

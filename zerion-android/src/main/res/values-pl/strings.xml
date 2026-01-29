@@ -65,8 +65,6 @@
   <string name="nav_drawer_close_description">Zamknij panel nawigacji</string>
   <string name="contact_list_button">Kontakty</string>
   <string name="groups_button">Grupy Prywatne</string>
-  <string name="forums_button">Fora</string>
-  <string name="blogs_button">Blogi</string>
   <!--This is part of the main menu. The app will be locked when this is tapped.-->
   <string name="lock_button">Zablokuj Aplikację</string>
   <string name="settings_button">Ustawienia</string>
@@ -105,18 +103,6 @@
     <item quantity="few">%dwiadomości grupowych. </item>
     <item quantity="many">%dwiadomości grupowych. </item>
     <item quantity="other">%d wiadomości grupowych.</item>
-  </plurals>
-  <plurals name="forum_post_notification_text">
-    <item quantity="one">Nowy post z forum.</item>
-    <item quantity="few">%d nowych postów z forum. </item>
-    <item quantity="many">%d nowych postów z forum. </item>
-    <item quantity="other">%d nowych postów z forum.</item>
-  </plurals>
-  <plurals name="blog_post_notification_text">
-    <item quantity="one">Nowy post z bloga.</item>
-    <item quantity="few">%d nowych postów z bloga. </item>
-    <item quantity="many">%d nowych postów z bloga. </item>
-    <item quantity="other">%d nowych postów z bloga.</item>
   </plurals>
   <!--Misc-->
   <string name="now">teraz</string>
@@ -224,7 +210,6 @@
   <!--Adding Contacts-->
   <string name="add_contact_title">Dodaj kontakt w pobliżu</string>
   <string name="add_contact_error_two_way">Czy oboje skanowaliście nawzajem swoje kody QR?</string>
-  <string name="face_to_face">Musisz spotkać się z osobą którą chcesz dodać jako kontakt.\n\nTo uniemożliwi komukolwiek udawanie Ciebie lub czytanie Twoich wiadomości w przyszłości.</string>
   <string name="continue_button">Kontynuuj</string>
   <string name="try_again_button">Spróbuj ponownie</string>
   <string name="waiting_for_contact_to_scan">Oczekiwanie aż kontakt zeskanuje kod i połączy się\u2026</string>
@@ -232,17 +217,11 @@
   <string name="contact_added_toast">Kontakt dodany: %s</string>
   <string name="contact_already_exists">Kontakt %s już istnieje</string>
   <string name="contact_already_exists_general">Kontakt już istnieje</string>
-  <string name="qr_code_invalid">Kod QR jest nieprawidłowy</string>
-  <string name="qr_code_too_old_1">Zeskanowany kod QR pochodzi ze starszej wersji Zerion.\n\nProszę poprosić Twój kontakt  o aktualizację do najnowszej wersji, a następnie spróbować ponownie.</string>
-  <string name="qr_code_too_new_1">Zeskanowany kod QR pochodzi z nowszej wersji programu Zerion.\n\nProszę zaktualizować go do najnowszej wersji, a następnie spróbować ponownie.</string>
-  <string name="mailbox_qr_code_for_contact">Zeskanowany kod QR pochodzi ze skrzynki odbiorczej Zerion.\n\nJeśli chcesz połączyć skrzynkę odbiorczą, wybierz Ustawienia i Skrzynka odbiorcza z menu Zerion.</string>
-  <string name="qr_code_format_unknown">Zeskanowany kod QR nie jest przeznaczony do dodawania kontaktu z Zerion.\n\nZeskanuj kod QR wyświetlany na ekranie kontaktu.</string>
   <string name="camera_error">Błąd aparatu</string>
   <string name="connecting_to_device">Łączenie z urządzeniem\u2026</string>
   <string name="authenticating_with_device">Autoryzowanie z urządzeniem\u2026</string>
   <string name="connection_error_title">Nie udało się połączyć z kontaktem</string>
   <string name="connection_error_feedback">Jeśli problem będzie występować dalej, proszę <a href="feedback">wysłać opinię</a> aby pomóc nam ulepszyć aplikację.</string>
-  <string name="info_both_must_scan">Oboje musicie skanować nawzajem swoje kody QR</string>
   <!--Adding Contacts Remotely-->
   <string name="add_contact_remotely_title_case">Dodaj Kontakt na odległość</string>
   <string name="add_contact_nearby_title">Dodaj kontakt w pobliżu</string>
@@ -400,13 +379,6 @@
   <string name="groups_reveal_visible_revealed_by_contact">Relacje kontaktów są widoczne dla grupy (ujawnione przez %s)</string>
   <string name="groups_reveal_invisible">Relacje kontaktów są niewidoczne dla grupy</string>
   <!--Forums-->
-  <string name="no_forums">Brak forów do pokazania</string>
-  <string name="no_forums_action">Dotknij ikonkę + aby stworzyć forum, lub poprosić kontakty o ich udostępnienie</string>
-  <string name="create_forum_title">Stwórz Forum</string>
-  <string name="choose_forum_hint">Wybierz nazwę dla swojego forum</string>
-  <string name="create_forum_button">Stwórz Forum</string>
-  <string name="forum_created_toast">Forum stworzone</string>
-  <string name="no_forum_posts">Brak postów do pokazania</string>
   <string name="no_posts">Brak postów</string>
   <plurals name="posts">
     <item quantity="one">%d post</item>
@@ -414,99 +386,21 @@
     <item quantity="many">%d postów</item>
     <item quantity="other">%d postów</item>
   </plurals>
-  <string name="forum_new_message_hint">Nowy Post</string>
-  <string name="forum_message_reply_hint">Nowa Odpowiedź</string>
   <string name="btn_reply">Odpowiedz</string>
-  <string name="forum_leave">Opuść Forum</string>
-  <string name="dialog_title_leave_forum">Potwierdź Opuszczenie Forum</string>
-  <string name="dialog_message_leave_forum">Jesteś pewny, że chcesz opuścić to forum?\n\nWszystkie kontakty którym udostępniłeś to forum mogą przestać otrzymywać uaktualnienia postów</string>
   <string name="dialog_button_leave">Opuść</string>
-  <string name="forum_left_toast">Opuścił/a Forum</string>
   <!--Forum Sharing-->
-  <string name="forum_share_button">Udostępnij Forum</string>
   <string name="contacts_selected">Zaznaczone kontakty</string>
   <string name="activity_share_toolbar_header">Wybierz Kontakty</string>
   <string name="no_contacts_selector">Brak kontaktów do pokazania</string>
   <string name="no_contacts_selector_action">Wróć tutaj gdy dodasz kontakt</string>
-  <string name="forum_shared_snackbar">Forum udostępnione wybranym kontaktom</string>
-  <string name="forum_share_message">Dodaj wiadomość (opcjonalne)</string>
-  <string name="forum_share_error">Wystąpił problem podczas udostępniania tego forum.</string>
-  <string name="forum_invitation_received">%1$s udostępnił Ci forum \"%2$s\"</string>
-  <string name="forum_invitation_sent">Udostępniłeś forum \"%1$s\" użytkownikowi %2$s.</string>
-  <string name="forum_invitations_title">Zaproszenia do forów</string>
-  <string name="forum_invitation_exists">Już zaakceptowałeś zaproszenie do tego forum.\n\nAkceptowanie większej ilości zaproszeń sprawi, że Twoje połączenie będzie szybsze i bardziej stabilne.</string>
-  <string name="forum_joined_toast">Dołączył do forum</string>
-  <string name="forum_declined_toast">Zaproszenie odrzucone</string>
   <string name="shared_by_format">Udostępnione przez %s</string>
-  <string name="forum_invitation_already_sharing">Już udostępnione</string>
-  <string name="forum_invitation_already_invited">Wysłano już zaproszenie</string>
-  <string name="forum_invitation_invite_received">Odebrano już zaproszenie</string>
-  <string name="forum_invitation_not_supported">Nie obsługiwane przez ten kontakt</string>
-  <string name="forum_invitation_error">Błąd. Jest to błąd w naszej aplikacji, to nie twoja wina</string>
-  <string name="forum_invitation_response_accepted_sent">Przyjąłeś zaproszenie do forum od %s</string>
-  <string name="forum_invitation_response_declined_sent">Odrzuciłeś zaproszenie do forum od %s</string>
-  <string name="forum_invitation_response_declined_auto">Zaproszenie do forum od %s zostało automatycznie odrzucone.</string>
-  <string name="forum_invitation_response_accepted_received">%s przyjął zaproszenie do forum.</string>
-  <string name="forum_invitation_response_declined_received">%s odrzucił zaproszenie do forum.</string>
   <string name="sharing_status">Status Udostępniania</string>
-  <string name="sharing_status_forum">Każdy członek tego forum może udostępnić je swoim kontaktom. Udostępniasz to forum następującym kontaktom. Mogą tu także być członkowie których nie możesz zobaczyć.</string>
   <string name="shared_with">Udostępniono %1$d (%2$d online)</string>
-  <plurals name="forums_shared">
-    <item quantity="one">%d forum udostępnione przez kontakty </item>
-    <item quantity="few">%d for udostępnionych przez kontakty </item>
-    <item quantity="many">%d for udostępnionych przez kontakty </item>
-    <item quantity="other">%d for udostępnionych przez kontakty</item>
-  </plurals>
   <string name="nobody">Nikt</string>
   <!--Blogs-->
-  <string name="blogs_other_blog_empty_state">Brak postów do pokazania</string>
   <string name="read_more">czytaj więcej</string>
-  <string name="blogs_write_blog_post">Napisz Post Bloga</string>
-  <string name="blogs_write_blog_post_body_hint">Napisz swój wpis na bloga</string>
-  <string name="blogs_publish_blog_post">Opublikuj</string>
-  <string name="blogs_blog_post_created">Wpis na Bloga Utworzony</string>
-  <string name="blogs_blog_post_received">Otrzymano Nowy Wpis z Bloga</string>
-  <string name="blogs_blog_post_scroll_to">Przewiń do</string>
-  <string name="blogs_feed_empty_state">Brak postów do pokazania</string>
-  <string name="blogs_feed_empty_state_action">Postyod Twoich kontaktów i blogów które subskrybujesz pojawią się tutaj\n\nDotknij ikonki długopisu aby napisać post</string>
-  <string name="blogs_remove_blog">Usuń Blog</string>
-  <string name="blogs_remove_blog_dialog_message">Jesteś pewny, że chcesz usunąć ten blog?\n\nPosty będą usunięte z Twojego urządzenia ale nie z urządzeń innych osób.\n\nWszystkie kontakty którym udostępniłeś ten blog mogą przestać otrzymywać aktualizacje postów.</string>
-  <string name="blogs_remove_blog_ok">Usuń</string>
-  <string name="blogs_blog_removed">Blog usunięty</string>
-  <string name="blogs_reblog_comment_hint">Dodaj komentarz (opcjonalne)</string>
-  <string name="blogs_reblog_button">Podaj dalej</string>
   <!--Blog Sharing-->
-  <string name="blogs_sharing_share">Udostępnij Blog</string>
-  <string name="blogs_sharing_error">Wystąpił błąd podczas udostępniania tego bloga.</string>
-  <string name="blogs_sharing_button">Udostępnij Blog</string>
-  <string name="blogs_sharing_snackbar">Blog udostępniony wybranym kontaktom</string>
-  <string name="blogs_sharing_response_accepted_sent">Zaakceptowano zaproszenie do bloga od %s</string>
-  <string name="blogs_sharing_response_declined_sent">Odrzucono zaproszenie do bloga od %s</string>
-  <string name="blogs_sharing_response_declined_auto">Zaproszenie do bloga od %s zostało automatycznie odrzucone.</string>
-  <string name="blogs_sharing_response_accepted_received">Użytkownik %s zaakceptował zaproszenie do bloga.</string>
-  <string name="blogs_sharing_response_declined_received">Użytkownik %s odrzucił zaproszenie do bloga.</string>
-  <string name="blogs_sharing_invitation_received">%1$s udostępnił/a Ci blog \"%2$s\"</string>
-  <string name="blogs_sharing_invitation_sent">Udostępniasz blog \"%1$s\" użytkownikowi %2$s.</string>
-  <string name="blogs_sharing_invitations_title">Zaproszenia do Blogów</string>
-  <string name="blogs_sharing_joined_toast">Zasubskrybowano blog</string>
-  <string name="blogs_sharing_declined_toast">Zaproszenie odrzucone</string>
-  <string name="sharing_status_blog">Każdy kto subskrybuje blog może go udostępnić swoim kontaktom. Udostępniasz ten blog następującym kontaktom. Mogą być tu także subskrybenci których nie możesz zobaczyć.</string>
   <!--RSS Feeds-->
-  <string name="blogs_rss_feeds_import">Zaimportuj kanał RSS</string>
-  <string name="blogs_rss_feeds_import_button">Zaimportuj</string>
-  <string name="blogs_rss_feeds_import_hint">Wprowadź adres URL do kanału RSS</string>
-  <string name="blogs_rss_feeds_import_progress">Importowanie kanału RSS…</string>
-  <string name="blogs_rss_feeds_import_error">Przepraszamy! Wystąpił błąd podczas importowania twojego kanału RSS</string>
-  <string name="blogs_rss_feeds_import_title">Importuj kanał z pliku</string>
-  <string name="blogs_rss_feeds">Feedy RSS</string>
-  <string name="blogs_rss_feeds_manage_imported">Zaimportowane:</string>
-  <string name="blogs_rss_feeds_manage_author">Autor:</string>
-  <string name="blogs_rss_feeds_manage_updated">Ostatnio Zaktualizowane:</string>
-  <string name="blogs_rss_remove_feed">Usuń kanał RSS</string>
-  <string name="blogs_rss_remove_feed_dialog_message">Jesteś pewny, że chcesz usunąć ten kanał RSS?\n\nPosty będą usunięte z Twojego urządzenia, ale nie z urządzeń innych ludzi.\n\nWszystkie kontakty którym udostępniłeś ten kanał mogą przestać otrzymywać jego uaktualnienia</string>
-  <string name="blogs_rss_remove_feed_ok">Usuń</string>
-  <string name="blogs_rss_feeds_manage_empty_state">Brak RSS do wyświetlenia\n\nDotknij ikonki + aby zaimportować kanał.</string>
-  <string name="blogs_rss_feeds_manage_error">Wystąpił problem podczas ładowania twoich kanałów RSS. Proszę spróbować ponownie później.</string>
   <!--Settings Profile Picture-->
   <string name="change_profile_picture">Kliknij, aby zmienić swoje zdjęcie profilowe</string>
   <string name="dialog_confirm_profile_picture_title">Zmień zdjęcie profilowe</string>
@@ -586,12 +480,6 @@
   <string name="notify_group_messages_setting_title">Wiadomości grupowe</string>
   <string name="notify_group_messages_setting_summary">Pokaż powiadomienia dla wiadomości grupowych</string>
   <string name="notify_group_messages_setting_summary_26">Skonfiguruj powiadomienia dla wiadomości grupowych</string>
-  <string name="notify_forum_posts_setting_title">Posty na forum</string>
-  <string name="notify_forum_posts_setting_summary">Pokazuj powiadomienia dla postów na forach</string>
-  <string name="notify_forum_posts_setting_summary_26">Skonfiguruj powiadomienia dla postów na forach</string>
-  <string name="notify_blog_posts_setting_title">Wpisy na blogach</string>
-  <string name="notify_blog_posts_setting_summary">Pokazuj powiadomienia dla wpisów na blogach</string>
-  <string name="notify_blog_posts_setting_summary_26">Skonfiguruj powiadomienia dla wpisów na blogach</string>
   <string name="notify_vibration_setting">Wibruj</string>
   <string name="notify_sound_setting">Dźwięk</string>
   <string name="notify_sound_setting_default">Domyślny dzwonek</string>
@@ -611,10 +499,6 @@
   <string name="mailbox_setup_connecting">Łączenie się ze Skrzynką odbiorczą…</string>
   <!--This string is shown when connecting to a Mailbox for the first time. The placeholder will be replaced with a duration, e.g. "2 minutes".-->
   <string name="mailbox_setup_connecting_info">Może to potrwać do %1s</string>
-  <string name="mailbox_qr_code_too_old">Zeskanowany kod QR pochodzi ze starszej wersji skrzynki odbiorczej Zerion.\n\nProszę zaktualizować ją do najnowszej wersji, a następnie spróbować ponownie.</string>
-  <string name="mailbox_qr_code_too_new">Zeskanowany kod QR pochodzi z nowszej wersji skrzynki odbiorczej Zerion.\n\nProszę zaktualizować ją do najnowszej wersji, a następnie spróbować ponownie.</string>
-  <string name="contact_qr_code_for_mailbox">Zeskanowany kod QR służy do dodawania kontaktu Zerion.\n\nJeśli chcesz dodać kontakt, przejdź do listy kontaktów i naciśnij ikonę +.</string>
-  <string name="mailbox_setup_qr_code_wrong_description">Zeskanowany kod QR nie pochodzi ze skrzynki odbiorczej Zerion. Otwórz skrzynkę odbiorczą Zerion na urządzeniu z Twoją skrzynką i zeskanuj wyświetlany kod QR. </string>
   <string name="mailbox_setup_already_paired_title">Mailbox już podłączony</string>
   <string name="mailbox_setup_already_paired_description">Odłącz Mailbox na drugim urządzeniu i spróbuj ponownie.</string>
   <string name="mailbox_setup_io_error_title">Nie udało się połączyć</string>
@@ -764,8 +648,6 @@ Brak dostępu do aparatu. Spróbuj ponownie, może po ponownym uruchomieniu urz�
   <string name="permission_bluetooth_title">Pozwolenie do urządzeń w pobliżu</string>
   <string name="permission_bluetooth_body">Aby korzystać z komunikacji Bluetooth, Zerion potrzebuje uprawnień do znajdowania i łączenia się z pobliskimi urządzeniami.</string>
   <string name="permission_bluetooth_denied_body">Odmówiono dostępu do pobliskich urządzeń, ale Zerion potrzebuje tego uprawnienia, aby korzystać z Bluetooth.\n\nRozważ udzielenie dostępu.</string>
-  <string name="qr_code">Kod QR</string>
-  <string name="show_qr_code_fullscreen">Pokaż QR na pełnym ekranie</string>
   <!--App Locking-->
   <string name="lock_unlock">Odblokuj Zerion</string>
   <string name="lock_unlock_verbose">Wprowadź PIN swojego urządzenia, wzór lub hasło aby odblokować Zerion</string>
@@ -793,9 +675,7 @@ Brak dostępu do aparatu. Spróbuj ponownie, może po ponownym uruchomieniu urz�
   <string name="wifi_settings_request_enable_body">Aby utworzyć hotspot Wi-Fi, Zerion potrzebuje użyć Wi-Fi. Włącz Wi-Fi.</string>
   <string name="hotspot_tab_manual">Manualne</string>
   <!--The placeholder to be inserted into the string 'hotspot_manual_wifi': People can connect by %s-->
-  <string name="hotspot_scanning_a_qr_code">skanowanie kodu QR</string>
   <!--Wi-Fi setup-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_wifi">Twój telefon udostępnia hotspot Wi-Fi. Osoby, które chcą pobrać Zerion, mogą połączyć się z hotspotem, dodając go w ustawieniach Wi-Fi urządzenia, korzystając z poniższych informacji lub korzystając z %s. Gdy połączą się z hotspotem, naciśnij „Dalej”.</string>
   <string name="hotspot_manual_wifi_ssid">Nazwa sieci</string>
   <string name="hotspot_qr_wifi">Twój telefon udostępnia hotspot Wi-Fi. Osoby, które chcą pobrać Zerion, mogą połączyć się z hotspotem, skanując ten kod QR. Gdy połączą się z hotspotem, naciśnij „Dalej”.</string>
@@ -807,7 +687,6 @@ Brak dostępu do aparatu. Spróbuj ponownie, może po ponownym uruchomieniu urz�
     <item quantity="other">%s połączonych urządzeń</item>
   </plurals>
   <!--Download link-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_site">Twój telefon udostępnia hotspot Wi-Fi. Osoby połączone z hotspotem mogą pobrać Zerion, wpisując następujący link w przeglądarce internetowej lub %s.</string>
   <string name="hotspot_manual_site_address">Adres (URL)</string>
   <string name="hotspot_qr_site">Twój telefon udostępnia hotspot Wi-Fi. Osoby połączone z hotspotem mogą pobrać Zerion, skanując ten kod QR.</string>

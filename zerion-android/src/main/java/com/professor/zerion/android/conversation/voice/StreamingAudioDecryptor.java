@@ -39,23 +39,15 @@ public class StreamingAudioDecryptor {
 		if (wrappedKey.length != 48) {
 			throw new IllegalArgumentException("Wrapped key must be 48 bytes (32 ciphertext + 16 tag), got " + wrappedKey.length);
 		}
-
-		// Derive the same wrapping key from groupId
 		java.security.MessageDigest sha256 = java.security.MessageDigest.getInstance("SHA-256");
 		sha256.update("VOICE_KEY_WRAP".getBytes(java.nio.charset.StandardCharsets.UTF_8));
 		sha256.update(groupId);
 		byte[] keyMaterial = sha256.digest();
 		SecretKeySpec wrapKey = new SecretKeySpec(keyMaterial, "AES");
-
-		// Unwrap using AES-GCM
-		// Note: Key unwrapping does NOT use AAD to maintain backward compatibility
-		// Security is still provided by GCM authentication tag and per-chunk AAD
 		Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
 		cipher.init(Cipher.DECRYPT_MODE, wrapKey, new GCMParameterSpec(GCM_TAG_LENGTH, iv));
 
 		byte[] unwrapped = cipher.doFinal(wrappedKey);
-
-		// Zeroize sensitive data
 		Arrays.fill(keyMaterial, (byte) 0);
 		Arrays.fill(wrapKey.getEncoded(), (byte) 0);
 
@@ -63,15 +55,12 @@ public class StreamingAudioDecryptor {
 	}
 
 	public void setAADContext(byte[] formatVersion, byte[] conversationId, byte[] messageId) {
-		// Validate inputs to catch mismatches early
 		if (formatVersion.length != 1) {
 			throw new IllegalArgumentException("formatVersion must be 1 byte, got " + formatVersion.length);
 		}
 		if (conversationId.length != 32) {
 			throw new IllegalArgumentException("conversationId must be 32 bytes, got " + conversationId.length);
 		}
-
-		// Build AAD context: formatVersion (1 byte) + conversationId (32 bytes) + messageId (variable)
 		ByteBuffer buffer = ByteBuffer.allocate(formatVersion.length + conversationId.length + messageId.length);
 		buffer.put(formatVersion);
 		buffer.put(conversationId);
@@ -150,21 +139,15 @@ public class StreamingAudioDecryptor {
 	                                 List<byte[]> chunks, List<byte[]> tags,
 	                                 int chunkCount, int durationMs, byte[] globalMAC,
 	                                 byte[] formatVersion, byte[] groupId, byte[] messageId) throws Exception {
-		// Validate inputs
 		if (formatVersion.length != 1) {
 			throw new IllegalArgumentException("formatVersion must be 1 byte, got " + formatVersion.length);
 		}
 		if (groupId.length != 32) {
 			throw new IllegalArgumentException("groupId must be 32 bytes, got " + groupId.length);
 		}
-
-		// Unwrap the session key (no AAD for backward compatibility)
 		byte[] sessionKey = unwrapSessionKey(wrappedKey, iv, groupId);
 
 		StreamingAudioDecryptor decryptor = new StreamingAudioDecryptor(sessionKey, iv);
-
-		// Set AAD context for chunk decryption and global MAC verification
-		// Use empty messageId since that's what was used during encryption
 		decryptor.setAADContext(formatVersion, groupId, new byte[0]);
 
 		ByteArrayOutputStream plaintext = new ByteArrayOutputStream();
@@ -180,7 +163,6 @@ public class StreamingAudioDecryptor {
 
 			return plaintext.toByteArray();
 		} finally {
-			// SECURITY: Zeroize unwrapped session key after all decryption is complete
 			Arrays.fill(sessionKey, (byte) 0);
 			decryptor.zeroizeKeys();
 		}

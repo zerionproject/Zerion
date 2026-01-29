@@ -17,21 +17,10 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.concurrent.Executor;
-import java.util.logging.Logger;
-
-import static java.util.logging.Level.INFO;
-import static java.util.logging.Level.WARNING;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.api.plugin.file.RemovableDriveConstants.ID;
-import static org.briarproject.bramble.util.LogUtils.logException;
-
 @NotNullByDefault
 class RemovableDriveWriterTask extends RemovableDriveTaskImpl
 		implements EventListener {
-
-	private static final Logger LOG =
-			getLogger(RemovableDriveWriterTask.class.getName());
-
 	private final DatabaseComponent db;
 	private final ContactId contactId;
 
@@ -55,7 +44,6 @@ class RemovableDriveWriterTask extends RemovableDriveTaskImpl
 		SimplexPlugin plugin = getPlugin();
 		TransportConnectionWriter w = plugin.createWriter(transportProperties);
 		if (w == null) {
-			LOG.warning("Failed to create writer");
 			registry.removeWriter(this);
 			setSuccess(false);
 			return;
@@ -64,7 +52,6 @@ class RemovableDriveWriterTask extends RemovableDriveTaskImpl
 			setTotal(db.transactionWithResult(true, txn ->
 					db.getUnackedMessageBytesToSend(txn, contactId)));
 		} catch (DbException e) {
-			logException(LOG, WARNING, e);
 			registry.removeWriter(this);
 			setSuccess(false);
 			return;
@@ -79,9 +66,6 @@ class RemovableDriveWriterTask extends RemovableDriveTaskImpl
 		if (e instanceof MessagesSentEvent) {
 			MessagesSentEvent m = (MessagesSentEvent) e;
 			if (contactId.equals(m.getContactId())) {
-				if (LOG.isLoggable(INFO)) {
-					LOG.info(m.getMessageIds().size() + " messages sent");
-				}
 				addDone(m.getTotalLength());
 			}
 		}

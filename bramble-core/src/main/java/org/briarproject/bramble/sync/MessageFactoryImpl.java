@@ -44,7 +44,6 @@ class MessageFactoryImpl implements MessageFactory {
 	}
 
 	private MessageId getMessageId(GroupId g, long timestamp, byte[] body) {
-		// There's only one block, so the root hash is the hash of the block
 		byte[] rootHash = crypto.hash(BLOCK_LABEL, FORMAT_VERSION_BYTES, body);
 		byte[] timeBytes = new byte[INT_64_BYTES];
 		ByteUtils.writeUint64(timestamp, timeBytes, 0);

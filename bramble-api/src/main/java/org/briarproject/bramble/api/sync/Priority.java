@@ -4,9 +4,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.Immutable;
 
-/**
- * A record containing a nonce for choosing between redundant sessions.
- */
+
 @Immutable
 @NotNullByDefault
 public class Priority {

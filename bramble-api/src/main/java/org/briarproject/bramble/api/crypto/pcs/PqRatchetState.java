@@ -67,10 +67,7 @@ public class PqRatchetState {
 				false, 0, 0, null, null, null, null, null, null);
 	}
 
-	/**
-	 * Reconstructs PqRatchetState from database values.
-	 * This is the only way to create a state with arbitrary field values.
-	 */
+	
 	public static PqRatchetState fromDatabase(long currentEpoch, long epochStartTime,
 			int messagesSinceEpoch, PqEpochState state, boolean isInitiator,
 			int chunksSent, int chunksReceived,

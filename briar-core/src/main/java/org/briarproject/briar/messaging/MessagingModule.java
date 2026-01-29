@@ -72,8 +72,6 @@ public class MessagingModule {
 		validationManager.registerIncomingMessageHook(CLIENT_ID, MAJOR_VERSION,
 				messagingManager);
 		conversationManager.registerConversationClient(messagingManager);
-		// Don't advertise support for image attachments or disappearing
-		// messages unless the respective feature flags are enabled
 		boolean images = featureFlags.shouldEnableImageAttachments();
 		boolean disappear = featureFlags.shouldEnableDisappearingMessages();
 		int minorVersion = images ? (disappear ? MINOR_VERSION : 2) : 0;

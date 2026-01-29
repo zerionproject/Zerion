@@ -7,10 +7,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
-/**
- * Keys for communicating with a given contact or pending contact over a given
- * transport.
- */
+
 @Immutable
 @NotNullByDefault
 public class TransportKeys {
@@ -22,17 +19,13 @@ public class TransportKeys {
 	private final SecretKey rootKey;
 	private final boolean alice;
 
-	/**
-	 * Constructor for rotation mode.
-	 */
+	
 	public TransportKeys(TransportId transportId, IncomingKeys inPrev,
 			IncomingKeys inCurr, IncomingKeys inNext, OutgoingKeys outCurr) {
 		this(transportId, inPrev, inCurr, inNext, outCurr, null, false);
 	}
 
-	/**
-	 * Constructor for handshake mode.
-	 */
+	
 	public TransportKeys(TransportId transportId, IncomingKeys inPrev,
 			IncomingKeys inCurr, IncomingKeys inNext, OutgoingKeys outCurr,
 			@Nullable SecretKey rootKey, boolean alice) {
@@ -75,32 +68,18 @@ public class TransportKeys {
 		return outCurr.getTimePeriod();
 	}
 
-	/**
-	 * Returns true if these keys are for use in handshake mode or false if
-	 * they're for use in rotation mode.
-	 */
+	
 	public boolean isHandshakeMode() {
 		return rootKey != null;
 	}
 
-	/**
-	 * If these keys are for use in handshake mode, returns the root key.
-	 *
-	 * @throws UnsupportedOperationException If these keys are for use in
-	 * rotation mode
-	 */
+	
 	public SecretKey getRootKey() {
 		if (rootKey == null) throw new UnsupportedOperationException();
 		return rootKey;
 	}
 
-	/**
-	 * If these keys are for use in handshake mode, returns true if the local
-	 * party is Alice.
-	 *
-	 * @throws UnsupportedOperationException If these keys are for use in
-	 * rotation mode
-	 */
+	
 	public boolean isAlice() {
 		if (rootKey == null) throw new UnsupportedOperationException();
 		return alice;

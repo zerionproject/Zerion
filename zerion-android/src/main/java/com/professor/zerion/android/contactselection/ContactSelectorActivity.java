@@ -36,8 +36,6 @@ public abstract class ContactSelectorActivity
 		super.onCreate(bundle);
 
 		setContentView(getLayout());
-
-		// Set up toolbar for proper action bar support (menu items, back button)
 		setUpCustomToolbar(false);
 
 		if (bundle != null) {

@@ -17,13 +17,8 @@ import org.briarproject.bramble.test.TimeTravel;
 import org.briarproject.briar.api.attachment.AttachmentReader;
 import org.briarproject.briar.api.autodelete.AutoDeleteManager;
 import org.briarproject.briar.api.avatar.AvatarManager;
-import org.briarproject.briar.api.blog.BlogFactory;
-import org.briarproject.briar.api.blog.BlogManager;
-import org.briarproject.briar.api.blog.BlogSharingManager;
 import org.briarproject.briar.api.client.MessageTracker;
 import org.briarproject.briar.api.conversation.ConversationManager;
-import org.briarproject.briar.api.forum.ForumManager;
-import org.briarproject.briar.api.forum.ForumSharingManager;
 import org.briarproject.briar.api.introduction.IntroductionManager;
 import org.briarproject.briar.api.messaging.MessagingManager;
 import org.briarproject.briar.api.messaging.PrivateMessageFactory;
@@ -33,10 +28,8 @@ import org.briarproject.briar.api.privategroup.invitation.GroupInvitationManager
 import org.briarproject.briar.attachment.AttachmentModule;
 import org.briarproject.briar.autodelete.AutoDeleteModule;
 import org.briarproject.briar.avatar.AvatarModule;
-import org.briarproject.briar.blog.BlogModule;
 import org.briarproject.briar.client.BriarClientModule;
 import org.briarproject.briar.conversation.ConversationModule;
-import org.briarproject.briar.forum.ForumModule;
 import org.briarproject.briar.identity.IdentityModule;
 import org.briarproject.briar.introduction.IntroductionModule;
 import org.briarproject.briar.messaging.MessagingModule;
@@ -55,10 +48,8 @@ import dagger.Component;
 		AttachmentModule.class,
 		AutoDeleteModule.class,
 		AvatarModule.class,
-		BlogModule.class,
 		BriarClientModule.class,
 		ConversationModule.class,
-		ForumModule.class,
 		GroupInvitationModule.class,
 		IdentityModule.class,
 		IntroductionModule.class,
@@ -78,11 +69,7 @@ public interface BriarIntegrationTestComponent
 
 	void inject(AvatarModule.EagerSingletons init);
 
-	void inject(BlogModule.EagerSingletons init);
-
 	void inject(ConversationModule.EagerSingletons init);
-
-	void inject(ForumModule.EagerSingletons init);
 
 	void inject(GroupInvitationModule.EagerSingletons init);
 
@@ -108,14 +95,6 @@ public interface BriarIntegrationTestComponent
 
 	DatabaseComponent getDatabaseComponent();
 
-	BlogManager getBlogManager();
-
-	BlogSharingManager getBlogSharingManager();
-
-	ForumSharingManager getForumSharingManager();
-
-	ForumManager getForumManager();
-
 	GroupInvitationManager getGroupInvitationManager();
 
 	GroupInvitationFactory getGroupInvitationFactory();
@@ -134,8 +113,6 @@ public interface BriarIntegrationTestComponent
 
 	AuthorFactory getAuthorFactory();
 
-	BlogFactory getBlogFactory();
-
 	AutoDeleteManager getAutoDeleteManager();
 
 	Clock getClock();
@@ -150,9 +127,7 @@ public interface BriarIntegrationTestComponent
 					.injectEagerSingletons(c);
 			c.inject(new AutoDeleteModule.EagerSingletons());
 			c.inject(new AvatarModule.EagerSingletons());
-			c.inject(new BlogModule.EagerSingletons());
 			c.inject(new ConversationModule.EagerSingletons());
-			c.inject(new ForumModule.EagerSingletons());
 			c.inject(new GroupInvitationModule.EagerSingletons());
 			c.inject(new IdentityModule.EagerSingletons());
 			c.inject(new IntroductionModule.EagerSingletons());

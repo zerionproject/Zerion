@@ -104,7 +104,6 @@ abstract class AbstractProtocolEngine<S extends Session<?>>
 
 	void setPrivateGroupVisibility(Transaction txn, S session,
 			Visibility preferred) throws DbException, FormatException {
-		// Apply min of preferred visibility and client's visibility
 		ContactId contactId =
 				clientHelper.getContactId(txn, session.getContactGroupId());
 		Visibility client = clientVersioningManager.getClientVisibility(txn,
@@ -122,7 +121,7 @@ abstract class AbstractProtocolEngine<S extends Session<?>>
 		try {
 			privateGroup = privateGroupFactory.parsePrivateGroup(g);
 		} catch (FormatException e) {
-			throw new DbException(e); // Invalid group descriptor
+			throw new DbException(e);
 		}
 		Message m;
 		ContactId c = clientHelper.getContactId(txn, s.getContactGroupId());
@@ -132,7 +131,6 @@ abstract class AbstractProtocolEngine<S extends Session<?>>
 					privateGroup.getCreator(), privateGroup.getSalt(), text,
 					signature, timer);
 			sendMessage(txn, m, INVITE, privateGroup.getId(), true, timer);
-			// Set the auto-delete timer duration on the message
 			if (timer != NO_AUTO_DELETE_TIMER) {
 				db.setCleanupTimerDuration(txn, m.getId(), timer);
 			}
@@ -155,7 +153,6 @@ abstract class AbstractProtocolEngine<S extends Session<?>>
 				: getTimestampForInvisibleMessage(s);
 		ContactId c = clientHelper.getContactId(txn, s.getContactGroupId());
 		if (contactSupportsAutoDeletion(txn, c)) {
-			// Set auto-delete timer if manually accepting an invitation
 			long timer = NO_AUTO_DELETE_TIMER;
 			if (visibleInUi) {
 				timer = autoDeleteManager
@@ -166,7 +163,6 @@ abstract class AbstractProtocolEngine<S extends Session<?>>
 					s.getLastLocalMessageId(), timer);
 			sendMessage(txn, m, JOIN, s.getPrivateGroupId(), visibleInUi,
 					timer);
-			// Set the auto-delete timer duration on the message
 			if (timer != NO_AUTO_DELETE_TIMER) {
 				db.setCleanupTimerDuration(txn, m.getId(), timer);
 			}
@@ -193,7 +189,6 @@ abstract class AbstractProtocolEngine<S extends Session<?>>
 				: getTimestampForInvisibleMessage(s);
 		ContactId c = clientHelper.getContactId(txn, s.getContactGroupId());
 		if (contactSupportsAutoDeletion(txn, c)) {
-			// Set auto-delete timer if declining an invitation
 			long timer = NO_AUTO_DELETE_TIMER;
 			if (visibleInUi) {
 				timer = autoDeleteManager.getAutoDeleteTimer(txn, c,
@@ -204,12 +199,10 @@ abstract class AbstractProtocolEngine<S extends Session<?>>
 					s.getLastLocalMessageId(), timer);
 			sendMessage(txn, m, LEAVE, s.getPrivateGroupId(), visibleInUi,
 					timer, isAutoDecline);
-			// Set the auto-delete timer duration on the local message
 			if (timer != NO_AUTO_DELETE_TIMER) {
 				db.setCleanupTimerDuration(txn, m.getId(), timer);
 			}
 			if (isAutoDecline) {
-				// Broadcast an event, so the auto-decline becomes visible
 				SessionId sessionId =
 						new SessionId(s.getPrivateGroupId().getBytes());
 				GroupInvitationResponse response = new GroupInvitationResponse(
@@ -288,7 +281,6 @@ abstract class AbstractProtocolEngine<S extends Session<?>>
 				invite.getGroupName(), invite.getCreator(), invite.getSalt());
 		long timestamp =
 				max(clock.currentTimeMillis(), invite.getTimestamp() + 1);
-		// TODO: Create the join message on the crypto executor
 		LocalAuthor member = identityManager.getLocalAuthor(txn);
 		GroupMessage joinMessage = groupMessageFactory.createJoinMessage(
 				privateGroup.getId(), timestamp, member, invite.getTimestamp(),
@@ -297,12 +289,7 @@ abstract class AbstractProtocolEngine<S extends Session<?>>
 				.addPrivateGroup(txn, privateGroup, joinMessage, false);
 	}
 
-	/**
-	 * Returns a timestamp for a visible outgoing message. The timestamp is
-	 * later than the timestamp of any message sent or received so far in the
-	 * conversation, and later than the {@link #getSessionTimestamp(Session)
-	 * session timestamp}.
-	 */
+	
 	long getTimestampForVisibleMessage(Transaction txn, S s)
 			throws DbException {
 		ContactId c = clientHelper.getContactId(txn, s.getContactGroupId());
@@ -311,18 +298,12 @@ abstract class AbstractProtocolEngine<S extends Session<?>>
 		return max(conversationTimestamp, getSessionTimestamp(s) + 1);
 	}
 
-	/**
-	 * Returns a timestamp for an invisible outgoing message. The timestamp is
-	 * later than the {@link #getSessionTimestamp(Session) session timestamp}.
-	 */
+	
 	long getTimestampForInvisibleMessage(S s) {
 		return max(clock.currentTimeMillis(), getSessionTimestamp(s) + 1);
 	}
 
-	/**
-	 * Returns the latest timestamp of any message sent so far in the session,
-	 * and any invite message sent or received so far in the session.
-	 */
+	
 	private long getSessionTimestamp(S s) {
 		return max(s.getLocalTimestamp(), s.getInviteTimestamp());
 	}
@@ -360,7 +341,6 @@ abstract class AbstractProtocolEngine<S extends Session<?>>
 		int minorVersion = clientVersioningManager.getClientMinorVersion(txn, c,
 				GroupInvitationManager.CLIENT_ID,
 				GroupInvitationManager.MAJOR_VERSION);
-		// Auto-delete was added in client version 0.1
 		return minorVersion >= 1;
 	}
 }

@@ -43,7 +43,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
@@ -53,8 +52,6 @@ import javax.net.SocketFactory;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
-import static java.util.logging.Level.WARNING;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.api.plugin.Plugin.State.ACTIVE;
 import static org.briarproject.bramble.api.plugin.Plugin.State.DISABLED;
 import static org.briarproject.bramble.api.plugin.Plugin.State.ENABLING;
@@ -77,16 +74,12 @@ import static org.briarproject.bramble.api.plugin.TorConstants.REASON_BATTERY;
 import static org.briarproject.bramble.api.plugin.TorConstants.REASON_MOBILE_DATA;
 import static org.briarproject.bramble.plugin.tor.TorRendezvousCrypto.SEED_BYTES;
 import static org.briarproject.bramble.util.IoUtils.tryToClose;
-import static org.briarproject.bramble.util.LogUtils.logException;
 import static org.briarproject.bramble.util.StringUtils.isNullOrEmpty;
 import static org.briarproject.onionwrapper.CircumventionProvider.BridgeType.MEEK;
 import static org.briarproject.onionwrapper.CircumventionProvider.BridgeType.SNOWFLAKE;
 
 @InterfaceNotNullByDefault
 class TorPlugin implements DuplexPlugin, EventListener {
-
-	protected static final Logger LOG = getLogger(TorPlugin.class.getName());
-
 	private static final Pattern ONION_V3 = Pattern.compile("[a-z2-7]{56}");
 
 	protected final Executor ioExecutor;
@@ -213,12 +206,11 @@ class TorPlugin implements DuplexPlugin, EventListener {
 				ss = new ServerSocket();
 				ss.bind(new InetSocketAddress("127.0.0.1", port));
 			} catch (IOException e) {
-				logException(LOG, WARNING, e);
-				tryToClose(ss, LOG, WARNING);
+				tryToClose(ss);
 				return;
 			}
 			if (!state.setServerSocket(ss)) {
-				tryToClose(ss, LOG, WARNING);
+				tryToClose(ss);
 				return;
 			}
 			int localPort = ss.getLocalPort();
@@ -238,7 +230,6 @@ class TorPlugin implements DuplexPlugin, EventListener {
 		try {
 			hsProps = tor.publishHiddenService(localPort, 80, privKey);
 		} catch (IOException e) {
-			logException(LOG, WARNING, e);
 			return;
 		}
 		if (privKey == null) {
@@ -283,11 +274,10 @@ class TorPlugin implements DuplexPlugin, EventListener {
 	@Override
 	public void stop() {
 		ServerSocket ss = state.setStopped();
-		tryToClose(ss, LOG, WARNING);
+		tryToClose(ss);
 		try {
 			tor.stop();
 		} catch (IOException e) {
-			logException(LOG, WARNING, e);
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 		}
@@ -347,7 +337,7 @@ class TorPlugin implements DuplexPlugin, EventListener {
 			s.setSoTimeout(socketTimeout);
 			return new TorTransportConnection(this, s);
 		} catch (IOException e) {
-			tryToClose(s, LOG, WARNING);
+			tryToClose(s);
 			return null;
 		}
 	}
@@ -413,12 +403,11 @@ class TorPlugin implements DuplexPlugin, EventListener {
 					try {
 						tor.removeHiddenService(localOnion);
 					} finally {
-						tryToClose(ss, LOG, WARNING);
+						tryToClose(ss);
 					}
 				}
 			};
 		} catch (IOException e) {
-			logException(LOG, WARNING, e);
 			return null;
 		}
 	}
@@ -504,7 +493,6 @@ class TorPlugin implements DuplexPlugin, EventListener {
 				}
 				tor.enableNetwork(enableNetwork);
 			} catch (IOException e) {
-				logException(LOG, WARNING, e);
 			}
 		});
 	}

@@ -63,7 +63,6 @@ public abstract class StringMap extends Hashtable<String, String> {
 	public int[] getIntArray(String key) {
 		String s = get(key);
 		if (s == null) return null;
-		// Handle empty string because "".split(",") returns {""}
 		if (s.length() == 0) return new int[0];
 		String[] intStrings = s.split(",");
 		int[] ints = new int[intStrings.length];
@@ -82,7 +81,6 @@ public abstract class StringMap extends Hashtable<String, String> {
 		for (int integer : value) {
 			intStrings.add(String.valueOf(integer));
 		}
-		// Puts empty string if input array value is empty
 		put(key, StringUtils.join(intStrings, ","));
 	}
 }

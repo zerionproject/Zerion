@@ -6,10 +6,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.Immutable;
 
-/**
- * An event that is broadcast when a contact disconnects and is no longer
- * connected via any transport.
- */
+
 @Immutable
 @NotNullByDefault
 public class ContactDisconnectedEvent extends Event {

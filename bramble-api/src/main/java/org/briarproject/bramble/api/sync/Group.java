@@ -6,9 +6,9 @@ public class Group {
 
 	public enum Visibility {
 
-		INVISIBLE(0), // The group is not visible
-		VISIBLE(1), // The group is visible, messages are accepted but not sent
-		SHARED(2); // The group is visible, messages are accepted and sent
+		INVISIBLE(0),
+		VISIBLE(1),
+		SHARED(2);
 
 		private final int value;
 
@@ -25,9 +25,7 @@ public class Group {
 		}
 	}
 
-	/**
-	 * The current version of the group format.
-	 */
+	
 	public static final int FORMAT_VERSION = 1;
 
 	private final GroupId id;
@@ -45,30 +43,22 @@ public class Group {
 		this.descriptor = descriptor;
 	}
 
-	/**
-	 * Returns the group's unique identifier.
-	 */
+	
 	public GroupId getId() {
 		return id;
 	}
 
-	/**
-	 * Returns the ID of the client to which the group belongs.
-	 */
+	
 	public ClientId getClientId() {
 		return clientId;
 	}
 
-	/**
-	 * Returns the major version of the client to which the group belongs.
-	 */
+	
 	public int getMajorVersion() {
 		return majorVersion;
 	}
 
-	/**
-	 * Returns the group's descriptor.
-	 */
+	
 	public byte[] getDescriptor() {
 		return descriptor;
 	}

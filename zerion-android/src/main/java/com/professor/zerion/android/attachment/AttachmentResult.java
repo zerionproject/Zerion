@@ -34,18 +34,12 @@ public class AttachmentResult {
 		return finished;
 	}
 
-	/**
-	 * Returns the upload progress for large attachments (0.0 to 1.0).
-	 * Returns 1.0 when finished, 0.0 when not started.
-	 */
+	
 	public float getProgress() {
 		return progress;
 	}
 
-	/**
-	 * Returns true if this result represents an in-progress upload with
-	 * meaningful progress information (for large files like videos).
-	 */
+	
 	public boolean hasProgress() {
 		return !finished && progress > 0.0f && progress < 1.0f;
 	}

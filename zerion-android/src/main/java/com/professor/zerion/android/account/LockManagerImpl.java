@@ -86,8 +86,6 @@ public class LockManagerImpl implements LockManager, Service, EventListener {
 		timeoutDefault = Integer.parseInt(
 				appContext.getString(R.string.pref_lock_timeout_value_default));
 		timeoutMinutes = timeoutNever;
-
-		// Use postValue since constructor may be called from a background thread
 		lockable.postValue(false);
 	}
 
@@ -180,7 +178,7 @@ public class LockManagerImpl implements LockManager, Service, EventListener {
 			try {
 				applySettings(settingsManager.getSettings(SETTINGS_NAMESPACE));
 			} catch (DbException e) {
-				/* silent */
+				
 			}
 		});
 	}

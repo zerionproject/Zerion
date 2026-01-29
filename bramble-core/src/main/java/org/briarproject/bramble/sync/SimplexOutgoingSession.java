@@ -24,39 +24,18 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.logging.Logger;
-
 import javax.annotation.concurrent.ThreadSafe;
-
-import static java.util.logging.Level.INFO;
-import static java.util.logging.Level.WARNING;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.api.lifecycle.LifecycleManager.LifecycleState.STOPPING;
 import static org.briarproject.bramble.api.record.Record.RECORD_HEADER_BYTES;
 import static org.briarproject.bramble.api.sync.SyncConstants.MAX_MESSAGE_IDS;
 import static org.briarproject.bramble.api.sync.SyncConstants.MAX_MESSAGE_LENGTH;
 import static org.briarproject.bramble.api.sync.SyncConstants.SUPPORTED_VERSIONS;
-import static org.briarproject.bramble.util.LogUtils.logException;
 
-/**
- * An outgoing {@link SyncSession} suitable for simplex transports. The session
- * sends messages without offering them first, and closes its output stream
- * when there are no more records to send.
- */
+
 @ThreadSafe
 @NotNullByDefault
 class SimplexOutgoingSession implements SyncSession, EventListener {
-
-	private static final Logger LOG =
-			getLogger(SimplexOutgoingSession.class.getName());
-
-	/**
-	 * The batch capacity must be at least {@link Record#RECORD_HEADER_BYTES}
-	 * + {@link SyncConstants#MAX_MESSAGE_LENGTH} to ensure that maximum-size
-	 * messages can be selected for transmission. Larger batches will mean
-	 * fewer round-trips between the DB and the output stream, but each
-	 * round-trip will block the DB for longer.
-	 */
+	
 	static final int BATCH_CAPACITY =
 			(RECORD_HEADER_BYTES + MAX_MESSAGE_LENGTH) * 2;
 
@@ -91,13 +70,11 @@ class SimplexOutgoingSession implements SyncSession, EventListener {
 	public void run() throws IOException {
 		eventBus.addListener(this);
 		try {
-			// Send our supported protocol versions
 			recordWriter.writeVersions(new Versions(SUPPORTED_VERSIONS));
 			try {
 				sendAcks();
 				sendMessages();
 			} catch (DbException e) {
-				logException(LOG, WARNING, e);
 			}
 			streamWriter.sendEndOfStream();
 		} finally {
@@ -138,11 +115,8 @@ class SimplexOutgoingSession implements SyncSession, EventListener {
 	private boolean generateAndSendAck() throws DbException, IOException {
 		Ack a = db.transactionWithNullableResult(false, txn ->
 				db.generateAck(txn, contactId, MAX_MESSAGE_IDS));
-		if (LOG.isLoggable(INFO))
-			LOG.info("Generated ack: " + (a != null));
-		if (a == null) return false; // No more acks to send
+		if (a == null) return false;
 		recordWriter.writeAck(a);
-		LOG.info("Sent ack");
 		return true;
 	}
 
@@ -153,11 +127,8 @@ class SimplexOutgoingSession implements SyncSession, EventListener {
 	private boolean generateAndSendBatch() throws DbException, IOException {
 		Collection<Message> b = db.transactionWithNullableResult(false, txn ->
 				db.generateBatch(txn, contactId, BATCH_CAPACITY, maxLatency));
-		if (LOG.isLoggable(INFO))
-			LOG.info("Generated batch: " + (b != null));
-		if (b == null) return false; // No more messages to send
+		if (b == null) return false;
 		for (Message m : b) recordWriter.writeMessage(m);
-		LOG.info("Sent batch");
 		return true;
 	}
 }

@@ -63,8 +63,6 @@
   <string name="nav_drawer_close_description">დახურეთ ნავიგაციის პანელი</string>
   <string name="contact_list_button">კონტაქტები</string>
   <string name="groups_button">დახურული ჯგუფები</string>
-  <string name="forums_button">ფორუმები</string>
-  <string name="blogs_button">ბლოგები</string>
   <!--This is part of the main menu. The app will be locked when this is tapped.-->
   <string name="lock_button">აპის დაბლოკვა</string>
   <string name="settings_button">პარამეტრები</string>
@@ -99,14 +97,6 @@
   <plurals name="group_message_notification_text">
     <item quantity="one">ახალი ჯგუფური წერილი.</item>
     <item quantity="other">%d ახალი ჯგუფური შეტყობინება.</item>
-  </plurals>
-  <plurals name="forum_post_notification_text">
-    <item quantity="one">ახალი პოსტი ფორუმზე.</item>
-    <item quantity="other">%d ახალი პოსტი ფორუმზე.</item>
-  </plurals>
-  <plurals name="blog_post_notification_text">
-    <item quantity="one">ახალი ჩანაწერი ბლოგზე.</item>
-    <item quantity="other">%d ახალი პოსტი ბლოგზე.</item>
   </plurals>
   <!--Misc-->
   <string name="now">ახლა</string>
@@ -206,16 +196,12 @@
   <string name="menu_contact">კონტაქტი</string>
   <!--Adding Contacts-->
   <string name="add_contact_title">ახლომყოფი კონტაქტის დამატება</string>
-  <string name="face_to_face">თქვენ უნდა შეხვდეთ პიროვნებას, ვისი დამატებაც გსურთ კონტაქტად.\n\nეს აღკვეთს მომავალში სხვის მიერ თქვენი პირადობის გამოყენებას ან თქვენი შეტყობინებების წაკითხვას.</string>
   <string name="continue_button">გაგრძელება</string>
   <string name="try_again_button">ხელახლა სცადეთ</string>
   <string name="waiting_for_contact_to_scan">კონტაქტის სკანირების და დაკავშირების ლოდინი\u2026</string>
   <string name="exchanging_contact_details">კონტაქტის დეტალების გაცვლა\u2026</string>
   <string name="contact_added_toast">დამატებული კონტაქტი: %s</string>
   <string name="contact_already_exists">კონტაქტი %s უკვე არსებობს</string>
-  <string name="qr_code_invalid"> QR კოდი არასწორია</string>
-  <string name="qr_code_too_old_1">თქვენ მიერ სკანირებული QR კოდი Zerion-ის შედარებით ძველი ვერსიიდანაა.\n\nსთხოვეთ თქვენს კონტაქტს, განაახლოს ბოლო ვერსიამდე და შემდეგ სცადეთ ხელახლა.</string>
-  <string name="qr_code_too_new_1">თქვენ მიერ სკანირებული QR კოდი Zerion-ის შედარებით ახალი ვერსიიდანაა.\n\nგთხოვთ, განაახლოთ ბოლო ვერსიამდე და შემდეგ სცადეთ ხელახლა.</string>
   <string name="camera_error">კამერის შეცდომა</string>
   <string name="connecting_to_device">უკავშირდება მოწყობილობას\u2026</string>
   <string name="authenticating_with_device">ავტორიზაცია მოწყობილობით\u2026</string>
@@ -370,103 +356,26 @@
   <string name="groups_reveal_visible_revealed_by_contact">კონტაქტთან ურთიერთობა ხილულია ჯგუფისთვის (%s-ის მიერ გამხელილი)</string>
   <string name="groups_reveal_invisible">კონტაქტთან ურთიერთობა დაფარულია ჯგუფისთვის</string>
   <!--Forums-->
-  <string name="no_forums">საჩვენებელი ფორუმები არ არის</string>
-  <string name="no_forums_action">შეეხეთ + ხატულას ფორუმის შესაქმნელად, ან სთხოვეთ თქვენს კონტაქტებს, გაგიზიარონ ფორუმები</string>
-  <string name="create_forum_title">ფორუმის შექმნა</string>
-  <string name="choose_forum_hint">აირჩიეთ თქვენი ფორუმის სახელი</string>
-  <string name="create_forum_button">ფორუმის შექმნა</string>
-  <string name="forum_created_toast">ფორუმი შექმნილია</string>
-  <string name="no_forum_posts">საჩვენებელი პოსტები არ არის</string>
   <string name="no_posts">პოსტები არ არის</string>
   <plurals name="posts">
     <item quantity="one">%d პოსტი</item>
     <item quantity="other">%d პოსტი</item>
   </plurals>
-  <string name="forum_new_message_hint">ახალი პოსტი</string>
-  <string name="forum_message_reply_hint">ახალი პასუხი</string>
   <string name="btn_reply">პასუხი</string>
-  <string name="forum_leave">ფორუმის დატოვება</string>
-  <string name="dialog_title_leave_forum">ფორუმის დატოვების დადასტურება</string>
-  <string name="dialog_message_leave_forum">ნამდვილად გსურთ დატოვოთ ეს ფორუმი?\n\nნებისმიერმა კონტაქტმა, რომელსაც გაუზიარეთ ეს ფორუმი, შესაძლოა შეწყვიტოს განახლებების მიღება.</string>
   <string name="dialog_button_leave">დატოვება</string>
-  <string name="forum_left_toast">ფორუმი დატოვებულია</string>
   <!--Forum Sharing-->
-  <string name="forum_share_button">ფორუმის გაზიარება</string>
   <string name="contacts_selected">არჩეული კონტაქტები</string>
   <string name="activity_share_toolbar_header">კონტაქტების არჩევა</string>
   <string name="no_contacts_selector">საჩვენებელი კონტაქტები არ არის</string>
   <string name="no_contacts_selector_action">გთხოვთ, დაბრუნდეთ კონტაქტის დამატების შემდეგ</string>
-  <string name="forum_shared_snackbar">ფორუმი გაზიარდა არჩეულ კონტაქტებს</string>
-  <string name="forum_share_message">შეტყობინების დამატება (არასავალდებულო)</string>
-  <string name="forum_share_error"> ამ ფორუმის გაზიარებისას შეცდომა წარმოიშვა.</string>
-  <string name="forum_invitation_received">%1$s გიზიარებთ „%2$s“ ფორუმს.</string>
-  <string name="forum_invitation_sent">თქვენ „%1$s“ ფორუმი გაუზიარეთ %2$s-ს.</string>
-  <string name="forum_invitations_title">ფორუმის მოწვევები</string>
-  <string name="forum_invitation_exists">თქვენ უკვე დათანხმდით ამ ფორუმში მოწვევას.\n\nმეტი მოწვევის დათანხმება თქვენს კავშირს ფორუმთან გახდის უფრო სწრაფს და საიმედოს.</string>
-  <string name="forum_joined_toast">შეუერთდა ფორუმს</string>
-  <string name="forum_declined_toast">მოწვევა უარყოფილია</string>
   <string name="shared_by_format">გააზიარა %s-მ</string>
-  <string name="forum_invitation_already_sharing">უკვე გაზიარებულია</string>
-  <string name="forum_invitation_response_accepted_sent">თქვენ დათანხმდით %s-ის ფორუმში მოწვევას.</string>
-  <string name="forum_invitation_response_declined_sent">თქვენ უარყავით %s-ის ფორუმში მოწვევას.</string>
-  <string name="forum_invitation_response_declined_auto"> %s-ის ფორუმში მოწვევა ავტომატურად უარყოფილია.</string>
-  <string name="forum_invitation_response_accepted_received">%s დათანხმდა ფორუმში მოწვევას.</string>
-  <string name="forum_invitation_response_declined_received">%s-მ უარყო ფორუმში მოწვევა.</string>
   <string name="sharing_status">გაზიარების სტატუსი</string>
-  <string name="sharing_status_forum">ფორუმის ნებისმიერ წევრს შეუძლია გაუზიაროს ის თავის კონტაქტებს. თქვენ უზიარებთ ამ ფორუმს შემდეგ კონტაქტებს. შეიძლება ასევე იყვნენ სხვა წევრებიც, რომლებსაც ვერ ხედავთ.</string>
   <string name="shared_with">გაუზიარდა %1$d-ის (%2$d ონლაინ)</string>
-  <plurals name="forums_shared">
-    <item quantity="one">%d გაზიარებული ფორუმი კონტაქტების მიერ</item>
-    <item quantity="other">%d გაზიარებული ფორუმი კონტაქტების მიერ</item>
-  </plurals>
   <string name="nobody">არავინ</string>
   <!--Blogs-->
-  <string name="blogs_other_blog_empty_state">საჩვენებელი პოსტები არ არის</string>
   <string name="read_more">წაიკითხეთ ვრცლად</string>
-  <string name="blogs_write_blog_post">ბლოგის პოსტის დაწერა</string>
-  <string name="blogs_write_blog_post_body_hint">აკრიფეთ თქვენი ბლოგის პოსტი</string>
-  <string name="blogs_publish_blog_post">გამოქვეყნება</string>
-  <string name="blogs_blog_post_created">ბლოგის პოსტი შექმნილია</string>
-  <string name="blogs_blog_post_received">მიღებულია ბლოგის ახალი პოსტი</string>
-  <string name="blogs_blog_post_scroll_to">გადაადგილება</string>
-  <string name="blogs_feed_empty_state">საჩვენებელი პოსტები არ არის</string>
-  <string name="blogs_feed_empty_state_action">თქვენი კონტაქტების და თქვენ მიერ გამოწერილი ბლოგების პოსტები გამოჩნდება აქ\n\nპოსტის დასაწერად, შეეხეთ კალმის ხატულას</string>
-  <string name="blogs_remove_blog">ბლოგის ამოშლა</string>
-  <string name="blogs_remove_blog_dialog_message">ნამდვილად გსურთ ამოშალოთ ეს ბლოგი?\n\nპოსტები ამოიშლება თქვენი მოწყობილობიდან, მაგრამ დარჩება სხვა ადამიანების მოწყობილობებზე.\n\nნებისმიერ კონტაქტს, ვისაც გაუზიარეთ ეს ბლოგი, შესაძლოა შეუწყდეს განახლებების მიღება.</string>
-  <string name="blogs_remove_blog_ok">ამოშლა</string>
-  <string name="blogs_blog_removed">ბლოგი ამოშლილია</string>
-  <string name="blogs_reblog_comment_hint">კომენტარის დამატება (არასავალდებულო)</string>
-  <string name="blogs_reblog_button">ხელახლა გამოქვეყნება</string>
   <!--Blog Sharing-->
-  <string name="blogs_sharing_share">ბლოგის გაზიარება</string>
-  <string name="blogs_sharing_error">ბლოგის გაზიარებისას შეცდომა წარმოიშვა.</string>
-  <string name="blogs_sharing_button">ბლოგის გაზიარება</string>
-  <string name="blogs_sharing_snackbar">ბლოგი გაზიარებულია არჩეულ კონტაქტებთან</string>
-  <string name="blogs_sharing_response_accepted_sent">თქვენ დათანხმდით %s-ის ბლოგში მოწვევას.</string>
-  <string name="blogs_sharing_response_declined_sent">თქვენ უარყავით %s-ის ბლოგში მოწვევა.</string>
-  <string name="blogs_sharing_response_declined_auto">%s-ის ბლოგში მოწვევა ავტომატურად უარყოფილია.</string>
-  <string name="blogs_sharing_response_accepted_received">%s დათანხმდა ბლოგში მოწვევას.</string>
-  <string name="blogs_sharing_response_declined_received">%s-მ უარყო ბლოგში მოწვევა.</string>
-  <string name="blogs_sharing_invitation_received">%1$s-მ გაგიზიარათ „%2$s“ ბლოგი.</string>
-  <string name="blogs_sharing_invitation_sent">თქვენ გაუზიარეთ „%1$s“ ბლოგი %2$s-ს.</string>
-  <string name="blogs_sharing_invitations_title">ბლოგის მოწვევები</string>
-  <string name="blogs_sharing_joined_toast">გაწევრიანებულია ბლოგში</string>
-  <string name="blogs_sharing_declined_toast">მოწვევა უარყოფილია</string>
-  <string name="sharing_status_blog">ნებისმიერი, ვინც გაწევრიანებულია ბლოგში, შეუძლია გაუზიაროს ის თავის კონტაქტებს. თქვენ უზიარებთ ამ ფორუმს შემდეგ კონტაქტებს. შეიძლება ასევე იყვნენ სხვა წევრებიც, რომლებსაც ვერ ხედავთ.</string>
   <!--RSS Feeds-->
-  <string name="blogs_rss_feeds_import">RSS არხის იმპორტი</string>
-  <string name="blogs_rss_feeds_import_button">იმპორტი</string>
-  <string name="blogs_rss_feeds_import_hint">შეიყვანეთ RSS არხის URL</string>
-  <string name="blogs_rss_feeds_import_error">ვწუხვართ! არხის იმპორტირებისას შეცდომა წარმოიშვა.</string>
-  <string name="blogs_rss_feeds">RSS არხები</string>
-  <string name="blogs_rss_feeds_manage_imported">იმპორტირებული:</string>
-  <string name="blogs_rss_feeds_manage_author">ავტორი:</string>
-  <string name="blogs_rss_feeds_manage_updated">ბოლო განახლება:</string>
-  <string name="blogs_rss_remove_feed">არხის ამოშლა</string>
-  <string name="blogs_rss_remove_feed_dialog_message">ნამდვილად გსურთ ამოშალოთ ეს არხი?\n\nპოსტები ამოიშლება თქვენი მოწყობილობიდან, მაგრამ დარჩება სხვა ადამიანების მოწყობილობებზე.\n\nნებისმიერ კონტაქტებს, ვისაც გაუზიარეთ ეს არხი, შესაძლოა შეუწყდეთ გაანახლებების მიღება.</string>
-  <string name="blogs_rss_remove_feed_ok">ამოშლა</string>
-  <string name="blogs_rss_feeds_manage_empty_state">საჩვენებელი RSS არხები არ არის\n\nშეეხეთ + ხატულას არხის იმპორტისთვის</string>
-  <string name="blogs_rss_feeds_manage_error">თქვენი არხების ჩატვირთვისას წარმოიშვა პრობლემა. გთხოვთ სცადოთ მოგვიანებით.</string>
   <!--Settings Profile Picture-->
   <string name="change_profile_picture">შეეხეთ თქვენი პროფილის სურათის შესაცვლელად</string>
   <string name="dialog_confirm_profile_picture_title">პროფილის სურათის შეცვლა</string>
@@ -546,12 +455,6 @@
   <string name="notify_group_messages_setting_title">ჯგუფის შეტყობინებები</string>
   <string name="notify_group_messages_setting_summary">ჯგუფის შეტყობინებების გაფრთხილებების ჩვენება</string>
   <string name="notify_group_messages_setting_summary_26">ჯგუფის შეტყობინებების გაფრთხილებების კონფიგურირება</string>
-  <string name="notify_forum_posts_setting_title">ფორუმის პოსტები</string>
-  <string name="notify_forum_posts_setting_summary">ფორუმის პოსტების გაფრთხილებების ჩვენება</string>
-  <string name="notify_forum_posts_setting_summary_26">ფორუმის პოსტების გაფრთხილებების კონფიგურირება</string>
-  <string name="notify_blog_posts_setting_title">ბლოგის პოსტები</string>
-  <string name="notify_blog_posts_setting_summary">ბლოგის პოსტების გაფრთხილებების ჩვენება</string>
-  <string name="notify_blog_posts_setting_summary_26">ფორუმის პოსტების გაფრთხილებების კონფიგურირება</string>
   <string name="notify_vibration_setting">ვიბრაცია</string>
   <string name="notify_sound_setting">ხმა</string>
   <string name="notify_sound_setting_default">ნაგულისხმევი ზარის მელოდია</string>
@@ -709,8 +612,6 @@
   <string name="permission_location_setting_title">მდებარეობის პარამეტრები</string>
   <string name="permission_location_setting_body">თქვენი მოწყობილობის მდებარეობის პარამეტრები ჩართული უნდა იყოს სხვა მოწყობილობების მოსაძებნად Bluetooth-ის მეშვეობით. გასაგრძელებლად, გთხოვთ ჩართოთ მდებარეობა. შემდგომში ისევ შეძლებთ მის გამორთვას.</string>
   <string name="permission_location_setting_button">მდებარეობის ჩართვა</string>
-  <string name="qr_code">QR კოდი</string>
-  <string name="show_qr_code_fullscreen">QR კოდის სრულ ეკრანზე ჩვენება</string>
   <!--App Locking-->
   <string name="lock_unlock">Zerion-ის განბლოკვა</string>
   <string name="lock_unlock_verbose">Zerion-ის განბლოკვისთვის, შეიყვანეთ თქვენი მოწყობილობის PIN, შაბლონი ან პაროლი </string>
@@ -736,9 +637,7 @@
   <string name="wifi_settings_request_enable_body">Wi-Fi წვდომის წერტილის შესაქმნელად, Zerion-ს ესაჭიროება Wi-Fi. გთხოვთ, ჩართოთ ის.</string>
   <string name="hotspot_tab_manual">ხელით</string>
   <!--The placeholder to be inserted into the string 'hotspot_manual_wifi': People can connect by %s-->
-  <string name="hotspot_scanning_a_qr_code">QR კოდის სკანირება</string>
   <!--Wi-Fi setup-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_wifi">თქვენი ტელეფონი უზრუნველყოფს Wi-Fi წვდომის წერტილს. ვისაც სურს ჩამოტვირთოს Zerion, შეუძლია დაუკავშირდეს აღნიშნულ წვდომის წერტილს მისი დამატებით საკუთარი მოწყობილობის Wi-Fi-ის პარამეტრებში, ქვემოთ მითითებულის გამოყენებით ან %s-ის მეშვეობით. როდესაც ისინი დაუკავშირდებიან წვდომის წერტილს, დააჭირეთ „შემდეგს“.</string>
   <string name="hotspot_manual_wifi_ssid">ქსელის სახელი</string>
   <string name="hotspot_qr_wifi">თქვენი ტელეფონი უზრუნველყოფს Wi-Fi წვდომის წერტილს. ვისაც სურს ჩამოტვირთოს Zerion, შეუძლია დაუკავშირდეს აღნიშნულ წვდომის წერტილს QR კოდის სკანირებით. როდესაც ისინი დაუკავშირდებიან წვდომის წერტილს, დააჭირეთ „შემდეგს“.</string>
@@ -748,7 +647,6 @@
     <item quantity="other">%s მოწყობილობა დაკავშირებულია</item>
   </plurals>
   <!--Download link-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_site">თქვენი ტელეფონი უზრუნველყოფს Wi-Fi წვდომის წერტილს. ვინც დაკავშირებულია ამ წვდომის წერტილთან, შეუძლია ჩამოტვირთოს Zerion შემდეგი ბმულის აკრეფით ბრაუზერში ან %s-ში.</string>
   <string name="hotspot_manual_site_address">მისამართი (URL)</string>
   <string name="hotspot_qr_site">თქვენი ტელეფონი უზრუნველყოფს Wi-Fi წვდომის წერტილს. ვინც დაკავშირებულია ამ წვდომის წერტილთან, შეუძლია ჩამოტვირთოს Zerion QR კოდის სკანირებით.</string>

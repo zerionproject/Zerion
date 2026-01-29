@@ -44,7 +44,6 @@ public class ZerionSnackbarBuilder {
 		if (anchorView != null) {
 			s.setAnchorView(anchorView);
 		}
-		// Apply bottom margin if specified
 		if (bottomMargin > 0) {
 			View snackbarView = s.getView();
 			ViewGroup.MarginLayoutParams params =

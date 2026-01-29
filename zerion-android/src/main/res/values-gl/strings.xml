@@ -51,8 +51,6 @@
   <string name="nav_drawer_close_description">Peche a gaveta de navegación</string>
   <string name="contact_list_button">Contactos</string>
   <string name="groups_button">Grupos Privados</string>
-  <string name="forums_button">Foros</string>
-  <string name="blogs_button">Blogues</string>
   <!--This is part of the main menu. The app will be locked when this is tapped.-->
   <string name="lock_button">Bloquear App</string>
   <string name="settings_button">Axustes</string>
@@ -87,14 +85,6 @@
   <plurals name="group_message_notification_text">
     <item quantity="one">Nova mensaxe de grupo.</item>
     <item quantity="other">%d novas mensaxes de grupo.</item>
-  </plurals>
-  <plurals name="forum_post_notification_text">
-    <item quantity="one">Nova publicación de foro.</item>
-    <item quantity="other">%d nova publicación de foro.</item>
-  </plurals>
-  <plurals name="blog_post_notification_text">
-    <item quantity="one">Nova publicación de blog.</item>
-    <item quantity="other">%d novas publicacións de blog.</item>
   </plurals>
   <!--Misc-->
   <string name="now">agora</string>
@@ -194,14 +184,12 @@
   <string name="menu_contact">Contacto</string>
   <!--Adding Contacts-->
   <string name="add_contact_title">Engadir contacto próximo</string>
-  <string name="face_to_face">Debes verte coa persoa que queres engadir como contacto.\n\Isto evitará que calquera poida suplantarte ou ler as túas mensaxes no futuro.</string>
   <string name="continue_button">Continuar</string>
   <string name="try_again_button">Inténtao de novo</string>
   <string name="waiting_for_contact_to_scan">Agardando polo contacto para escanear e conectar\u2026</string>
   <string name="exchanging_contact_details">Intercambiando detalles do contacto\u2026</string>
   <string name="contact_added_toast">Contacto engadido: %s</string>
   <string name="contact_already_exists">O contacto %s xa existe</string>
-  <string name="qr_code_invalid">O código QR non é válido</string>
   <string name="qr_code_too_old">O código QR que escaneaches procede dunha versión anterior de %s.\n\nPor favor, solicite ao teu contacto actualizar a nova versión e inténtao de novo.</string>
   <string name="qr_code_too_new">O código QR que escaneaches procede dunha nova versión de %s.\n\nPor favor, actualiza a última versión e inténteo de novo.</string>
   <string name="camera_error">Fallo na cámara</string>
@@ -347,103 +335,26 @@
   <string name="groups_reveal_visible_revealed_by_contact">A relación con contacto é visible para o grupo (revelada por %s)</string>
   <string name="groups_reveal_invisible">A relación co contacto non é visible para o grupo</string>
   <!--Forums-->
-  <string name="no_forums">Sen foros que mostrar</string>
-  <string name="no_forums_action">Toca na icona + para crear un foro, ou pídelle aos contactos que compartan foros contigo</string>
-  <string name="create_forum_title">Crear Foro</string>
-  <string name="choose_forum_hint">Escolle un nome para o teu foro</string>
-  <string name="create_forum_button">Crear Foro</string>
-  <string name="forum_created_toast">Foro creado</string>
-  <string name="no_forum_posts">Sen publicacións que mostrar</string>
   <string name="no_posts">Non hai mensaxes</string>
   <plurals name="posts">
     <item quantity="one">%d publicación</item>
     <item quantity="other">%d publicacións</item>
   </plurals>
-  <string name="forum_new_message_hint">Nova publicación</string>
-  <string name="forum_message_reply_hint">Nova Resposta</string>
   <string name="btn_reply">Responder</string>
-  <string name="forum_leave">Deixar foro</string>
-  <string name="dialog_title_leave_forum">Confirma a saída do foro</string>
-  <string name="dialog_message_leave_forum">Segura de querer deixar este foro?\n\nTodos os contactos cos que compartiches este foro poderían deixar de recibir actualizacións.</string>
   <string name="dialog_button_leave">Saír</string>
-  <string name="forum_left_toast">Saír do foro</string>
   <!--Forum Sharing-->
-  <string name="forum_share_button">Compartir Foro</string>
   <string name="contacts_selected">Contactos selecionados</string>
   <string name="activity_share_toolbar_header">Elixe Contactos</string>
   <string name="no_contacts_selector">Sen contactos que amosar</string>
   <string name="no_contacts_selector_action">Volve aquí tras engadir un contacto</string>
-  <string name="forum_shared_snackbar">Foro compartido cos contactos escollidos</string>
-  <string name="forum_share_message">Engadir unha mensaxe (opcional)</string>
-  <string name="forum_share_error">Algo fallou ao compartir este foro.</string>
-  <string name="forum_invitation_received">%1$s compartiu este foro \"%2$s\" contigo.</string>
-  <string name="forum_invitation_sent">Compartiu este foro \"%1$s\" con %2$s.</string>
-  <string name="forum_invitations_title">Convites a foros</string>
-  <string name="forum_invitation_exists">Xa aceptaras o convite a este foro\n\nAceptando máis convites farás a túa conexión ao foro máis rápida e fiable.</string>
-  <string name="forum_joined_toast">Unícheste ao foro</string>
-  <string name="forum_declined_toast">Rexeitaches o convite</string>
   <string name="shared_by_format">Compartido por %s</string>
-  <string name="forum_invitation_already_sharing">Xa compartindo</string>
-  <string name="forum_invitation_response_accepted_sent">Aceptaches o convite de %s ao foro.</string>
-  <string name="forum_invitation_response_declined_sent">Rexeitaches o convite de %s ao foro.</string>
-  <string name="forum_invitation_response_declined_auto">O convite ao foro desde %sfoi automáticamente rexeitado.</string>
-  <string name="forum_invitation_response_accepted_received">%s aceptou o convite ao foro.</string>
-  <string name="forum_invitation_response_declined_received">%s rexeitou o convite ao foro.</string>
   <string name="sharing_status">Estado do compartido</string>
-  <string name="sharing_status_forum">Calquera compoñente do foro pode compartilo cos seus contactos. Tie pode compartir este foro cos seguintes contactos. Pode haber outras persoas que non podes ver.</string>
   <string name="shared_with">Compartido con %1$d (%2$d en liña)</string>
-  <plurals name="forums_shared">
-    <item quantity="one">%d foro compartido por contactos</item>
-    <item quantity="other">%d foros compartidos por contactos</item>
-  </plurals>
   <string name="nobody">Ninguén</string>
   <!--Blogs-->
-  <string name="blogs_other_blog_empty_state">Sen publicacións que mostrar</string>
   <string name="read_more">ler mais</string>
-  <string name="blogs_write_blog_post">Escribir entrada de Blog</string>
-  <string name="blogs_write_blog_post_body_hint">Escribe o artigo no blog</string>
-  <string name="blogs_publish_blog_post">Publicar</string>
-  <string name="blogs_blog_post_created">Entrada no blog creada</string>
-  <string name="blogs_blog_post_received">Nova entrada de blog recibida</string>
-  <string name="blogs_blog_post_scroll_to">Desprazarse a</string>
-  <string name="blogs_feed_empty_state">Sen publicacións que mostrar</string>
-  <string name="blogs_feed_empty_state_action">Publicacións dos contactos e blogs aos que te suscribas aparecerán aquí\n\nToca na icona do lapis para encribir unha entrada</string>
-  <string name="blogs_remove_blog">Eliminar Blog</string>
-  <string name="blogs_remove_blog_dialog_message">Tes a certeza de querer eliminar este blog?\n\nAs entradas eliminaranse do teu dispositivo pero non dos dispositivos doutras persoas.\n\nCalquera contacto co que compartira este blog podería deixar de recibir actualizacións.</string>
-  <string name="blogs_remove_blog_ok">Eliminar</string>
-  <string name="blogs_blog_removed">Blog eliminado</string>
-  <string name="blogs_reblog_comment_hint">Engadir un comentario (optativo)</string>
-  <string name="blogs_reblog_button">Compartir</string>
   <!--Blog Sharing-->
-  <string name="blogs_sharing_share">Compartir blog</string>
-  <string name="blogs_sharing_error">Algo fallou ao compartir o blog</string>
-  <string name="blogs_sharing_button">Compartir blog</string>
-  <string name="blogs_sharing_snackbar">Blog compartido cos contactos escollidos</string>
-  <string name="blogs_sharing_response_accepted_sent">Aceptaches o convite ao blog de %s.</string>
-  <string name="blogs_sharing_response_declined_sent">Rexeitaches o convite ao blog de %s.</string>
-  <string name="blogs_sharing_response_declined_auto">O convite ao blog desde %s foi automáticamente rexeitado.</string>
-  <string name="blogs_sharing_response_accepted_received">%s aceptou o convite ao blog.</string>
-  <string name="blogs_sharing_response_declined_received">%s rexeitou o convite ao blog.</string>
-  <string name="blogs_sharing_invitation_received">%1$s compartiu o blog \"%2$s\" contigo.</string>
-  <string name="blogs_sharing_invitation_sent">Compartiches o blog \"%1$s\" con %2$s.</string>
-  <string name="blogs_sharing_invitations_title">Convites a Blog</string>
-  <string name="blogs_sharing_joined_toast">Subscrita ao blog</string>
-  <string name="blogs_sharing_declined_toast">Rexeitaches o convite</string>
-  <string name="sharing_status_blog">Calquera que se subscribe a un blog pode compartilo cos seus contactos. Podes compartir este blog cos seguintes contactos. Podería haber outras subscritoras que ti non podes ver.</string>
   <!--RSS Feeds-->
-  <string name="blogs_rss_feeds_import">Importar fonte RSS</string>
-  <string name="blogs_rss_feeds_import_button">Importar</string>
-  <string name="blogs_rss_feeds_import_hint">Escribe o URL da fonte RSS</string>
-  <string name="blogs_rss_feeds_import_error">Lamentámolo! Algo fallou ao importar a fonte.</string>
-  <string name="blogs_rss_feeds">Fontes RSS</string>
-  <string name="blogs_rss_feeds_manage_imported">Importado:</string>
-  <string name="blogs_rss_feeds_manage_author">Autor/a:</string>
-  <string name="blogs_rss_feeds_manage_updated">Última actualización:</string>
-  <string name="blogs_rss_remove_feed">Eliminar fonte</string>
-  <string name="blogs_rss_remove_feed_dialog_message">Tes a certeza de querer eliminar esta fonte?\n\nAs entradas eliminaranse do teu dispositivo pero non dos dispositivos doutras persoas\n\nTodas as persoas coas que compartiches esta fonte poderían deixar de recibir actualizacións.</string>
-  <string name="blogs_rss_remove_feed_ok">Eliminar</string>
-  <string name="blogs_rss_feeds_manage_empty_state">Sen fontes RSS que mostrar\n\nToque na icona + para importar unha fonte</string>
-  <string name="blogs_rss_feeds_manage_error">Aconteceu un problema ao cargar as túas fontes. Por favor, inténtao máis tarde.</string>
   <!--Settings Profile Picture-->
   <string name="change_profile_picture">Toca para cambiar a túa imaxe de perfil</string>
   <string name="dialog_confirm_profile_picture_title">Mudar imaxe de perfil</string>
@@ -524,12 +435,6 @@
   <string name="notify_group_messages_setting_title">Mensaxes de grupo</string>
   <string name="notify_group_messages_setting_summary">Amosar alertas para mensaxes de grupo</string>
   <string name="notify_group_messages_setting_summary_26">Configurar alertas para mensaxes de grupo</string>
-  <string name="notify_forum_posts_setting_title">Entradas no foro</string>
-  <string name="notify_forum_posts_setting_summary">Amosar alertas para mensaxes nos foros</string>
-  <string name="notify_forum_posts_setting_summary_26">Configurar alertas para mensaxes nos foros</string>
-  <string name="notify_blog_posts_setting_title">Entradas no Blog</string>
-  <string name="notify_blog_posts_setting_summary">Amosar alertas para entradas no blog</string>
-  <string name="notify_blog_posts_setting_summary_26">Configurar alertas para entradas no blog</string>
   <string name="notify_vibration_setting">Vibrar</string>
   <string name="notify_sound_setting">Son</string>
   <string name="notify_sound_setting_default">Ton por defecto</string>
@@ -608,8 +513,6 @@
   <string name="permission_location_setting_title">Axuste da localización</string>
   <string name="permission_location_setting_body">O axuste de localización do teu dispositivo ten que activarse para atopar outros dispositivos vía Bluetooth. Activa este axuste para continuar. Podes desactivala tras finalizar.</string>
   <string name="permission_location_setting_button">Activar localización</string>
-  <string name="qr_code">Código QR</string>
-  <string name="show_qr_code_fullscreen">Amosar o código QR a pantalla completa</string>
   <!--App Locking-->
   <string name="lock_unlock">Desbloquear Zerion</string>
   <string name="lock_unlock_verbose">Escribe o PIN do dispositivo, patrón ou contrasinal para desbloquear Zerion</string>
@@ -624,9 +527,7 @@
   <string name="hotspot_button_connected">Seguinte</string>
   <!--The placeholder to be inserted into the string 'hotspot_manual_wifi': People can connect by %s-->
   <!--Wi-Fi setup-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <!--Download link-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <!--e.g. Download Zerion 1.2.20-->
   <string name="website_troubleshooting_title">Solución de problemas</string>
   <!--error handling-->

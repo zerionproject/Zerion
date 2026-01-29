@@ -34,12 +34,9 @@ public class DatabaseExecutorModule {
 	@DatabaseExecutor
 	ExecutorService provideDatabaseExecutorService(
 			LifecycleManager lifecycleManager, ThreadFactory threadFactory) {
-		// Use an unbounded queue
 		BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>();
-		// Discard tasks that are submitted during shutdown
 		RejectedExecutionHandler policy =
 				new ThreadPoolExecutor.DiscardPolicy();
-		// Use a single thread and keep it in the pool for 60 secs
 		ExecutorService databaseExecutor = new TimeLoggingExecutor(
 				"DatabaseExecutor", 0, 1, 60, SECONDS, queue, threadFactory,
 				policy);

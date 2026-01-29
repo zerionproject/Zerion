@@ -59,8 +59,6 @@ public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFr
 		);
 
 		setContentView(R.layout.activity_vault);
-
-		// Check if we're in picker mode
 		Intent intent = getIntent();
 		isPickerMode = intent.getBooleanExtra(EXTRA_PICKER_MODE, false);
 		pickerType = intent.getStringExtra(EXTRA_PICKER_TYPE);
@@ -211,19 +209,15 @@ public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFr
 	}
 
 	public void onItemSelected(VaultItem item) {
-		// Decrypt and export the item to a temp file, then return its URI
 		viewModel.getMediaContent(item.id, new VaultViewModel.MediaContentCallback() {
 			@Override
 			public void onContentRetrieved(byte[] content) {
 				new Thread(() -> {
 					try {
-						// Create temp file in cache directory
 						File cacheDir = new File(getCacheDir(), "vault_share");
 						if (!cacheDir.exists()) {
 							cacheDir.mkdirs();
 						}
-
-						// Clean up old temp files
 						File[] oldFiles = cacheDir.listFiles();
 						if (oldFiles != null) {
 							for (File f : oldFiles) {
@@ -235,8 +229,6 @@ public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFr
 						FileOutputStream fos = new FileOutputStream(tempFile);
 						fos.write(content);
 						fos.close();
-
-						// Clear content from memory
 						java.util.Arrays.fill(content, (byte) 0);
 
 						Uri uri = FileProvider.getUriForFile(

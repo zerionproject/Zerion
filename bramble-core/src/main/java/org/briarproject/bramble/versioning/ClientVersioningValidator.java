@@ -32,14 +32,11 @@ class ClientVersioningValidator extends BdfMessageValidator {
 	@Override
 	protected BdfMessageContext validateMessage(Message m, Group g,
 			BdfList body) throws FormatException {
-		// Client states, update version
 		checkSize(body, 2);
-		// Client states
 		BdfList states = body.getList(0);
 		int size = states.size();
 		for (int i = 0; i < size; i++) {
 			BdfList clientState = states.getList(i);
-			// Client ID, major version, minor version, active
 			checkSize(clientState, 4);
 			String clientId = clientState.getString(0);
 			checkLength(clientId, 1, MAX_CLIENT_ID_LENGTH);
@@ -49,10 +46,8 @@ class ClientVersioningValidator extends BdfMessageValidator {
 			if (minorVersion < 0) throw new FormatException();
 			clientState.getBoolean(3);
 		}
-		// Update version
 		long updateVersion = body.getLong(1);
 		if (updateVersion < 0) throw new FormatException();
-		// Return the metadata
 		BdfDictionary meta = new BdfDictionary();
 		meta.put(MSG_KEY_UPDATE_VERSION, updateVersion);
 		meta.put(MSG_KEY_LOCAL, false);

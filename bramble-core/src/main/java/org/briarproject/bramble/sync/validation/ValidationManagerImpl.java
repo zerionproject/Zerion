@@ -34,14 +34,8 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Logger;
-
 import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
-
-import static java.util.logging.Level.FINE;
-import static java.util.logging.Level.INFO;
-import static java.util.logging.Level.WARNING;
 import static org.briarproject.bramble.api.sync.validation.IncomingMessageHook.DeliveryAction.ACCEPT_DO_NOT_SHARE;
 import static org.briarproject.bramble.api.sync.validation.IncomingMessageHook.DeliveryAction.ACCEPT_SHARE;
 import static org.briarproject.bramble.api.sync.validation.IncomingMessageHook.DeliveryAction.DEFER;
@@ -49,16 +43,10 @@ import static org.briarproject.bramble.api.sync.validation.IncomingMessageHook.D
 import static org.briarproject.bramble.api.sync.validation.MessageState.DELIVERED;
 import static org.briarproject.bramble.api.sync.validation.MessageState.INVALID;
 import static org.briarproject.bramble.api.sync.validation.MessageState.PENDING;
-import static org.briarproject.bramble.util.LogUtils.logException;
-
 @ThreadSafe
 @NotNullByDefault
 class ValidationManagerImpl implements ValidationManager, Service,
 		EventListener {
-
-	private static final Logger LOG =
-			Logger.getLogger(ValidationManagerImpl.class.getName());
-
 	private final DatabaseComponent db;
 	private final Executor dbExecutor, validationExecutor;
 	private final Map<ClientMajorVersion, MessageValidator> validators;
@@ -111,7 +99,6 @@ class ValidationManagerImpl implements ValidationManager, Service,
 					db.transactionWithResult(true, db::getMessagesToValidate));
 			validateNextMessageAsync(unvalidated);
 		} catch (DbException e) {
-			logException(LOG, WARNING, e);
 		}
 	}
 
@@ -133,13 +120,10 @@ class ValidationManagerImpl implements ValidationManager, Service,
 			validateMessageAsync(mg.getFirst(), mg.getSecond());
 			validateNextMessageAsync(unvalidated);
 		} catch (NoSuchMessageException e) {
-			LOG.info("Message removed before validation");
 			validateNextMessageAsync(unvalidated);
 		} catch (NoSuchGroupException e) {
-			LOG.info("Group removed before validation");
 			validateNextMessageAsync(unvalidated);
 		} catch (DbException e) {
-			logException(LOG, WARNING, e);
 		}
 	}
 
@@ -154,7 +138,6 @@ class ValidationManagerImpl implements ValidationManager, Service,
 					db.transactionWithResult(true, db::getPendingMessages));
 			deliverNextPendingMessageAsync(pending);
 		} catch (DbException e) {
-			logException(LOG, WARNING, e);
 		}
 	}
 
@@ -172,9 +155,7 @@ class ValidationManagerImpl implements ValidationManager, Service,
 				boolean anyInvalid = false, allDelivered = true;
 				MessageId id = pending.poll();
 				if (id == null) throw new AssertionError();
-				// Check if message is still pending
 				if (db.getMessageState(txn, id) == PENDING) {
-					// Check if dependencies are valid and delivered
 					Map<MessageId, MessageState> states =
 							db.getMessageDependencies(txn, id);
 					for (Entry<MessageId, MessageState> e : states.entrySet()) {
@@ -212,13 +193,10 @@ class ValidationManagerImpl implements ValidationManager, Service,
 			if (!toShare.isEmpty()) shareNextMessageAsync(toShare);
 			deliverNextPendingMessageAsync(pending);
 		} catch (NoSuchMessageException e) {
-			LOG.info("Message removed before delivery");
 			deliverNextPendingMessageAsync(pending);
 		} catch (NoSuchGroupException e) {
-			LOG.info("Group removed before delivery");
 			deliverNextPendingMessageAsync(pending);
 		} catch (DbException e) {
-			logException(LOG, WARNING, e);
 		}
 	}
 
@@ -232,17 +210,12 @@ class ValidationManagerImpl implements ValidationManager, Service,
 				new ClientMajorVersion(g.getClientId(), g.getMajorVersion());
 		MessageValidator v = validators.get(cv);
 		if (v == null) {
-			if (LOG.isLoggable(WARNING)) LOG.warning("No validator for " + cv);
 		} else {
-			if (LOG.isLoggable(FINE)) {
-				LOG.fine("Validating message for " + cv.getClientId());
-			}
 			try {
 				MessageContext context = v.validateMessage(m, g);
 				storeMessageContextAsync(m, g.getClientId(),
 						g.getMajorVersion(), context);
 			} catch (InvalidMessageException e) {
-				logException(LOG, INFO, e);
 				Queue<MessageId> invalidate = new LinkedList<>();
 				invalidate.add(m.getId());
 				invalidateNextMessageAsync(invalidate);
@@ -266,11 +239,9 @@ class ValidationManagerImpl implements ValidationManager, Service,
 			Queue<MessageId> toShare = new LinkedList<>();
 			db.transaction(false, txn -> {
 				boolean anyInvalid = false, allDelivered = true;
-				// Check if message has any dependencies
 				Collection<MessageId> dependencies = context.getDependencies();
 				if (!dependencies.isEmpty()) {
 					db.addMessageDependencies(txn, m, dependencies);
-					// Check if dependencies are valid and delivered
 					Map<MessageId, MessageState> states =
 							db.getMessageDependencies(txn, id);
 					for (Entry<MessageId, MessageState> e : states.entrySet()) {
@@ -312,31 +283,22 @@ class ValidationManagerImpl implements ValidationManager, Service,
 			if (!pending.isEmpty()) deliverNextPendingMessageAsync(pending);
 			if (!toShare.isEmpty()) shareNextMessageAsync(toShare);
 		} catch (NoSuchMessageException e) {
-			LOG.info("Message removed during validation");
 		} catch (NoSuchGroupException e) {
-			LOG.info("Group removed during validation");
 		} catch (DbException e) {
-			logException(LOG, WARNING, e);
 		}
 	}
 
 	@DatabaseExecutor
 	private DeliveryAction deliverMessage(Transaction txn, Message m,
 			ClientId c, int majorVersion, Metadata meta) {
-		// Deliver the message to the client if it has registered a hook
 		ClientMajorVersion cv = new ClientMajorVersion(c, majorVersion);
 		IncomingMessageHook hook = hooks.get(cv);
 		if (hook == null) return ACCEPT_DO_NOT_SHARE;
-		if (LOG.isLoggable(FINE)) {
-			LOG.fine("Delivering message for " + c);
-		}
 		try {
 			return hook.incomingMessage(txn, m, meta);
 		} catch (DbException e) {
-			logException(LOG, INFO, e);
 			return DEFER;
 		} catch (InvalidMessageException e) {
-			logException(LOG, INFO, e);
 			return REJECT;
 		}
 	}
@@ -361,16 +323,10 @@ class ValidationManagerImpl implements ValidationManager, Service,
 					db.transactionWithResult(true, db::getMessagesToShare));
 			shareNextMessageAsync(toShare);
 		} catch (DbException e) {
-			logException(LOG, WARNING, e);
 		}
 	}
 
-	/**
-	 * Shares the next message from the toShare queue asynchronously.
-	 * <p>
-	 * This method should only be called for messages that have all their
-	 * dependencies delivered and have been delivered themselves.
-	 */
+	
 	private void shareNextMessageAsync(Queue<MessageId> toShare) {
 		if (toShare.isEmpty()) return;
 		dbExecutor.execute(() -> shareNextMessage(toShare));
@@ -387,13 +343,10 @@ class ValidationManagerImpl implements ValidationManager, Service,
 			});
 			shareNextMessageAsync(toShare);
 		} catch (NoSuchMessageException e) {
-			LOG.info("Message removed before sharing");
 			shareNextMessageAsync(toShare);
 		} catch (NoSuchGroupException e) {
-			LOG.info("Group removed before sharing");
 			shareNextMessageAsync(toShare);
 		} catch (DbException e) {
-			logException(LOG, WARNING, e);
 		}
 	}
 
@@ -415,10 +368,8 @@ class ValidationManagerImpl implements ValidationManager, Service,
 			});
 			invalidateNextMessageAsync(invalidate);
 		} catch (NoSuchMessageException e) {
-			LOG.info("Message removed before invalidation");
 			invalidateNextMessageAsync(invalidate);
 		} catch (DbException e) {
-			logException(LOG, WARNING, e);
 		}
 	}
 
@@ -442,7 +393,6 @@ class ValidationManagerImpl implements ValidationManager, Service,
 	@Override
 	public void eventOccurred(Event e) {
 		if (e instanceof MessageAddedEvent) {
-			// Validate the message if it wasn't created locally
 			MessageAddedEvent m = (MessageAddedEvent) e;
 			if (m.getContactId() != null)
 				loadGroupAndValidateAsync(m.getMessage());
@@ -460,9 +410,7 @@ class ValidationManagerImpl implements ValidationManager, Service,
 					db.getGroup(txn, m.getGroupId()));
 			validateMessageAsync(m, g);
 		} catch (NoSuchGroupException e) {
-			LOG.info("Group removed before validation");
 		} catch (DbException e) {
-			logException(LOG, WARNING, e);
 		}
 	}
 }

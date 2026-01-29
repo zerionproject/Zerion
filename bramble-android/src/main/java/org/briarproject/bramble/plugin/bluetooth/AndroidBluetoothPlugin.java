@@ -32,8 +32,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.logging.Logger;
-
 import javax.annotation.Nullable;
 
 import static android.bluetooth.BluetoothAdapter.ACTION_DISCOVERY_FINISHED;
@@ -52,9 +50,6 @@ import static android.bluetooth.BluetoothDevice.DEVICE_TYPE_LE;
 import static android.bluetooth.BluetoothDevice.EXTRA_DEVICE;
 import static java.util.Collections.shuffle;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.logging.Level.INFO;
-import static java.util.logging.Level.WARNING;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.util.AndroidUtils.hasBtConnectPermission;
 import static org.briarproject.bramble.util.AndroidUtils.registerReceiver;
 import static org.briarproject.bramble.util.PrivacyUtils.scrubMacAddress;
@@ -64,10 +59,6 @@ import static org.briarproject.bramble.util.PrivacyUtils.scrubMacAddress;
 @SuppressLint("MissingPermission")
 class AndroidBluetoothPlugin extends
 		AbstractBluetoothPlugin<BluetoothSocket, BluetoothServerSocket> {
-
-	private static final Logger LOG =
-			getLogger(AndroidBluetoothPlugin.class.getName());
-
 	private static final int MAX_DISCOVERY_MS = 10_000;
 
 	private final AndroidExecutor androidExecutor;
@@ -75,8 +66,6 @@ class AndroidBluetoothPlugin extends
 	private final Clock clock;
 
 	private volatile BluetoothStateReceiver receiver = null;
-
-	// Non-null if the plugin started successfully
 	private volatile BluetoothAdapter adapter = null;
 	private volatile boolean stopDiscoverAndConnect;
 
@@ -108,7 +97,6 @@ class AndroidBluetoothPlugin extends
 	@Override
 	public void start() throws PluginException {
 		super.start();
-		// Listen for changes to the Bluetooth state
 		IntentFilter filter = new IntentFilter();
 		filter.addAction(ACTION_STATE_CHANGED);
 		filter.addAction(ACTION_SCAN_MODE_CHANGED);
@@ -124,8 +112,6 @@ class AndroidBluetoothPlugin extends
 
 	@Override
 	void initialiseAdapter() throws IOException {
-		// BluetoothAdapter.getDefaultAdapter() must be called on a thread
-		// with a message queue, so submit it to the AndroidExecutor
 		try {
 			adapter = androidExecutor.runOnBackgroundThread(
 					BluetoothAdapter::getDefaultAdapter).get();
@@ -157,7 +143,7 @@ class AndroidBluetoothPlugin extends
 
 	@Override
 	void tryToClose(@Nullable BluetoothServerSocket ss) {
-		IoUtils.tryToClose(ss, LOG, WARNING);
+		IoUtils.tryToClose(ss);
 	}
 
 	@Override
@@ -182,12 +168,10 @@ class AndroidBluetoothPlugin extends
 			s.connect();
 			return connectionFactory.wrapSocket(this, s);
 		} catch (IOException e) {
-			IoUtils.tryToClose(s, LOG, WARNING);
+			IoUtils.tryToClose(s);
 			throw e;
 		} catch (NullPointerException e) {
-			// BluetoothSocket#connect() may throw an NPE under unknown
-			// circumstances
-			IoUtils.tryToClose(s, LOG, WARNING);
+			IoUtils.tryToClose(s);
 			throw new IOException(e);
 		}
 	}
@@ -197,7 +181,6 @@ class AndroidBluetoothPlugin extends
 	DuplexTransportConnection discoverAndConnect(String uuid) {
 		if (adapter == null) return null;
 		if (!discoverSemaphore.tryAcquire()) {
-			LOG.info("Discover already running");
 			return null;
 		}
 		try {
@@ -207,20 +190,13 @@ class AndroidBluetoothPlugin extends
 					break;
 				}
 				try {
-					if (LOG.isLoggable(INFO))
-						LOG.info("Connecting to " + scrubMacAddress(address));
 					return connectTo(address, uuid);
 				} catch (IOException e) {
-					if (LOG.isLoggable(INFO)) {
-						LOG.info("Could not connect to "
-								+ scrubMacAddress(address));
-					}
 				}
 			}
 		} finally {
 			discoverSemaphore.release();
 		}
-		LOG.info("Could not connect to any devices");
 		return null;
 	}
 
@@ -248,18 +224,12 @@ class AndroidBluetoothPlugin extends
 					if (i == null) break;
 					String action = i.getAction();
 					if (ACTION_DISCOVERY_STARTED.equals(action)) {
-						LOG.info("Discovery started");
 					} else if (ACTION_DISCOVERY_FINISHED.equals(action)) {
-						LOG.info("Discovery finished");
 						break;
 					} else if (ACTION_FOUND.equals(action)) {
 						BluetoothDevice d = i.getParcelableExtra(EXTRA_DEVICE);
-						// Ignore Bluetooth LE devices
 						if (d.getType() != DEVICE_TYPE_LE) {
 							String address = d.getAddress();
-							if (LOG.isLoggable(INFO))
-								LOG.info("Discovered " +
-										scrubMacAddress(address));
 							if (!addresses.contains(address))
 								addresses.add(address);
 						}
@@ -267,17 +237,13 @@ class AndroidBluetoothPlugin extends
 					now = clock.currentTimeMillis();
 				}
 			} else {
-				LOG.info("Could not start discovery");
 			}
 		} catch (InterruptedException e) {
-			LOG.info("Interrupted while discovering devices");
 			Thread.currentThread().interrupt();
 		} finally {
-			LOG.info("Cancelling discovery");
 			adapter.cancelDiscovery();
 			app.unregisterReceiver(receiver);
 		}
-		// Shuffle the addresses so we don't always try the same one first
 		shuffle(addresses);
 		return addresses;
 	}
@@ -291,11 +257,8 @@ class AndroidBluetoothPlugin extends
 			else if (state == STATE_OFF) onAdapterDisabled();
 			int scanMode = intent.getIntExtra(EXTRA_SCAN_MODE, 0);
 			if (scanMode == SCAN_MODE_NONE) {
-				LOG.info("Scan mode: None");
 			} else if (scanMode == SCAN_MODE_CONNECTABLE) {
-				LOG.info("Scan mode: Connectable");
 			} else if (scanMode == SCAN_MODE_CONNECTABLE_DISCOVERABLE) {
-				LOG.info("Scan mode: Discoverable");
 			}
 		}
 	}

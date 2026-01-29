@@ -26,7 +26,6 @@ public class DefaultTaskSchedulerModule {
 	@Singleton
 	TaskScheduler provideTaskScheduler(LifecycleManager lifecycleManager,
 			ThreadFactory threadFactory) {
-		// Discard tasks that are submitted during shutdown
 		RejectedExecutionHandler policy =
 				new ScheduledThreadPoolExecutor.DiscardPolicy();
 		ScheduledExecutorService scheduledExecutorService =

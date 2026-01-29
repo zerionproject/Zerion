@@ -13,34 +13,16 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Logger;
-
 import javax.annotation.Nullable;
 
-/**
- * Handles voice message recording as attachments for longer recordings.
- * Uses MediaRecorder with AAC/Opus encoding for efficient compression.
- *
- * Security notes:
- * - Temp files are deleted after attachment is stored
- * - Uses same attachment infrastructure as images (battle-tested)
- * - Size limit enforced by MessagingManager (32KB per attachment)
- */
+
 @NotNullByDefault
 public class VoiceAttachmentHandler {
-
-	private static final Logger LOG = Logger.getLogger(VoiceAttachmentHandler.class.getName());
-
-	// Recording parameters for efficient compression
-	private static final int SAMPLE_RATE = 16000; // 16kHz for voice quality
-	private static final int BIT_RATE = 12000; // 12kbps for good quality/size balance
-	private static final int MAX_DURATION_MS = 300_000; // 5 minutes
+	private static final int SAMPLE_RATE = 16000;
+	private static final int BIT_RATE = 12000;
+	private static final int MAX_DURATION_MS = 300_000;
 	private static final int MIN_DURATION_MS = 500;
 	private static final int PROGRESS_UPDATE_INTERVAL_MS = 100;
-
-	// Briar attachment limit: 32KB
-	// At 12kbps (1.5KB/sec), max ~21 seconds per attachment
-	// For longer recordings, would need multiple attachments (future enhancement)
 	private static final int MAX_FILE_SIZE_BYTES = 32_000;
 
 	public interface AttachmentRecordingCallback {
@@ -71,10 +53,7 @@ public class VoiceAttachmentHandler {
 		this.mainHandler = new Handler(Looper.getMainLooper());
 	}
 
-	/**
-	 * Start recording audio for attachment.
-	 * Uses AAC encoding for broad compatibility.
-	 */
+	
 	public boolean startRecording(AttachmentRecordingCallback callback) {
 		if (isRecording.get()) {
 			callback.onRecordingError("Recording already in progress");
@@ -89,7 +68,6 @@ public class VoiceAttachmentHandler {
 				mainHandler.post(callback::onRecordingStarted);
 				startProgressMonitoring();
 			} catch (IOException e) {
-				LOG.warning("Failed to start attachment recording: " + e.getMessage());
 				cleanup();
 				mainHandler.post(() -> callback.onRecordingError("Failed to start recording: " + e.getMessage()));
 			}
@@ -100,19 +78,16 @@ public class VoiceAttachmentHandler {
 
 	@SuppressWarnings("deprecation")
 	private void initializeRecording() throws IOException {
-		// Create temp file in cache directory (auto-cleaned by system)
 		File cacheDir = context.getCacheDir();
 		outputFile = File.createTempFile("voice_attachment_", ".m4a", cacheDir);
 
 		mediaRecorder = new MediaRecorder();
 		mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-
-		// Use MPEG-4 container with AAC encoding for broad compatibility
 		mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
 		mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
 
 		mediaRecorder.setAudioSamplingRate(SAMPLE_RATE);
-		mediaRecorder.setAudioChannels(1); // Mono
+		mediaRecorder.setAudioChannels(1);
 		mediaRecorder.setAudioEncodingBitRate(BIT_RATE);
 		mediaRecorder.setMaxDuration(MAX_DURATION_MS);
 		mediaRecorder.setMaxFileSize(MAX_FILE_SIZE_BYTES);
@@ -127,7 +102,6 @@ public class VoiceAttachmentHandler {
 		});
 
 		mediaRecorder.setOnErrorListener((mr, what, extra) -> {
-			LOG.severe("MediaRecorder error: " + what);
 			mainHandler.post(() -> {
 				if (currentCallback != null) {
 					currentCallback.onRecordingError("Recording error occurred");
@@ -150,8 +124,6 @@ public class VoiceAttachmentHandler {
 					try {
 						int duration = (int) (System.currentTimeMillis() - recordingStartTime);
 						int amplitude = mediaRecorder.getMaxAmplitude();
-
-						// Convert to dB-like scale (0-100)
 						int amplitudeDb = amplitude > 0
 								? Math.min(100, (int) (20 * Math.log10(amplitude / 32767.0) + 100))
 								: 0;
@@ -162,16 +134,13 @@ public class VoiceAttachmentHandler {
 
 						mainHandler.postDelayed(this, PROGRESS_UPDATE_INTERVAL_MS);
 					} catch (IllegalStateException e) {
-						// MediaRecorder was released, stop monitoring
 					}
 				}
 			}
 		}, PROGRESS_UPDATE_INTERVAL_MS);
 	}
 
-	/**
-	 * Stop recording and finalize the audio file.
-	 */
+	
 	public void stopRecording() {
 		if (!isRecording.get() || mediaRecorder == null) return;
 
@@ -182,7 +151,6 @@ public class VoiceAttachmentHandler {
 			mediaRecorder.stop();
 
 			if (duration < MIN_DURATION_MS) {
-				LOG.warning("Attachment recording too short: " + duration + "ms");
 				deleteOutputFile();
 				mainHandler.post(() -> {
 					if (currentCallback != null) {
@@ -209,7 +177,6 @@ public class VoiceAttachmentHandler {
 				}
 			}
 		} catch (IllegalStateException e) {
-			LOG.warning("Error stopping MediaRecorder: " + e.getMessage());
 			mainHandler.post(() -> {
 				if (currentCallback != null) {
 					currentCallback.onRecordingError("Failed to stop recording");
@@ -220,9 +187,7 @@ public class VoiceAttachmentHandler {
 		}
 	}
 
-	/**
-	 * Cancel recording and delete any temp files.
-	 */
+	
 	public void cancelRecording() {
 		if (!isRecording.get()) return;
 
@@ -237,9 +202,7 @@ public class VoiceAttachmentHandler {
 		});
 	}
 
-	/**
-	 * Get URI for the recorded file (to pass to attachment system).
-	 */
+	
 	@Nullable
 	public Uri getRecordedFileUri() {
 		if (outputFile != null && outputFile.exists()) {
@@ -248,10 +211,7 @@ public class VoiceAttachmentHandler {
 		return null;
 	}
 
-	/**
-	 * Delete the temp file after attachment is stored.
-	 * Should be called after the attachment is successfully created.
-	 */
+	
 	public void cleanupTempFile() {
 		deleteOutputFile();
 	}
@@ -272,7 +232,6 @@ public class VoiceAttachmentHandler {
 			try {
 				mediaRecorder.release();
 			} catch (IllegalStateException e) {
-				LOG.warning("Error releasing MediaRecorder: " + e.getMessage());
 			}
 			mediaRecorder = null;
 		}
@@ -294,9 +253,7 @@ public class VoiceAttachmentHandler {
 		deleteOutputFile();
 	}
 
-	/**
-	 * Release all resources. Call when done with this handler.
-	 */
+	
 	public void release() {
 		if (isRecording.get()) {
 			cancelRecording();
@@ -304,12 +261,8 @@ public class VoiceAttachmentHandler {
 		cleanup();
 	}
 
-	/**
-	 * Get the maximum recording duration in seconds.
-	 */
+	
 	public static int getMaxDurationSeconds() {
-		// At 12kbps (1.5KB/sec), 32KB = ~21 seconds
-		// Round down for safety margin
 		return 20;
 	}
 }

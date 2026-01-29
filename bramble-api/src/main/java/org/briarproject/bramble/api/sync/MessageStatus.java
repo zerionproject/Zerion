@@ -16,30 +16,22 @@ public class MessageStatus {
 		this.seen = seen;
 	}
 
-	/**
-	 * Returns the ID of the message.
-	 */
+	
 	public MessageId getMessageId() {
 		return messageId;
 	}
 
-	/**
-	 * Returns the ID of the contact.
-	 */
+	
 	public ContactId getContactId() {
 		return contactId;
 	}
 
-	/**
-	 * Returns true if the message has been sent to the contact.
-	 */
+	
 	public boolean isSent() {
 		return sent;
 	}
 
-	/**
-	 * Returns true if the message has been seen by the contact.
-	 */
+	
 	public boolean isSeen() {
 		return seen;
 	}

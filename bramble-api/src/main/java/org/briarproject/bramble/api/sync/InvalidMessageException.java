@@ -2,9 +2,7 @@ package org.briarproject.bramble.api.sync;
 
 import java.io.IOException;
 
-/**
- * An exception that indicates an invalid message.
- */
+
 public class InvalidMessageException extends IOException {
 
 	public InvalidMessageException() {

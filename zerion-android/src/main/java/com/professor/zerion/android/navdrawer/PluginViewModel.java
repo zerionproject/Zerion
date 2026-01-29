@@ -69,8 +69,6 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 
 	private final MutableLiveData<NetworkStatus> networkStatus =
 			new MutableLiveData<>();
-
-	// Track if receiver was registered to avoid unregister crash
 	private boolean receiverRegistered = false;
 
 	@Inject
@@ -96,13 +94,11 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 	@Override
 	protected void onCleared() {
 		eventBus.removeListener(this);
-		// Only unregister if it was actually registered
 		if (receiverRegistered) {
 			try {
 				app.unregisterReceiver(receiver);
 				receiverRegistered = false;
 			} catch (IllegalArgumentException e) {
-				// Receiver was already unregistered, ignore
 			}
 		}
 	}

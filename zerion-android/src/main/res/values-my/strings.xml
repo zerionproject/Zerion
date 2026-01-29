@@ -65,8 +65,6 @@
   <string name="nav_drawer_close_description">လမ်းညွှန်အံ ပိတ်မည်</string>
   <string name="contact_list_button">အဆက်အသွယ်များ</string>
   <string name="groups_button">ကိုယ်ရေးကိုယ်တာ အဖွဲ့များ</string>
-  <string name="forums_button">ဖိုရမ်များ</string>
-  <string name="blogs_button">ဘလော့ဂ်များ</string>
   <!--This is part of the main menu. The app will be locked when this is tapped.-->
   <string name="lock_button">အပ္ပလီကေးရှင်းကို သော့ခတ်မယ်</string>
   <string name="settings_button">ဆက်တင်များ</string>
@@ -99,12 +97,6 @@
   </plurals>
   <plurals name="group_message_notification_text">
     <item quantity="other">အဖွဲ့မက်ဆေ့ချ်အသစ် %d ခု။</item>
-  </plurals>
-  <plurals name="forum_post_notification_text">
-    <item quantity="other">ဆွေးနွေးမှုဖိုရမ်ပို့စ်အသစ် %d ခု။</item>
-  </plurals>
-  <plurals name="blog_post_notification_text">
-    <item quantity="other">ဘလော့ဂ်ပို့စ်အသစ် %d ခု။</item>
   </plurals>
   <!--Misc-->
   <string name="now">ယခု</string>
@@ -203,7 +195,6 @@
   <!--Adding Contacts-->
   <string name="add_contact_title">အနီးနားရှိ အဆက်အသွယ်အား ထည့်သွင်းမည်</string>
   <string name="add_contact_error_two_way">သင်နှစ်ယောက်လုံး၏ QR ကုဒ်များကို စကင်ဖတ်ကြပါသလား။</string>
-  <string name="face_to_face">သင်သည် ဤလူပုဂ္ဂိုလ်အား အပြင်မှာတွေ့ရှိမှသာလျှင် ၎င်း၏အဆက်အသွယ်ကို ပေါင်းထည့်လို့ရပါမည်။ \n\n ဒါမှသာလျှင် နောင်တွင် အခြားလူများ သင့်အား အယောင်ဆောင်ခြင်း သို့မဟုတ် သင့်မက်ဆေ့ချ်များ ဖတ်ရှုခြင်း တို့ကို တားဆီးနိုင်ပါမည်။</string>
   <string name="continue_button">ဆက်လုပ်မည်</string>
   <string name="try_again_button">ထပ်မံကြိုးစားမည်</string>
   <string name="waiting_for_contact_to_scan">အဆက်အသွယ်မှ​ စကန်ဖတ်၍ ချိတ်ဆက်ရန် စောင့်နေပါသည် \u2026</string>
@@ -211,17 +202,11 @@
   <string name="contact_added_toast">ထည့်ပြီးသောအဆက်အသွယ် - %s ခု</string>
   <string name="contact_already_exists">အဆက်အသွယ်လိပ်စာ %s သည် ရှိနှင့်ပြီးဖြစ်သည်</string>
   <string name="contact_already_exists_general">အဆက်အသွယ် ရှိပြီးသားပါ။</string>
-  <string name="qr_code_invalid">ဒီ QR ကုဒ်သည် အသုံးပြုလို့ မဆီလျော်ပါ</string>
-  <string name="qr_code_too_old_1">သင်စကင်ဖတ်ထားသော QR ကုဒ်သည် Zerion ဗားရှင်းအဟောင်းမှ လာပါသည်။\n\nကျေးဇူးပြုပြီး နောက်ဆုံးဗားရှင်းသို့ အဆင့်မြှင့်ရန် သင့်အဆက်အသွယ်ကို တောင်းဆိုပြီး ထပ်စမ်းကြည့်ပါ။</string>
-  <string name="qr_code_too_new_1">သင်စကင်ဖတ်ထားသော QR ကုဒ်သည် Zerion ဗားရှင်းအသစ်မှ လာပါသည်။\n\nကျေးဇူးပြု၍ နောက်ဆုံးဗားရှင်းသို့ အဆင့်မြှင့်တင်ပြီးနောက် ထပ်စမ်းကြည့်ပါ။</string>
-  <string name="mailbox_qr_code_for_contact">သင်စကင်ဖတ်ထားသော QR ကုဒ်သည် Zerion စာတိုက်ပုံးမှ လာပါသည်။\n\nစာတိုက်ပုံးကို လင့်ခ်ချိတ်လိုပါက၊ Zerion မီနူးမှ ဆက်တင်များ &gt; စာတိုက်ပုံးကို ရွေးပါ။</string>
-  <string name="qr_code_format_unknown">သင်စကင်ဖတ်ထားသော QR ကုဒ်သည် Zerion အဆက်အသွယ်ကို ထည့်ရန်အတွက် ရည်ရွယ်ခြင်းမဟုတ်ပါ။\n\nသင့်အဆက်အသွယ်၏မျက်နှာပြင်တွင်ပြသထားသည့် QR ကုဒ်ကို စကင်န်ဖတ်ပါ။</string>
   <string name="camera_error">ကင်မရာ ပြဿနာ</string>
   <string name="connecting_to_device">ဤစက်ပစ္စည်း \u2026 နှင့် ချိတ်ဆက်နေပါသည်</string>
   <string name="authenticating_with_device">ဤစက် \u2026 ကို စစ်မှန်ကြောင်း စစ်ဆေးနေပါသည်</string>
   <string name="connection_error_title">သင့်ရဲ့အဆက်အသွယ်လိပ်စာနှင့် ချိတ်ဆက်လို့မရပါ</string>
   <string name="connection_error_feedback">ဤပြဿနာသည် ဆက်လက်ဖြစ်ဆဲပါက ကျေးဇူးပြု၍ အပ္ပလီကေးရှင်းတိုးတက်ရန် <a href="feedback"> တုံ့ပြန်ချက် ပေးပို့ပေးပါ </a> ။</string>
-  <string name="info_both_must_scan">နှစ်ဦးစလုံးသည် တစ်ဦးနှင့်တစ်ဦး၏ QR ကုဒ်များကို စကင်န်ဖတ်ရပါမည်။</string>
   <!--Adding Contacts Remotely-->
   <string name="add_contact_remotely_title_case">အဝေးက အဆက်အသွယ်လိပ်စာကို ထည့်သွင်းမယ်</string>
   <string name="add_contact_nearby_title">အနီးနားရှိ အဆက်အသွယ်အား ထည့်သွင်းမယ်</string>
@@ -371,107 +356,25 @@
   <string name="groups_reveal_visible_revealed_by_contact">အဆက်အသွယ်နှင့် ဆက်သွယ်မှုသည် အဖွဲ့မှ တွေ့မြင်နိုင်ပါသည် (%s မှ ထုတ်ဖော်ထားခြင်းဖြစ်၍)</string>
   <string name="groups_reveal_invisible">အဆက်အသွယ်နှင့် ဆက်သွယ်မှုကို အဖွဲ့မှ မတွေ့မြင်နိုင်ပါ</string>
   <!--Forums-->
-  <string name="no_forums">ပြသစရာဖိုရမ် မရှိပါ</string>
-  <string name="no_forums_action">+ (အပေါင်းအိုင်ကွန်) အား နှိပ်၍ ဆွေးနွေးမှုဖိုရမ် ဖန်တီးပါ သို့မဟုတ် သင့် အဆက်အသွယ်များကို ဆွေးနွေးမှုဖိုရမ်များကို သင့်ဆီသို့ ဝေမျှရန် တောင်းဆိုပါ </string>
-  <string name="create_forum_title">ဖိုရမ် ဖန်တီးမည်</string>
-  <string name="choose_forum_hint">သင့် ဆွေးနွေးမှုဖိုရမ်အတွက် အမည်ရွေးပါ</string>
-  <string name="create_forum_button">ဖိုရမ်ဖန်တီးရန်</string>
-  <string name="forum_created_toast">ဖိုရမ် ဖန်တီးပြီးပါပြီ</string>
-  <string name="no_forum_posts">ပြစရာ ပို့စ်များမရှိ</string>
   <string name="no_posts">ပို့စ်များမရှိ</string>
   <plurals name="posts">
     <item quantity="other">ပို့စ် %d ခု</item>
   </plurals>
-  <string name="forum_new_message_hint">ပို့စ်အသစ်</string>
-  <string name="forum_message_reply_hint">ပြန်ကြားချက်အသစ်</string>
   <string name="btn_reply">ပြန်ကြားမည်</string>
-  <string name="forum_leave">ဆွေးနွေးမှုဖိုရမ်မှ ထွက်မည်</string>
-  <string name="dialog_title_leave_forum">ဆွေးနွေးမှုဖိုရမ်မှ ထွက်ခြင်း အတည်ပြုမည်</string>
-  <string name="dialog_message_leave_forum">ဤဖိုရမ်မှ ထွက်ချင်တာ သေချာပါသလား။ \n\n သင် ဤဖိုရမ်ကိုမျှဝေထားသည့် သင့်အဆက်အသွယ်များအနေဖြင့် သတင်းအသစ်များရရှိမှု ရပ်တန့်သွားနိုင်ပါသည်။</string>
   <string name="dialog_button_leave">ထွက်မည်</string>
-  <string name="forum_left_toast">ဆွေးနွေးမှုဖိုရမ်မှ ထွက်သွားပါပြီ</string>
   <!--Forum Sharing-->
-  <string name="forum_share_button">ဆွေးနွေးမှုဖိုရမ်ကို ဝေမျှမည်</string>
   <string name="contacts_selected">အဆက်အသွယ်များ ရွေးထားသည်</string>
   <string name="activity_share_toolbar_header">အဆက်အသွယ်များ ရွေးမည်</string>
   <string name="no_contacts_selector">ပြသစရာအဆက်အသွယ် မရှိပါ</string>
   <string name="no_contacts_selector_action">အဆက်အသွယ်တစ်ခုထည့်ပြီးလျှင် ဤနေရာကို ပြန်လာပါ</string>
-  <string name="forum_shared_snackbar">ရွေးထားသော အဆက်အသွယ်များနှင့် ဆွေးနွေးမှုဖိုရမ်အား မျှဝေပြီး</string>
-  <string name="forum_share_message">မက်ဆေ့ချ် ထည့်သွင်းပါ (မဖြစ်မနေမဟုတ်ပါ)</string>
-  <string name="forum_share_error">ဤဖိုရမ်ကို မျှဝေရာတွင် ပြဿနာတစ်ခု ဖြစ်ခဲ့ပါသည်။</string>
-  <string name="forum_invitation_received">%1$s မှ \"%2$s\" ဆွေးနွေးမှုဖိုရမ်ကို သင်နှင့် မျှဝေခဲ့ပါသည်။</string>
-  <string name="forum_invitation_sent">သင်မှ \"%1$s\" ဆွေးနွေးမှုဖိုရမ်ကို %2$s နှင့် မျှဝေခဲ့ပါသည်။</string>
-  <string name="forum_invitations_title">ဆွေးနွေးမှုဖိုရမ်သို့ ဖိတ်ကြားခြင်းများ</string>
-  <string name="forum_invitation_exists">သင်သည် ဤဖိုရမ်သို့ ဖိတ်ကြားချက်ကို လက်ခံပြီးဖြစ်သည်။ \n\n ဖိတ်ကြားချက်များကို ထပ်မံလက်ခံထား၍ ဖိုရမ်နှင့်သင်၏ ဆက်သွယ်မှုကို ပိုမိုမြန်ဆန်စေပြီး ယုံကြည်စိတ်ချရစေပါသည်။</string>
-  <string name="forum_joined_toast">ဆွေးနွေးမှုဖိုရမ်သို့ ဝင်ပြီး</string>
-  <string name="forum_declined_toast">ဖိတ်ကြားမှု ငြင်းဆိုခဲ့သည်</string>
   <string name="shared_by_format">%s မှ မျှဝေခဲ့သည်</string>
-  <string name="forum_invitation_already_sharing">မျှဝေထားခြင်းဖြစ်သည်</string>
-  <string name="forum_invitation_already_invited">ဖိတ်ကြားစာ ပို့ပြီးပြီ</string>
-  <string name="forum_invitation_invite_received">ဖိတ်ကြားစာ လက်ခံရရှိသည်</string>
-  <string name="forum_invitation_not_supported">ဤအဆက်အသွယ်မှ မထောက်ပံ့ထားပါ</string>
-  <string name="forum_invitation_error">အမှား။ ဒါဟာ bug တစ်ခုဖြစ်ပြီး သင့်အပြစ်မဟုတ်ပါဘူး။</string>
-  <string name="forum_invitation_response_accepted_sent">%s မှ ဖိတ်ကြားမှုကို သင်သည် လက်ခံခဲ့ပါသည်။</string>
-  <string name="forum_invitation_response_declined_sent">%s မှ ဖိတ်ကြားမှုကို သင်သည် ငြင်းဆိုခဲ့ပါသည်။</string>
-  <string name="forum_invitation_response_declined_auto">%s မှ ပို့ထားသော ဖိုရမ်သို့ ဖိတ်ခေါ်ချက်ကို အလိုအလျောက် ငြင်းပယ်ခဲ့ပါသည်။</string>
-  <string name="forum_invitation_response_accepted_received">%s သည် ဖိုရမ်ဖိတ်ကြားမှုအား လက်ခံခဲ့ပါသည်။</string>
-  <string name="forum_invitation_response_declined_received">%s သည် ဖိုရမ်ဖိတ်ကြားမှုအား ငြင်းဆိုခဲ့ပါသည်။</string>
   <string name="sharing_status">မျှဝေခြင်း အခြေအနေ</string>
-  <string name="sharing_status_forum">ဖိုရမ်ထဲမှ မည်သူမဆို ၎င်းတို့၏ အဆက်အသွယ်များနှင့် မျှဝေနိုင်ပါသည်။ သင်သည် အောက်ပါအဆက်အသွယ်များနှင့် ဤဖိုရမ်အား မျှဝေထားပါသည်။​ သင် မတွေ့နိုင်သော အခြားအဖွဲ့ဝင်များလဲ ရှိနိုင်ပါသည်။</string>
   <string name="shared_with">%1$d နှင့် မျှဝေပြီး (%2$d သည် အွန်လိုင်းပေါ်ရှိ)</string>
-  <plurals name="forums_shared">
-    <item quantity="other">အဆက်အသွယ်များက ဖိုရမ် %d ခုကို မျှဝေထားသည်</item>
-  </plurals>
   <string name="nobody">မည်သူမျှ</string>
   <!--Blogs-->
-  <string name="blogs_other_blog_empty_state">ပြစရာ ပို့စ်များမရှိ</string>
   <string name="read_more">ထပ်မံဖတ်ရှုမည်</string>
-  <string name="blogs_write_blog_post">ဘလော့ဂ်ပို့စ် ရေးသားမည်</string>
-  <string name="blogs_write_blog_post_body_hint">သင့် ဘလော့ဂ်ပို့စ် ရေးသားပါ</string>
-  <string name="blogs_publish_blog_post">ထုတ်ဝေမည်</string>
-  <string name="blogs_blog_post_created">ဘလော့ဂ်ပို့စ် ဖန်တီးပြီး</string>
-  <string name="blogs_blog_post_received">ဘလော့ဂ်ပို့စ်အသစ် လက်ခံရယူပြီး</string>
-  <string name="blogs_blog_post_scroll_to">၎င်းသို့ လှိမ့်သွားမည်</string>
-  <string name="blogs_feed_empty_state">ပြစရာ ပို့စ်များမရှိ</string>
-  <string name="blogs_feed_empty_state_action">သင့် အဆက်အသွယ်များနှင့် သင်စာရင်းသွင်းထားသော ဘလော့ဂ်များမှ ပို့စ်များသည် ဤနေရာတွင် ပေါ်ပါမည်။​ \n\n ဘောပင်အိုင်ကွန်အားနှိပ်၍ ပို့စ်ရေးပါ</string>
-  <string name="blogs_remove_blog">ဘလော့ဂ်အား ဖယ်ရှားမည်</string>
-  <string name="blogs_remove_blog_dialog_message">ဤဘလော့ဂ်ကို ဖယ်ရှားချင်တာ သေချာပါသလား။ \n\n ပို့စ်များကို သင့်ကိရိယာမှ ဖယ်ရှားလိုက်မည်ဖြစ်သော်လည်း အခြားသူများ၏ကိရိယာများမှမူ ဖယ်ရှားလိုက်မည်မဟုတ်ပါ။ \n\n သင် ဤဘလော့ဂ်ကိုမျှဝေထားသည့် သင့်အဆက်အသွယ်များအနေဖြင့် သတင်းအသစ်များရရှိမှု ရပ်တန့်သွားနိုင်ပါသည်။</string>
-  <string name="blogs_remove_blog_ok">ဖယ်ရှားမည်</string>
-  <string name="blogs_blog_removed">ဘလော့ဂ်အား ဖယ်ရှားပြီး</string>
-  <string name="blogs_reblog_comment_hint">မှတ်ချက်ထည့်မယ် (မဖြစ်မနေမဟုတ်ပါ)</string>
-  <string name="blogs_reblog_button">ထပ်မံဘလော့ဂ်မည်</string>
   <!--Blog Sharing-->
-  <string name="blogs_sharing_share">ဘလော့ဂ်အား မျှဝေမည်</string>
-  <string name="blogs_sharing_error">ဘလော့ဂ်အား မျှဝေခြင်းတွင် ပျက်ကွက်မှု ဖြစ်ခဲ့ပါသည်</string>
-  <string name="blogs_sharing_button">ဘလော့ဂ်အား မျှဝေမည်</string>
-  <string name="blogs_sharing_snackbar">ဤဘလော့ဂ်ကိုရွေးချယ်ထားသောအဆက်အသွယ်များနှင့်မျှဝေပြီးပါပြီ။</string>
-  <string name="blogs_sharing_response_accepted_sent">%s မှ ဘလော့ဂ်သို့ ဖိတ်ခေါ်မှုအား သင်သည် လက်ခံခဲ့ပါသည်။</string>
-  <string name="blogs_sharing_response_declined_sent">%s မှ ဘလော့ဂ်သို့ ဖိတ်ခေါ်မှုအား သင်သည် ငြင်းဆိုခဲ့ပါသည်။</string>
-  <string name="blogs_sharing_response_declined_auto">%s မှ ပို့ထားသော ဘလော့ဂ်သို့ ဖိတ်ခေါ်ချက်ကို အလိုအလျောက် ငြင်းပယ်ခဲ့ပါသည်။</string>
-  <string name="blogs_sharing_response_accepted_received">%s သည် ဘလော့ဂ်သို့ ဖိတ်ခေါ်မှုအား လက်ခံခဲ့ပါသည်။</string>
-  <string name="blogs_sharing_response_declined_received">%s သည် ဘလော့ဂ်သို့ ဖိတ်ခေါ်မှုအား ငြင်းဆိုခဲ့ပါသည်။</string>
-  <string name="blogs_sharing_invitation_received">%1$s မှ \"%2$s\" ဘလော့ဂ်ကို သင်နှင့် မျှဝေခဲ့ပါသည်။</string>
-  <string name="blogs_sharing_invitation_sent">သင်မှ \"%1$s\" ဘလော့ဂ်ကို %2$s နှင့် မျှဝေခဲ့ပါသည်။</string>
-  <string name="blogs_sharing_invitations_title">ဘလော့ဂ်သို့ ဖိတ်ခေါ်မှုများ</string>
-  <string name="blogs_sharing_joined_toast">ဘလော့ဂ်စီသို့ စာရင်းသွင်းထား</string>
-  <string name="blogs_sharing_declined_toast">ဖိတ်ကြားမှု ငြင်းဆိုခဲ့သည်</string>
-  <string name="sharing_status_blog">ဘလော့ဂ်စီသို့ စာရင်းသွင်းထားသူသည် ၎င်းတို့၏ အဆက်အသွယ်များနှင့် မျှဝေလို့ရပါသည်။ သင်သည် အောက်ပါအဆက်အသွယ်များဖြင့် ဤဘလော့ဂ်ကို မျှဝေထားနေပါသည်။ သင်မမြင်နိုင်သော အခြား စာရင်းသွင်းထားသူများလည်း ရှိနိုင်ပါသည်။</string>
   <!--RSS Feeds-->
-  <string name="blogs_rss_feeds_import">RSS သတင်းပို့စ်အလွှာ တင်သွင်းမည်</string>
-  <string name="blogs_rss_feeds_import_button">တင်သွင်းမည်</string>
-  <string name="blogs_rss_feeds_import_hint">RSS သတင်းပို့စ်အလွှာ၏ URL ရိုက်ထည့်ပေးပါ</string>
-  <string name="blogs_rss_feeds_import_progress">RSS Feed ကို ထည့်သွင်းနေသည်...</string>
-  <string name="blogs_rss_feeds_import_error">ဝမ်းနည်းပါသည်! သင့် သတင်းပို့စ်အလွှာအား တင်သွင်းရာတွင် ပျက်ကွက်မှု ဖြစ်ခဲ့ပါသည်။</string>
-  <string name="blogs_rss_feeds_import_title">ဖိုင်မှ ဖိဒ်ကို ထည့်သွင်းပါ</string>
-  <string name="blogs_rss_feeds">RSS သတင်းလွှာများ</string>
-  <string name="blogs_rss_feeds_manage_imported">တင်သွင်းထားသော</string>
-  <string name="blogs_rss_feeds_manage_author">စာရေးဆရာ -</string>
-  <string name="blogs_rss_feeds_manage_updated">နောက်ဆုံး အပ်ဒိတ်လုပ်ခဲ့ခြင်း -</string>
-  <string name="blogs_rss_remove_feed">သတင်းပို့စ်အလွှာ ဖယ်ရှားမည်</string>
-  <string name="blogs_rss_remove_feed_dialog_message">ဤသတင်းပို့စ်အလွှာကို ဖယ်ရှားချင်တာ သေချာပါသလား။ \n\n ပို့စ်များကို သင့်ကိရိယာမှ ဖယ်ရှားလိုက်မည်ဖြစ်သော်လည်း အခြားသူများ၏ကိရိယာများမှမူ ဖယ်ရှားလိုက်မည်မဟုတ်ပါ။ \n\n သင်မှ ဤသတင်းပို့စ်အလွှာကို မျှဝေထားသည့် သင့်အဆက်အသွယ်များအနေဖြင့် သတင်းအသစ်များရရှိမှု ရပ်တန့်သွားနိုင်ပါသည်။</string>
-  <string name="blogs_rss_remove_feed_ok">ဖယ်ရှားမည်</string>
-  <string name="blogs_rss_feeds_manage_empty_state">RSS သတင်းပို့စ်အလွှာများပြရန် မရှိပါ \n\n + (အပေါင်းအိုင်ကွန်) အားနှိပ်၍ သတင်းအလွှာ တင်သွင်းပါ</string>
-  <string name="blogs_rss_feeds_manage_error">သင့် သတင်းပို့စ်အလွှာကို တင်သွင်းရာတွင် အခက်အခဲတွေ့ကြုံခဲ့ပါသည်။ နောင်မှ ပြန်စမ်းကြည့်ပေးပါ။</string>
   <!--Settings Profile Picture-->
   <string name="change_profile_picture">နှိပ်၍ သင့် ပရိုဖိုင်းပုံ ပြောင်းလဲပါ</string>
   <string name="dialog_confirm_profile_picture_title">ပရိုဖိုင်းပုံ ပြောင်းလဲမည်</string>
@@ -551,12 +454,6 @@
   <string name="notify_group_messages_setting_title">အဖွဲ့ မက်ဆေ့ချ်များ</string>
   <string name="notify_group_messages_setting_summary">အဖွဲ့ မက်ဆေ့ချ်များအတွက် အသိပေးချက်များ ပြသပါ</string>
   <string name="notify_group_messages_setting_summary_26">အဖွဲ့ မက်ဆေ့ချ်များအတွက် အသိပေးချက်များ ချိန်ညှိပြင်ဆင်မည်</string>
-  <string name="notify_forum_posts_setting_title">ဖိုရမ်ပို့စ်များ</string>
-  <string name="notify_forum_posts_setting_summary">ဖိုရမ်ပို့စ်များအတွက် အသိပေးချက်များ ပြသပါ</string>
-  <string name="notify_forum_posts_setting_summary_26">ဖိုရမ်ပို့စ်များအတွက် အသိပေးချက်များ ချိန်ညှိပြင်ဆင်မည်</string>
-  <string name="notify_blog_posts_setting_title">ဘလော့ပို့စ်များ</string>
-  <string name="notify_blog_posts_setting_summary">ဘလော့ပို့စ်များအတွက် အသိပေးချက်များ ပြသပါ</string>
-  <string name="notify_blog_posts_setting_summary_26">ဘလော့ပို့စ်များအတွက် အသိပေးချက်များ ချိန်ညှိပြင်ဆင်မည်</string>
   <string name="notify_vibration_setting">တုန်ခါမှု</string>
   <string name="notify_sound_setting">အသံ</string>
   <string name="notify_sound_setting_default">မူလဖုန်းမြည်သံ</string>
@@ -576,10 +473,6 @@
   <string name="mailbox_setup_connecting">စာတိုက်ပုံးသို့ ချိတ်ဆက်နေသည်...</string>
   <!--This string is shown when connecting to a Mailbox for the first time. The placeholder will be replaced with a duration, e.g. "2 minutes".-->
   <string name="mailbox_setup_connecting_info">%1sဤအထိ ကြာနိုင်သည်။</string>
-  <string name="mailbox_qr_code_too_old">သင်စကင်ဖတ်ထားသော QR ကုဒ်သည် Zerion Mailbox ဗားရှင်းအဟောင်းမှ လာပါသည်။\n\nကျေးဇူးပြု၍ Zerion Mailbox ကို နောက်ဆုံးဗားရှင်းသို့ အဆင့်မြှင့်တင်ပြီးနောက် ထပ်လုပ်ကြည့်ပါ။</string>
-  <string name="mailbox_qr_code_too_new">သင်စကင်ဖတ်ထားသော QR ကုဒ်သည် Zerion Mailbox ၏ ဗားရှင်းအသစ်မှ လာပါသည်။\n\nကျေးဇူးပြု၍ Zerion ကို နောက်ဆုံးဗားရှင်းသို့ အဆင့်မြှင့်ပြီး ထပ်စမ်းကြည့်ပါ။</string>
-  <string name="contact_qr_code_for_mailbox">သင်စကင်ဖတ်ထားသော QR ကုဒ်သည် Zerion အဆက်အသွယ်တစ်ခုထည့်ရန်အတွက်ဖြစ်သည်။\n\nအဆက်အသွယ်တစ်ခုထည့်လိုပါက၊ ကျေးဇူးပြု၍ အဆက်အသွယ်စာရင်းသို့သွားကာ + အိုင်ကွန်ကိုနှိပ်ပါ။</string>
-  <string name="mailbox_setup_qr_code_wrong_description">သင်စကင်ဖတ်ထားသော QR ကုဒ်သည် Zerion Mailbox မှ လာမည်မဟုတ်ပါ။\n\nကျေးဇူးပြု၍ သင့် Mailbox စက်တွင် Zerion Mailbox အက်ပ်ကိုဖွင့်ပြီး ၎င်းတွင်ပါရှိသော QR ကုဒ်ကို စကင်န်ဖတ်ပါ။</string>
   <string name="mailbox_setup_already_paired_title">Mailboxကို လင့်ခ်ချိတ်ထားပြီးသား</string>
   <string name="mailbox_setup_already_paired_description">သင့်အခြားစက်ပစ္စည်းရှိ Mailbox ကို လင့်ခ်ဖြုတ်ပြီး ထပ်စမ်းကြည့်ပါ။</string>
   <string name="mailbox_setup_io_error_title">ချိတ်ဆက်၍မရပါ</string>
@@ -729,8 +622,6 @@
   <string name="permission_bluetooth_title">အနီးနားရှိ စက်ပစ္စည်းများ ခွင့်ပြုချက်</string>
   <string name="permission_bluetooth_body">ဘလူးတုသ် ဆက်သွယ်ရေးကို အသုံးပြုရန်၊ Zerion သည် အနီးနားရှိ စက်များနှင့် ချိတ်ဆက်ရန် ခွင့်ပြုချက် လိုအပ်ပါသည်။</string>
   <string name="permission_bluetooth_denied_body">သင်သည် အနီးနားရှိ စက်များကို အသုံးပြုခွင့်ကို ငြင်းပယ်ထားသော်လည်း Zerion သည် Bluetooth ကို အသုံးပြုရန် ဤခွင့်ပြုချက် လိုအပ်ပါသည်။\n\nကျေးဇူးပြု၍ အသုံးပြုခွင့်ပေးရန် စဉ်းစားပါ။</string>
-  <string name="qr_code">QR ကုဒ်</string>
-  <string name="show_qr_code_fullscreen">စကရင်အပြည့်တွင် QR ကုဒ် ပြပါ</string>
   <!--App Locking-->
   <string name="lock_unlock">Zerion သော့ဖွင့်မယ်</string>
   <string name="lock_unlock_verbose">Zerion သော့ဖွင့်ရန် သင့် စက်၏ ပင်နံပါတ်၊ ကုဒ်ပုံစံ သို့မဟုတ် စကားဝှက်အား ရိုက်ထည့်ပေးပါ</string>
@@ -759,9 +650,7 @@
   <string name="wifi_settings_request_enable_body">ဝိုင်ဖိုင်ဟော့စပေါ့ ဖန်တီးရန်၊ Zerion သည် ဝိုင်ဖိုင်ကို အသုံးပြုရန် လိုအပ်သည်။ ၎င်းကိုဖွင့်ပါ။</string>
   <string name="hotspot_tab_manual">လမ်းညွှန်စာအုပ်</string>
   <!--The placeholder to be inserted into the string 'hotspot_manual_wifi': People can connect by %s-->
-  <string name="hotspot_scanning_a_qr_code">QR ကုဒ်ကို စကင်န်ဖတ်နေသည်</string>
   <!--Wi-Fi setup-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_wifi">သင့်ဖုန်းသည် ဝိုင်ဖိုင်ဟော့စပေါ့ကို ပံ့ပိုးပေးနေသည်။ Zerion ကို ဒေါင်းလုဒ် လုပ်လိုသူများသည် အောက်ဖော်ပြပါ သေးစိတ်အချက်အလက်များကို အသုံးပြု၍ သို့မဟုတ် ၎င်းတို့၏ စက်ပစ္စည်း၏ ဝိုင်ဖိုင်ဆက်တင်များတွင် %sထည့်သွင်းခြင်းဖြင့် ဟော့စပေါ့သို့ ချိတ်ဆက်နိုင်ပါသည်။ ဟော့စပေါ့သို့ ချိတ်ဆက်ပြီးပါက \'Next\' ကိုနှိပ်ပါ။</string>
   <string name="hotspot_manual_wifi_ssid">ကွန်ရက်အမည်</string>
   <string name="hotspot_qr_wifi">သင့်ဖုန်းသည် ဝိုင်ဖိုင်ဟော့စပေါ့ကို ပံ့ပိုးပေးနေသည်။ Zerion ကို ဒေါင်းလုဒ်လုပ်လိုသူများသည် ဤ QR ကုဒ်ကိုစကင်န်ဖတ်ခြင်းဖြင့် ဟော့စပေါ့သို့ ချိတ်ဆက်နိုင်သည်။ ဟော့စပေါ့သို့ ချိတ်ဆက်ပြီးပါက \'Next\' ကိုနှိပ်ပါ။</string>
@@ -770,7 +659,6 @@
     <item quantity="other">%sစက်ပစ္စည်းများကို ချိတ်ဆက်ထားသည်</item>
   </plurals>
   <!--Download link-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_site">သင့်ဖုန်းသည် ဝိုင်ဖိုင်ဟော့စပေါ့ကို ပံ့ပိုးပေးနေသည်။ ဝိုင်ဖိုင်ဟော့စပေါ့သို့ %sချိတ်ဆက်ထားသူများသည် ဝဘ်ဘရောက်ဆာတွင် အောက်ပါလင့်ခ်ကို ရိုက်ထည့်ခြင်းဖြင့် Zerion ကို ဒေါင်းလုဒ် လုပ်နိုင်သည်။</string>
   <string name="hotspot_manual_site_address">လိပ်စာ (URL)</string>
   <string name="hotspot_qr_site">သင့်ဖုန်းသည် ဝိုင်ဖိုင်ဟော့စပေါ့ကို ပံ့ပိုးပေးနေသည်။ ဟော့စပေါ့သို့ ချိတ်ဆက်ထားသူများသည် ဤ QR ကုဒ်ကို စကင်န်ဖတ်ခြင်းဖြင့် Zerion ကို ဒေါင်းလုဒ်လုပ်နိုင်ပါသည်။</string>

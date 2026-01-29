@@ -5,17 +5,12 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.Immutable;
 
-/**
- * Type-safe wrapper for a namespaced string that uniquely identifies a sync
- * client.
- */
+
 @Immutable
 @NotNullByDefault
 public class ClientId implements Comparable<ClientId> {
 
-	/**
-	 * The maximum length of a client identifier in UTF-8 bytes.
-	 */
+	
 	public static int MAX_CLIENT_ID_LENGTH = 100;
 
 	private final String id;

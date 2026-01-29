@@ -80,7 +80,6 @@ class SyncSessionFactoryImpl implements SyncSessionFactory {
 	public SyncSession createSimplexOutgoingSession(ContactId c, TransportId t,
 			long maxLatency, StreamWriter streamWriter,
 			OutgoingSessionRecord sessionRecord, boolean classical) {
-		// Mailbox feature removed - use standard simplex session instead
 		OutputStream out = streamWriter.getOutputStream();
 		SyncRecordWriter recordWriter =
 				recordWriterFactory.createRecordWriter(out, classical);

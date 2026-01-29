@@ -18,31 +18,25 @@ import static org.briarproject.bramble.util.StringUtils.toHexString;
 public class PrivacyUtils {
 
 	public static String scrubOnion(String onion) {
-		// keep first three characters of onion address
 		return onion.substring(0, 3) + "[scrubbed]";
 	}
 
 	@Nullable
 	public static String scrubMacAddress(@Nullable String address) {
 		if (isNullOrEmpty(address) || !isValidMac(address)) return address;
-		// this is a fake address we need to know about
 		if (address.equals("02:00:00:00:00:00")) return address;
-		// keep first and last octet of MAC address
 		return address.substring(0, 3) + "[scrubbed]"
 				+ address.substring(14, 17);
 	}
 
 	public static String scrubInetAddress(InetAddress address) {
 		if (address instanceof Inet4Address) {
-			// Don't scrub local IPv4 addresses
 			if (address.isLoopbackAddress() || address.isLinkLocalAddress() ||
 					address.isSiteLocalAddress()) {
 				return address.getHostAddress();
 			}
-			// Keep first and last octet of non-local IPv4 addresses
 			return scrubIpv4Address(address.getAddress());
 		} else {
-			// Keep first and last octet of IPv6 addresses
 			return scrubIpv6Address(address.getAddress());
 		}
 	}

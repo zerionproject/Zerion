@@ -73,18 +73,14 @@ public class VoiceRecordingController implements DefaultLifecycleObserver {
 		this.dbExecutor = dbExecutor;
 	}
 
-	/**
-	 * Initialize the recorder. Call this in onCreate.
-	 */
+	
 	@UiThread
 	public void initRecorder(android.content.Context context) {
 		voiceRecorder = new VoiceMessageRecorder(context, dbExecutor);
 		attachmentHandler = new VoiceAttachmentHandler(context, dbExecutor);
 	}
 
-	/**
-	 * Bind UI views. Call this after setContentView.
-	 */
+	
 	@UiThread
 	public void bindViews(
 			@Nullable View overlay,
@@ -108,26 +104,19 @@ public class VoiceRecordingController implements DefaultLifecycleObserver {
 		}
 	}
 
-	/**
-	 * Start voice recording in short message mode (default, ~3 seconds max).
-	 */
+	
 	@UiThread
 	public void startRecording() {
 		startRecording(RecordingMode.SHORT_MESSAGE);
 	}
 
-	/**
-	 * Start voice recording in attachment mode (~30 seconds max).
-	 * Use this for longer recordings that don't fit in a message.
-	 */
+	
 	@UiThread
 	public void startAttachmentRecording() {
 		startRecording(RecordingMode.ATTACHMENT);
 	}
 
-	/**
-	 * Start voice recording in specified mode.
-	 */
+	
 	@UiThread
 	public void startRecording(RecordingMode mode) {
 		if (isRecording) return;
@@ -145,9 +134,7 @@ public class VoiceRecordingController implements DefaultLifecycleObserver {
 		}
 	}
 
-	/**
-	 * Stop and cancel recording (user cancelled).
-	 */
+	
 	@UiThread
 	public void stopRecording() {
 		if (!isRecording) return;
@@ -171,36 +158,29 @@ public class VoiceRecordingController implements DefaultLifecycleObserver {
 		host.onRecordingCancelled();
 	}
 
-	/**
-	 * Finish recording and send (user clicked send).
-	 */
+	
 	@UiThread
 	public void finishRecording() {
 		if (!isRecording) return;
 
 		try {
-			// Immediately show processing state to eliminate UI lag
 			showProcessingState();
 
 			if (currentMode == RecordingMode.SHORT_MESSAGE) {
 				if (voiceRecorder != null) {
 					voiceRecorder.stopStreamingRecording();
 				}
-				// isRecording will be set to false in onEncryptionFinal callback
 			} else {
 				if (attachmentHandler != null) {
 					attachmentHandler.stopRecording();
 				}
-				// isRecording will be set to false in attachment callback
 			}
 		} catch (Exception e) {
 			host.onRecordingError(e);
 		}
 	}
 
-	/**
-	 * Force cancel if activity is stopping.
-	 */
+	
 	@UiThread
 	public void forceCancel() {
 		if (isRecording) {
@@ -215,16 +195,12 @@ public class VoiceRecordingController implements DefaultLifecycleObserver {
 		}
 	}
 
-	/**
-	 * Get the current recording mode.
-	 */
+	
 	public RecordingMode getCurrentMode() {
 		return currentMode;
 	}
 
-	/**
-	 * Get maximum duration in seconds for the current mode.
-	 */
+	
 	public int getMaxDurationSeconds() {
 		return currentMode == RecordingMode.SHORT_MESSAGE ? 3 : VoiceAttachmentHandler.getMaxDurationSeconds();
 	}
@@ -233,15 +209,10 @@ public class VoiceRecordingController implements DefaultLifecycleObserver {
 		return isRecording;
 	}
 
-	// ==================== Lifecycle Observer ====================
-
 	@Override
 	public void onStop(@NonNull LifecycleOwner owner) {
-		// SECURITY: Zeroize voice recording state if activity stops during recording
 		forceCancel();
 	}
-
-	// ==================== Private UI Methods ====================
 
 	private void showRecordingUI() {
 		if (textInputView != null) {
@@ -260,16 +231,13 @@ public class VoiceRecordingController implements DefaultLifecycleObserver {
 			voiceRecorder.startStreamingRecording(groupIdBytes, new EncryptedChunkCallback() {
 				@Override
 				public void onRecordingStarted() {
-					// Silent operation
 				}
 
 				@Override
 				public void onEncryptionInit(byte[] iv, byte[] sessionKey) {
-					// Copy arrays before passing to host
 					byte[] ivCopy = Arrays.copyOf(iv, iv.length);
 					byte[] sessionKeyCopy = Arrays.copyOf(sessionKey, sessionKey.length);
 					host.onEncryptionInit(ivCopy, sessionKeyCopy);
-					// Zeroize originals
 					Arrays.fill(iv, (byte) 0);
 					Arrays.fill(sessionKey, (byte) 0);
 				}
@@ -324,9 +292,7 @@ public class VoiceRecordingController implements DefaultLifecycleObserver {
 		}
 	}
 
-	/**
-	 * Show recording UI for attachment mode (longer recordings).
-	 */
+	
 	private void showAttachmentRecordingUI() {
 		if (textInputView != null) {
 			textInputView.setVisibility(View.GONE);
@@ -341,7 +307,6 @@ public class VoiceRecordingController implements DefaultLifecycleObserver {
 			attachmentHandler.startRecording(new VoiceAttachmentHandler.AttachmentRecordingCallback() {
 				@Override
 				public void onRecordingStarted() {
-					// Silent operation
 				}
 
 				@Override
@@ -354,9 +319,7 @@ public class VoiceRecordingController implements DefaultLifecycleObserver {
 					host.runOnUiThread(() -> {
 						isRecording = false;
 						hideRecordingUI();
-						// Notify host about completed attachment recording
 						host.onAttachmentRecordingComplete(audioFile, durationMs, mimeType);
-						// Store as attachment via ViewModel
 						android.net.Uri audioUri = android.net.Uri.fromFile(audioFile);
 						host.storeVoiceAttachment(audioUri);
 					});
@@ -400,13 +363,9 @@ public class VoiceRecordingController implements DefaultLifecycleObserver {
 		}
 	}
 
-	/**
-	 * Show a processing state while encryption completes.
-	 * This provides immediate feedback when user taps send.
-	 */
+	
 	private void showProcessingState() {
 		stopPulseAnimation();
-		// Disable buttons during processing
 		if (cancelRecordingButton != null) {
 			cancelRecordingButton.setEnabled(false);
 			cancelRecordingButton.setAlpha(0.5f);
@@ -415,15 +374,12 @@ public class VoiceRecordingController implements DefaultLifecycleObserver {
 			sendVoiceButton.setEnabled(false);
 			sendVoiceButton.setAlpha(0.5f);
 		}
-		// Update timer to show "Sending..."
 		if (recordingTimer != null) {
 			recordingTimer.setText(recordingTimer.getContext().getString(R.string.sending_voice_message));
 		}
 	}
 
-	/**
-	 * Reset the processing state (called after hideRecordingUI).
-	 */
+	
 	private void resetProcessingState() {
 		if (cancelRecordingButton != null) {
 			cancelRecordingButton.setEnabled(true);

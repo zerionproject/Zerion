@@ -7,8 +7,6 @@ import org.briarproject.bramble.api.data.BdfDictionary;
 import org.briarproject.bramble.api.data.BdfList;
 import org.briarproject.bramble.api.sync.MessageId;
 import org.briarproject.bramble.test.ValidatorTestCase;
-import org.briarproject.briar.api.blog.BlogFactory;
-import org.briarproject.briar.api.forum.ForumFactory;
 import org.jmock.Expectations;
 import org.junit.Test;
 
@@ -34,8 +32,6 @@ import static org.junit.Assert.fail;
 public abstract class SharingValidatorTest extends ValidatorTestCase {
 
 	final MessageEncoder messageEncoder = context.mock(MessageEncoder.class);
-	final ForumFactory forumFactory = context.mock(ForumFactory.class);
-	final BlogFactory blogFactory = context.mock(BlogFactory.class);
 
 	final SharingValidator validator = getValidator();
 

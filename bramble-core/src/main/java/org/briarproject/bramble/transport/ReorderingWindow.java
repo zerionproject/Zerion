@@ -58,17 +58,13 @@ class ReorderingWindow {
 		int offset = (int) (index - base);
 		if (seen[offset]) throw new IllegalArgumentException();
 		seen[offset] = true;
-		// Rule 1: Slide until all elements above the midpoint are unseen
 		int slide = Math.max(0, offset + 1 - seen.length / 2);
-		// Rule 2: Slide until the lowest element is unseen
 		while (seen[slide]) slide++;
-		// If the window doesn't need to slide, return
 		if (slide == 0) {
 			List<Long> added = Collections.emptyList();
 			List<Long> removed = Collections.singletonList(index);
 			return new Change(added, removed);
 		}
-		// Record the elements that will be added and removed
 		List<Long> added = new ArrayList<>(slide);
 		List<Long> removed = new ArrayList<>(slide);
 		for (int i = 0; i < slide; i++) {
@@ -76,7 +72,6 @@ class ReorderingWindow {
 			added.add(base + seen.length + i);
 		}
 		removed.add(index);
-		// Update the window
 		base += slide;
 		for (int i = 0; i + slide < seen.length; i++) seen[i] = seen[i + slide];
 		for (int i = seen.length - slide; i < seen.length; i++) seen[i] = false;

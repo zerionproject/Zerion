@@ -98,7 +98,6 @@ public class VaultGalleryFragment extends BaseFragment {
 			@Override
 			public void onImageClick(VaultItem item) {
 				if (isPickerMode) {
-					// In picker mode, select and return the item
 					selectItemForPicker(item);
 				} else {
 					openMediaViewer(item);
@@ -117,7 +116,6 @@ public class VaultGalleryFragment extends BaseFragment {
 
 	private void setupClickListeners() {
 		if (isPickerMode) {
-			// Hide FAB in picker mode
 			fabAdd.setVisibility(View.GONE);
 		} else {
 			fabAdd.setOnClickListener(v -> showAddImageDialog());

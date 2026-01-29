@@ -96,7 +96,7 @@ class RecentEmojiImpl implements RecentEmoji, OpenDatabaseHook {
 			try {
 				settingsManager.mergeSettings(settings, SETTINGS_NAMESPACE);
 			} catch (DbException e) {
-				/* silent */
+				
 			}
 		});
 	}

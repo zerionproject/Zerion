@@ -66,8 +66,6 @@
   <string name="nav_drawer_close_description">关闭侧滑导航</string>
   <string name="contact_list_button">联系人</string>
   <string name="groups_button">私密群聊</string>
-  <string name="forums_button">论坛</string>
-  <string name="blogs_button">博客</string>
   <!--This is part of the main menu. The app will be locked when this is tapped.-->
   <string name="lock_button">锁定应用</string>
   <string name="settings_button">设置</string>
@@ -100,12 +98,6 @@
   </plurals>
   <plurals name="group_message_notification_text">
     <item quantity="other">%d 条新群消息。</item>
-  </plurals>
-  <plurals name="forum_post_notification_text">
-    <item quantity="other">%d 条新论坛帖子。</item>
-  </plurals>
-  <plurals name="blog_post_notification_text">
-    <item quantity="other">%d 条新博文。</item>
   </plurals>
   <!--Misc-->
   <string name="now">现在</string>
@@ -204,7 +196,6 @@
   <!--Adding Contacts-->
   <string name="add_contact_title">添加附近的联系人</string>
   <string name="add_contact_error_two_way">您和联系人互扫二维码了吗？</string>
-  <string name="face_to_face">您必须面对面添加联系人。\n\n这样将防止未来他人冒充您的身份并查看您的信息。</string>
   <string name="continue_button">继续</string>
   <string name="try_again_button">重试</string>
   <string name="waiting_for_contact_to_scan">等待联系人扫描并连接\u2026</string>
@@ -212,17 +203,11 @@
   <string name="contact_added_toast">联系人已添加：%s</string>
   <string name="contact_already_exists">联系人 %s 已存在</string>
   <string name="contact_already_exists_general">联系人已存在</string>
-  <string name="qr_code_invalid">二维码无效</string>
-  <string name="qr_code_too_old_1">您扫描的二维码来自旧版本的 Zerion。\n\n请让您的联系人升级到最新版本，然后重试。</string>
-  <string name="qr_code_too_new_1">您扫描的二维码来自新版本的 Zerion。\n\n请升级到最新版本，然后重试。</string>
-  <string name="mailbox_qr_code_for_contact">你已经扫过的二维码来自 Zerion Mailbox。\n\n如果你想链接一个 Mailbox，请从 Zerion 菜单中选择设置&gt; Mailbox</string>
-  <string name="qr_code_format_unknown">你已经扫过的二维码不是用来添加 Zerion 联系人的。\n\n请扫描显示在你联系人设备屏幕上的二维码。</string>
   <string name="camera_error">相机出错</string>
   <string name="connecting_to_device">正在连接至设备\u2026</string>
   <string name="authenticating_with_device">正在验证设备\u2026</string>
   <string name="connection_error_title">无法连接到您的联系人</string>
   <string name="connection_error_feedback">如果该问题仍存在，请 <a href="feedback">发送反馈</a> 帮助我们改善应用。</string>
-  <string name="info_both_must_scan">您和联系人必须互扫二维码</string>
   <!--Adding Contacts Remotely-->
   <string name="add_contact_remotely_title_case">添加远处的联系人</string>
   <string name="add_contact_nearby_title">添加附近的联系人</string>
@@ -371,107 +356,25 @@
   <string name="groups_reveal_visible_revealed_by_contact">联系人关系对群聊可见（由 %s 设定）</string>
   <string name="groups_reveal_invisible">联系人关系对群聊不可见</string>
   <!--Forums-->
-  <string name="no_forums">尚无论坛可供展示</string>
-  <string name="no_forums_action">轻按 + 号创建论坛，或让您的联系人分享论坛给您</string>
-  <string name="create_forum_title">创建论坛</string>
-  <string name="choose_forum_hint">为论坛命名</string>
-  <string name="create_forum_button">创建论坛</string>
-  <string name="forum_created_toast">论坛已创建</string>
-  <string name="no_forum_posts">尚无帖子可供展示</string>
   <string name="no_posts">没有帖子</string>
   <plurals name="posts">
     <item quantity="other">%d 条帖子</item>
   </plurals>
-  <string name="forum_new_message_hint">新帖子</string>
-  <string name="forum_message_reply_hint">新回复</string>
   <string name="btn_reply">回复</string>
-  <string name="forum_leave">退出论坛</string>
-  <string name="dialog_title_leave_forum">确认退出论坛</string>
-  <string name="dialog_message_leave_forum">确认要退出该论坛吗？那些经过您的分享而加入该论坛的联系人可能不会再收到更新。</string>
   <string name="dialog_button_leave">退出</string>
-  <string name="forum_left_toast">已退出论坛</string>
   <!--Forum Sharing-->
-  <string name="forum_share_button">分享论坛</string>
   <string name="contacts_selected">已选择联系人</string>
   <string name="activity_share_toolbar_header">选择联系人</string>
   <string name="no_contacts_selector">尚无联系人可供显示</string>
   <string name="no_contacts_selector_action">请添加联系人后再来</string>
-  <string name="forum_shared_snackbar">论坛已分享给选中的联系人</string>
-  <string name="forum_share_message">附加消息（选填）</string>
-  <string name="forum_share_error">分享该论坛时发生错误。</string>
-  <string name="forum_invitation_received">%1$s 已将论坛 “%2$s” 分享给您。</string>
-  <string name="forum_invitation_sent">您已将论坛 “%1$s” 分享给 %2$s。</string>
-  <string name="forum_invitations_title">论坛邀请</string>
-  <string name="forum_invitation_exists">您接受了加入该论坛的一份邀请。\n\n接受更多邀请将会使您连接论坛更快速更可靠。</string>
-  <string name="forum_joined_toast">已加入论坛</string>
-  <string name="forum_declined_toast">邀请已谢绝</string>
   <string name="shared_by_format">由 %s 分享</string>
-  <string name="forum_invitation_already_sharing">已在分享</string>
-  <string name="forum_invitation_already_invited">邀请已发送</string>
-  <string name="forum_invitation_invite_received">已收到邀请</string>
-  <string name="forum_invitation_not_supported">不被此联系人所支持</string>
-  <string name="forum_invitation_error">错误。这是一个故障，不是你的问题</string>
-  <string name="forum_invitation_response_accepted_sent">您接受了来自 %s的论坛邀请</string>
-  <string name="forum_invitation_response_declined_sent">您谢绝了来自 %s的论坛邀请</string>
-  <string name="forum_invitation_response_declined_auto">来自 %s 的论坛邀请被自动拒绝了</string>
-  <string name="forum_invitation_response_accepted_received">%s 接受了论坛邀请。</string>
-  <string name="forum_invitation_response_declined_received">%s 谢绝了论坛邀请。</string>
   <string name="sharing_status">分享状态</string>
-  <string name="sharing_status_forum">论坛的任何成员都可以将论坛分享给他们的联系人。您正在分享该论坛给下列联系人。可能有您所不可见的其他成员存在。</string>
   <string name="shared_with">被 %1$d 人分享（%2$d 人在线）</string>
-  <plurals name="forums_shared">
-    <item quantity="other">%d 个论坛由联系人分享</item>
-  </plurals>
   <string name="nobody">没有人</string>
   <!--Blogs-->
-  <string name="blogs_other_blog_empty_state">尚无博文可供展示</string>
   <string name="read_more">阅读全文</string>
-  <string name="blogs_write_blog_post">写博文</string>
-  <string name="blogs_write_blog_post_body_hint">输入博文内容</string>
-  <string name="blogs_publish_blog_post">发布</string>
-  <string name="blogs_blog_post_created">博文已创建</string>
-  <string name="blogs_blog_post_received">收到新博文</string>
-  <string name="blogs_blog_post_scroll_to">滑动至</string>
-  <string name="blogs_feed_empty_state">尚无博文可供展示</string>
-  <string name="blogs_feed_empty_state_action">此处将显示您的联系人和您所订阅博客的博文\n\n轻按钢笔图标来写一篇博文</string>
-  <string name="blogs_remove_blog">删除博客</string>
-  <string name="blogs_remove_blog_dialog_message">确认要删除该博客吗？\n\n博文将会从您的设备删除，但仍会存在于其他人的设备上。\n\n那些经过您的分享而订阅该博客的联系人可能不会再收到更新。</string>
-  <string name="blogs_remove_blog_ok">删除</string>
-  <string name="blogs_blog_removed">博客已删除</string>
-  <string name="blogs_reblog_comment_hint">添加评论（选填）</string>
-  <string name="blogs_reblog_button">转载</string>
   <!--Blog Sharing-->
-  <string name="blogs_sharing_share">分享博客</string>
-  <string name="blogs_sharing_error">分享该博客时发生错误。</string>
-  <string name="blogs_sharing_button">分享博客</string>
-  <string name="blogs_sharing_snackbar">博客已分享给选中的联系人</string>
-  <string name="blogs_sharing_response_accepted_sent">您接受了来自 %s 的博客邀请。</string>
-  <string name="blogs_sharing_response_declined_sent">您谢绝了来自 %s 的博客邀请。</string>
-  <string name="blogs_sharing_response_declined_auto">来自 %s 的博客邀请被自动拒绝了</string>
-  <string name="blogs_sharing_response_accepted_received">%s 接受了博客邀请。</string>
-  <string name="blogs_sharing_response_declined_received">%s 谢绝了博客邀请。</string>
-  <string name="blogs_sharing_invitation_received">%1$s 向您分享博客 “%2$s”。</string>
-  <string name="blogs_sharing_invitation_sent">您已将博客 “%1$s” 分享给 %2$s 。</string>
-  <string name="blogs_sharing_invitations_title">博客邀请</string>
-  <string name="blogs_sharing_joined_toast">已订阅博客</string>
-  <string name="blogs_sharing_declined_toast">邀请已谢绝</string>
-  <string name="sharing_status_blog">任何订阅博客的人都可以将它分享给他的联系人。您正在将该博客分享给下列联系人。可能有您所不可见的其他订阅者存在。</string>
   <!--RSS Feeds-->
-  <string name="blogs_rss_feeds_import">导入 RSS 订阅源</string>
-  <string name="blogs_rss_feeds_import_button">导入</string>
-  <string name="blogs_rss_feeds_import_hint">输入 RSS 订阅源链接</string>
-  <string name="blogs_rss_feeds_import_progress">导入 RSS 订阅源中…</string>
-  <string name="blogs_rss_feeds_import_error">抱歉！导入订阅源时发生错误。</string>
-  <string name="blogs_rss_feeds_import_title">从文件导入源</string>
-  <string name="blogs_rss_feeds">RSS 源 </string>
-  <string name="blogs_rss_feeds_manage_imported">已导入：</string>
-  <string name="blogs_rss_feeds_manage_author">作者：</string>
-  <string name="blogs_rss_feeds_manage_updated">最后更新于：</string>
-  <string name="blogs_rss_remove_feed">删除订阅源</string>
-  <string name="blogs_rss_remove_feed_dialog_message">确认要删除该订阅源吗？\n\n博文将从您的设备上移除，但仍将存在于其他人的设备。\n\n那些经过您的分享而订阅该源的联系人可能不会再收到更新。</string>
-  <string name="blogs_rss_remove_feed_ok">删除</string>
-  <string name="blogs_rss_feeds_manage_empty_state">尚无订阅源可供显示\n\n轻按 + 号导入一个订阅源</string>
-  <string name="blogs_rss_feeds_manage_error">加载订阅源时出错。请稍候再试。</string>
   <!--Settings Profile Picture-->
   <string name="change_profile_picture">轻按以更改你的个人资料图片</string>
   <string name="dialog_confirm_profile_picture_title">更改个人资料图片</string>
@@ -551,12 +454,6 @@
   <string name="notify_group_messages_setting_title">群消息</string>
   <string name="notify_group_messages_setting_summary">显示群消息通知</string>
   <string name="notify_group_messages_setting_summary_26">设置群消息通知</string>
-  <string name="notify_forum_posts_setting_title">论坛帖子</string>
-  <string name="notify_forum_posts_setting_summary">显示论坛帖子通知</string>
-  <string name="notify_forum_posts_setting_summary_26">设置论坛帖子通知</string>
-  <string name="notify_blog_posts_setting_title">博文</string>
-  <string name="notify_blog_posts_setting_summary">显示博文通知</string>
-  <string name="notify_blog_posts_setting_summary_26">设置博文通知</string>
   <string name="notify_vibration_setting">震动</string>
   <string name="notify_sound_setting">声音</string>
   <string name="notify_sound_setting_default">默认铃声</string>
@@ -576,10 +473,6 @@
   <string name="mailbox_setup_connecting">正在连接到 Mailbox…</string>
   <!--This string is shown when connecting to a Mailbox for the first time. The placeholder will be replaced with a duration, e.g. "2 minutes".-->
   <string name="mailbox_setup_connecting_info">这可能最多需要 %1s 分钟</string>
-  <string name="mailbox_qr_code_too_old">你已经扫过的二维码来自旧版本的 Zerion Mailbox。\n\n请升级 Zerion Mailbox 到最新版本后再试一次</string>
-  <string name="mailbox_qr_code_too_new">你已经扫过的二维码来自新版本的 Zerion Mailbox。\n\n请升级 Zerion 到最新版本后再试一次。</string>
-  <string name="contact_qr_code_for_mailbox">你已经扫过的二维码的用途是添加 Zerion 联系人。\n\n如果你想添加联系人，请转到联系人列表，并轻按 + 图标。</string>
-  <string name="mailbox_setup_qr_code_wrong_description">你已经扫过的二维码不是来自 Zerion Mailbox。\n\n请在装有 Mailbox 应用的设备商上打开 Zerion Mailbox 并扫描该应用显示的二维码。</string>
   <string name="mailbox_setup_already_paired_title">Mailbox 已链接</string>
   <string name="mailbox_setup_already_paired_description">取消链接你其他设备上的 Mailbox 并重试。</string>
   <string name="mailbox_setup_io_error_title">无法连接</string>
@@ -730,8 +623,6 @@
   <string name="permission_bluetooth_title">“附近设备”权限</string>
   <string name="permission_bluetooth_body">要使用蓝牙通信，Zerion 需要发现并连接到附近设备的权限。</string>
   <string name="permission_bluetooth_denied_body">你拒绝了对附近设备的访问权，但 Zerion 需要这个权限才能使用蓝牙。\n\n请考虑授予权限。</string>
-  <string name="qr_code">二维码</string>
-  <string name="show_qr_code_fullscreen">全屏显示二维码</string>
   <!--App Locking-->
   <string name="lock_unlock">解锁 Zerion</string>
   <string name="lock_unlock_verbose">输入您设备的 PIN 码，图案或密码以解锁 Zerion</string>
@@ -761,9 +652,7 @@
   <string name="wifi_settings_request_enable_body">要创建 Wi-Fi 热点，Zerion 需要使用 Wi-Fi。请允许它。</string>
   <string name="hotspot_tab_manual">手动</string>
   <!--The placeholder to be inserted into the string 'hotspot_manual_wifi': People can connect by %s-->
-  <string name="hotspot_scanning_a_qr_code">扫描一个二维码</string>
   <!--Wi-Fi setup-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_wifi">你的手机正提供 Wi-Fi 热点。想下载 Zerion 的人可以连接到此热点，方法是使用以下详细信息在设备的 Wi-Fi 设置中进行添加或通过 %s。当他们连接到热点，按 “下一步”。</string>
   <string name="hotspot_manual_wifi_ssid">网络名称</string>
   <string name="hotspot_qr_wifi">你的手机提供了 Wi-Fi 热点。想下载 Zerion 的人可以通过扫描这个二维码连接到热点。当他们连接到热点，按“下一步”。</string>
@@ -773,7 +662,6 @@
     <item quantity="other">已连接%s 台设备</item>
   </plurals>
   <!--Download link-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_site">你的手机提供了Wi-Fi热点。连接到该热点的用户可以下载 Zerion，方法是在浏览器中输入以下链接或 %s</string>
   <string name="hotspot_manual_site_address">地址 (URL)</string>
   <string name="hotspot_qr_site">你的手机正提供 Wi-Fi 热点。连接到这个热点的人可以通过扫描这个二维码下载 Zerion。</string>

@@ -6,9 +6,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.Immutable;
 
-/**
- * An event that is broadcast when a group is removed from the database.
- */
+
 @Immutable
 @NotNullByDefault
 public class GroupRemovedEvent extends Event {

@@ -7,9 +7,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.Immutable;
 
-/**
- * An event that is broadcast when a message state changed.
- */
+
 @Immutable
 @NotNullByDefault
 public class MessageStateChangedEvent extends Event {

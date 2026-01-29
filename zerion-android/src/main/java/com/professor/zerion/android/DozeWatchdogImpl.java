@@ -18,7 +18,6 @@ import static android.os.Build.VERSION.SDK_INT;
 import static android.os.PowerManager.ACTION_DEVICE_IDLE_MODE_CHANGED;
 import static android.os.PowerManager.ACTION_DEVICE_LIGHT_IDLE_MODE_CHANGED;
 import static android.os.PowerManager.ACTION_LOW_POWER_STANDBY_ENABLED_CHANGED;
-import static java.util.logging.Level.WARNING;
 import static org.briarproject.bramble.util.AndroidUtils.registerReceiver;
 
 class DozeWatchdogImpl implements DozeWatchdog, Service {

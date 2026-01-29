@@ -17,6 +17,11 @@ public class NetworkMetrics {
 	private long previousLatencyMs = 0;
 	private long totalJitter = 0;
 	private long jitterSamples = 0;
+	private double ewmaJitterMs = 0;
+	private static final double EWMA_ALPHA = 0.1;
+
+	private long underrunCount = 0;
+	private long writeErrors = 0;
 
 	public static final int SIGNAL_EXCELLENT = 5;
 	public static final int SIGNAL_GOOD = 4;
@@ -59,6 +64,8 @@ public class NetworkMetrics {
 			long jitter = Math.abs(latencyMs - previousLatencyMs);
 			totalJitter += jitter;
 			jitterSamples++;
+			ewmaJitterMs = ewmaJitterMs == 0 ? jitter :
+					(EWMA_ALPHA * jitter) + ((1.0 - EWMA_ALPHA) * ewmaJitterMs);
 		}
 		previousLatencyMs = latencyMs;
 	}
@@ -74,6 +81,26 @@ public class NetworkMetrics {
 
 	public synchronized long getAverageJitter() {
 		return jitterSamples > 0 ? totalJitter / jitterSamples : 0;
+	}
+
+	public synchronized long getEwmaJitter() {
+		return (long) ewmaJitterMs;
+	}
+
+	public synchronized void recordUnderrun() {
+		underrunCount++;
+	}
+
+	public synchronized void recordWriteError() {
+		writeErrors++;
+	}
+
+	public synchronized long getUnderrunCount() {
+		return underrunCount;
+	}
+
+	public synchronized long getWriteErrors() {
+		return writeErrors;
 	}
 
 	public synchronized double getPacketLossPercentage() {
@@ -145,6 +172,9 @@ public class NetworkMetrics {
 		previousLatencyMs = 0;
 		totalJitter = 0;
 		jitterSamples = 0;
+		ewmaJitterMs = 0;
+		underrunCount = 0;
+		writeErrors = 0;
 	}
 
 	public synchronized String getSummary() {

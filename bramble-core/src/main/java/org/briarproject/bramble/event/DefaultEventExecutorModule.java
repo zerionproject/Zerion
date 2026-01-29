@@ -12,11 +12,7 @@ import dagger.Provides;
 
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 
-/**
- * Default implementation of {@link EventExecutor} that uses a dedicated thread
- * to notify listeners of events. Applications may prefer to supply an
- * implementation that uses an existing thread, such as the UI thread.
- */
+
 @Module
 public class DefaultEventExecutorModule {
 

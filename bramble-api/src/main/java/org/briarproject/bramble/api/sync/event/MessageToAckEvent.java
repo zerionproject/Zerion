@@ -6,10 +6,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.Immutable;
 
-/**
- * An event that is broadcast when a message is received from, or offered by, a
- * contact and needs to be acknowledged.
- */
+
 @Immutable
 @NotNullByDefault
 public class MessageToAckEvent extends Event {

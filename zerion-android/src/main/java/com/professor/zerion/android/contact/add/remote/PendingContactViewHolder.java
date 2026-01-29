@@ -43,16 +43,12 @@ class PendingContactViewHolder extends ViewHolder {
 	public void bind(PendingContactItem item) {
 		PendingContact p = item.getPendingContact();
 		String alias = p.getAlias();
-
-		// Set avatar with first letter of alias
 		if (alias != null && !alias.isEmpty()) {
 			avatar.setText(String.valueOf(alias.charAt(0)));
 		} else {
 			avatar.setText("?");
 		}
 		avatar.setBackgroundBytes(p.getId().getBytes());
-
-		// Set contact name prominently
 		name.setText(alias != null && !alias.isEmpty() ? alias : "Unknown");
 
 		time.setText(formatDate(time.getContext(), p.getTimestamp()));
@@ -60,14 +56,10 @@ class PendingContactViewHolder extends ViewHolder {
 			listener.onPendingContactItemRemoved(item);
 			removeButton.setEnabled(false);
 		});
-
-		// Default colors
 		int cyanColor = ContextCompat.getColor(status.getContext(), R.color.zerion_cyan);
 		int secondaryColor = ContextCompat.getColor(status.getContext(), R.color.zerion_text_secondary);
 		int errorColor = ContextCompat.getColor(status.getContext(), R.color.zerion_error_red);
 		int successColor = ContextCompat.getColor(status.getContext(), R.color.zerion_success_green);
-
-		// Default state
 		boolean showSpinner = false;
 		int statusColor = secondaryColor;
 		int indicatorColor = cyanColor;
@@ -108,21 +100,15 @@ class PendingContactViewHolder extends ViewHolder {
 		}
 
 		status.setTextColor(statusColor);
-
-		// Update status indicator color
 		if (statusIndicator != null) {
 			statusIndicator.getBackground().setTint(indicatorColor);
 		}
-
-		// Show/hide connecting spinner
 		if (connectingIndicator != null) {
 			connectingIndicator.setVisibility(showSpinner ? View.VISIBLE : View.GONE);
 			if (showSpinner) {
 				connectingIndicator.setIndicatorColor(indicatorColor);
 			}
 		}
-
-		// Adjust status text margin based on spinner visibility
 		android.view.ViewGroup.MarginLayoutParams params =
 				(android.view.ViewGroup.MarginLayoutParams) status.getLayoutParams();
 		int margin = showSpinner ? (int) (8 * status.getContext().getResources().getDisplayMetrics().density) : 0;

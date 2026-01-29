@@ -25,7 +25,6 @@ class BackoffImpl implements Backoff {
 	@Override
 	public int getPollingInterval() {
 		double multiplier = Math.pow(base, backoff.get());
-		// Large or infinite values will be rounded to Integer.MAX_VALUE
 		int interval = (int) (minInterval * multiplier);
 		return Math.min(interval, maxInterval);
 	}

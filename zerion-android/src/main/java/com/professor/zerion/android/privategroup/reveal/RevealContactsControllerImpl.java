@@ -118,7 +118,7 @@ class RevealContactsControllerImpl extends DbControllerImpl
 				settings.putBoolean(SHOW_ONBOARDING_REVEAL_CONTACTS, false);
 				settingsManager.mergeSettings(settings, SETTINGS_NAMESPACE);
 			} catch (DbException e) {
-				/* silent */
+				
 			}
 		});
 	}
@@ -131,7 +131,7 @@ class RevealContactsControllerImpl extends DbControllerImpl
 				try {
 					groupInvitationManager.revealRelationship(c, g);
 				} catch (ProtocolStateException e) {
-					/* silent */
+					
 				} catch (DbException e) {
 					handler.onException(e);
 					break;

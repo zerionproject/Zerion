@@ -25,8 +25,6 @@ public class AutoDeleteModule {
 			AutoDeleteManagerImpl autoDeleteManager) {
 		lifecycleManager.registerOpenDatabaseHook(autoDeleteManager);
 		contactManager.registerContactHook(autoDeleteManager);
-		// Don't need to register with the client versioning manager as this
-		// client's groups aren't shared with contacts
 		return autoDeleteManager;
 	}
 }

@@ -8,7 +8,6 @@ import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.ParcelFileDescriptor;
 import android.provider.OpenableColumns;
-import android.util.Log;
 import android.webkit.MimeTypeMap;
 
 import org.briarproject.bramble.api.db.DbException;
@@ -23,13 +22,9 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
-import java.util.logging.Logger;
-
 import androidx.annotation.Nullable;
 
 import static java.util.Arrays.asList;
-import static java.util.logging.Level.WARNING;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.util.AndroidUtils.getSupportedImageContentTypes;
 import static org.briarproject.bramble.util.IoUtils.tryToClose;
 import static com.professor.zerion.android.attachment.media.ImageCompressor.MIME_TYPE;
@@ -40,10 +35,6 @@ import java.util.Set;
 
 @NotNullByDefault
 class AttachmentCreationTask {
-
-	private static final Logger LOG =
-			getLogger(AttachmentCreationTask.class.getName());
-
 	private static final Set<String> SUPPORTED_AUDIO_TYPES = new HashSet<>(asList(
 			"audio/opus",
 			"audio/ogg",
@@ -129,7 +120,6 @@ class AttachmentCreationTask {
 	private AttachmentHeader storeAttachment(Uri uri)
 			throws IOException, DbException, ChunkedAttachmentsNotSupportedException {
 		String contentType = contentResolver.getType(uri);
-		// Fallback: get MIME type from file extension if ContentResolver returns null
 		if (contentType == null) {
 			contentType = getMimeTypeFromExtension(uri);
 		}
@@ -163,8 +153,6 @@ class AttachmentCreationTask {
 		if (fileSize > MAX_ATTACHMENT_SIZE) {
 			throw new org.briarproject.briar.api.attachment.FileTooBigException();
 		}
-
-		// Log video metadata for codec debugging
 		if (contentType != null && contentType.startsWith("video/")) {
 			logSenderVideoMetadata(uri, contentType, fileSize);
 		}
@@ -190,7 +178,7 @@ class AttachmentCreationTask {
 			return messagingManager.addLocalAttachmentStreaming(
 					groupId, timestamp, contentType, is, fileSize, progressCallback);
 		} finally {
-			tryToClose(is, LOG, WARNING);
+			tryToClose(is);
 		}
 	}
 
@@ -210,7 +198,7 @@ class AttachmentCreationTask {
 		long timestamp = System.currentTimeMillis();
 		AttachmentHeader h = messagingManager.addLocalAttachment(groupId,
 				timestamp, MIME_TYPE, is);
-		tryToClose(is, LOG, WARNING);
+		tryToClose(is);
 		return h;
 	}
 
@@ -226,7 +214,6 @@ class AttachmentCreationTask {
 				}
 			}
 		} catch (Exception e) {
-			LOG.log(WARNING, "Failed to query file size", e);
 		} finally {
 			if (cursor != null) {
 				cursor.close();
@@ -257,8 +244,6 @@ class AttachmentCreationTask {
 			info.append("uri=").append(uri.toString()).append(", ");
 			info.append("contentType=").append(contentType).append(", ");
 			info.append("fileSize=").append(fileSize).append("bytes, ");
-
-			// Use MediaMetadataRetriever with content URI
 			MediaMetadataRetriever retriever = new MediaMetadataRetriever();
 			try {
 				pfd = contentResolver.openFileDescriptor(uri, "r");
@@ -286,8 +271,6 @@ class AttachmentCreationTask {
 			} finally {
 				retriever.release();
 			}
-
-			// Try to get codec info using MediaExtractor
 			MediaExtractor extractor = new MediaExtractor();
 			try {
 				pfd = contentResolver.openFileDescriptor(uri, "r");
@@ -304,7 +287,6 @@ class AttachmentCreationTask {
 							if (format.containsKey(MediaFormat.KEY_LEVEL)) {
 								info.append(" level=").append(format.getInteger(MediaFormat.KEY_LEVEL));
 							}
-							// Check for HEVC
 							if (mime.contains("hevc") || mime.contains("hev1") || mime.contains("hvc1")) {
 								info.append(" [HEVC/H.265]");
 							} else if (mime.contains("avc") || mime.contains("h264")) {
@@ -318,10 +300,8 @@ class AttachmentCreationTask {
 				extractor.release();
 			}
 
-			Log.i("VideoCodecInfo", info.toString());
 
 		} catch (Exception e) {
-			Log.e("VideoCodecInfo", "[SENDER] Failed to extract metadata from " + uri + ": " + e.getMessage());
 		} finally {
 			if (pfd != null) {
 				try {

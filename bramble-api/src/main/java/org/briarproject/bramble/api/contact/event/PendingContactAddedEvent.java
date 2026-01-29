@@ -6,9 +6,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.Immutable;
 
-/**
- * An event that is broadcast when a pending contact is added.
- */
+
 @Immutable
 @NotNullByDefault
 public class PendingContactAddedEvent extends Event {

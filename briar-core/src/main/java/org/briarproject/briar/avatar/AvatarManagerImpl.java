@@ -78,22 +78,17 @@ class AvatarManagerImpl implements AvatarManager, OpenDatabaseHook, ContactHook,
 
 	@Override
 	public void onDatabaseOpened(Transaction txn) throws DbException {
-		// Create our avatar group if necessary
 		LocalAuthor a = identityManager.getLocalAuthor(txn);
 		Group ourGroup = getGroup(a.getId());
 		if (db.containsGroup(txn, ourGroup.getId())) return;
 		db.addGroup(txn, ourGroup);
-
-		// Set things up for any pre-existing contacts
 		for (Contact c : db.getContacts(txn)) addingContact(txn, c);
 	}
 
 	@Override
 	public void addingContact(Transaction txn, Contact c) throws DbException {
-		// Create a group to share with the contact
 		Group theirGroup = getGroup(c.getAuthor().getId());
 		db.addGroup(txn, theirGroup);
-		// Attach the contact ID to the group
 		BdfDictionary d = new BdfDictionary();
 		d.put(GROUP_KEY_CONTACT_ID, c.getId().getInt());
 		try {
@@ -101,7 +96,6 @@ class AvatarManagerImpl implements AvatarManager, OpenDatabaseHook, ContactHook,
 		} catch (FormatException e) {
 			throw new AssertionError(e);
 		}
-		// Apply the client's visibility to our and their group
 		Group ourGroup = getOurGroup(txn);
 		Visibility client = clientVersioningManager.getClientVisibility(txn,
 				c.getId(), CLIENT_ID, MAJOR_VERSION);
@@ -117,7 +111,6 @@ class AvatarManagerImpl implements AvatarManager, OpenDatabaseHook, ContactHook,
 	@Override
 	public void onClientVisibilityChanging(Transaction txn, Contact c,
 			Visibility v) throws DbException {
-		// Apply the client's visibility to our and the contact group
 		Group ourGroup = getOurGroup(txn);
 		Group theirGroup = getGroup(c.getAuthor().getId());
 		db.setGroupVisibility(txn, c.getId(), ourGroup.getId(), v);
@@ -133,16 +126,13 @@ class AvatarManagerImpl implements AvatarManager, OpenDatabaseHook, ContactHook,
 					"Received incoming message in my avatar group");
 		}
 		try {
-			// Find the latest update, if any
 			BdfDictionary d = metadataParser.parse(meta);
 			LatestUpdate latest = findLatest(txn, m.getGroupId());
 			if (latest != null) {
 				if (d.getLong(MSG_KEY_VERSION) > latest.version) {
-					// This update is newer - delete the previous update
 					db.deleteMessage(txn, latest.messageId);
 					db.deleteMessageMetadata(txn, latest.messageId);
 				} else {
-					// We've already received a newer update - delete this one
 					db.deleteMessage(txn, m.getId());
 					db.deleteMessageMetadata(txn, m.getId());
 					return ACCEPT_DO_NOT_SHARE;
@@ -162,7 +152,6 @@ class AvatarManagerImpl implements AvatarManager, OpenDatabaseHook, ContactHook,
 	@Override
 	public AttachmentHeader addAvatar(String contentType, InputStream in)
 			throws DbException, IOException {
-		// find latest avatar
 		GroupId groupId;
 		LatestUpdate latest;
 		Transaction txn = db.startTransaction(true);
@@ -174,22 +163,16 @@ class AvatarManagerImpl implements AvatarManager, OpenDatabaseHook, ContactHook,
 			db.endTransaction(txn);
 		}
 		long version = latest == null ? 0 : latest.version + 1;
-		// encode message and metadata
 		Pair<Message, BdfDictionary> encodedMessage = avatarMessageEncoder
 				.encodeUpdateMessage(groupId, version, contentType, in);
 		Message m = encodedMessage.getFirst();
 		BdfDictionary meta = encodedMessage.getSecond();
-		// save/send avatar and delete old one
 		return db.transactionWithResult(false, txn2 -> {
-			// re-query latest update as it might have changed since last query
 			LatestUpdate newLatest = findLatest(txn2, groupId);
 			if (newLatest != null && newLatest.version > version) {
-				// latest update is newer than our own
-				// no need to store or delete anything, just return latest
 				return new AttachmentHeader(groupId, newLatest.messageId,
 						newLatest.contentType);
 			} else if (newLatest != null) {
-				// delete latest update if it has the same or lower version
 				db.deleteMessage(txn2, newLatest.messageId);
 				db.deleteMessageMetadata(txn2, newLatest.messageId);
 			}

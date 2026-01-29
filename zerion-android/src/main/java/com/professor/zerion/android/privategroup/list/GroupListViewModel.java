@@ -47,8 +47,6 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
 import static java.util.Objects.requireNonNull;
-import static org.briarproject.bramble.util.LogUtils.logDuration;
-import static org.briarproject.bramble.util.LogUtils.now;
 import static org.briarproject.briar.api.privategroup.PrivateGroupManager.CLIENT_ID;
 
 @MethodsNotNullByDefault
@@ -134,7 +132,6 @@ class GroupListViewModel extends DbViewModel implements EventListener {
 
 	@DatabaseExecutor
 	private List<GroupItem> loadGroups(Transaction txn) throws DbException {
-		long start = now();
 		Collection<PrivateGroup> groups = groupManager.getPrivateGroups(txn);
 		List<GroupItem> items = new ArrayList<>(groups.size());
 		Map<AuthorId, AuthorInfo> authorInfos = new HashMap<>();

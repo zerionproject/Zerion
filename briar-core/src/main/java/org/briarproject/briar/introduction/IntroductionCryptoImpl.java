@@ -107,7 +107,6 @@ class IntroductionCryptoImpl implements IntroductionCrypto {
 	@SuppressWarnings("ConstantConditions")
 	public byte[] authMac(SecretKey macKey, IntroduceeSession s,
 			AuthorId localAuthorId) {
-		// the macKey is not yet available in the session at this point
 		return authMac(macKey, s.getIntroducer().getId(), localAuthorId,
 				s.getLocal(), s.getRemote());
 	}
@@ -135,7 +134,6 @@ class IntroductionCryptoImpl implements IntroductionCrypto {
 	void verifyAuthMac(byte[] mac, SecretKey macKey, AuthorId introducerId,
 			AuthorId localAuthorId, Common local, AuthorId remoteAuthorId,
 			Common remote) throws GeneralSecurityException {
-		// switch input for verification
 		byte[] inputs = getAuthMacInputs(introducerId, remoteAuthorId, remote,
 				localAuthorId, local);
 		if (!crypto.verifyMac(mac, LABEL_AUTH_MAC, macKey, inputs)) {

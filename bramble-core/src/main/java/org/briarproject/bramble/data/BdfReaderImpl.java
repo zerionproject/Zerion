@@ -56,7 +56,6 @@ final class BdfReaderImpl implements BdfReader {
 	private void readLookahead() throws IOException {
 		if (eof) return;
 		if (hasLookahead) throw new IllegalStateException();
-		// Read a lookahead byte
 		int i = in.read();
 		if (i == -1) {
 			eof = true;
@@ -193,7 +192,6 @@ final class BdfReaderImpl implements BdfReader {
 		readIntoBuffer(2);
 		short value = (short) (((buf[0] & 0xFF) << 8) + (buf[1] & 0xFF));
 		if (canonical && value >= Byte.MIN_VALUE && value <= Byte.MAX_VALUE) {
-			// Value could have been encoded as an INT_8
 			throw new FormatException();
 		}
 		return value;
@@ -204,7 +202,6 @@ final class BdfReaderImpl implements BdfReader {
 		int value = 0;
 		for (int i = 0; i < 4; i++) value |= (buf[i] & 0xFF) << (24 - i * 8);
 		if (canonical && value >= Short.MIN_VALUE && value <= Short.MAX_VALUE) {
-			// Value could have been encoded as an INT_16
 			throw new FormatException();
 		}
 		return value;
@@ -216,7 +213,6 @@ final class BdfReaderImpl implements BdfReader {
 		for (int i = 0; i < 8; i++) value |= (buf[i] & 0xFFL) << (56 - i * 8);
 		if (canonical && value >= Integer.MIN_VALUE &&
 				value <= Integer.MAX_VALUE) {
-			// Value could have been encoded as an INT_32
 			throw new FormatException();
 		}
 		return value;
@@ -412,7 +408,6 @@ final class BdfReaderImpl implements BdfReader {
 		while (!hasEnd()) {
 			String key = readString();
 			if (canonical && prevKey != null && key.compareTo(prevKey) <= 0) {
-				// Keys not unique and sorted
 				throw new FormatException();
 			}
 			dictionary.put(key, readObject(level + 1));

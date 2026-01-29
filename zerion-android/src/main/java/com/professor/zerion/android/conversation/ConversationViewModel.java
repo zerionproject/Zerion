@@ -131,8 +131,6 @@ public class ConversationViewModel extends DbViewModel
 			new java.util.concurrent.ConcurrentHashMap<>();
 	private final MutableLiveData<ConversationItem> replyTarget =
 			new MutableLiveData<>();
-
-	// Message loading state
 	private final MutableLiveData<Collection<ConversationMessageHeader>> messageHeaders =
 			new MutableLiveData<>();
 	private final MutableLiveData<Map<MessageId, String>> messageTexts =
@@ -151,8 +149,6 @@ public class ConversationViewModel extends DbViewModel
 			new MutableLiveEvent<>();
 	private final MutableLiveEvent<ClientId> clientVersionUpdated =
 			new MutableLiveEvent<>();
-
-	// Event for marking messages sent/seen
 	static class MarkMessagesEvent {
 		final Collection<MessageId> messageIds;
 		final boolean sent;
@@ -203,8 +199,6 @@ public class ConversationViewModel extends DbViewModel
 		super.onCleared();
 		attachmentCreator.cancel();
 		eventBus.removeListener(this);
-
-		// SECURITY: Zeroize voice recording state when ViewModel is destroyed
 		zeroizeVoiceRecordingState();
 	}
 
@@ -486,8 +480,6 @@ public class ConversationViewModel extends DbViewModel
 	Pair<MessageId, String> getReplyContext(MessageId messageId) {
 		return replyContextMap.get(messageId);
 	}
-
-	// Voice message encryption state
 	private final java.util.List<byte[]> encryptedVoiceChunks = new java.util.ArrayList<>();
 	private final java.util.List<byte[]> encryptedChunkTags = new java.util.ArrayList<>();
 	private byte[] currentIv;
@@ -497,7 +489,6 @@ public class ConversationViewModel extends DbViewModel
 
 	@UiThread
 	GroupId prepareVoiceRecording() {
-		// Called before recording starts to get GroupId for AAD context
 		try {
 			Contact contact = requireNonNull(contactItem.getValue()).getContact();
 			GroupId groupId = messagingManager.getContactGroup(contact).getId();
@@ -510,8 +501,6 @@ public class ConversationViewModel extends DbViewModel
 
 	@UiThread
 	void onEncryptionInit(byte[] iv, byte[] sessionKey) {
-		// SYNC: Store directly on UI thread to avoid race conditions
-		// These fields are only accessed from UI thread callbacks and DB thread (sequentially)
 		synchronized (encryptedVoiceChunks) {
 			currentIv = java.util.Arrays.copyOf(iv, iv.length);
 			wrappedKey = java.util.Arrays.copyOf(sessionKey, sessionKey.length);
@@ -521,9 +510,7 @@ public class ConversationViewModel extends DbViewModel
 
 	@UiThread
 	void appendEncryptedAudioChunk(byte[] encrypted, int len, byte[] tagPart) {
-		// SYNC: Store directly on UI thread to avoid race conditions
 		synchronized (encryptedVoiceChunks) {
-			// Store each chunk with its actual length (not concatenated)
 			byte[] chunk = java.util.Arrays.copyOf(encrypted, len);
 			encryptedVoiceChunks.add(chunk);
 			encryptedChunkTags.add(java.util.Arrays.copyOf(tagPart, tagPart.length));
@@ -532,9 +519,6 @@ public class ConversationViewModel extends DbViewModel
 
 	@UiThread
 	void finalizeEncryptedVoiceMessage(byte[] globalMAC, int totalDurationMs, int chunkCount) {
-		// SYNC: Capture all data under lock on UI thread, then pass copies to DB thread
-		// CRITICAL: Use totalDurationMs from recorder - this MUST match the value used for globalMAC computation
-		// Previously we recalculated duration here which caused MAC verification failures!
 		final byte[] ivCopy;
 		final byte[] wrappedKeyCopy;
 		final java.util.List<byte[]> chunksCopy;
@@ -542,15 +526,12 @@ public class ConversationViewModel extends DbViewModel
 
 		synchronized (encryptedVoiceChunks) {
 			if (currentIv == null || wrappedKey == null || encryptedVoiceChunks.isEmpty()) {
-				// Data not ready - abort
 				zeroizeVoiceRecordingState();
 				return;
 			}
 
 			ivCopy = java.util.Arrays.copyOf(currentIv, currentIv.length);
 			wrappedKeyCopy = java.util.Arrays.copyOf(wrappedKey, wrappedKey.length);
-
-			// CRITICAL: Deep copy chunks and tags - shallow copy would be zeroized by zeroizeVoiceRecordingState()
 			chunksCopy = new java.util.ArrayList<>(encryptedVoiceChunks.size());
 			for (byte[] chunk : encryptedVoiceChunks) {
 				chunksCopy.add(java.util.Arrays.copyOf(chunk, chunk.length));
@@ -559,8 +540,6 @@ public class ConversationViewModel extends DbViewModel
 			for (byte[] tag : encryptedChunkTags) {
 				tagsCopy.add(java.util.Arrays.copyOf(tag, tag.length));
 			}
-
-			// Zeroize immediately after copying
 			zeroizeVoiceRecordingState();
 		}
 
@@ -573,27 +552,23 @@ public class ConversationViewModel extends DbViewModel
 					wrappedKeyCopy,
 					chunksCopy,
 					tagsCopy,
-					totalDurationMs,  // Use duration from recorder, not recalculated
+					totalDurationMs,
 					globalMACCopy
 				);
 			} catch (Exception e) {
 				handleException(e);
 			}
-			// Note: storeEncryptedVoiceMessage already zeroizes its parameters in finally block
 		});
 	}
 
 	@UiThread
 	void cancelVoiceRecording() {
-		// SECURITY: Zeroize all crypto material when recording is cancelled
 		synchronized (encryptedVoiceChunks) {
 			zeroizeVoiceRecordingState();
 		}
 	}
 
 	private void zeroizeVoiceRecordingState() {
-		// SECURITY: Strict cleanup of all cryptographic material
-		// NOTE: Caller must hold lock on encryptedVoiceChunks
 		if (currentIv != null) {
 			java.util.Arrays.fill(currentIv, (byte) 0);
 			currentIv = null;
@@ -631,9 +606,6 @@ public class ConversationViewModel extends DbViewModel
 
 			long timestamp = db.transactionWithResult(false, txn ->
 				conversationManager.getTimestampForOutgoingMessage(txn, requireNonNull(contactId)));
-
-			// Create private message with encrypted voice payload
-			// Format: [VOICE:durationMs:base64payload]
 			String messageText = com.professor.zerion.android.conversation.voice.VoiceMessageFormat
 				.format(durationMs, payload);
 
@@ -663,11 +635,9 @@ public class ConversationViewModel extends DbViewModel
 		} catch (Exception e) {
 			handleException(new DbException(e));
 		} finally {
-			// SECURITY: Zeroize all sensitive data after DB storage
 			if (payload != null) {
 				java.util.Arrays.fill(payload, (byte) 0);
 			}
-			// Zeroize input parameters (builder doesn't zeroize them)
 			if (iv != null) java.util.Arrays.fill(iv, (byte) 0);
 			if (encryptedKey != null) java.util.Arrays.fill(encryptedKey, (byte) 0);
 			for (byte[] chunk : chunks) {
@@ -679,18 +649,7 @@ public class ConversationViewModel extends DbViewModel
 		}
 	}
 
-	// ==================== Voice Attachment Support (For Longer Recordings) ====================
-
-	/**
-	 * Store a voice recording as an attachment (for recordings > 3 seconds).
-	 * This uses the same attachment infrastructure as images, providing:
-	 * - Battle-tested security (TEMPORARY → PERMANENT lifecycle)
-	 * - Same encryption as other messages
-	 * - Automatic cleanup of orphaned attachments
-	 *
-	 * @param audioUri URI of the recorded audio file
-	 * @return LiveData tracking the attachment creation progress
-	 */
+	
 	@UiThread
 	LiveData<AttachmentResult> storeVoiceAttachment(android.net.Uri audioUri) {
 		java.util.Collection<android.net.Uri> uris = java.util.Collections.singleton(audioUri);
@@ -701,13 +660,7 @@ public class ConversationViewModel extends DbViewModel
 		return attachmentCreator.storeAttachments(messagingGroupId, uris, format);
 	}
 
-	/**
-	 * Send a voice message as an attachment.
-	 * Call this after storeVoiceAttachment completes successfully.
-	 *
-	 * @param expectedTimer Expected auto-delete timer value
-	 * @return LiveData tracking the send state
-	 */
+	
 	@UiThread
 	LiveData<SendState> sendVoiceAttachment(long expectedTimer) {
 		java.util.List<AttachmentHeader> headers = attachmentCreator.getAttachmentHeadersForSending();
@@ -716,24 +669,16 @@ public class ConversationViewModel extends DbViewModel
 			errorResult.setValue(SendState.ERROR);
 			return errorResult;
 		}
-		// Send as attachment without text
 		return sendMessage(null, headers, expectedTimer, null);
 	}
 
-	/**
-	 * Cancel voice attachment creation.
-	 */
+	
 	@UiThread
 	void cancelVoiceAttachment() {
 		attachmentCreator.cancel();
 	}
 
-	// ==================== Message Operations (Moved from Activity) ====================
-
-	/**
-	 * Load all message headers and texts for the current conversation.
-	 * Results are posted to messageHeaders and messageTexts LiveData.
-	 */
+	
 	void loadMessageHeaders() {
 		if (contactId == null) return;
 		messagesLoading.setValue(true);
@@ -755,10 +700,7 @@ public class ConversationViewModel extends DbViewModel
 		});
 	}
 
-	/**
-	 * Load message text for a specific message.
-	 * Result is posted to messageTextLoaded LiveEvent.
-	 */
+	
 	void loadMessageText(MessageId messageId) {
 		runOnDbThread(() -> {
 			try {
@@ -772,13 +714,10 @@ public class ConversationViewModel extends DbViewModel
 		});
 	}
 
-	/**
-	 * Delete selected messages from the conversation.
-	 */
+	
 	void deleteMessages(Collection<MessageId> messageIds) {
 		if (contactId == null || messageIds.isEmpty()) return;
 		final ContactId c = contactId;
-		// Post deletion immediately for UI responsiveness
 		messagesDeleted.postEvent(messageIds);
 		runOnDbThread(() -> {
 			try {
@@ -789,9 +728,7 @@ public class ConversationViewModel extends DbViewModel
 		});
 	}
 
-	/**
-	 * Clear all messages in the conversation.
-	 */
+	
 	void clearChat() {
 		if (contactId == null) return;
 		final ContactId c = contactId;
@@ -813,9 +750,7 @@ public class ConversationViewModel extends DbViewModel
 		});
 	}
 
-	/**
-	 * Remove the contact entirely.
-	 */
+	
 	void removeContact() {
 		if (contactId == null) return;
 		final ContactId c = contactId;
@@ -829,14 +764,10 @@ public class ConversationViewModel extends DbViewModel
 		});
 	}
 
-	/**
-	 * Mark messages as sent/seen. Called from EventBus event handlers.
-	 */
+	
 	void markMessages(Collection<MessageId> messageIds, boolean sent, boolean seen) {
 		messagesMarked.postEvent(new MarkMessagesEvent(messageIds, sent, seen));
 	}
-
-	// ==================== LiveData Getters for Message Operations ====================
 
 	LiveData<Collection<ConversationMessageHeader>> getMessageHeaders() {
 		return messageHeaders;
@@ -952,8 +883,6 @@ public class ConversationViewModel extends DbViewModel
 		replyTarget.setValue(null);
 	}
 
-	// ==================== Event LiveData Getters ====================
-
 	LiveData<Boolean> isContactConnected() {
 		return contactConnected;
 	}
@@ -966,10 +895,7 @@ public class ConversationViewModel extends DbViewModel
 		return clientVersionUpdated;
 	}
 
-	/**
-	 * Check initial connection status from ConnectionRegistry.
-	 * Called when Activity starts to set initial state.
-	 */
+	
 	void checkConnectionStatus(org.briarproject.bramble.api.connection.ConnectionRegistry registry) {
 		if (contactId != null) {
 			contactConnected.postValue(registry.isConnected(contactId));

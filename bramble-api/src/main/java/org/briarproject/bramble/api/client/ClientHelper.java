@@ -47,14 +47,7 @@ public interface ClientHelper {
 	BdfList getMessageAsList(Transaction txn, MessageId m) throws DbException,
 			FormatException;
 
-	/**
-	 * Transitional alternative to
-	 * {@link #getMessageAsList(Transaction, MessageId)} that allows the
-	 * message to be in non-canonical form, for backward compatibility.
-	 *
-	 * @param canonical True if the message must be in canonical form (a
-	 * {@link FormatException} will be thrown if it's not.
-	 */
+	
 	@Deprecated
 	BdfList getMessageAsList(Transaction txn, MessageId m, boolean canonical)
 			throws DbException, FormatException;
@@ -116,13 +109,7 @@ public interface ClientHelper {
 
 	BdfList toList(Message m) throws FormatException;
 
-	/**
-	 * Transitional alternative to {@link #toList(Message)} that allows the
-	 * message to be in non-canonical form, for backward compatibility.
-	 *
-	 * @param canonical True if the message must be in canonical form (a
-	 * {@link FormatException} will be thrown if it's not.
-	 */
+	
 	@Deprecated
 	BdfList toList(Message m, boolean canonical) throws FormatException;
 
@@ -146,17 +133,11 @@ public interface ClientHelper {
 	Map<TransportId, TransportProperties> parseAndValidateTransportPropertiesMap(
 			BdfDictionary properties) throws FormatException;
 
-	/**
-	 * Retrieves the contact ID from the group metadata of the given contact
-	 * group.
-	 */
+	
 	ContactId getContactId(Transaction txn, GroupId contactGroupId)
 			throws DbException;
 
-	/**
-	 * Stores the given contact ID in the group metadata of the given contact
-	 * group.
-	 */
+	
 	void setContactId(Transaction txn, GroupId contactGroupId, ContactId c)
 			throws DbException;
 }

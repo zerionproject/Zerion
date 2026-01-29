@@ -56,8 +56,6 @@ public class StartupActivity extends BaseActivity implements
 			if (deleted) onAccountDeleted();
 		});
 		viewModel.getState().observe(this, this::onStateChanged);
-
-		// Check account existence asynchronously to avoid blocking UI thread
 		viewModel.checkAccountExistsAsync(exists -> {
 			if (!exists) {
 				viewModel.deleteAccount();

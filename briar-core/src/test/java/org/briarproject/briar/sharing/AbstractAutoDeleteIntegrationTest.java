@@ -4,10 +4,8 @@ import org.briarproject.bramble.api.contact.Contact;
 import org.briarproject.bramble.api.db.DbException;
 import org.briarproject.bramble.api.sync.MessageId;
 import org.briarproject.briar.api.autodelete.event.ConversationMessagesDeletedEvent;
-import org.briarproject.briar.api.blog.Blog;
 import org.briarproject.briar.api.client.BaseGroup;
 import org.briarproject.briar.api.conversation.event.ConversationMessageReceivedEvent;
-import org.briarproject.briar.api.forum.Forum;
 import org.briarproject.briar.api.sharing.InvitationResponse;
 import org.briarproject.briar.api.sharing.Shareable;
 import org.briarproject.briar.api.sharing.SharingInvitationItem;
@@ -25,7 +23,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public abstract class AbstractAutoDeleteIntegrationTest
 		extends AbstractAutoDeleteTest {
@@ -233,17 +230,9 @@ public abstract class AbstractAutoDeleteIntegrationTest
 				getSharingManager1().getInvitations().iterator().next();
 		assertEquals(getShareable(), invitation.getShareable());
 		Contact c = contactManager1.getContact(contactId0From1);
-		if (getShareable() instanceof Blog) {
-			//noinspection unchecked
-			((SharingManager<Blog>) getSharingManager1()).respondToInvitation(
-					(Blog) getShareable(), c, true);
-		} else if (getShareable() instanceof Forum) {
-			//noinspection unchecked
-			((SharingManager<Forum>) getSharingManager1()).respondToInvitation(
-					(Forum) getShareable(), c, true);
-		} else {
-			fail();
-		}
+		//noinspection unchecked
+		((SharingManager<Shareable>) getSharingManager1()).respondToInvitation(
+				getShareable(), c, true);
 
 		// Sync the invitation response message to 0
 		sync1To0(1, true);

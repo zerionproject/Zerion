@@ -260,8 +260,6 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 				}
 			}
 		}
-
-		// Mode 3 enforcement: if session is Mode 3, require PQ capability flag
 		if (mode3Enabled && !pcsHeader.isPqEnabled()) {
 			throw new FormatException();
 		}
