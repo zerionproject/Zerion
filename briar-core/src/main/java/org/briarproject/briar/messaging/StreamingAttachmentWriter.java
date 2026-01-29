@@ -20,14 +20,9 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
-
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
-
-import static java.util.logging.Level.WARNING;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.briar.api.attachment.MediaConstants.CHUNK_SIZE;
 import static org.briarproject.briar.api.attachment.MediaConstants.MAX_ATTACHMENT_SIZE;
 import static org.briarproject.briar.api.attachment.MediaConstants.MAX_CHUNK_COUNT;
@@ -48,10 +43,6 @@ import static org.briarproject.briar.api.attachment.MediaConstants.MSG_KEY_DESCR
 @Immutable
 @NotNullByDefault
 public class StreamingAttachmentWriter {
-
-	private static final Logger LOG =
-			getLogger(StreamingAttachmentWriter.class.getName());
-
 	private static final int STREAMING_THRESHOLD = CHUNK_SIZE;
 
 	private final DatabaseComponent db;
@@ -139,7 +130,6 @@ public class StreamingAttachmentWriter {
 			try {
 				is.close();
 			} catch (IOException e) {
-				LOG.log(WARNING, "Failed to close input stream", e);
 			}
 		}
 	}
@@ -199,15 +189,12 @@ public class StreamingAttachmentWriter {
 			return new AttachmentHeader(groupId, manifestId, contentType);
 
 		} catch (DbException | IOException e) {
-			LOG.log(WARNING, "storeChunkedAttachment failed: " +
-					e.getClass().getSimpleName() + " - " + e.getMessage(), e);
 			cleanupOrphanedChunks(chunkMessageIds);
 			throw e;
 		} finally {
 			try {
 				inputStream.close();
 			} catch (IOException e) {
-				LOG.log(WARNING, "Failed to close input stream", e);
 			}
 		}
 	}
@@ -302,12 +289,10 @@ public class StreamingAttachmentWriter {
 					try {
 						db.deleteMessage(txn, chunkId);
 					} catch (DbException e) {
-						LOG.log(WARNING, "Failed to delete orphaned chunk", e);
 					}
 				}
 			});
 		} catch (DbException e) {
-			LOG.log(WARNING, "Failed to cleanup orphaned chunks", e);
 		}
 	}
 

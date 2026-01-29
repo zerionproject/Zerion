@@ -17,22 +17,12 @@ import javax.annotation.concurrent.ThreadSafe;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MAX_SKIP;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MAX_SKIP_AGE_MS;
 
-/**
- * In-memory implementation of SkippedKeyStore for testing and development.
- * <p>
- * This implementation stores skipped keys in memory with bounded storage
- * and automatic expiration. For production use, this should be replaced
- * with a persistent database-backed implementation.
- * <p>
- * Thread-safe through synchronized access.
- */
+
 @ThreadSafe
 @NotNullByDefault
 public class InMemorySkippedKeyStore implements SkippedKeyStore {
 
-	/**
-	 * Entry containing a skipped message key and its timestamp.
-	 */
+	
 	private static class SkippedKeyEntry {
 		final SecretKey messageKey;
 		final long timestamp;
@@ -43,9 +33,7 @@ public class InMemorySkippedKeyStore implements SkippedKeyStore {
 		}
 	}
 
-	/**
-	 * Key for looking up skipped keys: (chainId, messageNumber).
-	 */
+	
 	private static class SkippedKeyId {
 		final Bytes chainId;
 		final int messageNumber;
@@ -77,7 +65,6 @@ public class InMemorySkippedKeyStore implements SkippedKeyStore {
 	private final Map<Bytes, Integer> keysPerChain;
 
 	public InMemorySkippedKeyStore() {
-		// Use LinkedHashMap to maintain insertion order for LRU eviction
 		this.skippedKeys = new LinkedHashMap<>(16, 0.75f, true);
 		this.keysPerChain = new HashMap<>();
 	}
@@ -87,18 +74,12 @@ public class InMemorySkippedKeyStore implements SkippedKeyStore {
 			SecretKey messageKey, long timestamp) {
 		Bytes chainIdBytes = new Bytes(chainId);
 		SkippedKeyId keyId = new SkippedKeyId(chainId, messageNumber);
-
-		// Check if we need to evict oldest keys
 		int chainCount = keysPerChain.getOrDefault(chainIdBytes, 0);
 		if (chainCount >= MAX_SKIP) {
 			evictOldestKey(chainIdBytes);
 		}
-
-		// Store the new key
 		SkippedKeyEntry entry = new SkippedKeyEntry(messageKey, timestamp);
 		SkippedKeyEntry previous = skippedKeys.put(keyId, entry);
-
-		// Update count if this is a new key (not replacement)
 		if (previous == null) {
 			keysPerChain.put(chainIdBytes, chainCount + 1);
 		}
@@ -112,7 +93,6 @@ public class InMemorySkippedKeyStore implements SkippedKeyStore {
 		SkippedKeyEntry entry = skippedKeys.remove(keyId);
 
 		if (entry != null) {
-			// Decrement the count for this chain
 			Bytes chainIdBytes = new Bytes(chainId);
 			int count = keysPerChain.getOrDefault(chainIdBytes, 1);
 			if (count <= 1) {
@@ -143,8 +123,6 @@ public class InMemorySkippedKeyStore implements SkippedKeyStore {
 			Map.Entry<SkippedKeyId, SkippedKeyEntry> entry = iterator.next();
 			if (entry.getValue().timestamp < expirationThreshold) {
 				iterator.remove();
-
-				// Update chain count
 				Bytes chainIdBytes = entry.getKey().chainId;
 				int count = keysPerChain.getOrDefault(chainIdBytes, 1);
 				if (count <= 1) {
@@ -163,21 +141,15 @@ public class InMemorySkippedKeyStore implements SkippedKeyStore {
 	@Override
 	public synchronized void clearChain(byte[] chainId) {
 		Bytes chainIdBytes = new Bytes(chainId);
-
-		// Remove all keys for this chain
 		skippedKeys.entrySet().removeIf(
 				entry -> entry.getKey().chainId.equals(chainIdBytes));
 
 		keysPerChain.remove(chainIdBytes);
 	}
 
-	/**
-	 * Evicts the oldest key for the given chain to make room for a new one.
-	 * Must be called while synchronized.
-	 */
+	
 	@GuardedBy("this")
 	private void evictOldestKey(Bytes chainIdBytes) {
-		// Find the oldest entry for this chain (lowest message number)
 		SkippedKeyId oldestId = null;
 		long oldestTimestamp = Long.MAX_VALUE;
 
@@ -197,10 +169,7 @@ public class InMemorySkippedKeyStore implements SkippedKeyStore {
 		}
 	}
 
-	/**
-	 * Returns the total number of skipped keys stored across all chains.
-	 * For testing and monitoring purposes.
-	 */
+	
 	public synchronized int getTotalSkippedKeyCount() {
 		return skippedKeys.size();
 	}

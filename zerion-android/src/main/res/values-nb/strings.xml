@@ -64,8 +64,6 @@
   <string name="nav_drawer_close_description">Lukk navigasjonsskuffen</string>
   <string name="contact_list_button">Kontakter</string>
   <string name="groups_button">Private grupper</string>
-  <string name="forums_button">Forum</string>
-  <string name="blogs_button">Blogger</string>
   <!--This is part of the main menu. The app will be locked when this is tapped.-->
   <string name="lock_button">Lås appen</string>
   <string name="settings_button">Innstillinger</string>
@@ -100,14 +98,6 @@
   <plurals name="group_message_notification_text">
     <item quantity="one">Ny gruppemelding.</item>
     <item quantity="other">%d nye gruppemelindger.</item>
-  </plurals>
-  <plurals name="forum_post_notification_text">
-    <item quantity="one">Ny forumpost.</item>
-    <item quantity="other">%d nye forumposter.</item>
-  </plurals>
-  <plurals name="blog_post_notification_text">
-    <item quantity="one">Ny bloggpost.</item>
-    <item quantity="other">%d nye bloggposter.</item>
   </plurals>
   <!--Misc-->
   <string name="now">nå</string>
@@ -207,16 +197,12 @@
   <string name="menu_contact">Kontakt</string>
   <!--Adding Contacts-->
   <string name="add_contact_title">Legg til kontakt i nærheten</string>
-  <string name="face_to_face">Du må møte personen du ønsker å legge til som kontakt.\n\nDette vil forhindre folk fra å etterligne deg eller lese meldingene dine i fremtiden.</string>
   <string name="continue_button">Fortsett</string>
   <string name="try_again_button">Prøv igjen</string>
   <string name="waiting_for_contact_to_scan">Venter på at kontakten skal skanne og koble til\u2026</string>
   <string name="exchanging_contact_details">Utveksler kontaktdetaljer\u2026</string>
   <string name="contact_added_toast">Kontakt lagt til: %s</string>
   <string name="contact_already_exists">Kontakten %s finnes allerede</string>
-  <string name="qr_code_invalid">QR-koden er ugyldig</string>
-  <string name="qr_code_too_old_1">QR-koden du har skannet kommer fra en eldre versjon av Zerion.\n\nVennligst be din kontakt om å oppgradere til siste versjon og prøv på nytt.</string>
-  <string name="qr_code_too_new_1">QR-koden du har skannet kommer fra en nyere versjon av Zerion.\n\nVennligst oppgrader til den nyeste versjonen og prøv så på nytt.</string>
   <string name="camera_error">Kamerafeil</string>
   <string name="connecting_to_device">Kobler til enhet\u2026</string>
   <string name="authenticating_with_device">Autentiserer med enhet\u2026</string>
@@ -371,103 +357,26 @@
   <string name="groups_reveal_visible_revealed_by_contact">Kontaktforhold er synlige for gruppen (avslørt av %s)</string>
   <string name="groups_reveal_invisible">Kontaktforhold er ikke synlige for gruppen</string>
   <!--Forums-->
-  <string name="no_forums">Ingen forumer å vise</string>
-  <string name="no_forums_action">Trykk på «+»-ikonet for å lage et forum, eller be en av kontaktene dine om å dele forumer med deg</string>
-  <string name="create_forum_title">Opprett forum</string>
-  <string name="choose_forum_hint">Velg et navn for ditt forum</string>
-  <string name="create_forum_button">Opprett forum</string>
-  <string name="forum_created_toast">Forum opprettet</string>
-  <string name="no_forum_posts">Ingen poster å vise</string>
   <string name="no_posts">Ingen poster</string>
   <plurals name="posts">
     <item quantity="one">%d post</item>
     <item quantity="other">%d poster</item>
   </plurals>
-  <string name="forum_new_message_hint">Nytt innlegg</string>
-  <string name="forum_message_reply_hint">Nytt svar</string>
   <string name="btn_reply">Svar</string>
-  <string name="forum_leave">Forlat forum</string>
-  <string name="dialog_title_leave_forum">Bekreft forlating av forum</string>
-  <string name="dialog_message_leave_forum">Er du sikker på at du ønsker å forlate dette forumet?\n\nEnhver av dine kontakter som du har delt dette forumet med kan komme til å slutte å motta oppdateringer.</string>
   <string name="dialog_button_leave">Forlat</string>
-  <string name="forum_left_toast">Forum forlatt</string>
   <!--Forum Sharing-->
-  <string name="forum_share_button">Del forum</string>
   <string name="contacts_selected">Kontakter valgt</string>
   <string name="activity_share_toolbar_header">Velg kontakter</string>
   <string name="no_contacts_selector">Ingen kontakter å vise</string>
   <string name="no_contacts_selector_action">Vennligst kom tilbake hit etter at du har lagt til en kontakt</string>
-  <string name="forum_shared_snackbar">Forum delt med valgte kontakter</string>
-  <string name="forum_share_message">Legg til melding (valgfritt)</string>
-  <string name="forum_share_error">Feil ved deling av dette forumet.</string>
-  <string name="forum_invitation_received">%1$s har delt forumet \"%2$s\" med deg.</string>
-  <string name="forum_invitation_sent">Du har det forumet \"%1$s\" med %2$s.</string>
-  <string name="forum_invitations_title">Foruminvitasjoner</string>
-  <string name="forum_invitation_exists">Du har allerede akseptert en invitasjon til dette forumet.\n\nÅ akseptere flere invitasjoner vil gjøre din forbindelse til forumet raskere og mer pålitelig.</string>
-  <string name="forum_joined_toast">Sluttet seg til forum</string>
-  <string name="forum_declined_toast">Invitasjon avslått</string>
   <string name="shared_by_format">Delt av %s</string>
-  <string name="forum_invitation_already_sharing">Deler allerede</string>
-  <string name="forum_invitation_response_accepted_sent">Du godtok foruminvitasjonen fra %s.</string>
-  <string name="forum_invitation_response_declined_sent">Du avslo foruminvitasjonen fra %s.</string>
-  <string name="forum_invitation_response_declined_auto">Foruminvitasjonen fra %s ble automatisk avslått.</string>
-  <string name="forum_invitation_response_accepted_received">%s godtok foruminvitasjonen.</string>
-  <string name="forum_invitation_response_declined_received">%s avslo foruminvitasjonen.</string>
   <string name="sharing_status">Delingsstatus</string>
-  <string name="sharing_status_forum">Ethvert medlem av et forum kan dele det med sine kontakter. Du deler dette forumet med følgende kontakter. Det kan også være andre medlemmer du ikke kan se.</string>
   <string name="shared_with">Delt med %1$d (%2$d pålogget)</string>
-  <plurals name="forums_shared">
-    <item quantity="one">%d forum delt av kontakter</item>
-    <item quantity="other">%d forum delt av kontakter</item>
-  </plurals>
   <string name="nobody">Ingen</string>
   <!--Blogs-->
-  <string name="blogs_other_blog_empty_state">Ingen poster å vise</string>
   <string name="read_more">les mer</string>
-  <string name="blogs_write_blog_post">Skriv bloggpost</string>
-  <string name="blogs_write_blog_post_body_hint">Skriv ditt blogginnlegg</string>
-  <string name="blogs_publish_blog_post">Offentliggjør</string>
-  <string name="blogs_blog_post_created">Bloggpost opprettet</string>
-  <string name="blogs_blog_post_received">Ny bloggpost opprettet</string>
-  <string name="blogs_blog_post_scroll_to">Rull til</string>
-  <string name="blogs_feed_empty_state">Ingen poster å vise</string>
-  <string name="blogs_feed_empty_state_action">Innlegg fra dine kontakter og blogger du abonnerer på vil vises her\n\nTrykk på pennikonet for å skrive et innlegg</string>
-  <string name="blogs_remove_blog">Fjern blogg</string>
-  <string name="blogs_remove_blog_dialog_message">Er du sikker på at du ønsker å fjerne denne bloggen?\n\nInnlegg vil bli fjernet fra enheten, men vil ikke forsvinne fra andre personers enheter.\n\nEnhver kontakt som du har delt denne bloggen med kan komme til å slutte å motta oppdateringer.</string>
-  <string name="blogs_remove_blog_ok">Fjern</string>
-  <string name="blogs_blog_removed">Blogg fjernet</string>
-  <string name="blogs_reblog_comment_hint">Legg til en kommentar (valgfritt)</string>
-  <string name="blogs_reblog_button">Blogg dette</string>
   <!--Blog Sharing-->
-  <string name="blogs_sharing_share">Del blogg</string>
-  <string name="blogs_sharing_error">Feil under deling av denne bloggen.</string>
-  <string name="blogs_sharing_button">Del blogg</string>
-  <string name="blogs_sharing_snackbar">Blogg delt med valgte kontakter</string>
-  <string name="blogs_sharing_response_accepted_sent">Du godtok blogg-invitasjonen fra %s.</string>
-  <string name="blogs_sharing_response_declined_sent">Du avslo blogg-invitasjonen fra %s.</string>
-  <string name="blogs_sharing_response_declined_auto">Blogginvitasjonen fra %s ble automatisk avslått.</string>
-  <string name="blogs_sharing_response_accepted_received">%s godtok blogg-invitasjonen.</string>
-  <string name="blogs_sharing_response_declined_received">%s avslo blogg-invitasjonen.</string>
-  <string name="blogs_sharing_invitation_received">%1$s har delt bloggen \"%2$s\" med deg.</string>
-  <string name="blogs_sharing_invitation_sent">Du har delt bloggen \"%1$s\" med %2$s.</string>
-  <string name="blogs_sharing_invitations_title">Blogginvitasjoner</string>
-  <string name="blogs_sharing_joined_toast">Abonnerer på bloggen</string>
-  <string name="blogs_sharing_declined_toast">Invitasjon avslått</string>
-  <string name="sharing_status_blog">Enhver som abonnerer på bloggen kan dele den med sine kontakter. Du deler denne bloggen med følgende kontakter. Det kan også være andre abonnementer du ikke kan se.</string>
   <!--RSS Feeds-->
-  <string name="blogs_rss_feeds_import">Importer RSS-strøm</string>
-  <string name="blogs_rss_feeds_import_button">Importer</string>
-  <string name="blogs_rss_feeds_import_hint">Skriv inn nettadresse for RSS-strøm</string>
-  <string name="blogs_rss_feeds_import_error">Vi beklager! Feil under importering av strøm.</string>
-  <string name="blogs_rss_feeds">RSS-feed\'er</string>
-  <string name="blogs_rss_feeds_manage_imported">Importert:</string>
-  <string name="blogs_rss_feeds_manage_author">Forfatter:</string>
-  <string name="blogs_rss_feeds_manage_updated">Sist oppdatert:</string>
-  <string name="blogs_rss_remove_feed">Fjern strøm</string>
-  <string name="blogs_rss_remove_feed_dialog_message">Er du sikker på at du ønsker å fjerne denne feed\'en?\n\nInnlegg kommer til å bli fjernet fra din enhet, men ikke fra andre personers enheter.\n\nEnhver kontakt som du har delt denne feed\'en med kan komme til å slutte å motta oppdateringer.</string>
-  <string name="blogs_rss_remove_feed_ok">Fjern</string>
-  <string name="blogs_rss_feeds_manage_empty_state">Ingen RSS-feed\'er å vise\n\nTrykk på «+»-ikonet for å importere en feed.</string>
-  <string name="blogs_rss_feeds_manage_error">Feil ved lasting av dine strømmer. Prøv igjen senere.</string>
   <!--Settings Profile Picture-->
   <string name="change_profile_picture">Trykk for å endre ditt profilbilde</string>
   <string name="dialog_confirm_profile_picture_title">Bytte profilbilde</string>
@@ -547,12 +456,6 @@
   <string name="notify_group_messages_setting_title">Gruppemeldinger</string>
   <string name="notify_group_messages_setting_summary">Vis varsler for gruppemeldinger</string>
   <string name="notify_group_messages_setting_summary_26">Konfigurere varslinger for gruppemeldinger</string>
-  <string name="notify_forum_posts_setting_title">Forumposter</string>
-  <string name="notify_forum_posts_setting_summary">Vis varsler for forumposter</string>
-  <string name="notify_forum_posts_setting_summary_26">Konfigurere varslinger for foruminnlegg</string>
-  <string name="notify_blog_posts_setting_title">Bloggposter</string>
-  <string name="notify_blog_posts_setting_summary">Vis varsler for bloggposter</string>
-  <string name="notify_blog_posts_setting_summary_26">Konfigurere varslinger for blogginnlegg</string>
   <string name="notify_vibration_setting">Vibrer</string>
   <string name="notify_sound_setting">Lyd</string>
   <string name="notify_sound_setting_default">Forvalgt ringetone</string>
@@ -711,8 +614,6 @@
   <string name="permission_location_setting_title">Lokasjonsinnstillinger</string>
   <string name="permission_location_setting_body">Din enhets lokasjonsinnstillinger må være skrudd på for å finne andre enheter via Blåtann. Vennligst skru på lokasjonstilgang for å fortsette. Det er mulig å skru det av igjen senere.</string>
   <string name="permission_location_setting_button">Skru på lokasjon</string>
-  <string name="qr_code">QR-kode</string>
-  <string name="show_qr_code_fullscreen">Vise QR-kode i fullskjermsmodus</string>
   <!--App Locking-->
   <string name="lock_unlock">Låse opp Zerion</string>
   <string name="lock_unlock_verbose">Skrive inn din enhets PIN-kode, mønster eller passord for å låse opp Zerion</string>
@@ -738,9 +639,7 @@
   <string name="wifi_settings_request_enable_body">For å lage et Wi-Fi-hotspot, så trenger Zerion å bruke Wi-Fi. Vennligst vurder å skru det på.</string>
   <string name="hotspot_tab_manual">Manuelt</string>
   <!--The placeholder to be inserted into the string 'hotspot_manual_wifi': People can connect by %s-->
-  <string name="hotspot_scanning_a_qr_code">skanner en QR-kode</string>
   <!--Wi-Fi setup-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_wifi">Din telefon gir tilgang til et Wi-Fi-hotspot. Folk som ønser å laste ned Zerion kan koble til hotspot\'et ved å legge det til i sine enheters Wi-Fi-innstillinger ved å bruke opplysningende under eller ved %s. Når de har koblet til hotspot\'et, trykk «Neste».</string>
   <string name="hotspot_manual_wifi_ssid">Nettverksnavn</string>
   <string name="hotspot_qr_wifi">Din telefon tilgjengeliggjør et Wi-Fi-hotspot. Folk som ønsker å laste ned Zerion kan koble til hotspot\'et ved å skanne denne QR-koden. Når de har koblet til hotspot\'et, trykk på «Neste».</string>
@@ -750,7 +649,6 @@
     <item quantity="other">%s enheter tilkoblet</item>
   </plurals>
   <!--Download link-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_site">Din telefon gir tilgang til et Wi-Fi-hotspot. Folk som er koblet til hotspot\'et kan laste ned Zerion ved å skrive inn den følgende adressen i en nettleser eller %s.</string>
   <string name="hotspot_manual_site_address">Adresse (URL)</string>
   <string name="hotspot_qr_site">Din telefon gir tilgang til et Wi-Fi-hotspot. Folk som er koblet til hotspot\'et kan laste ned Zerion ved å skanne denne QR-koden.</string>

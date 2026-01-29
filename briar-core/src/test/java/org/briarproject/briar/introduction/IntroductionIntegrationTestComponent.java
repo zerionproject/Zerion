@@ -8,10 +8,8 @@ import org.briarproject.bramble.test.TestSocksModule;
 import org.briarproject.briar.attachment.AttachmentModule;
 import org.briarproject.briar.autodelete.AutoDeleteModule;
 import org.briarproject.briar.avatar.AvatarModule;
-import org.briarproject.briar.blog.BlogModule;
 import org.briarproject.briar.client.BriarClientModule;
 import org.briarproject.briar.conversation.ConversationModule;
-import org.briarproject.briar.forum.ForumModule;
 import org.briarproject.briar.identity.IdentityModule;
 import org.briarproject.briar.messaging.MessagingModule;
 import org.briarproject.briar.privategroup.PrivateGroupModule;
@@ -30,10 +28,8 @@ import dagger.Component;
 		AttachmentModule.class,
 		AutoDeleteModule.class,
 		AvatarModule.class,
-		BlogModule.class,
 		BriarClientModule.class,
 		ConversationModule.class,
-		ForumModule.class,
 		GroupInvitationModule.class,
 		IdentityModule.class,
 		IntroductionModule.class,

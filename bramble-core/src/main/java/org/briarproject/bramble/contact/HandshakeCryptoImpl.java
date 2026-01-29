@@ -91,7 +91,6 @@ class HandshakeCryptoImpl implements HandshakeCrypto {
 			PublicKey theirEphemeralPublicKey, KeyPair ourStaticKeyPair,
 			KeyPair ourEphemeralKeyPair, byte[] kemCiphertext,
 			byte[] kemSecret, boolean alice) throws GeneralSecurityException {
-		// Build inputs for key derivation (public keys in canonical order)
 		byte[] theirStatic = theirStaticPublicKey.getEncoded();
 		byte[] theirEphemeral = theirEphemeralPublicKey.getEncoded();
 		byte[] ourStatic = ourStaticKeyPair.getPublic().getEncoded();
@@ -101,14 +100,9 @@ class HandshakeCryptoImpl implements HandshakeCrypto {
 				alice ? theirStatic : ourStatic,
 				alice ? ourEphemeral : theirEphemeral,
 				alice ? theirEphemeral : ourEphemeral,
-				kemCiphertext // Include KEM ciphertext in derivation
+				kemCiphertext
 		};
-
-		// Derive shared secret using hybrid key agreement
-		// Alice (initiator) encapsulated and has kemSecret
-		// Bob (responder) decapsulates using kemCiphertext
 		if (alice) {
-			// We encapsulated, use our kemSecret
 			return crypto.deriveHybridSharedSecretAsResponder(
 					MASTER_KEY_LABEL_HYBRID,
 					theirStaticPublicKey,
@@ -116,7 +110,6 @@ class HandshakeCryptoImpl implements HandshakeCrypto {
 					kemSecret,
 					inputs);
 		} else {
-			// We need to decapsulate their KEM ciphertext
 			return crypto.deriveHybridSharedSecret(
 					MASTER_KEY_LABEL_HYBRID,
 					theirStaticPublicKey,

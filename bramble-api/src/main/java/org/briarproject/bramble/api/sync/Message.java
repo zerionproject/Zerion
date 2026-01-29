@@ -11,9 +11,7 @@ import static org.briarproject.bramble.api.sync.SyncConstants.MESSAGE_HEADER_LEN
 @NotNullByDefault
 public class Message {
 
-	/**
-	 * The current version of the message format.
-	 */
+	
 	public static final int FORMAT_VERSION = 1;
 
 	private final MessageId id;
@@ -31,37 +29,27 @@ public class Message {
 		this.body = body;
 	}
 
-	/**
-	 * Returns the message's unique identifier.
-	 */
+	
 	public MessageId getId() {
 		return id;
 	}
 
-	/**
-	 * Returns the ID of the {@link Group} to which the message belongs.
-	 */
+	
 	public GroupId getGroupId() {
 		return groupId;
 	}
 
-	/**
-	 * Returns the message's timestamp in milliseconds since the Unix epoch.
-	 */
+	
 	public long getTimestamp() {
 		return timestamp;
 	}
 
-	/**
-	 * Returns the length of the raw message in bytes.
-	 */
+	
 	public int getRawLength() {
 		return MESSAGE_HEADER_LENGTH + body.length;
 	}
 
-	/**
-	 * Returns the message body.
-	 */
+	
 	public byte[] getBody() {
 		return body;
 	}

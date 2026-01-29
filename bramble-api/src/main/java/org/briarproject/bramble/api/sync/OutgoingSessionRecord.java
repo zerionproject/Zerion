@@ -7,11 +7,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.annotation.concurrent.ThreadSafe;
 
-/**
- * A container for holding the IDs of messages sent and acked during an
- * outgoing {@link SyncSession}, so they can be recorded in the DB as sent
- * or acked at some later time.
- */
+
 @ThreadSafe
 @NotNullByDefault
 public class OutgoingSessionRecord {

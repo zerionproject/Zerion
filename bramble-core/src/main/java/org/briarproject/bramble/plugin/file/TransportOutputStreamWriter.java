@@ -5,18 +5,10 @@ import org.briarproject.bramble.api.plugin.simplex.SimplexPlugin;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.OutputStream;
-import java.util.logging.Logger;
-
-import static java.util.logging.Level.WARNING;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.util.IoUtils.tryToClose;
 
 @NotNullByDefault
 class TransportOutputStreamWriter implements TransportConnectionWriter {
-
-	private static final Logger LOG =
-			getLogger(TransportOutputStreamWriter.class.getName());
-
 	private final SimplexPlugin plugin;
 	private final OutputStream out;
 
@@ -47,6 +39,6 @@ class TransportOutputStreamWriter implements TransportConnectionWriter {
 
 	@Override
 	public void dispose(boolean exception) {
-		tryToClose(out, LOG, WARNING);
+		tryToClose(out);
 	}
 }

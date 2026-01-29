@@ -27,7 +27,6 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.List;
 import java.util.concurrent.Executor;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
@@ -39,26 +38,16 @@ import static android.net.NetworkCapabilities.TRANSPORT_WIFI;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.list;
 import static java.util.Collections.singletonList;
-import static java.util.logging.Level.WARNING;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.api.plugin.LanTcpConstants.DEFAULT_PREF_PLUGIN_ENABLE;
 import static org.briarproject.bramble.api.plugin.Plugin.State.ACTIVE;
 import static org.briarproject.bramble.api.plugin.Plugin.State.INACTIVE;
 import static org.briarproject.bramble.util.IoUtils.tryToClose;
-import static org.briarproject.bramble.util.LogUtils.logException;
 import static org.briarproject.bramble.util.NetworkUtils.getNetworkInterfaces;
 import static org.briarproject.nullsafety.NullSafety.requireNonNull;
 
 @NotNullByDefault
 class AndroidLanTcpPlugin extends LanTcpPlugin {
-
-	private static final Logger LOG =
-			getLogger(AndroidLanTcpPlugin.class.getName());
-
-	/**
-	 * The interface name is used as a heuristic for deciding whether the
-	 * device is providing a wifi access point.
-	 */
+	
 	private static final Pattern AP_INTERFACE_NAME =
 			Pattern.compile("^(wlan|ap|p2p)[-0-9]");
 
@@ -79,7 +68,6 @@ class AndroidLanTcpPlugin extends LanTcpPlugin {
 			int connectionTimeout) {
 		super(ioExecutor, wakefulIoExecutor, backoff, callback, maxLatency,
 				maxIdleTime, connectionTimeout);
-		// Don't execute more than one connection status check at a time
 		connectionStatusExecutor =
 				new PoliteExecutor("AndroidLanTcpPlugin", ioExecutor, 1);
 		connectivityManager = (ConnectivityManager)
@@ -113,31 +101,20 @@ class AndroidLanTcpPlugin extends LanTcpPlugin {
 	private InetAddress getWifiAddress(boolean ipv4) {
 		Pair<InetAddress, Boolean> wifi = getWifiIpv4Address();
 		if (ipv4) return wifi == null ? null : wifi.getFirst();
-		// If there's no wifi IPv4 address, we might be a client on an
-		// IPv6-only wifi network. We can only detect this on API 21+
 		if (wifi == null) {
 			return getWifiClientIpv6Address();
 		}
-		// Use the wifi IPv4 address to determine which interface's IPv6
-		// address we should return (if the interface has a suitable address)
 		return getIpv6AddressForInterface(wifi.getFirst());
 	}
 
-	/**
-	 * Returns a {@link Pair} where the first element is the IPv4 address of
-	 * the wifi interface and the second element is true if this device is
-	 * providing an access point, or false if this device is a client. Returns
-	 * null if this device isn't connected to wifi as an access point or client.
-	 */
+	
 	@Nullable
 	private Pair<InetAddress, Boolean> getWifiIpv4Address() {
 		if (wifiManager == null) return null;
-		// If we're connected to a wifi network, return its address
 		WifiInfo info = wifiManager.getConnectionInfo();
 		if (info != null && info.getIpAddress() != 0) {
 			return new Pair<>(intToInetAddress(info.getIpAddress()), false);
 		}
-		// If we're providing an access point, return its address
 		for (NetworkInterface iface : getNetworkInterfaces()) {
 			if (AP_INTERFACE_NAME.matcher(iface.getName()).find()) {
 				for (InterfaceAddress ifAddr : iface.getInterfaceAddresses()) {
@@ -147,17 +124,10 @@ class AndroidLanTcpPlugin extends LanTcpPlugin {
 				}
 			}
 		}
-		// Not connected to wifi
 		return null;
 	}
 
-	/**
-	 * Returns true if the given address may belong to an interface providing
-	 * a wifi access point (including wifi direct legacy mode access points).
-	 * <p>
-	 * This method may return true for wifi client interfaces as well, but
-	 * we've already checked for a wifi client connection above.
-	 */
+	
 	private boolean isPossibleWifiApInterface(InterfaceAddress ifAddr) {
 		if (ifAddr.getNetworkPrefixLength() != 24) return false;
 		byte[] ip = ifAddr.getAddress().getAddress();
@@ -166,13 +136,9 @@ class AndroidLanTcpPlugin extends LanTcpPlugin {
 				&& ip[1] == (byte) 168;
 	}
 
-	/**
-	 * Returns a link-local IPv6 address for the wifi client interface, or null
-	 * if there's no such interface or it doesn't have a suitable address.
-	 */
+	
 	@Nullable
 	private InetAddress getWifiClientIpv6Address() {
-		// https://issuetracker.google.com/issues/175055271
 		try {
 			for (Network net : connectivityManager.getAllNetworks()) {
 				NetworkCapabilities caps =
@@ -189,28 +155,21 @@ class AndroidLanTcpPlugin extends LanTcpPlugin {
 				}
 			}
 		} catch (SecurityException e) {
-			logException(LOG, WARNING, e);
 		}
 		return null;
 	}
 
-	/**
-	 * Returns a link-local IPv6 address for the interface with the given IPv4
-	 * address, or null if the interface doesn't have a suitable address.
-	 */
+	
 	@Nullable
 	private InetAddress getIpv6AddressForInterface(InetAddress ipv4) {
 		try {
-			// We may get an NPE from getByInetAddress() on Android 11
 			NetworkInterface iface = NetworkInterface.getByInetAddress(ipv4);
 			if (iface == null) return null;
 			for (InetAddress addr : list(iface.getInetAddresses())) {
 				if (isIpv6LinkLocalAddress(addr)) return addr;
 			}
-			// No suitable address
 			return null;
 		} catch (SocketException | NullPointerException e) {
-			logException(LOG, WARNING, e);
 			return null;
 		}
 	}
@@ -224,15 +183,10 @@ class AndroidLanTcpPlugin extends LanTcpPlugin {
 		try {
 			return InetAddress.getByAddress(ipBytes);
 		} catch (UnknownHostException e) {
-			// Should only be thrown if address has illegal length
 			throw new AssertionError(e);
 		}
 	}
-
-	// On API 21 and later, a socket that is not created with the wifi
-	// network's socket factory may try to connect via another network
 	private SocketFactory getSocketFactory() {
-		// https://issuetracker.google.com/issues/175055271
 		try {
 			for (Network net : connectivityManager.getAllNetworks()) {
 				NetworkCapabilities caps =
@@ -242,9 +196,7 @@ class AndroidLanTcpPlugin extends LanTcpPlugin {
 				}
 			}
 		} catch (SecurityException e) {
-			logException(LOG, WARNING, e);
 		}
-		LOG.warning("Could not find suitable socket factory");
 		return SocketFactory.getDefault();
 	}
 
@@ -260,45 +212,25 @@ class AndroidLanTcpPlugin extends LanTcpPlugin {
 			if (s != ACTIVE && s != INACTIVE) return;
 			Pair<InetAddress, Boolean> wifi = getPreferredWifiAddress();
 			if (wifi == null) {
-				LOG.info("Not connected to wifi");
 				socketFactory = SocketFactory.getDefault();
-				// Server sockets may not have been closed automatically when
-				// interface was taken down. If any sockets are open, closing
-				// them here will cause the sockets to be cleared and the state
-				// to be updated in acceptContactConnections()
 				if (s == ACTIVE) {
-					LOG.info("Closing server sockets");
-					tryToClose(state.getServerSocket(true), LOG, WARNING);
-					tryToClose(state.getServerSocket(false), LOG, WARNING);
+					tryToClose(state.getServerSocket(true));
+					tryToClose(state.getServerSocket(false));
 				}
 			} else if (wifi.getSecond()) {
-				LOG.info("Providing wifi hotspot");
-				// There's no corresponding Network object and thus no way
-				// to get a suitable socket factory, so we won't be able to
-				// make outgoing connections on API 21+ if another network
-				// has internet access
 				socketFactory = SocketFactory.getDefault();
 				bind();
 			} else {
-				LOG.info("Connected to wifi");
 				socketFactory = getSocketFactory();
 				bind();
 			}
 		});
 	}
 
-	/**
-	 * Returns a {@link Pair} where the first element is an IP address (IPv4 if
-	 * available, otherwise IPv6) of the wifi interface and the second element
-	 * is true if this device is providing an access point, or false if this
-	 * device is a client. Returns null if this device isn't connected to wifi
-	 * as an access point or client.
-	 */
+	
 	@Nullable
 	private Pair<InetAddress, Boolean> getPreferredWifiAddress() {
 		Pair<InetAddress, Boolean> wifi = getWifiIpv4Address();
-		// If there's no wifi IPv4 address, we might be a client on an
-		// IPv6-only wifi network. We can only detect this on API 21+
 		if (wifi == null) {
 			InetAddress ipv6 = getWifiClientIpv6Address();
 			if (ipv6 != null) return new Pair<>(ipv6, false);

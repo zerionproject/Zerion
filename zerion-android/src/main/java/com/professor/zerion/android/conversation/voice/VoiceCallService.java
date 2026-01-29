@@ -22,6 +22,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.PowerManager;
 
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
@@ -85,7 +86,11 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayDeque;
 import java.util.Queue;
-import java.util.zip.CRC32;
+
+import android.media.audiofx.AcousticEchoCanceler;
+import android.media.audiofx.NoiseSuppressor;
+import android.media.audiofx.AutomaticGainControl;
+
 
 import com.professor.zerion.android.AndroidComponent;
 import com.professor.zerion.android.ZerionApplication;
@@ -95,7 +100,7 @@ public class VoiceCallService extends Service implements EventListener {
 	private static final String CHANNEL_ID = "voice_call_channel";
 	private static final int NOTIFICATION_ID = 1001;
 
-	private static final int SAMPLE_RATE = 16000;
+	private static final int SAMPLE_RATE = 48000;
 
 	private static final int CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO;
 
@@ -104,9 +109,11 @@ public class VoiceCallService extends Service implements EventListener {
 	private static final int BUFFER_SIZE = AudioRecord.getMinBufferSize(
 			SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT);
 
-	private static final boolean USE_OPUS_CODEC = false;
+	private static final boolean USE_OPUS_CODEC = true;
 	private static final int OPUS_BITRATE = 24000;
 	private static final int OPUS_FRAME_DURATION_MS = 20;
+
+	private static final int PADDED_FRAME_SIZE = 512;
 
 	private static final int AUDIO_SYNC_MARKER = 0x5A455249;
 
@@ -142,11 +149,24 @@ public class VoiceCallService extends Service implements EventListener {
 	private volatile boolean isMuted = false;
 	private volatile boolean isSpeakerOn = false;
 	private AudioManager audioManager;
+	private PowerManager.WakeLock proximityWakeLock;
 
 	private OpusEncoder opusEncoder;
 	private OpusDecoder opusDecoder;
 
+	private AcousticEchoCanceler echoCanceler;
+	private NoiseSuppressor noiseSuppressor;
+	private AutomaticGainControl gainControl;
+
 	private NetworkMetrics networkMetrics = new NetworkMetrics();
+
+	private static final int JITTER_BUFFER_CAPACITY = SAMPLE_RATE * 2 * 2;
+	private final byte[] sharedJitterBuffer = new byte[JITTER_BUFFER_CAPACITY];
+	private volatile int jbWritePos = 0;
+	private volatile int jbReadPos = 0;
+	private volatile int jbBufferedBytes = 0;
+	private final Object jbLock = new Object();
+	private volatile boolean playoutStarted = false;
 
 	private Socket audioSocket;
 	private ServerSocket serverSocket;
@@ -156,6 +176,12 @@ public class VoiceCallService extends Service implements EventListener {
 
 	private long sendSequenceNumber = 0;
 	private long expectedReceiveSequence = 0;
+
+	private static final int MAX_RECONNECT_ATTEMPTS = 3;
+	private volatile int reconnectAttempts = 0;
+	private volatile boolean isReconnecting = false;
+	private String lastRemoteOnion;
+	private int lastRemotePort;
 
 	private long callStartTime = 0;
 	private long totalBytesSent = 0;
@@ -206,6 +232,13 @@ public class VoiceCallService extends Service implements EventListener {
 		voiceCallCrypto = component.voiceCallCrypto();
 
 		audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+
+		PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
+		if (powerManager != null) {
+			proximityWakeLock = powerManager.newWakeLock(
+					PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK,
+					"zerion:voice_call_proximity");
+		}
 	}
 
 	@Override
@@ -213,10 +246,8 @@ public class VoiceCallService extends Service implements EventListener {
 		if (intent != null) {
 			String action = intent.getAction();
 
-			// Handle notification actions
 			if ("ACTION_ACCEPT_CALL".equals(action)) {
 				acceptCall();
-				// Launch the activity to show call UI
 				launchCallActivity();
 				return START_NOT_STICKY;
 			} else if ("ACTION_DECLINE_CALL".equals(action)) {
@@ -266,7 +297,6 @@ public class VoiceCallService extends Service implements EventListener {
 				}
 			});
 
-			// Android 14+ requires explicit foreground service type and runtime permission
 			startForegroundWithPermissionCheck();
 
 			if (!isIncoming) {
@@ -283,7 +313,6 @@ public class VoiceCallService extends Service implements EventListener {
 		Notification notification = createNotification();
 
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-			// Android 14+ (API 34+) - must check permission before using microphone type
 			boolean hasMicPermission = ContextCompat.checkSelfPermission(this,
 					Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED;
 
@@ -291,16 +320,13 @@ public class VoiceCallService extends Service implements EventListener {
 				startForeground(NOTIFICATION_ID, notification,
 						ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE);
 			} else {
-				// Fall back to special use type if mic permission not granted yet
 				startForeground(NOTIFICATION_ID, notification,
 						ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
 			}
 		} else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-			// Android 10-13 - microphone type available but less strict
 			startForeground(NOTIFICATION_ID, notification,
 					ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE);
 		} else {
-			// Below Android 10 - no foreground service type required
 			startForeground(NOTIFICATION_ID, notification);
 		}
 	}
@@ -388,6 +414,8 @@ public class VoiceCallService extends Service implements EventListener {
 			} catch (Exception e) {
 			}
 
+			zeroizeKeyMaterial();
+
 			try {
 				if (callId != null) {
 					connectionManager.closeEndpoint(callId);
@@ -467,6 +495,9 @@ public class VoiceCallService extends Service implements EventListener {
 
 
 	private void connectToRemoteOnion(String remoteOnion, int remotePort) {
+		lastRemoteOnion = remoteOnion;
+		lastRemotePort = remotePort;
+
 		executorService.execute(() -> {
 			try {
 				if (voiceCallKey == null) {
@@ -484,8 +515,12 @@ public class VoiceCallService extends Service implements EventListener {
 					throw new IOException("Failed to connect to remote peer");
 				}
 
+				reconnectAttempts = 0;
+				isReconnecting = false;
 				callState = CallState.CONNECTED;
-				callStartTime = System.currentTimeMillis();
+				if (callStartTime == 0) {
+					callStartTime = System.currentTimeMillis();
+				}
 				updateCallActivity();
 				startAudioStreaming();
 
@@ -525,13 +560,11 @@ public class VoiceCallService extends Service implements EventListener {
 
 		isRecording = true;
 
-		audioRecord = new AudioRecord(MediaRecorder.AudioSource.VOICE_COMMUNICATION,
-				SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT, BUFFER_SIZE);
+		audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
+		audioManager.setSpeakerphoneOn(false);
+		isSpeakerOn = false;
 
-		if (audioRecord.getState() != AudioRecord.STATE_INITIALIZED) {
-			stopAudioStreaming();
-			return;
-		}
+		int audioSessionId = AudioManager.AUDIO_SESSION_ID_GENERATE;
 
 		audioTrack = new AudioTrack.Builder()
 				.setAudioAttributes(new AudioAttributes.Builder()
@@ -551,9 +584,25 @@ public class VoiceCallService extends Service implements EventListener {
 			return;
 		}
 
+		audioSessionId = audioTrack.getAudioSessionId();
+
+		audioRecord = new AudioRecord(MediaRecorder.AudioSource.VOICE_COMMUNICATION,
+				SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT,
+				BUFFER_SIZE * 2);
+
+		if (audioRecord.getState() != AudioRecord.STATE_INITIALIZED) {
+			stopAudioStreaming();
+			return;
+		}
+
+		enableAudioProcessing(audioRecord.getAudioSessionId());
+
 		audioRecord.startRecording();
 		audioTrack.play();
 
+		if (proximityWakeLock != null && !proximityWakeLock.isHeld()) {
+			proximityWakeLock.acquire();
+		}
 
 		if (USE_OPUS_CODEC) {
 			try {
@@ -573,7 +622,15 @@ public class VoiceCallService extends Service implements EventListener {
 			networkMetrics.setCodecInfo("PCM", 256);
 		}
 
+		synchronized (jbLock) {
+			jbWritePos = 0;
+			jbReadPos = 0;
+			jbBufferedBytes = 0;
+			playoutStarted = false;
+		}
+
 		startHeartbeat();
+		startPlayoutThread();
 
 		final int MAX_ENCRYPTED_FRAME_SIZE = (BUFFER_SIZE * 8) + 64;
 
@@ -619,8 +676,6 @@ public class VoiceCallService extends Service implements EventListener {
 				dataOut.writeInt(AUDIO_READY_MARKER);
 				dataOut.flush();
 
-				CRC32 crc32 = new CRC32();
-
 				while (isRecording && (torConnection != null || (audioSocket != null && audioSocket.isConnected()))) {
 					int read = audioRecord.read(readBuffer, readOffset, frameSize - readOffset);
 
@@ -634,7 +689,7 @@ public class VoiceCallService extends Service implements EventListener {
 								audioData = new byte[frameSize];
 								Arrays.fill(audioData, (byte) 0);
 							} else {
-								audioData = readBuffer;
+								audioData = Arrays.copyOf(readBuffer, frameSize);
 							}
 
 							byte[] encodedAudio;
@@ -643,6 +698,10 @@ public class VoiceCallService extends Service implements EventListener {
 									ByteBuffer pcmBuffer = ByteBuffer.wrap(audioData);
 									int sampleCount = audioData.length / 2;
 									encodedAudio = opusEncoder.encode(pcmBuffer, sampleCount);
+									if (encodedAudio.length == 0) {
+										readOffset = 0;
+										continue;
+									}
 								} catch (Exception e) {
 									readOffset = 0;
 									continue;
@@ -650,24 +709,28 @@ public class VoiceCallService extends Service implements EventListener {
 							} else {
 								encodedAudio = audioData;
 							}
+							long seq = sendSequenceNumber++;
+							long ts = System.currentTimeMillis();
+							byte[] plaintext = new byte[16 + encodedAudio.length];
+							ByteBuffer.wrap(plaintext).order(ByteOrder.BIG_ENDIAN)
+									.putLong(seq)
+									.putLong(ts)
+									.put(encodedAudio);
 
-							byte[] encryptedAudio = voiceCallCrypto.encryptAudioFrame(
-									encodedAudio, audioKeys.txKey);
+							byte[] encrypted = voiceCallCrypto.encryptAudioFrame(
+									plaintext, audioKeys.txKey);
+							int paddedSize = Math.max(PADDED_FRAME_SIZE, encrypted.length);
+							byte[] padded = new byte[paddedSize];
+							System.arraycopy(encrypted, 0, padded, 0, encrypted.length);
+							dataOut.writeInt(encrypted.length);
+							dataOut.write(padded);
 
-							crc32.reset();
-							crc32.update(encryptedAudio, 0, encryptedAudio.length);
-							long checksum = crc32.getValue();
-
-							dataOut.writeInt(encryptedAudio.length);
-							dataOut.writeLong(sendSequenceNumber++);
-							dataOut.writeLong(System.currentTimeMillis());
-							dataOut.writeLong(checksum);
-							dataOut.write(encryptedAudio);
-							dataOut.flush();
-
-							totalBytesSent += encryptedAudio.length + 28;
+							totalBytesSent += paddedSize + 4;
 							totalFramesSent++;
 							networkMetrics.recordPacketSent();
+							if (totalFramesSent % 3 == 0) {
+								dataOut.flush();
+							}
 
 							readOffset = 0;
 						}
@@ -710,19 +773,12 @@ public class VoiceCallService extends Service implements EventListener {
 					return;
 				}
 
-				final int JITTER_BUFFER_SIZE = BUFFER_SIZE * 20;
-				byte[] jitterBuffer = new byte[JITTER_BUFFER_SIZE];
-				int writePos = 0;
-				int readPos = 0;
-				int bufferedBytes = 0;
+				final int BYTES_PER_MS = (SAMPLE_RATE * 2) / 1000;
+				final int MIN_BUFFER_FLOOR = BYTES_PER_MS * 60;
 
-				final int MIN_BUFFER = BUFFER_SIZE * 6;
-
-				CRC32 crc32 = new CRC32();
 				int corruptedFrames = 0;
 				int receivedFrames = 0;
 				long lastSequence = -1;
-
 				long lastReceiveTime = System.currentTimeMillis();
 				final int READ_TIMEOUT_MS = 30000;
 
@@ -732,33 +788,54 @@ public class VoiceCallService extends Service implements EventListener {
 							break;
 						}
 
-						int frameSize = dataIn.readInt();
+						int encFrameSize = dataIn.readInt();
 
-						if (frameSize == AUDIO_READY_MARKER) {
+						if (encFrameSize == AUDIO_READY_MARKER) {
 							lastReceiveTime = System.currentTimeMillis();
 							continue;
-						} else if (frameSize == AUDIO_HEARTBEAT_MARKER) {
+						} else if (encFrameSize == AUDIO_HEARTBEAT_MARKER) {
 							lastReceiveTime = System.currentTimeMillis();
 							continue;
-						} else if (frameSize < 0) {
+						} else if (encFrameSize < 0) {
 							continue;
 						}
-
-						long sequence = dataIn.readLong();
-						long timestamp = dataIn.readLong();
-						long receivedChecksum = dataIn.readLong();
 
 						lastReceiveTime = System.currentTimeMillis();
 
-						if (frameSize > MAX_ENCRYPTED_FRAME_SIZE) {
+						if (encFrameSize > MAX_ENCRYPTED_FRAME_SIZE) {
 							continue;
 						}
 
-						byte[] encryptedFrame = new byte[frameSize];
-						dataIn.readFully(encryptedFrame);
+						int paddedSize = Math.max(PADDED_FRAME_SIZE, encFrameSize);
+						byte[] paddedFrame = new byte[paddedSize];
+						dataIn.readFully(paddedFrame);
+
+						byte[] encryptedFrame = new byte[encFrameSize];
+						System.arraycopy(paddedFrame, 0, encryptedFrame, 0, encFrameSize);
 						receivedFrames++;
 
-						totalBytesReceived += frameSize + 28;
+						byte[] plaintext;
+						try {
+							plaintext = voiceCallCrypto.decryptAudioFrame(
+									encryptedFrame, audioKeys.rxKey);
+						} catch (RuntimeException e) {
+							corruptedFrames++;
+							networkMetrics.recordCorruptedPacket();
+							continue;
+						}
+
+						if (plaintext.length < 16) {
+							corruptedFrames++;
+							continue;
+						}
+
+						ByteBuffer ptBuf = ByteBuffer.wrap(plaintext).order(ByteOrder.BIG_ENDIAN);
+						long sequence = ptBuf.getLong();
+						long timestamp = ptBuf.getLong();
+						byte[] encodedAudio = new byte[plaintext.length - 16];
+						ptBuf.get(encodedAudio);
+
+						totalBytesReceived += encFrameSize + 4;
 						totalFramesReceived++;
 						networkMetrics.recordPacketReceived(sequence);
 
@@ -768,25 +845,30 @@ public class VoiceCallService extends Service implements EventListener {
 							networkMetrics.recordLatency(latency);
 						}
 
-						crc32.reset();
-						crc32.update(encryptedFrame, 0, frameSize);
-						long calculatedChecksum = crc32.getValue();
+						final int PCM_FRAME = (SAMPLE_RATE / 1000) * OPUS_FRAME_DURATION_MS * 2;
+						if (lastSequence >= 0 && sequence > lastSequence + 1) {
+							long lostFrames = sequence - lastSequence - 1;
+							totalPacketLoss += lostFrames;
 
-						if (calculatedChecksum != receivedChecksum) {
-							corruptedFrames++;
-							networkMetrics.recordCorruptedPacket();
-							continue;
+							if (USE_OPUS_CODEC && opusDecoder != null) {
+								int framesToConceal = (int) Math.min(lostFrames, 5);
+								for (int f = 0; f < framesToConceal; f++) {
+									try {
+										byte[] concealed = opusDecoder.concealLostPacket(PCM_FRAME);
+										synchronized (jbLock) {
+											writeToJitterBuffer(sharedJitterBuffer, concealed,
+													jbWritePos, JITTER_BUFFER_CAPACITY);
+											jbWritePos = (jbWritePos + concealed.length) % JITTER_BUFFER_CAPACITY;
+											jbBufferedBytes = Math.min(jbBufferedBytes + concealed.length,
+													JITTER_BUFFER_CAPACITY);
+										}
+									} catch (Exception plcErr) {
+										break;
+									}
+								}
+							}
 						}
-
-						byte[] encodedAudio;
-						try {
-							encodedAudio = voiceCallCrypto.decryptAudioFrame(
-									encryptedFrame, audioKeys.rxKey);
-						} catch (RuntimeException e) {
-							corruptedFrames++;
-							networkMetrics.recordCorruptedPacket();
-							continue;
-						}
+						lastSequence = sequence;
 
 						byte[] decoded;
 						if (USE_OPUS_CODEC && opusDecoder != null) {
@@ -796,8 +878,7 @@ public class VoiceCallService extends Service implements EventListener {
 								corruptedFrames++;
 								networkMetrics.recordCorruptedPacket();
 								try {
-									int expectedFrameSize = (SAMPLE_RATE / 1000) * OPUS_FRAME_DURATION_MS * 2;
-									decoded = opusDecoder.concealLostPacket(expectedFrameSize);
+									decoded = opusDecoder.concealLostPacket(PCM_FRAME);
 								} catch (Exception plcError) {
 									continue;
 								}
@@ -806,53 +887,22 @@ public class VoiceCallService extends Service implements EventListener {
 							decoded = encodedAudio;
 						}
 
-						if (lastSequence >= 0) {
-							long expectedSequence = lastSequence + 1;
-							if (sequence != expectedSequence) {
-								if (sequence < expectedSequence) {
-								} else {
-									long lostFrames = sequence - expectedSequence;
-									totalPacketLoss += lostFrames;
-								}
-							}
+						if (decoded.length == 0) {
+							continue;
 						}
-						lastSequence = sequence;
 
-						final int PCM_FRAME = (SAMPLE_RATE / 1000) * OPUS_FRAME_DURATION_MS * 2;
+						synchronized (jbLock) {
+							writeToJitterBuffer(sharedJitterBuffer, decoded,
+									jbWritePos, JITTER_BUFFER_CAPACITY);
+							jbWritePos = (jbWritePos + decoded.length) % JITTER_BUFFER_CAPACITY;
+							jbBufferedBytes = Math.min(jbBufferedBytes + decoded.length,
+									JITTER_BUFFER_CAPACITY);
 
-						if (decoded.length != PCM_FRAME) {
-							int offset = 0;
-							while (offset + PCM_FRAME <= decoded.length) {
-								byte[] chunk = Arrays.copyOfRange(decoded, offset, offset + PCM_FRAME);
-								offset += PCM_FRAME;
-
-								for (byte b : chunk) {
-									jitterBuffer[writePos] = b;
-									writePos = (writePos + 1) % JITTER_BUFFER_SIZE;
-									bufferedBytes = Math.min(bufferedBytes + 1, JITTER_BUFFER_SIZE);
-								}
-							}
-
-						} else {
-							for (int i = 0; i < decoded.length; i++) {
-								jitterBuffer[writePos] = decoded[i];
-								writePos = (writePos + 1) % JITTER_BUFFER_SIZE;
-								bufferedBytes = Math.min(bufferedBytes + 1, JITTER_BUFFER_SIZE);
+							if (!playoutStarted && jbBufferedBytes >= MIN_BUFFER_FLOOR) {
+								playoutStarted = true;
 							}
 						}
 
-						while (bufferedBytes >= MIN_BUFFER) {
-							int toPlay = Math.min(BUFFER_SIZE, bufferedBytes);
-							byte[] playBuffer = new byte[toPlay];
-
-							for (int i = 0; i < toPlay; i++) {
-								playBuffer[i] = jitterBuffer[readPos];
-								readPos = (readPos + 1) % JITTER_BUFFER_SIZE;
-								bufferedBytes--;
-							}
-
-							audioTrack.write(playBuffer, 0, toPlay);
-						}
 					} catch (IOException e) {
 						break;
 					}
@@ -864,6 +914,45 @@ public class VoiceCallService extends Service implements EventListener {
 				}
 			}
 		});
+	}
+
+	private void enableAudioProcessing(int audioSessionId) {
+		if (AcousticEchoCanceler.isAvailable()) {
+			echoCanceler = AcousticEchoCanceler.create(audioSessionId);
+			if (echoCanceler != null) {
+				echoCanceler.setEnabled(true);
+			}
+		}
+		if (NoiseSuppressor.isAvailable()) {
+			noiseSuppressor = NoiseSuppressor.create(audioSessionId);
+			if (noiseSuppressor != null) {
+				noiseSuppressor.setEnabled(true);
+			}
+		}
+		if (AutomaticGainControl.isAvailable()) {
+			gainControl = AutomaticGainControl.create(audioSessionId);
+			if (gainControl != null) {
+				gainControl.setEnabled(true);
+			}
+		}
+	}
+
+	private void releaseAudioProcessing() {
+		if (echoCanceler != null) {
+			echoCanceler.setEnabled(false);
+			echoCanceler.release();
+			echoCanceler = null;
+		}
+		if (noiseSuppressor != null) {
+			noiseSuppressor.setEnabled(false);
+			noiseSuppressor.release();
+			noiseSuppressor = null;
+		}
+		if (gainControl != null) {
+			gainControl.setEnabled(false);
+			gainControl.release();
+			gainControl = null;
+		}
 	}
 
 	private void startHeartbeat() {
@@ -892,20 +981,181 @@ public class VoiceCallService extends Service implements EventListener {
 		});
 	}
 
+	private void startPlayoutThread() {
+		executorService.execute(() -> {
+			final int PCM_FRAME = (SAMPLE_RATE / 1000) * OPUS_FRAME_DURATION_MS * 2;
+			final byte[] playBuffer = new byte[PCM_FRAME];
+
+			while (isRecording) {
+				if (!playoutStarted) {
+					try { Thread.sleep(5); } catch (InterruptedException e) {
+						Thread.currentThread().interrupt();
+						return;
+					}
+					continue;
+				}
+
+				boolean hasFrame;
+				synchronized (jbLock) {
+					hasFrame = jbBufferedBytes >= PCM_FRAME;
+					if (hasFrame) {
+						for (int i = 0; i < PCM_FRAME; i++) {
+							playBuffer[i] = sharedJitterBuffer[jbReadPos];
+							jbReadPos = (jbReadPos + 1) % JITTER_BUFFER_CAPACITY;
+						}
+						jbBufferedBytes -= PCM_FRAME;
+					}
+				}
+
+				if (hasFrame) {
+					AudioTrack track = audioTrack;
+					if (track != null) {
+						int written = track.write(playBuffer, 0, PCM_FRAME);
+						if (written < 0) {
+							networkMetrics.recordWriteError();
+						}
+					}
+				} else {
+					networkMetrics.recordUnderrun();
+					try { Thread.sleep(5); } catch (InterruptedException e) {
+						Thread.currentThread().interrupt();
+						return;
+					}
+				}
+			}
+		});
+	}
+
 	private void handleConnectionError() {
-		if (callState == CallState.CONNECTED) {
-			callState = CallState.DISCONNECTED;
+		if (callState != CallState.CONNECTED && callState != CallState.CONNECTING) {
+			return;
+		}
+
+		if (isReconnecting) return;
+		SecretKey reconnectKey = voiceCallKey;
+		if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS && reconnectKey != null) {
+			isReconnecting = true;
+			reconnectAttempts++;
+			callState = CallState.CONNECTING;
 			updateCallActivity();
 
+			isRecording = false;
+			cleanupStreamsForReconnect();
+
+			long delay = reconnectAttempts * 2000L;
+			executorService.execute(() -> {
+				try {
+					Thread.sleep(delay);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					return;
+				}
+
+				if (callState != CallState.CONNECTING) return;
+				if (voiceCallKey == null) {
+					isReconnecting = false;
+					return;
+				}
+
+				try {
+					boolean alice = !isIncoming;
+
+					if (lastRemoteOnion != null) {
+						torConnection = connectionManager.connectToRemote(
+								callId, lastRemoteOnion, reconnectKey, alice);
+					} else if (onionAddress != null) {
+						VoiceCallConnectionHandler handler = conn -> {
+							torConnection = conn;
+							reconnectAttempts = 0;
+							isReconnecting = false;
+							callState = CallState.CONNECTED;
+							updateCallActivity();
+							deriveAudioEncryptionKeys();
+							startAudioStreaming();
+						};
+						connectionManager.createIncomingEndpoint(
+								callId, reconnectKey, alice, handler);
+						isReconnecting = false;
+						return;
+					} else {
+						throw new IOException("No reconnection target");
+					}
+
+					if (torConnection != null) {
+						reconnectAttempts = 0;
+						isReconnecting = false;
+						callState = CallState.CONNECTED;
+						updateCallActivity();
+						deriveAudioEncryptionKeys();
+						startAudioStreaming();
+					} else {
+						isReconnecting = false;
+						handleConnectionError();
+					}
+				} catch (Exception e) {
+					isReconnecting = false;
+					handleConnectionError();
+				}
+			});
+		} else {
+			callState = CallState.DISCONNECTED;
+			updateCallActivity();
 			mainHandler.postDelayed(() -> {
-				if (callState == CallState.DISCONNECTED && !isIncoming) {
+				if (callState == CallState.DISCONNECTED) {
 					endCall();
 				}
 			}, 2000);
 		}
 	}
 
+	private static void writeToJitterBuffer(byte[] jitterBuffer, byte[] data,
+			int writePos, int bufferSize) {
+		for (int i = 0; i < data.length; i++) {
+			jitterBuffer[(writePos + i) % bufferSize] = data[i];
+		}
+	}
+
+	private void cleanupStreamsForReconnect() {
+		synchronized (streamLock) {
+			if (torConnection != null) {
+				try {
+					torConnection.getReader().dispose(false, true);
+					torConnection.getWriter().dispose(false);
+				} catch (Exception e) {
+				}
+				torConnection = null;
+			}
+			if (audioSocket != null) {
+				try {
+					audioSocket.close();
+				} catch (Exception e) {
+				}
+				audioSocket = null;
+			}
+		}
+	}
+
+	
+	private void zeroizeKeyMaterial() {
+		if (voiceCallKey != null) {
+			Arrays.fill(voiceCallKey.getBytes(), (byte) 0);
+			voiceCallKey = null;
+		}
+		if (audioKeys != null) {
+			Arrays.fill(audioKeys.txKey.getBytes(), (byte) 0);
+			Arrays.fill(audioKeys.rxKey.getBytes(), (byte) 0);
+			audioKeys = null;
+		}
+	}
+
 	private void stopAudioStreaming() {
+		audioManager.setMode(AudioManager.MODE_NORMAL);
+		if (proximityWakeLock != null && proximityWakeLock.isHeld()) {
+			proximityWakeLock.release();
+		}
+
+		releaseAudioProcessing();
+
 		synchronized (streamLock) {
 			isRecording = false;
 
@@ -993,7 +1243,6 @@ public class VoiceCallService extends Service implements EventListener {
 	}
 
 	private void sendCallAnswer() throws DbException {
-		// Payload format: "onionAddress:port"
 		String payload = onionAddress + ":" + onionPort;
 		sendVoiceSignal(VoiceSignalType.CALL_ANSWER, payload);
 	}
@@ -1009,11 +1258,6 @@ public class VoiceCallService extends Service implements EventListener {
 		}
 		sendVoiceSignalWithDuration(VoiceSignalType.CALL_END, null, durationMs);
 	}
-
-	/**
-	 * Send a voice signal using the dedicated VOICE_SIGNAL message type.
-	 * This bypasses the conversation UI entirely.
-	 */
 	private void sendVoiceSignal(VoiceSignalType signalType, String payload) {
 		sendVoiceSignalWithDuration(signalType, payload, null);
 	}
@@ -1093,14 +1337,10 @@ public class VoiceCallService extends Service implements EventListener {
 	}
 
 	public void handleIncomingSignaling(String message) {
-		// Parse structured signal format
 		VoiceCallSignal signal = VoiceCallSignal.fromWireFormat(message);
 		if (signal == null) {
-			// Signal failed validation - ignore
 			return;
 		}
-
-		// Verify call ID matches our active call
 		if (callId == null) {
 			return;
 		}
@@ -1131,7 +1371,6 @@ public class VoiceCallService extends Service implements EventListener {
 				break;
 
 			default:
-				// Unknown signal type - ignore
 				break;
 		}
 	}
@@ -1170,6 +1409,9 @@ public class VoiceCallService extends Service implements EventListener {
 		this.isSpeakerOn = speakerOn;
 		if (audioManager != null) {
 			audioManager.setSpeakerphoneOn(speakerOn);
+			audioManager.setMode(speakerOn ?
+					AudioManager.MODE_NORMAL :
+					AudioManager.MODE_IN_COMMUNICATION);
 		}
 	}
 
@@ -1215,27 +1457,18 @@ public class VoiceCallService extends Service implements EventListener {
 				.setOngoing(true)
 				.setAutoCancel(false)
 				.setContentIntent(pendingIntent);
-
-		// For incoming calls, add full-screen intent to show call screen
 		if (isIncoming && callState == CallState.RINGING) {
-			// Full-screen intent for showing incoming call screen
 			builder.setFullScreenIntent(pendingIntent, true);
-
-			// Add accept action
 			Intent acceptIntent = new Intent(this, VoiceCallService.class);
 			acceptIntent.setAction("ACTION_ACCEPT_CALL");
 			PendingIntent acceptPendingIntent = PendingIntent.getService(this, 1,
 					acceptIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 			builder.addAction(R.drawable.ic_phone_white, "Accept", acceptPendingIntent);
-
-			// Add decline action
 			Intent declineIntent = new Intent(this, VoiceCallService.class);
 			declineIntent.setAction("ACTION_DECLINE_CALL");
 			PendingIntent declinePendingIntent = PendingIntent.getService(this, 2,
 					declineIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 			builder.addAction(R.drawable.ic_close, "Decline", declinePendingIntent);
-
-			// Use call style for better notification appearance
 			builder.setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
 		}
 
@@ -1278,6 +1511,10 @@ public class VoiceCallService extends Service implements EventListener {
 		}
 
 		stopAudioStreaming();
+		if (proximityWakeLock != null && proximityWakeLock.isHeld()) {
+			proximityWakeLock.release();
+		}
+		zeroizeKeyMaterial();
 
 		executorService.shutdown();
 		try {
@@ -1295,7 +1532,6 @@ public class VoiceCallService extends Service implements EventListener {
 
 	@Override
 	public void eventOccurred(Event e) {
-		// Listen for dedicated voice signal events (new system)
 		if (e instanceof VoiceSignalReceivedEvent) {
 			VoiceSignalReceivedEvent event = (VoiceSignalReceivedEvent) e;
 
@@ -1304,8 +1540,6 @@ public class VoiceCallService extends Service implements EventListener {
 				mainHandler.post(() -> handleIncomingVoiceSignal(header));
 			}
 		}
-		// Legacy support: also check text messages for backwards compatibility
-		// This can be removed once all clients are updated
 		else if (e instanceof PrivateMessageReceivedEvent) {
 			PrivateMessageReceivedEvent event = (PrivateMessageReceivedEvent) e;
 
@@ -1315,7 +1549,6 @@ public class VoiceCallService extends Service implements EventListener {
 						MessageId messageId = event.getMessageHeader().getId();
 						String text = messagingManager.getMessageText(messageId);
 
-						// Check for legacy VOICE_CALL: format OR new ZSIG format
 						if (text != null && (text.startsWith("VOICE_CALL:") ||
 								VoiceCallSignal.isSignal(text))) {
 							new Handler(Looper.getMainLooper()).post(() ->
@@ -1329,28 +1562,19 @@ public class VoiceCallService extends Service implements EventListener {
 		}
 	}
 
-	/**
-	 * Handle incoming voice signal from the dedicated VOICE_SIGNAL message type.
-	 * This is the new, secure signaling path that doesn't use text messages.
-	 */
 	private void handleIncomingVoiceSignal(VoiceSignalHeader header) {
 		String signalCallId = header.getCallId();
 
 		switch (header.getSignalType()) {
 			case CALL_OFFER:
-				// For incoming calls, the callId is set from the offer
-				// This is already handled by the incoming call flow in ConversationActivity
-				// but we log it here for completeness
 				break;
 
 			case CALL_ANSWER:
-				// Verify call ID matches our active call
 				if (callId == null || !callId.equals(signalCallId)) {
 					return;
 				}
 				String payload = header.getPayload();
 				if (payload != null) {
-					// Parse onion address from payload (format: "onion:port")
 					String[] parts = payload.split(":");
 					if (parts.length >= 2) {
 						String remoteOnion = parts[0];
@@ -1391,7 +1615,6 @@ public class VoiceCallService extends Service implements EventListener {
 				break;
 
 			default:
-				// Unknown signal type (e.g., ICE_CANDIDATE) - ignore for now
 				break;
 		}
 	}

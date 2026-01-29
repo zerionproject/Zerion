@@ -56,8 +56,6 @@
   <string name="nav_drawer_close_description">Затвори ја навигационата лента</string>
   <string name="contact_list_button">Контакти</string>
   <string name="groups_button">Приватни групи</string>
-  <string name="forums_button">Форуми</string>
-  <string name="blogs_button">Блогови</string>
   <!--This is part of the main menu. The app will be locked when this is tapped.-->
   <string name="lock_button">Заклучи ја апликацијата</string>
   <string name="settings_button">Поставки</string>
@@ -92,14 +90,6 @@
   <plurals name="group_message_notification_text">
     <item quantity="one">Нова порака во група.</item>
     <item quantity="other">%d нови пораки во група.</item>
-  </plurals>
-  <plurals name="forum_post_notification_text">
-    <item quantity="one">Нова објава на форум.</item>
-    <item quantity="other">%d нови објави на форум.</item>
-  </plurals>
-  <plurals name="blog_post_notification_text">
-    <item quantity="one">Нов пост на блог.</item>
-    <item quantity="other">%d нови објави на блог.</item>
   </plurals>
   <!--Misc-->
   <string name="now">сега</string>
@@ -173,14 +163,12 @@
   <string name="messaging_too_many_attachments_toast">Само првите %d слики ќе бидат испратени</string>
   <!--Adding Contacts-->
   <string name="add_contact_title">Додај контакт ВО БЛИЗИНА</string>
-  <string name="face_to_face">Морате да се сретнете со лицето кое сакате да го додадете за контакт.\n\nОва спречува во иднина било кој да се преставува како вас или да ги чита вашите пораки во иднина.</string>
   <string name="continue_button">Продолжи</string>
   <string name="try_again_button">Обиди се повторно</string>
   <string name="waiting_for_contact_to_scan">Почекај за контактот да скенира и да се поврзе\u2026</string>
   <string name="exchanging_contact_details">Разменување детали за контакт\u2026</string>
   <string name="contact_added_toast">Додадени контакти: %s</string>
   <string name="contact_already_exists">Контактот %s веќе постои</string>
-  <string name="qr_code_invalid">QR кодот е невалиден</string>
   <string name="qr_code_too_old">QR кодот што го скениравте доаѓа од постара верзија на %s.\n\nВе молиме прашајте го вашиот контакт за надградба во последната верзија и обидете се повторно. </string>
   <string name="qr_code_too_new">QR кодот кој го скениравте доаѓа од понова верзија на %s.\n\nВе молиме надградете во последната верзија и потоа обидете се повторно.</string>
   <string name="camera_error">Грешка во камерата</string>
@@ -320,100 +308,26 @@
   <string name="groups_reveal_visible_revealed_by_contact">Контакт врската е видилва во групата (открена од %s)</string>
   <string name="groups_reveal_invisible">Контакт врската не е видлива во групата</string>
   <!--Forums-->
-  <string name="no_forums">Нема форуми за прикажување</string>
-  <string name="no_forums_action">Допрете ја + иконата за да создадете форум, или прашајте ги вашите контакти да споделат форуми со вас</string>
-  <string name="create_forum_title">Создадете форум</string>
-  <string name="choose_forum_hint">Одберете име за вашиот форум</string>
-  <string name="create_forum_button">Создадете форум</string>
-  <string name="forum_created_toast">Форумот е содаден</string>
-  <string name="no_forum_posts">Нема објави за прикажување</string>
   <string name="no_posts">Нема објави</string>
   <plurals name="posts">
     <item quantity="one">%dпост</item>
     <item quantity="other">%dобјави</item>
   </plurals>
-  <string name="forum_new_message_hint">Нова објава</string>
-  <string name="forum_message_reply_hint">Нов одговор</string>
   <string name="btn_reply">Одговор</string>
-  <string name="forum_leave">Напушти форум</string>
-  <string name="dialog_title_leave_forum">Потврди напуштање на форум</string>
-  <string name="dialog_message_leave_forum">Дали сте сигурни дека сакате да го напуштите овој форум?\n\nБило кој од контактите со кои го споделивте овој форум може да престане да добива ажурирања.</string>
   <string name="dialog_button_leave">Напушти</string>
-  <string name="forum_left_toast">Напушти форум</string>
   <!--Forum Sharing-->
-  <string name="forum_share_button">Сподели форум</string>
   <string name="contacts_selected">Избрани контакти</string>
   <string name="activity_share_toolbar_header">Избери контакти</string>
   <string name="no_contacts_selector">Нема контакти за прикажување</string>
   <string name="no_contacts_selector_action">Ве молиме вратете се овде после додавање на контакт</string>
-  <string name="forum_shared_snackbar">Форумот е споделен со избраните контакти</string>
-  <string name="forum_share_message">Додај порака (опционално)</string>
-  <string name="forum_share_error">Настана грешка при споделувањето на овој форум.</string>
-  <string name="forum_invitation_received">%1$sго сподели овој форум \"%2$s\" со вас.</string>
-  <string name="forum_invitation_sent">Вие го споделивте овој форум \"%1$s\" со %2$s.</string>
-  <string name="forum_invitations_title">Поакни за форум</string>
-  <string name="forum_invitation_exists">Вие штотуку ја прифативте поканата за овој форум.\n\nПрифаќањето на повеќе покани ќе го направи вашето поврзување со форумот побрзо и поверодостојно.</string>
-  <string name="forum_joined_toast">Приклучен на форум</string>
-  <string name="forum_declined_toast">Поканата е одбиена</string>
   <string name="shared_by_format">Споделено со %s</string>
-  <string name="forum_invitation_already_sharing">Веќе споделува</string>
-  <string name="forum_invitation_response_accepted_sent">Вие ја прифативте поканата за овој форум од %s.</string>
-  <string name="forum_invitation_response_declined_sent">Вие ја одбивте поканата за овој форум од %s.</string>
-  <string name="forum_invitation_response_accepted_received">%s ја прифати поканата за форумот.</string>
-  <string name="forum_invitation_response_declined_received">%s ја одби поканата за форумот.</string>
   <string name="sharing_status">Споделување статус</string>
-  <string name="sharing_status_forum">Секој член на форум може да го сподели со неговите контакти. Вие го споделувате овој форум со следниве контакти. Исто така може да има и други членови кој вие не можете да ги видите.</string>
   <string name="shared_with">Споделено со %1$d (%2$d вклучен/и)</string>
-  <plurals name="forums_shared">
-    <item quantity="one">%dфорум споделен од контакти</item>
-    <item quantity="other">%d форуми споделени од контакти</item>
-  </plurals>
   <string name="nobody">Никој</string>
   <!--Blogs-->
-  <string name="blogs_other_blog_empty_state">Нема објави за прикажување</string>
   <string name="read_more">прочитај повеќе</string>
-  <string name="blogs_write_blog_post">Напиши објава на Блог </string>
-  <string name="blogs_write_blog_post_body_hint">Внесете објава на блог </string>
-  <string name="blogs_publish_blog_post">Објави</string>
-  <string name="blogs_blog_post_created">Создадена е објава на блог</string>
-  <string name="blogs_blog_post_received">Примена е нова објава на блог </string>
-  <string name="blogs_blog_post_scroll_to">Излистај до</string>
-  <string name="blogs_feed_empty_state">Нема објави за прикажување</string>
-  <string name="blogs_feed_empty_state_action">Објавите од вашите контакти и од блоговите на кои сте претплатени ќе се појавуваат овде\n\nДопрете ја пенкало иконата за да напишете објава</string>
-  <string name="blogs_remove_blog">Отстрани блог</string>
-  <string name="blogs_remove_blog_dialog_message">Дали сте сигурни дека сакате да го отстраните овој блог?\n\nОбјавите ќе бидат отстранети од вашиот уред но не и од уредите на другите луѓе.\n\nБило кои од контактите со кои сте го споделиле овој блог може да престанат да добиваат ажурирања.</string>
-  <string name="blogs_remove_blog_ok">Отстрани</string>
-  <string name="blogs_blog_removed">Блогот е отстранет</string>
-  <string name="blogs_reblog_comment_hint">Додај коментар (опционално)</string>
-  <string name="blogs_reblog_button">Реблог</string>
   <!--Blog Sharing-->
-  <string name="blogs_sharing_share">Сподели блог</string>
-  <string name="blogs_sharing_error">Настана грешка при споделувањето на овој блог.</string>
-  <string name="blogs_sharing_button">Сподели блог</string>
-  <string name="blogs_sharing_snackbar">Блогот е споделен со избраните контакти</string>
-  <string name="blogs_sharing_response_accepted_sent">Вие ја прифативте поканата за блог од %s.</string>
-  <string name="blogs_sharing_response_declined_sent">Вие ја одбивте поканата за блог од %s.</string>
-  <string name="blogs_sharing_response_accepted_received">%s ја прифати поканата за блог.</string>
-  <string name="blogs_sharing_response_declined_received">%s ја одби поканата за блог.</string>
-  <string name="blogs_sharing_invitation_received">%1$s го сподели блогот \"%2$s\" со тебе.</string>
-  <string name="blogs_sharing_invitation_sent">Вие го споделивте блогот \"%1$s\" со %2$s.</string>
-  <string name="blogs_sharing_invitations_title">Покани за блог</string>
-  <string name="blogs_sharing_joined_toast">Претплатен на блог</string>
-  <string name="blogs_sharing_declined_toast">Поканата е одбиена</string>
-  <string name="sharing_status_blog">Било кој што е претплатен на овој блог може да го сподели со неговите контакти. Вие го споделувате овој блог со следниве контакти. Исто така може да има и други претплатници кои ти не можеш да ги видиш.</string>
   <!--RSS Feeds-->
-  <string name="blogs_rss_feeds_import">Увези RSS тековник</string>
-  <string name="blogs_rss_feeds_import_button">Увези</string>
-  <string name="blogs_rss_feeds_import_hint">Внеси URL на RSS тековник</string>
-  <string name="blogs_rss_feeds_import_error">Жал ни е! Настана гршка при увезувањето на вашиот тековник.</string>
-  <string name="blogs_rss_feeds_manage_imported">Увезени:</string>
-  <string name="blogs_rss_feeds_manage_author">Автор:</string>
-  <string name="blogs_rss_feeds_manage_updated">Последен пат ажуриран:</string>
-  <string name="blogs_rss_remove_feed">Отстрани тековник</string>
-  <string name="blogs_rss_remove_feed_dialog_message">Дали сте сигурни дека сакате да го отстраните овој тековник?\n\nОбјавите ќе бидат отстранети од вашиот уред но не и од уредите на другите луѓе.\n\nБило кои од контактите со кои сте го споделиле овој тековник може да престанат да добиваат ажурирања.</string>
-  <string name="blogs_rss_remove_feed_ok">Отстрани</string>
-  <string name="blogs_rss_feeds_manage_empty_state">Нема RSS тековници за прикажување\n\nДопрете ја + иконата за да увезете тековник</string>
-  <string name="blogs_rss_feeds_manage_error">Настана проблем при вчитувањето на вашите тековници. Ве молиме обидете се повторно подоцна.</string>
   <!--Settings Profile Picture-->
   <!--Settings Display-->
   <string name="pref_language_title">Јазик &amp; регион</string>
@@ -490,12 +404,6 @@
   <string name="notify_group_messages_setting_title">Групни пораки</string>
   <string name="notify_group_messages_setting_summary">Покажи предупредувања за групни пораки</string>
   <string name="notify_group_messages_setting_summary_26">Конфигурирај предупредувања за групни пораки</string>
-  <string name="notify_forum_posts_setting_title">Форум објави</string>
-  <string name="notify_forum_posts_setting_summary">Покажи предупредувања за оваа форум објава</string>
-  <string name="notify_forum_posts_setting_summary_26">Конфигурирај ги предупредувањата за објавите на форумот</string>
-  <string name="notify_blog_posts_setting_title">Објави на Блог</string>
-  <string name="notify_blog_posts_setting_summary">Покажи ги предупредувањата за објавите на блог</string>
-  <string name="notify_blog_posts_setting_summary_26">Конфигурирај ги предупредувањата за објавите на блог</string>
   <string name="notify_vibration_setting">Вибрирање</string>
   <string name="notify_sound_setting">Звук</string>
   <string name="notify_sound_setting_default">Стандарден рингтон</string>
@@ -541,8 +449,6 @@
   <string name="permission_camera_location_request_body">За да го скенира QR кодот, на Zerion му е потребен пристап до камерата.\n\nЗа да открие Bluetooth уреди, на Zerion му е потребна дозвола за вашата локација.\n\nZerion не ја зачувува вашата локација или не ја споделува со никого.</string>
   <string name="permission_camera_denied_body">Го одбивте пристапот до камерата, но за додавање на контакти потребно е користење на камерата.\n\nВе молиме  размислете за давање пристап.</string>
   <string name="permission_location_denied_body">Го одбивте пристапот до вашата локација, но на Zerion му е потребна оваа дозвола за да ги открие Bluetooth уредите.\n\nВе молиме размислете за давање пристап.</string>
-  <string name="qr_code">QR код</string>
-  <string name="show_qr_code_fullscreen">Покажи го QR кодот на цел екран</string>
   <!--App Locking-->
   <string name="lock_unlock">Отклучи го Zerion</string>
   <string name="lock_unlock_verbose">Внесете го ПИН-от, шемата или лозинката на твојот уред за да го отклучите Zerion. </string>

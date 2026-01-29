@@ -9,10 +9,7 @@ import javax.annotation.concurrent.Immutable;
 
 import static org.briarproject.nullsafety.NullSafety.requireExactlyOneNull;
 
-/**
- * A set of keys for communicating with a given contact or pending contact
- * over a given transport.
- */
+
 @Immutable
 @NotNullByDefault
 public class TransportKeySet {

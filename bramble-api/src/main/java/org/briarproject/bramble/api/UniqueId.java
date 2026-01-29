@@ -8,9 +8,7 @@ import javax.annotation.concurrent.ThreadSafe;
 @NotNullByDefault
 public class UniqueId extends Bytes {
 
-	/**
-	 * The length of a unique identifier in bytes.
-	 */
+	
 	public static final int LENGTH = 32;
 
 	public UniqueId(byte[] id) {

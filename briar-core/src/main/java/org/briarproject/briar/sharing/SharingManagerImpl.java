@@ -106,30 +106,25 @@ abstract class SharingManagerImpl<S extends Shareable>
 
 	@Override
 	public void onDatabaseOpened(Transaction txn) throws DbException {
-		// Create a local group to indicate that we've set this client up
 		Group localGroup = contactGroupFactory.createLocalGroup(getClientId(),
 				getMajorVersion());
 		if (db.containsGroup(txn, localGroup.getId())) return;
 		db.addGroup(txn, localGroup);
-		// Set things up for any pre-existing contacts
 		for (Contact c : db.getContacts(txn)) addingContact(txn, c);
 	}
 
 	@Override
 	public void addingContact(Transaction txn, Contact c) throws DbException {
-		// Create a group to share with the contact
 		Group g = getContactGroup(c);
 		db.addGroup(txn, g);
 		Visibility client = clientVersioningManager.getClientVisibility(txn,
 				c.getId(), getClientId(), getMajorVersion());
 		db.setGroupVisibility(txn, c.getId(), g.getId(), client);
-		// Attach the contact ID to the group
 		clientHelper.setContactId(txn, g.getId(), c.getId());
 	}
 
 	@Override
 	public void removingContact(Transaction txn, Contact c) throws DbException {
-		// Remove the contact group (all messages will be removed with it)
 		db.removeGroup(txn, getContactGroup(c));
 	}
 
@@ -142,17 +137,13 @@ abstract class SharingManagerImpl<S extends Shareable>
 	@Override
 	protected DeliveryAction incomingMessage(Transaction txn, Message m,
 			BdfList body, BdfDictionary d) throws DbException, FormatException {
-		// Parse the metadata
 		MessageMetadata meta = messageParser.parseMetadata(d);
-		// set the clean-up timer that will be started when message gets read
 		long timer = meta.getAutoDeleteTimer();
 		if (timer != NO_AUTO_DELETE_TIMER) {
 			db.setCleanupTimerDuration(txn, m.getId(), timer);
 		}
-		// Look up the session, if there is one
 		SessionId sessionId = getSessionId(meta.getShareableId());
 		StoredSession ss = getSession(txn, m.getGroupId(), sessionId);
-		// Handle the message
 		Session session;
 		MessageId storageId;
 		if (ss == null) {
@@ -162,33 +153,21 @@ abstract class SharingManagerImpl<S extends Shareable>
 			session = handleMessage(txn, m, body, meta, ss.bdfSession);
 			storageId = ss.storageId;
 		}
-		// Store the updated session
 		storeSession(txn, storageId, session);
 		return ACCEPT_DO_NOT_SHARE;
 	}
 
-	/**
-	 * Adds the given Group and initializes a session between us
-	 * and the Contact c in state SHARING.
-	 * If a session already exists, this does nothing.
-	 */
+	
 	void preShareGroup(Transaction txn, Contact c, Group g)
 			throws DbException, FormatException {
-		// Return if a session already exists with the contact
 		GroupId contactGroupId = getContactGroup(c).getId();
 		StoredSession existingSession = getSession(txn, contactGroupId,
 				getSessionId(g.getId()));
 		if (existingSession != null) return;
-
-		// Add the shareable's group
 		db.addGroup(txn, g);
-
-		// Apply the client's visibility
 		Visibility client = clientVersioningManager.getClientVisibility(txn,
 				c.getId(), getShareableClientId(), getShareableMajorVersion());
 		db.setGroupVisibility(txn, c.getId(), g.getId(), client);
-
-		// Initialize session in sharing state
 		Session session = new Session(SHARING, contactGroupId, g.getId(),
 				null, null, 0, 0);
 		MessageId storageId = createStorageId(txn, contactGroupId);
@@ -220,7 +199,7 @@ abstract class SharingManagerImpl<S extends Shareable>
 			BdfDictionary d = sessionEncoder.encodeSession(session);
 			return handleMessage(txn, m, body, meta, d);
 		} else {
-			throw new FormatException(); // Invalid first message
+			throw new FormatException();
 		}
 	}
 
@@ -276,27 +255,20 @@ abstract class SharingManagerImpl<S extends Shareable>
 		try {
 			Contact contact = db.getContact(txn, contactId);
 			if (getSharingStatus(txn, shareableId, contact) != SHAREABLE)
-				// we might have received an invitation in the meantime
 				return;
-			// Look up the session, if there is one
 			GroupId contactGroupId = getContactGroup(contact).getId();
 			StoredSession ss = getSession(txn, contactGroupId, sessionId);
-			// Create or parse the session
 			Session session;
 			MessageId storageId;
 			if (ss == null) {
-				// This is the first invite - create a new session
 				session = new Session(contactGroupId, shareableId);
 				storageId = createStorageId(txn, contactGroupId);
 			} else {
-				// We already have a session
 				session = sessionParser
 						.parseSession(contactGroupId, ss.bdfSession);
 				storageId = ss.storageId;
 			}
-			// Handle the invite action
 			session = engine.onInviteAction(txn, session, text);
-			// Store the updated session
 			storeSession(txn, storageId, session);
 		} catch (FormatException e) {
 			throw new DbException(e);
@@ -332,18 +304,14 @@ abstract class SharingManagerImpl<S extends Shareable>
 			SessionId id, boolean accept, boolean isAutoDecline)
 			throws DbException {
 		try {
-			// Look up the session
 			Contact contact = db.getContact(txn, c);
 			GroupId contactGroupId = getContactGroup(contact).getId();
 			StoredSession ss = getSession(txn, contactGroupId, id);
 			if (ss == null) throw new IllegalArgumentException();
-			// Parse the session
 			Session session =
 					sessionParser.parseSession(contactGroupId, ss.bdfSession);
-			// Handle the accept or decline action
 			if (accept) session = engine.onAcceptAction(txn, session);
 			else session = engine.onDeclineAction(txn, session, isAutoDecline);
-			// Store the updated session
 			storeSession(txn, ss.storageId, session);
 		} catch (FormatException e) {
 			throw new DbException(e);
@@ -387,9 +355,7 @@ abstract class SharingManagerImpl<S extends Shareable>
 	private ConversationRequest<S> parseInvitationRequest(Transaction txn,
 			ContactId c, MessageId m, MessageMetadata meta,
 			MessageStatus status) throws DbException, FormatException {
-		// Look up the invite message to get the details of the private group
 		InviteMessage<S> invite = messageParser.getInviteMessage(txn, m);
-		// Find out whether the shareable can be opened
 		boolean canBeOpened = meta.wasAccepted() &&
 				db.containsGroup(txn, invite.getShareableId());
 		return invitationFactory
@@ -421,7 +387,6 @@ abstract class SharingManagerImpl<S extends Shareable>
 		BdfDictionary query = messageParser.getInvitesAvailableToAnswerQuery();
 		Map<S, Collection<Contact>> sharers = new HashMap<>();
 		try {
-			// get invitations from each contact
 			for (Contact c : db.getContacts(txn)) {
 				GroupId contactGroupId = getContactGroup(c).getId();
 				Map<MessageId, BdfDictionary> results =
@@ -440,7 +405,6 @@ abstract class SharingManagerImpl<S extends Shareable>
 					}
 				}
 			}
-			// construct the invitation items
 			for (Entry<S, Collection<Contact>> e : sharers.entrySet()) {
 				S s = e.getKey();
 				Collection<Contact> contacts = e.getValue();
@@ -463,7 +427,6 @@ abstract class SharingManagerImpl<S extends Shareable>
 	@Override
 	public Collection<Contact> getSharedWith(Transaction txn, GroupId g)
 			throws DbException {
-		// TODO report also pending invitations
 		Collection<Contact> contacts = new ArrayList<>();
 		for (Contact c : db.getContacts(txn)) {
 			if (db.getGroupVisibility(txn, c.getId(), g) == SHARED)
@@ -488,7 +451,6 @@ abstract class SharingManagerImpl<S extends Shareable>
 	@Override
 	public SharingStatus getSharingStatus(Transaction txn, GroupId g, Contact c)
 			throws DbException {
-		// The group can't be shared unless the contact supports the client
 		Visibility client = clientVersioningManager.getClientVisibility(txn,
 				c.getId(), getShareableClientId(), getShareableMajorVersion());
 		if (client != SHARED) return SharingStatus.NOT_SUPPORTED;
@@ -496,9 +458,7 @@ abstract class SharingManagerImpl<S extends Shareable>
 		SessionId sessionId = getSessionId(g);
 		try {
 			StoredSession ss = getSession(txn, contactGroupId, sessionId);
-			// If there's no session, we can share the group with the contact
 			if (ss == null) return SharingStatus.SHAREABLE;
-			// If the session's in the right state, the contact can be invited
 			Session session =
 					sessionParser.parseSession(contactGroupId, ss.bdfSession);
 			State state = session.getState();
@@ -516,18 +476,14 @@ abstract class SharingManagerImpl<S extends Shareable>
 
 	void removingShareable(Transaction txn, S shareable) throws DbException {
 		SessionId sessionId = getSessionId(shareable.getId());
-		// If we have any sessions in progress, tell the contacts we're leaving
 		try {
 			for (Contact c : db.getContacts(txn)) {
-				// Look up the session for the contact, if there is one
 				GroupId contactGroupId = getContactGroup(c).getId();
 				StoredSession ss = getSession(txn, contactGroupId, sessionId);
-				if (ss == null) continue; // No session for this contact
-				// Let the engine perform a LEAVE action
+				if (ss == null) continue;
 				Session session = sessionParser
 						.parseSession(contactGroupId, ss.bdfSession);
 				session = engine.onLeaveAction(txn, session);
-				// Store the updated session
 				storeSession(txn, ss.storageId, session);
 			}
 		} catch (FormatException e) {
@@ -538,7 +494,6 @@ abstract class SharingManagerImpl<S extends Shareable>
 	@Override
 	public void onClientVisibilityChanging(Transaction txn, Contact c,
 			Visibility v) throws DbException {
-		// Apply the client's visibility to the contact group
 		Group g = getContactGroup(c);
 		db.setGroupVisibility(txn, c.getId(), g.getId(), v);
 	}
@@ -546,8 +501,6 @@ abstract class SharingManagerImpl<S extends Shareable>
 	ClientVersioningHook getShareableClientVersioningHook() {
 		return this::onShareableClientVisibilityChanging;
 	}
-
-	// Versioning hook for the shareable client
 	private void onShareableClientVisibilityChanging(Transaction txn, Contact c,
 			Visibility client) throws DbException {
 		try {
@@ -556,8 +509,7 @@ abstract class SharingManagerImpl<S extends Shareable>
 			Map<GroupId, Visibility> m = getPreferredVisibilities(txn, c);
 			for (Group g : shareables) {
 				Visibility preferred = m.get(g.getId());
-				if (preferred == null) continue; // No session for this group
-				// Apply min of preferred visibility and client's visibility
+				if (preferred == null) continue;
 				Visibility min = Visibility.min(preferred, client);
 				db.setGroupVisibility(txn, c.getId(), g.getId(), min);
 			}
@@ -589,11 +541,7 @@ abstract class SharingManagerImpl<S extends Shareable>
 
 	@FunctionalInterface
 	private interface MessageDeletionChecker {
-		/**
-		 * This is called for all messages belonging to a session.
-		 * It returns true if the given {@link MessageId} causes a problem
-		 * so that the session can not be deleted.
-		 */
+		
 		boolean causesProblem(MessageId messageId);
 	}
 
@@ -601,7 +549,6 @@ abstract class SharingManagerImpl<S extends Shareable>
 	public DeletionResult deleteAllMessages(Transaction txn, ContactId c)
 			throws DbException {
 		return deleteMessages(txn, c, (txn1, contactGroup, metadata) -> {
-			// get all sessions and their states
 			Map<GroupId, DeletableSession> sessions = new HashMap<>();
 			for (BdfDictionary d : metadata.values()) {
 				Session session;
@@ -622,11 +569,10 @@ abstract class SharingManagerImpl<S extends Shareable>
 	public DeletionResult deleteMessages(Transaction txn, ContactId c,
 			Set<MessageId> messageIds) throws DbException {
 		return deleteMessages(txn, c, (txn1, g, metadata) -> {
-			// get only sessions from given messageIds
 			Map<GroupId, DeletableSession> sessions = new HashMap<>();
 			for (MessageId messageId : messageIds) {
 				BdfDictionary d = metadata.get(messageId);
-				if (d == null) continue;  // throw new NoSuchMessageException()
+				if (d == null) continue;
 				try {
 					MessageMetadata messageMetadata =
 							messageParser.parseMetadata(d);
@@ -643,35 +589,24 @@ abstract class SharingManagerImpl<S extends Shareable>
 				}
 			}
 			return sessions;
-			// don't delete sessions if a message is not part of messageIds
 		}, messageId -> !messageIds.contains(messageId));
 	}
 
 	private DeletionResult deleteMessages(Transaction txn, ContactId c,
 			DeletableSessionRetriever retriever, MessageDeletionChecker checker)
 			throws DbException {
-		// get ID of the contact group
 		GroupId g = getContactGroup(db.getContact(txn, c)).getId();
-
-		// get metadata for all messages in the group
-		// (these are sessions *and* protocol messages)
 		Map<MessageId, BdfDictionary> metadata;
 		try {
 			metadata = clientHelper.getMessageMetadataAsDictionary(txn, g);
 		} catch (FormatException e) {
 			throw new DbException(e);
 		}
-
-		// get sessions and their states
 		Map<GroupId, DeletableSession> sessions =
 				retriever.getDeletableSessions(txn, g, metadata);
-
-		// assign protocol messages to their sessions
 		for (Entry<MessageId, BdfDictionary> entry : metadata.entrySet()) {
-			// parse message metadata and skip messages not visible in UI
 			MessageMetadata m;
 			try {
-				// skip all sessions, we are only interested in messages
 				BdfDictionary d = entry.getValue();
 				if (sessionParser.isSession(d)) continue;
 				m = messageParser.parseMetadata(d);
@@ -679,13 +614,9 @@ abstract class SharingManagerImpl<S extends Shareable>
 				throw new DbException(e);
 			}
 			if (!m.isVisibleInConversation()) continue;
-
-			// add visible messages to session
 			DeletableSession session = sessions.get(m.getShareableId());
 			if (session != null) session.messages.add(entry.getKey());
 		}
-
-		// get a set of all messages which were not ACKed by the contact
 		Set<MessageId> notAcked = new HashSet<>();
 		for (MessageStatus status : db.getMessageStatus(txn, c, g)) {
 			if (!status.isSeen()) notAcked.add(status.getMessageId());
@@ -699,15 +630,12 @@ abstract class SharingManagerImpl<S extends Shareable>
 	private DeletionResult deleteCompletedSessions(Transaction txn,
 			Collection<DeletableSession> sessions, Set<MessageId> notAcked,
 			MessageDeletionChecker checker) throws DbException {
-		// find completed sessions to delete
 		DeletionResult result = new DeletionResult();
 		for (DeletableSession session : sessions) {
 			if (session.state.isAwaitingResponse()) {
 				result.addInvitationSessionInProgress();
 				continue;
 			}
-			// we can only delete sessions
-			// where delivery of all messages was confirmed (aka ACKed)
 			boolean sessionDeletable = true;
 			for (MessageId m : session.messages) {
 				if (notAcked.contains(m) || checker.causesProblem(m)) {
@@ -734,9 +662,7 @@ abstract class SharingManagerImpl<S extends Shareable>
 		ContactId c;
 		Map<SessionId, DeletableSession> sessions = new HashMap<>();
 		try {
-			// get the ContactId from the given GroupId
 			c = clientHelper.getContactId(txn, g);
-			// get sessions for all messages to be deleted
 			for (MessageId messageId : messageIds) {
 				BdfDictionary d = clientHelper
 						.getMessageMetadataAsDictionary(txn, messageId);
@@ -760,13 +686,9 @@ abstract class SharingManagerImpl<S extends Shareable>
 		} catch (FormatException e) {
 			throw new DbException(e);
 		}
-
-		// delete given visible messages in sessions
 		for (Entry<SessionId, DeletableSession> entry : sessions.entrySet()) {
 			DeletableSession session = entry.getValue();
-			// first decline pending invitation to shareable
 			if (session.state == LOCAL_INVITED) {
-				// marked as autoDecline
 				respondToInvitation(txn, c, entry.getKey(), false, true);
 			}
 			for (MessageId m : session.messages) {

@@ -9,8 +9,6 @@ class RecordReaderFactoryImpl implements RecordReaderFactory {
 
 	@Override
 	public RecordReader createRecordReader(InputStream in) {
-		// Default to extended format for Zerion↔Zerion communication.
-		// Classical format should be explicitly requested for Briar compatibility.
 		return new RecordReaderImpl(in);
 	}
 

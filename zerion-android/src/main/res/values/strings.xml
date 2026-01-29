@@ -105,8 +105,6 @@
 	<string name="groups_button">Private Groups</string>
 	<string name="groups_button_add">Add new group</string>
 	<string name="vault_button">Zvault</string>
-	<string name="forums_button">Forums</string>
-	<string name="blogs_button">Blogs</string>
 	<!-- This is part of the main menu. The app will be locked when this is tapped. -->
 	<string name="lock_button">Lock App</string>
 	<string name="settings_button">Settings</string>
@@ -167,14 +165,6 @@
 	<plurals name="group_message_notification_text">
 		<item quantity="one">New group message.</item>
 		<item quantity="other">%d new group messages.</item>
-	</plurals>
-	<plurals name="forum_post_notification_text">
-		<item quantity="one">New forum post.</item>
-		<item quantity="other">%d new forum posts.</item>
-	</plurals>
-	<plurals name="blog_post_notification_text">
-		<item quantity="one">New blog post.</item>
-		<item quantity="other">%d new blog posts.</item>
 	</plurals>
 
 	<!-- Voice Messages -->
@@ -377,7 +367,6 @@
 
 	<string name="add_contact_title">Add Contact Nearby</string>
 	<string name="add_contact_error_two_way">Did you both scan each other\'s QR codes?</string>
-	<string name="face_to_face">You must meet up with the person you want to add as a contact.\n\nThis will prevent anyone from impersonating you or reading your messages in future.</string>
 	<string name="continue_button">Continue</string>
 	<string name="try_again_button">Try Again</string>
 	<string name="waiting_for_contact_to_scan">Waiting for contact to scan and connect\u2026</string>
@@ -385,11 +374,6 @@
 	<string name="contact_added_toast">Contact added: %s</string>
 	<string name="contact_already_exists">Contact %s already exists</string>
 	<string name="contact_already_exists_general">Contact already exists</string>
-	<string name="qr_code_invalid">The QR code is invalid</string>
-	<string name="qr_code_too_old_1">The QR code you have scanned comes from an older version of Zerion.\n\nPlease ask your contact to upgrade to the latest version and then try again.</string>
-	<string name="qr_code_too_new_1">The QR code you have scanned comes from a newer version of Zerion.\n\nPlease upgrade to the latest version and then try again.</string>
-	<string name="mailbox_qr_code_for_contact">The QR code you have scanned comes from Zerion Mailbox.\n\nIf you want to link a Mailbox, please choose Settings > Mailbox from the Zerion menu.</string>
-	<string name="qr_code_format_unknown">The QR code you have scanned is not meant for adding a Zerion contact.\n\nPlease scan the QR code shown on your contact\'s screen.</string>
 	<string name="camera_error">Camera error</string>
 	<string name="no_camera_app">No camera app available</string>
 	<string name="connecting_to_device">Connecting to device\u2026</string>
@@ -397,7 +381,6 @@
 	<string name="connection_error_title">Could not connect to your contact</string>
 	<string name="connection_error_explanation">Please check that you are both connected to the same Wi-Fi network.</string>
 	<string name="connection_error_feedback">If this problem persists, please <a href="feedback">send feedback</a> to help us improve the app.</string>
-	<string name="info_both_must_scan">You must both scan each other\'s QR codes</string>
 
 	<!-- Adding Contacts Remotely -->
 
@@ -561,116 +544,39 @@
 	<string name="groups_reveal_visible_revealed_by_contact">Contact relationship is visible to the group (revealed by %s)</string>
 	<string name="groups_reveal_invisible">Contact relationship is not visible to the group</string>
 
-	<!-- Forums -->
-	<string name="no_forums">No forums to show</string>
-	<string name="no_forums_action">Tap the + icon to create a forum, or ask your contacts to share forums with you</string>
-	<string name="create_forum_title">Create Forum</string>
-	<string name="choose_forum_hint">Choose a name for your forum</string>
-	<string name="create_forum_button">Create Forum</string>
-	<string name="forum_created_toast">Forum created</string>
-	<string name="no_forum_posts">No posts to show</string>
 	<string name="no_posts">No posts</string>
+	<string name="reblog_button">Reblog</string>
+	<string name="share_message">Share with a message</string>
+	<string name="share_hint_short">Add a message (optional)</string>
+	<string name="invitation_exists">Invitation already sent</string>
+	<string name="invitation_already_sharing">Already sharing</string>
+	<string name="new_message_hint">New Post</string>
+	<string name="message_reply_hint">New Reply</string>
+	<string name="invitation_already_invited">Invitation already sent</string>
+	<string name="invitation_invite_received">Invitation already received</string>
+	<string name="invitation_not_supported">Not supported by this contact</string>
+	<string name="invitation_error">Error. This is a bug and not your fault</string>
 	<plurals name="posts">
 		<item quantity="one">%d post</item>
 		<item quantity="other">%d posts</item>
 	</plurals>
-	<string name="forum_new_message_hint">New Post</string>
-	<string name="forum_message_reply_hint">New Reply</string>
 	<string name="btn_reply">Reply</string>
-	<string name="forum_leave">Leave Forum</string>
-	<string name="dialog_title_leave_forum">Confirm Leaving Forum</string>
-	<string name="dialog_message_leave_forum">Are you sure that you want to leave this forum?\n\nAny contacts you\'ve shared this forum with might stop receiving updates.</string>
 	<string name="dialog_button_leave">Leave</string>
-	<string name="forum_left_toast">Left forum</string>
 
-	<!-- Forum Sharing -->
-	<string name="forum_share_button">Share Forum</string>
 	<string name="contacts_selected">Contacts selected</string>
 	<string name="activity_share_toolbar_header">Choose Contacts</string>
 	<string name="no_contacts_selector">No contacts to show</string>
 	<string name="no_contacts_selector_action">Please come back here after adding a contact</string>
-	<string name="forum_shared_snackbar">Forum shared with chosen contacts</string>
-	<string name="forum_share_message">Add a message (optional)</string>
-	<string name="forum_share_hint_short">Type your message here…</string>
-	<string name="forum_share_error">There was an error sharing this forum.</string>
-	<string name="forum_invitation_received">%1$s has shared the forum \"%2$s\" with you.</string>
-	<string name="forum_invitation_sent">You have shared the forum \"%1$s\" with %2$s.</string>
-	<string name="forum_invitations_title">Forum Invitations</string>
-	<string name="forum_invitation_exists">You accepted an invitation to this forum already.\n\nAccepting more invitations will make your connection to the forum faster and more reliable.</string>
-	<string name="forum_joined_toast">Joined forum</string>
-	<string name="forum_declined_toast">Invitation declined</string>
 	<string name="shared_by_format">Shared by %s</string>
-	<string name="forum_invitation_already_sharing">Already sharing</string>
-	<string name="forum_invitation_already_invited">Invitation already sent</string>
-	<string name="forum_invitation_invite_received">Invitation already received</string>
-	<string name="forum_invitation_not_supported">Not supported by this contact</string>
-	<string name="forum_invitation_error">Error. This is a bug and not your fault</string>
-	<string name="forum_invitation_response_accepted_sent">You accepted the forum invitation from %s.</string>
-	<string name="forum_invitation_response_declined_sent">You declined the forum invitation from %s.</string>
-	<string name="forum_invitation_response_declined_auto">The forum invitation from %s was automatically declined.</string>
-	<string name="forum_invitation_response_accepted_received">%s accepted the forum invitation.</string>
-	<string name="forum_invitation_response_declined_received">%s declined the forum invitation.</string>
 
 	<string name="sharing_status">Sharing Status</string>
-	<string name="sharing_status_forum">Any member of a forum can share it with their contacts. You are sharing this forum with the following contacts. There may also be other members who you can\'t see.</string>
 	<string name="shared_with">Shared with %1$d (%2$d online)</string>
-	<plurals name="forums_shared">
-		<item quantity="one">%d forum shared by contacts</item>
-		<item quantity="other">%d forums shared by contacts</item>
-	</plurals>
 	<string name="nobody">Nobody</string>
 
-	<!-- Blogs -->
-	<string name="blogs_other_blog_empty_state">No posts to show</string>
 	<string name="read_more">read more</string>
-	<string name="blogs_write_blog_post">Write Blog Post</string>
-	<string name="blogs_write_blog_post_body_hint">Type your blog post</string>
-	<string name="blogs_publish_blog_post">Publish</string>
-	<string name="blogs_blog_post_created">Blog Post Created</string>
-	<string name="blogs_blog_post_received">New Blog Post Received</string>
-	<string name="blogs_blog_post_scroll_to">Scroll To</string>
-	<string name="blogs_feed_empty_state">No posts to show</string>
-	<string name="blogs_feed_empty_state_action">Posts from your contacts and blogs you subscribe to will appear here\n\nTap the pen icon to write a post</string>
-	<string name="blogs_remove_blog">Remove Blog</string>
-	<string name="blogs_remove_blog_dialog_message">Are you sure that you want to remove this blog?\n\nPosts will be removed from your device but not from other people\'s devices.\n\nAny contacts you\'ve shared this blog with might stop receiving updates.</string>
-	<string name="blogs_remove_blog_ok">Remove</string>
-	<string name="blogs_blog_removed">Blog removed</string>
-	<string name="blogs_reblog_comment_hint">Add a comment (optional)</string>
-	<string name="blogs_reblog_button">Reblog</string>
 
-	<!-- Blog Sharing -->
-	<string name="blogs_sharing_share">Share Blog</string>
-	<string name="blogs_sharing_error">There was an error sharing this blog.</string>
-	<string name="blogs_sharing_button">Share Blog</string>
-	<string name="blogs_sharing_snackbar">Blog shared with chosen contacts</string>
-	<string name="blogs_sharing_response_accepted_sent">You accepted the blog invitation from %s.</string>
-	<string name="blogs_sharing_response_declined_sent">You declined the blog invitation from %s.</string>
-	<string name="blogs_sharing_response_declined_auto">The blog invitation from %s was automatically declined.</string>
-	<string name="blogs_sharing_response_accepted_received">%s accepted the blog invitation.</string>
-	<string name="blogs_sharing_response_declined_received">%s declined the blog invitation.</string>
-	<string name="blogs_sharing_invitation_received">%1$s has shared the blog \"%2$s\" with you.</string>
-	<string name="blogs_sharing_invitation_sent">You have shared the blog \"%1$s\" with %2$s.</string>
-	<string name="blogs_sharing_invitations_title">Blog Invitations</string>
-	<string name="blogs_sharing_joined_toast">Subscribed to blog</string>
-	<string name="blogs_sharing_declined_toast">Invitation declined</string>
-	<string name="sharing_status_blog">Anyone who subscribes to a blog can share it with their contacts. You are sharing this blog with the following contacts. There may also be other subscribers who you can\'t see.</string>
 
 	<!-- RSS Feeds -->
-	<string name="blogs_rss_feeds_import">Import RSS Feed</string>
-	<string name="blogs_rss_feeds_import_button">Import</string>
-	<string name="blogs_rss_feeds_import_hint">Enter the URL of the RSS feed</string>
-	<string name="blogs_rss_feeds_import_progress">Importing RSS Feed…</string>
-	<string name="blogs_rss_feeds_import_error">We are sorry! There was an error importing your feed.</string>
-	<string name="blogs_rss_feeds_import_title">Import feed from file</string>
-	<string name="blogs_rss_feeds">RSS Feeds</string>
-	<string name="blogs_rss_feeds_manage_imported">Imported:</string>
-	<string name="blogs_rss_feeds_manage_author">Author:</string>
-	<string name="blogs_rss_feeds_manage_updated">Last Updated:</string>
-	<string name="blogs_rss_remove_feed">Remove Feed</string>
-	<string name="blogs_rss_remove_feed_dialog_message">Are you sure that you want to remove this feed?\n\nPosts will be removed from your device but not from other people\'s devices.\n\nAny contacts you\'ve shared this feed with might stop receiving updates.</string>
-	<string name="blogs_rss_remove_feed_ok">Remove</string>
-	<string name="blogs_rss_feeds_manage_empty_state">No RSS feeds to show\n\nTap the + icon to import a feed</string>
-	<string name="blogs_rss_feeds_manage_error">There was a problem loading your feeds. Please try again later.</string>
 
 	<!-- Settings Profile Picture -->
 	<string name="change_profile_picture">Tap to change your profile picture</string>
@@ -769,12 +675,6 @@
 	<string name="notify_voice_calls_setting_title">Voice calls</string>
 	<string name="notify_voice_calls_setting_summary">Show alerts for incoming voice calls</string>
 	<string name="notify_voice_calls_setting_summary_26">Configure alerts for incoming voice calls</string>
-	<string name="notify_forum_posts_setting_title">Forum posts</string>
-	<string name="notify_forum_posts_setting_summary">Show alerts for forum posts</string>
-	<string name="notify_forum_posts_setting_summary_26">Configure alerts for forum posts</string>
-	<string name="notify_blog_posts_setting_title">Blog posts</string>
-	<string name="notify_blog_posts_setting_summary">Show alerts for blog posts</string>
-	<string name="notify_blog_posts_setting_summary_26">Configure alerts for blog posts</string>
 	<string name="notify_vibration_setting">Vibrate</string>
 	<string name="notify_sound_setting">Sound</string>
 	<string name="notify_sound_setting_default">Default ringtone</string>
@@ -796,10 +696,6 @@
 	<string name="mailbox_setup_connecting">Connecting to Mailbox…</string>
 	<!-- This string is shown when connecting to a Mailbox for the first time. The placeholder will be replaced with a duration, e.g. "2 minutes". -->
 	<string name="mailbox_setup_connecting_info">This may take up to %1s</string>
-	<string name="mailbox_qr_code_too_old">The QR code you have scanned comes from an older version of Zerion Mailbox.\n\nPlease upgrade Zerion Mailbox to the latest version and then try again.</string>
-	<string name="mailbox_qr_code_too_new">The QR code you have scanned comes from a newer version of Zerion Mailbox.\n\nPlease upgrade Zerion to the latest version and then try again.</string>
-	<string name="contact_qr_code_for_mailbox">The QR code you have scanned is for adding a Zerion contact.\n\nIf you want to add a contact, please go to the contact list and tap the + icon.</string>
-	<string name="mailbox_setup_qr_code_wrong_description">The QR code you have scanned does not come from Zerion Mailbox.\n\nPlease open the Zerion Mailbox app on your Mailbox device and scan the QR code it presents.</string>
 	<string name="mailbox_setup_already_paired_title">Mailbox already linked</string>
 	<string name="mailbox_setup_already_paired_description">Unlink the Mailbox on your other device and try again.</string>
 	<string name="mailbox_setup_io_error_title">Could not connect</string>
@@ -973,9 +869,6 @@
 	<string name="permission_bluetooth_body">To use Bluetooth communication, Zerion needs permission to find and connect to nearby devices.</string>
 	<string name="permission_bluetooth_denied_body">You have denied access to nearby devices, but Zerion needs this permission to use Bluetooth.\n\nPlease consider granting access.</string>
 
-	<string name="qr_code">QR code</string>
-	<string name="show_qr_code_fullscreen">Show QR code fullscreen</string>
-
 	<!-- App Locking -->
 	<string name="lock_unlock">Unlock Zerion</string>
 	<string name="lock_unlock_verbose">Enter your device PIN, pattern or password to unlock Zerion</string>
@@ -1008,11 +901,8 @@
 	<string name="wifi_settings_request_enable_body">To create a Wi-Fi hotspot, Zerion needs to use Wi-Fi. Please enable it.</string>
 
 	<string name="hotspot_tab_manual">Manual</string>
-	<!-- The placeholder to be inserted into the string 'hotspot_manual_wifi': People can connect by %s -->
-	<string name="hotspot_scanning_a_qr_code">scanning a QR code</string>
 
 	<!-- Wi-Fi setup -->
-	<!-- The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code' -->
 	<string name="hotspot_manual_wifi">Your phone is providing a Wi-Fi hotspot. People who want to download Zerion can connect to the hotspot by adding it in their device\'s Wi-Fi settings using the details below or by %s. When they have connected to the hotspot, press \'Next\'.</string>
 	<string name="hotspot_manual_wifi_ssid">Network name</string>
 	<string name="hotspot_qr_wifi">Your phone is providing a Wi-Fi hotspot. People who want to download Zerion can connect to the hotspot by scanning this QR code. When they have connected to the hotspot, press \'Next\'.</string>
@@ -1023,7 +913,6 @@
 	</plurals>
 
 	<!-- Download link -->
-	<!-- The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code' -->
 	<string name="hotspot_manual_site">Your phone is providing a Wi-Fi hotspot. People who are connected to the hotspot can download Zerion by typing the following link in a web browser or %s.</string>
 	<string name="hotspot_manual_site_address">Address (URL)</string>
 	<string name="hotspot_qr_site">Your phone is providing a Wi-Fi hotspot. People who are connected to the hotspot can download Zerion by scanning this QR code.</string>
@@ -1068,7 +957,7 @@
 
 	<string name="removable_drive_menu_title">Connect via Removable Drive</string>
 	<string name="removable_drive_intro">If you can\'t connect to your contact via the Internet, Wi-Fi or Bluetooth, Zerion can also transfer messages on a removable drive such as a USB stick or an SD card.</string>
-	<string name="removable_drive_explanation">If you can\'t connect to your contact via the Internet, Wi-Fi or Bluetooth, Zerion can also transfer messages on a removable drive such as a USB stick or an SD card.\n\nWhen you use the \"Send Data\" button, any data that\'s waiting to be sent to the contact will be written to the removable drive. This includes private messages, attachments, blogs, forums and private groups.\n\nEverything will be encrypted before it is written to the removable drive.\n\nWhen your contact receives the removable drive, they can use the \"Receive Data\" button to import the messages into Zerion.</string>
+	<string name="removable_drive_explanation">If you can\'t connect to your contact via the Internet, Wi-Fi or Bluetooth, Zerion can also transfer messages on a removable drive such as a USB stick or an SD card.\n\nWhen you use the \"Send Data\" button, any data that\'s waiting to be sent to the contact will be written to the removable drive. This includes private messages, attachments and private groups.\n\nEverything will be encrypted before it is written to the removable drive.\n\nWhen your contact receives the removable drive, they can use the \"Receive Data\" button to import the messages into Zerion.</string>
 	<string name="removable_drive_title_send">Send data</string>
 	<string name="removable_drive_title_receive">Receive data</string>
 	<string name="removable_drive_send_intro">Tap the button below to create a new file containing the encrypted messages. You can choose where the file will be saved.\n\nIf you want to save the file on a removable drive, insert the drive now.</string>

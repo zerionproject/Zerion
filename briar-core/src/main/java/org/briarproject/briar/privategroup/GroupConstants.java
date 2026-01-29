@@ -3,8 +3,6 @@ package org.briarproject.briar.privategroup;
 import static org.briarproject.briar.client.MessageTrackerConstants.MSG_KEY_READ;
 
 interface GroupConstants {
-
-	// Metadata keys
 	String KEY_TYPE = "type";
 	String KEY_TIMESTAMP = "timestamp";
 	String KEY_READ = MSG_KEY_READ;

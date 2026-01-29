@@ -8,9 +8,7 @@ import java.util.Arrays;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
-/**
- * A wrapper around a byte array, to allow it to be stored in maps etc.
- */
+
 @ThreadSafe
 @NotNullByDefault
 public class Bytes implements Comparable<Bytes> {
@@ -29,8 +27,6 @@ public class Bytes implements Comparable<Bytes> {
 
 	@Override
 	public int hashCode() {
-		// Thread-safe because if two or more threads check and update the
-		// value, they'll calculate the same value
 		if (hashCode == -1) hashCode = Arrays.hashCode(bytes);
 		return hashCode;
 	}

@@ -4,10 +4,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.Immutable;
 
-/**
- * Type-safe wrapper for an integer that uniquely identifies a set of
- * {@link TransportKeySet transport keys} within the scope of the local device.
- */
+
 @Immutable
 @NotNullByDefault
 public class KeySetId {

@@ -17,14 +17,8 @@ import org.briarproject.bramble.api.sync.GroupFactory;
 import org.briarproject.briar.api.autodelete.AutoDeleteManager;
 import org.briarproject.briar.api.autodelete.event.AutoDeleteTimerMirroredEvent;
 import org.briarproject.nullsafety.NotNullByDefault;
-
-import java.util.logging.Logger;
-
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
-
-import static java.util.logging.Level.INFO;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.briar.api.autodelete.AutoDeleteConstants.MAX_AUTO_DELETE_TIMER_MS;
 import static org.briarproject.briar.api.autodelete.AutoDeleteConstants.MIN_AUTO_DELETE_TIMER_MS;
 import static org.briarproject.briar.api.autodelete.AutoDeleteConstants.NO_AUTO_DELETE_TIMER;
@@ -37,10 +31,6 @@ import static org.briarproject.briar.autodelete.AutoDeleteConstants.NO_PREVIOUS_
 @NotNullByDefault
 class AutoDeleteManagerImpl
 		implements AutoDeleteManager, OpenDatabaseHook, ContactHook {
-
-	private static final Logger LOG =
-			getLogger(AutoDeleteManagerImpl.class.getName());
-
 	private final DatabaseComponent db;
 	private final ClientHelper clientHelper;
 	private final GroupFactory groupFactory;
@@ -63,7 +53,6 @@ class AutoDeleteManagerImpl
 	public void onDatabaseOpened(Transaction txn) throws DbException {
 		if (db.containsGroup(txn, localGroup.getId())) return;
 		db.addGroup(txn, localGroup);
-		// Set things up for any pre-existing contacts
 		for (Contact c : db.getContacts(txn)) addingContact(txn, c);
 	}
 
@@ -100,10 +89,6 @@ class AutoDeleteManagerImpl
 			BdfDictionary meta =
 					clientHelper.getGroupMetadataAsDictionary(txn, g.getId());
 			long timer = meta.getLong(GROUP_KEY_TIMER, NO_AUTO_DELETE_TIMER);
-			if (LOG.isLoggable(INFO)) {
-				LOG.info("Sending message with auto-delete timer " + timer);
-			}
-			// Update the timestamp and clear the previous timer, if any
 			meta = BdfDictionary.of(
 					new BdfEntry(GROUP_KEY_TIMESTAMP, timestamp),
 					new BdfEntry(GROUP_KEY_PREVIOUS_TIMER, NO_PREVIOUS_TIMER));
@@ -124,10 +109,6 @@ class AutoDeleteManagerImpl
 					clientHelper.getGroupMetadataAsDictionary(txn, g.getId());
 			long oldTimer = meta.getLong(GROUP_KEY_TIMER, NO_AUTO_DELETE_TIMER);
 			if (timer == oldTimer) return;
-			if (LOG.isLoggable(INFO)) {
-				LOG.info("Setting auto-delete timer to " + timer);
-			}
-			// Store the new timer and the previous timer
 			meta = BdfDictionary.of(
 					new BdfEntry(GROUP_KEY_TIMER, timer),
 					new BdfEntry(GROUP_KEY_PREVIOUS_TIMER, oldTimer));
@@ -151,24 +132,13 @@ class AutoDeleteManagerImpl
 					meta.getLong(GROUP_KEY_PREVIOUS_TIMER, NO_PREVIOUS_TIMER);
 			meta = new BdfDictionary();
 			if (oldTimer == NO_PREVIOUS_TIMER) {
-				// We don't have an unsent change. Mirror their timer
-				if (LOG.isLoggable(INFO)) {
-					LOG.info("Mirroring auto-delete timer " + timer);
-				}
 				meta.put(GROUP_KEY_TIMER, timer);
 				txn.attach(new AutoDeleteTimerMirroredEvent(c, timer));
 			} else if (timer != oldTimer) {
-				// Their sent change trumps our unsent change. Mirror their
-				// timer and clear the previous timer to drop our unsent change
-				if (LOG.isLoggable(INFO)) {
-					LOG.info("Mirroring auto-delete timer " + timer
-							+ " and forgetting unsent change");
-				}
 				meta.put(GROUP_KEY_TIMER, timer);
 				meta.put(GROUP_KEY_PREVIOUS_TIMER, NO_PREVIOUS_TIMER);
 				txn.attach(new AutoDeleteTimerMirroredEvent(c, timer));
 			}
-			// Always update the timestamp
 			meta.put(GROUP_KEY_TIMESTAMP, timestamp);
 			clientHelper.mergeGroupMetadata(txn, g.getId(), meta);
 		} catch (FormatException e) {

@@ -7,10 +7,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.Immutable;
 
-/**
- * An event that is broadcast when a plugin leaves the {@link State#ACTIVE}
- * state.
- */
+
 @Immutable
 @NotNullByDefault
 public class TransportInactiveEvent extends Event {

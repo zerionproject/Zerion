@@ -9,9 +9,7 @@ import java.util.Collection;
 
 import javax.annotation.concurrent.Immutable;
 
-/**
- * An event that is broadcast when messages are sent to a contact.
- */
+
 @Immutable
 @NotNullByDefault
 public class MessagesSentEvent extends Event {

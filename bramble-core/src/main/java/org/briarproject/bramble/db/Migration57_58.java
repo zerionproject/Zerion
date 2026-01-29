@@ -5,16 +5,9 @@ import org.briarproject.bramble.api.db.DbException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.logging.Logger;
-
-import static java.util.logging.Level.WARNING;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.db.JdbcUtils.tryToClose;
 
 class Migration57_58 implements Migration<Connection> {
-
-	private static final Logger LOG = getLogger(Migration57_58.class.getName());
-
 	private final DatabaseTypes dbTypes;
 
 	Migration57_58(DatabaseTypes dbTypes) {
@@ -67,7 +60,7 @@ class Migration57_58 implements Migration<Connection> {
 					+ " ADD COLUMN pqEpoch BIGINT NOT NULL DEFAULT 0");
 
 		} catch (SQLException e) {
-			tryToClose(s, LOG, WARNING);
+			tryToClose(s);
 			throw new DbException(e);
 		}
 	}

@@ -41,7 +41,6 @@ import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 import static android.view.WindowManager.LayoutParams.FLAG_SECURE;
 import static androidx.lifecycle.Lifecycle.State.STARTED;
 import static java.util.Collections.emptyList;
-import static java.util.logging.Level.INFO;
 import static com.professor.zerion.android.TestingConstants.PREVENT_SCREENSHOTS;
 import static com.professor.zerion.android.util.UiUtils.hideSoftKeyboard;
 import static com.professor.zerion.android.util.UiUtils.showFragment;
@@ -97,8 +96,6 @@ public abstract class BaseActivity extends AppCompatActivity
 
 	@Override
 	protected void attachBaseContext(Context base) {
-		// PERFORMANCE: Use applyLocaleToContext() - NO disk I/O
-		// Do NOT call setLocale() here as it can trigger LocaleManager writes
 		super.attachBaseContext(
 				Localizer.getInstance().applyLocaleToContext(base));
 	}

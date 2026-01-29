@@ -108,8 +108,6 @@ public class VoiceCallActivity extends AppCompatActivity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_voice_call);
-
-		// Show on lock screen and turn screen on for incoming calls
 		if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O_MR1) {
 			setShowWhenLocked(true);
 			setTurnScreenOn(true);
@@ -244,11 +242,9 @@ public class VoiceCallActivity extends AppCompatActivity {
 
 	private void toggleSpeaker() {
 		isSpeakerOn = !isSpeakerOn;
-		// Route speaker toggle through service so it affects the audio stream
 		if (isBound && voiceCallService != null) {
 			voiceCallService.setSpeakerphoneOn(isSpeakerOn);
 		} else {
-			// Fallback to direct AudioManager if service not bound
 			audioManager.setSpeakerphoneOn(isSpeakerOn);
 		}
 		speakerButton.setImageResource(isSpeakerOn ?
@@ -317,7 +313,6 @@ public class VoiceCallActivity extends AppCompatActivity {
 		runOnUiThread(() -> {
 			stopRingtone();
 			callStatusText.setText("Call failed: " + reason);
-			// Keep current layout visible (don't switch) - let user see the failure message
 			if (!isFinishing) {
 				isFinishing = true;
 				handler.postDelayed(this::finish, 2000);

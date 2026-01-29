@@ -3,8 +3,6 @@ package org.briarproject.briar.sharing;
 import org.briarproject.briar.client.MessageTrackerConstants;
 
 interface SharingConstants {
-
-	// Message metadata keys
 	String MSG_KEY_MESSAGE_TYPE = "messageType";
 	String MSG_KEY_SHAREABLE_ID = "shareableId";
 	String MSG_KEY_TIMESTAMP = "timestamp";
@@ -15,8 +13,6 @@ interface SharingConstants {
 	String MSG_KEY_INVITATION_ACCEPTED = "invitationAccepted";
 	String MSG_KEY_AUTO_DELETE_TIMER = "autoDeleteTimer";
 	String MSG_KEY_IS_AUTO_DECLINE = "isAutoDecline";
-
-	// Session keys
 	String SESSION_KEY_IS_SESSION = "isSession";
 	String SESSION_KEY_STATE = "state";
 	String SESSION_KEY_SESSION_ID = "sessionId";

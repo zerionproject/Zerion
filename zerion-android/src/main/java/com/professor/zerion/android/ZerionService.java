@@ -133,9 +133,6 @@ public class ZerionService extends Service {
 				startForeground(ONGOING_NOTIFICATION_ID, foregroundNotification);
 
 				wakeLockManager.executeWakefully(() -> {
-					// Note: Do NOT zero the dbKey here - it's still needed by the database
-					// for creating new connections. The key is stored by H2Database and will
-					// be cleared when the database is closed during shutdown.
 					StartResult result = lifecycleManager.startServices(dbKey);
 					if (result == SUCCESS) {
 						started = true;
@@ -166,7 +163,6 @@ public class ZerionService extends Service {
 
 	@Override
 	protected void attachBaseContext(Context base) {
-		// PERFORMANCE: Use applyLocaleToContext() - NO disk I/O
 		super.attachBaseContext(Localizer.getInstance().applyLocaleToContext(base));
 	}
 

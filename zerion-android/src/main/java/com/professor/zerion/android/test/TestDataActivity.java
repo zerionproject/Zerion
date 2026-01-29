@@ -24,9 +24,8 @@ public class TestDataActivity extends ZerionActivity {
 	@Inject
 	TestDataCreator testDataCreator;
 
-	private TextView contactsTextView, forumsTextView, privateGroupsTextView;
+	private TextView contactsTextView, privateGroupsTextView;
 	private SeekBar contactsSeekBar, messagesSeekBar, avatarsSeekBar,
-			blogPostsSeekBar, forumsSeekBar, forumPostsSeekBar,
 			privateGroupsSeekBar, privateGroupPostsSeekBar;
 
 	@Override
@@ -43,19 +42,12 @@ public class TestDataActivity extends ZerionActivity {
 		contactsTextView = findViewById(R.id.textViewContactsSb);
 		TextView messagesTextView = findViewById(R.id.textViewMessagesSb);
 		TextView avatarsTextView = findViewById(R.id.textViewAvatarsSb);
-		TextView blogPostsTextView = findViewById(R.id.TextViewBlogPostsSb);
-		forumsTextView = findViewById(R.id.TextViewForumsSb);
-		TextView forumPostsTextView =
-				findViewById(R.id.TextViewForumMessagesSb);
 		privateGroupsTextView = findViewById(R.id.TextViewPrivateGroupsSb);
 		TextView privateGroupPostsTextView =
 				findViewById(R.id.TextViewPrivateGroupMessagesSb);
 		contactsSeekBar = findViewById(R.id.seekBarContacts);
 		messagesSeekBar = findViewById(R.id.seekBarMessages);
 		avatarsSeekBar = findViewById(R.id.seekBarAvatars);
-		blogPostsSeekBar = findViewById(R.id.seekBarBlogPosts);
-		forumsSeekBar = findViewById(R.id.seekBarForums);
-		forumPostsSeekBar = findViewById(R.id.seekBarForumMessages);
 		privateGroupsSeekBar = findViewById(R.id.seekBarPrivateGroups);
 		privateGroupPostsSeekBar =
 				findViewById(R.id.seekBarPrivateGroupMessages);
@@ -73,19 +65,6 @@ public class TestDataActivity extends ZerionActivity {
 				new OnSeekBarChangeUpdateProgress(messagesTextView));
 		avatarsSeekBar.setOnSeekBarChangeListener(
 				new OnSeekBarChangeUpdateProgress(avatarsTextView));
-		blogPostsSeekBar.setOnSeekBarChangeListener(
-				new OnSeekBarChangeUpdateProgress(blogPostsTextView));
-		forumsSeekBar.setOnSeekBarChangeListener(
-				new AbstractOnSeekBarChangeListener() {
-					@Override
-					public void onProgressChanged(SeekBar seekBar, int progress,
-							boolean fromUser) {
-						forumsTextView.setText(String.valueOf(progress));
-						forumPostsSeekBar.setEnabled(progress > 0);
-					}
-				});
-		forumPostsSeekBar.setOnSeekBarChangeListener(
-				new OnSeekBarChangeUpdateProgress(forumPostsTextView));
 		privateGroupsSeekBar.setOnSeekBarChangeListener(
 				new AbstractOnSeekBarChangeListener() {
 					@Override
@@ -102,9 +81,6 @@ public class TestDataActivity extends ZerionActivity {
 			contactsSeekBar.setProgress(0);
 			messagesSeekBar.setProgress(0);
 			avatarsSeekBar.setProgress(0);
-			blogPostsSeekBar.setProgress(0);
-			forumsSeekBar.setProgress(0);
-			forumPostsSeekBar.setProgress(0);
 			privateGroupsSeekBar.setProgress(0);
 			privateGroupPostsSeekBar.setProgress(0);
 		});

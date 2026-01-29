@@ -70,7 +70,7 @@ class CreatorProtocolEngine extends AbstractProtocolEngine<CreatorSession> {
 			case LEFT:
 			case DISSOLVED:
 			case ERROR:
-				throw new ProtocolStateException(); // Invalid in these states
+				throw new ProtocolStateException();
 			default:
 				throw new AssertionError();
 		}
@@ -78,7 +78,7 @@ class CreatorProtocolEngine extends AbstractProtocolEngine<CreatorSession> {
 
 	@Override
 	public CreatorSession onJoinAction(Transaction txn, CreatorSession s) {
-		throw new UnsupportedOperationException(); // Invalid in this role
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -88,7 +88,7 @@ class CreatorProtocolEngine extends AbstractProtocolEngine<CreatorSession> {
 			case START:
 			case DISSOLVED:
 			case ERROR:
-				return s; // Ignored in these states
+				return s;
 			case INVITED:
 			case JOINED:
 			case LEFT:
@@ -101,13 +101,13 @@ class CreatorProtocolEngine extends AbstractProtocolEngine<CreatorSession> {
 	@Override
 	public CreatorSession onMemberAddedAction(Transaction txn,
 			CreatorSession s) {
-		return s; // Ignored in this role
+		return s;
 	}
 
 	@Override
 	public CreatorSession onInviteMessage(Transaction txn, CreatorSession s,
 			InviteMessage m) throws DbException, FormatException {
-		return abort(txn, s); // Invalid in this role
+		return abort(txn, s);
 	}
 
 	@Override
@@ -117,12 +117,12 @@ class CreatorProtocolEngine extends AbstractProtocolEngine<CreatorSession> {
 			case START:
 			case JOINED:
 			case LEFT:
-				return abort(txn, s); // Invalid in these states
+				return abort(txn, s);
 			case INVITED:
 				return onRemoteAccept(txn, s, m);
 			case DISSOLVED:
 			case ERROR:
-				return s; // Ignored in these states
+				return s;
 			default:
 				throw new AssertionError();
 		}
@@ -134,14 +134,14 @@ class CreatorProtocolEngine extends AbstractProtocolEngine<CreatorSession> {
 		switch (s.getState()) {
 			case START:
 			case LEFT:
-				return abort(txn, s); // Invalid in these states
+				return abort(txn, s);
 			case INVITED:
 				return onRemoteDecline(txn, s, m);
 			case JOINED:
 				return onRemoteLeave(txn, s, m);
 			case DISSOLVED:
 			case ERROR:
-				return s; // Ignored in these states
+				return s;
 			default:
 				throw new AssertionError();
 		}
@@ -156,12 +156,9 @@ class CreatorProtocolEngine extends AbstractProtocolEngine<CreatorSession> {
 	private CreatorSession onLocalInvite(Transaction txn, CreatorSession s,
 			@Nullable String text, long timestamp, byte[] signature,
 			long autoDeleteTimer) throws DbException {
-		// Send an INVITE message
 		Message sent = sendInviteMessage(txn, s, text, timestamp, signature,
 				autoDeleteTimer);
-		// Track the message
 		conversationManager.trackOutgoingMessage(txn, sent);
-		// Move to the INVITED state
 		long localTimestamp =
 				max(timestamp, getTimestampForVisibleMessage(txn, s));
 		return new CreatorSession(s.getContactGroupId(), s.getPrivateGroupId(),
@@ -172,14 +169,11 @@ class CreatorProtocolEngine extends AbstractProtocolEngine<CreatorSession> {
 	private CreatorSession onLocalLeave(Transaction txn, CreatorSession s)
 			throws DbException {
 		try {
-			// Make the private group invisible to the contact
 			setPrivateGroupVisibility(txn, s, INVISIBLE);
 		} catch (FormatException e) {
-			throw new DbException(e); // Invalid group metadata
+			throw new DbException(e);
 		}
-		// Send a LEAVE message
 		Message sent = sendLeaveMessage(txn, s);
-		// Move to the DISSOLVED state
 		return new CreatorSession(s.getContactGroupId(), s.getPrivateGroupId(),
 				sent.getId(), s.getLastRemoteMessageId(), sent.getTimestamp(),
 				s.getInviteTimestamp(), DISSOLVED);
@@ -187,28 +181,19 @@ class CreatorProtocolEngine extends AbstractProtocolEngine<CreatorSession> {
 
 	private CreatorSession onRemoteAccept(Transaction txn, CreatorSession s,
 			JoinMessage m) throws DbException, FormatException {
-		// The timestamp must be higher than the last invite message
 		if (m.getTimestamp() <= s.getInviteTimestamp()) return abort(txn, s);
-		// The dependency, if any, must be the last remote message
 		if (!isValidDependency(s, m.getPreviousMessageId()))
 			return abort(txn, s);
-		// Send a JOIN message
 		Message sent = sendJoinMessage(txn, s, false);
-		// Mark the response visible in the UI
 		markMessageVisibleInUi(txn, m.getId());
-		// Track the message
 		conversationManager.trackMessage(txn, m.getContactGroupId(),
 				m.getTimestamp(), false);
-		// Receive the auto-delete timer
 		receiveAutoDeleteTimer(txn, m);
-		// Share the private group with the contact
 		setPrivateGroupVisibility(txn, s, SHARED);
-		// Broadcast an event
 		ContactId contactId =
 				clientHelper.getContactId(txn, m.getContactGroupId());
 		txn.attach(new GroupInvitationResponseReceivedEvent(
 				createInvitationResponse(m, true), contactId));
-		// Move to the JOINED state
 		return new CreatorSession(s.getContactGroupId(), s.getPrivateGroupId(),
 				sent.getId(), m.getId(), sent.getTimestamp(),
 				s.getInviteTimestamp(), JOINED);
@@ -216,24 +201,17 @@ class CreatorProtocolEngine extends AbstractProtocolEngine<CreatorSession> {
 
 	private CreatorSession onRemoteDecline(Transaction txn, CreatorSession s,
 			LeaveMessage m) throws DbException, FormatException {
-		// The timestamp must be higher than the last invite message
 		if (m.getTimestamp() <= s.getInviteTimestamp()) return abort(txn, s);
-		// The dependency, if any, must be the last remote message
 		if (!isValidDependency(s, m.getPreviousMessageId()))
 			return abort(txn, s);
-		// Mark the response visible in the UI
 		markMessageVisibleInUi(txn, m.getId());
-		// Track the message
 		conversationManager.trackMessage(txn, m.getContactGroupId(),
 				m.getTimestamp(), false);
-		// Receive the auto-delete timer
 		receiveAutoDeleteTimer(txn, m);
-		// Broadcast an event
 		ContactId contactId =
 				clientHelper.getContactId(txn, m.getContactGroupId());
 		txn.attach(new GroupInvitationResponseReceivedEvent(
 				createInvitationResponse(m, false), contactId));
-		// Move to the START state
 		return new CreatorSession(s.getContactGroupId(), s.getPrivateGroupId(),
 				s.getLastLocalMessageId(), m.getId(), s.getLocalTimestamp(),
 				s.getInviteTimestamp(), START);
@@ -241,14 +219,10 @@ class CreatorProtocolEngine extends AbstractProtocolEngine<CreatorSession> {
 
 	private CreatorSession onRemoteLeave(Transaction txn, CreatorSession s,
 			LeaveMessage m) throws DbException, FormatException {
-		// The timestamp must be higher than the last invite message
 		if (m.getTimestamp() <= s.getInviteTimestamp()) return abort(txn, s);
-		// The dependency, if any, must be the last remote message
 		if (!isValidDependency(s, m.getPreviousMessageId()))
 			return abort(txn, s);
-		// Make the private group invisible to the contact
 		setPrivateGroupVisibility(txn, s, INVISIBLE);
-		// Move to the LEFT state
 		return new CreatorSession(s.getContactGroupId(), s.getPrivateGroupId(),
 				s.getLastLocalMessageId(), m.getId(), s.getLocalTimestamp(),
 				s.getInviteTimestamp(), LEFT);
@@ -256,14 +230,10 @@ class CreatorProtocolEngine extends AbstractProtocolEngine<CreatorSession> {
 
 	private CreatorSession abort(Transaction txn, CreatorSession s)
 			throws DbException, FormatException {
-		// If the session has already been aborted, do nothing
 		if (s.getState() == ERROR) return s;
-		// If we subscribe, make the private group invisible to the contact
 		if (isSubscribedPrivateGroup(txn, s.getPrivateGroupId()))
 			setPrivateGroupVisibility(txn, s, INVISIBLE);
-		// Send an ABORT message
 		Message sent = sendAbortMessage(txn, s);
-		// Move to the ERROR state
 		return new CreatorSession(s.getContactGroupId(), s.getPrivateGroupId(),
 				sent.getId(), s.getLastRemoteMessageId(), sent.getTimestamp(),
 				s.getInviteTimestamp(), ERROR);

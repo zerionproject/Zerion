@@ -68,16 +68,11 @@ class StreamEncrypterImpl implements StreamEncrypter {
 			throw new IllegalArgumentException();
 		if (payloadLength + paddingLength > MAX_PAYLOAD_LENGTH)
 			throw new IllegalArgumentException();
-		// Don't allow the frame counter to wrap
 		if (frameNumber < 0) throw new IOException();
-		// Write the tag if required
 		if (writeTag) writeTag();
-		// Write the stream header if required
 		if (writeStreamHeader) writeStreamHeader();
-		// Encode the frame header
 		FrameEncoder.encodeHeader(frameHeader, finalFrame, payloadLength,
 				paddingLength);
-		// Encrypt and authenticate the frame header
 		FrameEncoder.encodeNonce(frameNonce, frameNumber, true);
 		try {
 			cipher.init(true, frameKey, frameNonce);
@@ -87,11 +82,9 @@ class StreamEncrypterImpl implements StreamEncrypter {
 		} catch (GeneralSecurityException badCipher) {
 			throw new RuntimeException(badCipher);
 		}
-		// Combine the payload and padding
 		System.arraycopy(payload, 0, framePlaintext, 0, payloadLength);
 		for (int i = 0; i < paddingLength; i++)
 			framePlaintext[payloadLength + i] = 0;
-		// Encrypt and authenticate the payload and padding
 		FrameEncoder.encodeNonce(frameNonce, frameNumber, false);
 		try {
 			cipher.init(true, frameKey, frameNonce);
@@ -103,7 +96,6 @@ class StreamEncrypterImpl implements StreamEncrypter {
 		} catch (GeneralSecurityException badCipher) {
 			throw new RuntimeException(badCipher);
 		}
-		// Write the frame
 		out.write(frameCiphertext, 0, FRAME_HEADER_LENGTH + payloadLength
 				+ paddingLength + MAC_LENGTH);
 		frameNumber++;
@@ -116,7 +108,6 @@ class StreamEncrypterImpl implements StreamEncrypter {
 	}
 
 	private void writeStreamHeader() throws IOException {
-		// The header contains the protocol version, stream number and frame key
 		byte[] streamHeaderPlaintext = new byte[STREAM_HEADER_PLAINTEXT_LENGTH];
 		ByteUtils.writeUint16(PROTOCOL_VERSION, streamHeaderPlaintext, 0);
 		ByteUtils.writeUint64(streamNumber, streamHeaderPlaintext,
@@ -126,7 +117,6 @@ class StreamEncrypterImpl implements StreamEncrypter {
 		byte[] streamHeaderCiphertext = new byte[STREAM_HEADER_LENGTH];
 		System.arraycopy(streamHeaderNonce, 0, streamHeaderCiphertext, 0,
 				STREAM_HEADER_NONCE_LENGTH);
-		// Encrypt and authenticate the stream header key
 		try {
 			cipher.init(true, streamHeaderKey, streamHeaderNonce);
 			int encrypted = cipher.process(streamHeaderPlaintext, 0,
@@ -142,10 +132,13 @@ class StreamEncrypterImpl implements StreamEncrypter {
 	}
 
 	@Override
+	public int getMaxPayloadLength() {
+		return MAX_PAYLOAD_LENGTH;
+	}
+
+	@Override
 	public void flush() throws IOException {
-		// Write the tag if required
 		if (writeTag) writeTag();
-		// Write the stream header if required
 		if (writeStreamHeader) writeStreamHeader();
 		out.flush();
 	}

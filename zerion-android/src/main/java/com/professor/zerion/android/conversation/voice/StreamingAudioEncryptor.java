@@ -34,15 +34,12 @@ public class StreamingAudioEncryptor {
 	}
 
 	public void setAADContext(byte[] formatVersion, byte[] conversationId, byte[] messageId) {
-		// Validate inputs to catch mismatches early
 		if (formatVersion.length != 1) {
 			throw new IllegalArgumentException("formatVersion must be 1 byte, got " + formatVersion.length);
 		}
 		if (conversationId.length != 32) {
 			throw new IllegalArgumentException("conversationId must be 32 bytes, got " + conversationId.length);
 		}
-
-		// Build AAD context: formatVersion (1 byte) + conversationId (32 bytes) + messageId (variable)
 		ByteBuffer buffer = ByteBuffer.allocate(formatVersion.length + conversationId.length + messageId.length);
 		buffer.put(formatVersion);
 		buffer.put(conversationId);
@@ -63,8 +60,6 @@ public class StreamingAudioEncryptor {
 		Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
 		cipher.init(Cipher.ENCRYPT_MODE, masterKey,
 			new GCMParameterSpec(GCM_TAG_LENGTH, iv));
-		// Note: Key wrapping does NOT use AAD to maintain backward compatibility
-		// Security is still provided by GCM authentication tag and per-chunk AAD
 		byte[] keyBytes = encryptionKey.getEncoded();
 		byte[] wrapped = cipher.doFinal(keyBytes);
 		Arrays.fill(keyBytes, (byte) 0);

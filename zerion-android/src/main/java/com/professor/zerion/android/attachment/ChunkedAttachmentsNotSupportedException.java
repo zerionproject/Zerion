@@ -1,9 +1,6 @@
 package com.professor.zerion.android.attachment;
 
-/**
- * Exception thrown when attempting to send video/audio attachments to a contact
- * that doesn't support chunked attachments (Briar clients or older Zerion versions).
- */
+
 public class ChunkedAttachmentsNotSupportedException extends Exception {
 
 	private final String contentType;

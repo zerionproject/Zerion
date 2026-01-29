@@ -16,6 +16,7 @@ public class OpusDecoder {
 
 	private MediaCodec decoder;
 	private boolean isInitialized = false;
+	private long presentationTimeUs = 0;
 
 	public OpusDecoder(int sampleRate, int channelCount) {
 		this.sampleRate = sampleRate;
@@ -32,6 +33,12 @@ public class OpusDecoder {
 			format.setInteger(MediaFormat.KEY_CHANNEL_COUNT, channelCount);
 			format.setInteger(MediaFormat.KEY_SAMPLE_RATE, sampleRate);
 			format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 4096);
+			byte[] csd0 = buildOpusHead();
+			byte[] csd1 = new byte[8];
+			byte[] csd2 = new byte[8];
+			format.setByteBuffer("csd-0", ByteBuffer.wrap(csd0));
+			format.setByteBuffer("csd-1", ByteBuffer.wrap(csd1));
+			format.setByteBuffer("csd-2", ByteBuffer.wrap(csd2));
 
 			decoder = MediaCodec.createDecoderByType(MediaFormat.MIMETYPE_AUDIO_OPUS);
 			decoder.configure(format, null, null, 0);
@@ -39,6 +46,22 @@ public class OpusDecoder {
 			isInitialized = true;
 		} catch (IOException e) {
 		}
+	}
+
+	private byte[] buildOpusHead() {
+		byte[] head = new byte[19];
+		head[0] = 'O'; head[1] = 'p'; head[2] = 'u'; head[3] = 's';
+		head[4] = 'H'; head[5] = 'e'; head[6] = 'a'; head[7] = 'd';
+		head[8] = 1;
+		head[9] = (byte) channelCount;
+		head[10] = 0; head[11] = 0;
+		head[12] = (byte) (sampleRate & 0xFF);
+		head[13] = (byte) ((sampleRate >> 8) & 0xFF);
+		head[14] = (byte) ((sampleRate >> 16) & 0xFF);
+		head[15] = (byte) ((sampleRate >> 24) & 0xFF);
+		head[16] = 0; head[17] = 0;
+		head[18] = 0;
+		return head;
 	}
 
 	public byte[] decode(byte[] opusData) {
@@ -53,12 +76,61 @@ public class OpusDecoder {
 				if (inputBuffer != null) {
 					inputBuffer.clear();
 					inputBuffer.put(opusData);
-					decoder.queueInputBuffer(inputBufferIndex, 0, opusData.length, 0, 0);
+					decoder.queueInputBuffer(inputBufferIndex, 0, opusData.length,
+							presentationTimeUs, 0);
+					presentationTimeUs += 20000;
+				}
+			}
+			MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
+			byte[] result = null;
+			while (true) {
+				int outputBufferIndex = decoder.dequeueOutputBuffer(bufferInfo, 10000);
+				if (outputBufferIndex >= 0) {
+					ByteBuffer outputBuffer = decoder.getOutputBuffer(outputBufferIndex);
+					if (outputBuffer != null && bufferInfo.size > 0) {
+						byte[] pcm = new byte[bufferInfo.size];
+						outputBuffer.get(pcm);
+						if (result == null) {
+							result = pcm;
+						} else {
+							byte[] combined = new byte[result.length + pcm.length];
+							System.arraycopy(result, 0, combined, 0, result.length);
+							System.arraycopy(pcm, 0, combined, result.length, pcm.length);
+							result = combined;
+						}
+					}
+					decoder.releaseOutputBuffer(outputBufferIndex, false);
+				} else {
+					break;
+				}
+			}
+			if (result != null) return result;
+
+		} catch (Exception e) {
+		}
+
+		return new byte[0];
+	}
+
+	public byte[] concealLostPacket(int frameSize) {
+		if (!isInitialized || decoder == null) {
+			return new byte[frameSize];
+		}
+
+		try {
+			int inputBufferIndex = decoder.dequeueInputBuffer(5000);
+			if (inputBufferIndex >= 0) {
+				ByteBuffer inputBuffer = decoder.getInputBuffer(inputBufferIndex);
+				if (inputBuffer != null) {
+					inputBuffer.clear();
+					decoder.queueInputBuffer(inputBufferIndex, 0, 0,
+							presentationTimeUs, 0);
+					presentationTimeUs += 20000;
 				}
 			}
 
 			MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
-			int outputBufferIndex = decoder.dequeueOutputBuffer(bufferInfo, 10000);
+			int outputBufferIndex = decoder.dequeueOutputBuffer(bufferInfo, 5000);
 
 			if (outputBufferIndex >= 0) {
 				ByteBuffer outputBuffer = decoder.getOutputBuffer(outputBufferIndex);
@@ -70,16 +142,10 @@ public class OpusDecoder {
 				}
 				decoder.releaseOutputBuffer(outputBufferIndex, false);
 			}
-
 		} catch (Exception e) {
 		}
 
-		return new byte[0];
-	}
-
-	public byte[] concealLostPacket(int frameSize) {
-		byte[] silence = new byte[frameSize];
-		return silence;
+		return new byte[frameSize];
 	}
 
 	public void release() {

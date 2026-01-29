@@ -34,7 +34,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
@@ -43,9 +42,6 @@ import javax.annotation.concurrent.ThreadSafe;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.list;
-import static java.util.logging.Level.INFO;
-import static java.util.logging.Level.WARNING;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.api.plugin.Plugin.State.ACTIVE;
 import static org.briarproject.bramble.api.plugin.Plugin.State.DISABLED;
 import static org.briarproject.bramble.api.plugin.Plugin.State.INACTIVE;
@@ -58,9 +54,6 @@ import static org.briarproject.bramble.util.StringUtils.isNullOrEmpty;
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
 abstract class TcpPlugin implements DuplexPlugin, EventListener {
-
-	private static final Logger LOG = getLogger(TcpPlugin.class.getName());
-
 	private static final Pattern DOTTED_QUAD =
 			Pattern.compile("^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$");
 
@@ -72,36 +65,23 @@ abstract class TcpPlugin implements DuplexPlugin, EventListener {
 	protected final AtomicBoolean used = new AtomicBoolean(false);
 	protected final PluginState state = new PluginState();
 
-	/**
-	 * Returns zero or more socket addresses on which the plugin should listen,
-	 * in order of preference. At most one of the addresses will be bound.
-	 */
+	
 	protected abstract List<InetSocketAddress> getLocalSocketAddresses(
 			boolean ipv4);
 
-	/**
-	 * Adds the address on which the plugin is listening to the transport
-	 * properties.
-	 */
+	
 	protected abstract void setLocalSocketAddress(InetSocketAddress a,
 			boolean ipv4);
 
-	/**
-	 * Returns zero or more socket addresses for connecting to a contact with
-	 * the given transport properties.
-	 */
+	
 	protected abstract List<InetSocketAddress> getRemoteSocketAddresses(
 			TransportProperties p, boolean ipv4);
 
-	/**
-	 * Returns true if connections to the given address can be attempted.
-	 */
+	
 	protected abstract boolean isConnectable(InterfaceAddress local,
 			InetSocketAddress remote);
 
-	/**
-	 * Returns true if the plugin is enabled by default.
-	 */
+	
 	protected abstract boolean isEnabledByDefault();
 
 	TcpPlugin(Executor ioExecutor,
@@ -121,7 +101,6 @@ abstract class TcpPlugin implements DuplexPlugin, EventListener {
 		if (maxIdleTime > Integer.MAX_VALUE / 2)
 			socketTimeout = Integer.MAX_VALUE;
 		else socketTimeout = maxIdleTime * 2;
-		// Don't execute more than one bind operation at a time
 		bindExecutor = new PoliteExecutor("TcpPlugin", ioExecutor, 1);
 	}
 
@@ -158,7 +137,6 @@ abstract class TcpPlugin implements DuplexPlugin, EventListener {
 		ServerSocket ss = null;
 		for (InetSocketAddress addr : getLocalSocketAddresses(ipv4)) {
 			if (old != null && addr.equals(old.getLocalSocketAddress())) {
-				LOG.info("Server socket already bound");
 				return;
 			}
 			try {
@@ -166,27 +144,20 @@ abstract class TcpPlugin implements DuplexPlugin, EventListener {
 				ss.bind(addr);
 				break;
 			} catch (IOException e) {
-				if (LOG.isLoggable(INFO))
-					LOG.info("Failed to bind " + scrubSocketAddress(addr));
-				tryToClose(ss, LOG, WARNING);
 			}
 		}
 		if (ss == null || !ss.isBound()) {
-			LOG.info("Could not bind server socket");
 			return;
 		}
 		if (!state.setServerSocket(ss, ipv4)) {
-			LOG.info("Closing redundant server socket");
-			tryToClose(ss, LOG, WARNING);
+			tryToClose(ss);
 			return;
 		}
 		backoff.reset();
 		InetSocketAddress local =
 				(InetSocketAddress) ss.getLocalSocketAddress();
 		setLocalSocketAddress(local, ipv4);
-		if (LOG.isLoggable(INFO))
-			LOG.info("Listening on " + scrubSocketAddress(local));
-		ServerSocket finalSocket = ss;
+		final ServerSocket finalSocket = ss;
 		ioExecutor.execute(() -> acceptContactConnections(finalSocket, ipv4));
 	}
 
@@ -204,14 +175,8 @@ abstract class TcpPlugin implements DuplexPlugin, EventListener {
 				s = ss.accept();
 				s.setSoTimeout(socketTimeout);
 			} catch (IOException e) {
-				// This is expected when the server socket is closed
-				LOG.info("Server socket closed");
 				state.clearServerSocket(ss, ipv4);
 				return;
-			}
-			if (LOG.isLoggable(INFO)) {
-				LOG.info("Connection from " +
-						scrubSocketAddress(s.getRemoteSocketAddress()));
 			}
 			backoff.reset();
 			callback.handleConnection(new TcpTransportConnection(this, s));
@@ -220,7 +185,7 @@ abstract class TcpPlugin implements DuplexPlugin, EventListener {
 
 	@Override
 	public void stop() {
-		for (ServerSocket ss : state.setStopped()) tryToClose(ss, LOG, WARNING);
+		for (ServerSocket ss : state.setStopped()) tryToClose(ss);
 	}
 
 	@Override
@@ -277,38 +242,24 @@ abstract class TcpPlugin implements DuplexPlugin, EventListener {
 		if (ss == null) return null;
 		InterfaceAddress local = getLocalInterfaceAddress(ss.getInetAddress());
 		if (local == null) {
-			LOG.warning("No interface for server socket");
 			return null;
 		}
 		for (InetSocketAddress remote : getRemoteSocketAddresses(p, ipv4)) {
-			// Don't try to connect to our own address
 			if (!canConnectToOwnAddress() &&
 					remote.getAddress().equals(ss.getInetAddress())) {
 				continue;
 			}
 			if (!isConnectable(local, remote)) {
-				if (LOG.isLoggable(INFO)) {
-					LOG.info(scrubSocketAddress(remote) +
-							" is not connectable from " +
-							scrubSocketAddress(ss.getLocalSocketAddress()));
-				}
 				continue;
 			}
+			Socket s;
 			try {
-				if (LOG.isLoggable(INFO))
-					LOG.info("Connecting to " + scrubSocketAddress(remote));
-				Socket s = createSocket();
+				s = createSocket();
 				s.bind(new InetSocketAddress(ss.getInetAddress(), 0));
 				s.connect(remote, connectionTimeout);
 				s.setSoTimeout(socketTimeout);
-				if (LOG.isLoggable(INFO))
-					LOG.info("Connected to " + scrubSocketAddress(remote));
 				return new TcpTransportConnection(this, s);
 			} catch (IOException e) {
-				if (LOG.isLoggable(INFO)) {
-					LOG.info("Could not connect to " +
-							scrubSocketAddress(remote));
-				}
 			}
 		}
 		return null;
@@ -321,8 +272,6 @@ abstract class TcpPlugin implements DuplexPlugin, EventListener {
 		}
 		return null;
 	}
-
-	// Override for testing
 	protected boolean canConnectToOwnAddress() {
 		return false;
 	}
@@ -341,7 +290,6 @@ abstract class TcpPlugin implements DuplexPlugin, EventListener {
 		String[] split = ipPort.split(":");
 		if (split.length != 2) return null;
 		String addr = split[0], port = split[1];
-		// Ensure getByName() won't perform a DNS lookup
 		if (!DOTTED_QUAD.matcher(addr).matches()) return null;
 		try {
 			InetAddress a = InetAddress.getByName(addr);
@@ -411,10 +359,8 @@ abstract class TcpPlugin implements DuplexPlugin, EventListener {
 		List<ServerSocket> toClose = state.setEnabledByUser(enabledByUser);
 		State s = getState();
 		if (!toClose.isEmpty()) {
-			LOG.info("Disabled by user, closing server sockets");
-			for (ServerSocket ss : toClose) tryToClose(ss, LOG, WARNING);
+			for (ServerSocket ss : toClose) tryToClose(ss);
 		} else if (s == INACTIVE) {
-			LOG.info("Enabled by user, opening server sockets");
 			bind();
 		}
 	}

@@ -16,24 +16,14 @@ import org.briarproject.bramble.api.system.Clock;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.Collection;
-import java.util.logging.Logger;
-
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
-
-import static java.util.logging.Logger.getLogger;
-import static org.briarproject.bramble.util.LogUtils.logDuration;
-import static org.briarproject.bramble.util.LogUtils.now;
 import static org.briarproject.nullsafety.NullSafety.requireNonNull;
 
 @ThreadSafe
 @NotNullByDefault
 class IdentityManagerImpl implements IdentityManager, OpenDatabaseHook {
-
-	private static final Logger LOG =
-			getLogger(IdentityManagerImpl.class.getName());
-
 	private final DatabaseComponent db;
 	private final CryptoComponent crypto;
 	private final AuthorFactory authorFactory;
@@ -59,20 +49,14 @@ class IdentityManagerImpl implements IdentityManager, OpenDatabaseHook {
 
 	@Override
 	public Identity createIdentity(String name) {
-		long start = now();
 		LocalAuthor localAuthor = authorFactory.createLocalAuthor(name);
-
-		// Generate classical X25519 handshake keys (for Briar compatibility)
 		KeyPair classicalKeyPair = crypto.generateAgreementKeyPair();
 		PublicKey classicalPub = classicalKeyPair.getPublic();
 		PrivateKey classicalPriv = classicalKeyPair.getPrivate();
-
-		// Generate hybrid PQ handshake keys (for Zerion-to-Zerion)
 		KeyPair hybridKeyPair = crypto.generateHybridAgreementKeyPair();
 		PublicKey hybridPub = hybridKeyPair.getPublic();
 		PrivateKey hybridPriv = hybridKeyPair.getPrivate();
 
-		logDuration(LOG, "Creating identity", start);
 		return new Identity(localAuthor, classicalPub, classicalPriv,
 				hybridPub, hybridPriv, clock.currentTimeMillis());
 	}
@@ -151,15 +135,7 @@ class IdentityManagerImpl implements IdentityManager, OpenDatabaseHook {
 		return getCachedIdentity(txn).supportsPostQuantum();
 	}
 
-	/**
-	 * Loads the identity if necessary and returns it. If
-	 * {@code cachedIdentity} was not already set by calling
-	 * {@link #registerIdentity(Identity)}, this method sets it. If
-	 * {@code cachedIdentity} was already set, either by calling
-	 * {@link #registerIdentity(Identity)} or by a previous call to this
-	 * method, then this method returns the cached identity without hitting
-	 * the database.
-	 */
+	
 	private Identity getCachedIdentity(Transaction txn) throws DbException {
 		Identity cached = cachedIdentity;
 		if (cached == null)

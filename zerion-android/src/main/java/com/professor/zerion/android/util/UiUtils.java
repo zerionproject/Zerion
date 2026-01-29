@@ -474,13 +474,13 @@ public class UiUtils {
 			contentLauncher.launch(contentType);
 			return;
 		} catch (ActivityNotFoundException e) {
-			/* silent */
+			
 		}
 		try {
 			docLauncher.launch(new String[] {contentType});
 			return;
 		} catch (ActivityNotFoundException e) {
-			/* silent */
+			
 		}
 		Toast.makeText(ctx, R.string.error_start_activity, LENGTH_LONG).show();
 	}

@@ -40,23 +40,14 @@ import java.util.Map.Entry;
 import java.util.concurrent.Executor;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.logging.Logger;
-
 import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.logging.Level.WARNING;
-import static java.util.logging.Logger.getLogger;
-import static org.briarproject.bramble.util.LogUtils.logException;
-
 @ThreadSafe
 @NotNullByDefault
 class PollerImpl implements Poller, EventListener {
-
-	private static final Logger LOG = getLogger(PollerImpl.class.getName());
-
 	private final Executor ioExecutor, wakefulIoExecutor;
 	private final TaskScheduler scheduler;
 	private final ConnectionManager connectionManager;
@@ -96,27 +87,21 @@ class PollerImpl implements Poller, EventListener {
 	public void eventOccurred(Event e) {
 		if (e instanceof ContactAddedEvent) {
 			ContactAddedEvent c = (ContactAddedEvent) e;
-			// Connect to the newly added contact
 			connectToContact(c.getContactId());
 		} else if (e instanceof ConnectionClosedEvent) {
 			ConnectionClosedEvent c = (ConnectionClosedEvent) e;
-			// Reschedule polling, the polling interval may have decreased
 			reschedule(c.getTransportId());
-			// If an outgoing connection failed, try to reconnect
 			if (!c.isIncoming() && c.isException()) {
 				connectToContact(c.getContactId(), c.getTransportId());
 			}
 		} else if (e instanceof ConnectionOpenedEvent) {
 			ConnectionOpenedEvent c = (ConnectionOpenedEvent) e;
-			// Reschedule polling, the polling interval may have decreased
 			reschedule(c.getTransportId());
 		} else if (e instanceof TransportActiveEvent) {
 			TransportActiveEvent t = (TransportActiveEvent) e;
-			// Poll the newly activated transport
 			pollNow(t.getTransportId());
 		} else if (e instanceof TransportInactiveEvent) {
 			TransportInactiveEvent t = (TransportInactiveEvent) e;
-			// Cancel polling for the deactivated transport
 			cancel(t.getTransportId());
 		}
 	}
@@ -147,7 +132,6 @@ class PollerImpl implements Poller, EventListener {
 				if (w != null)
 					connectionManager.manageOutgoingConnection(c, t, w);
 			} catch (DbException e) {
-				logException(LOG, WARNING, e);
 			}
 		});
 	}
@@ -163,7 +147,6 @@ class PollerImpl implements Poller, EventListener {
 				if (d != null)
 					connectionManager.manageOutgoingConnection(c, t, d);
 			} catch (DbException e) {
-				logException(LOG, WARNING, e);
 			}
 		});
 	}
@@ -176,20 +159,16 @@ class PollerImpl implements Poller, EventListener {
 
 	private void pollNow(TransportId t) {
 		Plugin p = pluginManager.getPlugin(t);
-		// Randomise next polling interval
 		if (p != null && p.shouldPoll()) schedule(p, 0, true);
 	}
 
 	private void schedule(Plugin p, int delay, boolean randomiseNext) {
-		// Replace any later scheduled task for this plugin
 		long due = clock.currentTimeMillis() + delay;
 		TransportId t = p.getId();
 		lock.lock();
 		try {
 			ScheduledPollTask scheduled = tasks.get(t);
 			if (scheduled == null || due < scheduled.task.due) {
-				// If a later task exists, cancel it. If it's already started
-				// it will abort safely when it finds it's been replaced
 				if (scheduled != null) scheduled.cancellable.cancel();
 				PollTask task = new PollTask(p, due, randomiseNext);
 				Cancellable cancellable = scheduler.schedule(task, ioExecutor,
@@ -228,7 +207,6 @@ class PollerImpl implements Poller, EventListener {
 			}
 			if (!properties.isEmpty()) p.poll(properties);
 		} catch (DbException e) {
-			logException(LOG, WARNING, e);
 		}
 	}
 
@@ -264,7 +242,7 @@ class PollerImpl implements Poller, EventListener {
 				TransportId t = plugin.getId();
 				ScheduledPollTask scheduled = tasks.get(t);
 				if (scheduled != null && scheduled.task != this)
-					return; // Replaced by another task
+					return;
 				tasks.remove(t);
 			} finally {
 				lock.unlock();
@@ -294,7 +272,6 @@ class PollerImpl implements Poller, EventListener {
 
 		@Override
 		public void handleReader(TransportConnectionReader r) {
-			// TODO: Support simplex plugins that read from outgoing connections
 			throw new UnsupportedOperationException();
 		}
 

@@ -58,11 +58,7 @@ class MessageMetadata {
 		return available;
 	}
 
-	/**
-	 * Returns true if the invitation was accepted.
-	 * <p>
-	 * Only applies to messages of type INVITE.
-	 */
+	
 	public boolean wasAccepted() {
 		return accepted;
 	}

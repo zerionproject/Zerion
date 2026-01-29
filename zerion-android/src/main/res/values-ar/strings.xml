@@ -71,8 +71,6 @@
   <string name="nav_drawer_close_description">غلق راسم التصفح</string>
   <string name="contact_list_button">جهات الاتصال</string>
   <string name="groups_button">المجموعات الخاصة</string>
-  <string name="forums_button">المنتديات</string>
-  <string name="blogs_button">المدونات</string>
   <!--This is part of the main menu. The app will be locked when this is tapped.-->
   <string name="lock_button">قفل التطبيق</string>
   <string name="settings_button">الإعدادات</string>
@@ -115,22 +113,6 @@
     <item quantity="few">%d رسائل مجموعة جديدة.</item>
     <item quantity="many">%d رسالة مجموعة جديدة.</item>
     <item quantity="other">%d رسائل مجموعة جديدة.</item>
-  </plurals>
-  <plurals name="forum_post_notification_text">
-    <item quantity="zero">لا منشورات منتدى جديدة.</item>
-    <item quantity="one">منشور منتدى جديد.</item>
-    <item quantity="two">منشوريْ منتدى جديدين.</item>
-    <item quantity="few">%d منشورات منتدى جديدة.</item>
-    <item quantity="many">%d منشور منتدى جديد.</item>
-    <item quantity="other">%d منشورات منتدى جديدة.</item>
-  </plurals>
-  <plurals name="blog_post_notification_text">
-    <item quantity="zero">لا تدوينات جديدة.</item>
-    <item quantity="one">تدوينة جديدة.</item>
-    <item quantity="two">تدوينتين جديدتين.</item>
-    <item quantity="few">%d تدوينات جديدة.</item>
-    <item quantity="many">%d تدوينة جديدة.</item>
-    <item quantity="other">%d تدوينات جديدة.</item>
   </plurals>
   <!--Misc-->
   <string name="now">الآن</string>
@@ -244,7 +226,6 @@
   <!--Adding Contacts-->
   <string name="add_contact_title">إضافة جهة اتصال قريبة </string>
   <string name="add_contact_error_two_way">هل قمتما بمسح رموز QR الخاصة ببعضكما البعض؟</string>
-  <string name="face_to_face">لا بد من مقابلة الشخص الذي تريد/ين إضافته كجهة اتصال.\n\nهذا سيمنع أي شخص من انتحال شخصيتك أو قراءة رسائلك في المستقبل.</string>
   <string name="continue_button">إستمرار</string>
   <string name="try_again_button">الرجاء المحاولة مجددًا</string>
   <string name="waiting_for_contact_to_scan">بإنتظار أن تقوم جهة الإتصال بالمسح والإتصال\u2026</string>
@@ -252,17 +233,11 @@
   <string name="contact_added_toast">تم إضافة جهة إتصال: %s</string>
   <string name="contact_already_exists">جهة الإتصال %s بالفعل موجودة</string>
   <string name="contact_already_exists_general">جهة الاتصال موجودة بالفعل</string>
-  <string name="qr_code_invalid">رمز QR غير صالح</string>
-  <string name="qr_code_too_old_1">رمز QR الذي قمت بمسحه ضوئيًا يأتي من إصدار أقدم من براير.\n\nيُرجى مطالبة جهة الاتصال اتصالك بالترقية إلى أحدث إصدار ثم حاول مجددًا.</string>
-  <string name="qr_code_too_new_1">رمز QR الذي قمت بمسحه ضوئيًا يأتي من إصدار أحدث من براير.\n\nيُرجى مطالبة جهة الاتصال اتصالك بالترقية إلى أحدث إصدار ثم حاول مجددًا.</string>
-  <string name="mailbox_qr_code_for_contact">يأتي رمز QR الذي مسحته ضوئيًا من صندوق بريد براير Zerion Mailbox.\n\nإذا كنت تريد ربط صندوق بريد، فيرجى اختيار الإعدادات &gt; صندوق البريد من قائمة براير.</string>
-  <string name="qr_code_format_unknown">رمز QR الذي مسحته ضوئيًا ليس مخصصًا لإضافة جهة اتصال لـبراير.\n\nيُرجى مسح رمز QR الظاهر على شاشة جهة اتصالك.</string>
   <string name="camera_error">خطأ بالكاميرا</string>
   <string name="connecting_to_device">يتم الإتصال بالجهاز\u2026</string>
   <string name="authenticating_with_device">يتم التوثيق مع الجهاز\u2026</string>
   <string name="connection_error_title">لم يمكن الإتصال بجهة إتصالك</string>
   <string name="connection_error_feedback">إذا إستمرت المشكلة، رجاءًا <a href="feedback">أرسل تقرير </a> لمساعدتنا على تحسين التطبيق.</string>
-  <string name="info_both_must_scan">يجب عليكما مسح رموز QR الخاصة ببعضكما البعض</string>
   <!--Adding Contacts Remotely-->
   <string name="add_contact_remotely_title_case">إضافة جهة اتصال عن بعد </string>
   <string name="add_contact_nearby_title">إضافة جهة اتصال قريبة</string>
@@ -427,13 +402,6 @@
   <string name="groups_reveal_visible_revealed_by_contact">علاقات جهات الاتصال ظاهرة للمجموعة (قام/ت %s بكشفها)</string>
   <string name="groups_reveal_invisible">علاقات جهات الاتصال غير ظاهرة للمجموعة</string>
   <!--Forums-->
-  <string name="no_forums">لا منتديات للعرض</string>
-  <string name="no_forums_action">الرجاء لمس علامة + لإنشاء منتدى، أو طلب من جهات اتصالك مشاركتك في منتدياتهم</string>
-  <string name="create_forum_title">انشاء منتدى</string>
-  <string name="choose_forum_hint">اختيار إسم لمنتداك</string>
-  <string name="create_forum_button">انشاء منتدى</string>
-  <string name="forum_created_toast">تم إنشاء المنتدى</string>
-  <string name="no_forum_posts">لا منشورات للعرض</string>
   <string name="no_posts">لا منشورات</string>
   <plurals name="posts">
     <item quantity="zero">%d لا منشورات</item>
@@ -443,101 +411,21 @@
     <item quantity="many">%d منشور</item>
     <item quantity="other">%d منشور</item>
   </plurals>
-  <string name="forum_new_message_hint">منشور جديد</string>
-  <string name="forum_message_reply_hint">رد جديد</string>
   <string name="btn_reply">الرد</string>
-  <string name="forum_leave">مغادرة المنتدى</string>
-  <string name="dialog_title_leave_forum">تأكيد مغادرة المنتدى</string>
-  <string name="dialog_message_leave_forum">هل أنت متأكد/ة من رغبتك في مغادرة المنتدى؟\n\nأي جهة اتصال قمت/ي بمشاركة هذا المنتدى معها قد يتوقف عنها استلام التحديثات.</string>
   <string name="dialog_button_leave">مغادرة</string>
-  <string name="forum_left_toast">تم مغادرة المنتدى</string>
   <!--Forum Sharing-->
-  <string name="forum_share_button">مشاركة المنتدى</string>
   <string name="contacts_selected">جهات الاتصال المختارة</string>
   <string name="activity_share_toolbar_header">إختر جهات الاتصال</string>
   <string name="no_contacts_selector">لا جهات إتصال للعرض</string>
   <string name="no_contacts_selector_action">الرجاء العودة لاحقًا هنا بعد إضافة جهة إتصال</string>
-  <string name="forum_shared_snackbar">تم مشاركة المنتدى مع جهات الاتصال المختارة</string>
-  <string name="forum_share_message">اضافة رسالة (إختياري)</string>
-  <string name="forum_share_error">حدث خطأ أثناء مشاركة المنتدى</string>
-  <string name="forum_invitation_received">قام/ت %1$s بمشاركة المنتدى \"%2$s\" معك.</string>
-  <string name="forum_invitation_sent">لقد قمت/ي بمشاركة المنتدى \"%1$s\" مع %2$s.</string>
-  <string name="forum_invitations_title">دعوات المنتدى</string>
-  <string name="forum_invitation_exists">لقد قمت/ي بالفعل بقبول دعوة لهذا المنتدى.\n\nقبول دعوات إضافية سيجعل اتصالك مع المنتدى أسرع وأكثر اعتمادية.</string>
-  <string name="forum_joined_toast">تم الإنضمام للمنتدى</string>
-  <string name="forum_declined_toast">تم رفض الدعوة</string>
   <string name="shared_by_format">تمت المشاركة بواسطة %s</string>
-  <string name="forum_invitation_already_sharing">في طور المشاركة</string>
-  <string name="forum_invitation_already_invited">تم إرسال الدعوة بالفعل</string>
-  <string name="forum_invitation_invite_received">تم استلام الدعوة بالفعل</string>
-  <string name="forum_invitation_not_supported">غير مدعوم من قبل جهة الاتصال هذه</string>
-  <string name="forum_invitation_error">خطأ. هذا خطأ فني وليس خطأك</string>
-  <string name="forum_invitation_response_accepted_sent">لقد قبلت دعوة المنتدى من %s.</string>
-  <string name="forum_invitation_response_declined_sent">لقد رفضت دعوة المنتدى من %s.</string>
-  <string name="forum_invitation_response_declined_auto">رُفضت الدعوة المنتدى من %s تلقائيًا.</string>
-  <string name="forum_invitation_response_accepted_received">قبل/ت %s دعوة المنتدى.</string>
-  <string name="forum_invitation_response_declined_received">رفض/ت %s دعوة المنتدى.</string>
   <string name="sharing_status">حالة المشاركة</string>
-  <string name="sharing_status_forum">أي عضو بالمنتدى يمكنه مشاركته مع جهات إتصاله. يمكنك مشاركة هذا المنتدى مع جهات الإتصال هذه. قد يكون هناك أعضاء آخرين لا يمكنك/ي رؤيتهم.</string>
   <string name="shared_with">تمت المشاركة مع %1$d (%2$d متصل)</string>
-  <plurals name="forums_shared">
-    <item quantity="zero">لا منتدى مُشارَك من جهات الاتصال</item>
-    <item quantity="one">منتدى مُشارَك من جهات الاتصال</item>
-    <item quantity="two">منتديين مشاركين من جهات الاتصال</item>
-    <item quantity="few">%d منتديات مُشارَكة من جهات الاتصال</item>
-    <item quantity="many">%d منتدى مُشارَك من جهات الاتصال</item>
-    <item quantity="other">%d منتدى مُشارَك من جهات الاتصال</item>
-  </plurals>
   <string name="nobody">لا أحد</string>
   <!--Blogs-->
-  <string name="blogs_other_blog_empty_state">لا منشورات للعرض</string>
   <string name="read_more">قراءة المزيد</string>
-  <string name="blogs_write_blog_post">كتابة تدوينة</string>
-  <string name="blogs_write_blog_post_body_hint">كتابة تدوينتك</string>
-  <string name="blogs_publish_blog_post">نشر</string>
-  <string name="blogs_blog_post_created">تم إنشاء تدوينة</string>
-  <string name="blogs_blog_post_received">تم إستلام تدوينة جديدة</string>
-  <string name="blogs_blog_post_scroll_to">النزول إلى</string>
-  <string name="blogs_feed_empty_state">لا منشورات للعرض</string>
-  <string name="blogs_feed_empty_state_action">التدوينات من جهات اتصالك والمدونات التي تشترك/ين بها ستظهر هنا\n\nالرجاء لمس أيقونة القلم لكتابة تدوينة</string>
-  <string name="blogs_remove_blog">حذف المدونة</string>
-  <string name="blogs_remove_blog_dialog_message">هل أنت متأكد/ة من أنك تريد/ين حذف هذه المدونة؟\n\nالتدوينات سيتم حذفها من جهازك فقط وليس من أجهزة الآخرين.\n\nأي جهة اتصال قمت/ي بمشاركة المدونة معها قد لا تتمكن من استلام التحديثات.</string>
-  <string name="blogs_remove_blog_ok">حذف</string>
-  <string name="blogs_blog_removed">تم حذف المدونة</string>
-  <string name="blogs_reblog_comment_hint">اضافة تعليق (إختياري)</string>
-  <string name="blogs_reblog_button">اعادة التدوين</string>
   <!--Blog Sharing-->
-  <string name="blogs_sharing_share">مشاركة المدونة</string>
-  <string name="blogs_sharing_error">حدث خطأ في مشاركة هذه المدونة.</string>
-  <string name="blogs_sharing_button">مشاركة المدونة</string>
-  <string name="blogs_sharing_snackbar">تم مشاركة المدونة مع جهات الاتصال المختارة</string>
-  <string name="blogs_sharing_response_accepted_sent">لقد قبلت دعوة المدونة من %s.</string>
-  <string name="blogs_sharing_response_declined_sent">لقد رفضت دعوة المدونة من %s.</string>
-  <string name="blogs_sharing_response_declined_auto">رُفضت الدعوة المدونة من %s تلقائيًا.</string>
-  <string name="blogs_sharing_response_accepted_received">قبل/ت %s دعوة المدونة.</string>
-  <string name="blogs_sharing_response_declined_received">رفض/ت %s دعوة المدونة.</string>
-  <string name="blogs_sharing_invitation_received">قام/ت %1$s  بمشاركة المدونة \"%2$s\" معك.</string>
-  <string name="blogs_sharing_invitation_sent">تمت مشاركة المدونة \"%1$s\" مع %2$s.</string>
-  <string name="blogs_sharing_invitations_title">دعوات المدونة</string>
-  <string name="blogs_sharing_joined_toast">مشترك/ة في المدونة</string>
-  <string name="blogs_sharing_declined_toast">تم رفض الدعوة</string>
-  <string name="sharing_status_blog">أي شخص أشترك في مدونة يمكنه مشاركتها مع جهات اتصاله. أنت تشارك/ين هذه المدونة مع جهات الإتصال التالية. قد يكون هناك مشتركون آخرون لا يمكن رؤيتهم.</string>
   <!--RSS Feeds-->
-  <string name="blogs_rss_feeds_import">إستيراد تحديثات RSS</string>
-  <string name="blogs_rss_feeds_import_button">إستيراد</string>
-  <string name="blogs_rss_feeds_import_hint">ادخال رابط تحديثات RSS</string>
-  <string name="blogs_rss_feeds_import_progress">جارٍ استيراد موجز RSS...</string>
-  <string name="blogs_rss_feeds_import_error">معذرة! حدث خطأ في استيراد التحديثات.</string>
-  <string name="blogs_rss_feeds_import_title">استيراد الموجز من الملف</string>
-  <string name="blogs_rss_feeds">مواجز RSS</string>
-  <string name="blogs_rss_feeds_manage_imported">تم استيراد:</string>
-  <string name="blogs_rss_feeds_manage_author">المؤلف/ة:</string>
-  <string name="blogs_rss_feeds_manage_updated">آخر تحديث:</string>
-  <string name="blogs_rss_remove_feed">ازالة الخلاصة</string>
-  <string name="blogs_rss_remove_feed_dialog_message">هل أنت متأكد/ة من رغبتك في حذف هذه الخلاصة؟\n\nالمنشورات ستحذف من جهازك وليس من أجهزة الآخرين.\n\nأي جهة اتصال قمت/ي بمشاركة هذه الخلاصة معها قد لا تتمكن من استلام التحديثات.</string>
-  <string name="blogs_rss_remove_feed_ok">حذف</string>
-  <string name="blogs_rss_feeds_manage_empty_state">لا خلاصات RSS للعرض\n\nالرجاء لمس علامة + لإستيراد خلاصة.</string>
-  <string name="blogs_rss_feeds_manage_error">حدث خطأ في جلب خلاصاتك. الرجاء المحاولة لاحقًا.</string>
   <!--Settings Profile Picture-->
   <string name="change_profile_picture">انقر لتغيير صورة ملفك الشخصي</string>
   <string name="dialog_confirm_profile_picture_title">تغيير الصورة الشخصية</string>
@@ -617,12 +505,6 @@
   <string name="notify_group_messages_setting_title">رسائل المجموعات</string>
   <string name="notify_group_messages_setting_summary">أظهر التنبيهات لرسائل المجموعات</string>
   <string name="notify_group_messages_setting_summary_26">اضبط التنبيهات لرسائل المجموعات</string>
-  <string name="notify_forum_posts_setting_title">رسائل المنتديات</string>
-  <string name="notify_forum_posts_setting_summary">أظهر التنبيهات لرسائل المنتديات</string>
-  <string name="notify_forum_posts_setting_summary_26">اضبط التنبيهات لرسائل المنتديات</string>
-  <string name="notify_blog_posts_setting_title">منشورات المدونات</string>
-  <string name="notify_blog_posts_setting_summary">أظهر التنبيهات للتدوينات</string>
-  <string name="notify_blog_posts_setting_summary_26">اضبط التنبيهات للتدوينات</string>
   <string name="notify_vibration_setting">إهتزاز</string>
   <string name="notify_sound_setting">الصوت</string>
   <string name="notify_sound_setting_default">النغمة الافتراضية</string>
@@ -642,10 +524,6 @@
   <string name="mailbox_setup_connecting">جارِ الاتصال بصندوق البريد…</string>
   <!--This string is shown when connecting to a Mailbox for the first time. The placeholder will be replaced with a duration, e.g. "2 minutes".-->
   <string name="mailbox_setup_connecting_info">قد يستغرق هذا ما يصل إلى %1s</string>
-  <string name="mailbox_qr_code_too_old">يأتي رمز QR الذي مسحته ضوئيًا من إصدار أقدم من Zerion Mailbox.\n\nيُرجى ترقية Zerion Mailbox إلى احدث إصدار ثم حاول مرة أخرى.</string>
-  <string name="mailbox_qr_code_too_new">يأتي رمز QR الذي مسحته ضوئيًا من إصدار أحدث من Zerion Mailbox.\n\nيُرجى ترقية براير إلى احدث إصدار ثم حاول مرة أخرى.</string>
-  <string name="contact_qr_code_for_mailbox">رمز QR الذي مسحته ضوئيًا مخصص لإضافة جهة اتصال لـبراير.\n\nإذا كنت تريد إضافة جهة اتصال، فيُرجى الانتقال إلى قائمة جهات الاتصال والنقر على أيقونة +.</string>
-  <string name="mailbox_setup_qr_code_wrong_description">رمز QR الذي مسحته ضوئيًا لا يأتي من Zerion Mailbox.\n\nيُرجى فتح تطبيق Zerion Mailbox على جهاز Mailbox الخاص بك ومسح رمز QR الذي يقدمه ضوئيًا.</string>
   <string name="mailbox_setup_already_paired_title">صندوق البريد مرتبط بالفعل</string>
   <string name="mailbox_setup_already_paired_description">قم بإلغاء ربط صندوق البريد على جهازك الآخر وحاول مرة أخرى.</string>
   <string name="mailbox_setup_io_error_title">تعذر الاتصال</string>
@@ -795,8 +673,6 @@
   <string name="permission_bluetooth_title">إذن الأجهزة القريبة</string>
   <string name="permission_bluetooth_body">لاستخدام اتصال البلوتوث، يحتاج براير إلى إذن للعثور على الأجهزة القريبة والاتصال بها.</string>
   <string name="permission_bluetooth_denied_body">لقد رفضت الوصول إلى الأجهزة القريبة، ولكن براير يحتاج إلى هذا الإذن لاستخدام البلوتوث.\n\nيُرجى التفكير في منح حق الوصول.</string>
-  <string name="qr_code">رمز QR</string>
-  <string name="show_qr_code_fullscreen">اظهار رمز QR بوضع ملء الشاشة</string>
   <!--App Locking-->
   <string name="lock_unlock">فك قفل Zerion (براير)</string>
   <string name="lock_unlock_verbose">ادخال رمز، نمط أو كلمة سر جهازك لإلغاء قفل Zerion (براير)</string>
@@ -826,9 +702,7 @@
   <string name="wifi_settings_request_enable_body">لإنشاء نقطة اتصال Wi-Fi، يحتاج براير إلى استخدام Wi-Fi. يُرجى تفعيله.</string>
   <string name="hotspot_tab_manual">يدويا</string>
   <!--The placeholder to be inserted into the string 'hotspot_manual_wifi': People can connect by %s-->
-  <string name="hotspot_scanning_a_qr_code">مسح ضوئي رمز QR</string>
   <!--Wi-Fi setup-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_wifi">يوفر هاتفك نقطة اتصال Wi-Fi. يمكن للأشخاص الذين يرغبون في تنزيل براير الاتصال بنقطة الاتصال عن طريق إضافتها في إعدادات Wi-Fi على أجهزتهم باستخدام التفاصيل أدناه أو من خلال %s. عندما يتصلون بنقطة الاتصال، اضغط على \"التالي\".</string>
   <string name="hotspot_manual_wifi_ssid">اسم الشبكة</string>
   <string name="hotspot_qr_wifi">يوفر هاتفك نقطة اتصال Wi-Fi. يمكن للأشخاص الذين يرغبون في تنزيل براير الاتصال بنقطة الاتصال عن طريق مسح رمز QR هذا. عندما يتصلون بنقطة الاتصال، اضغط على \"التالي\".</string>
@@ -842,7 +716,6 @@
     <item quantity="other">%s اجهزة متصلة</item>
   </plurals>
   <!--Download link-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_site">يوفر هاتفك نقطة اتصال Wi-Fi. يمكن للأشخاص المتصلين بنقطة الاتصال تنزيل براير عن طريق كتابة الرابط التالي في متصفح الويب أو%s.</string>
   <string name="hotspot_manual_site_address">عنوان (URL)</string>
   <string name="hotspot_qr_site">يوفر هاتفك نقطة اتصال Wi-Fi. يمكن للأشخاص المتصلين بنقطة الاتصال تنزيل براير عن طريق مسح رمز QR هذا.</string>

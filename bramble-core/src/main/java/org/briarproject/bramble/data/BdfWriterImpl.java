@@ -174,13 +174,11 @@ final class BdfWriterImpl implements BdfWriter {
 	public void writeDictionary(Map<?, ?> m) throws IOException {
 		out.write(DICTIONARY);
 		if (m instanceof BdfDictionary) {
-			// Entries are already sorted and keys are known to be strings
 			for (Entry<String, Object> e : ((BdfDictionary) m).entrySet()) {
 				writeString(e.getKey());
 				writeObject(e.getValue());
 			}
 		} else {
-			// Check that keys are strings, write entries in canonical order
 			List<String> keys = new ArrayList<>(m.size());
 			for (Object k : m.keySet()) {
 				if (!(k instanceof String)) throw new FormatException();

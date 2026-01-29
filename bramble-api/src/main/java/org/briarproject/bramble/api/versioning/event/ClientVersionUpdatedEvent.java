@@ -7,10 +7,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.Immutable;
 
-/**
- * An event that is broadcast when we receive a client versioning update from
- * a contact.
- */
+
 @Immutable
 @NotNullByDefault
 public class ClientVersionUpdatedEvent extends Event {

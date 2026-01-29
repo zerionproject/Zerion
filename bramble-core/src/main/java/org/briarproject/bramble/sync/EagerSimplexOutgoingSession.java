@@ -13,24 +13,11 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.logging.Logger;
-
 import javax.annotation.concurrent.ThreadSafe;
 
-import static java.util.logging.Level.INFO;
-import static java.util.logging.Logger.getLogger;
-
-/**
- * A {@link SimplexOutgoingSession} that sends messages eagerly, ie
- * regardless of whether they're due for retransmission.
- */
 @ThreadSafe
 @NotNullByDefault
 class EagerSimplexOutgoingSession extends SimplexOutgoingSession {
-
-	private static final Logger LOG =
-			getLogger(EagerSimplexOutgoingSession.class.getName());
-
 	EagerSimplexOutgoingSession(DatabaseComponent db,
 			EventBus eventBus,
 			ContactId contactId,
@@ -48,9 +35,8 @@ class EagerSimplexOutgoingSession extends SimplexOutgoingSession {
 			if (isInterrupted()) break;
 			Message message = db.transactionWithNullableResult(false, txn ->
 					db.getMessageToSend(txn, contactId, m, maxLatency, true));
-			if (message == null) continue; // No longer shared
+			if (message == null) continue;
 			recordWriter.writeMessage(message);
-			LOG.info("Sent message");
 		}
 	}
 
@@ -58,9 +44,6 @@ class EagerSimplexOutgoingSession extends SimplexOutgoingSession {
 			throws DbException {
 		Collection<MessageId> ids = db.transactionWithResult(true, txn ->
 				db.getUnackedMessagesToSend(txn, contactId));
-		if (LOG.isLoggable(INFO)) {
-			LOG.info(ids.size() + " unacked messages to send");
-		}
 		return ids;
 	}
 }

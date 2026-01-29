@@ -25,25 +25,12 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.Executor;
-import java.util.logging.Logger;
-
 import javax.annotation.concurrent.ThreadSafe;
-
-import static java.util.logging.Level.WARNING;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.api.lifecycle.LifecycleManager.LifecycleState.STOPPING;
-import static org.briarproject.bramble.util.LogUtils.logException;
 
-/**
- * An incoming {@link SyncSession}.
- */
 @ThreadSafe
 @NotNullByDefault
 class IncomingSession implements SyncSession, EventListener {
-
-	private static final Logger LOG =
-			getLogger(IncomingSession.class.getName());
-
 	private final DatabaseComponent db;
 	private final Executor dbExecutor;
 	private final EventBus eventBus;
@@ -69,10 +56,8 @@ class IncomingSession implements SyncSession, EventListener {
 	public void run() throws IOException {
 		eventBus.addListener(this);
 		try {
-			// Read records until interrupted or EOF
 			while (!interrupted) {
 				if (recordReader.eof()) {
-					LOG.info("End of stream");
 					return;
 				}
 				if (recordReader.hasAck()) {
@@ -94,7 +79,6 @@ class IncomingSession implements SyncSession, EventListener {
 					Priority p = recordReader.readPriority();
 					priorityHandler.handle(p);
 				} else {
-					// unknown records are ignored in RecordReader#eof()
 					throw new FormatException();
 				}
 			}
@@ -105,7 +89,6 @@ class IncomingSession implements SyncSession, EventListener {
 
 	@Override
 	public void interrupt() {
-		// FIXME: This won't interrupt a blocking read
 		interrupted = true;
 	}
 
@@ -135,7 +118,6 @@ class IncomingSession implements SyncSession, EventListener {
 				db.transaction(false, txn ->
 						db.receiveAck(txn, contactId, ack));
 			} catch (DbException e) {
-				logException(LOG, WARNING, e);
 				interrupt();
 			}
 		}
@@ -156,7 +138,6 @@ class IncomingSession implements SyncSession, EventListener {
 				db.transaction(false, txn ->
 						db.receiveMessage(txn, contactId, message));
 			} catch (DbException e) {
-				logException(LOG, WARNING, e);
 				interrupt();
 			}
 		}
@@ -177,7 +158,6 @@ class IncomingSession implements SyncSession, EventListener {
 				db.transaction(false, txn ->
 						db.receiveOffer(txn, contactId, offer));
 			} catch (DbException e) {
-				logException(LOG, WARNING, e);
 				interrupt();
 			}
 		}
@@ -198,7 +178,6 @@ class IncomingSession implements SyncSession, EventListener {
 				db.transaction(false, txn ->
 						db.receiveRequest(txn, contactId, request));
 			} catch (DbException e) {
-				logException(LOG, WARNING, e);
 				interrupt();
 			}
 		}
@@ -220,7 +199,6 @@ class IncomingSession implements SyncSession, EventListener {
 				db.transaction(false,
 						txn -> db.setSyncVersions(txn, contactId, supported));
 			} catch (DbException e) {
-				logException(LOG, WARNING, e);
 				interrupt();
 			}
 		}

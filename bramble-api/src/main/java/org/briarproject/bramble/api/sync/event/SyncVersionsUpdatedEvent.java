@@ -8,10 +8,7 @@ import java.util.List;
 
 import javax.annotation.concurrent.Immutable;
 
-/**
- * An event that is broadcast when the versions of the sync protocol supported
- * by a contact are updated.
- */
+
 @Immutable
 @NotNullByDefault
 public class SyncVersionsUpdatedEvent extends Event {

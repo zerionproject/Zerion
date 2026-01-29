@@ -63,8 +63,6 @@
   <string name="nav_drawer_close_description">Tanca el calaix de navegació</string>
   <string name="contact_list_button">Contactes</string>
   <string name="groups_button">Grups privats</string>
-  <string name="forums_button">Fòrums</string>
-  <string name="blogs_button">Blogs</string>
   <!--This is part of the main menu. The app will be locked when this is tapped.-->
   <string name="lock_button">Bloqueja l\'aplicació</string>
   <string name="settings_button">Configuració</string>
@@ -99,14 +97,6 @@
   <plurals name="group_message_notification_text">
     <item quantity="one">Missatge de grup nou.</item>
     <item quantity="other">%d missatges de grup nous</item>
-  </plurals>
-  <plurals name="forum_post_notification_text">
-    <item quantity="one"> Un nou missatge del fòrum.</item>
-    <item quantity="other">%d apunts nous al fòrum.</item>
-  </plurals>
-  <plurals name="blog_post_notification_text">
-    <item quantity="one">Una nova publicacions al bloc.</item>
-    <item quantity="other">%d apunts nous al blog.</item>
   </plurals>
   <!--Misc-->
   <string name="now">Ara</string>
@@ -209,7 +199,6 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
   <!--Adding Contacts-->
   <string name="add_contact_title">Afegeix un contacte proper</string>
   <string name="add_contact_error_two_way">Tots dos heu escanejat el codi QR de l\'altre?</string>
-  <string name="face_to_face">Heu de coincidir en el mateix lloc amb la persona que voleu afegir com a contacte.\n\nD\'aquesta manera evitareu que algú suplanti les vostres identitats o pugui llegir els vostres missatges en el futur.</string>
   <string name="continue_button">Continua</string>
   <string name="try_again_button">Torna-ho a provar</string>
   <string name="waiting_for_contact_to_scan">Esperant que el vostre contacte escanegi i es connecti\u2026</string>
@@ -217,17 +206,11 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
   <string name="contact_added_toast">S\'ha afegit el contacte %s</string>
   <string name="contact_already_exists">El contacte %s ja existia</string>
   <string name="contact_already_exists_general">El contacte ja existeix</string>
-  <string name="qr_code_invalid">El codi QR és invàlid</string>
-  <string name="qr_code_too_old_1">El codi QR que heu escanejat prové d\'una versió anterior del Zerion.\n\nDemaneu al vostre contacte que actualitzi a la versió més recent i, a continuació, torneu-ho a provar.</string>
-  <string name="qr_code_too_new_1">El codi QR que heu escanejat prové d\'una versió més recent del Zerion.\n\nActualitzeu a la darrera versió i torneu-ho a provar.</string>
-  <string name="mailbox_qr_code_for_contact">El codi QR que heu escanejat prové del Zerion Mailbox.\n\nSi voleu enllaçar una bústia de correu, seleccioneu Configuració &gt; Bústia del menú Zerion.</string>
-  <string name="qr_code_format_unknown">El codi QR que heu escanejat no serveix per afegir un contacte del Zerion.\n\nEscanejeu el codi QR que es mostra a la pantalla del vostre contacte.</string>
   <string name="camera_error">Error de la càmera</string>
   <string name="connecting_to_device">Connectant-se al dispositiu\u2026</string>
   <string name="authenticating_with_device">Autenticant-se amb el dispositiu\u2026</string>
   <string name="connection_error_title">No ha pogut connectar-se al vostre contacte</string>
   <string name="connection_error_feedback">Si aquest problema persisteix, <a href="feedback">envieu-nos un comentari</a> per ajudar-nos a millorar l\'aplicació.</string>
-  <string name="info_both_must_scan">Tots dos heu d\'escanejar el codi QR de l\'altre</string>
   <!--Adding Contacts Remotely-->
   <string name="add_contact_remotely_title_case">Afegeix un contacte llunyà</string>
   <string name="add_contact_nearby_title">Afegeix un contacte proper</string>
@@ -379,109 +362,26 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
   <string name="groups_reveal_visible_revealed_by_contact">La relació de contactes és visible pel grup (revelada per %s)</string>
   <string name="groups_reveal_invisible">La relació de contactes no és visible pel grup</string>
   <!--Forums-->
-  <string name="no_forums">No hi ha cap fòrum per mostrar</string>
-  <string name="no_forums_action">Toqueu la icona + per crear un fòrum o demaneu als vostres contactes que us afegeixin als seus fòrums</string>
-  <string name="create_forum_title">Creeu un fòrum</string>
-  <string name="choose_forum_hint">Trieu un nom per al fòrum</string>
-  <string name="create_forum_button">Crea el fòrum</string>
-  <string name="forum_created_toast">S\'ha creat el fòrum</string>
-  <string name="no_forum_posts">No hi ha cap apunt per mostrar</string>
   <string name="no_posts">No hi ha cap apunt</string>
   <plurals name="posts">
     <item quantity="one">%d publicacio</item>
     <item quantity="other">%d apunts</item>
   </plurals>
-  <string name="forum_new_message_hint">Apunt nou</string>
-  <string name="forum_message_reply_hint">Resposta nova</string>
   <string name="btn_reply">Respon</string>
-  <string name="forum_leave">Abandona el fòrum</string>
-  <string name="dialog_title_leave_forum">Confirmeu l\'abandonament del Fòrum</string>
-  <string name="dialog_message_leave_forum">Segur que voleu abandonar aquest fòrum?\n\nEls contactes amb els que heu compartit aquest fòrum poden deixar de rebre les actualitzacions.</string>
   <string name="dialog_button_leave">Abandona</string>
-  <string name="forum_left_toast">Heu abandonat el fòrum</string>
   <!--Forum Sharing-->
-  <string name="forum_share_button">Comparteix el fòrum</string>
   <string name="contacts_selected">Contactes seleccionats</string>
   <string name="activity_share_toolbar_header">Trieu els contactes</string>
   <string name="no_contacts_selector">No hi ha cap contacte per mostrar</string>
   <string name="no_contacts_selector_action">Torneu aquí després d\'afegir un contacte</string>
-  <string name="forum_shared_snackbar">Fòrum compartit amb els contactes seleccionats</string>
-  <string name="forum_share_message">Afegiu una nota (opcional)</string>
-  <string name="forum_share_error">S\'ha produït un error en compartir aquest fòrum.</string>
-  <string name="forum_invitation_received">%1$s vol compartir el fòrum «%2$s» amb vós.</string>
-  <string name="forum_invitation_sent">Heu convidat a%2$s a compartit el fòrum «%1$s».</string>
-  <string name="forum_invitations_title">Convideu a participar al fòrum</string>
-  <string name="forum_invitation_exists">Ja heu acceptat una invitació a aquest fòrum.\n\nAcceptar més invitacions farà que la vostra connexió amb el fòrum sigui més ràpida i fiable.</string>
-  <string name="forum_joined_toast">Us heu afegit al fòrum</string>
-  <string name="forum_declined_toast">Heu refusat la invitació</string>
   <string name="shared_by_format">Compartit per %s</string>
-  <string name="forum_invitation_already_sharing">Ja l\'esteu compartint</string>
-  <string name="forum_invitation_already_invited">La invitació ja s\'ha enviat</string>
-  <string name="forum_invitation_invite_received">La invitació ja s\'ha rebut</string>
-  <string name="forum_invitation_not_supported">Aquest contacte no és compatible</string>
-  <string name="forum_invitation_error">Això és un error i no és culpa vostre</string>
-  <string name="forum_invitation_response_accepted_sent">Heu acceptat la invitació al fòrum enviada per %s.</string>
-  <string name="forum_invitation_response_declined_sent">Heu refusat la invitació al fòrum enviada per %s.</string>
-  <string name="forum_invitation_response_declined_auto">La invitació al blog de %s s\'ha declinat automàticament.</string>
-  <string name="forum_invitation_response_accepted_received">%s ha acceptat la invitació al fòrum.</string>
-  <string name="forum_invitation_response_declined_received">%s ha rebutjat la invitació al fòrum.</string>
   <string name="sharing_status">Estat de la compartició</string>
-  <string name="sharing_status_forum">Qualsevol membre d\'un fòrum pot compartir-lo amb els seus contactes. Esteu compartint aquest fòrum amb els següents contactes. Poden haver-hi membres del fòrum que no pugueu veure.</string>
   <string name="shared_with">Compartit amb %1$d (%2$d en línia)</string>
-  <plurals name="forums_shared">
-    <item quantity="one">%d fòrum compartit per contactes</item>
-    <item quantity="other">%d fòrums compartits per contactes</item>
-  </plurals>
   <string name="nobody">Ningú</string>
   <!--Blogs-->
-  <string name="blogs_other_blog_empty_state">No hi ha cap apunt per mostrar</string>
   <string name="read_more">llegeix-ne més</string>
-  <string name="blogs_write_blog_post">Escriviu un apunt al blog</string>
-  <string name="blogs_write_blog_post_body_hint">Escriviu el vostre apunt al blog</string>
-  <string name="blogs_publish_blog_post">Publica</string>
-  <string name="blogs_blog_post_created">S\'ha publicat l\'apunt al blog</string>
-  <string name="blogs_blog_post_received">S\'ha rebut un nou apunt al blog</string>
-  <string name="blogs_blog_post_scroll_to">Desplaça</string>
-  <string name="blogs_feed_empty_state">No hi ha cap apunt per mostrar</string>
-  <string name="blogs_feed_empty_state_action">Aquí hi trobareu els apunts dels vostres contactes i dels blocs subscrits. \n\nToqueu la icona de la ploma per escriure un apunt</string>
-  <string name="blogs_remove_blog">Suprimeix el blog</string>
-  <string name="blogs_remove_blog_dialog_message">Segur que voleu suprimir aquest blog?\n\nEls apunts publicats s\'esborraran del vostre dispositiu però no del d\'altres persones.\n\nEls contactes amb els que hàgeu compartit aquest blog poden deixar de rebre les actualitzacions.</string>
-  <string name="blogs_remove_blog_ok">Suprimeix</string>
-  <string name="blogs_blog_removed">S\'ha suprimit el blog</string>
-  <string name="blogs_reblog_comment_hint">Afegiu una nota (opcional)</string>
-  <string name="blogs_reblog_button">Rebloga</string>
   <!--Blog Sharing-->
-  <string name="blogs_sharing_share">Compartiu el blog</string>
-  <string name="blogs_sharing_error">S\'ha produït un error en compartir aquest blog.</string>
-  <string name="blogs_sharing_button">Compartiu el blog</string>
-  <string name="blogs_sharing_snackbar">S\'ha compartit el blog amb els contactes seleccionats</string>
-  <string name="blogs_sharing_response_accepted_sent">Heu acceptat la invitació al blog de %s.</string>
-  <string name="blogs_sharing_response_declined_sent">Heu refusat la invitació al blog de %s.</string>
-  <string name="blogs_sharing_response_declined_auto">La invitació al blog de %s s\'ha declinat automàticament.</string>
-  <string name="blogs_sharing_response_accepted_received">%s ha acceptat la invitació al blog.</string>
-  <string name="blogs_sharing_response_declined_received">%s ha refusat la invitació al blog.</string>
-  <string name="blogs_sharing_invitation_received">%1$s ha compartit el blog «%2$s» amb vós.</string>
-  <string name="blogs_sharing_invitation_sent">Heu compartit el blog «%1$s» amb %2$s.</string>
-  <string name="blogs_sharing_invitations_title">Convideu veure el blog</string>
-  <string name="blogs_sharing_joined_toast">Us heu subscrit al blog</string>
-  <string name="blogs_sharing_declined_toast">Heu refusat la invitació</string>
-  <string name="sharing_status_blog">Qualsevol membre subscrit a un blog el pot compartir amb els seus contactes. Esteu compartint aquest blog amb els següents contactes. Poden haver-hi altres membres subscrits que no veieu.</string>
   <!--RSS Feeds-->
-  <string name="blogs_rss_feeds_import">Subscriure\'s al canal de notícies RSS</string>
-  <string name="blogs_rss_feeds_import_button">Subscriu-me</string>
-  <string name="blogs_rss_feeds_import_hint">Escriviu l\'URL del canal de notícies RSS</string>
-  <string name="blogs_rss_feeds_import_progress">Important fil d\'actualitat RSS...</string>
-  <string name="blogs_rss_feeds_import_error">Ens sap greu! S\'ha produït un error en subscriure-us al vostre canal de notícies.</string>
-  <string name="blogs_rss_feeds_import_title">Importa fil d\'actualitat des d\'un fitxer</string>
-  <string name="blogs_rss_feeds">Canals RSS</string>
-  <string name="blogs_rss_feeds_manage_imported">Importat:</string>
-  <string name="blogs_rss_feeds_manage_author">Autor:</string>
-  <string name="blogs_rss_feeds_manage_updated">Darrera actualització:</string>
-  <string name="blogs_rss_remove_feed">Suprimeix la subscripció al canal de notícies</string>
-  <string name="blogs_rss_remove_feed_dialog_message">Segur que voleu suprimir la subscripció a aquest canal de notícies?\n\nLes notícies d\'aquest canal s\'eliminaran del vostre dispositiu però no del d\'altres persones.\n\nEls contactes amb els que hàgeu compartit aquest canal poden deixar de rebre les actualitzacions.</string>
-  <string name="blogs_rss_remove_feed_ok">Suprimeix la subscripció</string>
-  <string name="blogs_rss_feeds_manage_empty_state">No hi ha cap notícia per mostrar\n\nFeu un toc sobre la icona + per subscriure-us a un canal de notícies</string>
-  <string name="blogs_rss_feeds_manage_error">S\'ha produït un problema en actualitzar els vostres canals de notícies. Torneu-ho a provar més endavant.</string>
   <!--Settings Profile Picture-->
   <string name="change_profile_picture">Feu un toc per modificar la foto del vostre perfil</string>
   <string name="dialog_confirm_profile_picture_title">Modifica la foto de perfil</string>
@@ -561,12 +461,6 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
   <string name="notify_group_messages_setting_title">Missatges dels grups</string>
   <string name="notify_group_messages_setting_summary">Mostra avisos pels missatges dels grups</string>
   <string name="notify_group_messages_setting_summary_26">Configura els avisos pels missatges dels grups</string>
-  <string name="notify_forum_posts_setting_title">Apunts del fòrum</string>
-  <string name="notify_forum_posts_setting_summary">Mostra avisos pels apunts del fòrum</string>
-  <string name="notify_forum_posts_setting_summary_26">Configura els avisos pels apunts dels fòrums</string>
-  <string name="notify_blog_posts_setting_title">Apunts als blogs</string>
-  <string name="notify_blog_posts_setting_summary">Mostra avisos pels apunts als blogs</string>
-  <string name="notify_blog_posts_setting_summary_26">Configura els avisos pels apunts als blogs</string>
   <string name="notify_vibration_setting">Vibra</string>
   <string name="notify_sound_setting">So</string>
   <string name="notify_sound_setting_default">So d\'avís predeterminat</string>
@@ -586,10 +480,6 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
   <string name="mailbox_setup_connecting">S\'està connectant a la bústia...</string>
   <!--This string is shown when connecting to a Mailbox for the first time. The placeholder will be replaced with a duration, e.g. "2 minutes".-->
   <string name="mailbox_setup_connecting_info">Això pot trigar fins a %1s</string>
-  <string name="mailbox_qr_code_too_old">El codi QR que heu escanejat prové d\'una versió anterior del Zerion Mailbox.\n\nActualitzeu el Zerion Mailbox a la darrera versió i torneu-ho a provar.</string>
-  <string name="mailbox_qr_code_too_new">El codi QR que heu escanejat prové d\'una versió més recent de Zerion Mailbox.\n\nActualitzeu el Zerion a la darrera versió i torneu-ho a provar.</string>
-  <string name="contact_qr_code_for_mailbox">El codi QR que heu escanejat serveix per afegir un contacte del Zerion.\n\nSi voleu afegir un contacte, aneu a la llista de contactes i toqueu la icona +.</string>
-  <string name="mailbox_setup_qr_code_wrong_description">El codi QR que heu escanejat no prové del Zerion Mailbox.\n\nObriu l\'aplicació Zerion Mailbox al dispositiu Mailbox i escanegeu el codi QR que hi apareix.</string>
   <string name="mailbox_setup_already_paired_title">La bústia ja està enllaçada</string>
   <string name="mailbox_setup_already_paired_description">Desenllaceu la bústia de l\'altre dispositiu i torneu-ho a provar.</string>
   <string name="mailbox_setup_io_error_title">No s\'ha pogut connectar</string>
@@ -738,8 +628,6 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
   <string name="permission_bluetooth_title">Permís de dispositius propers</string>
   <string name="permission_bluetooth_body">Per utilitzar la comunicació Bluetooth, el Zerion necessita permís per trobar i connectar-se a dispositius propers.</string>
   <string name="permission_bluetooth_denied_body">Heu denegat l\'accés als dispositius propers, però el Zerion necessita aquest permís per utilitzar Bluetooth.\n\nPenseu en concedir l\'accés.</string>
-  <string name="qr_code">Codi QR</string>
-  <string name="show_qr_code_fullscreen">Mostra el codi QR a pantalla completa</string>
   <!--App Locking-->
   <string name="lock_unlock">Desbloqueja Zerion</string>
   <string name="lock_unlock_verbose">Introduïu el PIN, el patró o la contrasenya del vostre dispositiu per desbloquejar Zerion</string>
@@ -767,9 +655,7 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
   <string name="wifi_settings_request_enable_body">Per crear un punt d\'accés Wi-Fi, el Zerion ha d\'utilitzar Wi-Fi.  Activeu-lo.</string>
   <string name="hotspot_tab_manual">Manual</string>
   <!--The placeholder to be inserted into the string 'hotspot_manual_wifi': People can connect by %s-->
-  <string name="hotspot_scanning_a_qr_code">escanejant un codi QR</string>
   <!--Wi-Fi setup-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_wifi">El vostre telèfon proporciona un punt d\'accés Wi-Fi. Les persones que vulguin baixar el Zerion es poden connectar al punt d\'accés afegint-lo a la configuració Wi-Fi del seu dispositiu mitjançant els detalls següents o mitjançant %s. Quan s\'hagin connectat al punt d\'accés, premeu «Següent».</string>
   <string name="hotspot_manual_wifi_ssid">Nom de la xarxa</string>
   <string name="hotspot_qr_wifi">El vostre telèfon proporciona un punt d\'accés Wi-Fi. Les persones que vulguin baixar el Zerion poden connectar-se al punt d\'accés escanejant aquest codi QR. Quan s\'hagin connectat al punt d\'accés, premeu «Següent».</string>
@@ -779,7 +665,6 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
     <item quantity="other">%s dispositius connectats</item>
   </plurals>
   <!--Download link-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_site">El vostre telèfon proporciona un punt d\'accés Wi-Fi. Les persones connectades al punt d\'accés poden baixar el Zerion escrivint l\'enllaç següent en un navegador web o %s.</string>
   <string name="hotspot_manual_site_address">Adreça (URL)</string>
   <string name="hotspot_qr_site">El vostre telèfon proporciona una punt d\'accés Wi-Fi. Les persones connectades al punt d\'accés poden baixar el Zerion escanejant aquest codi QR.</string>

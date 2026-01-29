@@ -12,9 +12,7 @@ import java.security.GeneralSecurityException;
 import static org.briarproject.bramble.api.crypto.PostQuantumConstants.HYBRID_SIGNATURE_PRIVATE_KEY_BYTES;
 import static org.briarproject.bramble.api.crypto.PostQuantumConstants.HYBRID_SIGNATURE_PUBLIC_KEY_BYTES;
 
-/**
- * Parser for hybrid signature keys (Ed25519 + ML-DSA-65).
- */
+
 @NotNullByDefault
 class HybridSignatureKeyParser implements KeyParser {
 
@@ -33,11 +31,6 @@ class HybridSignatureKeyParser implements KeyParser {
 							encodedKey.length + ", expected: " +
 							HYBRID_SIGNATURE_PUBLIC_KEY_BYTES);
 		}
-
-		// Validate Ed25519 component (32 bytes at start)
-		// Ed25519 public keys need to be on the curve - basic length check here
-
-		// Validate ML-DSA-65 component (1952 bytes after Ed25519)
 		byte[] mlDsaPubKey = new byte[1952];
 		System.arraycopy(encodedKey, 32, mlDsaPubKey, 0, 1952);
 		if (!mlDsa65.isValidPublicKey(mlDsaPubKey)) {
@@ -57,8 +50,6 @@ class HybridSignatureKeyParser implements KeyParser {
 							encodedKey.length + ", expected: " +
 							HYBRID_SIGNATURE_PRIVATE_KEY_BYTES);
 		}
-
-		// Validate ML-DSA-65 private key component
 		byte[] mlDsaPrivKey = new byte[4032];
 		System.arraycopy(encodedKey, 32, mlDsaPrivKey, 0, 4032);
 		if (!mlDsa65.isValidPrivateKey(mlDsaPrivKey)) {

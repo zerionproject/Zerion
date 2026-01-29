@@ -13,26 +13,15 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
-import java.util.logging.Logger;
-
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
-
-import static java.util.logging.Level.INFO;
-
 @NotNullByDefault
 @ThreadSafe
 class ConnectionChooserImpl implements ConnectionChooser {
-
-	private static final Logger LOG =
-			Logger.getLogger(ConnectionChooserImpl.class.getName());
-
 	private final Clock clock;
 	private final Executor ioExecutor;
 	private final Object lock = new Object();
-
-	// The following are locking: lock
 	private boolean stopped = false;
 	private final Queue<KeyAgreementConnection> results = new LinkedList<>();
 
@@ -49,7 +38,6 @@ class ConnectionChooserImpl implements ConnectionChooser {
 				KeyAgreementConnection c = task.call();
 				if (c != null) addResult(c);
 			} catch (Exception e) {
-				if (LOG.isLoggable(INFO)) LOG.info(e.toString());
 			}
 		});
 	}
@@ -78,14 +66,9 @@ class ConnectionChooserImpl implements ConnectionChooser {
 			stopped = true;
 			lock.notifyAll();
 		}
-		if (LOG.isLoggable(INFO))
-			LOG.info("Closing " + unused.size() + " unused connections");
-		for (KeyAgreementConnection c : unused) tryToClose(c.getConnection());
 	}
 
 	private void addResult(KeyAgreementConnection c) {
-		if (LOG.isLoggable(INFO))
-			LOG.info("Got connection for " + c.getTransportId());
 		boolean close = false;
 		synchronized (lock) {
 			if (stopped) {
@@ -96,7 +79,6 @@ class ConnectionChooserImpl implements ConnectionChooser {
 			}
 		}
 		if (close) {
-			LOG.info("Already stopped");
 			tryToClose(c.getConnection());
 		}
 	}
@@ -106,7 +88,6 @@ class ConnectionChooserImpl implements ConnectionChooser {
 			conn.getReader().dispose(false, true);
 			conn.getWriter().dispose(false);
 		} catch (IOException e) {
-			if (LOG.isLoggable(INFO)) LOG.info(e.toString());
 		}
 	}
 }

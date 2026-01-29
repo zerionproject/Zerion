@@ -10,8 +10,6 @@ import javax.annotation.concurrent.Immutable;
 @Immutable
 @NotNullByDefault
 class PasswordStrengthEstimatorImpl implements PasswordStrengthEstimator {
-
-	// The minimum number of unique characters in a strong password
 	private static final int STRONG_UNIQUE_CHARS = 12;
 
 	@Override

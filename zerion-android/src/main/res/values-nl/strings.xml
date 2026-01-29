@@ -51,8 +51,6 @@
   <string name="nav_drawer_close_description">Sluit de navigatielade</string>
   <string name="contact_list_button">Contacten</string>
   <string name="groups_button">Privégroepen</string>
-  <string name="forums_button">Fora</string>
-  <string name="blogs_button">Blogs</string>
   <!--This is part of the main menu. The app will be locked when this is tapped.-->
   <string name="lock_button">App vergrendelen</string>
   <string name="settings_button">Instellingen</string>
@@ -87,14 +85,6 @@
   <plurals name="group_message_notification_text">
     <item quantity="one">Nieuw groepsbericht.</item>
     <item quantity="other">%d nieuwe groepsberichten.</item>
-  </plurals>
-  <plurals name="forum_post_notification_text">
-    <item quantity="one">Nieuwe forumpost.</item>
-    <item quantity="other">%d nieuwe forumposts.</item>
-  </plurals>
-  <plurals name="blog_post_notification_text">
-    <item quantity="one">Nieuwe blogpost.</item>
-    <item quantity="other">%d nieuwe blogposts.</item>
   </plurals>
   <!--Misc-->
   <string name="now">nu</string>
@@ -170,14 +160,12 @@
   <string name="menu_contact">Contact</string>
   <!--Adding Contacts-->
   <string name="add_contact_title">Voeg contact in de buurt toe</string>
-  <string name="face_to_face">Je moet een persoon in levenden lijve ontmoeten om die als contact toe te voegen.\n\nDit voortkomt dat anderen zich als jou voor kunnen doen of in de toekomst je berichten kunnen lezen.</string>
   <string name="continue_button">Ga verder</string>
   <string name="try_again_button">Probeer nog een keer</string>
   <string name="waiting_for_contact_to_scan">Wacht op contact om te scannen en te verbinden\u2026</string>
   <string name="exchanging_contact_details">Contactdetails aan het uitwisselen\u2026</string>
   <string name="contact_added_toast">Contact toegevoegd: %s</string>
   <string name="contact_already_exists">Contact %s bestaat al</string>
-  <string name="qr_code_invalid">De QR-code is ongeldig</string>
   <string name="qr_code_too_old">De QR-code die je hebt gescand komt van een oudere versie van %s.\n\nVraag aan je contact om de app bij te werken naar de laatste versie en probeer het daarna opnieuw.</string>
   <string name="qr_code_too_new">De QR-code die je hebt gescand komt van een nieuwere versie van %s.\n\nWerk de app bij naar de laatste versie en probeer het daarna opnieuw.</string>
   <string name="camera_error">Camerafout</string>
@@ -318,101 +306,26 @@
   <string name="groups_reveal_visible_revealed_by_contact">Contactrelaties zijn zichtbaar voor de groep (geopenbaard door %s)</string>
   <string name="groups_reveal_invisible">Contactrelatie is niet zichtbaar voor de groep</string>
   <!--Forums-->
-  <string name="no_forums">Er zijn geen fora om te tonen</string>
-  <string name="no_forums_action">Tik op het +-icoon om een forum aan te maken of vraag een van je contacten om een forum met je te delen</string>
-  <string name="create_forum_title">Maak forum aan</string>
-  <string name="choose_forum_hint">Voer een naam in voor je forum</string>
-  <string name="create_forum_button">Maak forum aan</string>
-  <string name="forum_created_toast">Forum aangemaakt</string>
-  <string name="no_forum_posts">Geen posts om te tonen</string>
   <string name="no_posts">Geen posts</string>
   <plurals name="posts">
     <item quantity="one">%d post</item>
     <item quantity="other">%d posts</item>
   </plurals>
-  <string name="forum_new_message_hint">Nieuw bericht</string>
-  <string name="forum_message_reply_hint">Nieuwe reactie</string>
   <string name="btn_reply">Antwoord</string>
-  <string name="forum_leave">Verlaat forum</string>
-  <string name="dialog_title_leave_forum">Bevestig verlaten forum</string>
-  <string name="dialog_message_leave_forum">Weet je zeker dat dit forum wil verlaten?\n\nHet is mogelijk dat contacten met wie je dit forum hebt gedeeld geen updates meer ontvangen.</string>
   <string name="dialog_button_leave">Verlaat</string>
-  <string name="forum_left_toast">Forum verlaten</string>
   <!--Forum Sharing-->
-  <string name="forum_share_button">Deel forum</string>
   <string name="contacts_selected">Contacten geselecteerd</string>
   <string name="activity_share_toolbar_header">Kies contacten</string>
   <string name="no_contacts_selector">Er zijn geen contacten om te tonen</string>
   <string name="no_contacts_selector_action">Kom alsjeblieft hier terug na het toevoegen van een contact</string>
-  <string name="forum_shared_snackbar">Forum is gedeeld met uitgekozen contacten</string>
-  <string name="forum_share_message">Voeg een bericht toe (optioneel)</string>
-  <string name="forum_share_error">Er trad een fout op bij het delen van dit forum.</string>
-  <string name="forum_invitation_received">%1$s heeft het forum \"%2$s\" met je gedeeld.</string>
-  <string name="forum_invitation_sent">Jij hebt het forum \"%1$s\" gedeeld met %2$s.</string>
-  <string name="forum_invitations_title">Forumuitnodigingen</string>
-  <string name="forum_invitation_exists">Je hebt de uitnodiging van dit forum al eens geaccepteerd.\n\nHet accepteren van meer uitnodigingen zal je verbinding met het forum sneller en betrouwbaarder maken.</string>
-  <string name="forum_joined_toast">Lid geworden van forum</string>
-  <string name="forum_declined_toast">Uitnodiging afgewezen</string>
   <string name="shared_by_format">Is gedeeld door %s</string>
-  <string name="forum_invitation_already_sharing">Reeds gedeeld</string>
-  <string name="forum_invitation_response_accepted_sent">Je hebt een forumuitnodiging geaccepteerd van %s.</string>
-  <string name="forum_invitation_response_declined_sent">Je hebt een forumuitnodiging afgewezen van %s.</string>
-  <string name="forum_invitation_response_accepted_received">%s heeft de forumuitnodiging geaccepteerd.</string>
-  <string name="forum_invitation_response_declined_received">%s heeft de forumuitnodiging afgewezen.</string>
   <string name="sharing_status">Deelstatus</string>
-  <string name="sharing_status_forum">Alle leden van een forum kunnen dat forum delen met hun contacten. Momenteel deel je dit forum met de volgende contacten. Er kunnen ook andere leden zijn die je niet kunt zien.</string>
   <string name="shared_with">Is gedeeld met %1$d (%2$d online)</string>
-  <plurals name="forums_shared">
-    <item quantity="one">%d forum is gedeeld door contacten.</item>
-    <item quantity="other">%d fora zijn gedeeld door contacten.</item>
-  </plurals>
   <string name="nobody">Niemand</string>
   <!--Blogs-->
-  <string name="blogs_other_blog_empty_state">Geen posts om te tonen</string>
   <string name="read_more">lees meer</string>
-  <string name="blogs_write_blog_post">Schrijf blogpost</string>
-  <string name="blogs_write_blog_post_body_hint">Schrijf je blogpost</string>
-  <string name="blogs_publish_blog_post">Publiceer</string>
-  <string name="blogs_blog_post_created">Blogpost aangemaakt</string>
-  <string name="blogs_blog_post_received">Nieuwe blogpost ontvangen</string>
-  <string name="blogs_blog_post_scroll_to">Scroll naar</string>
-  <string name="blogs_feed_empty_state">Geen posts om te tonen</string>
-  <string name="blogs_feed_empty_state_action">Hier verschijnen de posts van je je contacten en blogs waar je op bent geabonneerd\n\nTik op het penicoon om een post te schrijven</string>
-  <string name="blogs_remove_blog">Verwijder blog</string>
-  <string name="blogs_remove_blog_dialog_message">Weet je zeker dat je deze blog wil verwijderen?\n\nPosts zullen van je apparaat worden verwijderd maar niet van apparaten van andere mensen.\n\nContacten met wie je deze blog hebt gedeeld zullen geen updates meer ontvangen.</string>
-  <string name="blogs_remove_blog_ok">Verwijderen</string>
-  <string name="blogs_blog_removed">Blog is verwijderd</string>
-  <string name="blogs_reblog_comment_hint">Voeg commentaar toe (optioneel)</string>
-  <string name="blogs_reblog_button">Reblog</string>
   <!--Blog Sharing-->
-  <string name="blogs_sharing_share">Deel blog</string>
-  <string name="blogs_sharing_error">Er was een fout tijdens het delen van deze blog.</string>
-  <string name="blogs_sharing_button">Deel blog</string>
-  <string name="blogs_sharing_snackbar">Blog is gedeeld met gekozen contacten</string>
-  <string name="blogs_sharing_response_accepted_sent">Je hebt de bloguitnodiging van %s geaccepteerd.</string>
-  <string name="blogs_sharing_response_declined_sent">Je hebt de bloguitnodiging van %s afgewezen.</string>
-  <string name="blogs_sharing_response_accepted_received">%s heeft de bloguitnodiging geaccepteerd.</string>
-  <string name="blogs_sharing_response_declined_received">%s heeft de bloguitnodiging afgewezen.</string>
-  <string name="blogs_sharing_invitation_received">%1$s heeft de blog \"%2$s\" met je gedeeld.</string>
-  <string name="blogs_sharing_invitation_sent">Je hebt de blog \"%1$s\" gedeeld met %2$s.</string>
-  <string name="blogs_sharing_invitations_title">Bloguitnodigingen</string>
-  <string name="blogs_sharing_joined_toast">Geabonneerd op blog</string>
-  <string name="blogs_sharing_declined_toast">Uitnodiging afgewezen</string>
-  <string name="sharing_status_blog">Alle leden die lid worden van een blog kunnen deze blog delen met hun contacten. Je deelt deze blog al met de volgende contacten. Er kunnen ook andere leden zijn die je niet kunt zien.</string>
   <!--RSS Feeds-->
-  <string name="blogs_rss_feeds_import">Importeer RSS-feed</string>
-  <string name="blogs_rss_feeds_import_button">Importeer</string>
-  <string name="blogs_rss_feeds_import_hint">Voer de URL van de RSS-feed in</string>
-  <string name="blogs_rss_feeds_import_error">Excuses! Er trad een fout op bij het importeren van je feed.</string>
-  <string name="blogs_rss_feeds">RSS-feeds</string>
-  <string name="blogs_rss_feeds_manage_imported">Geïmporteerd:</string>
-  <string name="blogs_rss_feeds_manage_author">Auteur:</string>
-  <string name="blogs_rss_feeds_manage_updated">Laatst bijgewerkt:</string>
-  <string name="blogs_rss_remove_feed">Verwijder feed</string>
-  <string name="blogs_rss_remove_feed_dialog_message">Weet je zeker dat je deze feed wil verwijderen?\n\nPosts zullen van je apparaat worden verwijderd maar niet van apparaten van andere mensen.\n\nContacten met wie je deze feed hebt gedeeld zullen geen updates meer ontvangen.</string>
-  <string name="blogs_rss_remove_feed_ok">Verwijderen</string>
-  <string name="blogs_rss_feeds_manage_empty_state">Geen RSS-feeds om te tonen\n\nTik op het +-icoon om een feed te importeren</string>
-  <string name="blogs_rss_feeds_manage_error">Er was een probleem met het laden van je feeds. Probeer het alsjeblieft later nog een keer.</string>
   <!--Settings Profile Picture-->
   <string name="change_profile_picture">Tik om je profielfoto te wijzigen</string>
   <string name="dialog_confirm_profile_picture_title">Wijzig profielfoto</string>
@@ -493,12 +406,6 @@
   <string name="notify_group_messages_setting_title">Groepsberichten</string>
   <string name="notify_group_messages_setting_summary">Toon meldingen voor groepsberichten</string>
   <string name="notify_group_messages_setting_summary_26">Configureer meldingen voor groepsberichten</string>
-  <string name="notify_forum_posts_setting_title">Forumposts</string>
-  <string name="notify_forum_posts_setting_summary">Toon meldingen voor forumposts</string>
-  <string name="notify_forum_posts_setting_summary_26">Configureer meldingen voor forumposts</string>
-  <string name="notify_blog_posts_setting_title">Blogposts</string>
-  <string name="notify_blog_posts_setting_summary">Toon meldingen voor blogposts</string>
-  <string name="notify_blog_posts_setting_summary_26">Configureer meldingen voor blogposts</string>
   <string name="notify_vibration_setting">Tril</string>
   <string name="notify_sound_setting">Geluid</string>
   <string name="notify_sound_setting_default">Standaard meldingsgeluid</string>
@@ -559,8 +466,6 @@
   <string name="permission_camera_location_request_body">Om de QR-code in te scannen heeft Zerion toegang nodig tot de camera.\n\nOm bluetoothapparaten te ontdekken heeft Zerion toestemming nodig tot je locatie.\n\nZerion slaat je locatie niet op en deelt het met niemand.</string>
   <string name="permission_camera_denied_body">Je hebt toegang tot de camera niet vrijgegeven, terwijl het toevoegen van contacten de camera nodig heeft.\n\nOverweeg alsjeblieft toegang vrij te geven.</string>
   <string name="permission_location_denied_body">Je hebt geen toegang tot je locatie gegeven, maar Zerion heeft deze rechten nodig om apparaten via bluetooth te vinden.\n\nOverweeg a.u.b. deze rechten te geven.</string>
-  <string name="qr_code">QR-code</string>
-  <string name="show_qr_code_fullscreen">Toon QR-code op volledig scherm</string>
   <!--App Locking-->
   <string name="lock_unlock">Ontgrendel Zerion</string>
   <string name="lock_unlock_verbose">Voer je apparaat PIN, patroon of wachtwoord in om Zerion te ontgrendelen</string>
@@ -576,9 +481,7 @@
   <string name="hotspot_tab_manual">Handmatig</string>
   <!--The placeholder to be inserted into the string 'hotspot_manual_wifi': People can connect by %s-->
   <!--Wi-Fi setup-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <!--Download link-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <!--e.g. Download Zerion 1.2.20-->
   <string name="website_troubleshooting_title">Probleem oplossen</string>
   <!--error handling-->

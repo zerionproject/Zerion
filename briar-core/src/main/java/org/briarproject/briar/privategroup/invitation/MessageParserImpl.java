@@ -99,10 +99,6 @@ class MessageParserImpl implements MessageParser {
 	@Override
 	public InviteMessage parseInviteMessage(Message m, BdfList body)
 			throws FormatException {
-		// Client version 0.0: Message type, creator, group name, salt,
-		// optional text, signature.
-		// Client version 0.1: Message type, creator, group name, salt,
-		// optional text, signature, optional auto-delete timer.
 		BdfList creatorList = body.getList(1);
 		String groupName = body.getString(2);
 		byte[] salt = body.getRaw(3);
@@ -122,10 +118,6 @@ class MessageParserImpl implements MessageParser {
 	@Override
 	public JoinMessage parseJoinMessage(Message m, BdfList body)
 			throws FormatException {
-		// Client version 0.0: Message type, private group ID, optional
-		// previous message ID.
-		// Client version 0.1: Message type, private group ID, optional
-		// previous message ID, optional auto-delete timer.
 		GroupId privateGroupId = new GroupId(body.getRaw(1));
 		byte[] b = body.getOptionalRaw(2);
 		MessageId previousMessageId = b == null ? null : new MessageId(b);
@@ -139,10 +131,6 @@ class MessageParserImpl implements MessageParser {
 	@Override
 	public LeaveMessage parseLeaveMessage(Message m, BdfList body)
 			throws FormatException {
-		// Client version 0.0: Message type, private group ID, optional
-		// previous message ID.
-		// Client version 0.1: Message type, private group ID, optional
-		// previous message ID, optional auto-delete timer.
 		GroupId privateGroupId = new GroupId(body.getRaw(1));
 		byte[] b = body.getOptionalRaw(2);
 		MessageId previousMessageId = b == null ? null : new MessageId(b);

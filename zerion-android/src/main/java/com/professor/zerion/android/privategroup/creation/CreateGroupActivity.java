@@ -34,8 +34,6 @@ public class CreateGroupActivity extends ZerionActivity
 		super.onCreate(bundle);
 
 		setContentView(R.layout.activity_fragment_container_toolbar);
-
-		// Set up toolbar for proper action bar support
 		setUpCustomToolbar(false);
 
 		if (bundle == null) {

@@ -6,9 +6,7 @@ import java.util.Collection;
 
 import javax.annotation.concurrent.Immutable;
 
-/**
- * A record offering the recipient one or more {@link Message Messages}.
- */
+
 @Immutable
 @NotNullByDefault
 public class Offer {
@@ -19,9 +17,7 @@ public class Offer {
 		this.offered = offered;
 	}
 
-	/**
-	 * Returns the identifiers of the offered messages.
-	 */
+	
 	public Collection<MessageId> getMessageIds() {
 		return offered;
 	}

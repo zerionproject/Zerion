@@ -23,24 +23,15 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.concurrent.Executor;
-import java.util.logging.Logger;
-
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
 import javax.net.SocketFactory;
-
-import static java.util.logging.Level.INFO;
-import static java.util.logging.Level.WARNING;
 import static org.briarproject.bramble.util.IoUtils.tryToClose;
 
 @Immutable
 @NotNullByDefault
 class DevReporterImpl implements DevReporter, EventListener {
-
-	private static final Logger LOG =
-			Logger.getLogger(DevReporterImpl.class.getName());
-
-	private static final int SOCKET_TIMEOUT = 30 * 1000; // 30 seconds
+	private static final int SOCKET_TIMEOUT = 30 * 1000;
 	private static final int LINE_LENGTH = 70;
 
 	private final Executor ioExecutor;
@@ -65,7 +56,7 @@ class DevReporterImpl implements DevReporter, EventListener {
 			s.setSoTimeout(SOCKET_TIMEOUT);
 			return s;
 		} catch (IOException e) {
-			tryToClose(s, LOG, WARNING);
+			tryToClose(s);
 			throw e;
 		}
 	}
@@ -73,7 +64,6 @@ class DevReporterImpl implements DevReporter, EventListener {
 	@Override
 	public void encryptReportToFile(File reportDir, String filename,
 			String report) throws FileNotFoundException {
-		LOG.info("Encrypting report to file");
 		byte[] plaintext = StringUtils.toUtf8(report);
 		byte[] ciphertext = crypto.encryptToKey(devConfig.getDevPublicKey(),
 				plaintext);
@@ -87,7 +77,7 @@ class DevReporterImpl implements DevReporter, EventListener {
 			writer.append(armoured);
 			writer.flush();
 		} finally {
-			tryToClose(writer, LOG, WARNING);
+			tryToClose(writer);
 		}
 	}
 
@@ -106,9 +96,8 @@ class DevReporterImpl implements DevReporter, EventListener {
 		File[] reports = reportDir.listFiles();
 		int reportsSent = 0;
 		if (reports == null || reports.length == 0)
-			return reportsSent; // No reports to send
+			return reportsSent;
 
-		LOG.info("Sending reports to developers");
 		for (File f : reports) {
 			OutputStream out = null;
 			InputStream in = null;
@@ -120,13 +109,11 @@ class DevReporterImpl implements DevReporter, EventListener {
 				f.delete();
 				reportsSent++;
 			} catch (IOException e) {
-				LOG.log(WARNING, "Failed to send reports", e);
-				tryToClose(out, LOG, WARNING);
-				tryToClose(in, LOG, WARNING);
+				tryToClose(out);
+				tryToClose(in);
 				return reportsSent;
 			}
 		}
-		if (LOG.isLoggable(INFO)) LOG.info(reportsSent + " report(s) sent");
 		return reportsSent;
 	}
 }

@@ -6,9 +6,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.Immutable;
 
-/**
- * An event that is broadcast when a group is added to the database.
- */
+
 @Immutable
 @NotNullByDefault
 public class GroupAddedEvent extends Event {

@@ -30,10 +30,10 @@ import static org.briarproject.bramble.api.plugin.BluetoothConstants.ID;
 @NotNullByDefault
 public class AndroidBluetoothPluginFactory implements DuplexPluginFactory {
 
-	private static final int MAX_LATENCY = 30 * 1000; // 30 seconds
-	private static final int MAX_IDLE_TIME = 30 * 1000; // 30 seconds
-	private static final int MIN_POLLING_INTERVAL = 60 * 1000; // 1 minute
-	private static final int MAX_POLLING_INTERVAL = 10 * 60 * 1000; // 10 mins
+	private static final int MAX_LATENCY = 30 * 1000;
+	private static final int MAX_IDLE_TIME = 30 * 1000;
+	private static final int MIN_POLLING_INTERVAL = 60 * 1000;
+	private static final int MAX_POLLING_INTERVAL = 10 * 60 * 1000;
 	private static final double BACKOFF_BASE = 1.2;
 
 	private final Executor ioExecutor, wakefulIoExecutor;

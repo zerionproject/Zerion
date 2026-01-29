@@ -53,8 +53,6 @@
   <string name="nav_drawer_close_description">Naviqasiya çekməyini bağlayın</string>
   <string name="contact_list_button">Kontaktlar</string>
   <string name="groups_button">Şəxsi Qruplar</string>
-  <string name="forums_button">Forumlar</string>
-  <string name="blogs_button">Bloglar</string>
   <!--This is part of the main menu. The app will be locked when this is tapped.-->
   <string name="lock_button">Tətbiqetməni kilidlə</string>
   <string name="settings_button">Quraşdırmalar</string>
@@ -77,14 +75,6 @@
   <plurals name="group_message_notification_text">
     <item quantity="one">Yeni qrup məktubu</item>
     <item quantity="other">%dyeni qrup məktubu</item>
-  </plurals>
-  <plurals name="forum_post_notification_text">
-    <item quantity="one">yeni forum postu.</item>
-    <item quantity="other">%dyeni forum postu.</item>
-  </plurals>
-  <plurals name="blog_post_notification_text">
-    <item quantity="one">yeni bloq postu</item>
-    <item quantity="other">%dyeni bloq postu</item>
   </plurals>
   <!--Misc-->
   <string name="now">İndi</string>
@@ -146,14 +136,12 @@
   <string name="messaging_too_many_attachments_toast">Yalnız %d ilk şəkil göndəriləcək</string>
   <!--Adding Contacts-->
   <string name="add_contact_title">Yaxında kontakt əlavə etmək</string>
-  <string name="face_to_face">Kontakta əlavə etmək istədiyiniz şəxslə tanış olmalısınız. Bu, hər kəsin kimliyinizi və ya mesajlarınızı gələcəkdə oxumasını maneə törədir.</string>
   <string name="continue_button">Davam et</string>
   <string name="try_again_button">Yenidən cəhd elə</string>
   <string name="waiting_for_contact_to_scan">Skan üçün əlaqə gözləyir və \u2026 qoşulur</string>
   <string name="exchanging_contact_details">Əlaqə məlumatları mübadiləsi \u2026</string>
   <string name="contact_added_toast">Kontakt eləvə edildi: %s</string>
   <string name="contact_already_exists">Kontakt %s artıq mövcuddur</string>
-  <string name="qr_code_invalid">QR kodu yanlışdır</string>
   <string name="qr_code_too_old">Skan etdiyiniz QR kodunun köhnə bir versiyası gəlir. %s dən ən son versiyaya keçməyi xahiş edin və daha sonra yenidən cəhd edin.</string>
   <string name="qr_code_too_new">Skan etdiyiniz QR kodunun köhnə bir versiyası gəlir. %sdən ən son versiyaya keçməyi xahiş edin və daha sonra yenidən cəhd edin.</string>
   <string name="camera_error">Kamera xətası</string>
@@ -278,81 +266,25 @@
   <string name="groups_reveal_visible_revealed_by_us">Kontakt əlaqəsi qrupda görür (sizin üçün görsənir)</string>
   <string name="groups_reveal_invisible">Kontakt əlaqəsi qrup üçün görünmür</string>
   <!--Forums-->
-  <string name="no_forums">Göstərmək üçün forum yoxdur</string>
-  <string name="no_forums_action">Bir forum yaratmaq üçün + simgesinə toxunun və ya kontaktlarinizi forumları sizinlə bölüşmək üçün xahiş edin</string>
-  <string name="create_forum_title">Forum yarat</string>
-  <string name="choose_forum_hint">Forum üçün ad seçin</string>
-  <string name="create_forum_button">Forum yarat</string>
-  <string name="forum_created_toast">Forum yaradıldı</string>
-  <string name="no_forum_posts">Göstərilməyən post yoxdur</string>
   <string name="no_posts">Post yoxdur</string>
   <plurals name="posts">
     <item quantity="one">%dpost</item>
     <item quantity="other">%dpost</item>
   </plurals>
-  <string name="forum_new_message_hint">Yeni post</string>
-  <string name="forum_message_reply_hint">yeni cavab</string>
   <string name="btn_reply">Cavab ver</string>
-  <string name="forum_leave">Forumdan çıxın</string>
-  <string name="dialog_title_leave_forum">Forumdan çıxışı təsdiqləyin</string>
-  <string name="dialog_message_leave_forum">Bu forumu tərk etmək istədiyinizə əminsinizmi? \n\n Bu forumu paylaşdığınız hər hansı əlaqələr yenilikləri almağa davam edə bilər.</string>
   <string name="dialog_button_leave">Buraxın</string>
-  <string name="forum_left_toast">Sol forum</string>
   <!--Forum Sharing-->
-  <string name="forum_share_button">Forumu paylaş</string>
   <string name="contacts_selected">Kontaktlar seçildi</string>
   <string name="activity_share_toolbar_header">Kontaktlar seçin</string>
   <string name="no_contacts_selector">Göstərmək üçün əlaqə yoxdur</string>
   <string name="no_contacts_selector_action">Kontakt əlavə etdikdən sonra bura qayıdın</string>
-  <string name="forum_shared_snackbar">Forum seçilmiş kontaktlarla paylaşıldı</string>
-  <string name="forum_share_message">Mesaj əlavə et (istəyə bağlı)</string>
-  <string name="forum_share_error">Bu forumu paylaşan zaman bir səhv oldu. </string>
-  <string name="forum_invitations_title">Forum dəvətləri</string>
-  <string name="forum_invitation_exists">Bu foruma artıq bir dəvət qəbul etdiniz. \n\nDaha dəvətnamələr qəbul edərək foruma daha sürətli və daha etibarlı bir əlaqə yaradacaqsınız.</string>
-  <string name="forum_joined_toast">Foruma qoşul</string>
-  <string name="forum_declined_toast">Dəvət azalıb</string>
   <string name="shared_by_format">Paylaşdı %silə</string>
-  <string name="forum_invitation_already_sharing">Artıq paylaşırıq</string>
   <string name="sharing_status">Paylaşma statusu</string>
-  <string name="sharing_status_forum">Bir forumun hər hansı bir üzvü onu əlaqə ilə paylaşa bilər. Bu forumu aşağıdakı əlaqələrlə bölüşürsünüz. Görməyən digər üzvlər də ola bilər.</string>
   <string name="nobody">Heçkəs</string>
   <!--Blogs-->
-  <string name="blogs_other_blog_empty_state">Göstərilməyən post yoxdur</string>
   <string name="read_more">daha çox oxu</string>
-  <string name="blogs_write_blog_post">Blog postu yaz</string>
-  <string name="blogs_write_blog_post_body_hint">Blog yazınızı yazın</string>
-  <string name="blogs_publish_blog_post">Yayımlamaq</string>
-  <string name="blogs_blog_post_created">Blog yazı yaradılıb</string>
-  <string name="blogs_blog_post_received">Yeni blog mesajı qlındı</string>
-  <string name="blogs_blog_post_scroll_to">Gedin</string>
-  <string name="blogs_feed_empty_state">Göstərilməyən post yoxdur</string>
-  <string name="blogs_feed_empty_state_action">Abunə olduğunuz əlaqələrinizdən və bloglarınızdan gələn mesajlar burada görünəcək \n\n bir yazı yazmaq üçün qələm simgesinə toxunun</string>
-  <string name="blogs_remove_blog">Bloqu sil</string>
-  <string name="blogs_remove_blog_dialog_message">Bu blogu silmək istədiyinizə əminsinizmi? \n\n Onalarınız cihazınızdan silinəcək, lakin digər cihazların cihazlarından silinəcəkdir. \n\n Bu blogu paylaşdığınız hər hansı əlaqələr yenilikləri almağa davam edə bilər.</string>
-  <string name="blogs_remove_blog_ok">Sil</string>
-  <string name="blogs_blog_removed">Bloq silindi</string>
-  <string name="blogs_reblog_comment_hint">Şərh əlavə et (istəyə bağlı)</string>
-  <string name="blogs_reblog_button">Rebloq</string>
   <!--Blog Sharing-->
-  <string name="blogs_sharing_share">Blogu paylaş</string>
-  <string name="blogs_sharing_error">Bu blogu paylaşan zaman bir səhv oldu.</string>
-  <string name="blogs_sharing_button">Blogu paylaş</string>
-  <string name="blogs_sharing_snackbar">Blog seçilmiş kontaktlarla paylaşdı</string>
-  <string name="blogs_sharing_invitations_title">Blog dəvətləri</string>
-  <string name="blogs_sharing_joined_toast">Bloga abunə olundu</string>
-  <string name="blogs_sharing_declined_toast">Dəvət azalıb</string>
   <!--RSS Feeds-->
-  <string name="blogs_rss_feeds_import">RSS Feed idxalı</string>
-  <string name="blogs_rss_feeds_import_button">İdxal</string>
-  <string name="blogs_rss_feeds_import_hint">RSS kanalın linkini daxil edin</string>
-  <string name="blogs_rss_feeds_import_error">Üzr istəyirik! Feed-inizdə idxal bir xəta baş verdi.</string>
-  <string name="blogs_rss_feeds_manage_imported">İdxal olundu:</string>
-  <string name="blogs_rss_feeds_manage_author">Müəllif:</string>
-  <string name="blogs_rss_feeds_manage_updated">Son yeniləmə:</string>
-  <string name="blogs_rss_remove_feed">Feed\'i sil</string>
-  <string name="blogs_rss_remove_feed_ok">Sil</string>
-  <string name="blogs_rss_feeds_manage_empty_state">Xeyr RSS əks etdirmir\n\nİdxal etmək üçün + düyməsinə toxunun</string>
-  <string name="blogs_rss_feeds_manage_error">Kanal yükləmədə bir problem var. Zəhmət olmasa bir az sonra yenə cəhd edin.</string>
   <!--Settings Profile Picture-->
   <!--Settings Display-->
   <string name="pref_language_title">Dil və region</string>
@@ -416,12 +348,6 @@
   <string name="notify_group_messages_setting_title">Qrup mesajlar</string>
   <string name="notify_group_messages_setting_summary">Qrup mesajlar üçün siqnallar göstərmək</string>
   <string name="notify_group_messages_setting_summary_26">Qrup mesajlar üçün konfiqurasiya siqnalları</string>
-  <string name="notify_forum_posts_setting_title">Forumun postları </string>
-  <string name="notify_forum_posts_setting_summary">Forum postları üçün siqnallar göstərmək</string>
-  <string name="notify_forum_posts_setting_summary_26">Forum postları üçün konfiqurasiya siqnalları</string>
-  <string name="notify_blog_posts_setting_title">Bloq postları</string>
-  <string name="notify_blog_posts_setting_summary">Blog yazıları üçün siqnallar göstərin</string>
-  <string name="notify_blog_posts_setting_summary_26">Blog yazıları üçün siqnallar düzəldin</string>
   <string name="notify_vibration_setting">Vibrasiya</string>
   <string name="notify_sound_setting">Səs</string>
   <string name="notify_sound_setting_default">Standart zəng melodiyası</string>
@@ -462,8 +388,6 @@
   <string name="permission_location_title">Mövqe icazəsi</string>
   <string name="permission_camera_location_title">Kamera və mövqe</string>
   <string name="permission_camera_denied_body">Kameraya daxil olmağı rədd etdiniz, lakin əlaqə əlavə etmək kameradan istifadə etməyi tələb edir. \n\nİcazə verilməsini düşünün.</string>
-  <string name="qr_code">QR kodu</string>
-  <string name="show_qr_code_fullscreen">QR kodu tam ekranda göstər</string>
   <!--App Locking-->
   <string name="lock_unlock">Zerion kilidini aç</string>
   <string name="lock_unlock_verbose">Zerion kilidini açmaq üçün cihazınızın PİN, naxış və ya parolunuzu daxil edin</string>

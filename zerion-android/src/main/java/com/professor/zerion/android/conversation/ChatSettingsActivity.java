@@ -104,11 +104,7 @@ public class ChatSettingsActivity extends ZerionActivity {
 		securityLevelDescription = findViewById(R.id.security_level_description);
 		disappearingMessagesOption = findViewById(R.id.disappearing_messages_option);
 		disappearingMessagesValue = findViewById(R.id.disappearing_messages_value);
-
-		// Set up disappearing messages click handler
 		disappearingMessagesOption.setOnClickListener(v -> showDisappearingMessagesDialog());
-
-		// Observe auto-delete timer changes
 		viewModel.getAutoDeleteTimer().observe(this, timer -> {
 			if (timer != null) {
 				disappearingMessagesValue.setText(getTimerDisplayText(timer));
@@ -121,8 +117,6 @@ public class ChatSettingsActivity extends ZerionActivity {
 				contactName.setText(contactItem.getContact().getAuthor().getName());
 
 				contactAvatar.setOnClickListener(v -> showAvatarFullScreen(contactItem));
-
-				// Update security level display
 				if (contactItem.isPostQuantum()) {
 					securityLevelTitle.setText(R.string.security_level_post_quantum);
 					securityLevelDescription.setText(
@@ -134,8 +128,6 @@ public class ChatSettingsActivity extends ZerionActivity {
 				}
 			}
 		});
-
-		// Observe contact connection status
 		viewModel.isContactConnected().observe(this, connected -> {
 			if (connected != null) {
 				contactStatus.setText(connected ? R.string.online : R.string.offline);

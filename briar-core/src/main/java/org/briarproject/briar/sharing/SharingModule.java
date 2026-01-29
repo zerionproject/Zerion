@@ -7,8 +7,6 @@ import dagger.Provides;
 public class SharingModule {
 
 	public static class EagerSingletons {
-		// Sharing module now only contains base sharing infrastructure
-		// Forum and blog sharing have been removed
 	}
 
 	@Provides

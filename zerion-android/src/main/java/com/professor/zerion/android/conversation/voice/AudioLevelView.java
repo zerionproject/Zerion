@@ -39,16 +39,12 @@ public class AudioLevelView extends View {
 		paint.setColor(ContextCompat.getColor(context, R.color.zerion_lime_600));
 		paint.setStyle(Paint.Style.FILL);
 		paint.setStrokeCap(Paint.Cap.ROUND);
-
-		// Initialize with minimum heights
 		for (int i = 0; i < BAR_COUNT; i++) {
 			barHeights[i] = MIN_BAR_HEIGHT;
 		}
 	}
 
-	/**
-	 * Update the audio amplitude (0-100)
-	 */
+	
 	public void setAmplitude(int amplitude) {
 		currentAmplitude = Math.max(0, Math.min(100, amplitude));
 		updateBarHeights();
@@ -56,11 +52,9 @@ public class AudioLevelView extends View {
 	}
 
 	private void updateBarHeights() {
-		// Convert amplitude to bar heights with some randomness for animation effect
 		float targetHeight = MIN_BAR_HEIGHT + (currentAmplitude / 100f) * (MAX_BAR_HEIGHT - MIN_BAR_HEIGHT);
 
 		for (int i = 0; i < BAR_COUNT; i++) {
-			// Add slight variation to each bar for visual interest
 			float variation = (float) (Math.random() * 0.3 - 0.15);
 			barHeights[i] = Math.max(MIN_BAR_HEIGHT,
 					Math.min(MAX_BAR_HEIGHT, targetHeight + variation));
@@ -94,8 +88,6 @@ public class AudioLevelView extends View {
 					paint
 			);
 		}
-
-		// Animate continuously while recording
 		if (currentAmplitude > 0) {
 			postInvalidateDelayed(100);
 		}

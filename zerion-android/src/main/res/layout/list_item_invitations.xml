@@ -108,7 +108,7 @@
 			android:gravity="center_vertical"
 			android:paddingHorizontal="12dp"
 			android:paddingVertical="8dp"
-			android:text="@string/forum_invitation_exists"
+			android:text="@string/invitation_exists"
 			android:textColor="#FFB800"
 			android:textSize="12sp"
 			app:drawableTint="#FFB800"

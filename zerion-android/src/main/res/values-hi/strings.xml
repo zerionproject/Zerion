@@ -51,8 +51,6 @@
   <string name="nav_drawer_close_description">नेविगेशन ड्रॉवर को बंद करें</string>
   <string name="contact_list_button">संपर्क</string>
   <string name="groups_button">निजी समूह</string>
-  <string name="forums_button">मंच</string>
-  <string name="blogs_button">ब्लॉग</string>
   <!--This is part of the main menu. The app will be locked when this is tapped.-->
   <string name="lock_button">लॉक ऐप</string>
   <string name="settings_button">सेटिंग्स</string>
@@ -75,14 +73,6 @@
   <plurals name="group_message_notification_text">
     <item quantity="one">नया समूह संदेश</item>
     <item quantity="other">%dनया समूह संदेश</item>
-  </plurals>
-  <plurals name="forum_post_notification_text">
-    <item quantity="one">नया मंच पोस्ट</item>
-    <item quantity="other">%dनया मंच पोस्ट</item>
-  </plurals>
-  <plurals name="blog_post_notification_text">
-    <item quantity="one">नए ब्लॉग पोस्ट</item>
-    <item quantity="other">%dनए ब्लॉग पोस्ट</item>
   </plurals>
   <!--Misc-->
   <string name="now">अभी व</string>
@@ -144,14 +134,12 @@
   <string name="dialog_message_image_support">छवियों को संलग्न करने के लिए इस प्रतिकृति को दबायें।</string>
   <!--Adding Contacts-->
   <string name="add_contact_title">आस-पास वाले संपर्क जोड़ें</string>
-  <string name="face_to_face">आपको उस व्यक्ति के साथ मिलना चाहिए जिसे आप संपर्क के रूप में जोड़ना चाहते हैं। \ N \ n यह किसी को भविष्य में आपके प्रतिरूपण या पढ़ने के बाद से किसी को भी रोकेगा।</string>
   <string name="continue_button">जारी रहना</string>
   <string name="try_again_button">पुनः प्रयास करें</string>
   <string name="waiting_for_contact_to_scan">स्कैन करने और कनेक्ट करने के लिए संपर्क की प्रतीक्षा कर रहा है \ u2026</string>
   <string name="exchanging_contact_details">संपर्क विवरणों का आदान-प्रदान करें \ u2026</string>
   <string name="contact_added_toast">संपर्क जोड़ा गया:%s</string>
   <string name="contact_already_exists">संपर्क%s पहले से मौजूद है</string>
-  <string name="qr_code_invalid">QR कोड अमान्य है</string>
   <string name="qr_code_too_old">आपके द्वारा स्कैन किए गए क्यूआर कोड के पुराने संस्करण से आता है %s.\ n \ n कृपया अपने संपर्क से नवीनतम संस्करण में अपग्रेड करने के लिए कहें और फिर पुन: प्रयास करें।</string>
   <string name="qr_code_too_new">आपके द्वारा स्कैन किए गए क्यूआर कोड के एक नए संस्करण से आता है %s.\ n \ n कृपया नवीनतम संस्करण में अपग्रेड करें और फिर पुन: प्रयास करें।</string>
   <string name="camera_error">कैमरा त्रुटि</string>
@@ -290,100 +278,26 @@
   <string name="groups_reveal_visible_revealed_by_contact">संपर्क संबंध समूह को दिखाई देता है (%s द्वारा पता चला है)</string>
   <string name="groups_reveal_invisible">संपर्क संबंध समूह को दिखाई नहीं दे रहा है</string>
   <!--Forums-->
-  <string name="no_forums">दिखाने के लिए कोई मंच नहीं</string>
-  <string name="no_forums_action">फोरम बनाने के लिए + आइकन टैप करें, या अपने संपर्कों को अपने साथ मंच साझा करने के लिए कहें</string>
-  <string name="create_forum_title">फोरम बनाएँ</string>
-  <string name="choose_forum_hint">अपने मंच का नाम चुनें</string>
-  <string name="create_forum_button">फोरम बनाएँ</string>
-  <string name="forum_created_toast">फोरम बनाया</string>
-  <string name="no_forum_posts">दिखाने के लिए कोई पोस्ट नहीं</string>
   <string name="no_posts">कोई पोस्ट नहीं</string>
   <plurals name="posts">
     <item quantity="one">%dपदों</item>
     <item quantity="other">%dपदों</item>
   </plurals>
-  <string name="forum_new_message_hint">नई पोस्ट</string>
-  <string name="forum_message_reply_hint">नया उत्तर</string>
   <string name="btn_reply">जवाब दें</string>
-  <string name="forum_leave">फोरम छोड़ें</string>
-  <string name="dialog_title_leave_forum">फोरम छोड़ने की पुष्टि करें</string>
-  <string name="dialog_message_leave_forum">क्या आप वाकई इस मंच को छोड़ना चाहते हैं? \ N \ n आपके द्वारा इस मंच को साझा करने वाले किसी भी संपर्क के साथ अपडेट प्राप्त करना बंद हो सकता है।</string>
   <string name="dialog_button_leave">छोड़ना</string>
-  <string name="forum_left_toast">वाम मंच</string>
   <!--Forum Sharing-->
-  <string name="forum_share_button">शेयर फ़ोरम</string>
   <string name="contacts_selected">संपर्क चयनित</string>
   <string name="activity_share_toolbar_header">संपर्क चुनें</string>
   <string name="no_contacts_selector">दिखाने के लिए कोई संपर्क नहीं है</string>
   <string name="no_contacts_selector_action">संपर्क जोड़ने के बाद कृपया यहां वापस आएं</string>
-  <string name="forum_shared_snackbar">चयनित संपर्कों के साथ फ़ोरम साझा किया गया</string>
-  <string name="forum_share_message">एक संदेश जोड़ें (वैकल्पिक)</string>
-  <string name="forum_share_error">इस फ़ोरम को साझा करने में कोई त्रुटि थी।</string>
-  <string name="forum_invitation_received">%1$sने आपके साथ \"%2$s\" मंच साझा किया है</string>
-  <string name="forum_invitation_sent">आपने%2$s के साथ \"%1$s\" मंच साझा किया है</string>
-  <string name="forum_invitations_title">फोरम निमंत्रण</string>
-  <string name="forum_invitation_exists">आपने पहले से ही इस मंच पर एक निमंत्रण स्वीकार कर लिया है। \ N \ n अधिक आमंत्रण स्वीकार करने से मंच से आपका कनेक्शन तेजी से और अधिक विश्वसनीय हो जाएगा।</string>
-  <string name="forum_joined_toast">फोरम में शामिल</string>
-  <string name="forum_declined_toast">आमंत्रण में कमी आई</string>
   <string name="shared_by_format">%s द्वारा साझा किया गया</string>
-  <string name="forum_invitation_already_sharing">पहले से ही साझा करना</string>
-  <string name="forum_invitation_response_accepted_sent">आपने%s से मंच निमंत्रण स्वीकार कर लिया है</string>
-  <string name="forum_invitation_response_declined_sent">आपने%s से मंच निमंत्रण को अस्वीकार कर दिया है</string>
-  <string name="forum_invitation_response_accepted_received">%sमंच निमंत्रण स्वीकार कर लिया</string>
-  <string name="forum_invitation_response_declined_received">%sमंच निमंत्रण मना कर दिया</string>
   <string name="sharing_status">शेयरिंग स्थिति</string>
-  <string name="sharing_status_forum">फ़ोरम के किसी भी सदस्य को अपने संपर्कों के साथ साझा कर सकते हैं आप इस फ़ोरम को निम्नलिखित संपर्कों के साथ साझा कर रहे हैं ऐसे अन्य सदस्य भी हो सकते हैं जिन्हें आप नहीं देख सकते हैं</string>
   <string name="shared_with">%1$d (%2$d ऑनलाइन) के साथ साझा किया गया</string>
-  <plurals name="forums_shared">
-    <item quantity="one">%dसंपर्कों द्वारा साझा मंच</item>
-    <item quantity="other">%dसंपर्कों द्वारा साझा मंच</item>
-  </plurals>
   <string name="nobody">कोई भी नहीं</string>
   <!--Blogs-->
-  <string name="blogs_other_blog_empty_state">दिखाने के लिए कोई पोस्ट नहीं</string>
   <string name="read_more">अधिक पढ़ें</string>
-  <string name="blogs_write_blog_post">ब्लॉग पोस्ट लिखें</string>
-  <string name="blogs_write_blog_post_body_hint">अपना ब्लॉग पोस्ट टाइप करें</string>
-  <string name="blogs_publish_blog_post">प्रकाशित करना</string>
-  <string name="blogs_blog_post_created">ब्लॉग पोस्ट बनाया</string>
-  <string name="blogs_blog_post_received">नया ब्लॉग पोस्ट प्राप्त हुआ</string>
-  <string name="blogs_blog_post_scroll_to">स्क्रॉल टू</string>
-  <string name="blogs_feed_empty_state">दिखाने के लिए कोई पोस्ट नहीं</string>
-  <string name="blogs_feed_empty_state_action">आपके संपर्कों और ब्लॉगों की सदस्यता जो आप सदस्यता लेते हैं, यहां दिखाई देंगे \ n \ n एक पोस्ट लिखने के लिए पेन आइकन टैप करें</string>
-  <string name="blogs_remove_blog">ब्लॉग निकालें</string>
-  <string name="blogs_remove_blog_dialog_message">क्या आप वाकई इस ब्लॉग को हटाना चाहते हैं? \ N \ n पोस्ट आपके डिवाइस से हटा दिए जाएंगे, लेकिन अन्य लोगों के डिवाइस से नहीं। \ N \ n आपके द्वारा इस ब्लॉग को साझा करने वाले किसी भी संपर्क को अपडेट प्राप्त करना बंद हो सकता है।</string>
-  <string name="blogs_remove_blog_ok">हटाना</string>
-  <string name="blogs_blog_removed">ब्लॉग हटा दिया गया</string>
-  <string name="blogs_reblog_comment_hint">एक टिप्पणी जोड़ें (वैकल्पिक)</string>
-  <string name="blogs_reblog_button">पुनः ब्लॉग</string>
   <!--Blog Sharing-->
-  <string name="blogs_sharing_share">ब्लॉग शेयर करें</string>
-  <string name="blogs_sharing_error">इस ब्लॉग को साझा करने में एक त्रुटि थी</string>
-  <string name="blogs_sharing_button">ब्लॉग शेयरकरें</string>
-  <string name="blogs_sharing_snackbar">चयनित संपर्कों के साथ साझा ब्लॉग</string>
-  <string name="blogs_sharing_response_accepted_sent">आपने%s से ब्लॉग निमंत्रण स्वीकार कर लिया है</string>
-  <string name="blogs_sharing_response_declined_sent">आपने ब्लॉग आमंत्रण से इनकार कर दिया%s</string>
-  <string name="blogs_sharing_response_accepted_received">%sब्लॉग निमंत्रण स्वीकार कर लिया</string>
-  <string name="blogs_sharing_response_declined_received">%sब्लॉग आमंत्रण को अस्वीकार कर दिया</string>
-  <string name="blogs_sharing_invitation_received">%1$sने आपके साथ \"%2$s\" ब्लॉग को साझा किया है</string>
-  <string name="blogs_sharing_invitation_sent">आपने %1$s को%2$s के साथ साझा किया है</string>
-  <string name="blogs_sharing_invitations_title">ब्लॉग आमंत्रण</string>
-  <string name="blogs_sharing_joined_toast">ब्लॉग के लिए सदस्यता लें</string>
-  <string name="blogs_sharing_declined_toast">आमंत्रण में कमी आई</string>
-  <string name="sharing_status_blog">जो कोई भी ब्लॉग के लिए सदस्यता लेता है, उसे अपने संपर्कों के साथ साझा कर सकता है आप इस ब्लॉग को निम्नलिखित संपर्कों के साथ साझा कर रहे हैं। ऐसे अन्य सदस्य भी हो सकते हैं जिन्हें आप नहीं देख सकते हैं।</string>
   <!--RSS Feeds-->
-  <string name="blogs_rss_feeds_import">आरएसएस फ़ीड आयात करें</string>
-  <string name="blogs_rss_feeds_import_button">आयात</string>
-  <string name="blogs_rss_feeds_import_hint">आरएसएस फ़ीड का यूआरएल दर्ज करें</string>
-  <string name="blogs_rss_feeds_import_error">हमें खेद है! आपकी फ़ीड आयात करने में एक त्रुटि हुई</string>
-  <string name="blogs_rss_feeds_manage_imported">आयातित:</string>
-  <string name="blogs_rss_feeds_manage_author">लेखक:</string>
-  <string name="blogs_rss_feeds_manage_updated">आखरी अपडेट:</string>
-  <string name="blogs_rss_remove_feed">फ़ीड निकालें</string>
-  <string name="blogs_rss_remove_feed_dialog_message">क्या आप वाकई इस फीड को हटाना चाहते हैं? \ N \ n पोस्ट आपके डिवाइस से हटा दिए जाएंगे, लेकिन अन्य लोगों के डिवाइस से नहीं। \ N \ n आपके द्वारा इस फ़ीड को साझा करने वाले किसी भी संपर्क को अपडेट प्राप्त करना बंद हो सकता है।</string>
-  <string name="blogs_rss_remove_feed_ok">हटाना</string>
-  <string name="blogs_rss_feeds_manage_empty_state">कोई आरएसएस फ़ीड दिखाने के लिए फ़ीड नहीं करता \ n \ n फ़ीड आयात करने के लिए + आइकन टैप करें</string>
-  <string name="blogs_rss_feeds_manage_error">आपकी फ़ीड लोड करने में एक समस्या थी बाद में पुन: प्रयास करें।</string>
   <!--Settings Profile Picture-->
   <!--Settings Display-->
   <string name="pref_language_title">भाषा और amp; क्षेत्र</string>
@@ -450,12 +364,6 @@
   <string name="notify_group_messages_setting_title">समूह संदेश</string>
   <string name="notify_group_messages_setting_summary">समूह संदेशों के लिए अलर्ट्स दिखाएं</string>
   <string name="notify_group_messages_setting_summary_26">समूह संदेशों के लिए अलर्ट कॉन्फ़िगर करें</string>
-  <string name="notify_forum_posts_setting_title">फ़ोरम पोस्ट</string>
-  <string name="notify_forum_posts_setting_summary">फ़ोरम पोस्ट के लिए अलर्ट्स दिखाएं</string>
-  <string name="notify_forum_posts_setting_summary_26">फोरम पोस्ट के लिए अलर्ट कॉन्फ़िगर करें</string>
-  <string name="notify_blog_posts_setting_title">वेबदैनिकी डाक</string>
-  <string name="notify_blog_posts_setting_summary">ब्लॉग पोस्ट के लिए अलर्ट्स दिखाएं</string>
-  <string name="notify_blog_posts_setting_summary_26">ब्लॉग पोस्ट के लिए अलर्ट कॉन्फ़िगर करें</string>
   <string name="notify_vibration_setting">कांपना</string>
   <string name="notify_sound_setting">ध्वनि</string>
   <string name="notify_sound_setting_default">बकाया घंटी</string>
@@ -500,8 +408,6 @@
   <string name="permission_camera_location_title">कैमरा और स्थान</string>
   <string name="permission_camera_location_request_body">क्यूआर कोड को स्कैन करने के लिए, Zerion को कैमरे तक पहुंच की आवश्यकता होती है। \ N \ n ब्लूटूथ डिवाइसों को खोजने के लिए, Zerion को आपके स्थान तक पहुंचने की अनुमति की आवश्यकता होती है। \ n\n \ Zerion आपके स्थान को स्टोर नहीं करता है या इसे किसी के साथ साझा नहीं करता है।</string>
   <string name="permission_camera_denied_body">आपने कैमरे तक पहुंच से वंचित किया है, लेकिन संपर्क जोड़ने के लिए कैमरे का उपयोग करने की आवश्यकता है। \ N \ n कृपया पहुंच प्रदान करने पर विचार करें।</string>
-  <string name="qr_code">क्यूआर कोड</string>
-  <string name="show_qr_code_fullscreen">क्यूआर कोड पूर्णस्क्रीन दिखाएं</string>
   <!--App Locking-->
   <string name="lock_unlock">Zerion अनलॉक करें</string>
   <string name="lock_unlock_verbose">Zerion अनलॉक करने के लिए अपना डिवाइस पिन, पैटर्न या पासवर्ड दर्ज करें</string>

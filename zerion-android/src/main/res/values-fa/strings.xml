@@ -5,9 +5,6 @@
   <string name="setup_name_explanation">نام مستعار شما کنار هر مطلبی که پست کنید قرار خواهد گرفت. بعد از ایجاد حساب کاربری امکان تغییر آن وجود ندارد.</string>
   <string name="setup_next">بعدی</string>
   <string name="setup_password_intro">یک گذرواژه انتخاب کنید</string>
-  <string name="setup_password_explanation">حساب کاربری Zerion (برایر) شما به صورت رمزگذاری شده روی دستگاه شما به جای حافظه ابری ذخیره شده است. اگر گذرواژه خود را فراموش کنید یا Zerion (برایر) را پاک کنید، راهی برای بازیابی حساب کاربری شما وجود نخواهد داشت.
-
-یک گذرواژه طولانی انتخاب کنید که حدس آن سخت باشد، مثل چهار عبارت تصادفی یا ده لغت تصادفی با اعداد و نماد ها.</string>
   <string name="dnkm_doze_intro">برای دریافت پیام، Zerion (برایر) نیاز دارد تا در پس زمینه اتصال داشته باشد.</string>
   <string name="dnkm_doze_explanation">برای دریافت پیام، Zerion (برایر) نیاز دارد تا در پس زمینه اتصال داشته باشد. لطفا بهینه سازی باتری را غیر فعال کنید تا Zerion (برایر) بتواند به اتصال خود ادامه دهد.</string>
   <string name="choose_nickname">نام مستعار خود را انتخاب کنید</string>
@@ -40,9 +37,6 @@
   <string name="sign_in_button">ورود</string>
   <string name="forgotten_password">رمزعبور خود را فراموش کرده‌اید؟</string>
   <string name="dialog_title_lost_password">گذرواژه گمشده</string>
-  <string name="dialog_message_lost_password">حساب کاربری Zerion (برایر) شما به صورت رمزنگاری شده روی سیستم شما به جای حافظه ابری ذخیره شده است برای همین ما نمی توانیم گذرواژه شما را به صورت مجدد تنظیم کنیم. آیا مایل هستید تا حساب کاربری شما را پاک کنیم و دوباره از ابتدا شروع کنیم؟
-
-اخطار: هویت های شما، مخاطبان شما و پیام های شما برای همیشه از بین خواهند رفت.</string>
   <string name="startup_failed_activity_title">خطا در شروع Zerion (برایر)</string>
   <string name="startup_failed_clock_error">Zerion به دلیل این که ساعت دستگاه شما غلط است، اجرا نشد.\n\n لطفا ساعت دستگاه خود را تنظیم کرده و دوباره تلاش کنید.</string>
   <string name="startup_failed_db_error">Zerion قادر به باز کردن پایگاه داده حاوی حساب کاربری، مخاطبین و پیام‌های شما نشد.\n\n لطفا برنامه را به آخرین نسخه ارتقا داده، و یا هنگام وارد کردن رمز عبور، با انتخاب گزینه «رمز خود را فراموش کرده‌ام» حساب جدیدی ایجاد کنید.</string>
@@ -53,9 +47,6 @@
     <item quantity="one">این یک نسخه آزمایشی از Zerion (برایر) می باشد. حساب کاربری شما در %d روز آینده به پایان می رسد و امکان تمدید آن وجود نخواهد داشت.</item>
     <item quantity="other">این یک نسخه آزمایشی از Zerion (برایر) می باشد. حساب کاربری شما در %d روز آینده به پایان می رسد و امکان تمدید آن وجود نخواهد داشت.</item>
   </plurals>
-  <string name="expiry_date_reached">این نرم افزار منقضی شده است.
-
-بابت تست از شما سپاسگزاریم.</string>
   <string name="download_zerion">برای ادامه استفاده از Zerion، لطفا آخرین نسخه را دانلود کنید.</string>
   <string name="create_new_account">لازم است تا یک حساب کاربری جدید ایجاد کنید، ولی می توانید از همان نام مستعار استفاده کنید.</string>
   <string name="download_zerion_button">دانلود آخرین نسخه</string>
@@ -70,8 +61,6 @@
   <string name="nav_drawer_close_description">بستن منوی برنامه</string>
   <string name="contact_list_button">مخاطبان</string>
   <string name="groups_button">گروه های خصوصی</string>
-  <string name="forums_button">تالار های گفتمان</string>
-  <string name="blogs_button">بلاگ ها</string>
   <!--This is part of the main menu. The app will be locked when this is tapped.-->
   <string name="lock_button">قفل کردن برنامه</string>
   <string name="settings_button">تنظیمات</string>
@@ -106,14 +95,6 @@
   <plurals name="group_message_notification_text">
     <item quantity="one">پیام گروه جدید</item>
     <item quantity="other">%d پیام گروه جدید</item>
-  </plurals>
-  <plurals name="forum_post_notification_text">
-    <item quantity="one">پست فروم جدید</item>
-    <item quantity="other">%d پست فروم جدید</item>
-  </plurals>
-  <plurals name="blog_post_notification_text">
-    <item quantity="one">پست پلاگ جدید</item>
-    <item quantity="other">%d پست بلاگ جدید</item>
   </plurals>
   <!--Misc-->
   <string name="now">هم اکنون</string>
@@ -203,9 +184,6 @@
   <string name="you">شما</string>
   <string name="save_image">ذخیره تصویر</string>
   <string name="dialog_title_save_image">ذخیره تصویر؟</string>
-  <string name="dialog_message_save_image">ذخیره این تصویر به دیگر برنامه‌ها اجازه می‌دهد تا به آن دسترسی داشته باشند.
-
-آیا از ذخیره کردن مطمئن می باشید؟</string>
   <string name="save_image_success">تصویر ذخیره شد</string>
   <string name="save_image_error">تصویر ذخیره نشد</string>
   <string name="dialog_title_no_image_support">تصاویر در دسترس نمی باشند</string>
@@ -217,9 +195,6 @@
   <!--Adding Contacts-->
   <string name="add_contact_title">افزودن مخاطب از نزدیک</string>
   <string name="add_contact_error_two_way">آیا هر دو کدهای QR یکدیگر را اسکن کردید؟</string>
-  <string name="face_to_face">برای اضافه کردن فرد به عنوان مخاطب باید با او به صورت حضوری ملاقات کنید.
-
-این از جعل هویت شما و یا از خوانده شدن پیام هایتان در آینده جلوگیری خواهد کرد.</string>
   <string name="continue_button">ادامه</string>
   <string name="try_again_button">دوباره سعی کنید</string>
   <string name="waiting_for_contact_to_scan">انتظار برای اسکن و اتصال مخاطبu2026\</string>
@@ -227,17 +202,11 @@
   <string name="contact_added_toast">مخاطب اضافه شد: %s</string>
   <string name="contact_already_exists">مخاطب %s از قبل وجود دارد</string>
   <string name="contact_already_exists_general">مخاطب از قبل وجود دارد</string>
-  <string name="qr_code_invalid">کد کیوآر نامعتبر می باشد</string>
-  <string name="qr_code_too_old_1">کد QR که اسکن کرده‌اید مربوط به نسخه قدیمی Zerion است.\n\nلطفا از مخاطب خود بخواهید به آخرین نسخه ارتقا دهد و سپس دوباره امتحان کنید.</string>
-  <string name="qr_code_too_new_1">کد QR که اسکن کرده‌اید مربوط به نسخه جدیدتری از Zerion است.\n\nلطفا به آخرین نسخه ارتقا دهید و سپس دوباره امتحان کنید.</string>
-  <string name="mailbox_qr_code_for_contact">کد QR که اسکن کرده‌اید از صندوق پستی Zerion می‌آید.\n\nاگر می‌خواهید یک صندوق پستی را پیوند دهید، لطفا تنظیمات &gt; صندوق پستی از منوی Zerion را انتخاب کنید.</string>
-  <string name="qr_code_format_unknown">کد QR که اسکن کرده اید برای افزودن مخاطب Zerion نیست.\n\nلطفا کد QR نشان داده شده در صفحه مخاطب خود را اسکن کنید.</string>
   <string name="camera_error">خطای دوربین</string>
   <string name="connecting_to_device">اتصال به دستگاهu2026\</string>
   <string name="authenticating_with_device">تصدیق سازی با دستگاه u2026\</string>
   <string name="connection_error_title">اتصال به مخاطب شما برقرار نشد</string>
   <string name="connection_error_feedback">اگر این مشکل ادامه پیدا کرد، لطفا <a href="feedback">بازخورد ارسال کنید</a> تا به ما در بهبود برنامه کمک کنید.</string>
-  <string name="info_both_must_scan">هر دو باید کدهای QR یکدیگر را اسکن کنید</string>
   <!--Adding Contacts Remotely-->
   <string name="add_contact_remotely_title_case">افزودن مخاطب از دور</string>
   <string name="add_contact_nearby_title">افزودن مخاطب از نزدیک</string>
@@ -285,13 +254,9 @@
   <string name="duplicate_link_dialog_text_1_contact">شما هم اکنون یک مخاطب با این پیوند دارید: %s</string>
   <!--This is a question asking whether two nicknames refer to the same person-->
   <string name="duplicate_link_dialog_text_2">آیا %1$s و %2$s یک شخص هستند؟</string>
-  <!--This is a button for answering that two nicknames do indeed refer to the same person. This
-	string will be used in a dialog button, so if the translation of this string is longer than 20
-	characters, please use "Yes" instead, and use "No" for the "Different Person" button-->
+  <!--This is a button for answering that two nicknames do indeed refer to the same person. This -->
   <string name="same_person_button">همان شخص</string>
-  <!--This is a button for answering that two nicknames refer to different people. This string
-	will be used in a dialog button, so if the translation of this string longer than 20 characters,
-	please use "No" instead, and use "Yes" for the "Same Person" button-->
+  <!--This is a button for answering that two nicknames refer to different people. This string -->
   <string name="different_person_button">شخص متفاوت</string>
   <string name="duplicate_link_dialog_text_3">%1$s و %2$s یک پیوند یکسان را به شما ارسال کردند.\n\nشاید یکی از آن‌ها قصد شناسایی مخاطبین شما را دارد.\n\nبه آن‌ها نگویید که همان لینک را از فرد دیگری نیز دریافت کرده‌اید.</string>
   <string name="pending_contact_updated_toast">مخاطب معلق به روز رسانی شد</string>
@@ -361,14 +326,8 @@
   <string name="groups_leave_dialog_message">مطمئن هستید که میخواهید این گروه را ترک کنید؟</string>
   <string name="groups_dissolve">انحلال گروه</string>
   <string name="groups_dissolve_dialog_title">تایید انحلال گروه</string>
-  <string name="groups_dissolve_dialog_message">آیا از انحلال این گروه اطمینان دارید؟
-
-سایر اعضاء قادر نخواهند بود تا مکالمات خود را ادامه دهند و ممکن است آخرین پیام ها را دریافت نکنند.</string>
   <string name="groups_dissolve_button">انحلال</string>
   <string name="groups_dissolved_dialog_title">گروه منحل شد</string>
-  <string name="groups_dissolved_dialog_message">ایجاد کننده این گروه آن را منحل کرده است.
-
-شما از این به بعد قادر نخواهید بود پیام های دیگری در گروه بنویسید و ممکن است تمام پست هایی که نوشته شده اند را دریافت نکنید.</string>
   <!--Private Group Invitations-->
   <string name="groups_invitations_title">دعوت نامه های گروه</string>
   <string name="groups_invitations_invitation_sent">شما %1$s را برای عضویت به گروه \"%2$s\" دعوت کردید.</string>
@@ -387,133 +346,33 @@
   <string name="sharing_status_groups">فقط سازنده گروه می تواند اعضای جدید را به گروه دعوت کند. در پایین تمام اعضای فعلی گروه آمده است.</string>
   <!--Private Groups Revealing Contacts-->
   <string name="groups_reveal_contacts">نشان دادن مخاطبان</string>
-  <string name="groups_reveal_dialog_message">شما میتوانید مخاطبان را به تمام اعضای فعلی و آینده این گروه نشان دهید.
-
-نشان دادن مخاطبان اتصال شما به گروه را سریع تر و قابل اطمینان تر میکند، چراکه میتوانید با مخاطبان نشان داده شده ارتباط برقرار کنید حتی در موقعی که گروه آفلاین می باشد.</string>
   <string name="groups_reveal_visible">ارتباط مخاطب برای گروه قابل دیدن می باشد</string>
   <string name="groups_reveal_visible_revealed_by_us">ارتباط مخاطب برای گروه قابل دیدن می باشد (آشکار شده توسط شما)</string>
   <string name="groups_reveal_visible_revealed_by_contact">ارتباط مخاطب برای گروه قابل یدن می باشد (آشکار شده توسط %s)</string>
   <string name="groups_reveal_invisible">ارتباط مخاطب برای گروه قابل دیدن نمی باشد</string>
   <!--Forums-->
-  <string name="no_forums">هیچ فرومی برای نمایش وجود ندارد</string>
-  <string name="no_forums_action">برای ایجاد یک فروم روی آیکون + کلیک کنید، یا از مخاطبان خود بخواهید تا فروم های خود را با شما به اشتراک بگذارند</string>
-  <string name="create_forum_title">ایجاد فروم</string>
-  <string name="choose_forum_hint">انتخاب یک نام برای فروم</string>
-  <string name="create_forum_button">ایجاد فروم</string>
-  <string name="forum_created_toast">فروم ایجاد شد</string>
-  <string name="no_forum_posts">هیچ پستی برای نشان دادن وجود ندارد</string>
   <string name="no_posts">هیچ پستی وجود ندارد</string>
   <plurals name="posts">
     <item quantity="one">%d پست</item>
     <item quantity="other">%d پست</item>
   </plurals>
-  <string name="forum_new_message_hint">پست جدید</string>
-  <string name="forum_message_reply_hint">پاسخ جدید</string>
   <string name="btn_reply">پاسخ</string>
-  <string name="forum_leave">ترک فروم</string>
-  <string name="dialog_title_leave_forum">تأیید ترک فروم</string>
-  <string name="dialog_message_leave_forum">آیا اطمینان دارید که میخواهید این فروم را ترک کنید؟
-
-هر مخاطبی که این فروم را با آنها به اشتراک گذاشته اید ممکن است آپدیت دیگری دریافت نکند.</string>
   <string name="dialog_button_leave">ترک</string>
-  <string name="forum_left_toast">فروم را ترک کرد</string>
   <!--Forum Sharing-->
-  <string name="forum_share_button">اشتراک گذاری فروم</string>
   <string name="contacts_selected">مخاطبان انتخاب شدند</string>
   <string name="activity_share_toolbar_header">انتخاب مخاطبان</string>
   <string name="no_contacts_selector">هیچ مخاطبی برای نمایش وجود ندارد</string>
   <string name="no_contacts_selector_action">لطفا بعد از افزودن یک مخاطب به اینجا برگردید</string>
-  <string name="forum_shared_snackbar">فروم با مخاطبان انتخاب شده به اشتراک گذاشته شد</string>
-  <string name="forum_share_message">افزودن یک پیام (اختیاری)</string>
-  <string name="forum_share_error">خطایی با اشتراک گذاری این فروم رخ داد</string>
-  <string name="forum_invitation_received">%1$s فروم \"%2$s\" را با شما به اشتراک گذاشته است.</string>
-  <string name="forum_invitation_sent">شما فروم \"%1$s\" را با %2$s به اشتراک گذاشتید.</string>
-  <string name="forum_invitations_title">دعوت نامه های فروم</string>
-  <string name="forum_invitation_exists">شما دعوت به این فروم را پذیرفته بودید.
-
-پذیرفتن دعوت نامه های بیشتر باعث می شود تا اتصال شما به فروم سریع تر و قابل اطمینان تر شود.</string>
-  <string name="forum_joined_toast">عضو فروم شد</string>
-  <string name="forum_declined_toast">دعوت نامه رد شد</string>
   <string name="shared_by_format">به اشتراک گذاشته شده توسط %s</string>
-  <string name="forum_invitation_already_sharing">در حال به اشتراک گذاری</string>
-  <string name="forum_invitation_already_invited">دعوتنامه قبلا ارسال شده است</string>
-  <string name="forum_invitation_invite_received">دعوتنامه قبلا دریافت شده است</string>
-  <string name="forum_invitation_not_supported">توسط این مخاطب پشتیبانی نمی‌شود</string>
-  <string name="forum_invitation_error">خطا. این یک اشکال است و تقصیر شما نیست</string>
-  <string name="forum_invitation_response_accepted_sent">شما دعوت نامه فروم از %s را پذیرفتید.</string>
-  <string name="forum_invitation_response_declined_sent">شما دعوت نامه فروم از %s را رد کردید.</string>
-  <string name="forum_invitation_response_declined_auto">دعوت به تالار از %s به صورت خودکار رد شد.</string>
-  <string name="forum_invitation_response_accepted_received">%s دعوت نامه فروم را پذیرفت.</string>
-  <string name="forum_invitation_response_declined_received">%s دعوت نامه فروم را رد کرد.</string>
   <string name="sharing_status">به اشتراک گذاری وضعیت</string>
-  <string name="sharing_status_forum">هر عضو فروم می تواند آن را با دیگر مخاطبان خود به اشتراک بگذارد. شما این فروم را با مخاطبان زیر به اشتراک می گذارید. ممکن است اعضای دیگری هم باشند که شما نمی توانید آن ها را ببینید.</string>
   <string name="shared_with">به اشتراک گذاشته شده با %1$d (%2$d نفر آنلاین)</string>
-  <plurals name="forums_shared">
-    <item quantity="one"> %d فروم به اشتراک گذاشته شده توسط مخاطبان</item>
-    <item quantity="other">%d فروم به اشتراک گذاشته شده توسط مخاطبان</item>
-  </plurals>
   <string name="nobody">هیچکس</string>
   <!--Blogs-->
-  <string name="blogs_other_blog_empty_state">هیچ پستی برای نشان دادن وجود ندارد</string>
   <string name="read_more">بیشتر بخوانید</string>
-  <string name="blogs_write_blog_post">نوشتن پست بلاگ</string>
-  <string name="blogs_write_blog_post_body_hint">پست بلاگ خود را بنویسید</string>
-  <string name="blogs_publish_blog_post">انتشار</string>
-  <string name="blogs_blog_post_created">پست بلاگ ایجاد شد</string>
-  <string name="blogs_blog_post_received">پست جدید بلاگ دریافت شد</string>
-  <string name="blogs_blog_post_scroll_to">حرکت به</string>
-  <string name="blogs_feed_empty_state">هیچ پستی برای نشان دادن وجود ندارد</string>
-  <string name="blogs_feed_empty_state_action">پست های مربوط به مخاطبان و بلاگ هایی که مشترک آن ها هستید اینجا ظاهر خواهند شد
 
-برای نوشتن یک پست روی آیکون خودکار کلیک کنید</string>
-  <string name="blogs_remove_blog">حذف بلاگ</string>
-  <string name="blogs_remove_blog_dialog_message">آیا اطمینان دارید که میخواهید این بلاگ را حذف کنید؟
-
-پست ها از روی دستگاه شما حذف خواهند شد اما از روی دستگاه سایر افراد حذف نخواهد شد.
-
-هر مخاطبی که شما این بلاگ را با آن ها به اشتراک گذاشته اید ممکن است از این به بعد آپدیتی دریافت نکند.</string>
-  <string name="blogs_remove_blog_ok">حذف</string>
-  <string name="blogs_blog_removed">بلاگ حذف شد</string>
-  <string name="blogs_reblog_comment_hint">افزودن یک کامنت (اختیاری)</string>
-  <string name="blogs_reblog_button">ریبلاگ</string>
   <!--Blog Sharing-->
-  <string name="blogs_sharing_share">به اشتراک گذاری بلاگ</string>
-  <string name="blogs_sharing_error">خطایی با اشتراک گذاری این بلاگ وجود داشت.</string>
-  <string name="blogs_sharing_button">به اشتراک گذاری بلاگ</string>
-  <string name="blogs_sharing_snackbar">بلاگ با مخاطبان انتخاب شده به اشتراک گذاشته شد</string>
-  <string name="blogs_sharing_response_accepted_sent">شما دعوت نامه بلاگ از طرف %s را پذیرفتید.</string>
-  <string name="blogs_sharing_response_declined_sent">شما دعوت نامه بلاگ از %s را رد کردید.</string>
-  <string name="blogs_sharing_response_declined_auto">دعوت به وبلاگ از %s به صورت خودکار رد شد.</string>
-  <string name="blogs_sharing_response_accepted_received">%sدعوت نامه بلاگ را پذیرفت.</string>
-  <string name="blogs_sharing_response_declined_received">%s دعوت نامه بلاگ را رد کرد.</string>
-  <string name="blogs_sharing_invitation_received">%1$s بلاگ \"%2$s\" را با شما به اشتراک گذاشت.</string>
-  <string name="blogs_sharing_invitation_sent">شما بلاگ \"%1$s\" را با %2$s به اشتراک گذاشته اید.</string>
-  <string name="blogs_sharing_invitations_title">دعوت نامه های بلاگ</string>
-  <string name="blogs_sharing_joined_toast">به اشتراک بلاگ درآمد</string>
-  <string name="blogs_sharing_declined_toast">دعوت نامه رد شد</string>
-  <string name="sharing_status_blog">هرکسی که به اشتراک یک بلاگ در بیاید می تواند آن را با مخاطبان خود به اشتراک بگذارد. شما این بلاگ را با مخاطبان زیر به اشتراک میگذارید. ممکن است مشترکان دیگری هم باشند که شما نتوانید آن ها را ببینید.</string>
   <!--RSS Feeds-->
-  <string name="blogs_rss_feeds_import">وارد کردن خوراک RSS</string>
-  <string name="blogs_rss_feeds_import_button">وارد کردن</string>
-  <string name="blogs_rss_feeds_import_hint">آدرس خوراک RSS را وارد کنید</string>
-  <string name="blogs_rss_feeds_import_progress">در حال وارد کردن خوراک RSS…</string>
-  <string name="blogs_rss_feeds_import_error">متاسفیم!  وارد کردن خوراک شما با خطا مواجه شده است.</string>
-  <string name="blogs_rss_feeds_import_title">وارد کردن خوراک از پرونده</string>
-  <string name="blogs_rss_feeds">خوراک های RSS</string>
-  <string name="blogs_rss_feeds_manage_imported">وارد شده:</string>
-  <string name="blogs_rss_feeds_manage_author">نویسنده:</string>
-  <string name="blogs_rss_feeds_manage_updated">آخرین به روز رسانی:</string>
-  <string name="blogs_rss_remove_feed">حذف فید</string>
-  <string name="blogs_rss_remove_feed_dialog_message">آیا مطمئن هستید که میخواهید این خوراک را حذف کنید؟
 
-پست ها از دستگاه شما پاک خواهند شد اما روی دستگاه سایر افراد باقی خواهند ماند
-
-هر مخاطبی که با آن این خوراک را به اشتراک گذاشته اید ممکن است دیگر آپدیت دریافت نکند.</string>
-  <string name="blogs_rss_remove_feed_ok">حذف</string>
-  <string name="blogs_rss_feeds_manage_empty_state">هیچ خوراک RSS برای نمایش وجود ندارد
-
-برای وارد کردن خوراک روی آیکون + ضربه بزنید</string>
-  <string name="blogs_rss_feeds_manage_error">مشکلی با بارگذاری فیدهای شما وجود داشت. لطفا بعدا امتحان کنید.</string>
   <!--Settings Profile Picture-->
   <string name="change_profile_picture">برای تغییر تصویر نمایه خود اینجا را لمس کنید.</string>
   <string name="dialog_confirm_profile_picture_title">تغییر تصویر نمایه</string>
@@ -593,12 +452,6 @@
   <string name="notify_group_messages_setting_title">پیام های گروه</string>
   <string name="notify_group_messages_setting_summary">نمایش هشدار برای پیام های گروه</string>
   <string name="notify_group_messages_setting_summary_26">تنظیم هشدار برای پیام های گروه</string>
-  <string name="notify_forum_posts_setting_title">پست های تالار گفتمان</string>
-  <string name="notify_forum_posts_setting_summary">نمایش هشدار برای پست های تالار گفتمان</string>
-  <string name="notify_forum_posts_setting_summary_26">تنظیم هشدار برای پست های تالار گفتمان</string>
-  <string name="notify_blog_posts_setting_title">پست های بلاگ</string>
-  <string name="notify_blog_posts_setting_summary">نمایش هشدار برای پست های بلاگ</string>
-  <string name="notify_blog_posts_setting_summary_26">تنظیم هشدار برای پست های بلاگ</string>
   <string name="notify_vibration_setting">لرزش</string>
   <string name="notify_sound_setting">صدا</string>
   <string name="notify_sound_setting_default">رینگتون پیش فرض</string>
@@ -618,10 +471,6 @@
   <string name="mailbox_setup_connecting">در حال اتصال به صندوق پست…</string>
   <!--This string is shown when connecting to a Mailbox for the first time. The placeholder will be replaced with a duration, e.g. "2 minutes".-->
   <string name="mailbox_setup_connecting_info">این ممکن است تا %1s طول بکشد</string>
-  <string name="mailbox_qr_code_too_old">کد QR که اسکن کرده‌اید از نسخه قدیمی‌تری از صندوق پستی Zerion آمده است.\n\nلطفا صندوق پستی Zerion را به آخرین نسخه ارتقا دهید و سپس دوباره امتحان کنید.</string>
-  <string name="mailbox_qr_code_too_new">کد QR که اسکن کرده‌اید از نسخه جدیدتری از صندوق پستی Zerion آمده است.\n\nلطفا Zerion را به آخرین نسخه ارتقا دهید و سپس دوباره امتحان کنید.</string>
-  <string name="contact_qr_code_for_mailbox">کد QR که اسکن کرده‌اید برای افزودن مخاطب Zerion است.\n\nاگر می‌خواهید مخاطبی را اضافه کنید، لطفا به فهرست مخاطبین بروید و روی نماد + ضربه بزنید.</string>
-  <string name="mailbox_setup_qr_code_wrong_description">کد QR که اسکن کرده‌اید از صندوق پستی Zerion نمی‌آید.\n\nلطفا برنامه صندوق پستی Zerion را در دستگاه  مربوط به صندوق پستی خود باز کنید و کد QR ارائه‌شده را اسکن کنید.</string>
   <string name="mailbox_setup_already_paired_title">صندوق‌پستی قبلا متصل شده است</string>
   <string name="mailbox_setup_already_paired_description">اتصال صندوق‌پستی دستگاه دیگرتان را لغو کنید و دوباره امتحان کنید.</string>
   <string name="mailbox_setup_io_error_title">متصل نشد</string>
@@ -747,11 +596,6 @@
   <string name="progress_title_logout">خروج از Zerion (برایر)...</string>
   <!--Screen Filters & Tapjacking-->
   <string name="screen_filter_title">قرارگیری روی صفحه شناسایی شد</string>
-  <string name="screen_filter_body">برنامه ای دیگری روی Zerion (برایر) قرار گرفته است. برای حفاظت از امنیت شما، Zerion (برایر) پاسخگو به لمس های صفحه نمایش تا زمانی که برنامه دیگری بالای آن قرار دارد نخواهد بود.
-
-این برنامه ها ممکن است روی Zerion (برایر) قرار گرفته باشند:
-
-%1$s</string>
   <string name="screen_filter_body_api_30">برنامه دیگری بر روی برنامه Zerion (برایر) قرار دارد. برای محافظت از امنیت شما، Zerion (برایر) هنگامی که برنامه دیگری روی آن باز است، به لمس پاسخ نخواهد داد. \n\nبرای یافتن برنامه مذکور، برنامه‌های زیر را بررسی کنید.</string>
   <string name="screen_filter_allow">به این برنامه ها اجازه بده تا روی Zerion (برایر) قرار بگیرند</string>
   <string name="screen_filter_review_apps">بررسی برنامه‌ها</string>
@@ -760,20 +604,9 @@
   <string name="permission_camera_request_body">برای اسکن کردن کد کیوآر دسترسی به دوربین لازم است.</string>
   <string name="permission_location_title">اجازه موقعیت</string>
   <string name="permission_nearby_devices_title">مجوز دستگاه‌های نزدیک</string>
-  <string name="permission_location_request_body">برای پیدا کردن دستگاه‌های بلوتوث، Zerion (برایر) نیاز به اجازه دسترسی به موقعیت شما دارد.
-
-Zerion  (برایر) موقعیت شما را ذخیره نمی‌کند و آن را با کسی به اشتراک نمی‌گذارد.</string>
   <string name="permission_camera_location_title">دوربین و موقعیت</string>
-  <string name="permission_camera_location_request_body">برای اسکن کد کیوآر، Zerion (برایر) نیاز به دسترسی به دوربین دارد.
-
-برای پیدا کردن دستگاه‌های بلوتوث، Zerion (برایر) نیاز به اجازه دسترسی به موقعیت شما دارد.
-
-Zerion (برایر) موقعیت شما را ذخیره نمی‌کند و آن را با کسی به اشتراک نمی‌گذارد.</string>
   <string name="permission_camera_bluetooth_title">دوربین و دستگاه‌های نزدیک</string>
   <string name="permission_camera_bluetooth_request_body">برای اسکن کد QR، Zerion نیاز به دسترسی به دوربین دارد.\n\n Zerion برای یافتن دستگاه‌های بلوتوث و اتصال به دستگاه‌های اطراف به مجوز نیاز دارد.</string>
-  <string name="permission_camera_denied_body">شما دسترسی به دوربین را رد کرده اید، اما افزودن مخاطب نیاز به دوربین دارد.
-
-لطفا اجازه دسترسی را بدهید.</string>
   <string name="permission_location_denied_body">شما دسترسی به موقعیت خود را نداده‌اید اما Zerion (برایر) برای یافتن دستگاه‌های بلوتوث نیاز به این دسترسی دارد.\n\nلطفا این دسترسی را فراهم کنید.</string>
   <string name="permission_location_setting_title">تنظیمات مکان‌یابی</string>
   <string name="permission_location_setting_body">تنظیمات مکانی دستگاه شما باید روشن شود تا بتوانید سایر دستگاه‌ها را از طریق بلوتوث بیابید. برای ادامه لطفا مکان‌یابی خود را فعال کنید. شما می‌توانید بعدا آن رو دوباره غیرفعال کنید.</string>
@@ -782,8 +615,6 @@ Zerion (برایر) موقعیت شما را ذخیره نمی‌کند و آن 
   <string name="permission_bluetooth_title">مجوز دستگاه‌های نزدیک</string>
   <string name="permission_bluetooth_body">برای استفاده از ارتباط بلوتوث، Zerion برای یافتن و اتصال به دستگاه‌های نزدیک به مجوز نیاز دارد.</string>
   <string name="permission_bluetooth_denied_body">شما دسترسی به دستگاه‌های اطراف را رد کرده‌اید، اما Zerion برای استفاده از بلوتوث به این مجوز نیاز دارد.\n\nلطفا اجازه دسترسی دهید.</string>
-  <string name="qr_code">کد کیوآر</string>
-  <string name="show_qr_code_fullscreen">نمایش کد کیوآر به صورت فول اسکرین</string>
   <!--App Locking-->
   <string name="lock_unlock">باز کردن قفل Zerion (برایر)</string>
   <string name="lock_unlock_verbose">پین، الگو یا گذرواژه دستگاه خود را برای باز کردن قفل Zerion (برایر) وارد کنید</string>
@@ -811,9 +642,7 @@ Zerion (برایر) موقعیت شما را ذخیره نمی‌کند و آن 
   <string name="wifi_settings_request_enable_body">برای ایجاد Wi-Fi hotspot، Zerion نیاز به استفاده از Wi-Fi دارد. لطفا آن را فعال کنید.</string>
   <string name="hotspot_tab_manual">دستی</string>
   <!--The placeholder to be inserted into the string 'hotspot_manual_wifi': People can connect by %s-->
-  <string name="hotspot_scanning_a_qr_code">کد QR را اسکن کنید</string>
   <!--Wi-Fi setup-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_wifi">تلفن شما Wi-Fi hotspot ارائه می‌کند. کسانی که قصد دانلود Zerion را دارند، می‌توانند با افزودن hotspot در تنظیمات Wi-Fi دستگاه خود، به آن متصل شده و یا %s. هنگامی که به hotspot متصل شدند، دکمه «بعد» را بفشارند.</string>
   <string name="hotspot_manual_wifi_ssid">نام شبکه</string>
   <string name="hotspot_qr_wifi">تلفن شما Wi-Fi hotspot ارائه می‌کند. کسانی که قصد دانلود Zerion را دارند، می‌توانند با اسکن این کد QR به hotspot متصل شوند. هنگامی که به hotspot متصل شدند، دکمه «بعد» را بفشارند.</string>
@@ -823,7 +652,6 @@ Zerion (برایر) موقعیت شما را ذخیره نمی‌کند و آن 
     <item quantity="other">%s دستگاه متصل است</item>
   </plurals>
   <!--Download link-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_site">تلفن شما Wi-Fi hotspot ارائه می‌کند. کسانی که به hotspot متصل هستند، می‌توانند Zerion را با تایپ لینک زیر در مرورگر خود دانلود کنند و یا %s.</string>
   <string name="hotspot_manual_site_address">آدرس (URL)</string>
   <string name="hotspot_qr_site">تلفن شما Wi-Fi hotspot ارائه می‌کند. کسانی که به hotspot متصل هستند، می‌توانند Zerion را با اسکن این کد QR دانلود کنند.</string>

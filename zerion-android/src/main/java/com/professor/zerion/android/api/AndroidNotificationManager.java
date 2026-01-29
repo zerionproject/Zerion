@@ -11,14 +11,10 @@ public interface AndroidNotificationManager {
     int ONGOING_NOTIFICATION_ID = 1;
     String ACTION_STOP_HOTSPOT = "com.professor.zerion.android.STOP_HOTSPOT";
     String ACTION_DISMISS_REMINDER = "com.professor.zerion.android.DISMISS_REMINDER";
-    String BLOG_CHANNEL_ID = "BLOG_CHANNEL_ID";
     String CONTACT_CHANNEL_ID = "CONTACT_CHANNEL_ID";
-    String FORUM_CHANNEL_ID = "FORUM_CHANNEL_ID";
     String GROUP_CHANNEL_ID = "GROUP_CHANNEL_ID";
     String REMINDER_CHANNEL_ID = "REMINDER_CHANNEL_ID";
 
-    String PREF_NOTIFY_BLOG = "pref_key_notify_blog";
-    String PREF_NOTIFY_FORUM = "pref_key_notify_forum";
     String PREF_NOTIFY_GROUP = "pref_key_notify_group";
     String PREF_NOTIFY_PRIVATE = "pref_key_notify_private";
     String PREF_NOTIFY_VOICE_CALLS = "pref_key_notify_voice_calls";
@@ -51,18 +47,4 @@ public interface AndroidNotificationManager {
     void showHotspotNotification();
     void clearHotspotNotification();
 
-    void clearBlogPostNotification(GroupId g);
-    void showBlogPostNotification(GroupId g);
-    void clearAllBlogPostNotifications();
-    void blockBlogPostNotification(GroupId g);
-    void unblockBlogPostNotification(GroupId g);
-    void blockAllBlogPostNotifications();
-    void unblockAllBlogPostNotifications();
-    void clearForumPostNotification(GroupId g);
-    void showForumPostNotification(GroupId g);
-    void clearAllForumPostNotifications();
-    void blockForumPostNotification(GroupId g);
-    void unblockForumPostNotification(GroupId g);
-    void blockAllForumPostNotifications();
-    void unblockAllForumPostNotifications();
 }

@@ -19,7 +19,6 @@ import javax.inject.Inject;
 import androidx.annotation.Nullable;
 
 import static com.bumptech.glide.load.DataSource.LOCAL;
-import static java.util.logging.Level.WARNING;
 import static org.briarproject.bramble.util.IoUtils.tryToClose;
 
 @NotNullByDefault
@@ -60,7 +59,7 @@ class ZerionDataFetcher implements DataFetcher<InputStream> {
 
 	@Override
 	public void cleanup() {
-		tryToClose(inputStream, null, WARNING);
+		tryToClose(inputStream);
 	}
 
 	@Override

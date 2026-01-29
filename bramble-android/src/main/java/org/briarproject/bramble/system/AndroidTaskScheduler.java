@@ -107,8 +107,6 @@ class AndroidTaskScheduler implements TaskScheduler, Service, AlarmListener {
 		long dueMillis = now + MILLISECONDS.convert(delay, unit);
 		Runnable wakeful = () ->
 				wakeLockManager.executeWakefully(task, executor, "TaskHandoff");
-		// Acquire the lock before scheduling the check to ensure the check
-		// doesn't access the task queue before the task has been added
 		ScheduledTask s;
 		synchronized (lock) {
 			Future<?> check = scheduleCheckForDueTasks(delay, unit);
@@ -120,7 +118,6 @@ class AndroidTaskScheduler implements TaskScheduler, Service, AlarmListener {
 
 	private Cancellable scheduleWithFixedDelay(Runnable task, Executor executor,
 			long delay, long interval, TimeUnit unit, AtomicBoolean cancelled) {
-		// All executions of this periodic task share a cancelled flag
 		Runnable wrapped = () -> {
 			task.run();
 			scheduleWithFixedDelay(task, executor, interval, interval, unit,
@@ -158,7 +155,6 @@ class AndroidTaskScheduler implements TaskScheduler, Service, AlarmListener {
 	}
 
 	private void rescheduleAlarm() {
-		// If SDK_INT < 23 the alarm repeats automatically
 		if (SDK_INT >= 23) scheduleIdleAlarm();
 	}
 
@@ -209,11 +205,8 @@ class AndroidTaskScheduler implements TaskScheduler, Service, AlarmListener {
 
 		@Override
 		public void cancel() {
-			// Cancel any future executions of this task
 			cancelled.set(true);
-			// Cancel the scheduled check for due tasks
 			check.cancel(false);
-			// Remove the task from the queue
 			synchronized (lock) {
 				tasks.remove(this);
 			}
@@ -221,7 +214,6 @@ class AndroidTaskScheduler implements TaskScheduler, Service, AlarmListener {
 
 		@Override
 		public int compareTo(ScheduledTask s) {
-			//noinspection UseCompareMethod
 			if (dueMillis < s.dueMillis) return -1;
 			if (dueMillis > s.dueMillis) return 1;
 			return 0;

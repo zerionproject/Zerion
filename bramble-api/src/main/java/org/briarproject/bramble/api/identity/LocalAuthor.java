@@ -8,9 +8,7 @@ import javax.annotation.concurrent.Immutable;
 
 import static org.briarproject.bramble.api.crypto.CryptoConstants.KEY_TYPE_SIGNATURE;
 
-/**
- * A pseudonym for the local user.
- */
+
 @Immutable
 @NotNullByDefault
 public class LocalAuthor extends Author {
@@ -25,9 +23,7 @@ public class LocalAuthor extends Author {
 		this.privateKey = privateKey;
 	}
 
-	/**
-	 * Returns the private key used to generate the pseudonym's signatures.
-	 */
+	
 	public PrivateKey getPrivateKey() {
 		return privateKey;
 	}

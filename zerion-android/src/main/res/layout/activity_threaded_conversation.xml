@@ -55,7 +55,7 @@
                 android:paddingBottom="8dp"
                 android:paddingStart="8dp"
                 android:paddingEnd="8dp"
-                app:emptyText="@string/no_forum_posts"
+                app:emptyText="@string/no_posts"
                 app:scrollToEnd="false" />
 
             <!-- UNREAD UP BUTTON -->

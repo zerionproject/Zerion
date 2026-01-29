@@ -80,31 +80,19 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.logging.Logger;
-
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
 
 import static java.util.Collections.singletonList;
-import static java.util.logging.Level.WARNING;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.api.sync.Group.Visibility.INVISIBLE;
 import static org.briarproject.bramble.api.sync.Group.Visibility.SHARED;
 import static org.briarproject.bramble.api.sync.validation.MessageState.DELIVERED;
 import static org.briarproject.bramble.api.sync.validation.MessageState.UNKNOWN;
 import static org.briarproject.bramble.db.DatabaseConstants.MAX_OFFERED_MESSAGES;
-import static org.briarproject.bramble.util.LogUtils.logDuration;
-import static org.briarproject.bramble.util.LogUtils.logException;
-import static org.briarproject.bramble.util.LogUtils.now;
-
 @ThreadSafe
 @NotNullByDefault
 class DatabaseComponentImpl<T> implements DatabaseComponent {
-
-	private static final Logger LOG =
-			getLogger(DatabaseComponentImpl.class.getName());
-
 	private final Database<T> db;
 	private final Class<T> txnClass;
 	private final EventBus eventBus;
@@ -134,7 +122,6 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 			try {
 				close();
 			} catch (DbException e) {
-				logException(LOG, WARNING, e);
 			}
 		});
 		return reopened;
@@ -148,16 +135,12 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 
 	@Override
 	public Transaction startTransaction(boolean readOnly) throws DbException {
-		// Don't allow reentrant locking
 		if (lock.getReadHoldCount() > 0) throw new IllegalStateException();
 		if (lock.getWriteHoldCount() > 0) throw new IllegalStateException();
-		long start = now();
 		if (readOnly) {
 			lock.readLock().lock();
-			logDuration(LOG, "Waiting for read lock", start);
 		} else {
 			lock.writeLock().lock();
-			logDuration(LOG, "Waiting for write lock", start);
 		}
 		try {
 			return new Transaction(db.startTransaction(), readOnly);
@@ -240,7 +223,6 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 	public ContactId addContact(Transaction transaction, Author remote,
 			AuthorId local, @Nullable PublicKey handshake, boolean verified)
 			throws DbException {
-		// Default to classical (non-PQ), PCS disabled for backward compatibility
 		return addContact(transaction, remote, local, handshake, verified,
 				false, false);
 	}
@@ -249,7 +231,6 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 	public ContactId addContact(Transaction transaction, Author remote,
 			AuthorId local, @Nullable PublicKey handshake, boolean verified,
 			boolean postQuantum) throws DbException {
-		// Default to PCS disabled for backward compatibility
 		return addContact(transaction, remote, local, handshake, verified,
 				postQuantum, false);
 	}
@@ -258,7 +239,6 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 	public ContactId addContact(Transaction transaction, Author remote,
 			AuthorId local, @Nullable PublicKey handshake, boolean verified,
 			boolean postQuantum, boolean pcsEnabled) throws DbException {
-		// Default to mode3Capable=false for backward compatibility
 		return addContact(transaction, remote, local, handshake, verified,
 				postQuantum, pcsEnabled, false);
 	}
@@ -762,7 +742,6 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		if (!db.containsGroup(txn, g))
 			throw new NoSuchGroupException();
 		if (db.getGroupVisibility(txn, c, g) == INVISIBLE) {
-			// No status rows exist - return default statuses
 			Collection<MessageStatus> statuses = new ArrayList<>();
 			for (MessageId m : db.getMessageIds(txn, g))
 				statuses.add(new MessageStatus(m, c, false, false));
@@ -969,9 +948,6 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		for (MessageId m : a.getMessageIds()) {
 			if (db.containsVisibleMessage(txn, c, m)) {
 				if (db.raiseSeenFlag(txn, c, m)) {
-					// This is the first time the message has been acked by
-					// this contact. Start the cleanup timer (a no-op unless
-					// a cleanup deadline has been set for this message)
 					long deadline = db.startCleanupTimer(txn, m);
 					if (deadline != TIMER_NOT_STARTED) {
 						transaction.attach(new CleanupTimerStartedEvent(m,
@@ -1092,7 +1068,6 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		T txn = unbox(transaction);
 		if (!db.containsMessage(txn, m))
 			throw new NoSuchMessageException();
-		// TODO: Don't allow messages with dependents to be removed
 		db.removeMessage(txn, m);
 	}
 
@@ -1377,8 +1352,6 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		}
 	}
 
-	// ==================== PCS (Post-Compromise Security) Methods ====================
-
 	@Override
 	public void setPcsSessionState(Transaction transaction, ContactId c,
 			int direction, SecretKey chainKey, int messageNumber,
@@ -1460,8 +1433,6 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		db.removePcsState(txn, c);
 	}
 
-	// ==================== PCS Mode 2 (DH Ratchet) Methods ====================
-
 	@Override
 	public void setPcsMode2SessionState(Transaction transaction, ContactId c,
 			int direction, SecretKey chainKey, int messageNumber,
@@ -1505,8 +1476,6 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		T txn = unbox(transaction);
 		return db.getPcsMode2SkippedKey(txn, chainId, messageNumber);
 	}
-
-	// ==================== PCS Mode 3 (PQ Ratchet) Methods ====================
 
 	@Override
 	public void setPqRatchetState(Transaction transaction, ContactId c,

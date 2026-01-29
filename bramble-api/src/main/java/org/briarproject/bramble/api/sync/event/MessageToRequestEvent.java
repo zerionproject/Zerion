@@ -6,10 +6,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.Immutable;
 
-/**
- * An event that is broadcast when a message is offered by a contact and needs
- * to be requested.
- */
+
 @Immutable
 @NotNullByDefault
 public class MessageToRequestEvent extends Event {

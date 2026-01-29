@@ -35,11 +35,9 @@ class ConnectionsStore extends SettingsStore {
 				newKey = PREF_TOR_MOBILE;
 				break;
 			case PREF_KEY_ORBOT_ENABLED:
-				// Orbot setting uses the key directly
 				newKey = PREF_KEY_ORBOT_ENABLED;
 				break;
 			default:
-				// For other keys, use the key directly
 				newKey = key;
 				break;
 		}

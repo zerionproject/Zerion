@@ -73,10 +73,6 @@ class GroupInvitationValidator extends BdfMessageValidator {
 
 	private BdfMessageContext validateInviteMessage(Message m, BdfList body)
 			throws FormatException {
-		// Client version 0.0: Message type, creator, group name, salt,
-		// optional text, signature.
-		// Client version 0.1: Message type, creator, group name, salt,
-		// optional text, signature, optional auto-delete timer.
 		checkSize(body, 6, 7);
 		BdfList creatorList = body.getList(1);
 		String groupName = body.getString(2);
@@ -91,12 +87,9 @@ class GroupInvitationValidator extends BdfMessageValidator {
 		if (body.size() == 7) {
 			timer = validateAutoDeleteTimer(body.getOptionalLong(6));
 		}
-
-		// Validate the creator and create the private group
 		Author creator = clientHelper.parseAndValidateAuthor(creatorList);
 		PrivateGroup privateGroup = privateGroupFactory.createPrivateGroup(
 				groupName, creator, salt);
-		// Verify the signature
 		BdfList signed = BdfList.of(
 				m.getTimestamp(),
 				m.getGroupId(),
@@ -108,7 +101,6 @@ class GroupInvitationValidator extends BdfMessageValidator {
 		} catch (GeneralSecurityException e) {
 			throw new FormatException();
 		}
-		// Create the metadata
 		BdfDictionary meta = messageEncoder.encodeMetadata(INVITE,
 				privateGroup.getId(), m.getTimestamp(), timer);
 		return new BdfMessageContext(meta);
@@ -116,10 +108,6 @@ class GroupInvitationValidator extends BdfMessageValidator {
 
 	private BdfMessageContext validateJoinMessage(Message m, BdfList body)
 			throws FormatException {
-		// Client version 0.0: Message type, private group ID, optional
-		// previous message ID.
-		// Client version 0.1: Message type, private group ID, optional
-		// previous message ID, optional auto-delete timer.
 		checkSize(body, 3, 4);
 		byte[] privateGroupId = body.getRaw(1);
 		checkLength(privateGroupId, UniqueId.LENGTH);
@@ -143,10 +131,6 @@ class GroupInvitationValidator extends BdfMessageValidator {
 
 	private BdfMessageContext validateLeaveMessage(Message m, BdfList body)
 			throws FormatException {
-		// Client version 0.0: Message type, private group ID, optional
-		// previous message ID.
-		// Client version 0.1: Message type, private group ID, optional
-		// previous message ID, optional auto-delete timer.
 		checkSize(body, 3, 4);
 		byte[] privateGroupId = body.getRaw(1);
 		checkLength(privateGroupId, UniqueId.LENGTH);

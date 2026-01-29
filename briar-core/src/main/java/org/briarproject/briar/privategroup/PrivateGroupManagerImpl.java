@@ -213,7 +213,6 @@ class PrivateGroupManagerImpl extends BdfIncomingMessageHook
 	public GroupMessageHeader addLocalMessage(Transaction txn, GroupMessage m)
 			throws DbException {
 		try {
-			// store message and metadata
 			BdfDictionary meta = new BdfDictionary();
 			meta.put(KEY_TYPE, POST.getInt());
 			if (m.getParent() != null)
@@ -222,10 +221,8 @@ class PrivateGroupManagerImpl extends BdfIncomingMessageHook
 			GroupId g = m.getMessage().getGroupId();
 			clientHelper
 					.addLocalMessage(txn, m.getMessage(), meta, true, false);
-			// track message
 			setPreviousMsgId(txn, g, m.getMessage().getId());
 			messageTracker.trackOutgoingMessage(txn, m.getMessage());
-			// broadcast event
 			attachGroupMessageAddedEvent(txn, m.getMessage(), meta, true);
 			AuthorInfo authorInfo = authorManager.getMyAuthorInfo(txn);
 			return new GroupMessageHeader(m.getMessage().getGroupId(),
@@ -330,8 +327,6 @@ class PrivateGroupManagerImpl extends BdfIncomingMessageHook
 	}
 
 	private String getMessageText(BdfList body) throws FormatException {
-		// Message type (0), member (1), parent ID (2), previous message ID (3),
-		// text (4), signature (5)
 		return body.getString(4);
 	}
 
@@ -348,17 +343,14 @@ class PrivateGroupManagerImpl extends BdfIncomingMessageHook
 		try {
 			Map<MessageId, BdfDictionary> metadata =
 					clientHelper.getMessageMetadataAsDictionary(txn, g);
-			// get all authors we need to get the information for
 			Set<AuthorId> authors = new HashSet<>();
 			for (BdfDictionary meta : metadata.values()) {
 				authors.add(getAuthor(meta).getId());
 			}
-			// get information for all authors
 			Map<AuthorId, AuthorInfo> authorInfos = new HashMap<>();
 			for (AuthorId id : authors) {
 				authorInfos.put(id, authorManager.getAuthorInfo(txn, id));
 			}
-			// parse the metadata
 			for (Entry<MessageId, BdfDictionary> entry : metadata.entrySet()) {
 				BdfDictionary meta = entry.getValue();
 				if (meta.getInt(KEY_TYPE) == JOIN.getInt()) {
@@ -501,7 +493,6 @@ class PrivateGroupManagerImpl extends BdfIncomingMessageHook
 			BdfDictionary d = members.getDictionary(i);
 			if (a.equals(getAuthor(d).getId())) {
 				foundMember = true;
-				// Don't update the visibility if the contact is already visible
 				if (getVisibility(d) == INVISIBLE) {
 					changed = true;
 					v = byContact ? REVEALED_BY_CONTACT : REVEALED_BY_US;
@@ -539,14 +530,12 @@ class PrivateGroupManagerImpl extends BdfIncomingMessageHook
 				handleGroupMessage(txn, m, meta);
 				return ACCEPT_SHARE;
 			default:
-				// the validator should only let valid types pass
 				throw new RuntimeException("Unknown MessageType");
 		}
 	}
 
 	private void handleJoinMessage(Transaction txn, Message m,
 			BdfDictionary meta) throws FormatException, DbException {
-		// find out if contact relationship is visible and then add new member
 		Author member = getAuthor(meta);
 		BdfDictionary groupMeta = clientHelper
 				.getGroupMetadataAsDictionary(txn, m.getGroupId());
@@ -559,14 +548,12 @@ class PrivateGroupManagerImpl extends BdfIncomingMessageHook
 				v = INVISIBLE;
 		}
 		addMember(txn, m.getGroupId(), member, v);
-		// track message and broadcast event
 		messageTracker.trackIncomingMessage(txn, m);
 		attachJoinMessageAddedEvent(txn, m, meta, false);
 	}
 
 	private void handleGroupMessage(Transaction txn, Message m,
 			BdfDictionary meta) throws FormatException, DbException {
-		// timestamp must be greater than the timestamps of parent post
 		long timestamp = meta.getLong(KEY_TIMESTAMP);
 		byte[] parentIdBytes = meta.getOptionalRaw(KEY_PARENT_MSG_ID);
 		if (parentIdBytes != null) {
@@ -580,22 +567,18 @@ class PrivateGroupManagerImpl extends BdfIncomingMessageHook
 			if (parentType != POST)
 				throw new FormatException();
 		}
-		// and the member's previous message
 		byte[] previousMsgIdBytes = meta.getRaw(KEY_PREVIOUS_MSG_ID);
 		MessageId previousMsgId = new MessageId(previousMsgIdBytes);
 		BdfDictionary previousMeta = clientHelper
 				.getMessageMetadataAsDictionary(txn, previousMsgId);
 		if (timestamp <= previousMeta.getLong(KEY_TIMESTAMP))
 			throw new FormatException();
-		// previous message must be from same member
 		if (!getAuthor(meta).equals(getAuthor(previousMeta)))
 			throw new FormatException();
-		// previous message must be a POST or JOIN
 		MessageType previousType =
 				MessageType.valueOf(previousMeta.getInt(KEY_TYPE));
 		if (previousType != JOIN && previousType != POST)
 			throw new FormatException();
-		// track message and broadcast event
 		messageTracker.trackIncomingMessage(txn, m);
 		attachGroupMessageAddedEvent(txn, m, meta, false);
 	}

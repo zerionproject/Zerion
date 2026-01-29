@@ -88,8 +88,6 @@ class VoiceSignalFactoryImpl implements VoiceSignalFactory {
 			VoiceSignalType signalType, String callId,
 			@Nullable String payload, @Nullable Long durationMs)
 			throws FormatException {
-		// Serialise the voice signal message
-		// Format: [VOICE_SIGNAL, signalType, callId, payload, durationMs]
 		BdfList body = BdfList.of(
 				VOICE_SIGNAL,
 				signalType.getValue(),

@@ -112,7 +112,7 @@ public class ZerionControllerImpl implements ZerionController {
 				boolean ask = settings.getBoolean(DOZE_ASK_AGAIN, true);
 				handler.onResult(ask);
 			} catch (DbException e) {
-				/* silent */
+				
 			}
 		});
 	}
@@ -125,7 +125,7 @@ public class ZerionControllerImpl implements ZerionController {
 				settings.putBoolean(DOZE_ASK_AGAIN, false);
 				settingsManager.mergeSettings(settings, SETTINGS_NAMESPACE);
 			} catch (DbException e) {
-				/* silent */
+				
 			}
 		});
 	}

@@ -47,12 +47,9 @@ public class LifecycleModule {
 	@IoExecutor
 	Executor provideIoExecutor(LifecycleManager lifecycleManager,
 			ThreadFactory threadFactory) {
-		// The thread pool is unbounded, so use direct handoff
 		BlockingQueue<Runnable> queue = new SynchronousQueue<>();
-		// Discard tasks that are submitted during shutdown
 		RejectedExecutionHandler policy =
 				new ThreadPoolExecutor.DiscardPolicy();
-		// Create threads as required and keep them in the pool for 60 seconds
 		ExecutorService ioExecutor = new ThreadPoolExecutor(0,
 				Integer.MAX_VALUE, 60, SECONDS, queue, threadFactory, policy);
 		lifecycleManager.registerForShutdown(ioExecutor);

@@ -23,6 +23,7 @@ public class OpusEncoder {
 
 	private MediaCodec encoder;
 	private boolean isInitialized = false;
+	private long presentationTimeUs = 0;
 
 	public OpusEncoder(int sampleRate, int channelCount, int bitrate) {
 		this.sampleRate = sampleRate;
@@ -115,23 +116,27 @@ public class OpusEncoder {
 					inputBuffer.clear();
 					int inputSize = pcmData.remaining();
 					inputBuffer.put(pcmData);
-					encoder.queueInputBuffer(inputBufferIndex, 0, inputSize, 0, 0);
+					encoder.queueInputBuffer(inputBufferIndex, 0, inputSize,
+							presentationTimeUs, 0);
+					presentationTimeUs += 20000;
 				}
 			}
-
 			MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
-			int outputBufferIndex = encoder.dequeueOutputBuffer(bufferInfo, 10000);
-
-			if (outputBufferIndex >= 0) {
-				ByteBuffer outputBuffer = encoder.getOutputBuffer(outputBufferIndex);
-				if (outputBuffer != null && bufferInfo.size > 0) {
-					byte[] encoded = new byte[bufferInfo.size];
-					outputBuffer.get(encoded);
+			byte[] lastEncoded = null;
+			while (true) {
+				int outputBufferIndex = encoder.dequeueOutputBuffer(bufferInfo, 10000);
+				if (outputBufferIndex >= 0) {
+					ByteBuffer outputBuffer = encoder.getOutputBuffer(outputBufferIndex);
+					if (outputBuffer != null && bufferInfo.size > 0) {
+						lastEncoded = new byte[bufferInfo.size];
+						outputBuffer.get(lastEncoded);
+					}
 					encoder.releaseOutputBuffer(outputBufferIndex, false);
-					return encoded;
+				} else {
+					break;
 				}
-				encoder.releaseOutputBuffer(outputBufferIndex, false);
 			}
+			if (lastEncoded != null) return lastEncoded;
 
 		} catch (Exception e) {
 		}

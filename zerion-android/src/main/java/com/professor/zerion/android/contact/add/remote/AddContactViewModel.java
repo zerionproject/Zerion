@@ -60,29 +60,22 @@ public class AddContactViewModel extends DbViewModel {
 	}
 
 	void onCreate() {
-		// Don't load link until contact type is selected
 	}
 
-	/**
-	 * Sets the explicitly chosen contact type and loads the appropriate link.
-	 */
+	
 	void setContactType(ContactType contactType) {
 		selectedContactType = contactType;
 		loadHandshakeLink(contactType);
 		contactTypeSelected.setEvent(true);
 	}
 
-	/**
-	 * Returns the selected contact type, or null if not yet selected.
-	 */
+	
 	@Nullable
 	ContactType getContactType() {
 		return selectedContactType;
 	}
 
-	/**
-	 * Returns an event that fires when the contact type is selected.
-	 */
+	
 	LiveEvent<Boolean> getContactTypeSelected() {
 		return contactTypeSelected;
 	}
@@ -149,7 +142,7 @@ public class AddContactViewModel extends DbViewModel {
 				contactManager.removePendingContact(p.getId());
 				addContact(name);
 			} catch (NoSuchPendingContactException e) {
-				/* silent */
+				
 			} catch (DbException e) {
 				addContactResult.postValue(new LiveResult<>(e));
 			}

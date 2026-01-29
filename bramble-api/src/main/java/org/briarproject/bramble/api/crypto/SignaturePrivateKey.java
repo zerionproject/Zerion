@@ -7,9 +7,7 @@ import javax.annotation.concurrent.Immutable;
 
 import static org.briarproject.bramble.api.crypto.CryptoConstants.KEY_TYPE_SIGNATURE;
 
-/**
- * Type-safe wrapper for a public key used for signing.
- */
+
 @Immutable
 @NotNullByDefault
 public class SignaturePrivateKey extends Bytes implements PrivateKey {

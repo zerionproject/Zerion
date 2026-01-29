@@ -40,8 +40,6 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
 import static java.util.Objects.requireNonNull;
-import static java.util.logging.Level.INFO;
-
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
 public abstract class ThreadListViewModel<I extends ThreadItem>

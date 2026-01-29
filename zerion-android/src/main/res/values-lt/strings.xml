@@ -69,8 +69,6 @@
   <string name="nav_drawer_close_description">Uždaryti naršymo stalčių</string>
   <string name="contact_list_button">Adresatai</string>
   <string name="groups_button">Privačios grupės</string>
-  <string name="forums_button">Forumai</string>
-  <string name="blogs_button">Tinklaraščiai</string>
   <!--This is part of the main menu. The app will be locked when this is tapped.-->
   <string name="lock_button">Užrakinti programėlę</string>
   <string name="settings_button">Nustatymai</string>
@@ -109,18 +107,6 @@
     <item quantity="few">%d naujos grupės žinutės.</item>
     <item quantity="many">%d naujų grupės žinučių.</item>
     <item quantity="other">%d nauja grupės žinutė.</item>
-  </plurals>
-  <plurals name="forum_post_notification_text">
-    <item quantity="one">Naujas forumo įrašas.</item>
-    <item quantity="few">%d nauji forumo įrašai.</item>
-    <item quantity="many">%d naujų forumo įrašų.</item>
-    <item quantity="other">%d naujas forumo įrašas.</item>
-  </plurals>
-  <plurals name="blog_post_notification_text">
-    <item quantity="one">Naujas tinklaraščio įrašas.</item>
-    <item quantity="few">%d nauji tinklaraščio įrašai.</item>
-    <item quantity="many">%d naujų tinklaraščio įrašų.</item>
-    <item quantity="other">%d naujas tinklaraščio įrašas.</item>
   </plurals>
   <!--Misc-->
   <string name="now">dabar</string>
@@ -228,7 +214,6 @@
   <!--Adding Contacts-->
   <string name="add_contact_title">Pridėti šalia esantį adresatą</string>
   <string name="add_contact_error_two_way">Ar jūs abu nuskenavote vienas kito QR kodus?</string>
-  <string name="face_to_face">Jūs privalote susitikti gyvai su asmeniu, kurį norite pridėti kaip adresatą.\n\nTai neleis bet kam apsimetinėti jumis ar ateityje skaityti jūsų žinučių.</string>
   <string name="continue_button">Tęsti</string>
   <string name="try_again_button">Bandyti dar kartą</string>
   <string name="waiting_for_contact_to_scan">Laukiama, kol adresatas nuskenuos ir prisijungs\u2026</string>
@@ -236,17 +221,11 @@
   <string name="contact_added_toast">Adresatas pridėtas: %s</string>
   <string name="contact_already_exists">Adresatas %s jau yra</string>
   <string name="contact_already_exists_general">Adresatas jau yra</string>
-  <string name="qr_code_invalid">QR kodas yra neteisingas</string>
-  <string name="qr_code_too_old_1">Jūsų nuskenuotas QR kodas yra iš senesnės Zerion versijos.\n\nPaprašykite adresato, kad atnaujintų į naujausią versiją, o tuomet bandykite dar kartą.</string>
-  <string name="qr_code_too_new_1">Jūsų nuskenuotas QR kodas yra iš naujesnės Zerion versijos.\n\nAtnaujinkite į naujausią versiją, o tuomet bandykite dar kartą.</string>
-  <string name="mailbox_qr_code_for_contact">Jūsų nuskenuotas QR kodas yra iš Zerion pašto dėžutės.\n\nJei norite susieti pašto dėžutę, Zerion meniu pasirinkite Nustatymai &gt; Pašto dėžutė.</string>
-  <string name="qr_code_format_unknown">Jūsų nuskenuotas QR kodas nėra skirtas Zerion adresato pridėjimui.\n\nNuskenuokite jūsų adresato ekrane rodomą QR kodą.</string>
   <string name="camera_error">Kameros klaida</string>
   <string name="connecting_to_device">Jungiamasi prie įrenginio\u2026</string>
   <string name="authenticating_with_device">Tapatybės nustatymas su įrenginiu\u2026</string>
   <string name="connection_error_title">Nepavyko prisijungti prie jūsų adresato</string>
   <string name="connection_error_feedback">Jei ši problema išlieka, <a href="feedback">atsiųskite mums atsiliepimą</a>, kad padėtumėte mums patobulinti programėlę.</string>
-  <string name="info_both_must_scan">Jūs abu privalote nuskenuoti vienas kito QR kodus</string>
   <!--Adding Contacts Remotely-->
   <string name="add_contact_remotely_title_case">Pridėti adresatą per atstumą</string>
   <string name="add_contact_nearby_title">Pridėti šalia esantį adresatą</string>
@@ -404,13 +383,6 @@
   <string name="groups_reveal_visible_revealed_by_contact">Adresatų sąryšiai yra matomi grupei (atskleidė %s)</string>
   <string name="groups_reveal_invisible">Adresatų sąryšiai nėra matomi grupei</string>
   <!--Forums-->
-  <string name="no_forums">Nėra rodytinų forumų</string>
-  <string name="no_forums_action">Norėdami sukurti forumą ar paprašyti savo adresatų pradėti su jumis bendrinti forumus, bakstelėkite „+“ piktogramą</string>
-  <string name="create_forum_title">Sukurkite forumą</string>
-  <string name="choose_forum_hint">Pasirinkite savo forumo pavadinimą</string>
-  <string name="create_forum_button">Sukurti forumą</string>
-  <string name="forum_created_toast">Forumas sukurtas</string>
-  <string name="no_forum_posts">Nėra rodytinų įrašų</string>
   <string name="no_posts">Įrašų nėra</string>
   <plurals name="posts">
     <item quantity="one">%d įrašas</item>
@@ -418,99 +390,21 @@
     <item quantity="many">%d įrašų</item>
     <item quantity="other">%d įrašas</item>
   </plurals>
-  <string name="forum_new_message_hint">Naujas įrašas</string>
-  <string name="forum_message_reply_hint">Naujas atsakymas</string>
   <string name="btn_reply">Atsakyti</string>
-  <string name="forum_leave">Išeiti iš forumo</string>
-  <string name="dialog_title_leave_forum">Patvirtinkite išėjimą iš forumo</string>
-  <string name="dialog_message_leave_forum">Ar tikrai norite išeiti iš šio forumo?\n\nBet kokie adresatai, su kuriais bendrinote šį forumą, gali nustoti gauti atnaujinimus.</string>
   <string name="dialog_button_leave">Išeiti</string>
-  <string name="forum_left_toast">Išeita iš forumo</string>
   <!--Forum Sharing-->
-  <string name="forum_share_button">Bendrinti forumą</string>
   <string name="contacts_selected">Pasirinkti adresatai</string>
   <string name="activity_share_toolbar_header">Pasirinkite adresatus</string>
   <string name="no_contacts_selector">Nėra rodytinų adresatų</string>
   <string name="no_contacts_selector_action">Grįžkite čia po to, kai pridėsite adresatą</string>
-  <string name="forum_shared_snackbar">Forumas bendrinamas su pasirinktais adresatais</string>
-  <string name="forum_share_message">Pridėkite žinutę (nebūtina)</string>
-  <string name="forum_share_error">Bendrinant šį forumą, įvyko klaida.</string>
-  <string name="forum_invitation_received">%1$s pradėjo bendrinti su jumis forumą „%2$s“.</string>
-  <string name="forum_invitation_sent">Jūs pradėjote bendrinti su %2$s forumą „%1$s“.</string>
-  <string name="forum_invitations_title">Pakvietimai į forumą</string>
-  <string name="forum_invitation_exists">Jūs jau priėmėte pakvietimą į šį forumą.\n\nPriėmus daugiau pakvietimų, jūsų ryšys su forumu taps greitesnis ir patikimesnis.</string>
-  <string name="forum_joined_toast">Prisijungta prie forumo</string>
-  <string name="forum_declined_toast">Pakvietimas atmestas</string>
   <string name="shared_by_format">Bendrina %s</string>
-  <string name="forum_invitation_already_sharing">Jau bendrinama</string>
-  <string name="forum_invitation_already_invited">Pakvietimas jau išsiųstas</string>
-  <string name="forum_invitation_invite_received">Pakvietimas jau gautas</string>
-  <string name="forum_invitation_not_supported">Nepalaikoma šio adresato</string>
-  <string name="forum_invitation_error">Klaida. Tai yra triktis ir ne jūsų kaltė</string>
-  <string name="forum_invitation_response_accepted_sent">Jūs priėmėte iš %s pakvietimą į forumą.</string>
-  <string name="forum_invitation_response_declined_sent">Jūs atmetėte iš %s pakvietimą į forumą.</string>
-  <string name="forum_invitation_response_declined_auto">Pakvietimas į forumą nuo %s buvo automatiškai atmestas.</string>
-  <string name="forum_invitation_response_accepted_received">%s priėmė pakvietimą į forumą.</string>
-  <string name="forum_invitation_response_declined_received">%s atmetė pakvietimą į forumą.</string>
   <string name="sharing_status">Bendrinimo būsena</string>
-  <string name="sharing_status_forum">Bet kuris forumo narys gali jį bendrinti su savo adresatais. Jūs bendrinate šį forumą su šiais adresatais. Taip pat gali būti ir kitų narių, kurių nematote.</string>
   <string name="shared_with">Bendrinama su %1$d (Prisijungę: %2$d)</string>
-  <plurals name="forums_shared">
-    <item quantity="one">Adresatų bendrinamas %d forumas</item>
-    <item quantity="few">Adresatų bendrinami %d forumai</item>
-    <item quantity="many">Adresatų bendrinama %d forumų</item>
-    <item quantity="other">Adresatų bendrinamas %d forumas</item>
-  </plurals>
   <string name="nobody">Niekas</string>
   <!--Blogs-->
-  <string name="blogs_other_blog_empty_state">Nėra rodytinų įrašų</string>
   <string name="read_more">skaityti daugiau</string>
-  <string name="blogs_write_blog_post">Rašyti tinklaraščio įrašą</string>
-  <string name="blogs_write_blog_post_body_hint">Rašykite savo tinklaraščio įrašą</string>
-  <string name="blogs_publish_blog_post">Paskelbti</string>
-  <string name="blogs_blog_post_created">Tinklaraščio įrašas sukurtas</string>
-  <string name="blogs_blog_post_received">Gautas naujas tinklaraščio įrašas</string>
-  <string name="blogs_blog_post_scroll_to">Slinkti</string>
-  <string name="blogs_feed_empty_state">Nėra rodytinų įrašų</string>
-  <string name="blogs_feed_empty_state_action">Čia bus rodomi įrašai iš jūsų adresatų bei jūsų prenumeruojamų tinklaraščių\n\nNorėdami rašyti įrašą, bakstelėkite rašiklio piktogramą</string>
-  <string name="blogs_remove_blog">Šalinti tinklaraštį</string>
-  <string name="blogs_remove_blog_dialog_message">Ar tikrai norite pašalinti šį tinklaraštį?\n\nĮrašai bus pašalinti iš jūsų įrenginio, tačiau liks kitų žmonių įrenginiuose.\n\nBet kokie adresatai, su kuriais bendrinote šį tinklaraštį, gali nustoti gauti atnaujinimus.</string>
-  <string name="blogs_remove_blog_ok">Šalinti</string>
-  <string name="blogs_blog_removed">Tinklaraštis pašalintas</string>
-  <string name="blogs_reblog_comment_hint">Pridėkite komentarą (nebūtina)</string>
-  <string name="blogs_reblog_button">Bendrinti į savo tinklaraštį</string>
   <!--Blog Sharing-->
-  <string name="blogs_sharing_share">Bendrinti tinklaraštį</string>
-  <string name="blogs_sharing_error">Bendrinant šį tinklaraštį, įvyko klaida.</string>
-  <string name="blogs_sharing_button">Bendrinti tinklaraštį</string>
-  <string name="blogs_sharing_snackbar">Tinklaraštis bendrinamas su pasirinktais adresatais</string>
-  <string name="blogs_sharing_response_accepted_sent">Jūs priėmėte iš %s pakvietimą į tinklaraštį.</string>
-  <string name="blogs_sharing_response_declined_sent">Jūs atmetėte iš %s pakvietimą į tinklaraštį.</string>
-  <string name="blogs_sharing_response_declined_auto">Pakvietimas į tinklaraštį nuo %s buvo automatiškai atmestas.</string>
-  <string name="blogs_sharing_response_accepted_received">%s priėmė pakvietimą į tinklaraštį.</string>
-  <string name="blogs_sharing_response_declined_received">%s atmetė pakvietimą į tinklaraštį.</string>
-  <string name="blogs_sharing_invitation_received">%1$s pradėjo bendrinti su jumis tinklaraštį „%2$s“.</string>
-  <string name="blogs_sharing_invitation_sent">Jūs pradėjote bendrinti su %2$s tinklaraštį „%1$s“.</string>
-  <string name="blogs_sharing_invitations_title">Pakvietimai į tinklaraštį</string>
-  <string name="blogs_sharing_joined_toast">Tinklaraštis užprenumeruotas</string>
-  <string name="blogs_sharing_declined_toast">Pakvietimas atmestas</string>
-  <string name="sharing_status_blog">Bet kas, prenumeruojantis tinklaraštį, gali jį bendrinti su savo adresatais. Jūs bendrinate šį tinklaraštį su šiais adresatais. Taip pat gali būti ir kitų prenumeratorių, kurių nematote.</string>
   <!--RSS Feeds-->
-  <string name="blogs_rss_feeds_import">Importuoti RSS kanalą</string>
-  <string name="blogs_rss_feeds_import_button">Importuoti</string>
-  <string name="blogs_rss_feeds_import_hint">Įveskite RSS kanalo URL</string>
-  <string name="blogs_rss_feeds_import_progress">Importuojamas RSS kanalas…</string>
-  <string name="blogs_rss_feeds_import_error">Atleiskite! Importuojant jūsų kanalą, įvyko klaida.</string>
-  <string name="blogs_rss_feeds_import_title">Importuoti kanalą iš failo</string>
-  <string name="blogs_rss_feeds">RSS kanalai</string>
-  <string name="blogs_rss_feeds_manage_imported">Importuota:</string>
-  <string name="blogs_rss_feeds_manage_author">Autorius:</string>
-  <string name="blogs_rss_feeds_manage_updated">Paskutinį kartą atnaujinta:</string>
-  <string name="blogs_rss_remove_feed">Šalinti kanalą</string>
-  <string name="blogs_rss_remove_feed_dialog_message">Ar tikrai norite pašalinti šį kanalą?\n\nĮrašai bus pašalinti iš jūsų įrenginio, tačiau liks kitų žmonių įrenginiuose.\n\nBet kokie adresatai, su kuriais bendrinote šį kanalą, gali nustoti gauti atnaujinimus.</string>
-  <string name="blogs_rss_remove_feed_ok">Šalinti</string>
-  <string name="blogs_rss_feeds_manage_empty_state">Nėra rodytinų RSS kanalų\n\nNorėdami importuoti kanalą, bakstelėkite „+“ piktogramą</string>
-  <string name="blogs_rss_feeds_manage_error">Įkeliant jūsų kanalus, atsirado problemų. Vėliau bandykite dar kartą.</string>
   <!--Settings Profile Picture-->
   <string name="change_profile_picture">Bakstelėkite norėdami pasikeisti profilio paveikslą</string>
   <string name="dialog_confirm_profile_picture_title">Keisti profilio paveikslą</string>
@@ -590,12 +484,6 @@
   <string name="notify_group_messages_setting_title">Grupės žinutės</string>
   <string name="notify_group_messages_setting_summary">Rodyti pranešimus apie grupės žinutes</string>
   <string name="notify_group_messages_setting_summary_26">Konfigūruoti grupės žinučių pranešimus</string>
-  <string name="notify_forum_posts_setting_title">Forumo įrašai</string>
-  <string name="notify_forum_posts_setting_summary">Rodyti pranešimus apie forumo įrašus</string>
-  <string name="notify_forum_posts_setting_summary_26">Konfigūruoti forumo įrašų pranešimus</string>
-  <string name="notify_blog_posts_setting_title">Tinklaraščio įrašai</string>
-  <string name="notify_blog_posts_setting_summary">Rodyti pranešimus apie tinklaraščio įrašus</string>
-  <string name="notify_blog_posts_setting_summary_26">Konfigūruoti tinklaraščio įrašų pranešimus</string>
   <string name="notify_vibration_setting">Vibruoti</string>
   <string name="notify_sound_setting">Garsas</string>
   <string name="notify_sound_setting_default">Numatytoji skambučio melodija</string>
@@ -615,10 +503,6 @@
   <string name="mailbox_setup_connecting">Jungiamasi prie pašto dėžutės…</string>
   <!--This string is shown when connecting to a Mailbox for the first time. The placeholder will be replaced with a duration, e.g. "2 minutes".-->
   <string name="mailbox_setup_connecting_info">Tai gali užtrukti iki %1s</string>
-  <string name="mailbox_qr_code_too_old">Jūsų nuskenuotas QR kodas yra iš senesnės Zerion pašto dėžutės versijos.\n\nAtnaujinkite į naujausią Zerion pašto dėžutės versiją, o tuomet bandykite dar kartą.</string>
-  <string name="mailbox_qr_code_too_new">Jūsų nuskenuotas QR kodas yra iš naujesnės Zerion pašto dėžutės versijos.\n\nAtnaujinkite į naujausią Zerion versiją, o tuomet bandykite dar kartą.</string>
-  <string name="contact_qr_code_for_mailbox">Jūsų nuskenuotas QR kodas yra skirtas Zerion adresato pridėjimui.\n\nJei norite pridėti adresatą, pereikite į adresatų sąrašą ir bakstelėkite „+“ piktogramą.</string>
-  <string name="mailbox_setup_qr_code_wrong_description">Jūsų nuskenuotas QR kodas nėra iš Zerion pašto dėžutės.\n\nPašto dėžutės įrenginyje atverkite Zerion pašto dėžutės programėlę ir nuskenuokite joje pateikiamą QR kodą.</string>
   <string name="mailbox_setup_already_paired_title">Pašto dėžutė jau susieta</string>
   <string name="mailbox_setup_already_paired_description">Atsiekite pašto dėžutę kitame įrenginyje ir bandykite dar kartą.</string>
   <string name="mailbox_setup_io_error_title">Nepavyko prisijungti</string>
@@ -769,8 +653,6 @@
   <string name="permission_bluetooth_title">Įrenginių netoliese leidimas</string>
   <string name="permission_bluetooth_body">Tam, kad naudotų Bluetooth komunikaciją, Zerion reikia leidimo rasti ir prisijungti prie įrenginių netoliese.</string>
   <string name="permission_bluetooth_denied_body">Jūs uždraudėte prieigą prie įrenginių netoliese, tačiau norint naudoti Bluetooth, Zerion reikia šio leidimo.\n\nApsvarstykite galimybę sutekti prieigą prie įrenginių netoliese.</string>
-  <string name="qr_code">QR kodas</string>
-  <string name="show_qr_code_fullscreen">Rodyti QR kodą visame ekrane</string>
   <!--App Locking-->
   <string name="lock_unlock">Atrakinti Zerion</string>
   <string name="lock_unlock_verbose">Norėdami atrakinti Zerion, įveskite savo įrenginio PIN, šabloną ar slaptažodį</string>
@@ -800,9 +682,7 @@
   <string name="wifi_settings_request_enable_body">Tam, kad sukurtų belaidį (Wi-Fi) viešosios interneto prieigos tašką, Zerion turi naudoti belaidį (Wi-Fi) ryšį. Įjunkite jį.</string>
   <string name="hotspot_tab_manual">Rankinis</string>
   <!--The placeholder to be inserted into the string 'hotspot_manual_wifi': People can connect by %s-->
-  <string name="hotspot_scanning_a_qr_code">skenuodami QR kodą</string>
   <!--Wi-Fi setup-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_wifi">Jūsų telefonas teikia belaidį (Wi-Fi) viešosios interneto prieigos tašką. Žmonės, norintys atsisiųsti Zerion, gali prisijungti prie prieigos taško ir pridėti jį savo įrenginio belaidžio (Wi-Fi) ryšio nustatymuose naudodami informaciją žemiau arba %s. Prisijungę prie prieigos taško, jie turi paspausti „Kitas“.</string>
   <string name="hotspot_manual_wifi_ssid">Tinklo pavadinimas</string>
   <string name="hotspot_qr_wifi">Jūsų telefonas teikia belaidį (Wi-Fi) viešosios interneto prieigos tašką. Žmonės, norintys atsisiųsti Zerion, gali prisijungti prie prieigos taško skenuodami šį QR kodą. Prisijungę prie prieigos taško, jie turi paspausti „Kitas“.</string>
@@ -814,7 +694,6 @@
     <item quantity="other">%s prisijungęs įrenginys</item>
   </plurals>
   <!--Download link-->
-  <!--The %s placeholder will be replaced with the translation of 'hotspot_scanning_a_qr_code'-->
   <string name="hotspot_manual_site">Jūsų telefonas teikia belaidį (Wi-Fi) viešosios interneto prieigos tašką. Žmonės, prisijungę prie prieigos taško, gali atsisiųsti Zerion, įrašydami saityno naršyklėje šią nuorodą arba %s.</string>
   <string name="hotspot_manual_site_address">Adresas (URL)</string>
   <string name="hotspot_qr_site">Jūsų telefonas teikia belaidį (Wi-Fi) viešosios interneto prieigos tašką. Žmonės, prisijungę prie prieigos taško, gali atsisiųsti Zerion, skenuodami šį QR kodą.</string>

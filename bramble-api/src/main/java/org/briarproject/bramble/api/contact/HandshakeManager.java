@@ -11,16 +11,7 @@ import java.io.InputStream;
 @NotNullByDefault
 public interface HandshakeManager {
 
-	/**
-	 * Handshakes with the given pending contact. Returns an ephemeral master
-	 * key authenticated with both parties' handshake key pairs and a flag
-	 * indicating whether the local peer is Alice or Bob.
-	 *
-	 * @param in An incoming stream for the handshake, which must be secured in
-	 * handshake mode
-	 * @param out An outgoing stream for the handshake, which must be secured
-	 * in handshake mode
-	 */
+	
 	HandshakeResult handshake(PendingContactId p, InputStream in,
 			StreamWriter out) throws DbException, IOException;
 

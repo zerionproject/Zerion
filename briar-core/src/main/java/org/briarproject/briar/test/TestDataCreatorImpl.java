@@ -51,17 +51,11 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.Executor;
-import java.util.logging.Logger;
-
 import javax.inject.Inject;
 
 import static java.util.Collections.emptyList;
-import static java.util.logging.Level.INFO;
-import static java.util.logging.Level.WARNING;
-import static java.util.logging.Logger.getLogger;
 import static org.briarproject.bramble.api.plugin.BluetoothConstants.UUID_BYTES;
 import static org.briarproject.bramble.api.sync.Group.Visibility.SHARED;
-import static org.briarproject.bramble.util.LogUtils.logException;
 import static org.briarproject.bramble.util.StringUtils.getRandomString;
 import static org.briarproject.briar.api.autodelete.AutoDeleteConstants.MIN_AUTO_DELETE_TIMER_MS;
 import static org.briarproject.briar.api.autodelete.AutoDeleteConstants.NO_AUTO_DELETE_TIMER;
@@ -70,10 +64,6 @@ import static org.briarproject.briar.test.TestData.GROUP_NAMES;
 
 @NotNullByDefault
 public class TestDataCreatorImpl implements TestDataCreator {
-
-	private final Logger LOG =
-			getLogger(TestDataCreatorImpl.class.getName());
-
 	private final AuthorFactory authorFactory;
 	private final Clock clock;
 	private final GroupFactory groupFactory;
@@ -151,7 +141,6 @@ public class TestDataCreatorImpl implements TestDataCreator {
 						avatarPercent,
 						numPrivateGroups, numPrivateGroupMessages);
 			} catch (DbException e) {
-				logException(LOG, WARNING, e);
 			}
 		});
 	}
@@ -185,12 +174,9 @@ public class TestDataCreatorImpl implements TestDataCreator {
 
 	private Contact addContact(AuthorId localAuthorId, LocalAuthor remote,
 			boolean alias, int avatarPercent) throws DbException {
-		// prepare to add contact
 		SecretKey secretKey = getSecretKey();
 		long timestamp = clock.currentTimeMillis();
 		boolean verified = random.nextBoolean();
-
-		// prepare transport properties
 		Map<TransportId, TransportProperties> props =
 				getRandomTransportProperties();
 
@@ -205,11 +191,6 @@ public class TestDataCreatorImpl implements TestDataCreator {
 			return db.getContact(txn, contactId);
 		});
 		if (random.nextInt(100) + 1 <= avatarPercent) addAvatar(contact);
-
-		if (LOG.isLoggable(INFO)) {
-			LOG.info("Added contact " + remote.getName() +
-					" with transport properties: " + props);
-		}
 		localAuthors.put(contact, remote);
 		return contact;
 	}
@@ -240,15 +221,12 @@ public class TestDataCreatorImpl implements TestDataCreator {
 
 	private Map<TransportId, TransportProperties> getRandomTransportProperties() {
 		Map<TransportId, TransportProperties> props = new HashMap<>();
-		// Bluetooth
 		TransportProperties bt = new TransportProperties();
 		String btAddress = getRandomBluetoothAddress();
 		String uuid = getRandomUUID();
 		bt.put(BluetoothConstants.PROP_ADDRESS, btAddress);
 		bt.put(BluetoothConstants.PROP_UUID, uuid);
 		props.put(BluetoothConstants.ID, bt);
-
-		// LAN
 		TransportProperties lan = new TransportProperties();
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < 4; i++) {
@@ -259,8 +237,6 @@ public class TestDataCreatorImpl implements TestDataCreator {
 		String port = String.valueOf(getRandomPortNumber());
 		lan.put(LanTcpConstants.PROP_PORT, port);
 		props.put(LanTcpConstants.ID, lan);
-
-		// Tor
 		TransportProperties tor = new TransportProperties();
 		String torAddress = getRandomTorAddress();
 		tor.put(TorConstants.PROP_ONION_V3, torAddress);
@@ -289,7 +265,6 @@ public class TestDataCreatorImpl implements TestDataCreator {
 
 	private String getRandomLanAddress() {
 		StringBuilder sb = new StringBuilder();
-		// address
 		if (random.nextInt(5) == 0) {
 			sb.append("10.");
 			sb.append(random.nextInt(2)).append('.');
@@ -298,7 +273,6 @@ public class TestDataCreatorImpl implements TestDataCreator {
 		}
 		sb.append(random.nextInt(2)).append('.');
 		sb.append(random.nextInt(255));
-		// port
 		sb.append(':').append(getRandomPortNumber());
 		return sb.toString();
 	}
@@ -321,7 +295,6 @@ public class TestDataCreatorImpl implements TestDataCreator {
 		try {
 			is = testAvatarCreator.getAvatarInputStream();
 		} catch (IOException e) {
-			logException(LOG, WARNING, e);
 			return;
 		}
 		if (is == null) return;
@@ -333,13 +306,10 @@ public class TestDataCreatorImpl implements TestDataCreator {
 			throw new DbException(e);
 		}
 		db.transaction(false, txn -> {
-			// TODO: Do this properly via clients without breaking encapsulation
 			db.setGroupVisibility(txn, c.getId(), groupId, SHARED);
 			db.receiveMessage(txn, c.getId(), m);
 		});
 	}
-
-	// TODO: Do this properly via clients without breaking encapsulation
 	private void shareGroup(ContactId contactId, GroupId groupId)
 			throws DbException {
 		db.transaction(false, txn ->
@@ -354,10 +324,6 @@ public class TestDataCreatorImpl implements TestDataCreator {
 			for (int i = 0; i < numPrivateMsgs; i++) {
 				createRandomPrivateMessage(contact.getId(), group.getId(), i);
 			}
-		}
-		if (LOG.isLoggable(INFO)) {
-			LOG.info("Created " + numPrivateMsgs +
-					" private messages per contact.");
 		}
 	}
 
@@ -396,7 +362,6 @@ public class TestDataCreatorImpl implements TestDataCreator {
 		if (!featureFlags.shouldEnablePrivateGroupsInCore()) return emptyList();
 		List<PrivateGroup> groups = new ArrayList<>(numPrivateGroups);
 		for (int i = 0; i < numPrivateGroups; i++) {
-			// create private group
 			String name = GROUP_NAMES[random.nextInt(GROUP_NAMES.length)];
 			LocalAuthor creator = identityManager.getLocalAuthor();
 			PrivateGroup group =
@@ -408,9 +373,6 @@ public class TestDataCreatorImpl implements TestDataCreator {
 			);
 			privateGroupManager.addPrivateGroup(group, joinMsg, true);
 			groups.add(group);
-		}
-		if (LOG.isLoggable(INFO)) {
-			LOG.info("Created " + numPrivateGroups + " private groups.");
 		}
 		return groups;
 	}
@@ -437,7 +399,6 @@ public class TestDataCreatorImpl implements TestDataCreator {
 
 			GroupMessage msg;
 			if (!membersLastMessage.containsKey(contact)) {
-				// join message as first message of member
 				shareGroup(contact.getId(), group.getId());
 				long inviteTimestamp = timestamp - 1;
 				byte[] creatorSignature =
@@ -448,7 +409,6 @@ public class TestDataCreatorImpl implements TestDataCreator {
 								timestamp, author, inviteTimestamp,
 								creatorSignature);
 			} else {
-				// random text after first message
 				String text = getRandomText();
 				MessageId parent = null;
 				if (random.nextBoolean() && messages.size() > 0) {
@@ -465,9 +425,6 @@ public class TestDataCreatorImpl implements TestDataCreator {
 			membersLastMessage.put(contact, msg.getMessage().getId());
 			db.transaction(false, txn ->
 					db.receiveMessage(txn, contact.getId(), msg.getMessage()));
-		}
-		if (LOG.isLoggable(INFO)) {
-			LOG.info("Created " + amount + " private group messages.");
 		}
 	}
 

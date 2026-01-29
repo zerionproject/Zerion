@@ -5,10 +5,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.Immutable;
 
-/**
- * Contains transport keys for sending streams to a given contact or pending
- * contact over a given transport in a given time period.
- */
+
 @Immutable
 @NotNullByDefault
 public class OutgoingKeys {

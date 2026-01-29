@@ -36,8 +36,6 @@ class RendezvousCryptoImpl implements RendezvousCrypto {
 	@Override
 	public SecretKey deriveHybridRendezvousKey(byte[] theirCommitment,
 			byte[] ourCommitment) {
-		// Sort commitments lexicographically to ensure both parties derive
-		// the same key regardless of who is Alice/Bob
 		byte[] first, second;
 		if (compare(ourCommitment, theirCommitment) < 0) {
 			first = ourCommitment;
@@ -46,7 +44,6 @@ class RendezvousCryptoImpl implements RendezvousCrypto {
 			first = theirCommitment;
 			second = ourCommitment;
 		}
-		// Hash both commitments to derive the rendezvous key
 		byte[] hash = crypto.hash(HYBRID_RENDEZVOUS_KEY_LABEL, first, second);
 		return new SecretKey(hash);
 	}
