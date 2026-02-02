@@ -29,6 +29,7 @@ android {
     buildToolsVersion '35.0.0'
     packaging {
         jniLibs {
+            useLegacyPackaging = true
             keepDebugSymbols += ['**/*.so']
         }
         if (isFdroidBuild) {
