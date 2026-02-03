@@ -48,3 +48,6 @@ nul
 .vscode/
 
 .claude/
+
+# Generated Tor binaries (extracted from dependencies during build)
+bramble-android/src/main/jniLibs/
