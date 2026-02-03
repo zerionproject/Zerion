@@ -1,5 +1,29 @@
 apply plugin: 'com.android.library'
 
+def torBinariesDir = "$projectDir/src/main/jniLibs"
+
+task unpackTorBinaries {
+	doLast {
+		configurations.releaseRuntimeClasspath.each { file ->
+			if (file.name.startsWith('tor-android') || file.name.startsWith('lyrebird-android')) {
+				copy {
+					from zipTree(file)
+					into torBinariesDir
+					include '**/*.so'
+				}
+			}
+		}
+	}
+}
+
+tasks.matching { it.name == 'mergeReleaseJniLibFolders' }.configureEach {
+	dependsOn unpackTorBinaries
+}
+
+tasks.matching { it.name == 'mergeDebugJniLibFolders' }.configureEach {
+	dependsOn unpackTorBinaries
+}
+
 android {
 	compileSdkVersion 35
 	buildToolsVersion '35.0.0'
@@ -33,6 +57,8 @@ dependencies {
 	implementation project(':bramble-core')
 	implementation 'androidx.annotation:annotation:1.5.0'
 	implementation "org.briarproject:onionwrapper-android:$onionwrapper_version"
+	implementation "org.briarproject:tor-android:$tor_version"
+	implementation "org.briarproject:lyrebird-android:$lyrebird_version"
 	annotationProcessor "com.google.dagger:dagger-compiler:$dagger_version"
 	compileOnly 'javax.annotation:jsr250-api:1.0'
 	testImplementation project(path: ':bramble-api', configuration: 'testOutput')
