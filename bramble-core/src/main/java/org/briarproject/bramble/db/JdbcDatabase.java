@@ -89,7 +89,7 @@ import static org.briarproject.bramble.db.JdbcUtils.tryToClose;
 @NotNullByDefault
 abstract class JdbcDatabase implements Database<Connection> {
 
-	static final int CODE_SCHEMA_VERSION = 60;
+	static final int CODE_SCHEMA_VERSION = 62;
 
 	
 	private static final int MAX_CONNECTION_POOL_SIZE = 1;
@@ -137,6 +137,12 @@ abstract class JdbcDatabase implements Database<Connection> {
 					+ " FOREIGN KEY (localAuthorId)"
 					+ " REFERENCES localAuthors (authorId)"
 					+ " ON DELETE CASCADE)";
+
+	private static final String CREATE_CONTACT_CAPABILITIES =
+			"CREATE TABLE contactCapabilities"
+					+ " (contactId INT NOT NULL PRIMARY KEY,"
+					+ " capability INTEGER NOT NULL,"
+					+ " advertisedAt BIGINT NOT NULL)";
 
 	private static final String CREATE_GROUPS =
 			"CREATE TABLE groups"
@@ -364,6 +370,45 @@ abstract class JdbcDatabase implements Database<Connection> {
 					+ " REFERENCES contacts (contactId)"
 					+ " ON DELETE CASCADE)";
 
+	// Sender Keys Group PCS tables
+	private static final String CREATE_GROUP_SENDER_KEYS =
+			"CREATE TABLE groupSenderKeys"
+					+ " (groupId _HASH NOT NULL,"
+					+ " authorId _HASH NOT NULL,"
+					+ " chainKey _SECRET NOT NULL,"
+					+ " epoch INTEGER NOT NULL,"
+					+ " messageIndex INTEGER NOT NULL,"
+					+ " createdAt BIGINT NOT NULL,"
+					+ " isLocal INTEGER NOT NULL,"
+					+ " state INTEGER NOT NULL,"
+					+ " PRIMARY KEY (groupId, authorId))";
+
+	private static final String CREATE_GROUP_KEY_HISTORY =
+			"CREATE TABLE groupKeyHistory"
+					+ " (groupId _HASH NOT NULL,"
+					+ " authorId _HASH NOT NULL,"
+					+ " epoch INTEGER NOT NULL,"
+					+ " messageIndex INTEGER NOT NULL,"
+					+ " messageKey _SECRET NOT NULL,"
+					+ " expiresAt BIGINT NOT NULL,"
+					+ " PRIMARY KEY (groupId, authorId, epoch, messageIndex))";
+
+	private static final String CREATE_GROUP_CRYPTO_STATE =
+			"CREATE TABLE groupCryptoState"
+					+ " (groupId _HASH NOT NULL PRIMARY KEY,"
+					+ " cryptoMode INTEGER NOT NULL,"
+					+ " lastRekeyTime BIGINT NOT NULL,"
+					+ " rekeyReason INTEGER,"
+					+ " minCapability INTEGER NOT NULL)";
+
+	private static final String INDEX_GROUP_KEY_HISTORY_BY_EXPIRY =
+			"CREATE INDEX IF NOT EXISTS groupKeyHistoryExpiry"
+					+ " ON groupKeyHistory (expiresAt)";
+
+	private static final String INDEX_GROUP_SENDER_KEYS_BY_GROUP =
+			"CREATE INDEX IF NOT EXISTS groupSenderKeysByGroup"
+					+ " ON groupSenderKeys (groupId)";
+
 	private static final String INDEX_PCS_SKIPPED_KEYS_BY_TIMESTAMP =
 			"CREATE INDEX IF NOT EXISTS pcsSkippedKeysByTimestamp"
 					+ " ON pcsSkippedKeys (contactId, timestamp)";
@@ -523,7 +568,9 @@ abstract class JdbcDatabase implements Database<Connection> {
 				new Migration56_57(dbTypes),
 				new Migration57_58(dbTypes),
 				new Migration58_59(),
-				new Migration59_60()
+				new Migration59_60(),
+				new Migration60_61(dbTypes),
+				new Migration61_62()
 		);
 	}
 
@@ -557,6 +604,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 			s.executeUpdate(dbTypes.replaceTypes(CREATE_SETTINGS));
 			s.executeUpdate(dbTypes.replaceTypes(CREATE_LOCAL_AUTHORS));
 			s.executeUpdate(dbTypes.replaceTypes(CREATE_CONTACTS));
+			s.executeUpdate(dbTypes.replaceTypes(CREATE_CONTACT_CAPABILITIES));
 			s.executeUpdate(dbTypes.replaceTypes(CREATE_GROUPS));
 			s.executeUpdate(dbTypes.replaceTypes(CREATE_GROUP_METADATA));
 			s.executeUpdate(dbTypes.replaceTypes(CREATE_GROUP_VISIBILITIES));
@@ -572,6 +620,9 @@ abstract class JdbcDatabase implements Database<Connection> {
 			s.executeUpdate(dbTypes.replaceTypes(CREATE_PCS_SESSION_STATE));
 			s.executeUpdate(dbTypes.replaceTypes(CREATE_PCS_SKIPPED_KEYS));
 			s.executeUpdate(dbTypes.replaceTypes(CREATE_PQ_RATCHET_STATE));
+			s.executeUpdate(dbTypes.replaceTypes(CREATE_GROUP_SENDER_KEYS));
+			s.executeUpdate(dbTypes.replaceTypes(CREATE_GROUP_KEY_HISTORY));
+			s.executeUpdate(dbTypes.replaceTypes(CREATE_GROUP_CRYPTO_STATE));
 			s.close();
 		} catch (SQLException e) {
 			tryToClose(s);
@@ -593,6 +644,8 @@ abstract class JdbcDatabase implements Database<Connection> {
 			s.executeUpdate(INDEX_MESSAGES_BY_CLEANUP_DEADLINE);
 			s.executeUpdate(INDEX_PCS_SKIPPED_KEYS_BY_TIMESTAMP);
 			s.executeUpdate(INDEX_PCS_SKIPPED_KEYS_BY_CHAIN_ID);
+			s.executeUpdate(INDEX_GROUP_KEY_HISTORY_BY_EXPIRY);
+			s.executeUpdate(INDEX_GROUP_SENDER_KEYS_BY_GROUP);
 			s.close();
 		} catch (SQLException e) {
 			tryToClose(s);
