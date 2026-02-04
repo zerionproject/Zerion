@@ -126,6 +126,26 @@ class MessageEncoderImpl implements MessageEncoder {
 	}
 
 	@Override
+	public Message encodeMode3InviteMessage(GroupId contactGroupId,
+			GroupId privateGroupId, long timestamp, String groupName,
+			Author creator, byte[] salt, @Nullable String text,
+			byte[] signature, long autoDeleteTimer,
+			byte[] creatorEphemeralPublic) {
+		BdfList creatorList = clientHelper.toList(creator);
+		BdfList body = BdfList.of(
+				INVITE.getValue(),
+				creatorList,
+				groupName,
+				salt,
+				text,
+				signature,
+				encodeTimer(autoDeleteTimer),
+				creatorEphemeralPublic
+		);
+		return createMessage(contactGroupId, timestamp, body);
+	}
+
+	@Override
 	public Message encodeJoinMessage(GroupId contactGroupId,
 			GroupId privateGroupId, long timestamp,
 			@Nullable MessageId previousMessageId) {
@@ -146,6 +166,21 @@ class MessageEncoderImpl implements MessageEncoder {
 				privateGroupId,
 				previousMessageId,
 				encodeTimer(autoDeleteTimer)
+		);
+		return createMessage(contactGroupId, timestamp, body);
+	}
+
+	@Override
+	public Message encodeMode3JoinMessage(GroupId contactGroupId,
+			GroupId privateGroupId, long timestamp,
+			@Nullable MessageId previousMessageId, long autoDeleteTimer,
+			byte[] memberEphemeralPublic) {
+		BdfList body = BdfList.of(
+				JOIN.getValue(),
+				privateGroupId,
+				previousMessageId,
+				encodeTimer(autoDeleteTimer),
+				memberEphemeralPublic
 		);
 		return createMessage(contactGroupId, timestamp, body);
 	}
