@@ -105,14 +105,16 @@ class MessageParserImpl implements MessageParser {
 		String text = body.getOptionalString(4);
 		byte[] signature = body.getRaw(5);
 		long timer = NO_AUTO_DELETE_TIMER;
-		if (body.size() == 7) timer = body.getLong(6, NO_AUTO_DELETE_TIMER);
+		byte[] creatorEphemeralPublic = null;
+		if (body.size() >= 7) timer = body.getLong(6, NO_AUTO_DELETE_TIMER);
+		if (body.size() >= 8) creatorEphemeralPublic = body.getOptionalRaw(7);
 
 		Author creator = clientHelper.parseAndValidateAuthor(creatorList);
 		PrivateGroup privateGroup = privateGroupFactory.createPrivateGroup(
 				groupName, creator, salt);
 		return new InviteMessage(m.getId(), m.getGroupId(),
 				privateGroup.getId(), m.getTimestamp(), groupName, creator,
-				salt, text, signature, timer);
+				salt, text, signature, timer, creatorEphemeralPublic);
 	}
 
 	@Override
@@ -122,10 +124,12 @@ class MessageParserImpl implements MessageParser {
 		byte[] b = body.getOptionalRaw(2);
 		MessageId previousMessageId = b == null ? null : new MessageId(b);
 		long timer = NO_AUTO_DELETE_TIMER;
-		if (body.size() == 4) timer = body.getLong(3, NO_AUTO_DELETE_TIMER);
+		byte[] memberEphemeralPublic = null;
+		if (body.size() >= 4) timer = body.getLong(3, NO_AUTO_DELETE_TIMER);
+		if (body.size() >= 5) memberEphemeralPublic = body.getOptionalRaw(4);
 
 		return new JoinMessage(m.getId(), m.getGroupId(), privateGroupId,
-				m.getTimestamp(), previousMessageId, timer);
+				m.getTimestamp(), previousMessageId, timer, memberEphemeralPublic);
 	}
 
 	@Override

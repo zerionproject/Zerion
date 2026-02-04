@@ -31,19 +31,28 @@ interface MessageEncoder {
 			long timestamp, String groupName, Author creator, byte[] salt,
 			@Nullable String text, byte[] signature);
 
-	
+
 	Message encodeInviteMessage(GroupId contactGroupId, GroupId privateGroupId,
 			long timestamp, String groupName, Author creator, byte[] salt,
 			@Nullable String text, byte[] signature, long autoDeleteTimer);
 
-	
+	Message encodeMode3InviteMessage(GroupId contactGroupId, GroupId privateGroupId,
+			long timestamp, String groupName, Author creator, byte[] salt,
+			@Nullable String text, byte[] signature, long autoDeleteTimer,
+			byte[] creatorEphemeralPublic);
+
+
 	Message encodeJoinMessage(GroupId contactGroupId, GroupId privateGroupId,
 			long timestamp, @Nullable MessageId previousMessageId);
 
-	
+
 	Message encodeJoinMessage(GroupId contactGroupId, GroupId privateGroupId,
 			long timestamp, @Nullable MessageId previousMessageId,
 			long autoDeleteTimer);
+
+	Message encodeMode3JoinMessage(GroupId contactGroupId, GroupId privateGroupId,
+			long timestamp, @Nullable MessageId previousMessageId,
+			long autoDeleteTimer, byte[] memberEphemeralPublic);
 
 	
 	Message encodeLeaveMessage(GroupId contactGroupId, GroupId privateGroupId,
