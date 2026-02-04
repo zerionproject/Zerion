@@ -1,10 +1,15 @@
 package org.briarproject.briar.api.privategroup;
 
 import org.briarproject.bramble.api.crypto.CryptoExecutor;
+import org.briarproject.bramble.api.db.DbException;
+import org.briarproject.bramble.api.db.Transaction;
 import org.briarproject.bramble.api.identity.LocalAuthor;
 import org.briarproject.bramble.api.sync.GroupId;
 import org.briarproject.bramble.api.sync.MessageId;
+import org.briarproject.briar.api.privategroup.senderkeys.GroupMessageCrypto.EncryptedGroupMessage;
 import org.briarproject.nullsafety.NotNullByDefault;
+
+import java.security.GeneralSecurityException;
 
 import javax.annotation.Nullable;
 
@@ -43,7 +48,8 @@ public interface GroupMessageFactory {
 			LocalAuthor member, long inviteTimestamp, byte[] creatorSignature);
 
 	/**
-	 * Creates a private group post.
+	 * Creates a plaintext (unencrypted) private group post.
+	 * Used only when group crypto mode is NONE.
 	 *
 	 * @param groupId The ID of the private group
 	 * @param timestamp Must be greater than the timestamps of the parent
@@ -59,5 +65,26 @@ public interface GroupMessageFactory {
 	GroupMessage createGroupMessage(GroupId groupId, long timestamp,
 			@Nullable MessageId parentId, LocalAuthor author, String text,
 			MessageId previousMsgId);
+
+	/**
+	 * Creates a Sender Keys encrypted private group post.
+	 * Uses the local user's SenderKey for encryption.
+	 *
+	 * @param txn The database transaction
+	 * @param groupId The ID of the private group
+	 * @param timestamp Must be greater than the timestamps of the parent
+	 * post, if any, and the member's previous message
+	 * @param parentId The ID of the parent post, or null if the post has no
+	 * parent
+	 * @param author The author of the post
+	 * @param text The text of the post
+	 * @param previousMsgId The ID of the author's previous message
+	 * in this group
+	 */
+	@CryptoExecutor
+	GroupMessage createSenderKeysGroupMessage(Transaction txn, GroupId groupId,
+			long timestamp, @Nullable MessageId parentId, LocalAuthor author,
+			String text, MessageId previousMsgId)
+			throws DbException, GeneralSecurityException;
 
 }
