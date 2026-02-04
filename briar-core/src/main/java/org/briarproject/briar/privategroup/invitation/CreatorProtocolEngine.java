@@ -3,6 +3,7 @@ package org.briarproject.briar.privategroup.invitation;
 import org.briarproject.bramble.api.FormatException;
 import org.briarproject.bramble.api.client.ClientHelper;
 import org.briarproject.bramble.api.contact.ContactId;
+import org.briarproject.bramble.api.crypto.CryptoComponent;
 import org.briarproject.bramble.api.db.DatabaseComponent;
 import org.briarproject.bramble.api.db.DbException;
 import org.briarproject.bramble.api.db.Transaction;
@@ -50,11 +51,13 @@ class CreatorProtocolEngine extends AbstractProtocolEngine<CreatorSession> {
 			MessageEncoder messageEncoder,
 			AutoDeleteManager autoDeleteManager,
 			ConversationManager conversationManager,
-			Clock clock) {
+			Clock clock,
+			CryptoComponent crypto) {
 		super(db, clientHelper, clientVersioningManager, privateGroupManager,
 				privateGroupFactory, groupMessageFactory, identityManager,
 				messageParser, messageEncoder,
-				autoDeleteManager, conversationManager, clock);
+				autoDeleteManager, conversationManager, clock,
+				crypto);
 	}
 
 	@Override
