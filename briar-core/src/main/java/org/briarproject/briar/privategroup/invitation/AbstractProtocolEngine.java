@@ -3,6 +3,7 @@ package org.briarproject.briar.privategroup.invitation;
 import org.briarproject.bramble.api.FormatException;
 import org.briarproject.bramble.api.client.ClientHelper;
 import org.briarproject.bramble.api.contact.ContactId;
+import org.briarproject.bramble.api.crypto.CryptoComponent;
 import org.briarproject.bramble.api.data.BdfDictionary;
 import org.briarproject.bramble.api.db.DatabaseComponent;
 import org.briarproject.bramble.api.db.DbException;
@@ -52,6 +53,7 @@ abstract class AbstractProtocolEngine<S extends Session<?>>
 	protected final PrivateGroupManager privateGroupManager;
 	protected final PrivateGroupFactory privateGroupFactory;
 	protected final ConversationManager conversationManager;
+	protected final CryptoComponent crypto;
 
 	private final ClientVersioningManager clientVersioningManager;
 	private final GroupMessageFactory groupMessageFactory;
@@ -73,7 +75,8 @@ abstract class AbstractProtocolEngine<S extends Session<?>>
 			MessageEncoder messageEncoder,
 			AutoDeleteManager autoDeleteManager,
 			ConversationManager conversationManager,
-			Clock clock) {
+			Clock clock,
+			CryptoComponent crypto) {
 		this.db = db;
 		this.clientHelper = clientHelper;
 		this.clientVersioningManager = clientVersioningManager;
@@ -86,6 +89,7 @@ abstract class AbstractProtocolEngine<S extends Session<?>>
 		this.autoDeleteManager = autoDeleteManager;
 		this.conversationManager = conversationManager;
 		this.clock = clock;
+		this.crypto = crypto;
 	}
 
 	boolean isSubscribedPrivateGroup(Transaction txn, GroupId g)
@@ -116,6 +120,13 @@ abstract class AbstractProtocolEngine<S extends Session<?>>
 	Message sendInviteMessage(Transaction txn, S s,
 			@Nullable String text, long timestamp, byte[] signature,
 			long timer) throws DbException {
+		return sendInviteMessage(txn, s, text, timestamp, signature, timer, null);
+	}
+
+	Message sendInviteMessage(Transaction txn, S s,
+			@Nullable String text, long timestamp, byte[] signature,
+			long timer, @Nullable byte[] creatorEphemeralPublic)
+			throws DbException {
 		Group g = db.getGroup(txn, s.getPrivateGroupId());
 		PrivateGroup privateGroup;
 		try {
@@ -126,10 +137,17 @@ abstract class AbstractProtocolEngine<S extends Session<?>>
 		Message m;
 		ContactId c = clientHelper.getContactId(txn, s.getContactGroupId());
 		if (contactSupportsAutoDeletion(txn, c)) {
-			m = messageEncoder.encodeInviteMessage(s.getContactGroupId(),
-					privateGroup.getId(), timestamp, privateGroup.getName(),
-					privateGroup.getCreator(), privateGroup.getSalt(), text,
-					signature, timer);
+			if (creatorEphemeralPublic != null) {
+				m = messageEncoder.encodeMode3InviteMessage(s.getContactGroupId(),
+						privateGroup.getId(), timestamp, privateGroup.getName(),
+						privateGroup.getCreator(), privateGroup.getSalt(), text,
+						signature, timer, creatorEphemeralPublic);
+			} else {
+				m = messageEncoder.encodeInviteMessage(s.getContactGroupId(),
+						privateGroup.getId(), timestamp, privateGroup.getName(),
+						privateGroup.getCreator(), privateGroup.getSalt(), text,
+						signature, timer);
+			}
 			sendMessage(txn, m, INVITE, privateGroup.getId(), true, timer);
 			if (timer != NO_AUTO_DELETE_TIMER) {
 				db.setCleanupTimerDuration(txn, m.getId(), timer);
@@ -147,6 +165,12 @@ abstract class AbstractProtocolEngine<S extends Session<?>>
 
 	Message sendJoinMessage(Transaction txn, S s, boolean visibleInUi)
 			throws DbException {
+		return sendJoinMessage(txn, s, visibleInUi, null);
+	}
+
+	Message sendJoinMessage(Transaction txn, S s, boolean visibleInUi,
+			@Nullable byte[] memberEphemeralPublic)
+			throws DbException {
 		Message m;
 		long localTimestamp = visibleInUi
 				? getTimestampForVisibleMessage(txn, s)
@@ -158,9 +182,15 @@ abstract class AbstractProtocolEngine<S extends Session<?>>
 				timer = autoDeleteManager
 						.getAutoDeleteTimer(txn, c, localTimestamp);
 			}
-			m = messageEncoder.encodeJoinMessage(s.getContactGroupId(),
-					s.getPrivateGroupId(), localTimestamp,
-					s.getLastLocalMessageId(), timer);
+			if (memberEphemeralPublic != null) {
+				m = messageEncoder.encodeMode3JoinMessage(s.getContactGroupId(),
+						s.getPrivateGroupId(), localTimestamp,
+						s.getLastLocalMessageId(), timer, memberEphemeralPublic);
+			} else {
+				m = messageEncoder.encodeJoinMessage(s.getContactGroupId(),
+						s.getPrivateGroupId(), localTimestamp,
+						s.getLastLocalMessageId(), timer);
+			}
 			sendMessage(txn, m, JOIN, s.getPrivateGroupId(), visibleInUi,
 					timer);
 			if (timer != NO_AUTO_DELETE_TIMER) {

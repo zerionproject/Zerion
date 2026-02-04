@@ -17,4 +17,11 @@ interface GroupConstants {
 	String GROUP_KEY_DISSOLVED = "dissolved";
 	String GROUP_KEY_VISIBILITY = "visibility";
 
+	// Sender Keys message metadata
+	String KEY_CIPHERTEXT = "ciphertext";
+	String KEY_NONCE = "nonce";
+	String KEY_EPOCH = "epoch";
+	String KEY_MESSAGE_INDEX = "messageIndex";
+	String KEY_SIGNATURE = "signature";
+
 }
