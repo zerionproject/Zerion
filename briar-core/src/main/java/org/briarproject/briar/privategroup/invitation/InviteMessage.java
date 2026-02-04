@@ -17,16 +17,27 @@ class InviteMessage extends DeletableGroupInvitationMessage {
 	private final byte[] salt, signature;
 	@Nullable
 	private final String text;
+	@Nullable
+	private final byte[] creatorEphemeralPublic;
 
 	InviteMessage(MessageId id, GroupId contactGroupId, GroupId privateGroupId,
 			long timestamp, String groupName, Author creator, byte[] salt,
 			@Nullable String text, byte[] signature, long autoDeleteTimer) {
+		this(id, contactGroupId, privateGroupId, timestamp, groupName, creator,
+				salt, text, signature, autoDeleteTimer, null);
+	}
+
+	InviteMessage(MessageId id, GroupId contactGroupId, GroupId privateGroupId,
+			long timestamp, String groupName, Author creator, byte[] salt,
+			@Nullable String text, byte[] signature, long autoDeleteTimer,
+			@Nullable byte[] creatorEphemeralPublic) {
 		super(id, contactGroupId, privateGroupId, timestamp, autoDeleteTimer);
 		this.groupName = groupName;
 		this.creator = creator;
 		this.salt = salt;
 		this.text = text;
 		this.signature = signature;
+		this.creatorEphemeralPublic = creatorEphemeralPublic;
 	}
 
 	String getGroupName() {
@@ -48,5 +59,14 @@ class InviteMessage extends DeletableGroupInvitationMessage {
 
 	byte[] getSignature() {
 		return signature;
+	}
+
+	@Nullable
+	byte[] getCreatorEphemeralPublic() {
+		return creatorEphemeralPublic;
+	}
+
+	boolean isMode3Enabled() {
+		return creatorEphemeralPublic != null;
 	}
 }
