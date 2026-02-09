@@ -4,6 +4,8 @@ import android.content.ActivityNotFoundException;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -47,9 +49,12 @@ public class LinkExchangeFragment extends BaseFragment {
 
 	private AddContactViewModel viewModel;
 
+	private static final long CLIPBOARD_CLEAR_DELAY_MS = 30_000;
+
 	private ClipboardManager clipboard;
 	private TextInputLayout linkInputLayout;
 	private TextInputEditText linkInput;
+	private final Handler clipboardHandler = new Handler(Looper.getMainLooper());
 
 	@Override
 	public String getUniqueTag() {
@@ -113,6 +118,11 @@ public class LinkExchangeFragment extends BaseFragment {
 			clipboard.setPrimaryClip(clip);
 			Toast.makeText(getContext(), R.string.link_copied_toast,
 					LENGTH_SHORT).show();
+			clipboardHandler.removeCallbacksAndMessages(null);
+			clipboardHandler.postDelayed(() -> {
+				ClipData empty = ClipData.newPlainText("", "");
+				clipboard.setPrimaryClip(empty);
+			}, CLIPBOARD_CLEAR_DELAY_MS);
 		});
 		copyButton.setEnabled(true);
 
@@ -136,6 +146,12 @@ public class LinkExchangeFragment extends BaseFragment {
 		Button continueButton = v.findViewById(R.id.addButton);
 		continueButton.setOnClickListener(view -> onContinueButtonClicked());
 		continueButton.setEnabled(true);
+	}
+
+	@Override
+	public void onDestroyView() {
+		super.onDestroyView();
+		clipboardHandler.removeCallbacksAndMessages(null);
 	}
 
 	@Nullable

@@ -21,7 +21,7 @@ public class VoiceCallSignal {
 	private static final int MAX_PAYLOAD_LENGTH = 2048;
 	private static final int MAX_REASON_LENGTH = 128;
 
-	private static final long TIMESTAMP_WINDOW_MS = 10 * 60 * 1000;
+	private static final long TIMESTAMP_WINDOW_MS = 60 * 1000;
 
 	private static final String HMAC_ALGORITHM = "HmacSHA256";
 	private static final int HMAC_OUTPUT_LENGTH = 32;

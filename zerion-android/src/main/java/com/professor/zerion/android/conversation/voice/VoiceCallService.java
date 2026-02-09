@@ -133,15 +133,17 @@ public class VoiceCallService extends Service implements EventListener {
 	private final IBinder binder = new LocalBinder();
 	private final Handler mainHandler = new Handler(Looper.getMainLooper());
 	private final Object streamLock = new Object();
+	private final Object torConnectionLock = new Object();
+	private volatile boolean isShuttingDown = false;
 	private ExecutorService executorService = Executors.newCachedThreadPool();
 
 	private ContactId contactId;
 	private String contactName;
 	private String callId;
 	private boolean isIncoming;
-	private CallState callState = CallState.IDLE;
+	private volatile CallState callState = CallState.IDLE;
 	private volatile VoiceCallActivity callActivity;
-	private boolean eventListenerRegistered = false;
+	private volatile boolean eventListenerRegistered = false;
 
 	private AudioRecord audioRecord;
 	private AudioTrack audioTrack;
@@ -676,7 +678,7 @@ public class VoiceCallService extends Service implements EventListener {
 				dataOut.writeInt(AUDIO_READY_MARKER);
 				dataOut.flush();
 
-				while (isRecording && (torConnection != null || (audioSocket != null && audioSocket.isConnected()))) {
+				while (!isShuttingDown && isRecording && (torConnection != null || (audioSocket != null && audioSocket.isConnected()))) {
 					int read = audioRecord.read(readBuffer, readOffset, frameSize - readOffset);
 
 					if (read > 0) {
@@ -709,6 +711,11 @@ public class VoiceCallService extends Service implements EventListener {
 							} else {
 								encodedAudio = audioData;
 							}
+							VoiceCallCrypto.AudioKeys keys = audioKeys;
+							if (keys == null || keys.txKey == null) {
+								readOffset = 0;
+								continue;
+							}
 							long seq = sendSequenceNumber++;
 							long ts = System.currentTimeMillis();
 							byte[] plaintext = new byte[16 + encodedAudio.length];
@@ -718,7 +725,7 @@ public class VoiceCallService extends Service implements EventListener {
 									.put(encodedAudio);
 
 							byte[] encrypted = voiceCallCrypto.encryptAudioFrame(
-									plaintext, audioKeys.txKey);
+									plaintext, keys.txKey, seq);
 							int paddedSize = Math.max(PADDED_FRAME_SIZE, encrypted.length);
 							byte[] padded = new byte[paddedSize];
 							System.arraycopy(encrypted, 0, padded, 0, encrypted.length);
@@ -782,7 +789,7 @@ public class VoiceCallService extends Service implements EventListener {
 				long lastReceiveTime = System.currentTimeMillis();
 				final int READ_TIMEOUT_MS = 30000;
 
-				while (isRecording && (torConnection != null || (audioSocket != null && audioSocket.isConnected()))) {
+				while (!isShuttingDown && isRecording && (torConnection != null || (audioSocket != null && audioSocket.isConnected()))) {
 					try {
 						if (System.currentTimeMillis() - lastReceiveTime > READ_TIMEOUT_MS) {
 							break;
@@ -803,7 +810,7 @@ public class VoiceCallService extends Service implements EventListener {
 						lastReceiveTime = System.currentTimeMillis();
 
 						if (encFrameSize > MAX_ENCRYPTED_FRAME_SIZE) {
-							continue;
+							break;
 						}
 
 						int paddedSize = Math.max(PADDED_FRAME_SIZE, encFrameSize);
@@ -814,10 +821,14 @@ public class VoiceCallService extends Service implements EventListener {
 						System.arraycopy(paddedFrame, 0, encryptedFrame, 0, encFrameSize);
 						receivedFrames++;
 
+						VoiceCallCrypto.AudioKeys keys = audioKeys;
+						if (keys == null || keys.rxKey == null) {
+							continue;
+						}
 						byte[] plaintext;
 						try {
 							plaintext = voiceCallCrypto.decryptAudioFrame(
-									encryptedFrame, audioKeys.rxKey);
+									encryptedFrame, keys.rxKey);
 						} catch (RuntimeException e) {
 							corruptedFrames++;
 							networkMetrics.recordCorruptedPacket();
@@ -958,7 +969,7 @@ public class VoiceCallService extends Service implements EventListener {
 	private void startHeartbeat() {
 		executorService.execute(() -> {
 			try {
-				while (isRecording && (torConnection != null || (audioSocket != null && audioSocket.isConnected()))) {
+				while (!isShuttingDown && isRecording && (torConnection != null || (audioSocket != null && audioSocket.isConnected()))) {
 					Thread.sleep(30000);
 
 					if (torConnection != null) {
@@ -986,7 +997,7 @@ public class VoiceCallService extends Service implements EventListener {
 			final int PCM_FRAME = (SAMPLE_RATE / 1000) * OPUS_FRAME_DURATION_MS * 2;
 			final byte[] playBuffer = new byte[PCM_FRAME];
 
-			while (isRecording) {
+			while (!isShuttingDown && isRecording) {
 				if (!playoutStarted) {
 					try { Thread.sleep(5); } catch (InterruptedException e) {
 						Thread.currentThread().interrupt();
@@ -1446,7 +1457,7 @@ public class VoiceCallService extends Service implements EventListener {
 
 		String title = isIncoming && callState == CallState.RINGING ?
 				"Incoming call" : "Ongoing call";
-		String text = contactName != null ? contactName : "Secure voice call";
+		String text = "Secure voice call";
 
 		NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
 				.setContentTitle(title)
@@ -1469,7 +1480,7 @@ public class VoiceCallService extends Service implements EventListener {
 			PendingIntent declinePendingIntent = PendingIntent.getService(this, 2,
 					declineIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 			builder.addAction(R.drawable.ic_close, "Decline", declinePendingIntent);
-			builder.setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
+			builder.setVisibility(NotificationCompat.VISIBILITY_SECRET);
 		}
 
 		return builder.build();
@@ -1485,7 +1496,7 @@ public class VoiceCallService extends Service implements EventListener {
 			channel.enableLights(true);
 			channel.enableVibration(true);
 			channel.setVibrationPattern(new long[]{0, 1000, 500, 1000});
-			channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+			channel.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
 
 			NotificationManager manager = getSystemService(NotificationManager.class);
 			if (manager != null) {
@@ -1502,6 +1513,8 @@ public class VoiceCallService extends Service implements EventListener {
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
+		isShuttingDown = true;
+
 		if (eventBus != null) {
 			eventBus.removeListener(this);
 		}
@@ -1578,10 +1591,17 @@ public class VoiceCallService extends Service implements EventListener {
 					String[] parts = payload.split(":");
 					if (parts.length >= 2) {
 						String remoteOnion = parts[0];
-						int remotePort = Integer.parseInt(parts[1]);
-						callState = CallState.CONNECTING;
-						updateCallActivity();
-						connectToRemoteOnion(remoteOnion, remotePort);
+						try {
+							int remotePort = Integer.parseInt(parts[1]);
+							if (remotePort < 1 || remotePort > 65535) {
+								break;
+							}
+							callState = CallState.CONNECTING;
+							updateCallActivity();
+							connectToRemoteOnion(remoteOnion, remotePort);
+						} catch (NumberFormatException e) {
+							break;
+						}
 					}
 				}
 				break;

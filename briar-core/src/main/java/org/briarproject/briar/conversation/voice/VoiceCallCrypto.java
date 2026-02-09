@@ -31,7 +31,10 @@ public interface VoiceCallCrypto {
 	
 	byte[] encryptAudioFrame(byte[] plaintext, SecretKey key);
 
-	
+	byte[] encryptAudioFrame(byte[] plaintext, SecretKey key,
+			long frameCounter);
+
+
 	byte[] decryptAudioFrame(byte[] ciphertext, SecretKey key);
 
 	

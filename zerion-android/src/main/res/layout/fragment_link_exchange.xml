@@ -215,8 +215,9 @@
 					android:textColor="@android:color/white"
 					android:textColorHint="#80FFFFFF"
 					android:imeOptions="flagNoPersonalizedLearning"
+					android:privateImeOptions="nm"
 					android:importantForAutofill="no"
-					android:inputType="textUri" />
+					android:inputType="textUri|textNoSuggestions" />
 
 			</com.google.android.material.textfield.TextInputLayout>
 

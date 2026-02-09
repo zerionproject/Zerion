@@ -474,19 +474,6 @@
 	<string name="introduction_response_declined_received">%1$s declined the introduction to %2$s.</string>
 	<string name="introduction_response_declined_received_by_introducee">%1$s says that %2$s declined the introduction.</string>
 
-	<!-- Connect via Bluetooth -->
-
-	<string name="menu_item_connect_via_bluetooth">Connect via Bluetooth</string>
-	<string name="connect_via_bluetooth_title">Connect via Bluetooth</string>
-	<string name="connect_via_bluetooth_intro">In case Bluetooth connections do not work automatically, you can use this screen to connect manually.\n\nYour contact needs to be nearby for this to work.\n\nYou and your contact should both press \"Start\" at the same time.</string>
-	<string name="connect_via_bluetooth_already_discovering">Already trying to connect via Bluetooth. Please try again shortly.</string>
-	<string name="connect_via_bluetooth_no_location_permission">Cannot continue without location permission</string>
-	<string name="connect_via_bluetooth_no_bluetooth_permission">Cannot continue without nearby devices permission</string>
-	<string name="connect_via_bluetooth_start">Connecting via Bluetooth…</string>
-	<string name="connect_via_bluetooth_success">Successfully connected via Bluetooth</string>
-	<string name="connect_via_bluetooth_error">Could not connect via Bluetooth.</string>
-	<string name="connect_via_bluetooth_error_not_supported">Bluetooth is not supported by device.</string>
-
 	<!-- Private Groups -->
 	<string name="groups_list_empty">No groups to show</string>
 	<string name="groups_list_empty_action">Tap the + icon to create a group, or ask your contacts to share groups with you</string>
@@ -597,7 +584,6 @@
 
 	<!-- Settings Connections -->
 	<string name="network_settings_title">Connections</string>
-	<string name="bluetooth_setting">Connect to contacts via Bluetooth</string>
 	<string name="wifi_setting">Connect to contacts on the same Wi-Fi network</string>
 	<string name="tor_enable_title">Connect to contacts via the Internet</string>
 	<string name="tor_enable_summary">All connections go through the Tor network for privacy</string>
@@ -854,20 +840,12 @@
 	<string name="permission_camera_request_body">To scan the QR code, Zerion needs access to the camera.</string>
 	<string name="permission_location_title">Location permission</string>
 	<string name="permission_nearby_devices_title">Nearby devices permission</string>
-	<string name="permission_location_request_body">To discover Bluetooth devices, Zerion needs permission to access your location.\n\nZerion does not store your location or share it with anyone.</string>
 	<string name="permission_camera_location_title">Camera and location</string>
-	<string name="permission_camera_location_request_body">To scan the QR code, Zerion needs access to the camera.\n\nTo discover Bluetooth devices, Zerion needs permission to access your location.\n\nZerion does not store your location or share it with anyone.</string>
-	<string name="permission_camera_bluetooth_title">Camera and nearby devices</string>
-	<string name="permission_camera_bluetooth_request_body">To scan the QR code, Zerion needs access to the camera.\n\nTo discover Bluetooth devices, Zerion needs permission to find and connect to nearby devices.</string>
+	<string name="permission_camera_location_request_body">To scan the QR code, Zerion needs access to the camera.\n\nZerion does not store your location or share it with anyone.</string>
 	<string name="permission_camera_denied_body">You have denied access to the camera, but adding contacts requires using the camera.\n\nPlease consider granting access.</string>
-	<string name="permission_location_denied_body">You have denied access to your location, but Zerion needs this permission to discover Bluetooth devices.\n\nPlease consider granting access.</string>
 	<string name="permission_location_setting_title">Location setting</string>
-	<string name="permission_location_setting_body">Your device\'s location setting must be turned on to find other devices via Bluetooth. Please enable location to continue. You can disable it again afterwards.</string>
 	<string name="permission_location_setting_hotspot_body">Your device\'s location setting must be turned on to create a Wi-Fi hotspot. Please enable location to continue. You can disable it again afterwards.</string>
 	<string name="permission_location_setting_button">Enable location</string>
-	<string name="permission_bluetooth_title">Nearby devices permission</string>
-	<string name="permission_bluetooth_body">To use Bluetooth communication, Zerion needs permission to find and connect to nearby devices.</string>
-	<string name="permission_bluetooth_denied_body">You have denied access to nearby devices, but Zerion needs this permission to use Bluetooth.\n\nPlease consider granting access.</string>
 
 	<!-- App Locking -->
 	<string name="lock_unlock">Unlock Zerion</string>
@@ -878,7 +856,7 @@
 	<string name="lock_tap_to_unlock">Tap to unlock</string>
 
 	<!-- Connections Screen -->
-	<string name="transports_help_text">Zerion can connect to your contacts via the Internet, Wi-Fi or Bluetooth.\n\nAll Internet connections go through the Tor network for privacy.\n\nIf a contact can be reached by multiple methods, Zerion uses them in parallel.</string>
+	<string name="transports_help_text">Zerion connects to your contacts via the Internet.\n\nAll connections go through the Tor network for privacy.</string>
 
 	<!-- Share app offline -->
 	<string name="hotspot_title">Share this app offline</string>
@@ -937,8 +915,7 @@
 	<string name="hotspot_help_site_3">If you have a firewall app, check that it isn\'t blocking access.</string>
 	<string name="hotspot_help_site_4">If you can visit the site, but not download the Zerion app, try it with a different web browser app.</string>
 	<string name="hotspot_help_fallback_title">Nothing works?</string>
-	<string name="hotspot_help_fallback_intro">You can try to save the app as an .apk file to share in some other way. Once the file has been transferred to the other device, it can be used to install Zerion.
-		\n\nTip: For sharing via Bluetooth, you might need to rename the file to end with .zip first.</string>
+	<string name="hotspot_help_fallback_intro">You can try to save the app as an .apk file to share in some other way. Once the file has been transferred to the other device, it can be used to install Zerion.</string>
 	<string name="hotspot_help_fallback_button">Save app</string>
 
 	<!-- error handling -->
@@ -956,8 +933,8 @@
 	<!-- Transfer Data via Removable Drives -->
 
 	<string name="removable_drive_menu_title">Connect via Removable Drive</string>
-	<string name="removable_drive_intro">If you can\'t connect to your contact via the Internet, Wi-Fi or Bluetooth, Zerion can also transfer messages on a removable drive such as a USB stick or an SD card.</string>
-	<string name="removable_drive_explanation">If you can\'t connect to your contact via the Internet, Wi-Fi or Bluetooth, Zerion can also transfer messages on a removable drive such as a USB stick or an SD card.\n\nWhen you use the \"Send Data\" button, any data that\'s waiting to be sent to the contact will be written to the removable drive. This includes private messages, attachments and private groups.\n\nEverything will be encrypted before it is written to the removable drive.\n\nWhen your contact receives the removable drive, they can use the \"Receive Data\" button to import the messages into Zerion.</string>
+	<string name="removable_drive_intro">If you can\'t connect to your contact via the Internet, Zerion can also transfer messages on a removable drive such as a USB stick or an SD card.</string>
+	<string name="removable_drive_explanation">If you can\'t connect to your contact via the Internet, Zerion can also transfer messages on a removable drive such as a USB stick or an SD card.\n\nWhen you use the \"Send Data\" button, any data that\'s waiting to be sent to the contact will be written to the removable drive. This includes private messages, attachments and private groups.\n\nEverything will be encrypted before it is written to the removable drive.\n\nWhen your contact receives the removable drive, they can use the \"Receive Data\" button to import the messages into Zerion.</string>
 	<string name="removable_drive_title_send">Send data</string>
 	<string name="removable_drive_title_receive">Receive data</string>
 	<string name="removable_drive_send_intro">Tap the button below to create a new file containing the encrypted messages. You can choose where the file will be saved.\n\nIf you want to save the file on a removable drive, insert the drive now.</string>

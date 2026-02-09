@@ -13,6 +13,8 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.Semaphore;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
@@ -20,6 +22,9 @@ import javax.annotation.concurrent.Immutable;
 @Immutable
 @NotNullByDefault
 public class DevReportServer {
+
+	private static final Logger LOG =
+			Logger.getLogger(DevReportServer.class.getName());
 
 	private static final String FILE_PREFIX = "report-";
 	private static final String FILE_SUFFIX = ".enc";
@@ -44,12 +49,12 @@ public class DevReportServer {
 		try {
 			while (true) {
 				Socket s = ss.accept();
-				System.out.println("Incoming connection");
+				LOG.info("Incoming connection");
 				bucket.waitForToken();
 				new ReportSaver(s).start();
 			}
 		} catch (InterruptedException e) {
-			System.err.println("Interrupted while listening");
+			LOG.log(Level.WARNING, "Interrupted while listening", e);
 		} finally {
 			tryToClose(ss);
 		}
@@ -59,7 +64,7 @@ public class DevReportServer {
 		try {
 			if (ss != null) ss.close();
 		} catch (IOException e) {
-			e.printStackTrace();
+			LOG.log(Level.WARNING, "Failed to close socket", e);
 		}
 	}
 
@@ -67,21 +72,20 @@ public class DevReportServer {
 		try {
 			if (c != null) c.close();
 		} catch (IOException e) {
-			e.printStackTrace();
+			LOG.log(Level.WARNING, "Failed to close resource", e);
 		}
 	}
 
 	public static void main(String[] args) throws Exception {
 		if (args.length != 3) {
-			System.err.println("Usage:");
-			System.err.println("DevReportServer <addr> <port> <report_dir>");
+			LOG.warning("Usage: DevReportServer <addr> <port> <report_dir>");
 			System.exit(1);
 		}
 		int port = Integer.parseInt(args[1]);
 		InetSocketAddress listenAddress = new InetSocketAddress(args[0], port);
 		File reportDir = new File(args[2]);
-		System.out.println("Listening on " + listenAddress);
-		System.out.println("Saving reports to " + reportDir);
+		LOG.info("Listening on " + listenAddress);
+		LOG.info("Saving reports to " + reportDir);
 		new DevReportServer(listenAddress, reportDir).listen();
 	}
 
@@ -102,13 +106,13 @@ public class DevReportServer {
 			try {
 				while (true) {
 					if (semaphore.availablePermits() < MAX_TOKENS) {
-						System.out.println("Adding token to bucket");
+						LOG.fine("Adding token to bucket");
 						semaphore.release();
 					}
 					Thread.sleep(MIN_REQUEST_INTERVAL_MS);
 				}
 			} catch (InterruptedException e) {
-				System.err.println("Interrupted while sleeping");
+				LOG.log(Level.WARNING, "Interrupted while sleeping", e);
 			}
 		}
 	}
@@ -134,7 +138,7 @@ public class DevReportServer {
 				reportFile = File.createTempFile(FILE_PREFIX, FILE_SUFFIX,
 						reportDir);
 				out = new FileOutputStream(reportFile);
-				System.out.println("Saving report to " + reportFile);
+				LOG.info("Saving report to " + reportFile);
 				byte[] b = new byte[4096];
 				int length = 0;
 				while (true) {
@@ -146,9 +150,9 @@ public class DevReportServer {
 					length += read;
 				}
 				out.flush();
-				System.out.println("Saved " + length + " bytes");
+				LOG.info("Saved " + length + " bytes");
 			} catch (IOException e) {
-				e.printStackTrace();
+				LOG.log(Level.WARNING, "Failed to save report", e);
 				if (reportFile != null) reportFile.delete();
 			} finally {
 				tryToClose(in);

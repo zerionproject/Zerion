@@ -39,7 +39,8 @@ public class NetworkMetrics {
 	public synchronized void recordPacketReceived(long sequenceNumber) {
 		totalPacketsReceived++;
 
-		if (sequenceNumber > expectedPackets) {
+		if (sequenceNumber > expectedPackets
+				&& sequenceNumber <= expectedPackets + 100000) {
 			expectedPackets = sequenceNumber;
 		}
 	}
