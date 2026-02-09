@@ -6,8 +6,13 @@ import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public abstract class ApkSignaturePin {
+
+	private static final Logger LOG =
+			Logger.getLogger(ApkSignaturePin.class.getName());
 
 	protected String[] fingerprints;
 	protected byte[][] certificates;
@@ -31,7 +36,7 @@ public abstract class ApkSignaturePin {
 			md.reset();
 			return String.format("%0" + (hashBytes.length << 1) + "x", bi);
 		} catch (NoSuchAlgorithmException e) {
-			e.printStackTrace();
+			LOG.log(Level.WARNING, e.getMessage(), e);
 		}
 		return null;
 	}

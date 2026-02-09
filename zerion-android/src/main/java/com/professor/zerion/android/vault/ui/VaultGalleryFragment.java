@@ -162,6 +162,14 @@ public class VaultGalleryFragment extends BaseFragment {
 		dialog.setContentView(dialogView);
 		dialog.show();
 
+		final android.graphics.Bitmap[] bitmapHolder = new android.graphics.Bitmap[1];
+		dialog.setOnDismissListener(d -> {
+			if (bitmapHolder[0] != null && !bitmapHolder[0].isRecycled()) {
+				bitmapHolder[0].recycle();
+				bitmapHolder[0] = null;
+			}
+		});
+
 		viewModel.getMediaContent(item.id, new VaultViewModel.MediaContentCallback() {
 			@Override
 			public void onContentRetrieved(byte[] content) {
@@ -178,9 +186,11 @@ public class VaultGalleryFragment extends BaseFragment {
 									Toast.LENGTH_SHORT).show();
 							dialog.dismiss();
 						});
+						java.util.Arrays.fill(content, (byte) 0);
 						return;
 					}
 
+					bitmapHolder[0] = bitmap;
 					requireActivity().runOnUiThread(() -> {
 						if (imageView != null) {
 							imageView.setImageBitmap(bitmap);
@@ -281,36 +291,44 @@ public class VaultGalleryFragment extends BaseFragment {
 					android.graphics.Bitmap imageBitmap = (android.graphics.Bitmap) extras.get("data");
 					if (imageBitmap != null) {
 						java.io.ByteArrayOutputStream outputStream = new java.io.ByteArrayOutputStream();
-						imageBitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, outputStream);
-						byte[] content = outputStream.toByteArray();
-
-						String fileName = "photo_" + System.currentTimeMillis() + ".jpg";
-
-						viewModel.addMediaToVault(VaultItem.ItemType.IMAGE, fileName, content, "image/jpeg");
-						Toast.makeText(requireContext(),
-								"Photo saved securely",
-								Toast.LENGTH_SHORT).show();
-
 						try {
-							outputStream.close();
-						} catch (Exception e) {
+							imageBitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, outputStream);
+							byte[] content = outputStream.toByteArray();
+
+							String fileName = "photo_" + System.currentTimeMillis() + ".jpg";
+
+							viewModel.addMediaToVault(VaultItem.ItemType.IMAGE, fileName, content, "image/jpeg");
+							Toast.makeText(requireContext(),
+									"Photo saved securely",
+									Toast.LENGTH_SHORT).show();
+						} finally {
+							imageBitmap.recycle();
+							try {
+								outputStream.close();
+							} catch (Exception e) {
+							}
 						}
 					}
 				}
 			} else if (requestCode == REQUEST_IMAGE_PICK) {
 				Uri imageUri = data.getData();
 				if (imageUri != null) {
+					java.io.InputStream inputStream = null;
 					try {
-						java.io.InputStream inputStream = requireContext().getContentResolver()
+						inputStream = requireContext().getContentResolver()
 								.openInputStream(imageUri);
 						if (inputStream != null) {
 							java.io.ByteArrayOutputStream outputStream = new java.io.ByteArrayOutputStream();
 							byte[] buffer = new byte[4096];
 							int bytesRead;
+							long totalRead = 0;
 							while ((bytesRead = inputStream.read(buffer)) != -1) {
+								totalRead += bytesRead;
+								if (totalRead > 20 * 1024 * 1024) {
+									throw new java.io.IOException("Image too large");
+								}
 								outputStream.write(buffer, 0, bytesRead);
 							}
-							inputStream.close();
 
 							byte[] content = outputStream.toByteArray();
 							outputStream.close();
@@ -329,6 +347,13 @@ public class VaultGalleryFragment extends BaseFragment {
 						Toast.makeText(requireContext(),
 								"Failed to save image",
 								Toast.LENGTH_SHORT).show();
+					} finally {
+						if (inputStream != null) {
+							try {
+								inputStream.close();
+							} catch (Exception e) {
+							}
+						}
 					}
 				}
 			}

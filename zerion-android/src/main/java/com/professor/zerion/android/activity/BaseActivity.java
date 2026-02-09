@@ -16,6 +16,7 @@ import com.professor.zerion.android.fragment.BaseFragment;
 import com.professor.zerion.android.fragment.ScreenFilterDialogFragment;
 import com.professor.zerion.android.util.UiUtils;
 import com.professor.zerion.android.widget.TapSafeFrameLayout;
+import com.professor.zerion.android.vault.ui.IncognitoInputHelper;
 import com.professor.zerion.android.widget.TapSafeFrameLayout.OnTapFilteredListener;
 import com.professor.zerion.android.api.ScreenFilterMonitor;
 import com.professor.zerion.android.api.ScreenFilterMonitor.AppDetails;
@@ -130,6 +131,17 @@ public abstract class BaseActivity extends AppCompatActivity
 	@Override
 	protected void onResume() {
 		super.onResume();
+		enforceSecureInputs();
+	}
+
+	/**
+	 * Walks the entire view tree and enforces secure keyboard flags on
+	 * every EditText. This is the global enforcement mechanism that
+	 * prevents IME learning, suggestions, and autofill on all inputs.
+	 */
+	private void enforceSecureInputs() {
+		View decorView = getWindow().getDecorView();
+		IncognitoInputHelper.enforceSecureInputsOnViewTree(decorView);
 	}
 
 	@Override

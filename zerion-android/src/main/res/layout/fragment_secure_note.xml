@@ -28,8 +28,11 @@
                 android:id="@+id/note_title_input"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="text"
+                android:inputType="text|textNoSuggestions"
                 android:textColor="@android:color/white"
+                android:imeOptions="flagNoPersonalizedLearning"
+                android:privateImeOptions="nm"
+                android:importantForAutofill="no"
                 android:maxLines="1" />
 
         </com.google.android.material.textfield.TextInputLayout>
@@ -113,6 +116,9 @@
                 android:layout_height="wrap_content"
                 android:inputType="textPassword"
                 android:textColor="@android:color/white"
+                android:imeOptions="flagNoPersonalizedLearning"
+                android:privateImeOptions="nm"
+                android:importantForAutofill="no"
                 android:maxLines="1" />
 
         </com.google.android.material.textfield.TextInputLayout>

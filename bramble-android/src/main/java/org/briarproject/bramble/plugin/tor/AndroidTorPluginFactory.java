@@ -26,7 +26,6 @@ import org.briarproject.onionwrapper.TorWrapper;
 import java.io.File;
 import java.util.concurrent.Executor;
 
-import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
 import javax.net.SocketFactory;
@@ -66,7 +65,6 @@ public class AndroidTorPluginFactory extends TorPluginFactory {
 		this.wakeLockManager = wakeLockManager;
 	}
 
-	@Nullable
 	@Override
 	String getArchitectureForTorBinary() {
 		for (String abi : getSupportedArchitectures()) {
@@ -75,7 +73,7 @@ public class AndroidTorPluginFactory extends TorPluginFactory {
 			else if (abi.startsWith("arm64")) return "arm64_pie";
 			else if (abi.startsWith("armeabi")) return "arm_pie";
 		}
-		return null;
+		throw new UnsupportedOperationException("No supported Tor binary for device architecture");
 	}
 
 	@Override

@@ -14,6 +14,8 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.InputStream;
 
+import static android.util.Log.WARN;
+
 @GlideModule
 @NotNullByDefault
 public final class ZerionGlideModule extends AppGlideModule {
@@ -29,7 +31,7 @@ public final class ZerionGlideModule extends AppGlideModule {
 
 	@Override
 	public void applyOptions(Context context, GlideBuilder builder) {
-		builder.setLogLevel(android.util.Log.WARN);
+		builder.setLogLevel(WARN);
 	}
 
 	@Override

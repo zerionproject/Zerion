@@ -1,9 +1,6 @@
 package com.professor.zerion.android.navdrawer;
 
 import android.app.Application;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
 
 import org.briarproject.bramble.api.db.DatabaseExecutor;
 import org.briarproject.bramble.api.db.DbException;
@@ -43,33 +40,25 @@ import static org.briarproject.bramble.api.plugin.Plugin.State.STARTING_STOPPING
 @NotNullByDefault
 public class PluginViewModel extends DbViewModel implements EventListener {
 
-
-	private static final TransportId BLUETOOTH_ID = new TransportId("org.briarproject.bramble.plugin.bluetooth");
 	private static final TransportId LAN_ID = new TransportId("org.briarproject.bramble.plugin.lan");
 
 	private final Application app;
 	private final SettingsManager settingsManager;
 	private final PluginManager pluginManager;
 	private final EventBus eventBus;
-	private final BroadcastReceiver receiver;
 
 	private final MutableLiveData<State> torPluginState =
 			new MutableLiveData<>();
 	private final MutableLiveData<State> wifiPluginState =
-			new MutableLiveData<>();
-	private final MutableLiveData<State> btPluginState =
 			new MutableLiveData<>();
 
 	private final MutableLiveData<Boolean> torEnabledSetting =
 			new MutableLiveData<>(false);
 	private final MutableLiveData<Boolean> wifiEnabledSetting =
 			new MutableLiveData<>(false);
-	private final MutableLiveData<Boolean> btEnabledSetting =
-			new MutableLiveData<>(false);
 
 	private final MutableLiveData<NetworkStatus> networkStatus =
 			new MutableLiveData<>();
-	private boolean receiverRegistered = false;
 
 	@Inject
 	PluginViewModel(Application app, @DatabaseExecutor Executor dbExecutor,
@@ -83,24 +72,15 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 		this.pluginManager = pluginManager;
 		this.eventBus = eventBus;
 		eventBus.addListener(this);
-		receiver = new BluetoothStateReceiver();
 		networkStatus.setValue(networkManager.getNetworkStatus());
 		torPluginState.setValue(getTransportState(TorConstants.ID));
 		wifiPluginState.setValue(DISABLED);
-		btPluginState.setValue(DISABLED);
 		loadSettings();
 	}
 
 	@Override
 	protected void onCleared() {
 		eventBus.removeListener(this);
-		if (receiverRegistered) {
-			try {
-				app.unregisterReceiver(receiver);
-				receiverRegistered = false;
-			} catch (IllegalArgumentException e) {
-			}
-		}
 	}
 
 	@Override
@@ -115,8 +95,6 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 				torEnabledSetting.setValue(enable);
 			} else if (s.getNamespace().equals(LAN_ID.getString())) {
 				wifiEnabledSetting.setValue(false);
-			} else if (s.getNamespace().equals(BLUETOOTH_ID.getString())) {
-				btEnabledSetting.setValue(false);
 			}
 		} else if (e instanceof TransportStateEvent) {
 			TransportStateEvent t = (TransportStateEvent) e;
@@ -136,7 +114,6 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 	LiveData<Boolean> getPluginEnabledSetting(TransportId id) {
 		if (id.equals(TorConstants.ID)) return torEnabledSetting;
 		else if (id.equals(LAN_ID)) return wifiEnabledSetting;
-		else if (id.equals(BLUETOOTH_ID)) return btEnabledSetting;
 		else throw new IllegalArgumentException("Unknown transport: " + id);
 	}
 
@@ -162,7 +139,6 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 						TorConstants.DEFAULT_PREF_PLUGIN_ENABLE);
 				torEnabledSetting.postValue(tor);
 				wifiEnabledSetting.postValue(false);
-				btEnabledSetting.postValue(false);
 			} catch (DbException e) {
 				handleException(e);
 			}
@@ -184,7 +160,6 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 	private MutableLiveData<State> getPluginLiveData(TransportId id) {
 		if (id.equals(TorConstants.ID)) return torPluginState;
 		else if (id.equals(LAN_ID)) return wifiPluginState;
-		else if (id.equals(BLUETOOTH_ID)) return btPluginState;
 		else return null;
 	}
 
@@ -198,10 +173,4 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 		});
 	}
 
-	private class BluetoothStateReceiver extends BroadcastReceiver {
-
-		@Override
-		public void onReceive(Context context, Intent intent) {
-		}
-	}
 }

@@ -565,9 +565,7 @@ public class ConversationActivity extends ZerionActivity
 			retriever.release();
 			extractor.release();
 
-			android.util.Log.i("VideoCodecInfo", info.toString());
 		} catch (Exception e) {
-			android.util.Log.e("VideoCodecInfo", "[" + tag + "] Failed to extract metadata: " + e.getMessage());
 		}
 	}
 

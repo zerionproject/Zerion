@@ -45,6 +45,13 @@ public class OpusDecoder {
 			decoder.start();
 			isInitialized = true;
 		} catch (IOException e) {
+			if (decoder != null) {
+				try {
+					decoder.release();
+				} catch (Exception ignored) {
+				}
+				decoder = null;
+			}
 		}
 	}
 

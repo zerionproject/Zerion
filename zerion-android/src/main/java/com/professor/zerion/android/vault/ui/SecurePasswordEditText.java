@@ -5,6 +5,8 @@ import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
 import android.util.AttributeSet;
+import android.view.View;
+import android.view.inputmethod.EditorInfo;
 
 import com.google.android.material.textfield.TextInputEditText;
 
@@ -39,6 +41,9 @@ public class SecurePasswordEditText extends TextInputEditText {
 
 	private void init() {
 		setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+		setImeOptions(getImeOptions() | EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING);
+		setPrivateImeOptions("nm");
+		setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO);
 
 		addTextChangedListener(new TextWatcher() {
 			@Override

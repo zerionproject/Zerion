@@ -41,6 +41,8 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.security.SecureRandom;
 import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.annotation.concurrent.Immutable;
 
@@ -49,6 +51,9 @@ import static org.briarproject.bramble.util.StringUtils.UTF_8;
 @Immutable
 @NotNullByDefault
 public class MessageEncrypter {
+
+	private static final Logger LOG =
+			Logger.getLogger(MessageEncrypter.class.getName());
 
 	private static final String KEY_TYPE = "SEC1_brainpoolp512r1";
 	private static final ECDomainParameters PARAMETERS;
@@ -166,7 +171,7 @@ public class MessageEncrypter {
 			try {
 				generateKeyPair(args[1], args[2]);
 			} catch (Exception e) {
-				e.printStackTrace();
+				LOG.log(Level.SEVERE, "Key generation failed", e);
 				System.exit(2);
 			}
 		} else if (args[0].equals("encrypt")) {
@@ -177,7 +182,7 @@ public class MessageEncrypter {
 			try {
 				encryptMessage(args[1]);
 			} catch (Exception e) {
-				e.printStackTrace();
+				LOG.log(Level.SEVERE, "Encryption failed", e);
 				System.exit(2);
 			}
 		} else if (args[0].equals("decrypt")) {
@@ -188,7 +193,7 @@ public class MessageEncrypter {
 			try {
 				decryptMessage(args[1]);
 			} catch (Exception e) {
-				e.printStackTrace();
+				LOG.log(Level.SEVERE, "Decryption failed", e);
 				System.exit(2);
 			}
 		} else {
@@ -198,11 +203,11 @@ public class MessageEncrypter {
 	}
 
 	private static void printUsage() {
-		System.err.println("Usage:");
-		System.err.println(
-				"MessageEncrypter generate <public_key_file> <private_key_file>");
-		System.err.println("MessageEncrypter encrypt <public_key_file>");
-		System.err.println("MessageEncrypter decrypt <private_key_file>");
+		LOG.warning("Usage:\n"
+				+ "MessageEncrypter generate <public_key_file>"
+				+ " <private_key_file>\n"
+				+ "MessageEncrypter encrypt <public_key_file>\n"
+				+ "MessageEncrypter decrypt <private_key_file>");
 	}
 
 	private static void generateKeyPair(String publicKeyFile,
@@ -230,7 +235,7 @@ public class MessageEncrypter {
 		String message = readFully(System.in);
 		byte[] plaintext = message.getBytes(UTF_8);
 		byte[] ciphertext = encrypter.encrypt(publicKey, plaintext);
-		System.out.println(AsciiArmour.wrap(ciphertext, LINE_LENGTH));
+		LOG.info(AsciiArmour.wrap(ciphertext, LINE_LENGTH));
 	}
 
 	private static void decryptMessage(String privateKeyFile) throws Exception {
@@ -242,7 +247,7 @@ public class MessageEncrypter {
 				encrypter.getKeyParser().parsePrivateKey(keyBytes);
 		byte[] ciphertext = AsciiArmour.unwrap(readFully(System.in));
 		byte[] plaintext = encrypter.decrypt(privateKey, ciphertext);
-		System.out.println(new String(plaintext, UTF_8));
+		LOG.info(new String(plaintext, UTF_8));
 	}
 
 	private static String readFully(InputStream in) throws IOException {

@@ -8,7 +8,6 @@ import org.briarproject.bramble.api.keyagreement.KeyAgreementConnection;
 import org.briarproject.bramble.api.keyagreement.KeyAgreementListener;
 import org.briarproject.bramble.api.keyagreement.Payload;
 import org.briarproject.bramble.api.keyagreement.TransportDescriptor;
-import org.briarproject.bramble.api.plugin.BluetoothConstants;
 import org.briarproject.bramble.api.plugin.LanTcpConstants;
 import org.briarproject.bramble.api.plugin.Plugin;
 import org.briarproject.bramble.api.plugin.PluginManager;
@@ -31,7 +30,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.Nullable;
 
-import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.briarproject.bramble.api.keyagreement.KeyAgreementConstants.CONNECTION_TIMEOUT;
 
 @NotNullByDefault
@@ -41,7 +40,7 @@ class KeyAgreementConnector {
 		void connectionWaiting();
 	}
 	private static final List<TransportId> PREFERRED_TRANSPORTS =
-			asList(BluetoothConstants.ID, LanTcpConstants.ID);
+			singletonList(LanTcpConstants.ID);
 
 	private final Callbacks callbacks;
 	private final KeyAgreementCrypto keyAgreementCrypto;
