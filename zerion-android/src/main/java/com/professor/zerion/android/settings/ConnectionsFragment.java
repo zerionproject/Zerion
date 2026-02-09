@@ -6,6 +6,7 @@ import android.text.InputType;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -197,7 +198,10 @@ public class ConnectionsFragment extends Fragment {
 		layout.addView(hostLabel);
 
 		EditText hostInput = new EditText(context);
-		hostInput.setInputType(InputType.TYPE_CLASS_TEXT);
+		hostInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+		hostInput.setImeOptions(EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING);
+		hostInput.setPrivateImeOptions("nm");
+		hostInput.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO);
 		hostInput.setText(orbotHost);
 		hostInput.setHint(DEFAULT_ORBOT_HOST);
 		layout.addView(hostInput);
@@ -212,6 +216,9 @@ public class ConnectionsFragment extends Fragment {
 
 		EditText portInput = new EditText(context);
 		portInput.setInputType(InputType.TYPE_CLASS_NUMBER);
+		portInput.setImeOptions(EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING);
+		portInput.setPrivateImeOptions("nm");
+		portInput.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO);
 		portInput.setText(String.valueOf(orbotPort));
 		portInput.setHint(String.valueOf(DEFAULT_ORBOT_PORT));
 		layout.addView(portInput);

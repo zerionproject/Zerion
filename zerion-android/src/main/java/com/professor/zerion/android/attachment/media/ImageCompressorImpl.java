@@ -36,17 +36,30 @@ class ImageCompressorImpl implements ImageCompressor {
 	@Override
 	public InputStream compressImage(InputStream is, String contentType)
 			throws IOException {
+		Bitmap bitmap = null;
 		try {
-			Bitmap bitmap =
-					createBitmap(is, contentType, MAX_ATTACHMENT_DIMENSION);
-			return compressImage(bitmap);
+			bitmap = createBitmap(is, contentType, MAX_ATTACHMENT_DIMENSION);
+			return compressImageInternal(bitmap);
 		} finally {
+			if (bitmap != null && !bitmap.isRecycled()) {
+				bitmap.recycle();
+			}
 			tryToClose(is);
 		}
 	}
 
 	@Override
 	public InputStream compressImage(Bitmap bitmap) throws IOException {
+		try {
+			return compressImageInternal(bitmap);
+		} finally {
+			if (bitmap != null && !bitmap.isRecycled()) {
+				bitmap.recycle();
+			}
+		}
+	}
+
+	private InputStream compressImageInternal(Bitmap bitmap) throws IOException {
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		if (!bitmap.compress(JPEG, 85, out))
 			throw new IOException();

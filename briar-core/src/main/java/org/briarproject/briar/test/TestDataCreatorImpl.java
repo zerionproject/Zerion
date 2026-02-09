@@ -15,7 +15,6 @@ import org.briarproject.bramble.api.identity.AuthorId;
 import org.briarproject.bramble.api.identity.IdentityManager;
 import org.briarproject.bramble.api.identity.LocalAuthor;
 import org.briarproject.bramble.api.lifecycle.IoExecutor;
-import org.briarproject.bramble.api.plugin.BluetoothConstants;
 import org.briarproject.bramble.api.plugin.LanTcpConstants;
 import org.briarproject.bramble.api.plugin.TorConstants;
 import org.briarproject.bramble.api.plugin.TransportId;
@@ -49,12 +48,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.UUID;
 import java.util.concurrent.Executor;
 import javax.inject.Inject;
 
 import static java.util.Collections.emptyList;
-import static org.briarproject.bramble.api.plugin.BluetoothConstants.UUID_BYTES;
 import static org.briarproject.bramble.api.sync.Group.Visibility.SHARED;
 import static org.briarproject.bramble.util.StringUtils.getRandomString;
 import static org.briarproject.briar.api.autodelete.AutoDeleteConstants.MIN_AUTO_DELETE_TIMER_MS;
@@ -221,12 +218,6 @@ public class TestDataCreatorImpl implements TestDataCreator {
 
 	private Map<TransportId, TransportProperties> getRandomTransportProperties() {
 		Map<TransportId, TransportProperties> props = new HashMap<>();
-		TransportProperties bt = new TransportProperties();
-		String btAddress = getRandomBluetoothAddress();
-		String uuid = getRandomUUID();
-		bt.put(BluetoothConstants.PROP_ADDRESS, btAddress);
-		bt.put(BluetoothConstants.PROP_UUID, uuid);
-		props.put(BluetoothConstants.ID, bt);
 		TransportProperties lan = new TransportProperties();
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < 4; i++) {
@@ -243,24 +234,6 @@ public class TestDataCreatorImpl implements TestDataCreator {
 		props.put(TorConstants.ID, tor);
 
 		return props;
-	}
-
-	private String getRandomBluetoothAddress() {
-		byte[] mac = new byte[6];
-		random.nextBytes(mac);
-
-		StringBuilder sb = new StringBuilder(18);
-		for (byte b : mac) {
-			if (sb.length() > 0) sb.append(":");
-			sb.append(String.format("%02X", b));
-		}
-		return sb.toString();
-	}
-
-	private String getRandomUUID() {
-		byte[] uuid = new byte[UUID_BYTES];
-		random.nextBytes(uuid);
-		return UUID.nameUUIDFromBytes(uuid).toString();
 	}
 
 	private String getRandomLanAddress() {

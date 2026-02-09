@@ -277,7 +277,6 @@ public class ZerionService extends Service {
 					if (!app.isInstrumentationTest()) {
 						androidExecutor.runOnUiThread(() -> {
 							stopSelf();
-							android.os.Process.killProcess(android.os.Process.myPid());
 						});
 					}
 				}, "BackgroundShutdown");
