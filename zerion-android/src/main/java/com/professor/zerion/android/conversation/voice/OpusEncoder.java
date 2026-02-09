@@ -49,6 +49,13 @@ public class OpusEncoder {
 			encoder.start();
 			isInitialized = true;
 		} catch (IOException e) {
+			if (encoder != null) {
+				try {
+					encoder.release();
+				} catch (Exception ignored) {
+				}
+				encoder = null;
+			}
 		}
 	}
 

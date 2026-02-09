@@ -63,7 +63,9 @@
             android:inputType="textPassword"
             android:textColor="@android:color/white"
             android:background="@android:color/transparent"
-            android:imeOptions="actionDone"
+            android:imeOptions="flagNoPersonalizedLearning|actionDone"
+            android:privateImeOptions="nm"
+            android:importantForAutofill="no"
             android:maxLines="1"
             android:padding="16dp" />
 

@@ -16,6 +16,8 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.security.SecureRandom;
 
 import static org.briarproject.bramble.util.StringUtils.fromHexString;
@@ -124,6 +126,39 @@ class VoiceCallCryptoImpl implements VoiceCallCrypto {
 			byte[] result = new byte[GCM_NONCE_BYTES + ciphertextWithTag.length];
 			System.arraycopy(nonce, 0, result, 0, GCM_NONCE_BYTES);
 			System.arraycopy(ciphertextWithTag, 0, result, GCM_NONCE_BYTES, ciphertextWithTag.length);
+
+			return result;
+
+		} catch (Exception e) {
+			throw new RuntimeException("Audio frame encryption failed", e);
+		}
+	}
+
+	@Override
+	public byte[] encryptAudioFrame(byte[] plaintext, SecretKey key,
+			long frameCounter) {
+		try {
+			// Counter-based nonce: 4 bytes key-derived salt + 8 bytes counter
+			byte[] nonce = new byte[GCM_NONCE_BYTES];
+			byte[] keyBytes = key.getBytes();
+			nonce[0] = keyBytes[0];
+			nonce[1] = keyBytes[1];
+			nonce[2] = keyBytes[2];
+			nonce[3] = keyBytes[3];
+			ByteBuffer.wrap(nonce, 4, 8).order(ByteOrder.BIG_ENDIAN)
+					.putLong(frameCounter);
+
+			Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+			GCMParameterSpec gcmSpec = new GCMParameterSpec(GCM_TAG_BITS, nonce);
+			SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
+			cipher.init(Cipher.ENCRYPT_MODE, keySpec, gcmSpec);
+
+			byte[] ciphertextWithTag = cipher.doFinal(plaintext);
+
+			byte[] result = new byte[GCM_NONCE_BYTES + ciphertextWithTag.length];
+			System.arraycopy(nonce, 0, result, 0, GCM_NONCE_BYTES);
+			System.arraycopy(ciphertextWithTag, 0, result, GCM_NONCE_BYTES,
+					ciphertextWithTag.length);
 
 			return result;
 

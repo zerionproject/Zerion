@@ -76,7 +76,6 @@ class ModemPlugin implements DuplexPlugin, Modem.Callback {
 
 	@Override
 	public int getMaxIdleTime() {
-		// FIXME: Do we need keepalives for this transport?
 		return Integer.MAX_VALUE;
 	}
 

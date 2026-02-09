@@ -76,12 +76,14 @@
 						android:id="@+id/document_name_input"
 						android:layout_width="match_parent"
 						android:layout_height="wrap_content"
-						android:inputType="text"
+						android:inputType="text|textNoSuggestions"
 						android:maxLines="1"
 						android:textColor="@android:color/white"
 						android:textColorHint="#80FFFFFF"
 						android:textSize="16sp"
-						android:imeOptions="actionNext"
+						android:imeOptions="flagNoPersonalizedLearning|actionNext"
+						android:privateImeOptions="nm"
+						android:importantForAutofill="no"
 						android:paddingTop="16dp"
 						android:paddingBottom="16dp" />
 
@@ -182,7 +184,9 @@
 						android:textSize="15sp"
 						android:lineSpacingMultiplier="1.4"
 						android:padding="12dp"
-						android:imeOptions="flagNoExtractUi" />
+						android:imeOptions="flagNoPersonalizedLearning|flagNoExtractUi"
+						android:privateImeOptions="nm"
+						android:importantForAutofill="no" />
 
 				</androidx.core.widget.NestedScrollView>
 

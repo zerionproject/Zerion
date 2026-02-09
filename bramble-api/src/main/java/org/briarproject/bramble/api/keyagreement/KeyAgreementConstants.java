@@ -12,10 +12,6 @@ public interface KeyAgreementConstants {
 	
 	long CONNECTION_TIMEOUT = 60_000;
 
-	
-	int TRANSPORT_ID_BLUETOOTH = 0;
-
-	
 	int TRANSPORT_ID_LAN = 1;
 
 	
