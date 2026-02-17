@@ -94,9 +94,14 @@ class SqlCipherDatabase extends JdbcDatabase {
 				if (listener != null) listener.onDatabaseMigration();
 				H2ToSqlCipherMigration migration =
 						new H2ToSqlCipherMigration(config);
-				// Throws MigrationFailedException on failure, preserving
-				// H2 files so the user can retry via the recovery UI
-				migration.migrate(key);
+				try {
+					migration.migrate(key);
+				} catch (MigrationFailedException e) {
+					// Persist error description for diagnostics export
+					H2ToSqlCipherMigration.writeErrorFile(dir,
+							migration.getLastErrorDescription(), e);
+					throw e;
+				}
 			}
 			reopen = isNonEmptyDirectory(dir);
 		}
