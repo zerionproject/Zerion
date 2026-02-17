@@ -75,10 +75,10 @@ android {
     defaultConfig {
         minSdkVersion 29
         targetSdkVersion 35
-        versionCode 10000
-        versionName "1.0.0"
+        versionCode 10001
+        versionName "1.0.1"
         applicationId "com.professor.zerion"
-        buildConfigField "String", "VERSION_LABEL", "\"1.0.0\""
+        buildConfigField "String", "VERSION_LABEL", "\"1.0.1\""
         buildConfigField "String", "TorVersion", "\"$tor_version\""
 
         vectorDrawables.useSupportLibrary = true
@@ -178,6 +178,11 @@ if (isFdroidBuild) {
     configurations.all {
         exclude group: 'androidx.profileinstaller', module: 'profileinstaller'
     }
+}
+
+// Exclude H2 database from Android APK (only needed in bramble-core for desktop/tests)
+configurations.implementation {
+    exclude group: 'com.h2database', module: 'h2'
 }
 
 repositories {
