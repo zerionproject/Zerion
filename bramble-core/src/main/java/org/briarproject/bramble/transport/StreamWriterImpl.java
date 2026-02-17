@@ -76,7 +76,14 @@ class StreamWriterImpl extends OutputStream implements StreamWriter {
 	}
 
 	private void writeFrame(boolean finalFrame) throws IOException {
-		encrypter.writeFrame(payload, length, 0, finalFrame);
+		// Pad partial frames to full payload length to prevent
+		// traffic analysis on message size via Tor cell inspection
+		int paddingLength = payload.length - length;
+		if (!finalFrame && paddingLength > 0) {
+			// Zero-fill remaining payload bytes as padding
+			java.util.Arrays.fill(payload, length, payload.length, (byte) 0);
+		}
+		encrypter.writeFrame(payload, length, paddingLength, finalFrame);
 		length = 0;
 	}
 }

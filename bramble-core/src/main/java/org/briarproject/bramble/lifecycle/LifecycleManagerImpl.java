@@ -19,8 +19,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
+
 import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
+
 import static org.briarproject.bramble.api.lifecycle.LifecycleManager.LifecycleState.COMPACTING_DATABASE;
 import static org.briarproject.bramble.api.lifecycle.LifecycleManager.LifecycleState.CREATED;
 import static org.briarproject.bramble.api.lifecycle.LifecycleManager.LifecycleState.MIGRATING_DATABASE;
@@ -38,9 +40,11 @@ import static org.briarproject.bramble.api.lifecycle.LifecycleManager.StartResul
 import static org.briarproject.bramble.api.lifecycle.LifecycleManager.StartResult.SUCCESS;
 import static org.briarproject.bramble.api.system.Clock.MAX_REASONABLE_TIME_MS;
 import static org.briarproject.bramble.api.system.Clock.MIN_REASONABLE_TIME_MS;
+
 @ThreadSafe
 @NotNullByDefault
 class LifecycleManagerImpl implements LifecycleManager, MigrationListener {
+
 	private final DatabaseComponent db;
 	private final EventBus eventBus;
 	private final Clock clock;

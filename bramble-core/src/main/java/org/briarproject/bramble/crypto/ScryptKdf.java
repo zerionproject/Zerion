@@ -3,8 +3,11 @@ package org.briarproject.bramble.crypto;
 import org.bouncycastle.crypto.generators.SCrypt;
 import org.briarproject.bramble.api.crypto.SecretKey;
 import org.briarproject.bramble.api.system.Clock;
-import org.briarproject.bramble.util.StringUtils;
 import javax.inject.Inject;
+
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.StandardCharsets;
 
 import static java.lang.Math.min;
 
@@ -42,10 +45,18 @@ class ScryptKdf implements PasswordBasedKdf {
 	}
 
 	@Override
-	public SecretKey deriveKey(String password, byte[] salt, int cost) {
-		byte[] passwordBytes = StringUtils.toUtf8(password);
-		SecretKey k = new SecretKey(SCrypt.generate(passwordBytes, salt, cost,
-				BLOCK_SIZE, PARALLELIZATION, SecretKey.LENGTH));
-		return k;
+	public SecretKey deriveKey(char[] password, byte[] salt, int cost) {
+		ByteBuffer byteBuffer = StandardCharsets.UTF_8.encode(
+				CharBuffer.wrap(password));
+		byte[] passwordBytes = new byte[byteBuffer.remaining()];
+		byteBuffer.get(passwordBytes);
+		try {
+			return new SecretKey(SCrypt.generate(passwordBytes, salt, cost,
+					BLOCK_SIZE, PARALLELIZATION, SecretKey.LENGTH));
+		} finally {
+			// Zero password bytes after KDF
+			java.util.Arrays.fill(passwordBytes, (byte) 0);
+			java.util.Arrays.fill(byteBuffer.array(), (byte) 0);
+		}
 	}
 }

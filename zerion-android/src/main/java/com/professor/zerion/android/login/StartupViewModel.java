@@ -180,13 +180,11 @@ public class StartupViewModel extends AndroidViewModel
 				}
 			}
 
-			String passwordStr = null;
 			boolean cryptographicFailure = false;
 			DecryptionResult decryptionResult = null;
 
 			try {
-				passwordStr = new String(password);
-				accountManager.signIn(passwordStr);
+					accountManager.signIn(password);
 
 				synchronized (bruteForceProtection) {
 					bruteForceProtection.recordSuccessfulLogin();
@@ -215,9 +213,6 @@ public class StartupViewModel extends AndroidViewModel
 			} catch (Exception e) {
 				operationalFailure.postEvent(true);
 			} finally {
-				if (passwordStr != null) {
-					wipeString(passwordStr);
-				}
 				Arrays.fill(password, '\0');
 			}
 
@@ -239,21 +234,6 @@ public class StartupViewModel extends AndroidViewModel
 			triggerWipe.postEvent(true);
 		} else {
 			bruteForceFailure.postEvent(failureResult);
-		}
-	}
-
-	private void wipeString(String str) {
-		try {
-			java.lang.reflect.Field valueField = String.class.getDeclaredField("value");
-			valueField.setAccessible(true);
-			Object value = valueField.get(str);
-
-			if (value instanceof char[]) {
-				Arrays.fill((char[]) value, '\0');
-			} else if (value instanceof byte[]) {
-				Arrays.fill((byte[]) value, (byte) 0);
-			}
-		} catch (Exception e) {
 		}
 	}
 

@@ -4,9 +4,6 @@ targetCompatibility = 1.8
 
 apply plugin: 'ru.vyarus.animalsniffer'
 apply plugin: 'idea'
-// Witness plugin disabled - using updated Bouncy Castle 1.82 for post-quantum crypto
-// apply plugin: 'witness'
-// apply from: 'witness.gradle'
 apply from: '../dagger.gradle'
 
 dependencies {
@@ -15,8 +12,7 @@ dependencies {
 	api "org.briarproject:onionwrapper-core:$onionwrapper_version"
 
 	implementation "org.bouncycastle:bcprov-jdk15to18:$bouncy_castle_version"
-	//noinspection GradleDependency
-	implementation 'com.h2database:h2:1.4.192' // The last version that supports Java 1.6
+	implementation 'com.h2database:h2:1.4.192'
 	implementation 'org.bitlet:weupnp:0.1.4'
 	implementation 'net.i2p.crypto:eddsa:0.2.0'
 	implementation 'org.whispersystems:curve25519-java:0.5.0'

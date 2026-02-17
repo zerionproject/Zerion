@@ -59,8 +59,8 @@ public class AccountManagerImplTest extends BrambleMockTestCase {
 	private final Identity identity = getIdentity();
 	private final LocalAuthor localAuthor = identity.getLocalAuthor();
 	private final String authorName = localAuthor.getName();
-	private final String password = getRandomString(10);
-	private final String newPassword = getRandomString(10);
+	private final char[] password = getRandomString(10).toCharArray();
+	private final char[] newPassword = getRandomString(10).toCharArray();
 	private final File testDir = getTestDirectory();
 	private final File dbDir = new File(testDir, "db");
 	private final File keyDir = new File(testDir, "key");

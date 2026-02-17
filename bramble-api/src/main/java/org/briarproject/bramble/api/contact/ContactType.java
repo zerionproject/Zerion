@@ -13,7 +13,7 @@ public enum ContactType {
 	ZERION(FORMAT_VERSION_HYBRID, "Post-Quantum (Zerion)"),
 
 	
-	BRIAR(FORMAT_VERSION_CLASSICAL, "Classical (Briar-compatible)");
+	BRIAR(FORMAT_VERSION_CLASSICAL, "Classical Mode");
 
 	private final int formatVersion;
 	private final String displayName;

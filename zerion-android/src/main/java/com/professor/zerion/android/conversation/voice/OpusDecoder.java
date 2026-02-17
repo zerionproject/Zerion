@@ -71,6 +71,10 @@ public class OpusDecoder {
 		return head;
 	}
 
+	// Maximum decoded PCM frame size (20ms at 48kHz mono 16-bit = 1920 bytes)
+	// Allow 4x margin for multi-frame decoding
+	private static final int MAX_DECODED_FRAME_SIZE = 1920 * 4;
+
 	public byte[] decode(byte[] opusData) {
 		if (!isInitialized || decoder == null || opusData == null || opusData.length == 0) {
 			return new byte[0];
@@ -90,11 +94,17 @@ public class OpusDecoder {
 			}
 			MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
 			byte[] result = null;
+			int totalSize = 0;
 			while (true) {
 				int outputBufferIndex = decoder.dequeueOutputBuffer(bufferInfo, 10000);
 				if (outputBufferIndex >= 0) {
 					ByteBuffer outputBuffer = decoder.getOutputBuffer(outputBufferIndex);
 					if (outputBuffer != null && bufferInfo.size > 0) {
+						// Reject oversized decoded output
+						if (totalSize + bufferInfo.size > MAX_DECODED_FRAME_SIZE) {
+							decoder.releaseOutputBuffer(outputBufferIndex, false);
+							break;
+						}
 						byte[] pcm = new byte[bufferInfo.size];
 						outputBuffer.get(pcm);
 						if (result == null) {
@@ -103,8 +113,11 @@ public class OpusDecoder {
 							byte[] combined = new byte[result.length + pcm.length];
 							System.arraycopy(result, 0, combined, 0, result.length);
 							System.arraycopy(pcm, 0, combined, result.length, pcm.length);
+							// Zero old result buffer
+							java.util.Arrays.fill(result, (byte) 0);
 							result = combined;
 						}
+						totalSize += bufferInfo.size;
 					}
 					decoder.releaseOutputBuffer(outputBufferIndex, false);
 				} else {

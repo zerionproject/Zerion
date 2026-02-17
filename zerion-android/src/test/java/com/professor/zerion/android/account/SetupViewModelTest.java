@@ -29,7 +29,7 @@ public class SetupViewModelTest extends BrambleMockTestCase {
 			new InstantTaskExecutorRule();
 
 	private final String authorName = getRandomString(MAX_AUTHOR_NAME_LENGTH);
-	private final String password = getRandomString(10);
+	private final char[] password = getRandomString(10).toCharArray();
 
 	private final Application app;
 	private final Context appContext;

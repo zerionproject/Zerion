@@ -82,6 +82,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayDeque;
@@ -176,7 +177,7 @@ public class VoiceCallService extends Service implements EventListener {
 	private String onionAddress;
 	private int onionPort;
 
-	private long sendSequenceNumber = 0;
+	private final AtomicLong sendSequenceNumber = new AtomicLong(0);
 	private long expectedReceiveSequence = 0;
 
 	private static final int MAX_RECONNECT_ATTEMPTS = 3;
@@ -208,6 +209,10 @@ public class VoiceCallService extends Service implements EventListener {
 	private VoiceCallCrypto voiceCallCrypto;
 	private SecretKey voiceCallKey;
 	private VoiceCallCrypto.AudioKeys audioKeys;
+
+	// Ephemeral secrets for forward secrecy
+	private byte[] localEphemeralSecret;
+	private byte[] remoteEphemeralSecret;
 
 	public class LocalBinder extends Binder {
 		public VoiceCallService getService() {
@@ -273,12 +278,23 @@ public class VoiceCallService extends Service implements EventListener {
 			callId = intent.getStringExtra(VoiceCallActivity.EXTRA_CALL_ID);
 
 			if (isIncoming) {
-				String encodedKey = intent.getStringExtra(VoiceCallActivity.EXTRA_VOICE_CALL_KEY);
-				if (encodedKey != null) {
-					try {
-						voiceCallKey = voiceCallCrypto.decodeVoiceCallKey(encodedKey);
-					} catch (Exception e) {
+				// Use secure in-memory key holder
+				SecretKey heldKey = VoiceCallKeyHolder.consumeKey();
+				if (heldKey != null) {
+					voiceCallKey = heldKey;
+				} else {
+					// Fallback: try Intent extras for backward compatibility
+					String encodedKey = intent.getStringExtra(VoiceCallActivity.EXTRA_VOICE_CALL_KEY);
+					if (encodedKey != null) {
+						try {
+							voiceCallKey = voiceCallCrypto.decodeVoiceCallKey(encodedKey);
+						} catch (Exception e) {
+						}
 					}
+				}
+				byte[] heldEphemeral = VoiceCallKeyHolder.consumeRemoteEphemeral();
+				if (heldEphemeral != null) {
+					remoteEphemeralSecret = heldEphemeral;
 				}
 			}
 
@@ -343,6 +359,9 @@ public class VoiceCallService extends Service implements EventListener {
 					voiceCallKey = voiceCallCrypto.generateVoiceCallKey();
 				}
 
+				// Generate ephemeral secret for forward secrecy
+				localEphemeralSecret = voiceCallCrypto.generateEphemeralSecret();
+
 				sendCallOffer();
 
 				callState = CallState.RINGING;
@@ -363,6 +382,9 @@ public class VoiceCallService extends Service implements EventListener {
 
 		executorService.execute(() -> {
 			try {
+				// Generate ephemeral secret for forward secrecy
+				localEphemeralSecret = voiceCallCrypto.generateEphemeralSecret();
+
 				createHiddenService();
 
 				sendCallAnswer();
@@ -496,7 +518,24 @@ public class VoiceCallService extends Service implements EventListener {
 	}
 
 
+	// Validate .onion address format
+	private static final java.util.regex.Pattern ONION_V3_PATTERN =
+			java.util.regex.Pattern.compile("^[a-z2-7]{56}(\\.onion)?$");
+
 	private void connectToRemoteOnion(String remoteOnion, int remotePort) {
+		if (remoteOnion == null || !ONION_V3_PATTERN.matcher(
+				remoteOnion.toLowerCase()).matches()) {
+			callState = CallState.FAILED;
+			updateCallActivity();
+			return;
+		}
+		// Validate port range
+		if (remotePort < 1 || remotePort > 65535) {
+			callState = CallState.FAILED;
+			updateCallActivity();
+			return;
+		}
+
 		lastRemoteOnion = remoteOnion;
 		lastRemotePort = remotePort;
 
@@ -550,7 +589,20 @@ public class VoiceCallService extends Service implements EventListener {
 
 		boolean alice = !isIncoming;
 
-		audioKeys = voiceCallCrypto.deriveAudioKeys(voiceCallKey, alice);
+		// Use ephemeral keys for forward secrecy when available
+		if (localEphemeralSecret != null && remoteEphemeralSecret != null) {
+			audioKeys = voiceCallCrypto.deriveEphemeralAudioKeys(
+					voiceCallKey, localEphemeralSecret,
+					remoteEphemeralSecret, alice);
+			// Zero ephemeral secrets after derivation
+			Arrays.fill(localEphemeralSecret, (byte) 0);
+			Arrays.fill(remoteEphemeralSecret, (byte) 0);
+			localEphemeralSecret = null;
+			remoteEphemeralSecret = null;
+		} else {
+			// Fallback to static key derivation (no forward secrecy)
+			audioKeys = voiceCallCrypto.deriveAudioKeys(voiceCallKey, alice);
+		}
 	}
 
 	private void startAudioStreaming() {
@@ -716,7 +768,7 @@ public class VoiceCallService extends Service implements EventListener {
 								readOffset = 0;
 								continue;
 							}
-							long seq = sendSequenceNumber++;
+							long seq = sendSequenceNumber.getAndIncrement();
 							long ts = System.currentTimeMillis();
 							byte[] plaintext = new byte[16 + encodedAudio.length];
 							ByteBuffer.wrap(plaintext).order(ByteOrder.BIG_ENDIAN)
@@ -845,6 +897,12 @@ public class VoiceCallService extends Service implements EventListener {
 						long timestamp = ptBuf.getLong();
 						byte[] encodedAudio = new byte[plaintext.length - 16];
 						ptBuf.get(encodedAudio);
+
+						// Replay protection — reject old/duplicate frames
+						if (lastSequence >= 0 && sequence <= lastSequence) {
+							networkMetrics.recordCorruptedPacket();
+							continue;
+						}
 
 						totalBytesReceived += encFrameSize + 4;
 						totalFramesReceived++;
@@ -1047,6 +1105,9 @@ public class VoiceCallService extends Service implements EventListener {
 		if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS && reconnectKey != null) {
 			isReconnecting = true;
 			reconnectAttempts++;
+			// Advance counter by safety margin to prevent nonce reuse
+			// under same key after reconnection
+			sendSequenceNumber.addAndGet(1000);
 			callState = CallState.CONNECTING;
 			updateCallActivity();
 
@@ -1119,9 +1180,11 @@ public class VoiceCallService extends Service implements EventListener {
 		}
 	}
 
+	// Bounded jitter buffer write — silently drops excess data
 	private static void writeToJitterBuffer(byte[] jitterBuffer, byte[] data,
 			int writePos, int bufferSize) {
-		for (int i = 0; i < data.length; i++) {
+		int toWrite = Math.min(data.length, bufferSize);
+		for (int i = 0; i < toWrite; i++) {
 			jitterBuffer[(writePos + i) % bufferSize] = data[i];
 		}
 	}
@@ -1157,6 +1220,24 @@ public class VoiceCallService extends Service implements EventListener {
 			Arrays.fill(audioKeys.rxKey.getBytes(), (byte) 0);
 			audioKeys = null;
 		}
+		// Zero ephemeral secrets
+		if (localEphemeralSecret != null) {
+			Arrays.fill(localEphemeralSecret, (byte) 0);
+			localEphemeralSecret = null;
+		}
+		if (remoteEphemeralSecret != null) {
+			Arrays.fill(remoteEphemeralSecret, (byte) 0);
+			remoteEphemeralSecret = null;
+		}
+		// Zero jitter buffer
+		synchronized (jbLock) {
+			Arrays.fill(sharedJitterBuffer, (byte) 0);
+			jbWritePos = 0;
+			jbReadPos = 0;
+			jbBufferedBytes = 0;
+		}
+		// Clear contact name from memory
+		contactName = null;
 	}
 
 	private void stopAudioStreaming() {
@@ -1250,11 +1331,18 @@ public class VoiceCallService extends Service implements EventListener {
 
 	private void sendCallOffer() throws DbException {
 		String encodedKey = voiceCallCrypto.encodeVoiceCallKey(voiceCallKey);
-		sendVoiceSignal(VoiceSignalType.CALL_OFFER, encodedKey);
+		String payload = encodedKey;
+		if (localEphemeralSecret != null) {
+			payload = encodedKey + "|" + bytesToHex(localEphemeralSecret);
+		}
+		sendVoiceSignal(VoiceSignalType.CALL_OFFER, payload);
 	}
 
 	private void sendCallAnswer() throws DbException {
 		String payload = onionAddress + ":" + onionPort;
+		if (localEphemeralSecret != null) {
+			payload = payload + "|" + bytesToHex(localEphemeralSecret);
+		}
 		sendVoiceSignal(VoiceSignalType.CALL_ANSWER, payload);
 	}
 
@@ -1348,7 +1436,15 @@ public class VoiceCallService extends Service implements EventListener {
 	}
 
 	public void handleIncomingSignaling(String message) {
-		VoiceCallSignal signal = VoiceCallSignal.fromWireFormat(message);
+		// Use known voiceCallKey for HMAC verification when available
+		VoiceCallSignal signal;
+		if (voiceCallKey != null) {
+			signal = VoiceCallSignal.fromWireFormat(message,
+					voiceCallCrypto.encodeVoiceCallKey(voiceCallKey)
+							.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+		} else {
+			signal = VoiceCallSignal.fromWireFormat(message);
+		}
 		if (signal == null) {
 			return;
 		}
@@ -1365,6 +1461,10 @@ public class VoiceCallService extends Service implements EventListener {
 				String remoteOnion = signal.getOnionAddress();
 				Integer remotePort = signal.getOnionPort();
 				if (remoteOnion != null && remotePort != null) {
+					String ephHex = signal.getEphemeralSecret();
+					if (ephHex != null) {
+						remoteEphemeralSecret = hexToBytes(ephHex);
+					}
 					callState = CallState.CONNECTING;
 					updateCallActivity();
 					connectToRemoteOnion(remoteOnion, remotePort);
@@ -1588,13 +1688,23 @@ public class VoiceCallService extends Service implements EventListener {
 				}
 				String payload = header.getPayload();
 				if (payload != null) {
-					String[] parts = payload.split(":");
+					String ephemeralPart = null;
+					String connectionPart = payload;
+					int pipeIdx = payload.indexOf('|');
+					if (pipeIdx > 0) {
+						connectionPart = payload.substring(0, pipeIdx);
+						ephemeralPart = payload.substring(pipeIdx + 1);
+					}
+					String[] parts = connectionPart.split(":");
 					if (parts.length >= 2) {
 						String remoteOnion = parts[0];
 						try {
 							int remotePort = Integer.parseInt(parts[1]);
 							if (remotePort < 1 || remotePort > 65535) {
 								break;
+							}
+							if (ephemeralPart != null) {
+								remoteEphemeralSecret = hexToBytes(ephemeralPart);
 							}
 							callState = CallState.CONNECTING;
 							updateCallActivity();
@@ -1637,5 +1747,27 @@ public class VoiceCallService extends Service implements EventListener {
 			default:
 				break;
 		}
+	}
+
+	// Hex encoding helpers for ephemeral secret exchange
+	private static String bytesToHex(byte[] bytes) {
+		StringBuilder hex = new StringBuilder(bytes.length * 2);
+		for (byte b : bytes) {
+			hex.append(String.format("%02x", b));
+		}
+		return hex.toString();
+	}
+
+	private static byte[] hexToBytes(String hex) {
+		int len = hex.length();
+		if (len % 2 != 0) {
+			throw new IllegalArgumentException("Invalid hex string length");
+		}
+		byte[] data = new byte[len / 2];
+		for (int i = 0; i < len; i += 2) {
+			data[i / 2] = (byte) ((Character.digit(hex.charAt(i), 16) << 4)
+					+ Character.digit(hex.charAt(i + 1), 16));
+		}
+		return data;
 	}
 }

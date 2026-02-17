@@ -153,25 +153,27 @@ public class SetPasswordFragment extends SetupFragment {
 	public void onTextChanged(CharSequence authorName, int i, int i1, int i2) {
 		char[] password1Chars = getPasswordChars(passwordEntry);
 		char[] password2Chars = getPasswordChars(passwordConfirmation);
+		char[] sanitized1 = null;
+		char[] sanitized2 = null;
 
 		try {
-			String password1 = new String(password1Chars);
-			String password2 = new String(password2Chars);
+			sanitized1 = sanitizePasswordChars(password1Chars);
+			sanitized2 = sanitizePasswordChars(password2Chars);
 
-			String sanitized1 = sanitizePassword(password1);
-			String sanitized2 = sanitizePassword(password2);
-
-			boolean passwordsMatch = sanitized1.equals(sanitized2);
+			boolean passwordsMatch = Arrays.equals(sanitized1, sanitized2);
 
 			if (!Settings.canDrawOverlays(requireContext())) {
-				strengthMeter.setVisibility(!sanitized1.isEmpty() ? VISIBLE : INVISIBLE);
+				strengthMeter.setVisibility(sanitized1.length > 0 ? VISIBLE : INVISIBLE);
 			}
 
-			float strength = viewModel.estimatePasswordStrength(sanitized1);
+			// estimatePasswordStrength accepts String — use sanitized copy
+			String strengthInput = new String(sanitized1);
+			float strength = viewModel.estimatePasswordStrength(strengthInput);
+			strengthInput = null; // drop reference immediately
 			strengthMeter.setStrength(strength);
 			boolean strongEnough = strength >= QUITE_WEAK;
 
-			if (!sanitized1.isEmpty()) {
+			if (sanitized1.length > 0) {
 				if (strength >= STRONG) {
 					passwordEntryWrapper.setHelperText(
 							getString(R.string.password_strong));
@@ -183,10 +185,10 @@ public class SetPasswordFragment extends SetupFragment {
 				}
 			}
 			setError(passwordEntryWrapper, getString(R.string.password_too_weak),
-					!sanitized1.isEmpty() && !strongEnough);
+					sanitized1.length > 0 && !strongEnough);
 			setError(passwordConfirmationWrapper,
 					getString(R.string.passwords_do_not_match),
-					!sanitized2.isEmpty() && !passwordsMatch);
+					sanitized2.length > 0 && !passwordsMatch);
 
 			boolean enabled = passwordsMatch && strongEnough;
 			nextButton.setEnabled(enabled);
@@ -194,6 +196,8 @@ public class SetPasswordFragment extends SetupFragment {
 		} finally {
 			Arrays.fill(password1Chars, '\0');
 			Arrays.fill(password2Chars, '\0');
+			if (sanitized1 != null) Arrays.fill(sanitized1, '\0');
+			if (sanitized2 != null) Arrays.fill(sanitized2, '\0');
 		}
 	}
 
@@ -213,13 +217,14 @@ public class SetPasswordFragment extends SetupFragment {
 
 	private void setPassword() {
 		char[] passwordChars = getPasswordChars(passwordEntry);
+		char[] sanitizedChars = null;
 
 		try {
-			String password = new String(passwordChars);
-			String sanitized = sanitizePassword(password);
-			viewModel.setPassword(sanitized);
+			sanitizedChars = sanitizePasswordChars(passwordChars);
+			viewModel.setPassword(sanitizedChars);
 		} finally {
 			Arrays.fill(passwordChars, '\0');
+			// Don't zero sanitizedChars here — ViewModel now owns it
 		}
 	}
 
@@ -232,12 +237,15 @@ public class SetPasswordFragment extends SetupFragment {
 		return chars;
 	}
 
-	private String sanitizePassword(String password) {
-		if (password.isEmpty()) return "";
+	private char[] sanitizePasswordChars(char[] password) {
+		if (password.length == 0) return new char[0];
 
-		String normalized = Normalizer.normalize(password, Normalizer.Form.NFC);
+		// Normalizer requires CharSequence; wrap char[] and zero the temp String afterward
+		String tempForNorm = new String(password);
+		String normalized = Normalizer.normalize(tempForNorm, Normalizer.Form.NFC);
 
-		StringBuilder sb = new StringBuilder();
+		char[] result = new char[normalized.length()];
+		int pos = 0;
 		for (int i = 0; i < normalized.length(); i++) {
 			char c = normalized.charAt(i);
 			int type = Character.getType(c);
@@ -264,10 +272,12 @@ public class SetPasswordFragment extends SetupFragment {
 				c == '\uFEFF') {
 				continue;
 			}
-			sb.append(c);
+			result[pos++] = c;
 		}
 
-		return sb.toString();
+		char[] trimmed = Arrays.copyOf(result, pos);
+		Arrays.fill(result, '\0');
+		return trimmed;
 	}
 
 	private void clearPasswordFields() {

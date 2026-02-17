@@ -6,5 +6,5 @@ interface PasswordBasedKdf {
 
 	int chooseCostParameter();
 
-	SecretKey deriveKey(String password, byte[] salt, int cost);
+	SecretKey deriveKey(char[] password, byte[] salt, int cost);
 }

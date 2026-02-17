@@ -551,7 +551,7 @@
 	<string name="security_level_classical">Klassieke Beveiliging</string>
 	<string name="security_level_classical_short">Klassiek</string>
 	<string name="security_level_post_quantum_description">Dit contact gebruikt hybride post-quantum cryptografie (X25519 + ML-KEM-768), wat bescherming biedt tegen toekomstige kwantumcomputeraanvallen.</string>
-	<string name="security_level_classical_description">Dit contact gebruikt klassieke cryptografie, compatibel met Briar. Upgrade beide apps naar Zerion voor post-quantum beveiliging.</string>
+	<string name="security_level_classical_description">Dit contact gebruikt klassieke cryptografie. Upgrade beide apps naar Zerion voor post-quantum beveiliging.</string>
 
 	<!-- Brute Force Protection strings -->
 	<string name="login_account_locked">Account vergrendeld vanwege te veel mislukte pogingen. Wacht alstublieft %1$d minuten en %2$d seconden.</string>
@@ -597,10 +597,10 @@
 	<string name="contact_type_zerion_title">Zerion</string>
 	<string name="contact_type_zerion_badge">Post-Quantum Beveiliging</string>
 	<string name="contact_type_zerion_description">Verbind met andere Zerion-gebruikers met hybride post-quantum cryptografie. Biedt bescherming tegen toekomstige kwantumcomputeraanvallen.</string>
-	<string name="contact_type_briar_title">Briar Compatibel</string>
+	<string name="contact_type_briar_title">Klassieke Modus</string>
 	<string name="contact_type_briar_badge">Klassieke Beveiliging</string>
-	<string name="contact_type_briar_description">Verbind met Briar-gebruikers met klassieke cryptografie. Gebruik deze optie wanneer u contacten toevoegt die Briar gebruiken in plaats van Zerion.</string>
+	<string name="contact_type_briar_description">Verbind met klassieke cryptografie. Gebruik deze optie voor achterwaartse compatibiliteit met contacten op oudere versies.</string>
 	<string name="recommended">Aanbevolen</string>
-	<string name="contact_type_info">Kies Zerion voor maximale beveiliging, of Briar Compatibel om te verbinden met Briar-gebruikers.</string>
+	<string name="contact_type_info">Kies Zerion voor maximale beveiliging, of Klassieke Modus voor achterwaartse compatibiliteit.</string>
 
 </resources>

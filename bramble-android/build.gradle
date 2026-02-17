@@ -56,6 +56,8 @@ dependencies {
 	implementation project(':bramble-api')
 	implementation project(':bramble-core')
 	implementation 'androidx.annotation:annotation:1.5.0'
+	implementation 'net.zetetic:sqlcipher-android:4.13.0'
+	implementation 'androidx.sqlite:sqlite:2.4.0'
 	implementation "org.briarproject:onionwrapper-android:$onionwrapper_version"
 	implementation "org.briarproject:tor-android:$tor_version"
 	implementation "org.briarproject:lyrebird-android:$lyrebird_version"

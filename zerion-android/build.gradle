@@ -1,14 +1,21 @@
 apply plugin: 'com.android.application'
-// TODO: Re-enable witness plugin after resolving JDK version compatibility
-// apply plugin: 'witness'
-// apply from: 'witness.gradle'
 
 // Load keystore properties for signing (skip for F-Droid builds)
+// Supports environment variables (ZERION_STORE_FILE, ZERION_STORE_PASSWORD,
+// ZERION_KEY_ALIAS, ZERION_KEY_PASSWORD) or keystore.properties file.
+// Environment variables take precedence over the properties file.
 def isFdroidBuild = project.hasProperty('fdroid')
 def keystorePropertiesFile = rootProject.file("keystore.properties")
 def keystoreProperties = new Properties()
-if (!isFdroidBuild && keystorePropertiesFile.exists()) {
-    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+if (!isFdroidBuild) {
+    if (System.getenv('ZERION_STORE_FILE')) {
+        keystoreProperties['storeFile'] = System.getenv('ZERION_STORE_FILE')
+        keystoreProperties['storePassword'] = System.getenv('ZERION_STORE_PASSWORD')
+        keystoreProperties['keyAlias'] = System.getenv('ZERION_KEY_ALIAS')
+        keystoreProperties['keyPassword'] = System.getenv('ZERION_KEY_PASSWORD')
+    } else if (keystorePropertiesFile.exists()) {
+        keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+    }
 }
 
 def getStdout = { command, defaultValue ->
@@ -173,6 +180,10 @@ if (isFdroidBuild) {
     }
 }
 
+repositories {
+    flatDir { dirs 'libs' }
+}
+
 dependencies {
     //
     implementation project(':bramble-api')
@@ -203,14 +214,14 @@ dependencies {
     implementation 'com.google.zxing:core:3.3.3'  // newer version need minSdk 24
     implementation 'uk.co.samuelwall:material-tap-target-prompt:3.3.2'
     implementation 'com.vanniktech:emoji-google:0.9.0' // newer versions are more work to adapt
-    implementation 'com.github.kobakei:MaterialFabSpeedDial:1.2.1'
-    implementation 'com.github.chrisbanes:PhotoView:2.3.0'
+    implementation(name: 'PhotoView-2.3.0', ext: 'aar')
     def glideVersion = '4.16.0'
     implementation("com.github.bumptech.glide:glide:$glideVersion") {
         exclude group: 'com.android.support'
         exclude module: 'disklrucache' // when there's no disk cache, we can't accidentally use it
     }
-    implementation 'org.nanohttpd:nanohttpd:2.3.1'
+    // Removed — unused and unmaintained
+    // implementation 'org.nanohttpd:nanohttpd:2.3.1'
 
     // ExoPlayer for video playback
     def exoplayerVersion = '2.19.1'

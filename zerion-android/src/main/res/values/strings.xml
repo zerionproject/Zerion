@@ -259,10 +259,10 @@
 	<string name="image_attach_error_invalid_mime_type">Image format unsupported: %s</string>
 	<string name="video_attach_error">Could not attach video</string>
 	<string name="video_attach_error_too_big">Video too big. Maximum size is %d MB.</string>
-	<string name="video_not_supported_by_contact">Video requires Zerion on both devices. This contact uses Briar or an older Zerion version.</string>
+	<string name="video_not_supported_by_contact">Video requires Zerion on both devices. This contact uses an older or incompatible version.</string>
 	<string name="audio_attach_error">Could not attach audio</string>
 	<string name="audio_attach_error_too_big">Audio file too big. Maximum size is %d MB.</string>
-	<string name="audio_not_supported_by_contact">Audio files require Zerion on both devices. This contact uses Briar or an older Zerion version.</string>
+	<string name="audio_not_supported_by_contact">Audio files require Zerion on both devices. This contact uses an older or incompatible version.</string>
 	<string name="media_attach_error_unknown_size">Could not determine file size</string>
 	<string name="attachment_uploading">Uploading attachment\u2026 %d%%</string>
 	<string name="take_photo">Take photo</string>
@@ -1018,7 +1018,7 @@
 	<string name="security_level_classical">Classical Security</string>
 	<string name="security_level_classical_short">Classic</string>
 	<string name="security_level_post_quantum_description">This contact uses hybrid post-quantum cryptography (X25519 + ML-KEM-768), providing protection against future quantum computer attacks.</string>
-	<string name="security_level_classical_description">This contact uses classical cryptography, compatible with Briar. Upgrade both apps to Zerion for post-quantum security.</string>
+	<string name="security_level_classical_description">This contact uses classical cryptography. Upgrade both apps to Zerion for post-quantum security.</string>
 
 	<!-- Voice Call strings -->
 	<string name="voice_call">Voice call</string>
@@ -1067,10 +1067,10 @@
 	<string name="contact_type_zerion_title">Zerion</string>
 	<string name="contact_type_zerion_badge">Post-Quantum Security</string>
 	<string name="contact_type_zerion_description">Connect with other Zerion users using hybrid post-quantum cryptography. Provides protection against future quantum computer attacks.</string>
-	<string name="contact_type_briar_title">Briar Compatible</string>
+	<string name="contact_type_briar_title">Classic Mode</string>
 	<string name="contact_type_briar_badge">Classical Security</string>
-	<string name="contact_type_briar_description">Connect with Briar users using classical cryptography. Use this option when adding contacts who use Briar instead of Zerion.</string>
+	<string name="contact_type_briar_description">Connect using classical cryptography. Use this option for backward compatibility with contacts on older versions.</string>
 	<string name="recommended">Recommended</string>
-	<string name="contact_type_info">Choose Zerion for maximum security, or Briar Compatible to connect with Briar users.</string>
+	<string name="contact_type_info">Choose Zerion for maximum security, or Classic Mode for backward compatibility.</string>
 
 </resources>

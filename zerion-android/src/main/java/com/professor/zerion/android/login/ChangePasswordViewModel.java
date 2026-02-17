@@ -37,8 +37,8 @@ public class ChangePasswordViewModel extends ViewModel {
 		return strengthEstimator.estimateStrength(password);
 	}
 
-	LiveEvent<DecryptionResult> changePassword(String oldPassword,
-			String newPassword) {
+	LiveEvent<DecryptionResult> changePassword(char[] oldPassword,
+			char[] newPassword) {
 		MutableLiveEvent<DecryptionResult> result = new MutableLiveEvent<>();
 		ioExecutor.execute(() -> {
 			try {
@@ -46,6 +46,9 @@ public class ChangePasswordViewModel extends ViewModel {
 				result.postEvent(SUCCESS);
 			} catch (DecryptionException e) {
 				result.postEvent(e.getDecryptionResult());
+			} finally {
+				java.util.Arrays.fill(oldPassword, '\0');
+				java.util.Arrays.fill(newPassword, '\0');
 			}
 		});
 		return result;

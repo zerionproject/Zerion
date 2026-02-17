@@ -912,21 +912,36 @@ public class VaultManager {
 		byte[] exportKey = argon2.deriveKey(exportPassword, exportSalt, params);
 
 		int itemCount = dis.readInt();
+		if (itemCount < 0 || itemCount > 10000) {
+			throw new IOException("Invalid item count: " + itemCount);
+		}
 		int imported = 0;
+
+		final int MAX_METADATA_SIZE = 64 * 1024;
+		final int MAX_CONTENT_SIZE = 100 * 1024 * 1024;
 
 		for (int i = 0; i < itemCount; i++) {
 			int metadataLen = dis.readInt();
+			if (metadataLen < 0 || metadataLen > MAX_METADATA_SIZE) {
+				throw new IOException("Invalid metadata size: " + metadataLen);
+			}
 			byte[] metadata = new byte[metadataLen];
 			dis.readFully(metadata);
 			VaultItem item = VaultItem.deserializeMetadata(metadata);
 
 			if (!replaceExisting && fileIO.exists(ITEMS_DIR + "/" + item.id)) {
 				int contentLen = dis.readInt();
+				if (contentLen < 0 || contentLen > MAX_CONTENT_SIZE) {
+					throw new IOException("Invalid content size: " + contentLen);
+				}
 				dis.skip(contentLen);
 				continue;
 			}
 
 			int encryptedLen = dis.readInt();
+			if (encryptedLen < 0 || encryptedLen > MAX_CONTENT_SIZE) {
+				throw new IOException("Invalid encrypted content size: " + encryptedLen);
+			}
 			byte[] encryptedBytes = new byte[encryptedLen];
 			dis.readFully(encryptedBytes);
 
