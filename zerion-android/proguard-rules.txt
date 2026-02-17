@@ -184,6 +184,15 @@
 -keep class org.briarproject.bramble.api.crypto.** { *; }
 
 # ============================================================================
+# JDBC INTERFACES (used by bramble-android SQLCipher adapter)
+# ============================================================================
+# SqlCipherConnection/Statement/PreparedStatement/ResultSet implement
+# java.sql interfaces. Keep them to prevent R8 from stripping or renaming.
+-keep class java.sql.** { *; }
+-keep class javax.sql.** { *; }
+-keepnames class * implements java.sql.Driver
+
+# ============================================================================
 # BRAMBLE CORE CLASSES
 # ============================================================================
 # Keep all Bramble framework interfaces and implementations
