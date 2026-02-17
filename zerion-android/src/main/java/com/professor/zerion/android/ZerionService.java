@@ -168,16 +168,24 @@ public class ZerionService extends Service {
 
 	private void showStartupFailure(StartResult result) {
 		androidExecutor.runOnUiThread(() -> {
-			Intent i = new Intent(ZerionService.this, ENTRY_ACTIVITY);
-			i.setFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TOP);
+			if (result == StartResult.MIGRATION_FAILED) {
+				// Route to dedicated migration recovery UI
+				Intent i = new Intent(ZerionService.this,
+						MigrationRecoveryActivity.class);
+				i.setFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TOP);
+				startActivity(i);
+			} else {
+				Intent i = new Intent(ZerionService.this, ENTRY_ACTIVITY);
+				i.setFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TOP);
 
-			if (SDK_INT >= 21) {
-				i.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
+				if (SDK_INT >= 21) {
+					i.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
+				}
+
+				i.putExtra(EXTRA_STARTUP_FAILED, true);
+				i.putExtra(EXTRA_START_RESULT, result.name());
+				startActivity(i);
 			}
-
-			i.putExtra(EXTRA_STARTUP_FAILED, true);
-			i.putExtra(EXTRA_START_RESULT, result.name());
-			startActivity(i);
 		});
 	}
 

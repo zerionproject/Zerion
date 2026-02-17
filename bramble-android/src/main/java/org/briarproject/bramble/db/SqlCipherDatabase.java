@@ -8,6 +8,7 @@ import org.briarproject.bramble.api.crypto.SecretKey;
 import org.briarproject.bramble.api.db.DatabaseConfig;
 import org.briarproject.bramble.api.db.DbClosedException;
 import org.briarproject.bramble.api.db.DbException;
+import org.briarproject.bramble.api.db.MigrationFailedException;
 import org.briarproject.bramble.api.db.MigrationListener;
 import org.briarproject.bramble.api.sync.MessageFactory;
 import org.briarproject.bramble.api.system.Clock;
@@ -41,8 +42,6 @@ class SqlCipherDatabase extends JdbcDatabase {
 	private static final Object DB_OPEN_LOCK = new Object();
 
 	private static final String SQLCIPHER_FILE = "db.sqlite";
-	private static final String SQLCIPHER_STAGING_FILE = "db.sqlite.new";
-	private static final String MIGRATION_MARKER = "migrated-to-sqlcipher";
 
 	private static final int BUSY_TIMEOUT_MS = 5000;
 	private static final int OPEN_RETRY_MAX = 5;
@@ -82,13 +81,24 @@ class SqlCipherDatabase extends JdbcDatabase {
 
 		File dir = config.getDatabaseDirectory();
 		boolean reopen = isNonEmptyDirectory(dir);
-		// Track whether the directory originally existed with content.
-		// If it did but no valid SQLCipher database remains after cleanup,
-		// the account key files reference a database that no longer exists.
-		boolean originallyExpectedReopen = reopen;
 
 		if (reopen) {
-			reopen = cleanupLegacyFiles(dir);
+			// Clean up partial migration staging file from a previous crash
+			H2ToSqlCipherMigration.cleanupStagingFile(dir);
+
+			if (H2ToSqlCipherMigration.hasMarker(dir)) {
+				// Previous migration succeeded — clean up leftover H2 files
+				H2ToSqlCipherMigration.deleteH2Files(dir);
+			} else if (H2ToSqlCipherMigration.hasH2Files(dir)) {
+				// H2 files present, no marker → run migration
+				if (listener != null) listener.onDatabaseMigration();
+				H2ToSqlCipherMigration migration =
+						new H2ToSqlCipherMigration(config);
+				// Throws MigrationFailedException on failure, preserving
+				// H2 files so the user can retry via the recovery UI
+				migration.migrate(key);
+			}
+			reopen = isNonEmptyDirectory(dir);
 		}
 
 		if (reopen) {
@@ -96,19 +106,27 @@ class SqlCipherDatabase extends JdbcDatabase {
 			if (!dbFile.exists()) {
 				reopen = false;
 			} else if (!hasValidSchema(dbFile, key)) {
-				dbFile.delete();
-				reopen = false;
+				// Invalid/empty SQLCipher DB — try restore from backup
+				File bak = H2ToSqlCipherMigration.findBackup(dir);
+				if (bak != null) {
+					dbFile.delete();
+					bak.renameTo(dbFile);
+					if (!hasValidSchema(dbFile, key)) {
+						dbFile.delete();
+						reopen = false;
+					}
+				} else {
+					dbFile.delete();
+					reopen = false;
+				}
 			}
 		}
 
-		// If the database directory existed but no valid database remains
-		// (legacy H2 files cleaned up, SQLCipher file missing/corrupt,
-		// or empty database with no identity from a previous failed run),
-		// delete the account key files so the app returns to the "create
-		// account" screen on next launch, then abort this startup.
-		if (originallyExpectedReopen && !reopen) {
-			deleteAccountKeyFiles();
-			throw new DbException();
+		// If we expected a database but have none, and H2 files still
+		// exist, throw MigrationFailedException so the user sees the
+		// recovery UI. Never auto-delete db.key.
+		if (!reopen && H2ToSqlCipherMigration.hasH2Files(dir)) {
+			throw new MigrationFailedException();
 		}
 
 		if (!reopen) dir.mkdirs();
@@ -116,8 +134,6 @@ class SqlCipherDatabase extends JdbcDatabase {
 
 		// If compaction was deferred, run VACUUM now while we still hold
 		// DB_OPEN_LOCK and no other thread has accessed the database.
-		// At this point the connection pool is empty (compactAndClose
-		// closed all connections and the parent reset closed = false).
 		if (needsCompaction) {
 			needsCompaction = false;
 			Connection vc = null;
@@ -133,51 +149,6 @@ class SqlCipherDatabase extends JdbcDatabase {
 		}
 
 		return reopen;
-	}
-
-	/**
-	 * Removes legacy H2 database files and migration staging files from the
-	 * given directory. Returns true if the directory still contains files
-	 * after cleanup (i.e. a SQLCipher database may exist).
-	 * <p>
-	 * Package-private for testing.
-	 */
-	static boolean cleanupLegacyFiles(File dir) {
-		// Clean up any leftover migration staging files
-		File staging = new File(dir, SQLCIPHER_STAGING_FILE);
-		if (staging.exists()) staging.delete();
-		// Remove any legacy H2 database files (H2 cannot run on Android,
-		// so migration is not possible — start fresh instead)
-		File[] files = dir.listFiles();
-		if (files != null) {
-			for (File f : files) {
-				String name = f.getName();
-				if (name.endsWith(".h2.db") || name.endsWith(".mv.db")
-						|| name.endsWith(".trace.db")
-						|| name.endsWith(".lock.db")
-						|| name.equals(MIGRATION_MARKER)) {
-					f.delete();
-				}
-			}
-		}
-		return isNonEmptyDirectory(dir);
-	}
-
-	/**
-	 * Deletes account key files (db.key, db.key.bak, login.lockout) from
-	 * the key directory so that AccountManager.accountExists() returns false
-	 * on the next app launch. Called when the database cannot be reopened
-	 * (e.g. after H2-to-SQLCipher upgrade where migration is not possible).
-	 * <p>
-	 * Package-private for testing.
-	 */
-	void deleteAccountKeyFiles() {
-		File keyDir = config.getDatabaseKeyDirectory();
-		if (keyDir.exists()) {
-			new File(keyDir, "db.key").delete();
-			new File(keyDir, "db.key.bak").delete();
-			new File(keyDir, "login.lockout").delete();
-		}
 	}
 
 	/**

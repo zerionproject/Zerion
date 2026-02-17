@@ -1,3 +1,10 @@
+# Keep H2 classes for one-time migration from H2 to SQLCipher
+-keep class org.h2.Driver { *; }
+-keep class org.h2.engine.Engine { *; }
+-keep class org.h2.store.fs.** { *; }
+-dontwarn org.h2.**
+-dontnote org.h2.**
+
 # SQLCipher
 -keep class net.zetetic.database.sqlcipher.** { *; }
 -dontwarn net.zetetic.database.sqlcipher.**
