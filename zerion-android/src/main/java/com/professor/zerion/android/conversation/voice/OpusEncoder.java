@@ -43,6 +43,9 @@ public class OpusEncoder {
 			format.setInteger(MediaFormat.KEY_BIT_RATE, bitrate);
 			format.setInteger("opus-frame-size", (sampleRate / 1000) * 20);
 			format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 4096);
+			// Enable DTX (discontinuous transmission) for VAD
+			// Reduces bandwidth during silence, improving battery life
+			format.setInteger("opus-dtx", 1);
 
 			encoder = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_AUDIO_OPUS);
 			encoder.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
@@ -128,6 +131,12 @@ public class OpusEncoder {
 					presentationTimeUs += 20000;
 				}
 			}
+			// Zero PCM input buffer after encoding
+			pcmData.rewind();
+			while (pcmData.hasRemaining()) {
+				pcmData.put((byte) 0);
+			}
+
 			MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
 			byte[] lastEncoded = null;
 			while (true) {

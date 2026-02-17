@@ -14,14 +14,21 @@ import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.LINK_R
 
 class IntentRouter {
 
+	// Maximum URI/deep link length to prevent abuse
+	private static final int MAX_URI_LENGTH = 2048;
+
 	static void handleExternalIntent(Context ctx, Intent i) {
 		String action = i.getAction();
+		if (i.getData() != null && i.getData().toString().length() > MAX_URI_LENGTH) {
+			return;
+		}
 		if (ACTION_VIEW.equals(action) && "zerion".equals(i.getScheme())) {
 			redirectSanitized(ctx, i, AddContactActivity.class);
 		}
 		else if (ACTION_SEND.equals(action) &&
 				"text/plain".equals(i.getType()) &&
 				i.getStringExtra(EXTRA_TEXT) != null &&
+				i.getStringExtra(EXTRA_TEXT).length() <= MAX_URI_LENGTH &&
 				LINK_REGEX.matcher(i.getStringExtra(EXTRA_TEXT)).find()) {
 			redirectSanitized(ctx, i, AddContactActivity.class);
 		}

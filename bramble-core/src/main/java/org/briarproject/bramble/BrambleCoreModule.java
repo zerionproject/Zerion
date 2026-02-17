@@ -9,7 +9,6 @@ import org.briarproject.bramble.crypto.CryptoModule;
 import org.briarproject.bramble.crypto.pcs.PcsModule;
 import org.briarproject.bramble.data.DataModule;
 import org.briarproject.bramble.db.DatabaseExecutorModule;
-import org.briarproject.bramble.db.DatabaseModule;
 import org.briarproject.bramble.event.EventModule;
 import org.briarproject.bramble.identity.IdentityModule;
 import org.briarproject.bramble.io.IoModule;
@@ -38,7 +37,6 @@ import dagger.Module;
 		CryptoExecutorModule.class,
 		PcsModule.class,
 		DataModule.class,
-		DatabaseModule.class,
 		DatabaseExecutorModule.class,
 		EventModule.class,
 		IdentityModule.class,

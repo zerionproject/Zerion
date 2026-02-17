@@ -20,6 +20,7 @@ public class StreamingAudioEncryptor {
 	private static final int CHUNK_SIZE = 4096;
 
 	private final SecretKey encryptionKey;
+	private final byte[] rawKeyBytes; // retain raw bytes for zeroing
 	private final byte[] iv;
 	private int chunkSequenceNumber = 0;
 	private byte[] aadContext;
@@ -28,6 +29,7 @@ public class StreamingAudioEncryptor {
 		KeyGenerator keyGen = KeyGenerator.getInstance("AES");
 		keyGen.init(AES_KEY_SIZE, new SecureRandom());
 		this.encryptionKey = keyGen.generateKey();
+		this.rawKeyBytes = encryptionKey.getEncoded();
 		this.iv = new byte[GCM_IV_LENGTH];
 		new SecureRandom().nextBytes(iv);
 		this.aadContext = new byte[0];
@@ -75,10 +77,10 @@ public class StreamingAudioEncryptor {
 		System.arraycopy(iv, 0, ivWithCounter, 0, GCM_IV_LENGTH);
 
 		int counter = chunkSequenceNumber++;
-		ivWithCounter[GCM_IV_LENGTH - 4] = (byte) (counter >>> 24);
-		ivWithCounter[GCM_IV_LENGTH - 3] = (byte) (counter >>> 16);
-		ivWithCounter[GCM_IV_LENGTH - 2] = (byte) (counter >>> 8);
-		ivWithCounter[GCM_IV_LENGTH - 1] = (byte) counter;
+		ivWithCounter[GCM_IV_LENGTH - 4] ^= (byte) (counter >>> 24);
+		ivWithCounter[GCM_IV_LENGTH - 3] ^= (byte) (counter >>> 16);
+		ivWithCounter[GCM_IV_LENGTH - 2] ^= (byte) (counter >>> 8);
+		ivWithCounter[GCM_IV_LENGTH - 1] ^= (byte) counter;
 
 		Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
 		cipher.init(Cipher.ENCRYPT_MODE, encryptionKey,
@@ -105,10 +107,10 @@ public class StreamingAudioEncryptor {
 		System.arraycopy(iv, 0, ivWithCounter, 0, GCM_IV_LENGTH);
 
 		int counter = chunkSequenceNumber;
-		ivWithCounter[GCM_IV_LENGTH - 4] = (byte) (counter >>> 24);
-		ivWithCounter[GCM_IV_LENGTH - 3] = (byte) (counter >>> 16);
-		ivWithCounter[GCM_IV_LENGTH - 2] = (byte) (counter >>> 8);
-		ivWithCounter[GCM_IV_LENGTH - 1] = (byte) counter;
+		ivWithCounter[GCM_IV_LENGTH - 4] ^= (byte) (counter >>> 24);
+		ivWithCounter[GCM_IV_LENGTH - 3] ^= (byte) (counter >>> 16);
+		ivWithCounter[GCM_IV_LENGTH - 2] ^= (byte) (counter >>> 8);
+		ivWithCounter[GCM_IV_LENGTH - 1] ^= (byte) counter;
 
 		Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
 		cipher.init(Cipher.ENCRYPT_MODE, encryptionKey,
@@ -135,10 +137,9 @@ public class StreamingAudioEncryptor {
 	}
 
 	public void zeroizeKeys() {
-		try {
-			byte[] keyBytes = encryptionKey.getEncoded();
-			Arrays.fill(keyBytes, (byte) 0);
-		} catch (Exception ignored) {
+		// Zero the actual raw key bytes
+		if (rawKeyBytes != null) {
+			Arrays.fill(rawKeyBytes, (byte) 0);
 		}
 		if (iv != null) {
 			Arrays.fill(iv, (byte) 0);

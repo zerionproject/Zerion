@@ -111,10 +111,10 @@ abstract class JdbcDatabase implements Database<Connection> {
 					+ " name _STRING NOT NULL,"
 					+ " publicKey _BINARY NOT NULL,"
 					+ " privateKey _BINARY NOT NULL,"
-					+ " handshakePublicKey _BINARY," // Null if not generated
-					+ " handshakePrivateKey _BINARY," // Null if not generated
-					+ " hybridHandshakePublicKey _BINARY," // PQ keys, null if legacy
-					+ " hybridHandshakePrivateKey _BINARY," // PQ keys, null if legacy
+					+ " handshakePublicKey _BINARY,"
+					+ " handshakePrivateKey _BINARY,"
+					+ " hybridHandshakePublicKey _BINARY,"
+					+ " hybridHandshakePrivateKey _BINARY,"
 					+ " created BIGINT NOT NULL,"
 					+ " PRIMARY KEY (authorId))";
 
@@ -124,9 +124,9 @@ abstract class JdbcDatabase implements Database<Connection> {
 					+ " authorId _HASH NOT NULL,"
 					+ " formatVersion INT NOT NULL,"
 					+ " name _STRING NOT NULL,"
-					+ " alias _STRING," // Null if no alias has been set
+					+ " alias _STRING,"
 					+ " publicKey _BINARY NOT NULL,"
-					+ " handshakePublicKey _BINARY," // Null if key is unknown
+					+ " handshakePublicKey _BINARY,"
 					+ " localAuthorId _HASH NOT NULL,"
 					+ " verified BOOLEAN NOT NULL,"
 					+ " postQuantum BOOLEAN DEFAULT FALSE NOT NULL,"
@@ -667,7 +667,6 @@ abstract class JdbcDatabase implements Database<Connection> {
 		try {
 			if (txn == null) {
 				txn = createConnection();
-				txn.setAutoCommit(false);
 				connectionsLock.lock();
 				try {
 					if (closed) {
@@ -681,6 +680,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 					connectionsLock.unlock();
 				}
 			}
+			txn.setAutoCommit(false);
 		} catch (SQLException e) {
 			throw new DbException(e);
 		}
@@ -3959,9 +3959,16 @@ abstract class JdbcDatabase implements Database<Connection> {
 			throws DbException {
 		PreparedStatement ps = null;
 		try {
-			String sql = "MERGE INTO pcsSessionState"
-					+ " (contactId, direction, chainKey, messageNumber, previousChainLength)"
-					+ " KEY (contactId, direction)"
+			String sql = "DELETE FROM pcsSessionState"
+					+ " WHERE contactId = ? AND direction = ?";
+			ps = txn.prepareStatement(sql);
+			ps.setInt(1, c.getInt());
+			ps.setInt(2, direction);
+			ps.executeUpdate();
+			ps.close();
+			sql = "INSERT INTO pcsSessionState"
+					+ " (contactId, direction, chainKey, messageNumber,"
+					+ " previousChainLength)"
 					+ " VALUES (?, ?, ?, ?, ?)";
 			ps = txn.prepareStatement(sql);
 			ps.setInt(1, c.getInt());
@@ -3970,7 +3977,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 			ps.setInt(4, messageNumber);
 			ps.setInt(5, previousChainLength);
 			int affected = ps.executeUpdate();
-			if (affected < 0 || affected > 1) throw new DbStateException();
+			if (affected != 1) throw new DbStateException();
 			ps.close();
 		} catch (SQLException e) {
 			tryToClose(ps);
@@ -4165,10 +4172,17 @@ abstract class JdbcDatabase implements Database<Connection> {
 			boolean mode2Enabled) throws DbException {
 		PreparedStatement ps = null;
 		try {
-			String sql = "MERGE INTO pcsSessionState"
-					+ " (contactId, direction, chainKey, messageNumber, previousChainLength,"
-					+ " mode2Enabled, rootKey, dhPrivateKey, dhPublicKey, dhRemotePublicKey)"
-					+ " KEY (contactId, direction)"
+			String sql = "DELETE FROM pcsSessionState"
+					+ " WHERE contactId = ? AND direction = ?";
+			ps = txn.prepareStatement(sql);
+			ps.setInt(1, c.getInt());
+			ps.setInt(2, direction);
+			ps.executeUpdate();
+			ps.close();
+			sql = "INSERT INTO pcsSessionState"
+					+ " (contactId, direction, chainKey, messageNumber,"
+					+ " previousChainLength, mode2Enabled, rootKey,"
+					+ " dhPrivateKey, dhPublicKey, dhRemotePublicKey)"
 					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 			ps = txn.prepareStatement(sql);
 			ps.setInt(1, c.getInt());
@@ -4182,7 +4196,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 			ps.setBytes(9, dhPublicKey != null ? dhPublicKey.getEncoded() : null);
 			ps.setBytes(10, dhRemotePublicKey != null ? dhRemotePublicKey.getEncoded() : null);
 			int affected = ps.executeUpdate();
-			if (affected < 0 || affected > 1) throw new DbStateException();
+			if (affected != 1) throw new DbStateException();
 			ps.close();
 		} catch (SQLException e) {
 			tryToClose(ps);
@@ -4303,13 +4317,19 @@ abstract class JdbcDatabase implements Database<Connection> {
 			throws DbException {
 		PreparedStatement ps = null;
 		try {
-			String sql = "MERGE INTO pqRatchetState"
-					+ " (contactId, currentEpoch, epochStartTime, messagesSinceEpoch,"
-					+ " state, isInitiator, chunksSent, chunksReceived,"
-					+ " ourEkSeed, ourEkVector, ourDecapsKey,"
-					+ " theirEkSeed, theirEkHash, theirEkVector,"
-					+ " ciphertext, pendingChunks)"
-					+ " KEY (contactId)"
+			String sql = "DELETE FROM pqRatchetState"
+					+ " WHERE contactId = ?";
+			ps = txn.prepareStatement(sql);
+			ps.setInt(1, c.getInt());
+			ps.executeUpdate();
+			ps.close();
+			sql = "INSERT INTO pqRatchetState"
+					+ " (contactId, currentEpoch, epochStartTime,"
+					+ " messagesSinceEpoch, state, isInitiator,"
+					+ " chunksSent, chunksReceived, ourEkSeed,"
+					+ " ourEkVector, ourDecapsKey, theirEkSeed,"
+					+ " theirEkHash, theirEkVector, ciphertext,"
+					+ " pendingChunks)"
 					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 			ps = txn.prepareStatement(sql);
 			ps.setInt(1, c.getInt());
@@ -4329,7 +4349,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 			ps.setBytes(15, ciphertext);
 			ps.setBytes(16, pendingChunks);
 			int affected = ps.executeUpdate();
-			if (affected < 0 || affected > 1) throw new DbStateException();
+			if (affected != 1) throw new DbStateException();
 			ps.close();
 		} catch (SQLException e) {
 			tryToClose(ps);

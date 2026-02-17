@@ -23,10 +23,9 @@ class Migration58_59 implements Migration<Connection> {
 		Statement s = null;
 		try {
 			s = txn.createStatement();
-
 			s.execute("ALTER TABLE contacts"
 					+ " ADD COLUMN mode3Capable BOOLEAN DEFAULT FALSE NOT NULL");
-
+			s.close();
 		} catch (SQLException e) {
 			tryToClose(s);
 			throw new DbException(e);

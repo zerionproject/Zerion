@@ -680,6 +680,8 @@ public class ConversationActivity extends ZerionActivity
 	private void handleCallOffer(com.professor.zerion.android.conversation.voice.VoiceCallSignal signal) {
 		String remoteCallId = signal.getCallId();
 		String voiceCallKey = signal.getVoiceCallKey();
+		// Extract remote ephemeral secret for forward secrecy
+		String remoteEphemeralHex = signal.getEphemeralSecret();
 
 		// Voice call key is already validated by VoiceCallSignal.fromWireFormat()
 
@@ -711,8 +713,24 @@ public class ConversationActivity extends ZerionActivity
 		intent.putExtra(com.professor.zerion.android.conversation.voice.VoiceCallActivity.EXTRA_CALL_ID,
 				remoteCallId);
 		if (voiceCallKey != null) {
-			intent.putExtra(com.professor.zerion.android.conversation.voice.VoiceCallActivity.EXTRA_VOICE_CALL_KEY,
-					voiceCallKey);
+			// Pass key via secure in-memory holder, not Intent extras
+			try {
+				org.briarproject.bramble.api.crypto.SecretKey key =
+						new org.briarproject.bramble.api.crypto.SecretKey(
+								org.briarproject.bramble.util.StringUtils.fromHexString(voiceCallKey));
+				com.professor.zerion.android.conversation.voice.VoiceCallKeyHolder.setKey(key);
+			} catch (Exception e) {
+				// Fallback to Intent extras if hex decode fails
+				intent.putExtra(com.professor.zerion.android.conversation.voice.VoiceCallActivity.EXTRA_VOICE_CALL_KEY,
+						voiceCallKey);
+			}
+		}
+		if (remoteEphemeralHex != null) {
+			try {
+				com.professor.zerion.android.conversation.voice.VoiceCallKeyHolder
+						.setRemoteEphemeral(fromHexString(remoteEphemeralHex));
+			} catch (Exception ignored) {
+			}
 		}
 		intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
 		startActivity(intent);

@@ -33,7 +33,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Integration tests for Mode 3 capability data flow through all layers.
  * <p>
- * Phase 4c requirement: Verify end-to-end propagation:
+ * Verify end-to-end propagation:
  * <pre>
  * HandshakeResult
  * → Outgoing/IncomingHandshakeConnection

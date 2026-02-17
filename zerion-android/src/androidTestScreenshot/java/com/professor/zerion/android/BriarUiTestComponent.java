@@ -2,6 +2,7 @@ package com.professor.zerion.android;
 
 import org.briarproject.bramble.BrambleAndroidModule;
 import org.briarproject.bramble.BrambleCoreModule;
+import org.briarproject.bramble.db.AndroidDatabaseModule;
 import org.briarproject.bramble.account.BriarAccountModule;
 import org.briarproject.bramble.plugin.file.RemovableDriveModule;
 import org.briarproject.bramble.system.ClockModule;
@@ -25,7 +26,8 @@ import dagger.Component;
 		BriarCoreModule.class,
 		BrambleAndroidModule.class,
 		BriarAccountModule.class,
-		BrambleCoreModule.class
+		BrambleCoreModule.class,
+		AndroidDatabaseModule.class
 })
 public interface BriarUiTestComponent extends AndroidComponent {
 

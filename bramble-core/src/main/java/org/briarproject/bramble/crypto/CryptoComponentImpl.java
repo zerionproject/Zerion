@@ -341,7 +341,7 @@ class CryptoComponentImpl implements CryptoComponent {
 	}
 
 	@Override
-	public byte[] encryptWithPassword(byte[] input, String password,
+	public byte[] encryptWithPassword(byte[] input, char[] password,
 			@Nullable KeyStrengthener keyStrengthener) {
 		AuthenticatedCipher cipher = new XSalsa20Poly1305AuthenticatedCipher();
 		int macBytes = cipher.getMacBytes();
@@ -376,7 +376,7 @@ class CryptoComponentImpl implements CryptoComponent {
 	}
 
 	@Override
-	public byte[] decryptWithPassword(byte[] input, String password,
+	public byte[] decryptWithPassword(byte[] input, char[] password,
 			@Nullable KeyStrengthener keyStrengthener)
 			throws DecryptionException {
 		AuthenticatedCipher cipher = new XSalsa20Poly1305AuthenticatedCipher();

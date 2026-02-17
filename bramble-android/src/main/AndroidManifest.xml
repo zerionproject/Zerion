@@ -12,7 +12,9 @@
 		android:label="@string/app_name"
 		android:supportsRtl="true">
 
-		<receiver android:name=".system.AlarmReceiver" />
+		<receiver
+			android:name=".system.AlarmReceiver"
+			android:exported="false" />
 
 	</application>
 

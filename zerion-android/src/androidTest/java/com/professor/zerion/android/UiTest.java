@@ -27,7 +27,7 @@ public abstract class UiTest {
 
 	protected final String USERNAME =
 			getApplicationContext().getString(R.string.screenshot_alice);
-	protected static final String PASSWORD = "123456";
+	protected static final char[] PASSWORD = "123456".toCharArray();
 
 	@Inject
 	protected AccountManager accountManager;

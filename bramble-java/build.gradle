@@ -3,9 +3,6 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 apply plugin: 'idea'
-// Witness plugin disabled - using updated Bouncy Castle 1.82 for post-quantum crypto
-// apply plugin: 'witness'
-// apply from: 'witness.gradle'
 apply from: '../dagger.gradle'
 
 dependencies {

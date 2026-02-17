@@ -30,7 +30,7 @@ public class PasswordBasedEncryptionTest extends BrambleMockTestCase {
 	@Test
 	public void testEncryptionAndDecryption() throws Exception {
 		byte[] input = getRandomBytes(1234);
-		String password = "password";
+		char[] password = "password".toCharArray();
 		byte[] ciphertext = crypto.encryptWithPassword(input, password, null);
 		byte[] output = crypto.decryptWithPassword(ciphertext, password, null);
 		assertArrayEquals(input, output);
@@ -39,7 +39,7 @@ public class PasswordBasedEncryptionTest extends BrambleMockTestCase {
 	@Test
 	public void testInvalidFormatVersionThrowsException() {
 		byte[] input = getRandomBytes(1234);
-		String password = "password";
+		char[] password = "password".toCharArray();
 		byte[] ciphertext = crypto.encryptWithPassword(input, password, null);
 
 		// Modify the format version
@@ -55,11 +55,11 @@ public class PasswordBasedEncryptionTest extends BrambleMockTestCase {
 	@Test
 	public void testInvalidPasswordThrowsException() {
 		byte[] input = getRandomBytes(1234);
-		byte[] ciphertext = crypto.encryptWithPassword(input, "password", null);
+		byte[] ciphertext = crypto.encryptWithPassword(input, "password".toCharArray(), null);
 
 		// Try to decrypt with the wrong password
 		try {
-			crypto.decryptWithPassword(ciphertext, "wrong", null);
+			crypto.decryptWithPassword(ciphertext, "wrong".toCharArray(), null);
 			fail();
 		} catch (DecryptionException expected) {
 			assertEquals(INVALID_PASSWORD, expected.getDecryptionResult());
@@ -76,7 +76,7 @@ public class PasswordBasedEncryptionTest extends BrambleMockTestCase {
 
 		// Use the key strengthener during encryption
 		byte[] input = getRandomBytes(1234);
-		String password = "password";
+		char[] password = "password".toCharArray();
 		byte[] ciphertext =
 				crypto.encryptWithPassword(input, password, keyStrengthener);
 
@@ -101,7 +101,7 @@ public class PasswordBasedEncryptionTest extends BrambleMockTestCase {
 
 		// Use the key strengthener during encryption
 		byte[] input = getRandomBytes(1234);
-		String password = "password";
+		char[] password = "password".toCharArray();
 		byte[] ciphertext =
 				crypto.encryptWithPassword(input, password, keyStrengthener);
 

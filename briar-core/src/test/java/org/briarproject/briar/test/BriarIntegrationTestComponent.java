@@ -2,6 +2,7 @@ package org.briarproject.briar.test;
 
 import org.briarproject.bramble.BrambleCoreIntegrationTestEagerSingletons;
 import org.briarproject.bramble.BrambleCoreModule;
+import org.briarproject.bramble.db.DatabaseModule;
 import org.briarproject.bramble.api.contact.ContactManager;
 import org.briarproject.bramble.api.db.DatabaseComponent;
 import org.briarproject.bramble.api.identity.AuthorFactory;
@@ -45,6 +46,7 @@ import dagger.Component;
 @Component(modules = {
 		BrambleCoreIntegrationTestModule.class,
 		BrambleCoreModule.class,
+		DatabaseModule.class,
 		AttachmentModule.class,
 		AutoDeleteModule.class,
 		AvatarModule.class,

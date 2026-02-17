@@ -14,6 +14,8 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 @NotNullByDefault
 public class VoiceCallSignal {
+	// Protocol version for wire format negotiation
+	private static final int PROTOCOL_VERSION = 1;
 	private static final String SIGNAL_PREFIX = "\u0000ZSIG\u0001\u0000";
 
 	public static final String WIRE_PREFIX = SIGNAL_PREFIX;
@@ -65,10 +67,19 @@ public class VoiceCallSignal {
 	@Nullable private final String onionAddress;
 	@Nullable private final Integer onionPort;
 	@Nullable private final String reason;
+	@Nullable private final String ephemeralSecret;
 
 	private VoiceCallSignal(SignalType type, String callId, long timestamp,
 			@Nullable String voiceCallKey, @Nullable String onionAddress,
 			@Nullable Integer onionPort, @Nullable String reason) {
+		this(type, callId, timestamp, voiceCallKey, onionAddress, onionPort,
+				reason, null);
+	}
+
+	private VoiceCallSignal(SignalType type, String callId, long timestamp,
+			@Nullable String voiceCallKey, @Nullable String onionAddress,
+			@Nullable Integer onionPort, @Nullable String reason,
+			@Nullable String ephemeralSecret) {
 		this.type = type;
 		this.callId = callId;
 		this.timestamp = timestamp;
@@ -76,6 +87,7 @@ public class VoiceCallSignal {
 		this.onionAddress = onionAddress;
 		this.onionPort = onionPort;
 		this.reason = reason;
+		this.ephemeralSecret = ephemeralSecret;
 	}
 	public SignalType getType() { return type; }
 	public String getCallId() { return callId; }
@@ -84,6 +96,7 @@ public class VoiceCallSignal {
 	@Nullable public String getOnionAddress() { return onionAddress; }
 	@Nullable public Integer getOnionPort() { return onionPort; }
 	@Nullable public String getReason() { return reason; }
+	@Nullable public String getEphemeralSecret() { return ephemeralSecret; }
 
 	
 	public static VoiceCallSignal createOffer(String callId, String voiceCallKey) {
@@ -93,13 +106,38 @@ public class VoiceCallSignal {
 				System.currentTimeMillis(), voiceCallKey, null, null, null);
 	}
 
-	
+	/**
+	 * Create offer with ephemeral secret for forward secrecy.
+	 */
+	public static VoiceCallSignal createOffer(String callId, String voiceCallKey,
+			String ephemeralSecret) {
+		validateCallId(callId);
+		validateVoiceCallKey(voiceCallKey);
+		return new VoiceCallSignal(SignalType.CALL_OFFER, callId,
+				System.currentTimeMillis(), voiceCallKey, null, null, null,
+				ephemeralSecret);
+	}
+
+
 	public static VoiceCallSignal createAnswer(String callId, String onionAddress, int onionPort) {
 		validateCallId(callId);
 		validateOnionAddress(onionAddress);
 		validatePort(onionPort);
 		return new VoiceCallSignal(SignalType.CALL_ANSWER, callId,
 				System.currentTimeMillis(), null, onionAddress, onionPort, null);
+	}
+
+	/**
+	 * Create answer with ephemeral secret for forward secrecy.
+	 */
+	public static VoiceCallSignal createAnswer(String callId, String onionAddress,
+			int onionPort, String ephemeralSecret) {
+		validateCallId(callId);
+		validateOnionAddress(onionAddress);
+		validatePort(onionPort);
+		return new VoiceCallSignal(SignalType.CALL_ANSWER, callId,
+				System.currentTimeMillis(), null, onionAddress, onionPort, null,
+				ephemeralSecret);
 	}
 
 	
@@ -131,12 +169,8 @@ public class VoiceCallSignal {
 
 	
 	public String toWireFormat() {
-		byte[] hmacKey;
-		if (voiceCallKey != null) {
-			hmacKey = voiceCallKey.getBytes(StandardCharsets.UTF_8);
-		} else {
-			hmacKey = callId.getBytes(StandardCharsets.UTF_8);
-		}
+		// Always use callId for HMAC — never voiceCallKey from payload
+		byte[] hmacKey = callId.getBytes(StandardCharsets.UTF_8);
 		return toWireFormat(hmacKey);
 	}
 
@@ -144,6 +178,7 @@ public class VoiceCallSignal {
 	private String toCanonicalJson() {
 		StringBuilder json = new StringBuilder();
 		json.append("{");
+		json.append("\"v\":").append(PROTOCOL_VERSION).append(",");
 		json.append("\"c\":\"").append(escapeJson(callId)).append("\",");
 		json.append("\"t\":\"").append(type.getWireValue()).append("\",");
 		json.append("\"ts\":").append(timestamp);
@@ -158,6 +193,9 @@ public class VoiceCallSignal {
 		}
 		if (reason != null) {
 			json.append(",\"r\":\"").append(escapeJson(reason)).append("\"");
+		}
+		if (ephemeralSecret != null) {
+			json.append(",\"e\":\"").append(escapeJson(ephemeralSecret)).append("\"");
 		}
 
 		json.append("}");
@@ -204,6 +242,10 @@ public class VoiceCallSignal {
 	}
 
 	
+	/**
+	 * Parses a wire-format signal using callId-based HMAC verification only.
+	 * For ongoing calls where voiceCallKey is known, use fromWireFormat(msg, key).
+	 */
 	@Nullable
 	public static VoiceCallSignal fromWireFormat(String wireMessage) {
 		if (!isSignal(wireMessage)) {
@@ -219,17 +261,13 @@ public class VoiceCallSignal {
 
 			String jsonStr = payload.substring(0, lastColon);
 			String receivedHmac = payload.substring(lastColon + 1);
-			String voiceKey = extractJsonString(jsonStr, "k");
 			String callId = extractJsonString(jsonStr, "c");
 
-			byte[] hmacKey;
-			if (voiceKey != null) {
-				hmacKey = voiceKey.getBytes(StandardCharsets.UTF_8);
-			} else if (callId != null) {
-				hmacKey = callId.getBytes(StandardCharsets.UTF_8);
-			} else {
+			if (callId == null) {
 				return null;
 			}
+			// Use callId only — never the untrusted "k" field from the payload
+			byte[] hmacKey = callId.getBytes(StandardCharsets.UTF_8);
 			String expectedHmac = computeHmac(jsonStr, hmacKey);
 			if (!constantTimeEquals(expectedHmac, receivedHmac)) {
 				return null;
@@ -247,6 +285,11 @@ public class VoiceCallSignal {
 		try {
 			if (json.length() > MAX_PAYLOAD_LENGTH) {
 				return null;
+			}
+
+			Integer version = extractJsonInt(json, "v");
+			if (version != null && version > PROTOCOL_VERSION) {
+				return null; // Reject signals from unsupported future versions
 			}
 
 			String typeStr = extractJsonString(json, "t");
@@ -274,6 +317,7 @@ public class VoiceCallSignal {
 			String onionAddress = extractJsonString(json, "o");
 			Integer onionPort = extractJsonInt(json, "p");
 			String reason = extractJsonString(json, "r");
+			String ephemeral = extractJsonString(json, "e");
 			if (reason != null && reason.length() > MAX_REASON_LENGTH) {
 				reason = reason.substring(0, MAX_REASON_LENGTH);
 			}
@@ -299,7 +343,8 @@ public class VoiceCallSignal {
 			}
 
 			return new VoiceCallSignal(type, callId, timestamp,
-					voiceCallKey, onionAddress, onionPort, reason);
+					voiceCallKey, onionAddress, onionPort, reason,
+					ephemeral);
 
 		} catch (Exception e) {
 			return null;
