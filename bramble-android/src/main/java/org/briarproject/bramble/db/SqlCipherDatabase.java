@@ -88,24 +88,7 @@ class SqlCipherDatabase extends JdbcDatabase {
 		boolean originallyExpectedReopen = reopen;
 
 		if (reopen) {
-			// Clean up any leftover migration staging files
-			File staging = new File(dir, SQLCIPHER_STAGING_FILE);
-			if (staging.exists()) staging.delete();
-			// Remove any legacy H2 database files (H2 cannot run on Android,
-			// so migration is not possible — start fresh instead)
-			File[] files = dir.listFiles();
-			if (files != null) {
-				for (File f : files) {
-					String name = f.getName();
-					if (name.endsWith(".h2.db") || name.endsWith(".mv.db")
-							|| name.endsWith(".trace.db")
-							|| name.endsWith(".lock.db")
-							|| name.equals(MIGRATION_MARKER)) {
-						f.delete();
-					}
-				}
-			}
-			reopen = isNonEmptyDirectory(dir);
+			reopen = cleanupLegacyFiles(dir);
 		}
 
 		if (reopen) {
@@ -152,12 +135,42 @@ class SqlCipherDatabase extends JdbcDatabase {
 	}
 
 	/**
+	 * Removes legacy H2 database files and migration staging files from the
+	 * given directory. Returns true if the directory still contains files
+	 * after cleanup (i.e. a SQLCipher database may exist).
+	 * <p>
+	 * Package-private for testing.
+	 */
+	static boolean cleanupLegacyFiles(File dir) {
+		// Clean up any leftover migration staging files
+		File staging = new File(dir, SQLCIPHER_STAGING_FILE);
+		if (staging.exists()) staging.delete();
+		// Remove any legacy H2 database files (H2 cannot run on Android,
+		// so migration is not possible — start fresh instead)
+		File[] files = dir.listFiles();
+		if (files != null) {
+			for (File f : files) {
+				String name = f.getName();
+				if (name.endsWith(".h2.db") || name.endsWith(".mv.db")
+						|| name.endsWith(".trace.db")
+						|| name.endsWith(".lock.db")
+						|| name.equals(MIGRATION_MARKER)) {
+					f.delete();
+				}
+			}
+		}
+		return isNonEmptyDirectory(dir);
+	}
+
+	/**
 	 * Deletes account key files (db.key, db.key.bak, login.lockout) from
 	 * the key directory so that AccountManager.accountExists() returns false
 	 * on the next app launch. Called when the database cannot be reopened
 	 * (e.g. after H2-to-SQLCipher upgrade where migration is not possible).
+	 * <p>
+	 * Package-private for testing.
 	 */
-	private void deleteAccountKeyFiles() {
+	void deleteAccountKeyFiles() {
 		File keyDir = config.getDatabaseKeyDirectory();
 		if (keyDir.exists()) {
 			new File(keyDir, "db.key").delete();
