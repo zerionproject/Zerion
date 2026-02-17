@@ -167,6 +167,20 @@ public class MigrationRecoveryActivity extends BaseActivity {
 				}
 			}
 
+			// Include migration error if available
+			File errorFile = new File(dbDir, "migration-error.txt");
+			if (errorFile.exists()) {
+				writer.write("\nMigration error:\n");
+				java.io.BufferedReader errReader =
+						new java.io.BufferedReader(
+								new java.io.FileReader(errorFile));
+				String errLine;
+				while ((errLine = errReader.readLine()) != null) {
+					writer.write("  " + errLine + "\n");
+				}
+				errReader.close();
+			}
+
 			writer.write("\n");
 			writer.write("NOTE: This file contains no passwords, keys,\n");
 			writer.write("or personal data. It is safe to share.\n");
