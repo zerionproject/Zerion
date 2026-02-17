@@ -102,7 +102,8 @@ class SqlCipherDatabase extends JdbcDatabase {
 		}
 
 		// If the database directory existed but no valid database remains
-		// (legacy H2 files cleaned up, or SQLCipher file missing/corrupt),
+		// (legacy H2 files cleaned up, SQLCipher file missing/corrupt,
+		// or empty database with no identity from a previous failed run),
 		// delete the account key files so the app returns to the "create
 		// account" screen on next launch, then abort this startup.
 		if (originallyExpectedReopen && !reopen) {
@@ -179,7 +180,15 @@ class SqlCipherDatabase extends JdbcDatabase {
 		}
 	}
 
-	private boolean hasValidSchema(File dbFile, SecretKey key) {
+	/**
+	 * Checks whether the database file has a valid schema AND contains at
+	 * least one identity row. A database with correct schema but no identity
+	 * is unusable (e.g. created by a previous failed startup) and must be
+	 * treated as invalid to avoid an infinite error loop.
+	 * <p>
+	 * Package-private for testing.
+	 */
+	static boolean hasValidSchema(File dbFile, SecretKey key) {
 		String hexKey = StringUtils.toHexString(key.getBytes());
 		SQLiteDatabase db = null;
 		try {
@@ -190,14 +199,28 @@ class SqlCipherDatabase extends JdbcDatabase {
 			Cursor bc = db.rawQuery(
 					"PRAGMA busy_timeout = " + BUSY_TIMEOUT_MS, null);
 			bc.close();
-			Cursor cursor = db.rawQuery(
+			// Check that the schema exists (settings table present)
+			Cursor schema = db.rawQuery(
 					"SELECT count(*) FROM sqlite_master"
 							+ " WHERE type='table' AND name='settings'",
 					null);
 			try {
-				return cursor.moveToFirst() && cursor.getInt(0) > 0;
+				if (!schema.moveToFirst() || schema.getInt(0) == 0) {
+					return false;
+				}
 			} finally {
-				cursor.close();
+				schema.close();
+			}
+			// Check that the database has at least one identity row.
+			// A database with valid schema but no identity was created by
+			// a previous failed startup and cannot be reopened safely —
+			// IdentityManager will throw DbException on 0 identities.
+			Cursor identity = db.rawQuery(
+					"SELECT count(*) FROM localAuthors", null);
+			try {
+				return identity.moveToFirst() && identity.getInt(0) > 0;
+			} finally {
+				identity.close();
 			}
 		} catch (Exception e) {
 			return false;

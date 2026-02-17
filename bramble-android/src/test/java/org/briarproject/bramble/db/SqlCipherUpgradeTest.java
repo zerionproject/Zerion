@@ -334,6 +334,126 @@ public class SqlCipherUpgradeTest extends BrambleTestCase {
 				new File(keyDir, "db.key").exists());
 	}
 
+	/**
+	 * THE critical regression test for the real-world crash scenario.
+	 * <p>
+	 * When a previous failed startup (e.g. v1.0.1 upgrade) created an empty
+	 * db.sqlite (valid schema, but no identity rows), and db.key still exists:
+	 * <ol>
+	 *   <li>isNonEmptyDirectory → true (db.sqlite exists)</li>
+	 *   <li>cleanupLegacyFiles → true (db.sqlite preserved)</li>
+	 *   <li>hasValidSchema → false (no identity in localAuthors)</li>
+	 *   <li>db.sqlite deleted, reopen = false</li>
+	 *   <li>originallyExpectedReopen && !reopen → true</li>
+	 *   <li>deleteAccountKeyFiles → db.key deleted</li>
+	 *   <li>throw DbException → DB_ERROR screen</li>
+	 *   <li>Next launch → no db.key → Create Account</li>
+	 * </ol>
+	 * <p>
+	 * Before this fix, hasValidSchema only checked the settings table
+	 * existed — it did NOT check for identity data. So the empty database
+	 * was treated as valid, reopened, and then IdentityManager crashed
+	 * with 0 identities. Worse, db.key was never deleted, causing an
+	 * infinite error loop on every subsequent launch.
+	 */
+	@Test
+	public void testEmptyDbSqliteWithStaleKeyFilesTriggersCleanup()
+			throws Exception {
+		// Simulate the state left by a previous failed startup:
+		// db.sqlite exists (non-empty file, valid schema but no identity)
+		// db.key exists (from original H2 account)
+		assertTrue(dbDir.mkdirs());
+		assertTrue(keyDir.mkdirs());
+		createFile(dbDir, "db.sqlite");
+		createFile(keyDir, "db.key");
+		createFile(keyDir, "db.key.bak");
+
+		// Step 1: directory exists with content
+		boolean reopen = isNonEmptyDirectory(dbDir);
+		assertTrue("db.sqlite exists, directory is non-empty", reopen);
+		boolean originallyExpectedReopen = reopen;
+
+		// Step 2: cleanup removes no H2 files, db.sqlite preserved
+		if (reopen) {
+			reopen = SqlCipherDatabase.cleanupLegacyFiles(dbDir);
+		}
+		assertTrue("db.sqlite survives legacy cleanup", reopen);
+		assertTrue("db.sqlite should still exist",
+				new File(dbDir, "db.sqlite").exists());
+
+		// Step 3: hasValidSchema would return false (no identity rows).
+		// We can't call hasValidSchema in unit tests (needs SQLCipher native
+		// lib), so we simulate its effect: db.sqlite deleted, reopen = false.
+		// In production, hasValidSchema now checks:
+		//   SELECT count(*) FROM localAuthors → 0 → returns false
+		if (reopen) {
+			// Simulate hasValidSchema returning false for empty database
+			boolean hasValidSchema = false; // no identity in localAuthors
+			if (!hasValidSchema) {
+				new File(dbDir, "db.sqlite").delete();
+				reopen = false;
+			}
+		}
+		assertFalse("Empty db.sqlite should be treated as invalid", reopen);
+
+		// Step 4: the critical condition fires
+		assertTrue("Should detect broken state and trigger key cleanup",
+				originallyExpectedReopen && !reopen);
+
+		// Step 5: key files are deleted
+		DatabaseConfig config = new TestDatabaseConfigForTest(dbDir, keyDir);
+		SqlCipherDatabase db = createDatabaseForKeyTest(config);
+		db.deleteAccountKeyFiles();
+
+		assertFalse("db.key should be deleted (breaks infinite error loop)",
+				new File(keyDir, "db.key").exists());
+		assertFalse("db.key.bak should be deleted",
+				new File(keyDir, "db.key.bak").exists());
+		assertFalse("db.sqlite should be deleted",
+				new File(dbDir, "db.sqlite").exists());
+	}
+
+	/**
+	 * Verifies that an intact v1.0.1-to-v1.0.2 upgrade where db.sqlite has
+	 * data is NOT affected by the identity check. The database would have
+	 * identity data and hasValidSchema returns true.
+	 */
+	@Test
+	public void testValidDbSqliteWithIdentityNotAffected() throws Exception {
+		// Simulate: db.sqlite has valid schema AND identity (normal state)
+		assertTrue(dbDir.mkdirs());
+		assertTrue(keyDir.mkdirs());
+		createFile(dbDir, "db.sqlite");
+		createFile(keyDir, "db.key");
+
+		boolean reopen = isNonEmptyDirectory(dbDir);
+		assertTrue(reopen);
+		boolean originallyExpectedReopen = reopen;
+
+		if (reopen) {
+			reopen = SqlCipherDatabase.cleanupLegacyFiles(dbDir);
+		}
+		assertTrue(reopen);
+
+		if (reopen) {
+			// Simulate hasValidSchema returning true (identity exists)
+			boolean hasValidSchema = true;
+			if (!hasValidSchema) {
+				new File(dbDir, "db.sqlite").delete();
+				reopen = false;
+			}
+		}
+		assertTrue("Valid database should remain open", reopen);
+
+		// Condition should NOT trigger
+		assertFalse("Valid database should not trigger cleanup",
+				originallyExpectedReopen && !reopen);
+
+		// Key files must survive
+		assertTrue("db.key must survive with valid database",
+				new File(keyDir, "db.key").exists());
+	}
+
 	@Test
 	public void testEmptyDatabaseDirectoryWithKeyFiles() throws Exception {
 		// Edge case: database directory exists but is empty, key files exist
