@@ -216,6 +216,38 @@ class H2ToSqlCipherMigration {
 		return bak.exists() ? bak : null;
 	}
 
+	/**
+	 * Writes a non-sensitive error description to migration-error.txt
+	 * so the diagnostics export can include it.
+	 */
+	static void writeErrorFile(File dir, @Nullable String description,
+			@Nullable Throwable cause) {
+		try {
+			File errorFile = new File(dir, "migration-error.txt");
+			java.io.FileWriter writer = new java.io.FileWriter(errorFile);
+			if (description != null) {
+				writer.write(description + "\n");
+			}
+			if (cause != null) {
+				writer.write(cause.getClass().getName());
+				if (cause.getMessage() != null) {
+					writer.write(": " + cause.getMessage());
+				}
+				writer.write("\n");
+				if (cause.getCause() != null) {
+					Throwable root = cause.getCause();
+					writer.write("Caused by: " + root.getClass().getName());
+					if (root.getMessage() != null) {
+						writer.write(": " + root.getMessage());
+					}
+					writer.write("\n");
+				}
+			}
+			writer.close();
+		} catch (Exception ignored) {
+		}
+	}
+
 	private void closeQuietly(@Nullable Connection h2Conn,
 			@Nullable SQLiteDatabase sqlCipherDb) {
 		if (h2Conn != null) {

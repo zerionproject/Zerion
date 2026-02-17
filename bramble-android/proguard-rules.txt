@@ -1,7 +1,8 @@
-# Keep H2 classes for one-time migration from H2 to SQLCipher
--keep class org.h2.Driver { *; }
--keep class org.h2.engine.Engine { *; }
--keep class org.h2.store.fs.** { *; }
+# Keep ALL H2 classes for one-time migration from H2 to SQLCipher.
+# H2 uses heavy internal reflection (connection factories, value types,
+# MVStore engine, AES encryption). Keeping only a few classes causes
+# NoClassDefFoundError / ClassNotFoundException at runtime on Android.
+-keep class org.h2.** { *; }
 -dontwarn org.h2.**
 -dontnote org.h2.**
 
