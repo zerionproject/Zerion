@@ -40,6 +40,10 @@ class SqlCipherDatabase extends JdbcDatabase {
 	// Process-wide lock: only one thread may open/migrate/compact at a time
 	private static final Object DB_OPEN_LOCK = new Object();
 
+	private static final String SQLCIPHER_FILE = "db.sqlite";
+	private static final String SQLCIPHER_STAGING_FILE = "db.sqlite.new";
+	private static final String MIGRATION_MARKER = "migrated-to-sqlcipher";
+
 	private static final int BUSY_TIMEOUT_MS = 5000;
 	private static final int OPEN_RETRY_MAX = 5;
 	private static final long OPEN_RETRY_BASE_MS = 100;
@@ -80,24 +84,26 @@ class SqlCipherDatabase extends JdbcDatabase {
 		boolean reopen = isNonEmptyDirectory(dir);
 
 		if (reopen) {
-			H2ToSqlCipherMigration.cleanupStagingFile(dir);
-
-			if (H2ToSqlCipherMigration.hasMarker(dir)) {
-				if (H2ToSqlCipherMigration.hasH2Files(dir)) {
-					H2ToSqlCipherMigration.deleteH2Files(dir);
+			// Clean up any leftover migration staging files
+			File staging = new File(dir, SQLCIPHER_STAGING_FILE);
+			if (staging.exists()) staging.delete();
+			// Remove any H2 database files (migration no longer supported)
+			File[] files = dir.listFiles();
+			if (files != null) {
+				for (File f : files) {
+					String name = f.getName();
+					if (name.endsWith(".h2.db") || name.endsWith(".trace.db")
+							|| name.endsWith(".lock.db")
+							|| name.equals(MIGRATION_MARKER)) {
+						f.delete();
+					}
 				}
-			} else if (H2ToSqlCipherMigration.hasH2Files(dir)) {
-				if (listener != null) listener.onDatabaseMigration();
-				H2ToSqlCipherMigration migration =
-						new H2ToSqlCipherMigration(config);
-				migration.migrate(key);
 			}
 			reopen = isNonEmptyDirectory(dir);
 		}
 
 		if (reopen) {
-			File dbFile = new File(dir,
-					H2ToSqlCipherMigration.SQLCIPHER_FILE);
+			File dbFile = new File(dir, SQLCIPHER_FILE);
 			if (!dbFile.exists()) {
 				reopen = false;
 			} else if (!hasValidSchema(dbFile, key)) {
@@ -190,7 +196,7 @@ class SqlCipherDatabase extends JdbcDatabase {
 		SecretKey key = this.key;
 		if (key == null) throw new DbClosedException();
 		File dbFile = new File(config.getDatabaseDirectory(),
-				H2ToSqlCipherMigration.SQLCIPHER_FILE);
+				SQLCIPHER_FILE);
 		String hexKey = StringUtils.toHexString(key.getBytes());
 
 		for (int attempt = 1; attempt <= OPEN_RETRY_MAX; attempt++) {
