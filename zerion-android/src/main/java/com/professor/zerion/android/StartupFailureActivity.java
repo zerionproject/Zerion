@@ -36,8 +36,18 @@ public class StartupFailureActivity extends BaseActivity implements
 	}
 
 	private void handleIntent(Intent i) {
-		StartResult result =
-				(StartResult) i.getSerializableExtra(EXTRA_START_RESULT);
+		String resultName = i.getStringExtra(EXTRA_START_RESULT);
+		if (resultName == null) {
+			finish();
+			return;
+		}
+		StartResult result;
+		try {
+			result = StartResult.valueOf(resultName);
+		} catch (IllegalArgumentException e) {
+			finish();
+			return;
+		}
 
 		int errorRes;
 		switch (result) {

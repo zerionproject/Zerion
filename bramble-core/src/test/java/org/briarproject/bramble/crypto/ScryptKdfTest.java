@@ -24,7 +24,7 @@ public class ScryptKdfTest extends BrambleTestCase {
 		byte[] salt = getRandomBytes(32);
 		Set<Bytes> keys = new HashSet<>();
 		for (int i = 0; i < 100; i++) {
-			String password = getRandomString(16);
+			char[] password = getRandomString(16).toCharArray();
 			SecretKey key = kdf.deriveKey(password, salt, 256);
 			assertTrue(keys.add(new Bytes(key.getBytes())));
 		}
@@ -33,7 +33,7 @@ public class ScryptKdfTest extends BrambleTestCase {
 	@Test
 	public void testSaltAffectsKey() throws Exception {
 		PasswordBasedKdf kdf = new ScryptKdf(new SystemClock());
-		String password = getRandomString(16);
+		char[] password = getRandomString(16).toCharArray();
 		Set<Bytes> keys = new HashSet<>();
 		for (int i = 0; i < 100; i++) {
 			byte[] salt = getRandomBytes(32);
@@ -45,7 +45,7 @@ public class ScryptKdfTest extends BrambleTestCase {
 	@Test
 	public void testCostParameterAffectsKey() throws Exception {
 		PasswordBasedKdf kdf = new ScryptKdf(new SystemClock());
-		String password = getRandomString(16);
+		char[] password = getRandomString(16).toCharArray();
 		byte[] salt = getRandomBytes(32);
 		Set<Bytes> keys = new HashSet<>();
 		for (int cost = 2; cost <= 256; cost *= 2) {

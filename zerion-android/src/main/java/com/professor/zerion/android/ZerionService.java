@@ -176,7 +176,7 @@ public class ZerionService extends Service {
 			}
 
 			i.putExtra(EXTRA_STARTUP_FAILED, true);
-			i.putExtra(EXTRA_START_RESULT, result);
+			i.putExtra(EXTRA_START_RESULT, result.name());
 			startActivity(i);
 		});
 	}

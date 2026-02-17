@@ -12,7 +12,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.util.Arrays;
+import java.security.MessageDigest;
 
 import static org.briarproject.bramble.api.keyagreement.KeyAgreementConstants.MASTER_KEY_LABEL;
 import static org.briarproject.bramble.api.keyagreement.KeyAgreementConstants.PROTOCOL_VERSION;
@@ -74,7 +74,10 @@ class KeyAgreementProtocol {
 				receiveConfirm(s, theirPublicKey);
 				sendConfirm(s, theirPublicKey);
 			}
-			return crypto.deriveKey(MASTER_KEY_LABEL, s);
+			SecretKey masterKey = crypto.deriveKey(MASTER_KEY_LABEL, s);
+			// Zero shared secret after derivation
+			java.util.Arrays.fill(s.getBytes(), (byte) 0);
+			return masterKey;
 		} catch (AbortException e) {
 			sendAbort(e.getCause() != null);
 			throw e;
@@ -92,7 +95,8 @@ class KeyAgreementProtocol {
 		try {
 			PublicKey publicKey = keyParser.parsePublicKey(publicKeyBytes);
 			byte[] expected = keyAgreementCrypto.deriveKeyCommitment(publicKey);
-			if (!Arrays.equals(expected, theirPayload.getCommitment()))
+			// Constant-time comparison
+			if (!MessageDigest.isEqual(expected, theirPayload.getCommitment()))
 				throw new AbortException();
 			return publicKey;
 		} catch (GeneralSecurityException e) {
@@ -135,7 +139,8 @@ class KeyAgreementProtocol {
 				payloadEncoder.encode(ourPayload),
 				theirPublicKey, ourKeyPair,
 				alice, !alice);
-		if (!Arrays.equals(expected, confirm))
+		// Constant-time comparison
+		if (!MessageDigest.isEqual(expected, confirm))
 			throw new AbortException();
 	}
 

@@ -90,8 +90,6 @@ dependencyVerification {
 		'com.github.bumptech.glide:compiler:4.16.0:compiler-4.16.0.jar:5fcbd8fcee22bc6aa687387ed35acd792dcb8a27c029b3b81ab818e532073436',
 		'com.github.bumptech.glide:gifdecoder:4.16.0:gifdecoder-4.16.0.aar:955f872af4d2a321fea2a346fc472225a2b99524acc46781491712e39b6a214f',
 		'com.github.bumptech.glide:glide:4.16.0:glide-4.16.0.aar:89811c63dd266a4851fd1b79c6fc0c982996ece435f5ff483fb830ca6cb53cd4',
-		'com.github.chrisbanes:PhotoView:2.3.0:PhotoView-2.3.0.aar:6c8989f2945d50ab38b3e0300064f1f8d2d75bbcae1434fe535d9fb6898e9ad6',
-		'com.github.kobakei:MaterialFabSpeedDial:1.2.1:MaterialFabSpeedDial-1.2.1.aar:e86198c3c48cd832fb209a769a9f222c2a3cc045743b110ac2391d9737e3ea02',
 		'com.google.android.apps.common.testing.accessibility.framework:accessibility-test-framework:2.0:accessibility-test-framework-2.0.jar:cdf16ef8f5b8023d003ce3cc1b0d51bda737762e2dab2fedf43d1c4292353f7f',
 		'com.google.android.material:material:1.9.0:material-1.9.0.aar:6cc2359979269e4d9eddce7d84682d2bb06a35a14edce806bf0da6e8d4d31806',
 		'com.google.auto.value:auto-value-annotations:1.7.4:auto-value-annotations-1.7.4.jar:fedd59b0b4986c342f6ab2d182f2a4ee9fceb2c7e2d5bdc4dc764c92394a23d3',

@@ -789,7 +789,7 @@
 	<string name="security_level_classical">Klassische Sicherheit</string>
 	<string name="security_level_classical_short">Klassisch</string>
 	<string name="security_level_post_quantum_description">Dieser Kontakt verwendet hybride Post-Quantum-Kryptografie (X25519 + ML-KEM-768), die Schutz vor zukünftigen Quantencomputerangriffen bietet.</string>
-	<string name="security_level_classical_description">Dieser Kontakt verwendet klassische Kryptografie, kompatibel mit Briar. Aktualisiere beide Apps auf Zerion für Post-Quantum-Sicherheit.</string>
+	<string name="security_level_classical_description">Dieser Kontakt verwendet klassische Kryptografie. Aktualisiere beide Apps auf Zerion für Post-Quantum-Sicherheit.</string>
 
 	<!-- Brute Force Protection strings -->
 	<string name="login_account_locked">Konto gesperrt aufgrund zu vieler Fehlversuche. Bitte warte %1$d Minuten und %2$d Sekunden.</string>
@@ -835,10 +835,10 @@
 	<string name="contact_type_zerion_title">Zerion</string>
 	<string name="contact_type_zerion_badge">Post-Quantum-Sicherheit</string>
 	<string name="contact_type_zerion_description">Verbinde dich mit anderen Zerion-Nutzern mit hybrider Post-Quantum-Kryptografie. Bietet Schutz vor zukünftigen Quantencomputerangriffen.</string>
-	<string name="contact_type_briar_title">Briar-kompatibel</string>
+	<string name="contact_type_briar_title">Klassischer Modus</string>
 	<string name="contact_type_briar_badge">Klassische Sicherheit</string>
-	<string name="contact_type_briar_description">Verbinde dich mit Briar-Nutzern mit klassischer Kryptografie. Verwende diese Option, wenn du Kontakte hinzufügst, die Briar statt Zerion nutzen.</string>
+	<string name="contact_type_briar_description">Verbinde dich mit klassischer Kryptografie. Verwende diese Option für Abwärtskompatibilität mit Kontakten auf älteren Versionen.</string>
 	<string name="recommended">Empfohlen</string>
-	<string name="contact_type_info">Wähle Zerion für maximale Sicherheit oder Briar-kompatibel, um dich mit Briar-Nutzern zu verbinden.</string>
+	<string name="contact_type_info">Wähle Zerion für maximale Sicherheit oder Klassischer Modus für Abwärtskompatibilität.</string>
 
 </resources>

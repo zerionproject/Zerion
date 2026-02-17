@@ -59,12 +59,8 @@ class PortMapperImpl implements PortMapper {
 	}
 
 	private void start() {
-		GatewayDiscover d = new GatewayDiscover();
-		try {
-			d.discover();
-		} catch (IOException | SAXException | ParserConfigurationException e) {
-		}
-		gateway = d.getValidGateway();
+		// UPnP disabled — not used by Zerion
+		gateway = null;
 	}
 
 	private void deleteMapping(int port) {

@@ -1,10 +1,16 @@
-# Keep the H2 classes that are loaded via reflection
+# Keep H2 classes for one-time migration from H2 to SQLCipher
 -keep class org.h2.Driver { *; }
 -keep class org.h2.engine.Engine { *; }
 -keep class org.h2.store.fs.** { *; }
-# Don't warn about unused dependencies of H2 classes
 -dontwarn org.h2.**
 -dontnote org.h2.**
+
+# SQLCipher
+-keep class net.zetetic.database.sqlcipher.** { *; }
+-dontwarn net.zetetic.database.sqlcipher.**
+
+# SQLCipher JDBC adapter dummy driver
+-keep class org.briarproject.bramble.db.SqlCipherDriver { *; }
 
 -keep class dagger.** { *; }
 -dontwarn dagger.**

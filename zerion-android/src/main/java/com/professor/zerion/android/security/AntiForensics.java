@@ -247,7 +247,10 @@ public class AntiForensics {
 				return true;
 			}
 
-			java.net.Socket socket = new java.net.Socket("127.0.0.1", 5555);
+			// Use connect timeout to prevent indefinite hang
+			java.net.Socket socket = new java.net.Socket();
+			socket.connect(
+					new java.net.InetSocketAddress("127.0.0.1", 5555), 1000);
 			socket.close();
 			return true;
 		} catch (Exception e) {

@@ -35,7 +35,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Briar compatibility regression tests for Mode 3 capability negotiation.
  * <p>
- * Phase 4c requirement: Verify backward compatibility:
+ * Verify backward compatibility:
  * - Zerion ↔ Zerion (Mode 2 only) works correctly
  * - Zerion ↔ Briar compatibility is preserved
  * - Existing contacts after upgrade maintain correct state

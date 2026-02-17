@@ -800,7 +800,7 @@
 	<string name="security_level_classical">Seguridad Clásica</string>
 	<string name="security_level_classical_short">Clásica</string>
 	<string name="security_level_post_quantum_description">Este contacto usa criptografía híbrida post-cuántica (X25519 + ML-KEM-768), que proporciona protección contra futuros ataques de computadoras cuánticas.</string>
-	<string name="security_level_classical_description">Este contacto usa criptografía clásica, compatible con Briar. Actualiza ambas apps a Zerion para seguridad post-cuántica.</string>
+	<string name="security_level_classical_description">Este contacto usa criptografía clásica. Actualiza ambas apps a Zerion para seguridad post-cuántica.</string>
 
 	<!-- Brute Force Protection strings -->
 	<string name="login_account_locked">Cuenta bloqueada por demasiados intentos fallidos. Por favor espera %1$d minutos y %2$d segundos.</string>
@@ -846,10 +846,10 @@
 	<string name="contact_type_zerion_title">Zerion</string>
 	<string name="contact_type_zerion_badge">Seguridad Post-Cuántica</string>
 	<string name="contact_type_zerion_description">Conéctate con otros usuarios de Zerion usando criptografía híbrida post-cuántica. Proporciona protección contra futuros ataques de computadoras cuánticas.</string>
-	<string name="contact_type_briar_title">Compatible con Briar</string>
+	<string name="contact_type_briar_title">Modo Clásico</string>
 	<string name="contact_type_briar_badge">Seguridad Clásica</string>
-	<string name="contact_type_briar_description">Conéctate con usuarios de Briar usando criptografía clásica. Usa esta opción cuando agregues contactos que usan Briar en lugar de Zerion.</string>
+	<string name="contact_type_briar_description">Conéctate usando criptografía clásica. Usa esta opción para compatibilidad con contactos en versiones anteriores.</string>
 	<string name="recommended">Recomendado</string>
-	<string name="contact_type_info">Elige Zerion para máxima seguridad, o Compatible con Briar para conectarte con usuarios de Briar.</string>
+	<string name="contact_type_info">Elige Zerion para máxima seguridad, o Modo Clásico para compatibilidad.</string>
 
 </resources>

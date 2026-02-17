@@ -2,6 +2,7 @@ package org.briarproject.bramble.test;
 
 import org.briarproject.bramble.BrambleCoreIntegrationTestEagerSingletons;
 import org.briarproject.bramble.BrambleCoreModule;
+import org.briarproject.bramble.db.DatabaseModule;
 import org.briarproject.bramble.api.client.ClientHelper;
 import org.briarproject.bramble.api.connection.ConnectionManager;
 import org.briarproject.bramble.api.event.EventBus;
@@ -15,6 +16,7 @@ import dagger.Component;
 @Component(modules = {
 		BrambleCoreIntegrationTestModule.class,
 		BrambleCoreModule.class,
+		DatabaseModule.class,
 		TestDnsModule.class,
 		TestSocksModule.class,
 		TestPluginConfigModule.class,

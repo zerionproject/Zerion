@@ -110,7 +110,7 @@
 
 	</androidx.cardview.widget.CardView>
 
-	<!-- Briar (Classical) Option -->
+	<!-- Classic Mode (Classical Cryptography) Option -->
 	<androidx.cardview.widget.CardView
 		android:id="@+id/briarCard"
 		android:layout_width="match_parent"

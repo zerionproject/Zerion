@@ -8,12 +8,6 @@ import java.sql.Statement;
 
 import static org.briarproject.bramble.db.JdbcUtils.tryToClose;
 
-/**
- * Migration for contact capability tracking.
- * <p>
- * Adds table for storing per-contact crypto capabilities,
- * enabling dynamic capability negotiation for group encryption.
- */
 class Migration61_62 implements Migration<Connection> {
 
 	@Override
@@ -32,14 +26,13 @@ class Migration61_62 implements Migration<Connection> {
 		try {
 			s = txn.createStatement();
 
-			// Per-contact capability state
-			// Tracks which crypto features each contact supports
 			s.execute("CREATE TABLE contactCapabilities ("
 					+ " contactId INT NOT NULL PRIMARY KEY,"
 					+ " capability INTEGER NOT NULL,"
 					+ " advertisedAt BIGINT NOT NULL"
 					+ ")");
 
+			s.close();
 		} catch (SQLException e) {
 			tryToClose(s);
 			throw new DbException(e);

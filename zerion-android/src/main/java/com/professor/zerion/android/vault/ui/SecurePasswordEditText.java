@@ -100,14 +100,6 @@ public class SecurePasswordEditText extends TextInputEditText {
 		}
 	}
 
-	@Deprecated
-	public String getPasswordString() {
-		if (passwordCleared || passwordChars.length == 0) {
-			return "";
-		}
-		return new String(passwordChars);
-	}
-
 	@Override
 	protected void onDetachedFromWindow() {
 		clearPassword();

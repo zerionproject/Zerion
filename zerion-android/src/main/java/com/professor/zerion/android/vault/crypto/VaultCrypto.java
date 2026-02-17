@@ -94,33 +94,37 @@ public class VaultCrypto {
 
 	public byte[] hkdfSha256(byte[] inputKeyMaterial, String info, int outputLength) {
 		try {
-			Mac hmac = Mac.getInstance("HmacSHA256");
+			// HKDF per RFC 5869 using standard JCA HMAC-SHA256
 			byte[] salt = new byte[32];
-			Arrays.fill(salt, (byte) 0);
-			hmac.init(new SecretKeySpec(salt, "HmacSHA256"));
-			byte[] prk = hmac.doFinal(inputKeyMaterial);
+			// Extract: PRK = HMAC-SHA256(salt, IKM)
+			Mac extractMac = Mac.getInstance("HmacSHA256");
+			extractMac.init(new SecretKeySpec(salt, "HmacSHA256"));
+			byte[] prk = extractMac.doFinal(inputKeyMaterial);
 
-			hmac.init(new SecretKeySpec(prk, "HmacSHA256"));
-			ByteBuffer output = ByteBuffer.allocate(outputLength);
-			byte[] infoBytes = info.getBytes();
-			byte counter = 1;
+			// Expand: OKM = T(1) || T(2) || ... truncated to outputLength
+			byte[] infoBytes = info.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+			int hashLen = 32;
+			int n = (outputLength + hashLen - 1) / hashLen;
+			byte[] okm = new byte[n * hashLen];
+			byte[] t = new byte[0];
 
-			while (output.hasRemaining()) {
-				hmac.reset();
-				if (counter > 1) {
-					hmac.update(output.array(), (counter - 2) * 32, 32);
-				}
-				hmac.update(infoBytes);
-				hmac.update(counter);
-				byte[] block = hmac.doFinal();
-				int toCopy = Math.min(output.remaining(), block.length);
-				output.put(block, 0, toCopy);
-				counter++;
+			Mac expandMac = Mac.getInstance("HmacSHA256");
+			expandMac.init(new SecretKeySpec(prk, "HmacSHA256"));
+
+			for (int i = 1; i <= n; i++) {
+				expandMac.reset();
+				expandMac.update(t);
+				expandMac.update(infoBytes);
+				expandMac.update((byte) i);
+				t = expandMac.doFinal();
+				System.arraycopy(t, 0, okm, (i - 1) * hashLen, hashLen);
 			}
 
+			byte[] output = new byte[outputLength];
+			System.arraycopy(okm, 0, output, 0, outputLength);
 			Arrays.fill(prk, (byte) 0);
-
-			return output.array();
+			Arrays.fill(okm, (byte) 0);
+			return output;
 		} catch (Exception e) {
 			throw new RuntimeException("HKDF failed", e);
 		}

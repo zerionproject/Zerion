@@ -2,6 +2,7 @@ package org.briarproject.bramble.plugin.file;
 
 import org.briarproject.bramble.BrambleCoreEagerSingletons;
 import org.briarproject.bramble.BrambleCoreModule;
+import org.briarproject.bramble.db.DatabaseModule;
 import org.briarproject.bramble.api.contact.ContactManager;
 import org.briarproject.bramble.api.event.EventBus;
 import org.briarproject.bramble.api.identity.IdentityManager;
@@ -25,6 +26,7 @@ import dagger.Component;
 @Singleton
 @Component(modules = {
 		BrambleCoreModule.class,
+		DatabaseModule.class,
 		DefaultBatteryManagerModule.class,
 		DefaultEventExecutorModule.class,
 		DefaultWakefulIoExecutorModule.class,

@@ -207,9 +207,16 @@ public class VoiceMessageRecorder {
 
 			byte[] iv = encryptor.getIV();
 			javax.crypto.SecretKey wrapKey = deriveWrapKey(currentGroupId);
-			byte[] wrappedKey = encryptor.getEncryptedKey(wrapKey);
+			byte[] encryptedSessionKey = encryptor.getEncryptedKey(wrapKey);
 			byte[] wrapKeyBytes = wrapKey.getEncoded();
+			// New format: prepend the 32-byte random wrap key to the 48-byte
+			// encrypted session key. The entire payload is protected by the
+			// Bramble transport encryption (E2E).
+			byte[] wrappedKey = new byte[32 + encryptedSessionKey.length];
+			System.arraycopy(wrapKeyBytes, 0, wrappedKey, 0, 32);
+			System.arraycopy(encryptedSessionKey, 0, wrappedKey, 32, encryptedSessionKey.length);
 			java.util.Arrays.fill(wrapKeyBytes, (byte) 0);
+			java.util.Arrays.fill(encryptedSessionKey, (byte) 0);
 			mainHandler.post(() -> callback.onEncryptionInit(iv, wrappedKey));
 			int chunkSize = 4096;
 			int totalChunks = 0;
@@ -511,12 +518,19 @@ public class VoiceMessageRecorder {
 				Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED;
 	}
 
+	/**
+	 * Generates a cryptographically random AES-256 wrap key.
+	 * The wrap key is sent alongside the encrypted voice message through
+	 * the Bramble transport layer, which is already end-to-end encrypted.
+	 * This ensures the wrap key is protected by the transport secret,
+	 * not derived from the public groupId.
+	 */
 	private javax.crypto.SecretKey deriveWrapKey(byte[] groupId) throws Exception {
-		java.security.MessageDigest sha256 = java.security.MessageDigest.getInstance("SHA-256");
-		sha256.update("VOICE_KEY_WRAP".getBytes(java.nio.charset.StandardCharsets.UTF_8));
-		sha256.update(groupId);
-		byte[] keyMaterial = sha256.digest();
-		return new javax.crypto.spec.SecretKeySpec(keyMaterial, "AES");
+		byte[] keyMaterial = new byte[32];
+		java.security.SecureRandom.getInstanceStrong().nextBytes(keyMaterial);
+		javax.crypto.SecretKey key = new javax.crypto.spec.SecretKeySpec(keyMaterial, "AES");
+		java.util.Arrays.fill(keyMaterial, (byte) 0);
+		return key;
 	}
 
 	public boolean isRecording() {

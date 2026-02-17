@@ -60,13 +60,13 @@ public class NavDrawerActivity extends ZerionActivity implements
 		BaseFragmentListener {
 
 	public static Uri CONTACT_URI =
-			Uri.parse("briar-content://contacts");
+			Uri.parse("zerion-content://contacts");
 	public static Uri GROUP_URI =
-			Uri.parse("briar-content://groups");
+			Uri.parse("zerion-content://groups");
 	public static Uri CONTACT_ADDED_URI =
-			Uri.parse("briar-content://contact-added");
+			Uri.parse("zerion-content://contact-added");
 	public static Uri SIGN_OUT_URI =
-			Uri.parse("briar-content://sign-out");
+			Uri.parse("zerion-content://sign-out");
 
 	private static final int TAB_CONTACTS = 0;
 	private static final int TAB_GROUPS = 1;
@@ -361,7 +361,7 @@ public class NavDrawerActivity extends ZerionActivity implements
 		super.onNewIntent(intent);
 		exitIfStartupFailed(intent);
 
-		if ("briar-content".equals(intent.getScheme())) {
+		if ("zerion-content".equals(intent.getScheme())) {
 			handleContentIntent(intent);
 		} else {
 			handleExternalIntent(this, intent);
@@ -380,10 +380,16 @@ public class NavDrawerActivity extends ZerionActivity implements
 	}
 
 	private void exitIfStartupFailed(Intent intent) {
-		if (intent.getBooleanExtra(EXTRA_STARTUP_FAILED, false)) {
+		// Only process startup failure from our own package, not external intents
+		if (intent.getComponent() != null
+				&& getPackageName().equals(
+						intent.getComponent().getPackageName())
+				&& intent.getBooleanExtra(EXTRA_STARTUP_FAILED, false)) {
 			Intent i = new Intent(this, StartupFailureActivity.class);
-			i.putExtra(EXTRA_START_RESULT,
-					intent.getSerializableExtra(EXTRA_START_RESULT));
+			String resultName = intent.getStringExtra(EXTRA_START_RESULT);
+			if (resultName != null) {
+				i.putExtra(EXTRA_START_RESULT, resultName);
+			}
 			startActivity(i);
 			finish();
 			System.exit(0);

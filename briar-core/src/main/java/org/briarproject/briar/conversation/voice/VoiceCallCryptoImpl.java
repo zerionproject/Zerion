@@ -111,6 +111,43 @@ class VoiceCallCryptoImpl implements VoiceCallCrypto {
 	}
 
 	@Override
+	public byte[] generateEphemeralSecret() {
+		byte[] secret = new byte[AES_KEY_BYTES];
+		secureRandom.nextBytes(secret);
+		return secret;
+	}
+
+	@Override
+	public AudioKeys deriveEphemeralAudioKeys(SecretKey voiceCallKey,
+			byte[] localEphemeral, byte[] remoteEphemeral, boolean alice) {
+		// Mix ephemeral secrets with static key for forward secrecy
+		// sessionInput = HMAC-SHA256(voiceCallKey, aliceEphemeral || bobEphemeral)
+		byte[] aliceEphemeral = alice ? localEphemeral : remoteEphemeral;
+		byte[] bobEphemeral = alice ? remoteEphemeral : localEphemeral;
+
+		byte[] combined = new byte[aliceEphemeral.length + bobEphemeral.length];
+		System.arraycopy(aliceEphemeral, 0, combined, 0, aliceEphemeral.length);
+		System.arraycopy(bobEphemeral, 0, combined, aliceEphemeral.length,
+				bobEphemeral.length);
+
+		SecretKey ephemeralSourceKey = crypto.deriveKey(
+				AUDIO_KEY_LABEL + "/EPHEMERAL",
+				voiceCallKey,
+				combined
+		);
+		java.util.Arrays.fill(combined, (byte) 0);
+
+		KeyMaterialSource audioKeyMaterial =
+				new VoiceCallKeyMaterialSource(ephemeralSourceKey);
+		byte[] aliceKeyBytes = audioKeyMaterial.getKeyMaterial(AES_KEY_BYTES);
+		byte[] bobKeyBytes = audioKeyMaterial.getKeyMaterial(AES_KEY_BYTES);
+		SecretKey txKey = new SecretKey(alice ? aliceKeyBytes : bobKeyBytes);
+		SecretKey rxKey = new SecretKey(alice ? bobKeyBytes : aliceKeyBytes);
+
+		return new AudioKeys(txKey, rxKey);
+	}
+
+	@Override
 	public byte[] encryptAudioFrame(byte[] plaintext, SecretKey key) {
 		try {
 			byte[] nonce = new byte[GCM_NONCE_BYTES];
@@ -138,13 +175,21 @@ class VoiceCallCryptoImpl implements VoiceCallCrypto {
 	public byte[] encryptAudioFrame(byte[] plaintext, SecretKey key,
 			long frameCounter) {
 		try {
-			// Counter-based nonce: 4 bytes key-derived salt + 8 bytes counter
+			// Counter-based nonce: 4 bytes HKDF-derived salt + 8 bytes counter
+			// Counter-based nonce uses HKDF-derived salt, not raw key bytes
 			byte[] nonce = new byte[GCM_NONCE_BYTES];
 			byte[] keyBytes = key.getBytes();
-			nonce[0] = keyBytes[0];
-			nonce[1] = keyBytes[1];
-			nonce[2] = keyBytes[2];
-			nonce[3] = keyBytes[3];
+			java.security.MessageDigest sha256 =
+					java.security.MessageDigest.getInstance("SHA-256");
+			sha256.update("VOICE_NONCE_SALT".getBytes(
+					java.nio.charset.StandardCharsets.UTF_8));
+			sha256.update(keyBytes);
+			byte[] derived = sha256.digest();
+			nonce[0] = derived[0];
+			nonce[1] = derived[1];
+			nonce[2] = derived[2];
+			nonce[3] = derived[3];
+			java.util.Arrays.fill(derived, (byte) 0);
 			ByteBuffer.wrap(nonce, 4, 8).order(ByteOrder.BIG_ENDIAN)
 					.putLong(frameCounter);
 
