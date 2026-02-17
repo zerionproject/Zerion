@@ -10,7 +10,6 @@ import android.os.StrictMode;
 import android.os.StrictMode.ThreadPolicy;
 import android.os.StrictMode.VmPolicy;
 
-import java.io.File;
 import com.google.android.material.color.DynamicColors;
 import com.vanniktech.emoji.EmojiManager;
 import com.vanniktech.emoji.google.GoogleEmojiProvider;
@@ -49,11 +48,6 @@ public class ZerionApplicationImpl extends Application
 	public void onCreate() {
 		super.onCreate();
 
-		// Pre-flight: detect legacy H2 database and clean up BEFORE any
-		// AccountManager check. Old H2 users go directly to "Create Account"
-		// instead of seeing a login screen that leads to "Database error".
-		cleanupLegacyDatabaseState();
-
 		suppressBouncyCastleWarning();
 
 		DynamicColors.applyToActivitiesIfAvailable(this);
@@ -66,61 +60,6 @@ public class ZerionApplicationImpl extends Application
 		Thread.setDefaultUncaughtExceptionHandler(exceptionHandler);
 
 		EmojiManager.install(new GoogleEmojiProvider());
-	}
-
-	
-	/**
-	 * Detects legacy H2 database files from old Zerion versions and cleans
-	 * up both the database directory and key directory. This runs at app
-	 * startup, BEFORE AccountManager.accountExists() is ever called.
-	 * <p>
-	 * If H2 files are found and no valid SQLCipher database exists, the
-	 * account key files (db.key, db.key.bak) are deleted so the user goes
-	 * directly to the "Create Account" screen instead of the login screen.
-	 * H2 databases cannot be migrated on Android.
-	 */
-	private void cleanupLegacyDatabaseState() {
-		File dbDir = getDir("db", MODE_PRIVATE);
-		File keyDir = getDir("key", MODE_PRIVATE);
-		File[] files = dbDir.listFiles();
-		if (files == null || files.length == 0) return;
-
-		boolean hasLegacyFiles = false;
-		boolean hasSqlCipher = false;
-		for (File f : files) {
-			String name = f.getName();
-			if (name.endsWith(".h2.db") || name.endsWith(".mv.db")
-					|| name.endsWith(".trace.db")
-					|| name.endsWith(".lock.db")
-					|| name.equals("migrated-to-sqlcipher")
-					|| name.equals("db.sqlite.new")) {
-				hasLegacyFiles = true;
-			}
-			if (name.equals("db.sqlite")) {
-				hasSqlCipher = true;
-			}
-		}
-
-		if (hasLegacyFiles) {
-			// Delete all legacy files from database directory
-			for (File f : files) {
-				String name = f.getName();
-				if (name.endsWith(".h2.db") || name.endsWith(".mv.db")
-						|| name.endsWith(".trace.db")
-						|| name.endsWith(".lock.db")
-						|| name.equals("migrated-to-sqlcipher")
-						|| name.equals("db.sqlite.new")) {
-					f.delete();
-				}
-			}
-			// If no valid SQLCipher database exists, delete account key
-			// files so accountExists() returns false
-			if (!hasSqlCipher) {
-				new File(keyDir, "db.key").delete();
-				new File(keyDir, "db.key.bak").delete();
-				new File(keyDir, "login.lockout").delete();
-			}
-		}
 	}
 
 	private void suppressBouncyCastleWarning() {

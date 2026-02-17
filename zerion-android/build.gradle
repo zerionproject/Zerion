@@ -75,10 +75,10 @@ android {
     defaultConfig {
         minSdkVersion 29
         targetSdkVersion 35
-        versionCode 10004
-        versionName "1.0.4"
+        versionCode 10005
+        versionName "1.0.5"
         applicationId "com.professor.zerion"
-        buildConfigField "String", "VERSION_LABEL", "\"1.0.4\""
+        buildConfigField "String", "VERSION_LABEL", "\"1.0.5\""
         buildConfigField "String", "TorVersion", "\"$tor_version\""
 
         vectorDrawables.useSupportLibrary = true
@@ -180,10 +180,9 @@ if (isFdroidBuild) {
     }
 }
 
-// Exclude H2 database from Android APK (only needed in bramble-core for desktop/tests)
-configurations.implementation {
-    exclude group: 'com.h2database', module: 'h2'
-}
+// H2 is included in the APK for one-time migration from legacy H2 databases
+// to SQLCipher. After migration completes on all existing users, this can be
+// removed in a future version to reduce APK size.
 
 repositories {
     flatDir { dirs 'libs' }
