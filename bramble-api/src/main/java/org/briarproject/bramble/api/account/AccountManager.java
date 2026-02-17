@@ -21,15 +21,13 @@ public interface AccountManager {
 	boolean accountExists();
 
 	
-	boolean createAccount(String name, String password);
+	boolean createAccount(String name, char[] password);
 
-	
+
 	void deleteAccount();
 
-	
-	void signIn(String password) throws DecryptionException;
+	void signIn(char[] password) throws DecryptionException;
 
-	
-	void changePassword(String oldPassword, String newPassword)
+	void changePassword(char[] oldPassword, char[] newPassword)
 			throws DecryptionException;
 }

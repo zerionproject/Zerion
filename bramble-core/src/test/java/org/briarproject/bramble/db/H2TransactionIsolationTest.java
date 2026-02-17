@@ -34,10 +34,10 @@ public class H2TransactionIsolationTest extends BrambleTestCase {
 
 	private final File testDir = TestUtils.getTestDirectory();
 	private final File db = new File(testDir, "db");
-	private final String withMvcc = "jdbc:h2:split:" + db.getAbsolutePath()
-			+ ";MV_STORE=TRUE;MVCC=TRUE";
+	// H2 2.x always uses MVStore — MVCC and MV_STORE settings removed
+	private final String withMvcc = "jdbc:h2:split:" + db.getAbsolutePath();
 	private final String withoutMvcc = "jdbc:h2:split:" + db.getAbsolutePath()
-			+ ";MV_STORE=FALSE;MVCC=FALSE;LOCK_MODE=1";
+			+ ";LOCK_MODE=1";
 
 	@Before
 	public void setUp() throws Exception {

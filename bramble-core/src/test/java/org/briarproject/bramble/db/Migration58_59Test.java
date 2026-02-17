@@ -39,7 +39,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Tests for Migration58_59 which adds the mode3Capable column to contacts table.
  * <p>
- * Phase 4c requirement: Verify database migration:
+ * Verify database migration:
  * - Fresh install creates contacts.mode3Capable with DEFAULT FALSE
  * - Upgrade from schema 58 to 59 preserves existing contacts
  * - Existing contacts have mode3Capable = FALSE after migration

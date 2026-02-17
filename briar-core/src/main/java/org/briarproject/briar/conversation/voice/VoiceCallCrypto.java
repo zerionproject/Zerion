@@ -28,7 +28,23 @@ public interface VoiceCallCrypto {
 	
 	AudioKeys deriveAudioKeys(SecretKey voiceCallKey, boolean alice);
 
-	
+	/**
+	 * Generate a 32-byte ephemeral secret for forward secrecy.
+	 * This secret is exchanged during call signaling and mixed into
+	 * the audio key derivation. It MUST be zeroed after use.
+	 */
+	byte[] generateEphemeralSecret();
+
+	/**
+	 * Derive audio keys with forward secrecy using ephemeral secrets
+	 * from both parties. The ephemeral secrets ensure that even if the
+	 * static voiceCallKey is compromised, past call audio cannot be
+	 * decrypted.
+	 */
+	AudioKeys deriveEphemeralAudioKeys(SecretKey voiceCallKey,
+			byte[] localEphemeral, byte[] remoteEphemeral, boolean alice);
+
+
 	byte[] encryptAudioFrame(byte[] plaintext, SecretKey key);
 
 	byte[] encryptAudioFrame(byte[] plaintext, SecretKey key,

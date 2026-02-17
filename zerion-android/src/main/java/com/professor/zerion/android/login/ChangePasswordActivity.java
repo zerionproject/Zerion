@@ -128,13 +128,22 @@ public class ChangePasswordActivity extends ZerionActivity
 		if (newPassword.getText().length() > 0 && newPassword.hasFocus())
 			strengthMeter.setVisibility(VISIBLE);
 		else strengthMeter.setVisibility(INVISIBLE);
-		String firstPassword = newPassword.getText().toString();
-		String secondPassword = newPasswordConfirmation.getText().toString();
-		boolean passwordsMatch = firstPassword.equals(secondPassword);
-		float strength = viewModel.estimatePasswordStrength(firstPassword);
+
+		int firstLen = newPassword.length();
+		int secondLen = newPasswordConfirmation.length();
+		char[] firstChars = new char[firstLen];
+		char[] secondChars = new char[secondLen];
+		if (firstLen > 0) newPassword.getText().getChars(0, firstLen, firstChars, 0);
+		if (secondLen > 0) newPasswordConfirmation.getText().getChars(0, secondLen, secondChars, 0);
+
+		boolean passwordsMatch = java.util.Arrays.equals(firstChars, secondChars);
+		// estimatePasswordStrength requires String; create brief copy
+		String strengthInput = new String(firstChars);
+		float strength = viewModel.estimatePasswordStrength(strengthInput);
+		strengthInput = null;
 		strengthMeter.setStrength(strength);
 
-		if (!firstPassword.isEmpty()) {
+		if (firstLen > 0) {
 			if (strength >= STRONG) {
 				newPasswordEntryWrapper.setHelperText(
 						getString(R.string.password_strong));
@@ -148,13 +157,16 @@ public class ChangePasswordActivity extends ZerionActivity
 
 		setError(newPasswordEntryWrapper,
 				getString(R.string.password_too_weak),
-				!firstPassword.isEmpty() && strength < QUITE_WEAK);
+				firstLen > 0 && strength < QUITE_WEAK);
 		setError(newPasswordConfirmationWrapper,
 				getString(R.string.passwords_do_not_match),
-				!secondPassword.isEmpty() && !passwordsMatch);
+				secondLen > 0 && !passwordsMatch);
 		changePasswordButton.setEnabled(
-				!currentPassword.getText().toString().isEmpty() &&
+				currentPassword.length() > 0 &&
 						passwordsMatch && strength >= QUITE_WEAK);
+
+		java.util.Arrays.fill(firstChars, '\0');
+		java.util.Arrays.fill(secondChars, '\0');
 	}
 
 	@Override
@@ -168,8 +180,10 @@ public class ChangePasswordActivity extends ZerionActivity
 		changePasswordButton.setVisibility(INVISIBLE);
 		progress.setVisibility(VISIBLE);
 
-		String curPwd = currentPassword.getText().toString();
-		String newPwd = newPassword.getText().toString();
+		char[] curPwd = new char[currentPassword.length()];
+		currentPassword.getText().getChars(0, curPwd.length, curPwd, 0);
+		char[] newPwd = new char[newPassword.length()];
+		newPassword.getText().getChars(0, newPwd.length, newPwd, 0);
 		viewModel.changePassword(curPwd, newPwd).observeEvent(this, result -> {
 					if (result == SUCCESS) {
 						Toast.makeText(ChangePasswordActivity.this,

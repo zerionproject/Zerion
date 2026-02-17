@@ -116,6 +116,13 @@ public class NicknameFragment extends BaseFragment {
 			return null;
 		}
 		String name = text.toString().trim();
+		// Strip Unicode control characters and homoglyph attack vectors
+		name = stripControlCharacters(name);
+		if (name.isEmpty()) {
+			contactNameLayout.setError(getString(R.string.nickname_missing));
+			contactNameInput.requestFocus();
+			return null;
+		}
 		if (utf8IsTooLong(name, MAX_AUTHOR_NAME_LENGTH)) {
 			contactNameLayout.setError(getString(R.string.name_too_long));
 			contactNameInput.requestFocus();
@@ -123,6 +130,30 @@ public class NicknameFragment extends BaseFragment {
 		}
 		contactNameLayout.setError(null);
 		return name;
+	}
+
+	// Remove Unicode control characters, zero-width chars, and
+	// bidirectional override characters that enable homoglyph attacks
+	private static String stripControlCharacters(String input) {
+		StringBuilder sb = new StringBuilder(input.length());
+		for (int i = 0; i < input.length(); i++) {
+			char c = input.charAt(i);
+			int type = Character.getType(c);
+			if (type == Character.CONTROL ||
+				type == Character.FORMAT ||
+				type == Character.SURROGATE ||
+				type == Character.PRIVATE_USE ||
+				c == '\u200B' || c == '\u200C' || c == '\u200D' ||
+				c == '\u200E' || c == '\u200F' ||
+				c == '\u202A' || c == '\u202B' || c == '\u202C' ||
+				c == '\u202D' || c == '\u202E' ||
+				c == '\u2066' || c == '\u2067' || c == '\u2068' ||
+				c == '\u2069' || c == '\uFEFF') {
+				continue;
+			}
+			sb.append(c);
+		}
+		return sb.toString();
 	}
 
 	private void onAddButtonClicked() {

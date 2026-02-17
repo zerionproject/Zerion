@@ -11,10 +11,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
-import java.net.Proxy;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -148,44 +145,34 @@ public class TorStatusMonitor {
         }
     }
 
+    /**
+     * Tests Tor connectivity by performing a SOCKS5 handshake with the local
+     * Tor SOCKS port. This verifies Tor is accepting connections without
+     * making any external network requests that could leak DNS or IP.
+     */
     private boolean testTorConnection() {
         try {
-            Proxy proxy = new Proxy(Proxy.Type.SOCKS,
-                    new InetSocketAddress("127.0.0.1", torSocksPort));
-
-            URL url = new URL("https://check.torproject.org/api/ip");
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection(proxy);
-            conn.setConnectTimeout(5000);
-            conn.setReadTimeout(5000);
-
-            int responseCode = conn.getResponseCode();
-            if (responseCode == 200) {
-                BufferedReader reader = new BufferedReader(
-                        new InputStreamReader(conn.getInputStream()));
-                String response = reader.readLine();
-                reader.close();
-                return response != null && response.contains("\"IsTor\":true");
-            }
+            java.net.Socket socket = new java.net.Socket();
+            socket.connect(new InetSocketAddress("127.0.0.1", torSocksPort), 2000);
+            // Perform SOCKS5 greeting to verify Tor is ready
+            java.io.OutputStream out = socket.getOutputStream();
+            java.io.InputStream in = socket.getInputStream();
+            // SOCKS5 greeting: version 5, 1 auth method, no auth
+            out.write(new byte[]{0x05, 0x01, 0x00});
+            out.flush();
+            byte[] response = new byte[2];
+            int read = in.read(response);
+            socket.close();
+            // Valid SOCKS5 response: version 5, accepted no-auth
+            return read == 2 && response[0] == 0x05 && response[1] == 0x00;
         } catch (Exception e) {
+            return false;
         }
-        return false;
     }
 
     private boolean isTorProcessRunning() {
-        try {
-            Process process = Runtime.getRuntime().exec("ps");
-            BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(process.getInputStream()));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (line.contains("tor") || line.contains("Tor")) {
-                    return true;
-                }
-            }
-            reader.close();
-        } catch (Exception e) {
-        }
-        return false;
+        // Check if Tor is running via SOCKS port probe
+        return isTorSocksActive();
     }
 
     private int getBootstrapProgress() {
@@ -362,24 +349,9 @@ public class TorStatusMonitor {
     }
 
     private String getCurrentExitIp() {
-        try {
-            Proxy proxy = new Proxy(Proxy.Type.SOCKS,
-                    new InetSocketAddress("127.0.0.1", torSocksPort));
-
-            URL url = new URL("https://api.ipify.org");
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection(proxy);
-            conn.setConnectTimeout(3000);
-            conn.setReadTimeout(3000);
-
-            BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(conn.getInputStream()));
-            String ip = reader.readLine();
-            reader.close();
-
-            return ip != null ? ip : "Unknown";
-        } catch (Exception e) {
-            return "Unknown";
-        }
+        // Never make external requests to discover exit IP.
+        // Tor exit IPs are hidden by design — exposing them is a privacy risk.
+        return "Hidden";
     }
 
     public LiveData<TorStatus> getTorStatus() {

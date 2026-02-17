@@ -4,8 +4,11 @@ import org.bouncycastle.crypto.generators.Argon2BytesGenerator;
 import org.bouncycastle.crypto.params.Argon2Parameters;
 import org.briarproject.bramble.api.crypto.SecretKey;
 import org.briarproject.bramble.api.system.Clock;
-import org.briarproject.bramble.util.StringUtils;
 import javax.inject.Inject;
+
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.StandardCharsets;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -77,7 +80,7 @@ class Argon2idKdf implements PasswordBasedKdf {
 	}
 
 	@Override
-	public SecretKey deriveKey(String password, byte[] salt, int cost) {
+	public SecretKey deriveKey(char[] password, byte[] salt, int cost) {
 		int memoryKb = decodeMemoryKb(cost);
 		int iterations = decodeIterations(cost);
 		if (memoryKb < MIN_MEMORY_KB) memoryKb = MIN_MEMORY_KB;
@@ -85,23 +88,31 @@ class Argon2idKdf implements PasswordBasedKdf {
 		if (iterations < MIN_ITERATIONS) iterations = MIN_ITERATIONS;
 		if (iterations > MAX_ITERATIONS) iterations = MAX_ITERATIONS;
 
-		byte[] passwordBytes = StringUtils.toUtf8(password);
+		ByteBuffer byteBuffer = StandardCharsets.UTF_8.encode(
+				CharBuffer.wrap(password));
+		byte[] passwordBytes = new byte[byteBuffer.remaining()];
+		byteBuffer.get(passwordBytes);
 
-		Argon2Parameters params = new Argon2Parameters.Builder(Argon2Parameters.ARGON2_id)
-				.withMemoryAsKB(memoryKb)
-				.withIterations(iterations)
-				.withParallelism(PARALLELISM)
-				.withSalt(salt)
-				.build();
+		try {
+			Argon2Parameters params = new Argon2Parameters.Builder(Argon2Parameters.ARGON2_id)
+					.withMemoryAsKB(memoryKb)
+					.withIterations(iterations)
+					.withParallelism(PARALLELISM)
+					.withSalt(salt)
+					.build();
 
-		Argon2BytesGenerator generator = new Argon2BytesGenerator();
-		generator.init(params);
+			Argon2BytesGenerator generator = new Argon2BytesGenerator();
+			generator.init(params);
 
-		byte[] output = new byte[SecretKey.LENGTH];
-		generator.generateBytes(passwordBytes, output);
+			byte[] output = new byte[SecretKey.LENGTH];
+			generator.generateBytes(passwordBytes, output);
 
-		SecretKey key = new SecretKey(output);
-		return key;
+			return new SecretKey(output);
+		} finally {
+			// Zero password bytes after KDF
+			java.util.Arrays.fill(passwordBytes, (byte) 0);
+			java.util.Arrays.fill(byteBuffer.array(), (byte) 0);
+		}
 	}
 
 	

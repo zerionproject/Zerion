@@ -102,11 +102,10 @@ public interface CryptoComponent {
 			byte[]... inputs);
 
 	
-	byte[] encryptWithPassword(byte[] plaintext, String password,
+	byte[] encryptWithPassword(byte[] plaintext, char[] password,
 			@Nullable KeyStrengthener keyStrengthener);
 
-	
-	byte[] decryptWithPassword(byte[] ciphertext, String password,
+	byte[] decryptWithPassword(byte[] ciphertext, char[] password,
 			@Nullable KeyStrengthener keyStrengthener)
 			throws DecryptionException;
 

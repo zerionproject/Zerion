@@ -12,7 +12,7 @@
 -keepattributes SourceFile,LineNumberTable
 
 # ============================================================================
-# SECURITY HARDENING - Phase 2.6
+# SECURITY HARDENING
 # ============================================================================
 # Enable obfuscation for anti-reverse-engineering
 # Keep only what's absolutely necessary for Android/DI to function
@@ -103,9 +103,9 @@
 }
 
 # ============================================================================
-# BRIARPROJECT API
+# ZERION API
 # ============================================================================
-# Keep Briar API interfaces that are used via reflection or across modules
+# Keep API interfaces that are used via reflection or across modules
 -keep,includedescriptorclasses class com.professor.zerion.api.android.** { *; }
 
 # ============================================================================
@@ -179,18 +179,24 @@
 -keep class org.bouncycastle.pqc.crypto.mldsa.** { *; }
 -dontwarn org.bouncycastle.**
 
-# Keep Briar/Zerion crypto classes that interact with BouncyCastle
+# Keep Zerion crypto classes that interact with BouncyCastle
 -keep class org.briarproject.bramble.crypto.** { *; }
 -keep class org.briarproject.bramble.api.crypto.** { *; }
 
 # ============================================================================
-# BRAMBLE/BRIAR CORE CLASSES
+# BRAMBLE CORE CLASSES
 # ============================================================================
-# Keep all Bramble and Briar interfaces and implementations
+# Keep all Bramble framework interfaces and implementations
 -keep class org.briarproject.bramble.** { *; }
 -keep class org.briarproject.briar.** { *; }
 -keep interface org.briarproject.bramble.** { *; }
 -keep interface org.briarproject.briar.** { *; }
+
+# ============================================================================
+# Dead clearnet TCP plugins (not registered in PluginConfig — Tor-only)
+# ============================================================================
+# R8 minification with minifyEnabled=true automatically strips unreferenced
+# classes. No explicit rules needed — these classes have zero references.
 
 # Keep all Zerion Android classes
 -keep class com.professor.zerion.** { *; }

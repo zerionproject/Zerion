@@ -32,11 +32,14 @@ import static org.briarproject.bramble.util.StringUtils.toHexString;
 class AccountManagerImpl implements AccountManager {
 	private static final String DB_KEY_FILENAME = "db.key";
 	private static final String DB_KEY_BACKUP_FILENAME = "db.key.bak";
+	private static final String LOCKOUT_FILENAME = "login.lockout";
+	private static final int MAX_FAILED_ATTEMPTS = 10;
+	private static final long LOCKOUT_DURATION_MS = 5 * 60 * 1000;
 
 	private final DatabaseConfig databaseConfig;
 	private final CryptoComponent crypto;
 	private final IdentityManager identityManager;
-	private final File dbKeyFile, dbKeyBackupFile;
+	private final File dbKeyFile, dbKeyBackupFile, lockoutFile;
 
 	final Object stateChangeLock = new Object();
 
@@ -52,6 +55,7 @@ class AccountManagerImpl implements AccountManager {
 		File keyDir = databaseConfig.getDatabaseKeyDirectory();
 		dbKeyFile = new File(keyDir, DB_KEY_FILENAME);
 		dbKeyBackupFile = new File(keyDir, DB_KEY_BACKUP_FILENAME);
+		lockoutFile = new File(keyDir, LOCKOUT_FILENAME);
 	}
 
 	@Override
@@ -129,7 +133,7 @@ class AccountManagerImpl implements AccountManager {
 	}
 
 	@Override
-	public boolean createAccount(String name, String password) {
+	public boolean createAccount(String name, char[] password) {
 		synchronized (stateChangeLock) {
 			if (hasDatabaseKey())
 				throw new AssertionError("Already have a database key");
@@ -143,7 +147,7 @@ class AccountManagerImpl implements AccountManager {
 	}
 
 	@GuardedBy("stateChangeLock")
-	private boolean encryptAndStoreDatabaseKey(SecretKey key, String password) {
+	private boolean encryptAndStoreDatabaseKey(SecretKey key, char[] password) {
 		byte[] plaintext = key.getBytes();
 		byte[] ciphertext = crypto.encryptWithPassword(plaintext, password,
 				databaseConfig.getKeyStrengthener());
@@ -160,14 +164,83 @@ class AccountManagerImpl implements AccountManager {
 	}
 
 	@Override
-	public void signIn(String password) throws DecryptionException {
+	public void signIn(char[] password) throws DecryptionException {
 		synchronized (stateChangeLock) {
-			databaseKey = loadAndDecryptDatabaseKey(password);
+			checkLockout();
+			try {
+				databaseKey = loadAndDecryptDatabaseKey(password);
+				resetLockout();
+			} catch (DecryptionException e) {
+				recordFailedAttempt();
+				throw e;
+			}
 		}
 	}
 
 	@GuardedBy("stateChangeLock")
-	private SecretKey loadAndDecryptDatabaseKey(String password)
+	private void checkLockout() throws DecryptionException {
+		if (!lockoutFile.exists()) return;
+		try {
+			BufferedReader reader = new BufferedReader(new InputStreamReader(
+					new FileInputStream(lockoutFile), UTF_8));
+			String line = reader.readLine();
+			reader.close();
+			if (line == null) return;
+			String[] parts = line.split(",");
+			if (parts.length != 2) return;
+			int attempts = Integer.parseInt(parts[0]);
+			long lastFailTime = Long.parseLong(parts[1]);
+			if (attempts >= MAX_FAILED_ATTEMPTS) {
+				long elapsed = System.currentTimeMillis() - lastFailTime;
+				if (elapsed < LOCKOUT_DURATION_MS) {
+					throw new DecryptionException(INVALID_CIPHERTEXT);
+				}
+					resetLockout();
+			}
+		} catch (IOException | NumberFormatException e) {
+			lockoutFile.delete();
+		}
+	}
+
+	@GuardedBy("stateChangeLock")
+	private void recordFailedAttempt() {
+		int attempts = 0;
+		if (lockoutFile.exists()) {
+			try {
+				BufferedReader reader = new BufferedReader(
+						new InputStreamReader(
+								new FileInputStream(lockoutFile), UTF_8));
+				String line = reader.readLine();
+				reader.close();
+				if (line != null) {
+					String[] parts = line.split(",");
+					if (parts.length == 2) {
+						attempts = Integer.parseInt(parts[0]);
+					}
+				}
+			} catch (IOException | NumberFormatException e) {
+			}
+		}
+		attempts++;
+		try {
+			FileOutputStream out = new FileOutputStream(lockoutFile);
+			String data = attempts + "," + System.currentTimeMillis();
+			out.write(data.getBytes(UTF_8));
+			out.flush();
+			out.close();
+		} catch (IOException e) {
+		}
+	}
+
+	@GuardedBy("stateChangeLock")
+	private void resetLockout() {
+		if (lockoutFile.exists()) {
+			lockoutFile.delete();
+		}
+	}
+
+	@GuardedBy("stateChangeLock")
+	private SecretKey loadAndDecryptDatabaseKey(char[] password)
 			throws DecryptionException {
 		String hex = loadEncryptedDatabaseKey();
 		if (hex == null) {
@@ -191,11 +264,13 @@ class AccountManagerImpl implements AccountManager {
 	}
 
 	@Override
-	public void changePassword(String oldPassword, String newPassword)
+	public void changePassword(char[] oldPassword, char[] newPassword)
 			throws DecryptionException {
 		synchronized (stateChangeLock) {
 			SecretKey key = loadAndDecryptDatabaseKey(oldPassword);
 			encryptAndStoreDatabaseKey(key, newPassword);
+			databaseKey = null;
+			databaseKey = key;
 		}
 	}
 }

@@ -98,6 +98,9 @@ class KeyAgreementTaskImpl extends Thread implements KeyAgreementTask,
 				localPayload, localKeyPair, alice);
 		try {
 			SecretKey masterKey = protocol.perform();
+			// Zero local key pair after agreement
+			java.util.Arrays.fill(localKeyPair.getPublic().getEncoded(), (byte) 0);
+			java.util.Arrays.fill(localKeyPair.getPrivate().getEncoded(), (byte) 0);
 			KeyAgreementResult result =
 					new KeyAgreementResult(masterKey, transport.getConnection(),
 							transport.getTransportId(), alice);

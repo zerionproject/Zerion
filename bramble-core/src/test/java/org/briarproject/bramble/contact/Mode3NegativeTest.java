@@ -29,7 +29,7 @@ import static org.junit.Assert.fail;
 /**
  * Negative and failure tests for Mode 3 capability negotiation.
  * <p>
- * Phase 4c requirement: Verify fail-closed behavior:
+ * Verify fail-closed behavior:
  * - Corrupted Mode 3 capability record → handshake fails cleanly
  * - Unexpected record type → rejected
  * - Partial negotiation → fail-closed
@@ -333,7 +333,7 @@ public class Mode3NegativeTest extends BrambleMockTestCase {
 
 	/**
 	 * Test 16: MODE3_ENABLED = true enables Mode 3 negotiation.
-	 * Phase 4d activated Mode 3 - verify the flag is enabled.
+	 * Verify Mode 3 feature flag is enabled.
 	 */
 	@Test
 	public void testFeatureFlagEnablesNegotiation() {

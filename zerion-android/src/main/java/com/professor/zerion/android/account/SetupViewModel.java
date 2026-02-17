@@ -33,7 +33,9 @@ class SetupViewModel extends AndroidViewModel {
 
 
 	@Nullable
-	private String authorName, password;
+	private String authorName;
+	@Nullable
+	private char[] password;
 	private final MutableLiveEvent<State> state = new MutableLiveEvent<>();
 	private final MutableLiveData<Boolean> isCreatingAccount =
 			new MutableLiveData<>(false);
@@ -77,7 +79,7 @@ class SetupViewModel extends AndroidViewModel {
 		state.setEvent(SET_PASSWORD);
 	}
 
-	void setPassword(String password) {
+	void setPassword(char[] password) {
 		if (authorName == null) throw new IllegalStateException();
 		this.password = password;
 		if (needToShowDozeFragment()) {
@@ -103,12 +105,18 @@ class SetupViewModel extends AndroidViewModel {
 		if (authorName == null) throw new IllegalStateException();
 		if (password == null) throw new IllegalStateException();
 		isCreatingAccount.setValue(true);
+		char[] pw = password;
 		ioExecutor.execute(() -> {
-			if (accountManager.createAccount(authorName, password)) {
-				state.postEvent(CREATED);
-			} else {
-				state.postEvent(FAILED);
+			try {
+				if (accountManager.createAccount(authorName, pw)) {
+					state.postEvent(CREATED);
+				} else {
+					state.postEvent(FAILED);
+				}
+			} finally {
+				java.util.Arrays.fill(pw, '\0');
 			}
 		});
+		password = null;
 	}
 }

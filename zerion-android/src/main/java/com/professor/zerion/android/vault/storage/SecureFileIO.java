@@ -104,13 +104,6 @@ public class SecureFileIO {
 				throw new RuntimeException("Failed to create vault directory");
 			}
 		}
-
-		vaultDir.setReadable(false, false);
-		vaultDir.setReadable(true, true);
-		vaultDir.setWritable(false, false);
-		vaultDir.setWritable(true, true);
-		vaultDir.setExecutable(false, false);
-		vaultDir.setExecutable(true, true);
 	}
 
 	public void writeSecure(String filename, byte[] data) throws IOException {

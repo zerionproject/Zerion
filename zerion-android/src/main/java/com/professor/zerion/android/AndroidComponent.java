@@ -8,6 +8,7 @@ import org.briarproject.bramble.BrambleAndroidModule;
 import org.briarproject.bramble.BrambleAppComponent;
 import org.briarproject.bramble.BrambleCoreEagerSingletons;
 import org.briarproject.bramble.BrambleCoreModule;
+import org.briarproject.bramble.db.AndroidDatabaseModule;
 import org.briarproject.bramble.account.AccountModule;
 import org.briarproject.bramble.api.FeatureFlags;
 import org.briarproject.bramble.api.account.AccountManager;
@@ -78,6 +79,7 @@ import dagger.Component;
 @Singleton
 @Component(modules = {
 		BrambleCoreModule.class,
+		AndroidDatabaseModule.class,
 		BriarCoreModule.class,
 		BrambleAndroidModule.class,
 		AccountModule.class,

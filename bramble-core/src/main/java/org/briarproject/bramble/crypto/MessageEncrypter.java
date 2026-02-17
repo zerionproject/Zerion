@@ -18,7 +18,9 @@ import org.bouncycastle.crypto.generators.ECKeyPairGenerator;
 import org.bouncycastle.crypto.generators.EphemeralKeyPairGenerator;
 import org.bouncycastle.crypto.generators.KDF2BytesGenerator;
 import org.bouncycastle.crypto.macs.HMac;
+import org.bouncycastle.crypto.BufferedBlockCipher;
 import org.bouncycastle.crypto.modes.CBCBlockCipher;
+import org.bouncycastle.crypto.modes.SICBlockCipher;
 import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.ECDomainParameters;
@@ -41,9 +43,6 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.security.SecureRandom;
 import java.util.Scanner;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import javax.annotation.concurrent.Immutable;
 
 import static org.briarproject.bramble.util.StringUtils.UTF_8;
@@ -51,9 +50,6 @@ import static org.briarproject.bramble.util.StringUtils.UTF_8;
 @Immutable
 @NotNullByDefault
 public class MessageEncrypter {
-
-	private static final Logger LOG =
-			Logger.getLogger(MessageEncrypter.class.getName());
 
 	private static final String KEY_TYPE = "SEC1_brainpoolp512r1";
 	private static final ECDomainParameters PARAMETERS;
@@ -111,13 +107,36 @@ public class MessageEncrypter {
 			throws CryptoException {
 		if (!(priv instanceof Sec1PrivateKey))
 			throw new IllegalArgumentException();
-		IESEngine engine = getEngine();
-		engine.init(((Sec1PrivateKey) priv).getKey(), getCipherParameters(),
-				ephemeralParser);
-		return engine.processBlock(ciphertext, 0, ciphertext.length);
+		// Try CTR mode first (new format), fall back to legacy
+		// CBC for messages encrypted before the migration
+		try {
+			IESEngine engine = getEngine();
+			engine.init(((Sec1PrivateKey) priv).getKey(),
+					getCipherParameters(),
+					new PublicKeyParser(PARAMETERS));
+			return engine.processBlock(ciphertext, 0, ciphertext.length);
+		} catch (Exception e) {
+			// Legacy CBC fallback for pre-migration messages
+			IESEngine legacy = getLegacyCbcEngine();
+			legacy.init(((Sec1PrivateKey) priv).getKey(),
+					getCipherParameters(),
+					new PublicKeyParser(PARAMETERS));
+			return legacy.processBlock(ciphertext, 0, ciphertext.length);
+		}
 	}
 
+	// CTR mode engine
 	private IESEngine getEngine() {
+		BasicAgreement agreement = new ECDHCBasicAgreement();
+		DerivationFunction kdf = new KDF2BytesGenerator(new SHA256Digest());
+		Mac mac = new HMac(new SHA256Digest());
+		BlockCipher cipher = new SICBlockCipher(new AESLightEngine());
+		BufferedBlockCipher buffered = new BufferedBlockCipher(cipher);
+		return new IESEngine(agreement, kdf, mac, buffered);
+	}
+
+	// Legacy engine for decrypting pre-migration CBC messages
+	private IESEngine getLegacyCbcEngine() {
 		BasicAgreement agreement = new ECDHCBasicAgreement();
 		DerivationFunction kdf = new KDF2BytesGenerator(new SHA256Digest());
 		Mac mac = new HMac(new SHA256Digest());
@@ -158,108 +177,4 @@ public class MessageEncrypter {
 		}
 	}
 
-	public static void main(String[] args) {
-		if (args.length < 1) {
-			printUsage();
-			System.exit(1);
-		}
-		if (args[0].equals("generate")) {
-			if (args.length != 3) {
-				printUsage();
-				System.exit(1);
-			}
-			try {
-				generateKeyPair(args[1], args[2]);
-			} catch (Exception e) {
-				LOG.log(Level.SEVERE, "Key generation failed", e);
-				System.exit(2);
-			}
-		} else if (args[0].equals("encrypt")) {
-			if (args.length != 2) {
-				printUsage();
-				System.exit(1);
-			}
-			try {
-				encryptMessage(args[1]);
-			} catch (Exception e) {
-				LOG.log(Level.SEVERE, "Encryption failed", e);
-				System.exit(2);
-			}
-		} else if (args[0].equals("decrypt")) {
-			if (args.length != 2) {
-				printUsage();
-				System.exit(1);
-			}
-			try {
-				decryptMessage(args[1]);
-			} catch (Exception e) {
-				LOG.log(Level.SEVERE, "Decryption failed", e);
-				System.exit(2);
-			}
-		} else {
-			printUsage();
-			System.exit(1);
-		}
-	}
-
-	private static void printUsage() {
-		LOG.warning("Usage:\n"
-				+ "MessageEncrypter generate <public_key_file>"
-				+ " <private_key_file>\n"
-				+ "MessageEncrypter encrypt <public_key_file>\n"
-				+ "MessageEncrypter decrypt <private_key_file>");
-	}
-
-	private static void generateKeyPair(String publicKeyFile,
-			String privateKeyFile) throws Exception {
-		SecureRandom random = new SecureRandom();
-		MessageEncrypter encrypter = new MessageEncrypter(random);
-		KeyPair keyPair = encrypter.generateKeyPair();
-		PrintStream out = new PrintStream(new FileOutputStream(publicKeyFile));
-		out.print(StringUtils.toHexString(keyPair.getPublic().getEncoded()));
-		out.flush();
-		out.close();
-		out = new PrintStream(new FileOutputStream(privateKeyFile));
-		out.print(StringUtils.toHexString(keyPair.getPrivate().getEncoded()));
-		out.flush();
-		out.close();
-	}
-
-	private static void encryptMessage(String publicKeyFile) throws Exception {
-		SecureRandom random = new SecureRandom();
-		MessageEncrypter encrypter = new MessageEncrypter(random);
-		InputStream in = new FileInputStream(publicKeyFile);
-		byte[] keyBytes = StringUtils.fromHexString(readFully(in).trim());
-		PublicKey publicKey =
-				encrypter.getKeyParser().parsePublicKey(keyBytes);
-		String message = readFully(System.in);
-		byte[] plaintext = message.getBytes(UTF_8);
-		byte[] ciphertext = encrypter.encrypt(publicKey, plaintext);
-		LOG.info(AsciiArmour.wrap(ciphertext, LINE_LENGTH));
-	}
-
-	private static void decryptMessage(String privateKeyFile) throws Exception {
-		SecureRandom random = new SecureRandom();
-		MessageEncrypter encrypter = new MessageEncrypter(random);
-		InputStream in = new FileInputStream(privateKeyFile);
-		byte[] keyBytes = StringUtils.fromHexString(readFully(in).trim());
-		PrivateKey privateKey =
-				encrypter.getKeyParser().parsePrivateKey(keyBytes);
-		byte[] ciphertext = AsciiArmour.unwrap(readFully(System.in));
-		byte[] plaintext = encrypter.decrypt(privateKey, ciphertext);
-		LOG.info(new String(plaintext, UTF_8));
-	}
-
-	private static String readFully(InputStream in) throws IOException {
-		String newline = System.getProperty("line.separator");
-		StringBuilder stringBuilder = new StringBuilder();
-		Scanner scanner = new Scanner(in);
-		while (scanner.hasNextLine()) {
-			stringBuilder.append(scanner.nextLine());
-			stringBuilder.append(newline);
-		}
-		scanner.close();
-		in.close();
-		return stringBuilder.toString();
-	}
 }

@@ -1,6 +1,7 @@
 package org.briarproject.bramble.transport.agreement;
 
 import org.briarproject.bramble.BrambleCoreModule;
+import org.briarproject.bramble.db.DatabaseModule;
 import org.briarproject.bramble.api.client.ContactGroupFactory;
 import org.briarproject.bramble.api.contact.ContactManager;
 import org.briarproject.bramble.api.db.DatabaseComponent;
@@ -21,6 +22,7 @@ import dagger.Component;
 @Component(modules = {
 		BrambleCoreIntegrationTestModule.class,
 		BrambleCoreModule.class,
+		DatabaseModule.class,
 		TestDnsModule.class,
 		TestSocksModule.class,
 		TestPluginConfigModule.class,

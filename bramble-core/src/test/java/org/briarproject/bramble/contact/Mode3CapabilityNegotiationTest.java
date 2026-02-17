@@ -24,7 +24,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Tests for Mode 3 (Triple Ratchet) capability negotiation during handshake.
  * <p>
- * Phase 4c requirement: Verify capability negotiation is:
+ * Verify capability negotiation is:
  * - Explicit opt-in only
  * - Symmetric and deterministic
  * - No silent upgrades
