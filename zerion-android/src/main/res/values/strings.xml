@@ -82,6 +82,15 @@
 	<string name="startup_failed_data_too_old_error">Your account was created with an old version of this app and cannot be opened with this version.\n\nYou must either reinstall the old version or set up a new account by choosing \'I have forgotten my password\' at the password prompt.</string>
 	<string name="startup_failed_data_too_new_error">Your account was created with a newer version of this app and cannot be opened with this version.\n\nPlease upgrade to the latest version and try again.</string>
 	<string name="startup_failed_service_error">Zerion was unable to start a required component.\n\nPlease upgrade to the latest version of the app and try again.</string>
+	<string name="startup_failed_migration_error">Zerion was unable to upgrade your database from the previous version. Your data has been preserved.\n\nPlease try again or contact support.</string>
+	<string name="migration_title">Database Upgrade Required</string>
+	<string name="migration_description">Your account was created with an older version of Zerion that used a different database format. The automatic upgrade was unsuccessful.\n\nYour data has not been deleted. You can retry the upgrade, export diagnostic information for support, or start with a new account.</string>
+	<string name="migration_retry">Retry Upgrade</string>
+	<string name="migration_export">Export Diagnostics</string>
+	<string name="migration_start_fresh">Start Fresh</string>
+	<string name="migration_delete_title">Delete Account?</string>
+	<string name="migration_delete_message">This will permanently delete your identity, contacts, and messages. This action cannot be undone.</string>
+	<string name="migration_delete_confirm">Delete</string>
 	<plurals name="expiry_warning">
 		<item quantity="one">This is a test version of Zerion. Your account will expire in %d day and cannot be renewed.</item>
 		<item quantity="other">This is a test version of Zerion. Your account will expire in %d days and cannot be renewed.</item>
