@@ -267,7 +267,7 @@
 			android:excludeFromRecents="true"
 			android:exported="false"
 			android:label=""
-			android:theme="@style/AppTheme" />
+			android:theme="@style/ZerionTheme.NoActionBar" />
 
 		<activity
 			android:name="com.professor.zerion.android.settings.SettingsActivity"
