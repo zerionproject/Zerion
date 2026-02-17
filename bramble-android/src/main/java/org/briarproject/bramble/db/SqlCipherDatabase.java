@@ -82,17 +82,23 @@ class SqlCipherDatabase extends JdbcDatabase {
 
 		File dir = config.getDatabaseDirectory();
 		boolean reopen = isNonEmptyDirectory(dir);
+		// Track whether the directory originally existed with content.
+		// If it did but no valid SQLCipher database remains after cleanup,
+		// the account key files reference a database that no longer exists.
+		boolean originallyExpectedReopen = reopen;
 
 		if (reopen) {
 			// Clean up any leftover migration staging files
 			File staging = new File(dir, SQLCIPHER_STAGING_FILE);
 			if (staging.exists()) staging.delete();
-			// Remove any H2 database files (migration no longer supported)
+			// Remove any legacy H2 database files (H2 cannot run on Android,
+			// so migration is not possible — start fresh instead)
 			File[] files = dir.listFiles();
 			if (files != null) {
 				for (File f : files) {
 					String name = f.getName();
-					if (name.endsWith(".h2.db") || name.endsWith(".trace.db")
+					if (name.endsWith(".h2.db") || name.endsWith(".mv.db")
+							|| name.endsWith(".trace.db")
 							|| name.endsWith(".lock.db")
 							|| name.equals(MIGRATION_MARKER)) {
 						f.delete();
@@ -110,6 +116,15 @@ class SqlCipherDatabase extends JdbcDatabase {
 				dbFile.delete();
 				reopen = false;
 			}
+		}
+
+		// If the database directory existed but no valid database remains
+		// (legacy H2 files cleaned up, or SQLCipher file missing/corrupt),
+		// delete the account key files so the app returns to the "create
+		// account" screen on next launch, then abort this startup.
+		if (originallyExpectedReopen && !reopen) {
+			deleteAccountKeyFiles();
+			throw new DbException();
 		}
 
 		if (!reopen) dir.mkdirs();
@@ -134,6 +149,21 @@ class SqlCipherDatabase extends JdbcDatabase {
 		}
 
 		return reopen;
+	}
+
+	/**
+	 * Deletes account key files (db.key, db.key.bak, login.lockout) from
+	 * the key directory so that AccountManager.accountExists() returns false
+	 * on the next app launch. Called when the database cannot be reopened
+	 * (e.g. after H2-to-SQLCipher upgrade where migration is not possible).
+	 */
+	private void deleteAccountKeyFiles() {
+		File keyDir = config.getDatabaseKeyDirectory();
+		if (keyDir.exists()) {
+			new File(keyDir, "db.key").delete();
+			new File(keyDir, "db.key.bak").delete();
+			new File(keyDir, "login.lockout").delete();
+		}
 	}
 
 	private boolean hasValidSchema(File dbFile, SecretKey key) {
