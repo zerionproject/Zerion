@@ -49,5 +49,10 @@ nul
 
 .claude/
 
+# Pentest and security audit data (sensitive)
+PentestZerion/
+docs/SECURITY_AUDIT_REPORT.md
+scripts/run-security-audit.*
+
 # Generated Tor binaries (extracted from dependencies during build)
 bramble-android/src/main/jniLibs/
