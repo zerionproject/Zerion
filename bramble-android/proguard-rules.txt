@@ -1,11 +1,3 @@
-# Keep ALL H2 classes for one-time migration from H2 to SQLCipher.
-# H2 uses heavy internal reflection (connection factories, value types,
-# MVStore engine, AES encryption). Keeping only a few classes causes
-# NoClassDefFoundError / ClassNotFoundException at runtime on Android.
--keep class org.h2.** { *; }
--dontwarn org.h2.**
--dontnote org.h2.**
-
 # SQLCipher
 -keep class net.zetetic.database.sqlcipher.** { *; }
 -dontwarn net.zetetic.database.sqlcipher.**

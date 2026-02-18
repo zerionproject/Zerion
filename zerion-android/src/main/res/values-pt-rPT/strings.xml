@@ -816,9 +816,9 @@ O teu contacto também pode alterar esta configuração para ambos.</string>
 	<string name="contact_type_zerion_title">Zerion</string>
 	<string name="contact_type_zerion_badge">Segurança Pós-Quântica</string>
 	<string name="contact_type_zerion_description">Liga-te a outros utilizadores do Zerion usando criptografia híbrida pós-quântica. Oferece proteção contra futuros ataques de computadores quânticos.</string>
-	<string name="contact_type_briar_title">Modo Clássico</string>
-	<string name="contact_type_briar_badge">Segurança Clássica</string>
-	<string name="contact_type_briar_description">Liga-te usando criptografia clássica. Usa esta opção para compatibilidade com contactos em versões anteriores.</string>
+	<string name="contact_type_classic_title">Modo Clássico</string>
+	<string name="contact_type_classic_badge">Segurança Clássica</string>
+	<string name="contact_type_classic_description">Liga-te usando criptografia clássica. Usa esta opção para compatibilidade com contactos em versões anteriores.</string>
 	<string name="recommended">Recomendado</string>
 	<string name="contact_type_info">Escolhe Zerion para máxima segurança, ou Modo Clássico para compatibilidade.</string>
 

@@ -17,6 +17,7 @@ import org.briarproject.bramble.api.transport.StreamWriterFactory;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.Nullable;
+
 @NotNullByDefault
 abstract class HandshakeConnection extends Connection {
 
@@ -28,7 +29,7 @@ abstract class HandshakeConnection extends Connection {
 	final DuplexTransportConnection connection;
 	final TransportConnectionReader reader;
 	final TransportConnectionWriter writer;
-	
+
 	final boolean classical;
 
 	HandshakeConnection(KeyManager keyManager,

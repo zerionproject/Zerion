@@ -82,15 +82,6 @@
 	<string name="startup_failed_data_too_old_error">Your account was created with an old version of this app and cannot be opened with this version.\n\nYou must either reinstall the old version or set up a new account by choosing \'I have forgotten my password\' at the password prompt.</string>
 	<string name="startup_failed_data_too_new_error">Your account was created with a newer version of this app and cannot be opened with this version.\n\nPlease upgrade to the latest version and try again.</string>
 	<string name="startup_failed_service_error">Zerion was unable to start a required component.\n\nPlease upgrade to the latest version of the app and try again.</string>
-	<string name="startup_failed_migration_error">Zerion was unable to upgrade your database from the previous version. Your data has been preserved.\n\nPlease try again or contact support.</string>
-	<string name="migration_title">Database Upgrade Required</string>
-	<string name="migration_description">Your account was created with an older version of Zerion that used a different database format. The automatic upgrade was unsuccessful.\n\nYour data has not been deleted. You can retry the upgrade, export diagnostic information for support, or start with a new account.</string>
-	<string name="migration_retry">Retry Upgrade</string>
-	<string name="migration_export">Export Diagnostics</string>
-	<string name="migration_start_fresh">Start Fresh</string>
-	<string name="migration_delete_title">Delete Account?</string>
-	<string name="migration_delete_message">This will permanently delete your identity, contacts, and messages. This action cannot be undone.</string>
-	<string name="migration_delete_confirm">Delete</string>
 	<plurals name="expiry_warning">
 		<item quantity="one">This is a test version of Zerion. Your account will expire in %d day and cannot be renewed.</item>
 		<item quantity="other">This is a test version of Zerion. Your account will expire in %d days and cannot be renewed.</item>
@@ -99,7 +90,7 @@
 	<string name="download_zerion">To continue using Zerion, please download the latest release.</string>
 	<string name="create_new_account">You will need to create a new account, but you can use the same nickname.</string>
 	<string name="download_zerion_button">Download Latest Release</string>
-	<string name="expired_redirect_url" translatable="false">https://example.com</string>
+	<string name="expired_redirect_url" translatable="false">https://zerion.chat</string>
 	<string name="old_android_expiry_date_reached">Zerion no longer runs on Android 4.\nPlease install Zerion on a newer device.</string>
 	<string name="old_android_delete_account">You can tap the button below to delete your account from this device.</string>
 	<string name="delete_account_button">Delete Account</string>
@@ -147,16 +138,6 @@
 	<string name="network_status_label">Status:</string>
 	<string name="network_uptime_label">Uptime:</string>
 	<string name="network_hidden_service_label">Hidden Service:</string>
-	<string name="network_bandwidth_title">Real-Time Bandwidth</string>
-	<string name="network_session_stats">Session Statistics</string>
-	<string name="network_session_duration">Duration:</string>
-	<string name="network_total_download">Total Download</string>
-	<string name="network_total_upload">Total Upload</string>
-	<string name="network_peak_download">Peak Download</string>
-	<string name="network_peak_upload">Peak Upload</string>
-	<string name="network_avg_download">Avg Download</string>
-	<string name="network_avg_upload">Avg Upload</string>
-	<string name="clear">Clear</string>
 	<string name="network_mode_title">Secure Network Mode</string>
 	<string name="network_mode_description">All communication is routed through the Tor network for maximum privacy and security. Your connection is encrypted end-to-end and your identity remains anonymous.</string>
 
@@ -1076,9 +1057,9 @@
 	<string name="contact_type_zerion_title">Zerion</string>
 	<string name="contact_type_zerion_badge">Post-Quantum Security</string>
 	<string name="contact_type_zerion_description">Connect with other Zerion users using hybrid post-quantum cryptography. Provides protection against future quantum computer attacks.</string>
-	<string name="contact_type_briar_title">Classic Mode</string>
-	<string name="contact_type_briar_badge">Classical Security</string>
-	<string name="contact_type_briar_description">Connect using classical cryptography. Use this option for backward compatibility with contacts on older versions.</string>
+	<string name="contact_type_classic_title">Classic Mode</string>
+	<string name="contact_type_classic_badge">Classical Security</string>
+	<string name="contact_type_classic_description">Connect using classical cryptography. Use this option for backward compatibility with contacts on older versions.</string>
 	<string name="recommended">Recommended</string>
 	<string name="contact_type_info">Choose Zerion for maximum security, or Classic Mode for backward compatibility.</string>
 

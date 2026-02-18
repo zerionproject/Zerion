@@ -148,7 +148,7 @@
 					<TextView
 						android:layout_width="wrap_content"
 						android:layout_height="wrap_content"
-						android:text="@string/contact_type_briar_title"
+						android:text="@string/contact_type_classic_title"
 						android:textColor="@android:color/white"
 						android:textSize="18sp"
 						android:textStyle="bold" />
@@ -157,7 +157,7 @@
 						android:layout_width="wrap_content"
 						android:layout_height="wrap_content"
 						android:layout_marginTop="4dp"
-						android:text="@string/contact_type_briar_badge"
+						android:text="@string/contact_type_classic_badge"
 						android:textColor="#80FFFFFF"
 						android:textSize="12sp" />
 
@@ -169,7 +169,7 @@
 				android:layout_width="match_parent"
 				android:layout_height="wrap_content"
 				android:layout_marginTop="@dimen/margin_medium"
-				android:text="@string/contact_type_briar_description"
+				android:text="@string/contact_type_classic_description"
 				android:textColor="#80FFFFFF"
 				android:textSize="14sp" />
 

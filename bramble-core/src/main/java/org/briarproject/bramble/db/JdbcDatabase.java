@@ -1151,41 +1151,44 @@ abstract class JdbcDatabase implements Database<Connection> {
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		try {
-			String sql = "INSERT INTO outgoingKeys (transportId, timePeriod,"
-					+ " contactId, pendingContactId, tagKey, headerKey,"
-					+ " stream, active, rootKey, alice)"
-					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+			// SQLCipher/SQLite: INTEGER in a composite PK does not
+			// auto-increment, so we must calculate the next keySetId
+			String sql = "SELECT COALESCE(MAX(keySetId), 0) + 1"
+					+ " FROM outgoingKeys";
+			ps = txn.prepareStatement(sql);
+			rs = ps.executeQuery();
+			if (!rs.next()) throw new DbStateException();
+			int nextKeySetId = rs.getInt(1);
+			rs.close();
+			ps.close();
+			sql = "INSERT INTO outgoingKeys (transportId, keySetId,"
+					+ " timePeriod, contactId, pendingContactId, tagKey,"
+					+ " headerKey, stream, active, rootKey, alice)"
+					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 			ps = txn.prepareStatement(sql);
 			ps.setString(1, k.getTransportId().getString());
-			ps.setLong(2, k.getTimePeriod());
-			if (c == null) ps.setNull(3, INTEGER);
-			else ps.setInt(3, c.getInt());
-			if (p == null) ps.setNull(4, BINARY);
-			else ps.setBytes(4, p.getBytes());
+			ps.setInt(2, nextKeySetId);
+			ps.setLong(3, k.getTimePeriod());
+			if (c == null) ps.setNull(4, INTEGER);
+			else ps.setInt(4, c.getInt());
+			if (p == null) ps.setNull(5, BINARY);
+			else ps.setBytes(5, p.getBytes());
 			OutgoingKeys outCurr = k.getCurrentOutgoingKeys();
-			ps.setBytes(5, outCurr.getTagKey().getBytes());
-			ps.setBytes(6, outCurr.getHeaderKey().getBytes());
-			ps.setLong(7, outCurr.getStreamCounter());
-			ps.setBoolean(8, outCurr.isActive());
+			ps.setBytes(6, outCurr.getTagKey().getBytes());
+			ps.setBytes(7, outCurr.getHeaderKey().getBytes());
+			ps.setLong(8, outCurr.getStreamCounter());
+			ps.setBoolean(9, outCurr.isActive());
 			if (k.isHandshakeMode()) {
-				ps.setBytes(9, k.getRootKey().getBytes());
-				ps.setBoolean(10, k.isAlice());
+				ps.setBytes(10, k.getRootKey().getBytes());
+				ps.setBoolean(11, k.isAlice());
 			} else {
-				ps.setNull(9, BINARY);
-				ps.setNull(10, BOOLEAN);
+				ps.setNull(10, BINARY);
+				ps.setNull(11, BOOLEAN);
 			}
 			int affected = ps.executeUpdate();
 			if (affected != 1) throw new DbStateException();
 			ps.close();
-			sql = "SELECT keySetId FROM outgoingKeys"
-					+ " ORDER BY keySetId DESC LIMIT 1";
-			ps = txn.prepareStatement(sql);
-			rs = ps.executeQuery();
-			if (!rs.next()) throw new DbStateException();
-			KeySetId keySetId = new KeySetId(rs.getInt(1));
-			if (rs.next()) throw new DbStateException();
-			rs.close();
-			ps.close();
+			KeySetId keySetId = new KeySetId(nextKeySetId);
 			sql = "INSERT INTO incomingKeys (transportId, keySetId,"
 					+ " timePeriod, tagKey, headerKey, base, bitmap,"
 					+ " periodOffset)"

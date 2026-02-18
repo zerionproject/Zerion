@@ -236,6 +236,10 @@ class TransportKeyManagerImpl implements TransportKeyManager {
 			SecretKey rootKey, boolean alice) throws DbException {
 		lock.lock();
 		try {
+			// If keys already exist (loaded by start()), skip insertion
+			MutableTransportKeySet existing =
+					pendingContactOutContexts.get(p);
+			if (existing != null) return existing.getKeySetId();
 			long timePeriod = clock.currentTimeMillis() / timePeriodLength;
 			TransportKeys k = transportCrypto.deriveHandshakeKeys(transportId,
 					rootKey, timePeriod, alice);
