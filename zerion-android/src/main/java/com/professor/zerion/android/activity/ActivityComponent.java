@@ -3,7 +3,6 @@ package com.professor.zerion.android.activity;
 import android.app.Activity;
 
 import com.professor.zerion.android.AndroidComponent;
-import com.professor.zerion.android.MigrationRecoveryActivity;
 import com.professor.zerion.android.StartupFailureActivity;
 import com.professor.zerion.android.account.SetupActivity;
 import com.professor.zerion.android.account.SetupFragment;
@@ -121,8 +120,6 @@ public interface ActivityComponent {
 
 
 	void inject(StartupFailureActivity activity);
-
-	void inject(MigrationRecoveryActivity activity);
 
 	void inject(UnlockActivity activity);
 

@@ -10,15 +10,11 @@ import android.widget.TextView;
 
 import com.professor.zerion.R;
 import com.professor.zerion.android.fragment.BaseFragment;
-import com.professor.zerion.android.network.TorStatusMonitor;
-import com.professor.zerion.android.view.NetworkGraphView;
 
 import org.briarproject.bramble.api.plugin.TorConstants;
 import org.briarproject.bramble.api.plugin.TransportId;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
-
-import java.util.Locale;
 
 import javax.inject.Inject;
 
@@ -39,18 +35,11 @@ public class TorStatusFragment extends BaseFragment {
 	@Inject
 	ViewModelProvider.Factory viewModelFactory;
 
-	@Inject
-	TorStatusMonitor torStatusMonitor;
-
 	private PluginViewModel viewModel;
 
 	private ImageView torStatusIcon;
 	private TextView torStatusText;
 	private TextView torOnionAddress;
-	private NetworkGraphView networkGraph;
-	private TextView totalDownload;
-	private TextView totalUpload;
-	private ImageView clearStatsButton;
 
 	@Override
 	public void onAttach(@NonNull Context context) {
@@ -68,15 +57,6 @@ public class TorStatusFragment extends BaseFragment {
 		torStatusIcon = v.findViewById(R.id.torStatusIcon);
 		torStatusText = v.findViewById(R.id.torStatusText);
 		torOnionAddress = v.findViewById(R.id.torOnionAddress);
-		networkGraph = v.findViewById(R.id.networkGraph);
-		totalDownload = v.findViewById(R.id.totalDownload);
-		totalUpload = v.findViewById(R.id.totalUpload);
-		clearStatsButton = v.findViewById(R.id.clearStatsButton);
-
-		clearStatsButton.setOnClickListener(view -> {
-			torStatusMonitor.resetStatistics();
-			networkGraph.clearData();
-		});
 
 		viewModel = new ViewModelProvider(requireActivity(), viewModelFactory)
 				.get(PluginViewModel.class);
@@ -89,21 +69,10 @@ public class TorStatusFragment extends BaseFragment {
 		super.onStart();
 		requireActivity().setTitle(R.string.network_status_title);
 
-		torStatusMonitor.startMonitoring();
-
 		viewModel.getPluginState(TOR_ID).observe(getViewLifecycleOwner(),
 				state -> {
 					if (state != null) {
 						updateTorStatus(state);
-					}
-				});
-
-		torStatusMonitor.getBandwidthUpdate().observe(getViewLifecycleOwner(),
-				update -> {
-					if (update != null) {
-						networkGraph.addDataPoint(update.downloadSpeed, update.uploadSpeed);
-						totalDownload.setText(formatBytes(update.totalDownload));
-						totalUpload.setText(formatBytes(update.totalUpload));
 					}
 				});
 	}
@@ -129,18 +98,6 @@ public class TorStatusFragment extends BaseFragment {
 			torStatusText.setTextColor(0xFFFFA726);
 			torOnionAddress.setText(R.string.tor_hidden_services_connecting);
 			torStatusIcon.setColorFilter(0xFFFFA726);
-		}
-	}
-
-	private String formatBytes(long bytes) {
-		if (bytes < 1024) {
-			return bytes + " B";
-		} else if (bytes < 1024 * 1024) {
-			return String.format(Locale.US, "%.1f KB", bytes / 1024.0);
-		} else if (bytes < 1024 * 1024 * 1024) {
-			return String.format(Locale.US, "%.2f MB", bytes / (1024.0 * 1024.0));
-		} else {
-			return String.format(Locale.US, "%.2f GB", bytes / (1024.0 * 1024.0 * 1024.0));
 		}
 	}
 

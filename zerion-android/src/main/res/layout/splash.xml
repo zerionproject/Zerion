@@ -1,22 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-	xmlns:app="http://schemas.android.com/apk/res-auto"
 	android:layout_width="match_parent"
 	android:layout_height="match_parent"
 	android:background="@drawable/bg_zerion_gradient">
 
-	<!-- Matrix Rain Background -->
-	<com.professor.zerion.android.view.MatrixRainView
-		android:id="@+id/matrix_rain_view"
+	<!-- Particle field background -->
+	<com.professor.zerion.android.view.ParticleFieldView
+		android:id="@+id/particle_field_view"
 		android:layout_width="match_parent"
 		android:layout_height="match_parent" />
 
-	<!-- Invisible placeholder for animation reference -->
-	<View
+	<!-- Zerion logo — centered, fades in with scale animation -->
+	<ImageView
 		android:id="@+id/logoView"
-		android:layout_width="1dp"
-		android:layout_height="1dp"
+		android:layout_width="120dp"
+		android:layout_height="120dp"
 		android:layout_gravity="center"
-		android:visibility="gone" />
+		android:src="@drawable/logo_splash"
+		android:contentDescription="@string/app_name"
+		android:alpha="0" />
 
 </FrameLayout>

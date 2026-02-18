@@ -57,6 +57,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 
@@ -76,6 +77,7 @@ import static org.briarproject.nullsafety.NullSafety.requireNull;
 
 @NotNullByDefault
 class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
+
 	private final TaskScheduler scheduler;
 	private final DatabaseComponent db;
 	private final IdentityManager identityManager;
@@ -186,9 +188,14 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 				alice = compare(ourHybridCommitment, theirCommitment) < 0;
 				final SecretKey finalRendezvousKey = rendezvousKey;
 				final boolean finalAlice = alice;
-				db.transaction(false, txn ->
-						keyManager.addHybridPendingContact(txn, p.getId(),
-								finalRendezvousKey, finalAlice));
+				try {
+					db.transaction(false, txn ->
+							keyManager.addHybridPendingContact(txn, p.getId(),
+									finalRendezvousKey, finalAlice));
+				} catch (DbException e) {
+					// Keys may already exist from a previous session —
+					// expected on app restart, continue with polling
+				}
 			} else {
 				if (handshakeKeyPair == null) {
 					handshakeKeyPair = db.transactionWithResult(true,
@@ -220,6 +227,7 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 						POLLING_INTERVAL_MS, POLLING_INTERVAL_MS, MILLISECONDS);
 			}
 		} catch (DbException | GeneralSecurityException e) {
+			broadcastState(p.getId(), FAILED);
 		}
 	}
 

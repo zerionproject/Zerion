@@ -40,7 +40,6 @@ buildscript {
 	dependencies {
 		classpath 'com.android.tools.build:gradle:8.13.0'
 		classpath 'ru.vyarus:gradle-animalsniffer-plugin:2.0.1'
-		// TODO: Re-enable witness plugin after resolving JDK version compatibility
 		// classpath files('libs/gradle-witness.jar')
 		classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
 	}

@@ -5,7 +5,6 @@ import org.briarproject.bramble.api.db.DataTooNewException;
 import org.briarproject.bramble.api.db.DataTooOldException;
 import org.briarproject.bramble.api.db.DatabaseComponent;
 import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.db.MigrationFailedException;
 import org.briarproject.bramble.api.db.MigrationListener;
 import org.briarproject.bramble.api.event.EventBus;
 import org.briarproject.bramble.api.lifecycle.LifecycleManager;
@@ -37,7 +36,6 @@ import static org.briarproject.bramble.api.lifecycle.LifecycleManager.StartResul
 import static org.briarproject.bramble.api.lifecycle.LifecycleManager.StartResult.DATA_TOO_NEW_ERROR;
 import static org.briarproject.bramble.api.lifecycle.LifecycleManager.StartResult.DATA_TOO_OLD_ERROR;
 import static org.briarproject.bramble.api.lifecycle.LifecycleManager.StartResult.DB_ERROR;
-import static org.briarproject.bramble.api.lifecycle.LifecycleManager.StartResult.MIGRATION_FAILED;
 import static org.briarproject.bramble.api.lifecycle.LifecycleManager.StartResult.SERVICE_ERROR;
 import static org.briarproject.bramble.api.lifecycle.LifecycleManager.StartResult.SUCCESS;
 import static org.briarproject.bramble.api.system.Clock.MAX_REASONABLE_TIME_MS;
@@ -116,8 +114,6 @@ class LifecycleManagerImpl implements LifecycleManager, MigrationListener {
 			startupLatch.countDown();
 			eventBus.broadcast(new LifecycleEvent(RUNNING));
 			return SUCCESS;
-		} catch (MigrationFailedException e) {
-			return MIGRATION_FAILED;
 		} catch (DataTooOldException e) {
 			return DATA_TOO_OLD_ERROR;
 		} catch (DataTooNewException e) {

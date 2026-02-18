@@ -597,9 +597,9 @@
 	<string name="contact_type_zerion_title">Zerion</string>
 	<string name="contact_type_zerion_badge">Post-Quantum Beveiliging</string>
 	<string name="contact_type_zerion_description">Verbind met andere Zerion-gebruikers met hybride post-quantum cryptografie. Biedt bescherming tegen toekomstige kwantumcomputeraanvallen.</string>
-	<string name="contact_type_briar_title">Klassieke Modus</string>
-	<string name="contact_type_briar_badge">Klassieke Beveiliging</string>
-	<string name="contact_type_briar_description">Verbind met klassieke cryptografie. Gebruik deze optie voor achterwaartse compatibiliteit met contacten op oudere versies.</string>
+	<string name="contact_type_classic_title">Klassieke Modus</string>
+	<string name="contact_type_classic_badge">Klassieke Beveiliging</string>
+	<string name="contact_type_classic_description">Verbind met klassieke cryptografie. Gebruik deze optie voor achterwaartse compatibiliteit met contacten op oudere versies.</string>
 	<string name="recommended">Aanbevolen</string>
 	<string name="contact_type_info">Kies Zerion voor maximale beveiliging, of Klassieke Modus voor achterwaartse compatibiliteit.</string>
 
