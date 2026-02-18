@@ -589,6 +589,7 @@ class H2ToSqlCipherMigration {
 				+ " publicKey BLOB NOT NULL,"
 				+ " alias TEXT NOT NULL,"
 				+ " timestamp BIGINT NOT NULL,"
+				+ " formatVersion INT DEFAULT 0 NOT NULL,"
 				+ " PRIMARY KEY (pendingContactId))");
 
 		db.execSQL("CREATE TABLE IF NOT EXISTS pcsSessionState"
