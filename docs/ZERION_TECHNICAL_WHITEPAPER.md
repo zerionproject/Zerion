@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-Zerion (formerly a Briar fork) is an end-to-end encrypted, peer-to-peer secure messaging application for Android that provides anonymity through Tor integration and includes a built-in encrypted vault for secure file storage. The application emphasizes privacy, security, and metadata protection through its architecture built on the Bramble protocol framework.
+Zerion is an end-to-end encrypted, peer-to-peer secure messaging application for Android that provides anonymity through Tor integration and includes a built-in encrypted vault for secure file storage. Built on the Bramble protocol (originally developed by the Briar Project), Zerion independently expanded it with voice calls over Tor, encrypted vault storage, and post-quantum cryptography. The application emphasizes privacy, security, and metadata protection.
 
 **Post-Quantum Security**: Zerion implements **full hybrid post-quantum cryptography** using NIST-standardized algorithms (ML-KEM-768 + X25519 for key exchange, ML-DSA-65 + Ed25519 for signatures), providing defense-in-depth protection against both current and future quantum computing threats.
 
