@@ -75,10 +75,10 @@ android {
     defaultConfig {
         minSdkVersion 29
         targetSdkVersion 35
-        versionCode 10005
-        versionName "1.0.5"
+        versionCode 10006
+        versionName "1.0.6"
         applicationId "com.professor.zerion"
-        buildConfigField "String", "VERSION_LABEL", "\"1.0.5\""
+        buildConfigField "String", "VERSION_LABEL", "\"1.0.6\""
         buildConfigField "String", "TorVersion", "\"$tor_version\""
 
         vectorDrawables.useSupportLibrary = true

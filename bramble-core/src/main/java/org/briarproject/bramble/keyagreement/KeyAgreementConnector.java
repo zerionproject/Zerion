@@ -106,6 +106,8 @@ class KeyAgreementConnector {
 			TransportDescriptor d = descriptors.get(id);
 			Plugin p = pluginManager.getPlugin(id);
 			if (d != null && p instanceof DuplexPlugin) {
+				transports.add(new Pair<>((DuplexPlugin) p,
+						d.getDescriptor()));
 			}
 		}
 
@@ -157,6 +159,8 @@ class KeyAgreementConnector {
 							plugin.createKeyAgreementConnection(commitment,
 									descriptor);
 					if (conn != null) {
+						return new KeyAgreementConnection(
+								conn, plugin.getId());
 					}
 				}
 				Thread.sleep(2000);
