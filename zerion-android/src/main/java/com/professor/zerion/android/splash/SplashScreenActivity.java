@@ -14,7 +14,6 @@ import android.view.animation.AccelerateDecelerateInterpolator;
 
 import org.briarproject.bramble.api.account.AccountManager;
 import org.briarproject.bramble.api.system.AndroidExecutor;
-import com.professor.zerion.BuildConfig;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.BaseActivity;
@@ -81,19 +80,19 @@ public class SplashScreenActivity extends BaseActivity {
 		if (logo == null) return;
 
 		logo.setAlpha(0f);
-		logo.setScaleX(0.5f);
-		logo.setScaleY(0.5f);
+		logo.setScaleX(0.8f);
+		logo.setScaleY(0.8f);
 
 		ObjectAnimator fadeIn = ObjectAnimator.ofFloat(logo, "alpha", 0f, 1f);
-		fadeIn.setDuration(800);
+		fadeIn.setDuration(1000);
 		fadeIn.setInterpolator(new AccelerateDecelerateInterpolator());
 
-		ObjectAnimator scaleX = ObjectAnimator.ofFloat(logo, "scaleX", 0.5f, 1f);
-		scaleX.setDuration(800);
+		ObjectAnimator scaleX = ObjectAnimator.ofFloat(logo, "scaleX", 0.8f, 1f);
+		scaleX.setDuration(1000);
 		scaleX.setInterpolator(new AccelerateDecelerateInterpolator());
 
-		ObjectAnimator scaleY = ObjectAnimator.ofFloat(logo, "scaleY", 0.5f, 1f);
-		scaleY.setDuration(800);
+		ObjectAnimator scaleY = ObjectAnimator.ofFloat(logo, "scaleY", 0.8f, 1f);
+		scaleY.setDuration(1000);
 		scaleY.setInterpolator(new AccelerateDecelerateInterpolator());
 
 		AnimatorSet animatorSet = new AnimatorSet();

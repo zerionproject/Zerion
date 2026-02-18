@@ -18,6 +18,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.IOException;
 import java.io.InputStream;
+
 @NotNullByDefault
 class IncomingHandshakeConnection extends HandshakeConnection
 		implements Runnable {

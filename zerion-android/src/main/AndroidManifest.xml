@@ -263,13 +263,6 @@
 			android:windowSoftInputMode="adjustResize|stateHidden" />
 
 		<activity
-			android:name="com.professor.zerion.android.MigrationRecoveryActivity"
-			android:excludeFromRecents="true"
-			android:exported="false"
-			android:label=""
-			android:theme="@style/ZerionTheme.NoActionBar" />
-
-		<activity
 			android:name="com.professor.zerion.android.settings.SettingsActivity"
 			android:exported="false"
 			android:label="@string/settings_button"

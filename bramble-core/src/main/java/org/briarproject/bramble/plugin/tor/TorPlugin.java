@@ -388,6 +388,7 @@ class TorPlugin implements DuplexPlugin, EventListener {
 								new TorTransportConnection(this, s));
 					}
 				} catch (IOException e) {
+					// Socket closed when endpoint is closed
 				}
 			});
 			tor.publishHiddenService(port, 80, blob);
