@@ -8,6 +8,8 @@ import org.briarproject.bramble.api.data.BdfReaderFactory;
 import org.briarproject.bramble.api.keyagreement.Payload;
 import org.briarproject.bramble.api.keyagreement.PayloadParser;
 import org.briarproject.bramble.api.keyagreement.TransportDescriptor;
+import org.briarproject.bramble.api.plugin.LanTcpConstants;
+import org.briarproject.bramble.api.plugin.TransportId;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.ByteArrayInputStream;
@@ -20,6 +22,7 @@ import javax.inject.Inject;
 
 import static org.briarproject.bramble.api.keyagreement.KeyAgreementConstants.COMMIT_LENGTH;
 import static org.briarproject.bramble.api.keyagreement.KeyAgreementConstants.PROTOCOL_VERSION;
+import static org.briarproject.bramble.api.keyagreement.KeyAgreementConstants.TRANSPORT_ID_LAN;
 import static org.briarproject.bramble.util.StringUtils.ISO_8859_1;
 
 @Immutable
@@ -58,6 +61,14 @@ class PayloadParserImpl implements PayloadParser {
 		byte[] commitment = payload.getRaw(0);
 		if (commitment.length != COMMIT_LENGTH) throw new FormatException();
 		List<TransportDescriptor> recognised = new ArrayList<>();
+		for (int i = 1; i < payload.size(); i++) {
+			BdfList descriptor = payload.getList(i);
+			int transportId = descriptor.getInt(0);
+			if (transportId == TRANSPORT_ID_LAN) {
+				TransportId id = LanTcpConstants.ID;
+				recognised.add(new TransportDescriptor(id, descriptor));
+			}
+		}
 		return new Payload(commitment, recognised);
 	}
 }
