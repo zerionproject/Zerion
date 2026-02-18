@@ -835,9 +835,9 @@
 	<string name="contact_type_zerion_title">Zerion</string>
 	<string name="contact_type_zerion_badge">Post-Quantum-Sicherheit</string>
 	<string name="contact_type_zerion_description">Verbinde dich mit anderen Zerion-Nutzern mit hybrider Post-Quantum-Kryptografie. Bietet Schutz vor zukünftigen Quantencomputerangriffen.</string>
-	<string name="contact_type_briar_title">Klassischer Modus</string>
-	<string name="contact_type_briar_badge">Klassische Sicherheit</string>
-	<string name="contact_type_briar_description">Verbinde dich mit klassischer Kryptografie. Verwende diese Option für Abwärtskompatibilität mit Kontakten auf älteren Versionen.</string>
+	<string name="contact_type_classic_title">Klassischer Modus</string>
+	<string name="contact_type_classic_badge">Klassische Sicherheit</string>
+	<string name="contact_type_classic_description">Verbinde dich mit klassischer Kryptografie. Verwende diese Option für Abwärtskompatibilität mit Kontakten auf älteren Versionen.</string>
 	<string name="recommended">Empfohlen</string>
 	<string name="contact_type_info">Wähle Zerion für maximale Sicherheit oder Klassischer Modus für Abwärtskompatibilität.</string>
 

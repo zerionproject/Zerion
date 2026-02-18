@@ -131,8 +131,7 @@ public class PasswordFragment extends BaseFragment implements TextWatcher {
 	
 	private void setupKeyboardInsetsHandling(View rootView) {
 		View loginContent = rootView.findViewById(R.id.login_content);
-		com.professor.zerion.android.view.MatrixRainView matrixRainView =
-				rootView.findViewById(R.id.matrix_rain_view);
+		View particleFieldView = rootView.findViewById(R.id.particle_field_view);
 
 		if (loginContent == null) return;
 		ViewCompat.setOnApplyWindowInsetsListener(loginContent, (v, windowInsets) -> {
@@ -145,14 +144,10 @@ public class PasswordFragment extends BaseFragment implements TextWatcher {
 					v.getPaddingRight(),
 					bottomPadding
 			);
-			if (matrixRainView != null) {
-				matrixRainView.setStatusBarHeight(systemBars.top);
-			}
-
 			return windowInsets;
 		});
-		if (matrixRainView != null) {
-			ViewCompat.setOnApplyWindowInsetsListener(matrixRainView, (v, windowInsets) -> {
+		if (particleFieldView != null) {
+			ViewCompat.setOnApplyWindowInsetsListener(particleFieldView, (v, windowInsets) -> {
 				v.setPadding(0, 0, 0, 0);
 				return windowInsets;
 			});

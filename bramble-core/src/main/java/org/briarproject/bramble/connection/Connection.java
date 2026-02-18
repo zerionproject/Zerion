@@ -13,11 +13,15 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.IOException;
 import java.io.InputStream;
+
 import javax.annotation.Nullable;
+
 import static org.briarproject.bramble.api.transport.TransportConstants.TAG_LENGTH;
 import static org.briarproject.bramble.util.IoUtils.read;
+
 @NotNullByDefault
 abstract class Connection {
+
 	final KeyManager keyManager;
 	final ConnectionRegistry connectionRegistry;
 	final StreamReaderFactory streamReaderFactory;
@@ -53,6 +57,7 @@ abstract class Connection {
 		try {
 			reader.dispose(true, recognised);
 		} catch (IOException e) {
+			// ignored
 		}
 	}
 
@@ -60,6 +65,7 @@ abstract class Connection {
 		try {
 			writer.dispose(true);
 		} catch (IOException e) {
+			// ignored
 		}
 	}
 }

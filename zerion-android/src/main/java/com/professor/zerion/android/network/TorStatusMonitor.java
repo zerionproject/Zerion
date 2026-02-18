@@ -7,16 +7,15 @@ import android.os.Looper;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
+import java.io.RandomAccessFile;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -42,18 +41,19 @@ public class TorStatusMonitor {
     private final MutableLiveData<BandwidthUpdate> bandwidthUpdate = new MutableLiveData<>();
 
     private volatile boolean isMonitoring = false;
+    private volatile int cachedBootstrapProgress = 0;
 
-    private long totalBytesReceived = 0;
-    private long totalBytesSent = 0;
-    private long monitoringStartTime = 0;
-    private long connectionStartTime = 0;
-    private boolean wasConnected = false;
-    private long sessionStartTime = 0;
-    private long peakDownloadSpeed = 0;
-    private long peakUploadSpeed = 0;
-    private long bandwidthSampleCount = 0;
-    private long totalDownloadSpeedSum = 0;
-    private long totalUploadSpeedSum = 0;
+    private final AtomicLong totalBytesReceived = new AtomicLong();
+    private final AtomicLong totalBytesSent = new AtomicLong();
+    private volatile long monitoringStartTime = 0;
+    private volatile long connectionStartTime = 0;
+    private volatile boolean wasConnected = false;
+    private volatile long sessionStartTime = 0;
+    private final AtomicLong peakDownloadSpeed = new AtomicLong();
+    private final AtomicLong peakUploadSpeed = new AtomicLong();
+    private final AtomicLong bandwidthSampleCount = new AtomicLong();
+    private final AtomicLong totalDownloadSpeedSum = new AtomicLong();
+    private final AtomicLong totalUploadSpeedSum = new AtomicLong();
 
     @Inject
     public TorStatusMonitor(Context context, @TorSocksPort int torSocksPort) {
@@ -176,32 +176,43 @@ public class TorStatusMonitor {
     }
 
     private int getBootstrapProgress() {
+        // Return cached value once fully bootstrapped
+        if (cachedBootstrapProgress >= 100) return 100;
+
         try {
             File torLog = new File(context.getFilesDir(), "tor/tor.log");
-            if (torLog.exists()) {
-                BufferedReader reader = new BufferedReader(
-                        new InputStreamReader(new FileInputStream(torLog)));
+            if (!torLog.exists()) return 0;
+
+            // Tail-read: only read the last 4KB of the file
+            int maxProgress = 0;
+            try (RandomAccessFile raf = new RandomAccessFile(torLog, "r")) {
+                long length = raf.length();
+                long tailSize = 4096;
+                if (length > tailSize) {
+                    raf.seek(length - tailSize);
+                    raf.readLine(); // skip partial first line
+                }
                 String line;
-                int maxProgress = 0;
-                while ((line = reader.readLine()) != null) {
+                while ((line = raf.readLine()) != null) {
                     if (line.contains("Bootstrapped")) {
                         int start = line.indexOf("Bootstrapped ") + 13;
                         int end = line.indexOf("%", start);
                         if (start > 0 && end > start) {
                             try {
-                                int progress = Integer.parseInt(line.substring(start, end).trim());
+                                int progress = Integer.parseInt(
+                                        line.substring(start, end).trim());
                                 maxProgress = Math.max(maxProgress, progress);
-                            } catch (NumberFormatException e) {
+                            } catch (NumberFormatException ignored) {
                             }
                         }
                     }
                 }
-                reader.close();
-                return maxProgress;
             }
+            cachedBootstrapProgress = maxProgress;
+            return maxProgress;
         } catch (Exception e) {
+            return cachedBootstrapProgress;
         }
-        return 0;
     }
 
     private void updateCircuitInfo() {
@@ -239,21 +250,21 @@ public class TorStatusMonitor {
             long uploadSpeed = bandwidth[1];
 
             if (downloadSpeed > 0 || uploadSpeed > 0) {
-                totalBytesReceived += downloadSpeed;
-                totalBytesSent += uploadSpeed;
+                totalBytesReceived.addAndGet(downloadSpeed);
+                totalBytesSent.addAndGet(uploadSpeed);
             }
 
-            peakDownloadSpeed = Math.max(peakDownloadSpeed, downloadSpeed);
-            peakUploadSpeed = Math.max(peakUploadSpeed, uploadSpeed);
-            bandwidthSampleCount++;
-            totalDownloadSpeedSum += downloadSpeed;
-            totalUploadSpeedSum += uploadSpeed;
+            peakDownloadSpeed.updateAndGet(v -> Math.max(v, downloadSpeed));
+            peakUploadSpeed.updateAndGet(v -> Math.max(v, uploadSpeed));
+            bandwidthSampleCount.incrementAndGet();
+            totalDownloadSpeedSum.addAndGet(downloadSpeed);
+            totalUploadSpeedSum.addAndGet(uploadSpeed);
 
             final BandwidthUpdate update = new BandwidthUpdate(
                     downloadSpeed,
                     uploadSpeed,
-                    totalBytesReceived,
-                    totalBytesSent
+                    totalBytesReceived.get(),
+                    totalBytesSent.get()
             );
 
             mainHandler.post(() -> bandwidthUpdate.setValue(update));
@@ -320,16 +331,17 @@ public class TorStatusMonitor {
             TorStatus status = torStatus.getValue();
 
             stats.sessionStartTime = sessionStartTime;
-            stats.bytesReceived = totalBytesReceived;
-            stats.bytesSent = totalBytesSent;
-            stats.peakDownloadSpeed = peakDownloadSpeed;
-            stats.peakUploadSpeed = peakUploadSpeed;
+            stats.bytesReceived = totalBytesReceived.get();
+            stats.bytesSent = totalBytesSent.get();
+            stats.peakDownloadSpeed = peakDownloadSpeed.get();
+            stats.peakUploadSpeed = peakUploadSpeed.get();
             stats.currentDownloadSpeed = currentDownloadSpeed;
             stats.currentUploadSpeed = currentUploadSpeed;
 
-            if (bandwidthSampleCount > 0) {
-                stats.averageDownloadSpeed = totalDownloadSpeedSum / bandwidthSampleCount;
-                stats.averageUploadSpeed = totalUploadSpeedSum / bandwidthSampleCount;
+            long samples = bandwidthSampleCount.get();
+            if (samples > 0) {
+                stats.averageDownloadSpeed = totalDownloadSpeedSum.get() / samples;
+                stats.averageUploadSpeed = totalUploadSpeedSum.get() / samples;
             }
 
             if (status != null && status.isConnected && connectionStartTime > 0) {
@@ -371,14 +383,14 @@ public class TorStatusMonitor {
     }
 
     public void resetStatistics() {
-        totalBytesReceived = 0;
-        totalBytesSent = 0;
+        totalBytesReceived.set(0);
+        totalBytesSent.set(0);
         sessionStartTime = System.currentTimeMillis();
-        peakDownloadSpeed = 0;
-        peakUploadSpeed = 0;
-        bandwidthSampleCount = 0;
-        totalDownloadSpeedSum = 0;
-        totalUploadSpeedSum = 0;
+        peakDownloadSpeed.set(0);
+        peakUploadSpeed.set(0);
+        bandwidthSampleCount.set(0);
+        totalDownloadSpeedSum.set(0);
+        totalUploadSpeedSum.set(0);
         lastRxBytes = 0;
         lastTxBytes = 0;
         lastBandwidthCheck = 0;

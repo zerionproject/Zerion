@@ -63,9 +63,6 @@ public class StartupFailureActivity extends BaseActivity implements
 			case DB_ERROR:
 				errorRes = R.string.startup_failed_db_error;
 				break;
-			case MIGRATION_FAILED:
-				errorRes = R.string.startup_failed_migration_error;
-				break;
 			case SERVICE_ERROR:
 				errorRes = R.string.startup_failed_service_error;
 				break;

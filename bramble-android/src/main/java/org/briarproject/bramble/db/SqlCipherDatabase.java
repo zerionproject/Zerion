@@ -8,7 +8,6 @@ import org.briarproject.bramble.api.crypto.SecretKey;
 import org.briarproject.bramble.api.db.DatabaseConfig;
 import org.briarproject.bramble.api.db.DbClosedException;
 import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.db.MigrationFailedException;
 import org.briarproject.bramble.api.db.MigrationListener;
 import org.briarproject.bramble.api.sync.MessageFactory;
 import org.briarproject.bramble.api.system.Clock;
@@ -83,55 +82,13 @@ class SqlCipherDatabase extends JdbcDatabase {
 		boolean reopen = isNonEmptyDirectory(dir);
 
 		if (reopen) {
-			// Clean up partial migration staging file from a previous crash
-			H2ToSqlCipherMigration.cleanupStagingFile(dir);
-
-			if (H2ToSqlCipherMigration.hasMarker(dir)) {
-				// Previous migration succeeded — clean up leftover H2 files
-				H2ToSqlCipherMigration.deleteH2Files(dir);
-			} else if (H2ToSqlCipherMigration.hasH2Files(dir)) {
-				// H2 files present, no marker → run migration
-				if (listener != null) listener.onDatabaseMigration();
-				H2ToSqlCipherMigration migration =
-						new H2ToSqlCipherMigration(config);
-				try {
-					migration.migrate(key);
-				} catch (MigrationFailedException e) {
-					// Persist error description for diagnostics export
-					H2ToSqlCipherMigration.writeErrorFile(dir,
-							migration.getLastErrorDescription(), e);
-					throw e;
-				}
-			}
-			reopen = isNonEmptyDirectory(dir);
-		}
-
-		if (reopen) {
 			File dbFile = new File(dir, SQLCIPHER_FILE);
 			if (!dbFile.exists()) {
 				reopen = false;
 			} else if (!hasValidSchema(dbFile, key)) {
-				// Invalid/empty SQLCipher DB — try restore from backup
-				File bak = H2ToSqlCipherMigration.findBackup(dir);
-				if (bak != null) {
-					dbFile.delete();
-					bak.renameTo(dbFile);
-					if (!hasValidSchema(dbFile, key)) {
-						dbFile.delete();
-						reopen = false;
-					}
-				} else {
-					dbFile.delete();
-					reopen = false;
-				}
+				dbFile.delete();
+				reopen = false;
 			}
-		}
-
-		// If we expected a database but have none, and H2 files still
-		// exist, throw MigrationFailedException so the user sees the
-		// recovery UI. Never auto-delete db.key.
-		if (!reopen && H2ToSqlCipherMigration.hasH2Files(dir)) {
-			throw new MigrationFailedException();
 		}
 
 		if (!reopen) dir.mkdirs();

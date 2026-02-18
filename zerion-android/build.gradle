@@ -75,10 +75,10 @@ android {
     defaultConfig {
         minSdkVersion 29
         targetSdkVersion 35
-        versionCode 10006
-        versionName "1.0.6"
+        versionCode 10001
+        versionName "1.0.1"
         applicationId "com.professor.zerion"
-        buildConfigField "String", "VERSION_LABEL", "\"1.0.6\""
+        buildConfigField "String", "VERSION_LABEL", "\"1.0.1\""
         buildConfigField "String", "TorVersion", "\"$tor_version\""
 
         vectorDrawables.useSupportLibrary = true
@@ -114,7 +114,7 @@ android {
                     'proguard-rules.txt', 'proguard-test.txt'
         }
         release {
-            shrinkResources false
+            shrinkResources true
             minifyEnabled true
             crunchPngs false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
@@ -180,10 +180,6 @@ if (isFdroidBuild) {
     }
 }
 
-// H2 is included in the APK for one-time migration from legacy H2 databases
-// to SQLCipher. After migration completes on all existing users, this can be
-// removed in a future version to reduce APK size.
-
 repositories {
     flatDir { dirs 'libs' }
 }
@@ -224,9 +220,6 @@ dependencies {
         exclude group: 'com.android.support'
         exclude module: 'disklrucache' // when there's no disk cache, we can't accidentally use it
     }
-    // Removed — unused and unmaintained
-    // implementation 'org.nanohttpd:nanohttpd:2.3.1'
-
     // ExoPlayer for video playback
     def exoplayerVersion = '2.19.1'
     implementation "com.google.android.exoplayer:exoplayer-core:$exoplayerVersion"
