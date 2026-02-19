@@ -191,6 +191,7 @@ public class SecurityFragment extends Fragment {
 		}
 
 		String currentValue = viewModel.getScreenLockTimeout().getValue();
+		if (currentValue == null) currentValue = timeoutValues[0];
 		int selectedIndex = 0;
 		for (int i = 0; i < timeoutValues.length; i++) {
 			if (timeoutValues[i].equals(currentValue)) {

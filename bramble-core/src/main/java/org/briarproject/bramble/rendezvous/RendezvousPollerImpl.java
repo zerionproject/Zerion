@@ -69,6 +69,8 @@ import static org.briarproject.bramble.api.contact.PendingContactState.ADDING_CO
 import static org.briarproject.bramble.api.contact.PendingContactState.FAILED;
 import static org.briarproject.bramble.api.contact.PendingContactState.OFFLINE;
 import static org.briarproject.bramble.api.contact.PendingContactState.WAITING_FOR_CONNECTION;
+import static org.briarproject.bramble.rendezvous.RendezvousConstants.FAST_POLLING_DURATION_MS;
+import static org.briarproject.bramble.rendezvous.RendezvousConstants.FAST_POLLING_INTERVAL_MS;
 import static org.briarproject.bramble.rendezvous.RendezvousConstants.POLLING_INTERVAL_MS;
 import static org.briarproject.bramble.rendezvous.RendezvousConstants.RENDEZVOUS_TIMEOUT_MS;
 import static org.briarproject.bramble.util.IoUtils.tryToClose;
@@ -160,11 +162,10 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 	}
 	private void addPendingContact(PendingContact p) {
 		long now = clock.currentTimeMillis();
-		long expiry = p.getTimestamp() + RENDEZVOUS_TIMEOUT_MS;
-		if (expiry <= now) {
-			broadcastState(p.getId(), FAILED);
-			return;
-		}
+		// Use the later of link creation or now as the base for expiry,
+		// so devices that come online late still get the full timeout window
+		long base = Math.max(p.getTimestamp(), now);
+		long expiry = base + RENDEZVOUS_TIMEOUT_MS;
 		try {
 			SecretKey rendezvousKey;
 			boolean alice;
@@ -209,7 +210,7 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 						.isAlice(p.getPublicKey(), handshakeKeyPair);
 			}
 			boolean classical = !p.isPostQuantum();
-			CryptoState cs = new CryptoState(rendezvousKey, alice, expiry, classical);
+			CryptoState cs = new CryptoState(rendezvousKey, alice, expiry, classical, now);
 			requireNull(cryptoStates.put(p.getId(), cs));
 			for (PluginState ps : pluginStates.values()) {
 				RendezvousEndpoint endpoint =
@@ -223,8 +224,10 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 			else broadcastState(p.getId(), WAITING_FOR_CONNECTION);
 			if (cryptoStates.size() == 1) {
 				requireNull(pollTask);
+				// Use fast interval — poll() filters per-contact based on age
 				pollTask = scheduler.scheduleWithFixedDelay(this::poll, worker,
-						POLLING_INTERVAL_MS, POLLING_INTERVAL_MS, MILLISECONDS);
+						FAST_POLLING_INTERVAL_MS, FAST_POLLING_INTERVAL_MS,
+						MILLISECONDS);
 			}
 		} catch (DbException | GeneralSecurityException e) {
 			broadcastState(p.getId(), FAILED);
@@ -277,19 +280,33 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 	private void poll(PluginState ps) {
 		if (ps.endpoints.isEmpty()) return;
 		TransportId t = ps.plugin.getId();
+		long now = clock.currentTimeMillis();
 		List<Pair<TransportProperties, ConnectionHandler>> properties =
 				new ArrayList<>();
+		List<PendingContactId> polled = new ArrayList<>();
 		for (Entry<PendingContactId, RendezvousEndpoint> e :
 				ps.endpoints.entrySet()) {
+			PendingContactId pid = e.getKey();
+			CryptoState cs = cryptoStates.get(pid);
+			if (cs == null) continue;
+			// Contacts added < 60s ago get fast polling (every 10s).
+			// After that, only poll if 30s has elapsed since last poll.
+			boolean fastMode =
+					(now - cs.createdAt) < FAST_POLLING_DURATION_MS;
+			if (!fastMode) {
+				Long lastPoll = lastPollTimes.get(pid);
+				if (lastPoll != null &&
+						(now - lastPoll) < POLLING_INTERVAL_MS) {
+					continue;
+				}
+			}
 			TransportProperties props =
 					e.getValue().getRemoteTransportProperties();
-			CryptoState cs = cryptoStates.get(e.getKey());
-			boolean classical = cs != null && cs.classical;
-			Handler h = new Handler(e.getKey(), t, false, classical);
+			Handler h = new Handler(pid, t, false, cs.classical);
 			properties.add(new Pair<>(props, h));
+			polled.add(pid);
 		}
-		List<PendingContactId> polled = new ArrayList<>(ps.endpoints.keySet());
-		long now = clock.currentTimeMillis();
+		if (polled.isEmpty()) return;
 		for (PendingContactId p : polled) lastPollTimes.put(p, now);
 		eventBus.broadcast(new RendezvousPollEvent(t, polled));
 		ps.plugin.poll(properties);
@@ -408,8 +425,11 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 		worker.execute(() -> connectionFailed(p));
 	}
 	private void connectionFailed(PendingContactId p) {
-		if (cryptoStates.containsKey(p))
+		if (cryptoStates.containsKey(p)) {
 			broadcastState(p, WAITING_FOR_CONNECTION);
+			// Immediately re-poll this contact instead of waiting for interval
+			poll(p);
+		}
 	}
 
 	private static class PluginState {
@@ -429,17 +449,19 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 		private final SecretKey rendezvousKey;
 		private final boolean alice;
 		private final long expiry;
-		
+		private final long createdAt;
+
 		private final boolean classical;
 
 		private int numEndpoints = 0;
 
 		private CryptoState(SecretKey rendezvousKey, boolean alice,
-				long expiry, boolean classical) {
+				long expiry, boolean classical, long createdAt) {
 			this.rendezvousKey = rendezvousKey;
 			this.alice = alice;
 			this.expiry = expiry;
 			this.classical = classical;
+			this.createdAt = createdAt;
 		}
 	}
 

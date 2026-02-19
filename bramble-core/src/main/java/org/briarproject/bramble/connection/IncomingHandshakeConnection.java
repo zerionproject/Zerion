@@ -41,6 +41,7 @@ class IncomingHandshakeConnection extends HandshakeConnection
 
 	@Override
 	public void run() {
+		startTimeout();
 		StreamContext ctxIn = recogniseTag(reader, transportId);
 		if (ctxIn == null) {
 			onError(false);
@@ -72,6 +73,7 @@ class IncomingHandshakeConnection extends HandshakeConnection
 			contactExchangeManager.exchangeContacts(pendingContactId,
 					connection, result.getMasterKey(), result.isAlice(), true,
 					classical, result.isMode3Capable());
+			cancelTimeout();
 			connectionRegistry.unregisterConnection(pendingContactId, true);
 			connectionManager.manageIncomingConnection(transportId, connection);
 		} catch (IOException | DbException e) {

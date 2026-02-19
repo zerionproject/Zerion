@@ -16,6 +16,8 @@ import org.briarproject.bramble.api.transport.StreamReaderFactory;
 import org.briarproject.bramble.api.transport.StreamWriterFactory;
 import org.briarproject.nullsafety.NotNullByDefault;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import javax.annotation.Nullable;
 
 @NotNullByDefault
@@ -31,6 +33,10 @@ abstract class HandshakeConnection extends Connection {
 	final TransportConnectionWriter writer;
 
 	final boolean classical;
+
+	// 2 minutes: generous for Tor latency, prevents indefinite blocking
+	private static final long HANDSHAKE_TIMEOUT_MS = 120_000;
+	private final AtomicBoolean handshakeComplete = new AtomicBoolean(false);
 
 	HandshakeConnection(KeyManager keyManager,
 			ConnectionRegistry connectionRegistry,
@@ -59,6 +65,15 @@ abstract class HandshakeConnection extends Connection {
 	StreamContext allocateStreamContext(PendingContactId pendingContactId,
 			TransportId transportId) {
 		try {
+			StreamContext ctx =
+					keyManager.getStreamContext(pendingContactId, transportId);
+			if (ctx != null) return ctx;
+			// Keys may not be loaded yet — wait briefly and retry once
+			try {
+				Thread.sleep(2000);
+			} catch (InterruptedException e) {
+				return null;
+			}
 			return keyManager.getStreamContext(pendingContactId, transportId);
 		} catch (DbException e) {
 			return null;
@@ -68,5 +83,29 @@ abstract class HandshakeConnection extends Connection {
 	void onError(boolean recognised) {
 		disposeOnError(reader, recognised);
 		disposeOnError(writer);
+	}
+
+	/**
+	 * Starts a watchdog thread that closes the connection if the handshake
+	 * does not complete within HANDSHAKE_TIMEOUT_MS. Call
+	 * {@link #cancelTimeout()} when handshake succeeds.
+	 */
+	void startTimeout() {
+		Thread watchdog = new Thread(() -> {
+			try {
+				Thread.sleep(HANDSHAKE_TIMEOUT_MS);
+			} catch (InterruptedException e) {
+				return;
+			}
+			if (!handshakeComplete.get()) {
+				onError(true);
+			}
+		}, "HandshakeTimeout");
+		watchdog.setDaemon(true);
+		watchdog.start();
+	}
+
+	void cancelTimeout() {
+		handshakeComplete.set(true);
 	}
 }

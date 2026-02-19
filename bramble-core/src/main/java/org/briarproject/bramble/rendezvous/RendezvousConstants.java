@@ -14,6 +14,10 @@ interface RendezvousConstants {
 	
 	long POLLING_INTERVAL_MS = SECONDS.toMillis(30);
 
+	// Faster polling for the first minute after adding a contact
+	long FAST_POLLING_INTERVAL_MS = SECONDS.toMillis(10);
+	long FAST_POLLING_DURATION_MS = SECONDS.toMillis(60);
+
 	
 	String RENDEZVOUS_KEY_LABEL =
 			"org.briarproject.bramble.rendezvous/RENDEZVOUS_KEY";
