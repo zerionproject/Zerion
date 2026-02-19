@@ -180,22 +180,30 @@ public class VaultGalleryFragment extends BaseFragment {
 							content, 0, content.length, options);
 
 					if (bitmap == null) {
-						requireActivity().runOnUiThread(() -> {
-							Toast.makeText(requireContext(),
-									"Failed to load media: Could not decode image",
-									Toast.LENGTH_SHORT).show();
-							dialog.dismiss();
-						});
+						Activity a = getActivity();
+						if (a != null) {
+							a.runOnUiThread(() -> {
+								if (isAdded()) {
+									Toast.makeText(a,
+											"Failed to load media: Could not decode image",
+											Toast.LENGTH_SHORT).show();
+								}
+								dialog.dismiss();
+							});
+						}
 						java.util.Arrays.fill(content, (byte) 0);
 						return;
 					}
 
 					bitmapHolder[0] = bitmap;
-					requireActivity().runOnUiThread(() -> {
-						if (imageView != null) {
-							imageView.setImageBitmap(bitmap);
-						}
-					});
+					Activity a = getActivity();
+					if (a != null) {
+						a.runOnUiThread(() -> {
+							if (imageView != null) {
+								imageView.setImageBitmap(bitmap);
+							}
+						});
+					}
 
 					java.util.Arrays.fill(content, (byte) 0);
 				}).start();

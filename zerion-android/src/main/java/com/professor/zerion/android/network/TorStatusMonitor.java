@@ -135,10 +135,8 @@ public class TorStatusMonitor {
     }
 
     private boolean isTorSocksActive() {
-        try {
-            java.net.Socket socket = new java.net.Socket();
+        try (java.net.Socket socket = new java.net.Socket()) {
             socket.connect(new InetSocketAddress("127.0.0.1", torSocksPort), 1000);
-            socket.close();
             return true;
         } catch (Exception e) {
             return false;
@@ -151,10 +149,10 @@ public class TorStatusMonitor {
      * making any external network requests that could leak DNS or IP.
      */
     private boolean testTorConnection() {
+        java.net.Socket socket = null;
         try {
-            java.net.Socket socket = new java.net.Socket();
+            socket = new java.net.Socket();
             socket.connect(new InetSocketAddress("127.0.0.1", torSocksPort), 2000);
-            // Perform SOCKS5 greeting to verify Tor is ready
             java.io.OutputStream out = socket.getOutputStream();
             java.io.InputStream in = socket.getInputStream();
             // SOCKS5 greeting: version 5, 1 auth method, no auth
@@ -162,11 +160,14 @@ public class TorStatusMonitor {
             out.flush();
             byte[] response = new byte[2];
             int read = in.read(response);
-            socket.close();
             // Valid SOCKS5 response: version 5, accepted no-auth
             return read == 2 && response[0] == 0x05 && response[1] == 0x00;
         } catch (Exception e) {
             return false;
+        } finally {
+            if (socket != null) {
+                try { socket.close(); } catch (Exception ignored) {}
+            }
         }
     }
 

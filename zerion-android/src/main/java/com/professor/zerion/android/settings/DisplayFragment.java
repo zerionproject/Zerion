@@ -189,7 +189,7 @@ public class DisplayFragment extends Fragment {
 				.setPositiveButton(R.string.sign_out_button, (d, i) -> {
 					uiPrefs.edit()
 							.putString(PREF_LANGUAGE, newLanguage)
-							.apply();
+							.commit();
 					Intent intent = new Intent(getContext(), ENTRY_ACTIVITY);
 					intent.setFlags(FLAG_ACTIVITY_CLEAR_TOP);
 					intent.setData(SIGN_OUT_URI);

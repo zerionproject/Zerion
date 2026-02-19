@@ -62,6 +62,10 @@ class TransportKeyManagerImpl implements TransportKeyManager {
 	@GuardedBy("lock")
 	private final Map<PendingContactId, MutableTransportKeySet>
 			pendingContactOutContexts = new HashMap<>();
+	// Track pending contacts with active handshake connections
+	@GuardedBy("lock")
+	private final Map<PendingContactId, Integer> activeHandshakes =
+			new HashMap<>();
 
 	TransportKeyManagerImpl(DatabaseComponent db,
 			TransportCrypto transportCrypto,
@@ -286,6 +290,10 @@ class TransportKeyManagerImpl implements TransportKeyManager {
 	public void removePendingContact(PendingContactId p) {
 		lock.lock();
 		try {
+			// Don't remove keys while a handshake is actively using them
+			Integer active = activeHandshakes.get(p);
+			if (active != null && active > 0) return;
+			activeHandshakes.remove(p);
 			Iterator<TagContext> it = inContexts.values().iterator();
 			while (it.hasNext())
 				if (p.equals(it.next().pendingContactId)) it.remove();
@@ -293,6 +301,37 @@ class TransportKeyManagerImpl implements TransportKeyManager {
 			Iterator<MutableTransportKeySet> it1 = keys.values().iterator();
 			while (it1.hasNext())
 				if (p.equals(it1.next().getPendingContactId())) it1.remove();
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	/**
+	 * Marks a pending contact as having an active handshake in progress.
+	 * While active, transport keys won't be removed by removePendingContact().
+	 */
+	public void acquireHandshakeLock(PendingContactId p) {
+		lock.lock();
+		try {
+			activeHandshakes.merge(p, 1, Integer::sum);
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	/**
+	 * Releases the handshake lock. If no more active handshakes remain
+	 * and removal was requested, keys will be cleaned up on next removal call.
+	 */
+	public void releaseHandshakeLock(PendingContactId p) {
+		lock.lock();
+		try {
+			Integer count = activeHandshakes.get(p);
+			if (count != null && count > 1) {
+				activeHandshakes.put(p, count - 1);
+			} else {
+				activeHandshakes.remove(p);
+			}
 		} finally {
 			lock.unlock();
 		}

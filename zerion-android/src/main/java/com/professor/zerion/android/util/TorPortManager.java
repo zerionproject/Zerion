@@ -70,6 +70,8 @@ public class TorPortManager {
 	private boolean isPortAvailable(int port) {
 		if (port < 1 || port > 65535) return false;
 
+		int savedTag = android.net.TrafficStats.getThreadStatsTag();
+		android.net.TrafficStats.setThreadStatsTag(0xFE);
 		ServerSocket socket = null;
 		try {
 			socket = new ServerSocket(port);
@@ -78,6 +80,7 @@ public class TorPortManager {
 		} catch (IOException e) {
 			return false;
 		} finally {
+			android.net.TrafficStats.setThreadStatsTag(savedTag);
 			if (socket != null) {
 				try {
 					socket.close();

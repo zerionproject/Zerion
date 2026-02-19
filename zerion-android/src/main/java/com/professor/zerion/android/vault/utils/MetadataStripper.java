@@ -185,8 +185,9 @@ public class MetadataStripper {
 	}
 
 	private byte[] stripOfficeMetadata(byte[] officeData) {
-
-		return officeData;
+		throw new UnsupportedOperationException(
+				"Office document metadata stripping is not supported. " +
+				"Office documents are stored as-is in the vault.");
 	}
 
 	private boolean isDocument(String mimeType) {
