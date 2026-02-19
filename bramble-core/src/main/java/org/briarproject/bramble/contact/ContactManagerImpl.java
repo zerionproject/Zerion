@@ -203,6 +203,14 @@ class ContactManagerImpl implements ContactManager, EventListener {
 			throws DbException, FormatException, GeneralSecurityException {
 		PendingContact p =
 				pendingContactFactory.createPendingContact(link, alias);
+		// Check for duplicate pending contact with same public key
+		byte[] newKey = p.getPublicKey().getEncoded();
+		for (PendingContact existing : db.getPendingContacts(txn)) {
+			if (java.util.Arrays.equals(
+					existing.getPublicKey().getEncoded(), newKey)) {
+				return existing;
+			}
+		}
 		AuthorId local = identityManager.getLocalAuthor(txn).getId();
 		db.addPendingContact(txn, p, local);
 		if (p.isClassical()) {

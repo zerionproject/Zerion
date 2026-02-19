@@ -75,7 +75,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 	private boolean isMuted = false;
 	private boolean isSpeakerOn = false;
 	private AudioManager audioManager;
-	private Handler handler = new Handler();
+	private Handler handler = new Handler(Looper.getMainLooper());
 	private Ringtone ringtone;
 
 	private final Runnable networkQualityUpdateRunnable = new Runnable() {
@@ -127,7 +127,6 @@ public class VoiceCallActivity extends AppCompatActivity {
 		isIncoming = intent.getBooleanExtra(EXTRA_IS_INCOMING, false);
 		callId = intent.getStringExtra(EXTRA_CALL_ID);
 		String callerAddress = intent.getStringExtra(EXTRA_CALLER_ADDRESS);
-		String voiceCallKey = intent.getStringExtra(EXTRA_VOICE_CALL_KEY);
 
 		initViews();
 
@@ -142,9 +141,6 @@ public class VoiceCallActivity extends AppCompatActivity {
 		serviceIntent.putExtra(EXTRA_CALL_ID, callId);
 		if (callerAddress != null) {
 			serviceIntent.putExtra(EXTRA_CALLER_ADDRESS, callerAddress);
-		}
-		if (voiceCallKey != null) {
-			serviceIntent.putExtra(EXTRA_VOICE_CALL_KEY, voiceCallKey);
 		}
 
 		startService(serviceIntent);
@@ -227,7 +223,8 @@ public class VoiceCallActivity extends AppCompatActivity {
 		if (callId != null) {
 			Intent cleanupIntent = new Intent("com.professor.zerion.CLEANUP_VOICE_CALL");
 			cleanupIntent.putExtra("call_id", callId);
-			sendBroadcast(cleanupIntent);
+			androidx.localbroadcastmanager.content.LocalBroadcastManager
+					.getInstance(this).sendBroadcast(cleanupIntent);
 		}
 		finish();
 	}
@@ -380,6 +377,9 @@ public class VoiceCallActivity extends AppCompatActivity {
 		handler.removeCallbacksAndMessages(null);
 
 		if (isBound) {
+			if (voiceCallService != null) {
+				voiceCallService.clearCallActivity();
+			}
 			unbindService(serviceConnection);
 			isBound = false;
 		}

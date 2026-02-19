@@ -25,6 +25,8 @@ public class DonationManager {
 
 	private final SharedPreferences prefs;
 	private final Random random;
+	private volatile int cachedCheckDay = -1;
+	private volatile boolean cachedResult = false;
 
 	@Inject
 	public DonationManager(@UiPrefs SharedPreferences prefs) {
@@ -32,29 +34,37 @@ public class DonationManager {
 		this.random = new Random();
 	}
 
-	
+
 	public boolean shouldShowDonationDialog() {
 		long now = System.currentTimeMillis();
+		int currentDay = (int) TimeUnit.MILLISECONDS.toDays(now);
+		// Return cached result if already checked today
+		if (currentDay == cachedCheckDay) {
+			return cachedResult;
+		}
 		long lastPrompt = prefs.getLong(PREF_LAST_DONATION_PROMPT, 0);
 		int nextCheckDay = prefs.getInt(PREF_NEXT_CHECK_DAY, 0);
-		int currentDay = (int) TimeUnit.MILLISECONDS.toDays(now);
 		if (currentDay <= nextCheckDay && lastPrompt > 0) {
+			cachedCheckDay = currentDay;
+			cachedResult = false;
 			return false;
 		}
 		long daysSinceLastPrompt = TimeUnit.MILLISECONDS.toDays(now - lastPrompt);
 		if (daysSinceLastPrompt < MIN_DAYS_BETWEEN_PROMPTS) {
+			cachedCheckDay = currentDay;
+			cachedResult = false;
 			return false;
 		}
 		boolean shouldShow = random.nextFloat() < DAILY_SHOW_PROBABILITY;
 
-		if (shouldShow) {
-			return true;
-		} else {
+		cachedCheckDay = currentDay;
+		cachedResult = shouldShow;
+		if (!shouldShow) {
 			prefs.edit()
 					.putInt(PREF_NEXT_CHECK_DAY, currentDay)
 					.apply();
-			return false;
 		}
+		return shouldShow;
 	}
 
 	

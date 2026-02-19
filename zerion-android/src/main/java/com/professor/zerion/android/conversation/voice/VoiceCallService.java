@@ -278,19 +278,10 @@ public class VoiceCallService extends Service implements EventListener {
 			callId = intent.getStringExtra(VoiceCallActivity.EXTRA_CALL_ID);
 
 			if (isIncoming) {
-				// Use secure in-memory key holder
+				// Use secure in-memory key holder (never pass keys via Intent)
 				SecretKey heldKey = VoiceCallKeyHolder.consumeKey();
 				if (heldKey != null) {
 					voiceCallKey = heldKey;
-				} else {
-					// Fallback: try Intent extras for backward compatibility
-					String encodedKey = intent.getStringExtra(VoiceCallActivity.EXTRA_VOICE_CALL_KEY);
-					if (encodedKey != null) {
-						try {
-							voiceCallKey = voiceCallCrypto.decodeVoiceCallKey(encodedKey);
-						} catch (Exception e) {
-						}
-					}
 				}
 				byte[] heldEphemeral = VoiceCallKeyHolder.consumeRemoteEphemeral();
 				if (heldEphemeral != null) {
@@ -1506,6 +1497,10 @@ public class VoiceCallService extends Service implements EventListener {
 
 	public void setCallActivity(VoiceCallActivity activity) {
 		this.callActivity = activity;
+	}
+
+	public void clearCallActivity() {
+		this.callActivity = null;
 	}
 
 	public CallState getCallState() {
