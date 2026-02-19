@@ -42,6 +42,7 @@ class OutgoingHandshakeConnection extends HandshakeConnection
 
 	@Override
 	public void run() {
+		startTimeout();
 		StreamContext ctxOut =
 				allocateStreamContext(pendingContactId, transportId);
 		if (ctxOut == null) {
@@ -79,6 +80,7 @@ class OutgoingHandshakeConnection extends HandshakeConnection
 			Contact contact = contactExchangeManager.exchangeContacts(
 					pendingContactId, connection, result.getMasterKey(),
 					result.isAlice(), true, classical, result.isMode3Capable());
+			cancelTimeout();
 			connectionRegistry.unregisterConnection(pendingContactId, true);
 			connectionManager.manageOutgoingConnection(contact.getId(),
 					transportId, connection);

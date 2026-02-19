@@ -260,7 +260,7 @@ public class NotificationsFragment extends Fragment {
 		i.putExtra(EXTRA_RINGTONE_DEFAULT_URI, DEFAULT_NOTIFICATION_URI);
 		i.putExtra(EXTRA_RINGTONE_SHOW_SILENT, true);
 
-		if (requireNonNull(nm.getNotifySound().getValue())) {
+		if (Boolean.TRUE.equals(nm.getNotifySound().getValue())) {
 			Uri uri;
 			String ringtoneUri = nm.getRingtoneUri();
 			if (isNullOrEmpty(ringtoneUri)) {

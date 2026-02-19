@@ -30,7 +30,14 @@ class TorSummaryProvider implements SummaryProvider<ListPreference> {
 
 	@Override
 	public CharSequence provideSummary(ListPreference preference) {
-		int torNetworkSetting = Integer.parseInt(preference.getValue());
+		String value = preference.getValue();
+		if (value == null) return preference.getEntry();
+		int torNetworkSetting;
+		try {
+			torNetworkSetting = Integer.parseInt(value);
+		} catch (NumberFormatException e) {
+			return preference.getEntry();
+		}
 
 		if (torNetworkSetting != PREF_TOR_NETWORK_AUTOMATIC) {
 			return preference.getEntry();

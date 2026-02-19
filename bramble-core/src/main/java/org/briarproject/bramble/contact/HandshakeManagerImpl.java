@@ -113,6 +113,10 @@ class HandshakeManagerImpl implements HandshakeManager {
 			if (pendingContact.isPostQuantum()) {
 				hybridKeyPair = identityManager.getHybridHandshakeKeys(txn);
 				if (hybridKeyPair == null) {
+					// Post-quantum contact but hybrid keys unavailable —
+					// fall back to classical handshake. This is a security
+					// downgrade: the contact was added as post-quantum but
+					// the handshake will use classical crypto only.
 					keyPair = identityManager.getHandshakeKeys(txn);
 				} else {
 					keyPair = hybridKeyPair;
@@ -130,6 +134,12 @@ class HandshakeManagerImpl implements HandshakeManager {
 		if (isHybrid) {
 			return performHybridHandshake(ctx, in, out);
 		} else {
+			if (ctx.pendingContact.isPostQuantum()) {
+				// Hybrid keys unavailable for PQ contact — reject handshake
+				// to prevent silent security downgrade
+				throw new IOException(
+						"Post-quantum handshake requested but hybrid keys unavailable");
+			}
 			return performClassicalHandshake(ctx, in, out);
 		}
 	}
