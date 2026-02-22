@@ -9,6 +9,8 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ProgressBar;
 
+import java.util.Arrays;
+
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
@@ -207,10 +209,7 @@ public class PasswordFragment extends BaseFragment implements TextWatcher {
 
 		char[] passwordChars = passwordStr.toCharArray();
 		viewModel.validatePassword(passwordChars);
-
-		for (int i = 0; i < passwordStr.length(); i++) {
-			passwordStr = passwordStr.replace(passwordStr.charAt(i), '\0');
-		}
+		Arrays.fill(passwordChars, '\0');
 	}
 
 	private void onPasswordInvalid(DecryptionResult result) {

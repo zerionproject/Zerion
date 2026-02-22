@@ -111,7 +111,6 @@ public class ZerionService extends Service {
 		}
 
 		wakeLockManager.runWakefully(() -> {
-			try {
 				if (SDK_INT >= 26) {
 					NotificationManager nm = (NotificationManager)
 							requireNonNull(getSystemService(NOTIFICATION_SERVICE));
@@ -156,8 +155,6 @@ public class ZerionService extends Service {
 				filter.addAction("com.htc.intent.action.QUICKBOOT_POWEROFF");
 
 				AndroidUtils.registerReceiver(getApplicationContext(), receiver, filter);
-			} finally {
-			}
 		}, "LifecycleStartup");
 	}
 
@@ -260,7 +257,6 @@ public class ZerionService extends Service {
 
 	private void shutdownFromBackground() {
 		wakeLockManager.runWakefully(() -> {
-			try {
 				shutdown(true);
 				hideUi();
 				wakeLockManager.executeWakefully(() -> {
@@ -276,8 +272,6 @@ public class ZerionService extends Service {
 						});
 					}
 				}, "BackgroundShutdown");
-			} finally {
-			}
 		}, "BackgroundShutdown");
 	}
 
@@ -291,15 +285,12 @@ public class ZerionService extends Service {
 
 	public void shutdown(boolean stopAndroidService) {
 		wakeLockManager.runWakefully(() -> {
-			try {
 				wakeLockManager.executeWakefully(() -> {
 					if (started) lifecycleManager.stopServices();
 					if (stopAndroidService) {
 						androidExecutor.runOnUiThread(() -> stopSelf());
 					}
 				}, "LifecycleShutdown");
-			} finally {
-			}
 		}, "LifecycleShutdown");
 	}
 
