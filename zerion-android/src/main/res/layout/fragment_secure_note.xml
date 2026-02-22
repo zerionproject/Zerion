@@ -143,6 +143,8 @@
                 android:hint="Start typing your secure note..."
                 android:textColorHint="#80000000"
                 android:inputType="textMultiLine"
+                android:imeOptions="flagNoPersonalizedLearning"
+                android:privateImeOptions="nm"
                 android:gravity="top"
                 android:scrollbars="vertical"
                 android:background="@android:color/transparent"
