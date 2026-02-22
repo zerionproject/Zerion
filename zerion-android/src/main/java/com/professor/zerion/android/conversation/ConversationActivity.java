@@ -176,7 +176,6 @@ public class ConversationActivity extends ZerionActivity
 	private final ActivityResultLauncher<String> contentLauncher =
 			registerForActivityResult(new GetMultipleImagesAdvanced(),
 					this::onImagesChosen);
-	// Launcher for picking images AND videos (for contacts supporting chunked attachments)
 	private final ActivityResultLauncher<String> mediaLauncher =
 			registerForActivityResult(new GetMultipleMediaAdvanced(),
 					this::onImagesChosen);
@@ -236,7 +235,6 @@ public class ConversationActivity extends ZerionActivity
 		viewModel.setContactId(contactId);
 		attachmentRetriever = viewModel.getAttachmentRetriever();
 
-		// Initialize voice recording controller
 		voiceRecordingController = new VoiceRecordingController(this, dbExecutor);
 		voiceRecordingController.initRecorder(this);
 		getLifecycle().addObserver(voiceRecordingController);
@@ -313,7 +311,6 @@ public class ConversationActivity extends ZerionActivity
 			});
 		}
 
-		// Bind voice recording UI views to controller
 		voiceRecordingController.bindViews(
 				findViewById(R.id.voiceRecordingOverlay),
 				findViewById(R.id.recording_time),
@@ -325,31 +322,26 @@ public class ConversationActivity extends ZerionActivity
 		viewModel.getAutoDeleteTimer().observe(this, timer ->
 				sendController.setAutoDeleteTimer(timer));
 
-		// Observe message texts - populate cache before headers arrive
 		viewModel.getMessageTexts().observe(this, texts -> {
 			if (texts != null) {
 				textCache.putAll(texts);
 			}
 		});
 
-		// Observe message headers from ViewModel
 		viewModel.getMessageHeaders().observe(this, this::onMessageHeadersLoaded);
 
-		// Observe individual message text loading (for newly sent messages)
 		viewModel.getMessageTextLoaded().observeEvent(this, pair -> {
 			if (pair != null) {
 				displayMessageText(pair.getFirst(), pair.getSecond());
 			}
 		});
 
-		// Observe chat cleared event
 		viewModel.getChatCleared().observeEvent(this, cleared -> {
 			if (cleared != null && cleared) {
 				adapter.clear();
 			}
 		});
 
-		// Observe message deletion events
 		viewModel.getMessagesDeleted().observeEvent(this, messageIds -> {
 			if (messageIds != null) {
 				for (MessageId msgId : messageIds) {
@@ -360,28 +352,24 @@ public class ConversationActivity extends ZerionActivity
 			}
 		});
 
-		// Observe message marking events (sent/seen)
 		viewModel.getMessagesMarked().observeEvent(this, event -> {
 			if (event != null) {
 				onMessagesMarked(event.messageIds, event.sent, event.seen);
 			}
 		});
 
-		// Observe connection status changes (moved from EventBus)
 		viewModel.isContactConnected().observe(this, connected -> {
 			if (connected != null) {
 				updateConnectionStatusUI(connected);
 			}
 		});
 
-		// Observe new messages received (moved from EventBus)
 		viewModel.getNewMessageReceived().observeEvent(this, header -> {
 			if (header != null) {
 				onNewConversationMessage(header);
 			}
 		});
 
-		// Observe client version updates (moved from EventBus)
 		viewModel.getClientVersionUpdated().observeEvent(this, clientId -> {
 			if (clientId != null && clientId.equals(MessagingManager.CLIENT_ID)) {
 				viewModel.recheckFeaturesAndOnboarding(contactId);
@@ -420,7 +408,6 @@ public class ConversationActivity extends ZerionActivity
 	private Uri videoUri;
 	private java.io.File recordedVideoFile;
 
-	// Voice recording controller (manages recording UI and state)
 	private VoiceRecordingController voiceRecordingController;
 
 	private void launchCamera() {
@@ -475,7 +462,6 @@ public class ConversationActivity extends ZerionActivity
 					return;
 				}
 
-				// Create a finalized copy in the camera directory (accessible by FileProvider)
 				java.io.File cameraDir = new java.io.File(getFilesDir(), "camera");
 				if (!cameraDir.exists()) {
 					cameraDir.mkdirs();
@@ -483,7 +469,6 @@ public class ConversationActivity extends ZerionActivity
 				java.io.File finalizedFile = new java.io.File(cameraDir,
 						"final_" + System.currentTimeMillis() + ".mp4");
 
-				// Copy the recorded file to ensure it's fully written and MP4 is finalized
 				try (java.io.FileInputStream fis = new java.io.FileInputStream(recordedVideoFile);
 					 java.io.FileOutputStream fos = new java.io.FileOutputStream(finalizedFile)) {
 					byte[] buffer = new byte[8192];
@@ -495,17 +480,14 @@ public class ConversationActivity extends ZerionActivity
 					fos.getFD().sync();
 				}
 
-				// Verify the copied file is valid
 				if (!finalizedFile.exists() || finalizedFile.length() == 0) {
 					runOnUiThread(() -> Toast.makeText(this,
 							R.string.video_attach_error, Toast.LENGTH_SHORT).show());
 					return;
 				}
 
-				// Log video metadata for debugging codec info
 				logVideoMetadata("SENDER_RECORDED", finalizedFile);
 
-				// Get a proper content URI for the finalized file
 				Uri finalizedUri = androidx.core.content.FileProvider.getUriForFile(this,
 						"com.professor.zerion.fileprovider", finalizedFile);
 
@@ -517,7 +499,6 @@ public class ConversationActivity extends ZerionActivity
 					}
 				});
 
-				// Clean up the original recorded file
 				if (recordedVideoFile.exists()) {
 					recordedVideoFile.delete();
 				}
@@ -594,7 +575,6 @@ public class ConversationActivity extends ZerionActivity
 		boolean hasRecordAudio = ContextCompat.checkSelfPermission(this,
 				android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED;
 
-		// Android 14+ requires FOREGROUND_SERVICE_MICROPHONE for foreground services using microphone
 		if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
 			boolean hasForegroundMic = ContextCompat.checkSelfPermission(this,
 					android.Manifest.permission.FOREGROUND_SERVICE_MICROPHONE) == PackageManager.PERMISSION_GRANTED;
@@ -605,7 +585,6 @@ public class ConversationActivity extends ZerionActivity
 	}
 
 	private void requestVoicePermission() {
-		// Android 14+ requires FOREGROUND_SERVICE_MICROPHONE for foreground services using microphone
 		if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
 			ActivityCompat.requestPermissions(this,
 					new String[]{
@@ -622,7 +601,6 @@ public class ConversationActivity extends ZerionActivity
 
 	private void startVoiceCall() {
 		if (!checkVoicePermission()) {
-			// Request both RECORD_AUDIO and FOREGROUND_SERVICE_MICROPHONE (Android 14+)
 			if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
 				ActivityCompat.requestPermissions(this,
 						new String[]{
@@ -642,20 +620,19 @@ public class ConversationActivity extends ZerionActivity
 				com.professor.zerion.android.conversation.voice.VoiceCallActivity.class);
 		intent.putExtra(com.professor.zerion.android.conversation.voice.VoiceCallActivity.EXTRA_CONTACT_ID,
 				contactId.getInt());
+		String displayName = viewModel.getContactDisplayName().getValue();
 		intent.putExtra(com.professor.zerion.android.conversation.voice.VoiceCallActivity.EXTRA_CONTACT_NAME,
-				viewModel.getContactDisplayName().getValue());
+				displayName != null ? displayName : "");
 		intent.putExtra(com.professor.zerion.android.conversation.voice.VoiceCallActivity.EXTRA_IS_INCOMING,
 				false);
 		startActivity(intent);
 	}
 
 	private void handleIncomingVoiceCallSignal(String signalMessage) {
-		// Parse structured signal format with full validation
 		com.professor.zerion.android.conversation.voice.VoiceCallSignal signal =
 				com.professor.zerion.android.conversation.voice.VoiceCallSignal.fromWireFormat(signalMessage);
 
 		if (signal == null) {
-			// Signal failed validation - ignore silently
 			return;
 		}
 
@@ -667,12 +644,10 @@ public class ConversationActivity extends ZerionActivity
 			case CALL_ANSWER:
 			case CALL_REJECT:
 			case CALL_END:
-				// Forward to VoiceCallService for handling
 				forwardSignalToService(signalMessage);
 				break;
 
 			default:
-				// Unknown signal type - ignore
 				break;
 		}
 	}
@@ -680,13 +655,9 @@ public class ConversationActivity extends ZerionActivity
 	private void handleCallOffer(com.professor.zerion.android.conversation.voice.VoiceCallSignal signal) {
 		String remoteCallId = signal.getCallId();
 		String voiceCallKey = signal.getVoiceCallKey();
-		// Extract remote ephemeral secret for forward secrecy
 		String remoteEphemeralHex = signal.getEphemeralSecret();
 
-		// Voice call key is already validated by VoiceCallSignal.fromWireFormat()
-
 		if (!checkVoicePermission()) {
-			// Request both RECORD_AUDIO and FOREGROUND_SERVICE_MICROPHONE (Android 14+)
 			if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
 				ActivityCompat.requestPermissions(this,
 						new String[]{
@@ -706,21 +677,20 @@ public class ConversationActivity extends ZerionActivity
 				com.professor.zerion.android.conversation.voice.VoiceCallActivity.class);
 		intent.putExtra(com.professor.zerion.android.conversation.voice.VoiceCallActivity.EXTRA_CONTACT_ID,
 				contactId.getInt());
+		String incomingName = viewModel.getContactDisplayName().getValue();
 		intent.putExtra(com.professor.zerion.android.conversation.voice.VoiceCallActivity.EXTRA_CONTACT_NAME,
-				viewModel.getContactDisplayName().getValue());
+				incomingName != null ? incomingName : "");
 		intent.putExtra(com.professor.zerion.android.conversation.voice.VoiceCallActivity.EXTRA_IS_INCOMING,
 				true);
 		intent.putExtra(com.professor.zerion.android.conversation.voice.VoiceCallActivity.EXTRA_CALL_ID,
 				remoteCallId);
 		if (voiceCallKey != null) {
-			// Pass key via secure in-memory holder, not Intent extras
 			try {
 				org.briarproject.bramble.api.crypto.SecretKey key =
 						new org.briarproject.bramble.api.crypto.SecretKey(
 								org.briarproject.bramble.util.StringUtils.fromHexString(voiceCallKey));
 				com.professor.zerion.android.conversation.voice.VoiceCallKeyHolder.setKey(key);
 			} catch (Exception e) {
-				// Fallback to Intent extras if hex decode fails
 				intent.putExtra(com.professor.zerion.android.conversation.voice.VoiceCallActivity.EXTRA_VOICE_CALL_KEY,
 						voiceCallKey);
 			}
@@ -763,21 +733,15 @@ public class ConversationActivity extends ZerionActivity
 				launchVideoRecorder();
 			}
 		} else if (requestCode == REQUEST_RECORD_AUDIO) {
-			// For Android 14+, we request both RECORD_AUDIO and FOREGROUND_SERVICE_MICROPHONE
-			// Check if at least RECORD_AUDIO was granted (both required for foreground service)
 			if (grantResults.length > 0 &&
 					grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-				// On Android 14+, verify both permissions granted before starting
 				if (checkVoicePermission()) {
 					startVoiceRecording();
 				}
 			}
 		} else if (requestCode == REQUEST_VOICE_CALL) {
-			// For Android 14+, we request both RECORD_AUDIO and FOREGROUND_SERVICE_MICROPHONE
-			// Check if at least RECORD_AUDIO was granted (both required for foreground service)
 			if (grantResults.length > 0 &&
 					grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-				// On Android 14+, verify both permissions granted before starting
 				if (checkVoicePermission()) {
 					startVoiceCall();
 				}
@@ -830,15 +794,11 @@ public class ConversationActivity extends ZerionActivity
 	public void onStop() {
 		super.onStop();
 
-		// Voice recording cleanup is handled by VoiceRecordingController lifecycle observer
-
-		// Stop VoiceCallService to prevent crash when returning from background
 		try {
 			Intent serviceIntent = new Intent(this,
 					com.professor.zerion.android.conversation.voice.VoiceCallService.class);
 			stopService(serviceIntent);
 		} catch (Exception e) {
-			// Ignore if service wasn't running
 		}
 
 		notificationManager.unblockContactNotification(contactId);
@@ -995,7 +955,6 @@ public class ConversationActivity extends ZerionActivity
 
 	@UiThread
 	private void displayContactOnlineStatus() {
-		// Check initial status and trigger observer
 		viewModel.checkConnectionStatus(connectionRegistry);
 	}
 
@@ -1011,7 +970,6 @@ public class ConversationActivity extends ZerionActivity
 	}
 
 	private void loadMessages() {
-		// Trigger message loading via ViewModel
 		viewModel.loadMessageHeaders();
 	}
 
@@ -1054,7 +1012,6 @@ public class ConversationActivity extends ZerionActivity
 	}
 
 	private void loadMessageText(MessageId m) {
-		// Delegate to ViewModel - result observed via getMessageTextLoaded()
 		viewModel.loadMessageText(m);
 	}
 
@@ -1072,8 +1029,6 @@ public class ConversationActivity extends ZerionActivity
 		});
 	}
 
-	// When a message's text or attachments are loaded, scroll to the bottom
-	// if the conversation is visible and we were previously at the bottom
 	private boolean shouldScrollWhenUpdatingMessage() {
 		return getLifecycle().getCurrentState().isAtLeast(STARTED)
 				&& adapter.isScrolledToBottom(layoutManager);
@@ -1089,7 +1044,6 @@ public class ConversationActivity extends ZerionActivity
 		}
 	}
 
-
 	@UiThread
 	private void addConversationItem(ConversationItem item) {
 		adapter.incrementRevision();
@@ -1102,11 +1056,9 @@ public class ConversationActivity extends ZerionActivity
 	private void onNewConversationMessage(ConversationMessageHeader h) {
 		if (h instanceof ConversationRequest ||
 				h instanceof ConversationResponse) {
-			// contact name might not have been loaded
 			observeOnce(viewModel.getContactDisplayName(), this,
 					name -> addConversationItem(h.accept(visitor)));
 		} else {
-			// visitor also loads message text and attachments (if existing)
 			addConversationItem(h.accept(visitor));
 		}
 	}
@@ -1132,7 +1084,6 @@ public class ConversationActivity extends ZerionActivity
 			List<AttachmentHeader> headers, long expectedAutoDeleteTimer) {
 		ConversationItem replyToItem = textInputView.getReplyingToItem();
 		LiveData<SendState> result = viewModel.sendMessage(text, headers, expectedAutoDeleteTimer, replyToItem);
-		// Clear reply preview after sending
 		textInputView.hideReplyPreview();
 		return result;
 	}
@@ -1167,10 +1118,7 @@ public class ConversationActivity extends ZerionActivity
 				attachmentRetriever.getAttachmentItems(h);
 		List<AttachmentItem> items = new ArrayList<>(liveDataList.size());
 		for (LiveData<AttachmentItem> liveData : liveDataList) {
-			// first remove all our observers to avoid having more than one
-			// in case we reload the conversation, e.g. after deleting messages
 			liveData.removeObservers(this);
-			// add a new observer
 			liveData.observe(this, new AttachmentObserver(h.getId(), liveData));
 			items.add(requireNonNull(liveData.getValue()));
 		}
@@ -1260,12 +1208,10 @@ public class ConversationActivity extends ZerionActivity
 
 	@Override
 	public List<AttachmentItem> loadAttachmentsForItem(ConversationMessageItem item) {
-		// If attachments already loaded, return them
 		if (!item.needsAttachmentLoading()) {
 			return item.getAttachments();
 		}
 
-		// Load attachments lazily using getAttachmentItems (triggers observer setup)
 		PrivateMessageHeader header = item.getHeader();
 		if (header != null) {
 			List<AttachmentItem> attachments = getAttachmentItems(header);
@@ -1302,16 +1248,12 @@ public class ConversationActivity extends ZerionActivity
 		voiceRecordingController.startRecording();
 	}
 
-	// ==================== VoiceRecordingHost Interface Implementation ====================
-
 	@Override
 	public void onRecordingComplete() {
-		// Recording finished and message sent
 	}
 
 	@Override
 	public void onRecordingCancelled() {
-		// Recording was cancelled by user
 	}
 
 	@Override
@@ -1321,7 +1263,6 @@ public class ConversationActivity extends ZerionActivity
 			if (errorMessage == null || errorMessage.isEmpty()) {
 				errorMessage = getString(R.string.voice_message_error);
 			}
-			// Show user-friendly error message
 			Snackbar.make(list, errorMessage, Snackbar.LENGTH_LONG).show();
 		});
 	}
@@ -1351,12 +1292,8 @@ public class ConversationActivity extends ZerionActivity
 		viewModel.cancelVoiceRecording();
 	}
 
-	// ==================== Attachment Recording Callbacks ====================
-
 	@Override
 	public void onAttachmentRecordingComplete(java.io.File audioFile, int durationMs, String mimeType) {
-		// Attachment recording completed - file will be stored via storeVoiceAttachment
-		// Show feedback to user
 		int seconds = durationMs / 1000;
 		String message = getString(R.string.voice_message) + " (" + seconds + "s)";
 		Snackbar.make(list, message, Snackbar.LENGTH_SHORT).show();
@@ -1364,10 +1301,8 @@ public class ConversationActivity extends ZerionActivity
 
 	@Override
 	public void storeVoiceAttachment(android.net.Uri audioUri) {
-		// Store the audio file as an attachment and send
 		viewModel.storeVoiceAttachment(audioUri).observe(this, result -> {
 			if (result != null && result.isFinished()) {
-				// Check for errors in the result
 				boolean hasErrors = false;
 				for (com.professor.zerion.android.attachment.AttachmentItemResult itemResult : result.getItemResults()) {
 					if (itemResult.hasError()) {
@@ -1381,12 +1316,10 @@ public class ConversationActivity extends ZerionActivity
 				}
 
 				if (!hasErrors) {
-					// Send the voice attachment
 					Long timerValue = viewModel.getAutoDeleteTimer().getValue();
 					long expectedTimer = timerValue != null ? timerValue : 0L;
 					viewModel.sendVoiceAttachment(expectedTimer).observe(this, sendState -> {
 						if (sendState == com.professor.zerion.android.view.TextSendController.SendState.SENT) {
-							// Success - attachment sent
 						} else if (sendState == com.professor.zerion.android.view.TextSendController.SendState.ERROR) {
 							Snackbar.make(list, R.string.voice_message_error, Snackbar.LENGTH_LONG).show();
 						}
@@ -1472,7 +1405,6 @@ public class ConversationActivity extends ZerionActivity
 				.setTitle("Remove Contact")
 				.setMessage("Remove this contact? All messages will be deleted.")
 				.setPositiveButton("Remove", (dialog, which) -> {
-					// Delegate to ViewModel - isContactDeleted() observer will finish activity
 					viewModel.removeContact();
 				})
 				.setNegativeButton(android.R.string.cancel, null)
@@ -1487,9 +1419,7 @@ public class ConversationActivity extends ZerionActivity
 				.setTitle("Delete Messages")
 				.setMessage("Delete " + selected.size() + " message(s)?")
 				.setPositiveButton("Delete", (dialog, which) -> {
-					// Close action mode first
 					if (actionMode != null) actionMode.finish();
-					// Delegate to ViewModel - getMessagesDeleted() observer handles UI update
 					viewModel.deleteMessages(selected);
 				})
 				.setNegativeButton(android.R.string.cancel, null)
@@ -1514,8 +1444,6 @@ public class ConversationActivity extends ZerionActivity
 	}
 
 	private void onAddedPrivateMessage(PrivateMessageHeader h) {
-		// Convert header to ConversationItem using visitor
-		// The visitor will trigger text/attachment loading via existing observers
 		ConversationItem item = h.accept(visitor);
 		if (item != null) {
 			runOnUiThreadUnlessDestroyed(() -> {
@@ -1600,7 +1528,8 @@ public class ConversationActivity extends ZerionActivity
 			} else {
 				Intent intent = new Intent(this, ImageActivity.class);
 				intent.putExtra(CONTACT_ID, contactId.getInt());
-				intent.putExtra(NAME, viewModel.getContactDisplayName().getValue());
+				String imgName = viewModel.getContactDisplayName().getValue();
+				intent.putExtra(NAME, imgName != null ? imgName : "");
 				intent.putExtra(ITEM_ID, messageItem.getId().getBytes());
 				intent.putExtra(DATE, messageItem.getTime());
 				intent.putExtra(ATTACHMENT_POSITION, messageItem.getAttachments().indexOf(attachmentItem));
@@ -1648,7 +1577,6 @@ public class ConversationActivity extends ZerionActivity
 		if (text == null || text.isEmpty()) {
 			return false;
 		}
-		// Use structured signal detection (checks for binary prefix)
 		return com.professor.zerion.android.conversation.voice.VoiceCallSignal.isSignal(text);
 	}
 

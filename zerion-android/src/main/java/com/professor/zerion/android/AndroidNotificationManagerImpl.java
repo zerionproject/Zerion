@@ -13,6 +13,8 @@ import android.net.Uri;
 import org.briarproject.bramble.api.Multiset;
 import org.briarproject.bramble.api.contact.ContactId;
 import org.briarproject.bramble.api.contact.event.ContactAddedEvent;
+import org.briarproject.bramble.api.crypto.SecretKey;
+import com.professor.zerion.android.conversation.voice.VoiceCallKeyHolder;
 import org.briarproject.bramble.api.db.DbException;
 import org.briarproject.bramble.api.event.Event;
 import org.briarproject.bramble.api.event.EventListener;
@@ -695,7 +697,32 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 			try {
 				Contact contact = contactManager.getContact(contactId);
 				String callId = header.getCallId();
-				String voiceCallKey = header.getPayload();
+				String rawPayload = header.getPayload();
+
+				// Store key in VoiceCallKeyHolder (same path as ConversationActivity)
+				if (rawPayload != null) {
+					String voiceCallKeyHex = rawPayload;
+					String ephemeralHex = null;
+					int pipeIdx = rawPayload.indexOf('|');
+					if (pipeIdx > 0) {
+						voiceCallKeyHex = rawPayload.substring(0, pipeIdx);
+						ephemeralHex = rawPayload.substring(pipeIdx + 1);
+					}
+					try {
+						SecretKey key = new SecretKey(
+								StringUtils.fromHexString(voiceCallKeyHex));
+						VoiceCallKeyHolder.setKey(key);
+					} catch (Exception e) {
+						// Key decode failed
+					}
+					if (ephemeralHex != null) {
+						try {
+							VoiceCallKeyHolder.setRemoteEphemeral(
+									StringUtils.fromHexString(ephemeralHex));
+						} catch (Exception ignored) {
+						}
+					}
+				}
 
 				androidExecutor.runOnUiThread(() -> {
 					Intent intent = new Intent(appContext,
@@ -714,11 +741,6 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 						intent.putExtra(
 								com.professor.zerion.android.conversation.voice.VoiceCallActivity.EXTRA_CALL_ID,
 								callId);
-					}
-					if (voiceCallKey != null) {
-						intent.putExtra(
-								com.professor.zerion.android.conversation.voice.VoiceCallActivity.EXTRA_VOICE_CALL_KEY,
-								voiceCallKey);
 					}
 					intent.addFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TOP);
 					appContext.startActivity(intent);
