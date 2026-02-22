@@ -101,7 +101,7 @@ public class VoiceCallService extends Service implements EventListener {
 	private static final String CHANNEL_ID = "voice_call_channel";
 	private static final int NOTIFICATION_ID = 1001;
 
-	private static final int SAMPLE_RATE = 48000;
+	private static final int SAMPLE_RATE = 16000;
 
 	private static final int CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO;
 
@@ -110,7 +110,7 @@ public class VoiceCallService extends Service implements EventListener {
 	private static final int BUFFER_SIZE = AudioRecord.getMinBufferSize(
 			SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT);
 
-	private static final boolean USE_OPUS_CODEC = true;
+	private static final boolean USE_OPUS_CODEC = false;
 	private static final int OPUS_BITRATE = 24000;
 	private static final int OPUS_FRAME_DURATION_MS = 20;
 
@@ -759,28 +759,23 @@ public class VoiceCallService extends Service implements EventListener {
 								readOffset = 0;
 								continue;
 							}
-							long seq = sendSequenceNumber.getAndIncrement();
-							long ts = System.currentTimeMillis();
-							byte[] plaintext = new byte[16 + encodedAudio.length];
-							ByteBuffer.wrap(plaintext).order(ByteOrder.BIG_ENDIAN)
-									.putLong(seq)
-									.putLong(ts)
-									.put(encodedAudio);
+							byte[] encryptedAudio = voiceCallCrypto.encryptAudioFrame(
+									encodedAudio, keys.txKey);
 
-							byte[] encrypted = voiceCallCrypto.encryptAudioFrame(
-									plaintext, keys.txKey, seq);
-							int paddedSize = Math.max(PADDED_FRAME_SIZE, encrypted.length);
-							byte[] padded = new byte[paddedSize];
-							System.arraycopy(encrypted, 0, padded, 0, encrypted.length);
-							dataOut.writeInt(encrypted.length);
-							dataOut.write(padded);
+							java.util.zip.CRC32 crc32 = new java.util.zip.CRC32();
+							crc32.update(encryptedAudio, 0, encryptedAudio.length);
+							long checksum = crc32.getValue();
 
-							totalBytesSent += paddedSize + 4;
+							dataOut.writeInt(encryptedAudio.length);
+							dataOut.writeLong(sendSequenceNumber.getAndIncrement());
+							dataOut.writeLong(System.currentTimeMillis());
+							dataOut.writeLong(checksum);
+							dataOut.write(encryptedAudio);
+							dataOut.flush();
+
+							totalBytesSent += encryptedAudio.length + 28;
 							totalFramesSent++;
 							networkMetrics.recordPacketSent();
-							if (totalFramesSent % 3 == 0) {
-								dataOut.flush();
-							}
 
 							readOffset = 0;
 						}
@@ -850,52 +845,21 @@ public class VoiceCallService extends Service implements EventListener {
 							continue;
 						}
 
+						long sequence = dataIn.readLong();
+						long timestamp = dataIn.readLong();
+						long receivedChecksum = dataIn.readLong();
+
 						lastReceiveTime = System.currentTimeMillis();
 
 						if (encFrameSize > MAX_ENCRYPTED_FRAME_SIZE) {
-							break;
+							continue;
 						}
-
-						int paddedSize = Math.max(PADDED_FRAME_SIZE, encFrameSize);
-						byte[] paddedFrame = new byte[paddedSize];
-						dataIn.readFully(paddedFrame);
 
 						byte[] encryptedFrame = new byte[encFrameSize];
-						System.arraycopy(paddedFrame, 0, encryptedFrame, 0, encFrameSize);
+						dataIn.readFully(encryptedFrame);
 						receivedFrames++;
 
-						VoiceCallCrypto.AudioKeys keys = audioKeys;
-						if (keys == null || keys.rxKey == null) {
-							continue;
-						}
-						byte[] plaintext;
-						try {
-							plaintext = voiceCallCrypto.decryptAudioFrame(
-									encryptedFrame, keys.rxKey);
-						} catch (RuntimeException e) {
-							corruptedFrames++;
-							networkMetrics.recordCorruptedPacket();
-							continue;
-						}
-
-						if (plaintext.length < 16) {
-							corruptedFrames++;
-							continue;
-						}
-
-						ByteBuffer ptBuf = ByteBuffer.wrap(plaintext).order(ByteOrder.BIG_ENDIAN);
-						long sequence = ptBuf.getLong();
-						long timestamp = ptBuf.getLong();
-						byte[] encodedAudio = new byte[plaintext.length - 16];
-						ptBuf.get(encodedAudio);
-
-						// Replay protection — reject old/duplicate frames
-						if (lastSequence >= 0 && sequence <= lastSequence) {
-							networkMetrics.recordCorruptedPacket();
-							continue;
-						}
-
-						totalBytesReceived += encFrameSize + 4;
+						totalBytesReceived += encFrameSize + 28;
 						totalFramesReceived++;
 						networkMetrics.recordPacketReceived(sequence);
 
@@ -905,30 +869,30 @@ public class VoiceCallService extends Service implements EventListener {
 							networkMetrics.recordLatency(latency);
 						}
 
-						final int PCM_FRAME = (SAMPLE_RATE / 1000) * OPUS_FRAME_DURATION_MS * 2;
-						if (lastSequence >= 0 && sequence > lastSequence + 1) {
-							long lostFrames = sequence - lastSequence - 1;
-							totalPacketLoss += lostFrames;
+						java.util.zip.CRC32 crc32 = new java.util.zip.CRC32();
+						crc32.update(encryptedFrame, 0, encFrameSize);
+						long calculatedChecksum = crc32.getValue();
 
-							if (USE_OPUS_CODEC && opusDecoder != null) {
-								int framesToConceal = (int) Math.min(lostFrames, 5);
-								for (int f = 0; f < framesToConceal; f++) {
-									try {
-										byte[] concealed = opusDecoder.concealLostPacket(PCM_FRAME);
-										synchronized (jbLock) {
-											writeToJitterBuffer(sharedJitterBuffer, concealed,
-													jbWritePos, JITTER_BUFFER_CAPACITY);
-											jbWritePos = (jbWritePos + concealed.length) % JITTER_BUFFER_CAPACITY;
-											jbBufferedBytes = Math.min(jbBufferedBytes + concealed.length,
-													JITTER_BUFFER_CAPACITY);
-										}
-									} catch (Exception plcErr) {
-										break;
-									}
-								}
-							}
+						if (calculatedChecksum != receivedChecksum) {
+							corruptedFrames++;
+							networkMetrics.recordCorruptedPacket();
+							continue;
 						}
-						lastSequence = sequence;
+
+						VoiceCallCrypto.AudioKeys keys = audioKeys;
+						if (keys == null || keys.rxKey == null) {
+							continue;
+						}
+
+						byte[] encodedAudio;
+						try {
+							encodedAudio = voiceCallCrypto.decryptAudioFrame(
+									encryptedFrame, keys.rxKey);
+						} catch (RuntimeException e) {
+							corruptedFrames++;
+							networkMetrics.recordCorruptedPacket();
+							continue;
+						}
 
 						byte[] decoded;
 						if (USE_OPUS_CODEC && opusDecoder != null) {
@@ -937,15 +901,23 @@ public class VoiceCallService extends Service implements EventListener {
 							} catch (Exception e) {
 								corruptedFrames++;
 								networkMetrics.recordCorruptedPacket();
-								try {
-									decoded = opusDecoder.concealLostPacket(PCM_FRAME);
-								} catch (Exception plcError) {
-									continue;
-								}
+								continue;
 							}
 						} else {
 							decoded = encodedAudio;
 						}
+
+						if (lastSequence >= 0) {
+							if (sequence <= lastSequence) {
+								networkMetrics.recordCorruptedPacket();
+								continue;
+							}
+							if (sequence > lastSequence + 1) {
+								long lostFrames = sequence - lastSequence - 1;
+								totalPacketLoss += lostFrames;
+							}
+						}
+						lastSequence = sequence;
 
 						if (decoded.length == 0) {
 							continue;
