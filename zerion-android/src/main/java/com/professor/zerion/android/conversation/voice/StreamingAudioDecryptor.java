@@ -28,7 +28,7 @@ public class StreamingAudioDecryptor {
 	private static final int GCM_TAG_LENGTH = 128;
 
 	private final SecretKeySpec decryptionKey;
-	private final byte[] rawKeyBytes; // retain raw bytes for zeroing
+	private final byte[] rawKeyBytes;
 	private final byte[] baseIv;
 	private int chunkSequenceNumber = 0;
 	private byte[] aadContext;
