@@ -45,6 +45,10 @@ public class Localizer {
 			INSTANCE = new Localizer(INSTANCE.systemLocale, null);
 	}
 
+	public static synchronized void forceReinitialize(SharedPreferences prefs) {
+		INSTANCE = new Localizer(prefs);
+	}
+
 	public static synchronized Localizer getInstance() {
 		if (INSTANCE == null)
 			throw new IllegalStateException("Localizer not initialized");

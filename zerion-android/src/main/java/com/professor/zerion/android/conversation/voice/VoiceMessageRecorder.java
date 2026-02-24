@@ -35,7 +35,7 @@ public class VoiceMessageRecorder {
 	private static final int MAX_DURATION_MS = 300_000;
 	private static final int MIN_DURATION_MS = 300;
 	private static final int MAX_RAW_AUDIO_SIZE = 4_800_000;
-	private static final int MAX_ENCRYPTED_PAYLOAD_SIZE = 21_500;
+	private static final int MAX_ENCRYPTED_PAYLOAD_SIZE = 250_000;
 
 	private static final int PROGRESS_UPDATE_INTERVAL_MS = 100;
 
@@ -196,7 +196,7 @@ public class VoiceMessageRecorder {
 			int maxPayloadData = MAX_ENCRYPTED_PAYLOAD_SIZE - 100;
 			if (muLawData.length > maxPayloadData) {
 				mainHandler.post(() -> callback.onError(
-						new IllegalStateException("Voice message too long. Please keep it under 3 seconds.")));
+						new IllegalStateException("Voice message too long. Please keep it under 30 seconds.")));
 				Arrays.fill(muLawData, (byte) 0);
 				return;
 			}
