@@ -211,7 +211,6 @@ public class VoiceCallService extends Service implements EventListener {
 	private SecretKey voiceCallKey;
 	private VoiceCallCrypto.AudioKeys audioKeys;
 
-	// Ephemeral secrets for forward secrecy
 	private byte[] localEphemeralSecret;
 	private byte[] remoteEphemeralSecret;
 
@@ -279,7 +278,6 @@ public class VoiceCallService extends Service implements EventListener {
 			callId = intent.getStringExtra(VoiceCallActivity.EXTRA_CALL_ID);
 
 			if (isIncoming) {
-				// Use secure in-memory key holder (never pass keys via Intent)
 				SecretKey heldKey = VoiceCallKeyHolder.consumeKey();
 				if (heldKey != null) {
 					voiceCallKey = heldKey;
@@ -351,7 +349,7 @@ public class VoiceCallService extends Service implements EventListener {
 					voiceCallKey = voiceCallCrypto.generateVoiceCallKey();
 				}
 
-				// Generate ephemeral secret for forward secrecy
+	
 				localEphemeralSecret = voiceCallCrypto.generateEphemeralSecret();
 
 				sendCallOffer();
@@ -359,7 +357,7 @@ public class VoiceCallService extends Service implements EventListener {
 				callState = CallState.RINGING;
 				updateCallActivity();
 
-				// Timeout if no CALL_ANSWER received
+
 				scheduleCallSetupTimeout(90_000);
 
 			} catch (Exception e) {
@@ -377,14 +375,13 @@ public class VoiceCallService extends Service implements EventListener {
 
 		executorService.execute(() -> {
 			try {
-				// Generate ephemeral secret for forward secrecy
+	
 				localEphemeralSecret = voiceCallCrypto.generateEphemeralSecret();
 
 				createHiddenService();
 
 				sendCallAnswer();
 
-				// Timeout if caller doesn't connect
 				scheduleCallSetupTimeout(120_000);
 
 			} catch (Exception e) {
@@ -426,13 +423,6 @@ public class VoiceCallService extends Service implements EventListener {
 			}
 
 			try {
-				if (callStartTime > 0) {
-					logCallDiagnostics();
-				}
-			} catch (Exception e) {
-			}
-
-			try {
 				stopAudioStreaming();
 			} catch (Exception e) {
 			}
@@ -449,21 +439,6 @@ public class VoiceCallService extends Service implements EventListener {
 			updateCallActivity();
 			stopSelf();
 		});
-	}
-
-	private void logCallDiagnostics() {
-		long callDuration = System.currentTimeMillis() - callStartTime;
-		double durationSeconds = callDuration / 1000.0;
-
-		double avgSendBitrate = (totalBytesSent * 8) / durationSeconds / 1000;
-		double avgRecvBitrate = (totalBytesReceived * 8) / durationSeconds / 1000;
-
-		callStartTime = 0;
-		totalBytesSent = 0;
-		totalBytesReceived = 0;
-		totalFramesSent = 0;
-		totalFramesReceived = 0;
-		totalPacketLoss = 0;
 	}
 
 	private void createHiddenService() throws IOException {
@@ -518,7 +493,6 @@ public class VoiceCallService extends Service implements EventListener {
 	}
 
 
-	// Validate .onion address format
 	private static final java.util.regex.Pattern ONION_V3_PATTERN =
 			java.util.regex.Pattern.compile("^[a-z2-7]{56}(\\.onion)?$");
 
@@ -529,7 +503,6 @@ public class VoiceCallService extends Service implements EventListener {
 			updateCallActivity();
 			return;
 		}
-		// Validate port range
 		if (remotePort < 1 || remotePort > 65535) {
 			callState = CallState.FAILED;
 			updateCallActivity();
@@ -590,18 +563,15 @@ public class VoiceCallService extends Service implements EventListener {
 
 		boolean alice = !isIncoming;
 
-		// Use ephemeral keys for forward secrecy when available
 		if (localEphemeralSecret != null && remoteEphemeralSecret != null) {
 			audioKeys = voiceCallCrypto.deriveEphemeralAudioKeys(
 					voiceCallKey, localEphemeralSecret,
 					remoteEphemeralSecret, alice);
-			// Zero ephemeral secrets after derivation
 			Arrays.fill(localEphemeralSecret, (byte) 0);
 			Arrays.fill(remoteEphemeralSecret, (byte) 0);
 			localEphemeralSecret = null;
 			remoteEphemeralSecret = null;
 		} else {
-			// Fallback to static key derivation (no forward secrecy)
 			audioKeys = voiceCallCrypto.deriveAudioKeys(voiceCallKey, alice);
 		}
 	}
@@ -1100,8 +1070,6 @@ public class VoiceCallService extends Service implements EventListener {
 		if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS && reconnectKey != null) {
 			isReconnecting = true;
 			reconnectAttempts++;
-			// Advance counter by safety margin to prevent nonce reuse
-			// under same key after reconnection
 			sendSequenceNumber.addAndGet(1000);
 			callState = CallState.CONNECTING;
 			updateCallActivity();
@@ -1175,7 +1143,6 @@ public class VoiceCallService extends Service implements EventListener {
 		}
 	}
 
-	// Bounded jitter buffer write — silently drops excess data
 	private static void writeToJitterBuffer(byte[] jitterBuffer, byte[] data,
 			int writePos, int bufferSize) {
 		int toWrite = Math.min(data.length, bufferSize);
@@ -1215,7 +1182,6 @@ public class VoiceCallService extends Service implements EventListener {
 			Arrays.fill(audioKeys.rxKey.getBytes(), (byte) 0);
 			audioKeys = null;
 		}
-		// Zero ephemeral secrets
 		if (localEphemeralSecret != null) {
 			Arrays.fill(localEphemeralSecret, (byte) 0);
 			localEphemeralSecret = null;
@@ -1224,14 +1190,12 @@ public class VoiceCallService extends Service implements EventListener {
 			Arrays.fill(remoteEphemeralSecret, (byte) 0);
 			remoteEphemeralSecret = null;
 		}
-		// Zero jitter buffer
 		synchronized (jbLock) {
 			Arrays.fill(sharedJitterBuffer, (byte) 0);
 			jbWritePos = 0;
 			jbReadPos = 0;
 			jbBufferedBytes = 0;
 		}
-		// Clear contact name from memory
 		contactName = null;
 	}
 
@@ -1431,7 +1395,6 @@ public class VoiceCallService extends Service implements EventListener {
 	}
 
 	public void handleIncomingSignaling(String message) {
-		// Use known voiceCallKey for HMAC verification when available
 		VoiceCallSignal signal;
 		if (voiceCallKey != null) {
 			signal = VoiceCallSignal.fromWireFormat(message,
@@ -1749,7 +1712,6 @@ public class VoiceCallService extends Service implements EventListener {
 		}
 	}
 
-	// Hex encoding helpers for ephemeral secret exchange
 	private static String bytesToHex(byte[] bytes) {
 		StringBuilder hex = new StringBuilder(bytes.length * 2);
 		for (byte b : bytes) {
