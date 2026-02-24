@@ -54,8 +54,6 @@ public class StreamingAudioDecryptor {
 	 * random wrap key material, protected by the transport encryption.
 	 */
 	private static byte[] unwrapSessionKey(byte[] wrappedKey, byte[] iv, byte[] groupId) throws Exception {
-		// New format: 80 bytes (32-byte wrap key + 48-byte wrapped session key).
-		// Legacy 48-byte format is not supported.
 		if (wrappedKey.length == 80) {
 			byte[] wrapKeyBytes = Arrays.copyOfRange(wrappedKey, 0, 32);
 			byte[] encryptedSessionKey = Arrays.copyOfRange(wrappedKey, 32, 80);
@@ -185,7 +183,6 @@ public class StreamingAudioDecryptor {
 	}
 
 	public void zeroizeKeys() {
-		// Zero the actual key material, not just IV/AAD
 		if (rawKeyBytes != null) {
 			Arrays.fill(rawKeyBytes, (byte) 0);
 		}
