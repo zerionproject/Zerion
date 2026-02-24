@@ -16,19 +16,14 @@ import org.briarproject.bramble.api.system.Clock;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.Collection;
-import java.util.logging.Logger;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
-import static java.util.logging.Level.WARNING;
 import static org.briarproject.nullsafety.NullSafety.requireNonNull;
 
 @ThreadSafe
 @NotNullByDefault
 class IdentityManagerImpl implements IdentityManager, OpenDatabaseHook {
-
-	private static final Logger LOG =
-			Logger.getLogger(IdentityManagerImpl.class.getName());
 
 	private final DatabaseComponent db;
 	private final CryptoComponent crypto;
@@ -163,17 +158,13 @@ class IdentityManagerImpl implements IdentityManager, OpenDatabaseHook {
 		// Detect corruption: one half of a key pair present without
 		// the other indicates database corruption, not migration
 		if ((classicalPub == null) != (classicalPriv == null)) {
-			LOG.log(WARNING, "Corrupt identity: partial classical key pair");
 			throw new DbException();
 		}
 		if ((hybridPub == null) != (hybridPriv == null)) {
-			LOG.log(WARNING, "Corrupt identity: partial hybrid key pair");
 			throw new DbException();
 		}
 
 		if (!i.hasHandshakeKeyPair()) {
-			LOG.log(WARNING, "Classical handshake keys missing — "
-					+ "generating new key pair (one-time migration)");
 			KeyPair classicalKeyPair = crypto.generateAgreementKeyPair();
 			classicalPub = classicalKeyPair.getPublic();
 			classicalPriv = classicalKeyPair.getPrivate();
@@ -181,8 +172,6 @@ class IdentityManagerImpl implements IdentityManager, OpenDatabaseHook {
 		}
 
 		if (!i.hasHybridHandshakeKeyPair()) {
-			LOG.log(WARNING, "Hybrid handshake keys missing — "
-					+ "generating new key pair (one-time migration)");
 			KeyPair hybridKeyPair = crypto.generateHybridAgreementKeyPair();
 			hybridPub = hybridKeyPair.getPublic();
 			hybridPriv = hybridKeyPair.getPrivate();
