@@ -6,8 +6,8 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 
 import javax.annotation.concurrent.ThreadSafe;
@@ -44,23 +44,23 @@ public final class BruteForceProtection {
 
 		failedAttempts++;
 		lastFailedWallClock = now;
-		saveState();
 
 		if (failedAttempts >= ATTEMPTS_BEFORE_WIPE) {
+			saveState();
 			return FailureResult.wipeData();
 		}
 
-		if (failedAttempts == ATTEMPTS_BEFORE_FIRST_LOCKOUT) {
+		if (failedAttempts >= ATTEMPTS_BEFORE_FIRST_LOCKOUT) {
 			lockoutUntilWallClock = now + LOCKOUT_DURATION_MS;
 			saveState();
-			return FailureResult.lockout(LOCKOUT_DURATION_MS);
+			if (failedAttempts == ATTEMPTS_BEFORE_FIRST_LOCKOUT) {
+				return FailureResult.lockout(LOCKOUT_DURATION_MS);
+			}
+			return FailureResult.finalWarning(
+					ATTEMPTS_BEFORE_WIPE - failedAttempts);
 		}
 
-		if (failedAttempts > ATTEMPTS_BEFORE_FIRST_LOCKOUT) {
-			int remaining = ATTEMPTS_BEFORE_WIPE - failedAttempts;
-			return FailureResult.finalWarning(remaining);
-		}
-
+		saveState();
 		int remaining = ATTEMPTS_BEFORE_FIRST_LOCKOUT - failedAttempts;
 		return FailureResult.normalFailure(remaining);
 	}
@@ -118,7 +118,6 @@ public final class BruteForceProtection {
 				lastFailedWallClock = Long.parseLong(line3.trim());
 			}
 		} catch (IOException | NumberFormatException e) {
-			// Corrupted state file — treat as fresh start
 			failedAttempts = 0;
 			lockoutUntilWallClock = 0;
 			lastFailedWallClock = 0;
@@ -128,20 +127,32 @@ public final class BruteForceProtection {
 	private void saveState() {
 		File tmpFile = new File(stateFile.getParent(),
 				STATE_FILE + ".tmp");
-		try (FileWriter writer = new FileWriter(tmpFile)) {
-			writer.write(failedAttempts + "\n");
-			writer.write(lockoutUntilWallClock + "\n");
-			writer.write(lastFailedWallClock + "\n");
-			writer.flush();
+		try {
+			FileOutputStream fos = new FileOutputStream(tmpFile);
+			try {
+				byte[] data = (failedAttempts + "\n" +
+						lockoutUntilWallClock + "\n" +
+						lastFailedWallClock + "\n")
+						.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+				fos.write(data);
+				fos.flush();
+				fos.getFD().sync();
+			} finally {
+				fos.close();
+			}
 		} catch (IOException e) {
 			return;
 		}
-		// Atomic rename to prevent corruption on crash
-		tmpFile.renameTo(stateFile);
+		if (!tmpFile.renameTo(stateFile)) {
+			tmpFile.delete();
+		}
 	}
 
 	private void deleteState() {
 		stateFile.delete();
+		File tmpFile = new File(stateFile.getParent(),
+				STATE_FILE + ".tmp");
+		tmpFile.delete();
 	}
 
 	public static final class FailureResult {
@@ -156,14 +167,16 @@ public final class BruteForceProtection {
 		public final int attemptsRemaining;
 		public final long lockoutDurationMs;
 
-		private FailureResult(Type type, int attemptsRemaining, long lockoutDurationMs) {
+		private FailureResult(Type type, int attemptsRemaining,
+				long lockoutDurationMs) {
 			this.type = type;
 			this.attemptsRemaining = attemptsRemaining;
 			this.lockoutDurationMs = lockoutDurationMs;
 		}
 
 		public static FailureResult normalFailure(int attemptsRemaining) {
-			return new FailureResult(Type.NORMAL_FAILURE, attemptsRemaining, 0);
+			return new FailureResult(Type.NORMAL_FAILURE,
+					attemptsRemaining, 0);
 		}
 
 		public static FailureResult lockout(long durationMs) {
@@ -171,7 +184,8 @@ public final class BruteForceProtection {
 		}
 
 		public static FailureResult finalWarning(int attemptsRemaining) {
-			return new FailureResult(Type.FINAL_WARNING, attemptsRemaining, 0);
+			return new FailureResult(Type.FINAL_WARNING,
+					attemptsRemaining, 0);
 		}
 
 		public static FailureResult wipeData() {

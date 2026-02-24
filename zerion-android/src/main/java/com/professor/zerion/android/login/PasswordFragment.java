@@ -209,7 +209,6 @@ public class PasswordFragment extends BaseFragment implements TextWatcher {
 		char[] passwordChars = passwordStr.toCharArray();
 		password.setText(null);
 		viewModel.validatePassword(passwordChars);
-		// passwordChars is zeroed in StartupViewModel.validatePassword() finally block
 	}
 
 	private void onPasswordInvalid(DecryptionResult result) {
