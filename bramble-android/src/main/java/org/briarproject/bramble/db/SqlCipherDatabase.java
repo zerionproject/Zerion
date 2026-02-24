@@ -205,6 +205,7 @@ class SqlCipherDatabase extends JdbcDatabase {
 								dbFile.getAbsolutePath(), hexKey,
 								null, null, null);
 				db.execSQL("PRAGMA cipher_memory_security = OFF");
+				db.execSQL("PRAGMA secure_delete = ON");
 				// Use rawQuery (not execSQL) because busy_timeout returns a row
 				Cursor bc = db.rawQuery(
 						"PRAGMA busy_timeout = " + BUSY_TIMEOUT_MS, null);

@@ -1,14 +1,8 @@
 package com.professor.zerion.android.login;
 
-import android.content.Context;
+import android.content.SharedPreferences;
 
 import org.briarproject.nullsafety.NotNullByDefault;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.IOException;
 
 import javax.annotation.concurrent.ThreadSafe;
 
@@ -16,7 +10,9 @@ import javax.annotation.concurrent.ThreadSafe;
 @NotNullByDefault
 public final class BruteForceProtection {
 
-	private static final String STATE_FILE = ".bf_state";
+	private static final String KEY_FAILED_ATTEMPTS = "bf_fa";
+	private static final String KEY_LOCKOUT_UNTIL = "bf_lu";
+	private static final String KEY_LAST_FAILED = "bf_lf";
 
 	private int failedAttempts = 0;
 	private long lockoutUntilWallClock = 0;
@@ -27,10 +23,10 @@ public final class BruteForceProtection {
 	private static final long LOCKOUT_DURATION_MS = 5 * 60 * 1000;
 	private static final long ATTEMPT_WINDOW_MS = 30 * 60 * 1000;
 
-	private final File stateFile;
+	private final SharedPreferences prefs;
 
-	public BruteForceProtection(Context context) {
-		stateFile = new File(context.getFilesDir(), STATE_FILE);
+	public BruteForceProtection(SharedPreferences prefs) {
+		this.prefs = prefs;
 		loadState();
 	}
 
@@ -106,53 +102,25 @@ public final class BruteForceProtection {
 	}
 
 	private void loadState() {
-		if (!stateFile.exists()) return;
-		try (BufferedReader reader = new BufferedReader(
-				new FileReader(stateFile))) {
-			String line1 = reader.readLine();
-			String line2 = reader.readLine();
-			String line3 = reader.readLine();
-			if (line1 != null && line2 != null && line3 != null) {
-				failedAttempts = Integer.parseInt(line1.trim());
-				lockoutUntilWallClock = Long.parseLong(line2.trim());
-				lastFailedWallClock = Long.parseLong(line3.trim());
-			}
-		} catch (IOException | NumberFormatException e) {
-			failedAttempts = 0;
-			lockoutUntilWallClock = 0;
-			lastFailedWallClock = 0;
-		}
+		failedAttempts = prefs.getInt(KEY_FAILED_ATTEMPTS, 0);
+		lockoutUntilWallClock = prefs.getLong(KEY_LOCKOUT_UNTIL, 0);
+		lastFailedWallClock = prefs.getLong(KEY_LAST_FAILED, 0);
 	}
 
 	private void saveState() {
-		File tmpFile = new File(stateFile.getParent(),
-				STATE_FILE + ".tmp");
-		try {
-			FileOutputStream fos = new FileOutputStream(tmpFile);
-			try {
-				byte[] data = (failedAttempts + "\n" +
-						lockoutUntilWallClock + "\n" +
-						lastFailedWallClock + "\n")
-						.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-				fos.write(data);
-				fos.flush();
-				fos.getFD().sync();
-			} finally {
-				fos.close();
-			}
-		} catch (IOException e) {
-			return;
-		}
-		if (!tmpFile.renameTo(stateFile)) {
-			tmpFile.delete();
-		}
+		prefs.edit()
+				.putInt(KEY_FAILED_ATTEMPTS, failedAttempts)
+				.putLong(KEY_LOCKOUT_UNTIL, lockoutUntilWallClock)
+				.putLong(KEY_LAST_FAILED, lastFailedWallClock)
+				.commit();
 	}
 
 	private void deleteState() {
-		stateFile.delete();
-		File tmpFile = new File(stateFile.getParent(),
-				STATE_FILE + ".tmp");
-		tmpFile.delete();
+		prefs.edit()
+				.remove(KEY_FAILED_ATTEMPTS)
+				.remove(KEY_LOCKOUT_UNTIL)
+				.remove(KEY_LAST_FAILED)
+				.commit();
 	}
 
 	public static final class FailureResult {
