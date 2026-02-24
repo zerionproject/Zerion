@@ -16,8 +16,8 @@ public class VoiceMessageFormat {
 	private static final String VOICE_SUFFIX = "]";
 	private static final Pattern VOICE_PATTERN =
 		Pattern.compile("\\[VOICE:(\\d+):([A-Za-z0-9+/=]+)\\]");
-	private static final int MAX_BINARY_PAYLOAD_SIZE = 22_500;
-	private static final int MAX_BASE64_TEXT_SIZE = 30_700;
+	private static final int MAX_BINARY_PAYLOAD_SIZE = 280_000;
+	private static final int MAX_BASE64_TEXT_SIZE = 375_000;
 	private static final int BASE64_OVERHEAD_FACTOR = 4;
 
 	public static class ParsedVoiceMessage {

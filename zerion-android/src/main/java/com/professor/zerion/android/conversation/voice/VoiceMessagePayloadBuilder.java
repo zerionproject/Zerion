@@ -38,7 +38,7 @@ public class VoiceMessagePayloadBuilder {
 			throw new IllegalArgumentException("IV must be 12 bytes, got " + iv.length);
 		}
 		if (encryptedKey.length != WRAPPED_KEY_LENGTH) {
-			throw new IllegalArgumentException("Wrapped key must be 48 bytes, got " + encryptedKey.length);
+			throw new IllegalArgumentException("Wrapped key must be " + WRAPPED_KEY_LENGTH + " bytes, got " + encryptedKey.length);
 		}
 		if (chunks.isEmpty()) {
 			throw new IllegalArgumentException("Must have at least one chunk");

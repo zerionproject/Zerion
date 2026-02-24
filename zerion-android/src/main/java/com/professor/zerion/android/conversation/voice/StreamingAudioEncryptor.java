@@ -29,7 +29,7 @@ public class StreamingAudioEncryptor {
 	private static final int CHUNK_SIZE = 4096;
 
 	private final SecretKey encryptionKey;
-	private final byte[] rawKeyBytes; // retain raw bytes for zeroing
+	private final byte[] rawKeyBytes;
 	private final byte[] iv;
 	private int chunkSequenceNumber = 0;
 	private byte[] aadContext;
@@ -146,7 +146,6 @@ public class StreamingAudioEncryptor {
 	}
 
 	public void zeroizeKeys() {
-		// Zero the actual raw key bytes
 		if (rawKeyBytes != null) {
 			Arrays.fill(rawKeyBytes, (byte) 0);
 		}

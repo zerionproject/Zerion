@@ -209,9 +209,6 @@ public class VoiceMessageRecorder {
 			javax.crypto.SecretKey wrapKey = deriveWrapKey(currentGroupId);
 			byte[] encryptedSessionKey = encryptor.getEncryptedKey(wrapKey);
 			byte[] wrapKeyBytes = wrapKey.getEncoded();
-			// New format: prepend the 32-byte random wrap key to the 48-byte
-			// encrypted session key. The entire payload is protected by the
-			// Bramble transport encryption (E2E).
 			byte[] wrappedKey = new byte[32 + encryptedSessionKey.length];
 			System.arraycopy(wrapKeyBytes, 0, wrappedKey, 0, 32);
 			System.arraycopy(encryptedSessionKey, 0, wrappedKey, 32, encryptedSessionKey.length);
