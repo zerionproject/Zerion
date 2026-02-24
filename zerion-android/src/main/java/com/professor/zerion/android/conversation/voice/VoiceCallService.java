@@ -1478,13 +1478,25 @@ public class VoiceCallService extends Service implements EventListener {
 		this.isMuted = muted;
 	}
 
+	@SuppressWarnings("deprecation")
 	public void setSpeakerphoneOn(boolean speakerOn) {
 		this.isSpeakerOn = speakerOn;
-		if (audioManager != null) {
+		if (audioManager == null) return;
+		if (android.os.Build.VERSION.SDK_INT >= 31) {
+			if (speakerOn) {
+				for (android.media.AudioDeviceInfo device :
+						audioManager.getAvailableCommunicationDevices()) {
+					if (device.getType() ==
+							android.media.AudioDeviceInfo.TYPE_BUILTIN_SPEAKER) {
+						audioManager.setCommunicationDevice(device);
+						break;
+					}
+				}
+			} else {
+				audioManager.clearCommunicationDevice();
+			}
+		} else {
 			audioManager.setSpeakerphoneOn(speakerOn);
-			audioManager.setMode(speakerOn ?
-					AudioManager.MODE_NORMAL :
-					AudioManager.MODE_IN_COMMUNICATION);
 		}
 	}
 

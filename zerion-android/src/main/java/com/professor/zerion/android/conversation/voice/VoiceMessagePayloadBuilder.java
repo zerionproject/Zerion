@@ -13,12 +13,12 @@ public class VoiceMessagePayloadBuilder {
 
 	private static final byte FORMAT_VERSION = 1;
 	private static final int IV_LENGTH = 12;
-	private static final int WRAPPED_KEY_LENGTH = 48;
+	private static final int WRAPPED_KEY_LENGTH = 80;
 	private static final int TAG_LENGTH = 16;
 	private static final int INT_LENGTH = 4;
 	private static final int MAX_CHUNK_SIZE = 8_192;
 	private static final int MAX_DURATION_MS = 60_000;
-	private static final int MAX_VOICE_MESSAGE_SIZE = 22_500;
+	private static final int MAX_VOICE_MESSAGE_SIZE = 280_000;
 
 	public static byte getFormatVersion() {
 		return FORMAT_VERSION;
