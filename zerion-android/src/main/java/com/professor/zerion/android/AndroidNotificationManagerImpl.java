@@ -696,8 +696,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 				String callId = header.getCallId();
 				String rawPayload = header.getPayload();
 
-				// Store key in VoiceCallKeyHolder (same path as ConversationActivity)
-				if (rawPayload != null) {
+					if (rawPayload != null) {
 					String voiceCallKeyHex = rawPayload;
 					String ephemeralHex = null;
 					int pipeIdx = rawPayload.indexOf('|');
@@ -710,7 +709,6 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 								StringUtils.fromHexString(voiceCallKeyHex));
 						VoiceCallKeyHolder.setKey(key);
 					} catch (Exception e) {
-						// Key decode failed
 					}
 					if (ephemeralHex != null) {
 						try {

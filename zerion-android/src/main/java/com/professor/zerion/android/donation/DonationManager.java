@@ -38,7 +38,6 @@ public class DonationManager {
 	public boolean shouldShowDonationDialog() {
 		long now = System.currentTimeMillis();
 		int currentDay = (int) TimeUnit.MILLISECONDS.toDays(now);
-		// Return cached result if already checked today
 		if (currentDay == cachedCheckDay) {
 			return cachedResult;
 		}
