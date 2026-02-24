@@ -1,6 +1,5 @@
 package com.professor.zerion.android.util;
 
-import android.content.Context;
 import android.content.SharedPreferences;
 
 import org.briarproject.nullsafety.NotNullByDefault;
@@ -16,16 +15,15 @@ import static org.briarproject.bramble.api.plugin.TorConstants.MIN_DYNAMIC_PORT;
 @NotNullByDefault
 public class TorPortManager {
 
-	private static final String PREFS_NAME = "zerion_tor_ports";
-	private static final String PREF_SOCKS_PORT = "socks_port";
-	private static final String PREF_CONTROL_PORT = "control_port";
+	private static final String PREF_SOCKS_PORT = "tp_socks";
+	private static final String PREF_CONTROL_PORT = "tp_ctrl";
 
 	private final SharedPreferences prefs;
 	private int socksPort = -1;
 	private int controlPort = -1;
 
-	public TorPortManager(Context context) {
-		this.prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+	public TorPortManager(SharedPreferences prefs) {
+		this.prefs = prefs;
 		initializePorts();
 	}
 

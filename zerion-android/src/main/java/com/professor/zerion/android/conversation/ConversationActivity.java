@@ -690,9 +690,7 @@ public class ConversationActivity extends ZerionActivity
 						new org.briarproject.bramble.api.crypto.SecretKey(
 								org.briarproject.bramble.util.StringUtils.fromHexString(voiceCallKey));
 				com.professor.zerion.android.conversation.voice.VoiceCallKeyHolder.setKey(key);
-			} catch (Exception e) {
-				intent.putExtra(com.professor.zerion.android.conversation.voice.VoiceCallActivity.EXTRA_VOICE_CALL_KEY,
-						voiceCallKey);
+			} catch (Exception ignored) {
 			}
 		}
 		if (remoteEphemeralHex != null) {
