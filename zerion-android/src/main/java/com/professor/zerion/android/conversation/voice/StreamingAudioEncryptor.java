@@ -14,6 +14,15 @@ import javax.crypto.spec.GCMParameterSpec;
 @NotNullByDefault
 public class StreamingAudioEncryptor {
 
+	private static final ThreadLocal<Cipher> CIPHER_CACHE =
+			ThreadLocal.withInitial(() -> {
+				try {
+					return Cipher.getInstance("AES/GCM/NoPadding");
+				} catch (Exception e) {
+					throw new RuntimeException(e);
+				}
+			});
+
 	private static final int AES_KEY_SIZE = 256;
 	private static final int GCM_IV_LENGTH = 12;
 	private static final int GCM_TAG_LENGTH = 128;
@@ -59,7 +68,7 @@ public class StreamingAudioEncryptor {
 	}
 
 	public byte[] getEncryptedKey(SecretKey masterKey) throws Exception {
-		Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+		Cipher cipher = CIPHER_CACHE.get();
 		cipher.init(Cipher.ENCRYPT_MODE, masterKey,
 			new GCMParameterSpec(GCM_TAG_LENGTH, iv));
 		byte[] keyBytes = encryptionKey.getEncoded();
@@ -82,7 +91,7 @@ public class StreamingAudioEncryptor {
 		ivWithCounter[GCM_IV_LENGTH - 2] ^= (byte) (counter >>> 8);
 		ivWithCounter[GCM_IV_LENGTH - 1] ^= (byte) counter;
 
-		Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+		Cipher cipher = CIPHER_CACHE.get();
 		cipher.init(Cipher.ENCRYPT_MODE, encryptionKey,
 			new GCMParameterSpec(GCM_TAG_LENGTH, ivWithCounter));
 
@@ -112,7 +121,7 @@ public class StreamingAudioEncryptor {
 		ivWithCounter[GCM_IV_LENGTH - 2] ^= (byte) (counter >>> 8);
 		ivWithCounter[GCM_IV_LENGTH - 1] ^= (byte) counter;
 
-		Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+		Cipher cipher = CIPHER_CACHE.get();
 		cipher.init(Cipher.ENCRYPT_MODE, encryptionKey,
 			new GCMParameterSpec(GCM_TAG_LENGTH, ivWithCounter));
 
