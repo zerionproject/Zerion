@@ -202,7 +202,7 @@ public class VoiceRecordingController implements DefaultLifecycleObserver {
 
 	
 	public int getMaxDurationSeconds() {
-		return currentMode == RecordingMode.SHORT_MESSAGE ? 3 : VoiceAttachmentHandler.getMaxDurationSeconds();
+		return currentMode == RecordingMode.SHORT_MESSAGE ? 30 : VoiceAttachmentHandler.getMaxDurationSeconds();
 	}
 
 	public boolean isRecording() {

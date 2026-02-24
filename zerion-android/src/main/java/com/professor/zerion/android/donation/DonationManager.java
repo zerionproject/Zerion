@@ -20,8 +20,8 @@ public class DonationManager {
 	private static final String PREF_LAST_DONATION_PROMPT = "donation_last_prompt";
 	private static final String PREF_DONATION_PROMPT_COUNT = "donation_prompt_count";
 	private static final String PREF_NEXT_CHECK_DAY = "donation_next_check_day";
-	private static final long MIN_DAYS_BETWEEN_PROMPTS = 30;
-	private static final float DAILY_SHOW_PROBABILITY = 0.15f;
+	private static final long MIN_DAYS_BETWEEN_PROMPTS = 90;
+	private static final float DAILY_SHOW_PROBABILITY = 0.05f;
 
 	private final SharedPreferences prefs;
 	private final Random random;
