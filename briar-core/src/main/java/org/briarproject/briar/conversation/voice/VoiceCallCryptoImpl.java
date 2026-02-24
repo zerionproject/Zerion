@@ -97,9 +97,14 @@ class VoiceCallCryptoImpl implements VoiceCallCrypto {
 		byte[] aliceSeed = keyMaterial.getKeyMaterial(SEED_BYTES);
 		byte[] bobSeed = keyMaterial.getKeyMaterial(SEED_BYTES);
 		byte[] localSeed = alice ? aliceSeed : bobSeed;
-		EdDSAPrivateKeySpec spec = new EdDSAPrivateKeySpec(localSeed, CURVE_SPEC);
-		byte[] publicKey = spec.getA().toByteArray();
-		return crypto.encodeOnion(publicKey);
+		try {
+			EdDSAPrivateKeySpec spec = new EdDSAPrivateKeySpec(localSeed, CURVE_SPEC);
+			byte[] publicKey = spec.getA().toByteArray();
+			return crypto.encodeOnion(publicKey);
+		} finally {
+			java.util.Arrays.fill(aliceSeed, (byte) 0);
+			java.util.Arrays.fill(bobSeed, (byte) 0);
+		}
 	}
 
 	@Override
@@ -115,6 +120,8 @@ class VoiceCallCryptoImpl implements VoiceCallCrypto {
 		byte[] bobKeyBytes = audioKeyMaterial.getKeyMaterial(AES_KEY_BYTES);
 		SecretKey txKey = new SecretKey(alice ? aliceKeyBytes : bobKeyBytes);
 		SecretKey rxKey = new SecretKey(alice ? bobKeyBytes : aliceKeyBytes);
+		java.util.Arrays.fill(aliceKeyBytes, (byte) 0);
+		java.util.Arrays.fill(bobKeyBytes, (byte) 0);
 
 		return new AudioKeys(txKey, rxKey);
 	}
@@ -150,6 +157,8 @@ class VoiceCallCryptoImpl implements VoiceCallCrypto {
 		byte[] bobKeyBytes = audioKeyMaterial.getKeyMaterial(AES_KEY_BYTES);
 		SecretKey txKey = new SecretKey(alice ? aliceKeyBytes : bobKeyBytes);
 		SecretKey rxKey = new SecretKey(alice ? bobKeyBytes : aliceKeyBytes);
+		java.util.Arrays.fill(aliceKeyBytes, (byte) 0);
+		java.util.Arrays.fill(bobKeyBytes, (byte) 0);
 
 		return new AudioKeys(txKey, rxKey);
 	}
@@ -160,9 +169,10 @@ class VoiceCallCryptoImpl implements VoiceCallCrypto {
 			byte[] nonce = new byte[GCM_NONCE_BYTES];
 			secureRandom.nextBytes(nonce);
 
+			byte[] keyBytes = key.getBytes();
 			Cipher cipher = CIPHER_CACHE.get();
 			GCMParameterSpec gcmSpec = new GCMParameterSpec(GCM_TAG_BITS, nonce);
-			SecretKeySpec keySpec = new SecretKeySpec(key.getBytes(), "AES");
+			SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
 			cipher.init(Cipher.ENCRYPT_MODE, keySpec, gcmSpec);
 
 			byte[] ciphertextWithTag = cipher.doFinal(plaintext);
@@ -171,6 +181,7 @@ class VoiceCallCryptoImpl implements VoiceCallCrypto {
 			System.arraycopy(nonce, 0, result, 0, GCM_NONCE_BYTES);
 			System.arraycopy(ciphertextWithTag, 0, result, GCM_NONCE_BYTES, ciphertextWithTag.length);
 
+			java.util.Arrays.fill(keyBytes, (byte) 0);
 			return result;
 
 		} catch (Exception e) {
@@ -210,6 +221,7 @@ class VoiceCallCryptoImpl implements VoiceCallCrypto {
 			System.arraycopy(ciphertextWithTag, 0, result, GCM_NONCE_BYTES,
 					ciphertextWithTag.length);
 
+			java.util.Arrays.fill(keyBytes, (byte) 0);
 			return result;
 
 		} catch (Exception e) {
@@ -231,12 +243,15 @@ class VoiceCallCryptoImpl implements VoiceCallCrypto {
 			byte[] ciphertextWithTag = new byte[ciphertextLength];
 			System.arraycopy(ciphertext, GCM_NONCE_BYTES, ciphertextWithTag, 0, ciphertextLength);
 
+			byte[] keyBytes = key.getBytes();
 			Cipher cipher = CIPHER_CACHE.get();
 			GCMParameterSpec gcmSpec = new GCMParameterSpec(GCM_TAG_BITS, nonce);
-			SecretKeySpec keySpec = new SecretKeySpec(key.getBytes(), "AES");
+			SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
 			cipher.init(Cipher.DECRYPT_MODE, keySpec, gcmSpec);
 
-			return cipher.doFinal(ciphertextWithTag);
+			byte[] result = cipher.doFinal(ciphertextWithTag);
+			java.util.Arrays.fill(keyBytes, (byte) 0);
+			return result;
 
 		} catch (Exception e) {
 			throw new RuntimeException("Audio frame decryption failed", e);
