@@ -145,6 +145,7 @@ public class VoiceCallService extends Service implements EventListener {
 	private volatile CallState callState = CallState.IDLE;
 	private volatile VoiceCallActivity callActivity;
 	private volatile boolean eventListenerRegistered = false;
+	private Runnable callSetupTimeoutRunnable;
 
 	private AudioRecord audioRecord;
 	private AudioTrack audioTrack;
@@ -358,6 +359,9 @@ public class VoiceCallService extends Service implements EventListener {
 				callState = CallState.RINGING;
 				updateCallActivity();
 
+				// Timeout if no CALL_ANSWER received
+				scheduleCallSetupTimeout(90_000);
+
 			} catch (Exception e) {
 				callState = CallState.FAILED;
 				updateCallActivity();
@@ -380,6 +384,8 @@ public class VoiceCallService extends Service implements EventListener {
 
 				sendCallAnswer();
 
+				// Timeout if caller doesn't connect
+				scheduleCallSetupTimeout(120_000);
 
 			} catch (Exception e) {
 				callState = CallState.FAILED;
@@ -390,6 +396,7 @@ public class VoiceCallService extends Service implements EventListener {
 
 	public void declineCall() {
 		if (!isIncoming) return;
+		cancelCallSetupTimeout();
 
 		executorService.execute(() -> {
 			try {
@@ -404,6 +411,7 @@ public class VoiceCallService extends Service implements EventListener {
 	}
 
 	public void endCall() {
+		cancelCallSetupTimeout();
 		synchronized (streamLock) {
 			if (callState == CallState.DISCONNECTED) {
 				return;
@@ -476,6 +484,7 @@ public class VoiceCallService extends Service implements EventListener {
 					torConnection = conn;
 
 					if (callState == CallState.CONNECTING || callState == CallState.RINGING) {
+						cancelCallSetupTimeout();
 						callState = CallState.CONNECTED;
 						callStartTime = System.currentTimeMillis();
 						updateCallActivity();
@@ -547,6 +556,7 @@ public class VoiceCallService extends Service implements EventListener {
 					throw new IOException("Failed to connect to remote peer");
 				}
 
+				cancelCallSetupTimeout();
 				reconnectAttempts = 0;
 				isReconnecting = false;
 				callState = CallState.CONNECTED;
@@ -1056,6 +1066,28 @@ public class VoiceCallService extends Service implements EventListener {
 				}
 			}
 		});
+	}
+
+	private void scheduleCallSetupTimeout(long timeoutMs) {
+		cancelCallSetupTimeout();
+		callSetupTimeoutRunnable = () -> {
+			if (callState == CallState.RINGING ||
+					callState == CallState.CONNECTING) {
+				callState = CallState.FAILED;
+				updateCallActivity();
+				if (callActivity != null) {
+					callActivity.onCallFailed("Connection timeout");
+				}
+			}
+		};
+		mainHandler.postDelayed(callSetupTimeoutRunnable, timeoutMs);
+	}
+
+	private void cancelCallSetupTimeout() {
+		if (callSetupTimeoutRunnable != null) {
+			mainHandler.removeCallbacks(callSetupTimeoutRunnable);
+			callSetupTimeoutRunnable = null;
+		}
 	}
 
 	private void handleConnectionError() {
@@ -1581,6 +1613,7 @@ public class VoiceCallService extends Service implements EventListener {
 	public void onDestroy() {
 		super.onDestroy();
 		isShuttingDown = true;
+		cancelCallSetupTimeout();
 
 		if (eventBus != null) {
 			eventBus.removeListener(this);

@@ -192,7 +192,6 @@ public class PasswordFragment extends BaseFragment implements TextWatcher {
 		if (SDK_INT >= 33 &&
 				checkSelfPermission(requireContext(), POST_NOTIFICATIONS) !=
 						PERMISSION_GRANTED) {
-			password.setText(null);
 			requestPermissionLauncher.launch(POST_NOTIFICATIONS);
 		} else {
 			validatePassword();
@@ -208,8 +207,9 @@ public class PasswordFragment extends BaseFragment implements TextWatcher {
 		}
 
 		char[] passwordChars = passwordStr.toCharArray();
+		password.setText(null);
 		viewModel.validatePassword(passwordChars);
-		Arrays.fill(passwordChars, '\0');
+		// passwordChars is zeroed in StartupViewModel.validatePassword() finally block
 	}
 
 	private void onPasswordInvalid(DecryptionResult result) {
