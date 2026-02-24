@@ -66,9 +66,13 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 		setTopNotice(item);
 
 		if (item.getText() != null) {
-			text.setText(trim(item.getText()));
-			Linkify.addLinks(text, Linkify.WEB_URLS);
-			makeLinksClickable(text, listener::onLinkClick);
+			if (item.getText().startsWith("[VOICE:")) {
+				text.setText("");
+			} else {
+				text.setText(trim(item.getText()));
+				Linkify.addLinks(text, Linkify.WEB_URLS);
+				makeLinksClickable(text, listener::onLinkClick);
+			}
 		}
 
 		long timestamp = item.getTime();
