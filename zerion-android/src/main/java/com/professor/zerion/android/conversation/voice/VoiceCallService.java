@@ -766,7 +766,6 @@ public class VoiceCallService extends Service implements EventListener {
 			} catch (IOException e) {
 				handleConnectionError();
 			} catch (Exception e) {
-				// IllegalStateException from released AudioRecord during shutdown
 			}
 		});
 
@@ -929,7 +928,6 @@ public class VoiceCallService extends Service implements EventListener {
 					handleConnectionError();
 				}
 			} catch (Exception e) {
-				// RuntimeException from crypto/codec during shutdown
 			}
 		});
 	}

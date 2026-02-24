@@ -37,7 +37,6 @@ class SqlCipherDatabase extends JdbcDatabase {
 	private static final String DRIVER_CLASS =
 			"org.briarproject.bramble.db.SqlCipherDriver";
 
-	// Process-wide lock: only one thread may open/migrate/compact at a time
 	private static final Object DB_OPEN_LOCK = new Object();
 
 	private static final String SQLCIPHER_FILE = "db.sqlite";
@@ -48,7 +47,6 @@ class SqlCipherDatabase extends JdbcDatabase {
 
 	private final DatabaseConfig config;
 
-	// Flag: true once open() has completed; compaction deferred until later
 	private volatile boolean needsCompaction = false;
 
 	@Nullable
@@ -94,8 +92,6 @@ class SqlCipherDatabase extends JdbcDatabase {
 		if (!reopen) dir.mkdirs();
 		super.open(DRIVER_CLASS, reopen, key, listener);
 
-		// If compaction was deferred, run VACUUM now while we still hold
-		// DB_OPEN_LOCK and no other thread has accessed the database.
 		if (needsCompaction) {
 			needsCompaction = false;
 			Connection vc = null;
@@ -128,11 +124,9 @@ class SqlCipherDatabase extends JdbcDatabase {
 			db = SQLiteDatabase.openDatabase(
 					dbFile.getAbsolutePath(), hexKey, null,
 					SQLiteDatabase.OPEN_READONLY, null);
-			// Use rawQuery (not execSQL) because busy_timeout returns a row
 			Cursor bc = db.rawQuery(
 					"PRAGMA busy_timeout = " + BUSY_TIMEOUT_MS, null);
 			bc.close();
-			// Check that the schema exists (settings table present)
 			Cursor schema = db.rawQuery(
 					"SELECT count(*) FROM sqlite_master"
 							+ " WHERE type='table' AND name='settings'",
@@ -144,10 +138,6 @@ class SqlCipherDatabase extends JdbcDatabase {
 			} finally {
 				schema.close();
 			}
-			// Check that the database has at least one identity row.
-			// A database with valid schema but no identity was created by
-			// a previous failed startup and cannot be reopened safely —
-			// IdentityManager will throw DbException on 0 identities.
 			Cursor identity = db.rawQuery(
 					"SELECT count(*) FROM localAuthors", null);
 			try {
@@ -205,7 +195,6 @@ class SqlCipherDatabase extends JdbcDatabase {
 								dbFile.getAbsolutePath(), hexKey,
 								null, null, null);
 				db.execSQL("PRAGMA cipher_memory_security = OFF");
-				// Use rawQuery (not execSQL) because these PRAGMAs return a row
 				Cursor sd = db.rawQuery(
 						"PRAGMA secure_delete = ON", null);
 				sd.close();
@@ -248,8 +237,6 @@ class SqlCipherDatabase extends JdbcDatabase {
 	@Override
 	protected void compactAndClose() throws DbException {
 		needsCompaction = true;
-		// Close all pooled connections but skip VACUUM.
-		// The caller (JdbcDatabase.open) will reset closed = false.
 		closeAllConnections();
 	}
 
