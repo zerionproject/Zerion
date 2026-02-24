@@ -1,7 +1,8 @@
 package com.professor.zerion.android.login;
 
-import android.app.Application;
+import android.content.SharedPreferences;
 
+import com.professor.zerion.android.AppModule;
 import com.professor.zerion.android.viewmodel.ViewModelKey;
 
 import javax.inject.Singleton;
@@ -28,7 +29,8 @@ public abstract class LoginModule {
 
 	@Provides
 	@Singleton
-	static BruteForceProtection provideBruteForceProtection(Application app) {
-		return new BruteForceProtection(app.getApplicationContext());
+	static BruteForceProtection provideBruteForceProtection(
+			@AppModule.SecurePrefs SharedPreferences securePrefs) {
+		return new BruteForceProtection(securePrefs);
 	}
 }

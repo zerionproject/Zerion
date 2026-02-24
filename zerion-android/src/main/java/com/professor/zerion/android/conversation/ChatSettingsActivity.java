@@ -18,6 +18,7 @@ import androidx.lifecycle.ViewModelProvider;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 import com.professor.zerion.R;
+import com.professor.zerion.android.AppModule;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
 
@@ -26,6 +27,9 @@ import org.briarproject.bramble.api.contact.ContactId;
 import org.briarproject.briar.api.identity.AuthorInfo;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
+
+import java.io.File;
+import java.util.Map;
 
 import javax.inject.Inject;
 
@@ -82,7 +86,8 @@ public class ChatSettingsActivity extends ZerionActivity {
 
 		viewModel.setContactId(contactId);
 		viewModel.checkConnectionStatus(connectionRegistry);
-		prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+		prefs = getSecurePrefs(this);
+		migrateFromPlaintextPrefs();
 
 		setContentView(R.layout.activity_chat_settings);
 
@@ -181,18 +186,50 @@ public class ChatSettingsActivity extends ZerionActivity {
 	}
 
 	public static boolean isContactMuted(Context context, ContactId contactId) {
-		SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+		SharedPreferences prefs = getSecurePrefs(context);
 		return prefs.getBoolean(PREF_MUTE_PREFIX + contactId.getInt(), false);
 	}
 
 	public static boolean isVibrationEnabled(Context context, ContactId contactId) {
-		SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+		SharedPreferences prefs = getSecurePrefs(context);
 		return prefs.getBoolean(PREF_VIBRATION_PREFIX + contactId.getInt(), true);
 	}
 
 	public static long getDisappearingTimer(Context context, ContactId contactId) {
-		SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+		SharedPreferences prefs = getSecurePrefs(context);
 		return prefs.getLong(PREF_TIMER_PREFIX + contactId.getInt(), 0);
+	}
+
+	private static SharedPreferences getSecurePrefs(Context context) {
+		return AppModule.getAndroidComponent(context).securePreferences();
+	}
+
+	private void migrateFromPlaintextPrefs() {
+		File prefsDir = new File(getApplicationInfo().dataDir, "shared_prefs");
+		File oldFile = new File(prefsDir, PREFS_NAME + ".xml");
+		if (!oldFile.exists()) return;
+
+		SharedPreferences oldPrefs =
+				getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+		Map<String, ?> allEntries = oldPrefs.getAll();
+		if (!allEntries.isEmpty()) {
+			SharedPreferences.Editor editor = prefs.edit();
+			for (Map.Entry<String, ?> entry : allEntries.entrySet()) {
+				Object value = entry.getValue();
+				if (value instanceof Boolean) {
+					editor.putBoolean(entry.getKey(), (Boolean) value);
+				} else if (value instanceof Long) {
+					editor.putLong(entry.getKey(), (Long) value);
+				} else if (value instanceof Integer) {
+					editor.putInt(entry.getKey(), (Integer) value);
+				} else if (value instanceof String) {
+					editor.putString(entry.getKey(), (String) value);
+				}
+			}
+			editor.commit();
+		}
+		oldPrefs.edit().clear().commit();
+		oldFile.delete();
 	}
 
 	private void showAvatarFullScreen(com.professor.zerion.android.contact.ContactItem contactItem) {
