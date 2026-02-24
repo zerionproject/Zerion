@@ -43,7 +43,6 @@ public class VoiceCallActivity extends AppCompatActivity {
 	public static final String EXTRA_IS_INCOMING = "is_incoming";
 	public static final String EXTRA_CALL_ID = "call_id";
 	public static final String EXTRA_CALLER_ADDRESS = "caller_address";
-	public static final String EXTRA_VOICE_CALL_KEY = "voice_call_key";
 
 	private static final int REQUEST_AUDIO_PERMISSION = 1;
 

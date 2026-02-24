@@ -259,8 +259,17 @@ public class AppModule {
 
 	@Provides
 	@Singleton
-	TorPortManager provideTorPortManager(Application app) {
-		return new TorPortManager(app);
+	TorPortManager provideTorPortManager(Application app,
+			@SecurePrefs SharedPreferences securePrefs) {
+		File prefsDir = new File(app.getApplicationInfo().dataDir,
+				"shared_prefs");
+		File oldFile = new File(prefsDir, "zerion_tor_ports.xml");
+		if (oldFile.exists()) {
+			app.getSharedPreferences("zerion_tor_ports", MODE_PRIVATE)
+					.edit().clear().commit();
+			oldFile.delete();
+		}
+		return new TorPortManager(securePrefs);
 	}
 
 	@Provides
