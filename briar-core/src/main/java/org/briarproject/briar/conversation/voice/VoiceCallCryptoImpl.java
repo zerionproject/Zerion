@@ -120,8 +120,6 @@ class VoiceCallCryptoImpl implements VoiceCallCrypto {
 	@Override
 	public AudioKeys deriveEphemeralAudioKeys(SecretKey voiceCallKey,
 			byte[] localEphemeral, byte[] remoteEphemeral, boolean alice) {
-		// Mix ephemeral secrets with static key for forward secrecy
-		// sessionInput = HMAC-SHA256(voiceCallKey, aliceEphemeral || bobEphemeral)
 		byte[] aliceEphemeral = alice ? localEphemeral : remoteEphemeral;
 		byte[] bobEphemeral = alice ? remoteEphemeral : localEphemeral;
 
@@ -175,8 +173,6 @@ class VoiceCallCryptoImpl implements VoiceCallCrypto {
 	public byte[] encryptAudioFrame(byte[] plaintext, SecretKey key,
 			long frameCounter) {
 		try {
-			// Counter-based nonce: 4 bytes HKDF-derived salt + 8 bytes counter
-			// Counter-based nonce uses HKDF-derived salt, not raw key bytes
 			byte[] nonce = new byte[GCM_NONCE_BYTES];
 			byte[] keyBytes = key.getBytes();
 			java.security.MessageDigest sha256 =
