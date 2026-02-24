@@ -414,7 +414,9 @@ public class VoiceCallService extends Service implements EventListener {
 				return;
 			}
 			callState = CallState.DISCONNECTED;
+			isRecording = false;
 		}
+		isShuttingDown = true;
 
 		executorService.execute(() -> {
 			try {
@@ -763,6 +765,8 @@ public class VoiceCallService extends Service implements EventListener {
 				}
 			} catch (IOException e) {
 				handleConnectionError();
+			} catch (Exception e) {
+				// IllegalStateException from released AudioRecord during shutdown
 			}
 		});
 
@@ -924,6 +928,8 @@ public class VoiceCallService extends Service implements EventListener {
 				if (callState == CallState.CONNECTED) {
 					handleConnectionError();
 				}
+			} catch (Exception e) {
+				// RuntimeException from crypto/codec during shutdown
 			}
 		});
 	}
@@ -1022,9 +1028,13 @@ public class VoiceCallService extends Service implements EventListener {
 				if (hasFrame) {
 					AudioTrack track = audioTrack;
 					if (track != null) {
-						int written = track.write(playBuffer, 0, PCM_FRAME);
-						if (written < 0) {
-							networkMetrics.recordWriteError();
+						try {
+							int written = track.write(playBuffer, 0, PCM_FRAME);
+							if (written < 0) {
+								networkMetrics.recordWriteError();
+							}
+						} catch (IllegalStateException e) {
+							break;
 						}
 					}
 				} else {
