@@ -1,8 +1,14 @@
 package com.professor.zerion.android.login;
 
-import android.os.SystemClock;
+import android.content.Context;
 
 import org.briarproject.nullsafety.NotNullByDefault;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 
 import javax.annotation.concurrent.ThreadSafe;
 
@@ -10,34 +16,43 @@ import javax.annotation.concurrent.ThreadSafe;
 @NotNullByDefault
 public final class BruteForceProtection {
 
+	private static final String STATE_FILE = ".bf_state";
+
 	private int failedAttempts = 0;
-	private long lockoutUntilElapsed = 0;
-	private long lastFailedAttemptElapsed = 0;
+	private long lockoutUntilWallClock = 0;
+	private long lastFailedWallClock = 0;
 
 	private static final int ATTEMPTS_BEFORE_FIRST_LOCKOUT = 3;
 	private static final int ATTEMPTS_BEFORE_WIPE = 6;
 	private static final long LOCKOUT_DURATION_MS = 5 * 60 * 1000;
 	private static final long ATTEMPT_WINDOW_MS = 30 * 60 * 1000;
 
-	public BruteForceProtection() {
+	private final File stateFile;
+
+	public BruteForceProtection(Context context) {
+		stateFile = new File(context.getFilesDir(), STATE_FILE);
+		loadState();
 	}
 
 	public synchronized FailureResult recordFailedAttempt() {
-		long now = SystemClock.elapsedRealtime();
+		long now = System.currentTimeMillis();
 
-		if (now - lastFailedAttemptElapsed > ATTEMPT_WINDOW_MS) {
+		if (lastFailedWallClock > 0 &&
+				now - lastFailedWallClock > ATTEMPT_WINDOW_MS) {
 			failedAttempts = 0;
 		}
 
 		failedAttempts++;
-		lastFailedAttemptElapsed = now;
+		lastFailedWallClock = now;
+		saveState();
 
 		if (failedAttempts >= ATTEMPTS_BEFORE_WIPE) {
 			return FailureResult.wipeData();
 		}
 
 		if (failedAttempts == ATTEMPTS_BEFORE_FIRST_LOCKOUT) {
-			lockoutUntilElapsed = now + LOCKOUT_DURATION_MS;
+			lockoutUntilWallClock = now + LOCKOUT_DURATION_MS;
+			saveState();
 			return FailureResult.lockout(LOCKOUT_DURATION_MS);
 		}
 
@@ -52,29 +67,32 @@ public final class BruteForceProtection {
 
 	public synchronized void recordSuccessfulLogin() {
 		failedAttempts = 0;
-		lastFailedAttemptElapsed = 0;
-		lockoutUntilElapsed = 0;
+		lastFailedWallClock = 0;
+		lockoutUntilWallClock = 0;
+		saveState();
 	}
 
 	public synchronized LockStatus checkLockStatus() {
-		long now = SystemClock.elapsedRealtime();
+		long now = System.currentTimeMillis();
 
-		if (lockoutUntilElapsed == 0) {
+		if (lockoutUntilWallClock == 0) {
 			return LockStatus.notLocked();
 		}
 
-		if (now < lockoutUntilElapsed) {
-			long remainingMs = lockoutUntilElapsed - now;
+		if (now < lockoutUntilWallClock) {
+			long remainingMs = lockoutUntilWallClock - now;
 			return LockStatus.locked(remainingMs);
 		} else {
-			lockoutUntilElapsed = 0;
+			lockoutUntilWallClock = 0;
+			saveState();
 			return LockStatus.notLocked();
 		}
 	}
 
 	public synchronized int getFailedAttempts() {
-		long now = SystemClock.elapsedRealtime();
-		if (now - lastFailedAttemptElapsed > ATTEMPT_WINDOW_MS) {
+		long now = System.currentTimeMillis();
+		if (lastFailedWallClock > 0 &&
+				now - lastFailedWallClock > ATTEMPT_WINDOW_MS) {
 			return 0;
 		}
 		return failedAttempts;
@@ -82,8 +100,48 @@ public final class BruteForceProtection {
 
 	public synchronized void clear() {
 		failedAttempts = 0;
-		lastFailedAttemptElapsed = 0;
-		lockoutUntilElapsed = 0;
+		lastFailedWallClock = 0;
+		lockoutUntilWallClock = 0;
+		deleteState();
+	}
+
+	private void loadState() {
+		if (!stateFile.exists()) return;
+		try (BufferedReader reader = new BufferedReader(
+				new FileReader(stateFile))) {
+			String line1 = reader.readLine();
+			String line2 = reader.readLine();
+			String line3 = reader.readLine();
+			if (line1 != null && line2 != null && line3 != null) {
+				failedAttempts = Integer.parseInt(line1.trim());
+				lockoutUntilWallClock = Long.parseLong(line2.trim());
+				lastFailedWallClock = Long.parseLong(line3.trim());
+			}
+		} catch (IOException | NumberFormatException e) {
+			// Corrupted state file — treat as fresh start
+			failedAttempts = 0;
+			lockoutUntilWallClock = 0;
+			lastFailedWallClock = 0;
+		}
+	}
+
+	private void saveState() {
+		File tmpFile = new File(stateFile.getParent(),
+				STATE_FILE + ".tmp");
+		try (FileWriter writer = new FileWriter(tmpFile)) {
+			writer.write(failedAttempts + "\n");
+			writer.write(lockoutUntilWallClock + "\n");
+			writer.write(lastFailedWallClock + "\n");
+			writer.flush();
+		} catch (IOException e) {
+			return;
+		}
+		// Atomic rename to prevent corruption on crash
+		tmpFile.renameTo(stateFile);
+	}
+
+	private void deleteState() {
+		stateFile.delete();
 	}
 
 	public static final class FailureResult {
