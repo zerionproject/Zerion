@@ -42,6 +42,15 @@ class VoiceCallCryptoImpl implements VoiceCallCrypto {
 	private static final EdDSANamedCurveSpec CURVE_SPEC =
 			EdDSANamedCurveTable.getByName("Ed25519");
 
+	private static final ThreadLocal<Cipher> CIPHER_CACHE =
+			ThreadLocal.withInitial(() -> {
+				try {
+					return Cipher.getInstance("AES/GCM/NoPadding");
+				} catch (Exception e) {
+					throw new RuntimeException(e);
+				}
+			});
+
 	private final CryptoComponent crypto;
 	private final SecureRandom secureRandom;
 
@@ -151,7 +160,7 @@ class VoiceCallCryptoImpl implements VoiceCallCrypto {
 			byte[] nonce = new byte[GCM_NONCE_BYTES];
 			secureRandom.nextBytes(nonce);
 
-			Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+			Cipher cipher = CIPHER_CACHE.get();
 			GCMParameterSpec gcmSpec = new GCMParameterSpec(GCM_TAG_BITS, nonce);
 			SecretKeySpec keySpec = new SecretKeySpec(key.getBytes(), "AES");
 			cipher.init(Cipher.ENCRYPT_MODE, keySpec, gcmSpec);
@@ -189,7 +198,7 @@ class VoiceCallCryptoImpl implements VoiceCallCrypto {
 			ByteBuffer.wrap(nonce, 4, 8).order(ByteOrder.BIG_ENDIAN)
 					.putLong(frameCounter);
 
-			Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+			Cipher cipher = CIPHER_CACHE.get();
 			GCMParameterSpec gcmSpec = new GCMParameterSpec(GCM_TAG_BITS, nonce);
 			SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
 			cipher.init(Cipher.ENCRYPT_MODE, keySpec, gcmSpec);
@@ -222,7 +231,7 @@ class VoiceCallCryptoImpl implements VoiceCallCrypto {
 			byte[] ciphertextWithTag = new byte[ciphertextLength];
 			System.arraycopy(ciphertext, GCM_NONCE_BYTES, ciphertextWithTag, 0, ciphertextLength);
 
-			Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+			Cipher cipher = CIPHER_CACHE.get();
 			GCMParameterSpec gcmSpec = new GCMParameterSpec(GCM_TAG_BITS, nonce);
 			SecretKeySpec keySpec = new SecretKeySpec(key.getBytes(), "AES");
 			cipher.init(Cipher.DECRYPT_MODE, keySpec, gcmSpec);

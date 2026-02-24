@@ -651,9 +651,6 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 						if (remoteCallId != null) {
 							intent.putExtra("call_id", remoteCallId);
 						}
-						if (voiceCallKey != null) {
-							intent.putExtra("voice_call_key", voiceCallKey);
-						}
 						intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
 						appContext.startActivity(intent);
 					});
