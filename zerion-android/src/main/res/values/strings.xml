@@ -167,7 +167,7 @@
 	<string name="voice_message_cancelled">Recording cancelled</string>
 	<string name="slide_to_cancel">← Slide to cancel</string>
 	<string name="voice_message_too_short">Voice message too short</string>
-	<string name="voice_message_too_long">Voice message too long. Keep it under 3 seconds.</string>
+	<string name="voice_message_too_long">Voice message too long. Keep it under 30 seconds.</string>
 	<string name="microphone_permission_required">Microphone permission is required for voice messages</string>
 	<string name="hold_to_record">Hold to record, release to send</string>
 	<string name="voice_message_loading">Loading…</string>
@@ -563,7 +563,7 @@
 
 	<!-- Settings Display -->
 	<string name="pref_language_title">Language &amp; region</string>
-	<string name="pref_language_changed">This setting will take effect when you restart Zerion. Please sign out and restart Zerion.</string>
+	<string name="pref_language_changed">The app will restart to apply the new language.</string>
 	<string name="pref_language_default">System default</string>
 	<string name="display_settings_title">Display</string>
 	<string name="pref_theme_title">Theme</string>

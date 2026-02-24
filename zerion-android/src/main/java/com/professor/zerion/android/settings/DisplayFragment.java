@@ -30,11 +30,11 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 
 import static android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK;
-import static android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP;
+
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static com.professor.zerion.android.AppModule.getAndroidComponent;
 import static com.professor.zerion.android.ZerionApplication.ENTRY_ACTIVITY;
-import static com.professor.zerion.android.navdrawer.NavDrawerActivity.SIGN_OUT_URI;
+
 import static com.professor.zerion.android.settings.SettingsActivity.EXTRA_THEME_CHANGE;
 
 @NotNullByDefault
@@ -186,13 +186,13 @@ public class DisplayFragment extends Fragment {
 		new MaterialAlertDialogBuilder(requireContext())
 				.setTitle(R.string.pref_language_title)
 				.setMessage(R.string.pref_language_changed)
-				.setPositiveButton(R.string.sign_out_button, (d, i) -> {
+				.setPositiveButton(android.R.string.ok, (d, i) -> {
 					uiPrefs.edit()
 							.putString(PREF_LANGUAGE, newLanguage)
 							.commit();
+					Localizer.forceReinitialize(uiPrefs);
 					Intent intent = new Intent(getContext(), ENTRY_ACTIVITY);
-					intent.setFlags(FLAG_ACTIVITY_CLEAR_TOP);
-					intent.setData(SIGN_OUT_URI);
+					intent.setFlags(FLAG_ACTIVITY_CLEAR_TASK | FLAG_ACTIVITY_NEW_TASK);
 					requireActivity().startActivity(intent);
 					requireActivity().finish();
 				})

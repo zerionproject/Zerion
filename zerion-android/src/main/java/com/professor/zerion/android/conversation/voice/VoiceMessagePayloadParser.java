@@ -12,7 +12,7 @@ public class VoiceMessagePayloadParser {
 
 	private static final byte EXPECTED_FORMAT_VERSION = 1;
 	private static final int IV_LENGTH = 12;
-	private static final int WRAPPED_KEY_LENGTH = 48;
+	private static final int WRAPPED_KEY_LENGTH = 80;
 	private static final int TAG_LENGTH = 16;
 	private static final int INT_LENGTH = 4;
 	private static final int HEADER_LENGTH = 1 + IV_LENGTH + WRAPPED_KEY_LENGTH + INT_LENGTH;
