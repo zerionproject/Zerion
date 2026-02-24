@@ -310,7 +310,8 @@ class ClientHelperImpl implements ClientHelper {
 	private BdfList toList(byte[] b, int off, int len, boolean canonical)
 			throws FormatException {
 		ByteArrayInputStream in = new ByteArrayInputStream(b, off, len);
-		BdfReader reader = bdfReaderFactory.createReader(in, canonical);
+		BdfReader reader = bdfReaderFactory.createReader(in,
+				BdfReader.DEFAULT_NESTED_LIMIT, len, canonical);
 		try {
 			BdfList list = reader.readList();
 			if (!reader.eof()) throw new FormatException();
