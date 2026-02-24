@@ -1,6 +1,6 @@
 package com.professor.zerion.android.login;
 
-import android.content.Context;
+import android.app.Application;
 
 import com.professor.zerion.android.viewmodel.ViewModelKey;
 
@@ -28,7 +28,7 @@ public abstract class LoginModule {
 
 	@Provides
 	@Singleton
-	static BruteForceProtection provideBruteForceProtection() {
-		return new BruteForceProtection();
+	static BruteForceProtection provideBruteForceProtection(Application app) {
+		return new BruteForceProtection(app.getApplicationContext());
 	}
 }
