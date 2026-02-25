@@ -194,6 +194,9 @@ public interface AndroidComponent
 
 	com.professor.zerion.android.network.TorStatusMonitor torStatusMonitor();
 
+	@org.briarproject.bramble.api.plugin.TorSocksPort
+	int torSocksPort();
+
 	com.professor.zerion.android.donation.DonationManager donationManager();
 
 	@AppModule.UiPrefs
@@ -203,6 +206,8 @@ public interface AndroidComponent
 	SharedPreferences securePreferences();
 
 	void inject(SignInReminderReceiver briarService);
+
+	void inject(NotificationQuickReplyReceiver receiver);
 
 	void inject(ZerionService briarService);
 

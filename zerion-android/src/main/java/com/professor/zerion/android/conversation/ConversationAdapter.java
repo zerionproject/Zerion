@@ -39,6 +39,7 @@ class ConversationAdapter
 	private final java.util.concurrent.Executor dbExecutor;
 	@Nullable
 	private SelectionTracker<String> tracker = null;
+	private int highlightedPosition = -1;
 
 	ConversationAdapter(Context ctx,
 			ConversationListener conversationListener,
@@ -114,6 +115,26 @@ class ConversationAdapter
 		ConversationItem item = items.get(position);
 		boolean selected = false;
 		ui.bind(item, selected);
+		if (position == highlightedPosition) {
+			ui.itemView.setAlpha(1.0f);
+		} else if (highlightedPosition >= 0) {
+			ui.itemView.setAlpha(0.4f);
+		} else {
+			ui.itemView.setAlpha(1.0f);
+		}
+	}
+
+	@UiThread
+	void setHighlightedPosition(int position) {
+		int old = highlightedPosition;
+		highlightedPosition = position;
+		if (old >= 0) notifyItemChanged(old);
+		if (position >= 0) notifyItemChanged(position);
+		if (old < 0 && position >= 0) {
+			notifyItemRangeChanged(0, items.size());
+		} else if (old >= 0 && position < 0) {
+			notifyItemRangeChanged(0, items.size());
+		}
 	}
 
 	@Override

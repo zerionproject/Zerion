@@ -223,6 +223,7 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 					pqState = pqRatchet.completeEpoch(pqState,
 							System.currentTimeMillis());
 				} catch (Exception e) {
+					pqState = pqRatchet.initialize(System.currentTimeMillis());
 				}
 			}
 			if (pqStateCallback != null) {

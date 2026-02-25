@@ -53,14 +53,40 @@ public interface VoiceCallCrypto {
 
 	byte[] decryptAudioFrame(byte[] ciphertext, SecretKey key);
 
-	
+	/**
+	 * Derive separate encryption keys for the video stream.
+	 * Uses a distinct HKDF label so video keys are cryptographically
+	 * independent from audio keys.
+	 */
+	VideoKeys deriveVideoKeys(SecretKey voiceCallKey, boolean alice);
+
+	/**
+	 * Derive video keys with forward secrecy using ephemeral secrets.
+	 */
+	VideoKeys deriveEphemeralVideoKeys(SecretKey voiceCallKey,
+			byte[] localEphemeral, byte[] remoteEphemeral, boolean alice);
+
+
 	class AudioKeys {
-		
+
 		public final SecretKey txKey;
-		
+
 		public final SecretKey rxKey;
 
 		public AudioKeys(SecretKey txKey, SecretKey rxKey) {
+			this.txKey = txKey;
+			this.rxKey = rxKey;
+		}
+	}
+
+	/**
+	 * Holds separate tx/rx keys for the video stream.
+	 */
+	class VideoKeys {
+		public final SecretKey txKey;
+		public final SecretKey rxKey;
+
+		public VideoKeys(SecretKey txKey, SecretKey rxKey) {
 			this.txKey = txKey;
 			this.rxKey = rxKey;
 		}

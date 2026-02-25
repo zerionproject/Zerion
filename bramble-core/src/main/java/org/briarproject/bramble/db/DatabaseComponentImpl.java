@@ -633,6 +633,15 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 	}
 
 	@Override
+	public Collection<MessageId> getAllMessageIds(Transaction transaction,
+			GroupId g) throws DbException {
+		T txn = unbox(transaction);
+		if (!db.containsGroup(txn, g))
+			throw new NoSuchGroupException();
+		return db.getAllMessageIds(txn, g);
+	}
+
+	@Override
 	public Collection<MessageId> getMessageIds(Transaction transaction,
 			GroupId g, Metadata query) throws DbException {
 		T txn = unbox(transaction);
@@ -1069,6 +1078,16 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		if (!db.containsMessage(txn, m))
 			throw new NoSuchMessageException();
 		db.removeMessage(txn, m);
+	}
+
+	@Override
+	public void removeAllGroupMessages(Transaction transaction, GroupId g)
+			throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		T txn = unbox(transaction);
+		if (!db.containsGroup(txn, g))
+			throw new NoSuchGroupException();
+		db.removeAllGroupMessages(txn, g);
 	}
 
 	@Override

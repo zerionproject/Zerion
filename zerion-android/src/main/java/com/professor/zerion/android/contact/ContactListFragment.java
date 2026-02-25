@@ -5,7 +5,9 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.PopupMenu;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.material.snackbar.Snackbar;
 
@@ -104,6 +106,32 @@ public class ContactListFragment extends BaseFragment
 		ContactId contactId = item.getContact().getId();
 		i.putExtra(CONTACT_ID, contactId.getInt());
 		startActivity(i);
+	}
+
+	@Override
+	public void onItemLongClick(View view, ContactListItem item) {
+		ContactId contactId = item.getContact().getId();
+		PopupMenu popup = new PopupMenu(requireContext(), view);
+		if (item.isPinned()) {
+			popup.getMenu().add(R.string.unpin_conversation);
+		} else {
+			popup.getMenu().add(R.string.pin_conversation);
+		}
+		popup.setOnMenuItemClickListener(menuItem -> {
+			if (item.isPinned()) {
+				viewModel.togglePinned(contactId);
+			} else {
+				if (viewModel.getPinnedCount() >= PinnedContactManager.MAX_PINNED) {
+					Toast.makeText(requireContext(),
+							R.string.max_pinned_conversations,
+							Toast.LENGTH_SHORT).show();
+				} else {
+					viewModel.togglePinned(contactId);
+				}
+			}
+			return true;
+		});
+		popup.show();
 	}
 
 	@Override

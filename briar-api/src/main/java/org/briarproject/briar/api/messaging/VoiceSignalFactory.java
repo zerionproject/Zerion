@@ -82,4 +82,30 @@ public interface VoiceSignalFactory {
 	 */
 	VoiceSignal createCallBusy(GroupId groupId, long timestamp,
 			String callId) throws FormatException;
+
+	/**
+	 * Creates a video offer signal to request video upgrade mid-call.
+	 * Payload contains the video stream onion address and port.
+	 */
+	VoiceSignal createVideoOffer(GroupId groupId, long timestamp,
+			String callId, String payload) throws FormatException;
+
+	/**
+	 * Creates a video accept signal.
+	 * Payload contains the video stream onion address and port.
+	 */
+	VoiceSignal createVideoAccept(GroupId groupId, long timestamp,
+			String callId, String payload) throws FormatException;
+
+	/**
+	 * Creates a video reject signal.
+	 */
+	VoiceSignal createVideoReject(GroupId groupId, long timestamp,
+			String callId) throws FormatException;
+
+	/**
+	 * Creates a video end signal to stop video streaming.
+	 */
+	VoiceSignal createVideoEnd(GroupId groupId, long timestamp,
+			String callId) throws FormatException;
 }

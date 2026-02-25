@@ -43,7 +43,7 @@ public class PcsModule {
 
 	@Provides
 	@Singleton
-	ChunkingManager provideChunkingManager() {
-		return new ChunkingManager();
+	ChunkingManager provideChunkingManager(MlKemProvider mlKemProvider) {
+		return new ChunkingManager(mlKemProvider);
 	}
 }

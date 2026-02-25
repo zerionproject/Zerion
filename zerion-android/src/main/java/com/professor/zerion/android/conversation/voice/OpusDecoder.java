@@ -113,7 +113,6 @@ public class OpusDecoder {
 							byte[] combined = new byte[result.length + pcm.length];
 							System.arraycopy(result, 0, combined, 0, result.length);
 							System.arraycopy(pcm, 0, combined, result.length, pcm.length);
-							// Zero old result buffer
 							java.util.Arrays.fill(result, (byte) 0);
 							result = combined;
 						}

@@ -7,6 +7,8 @@ import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
 
 import com.professor.zerion.R;
+import android.content.SharedPreferences;
+
 import com.professor.zerion.android.AndroidComponent;
 import com.professor.zerion.android.ZerionApplication;
 import com.professor.zerion.android.DestroyableContext;
@@ -43,7 +45,9 @@ import static android.view.WindowManager.LayoutParams.FLAG_SECURE;
 import static androidx.lifecycle.Lifecycle.State.STARTED;
 import static java.util.Collections.emptyList;
 import static com.professor.zerion.android.TestingConstants.PREVENT_SCREENSHOTS;
+import static com.professor.zerion.android.settings.DisplayFragment.PREF_THEME;
 import static com.professor.zerion.android.util.UiUtils.hideSoftKeyboard;
+import static com.professor.zerion.android.util.UiUtils.isAmoledTheme;
 import static com.professor.zerion.android.util.UiUtils.showFragment;
 
 @MethodsNotNullByDefault
@@ -83,6 +87,12 @@ public abstract class BaseActivity extends AppCompatActivity
 		injectActivity(activityComponent);
 
 		securityManager = applicationComponent.securityManager();
+
+		SharedPreferences uiPrefs = applicationComponent.uiPreferences();
+		String theme = uiPrefs.getString(PREF_THEME, "");
+		if (isAmoledTheme(theme, this)) {
+			getTheme().applyStyle(R.style.AmoledOverlay, true);
+		}
 
 		super.onCreate(state);
 

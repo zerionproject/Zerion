@@ -38,7 +38,27 @@ public enum VoiceSignalType {
 	/**
 	 * Call busy - callee is already in another call.
 	 */
-	CALL_BUSY(5);
+	CALL_BUSY(5),
+
+	/**
+	 * Video offer - request to upgrade call with video.
+	 */
+	VIDEO_OFFER(6),
+
+	/**
+	 * Video accept - accept video upgrade request.
+	 */
+	VIDEO_ACCEPT(7),
+
+	/**
+	 * Video reject - reject video upgrade request.
+	 */
+	VIDEO_REJECT(8),
+
+	/**
+	 * Video end - stop video streaming (voice continues).
+	 */
+	VIDEO_END(9);
 
 	private final int value;
 

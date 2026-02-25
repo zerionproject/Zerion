@@ -56,6 +56,9 @@ import org.briarproject.briar.api.messaging.PrivateMessageFactory;
 import org.briarproject.briar.api.messaging.PrivateMessageFormat;
 import org.briarproject.briar.api.messaging.PrivateMessageHeader;
 import org.briarproject.briar.api.messaging.event.AttachmentReceivedEvent;
+import org.briarproject.briar.api.messaging.LinkPreview;
+import org.briarproject.briar.api.messaging.event.ReactionReceivedEvent;
+import org.briarproject.briar.api.messaging.event.TypingIndicatorReceivedEvent;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.ArrayList;
@@ -149,6 +152,16 @@ public class ConversationViewModel extends DbViewModel
 			new MutableLiveEvent<>();
 	private final MutableLiveEvent<ClientId> clientVersionUpdated =
 			new MutableLiveEvent<>();
+	private final MutableLiveData<Map<MessageId, Map<String, Integer>>> reactionsMap =
+			new MutableLiveData<>();
+	private final MutableLiveEvent<ReactionReceivedEvent> reactionReceived =
+			new MutableLiveEvent<>();
+	private final MutableLiveData<Boolean> contactTyping =
+			new MutableLiveData<>(false);
+	private final MutableLiveData<Map<MessageId, LinkPreview>> linkPreviewsMap =
+			new MutableLiveData<>();
+	private final MutableLiveData<LinkPreview> pendingLinkPreview =
+			new MutableLiveData<>();
 	static class MarkMessagesEvent {
 		final Collection<MessageId> messageIds;
 		final boolean sent;
@@ -257,6 +270,16 @@ public class ConversationViewModel extends DbViewModel
 			ClientVersionUpdatedEvent c = (ClientVersionUpdatedEvent) e;
 			if (c.getContactId().equals(contactId)) {
 				clientVersionUpdated.postEvent(c.getClientVersion().getClientId());
+			}
+		} else if (e instanceof ReactionReceivedEvent) {
+			ReactionReceivedEvent r = (ReactionReceivedEvent) e;
+			if (r.getContactId().equals(contactId)) {
+				reactionReceived.postEvent(r);
+			}
+		} else if (e instanceof TypingIndicatorReceivedEvent) {
+			TypingIndicatorReceivedEvent t = (TypingIndicatorReceivedEvent) e;
+			if (t.getContactId().equals(contactId)) {
+				contactTyping.postValue(t.isTyping());
 			}
 		} else if (e instanceof org.briarproject.briar.api.conversation.event.ConversationMessageReceivedEvent) {
 			org.briarproject.briar.api.conversation.event.ConversationMessageReceivedEvent<?> p =
@@ -408,15 +431,17 @@ public class ConversationViewModel extends DbViewModel
 		runOnDbThread(() -> {
 			try {
 				db.transaction(false, txn -> {
+					MessageId replyToId = replyToItem != null ?
+							replyToItem.getId() : null;
 					PrivateMessage m = createMessage(txn, text, headers,
-							expectedTimer);
+							expectedTimer, replyToId);
 					messagingManager.addLocalMessage(txn, m);
 					Message message = m.getMessage();
 					PrivateMessageHeader h = new PrivateMessageHeader(
 							message.getId(), message.getGroupId(),
 							message.getTimestamp(), true, true, false, false,
 							m.hasText(), m.getAttachmentHeaders(),
-							m.getAutoDeleteTimer());
+							m.getAutoDeleteTimer(), replyToId);
 					MessageId id = message.getId();
 
 					if (replyToItem != null) {
@@ -440,7 +465,8 @@ public class ConversationViewModel extends DbViewModel
 	}
 
 	private PrivateMessage createMessage(Transaction txn, @Nullable String text,
-			List<AttachmentHeader> headers, long expectedTimer)
+			List<AttachmentHeader> headers, long expectedTimer,
+			@Nullable MessageId replyToId)
 			throws DbException {
 		Contact contact = requireNonNull(contactItem.getValue()).getContact();
 		GroupId groupId = messagingManager.getContactGroup(contact).getId();
@@ -463,7 +489,7 @@ public class ConversationViewModel extends DbViewModel
 					throw new UnexpectedTimerException();
 				}
 				return privateMessageFactory.createPrivateMessage(groupId,
-						timestamp, text, headers, expectedTimer);
+						timestamp, text, headers, expectedTimer, replyToId);
 			}
 		} catch (FormatException e) {
 			throw new AssertionError(e);
@@ -708,6 +734,8 @@ public class ConversationViewModel extends DbViewModel
 				if (text != null) {
 					messageTextLoaded.postEvent(new Pair<>(messageId, text));
 				}
+			} catch (org.briarproject.bramble.api.db.NoSuchMessageException e) {
+				// Message was deleted (auto-delete timer, cleanup) — ignore
 			} catch (DbException e) {
 				handleException(e);
 			}
@@ -734,15 +762,11 @@ public class ConversationViewModel extends DbViewModel
 		final ContactId c = contactId;
 		runOnDbThread(() -> {
 			try {
-				Collection<ConversationMessageHeader> headers =
-						conversationManager.getMessageHeaders(c);
-				List<MessageId> ids = new ArrayList<>();
-				for (ConversationMessageHeader h : headers) {
-					ids.add(h.getId());
-				}
-				if (!ids.isEmpty()) {
-					conversationManager.deleteMessages(c, ids);
-				}
+				conversationManager.deleteAllMessages(c);
+				messageHeaders.postValue(
+						new java.util.ArrayList<>());
+				messageTexts.postValue(
+						new java.util.HashMap<>());
 				chatCleared.postEvent(true);
 			} catch (DbException e) {
 				handleException(e);
@@ -900,5 +924,159 @@ public class ConversationViewModel extends DbViewModel
 		if (contactId != null) {
 			contactConnected.postValue(registry.isConnected(contactId));
 		}
+	}
+
+	void sendReaction(MessageId targetMessageId, String emoji) {
+		if (contactId == null) return;
+		final ContactId c = contactId;
+		runOnDbThread(() -> {
+			try {
+				messagingManager.addLocalReaction(c, targetMessageId, emoji);
+			} catch (DbException e) {
+				handleException(e);
+			}
+		});
+	}
+
+	LiveEvent<ReactionReceivedEvent> getReactionReceived() {
+		return reactionReceived;
+	}
+
+	LiveData<Map<MessageId, Map<String, Integer>>> getReactionsMap() {
+		return reactionsMap;
+	}
+
+	void loadReactions() {
+		if (contactId == null) return;
+		final ContactId c = contactId;
+		runOnDbThread(() -> {
+			try {
+				Map<MessageId, Map<String, Integer>> reactions =
+						messagingManager.getReactions(c);
+				reactionsMap.postValue(reactions);
+			} catch (DbException e) {
+				handleException(e);
+			}
+		});
+	}
+
+	void sendTypingIndicator(boolean isTyping) {
+		if (contactId == null) return;
+		final ContactId c = contactId;
+		runOnDbThread(() -> {
+			try {
+				messagingManager.sendTypingIndicator(c, isTyping);
+			} catch (DbException e) {
+				handleException(e);
+			}
+		});
+	}
+
+	LiveData<Boolean> isContactTyping() {
+		return contactTyping;
+	}
+
+	void loadContactsForForward(
+			androidx.arch.core.util.Function<List<Contact>, Void> callback) {
+		runOnDbThread(() -> {
+			try {
+				Collection<Contact> contacts = contactManager.getContacts();
+				List<Contact> filtered = new ArrayList<>();
+				for (Contact c : contacts) {
+					if (!c.getId().equals(contactId)) {
+						filtered.add(c);
+					}
+				}
+				androidExecutor.runOnUiThread(
+						() -> callback.apply(filtered));
+			} catch (DbException e) {
+				handleException(e);
+			}
+		});
+	}
+
+	void forwardMessage(ContactId recipientId, String text,
+			Runnable onSuccess, Runnable onFailure) {
+		runOnDbThread(() -> {
+			try {
+				db.transaction(false, txn -> {
+					GroupId groupId = messagingManager
+							.getConversationId(txn, recipientId);
+					long timestamp = conversationManager
+							.getTimestampForOutgoingMessage(txn,
+									recipientId);
+					PrivateMessage pm = privateMessageFactory
+							.createLegacyPrivateMessage(groupId,
+									timestamp, text);
+					messagingManager.addLocalMessage(txn, pm);
+				});
+				androidExecutor.runOnUiThread(onSuccess);
+			} catch (DbException e) {
+				handleException(e);
+				androidExecutor.runOnUiThread(onFailure);
+			} catch (FormatException e) {
+				androidExecutor.runOnUiThread(onFailure);
+			}
+		});
+	}
+
+	void loadLinkPreviews() {
+		if (contactId == null) return;
+		final ContactId c = contactId;
+		runOnDbThread(() -> {
+			try {
+				Map<MessageId, LinkPreview> previews =
+						messagingManager.getLinkPreviews(c);
+				linkPreviewsMap.postValue(previews);
+			} catch (DbException e) {
+				handleException(e);
+			}
+		});
+	}
+
+	LiveData<Map<MessageId, LinkPreview>> getLinkPreviewsMap() {
+		return linkPreviewsMap;
+	}
+
+	LiveData<LinkPreview> getPendingLinkPreview() {
+		return pendingLinkPreview;
+	}
+
+	void fetchLinkPreview(String url, int torSocksPort) {
+		runOnDbThread(() -> {
+			com.professor.zerion.android.conversation.linkpreview
+					.LinkPreviewFetcher fetcher =
+					new com.professor.zerion.android.conversation.linkpreview
+							.LinkPreviewFetcher(torSocksPort);
+			LinkPreview preview = fetcher.fetch(url);
+			pendingLinkPreview.postValue(preview);
+		});
+	}
+
+	void clearPendingLinkPreview() {
+		pendingLinkPreview.postValue(null);
+	}
+
+	@UiThread
+	LiveData<SendState> sendMessageWithPreview(@Nullable String text,
+			long expectedTimer, LinkPreview preview) {
+		MutableLiveData<SendState> liveData = new MutableLiveData<>();
+		if (contactId == null) {
+			liveData.setValue(ERROR);
+			return liveData;
+		}
+		final ContactId c = contactId;
+		runOnDbThread(() -> {
+			try {
+				db.transaction(false, txn -> {
+					messagingManager.addLocalLinkPreviewMessage(
+							txn, c, text, preview);
+					txn.attach(() -> liveData.setValue(SENT));
+				});
+			} catch (DbException e) {
+				liveData.postValue(ERROR);
+			}
+		});
+		return liveData;
 	}
 }

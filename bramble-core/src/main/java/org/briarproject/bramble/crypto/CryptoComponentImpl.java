@@ -518,7 +518,9 @@ class CryptoComponentImpl implements CryptoComponent {
 		}
 		HybridKeyAgreement.HybridEncapsulation enc = hybridKeyAgreement.encapsulate(
 				(HybridAgreementPublicKey) theirPublicKey);
-		return new HybridEncapsulationResult(enc.getCiphertext(), enc.getSharedSecret());
+		byte[] secret = enc.getSharedSecret().clone();
+		enc.clearSecret();
+		return new HybridEncapsulationResult(enc.getCiphertext(), secret);
 	}
 
 	@Override

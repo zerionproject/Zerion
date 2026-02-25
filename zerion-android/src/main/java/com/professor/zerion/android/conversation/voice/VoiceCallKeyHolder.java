@@ -3,13 +3,10 @@ package com.professor.zerion.android.conversation.voice;
 import org.briarproject.bramble.api.crypto.SecretKey;
 import org.briarproject.nullsafety.NotNullByDefault;
 
+import java.util.Arrays;
+
 import javax.annotation.Nullable;
 
-/**
- * Secure in-memory holder for voice call keys, avoiding Android Intent extras
- * which are visible to other apps via IPC and may be logged by the system.
- * Keys are stored transiently and cleared after retrieval.
- */
 @NotNullByDefault
 public class VoiceCallKeyHolder {
 
@@ -19,30 +16,38 @@ public class VoiceCallKeyHolder {
 	@Nullable
 	private static volatile byte[] pendingRemoteEphemeral = null;
 
-	public static void setKey(SecretKey key) {
+	public static synchronized void setKey(SecretKey key) {
+		SecretKey old = pendingKey;
 		pendingKey = key;
+		if (old != null) old.clear();
 	}
 
-	public static void setRemoteEphemeral(byte[] ephemeral) {
+	public static synchronized void setRemoteEphemeral(byte[] ephemeral) {
+		byte[] old = pendingRemoteEphemeral;
 		pendingRemoteEphemeral = ephemeral;
+		if (old != null) Arrays.fill(old, (byte) 0);
 	}
 
 	@Nullable
-	public static SecretKey consumeKey() {
+	public static synchronized SecretKey consumeKey() {
 		SecretKey key = pendingKey;
 		pendingKey = null;
 		return key;
 	}
 
 	@Nullable
-	public static byte[] consumeRemoteEphemeral() {
+	public static synchronized byte[] consumeRemoteEphemeral() {
 		byte[] eph = pendingRemoteEphemeral;
 		pendingRemoteEphemeral = null;
 		return eph;
 	}
 
-	public static void clear() {
+	public static synchronized void clear() {
+		SecretKey key = pendingKey;
+		byte[] eph = pendingRemoteEphemeral;
 		pendingKey = null;
 		pendingRemoteEphemeral = null;
+		if (key != null) key.clear();
+		if (eph != null) Arrays.fill(eph, (byte) 0);
 	}
 }

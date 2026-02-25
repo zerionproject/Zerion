@@ -34,6 +34,9 @@ class VoiceCallCryptoImpl implements VoiceCallCrypto {
 	private static final String AUDIO_KEY_LABEL =
 			"org.briarproject.briar.voice/AUDIO_KEY";
 
+	private static final String VIDEO_KEY_LABEL =
+			"org.briarproject.briar.voice/VIDEO_KEY";
+
 	private static final int SEED_BYTES = 32;
 	private static final int AES_KEY_BYTES = 32;
 	private static final int GCM_NONCE_BYTES = 12;
@@ -161,6 +164,57 @@ class VoiceCallCryptoImpl implements VoiceCallCrypto {
 		java.util.Arrays.fill(bobKeyBytes, (byte) 0);
 
 		return new AudioKeys(txKey, rxKey);
+	}
+
+	@Override
+	public VideoKeys deriveVideoKeys(SecretKey voiceCallKey, boolean alice) {
+		SecretKey videoSourceKey = crypto.deriveKey(
+				VIDEO_KEY_LABEL,
+				voiceCallKey,
+				new byte[0]
+		);
+
+		KeyMaterialSource videoKeyMaterial =
+				new VoiceCallKeyMaterialSource(videoSourceKey);
+		byte[] aliceKeyBytes = videoKeyMaterial.getKeyMaterial(AES_KEY_BYTES);
+		byte[] bobKeyBytes = videoKeyMaterial.getKeyMaterial(AES_KEY_BYTES);
+		SecretKey txKey = new SecretKey(alice ? aliceKeyBytes : bobKeyBytes);
+		SecretKey rxKey = new SecretKey(alice ? bobKeyBytes : aliceKeyBytes);
+		java.util.Arrays.fill(aliceKeyBytes, (byte) 0);
+		java.util.Arrays.fill(bobKeyBytes, (byte) 0);
+
+		return new VideoKeys(txKey, rxKey);
+	}
+
+	@Override
+	public VideoKeys deriveEphemeralVideoKeys(SecretKey voiceCallKey,
+			byte[] localEphemeral, byte[] remoteEphemeral, boolean alice) {
+		byte[] aliceEphemeral = alice ? localEphemeral : remoteEphemeral;
+		byte[] bobEphemeral = alice ? remoteEphemeral : localEphemeral;
+
+		byte[] combined = new byte[aliceEphemeral.length + bobEphemeral.length];
+		System.arraycopy(aliceEphemeral, 0, combined, 0,
+				aliceEphemeral.length);
+		System.arraycopy(bobEphemeral, 0, combined, aliceEphemeral.length,
+				bobEphemeral.length);
+
+		SecretKey ephemeralSourceKey = crypto.deriveKey(
+				VIDEO_KEY_LABEL + "/EPHEMERAL",
+				voiceCallKey,
+				combined
+		);
+		java.util.Arrays.fill(combined, (byte) 0);
+
+		KeyMaterialSource videoKeyMaterial =
+				new VoiceCallKeyMaterialSource(ephemeralSourceKey);
+		byte[] aliceKeyBytes = videoKeyMaterial.getKeyMaterial(AES_KEY_BYTES);
+		byte[] bobKeyBytes = videoKeyMaterial.getKeyMaterial(AES_KEY_BYTES);
+		SecretKey txKey = new SecretKey(alice ? aliceKeyBytes : bobKeyBytes);
+		SecretKey rxKey = new SecretKey(alice ? bobKeyBytes : aliceKeyBytes);
+		java.util.Arrays.fill(aliceKeyBytes, (byte) 0);
+		java.util.Arrays.fill(bobKeyBytes, (byte) 0);
+
+		return new VideoKeys(txKey, rxKey);
 	}
 
 	@Override

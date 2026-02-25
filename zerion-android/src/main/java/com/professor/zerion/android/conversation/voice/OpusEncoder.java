@@ -131,7 +131,6 @@ public class OpusEncoder {
 					presentationTimeUs += 20000;
 				}
 			}
-			// Zero PCM input buffer after encoding
 			pcmData.rewind();
 			while (pcmData.hasRemaining()) {
 				pcmData.put((byte) 0);
