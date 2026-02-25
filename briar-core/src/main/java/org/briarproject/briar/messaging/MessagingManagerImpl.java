@@ -155,13 +155,18 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		for (Contact c : db.getContacts(txn)) addingContact(txn, c);
 	}
 
+	// Only purge ephemeral messages older than this threshold so that
+	// in-flight call signals survive a quick app restart.
+	private static final long EPHEMERAL_PURGE_AGE_MS = 5 * 60 * 1000;
+
 	private void purgeStaleEphemeralMessages(Transaction txn)
 			throws DbException {
 		try {
+			long cutoff = System.currentTimeMillis() - EPHEMERAL_PURGE_AGE_MS;
 			for (Contact c : db.getContacts(txn)) {
 				GroupId gId = getContactGroup(c).getId();
-				purgeByType(txn, gId, MessageTypes.VOICE_SIGNAL);
-				purgeByType(txn, gId, MessageTypes.TYPING_INDICATOR);
+				purgeByType(txn, gId, MessageTypes.VOICE_SIGNAL, cutoff);
+				purgeByType(txn, gId, MessageTypes.TYPING_INDICATOR, cutoff);
 			}
 		} catch (FormatException e) {
 			throw new DbException(e);
@@ -169,15 +174,19 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 	}
 
 	private void purgeByType(Transaction txn, GroupId groupId,
-			int messageType) throws DbException, FormatException {
+			int messageType, long cutoff)
+			throws DbException, FormatException {
 		BdfDictionary query = BdfDictionary.of(
 				new BdfEntry(MSG_KEY_MSG_TYPE, messageType));
 		Map<MessageId, BdfDictionary> matches =
 				clientHelper.getMessageMetadataAsDictionary(
 						txn, groupId, query);
-		for (MessageId id : matches.keySet()) {
+		for (Map.Entry<MessageId, BdfDictionary> entry :
+				matches.entrySet()) {
+			long timestamp = entry.getValue().getLong(MSG_KEY_TIMESTAMP, 0L);
+			if (timestamp >= cutoff) continue;
 			try {
-				db.removeMessage(txn, id);
+				db.removeMessage(txn, entry.getKey());
 			} catch (NoSuchMessageException ignored) {
 			}
 		}

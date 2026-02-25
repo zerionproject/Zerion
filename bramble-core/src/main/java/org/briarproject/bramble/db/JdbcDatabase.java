@@ -3372,7 +3372,17 @@ abstract class JdbcDatabase implements Database<Connection> {
 		try {
 			// CASCADE is not enforced (PRAGMA foreign_keys OFF),
 			// so explicitly delete from all child tables first.
-			String sql = "DELETE FROM statuses WHERE groupId = ?";
+
+			// Remove orphan-prone offers referencing messages in this group.
+			// The offers table uses messageId (not a FK) so won't cascade.
+			String sql = "DELETE FROM offers WHERE messageId IN"
+					+ " (SELECT messageId FROM messages WHERE groupId = ?)";
+			ps = txn.prepareStatement(sql);
+			ps.setBytes(1, g.getBytes());
+			ps.executeUpdate();
+			ps.close();
+
+			sql = "DELETE FROM statuses WHERE groupId = ?";
 			ps = txn.prepareStatement(sql);
 			ps.setBytes(1, g.getBytes());
 			ps.executeUpdate();
