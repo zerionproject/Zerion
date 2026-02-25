@@ -17,7 +17,7 @@ With hybrid post-quantum cryptography, post-compromise security (Triple Ratchet 
 ## Why Zerion?
 
 - **Truly anonymous** — No phone number, email, or registration
-- **End-to-end encrypted** messaging, groups, voice notes, and P2P calls
+- **End-to-end encrypted** messaging, groups, voice notes, P2P voice and video calls
 - **Post-Compromise Security** — Triple Ratchet (X25519 DH + ML-KEM-768 PQ) for per-message key evolution
 - **Tor-only networking** — Your IP address is never exposed to contacts
 - **Direct peer-to-peer architecture** — No central servers
@@ -52,10 +52,15 @@ Zerion implements a Triple Ratchet protocol for post-compromise security:
 - **Mode 2 (Double Ratchet)**: X25519 DH ratchet for forward secrecy and post-compromise security.
 - **Mode 3 (Triple Ratchet)**: Active for Zerion↔Zerion contacts. Adds ML-KEM-768 post-quantum ratchet on top of Mode 2 for quantum-resistant post-compromise security.
 
-### P2P Voice Calls
+### P2P Voice & Video Calls
 
-Real peer-to-peer encrypted voice calls routed exclusively through Tor hidden services.
+Real peer-to-peer encrypted voice and video calls routed exclusively through Tor hidden services.
 No STUN, no TURN, no VoIP servers — just private communication between devices.
+
+- **Voice calls**: Opus codec at 32kbps, AES-256-GCM encrypted, ~100-200ms latency
+- **Video calls**: H.264 at 320x240 15fps, AES-256-GCM encrypted with padded frames
+- Camera switching, video pause/resume, and correct portrait orientation
+- All frame metadata encrypted inside the payload — zero plaintext metadata on wire
 
 ### Secure Vault
 
@@ -87,16 +92,22 @@ Any attempt to reconnect with weaker security is automatically blocked.
 
 ## Development Status
 
-Zerion is under active development. Current focus areas:
+Zerion is under active development.
 
-**In Progress:**
-- P2P video calls
-- File transfer improvements
-- UI/UX refinements
+**v1.0.4 (Latest):**
+- P2P encrypted video calls over Tor
+- Video orientation correction (TextureView + rotation matrix)
+- Crypto-protocol hardening: 8 vulnerabilities fixed (ZERION-001 through ZERION-009)
+- Fail-closed PQ epoch reset, constant-time key comparison, KEM secret zeroing
+- Receive-side PQ epoch completion, chunk index validation, EK seed hash computation
+- Voice signal ephemeral cleanup (immediate delete + startup purge)
+- Zero-log CI enforcement (Gradle build task)
+- Video/audio stream metadata moved inside encrypted payload
 
 **Planned:**
 - Multi-device sync
-- Offline messaging queue enhancements
+- File transfer improvements
+- UI/UX refinements
 
 ---
 
@@ -105,7 +116,7 @@ Zerion is under active development. Current focus areas:
 - [Technical Whitepaper](docs/ZERION_TECHNICAL_WHITEPAPER.md) — Complete architecture & crypto design
 - [PCS Design](docs/PCS_DESIGN.md) — Post-Compromise Security (Triple Ratchet) specification
 - [Triple Ratchet Design](docs/TRIPLE_RATCHET_DESIGN.md) — Mode 3 ML-KEM-768 ratchet specification
-- [P2P Voice Calls](docs/P2P_Voice_Calls_Documentation.md) — Voice calling specification
+- [P2P Voice & Video Calls](docs/P2P_Voice_Calls_Documentation.md) — Voice and video calling specification
 
 ---
 
