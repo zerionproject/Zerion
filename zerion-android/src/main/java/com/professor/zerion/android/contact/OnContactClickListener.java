@@ -6,4 +6,6 @@ public interface OnContactClickListener<I> {
 
 	void onItemClick(View view, I item);
 
+	default void onItemLongClick(View view, I item) {}
+
 }

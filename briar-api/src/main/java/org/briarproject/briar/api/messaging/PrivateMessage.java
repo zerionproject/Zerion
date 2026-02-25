@@ -1,11 +1,13 @@
 package org.briarproject.briar.api.messaging;
 
 import org.briarproject.bramble.api.sync.Message;
+import org.briarproject.bramble.api.sync.MessageId;
 import org.briarproject.briar.api.attachment.AttachmentHeader;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.List;
 
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
 import static java.util.Collections.emptyList;
@@ -23,23 +25,18 @@ public class PrivateMessage {
 	private final List<AttachmentHeader> attachmentHeaders;
 	private final long autoDeleteTimer;
 	private final PrivateMessageFormat format;
+	@Nullable
+	private final MessageId replyToId;
 
-	/**
-	 * Constructor for private messages in the
-	 * {@link PrivateMessageFormat#TEXT_ONLY TEXT_ONLY} format.
-	 */
 	public PrivateMessage(Message message) {
 		this.message = message;
 		hasText = true;
 		attachmentHeaders = emptyList();
 		autoDeleteTimer = NO_AUTO_DELETE_TIMER;
 		format = TEXT_ONLY;
+		replyToId = null;
 	}
 
-	/**
-	 * Constructor for private messages in the
-	 * {@link PrivateMessageFormat#TEXT_IMAGES TEXT_IMAGES} format.
-	 */
 	public PrivateMessage(Message message, boolean hasText,
 			List<AttachmentHeader> headers) {
 		this.message = message;
@@ -47,19 +44,22 @@ public class PrivateMessage {
 		this.attachmentHeaders = headers;
 		autoDeleteTimer = NO_AUTO_DELETE_TIMER;
 		format = TEXT_IMAGES;
+		replyToId = null;
 	}
 
-	/**
-	 * Constructor for private messages in the
-	 * {@link PrivateMessageFormat#TEXT_IMAGES_AUTO_DELETE TEXT_IMAGES_AUTO_DELETE}
-	 * format.
-	 */
 	public PrivateMessage(Message message, boolean hasText,
 			List<AttachmentHeader> headers, long autoDeleteTimer) {
+		this(message, hasText, headers, autoDeleteTimer, null);
+	}
+
+	public PrivateMessage(Message message, boolean hasText,
+			List<AttachmentHeader> headers, long autoDeleteTimer,
+			@Nullable MessageId replyToId) {
 		this.message = message;
 		this.hasText = hasText;
 		this.attachmentHeaders = headers;
 		this.autoDeleteTimer = autoDeleteTimer;
+		this.replyToId = replyToId;
 		format = TEXT_IMAGES_AUTO_DELETE;
 	}
 
@@ -81,5 +81,10 @@ public class PrivateMessage {
 
 	public long getAutoDeleteTimer() {
 		return autoDeleteTimer;
+	}
+
+	@Nullable
+	public MessageId getReplyToId() {
+		return replyToId;
 	}
 }

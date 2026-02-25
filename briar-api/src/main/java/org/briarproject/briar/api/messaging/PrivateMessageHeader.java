@@ -9,6 +9,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.List;
 
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
 @Immutable
@@ -17,14 +18,25 @@ public class PrivateMessageHeader extends ConversationMessageHeader {
 
 	private final boolean hasText;
 	private final List<AttachmentHeader> attachmentHeaders;
+	@Nullable
+	private final MessageId replyToId;
 
 	public PrivateMessageHeader(MessageId id, GroupId groupId, long timestamp,
 			boolean local, boolean read, boolean sent, boolean seen,
 			boolean hasText, List<AttachmentHeader> headers,
 			long autoDeleteTimer) {
+		this(id, groupId, timestamp, local, read, sent, seen, hasText,
+				headers, autoDeleteTimer, null);
+	}
+
+	public PrivateMessageHeader(MessageId id, GroupId groupId, long timestamp,
+			boolean local, boolean read, boolean sent, boolean seen,
+			boolean hasText, List<AttachmentHeader> headers,
+			long autoDeleteTimer, @Nullable MessageId replyToId) {
 		super(id, groupId, timestamp, local, read, sent, seen, autoDeleteTimer);
 		this.hasText = hasText;
 		this.attachmentHeaders = headers;
+		this.replyToId = replyToId;
 	}
 
 	public boolean hasText() {
@@ -33,6 +45,11 @@ public class PrivateMessageHeader extends ConversationMessageHeader {
 
 	public List<AttachmentHeader> getAttachmentHeaders() {
 		return attachmentHeaders;
+	}
+
+	@Nullable
+	public MessageId getReplyToId() {
+		return replyToId;
 	}
 
 	@Override

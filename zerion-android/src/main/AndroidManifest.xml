@@ -33,6 +33,7 @@
 	<uses-permission-sdk-23 android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 	<uses-permission-sdk-23 android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 	<uses-permission-sdk-23 android:name="android.permission.FOREGROUND_SERVICE_PHONE_CALL" />
+	<uses-permission-sdk-23 android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
 
 	<uses-permission
 		android:name="android.permission.HIDE_OVERLAY_WINDOWS"
@@ -60,6 +61,10 @@
 				<action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
 			</intent-filter>
 		</receiver>
+
+		<receiver
+			android:name="com.professor.zerion.android.NotificationQuickReplyReceiver"
+			android:exported="false" />
 
 		<service
 			android:name="com.professor.zerion.android.ZerionService"
@@ -391,7 +396,7 @@
 		<service
 			android:name=".android.conversation.voice.VoiceCallService"
 			android:exported="false"
-			android:foregroundServiceType="microphone|specialUse">
+			android:foregroundServiceType="microphone|camera|specialUse">
 			<property
 				android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
 				android:value="Voice call signaling while waiting for microphone permission" />

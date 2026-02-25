@@ -52,6 +52,7 @@ public class ContactsViewModel extends DbViewModel implements EventListener {
 	protected final ConversationManager conversationManager;
 	private final ConnectionRegistry connectionRegistry;
 	private final EventBus eventBus;
+	protected final PinnedContactManager pinnedContactManager;
 
 	private final MutableLiveData<LiveResult<List<ContactListItem>>>
 			contactListItems = new MutableLiveData<>();
@@ -63,7 +64,8 @@ public class ContactsViewModel extends DbViewModel implements EventListener {
 			AndroidExecutor androidExecutor, ContactManager contactManager,
 			AuthorManager authorManager,
 			ConversationManager conversationManager,
-			ConnectionRegistry connectionRegistry, EventBus eventBus) {
+			ConnectionRegistry connectionRegistry, EventBus eventBus,
+			PinnedContactManager pinnedContactManager) {
 		super(application, dbExecutor, lifecycleManager, db, androidExecutor);
 		this.contactManager = contactManager;
 		this.authorManager = authorManager;
@@ -71,6 +73,7 @@ public class ContactsViewModel extends DbViewModel implements EventListener {
 		this.connectionRegistry = connectionRegistry;
 		this.eventBus = eventBus;
 		this.eventBus.addListener(this);
+		this.pinnedContactManager = pinnedContactManager;
 	}
 
 	@Override
@@ -86,8 +89,10 @@ public class ContactsViewModel extends DbViewModel implements EventListener {
 	private List<ContactListItem> loadContacts(Transaction txn)
 			throws DbException {
 		List<ContactListItem> contacts = new ArrayList<>();
+		java.util.Set<ContactId> validIds = new java.util.HashSet<>();
 		for (Contact c : contactManager.getContacts(txn)) {
 			ContactId id = c.getId();
+			validIds.add(id);
 			if (!displayContact(id)) {
 				continue;
 			}
@@ -95,8 +100,12 @@ public class ContactsViewModel extends DbViewModel implements EventListener {
 			MessageTracker.GroupCount count =
 					conversationManager.getGroupCount(txn, id);
 			boolean connected = connectionRegistry.isConnected(c.getId());
-			contacts.add(new ContactListItem(c, authorInfo, connected, count));
+			boolean pinned = pinnedContactManager.isPinned(id);
+			contacts.add(new ContactListItem(c, authorInfo, connected, count,
+					pinned));
 		}
+		// Prune stale pinned entries for deleted contacts
+		pinnedContactManager.pruneStaleEntries(validIds);
 		Collections.sort(contacts);
 		return contacts;
 	}
@@ -170,8 +179,26 @@ public class ContactsViewModel extends DbViewModel implements EventListener {
 
 	@UiThread
 	private void removeItem(ContactId c) {
+		pinnedContactManager.unpin(c);
 		removeAndUpdateListItems(contactListItems,
 				itemToTest -> itemToTest.getContact().getId().equals(c));
+	}
+
+	@UiThread
+	boolean togglePinned(ContactId contactId) {
+		boolean result = pinnedContactManager.togglePin(contactId);
+		boolean isPinned = pinnedContactManager.isPinned(contactId);
+		updateItem(contactId,
+				item -> new ContactListItem(item, isPinned, 0), true);
+		return result;
+	}
+
+	boolean isContactPinned(ContactId contactId) {
+		return pinnedContactManager.isPinned(contactId);
+	}
+
+	int getPinnedCount() {
+		return pinnedContactManager.getPinnedCount();
 	}
 
 }

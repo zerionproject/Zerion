@@ -83,6 +83,13 @@ public class ContactItemViewHolder<I extends ContactItem>
 		layout.setOnClickListener(v -> {
 			if (listener != null) listener.onItemClick(avatar, item);
 		});
+		layout.setOnLongClickListener(v -> {
+			if (listener != null) {
+				listener.onItemLongClick(layout, item);
+				return true;
+			}
+			return false;
+		});
 	}
 
 }

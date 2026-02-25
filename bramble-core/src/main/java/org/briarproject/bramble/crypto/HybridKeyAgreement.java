@@ -166,11 +166,13 @@ class HybridKeyAgreement {
 	
 	private int compareBytes(byte[] a, byte[] b) {
 		int minLen = Math.min(a.length, b.length);
-		for (int i = 0; i < minLen; i++) {
+		int result = a.length - b.length;
+		for (int i = minLen - 1; i >= 0; i--) {
 			int diff = (a[i] & 0xFF) - (b[i] & 0xFF);
-			if (diff != 0) return diff;
+			int mask = ~((diff | -diff) >>> 31) + 1;
+			result = (diff & mask) | (result & ~mask);
 		}
-		return a.length - b.length;
+		return result;
 	}
 
 	

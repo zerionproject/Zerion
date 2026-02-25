@@ -210,6 +210,31 @@
 	<string name="got_it">Got it</string>
 	<string name="ok">OK</string>
 	<string name="delete">Delete</string>
+	<string name="copy_text">Copy</string>
+	<string name="copied_to_clipboard">Copied to clipboard</string>
+	<string name="action_react">React</string>
+	<string name="forward">Forward</string>
+	<string name="pin_conversation">Pin conversation</string>
+	<string name="unpin_conversation">Unpin conversation</string>
+	<string name="max_pinned_conversations">Maximum of 5 pinned conversations</string>
+	<string name="search">Search</string>
+	<string name="search_hint">Search messages</string>
+	<string name="search_no_results">No results</string>
+	<string name="search_result_count">%1$d of %2$d</string>
+	<string name="forward_to">Forward to</string>
+	<string name="message_forwarded">Message forwarded</string>
+	<string name="forward_failed">Failed to forward message</string>
+	<string name="no_other_contacts">No other contacts</string>
+	<string name="quick_reply">Reply</string>
+	<string name="quick_reply_hint">Type a reply</string>
+	<string name="quick_reply_sent">Reply sent</string>
+	<string name="notify_quick_reply_title">Quick Reply</string>
+	<string name="notify_quick_reply_summary">Reply to messages from notifications</string>
+	<string name="typing_indicator">typing\u2026</string>
+	<string name="pref_typing_indicators_title">Typing indicators</string>
+	<string name="pref_typing_indicators_summary">Let contacts see when you are typing</string>
+	<string name="pref_link_previews_title">Link previews</string>
+	<string name="pref_link_previews_summary">Generate previews for URLs in messages (fetched via Tor)</string>
 	<string name="accept">Accept</string>
 	<string name="decline">Decline</string>
 	<string name="online">Online</string>
@@ -570,6 +595,7 @@
 	<string name="pref_theme_light">Light</string>
 	<!-- ZERION FIX: Changed from "Dark" to "Zerion Dark" for branding -->
 	<string name="pref_theme_dark">Zerion Dark</string>
+	<string name="pref_theme_amoled">AMOLED Black</string>
 	<string name="pref_theme_system">System default</string>
 
 	<!-- Settings Connections -->
@@ -1012,6 +1038,7 @@
 
 	<!-- Voice Call strings -->
 	<string name="voice_call">Voice call</string>
+	<string name="media">Media</string>
 
 	<!-- Brute Force Protection strings -->
 	<string name="login_account_locked">Account locked due to too many failed attempts. Please wait %1$d minutes and %2$d seconds.</string>
@@ -1050,6 +1077,13 @@
 	<string name="mute">Mute</string>
 	<string name="speaker">Speaker</string>
 	<string name="end_call">End call</string>
+	<string name="video">Video</string>
+	<string name="switch_camera">Flip</string>
+	<string name="video_call">Video Call</string>
+	<string name="video_offer_received">Video request from contact</string>
+	<string name="video_offer_accept">Accept Video</string>
+	<string name="video_offer_reject">Decline</string>
+	<string name="camera_permission_required">Camera permission required for video calls</string>
 
 	<!-- Contact Type Selection -->
 	<string name="contact_type_selection_title">Choose Connection Type</string>

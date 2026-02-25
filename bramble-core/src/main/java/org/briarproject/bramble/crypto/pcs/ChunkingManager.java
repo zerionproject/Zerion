@@ -1,6 +1,7 @@
 package org.briarproject.bramble.crypto.pcs;
 
 import org.briarproject.bramble.api.crypto.pcs.MlKemKeyPair;
+import org.briarproject.bramble.api.crypto.pcs.MlKemProvider;
 import org.briarproject.bramble.api.crypto.pcs.PqChunk;
 import org.briarproject.bramble.api.crypto.pcs.PqRatchetState;
 import org.briarproject.nullsafety.NotNullByDefault;
@@ -12,6 +13,7 @@ import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MLKEM_CIPHERTEXT_SIZE;
+import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MLKEM_EK_SEED_SIZE;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MLKEM_EK_SEED_TOTAL_SIZE;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MLKEM_EK_VECTOR_SIZE;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PQ_CHUNK_SIZE;
@@ -24,8 +26,11 @@ import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PQ_EK_VECTOR_
 @NotNullByDefault
 class ChunkingManager {
 
+	private final MlKemProvider mlKemProvider;
+
 	@Inject
-	ChunkingManager() {
+	ChunkingManager(MlKemProvider mlKemProvider) {
+		this.mlKemProvider = mlKemProvider;
 	}
 
 	@Nullable
@@ -47,8 +52,13 @@ class ChunkingManager {
 		MlKemKeyPair keyPair = state.getOurKeyPair();
 		if (keyPair == null) return null;
 
+		byte[] seed = keyPair.getEkSeed();
+		byte[] ekHash = mlKemProvider.hashEkSeedAndVector(
+				seed, keyPair.getEkVector());
 		byte[] seedAndHash = new byte[MLKEM_EK_SEED_TOTAL_SIZE];
-		System.arraycopy(keyPair.getEkSeed(), 0, seedAndHash, 0, 32);
+		System.arraycopy(seed, 0, seedAndHash, 0, MLKEM_EK_SEED_SIZE);
+		System.arraycopy(ekHash, 0, seedAndHash, MLKEM_EK_SEED_SIZE,
+				ekHash.length);
 
 		return new PqChunk(PQ_CHUNK_TYPE_EK_SEED, 0, seedAndHash);
 	}

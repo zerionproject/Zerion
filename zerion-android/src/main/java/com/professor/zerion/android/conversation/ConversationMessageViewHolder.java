@@ -95,6 +95,13 @@ class ConversationMessageViewHolder extends ConversationItemViewHolder {
 		} else {
 			bindImageItem(item);
 		}
+
+		// Re-bind reply context, reactions, and link preview AFTER
+		// constraint sets are applied, because ConstraintSet.applyTo()
+		// resets view visibility to XML defaults (GONE)
+		bindReplyContext(conversationItem);
+		bindReactions(conversationItem);
+		bindLinkPreview(conversationItem);
 	}
 
 	private boolean hasVoiceMessage(ConversationMessageItem item) {

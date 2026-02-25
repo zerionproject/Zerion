@@ -5,6 +5,11 @@ import org.briarproject.bramble.api.sync.MessageId;
 import org.briarproject.briar.api.conversation.ConversationMessageHeader;
 import org.briarproject.nullsafety.NotNullByDefault;
 
+import org.briarproject.briar.api.messaging.LinkPreview;
+
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.NotThreadSafe;
 
@@ -146,5 +151,43 @@ public abstract class ConversationItem {
 
 	public boolean hasReplyContext() {
 		return replyToMessageId != null && replyToText != null;
+	}
+
+	private final Map<String, Integer> reactions = new HashMap<>();
+
+	public Map<String, Integer> getReactions() {
+		return reactions;
+	}
+
+	public void addReaction(String emoji) {
+		reactions.merge(emoji, 1, Integer::sum);
+	}
+
+	public void removeReaction(String emoji) {
+		Integer count = reactions.get(emoji);
+		if (count != null) {
+			if (count <= 1) reactions.remove(emoji);
+			else reactions.put(emoji, count - 1);
+		}
+	}
+
+	public boolean hasReactions() {
+		return !reactions.isEmpty();
+	}
+
+	@Nullable
+	private LinkPreview linkPreview;
+
+	@Nullable
+	public LinkPreview getLinkPreview() {
+		return linkPreview;
+	}
+
+	public void setLinkPreview(@Nullable LinkPreview linkPreview) {
+		this.linkPreview = linkPreview;
+	}
+
+	public boolean hasLinkPreview() {
+		return linkPreview != null;
 	}
 }

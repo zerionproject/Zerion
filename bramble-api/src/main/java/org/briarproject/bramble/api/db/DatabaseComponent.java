@@ -198,7 +198,10 @@ public interface DatabaseComponent extends TransactionManager {
 	Collection<MessageId> getMessageIds(Transaction txn, GroupId g)
 			throws DbException;
 
-	
+	Collection<MessageId> getAllMessageIds(Transaction txn, GroupId g)
+			throws DbException;
+
+
 	Collection<MessageId> getMessageIds(Transaction txn, GroupId g,
 			Metadata query) throws DbException;
 
@@ -350,7 +353,10 @@ public interface DatabaseComponent extends TransactionManager {
 	
 	void removeMessage(Transaction txn, MessageId m) throws DbException;
 
-	
+	void removeAllGroupMessages(Transaction txn, GroupId g)
+			throws DbException;
+
+
 	void removePendingContact(Transaction txn, PendingContactId p)
 			throws DbException;
 

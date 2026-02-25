@@ -43,6 +43,9 @@ import static org.briarproject.briar.messaging.MessageTypes.ATTACHMENT;
 import static org.briarproject.briar.messaging.MessageTypes.ATTACHMENT_CHUNK;
 import static org.briarproject.briar.messaging.MessageTypes.ATTACHMENT_MANIFEST;
 import static org.briarproject.briar.messaging.MessageTypes.PRIVATE_MESSAGE;
+import static org.briarproject.briar.messaging.MessageTypes.MESSAGE_REACTION;
+import static org.briarproject.briar.messaging.MessageTypes.TYPING_INDICATOR;
+import static org.briarproject.briar.messaging.MessageTypes.LINK_PREVIEW_MESSAGE;
 import static org.briarproject.briar.messaging.MessageTypes.VOICE_SIGNAL;
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_ATTACHMENT_HEADERS;
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_CHUNK_COUNT;
@@ -51,8 +54,16 @@ import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_ROOT_H
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_TOTAL_SIZE;
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_AUTO_DELETE_TIMER;
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_HAS_TEXT;
+import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_IS_TYPING;
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_LOCAL;
+import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_REPLY_TO_ID;
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_MSG_TYPE;
+import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_REACTION_EMOJI;
+import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_PREVIEW_URL;
+import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_PREVIEW_TITLE;
+import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_PREVIEW_DESCRIPTION;
+import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_HAS_PREVIEW_IMAGE;
+import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_TARGET_MESSAGE_ID;
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_TIMESTAMP;
 import static org.briarproject.briar.util.ValidationUtils.validateAutoDeleteTimer;
 
@@ -107,6 +118,15 @@ class PrivateMessageValidator implements MessageValidator {
 					context = validateAttachmentManifest(m, list);
 				} else if (messageType == ATTACHMENT_CHUNK) {
 					context = validateAttachmentChunk(m, list, bytesRead);
+				} else if (messageType == MESSAGE_REACTION) {
+					if (!reader.eof()) throw new FormatException();
+					context = validateMessageReaction(m, list);
+				} else if (messageType == TYPING_INDICATOR) {
+					if (!reader.eof()) throw new FormatException();
+					context = validateTypingIndicator(m, list);
+				} else if (messageType == LINK_PREVIEW_MESSAGE) {
+					if (!reader.eof()) throw new FormatException();
+					context = validateLinkPreviewMessage(m, list);
 				} else {
 					throw new InvalidMessageException();
 				}
@@ -132,7 +152,7 @@ class PrivateMessageValidator implements MessageValidator {
 
 	private BdfMessageContext validatePrivateMessage(Message m, BdfList body)
 			throws FormatException {
-		checkSize(body, 3, 4);
+		checkSize(body, 3, 5);
 		String text = body.getOptionalString(1);
 		checkLength(text, 0, MAX_PRIVATE_MESSAGE_TEXT_LENGTH);
 		BdfList headers = body.getList(2);
@@ -150,8 +170,13 @@ class PrivateMessageValidator implements MessageValidator {
 		}
 
 		long timer = NO_AUTO_DELETE_TIMER;
-		if (body.size() == 4) {
+		if (body.size() >= 4) {
 			timer = validateAutoDeleteTimer(body.getOptionalLong(3));
+		}
+		byte[] replyToId = null;
+		if (body.size() == 5) {
+			replyToId = body.getOptionalRaw(4);
+			if (replyToId != null) checkLength(replyToId, UniqueId.LENGTH);
 		}
 		BdfDictionary meta = new BdfDictionary();
 		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
@@ -162,6 +187,9 @@ class PrivateMessageValidator implements MessageValidator {
 		meta.put(MSG_KEY_ATTACHMENT_HEADERS, headers);
 		if (timer != NO_AUTO_DELETE_TIMER) {
 			meta.put(MSG_KEY_AUTO_DELETE_TIMER, timer);
+		}
+		if (replyToId != null) {
+			meta.put(MSG_KEY_REPLY_TO_ID, replyToId);
 		}
 		if (dependencies.isEmpty()) {
 			return new BdfMessageContext(meta);
@@ -278,6 +306,78 @@ class PrivateMessageValidator implements MessageValidator {
 		meta.put(MSG_KEY_MSG_TYPE, ATTACHMENT_CHUNK);
 		meta.put(MSG_KEY_CHUNK_INDEX, chunkIndex);
 		meta.put(MSG_KEY_DESCRIPTOR_LENGTH, (int) headerLength);
+		return new BdfMessageContext(meta);
+	}
+
+	private static final java.util.Set<String> ALLOWED_REACTION_EMOJIS =
+			new java.util.HashSet<>(java.util.Arrays.asList(
+					"\uD83D\uDC4D", "\u2764\uFE0F", "\uD83D\uDE02",
+					"\uD83D\uDE2E", "\uD83D\uDE22", "\uD83D\uDE20",
+					"thumbsup", "heart", "laugh",
+					"surprise", "sad", "angry"));
+
+	private BdfMessageContext validateMessageReaction(Message m, BdfList body)
+			throws FormatException {
+		checkSize(body, 3);
+		byte[] targetId = body.getRaw(1);
+		checkLength(targetId, UniqueId.LENGTH);
+		String emoji = body.getString(2);
+		checkLength(emoji, 1, 64);
+		if (!ALLOWED_REACTION_EMOJIS.contains(emoji)) {
+			throw new FormatException();
+		}
+
+		BdfDictionary meta = new BdfDictionary();
+		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
+		meta.put(MSG_KEY_LOCAL, false);
+		meta.put(MSG_KEY_MSG_TYPE, MESSAGE_REACTION);
+		meta.put(MSG_KEY_TARGET_MESSAGE_ID, targetId);
+		meta.put(MSG_KEY_REACTION_EMOJI, emoji);
+		return new BdfMessageContext(meta);
+	}
+
+	private BdfMessageContext validateTypingIndicator(Message m, BdfList body)
+			throws FormatException {
+		checkSize(body, 2);
+		boolean isTyping = body.getBoolean(1);
+
+		BdfDictionary meta = new BdfDictionary();
+		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
+		meta.put(MSG_KEY_LOCAL, false);
+		meta.put(MSG_KEY_MSG_TYPE, TYPING_INDICATOR);
+		meta.put(MSG_KEY_IS_TYPING, isTyping);
+		return new BdfMessageContext(meta);
+	}
+
+	private BdfMessageContext validateLinkPreviewMessage(Message m,
+			BdfList body) throws FormatException {
+		checkSize(body, 5, 6);
+		String text = body.getOptionalString(1);
+		if (text != null) {
+			checkLength(text, 0, MAX_PRIVATE_MESSAGE_TEXT_LENGTH);
+		}
+		String previewUrl = body.getString(2);
+		checkLength(previewUrl, 1, 2048);
+		String previewTitle = body.getString(3);
+		checkLength(previewTitle, 1, 512);
+		String previewDescription = body.getOptionalString(4);
+		if (previewDescription != null) {
+			checkLength(previewDescription, 0, 1024);
+		}
+		boolean hasImage = body.size() == 6 && body.getRaw(5) != null;
+
+		BdfDictionary meta = new BdfDictionary();
+		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
+		meta.put(MSG_KEY_LOCAL, false);
+		meta.put(MSG_KEY_READ, false);
+		meta.put(MSG_KEY_MSG_TYPE, LINK_PREVIEW_MESSAGE);
+		meta.put(MSG_KEY_HAS_TEXT, text != null);
+		meta.put(MSG_KEY_PREVIEW_URL, previewUrl);
+		meta.put(MSG_KEY_PREVIEW_TITLE, previewTitle);
+		if (previewDescription != null) {
+			meta.put(MSG_KEY_PREVIEW_DESCRIPTION, previewDescription);
+		}
+		meta.put(MSG_KEY_HAS_PREVIEW_IMAGE, hasImage);
 		return new BdfMessageContext(meta);
 	}
 }

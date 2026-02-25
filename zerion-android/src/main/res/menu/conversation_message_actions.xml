@@ -4,6 +4,24 @@
 	xmlns:app="http://schemas.android.com/apk/res-auto">
 
 	<item
+		android:id="@+id/action_copy"
+		android:icon="@drawable/ic_content_copy"
+		android:title="@string/copy_text"
+		app:showAsAction="always"/>
+
+	<item
+		android:id="@+id/action_react"
+		android:icon="@drawable/ic_emoji_toggle"
+		android:title="@string/action_react"
+		app:showAsAction="always"/>
+
+	<item
+		android:id="@+id/action_forward"
+		android:icon="@drawable/ic_forward"
+		android:title="@string/forward"
+		app:showAsAction="always"/>
+
+	<item
 		android:id="@+id/action_delete"
 		android:icon="@drawable/action_delete_white"
 		android:title="@string/delete"

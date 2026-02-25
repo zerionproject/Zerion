@@ -269,9 +269,23 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 			PqChunk chunk = pcsHeader.getPqChunk();
 			if (chunk != null) {
 				pqState = pqRatchet.processChunkReceived(pqState, chunk);
-				if (pqStateCallback != null) {
-					pqStateCallback.accept(pqState);
+			}
+			if (pqRatchet.isEpochComplete(pqState) &&
+					recvState != null && recvState.getRootKey() != null) {
+				try {
+					SecretKey pqSecret = pqRatchet.deriveEpochSecret(pqState);
+					SecretKey newRootKey = pqRatchet.mixPqSecretIntoRootKey(
+							recvState.getRootKey(), pqSecret);
+					recvState = recvState.afterPqRatchet(newRootKey,
+							pqState.getCurrentEpoch());
+					pqState = pqRatchet.completeEpoch(pqState,
+							System.currentTimeMillis());
+				} catch (Exception e) {
+					pqState = pqRatchet.initialize(System.currentTimeMillis());
 				}
+			}
+			if (pqStateCallback != null) {
+				pqStateCallback.accept(pqState);
 			}
 		}
 

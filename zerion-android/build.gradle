@@ -271,6 +271,32 @@ dependencies {
     androidTestScreenshotImplementation 'androidx.test.uiautomator:uiautomator:2.2.0'
 }
 
+task enforceNoLogs {
+    doLast {
+        def srcDir = file("src/main/java")
+        def banned = ['Log.d(', 'Log.i(', 'Log.w(', 'Log.e(', 'Log.v(',
+                       'System.out.print', 'System.err.print',
+                       '.printStackTrace()', 'Timber.']
+        def violations = []
+        srcDir.eachFileRecurse(groovy.io.FileType.FILES) { f ->
+            if (f.name.endsWith('.java')) {
+                f.eachLine { line, num ->
+                    banned.each { pattern ->
+                        if (line.contains(pattern)) {
+                            violations << "${f.path}:${num}: ${line.trim()}"
+                        }
+                    }
+                }
+            }
+        }
+        if (!violations.isEmpty()) {
+            throw new GradleException(
+                "LOGGING VIOLATION — Zerion enforces zero-log policy:\n"
+                + violations.join('\n'))
+        }
+    }
+}
+
 task verifyTranslations {
     doLast {
         def file = project.file("src/main/res/values/arrays.xml")
@@ -313,6 +339,7 @@ task verifyTranslations {
 
 project.afterEvaluate {
     preBuild.dependsOn.add(verifyTranslations)
+    preBuild.dependsOn.add(enforceNoLogs)
 
     // Disable ART/Baseline profile tasks for F-Droid reproducible builds
     if (isFdroidBuild) {

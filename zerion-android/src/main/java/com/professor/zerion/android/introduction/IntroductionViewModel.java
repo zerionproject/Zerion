@@ -16,6 +16,7 @@ import org.briarproject.bramble.api.system.AndroidExecutor;
 import com.professor.zerion.R;
 import com.professor.zerion.android.contact.ContactItem;
 import com.professor.zerion.android.contact.ContactsViewModel;
+import com.professor.zerion.android.contact.PinnedContactManager;
 import com.professor.zerion.android.viewmodel.LiveEvent;
 import com.professor.zerion.android.viewmodel.MutableLiveEvent;
 import org.briarproject.briar.api.conversation.ConversationManager;
@@ -51,10 +52,11 @@ class IntroductionViewModel extends ContactsViewModel {
 			AuthorManager authorManager,
 			ConversationManager conversationManager,
 			ConnectionRegistry connectionRegistry, EventBus eventBus,
-			IntroductionManager introductionManager) {
+			IntroductionManager introductionManager,
+			PinnedContactManager pinnedContactManager) {
 		super(application, dbExecutor, lifecycleManager, db, androidExecutor,
 				contactManager, authorManager, conversationManager,
-				connectionRegistry, eventBus);
+				connectionRegistry, eventBus, pinnedContactManager);
 		this.contactManager = contactManager;
 		this.authorManager = authorManager;
 		this.introductionManager = introductionManager;

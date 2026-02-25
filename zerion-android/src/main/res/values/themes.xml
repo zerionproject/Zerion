@@ -149,4 +149,16 @@
 		<item name="android:layout">@layout/preference_category_material</item>
 	</style>
 
+	<style name="AmoledOverlay">
+		<item name="android:colorBackground">@color/zerion_amoled_bg</item>
+		<item name="colorSurface">@color/zerion_amoled_card</item>
+		<item name="colorSurfaceDim">@color/zerion_amoled_bg</item>
+		<item name="colorSurfaceVariant">@color/zerion_amoled_card</item>
+		<item name="colorPrimaryContainer">@color/zerion_amoled_card</item>
+		<item name="colorTertiaryContainer">@color/zerion_amoled_card</item>
+		<item name="android:windowBackground">@color/zerion_amoled_bg</item>
+		<item name="android:statusBarColor">@color/zerion_amoled_bg</item>
+		<item name="android:navigationBarColor">@color/zerion_amoled_bg</item>
+	</style>
+
 </resources>

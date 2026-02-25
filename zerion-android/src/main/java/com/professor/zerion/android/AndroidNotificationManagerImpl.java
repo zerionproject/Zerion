@@ -48,6 +48,9 @@ import org.briarproject.briar.api.privategroup.event.GroupMessageAddedEvent;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
+import android.content.SharedPreferences;
+
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -62,6 +65,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.annotation.UiThread;
 import androidx.core.app.NotificationCompat;
+import androidx.core.app.RemoteInput;
 import androidx.core.app.TaskStackBuilder;
 
 import static android.app.Notification.DEFAULT_LIGHTS;
@@ -101,11 +105,12 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 
 	private static final long SOUND_DELAY = TimeUnit.SECONDS.toMillis(2);
 
-	private static final int PRIVATE_MESSAGE_NOTIFICATION_ID = 2;
+	static final int PRIVATE_MESSAGE_NOTIFICATION_ID = 2;
 	private static final int GROUP_MESSAGE_NOTIFICATION_ID = 3;
 	private static final int CONTACT_ADDED_NOTIFICATION_ID = 4;
 	private static final int SIGN_IN_NOTIFICATION_ID = 5;
 	private static final int REMINDER_NOTIFICATION_ID = 6;
+	static final int CONTACT_NOTIFICATION_ID_BASE = 1000;
 
 	private final SettingsManager settingsManager;
 	private final AndroidExecutor androidExecutor;
@@ -114,9 +119,12 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	private final NotificationManager notificationManager;
 	private final MessagingManager messagingManager;
 	private final ContactManager contactManager;
+	private final SharedPreferences uiPrefs;
 	private final AtomicBoolean used = new AtomicBoolean(false);
 
 	private final Multiset<ContactId> contactCounts = new Multiset<>();
+	private final Set<Integer> activeContactNotificationIds =
+			new HashSet<>();
 	private final Multiset<GroupId> groupCounts = new Multiset<>();
 	private int contactAddedTotal = 0;
 	private int nextRequestId = 0;
@@ -133,12 +141,14 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	@Inject
 	AndroidNotificationManagerImpl(SettingsManager settingsManager,
 			AndroidExecutor androidExecutor, Application app, Clock clock,
-			MessagingManager messagingManager, ContactManager contactManager) {
+			MessagingManager messagingManager, ContactManager contactManager,
+			@AppModule.UiPrefs SharedPreferences uiPrefs) {
 		this.settingsManager = settingsManager;
 		this.androidExecutor = androidExecutor;
 		this.clock = clock;
 		this.messagingManager = messagingManager;
 		this.contactManager = contactManager;
+		this.uiPrefs = uiPrefs;
 		appContext = app.getApplicationContext();
 		notificationManager = (NotificationManager)
 				appContext.getSystemService(NOTIFICATION_SERVICE);
@@ -199,6 +209,11 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	@UiThread
 	private void clearContactNotification() {
 		contactCounts.clear();
+		for (int id : activeContactNotificationIds) {
+			notificationManager.cancel(id);
+		}
+		activeContactNotificationIds.clear();
+		// Also cancel legacy global ID in case of upgrade
 		notificationManager.cancel(PRIVATE_MESSAGE_NOTIFICATION_ID);
 	}
 
@@ -294,60 +309,94 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	private void showContactNotification(ContactId c) {
 		if (c.equals(blockedContact)) return;
 		contactCounts.add(c);
-		updateContactNotification(true);
+		if (!settings.getBoolean(PREF_NOTIFY_PRIVATE, true)) return;
+		postContactNotification(c, true);
 	}
 
 	@Override
 	public void clearContactNotification(ContactId c) {
 		androidExecutor.runOnUiThread(() -> {
-			if (contactCounts.removeAll(c) > 0)
-				updateContactNotification(false);
+			contactCounts.removeAll(c);
+			// Always cancel — even after process restart when
+			// contactCounts is empty, the notification may still exist
+			int notifId = CONTACT_NOTIFICATION_ID_BASE + c.getInt();
+			notificationManager.cancel(notifId);
+			activeContactNotificationIds.remove(notifId);
 		});
 	}
 
+	/**
+	 * Post or update the notification for a single contact.
+	 * Only alerts (sound/vibrate) if mayAlert is true.
+	 */
 	@UiThread
-	private void updateContactNotification(boolean mayAlertAgain) {
-		int contactTotal = contactCounts.getTotal();
-		if (contactTotal == 0) {
-			clearContactNotification();
-		} else if (settings.getBoolean(PREF_NOTIFY_PRIVATE, true)) {
-			ZerionNotificationBuilder b = new ZerionNotificationBuilder(
-					appContext, CONTACT_CHANNEL_ID);
-			b.setSmallIcon(R.drawable.logo);
-			b.setColorRes(R.color.zerion_primary);
-			b.setContentTitle(appContext.getText(R.string.app_name));
-			b.setContentText(appContext.getResources().getQuantityString(
-					R.plurals.private_message_notification_text, contactTotal,
-					contactTotal));
-			b.setNumber(contactTotal);
-			b.setNotificationCategory(CATEGORY_MESSAGE);
-			if (mayAlertAgain) setAlertProperties(b);
-			setDeleteIntent(b, CONTACT_URI);
-			Set<ContactId> contacts = contactCounts.keySet();
-			if (contacts.size() == 1) {
-				Intent i = new Intent(appContext, ConversationActivity.class);
-				ContactId c = contacts.iterator().next();
-				i.putExtra(CONTACT_ID, c.getInt());
-				i.setData(Uri.parse(CONTACT_URI + "/" + c.getInt()));
-				i.setFlags(FLAG_ACTIVITY_CLEAR_TOP);
-				TaskStackBuilder t = TaskStackBuilder.create(appContext);
-				t.addParentStack(ConversationActivity.class);
-				t.addNextIntent(i);
-				b.setContentIntent(t.getPendingIntent(nextRequestId++,
-						getImmutableFlags(0)));
-			} else {
-				Intent i = new Intent(appContext, NavDrawerActivity.class);
-				i.setFlags(FLAG_ACTIVITY_CLEAR_TOP);
-				i.setData(CONTACT_URI);
-				TaskStackBuilder t = TaskStackBuilder.create(appContext);
-				t.addParentStack(NavDrawerActivity.class);
-				t.addNextIntent(i);
-				b.setContentIntent(t.getPendingIntent(nextRequestId++,
-						getImmutableFlags(0)));
+	private void postContactNotification(ContactId c, boolean mayAlert) {
+		int count = contactCounts.getCount(c);
+		if (count == 0) return;
+		int notifId = CONTACT_NOTIFICATION_ID_BASE + c.getInt();
+
+		ZerionNotificationBuilder b = new ZerionNotificationBuilder(
+				appContext, CONTACT_CHANNEL_ID);
+		b.setSmallIcon(R.drawable.logo);
+		b.setColorRes(R.color.zerion_primary);
+		b.setContentTitle(appContext.getText(R.string.app_name));
+		b.setContentText(appContext.getResources().getQuantityString(
+				R.plurals.private_message_notification_text,
+				count, count));
+		b.setNumber(count);
+		b.setNotificationCategory(CATEGORY_MESSAGE);
+		if (mayAlert) setAlertProperties(b);
+
+		// Per-contact delete intent for swipe dismiss
+		setDeleteIntent(b,
+				Uri.parse(CONTACT_URI + "/" + c.getInt()));
+
+		// Content intent — open conversation
+		Intent i = new Intent(appContext, ConversationActivity.class);
+		i.putExtra(CONTACT_ID, c.getInt());
+		i.setData(Uri.parse(CONTACT_URI + "/" + c.getInt()));
+		i.setFlags(FLAG_ACTIVITY_CLEAR_TOP);
+		TaskStackBuilder t = TaskStackBuilder.create(appContext);
+		t.addParentStack(ConversationActivity.class);
+		t.addNextIntent(i);
+		b.setContentIntent(t.getPendingIntent(nextRequestId++,
+				getImmutableFlags(0)));
+
+		// Quick reply action (if enabled in settings)
+		boolean quickReplyEnabled = uiPrefs.getBoolean(
+				com.professor.zerion.android.settings.NotificationsFragment
+						.PREF_NOTIFY_QUICK_REPLY, true);
+		if (quickReplyEnabled) {
+			RemoteInput remoteInput = new RemoteInput.Builder(
+					NotificationQuickReplyReceiver.KEY_REPLY_TEXT)
+					.setLabel(appContext.getString(
+							R.string.quick_reply_hint))
+					.build();
+			Intent replyIntent = new Intent(appContext,
+					NotificationQuickReplyReceiver.class);
+			replyIntent.putExtra(CONTACT_ID, c.getInt());
+			// RemoteInput requires FLAG_MUTABLE on Android 12+
+			int replyFlags = PendingIntent.FLAG_UPDATE_CURRENT;
+			if (android.os.Build.VERSION.SDK_INT >= 31) {
+				replyFlags |= PendingIntent.FLAG_MUTABLE;
 			}
-			notificationManager.notify(PRIVATE_MESSAGE_NOTIFICATION_ID,
-					b.build());
+			PendingIntent replyPendingIntent = getBroadcast(
+					appContext, nextRequestId++,
+					replyIntent, replyFlags);
+			NotificationCompat.Action replyAction =
+					new NotificationCompat.Action.Builder(
+							R.drawable.ic_reply,
+							appContext.getString(
+									R.string.quick_reply),
+							replyPendingIntent)
+							.addRemoteInput(remoteInput)
+							.setAllowGeneratedReplies(false)
+							.build();
+			b.addAction(replyAction);
 		}
+
+		notificationManager.notify(notifId, b.build());
+		activeContactNotificationIds.add(notifId);
 	}
 
 	@UiThread
@@ -696,13 +745,21 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 				String callId = header.getCallId();
 				String rawPayload = header.getPayload();
 
-					if (rawPayload != null) {
+					boolean isVideoCall = false;
+				if (rawPayload != null) {
 					String voiceCallKeyHex = rawPayload;
 					String ephemeralHex = null;
-					int pipeIdx = rawPayload.indexOf('|');
-					if (pipeIdx > 0) {
-						voiceCallKeyHex = rawPayload.substring(0, pipeIdx);
-						ephemeralHex = rawPayload.substring(pipeIdx + 1);
+					String[] parts = rawPayload.split("\\|");
+					voiceCallKeyHex = parts[0];
+					if (parts.length >= 2) {
+						if ("VIDEO".equals(parts[parts.length - 1])) {
+							isVideoCall = true;
+							if (parts.length >= 3) {
+								ephemeralHex = parts[1];
+							}
+						} else {
+							ephemeralHex = parts[1];
+						}
 					}
 					try {
 						SecretKey key = new SecretKey(
@@ -719,6 +776,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 					}
 				}
 
+				final boolean videoCall = isVideoCall;
 				androidExecutor.runOnUiThread(() -> {
 					Intent intent = new Intent(appContext,
 							com.professor.zerion.android.conversation.voice.VoiceCallActivity.class);
@@ -732,6 +790,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 					intent.putExtra(
 							com.professor.zerion.android.conversation.voice.VoiceCallActivity.EXTRA_IS_INCOMING,
 							true);
+					intent.putExtra("auto_video", videoCall);
 					if (callId != null) {
 						intent.putExtra(
 								com.professor.zerion.android.conversation.voice.VoiceCallActivity.EXTRA_CALL_ID,
