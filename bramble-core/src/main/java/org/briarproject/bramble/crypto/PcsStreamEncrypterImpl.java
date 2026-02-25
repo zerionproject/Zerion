@@ -19,6 +19,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.security.GeneralSecurityException;
 import java.util.function.Consumer;
+import java.util.logging.Logger;
+
+import static java.util.logging.Level.WARNING;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.NotThreadSafe;
@@ -49,6 +52,9 @@ import static org.briarproject.bramble.util.ByteUtils.INT_64_BYTES;
 @NotThreadSafe
 @NotNullByDefault
 class PcsStreamEncrypterImpl implements StreamEncrypter {
+
+	private static final Logger LOG =
+			Logger.getLogger(PcsStreamEncrypterImpl.class.getName());
 
 	private final OutputStream out;
 	private final AuthenticatedCipher cipher;
@@ -223,6 +229,9 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 					pqState = pqRatchet.completeEpoch(pqState,
 							System.currentTimeMillis());
 				} catch (Exception e) {
+					LOG.log(WARNING,
+							"PQ epoch secret derivation failed, resetting PQ state", e);
+					pqState = pqRatchet.initialize(System.currentTimeMillis());
 				}
 			}
 			if (pqStateCallback != null) {

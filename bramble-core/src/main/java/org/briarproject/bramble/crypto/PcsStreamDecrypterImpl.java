@@ -25,6 +25,9 @@ import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
 import java.util.function.Consumer;
+import java.util.logging.Logger;
+
+import static java.util.logging.Level.WARNING;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.NotThreadSafe;
@@ -52,6 +55,9 @@ import static org.briarproject.bramble.util.ByteUtils.INT_64_BYTES;
 @NotThreadSafe
 @NotNullByDefault
 class PcsStreamDecrypterImpl implements StreamDecrypter {
+
+	private static final Logger LOG =
+			Logger.getLogger(PcsStreamDecrypterImpl.class.getName());
 
 	private final InputStream in;
 	private final AuthenticatedCipher cipher;
@@ -269,9 +275,25 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 			PqChunk chunk = pcsHeader.getPqChunk();
 			if (chunk != null) {
 				pqState = pqRatchet.processChunkReceived(pqState, chunk);
-				if (pqStateCallback != null) {
-					pqStateCallback.accept(pqState);
+			}
+			if (pqRatchet.isEpochComplete(pqState) &&
+					recvState != null && recvState.getRootKey() != null) {
+				try {
+					SecretKey pqSecret = pqRatchet.deriveEpochSecret(pqState);
+					SecretKey newRootKey = pqRatchet.mixPqSecretIntoRootKey(
+							recvState.getRootKey(), pqSecret);
+					recvState = recvState.afterPqRatchet(newRootKey,
+							pqState.getCurrentEpoch());
+					pqState = pqRatchet.completeEpoch(pqState,
+							System.currentTimeMillis());
+				} catch (Exception e) {
+					LOG.log(WARNING,
+							"PQ epoch secret derivation failed on receive, resetting PQ state", e);
+					pqState = pqRatchet.initialize(System.currentTimeMillis());
 				}
+			}
+			if (pqStateCallback != null) {
+				pqStateCallback.accept(pqState);
 			}
 		}
 

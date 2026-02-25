@@ -93,6 +93,11 @@ class PqRatchetImpl implements PqRatchet {
 	@Override
 	public PqRatchetState processChunkReceived(PqRatchetState state,
 			PqChunk chunk) {
+		int expectedIndex = state.getChunksReceived();
+		if (chunk.getIndex() != expectedIndex) {
+			return state.reset();
+		}
+
 		byte[] pending = state.getPendingChunks();
 		if (pending == null) pending = new byte[0];
 

@@ -18,9 +18,13 @@ import org.briarproject.bramble.api.db.Transaction;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.security.GeneralSecurityException;
+import java.util.logging.Logger;
+
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
+
+import static java.util.logging.Level.WARNING;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_ENABLED;
 import static org.briarproject.bramble.api.db.DatabaseComponent.PCS_DIRECTION_RECEIVE;
 import static org.briarproject.bramble.api.db.DatabaseComponent.PCS_DIRECTION_SEND;
@@ -29,6 +33,10 @@ import static org.briarproject.bramble.api.db.DatabaseComponent.PCS_DIRECTION_SE
 @ThreadSafe
 @NotNullByDefault
 public class PcsStateManager {
+
+	private static final Logger LOG =
+			Logger.getLogger(PcsStateManager.class.getName());
+
 	private final DatabaseComponent db;
 	private final CryptoComponent crypto;
 
@@ -68,6 +76,7 @@ public class PcsStateManager {
 				initializeState(txn, contactId, initial);
 			});
 		} catch (DbException e) {
+			LOG.log(WARNING, "Failed to initialize PCS state", e);
 		}
 	}
 
@@ -96,6 +105,7 @@ public class PcsStateManager {
 				initializeMode2State(txn, contactId, sendState, receiveState);
 			});
 		} catch (DbException e) {
+			LOG.log(WARNING, "Failed to initialize Mode 2 state", e);
 		}
 	}
 
@@ -113,6 +123,7 @@ public class PcsStateManager {
 			return db.transactionWithResult(true, txn ->
 					db.containsPcsSessionState(txn, contactId));
 		} catch (DbException e) {
+			LOG.log(WARNING, "Failed to check PCS state existence", e);
 			return false;
 		}
 	}
@@ -129,10 +140,11 @@ public class PcsStateManager {
 			db.transaction(false, txn ->
 					db.removePcsState(txn, contactId));
 		} catch (DbException e) {
+			LOG.log(WARNING, "Failed to remove PCS state", e);
 		}
 	}
 
-	
+
 	@Nullable
 	public PcsSessionState loadSendState(Transaction txn, ContactId contactId)
 			throws DbException {
@@ -161,6 +173,7 @@ public class PcsStateManager {
 			return db.transactionWithNullableResult(true, txn ->
 					loadState(txn, contactId, direction));
 		} catch (DbException e) {
+			LOG.log(WARNING, "Failed to load PCS state", e);
 			return null;
 		}
 	}
@@ -216,6 +229,8 @@ public class PcsStateManager {
 
 				dhState = new DhRatchetState(dhKeyPair, dhRemotePublicKey);
 			} catch (GeneralSecurityException e) {
+				LOG.log(WARNING,
+						"Failed to parse DH keys, falling back to Mode 1", e);
 				return new PcsSessionState(chainKey, messageNumber, previousChainLength);
 			}
 		}
@@ -230,6 +245,7 @@ public class PcsStateManager {
 			db.transaction(false, txn ->
 					saveState(txn, contactId, direction, state));
 		} catch (DbException e) {
+			LOG.log(WARNING, "Failed to save PCS state", e);
 		}
 	}
 
@@ -270,6 +286,7 @@ public class PcsStateManager {
 			return db.transactionWithNullableResult(true, txn ->
 					loadPqState(txn, contactId));
 		} catch (DbException e) {
+			LOG.log(WARNING, "Failed to load PQ ratchet state", e);
 			return null;
 		}
 	}
@@ -288,6 +305,7 @@ public class PcsStateManager {
 		try {
 			db.transaction(false, txn -> savePqState(txn, contactId, state));
 		} catch (DbException e) {
+			LOG.log(WARNING, "Failed to save PQ ratchet state", e);
 		}
 	}
 
@@ -323,6 +341,7 @@ public class PcsStateManager {
 			return db.transactionWithResult(true, txn ->
 					db.containsPqRatchetState(txn, contactId));
 		} catch (DbException e) {
+			LOG.log(WARNING, "Failed to check PQ state existence", e);
 			return false;
 		}
 	}
@@ -333,6 +352,7 @@ public class PcsStateManager {
 			db.transaction(false, txn ->
 					db.removePqRatchetState(txn, contactId));
 		} catch (DbException e) {
+			LOG.log(WARNING, "Failed to remove PQ ratchet state", e);
 		}
 	}
 

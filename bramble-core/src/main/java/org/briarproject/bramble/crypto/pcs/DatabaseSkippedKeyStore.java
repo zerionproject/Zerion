@@ -8,9 +8,13 @@ import org.briarproject.bramble.api.db.DbException;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.nio.ByteBuffer;
+import java.util.logging.Logger;
+
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
+
+import static java.util.logging.Level.WARNING;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MAX_SKIP_AGE_MS;
 import static org.briarproject.bramble.api.db.DatabaseComponent.PCS_DIRECTION_RECEIVE;
 import static org.briarproject.bramble.api.db.DatabaseComponent.PCS_DIRECTION_SEND;
@@ -19,7 +23,10 @@ import static org.briarproject.bramble.api.db.DatabaseComponent.PCS_DIRECTION_SE
 @ThreadSafe
 @NotNullByDefault
 public class DatabaseSkippedKeyStore implements SkippedKeyStore {
-	
+
+	private static final Logger LOG =
+			Logger.getLogger(DatabaseSkippedKeyStore.class.getName());
+
 	private static final int CHAIN_ID_LENGTH = 5;
 
 	private final DatabaseComponent db;
@@ -41,6 +48,7 @@ public class DatabaseSkippedKeyStore implements SkippedKeyStore {
 						messageNumber, messageKey, timestamp);
 			});
 		} catch (DbException e) {
+			LOG.log(WARNING, "Failed to store skipped key", e);
 		}
 	}
 
@@ -55,6 +63,7 @@ public class DatabaseSkippedKeyStore implements SkippedKeyStore {
 			return db.transactionWithNullableResult(false, txn ->
 					db.getPcsSkippedKey(txn, contactId, direction, messageNumber));
 		} catch (DbException e) {
+			LOG.log(WARNING, "Failed to retrieve skipped key", e);
 			return null;
 		}
 	}
@@ -68,6 +77,7 @@ public class DatabaseSkippedKeyStore implements SkippedKeyStore {
 			return db.transactionWithResult(true, txn ->
 					db.getPcsSkippedKeyCount(txn, contactId, direction));
 		} catch (DbException e) {
+			LOG.log(WARNING, "Failed to get skipped key count", e);
 			return 0;
 		}
 	}
@@ -78,6 +88,7 @@ public class DatabaseSkippedKeyStore implements SkippedKeyStore {
 			return db.transactionWithResult(false, txn ->
 					db.prunePcsSkippedKeys(txn, MAX_SKIP_AGE_MS));
 		} catch (DbException e) {
+			LOG.log(WARNING, "Failed to prune expired keys", e);
 			return 0;
 		}
 	}
@@ -90,6 +101,7 @@ public class DatabaseSkippedKeyStore implements SkippedKeyStore {
 			db.transaction(false, txn ->
 					db.removePcsState(txn, contactId));
 		} catch (DbException e) {
+			LOG.log(WARNING, "Failed to clear skipped key chain", e);
 		}
 	}
 
