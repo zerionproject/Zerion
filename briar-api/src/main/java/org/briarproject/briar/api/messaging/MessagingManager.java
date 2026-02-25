@@ -138,4 +138,38 @@ public interface MessagingManager extends ConversationClient {
 	 */
 	PrivateMessageFormat getContactMessageFormat(Transaction txn, ContactId c)
 			throws DbException;
+
+	/**
+	 * Sends a local reaction to the given target message.
+	 */
+	void addLocalReaction(ContactId contactId, MessageId targetMessageId,
+			String emoji) throws DbException;
+
+	/**
+	 * Returns all reactions for messages in the given contact's conversation.
+	 * The outer map is keyed by target message ID, the inner map is
+	 * emoji -> count.
+	 */
+	java.util.Map<MessageId, java.util.Map<String, Integer>> getReactions(
+			ContactId c) throws DbException;
+
+	/**
+	 * Sends a typing indicator to the given contact.
+	 */
+	void sendTypingIndicator(ContactId contactId, boolean isTyping)
+			throws DbException;
+
+	/**
+	 * Returns link previews for messages in the given contact's conversation.
+	 * Map is keyed by message ID.
+	 */
+	java.util.Map<MessageId, LinkPreview> getLinkPreviews(ContactId c)
+			throws DbException;
+
+	/**
+	 * Sends a private message with an embedded link preview.
+	 */
+	void addLocalLinkPreviewMessage(Transaction txn, ContactId contactId,
+			@Nullable String text, LinkPreview preview)
+			throws DbException;
 }

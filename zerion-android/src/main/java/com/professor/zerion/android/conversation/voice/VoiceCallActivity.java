@@ -15,6 +15,10 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.SystemClock;
+import android.graphics.Matrix;
+import android.graphics.SurfaceTexture;
+import android.view.Surface;
+import android.view.TextureView;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Chronometer;
@@ -22,6 +26,9 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -45,6 +52,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 	public static final String EXTRA_CALLER_ADDRESS = "caller_address";
 
 	private static final int REQUEST_AUDIO_PERMISSION = 1;
+	private static final int REQUEST_CAMERA_PERMISSION = 2;
 
 	private TextView contactNameText;
 	private TextView callStatusText;
@@ -77,6 +85,23 @@ public class VoiceCallActivity extends AppCompatActivity {
 	private AudioManager audioManager;
 	private Handler handler = new Handler(Looper.getMainLooper());
 	private Ringtone ringtone;
+
+	// Video UI
+	private TextureView remoteVideoSurface;
+	private TextureView localVideoSurface;
+	private View remoteVideoContainer;
+	private View localVideoContainer;
+	private ImageButton videoButton;
+	private ImageButton switchCameraButton;
+	private View videoButtonContainer;
+	private View switchCameraContainer;
+	private View avatarContainer;
+	private boolean isVideoActive = false;
+	private Surface remoteSurface;
+	private Surface localSurface;
+	private Runnable onRemoteSurfaceReady;
+	private boolean autoVideo = false;
+	private boolean pendingVideoAfterPermission = false;
 
 	private final Runnable networkQualityUpdateRunnable = new Runnable() {
 		@Override
@@ -127,6 +152,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 		isIncoming = intent.getBooleanExtra(EXTRA_IS_INCOMING, false);
 		callId = intent.getStringExtra(EXTRA_CALL_ID);
 		String callerAddress = intent.getStringExtra(EXTRA_CALLER_ADDRESS);
+		autoVideo = intent.getBooleanExtra("auto_video", false);
 
 		initViews();
 
@@ -139,6 +165,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 		serviceIntent.putExtra(EXTRA_CONTACT_NAME, contactName);
 		serviceIntent.putExtra(EXTRA_IS_INCOMING, isIncoming);
 		serviceIntent.putExtra(EXTRA_CALL_ID, callId);
+		serviceIntent.putExtra("auto_video", autoVideo);
 		if (callerAddress != null) {
 			serviceIntent.putExtra(EXTRA_CALLER_ADDRESS, callerAddress);
 		}
@@ -150,7 +177,8 @@ public class VoiceCallActivity extends AppCompatActivity {
 			showIncomingCallUI();
 		} else {
 			showActiveCallUI();
-			callStatusText.setText("Connecting via Tor...");
+			callStatusText.setText(autoVideo ?
+					"Video call connecting via Tor..." : "Connecting via Tor...");
 			playDialTone();
 		}
 	}
@@ -178,17 +206,98 @@ public class VoiceCallActivity extends AppCompatActivity {
 
 		contactNameText.setText(contactName != null ? contactName : "Unknown");
 
+		remoteVideoSurface = findViewById(R.id.remote_video_surface);
+		localVideoSurface = findViewById(R.id.local_video_surface);
+		remoteVideoContainer = findViewById(R.id.remote_video_container);
+		localVideoContainer = findViewById(R.id.local_video_container);
+		videoButton = findViewById(R.id.video_button);
+		switchCameraButton = findViewById(R.id.switch_camera_button);
+		videoButtonContainer = findViewById(R.id.video_button_container);
+		switchCameraContainer = findViewById(R.id.switch_camera_container);
+		avatarContainer = findViewById(R.id.avatar_container);
+
+		if (remoteVideoSurface != null) {
+			remoteVideoSurface.setSurfaceTextureListener(
+					new TextureView.SurfaceTextureListener() {
+				@Override
+				public void onSurfaceTextureAvailable(
+						SurfaceTexture st, int width, int height) {
+					remoteSurface = new Surface(st);
+					if (onRemoteSurfaceReady != null) {
+						Runnable cb = onRemoteSurfaceReady;
+						onRemoteSurfaceReady = null;
+						cb.run();
+					}
+				}
+
+				@Override
+				public void onSurfaceTextureSizeChanged(
+						SurfaceTexture st, int width, int height) {
+				}
+
+				@Override
+				public boolean onSurfaceTextureDestroyed(
+						SurfaceTexture st) {
+					remoteSurface = null;
+					return true;
+				}
+
+				@Override
+				public void onSurfaceTextureUpdated(
+						SurfaceTexture st) {
+				}
+			});
+		}
+
+		if (localVideoSurface != null) {
+			localVideoSurface.setSurfaceTextureListener(
+					new TextureView.SurfaceTextureListener() {
+				@Override
+				public void onSurfaceTextureAvailable(
+						SurfaceTexture st, int width, int height) {
+					st.setDefaultBufferSize(
+							VideoEncoder.WIDTH, VideoEncoder.HEIGHT);
+					localSurface = new Surface(st);
+				}
+
+				@Override
+				public void onSurfaceTextureSizeChanged(
+						SurfaceTexture st, int width, int height) {
+				}
+
+				@Override
+				public boolean onSurfaceTextureDestroyed(
+						SurfaceTexture st) {
+					localSurface = null;
+					return true;
+				}
+
+				@Override
+				public void onSurfaceTextureUpdated(
+						SurfaceTexture st) {
+				}
+			});
+		}
+
 		endCallButton.setOnClickListener(v -> endCall());
 		acceptCallButton.setOnClickListener(v -> acceptCall());
 		declineCallButton.setOnClickListener(v -> declineCall());
 		muteButton.setOnClickListener(v -> toggleMute());
 		speakerButton.setOnClickListener(v -> toggleSpeaker());
+
+		if (videoButton != null) {
+			videoButton.setOnClickListener(v -> toggleVideo());
+		}
+		if (switchCameraButton != null) {
+			switchCameraButton.setOnClickListener(v -> switchCamera());
+		}
 	}
 
 	private void showIncomingCallUI() {
 		incomingCallLayout.setVisibility(View.VISIBLE);
 		activeCallLayout.setVisibility(View.GONE);
-		callStatusText.setText("Incoming secure call...");
+		callStatusText.setText(autoVideo ?
+				"Incoming secure video call..." : "Incoming secure call...");
 		playRingtone();
 	}
 
@@ -291,6 +400,9 @@ public class VoiceCallActivity extends AppCompatActivity {
 
 			networkQualityContainer.setVisibility(View.VISIBLE);
 			handler.post(networkQualityUpdateRunnable);
+
+			// Video call is handled automatically by the service —
+			// no manual upgrade needed from the activity
 		});
 	}
 
@@ -357,24 +469,13 @@ public class VoiceCallActivity extends AppCompatActivity {
 	}
 
 	@Override
-	public void onRequestPermissionsResult(int requestCode, String[] permissions,
-			int[] grantResults) {
-		super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-		if (requestCode == REQUEST_AUDIO_PERMISSION) {
-			if (grantResults.length > 0 &&
-					grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-			} else {
-				callStatusText.setText("Microphone permission required");
-				handler.postDelayed(this::finish, 2000);
-			}
-		}
-	}
-
-	@Override
 	protected void onDestroy() {
 		super.onDestroy();
 
 		handler.removeCallbacksAndMessages(null);
+		onRemoteSurfaceReady = null;
+		remoteSurface = null;
+		localSurface = null;
 
 		if (isBound) {
 			if (voiceCallService != null) {
@@ -455,6 +556,218 @@ public class VoiceCallActivity extends AppCompatActivity {
 
 			codecBitrateDisplay.setText(metrics.getCodecBitrateDisplay());
 		});
+	}
+
+	private void toggleVideo() {
+		if (!isBound || voiceCallService == null) return;
+
+		if (voiceCallService.isVideoEnabled()) {
+			voiceCallService.endVideo();
+		} else {
+			if (!hasCameraPermission()) {
+				requestCameraPermission();
+				return;
+			}
+			voiceCallService.resumeVideo();
+		}
+	}
+
+	private void switchCamera() {
+		if (isBound && voiceCallService != null) {
+			voiceCallService.switchCamera();
+			applyLocalVideoTransform();
+		}
+	}
+
+	public Surface getRemoteVideoSurface() {
+		return remoteSurface;
+	}
+
+	public Surface getLocalVideoSurface() {
+		return localSurface;
+	}
+
+	public void getRemoteVideoSurfaceWhenReady(
+			java.util.function.Consumer<Surface> callback) {
+		runOnUiThread(() -> {
+			if (remoteSurface != null) {
+				callback.accept(remoteSurface);
+			} else {
+				onRemoteSurfaceReady = () -> {
+					if (remoteSurface != null) {
+						callback.accept(remoteSurface);
+					}
+				};
+			}
+		});
+	}
+
+	public void onVideoOfferReceived() {
+		runOnUiThread(() -> {
+			new MaterialAlertDialogBuilder(this)
+					.setTitle(R.string.video_call)
+					.setMessage(R.string.video_offer_received)
+					.setPositiveButton(R.string.video_offer_accept,
+							(dialog, which) -> {
+						if (!hasCameraPermission()) {
+							requestCameraPermission();
+							return;
+						}
+						if (isBound && voiceCallService != null) {
+							voiceCallService.acceptVideoOffer();
+						}
+					})
+					.setNegativeButton(R.string.video_offer_reject,
+							(dialog, which) -> {
+						if (isBound && voiceCallService != null) {
+							voiceCallService.rejectVideoOffer();
+						}
+					})
+					.setCancelable(false)
+					.show();
+		});
+	}
+
+	public void onVideoStarted() {
+		runOnUiThread(() -> {
+			isVideoActive = true;
+			if (remoteVideoContainer != null) {
+				remoteVideoContainer.setVisibility(View.VISIBLE);
+				applyRemoteVideoTransform();
+			}
+			if (localVideoContainer != null) {
+				localVideoContainer.setVisibility(View.VISIBLE);
+				applyLocalVideoTransform();
+			}
+			if (avatarContainer != null) {
+				avatarContainer.setVisibility(View.GONE);
+			}
+			if (videoButton != null) {
+				videoButton.setImageResource(R.drawable.ic_videocam_off);
+			}
+			if (switchCameraContainer != null) {
+				switchCameraContainer.setVisibility(View.VISIBLE);
+			}
+		});
+	}
+
+	public void onVideoStopped() {
+		runOnUiThread(() -> {
+			isVideoActive = false;
+			if (remoteVideoContainer != null) {
+				remoteVideoContainer.setVisibility(View.GONE);
+			}
+			if (localVideoContainer != null) {
+				localVideoContainer.setVisibility(View.GONE);
+			}
+			if (avatarContainer != null) {
+				avatarContainer.setVisibility(View.VISIBLE);
+			}
+			if (videoButton != null) {
+				videoButton.setImageResource(R.drawable.ic_videocam);
+			}
+			if (switchCameraContainer != null) {
+				switchCameraContainer.setVisibility(View.GONE);
+			}
+		});
+	}
+
+	private void applyVideoTransform(TextureView tv, int rotationDegrees,
+			boolean mirror) {
+		if (tv == null || tv.getWidth() == 0 || tv.getHeight() == 0) return;
+
+		int viewWidth = tv.getWidth();
+		int viewHeight = tv.getHeight();
+		float centerX = viewWidth / 2f;
+		float centerY = viewHeight / 2f;
+
+		Matrix matrix = new Matrix();
+		matrix.postRotate(rotationDegrees, centerX, centerY);
+
+		if (rotationDegrees % 180 != 0) {
+			float scaleX = (float) viewHeight / viewWidth;
+			float scaleY = (float) viewWidth / viewHeight;
+			matrix.postScale(scaleX, scaleY, centerX, centerY);
+		}
+
+		if (mirror) {
+			matrix.postScale(-1f, 1f, centerX, centerY);
+		}
+
+		tv.setTransform(matrix);
+	}
+
+	private void applyRemoteVideoTransform() {
+		if (remoteVideoSurface == null) return;
+		remoteVideoSurface.post(() ->
+				applyVideoTransform(remoteVideoSurface, 270, false));
+	}
+
+	private void applyLocalVideoTransform() {
+		if (localVideoSurface == null || !isBound
+				|| voiceCallService == null) return;
+		int sensorOrientation =
+				voiceCallService.getCameraSensorOrientation();
+		boolean isFront = voiceCallService.isCameraFront();
+		localVideoSurface.post(() ->
+				applyVideoTransform(localVideoSurface,
+						sensorOrientation, isFront));
+	}
+
+	public void onVideoRejected() {
+		runOnUiThread(() -> {
+			if (videoButton != null) {
+				videoButton.setImageResource(R.drawable.ic_videocam);
+			}
+		});
+	}
+
+	public void showVideoError(String message) {
+		runOnUiThread(() -> {
+			Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+		});
+	}
+
+	private boolean hasCameraPermission() {
+		return ContextCompat.checkSelfPermission(this,
+				Manifest.permission.CAMERA)
+				== PackageManager.PERMISSION_GRANTED;
+	}
+
+	private void requestCameraPermission() {
+		ActivityCompat.requestPermissions(this,
+				new String[]{Manifest.permission.CAMERA},
+				REQUEST_CAMERA_PERMISSION);
+	}
+
+	@Override
+	public void onRequestPermissionsResult(int requestCode,
+			String[] permissions, int[] grantResults) {
+		super.onRequestPermissionsResult(requestCode, permissions,
+				grantResults);
+		if (requestCode == REQUEST_AUDIO_PERMISSION) {
+			if (grantResults.length > 0 &&
+					grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+			} else {
+				callStatusText.setText("Microphone permission required");
+				handler.postDelayed(this::finish, 2000);
+			}
+		} else if (requestCode == REQUEST_CAMERA_PERMISSION) {
+			if (grantResults.length > 0 &&
+					grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+				// Retry video after permission granted
+				if (pendingVideoAfterPermission) {
+					pendingVideoAfterPermission = false;
+					if (isBound && voiceCallService != null) {
+						voiceCallService.requestVideoUpgrade();
+					}
+				} else {
+					toggleVideo();
+				}
+			} else {
+				pendingVideoAfterPermission = false;
+			}
+		}
 	}
 
 	@Override

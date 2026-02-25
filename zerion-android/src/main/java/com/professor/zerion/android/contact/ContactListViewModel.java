@@ -42,10 +42,11 @@ class ContactListViewModel extends ContactsViewModel {
 			AuthorManager authorManager,
 			ConversationManager conversationManager,
 			ConnectionRegistry connectionRegistry, EventBus eventBus,
-			AndroidNotificationManager notificationManager) {
+			AndroidNotificationManager notificationManager,
+			PinnedContactManager pinnedContactManager) {
 		super(application, dbExecutor, lifecycleManager, db, androidExecutor,
 				contactManager, authorManager, conversationManager,
-				connectionRegistry, eventBus);
+				connectionRegistry, eventBus, pinnedContactManager);
 		this.notificationManager = notificationManager;
 	}
 

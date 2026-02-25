@@ -6,6 +6,8 @@ import android.net.Uri;
 
 import com.professor.zerion.android.api.AndroidNotificationManager;
 
+import org.briarproject.bramble.api.contact.ContactId;
+
 import javax.inject.Inject;
 
 import androidx.annotation.Nullable;
@@ -38,8 +40,21 @@ public class NotificationCleanupService extends IntentService {
 	protected void onHandleIntent(@Nullable Intent i) {
 		if (i == null || i.getData() == null) return;
 		Uri uri = i.getData();
+		String uriStr = uri.toString();
+		String contactUriStr = CONTACT_URI.toString();
 		if (uri.equals(CONTACT_URI)) {
 			notificationManager.clearAllContactNotifications();
+		} else if (uriStr.startsWith(contactUriStr + "/")) {
+			// Per-contact swipe dismiss
+			String idStr = uri.getLastPathSegment();
+			if (idStr != null) {
+				try {
+					int contactInt = Integer.parseInt(idStr);
+					notificationManager.clearContactNotification(
+							new ContactId(contactInt));
+				} catch (NumberFormatException ignored) {
+				}
+			}
 		} else if (uri.equals(GROUP_URI)) {
 			notificationManager.clearAllGroupMessageNotifications();
 		} else if (uri.equals(CONTACT_ADDED_URI)) {

@@ -46,6 +46,9 @@ public class ContactListAdapter extends
 			if (c1.isConnected() != c2.isConnected()) {
 				return false;
 			}
+			if (c1.isPinned() != c2.isPinned()) {
+				return false;
+			}
 			if (!NullSafety.equals(c1.getContact().getAlias(),
 					c2.getContact().getAlias())) {
 				return false;

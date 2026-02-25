@@ -122,6 +122,13 @@
 	<color name="zerion_dark_bg">#0F1014</color> <!-- Dark charcoal background -->
 	<color name="zerion_card_bg">#1C1D22</color> <!-- Slightly elevated surfaces -->
 
+	<!-- AMOLED Pure Black -->
+	<color name="zerion_amoled_bg">#000000</color>
+	<color name="zerion_amoled_card">#0A0A0A</color>
+	<color name="zerion_amoled_surface">#0D0D0D</color>
+	<color name="zerion_amoled_msg_in">#0A0A0A</color>
+	<color name="zerion_amoled_msg_out">#1A2332</color>
+
 	<!-- Primary Brand Colors - Balanced and professional -->
 	<color name="zerion_primary_accent">#3B82F6</color> <!-- Professional blue accent -->
 	<color name="zerion_secondary_accent">#2563EB</color> <!-- Deeper blue complement -->

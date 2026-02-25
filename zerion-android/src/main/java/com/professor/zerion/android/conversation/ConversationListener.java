@@ -27,7 +27,8 @@ interface ConversationListener {
 
 	void onMessageLongClick(ConversationItem item);
 
-	
+	void onReactionClicked(ConversationItem item);
+
 	List<AttachmentItem> loadAttachmentsForItem(ConversationMessageItem item);
 
 }

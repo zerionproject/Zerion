@@ -9,4 +9,7 @@ public interface MessageTypes {
 	int ATTACHMENT_CHUNK = 4;
 	int SENDER_KEY_DISTRIBUTION = 5;
 	int REKEY_REQUEST = 6;
+	int MESSAGE_REACTION = 7;
+	int TYPING_INDICATOR = 8;
+	int LINK_PREVIEW_MESSAGE = 9;
 }

@@ -1,6 +1,7 @@
 package com.professor.zerion.android.contact;
 
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.professor.zerion.R;
@@ -20,11 +21,13 @@ class ContactListItemViewHolder extends ContactItemViewHolder<ContactListItem> {
 
 	private final TextView unread;
 	private final TextView date;
+	private final ImageView pinIcon;
 
 	ContactListItemViewHolder(View v) {
 		super(v);
 		unread = v.findViewById(R.id.unreadCountView);
 		date = v.findViewById(R.id.dateView);
+		pinIcon = v.findViewById(R.id.pinIcon);
 	}
 
 	@Override
@@ -47,6 +50,8 @@ class ContactListItemViewHolder extends ContactItemViewHolder<ContactListItem> {
 			long timestamp = item.getTimestamp();
 			date.setText(formatDate(date.getContext(), timestamp));
 		}
+
+		pinIcon.setVisibility(item.isPinned() ? View.VISIBLE : View.GONE);
 	}
 
 }

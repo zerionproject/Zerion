@@ -3,11 +3,25 @@
 	xmlns:app="http://schemas.android.com/apk/res-auto"
 	xmlns:tools="http://schemas.android.com/tools">
 
+	<item
+		android:id="@+id/action_search"
+		android:icon="@drawable/ic_search"
+		android:title="@string/search"
+		app:actionViewClass="androidx.appcompat.widget.SearchView"
+		app:showAsAction="collapseActionView|ifRoom" />
+
 	<!-- P2P Call Action -->
 	<item
 		android:id="@+id/action_voice_call"
 		android:icon="@drawable/ic_phone"
 		android:title="Voice Call"
+		app:showAsAction="ifRoom" />
+
+	<!-- Video Call Action -->
+	<item
+		android:id="@+id/action_video_call"
+		android:icon="@drawable/ic_videocam"
+		android:title="@string/video_call"
 		app:showAsAction="ifRoom" />
 
 	<item

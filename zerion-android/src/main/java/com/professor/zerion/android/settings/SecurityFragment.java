@@ -39,6 +39,8 @@ public class SecurityFragment extends Fragment {
 	public static final String PREF_SCREEN_LOCK = "pref_key_lock";
 	public static final String PREF_SCREEN_LOCK_TIMEOUT = "pref_key_lock_timeout";
 	public static final String PREF_SCREENSHOT_PROTECTION = "pref_screenshot_protection";
+	public static final String PREF_TYPING_INDICATORS = "pref_typing_indicators";
+	public static final String PREF_LINK_PREVIEWS = "pref_link_previews";
 
 	@Inject
 	ViewModelProvider.Factory viewModelFactory;
@@ -56,6 +58,8 @@ public class SecurityFragment extends Fragment {
 
 	private SwitchMaterial lockSwitch;
 	private SwitchMaterial screenshotProtectionSwitch;
+	private SwitchMaterial typingIndicatorsSwitch;
+	private SwitchMaterial linkPreviewsSwitch;
 	private MaterialCardView lockTimeoutCard;
 	private TextView lockTimeoutValue;
 	private MaterialCardView changePasswordCard;
@@ -117,6 +121,28 @@ public class SecurityFragment extends Fragment {
 
 		lockTimeoutCard.setOnClickListener(v -> showTimeoutDialog());
 
+		typingIndicatorsSwitch = view.findViewById(R.id.typing_indicators_switch);
+		boolean typingEnabled = uiPrefs.getBoolean(PREF_TYPING_INDICATORS, true);
+		typingIndicatorsSwitch.setChecked(typingEnabled);
+		typingIndicatorsSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+			if (buttonView.isPressed()) {
+				uiPrefs.edit().putBoolean(PREF_TYPING_INDICATORS, isChecked).apply();
+			}
+		});
+
+		linkPreviewsSwitch = view.findViewById(R.id.link_previews_switch);
+		if (linkPreviewsSwitch != null) {
+			boolean linkPreviewsEnabled = uiPrefs.getBoolean(
+					PREF_LINK_PREVIEWS, true);
+			linkPreviewsSwitch.setChecked(linkPreviewsEnabled);
+			linkPreviewsSwitch.setOnCheckedChangeListener(
+					(buttonView, isChecked) -> {
+				if (buttonView.isPressed()) {
+					uiPrefs.edit().putBoolean(PREF_LINK_PREVIEWS,
+							isChecked).apply();
+				}
+			});
+		}
 
 		changePasswordCard.setOnClickListener(v -> {
 			Intent intent = new Intent(requireContext(), ChangePasswordActivity.class);

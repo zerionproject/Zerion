@@ -84,6 +84,40 @@ class VoiceSignalFactoryImpl implements VoiceSignalFactory {
 				callId, null, null);
 	}
 
+	@Override
+	public VoiceSignal createVideoOffer(GroupId groupId, long timestamp,
+			String callId, String payload) throws FormatException {
+		validateCallId(callId);
+		validatePayload(payload);
+		return createSignal(groupId, timestamp, VoiceSignalType.VIDEO_OFFER,
+				callId, payload, null);
+	}
+
+	@Override
+	public VoiceSignal createVideoAccept(GroupId groupId, long timestamp,
+			String callId, String payload) throws FormatException {
+		validateCallId(callId);
+		validatePayload(payload);
+		return createSignal(groupId, timestamp, VoiceSignalType.VIDEO_ACCEPT,
+				callId, payload, null);
+	}
+
+	@Override
+	public VoiceSignal createVideoReject(GroupId groupId, long timestamp,
+			String callId) throws FormatException {
+		validateCallId(callId);
+		return createSignal(groupId, timestamp, VoiceSignalType.VIDEO_REJECT,
+				callId, null, null);
+	}
+
+	@Override
+	public VoiceSignal createVideoEnd(GroupId groupId, long timestamp,
+			String callId) throws FormatException {
+		validateCallId(callId);
+		return createSignal(groupId, timestamp, VoiceSignalType.VIDEO_END,
+				callId, null, null);
+	}
+
 	private VoiceSignal createSignal(GroupId groupId, long timestamp,
 			VoiceSignalType signalType, String callId,
 			@Nullable String payload, @Nullable Long durationMs)

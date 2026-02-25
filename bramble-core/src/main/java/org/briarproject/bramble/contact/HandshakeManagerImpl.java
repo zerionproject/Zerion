@@ -29,6 +29,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.annotation.concurrent.Immutable;
@@ -263,6 +264,8 @@ class HandshakeManagerImpl implements HandshakeManager {
 					kemCiphertext, kemSecret, alice);
 		} catch (GeneralSecurityException e) {
 			throw new FormatException();
+		} finally {
+			Arrays.fill(kemSecret, (byte) 0);
 		}
 
 		byte[] ourProof = handshakeCrypto.proveOwnership(masterKey, alice);

@@ -23,6 +23,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.PowerManager;
+import android.widget.Toast;
 
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
@@ -91,7 +92,7 @@ import java.util.Queue;
 import android.media.audiofx.AcousticEchoCanceler;
 import android.media.audiofx.NoiseSuppressor;
 import android.media.audiofx.AutomaticGainControl;
-
+import android.view.Surface;
 
 import com.professor.zerion.android.AndroidComponent;
 import com.professor.zerion.android.ZerionApplication;
@@ -214,6 +215,15 @@ public class VoiceCallService extends Service implements EventListener {
 	private byte[] localEphemeralSecret;
 	private byte[] remoteEphemeralSecret;
 
+	// Video call state
+	private volatile boolean isVideoCall = false;
+	private volatile boolean videoEnabled = false;
+	private volatile boolean videoRequested = false;
+	private VoiceCallCrypto.VideoKeys videoKeys;
+	private VideoStreamManager videoStreamManager;
+	private VideoCameraManager videoCameraManager;
+	private DuplexTransportConnection videoTorConnection;
+
 	public class LocalBinder extends Binder {
 		public VoiceCallService getService() {
 			return VoiceCallService.this;
@@ -276,6 +286,7 @@ public class VoiceCallService extends Service implements EventListener {
 			isIncoming = intent.getBooleanExtra(
 					VoiceCallActivity.EXTRA_IS_INCOMING, false);
 			callId = intent.getStringExtra(VoiceCallActivity.EXTRA_CALL_ID);
+			isVideoCall = intent.getBooleanExtra("auto_video", false);
 
 			if (isIncoming) {
 				SecretKey heldKey = VoiceCallKeyHolder.consumeKey();
@@ -323,14 +334,18 @@ public class VoiceCallService extends Service implements EventListener {
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
 			boolean hasMicPermission = ContextCompat.checkSelfPermission(this,
 					Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED;
+			boolean hasCamPermission = ContextCompat.checkSelfPermission(this,
+					Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
 
-			if (hasMicPermission) {
-				startForeground(NOTIFICATION_ID, notification,
-						ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE);
-			} else {
-				startForeground(NOTIFICATION_ID, notification,
-						ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+			int serviceType = ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE;
+			if (hasMicPermission && hasCamPermission) {
+				serviceType = ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+						| ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA;
+			} else if (hasMicPermission) {
+				serviceType = ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE;
 			}
+
+			startForeground(NOTIFICATION_ID, notification, serviceType);
 		} else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
 			startForeground(NOTIFICATION_ID, notification,
 					ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE);
@@ -425,6 +440,11 @@ public class VoiceCallService extends Service implements EventListener {
 			}
 
 			try {
+				stopVideoStreaming();
+			} catch (Exception e) {
+			}
+
+			try {
 				stopAudioStreaming();
 			} catch (Exception e) {
 			}
@@ -434,6 +454,7 @@ public class VoiceCallService extends Service implements EventListener {
 			try {
 				if (callId != null) {
 					connectionManager.closeEndpoint(callId);
+					connectionManager.closeEndpoint(callId + "-video");
 				}
 			} catch (Exception e) {
 			}
@@ -458,14 +479,22 @@ public class VoiceCallService extends Service implements EventListener {
 			VoiceCallConnectionHandler handler = new VoiceCallConnectionHandler() {
 				@Override
 				public void handleConnection(DuplexTransportConnection conn) {
-					torConnection = conn;
-
-					if (callState == CallState.CONNECTING || callState == CallState.RINGING) {
+					if (callState == CallState.CONNECTED && videoRequested) {
+						// Second connection on existing endpoint = video
+						videoTorConnection = conn;
+						deriveVideoEncryptionKeys();
+						startVideoStreamingOnConnection();
+						videoEnabled = true;
+						updateNotification();
+					} else if (callState == CallState.CONNECTING ||
+							callState == CallState.RINGING) {
+						torConnection = conn;
 						cancelCallSetupTimeout();
 						callState = CallState.CONNECTED;
 						callStartTime = System.currentTimeMillis();
 						updateCallActivity();
 						startAudioStreaming();
+						autoStartVideoIfNeeded();
 					}
 				}
 			};
@@ -540,6 +569,7 @@ public class VoiceCallService extends Service implements EventListener {
 				}
 				updateCallActivity();
 				startAudioStreaming();
+				autoStartVideoIfNeeded();
 
 			} catch (Exception e) {
 				String errorMessage = "Failed to connect to contact";
@@ -750,7 +780,7 @@ public class VoiceCallService extends Service implements EventListener {
 
 							dataOut.writeInt(encryptedAudio.length);
 							dataOut.writeLong(sendSequenceNumber.getAndIncrement());
-							dataOut.writeLong(System.currentTimeMillis());
+							dataOut.writeLong(0L);
 							dataOut.writeLong(checksum);
 							dataOut.write(encryptedAudio);
 							dataOut.flush();
@@ -829,10 +859,18 @@ public class VoiceCallService extends Service implements EventListener {
 						}
 
 						long sequence = dataIn.readLong();
-						long timestamp = dataIn.readLong();
+						dataIn.readLong();
 						long receivedChecksum = dataIn.readLong();
 
-						lastReceiveTime = System.currentTimeMillis();
+						long now = System.currentTimeMillis();
+						if (lastReceiveTime > 0) {
+							long interArrival = now - lastReceiveTime;
+							long excess = interArrival - OPUS_FRAME_DURATION_MS;
+							if (excess > 0 && excess < 5000) {
+								networkMetrics.recordLatency(excess);
+							}
+						}
+						lastReceiveTime = now;
 
 						if (encFrameSize > MAX_ENCRYPTED_FRAME_SIZE) {
 							continue;
@@ -845,12 +883,6 @@ public class VoiceCallService extends Service implements EventListener {
 						totalBytesReceived += encFrameSize + 28;
 						totalFramesReceived++;
 						networkMetrics.recordPacketReceived(sequence);
-
-						long currentTime = System.currentTimeMillis();
-						long latency = currentTime - timestamp;
-						if (latency > 0 && latency < 10000) {
-							networkMetrics.recordLatency(latency);
-						}
 
 						java.util.zip.CRC32 crc32 = new java.util.zip.CRC32();
 						crc32.update(encryptedFrame, 0, encFrameSize);
@@ -1115,6 +1147,7 @@ public class VoiceCallService extends Service implements EventListener {
 							updateCallActivity();
 							deriveAudioEncryptionKeys();
 							startAudioStreaming();
+							autoStartVideoIfNeeded();
 						};
 						connectionManager.createIncomingEndpoint(
 								callId, reconnectKey, alice, handler);
@@ -1131,6 +1164,7 @@ public class VoiceCallService extends Service implements EventListener {
 						updateCallActivity();
 						deriveAudioEncryptionKeys();
 						startAudioStreaming();
+						autoStartVideoIfNeeded();
 					} else {
 						isReconnecting = false;
 						handleConnectionError();
@@ -1198,6 +1232,7 @@ public class VoiceCallService extends Service implements EventListener {
 			Arrays.fill(remoteEphemeralSecret, (byte) 0);
 			remoteEphemeralSecret = null;
 		}
+		zeroizeVideoKeys();
 		synchronized (jbLock) {
 			Arrays.fill(sharedJitterBuffer, (byte) 0);
 			jbWritePos = 0;
@@ -1302,6 +1337,9 @@ public class VoiceCallService extends Service implements EventListener {
 		if (localEphemeralSecret != null) {
 			payload = encodedKey + "|" + bytesToHex(localEphemeralSecret);
 		}
+		if (isVideoCall) {
+			payload = payload + "|VIDEO";
+		}
 		sendVoiceSignal(VoiceSignalType.CALL_OFFER, payload);
 	}
 
@@ -1378,6 +1416,22 @@ public class VoiceCallService extends Service implements EventListener {
 						signal = voiceSignalFactory.createCallBusy(
 								groupId, timestamp, callId);
 						break;
+					case VIDEO_OFFER:
+						signal = voiceSignalFactory.createVideoOffer(
+								groupId, timestamp, callId, payload);
+						break;
+					case VIDEO_ACCEPT:
+						signal = voiceSignalFactory.createVideoAccept(
+								groupId, timestamp, callId, payload);
+						break;
+					case VIDEO_REJECT:
+						signal = voiceSignalFactory.createVideoReject(
+								groupId, timestamp, callId);
+						break;
+					case VIDEO_END:
+						signal = voiceSignalFactory.createVideoEnd(
+								groupId, timestamp, callId);
+						break;
 					default:
 						handleSignalingFailure("Unknown signal type: " + signalType);
 						return;
@@ -1439,6 +1493,7 @@ public class VoiceCallService extends Service implements EventListener {
 
 			case CALL_REJECT:
 				callState = CallState.DISCONNECTED;
+				zeroizeKeyMaterial();
 				updateCallActivity();
 				stopSelf();
 				break;
@@ -1539,7 +1594,8 @@ public class VoiceCallService extends Service implements EventListener {
 
 		String title = isIncoming && callState == CallState.RINGING ?
 				"Incoming call" : "Ongoing call";
-		String text = "Secure voice call";
+		String text = videoEnabled || videoRequested || isVideoCall ?
+				"Secure video call" : "Secure voice call";
 
 		NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
 				.setContentTitle(title)
@@ -1587,6 +1643,13 @@ public class VoiceCallService extends Service implements EventListener {
 		}
 	}
 
+	private void updateNotification() {
+		NotificationManager nm = getSystemService(NotificationManager.class);
+		if (nm != null) {
+			nm.notify(NOTIFICATION_ID, createNotification());
+		}
+	}
+
 	@Override
 	public IBinder onBind(Intent intent) {
 		return binder;
@@ -1606,7 +1669,17 @@ public class VoiceCallService extends Service implements EventListener {
 			mainHandler.removeCallbacksAndMessages(null);
 		}
 
+		try { stopVideoStreaming(); } catch (Exception ignored) {}
+
 		stopAudioStreaming();
+
+		try {
+			if (callId != null && connectionManager != null) {
+				connectionManager.closeEndpoint(callId);
+				connectionManager.closeEndpoint(callId + "-video");
+			}
+		} catch (Exception ignored) {}
+
 		if (proximityWakeLock != null && proximityWakeLock.isHeld()) {
 			proximityWakeLock.release();
 		}
@@ -1704,6 +1777,7 @@ public class VoiceCallService extends Service implements EventListener {
 					return;
 				}
 				callState = CallState.DISCONNECTED;
+				zeroizeKeyMaterial();
 				updateCallActivity();
 				stopSelf();
 				break;
@@ -1720,6 +1794,7 @@ public class VoiceCallService extends Service implements EventListener {
 					return;
 				}
 				callState = CallState.DISCONNECTED;
+				zeroizeKeyMaterial();
 				updateCallActivity();
 				if (callActivity != null) {
 					callActivity.onCallFailed("Contact is busy");
@@ -1727,9 +1802,398 @@ public class VoiceCallService extends Service implements EventListener {
 				stopSelf();
 				break;
 
+			case VIDEO_OFFER:
+				if (callId == null || !callId.equals(signalCallId)) {
+					return;
+				}
+				handleVideoOffer(header);
+				break;
+
+			case VIDEO_ACCEPT:
+				if (callId == null || !callId.equals(signalCallId)) {
+					return;
+				}
+				handleVideoAccept(header);
+				break;
+
+			case VIDEO_REJECT:
+				if (callId == null || !callId.equals(signalCallId)) {
+					return;
+				}
+				videoRequested = false;
+				if (callActivity != null) {
+					callActivity.onVideoRejected();
+				}
+				break;
+
+			case VIDEO_END:
+				if (callId == null || !callId.equals(signalCallId)) {
+					return;
+				}
+				stopVideoStreaming();
+				break;
+
 			default:
 				break;
 		}
+	}
+
+	// ---- Video call methods ----
+
+	private void handleVideoOffer(VoiceSignalHeader header) {
+		String payload = header.getPayload();
+		if (payload == null || callState != CallState.CONNECTED) return;
+		videoRequested = true;
+		mainHandler.post(() -> {
+			if (callActivity != null) {
+				callActivity.onVideoOfferReceived();
+			}
+		});
+	}
+
+	private void handleVideoAccept(VoiceSignalHeader header) {
+		if (callState != CallState.CONNECTED) return;
+
+		// The voice call CALLER initiates the video TCP connection
+		// to the RECEIVER's existing voice hidden service.
+		if (!isIncoming && lastRemoteOnion != null) {
+			connectVideoToRemote(lastRemoteOnion);
+		}
+		// If we are the receiver, the caller will connect to our
+		// existing voice hidden service — the handler routes it to video
+	}
+
+	private void connectVideoToRemote(String remoteOnion) {
+		executorService.execute(() -> {
+			try {
+				videoTorConnection = connectionManager.connectToRemote(
+						callId + "-video", remoteOnion,
+						voiceCallKey, !isIncoming);
+
+				if (videoTorConnection == null) {
+					mainHandler.post(() -> {
+						if (callActivity != null) {
+							callActivity.showVideoError(
+									"Video connection failed: null connection");
+						}
+					});
+					return;
+				}
+
+				deriveVideoEncryptionKeys();
+				startVideoStreamingOnConnection();
+				videoEnabled = true;
+				updateNotification();
+			} catch (Exception e) {
+				mainHandler.post(() -> {
+					if (callActivity != null) {
+						callActivity.showVideoError(
+								"Video connection failed: " + e.getMessage());
+					}
+				});
+			}
+		});
+	}
+
+	/**
+	 * If this is a video call (isVideoCall), automatically set up video
+	 * after audio connects. The caller connects to the receiver's existing
+	 * hidden service for the video TCP stream. The receiver's handler
+	 * routes the second connection to video.
+	 */
+	private void autoStartVideoIfNeeded() {
+		if (!isVideoCall || videoEnabled || videoRequested) return;
+		videoRequested = true;
+		updateNotification();
+
+		if (!isIncoming && lastRemoteOnion != null) {
+			// CALLER: connect to receiver's hidden service for video.
+			// Brief delay so audio handshake settles first.
+			mainHandler.postDelayed(() -> {
+				if (callState == CallState.CONNECTED && !videoEnabled) {
+					connectVideoToRemote(lastRemoteOnion);
+				}
+			}, 1500);
+		}
+		// RECEIVER: the handler in createHiddenService() already routes
+		// the caller's second connection to video (callState == CONNECTED
+		// && videoRequested).
+	}
+
+	public void requestVideoUpgrade() {
+		if (callState != CallState.CONNECTED || videoEnabled) {
+			mainHandler.post(() -> {
+				if (callActivity != null) {
+					callActivity.showVideoError("Cannot start video: call not connected");
+				}
+			});
+			return;
+		}
+		videoRequested = true;
+		updateNotification();
+
+		// No new rendezvous endpoint needed — reuse voice hidden service.
+		// Send VIDEO_OFFER so the peer knows we want video.
+		sendVoiceSignal(VoiceSignalType.VIDEO_OFFER, "REQUEST");
+	}
+
+	public void acceptVideoOffer() {
+		if (callState != CallState.CONNECTED) return;
+		videoRequested = true;
+
+		// Send VIDEO_ACCEPT so the caller side knows to connect.
+		// The voice call CALLER always initiates the video TCP connection
+		// to the RECEIVER's existing hidden service.
+		sendVoiceSignal(VoiceSignalType.VIDEO_ACCEPT, "ACCEPT");
+
+		// If WE are the voice call caller, WE connect to the peer
+		if (!isIncoming && lastRemoteOnion != null) {
+			connectVideoToRemote(lastRemoteOnion);
+		}
+		// If we are the receiver, the caller will connect to our
+		// existing voice hidden service — the handler routes it to video
+	}
+
+	public void rejectVideoOffer() {
+		videoRequested = false;
+		sendVoiceSignal(VoiceSignalType.VIDEO_REJECT, null);
+	}
+
+	public void endVideo() {
+		if (!videoEnabled) return;
+		videoEnabled = false;
+		updateNotification();
+
+		// Pause camera+encoder but keep Tor connection and decoder alive
+		if (videoStreamManager != null) {
+			videoStreamManager.pauseSending();
+		}
+
+		mainHandler.post(() -> {
+			if (callActivity != null) {
+				callActivity.onVideoStopped();
+			}
+		});
+	}
+
+	public void resumeVideo() {
+		if (videoEnabled || callState != CallState.CONNECTED) return;
+		if (videoStreamManager == null || !videoStreamManager.isRunning()) {
+			// Stream was fully torn down — need new connection
+			requestVideoUpgrade();
+			return;
+		}
+
+		try {
+			// Set preview surface before restarting camera
+			if (callActivity != null) {
+				Surface preview = callActivity.getLocalVideoSurface();
+				if (preview != null) {
+					videoStreamManager.setPreviewSurface(preview);
+				}
+			}
+			videoStreamManager.resumeSending(this);
+			videoEnabled = true;
+			updateNotification();
+			mainHandler.post(() -> {
+				if (callActivity != null) {
+					callActivity.onVideoStarted();
+				}
+			});
+		} catch (Exception e) {
+			mainHandler.post(() -> {
+				if (callActivity != null) {
+					callActivity.showVideoError(
+							"Camera restart failed");
+				}
+			});
+		}
+	}
+
+	private void deriveVideoEncryptionKeys() {
+		if (voiceCallKey == null) return;
+		boolean alice = !isIncoming;
+		videoKeys = voiceCallCrypto.deriveVideoKeys(voiceCallKey, alice);
+	}
+
+	private void upgradeForegroundForVideo() {
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+			boolean hasMicPermission = ContextCompat.checkSelfPermission(this,
+					Manifest.permission.RECORD_AUDIO)
+					== PackageManager.PERMISSION_GRANTED;
+			boolean hasCamPermission = ContextCompat.checkSelfPermission(this,
+					Manifest.permission.CAMERA)
+					== PackageManager.PERMISSION_GRANTED;
+			if (hasMicPermission && hasCamPermission) {
+				Notification notification = createNotification();
+				startForeground(NOTIFICATION_ID, notification,
+						ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+								| ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA);
+			}
+		} else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+			boolean hasCamPermission = ContextCompat.checkSelfPermission(this,
+					Manifest.permission.CAMERA)
+					== PackageManager.PERMISSION_GRANTED;
+			if (hasCamPermission) {
+				Notification notification = createNotification();
+				startForeground(NOTIFICATION_ID, notification,
+						ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+								| ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA);
+			}
+		}
+	}
+
+	private void startVideoStreamingOnConnection() {
+		if (videoTorConnection == null || videoKeys == null) {
+			mainHandler.post(() -> {
+				if (callActivity != null) {
+					callActivity.showVideoError(videoTorConnection == null ?
+							"Video: no Tor connection" :
+							"Video: encryption keys not derived");
+				}
+			});
+			return;
+		}
+
+		upgradeForegroundForVideo();
+
+		try {
+			videoStreamManager = new VideoStreamManager();
+			videoStreamManager.setStateCallback(
+					new VideoStreamManager.VideoStateCallback() {
+				@Override
+				public void onVideoStarted() {}
+
+				@Override
+				public void onVideoStopped() {}
+
+				@Override
+				public void onVideoError(String reason) {
+					mainHandler.post(() -> {
+						if (callActivity != null) {
+							callActivity.showVideoError(
+									"Camera error: " + reason);
+						}
+					});
+				}
+			});
+			videoStreamManager.initKeys(
+					videoKeys.txKey.getBytes(),
+					videoKeys.rxKey.getBytes());
+
+			// Set local preview surface before starting camera
+			if (callActivity != null) {
+				Surface preview = callActivity.getLocalVideoSurface();
+				if (preview != null) {
+					videoStreamManager.setPreviewSurface(preview);
+				}
+			}
+
+			OutputStream videoOut =
+					videoTorConnection.getWriter().getOutputStream();
+			videoStreamManager.startSending(this, videoOut);
+
+			// Make surfaces visible FIRST, then wait for surface readiness
+			mainHandler.post(() -> {
+				if (callActivity != null) {
+					callActivity.onVideoStarted();
+					callActivity.getRemoteVideoSurfaceWhenReady(surface -> {
+						if (videoStreamManager == null ||
+								videoTorConnection == null) return;
+						try {
+							InputStream videoIn =
+									videoTorConnection.getReader()
+											.getInputStream();
+							videoStreamManager.startReceiving(
+									videoIn, surface);
+						} catch (Exception e) {
+							stopVideoStreaming();
+						}
+					});
+				}
+			});
+		} catch (Exception e) {
+			mainHandler.post(() -> {
+				if (callActivity != null) {
+					callActivity.showVideoError(
+							"Video streaming failed: " + e.getMessage());
+				}
+			});
+			stopVideoStreaming();
+		}
+	}
+
+	private void stopVideoStreaming() {
+		videoEnabled = false;
+		videoRequested = false;
+
+		if (videoStreamManager != null) {
+			try {
+				videoStreamManager.stop();
+			} catch (Exception ignored) {}
+			videoStreamManager = null;
+		}
+		if (videoCameraManager != null) {
+			try {
+				videoCameraManager.stop();
+			} catch (Exception ignored) {}
+			videoCameraManager = null;
+		}
+		if (videoTorConnection != null) {
+			try {
+				videoTorConnection.getReader().dispose(false, true);
+			} catch (Exception ignored) {}
+			try {
+				videoTorConnection.getWriter().dispose(false);
+			} catch (Exception ignored) {}
+			videoTorConnection = null;
+		}
+		try {
+			zeroizeVideoKeys();
+		} catch (Exception ignored) {}
+
+		mainHandler.post(() -> {
+			if (callActivity != null) {
+				callActivity.onVideoStopped();
+			}
+		});
+	}
+
+	private void zeroizeVideoKeys() {
+		if (videoKeys != null) {
+			Arrays.fill(videoKeys.txKey.getBytes(), (byte) 0);
+			Arrays.fill(videoKeys.rxKey.getBytes(), (byte) 0);
+			videoKeys = null;
+		}
+	}
+
+	public boolean isVideoEnabled() {
+		return videoEnabled;
+	}
+
+	public boolean isVideoRequested() {
+		return videoRequested;
+	}
+
+	public void switchCamera() {
+		if (videoStreamManager != null && videoEnabled
+				&& !videoStreamManager.isSendingPaused()) {
+			videoStreamManager.switchCamera(this);
+		}
+	}
+
+	public int getCameraSensorOrientation() {
+		if (videoStreamManager != null) {
+			return videoStreamManager.getCameraSensorOrientation();
+		}
+		return 270; // Default front camera sensor orientation
+	}
+
+	public boolean isCameraFront() {
+		if (videoStreamManager != null) {
+			return videoStreamManager.isCameraFront();
+		}
+		return true; // Default to front camera
 	}
 
 	private static String bytesToHex(byte[] bytes) {

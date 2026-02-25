@@ -58,6 +58,8 @@ import static com.professor.zerion.android.api.AndroidNotificationManager.PREF_N
 public class NotificationsFragment extends Fragment {
 
 	public static final String PREF_NOTIFY_SIGN_IN = "pref_key_notify_sign_in";
+	public static final String PREF_NOTIFY_QUICK_REPLY =
+			"pref_key_notify_quick_reply";
 	private static final int NOTIFICATION_CHANNEL_API = 26;
 
 	@Inject
@@ -76,6 +78,7 @@ public class NotificationsFragment extends Fragment {
 	private SwitchMaterial notifyGroupMessagesSwitch;
 	private SwitchMaterial notifyVoiceCallsSwitch;
 	private SwitchMaterial notifyVibrationSwitch;
+	private SwitchMaterial notifyQuickReplySwitch;
 	private MaterialCardView notifySoundCard;
 	private TextView notifySoundValue;
 	private MaterialCardView notifyPrivateMessagesCard;
@@ -109,6 +112,7 @@ public class NotificationsFragment extends Fragment {
 		notifyGroupMessagesSwitch = view.findViewById(R.id.notify_group_messages_switch);
 		notifyVoiceCallsSwitch = view.findViewById(R.id.notify_voice_calls_switch);
 		notifyVibrationSwitch = view.findViewById(R.id.notify_vibration_switch);
+		notifyQuickReplySwitch = view.findViewById(R.id.notify_quick_reply_switch);
 		notifySoundCard = view.findViewById(R.id.notify_sound_card);
 		notifySoundValue = view.findViewById(R.id.notify_sound_value);
 		notifyPrivateMessagesCard = view.findViewById(R.id.notify_private_messages_card);
@@ -125,6 +129,21 @@ public class NotificationsFragment extends Fragment {
 
 
 		setupSignInNotifications();
+		setupQuickReply();
+	}
+
+	private void setupQuickReply() {
+		boolean enabled = uiPrefs.getBoolean(PREF_NOTIFY_QUICK_REPLY, true);
+		notifyQuickReplySwitch.setChecked(enabled);
+		notifyQuickReplySwitch.setOnCheckedChangeListener(
+				(buttonView, isChecked) -> {
+					if (buttonView.isPressed()) {
+						uiPrefs.edit()
+								.putBoolean(PREF_NOTIFY_QUICK_REPLY,
+										isChecked)
+								.apply();
+					}
+				});
 	}
 
 	private void setupSignInNotifications() {

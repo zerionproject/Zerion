@@ -91,10 +91,14 @@ class VoiceCallConnectionManagerImpl implements VoiceCallConnectionManager {
 			throw new IOException("Tor plugin does not support rendezvous");
 		}
 
+		// Derive key material using callId as additional input so that
+		// voice (callId="X") and video (callId="X-video") endpoints get
+		// different onion addresses from the same voiceCallKey.
+		SecretKey endpointKey = deriveEndpointKey(voiceCallKey, callId);
 		KeyMaterialSource keyMaterialForOnion = crypto.createKeyMaterialSource(
-				voiceCallKey, TorConstants.ID);
+				endpointKey, TorConstants.ID);
 		KeyMaterialSource keyMaterialForEndpoint = crypto.createKeyMaterialSource(
-				voiceCallKey, TorConstants.ID);
+				endpointKey, TorConstants.ID);
 
 		String localOnion = crypto.getLocalOnion(keyMaterialForOnion, alice);
 
@@ -258,6 +262,24 @@ class VoiceCallConnectionManagerImpl implements VoiceCallConnectionManager {
 		try {
 			conn.getWriter().dispose(false);
 		} catch (IOException e) {
+		}
+	}
+
+	/**
+	 * Derive a per-endpoint key by mixing the callId into the voice call key.
+	 * This ensures that different endpoints (voice vs video) get different
+	 * onion addresses even when using the same voiceCallKey.
+	 */
+	private SecretKey deriveEndpointKey(SecretKey voiceCallKey, String callId) {
+		try {
+			javax.crypto.Mac mac = javax.crypto.Mac.getInstance("HmacSHA256");
+			mac.init(new javax.crypto.spec.SecretKeySpec(
+					voiceCallKey.getBytes(), "HmacSHA256"));
+			mac.update(callId.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+			byte[] derived = mac.doFinal();
+			return new SecretKey(derived);
+		} catch (java.security.GeneralSecurityException e) {
+			throw new RuntimeException("Failed to derive endpoint key", e);
 		}
 	}
 }

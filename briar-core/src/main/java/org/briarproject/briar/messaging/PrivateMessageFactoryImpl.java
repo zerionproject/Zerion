@@ -5,6 +5,7 @@ import org.briarproject.bramble.api.client.ClientHelper;
 import org.briarproject.bramble.api.data.BdfList;
 import org.briarproject.bramble.api.sync.GroupId;
 import org.briarproject.bramble.api.sync.Message;
+import org.briarproject.bramble.api.sync.MessageId;
 import org.briarproject.briar.api.attachment.AttachmentHeader;
 import org.briarproject.briar.api.messaging.PrivateMessage;
 import org.briarproject.briar.api.messaging.PrivateMessageFactory;
@@ -57,13 +58,29 @@ class PrivateMessageFactoryImpl implements PrivateMessageFactory {
 	public PrivateMessage createPrivateMessage(GroupId groupId, long timestamp,
 			@Nullable String text, List<AttachmentHeader> headers,
 			long autoDeleteTimer) throws FormatException {
+		return createPrivateMessage(groupId, timestamp, text, headers,
+				autoDeleteTimer, null);
+	}
+
+	@Override
+	public PrivateMessage createPrivateMessage(GroupId groupId, long timestamp,
+			@Nullable String text, List<AttachmentHeader> headers,
+			long autoDeleteTimer, @Nullable MessageId replyToId)
+			throws FormatException {
 		validateTextAndAttachmentHeaders(text, headers);
 		BdfList attachmentList = serialiseAttachmentHeaders(headers);
 		Long timer = autoDeleteTimer == NO_AUTO_DELETE_TIMER ?
 				null : autoDeleteTimer;
-		BdfList body = BdfList.of(PRIVATE_MESSAGE, text, attachmentList, timer);
+		BdfList body;
+		if (replyToId != null) {
+			body = BdfList.of(PRIVATE_MESSAGE, text, attachmentList, timer,
+					replyToId.getBytes());
+		} else {
+			body = BdfList.of(PRIVATE_MESSAGE, text, attachmentList, timer);
+		}
 		Message m = clientHelper.createMessage(groupId, timestamp, body);
-		return new PrivateMessage(m, text != null, headers, autoDeleteTimer);
+		return new PrivateMessage(m, text != null, headers, autoDeleteTimer,
+				replyToId);
 	}
 
 	private void validateTextAndAttachmentHeaders(@Nullable String text,

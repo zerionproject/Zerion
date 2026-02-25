@@ -103,13 +103,25 @@ class ConversationVisitor implements
 			}
 		}
 
+		// Check local reply context first (sender side),
+		// then check header's replyToId (receiver side)
 		if (viewModel != null) {
 			org.briarproject.bramble.api.Pair<MessageId, String> replyContext =
 					viewModel.getReplyContext(h.getId());
 			if (replyContext != null) {
 				item.setReplyToMessageId(replyContext.getFirst());
 				item.setReplyToText(replyContext.getSecond());
+			} else if (h.getReplyToId() != null) {
+				item.setReplyToMessageId(h.getReplyToId());
+				String replyText = textCache.getText(h.getReplyToId());
+				item.setReplyToText(
+						replyText != null ? replyText : "[message]");
 			}
+		} else if (h.getReplyToId() != null) {
+			item.setReplyToMessageId(h.getReplyToId());
+			String replyText = textCache.getText(h.getReplyToId());
+			item.setReplyToText(
+					replyText != null ? replyText : "[message]");
 		}
 
 		return item;

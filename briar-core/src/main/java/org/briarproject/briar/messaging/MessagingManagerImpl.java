@@ -37,6 +37,7 @@ import org.briarproject.briar.api.conversation.ConversationManager;
 import org.briarproject.briar.api.conversation.ConversationManager.ConversationClient;
 import org.briarproject.briar.api.conversation.ConversationMessageHeader;
 import org.briarproject.briar.api.conversation.DeletionResult;
+import org.briarproject.briar.api.messaging.LinkPreview;
 import org.briarproject.briar.api.messaging.MessagingManager;
 import org.briarproject.briar.api.messaging.PrivateMessage;
 import org.briarproject.briar.api.messaging.PrivateMessageFormat;
@@ -46,6 +47,8 @@ import org.briarproject.briar.api.messaging.VoiceSignalHeader;
 import org.briarproject.briar.api.messaging.VoiceSignalType;
 import org.briarproject.briar.api.messaging.event.AttachmentReceivedEvent;
 import org.briarproject.briar.api.messaging.event.PrivateMessageReceivedEvent;
+import org.briarproject.briar.api.messaging.event.ReactionReceivedEvent;
+import org.briarproject.briar.api.messaging.event.TypingIndicatorReceivedEvent;
 import org.briarproject.briar.api.messaging.event.VoiceSignalReceivedEvent;
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -83,8 +86,16 @@ import static org.briarproject.briar.messaging.MessagingConstants.MISSING_ATTACH
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_ATTACHMENT_HEADERS;
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_AUTO_DELETE_TIMER;
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_HAS_TEXT;
+import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_IS_TYPING;
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_LOCAL;
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_MSG_TYPE;
+import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_HAS_PREVIEW_IMAGE;
+import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_PREVIEW_DESCRIPTION;
+import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_PREVIEW_TITLE;
+import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_PREVIEW_URL;
+import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_REACTION_EMOJI;
+import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_REPLY_TO_ID;
+import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_TARGET_MESSAGE_ID;
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_TIMESTAMP;
 
 @Immutable
@@ -136,9 +147,40 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 	public void onDatabaseOpened(Transaction txn) throws DbException {
 		Group localGroup = contactGroupFactory.createLocalGroup(CLIENT_ID,
 				MAJOR_VERSION);
-		if (db.containsGroup(txn, localGroup.getId())) return;
+		if (db.containsGroup(txn, localGroup.getId())) {
+			purgeStaleEphemeralMessages(txn);
+			return;
+		}
 		db.addGroup(txn, localGroup);
 		for (Contact c : db.getContacts(txn)) addingContact(txn, c);
+	}
+
+	private void purgeStaleEphemeralMessages(Transaction txn)
+			throws DbException {
+		try {
+			for (Contact c : db.getContacts(txn)) {
+				GroupId gId = getContactGroup(c).getId();
+				purgeByType(txn, gId, MessageTypes.VOICE_SIGNAL);
+				purgeByType(txn, gId, MessageTypes.TYPING_INDICATOR);
+			}
+		} catch (FormatException e) {
+			throw new DbException(e);
+		}
+	}
+
+	private void purgeByType(Transaction txn, GroupId groupId,
+			int messageType) throws DbException, FormatException {
+		BdfDictionary query = BdfDictionary.of(
+				new BdfEntry(MSG_KEY_MSG_TYPE, messageType));
+		Map<MessageId, BdfDictionary> matches =
+				clientHelper.getMessageMetadataAsDictionary(
+						txn, groupId, query);
+		for (MessageId id : matches.keySet()) {
+			try {
+				db.removeMessage(txn, id);
+			} catch (NoSuchMessageException ignored) {
+			}
+		}
 	}
 
 	@Override
@@ -191,6 +233,12 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				incomingAttachmentChunk(txn, m);
 			} else if (messageType == MessageTypes.VOICE_SIGNAL) {
 				incomingVoiceSignal(txn, m, metaDict);
+			} else if (messageType == MessageTypes.MESSAGE_REACTION) {
+				incomingReaction(txn, m, metaDict);
+			} else if (messageType == MessageTypes.TYPING_INDICATOR) {
+				incomingTypingIndicator(txn, m, metaDict);
+			} else if (messageType == MessageTypes.LINK_PREVIEW_MESSAGE) {
+				incomingLinkPreviewMessage(txn, m, metaDict);
 			} else {
 				throw new InvalidMessageException();
 			}
@@ -209,9 +257,13 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		boolean read = meta.getBoolean(MSG_KEY_READ);
 		long timer = meta.getLong(MSG_KEY_AUTO_DELETE_TIMER,
 				NO_AUTO_DELETE_TIMER);
+		byte[] replyToIdBytes = meta.getOptionalRaw(MSG_KEY_REPLY_TO_ID);
+		MessageId replyToId = replyToIdBytes != null ?
+				new MessageId(replyToIdBytes) : null;
 		PrivateMessageHeader header =
 				new PrivateMessageHeader(m.getId(), groupId, timestamp, local,
-						read, false, false, hasText, headers, timer);
+						read, false, false, hasText, headers, timer,
+						replyToId);
 		ContactId contactId = getContactId(txn, groupId);
 		PrivateMessageReceivedEvent event =
 				new PrivateMessageReceivedEvent(header, contactId);
@@ -338,6 +390,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		VoiceSignalReceivedEvent event =
 				new VoiceSignalReceivedEvent(header, contactId);
 		txn.attach(event);
+		db.removeMessage(txn, m.getId());
 	}
 
 	@Override
@@ -366,6 +419,10 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				if (m.getFormat() == TEXT_IMAGES_AUTO_DELETE
 						&& timer != NO_AUTO_DELETE_TIMER) {
 					meta.put(MSG_KEY_AUTO_DELETE_TIMER, timer);
+				}
+				if (m.getReplyToId() != null) {
+					meta.put(MSG_KEY_REPLY_TO_ID,
+							m.getReplyToId().getBytes());
 				}
 			}
 			for (AttachmentHeader a : m.getAttachmentHeaders()) {
@@ -415,6 +472,9 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				clientHelper.addLocalMessage(txn, signal.getMessage(), meta, true,
 						false);
 				conversationManager.trackOutgoingMessage(txn, signal.getMessage());
+				db.setCleanupTimerDuration(txn,
+						signal.getMessage().getId(), 60000);
+				db.startCleanupTimer(txn, signal.getMessage().getId());
 			} catch (FormatException e) {
 				throw new AssertionError(e);
 			}
@@ -512,7 +572,8 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			if (meta == null) continue;
 			try {
 				Integer messageType = meta.getOptionalInt(MSG_KEY_MSG_TYPE);
-				if (messageType != null && messageType != PRIVATE_MESSAGE)
+				if (messageType != null && messageType != PRIVATE_MESSAGE
+						&& messageType != MessageTypes.LINK_PREVIEW_MESSAGE)
 					continue;
 				long timestamp = meta.getLong(MSG_KEY_TIMESTAMP);
 				boolean local = meta.getBoolean(MSG_KEY_LOCAL);
@@ -525,9 +586,14 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 					boolean hasText = meta.getBoolean(MSG_KEY_HAS_TEXT);
 					long timer = meta.getLong(MSG_KEY_AUTO_DELETE_TIMER,
 							NO_AUTO_DELETE_TIMER);
+					byte[] replyToIdBytes =
+							meta.getOptionalRaw(MSG_KEY_REPLY_TO_ID);
+					MessageId replyToId = replyToIdBytes != null ?
+							new MessageId(replyToIdBytes) : null;
 					headers.add(new PrivateMessageHeader(id, g, timestamp,
 							local, read, s.isSent(), s.isSeen(), hasText,
-							parseAttachmentHeaders(g, meta), timer));
+							parseAttachmentHeaders(g, meta), timer,
+							replyToId));
 				}
 			} catch (FormatException e) {
 				throw new DbException(e);
@@ -547,7 +613,8 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			for (Entry<MessageId, BdfDictionary> entry : messages.entrySet()) {
 				Integer type =
 						entry.getValue().getOptionalInt(MSG_KEY_MSG_TYPE);
-				if (type == null || type == PRIVATE_MESSAGE)
+				if (type == null || type == PRIVATE_MESSAGE
+						|| type == MessageTypes.LINK_PREVIEW_MESSAGE)
 					result.add(entry.getKey());
 			}
 		} catch (FormatException e) {
@@ -590,7 +657,9 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				MessageId id = entry.getKey();
 				BdfDictionary meta = entry.getValue();
 				Integer messageType = meta.getOptionalInt(MSG_KEY_MSG_TYPE);
-				if (messageType != null && messageType != PRIVATE_MESSAGE) continue;
+				if (messageType != null && messageType != PRIVATE_MESSAGE
+						&& messageType != MessageTypes.LINK_PREVIEW_MESSAGE)
+					continue;
 				boolean hasText = messageType == null ||
 						meta.getBoolean(MSG_KEY_HAS_TEXT, false);
 				if (!hasText) continue;
@@ -601,6 +670,9 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 					else text = body.getOptionalString(1);
 					if (text != null) texts.put(id, text);
 				} catch (FormatException e) {
+				} catch (
+						org.briarproject.bramble.api.db.NoSuchMessageException e) {
+					// Message body was deleted — skip this message
 				}
 			}
 		} catch (FormatException e) {
@@ -624,9 +696,11 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 	public DeletionResult deleteAllMessages(Transaction txn, ContactId c)
 			throws DbException {
 		GroupId g = getContactGroup(db.getContact(txn, c)).getId();
-		for (MessageId messageId : db.getMessageIds(txn, g)) {
-			db.removeMessage(txn, messageId);
-		}
+		// Bulk delete: explicitly removes from statuses, messageMetadata,
+		// messageDependencies, and messages tables by groupId.
+		// Cannot rely on ON DELETE CASCADE — SQLite PRAGMA foreign_keys
+		// is OFF so cascades do not fire.
+		db.removeAllGroupMessages(txn, g);
 		messageTracker.initializeGroupCount(txn, g);
 		return new DeletionResult();
 	}
@@ -664,6 +738,8 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				}
 			}
 			db.removeMessage(txn, m);
+		} catch (NoSuchMessageException e) {
+			// Message already deleted — skip
 		} catch (FormatException e) {
 			throw new DbException(e);
 		}
@@ -679,12 +755,310 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			for (Entry<MessageId, BdfDictionary> entry : metadata.entrySet()) {
 				BdfDictionary meta = entry.getValue();
 				Integer messageType = meta.getOptionalInt(MSG_KEY_MSG_TYPE);
-				if (messageType == null || messageType == PRIVATE_MESSAGE) {
+				if (messageType == null || messageType == PRIVATE_MESSAGE
+						|| messageType == MessageTypes.LINK_PREVIEW_MESSAGE) {
 					msgCount++;
 					if (!meta.getBoolean(MSG_KEY_READ)) unreadCount++;
 				}
 			}
 			messageTracker.resetGroupCount(txn, g, msgCount, unreadCount);
+		} catch (FormatException e) {
+			throw new DbException(e);
+		}
+	}
+
+	private void incomingReaction(Transaction txn, Message m,
+			BdfDictionary meta) throws DbException, FormatException {
+		GroupId groupId = m.getGroupId();
+		byte[] targetIdBytes = meta.getRaw(MSG_KEY_TARGET_MESSAGE_ID);
+		MessageId targetId = new MessageId(targetIdBytes);
+		String emoji = meta.getString(MSG_KEY_REACTION_EMOJI);
+		ContactId contactId = getContactId(txn, groupId);
+
+		// Idempotency: check for existing remote reaction with same
+		// target + emoji — if found, remove old one (toggle off)
+		BdfDictionary query = BdfDictionary.of(
+				new BdfEntry(MSG_KEY_MSG_TYPE,
+						MessageTypes.MESSAGE_REACTION));
+		Map<MessageId, BdfDictionary> existing =
+				clientHelper.getMessageMetadataAsDictionary(
+						txn, groupId, query);
+		for (Entry<MessageId, BdfDictionary> entry :
+				existing.entrySet()) {
+			BdfDictionary eMeta = entry.getValue();
+			if (eMeta.getBoolean(MSG_KEY_LOCAL)) continue;
+			byte[] eTarget = eMeta.getRaw(MSG_KEY_TARGET_MESSAGE_ID);
+			String eEmoji = eMeta.getString(MSG_KEY_REACTION_EMOJI);
+			if (java.util.Arrays.equals(eTarget, targetIdBytes) &&
+					emoji.equals(eEmoji)) {
+				// Toggle off: remove old reaction, keep the new one
+				// (which replaces it). Delete the old entry.
+				db.removeMessage(txn, entry.getKey());
+				break;
+			}
+		}
+
+		ReactionReceivedEvent event = new ReactionReceivedEvent(
+				contactId, targetId, emoji, false);
+		txn.attach(event);
+	}
+
+	private void incomingTypingIndicator(Transaction txn, Message m,
+			BdfDictionary meta) throws DbException, FormatException {
+		GroupId groupId = m.getGroupId();
+		boolean isTyping = meta.getBoolean(MSG_KEY_IS_TYPING);
+		ContactId contactId = getContactId(txn, groupId);
+		TypingIndicatorReceivedEvent event =
+				new TypingIndicatorReceivedEvent(contactId, isTyping);
+		txn.attach(event);
+		db.removeMessage(txn, m.getId());
+	}
+
+	private void incomingLinkPreviewMessage(Transaction txn, Message m,
+			BdfDictionary meta) throws DbException, FormatException {
+		GroupId groupId = m.getGroupId();
+		long timestamp = meta.getLong(MSG_KEY_TIMESTAMP);
+		boolean local = meta.getBoolean(MSG_KEY_LOCAL);
+		boolean read = meta.getBoolean(MSG_KEY_READ);
+		boolean hasText = meta.getBoolean(MSG_KEY_HAS_TEXT);
+		PrivateMessageHeader header = new PrivateMessageHeader(
+				m.getId(), groupId, timestamp, local, read,
+				false, false, hasText, java.util.Collections.emptyList(),
+				NO_AUTO_DELETE_TIMER);
+		ContactId contactId = getContactId(txn, groupId);
+		PrivateMessageReceivedEvent event =
+				new PrivateMessageReceivedEvent(header, contactId);
+		txn.attach(event);
+		conversationManager.trackIncomingMessage(txn, m);
+	}
+
+	private boolean peerSupportsExtendedMessages(Transaction txn,
+			ContactId contactId) throws DbException {
+		// Zerion-only: all peers run Zerion with MINOR_VERSION 4.
+		// The version negotiation may return 0 before sync completes,
+		// so we default to true to avoid silently blocking features.
+		return true;
+	}
+
+	@Override
+	public void addLocalReaction(ContactId contactId,
+			MessageId targetMessageId, String emoji) throws DbException {
+		db.transaction(false, txn -> {
+			if (!peerSupportsExtendedMessages(txn, contactId)) return;
+			try {
+				Contact contact = db.getContact(txn, contactId);
+				GroupId groupId = getContactGroup(contact).getId();
+
+				// Idempotency: check for existing local reaction with
+				// same target + emoji — if found, remove it (toggle off)
+				BdfDictionary query = BdfDictionary.of(
+						new BdfEntry(MSG_KEY_MSG_TYPE,
+								MessageTypes.MESSAGE_REACTION));
+				Map<MessageId, BdfDictionary> existing =
+						clientHelper.getMessageMetadataAsDictionary(
+								txn, groupId, query);
+				for (Entry<MessageId, BdfDictionary> entry :
+						existing.entrySet()) {
+					BdfDictionary eMeta = entry.getValue();
+					if (!eMeta.getBoolean(MSG_KEY_LOCAL)) continue;
+					byte[] eTarget =
+							eMeta.getRaw(MSG_KEY_TARGET_MESSAGE_ID);
+					String eEmoji =
+							eMeta.getString(MSG_KEY_REACTION_EMOJI);
+					if (java.util.Arrays.equals(eTarget,
+							targetMessageId.getBytes()) &&
+							emoji.equals(eEmoji)) {
+						// Toggle off: remove existing reaction
+						db.removeMessage(txn, entry.getKey());
+						ReactionReceivedEvent event =
+								new ReactionReceivedEvent(contactId,
+										targetMessageId, emoji, true);
+						txn.attach(event);
+						return;
+					}
+				}
+
+				// No existing match — add new reaction
+				long timestamp = System.currentTimeMillis();
+				BdfList body = BdfList.of(MessageTypes.MESSAGE_REACTION,
+						targetMessageId.getBytes(), emoji);
+				Message m = clientHelper.createMessage(
+						groupId, timestamp, body);
+				BdfDictionary meta = new BdfDictionary();
+				meta.put(MSG_KEY_TIMESTAMP, timestamp);
+				meta.put(MSG_KEY_LOCAL, true);
+				meta.put(MSG_KEY_READ, true);
+				meta.put(MSG_KEY_MSG_TYPE, MessageTypes.MESSAGE_REACTION);
+				meta.put(MSG_KEY_TARGET_MESSAGE_ID,
+						targetMessageId.getBytes());
+				meta.put(MSG_KEY_REACTION_EMOJI, emoji);
+				clientHelper.addLocalMessage(txn, m, meta, true, false);
+				ReactionReceivedEvent event = new ReactionReceivedEvent(
+						contactId, targetMessageId, emoji, true);
+				txn.attach(event);
+			} catch (FormatException e) {
+				throw new DbException(e);
+			}
+		});
+	}
+
+	@Override
+	public Map<MessageId, Map<String, Integer>> getReactions(ContactId c)
+			throws DbException {
+		return db.transactionWithResult(true, txn -> {
+			try {
+				Contact contact = db.getContact(txn, c);
+				GroupId g = getContactGroup(contact).getId();
+				BdfDictionary query = BdfDictionary.of(
+						new BdfEntry(MSG_KEY_MSG_TYPE,
+								MessageTypes.MESSAGE_REACTION));
+				Map<MessageId, BdfDictionary> results =
+						clientHelper.getMessageMetadataAsDictionary(
+								txn, g, query);
+				Map<MessageId, Map<String, Integer>> reactions =
+						new java.util.HashMap<>();
+				for (BdfDictionary meta : results.values()) {
+					byte[] targetIdBytes =
+							meta.getRaw(MSG_KEY_TARGET_MESSAGE_ID);
+					MessageId targetId = new MessageId(targetIdBytes);
+					String emoji = meta.getString(MSG_KEY_REACTION_EMOJI);
+					Map<String, Integer> msgReactions = reactions.get(targetId);
+					if (msgReactions == null) {
+						msgReactions = new java.util.HashMap<>();
+						reactions.put(targetId, msgReactions);
+					}
+					msgReactions.merge(emoji, 1, Integer::sum);
+				}
+				return reactions;
+			} catch (FormatException e) {
+				throw new DbException(e);
+			}
+		});
+	}
+
+	@Override
+	public void sendTypingIndicator(ContactId contactId, boolean isTyping)
+			throws DbException {
+		db.transaction(false, txn -> {
+			if (!peerSupportsExtendedMessages(txn, contactId)) return;
+			try {
+				Contact contact = db.getContact(txn, contactId);
+				GroupId groupId = getContactGroup(contact).getId();
+				long timestamp = System.currentTimeMillis();
+				BdfList body = BdfList.of(
+						MessageTypes.TYPING_INDICATOR, isTyping);
+				Message m = clientHelper.createMessage(
+						groupId, timestamp, body);
+				BdfDictionary meta = new BdfDictionary();
+				meta.put(MSG_KEY_TIMESTAMP, timestamp);
+				meta.put(MSG_KEY_LOCAL, true);
+				meta.put(MSG_KEY_READ, true);
+				meta.put(MSG_KEY_MSG_TYPE, MessageTypes.TYPING_INDICATOR);
+				meta.put(MSG_KEY_IS_TYPING, isTyping);
+				clientHelper.addLocalMessage(txn, m, meta, true, false);
+				db.setCleanupTimerDuration(txn, m.getId(), 30000);
+				db.startCleanupTimer(txn, m.getId());
+			} catch (FormatException e) {
+				throw new DbException(e);
+			}
+		});
+	}
+
+	@Override
+	public java.util.Map<MessageId, LinkPreview> getLinkPreviews(
+			ContactId c) throws DbException {
+		return db.transactionWithResult(true, txn -> {
+			try {
+				Contact contact = db.getContact(txn, c);
+				GroupId g = getContactGroup(contact).getId();
+				BdfDictionary query = BdfDictionary.of(
+						new BdfEntry(MSG_KEY_MSG_TYPE,
+								MessageTypes.LINK_PREVIEW_MESSAGE));
+				Map<MessageId, BdfDictionary> results =
+						clientHelper.getMessageMetadataAsDictionary(
+								txn, g, query);
+				java.util.Map<MessageId, LinkPreview> previews =
+						new java.util.HashMap<>();
+				for (Entry<MessageId, BdfDictionary> entry :
+						results.entrySet()) {
+					BdfDictionary meta = entry.getValue();
+					String url = meta.getOptionalString(MSG_KEY_PREVIEW_URL);
+					String title = meta.getOptionalString(
+							MSG_KEY_PREVIEW_TITLE);
+					if (url == null || title == null) continue;
+					String description = meta.getOptionalString(
+							MSG_KEY_PREVIEW_DESCRIPTION);
+					byte[] imageData = null;
+					boolean hasImage = meta.getBoolean(
+							MSG_KEY_HAS_PREVIEW_IMAGE, false);
+					if (hasImage) {
+						try {
+							BdfList body = clientHelper
+									.getMessageAsList(txn,
+											entry.getKey());
+							if (body.size() >= 6) {
+								imageData = body.getOptionalRaw(5);
+							}
+						} catch (FormatException ignored) {
+						} catch (
+								org.briarproject.bramble.api.db.NoSuchMessageException ignored) {
+						}
+					}
+					previews.put(entry.getKey(),
+							new LinkPreview(url, title, description,
+									imageData));
+				}
+				return previews;
+			} catch (FormatException e) {
+				throw new DbException(e);
+			}
+		});
+	}
+
+	@Override
+	public void addLocalLinkPreviewMessage(Transaction txn,
+			ContactId contactId, @javax.annotation.Nullable String text,
+			LinkPreview preview) throws DbException {
+		try {
+			Contact contact = db.getContact(txn, contactId);
+			GroupId groupId = getContactGroup(contact).getId();
+			long timestamp = System.currentTimeMillis();
+			BdfList body;
+			if (preview.hasImage()) {
+				body = BdfList.of(
+						MessageTypes.LINK_PREVIEW_MESSAGE,
+						text, preview.getUrl(), preview.getTitle(),
+						preview.getDescription(), preview.getImageData());
+			} else {
+				body = BdfList.of(
+						MessageTypes.LINK_PREVIEW_MESSAGE,
+						text, preview.getUrl(), preview.getTitle(),
+						preview.getDescription());
+			}
+			Message m = clientHelper.createMessage(groupId, timestamp, body);
+			BdfDictionary meta = new BdfDictionary();
+			meta.put(MSG_KEY_TIMESTAMP, timestamp);
+			meta.put(MSG_KEY_LOCAL, true);
+			meta.put(MSG_KEY_READ, true);
+			meta.put(MSG_KEY_MSG_TYPE, MessageTypes.LINK_PREVIEW_MESSAGE);
+			meta.put(MSG_KEY_HAS_TEXT, text != null);
+			meta.put(MSG_KEY_PREVIEW_URL, preview.getUrl());
+			meta.put(MSG_KEY_PREVIEW_TITLE, preview.getTitle());
+			if (preview.getDescription() != null) {
+				meta.put(MSG_KEY_PREVIEW_DESCRIPTION,
+						preview.getDescription());
+			}
+			meta.put(MSG_KEY_HAS_PREVIEW_IMAGE, preview.hasImage());
+			clientHelper.addLocalMessage(txn, m, meta, true, false);
+			PrivateMessageHeader header = new PrivateMessageHeader(
+					m.getId(), groupId, timestamp, true, true,
+					false, false, text != null,
+					java.util.Collections.emptyList(),
+					NO_AUTO_DELETE_TIMER);
+			PrivateMessageReceivedEvent event =
+					new PrivateMessageReceivedEvent(header, contactId);
+			txn.attach(event);
+			conversationManager.trackOutgoingMessage(txn, m);
 		} catch (FormatException e) {
 			throw new DbException(e);
 		}

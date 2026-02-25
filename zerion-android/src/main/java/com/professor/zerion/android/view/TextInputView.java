@@ -168,8 +168,20 @@ public class TextInputView extends LinearLayout {
 		}
 		replyAuthor.setText(authorName);
 
-		replyText.setText(item.getText() != null && !item.getText().isEmpty() ?
-			item.getText() : "[Media]");
+		String displayText;
+		String rawText = item.getText();
+		if (rawText == null || rawText.isEmpty()) {
+			displayText = getContext().getString(R.string.media);
+		} else if (rawText.startsWith("[VOICE:")) {
+			displayText = getContext().getString(R.string.voice_message);
+		} else if (com.professor.zerion.android.conversation.voice
+				.VoiceCallSignal.isSignal(rawText)
+				|| rawText.startsWith("VOICE_CALL:")) {
+			displayText = getContext().getString(R.string.voice_call);
+		} else {
+			displayText = rawText;
+		}
+		replyText.setText(displayText);
 
 		cancelReply.setOnClickListener(v -> hideReplyPreview());
 

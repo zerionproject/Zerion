@@ -1,13 +1,18 @@
 package com.professor.zerion.android.conversation;
 
 import android.content.Context;
+import android.graphics.BitmapFactory;
 import android.text.util.Linkify;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.professor.zerion.R;
+import org.briarproject.briar.api.messaging.LinkPreview;
 import org.briarproject.nullsafety.NotNullByDefault;
+
+import java.net.URL;
+import java.util.Map;
 
 import androidx.annotation.CallSuper;
 import androidx.annotation.Nullable;
@@ -42,6 +47,18 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 	private TextView replyText;
 	@Nullable
 	private String itemKey = null;
+	@Nullable
+	private final TextView reactionsView;
+	@Nullable
+	private final View linkPreviewCard;
+	@Nullable
+	private final ImageView linkPreviewImage;
+	@Nullable
+	private final TextView linkPreviewTitle;
+	@Nullable
+	private final TextView linkPreviewDescription;
+	@Nullable
+	private final TextView linkPreviewDomain;
 
 	ConversationItemViewHolder(View v, ConversationListener listener,
 			boolean isIncoming) {
@@ -56,6 +73,23 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 		bomb = v.findViewById(R.id.bomb);
 		replyPreviewContainer = layout.findViewById(R.id.replyPreviewContainer);
 		replyText = layout.findViewById(R.id.replyText);
+		reactionsView = layout.findViewById(R.id.reactionsView);
+		linkPreviewCard = layout.findViewById(R.id.linkPreviewCard);
+		if (linkPreviewCard != null) {
+			linkPreviewImage = linkPreviewCard.findViewById(
+					R.id.linkPreviewImage);
+			linkPreviewTitle = linkPreviewCard.findViewById(
+					R.id.linkPreviewTitle);
+			linkPreviewDescription = linkPreviewCard.findViewById(
+					R.id.linkPreviewDescription);
+			linkPreviewDomain = linkPreviewCard.findViewById(
+					R.id.linkPreviewDomain);
+		} else {
+			linkPreviewImage = null;
+			linkPreviewTitle = null;
+			linkPreviewDescription = null;
+			linkPreviewDomain = null;
+		}
 	}
 
 	@CallSuper
@@ -87,11 +121,77 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 		});
 
 		bindReplyContext(item);
+		bindReactions(item);
+		bindLinkPreview(item);
 
 		if (outViewHolder != null) outViewHolder.bind(item);
 	}
 
-	private void bindReplyContext(ConversationItem item) {
+	void bindReactions(ConversationItem item) {
+		if (reactionsView == null) return;
+		if (item.hasReactions()) {
+			StringBuilder sb = new StringBuilder();
+			for (Map.Entry<String, Integer> entry :
+					item.getReactions().entrySet()) {
+				if (sb.length() > 0) sb.append("  ");
+				sb.append(entry.getKey());
+				if (entry.getValue() > 1) {
+					sb.append(" ").append(entry.getValue());
+				}
+			}
+			reactionsView.setText(sb.toString());
+			reactionsView.setVisibility(VISIBLE);
+			reactionsView.setOnClickListener(v ->
+					listener.onReactionClicked(item));
+		} else {
+			reactionsView.setVisibility(GONE);
+		}
+	}
+
+	void bindLinkPreview(ConversationItem item) {
+		if (linkPreviewCard == null) return;
+		LinkPreview preview = item.getLinkPreview();
+		if (preview != null) {
+			linkPreviewCard.setVisibility(VISIBLE);
+			if (linkPreviewTitle != null) {
+				linkPreviewTitle.setText(preview.getTitle());
+			}
+			if (linkPreviewDescription != null) {
+				String desc = preview.getDescription();
+				if (desc != null && !desc.isEmpty()) {
+					linkPreviewDescription.setText(desc);
+					linkPreviewDescription.setVisibility(VISIBLE);
+				} else {
+					linkPreviewDescription.setVisibility(GONE);
+				}
+			}
+			if (linkPreviewDomain != null) {
+				try {
+					String host = new URL(preview.getUrl()).getHost();
+					linkPreviewDomain.setText(host);
+				} catch (Exception e) {
+					linkPreviewDomain.setText(preview.getUrl());
+				}
+			}
+			if (linkPreviewImage != null) {
+				if (preview.hasImage()) {
+					byte[] data = preview.getImageData();
+					linkPreviewImage.setImageBitmap(
+							BitmapFactory.decodeByteArray(
+									data, 0, data.length));
+					linkPreviewImage.setVisibility(VISIBLE);
+				} else {
+					linkPreviewImage.setVisibility(GONE);
+				}
+			}
+			linkPreviewCard.setOnClickListener(v ->
+					listener.onLinkClick(preview.getUrl()));
+		} else {
+			linkPreviewCard.setVisibility(GONE);
+		}
+	}
+
+	void bindReplyContext(ConversationItem item) {
 		if (replyPreviewContainer != null && replyText != null) {
 			if (item.hasReplyContext()) {
 				String replyTextContent = item.getReplyToText();

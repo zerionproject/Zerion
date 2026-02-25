@@ -150,11 +150,14 @@ public class DisplayFragment extends Fragment {
 		String systemValue = getString(R.string.pref_theme_system_value);
 		String lightValue = getString(R.string.pref_theme_light_value);
 		String darkValue = getString(R.string.pref_theme_dark_value);
+		String amoledValue = getString(R.string.pref_theme_amoled_value);
 
 		if (currentTheme.equals(systemValue)) {
 			themeValue.setText(R.string.pref_theme_system);
 		} else if (currentTheme.equals(lightValue)) {
 			themeValue.setText(R.string.pref_theme_light);
+		} else if (currentTheme.equals(amoledValue)) {
+			themeValue.setText(R.string.pref_theme_amoled);
 		} else if (currentTheme.equals(darkValue)) {
 			themeValue.setText(R.string.pref_theme_dark);
 		}

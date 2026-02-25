@@ -222,7 +222,10 @@ interface Database<T> {
 	
 	Collection<MessageId> getMessageIds(T txn, GroupId g) throws DbException;
 
-	
+	Collection<MessageId> getAllMessageIds(T txn, GroupId g)
+			throws DbException;
+
+
 	Collection<MessageId> getMessageIds(T txn, GroupId g, Metadata query)
 			throws DbException;
 
@@ -372,7 +375,9 @@ interface Database<T> {
 	
 	void removeMessage(T txn, MessageId m) throws DbException;
 
-	
+	void removeAllGroupMessages(T txn, GroupId g) throws DbException;
+
+
 	void removeOfferedMessages(T txn, ContactId c,
 			Collection<MessageId> requested) throws DbException;
 

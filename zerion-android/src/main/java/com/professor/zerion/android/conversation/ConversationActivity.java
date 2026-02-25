@@ -2,6 +2,8 @@ package com.professor.zerion.android.conversation;
 
 import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -51,6 +53,7 @@ import com.professor.zerion.android.util.ActivityLaunchers.GetMultipleImagesAdva
 import com.professor.zerion.android.util.ActivityLaunchers.GetMultipleMediaAdvanced;
 import com.professor.zerion.android.util.ActivityLaunchers.OpenMultipleImageDocumentsAdvanced;
 import com.professor.zerion.android.conversation.voice.VoiceRecordingController;
+import com.professor.zerion.android.util.UiUtils;
 import com.professor.zerion.android.util.ZerionSnackbarBuilder;
 import com.professor.zerion.android.view.ZerionRecyclerView;
 import com.professor.zerion.android.view.ImagePreview;
@@ -71,6 +74,7 @@ import org.briarproject.briar.api.conversation.event.ConversationMessageReceived
 import org.briarproject.briar.api.client.SessionId;
 import org.briarproject.briar.api.introduction.IntroductionManager;
 import org.briarproject.briar.api.messaging.MessagingManager;
+import org.briarproject.briar.api.messaging.event.ReactionReceivedEvent;
 import org.briarproject.briar.api.messaging.PrivateMessageFormat;
 import org.briarproject.briar.api.messaging.PrivateMessageHeader;
 import org.briarproject.briar.api.privategroup.invitation.GroupInvitationManager;
@@ -91,6 +95,7 @@ import javax.inject.Inject;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
+import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.ActivityOptionsCompat;
@@ -103,6 +108,7 @@ import androidx.recyclerview.selection.SelectionPredicates;
 import androidx.recyclerview.selection.SelectionTracker;
 import androidx.recyclerview.selection.SelectionTracker.SelectionObserver;
 import androidx.recyclerview.selection.StorageStrategy;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
@@ -168,6 +174,10 @@ public class ConversationActivity extends ZerionActivity
 	@IoExecutor
 	Executor ioExecutor;
 
+	@Inject
+	@com.professor.zerion.android.AppModule.UiPrefs
+	android.content.SharedPreferences uiPrefs;
+
 	private final Map<MessageId, String> textCache = new ConcurrentHashMap<>();
 
 	private final ActivityResultLauncher<String[]> docLauncher =
@@ -199,6 +209,22 @@ public class ConversationActivity extends ZerionActivity
 	private ActionMode actionMode;
 	@Nullable
 	private com.google.android.material.floatingactionbutton.FloatingActionButton scrollToBottomButton;
+
+	private TextView typingIndicator;
+	private final TypingIndicatorManager typingManager =
+			new TypingIndicatorManager();
+
+	@Nullable
+	private View composeLinkPreviewCard;
+	@Nullable
+	private TextView composeLinkPreviewTitle;
+	@Nullable
+	private TextView composeLinkPreviewDomain;
+	@Nullable
+	private String lastDetectedUrl;
+
+	private final List<Integer> searchMatchPositions = new ArrayList<>();
+	private int searchMatchIndex = -1;
 
 	private volatile ContactId contactId;
 
@@ -275,6 +301,17 @@ public class ConversationActivity extends ZerionActivity
 				new ConversationScrollListener(adapter, viewModel);
 		list.getRecyclerView().addOnScrollListener(scrollListener);
 
+		SwipeToReplyCallback swipeCallback = new SwipeToReplyCallback(
+				position -> {
+					ConversationItem item = adapter.getItemAt(position);
+					if (item != null) {
+						textInputView.showReplyPreview(item);
+						textInputView.showSoftKeyboard();
+					}
+				});
+		new ItemTouchHelper(swipeCallback)
+				.attachToRecyclerView(list.getRecyclerView());
+
 		textInputView = findViewById(R.id.text_input_container);
 		if (featureFlags.shouldEnableImageAttachments()) {
 			ImagePreview imagePreview = findViewById(R.id.imagePreview);
@@ -319,6 +356,10 @@ public class ConversationActivity extends ZerionActivity
 				findViewById(R.id.send_voice_button),
 				textInputView);
 
+		typingIndicator = findViewById(R.id.typingIndicator);
+		setupTypingIndicator();
+		setupLinkPreviewDetection();
+
 		viewModel.getAutoDeleteTimer().observe(this, timer ->
 				sendController.setAutoDeleteTimer(timer));
 
@@ -338,6 +379,7 @@ public class ConversationActivity extends ZerionActivity
 
 		viewModel.getChatCleared().observeEvent(this, cleared -> {
 			if (cleared != null && cleared) {
+				textCache.clear();
 				adapter.clear();
 			}
 		});
@@ -367,12 +409,48 @@ public class ConversationActivity extends ZerionActivity
 		viewModel.getNewMessageReceived().observeEvent(this, header -> {
 			if (header != null) {
 				onNewConversationMessage(header);
+				viewModel.loadLinkPreviews();
 			}
 		});
 
 		viewModel.getClientVersionUpdated().observeEvent(this, clientId -> {
 			if (clientId != null && clientId.equals(MessagingManager.CLIENT_ID)) {
 				viewModel.recheckFeaturesAndOnboarding(contactId);
+			}
+		});
+
+		viewModel.isContactTyping().observe(this, typing -> {
+			boolean typingEnabled = uiPrefs.getBoolean(
+					com.professor.zerion.android.settings.SecurityFragment
+							.PREF_TYPING_INDICATORS, true);
+			if (!typingEnabled) {
+				typingManager.onTypingIndicatorReceived(false);
+				return;
+			}
+			if (typing != null && typing) {
+				typingManager.onTypingIndicatorReceived(true);
+			} else {
+				typingManager.onTypingIndicatorReceived(false);
+			}
+		});
+
+		viewModel.getReactionsMap().observe(this, reactions -> {
+			if (reactions != null) {
+				applyReactionsToItems(reactions);
+			}
+		});
+
+		viewModel.getReactionReceived().observeEvent(this, event -> {
+			if (event != null) {
+				// Reload all reactions from DB to get correct state
+				// (handles both add and toggle-off correctly)
+				viewModel.loadReactions();
+			}
+		});
+
+		viewModel.getLinkPreviewsMap().observe(this, previews -> {
+			if (previews != null) {
+				applyLinkPreviewsToItems(previews);
 			}
 		});
 	}
@@ -396,6 +474,138 @@ public class ConversationActivity extends ZerionActivity
 		}
 	}
 
+	private void setupTypingIndicator() {
+		typingManager.setListener(new TypingIndicatorManager.TypingListener() {
+			@Override
+			public void onSendTypingIndicator(boolean isTyping) {
+				if (uiPrefs.getBoolean(
+						com.professor.zerion.android.settings.SecurityFragment
+								.PREF_TYPING_INDICATORS, true)) {
+					viewModel.sendTypingIndicator(isTyping);
+				}
+			}
+
+			@Override
+			public void onContactTypingChanged(boolean isTyping) {
+				runOnUiThread(() -> {
+					if (typingIndicator != null) {
+						if (isTyping) {
+							typingIndicator.setText(R.string.typing_indicator);
+							typingIndicator.setVisibility(View.VISIBLE);
+						} else {
+							typingIndicator.setVisibility(View.GONE);
+						}
+					}
+				});
+			}
+		});
+
+		android.widget.EditText editText = findViewById(R.id.input_text);
+		if (editText != null) {
+			editText.addTextChangedListener(new android.text.TextWatcher() {
+				@Override
+				public void beforeTextChanged(CharSequence s, int start,
+						int count, int after) {}
+
+				@Override
+				public void onTextChanged(CharSequence s, int start,
+						int before, int count) {
+					if (count > 0) {
+						typingManager.onTextChanged();
+					}
+				}
+
+				@Override
+				public void afterTextChanged(android.text.Editable s) {}
+			});
+		}
+	}
+
+	private void setupLinkPreviewDetection() {
+		composeLinkPreviewCard = findViewById(R.id.composeLinkPreviewCard);
+		composeLinkPreviewTitle = findViewById(R.id.composeLinkPreviewTitle);
+		composeLinkPreviewDomain = findViewById(R.id.composeLinkPreviewDomain);
+		ImageView dismiss = findViewById(R.id.composeLinkPreviewDismiss);
+		if (dismiss != null) {
+			dismiss.setOnClickListener(v -> {
+				viewModel.clearPendingLinkPreview();
+				hideLinkPreviewCompose();
+			});
+		}
+
+		viewModel.getPendingLinkPreview().observe(this, preview -> {
+			if (preview != null) {
+				showLinkPreviewCompose(preview);
+			} else {
+				hideLinkPreviewCompose();
+			}
+		});
+
+		android.widget.EditText editText = findViewById(R.id.input_text);
+		if (editText != null) {
+			editText.addTextChangedListener(
+					new android.text.TextWatcher() {
+				@Override
+				public void beforeTextChanged(CharSequence s, int start,
+						int count, int after) {}
+
+				@Override
+				public void onTextChanged(CharSequence s, int start,
+						int before, int count) {}
+
+				@Override
+				public void afterTextChanged(android.text.Editable s) {
+					if (!uiPrefs.getBoolean(
+						com.professor.zerion.android.settings
+								.SecurityFragment.PREF_LINK_PREVIEWS,
+						true)) {
+						return;
+					}
+					String text = s.toString();
+					String url = com.professor.zerion.android.conversation
+							.linkpreview.LinkPreviewFetcher
+							.extractUrl(text);
+					if (url != null && !url.equals(lastDetectedUrl)) {
+						lastDetectedUrl = url;
+						viewModel.fetchLinkPreview(url, getTorSocksPort());
+					} else if (url == null && lastDetectedUrl != null) {
+						lastDetectedUrl = null;
+						viewModel.clearPendingLinkPreview();
+					}
+				}
+			});
+		}
+	}
+
+	private int getTorSocksPort() {
+		return com.professor.zerion.android.AppModule
+				.getAndroidComponent(this).torSocksPort();
+	}
+
+	private void showLinkPreviewCompose(
+			org.briarproject.briar.api.messaging.LinkPreview preview) {
+		if (composeLinkPreviewCard == null) return;
+		if (composeLinkPreviewTitle != null) {
+			composeLinkPreviewTitle.setText(preview.getTitle());
+		}
+		if (composeLinkPreviewDomain != null) {
+			try {
+				composeLinkPreviewDomain.setText(
+						new java.net.URL(preview.getUrl()).getHost());
+			} catch (Exception e) {
+				composeLinkPreviewDomain.setText(preview.getUrl());
+			}
+		}
+		composeLinkPreviewCard.setVisibility(View.VISIBLE);
+	}
+
+	private void hideLinkPreviewCompose() {
+		if (composeLinkPreviewCard != null) {
+			composeLinkPreviewCard.setVisibility(View.GONE);
+		}
+		lastDetectedUrl = null;
+	}
+
 	private static final int REQUEST_CAMERA_PERMISSION = 1002;
 	private static final int REQUEST_TAKE_PHOTO = 1003;
 	private static final int REQUEST_VAULT_GALLERY = 1004;
@@ -404,6 +614,7 @@ public class ConversationActivity extends ZerionActivity
 	private static final int REQUEST_VOICE_CALL = 1007;
 	private static final int REQUEST_RECORD_VIDEO = 1008;
 	private static final int REQUEST_VIDEO_CAMERA_PERMISSION = 1009;
+	private static final int REQUEST_VIDEO_CALL = 1010;
 	private Uri photoUri;
 	private Uri videoUri;
 	private java.io.File recordedVideoFile;
@@ -486,8 +697,6 @@ public class ConversationActivity extends ZerionActivity
 					return;
 				}
 
-				logVideoMetadata("SENDER_RECORDED", finalizedFile);
-
 				Uri finalizedUri = androidx.core.content.FileProvider.getUriForFile(this,
 						"com.professor.zerion.fileprovider", finalizedFile);
 
@@ -509,45 +718,6 @@ public class ConversationActivity extends ZerionActivity
 						R.string.video_attach_error, Toast.LENGTH_SHORT).show());
 			}
 		});
-	}
-
-	private void logVideoMetadata(String tag, java.io.File videoFile) {
-		try {
-			android.media.MediaExtractor extractor = new android.media.MediaExtractor();
-			extractor.setDataSource(videoFile.getAbsolutePath());
-
-			StringBuilder info = new StringBuilder();
-			info.append("[").append(tag).append("] ");
-			info.append("size=").append(videoFile.length()).append("bytes, ");
-
-			for (int i = 0; i < extractor.getTrackCount(); i++) {
-				android.media.MediaFormat format = extractor.getTrackFormat(i);
-				String mime = format.getString(android.media.MediaFormat.KEY_MIME);
-				info.append("track").append(i).append("=").append(mime);
-
-				if (mime != null && mime.startsWith("video/")) {
-					if (format.containsKey(android.media.MediaFormat.KEY_WIDTH)) {
-						info.append(" ").append(format.getInteger(android.media.MediaFormat.KEY_WIDTH));
-						info.append("x").append(format.getInteger(android.media.MediaFormat.KEY_HEIGHT));
-					}
-					if (format.containsKey(android.media.MediaFormat.KEY_FRAME_RATE)) {
-						info.append(" ").append(format.getInteger(android.media.MediaFormat.KEY_FRAME_RATE)).append("fps");
-					}
-				}
-				info.append(", ");
-			}
-
-			android.media.MediaMetadataRetriever retriever = new android.media.MediaMetadataRetriever();
-			retriever.setDataSource(videoFile.getAbsolutePath());
-			String duration = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION);
-			if (duration != null) {
-				info.append("duration=").append(duration).append("ms");
-			}
-			retriever.release();
-			extractor.release();
-
-		} catch (Exception e) {
-		}
 	}
 
 	private void scrollToBottom() {
@@ -625,6 +795,58 @@ public class ConversationActivity extends ZerionActivity
 				displayName != null ? displayName : "");
 		intent.putExtra(com.professor.zerion.android.conversation.voice.VoiceCallActivity.EXTRA_IS_INCOMING,
 				false);
+		startActivity(intent);
+	}
+
+	private void startVideoCall() {
+		// Video call starts as voice call — video is upgraded mid-call
+		// Request both audio and camera permissions
+		boolean hasAudio = ContextCompat.checkSelfPermission(this,
+				android.Manifest.permission.RECORD_AUDIO)
+				== android.content.pm.PackageManager.PERMISSION_GRANTED;
+		boolean hasCamera = ContextCompat.checkSelfPermission(this,
+				android.Manifest.permission.CAMERA)
+				== android.content.pm.PackageManager.PERMISSION_GRANTED;
+
+		if (!hasAudio || !hasCamera) {
+			java.util.List<String> perms = new java.util.ArrayList<>();
+			if (!hasAudio) {
+				perms.add(android.Manifest.permission.RECORD_AUDIO);
+			}
+			if (!hasCamera) {
+				perms.add(android.Manifest.permission.CAMERA);
+			}
+			if (android.os.Build.VERSION.SDK_INT >=
+					android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+				if (!hasAudio) {
+					perms.add(android.Manifest.permission
+							.FOREGROUND_SERVICE_MICROPHONE);
+				}
+				perms.add(android.Manifest.permission
+						.FOREGROUND_SERVICE_CAMERA);
+			}
+			ActivityCompat.requestPermissions(this,
+					perms.toArray(new String[0]), REQUEST_VIDEO_CALL);
+			return;
+		}
+
+		Intent intent = new Intent(this,
+				com.professor.zerion.android.conversation.voice
+						.VoiceCallActivity.class);
+		intent.putExtra(
+				com.professor.zerion.android.conversation.voice
+						.VoiceCallActivity.EXTRA_CONTACT_ID,
+				contactId.getInt());
+		String displayName = viewModel.getContactDisplayName().getValue();
+		intent.putExtra(
+				com.professor.zerion.android.conversation.voice
+						.VoiceCallActivity.EXTRA_CONTACT_NAME,
+				displayName != null ? displayName : "");
+		intent.putExtra(
+				com.professor.zerion.android.conversation.voice
+						.VoiceCallActivity.EXTRA_IS_INCOMING, false);
+		// Flag to auto-enable video after connection
+		intent.putExtra("auto_video", true);
 		startActivity(intent);
 	}
 
@@ -744,6 +966,17 @@ public class ConversationActivity extends ZerionActivity
 					startVoiceCall();
 				}
 			}
+		} else if (requestCode == REQUEST_VIDEO_CALL) {
+			boolean allGranted = true;
+			for (int result : grantResults) {
+				if (result != PackageManager.PERMISSION_GRANTED) {
+					allGranted = false;
+					break;
+				}
+			}
+			if (allGranted) {
+				startVideoCall();
+			}
 		}
 	}
 
@@ -824,9 +1057,48 @@ public class ConversationActivity extends ZerionActivity
 	}
 
 	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		typingManager.destroy();
+	}
+
+	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		MenuInflater inflater = getMenuInflater();
 		inflater.inflate(R.menu.conversation_actions, menu);
+
+		MenuItem searchItem = menu.findItem(R.id.action_search);
+		SearchView searchView = (SearchView) searchItem.getActionView();
+		if (searchView != null) {
+			searchView.setQueryHint(getString(R.string.search_hint));
+			searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+				@Override
+				public boolean onQueryTextSubmit(String query) {
+					navigateSearchNext();
+					return true;
+				}
+
+				@Override
+				public boolean onQueryTextChange(String newText) {
+					performMessageSearch(newText);
+					return true;
+				}
+			});
+			searchItem.setOnActionExpandListener(
+					new MenuItem.OnActionExpandListener() {
+				@Override
+				public boolean onMenuItemActionExpand(MenuItem item) {
+					return true;
+				}
+
+				@Override
+				public boolean onMenuItemActionCollapse(MenuItem item) {
+					clearSearchHighlight();
+					return true;
+				}
+			});
+		}
+
 		return super.onCreateOptionsMenu(menu);
 	}
 
@@ -838,6 +1110,9 @@ public class ConversationActivity extends ZerionActivity
 			return true;
 		} else if (itemId == R.id.action_voice_call) {
 			startVoiceCall();
+			return true;
+		} else if (itemId == R.id.action_video_call) {
+			startVideoCall();
 			return true;
 		} else if (itemId == R.id.action_all_media) {
 			Intent intent = new Intent(this, AllMediaActivity.class);
@@ -874,12 +1149,34 @@ public class ConversationActivity extends ZerionActivity
 
 	@Override
 	public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
-		return false;
+		MenuItem reactItem = menu.findItem(R.id.action_react);
+		if (reactItem != null) {
+			boolean showReact = false;
+			if (tracker.getSelection().size() == 1) {
+				String key = tracker.getSelection().iterator().next();
+				int pos = adapter.getPositionOfKey(key);
+				if (pos >= 0) {
+					ConversationItem item = adapter.getItemAt(pos);
+					showReact = item instanceof ConversationMessageItem;
+				}
+			}
+			reactItem.setVisible(showReact);
+		}
+		return true;
 	}
 
 	@Override
 	public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-		if (item.getItemId() == R.id.action_delete) {
+		if (item.getItemId() == R.id.action_react) {
+			reactToSelectedMessage();
+			return true;
+		} else if (item.getItemId() == R.id.action_copy) {
+			copySelectedMessages();
+			return true;
+		} else if (item.getItemId() == R.id.action_forward) {
+			forwardSelectedMessages();
+			return true;
+		} else if (item.getItemId() == R.id.action_delete) {
 			deleteSelectedMessages();
 			return true;
 		}
@@ -935,6 +1232,7 @@ public class ConversationActivity extends ZerionActivity
 		if (actionMode == null) throw new IllegalStateException();
 		String title = String.valueOf(tracker.getSelection().size());
 		actionMode.setTitle(title);
+		actionMode.invalidate();
 	}
 
 	private Collection<MessageId> getSelection() {
@@ -976,6 +1274,9 @@ public class ConversationActivity extends ZerionActivity
 		List<ConversationMessageHeader> sorted = new ArrayList<>(headers);
 		sort(sorted, (a, b) -> Long.compare(b.getTimestamp(), a.getTimestamp()));
 		displayMessages(sorted);
+		// Load reactions and link previews AFTER messages populate the adapter
+		viewModel.loadReactions();
+		viewModel.loadLinkPreviews();
 	}
 
 	private void displayMessages(Collection<ConversationMessageHeader> headers) {
@@ -1080,6 +1381,20 @@ public class ConversationActivity extends ZerionActivity
 	@Override
 	public LiveData<SendState> onSendClick(@Nullable String text,
 			List<AttachmentHeader> headers, long expectedAutoDeleteTimer) {
+		typingManager.onMessageSent();
+		// Check if there's a pending link preview to embed
+		org.briarproject.briar.api.messaging.LinkPreview preview =
+				viewModel.getPendingLinkPreview().getValue();
+		if (preview != null && text != null && !text.trim().isEmpty()
+				&& (headers == null || headers.isEmpty())) {
+			viewModel.clearPendingLinkPreview();
+			hideLinkPreviewCompose();
+			textInputView.hideReplyPreview();
+			return viewModel.sendMessageWithPreview(
+					text, expectedAutoDeleteTimer, preview);
+		}
+		viewModel.clearPendingLinkPreview();
+		hideLinkPreviewCompose();
 		ConversationItem replyToItem = textInputView.getReplyingToItem();
 		LiveData<SendState> result = viewModel.sendMessage(text, headers, expectedAutoDeleteTimer, replyToItem);
 		textInputView.hideReplyPreview();
@@ -1409,6 +1724,108 @@ public class ConversationActivity extends ZerionActivity
 				.show();
 	}
 
+	@UiThread
+	private void copySelectedMessages() {
+		Selection<String> selection = tracker.getSelection();
+		StringBuilder sb = new StringBuilder();
+		for (String key : selection) {
+			int pos = adapter.getPositionOfKey(key);
+			if (pos < 0) continue;
+			ConversationItem item = adapter.getItemAt(pos);
+			if (item == null) continue;
+			String text = item.getText();
+			if (text != null && !text.isEmpty()) {
+				if (sb.length() > 0) sb.append("\n");
+				sb.append(text);
+			}
+		}
+		if (sb.length() > 0) {
+			ClipboardManager clipboard = (ClipboardManager)
+					getSystemService(Context.CLIPBOARD_SERVICE);
+			if (clipboard != null) {
+				clipboard.setPrimaryClip(
+						ClipData.newPlainText("message", sb.toString()));
+				Snackbar.make(list, R.string.copied_to_clipboard,
+						Snackbar.LENGTH_SHORT).show();
+			}
+		}
+		if (actionMode != null) actionMode.finish();
+	}
+
+	@UiThread
+	private void reactToSelectedMessage() {
+		Selection<String> selection = tracker.getSelection();
+		if (selection.size() != 1) return;
+		String key = selection.iterator().next();
+		int pos = adapter.getPositionOfKey(key);
+		if (pos < 0) return;
+		ConversationItem item = adapter.getItemAt(pos);
+		if (item == null) return;
+		if (!(item instanceof ConversationMessageItem)) return;
+		if (actionMode != null) actionMode.finish();
+		onReactionClicked(item);
+	}
+
+	@UiThread
+	private void forwardSelectedMessages() {
+		Selection<String> selection = tracker.getSelection();
+		StringBuilder sb = new StringBuilder();
+		for (String key : selection) {
+			int pos = adapter.getPositionOfKey(key);
+			if (pos < 0) continue;
+			ConversationItem item = adapter.getItemAt(pos);
+			if (item == null) continue;
+			// Only forward actual user messages, not system/notice/call items
+			if (!(item instanceof ConversationMessageItem)) continue;
+			String text = item.getText();
+			if (text != null && !text.isEmpty()) {
+				if (sb.length() > 0) sb.append("\n");
+				sb.append(text);
+			}
+		}
+		if (sb.length() == 0) {
+			if (actionMode != null) actionMode.finish();
+			return;
+		}
+		String rawText = sb.toString();
+		// Truncate to max message length to prevent FormatException
+		int maxLen = org.briarproject.briar.api.messaging
+				.MessagingConstants.MAX_PRIVATE_MESSAGE_TEXT_LENGTH;
+		String forwardText = rawText.length() > maxLen
+				? rawText.substring(0, maxLen) : rawText;
+		if (actionMode != null) actionMode.finish();
+
+		viewModel.loadContactsForForward(contacts -> {
+			if (contacts == null || contacts.isEmpty()) {
+				Toast.makeText(this, R.string.no_other_contacts,
+						Toast.LENGTH_SHORT).show();
+				return null;
+			}
+			String[] names = new String[contacts.size()];
+			for (int i = 0; i < contacts.size(); i++) {
+				names[i] = UiUtils.getContactDisplayName(
+						contacts.get(i));
+			}
+			new MaterialAlertDialogBuilder(this)
+					.setTitle(R.string.forward_to)
+					.setItems(names, (dialog, which) -> {
+						ContactId recipientId =
+								contacts.get(which).getId();
+						viewModel.forwardMessage(recipientId,
+								forwardText,
+								() -> Toast.makeText(this,
+										R.string.message_forwarded,
+										Toast.LENGTH_SHORT).show(),
+								() -> Toast.makeText(this,
+										R.string.forward_failed,
+										Toast.LENGTH_SHORT).show());
+					})
+					.setNegativeButton(android.R.string.cancel, null)
+					.show();
+			return null;
+		});
+	}
+
 	private void deleteSelectedMessages() {
 		Collection<MessageId> selected = getSelection();
 		if (selected.isEmpty()) return;
@@ -1467,6 +1884,56 @@ public class ConversationActivity extends ZerionActivity
 				if (key != null) {
 					tracker.select(key);
 				}
+			}
+		}
+	}
+
+	private static final String[] REACTION_EMOJIS = {
+			"\uD83D\uDC4D", "\u2764\uFE0F", "\uD83D\uDE02",
+			"\uD83D\uDE2E", "\uD83D\uDE22", "\uD83D\uDE21"
+	};
+
+	@Override
+	public void onReactionClicked(ConversationItem item) {
+		new MaterialAlertDialogBuilder(this)
+				.setItems(REACTION_EMOJIS, (dialog, which) ->
+						viewModel.sendReaction(item.getId(),
+								REACTION_EMOJIS[which]))
+				.show();
+	}
+
+	@UiThread
+	private void applyReactionsToItems(
+			Map<MessageId, Map<String, Integer>> reactions) {
+		for (int i = 0; i < adapter.getItemCount(); i++) {
+			ConversationItem item = adapter.getItemAt(i);
+			if (item == null) continue;
+			Map<String, Integer> msgReactions = reactions.get(item.getId());
+			if (msgReactions != null) {
+				item.getReactions().clear();
+				item.getReactions().putAll(msgReactions);
+				adapter.notifyItemChanged(i);
+			} else if (item.hasReactions()) {
+				// Clear reactions that were removed (toggle-off)
+				item.getReactions().clear();
+				adapter.notifyItemChanged(i);
+			}
+		}
+	}
+
+
+
+	@UiThread
+	private void applyLinkPreviewsToItems(
+			Map<MessageId, org.briarproject.briar.api.messaging.LinkPreview> previews) {
+		for (int i = 0; i < adapter.getItemCount(); i++) {
+			ConversationItem item = adapter.getItemAt(i);
+			if (item == null) continue;
+			org.briarproject.briar.api.messaging.LinkPreview preview =
+					previews.get(item.getId());
+			if (preview != null) {
+				item.setLinkPreview(preview);
+				adapter.notifyItemChanged(i);
 			}
 		}
 	}
@@ -1590,5 +2057,64 @@ public class ConversationActivity extends ZerionActivity
 		if (handler != null && e instanceof RuntimeException) {
 			handler.uncaughtException(Thread.currentThread(), e);
 		}
+	}
+
+	@UiThread
+	private void performMessageSearch(String query) {
+		searchMatchPositions.clear();
+		searchMatchIndex = -1;
+		adapter.setHighlightedPosition(-1);
+
+		if (query.isEmpty()) return;
+
+		String lowerQuery = query.toLowerCase(java.util.Locale.ROOT);
+		for (int i = 0; i < adapter.getItemCount(); i++) {
+			ConversationItem item = adapter.getItemAt(i);
+			if (item == null) continue;
+			String text = item.getText();
+			if (text != null &&
+					text.toLowerCase(java.util.Locale.ROOT)
+							.contains(lowerQuery)) {
+				searchMatchPositions.add(i);
+			}
+		}
+
+		if (!searchMatchPositions.isEmpty()) {
+			searchMatchIndex = 0;
+			scrollToSearchMatch();
+		} else {
+			Toast.makeText(this, R.string.search_no_results,
+					Toast.LENGTH_SHORT).show();
+		}
+	}
+
+	@UiThread
+	private void navigateSearchNext() {
+		if (searchMatchPositions.isEmpty()) return;
+		searchMatchIndex = (searchMatchIndex + 1)
+				% searchMatchPositions.size();
+		scrollToSearchMatch();
+	}
+
+	@UiThread
+	private void scrollToSearchMatch() {
+		if (searchMatchIndex < 0 ||
+				searchMatchIndex >= searchMatchPositions.size()) return;
+		int position = searchMatchPositions.get(searchMatchIndex);
+		if (position >= adapter.getItemCount()) {
+			// Position stale after dataset change; clear search
+			clearSearchHighlight();
+			return;
+		}
+		adapter.setHighlightedPosition(position);
+		layoutManager.scrollToPositionWithOffset(position,
+				list.getRecyclerView().getHeight() / 3);
+	}
+
+	@UiThread
+	private void clearSearchHighlight() {
+		searchMatchPositions.clear();
+		searchMatchIndex = -1;
+		adapter.setHighlightedPosition(-1);
 	}
 }
