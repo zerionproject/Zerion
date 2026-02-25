@@ -2500,6 +2500,83 @@ public abstract class JdbcDatabaseTest extends BrambleTestCase {
 		assertEquals(NO_CLEANUP_DEADLINE, db.getNextCleanupDeadline(txn));
 	}
 
+	@Test
+	public void testRemoveAllGroupMessagesDeletesOffers() throws Exception {
+		Database<Connection> db = open(false);
+		Connection txn = db.startTransaction();
+
+		// Set up contact and group
+		db.addIdentity(txn, identity);
+		assertEquals(contactId,
+				db.addContact(txn, author, localAuthor.getId(), null, true));
+		db.addGroup(txn, group);
+		db.addGroupVisibility(txn, contactId, groupId, true);
+
+		// Add two messages to the group
+		db.addMessage(txn, message, DELIVERED, true, false, null);
+		Message message2 = getMessage(groupId);
+		db.addMessage(txn, message2, DELIVERED, true, false, null);
+
+		// Add offers referencing those messages
+		db.addOfferedMessage(txn, contactId, messageId);
+		db.addOfferedMessage(txn, contactId, message2.getId());
+		assertEquals(2, db.countOfferedMessages(txn, contactId));
+
+		// Remove all messages in the group
+		db.removeAllGroupMessages(txn, groupId);
+
+		// Messages must be gone
+		assertFalse(db.containsMessage(txn, messageId));
+		assertFalse(db.containsMessage(txn, message2.getId()));
+
+		// Offers referencing those messages must also be gone
+		assertEquals(0, db.countOfferedMessages(txn, contactId));
+
+		db.commitTransaction(txn);
+		db.close();
+	}
+
+	@Test
+	public void testRemoveAllGroupMessagesPreservesOtherGroupOffers()
+			throws Exception {
+		Database<Connection> db = open(false);
+		Connection txn = db.startTransaction();
+
+		// Set up contact and two groups
+		db.addIdentity(txn, identity);
+		assertEquals(contactId,
+				db.addContact(txn, author, localAuthor.getId(), null, true));
+		db.addGroup(txn, group);
+		db.addGroupVisibility(txn, contactId, groupId, true);
+
+		Group group2 = getGroup(clientId, majorVersion);
+		db.addGroup(txn, group2);
+		db.addGroupVisibility(txn, contactId, group2.getId(), true);
+
+		// Add messages to each group
+		db.addMessage(txn, message, DELIVERED, true, false, null);
+		Message otherMsg = getMessage(group2.getId());
+		db.addMessage(txn, otherMsg, DELIVERED, true, false, null);
+
+		// Add offers for both
+		db.addOfferedMessage(txn, contactId, messageId);
+		db.addOfferedMessage(txn, contactId, otherMsg.getId());
+		assertEquals(2, db.countOfferedMessages(txn, contactId));
+
+		// Remove only the first group's messages
+		db.removeAllGroupMessages(txn, groupId);
+
+		// First group's message and offer gone
+		assertFalse(db.containsMessage(txn, messageId));
+
+		// Second group's message and offer preserved
+		assertTrue(db.containsMessage(txn, otherMsg.getId()));
+		assertEquals(1, db.countOfferedMessages(txn, contactId));
+
+		db.commitTransaction(txn);
+		db.close();
+	}
+
 	private Database<Connection> open(boolean resume) throws Exception {
 		return open(resume, new TestMessageFactory(), new SystemClock());
 	}
