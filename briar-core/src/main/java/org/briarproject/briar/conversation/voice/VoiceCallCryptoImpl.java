@@ -223,7 +223,7 @@ class VoiceCallCryptoImpl implements VoiceCallCrypto {
 			byte[] nonce = new byte[GCM_NONCE_BYTES];
 			secureRandom.nextBytes(nonce);
 
-			byte[] keyBytes = key.getBytes();
+			byte[] keyBytes = key.getBytes().clone();
 			Cipher cipher = CIPHER_CACHE.get();
 			GCMParameterSpec gcmSpec = new GCMParameterSpec(GCM_TAG_BITS, nonce);
 			SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
@@ -248,7 +248,7 @@ class VoiceCallCryptoImpl implements VoiceCallCrypto {
 			long frameCounter) {
 		try {
 			byte[] nonce = new byte[GCM_NONCE_BYTES];
-			byte[] keyBytes = key.getBytes();
+			byte[] keyBytes = key.getBytes().clone();
 			java.security.MessageDigest sha256 =
 					java.security.MessageDigest.getInstance("SHA-256");
 			sha256.update("VOICE_NONCE_SALT".getBytes(
@@ -297,7 +297,7 @@ class VoiceCallCryptoImpl implements VoiceCallCrypto {
 			byte[] ciphertextWithTag = new byte[ciphertextLength];
 			System.arraycopy(ciphertext, GCM_NONCE_BYTES, ciphertextWithTag, 0, ciphertextLength);
 
-			byte[] keyBytes = key.getBytes();
+			byte[] keyBytes = key.getBytes().clone();
 			Cipher cipher = CIPHER_CACHE.get();
 			GCMParameterSpec gcmSpec = new GCMParameterSpec(GCM_TAG_BITS, nonce);
 			SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
