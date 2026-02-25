@@ -49,6 +49,7 @@ import static org.briarproject.bramble.api.contact.PendingContactState.ADDING_CO
 import static org.briarproject.bramble.api.contact.PendingContactState.FAILED;
 import static org.briarproject.bramble.api.contact.PendingContactState.OFFLINE;
 import static org.briarproject.bramble.api.contact.PendingContactState.WAITING_FOR_CONNECTION;
+import static org.briarproject.bramble.rendezvous.RendezvousConstants.FAST_POLLING_INTERVAL_MS;
 import static org.briarproject.bramble.rendezvous.RendezvousConstants.POLLING_INTERVAL_MS;
 import static org.briarproject.bramble.rendezvous.RendezvousConstants.RENDEZVOUS_TIMEOUT_MS;
 import static org.briarproject.bramble.test.CollectionMatcher.collectionOf;
@@ -474,8 +475,8 @@ public class RendezvousPollerImplTest extends BrambleMockTestCase {
 
 		context.checking(new Expectations() {{
 			oneOf(scheduler).scheduleWithFixedDelay(with(any(Runnable.class)),
-					with(any(Executor.class)), with(POLLING_INTERVAL_MS),
-					with(POLLING_INTERVAL_MS), with(MILLISECONDS));
+					with(any(Executor.class)), with(FAST_POLLING_INTERVAL_MS),
+					with(FAST_POLLING_INTERVAL_MS), with(MILLISECONDS));
 			will(doAll(new CaptureArgumentAction<>(capturePollTask,
 					Runnable.class, 0), returnValue(cancellable)));
 		}});

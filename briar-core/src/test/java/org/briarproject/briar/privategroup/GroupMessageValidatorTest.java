@@ -2,6 +2,7 @@ package org.briarproject.briar.privategroup;
 
 import org.briarproject.bramble.api.FormatException;
 import org.briarproject.bramble.api.client.BdfMessageContext;
+import org.briarproject.bramble.api.crypto.CryptoComponent;
 import org.briarproject.bramble.api.data.BdfDictionary;
 import org.briarproject.bramble.api.data.BdfList;
 import org.briarproject.bramble.api.identity.Author;
@@ -51,6 +52,8 @@ public class GroupMessageValidatorTest extends ValidatorTestCase {
 			context.mock(PrivateGroupFactory.class);
 	private final GroupInvitationFactory groupInvitationFactory =
 			context.mock(GroupInvitationFactory.class);
+	private final CryptoComponent crypto =
+			context.mock(CryptoComponent.class);
 
 	private final Author member = getAuthor();
 	private final BdfList memberList = BdfList.of(
@@ -80,7 +83,7 @@ public class GroupMessageValidatorTest extends ValidatorTestCase {
 
 	private final GroupMessageValidator validator =
 			new GroupMessageValidator(privateGroupFactory, clientHelper,
-					metadataEncoder, clock, groupInvitationFactory);
+					metadataEncoder, clock, groupInvitationFactory, crypto);
 
 	// JOIN message
 

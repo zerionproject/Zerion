@@ -24,8 +24,7 @@ public class DatabaseModule {
 	@Singleton
 	Database<Connection> provideDatabase(DatabaseConfig config,
 			MessageFactory messageFactory, Clock clock) {
-		throw new UnsupportedOperationException(
-				"Desktop H2 database removed — use AndroidDatabaseModule");
+		return new HyperSqlDatabase(config, messageFactory, clock);
 	}
 
 	@Provides

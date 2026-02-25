@@ -25,7 +25,7 @@ public class CreatorProtocolEngineTest extends AbstractProtocolEngineTest {
 					privateGroupManager, privateGroupFactory,
 					groupMessageFactory, identityManager, messageParser,
 					messageEncoder, autoDeleteManager,
-					conversationManager, clock);
+					conversationManager, clock, crypto);
 
 	private CreatorSession getDefaultSession(CreatorState state) {
 		return new CreatorSession(contactGroupId, privateGroupId,

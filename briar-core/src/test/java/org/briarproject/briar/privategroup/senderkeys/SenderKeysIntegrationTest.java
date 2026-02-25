@@ -223,38 +223,19 @@ public class SenderKeysIntegrationTest extends BrambleMockTestCase {
 		SenderKey senderKey = new SenderKey(
 				groupId, authorId1, chainKey, 0, 0, createdAt, true, SenderKeyState.ACTIVE);
 
-		// Message to encrypt
-		byte[] plaintext = "Hello, private group!".getBytes();
-		byte[] nonce = getRandomId();
-
 		SecretKey messageKey = getSecretKey();
-		byte[] ciphertext = new byte[plaintext.length + 16]; // With auth tag
 
 		context.checking(new Expectations() {{
 			// Get sender's key for encryption
 			oneOf(senderKeyManager).getLocalSenderKey(txn, groupId);
 			will(returnValue(senderKey));
 
-			// Derive message key
+			// Derive message key (used by deriveMessageKeyAt)
 			oneOf(crypto).deriveKey(
 					with(equal(GroupMessageCrypto.MESSAGE_KEY_LABEL)),
 					with(any(SecretKey.class)),
 					with(any(byte[].class)));
 			will(returnValue(messageKey));
-
-			// Encrypt message
-			oneOf(crypto).encryptWithAssociatedData(
-					with(any(SecretKey.class)),
-					with(any(byte[].class)),
-					with(any(byte[].class)),
-					with(any(byte[].class)));
-			will(returnValue(ciphertext));
-
-			// Advance chain key after encryption
-			oneOf(crypto).deriveKey(
-					with(equal(GroupMessageCrypto.CHAIN_KEY_LABEL)),
-					with(any(SecretKey.class)));
-			will(returnValue(getSecretKey()));
 		}});
 
 		// Simulate encryption
