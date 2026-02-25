@@ -3,6 +3,9 @@ package org.briarproject.briar.conversation.voice;
 import org.briarproject.bramble.api.crypto.SecretKey;
 import org.junit.Test;
 
+import java.security.SecureRandom;
+import java.util.Arrays;
+
 import static org.junit.Assert.*;
 
 /**
@@ -127,5 +130,181 @@ public class VoiceCallCryptoImplTest {
 		String encoded2 = crypto.encodeVoiceCallKey(key);
 
 		assertEquals(encoded1, encoded2);
+	}
+
+	// ---- Fix 1 regression tests: multi-frame encrypt/decrypt ----
+
+	/**
+	 * Verifies that the same key can encrypt 100 frames and each one
+	 * round-trips correctly through decrypt. Before the clone() fix,
+	 * the key was zeroed after frame #1, breaking all subsequent frames.
+	 */
+	@Test
+	public void testMultiFrameEncryptDecryptRoundTrip() {
+		VoiceCallCryptoImpl crypto = new VoiceCallCryptoImpl(null);
+		SecretKey key = makeTestKey();
+
+		byte[] originalKeyBytes = key.getBytes().clone();
+
+		for (int i = 0; i < 100; i++) {
+			byte[] plaintext = makeFrame(160, (byte) i);
+			byte[] ciphertext = crypto.encryptAudioFrame(plaintext, key);
+			byte[] decrypted = crypto.decryptAudioFrame(ciphertext, key);
+
+			assertArrayEquals("Frame " + i + " round-trip failed",
+					plaintext, decrypted);
+		}
+
+		// Key must remain intact after all 100 frames
+		assertArrayEquals("Key was mutated during encrypt/decrypt",
+				originalKeyBytes, key.getBytes());
+	}
+
+	/**
+	 * Regression: after frame #1 the old code used an all-zero key.
+	 * This test encrypts frame #2 with the real key and with an all-zero
+	 * key, and asserts they differ. If clone() is missing, they'd match.
+	 */
+	@Test
+	public void testFrame2DoesNotMatchZeroKeyEncryption() {
+		VoiceCallCryptoImpl crypto = new VoiceCallCryptoImpl(null);
+		SecretKey realKey = makeTestKey();
+
+		// Encrypt frame 1 (consumes key if clone is missing)
+		byte[] frame1 = makeFrame(160, (byte) 0xAA);
+		crypto.encryptAudioFrame(frame1, realKey);
+
+		// Encrypt frame 2 with the real key
+		byte[] frame2 = makeFrame(160, (byte) 0xBB);
+		byte[] ciphertextReal = crypto.encryptAudioFrame(frame2, realKey);
+
+		// Verify the real key decrypts its own ciphertext and an all-zero
+		// key (what old code would use after frame #1) does NOT
+		SecretKey zeroKey = new SecretKey(new byte[32]);
+		byte[] decryptedReal = crypto.decryptAudioFrame(ciphertextReal,
+				realKey);
+		assertArrayEquals(frame2, decryptedReal);
+
+		try {
+			crypto.decryptAudioFrame(ciphertextReal, zeroKey);
+			fail("Zero key should not decrypt real-key ciphertext");
+		} catch (RuntimeException expected) {
+			// GCM tag mismatch — correct behavior
+		}
+	}
+
+	/**
+	 * Verifies the counter-based encrypt overload also preserves the key
+	 * across multiple frames.
+	 */
+	@Test
+	public void testMultiFrameCounterBasedEncrypt() {
+		VoiceCallCryptoImpl crypto = new VoiceCallCryptoImpl(null);
+		SecretKey key = makeTestKey();
+		byte[] originalKeyBytes = key.getBytes().clone();
+
+		for (long counter = 0; counter < 50; counter++) {
+			byte[] plaintext = makeFrame(160, (byte) counter);
+			byte[] ciphertext = crypto.encryptAudioFrame(plaintext, key,
+					counter);
+			assertNotNull("Counter " + counter + " returned null",
+					ciphertext);
+			assertTrue("Counter " + counter + " ciphertext too short",
+					ciphertext.length > plaintext.length);
+		}
+
+		assertArrayEquals("Key was mutated during counter-based encrypt",
+				originalKeyBytes, key.getBytes());
+	}
+
+	/**
+	 * Counter-based encrypt uses the key bytes in nonce derivation.
+	 * Verify that nonce differs per counter (no nonce reuse).
+	 */
+	@Test
+	public void testCounterBasedNonceUniqueness() {
+		VoiceCallCryptoImpl crypto = new VoiceCallCryptoImpl(null);
+		SecretKey key = makeTestKey();
+		byte[] plaintext = makeFrame(160, (byte) 0x42);
+
+		byte[] ct0 = crypto.encryptAudioFrame(plaintext, key, 0);
+		byte[] ct1 = crypto.encryptAudioFrame(plaintext, key, 1);
+
+		// Same key + same plaintext but different counters => different
+		// ciphertext (nonce differs)
+		assertFalse("Nonce reuse: counter 0 vs 1 produced same ciphertext",
+				Arrays.equals(ct0, ct1));
+	}
+
+	/**
+	 * Property test: random plaintext sizes and keys all round-trip.
+	 */
+	@Test
+	public void testRandomFramesRoundTrip() {
+		VoiceCallCryptoImpl crypto = new VoiceCallCryptoImpl(null);
+		SecureRandom rng = new SecureRandom();
+
+		for (int trial = 0; trial < 20; trial++) {
+			byte[] keyBytes = new byte[32];
+			rng.nextBytes(keyBytes);
+			SecretKey key = new SecretKey(keyBytes);
+
+			int frameSize = 80 + rng.nextInt(400);
+			byte[] plaintext = new byte[frameSize];
+			rng.nextBytes(plaintext);
+
+			byte[] ciphertext = crypto.encryptAudioFrame(plaintext, key);
+			byte[] decrypted = crypto.decryptAudioFrame(ciphertext, key);
+
+			assertArrayEquals("Trial " + trial + " round-trip failed",
+					plaintext, decrypted);
+		}
+	}
+
+	/**
+	 * Verifies cross-decryption: Alice encrypts with txKey, Bob decrypts
+	 * with the same key (simulating alice.txKey == bob.rxKey).
+	 * Both must survive 50 frames without key corruption.
+	 */
+	@Test
+	public void testAliceBobMultiFrameSymmetry() {
+		VoiceCallCryptoImpl crypto = new VoiceCallCryptoImpl(null);
+
+		byte[] aliceKeyBytes = new byte[32];
+		byte[] bobKeyBytes = new byte[32];
+		for (int i = 0; i < 32; i++) {
+			aliceKeyBytes[i] = (byte) (i + 1);
+			bobKeyBytes[i] = (byte) (i + 1);
+		}
+		SecretKey aliceTx = new SecretKey(aliceKeyBytes);
+		SecretKey bobRx = new SecretKey(bobKeyBytes);
+
+		for (int i = 0; i < 50; i++) {
+			byte[] plaintext = makeFrame(160, (byte) i);
+			byte[] ciphertext = crypto.encryptAudioFrame(plaintext, aliceTx);
+			byte[] decrypted = crypto.decryptAudioFrame(ciphertext, bobRx);
+			assertArrayEquals("Frame " + i + " Alice->Bob failed",
+					plaintext, decrypted);
+		}
+
+		// Both keys must remain intact
+		assertArrayEquals(aliceKeyBytes, aliceTx.getBytes());
+		assertArrayEquals(bobKeyBytes, bobRx.getBytes());
+	}
+
+	// ---- helpers ----
+
+	private static SecretKey makeTestKey() {
+		byte[] keyBytes = new byte[32];
+		for (int i = 0; i < 32; i++) {
+			keyBytes[i] = (byte) (i + 0x10);
+		}
+		return new SecretKey(keyBytes);
+	}
+
+	private static byte[] makeFrame(int size, byte fill) {
+		byte[] frame = new byte[size];
+		Arrays.fill(frame, fill);
+		return frame;
 	}
 }
