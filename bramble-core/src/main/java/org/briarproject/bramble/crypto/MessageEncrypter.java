@@ -18,9 +18,7 @@ import org.bouncycastle.crypto.generators.ECKeyPairGenerator;
 import org.bouncycastle.crypto.generators.EphemeralKeyPairGenerator;
 import org.bouncycastle.crypto.generators.KDF2BytesGenerator;
 import org.bouncycastle.crypto.macs.HMac;
-import org.bouncycastle.crypto.BufferedBlockCipher;
 import org.bouncycastle.crypto.modes.CBCBlockCipher;
-import org.bouncycastle.crypto.modes.SICBlockCipher;
 import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.ECDomainParameters;
@@ -107,36 +105,14 @@ public class MessageEncrypter {
 			throws CryptoException {
 		if (!(priv instanceof Sec1PrivateKey))
 			throw new IllegalArgumentException();
-		// Try CTR mode first (new format), fall back to legacy
-		// CBC for messages encrypted before the migration
-		try {
-			IESEngine engine = getEngine();
-			engine.init(((Sec1PrivateKey) priv).getKey(),
-					getCipherParameters(),
-					new PublicKeyParser(PARAMETERS));
-			return engine.processBlock(ciphertext, 0, ciphertext.length);
-		} catch (Exception e) {
-			// Legacy CBC fallback for pre-migration messages
-			IESEngine legacy = getLegacyCbcEngine();
-			legacy.init(((Sec1PrivateKey) priv).getKey(),
-					getCipherParameters(),
-					new PublicKeyParser(PARAMETERS));
-			return legacy.processBlock(ciphertext, 0, ciphertext.length);
-		}
+		IESEngine engine = getEngine();
+		engine.init(((Sec1PrivateKey) priv).getKey(),
+				getCipherParameters(),
+				new PublicKeyParser(PARAMETERS));
+		return engine.processBlock(ciphertext, 0, ciphertext.length);
 	}
 
-	// CTR mode engine
 	private IESEngine getEngine() {
-		BasicAgreement agreement = new ECDHCBasicAgreement();
-		DerivationFunction kdf = new KDF2BytesGenerator(new SHA256Digest());
-		Mac mac = new HMac(new SHA256Digest());
-		BlockCipher cipher = new SICBlockCipher(new AESLightEngine());
-		BufferedBlockCipher buffered = new BufferedBlockCipher(cipher);
-		return new IESEngine(agreement, kdf, mac, buffered);
-	}
-
-	// Legacy engine for decrypting pre-migration CBC messages
-	private IESEngine getLegacyCbcEngine() {
 		BasicAgreement agreement = new ECDHCBasicAgreement();
 		DerivationFunction kdf = new KDF2BytesGenerator(new SHA256Digest());
 		Mac mac = new HMac(new SHA256Digest());

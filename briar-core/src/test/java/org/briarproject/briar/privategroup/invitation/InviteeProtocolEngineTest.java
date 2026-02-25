@@ -44,7 +44,7 @@ public class InviteeProtocolEngineTest extends AbstractProtocolEngineTest {
 					privateGroupManager, privateGroupFactory,
 					groupMessageFactory, identityManager, messageParser,
 					messageEncoder, autoDeleteManager,
-					conversationManager, clock);
+					conversationManager, clock, crypto);
 	private final LocalAuthor localAuthor = getLocalAuthor();
 
 	private InviteeSession getDefaultSession(InviteeState state) {
