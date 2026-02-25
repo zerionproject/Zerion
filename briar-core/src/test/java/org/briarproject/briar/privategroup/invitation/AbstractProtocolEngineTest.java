@@ -14,6 +14,7 @@ import org.briarproject.bramble.api.sync.Group.Visibility;
 import org.briarproject.bramble.api.sync.GroupId;
 import org.briarproject.bramble.api.sync.Message;
 import org.briarproject.bramble.api.sync.MessageId;
+import org.briarproject.bramble.api.crypto.CryptoComponent;
 import org.briarproject.bramble.api.system.Clock;
 import org.briarproject.bramble.api.versioning.ClientVersioningManager;
 import org.briarproject.bramble.test.BrambleMockTestCase;
@@ -65,6 +66,7 @@ abstract class AbstractProtocolEngineTest extends BrambleMockTestCase {
 	final ConversationManager conversationManager =
 			context.mock(ConversationManager.class);
 	final Clock clock = context.mock(Clock.class);
+	final CryptoComponent crypto = context.mock(CryptoComponent.class);
 
 	final Transaction txn = new Transaction(null, false);
 	final Contact contact = getContact();
