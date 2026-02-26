@@ -399,7 +399,12 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		VoiceSignalReceivedEvent event =
 				new VoiceSignalReceivedEvent(header, contactId);
 		txn.attach(event);
-		db.removeMessage(txn, m.getId());
+		// Do NOT call db.removeMessage() here — the caller
+		// (ValidationManagerImpl) will call setMessageState(DELIVERED)
+		// on this message after we return. Removing it here causes
+		// setMessageState to throw NoSuchMessageException, which
+		// rolls back the transaction and prevents the event from firing.
+		// Voice signals are cleaned up by purgeStaleEphemeralMessages().
 	}
 
 	@Override
@@ -481,9 +486,6 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				clientHelper.addLocalMessage(txn, signal.getMessage(), meta, true,
 						false);
 				conversationManager.trackOutgoingMessage(txn, signal.getMessage());
-				db.setCleanupTimerDuration(txn,
-						signal.getMessage().getId(), 60000);
-				db.startCleanupTimer(txn, signal.getMessage().getId());
 			} catch (FormatException e) {
 				throw new AssertionError(e);
 			}
@@ -820,7 +822,9 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		TypingIndicatorReceivedEvent event =
 				new TypingIndicatorReceivedEvent(contactId, isTyping);
 		txn.attach(event);
-		db.removeMessage(txn, m.getId());
+		// Do NOT call db.removeMessage() here — same reason as
+		// incomingVoiceSignal: caller calls setMessageState(DELIVERED)
+		// after we return, which would throw on a removed message.
 	}
 
 	private void incomingLinkPreviewMessage(Transaction txn, Message m,

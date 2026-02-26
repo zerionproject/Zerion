@@ -48,8 +48,6 @@ public class ZerionApplicationImpl extends Application
 	public void onCreate() {
 		super.onCreate();
 
-		suppressBouncyCastleWarning();
-
 		DynamicColors.applyToActivitiesIfAvailable(this);
 
 		if (IS_DEBUG_BUILD) enableStrictMode();
@@ -60,11 +58,6 @@ public class ZerionApplicationImpl extends Application
 		Thread.setDefaultUncaughtExceptionHandler(exceptionHandler);
 
 		EmojiManager.install(new GoogleEmojiProvider());
-	}
-
-	private void suppressBouncyCastleWarning() {
-		java.util.logging.Logger.getLogger("org.bouncycastle.util.Strings")
-				.setLevel(java.util.logging.Level.OFF);
 	}
 
 	protected AndroidComponent createApplicationComponent() {

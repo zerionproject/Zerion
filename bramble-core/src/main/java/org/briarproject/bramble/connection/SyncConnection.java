@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import javax.annotation.Nullable;
+
 import static org.briarproject.nullsafety.NullSafety.requireNonNull;
 
 @NotNullByDefault
