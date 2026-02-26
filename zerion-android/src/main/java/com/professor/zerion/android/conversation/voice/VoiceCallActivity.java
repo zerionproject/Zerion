@@ -233,6 +233,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 				@Override
 				public void onSurfaceTextureSizeChanged(
 						SurfaceTexture st, int width, int height) {
+					if (isVideoActive) applyRemoteVideoTransform();
 				}
 
 				@Override
@@ -263,6 +264,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 				@Override
 				public void onSurfaceTextureSizeChanged(
 						SurfaceTexture st, int width, int height) {
+					if (isVideoActive) applyLocalVideoTransform();
 				}
 
 				@Override
@@ -639,8 +641,22 @@ public class VoiceCallActivity extends AppCompatActivity {
 				localVideoContainer.setVisibility(View.VISIBLE);
 				applyLocalVideoTransform();
 			}
+			// Hide overlays for full-screen video experience
 			if (avatarContainer != null) {
 				avatarContainer.setVisibility(View.GONE);
+			}
+			if (contactNameText != null) {
+				contactNameText.setVisibility(View.GONE);
+			}
+			if (callStatusText != null) {
+				callStatusText.setVisibility(View.GONE);
+			}
+			TextView callTypeLabel = findViewById(R.id.call_type_label);
+			if (callTypeLabel != null) {
+				callTypeLabel.setVisibility(View.GONE);
+			}
+			if (networkQualityContainer != null) {
+				networkQualityContainer.setVisibility(View.GONE);
 			}
 			if (videoButton != null) {
 				videoButton.setImageResource(R.drawable.ic_videocam_off);
@@ -660,8 +676,22 @@ public class VoiceCallActivity extends AppCompatActivity {
 			if (localVideoContainer != null) {
 				localVideoContainer.setVisibility(View.GONE);
 			}
+			// Restore overlays
 			if (avatarContainer != null) {
 				avatarContainer.setVisibility(View.VISIBLE);
+			}
+			if (contactNameText != null) {
+				contactNameText.setVisibility(View.VISIBLE);
+			}
+			if (callStatusText != null) {
+				callStatusText.setVisibility(View.VISIBLE);
+			}
+			TextView callTypeLabel = findViewById(R.id.call_type_label);
+			if (callTypeLabel != null) {
+				callTypeLabel.setVisibility(View.VISIBLE);
+			}
+			if (networkQualityContainer != null) {
+				networkQualityContainer.setVisibility(View.VISIBLE);
 			}
 			if (videoButton != null) {
 				videoButton.setImageResource(R.drawable.ic_videocam);
@@ -681,14 +711,25 @@ public class VoiceCallActivity extends AppCompatActivity {
 		float centerX = viewWidth / 2f;
 		float centerY = viewHeight / 2f;
 
-		Matrix matrix = new Matrix();
-		matrix.postRotate(rotationDegrees, centerX, centerY);
+		// Video source dimensions (from encoder)
+		float videoWidth = VideoEncoder.WIDTH;
+		float videoHeight = VideoEncoder.HEIGHT;
 
-		if (rotationDegrees % 180 != 0) {
-			float scaleX = (float) viewHeight / viewWidth;
-			float scaleY = (float) viewWidth / viewHeight;
-			matrix.postScale(scaleX, scaleY, centerX, centerY);
-		}
+		// After rotation, effective dimensions swap if 90/270
+		boolean rotated = (rotationDegrees % 180 != 0);
+		float effectiveW = rotated ? videoHeight : videoWidth;
+		float effectiveH = rotated ? videoWidth : videoHeight;
+
+		// Center-crop: scale to FILL the view (no black bars)
+		float scaleX = viewWidth / effectiveW;
+		float scaleY = viewHeight / effectiveH;
+		float scale = Math.max(scaleX, scaleY);
+
+		Matrix matrix = new Matrix();
+		// Move to origin, scale, move back to center
+		matrix.setScale(effectiveW * scale / viewWidth,
+				effectiveH * scale / viewHeight, centerX, centerY);
+		matrix.postRotate(rotationDegrees, centerX, centerY);
 
 		if (mirror) {
 			matrix.postScale(-1f, 1f, centerX, centerY);

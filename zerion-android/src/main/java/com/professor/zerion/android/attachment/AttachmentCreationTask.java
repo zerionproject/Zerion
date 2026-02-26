@@ -2,11 +2,7 @@ package com.professor.zerion.android.attachment;
 
 import android.content.ContentResolver;
 import android.database.Cursor;
-import android.media.MediaExtractor;
-import android.media.MediaFormat;
-import android.media.MediaMetadataRetriever;
 import android.net.Uri;
-import android.os.ParcelFileDescriptor;
 import android.provider.OpenableColumns;
 import android.webkit.MimeTypeMap;
 
@@ -14,11 +10,14 @@ import org.briarproject.bramble.api.db.DbException;
 import org.briarproject.bramble.api.lifecycle.IoExecutor;
 import org.briarproject.bramble.api.sync.GroupId;
 import com.professor.zerion.android.attachment.media.ImageCompressor;
+import com.professor.zerion.android.vault.utils.MetadataStripper;
 import org.briarproject.briar.api.attachment.AttachmentHeader;
 import org.briarproject.briar.api.messaging.MessagingManager;
 import org.briarproject.briar.api.messaging.PrivateMessageFormat;
 import org.briarproject.nullsafety.NotNullByDefault;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
@@ -59,6 +58,7 @@ class AttachmentCreationTask {
 	private final MessagingManager messagingManager;
 	private final ContentResolver contentResolver;
 	private final ImageCompressor imageCompressor;
+	private final MetadataStripper metadataStripper;
 	private final GroupId groupId;
 	private final Collection<Uri> uris;
 	private final boolean needsSize;
@@ -72,11 +72,13 @@ class AttachmentCreationTask {
 			ContentResolver contentResolver,
 			AttachmentCreator attachmentCreator,
 			ImageCompressor imageCompressor,
+			MetadataStripper metadataStripper,
 			GroupId groupId, Collection<Uri> uris, boolean needsSize,
 			PrivateMessageFormat messageFormat) {
 		this.messagingManager = messagingManager;
 		this.contentResolver = contentResolver;
 		this.imageCompressor = imageCompressor;
+		this.metadataStripper = metadataStripper;
 		this.groupId = groupId;
 		this.uris = uris;
 		this.needsSize = needsSize;
@@ -153,14 +155,20 @@ class AttachmentCreationTask {
 		if (fileSize > MAX_ATTACHMENT_SIZE) {
 			throw new org.briarproject.briar.api.attachment.FileTooBigException();
 		}
-		if (contentType != null && contentType.startsWith("video/")) {
-			logSenderVideoMetadata(uri, contentType, fileSize);
-		}
 
+		// Strip metadata from video files before sending
+		File strippedFile = null;
 		InputStream is;
 		try {
-			is = contentResolver.openInputStream(uri);
-			if (is == null) throw new IOException("Could not open input stream");
+			if (contentType.startsWith("video/")) {
+				strippedFile = metadataStripper
+						.stripVideoMetadataFromUri(uri, contentResolver);
+				fileSize = strippedFile.length();
+				is = new FileInputStream(strippedFile);
+			} else {
+				is = contentResolver.openInputStream(uri);
+				if (is == null) throw new IOException("Could not open input stream");
+			}
 		} catch (SecurityException e) {
 			throw new IOException(e);
 		}
@@ -179,6 +187,7 @@ class AttachmentCreationTask {
 					groupId, timestamp, contentType, is, fileSize, progressCallback);
 		} finally {
 			tryToClose(is);
+			if (strippedFile != null) strippedFile.delete();
 		}
 	}
 
@@ -232,83 +241,4 @@ class AttachmentCreationTask {
 		return MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
 	}
 
-	private void logSenderVideoMetadata(Uri uri, String contentType, long fileSize) {
-		ParcelFileDescriptor pfd = null;
-		try {
-			StringBuilder info = new StringBuilder();
-			String uriScheme = uri.getScheme();
-			boolean isGallery = "content".equals(uriScheme);
-			String tag = isGallery ? "SENDER_GALLERY" : "SENDER_FILE";
-
-			info.append("[").append(tag).append("] ");
-			info.append("uri=").append(uri.toString()).append(", ");
-			info.append("contentType=").append(contentType).append(", ");
-			info.append("fileSize=").append(fileSize).append("bytes, ");
-			MediaMetadataRetriever retriever = new MediaMetadataRetriever();
-			try {
-				pfd = contentResolver.openFileDescriptor(uri, "r");
-				if (pfd != null) {
-					retriever.setDataSource(pfd.getFileDescriptor());
-					String duration = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
-					String bitrate = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE);
-					String width = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH);
-					String height = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT);
-					String mimeType = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_MIMETYPE);
-
-					if (width != null && height != null) {
-						info.append("resolution=").append(width).append("x").append(height).append(", ");
-					}
-					if (duration != null) {
-						info.append("duration=").append(duration).append("ms, ");
-					}
-					if (bitrate != null) {
-						info.append("bitrate=").append(bitrate).append(", ");
-					}
-					if (mimeType != null) {
-						info.append("extractedMime=").append(mimeType).append(", ");
-					}
-				}
-			} finally {
-				retriever.release();
-			}
-			MediaExtractor extractor = new MediaExtractor();
-			try {
-				pfd = contentResolver.openFileDescriptor(uri, "r");
-				if (pfd != null) {
-					extractor.setDataSource(pfd.getFileDescriptor());
-					for (int i = 0; i < extractor.getTrackCount(); i++) {
-						MediaFormat format = extractor.getTrackFormat(i);
-						String mime = format.getString(MediaFormat.KEY_MIME);
-						info.append("track").append(i).append("=").append(mime);
-						if (mime != null && mime.startsWith("video/")) {
-							if (format.containsKey(MediaFormat.KEY_PROFILE)) {
-								info.append(" profile=").append(format.getInteger(MediaFormat.KEY_PROFILE));
-							}
-							if (format.containsKey(MediaFormat.KEY_LEVEL)) {
-								info.append(" level=").append(format.getInteger(MediaFormat.KEY_LEVEL));
-							}
-							if (mime.contains("hevc") || mime.contains("hev1") || mime.contains("hvc1")) {
-								info.append(" [HEVC/H.265]");
-							} else if (mime.contains("avc") || mime.contains("h264")) {
-								info.append(" [AVC/H.264]");
-							}
-						}
-						info.append(", ");
-					}
-				}
-			} finally {
-				extractor.release();
-			}
-
-
-		} catch (Exception e) {
-		} finally {
-			if (pfd != null) {
-				try {
-					pfd.close();
-				} catch (Exception ignored) {
-				}
-			}
-		}
-	}
 }
