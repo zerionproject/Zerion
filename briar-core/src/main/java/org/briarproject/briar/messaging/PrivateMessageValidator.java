@@ -312,7 +312,7 @@ class PrivateMessageValidator implements MessageValidator {
 	private static final java.util.Set<String> ALLOWED_REACTION_EMOJIS =
 			new java.util.HashSet<>(java.util.Arrays.asList(
 					"\uD83D\uDC4D", "\u2764\uFE0F", "\uD83D\uDE02",
-					"\uD83D\uDE2E", "\uD83D\uDE22", "\uD83D\uDE20",
+					"\uD83D\uDE2E", "\uD83D\uDE22", "\uD83D\uDE21",
 					"thumbsup", "heart", "laugh",
 					"surprise", "sad", "angry"));
 
