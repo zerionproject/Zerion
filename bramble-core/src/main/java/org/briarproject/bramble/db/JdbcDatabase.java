@@ -3353,7 +3353,35 @@ abstract class JdbcDatabase implements Database<Connection> {
 	public void removeMessage(Connection txn, MessageId m) throws DbException {
 		PreparedStatement ps = null;
 		try {
-			String sql = "DELETE FROM messages WHERE messageId = ?";
+			// CASCADE is not enforced (PRAGMA foreign_keys OFF),
+			// so explicitly delete from child tables first.
+			String sql = "DELETE FROM offers WHERE messageId = ?";
+			ps = txn.prepareStatement(sql);
+			ps.setBytes(1, m.getBytes());
+			ps.executeUpdate();
+			ps.close();
+
+			sql = "DELETE FROM statuses WHERE messageId = ?";
+			ps = txn.prepareStatement(sql);
+			ps.setBytes(1, m.getBytes());
+			ps.executeUpdate();
+			ps.close();
+
+			sql = "DELETE FROM messageMetadata WHERE messageId = ?";
+			ps = txn.prepareStatement(sql);
+			ps.setBytes(1, m.getBytes());
+			ps.executeUpdate();
+			ps.close();
+
+			sql = "DELETE FROM messageDependencies"
+					+ " WHERE messageId = ? OR dependencyId = ?";
+			ps = txn.prepareStatement(sql);
+			ps.setBytes(1, m.getBytes());
+			ps.setBytes(2, m.getBytes());
+			ps.executeUpdate();
+			ps.close();
+
+			sql = "DELETE FROM messages WHERE messageId = ?";
 			ps = txn.prepareStatement(sql);
 			ps.setBytes(1, m.getBytes());
 			int affected = ps.executeUpdate();
@@ -3477,7 +3505,35 @@ abstract class JdbcDatabase implements Database<Connection> {
 	public void removeTemporaryMessages(Connection txn) throws DbException {
 		Statement s = null;
 		try {
-			String sql = "DELETE FROM messages WHERE temporary = TRUE";
+			// CASCADE is not enforced (PRAGMA foreign_keys OFF),
+			// so explicitly delete from child tables first.
+			String sql = "DELETE FROM offers WHERE messageId IN"
+					+ " (SELECT messageId FROM messages WHERE temporary = TRUE)";
+			s = txn.createStatement();
+			s.executeUpdate(sql);
+			s.close();
+
+			sql = "DELETE FROM statuses WHERE messageId IN"
+					+ " (SELECT messageId FROM messages WHERE temporary = TRUE)";
+			s = txn.createStatement();
+			s.executeUpdate(sql);
+			s.close();
+
+			sql = "DELETE FROM messageMetadata WHERE messageId IN"
+					+ " (SELECT messageId FROM messages WHERE temporary = TRUE)";
+			s = txn.createStatement();
+			s.executeUpdate(sql);
+			s.close();
+
+			sql = "DELETE FROM messageDependencies WHERE messageId IN"
+					+ " (SELECT messageId FROM messages WHERE temporary = TRUE)"
+					+ " OR dependencyId IN"
+					+ " (SELECT messageId FROM messages WHERE temporary = TRUE)";
+			s = txn.createStatement();
+			s.executeUpdate(sql);
+			s.close();
+
+			sql = "DELETE FROM messages WHERE temporary = TRUE";
 			s = txn.createStatement();
 			int affected = s.executeUpdate(sql);
 			if (affected < 0) throw new DbStateException();

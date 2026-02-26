@@ -37,6 +37,7 @@ import static org.briarproject.briar.api.messaging.MessagingConstants.MAX_PRIVAT
 import static org.briarproject.briar.client.MessageTrackerConstants.MSG_KEY_READ;
 import static org.briarproject.briar.messaging.MessageTypes.ATTACHMENT;
 import static org.briarproject.briar.messaging.MessageTypes.PRIVATE_MESSAGE;
+import static org.briarproject.briar.messaging.MessageTypes.VOICE_SIGNAL;
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_ATTACHMENT_HEADERS;
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_AUTO_DELETE_TIMER;
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_HAS_TEXT;
@@ -434,6 +435,89 @@ public class PrivateMessageValidatorTest extends BrambleMockTestCase {
 
 		testAcceptsPrivateMessage(BdfList.of(PRIVATE_MESSAGE, text,
 				new BdfList(), MAX_AUTO_DELETE_TIMER_MS), maxTimerMeta);
+	}
+
+	// ---- Voice signal validation tests ----
+
+	@Test
+	public void testAcceptsCallOfferVoiceSignal() throws Exception {
+		BdfDictionary voiceMeta = BdfDictionary.of(
+				new BdfEntry(MSG_KEY_TIMESTAMP, message.getTimestamp()),
+				new BdfEntry(MSG_KEY_LOCAL, false),
+				new BdfEntry(MSG_KEY_MSG_TYPE, VOICE_SIGNAL));
+		testAcceptsVoiceSignal(
+				BdfList.of(VOICE_SIGNAL, 0, "call-id-123", "payload", null),
+				voiceMeta);
+	}
+
+	@Test
+	public void testAcceptsCallBusyVoiceSignal() throws Exception {
+		BdfDictionary voiceMeta = BdfDictionary.of(
+				new BdfEntry(MSG_KEY_TIMESTAMP, message.getTimestamp()),
+				new BdfEntry(MSG_KEY_LOCAL, false),
+				new BdfEntry(MSG_KEY_MSG_TYPE, VOICE_SIGNAL));
+		testAcceptsVoiceSignal(
+				BdfList.of(VOICE_SIGNAL, 5, "call-id"),
+				voiceMeta);
+	}
+
+	@Test
+	public void testAcceptsVideoOfferVoiceSignal() throws Exception {
+		BdfDictionary voiceMeta = BdfDictionary.of(
+				new BdfEntry(MSG_KEY_TIMESTAMP, message.getTimestamp()),
+				new BdfEntry(MSG_KEY_LOCAL, false),
+				new BdfEntry(MSG_KEY_MSG_TYPE, VOICE_SIGNAL));
+		testAcceptsVoiceSignal(
+				BdfList.of(VOICE_SIGNAL, 6, "call-id", "payload", null),
+				voiceMeta);
+	}
+
+	@Test
+	public void testAcceptsVideoEndVoiceSignal() throws Exception {
+		BdfDictionary voiceMeta = BdfDictionary.of(
+				new BdfEntry(MSG_KEY_TIMESTAMP, message.getTimestamp()),
+				new BdfEntry(MSG_KEY_LOCAL, false),
+				new BdfEntry(MSG_KEY_MSG_TYPE, VOICE_SIGNAL));
+		testAcceptsVoiceSignal(
+				BdfList.of(VOICE_SIGNAL, 9, "call-id"),
+				voiceMeta);
+	}
+
+	@Test(expected = InvalidMessageException.class)
+	public void testRejectsNegativeVoiceSignalType() throws Exception {
+		testRejectsVoiceSignal(BdfList.of(VOICE_SIGNAL, -1, "call-id"));
+	}
+
+	@Test(expected = InvalidMessageException.class)
+	public void testRejectsOutOfRangeVoiceSignalType() throws Exception {
+		testRejectsVoiceSignal(BdfList.of(VOICE_SIGNAL, 10, "call-id"));
+	}
+
+	@Test(expected = InvalidMessageException.class)
+	public void testRejectsTooShortVoiceSignalBody() throws Exception {
+		testRejectsVoiceSignal(BdfList.of(VOICE_SIGNAL, 0));
+	}
+
+	@Test(expected = InvalidMessageException.class)
+	public void testRejectsEmptyCallId() throws Exception {
+		testRejectsVoiceSignal(BdfList.of(VOICE_SIGNAL, 0, ""));
+	}
+
+	private void testAcceptsVoiceSignal(BdfList body, BdfDictionary meta)
+			throws Exception {
+		expectCheckTimestamp(now);
+		expectParseList(body);
+		expectReadEof(true);
+		expectEncodeMetadata(meta);
+		MessageContext result = validator.validateMessage(message, group);
+		assertEquals(0, result.getDependencies().size());
+	}
+
+	private void testRejectsVoiceSignal(BdfList body) throws Exception {
+		expectCheckTimestamp(now);
+		expectParseList(body);
+		expectReadEof(true);
+		validator.validateMessage(message, group);
 	}
 
 	private void testRejectsLegacyMessage(BdfList body) throws Exception {
