@@ -1,6 +1,7 @@
 package org.briarproject.bramble.crypto.pcs;
 
 import org.bouncycastle.crypto.SecretWithEncapsulation;
+import org.bouncycastle.crypto.digests.SHA3Digest;
 import org.bouncycastle.pqc.crypto.mlkem.MLKEMExtractor;
 import org.bouncycastle.pqc.crypto.mlkem.MLKEMGenerator;
 import org.bouncycastle.pqc.crypto.mlkem.MLKEMKeyGenerationParameters;
@@ -14,7 +15,6 @@ import org.briarproject.bramble.api.crypto.pcs.MlKemProvider;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 
@@ -84,14 +84,12 @@ class MlKemProviderImpl implements MlKemProvider {
 
 	@Override
 	public byte[] hashEkSeedAndVector(byte[] ekSeed, byte[] ekVector) {
-		try {
-			MessageDigest sha3 = MessageDigest.getInstance("SHA3-256");
-			sha3.update(ekSeed);
-			sha3.update(ekVector);
-			return sha3.digest();
-		} catch (NoSuchAlgorithmException e) {
-			throw new RuntimeException(e);
-		}
+		SHA3Digest sha3 = new SHA3Digest(256);
+		sha3.update(ekSeed, 0, ekSeed.length);
+		sha3.update(ekVector, 0, ekVector.length);
+		byte[] hash = new byte[sha3.getDigestSize()];
+		sha3.doFinal(hash, 0);
+		return hash;
 	}
 
 	@Override
