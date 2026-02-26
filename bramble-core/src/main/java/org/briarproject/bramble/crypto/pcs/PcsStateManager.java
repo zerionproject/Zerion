@@ -71,7 +71,7 @@ public class PcsStateManager {
 		}
 	}
 
-	
+
 	public void initializeState(Transaction txn, ContactId contactId,
 			SecretKey rootKey) throws DbException {
 		PcsSessionState initial = PcsSessionState.createInitial(rootKey);

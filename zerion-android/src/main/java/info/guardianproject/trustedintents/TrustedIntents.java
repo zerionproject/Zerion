@@ -16,13 +16,7 @@ import android.text.TextUtils;
 import java.lang.reflect.Constructor;
 import java.security.cert.CertificateException;
 import java.util.LinkedHashSet;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 public class TrustedIntents {
-
-   private static final Logger LOG =
-           Logger.getLogger(TrustedIntents.class.getName());
 
    private static TrustedIntents instance;
 
@@ -67,7 +61,6 @@ public class TrustedIntents {
       try {
          checkTrustedSigner(packageName);
       } catch (NameNotFoundException e) {
-         LOG.log(Level.WARNING, e.getMessage(), e);
          return false;
       } catch (CertificateException e) {
          return false;
@@ -116,7 +109,6 @@ public class TrustedIntents {
          Constructor<? extends ApkSignaturePin> constructor = cls.getConstructor();
          return pinList.add((ApkSignaturePin) constructor.newInstance((Object[]) null));
       } catch (Exception e) {
-         LOG.log(Level.WARNING, e.getMessage(), e);
          throw new IllegalArgumentException(e);
       }
    }
@@ -196,7 +188,6 @@ public class TrustedIntents {
       try {
          checkTrustedSigner(packageName);
       } catch (NameNotFoundException e) {
-         LOG.log(Level.WARNING, e.getMessage(), e);
          throw new ActivityNotFoundException(e.getLocalizedMessage());
       }
       context.startActivity(intent);

@@ -42,7 +42,7 @@ class VoiceCallConnectionManagerImpl implements VoiceCallConnectionManager {
 
 	private final ConcurrentMap<String, Long> endpointCreationTimes =
 			new ConcurrentHashMap<>();
-	private static final long ENDPOINT_TIMEOUT_MS = 5 * 60 * 1000;
+	private static final long ENDPOINT_TIMEOUT_MS = 30 * 60 * 1000;
 
 	private final ConcurrentMap<String, DuplexTransportConnection> activeConnections =
 			new ConcurrentHashMap<>();
@@ -57,7 +57,7 @@ class VoiceCallConnectionManagerImpl implements VoiceCallConnectionManager {
 		this.crypto = crypto;
 
 		cleanupScheduler.scheduleAtFixedRate(this::cleanupExpiredEndpoints,
-				1, 1, TimeUnit.MINUTES);
+				5, 5, TimeUnit.MINUTES);
 	}
 
 	private void cleanupExpiredEndpoints() {
@@ -73,6 +73,14 @@ class VoiceCallConnectionManagerImpl implements VoiceCallConnectionManager {
 
 		for (String callId : expired) {
 			closeEndpoint(callId);
+			// Delay between consecutive hidden service removals
+			// to avoid destabilizing the Tor daemon
+			try {
+				Thread.sleep(500);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				return;
+			}
 		}
 	}
 

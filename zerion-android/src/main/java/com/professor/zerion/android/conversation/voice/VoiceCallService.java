@@ -137,6 +137,7 @@ public class VoiceCallService extends Service implements EventListener {
 	private final Object streamLock = new Object();
 	private final Object torConnectionLock = new Object();
 	private volatile boolean isShuttingDown = false;
+	private volatile boolean endpointsClosed = false;
 	private ExecutorService executorService = Executors.newCachedThreadPool();
 
 	private ContactId contactId;
@@ -415,7 +416,8 @@ public class VoiceCallService extends Service implements EventListener {
 				sendCallReject();
 			} catch (Exception e) {
 			}
-			if (callId != null) {
+			if (!endpointsClosed && callId != null) {
+				endpointsClosed = true;
 				connectionManager.closeEndpoint(callId);
 			}
 			stopSelf();
@@ -451,12 +453,21 @@ public class VoiceCallService extends Service implements EventListener {
 
 			zeroizeKeyMaterial();
 
-			try {
-				if (callId != null) {
+			if (!endpointsClosed && callId != null) {
+				endpointsClosed = true;
+				try {
 					connectionManager.closeEndpoint(callId);
-					connectionManager.closeEndpoint(callId + "-video");
+				} catch (Exception e) {
 				}
-			} catch (Exception e) {
+				try {
+					Thread.sleep(500);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
+				try {
+					connectionManager.closeEndpoint(callId + "-video");
+				} catch (Exception e) {
+				}
 			}
 
 			updateCallActivity();
@@ -1308,16 +1319,9 @@ public class VoiceCallService extends Service implements EventListener {
 				}
 			}
 
-			if (torConnection != null) {
-				try {
-					torConnection.getReader().dispose(false, true);
-					torConnection.getWriter().dispose(false);
-				} catch (IOException e) {
-				} catch (Exception e) {
-				} finally {
-					torConnection = null;
-				}
-			}
+			// torConnection is closed by connectionManager.closeEndpoint()
+			// — do NOT close it here to avoid double-close race with Tor
+			torConnection = null;
 
 			if (serverSocket != null && !serverSocket.isClosed()) {
 				try {
@@ -1673,12 +1677,17 @@ public class VoiceCallService extends Service implements EventListener {
 
 		stopAudioStreaming();
 
-		try {
-			if (callId != null && connectionManager != null) {
+		// Only close endpoints if endCall() hasn't already done it.
+		// Rapid hidden service removal destabilizes the Tor daemon.
+		if (!endpointsClosed && callId != null && connectionManager != null) {
+			endpointsClosed = true;
+			try {
 				connectionManager.closeEndpoint(callId);
+			} catch (Exception ignored) {}
+			try {
 				connectionManager.closeEndpoint(callId + "-video");
-			}
-		} catch (Exception ignored) {}
+			} catch (Exception ignored) {}
+		}
 
 		if (proximityWakeLock != null && proximityWakeLock.isHeld()) {
 			proximityWakeLock.release();
@@ -1703,7 +1712,6 @@ public class VoiceCallService extends Service implements EventListener {
 	public void eventOccurred(Event e) {
 		if (e instanceof VoiceSignalReceivedEvent) {
 			VoiceSignalReceivedEvent event = (VoiceSignalReceivedEvent) e;
-
 			if (contactId != null && event.getContactId().equals(contactId)) {
 				VoiceSignalHeader header = event.getSignalHeader();
 				mainHandler.post(() -> handleIncomingVoiceSignal(header));
@@ -2139,15 +2147,9 @@ public class VoiceCallService extends Service implements EventListener {
 			} catch (Exception ignored) {}
 			videoCameraManager = null;
 		}
-		if (videoTorConnection != null) {
-			try {
-				videoTorConnection.getReader().dispose(false, true);
-			} catch (Exception ignored) {}
-			try {
-				videoTorConnection.getWriter().dispose(false);
-			} catch (Exception ignored) {}
-			videoTorConnection = null;
-		}
+		// videoTorConnection is closed by connectionManager.closeEndpoint()
+		// — do NOT close it here to avoid double-close race with Tor
+		videoTorConnection = null;
 		try {
 			zeroizeVideoKeys();
 		} catch (Exception ignored) {}

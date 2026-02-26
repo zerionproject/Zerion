@@ -215,7 +215,7 @@ class PrivateMessageValidator implements MessageValidator {
 			throws FormatException {
 		checkSize(body, 3, 5);
 		int signalType = body.getInt(1);
-		if (signalType < 0 || signalType > 5) {
+		if (signalType < 0 || signalType > 9) {
 			throw new FormatException();
 		}
 		String callId = body.getString(2);
