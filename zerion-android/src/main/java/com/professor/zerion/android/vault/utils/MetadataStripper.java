@@ -1,10 +1,16 @@
 package com.professor.zerion.android.vault.utils;
 
+import android.content.ContentResolver;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.ExifInterface;
-import android.media.MediaMetadataRetriever;
+import android.media.MediaCodec;
+import android.media.MediaExtractor;
+import android.media.MediaFormat;
+import android.media.MediaMuxer;
+import android.net.Uri;
+import android.os.ParcelFileDescriptor;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -13,6 +19,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 @NotNullByDefault
 public class MetadataStripper {
@@ -138,9 +145,181 @@ public class MetadataStripper {
 	}
 
 	private byte[] stripVideoMetadata(byte[] videoData) {
-		throw new UnsupportedOperationException(
-				"Video files are not supported in vault for security reasons. " +
-				"Metadata cannot be reliably removed without re-encoding.");
+		// For byte[] path (vault), re-mux via temp files
+		File tempIn = null;
+		File tempOut = null;
+		try {
+			tempIn = File.createTempFile("vid_in_", ".mp4", context.getCacheDir());
+			try (FileOutputStream fos = new FileOutputStream(tempIn)) {
+				fos.write(videoData);
+			}
+			tempOut = remuxVideoFile(tempIn);
+			try (FileInputStream fis = new FileInputStream(tempOut);
+				 ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
+				byte[] buf = new byte[8192];
+				int read;
+				while ((read = fis.read(buf)) != -1) {
+					bos.write(buf, 0, read);
+				}
+				return bos.toByteArray();
+			}
+		} catch (IOException e) {
+			return videoData;
+		} finally {
+			if (tempIn != null) tempIn.delete();
+			if (tempOut != null) tempOut.delete();
+		}
+	}
+
+	/**
+	 * Strip metadata from a video at the given URI.
+	 * Returns a temp file containing the clean video (caller must delete it).
+	 */
+	public File stripVideoMetadataFromUri(Uri uri, ContentResolver resolver)
+			throws IOException {
+		ParcelFileDescriptor pfd = null;
+		MediaExtractor extractor = null;
+		MediaMuxer muxer = null;
+		File tempOutput = null;
+
+		try {
+			tempOutput = File.createTempFile("vid_clean_", ".mp4",
+					context.getCacheDir());
+
+			pfd = resolver.openFileDescriptor(uri, "r");
+			if (pfd == null) throw new IOException("Cannot open video URI");
+
+			extractor = new MediaExtractor();
+			extractor.setDataSource(pfd.getFileDescriptor());
+
+			muxer = new MediaMuxer(tempOutput.getAbsolutePath(),
+					MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
+
+			int trackCount = extractor.getTrackCount();
+			int[] trackMap = new int[trackCount];
+			boolean[] includeTrack = new boolean[trackCount];
+
+			// Only include video and audio tracks — skip metadata tracks
+			for (int i = 0; i < trackCount; i++) {
+				MediaFormat format = extractor.getTrackFormat(i);
+				String mime = format.getString(MediaFormat.KEY_MIME);
+				if (mime != null && (mime.startsWith("video/")
+						|| mime.startsWith("audio/"))) {
+					trackMap[i] = muxer.addTrack(format);
+					includeTrack[i] = true;
+				}
+			}
+
+			muxer.start();
+
+			ByteBuffer buffer = ByteBuffer.allocate(512 * 1024);
+			MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
+
+			for (int i = 0; i < trackCount; i++) {
+				if (!includeTrack[i]) continue;
+
+				extractor.selectTrack(i);
+				while (true) {
+					int sampleSize = extractor.readSampleData(buffer, 0);
+					if (sampleSize < 0) break;
+
+					bufferInfo.offset = 0;
+					bufferInfo.size = sampleSize;
+					bufferInfo.presentationTimeUs =
+							extractor.getSampleTime();
+					bufferInfo.flags = extractor.getSampleFlags();
+
+					muxer.writeSampleData(trackMap[i], buffer,
+							bufferInfo);
+					extractor.advance();
+				}
+				extractor.unselectTrack(i);
+			}
+
+			muxer.stop();
+			return tempOutput;
+
+		} catch (Exception e) {
+			if (tempOutput != null) tempOutput.delete();
+			throw new IOException("Failed to strip video metadata", e);
+		} finally {
+			if (extractor != null) extractor.release();
+			if (muxer != null) {
+				try { muxer.release(); } catch (Exception ignored) {}
+			}
+			if (pfd != null) {
+				try { pfd.close(); } catch (Exception ignored) {}
+			}
+		}
+	}
+
+	private File remuxVideoFile(File inputFile) throws IOException {
+		MediaExtractor extractor = null;
+		MediaMuxer muxer = null;
+		File tempOutput = null;
+
+		try {
+			tempOutput = File.createTempFile("vid_remux_", ".mp4",
+					context.getCacheDir());
+
+			extractor = new MediaExtractor();
+			extractor.setDataSource(inputFile.getAbsolutePath());
+
+			muxer = new MediaMuxer(tempOutput.getAbsolutePath(),
+					MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
+
+			int trackCount = extractor.getTrackCount();
+			int[] trackMap = new int[trackCount];
+			boolean[] includeTrack = new boolean[trackCount];
+
+			for (int i = 0; i < trackCount; i++) {
+				MediaFormat format = extractor.getTrackFormat(i);
+				String mime = format.getString(MediaFormat.KEY_MIME);
+				if (mime != null && (mime.startsWith("video/")
+						|| mime.startsWith("audio/"))) {
+					trackMap[i] = muxer.addTrack(format);
+					includeTrack[i] = true;
+				}
+			}
+
+			muxer.start();
+
+			ByteBuffer buffer = ByteBuffer.allocate(512 * 1024);
+			MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
+
+			for (int i = 0; i < trackCount; i++) {
+				if (!includeTrack[i]) continue;
+
+				extractor.selectTrack(i);
+				while (true) {
+					int sampleSize = extractor.readSampleData(buffer, 0);
+					if (sampleSize < 0) break;
+
+					bufferInfo.offset = 0;
+					bufferInfo.size = sampleSize;
+					bufferInfo.presentationTimeUs =
+							extractor.getSampleTime();
+					bufferInfo.flags = extractor.getSampleFlags();
+
+					muxer.writeSampleData(trackMap[i], buffer,
+							bufferInfo);
+					extractor.advance();
+				}
+				extractor.unselectTrack(i);
+			}
+
+			muxer.stop();
+			return tempOutput;
+
+		} catch (Exception e) {
+			if (tempOutput != null) tempOutput.delete();
+			throw new IOException("Failed to remux video", e);
+		} finally {
+			if (extractor != null) extractor.release();
+			if (muxer != null) {
+				try { muxer.release(); } catch (Exception ignored) {}
+			}
+		}
 	}
 
 	private byte[] stripDocumentMetadata(byte[] documentData, String mimeType) {

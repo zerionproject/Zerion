@@ -10,6 +10,7 @@ import org.briarproject.bramble.api.sync.GroupId;
 import org.briarproject.bramble.api.sync.MessageId;
 import com.professor.zerion.R;
 import com.professor.zerion.android.attachment.media.ImageCompressor;
+import com.professor.zerion.android.vault.utils.MetadataStripper;
 import org.briarproject.briar.api.attachment.Attachment;
 import org.briarproject.briar.api.attachment.AttachmentHeader;
 import org.briarproject.briar.api.attachment.FileTooBigException;
@@ -40,6 +41,7 @@ class AttachmentCreatorImpl implements AttachmentCreator {
 	private final MessagingManager messagingManager;
 	private final AttachmentRetriever retriever;
 	private final ImageCompressor imageCompressor;
+	private final MetadataStripper metadataStripper;
 
 	private final CopyOnWriteArrayList<Uri> uris = new CopyOnWriteArrayList<>();
 	private final CopyOnWriteArrayList<AttachmentItemResult> itemResults =
@@ -60,6 +62,7 @@ class AttachmentCreatorImpl implements AttachmentCreator {
 		this.messagingManager = messagingManager;
 		this.retriever = retriever;
 		this.imageCompressor = imageCompressor;
+		this.metadataStripper = new MetadataStripper(app);
 	}
 
 	@Override
@@ -77,8 +80,9 @@ class AttachmentCreatorImpl implements AttachmentCreator {
 			if (id == null) throw new IllegalStateException();
 			boolean needsSize = uris.size() == 1;
 			task = new AttachmentCreationTask(messagingManager,
-					app.getContentResolver(), this, imageCompressor, id,
-					uris, needsSize, messageFormat);
+					app.getContentResolver(), this, imageCompressor,
+					metadataStripper, id, uris, needsSize,
+					messageFormat);
 			ioExecutor.execute(() -> task.storeAttachments());
 		});
 		return result;
