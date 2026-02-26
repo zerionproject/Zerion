@@ -9,6 +9,7 @@ import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
+import android.media.ToneGenerator;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -85,6 +86,11 @@ public class VoiceCallActivity extends AppCompatActivity {
 	private AudioManager audioManager;
 	private Handler handler = new Handler(Looper.getMainLooper());
 	private Ringtone ringtone;
+	private ToneGenerator toneGenerator;
+
+	private TextView muteLabel;
+	private TextView speakerLabel;
+	private TextView videoLabel;
 
 	// Video UI
 	private TextureView remoteVideoSurface;
@@ -205,6 +211,10 @@ public class VoiceCallActivity extends AppCompatActivity {
 		codecBitrateDisplay = findViewById(R.id.codec_bitrate_display);
 
 		contactNameText.setText(contactName != null ? contactName : "Unknown");
+
+		muteLabel = findViewById(R.id.mute_label);
+		speakerLabel = findViewById(R.id.speaker_label);
+		videoLabel = findViewById(R.id.video_label);
 
 		remoteVideoSurface = findViewById(R.id.remote_video_surface);
 		localVideoSurface = findViewById(R.id.local_video_surface);
@@ -347,6 +357,12 @@ public class VoiceCallActivity extends AppCompatActivity {
 		}
 		muteButton.setImageResource(isMuted ?
 				R.drawable.ic_mic_off_white : R.drawable.ic_mic_white);
+		muteButton.setBackgroundResource(isMuted ?
+				R.drawable.bg_call_control_button_active :
+				R.drawable.bg_call_control_button);
+		if (muteLabel != null) {
+			muteLabel.setText(isMuted ? "Muted" : "Mute");
+		}
 	}
 
 	private void toggleSpeaker() {
@@ -358,6 +374,12 @@ public class VoiceCallActivity extends AppCompatActivity {
 		}
 		speakerButton.setImageResource(isSpeakerOn ?
 				R.drawable.ic_volume_up_white : R.drawable.ic_volume_down_white);
+		speakerButton.setBackgroundResource(isSpeakerOn ?
+				R.drawable.bg_call_control_button_active :
+				R.drawable.bg_call_control_button);
+		if (speakerLabel != null) {
+			speakerLabel.setText(isSpeakerOn ? "Speaker On" : "Speaker");
+		}
 	}
 
 	private void playRingtone() {
@@ -380,21 +402,28 @@ public class VoiceCallActivity extends AppCompatActivity {
 
 	private void playDialTone() {
 		try {
-			Uri dialToneUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-			ringtone = RingtoneManager.getRingtone(getApplicationContext(), dialToneUri);
-			if (ringtone != null) {
-				if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-					ringtone.setLooping(true);
-				}
-				ringtone.play();
-			}
+			toneGenerator = new ToneGenerator(
+					AudioManager.STREAM_VOICE_CALL, 80);
+			toneGenerator.startTone(ToneGenerator.TONE_SUP_RINGTONE);
 		} catch (Exception e) {
+		}
+	}
+
+	private void stopDialTone() {
+		if (toneGenerator != null) {
+			try {
+				toneGenerator.stopTone();
+				toneGenerator.release();
+			} catch (Exception e) {
+			}
+			toneGenerator = null;
 		}
 	}
 
 	public void onCallConnected() {
 		runOnUiThread(() -> {
 			stopRingtone();
+			stopDialTone();
 			callStatusText.setText("Connected");
 			callDuration.setBase(SystemClock.elapsedRealtime());
 			callDuration.start();
@@ -412,11 +441,16 @@ public class VoiceCallActivity extends AppCompatActivity {
 
 	public void onCallDisconnected() {
 		runOnUiThread(() -> {
-			callStatusText.setText("Call ended");
 			callDuration.stop();
+			long elapsed = SystemClock.elapsedRealtime() - callDuration.getBase();
+			long secs = elapsed / 1000;
+			long mins = secs / 60;
+			secs = secs % 60;
+			String duration = String.format("%d:%02d", mins, secs);
+			callStatusText.setText("Call ended \u00B7 " + duration);
 			if (!isFinishing) {
 				isFinishing = true;
-				handler.postDelayed(this::finish, 1000);
+				handler.postDelayed(this::finish, 1500);
 			}
 		});
 	}
@@ -424,6 +458,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 	public void onCallFailed(String reason) {
 		runOnUiThread(() -> {
 			stopRingtone();
+			stopDialTone();
 			callStatusText.setText("Call failed: " + reason);
 			if (!isFinishing) {
 				isFinishing = true;
@@ -442,6 +477,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 				case RINGING:
 					callStatusText.setText("Ringing...");
 					if (!isIncoming) {
+						stopDialTone();
 						stopRingtone();
 						playRingtone();
 					}
@@ -487,6 +523,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 			isBound = false;
 		}
 		stopRingtone();
+		stopDialTone();
 	}
 
 	private void updateNetworkQuality() {
@@ -570,14 +607,30 @@ public class VoiceCallActivity extends AppCompatActivity {
 				requestCameraPermission();
 				return;
 			}
+			Toast.makeText(this, "Setting up video...",
+					Toast.LENGTH_SHORT).show();
+			if (videoButton != null) {
+				videoButton.setBackgroundResource(
+						R.drawable.bg_call_control_button_active);
+			}
 			voiceCallService.resumeVideo();
 		}
 	}
 
 	private void switchCamera() {
 		if (isBound && voiceCallService != null) {
+			if (switchCameraButton != null) {
+				switchCameraButton.setEnabled(false);
+				switchCameraButton.setAlpha(0.4f);
+			}
 			voiceCallService.switchCamera();
 			applyLocalVideoTransform();
+			handler.postDelayed(() -> {
+				if (switchCameraButton != null) {
+					switchCameraButton.setEnabled(true);
+					switchCameraButton.setAlpha(1.0f);
+				}
+			}, 1500);
 		}
 	}
 
@@ -641,7 +694,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 				localVideoContainer.setVisibility(View.VISIBLE);
 				applyLocalVideoTransform();
 			}
-			// Hide overlays for full-screen video experience
+			// Hide non-essential overlays for full-screen video
 			if (avatarContainer != null) {
 				avatarContainer.setVisibility(View.GONE);
 			}
@@ -655,14 +708,21 @@ public class VoiceCallActivity extends AppCompatActivity {
 			if (callTypeLabel != null) {
 				callTypeLabel.setVisibility(View.GONE);
 			}
-			if (networkQualityContainer != null) {
-				networkQualityContainer.setVisibility(View.GONE);
-			}
+			// Keep duration and network quality visible during video
 			if (videoButton != null) {
 				videoButton.setImageResource(R.drawable.ic_videocam_off);
+				videoButton.setBackgroundResource(
+						R.drawable.bg_call_control_button_active);
+			}
+			if (videoLabel != null) {
+				videoLabel.setText("Video On");
 			}
 			if (switchCameraContainer != null) {
 				switchCameraContainer.setVisibility(View.VISIBLE);
+			}
+			// Auto-enable speaker for video calls
+			if (!isSpeakerOn) {
+				toggleSpeaker();
 			}
 		});
 	}
@@ -690,11 +750,13 @@ public class VoiceCallActivity extends AppCompatActivity {
 			if (callTypeLabel != null) {
 				callTypeLabel.setVisibility(View.VISIBLE);
 			}
-			if (networkQualityContainer != null) {
-				networkQualityContainer.setVisibility(View.VISIBLE);
-			}
 			if (videoButton != null) {
 				videoButton.setImageResource(R.drawable.ic_videocam);
+				videoButton.setBackgroundResource(
+						R.drawable.bg_call_control_button);
+			}
+			if (videoLabel != null) {
+				videoLabel.setText("Video");
 			}
 			if (switchCameraContainer != null) {
 				switchCameraContainer.setVisibility(View.GONE);
@@ -759,7 +821,14 @@ public class VoiceCallActivity extends AppCompatActivity {
 		runOnUiThread(() -> {
 			if (videoButton != null) {
 				videoButton.setImageResource(R.drawable.ic_videocam);
+				videoButton.setBackgroundResource(
+						R.drawable.bg_call_control_button);
 			}
+			if (videoLabel != null) {
+				videoLabel.setText("Video");
+			}
+			Toast.makeText(this, "Video request declined",
+					Toast.LENGTH_SHORT).show();
 		});
 	}
 
@@ -803,7 +872,9 @@ public class VoiceCallActivity extends AppCompatActivity {
 						voiceCallService.requestVideoUpgrade();
 					}
 				} else {
-					toggleVideo();
+					if (isBound && voiceCallService != null) {
+						voiceCallService.resumeVideo();
+					}
 				}
 			} else {
 				pendingVideoAfterPermission = false;
