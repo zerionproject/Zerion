@@ -11,10 +11,6 @@ import java.nio.ByteBuffer;
 
 import javax.annotation.Nullable;
 
-/**
- * H.264 video decoder using MediaCodec.
- * Decodes received video frames and renders to a Surface.
- */
 @NotNullByDefault
 class VideoDecoder {
 
@@ -65,7 +61,6 @@ class VideoDecoder {
 				int outputIndex = decoder.dequeueOutputBuffer(
 						info, 10000);
 				if (outputIndex >= 0) {
-					// Render to Surface by passing true
 					decoder.releaseOutputBuffer(outputIndex, true);
 				}
 			} catch (Exception e) {

@@ -157,6 +157,8 @@ public class VaultDocumentsFragment extends BaseFragment {
 	}
 
 	private void performDocumentExport(VaultItem item) {
+		Activity a = getActivity();
+		if (a == null) return;
 		viewModel.getMediaContent(item.id, new VaultViewModel.MediaContentCallback() {
 			@Override
 			public void onContentRetrieved(byte[] content) {
@@ -178,16 +180,20 @@ public class VaultDocumentsFragment extends BaseFragment {
 
 						java.util.Arrays.fill(content, (byte) 0);
 
-						requireActivity().runOnUiThread(() -> {
-							Toast.makeText(requireContext(),
-									"Document exported to: " + exportFile.getPath(),
-									Toast.LENGTH_LONG).show();
+						a.runOnUiThread(() -> {
+							if (isAdded()) {
+								Toast.makeText(a,
+										"Document exported to: " + exportFile.getPath(),
+										Toast.LENGTH_LONG).show();
+							}
 						});
 					} catch (Exception e) {
-						requireActivity().runOnUiThread(() -> {
-							Toast.makeText(requireContext(),
-									"Failed to export document",
-									Toast.LENGTH_SHORT).show();
+						a.runOnUiThread(() -> {
+							if (isAdded()) {
+								Toast.makeText(a,
+										"Failed to export document",
+										Toast.LENGTH_SHORT).show();
+							}
 						});
 					}
 				}).start();
@@ -195,9 +201,11 @@ public class VaultDocumentsFragment extends BaseFragment {
 
 			@Override
 			public void onError(String error) {
-				Toast.makeText(requireContext(),
-						"Failed to load document: " + error,
-						Toast.LENGTH_SHORT).show();
+				if (isAdded()) {
+					Toast.makeText(a,
+							"Failed to load document: " + error,
+							Toast.LENGTH_SHORT).show();
+				}
 			}
 		});
 	}
@@ -287,6 +295,8 @@ public class VaultDocumentsFragment extends BaseFragment {
 	}
 
 	private void performEncryptedExport(VaultItem item, char[] password, boolean share) {
+		Activity a = getActivity();
+		if (a == null) return;
 		viewModel.getMediaContent(item.id, new VaultViewModel.MediaContentCallback() {
 			@Override
 			public void onContentRetrieved(byte[] content) {
@@ -303,16 +313,18 @@ public class VaultDocumentsFragment extends BaseFragment {
 						}
 
 						if (share) {
-							shareZencFile(exportFilename, zencData);
+							shareZencFile(a, exportFilename, zencData);
 						} else {
-							saveZencToDownloads(exportFilename, zencData);
+							saveZencToDownloads(a, exportFilename, zencData);
 						}
 
 					} catch (Exception e) {
-						requireActivity().runOnUiThread(() -> {
-							Toast.makeText(requireContext(),
-									"Failed to export",
-									Toast.LENGTH_SHORT).show();
+						a.runOnUiThread(() -> {
+							if (isAdded()) {
+								Toast.makeText(a,
+										"Failed to export",
+										Toast.LENGTH_SHORT).show();
+							}
 						});
 					}
 				}).start();
@@ -320,16 +332,18 @@ public class VaultDocumentsFragment extends BaseFragment {
 
 			@Override
 			public void onError(String error) {
-				Toast.makeText(requireContext(),
-						"Failed to load document: " + error,
-						Toast.LENGTH_SHORT).show();
+				if (isAdded()) {
+					Toast.makeText(a,
+							"Failed to load document: " + error,
+							Toast.LENGTH_SHORT).show();
+				}
 			}
 		});
 	}
 
-	private void shareZencFile(String filename, byte[] zencData) {
+	private void shareZencFile(Activity a, String filename, byte[] zencData) {
 		try {
-			java.io.File cacheDir = new java.io.File(requireContext().getCacheDir(), "zenc_share");
+			java.io.File cacheDir = new java.io.File(a.getCacheDir(), "zenc_share");
 			if (!cacheDir.exists()) {
 				cacheDir.mkdirs();
 			}
@@ -342,8 +356,8 @@ public class VaultDocumentsFragment extends BaseFragment {
 			java.util.Arrays.fill(zencData, (byte) 0);
 
 			android.net.Uri uri = androidx.core.content.FileProvider.getUriForFile(
-					requireContext(),
-					requireContext().getPackageName() + ".fileprovider",
+					a,
+					a.getPackageName() + ".fileprovider",
 					zencFile
 			);
 
@@ -352,23 +366,27 @@ public class VaultDocumentsFragment extends BaseFragment {
 			shareIntent.putExtra(android.content.Intent.EXTRA_STREAM, uri);
 			shareIntent.addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
-			requireActivity().runOnUiThread(() -> {
-				startActivity(android.content.Intent.createChooser(shareIntent, "Share Encrypted File"));
-				Toast.makeText(requireContext(),
-						"Sharing encrypted file. Remember to share the password separately!",
-						Toast.LENGTH_LONG).show();
+			a.runOnUiThread(() -> {
+				if (isAdded()) {
+					startActivity(android.content.Intent.createChooser(shareIntent, "Share Encrypted File"));
+					Toast.makeText(a,
+							"Sharing encrypted file. Remember to share the password separately!",
+							Toast.LENGTH_LONG).show();
+				}
 			});
 
 		} catch (Exception e) {
-			requireActivity().runOnUiThread(() -> {
-				Toast.makeText(requireContext(),
-						"Failed to share",
-						Toast.LENGTH_SHORT).show();
+			a.runOnUiThread(() -> {
+				if (isAdded()) {
+					Toast.makeText(a,
+							"Failed to share",
+							Toast.LENGTH_SHORT).show();
+				}
 			});
 		}
 	}
 
-	private void saveZencToDownloads(String filename, byte[] zencData) {
+	private void saveZencToDownloads(Activity a, String filename, byte[] zencData) {
 		try {
 			java.io.File exportDir = new java.io.File(
 					android.os.Environment.getExternalStoragePublicDirectory(
@@ -386,17 +404,21 @@ public class VaultDocumentsFragment extends BaseFragment {
 
 			java.util.Arrays.fill(zencData, (byte) 0);
 
-			requireActivity().runOnUiThread(() -> {
-				Toast.makeText(requireContext(),
-						"Encrypted file saved to: " + exportFile.getPath(),
-						Toast.LENGTH_LONG).show();
+			a.runOnUiThread(() -> {
+				if (isAdded()) {
+					Toast.makeText(a,
+							"Encrypted file saved to: " + exportFile.getPath(),
+							Toast.LENGTH_LONG).show();
+				}
 			});
 
 		} catch (Exception e) {
-			requireActivity().runOnUiThread(() -> {
-				Toast.makeText(requireContext(),
-						"Failed to save",
-						Toast.LENGTH_SHORT).show();
+			a.runOnUiThread(() -> {
+				if (isAdded()) {
+					Toast.makeText(a,
+							"Failed to save",
+							Toast.LENGTH_SHORT).show();
+				}
 			});
 		}
 	}

@@ -102,7 +102,7 @@ public class ContactListFragment extends BaseFragment
 
 	@Override
 	public void onItemClick(View view, ContactListItem item) {
-		Intent i = new Intent(getActivity(), ConversationActivity.class);
+		Intent i = new Intent(requireActivity(), ConversationActivity.class);
 		ContactId contactId = item.getContact().getId();
 		i.putExtra(CONTACT_ID, contactId.getInt());
 		startActivity(i);
@@ -172,7 +172,7 @@ public class ContactListFragment extends BaseFragment
 	}
 
 	private void showPendingContactList() {
-		Intent i = new Intent(getContext(), PendingContactListActivity.class);
+		Intent i = new Intent(requireContext(), PendingContactListActivity.class);
 		startActivity(i);
 	}
 }

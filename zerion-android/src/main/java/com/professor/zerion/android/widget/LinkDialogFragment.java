@@ -83,11 +83,15 @@ public class LinkDialogFragment extends DialogFragment {
 				Toast.makeText(ctx, R.string.error_start_activity, LENGTH_SHORT)
 						.show();
 			}
-			getDialog().dismiss();
+			android.app.Dialog d = getDialog();
+			if (d != null) d.dismiss();
 		});
 
 		Button cancelButton = v.findViewById(R.id.cancelButton);
-		cancelButton.setOnClickListener(v1 -> getDialog().cancel());
+		cancelButton.setOnClickListener(v1 -> {
+			android.app.Dialog d = getDialog();
+			if (d != null) d.cancel();
+		});
 
 		return v;
 	}
