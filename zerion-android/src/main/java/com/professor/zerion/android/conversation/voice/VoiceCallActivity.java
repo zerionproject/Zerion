@@ -92,7 +92,6 @@ public class VoiceCallActivity extends AppCompatActivity {
 	private TextView speakerLabel;
 	private TextView videoLabel;
 
-	// Video UI
 	private TextureView remoteVideoSurface;
 	private TextureView localVideoSurface;
 	private View remoteVideoContainer;
@@ -108,6 +107,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 	private Runnable onRemoteSurfaceReady;
 	private boolean autoVideo = false;
 	private boolean pendingVideoAfterPermission = false;
+	private int remoteVideoRotation = 270;
 
 	private final Runnable networkQualityUpdateRunnable = new Runnable() {
 		@Override
@@ -269,6 +269,12 @@ public class VoiceCallActivity extends AppCompatActivity {
 					st.setDefaultBufferSize(
 							VideoEncoder.WIDTH, VideoEncoder.HEIGHT);
 					localSurface = new Surface(st);
+					if (isVideoActive && isBound
+							&& voiceCallService != null) {
+						voiceCallService.updatePreviewSurface(
+								localSurface);
+						applyLocalVideoTransform();
+					}
 				}
 
 				@Override
@@ -431,9 +437,6 @@ public class VoiceCallActivity extends AppCompatActivity {
 
 			networkQualityContainer.setVisibility(View.VISIBLE);
 			handler.post(networkQualityUpdateRunnable);
-
-			// Video call is handled automatically by the service —
-			// no manual upgrade needed from the activity
 		});
 	}
 
@@ -624,7 +627,6 @@ public class VoiceCallActivity extends AppCompatActivity {
 				switchCameraButton.setAlpha(0.4f);
 			}
 			voiceCallService.switchCamera();
-			applyLocalVideoTransform();
 			handler.postDelayed(() -> {
 				if (switchCameraButton != null) {
 					switchCameraButton.setEnabled(true);
@@ -686,6 +688,17 @@ public class VoiceCallActivity extends AppCompatActivity {
 	public void onVideoStarted() {
 		runOnUiThread(() -> {
 			isVideoActive = true;
+			if (isBound && voiceCallService != null) {
+				voiceCallService.setVideoRotationCallback(
+						degrees -> runOnUiThread(() -> {
+							remoteVideoRotation = degrees;
+							applyRemoteVideoTransform();
+						}));
+				voiceCallService.setCameraReadyCallback(
+						(orientation, isFront) ->
+								runOnUiThread(
+										this::applyLocalVideoTransform));
+			}
 			if (remoteVideoContainer != null) {
 				remoteVideoContainer.setVisibility(View.VISIBLE);
 				applyRemoteVideoTransform();
@@ -694,7 +707,6 @@ public class VoiceCallActivity extends AppCompatActivity {
 				localVideoContainer.setVisibility(View.VISIBLE);
 				applyLocalVideoTransform();
 			}
-			// Hide non-essential overlays for full-screen video
 			if (avatarContainer != null) {
 				avatarContainer.setVisibility(View.GONE);
 			}
@@ -708,7 +720,6 @@ public class VoiceCallActivity extends AppCompatActivity {
 			if (callTypeLabel != null) {
 				callTypeLabel.setVisibility(View.GONE);
 			}
-			// Keep duration and network quality visible during video
 			if (videoButton != null) {
 				videoButton.setImageResource(R.drawable.ic_videocam_off);
 				videoButton.setBackgroundResource(
@@ -720,7 +731,6 @@ public class VoiceCallActivity extends AppCompatActivity {
 			if (switchCameraContainer != null) {
 				switchCameraContainer.setVisibility(View.VISIBLE);
 			}
-			// Auto-enable speaker for video calls
 			if (!isSpeakerOn) {
 				toggleSpeaker();
 			}
@@ -736,7 +746,6 @@ public class VoiceCallActivity extends AppCompatActivity {
 			if (localVideoContainer != null) {
 				localVideoContainer.setVisibility(View.GONE);
 			}
-			// Restore overlays
 			if (avatarContainer != null) {
 				avatarContainer.setVisibility(View.VISIBLE);
 			}
@@ -773,22 +782,18 @@ public class VoiceCallActivity extends AppCompatActivity {
 		float centerX = viewWidth / 2f;
 		float centerY = viewHeight / 2f;
 
-		// Video source dimensions (from encoder)
 		float videoWidth = VideoEncoder.WIDTH;
 		float videoHeight = VideoEncoder.HEIGHT;
 
-		// After rotation, effective dimensions swap if 90/270
 		boolean rotated = (rotationDegrees % 180 != 0);
 		float effectiveW = rotated ? videoHeight : videoWidth;
 		float effectiveH = rotated ? videoWidth : videoHeight;
 
-		// Center-crop: scale to FILL the view (no black bars)
 		float scaleX = viewWidth / effectiveW;
 		float scaleY = viewHeight / effectiveH;
 		float scale = Math.max(scaleX, scaleY);
 
 		Matrix matrix = new Matrix();
-		// Move to origin, scale, move back to center
 		matrix.setScale(effectiveW * scale / viewWidth,
 				effectiveH * scale / viewHeight, centerX, centerY);
 		matrix.postRotate(rotationDegrees, centerX, centerY);
@@ -803,7 +808,8 @@ public class VoiceCallActivity extends AppCompatActivity {
 	private void applyRemoteVideoTransform() {
 		if (remoteVideoSurface == null) return;
 		remoteVideoSurface.post(() ->
-				applyVideoTransform(remoteVideoSurface, 270, false));
+				applyVideoTransform(remoteVideoSurface,
+						remoteVideoRotation, false));
 	}
 
 	private void applyLocalVideoTransform() {
@@ -865,7 +871,6 @@ public class VoiceCallActivity extends AppCompatActivity {
 		} else if (requestCode == REQUEST_CAMERA_PERMISSION) {
 			if (grantResults.length > 0 &&
 					grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-				// Retry video after permission granted
 				if (pendingVideoAfterPermission) {
 					pendingVideoAfterPermission = false;
 					if (isBound && voiceCallService != null) {

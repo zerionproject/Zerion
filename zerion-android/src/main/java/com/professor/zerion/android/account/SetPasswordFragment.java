@@ -290,9 +290,14 @@ public class SetPasswordFragment extends SetupFragment {
 	}
 
 	@Override
+	public void onDestroyView() {
+		super.onDestroyView();
+		mainHandler.removeCallbacksAndMessages(null);
+	}
+
+	@Override
 	public void onDestroy() {
 		super.onDestroy();
-		mainHandler.removeCallbacksAndMessages(null);
 		clearPasswordFields();
 	}
 

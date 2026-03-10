@@ -63,21 +63,22 @@ public class PanicPreferencesFragment extends PreferenceFragmentCompat
 	}
 
 	private void updatePreferences() {
-		pm = getActivity().getPackageManager();
+		android.app.Activity activity = requireActivity();
+		pm = activity.getPackageManager();
 
 		lockPref = findPreference(KEY_LOCK);
 		panicAppPref = findPreference(KEY_PANIC_APP);
 		purgePref = findPreference(KEY_PURGE);
 
-		if (PanicResponder.checkForDisconnectIntent(getActivity())) {
-			getActivity().finish();
+		if (PanicResponder.checkForDisconnectIntent(activity)) {
+			activity.finish();
 		} else {
 			String packageName =
-					PanicResponder.getConnectIntentSender(getActivity());
+					PanicResponder.getConnectIntentSender(activity);
 			if (!TextUtils.isEmpty((packageName)) &&
 					!TextUtils.equals(packageName,
 							PanicResponder
-									.getTriggerPackageName(getActivity()))) {
+									.getTriggerPackageName(activity))) {
 				showOptInDialog();
 			}
 		}
@@ -99,14 +100,16 @@ public class PanicPreferencesFragment extends PreferenceFragmentCompat
 		panicAppPref.setDefaultValue(PACKAGE_NAME_NONE);
 
 		panicAppPref.setOnPreferenceChangeListener((preference, newValue) -> {
+			android.app.Activity a = getActivity();
+			if (a == null) return false;
 			String packageName = (String) newValue;
-			PanicResponder.setTriggerPackageName(getActivity(), packageName);
+			PanicResponder.setTriggerPackageName(a, packageName);
 			showPanicApp(packageName);
 
 			if (packageName.equals(PACKAGE_NAME_NONE)) {
 				purgePref.setChecked(false);
 				purgePref.setEnabled(false);
-				getActivity().setResult(RESULT_CANCELED);
+				a.setResult(RESULT_CANCELED);
 			} else {
 				purgePref.setEnabled(true);
 			}
@@ -137,7 +140,7 @@ public class PanicPreferencesFragment extends PreferenceFragmentCompat
 		getPreferenceScreen().getSharedPreferences()
 				.registerOnSharedPreferenceChangeListener(this);
 		updatePreferences();
-		showPanicApp(PanicResponder.getTriggerPackageName(getActivity()));
+		showPanicApp(PanicResponder.getTriggerPackageName(requireActivity()));
 	}
 
 	@Override
@@ -180,30 +183,37 @@ public class PanicPreferencesFragment extends PreferenceFragmentCompat
 
 				purgePref.setEnabled(true);
 			} catch (PackageManager.NameNotFoundException e) {
-				PanicResponder.setTriggerPackageName(getActivity(),
-						PACKAGE_NAME_NONE);
+				android.app.Activity a = getActivity();
+				if (a != null) {
+					PanicResponder.setTriggerPackageName(a, PACKAGE_NAME_NONE);
+				}
 				showPanicApp(PACKAGE_NAME_NONE);
 			}
 		}
 	}
 
 	private void showOptInDialog() {
+		android.app.Activity activity = requireActivity();
 		DialogInterface.OnClickListener okListener = (dialog, which) -> {
-			PanicResponder.setTriggerPackageName(getActivity());
-			showPanicApp(PanicResponder.getTriggerPackageName(getActivity()));
-			getActivity().setResult(RESULT_OK);
+			android.app.Activity a = getActivity();
+			if (a == null) return;
+			PanicResponder.setTriggerPackageName(a);
+			showPanicApp(PanicResponder.getTriggerPackageName(a));
+			a.setResult(RESULT_OK);
 		};
 		DialogInterface.OnClickListener cancelListener = (dialog, which) -> {
-			getActivity().setResult(RESULT_CANCELED);
-			getActivity().finish();
+			android.app.Activity a = getActivity();
+			if (a == null) return;
+			a.setResult(RESULT_CANCELED);
+			a.finish();
 		};
 
 		MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(
-				requireContext(), R.style.ZerionDialogTheme);
+				activity, R.style.ZerionDialogTheme);
 		builder.setTitle(getString(R.string.dialog_title_connect_panic_app));
 
 		CharSequence app = getString(R.string.unknown_app);
-		String packageName = getCallingPackageName();
+		String packageName = getCallingPackageName(activity);
 		if (packageName != null) {
 			try {
 				app = pm.getApplicationLabel(
@@ -221,13 +231,12 @@ public class PanicPreferencesFragment extends PreferenceFragmentCompat
 	}
 
 	@Nullable
-	private String getCallingPackageName() {
-		ComponentName componentName = getActivity().getCallingActivity();
-		String packageName = null;
+	private String getCallingPackageName(android.app.Activity activity) {
+		ComponentName componentName = activity.getCallingActivity();
 		if (componentName != null) {
-			packageName = componentName.getPackageName();
+			return componentName.getPackageName();
 		}
-		return packageName;
+		return null;
 	}
 
 }

@@ -18,18 +18,13 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-/**
- * Manages the video stream for encrypted video calls over Tor.
- * Handles encoding, encryption, transmission and decryption of video frames.
- */
 @NotNullByDefault
 class VideoStreamManager {
 
-	private static final int VIDEO_SYNC_MARKER = 0x5A564944; // "ZVID"
-	private static final int VIDEO_FRAME_MARKER = 0x56464D00; // "VFM\0"
+	private static final int VIDEO_SYNC_MARKER = 0x5A564944;
+	private static final int VIDEO_FRAME_MARKER = 0x56464D00;
 	private static final int GCM_TAG_LENGTH = 128;
 	private static final int NONCE_LENGTH = 12;
-	// Pad frames to 512-byte boundaries to reduce traffic analysis
 	private static final int PAD_BOUNDARY = 512;
 
 	private final VideoEncoder encoder = new VideoEncoder();
@@ -53,6 +48,8 @@ class VideoStreamManager {
 	private Thread receiveThread;
 	@Nullable
 	private VideoStateCallback stateCallback;
+	@Nullable
+	private VideoRotationCallback rotationCallback;
 
 	interface VideoStateCallback {
 		void onVideoStarted();
@@ -60,22 +57,32 @@ class VideoStreamManager {
 		void onVideoError(String reason);
 	}
 
+	interface VideoRotationCallback {
+		void onRemoteRotation(int degrees);
+	}
+
 	void setStateCallback(@Nullable VideoStateCallback callback) {
 		this.stateCallback = callback;
 	}
 
-	/**
-	 * Initialize video keys derived from the voice call key material.
-	 * Uses separate key labels so video keys are independent of audio keys.
-	 */
+	void setRotationCallback(@Nullable VideoRotationCallback callback) {
+		this.rotationCallback = callback;
+	}
+
+	void setCameraReadyCallback(
+			@Nullable VideoCameraManager.CameraReadyCallback callback) {
+		camera.setCameraReadyCallback(callback);
+	}
+
+	void updatePreviewSurface(Surface surface) {
+		camera.updatePreviewSurface(surface);
+	}
+
 	void initKeys(byte[] videoTxKey, byte[] videoRxKey) {
 		this.txKeyBytes = Arrays.copyOf(videoTxKey, videoTxKey.length);
 		this.rxKeyBytes = Arrays.copyOf(videoRxKey, videoRxKey.length);
 	}
 
-	/**
-	 * Start sending video from camera to the output stream.
-	 */
 	void startSending(Context context, OutputStream outputStream)
 			throws IOException {
 		if (txKeyBytes == null) {
@@ -84,7 +91,6 @@ class VideoStreamManager {
 		videoOut = new DataOutputStream(outputStream);
 		running = true;
 
-		// Start encoder
 		Surface encoderSurface = encoder.start();
 
 		encoder.setCallback((data, offset, length, pts, isKeyFrame) -> {
@@ -105,10 +111,8 @@ class VideoStreamManager {
 			}
 		});
 
-		// Start camera feeding into encoder
 		camera.start(context, encoderSurface);
 
-		// Send sync marker
 		videoOut.writeInt(VIDEO_SYNC_MARKER);
 		videoOut.flush();
 
@@ -117,9 +121,6 @@ class VideoStreamManager {
 		}
 	}
 
-	/**
-	 * Start receiving and decoding video from the input stream.
-	 */
 	void startReceiving(InputStream inputStream,
 			Surface decoderOutputSurface) throws IOException {
 		if (rxKeyBytes == null) {
@@ -141,7 +142,7 @@ class VideoStreamManager {
 		receiveThread.start();
 	}
 
-	private static final int INNER_META_SIZE = 13;
+	private static final int INNER_META_SIZE = 14;
 
 	private void sendEncryptedFrame(byte[] data, int offset, int length,
 			long presentationTimeUs, boolean isKeyFrame) throws Exception {
@@ -160,6 +161,7 @@ class VideoStreamManager {
 					(56 - i * 8)) & 0xFF);
 		}
 		padded[12] = (byte) (isKeyFrame ? 1 : 0);
+		padded[13] = (byte) (camera.getSensorOrientation() / 90);
 		System.arraycopy(data, offset, padded, INNER_META_SIZE, length);
 
 		long counter = txFrameCounter.getAndIncrement();
@@ -219,20 +221,23 @@ class VideoStreamManager {
 									<< (56 - i * 8);
 				}
 
+				int remoteDegrees = (decrypted[13] & 0xFF) * 90;
+				if (rotationCallback != null) {
+					rotationCallback.onRemoteRotation(remoteDegrees);
+				}
+
 				if (originalLength > 0 && INNER_META_SIZE
 						+ originalLength <= decrypted.length) {
 					decoder.decodeFrame(decrypted, INNER_META_SIZE,
 							originalLength, presentationTimeUs);
 				}
 			} catch (Exception e) {
-				// Skip corrupted frames
 			}
 		}
 	}
 
 	private static byte[] buildNonce(byte[] keyBytes, long counter) {
 		byte[] nonce = new byte[NONCE_LENGTH];
-		// First 4 bytes from key hash (salt)
 		try {
 			java.security.MessageDigest md =
 					java.security.MessageDigest.getInstance("SHA-256");
@@ -244,7 +249,6 @@ class VideoStreamManager {
 		} catch (java.security.NoSuchAlgorithmException e) {
 			throw new IllegalStateException("SHA-256 required", e);
 		}
-		// Last 8 bytes from counter
 		for (int i = 7; i >= 0; i--) {
 			nonce[4 + i] = (byte) (counter & 0xFF);
 			counter >>= 8;
@@ -290,21 +294,12 @@ class VideoStreamManager {
 		encoder.requestKeyFrame();
 	}
 
-	/**
-	 * Pauses camera and encoder without tearing down the Tor connection,
-	 * decryption keys, or decoder. The receive side keeps running so the
-	 * remote peer's video still displays.
-	 */
 	void pauseSending() {
 		sendingPaused = true;
 		camera.stop();
 		encoder.stop();
 	}
 
-	/**
-	 * Resumes camera and encoder after a pause. Reuses the existing
-	 * Tor connection and encryption state.
-	 */
 	void resumeSending(Context context) throws IOException {
 		if (videoOut == null || txKeyBytes == null) {
 			throw new IOException("Cannot resume: stream not initialized");

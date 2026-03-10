@@ -716,11 +716,14 @@ public class VoiceCallService extends Service implements EventListener {
 			try {
 				OutputStream outputStream = null;
 				for (int retry = 0; retry < 50; retry++) {
-					if (torConnection != null) {
-						outputStream = torConnection.getWriter().getOutputStream();
+					DuplexTransportConnection conn = torConnection;
+					if (conn != null) {
+						outputStream = conn.getWriter().getOutputStream();
 						break;
-					} else if (audioSocket != null) {
-						outputStream = audioSocket.getOutputStream();
+					}
+					Socket sock = audioSocket;
+					if (sock != null) {
+						outputStream = sock.getOutputStream();
 						break;
 					}
 					try {
@@ -744,8 +747,13 @@ public class VoiceCallService extends Service implements EventListener {
 				dataOut.writeInt(AUDIO_READY_MARKER);
 				dataOut.flush();
 
+				AudioRecord recorder = audioRecord;
+				if (recorder == null) {
+					throw new IOException("AudioRecord not initialized");
+				}
+
 				while (!isShuttingDown && isRecording && (torConnection != null || (audioSocket != null && audioSocket.isConnected()))) {
-					int read = audioRecord.read(readBuffer, readOffset, frameSize - readOffset);
+					int read = recorder.read(readBuffer, readOffset, frameSize - readOffset);
 
 					if (read > 0) {
 						readOffset += read;
@@ -807,6 +815,9 @@ public class VoiceCallService extends Service implements EventListener {
 			} catch (IOException e) {
 				handleConnectionError();
 			} catch (Exception e) {
+				if (!isShuttingDown) {
+					handleConnectionError();
+				}
 			}
 		});
 
@@ -814,11 +825,14 @@ public class VoiceCallService extends Service implements EventListener {
 			try {
 				InputStream inputStream = null;
 				for (int retry = 0; retry < 50; retry++) {
-					if (torConnection != null) {
-						inputStream = torConnection.getReader().getInputStream();
+					DuplexTransportConnection conn = torConnection;
+					if (conn != null) {
+						inputStream = conn.getReader().getInputStream();
 						break;
-					} else if (audioSocket != null) {
-						inputStream = audioSocket.getInputStream();
+					}
+					Socket sock = audioSocket;
+					if (sock != null) {
+						inputStream = sock.getInputStream();
 						break;
 					}
 					try {
@@ -971,6 +985,9 @@ public class VoiceCallService extends Service implements EventListener {
 					handleConnectionError();
 				}
 			} catch (Exception e) {
+				if (!isShuttingDown && callState == CallState.CONNECTED) {
+					handleConnectionError();
+				}
 			}
 		});
 	}
@@ -1116,11 +1133,20 @@ public class VoiceCallService extends Service implements EventListener {
 			return;
 		}
 
-		if (isReconnecting) return;
-		SecretKey reconnectKey = voiceCallKey;
-		if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS && reconnectKey != null) {
-			isReconnecting = true;
-			reconnectAttempts++;
+		final SecretKey reconnectKey;
+		synchronized (this) {
+			if (isReconnecting) return;
+			if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+				reconnectKey = null;
+			} else {
+				reconnectKey = voiceCallKey;
+			}
+			if (reconnectKey != null) {
+				isReconnecting = true;
+				reconnectAttempts++;
+			}
+		}
+		if (reconnectKey != null) {
 			sendSequenceNumber.addAndGet(1000);
 			callState = CallState.CONNECTING;
 			updateCallActivity();
@@ -1227,12 +1253,12 @@ public class VoiceCallService extends Service implements EventListener {
 	
 	private void zeroizeKeyMaterial() {
 		if (voiceCallKey != null) {
-			Arrays.fill(voiceCallKey.getBytes(), (byte) 0);
+			voiceCallKey.clear();
 			voiceCallKey = null;
 		}
 		if (audioKeys != null) {
-			Arrays.fill(audioKeys.txKey.getBytes(), (byte) 0);
-			Arrays.fill(audioKeys.rxKey.getBytes(), (byte) 0);
+			audioKeys.txKey.clear();
+			audioKeys.rxKey.clear();
 			audioKeys = null;
 		}
 		if (localEphemeralSecret != null) {
@@ -2163,8 +2189,8 @@ public class VoiceCallService extends Service implements EventListener {
 
 	private void zeroizeVideoKeys() {
 		if (videoKeys != null) {
-			Arrays.fill(videoKeys.txKey.getBytes(), (byte) 0);
-			Arrays.fill(videoKeys.rxKey.getBytes(), (byte) 0);
+			videoKeys.txKey.clear();
+			videoKeys.rxKey.clear();
 			videoKeys = null;
 		}
 	}
@@ -2188,14 +2214,34 @@ public class VoiceCallService extends Service implements EventListener {
 		if (videoStreamManager != null) {
 			return videoStreamManager.getCameraSensorOrientation();
 		}
-		return 270; // Default front camera sensor orientation
+		return 270;
 	}
 
 	public boolean isCameraFront() {
 		if (videoStreamManager != null) {
 			return videoStreamManager.isCameraFront();
 		}
-		return true; // Default to front camera
+		return true;
+	}
+
+	public void updatePreviewSurface(Surface surface) {
+		if (videoStreamManager != null) {
+			videoStreamManager.updatePreviewSurface(surface);
+		}
+	}
+
+	public void setVideoRotationCallback(
+			VideoStreamManager.VideoRotationCallback cb) {
+		if (videoStreamManager != null) {
+			videoStreamManager.setRotationCallback(cb);
+		}
+	}
+
+	public void setCameraReadyCallback(
+			VideoCameraManager.CameraReadyCallback cb) {
+		if (videoStreamManager != null) {
+			videoStreamManager.setCameraReadyCallback(cb);
+		}
 	}
 
 	private static String bytesToHex(byte[] bytes) {

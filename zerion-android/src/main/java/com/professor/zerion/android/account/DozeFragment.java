@@ -103,9 +103,12 @@ public class DozeFragment extends SetupFragment
 		if (request == REQUEST_DOZE_WHITELISTING) {
 			if (!dozeView.needsToBeShown() || secondAttempt) {
 				dozeView.setChecked(true);
-			} else if (getContext() != null) {
-				secondAttempt = true;
-				showOnboardingDialog(getContext(), getHelpText());
+			} else {
+				android.content.Context ctx = getContext();
+				if (ctx != null) {
+					secondAttempt = true;
+					showOnboardingDialog(ctx, getHelpText());
+				}
 			}
 		}
 	}
