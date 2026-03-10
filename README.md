@@ -94,7 +94,17 @@ Any attempt to reconnect with weaker security is automatically blocked.
 
 Zerion is under active development.
 
-**v1.0.4 (Latest):**
+**v1.0.5 (Latest):**
+- Video call quality: 640x480 @ 24fps / 600kbps, H.264 Main Profile Level 3.1
+- Self-view fix: local camera preview now shows correctly during video calls
+- Remote video rotation: per-frame rotation metadata, no more upside-down video
+- Camera switch: async callback ensures correct transform after front/back switch
+- Video call UX: mute/speaker active state indicators, auto-speaker on video start
+- Video call UX: call duration shown on end screen, network quality during video
+- VoiceCallService: fix SecretKey zeroing, TorConnection/AudioRecord threading races
+- Fragment lifecycle: fix null crashes in ContactList, PanicPrefs, dialogs, Vault export
+
+**v1.0.4:**
 - P2P encrypted video calls over Tor
 - Video orientation correction (TextureView + rotation matrix)
 - Crypto-protocol hardening: 8 vulnerabilities fixed (ZERION-001 through ZERION-009)
