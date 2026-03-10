@@ -24,6 +24,7 @@ import androidx.appcompat.app.AppCompatDialogFragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE;
+import static java.util.Objects.requireNonNull;
 import static org.briarproject.bramble.api.identity.AuthorConstants.MAX_AUTHOR_NAME_LENGTH;
 import static org.briarproject.bramble.util.StringUtils.toUtf8;
 import static com.professor.zerion.android.util.UiUtils.hideSoftKeyboard;
