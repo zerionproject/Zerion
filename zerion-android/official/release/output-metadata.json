@@ -11,8 +11,8 @@
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
-      "versionCode": 10040,
-      "versionName": "1.0.4",
+      "versionCode": 10050,
+      "versionName": "1.0.5",
       "outputFile": "zerion-official-release.apk"
     }
   ],
