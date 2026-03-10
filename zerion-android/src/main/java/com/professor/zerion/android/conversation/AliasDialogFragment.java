@@ -24,7 +24,6 @@ import androidx.appcompat.app.AppCompatDialogFragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE;
-import static java.util.Objects.requireNonNull;
 import static org.briarproject.bramble.api.identity.AuthorConstants.MAX_AUTHOR_NAME_LENGTH;
 import static org.briarproject.bramble.util.StringUtils.toUtf8;
 import static com.professor.zerion.android.util.UiUtils.hideSoftKeyboard;
@@ -98,20 +97,24 @@ public class AliasDialogFragment extends AppCompatDialogFragment {
 			aliasEditLayout.setError(getString(R.string.name_too_long));
 		} else {
 			viewModel.setContactAlias(alias);
-			getDialog().dismiss();
+			android.app.Dialog d = getDialog();
+			if (d != null) d.dismiss();
 		}
 	}
 
 	private void onCancelButtonClicked() {
 		hideSoftKeyboard(aliasEditText);
-		getDialog().cancel();
+		android.app.Dialog d = getDialog();
+		if (d != null) d.cancel();
 	}
 
 	@Override
 	public void onStart() {
 		super.onStart();
-		requireNonNull(getDialog().getWindow())
-				.setSoftInputMode(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+		android.app.Dialog d = getDialog();
+		if (d != null && d.getWindow() != null) {
+			d.getWindow().setSoftInputMode(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+		}
 		showSoftKeyboard(aliasEditText);
 	}
 

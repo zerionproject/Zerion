@@ -137,10 +137,11 @@ public class VaultGalleryFragment extends BaseFragment {
 			return;
 		}
 
-		android.app.Dialog dialog = new android.app.Dialog(requireContext(),
+		Activity openActivity = requireActivity();
+		android.app.Dialog dialog = new android.app.Dialog(openActivity,
 				android.R.style.Theme_Black_NoTitleBar_Fullscreen);
 
-		View dialogView = LayoutInflater.from(requireContext())
+		View dialogView = LayoutInflater.from(openActivity)
 				.inflate(R.layout.dialog_media_viewer, null);
 
 		ImageView imageView = dialogView.findViewById(R.id.media_image);
@@ -211,9 +212,11 @@ public class VaultGalleryFragment extends BaseFragment {
 
 			@Override
 			public void onError(String error) {
-				Toast.makeText(requireContext(),
-						"Failed to load media: " + error,
-						Toast.LENGTH_SHORT).show();
+				if (isAdded()) {
+					Toast.makeText(openActivity,
+							"Failed to load media: " + error,
+							Toast.LENGTH_SHORT).show();
+				}
 				dialog.dismiss();
 			}
 		});

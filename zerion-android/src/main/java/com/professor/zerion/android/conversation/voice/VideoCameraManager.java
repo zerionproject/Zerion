@@ -18,15 +18,15 @@ import java.util.Arrays;
 
 import javax.annotation.Nullable;
 
-/**
- * Manages camera capture for video calls using Camera2 API.
- * Outputs frames to a Surface provided by the VideoEncoder.
- */
 @NotNullByDefault
 class VideoCameraManager {
 
 	interface CameraErrorCallback {
 		void onCameraError(String reason);
+	}
+
+	interface CameraReadyCallback {
+		void onCameraReady(int sensorOrientation, boolean isFront);
 	}
 
 	private boolean useFrontCamera = true;
@@ -42,17 +42,47 @@ class VideoCameraManager {
 	@Nullable
 	private CameraErrorCallback errorCallback;
 	@Nullable
+	private CameraReadyCallback readyCallback;
+	@Nullable
 	private Surface previewSurface;
+	@Nullable
+	private Surface encoderSurfaceRef;
 
 	void setErrorCallback(@Nullable CameraErrorCallback callback) {
 		this.errorCallback = callback;
+	}
+
+	void setCameraReadyCallback(@Nullable CameraReadyCallback callback) {
+		this.readyCallback = callback;
 	}
 
 	void setPreviewSurface(@Nullable Surface surface) {
 		this.previewSurface = surface;
 	}
 
+	void updatePreviewSurface(Surface surface) {
+		this.previewSurface = surface;
+		if (cameraDevice != null && encoderSurfaceRef != null
+				&& cameraHandler != null) {
+			final CameraDevice cam = cameraDevice;
+			final Surface enc = encoderSurfaceRef;
+			cameraHandler.post(() -> {
+				if (captureSession != null) {
+					try {
+						captureSession.stopRepeating();
+					} catch (Exception ignored) {}
+					try {
+						captureSession.close();
+					} catch (Exception ignored) {}
+					captureSession = null;
+				}
+				createCaptureSession(cam, enc);
+			});
+		}
+	}
+
 	void start(Context context, Surface encoderSurface) {
+		encoderSurfaceRef = encoderSurface;
 		cameraThread = new HandlerThread("CameraThread");
 		cameraThread.start();
 		cameraHandler = new Handler(cameraThread.getLooper());
@@ -159,7 +189,6 @@ class VideoCameraManager {
 						public void onConfigureFailed(
 								CameraCaptureSession session) {
 							if (triedPreview) {
-								// Fallback: retry encoder-only
 								createCaptureSessionInternal(
 										camera, encoderSurface,
 										false);
@@ -193,6 +222,10 @@ class VideoCameraManager {
 					CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_VIDEO);
 			session.setRepeatingRequest(builder.build(),
 					null, cameraHandler);
+			if (readyCallback != null) {
+				readyCallback.onCameraReady(sensorOrientation,
+						useFrontCamera);
+			}
 		} catch (CameraAccessException e) {
 			if (errorCallback != null) {
 				errorCallback.onCameraError("Camera preview failed");

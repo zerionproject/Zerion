@@ -12,18 +12,14 @@ import java.nio.ByteBuffer;
 
 import javax.annotation.Nullable;
 
-/**
- * H.264 video encoder using MediaCodec.
- * Encodes camera frames at 320x240 @15fps for Tor-friendly bandwidth.
- */
 @NotNullByDefault
 class VideoEncoder {
 
-	static final int WIDTH = 320;
-	static final int HEIGHT = 240;
-	static final int FRAME_RATE = 15;
-	static final int BIT_RATE = 250_000; // 250 kbps
-	static final int I_FRAME_INTERVAL = 2; // seconds
+	static final int WIDTH = 640;
+	static final int HEIGHT = 480;
+	static final int FRAME_RATE = 24;
+	static final int BIT_RATE = 600_000;
+	static final int I_FRAME_INTERVAL = 3;
 
 	@Nullable
 	private MediaCodec encoder;
@@ -54,9 +50,9 @@ class VideoEncoder {
 				I_FRAME_INTERVAL);
 		format.setInteger(MediaFormat.KEY_PROFILE,
 				MediaCodecInfo.CodecProfileLevel
-						.AVCProfileBaseline);
+						.AVCProfileMain);
 		format.setInteger(MediaFormat.KEY_LEVEL,
-				MediaCodecInfo.CodecProfileLevel.AVCLevel13);
+				MediaCodecInfo.CodecProfileLevel.AVCLevel31);
 
 		encoder = MediaCodec.createEncoderByType(
 				MediaFormat.MIMETYPE_VIDEO_AVC);
