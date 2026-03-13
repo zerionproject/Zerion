@@ -294,16 +294,8 @@ public class PasswordFragment extends BaseFragment implements TextWatcher {
 	}
 
 	private void onWipeTriggered() {
-		MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(
-				requireContext(), R.style.ZerionDialogTheme);
-		builder.setTitle(R.string.dialog_title_max_attempts);
-		builder.setMessage(R.string.dialog_message_max_attempts);
-		builder.setPositiveButton(android.R.string.ok, (dialog, which) -> {
-			viewModel.deleteAccount();
-			requireActivity().finishAffinity();
-		});
-		builder.setCancelable(false);
-		builder.show();
+		viewModel.deleteAccount();
+		requireActivity().finishAffinity();
 	}
 
 	private void onOperationalFailure() {
