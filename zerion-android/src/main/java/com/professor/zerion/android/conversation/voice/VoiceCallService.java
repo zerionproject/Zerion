@@ -2165,6 +2165,7 @@ public class VoiceCallService extends Service implements EventListener {
 		videoRequested = false;
 
 		if (videoStreamManager != null) {
+			videoStreamManager.setStateCallback(null);
 			try {
 				videoStreamManager.stop();
 			} catch (Exception ignored) {}
