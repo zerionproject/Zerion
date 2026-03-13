@@ -1743,10 +1743,24 @@ public class ConversationActivity extends ZerionActivity
 			ClipboardManager clipboard = (ClipboardManager)
 					getSystemService(Context.CLIPBOARD_SERVICE);
 			if (clipboard != null) {
+				final String copiedText = sb.toString();
 				clipboard.setPrimaryClip(
-						ClipData.newPlainText("message", sb.toString()));
+						ClipData.newPlainText("message", copiedText));
 				Snackbar.make(list, R.string.copied_to_clipboard,
 						Snackbar.LENGTH_SHORT).show();
+				new android.os.Handler(android.os.Looper.getMainLooper())
+						.postDelayed(() -> {
+							ClipData current = clipboard.getPrimaryClip();
+							if (current != null && current.getItemCount() > 0) {
+								CharSequence currentText =
+										current.getItemAt(0).getText();
+								if (copiedText.contentEquals(
+										currentText != null ? currentText : "")) {
+									clipboard.setPrimaryClip(
+											ClipData.newPlainText("", ""));
+								}
+							}
+						}, 60_000L);
 			}
 		}
 		if (actionMode != null) actionMode.finish();

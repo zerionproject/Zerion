@@ -1,6 +1,7 @@
 package com.professor.zerion.android.security;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.Build;
 import android.os.Environment;
 import android.os.FileObserver;
@@ -308,10 +309,18 @@ public class AntiForensics {
 	private void corruptFile(File file) {
 		try {
 			if (file.exists() && file.canWrite()) {
+				long fileLen = file.length();
+				if (fileLen == 0) return;
 				RandomAccessFile raf = new RandomAccessFile(file, "rw");
-				byte[] random = new byte[(int) Math.min(file.length(), 1024)];
-				secureRandom.nextBytes(random);
-				raf.write(random);
+				byte[] chunk = new byte[(int) Math.min(fileLen, 65536)];
+				long remaining = fileLen;
+				while (remaining > 0) {
+					int toWrite = (int) Math.min(remaining, chunk.length);
+					secureRandom.nextBytes(chunk);
+					raf.write(chunk, 0, toWrite);
+					remaining -= toWrite;
+				}
+				raf.getFD().sync();
 				raf.close();
 			}
 		} catch (Exception e) {
@@ -373,6 +382,14 @@ public class AntiForensics {
 	}
 
 	private void notifySecurityBreach() {
+		try {
+			Intent lockIntent = new Intent(context,
+					com.professor.zerion.android.ZerionService.class);
+			lockIntent.setAction("com.professor.zerion.android.LOCK");
+			lockIntent.putExtra("pid", android.os.Process.myPid());
+			context.startService(lockIntent);
+		} catch (Exception ignored) {
+		}
 	}
 
 	public void cleanup() {
