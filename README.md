@@ -84,7 +84,7 @@ Any attempt to reconnect with weaker security is automatically blocked.
 
 ## Download Zerion
 
-**[Download APK](https://github.com/zerionproject/Zerion/releases/latest)** — v1.0.7
+**[Download APK](https://github.com/zerionproject/Zerion/releases/latest)** — v1.0.8
 
 **F-Droid:** [fdroid.zerion.chat](https://fdroid.zerion.chat/fdroid/repo)
 ```
@@ -95,7 +95,13 @@ Repo fingerprint: D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6888F704
 
 ## Changelog
 
-**v1.0.7 (Latest):**
+**v1.0.8 (Latest):**
+- Auto-wipe on max login attempts is now immediate (no confirmation dialog required)
+- Forensic tool detection (Cellebrite, GrayKey, ADB, USB data transfer) now triggers immediate app lock
+- Message clipboard auto-clears after 60 seconds
+- Emergency file corruption now overwrites entire file contents with secure flush
+
+**v1.0.7:**
 - Fixed self-view rotation during video calls (front camera formula corrected)
 - Fixed spurious "Camera error" toast appearing after hanging up a video call
 - Fixed call timer overlapping local video preview pip
