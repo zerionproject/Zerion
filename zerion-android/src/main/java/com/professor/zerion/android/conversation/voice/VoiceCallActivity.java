@@ -716,6 +716,9 @@ public class VoiceCallActivity extends AppCompatActivity {
 			if (callStatusText != null) {
 				callStatusText.setVisibility(View.GONE);
 			}
+			if (callDuration != null) {
+				callDuration.setVisibility(View.GONE);
+			}
 			TextView callTypeLabel = findViewById(R.id.call_type_label);
 			if (callTypeLabel != null) {
 				callTypeLabel.setVisibility(View.GONE);
@@ -754,6 +757,9 @@ public class VoiceCallActivity extends AppCompatActivity {
 			}
 			if (callStatusText != null) {
 				callStatusText.setVisibility(View.VISIBLE);
+			}
+			if (callDuration != null) {
+				callDuration.setVisibility(View.VISIBLE);
 			}
 			TextView callTypeLabel = findViewById(R.id.call_type_label);
 			if (callTypeLabel != null) {
@@ -829,9 +835,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 			displayRotation = getWindowManager()
 					.getDefaultDisplay().getRotation() * 90;
 		}
-		final int rotation = isFront
-				? (sensorOrientation + displayRotation + 180) % 360
-				: (sensorOrientation - displayRotation + 360) % 360;
+		final int rotation = (sensorOrientation - displayRotation + 360) % 360;
 		localVideoSurface.post(() ->
 				applyVideoTransform(localVideoSurface, rotation, isFront));
 	}
