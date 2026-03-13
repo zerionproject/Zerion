@@ -73,22 +73,30 @@ class VideoEncoder {
 	private void drainEncoder() {
 		MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
 		while (running && encoder != null) {
-			int outputIndex = encoder.dequeueOutputBuffer(info, 10000);
-			if (outputIndex >= 0) {
-				ByteBuffer outputBuffer =
-						encoder.getOutputBuffer(outputIndex);
-				if (outputBuffer != null && info.size > 0 &&
-						callback != null) {
-					boolean isKeyFrame = (info.flags &
-							MediaCodec.BUFFER_FLAG_KEY_FRAME) != 0;
-					byte[] data = new byte[info.size];
-					outputBuffer.position(info.offset);
-					outputBuffer.limit(info.offset + info.size);
-					outputBuffer.get(data);
-					callback.onEncodedFrame(data, 0, data.length,
-							info.presentationTimeUs, isKeyFrame);
+			try {
+				int outputIndex = encoder.dequeueOutputBuffer(
+						info, 10000);
+				if (outputIndex >= 0) {
+					boolean isEos = (info.flags
+							& MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0;
+					ByteBuffer outputBuffer =
+							encoder.getOutputBuffer(outputIndex);
+					if (outputBuffer != null && info.size > 0 &&
+							callback != null) {
+						boolean isKeyFrame = (info.flags &
+								MediaCodec.BUFFER_FLAG_KEY_FRAME) != 0;
+						byte[] data = new byte[info.size];
+						outputBuffer.position(info.offset);
+						outputBuffer.limit(info.offset + info.size);
+						outputBuffer.get(data);
+						callback.onEncodedFrame(data, 0, data.length,
+								info.presentationTimeUs, isKeyFrame);
+					}
+					encoder.releaseOutputBuffer(outputIndex, false);
+					if (isEos) break;
 				}
-				encoder.releaseOutputBuffer(outputIndex, false);
+			} catch (Exception e) {
+				break;
 			}
 		}
 	}

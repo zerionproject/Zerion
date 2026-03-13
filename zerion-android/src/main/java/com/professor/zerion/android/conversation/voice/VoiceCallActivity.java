@@ -818,9 +818,22 @@ public class VoiceCallActivity extends AppCompatActivity {
 		int sensorOrientation =
 				voiceCallService.getCameraSensorOrientation();
 		boolean isFront = voiceCallService.isCameraFront();
+		int displayRotation = 0;
+		if (android.os.Build.VERSION.SDK_INT
+				>= android.os.Build.VERSION_CODES.R) {
+			android.view.Display display = getDisplay();
+			if (display != null) {
+				displayRotation = display.getRotation() * 90;
+			}
+		} else {
+			displayRotation = getWindowManager()
+					.getDefaultDisplay().getRotation() * 90;
+		}
+		final int rotation = isFront
+				? (sensorOrientation + displayRotation + 180) % 360
+				: (sensorOrientation - displayRotation + 360) % 360;
 		localVideoSurface.post(() ->
-				applyVideoTransform(localVideoSurface,
-						sensorOrientation, isFront));
+				applyVideoTransform(localVideoSurface, rotation, isFront));
 	}
 
 	public void onVideoRejected() {

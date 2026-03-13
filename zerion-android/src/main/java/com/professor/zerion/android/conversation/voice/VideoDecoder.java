@@ -17,6 +17,7 @@ class VideoDecoder {
 	@Nullable
 	private MediaCodec decoder;
 	private volatile boolean running = false;
+	private int decodeFailures = 0;
 
 	void start(Surface outputSurface) throws IOException {
 		MediaFormat format = MediaFormat.createVideoFormat(
@@ -48,9 +49,14 @@ class VideoDecoder {
 					inputBuffer.put(data, offset, length);
 					decoder.queueInputBuffer(inputIndex, 0, length,
 							presentationTimeUs, 0);
+					decodeFailures = 0;
 				}
 			}
-		} catch (Exception ignored) {
+		} catch (Exception e) {
+			decodeFailures++;
+			if (decodeFailures >= 10) {
+				running = false;
+			}
 		}
 	}
 

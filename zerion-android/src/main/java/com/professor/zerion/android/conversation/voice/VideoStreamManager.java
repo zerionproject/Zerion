@@ -50,6 +50,7 @@ class VideoStreamManager {
 	private VideoStateCallback stateCallback;
 	@Nullable
 	private VideoRotationCallback rotationCallback;
+	private int consecutiveAuthFailures = 0;
 
 	interface VideoStateCallback {
 		void onVideoStarted();
@@ -210,6 +211,8 @@ class VideoStreamManager {
 					continue;
 				}
 
+				consecutiveAuthFailures = 0;
+
 				int originalLength = ((decrypted[0] & 0xFF) << 24)
 						| ((decrypted[1] & 0xFF) << 16)
 						| ((decrypted[2] & 0xFF) << 8)
@@ -231,7 +234,16 @@ class VideoStreamManager {
 					decoder.decodeFrame(decrypted, INNER_META_SIZE,
 							originalLength, presentationTimeUs);
 				}
+			} catch (javax.crypto.AEADBadTagException e) {
+				consecutiveAuthFailures++;
+				if (consecutiveAuthFailures >= 3
+						&& stateCallback != null) {
+					stateCallback.onVideoError(
+							"Video stream integrity failure");
+					return;
+				}
 			} catch (Exception e) {
+				consecutiveAuthFailures = 0;
 			}
 		}
 	}
