@@ -48,6 +48,8 @@ public class StartupActivity extends BaseActivity implements
 	@Override
 	public void onCreate(@Nullable Bundle state) {
 		super.onCreate(state);
+		getWindow().addFlags(
+				android.view.WindowManager.LayoutParams.FLAG_SECURE);
 		overridePendingTransition(R.anim.fade_in, R.anim.fade_out);
 
 		setContentView(R.layout.activity_fragment_container);

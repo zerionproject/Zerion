@@ -2127,10 +2127,8 @@ public class VoiceCallService extends Service implements EventListener {
 					videoTorConnection.getWriter().getOutputStream();
 			videoStreamManager.startSending(this, videoOut);
 
-			// Make surfaces visible FIRST, then wait for surface readiness
 			mainHandler.post(() -> {
 				if (callActivity != null) {
-					callActivity.onVideoStarted();
 					callActivity.getRemoteVideoSurfaceWhenReady(surface -> {
 						if (videoStreamManager == null ||
 								videoTorConnection == null) return;
@@ -2140,6 +2138,11 @@ public class VoiceCallService extends Service implements EventListener {
 											.getInputStream();
 							videoStreamManager.startReceiving(
 									videoIn, surface);
+							mainHandler.post(() -> {
+								if (callActivity != null) {
+									callActivity.onVideoStarted();
+								}
+							});
 						} catch (Exception e) {
 							stopVideoStreaming();
 						}

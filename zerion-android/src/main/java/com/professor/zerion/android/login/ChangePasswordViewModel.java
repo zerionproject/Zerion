@@ -33,8 +33,8 @@ public class ChangePasswordViewModel extends ViewModel {
 		this.strengthEstimator = strengthEstimator;
 	}
 
-	float estimatePasswordStrength(String password) {
-		return strengthEstimator.estimateStrength(password);
+	float estimatePasswordStrength(char[] password) {
+		return strengthEstimator.estimateStrength(new String(password));
 	}
 
 	LiveEvent<DecryptionResult> changePassword(char[] oldPassword,
