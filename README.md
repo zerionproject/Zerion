@@ -84,35 +84,40 @@ Any attempt to reconnect with weaker security is automatically blocked.
 
 ## Download Zerion
 
-**[Download APK](https://github.com/zerionproject/Zerion/releases/latest)**
+**[Download APK](https://github.com/zerionproject/Zerion/releases/latest)** — v1.0.7
 
-- F-Droid (pending review)
+**F-Droid:** [fdroid.zerion.chat](https://fdroid.zerion.chat/fdroid/repo)
+```
+Repo fingerprint: D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6888F704C8
+```
 
 ---
 
-## Development Status
+## Changelog
 
-Zerion is under active development.
+**v1.0.7 (Latest):**
+- Fixed self-view rotation during video calls (front camera formula corrected)
+- Fixed spurious "Camera error" toast appearing after hanging up a video call
+- Fixed call timer overlapping local video preview pip
 
-**v1.0.5 (Latest):**
+**v1.0.6:**
+- Video call security: AES-GCM authentication failure detection (stream integrity)
+- Video encoder drain thread: clean shutdown with EOS flag
+- Video decoder: consecutive failure tracking, codec error detection
+- Auth screen: FLAG_SECURE added to prevent screenshot leakage
+- Password handling: char[] passed directly to strength estimator, no String copy
+
+**v1.0.5:**
 - Video call quality: 640x480 @ 24fps / 600kbps, H.264 Main Profile Level 3.1
-- Self-view fix: local camera preview now shows correctly during video calls
-- Remote video rotation: per-frame rotation metadata, no more upside-down video
+- Remote video rotation: per-frame rotation metadata
 - Camera switch: async callback ensures correct transform after front/back switch
 - Video call UX: mute/speaker active state indicators, auto-speaker on video start
-- Video call UX: call duration shown on end screen, network quality during video
 - VoiceCallService: fix SecretKey zeroing, TorConnection/AudioRecord threading races
-- Fragment lifecycle: fix null crashes in ContactList, PanicPrefs, dialogs, Vault export
 
 **v1.0.4:**
 - P2P encrypted video calls over Tor
-- Video orientation correction (TextureView + rotation matrix)
-- Crypto-protocol hardening: 8 vulnerabilities fixed (ZERION-001 through ZERION-009)
-- Fail-closed PQ epoch reset, constant-time key comparison, KEM secret zeroing
-- Receive-side PQ epoch completion, chunk index validation, EK seed hash computation
-- Voice signal ephemeral cleanup (immediate delete + startup purge)
-- Zero-log CI enforcement (Gradle build task)
-- Video/audio stream metadata moved inside encrypted payload
+- Crypto-protocol hardening: 8 vulnerabilities fixed
+- Voice signal ephemeral cleanup, zero-log CI enforcement
 
 **Planned:**
 - Multi-device sync
