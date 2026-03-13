@@ -272,5 +272,7 @@ class AccountManagerImpl implements AccountManager {
 			databaseKey = null;
 			databaseKey = key;
 		}
+		java.util.Arrays.fill(oldPassword, '\0');
+		java.util.Arrays.fill(newPassword, '\0');
 	}
 }

@@ -259,12 +259,13 @@ class VideoCameraManager {
 
 	void stop() {
 		stopCamera();
-		try { Thread.sleep(200); } catch (InterruptedException ignored) {}
 		if (cameraThread != null) {
 			cameraThread.quitSafely();
 			try {
-				cameraThread.join(1000);
-			} catch (InterruptedException ignored) {}
+				cameraThread.join(1500);
+			} catch (InterruptedException ignored) {
+				Thread.currentThread().interrupt();
+			}
 			cameraThread = null;
 		}
 		cameraHandler = null;

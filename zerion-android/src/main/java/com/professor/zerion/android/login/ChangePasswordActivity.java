@@ -137,10 +137,7 @@ public class ChangePasswordActivity extends ZerionActivity
 		if (secondLen > 0) newPasswordConfirmation.getText().getChars(0, secondLen, secondChars, 0);
 
 		boolean passwordsMatch = java.util.Arrays.equals(firstChars, secondChars);
-		// estimatePasswordStrength requires String; create brief copy
-		String strengthInput = new String(firstChars);
-		float strength = viewModel.estimatePasswordStrength(strengthInput);
-		strengthInput = null;
+		float strength = viewModel.estimatePasswordStrength(firstChars);
 		strengthMeter.setStrength(strength);
 
 		if (firstLen > 0) {
