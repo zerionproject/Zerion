@@ -63,8 +63,7 @@ public class StreamingAudioEncryptor {
 	}
 
 	public byte[] getSessionKey() {
-		byte[] keyBytes = encryptionKey.getEncoded();
-		return Arrays.copyOf(keyBytes, keyBytes.length);
+		return Arrays.copyOf(rawKeyBytes, rawKeyBytes.length);
 	}
 
 	public byte[] getEncryptedKey(SecretKey masterKey) throws Exception {
@@ -86,10 +85,10 @@ public class StreamingAudioEncryptor {
 		System.arraycopy(iv, 0, ivWithCounter, 0, GCM_IV_LENGTH);
 
 		int counter = chunkSequenceNumber++;
-		ivWithCounter[GCM_IV_LENGTH - 4] ^= (byte) (counter >>> 24);
-		ivWithCounter[GCM_IV_LENGTH - 3] ^= (byte) (counter >>> 16);
-		ivWithCounter[GCM_IV_LENGTH - 2] ^= (byte) (counter >>> 8);
-		ivWithCounter[GCM_IV_LENGTH - 1] ^= (byte) counter;
+		ivWithCounter[GCM_IV_LENGTH - 4] = (byte) (iv[GCM_IV_LENGTH - 4] ^ (byte) (counter >>> 24));
+		ivWithCounter[GCM_IV_LENGTH - 3] = (byte) (iv[GCM_IV_LENGTH - 3] ^ (byte) (counter >>> 16));
+		ivWithCounter[GCM_IV_LENGTH - 2] = (byte) (iv[GCM_IV_LENGTH - 2] ^ (byte) (counter >>> 8));
+		ivWithCounter[GCM_IV_LENGTH - 1] = (byte) (iv[GCM_IV_LENGTH - 1] ^ (byte) counter);
 
 		Cipher cipher = CIPHER_CACHE.get();
 		cipher.init(Cipher.ENCRYPT_MODE, encryptionKey,
@@ -116,10 +115,10 @@ public class StreamingAudioEncryptor {
 		System.arraycopy(iv, 0, ivWithCounter, 0, GCM_IV_LENGTH);
 
 		int counter = chunkSequenceNumber;
-		ivWithCounter[GCM_IV_LENGTH - 4] ^= (byte) (counter >>> 24);
-		ivWithCounter[GCM_IV_LENGTH - 3] ^= (byte) (counter >>> 16);
-		ivWithCounter[GCM_IV_LENGTH - 2] ^= (byte) (counter >>> 8);
-		ivWithCounter[GCM_IV_LENGTH - 1] ^= (byte) counter;
+		ivWithCounter[GCM_IV_LENGTH - 4] = (byte) (iv[GCM_IV_LENGTH - 4] ^ (byte) (counter >>> 24));
+		ivWithCounter[GCM_IV_LENGTH - 3] = (byte) (iv[GCM_IV_LENGTH - 3] ^ (byte) (counter >>> 16));
+		ivWithCounter[GCM_IV_LENGTH - 2] = (byte) (iv[GCM_IV_LENGTH - 2] ^ (byte) (counter >>> 8));
+		ivWithCounter[GCM_IV_LENGTH - 1] = (byte) (iv[GCM_IV_LENGTH - 1] ^ (byte) counter);
 
 		Cipher cipher = CIPHER_CACHE.get();
 		cipher.init(Cipher.ENCRYPT_MODE, encryptionKey,

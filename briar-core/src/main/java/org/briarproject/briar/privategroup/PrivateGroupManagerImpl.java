@@ -493,7 +493,8 @@ class PrivateGroupManagerImpl extends BdfIncomingMessageHook
 			BdfDictionary d = members.getDictionary(i);
 			if (a.equals(getAuthor(d).getId())) {
 				foundMember = true;
-				if (getVisibility(d) == INVISIBLE) {
+				Visibility current = getVisibility(d);
+				if (current == INVISIBLE) {
 					changed = true;
 					v = byContact ? REVEALED_BY_CONTACT : REVEALED_BY_US;
 					d.put(GROUP_KEY_VISIBILITY, v.getInt());
@@ -508,6 +509,27 @@ class PrivateGroupManagerImpl extends BdfIncomingMessageHook
 			ContactId c = contactManager.getContact(txn, a, la.getId()).getId();
 			Event e = new ContactRelationshipRevealedEvent(g, a, c, v);
 			txn.attach(e);
+		}
+	}
+
+	public void hideRemovedContact(Transaction txn, GroupId g, AuthorId a)
+			throws FormatException, DbException {
+		BdfDictionary meta = clientHelper.getGroupMetadataAsDictionary(txn, g);
+		BdfList members = meta.getList(GROUP_KEY_MEMBERS);
+		boolean changed = false;
+		for (int i = 0; i < members.size(); i++) {
+			BdfDictionary d = members.getDictionary(i);
+			if (a.equals(getAuthor(d).getId())) {
+				Visibility current = getVisibility(d);
+				if (current != INVISIBLE) {
+					d.put(GROUP_KEY_VISIBILITY, INVISIBLE.getInt());
+					changed = true;
+				}
+				break;
+			}
+		}
+		if (changed) {
+			clientHelper.mergeGroupMetadata(txn, g, meta);
 		}
 	}
 
@@ -552,9 +574,16 @@ class PrivateGroupManagerImpl extends BdfIncomingMessageHook
 		attachJoinMessageAddedEvent(txn, m, meta, false);
 	}
 
+	private static final long MAX_TIMESTAMP_DRIFT_MS = 365L * 24 * 60 * 60 * 1000;
+
 	private void handleGroupMessage(Transaction txn, Message m,
 			BdfDictionary meta) throws FormatException, DbException {
 		long timestamp = meta.getLong(KEY_TIMESTAMP);
+		long now = System.currentTimeMillis();
+		if (timestamp > now + MAX_TIMESTAMP_DRIFT_MS ||
+				timestamp < now - MAX_TIMESTAMP_DRIFT_MS) {
+			throw new FormatException();
+		}
 		byte[] parentIdBytes = meta.getOptionalRaw(KEY_PARENT_MSG_ID);
 		if (parentIdBytes != null) {
 			MessageId parentId = new MessageId(parentIdBytes);

@@ -29,17 +29,16 @@ public class Argon2 {
 
 	public byte[] deriveKey(char[] password, byte[] salt, Argon2Params params) {
 		try {
-			return pbkdf2Fallback(password, salt, params);
-
+			return deriveKeyPBKDF2(password, salt, params);
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to derive key", e);
 		}
 	}
 
-	private byte[] pbkdf2Fallback(char[] password, byte[] salt, Argon2Params params)
+	private byte[] deriveKeyPBKDF2(char[] password, byte[] salt, Argon2Params params)
 			throws Exception {
 
-		int iterations = 200000;
+		int iterations = Math.max(200000, params.iterations * 50000);
 
 		PBEKeySpec spec = new PBEKeySpec(
 				password,

@@ -47,7 +47,7 @@ public class VaultManager {
 	private final MetadataStripper metadataStripper;
 
 	private VaultHeader currentHeader;
-	private volatile byte[] vaultMasterKey;
+	private byte[] vaultMasterKey;
 	private volatile long lastActivityTime;
 	private volatile boolean isUnlocked = false;
 	private volatile int failedAttempts = 0;
@@ -410,7 +410,19 @@ public class VaultManager {
 			);
 
 			fileIO.writeSecure(itemDir + "/header.bin", encryptedMetadata.toBytes());
-			fileIO.writeSecure(itemDir + "/content.bin", encryptedContent.toBytes());
+
+			byte[] contentBytes = encryptedContent.toBytes();
+			int padSize = 4096;
+			while (padSize < contentBytes.length + 4) padSize *= 2;
+			byte[] paddedContent = new byte[padSize];
+			new SecureRandom().nextBytes(paddedContent);
+			paddedContent[0] = (byte) (contentBytes.length >> 24);
+			paddedContent[1] = (byte) (contentBytes.length >> 16);
+			paddedContent[2] = (byte) (contentBytes.length >> 8);
+			paddedContent[3] = (byte) contentBytes.length;
+			System.arraycopy(contentBytes, 0, paddedContent, 4, contentBytes.length);
+			fileIO.writeSecure(itemDir + "/content.bin", paddedContent);
+			Arrays.fill(paddedContent, (byte) 0);
 
 			invalidateCache();
 
@@ -427,8 +439,6 @@ public class VaultManager {
 
 	public byte[] getItemContent(String itemId) throws Exception {
 		requireUnlocked();
-
-		updateActivity();
 
 		String itemDir = ITEMS_DIR + "/" + itemId;
 		byte[] metadataPlain = null;
@@ -448,7 +458,8 @@ public class VaultManager {
 					VaultCrypto.EncryptedData.fromBytes(item.encryptedKey);
 			itemKey = crypto.decrypt(encryptedKey, vaultMasterKey, new byte[0]);
 
-			byte[] encryptedContent = fileIO.readSecure(itemDir + "/content.bin");
+			byte[] rawContent = fileIO.readSecure(itemDir + "/content.bin");
+			byte[] encryptedContent = stripPadding(rawContent);
 			VaultCrypto.EncryptedData contentWrapper =
 					VaultCrypto.EncryptedData.fromBytes(encryptedContent);
 			byte[] content = crypto.decrypt(contentWrapper, itemKey, item.name.getBytes(StandardCharsets.UTF_8));
@@ -463,8 +474,6 @@ public class VaultManager {
 
 	public byte[] getThumbnail(String itemId) throws Exception {
 		requireUnlocked();
-
-		updateActivity();
 
 		String itemDir = ITEMS_DIR + "/" + itemId;
 		String thumbPath = itemDir + "/thumb.bin";
@@ -548,7 +557,8 @@ public class VaultManager {
 					VaultCrypto.EncryptedData.fromBytes(item.encryptedKey);
 			itemKey = crypto.decrypt(encryptedKey, vaultMasterKey, new byte[0]);
 
-			byte[] encryptedContent = fileIO.readSecure(itemDir + "/content.bin");
+			byte[] rawContent = fileIO.readSecure(itemDir + "/content.bin");
+			byte[] encryptedContent = stripPadding(rawContent);
 			VaultCrypto.EncryptedData contentWrapper =
 					VaultCrypto.EncryptedData.fromBytes(encryptedContent);
 			nestedContent = crypto.decrypt(contentWrapper, itemKey, item.name.getBytes(StandardCharsets.UTF_8));
@@ -587,8 +597,6 @@ public class VaultManager {
 
 	public synchronized List<VaultItem> listItems() throws Exception {
 		requireUnlocked();
-
-		updateActivity();
 
 		long now = System.currentTimeMillis();
 		if (cachedItems != null && (now - cacheTimestamp) < CACHE_VALIDITY_MS) {
@@ -806,6 +814,16 @@ public class VaultManager {
 			}
 			throw e;
 		}
+	}
+
+	private byte[] stripPadding(byte[] raw) {
+		if (raw.length < 4) return raw;
+		int realLength = ((raw[0] & 0xFF) << 24) | ((raw[1] & 0xFF) << 16)
+				| ((raw[2] & 0xFF) << 8) | (raw[3] & 0xFF);
+		if (realLength <= 0 || realLength > raw.length - 4) return raw;
+		byte[] result = new byte[realLength];
+		System.arraycopy(raw, 4, result, 0, realLength);
+		return result;
 	}
 
 	private void requireUnlocked() {

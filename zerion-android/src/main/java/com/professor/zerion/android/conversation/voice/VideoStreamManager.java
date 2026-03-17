@@ -253,17 +253,21 @@ class VideoStreamManager {
 		try {
 			java.security.MessageDigest md =
 					java.security.MessageDigest.getInstance("SHA-256");
-			md.update("VIDEO_NONCE_SALT".getBytes());
+			md.update("VIDEO_NONCE_SALT".getBytes(
+					java.nio.charset.StandardCharsets.UTF_8));
 			md.update(keyBytes);
+			byte[] counterBytes = new byte[8];
+			for (int i = 7; i >= 0; i--) {
+				counterBytes[i] = (byte) (counter & 0xFF);
+				counter >>= 8;
+			}
+			md.update(counterBytes);
 			byte[] hash = md.digest();
-			System.arraycopy(hash, 0, nonce, 0, 4);
+			System.arraycopy(hash, 0, nonce, 0, NONCE_LENGTH);
 			Arrays.fill(hash, (byte) 0);
+			Arrays.fill(counterBytes, (byte) 0);
 		} catch (java.security.NoSuchAlgorithmException e) {
 			throw new IllegalStateException("SHA-256 required", e);
-		}
-		for (int i = 7; i >= 0; i--) {
-			nonce[4 + i] = (byte) (counter & 0xFF);
-			counter >>= 8;
 		}
 		return nonce;
 	}

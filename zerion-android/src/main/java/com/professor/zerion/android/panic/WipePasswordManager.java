@@ -177,7 +177,7 @@ public class WipePasswordManager {
 			} else {
 				matches = verifyLegacySHA256Password(password);
 				if (matches) {
-					securePrefs.edit().putBoolean(PREF_NEEDS_MIGRATION, true).apply();
+					setWipePassword(password);
 				}
 			}
 
