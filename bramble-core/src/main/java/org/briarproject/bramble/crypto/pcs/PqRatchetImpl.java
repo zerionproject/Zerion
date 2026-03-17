@@ -120,9 +120,11 @@ class PqRatchetImpl implements PqRatchet {
 										ekSeed, ekVector);
 								MlKemEncapsulation enc =
 										mlKemProvider.encapsulate(fullEk);
+								byte[] ct = enc.getCiphertext();
+								Arrays.fill(enc.getSharedSecret(), (byte) 0);
 								return updated
 										.withEkVector(ekVector)
-										.withCiphertext(enc.getCiphertext())
+										.withCiphertext(ct)
 										.withState(PqEpochState.PQ_SENDING_CT);
 							}
 						}
@@ -181,9 +183,11 @@ class PqRatchetImpl implements PqRatchet {
 			byte[] fullEk = assembleEncapsulationKey(ekSeed, ekVector);
 			MlKemEncapsulation enc = mlKemProvider.encapsulate(fullEk);
 			if (!Arrays.equals(enc.getCiphertext(), ciphertext)) {
+				Arrays.fill(enc.getSharedSecret(), (byte) 0);
 				throw new PcsException("Ciphertext mismatch");
 			}
-			sharedSecret = enc.getSharedSecret();
+			sharedSecret = enc.getSharedSecret().clone();
+			Arrays.fill(enc.getSharedSecret(), (byte) 0);
 		}
 
 		return new SecretKey(sharedSecret);

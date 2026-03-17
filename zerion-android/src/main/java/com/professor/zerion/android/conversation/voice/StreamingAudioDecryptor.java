@@ -56,13 +56,15 @@ public class StreamingAudioDecryptor {
 	private static byte[] unwrapSessionKey(byte[] wrappedKey, byte[] iv, byte[] groupId) throws Exception {
 		if (wrappedKey.length == 80) {
 			byte[] wrapKeyBytes = Arrays.copyOfRange(wrappedKey, 0, 32);
-			byte[] encryptedSessionKey = Arrays.copyOfRange(wrappedKey, 32, 80);
-			SecretKeySpec wrapKey = new SecretKeySpec(wrapKeyBytes, "AES");
-			Cipher cipher = CIPHER_CACHE.get();
-			cipher.init(Cipher.DECRYPT_MODE, wrapKey, new GCMParameterSpec(GCM_TAG_LENGTH, iv));
-			byte[] unwrapped = cipher.doFinal(encryptedSessionKey);
-			Arrays.fill(wrapKeyBytes, (byte) 0);
-			return unwrapped;
+			try {
+				byte[] encryptedSessionKey = Arrays.copyOfRange(wrappedKey, 32, 80);
+				SecretKeySpec wrapKey = new SecretKeySpec(wrapKeyBytes, "AES");
+				Cipher cipher = CIPHER_CACHE.get();
+				cipher.init(Cipher.DECRYPT_MODE, wrapKey, new GCMParameterSpec(GCM_TAG_LENGTH, iv));
+				return cipher.doFinal(encryptedSessionKey);
+			} finally {
+				Arrays.fill(wrapKeyBytes, (byte) 0);
+			}
 		}
 		throw new SecurityException(
 				"Insecure voice message format rejected: wrap key must not be derived from public groupId");
@@ -91,10 +93,10 @@ public class StreamingAudioDecryptor {
 		System.arraycopy(baseIv, 0, ivWithCounter, 0, GCM_IV_LENGTH);
 
 		int counter = chunkSequenceNumber++;
-		ivWithCounter[GCM_IV_LENGTH - 4] ^= (byte) (counter >>> 24);
-		ivWithCounter[GCM_IV_LENGTH - 3] ^= (byte) (counter >>> 16);
-		ivWithCounter[GCM_IV_LENGTH - 2] ^= (byte) (counter >>> 8);
-		ivWithCounter[GCM_IV_LENGTH - 1] ^= (byte) counter;
+		ivWithCounter[GCM_IV_LENGTH - 4] = (byte) (baseIv[GCM_IV_LENGTH - 4] ^ (byte) (counter >>> 24));
+		ivWithCounter[GCM_IV_LENGTH - 3] = (byte) (baseIv[GCM_IV_LENGTH - 3] ^ (byte) (counter >>> 16));
+		ivWithCounter[GCM_IV_LENGTH - 2] = (byte) (baseIv[GCM_IV_LENGTH - 2] ^ (byte) (counter >>> 8));
+		ivWithCounter[GCM_IV_LENGTH - 1] = (byte) (baseIv[GCM_IV_LENGTH - 1] ^ (byte) counter);
 
 		byte[] combined = new byte[ciphertext.length + tag.length];
 		System.arraycopy(ciphertext, 0, combined, 0, ciphertext.length);
@@ -125,10 +127,10 @@ public class StreamingAudioDecryptor {
 		System.arraycopy(baseIv, 0, ivWithCounter, 0, GCM_IV_LENGTH);
 
 		int counter = chunkSequenceNumber;
-		ivWithCounter[GCM_IV_LENGTH - 4] ^= (byte) (counter >>> 24);
-		ivWithCounter[GCM_IV_LENGTH - 3] ^= (byte) (counter >>> 16);
-		ivWithCounter[GCM_IV_LENGTH - 2] ^= (byte) (counter >>> 8);
-		ivWithCounter[GCM_IV_LENGTH - 1] ^= (byte) counter;
+		ivWithCounter[GCM_IV_LENGTH - 4] = (byte) (baseIv[GCM_IV_LENGTH - 4] ^ (byte) (counter >>> 24));
+		ivWithCounter[GCM_IV_LENGTH - 3] = (byte) (baseIv[GCM_IV_LENGTH - 3] ^ (byte) (counter >>> 16));
+		ivWithCounter[GCM_IV_LENGTH - 2] = (byte) (baseIv[GCM_IV_LENGTH - 2] ^ (byte) (counter >>> 8));
+		ivWithCounter[GCM_IV_LENGTH - 1] = (byte) (baseIv[GCM_IV_LENGTH - 1] ^ (byte) counter);
 
 		Cipher cipher = CIPHER_CACHE.get();
 		cipher.init(Cipher.DECRYPT_MODE, decryptionKey,

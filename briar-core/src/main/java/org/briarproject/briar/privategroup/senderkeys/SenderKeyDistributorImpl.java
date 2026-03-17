@@ -150,6 +150,13 @@ public class SenderKeyDistributorImpl implements SenderKeyDistributor {
 				throw new DbException();
 			}
 
+			SenderKey existingKey = senderKeyManager.getSenderKey(
+					txn, parsed.getTargetGroupId(), authorId);
+			if (existingKey != null &&
+					parsed.getEpoch() < existingKey.getEpoch()) {
+				return;
+			}
+
 			SenderKey receivedKey = new SenderKey(
 					parsed.getTargetGroupId(),
 					authorId,

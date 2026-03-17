@@ -252,6 +252,9 @@ public class ConversationActivity extends ZerionActivity
 		slide.setDuration(TRANSITION_DURATION_MS);
 		setSceneTransitionAnimation(slide, null, slide);
 		super.onCreate(state);
+		getWindow().setFlags(
+				android.view.WindowManager.LayoutParams.FLAG_SECURE,
+				android.view.WindowManager.LayoutParams.FLAG_SECURE);
 
 		Intent i = getIntent();
 		int id = i.getIntExtra(CONTACT_ID, -1);

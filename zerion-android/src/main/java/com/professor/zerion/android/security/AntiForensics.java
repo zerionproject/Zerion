@@ -85,7 +85,7 @@ public class AntiForensics {
 
 	private boolean checkRunningProcesses() {
 		try {
-			Process process = Runtime.getRuntime().exec("ps");
+			Process process = Runtime.getRuntime().exec(new String[]{"ps"});
 			BufferedReader reader = new BufferedReader(
 					new InputStreamReader(process.getInputStream()));
 			String line;
@@ -93,6 +93,7 @@ public class AntiForensics {
 				String lowerLine = line.toLowerCase();
 				for (String indicator : FORENSIC_INDICATORS) {
 					if (lowerLine.contains(indicator)) {
+						reader.close();
 						return true;
 					}
 				}

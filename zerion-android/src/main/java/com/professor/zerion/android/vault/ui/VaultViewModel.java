@@ -471,7 +471,7 @@ public class VaultViewModel extends AndroidViewModel {
 
 				javax.crypto.SecretKeyFactory factory = javax.crypto.SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
 				javax.crypto.spec.PBEKeySpec spec = new javax.crypto.spec.PBEKeySpec(
-					password.toCharArray(), salt, 10000, 256);
+					password.toCharArray(), salt, 200000, 256);
 				byte[] passwordKey = factory.generateSecret(spec).getEncoded();
 
 				javax.crypto.Cipher cipher = javax.crypto.Cipher.getInstance("AES/GCM/NoPadding");
@@ -500,6 +500,8 @@ public class VaultViewModel extends AndroidViewModel {
 				Arrays.fill(contentBytes, (byte) 0);
 				Arrays.fill(passwordKey, (byte) 0);
 				Arrays.fill(encryptedContent, (byte) 0);
+				Arrays.fill(salt, (byte) 0);
+				spec.clearPassword();
 
 			} catch (Exception e) {
 				errorMessage.postValue("Failed to save note");
@@ -586,7 +588,7 @@ public class VaultViewModel extends AndroidViewModel {
 
 				javax.crypto.SecretKeyFactory factory = javax.crypto.SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
 				javax.crypto.spec.PBEKeySpec spec = new javax.crypto.spec.PBEKeySpec(
-					password.toCharArray(), salt, 10000, 256);
+					password.toCharArray(), salt, 200000, 256);
 				byte[] passwordKey = factory.generateSecret(spec).getEncoded();
 
 				javax.crypto.Cipher cipher = javax.crypto.Cipher.getInstance("AES/GCM/NoPadding");
@@ -601,6 +603,8 @@ public class VaultViewModel extends AndroidViewModel {
 				Arrays.fill(encryptedData, (byte) 0);
 				Arrays.fill(passwordKey, (byte) 0);
 				Arrays.fill(decryptedContent, (byte) 0);
+				Arrays.fill(salt, (byte) 0);
+				spec.clearPassword();
 
 			} catch (javax.crypto.BadPaddingException e) {
 				content.postValue(null);

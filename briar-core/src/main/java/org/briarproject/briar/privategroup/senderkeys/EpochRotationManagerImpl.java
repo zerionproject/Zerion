@@ -69,8 +69,8 @@ public class EpochRotationManagerImpl implements EpochRotationManager {
 				newEpoch
 		);
 
-		SenderKey rotatingKey = currentKey.withState(SenderKeyState.ROTATING);
-		senderKeyManager.updateSenderKey(txn, rotatingKey);
+		SenderKey revokedKey = currentKey.withState(SenderKeyState.REVOKED);
+		senderKeyManager.updateSenderKey(txn, revokedKey);
 
 		SenderKey newKey = currentKey.withNewChainKey(
 				new SecretKey(newChainKeyBytes),
@@ -102,8 +102,8 @@ public class EpochRotationManagerImpl implements EpochRotationManager {
 				return;
 			}
 
-			SenderKey revokingKey = existingKey.withState(SenderKeyState.ROTATING);
-			senderKeyManager.updateSenderKey(txn, revokingKey);
+			SenderKey revokedKey = existingKey.withState(SenderKeyState.REVOKED);
+			senderKeyManager.updateSenderKey(txn, revokedKey);
 		}
 
 		senderKeyManager.storeSenderKey(txn, newSenderKey);

@@ -164,11 +164,15 @@ public class VaultPasswordsFragment extends BaseFragment {
 			});
 		}
 
-		new MaterialAlertDialogBuilder(requireContext())
+		androidx.appcompat.app.AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
 				.setTitle(entry.title)
 				.setView(dialogView)
 				.setPositiveButton("Close", null)
-				.show();
+				.create();
+		dialog.getWindow().setFlags(
+				android.view.WindowManager.LayoutParams.FLAG_SECURE,
+				android.view.WindowManager.LayoutParams.FLAG_SECURE);
+		dialog.show();
 	}
 
 	private void showPasswordOptions(com.professor.zerion.android.vault.model.VaultItem item) {

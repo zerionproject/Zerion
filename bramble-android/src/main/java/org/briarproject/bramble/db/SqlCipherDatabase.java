@@ -97,9 +97,14 @@ class SqlCipherDatabase extends JdbcDatabase {
 			Connection vc = null;
 			try {
 				vc = createConnection();
-				((SqlCipherConnection) vc).getDatabase().execSQL("VACUUM");
+				SQLiteDatabase vacuumDb = ((SqlCipherConnection) vc).getDatabase();
+				vacuumDb.execSQL("VACUUM");
+				File dbFile = new File(config.getDatabaseDirectory(), SQLCIPHER_FILE);
+				try (java.io.RandomAccessFile raf = new java.io.RandomAccessFile(dbFile, "rw")) {
+					raf.getFD().sync();
+				}
 				vc.close();
-			} catch (SQLException e) {
+			} catch (SQLException | java.io.IOException e) {
 				if (vc != null) {
 					try { vc.close(); } catch (SQLException ignored) {}
 				}
@@ -194,7 +199,7 @@ class SqlCipherDatabase extends JdbcDatabase {
 				db = SQLiteDatabase.openOrCreateDatabase(
 								dbFile.getAbsolutePath(), hexKey,
 								null, null, null);
-				db.execSQL("PRAGMA cipher_memory_security = OFF");
+				db.execSQL("PRAGMA cipher_memory_security = ON");
 				Cursor sd = db.rawQuery(
 						"PRAGMA secure_delete = ON", null);
 				sd.close();

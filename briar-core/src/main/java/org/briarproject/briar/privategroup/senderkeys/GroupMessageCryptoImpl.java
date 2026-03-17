@@ -139,6 +139,10 @@ public class GroupMessageCryptoImpl implements GroupMessageCrypto {
 				throw new GeneralSecurityException("Message already processed");
 			}
 
+			if (targetIndex - currentIndex > SenderKeyManager.MAX_SKIP) {
+				throw new GeneralSecurityException("Message index exceeds maximum skip window");
+			}
+
 			if (targetIndex > currentIndex) {
 				cacheSkippedKeys(txn, groupId, senderId, senderKey, targetIndex);
 			}
@@ -191,21 +195,7 @@ public class GroupMessageCryptoImpl implements GroupMessageCrypto {
 
 	private byte[] buildNonce(int epoch, int messageIndex) {
 		byte[] nonce = new byte[NONCE_SIZE];
-
-		nonce[0] = (byte) (epoch >> 24);
-		nonce[1] = (byte) (epoch >> 16);
-		nonce[2] = (byte) (epoch >> 8);
-		nonce[3] = (byte) epoch;
-
-		nonce[4] = (byte) (messageIndex >> 24);
-		nonce[5] = (byte) (messageIndex >> 16);
-		nonce[6] = (byte) (messageIndex >> 8);
-		nonce[7] = (byte) messageIndex;
-
-		byte[] random = new byte[4];
-		crypto.getSecureRandom().nextBytes(random);
-		System.arraycopy(random, 0, nonce, 8, 4);
-
+		crypto.getSecureRandom().nextBytes(nonce);
 		return nonce;
 	}
 
