@@ -19,6 +19,10 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -84,24 +88,34 @@ public class AntiForensics {
 	}
 
 	private boolean checkRunningProcesses() {
+		Process process = null;
+		ExecutorService executor = Executors.newSingleThreadExecutor();
 		try {
-			Process process = Runtime.getRuntime().exec(new String[]{"ps"});
-			BufferedReader reader = new BufferedReader(
-					new InputStreamReader(process.getInputStream()));
-			String line;
-			while ((line = reader.readLine()) != null) {
-				String lowerLine = line.toLowerCase();
-				for (String indicator : FORENSIC_INDICATORS) {
-					if (lowerLine.contains(indicator)) {
-						reader.close();
-						return true;
+			ProcessBuilder pb = new ProcessBuilder("ps");
+			pb.redirectErrorStream(true);
+			process = pb.start();
+			final Process p = process;
+			Future<Boolean> future = executor.submit(() -> {
+				try (BufferedReader reader = new BufferedReader(
+						new InputStreamReader(p.getInputStream(),
+								StandardCharsets.UTF_8))) {
+					String line;
+					while ((line = reader.readLine()) != null) {
+						String lower = line.toLowerCase();
+						for (String indicator : FORENSIC_INDICATORS) {
+							if (lower.contains(indicator)) return Boolean.TRUE;
+						}
 					}
 				}
-			}
-			reader.close();
+				return Boolean.FALSE;
+			});
+			return future.get(3, TimeUnit.SECONDS);
 		} catch (Exception e) {
+			return false;
+		} finally {
+			executor.shutdownNow();
+			if (process != null) process.destroyForcibly();
 		}
-		return false;
 	}
 
 	private boolean checkForensicFiles() {
