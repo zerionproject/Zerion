@@ -271,6 +271,18 @@ public class ZerionService extends Service {
 							stopSelf();
 						});
 					}
+
+					Thread killWatchdog = new Thread(() -> {
+						try {
+							Thread.sleep(3000);
+						} catch (InterruptedException e) {
+							return;
+						}
+						android.os.Process.killProcess(android.os.Process.myPid());
+					});
+					killWatchdog.setDaemon(true);
+					killWatchdog.setName("ShutdownWatchdog");
+					killWatchdog.start();
 				}, "BackgroundShutdown");
 		}, "BackgroundShutdown");
 	}

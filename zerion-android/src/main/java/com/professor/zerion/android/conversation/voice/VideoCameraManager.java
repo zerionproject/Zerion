@@ -47,6 +47,11 @@ class VideoCameraManager {
 	private Surface previewSurface;
 	@Nullable
 	private Surface encoderSurfaceRef;
+	// Pending switch: set by switchCamera(), consumed in onClosed()
+	@Nullable
+	private Context pendingSwitchContext;
+	@Nullable
+	private Surface pendingSwitchEncoderSurface;
 
 	void setErrorCallback(@Nullable CameraErrorCallback callback) {
 		this.errorCallback = callback;
@@ -112,12 +117,23 @@ class VideoCameraManager {
 				}
 
 				@Override
+				public void onClosed(CameraDevice camera) {
+					// Camera fully closed — open the pending switch if any
+					if (pendingSwitchContext != null) {
+						Context ctx = pendingSwitchContext;
+						Surface surf = pendingSwitchEncoderSurface;
+						pendingSwitchContext = null;
+						pendingSwitchEncoderSurface = null;
+						if (surf != null) openCamera(ctx, surf);
+					}
+				}
+
+				@Override
 				public void onError(CameraDevice camera, int error) {
 					camera.close();
 					cameraDevice = null;
 					if (errorCallback != null) {
-						errorCallback.onCameraError(
-								"Camera device error: " + error);
+						errorCallback.onCameraError(describeError(error));
 					}
 				}
 			}, cameraHandler);
@@ -235,8 +251,27 @@ class VideoCameraManager {
 
 	void switchCamera(Context context, Surface encoderSurface) {
 		useFrontCamera = !useFrontCamera;
+		// Store target params; openCamera() is called from onClosed() to avoid race
+		pendingSwitchContext = context;
+		pendingSwitchEncoderSurface = encoderSurface;
 		stopCamera();
-		openCamera(context, encoderSurface);
+	}
+
+	private static String describeError(int error) {
+		switch (error) {
+			case CameraDevice.StateCallback.ERROR_CAMERA_IN_USE:
+				return "Camera already in use by another app";
+			case CameraDevice.StateCallback.ERROR_MAX_CAMERAS_IN_USE:
+				return "Too many cameras open — close other apps";
+			case CameraDevice.StateCallback.ERROR_CAMERA_DISABLED:
+				return "Camera disabled by device policy";
+			case CameraDevice.StateCallback.ERROR_CAMERA_DEVICE:
+				return "Camera hardware error";
+			case CameraDevice.StateCallback.ERROR_CAMERA_SERVICE:
+				return "Camera service error — restart the app";
+			default:
+				return "Camera error (code " + error + ")";
+		}
 	}
 
 	private void stopCamera() {

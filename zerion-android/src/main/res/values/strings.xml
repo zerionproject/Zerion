@@ -104,7 +104,7 @@
 	<string name="contact_list_button">Contacts</string>
 	<string name="groups_button">Private Groups</string>
 	<string name="groups_button_add">Add new group</string>
-	<string name="vault_button">Zvault</string>
+	<string name="vault_button">zVault</string>
 	<!-- This is part of the main menu. The app will be locked when this is tapped. -->
 	<string name="lock_button">Lock App</string>
 	<string name="settings_button">Settings</string>
@@ -194,10 +194,10 @@
 	<string name="vault_button_discard">Discard</string>
 	<string name="vault_button_cancel">Cancel</string>
 	<string name="vault_settings">Vault Settings</string>
-	<string name="vault_settings_title">Zvault Settings</string>
-	<string name="vault_onboarding_title">Zvault</string>
-	<string name="vault_onboarding_subtitle">Your Ultra-Secure Digital Safe</string>
-	<string name="vault_dashboard_title">Zvault Dashboard</string>
+	<string name="vault_settings_title">zVault Settings</string>
+	<string name="vault_onboarding_title">zVault</string>
+	<string name="vault_onboarding_subtitle">Military-grade encrypted storage</string>
+	<string name="vault_dashboard_title">zVault</string>
 	<string name="vault_recent_items">Recent Items</string>
 	<string name="vault_empty_state">Your vault is empty</string>
 	<string name="vault_empty_state_subtitle">Add items to keep them secure</string>
@@ -262,7 +262,8 @@
 	<string name="no_contacts">No contacts to show</string>
 	<string name="no_contacts_action">Tap the + icon to add a contact</string>
 	<string name="date_no_private_messages">No messages.</string>
-	<string name="no_private_messages">No messages to show</string>
+	<string name="no_private_messages">No messages yet</string>
+	<string name="no_private_messages_action">Send the first message to start your conversation</string>
 	<string name="message_hint">New message</string>
 	<string name="message_hint_auto_delete">New disappearing message</string>
 	<string name="message_error">Error sending message</string>
@@ -986,10 +987,10 @@
 	<string name="screenshot_message_3">No problem, hope you like it 😀</string>
 
 	<!-- Vault -->
-	<string name="vault_title">Zvault</string>
-	<string name="vault_setup_title">Set Up Zvault</string>
-	<string name="vault_unlock_title">Unlock Zvault</string>
-	<string name="vault_password_hint">Enter Zvault password</string>
+	<string name="vault_title">zVault</string>
+	<string name="vault_setup_title">zVault</string>
+	<string name="vault_unlock_title">zVault</string>
+	<string name="vault_password_hint">Master password</string>
 	<string name="vault_confirm_password_hint">Confirm password</string>
 	<string name="vault_create_button">Create Vault</string>
 	<string name="vault_unlock_button">Unlock</string>

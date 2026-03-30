@@ -44,7 +44,7 @@ public class VaultListFragment extends BaseFragment {
 	private VaultViewModel viewModel;
 	private RecyclerView recyclerView;
 	private VaultAdapter adapter;
-	private TextView emptyView;
+	private View emptyView;
 	private FloatingActionButton fab;
 
 	private long lastClickTime = 0;
