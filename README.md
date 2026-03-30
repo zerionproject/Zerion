@@ -23,7 +23,7 @@ With hybrid post-quantum cryptography, post-compromise security (Triple Ratchet 
 - **Direct peer-to-peer architecture** — No central servers
 - **Encrypted Vault** for passwords, documents, media, and notes
 - **Post-quantum hardened** — Hybrid ML-KEM-768 + X25519, ML-DSA-65 + Ed25519
-- **Briar compatible** — Communicate with Briar users via Briar-compatible mode
+- **Zerion-only** — Purpose-built for Zerion-to-Zerion communication with maximum security
 - **Downgrade attack protection** — PQ contacts stay PQ-secure forever
 - **Anti-forensics protection** against mobile extraction tools
 - **Open-source and auditable**
@@ -48,7 +48,6 @@ Zerion implements a Triple Ratchet protocol for post-compromise security:
 - **Per-message keys**: Every message uses a unique encryption key derived from the current chain state
 
 **Ratchet Modes:**
-- **Mode 1 (Symmetric ratchet)**: Used with Briar contacts for compatibility. Provides forward secrecy.
 - **Mode 2 (Double Ratchet)**: X25519 DH ratchet for forward secrecy and post-compromise security.
 - **Mode 3 (Triple Ratchet)**: Active for Zerion↔Zerion contacts. Adds ML-KEM-768 post-quantum ratchet on top of Mode 2 for quantum-resistant post-compromise security.
 
@@ -67,13 +66,12 @@ No STUN, no TURN, no VoIP servers — just private communication between devices
 A hardware-backed encrypted vault for passwords, notes, photos, videos, and documents.
 Uses Argon2id, AES-256-GCM, and StrongBox/Keystore integration for strong protection.
 
-### Briar-Compatible Mode
+### Post-Quantum Security
 
-When adding a contact, you choose the security level:
-- **Zerion (Post-Quantum)**: Full post-quantum security (ML-KEM-768 + X25519) + PCS Mode 3 (Triple Ratchet) for Zerion-to-Zerion communication with quantum-resistant post-compromise security
-- **Briar-compatible (Classical)**: Classical security (X25519) + PCS Mode 1 (symmetric ratchet) for communication with Briar users
-
-Your chat settings show the security level for each contact.
+All Zerion contacts use full post-quantum security:
+- **ML-KEM-768 + X25519** hybrid key encapsulation for quantum-resistant key exchange
+- **ML-DSA-65 + Ed25519** hybrid signatures for quantum-resistant authentication
+- **PCS Mode 3 (Triple Ratchet)** for per-message key evolution with quantum-resistant post-compromise security
 
 ### Downgrade Attack Protection
 
@@ -84,7 +82,9 @@ Any attempt to reconnect with weaker security is automatically blocked.
 
 ## Download Zerion
 
-**[Download APK](https://github.com/zerionproject/Zerion/releases/latest)** — v1.0.8
+**[Google Play](https://play.google.com/store/apps/details?id=com.professor.zerion)** — Get it on the Play Store
+
+**[Download APK](https://github.com/zerionproject/Zerion/releases/latest)** — v1.0.10 (direct from GitHub)
 
 **F-Droid:** [fdroid.zerion.chat](https://fdroid.zerion.chat/fdroid/repo)
 ```
@@ -95,7 +95,22 @@ Repo fingerprint: D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6888F704
 
 ## Changelog
 
-**v1.0.8 (Latest):**
+**v1.0.10 (Latest):**
+- Now available on Google Play Store
+- Fixed local self-view rotation during video calls (correct formula for front/back camera)
+- Fixed camera switch race condition: `onClosed()` callback ensures hardware is fully released before reopening
+- Descriptive camera error messages (ERROR_CAMERA_IN_USE, ERROR_CAMERA_DISABLED, etc.)
+- Edge-to-edge rendering support for Android 15+ (SDK 35 compliance)
+- Removed deprecated `setStatusBarColor`/`setNavigationBarColor` API usage
+- Removed screen orientation lock from VoiceCallActivity (supports large screens/foldables)
+- Vault UI refinements: cleaner onboarding text, minimal labels
+
+**v1.0.9:**
+- UI/UX improvements: rich empty states with icons across all list screens
+- Conversation empty state with contextual action prompt
+- zVault branding: updated all labels to match minimalist style
+
+**v1.0.8:**
 - Auto-wipe on max login attempts is now immediate (no confirmation dialog required)
 - Forensic tool detection (Cellebrite, GrayKey, ADB, USB data transfer) now triggers immediate app lock
 - Message clipboard auto-clears after 60 seconds

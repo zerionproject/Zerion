@@ -39,14 +39,6 @@ public class SettingsActivity extends ZerionActivity
 
 		setContentView(R.layout.activity_settings);
 
-		if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
-			getWindow().setStatusBarColor(getResources().getColor(R.color.zerion_dark_bg));
-		}
-
-		if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
-			getWindow().setNavigationBarColor(getResources().getColor(R.color.zerion_dark_bg));
-		}
-
 		androidx.appcompat.widget.Toolbar toolbar = findViewById(R.id.toolbar);
 		setSupportActionBar(toolbar);
 

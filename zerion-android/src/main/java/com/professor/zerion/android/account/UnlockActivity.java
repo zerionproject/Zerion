@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.app.KeyguardManager;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
-import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -61,8 +60,6 @@ public class UnlockActivity extends BaseActivity {
 		super.onCreate(state);
 
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
-
-		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
 		overridePendingTransition(0, 0);
 		setContentView(R.layout.activity_unlock);

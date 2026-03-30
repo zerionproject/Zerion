@@ -35,13 +35,13 @@ import javax.inject.Inject;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog.Builder;
+import androidx.core.view.WindowCompat;
 import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
 
-import static android.graphics.Color.TRANSPARENT;
 import static android.view.View.GONE;
 import static android.view.View.SYSTEM_UI_FLAG_FULLSCREEN;
 import static android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN;
@@ -114,7 +114,7 @@ public class ImageActivity extends ZerionActivity
 		layout.setCallback(this);
 		layout.getViewTreeObserver().addOnGlobalLayoutListener(this);
 
-		window.setStatusBarColor(TRANSPARENT);
+		WindowCompat.setDecorFitsSystemWindows(window, false);
 
 		appBarLayout = findViewById(R.id.appBarLayout);
 		Toolbar toolbar = requireNonNull(setUpCustomToolbar(true));
