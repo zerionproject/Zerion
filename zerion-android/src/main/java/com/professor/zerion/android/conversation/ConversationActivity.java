@@ -299,7 +299,9 @@ public class ConversationActivity extends ZerionActivity
 		layoutManager = new LinearLayoutManager(this);
 		list.setLayoutManager(layoutManager);
 		list.setAdapter(adapter);
+		list.setEmptyImage(R.drawable.il_empty_state_contact_list);
 		list.setEmptyText(getString(R.string.no_private_messages));
+		list.setEmptyAction(getString(R.string.no_private_messages_action));
 		ConversationScrollListener scrollListener =
 				new ConversationScrollListener(adapter, viewModel);
 		list.getRecyclerView().addOnScrollListener(scrollListener);

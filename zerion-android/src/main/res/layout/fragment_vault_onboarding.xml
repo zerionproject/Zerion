@@ -18,7 +18,7 @@
             android:id="@+id/vault_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Zvault"
+            android:text="zVault"
             android:textSize="32sp"
             android:textStyle="bold"
             android:textColor="@color/zerion_cyan"
@@ -30,7 +30,7 @@
             android:id="@+id/vault_subtitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Secure Digital Safe"
+            android:text="Military-grade encrypted storage"
             android:textSize="16sp"
             android:textColor="#B3FFFFFF"
             android:layout_marginBottom="24dp"
@@ -53,44 +53,12 @@
                 android:padding="16dp">
 
                 <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="🔒 Complete Isolation"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/zerion_cyan"
-                    android:layout_marginBottom="8dp" />
-
-                <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="• All data is encrypted with AES-256-GCM"
-                    android:textSize="14sp"
-                    android:textColor="@android:color/white"
-                    android:layout_marginBottom="4dp" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="• Hardware-backed key storage when available"
-                    android:textSize="14sp"
-                    android:textColor="@android:color/white"
-                    android:layout_marginBottom="4dp" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="• Zero-knowledge architecture"
-                    android:textSize="14sp"
-                    android:textColor="@android:color/white"
-                    android:layout_marginBottom="4dp" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="• Automatic lock on background"
-                    android:textSize="14sp"
-                    android:textColor="@android:color/white" />
+                    android:text="AES-256-GCM · Hardware keystore · Auto-lock"
+                    android:textSize="13sp"
+                    android:textColor="#B3FFFFFF"
+                    android:gravity="center" />
 
             </LinearLayout>
 
@@ -100,7 +68,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Create Master Password"
+            android:text="Create password"
             android:textSize="18sp"
             android:textStyle="bold"
             android:textColor="@android:color/white"
@@ -111,7 +79,7 @@
             android:id="@+id/password_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Master Password"
+            android:hint="Password"
             app:passwordToggleEnabled="true"
             app:endIconMode="password_toggle"
             app:helperText="At least 8 characters"
@@ -182,7 +150,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="There is no password recovery. Make sure to remember your password!"
+                    android:text="No recovery possible. Keep your password safe."
                     android:textSize="13sp"
                     android:textColor="#856404" />
 
@@ -195,7 +163,7 @@
             android:id="@+id/create_vault_button"
             android:layout_width="match_parent"
             android:layout_height="56dp"
-            android:text="Create Secure Vault"
+            android:text="Create vault"
             android:textSize="16sp"
             android:enabled="false"
             style="@style/Zerion.Button.Primary"

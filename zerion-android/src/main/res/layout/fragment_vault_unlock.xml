@@ -29,7 +29,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Enter your master password"
+        android:text="Enter your password to unlock"
         android:textSize="14sp"
         android:textColor="#B3FFFFFF"
         android:layout_marginBottom="40dp"

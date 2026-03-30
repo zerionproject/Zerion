@@ -48,7 +48,7 @@ public class VaultGalleryFragment extends BaseFragment {
 
 	private VaultViewModel viewModel;
 	private RecyclerView galleryGrid;
-	private TextView emptyText;
+	private View emptyText;
 	private FloatingActionButton fabAdd;
 	private VaultGalleryAdapter adapter;
 	private boolean isPickerMode = false;

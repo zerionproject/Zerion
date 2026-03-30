@@ -12,6 +12,14 @@ import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 
 
+/**
+ * Key derivation for vault password hashing.
+ * NOTE: Despite the class name (kept for API compatibility), this implementation
+ * uses PBKDF2-HMAC-SHA256 (not Argon2id), because Argon2 is not available in the
+ * Android standard library without a native dependency. The iteration count is
+ * enforced to a minimum of 200,000 rounds to compensate. Params (memory/iterations)
+ * map conceptually to the Argon2Params structure for future migration.
+ */
 @NotNullByDefault
 public class Argon2 {
 

@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#000000"
+    android:background="@android:color/black"
     android:keepScreenOn="true">
 
     <!-- Remote Video Surface (center-crop container) -->
@@ -50,7 +50,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="48dp"
         android:text="@string/zerion_call"
-        android:textColor="#AAAAAA"
+        android:textColor="?android:attr/textColorSecondary"
         android:textSize="14sp"
         android:letterSpacing="0.05"
         app:layout_constraintTop_toTopOf="parent"
@@ -99,7 +99,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:text="@string/call_connecting"
-        android:textColor="#888888"
+        android:textColor="?android:attr/textColorTertiary"
         android:textSize="16sp"
         app:layout_constraintTop_toBottomOf="@id/contact_name"
         app:layout_constraintStart_toStartOf="parent"
@@ -166,7 +166,7 @@
             android:layout_marginStart="8dp"
             android:text="Opus 16kbps"
             android:textSize="12sp"
-            android:textColor="#888888" />
+            android:textColor="?android:attr/textColorTertiary" />
 
     </LinearLayout>
 
@@ -209,7 +209,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:text="@string/decline"
-                android:textColor="#AAAAAA"
+                android:textColor="?android:attr/textColorSecondary"
                 android:textSize="14sp" />
 
         </LinearLayout>
@@ -242,7 +242,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:text="@string/accept"
-                android:textColor="#AAAAAA"
+                android:textColor="?android:attr/textColorSecondary"
                 android:textSize="14sp" />
 
         </LinearLayout>
@@ -293,7 +293,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:text="@string/mute"
-                    android:textColor="#888888"
+                    android:textColor="?android:attr/textColorTertiary"
                     android:textSize="12sp" />
 
             </LinearLayout>
@@ -321,7 +321,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:text="@string/speaker"
-                    android:textColor="#888888"
+                    android:textColor="?android:attr/textColorTertiary"
                     android:textSize="12sp" />
 
             </LinearLayout>
@@ -350,7 +350,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:text="@string/video"
-                    android:textColor="#888888"
+                    android:textColor="?android:attr/textColorTertiary"
                     android:textSize="12sp" />
 
             </LinearLayout>
@@ -380,7 +380,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:text="@string/switch_camera"
-                    android:textColor="#888888"
+                    android:textColor="?android:attr/textColorTertiary"
                     android:textSize="12sp" />
 
             </LinearLayout>
@@ -411,7 +411,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:text="@string/end_call"
-                android:textColor="#AAAAAA"
+                android:textColor="?android:attr/textColorSecondary"
                 android:textSize="14sp" />
 
         </LinearLayout>
