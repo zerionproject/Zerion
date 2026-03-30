@@ -212,17 +212,6 @@ public class PcsRatchetImpl implements PcsRatchet {
 	}
 
 	@Override
-	public PcsSessionState initializeMode2(PcsSessionState mode1State) {
-		KeyPair dhKeyPair = generateDhKeyPair();
-		DhRatchetState dhState = new DhRatchetState(dhKeyPair, null);
-		return PcsSessionState.createInitialMode2(
-				mode1State.getChainKey(),
-				mode1State.getChainKey(),
-				dhState
-		);
-	}
-
-	@Override
 	public PcsSessionState initializeMode2AsInitiator(SecretKey rootKey) {
 		KeyPair dhKeyPair = generateDhKeyPair();
 		DhRatchetState dhState = new DhRatchetState(dhKeyPair, null);

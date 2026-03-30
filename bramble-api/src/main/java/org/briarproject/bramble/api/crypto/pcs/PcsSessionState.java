@@ -24,12 +24,6 @@ public class PcsSessionState {
 	private final long pqEpoch;
 
 	public PcsSessionState(SecretKey chainKey, int messageNumber,
-			int previousChainLength) {
-		this(chainKey, messageNumber, previousChainLength, null, null,
-				false, 0);
-	}
-
-	public PcsSessionState(SecretKey chainKey, int messageNumber,
 			int previousChainLength, @Nullable SecretKey rootKey,
 			@Nullable DhRatchetState dhState) {
 		this(chainKey, messageNumber, previousChainLength, rootKey, dhState,
@@ -47,10 +41,6 @@ public class PcsSessionState {
 		this.dhState = dhState;
 		this.mode3Enabled = mode3Enabled;
 		this.pqEpoch = pqEpoch;
-	}
-
-	public static PcsSessionState createInitial(SecretKey rootKey) {
-		return new PcsSessionState(rootKey, 0, 0);
 	}
 
 	public static PcsSessionState createInitialMode2(SecretKey rootKey,

@@ -71,51 +71,6 @@ public class PcsMode2AdvancedTest {
 		return new SecretKey(keyBytes);
 	}
 
-	// ==================== Mode 1 → Mode 2 Upgrade Tests ====================
-
-	@Test
-	public void testMode1ToMode2UpgradePreservesChainKey() throws Exception {
-		// Start with Mode 1 session
-		SecretKey rootKey = generateKey();
-		PcsSessionState mode1State = PcsSessionState.createInitial(rootKey);
-
-		// Advance Mode 1 a few times
-		for (int i = 0; i < 5; i++) {
-			AdvanceResult result = ratchet.advanceSendChain(mode1State);
-			mode1State = result.getNewState();
-		}
-
-		// Upgrade to Mode 2
-		PcsSessionState mode2State = ratchet.initializeMode2(mode1State);
-
-		// Verify Mode 2 state
-		assertTrue(mode2State.isMode2());
-		assertNotNull(mode2State.getDhState());
-		assertNotNull(mode2State.getRootKey());
-		// Chain key should be preserved during upgrade
-		assertEquals(mode1State.getChainKey(), mode2State.getChainKey());
-	}
-
-	@Test
-	public void testMode1ToMode2UpgradePreservesMessageNumber() throws Exception {
-		SecretKey rootKey = generateKey();
-		PcsSessionState mode1State = PcsSessionState.createInitial(rootKey);
-
-		// Advance to message number 10
-		for (int i = 0; i < 10; i++) {
-			AdvanceResult result = ratchet.advanceSendChain(mode1State);
-			mode1State = result.getNewState();
-		}
-		assertEquals(10, mode1State.getMessageNumber());
-
-		// Upgrade to Mode 2
-		PcsSessionState mode2State = ratchet.initializeMode2(mode1State);
-
-		// Message number should reset to 0 with new DH chain
-		// This is correct behavior for Double Ratchet protocol
-		assertEquals(0, mode2State.getMessageNumber());
-	}
-
 	// ==================== Out-of-Order Message Tests ====================
 
 	@Test
@@ -173,7 +128,7 @@ public class PcsMode2AdvancedTest {
 		PcsRatchetImpl customRatchet = new PcsRatchetImpl(crypto, controllableClock);
 
 		SecretKey rootKey = generateKey();
-		PcsSessionState state = PcsSessionState.createInitial(rootKey);
+		PcsSessionState state = ratchet.initializeMode2AsInitiator(rootKey);
 
 		// Advance past message 5, storing skipped keys
 		AdvanceResult result = customRatchet.advanceReceiveChain(
@@ -199,7 +154,7 @@ public class PcsMode2AdvancedTest {
 	@Test
 	public void testMode2MaxSkipEnforcement() throws Exception {
 		SecretKey rootKey = generateKey();
-		PcsSessionState state = PcsSessionState.createInitial(rootKey);
+		PcsSessionState state = ratchet.initializeMode2AsInitiator(rootKey);
 
 		// Try to skip more than MAX_SKIP
 		try {

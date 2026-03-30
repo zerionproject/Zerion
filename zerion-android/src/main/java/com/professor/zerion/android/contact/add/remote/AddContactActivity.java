@@ -9,6 +9,7 @@ import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
 import com.professor.zerion.android.fragment.BaseFragment.BaseFragmentListener;
+import org.briarproject.bramble.api.contact.ContactType;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
@@ -54,16 +55,6 @@ public class AddContactActivity extends ZerionActivity implements
 		}
 
 		viewModel.onCreate();
-		viewModel.getContactTypeSelected().observeEvent(this, selected -> {
-			if (selected) {
-				LinkExchangeFragment f = new LinkExchangeFragment();
-				showNextFragment(f);
-				if (pendingIncomingLink != null) {
-					handleIncomingLink(pendingIncomingLink);
-					pendingIncomingLink = null;
-				}
-			}
-		});
 		viewModel.getRemoteLinkEntered().observeEvent(this, entered -> {
 			if (entered) {
 				NicknameFragment f = new NicknameFragment();
@@ -73,11 +64,13 @@ public class AddContactActivity extends ZerionActivity implements
 
 		Intent i = getIntent();
 		if (state == null) {
+			viewModel.setContactType(ContactType.ZERION);
 			onNewIntent(i);
-		}
-
-		if (state == null) {
-			showInitialFragment(new ContactTypeSelectionFragment());
+			showInitialFragment(new LinkExchangeFragment());
+			if (pendingIncomingLink != null) {
+				handleIncomingLink(pendingIncomingLink);
+				pendingIncomingLink = null;
+			}
 		}
 	}
 

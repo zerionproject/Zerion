@@ -127,10 +127,8 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 		if (useMode3) {
 			pqChunk = pqRatchet.getNextChunkToSend(pqState);
 			pcsHeaderSize = headerCodec.getMode3HeaderSize(pqChunk);
-		} else if (sendState.isMode2()) {
-			pcsHeaderSize = PCS_HEADER_MAX_SIZE;
 		} else {
-			pcsHeaderSize = PCS_HEADER_MIN_SIZE;
+			pcsHeaderSize = PCS_HEADER_MAX_SIZE;
 		}
 
 		int effectiveMaxPayload = MAX_PAYLOAD_LENGTH - pcsHeaderSize;
@@ -264,10 +262,7 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 
 	private void writeStreamHeader() throws IOException {
 		byte[] streamHeaderPlaintext = new byte[STREAM_HEADER_PLAINTEXT_LENGTH];
-		int version = PROTOCOL_VERSION | 0x8000;
-		if (sendState.isMode2()) {
-			version |= 0x4000;
-		}
+		int version = PROTOCOL_VERSION | 0x8000 | 0x4000;
 		if (MODE3_ENABLED && sendState.isMode3()) {
 			version |= 0x2000;
 		}
@@ -298,10 +293,8 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 		int pcsHeaderSize;
 		if (MODE3_ENABLED && sendState.isMode3()) {
 			pcsHeaderSize = PCS_MODE3_HEADER_MAX_SIZE;
-		} else if (sendState.isMode2()) {
-			pcsHeaderSize = PCS_HEADER_MAX_SIZE;
 		} else {
-			pcsHeaderSize = PCS_HEADER_MIN_SIZE;
+			pcsHeaderSize = PCS_HEADER_MAX_SIZE;
 		}
 		return MAX_PAYLOAD_LENGTH - pcsHeaderSize;
 	}

@@ -15,15 +15,10 @@ import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PCS_HEADER_MI
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PCS_PROTOCOL_VERSION;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-/**
- * Unit tests for PCS header encoding and decoding.
- */
 public class PcsHeaderCodecTest {
 
 	private PcsHeaderCodec codec;
@@ -36,35 +31,12 @@ public class PcsHeaderCodecTest {
 	}
 
 	@Test
-	public void testEncodeMode1HeaderSize() {
-		byte[] header = codec.encodeMode1Header(0, 0);
-		assertEquals(PCS_HEADER_MIN_SIZE, header.length);
-	}
-
-	@Test
 	public void testEncodeMode2HeaderSize() {
 		byte[] dhKey = new byte[DH_PUBLIC_KEY_SIZE];
 		random.nextBytes(dhKey);
 
 		byte[] header = codec.encodeMode2Header(0, 0, dhKey);
 		assertEquals(PCS_HEADER_MAX_SIZE, header.length);
-	}
-
-	@Test
-	public void testDecodeMode1Header() throws PcsException {
-		int messageNumber = 12345;
-		int prevChainLength = 42;
-
-		byte[] encoded = codec.encodeMode1Header(messageNumber, prevChainLength);
-		PcsHeader decoded = codec.decode(encoded);
-
-		assertEquals(PCS_PROTOCOL_VERSION, decoded.getVersion());
-		assertEquals(FLAG_PCS_ENABLED, decoded.getFlags());
-		assertTrue(decoded.isPcsEnabled());
-		assertFalse(decoded.hasDhRatchet());
-		assertEquals(messageNumber, decoded.getMessageNumber());
-		assertEquals(prevChainLength, decoded.getPreviousChainLength());
-		assertNull(decoded.getDhPublicKey());
 	}
 
 	@Test
@@ -89,15 +61,30 @@ public class PcsHeaderCodecTest {
 
 	@Test
 	public void testEncodeDecodeRoundTrip() throws PcsException {
-		// Test various message numbers including edge cases
 		int[] testNumbers = {0, 1, 127, 128, 255, 256, 65535, 65536,
 				Integer.MAX_VALUE, Integer.MAX_VALUE - 1};
+		byte[] dhKey = new byte[DH_PUBLIC_KEY_SIZE];
+		random.nextBytes(dhKey);
 
 		for (int msgNum : testNumbers) {
-			byte[] encoded = codec.encodeMode1Header(msgNum, 0);
+			byte[] encoded = codec.encodeMode2Header(msgNum, 0, dhKey);
 			PcsHeader decoded = codec.decode(encoded);
 			assertEquals("Failed for message number " + msgNum,
 					msgNum, decoded.getMessageNumber());
+		}
+	}
+
+	@Test
+	public void testDecodeMode1HeaderThrows() {
+		byte[] header = new byte[PCS_HEADER_MIN_SIZE];
+		header[0] = PCS_PROTOCOL_VERSION;
+		header[1] = FLAG_PCS_ENABLED;
+
+		try {
+			codec.decode(header);
+			fail("Expected PcsException for Mode 1 header without DH ratchet");
+		} catch (PcsException e) {
+			assertTrue(e.getMessage().contains("DH ratchet required"));
 		}
 	}
 
@@ -114,8 +101,9 @@ public class PcsHeaderCodecTest {
 
 	@Test
 	public void testDecodeInvalidVersionThrows() {
-		byte[] header = codec.encodeMode1Header(0, 0);
-		// Corrupt version byte
+		byte[] dhKey = new byte[DH_PUBLIC_KEY_SIZE];
+		random.nextBytes(dhKey);
+		byte[] header = codec.encodeMode2Header(0, 0, dhKey);
 		header[0] = (byte) (PCS_PROTOCOL_VERSION + 1);
 
 		try {
@@ -130,7 +118,7 @@ public class PcsHeaderCodecTest {
 	public void testDecodeMode2WithTruncatedDhKeyThrows() {
 		byte[] header = new byte[PCS_HEADER_MIN_SIZE];
 		header[0] = PCS_PROTOCOL_VERSION;
-		header[1] = FLAG_PCS_ENABLED | FLAG_DH_RATCHET; // Set DH flag but no DH key
+		header[1] = (byte) (FLAG_PCS_ENABLED | FLAG_DH_RATCHET);
 
 		try {
 			codec.decode(header);
@@ -142,8 +130,7 @@ public class PcsHeaderCodecTest {
 
 	@Test
 	public void testGetHeaderSize() {
-		assertEquals(PCS_HEADER_MIN_SIZE, codec.getHeaderSize(false));
-		assertEquals(PCS_HEADER_MAX_SIZE, codec.getHeaderSize(true));
+		assertEquals(PCS_HEADER_MAX_SIZE, codec.getHeaderSize());
 	}
 
 	@Test
@@ -167,26 +154,23 @@ public class PcsHeaderCodecTest {
 
 	@Test
 	public void testBigEndianEncoding() throws PcsException {
-		// Test that multi-byte integers are encoded in big-endian order
-		// 0x12345678 should be encoded as 12 34 56 78
 		int messageNumber = 0x12345678;
 		int prevChainLength = 0xAABBCCDD;
+		byte[] dhKey = new byte[DH_PUBLIC_KEY_SIZE];
+		random.nextBytes(dhKey);
 
-		byte[] encoded = codec.encodeMode1Header(messageNumber, prevChainLength);
+		byte[] encoded = codec.encodeMode2Header(messageNumber, prevChainLength, dhKey);
 
-		// Check message number bytes (offset 2-5)
 		assertEquals((byte) 0x12, encoded[2]);
 		assertEquals((byte) 0x34, encoded[3]);
 		assertEquals((byte) 0x56, encoded[4]);
 		assertEquals((byte) 0x78, encoded[5]);
 
-		// Check prev chain length bytes (offset 6-9)
 		assertEquals((byte) 0xAA, encoded[6]);
 		assertEquals((byte) 0xBB, encoded[7]);
 		assertEquals((byte) 0xCC, encoded[8]);
 		assertEquals((byte) 0xDD, encoded[9]);
 
-		// Verify round-trip
 		PcsHeader decoded = codec.decode(encoded);
 		assertEquals(messageNumber, decoded.getMessageNumber());
 		assertEquals(prevChainLength, decoded.getPreviousChainLength());

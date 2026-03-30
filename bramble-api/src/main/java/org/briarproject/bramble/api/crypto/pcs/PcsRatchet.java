@@ -123,10 +123,7 @@ public interface PcsRatchet {
 			PublicKey theirNewPublicKey)
 			throws GeneralSecurityException, PcsException;
 
-	
-	PcsSessionState initializeMode2(PcsSessionState mode1State);
 
-	
 	PcsSessionState initializeMode2AsInitiator(SecretKey rootKey);
 
 	

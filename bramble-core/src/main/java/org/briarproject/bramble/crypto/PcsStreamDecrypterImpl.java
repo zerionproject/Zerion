@@ -29,12 +29,8 @@ import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.NotThreadSafe;
 
-import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.DH_PUBLIC_KEY_SIZE;
-import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.FLAG_DH_RATCHET;
-import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.FLAG_PCS_ENABLED;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_ENABLED;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PCS_HEADER_MAX_SIZE;
-import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PCS_HEADER_MIN_SIZE;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PCS_MODE3_HEADER_MAX_SIZE;
 import static org.briarproject.bramble.api.transport.TransportConstants.FRAME_HEADER_LENGTH;
 import static org.briarproject.bramble.api.transport.TransportConstants.FRAME_HEADER_PLAINTEXT_LENGTH;
@@ -190,7 +186,7 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 		int totalPayloadLength = FrameEncoder.getPayloadLength(frameHeader);
 		int paddingLength = FrameEncoder.getPaddingLength(frameHeader);
 
-		if (totalPayloadLength < PCS_HEADER_MIN_SIZE)
+		if (totalPayloadLength < PCS_HEADER_MAX_SIZE)
 			throw new FormatException();
 		if (totalPayloadLength + paddingLength > MAX_PAYLOAD_LENGTH + PCS_MODE3_HEADER_MAX_SIZE)
 			throw new FormatException();
@@ -224,10 +220,8 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 
 			if (pcsHeader.isPqEnabled()) {
 				pcsHeaderSize = headerCodec.getMode3HeaderSize(pcsHeader.getPqChunk());
-			} else if (pcsHeader.hasDhRatchet()) {
-				pcsHeaderSize = PCS_HEADER_MAX_SIZE;
 			} else {
-				pcsHeaderSize = PCS_HEADER_MIN_SIZE;
+				pcsHeaderSize = PCS_HEADER_MAX_SIZE;
 			}
 		} catch (PcsException e) {
 			throw new FormatException();
@@ -349,7 +343,7 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 		int baseVersion = receivedProtocolVersion & 0x1FFF;
 		if (baseVersion != PROTOCOL_VERSION)
 			throw new FormatException();
-		if (!pcsEnabled) {
+		if (!pcsEnabled || !mode2Enabled) {
 			throw new FormatException();
 		}
 		long receivedStreamNumber = ByteUtils.readUint64(streamHeaderPlaintext, INT_16_BYTES);
@@ -358,12 +352,7 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 		System.arraycopy(streamHeaderPlaintext, INT_16_BYTES + INT_64_BYTES,
 				chainKeyBytes, 0, SecretKey.LENGTH);
 		SecretKey chainKey = new SecretKey(chainKeyBytes);
-
-		if (mode2Enabled) {
-			recvState = ratchet.initializeMode2AsInitiator(chainKey);
-		} else {
-			recvState = PcsSessionState.createInitial(chainKey);
-		}
+		recvState = ratchet.initializeMode2AsInitiator(chainKey);
 		streamHeaderRead = true;
 	}
 

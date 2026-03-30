@@ -105,20 +105,6 @@ public class PcsHeaderCodec {
 		}
 	}
 
-	
-	public byte[] encodeMode1Header(int messageNumber, int previousChainLength) {
-		byte[] header = new byte[PCS_HEADER_MIN_SIZE];
-		int offset = 0;
-		header[offset++] = (byte) PCS_PROTOCOL_VERSION;
-		header[offset++] = FLAG_PCS_ENABLED;
-		writeUint32(messageNumber, header, offset);
-		offset += MESSAGE_NUMBER_SIZE;
-		writeUint32(previousChainLength, header, offset);
-
-		return header;
-	}
-
-	
 	public byte[] encodeMode2Header(int messageNumber, int previousChainLength,
 			byte[] dhPublicKey) {
 		if (dhPublicKey.length != DH_PUBLIC_KEY_SIZE) {
@@ -207,15 +193,15 @@ public class PcsHeaderCodec {
 		int previousChainLength = readUint32(data, offset);
 		offset += PREVIOUS_CHAIN_LENGTH_SIZE;
 
-		byte[] dhPublicKey = null;
-		if ((flags & FLAG_DH_RATCHET) != 0) {
-			if (data.length < PCS_HEADER_MAX_SIZE) {
-				throw new PcsException("DH header too short");
-			}
-			dhPublicKey = new byte[DH_PUBLIC_KEY_SIZE];
-			System.arraycopy(data, offset, dhPublicKey, 0, DH_PUBLIC_KEY_SIZE);
-			offset += DH_PUBLIC_KEY_SIZE;
+		if ((flags & FLAG_DH_RATCHET) == 0) {
+			throw new PcsException("DH ratchet required");
 		}
+		if (data.length < PCS_HEADER_MAX_SIZE) {
+			throw new PcsException("DH header too short");
+		}
+		byte[] dhPublicKey = new byte[DH_PUBLIC_KEY_SIZE];
+		System.arraycopy(data, offset, dhPublicKey, 0, DH_PUBLIC_KEY_SIZE);
+		offset += DH_PUBLIC_KEY_SIZE;
 
 		long pqEpoch = 0;
 		PqChunk pqChunk = null;
@@ -256,8 +242,8 @@ public class PcsHeaderCodec {
 				dhPublicKey, pqEpoch, pqChunk);
 	}
 
-	public int getHeaderSize(boolean hasDhRatchet) {
-		return hasDhRatchet ? PCS_HEADER_MAX_SIZE : PCS_HEADER_MIN_SIZE;
+	public int getHeaderSize() {
+		return PCS_HEADER_MAX_SIZE;
 	}
 
 	public int getMode3HeaderSize(@Nullable PqChunk pqChunk) {

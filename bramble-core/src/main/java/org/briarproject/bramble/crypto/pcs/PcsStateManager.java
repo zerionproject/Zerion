@@ -60,35 +60,6 @@ public class PcsStateManager {
 		saveState(contactId, PCS_DIRECTION_RECEIVE, state);
 	}
 
-	
-	public void initializeState(ContactId contactId, SecretKey rootKey) {
-		PcsSessionState initial = PcsSessionState.createInitial(rootKey);
-		try {
-			db.transaction(false, txn -> {
-				initializeState(txn, contactId, initial);
-			});
-		} catch (DbException e) {
-		}
-	}
-
-
-	public void initializeState(Transaction txn, ContactId contactId,
-			SecretKey rootKey) throws DbException {
-		PcsSessionState initial = PcsSessionState.createInitial(rootKey);
-		initializeState(txn, contactId, initial);
-	}
-
-	private void initializeState(Transaction txn, ContactId contactId,
-			PcsSessionState initial) throws DbException {
-		db.setPcsSessionState(txn, contactId, PCS_DIRECTION_SEND,
-				initial.getChainKey(), initial.getMessageNumber(),
-				initial.getPreviousChainLength());
-		db.setPcsSessionState(txn, contactId, PCS_DIRECTION_RECEIVE,
-				initial.getChainKey(), initial.getMessageNumber(),
-				initial.getPreviousChainLength());
-	}
-
-	
 	public void initializeMode2State(ContactId contactId,
 			PcsSessionState sendState, PcsSessionState receiveState) {
 		try {
@@ -169,18 +140,8 @@ public class PcsStateManager {
 	private PcsSessionState loadState(Transaction txn, ContactId contactId,
 			int direction) throws DbException {
 		Object[] result = db.getPcsMode2SessionState(txn, contactId, direction);
-		if (result != null) {
-			return parseMode2State(result);
-		}
-		result = db.getPcsSessionState(txn, contactId, direction);
 		if (result == null) return null;
-
-		byte[] chainKeyBytes = (byte[]) result[0];
-		int messageNumber = (Integer) result[1];
-		int previousChainLength = (Integer) result[2];
-
-		SecretKey chainKey = new SecretKey(chainKeyBytes);
-		return new PcsSessionState(chainKey, messageNumber, previousChainLength);
+		return parseMode2State(result);
 	}
 
 	@Nullable
@@ -196,9 +157,7 @@ public class PcsStateManager {
 
 		SecretKey chainKey = new SecretKey(chainKeyBytes);
 
-		if (!mode2Enabled || rootKeyBytes == null) {
-			return new PcsSessionState(chainKey, messageNumber, previousChainLength);
-		}
+		if (!mode2Enabled || rootKeyBytes == null) return null;
 		SecretKey rootKey = new SecretKey(rootKeyBytes);
 		DhRatchetState dhState = null;
 
@@ -216,7 +175,7 @@ public class PcsStateManager {
 
 				dhState = new DhRatchetState(dhKeyPair, dhRemotePublicKey);
 			} catch (GeneralSecurityException e) {
-				return new PcsSessionState(chainKey, messageNumber, previousChainLength);
+				return null;
 			}
 		}
 
@@ -235,13 +194,7 @@ public class PcsStateManager {
 
 	private void saveState(Transaction txn, ContactId contactId, int direction,
 			PcsSessionState state) throws DbException {
-		if (state.isMode2()) {
-			saveMode2State(txn, contactId, direction, state);
-		} else {
-			db.setPcsSessionState(txn, contactId, direction,
-					state.getChainKey(), state.getMessageNumber(),
-					state.getPreviousChainLength());
-		}
+		saveMode2State(txn, contactId, direction, state);
 	}
 
 	private void saveMode2State(Transaction txn, ContactId contactId,

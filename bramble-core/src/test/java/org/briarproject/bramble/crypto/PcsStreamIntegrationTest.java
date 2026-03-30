@@ -20,6 +20,7 @@ import java.io.ByteArrayOutputStream;
 import java.lang.reflect.Constructor;
 import java.util.Arrays;
 
+import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PCS_HEADER_MAX_SIZE;
 import static org.briarproject.bramble.api.transport.TransportConstants.MAX_PAYLOAD_LENGTH;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -79,8 +80,8 @@ public class PcsStreamIntegrationTest {
 		SecretKey streamHeaderKey = generateKey();
 
 		// Create initial states for sender and receiver (same root key)
-		PcsSessionState senderState = PcsSessionState.createInitial(rootKey);
-		PcsSessionState receiverState = PcsSessionState.createInitial(rootKey);
+		PcsSessionState senderState = ratchet.initializeMode2AsInitiator(rootKey);
+		PcsSessionState receiverState = ratchet.initializeMode2AsInitiator(rootKey);
 
 		// Create stream header nonce
 		byte[] streamHeaderNonce = new byte[24];
@@ -124,7 +125,7 @@ public class PcsStreamIntegrationTest {
 		SecretKey streamHeaderKey = generateKey();
 
 		// Create initial states
-		PcsSessionState senderState = PcsSessionState.createInitial(rootKey);
+		PcsSessionState senderState = ratchet.initializeMode2AsInitiator(rootKey);
 
 		// Create stream header nonce
 		byte[] streamHeaderNonce = new byte[24];
@@ -170,7 +171,7 @@ public class PcsStreamIntegrationTest {
 	@Test
 	public void testRatchetProducesUniqueKeysPerMessage() throws Exception {
 		SecretKey rootKey = generateKey();
-		PcsSessionState state = PcsSessionState.createInitial(rootKey);
+		PcsSessionState state = ratchet.initializeMode2AsInitiator(rootKey);
 
 		// Advance ratchet multiple times and verify unique keys
 		SecretKey[] keys = new SecretKey[5];
@@ -196,10 +197,9 @@ public class PcsStreamIntegrationTest {
 		// Verify sender and receiver derive same keys from same root
 		SecretKey rootKey = generateKey();
 
-		PcsSessionState senderState = PcsSessionState.createInitial(rootKey);
-		PcsSessionState receiverState = PcsSessionState.createInitial(rootKey);
+		PcsSessionState senderState = ratchet.initializeMode2AsInitiator(rootKey);
+		PcsSessionState receiverState = ratchet.initializeMode2AsInitiator(rootKey);
 
-		// Sender advances to send message 0
 		AdvanceResult sendResult = ratchet.advanceSendChain(senderState);
 		SecretKey senderKey = sendResult.getMessageKey();
 
@@ -217,13 +217,13 @@ public class PcsStreamIntegrationTest {
 		// Test with maximum payload size (minus PCS header overhead)
 		SecretKey rootKey = generateKey();
 		SecretKey streamHeaderKey = generateKey();
-		PcsSessionState senderState = PcsSessionState.createInitial(rootKey);
+		PcsSessionState senderState = ratchet.initializeMode2AsInitiator(rootKey);
 
 		byte[] streamHeaderNonce = new byte[24];
 		crypto.getSecureRandom().nextBytes(streamHeaderNonce);
 
 		// Create large payload (accounting for 10-byte PCS header)
-		int maxPayload = MAX_PAYLOAD_LENGTH - 10;
+		int maxPayload = MAX_PAYLOAD_LENGTH - PCS_HEADER_MAX_SIZE;
 		byte[] largeMessage = new byte[maxPayload];
 		crypto.getSecureRandom().nextBytes(largeMessage);
 
