@@ -27,7 +27,6 @@ public class StreamingAudioDecryptor {
 	private static final int GCM_IV_LENGTH = 12;
 	private static final int GCM_TAG_LENGTH = 128;
 
-	private final SecretKeySpec decryptionKey;
 	private final byte[] rawKeyBytes;
 	private final byte[] baseIv;
 	private int chunkSequenceNumber = 0;
@@ -41,7 +40,6 @@ public class StreamingAudioDecryptor {
 			throw new IllegalArgumentException("IV must be 12 bytes, got " + iv.length);
 		}
 		this.rawKeyBytes = Arrays.copyOf(sessionKey, sessionKey.length);
-		this.decryptionKey = new SecretKeySpec(rawKeyBytes, "AES");
 		this.baseIv = Arrays.copyOf(iv, iv.length);
 		this.aadContext = new byte[0];
 	}
@@ -103,7 +101,7 @@ public class StreamingAudioDecryptor {
 		System.arraycopy(tag, 0, combined, ciphertext.length, tag.length);
 
 		Cipher cipher = CIPHER_CACHE.get();
-		cipher.init(Cipher.DECRYPT_MODE, decryptionKey,
+		cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(rawKeyBytes, "AES"),
 			new GCMParameterSpec(GCM_TAG_LENGTH, ivWithCounter));
 
 		if (aadContext.length > 0) {
@@ -133,7 +131,7 @@ public class StreamingAudioDecryptor {
 		ivWithCounter[GCM_IV_LENGTH - 1] = (byte) (baseIv[GCM_IV_LENGTH - 1] ^ (byte) counter);
 
 		Cipher cipher = CIPHER_CACHE.get();
-		cipher.init(Cipher.DECRYPT_MODE, decryptionKey,
+		cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(rawKeyBytes, "AES"),
 			new GCMParameterSpec(GCM_TAG_LENGTH, ivWithCounter));
 
 		ByteBuffer metadata = ByteBuffer.allocate(8);

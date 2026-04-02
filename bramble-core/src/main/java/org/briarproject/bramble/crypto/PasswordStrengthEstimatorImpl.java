@@ -13,10 +13,9 @@ class PasswordStrengthEstimatorImpl implements PasswordStrengthEstimator {
 	private static final int STRONG_UNIQUE_CHARS = 12;
 
 	@Override
-	public float estimateStrength(String password) {
+	public float estimateStrength(char[] password) {
 		HashSet<Character> unique = new HashSet<>();
-		int length = password.length();
-		for (int i = 0; i < length; i++) unique.add(password.charAt(i));
+		for (char c : password) unique.add(c);
 		return Math.min(1, (float) unique.size() / STRONG_UNIQUE_CHARS);
 	}
 }

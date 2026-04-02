@@ -161,6 +161,14 @@
 	<color name="zerion_success_green">@color/zerion_success</color>
 	<color name="zerion_purple">#8B5CF6</color> <!-- Purple accent for UI interactions -->
 
+	<!-- Chat Bubble Color Options -->
+	<color name="bubble_blue">#2563EB</color>
+	<color name="bubble_purple">#7C3AED</color>
+	<color name="bubble_green">#059669</color>
+	<color name="bubble_orange">#D97706</color>
+	<color name="bubble_pink">#DB2777</color>
+	<color name="bubble_cyan">#0891B2</color>
+
 	<!-- Video player -->
-	<color name="video_controls_background">#B3000000</color> <!-- 70% black -->
+	<color name="video_controls_background">#B3000000</color>
 </resources>

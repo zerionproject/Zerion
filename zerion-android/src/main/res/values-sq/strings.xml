@@ -1,6 +1,6 @@
-﻿<?xml version='1.0' encoding='UTF-8'?>
-<resources xmlns:tools="http://schemas.android.com/tools">
-  <!--Setup-->
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+  
   <string name="setup_title">Mirë se vini në Zerion</string>
   <string name="setup_name_explanation">Nofka juaj do të shfaqet në krah të çfarëdo gjëje që postoni. S\’mund ta ndryshoni më, pas krijimit të llogarisë tuaj.</string>
   <string name="setup_next">Pasuesi</string>
@@ -32,7 +32,7 @@
   <string name="dnkm_xiaomi_lock_apps_text">Ju lutemi, prekni butonin më poshtë që të hapen rregullimet e sigurisë. Prekni “Përforcim shpejtësie”, mandej prekni “Kyçje aplikacionesh” dhe sigurohuni se për Zerion-in është zgjedhur “I kyçur”.</string>
   <string name="dnkm_xiaomi_lock_apps_help">Nëse për Zerion-in s’është zgjedhur “I kyçur” te skena “Kyçje aplikacionesh”, s’do të jetë në gjendje të xhirojë në prapaskenë.</string>
   <string name="dnkm_warning_dozed_1">Zerion-i s’qe në gjendje të xhirojë në prapaskenë</string>
-  <!--Login-->
+  
   <string name="enter_password">Fjalëkalim</string>
   <string name="try_again">Fjalëkalim i gabuar, riprovoni</string>
   <string name="dialog_title_cannot_check_password">S\’kontrollohet Dot Fjalëkalimi</string>
@@ -63,17 +63,17 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   <string name="startup_open_database">Po shfshehtëzohet Baza e të Dhënave…</string>
   <string name="startup_migrate_database">Po përditësohet Baza e të dhënave…</string>
   <string name="startup_compact_database">Po kompaktësohet Baza e të Dhënave…</string>
-  <!--Navigation Drawer-->
+  
   <string name="nav_drawer_open_description">Hap sirtarin e lëvizjeve</string>
   <string name="nav_drawer_close_description">Mbylle sirtarin e lëvizjeve</string>
   <string name="contact_list_button">Kontakte</string>
   <string name="groups_button">Grupe Private</string>
-  <!--This is part of the main menu. The app will be locked when this is tapped.-->
+  
   <string name="lock_button">Kyçe Aplikacionin</string>
   <string name="settings_button">Rregullime</string>
   <string name="sign_out_button">Dilni</string>
   <string name="transports_onboarding_text">Prekkeni këtu që të kontrolloni se si lidhet Zerion-i me kontaktet tuaja.</string>
-  <!--Transports: Tor-->
+  
   <string name="transport_tor">Internet</string>
   <string name="tor_device_status_online_wifi">Telefoni juaj mund të përdorë Internet përmes Wi-Fi</string>
   <string name="tor_device_status_online_mobile">Telefoni juaj mund të përdorë Internet përmes të dhënash pakete celulari</string>
@@ -85,10 +85,10 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   <string name="tor_plugin_status_disabled_mobile_data">Zerion-i është formësuar të mos përdorë të dhëna pakete celulari</string>
   <string name="tor_plugin_status_disabled_battery">Zerion-i është formësuar të mos përdorë Internet, kur xhiron me bateri</string>
   <string name="tor_plugin_status_disabled_country_blocked">Zerion-i është formësuar të mos përdorë Internet në këtë vend</string>
-  <!--Transports: Wi-Fi-->
+  
   <string name="transport_lan_long">Po atë rrjet Wi-Fi</string>
-  <!--Transports: Bluetooth-->
-  <!--Notifications-->
+  
+  
   <string name="reminder_notification_title">U dol nga Zerion-i</string>
   <string name="reminder_notification_text">Prekeni që të ribëhet hyrja.</string>
   <string name="reminder_notification_channel_title">Kujtues Hyrjeje Zerion</string>
@@ -103,7 +103,7 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
     <item quantity="one">Mesazh i ri grupi.</item>
     <item quantity="other">%d mesazhe të rinj grupi.</item>
   </plurals>
-  <!--Misc-->
+  
   <string name="now">tani</string>
   <string name="show">Shfaqi</string>
   <string name="hide">Fshihi</string>
@@ -132,7 +132,7 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   <string name="status_heading">Gjendje:</string>
   <string name="error">Gabim</string>
   <string name="info">Informacion</string>
-  <!--Contacts and Private Conversations-->
+  
   <string name="no_contacts">S’ka kontakte për shfaqje</string>
   <string name="no_contacts_action">Prekni ikonën + që të shtoni një kontakt</string>
   <string name="date_no_private_messages">S\’ka mesazhe.</string>
@@ -148,11 +148,11 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   <string name="set_contact_alias">Ndryshoni emër kontakti</string>
   <string name="set_contact_alias_hint">Emër kontakti</string>
   <string name="menu_item_disappearing_messages">Mesazhe që treten</string>
-  <!--The first placeholder will show a duration like "7 days". The second placeholder at the end will add "Tap to learn more."-->
+  
   <string name="auto_delete_msg_you_enabled">Mesazhet tuaja do të treten pas %1$s. %2$s</string>
-  <!--The placeholder at the end will add "Tap to learn more."-->
+  
   <string name="auto_delete_msg_you_disabled">Mesazhet tuaj s’do të treten. %1$s</string>
-  <!--The first placeholder will show a contact's name. The second placeholder will show a duration like "7 days". The third placeholder at the end will add "Tap to learn more."-->
+  
   <string name="auto_delete_msg_contact_enabled">Mesazhet e %1$s do të treten pas %2$s. %3$s</string>
   <plurals name="duration_minutes">
     <item quantity="one">%d minute</item>
@@ -166,7 +166,7 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
     <item quantity="one">%d dite</item>
     <item quantity="other">%d ditësh</item>
   </plurals>
-  <!--The first placeholder will show a contact's name. The second placeholder at the end will add "Tap to learn more."-->
+  
   <string name="auto_delete_msg_contact_disabled">Mesazhet e %1$s s’do të treten. %2$s</string>
   <string name="tap_to_learn_more">Prekeni për të mësuar më shumë.</string>
   <string name="auto_delete_changed_warning_title">Ndryshuan mesazhe që treten</string>
@@ -187,7 +187,7 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   <string name="dialog_title_delete_contact">Ripohoni Fshirje Kontakti</string>
   <string name="dialog_message_delete_contact">Jeni i sigurt se doni të hiqet ky kontakt dhe krejt mesazhet e shkëmbyer me këtë kontakt?</string>
   <string name="contact_deleted_toast">Kontakti u fshi</string>
-  <!--This is shown in the action bar when opening an image in fullscreen that the user sent-->
+  
   <string name="you">Ju</string>
   <string name="save_image">Ruaje figurën</string>
   <string name="dialog_title_save_image">Të ruhet Figura?</string>
@@ -200,7 +200,7 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   <string name="dialog_message_image_support">Prekeni këtë ikonë që të bashkëngjitni figura.</string>
   <string name="messaging_too_many_attachments_toast">Do të dërgohen vetëm %d figurat e para</string>
   <string name="menu_contact">Kontakt</string>
-  <!--Adding Contacts-->
+  
   <string name="add_contact_title">Shtoni Kontakt Atypari</string>
   <string name="add_contact_error_two_way">A skanuat, që të dy palët, kodet QR të njëri-tjetrit?</string>
   <string name="continue_button">Vazhdo</string>
@@ -215,7 +215,7 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   <string name="authenticating_with_device">Po bëhet mirëfilltësimi me pajisjen\u2026</string>
   <string name="connection_error_title">S’u lidh dot te kontakti juaj</string>
   <string name="connection_error_feedback">Nëse problemi vazhdon, ju lutemi, <a href="feedback">na njoftoni</a>, që të mund të përmirësojmë aplikacionin.</string>
-  <!--Adding Contacts Remotely-->
+  
   <string name="add_contact_remotely_title_case">Shtoni Kontakt në Largësi</string>
   <string name="add_contact_nearby_title">Shtoni kontakt atypari</string>
   <string name="add_contact_remotely_title">Shtoni kontakt në largësi</string>
@@ -248,9 +248,9 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   <string name="unsupported_link">Kjo lidhje vjen prej një versioni më të ri të Zerion-it. Ju lutemi, përmirësojeni me versionin më të ri dhe riprovoni.</string>
   <string name="intent_own_link">Hapët lidhjen tuaj. Përdorni atë të kontaktit që doni të shtoni!</string>
   <string name="missing_link">Ju lutemi, jepni një lidhje</string>
-  <!--This is a numeral indicating the first step in a series of screens-->
+  
   <string name="step_1">1</string>
-  <!--This is a numeral indicating the second step in a series of screens-->
+  
   <string name="step_2">2</string>
   <plurals name="contact_added_notification_text">
     <item quantity="one">U shtua kontakt i ri.</item>
@@ -260,25 +260,21 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   <string name="duplicate_link_dialog_title">Lidhje e Përsëdytur</string>
   <string name="duplicate_link_dialog_text_1">Keni tashmë një kontakt pezull me këtë lidhje: %s</string>
   <string name="duplicate_link_dialog_text_1_contact">Keni tashmë një kontakt me këtë lidhje: %s</string>
-  <!--This is a question asking whether two nicknames refer to the same person-->
+  
   <string name="duplicate_link_dialog_text_2">Është %1$s dhe %2$s i njëjti person?</string>
-  <!--This is a button for answering that two nicknames do indeed refer to the same person. This
-	string will be used in a dialog button, so if the translation of this string is longer than 20
-	characters, please use "Yes" instead, and use "No" for the "Different Person" button-->
+  
   <string name="same_person_button">I njëjti Person</string>
-  <!--This is a button for answering that two nicknames refer to different people. This string
-	will be used in a dialog button, so if the translation of this string longer than 20 characters,
-	please use "No" instead, and use "Yes" for the "Same Person" button-->
+  
   <string name="different_person_button">Person i Ndryshëm</string>
   <string name="duplicate_link_dialog_text_3">%1$s dhe %2$s ju dërguan të njëjtën lidhje.\n\nNjë prej tyre mund të jetë duke u rrekur të zbulojë cilët janë kontaktet tuaja.\n\nMos u thoni se morët të njëjtën lidhje nga dikush tjetër.</string>
   <string name="pending_contact_updated_toast">Kontakti pezull u përditësua</string>
   <string name="info_both_must_enter_links">Duhet të shtoni, të dy palët, lidhjet e njëri tjetrit</string>
-  <!--Peer trust levels-->
+  
   <string name="peer_trust_level_unverified">Kontakt i paverifikuar</string>
   <string name="peer_trust_level_verified">Kontakt i verifikuar</string>
   <string name="peer_trust_level_ourselves">Unë</string>
   <string name="peer_trust_level_stranger">I huaj</string>
-  <!--Introductions-->
+  
   <string name="introduction_onboarding_title">Prezantoni kontaktet tuaja</string>
   <string name="introduction_onboarding_text">Prezantoni kontaktet tuaj me njëri-tjetrin, që të mund të lidhen me Zerion.</string>
   <string name="introduction_menu_item">Bëje prezantimin</string>
@@ -300,18 +296,7 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   <string name="introduction_response_accepted_received">%1$s pranoi prezantimin te %2$s.</string>
   <string name="introduction_response_declined_received">%1$s hodhi poshtë prezantimin te %2$s.</string>
   <string name="introduction_response_declined_received_by_introducee">%1$s thotë se %2$s hodhi poshtë prezantimin.</string>
-  <!--Connect via Bluetooth-->
-  <string name="menu_item_connect_via_bluetooth">Lidhu përmes Bluetooth-i</string>
-  <string name="connect_via_bluetooth_title">Lidhu përmes Bluetooth-i</string>
-  <string name="connect_via_bluetooth_intro">Në rast se lidhjet me Bluetooth s’funksionojnë automatikisht, mund të përdorni këtë skenë që të bëni lidhjen dorazi.\n\nQë kjo të funksionojë, kontakti juaj duhet të jetë atypari.\n\nJu dhe kontakti juaj duhet të shtypni që të dy “Fillo” në të njëjtën kohë.</string>
-  <string name="connect_via_bluetooth_already_discovering">Po provohet tashmë të bëhet lidhje përmes Bluetooth-i. Ju lutemi, riprovoni pas pak.</string>
-  <string name="connect_via_bluetooth_no_location_permission">S’mund të vazhdohet pa leje vendore</string>
-  <string name="connect_via_bluetooth_no_bluetooth_permission">Pa leje pajisjesh atypari s’mund të vazhdohet </string>
-  <string name="connect_via_bluetooth_start">Po lidhet me Bluetooth…</string>
-  <string name="connect_via_bluetooth_success">U lidh me sukses përmes Bluetooth-i</string>
-  <string name="connect_via_bluetooth_error">S’u bë dot lidhja me Bluetooth.</string>
-  <string name="connect_via_bluetooth_error_not_supported">Bluetooth-i nuk mbulohet nga pajisja.</string>
-  <!--Private Groups-->
+  
   <string name="groups_list_empty">S’ka grupe për shfaqje</string>
   <string name="groups_list_empty_action">Prekni ikonën + që të krijoni një grup, ose kërkojuni kontakteve tuaj të ndajnë grupe me ju</string>
   <string name="groups_created_by">Krijuar nga %s</string>
@@ -342,7 +327,7 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   <string name="groups_dissolve_button">Shkrije</string>
   <string name="groups_dissolved_dialog_title">Grupi u Shkri</string>
   <string name="groups_dissolved_dialog_message">Krijuesi i këtij grupi e ka shkrirë atë.\n\nS\’mund të shkruani më mesazhe për grupin dhe mundet të mos i merrni krejt postimet që janë shkruar.</string>
-  <!--Private Group Invitations-->
+  
   <string name="groups_invitations_title">Ftesa Grupi</string>
   <string name="groups_invitations_invitation_sent">Keni ftuar %1$s të bëhet pjesë e grupit \"%2$s\".</string>
   <string name="groups_invitations_invitation_received">%1$s ju ka ftuar të bëheni pjesë e grupit \"%2$s\".</string>
@@ -358,14 +343,14 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   <string name="groups_invitations_response_accepted_received">%s e pranoi ftesën e grupit.</string>
   <string name="groups_invitations_response_declined_received">%s e hodhi poshtë ftesën për në grup.</string>
   <string name="sharing_status_groups">Vetëm krijuesi mund të ftojë anëtarë të rinj në grup. Më poshtë gjenden tërë anëtarët e tanishëm të grupit.</string>
-  <!--Private Groups Revealing Contacts-->
+  
   <string name="groups_reveal_contacts">Shfaqua Kontaktet</string>
   <string name="groups_reveal_dialog_message">Mund të zgjidhni t\’ua shfaqni ose jo kontaktet krejt anëtarëve të tanishëm dhe të ardhshëm të këtij grupi.\n\nShfaqja e kontakteve e bën lidhjen tuaj me grupin më të shpejtë dhe më të besueshme, ngaqë mund të komunikoni me kontaktet e shfaqura edhe kur krijuesi i grupit s\’është në linjë.</string>
   <string name="groups_reveal_visible">Marrëdhënia e kontaktit është e dukshme për grupin</string>
   <string name="groups_reveal_visible_revealed_by_us">Marrëdhënia e kontaktit është e dukshme për grupin (shfaqur nga ju)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Marrëdhënia e kontaktit është e dukshme për grupin (shfaqur nga %s)</string>
   <string name="groups_reveal_invisible">Marrëdhënia me kontaktin s\’është e dukshme për grupin</string>
-  <!--Forums-->
+  
   <string name="no_posts">S\’ka postime</string>
   <plurals name="posts">
     <item quantity="one">%d postim</item>
@@ -373,7 +358,7 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   </plurals>
   <string name="btn_reply">Përgjigju</string>
   <string name="dialog_button_leave">Braktise</string>
-  <!--Forum Sharing-->
+  
   <string name="contacts_selected">Kontaktet u përzgjodhën</string>
   <string name="activity_share_toolbar_header">Zgjidhni Kontakte</string>
   <string name="no_contacts_selector">S’ka kontakte për shfaqje</string>
@@ -382,16 +367,16 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   <string name="sharing_status">Gjendje Ndarjeje Me të Tjerë</string>
   <string name="shared_with">E ndarë me %1$d (%2$d në linjë)</string>
   <string name="nobody">Askush</string>
-  <!--Blogs-->
+  
   <string name="read_more">lexoni më tepër</string>
-  <!--Blog Sharing-->
-  <!--RSS Feeds-->
-  <!--Settings Profile Picture-->
+  
+  
+  
   <string name="change_profile_picture">Që të ndryshoni foton e profilit tuaj, prekeni</string>
   <string name="dialog_confirm_profile_picture_title">Ndryshoni foto profili</string>
   <string name="dialog_confirm_profile_picture_remark">Këtë foto mund ta shohin vetëm kontaktet tuaja</string>
   <string name="change_profile_picture_failed_message">Na ndjeni, por diç shkoi ters me përditësimin e fotos së profilit tuaj</string>
-  <!--Settings Display-->
+  
   <string name="pref_language_title">Gjuhë &amp; rajon</string>
   <string name="pref_language_changed">Ky rregullim do të hyjë në fuqi kur të rinisni Zerion-in. Ju lutemi, bëni daljen nga llogaria dhe rinisni Zerion-in.</string>
   <string name="pref_language_default">Parazgjedhje sistemi</string>
@@ -400,9 +385,8 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   <string name="pref_theme_light">E çelët</string>
   <string name="pref_theme_dark">E errët</string>
   <string name="pref_theme_system">Parazgjedhje sistemi</string>
-  <!--Settings Connections-->
+  
   <string name="network_settings_title">Lidhje</string>
-  <string name="bluetooth_setting">Lidhuni me kontaktet përmes Bluetooth-i</string>
   <string name="wifi_setting">Lidhuni me kontakte në të njëjtin rrjet Wi-Fi</string>
   <string name="tor_enable_title">Lidhuni me kontakte përmes Internet-i</string>
   <string name="tor_enable_summary">Për privatësi, krejt lidhjet kryhen përmes rrjetit Tor</string>
@@ -411,28 +395,28 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   <string name="tor_network_setting_without_bridges">Përdor rrjet Tor pa ura</string>
   <string name="tor_network_setting_with_bridges">Përdor rrjet Tor me ura</string>
   <string name="tor_network_setting_never">Mos u lidh në Internet</string>
-  <!--How and when Zerion will connect to Tor: E.g. "Don't connect to the Internet (in China)" or "Use Tor network with bridges (in Belarus)"-->
+  
   <string name="tor_network_setting_summary">Automatike: %1$s (në %2$s)</string>
   <string name="tor_mobile_data_title">Përdor të dhëna celulare</string>
   <string name="tor_only_when_charging_title">Lidhu në Internet vetëm kur ngarkohet bateria</string>
   <string name="tor_only_when_charging_summary">Çaktivizon lidhjen në Internet, kur pajisja ushqehet nga bateria</string>
-  <!--Settings Security and Panic-->
+  
   <string name="security_settings_title">Siguri</string>
   <string name="pref_lock_title">Kyçje aplikacioni</string>
   <string name="pref_lock_summary">Përdorni kyçjen e ekranit të pajisjes që të mbroni Zerion-in teksa keni bërë hyrjen në llogari </string>
   <string name="pref_lock_disabled_summary">Që të përdorni këtë veçori, rregulloni kyçje ekrani për pajisjen tuaj</string>
   <string name="pref_lock_timeout_title">Skadim kohe mosveprimtarie për kyçje aplikacioni</string>
-  <!--The %s placeholder is replaced with the following time spans, e.g. 5 Minutes, 1 Hour-->
+  
   <string name="pref_lock_timeout_summary">Kur Zerion-i s’është në përdorim, kyçe vetvetiu pas %s</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_1">1 minute</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_5">5 minutash</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_15">15 minutash</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_30">30 minutash</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_60">1 orë</string>
   <string name="pref_lock_timeout_never">Kurrë</string>
   <string name="pref_lock_timeout_never_summary">Mos e kyç kurrë Zerion-in vetvetiu</string>
@@ -455,7 +439,7 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   <string name="panic_setting_signout_summary">Dil nga Zerion-i nëse shtypet një buton paniku</string>
   <string name="purge_setting_title">Fshi Llogarinë</string>
   <string name="purge_setting_summary">Fshijeni llogarinë tuaj Zerion, nëse shtypet një buton paniku. Kujdes: Kjo do të shkaktojë fshirjen e identiteteve, kontakteve dhe mesazheve tuaj</string>
-  <!--Settings Notifications-->
+  
   <string name="notification_settings_title">Njoftime</string>
   <string name="notify_sign_in_title">Rikujtomë të bëj hyrjen</string>
   <string name="notify_sign_in_summary">Shfaq një kujtues kur niset telefoni ose aplikacioni është përditësuar</string>
@@ -471,7 +455,7 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   <string name="notify_sound_setting_disabled">Asnjë</string>
   <string name="choose_ringtone_title">Zgjidhni zile</string>
   <string name="cannot_load_ringtone">S\’ngarkohet dot zile</string>
-  <!--Mailbox-->
+  
   <string name="mailbox_settings_title">Kuti postare</string>
   <string name="mailbox_setup_title">Ujdisje kutie postare</string>
   <string name="mailbox_setup_intro">Një Kuti postare u lejon kontakteve tuaj t’ju dërgojnë mesazhe , kur s’jeni në linjë. Kutia postare do të marrë mesazhet tuaj dhe depozitojë deri sa të jeni në linjë.\n
@@ -479,10 +463,8 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   <string name="mailbox_setup_download">Së pari, instaloni aplikacionin Kuti postare te një pajisje tjetër, duke kërkuar për “Zerion Mailbox” në Google Play, ose kudo ku shkarkuat Zerion-in.\n
 		\nMandej lidheni Kutinë tuaj postare me Zerion-in duke skanuar kodin QR të shfaqur te aplikacioni Kuti postare.</string>
   <string name="mailbox_setup_download_link">Ndani Lidhje Shkarkimi</string>
-  <string name="mailbox_setup_button_scan">Skanoni kod QR Kutie postare</string>
-  <string name="permission_camera_qr_denied_body">Keni mohuar hyrjen te kamera, por skanimi i një kodi QR lyp përdorimin e kamerës.\n\nJu lutemi, shihni mundësinë e dhënies së hyrjes.</string>
   <string name="mailbox_setup_connecting">Po bëhet lidhja me Kutinë postare…</string>
-  <!--This string is shown when connecting to a Mailbox for the first time. The placeholder will be replaced with a duration, e.g. "2 minutes".-->
+  
   <string name="mailbox_setup_connecting_info">Kjo mund të dojë deri në %1s</string>
   <string name="mailbox_setup_already_paired_title">Kuti postare tashmë e lidhur</string>
   <string name="mailbox_setup_already_paired_description">Shkëputeni Kutinë postare në pajisjen tuaj tjetër dhe riprovoni.</string>
@@ -507,9 +489,9 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   <string name="mailbox_status_mailbox_too_old_title">Kutia postare është shumë e vjetër</string>
   <string name="mailbox_status_mailbox_too_old_message">Përditësoni Kutinë tuaj postare me versionin më të ri të aplikacionit dhe riprovoni.</string>
   <string name="mailbox_status_check_button">Kontrolloni Lidhjen</string>
-  <!--Example for string substitution: Last connection: 3min ago-->
+  
   <string name="mailbox_status_connected_info">Lidhja e fundit: %s</string>
-  <!--Indicates that there never was a connection to the mailbox. Last connection: Never-->
+  
   <string name="mailbox_status_connected_never">Kurrë</string>
   <string name="mailbox_status_unlink_button">Shkëpute</string>
   <string name="mailbox_status_unlink_dialog_title">Të hiqet lidhja për kutinë postare?</string>
@@ -542,7 +524,7 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   <string name="mailbox_error_wizard_info1_1_4">Shihni që pajisja kuti postare të jetë lidhur si duhet në Internet.\n\nKontrolloni që sahati te pajisja Kuti postare shfaq kohën, datën dhe zonën kohore të saktë.\n\nShihni që aplikacionet Kuti postare dhe Zerion të jenë të përditësuar me versionin më të ri.\n\nRinisni pajisjet tuaja Kuti postare dhe Zerion dhe riprovoni.</string>
   <string name="mailbox_error_wizard_info2">Ju lutemi, rikthejuni kësaj skene kur të keni mundësi të përdorni pajisjen.</string>
   <string name="mailbox_error_wizard_info3">Ju lutemi, shkëputeni kutinë tuaj postare duke përdorur butonin më poshtë.\n\nPasi të shkëputni Kutinë tuaj të vjetër postare, mund të ujdisni kurdo një Kuti të re postare.</string>
-  <!--About-->
+  
   <string name="about_title">Mbi</string>
   <string name="zerion_version">Version Zerion-i: %s</string>
   <string name="tor_version">Version Tor-i: %s</string>
@@ -551,9 +533,9 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   <string name="zerion_source_code">\u2022 <a href="">Kod burim</a></string>
   <string name="zerion_changelog">\u2022 <a href="">Regjistër ndryshimesh</a></string>
   <string name="zerion_privacy_policy">\u2022 <a href="">Rregulla Privatësie</a></string>
-  <!--Here translators can add their names or Transifex usernames(eg "Thanks to all the contributors at the Localization Lab, especially Tom, Matthew and Jerry")-->
+  
   <string name="translator_thanks">Faleminderit krejt kontribuesve prej Localization Lab</string>
-  <!--Conversation Settings-->
+  
   <string name="disappearing_messages_title">Mesazhe që treten</string>
   <string name="disappearing_messages_explanation_long">Aktivizimi i këtij rregullimi do të bëjë që
 mesazhet e reja në këtë bisedë të treten automatikisht pas 7\u00A0ditësh.
@@ -566,17 +548,17 @@ menjëherë dhe mbi mesazhet e kontaktit sapo të marrë mesazhin tuaj të radh�
 Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
   <string name="learn_more">Mësoni më tepër</string>
   <string name="disappearing_messages_summary">Bëji mesazhet e ardhshëm në këtë bisedë të treten automatikisht pas 7\u00A0ditësh.</string>
-  <!--Settings Actions-->
+  
   <string name="pref_category_actions">Veprime</string>
   <string name="share_app_link">Jepuni lidhjen e shkarkimit</string>
   <string name="share_app_link_text">Shkarkojeni Zerion-in te %s</string>
   <string name="send_feedback">Dërgoji përshtypjet</string>
-  <!--Link Warning-->
+  
   <string name="link_warning_title">Sinjalizim Lidhjeje</string>
   <string name="link_warning_intro">Ju ndan një hap nga hapja e lidhjes vijuese me një aplikacion të jashtëm.</string>
   <string name="link_warning_text">Kjo mund të përdoret për t\’ju identifikuar. Sillni në mend nëse i zini besë personit që ju dërgoi lidhjen dhe shihni mundësinë e hapjes së saj me Shfletuesin Tor.</string>
   <string name="link_warning_open_link">Hape Lidhjen</string>
-  <!--Crash Reporter-->
+  
   <string name="crash_report_title">Njoftim Vithisjesh Zerion-i</string>
   <string name="zerion_crashed">Na ndjeni, Zerion-i u vithis</string>
   <string name="not_your_fault">S\’është faji juaj.</string>
@@ -606,15 +588,15 @@ Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
   <string name="dev_report_sent">Përshtypjet u dërguan</string>
   <string name="dev_report_saved">Njoftimi u ruajt. Do të dërgohet herën tjetër që do të hyni në Zerion.</string>
   <string name="dev_report_error">Gabim: Dërgimi i raportit dështoi</string>
-  <!--Sign Out-->
+  
   <string name="progress_title_logout">Po dilet nga Zerion-i…</string>
-  <!--Screen Filters & Tapjacking-->
+  
   <string name="screen_filter_title">U kap dalje jashtë ekrani</string>
   <string name="screen_filter_body">Sipër Zerion-it po vizaton një tjetër aplikacion. Për të mbrojtur sigurinë tuaj, Zerion-i s\’do t\’u përgjigjet prekjeve kur një tjetër aplikacion vizaton përsipër.\n\nPërsipër mund të jenë duke vizatuar aplikacionet vijues:\n\n%1$s</string>
   <string name="screen_filter_body_api_30">Sipër Zerion-it po vizaton një tjetër aplikacion. Për të mbrojtur sigurinë tuaj, Zerion-i s\’do t\’u përgjigjet prekjeve kur një tjetër aplikacion vizaton përsipër.\n\nShqyrtoni aplikacionet më poshtë, që të gjeni aplikacionin përgjegjës.</string>
   <string name="screen_filter_allow">Lejoji këto aplikacione të vizatojnë përsipër</string>
   <string name="screen_filter_review_apps">Shqyrtoni aplikacione</string>
-  <!--Permission Requests-->
+  
   <string name="permission_camera_title">Leje mbi kamerën</string>
   <string name="permission_camera_request_body">Që të skanojë kodin QR, Zerion-i lypset të hyjë te kamera.</string>
   <string name="permission_location_title">Leje vendi</string>
@@ -622,95 +604,23 @@ Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
   <string name="permission_location_request_body">Që të pikasë pajisje Bluetooth, Zerion-i lyp leje të njohë vendin tuaj.\n\nZerion-i nuk e depoziton vendin tuaj, as e ndan me dikë.</string>
   <string name="permission_camera_location_title">Kamera dhe vend</string>
   <string name="permission_camera_location_request_body">Që të skanojë kodin QR, Zerion-it i duhet të përdorë kamerën.\n\nQë të pikasë pajisje Bluetooth, Zerion-i lyp leje të njohë vendin tuaj.\n\nZerion-i nuk e depoziton vendin tuaj, as e ndan me dikë.</string>
-  <string name="permission_camera_bluetooth_title">Kamerë dhe pajisje atypari</string>
-  <string name="permission_camera_bluetooth_request_body">Që të skanohet kodi QR, Zerion-i lyp leje përdorimi të kamerës.\n\nQë të zbulohen pajisje Bluetooth, Zerion-i lyp leje të gjejë dhe të lidhet me pajisje atypari.</string>
   <string name="permission_camera_denied_body">Keni mohuar hyrjen në kamera, por shtimi i kontakteve lyp përdorimin e kamerës.\n\nJu lutemi, shihni mundësinë e akordimit të hyrjes.</string>
   <string name="permission_location_denied_body">Keni mohuar hyrje te vendndodhja juaj, por Zerion-i ka nevojë për këtë leje, që të mund të zbulojë pajisje Bluetooth.\n\nJu lutemi, shihni mundësinë e akordimit të hyrjes.</string>
   <string name="permission_location_setting_title">Rregullime vendndodhjeje</string>
   <string name="permission_location_setting_body">Që të gjenden pajisje të tjera përmes Bluetooth-i, rregullimi për vendndodhjen e pajisjes tuaj duhet të jetë i aktivizuar. Ju lutemi, që të vazhdohet, aktivizoni vendndodhjen. Më pas, mund ta çaktivizoni prapë.</string>
-  <string name="permission_location_setting_hotspot_body">Që të krijohet një hotspot Wi-Fi, duhet aktivizuar rregullimi për vendndodhje të pajisjes tuaj. Ju lutemi, që të vazhdohet, aktivizoni këtë rregullim. Mund ta çaktivizoni sërish më pas.</string>
   <string name="permission_location_setting_button">Aktivizoni vendndodhje</string>
-  <string name="permission_bluetooth_title">Leje pajisjesh atypari</string>
-  <string name="permission_bluetooth_body">Që të përdoret komunikim Bluetooth, Zerion-i lyp leje të gjejë dhe të lidhet me pajisje atypari.</string>
-  <string name="permission_bluetooth_denied_body">Keni mohuar hyrje te pajisje atyprai, por Zerion-i ka nevojë për këtë leje, që të përdorë Bluetooth-in.\n\nJu lutemi, shihni mundësinë e akordimit të hyrjes.</string>
-  <!--App Locking-->
   <string name="lock_unlock">Shkyçe Zerion-in</string>
   <string name="lock_unlock_verbose">Që të shkyçet Zerion-i, jepni PIN-in, rregullsinë ose fjalëkalimin e pajisjes tuaj</string>
   <string name="lock_unlock_fingerprint_description">Që të vazhdohet, prekni me gishtin e regjistruar ndijuesin e shenjave të gishtave</string>
   <string name="lock_unlock_password">Përdor Fjalëkalim</string>
   <string name="lock_is_locked">Zerion-i është i kyçur</string>
   <string name="lock_tap_to_unlock">Prekeni që të shkyçet</string>
-  <!--Connections Screen-->
+  
   <string name="transports_help_text">Zerion-i mund të lidhet me kontaktet tuaja përmes Interneti, Wi-Fi ose Bluetooth-i.\n\n
 Për privatësi, krejt lidhjet Internet kalojnë përmes rrjetit Tor.\n\n
 Nëse me një kontakt mund të bëhet lidhja përmes metodash të shumta,\n\n
 Zerion-i i përdor ato paralelisht.</string>
-  <!--Share app offline-->
-  <string name="hotspot_title">Ndaje me të tjerë “offline” këtë aplikacion</string>
-  <string name="hotspot_intro">Jepeni këtë aplikacion për dikë atypari pa lidhje Internet, duke përdorur Wi-Fi-n e telefonit tuaj.
-		\n\nTelefoni juaj do të nisë një Wi-Fi hotspot. Persona atypari mund të lidhen me hotspot-in dhe të shkarkojnë aplikacionin Zerion që nga telefoni juaj.</string>
-  <string name="hotspot_button_start_sharing">Nise hotspot-in</string>
-  <string name="hotspot_button_stop_sharing">Ndale hotspot-in</string>
-  <string name="hotspot_progress_text_start">Po ujdiset hotspot…</string>
-  <string name="hotspot_notification_channel_title">Hotspot Wi-Fi</string>
-  <string name="hotspot_notification_title">Dhënie Zerion-i “offline”</string>
-  <string name="hotspot_button_connected">Pasuesi</string>
-  <string name="permission_hotspot_location_request_body">Që të krijohet një hotspot Wi-Fi, Zerion-i lyp leje për të njohur vendndodhjen tuaj.\n\nZerion-i nuk e depoziton apo ia jep dikujt vendndodhjen tuaj.</string>
-  <string name="permission_hotspot_location_request_precise_body">Që të krijohet një hotspot Wi-Fi, Zerion-i lyp leje për të njohur saktësisht vendndodhjen tuaj.\n\nZerion-i nuk e depoziton apo ia jep dikujt atë.</string>
-  <string name="permission_hotspot_location_denied_body">Keni mohuar njohjen e vendndodhjes tuaj, ndërkohë që Zerion-it i duhet kjo leje për të krijuar një hotspot Wi-Fi.\n\nJu lutemi, shihni mundësinë e akordimit të kësaj lejeje.</string>
-  <string name="permission_hotspot_location_denied_precise_body">Keni mohuar njohjen e saktë të vendndodhjes tuaj, ndërkohë që Zerion-it i duhet kjo leje për të krijuar një hotspot Wi-Fi.\n\nJu lutemi, shihni mundësinë e akordimit të kësaj lejeje.</string>
-  <string name="permission_hotspot_nearby_wifi_request_body">Që të krijojë një hotspot Wi-Fi, Zerion-it i duhet leje të përdorë pajisje atypari.</string>
-  <string name="permission_hotspot_nearby_wifi_denied_body">Keni mohuar përdorim pajisjesh atypari, por Zerion-it i duhet kjo leje, që të krijojë një hotspot Wi-Fi.\n\nJu lutemi, shihni mundësinë e lejimit të përdorimit.</string>
-  <string name="wifi_settings_title">Rregullim Wi-Fi-i</string>
-  <string name="wifi_settings_request_enable_body">Që të krijohet një hotspot Wi-Fi, Zerion-it i duhet të përdorë Wi-Fi-n. Ju lutemi, aktivizojeni.</string>
-  <string name="hotspot_tab_manual">Dorazi</string>
-  <!--The placeholder to be inserted into the string 'hotspot_manual_wifi': People can connect by %s-->
-  <!--Wi-Fi setup-->
-  <string name="hotspot_manual_wifi">Telefoni juaj po ofron një hotspot Wi-Fi. Personat që duan të shkarkojnë Zerion-in, mund të lidhen me hotspot-in duke shtuar te te rregullimet e pajisjeve të tyre për Wi-Fi-n hollësitë më poshtë ose duke %s. Kur të jenë lidhur me hotspot-in, shtypni “Pasuesi”.</string>
-  <string name="hotspot_manual_wifi_ssid">Emër rrjet</string>
-  <string name="hotspot_qr_wifi">Telefoni juaj po ofron një hotspot Wi-Fi. Persona që duan të shkarkojnë Zerion-in mund të lidhen me hotspot-in duke skanuar këtë kod QR. Kur të jenë lidhur me hotspot-in, shtypni “Pasuesi”.</string>
-  <string name="hotspot_no_peers_connected">S’ka pajisje të lidhur</string>
-  <plurals name="hotspot_peers_connected">
-    <item quantity="one">%s pajisje e lidhur</item>
-    <item quantity="other">%s pajisje të lidhura</item>
-  </plurals>
-  <!--Download link-->
-  <string name="hotspot_manual_site">Telefoni juaj po ofron një hotspot Wi-Fi. Persona që duan të shkarkojnë Zerion-in mund të lidhen me hotspot-in duke shtypur lidhjen vijuese në një shfletues ose %s.</string>
-  <string name="hotspot_manual_site_address">Adresë (URL)</string>
-  <string name="hotspot_qr_site">Telefoni juaj po ofron një hotspot Wi-Fi. Persona që janë të lidhur me hotspot-in mund të shkarkojnë Zerion-in duke skanuar këtë kod QR.</string>
-  <!--e.g. Download Zerion 1.2.20-->
-  <string name="website_download_title_1">Shkarkoni Zerion %s</string>
-  <string name="website_download_intro_1">Dikush atyparu ju dha Zerion-in</string>
-  <string name="website_download_button">Shkarkojeni Zerion-in</string>
-  <string name="website_download_outro">Pasi të jetë plotësuar shkarkimi, hapni kartelën e shkarkuar dhe instalojeni.</string>
-  <string name="website_troubleshooting_title">Diagnostikim</string>
-  <string name="website_troubleshooting_1">Nëse s’mund të shkarkoni aplikacionin, provoni me një aplikacion tjetër shfletuesi.</string>
-  <string name="website_troubleshooting_2_old">Që të instaloni aplikacionin e shkarkuar, mund t’ju duhet të lejoni instalim aplikacionesh nga “Burime të panjohura”, që nga rregullimet e sistemit. Më pas, mund t’ju duhet të shkarkoni sërish aplikacionin. Rekomandojmë çaktivizimin e rregullimit “Burime të panjohura”, pas instalimit të aplikacionit.</string>
-  <string name="website_troubleshooting_2_new">Që të instaloni aplikacionin e shkarkuar, mund t’ju duhet të lejoni shfletuesin të instalojë aplikacione të panjohura. Pas instalimit të aplikacionit, rekomandojmë çaktivizimin e lejes për instalim aplikacionesh të panjohur nga shfletuesi.</string>
-  <string name="hotspot_help_wifi_title">Probleme me lidhjen me Wi-Fi:</string>
-  <string name="hotspot_help_wifi_1">Provoni çaktivizimin dhe riaktivizimin e Wi-Fi-it në të dy telefonat dhe riprovoni.</string>
-  <string name="hotspot_help_wifi_2">Nëse telefoni juaj ankohet se Wi-Fi s’ka internet, i thoni se dëshironi të jeni i lidhur sido qoftë.</string>
-  <string name="hotspot_help_wifi_3">Rinisni telefonin që xhiron hotspot-in Wi-Fi, mandej rinisni Zerion-in dhe riprovoni ta jepni lidhjen.</string>
-  <string name="hotspot_help_site_title">Probleme në vizita të sajtit vendor:</string>
-  <string name="hotspot_help_site_1">Rikontrolloni se e keni dhënë adresën saktësisht siç shfaqet. Një gabim i vockël mund të bëjë të dështojë.</string>
-  <string name="hotspot_help_site_2">Sigurohuni se telefoni juaj është ende i lidhur me Wi-Fi e duhur (shihni më sipër), kur provoni të hyni te sajti.</string>
-  <string name="hotspot_help_site_3">Nëse keni një aplikacion firewall-i, shihni se mos po e bllokon hyrjen.</string>
-  <string name="hotspot_help_site_4">Nëse mund ta vizitoni sajtin, por jo të shkarkoni aplikacionin Zerion, provoni me një tjetër aplikacion shfletuesi.</string>
-  <string name="hotspot_help_fallback_title">Asgjë s’bën punë?</string>
-  <string name="hotspot_help_fallback_intro">Mund të provoni ta ruani aplikacionin si një kartelë .apk, për ta dhënë me ndonjë rrugë tjetër. Pasi kartela të jetë shpërngulur te pajisja tjetër, mund të përdoret për të instaluar Zerion-in.
-		\n\nNdihmëz: Për ta dhënë përmes Bluetooth-i, mund t’ju duhet së pari ta riemërtoni kartelën, në mënyrë që të përfundojë me .zip.</string>
-  <string name="hotspot_help_fallback_button">Ruaje aplikacionin</string>
-  <!--error handling-->
-  <string name="hotspot_error_intro">Diç shkoi ters teksa provohej të jepej aplikacioni përmes Wi-Fi:</string>
-  <string name="hotspot_error_no_wifi_direct">Pajisja nuk mbulon Wi-Fi Direct</string>
-  <string name="hotspot_error_start_callback_failed">S’u arrit të nisej hotspot-i: gabim %s</string>
-  <string name="hotspot_error_start_callback_failed_unknown">Nga një gabim i panjohur, hotspot-i s’u arrit të nisej, arsye %d</string>
-  <string name="hotspot_error_start_callback_no_group_info">S’u arrit të nisej hotspot-i: pa hollësi grupi</string>
-  <string name="hotspot_error_web_server_start">Gabim në nisjen e shërbyesit</string>
-  <string name="hotspot_error_web_server_serve">Gabim në paraqitjen e sajtit.\n\nJu lutemi, nëse problemi vazhdon, dërgoni njoftim (me të dhëna anonime) përmes aplikacionit Zerion.</string>
-  <string name="hotspot_flag_test">Kujdes: Ky aplikacion qe instaluar me Android Studio dhe NUK mund të instalohet në një pajisje tjetër.</string>
-  <string name="hotspot_error_framework_busy">S’arrihet të niset hotspot-i.\n\nNëse keni një tjetër hotspot në punë, ose e jepni lidhjen tuaj Internet përmes Wi-Fi, provoni ta ndalni dhe të riprovoni pas kësaj.</string>
-  <!--Transfer Data via Removable Drives-->
+  
   <string name="removable_drive_menu_title">Lidhu përmes Disku të Heqshëm</string>
   <string name="removable_drive_intro">Nëse s’lidheni dot me kontaktin tuaj përmes Interneti, Wi-Fi apo Bluetooth-i, Zerion-i mund të shpërngulë mesazhe edhe përmes disqesh të heqshëm, bie fjala një diskth USB, ose një kartë SD.</string>
   <string name="removable_drive_explanation">Nëse s’lidheni dot me kontaktin tuaj përmes Interneti, Wi-Fi apo Bluetooth-i, Zerion-i mund të shpërngulë mesazhe edhe përmes disqesh të heqshëm, bie fjala një diskth USB, ose një kartë SD.\n\nKur përdorni butonin “Dërgo të Dhëna”, çfarëdo të dhënash që po presin të dërgohen te kontakti, do të shkruhen te disku i heqshëm. Kjo përfshin mesazhe privates, bashkëngjitje, blogje, forume dhe grupe private.\n\nPara se të shkruhet te disku i heqshëm, gjithçka do të fshehtëzohet.\n\nKur kontakti juaj merr diskun e heqshëm, ai mund të përdorë butonin “Merr të Dhëna” që të importoni mesazhet në Zerion.</string>
@@ -731,17 +641,17 @@ Zerion-i i përdor ato paralelisht.</string>
   <string name="removable_drive_error_send_text">Pati një gabim gjatë shkrimit të të dhënave te kartela.\n\nNëse po përdorni një disk të heqshëm, sigurohuni se është futur si duhet dhe riprovoni.\n\nNëse gabimi vazhdon, ju lutemi, dërgoni një njoftim për t’ia bërë problemin të ditur ekipit të Zerion-it.</string>
   <string name="removable_drive_error_receive_title">Gabim në importim të dhënash</string>
   <string name="removable_drive_error_receive_text">Kartela e përzgjedhur nuk përmbante ndonjë gjë të kuptueshme nga Zerion-i.\n\nJu lutemi, kontrolloni se keni zgjedhur kartelën e duhur.\n\nNëse kontakti e krijoi kartelën më herët se 28 ditë më parë, Zerion-i s’do të jetë në gjendje ta hapë.</string>
-  <!--Screenshots-->
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
+  
   <string name="screenshot_alice">Mira</string>
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
   <string name="screenshot_bob">Beni</string>
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
   <string name="screenshot_carol">Moza</string>
-  <!--This is a message to be used in screenshots. Please use the same translation for Bob!-->
+  
   <string name="screenshot_message_1">Njatjeta Beni!</string>
-  <!--This is a message to be used in screenshots. Please use the same translation for Alice!-->
+  
   <string name="screenshot_message_2">Njatjeta Mira! Faleminderit që më tregove për Zerion-in!</string>
-  <!--This is a message to be used in screenshots.-->
+  
   <string name="screenshot_message_3">Asgjë, shpresoj të të pëlqejë 😀</string>
 </resources>

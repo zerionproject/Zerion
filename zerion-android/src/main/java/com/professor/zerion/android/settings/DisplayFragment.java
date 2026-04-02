@@ -3,6 +3,7 @@ package com.professor.zerion.android.settings;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -35,6 +36,7 @@ import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static com.professor.zerion.android.AppModule.getAndroidComponent;
 import static com.professor.zerion.android.ZerionApplication.ENTRY_ACTIVITY;
 
+import static com.professor.zerion.android.settings.ChatPreferences.*;
 import static com.professor.zerion.android.settings.SettingsActivity.EXTRA_THEME_CHANGE;
 
 @NotNullByDefault
@@ -51,11 +53,24 @@ public class DisplayFragment extends Fragment {
 	private TextView languageValue;
 	private MaterialCardView themeCard;
 	private TextView themeValue;
+	private MaterialCardView appIconCard;
+	private TextView appIconValue;
+	private MaterialCardView navSizeCard;
+	private TextView navSizeValue;
+	private MaterialCardView textSizeCard;
+	private TextView textSizeValue;
+	private MaterialCardView bubbleColorCard;
+	private TextView bubbleColorValue;
+	private View bubbleColorPreview;
 
 	private String[] languageTags;
 	private CharSequence[] languageEntries;
 	private String currentLanguage = "default";
 	private String currentTheme;
+	private int currentAppIcon;
+	private int currentNavSize;
+	private int currentTextSize;
+	private int currentBubbleColor;
 
 	@Override
 	public void onAttach(@NonNull Context context) {
@@ -79,16 +94,29 @@ public class DisplayFragment extends Fragment {
 		languageValue = view.findViewById(R.id.language_value);
 		themeCard = view.findViewById(R.id.theme_card);
 		themeValue = view.findViewById(R.id.theme_value);
-
+		appIconCard = view.findViewById(R.id.app_icon_card);
+		appIconValue = view.findViewById(R.id.app_icon_value);
+		navSizeCard = view.findViewById(R.id.nav_size_card);
+		navSizeValue = view.findViewById(R.id.nav_size_value);
+		textSizeCard = view.findViewById(R.id.text_size_card);
+		textSizeValue = view.findViewById(R.id.text_size_value);
+		bubbleColorCard = view.findViewById(R.id.bubble_color_card);
+		bubbleColorValue = view.findViewById(R.id.bubble_color_value);
+		bubbleColorPreview = view.findViewById(R.id.bubble_color_preview);
 
 		loadCurrentSettings();
-
-
 		setupLanguageEntries();
-
 
 		languageCard.setOnClickListener(v -> showLanguageDialog());
 		themeCard.setOnClickListener(v -> showThemeDialog());
+		if (appIconCard != null) {
+			appIconCard.setOnClickListener(v -> showAppIconDialog());
+		}
+		if (navSizeCard != null) {
+			navSizeCard.setOnClickListener(v -> showNavSizeDialog());
+		}
+		textSizeCard.setOnClickListener(v -> showTextSizeDialog());
+		bubbleColorCard.setOnClickListener(v -> showBubbleColorDialog());
 	}
 
 	private void loadCurrentSettings() {
@@ -97,6 +125,21 @@ public class DisplayFragment extends Fragment {
 
 		currentTheme = uiPrefs.getString(PREF_THEME, getString(R.string.pref_theme_dark_value));
 		updateThemeDisplay();
+
+		SharedPreferences securePrefs = getAndroidComponent(requireContext())
+				.securePreferences();
+		currentAppIcon = AppIconManager.getCurrentIcon(requireContext());
+		updateAppIconDisplay();
+
+		currentNavSize = securePrefs.getInt(ChatPreferences.PREF_NAV_SIZE,
+				ChatPreferences.NAV_DEFAULT);
+		updateNavSizeDisplay();
+
+		currentTextSize = securePrefs.getInt(PREF_TEXT_SIZE, TEXT_SIZE_MEDIUM);
+		updateTextSizeDisplay();
+
+		currentBubbleColor = securePrefs.getInt(PREF_BUBBLE_COLOR, BUBBLE_BLUE);
+		updateBubbleColorDisplay();
 	}
 
 	private void setupLanguageEntries() {
@@ -246,6 +289,169 @@ public class DisplayFragment extends Fragment {
 		intent.putExtra(EXTRA_THEME_CHANGE, true);
 		startActivity(intent);
 		activity.finish();
+	}
+
+	private void updateAppIconDisplay() {
+		int[] labels = {
+				R.string.pref_app_icon_default,
+				R.string.pref_app_icon_calculator,
+				R.string.pref_app_icon_notes,
+				R.string.pref_app_icon_weather
+		};
+		int idx = currentAppIcon;
+		if (idx < 0 || idx >= labels.length) idx = AppIconManager.ICON_DEFAULT;
+		if (appIconValue != null) appIconValue.setText(labels[idx]);
+	}
+
+	private void showAppIconDialog() {
+		String[] entries = {
+				getString(R.string.pref_app_icon_default),
+				getString(R.string.pref_app_icon_calculator),
+				getString(R.string.pref_app_icon_notes),
+				getString(R.string.pref_app_icon_weather)
+		};
+
+		new MaterialAlertDialogBuilder(requireContext())
+				.setTitle(R.string.pref_app_icon_title)
+				.setSingleChoiceItems(entries, currentAppIcon, (dialog, which) -> {
+					if (which != currentAppIcon) {
+						currentAppIcon = which;
+						AppIconManager.setAppIcon(requireContext(), which);
+						updateAppIconDisplay();
+						android.widget.Toast.makeText(requireContext(),
+								R.string.pref_app_icon_restart_hint,
+								android.widget.Toast.LENGTH_SHORT).show();
+					}
+					dialog.dismiss();
+				})
+				.setNegativeButton(R.string.cancel, null)
+				.show();
+	}
+
+	private void updateNavSizeDisplay() {
+		int[] labels = {
+				R.string.pref_nav_size_compact,
+				R.string.pref_nav_size_default,
+				R.string.pref_nav_size_large
+		};
+		int idx = currentNavSize;
+		if (idx < 0 || idx >= labels.length) idx = ChatPreferences.NAV_DEFAULT;
+		if (navSizeValue != null) navSizeValue.setText(labels[idx]);
+	}
+
+	private void showNavSizeDialog() {
+		String[] entries = {
+				getString(R.string.pref_nav_size_compact),
+				getString(R.string.pref_nav_size_default),
+				getString(R.string.pref_nav_size_large)
+		};
+
+		new MaterialAlertDialogBuilder(requireContext())
+				.setTitle(R.string.pref_nav_size_title)
+				.setSingleChoiceItems(entries, currentNavSize, (dialog, which) -> {
+					if (which != currentNavSize) {
+						currentNavSize = which;
+						SharedPreferences securePrefs =
+								getAndroidComponent(requireContext())
+										.securePreferences();
+						securePrefs.edit()
+								.putInt(ChatPreferences.PREF_NAV_SIZE, which)
+								.apply();
+						updateNavSizeDisplay();
+					}
+					dialog.dismiss();
+				})
+				.setNegativeButton(R.string.cancel, null)
+				.show();
+	}
+
+	private void updateTextSizeDisplay() {
+		int[] labels = {
+				R.string.pref_text_size_small,
+				R.string.pref_text_size_medium,
+				R.string.pref_text_size_large,
+				R.string.pref_text_size_extra_large
+		};
+		int idx = currentTextSize;
+		if (idx < 0 || idx >= labels.length) idx = TEXT_SIZE_MEDIUM;
+		textSizeValue.setText(labels[idx]);
+	}
+
+	private void updateBubbleColorDisplay() {
+		int[] labels = {
+				R.string.pref_bubble_color_blue,
+				R.string.pref_bubble_color_purple,
+				R.string.pref_bubble_color_green,
+				R.string.pref_bubble_color_orange,
+				R.string.pref_bubble_color_pink,
+				R.string.pref_bubble_color_cyan
+		};
+		int[] colors = {
+				R.color.bubble_blue,
+				R.color.bubble_purple,
+				R.color.bubble_green,
+				R.color.bubble_orange,
+				R.color.bubble_pink,
+				R.color.bubble_cyan
+		};
+		int idx = currentBubbleColor;
+		if (idx < 0 || idx >= labels.length) idx = BUBBLE_BLUE;
+		bubbleColorValue.setText(labels[idx]);
+		if (bubbleColorPreview.getBackground() instanceof GradientDrawable) {
+			((GradientDrawable) bubbleColorPreview.getBackground())
+					.setColor(requireContext().getResources()
+							.getColor(colors[idx], requireContext().getTheme()));
+		}
+	}
+
+	private void showTextSizeDialog() {
+		String[] entries = {
+				getString(R.string.pref_text_size_small),
+				getString(R.string.pref_text_size_medium),
+				getString(R.string.pref_text_size_large),
+				getString(R.string.pref_text_size_extra_large)
+		};
+
+		new MaterialAlertDialogBuilder(requireContext())
+				.setTitle(R.string.pref_text_size_title)
+				.setSingleChoiceItems(entries, currentTextSize, (dialog, which) -> {
+					if (which != currentTextSize) {
+						currentTextSize = which;
+						SharedPreferences securePrefs = getAndroidComponent(requireContext())
+								.securePreferences();
+						securePrefs.edit().putInt(PREF_TEXT_SIZE, which).apply();
+						updateTextSizeDisplay();
+					}
+					dialog.dismiss();
+				})
+				.setNegativeButton(R.string.cancel, null)
+				.show();
+	}
+
+	private void showBubbleColorDialog() {
+		String[] entries = {
+				getString(R.string.pref_bubble_color_blue),
+				getString(R.string.pref_bubble_color_purple),
+				getString(R.string.pref_bubble_color_green),
+				getString(R.string.pref_bubble_color_orange),
+				getString(R.string.pref_bubble_color_pink),
+				getString(R.string.pref_bubble_color_cyan)
+		};
+
+		new MaterialAlertDialogBuilder(requireContext())
+				.setTitle(R.string.pref_bubble_color_title)
+				.setSingleChoiceItems(entries, currentBubbleColor, (dialog, which) -> {
+					if (which != currentBubbleColor) {
+						currentBubbleColor = which;
+						SharedPreferences securePrefs = getAndroidComponent(requireContext())
+								.securePreferences();
+						securePrefs.edit().putInt(PREF_BUBBLE_COLOR, which).apply();
+						updateBubbleColorDisplay();
+					}
+					dialog.dismiss();
+				})
+				.setNegativeButton(R.string.cancel, null)
+				.show();
 	}
 
 	@Override

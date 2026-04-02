@@ -1,6 +1,6 @@
-﻿<?xml version='1.0' encoding='UTF-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
-	<!--Setup-->
+	
 	<string name="setup_title">Welkom bij Zerion</string>
 	<string name="setup_name_explanation">Je bijnaam wordt getoond bij alle content die je post. Nadat je account is aangemaakt is het niet mogelijk je bijnaam te wijzigen.</string>
 	<string name="setup_next">Volgende</string>
@@ -24,7 +24,7 @@
 	<string name="dnkm_huawei_protected_help">Als Zerion niet is toegevoegd aan de beschermde apps, is het niet mogelijk om het in de achtergrond uit te voeren.</string>
 	<string name="dnkm_xiaomi_button">Bescherm Zerion</string>
 	<string name="dnkm_warning_dozed">%s kon niet in de achtergrond worden uitgevoerd</string>
-	<!--Login-->
+	
 	<string name="enter_password">Wachtwoord</string>
 	<string name="try_again">Verkeerd wachtwoord, probeer het nog een keer</string>
 	<string name="dialog_title_cannot_check_password">Kan wachtwoord niet controleren</string>
@@ -46,17 +46,17 @@
   <string name="startup_open_database">Database aan het ontsleutelen…</string>
   <string name="startup_migrate_database">Database aan het upgraden…</string>
   <string name="startup_compact_database">Database comprimeren...</string>
-  <!--Navigation Drawer-->
+  
   <string name="nav_drawer_open_description">Open de navigatielade</string>
   <string name="nav_drawer_close_description">Sluit de navigatielade</string>
   <string name="contact_list_button">Contacten</string>
   <string name="groups_button">Privégroepen</string>
-  <!--This is part of the main menu. The app will be locked when this is tapped.-->
+  
   <string name="lock_button">App vergrendelen</string>
   <string name="settings_button">Instellingen</string>
   <string name="sign_out_button">Log uit</string>
   <string name="transports_onboarding_text">Tik hier om in te stellen hoe Zerion een verbinding met je contacten opzet.</string>
-  <!--Transports: Tor-->
+  
   <string name="transport_tor">Internet</string>
   <string name="tor_device_status_online_wifi">Je apparaat heeft internettoegang via wifi</string>
   <string name="tor_device_status_online_mobile">Je apparaat heeft internettoegang via mobiele dataverbinding</string>
@@ -68,10 +68,10 @@
   <string name="tor_plugin_status_disabled_mobile_data">Zerion is geconfigureerd om mobiele dataverbinding niet te gebruiken</string>
   <string name="tor_plugin_status_disabled_battery">Zerion is geconfigureerd om het internet niet te gebruiken als apparaat op batterij loopt</string>
   <string name="tor_plugin_status_disabled_country_blocked">Zerion is geconfigureerd om internet niet te gebruiken in dit land</string>
-  <!--Transports: Wi-Fi-->
+  
   <string name="transport_lan_long">Hetzelfde wifinetwerk</string>
-  <!--Transports: Bluetooth-->
-  <!--Notifications-->
+  
+  
   <string name="reminder_notification_title">Uitgelogd van Zerion</string>
   <string name="reminder_notification_text">Tik om opnieuw in te loggen.</string>
   <string name="reminder_notification_channel_title">Zerion inlogherinnering</string>
@@ -86,7 +86,7 @@
     <item quantity="one">Nieuw groepsbericht.</item>
     <item quantity="other">%d nieuwe groepsberichten.</item>
   </plurals>
-  <!--Misc-->
+  
   <string name="now">nu</string>
   <string name="show">Toon</string>
   <string name="hide">Verberg</string>
@@ -114,7 +114,7 @@
   <string name="error_start_activity">Onbeschikbaar op jouw systeem</string>
   <string name="status_heading">Status:</string>
   <string name="error">Fout</string>
-  <!--Contacts and Private Conversations-->
+  
   <string name="no_contacts">Er zijn geen contacten om te tonen</string>
   <string name="no_contacts_action">Tik op het +-icoon om een contact toe te voegen</string>
   <string name="date_no_private_messages">Geen berichten.</string>
@@ -127,10 +127,10 @@
   <string name="image_attach_error_invalid_mime_type">Bestandsformaat wordt niet ondersteund: %s</string>
   <string name="set_contact_alias">Verander naam van contact</string>
   <string name="set_contact_alias_hint">Contactnaam</string>
-  <!--The first placeholder will show a duration like "7 days". The second placeholder at the end will add "Tap to learn more."-->
-  <!--The placeholder at the end will add "Tap to learn more."-->
-  <!--The first placeholder will show a contact's name. The second placeholder will show a duration like "7 days". The third placeholder at the end will add "Tap to learn more."-->
-  <!--The first placeholder will show a contact's name. The second placeholder at the end will add "Tap to learn more."-->
+  
+  
+  
+  
   <string name="delete_all_messages">Verwijder alle berichten</string>
   <string name="dialog_title_delete_all_messages">Bevestig verwijderen berichten</string>
   <string name="dialog_message_delete_all_messages">Weet je zeker dat je alle berichten wil verwijderen?</string>
@@ -145,7 +145,7 @@
   <string name="dialog_title_delete_contact">Bevestig verwijderen contact</string>
   <string name="dialog_message_delete_contact">Weet je zeker dat je dit contact en alle berichten die met dit contact zijn uitgewisseld wil verwijderen?</string>
   <string name="contact_deleted_toast">Contact is verwijderd</string>
-  <!--This is shown in the action bar when opening an image in fullscreen that the user sent-->
+  
   <string name="you">Jij</string>
   <string name="save_image">Sla afbeelding op</string>
   <string name="dialog_title_save_image">Sla afbeelding op?</string>
@@ -158,7 +158,7 @@
   <string name="dialog_message_image_support">Tik op dit icoon om afbeelding bij te sluiten.</string>
   <string name="messaging_too_many_attachments_toast">Alleen de eerste %d afbeeldingen worden verstuurd</string>
   <string name="menu_contact">Contact</string>
-  <!--Adding Contacts-->
+  
   <string name="add_contact_title">Voeg contact in de buurt toe</string>
   <string name="continue_button">Ga verder</string>
   <string name="try_again_button">Probeer nog een keer</string>
@@ -173,7 +173,7 @@
   <string name="authenticating_with_device">Aan het authenticeren met apparaat\u2026</string>
   <string name="connection_error_title">Kon geen verbinding maken met je contact</string>
   <string name="connection_error_feedback">Als dit probleem aanhoudt, <a href="feedback">stuur feedback</a> alsjeblieft om ons te helpen de app te verbeteren.</string>
-  <!--Adding Contacts Remotely-->
+  
   <string name="add_contact_remotely_title_case">Voeg een contact ver weg toe</string>
   <string name="add_contact_nearby_title">Voeg contact dat in de buurt is toe</string>
   <string name="add_contact_remotely_title">Voeg een contact dat niet in de buurt is toe</string>
@@ -206,9 +206,9 @@
   <string name="unsupported_link">Deze link komt van een nieuwe versie van Zerion. Upgrade alsjeblieft naar de laatste versie en probeer het nog eens.</string>
   <string name="intent_own_link">Je hebt je eigen link geopend. Gebruik de link van jouw contact die je wil toevoegen!</string>
   <string name="missing_link">Voeg a.u.b. link in</string>
-  <!--This is a numeral indicating the first step in a series of screens-->
+  
   <string name="step_1">1</string>
-  <!--This is a numeral indicating the second step in a series of screens-->
+  
   <string name="step_2">2</string>
   <plurals name="contact_added_notification_text">
     <item quantity="one">Nieuw contact toegevoegd</item>
@@ -218,17 +218,13 @@
   <string name="duplicate_link_dialog_title">Duplicate link</string>
   <string name="duplicate_link_dialog_text_1">Je hebt al een wachtend contact met deze link: %s</string>
   <string name="duplicate_link_dialog_text_1_contact">Je hebt al een contact met deze link: %s</string>
-  <!--This is a question asking whether two nicknames refer to the same person-->
-  <!--This is a button for answering that two nicknames do indeed refer to the same person. This
-	string will be used in a dialog button, so if the translation of this string is longer than 20
-	characters, please use "Yes" instead, and use "No" for the "Different Person" button-->
+  
+  
   <string name="same_person_button">Zelfde persoon</string>
-  <!--This is a button for answering that two nicknames refer to different people. This string
-	will be used in a dialog button, so if the translation of this string longer than 20 characters,
-	please use "No" instead, and use "Yes" for the "Same Person" button-->
+  
   <string name="different_person_button">Ander persoon</string>
   <string name="pending_contact_updated_toast">Wachtend contact is bijgewerkt</string>
-  <!--Introductions-->
+  
   <string name="introduction_onboarding_title">Introduceer je contacten</string>
   <string name="introduction_onboarding_text">Je kan je contacten aan elkaar introduceren zodat ze niet in levenden lijve elkaar te hoeven ontmoeten om op Zerion in contact te komen.</string>
   <string name="introduction_menu_item">Introduceer</string>
@@ -249,10 +245,7 @@
   <string name="introduction_response_accepted_received">%1$s heeft de introductie aan %2$s geaccepteerd.</string>
   <string name="introduction_response_declined_received">%1$s heeft de introductie aan %2$s afgewezen.</string>
   <string name="introduction_response_declined_received_by_introducee">%1$s zegt dat %2$s je introductie heeft afgewezen.</string>
-  <!--Connect via Bluetooth-->
-  <string name="menu_item_connect_via_bluetooth">Verbind via Bluetooth</string>
-  <string name="connect_via_bluetooth_title">Verbind via Bluetooth</string>
-  <!--Private Groups-->
+  
   <string name="groups_list_empty">Er zijn geen groepen om te tonen</string>
   <string name="groups_list_empty_action">Tik op het +-icoon om een groep aan te maken of vraag een van je contacten om een groep met je te delen</string>
   <string name="groups_created_by">Is aangemaakt door %s</string>
@@ -283,7 +276,7 @@
   <string name="groups_dissolve_button">Hef op</string>
   <string name="groups_dissolved_dialog_title">Groep is opgeheven</string>
   <string name="groups_dissolved_dialog_message">De maker van deze groep heeft deze opgeheven.\n\nJe kan niet langer berichten aan de groep sturen en het zou kunnen dat je niet alle posts hebt ontvangen die aan deze groep zijn verstuurd.</string>
-  <!--Private Group Invitations-->
+  
   <string name="groups_invitations_title">Groepsuitnodigingen</string>
   <string name="groups_invitations_invitation_sent">Je hebt %1$s uitgenodigd om lid te worden van de groep \"%2$s\".</string>
   <string name="groups_invitations_invitation_received">%1$s heeft je uitgenodigd om lid te worden van de groep \"%2$s\".</string>
@@ -298,14 +291,14 @@
   <string name="groups_invitations_response_accepted_received">%s heeft de groepsuitnodiging geaccepteerd.</string>
   <string name="groups_invitations_response_declined_received">%s heeft de groepsuitnodiging afgewezen.</string>
   <string name="sharing_status_groups">Alleen degene die een groep heeft aangemaakt kan nieuwe leden voor die groep uitnodigen. Hieronder staan alle huidige leden van de groep.</string>
-  <!--Private Groups Revealing Contacts-->
+  
   <string name="groups_reveal_contacts">Openbaar contacten</string>
   <string name="groups_reveal_dialog_message">Je kan ervoor kiezen om contacten te openbaren aan alle huidige en toekomstige leden van deze groep.\n\nOpenbaren van contacten maakt je verbinding met de groep sneller en betrouwbaarder omdat je kan communiceren met geopenbaarde contacten, zelfs als degene die de groep heeft aangemaakt offline is.</string>
   <string name="groups_reveal_visible">Contactrelatie is zichtbaar voor de groep</string>
   <string name="groups_reveal_visible_revealed_by_us">Contactrelatie is zichtbaar voor de groep (door jou geopenbaard)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Contactrelaties zijn zichtbaar voor de groep (geopenbaard door %s)</string>
   <string name="groups_reveal_invisible">Contactrelatie is niet zichtbaar voor de groep</string>
-  <!--Forums-->
+  
   <string name="no_posts">Geen posts</string>
   <plurals name="posts">
     <item quantity="one">%d post</item>
@@ -313,7 +306,7 @@
   </plurals>
   <string name="btn_reply">Antwoord</string>
   <string name="dialog_button_leave">Verlaat</string>
-  <!--Forum Sharing-->
+  
   <string name="contacts_selected">Contacten geselecteerd</string>
   <string name="activity_share_toolbar_header">Kies contacten</string>
   <string name="no_contacts_selector">Er zijn geen contacten om te tonen</string>
@@ -322,16 +315,16 @@
   <string name="sharing_status">Deelstatus</string>
   <string name="shared_with">Is gedeeld met %1$d (%2$d online)</string>
   <string name="nobody">Niemand</string>
-  <!--Blogs-->
+  
   <string name="read_more">lees meer</string>
-  <!--Blog Sharing-->
-  <!--RSS Feeds-->
-  <!--Settings Profile Picture-->
+  
+  
+  
   <string name="change_profile_picture">Tik om je profielfoto te wijzigen</string>
   <string name="dialog_confirm_profile_picture_title">Wijzig profielfoto</string>
   <string name="dialog_confirm_profile_picture_remark">Alleen je contacten kunnen deze afbeelding zien</string>
   <string name="change_profile_picture_failed_message">Excuses, maar er is iets misgegaan met het updaten van je profielfoto</string>
-  <!--Settings Display-->
+  
   <string name="pref_language_title">Taal &amp; regio</string>
   <string name="pref_language_changed">Deze instelling zal werken wanneer u Zerion opnieuw opstart. Gelieve uit te loggen en Zerion opnieuw te starten.</string>
   <string name="pref_language_default">Systeemstandaard</string>
@@ -341,9 +334,8 @@
   <string name="pref_theme_dark">Donker</string>
   <string name="pref_theme_auto">Automatisch (overdag)</string>
   <string name="pref_theme_system">Systeemstandaard</string>
-  <!--Settings Connections-->
+  
   <string name="network_settings_title">Verbindingen</string>
-  <string name="bluetooth_setting">Verbind met contacten via bluetooth</string>
   <string name="wifi_setting">Verbind met contacten over hetzelfde wifinetwerk</string>
   <string name="tor_enable_title">Verbind met contacten over het internet</string>
   <string name="tor_enable_summary">Alle verbindingen gaan door het Tornetwerk voor privacy</string>
@@ -352,28 +344,28 @@
   <string name="tor_network_setting_without_bridges">Gebruikt Tornetwerk zonder bridges</string>
   <string name="tor_network_setting_with_bridges">Gebruik Tornetwerk met bridges</string>
   <string name="tor_network_setting_never">Verbind niet met het internet</string>
-  <!--How and when Zerion will connect to Tor: E.g. "Don't connect to the Internet (in China)" or "Use Tor network with bridges (in Belarus)"-->
+  
   <string name="tor_network_setting_summary">Automatisch: %1$s (in %2$s)</string>
   <string name="tor_mobile_data_title">Gebruik mobiele data</string>
   <string name="tor_only_when_charging_title">Verbind alleen met het internet tijdens opladen</string>
   <string name="tor_only_when_charging_summary">Schakel internetverbinding uit als apparaat op batterij loopt</string>
-  <!--Settings Security and Panic-->
+  
   <string name="security_settings_title">Beveiliging</string>
   <string name="pref_lock_title">App-vergrendeling</string>
   <string name="pref_lock_summary">Gebruik de schermvergrendeling van het apparaat om Zerion te beschermen terwijl je bent ingelogd</string>
   <string name="pref_lock_disabled_summary">Stel een schermvergrendeling in op je apparaat om deze feature te gebruiken</string>
   <string name="pref_lock_timeout_title">App-vergrendeling inactiviteitstime-out</string>
-  <!--The %s placeholder is replaced with the following time spans, e.g. 5 Minutes, 1 Hour-->
+  
   <string name="pref_lock_timeout_summary">Als Zerion niet wordt gebruikt, vergrendel automatisch na %s</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_1">1 minuut</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_5">5 minuten</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_15">15 minuten</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_30">30 minuten</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_60">1 uur</string>
   <string name="pref_lock_timeout_never">Nooit</string>
   <string name="pref_lock_timeout_never_summary">Vergrendel Zerion nooit automatisch</string>
@@ -396,7 +388,7 @@
   <string name="panic_setting_signout_summary">Log uit op Zerion als de paniekknop wordt ingedrukt.</string>
   <string name="purge_setting_title">Verwijder account</string>
   <string name="purge_setting_summary">Verwijder je Zerion-account als een paniekknop wordt ingedrukt. Let op: dit zal permanent je identiteit, contacten en berichten verwijderen.</string>
-  <!--Settings Notifications-->
+  
   <string name="notification_settings_title">Meldingen</string>
   <string name="notify_sign_in_title">Herinner me om in te loggen</string>
   <string name="notify_sign_in_summary">Stuur een herinnering wanneer de telefoon opstart of als de app is bijgewerkt</string>
@@ -412,17 +404,17 @@
   <string name="notify_sound_setting_disabled">Geen</string>
   <string name="choose_ringtone_title">Kies meldingsgeluid</string>
   <string name="cannot_load_ringtone">Kan meldingsgeluid niet laden</string>
-  <!--Conversation Settings-->
+  
   <string name="learn_more">Meer info</string>
-  <!--Settings Actions-->
+  
   <string name="pref_category_actions">Acties</string>
   <string name="send_feedback">Verstuur feedback</string>
-  <!--Link Warning-->
+  
   <string name="link_warning_title">Linkwaarschuwing</string>
   <string name="link_warning_intro">Je staat op het punt om de volgende link te open met een externe app.</string>
   <string name="link_warning_text">Dit kan worden gebruikt om je te identificeren. Denk goed na of je de persoon die je deze link heeft gestuurd wil vertrouwen en overweeg om deze te openen met een Tor-browser.</string>
   <string name="link_warning_open_link">Open link</string>
-  <!--Crash Reporter-->
+  
   <string name="crash_report_title">Zerion Crashrapport</string>
   <string name="not_your_fault">Dit is niet jouw schuld</string>
   <string name="please_send_report">Help ons alsjeblieft om Zerion te verbeteren door crashrapporten naar ons te sturen.</string>
@@ -449,15 +441,15 @@
   <string name="dev_report_sent">Feedback is verzonden</string>
   <string name="dev_report_saved">Rapport is opgeslagen. Het zal worden verstuurd als je de volgende keer inlogt op Zerion </string>
   <string name="dev_report_error">Fout: Verzenden van rapport is gefaald</string>
-  <!--Sign Out-->
+  
   <string name="progress_title_logout">Uitloggen bij Zerion…</string>
-  <!--Screen Filters & Tapjacking-->
+  
   <string name="screen_filter_title">Schermoverlay is gedetecteerd</string>
   <string name="screen_filter_body">Een andere app tekent bovenop Zerion. Om je veiligheid te beschermen zal Zerion niet reageren op aanrakingen als er een andere app bovenop ligt.\n\nDe volgende apps proberen waarschijnlijk dit te doen:\n\n%1$s</string>
   <string name="screen_filter_body_api_30">Een andere app wordt voor Zerion getoond. Voor veiligheidsredenen zal Zerion niet reageren op input als er een andere app voor wordt getoond.\n\nHerzie de apps hieronder om de verantwoordelijke app te vinden.</string>
   <string name="screen_filter_allow">Sta toe dat deze apps weergeven vóór andere apps.</string>
   <string name="screen_filter_review_apps">Herzie apps</string>
-  <!--Permission Requests-->
+  
   <string name="permission_camera_title">Cameratoestemming</string>
   <string name="permission_camera_request_body">Om de QR-code te scannen moet Zerion toegang hebben tot de camera.</string>
   <string name="permission_location_title">Toegang tot locatie</string>
@@ -466,42 +458,32 @@
   <string name="permission_camera_location_request_body">Om de QR-code in te scannen heeft Zerion toegang nodig tot de camera.\n\nOm bluetoothapparaten te ontdekken heeft Zerion toestemming nodig tot je locatie.\n\nZerion slaat je locatie niet op en deelt het met niemand.</string>
   <string name="permission_camera_denied_body">Je hebt toegang tot de camera niet vrijgegeven, terwijl het toevoegen van contacten de camera nodig heeft.\n\nOverweeg alsjeblieft toegang vrij te geven.</string>
   <string name="permission_location_denied_body">Je hebt geen toegang tot je locatie gegeven, maar Zerion heeft deze rechten nodig om apparaten via bluetooth te vinden.\n\nOverweeg a.u.b. deze rechten te geven.</string>
-  <!--App Locking-->
+  
   <string name="lock_unlock">Ontgrendel Zerion</string>
   <string name="lock_unlock_verbose">Voer je apparaat PIN, patroon of wachtwoord in om Zerion te ontgrendelen</string>
   <string name="lock_unlock_fingerprint_description">Raak met de geregistreerde vinger de vingerafdrukscanner aan om door te gaan</string>
   <string name="lock_unlock_password">Gebruik Wachtwoord</string>
   <string name="lock_is_locked">Zerion is vergrendeld</string>
   <string name="lock_tap_to_unlock">Tik om te ontgrendelen</string>
-  <!--Connections Screen-->
+  
   <string name="transports_help_text">Zerion kan met je contacten verbinden via het internet, wifi of bluetooth.\n\nAlle internetverbindingen gaan voor privacy door het Tornetwerk.\n\nAls een contact via meerdere methoden te bereiken is, zal Zerion die parallel gebruiken.</string>
-  <!--Share app offline-->
-  <string name="hotspot_notification_channel_title">Wifi-hotspot</string>
-  <string name="hotspot_button_connected">Volgende</string>
-  <string name="hotspot_tab_manual">Handmatig</string>
-  <!--The placeholder to be inserted into the string 'hotspot_manual_wifi': People can connect by %s-->
-  <!--Wi-Fi setup-->
-  <!--Download link-->
-  <!--e.g. Download Zerion 1.2.20-->
-  <string name="website_troubleshooting_title">Probleem oplossen</string>
-  <!--error handling-->
-  <!--Transfer Data via Removable Drives-->
+  
   <string name="removable_drive_success_receive_title">Importeren geslaagd</string>
-  <!--Screenshots-->
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
+  
   <string name="screenshot_alice">Veerle</string>
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
   <string name="screenshot_bob">Soem</string>
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
   <string name="screenshot_carol">Rob</string>
-  <!--This is a message to be used in screenshots. Please use the same translation for Bob!-->
+  
   <string name="screenshot_message_1">Hoi Soem!</string>
-  <!--This is a message to be used in screenshots. Please use the same translation for Alice!-->
+  
   <string name="screenshot_message_2">Hoi Veerle! Bedankt dat je me Zerion hebt laten zien!</string>
-  <!--This is a message to be used in screenshots.-->
+  
   <string name="screenshot_message_3">Geen probleem, ik hoop dat je het handig vindt! 😀</string>
 
-	<!-- Vault strings -->
+	
 	<string name="vault_unlock_button">Ontgrendelen</string>
 	<string name="vault_password_mismatch">Wachtwoorden komen niet overeen</string>
 	<string name="vault_password_too_short">Wachtwoord moet minimaal 8 tekens bevatten</string>
@@ -525,27 +507,27 @@
 	<string name="vault_enable_biometric">Biometrisch ontgrendelen inschakelen</string>
 	<string name="vault_auto_lock_timeout">Automatische vergrendelingstijd</string>
 
-	<!-- Security strings -->
+	
 	<string name="security_threat_detected">Beveiligingsdreiging gedetecteerd. Controleer uw apparaat op schadelijke software.</string>
 	<string name="pref_screenshot_protection_title">Schermafbeeldingbescherming</string>
 	<string name="pref_screenshot_protection_summary">Voorkom schermafbeeldingen en schermopnames van gevoelige inhoud</string>
 	<string name="security_warning_title">Beveiligingswaarschuwing</string>
 
-	<!-- Tor status strings -->
+	
 	<string name="tor_status_title">Tor-netwerkstatus</string>
 	<string name="tor_status_connected">Verbonden met Tor-netwerk</string>
 	<string name="tor_status_disconnected">Verbroken van Tor-netwerk</string>
 	<string name="tor_status_connecting">Verbinding maken met Tor-netwerk…</string>
 
-	<!-- Voice Call strings -->
+	
 	<string name="voice_call">Spraakoproep</string>
 
-	<!-- Disappearing messages -->
+	
 	<string name="menu_item_disappearing_messages">Verdwijnende berichten</string>
 	<string name="disappearing_messages_setting_description">Berichten verdwijnen automatisch na de geselecteerde tijd</string>
 	<string name="off">Uit</string>
 
-	<!-- Post-Quantum Security Level strings -->
+	
 	<string name="security_level_post_quantum">Post-Quantum Beveiliging</string>
 	<string name="security_level_post_quantum_short">PQ</string>
 	<string name="security_level_classical">Klassieke Beveiliging</string>
@@ -553,14 +535,14 @@
 	<string name="security_level_post_quantum_description">Dit contact gebruikt hybride post-quantum cryptografie (X25519 + ML-KEM-768), wat bescherming biedt tegen toekomstige kwantumcomputeraanvallen.</string>
 	<string name="security_level_classical_description">Dit contact gebruikt klassieke cryptografie. Upgrade beide apps naar Zerion voor post-quantum beveiliging.</string>
 
-	<!-- Brute Force Protection strings -->
+	
 	<string name="login_account_locked">Account vergrendeld vanwege te veel mislukte pogingen. Wacht alstublieft %1$d minuten en %2$d seconden.</string>
 	<string name="login_final_warning">WAARSCHUWING: Na nog 3 mislukte pogingen worden alle gegevens permanent verwijderd voor de veiligheid.</string>
 	<string name="login_attempts_remaining">Ongeldig wachtwoord. Nog %d pogingen over voordat account wordt vergrendeld.</string>
 	<string name="login_data_wiped_title">Beveiligingsprotectie Geactiveerd</string>
 	<string name="login_data_wiped_message">Alle gegevens zijn permanent verwijderd vanwege herhaalde mislukte inlogpogingen. Dit is een beveiligingsfunctie om uw gegevens te beschermen.</string>
 
-	<!-- Wipe Password strings -->
+	
 	<string name="wipe_password_title">Wiswachtwoord</string>
 	<string name="wipe_password_summary">Stel een wachtwoord in dat alle gegevens onmiddellijk wist bij invoer</string>
 	<string name="wipe_password_summary_enabled">Wiswachtwoord is actief</string>
@@ -584,14 +566,14 @@
 	<string name="set">Instellen</string>
 	<string name="remove">Verwijderen</string>
 
-	<!-- Voice Call Screen -->
+	
 	<string name="zerion_call">Zerion-oproep</string>
 	<string name="call_connecting">Verbinden…</string>
 	<string name="mute">Dempen</string>
 	<string name="speaker">Luidspreker</string>
 	<string name="end_call">Oproep beëindigen</string>
 
-	<!-- Contact Type Selection -->
+	
 	<string name="contact_type_selection_title">Kies Verbindingstype</string>
 	<string name="contact_type_selection_subtitle">Selecteer hoe u met uw contact wilt verbinden</string>
 	<string name="contact_type_zerion_title">Zerion</string>

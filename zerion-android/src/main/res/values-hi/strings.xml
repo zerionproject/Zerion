@@ -1,6 +1,6 @@
-﻿<?xml version='1.0' encoding='UTF-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
-	<!--Setup-->
+	
 	<string name="setup_title">Zerion में आपका स्वागत है</string>
 	<string name="setup_name_explanation">आपके उपनाम आप पोस्ट किसी भी सामग्री के बगल में दिखाया जाएगा। आप अपना खाता बनाने के बाद इसे बदल नहीं सकते</string>
 	<string name="setup_next">अगला</string>
@@ -23,7 +23,7 @@
 	<string name="dnkm_huawei_protected_button">Zerion की रक्षा करें</string>
 	<string name="dnkm_huawei_protected_help">अगर Zerion संरक्षित ऐप्स सूची में नहीं जोड़ा गया है, तो यह पृष्ठभूमि में चलने में असमर्थ होगा।</string>
 	<string name="dnkm_warning_dozed">%sपृष्ठभूमि में चलाने में असमर्थ था</string>
-	<!--Login-->
+	
 	<string name="enter_password">पासवर्ड</string>
 	<string name="try_again">गलत पासवर्ड, फिर से प्रयास करें</string>
 	<string name="sign_in_button">साइन इन करें</string>
@@ -46,20 +46,20 @@
   <string name="startup_open_database">डेटाबेस डिक्रिप्ट कर रहा है ...</string>
   <string name="startup_migrate_database">डाटाबेस का उन्नयन ...</string>
   <string name="startup_compact_database">डेटाबेस को कॉम्पैक्ट कर रहा है ...</string>
-  <!--Navigation Drawer-->
+  
   <string name="nav_drawer_open_description">नेविगेशन ड्रॉवर खोलें</string>
   <string name="nav_drawer_close_description">नेविगेशन ड्रॉवर को बंद करें</string>
   <string name="contact_list_button">संपर्क</string>
   <string name="groups_button">निजी समूह</string>
-  <!--This is part of the main menu. The app will be locked when this is tapped.-->
+  
   <string name="lock_button">लॉक ऐप</string>
   <string name="settings_button">सेटिंग्स</string>
   <string name="sign_out_button">साइन आउट</string>
-  <!--Transports: Tor-->
+  
   <string name="transport_tor">इंटरनेट</string>
-  <!--Transports: Wi-Fi-->
-  <!--Transports: Bluetooth-->
-  <!--Notifications-->
+  
+  
+  
   <string name="reminder_notification_title">Zerion  से साइन आउट हो रहा है ...</string>
   <string name="reminder_notification_text">वापस साइन इन करने के लिए टैप करें।</string>
   <string name="reminder_notification_channel_title">Zerion साइन-इन अनुस्मारक</string>
@@ -74,7 +74,7 @@
     <item quantity="one">नया समूह संदेश</item>
     <item quantity="other">%dनया समूह संदेश</item>
   </plurals>
-  <!--Misc-->
+  
   <string name="now">अभी व</string>
   <string name="show">दिखाना</string>
   <string name="hide">छिपाना</string>
@@ -99,7 +99,7 @@
   <string name="help">सहायता</string>
   <string name="sorry">माफ़ कीजिये</string>
   <string name="status_heading">स्थिति</string>
-  <!--Contacts and Private Conversations-->
+  
   <string name="no_contacts">दिखाने के लिए कोई संपर्क नहीं है</string>
   <string name="no_contacts_action">संपर्क जोड़ने के लिए + आइकन टैप करें</string>
   <string name="date_no_private_messages">कोई संदेश नहीं।</string>
@@ -111,17 +111,11 @@
   <string name="image_attach_error_invalid_mime_type">छवि प्रारूप असमर्थित: %s</string>
   <string name="set_contact_alias">संपर्क नाम बदलें</string>
   <string name="set_contact_alias_hint">संपर्क नाम</string>
-  <string name="menu_item_connect_via_bluetooth">ब्लूटूथ के माध्यम से कनेक्ट करें</string>
-  <string name="connect_via_bluetooth_title">ब्लूटूथ के माध्यम से कनेक्ट करें</string>
-  <!--The first placeholder will show a duration like "7 days". The second placeholder at the end will add "Tap to learn more."-->
-  <!--The placeholder at the end will add "Tap to learn more."-->
-  <!--The first placeholder will show a contact's name. The second placeholder will show a duration like "7 days". The third placeholder at the end will add "Tap to learn more."-->
-  <!--The first placeholder will show a contact's name. The second placeholder at the end will add "Tap to learn more."-->
   <string name="delete_contact">संपर्क मिटा दें</string>
   <string name="dialog_title_delete_contact">संपर्क हटाने की पुष्टि करें</string>
   <string name="dialog_message_delete_contact">क्या आप निश्चित हैं कि आप इस संपर्क और सभी संदेशों को इस संपर्क से निकाला जाना चाहते हैं?</string>
   <string name="contact_deleted_toast">संपर्क हटा दिया गया</string>
-  <!--This is shown in the action bar when opening an image in fullscreen that the user sent-->
+  
   <string name="you">आप</string>
   <string name="save_image">चित्र को सेव करें</string>
   <string name="dialog_title_save_image">चित्र को सेव करें?</string>
@@ -132,7 +126,7 @@
   <string name="dialog_message_no_image_support">आपके संपर्क का Zerion अभी तक छवि अनुलग्नकों का समर्थन नहीं करता है। एक बार जब वे अद्यतन करेंगे तो आपको एक अलग छवि दिखाई देगा।</string>
   <string name="dialog_title_image_support">अब आप इस संपर्क को चित्र भेज सकते हैं</string>
   <string name="dialog_message_image_support">छवियों को संलग्न करने के लिए इस प्रतिकृति को दबायें।</string>
-  <!--Adding Contacts-->
+  
   <string name="add_contact_title">आस-पास वाले संपर्क जोड़ें</string>
   <string name="continue_button">जारी रहना</string>
   <string name="try_again_button">पुनः प्रयास करें</string>
@@ -147,7 +141,7 @@
   <string name="authenticating_with_device">डिवाइस के साथ प्रमाणीकरण \ u2026</string>
   <string name="connection_error_title">आपके संपर्क से कनेक्ट नहीं हो सका</string>
   <string name="connection_error_feedback">यदि यह समस्या बनी रहती है, तो कृपया ऐप को बेहतर बनाने में हमारी सहायता के लिए <a href="feedback">फ़ीडबैक भेजें</a>।</string>
-  <!--Adding Contacts Remotely-->
+  
   <string name="add_contact_remotely_title_case">दूरी वाले संपर्क जोड़ें</string>
   <string name="add_contact_nearby_title">आस-पास वाले संपर्क जोड़ें</string>
   <string name="add_contact_remotely_title">दूरी वाले संपर्क जोड़ें</string>
@@ -180,9 +174,9 @@
   <string name="unsupported_link">यह लिंक Zerion के नए संस्करण से आया है। कृपया नवीनतम संस्करण में अद्यतन करें और पुनः प्रयास करें।</string>
   <string name="intent_own_link">आपने अपना लिंक खोला। उस संपर्क का उपयोग करें जिसे आप जोड़ना चाहते हैं!</string>
   <string name="missing_link">कृपया एक लिंक डालें।</string>
-  <!--This is a numeral indicating the first step in a series of screens-->
+  
   <string name="step_1">1</string>
-  <!--This is a numeral indicating the second step in a series of screens-->
+  
   <string name="step_2">2</string>
   <plurals name="contact_added_notification_text">
     <item quantity="one">नया संपर्क जोड़ा गया|</item>
@@ -191,19 +185,15 @@
   <string name="offline_state">कोई इंटरनेट कनेक्शन नहीं</string>
   <string name="duplicate_link_dialog_title">प्रतिलिपि लिंक</string>
   <string name="duplicate_link_dialog_text_1">आपके पास इस लिंक के साथ पहले से ही एक लंबित संपर्क है: %s</string>
-  <!--This is a question asking whether two nicknames refer to the same person-->
+  
   <string name="duplicate_link_dialog_text_2">क्या %s और %s एक ही व्यक्ति हैं?</string>
-  <!--This is a button for answering that two nicknames do indeed refer to the same person. This
-	string will be used in a dialog button, so if the translation of this string is longer than 20
-	characters, please use "Yes" instead, and use "No" for the "Different Person" button-->
+  
   <string name="same_person_button">वही आदमी</string>
-  <!--This is a button for answering that two nicknames refer to different people. This string
-	will be used in a dialog button, so if the translation of this string longer than 20 characters,
-	please use "No" instead, and use "Yes" for the "Same Person" button-->
+  
   <string name="different_person_button">अलग व्यक्ति</string>
   <string name="duplicate_link_dialog_text_3">%s और %s ने एक ही लिंक भेजा है। \n\n और उनमें से कोई भी यह जानने की कोशिश कर सकता है कि आपके संपर्क कौन हैं। \n\n उन्हें यह न बताएं कि आपको वही लिंक किसी और से मिला है।</string>
   <string name="pending_contact_updated_toast">लंबित संपर्क अपडेट किया गया</string>
-  <!--Introductions-->
+  
   <string name="introduction_onboarding_title">अपने संपर्कों का परिचय दें</string>
   <string name="introduction_onboarding_text">आप अपने संपर्कों को एक दूसरे से जोड़ सकते हैं, इसलिए उन्हें Zerion  से जुड़ने के लिए व्यक्तिगत रूप से मिलने की जरूरत नहीं है।</string>
   <string name="introduction_menu_item">परिचय करें</string>
@@ -224,7 +214,7 @@
   <string name="introduction_response_accepted_received">%1$s%2$s की शुरूआत स्वीकार कर ली</string>
   <string name="introduction_response_declined_received">%1$s%2$sकी शुरूआत में गिरावट आई</string>
   <string name="introduction_response_declined_received_by_introducee">%1$sकहते हैं कि%2$sने परिचय को अस्वीकार कर दिया</string>
-  <!--Private Groups-->
+  
   <string name="groups_list_empty">दिखाने के लिए कोई समूह नहीं है</string>
   <string name="groups_list_empty_action">समूह बनाने के लिए + आइकन टैप करें, या अपने संपर्कों को अपने साथ समूह साझा करने के लिए कहें</string>
   <string name="groups_created_by">के द्वारा बनाई गई%s</string>
@@ -255,7 +245,7 @@
   <string name="groups_dissolve_button">भंग</string>
   <string name="groups_dissolved_dialog_title">समूह भंग कर दिया गया है</string>
   <string name="groups_dissolved_dialog_message">इस समूह के निर्माता ने उसे भंग कर दिया है। \ N \ n आप अब समूह को संदेश नहीं लिख सकते हैं और जो सभी पोस्ट लिखी गई हैं उन्हें प्राप्त नहीं हो सकता है।</string>
-  <!--Private Group Invitations-->
+  
   <string name="groups_invitations_title">समूह आमंत्रण</string>
   <string name="groups_invitations_invitation_sent">आपने समूह \"%2$s\" में शामिल होने के लिए %1$sको आमंत्रित किया है</string>
   <string name="groups_invitations_invitation_received">%1$sने आपको \"%2$s\" समूह में शामिल होने के लिए आमंत्रित किया है</string>
@@ -270,14 +260,14 @@
   <string name="groups_invitations_response_accepted_received">%sसमूह निमंत्रण से मना कर दिया</string>
   <string name="groups_invitations_response_declined_received">%sसमूह निमंत्रण से मना कर दिया</string>
   <string name="sharing_status_groups">केवल निर्माता समूह में नए सदस्यों को आमंत्रित कर सकता है। नीचे समूह के सभी मौजूदा सदस्य हैं</string>
-  <!--Private Groups Revealing Contacts-->
+  
   <string name="groups_reveal_contacts">संपर्क प्रकट करें</string>
   <string name="groups_reveal_dialog_message">आप यह समूह चुन सकते हैं कि इस समूह के सभी वर्तमान और भविष्य के सदस्यों के संपर्कों को प्रकट करना है। \ N \ n संपर्कों का स्वागत करते हुए समूह से आपका कनेक्शन तेज़ और अधिक विश्वसनीय बना देता है, क्योंकि आप समूह के निर्माता ऑफ़लाइन होने पर भी पता चला संपर्कों के साथ संवाद कर सकते हैं।</string>
   <string name="groups_reveal_visible">संपर्क संबंध समूह को दिखाई देता है</string>
   <string name="groups_reveal_visible_revealed_by_us">संपर्क संबंध समूह को दिखाई देता है (आपके द्वारा पता चला है)</string>
   <string name="groups_reveal_visible_revealed_by_contact">संपर्क संबंध समूह को दिखाई देता है (%s द्वारा पता चला है)</string>
   <string name="groups_reveal_invisible">संपर्क संबंध समूह को दिखाई नहीं दे रहा है</string>
-  <!--Forums-->
+  
   <string name="no_posts">कोई पोस्ट नहीं</string>
   <plurals name="posts">
     <item quantity="one">%dपदों</item>
@@ -285,7 +275,7 @@
   </plurals>
   <string name="btn_reply">जवाब दें</string>
   <string name="dialog_button_leave">छोड़ना</string>
-  <!--Forum Sharing-->
+  
   <string name="contacts_selected">संपर्क चयनित</string>
   <string name="activity_share_toolbar_header">संपर्क चुनें</string>
   <string name="no_contacts_selector">दिखाने के लिए कोई संपर्क नहीं है</string>
@@ -294,12 +284,12 @@
   <string name="sharing_status">शेयरिंग स्थिति</string>
   <string name="shared_with">%1$d (%2$d ऑनलाइन) के साथ साझा किया गया</string>
   <string name="nobody">कोई भी नहीं</string>
-  <!--Blogs-->
+  
   <string name="read_more">अधिक पढ़ें</string>
-  <!--Blog Sharing-->
-  <!--RSS Feeds-->
-  <!--Settings Profile Picture-->
-  <!--Settings Display-->
+  
+  
+  
+  
   <string name="pref_language_title">भाषा और amp; क्षेत्र</string>
   <string name="pref_language_changed">जब आप Zerion को पुनरारंभ करते हैं तो यह सेटिंग प्रभावी होगी। कृपया साइन आउट करें और Zerion को पुनरारंभ करें।</string>
   <string name="pref_language_default">प्रणालीगत चूक</string>
@@ -309,29 +299,29 @@
   <string name="pref_theme_dark">अंधेरा</string>
   <string name="pref_theme_auto">स्वचालित (दिन का समय)</string>
   <string name="pref_theme_system">प्रणालीगत चूक</string>
-  <!--Settings Connections-->
+  
   <string name="tor_network_setting_automatic">स्वचालित स्थान पर आधारित</string>
-  <!--How and when Zerion will connect to Tor: E.g. "Don't connect to the Internet (in China)" or "Use Tor network with bridges (in Belarus)"-->
+  
   <string name="tor_network_setting_summary">स्वचालित:%1$s (में %2$s)</string>
   <string name="tor_mobile_data_title">मोबाइल डेटा का प्रयोग करें</string>
   <string name="tor_only_when_charging_summary">जब यंत्र बैटरी पर चल रहा हो तो इंटरनेट संबंध को निष्क्रिय कर देता है</string>
-  <!--Settings Security and Panic-->
+  
   <string name="security_settings_title">सुरक्षा</string>
   <string name="pref_lock_title">एप्लिकेशन का लॉक</string>
   <string name="pref_lock_summary">साइन इन करते समय Zerion की सुरक्षा के लिए डिवाइस के स्क्रीन लॉक का उपयोग करें</string>
   <string name="pref_lock_disabled_summary">इस सुविधा का उपयोग करने के लिए, अपने डिवाइस के लिए एक स्क्रीन लॉक सेट करें</string>
   <string name="pref_lock_timeout_title">ऐप लॉक निष्क्रियता टाइमआउट</string>
-  <!--The %s placeholder is replaced with the following time spans, e.g. 5 Minutes, 1 Hour-->
+  
   <string name="pref_lock_timeout_summary">Zerion का उपयोग नहीं करते समय, इसे स्वचालित रूप से बाद में लॉक करें %s</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_1">1 मिनट</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_5">5 मिनट</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_15"> 15 मिनट</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_30">30 मिनट</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_60">1 घंटा</string>
   <string name="pref_lock_timeout_never">कभी नहीँ</string>
   <string name="pref_lock_timeout_never_summary">कभी भी Zerion को स्वचालित रूप से लॉक न करें</string>
@@ -354,7 +344,7 @@
   <string name="panic_setting_signout_summary">यदि कोई आतंक बटन दबाया जाता है तो Zerion  से साइन आउट करें</string>
   <string name="purge_setting_title">खाता हटा दो</string>
   <string name="purge_setting_summary">यदि आपका आतंक बटन दबाया गया हो तो अपने Zerion  खाते को हटा दें। सावधानी: यह आपकी पहचान, संपर्क और संदेश को स्थायी रूप से हटा देगा</string>
-  <!--Settings Notifications-->
+  
   <string name="notification_settings_title">सूचनाएं</string>
   <string name="notify_sign_in_title">मुझे साइन इन करने के लिए याद दिलाएं</string>
   <string name="notify_sign_in_summary">फ़ोन शुरू होने पर या अनुस्मारक अपडेट होने पर अनुस्मारक दिखाएं</string>
@@ -370,16 +360,16 @@
   <string name="notify_sound_setting_disabled">कोई नहीं</string>
   <string name="choose_ringtone_title">रिंगटोन चुनें</string>
   <string name="cannot_load_ringtone">रिंगटोन लोड नहीं कर सकता</string>
-  <!--Conversation Settings-->
+  
   <string name="learn_more">और अधिक जानें</string>
-  <!--Settings Feedback-->
+  
   <string name="send_feedback">प्रतिक्रिया भेजें</string>
-  <!--Link Warning-->
+  
   <string name="link_warning_title">लिंक चेतावनी</string>
   <string name="link_warning_intro">आप बाहरी एप्लिकेशन के साथ निम्न लिंक खोलने वाले हैं</string>
   <string name="link_warning_text">इसका उपयोग आपकी पहचान करने के लिए किया जा सकता है। इस बारे में सोचें कि क्या आप उस व्यक्ति पर भरोसा करते हैं जिसने आपको यह लिंक भेजा है और इसे टोर ब्राउज़र से खोलने पर विचार करें।</string>
   <string name="link_warning_open_link">खुली लिंक</string>
-  <!--Crash Reporter-->
+  
   <string name="crash_report_title">Zerion  क्रैश रिपोर्ट</string>
   <string name="zerion_crashed">क्षमा करें, Zerion  दुर्घटनाग्रस्त हो गया है।</string>
   <string name="not_your_fault">यह आपकी गलती नहीं है</string>
@@ -394,13 +384,13 @@
   <string name="send_report">रिपोर्ट भेजो</string>
   <string name="close">बंद करे</string>
   <string name="dev_report_saved">रिपोर्ट सहेजी गई अगली बार जब आप Zerion  में प्रवेश करेंगे तो उसे भेजा जाएगा।</string>
-  <!--Sign Out-->
+  
   <string name="progress_title_logout">Zerion  से साइन आउट हो रहा है ...</string>
-  <!--Screen Filters & Tapjacking-->
+  
   <string name="screen_filter_title">स्क्रीन ओवरले का पता लगाया</string>
   <string name="screen_filter_body">एक और ऐप Zerion  के शीर्ष पर है। आपकी सुरक्षा की रक्षा के लिए, Zerion  स्पर्श करने का जवाब नहीं देगा, जब किसी अन्य ऐप को शीर्ष पर आ रही है। \ N \ n निम्न एप्लिकेशन शीर्ष पर ड्राइंग कर सकते हैं: \ n \ n%1$s</string>
   <string name="screen_filter_allow">इन ऐप्स को शीर्ष पर आकर्षित करने की अनुमति दें</string>
-  <!--Permission Requests-->
+  
   <string name="permission_camera_title">कैमरा अनुमति</string>
   <string name="permission_camera_request_body">QR कोड को स्कैन करने के लिए, Zerion को कैमरे तक पहुंच की आवश्यकता है।</string>
   <string name="permission_location_title">स्थान की अनुमति</string>
@@ -408,29 +398,29 @@
   <string name="permission_camera_location_title">कैमरा और स्थान</string>
   <string name="permission_camera_location_request_body">क्यूआर कोड को स्कैन करने के लिए, Zerion को कैमरे तक पहुंच की आवश्यकता होती है। \ N \ n ब्लूटूथ डिवाइसों को खोजने के लिए, Zerion को आपके स्थान तक पहुंचने की अनुमति की आवश्यकता होती है। \ n\n \ Zerion आपके स्थान को स्टोर नहीं करता है या इसे किसी के साथ साझा नहीं करता है।</string>
   <string name="permission_camera_denied_body">आपने कैमरे तक पहुंच से वंचित किया है, लेकिन संपर्क जोड़ने के लिए कैमरे का उपयोग करने की आवश्यकता है। \ N \ n कृपया पहुंच प्रदान करने पर विचार करें।</string>
-  <!--App Locking-->
+  
   <string name="lock_unlock">Zerion अनलॉक करें</string>
   <string name="lock_unlock_verbose">Zerion अनलॉक करने के लिए अपना डिवाइस पिन, पैटर्न या पासवर्ड दर्ज करें</string>
   <string name="lock_unlock_fingerprint_description">जारी रखने के लिए पंजीकृत उंगली के साथ अपने फिंगरप्रिंट सेंसर को स्पर्श करें</string>
   <string name="lock_unlock_password">पासवर्ड का प्रयोग करें</string>
   <string name="lock_is_locked">Zerion लॉक है</string>
   <string name="lock_tap_to_unlock">अनलॉक करने के लिए टैप करें</string>
-  <!--Connections Screen-->
-  <!--Screenshots-->
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
+  
+  
   <string name="screenshot_alice">ऐलिस</string>
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
   <string name="screenshot_bob">बॉब</string>
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
   <string name="screenshot_carol">कैरोल </string>
-  <!--This is a message to be used in screenshots. Please use the same translation for Bob!-->
+  
   <string name="screenshot_message_1">हाय बॉब!</string>
-  <!--This is a message to be used in screenshots. Please use the same translation for Alice!-->
+  
   <string name="screenshot_message_2">हाय ऐलिस! Zerion के बारे में मुझे बताने के लिए धन्यवाद!</string>
-  <!--This is a message to be used in screenshots.-->
+  
   <string name="screenshot_message_3">कोई समस्या नहीं, आशा है कि आप इसे पसंद करेंगे 😀</string>
 
-	<!-- Vault strings -->
+	
 	<string name="vault_unlock_button">अनलॉक करें</string>
 	<string name="vault_password_mismatch">पासवर्ड मेल नहीं खाते</string>
 	<string name="vault_password_too_short">पासवर्ड कम से कम 8 अक्षर का होना चाहिए</string>
@@ -454,19 +444,19 @@
 	<string name="vault_enable_biometric">बायोमेट्रिक अनलॉक सक्षम करें</string>
 	<string name="vault_auto_lock_timeout">ऑटो-लॉक टाइमआउट</string>
 
-	<!-- Security strings -->
+	
 	<string name="security_threat_detected">सुरक्षा खतरा पाया गया। कृपया अपने डिवाइस में दुर्भावनापूर्ण सॉफ़्टवेयर की जांच करें।</string>
 	<string name="pref_screenshot_protection_title">स्क्रीनशॉट सुरक्षा</string>
 	<string name="pref_screenshot_protection_summary">संवेदनशील सामग्री के स्क्रीनशॉट और स्क्रीन रिकॉर्डिंग को रोकें</string>
 	<string name="security_warning_title">सुरक्षा चेतावनी</string>
 
-	<!-- Tor status strings -->
+	
 	<string name="tor_status_title">Tor नेटवर्क स्थिति</string>
 	<string name="tor_status_connected">Tor नेटवर्क से जुड़ा हुआ</string>
 	<string name="tor_status_disconnected">Tor नेटवर्क से डिस्कनेक्ट किया गया</string>
 	<string name="tor_status_connecting">Tor नेटवर्क से कनेक्ट हो रहा है…</string>
 
-	<!-- Voice Call strings -->
+	
 	<string name="voice_call">वॉइस कॉल</string>
 
 </resources>

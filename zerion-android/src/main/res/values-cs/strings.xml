@@ -1,6 +1,6 @@
-﻿<?xml version='1.0' encoding='UTF-8'?>
-<resources xmlns:tools="http://schemas.android.com/tools">
-  <!--Setup-->
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+  
   <string name="setup_title">Vítejte v aplikaci Zerion</string>
   <string name="setup_name_explanation">Vaše uživatelské jméno bude zobrazeno u jakéhokoli obsahu, který zveřejníte. Následná změna již nebude možná.</string>
   <string name="setup_next">Další</string>
@@ -32,7 +32,7 @@
   <string name="dnkm_xiaomi_lock_apps_text">Klepněte na tlačítko níže pro otevření nastavení zabezpečení. Klepněte na „Zvýšení rychlosti“, poté na „Uzamčení aplikací“ a ujistěte se, že je Zerion nastaven na „Uzamčeno“.</string>
   <string name="dnkm_xiaomi_lock_apps_help">Pokud není Zerion na obrazovce „Uzamčení aplikací“ nastaven na „Uzamčeno“, nebude moci běžet na pozadí.</string>
   <string name="dnkm_warning_dozed_1">Zerion nemůže běžet na pozadí</string>
-  <!--Login-->
+  
   <string name="enter_password">Heslo</string>
   <string name="try_again">Zadali jste špatné heslo, zkuste to znovu</string>
   <string name="dialog_title_cannot_check_password">Nepodařilo se zkontrolovat heslo</string>
@@ -64,17 +64,17 @@
   <string name="startup_open_database">Dešifrování databáze...</string>
   <string name="startup_migrate_database">Aktualizování databáze...</string>
   <string name="startup_compact_database">Komprimování databáze…</string>
-  <!--Navigation Drawer-->
+  
   <string name="nav_drawer_open_description">Otevřít navigační lištu</string>
   <string name="nav_drawer_close_description">Zavřít navigační lištu</string>
   <string name="contact_list_button">Kontakty</string>
   <string name="groups_button">Soukromá skupina</string>
-  <!--This is part of the main menu. The app will be locked when this is tapped.-->
+  
   <string name="lock_button">Zamknout aplikaci</string>
   <string name="settings_button">Nastavení</string>
   <string name="sign_out_button">Odhlásit se</string>
   <string name="transports_onboarding_text">Klepněte sem pro ovládání způsobu, kterým se Zerion připojuje k vašim kontaktům.</string>
-  <!--Transports: Tor-->
+  
   <string name="transport_tor">Internet</string>
   <string name="tor_device_status_online_wifi">Váš mobil má přístup k internetu přes Wi-Fi</string>
   <string name="tor_device_status_online_mobile">Váš mobil má přístup k internetu přes mobilní data</string>
@@ -86,10 +86,10 @@
   <string name="tor_plugin_status_disabled_mobile_data">Zerion je nastaven tak, aby nepoužíval mobilní data</string>
   <string name="tor_plugin_status_disabled_battery">Zerion je nastaven tak, aby nepoužíval internet při provozu na baterii</string>
   <string name="tor_plugin_status_disabled_country_blocked">Zerion je nastaven tak, aby v této zemi nepoužíval internet</string>
-  <!--Transports: Wi-Fi-->
+  
   <string name="transport_lan_long">Stejná síť Wi-Fi</string>
-  <!--Transports: Bluetooth-->
-  <!--Notifications-->
+  
+  
   <string name="reminder_notification_title">Byl jste odhlášen z Zerion</string>
   <string name="reminder_notification_text">Klepněte pro opětovné přihlášení.</string>
   <string name="reminder_notification_channel_title">Připomenutí k přihlášení Zerion</string>
@@ -108,7 +108,7 @@
     <item quantity="many">%d nových zpráv ve skupině.</item>
     <item quantity="other">%d nových zpráv ve skupině.</item>
   </plurals>
-  <!--Misc-->
+  
   <string name="now">nyní</string>
   <string name="show">Zobrazit</string>
   <string name="hide">Skrýt</string>
@@ -137,7 +137,7 @@
   <string name="status_heading">Stav</string>
   <string name="error">Chyba</string>
   <string name="info">Informace</string>
-  <!--Contacts and Private Conversations-->
+  
   <string name="no_contacts">Žádné kontakty k zobrazení</string>
   <string name="no_contacts_action">Klepněte na ikonu + pro přidání kontaktu</string>
   <string name="date_no_private_messages">Žádné zprávy</string>
@@ -153,11 +153,11 @@
   <string name="set_contact_alias">Změnit jméno kontaktu</string>
   <string name="set_contact_alias_hint">Jméno kontaktu</string>
   <string name="menu_item_disappearing_messages">Mizející zprávy</string>
-  <!--The first placeholder will show a duration like "7 days". The second placeholder at the end will add "Tap to learn more."-->
+  
   <string name="auto_delete_msg_you_enabled">Vaše zprávy zmizí za %1$s. %2$s</string>
-  <!--The placeholder at the end will add "Tap to learn more."-->
+  
   <string name="auto_delete_msg_you_disabled">Vaše zprávy nebudou mizet. %1$s</string>
-  <!--The first placeholder will show a contact's name. The second placeholder will show a duration like "7 days". The third placeholder at the end will add "Tap to learn more."-->
+  
   <string name="auto_delete_msg_contact_enabled">Zprávy kontaktu %1$s zmizí za %2$s. %3$s</string>
   <plurals name="duration_minutes">
     <item quantity="one">%d minutu</item>
@@ -177,7 +177,7 @@
     <item quantity="many">%d dní</item>
     <item quantity="other">%d dní</item>
   </plurals>
-  <!--The first placeholder will show a contact's name. The second placeholder at the end will add "Tap to learn more."-->
+  
   <string name="auto_delete_msg_contact_disabled">Zprávy kontaktu %1$s nebudou mizet. %2$s</string>
   <string name="tap_to_learn_more">Klepněte pro více informací.</string>
   <string name="auto_delete_changed_warning_title">Mizející zprávy změněny</string>
@@ -198,7 +198,7 @@
   <string name="dialog_title_delete_contact">Potvrdit odstranění kontaktu</string>
   <string name="dialog_message_delete_contact">Jste si jisti, že chcete odstranit kontakt a všechny související zprávy s tímto kontaktem?</string>
   <string name="contact_deleted_toast">Kontakt odstraněn</string>
-  <!--This is shown in the action bar when opening an image in fullscreen that the user sent-->
+  
   <string name="you">Vy</string>
   <string name="save_image">Uložit obrázek</string>
   <string name="dialog_title_save_image">Uložit obrázek?</string>
@@ -211,7 +211,7 @@
   <string name="dialog_message_image_support">Klepněte na tuto ikonu pro připojení obrázků.</string>
   <string name="messaging_too_many_attachments_toast">Pouze prvních %d obrázků bude odesláno</string>
   <string name="menu_contact">Kontakt</string>
-  <!--Adding Contacts-->
+  
   <string name="add_contact_title">Přidat kontakt v okolí</string>
   <string name="add_contact_error_two_way">Oskenovali jste vy i druhá strana QR kód toho druhého?</string>
   <string name="continue_button">Pokračovat</string>
@@ -226,7 +226,7 @@
   <string name="authenticating_with_device">Ověřování se zařízením\u2026</string>
   <string name="connection_error_title">Nebylo možné se připojit k vašemu kontaktu</string>
   <string name="connection_error_feedback">Pokud tento problém přetrvává, prosím <a href="feedback">odešlete zpětnou vazbu</a> abyste nám pomohli vylepšit aplikaci.</string>
-  <!--Adding Contacts Remotely-->
+  
   <string name="add_contact_remotely_title_case">Přidat vzdálený kontakt</string>
   <string name="add_contact_nearby_title">Přidat kontakt v okolí</string>
   <string name="add_contact_remotely_title">Přidat vzdálený kontakt</string>
@@ -259,9 +259,9 @@
   <string name="unsupported_link">Tento odkaz pochází z novější verze Zerionu. Prosím proveďte aktualizaci na nejnovější verzi a zkuste to znovu.</string>
   <string name="intent_own_link">Otevřeli jste váš odkaz. Použijte odkaz kontaktu, který chcete přidat.</string>
   <string name="missing_link">Prosím zadejte odkaz</string>
-  <!--This is a numeral indicating the first step in a series of screens-->
+  
   <string name="step_1">1</string>
-  <!--This is a numeral indicating the second step in a series of screens-->
+  
   <string name="step_2">2</string>
   <plurals name="contact_added_notification_text">
     <item quantity="one">Nový kontakt přidán.</item>
@@ -273,25 +273,21 @@
   <string name="duplicate_link_dialog_title">Duplicitní odkaz</string>
   <string name="duplicate_link_dialog_text_1">Již máte čekající kontakt s tímto odkazem: %s</string>
   <string name="duplicate_link_dialog_text_1_contact">Již máte kontakt s tímto odkazem: %s</string>
-  <!--This is a question asking whether two nicknames refer to the same person-->
+  
   <string name="duplicate_link_dialog_text_2">Je %1$s a %2$s stejná osoba?</string>
-  <!--This is a button for answering that two nicknames do indeed refer to the same person. This
-	string will be used in a dialog button, so if the translation of this string is longer than 20
-	characters, please use "Yes" instead, and use "No" for the "Different Person" button-->
+  
   <string name="same_person_button">Stejná osoba</string>
-  <!--This is a button for answering that two nicknames refer to different people. This string
-	will be used in a dialog button, so if the translation of this string longer than 20 characters,
-	please use "No" instead, and use "Yes" for the "Same Person" button-->
+  
   <string name="different_person_button">Jiná osoba</string>
   <string name="duplicate_link_dialog_text_3">%1$s a %2$s vám poslali stejný odkaz.\n\nJeden z nich se možná snaží zjistit kdo jsou vaše kontakty.\n\nNeříkejte jim, že jste dostali stejný odkaz od někoho jiného.</string>
   <string name="pending_contact_updated_toast">Čekající kontakt aktualizován</string>
   <string name="info_both_must_enter_links">Oba kontakty musí přidat odkaz toho druhého</string>
-  <!--Peer trust levels-->
+  
   <string name="peer_trust_level_unverified">Neověřený kontakt</string>
   <string name="peer_trust_level_verified">Ověřený kontakt</string>
   <string name="peer_trust_level_ourselves">Já</string>
   <string name="peer_trust_level_stranger">Neznámý</string>
-  <!--Introductions-->
+  
   <string name="introduction_onboarding_title">Uvést vaše kontakty</string>
   <string name="introduction_onboarding_text">Představte vzájemně vaše kontakty, aby se spolu mohly spojit.</string>
   <string name="introduction_menu_item">Představit</string>
@@ -313,18 +309,7 @@
   <string name="introduction_response_accepted_received">%1$s přijal(a) představení %2$s.</string>
   <string name="introduction_response_declined_received">%1$s odmítl(a) představení %2$s.</string>
   <string name="introduction_response_declined_received_by_introducee">%1$s řekl(a), že %2$s odmítl(a) představení.</string>
-  <!--Connect via Bluetooth-->
-  <string name="menu_item_connect_via_bluetooth">Připojit přes Bluetooth</string>
-  <string name="connect_via_bluetooth_title">Připojit přes Bluetooth</string>
-  <string name="connect_via_bluetooth_intro">V případě, že Bluetooth připojení nefunguje automaticky, můžete použít tuto obrazovku pro ruční připojení.\n\nVáš kontakt musí být v okolí, aby to fungovalo.\n\nVy i váš kontakt musíte klepnout na \"Start\" ve stejný čas.</string>
-  <string name="connect_via_bluetooth_already_discovering">Již se pokoušíte o připojení přes Bluetooth. Zkuste to znovu za chvíli.</string>
-  <string name="connect_via_bluetooth_no_location_permission">Není možné pokračovat bez povolení znát umístění</string>
-  <string name="connect_via_bluetooth_no_bluetooth_permission">Není možné pokračovat bez povolení přístupu k zařízením v okolí</string>
-  <string name="connect_via_bluetooth_start">Připojování přes Bluetooth...</string>
-  <string name="connect_via_bluetooth_success">Úspěšně připojeno přes Bluetooth</string>
-  <string name="connect_via_bluetooth_error">Nebylo možné se připojit přes Bluetooth.</string>
-  <string name="connect_via_bluetooth_error_not_supported">Bluetooth není podporován zařízením.</string>
-  <!--Private Groups-->
+  
   <string name="groups_list_empty">Žádné skupiny k zobrazení</string>
   <string name="groups_list_empty_action">Klepněte na ikonu + pro vytvoření skupiny a nebo požádejte své kontakty, aby s vámi skupiny sdílely</string>
   <string name="groups_created_by">Vytvořeno %s</string>
@@ -357,7 +342,7 @@
   <string name="groups_dissolve_button">Rozpuštění</string>
   <string name="groups_dissolved_dialog_title">Skupina byla rozpuštěna</string>
   <string name="groups_dissolved_dialog_message">Zakladatel tuto skupinu rozpustil.\n\nV této skupině již nemůžeš psát zprávy a taktéž přijímat příspěvky, které byly napsány.</string>
-  <!--Private Group Invitations-->
+  
   <string name="groups_invitations_title">Skupinové pozvánky</string>
   <string name="groups_invitations_invitation_sent">Pozvali jste %1$s k připojení ke skupině \"%2$s\".</string>
   <string name="groups_invitations_invitation_received">%1$s vás pozval, abyste se připojili ke skupině \"%2$s\".</string>
@@ -375,14 +360,14 @@
   <string name="groups_invitations_response_accepted_received">%s přijatých pozvání ke skupině.</string>
   <string name="groups_invitations_response_declined_received">%s odmítnutých pozvání ke skupině.</string>
   <string name="sharing_status_groups">Pouze zakladatel může pozvat nové členy do skupiny. Níže jsou všichni současní členové skupiny.</string>
-  <!--Private Groups Revealing Contacts-->
+  
   <string name="groups_reveal_contacts">Odkrýt kontakty</string>
   <string name="groups_reveal_dialog_message">Můžete si vybrat, zda chcete své kontakty odhalit všem současným i budoucím členům této skupiny.\n\nPřidáním kontaktů je vaše připojení ke skupině rychlejší a spolehlivější, protože můžete komunikovat s odhalenými kontakty i když je zakladatel skupiny offline.</string>
   <string name="groups_reveal_visible">Vztah s kontaktem je viditelný ve skupině</string>
   <string name="groups_reveal_visible_revealed_by_us">Vztah s kontaktem je viditelný ve skupině (Tebou odkrytý)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Vztah s kontaktem je viditelný ve skupině (byl odkrytý %s)</string>
   <string name="groups_reveal_invisible">Vztah s kontaktem není viditelný ve skupině</string>
-  <!--Forums-->
+  
   <string name="no_posts">Žádné příspěvky</string>
   <plurals name="posts">
     <item quantity="one">%d příspěvek</item>
@@ -392,7 +377,7 @@
   </plurals>
   <string name="btn_reply">Odpověď</string>
   <string name="dialog_button_leave">Opustit</string>
-  <!--Forum Sharing-->
+  
   <string name="contacts_selected">Zvolené kontakty</string>
   <string name="activity_share_toolbar_header">Zvolit kontakty</string>
   <string name="no_contacts_selector">Žádné kontakty k zobrazení</string>
@@ -401,16 +386,16 @@
   <string name="sharing_status">Sdílet status</string>
   <string name="shared_with">Sdíleno s %1$d (%2$d online)</string>
   <string name="nobody">Nikdo</string>
-  <!--Blogs-->
+  
   <string name="read_more">Číst dál</string>
-  <!--Blog Sharing-->
-  <!--RSS Feeds-->
-  <!--Settings Profile Picture-->
+  
+  
+  
   <string name="change_profile_picture">Klepněte pro změnu svého profilového obrázku</string>
   <string name="dialog_confirm_profile_picture_title">Změnit profilový obrázek</string>
   <string name="dialog_confirm_profile_picture_remark">Pouze vaše kontakty uvidí tento obrázek</string>
   <string name="change_profile_picture_failed_message">Omlouváme se, ale něco se pokazilo při aktualizaci vašeho profilového obrázku</string>
-  <!--Settings Display-->
+  
   <string name="pref_language_title">Jazyk a oblast</string>
   <string name="pref_language_changed">Toto nastavení bude mít efekt když vykonáre restart svého Zerion. Prosím odhlaste se a restartujte Zerion.</string>
   <string name="pref_language_default">Podle systému</string>
@@ -419,9 +404,8 @@
   <string name="pref_theme_light">Světlý</string>
   <string name="pref_theme_dark">Temný</string>
   <string name="pref_theme_system">Podle systému</string>
-  <!--Settings Connections-->
+  
   <string name="network_settings_title">Spojení</string>
-  <string name="bluetooth_setting">Připojit se ke kontaktům přes Bluetooth</string>
   <string name="wifi_setting">Připojte se ke kontaktům na stejné Wi-Fi síti</string>
   <string name="tor_enable_title">Připojte se ke kontaktům přes internet</string>
   <string name="tor_enable_summary">Všechna spojení jdou skrze síť Tor kvůli soukromí</string>
@@ -430,28 +414,28 @@
   <string name="tor_network_setting_without_bridges">Použít síť Tor bez mostů</string>
   <string name="tor_network_setting_with_bridges">Použít síť Tor s mosty</string>
   <string name="tor_network_setting_never">Nepřipojovat se k internetu</string>
-  <!--How and when Zerion will connect to Tor: E.g. "Don't connect to the Internet (in China)" or "Use Tor network with bridges (in Belarus)"-->
+  
   <string name="tor_network_setting_summary">Automatické: %1$s (v %2$s)</string>
   <string name="tor_mobile_data_title">Použít mobilní data</string>
   <string name="tor_only_when_charging_title">Připojit se k internetu pouze při nabíjení</string>
   <string name="tor_only_when_charging_summary">Vypne internetové připojení když zařízení není nabíjeno ze sítě</string>
-  <!--Settings Security and Panic-->
+  
   <string name="security_settings_title">Zabezpečení</string>
   <string name="pref_lock_title">Zamčení aplikace</string>
   <string name="pref_lock_summary">Použít zamčení obrazovky zařízení pro ochranu Zerionu po přihlášení</string>
   <string name="pref_lock_disabled_summary">Pro použité této funkce nastavte zamčení obrazovky zařízení</string>
   <string name="pref_lock_timeout_title">Doba neaktivity pro zamčení aplikace</string>
-  <!--The %s placeholder is replaced with the following time spans, e.g. 5 Minutes, 1 Hour-->
+  
   <string name="pref_lock_timeout_summary">Když Zerion není používán, automaticky ho zamknou po %s</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_1">1 minutě</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_5">5 minutách</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_15">15 minutách</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_30">30 minutách</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_60">1 hodina</string>
   <string name="pref_lock_timeout_never">Nikdy</string>
   <string name="pref_lock_timeout_never_summary">Nikdy nezamykat Zerion automaticky</string>
@@ -474,7 +458,7 @@
   <string name="panic_setting_signout_summary">Odhlásit se z Zerion, pokud je stisknuto tlačítko paniky</string>
   <string name="purge_setting_title">Odstranit účet</string>
   <string name="purge_setting_summary">Při stisknutí tlačítka paniky odstranit váš účet Zerion. Varování: tato akce trvale vymaže vaše identity, kontakty a zprávy</string>
-  <!--Settings Notifications-->
+  
   <string name="notification_settings_title">Upozornění</string>
   <string name="notify_sign_in_title">Připomenout mi, abych se přihlásil/a</string>
   <string name="notify_sign_in_summary">Zobrazit připomínku po startu telefonu nebo po aktualizaci aplikace</string>
@@ -490,7 +474,7 @@
   <string name="notify_sound_setting_disabled">Žádný</string>
   <string name="choose_ringtone_title">Zvolit vyzváněcí tón</string>
   <string name="cannot_load_ringtone">Nelze načíst vyzváněcí tón</string>
-  <!--Mailbox-->
+  
   <string name="mailbox_settings_title">Mailbox</string>
   <string name="mailbox_setup_title">Mailbox nastavení</string>
   <string name="mailbox_setup_intro">Mailbox umožňuje vašim kontaktům posílat vám zprávy když jste offline. Mailbox obdrží vaše zprávy a uchová je dokud nebudete online.\n
@@ -498,10 +482,8 @@
   <string name="mailbox_setup_download">Nejprve nainstalujte aplikaci Mailbox na jiné zařízení tak, že si vyhledáte \"Zerion Mailbox\" na Google Play nebo jinde odkud stahujete Zerion.\n
 		\nPotom spojte váš Mailbox s Zerionem oskenováním QR kódu zobrazeném aplikací Mailbox.</string>
   <string name="mailbox_setup_download_link">Sdílet odkaz pro stažení</string>
-  <string name="mailbox_setup_button_scan">Skenovat Mailbox QR kód</string>
-  <string name="permission_camera_qr_denied_body">Přístup k fotoaparátu máte zakázaný ale skenování QR kódu vyžaduje použití fotoaparátu.\n\nProsím zvažte povolení přístupu.</string>
   <string name="mailbox_setup_connecting">Připojování k Mailboxu...</string>
-  <!--This string is shown when connecting to a Mailbox for the first time. The placeholder will be replaced with a duration, e.g. "2 minutes".-->
+  
   <string name="mailbox_setup_connecting_info">Toto může trvat až %1s</string>
   <string name="mailbox_setup_already_paired_title">Mailbox již byl spojen</string>
   <string name="mailbox_setup_already_paired_description">Odpojte Mailbox na vašem dalším zařízení a akci opakujte.</string>
@@ -526,9 +508,9 @@
   <string name="mailbox_status_mailbox_too_old_title">Mailbox je příliš zastaralý</string>
   <string name="mailbox_status_mailbox_too_old_message">Aktualizujte váš Mailbox na nejnovější verzi aplikace a zkuste to znovu.</string>
   <string name="mailbox_status_check_button">Zkontrolujte připojení</string>
-  <!--Example for string substitution: Last connection: 3min ago-->
+  
   <string name="mailbox_status_connected_info">Poslední připojení: %s</string>
-  <!--Indicates that there never was a connection to the mailbox. Last connection: Never-->
+  
   <string name="mailbox_status_connected_never">Nikdy</string>
   <string name="mailbox_status_unlink_button">Odpojit</string>
   <string name="mailbox_status_unlink_dialog_title">Odpojit Mailbox?</string>
@@ -561,7 +543,7 @@
   <string name="mailbox_error_wizard_info1_1_4">Zkontrolujte že mailbox zařízení je správně připojeno k internetu.\n\nZkontrolujte že hodiny na Mailbox zařízení ukazují správný čas, datum a časové pásmo.\n\nZkontrolujte že Mailbox a Zerion aplikace jsou aktualizované na nejnovější verzi.\n\nRestartujte Mailbox i Zerion zařízení a zkuste to znovu.</string>
   <string name="mailbox_error_wizard_info2">Prosím vraťte se zpět na tuto obrazovku jakmile získáte přístup k zařízení.</string>
   <string name="mailbox_error_wizard_info3">Prosím odpojte váš Mailbox pomocí tlačítka níže.\n\nPo odpojení vašeho starého Mailboxu můžete kdykoliv nastavit nový Mailbox.</string>
-  <!--About-->
+  
   <string name="about_title">O</string>
   <string name="zerion_version">Zerion verze: %s</string>
   <string name="tor_version">Tor verze: %s</string>
@@ -570,9 +552,9 @@
   <string name="zerion_source_code">\u2022 <a href="">Zdrojový kód</a></string>
   <string name="zerion_changelog">\u2022 <a href="">Změny v aplikaci</a></string>
   <string name="zerion_privacy_policy">\u2022 <a href="">Zásady ochrany osobních údajů</a></string>
-  <!--Here translators can add their names or Transifex usernames(eg "Thanks to all the contributors at the Localization Lab, especially Tom, Matthew and Jerry")-->
+  
   <string name="translator_thanks">Díky všem, kdo přispěli k překladu aplikace na https://www.transifex.com/otf/zerion</string>
-  <!--Conversation Settings-->
+  
   <string name="disappearing_messages_title">Mizející zprávy</string>
   <string name="disappearing_messages_explanation_long">Zapnutím této volby znamená, že nové
 		zprávy v této konverzaci automaticky zmizí po 7\u00A0dnech.
@@ -585,17 +567,17 @@
 		Váš kontakt také může změnit tuto volbu pro oba z vás.</string>
   <string name="learn_more">Zjistit více</string>
   <string name="disappearing_messages_summary">Nastavte automatické zmizení zpráv této konverzace po 7\u00A0dnech.</string>
-  <!--Settings Actions-->
+  
   <string name="pref_category_actions">Akce</string>
   <string name="share_app_link">Sdílet odkaz ke stažení</string>
   <string name="share_app_link_text">Stáhnout Zerion z %s</string>
   <string name="send_feedback">Poslat zpětnou vazbu</string>
-  <!--Link Warning-->
+  
   <string name="link_warning_title">Odkaz varování</string>
   <string name="link_warning_intro">Chystáte se otevřít následující odkaz pomocí externí eplikace.</string>
   <string name="link_warning_text">Toto může být použito k vaší identifikaci. Zamyslete se, zda věříte osobě, která vám poslala tento odkaz a zvažte otevření pomocí Prohlížeče Tor.</string>
   <string name="link_warning_open_link">Otevřít odkaz</string>
-  <!--Crash Reporter-->
+  
   <string name="crash_report_title">Hlášení o pádu Zerion</string>
   <string name="zerion_crashed">Omlouváme se, Zerion se zhroutil</string>
   <string name="not_your_fault">Toto není vaše chyba.</string>
@@ -626,15 +608,15 @@
   <string name="dev_report_sent">Zpětná vazba odeslána</string>
   <string name="dev_report_saved">Hlášení uloženo. Odesláno bude při příštím přihlášení do Zerion.</string>
   <string name="dev_report_error">Chyba: Odesílání hlášení selhalo</string>
-  <!--Sign Out-->
+  
   <string name="progress_title_logout">Odhlásit se z Zerion...</string>
-  <!--Screen Filters & Tapjacking-->
+  
   <string name="screen_filter_title">Bylo zjištěno překrytí obrazovky</string>
   <string name="screen_filter_body">Jiná aplikace se nachází nad aplikací Zerion. Kvůli ochraně vaší bezpečnosti Zerion nebude odpovídat na klepnutí prstem pokud jiná aplikace je na popředí.\n\nNásledující aplikace mohou být na popředí:\n\n%1$s</string>
   <string name="screen_filter_body_api_30">Jiná aplikace se nachází nad aplikací Zerion. Kvůli ochraně vaší bezpečnosti Zerion nebude odpovídat na klepnutí prstem pokud jiná aplikace je na popředí.\n\nZkontrolujte níže uvedené aplikace abyste našli dotyčnou aplikaci.</string>
   <string name="screen_filter_allow">Povolit těmto aplikacím zůstat navrchu</string>
   <string name="screen_filter_review_apps">Zkontrolujte aplikace</string>
-  <!--Permission Requests-->
+  
   <string name="permission_camera_title">Oprávnění pro přístup k fotoaparátu</string>
   <string name="permission_camera_request_body">Pro scan QR kódu, Zerion vyžaduje přístup k fotoaparátu.</string>
   <string name="permission_location_title">Místní povolení</string>
@@ -642,94 +624,20 @@
   <string name="permission_location_request_body">Aby mohl Zerion najít zařízení Bluetooth, potřebuje Zerion povolení zjistit vaše umístění.\n\nZerion neukládá vaše umístění ani ho s nikým nesdílí.</string>
   <string name="permission_camera_location_title">Fotoaparát a umístění</string>
   <string name="permission_camera_location_request_body">Pro oskenování QR kódu potřebuje Zerion přístup k fotoaparátu.\n\nPro nalezení zařízení Bluetooth potřebuje Zerion povolení zjistit vaše umístění.\n\nZerion neukládá vaše umístění ani ho s nikým nesdílí.</string>
-  <string name="permission_camera_bluetooth_title">Fotoaparát a zařízení v okolí</string>
-  <string name="permission_camera_bluetooth_request_body">Pro oskenování QR kódu Zerion potřebuje přístup k vašemu fotoaparátu.\n\nPro nalezení Bluetooth zařízení potřebuje Zerion povolení přístupu k zařízením v okolí.</string>
   <string name="permission_camera_denied_body">Odmítli jste udělit oprávnění přístupu k fotoaparátu, avšak pro přidání kontaktů je nutné použití fotoaparátu.\n\nZvažte prosím, opětovné udělení přístupu.</string>
   <string name="permission_location_denied_body">Zamítli jste přístup k umístění ale Zerion tento přístup potřebuje k nalezení zařízení Bluetooth.\n\nZvažte povolení přístupu.</string>
   <string name="permission_location_setting_title">Volba umístění</string>
   <string name="permission_location_setting_body">Volba umístění vašeho zařízení musí být zapnuta aby byla nalezena jiná zařízení přes Bluetooth. Prosím zapněte umístění pro pokračování. Následně ho můžete zase vypnout.</string>
-  <string name="permission_location_setting_hotspot_body">Volba umístění vašeho zařízení musí být zapnuta aby mohl být vytvořen Wi-Fi hotspot. Prosím zapněte umístění pro pokračování. Následně ho můžete zase vypnout.</string>
   <string name="permission_location_setting_button">Zapnout umístění</string>
-  <string name="permission_bluetooth_title">Povolení pro zařízení v okolí</string>
-  <string name="permission_bluetooth_body">Pro využití Bluetooth komunikace potřebuje Zerion povolení hledat a spojovat se se zařízeními v okolí.</string>
-  <string name="permission_bluetooth_denied_body">Zamítli jste přístup k zařízením v okolí. Zerion ale potřebuje tento přístup pro použití Bluetooth.\n\nProsím zvažte povolení přístupu.</string>
-  <!--App Locking-->
   <string name="lock_unlock">Odemknout Zerion</string>
   <string name="lock_unlock_verbose">K odemknutí aplikace Zerion zadejte PIN, vzor nebo heslo vašeho zařízení</string>
   <string name="lock_unlock_fingerprint_description">Pro pokračování se dotkněte snímače otisku prstu registrovaným prstem</string>
   <string name="lock_unlock_password">Použít heslo</string>
   <string name="lock_is_locked">Zerion je zamčen</string>
   <string name="lock_tap_to_unlock">Klepněte pro odemčení</string>
-  <!--Connections Screen-->
+  
   <string name="transports_help_text">Zerion se může připojit k vašim kontaktům pomocí internetu, Wi-Fi nebo Bluetooth.\n\nVšechna internetová spojení jsou kvůli soukromí přenášena sítí Tor.\n\nPokud kontakt může být dosažen pomocí několika metod, Zerion je využije zároveň.</string>
-  <!--Share app offline-->
-  <string name="hotspot_title">Sdílet tuto aplikaci offline</string>
-  <string name="hotspot_intro">Sdílejte tuto aplikaci s někým, kdo je v okolí a to bez použití internetu, jen pomocí místní Wi-Fi sítě.
-		\n\nVáš telefon vytvoří Wi-Fi hotspot. Lidé v okolí se budou moci připojit k hotspotu a stáhnout aplikaci Zerion z vašeho telefonu.</string>
-  <string name="hotspot_button_start_sharing">Spustit hotspot</string>
-  <string name="hotspot_button_stop_sharing">Zastavit hotspot</string>
-  <string name="hotspot_progress_text_start">Nastavování hotspotu...</string>
-  <string name="hotspot_notification_channel_title">Wi-Fi hotspot</string>
-  <string name="hotspot_notification_title">Sdílení Zerionu offline</string>
-  <string name="hotspot_button_connected">Další</string>
-  <string name="permission_hotspot_location_request_body">Pro vytvoření Wi-Fi hotspotu potřebuje Zerion povolení zjistit vaše umístění.\n\nZerion neukládá vaše umístění ani ho s nikým nesdílí.</string>
-  <string name="permission_hotspot_location_request_precise_body">Pro vytvoření Wi-Fi hotspotu potřebuje Zerion povolení zjistit vaše přesné umístění.\n\nZerion neukládá vaše umístění ani ho s nikým nesdílí.</string>
-  <string name="permission_hotspot_location_denied_body">Zamítli jste přístup k vašemu umístění. Zerion přístup potřebuje, aby mohl vytvořit Wi-Fi hotspot.\n\nProsím zvažte povolení přístupu.</string>
-  <string name="permission_hotspot_location_denied_precise_body">Zamítli jste přístup k vašemu přesnému umístění. Zerion přístup potřebuje, aby mohl vytvořit Wi-Fi hotspot.\n\nProsím zvažte povolení přístupu.</string>
-  <string name="permission_hotspot_nearby_wifi_request_body">Pro vytvoření Wi-Fi hotspotu, potřebuje Zerion povolení přístupu k zařízením v okolí.</string>
-  <string name="permission_hotspot_nearby_wifi_denied_body">Odmítli jste přístup k zařízením v okolí i když Zerion potřebuje povolení, aby mohl vytvořit Wi-Fi hotspot.\n\nProsím zvažte udělení přístupu.</string>
-  <string name="wifi_settings_title">Wi-Fi volba</string>
-  <string name="wifi_settings_request_enable_body">Pro vytvoření Wi-Fi hotspotu potřebuje Zerion využít Wi-Fi. Prosím zapněte ji.</string>
-  <string name="hotspot_tab_manual">Manuálně</string>
-  <!--The placeholder to be inserted into the string 'hotspot_manual_wifi': People can connect by %s-->
-  <!--Wi-Fi setup-->
-  <string name="hotspot_manual_wifi">Váš telefon poskytuje Wi-Fi hotspot. Lidé, kteří si chtějí stáhnout Zerion se mohou k hotspotu připojit tak, že ho přidají ve Wi-Fi nastavení svého zařízení, za použití údajů uvedených níže a nebo %s. Jakmile se připojí k hotspotu, klikněte na \'Další\'.</string>
-  <string name="hotspot_manual_wifi_ssid">Název sítě</string>
-  <string name="hotspot_qr_wifi">Váš telefon poskytuje Wi-Fi hotspot. Lidé, kteří si chtějí stáhnout Zerion se mohou k hotspotu připojit tak, že oskenují tento QR kód. Jakmile se připojí k hotspotu, klikněte na \'Další\'.</string>
-  <string name="hotspot_no_peers_connected">Nejsou připojena žádná zařízení</string>
-  <plurals name="hotspot_peers_connected">
-    <item quantity="one">%s zařízení připojeno</item>
-    <item quantity="few">%s zařízení připojena</item>
-    <item quantity="many">%s zařízení připojeno</item>
-    <item quantity="other">%s zařízení připojeno</item>
-  </plurals>
-  <!--Download link-->
-  <string name="hotspot_manual_site">Váš telefon poskytuje Wi-Fi hotspot. Lidé, kteří jsou připojeni k hotspotu si mohou stáhnout Zerion tak, že zadají následující odkaz do internetového prohlížeče nebo %s.</string>
-  <string name="hotspot_manual_site_address">Adresa (URL)</string>
-  <string name="hotspot_qr_site">Váš telefon poskytuje Wi-Fi hotspot. Lidé, kteří jsou připojeni k hotspotu si mohou stáhnout Zerion po oskenování tohoto QR kódu.</string>
-  <!--e.g. Download Zerion 1.2.20-->
-  <string name="website_download_title_1">Stáhnout Zerion %s</string>
-  <string name="website_download_intro_1">Někdo v okolí s vámi sdílel Zerion.</string>
-  <string name="website_download_button">Stáhnout Zerion</string>
-  <string name="website_download_outro">Po tom, co stahování skončí, otevřete stažený soubor a nainstalujte ho.</string>
-  <string name="website_troubleshooting_title">Odstraňování problémů</string>
-  <string name="website_troubleshooting_1">Pokud nemůžete aplikaci stáhnout, zkuste použít jiný internetový prohlížeč.</string>
-  <string name="website_troubleshooting_2_old">Pro instalaci stažené aplikace možná bude nutné v nastavení systému povolit instalaci aplikací z neznámých zdrojů. Následně může být potřeba aplikaci znovu stáhnout. Po instalaci aplikace doporučujeme vypnout zmíněnou volbu neznámých zdrojů.</string>
-  <string name="website_troubleshooting_2_new">Pro instalaci stažené aplikace možná bude nutné v nastavení internetového prohlížeče povolit instalaci aplikací z neznámých zdrojů. Po instalaci aplikace doporučujeme vypnout zmíněnou volbu instalace neznámých aplikací.</string>
-  <string name="hotspot_help_wifi_title">Potíže s připojením k Wi-Fi:</string>
-  <string name="hotspot_help_wifi_1">Zkuste vypnout a zapnout Wi-Fi na obou telefonech a zkusit to znovu.</string>
-  <string name="hotspot_help_wifi_2">Pokud si váš telefon stěžuje, že Wi-Fi není připojena k internetu, vyberte i tak volbu zachování připojení k Wi-Fi.</string>
-  <string name="hotspot_help_wifi_3">Restartujte telefon, který provozuje Wi-Fi hotspot. Spusťte Zerion a akci opakujte.</string>
-  <string name="hotspot_help_site_title">Potíže při navštívení místní webové stránky:</string>
-  <string name="hotspot_help_site_1">Dobře zkontrolujte, že jste zadali adresu přesně tak, jak je zobrazena. Malá chyba může způsobit selhání.</string>
-  <string name="hotspot_help_site_2">Ujistěte se, že váš telefon je stále připojen ke správně síti Wi-Fi (viz. výše) ve chvíli, kdy se pokoušíte přistoupit na stránku.</string>
-  <string name="hotspot_help_site_3">Pokud používáte firewall aplikaci, zkontrolujte že neblokuje přístup.</string>
-  <string name="hotspot_help_site_4">Pokud můžete navštívit stránku, ale stahování aplikace Zerion nefunguje, zkuste to s jiným internetovým prohlížečem.</string>
-  <string name="hotspot_help_fallback_title">Nic nefunguje?</string>
-  <string name="hotspot_help_fallback_intro">Můžete zkusit uložit aplikaci jako .apk soubor a sdílet i jinými způsoby. Po přenesení souboru na jiné zařízení je možné ho využít k instalaci Zerionu.
-		\n\nTip: Pro sdílení přes Bluetooth může být potřeba nejprve soubor přejmenovat aby končil příponou .zip.</string>
-  <string name="hotspot_help_fallback_button">Uložit aplikaci</string>
-  <!--error handling-->
-  <string name="hotspot_error_intro">Něco se pokazilo při pokusu o sdílení aplikace přes Wi-Fi:</string>
-  <string name="hotspot_error_no_wifi_direct">Zařízení nepodporuje Wi-Fi Direct</string>
-  <string name="hotspot_error_start_callback_failed">Hotspot se nespustil: chyba %s</string>
-  <string name="hotspot_error_start_callback_failed_unknown">Hotspot se nespustil kvůli neznámé chybě, důvod %d</string>
-  <string name="hotspot_error_start_callback_no_group_info">Spuštění hotspotu selhalo: žádné info skupiny</string>
-  <string name="hotspot_error_web_server_start">Chyba spuštění web serveru</string>
-  <string name="hotspot_error_web_server_serve">Chyba představení webové stránky.\n\nPokud problém přetrvává, prosím odešlete zpětnou vazbu (s anonymizovanými daty) pomocí aplikace Zerion.</string>
-  <string name="hotspot_flag_test">Varování: Tato aplikace byla instalována pomocí Android Studia a NEMŮŽE být instalována na jiném zařízení.</string>
-  <string name="hotspot_error_framework_busy">Nebylo možné spustit hotspot.\n\nPokud máte spuštěný jiný hotspot a nebo sdílíte své internetové připojení pomocí Wi-Fi, zkuste to vypnout a pak akci opakovat.</string>
-  <!--Transfer Data via Removable Drives-->
+  
   <string name="removable_drive_menu_title">Připojit se přes vyměnitelný disk</string>
   <string name="removable_drive_intro">Pokud se nemůžete připojit k vašemu kontaktu pomocí internetu, Wi-Fi nebo Bluetooth, Zerion může také přenést zprávy na vyměnitelný disk, kterým je například USB klíčenka a nebo SD karta.</string>
   <string name="removable_drive_explanation">Pokud se nemůžete připojit k vašemu kontaktu pomocí internetu, Wi-Fi nebo Bluetooth, Zerion může také přenést zprávy na vyměnitelný disk, kterým je například USB klíčenka a nebo SD karta.\n\nKdyž použijete tlačítko \"Poslat data\", budou data čekající na odeslání kontaktům, zapsána na vyměnitelný disk. Tato data zahrnují soukromé zprávy, přílohy, blogy, fóra a soukromé skupiny.\n\nVše bude zašifrováno před zapsáním na vyměnitelný disk.\n\nJakmile kontakt obdrží vyměnitelný disk, může použít tlačítko \"Přijmout data\" a tím importovat zprávy do Zerionu.</string>
@@ -750,17 +658,17 @@
   <string name="removable_drive_error_send_text">Došlo k chybě při zápisu dat do souboru.\n\nPokud používáte vyměnitelný disk, ujistěte se že je správně vložen a akci opakujte.\n\nPokud chyba přetrvává, prosím informujte o problému Zerion team odesláním zpětné vazby.</string>
   <string name="removable_drive_error_receive_title">Chyba importu dat</string>
   <string name="removable_drive_error_receive_text">Vybraný soubor neobsahoval nic co by Zerion rozpoznal.\n\nProsím zkontrolujte, že jste vybrali správný soubor.\n\nPokud váš kontakt vytvořil soubor před více než 28 dny, Zerion ho nebude moci rozpoznat.</string>
-  <!--Screenshots-->
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
+  
   <string name="screenshot_alice">Alice</string>
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
   <string name="screenshot_bob">Tomáš</string>
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
   <string name="screenshot_carol">Karolína</string>
-  <!--This is a message to be used in screenshots. Please use the same translation for Bob!-->
+  
   <string name="screenshot_message_1">Ahoj Tomáši!</string>
-  <!--This is a message to be used in screenshots. Please use the same translation for Alice!-->
+  
   <string name="screenshot_message_2">Ahoj Alice! Díky, že jsi mi dala vědět o Zerionu!</string>
-  <!--This is a message to be used in screenshots.-->
+  
   <string name="screenshot_message_3">V pořádku, doufám že se ti líbí 😀</string>
 </resources>

@@ -1,6 +1,6 @@
-﻿<?xml version='1.0' encoding='UTF-8'?>
-<resources xmlns:tools="http://schemas.android.com/tools">
-  <!--Setup-->
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+  
   <string name="setup_title">Sveiki atvykę į Zerion</string>
   <string name="setup_name_explanation">Jūsų slapyvardis bus rodomas šalia bet kokio jūsų skelbiamo turinio. Sukūrę paskyrą, slapyvardžio pakeisti nebegalėsite.</string>
   <string name="setup_next">Kitas</string>
@@ -32,7 +32,7 @@
   <string name="dnkm_xiaomi_lock_apps_text">Bakstelėkite mygtuką žemiau, kad atvertumėte saugumo nustatymus. Bakstelėkite „Padidinti greitį“ (angl. Boost speed), o tuomet, bakstelėkite „Užrakinti programėles“ (angl. Lock apps) ir įsitikinkite, kad Zerion yra nustatyta į „Užrakinta“ (angl. Locked).</string>
   <string name="dnkm_xiaomi_lock_apps_help">Jei „Užrakintų programėlių“ (angl. Locked apps) lange Zerion nėra nustatyta į „Užrakinta“ (angl. Locked), tuomet Zerion negalės veikti fone.</string>
   <string name="dnkm_warning_dozed_1">Zerion nepavyko pasileisti fone</string>
-  <!--Login-->
+  
   <string name="enter_password">Slaptažodis</string>
   <string name="try_again">Neteisingas slaptažodis, bandykite dar kartą</string>
   <string name="dialog_title_cannot_check_password">Nepavyksta patikrinti slaptažodžio</string>
@@ -64,17 +64,17 @@
   <string name="startup_open_database">Iššifruojama duomenų bazė…</string>
   <string name="startup_migrate_database">Naujinama duomenų bazė…</string>
   <string name="startup_compact_database">Suspaudžiama duomenų bazė…</string>
-  <!--Navigation Drawer-->
+  
   <string name="nav_drawer_open_description">Atidaryti naršymo stalčių</string>
   <string name="nav_drawer_close_description">Uždaryti naršymo stalčių</string>
   <string name="contact_list_button">Adresatai</string>
   <string name="groups_button">Privačios grupės</string>
-  <!--This is part of the main menu. The app will be locked when this is tapped.-->
+  
   <string name="lock_button">Užrakinti programėlę</string>
   <string name="settings_button">Nustatymai</string>
   <string name="sign_out_button">Atsijungti</string>
   <string name="transports_onboarding_text">Bakstelėkite čia norėdami valdyti tai, kaip Zerion jungiasi prie jūsų adresatų.</string>
-  <!--Transports: Tor-->
+  
   <string name="transport_tor">Internetas</string>
   <string name="tor_device_status_online_wifi">Jūsų telefonas jungiasi prie interneto per belaidį (Wi-Fi)</string>
   <string name="tor_device_status_online_mobile">Jūsų telefonas jungiasi prie interneto per mobiliuosius duomenis</string>
@@ -86,10 +86,10 @@
   <string name="tor_plugin_status_disabled_mobile_data">Zerion yra sukonfigūruota taip, kad nesinaudotų mobiliaisiais duomenimis</string>
   <string name="tor_plugin_status_disabled_battery">Zerion yra sukonfigūruota taip, kad nesinaudotų internetu, kai įrenginys veikia naudodamas akumuliatoriaus energiją</string>
   <string name="tor_plugin_status_disabled_country_blocked">Zerion yra sukonfigūruota taip, kad šioje šalyje nesinaudotų internetu</string>
-  <!--Transports: Wi-Fi-->
+  
   <string name="transport_lan_long">Tas pats belaidis (Wi-Fi) tinklas</string>
-  <!--Transports: Bluetooth-->
-  <!--Notifications-->
+  
+  
   <string name="reminder_notification_title">Atsijungta iš Zerion</string>
   <string name="reminder_notification_text">Bakstelėkite, norėdami prisijungti atgal.</string>
   <string name="reminder_notification_channel_title">Zerion prisijungimo priminimas</string>
@@ -108,7 +108,7 @@
     <item quantity="many">%d naujų grupės žinučių.</item>
     <item quantity="other">%d nauja grupės žinutė.</item>
   </plurals>
-  <!--Misc-->
+  
   <string name="now">dabar</string>
   <string name="show">Rodyti</string>
   <string name="hide">Slėpti</string>
@@ -137,7 +137,7 @@
   <string name="status_heading">Būsena:</string>
   <string name="error">Klaida</string>
   <string name="info">Informacija</string>
-  <!--Contacts and Private Conversations-->
+  
   <string name="no_contacts">Nėra rodytinų adresatų</string>
   <string name="no_contacts_action">Norėdami pridėti adresatą, bakstelėkite „+“ piktogramą</string>
   <string name="date_no_private_messages">Žinučių nėra.</string>
@@ -153,11 +153,11 @@
   <string name="set_contact_alias">Pakeisti adresato vardą</string>
   <string name="set_contact_alias_hint">Adresato vardas</string>
   <string name="menu_item_disappearing_messages">Išnykstančios žinutės</string>
-  <!--The first placeholder will show a duration like "7 days". The second placeholder at the end will add "Tap to learn more."-->
+  
   <string name="auto_delete_msg_you_enabled">Jūsų žinutės išnyks po %1$s. %2$s</string>
-  <!--The placeholder at the end will add "Tap to learn more."-->
+  
   <string name="auto_delete_msg_you_disabled">Jūsų žinutės neišnyks. %1$s</string>
-  <!--The first placeholder will show a contact's name. The second placeholder will show a duration like "7 days". The third placeholder at the end will add "Tap to learn more."-->
+  
   <string name="auto_delete_msg_contact_enabled">Adresato %1$s žinutės išnyks po %2$s. %3$s</string>
   <plurals name="duration_minutes">
     <item quantity="one">%d minutės</item>
@@ -177,7 +177,7 @@
     <item quantity="many">%d dienų</item>
     <item quantity="other">%d dienos</item>
   </plurals>
-  <!--The first placeholder will show a contact's name. The second placeholder at the end will add "Tap to learn more."-->
+  
   <string name="auto_delete_msg_contact_disabled">Adresato %1$s žinutės neišnyks. %2$s</string>
   <string name="tap_to_learn_more">Bakstelėkite, norėdami sužinoti daugiau.</string>
   <string name="auto_delete_changed_warning_title">Išnykstančios žinutės pasikeitė</string>
@@ -198,7 +198,7 @@
   <string name="dialog_title_delete_contact">Patvirtinkite adresato ištrynimą</string>
   <string name="dialog_message_delete_contact">Ar tikrai norite pašalinti šį adresatą ir visas žinutes, kuriomis apsikeitėte su šiuo adresatu ?</string>
   <string name="contact_deleted_toast">Adresatas ištrintas</string>
-  <!--This is shown in the action bar when opening an image in fullscreen that the user sent-->
+  
   <string name="you">Jūs</string>
   <string name="save_image">Įrašyti atvaizdą</string>
   <string name="dialog_title_save_image">Įrašyti atvaizdą?</string>
@@ -211,7 +211,7 @@
   <string name="dialog_message_image_support">Bakstelėkite šią piktogramą, norėdami pridėti atvaizdus.</string>
   <string name="messaging_too_many_attachments_toast">Bus išsiųsti tik %d pirmi atvaizdai</string>
   <string name="menu_contact">Adresatas</string>
-  <!--Adding Contacts-->
+  
   <string name="add_contact_title">Pridėti šalia esantį adresatą</string>
   <string name="add_contact_error_two_way">Ar jūs abu nuskenavote vienas kito QR kodus?</string>
   <string name="continue_button">Tęsti</string>
@@ -226,7 +226,7 @@
   <string name="authenticating_with_device">Tapatybės nustatymas su įrenginiu\u2026</string>
   <string name="connection_error_title">Nepavyko prisijungti prie jūsų adresato</string>
   <string name="connection_error_feedback">Jei ši problema išlieka, <a href="feedback">atsiųskite mums atsiliepimą</a>, kad padėtumėte mums patobulinti programėlę.</string>
-  <!--Adding Contacts Remotely-->
+  
   <string name="add_contact_remotely_title_case">Pridėti adresatą per atstumą</string>
   <string name="add_contact_nearby_title">Pridėti šalia esantį adresatą</string>
   <string name="add_contact_remotely_title">Pridėti adresatą per atstumą</string>
@@ -259,9 +259,9 @@
   <string name="unsupported_link">Ši nuoroda atėjo iš naujesnės Zerion versijos. Atsinaujinkite į naujausią versiją ir bandykite dar kartą.</string>
   <string name="intent_own_link">Jūs atvėrėte savo nuorodą. Naudokite nuorodą to adresato, kurį norite pridėti!</string>
   <string name="missing_link">Įveskite nuorodą</string>
-  <!--This is a numeral indicating the first step in a series of screens-->
+  
   <string name="step_1">1</string>
-  <!--This is a numeral indicating the second step in a series of screens-->
+  
   <string name="step_2">2</string>
   <plurals name="contact_added_notification_text">
     <item quantity="one">Pridėtas naujas adresatas.</item>
@@ -273,25 +273,21 @@
   <string name="duplicate_link_dialog_title">Identiška nuoroda</string>
   <string name="duplicate_link_dialog_text_1">Jūs jau turite laukiančią adresato užklausą su šia nuoroda: %s</string>
   <string name="duplicate_link_dialog_text_1_contact">Jau turite adresatą su šia nuoroda: %s</string>
-  <!--This is a question asking whether two nicknames refer to the same person-->
+  
   <string name="duplicate_link_dialog_text_2">Ar %1$s ir %2$s yra tas pats asmuo?</string>
-  <!--This is a button for answering that two nicknames do indeed refer to the same person. This
-	string will be used in a dialog button, so if the translation of this string is longer than 20
-	characters, please use "Yes" instead, and use "No" for the "Different Person" button-->
+  
   <string name="same_person_button">Tas pats asmuo</string>
-  <!--This is a button for answering that two nicknames refer to different people. This string
-	will be used in a dialog button, so if the translation of this string longer than 20 characters,
-	please use "No" instead, and use "Yes" for the "Same Person" button-->
+  
   <string name="different_person_button">Kitas asmuo</string>
   <string name="duplicate_link_dialog_text_3">%1$s ir %2$s išsiuntė jums tą pačią nuorodą.\n\nGali būti, kad vienas iš šių asmenų bando sužinoti, kas yra jūsų adresatų sąraše.\n\nNesakykite šiems asmenims, kad gavote tokią pačią nuorodą iš kito asmens.</string>
   <string name="pending_contact_updated_toast">Laukiantis adresatas atnaujintas</string>
   <string name="info_both_must_enter_links">Jūs abu privalote pridėti vienas kito nuorodas</string>
-  <!--Peer trust levels-->
+  
   <string name="peer_trust_level_unverified">Nepatvirtintas adresatas</string>
   <string name="peer_trust_level_verified">Patvirtintas adresatas</string>
   <string name="peer_trust_level_ourselves">Aš</string>
   <string name="peer_trust_level_stranger">Nepažįstamasis</string>
-  <!--Introductions-->
+  
   <string name="introduction_onboarding_title">Supažindinkite savo adresatus</string>
   <string name="introduction_onboarding_text">Supažindinkite adresatus vieną su kitu, kad jie galėtų susisiekti per Zerion.</string>
   <string name="introduction_menu_item">Supažindinti</string>
@@ -313,18 +309,7 @@
   <string name="introduction_response_accepted_received">%1$s priėmė supažindinimą su %2$s.</string>
   <string name="introduction_response_declined_received">%1$s atmetė supažindinimą su %2$s.</string>
   <string name="introduction_response_declined_received_by_introducee">%1$s sako, kad %2$s atmetė supažindinimą.</string>
-  <!--Connect via Bluetooth-->
-  <string name="menu_item_connect_via_bluetooth">Prisijungti per Bluetooth</string>
-  <string name="connect_via_bluetooth_title">Prisijungti per Bluetooth</string>
-  <string name="connect_via_bluetooth_intro">Tuo atveju, jei Bluetooth ryšiai neveikia automatiškai, galite naudoti šį langą, kad prisijungtumėte rankiniu būdu.\n\nTam, kad tai suveiktų, jūsų adresatas turi būti šalia jūsų.\n\nJūs ir jūsų adresatas vienu metu turėtumėte paspausti „Pradėti“.</string>
-  <string name="connect_via_bluetooth_already_discovering">Jau bandoma jungtis per Bluetooth. Netrukus bandykite dar kartą.</string>
-  <string name="connect_via_bluetooth_no_location_permission">Nepavyksta tęsti be įrenginio vietovės leidimo</string>
-  <string name="connect_via_bluetooth_no_bluetooth_permission">Nepavyksta tęsti be įrenginių netoliese leidimo</string>
-  <string name="connect_via_bluetooth_start">Jungiamasi per Bluetooth…</string>
-  <string name="connect_via_bluetooth_success">Sėkmingai prisijungta per Bluetooth</string>
-  <string name="connect_via_bluetooth_error">Nepavyko prisijungti per Bluetooth.</string>
-  <string name="connect_via_bluetooth_error_not_supported">Įrenginys nepalaiko Bluetooth.</string>
-  <!--Private Groups-->
+  
   <string name="groups_list_empty">Nėra rodytinų grupių</string>
   <string name="groups_list_empty_action">Norėdami sukurti grupę ar paprašyti savo adresatų pradėti su jumis bendrinti grupes, bakstelėkite „+“ piktogramą</string>
   <string name="groups_created_by">Sukūrė %s</string>
@@ -357,7 +342,7 @@
   <string name="groups_dissolve_button">Išformuoti</string>
   <string name="groups_dissolved_dialog_title">Grupė išformuota</string>
   <string name="groups_dissolved_dialog_message">Šios grupės įkūrėjas ją išformavo.\n\nJūs daugiau nebegalite rašyti žinučių į šią grupę ir galite nebegauti visų parašytų įrašų.</string>
-  <!--Private Group Invitations-->
+  
   <string name="groups_invitations_title">Pakvietimai į grupę</string>
   <string name="groups_invitations_invitation_sent">Jūs pakvietėte, kad %1$s prisijungtų prie grupės „%2$s“.</string>
   <string name="groups_invitations_invitation_received">%1$s pakvietė jus prisijungti prie grupės „%2$s“.</string>
@@ -375,14 +360,14 @@
   <string name="groups_invitations_response_accepted_received">%s priėmė pakvietimą į grupę.</string>
   <string name="groups_invitations_response_declined_received">%s atmetė pakvietimą į grupę.</string>
   <string name="sharing_status_groups">Tik įkūrėjas gali kviesti naujus narius į grupę. Žemiau yra visi esami grupės nariai.</string>
-  <!--Private Groups Revealing Contacts-->
+  
   <string name="groups_reveal_contacts">Atskleisti adresatus</string>
   <string name="groups_reveal_dialog_message">Galite pasirinkti, ar atskleisti adresatus visiems esamiems ir būsimiems šios grupės nariams.\n\nAdresatų atskleidimas paverčia jūsų ryšį su grupe greitesniu ir labiau patikimu, nes galite bendrauti su atskleistais adresatais netgi tuomet, kai grupės įkūrėjas yra atsijungęs.</string>
   <string name="groups_reveal_visible">Adresatų sąryšiai yra matomi grupei</string>
   <string name="groups_reveal_visible_revealed_by_us">Adresatų sąryšiai yra matomi grupei (atskleidėte jūs)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Adresatų sąryšiai yra matomi grupei (atskleidė %s)</string>
   <string name="groups_reveal_invisible">Adresatų sąryšiai nėra matomi grupei</string>
-  <!--Forums-->
+  
   <string name="no_posts">Įrašų nėra</string>
   <plurals name="posts">
     <item quantity="one">%d įrašas</item>
@@ -392,7 +377,7 @@
   </plurals>
   <string name="btn_reply">Atsakyti</string>
   <string name="dialog_button_leave">Išeiti</string>
-  <!--Forum Sharing-->
+  
   <string name="contacts_selected">Pasirinkti adresatai</string>
   <string name="activity_share_toolbar_header">Pasirinkite adresatus</string>
   <string name="no_contacts_selector">Nėra rodytinų adresatų</string>
@@ -401,16 +386,16 @@
   <string name="sharing_status">Bendrinimo būsena</string>
   <string name="shared_with">Bendrinama su %1$d (Prisijungę: %2$d)</string>
   <string name="nobody">Niekas</string>
-  <!--Blogs-->
+  
   <string name="read_more">skaityti daugiau</string>
-  <!--Blog Sharing-->
-  <!--RSS Feeds-->
-  <!--Settings Profile Picture-->
+  
+  
+  
   <string name="change_profile_picture">Bakstelėkite norėdami pasikeisti profilio paveikslą</string>
   <string name="dialog_confirm_profile_picture_title">Keisti profilio paveikslą</string>
   <string name="dialog_confirm_profile_picture_remark">Šį paveikslą gali matyti tik jūsų adresatai</string>
   <string name="change_profile_picture_failed_message">Atleiskite, bet atnaujinant jūsų profilio paveikslą kažkas nutiko</string>
-  <!--Settings Display-->
+  
   <string name="pref_language_title">Kalba ir regionas</string>
   <string name="pref_language_changed">Šis nustatymas įsigalios, kai paleisite Zerion iš naujo. Atsijunkite ir paleiskite Zerion iš naujo.</string>
   <string name="pref_language_default">Sistemos numatytoji</string>
@@ -419,9 +404,8 @@
   <string name="pref_theme_light">Šviesus</string>
   <string name="pref_theme_dark">Tamsus</string>
   <string name="pref_theme_system">Sistemos numatytasis</string>
-  <!--Settings Connections-->
+  
   <string name="network_settings_title">Ryšiai</string>
-  <string name="bluetooth_setting">Jungtis prie adresatų per Bluetooth ryšį</string>
   <string name="wifi_setting">Jungtis prie adresatų tame pačiame belaidžiame (Wi-Fi) tinkle</string>
   <string name="tor_enable_title">Jungtis prie adresatų per internetą</string>
   <string name="tor_enable_summary">Privatumo sumetimais, visi ryšiai jungsis per Tor tinklą</string>
@@ -430,28 +414,28 @@
   <string name="tor_network_setting_without_bridges">Naudoti Tor tinklą be tinklų tilto</string>
   <string name="tor_network_setting_with_bridges">Naudoti Tor tinklą su tinklų tiltu</string>
   <string name="tor_network_setting_never">Neprisijungti prie interneto</string>
-  <!--How and when Zerion will connect to Tor: E.g. "Don't connect to the Internet (in China)" or "Use Tor network with bridges (in Belarus)"-->
+  
   <string name="tor_network_setting_summary">Automatiškai: %1$s (šalyje %2$s)</string>
   <string name="tor_mobile_data_title">Naudoti mobiliuosius duomenis</string>
   <string name="tor_only_when_charging_title">Prisijungti prie interneto tik įkraunant įrenginį</string>
   <string name="tor_only_when_charging_summary">Išjungia interneto ryšį, kai įrenginys veikia naudodamas akumuliatorių</string>
-  <!--Settings Security and Panic-->
+  
   <string name="security_settings_title">Saugumas</string>
   <string name="pref_lock_title">Programėlės užrakinimas</string>
   <string name="pref_lock_summary">Naudoti įrenginio ekrano užraktą, kad esant prisijungus, Zerion būtų apsaugota</string>
   <string name="pref_lock_disabled_summary">Norėdami naudoti šią ypatybę, nusistatykite įrenginyje ekrano užraktą</string>
   <string name="pref_lock_timeout_title">Programėlės užrakinimo laiko limitas esant neveiklumui</string>
-  <!--The %s placeholder is replaced with the following time spans, e.g. 5 Minutes, 1 Hour-->
+  
   <string name="pref_lock_timeout_summary">Nenaudojant Zerion, automatiškai ją užrakinti po %s</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_1">1 minutės</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_5">5 minučių</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_15">15 minučių</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_30">30 minučių</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_60">1 valandos</string>
   <string name="pref_lock_timeout_never">Niekada</string>
   <string name="pref_lock_timeout_never_summary">Niekada automatiškai neužrakinti Zerion</string>
@@ -474,7 +458,7 @@
   <string name="panic_setting_signout_summary">Atsijungti iš Zerion, jei yra paspaudžiamas panikos mygtukas</string>
   <string name="purge_setting_title">Ištrinti paskyrą</string>
   <string name="purge_setting_summary">Ištrinti jūsų Zerion paskyrą, jei yra paspaudžiamas panikos mygtukas. Dėmesio: Tai visiems laikams ištrins jūsų tapatybes, adresatus ir žinutes</string>
-  <!--Settings Notifications-->
+  
   <string name="notification_settings_title">Pranešimai</string>
   <string name="notify_sign_in_title">Priminti man prisijungti</string>
   <string name="notify_sign_in_summary">Rodyti priminimą, kai telefonas įsijungia ar, kai programėlė buvo atnaujinta</string>
@@ -490,7 +474,7 @@
   <string name="notify_sound_setting_disabled">Nėra</string>
   <string name="choose_ringtone_title">Pasirinkite skambučio melodiją</string>
   <string name="cannot_load_ringtone">Nepavyksta įkelti skambučio melodijos</string>
-  <!--Mailbox-->
+  
   <string name="mailbox_settings_title">Pašto dėžutė</string>
   <string name="mailbox_setup_title">Pašto dėžutės sąranka</string>
   <string name="mailbox_setup_intro">Pašto dėžutė leidžia adresatams siųsti jums žinutes, kai esate neprisijungę prie interneto. Žinutės bus siunčiamos į jūsų pašto dėžutę ir saugomos ten tol, kol prisijungsite prie interneto.\n
@@ -498,10 +482,8 @@
   <string name="mailbox_setup_download">Pirmiausia, įsidiekite kitame įrenginyje pašto dėžutės programėlę: atverkite „Google Play“ ar kitą programėlių parduotuvę, iš kurios atsisiuntėte Zerion, ir įrašykite į paiešką raktažodį „Zerion Mailbox“.\n
 		\nTuomet, susiekite pašto dėžutę su Zerion, nuskenuodami pašto dėžutės programėlėje rodomą QR kodą.</string>
   <string name="mailbox_setup_download_link">Bendrinti atsisiuntimo nuorodą</string>
-  <string name="mailbox_setup_button_scan">Skenuoti pašto dėžutės QR kodą</string>
-  <string name="permission_camera_qr_denied_body">Jūs uždraudėte prieigą prie kameros, tačiau norint skenuoti QR kodą, reikia naudoti kamerą.\n\nApsvarstykite galimybę sutekti prieigą prie kameros.</string>
   <string name="mailbox_setup_connecting">Jungiamasi prie pašto dėžutės…</string>
-  <!--This string is shown when connecting to a Mailbox for the first time. The placeholder will be replaced with a duration, e.g. "2 minutes".-->
+  
   <string name="mailbox_setup_connecting_info">Tai gali užtrukti iki %1s</string>
   <string name="mailbox_setup_already_paired_title">Pašto dėžutė jau susieta</string>
   <string name="mailbox_setup_already_paired_description">Atsiekite pašto dėžutę kitame įrenginyje ir bandykite dar kartą.</string>
@@ -526,9 +508,9 @@
   <string name="mailbox_status_mailbox_too_old_title">Pašto dėžutė yra per sena</string>
   <string name="mailbox_status_mailbox_too_old_message">Atnaujinkite pašto dėžutės programėlę iki naujausios versijos ir bandykite dar kartą.</string>
   <string name="mailbox_status_check_button">Tikrinti ryšį</string>
-  <!--Example for string substitution: Last connection: 3min ago-->
+  
   <string name="mailbox_status_connected_info">Paskutinis prisijungimas: %s</string>
-  <!--Indicates that there never was a connection to the mailbox. Last connection: Never-->
+  
   <string name="mailbox_status_connected_never">Niekada</string>
   <string name="mailbox_status_unlink_button">Atsieti</string>
   <string name="mailbox_status_unlink_dialog_title">Atsieti pašto dėžutę?</string>
@@ -561,7 +543,7 @@
   <string name="mailbox_error_wizard_info1_1_4">Patikrinkite, ar pašto dėžutės įrenginys yra tinkamai prijungtas prie interneto.\n\nPatikrinkite, ar laikrodis pašto dėžutės įrenginyje rodo teisingą laiką, datą ir laiko juostą.\n\nPatikrinkite, ar pašto dėžutės ir Zerion programėlės yra atnaujintos į naujausią versiją.\n\nPaleiskite pašto dėžutės bei Zerion įrenginius iš naujo ir bandykite dar kartą.</string>
   <string name="mailbox_error_wizard_info2">Grįžkite į šį langelį, kai turėsite prieigą prie įrenginio.</string>
   <string name="mailbox_error_wizard_info3">Atsiekite pašto dėžutę naudodami žemiau esantį mygtuką.\n\nAtsieję seną pašto dėžutę galite bet kuriuo metu nusistatyti naują pašto dėžutę.</string>
-  <!--About-->
+  
   <string name="about_title">Apie</string>
   <string name="zerion_version">Zerion versija: %s</string>
   <string name="tor_version">Tor versija: %s</string>
@@ -570,9 +552,9 @@
   <string name="zerion_source_code">\u2022 <a href="">Pradinis kodas</a></string>
   <string name="zerion_changelog">\u2022 <a href="">Keitinių žurnalas</a></string>
   <string name="zerion_privacy_policy">\u2022 <a href="">Privatumo politika</a></string>
-  <!--Here translators can add their names or Transifex usernames(eg "Thanks to all the contributors at the Localization Lab, especially Tom, Matthew and Jerry")-->
+  
   <string name="translator_thanks">Dėkojame talkininkams iš Localization Lab, ypač Moo už vertimą į lietuvių kalbą</string>
-  <!--Conversation Settings-->
+  
   <string name="disappearing_messages_title">Išnykstančios žinutės</string>
   <string name="disappearing_messages_explanation_long">Įjungus šį nustatymą, naujos žinutės
 		šiame pokalbyje automatiškai išnyks po 7\u00A0dienų.
@@ -585,17 +567,17 @@
 		Jūsų adresatas taip pat gali keisti šį nustatymą jums abiems.</string>
   <string name="learn_more">Sužinoti daugiau</string>
   <string name="disappearing_messages_summary">Padaryti, kad būsimos žinutės šiame pokalbyje automatiškai išnyktų po 7\u00A0dienų.</string>
-  <!--Settings Actions-->
+  
   <string name="pref_category_actions">Veiksmai</string>
   <string name="share_app_link">Bendrinti atsisiuntimo nuorodą</string>
   <string name="share_app_link_text">Atsisiųskite Zerion apsilankę adresu %s</string>
   <string name="send_feedback">Siųsti atsiliepimą</string>
-  <!--Link Warning-->
+  
   <string name="link_warning_title">Įspėjimas apie nuorodą</string>
   <string name="link_warning_intro">Jūs ketinate atverti šią nuorodą, naudojant išorinę programėlę.</string>
   <string name="link_warning_text">Tai gali būti panaudota tam, kad jūs būtumėte atpažinti. Pagalvokite ar pasitikite asmeniu, kuris jums siunčia šią nuorodą ir apsvarstykite galimybę ją atverti, naudojant Tor Browser.</string>
   <string name="link_warning_open_link">Atverti nuorodą</string>
-  <!--Crash Reporter-->
+  
   <string name="crash_report_title">Zerion strigties ataskaita</string>
   <string name="zerion_crashed">Apgailestaujame, Zerion užstrigo</string>
   <string name="not_your_fault">Tai nėra jūsų kaltė.</string>
@@ -626,15 +608,15 @@
   <string name="dev_report_sent">Atsiliepimas išsiųstas</string>
   <string name="dev_report_saved">Ataskaita įrašyta. Ji bus išsiųsta, kai kitą kartą prisijungsite prie Zerion.</string>
   <string name="dev_report_error">Klaida: Nepavyko išsiųsti ataskaitos</string>
-  <!--Sign Out-->
+  
   <string name="progress_title_logout">Atsijungiama iš Zerion…</string>
-  <!--Screen Filters & Tapjacking-->
+  
   <string name="screen_filter_title">Aptikta ekrano perdanga</string>
   <string name="screen_filter_body">Aptikta kitos programėlės perdanga virš Zerion. Tam, kad būtų apsaugotas jūsų saugumas, Zerion nereaguos į prilietimus tol, kol kita programėlė yra atvaizduojama ant viršaus. Gali būti, kad šios programėlės perdengia Zerion:\n\n%1$s</string>
   <string name="screen_filter_body_api_30">Aptikta kitos programėlės perdanga virš Zerion. Siekdama apsaugoti jūsų saugumą, Zerion nereaguos į prilietimus tol, kol kita programėlė yra atvaizduojama ant viršaus.\n\nPeržiūrėkite žemiau esančias programėles, kad rastumėte atsakingą programėlę.</string>
   <string name="screen_filter_allow">Leisti šioms programėlėms perdengti ant viršaus</string>
   <string name="screen_filter_review_apps">Peržiūrėti programėles</string>
-  <!--Permission Requests-->
+  
   <string name="permission_camera_title">Kameros leidimas</string>
   <string name="permission_camera_request_body">Norint nuskenuoti QR kodą, Zerion reikia prieigos prie kameros.</string>
   <string name="permission_location_title">Įrenginio vietovės leidimas</string>
@@ -642,94 +624,20 @@
   <string name="permission_location_request_body">Tam, kad galėtų atrasti Bluetooth įrenginius, Zerion reikia gauti prieigą prie jūsų įrenginio vietovės.\n\nZerion nesaugo jūsų įrenginio vietovės ir su niekuo jos nebendrina.</string>
   <string name="permission_camera_location_title">Kamera ir įrenginio vietovė</string>
   <string name="permission_camera_location_request_body">Tam, kad galėtų nuskenuoti QR kodą, Zerion reikia gauti prieigą prie jūsų kameros.\n\nTam, kad galėtų atrasti Bluetooth įrenginius, Zerion reikia gauti prieigą prie jūsų įrenginio vietovės.\n\nZerion nesaugo jūsų įrenginio vietovės ir su niekuo jos nebendrina.</string>
-  <string name="permission_camera_bluetooth_title">Kamera ir įrenginiai netoliese</string>
-  <string name="permission_camera_bluetooth_request_body">Tam, kad galėtų nuskenuoti QR kodą, Zerion reikia gauti prieigą prie jūsų kameros.\n\nTam, kad galėtų atrasti Bluetooth įrenginius, Zerion reikia leidimo, skirto rasti ir prisijungti prie netoliese esančių įrenginių.</string>
   <string name="permission_camera_denied_body">Jūs uždraudėte prieigą prie kameros, tačiau norint pridėti adresatus, reikia naudoti kamerą.\n\nApsvarstykite galimybę sutekti prieigą prie kameros.</string>
   <string name="permission_location_denied_body">Jūs uždraudėte prieigą prie įrenginio vietovės, tačiau norint atrasti Bluetooth įrenginius, Zerion reikia šio leidimo.\n\nApsvarstykite galimybę sutekti prieigą prie įrenginio vietovės.</string>
   <string name="permission_location_setting_title">Įrenginio vietovės nustatymas</string>
   <string name="permission_location_setting_body">Norint rasti kitus įrenginius per Bluetooth, privalo būti įjungtas jūsų įrenginio vietovės nustatymas. Norėdami tęsti, įjunkite įrenginio vietovę. Po to, galėsite ir vėl ją išjungti.</string>
-  <string name="permission_location_setting_hotspot_body">Norint sukurti belaidį (Wi-Fi) viešosios interneto prieigos tašką, privalo būti įjungtas jūsų įrenginio vietovės nustatymas. Norėdami tęsti, įjunkite įrenginio vietovę. Po to, galėsite ir vėl ją išjungti.</string>
   <string name="permission_location_setting_button">Įjungti įrenginio vietovę</string>
-  <string name="permission_bluetooth_title">Įrenginių netoliese leidimas</string>
-  <string name="permission_bluetooth_body">Tam, kad naudotų Bluetooth komunikaciją, Zerion reikia leidimo rasti ir prisijungti prie įrenginių netoliese.</string>
-  <string name="permission_bluetooth_denied_body">Jūs uždraudėte prieigą prie įrenginių netoliese, tačiau norint naudoti Bluetooth, Zerion reikia šio leidimo.\n\nApsvarstykite galimybę sutekti prieigą prie įrenginių netoliese.</string>
-  <!--App Locking-->
   <string name="lock_unlock">Atrakinti Zerion</string>
   <string name="lock_unlock_verbose">Norėdami atrakinti Zerion, įveskite savo įrenginio PIN, šabloną ar slaptažodį</string>
   <string name="lock_unlock_fingerprint_description">Norėdami tęsti, priregistruotu pirštu prilieskite piršto atspaudo jutiklį</string>
   <string name="lock_unlock_password">Naudoti slaptažodį</string>
   <string name="lock_is_locked">Zerion užrakinta</string>
   <string name="lock_tap_to_unlock">Bakstelėkite, norėdami atrakinti</string>
-  <!--Connections Screen-->
+  
   <string name="transports_help_text">Zerion gali jungtis prie jūsų adresatų per internetą, belaidį (Wi-Fi) tinklą ar Bluetooth ryšį.\n\nPrivatumo sumetimais, visi ryšiai jungiasi per Tor tinklą.\n\nJei adresatas gali būti pasiekiamas keliais būdais, tuomet Zerion naudoja juos lygiagrečiai.</string>
-  <!--Share app offline-->
-  <string name="hotspot_title">Bendrinti šią programėlę nenaudojant interneto</string>
-  <string name="hotspot_intro">Bendrinti šią programėlę su žmogumi, kuris neturi interneto ryšio, naudojant jūsų telefono belaidį (Wi-Fi) ryšį.
-		\n\nJūsų telefonas įjungs belaidį (Wi-Fi) viešosios interneto prieigos tašką. Šalia esantys žmonės galės prisijungti prie prieigos taško ir atsisiųsti iš jūsų telefono Zerion programėlę.</string>
-  <string name="hotspot_button_start_sharing">Įjungti prieigos tašką</string>
-  <string name="hotspot_button_stop_sharing">Išjungti prieigos tašką</string>
-  <string name="hotspot_progress_text_start">Nustatomas prieigos taškas…</string>
-  <string name="hotspot_notification_channel_title">Belaidis (Wi-Fi) prieigos taškas</string>
-  <string name="hotspot_notification_title">Bendrinama Zerion nenaudojant interneto</string>
-  <string name="hotspot_button_connected">Kitas</string>
-  <string name="permission_hotspot_location_request_body">Tam, kad galėtų sukurti belaidį (Wi-Fi) viešosios interneto prieigos tašką, Zerion reikia gauti prieigą prie jūsų įrenginio vietovės.\n\nZerion nesaugo jūsų įrenginio vietovės ir su niekuo jos nebendrina.</string>
-  <string name="permission_hotspot_location_request_precise_body">Tam, kad galėtų sukurti belaidį (Wi-Fi) viešosios interneto prieigos tašką, Zerion reikia gauti prieigą prie jūsų tikslios įrenginio vietovės.\n\nZerion nesaugo jūsų įrenginio vietovės ir su niekuo jos nebendrina.</string>
-  <string name="permission_hotspot_location_denied_body">Jūs uždraudėte prieigą prie įrenginio vietovės, tačiau norint sukurti belaidį (Wi-Fi) viešosios interneto prieigos tašką, Zerion reikia šio leidimo.\n\nApsvarstykite galimybę sutekti prieigą prie įrenginio vietovės.</string>
-  <string name="permission_hotspot_location_denied_precise_body">Jūs uždraudėte prieigą prie tikslios įrenginio vietovės, tačiau norint sukurti belaidį (Wi-Fi) viešosios interneto prieigos tašką, Zerion reikia šio leidimo.\n\nApsvarstykite galimybę sutekti prieigą prie įrenginio vietovės.</string>
-  <string name="permission_hotspot_nearby_wifi_request_body">Tam, kad sukurtų belaidį (Wi-Fi) viešosios interneto prieigos tašką, Zerion reikia leidimo gauti prieigą prie įrenginių netoliese.</string>
-  <string name="permission_hotspot_nearby_wifi_denied_body">Jūs uždraudėte prieigą prie įrenginių netoliese, tačiau norint sukurti belaidį (Wi-Fi) viešosios interneto prieigos tašką, Zerion reikia šio leidimo.\n\nApsvarstykite galimybę sutekti prieigą prie įrenginių netoliese.</string>
-  <string name="wifi_settings_title">Belaidžio (Wi-Fi) nustatymas</string>
-  <string name="wifi_settings_request_enable_body">Tam, kad sukurtų belaidį (Wi-Fi) viešosios interneto prieigos tašką, Zerion turi naudoti belaidį (Wi-Fi) ryšį. Įjunkite jį.</string>
-  <string name="hotspot_tab_manual">Rankinis</string>
-  <!--The placeholder to be inserted into the string 'hotspot_manual_wifi': People can connect by %s-->
-  <!--Wi-Fi setup-->
-  <string name="hotspot_manual_wifi">Jūsų telefonas teikia belaidį (Wi-Fi) viešosios interneto prieigos tašką. Žmonės, norintys atsisiųsti Zerion, gali prisijungti prie prieigos taško ir pridėti jį savo įrenginio belaidžio (Wi-Fi) ryšio nustatymuose naudodami informaciją žemiau arba %s. Prisijungę prie prieigos taško, jie turi paspausti „Kitas“.</string>
-  <string name="hotspot_manual_wifi_ssid">Tinklo pavadinimas</string>
-  <string name="hotspot_qr_wifi">Jūsų telefonas teikia belaidį (Wi-Fi) viešosios interneto prieigos tašką. Žmonės, norintys atsisiųsti Zerion, gali prisijungti prie prieigos taško skenuodami šį QR kodą. Prisijungę prie prieigos taško, jie turi paspausti „Kitas“.</string>
-  <string name="hotspot_no_peers_connected">Nėra prisijungusių įrenginių</string>
-  <plurals name="hotspot_peers_connected">
-    <item quantity="one">%s prisijungęs įrenginys</item>
-    <item quantity="few">%s prisijungę įrenginiai</item>
-    <item quantity="many">%s prisijungusių įrenginių</item>
-    <item quantity="other">%s prisijungęs įrenginys</item>
-  </plurals>
-  <!--Download link-->
-  <string name="hotspot_manual_site">Jūsų telefonas teikia belaidį (Wi-Fi) viešosios interneto prieigos tašką. Žmonės, prisijungę prie prieigos taško, gali atsisiųsti Zerion, įrašydami saityno naršyklėje šią nuorodą arba %s.</string>
-  <string name="hotspot_manual_site_address">Adresas (URL)</string>
-  <string name="hotspot_qr_site">Jūsų telefonas teikia belaidį (Wi-Fi) viešosios interneto prieigos tašką. Žmonės, prisijungę prie prieigos taško, gali atsisiųsti Zerion, skenuodami šį QR kodą.</string>
-  <!--e.g. Download Zerion 1.2.20-->
-  <string name="website_download_title_1">Atsisiųsti Zerion %s</string>
-  <string name="website_download_intro_1">Kažkas iš šalia esančių pradėjo bendrinti su jumis Zerion.</string>
-  <string name="website_download_button">Atsisiųsti Zerion</string>
-  <string name="website_download_outro">Kai atsisiuntimas pasibaigs, atverkite atsisiųstą failą ir jį įdiekite.</string>
-  <string name="website_troubleshooting_title">Nesklandumų šalinimas</string>
-  <string name="website_troubleshooting_1">Jei negalite atsisiųsti programėlės, pabandykite naudoti kitą saityno naršyklės programėlę.</string>
-  <string name="website_troubleshooting_2_old">Norint įsidiegti atsisiųstą programėlę, jums sistemos nustatymuose gali tekti leisti programėlių iš „Nežinomų šaltinių“ diegimą. Po to, jums gali tekti atsisiųsti programėlę iš naujo. Kai įsidiegsite programėlę, rekomenduojame išjungti „Nežinomų šaltinių“ nustatymą.</string>
-  <string name="website_troubleshooting_2_new">Norint įsidiegti atsisiųstą programėlę, jums gali tekti leisti savo naršyklei diegti nežinomas programėles. Kai įsidiegsite programėlę, rekomenduojame pašalinti naršyklės leidimą diegti nežinomas programėles.</string>
-  <string name="hotspot_help_wifi_title">Problemos jungiantis prie belaidžio (Wi-Fi):</string>
-  <string name="hotspot_help_wifi_1">Pabandykite abiejuose telefonuose išjungti ir vėl įjungti belaidį (Wi-Fi) ryšį ir bandykite dar kartą.</string>
-  <string name="hotspot_help_wifi_2">Jeigu jūsų telefonas skundžiasi, jog belaidžiame (Wi-Fi) tinkle nėra interneto ryšio, nurodykite jam, kad norite likti prisijungę.</string>
-  <string name="hotspot_help_wifi_3">Paleiskite telefoną, kuriame įjungtas belaidis (Wi-Fi) viešosios interneto prieigos taškas, iš naujo, o tuomet paleiskite Zerion ir bandykite bendrinti dar kartą.</string>
-  <string name="hotspot_help_site_title">Iškilo problemų apsilankant vietinėje svetainėje:</string>
-  <string name="hotspot_help_site_1">Dar kartą įsitikinkite, kad tiksliai įvedėte nurodytą adresą. Maža klaida gali sukelti nesėkmę.</string>
-  <string name="hotspot_help_site_2">Bandydami pasiekti šią svetainę, įsitikinkite, kad jūsų telefonas vis dar yra prisijungęs prie teisingo belaidžio (Wi-Fi) ryšio (žiūrėkite aukščiau).</string>
-  <string name="hotspot_help_site_3">Jei turite užkardos programėlę, įsitikinkite, kad ji neblokuoja prieigos.</string>
-  <string name="hotspot_help_site_4">Jei galite apsilankyti svetainėje, bet negalite atsisiųsti Zerion programėlės, pabandykite naudoti kitą saityno naršyklės programėlę.</string>
-  <string name="hotspot_help_fallback_title">Niekas neveikia?</string>
-  <string name="hotspot_help_fallback_intro">Galite pabandyti įsirašyti programėlę kaip .apk failą, kad bendrintumėte ją kitokiu būdu. Perkėlus failą į kitą įrenginį, jis gali būti naudojamas, kad būtų įdiegta Zerion.
-		\n\nPatarimas: Norėdami bendrinti failą per Bluetooth, iš pradžių, jums gali tekti pervadinti failą taip, kad jis baigtųsi .zip prievardžiu.</string>
-  <string name="hotspot_help_fallback_button">Įsirašyti programėlę</string>
-  <!--error handling-->
-  <string name="hotspot_error_intro">Kažkas nutiko bandant bendrinti programėlę per belaidį (Wi-Fi) ryšį:</string>
-  <string name="hotspot_error_no_wifi_direct">Įrenginys nepalaiko „Wi-Fi Direct“</string>
-  <string name="hotspot_error_start_callback_failed">Nepavyko įjungti prieigos taško: klaida %s</string>
-  <string name="hotspot_error_start_callback_failed_unknown">Nepavyko įjungti prieigos taško dėl nežinomos klaidos, priežastis %d</string>
-  <string name="hotspot_error_start_callback_no_group_info">Nepavyko įjungti prieigos taško: nėra informacijos apie grupę</string>
-  <string name="hotspot_error_web_server_start">Klaida paleidžiant saityno serverį</string>
-  <string name="hotspot_error_web_server_serve">Klaida pateikiant svetainę.\n\nJei problema išlieka, išsiųskite atsiliepimą (su anoniminiais duomenimis) per Zerion programėlę.</string>
-  <string name="hotspot_flag_test">Įspėjimas: Ši programėlė buvo įdiegta naudojant „Android Studio“ ir NEGALI būti įdiegta kitame įrenginyje.</string>
-  <string name="hotspot_error_framework_busy">Nepavyko įjungti prieigos taško.\n\nJei turite veikiantį kitą prieigos tašką arba, jei bendrinate interneto ryšį per belaidį (Wi-Fi) ryšį, pabandykite to nebedaryti ir po to, bandykite dar kartą.</string>
-  <!--Transfer Data via Removable Drives-->
+  
   <string name="removable_drive_menu_title">Prisijungti per keičiamąjį diską</string>
   <string name="removable_drive_intro">Jei negalite prisijungti prie savo adresato per internetą, belaidį (Wi-Fi) ar Bluetooth, Zerion taip pat gali perkelti žinutes į keičiamąjį diską, pavyzdžiui, USB atmintuką ar SD kortelę.</string>
   <string name="removable_drive_explanation">Jei negalite prisijungti prie savo adresato per internetą, belaidį (Wi-Fi) ar Bluetooth, Zerion taip pat gali perkelti žinutes į keičiamąjį diską, pavyzdžiui, USB atmintuką ar SD kortelę.\n\nKai naudojate mygtuką „Siųsti duomenis“, bet kokie duomenys, laukiantys, kad būtų išsiųsti adresatui, bus įrašyti į keičiamąjį diską. Į juos įeina privačios žinutės, priedai, tinklaraščiai, forumai ir privačios grupės.\n\nVisa tai, prieš įrašant į keičiamąjį diską, bus užšifruota.\n\nJūsų adresatas, gavęs keičiamąjį diską, galės naudoti mygtuką „Gauti duomenis“, kad importuotų žinutes į Zerion.</string>
@@ -750,17 +658,17 @@
   <string name="removable_drive_error_send_text">Įvyko klaida rašant duomenis į failą.\n\nJei naudojate keičiamąjį diską, įsitikinkite, jog jis yra tinkamai įkištas ir bandykite dar kartą.\n\nJei klaida išlieka, atsiųskite atsiliepimą, kad praneštumėte Zerion komandai apie šią klaidą.</string>
   <string name="removable_drive_error_receive_title">Klaida importuojant duomenis</string>
   <string name="removable_drive_error_receive_text">Pasirinktame faile nebuvo nieko tokio, ką Zerion galėtų atpažinti.\n\nĮsitikinkite, kad pasirinkote teisingą failą.\n\nJeigu jūsų adresatas sukūrė failą daugiau kaip prieš 28 dienas, tuomet Zerion negalės jo atpažinti.</string>
-  <!--Screenshots-->
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
+  
   <string name="screenshot_alice">Jurgita</string>
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
   <string name="screenshot_bob">Mindaugas</string>
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
   <string name="screenshot_carol">Vilma</string>
-  <!--This is a message to be used in screenshots. Please use the same translation for Bob!-->
+  
   <string name="screenshot_message_1">Labas, Mindaugai!</string>
-  <!--This is a message to be used in screenshots. Please use the same translation for Alice!-->
+  
   <string name="screenshot_message_2">Sveika, Jurgita! Ačiū, kad papasakojai man apie Zerion!</string>
-  <!--This is a message to be used in screenshots.-->
+  
   <string name="screenshot_message_3">Jokių problemų, tikiuosi tau patiks 😀</string>
 </resources>

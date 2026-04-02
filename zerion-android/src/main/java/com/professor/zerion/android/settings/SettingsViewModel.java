@@ -54,8 +54,6 @@ import static com.professor.zerion.android.settings.SettingsFragment.SETTINGS_NA
 @ParametersNotNullByDefault
 class SettingsViewModel extends DbViewModel implements EventListener {
 
-	static final String BT_NAMESPACE = "org.briarproject.bramble.plugin.bluetooth";
-	static final String WIFI_NAMESPACE = "org.briarproject.bramble.plugin.lan";
 	static final String TOR_NAMESPACE = TorConstants.ID.getString();
 
 	private final SettingsManager settingsManager;
@@ -131,10 +129,6 @@ class SettingsViewModel extends DbViewModel implements EventListener {
 			try {
 				settings = settingsManager.getSettings(SETTINGS_NAMESPACE);
 				updateSettings(settings);
-				connectionsManager.updateBtSetting(
-						settingsManager.getSettings(BT_NAMESPACE));
-				connectionsManager.updateWifiSettings(
-						settingsManager.getSettings(WIFI_NAMESPACE));
 				connectionsManager.updateTorSettings(
 						settingsManager.getSettings(TOR_NAMESPACE));
 			} catch (DbException e) {
@@ -168,10 +162,6 @@ class SettingsViewModel extends DbViewModel implements EventListener {
 			if (namespace.equals(SETTINGS_NAMESPACE)) {
 				settings = s.getSettings();
 				updateSettings(settings);
-			} else if (namespace.equals(BT_NAMESPACE)) {
-				connectionsManager.updateBtSetting(s.getSettings());
-			} else if (namespace.equals(WIFI_NAMESPACE)) {
-				connectionsManager.updateWifiSettings(s.getSettings());
 			} else if (namespace.equals(TOR_NAMESPACE)) {
 				connectionsManager.updateTorSettings(s.getSettings());
 			}

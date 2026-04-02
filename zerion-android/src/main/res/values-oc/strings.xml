@@ -1,6 +1,6 @@
-﻿<?xml version='1.0' encoding='UTF-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
-	<!--Setup-->
+	
 	<string name="setup_title">La benvenguda a Zerion</string>
 	<string name="setup_name_explanation">Vòstre escais-nom serà mostrat al costat de cada de vòstra publicacion. Poiretz pas lo cambiar aprèp la creacion del compte.</string>
 	<string name="setup_next">Seguent</string>
@@ -24,7 +24,7 @@
 	<string name="dnkm_huawei_protected_help">Se Zerion es pas ajustat a la lista de las aplicacion protegidas poirà pas s’executar en rèire plan.</string>
 	<string name="dnkm_xiaomi_button">Projècte Zerion</string>
 	<string name="dnkm_warning_dozed">%s a pas pogut s’executar en rèire plan</string>
-	<!--Login-->
+	
 	<string name="enter_password">Senhal</string>
 	<string name="try_again">Senhal incorècte, tornatz ensajar</string>
 	<string name="dialog_title_cannot_check_password">Verificacion del senhal impossibla</string>
@@ -53,20 +53,20 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   <string name="startup_open_database">Deschirament de la basa de donadas…</string>
   <string name="startup_migrate_database">Mesa a nivèl de la basa de donadas…</string>
   <string name="startup_compact_database">Compression de la basa de donadas…</string>
-  <!--Navigation Drawer-->
+  
   <string name="nav_drawer_open_description">Dobrir lo panèl de navigacion</string>
   <string name="nav_drawer_close_description">Tampar lo panèl de navigacion</string>
   <string name="contact_list_button">Contactes</string>
   <string name="groups_button">Grops privats</string>
-  <!--This is part of the main menu. The app will be locked when this is tapped.-->
+  
   <string name="lock_button">Verrolhar l’aplicacion</string>
   <string name="settings_button">Paramètres</string>
   <string name="sign_out_button">Se desconnectar</string>
-  <!--Transports: Tor-->
+  
   <string name="transport_tor">Internet</string>
-  <!--Transports: Wi-Fi-->
-  <!--Transports: Bluetooth-->
-  <!--Notifications-->
+  
+  
+  
   <string name="reminder_notification_title">Desconnectat de Zerion</string>
   <string name="reminder_notification_text">Tocatz per vos desconnectar</string>
   <string name="reminder_notification_channel_title">Recòrd de connexion Zerion</string>
@@ -81,7 +81,7 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
     <item quantity="one">Novèl messatge gropat</item>
     <item quantity="other">%d novèls messatges gropats</item>
   </plurals>
-  <!--Misc-->
+  
   <string name="now">Ara</string>
   <string name="show">Mostrar</string>
   <string name="hide">Amagar</string>
@@ -105,7 +105,7 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   <string name="help">Ajuda</string>
   <string name="sorry">O planhèm</string>
   <string name="error_start_activity">Pas disponibla per vòstre sistèma</string>
-  <!--Contacts and Private Conversations-->
+  
   <string name="no_contacts">Cap de contacte de mostrar</string>
   <string name="no_contacts_action">Tocatz l’icòna + per ajustar un contacte</string>
   <string name="date_no_private_messages">Cap messatge</string>
@@ -117,12 +117,6 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   <string name="image_attach_error_invalid_mime_type">Format d’imatge pas compatible : %s</string>
   <string name="set_contact_alias">Cambiar lo nom del contacte</string>
   <string name="set_contact_alias_hint">Nom del contacte</string>
-  <string name="menu_item_connect_via_bluetooth">Se connectar per Bluetooth</string>
-  <string name="connect_via_bluetooth_title">Se connectar per Bluetooth</string>
-  <!--The first placeholder will show a duration like "7 days". The second placeholder at the end will add "Tap to learn more."-->
-  <!--The placeholder at the end will add "Tap to learn more."-->
-  <!--The first placeholder will show a contact's name. The second placeholder will show a duration like "7 days". The third placeholder at the end will add "Tap to learn more."-->
-  <!--The first placeholder will show a contact's name. The second placeholder at the end will add "Tap to learn more."-->
   <string name="delete_all_messages">Suprimir totes los messatges</string>
   <string name="dialog_title_delete_all_messages">Confirmatz la supression dels messatges</string>
   <string name="dialog_message_delete_all_messages">Volètz vertadièrament suprimir totes los messatges ?</string>
@@ -134,7 +128,7 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   <string name="dialog_title_delete_contact">Confirmatz la supression del contacte</string>
   <string name="dialog_message_delete_contact">Sètz segur de voler suprimir lo contacte e los messatges ligats a el ?</string>
   <string name="contact_deleted_toast">Contacte suprimit</string>
-  <!--This is shown in the action bar when opening an image in fullscreen that the user sent-->
+  
   <string name="you">Vos</string>
   <string name="save_image">Enregistrar l’imatge</string>
   <string name="dialog_title_save_image">Volètz enregistrar l’imatge ?</string>
@@ -146,7 +140,7 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   <string name="dialog_title_image_support">Ara podètz enviar d’imatges a aqueste contacte</string>
   <string name="dialog_message_image_support">Tocatz aquesta icòna per juntar d’imatges.</string>
   <string name="messaging_too_many_attachments_toast">Solament los %d primièrs imatges seràn enviats</string>
-  <!--Adding Contacts-->
+  
   <string name="add_contact_title">Ajustar un contacte a proximitat</string>
   <string name="continue_button">Contunhar</string>
   <string name="try_again_button">Tornar ensajar</string>
@@ -161,7 +155,7 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   <string name="authenticating_with_device">Autentificacion amb l’aparelh\u2026</string>
   <string name="connection_error_title">Connexion impossibla al contacte</string>
   <string name="connection_error_feedback">S’aqueste problèma dura, mercés <a href="feedback"> d’enviar un comentari</a> per nos ajudar a melhorar l’aplicacion.</string>
-  <!--Adding Contacts Remotely-->
+  
   <string name="add_contact_remotely_title_case">Ajustar un contacte a distància</string>
   <string name="add_contact_nearby_title">Ajustatz un contacte a proximitat</string>
   <string name="add_contact_remotely_title">Ajustatz un contacte a distància</string>
@@ -194,9 +188,9 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   <string name="unsupported_link">Aqueste ligam ven d’una version de Zerion mai recenta. Passatz a la darrièra version e tornatz ensajar.</string>
   <string name="intent_own_link">Avètz dubèrt vòstre pròpi ligam. Utilizatz çò d’un contacte que volètz ajustar !</string>
   <string name="missing_link">Mercés de picar un ligam</string>
-  <!--This is a numeral indicating the first step in a series of screens-->
+  
   <string name="step_1">1</string>
-  <!--This is a numeral indicating the second step in a series of screens-->
+  
   <string name="step_2">2</string>
   <plurals name="contact_added_notification_text">
     <item quantity="one">Nòu contacte ajustat.</item>
@@ -206,15 +200,15 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   <string name="duplicate_link_dialog_title">Duplicar lo ligam</string>
   <string name="duplicate_link_dialog_text_1">Avètz ja una demanda en espèra amb aqueste ligam : %s</string>
   <string name="duplicate_link_dialog_text_1_contact">Avètz ja un contacte amb aqueste ligam : %s</string>
-  <!--This is a question asking whether two nicknames refer to the same person-->
+  
   <string name="duplicate_link_dialog_text_2">Son %s e %s la meteissa persona ?</string>
-  <!--This is a button for answering that two nicknames do indeed refer to the same person. This -->
+  
   <string name="same_person_button">Meteissa persona</string>
-  <!--This is a button for answering that two nicknames refer to different people. This string -->
+  
   <string name="different_person_button">Persona diferenta</string>
   <string name="duplicate_link_dialog_text_3">%s e %s vos envia lo meteis ligam.\n\nUn d’eles poiriá ensajar de descobrir quines son vòstres contactes.\n\n Digatz-los pas qu’avètz recebut lo meteis ligam de qualqu’un mai.</string>
   <string name="pending_contact_updated_toast">Contact en espèra actualizat</string>
-  <!--Introductions-->
+  
   <string name="introduction_onboarding_title">Presentatz vòstres contactes</string>
   <string name="introduction_onboarding_text">Podètz presentar vòstres contactes, lor caldrà pas se veire per s’apondre e se connectar a Zerion.</string>
   <string name="introduction_menu_item">Escafar l’introduccion</string>
@@ -235,7 +229,7 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   <string name="introduction_response_accepted_received">%1$s a acceptat d’apondre %2$s.</string>
   <string name="introduction_response_declined_received">%1$s a refusat d’apondre %2$s.</string>
   <string name="introduction_response_declined_received_by_introducee">%1$s anóncia que %2$s a refusat la convidacion.</string>
-  <!--Private Groups-->
+  
   <string name="groups_list_empty">Cap de grop de mostrar</string>
   <string name="groups_list_empty_action">Tocatz l’icòna + per crear un grop, o demandatz a un contacte de patejar un grop amb vos</string>
   <string name="groups_created_by">Fondat per %s</string>
@@ -266,7 +260,7 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   <string name="groups_dissolve_button">Suprimir</string>
   <string name="groups_dissolved_dialog_title">Lo grop es estat suprimit</string>
   <string name="groups_dissolved_dialog_message">Lo fondador d’aqueste grop l’a suprimit.\n\nPodètz pas mai escriure de messatges e benlèu qu’avètz pas recebuts totes los messatges.</string>
-  <!--Private Group Invitations-->
+  
   <string name="groups_invitations_title">Convidacion de grop</string>
   <string name="groups_invitations_invitation_sent">Avètz convidat %1$s a venir al grop « %2$vs»</string>
   <string name="groups_invitations_invitation_received">%1$s vos a convidat a anar al grop « %2$s »</string>
@@ -281,14 +275,14 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   <string name="groups_invitations_response_accepted_received">%s a acceptat la convidacion del grop.</string>
   <string name="groups_invitations_response_declined_received">%s a refusat la convidacion del grop.</string>
   <string name="sharing_status_groups">Pas que lo fondador del grop pòt convidar mai de monde. Vaquí la tièra dels membres actuals.</string>
-  <!--Private Groups Revealing Contacts-->
+  
   <string name="groups_reveal_contacts">Revelar los contactes</string>
   <string name="groups_reveal_dialog_message">Podètz causir de revelar los contactes a totes los membres actuals e venents d’aqueste grop.\n\nEn revelar los contactes auretz una melhora connexion al grop e mai fiabla perque poiretz comunicar amb los contactes revelats quand lo fondator es fòra linha.</string>
   <string name="groups_reveal_visible">Vòstre ligam amb lo contacte es visible pel grop</string>
   <string name="groups_reveal_visible_revealed_by_us">Vòstre ligam – revelat per vos – amb lo contacte es visible pel grop </string>
   <string name="groups_reveal_visible_revealed_by_contact">Vòstre ligam – revelat per %s – amb lo contacte es invisible pel grop</string>
   <string name="groups_reveal_invisible">Vòstre ligam amb lo contacte es invisible pel grop</string>
-  <!--Forums-->
+  
   <string name="no_posts">Cap publicacion</string>
   <plurals name="posts">
     <item quantity="one">%d publicacion</item>
@@ -296,7 +290,7 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   </plurals>
   <string name="btn_reply">Respondre</string>
   <string name="dialog_button_leave">Quitar</string>
-  <!--Forum Sharing-->
+  
   <string name="contacts_selected">Contactes seleccionats</string>
   <string name="activity_share_toolbar_header">Causissètz de contactes</string>
   <string name="no_contacts_selector">Cap de contacte de mostrar</string>
@@ -305,12 +299,12 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   <string name="sharing_status">Estat del partatge</string>
   <string name="shared_with">Partejat amb %1$d (%2$d en linha)</string>
   <string name="nobody">Degun</string>
-  <!--Blogs-->
+  
   <string name="read_more">Legir la seguida</string>
-  <!--Blog Sharing-->
-  <!--RSS Feeds-->
-  <!--Settings Profile Picture-->
-  <!--Settings Display-->
+  
+  
+  
+  
   <string name="pref_language_title">Lenga &amp; region</string>
   <string name="pref_language_changed">Aquel paramètre serà pres en compte aprèp una reaviada de Zerion. Desconnectatz-vos e reaviatz Zerion.</string>
   <string name="pref_language_default">Sistèma per defaut</string>
@@ -320,29 +314,29 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   <string name="pref_theme_dark">Escur</string>
   <string name="pref_theme_auto">Automatic (Segon l’ora)</string>
   <string name="pref_theme_system">Sistèma per defaut</string>
-  <!--Settings Connections-->
+  
   <string name="tor_network_setting_automatic">Automaticament basat sus l’emplaçament</string>
-  <!--How and when Zerion will connect to Tor: E.g. "Don't connect to the Internet (in China)" or "Use Tor network with bridges (in Belarus)"-->
+  
   <string name="tor_network_setting_summary">Automatic : %1$s (en %2$s)</string>
   <string name="tor_mobile_data_title">Utilizar la connexion del mobil</string>
   <string name="tor_only_when_charging_summary">Desactiva la connexion Internet quand l’aparelh manca de bateriá</string>
-  <!--Settings Security and Panic-->
+  
   <string name="security_settings_title">Seguretat</string>
   <string name="pref_lock_title">Verrolatge de l’aplicacion</string>
   <string name="pref_lock_summary">Utilizar l’ecran de verrolhatge per protegir Zerion quand es connectat</string>
   <string name="pref_lock_disabled_summary">Per utilizar aquesta foncion, configuratz un ecran de verrolatge per l’aparelh</string>
   <string name="pref_lock_timeout_title">Temps d’inactivitat abans verrolatge</string>
-  <!--The %s placeholder is replaced with the following time spans, e.g. 5 Minutes, 1 Hour-->
+  
   <string name="pref_lock_timeout_summary">Sens utilizar Zerion, lo verrolhar aprèp %s</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_1">1 minuta</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_5">5 minutas</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_15">15 minutas</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_30">30 minutas</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_60">1 ora</string>
   <string name="pref_lock_timeout_never">Pas jamai</string>
   <string name="pref_lock_timeout_never_summary">Jamai verrolhar Zerion automaticament</string>
@@ -365,7 +359,7 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   <string name="panic_setting_signout_summary">Se desconnectar de Zerion en apiejant lo boton Urgéncia ?</string>
   <string name="purge_setting_title">Suprimir lo compte</string>
   <string name="purge_setting_summary">Suprimir vòstre compte en apiejant lo boton Urgéncia. Mèfi, aquò escafarà per totjorn vòstra identitat, vòstres contactes e messatges.</string>
-  <!--Settings Notifications-->
+  
   <string name="notification_settings_title">Notificacions</string>
   <string name="notify_sign_in_title">Me rapelar de me connectar</string>
   <string name="notify_sign_in_summary">Me mostrar un avís quand lo mobil avia o que l’aplicacion foguèt mesa a jorn</string>
@@ -381,15 +375,15 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   <string name="notify_sound_setting_disabled">Cap</string>
   <string name="choose_ringtone_title">Causir la sonariá</string>
   <string name="cannot_load_ringtone">Cargament impossible de las sonariás</string>
-  <!--Conversation Settings-->
-  <!--Settings Feedback-->
+  
+  
   <string name="send_feedback">Enviar vòstres comentaris</string>
-  <!--Link Warning-->
+  
   <string name="link_warning_title">Avertiment de ligam</string>
   <string name="link_warning_intro">Sètz a man de dobrir lo ligam seguent amb una aplicacion extèrna.</string>
   <string name="link_warning_text">Aquò pòt servir a vos identificar. Soscatz se vos fisatz de la persona que vos a enviat aqueste ligam e pensatz de lo dobrir amb Tor Browser. </string>
   <string name="link_warning_open_link">Dobrir lo ligam</string>
-  <!--Crash Reporter-->
+  
   <string name="crash_report_title">Senhalar lo fracàs de Zerion</string>
   <string name="zerion_crashed">Malastre, Zerion a arrestat de foncionar.</string>
   <string name="not_your_fault">Es pas vòstra fauta.</string>
@@ -404,13 +398,13 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   <string name="send_report">Enviar lo rapòrt</string>
   <string name="close">Tampar</string>
   <string name="dev_report_saved">Rapòrt salvat. Serà enviat a vòstra connexion venenta a Zerion.</string>
-  <!--Sign Out-->
+  
   <string name="progress_title_logout">Desconnecion de Zerion...</string>
-  <!--Screen Filters & Tapjacking-->
+  
   <string name="screen_filter_title">Superposicion detectada</string>
   <string name="screen_filter_body">Una autra aplicacion se subrepausa a Zerion. Per protegir vòstra seguretat, Zerion respondrà pas a las tòcas tant qu’una aplicacion li passa dessús.\n\n Las aplicacions seguentas pòdon subrepausar las autras :\n\n %1$s</string>
   <string name="screen_filter_allow">Autorizar aquestas aplicacions a se subrepausar</string>
-  <!--Permission Requests-->
+  
   <string name="permission_camera_title">Permission de la camèra</string>
   <string name="permission_camera_request_body">Per numerizar lo còdi QR cal que Zerion aja l’accès a la camèra.</string>
   <string name="permission_location_title">Autorizacion de localizacion</string>
@@ -420,25 +414,25 @@ parteja pas amb degun.</string>
   <string name="permission_camera_location_title">Camèra e localizacion</string>
   <string name="permission_camera_location_request_body">Per numerizar un còdi QR, Zerion deu accedir a la camèra.\n\nPer trobar de periferics Bluetooth, Zerion deu aver l’autorizacion d’accedir a vòstra posicion.\n\n Zerion garda pas vòstra posicion e la parteja pas amb degun.</string>
   <string name="permission_camera_denied_body">Avètz regetat l’accès a la camèra, mas per ajustar de contacte cal utilizar la camèra.\n\n Mercés de li donar l’accès</string>
-  <!--App Locking-->
+  
   <string name="lock_unlock">Desverrolhar Zerion</string>
   <string name="lock_unlock_verbose">Picatz vòstre PIN, esquèma o senhal per desverrollhar Zerion</string>
   <string name="lock_unlock_fingerprint_description">Tocatz lo captaire de detada amb lo det enregistrat per contunhar</string>
   <string name="lock_unlock_password">Utilizar lo senhal</string>
   <string name="lock_is_locked">Zerion es verrolhat</string>
   <string name="lock_tap_to_unlock">Tocatz per desverrolhar</string>
-  <!--Connections Screen-->
-  <!--Screenshots-->
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
+  
+  
   <string name="screenshot_alice">Alicia</string>
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
   <string name="screenshot_bob">Joan</string>
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
   <string name="screenshot_carol">Carolina</string>
-  <!--This is a message to be used in screenshots. Please use the same translation for Bob!-->
+  
   <string name="screenshot_message_1">Adieu lo Joan !</string>
-  <!--This is a message to be used in screenshots. Please use the same translation for Alice!-->
+  
   <string name="screenshot_message_2">Adieu l’Alicia ! Mercés de m’aver parlat de Zerion !</string>
-  <!--This is a message to be used in screenshots.-->
+  
   <string name="screenshot_message_3">Amb plaser, espri que t\'agradarà !</string>
 </resources>

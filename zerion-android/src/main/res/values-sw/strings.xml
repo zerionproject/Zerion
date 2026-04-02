@@ -1,6 +1,6 @@
-﻿<?xml version='1.0' encoding='UTF-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
-	<!--Setup-->
+	
 	<string name="setup_title">Karibu kwenye Zerion</string>
 	<string name="setup_name_explanation">lakabu lako litaonekana kwenye kila chapisho lako . Na hutaweza badilisha baada ya kuteneneza akaunti yako .</string>
 	<string name="setup_next">Ifuatayo</string>
@@ -28,7 +28,7 @@ Nenosiri zako haziendani </string>
 Kama Zerion haija wekwa kwenye orotha programu ulizi, haitaweza kufanya kazi kwenye nyuma ya mkongo</string>
 	<string name="dnkm_xiaomi_button">Linda Zerion </string>
 	<string name="dnkm_warning_dozed">%shaijawezekana kujiendesha kwa nyuma ya mkongo</string>
-	<!--Login-->
+	
 	<string name="enter_password">Nywila
 nenosiri</string>
 	<string name="try_again">Umekosea nywila , jaribu tena
@@ -59,17 +59,17 @@ Umepoteza nenosiri.</string>
   <string name="startup_open_database">Kupunguka Hifadhidata</string>
   <string name="startup_migrate_database">Boresha Hifadhidata</string>
   <string name="startup_compact_database">Kuingiliana Hifadhi data rununu</string>
-  <!--Navigation Drawer-->
+  
   <string name="nav_drawer_open_description">Fungua njia ya Usambazaji </string>
   <string name="nav_drawer_close_description">Funga njia ya Usambazaji </string>
   <string name="contact_list_button">Mawasiliano </string>
   <string name="groups_button">Vikundi vya kibinafsi</string>
-  <!--This is part of the main menu. The app will be locked when this is tapped.-->
+  
   <string name="lock_button">Funga programu</string>
   <string name="settings_button">Mipangilio</string>
   <string name="sign_out_button">Kutoka</string>
   <string name="transports_onboarding_text">Gonga hapa kudhibiti jinsi Zerion inavyounganishwa kwenye mawasiliano yako</string>
-  <!--Transports: Tor-->
+  
   <string name="transport_tor">Mtandao </string>
   <string name="tor_device_status_online_wifi">Simu yako ina upatikanaji wa mtandano kupitia Wi_Fi</string>
   <string name="tor_device_status_online_mobile">Simu yako ina upatikanaji wa mtandano kupitia data ya rununu</string>
@@ -81,17 +81,17 @@ Umepoteza nenosiri.</string>
   <string name="tor_plugin_status_disabled_mobile_data">Zerion imeundwa kutotumia data rununu</string>
   <string name="tor_plugin_status_disabled_battery">Zerion imeundwa kutotumia Mtandao wakati wa kutumia betri</string>
   <string name="tor_plugin_status_disabled_country_blocked">Zerion imeundwa kutotumia mtandao kwenye nchi hii</string>
-  <!--Transports: Wi-Fi-->
+  
   <string name="transport_lan_long">mtandao sawa wa Wi_Fi</string>
-  <!--Transports: Bluetooth-->
-  <!--Notifications-->
+  
+  
   <string name="reminder_notification_title">Toka Zerion</string>
   <string name="reminder_notification_text">bonyeza Kuingia tena .</string>
   <string name="reminder_notification_channel_title">Zerion ingia kwenye kumbukumbu </string>
   <string name="reminder_notification_dismiss">tokaa </string>
   <string name="ongoing_notification_title">Ingia kwenye Zerion </string>
   <string name="ongoing_notification_text">bonyeza kufungua Zerion.</string>
-  <!--Misc-->
+  
   <string name="now">sasa</string>
   <string name="show">onyesha</string>
   <string name="hide">ficha</string>
@@ -117,7 +117,7 @@ Umepoteza nenosiri.</string>
   <string name="sorry">Samahani</string>
   <string name="error_start_activity">Haipatikani kwenye mfumo wako</string>
   <string name="status_heading">Hali</string>
-  <!--Contacts and Private Conversations-->
+  
   <string name="no_contacts">Hakuna mawasiliano yakuonyesha </string>
   <string name="no_contacts_action">Bonyeza ikoni + kuongeza mawasiliano </string>
   <string name="date_no_private_messages">Hakuna ujumbe </string>
@@ -129,12 +129,6 @@ Umepoteza nenosiri.</string>
   <string name="image_attach_error_invalid_mime_type">Mfumo wa taswira hauendani: %s</string>
   <string name="set_contact_alias">Badilisha jina lako la mawasiliano </string>
   <string name="set_contact_alias_hint">Jina la mawasiliano </string>
-  <string name="menu_item_connect_via_bluetooth">Unganisha kwa Bluetooth</string>
-  <string name="connect_via_bluetooth_title">Unganisha kwa Bluetooth</string>
-  <!--The first placeholder will show a duration like "7 days". The second placeholder at the end will add "Tap to learn more."-->
-  <!--The placeholder at the end will add "Tap to learn more."-->
-  <!--The first placeholder will show a contact's name. The second placeholder will show a duration like "7 days". The third placeholder at the end will add "Tap to learn more."-->
-  <!--The first placeholder will show a contact's name. The second placeholder at the end will add "Tap to learn more."-->
   <string name="delete_all_messages">Futa jumbe zote</string>
   <string name="dialog_title_delete_all_messages">Hakiki ufutaji  wa ujumbe</string>
   <string name="dialog_message_delete_all_messages">Je, unauhakika wa kufuta jumbe zote?</string>
@@ -149,7 +143,7 @@ Umepoteza nenosiri.</string>
   <string name="dialog_title_delete_contact">Thibitisha ufutaji wa mawasiliano </string>
   <string name="dialog_message_delete_contact">Unauhakika unataka kuondoa mawasiliano na ujumbe wote kati yenu .</string>
   <string name="contact_deleted_toast">Mawasiliano yamefutwa</string>
-  <!--This is shown in the action bar when opening an image in fullscreen that the user sent-->
+  
   <string name="you">Wewe</string>
   <string name="save_image">Hifathi taswira</string>
   <string name="dialog_title_save_image">Hifathi taswira?</string>
@@ -161,7 +155,7 @@ Umepoteza nenosiri.</string>
   <string name="dialog_title_image_support">Sasa unaweza tuma taswira kwa mawasiliano haya.</string>
   <string name="dialog_message_image_support">Bonyeza ikoni hii kuambatanisha taswira.</string>
   <string name="messaging_too_many_attachments_toast">Taswira ya kwanza %d ndio itakayotumwa</string>
-  <!--Adding Contacts-->
+  
   <string name="add_contact_title">Ongeza mawasaliano ya walio karibu </string>
   <string name="continue_button">Endelea</string>
   <string name="try_again_button">Jaribu tena </string>
@@ -176,7 +170,7 @@ Umepoteza nenosiri.</string>
   <string name="authenticating_with_device">Uhalisishaji wa kifaa\u2026</string>
   <string name="connection_error_title">Imeshindwa unganishwa kwenye mawasiliano </string>
   <string name="connection_error_feedback">Kama hilo tatizo linaendela , Tafathali <a href="feedback"> tutumie maoni</a>ilituboreshe Programu .</string>
-  <!--Adding Contacts Remotely-->
+  
   <string name="add_contact_remotely_title_case">Ongeza mawasiliano kwambali </string>
   <string name="add_contact_nearby_title">Ongeza mawasiliano kwa karibu </string>
   <string name="add_contact_remotely_title">Ongeza Mawasilina kwa wambali </string>
@@ -209,9 +203,9 @@ Umepoteza nenosiri.</string>
   <string name="unsupported_link">Hichi kiunga kimetoka kwenye tolea jipya  Bria. Tafathali boresha kuwa kwenye Tolea jipya na ujaribu tena .</string>
   <string name="intent_own_link">Umefungua kiunga cha kwako mwenyewe. Tumia kingine unachotaka kuongeza!</string>
   <string name="missing_link">Tafathali ingiza Kiungo </string>
-  <!--This is a numeral indicating the first step in a series of screens-->
+  
   <string name="step_1">1</string>
-  <!--This is a numeral indicating the second step in a series of screens-->
+  
   <string name="step_2">2</string>
   <plurals name="contact_added_notification_text">
     <item quantity="one">mawasiliano mapya yameongezeka </item>
@@ -222,19 +216,15 @@ Umepoteza nenosiri.</string>
   <string name="duplicate_link_dialog_text_1">Tayari unayo mawasiliano yenye kiunga hiki:%s</string>
   <string name="duplicate_link_dialog_text_1_contact">Tayari una mawasiliano na kiunga hiki: 1%s
  </string>
-  <!--This is a question asking whether two nicknames refer to the same person-->
+  
   <string name="duplicate_link_dialog_text_2">yani%sna%sni mtu mmoja?</string>
-  <!--This is a button for answering that two nicknames do indeed refer to the same person. This
-	string will be used in a dialog button, so if the translation of this string is longer than 20
-	characters, please use "Yes" instead, and use "No" for the "Different Person" button-->
+  
   <string name="same_person_button">Mtu yuleyule</string>
-  <!--This is a button for answering that two nicknames refer to different people. This string
-	will be used in a dialog button, so if the translation of this string longer than 20 characters,
-	please use "No" instead, and use "Yes" for the "Same Person" button-->
+  
   <string name="different_person_button">Mtu Tofauti</string>
   <string name="duplicate_link_dialog_text_3">%sna%swamekutumia kiunga sawa.\n\nMmoja wapo anajaribu kujuha ninani umewasiliana nae.\n\nUsi waambie umepokea kiunga hicho kwa mtu mwengine .</string>
   <string name="pending_contact_updated_toast">mawasilano yalio subirishwa yamesasishwa </string>
-  <!--Introductions-->
+  
   <string name="introduction_onboarding_title">Tambulisha mawasiliano yako </string>
   <string name="introduction_onboarding_text">Unaweza yatambulisha mawasiliano yako kwenu wote,Ili isiwe lazima mpaka wakutane ndio waungane kwenye Zerion.</string>
   <string name="introduction_menu_item">Anza Utambulisho </string>
@@ -255,7 +245,7 @@ Umepoteza nenosiri.</string>
   <string name="introduction_response_accepted_received">%1$samekubali utabulisho kwa %2$s</string>
   <string name="introduction_response_declined_received">%1$sKakataa Utambulisho kwa %2$s.</string>
   <string name="introduction_response_declined_received_by_introducee">%1$skasema kwamba %2$s kakataa utambulisho.</string>
-  <!--Private Groups-->
+  
   <string name="groups_list_empty">Hakuna kikundi cha kuonyesha </string>
   <string name="groups_list_empty_action">Bonyeza +ikoni kutenege kikundi, au uliza mawasiliano yako wakuunge kwenye kikundi </string>
   <string name="groups_created_by">Imetengenezwa na %s</string>
@@ -286,7 +276,7 @@ Umepoteza nenosiri.</string>
   <string name="groups_dissolve_button">kufuta</string>
   <string name="groups_dissolved_dialog_title">Kikundi kime futwa </string>
   <string name="groups_dissolved_dialog_message">Alie tengeneza kikundi kakifuta .\n\nWewe hautaweza kuandika ujumbe kwenye hili kundi na hutaweza pata chapisho ambalo lilisha wahi andikwa .</string>
-  <!--Private Group Invitations-->
+  
   <string name="groups_invitations_title">Mwaliko wa Kikundi </string>
   <string name="groups_invitations_invitation_sent">Umemwalika %1$skujiunga kwenye kikundi \"%2$s\".</string>
   <string name="groups_invitations_invitation_received">%1$samekualika kujiunga kwenye kikundi\"%2$s\".</string>
@@ -297,18 +287,18 @@ Umepoteza nenosiri.</string>
   <string name="groups_invitations_response_accepted_received">%sKakubali mwaliko wa Kikundi .</string>
   <string name="groups_invitations_response_declined_received">%sWamekata mwaliko wa kikundi.</string>
   <string name="sharing_status_groups">Ni alie tengeneza tu kikundi ndio anaweza mwalika mtu tu. Hapo chini ni wanakikundi waliopo.</string>
-  <!--Private Groups Revealing Contacts-->
+  
   <string name="groups_reveal_contacts">Onyesha Mawasiliano </string>
   <string name="groups_reveal_dialog_message">Unaweza chagua kuonyesha mawasiliano yote sasa au hapo mbeleni ya wanakikundi.\n\nKuonyesha mawasiliano inafanya kikundi chako kuwa hai na kinapatikana marakwamara , kwasababu unawasiliana na mawasiliano yanayo tambulika hata kama unaye wasiliana nae hayupo mtandaoni </string>
   <string name="groups_reveal_visible">Mahusiano ya mawasiliano yanaonekana kwenye kikundi</string>
   <string name="groups_reveal_visible_revealed_by_us">Mahusiano ya kikundi yanaonekana ( Yameonyeshwa na wewe)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Mahusiano ya mawasiliano yanaonekana kwenye kikundi (Yanaonyeshwa na %s)</string>
   <string name="groups_reveal_invisible">Mawaliano yanaonekana kwenye hichi kikundi </string>
-  <!--Forums-->
+  
   <string name="no_posts">Hakuna Chapisho </string>
   <string name="btn_reply">Jibu</string>
   <string name="dialog_button_leave">Toka</string>
-  <!--Forum Sharing-->
+  
   <string name="contacts_selected">Mawasiliano yalio chaguliwa </string>
   <string name="activity_share_toolbar_header">Chagua Mawasiliano </string>
   <string name="no_contacts_selector">hakuna mawasiliano yakuonyesha </string>
@@ -317,12 +307,12 @@ Umepoteza nenosiri.</string>
   <string name="sharing_status">Tawanya hali </string>
   <string name="shared_with">Umesabazwa na %1$d(%2$dmkondoni)</string>
   <string name="nobody">Hakuna mtu </string>
-  <!--Blogs-->
+  
   <string name="read_more">Soma zaidi </string>
-  <!--Blog Sharing-->
-  <!--RSS Feeds-->
-  <!--Settings Profile Picture-->
-  <!--Settings Display-->
+  
+  
+  
+  
   <string name="pref_language_title">Lugha &amp;mkoa</string>
   <string name="pref_language_changed">Huu mpango utafanya kazi utakapo anzisha tena Zerion. Tafathali toka na kuanzisha tena Zerion.</string>
   <string name="pref_language_default">Mfumo msingi </string>
@@ -332,9 +322,8 @@ Umepoteza nenosiri.</string>
   <string name="pref_theme_dark">Giza</string>
   <string name="pref_theme_auto">kiotomatiki (Mchana)</string>
   <string name="pref_theme_system">Mfumo msingi </string>
-  <!--Settings Connections-->
+  
   <string name="network_settings_title">Viunganishi</string>
-  <string name="bluetooth_setting">Unganisha kwa anwani kupitia Bluetooth</string>
   <string name="wifi_setting">Unganisha kwa anwani kwenye mtandao huo wa Wi-Fi 376 mtandao</string>
   <string name="tor_enable_title">Unganisha mawasiliano kupitia mtandao</string>
   <string name="tor_enable_summary">Muunganiko wote unaokwenda kwa njia ya mtandao wa Tor ni kwa faragha</string>
@@ -343,28 +332,28 @@ Umepoteza nenosiri.</string>
   <string name="tor_network_setting_without_bridges">Tumia mtandao wa Tor bila madaraja</string>
   <string name="tor_network_setting_with_bridges">Tumia mtandao wa Tor na madaraja</string>
   <string name="tor_network_setting_never">Usiunganishe kwenye mtandao</string>
-  <!--How and when Zerion will connect to Tor: E.g. "Don't connect to the Internet (in China)" or "Use Tor network with bridges (in Belarus)"-->
+  
   <string name="tor_network_setting_summary">kiotomatiki:%1$s (ndani%2$s)</string>
   <string name="tor_mobile_data_title">Tumia Data ya simu</string>
   <string name="tor_only_when_charging_title">Unganisha kwenye mtandao wakati wa kuchaji tu</string>
   <string name="tor_only_when_charging_summary">Zima mtandao wakati betri inachajishwa</string>
-  <!--Settings Security and Panic-->
+  
   <string name="security_settings_title">Ulizi</string>
   <string name="pref_lock_title">Funga programu</string>
   <string name="pref_lock_summary">Tumia nenosiri katika kifaa chako kulinda Zerion wakati wa kuingia</string>
   <string name="pref_lock_disabled_summary">Ili kutumia huu mfumo , weka ulizi kwenye kifaa chako </string>
   <string name="pref_lock_timeout_title">Kifungo cha Programu kimefika mwisho wake </string>
-  <!--The %s placeholder is replaced with the following time spans, e.g. 5 Minutes, 1 Hour-->
+  
   <string name="pref_lock_timeout_summary">Usipo kuwa unatumia Zerion , kiotomatiki itajifunga baada ya %s</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_1">Dakika 1</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_5">dakika 5</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_15">Dakika 15</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_30">Dakika 30</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_60">lisaa 1</string>
   <string name="pref_lock_timeout_never">Kamwe</string>
   <string name="pref_lock_timeout_never_summary">kamwe usifunge Zerion kiotomatiki</string>
@@ -387,7 +376,7 @@ Umepoteza nenosiri.</string>
   <string name="panic_setting_signout_summary">Sanidi kutoka kwa Zerion ikiwa kitufe cha hofu kimesisitizwa.</string>
   <string name="purge_setting_title">Futa Akaunti.</string>
   <string name="purge_setting_summary">Futa Akaunti yako ya Zerion ikiwa kitufe cha hofu kimesisitizwa .Tahadhari: Hii itafuta kabisa utambulisho wako, anwani na ujumbe.</string>
-  <!--Settings Notifications-->
+  
   <string name="notification_settings_title">Arifa</string>
   <string name="notify_sign_in_title">Nikumbushe kuingia.</string>
   <string name="notify_sign_in_summary">Onyesha ukumbusho wakati simu inaanza au programu imesasishwa.</string>
@@ -403,16 +392,16 @@ Umepoteza nenosiri.</string>
   <string name="notify_sound_setting_disabled">Hakuna</string>
   <string name="choose_ringtone_title">Chagua mwiito </string>
   <string name="cannot_load_ringtone">Ina shindikana kufungua mwiito </string>
-  <!--Conversation Settings-->
+  
   <string name="learn_more">Kujifunza zaidi</string>
-  <!--Settings Feedback-->
+  
   <string name="send_feedback">Tuma Maoni </string>
-  <!--Link Warning-->
+  
   <string name="link_warning_title">kiungo  onyo</string>
   <string name="link_warning_intro">Uko karibu kufungua kiunga kifuatacho na programu ya nje</string>
   <string name="link_warning_text">Hii inaweza kutumika kutambua wewe. Fikiria kama unaamini mtu aliyekutumia kiungo hiki na Fikiria kuifungua kwa kivinjari cha Tor.</string>
   <string name="link_warning_open_link">kiunga wazi</string>
-  <!--Crash Reporter-->
+  
   <string name="crash_report_title">Ripoti  fupi ya ajali ya Brair</string>
   <string name="zerion_crashed">Samahani, Zerion imeharibika.</string>
   <string name="not_your_fault"> Hili sio kosa lako</string>
@@ -428,13 +417,13 @@ Umepoteza nenosiri.</string>
   <string name="close">Funga</string>
   <string name="dev_report_sending">Kutuma mrejesho...</string>
   <string name="dev_report_saved">Ripoti imehifadhiwa. Itatumwa wakati ujao ukiingia kwenye Zerion.</string>
-  <!--Sign Out-->
+  
   <string name="progress_title_logout">Kuondoka Kwenye Zerion...</string>
-  <!--Screen Filters & Tapjacking-->
+  
   <string name="screen_filter_title">Ufunikaji wa skrini umegunduliwa</string>
   <string name="screen_filter_body">Programu nyingine inachorwa juu ya Zerion. Ili kulinda usalama wako, Zerion haitajibu kugusa wakati programu nyingine inachorwa juu. \n\nProgramu zifuatazo zinaweza kuchorwa juu:\n\n%1$s</string>
   <string name="screen_filter_allow">Ruhusu programu hizi kuteka juu</string>
-  <!--Permission Requests-->
+  
   <string name="permission_camera_title">Ruhusa ya Kamera</string>
   <string name="permission_camera_request_body">Ili kuchanganua nambari ya QR, Zerion inahitaji ufikiaji wa kamera.</string>
   <string name="permission_location_title">Ruhusa ya eneo</string>
@@ -442,26 +431,26 @@ Umepoteza nenosiri.</string>
   <string name="permission_camera_location_title">Kamera na Eneo</string>
   <string name="permission_camera_location_request_body">Ili kuchanganua nambari ya QR, Zerion inahitaji ufikiaji wa kamera. \n\nKugundua vifaa vya Bluetooth, Zerion inahitaji idhini ya kufikia eneo lako. \n\nZerion hahifadhi eneo lako au kushiriki na mtu yeyote.</string>
   <string name="permission_camera_denied_body">Umekataa ufikiaji wa kamera, lakini kuongeza anwani kunahitaji kutumia kamera. \n\nTafadhali fikiria kutoa idhini ya kufikia.</string>
-  <!--App Locking-->
+  
   <string name="lock_unlock">Fungua Zerion</string>
   <string name="lock_unlock_verbose">Ingiza PIN ya kifaa chako, fumbo au nywila kufungua Zerion </string>
   <string name="lock_unlock_fingerprint_description">Gusa kihisi cha alama za vidole kilicho sajiliwa na kidole husika ili kuendelea</string>
   <string name="lock_unlock_password">Tumia Nywila</string>
   <string name="lock_is_locked">Zerion imefungwa </string>
   <string name="lock_tap_to_unlock">Bonyeza kufungua</string>
-  <!--Connections Screen-->
+  
   <string name="transports_help_text">Zerion inaweza kuungana na anwani zako kupitia mtandao, Wi-Fi au Bluetooth. \n\n Muunganisho wote wa mtandao hupitia mtandao wa Tor kwa faragha. \n\n Ikiwa anwani inaweza kufikiwa kwa njia nyingi, Zerion huitumia kwa usawa.</string>
-  <!--Screenshots-->
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
+  
   <string name="screenshot_alice">Alice</string>
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
   <string name="screenshot_bob">Bob</string>
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
   <string name="screenshot_carol">Carol</string>
-  <!--This is a message to be used in screenshots. Please use the same translation for Bob!-->
+  
   <string name="screenshot_message_1">Habari Bob!</string>
-  <!--This is a message to be used in screenshots. Please use the same translation for Alice!-->
+  
   <string name="screenshot_message_2">Habari Alice! Asante kwa kuniambia kuhusu Zerion!</string>
-  <!--This is a message to be used in screenshots.-->
+  
   <string name="screenshot_message_3">Hakuna tatizo, natumaini umeipenda 😀</string>
 </resources>

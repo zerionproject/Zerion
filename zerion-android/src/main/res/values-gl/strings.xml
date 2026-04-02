@@ -1,6 +1,6 @@
-﻿<?xml version='1.0' encoding='UTF-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
-	<!--Setup-->
+	
 	<string name="setup_title">Benvida a Zerion</string>
 	<string name="setup_name_explanation">O teu alcume mostrarase xunto a todas as mensaxes que publiques. Podes cambialo tras crear a túa conta.</string>
 	<string name="setup_next">Seguinte</string>
@@ -24,7 +24,7 @@
 	<string name="dnkm_huawei_protected_help">Se Zerion non se engade ao listado de apps protexidas, non poderá funcionar en segundo plano.</string>
 	<string name="dnkm_xiaomi_button">Protexer Zerion</string>
 	<string name="dnkm_warning_dozed">%s non foi quen de funcionar en segundo plano</string>
-	<!--Login-->
+	
 	<string name="enter_password">Contrasinal</string>
 	<string name="try_again">Contrasinal incorrecto, tenteo de novo</string>
 	<string name="dialog_title_cannot_check_password">Non se comprobou o contrasinal</string>
@@ -46,17 +46,17 @@
   <string name="startup_open_database">Descifrando a Base de datos...</string>
   <string name="startup_migrate_database">Actualizando a Base de datos...</string>
   <string name="startup_compact_database">Compactando a base de datos...</string>
-  <!--Navigation Drawer-->
+  
   <string name="nav_drawer_open_description">Abra a gaveta de navegación</string>
   <string name="nav_drawer_close_description">Peche a gaveta de navegación</string>
   <string name="contact_list_button">Contactos</string>
   <string name="groups_button">Grupos Privados</string>
-  <!--This is part of the main menu. The app will be locked when this is tapped.-->
+  
   <string name="lock_button">Bloquear App</string>
   <string name="settings_button">Axustes</string>
   <string name="sign_out_button">Finalizar sesión</string>
   <string name="transports_onboarding_text">Toca aquí para controlar o xeito en que Zerion conecta cos teus contactos.</string>
-  <!--Transports: Tor-->
+  
   <string name="transport_tor">Internet</string>
   <string name="tor_device_status_online_wifi">O teu móbil ten acceso a internet por Wi-Fi</string>
   <string name="tor_device_status_online_mobile">O teu móbil ten acceso a internet por datos móbiles</string>
@@ -68,10 +68,10 @@
   <string name="tor_plugin_status_disabled_mobile_data">Zerion está configurada para non usar datos móbilies</string>
   <string name="tor_plugin_status_disabled_battery">Zerion está configurada para non usar internet se está usando batería</string>
   <string name="tor_plugin_status_disabled_country_blocked">Zerion está configurada para non usar internet neste país</string>
-  <!--Transports: Wi-Fi-->
+  
   <string name="transport_lan_long">Mesma rede Wi-Fi</string>
-  <!--Transports: Bluetooth-->
-  <!--Notifications-->
+  
+  
   <string name="reminder_notification_title">Desconectaches de Zerion</string>
   <string name="reminder_notification_text">Toca para volver a conectar</string>
   <string name="reminder_notification_channel_title">Recordatorio para conectar a Zerion</string>
@@ -86,7 +86,7 @@
     <item quantity="one">Nova mensaxe de grupo.</item>
     <item quantity="other">%d novas mensaxes de grupo.</item>
   </plurals>
-  <!--Misc-->
+  
   <string name="now">agora</string>
   <string name="show">Amosar</string>
   <string name="hide">Agochar</string>
@@ -114,7 +114,7 @@
   <string name="error_start_activity">Non dispoñible para o teu sistema</string>
   <string name="status_heading">Estado:</string>
   <string name="error">Erro</string>
-  <!--Contacts and Private Conversations-->
+  
   <string name="no_contacts">Sen contactos que amosar</string>
   <string name="no_contacts_action">Toca na icona + para engadir un contacto</string>
   <string name="date_no_private_messages">Sen mensaxes</string>
@@ -130,11 +130,11 @@
   <string name="set_contact_alias">Cambiar o nome do contacto</string>
   <string name="set_contact_alias_hint">Nome do contacto</string>
   <string name="menu_item_disappearing_messages">Mensaxes efémeras</string>
-  <!--The first placeholder will show a duration like "7 days". The second placeholder at the end will add "Tap to learn more."-->
+  
   <string name="auto_delete_msg_you_enabled">As túas mensaxes desaparecerán após %1$s . %2$s</string>
-  <!--The placeholder at the end will add "Tap to learn more."-->
+  
   <string name="auto_delete_msg_you_disabled">As túas mensaxes non desaparecerán. %1$s</string>
-  <!--The first placeholder will show a contact's name. The second placeholder will show a duration like "7 days". The third placeholder at the end will add "Tap to learn more."-->
+  
   <string name="auto_delete_msg_contact_enabled">As mensaxes de %1$s desaparecerán após %2$s . %3$s</string>
   <plurals name="duration_minutes">
     <item quantity="one">%d minuto</item>
@@ -148,7 +148,7 @@
     <item quantity="one">%ddía</item>
     <item quantity="other">%ddías</item>
   </plurals>
-  <!--The first placeholder will show a contact's name. The second placeholder at the end will add "Tap to learn more."-->
+  
   <string name="auto_delete_msg_contact_disabled">As mensaxes de %1$snon desaparecerán. %2$s</string>
   <string name="tap_to_learn_more">Toca para saber máis.</string>
   <string name="auto_delete_changed_warning_title">As mensaxes efémeras cambiaron</string>
@@ -169,7 +169,7 @@
   <string name="dialog_title_delete_contact">Confirma a eliminación do contacto</string>
   <string name="dialog_message_delete_contact">Segura de querer eliminar este contacto e todas as mensaxes que intercambiaron?</string>
   <string name="contact_deleted_toast">Contacto eliminado</string>
-  <!--This is shown in the action bar when opening an image in fullscreen that the user sent-->
+  
   <string name="you">Ti</string>
   <string name="save_image">Gardar imaxe</string>
   <string name="dialog_title_save_image">Gardar imaxe?</string>
@@ -182,7 +182,7 @@
   <string name="dialog_message_image_support">Toque nesta icona para anexar imaxes.</string>
   <string name="messaging_too_many_attachments_toast">Só se enviarán as primeiras %d imaxes</string>
   <string name="menu_contact">Contacto</string>
-  <!--Adding Contacts-->
+  
   <string name="add_contact_title">Engadir contacto próximo</string>
   <string name="continue_button">Continuar</string>
   <string name="try_again_button">Inténtao de novo</string>
@@ -197,7 +197,7 @@
   <string name="authenticating_with_device">Autenticándose co dispositivo\u2026</string>
   <string name="connection_error_title">Non se puido conectar co contacto</string>
   <string name="connection_error_feedback">Se persiste o problema,<a href="feedback">envía un informe</a> para axudarnos a mellorar a app.</string>
-  <!--Adding Contacts Remotely-->
+  
   <string name="add_contact_remotely_title_case">Engadir contacto a distancia</string>
   <string name="add_contact_nearby_title">Engadir contacto próximo</string>
   <string name="add_contact_remotely_title">Engadir contacto a distancia</string>
@@ -230,9 +230,9 @@
   <string name="unsupported_link">Esta ligazón chega desde unha versión nova de Zerion. Por favor, actualiza a nova versión e inténtao de novo.</string>
   <string name="intent_own_link">Abreu a súa propia ligazón. Utilice a do contacto que quere engadir!</string>
   <string name="missing_link">Por favor escribe unha ligazón</string>
-  <!--This is a numeral indicating the first step in a series of screens-->
+  
   <string name="step_1">1</string>
-  <!--This is a numeral indicating the second step in a series of screens-->
+  
   <string name="step_2">2</string>
   <plurals name="contact_added_notification_text">
     <item quantity="one">Novo contacto engadido.</item>
@@ -242,17 +242,13 @@
   <string name="duplicate_link_dialog_title">Duplicar Ligazón</string>
   <string name="duplicate_link_dialog_text_1">Xa tes un contacto pendente con esta ligazón: %s</string>
   <string name="duplicate_link_dialog_text_1_contact">Xa tes un contacto con esta ligazón: %s</string>
-  <!--This is a question asking whether two nicknames refer to the same person-->
-  <!--This is a button for answering that two nicknames do indeed refer to the same person. This
-	string will be used in a dialog button, so if the translation of this string is longer than 20
-	characters, please use "Yes" instead, and use "No" for the "Different Person" button-->
+  
+  
   <string name="same_person_button">Mesma Persoa</string>
-  <!--This is a button for answering that two nicknames refer to different people. This string
-	will be used in a dialog button, so if the translation of this string longer than 20 characters,
-	please use "No" instead, and use "Yes" for the "Same Person" button-->
+  
   <string name="different_person_button">Diferente Persoa</string>
   <string name="pending_contact_updated_toast">Contacto pendente actualizado</string>
-  <!--Introductions-->
+  
   <string name="introduction_onboarding_title">Presenta aos seus contactos</string>
   <string name="introduction_onboarding_text">Podes presentar aos teus contactos, así non precisan encontrarse en persoa para conectar a través de Zerion.</string>
   <string name="introduction_menu_item">Preséntate</string>
@@ -274,13 +270,7 @@
   <string name="introduction_response_accepted_received">%1$s aceptou a presentación a %2$s.</string>
   <string name="introduction_response_declined_received">%1$s rexeitou a presentación a %2$s.</string>
   <string name="introduction_response_declined_received_by_introducee">%1$s di que %2$srexeitou a presentación.</string>
-  <!--Connect via Bluetooth-->
-  <string name="menu_item_connect_via_bluetooth">Conectar vía Bluetooth</string>
-  <string name="connect_via_bluetooth_title">Conectar vía Bluetooth</string>
-  <string name="connect_via_bluetooth_no_location_permission">Non se pode continuar sen o permiso de localización</string>
-  <string name="connect_via_bluetooth_start">Conectando vía Bluetooth...</string>
-  <string name="connect_via_bluetooth_success">Conectouse correctamente vía Bluetooth</string>
-  <!--Private Groups-->
+  
   <string name="groups_list_empty">Sen grupos que amosar</string>
   <string name="groups_list_empty_action">Toca a icona + para crear un grupo, ou solicita aos contactos que compartan grupos contigo</string>
   <string name="groups_created_by">Creado por %s</string>
@@ -311,7 +301,7 @@
   <string name="groups_dissolve_button">Desfacer</string>
   <string name="groups_dissolved_dialog_title">O grupo foi destruído</string>
   <string name="groups_dissolved_dialog_message">A persoa creadora do grupo desfíxoo.\n\nXa non poderás escribir mensaxes ao grupo e poderías non ter recibido tódalas mensaxes que foran escritas.</string>
-  <!--Private Group Invitations-->
+  
   <string name="groups_invitations_title">Convites de Grupo</string>
   <string name="groups_invitations_invitation_sent">Convidaches a %1$s a unirse ao grupo \"%2$s\".</string>
   <string name="groups_invitations_invitation_received">%1$s convidoute a unirte ao grupo \"%2$s\".</string>
@@ -327,14 +317,14 @@
   <string name="groups_invitations_response_accepted_received">%s aceptou o convite de grupo.</string>
   <string name="groups_invitations_response_declined_received">%s rexeitou o convite de grupo.</string>
   <string name="sharing_status_groups">Só a persoa creadora poder convidar a novos membros ao grupo. Abaixo está a membresía do grupo.</string>
-  <!--Private Groups Revealing Contacts-->
+  
   <string name="groups_reveal_contacts">Revelar contactos</string>
   <string name="groups_reveal_dialog_message">Podes escoller se revelas os contactos a todos os compoñentes actuais e futuros do grupo.\n\Se revelas os contactos a conexión do grupo será máis rápida e fiable, xa que poderá comunicarse cos contactos revelados incluso se a creadora do grupo non está en liña.</string>
   <string name="groups_reveal_visible">As relacións dos contactos son visibles para o grupo</string>
   <string name="groups_reveal_visible_revealed_by_us">A relación co contacto é visible para o grupo (revelada por ti)</string>
   <string name="groups_reveal_visible_revealed_by_contact">A relación con contacto é visible para o grupo (revelada por %s)</string>
   <string name="groups_reveal_invisible">A relación co contacto non é visible para o grupo</string>
-  <!--Forums-->
+  
   <string name="no_posts">Non hai mensaxes</string>
   <plurals name="posts">
     <item quantity="one">%d publicación</item>
@@ -342,7 +332,7 @@
   </plurals>
   <string name="btn_reply">Responder</string>
   <string name="dialog_button_leave">Saír</string>
-  <!--Forum Sharing-->
+  
   <string name="contacts_selected">Contactos selecionados</string>
   <string name="activity_share_toolbar_header">Elixe Contactos</string>
   <string name="no_contacts_selector">Sen contactos que amosar</string>
@@ -351,16 +341,16 @@
   <string name="sharing_status">Estado do compartido</string>
   <string name="shared_with">Compartido con %1$d (%2$d en liña)</string>
   <string name="nobody">Ninguén</string>
-  <!--Blogs-->
+  
   <string name="read_more">ler mais</string>
-  <!--Blog Sharing-->
-  <!--RSS Feeds-->
-  <!--Settings Profile Picture-->
+  
+  
+  
   <string name="change_profile_picture">Toca para cambiar a túa imaxe de perfil</string>
   <string name="dialog_confirm_profile_picture_title">Mudar imaxe de perfil</string>
   <string name="dialog_confirm_profile_picture_remark">Só os teus contactos poden ver esta foto</string>
   <string name="change_profile_picture_failed_message">Lamentámolo, pero algo fallou cando intentamos actualizar a túa imaxe de pefil</string>
-  <!--Settings Display-->
+  
   <string name="pref_language_title">Idioma  &amp; rexión</string>
   <string name="pref_language_changed">Este axuste terá efecto cando reinicies Zerion. Pecha e reinicia Zerion.</string>
   <string name="pref_language_default">Por defecto no sistema</string>
@@ -370,9 +360,8 @@
   <string name="pref_theme_dark">Escuro</string>
   <string name="pref_theme_auto">Automático (no día)</string>
   <string name="pref_theme_system">Por defecto no sistema</string>
-  <!--Settings Connections-->
+  
   <string name="network_settings_title">Conexións</string>
-  <string name="bluetooth_setting">Conectar cos contactos vía Bluetooth</string>
   <string name="wifi_setting">Conectar cos contactos na mesma rede Wi-Fi</string>
   <string name="tor_enable_title">Conectar cos contactos a través de internet</string>
   <string name="tor_enable_summary">Todas as conexións a través da rede Tor para ter privacidade</string>
@@ -381,28 +370,28 @@
   <string name="tor_network_setting_without_bridges">Usar rede Tor sen pontes</string>
   <string name="tor_network_setting_with_bridges">Usar rede Tor con pontes</string>
   <string name="tor_network_setting_never">Non conectar a internet</string>
-  <!--How and when Zerion will connect to Tor: E.g. "Don't connect to the Internet (in China)" or "Use Tor network with bridges (in Belarus)"-->
+  
   <string name="tor_network_setting_summary">Automático: %1$s (en %2$s)</string>
   <string name="tor_mobile_data_title">Utilizar datos móbiles</string>
   <string name="tor_only_when_charging_title">Conectar a internet só cando carga batería</string>
   <string name="tor_only_when_charging_summary">Desactiva a conexión a internet cando o dispositivo utiliza a batería</string>
-  <!--Settings Security and Panic-->
+  
   <string name="security_settings_title">Seguridade</string>
   <string name="pref_lock_title">Bloquear app</string>
   <string name="pref_lock_summary">Utilizar o bloqueo de pantalla do dispositio para protexer Zerion mentras estás conectada</string>
   <string name="pref_lock_disabled_summary">Para utilizar esta función, axusta o bloqueo de pantalla do dispositivo</string>
   <string name="pref_lock_timeout_title">Tempo de espera en inactividade para o bloqueo</string>
-  <!--The %s placeholder is replaced with the following time spans, e.g. 5 Minutes, 1 Hour-->
+  
   <string name="pref_lock_timeout_summary">Cando non uses Zerion, bloquea automáticamente tras %s</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_1">1 minuto</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_5">5 minutos</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_15">15 minutos</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_30">30 minutos</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_60">1 hora</string>
   <string name="pref_lock_timeout_never">Nunca</string>
   <string name="pref_lock_timeout_never_summary">Nunca bloquear Zerion automáticamente</string>
@@ -425,7 +414,7 @@
   <string name="panic_setting_signout_summary">Desconecta de Zerion se o botón do pánico se preme</string>
   <string name="purge_setting_title">Eliminar conta</string>
   <string name="purge_setting_summary">Elimina a túa conta en Zerion se se preme o botón do pánico. Coidado: Isto eliminará permanentemente as túas identidades, contactos e mensaxes</string>
-  <!--Settings Notifications-->
+  
   <string name="notification_settings_title">Notificacións</string>
   <string name="notify_sign_in_title">Lembrarme conectar</string>
   <string name="notify_sign_in_summary">Amosar unha alerta cando o teléfono se inicie ou a app fose actualizada</string>
@@ -441,10 +430,10 @@
   <string name="notify_sound_setting_disabled">Ningún</string>
   <string name="choose_ringtone_title">Escolle ton</string>
   <string name="cannot_load_ringtone">Non se cargou o ton</string>
-  <!--Mailbox-->
+  
   <string name="mailbox_setup_connecting">Conectando...</string>
   <string name="tor_offline_title">Desconectado</string>
-  <!--Conversation Settings-->
+  
   <string name="disappearing_messages_title">Mensaxes efémeras</string>
   <string name="disappearing_messages_explanation_long">Ao activar esta función farás que as novas
 		mensaxes nesta conversa desaparezan automáticamente após 7\u00A0días.
@@ -457,15 +446,15 @@
 		O teu contacto tamén pode cambiar este axuste para ambas.</string>
   <string name="learn_more">Aprender máis</string>
   <string name="disappearing_messages_summary">Facer que as futuras mensaxes da conversa desaparecerán automáticamente após 7\u00A0días.</string>
-  <!--Settings Actions-->
+  
   <string name="pref_category_actions">Accións</string>
   <string name="send_feedback">Envía a avaliación</string>
-  <!--Link Warning-->
+  
   <string name="link_warning_title">Aviso de ligazón</string>
   <string name="link_warning_intro">Vas abrir a seguinte ligazón nunha aplicación externa.</string>
   <string name="link_warning_text">Esto pódese utilizar para identificarte. Pensa ben se confías na persoa que che envía a ligazón e considera abrila co Navegador Tor.</string>
   <string name="link_warning_open_link">Abrir ligazón</string>
-  <!--Crash Reporter-->
+  
   <string name="crash_report_title">Informe de fallo de Zerion</string>
   <string name="not_your_fault">Non é culpa túa.</string>
   <string name="please_send_report">Axúdanos por favor a mellorar Zerion enviándonos un informe do fallo.</string>
@@ -493,15 +482,15 @@
   <string name="dev_report_sent">Comentarios enviados</string>
   <string name="dev_report_saved">Informe gardado. Enviarase a seguinte vez que te conectes con Zerion.</string>
   <string name="dev_report_error">Erro: fallou o envío do informe</string>
-  <!--Sign Out-->
+  
   <string name="progress_title_logout">Desconectando de Zerion...</string>
-  <!--Screen Filters & Tapjacking-->
+  
   <string name="screen_filter_title">Detectouse unha sobreescrita da pantalla</string>
   <string name="screen_filter_body">Outra aplicación estase a amosar enriba de Zerion. Para protexer a túa seguridade, Zerion non responderá a toques cando outra aplicación está debuxando enriba.\n\nAs seguintes aplicacións poderían estar debuxando enriba:\n\n%1$s</string>
   <string name="screen_filter_body_api_30">Outra app ten acceso a ver a pantalla enriba de Zerion. Para protexer a túa seguridade, Zerion non vai responder aos toques cando outra app ten acceso a pantalla.\n\nRevisa as app de abaixo para atopara a resposable.</string>
   <string name="screen_filter_allow">Permitir a estas aplicación amosarse enriba</string>
   <string name="screen_filter_review_apps">Revisar apps</string>
-  <!--Permission Requests-->
+  
   <string name="permission_camera_title">Permiso da cámara</string>
   <string name="permission_camera_request_body">Para escanear códigos QR, Zerion precisa acceso a cámara.</string>
   <string name="permission_location_title">Permiso de localización</string>
@@ -513,38 +502,29 @@
   <string name="permission_location_setting_title">Axuste da localización</string>
   <string name="permission_location_setting_body">O axuste de localización do teu dispositivo ten que activarse para atopar outros dispositivos vía Bluetooth. Activa este axuste para continuar. Podes desactivala tras finalizar.</string>
   <string name="permission_location_setting_button">Activar localización</string>
-  <!--App Locking-->
+  
   <string name="lock_unlock">Desbloquear Zerion</string>
   <string name="lock_unlock_verbose">Escribe o PIN do dispositivo, patrón ou contrasinal para desbloquear Zerion</string>
   <string name="lock_unlock_fingerprint_description">Toca o sensor de impresións dixitais co dedo rexistrado para continuar</string>
   <string name="lock_unlock_password">Utilizar contrasinal</string>
   <string name="lock_is_locked">Zerion está bloqueada</string>
   <string name="lock_tap_to_unlock">Toca para desbloquear</string>
-  <!--Connections Screen-->
+  
   <string name="transports_help_text">Zerion pode conectar cos teus contactos a través de Internet, Wi-Fi ou Bluetooth.\n\nTodas as conexións a internet pasan a través da rede Tor para máis privacidade.\n\nSe un contacto é accesible de múltiples xeitos, Zerion usaráos en paralelo.</string>
-  <!--Share app offline-->
-  <string name="hotspot_notification_channel_title">Punto de acceso Wi-Fi</string>
-  <string name="hotspot_button_connected">Seguinte</string>
-  <!--The placeholder to be inserted into the string 'hotspot_manual_wifi': People can connect by %s-->
-  <!--Wi-Fi setup-->
-  <!--Download link-->
-  <!--e.g. Download Zerion 1.2.20-->
-  <string name="website_troubleshooting_title">Solución de problemas</string>
-  <!--error handling-->
-  <!--Transfer Data via Removable Drives-->
+  
   <string name="removable_drive_menu_title">Conectar vía Disco Extraíble</string>
   <string name="removable_drive_success_receive_title">Importación exitosa</string>
-  <!--Screenshots-->
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
+  
   <string name="screenshot_alice">Alice</string>
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
   <string name="screenshot_bob">Bob</string>
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
   <string name="screenshot_carol">Carol</string>
-  <!--This is a message to be used in screenshots. Please use the same translation for Bob!-->
+  
   <string name="screenshot_message_1">Ola Bob!</string>
-  <!--This is a message to be used in screenshots. Please use the same translation for Alice!-->
+  
   <string name="screenshot_message_2">Ola Alice! Grazas por falarme de Zerion!</string>
-  <!--This is a message to be used in screenshots.-->
+  
   <string name="screenshot_message_3">Sen problema, agardo sexa do teu gusto 😀</string>
 </resources>

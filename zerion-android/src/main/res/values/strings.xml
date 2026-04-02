@@ -382,7 +382,7 @@
 	<!-- Adding Contacts -->
 
 	<string name="add_contact_title">Add Contact Nearby</string>
-	<string name="add_contact_error_two_way">Did you both scan each other\'s QR codes?</string>
+	<string name="add_contact_error_two_way">Did both contacts complete the exchange?</string>
 	<string name="continue_button">Continue</string>
 	<string name="try_again_button">Try Again</string>
 	<string name="waiting_for_contact_to_scan">Waiting for contact to scan and connect\u2026</string>
@@ -591,7 +591,52 @@
 	<string name="pref_language_title">Language &amp; region</string>
 	<string name="pref_language_changed">The app will restart to apply the new language.</string>
 	<string name="pref_language_default">System default</string>
+	<string name="reg_lock_title">Registration Lock</string>
+	<string name="reg_lock_summary_off">Protect your account with a PIN or password</string>
+	<string name="reg_lock_summary_pin">Protected with PIN</string>
+	<string name="reg_lock_summary_password">Protected with password</string>
+	<string name="reg_lock_set_pin">Set PIN (6 digits)</string>
+	<string name="reg_lock_set_password">Set Password</string>
+	<string name="reg_lock_enter_pin">Enter PIN</string>
+	<string name="reg_lock_enter_password">Enter Password</string>
+	<string name="reg_lock_confirm">Confirm</string>
+	<string name="reg_lock_pin_too_short">PIN must be at least 6 digits</string>
+	<string name="reg_lock_password_too_short">Password must be at least 6 characters</string>
+	<string name="reg_lock_mismatch">Entries do not match</string>
+	<string name="reg_lock_enabled">Registration lock enabled</string>
+	<string name="reg_lock_disabled">Registration lock disabled</string>
+	<string name="reg_lock_change">Change Registration Lock</string>
+	<string name="reg_lock_disable">Disable Registration Lock</string>
+	<string name="reg_lock_disable_confirm">Are you sure you want to disable Registration Lock?</string>
+	<string name="reg_lock_choose_type">Choose protection type</string>
+	<string name="invite_friends_title">Invite Friends</string>
+	<string name="invite_friends_summary">Share Zerion with people you trust</string>
+	<string name="invite_friends_message">Chat privately with Zerion \u2014 encrypted messaging and calls over Tor.\n\nDownload from Google Play:\nhttps://play.google.com/store/apps/details?id=com.professor.zerion\n\nOr visit: https://zerion.chat</string>
+	<string name="invite_friends_chooser">Share Zerion via</string>
 	<string name="display_settings_title">Display</string>
+	<string name="pref_app_icon_title">App Icon</string>
+	<string name="pref_app_icon_default">Zerion</string>
+	<string name="pref_app_icon_calculator">Calculator</string>
+	<string name="pref_app_icon_notes">Notes</string>
+	<string name="pref_app_icon_weather">Weather</string>
+	<string name="pref_app_icon_restart_hint">Home screen icon will update shortly</string>
+	<string name="pref_nav_size_title">Navigation Bar Size</string>
+	<string name="pref_nav_size_compact">Compact</string>
+	<string name="pref_nav_size_default">Default</string>
+	<string name="pref_nav_size_large">Large</string>
+	<string name="pref_chat_section">CHAT</string>
+	<string name="pref_text_size_title">Text Size</string>
+	<string name="pref_text_size_small">Small</string>
+	<string name="pref_text_size_medium">Medium</string>
+	<string name="pref_text_size_large">Large</string>
+	<string name="pref_text_size_extra_large">Extra Large</string>
+	<string name="pref_bubble_color_title">Chat Bubble Color</string>
+	<string name="pref_bubble_color_blue">Blue</string>
+	<string name="pref_bubble_color_purple">Purple</string>
+	<string name="pref_bubble_color_green">Green</string>
+	<string name="pref_bubble_color_orange">Orange</string>
+	<string name="pref_bubble_color_pink">Pink</string>
+	<string name="pref_bubble_color_cyan">Cyan</string>
 	<string name="pref_theme_title">Theme</string>
 	<string name="pref_theme_light">Light</string>
 	<!-- ZERION FIX: Changed from "Dark" to "Zerion Dark" for branding -->
@@ -692,10 +737,8 @@
 	<string name="mailbox_setup_intro">A Mailbox enables your contacts to send you messages while you are offline. The Mailbox will receive your messages and store them until you come online.\n
 		\nYou can install the Zerion Mailbox app on a spare device. Keep it connected to power and Wi-Fi so it\'s always online.</string>
 	<string name="mailbox_setup_download">First, install the Mailbox app on another device by searching for \"Zerion Mailbox\" on Google Play or wherever you downloaded Zerion.\n
-		\nThen link your Mailbox with Zerion by scanning the QR code shown by the Mailbox app.</string>
+		\nThen link your Mailbox with Zerion.</string>
 	<string name="mailbox_setup_download_link">Share Download Link</string>
-	<string name="mailbox_setup_button_scan">Scan Mailbox QR code</string>
-	<string name="permission_camera_qr_denied_body">You have denied access to the camera, but scanning a QR code requires using the camera.\n\nPlease consider granting access.</string>
 	<string name="mailbox_setup_connecting">Connecting to Mailbox…</string>
 	<!-- This string is shown when connecting to a Mailbox for the first time. The placeholder will be replaced with a duration, e.g. "2 minutes". -->
 	<string name="mailbox_setup_connecting_info">This may take up to %1s</string>
@@ -747,11 +790,11 @@
 	<string name="mailbox_error_wizard_info1_1">Check that the Mailbox device is turned on and connected to the Internet.</string>
 	<string name="mailbox_error_wizard_question1_1">Open the Mailbox app. What do you see?</string>
 	<string name="mailbox_error_wizard_answer1_1">I see instructions for setting up the Mailbox</string>
-	<string name="mailbox_error_wizard_answer1_2">I see a QR code</string>
+	<string name="mailbox_error_wizard_answer1_2">I see a pairing screen</string>
 	<string name="mailbox_error_wizard_answer1_3">I see \"Mailbox is running\"</string>
 	<string name="mailbox_error_wizard_answer1_4">I see \"Device offline\"</string>
 	<string name="mailbox_error_wizard_info1_1_1">Please unlink your Mailbox using the button below, then follow the instructions on the Mailbox device to link it again.</string>
-	<string name="mailbox_error_wizard_info_1_1_2">Please unlink your Mailbox using the button below, then scan the QR code to link it again.</string>
+	<string name="mailbox_error_wizard_info_1_1_2">Please unlink your Mailbox using the button below, then link it again.</string>
 	<string name="mailbox_error_wizard_info1_1_3">Please use the button below to check the connection between Zerion and the Mailbox.\n\n
 		If the connection fails again:\n
 		\u2022 Check that the Mailbox and Zerion apps are updated to the latest version.\n
@@ -854,14 +897,13 @@
 
 	<!-- Permission Requests -->
 	<string name="permission_camera_title">Camera permission</string>
-	<string name="permission_camera_request_body">To scan the QR code, Zerion needs access to the camera.</string>
+	<string name="permission_camera_request_body">Zerion needs access to the camera for video calls.</string>
 	<string name="permission_location_title">Location permission</string>
 	<string name="permission_nearby_devices_title">Nearby devices permission</string>
 	<string name="permission_camera_location_title">Camera and location</string>
-	<string name="permission_camera_location_request_body">To scan the QR code, Zerion needs access to the camera.\n\nZerion does not store your location or share it with anyone.</string>
+	<string name="permission_camera_location_request_body">Zerion needs access to the camera for video calls.\n\nZerion does not store your location or share it with anyone.</string>
 	<string name="permission_camera_denied_body">You have denied access to the camera, but adding contacts requires using the camera.\n\nPlease consider granting access.</string>
 	<string name="permission_location_setting_title">Location setting</string>
-	<string name="permission_location_setting_hotspot_body">Your device\'s location setting must be turned on to create a Wi-Fi hotspot. Please enable location to continue. You can disable it again afterwards.</string>
 	<string name="permission_location_setting_button">Enable location</string>
 
 	<!-- App Locking -->
@@ -874,78 +916,6 @@
 
 	<!-- Connections Screen -->
 	<string name="transports_help_text">Zerion connects to your contacts via the Internet.\n\nAll connections go through the Tor network for privacy.</string>
-
-	<!-- Share app offline -->
-	<string name="hotspot_title">Share this app offline</string>
-	<string name="hotspot_intro">Share this app with someone nearby without an Internet connection by using your phone\'s Wi-Fi.
-		\n\nYour phone will start a Wi-Fi hotspot. People nearby can connect to the hotspot and download the Zerion app from your phone.</string>
-	<string name="hotspot_button_start_sharing">Start hotspot</string>
-	<string name="hotspot_button_stop_sharing">Stop hotspot</string>
-	<string name="hotspot_progress_text_start">Setting up hotspot…</string>
-	<string name="hotspot_notification_channel_title">Wi-Fi hotspot</string>
-	<string name="hotspot_notification_title">Sharing Zerion offline</string>
-	<string name="hotspot_button_connected">Next</string>
-
-	<string name="permission_hotspot_location_request_body">To create a Wi-Fi hotspot, Zerion needs permission to access your location.\n\nZerion does not store your location or share it with anyone.</string>
-	<string name="permission_hotspot_location_request_precise_body">To create a Wi-Fi hotspot, Zerion needs permission to access your precise location.\n\nZerion does not store your location or share it with anyone.</string>
-	<string name="permission_hotspot_location_denied_body">You have denied access to your location, but Zerion needs this permission to create a Wi-Fi hotspot.\n\nPlease consider granting access.</string>
-	<string name="permission_hotspot_location_denied_precise_body">You have denied access to your precise location, but Zerion needs this permission to create a Wi-Fi hotspot.\n\nPlease consider granting access.</string>
-	<string name="permission_hotspot_nearby_wifi_request_body">To create a Wi-Fi hotspot, Zerion needs permission to access nearby devices.</string>
-	<string name="permission_hotspot_nearby_wifi_denied_body">You have denied access to nearby devices, but Zerion needs this permission to create a Wi-Fi hotspot.\n\nPlease consider granting access.</string>
-	<string name="wifi_settings_title">Wi-Fi setting</string>
-	<string name="wifi_settings_request_enable_body">To create a Wi-Fi hotspot, Zerion needs to use Wi-Fi. Please enable it.</string>
-
-	<string name="hotspot_tab_manual">Manual</string>
-
-	<!-- Wi-Fi setup -->
-	<string name="hotspot_manual_wifi">Your phone is providing a Wi-Fi hotspot. People who want to download Zerion can connect to the hotspot by adding it in their device\'s Wi-Fi settings using the details below or by %s. When they have connected to the hotspot, press \'Next\'.</string>
-	<string name="hotspot_manual_wifi_ssid">Network name</string>
-	<string name="hotspot_qr_wifi">Your phone is providing a Wi-Fi hotspot. People who want to download Zerion can connect to the hotspot by scanning this QR code. When they have connected to the hotspot, press \'Next\'.</string>
-	<string name="hotspot_no_peers_connected">No devices connected</string>
-	<plurals name="hotspot_peers_connected">
-		<item quantity="one">%s device connected</item>
-		<item quantity="other">%s devices connected</item>
-	</plurals>
-
-	<!-- Download link -->
-	<string name="hotspot_manual_site">Your phone is providing a Wi-Fi hotspot. People who are connected to the hotspot can download Zerion by typing the following link in a web browser or %s.</string>
-	<string name="hotspot_manual_site_address">Address (URL)</string>
-	<string name="hotspot_qr_site">Your phone is providing a Wi-Fi hotspot. People who are connected to the hotspot can download Zerion by scanning this QR code.</string>
-
-	<!-- e.g. Download Zerion 1.2.20 -->
-	<string name="website_download_title_1">Download Zerion %s</string>
-	<string name="website_download_intro_1">Someone nearby shared Zerion with you.</string>
-	<string name="website_download_button">Download Zerion</string>
-	<string name="website_download_outro">After the download is complete, open the downloaded file and install it.</string>
-	<string name="website_troubleshooting_title">Troubleshooting</string>
-	<string name="website_troubleshooting_1">If you cannot download the app, try it with a different web browser app.</string>
-	<string name="website_troubleshooting_2_old">To install the downloaded app, you might need to allow installation of apps from \"Unknown sources\" in system settings. Afterwards, you may need to download the app again. We recommend disabling the \"Unknown sources\" setting after installing the app.</string>
-	<string name="website_troubleshooting_2_new">To install the downloaded app, you might need to allow your browser to install unknown apps. After installing the app, we recommend removing the browser\'s permission to install unknown apps.</string>
-
-	<string name="hotspot_help_wifi_title">Problems with connecting to Wi-Fi:</string>
-	<string name="hotspot_help_wifi_1">Try disabling and re-enabling Wi-Fi on both phones and try again.</string>
-	<string name="hotspot_help_wifi_2">If your phone complains that the Wi-Fi has no Internet, tell it that you want to stay connected anyway.</string>
-	<string name="hotspot_help_wifi_3">Restart the phone which is running the Wi-Fi hotspot, then start Zerion and try sharing again.</string>
-	<string name="hotspot_help_site_title">Problems visiting the local website:</string>
-	<string name="hotspot_help_site_1">Double check that you entered the address exactly as shown. A small error can make it fail.</string>
-	<string name="hotspot_help_site_2">Ensure that your phone is still connected to the correct Wi-Fi (see above) when you try to access the site.</string>
-	<string name="hotspot_help_site_3">If you have a firewall app, check that it isn\'t blocking access.</string>
-	<string name="hotspot_help_site_4">If you can visit the site, but not download the Zerion app, try it with a different web browser app.</string>
-	<string name="hotspot_help_fallback_title">Nothing works?</string>
-	<string name="hotspot_help_fallback_intro">You can try to save the app as an .apk file to share in some other way. Once the file has been transferred to the other device, it can be used to install Zerion.</string>
-	<string name="hotspot_help_fallback_button">Save app</string>
-
-	<!-- error handling -->
-	<string name="hotspot_error_intro">Something went wrong while trying to share the app via Wi-Fi:</string>
-	<string name="hotspot_error_no_wifi_direct">Device does not support Wi-Fi Direct</string>
-	<string name="hotspot_error_start_callback_failed">Hotspot failed to start: error %s</string>
-	<string name="hotspot_error_start_callback_failed_unknown">Hotspot failed to start with an unknown error, reason %d</string>
-	<string name="hotspot_error_start_callback_no_group_info">Hotspot failed to start: no group info</string>
-	<string name="hotspot_error_web_server_start">Error starting web server</string>
-	<string name="hotspot_error_web_server_serve">Error presenting website.\n\nPlease send feedback (with anonymous data) via the Zerion app if the issue persists.</string>
-	<string name="hotspot_flag_test">Warning: This app was installed with Android Studio and can NOT be installed on another device.</string>
-	<string name="hotspot_error_framework_busy">Unable to start the hotspot.\n\nIf you have another hotspot running or are sharing your Internet connection via Wi-Fi, try stopping that and try again afterwards.</string>
-
 
 	<!-- Transfer Data via Removable Drives -->
 

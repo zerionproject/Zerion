@@ -34,13 +34,10 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
 import static org.briarproject.bramble.api.plugin.Plugin.PREF_PLUGIN_ENABLE;
-import static org.briarproject.bramble.api.plugin.Plugin.State.DISABLED;
 import static org.briarproject.bramble.api.plugin.Plugin.State.STARTING_STOPPING;
 
 @NotNullByDefault
 public class PluginViewModel extends DbViewModel implements EventListener {
-
-	private static final TransportId LAN_ID = new TransportId("org.briarproject.bramble.plugin.lan");
 
 	private final Application app;
 	private final SettingsManager settingsManager;
@@ -49,12 +46,8 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 
 	private final MutableLiveData<State> torPluginState =
 			new MutableLiveData<>();
-	private final MutableLiveData<State> wifiPluginState =
-			new MutableLiveData<>();
 
 	private final MutableLiveData<Boolean> torEnabledSetting =
-			new MutableLiveData<>(false);
-	private final MutableLiveData<Boolean> wifiEnabledSetting =
 			new MutableLiveData<>(false);
 
 	private final MutableLiveData<NetworkStatus> networkStatus =
@@ -74,7 +67,6 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 		eventBus.addListener(this);
 		networkStatus.setValue(networkManager.getNetworkStatus());
 		torPluginState.setValue(getTransportState(TorConstants.ID));
-		wifiPluginState.setValue(DISABLED);
 		loadSettings();
 	}
 
@@ -93,28 +85,23 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 				boolean enable = s.getSettings().getBoolean(PREF_PLUGIN_ENABLE,
 						TorConstants.DEFAULT_PREF_PLUGIN_ENABLE);
 				torEnabledSetting.setValue(enable);
-			} else if (s.getNamespace().equals(LAN_ID.getString())) {
-				wifiEnabledSetting.setValue(false);
 			}
 		} else if (e instanceof TransportStateEvent) {
 			TransportStateEvent t = (TransportStateEvent) e;
-			TransportId id = t.getTransportId();
-			State state = t.getState();
-			MutableLiveData<State> liveData = getPluginLiveData(id);
-			if (liveData != null) liveData.postValue(state);
+			if (t.getTransportId().equals(TorConstants.ID)) {
+				torPluginState.postValue(t.getState());
+			}
 		}
 	}
 
 	LiveData<State> getPluginState(TransportId id) {
-		LiveData<State> liveData = getPluginLiveData(id);
-		if (liveData == null) throw new IllegalArgumentException();
-		return liveData;
+		if (id.equals(TorConstants.ID)) return torPluginState;
+		throw new IllegalArgumentException("Unknown transport: " + id);
 	}
 
 	LiveData<Boolean> getPluginEnabledSetting(TransportId id) {
 		if (id.equals(TorConstants.ID)) return torEnabledSetting;
-		else if (id.equals(LAN_ID)) return wifiEnabledSetting;
-		else throw new IllegalArgumentException("Unknown transport: " + id);
+		throw new IllegalArgumentException("Unknown transport: " + id);
 	}
 
 	LiveData<NetworkStatus> getNetworkStatus() {
@@ -138,7 +125,6 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 				boolean tor = isPluginEnabled(TorConstants.ID,
 						TorConstants.DEFAULT_PREF_PLUGIN_ENABLE);
 				torEnabledSetting.postValue(tor);
-				wifiEnabledSetting.postValue(false);
 			} catch (DbException e) {
 				handleException(e);
 			}
@@ -154,13 +140,6 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 	private State getTransportState(TransportId id) {
 		Plugin plugin = pluginManager.getPlugin(id);
 		return plugin == null ? STARTING_STOPPING : plugin.getState();
-	}
-
-	@Nullable
-	private MutableLiveData<State> getPluginLiveData(TransportId id) {
-		if (id.equals(TorConstants.ID)) return torPluginState;
-		else if (id.equals(LAN_ID)) return wifiPluginState;
-		else return null;
 	}
 
 	private void mergeSettings(Settings s, String namespace) {

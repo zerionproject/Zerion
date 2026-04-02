@@ -166,10 +166,7 @@ public class SetPasswordFragment extends SetupFragment {
 				strengthMeter.setVisibility(sanitized1.length > 0 ? VISIBLE : INVISIBLE);
 			}
 
-			// estimatePasswordStrength accepts String — use sanitized copy
-			String strengthInput = new String(sanitized1);
-			float strength = viewModel.estimatePasswordStrength(strengthInput);
-			strengthInput = null; // drop reference immediately
+			float strength = viewModel.estimatePasswordStrength(sanitized1);
 			strengthMeter.setStrength(strength);
 			boolean strongEnough = strength >= QUITE_WEAK;
 

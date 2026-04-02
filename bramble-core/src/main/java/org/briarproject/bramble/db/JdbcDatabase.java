@@ -323,9 +323,9 @@ abstract class JdbcDatabase implements Database<Connection> {
 					+ " messageNumber INT NOT NULL,"
 					+ " previousChainLength INT NOT NULL,"
 					+ " mode2Enabled BOOLEAN DEFAULT FALSE NOT NULL,"
-					+ " rootKey _SECRET," // Null for Mode 1 sessions
-					+ " dhPrivateKey _SECRET," // Null for Mode 1 sessions
-					+ " dhPublicKey _BINARY," // Null for Mode 1 sessions
+					+ " rootKey _SECRET,"
+					+ " dhPrivateKey _SECRET,"
+					+ " dhPublicKey _BINARY,"
 					+ " dhRemotePublicKey _BINARY," // Null until received
 					+ " mode3Enabled BOOLEAN DEFAULT FALSE NOT NULL,"
 					+ " pqEpoch BIGINT DEFAULT 0 NOT NULL,"
@@ -341,7 +341,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 					+ " messageNumber INT NOT NULL,"
 					+ " messageKey _SECRET NOT NULL,"
 					+ " timestamp BIGINT NOT NULL,"
-					+ " chainId _HASH," // Null for Mode 1 sessions
+					+ " chainId _HASH,"
 					+ " PRIMARY KEY (contactId, direction, messageNumber),"
 					+ " FOREIGN KEY (contactId)"
 					+ " REFERENCES contacts (contactId)"

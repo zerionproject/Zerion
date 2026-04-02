@@ -1,6 +1,6 @@
-﻿<?xml version='1.0' encoding='UTF-8'?>
-<resources xmlns:tools="http://schemas.android.com/tools">
-  <!--Setup-->
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+  
   <string name="setup_title">Boas-vindas ao Zerion</string>
   <string name="setup_name_explanation">Seu nome de usuária será mostrado próximo a qualquer conteúdo que você publicar. Você não pode mudá-lo depois que criar sua conta,</string>
   <string name="setup_next">Próximo</string>
@@ -32,7 +32,7 @@
   <string name="dnkm_xiaomi_lock_apps_text">Toque no botão abaixo para abrir as configurações de segurança. Toque em \"Aumentar velocidade\", depois toque em \"Bloquear aplicativos\" e verifique se Zerion está definido como \"Bloqueado\".</string>
   <string name="dnkm_xiaomi_lock_apps_help">Se o Zerion não estiver definido como \"Bloqueado\" na tela \"Bloquear aplicativos\", ele não poderá ser executado em segundo plano.</string>
   <string name="dnkm_warning_dozed_1">Zerion não conseguiu executar no background</string>
-  <!--Login-->
+  
   <string name="enter_password">Senha</string>
   <string name="try_again">Senha Incorreta, tente novamente</string>
   <string name="dialog_title_cannot_check_password">Não foi possível verificar sua senha</string>
@@ -63,17 +63,17 @@
   <string name="startup_open_database">Descriptografando Banco de Dados...</string>
   <string name="startup_migrate_database">Atualizando Banco de Dados...</string>
   <string name="startup_compact_database">Compactando Banco de Dados...</string>
-  <!--Navigation Drawer-->
+  
   <string name="nav_drawer_open_description">Abrir aba de navegação</string>
   <string name="nav_drawer_close_description">Fechar aba de navegação</string>
   <string name="contact_list_button">Contatos</string>
   <string name="groups_button">Grupos Privados</string>
-  <!--This is part of the main menu. The app will be locked when this is tapped.-->
+  
   <string name="lock_button">Bloquear Aplicativo</string>
   <string name="settings_button">Configurações</string>
   <string name="sign_out_button">Sair</string>
   <string name="transports_onboarding_text">Clique aqui para controlar como o Zerion se conecta aos seus contatos.</string>
-  <!--Transports: Tor-->
+  
   <string name="transport_tor">Internet</string>
   <string name="tor_device_status_online_wifi">Seu celular possui acesso à Internet via Wi-Fi</string>
   <string name="tor_device_status_online_mobile">Seu celular possui acesso à Internet via dados móveis</string>
@@ -85,10 +85,10 @@
   <string name="tor_plugin_status_disabled_mobile_data">Zerion está configurado para não usar dados móveis</string>
   <string name="tor_plugin_status_disabled_battery">Zerion está configurado para não usar a Internet quando depender apenas da bateria</string>
   <string name="tor_plugin_status_disabled_country_blocked">Zerion está configurado para não usar a Internet neste país</string>
-  <!--Transports: Wi-Fi-->
+  
   <string name="transport_lan_long">Mesma rede Wi-Fi</string>
-  <!--Transports: Bluetooth-->
-  <!--Notifications-->
+  
+  
   <string name="reminder_notification_title">Saiu do Zerion</string>
   <string name="reminder_notification_text">Toque para fazer login novamente.</string>
   <string name="reminder_notification_channel_title">Lembrete de Login do Zerion</string>
@@ -105,7 +105,7 @@
     <item quantity="many">%d novas mensagens de Grupos.</item>
     <item quantity="other">%d novas mensagens de Grupos.</item>
   </plurals>
-  <!--Misc-->
+  
   <string name="now">agora</string>
   <string name="show">Mostrar</string>
   <string name="hide">Esconder</string>
@@ -134,7 +134,7 @@
   <string name="status_heading">Status:</string>
   <string name="error">Erro</string>
   <string name="info">Informação</string>
-  <!--Contacts and Private Conversations-->
+  
   <string name="no_contacts">Sem contatos para exibir</string>
   <string name="no_contacts_action">Toque no ícone + para adicionar um contato</string>
   <string name="date_no_private_messages">Sem Mensagens</string>
@@ -152,11 +152,11 @@
   <string name="menu_item_disappearing_messages">Mensagens efêmeras</string>
   <string name="disappearing_messages_setting_description">As mensagens desaparecerão automaticamente após o tempo selecionado</string>
   <string name="off">Desligado</string>
-  <!--The first placeholder will show a duration like "7 days". The second placeholder at the end will add "Tap to learn more."-->
+  
   <string name="auto_delete_msg_you_enabled">Suas mensagens vão desaparecer após %1$s. %2$s</string>
-  <!--The placeholder at the end will add "Tap to learn more."-->
+  
   <string name="auto_delete_msg_you_disabled">Suas mensagens não vão desaparecer. %1$s</string>
-  <!--The first placeholder will show a contact's name. The second placeholder will show a duration like "7 days". The third placeholder at the end will add "Tap to learn more."-->
+  
   <string name="auto_delete_msg_contact_enabled">As mensagens de %1$s vão desaparecer em %2$s. %3$s</string>
   <plurals name="duration_minutes">
     <item quantity="one">%d minuto</item>
@@ -173,7 +173,7 @@
     <item quantity="many">%d dias</item>
     <item quantity="other">%d dias</item>
   </plurals>
-  <!--The first placeholder will show a contact's name. The second placeholder at the end will add "Tap to learn more."-->
+  
   <string name="auto_delete_msg_contact_disabled">As mensagens de %1$s não vão desaparecer. %2$s</string>
   <string name="tap_to_learn_more">Toque para saber mais.</string>
   <string name="auto_delete_changed_warning_title">As mensagens efêmeras mudaram</string>
@@ -194,7 +194,7 @@
   <string name="dialog_title_delete_contact">Confirmar remoção do contato</string>
   <string name="dialog_message_delete_contact">Você tem certeza que quer remover este contato e todas mensagens trocadas com ele?</string>
   <string name="contact_deleted_toast">Contato apagado</string>
-  <!--This is shown in the action bar when opening an image in fullscreen that the user sent-->
+  
   <string name="you">Você</string>
   <string name="save_image">Salvar imagem</string>
   <string name="dialog_title_save_image">Salvar imagem?</string>
@@ -207,7 +207,7 @@
   <string name="dialog_message_image_support">Toque nesse ícone para anexar imagens.</string>
   <string name="messaging_too_many_attachments_toast">Apenas as primeiras %d imagens serão enviadas</string>
   <string name="menu_contact">Contato</string>
-  <!--Adding Contacts-->
+  
   <string name="add_contact_title">Adicionar contato que está próximo</string>
   <string name="add_contact_error_two_way">Vocês dois escanearam os códigos QR um do outro?</string>
   <string name="continue_button">Continuar</string>
@@ -222,7 +222,7 @@
   <string name="authenticating_with_device">Autenticando com o dispositivo\u2026</string>
   <string name="connection_error_title">Não foi possível conectar-se ao seu contato</string>
   <string name="connection_error_feedback">Se o problema persistir, por favor <a href="feedback">envie um feedback</a> para nos ajudar a melhorar o app.</string>
-  <!--Adding Contacts Remotely-->
+  
   <string name="add_contact_remotely_title_case">Adicionar contato à distância</string>
   <string name="add_contact_nearby_title">Adicionar contato que está próximo</string>
   <string name="add_contact_remotely_title">Adicionar contato à distância</string>
@@ -255,9 +255,9 @@
   <string name="unsupported_link">Esse link veio de uma versão mais recente do Zerion. Por favor atualize para a versão mais recente e tente novamente </string>
   <string name="intent_own_link">Você abriu seu próprio link. Utilize o link do contato que quer adicionar!</string>
   <string name="missing_link">Por favor, insira um link</string>
-  <!--This is a numeral indicating the first step in a series of screens-->
+  
   <string name="step_1">1</string>
-  <!--This is a numeral indicating the second step in a series of screens-->
+  
   <string name="step_2">2</string>
   <plurals name="contact_added_notification_text">
     <item quantity="one">Novo contato adicionado.</item>
@@ -268,25 +268,21 @@
   <string name="duplicate_link_dialog_title">Link duplicado</string>
   <string name="duplicate_link_dialog_text_1">Você já tem um contato pendente com esse link: %s </string>
   <string name="duplicate_link_dialog_text_1_contact">Você já possui um contato com esse link: %s</string>
-  <!--This is a question asking whether two nicknames refer to the same person-->
+  
   <string name="duplicate_link_dialog_text_2">%1$s e %2$s são a mesma pessoa?</string>
-  <!--This is a button for answering that two nicknames do indeed refer to the same person. This
-	string will be used in a dialog button, so if the translation of this string is longer than 20
-	characters, please use "Yes" instead, and use "No" for the "Different Person" button-->
+  
   <string name="same_person_button">Mesma pessoa</string>
-  <!--This is a button for answering that two nicknames refer to different people. This string
-	will be used in a dialog button, so if the translation of this string longer than 20 characters,
-	please use "No" instead, and use "Yes" for the "Same Person" button-->
+  
   <string name="different_person_button">Pessoa diferente</string>
   <string name="duplicate_link_dialog_text_3">%1$s e %2$s enviaram o mesmo link para você.\n\nUm deles pode estar tentando descobrir quem são seus contatos.\n\nNão diga a eles que você recebeu o mesmo link de outra pessoa.</string>
   <string name="pending_contact_updated_toast">Contato pendente atualizado</string>
   <string name="info_both_must_enter_links">Você deve adicionar os links um do outro</string>
-  <!--Peer trust levels-->
+  
   <string name="peer_trust_level_unverified">Contato não verificado</string>
   <string name="peer_trust_level_verified">Contato verificado</string>
   <string name="peer_trust_level_ourselves">Eu</string>
   <string name="peer_trust_level_stranger">Desconhecido</string>
-  <!--Introductions-->
+  
   <string name="introduction_onboarding_title">Apresente seus contatos</string>
   <string name="introduction_onboarding_text">Apresente seus contatos entre si para que eles possam se conectar no Zerion.</string>
   <string name="introduction_menu_item">Fazer Apresentação</string>
@@ -308,18 +304,7 @@
   <string name="introduction_response_accepted_received">%1$s aceitou ser apresentado a %2$s.</string>
   <string name="introduction_response_declined_received">%1$s recusou ser apresentado a %2$s.</string>
   <string name="introduction_response_declined_received_by_introducee">%1$s disse que %2$s recusou a apresentação.</string>
-  <!--Connect via Bluetooth-->
-  <string name="menu_item_connect_via_bluetooth">Conectar via Bluetooth</string>
-  <string name="connect_via_bluetooth_title">Conectar via Bluetooth</string>
-  <string name="connect_via_bluetooth_intro">Caso as conexões Bluetooth não funcionem automaticamente, você pode usar essa tela para se conectar manualmente.\n\nSeu contato precisa estar próximo para isso dar certo.\n\nVocê e seu contato devem apertar \"Iniciar\" ao mesmo tempo.</string>
-  <string name="connect_via_bluetooth_already_discovering">Tentando se conectar via Bluetooth no momento. Por favor, tente novamente em breve.</string>
-  <string name="connect_via_bluetooth_no_location_permission">Não há como continuar sem a permissão de localização</string>
-  <string name="connect_via_bluetooth_no_bluetooth_permission">Não é possível continuar sem permissão de dispositivos próximos</string>
-  <string name="connect_via_bluetooth_start">Conectando-se via Bluetooth...</string>
-  <string name="connect_via_bluetooth_success">Conectado com sucesso via Bluetooth</string>
-  <string name="connect_via_bluetooth_error">Não foi possível se conectar via Bluetooth.</string>
-  <string name="connect_via_bluetooth_error_not_supported">Bluetooth não suportado pelo dispositivo.</string>
-  <!--Private Groups-->
+  
   <string name="groups_list_empty">Sem grupos para exibir</string>
   <string name="groups_list_empty_action">Toque no ícone + para criar um grupo, ou peça para seus contatos compartilharem grupos com você</string>
   <string name="groups_created_by">Criado por %s.</string>
@@ -351,7 +336,7 @@
   <string name="groups_dissolve_button">Dissolver</string>
   <string name="groups_dissolved_dialog_title">O grupo foi dissolvido</string>
   <string name="groups_dissolved_dialog_message">O criador desse Grupo o dissolveu.\n\nVocê não pode mais escrever mensagens no grupo e talvez não receba todos posts que foram escritos.</string>
-  <!--Private Group Invitations-->
+  
   <string name="groups_invitations_title">Convites para Grupos</string>
   <string name="groups_invitations_invitation_sent">Você convidou %1$s para entrar no grupo \"%2$s\".</string>
   <string name="groups_invitations_invitation_received">%1$s convidou você para entrar no Grupo \"%2$s\".</string>
@@ -368,14 +353,14 @@
   <string name="groups_invitations_response_accepted_received">%s aceitou o convite do Grupo.</string>
   <string name="groups_invitations_response_declined_received">%s recusou o convite do Grupo.</string>
   <string name="sharing_status_groups">Apenas o criador pode convidar novas pessoas para o grupo. Abaixo estão os atuais membros do grupo.</string>
-  <!--Private Groups Revealing Contacts-->
+  
   <string name="groups_reveal_contacts">Revelar contatos</string>
   <string name="groups_reveal_dialog_message">Você pode escolher revelar seus contatos para todos os membros presentes e futuros desse Grupo.\n\nRevelar seus contatos torna sua conexão com o grupo mais rápida e confiável, porque você pode comunicar com os contatos revelados mesmo se o criador do Grupo está offline</string>
   <string name="groups_reveal_visible">Relação de contatos é está visível para o Grupo</string>
   <string name="groups_reveal_visible_revealed_by_us">Relação de contatos está visível para o Grupo (revelado por você)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Relação de contatos está visível para o Grupo (revelado por %s)</string>
   <string name="groups_reveal_invisible">Relação de contatos não visível para o Grupo </string>
-  <!--Forums-->
+  
   <string name="no_posts">Sem Posts</string>
   <plurals name="posts">
     <item quantity="one">%d Post</item>
@@ -384,7 +369,7 @@
   </plurals>
   <string name="btn_reply">Responder</string>
   <string name="dialog_button_leave">Sair</string>
-  <!--Forum Sharing-->
+  
   <string name="contacts_selected">Contatos Selecionados</string>
   <string name="activity_share_toolbar_header">Escolher contatos</string>
   <string name="no_contacts_selector">Sem contatos para exibir</string>
@@ -393,16 +378,16 @@
   <string name="sharing_status">Status de compartilhamento</string>
   <string name="shared_with">Compartilhado com %1$d (%2$d online)</string>
   <string name="nobody">Ninguém</string>
-  <!--Blogs-->
+  
   <string name="read_more">leia mais</string>
-  <!--Blog Sharing-->
-  <!--RSS Feeds-->
-  <!--Settings Profile Picture-->
+  
+  
+  
   <string name="change_profile_picture">Toque para mudar sua foto de perfil</string>
   <string name="dialog_confirm_profile_picture_title">Mudar foto de perfil</string>
   <string name="dialog_confirm_profile_picture_remark">Só seus contatos podem ver essa foto</string>
   <string name="change_profile_picture_failed_message">Sentimos muito, mas algo deu errado ao atualizar sua foto de perfil</string>
-  <!--Settings Display-->
+  
   <string name="pref_language_title">Linguagem &amp; região</string>
   <string name="pref_language_changed">Essa mudança vai valer quando você reiniciar o Zerion. Por favor, saia e reinicie o Zerion.</string>
   <string name="pref_language_default">Padrão do sistema</string>
@@ -411,9 +396,8 @@
   <string name="pref_theme_light">Claro</string>
   <string name="pref_theme_dark">Escuro</string>
   <string name="pref_theme_system">Padrão do sistema</string>
-  <!--Settings Connections-->
+  
   <string name="network_settings_title">Conexões</string>
-  <string name="bluetooth_setting">Acessar contatos via Bluetooth</string>
   <string name="wifi_setting">Acessar contatos na mesma rede Wi-Fi</string>
   <string name="tor_enable_title">Acessar contatos via Internet</string>
   <string name="tor_enable_summary">Por privacidade, todas as conexões passam pela rede Tor</string>
@@ -422,28 +406,28 @@
   <string name="tor_network_setting_without_bridges">Use a rede Tor sem pontes</string>
   <string name="tor_network_setting_with_bridges">Use a rede Tor com pontes</string>
   <string name="tor_network_setting_never">Não se conectar à Internet</string>
-  <!--How and when Zerion will connect to Tor: E.g. "Don't connect to the Internet (in China)" or "Use Tor network with bridges (in Belarus)"-->
+  
   <string name="tor_network_setting_summary">Automático: %1$s (em %2$s) </string>
   <string name="tor_mobile_data_title">Usar dados móveis</string>
   <string name="tor_only_when_charging_title">Conectar à Internet apenas durante o carregamento</string>
   <string name="tor_only_when_charging_summary">Desabilita conexão à Internet quando seu dispositivo estiver descarregando</string>
-  <!--Settings Security and Panic-->
+  
   <string name="security_settings_title">Segurança</string>
   <string name="pref_lock_title">Bloqueio de app</string>
   <string name="pref_lock_summary">Use o bloqueio de tela do dispositivo para proteger o Zerion enquanto estiver conectado</string>
   <string name="pref_lock_disabled_summary">Para usar esse recurso, configure um bloqueio de tela para seu dispositivo</string>
   <string name="pref_lock_timeout_title">Tempo de inatividade para bloqueio do app</string>
-  <!--The %s placeholder is replaced with the following time spans, e.g. 5 Minutes, 1 Hour-->
+  
   <string name="pref_lock_timeout_summary">Bloquear o Zerion automaticamente ao não usá-lo por %s</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_1">1 minuto</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_5">5 minutos</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_15">15 minutos</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_30">30 minutos</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_60">1 hora</string>
   <string name="pref_lock_timeout_never">Nunca</string>
   <string name="pref_lock_timeout_never_summary">Nunca bloquear o Zerion automaticamente</string>
@@ -466,7 +450,7 @@
   <string name="panic_setting_signout_summary">Desconectar do Zerion se o botão de pânico for apertado</string>
   <string name="purge_setting_title">Apagar conta</string>
   <string name="purge_setting_summary">Apagar sua conta do Zerion se o botão de pânico for apertado. Atenção: isso irá apagar permanentemente suas identidades, contatos e mensagens</string>
-  <!--Settings Notifications-->
+  
   <string name="notification_settings_title">Notificações</string>
   <string name="notify_sign_in_title">Lembre-me de fazer login</string>
   <string name="notify_sign_in_summary">Mostrar um lembrete quando o celular for ligado ou o app atualizado</string>
@@ -482,7 +466,7 @@
   <string name="notify_sound_setting_disabled">Nenhum</string>
   <string name="choose_ringtone_title">Escolher toque</string>
   <string name="cannot_load_ringtone">Não foi possível carregar o toque</string>
-  <!--Mailbox-->
+  
   <string name="mailbox_settings_title">Mailbox</string>
   <string name="mailbox_setup_title">Configuração do Mailbox</string>
   <string name="mailbox_setup_intro">Um Mailbox permite que seus contatos enviem mensagens a você enquanto você está offline. O Mailbox irá receber suas mensagens e as armazenar até que você esteja online.\n
@@ -490,10 +474,8 @@
   <string name="mailbox_setup_download">Primeiro, instale o app Mailbox em outro dispositivo buscando por \"Zerion Mailbox\" no Google Play ou no local onde você baixou o Zerion.\n
 		\nDepois, vincule seu Mailbox com o Zerion escaneando o código QR mostrado pelo app Mailbox.</string>
   <string name="mailbox_setup_download_link">Compartilhar Link de Download</string>
-  <string name="mailbox_setup_button_scan">Escanear código QR do Mailbox</string>
-  <string name="permission_camera_qr_denied_body">Você negou acesso à câmera, mas escanear um código QR requer o uso da câmera.\n\nPor favor, considere conceder acesso.</string>
   <string name="mailbox_setup_connecting">Conectando à caixa de email...</string>
-  <!--This string is shown when connecting to a Mailbox for the first time. The placeholder will be replaced with a duration, e.g. "2 minutes".-->
+  
   <string name="mailbox_setup_connecting_info">Isso pode levar até %1s</string>
   <string name="mailbox_setup_already_paired_title">Mailbox já vinculado</string>
   <string name="mailbox_setup_already_paired_description">Desvincule o Mailbox no seu outro dispositivo e tente de novo.</string>
@@ -518,9 +500,9 @@
   <string name="mailbox_status_mailbox_too_old_title">A Caixa de email é muito antiga</string>
   <string name="mailbox_status_mailbox_too_old_message">Atualize sua Caixa de Entrada para a versão mais recente do app e tente novamente.</string>
   <string name="mailbox_status_check_button">Verificar Conexão</string>
-  <!--Example for string substitution: Last connection: 3min ago-->
+  
   <string name="mailbox_status_connected_info">Última conexão: %s</string>
-  <!--Indicates that there never was a connection to the mailbox. Last connection: Never-->
+  
   <string name="mailbox_status_connected_never">Nunca</string>
   <string name="mailbox_status_unlink_button">Desvincular</string>
   <string name="mailbox_status_unlink_dialog_title">Desvincular Mailbox?</string>
@@ -553,7 +535,7 @@
   <string name="mailbox_error_wizard_info1_1_4">Verifique se o dispositivo de Caixa de Entrada está conectado corretamente à Internet.\n\nVerifique se o relógio do dispositivo de Caixa de Entrada mostra a hora, a data e o fuso horário corretos.\n\nVerifique se os aplicativos de Caixa de Entrada e Zerion estão atualizados para a versão mais recente.\ n\nReinicie seus dispositivos de Caixa de Entrada e Zerion e tente novamente.</string>
   <string name="mailbox_error_wizard_info2">Por favor, volte a esta tela quando tiver acesso ao dispositivo.</string>
   <string name="mailbox_error_wizard_info3">Por favor, desvincule sua Caixa de Entrada usando o botão abaixo.\n\nDepois de desvincular sua Caixa de Entrada antiga, você pode configurar uma nova Caixa de Entrada a qualquer momento.</string>
-  <!--About-->
+  
   <string name="about_title">Sobre</string>
   <string name="zerion_version">Versão do Zerion: %s</string>
   <string name="tor_version">Versão do Tor: %s</string>
@@ -562,9 +544,9 @@
   <string name="zerion_source_code">\u2022 <a href="">Código fonte</a></string>
   <string name="zerion_changelog">\u2022 <a href="">Registro de alterações</a></string>
   <string name="zerion_privacy_policy">\u2022 <a href="">Política de Privacidade</a></string>
-  <!--Here translators can add their names or Transifex usernames(eg "Thanks to all the contributors at the Localization Lab, especially Tom, Matthew and Jerry")-->
+  
   <string name="translator_thanks">Agradecemos todos os contribuidores do Localization Lab</string>
-  <!--Conversation Settings-->
+  
   <string name="disappearing_messages_title">Mensagens efêmeras</string>
   <string name="disappearing_messages_explanation_long">Ativar essa opção fará novas
 		mensagens nessa conversa desaparecerem automaticamente após 7\u00A0dias.
@@ -577,17 +559,17 @@
 		Seu contato tambem pode alterar essa opção por vocês.</string>
   <string name="learn_more">Saiba mais</string>
   <string name="disappearing_messages_summary">Fazer as mensagens futuras nessa conversa desaparecerem automaticamente após 7\u00A0dias.</string>
-  <!--Settings Actions-->
+  
   <string name="pref_category_actions">Ações</string>
   <string name="share_app_link">Compartilhar link de download</string>
   <string name="share_app_link_text">Baixe o Zerion em %s</string>
   <string name="send_feedback">Enviar feedback</string>
-  <!--Link Warning-->
+  
   <string name="link_warning_title">Aviso sobre Link</string>
   <string name="link_warning_intro">Você está prestes a abrir esse link em um Aplicativo Externo.</string>
   <string name="link_warning_text">Isso pode ser usado para identificar você. Pense se você confia em quem te enviou esse link e considere abri-lo no Navegador Tor.</string>
   <string name="link_warning_open_link">Abrir Link</string>
-  <!--Crash Reporter-->
+  
   <string name="crash_report_title">Relatório de falhas do Zerion</string>
   <string name="zerion_crashed">Desculpe, o Zerion fechou</string>
   <string name="not_your_fault">Isso não é sua culpa.</string>
@@ -618,15 +600,15 @@
   <string name="dev_report_sent">Feedback enviado</string>
   <string name="dev_report_saved">Relatório salvo. Ele será enviado na próxima vez em que você entrar no Zerion.</string>
   <string name="dev_report_error">Erro: falha no envio do relatório</string>
-  <!--Sign Out-->
+  
   <string name="progress_title_logout">Saindo do Zerion…</string>
-  <!--Screen Filters & Tapjacking-->
+  
   <string name="screen_filter_title">Sobreposição de tela detectada</string>
   <string name="screen_filter_body">Outro aplicativo está se sobrepondo sobre o Zerion. Para proteger sua segurança, Zerion não responderá a seus toques enquanto estiver sobreposto.\n\nOs seguintes aplicativos podem estar se sobrepondo:\n\n%1$s</string>
   <string name="screen_filter_body_api_30">Outro app está sendo executado sobre o Zerion. Para garantir sua segurança, Zerion não responderá aos toques quando outro app estiver em execução.\n\nRevise os apps abaixo para encontrar o responsável.</string>
   <string name="screen_filter_allow">Permitir que estes aplicativos se sobreponham</string>
   <string name="screen_filter_review_apps">Revise os apps</string>
-  <!--Permission Requests-->
+  
   <string name="permission_camera_title">Permissão da câmera</string>
   <string name="permission_camera_request_body">O Zerion precisa acessar a câmera para pode escanear o código QR.</string>
   <string name="permission_location_title">Permissão para localização</string>
@@ -634,93 +616,20 @@
   <string name="permission_location_request_body">Para encontrar dispositivos Bluetooth, o Zerion precisa de permissão para acessar sua localização.\n\nZerion não armazena sua localização nem a compartilha com ninguém.</string>
   <string name="permission_camera_location_title">Câmera e localização</string>
   <string name="permission_camera_location_request_body">Para escanear o código QR, o Zerion precisa de acesso à câmera.\n\nPara encontrar dispositivos Bluetooth, o Zerion precisa de permissão para acessar a localização.\n\nZerion não armazena sua localização nem a compartilha com ninguém.</string>
-  <string name="permission_camera_bluetooth_title">Câmera e dispositivos próximos</string>
-  <string name="permission_camera_bluetooth_request_body">Para digitalizar o código QR, Zerion precisa de acesso à câmera.\n\nPara descobrir dispositivos Bluetooth, Zerion precisa de permissão para encontrar e se conectar a dispositivos próximos.</string>
   <string name="permission_camera_denied_body">Você negou acesso à câmera, mas para adicionar contatos você precisa da câmera.\n\nPor favor, pense em liberar o acesso a ela.</string>
   <string name="permission_location_denied_body">Você desabilitou o acesso à sua localização, no entanto o Zerion precisa da permissão para saber se há dispositivos Bluetooth.\n\nPor favor, considere liberar o acesso.</string>
   <string name="permission_location_setting_title">Configuração de localização</string>
   <string name="permission_location_setting_body">A opção de localização de seu dispositivo deve estar ativada para achar outros dispositivos via Bluetooth. Por favor, ative a localização para continuar. Você pode desativá-la em seguida.</string>
-  <string name="permission_location_setting_hotspot_body">A configuração de localização do dispositivo deve estar ativada para criar um ponto de acesso Wi-Fi. Habilite a localização para continuar. Você pode desativá-lo novamente depois.</string>
   <string name="permission_location_setting_button">Ativar localização</string>
-  <string name="permission_bluetooth_title">Permissão de dispositivos próximos</string>
-  <string name="permission_bluetooth_body">Para usar a comunicação Bluetooth, Zerion precisa de permissão para localizar e se conectar a dispositivos próximos.</string>
-  <string name="permission_bluetooth_denied_body">Você negou acesso a dispositivos próximos, mas a Zerion precisa dessa permissão para usar Bluetooth.\n\nConsidere conceder acesso.</string>
-  <!--App Locking-->
   <string name="lock_unlock">Desbloquear o Zerion</string>
   <string name="lock_unlock_verbose">Insira o PIN, padrão ou senha do seu dispositivo para desbloquear o Zerion</string>
   <string name="lock_unlock_fingerprint_description">Encoste no leitor de impressão digital com o dedo cadastrado para continuar</string>
   <string name="lock_unlock_password">Usar senha</string>
   <string name="lock_is_locked">Zerion está bloqueado</string>
   <string name="lock_tap_to_unlock">Toque para desbloquear</string>
-  <!--Connections Screen-->
+  
   <string name="transports_help_text">Zerion pode se conectar aos seus contatos via Internet, Wi-Fi ou Bluetooth.\n\nTodas as conexões com a Internet acontecem pela rede Tor, por privacidade.\n\nSe um contato pode ser alcançado de várias formas, o Zerion as utilizará em paralelo.</string>
-  <!--Share app offline-->
-  <string name="hotspot_title">Compartilhar esse app offline</string>
-  <string name="hotspot_intro">Compartilhe esse app com alguém próximo sem uma conexão à Internet usando o Wi-Fi do seu celular.
-		\n\nSeu celular vai iniciar um hotspot Wi-Fi. Pessoas próximas podem se conectar ao hotspot e baixar o app Zerion pelo seu celular.</string>
-  <string name="hotspot_button_start_sharing">Iniciar hotspot</string>
-  <string name="hotspot_button_stop_sharing">Parar hotspot</string>
-  <string name="hotspot_progress_text_start">Preparando hotspot...</string>
-  <string name="hotspot_notification_channel_title">Hotspot Wi-Fi</string>
-  <string name="hotspot_notification_title">Compartilhando Zerion offline</string>
-  <string name="hotspot_button_connected">Próximo</string>
-  <string name="permission_hotspot_location_request_body">Para criar um hotspot Wi-Fi, o Zerion precisa de permissão para acessar sua localização.\n\nZerion não armazena sua localização nem a compartilha com ninguém.</string>
-  <string name="permission_hotspot_location_request_precise_body">Para criar um hotspot Wi-Fi, o Zerion precisa de permissão para acessar sua localização precisa.\n\nZerion não armazena sua localização nem a compartilha com ninguém.</string>
-  <string name="permission_hotspot_location_denied_body">Você negou acesso à sua localização, mas o Zerion precisa dessa permissão para criar um hotspot Wi-Fi.\n\nPor favor, considere conceder acesso.</string>
-  <string name="permission_hotspot_location_denied_precise_body">Você negou acesso à sua localização precisa, mas a Zerion precisa dessa permissão para criar um ponto de acesso Wi-Fi.\n\nConsidere conceder acesso.</string>
-  <string name="permission_hotspot_nearby_wifi_request_body">Para criar um hotspot Wi-Fi, Zerion precisa de permissão para acessar dispositivos próximos.</string>
-  <string name="permission_hotspot_nearby_wifi_denied_body">Você negou acesso a dispositivos próximos, mas o Zerion precisa dessa permissão para criar um ponto de acesso Wi-Fi.\n\nConsidere conceder acesso.</string>
-  <string name="wifi_settings_title">Configurações de Wi-Fi</string>
-  <string name="wifi_settings_request_enable_body">Para criar um hotspot Wi-Fi, o Zerion precisa usar o Wi-Fi. Por favor, ative ele.</string>
-  <string name="hotspot_tab_manual">Manual</string>
-  <!--The placeholder to be inserted into the string 'hotspot_manual_wifi': People can connect by %s-->
-  <!--Wi-Fi setup-->
-  <string name="hotspot_manual_wifi">Seu celular está fornecendo um hotspot Wi-Fi. Pessoas que quiserem baixar o Zerion podem se conectar ao hotspot ao adicioná-lo nas configurações de Wi-Fi de seus dispositivos usando os detalhes abaixo ou %s. Quando estiverem conectadas ao hotspot, pressione \'Próximo\'.</string>
-  <string name="hotspot_manual_wifi_ssid">Nome da rede</string>
-  <string name="hotspot_qr_wifi">Seu celular está fornecendo um hotspot Wi-Fi. Pessoas que quiserem baixar o Zerion podem se conectar ao hotspot escaneando esse código QR. Quando estiverem conectadas ao hotspot, pressione \'Próximo\'.</string>
-  <string name="hotspot_no_peers_connected">Sem dispositivos conectados</string>
-  <plurals name="hotspot_peers_connected">
-    <item quantity="one">%s dispositivo conectado</item>
-    <item quantity="many">%s dispositivos conectados</item>
-    <item quantity="other">%s dispositivos conectados</item>
-  </plurals>
-  <!--Download link-->
-  <string name="hotspot_manual_site">Seu celular está fornecendo um hotspot Wi-Fi. Pessoas que estão conectadas ao hotspot podem baixar o Zerion inserindo o seguinte link em um navegador de internet ou %s.</string>
-  <string name="hotspot_manual_site_address">Endereço (URL)</string>
-  <string name="hotspot_qr_site">Seu celular está fornecendo um hotspot Wi-Fi. Pessoas que estão conectadas ao hotspot podem baixar o Zerion escaneando esse código QR. </string>
-  <!--e.g. Download Zerion 1.2.20-->
-  <string name="website_download_title_1">Baixe Zerion %s</string>
-  <string name="website_download_intro_1">Alguém próximo compartilhou Zerion com você.</string>
-  <string name="website_download_button">Baixe Zerion</string>
-  <string name="website_download_outro">Após baixar o arquivo, abra-o e instale-o.</string>
-  <string name="website_troubleshooting_title">Solução de Problemas</string>
-  <string name="website_troubleshooting_1">Se você não conseguir baixar o app, tente em outro app de navegador de internet.</string>
-  <string name="website_troubleshooting_2_old">Para instalar o app baixado, você talvez precise permitir a instalação de apps de \"Fontes desconhecidas\" nas configurações do sistema. Após isso, você pode precisar baixar o app novamente. Recomendamos desativar a permissão de \"Fontes desconhecidas\" após instalar o app.</string>
-  <string name="website_troubleshooting_2_new">Para instalar o app baixado, você talvez precise permitir que seu navegador instale apps desconhecidos. Após a instalação do app, recomendamos remover a permissão do navegador de instalar apps desconhecidos.</string>
-  <string name="hotspot_help_wifi_title">Problemas em conectar ao Wi-Fi:</string>
-  <string name="hotspot_help_wifi_1">Desative e reative o Wi-Fi nos dois celulares e tente de novo.</string>
-  <string name="hotspot_help_wifi_2">Se seu celular reclama que o Wi-Fi não tem Internet, diga que você quer ficar conectado mesmo assim.</string>
-  <string name="hotspot_help_wifi_3">Reinicie o celular que está rodando o hotspot Wi-Fi, depois abra o Zerion e tente compartilhar de novo.</string>
-  <string name="hotspot_help_site_title">Problemas visitando o website local:</string>
-  <string name="hotspot_help_site_1">Verifique se você inseriu o endereço exatamente como mostrado. Um pequeno erro pode fazê-lo falhar.</string>
-  <string name="hotspot_help_site_2">Garanta que seu celular ainda está conectado ao Wi-Fi correto (veja acima) quando você tentar acessar o site.</string>
-  <string name="hotspot_help_site_3">Se você tem um app de firewall, verifique se ele não está bloqueando o acesso.</string>
-  <string name="hotspot_help_site_4">Se você consegue visitar o site, mas não baixar o app Zerion, tente em outro app de navegador de internet.</string>
-  <string name="hotspot_help_fallback_title">Nada funciona?</string>
-  <string name="hotspot_help_fallback_intro">Você pode tentar salvar o app como um arquivo .apk para compartilhar de outra forma. Após o arquivo ser transferido para o outro dispositivo, ele pode ser usado para instalar o Zerion.
-		\n\nDica: Para transferir via Bluetooth, você talvez precise renomear o arquivo para finalizar com .zip primeiro.</string>
-  <string name="hotspot_help_fallback_button">Salvar app</string>
-  <!--error handling-->
-  <string name="hotspot_error_intro">Algo deu errado ao tentar compartilhar o app via Wi-Fi:</string>
-  <string name="hotspot_error_no_wifi_direct">Dispositivo não suporta Wi-Fi Direct</string>
-  <string name="hotspot_error_start_callback_failed">Hotspot falhou ao iniciar: erro %s</string>
-  <string name="hotspot_error_start_callback_failed_unknown">Hotspot falhou ao iniciar, com um erro desconhecido, razão %d</string>
-  <string name="hotspot_error_start_callback_no_group_info">Hotspot falhou ao iniciar: sem info de grupo</string>
-  <string name="hotspot_error_web_server_start">Erro ao iniciar servidor web</string>
-  <string name="hotspot_error_web_server_serve">Erro ao apresentar website.\n\nPor favor envie feedback (com dados anônimos) pelo app Zerion se o problema persistir.</string>
-  <string name="hotspot_flag_test">Aviso: Esse app foi instalado com Android Studio e NÃO pode ser instalado em outro dispositivo.</string>
-  <string name="hotspot_error_framework_busy">Não foi possível iniciar o hotspot.\n\nSe você tem outro hotspot rodando ou está compartilhando sua conexão à Internet por Wi-Fi, tente parar isso e tentar de novo em seguida.</string>
-  <!--Transfer Data via Removable Drives-->
+  
   <string name="removable_drive_menu_title">Conectar via Unidade Removível</string>
   <string name="removable_drive_intro">Se você não pode se conectar ao seu contato via Internet, Wi-Fi ou Bluetooth, o Zerion tambem pode transferir mensagens em uma unidade removível como um pendrive USB ou cartão SD.</string>
   <string name="removable_drive_explanation">Se você não pode se conectar ao seu contato via Internet, Wi-Fi ou Bluetooth, o Zerion tambem pode transferir mensagens em uma unidade removível como um pendrive USB ou cartão SD.\n\nQuando você usar o botão \"Enviar Dados\", qualquer dado que esteja aguardando envio ao seu contato será gravado na unidade removível. Isso inclui mensagens privadas, anexos, blogs, fóruns e grupos privados.\n\nTudo será criptografado antes de ser gravado na unidade removível.\n\nQuando seu contato receber a unidade removível, poderá usar o botão \"Receber Dados\" para importar as mensagens ao Zerion.</string>
@@ -741,21 +650,21 @@
   <string name="removable_drive_error_send_text">Houve um erro ao gravar dados no arquivo. \n\nSe você está usando uma unidade removível, garanta que está propriamente inserida e tente de novo.\n\nSe o erro persistir, por favor envie feedback para que a equipe do Zerion saiba do problema.</string>
   <string name="removable_drive_error_receive_title">Erro ao importar dados</string>
   <string name="removable_drive_error_receive_text">O arquivo selecionado não contém nada que o Zerion possa reconhecer. \n\nPor favor, cheque que você selecionou o arquivo correto.\n\nSe seu contato criou o arquivo há mais de 28 dias, o Zerion não será capaz de reconhecê-lo.</string>
-  <!--Screenshots-->
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
+  
   <string name="screenshot_alice">Alice</string>
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
   <string name="screenshot_bob">Bob</string>
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
   <string name="screenshot_carol">Carol</string>
-  <!--This is a message to be used in screenshots. Please use the same translation for Bob!-->
+  
   <string name="screenshot_message_1">Oi Bob!</string>
-  <!--This is a message to be used in screenshots. Please use the same translation for Alice!-->
+  
   <string name="screenshot_message_2">Oi Alice! Obrigado por me informar sobre o Zerion!</string>
-  <!--This is a message to be used in screenshots.-->
+  
   <string name="screenshot_message_3">Sem problema, espero que goste 😀</string>
 
-	<!-- Vault strings -->
+	
 	<string name="vault_unlock_button">Desbloquear</string>
 	<string name="vault_password_mismatch">As senhas não correspondem</string>
 	<string name="vault_password_too_short">A senha deve ter pelo menos 8 caracteres</string>
@@ -779,22 +688,22 @@
 	<string name="vault_enable_biometric">Ativar desbloqueio biométrico</string>
 	<string name="vault_auto_lock_timeout">Tempo de bloqueio automático</string>
 
-	<!-- Security strings -->
+	
 	<string name="security_threat_detected">Ameaça de segurança detectada. Verifique se há software malicioso em seu dispositivo.</string>
 	<string name="pref_screenshot_protection_title">Proteção contra capturas de tela</string>
 	<string name="pref_screenshot_protection_summary">Impedir capturas de tela e gravações de conteúdo sensível</string>
 	<string name="security_warning_title">Aviso de segurança</string>
 
-	<!-- Tor status strings -->
+	
 	<string name="tor_status_title">Status da rede Tor</string>
 	<string name="tor_status_connected">Conectado à rede Tor</string>
 	<string name="tor_status_disconnected">Desconectado da rede Tor</string>
 	<string name="tor_status_connecting">Conectando à rede Tor…</string>
 
-	<!-- Voice Call strings -->
+	
 	<string name="voice_call">Chamada de voz</string>
 
-	<!-- Post-Quantum Security Level strings -->
+	
 	<string name="security_level_post_quantum">Segurança Pós-Quântica</string>
 	<string name="security_level_post_quantum_short">PQ</string>
 	<string name="security_level_classical">Segurança Clássica</string>
@@ -802,14 +711,14 @@
 	<string name="security_level_post_quantum_description">Este contato usa criptografia híbrida pós-quântica (X25519 + ML-KEM-768), que oferece proteção contra futuros ataques de computadores quânticos.</string>
 	<string name="security_level_classical_description">Este contato usa criptografia clássica. Atualize ambos os apps para Zerion para segurança pós-quântica.</string>
 
-	<!-- Brute Force Protection strings -->
+	
 	<string name="login_account_locked">Conta bloqueada devido a muitas tentativas falhas. Por favor aguarde %1$d minutos e %2$d segundos.</string>
 	<string name="login_final_warning">AVISO: Após mais 3 tentativas falhas, todos os dados serão permanentemente excluídos por segurança.</string>
 	<string name="login_attempts_remaining">Senha inválida. %d tentativas restantes antes do bloqueio.</string>
 	<string name="login_data_wiped_title">Proteção de Segurança Ativada</string>
 	<string name="login_data_wiped_message">Todos os dados foram permanentemente excluídos devido a repetidas tentativas de login falhas. Esta é uma função de segurança para proteger seus dados.</string>
 
-	<!-- Wipe Password strings -->
+	
 	<string name="wipe_password_title">Senha de Limpeza</string>
 	<string name="wipe_password_summary">Defina uma senha que apague imediatamente todos os dados quando digitada</string>
 	<string name="wipe_password_summary_enabled">A senha de limpeza está ativa</string>
@@ -833,14 +742,14 @@
 	<string name="set">Definir</string>
 	<string name="remove">Remover</string>
 
-	<!-- Voice Call Screen -->
+	
 	<string name="zerion_call">Chamada Zerion</string>
 	<string name="call_connecting">Conectando…</string>
 	<string name="mute">Silenciar</string>
 	<string name="speaker">Alto-falante</string>
 	<string name="end_call">Encerrar chamada</string>
 
-	<!-- Contact Type Selection -->
+	
 	<string name="contact_type_selection_title">Escolher Tipo de Conexão</string>
 	<string name="contact_type_selection_subtitle">Selecione como você quer se conectar com seu contato</string>
 	<string name="contact_type_zerion_title">Zerion</string>

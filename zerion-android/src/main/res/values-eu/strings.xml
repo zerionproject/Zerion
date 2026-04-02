@@ -1,6 +1,6 @@
-﻿<?xml version='1.0' encoding='UTF-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
-	<!--Setup-->
+	
 	<string name="setup_title">Ongi etorri Zerion-era</string>
 	<string name="setup_name_explanation">Zure ezizena argitaratzen dituzun eduki guztien ondoan agertuko da. Ezingo duzu aldatu, kontua sortu eta gero.</string>
 	<string name="setup_next">Hurrengoa</string>
@@ -24,7 +24,7 @@
 	<string name="dnkm_huawei_protected_help">Zerion ez bada babestutako aplikazioen zerrendara gehitzen, ezin izango du bigarren planoan ibili.</string>
 	<string name="dnkm_xiaomi_button">Babestu Zerion</string>
 	<string name="dnkm_warning_dozed">%s ezin izan da bigarren planoan exekutatu</string>
-	<!--Login-->
+	
 	<string name="enter_password">Pasahitza</string>
 	<string name="try_again">Pasahitz okerra, saiatu berriro</string>
 	<string name="dialog_title_cannot_check_password">Ezin izan da pasahitza egiaztatu</string>
@@ -51,20 +51,20 @@
   <string name="startup_open_database">Datu-basea deszifratzen...</string>
   <string name="startup_migrate_database">Datu-basea eguneratzen...</string>
   <string name="startup_compact_database">Datu-basea trinkotzen…</string>
-  <!--Navigation Drawer-->
+  
   <string name="nav_drawer_open_description">Ireki nabigazio-tiradera</string>
   <string name="nav_drawer_close_description">Itxi nabigazio-tiradera</string>
   <string name="contact_list_button">Kontaktuak</string>
   <string name="groups_button">Talde pribatuak</string>
-  <!--This is part of the main menu. The app will be locked when this is tapped.-->
+  
   <string name="lock_button">Blokeatu aplikazioa</string>
   <string name="settings_button">Ezarpenak</string>
   <string name="sign_out_button">Amaitu saioa</string>
-  <!--Transports: Tor-->
+  
   <string name="transport_tor">Internet</string>
-  <!--Transports: Wi-Fi-->
-  <!--Transports: Bluetooth-->
-  <!--Notifications-->
+  
+  
+  
   <string name="reminder_notification_title">Zerion saioa amaituta</string>
   <string name="reminder_notification_text">Sakatu saioa berriro hasteko.</string>
   <string name="reminder_notification_channel_title">Zerion saioa hasteko oroigarria</string>
@@ -79,7 +79,7 @@
     <item quantity="one">Talde mezu berri bat.</item>
     <item quantity="other">%d talde mezu berri.</item>
   </plurals>
-  <!--Misc-->
+  
   <string name="now">orain</string>
   <string name="show">Erakutsi</string>
   <string name="hide">Ezkutatu</string>
@@ -105,7 +105,7 @@
   <string name="sorry">Sentitzen dugu</string>
   <string name="error_start_activity">Ez dago eskuragarri zure sistemarako</string>
   <string name="status_heading">Egoera:</string>
-  <!--Contacts and Private Conversations-->
+  
   <string name="no_contacts">Ez dago erakusteko kontakturik</string>
   <string name="no_contacts_action">Sakatu + ikonoa kontaktua gehitzeko</string>
   <string name="date_no_private_messages">Ez dago mezurik.</string>
@@ -117,12 +117,6 @@
   <string name="image_attach_error_invalid_mime_type">Onartu gabeko irudi formatua: %s</string>
   <string name="set_contact_alias">Aldatu kontaktuaren izena</string>
   <string name="set_contact_alias_hint">Kontaktuaren izena</string>
-  <string name="menu_item_connect_via_bluetooth">Konektatu Bluetooth bidez</string>
-  <string name="connect_via_bluetooth_title">Konektatu Bluetooth bidez</string>
-  <!--The first placeholder will show a duration like "7 days". The second placeholder at the end will add "Tap to learn more."-->
-  <!--The placeholder at the end will add "Tap to learn more."-->
-  <!--The first placeholder will show a contact's name. The second placeholder will show a duration like "7 days". The third placeholder at the end will add "Tap to learn more."-->
-  <!--The first placeholder will show a contact's name. The second placeholder at the end will add "Tap to learn more."-->
   <string name="delete_all_messages">Ezabatu mezu guztiak</string>
   <string name="dialog_title_delete_all_messages">Baieztatu mezuak ezabatzea</string>
   <string name="dialog_message_delete_all_messages">Ziur mezu guztiak ezabatu nahi dituzula?</string>
@@ -137,7 +131,7 @@
   <string name="dialog_title_delete_contact">Baieztatu kontaktua ezabatzea</string>
   <string name="dialog_message_delete_contact">Ziur zaude kontaktu hau eta berarekin trukatutako mezu guztiak kendu nahi dituzula?</string>
   <string name="contact_deleted_toast">Kontaktua ezabatuta</string>
-  <!--This is shown in the action bar when opening an image in fullscreen that the user sent-->
+  
   <string name="you">Zu</string>
   <string name="save_image">Gorde irudia</string>
   <string name="dialog_title_save_image">Gorde irudia?</string>
@@ -149,7 +143,7 @@
   <string name="dialog_title_image_support">Orain irudiak bidali ahal dizkiozu kontaktu honi</string>
   <string name="dialog_message_image_support">Sakatu ikono hau irudiak eransteko.</string>
   <string name="messaging_too_many_attachments_toast">Lehen %d irudiak bidaliko dira, gehiagorik ez</string>
-  <!--Adding Contacts-->
+  
   <string name="add_contact_title">Gehitu inguruko kontaktua</string>
   <string name="continue_button">Jarraitu</string>
   <string name="try_again_button">Saiatu berriro</string>
@@ -164,7 +158,7 @@
   <string name="authenticating_with_device">Gailuarekin autentifikatzen\u2026</string>
   <string name="connection_error_title">Ezin izan da zure kontaktuarekin konektatu</string>
   <string name="connection_error_feedback">Arazoa  mantentzen bada, mesedez <a href="feedback">bidali iruzkin bat</a> aplikazioa hobetzen laguntzeko.</string>
-  <!--Adding Contacts Remotely-->
+  
   <string name="add_contact_remotely_title_case">Gehitu urruneko kontaktua</string>
   <string name="add_contact_nearby_title">Gehitu inguruko kontaktua</string>
   <string name="add_contact_remotely_title">Gehitu urruneko kontaktua</string>
@@ -197,9 +191,9 @@
   <string name="unsupported_link">Esteka hau Zerion-en bertsio berriago batetik dator. Eguneratu azken bertsiora eta saiatu berriro.</string>
   <string name="intent_own_link">Zure esteka ireki duzu. Erabili gehitu nahi duzun kontaktuarena!</string>
   <string name="missing_link">Sartu esteka bat</string>
-  <!--This is a numeral indicating the first step in a series of screens-->
+  
   <string name="step_1">1</string>
-  <!--This is a numeral indicating the second step in a series of screens-->
+  
   <string name="step_2">2</string>
   <plurals name="contact_added_notification_text">
     <item quantity="one">Kontaktu berria gehitu da</item>
@@ -209,19 +203,15 @@
   <string name="duplicate_link_dialog_title">Bikoiztutako esteka</string>
   <string name="duplicate_link_dialog_text_1">Baduzu kontaktu bat aztertzeke esteka honekin: %s</string>
   <string name="duplicate_link_dialog_text_1_contact">Baduzu esteka hau duen kontaktu bat: %s</string>
-  <!--This is a question asking whether two nicknames refer to the same person-->
+  
   <string name="duplicate_link_dialog_text_2">Ziur %s eta %s pertsona bera direla?</string>
-  <!--This is a button for answering that two nicknames do indeed refer to the same person. This
-	string will be used in a dialog button, so if the translation of this string is longer than 20
-	characters, please use "Yes" instead, and use "No" for the "Different Person" button-->
+  
   <string name="same_person_button">Pertsona bera</string>
-  <!--This is a button for answering that two nicknames refer to different people. This string
-	will be used in a dialog button, so if the translation of this string longer than 20 characters,
-	please use "No" instead, and use "Yes" for the "Same Person" button-->
+  
   <string name="different_person_button">Beste pertsona bat</string>
   <string name="duplicate_link_dialog_text_3">%s eta %s erabiltzaileek esteka bera bidali dizute.\n\nBietako batek agian zure kontaktuak zeintzuk diren asmatu nahi du.\n\nEz esan esteka bera jaso duzula beste norbaitengandik.</string>
   <string name="pending_contact_updated_toast">Aztertzeke zegoen kontaktua eguneratu da</string>
-  <!--Introductions-->
+  
   <string name="introduction_onboarding_title">Aurkeztu zure kontaktuak</string>
   <string name="introduction_onboarding_text">Zure kontaktuak elkarren artean aurkez ditzakezu, Zerion bidez konektatzeko aurrez aurre egon behar izan ez dezaten.</string>
   <string name="introduction_menu_item">Egin aurkezpena</string>
@@ -242,7 +232,7 @@
   <string name="introduction_response_accepted_received">%1$s erabiltzaileak %2$s erabiltzailearen aurkezpena onartu du.</string>
   <string name="introduction_response_declined_received">%1$s erabiltzaileak %2$s erabiltzailearen aurkezpena errefusatu du.</string>
   <string name="introduction_response_declined_received_by_introducee">%1$s erabiltzaileak dio %2$s erabiltzaileak aurkezpena errefusatu duela.</string>
-  <!--Private Groups-->
+  
   <string name="groups_list_empty">Ez dago erakusteko talderik</string>
   <string name="groups_list_empty_action">Sakatu + ikonoa talde bat sortzeko, edo eskatu zure kontaktuei taldeak zurekin parteka ditzatela</string>
   <string name="groups_created_by">%s erabiltzaileak sortua</string>
@@ -273,7 +263,7 @@
   <string name="groups_dissolve_button">Desegin</string>
   <string name="groups_dissolved_dialog_title">Taldea desegin da</string>
   <string name="groups_dissolved_dialog_message">Talde honen sortzaileak taldea desegin du.\n\nJada ezin duzu talde honetan mezurik idatzi, eta agian ez dituzu idatzi diren sarrera guztiak jasoko.</string>
-  <!--Private Group Invitations-->
+  
   <string name="groups_invitations_title">Talderako gonbidapenak</string>
   <string name="groups_invitations_invitation_sent">%1$s erabiltzailea \"%2$s\" taldera elkartzera gonbidatu duzu.</string>
   <string name="groups_invitations_invitation_received">%1$s erabiltzaileak \"%2$s\" taldera elkartzera gonbidatu zaitu.</string>
@@ -288,14 +278,14 @@
   <string name="groups_invitations_response_accepted_received">%s erabiltzaileak talderako gonbidapena onartu du.</string>
   <string name="groups_invitations_response_declined_received">%s erabiltzaileak talderako gonbidapena errefusatu du.</string>
   <string name="sharing_status_groups">Sortzaileak ez beste inork ezin ditu kide berriak taldera gonbidatu. Behean taldeko oraingo kide guztiak daude.</string>
-  <!--Private Groups Revealing Contacts-->
+  
   <string name="groups_reveal_contacts">Erazagutu kontaktuak</string>
   <string name="groups_reveal_dialog_message">Talde honetako oraingo eta etorkizuneko kide guztiei kontaktuak erazagutzea ala ez aukeratu dezakezu.\n\nKontaktuak erazagutzeak taldearekiko zure konexioa azkarragoa eta egonkorragoa egingo du, erazagututako kontaktuekin komunikatu zaitezkeelako taldearen sortzailea deskonektatuta egonik ere.</string>
   <string name="groups_reveal_visible">Kontaktuen erlazioa taldean ikusgai dago</string>
   <string name="groups_reveal_visible_revealed_by_us">Kontaktuen erlazioa taldean ikusgai dago (Zuk erazagututa)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Kontaktuen erlazioa taldean ikusgai dago (%s erabiltzaileak erazagututa)</string>
   <string name="groups_reveal_invisible">Kontaktuen erlazioa ez dago taldean ikusgai</string>
-  <!--Forums-->
+  
   <string name="no_posts">Ez dago sarrerarik</string>
   <plurals name="posts">
     <item quantity="one">Sarrera %d</item>
@@ -303,7 +293,7 @@
   </plurals>
   <string name="btn_reply">Erantzun</string>
   <string name="dialog_button_leave">Atera</string>
-  <!--Forum Sharing-->
+  
   <string name="contacts_selected">Kontaktuak hautatuta</string>
   <string name="activity_share_toolbar_header">Aukeratu kontaktuak</string>
   <string name="no_contacts_selector">Ez dago erakusteko kontakturik</string>
@@ -312,12 +302,12 @@
   <string name="sharing_status">Partekatze egoera</string>
   <string name="shared_with">%1$d(r)ekin partekatuta (%2$d konektatuta)</string>
   <string name="nobody">Inor ez</string>
-  <!--Blogs-->
+  
   <string name="read_more">irakurri gehiago</string>
-  <!--Blog Sharing-->
-  <!--RSS Feeds-->
-  <!--Settings Profile Picture-->
-  <!--Settings Display-->
+  
+  
+  
+  
   <string name="pref_language_title">Hizkuntza eta eskualdea</string>
   <string name="pref_language_changed">Ezarpen hau Zerion berrabiaraztean jarriko da indarrean. Amaitu saioa eta berrabiarazi Zerion.</string>
   <string name="pref_language_default">Sistemak lehenetsitakoa</string>
@@ -327,29 +317,29 @@
   <string name="pref_theme_dark">Iluna</string>
   <string name="pref_theme_auto">Automatikoa (Egunez)</string>
   <string name="pref_theme_system">Sisteman lehenetsia</string>
-  <!--Settings Connections-->
+  
   <string name="tor_network_setting_automatic">Automatikoa kokalekuan oinarritua</string>
-  <!--How and when Zerion will connect to Tor: E.g. "Don't connect to the Internet (in China)" or "Use Tor network with bridges (in Belarus)"-->
+  
   <string name="tor_network_setting_summary">Automatikoa: %1$s (%2$s(e)n)</string>
   <string name="tor_mobile_data_title">Erabili datu mugikorrak</string>
   <string name="tor_only_when_charging_summary">Internet konexio desgaitzen du gailuak bateria darabilenean</string>
-  <!--Settings Security and Panic-->
+  
   <string name="security_settings_title">Segurtasuna</string>
   <string name="pref_lock_title">Aplikazioaren blokeoa</string>
   <string name="pref_lock_summary">Erabili gailuaren pantaila-blokeoa Zerion babesteko saioa irekita dagoen bitartean</string>
   <string name="pref_lock_disabled_summary">Eginbide hau erabiltzeko, ezarri zure gailuarentzako pantaila-blokeo bat</string>
   <string name="pref_lock_timeout_title">Aplikazioa blokeatzeko jarduera ezaren denbora-muga</string>
-  <!--The %s placeholder is replaced with the following time spans, e.g. 5 Minutes, 1 Hour-->
+  
   <string name="pref_lock_timeout_summary">Zerion ez erabiltzean, hura automatikoki blokeatu %s eta gero</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_1">minutu 1</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_5">5 minutu</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_15">15 minutu</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_30">30 minutu</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_60">ordu 1</string>
   <string name="pref_lock_timeout_never">Inoiz ez</string>
   <string name="pref_lock_timeout_never_summary">Ez blokeatu inoiz Zerion automatikoki</string>
@@ -372,7 +362,7 @@
   <string name="panic_setting_signout_summary">Amaitu Zerion saioa larrialdi-botoia zapaltzen bada</string>
   <string name="purge_setting_title">Ezabatu kontua</string>
   <string name="purge_setting_summary">Ezabatu zure Zerion kontua larrialdi-botoia zapaltzen bada. Kontuz: Honek behin betiko ezabatuko ditu zure identitateak, kontaktuak eta mezuak</string>
-  <!--Settings Notifications-->
+  
   <string name="notification_settings_title">Jakinarazpenak</string>
   <string name="notify_sign_in_title">Gogorarazi niri saioa hastea</string>
   <string name="notify_sign_in_summary">Erakutsi oroigarri bat telefonoa abiatzean edo aplikazioa eguneratzean.</string>
@@ -388,16 +378,16 @@
   <string name="notify_sound_setting_disabled">Bat ere ez</string>
   <string name="choose_ringtone_title">Aukeratu dei-doinua</string>
   <string name="cannot_load_ringtone">Ezin izan da dei-doinua kargatu</string>
-  <!--Conversation Settings-->
+  
   <string name="learn_more">Gehiago jakin</string>
-  <!--Settings Feedback-->
+  
   <string name="send_feedback">Bidali garatzaileentzako iruzkinak</string>
-  <!--Link Warning-->
+  
   <string name="link_warning_title">Estekari buruzko abisua</string>
   <string name="link_warning_intro">Honako esteka hau kanpo aplikazio batekin irekitzear zaude.</string>
   <string name="link_warning_text">Hau zu identifikatzeko erabili daiteke. Pentsatu esteka hau bidali dizun pertsonarengan konfiantza duzun eta baloratu Tor nabigatzailearekin irekitzea.</string>
   <string name="link_warning_open_link">Ireki esteka</string>
-  <!--Crash Reporter-->
+  
   <string name="crash_report_title">Zerion kraskatze txostena</string>
   <string name="zerion_crashed">Zerion kraskatu egin da.</string>
   <string name="not_your_fault">Hau ez da zure errua.</string>
@@ -412,13 +402,13 @@
   <string name="send_report">Bidali txostena</string>
   <string name="close">Itxi</string>
   <string name="dev_report_saved">Txostena gordeta. Zerion-en saioa hasten duzun hurrengoan bidaliko da.</string>
-  <!--Sign Out-->
+  
   <string name="progress_title_logout">Zerion saioa amaitzen...</string>
-  <!--Screen Filters & Tapjacking-->
+  
   <string name="screen_filter_title">Pantaila gainjartzea antzeman da</string>
   <string name="screen_filter_body">Beste aplikazio bat ari da Zerion-en gainean marrazten. Zure segurtasuna babesteko, Zerion-ek ez die ukituei jaramon egingo beste aplikazio bat gainean marrazten ari denean.\n\nOndoko aplikazioak dira gainean marrazten egon daitezkeenak:\n\n%1$s</string>
   <string name="screen_filter_allow">Baimendu aplikazio hauei gainean marraztea</string>
-  <!--Permission Requests-->
+  
   <string name="permission_camera_title">Kamera erabiltzeko baimena</string>
   <string name="permission_camera_request_body">QR kodea eskaneatzeko Zerion-ek kamera atzitu behar du.</string>
   <string name="permission_location_title">Kokapen baimena</string>
@@ -426,25 +416,25 @@
   <string name="permission_camera_location_title">Kamera eta kokapena</string>
   <string name="permission_camera_location_request_body">QR kodea eskaneatzeko, Zerion aplikazioak zure kamera atzitzeko baimena behar du.\n\nBluetooth gailuak aurkitzeko, Zerion aplikazioak zure kokapena atzitzeko baimena behar du.\n\n Zerion-ek ez du zure kokapena gordetzen ezta inorekin partekatzen.</string>
   <string name="permission_camera_denied_body">Kamera atzitzeko baimena ukatu duzu, baina kontaktuak gehitzeko kamera erabili behar da.\n\nMesedez baimendu kamera atzitzea.</string>
-  <!--App Locking-->
+  
   <string name="lock_unlock">Desblokeatu Zerion</string>
   <string name="lock_unlock_verbose">Sartu zure gailuaren PIN zenbakia, eredua edo pasahitza Zerion desblokeatzeko</string>
   <string name="lock_unlock_fingerprint_description">Jarraitzeko ukitu hatz-marka sentsorea erregistratutako atzamarrarekin </string>
   <string name="lock_unlock_password">Erabili pasahitza</string>
   <string name="lock_is_locked">Zerion blokeatuta dago</string>
   <string name="lock_tap_to_unlock">Sakatu desblokeatzeko</string>
-  <!--Connections Screen-->
-  <!--Screenshots-->
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
+  
+  
   <string name="screenshot_alice">Arantza</string>
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
   <string name="screenshot_bob">Jokin</string>
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
   <string name="screenshot_carol">Maitane</string>
-  <!--This is a message to be used in screenshots. Please use the same translation for Bob!-->
+  
   <string name="screenshot_message_1">Kaixo Jokin!</string>
-  <!--This is a message to be used in screenshots. Please use the same translation for Alice!-->
+  
   <string name="screenshot_message_2">Kaixo Arantza, eskerrik asko Zerion ezagutzera emateagatik!</string>
-  <!--This is a message to be used in screenshots.-->
+  
   <string name="screenshot_message_3">Ez horregatik, ea gustuko duzun 😀</string>
 </resources>

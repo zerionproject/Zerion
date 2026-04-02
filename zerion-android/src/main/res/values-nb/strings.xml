@@ -1,6 +1,6 @@
-﻿<?xml version='1.0' encoding='UTF-8'?>
-<resources xmlns:tools="http://schemas.android.com/tools">
-  <!--Setup-->
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+  
   <string name="setup_title">Velkommen til Zerion</string>
   <string name="setup_name_explanation">Ditt kallenavn vil bli vist ved siden av innhold du poster. Du kan endre det etter at du har opprettet kontoen din.</string>
   <string name="setup_next">Neste</string>
@@ -30,7 +30,7 @@
   <string name="dnkm_xiaomi_lock_apps_text">Vennligst trykk på knappen under for å åpne sikkerhetsinnstillingene. Trykk på «Booste hastighet», trykk så på «Låse app\'er», sørg så for at Zerion er satt til «Låst».</string>
   <string name="dnkm_xiaomi_lock_apps_help">Dersom Zerion ikke er satt til «Låst» på «Låse app\'er»-skjermen, så vil den ikke kunne kjøre i bakgrunnen.</string>
   <string name="dnkm_warning_dozed_1">Zerion klarte ikke å kjøre i bakgrunnen</string>
-  <!--Login-->
+  
   <string name="enter_password">Passord</string>
   <string name="try_again">Feil passord, prøv igjen</string>
   <string name="dialog_title_cannot_check_password">Kan ikke sjekke passord</string>
@@ -59,17 +59,17 @@
   <string name="startup_open_database">Dekrypter database...</string>
   <string name="startup_migrate_database">Oppgraderer database...</string>
   <string name="startup_compact_database">Komprimerer database...</string>
-  <!--Navigation Drawer-->
+  
   <string name="nav_drawer_open_description">Åpne navigasjonsskuffen</string>
   <string name="nav_drawer_close_description">Lukk navigasjonsskuffen</string>
   <string name="contact_list_button">Kontakter</string>
   <string name="groups_button">Private grupper</string>
-  <!--This is part of the main menu. The app will be locked when this is tapped.-->
+  
   <string name="lock_button">Lås appen</string>
   <string name="settings_button">Innstillinger</string>
   <string name="sign_out_button">Logg ut</string>
   <string name="transports_onboarding_text">Trykke her for å kontrolere hvordan Zerion kobler til dine kontakter.</string>
-  <!--Transports: Tor-->
+  
   <string name="transport_tor">Internett</string>
   <string name="tor_device_status_online_wifi">Din telefon har Internettilgang via Wi-Fi</string>
   <string name="tor_device_status_online_mobile">Din telefon har Internettilgang via mobildata</string>
@@ -81,10 +81,10 @@
   <string name="tor_plugin_status_disabled_mobile_data">Zerion er satt opp til ikke å bruke mobildata</string>
   <string name="tor_plugin_status_disabled_battery">Zerion er satt opp til å ikke bruke Internettet når den kjører fra batteri</string>
   <string name="tor_plugin_status_disabled_country_blocked">Zerion er satt opp til ikke a bruke Internettet i dette landet</string>
-  <!--Transports: Wi-Fi-->
+  
   <string name="transport_lan_long">Samme Wi-Fi-nettverk</string>
-  <!--Transports: Bluetooth-->
-  <!--Notifications-->
+  
+  
   <string name="reminder_notification_title">Logget ut av Zerion</string>
   <string name="reminder_notification_text">Trykk for å logge inn igjen.</string>
   <string name="reminder_notification_channel_title">Zerion påloggings påminnelse</string>
@@ -99,7 +99,7 @@
     <item quantity="one">Ny gruppemelding.</item>
     <item quantity="other">%d nye gruppemelindger.</item>
   </plurals>
-  <!--Misc-->
+  
   <string name="now">nå</string>
   <string name="show">Vis</string>
   <string name="hide">Skjul</string>
@@ -127,7 +127,7 @@
   <string name="error_start_activity">Utilgjengelig på ditt system</string>
   <string name="status_heading">Status:</string>
   <string name="error">Feil</string>
-  <!--Contacts and Private Conversations-->
+  
   <string name="no_contacts">Ingen kontakter å vise</string>
   <string name="no_contacts_action">Trykk på + ikonet for å legge til en kontakt</string>
   <string name="date_no_private_messages">Ingen meldinger.</string>
@@ -143,11 +143,11 @@
   <string name="set_contact_alias">Endre kontaktnavn</string>
   <string name="set_contact_alias_hint">Kontaktnavn</string>
   <string name="menu_item_disappearing_messages">Selvforsvinnende meldinger</string>
-  <!--The first placeholder will show a duration like "7 days". The second placeholder at the end will add "Tap to learn more."-->
+  
   <string name="auto_delete_msg_you_enabled">Dine meldinger kommer til å forvinne etter %1$s . %2$s</string>
-  <!--The placeholder at the end will add "Tap to learn more."-->
+  
   <string name="auto_delete_msg_you_disabled">Meldingen din vil ikke forsvinne. %1$s</string>
-  <!--The first placeholder will show a contact's name. The second placeholder will show a duration like "7 days". The third placeholder at the end will add "Tap to learn more."-->
+  
   <string name="auto_delete_msg_contact_enabled">%1$s\'s meldinger kommer til å forvinne etter %2$s. %3$s </string>
   <plurals name="duration_minutes">
     <item quantity="one">%d minutt</item>
@@ -161,7 +161,7 @@
     <item quantity="one">%d dag</item>
     <item quantity="other">%d dager</item>
   </plurals>
-  <!--The first placeholder will show a contact's name. The second placeholder at the end will add "Tap to learn more."-->
+  
   <string name="auto_delete_msg_contact_disabled">%1$s\'s meldinger vil ikke forsvinne. %2$s</string>
   <string name="tap_to_learn_more">Klikk for å lære mer.</string>
   <string name="auto_delete_changed_warning_title">Forsvinnende meldinger endret</string>
@@ -182,7 +182,7 @@
   <string name="dialog_title_delete_contact">Bekreft sletting av kontakt</string>
   <string name="dialog_message_delete_contact">Er du sikker på at du vil fjerne denne kontakten og alle meldinger utvekslet med denne kontakten?</string>
   <string name="contact_deleted_toast">Kontakt slettet</string>
-  <!--This is shown in the action bar when opening an image in fullscreen that the user sent-->
+  
   <string name="you">Deg</string>
   <string name="save_image">Lagre bilde</string>
   <string name="dialog_title_save_image">Lagre bilde?</string>
@@ -195,7 +195,7 @@
   <string name="dialog_message_image_support">Trykk på dette ikonet for å legge ved bilder.</string>
   <string name="messaging_too_many_attachments_toast">Bare de første %d bildene vil bli sendt</string>
   <string name="menu_contact">Kontakt</string>
-  <!--Adding Contacts-->
+  
   <string name="add_contact_title">Legg til kontakt i nærheten</string>
   <string name="continue_button">Fortsett</string>
   <string name="try_again_button">Prøv igjen</string>
@@ -208,7 +208,7 @@
   <string name="authenticating_with_device">Autentiserer med enhet\u2026</string>
   <string name="connection_error_title">Kunne ikke koble til din kontakt </string>
   <string name="connection_error_feedback">Om problemet vedvarer, vennligst <a href="feedback"> send tilbakemelding </a> for å hjelpe oss å forbedre appen.</string>
-  <!--Adding Contacts Remotely-->
+  
   <string name="add_contact_remotely_title_case">Legg til kontakt over distanse</string>
   <string name="add_contact_nearby_title">Legg til kontakt i nærheten</string>
   <string name="add_contact_remotely_title">Legg til kontakt over distanse</string>
@@ -241,9 +241,9 @@
   <string name="unsupported_link">Denne lenken kommer fra en nyere versjon av Zerion. Vennligst oppgrader til den nyeste versjonen og prøv på nytt.</string>
   <string name="intent_own_link">Du åpnet din egen lenke. Bruke den som tilhører kontakten du ønsker å legge til!</string>
   <string name="missing_link">Vennligst skriv inn lenke</string>
-  <!--This is a numeral indicating the first step in a series of screens-->
+  
   <string name="step_1">1</string>
-  <!--This is a numeral indicating the second step in a series of screens-->
+  
   <string name="step_2">2</string>
   <plurals name="contact_added_notification_text">
     <item quantity="one">Ny kontakt lagt til.</item>
@@ -253,24 +253,20 @@
   <string name="duplicate_link_dialog_title">Duplikatlenke</string>
   <string name="duplicate_link_dialog_text_1">Du har allerede en ventende kontakt med denne lenken: %s</string>
   <string name="duplicate_link_dialog_text_1_contact">Du har allerede en kontakt med denne lenken: %s</string>
-  <!--This is a question asking whether two nicknames refer to the same person-->
+  
   <string name="duplicate_link_dialog_text_2">Er %1$s og %2$s den samme personen?</string>
-  <!--This is a button for answering that two nicknames do indeed refer to the same person. This
-	string will be used in a dialog button, so if the translation of this string is longer than 20
-	characters, please use "Yes" instead, and use "No" for the "Different Person" button-->
+  
   <string name="same_person_button">Samme person</string>
-  <!--This is a button for answering that two nicknames refer to different people. This string
-	will be used in a dialog button, so if the translation of this string longer than 20 characters,
-	please use "No" instead, and use "Yes" for the "Same Person" button-->
+  
   <string name="different_person_button">Annen person</string>
   <string name="duplicate_link_dialog_text_3">%1$s og %2$s sendte deg den samme lenken.\n\nDet kan være at en av dem prøver å finne ut hvem dine kontakter er.\n\nIkke forelle dem at du mottok den samme lenken fra noen andre.</string>
   <string name="pending_contact_updated_toast">Ventende kontakt oppdatert</string>
-  <!--Peer trust levels-->
+  
   <string name="peer_trust_level_unverified">Uverifisert kontakt</string>
   <string name="peer_trust_level_verified">Verifisert kontakt</string>
   <string name="peer_trust_level_ourselves">Meg</string>
   <string name="peer_trust_level_stranger">Fremmed</string>
-  <!--Introductions-->
+  
   <string name="introduction_onboarding_title">Introduser kontaktene dine</string>
   <string name="introduction_onboarding_text">Introdusere dine kontakter til hverandre så at de kan komme i kontakt med hverandre på Zerion.</string>
   <string name="introduction_menu_item">Introduser ovenfor hverandre</string>
@@ -292,17 +288,7 @@
   <string name="introduction_response_accepted_received">%1$s er nå bekjent %2$s.</string>
   <string name="introduction_response_declined_received">%1$s avslo introduksjonen med %2$s.</string>
   <string name="introduction_response_declined_received_by_introducee">%1$s sier at %2$s avslo introduksjonen.</string>
-  <!--Connect via Bluetooth-->
-  <string name="menu_item_connect_via_bluetooth">Koble til via Blåtann</string>
-  <string name="connect_via_bluetooth_title">Koble til via Blåtann</string>
-  <string name="connect_via_bluetooth_intro">I tilfelle Blåtann-forbindelser ikke virker automatisk, så kan du på dette skjermbildet gjøre så telefonen kobler til manuelt.\n\nDine kontakter må være i nærheten om dette skal fungere.\n\nDu og dine kontakter bør alle trykke på \"Start\" samtidig.</string>
-  <string name="connect_via_bluetooth_already_discovering">Prøver allerede å koble til via Blåtann. Vennligst prøv igjen om litt.</string>
-  <string name="connect_via_bluetooth_no_location_permission">Kan ikke fortsette uten lokasjonstillatelse</string>
-  <string name="connect_via_bluetooth_start">Kobler til via Blåtann...</string>
-  <string name="connect_via_bluetooth_success">Tilkobling via Blåtann vellykket</string>
-  <string name="connect_via_bluetooth_error">Kunne ikke koble til via Blåtann.</string>
-  <string name="connect_via_bluetooth_error_not_supported">Blåtann støttes ikke av enheten.</string>
-  <!--Private Groups-->
+  
   <string name="groups_list_empty">Ingen grupper å vise</string>
   <string name="groups_list_empty_action">Trykk på «+»-ikonet for å lage en gruppe, eller be dine kontakter om å dele grupper med deg</string>
   <string name="groups_created_by">Opprettet av %s</string>
@@ -333,7 +319,7 @@
   <string name="groups_dissolve_button">Oppløs</string>
   <string name="groups_dissolved_dialog_title">Gruppen har blitt oppløst</string>
   <string name="groups_dissolved_dialog_message">Oppretteren av denne gruppen har oppløst den.\n\nDu kan ikke lenger skrive meldinger til gruppen, og vil kanskje ikke få alle poster som har blitt skrevet.</string>
-  <!--Private Group Invitations-->
+  
   <string name="groups_invitations_title">Gruppeinvitasjoner</string>
   <string name="groups_invitations_invitation_sent">Du har invitert %1$s til å ta del i gruppen \"%2$s\".</string>
   <string name="groups_invitations_invitation_received">%1$s har inviter deg til å ta del i gruppen \"%2$s\".</string>
@@ -349,14 +335,14 @@
   <string name="groups_invitations_response_accepted_received">%s godtok gruppeinvitasjonen.</string>
   <string name="groups_invitations_response_declined_received">%s avslo gruppeinvitasjonen</string>
   <string name="sharing_status_groups">Bare grunnleggeren kan invitere nye medlemmer til gruppen. Nedenfor har du alle medlemmene i den.</string>
-  <!--Private Groups Revealing Contacts-->
+  
   <string name="groups_reveal_contacts">Avslør kontakter</string>
   <string name="groups_reveal_dialog_message">Du kan velge hvorvidt du vil tilkjennegi kontakter ovenfor alle nåværende og fremtidige medlemmer av denne gruppen.\n\nDette gjør tilkoblingen til gruppen raskere og mer pålitelig, fordi du kan kommunisere med tilkjennegitte kontakter selv om grunnleggeren av gruppen er frakoblet.</string>
   <string name="groups_reveal_visible">Kontaktforhold er synlige for gruppen</string>
   <string name="groups_reveal_visible_revealed_by_us">Kontaktforhold er synlige for gruppen (avslørt av deg)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Kontaktforhold er synlige for gruppen (avslørt av %s)</string>
   <string name="groups_reveal_invisible">Kontaktforhold er ikke synlige for gruppen</string>
-  <!--Forums-->
+  
   <string name="no_posts">Ingen poster</string>
   <plurals name="posts">
     <item quantity="one">%d post</item>
@@ -364,7 +350,7 @@
   </plurals>
   <string name="btn_reply">Svar</string>
   <string name="dialog_button_leave">Forlat</string>
-  <!--Forum Sharing-->
+  
   <string name="contacts_selected">Kontakter valgt</string>
   <string name="activity_share_toolbar_header">Velg kontakter</string>
   <string name="no_contacts_selector">Ingen kontakter å vise</string>
@@ -373,16 +359,16 @@
   <string name="sharing_status">Delingsstatus</string>
   <string name="shared_with">Delt med %1$d (%2$d pålogget)</string>
   <string name="nobody">Ingen</string>
-  <!--Blogs-->
+  
   <string name="read_more">les mer</string>
-  <!--Blog Sharing-->
-  <!--RSS Feeds-->
-  <!--Settings Profile Picture-->
+  
+  
+  
   <string name="change_profile_picture">Trykk for å endre ditt profilbilde</string>
   <string name="dialog_confirm_profile_picture_title">Bytte profilbilde</string>
   <string name="dialog_confirm_profile_picture_remark">Bare kontaktene dine kan se dette bildet</string>
   <string name="change_profile_picture_failed_message">Vi beklager, men noe gikk galt under oppdateringen av ditt profilbilde</string>
-  <!--Settings Display-->
+  
   <string name="pref_language_title">Språk &amp; region</string>
   <string name="pref_language_changed">Denne innstillingen vil trå i kraft etter du har startet Zerion på nytt. Vennligst logg ut og start Zerion på nytt.</string>
   <string name="pref_language_default">Systemforvalg</string>
@@ -391,9 +377,8 @@
   <string name="pref_theme_light">Lyst</string>
   <string name="pref_theme_dark">Mørkt</string>
   <string name="pref_theme_system">Systemforvalg</string>
-  <!--Settings Connections-->
+  
   <string name="network_settings_title">Tilkoblinger</string>
-  <string name="bluetooth_setting">Koble til dine kontakter via Blåtann</string>
   <string name="wifi_setting">Koble til kontakter på det samme Wi-Fi-nettverket</string>
   <string name="tor_enable_title">Koble til dine kontakter via Internettet</string>
   <string name="tor_enable_summary">Alle tilkoblingene blir sendt igjennom Tor-nettverket for personvernets skyld</string>
@@ -402,28 +387,28 @@
   <string name="tor_network_setting_without_bridges">Bruke Tor-nettverket uten broer</string>
   <string name="tor_network_setting_with_bridges">Bruke Tor-nettverket med broer</string>
   <string name="tor_network_setting_never">Ikke koble til Internettet</string>
-  <!--How and when Zerion will connect to Tor: E.g. "Don't connect to the Internet (in China)" or "Use Tor network with bridges (in Belarus)"-->
+  
   <string name="tor_network_setting_summary">Automatisk: %1$s (i %2$s)</string>
   <string name="tor_mobile_data_title">Bruke mobildata</string>
   <string name="tor_only_when_charging_title">Koble bare til Internettet under lading</string>
   <string name="tor_only_when_charging_summary">Deaktivere Internettforbindelsen når enheten bruker batteriet</string>
-  <!--Settings Security and Panic-->
+  
   <string name="security_settings_title">Sikkerhet</string>
   <string name="pref_lock_title">App-lås</string>
   <string name="pref_lock_summary">Bruke enhetens skjermlås for å beskytte Zerion når du er logget inn</string>
   <string name="pref_lock_disabled_summary">For å bruke denne funksjonaliteten, aktivere en skjermlås på din enhet</string>
   <string name="pref_lock_timeout_title">App-lås inaktivitets-tidsavbrudd</string>
-  <!--The %s placeholder is replaced with the following time spans, e.g. 5 Minutes, 1 Hour-->
+  
   <string name="pref_lock_timeout_summary">Når Zerion ikke er i bruk, automatisk låse den etter %s</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_1">1 minutt</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_5">5 minutter</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_15">15 minutter</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_30">30 minutter</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_60">1 time</string>
   <string name="pref_lock_timeout_never">Aldri</string>
   <string name="pref_lock_timeout_never_summary">Aldri låse Zerion automatisk</string>
@@ -446,7 +431,7 @@
   <string name="panic_setting_signout_summary">Logg ut av Zerion hvis panikk-knappen trykkes</string>
   <string name="purge_setting_title">Slett konto</string>
   <string name="purge_setting_summary">Slett Zerion-kontoen din hvis panikk-knappen trykkes. Advarsel: Dette vil slette dine identiteter, kontakter og meldinger for godt.</string>
-  <!--Settings Notifications-->
+  
   <string name="notification_settings_title">Merknader</string>
   <string name="notify_sign_in_title">Påminne meg om å logge inn</string>
   <string name="notify_sign_in_summary">Vise en påminnelse når telefonen starter opp eller at app\'en har blitt oppdatert</string>
@@ -462,7 +447,7 @@
   <string name="notify_sound_setting_disabled">Ingen</string>
   <string name="choose_ringtone_title">Velg ringetone</string>
   <string name="cannot_load_ringtone">Kan ikke laste inn ringetone</string>
-  <!--Mailbox-->
+  
   <string name="mailbox_settings_title">Mailboks</string>
   <string name="mailbox_setup_title">Mailboks-innstillinger</string>
   <string name="mailbox_setup_intro">En Mailboks gjør det mulig for dine kontakter å sende deg meldinger selv om du ikke er pålogget. Mailboksen vil motta dine meldinger å lagre dem til du logger på igjen.\n
@@ -470,9 +455,6 @@
   <string name="mailbox_setup_download">Først, installere Mailbox-app\'en på en annen enhet ved å søke etter «Zerion Mailbox» på Google Play eller hvorenn du lastet ned Zerion.\n
 		\nSå koble din Mailbox med Zerion ved å skanne QR-koden vist i Mailbox-app\'en.</string>
   <string name="mailbox_setup_download_link">Dele nedlastingslenke</string>
-  <string name="mailbox_setup_button_scan">Skanne Mailboks-QR-kode</string>
-  <string name="permission_camera_qr_denied_body">Du har forbudt tilgang til kameraet, men for å kunne skanne QR-koder kreves kameratilgang.\n\nVennligst vurder å gi tilgang.</string>
-  <!--This string is shown when connecting to a Mailbox for the first time. The placeholder will be replaced with a duration, e.g. "2 minutes".-->
   <string name="mailbox_setup_already_paired_title">Mailboks\'en er allerede lenket opp</string>
   <string name="mailbox_setup_already_paired_description">Lenke fra Mailboks-appen på din andre enhet og prøv igjen.</string>
   <string name="mailbox_setup_io_error_title">Kunne ikke koble til</string>
@@ -496,9 +478,9 @@
   <string name="mailbox_status_mailbox_too_old_title">Mailboks er for gammel</string>
   <string name="mailbox_status_mailbox_too_old_message">Oppdatere din Mailboks til den siste versjonen av app\'en og prøv igjen.</string>
   <string name="mailbox_status_check_button">Sjekke tilkoblingen</string>
-  <!--Example for string substitution: Last connection: 3min ago-->
+  
   <string name="mailbox_status_connected_info">Siste tilkobling: %s</string>
-  <!--Indicates that there never was a connection to the mailbox. Last connection: Never-->
+  
   <string name="mailbox_status_connected_never">Aldri</string>
   <string name="mailbox_status_unlink_button">Lenke fra</string>
   <string name="mailbox_status_unlink_dialog_title">Lenke fra mailboks?</string>
@@ -531,7 +513,7 @@
   <string name="mailbox_error_wizard_info1_1_4">Sjekke at mailboks-enheten er ordentlig koblet til Internettet.\n\nSjekk at klokka på Mailboks-enheten viser riktig tid, dato og tidssone.\n\nSjekk at Maiboks- og Zerion-appene er oppdaterte til den nyeste versjonen.\n\nStarte dine Mailboks- og Zerion-enheter på nytt og prøv igjen.</string>
   <string name="mailbox_error_wizard_info2">Vennligst kom tilbake til denne skjermen når du har fått tilgang til enheten.</string>
   <string name="mailbox_error_wizard_info3">Vennligst lenke fra din mailboks ved å bruke knappen under.\n\nEtter du har lenket fra din gamle Mailboks, så kan du sette opp en ny Mailboks når det skulle være.</string>
-  <!--About-->
+  
   <string name="about_title">Om</string>
   <string name="zerion_version">Zerion versjon: %s</string>
   <string name="tor_version">Tor versjon: %s</string>
@@ -540,9 +522,9 @@
   <string name="zerion_source_code">\u2022 <a href="">Kildekode</a></string>
   <string name="zerion_changelog">\u2022 <a href="">Endringslogg</a></string>
   <string name="zerion_privacy_policy">\u2022 <a href="">Personvernerklæring</a></string>
-  <!--Here translators can add their names or Transifex usernames(eg "Thanks to all the contributors at the Localization Lab, especially Tom, Matthew and Jerry")-->
+  
   <string name="translator_thanks">En takk til alle bidragsytere og til Lokaliseringslabben</string>
-  <!--Conversation Settings-->
+  
   <string name="disappearing_messages_title">Selvforsvinnende meldinger</string>
   <string name="disappearing_messages_explanation_long">Ved å skru på denne innstillingen så vil nye
 		meldinger i denne samtalen automatisk forsvinne etter 7\u00A0dager.
@@ -555,15 +537,15 @@
 		Din kontakt kan også endre denne innstillingen for dere begge.</string>
   <string name="learn_more">Lær mer</string>
   <string name="disappearing_messages_summary">La fremtidige meldinger i denne konversasjonen forvinne automatisk etter 7\u00A0dager.</string>
-  <!--Settings Actions-->
+  
   <string name="pref_category_actions">Handlinger</string>
   <string name="send_feedback">Send tilbakemelding</string>
-  <!--Link Warning-->
+  
   <string name="link_warning_title">Lenkeadvarsel</string>
   <string name="link_warning_intro">Du er i ferd med å følge en lenke med et eksternt program.</string>
   <string name="link_warning_text">Dette kan brukes for å identifisere deg. Tenk over om du stoler på personen som sendte deg lenken eller ikke, og vurdere om du vil åpne den i Tor-nettleseren.</string>
   <string name="link_warning_open_link">Åpne lenke</string>
-  <!--Crash Reporter-->
+  
   <string name="crash_report_title">Kræsjrapport for Zerion</string>
   <string name="zerion_crashed">Vi er lei for det, Zerion har krasjet</string>
   <string name="not_your_fault">Dette er ikke din feil.</string>
@@ -594,15 +576,15 @@
   <string name="dev_report_sent">Tilbakemelding sendt</string>
   <string name="dev_report_saved">Kræsjrapport lagret. Den vil bli sendt neste gang du logger inn i Zerion.</string>
   <string name="dev_report_error">Feil: Rapportsendingen mislyktes</string>
-  <!--Sign Out-->
+  
   <string name="progress_title_logout">Logger ut av Zerion…</string>
-  <!--Screen Filters & Tapjacking-->
+  
   <string name="screen_filter_title">Skjermoverlag oppdaget</string>
   <string name="screen_filter_body">En annen app skriver oppå Zerion. For å beskytte din sikkerhet, så responderer ikke Zerion til berøringer når en annen app skriver på toppen av Zerion.\n\nFølgende app\'er kan muligens ha tilgang til å skrive på toppen av denne:\n\n%1$s</string>
   <string name="screen_filter_body_api_30">En annen app har tilgang til å skrive på toppen av Zerion. For å beskytte din sikkerhet, så responderer ikke Zerion på berøring når andre app\'er skriver på toppen av denne.\n\nGå igjennom appene under for å finne app\'en som er ansvarlig for denne adferden.</string>
   <string name="screen_filter_allow">Tillat disse appene å skrive oppå denne</string>
   <string name="screen_filter_review_apps">Anmeld appene</string>
-  <!--Permission Requests-->
+  
   <string name="permission_camera_title">Kameratilgang</string>
   <string name="permission_camera_request_body">For å skanne QR-koden, trenger Zerion tilgang til kameraet.</string>
   <string name="permission_location_title">Lokasjonstillatelse</string>
@@ -614,77 +596,16 @@
   <string name="permission_location_setting_title">Lokasjonsinnstillinger</string>
   <string name="permission_location_setting_body">Din enhets lokasjonsinnstillinger må være skrudd på for å finne andre enheter via Blåtann. Vennligst skru på lokasjonstilgang for å fortsette. Det er mulig å skru det av igjen senere.</string>
   <string name="permission_location_setting_button">Skru på lokasjon</string>
-  <!--App Locking-->
+  
   <string name="lock_unlock">Låse opp Zerion</string>
   <string name="lock_unlock_verbose">Skrive inn din enhets PIN-kode, mønster eller passord for å låse opp Zerion</string>
   <string name="lock_unlock_fingerprint_description">Røre din fingeravtrykksavleser med den registrerte fingeren for å fortsette</string>
   <string name="lock_unlock_password">Bruke passord</string>
   <string name="lock_is_locked">Zerion er låst</string>
   <string name="lock_tap_to_unlock">Trykke for å låse opp</string>
-  <!--Connections Screen-->
+  
   <string name="transports_help_text">Zerion kan koble til dine kontakter via Internettet, Wi-Fi eller Blåtann.\n\nAlle internettilkoblinger går via Tor-nettverket for personvernets skyld.\n\nDersom en kontakt kan nås via mer enn en metode, så bruker Zerion disse parallelt.</string>
-  <!--Share app offline-->
-  <string name="hotspot_title">Dele denne app\'en uten internett</string>
-  <string name="hotspot_intro">Dele denne app\'en med noen i nærheten uten internettilang ved å bruke din telefons Wi-Fi.
-		\n\nDin telefon vil starte opp et Wi-Fi-hotspot. Folk i nærheten kan koble til hotspot\'et og laste ned Zerion-appen fra din telefon.</string>
-  <string name="hotspot_button_start_sharing">Starte hotspot</string>
-  <string name="hotspot_button_stop_sharing">Stoppe hotspot</string>
-  <string name="hotspot_progress_text_start">Setter opp hotspot...</string>
-  <string name="hotspot_notification_channel_title">Wi-Fi-hotspot</string>
-  <string name="hotspot_notification_title">Deler Zerion uten internettilgang</string>
-  <string name="hotspot_button_connected">Neste</string>
-  <string name="permission_hotspot_location_request_body">For å lage et WiFi-hotspot så trenger Zerion tillatelse til å få tilgang til din lokasjon.\n\nZerion lagrer ikke din lokasjon eller deler den med noen.</string>
-  <string name="permission_hotspot_location_denied_body">Du har avlsått tilgang til din lokasjonsinformasjon, men Zerion trenger denne tillatelsen for å lage et Wi-Fi-hotspot.\n\nVennligst vurder å gi denne tilgangen.</string>
-  <string name="wifi_settings_title">Wi-Fi-innstillinger</string>
-  <string name="wifi_settings_request_enable_body">For å lage et Wi-Fi-hotspot, så trenger Zerion å bruke Wi-Fi. Vennligst vurder å skru det på.</string>
-  <string name="hotspot_tab_manual">Manuelt</string>
-  <!--The placeholder to be inserted into the string 'hotspot_manual_wifi': People can connect by %s-->
-  <!--Wi-Fi setup-->
-  <string name="hotspot_manual_wifi">Din telefon gir tilgang til et Wi-Fi-hotspot. Folk som ønser å laste ned Zerion kan koble til hotspot\'et ved å legge det til i sine enheters Wi-Fi-innstillinger ved å bruke opplysningende under eller ved %s. Når de har koblet til hotspot\'et, trykk «Neste».</string>
-  <string name="hotspot_manual_wifi_ssid">Nettverksnavn</string>
-  <string name="hotspot_qr_wifi">Din telefon tilgjengeliggjør et Wi-Fi-hotspot. Folk som ønsker å laste ned Zerion kan koble til hotspot\'et ved å skanne denne QR-koden. Når de har koblet til hotspot\'et, trykk på «Neste».</string>
-  <string name="hotspot_no_peers_connected">Ingen enheter tilkoblet</string>
-  <plurals name="hotspot_peers_connected">
-    <item quantity="one">%s enhet tilkoblet</item>
-    <item quantity="other">%s enheter tilkoblet</item>
-  </plurals>
-  <!--Download link-->
-  <string name="hotspot_manual_site">Din telefon gir tilgang til et Wi-Fi-hotspot. Folk som er koblet til hotspot\'et kan laste ned Zerion ved å skrive inn den følgende adressen i en nettleser eller %s.</string>
-  <string name="hotspot_manual_site_address">Adresse (URL)</string>
-  <string name="hotspot_qr_site">Din telefon gir tilgang til et Wi-Fi-hotspot. Folk som er koblet til hotspot\'et kan laste ned Zerion ved å skanne denne QR-koden.</string>
-  <!--e.g. Download Zerion 1.2.20-->
-  <string name="website_download_title_1">Laste ned Zerion %s</string>
-  <string name="website_download_intro_1">Noen i nærheten av deg delte Zerion med deg.</string>
-  <string name="website_download_button">Laste ned Zerion</string>
-  <string name="website_download_outro">Etter at nedlastingen er fullført, åpne den nedlastede filen og installer den.</string>
-  <string name="website_troubleshooting_title">Feilsøking</string>
-  <string name="website_troubleshooting_1">Dersom du ikke kan laste ned app\'en, prøv den med en annen nettleser-app.</string>
-  <string name="website_troubleshooting_2_old">For å installere den nedlastede app\'en, så kan det være du trenger å tillate installasjonen av apper fra «Ukjente kilder» i dine systeminnstillinger. Etterpå, kan det være du trenger å laste ned app\'en på nytt. Vi anbefaler å skru av «Ukjente kilder»-instillingen etter at du har installert app\'en.</string>
-  <string name="website_troubleshooting_2_new">For å installere den nedlastede app\'en, så kan det være du trenger å tillate din nettleser å installere ukjente app\'er. Etter at du har installert app\'en anbefaler vi å fjerne nettleserens tillatelse til å installere ukjente app\'er.</string>
-  <string name="hotspot_help_wifi_title">Problemer med å koble til Wi-Fi:</string>
-  <string name="hotspot_help_wifi_1">Prøve å skru av og skru på igjen Wi-Fi på begge telefonene og prøv igjen.</string>
-  <string name="hotspot_help_wifi_2">Dersom telefonen klager over at Wi-Fi\'en ikke har Internettilgang, gi den beskjed om at du ønsker å forbli tilkoblet uansett.</string>
-  <string name="hotspot_help_wifi_3">Gi telefonen som tilgjengeliggjør Wi-Fi-hotspot\'et en omstart, starte så Zerion og prøv å dele på nytt.</string>
-  <string name="hotspot_help_site_title">Problemer med å besøke den lokale nettsiden:</string>
-  <string name="hotspot_help_site_1">Sjekk to ganger at du skrev inn adressen helt eksakt slik den vises. En liten feil kan få den til å mislykkes.</string>
-  <string name="hotspot_help_site_2">Søre for at din telefon fremdeles er koblet til den riktige Wi-Fi\'en (se over) når du prøver å besøke siden.</string>
-  <string name="hotspot_help_site_3">Dersom du har en brannmur-app, sjekk at den ikke blokkerer tilgang.</string>
-  <string name="hotspot_help_site_4">Dersom du kan besøke nettsiden, men ikke laste ned Zerion app\'en, prøv igjen med en annen nettleser-app.</string>
-  <string name="hotspot_help_fallback_title">Ingenting virker?</string>
-  <string name="hotspot_help_fallback_intro">Du kan prøve å lagre app\'en som en .apk-fil for å dele den på en eller annen annen måte. Når filen har blitt overført til den andre enheten, så kan den brukes for å installere Zerion.
-		\n\nTips: For deling via Blåtann, så kan det hende du må endre filnavnet så den slutter med .zip først.</string>
-  <string name="hotspot_help_fallback_button">Lagre app</string>
-  <!--error handling-->
-  <string name="hotspot_error_intro">Noe gikk galt under forsøket på å dele app\'en via Wi-Fi:</string>
-  <string name="hotspot_error_no_wifi_direct">Enheten støtter ikke «WiFi Direct»</string>
-  <string name="hotspot_error_start_callback_failed">Hotspot\'et mislyktes i å starte: feil %s</string>
-  <string name="hotspot_error_start_callback_failed_unknown">Hotspot\'et feilet å starte med en ukjent feilmelding, grunn %d</string>
-  <string name="hotspot_error_start_callback_no_group_info">Hotspot\'et feilet å starte: ingen gruppe-info</string>
-  <string name="hotspot_error_web_server_start">Feil oppsto under start av webserver</string>
-  <string name="hotspot_error_web_server_serve">Feilmelding under fremvisning av nettside.\n\nVennligst send tilbakemelding (med anonymiserte data) via Zerion-app\'en dersom problemet fortsetter.</string>
-  <string name="hotspot_flag_test">Advarsel: Denne app\'en ble installert med hjelp av Android Studio og kan IKKE bli installert på en annen enhet.</string>
-  <string name="hotspot_error_framework_busy">Kan ikke starte hotspot\'et.\n\nOm du har et annet hotspot kjørende eller deler Internettforbindelsen din via Wi-Fi, prøv å stoppe den og prøv igjen etterpå.</string>
-  <!--Transfer Data via Removable Drives-->
+  
   <string name="removable_drive_menu_title">Koble til via fjernbar lagringsenhet</string>
   <string name="removable_drive_intro">Om du ikke kan koble til kontaktene dine via Internettet, Wi-Fi eller Blåtann, så kan Zerion også overføre meldinger på en fjernbar lagringsenhet slik som en USB-minnepenn eller et SD-kort.</string>
   <string name="removable_drive_explanation">Dersom du ikke kan koble til dine kontakter via Internettet, Wi-Fi eller Blåtann, så kan Zerion også overføre meldinger på en fjernbar lagringsenhet slik som en USB-minnepenn eller et SD-kort.\n\nNår du bruker \"Send data\"-knappen, så vil all data som venter på å bli sendt til kontakten din bli lagret på den fjernbare lagringsenheten. Dette inkluderer private meldinger, filvedlegg, blogger, forumer og private grupper.\n\nAlt vil bli kryptert før det lagres på den fjernabare lagringsenheten.\n\nNår kontakten din mottar den fjernbare lagringsenheten, så kan de bruke \"Motta data\"-knappen for å importere meldingene inn i Zerion.</string>
@@ -705,17 +626,17 @@
   <string name="removable_drive_error_send_text">Det oppsto en feil under skriving av data til filen.\n\nDersom du bruker en fjernbar lagringsenhet, sørge for at den er koblet ordentlig til og prøv på nytt.\n\nDersom problemet fortsetter, vennligst send tilbakemelding og la Zerion-team\'et vite om dette problemet.</string>
   <string name="removable_drive_error_receive_title">Feil oppsto under dataimport</string>
   <string name="removable_drive_error_receive_text">Den valgte filen inneholdt ikke noe som Zerion kunne gjenkjenne.\n\nVennligst sjekk at du valgte den riktige filen.\n\nDersom kontakten din laget filen for mer enn 28 dager siden, så vil ikke Zerion kunne gjenkjenne den.</string>
-  <!--Screenshots-->
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
+  
   <string name="screenshot_alice">Aline</string>
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
   <string name="screenshot_bob">Bjørnar</string>
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
   <string name="screenshot_carol">Karoline</string>
-  <!--This is a message to be used in screenshots. Please use the same translation for Bob!-->
+  
   <string name="screenshot_message_1">Hei Bjørnar!</string>
-  <!--This is a message to be used in screenshots. Please use the same translation for Alice!-->
+  
   <string name="screenshot_message_2">Hei Aline! Takk for at du fortalte meg om Zerion!</string>
-  <!--This is a message to be used in screenshots.-->
+  
   <string name="screenshot_message_3">Ingen årsak, håper du liker den 😀</string>
 </resources>

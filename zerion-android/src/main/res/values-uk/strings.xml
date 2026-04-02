@@ -1,6 +1,6 @@
-﻿<?xml version='1.0' encoding='UTF-8'?>
-<resources xmlns:tools="http://schemas.android.com/tools">
-  <!--Setup-->
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+  
   <string name="setup_title">Вітаємо у Zerion</string>
   <string name="setup_name_explanation">Ваше ім\'я користувача буде відображено біля будь-якого матеріалу, який ви опублікуєте. Ви не зможете змінити його після створення облікового запису.</string>
   <string name="setup_next">Вперед</string>
@@ -30,7 +30,7 @@
   <string name="dnkm_xiaomi_lock_apps_text">Натисніть кнопку нижче, щоб відкрити налаштування безпеки. Натисніть \"Підвищити швидкість\", потім \"Блокувати програми\" і переконайтеся, що для Zerion встановлено значення \"Блоковано\".</string>
   <string name="dnkm_xiaomi_lock_apps_help">Якщо для Zerion не встановлено значення \"Блоковано\" на екрані \"Блокування програм\", він не зможе працювати у фоновому режимі.</string>
   <string name="dnkm_warning_dozed_1">Zerion не вдалося запустити у фоновому режимі</string>
-  <!--Login-->
+  
   <string name="enter_password">Пароль</string>
   <string name="try_again">Неправильний пароль, спробуйте ще раз</string>
   <string name="dialog_title_cannot_check_password">Не вдалося перевірити пароль</string>
@@ -61,17 +61,17 @@
   <string name="startup_open_database">Розшифрування бази даних...</string>
   <string name="startup_migrate_database">Оновлення бази даних...</string>
   <string name="startup_compact_database">Стиснення бази даних...</string>
-  <!--Navigation Drawer-->
+  
   <string name="nav_drawer_open_description">Відкрити панель навігації</string>
   <string name="nav_drawer_close_description">Закрити панель навігації</string>
   <string name="contact_list_button">Контакти</string>
   <string name="groups_button">Приватні групи</string>
-  <!--This is part of the main menu. The app will be locked when this is tapped.-->
+  
   <string name="lock_button">Заблокувати програму</string>
   <string name="settings_button">Налаштування</string>
   <string name="sign_out_button">Вийти</string>
   <string name="transports_onboarding_text">Торкніть це, щоб налаштувати з\'єднання Zerion із вашими контактами.</string>
-  <!--Transports: Tor-->
+  
   <string name="transport_tor">Інтернет</string>
   <string name="tor_device_status_online_wifi">Ваш телефон має доступ до інтернету через Wi-Fi</string>
   <string name="tor_device_status_online_mobile">Ваш телефон має доступ до інтернету через мобільні дані</string>
@@ -83,10 +83,10 @@
   <string name="tor_plugin_status_disabled_mobile_data">Zerion налаштовано не використовувати мобільні дані</string>
   <string name="tor_plugin_status_disabled_battery">Zerion налаштовано не використовувати інтернет при роботі від батареї</string>
   <string name="tor_plugin_status_disabled_country_blocked">Zerion налаштовано не використовувати інтернет у цій країні</string>
-  <!--Transports: Wi-Fi-->
+  
   <string name="transport_lan_long">Спільна мережа Wi-Fi</string>
-  <!--Transports: Bluetooth-->
-  <!--Notifications-->
+  
+  
   <string name="reminder_notification_title">Ви вийшли з Zerion</string>
   <string name="reminder_notification_text">Натисніть, щоб знову увійти.</string>
   <string name="reminder_notification_channel_title">Нагадування про вхід до Zerion</string>
@@ -105,7 +105,7 @@
     <item quantity="many">%d нових групових повідомлень.</item>
     <item quantity="other">%d нового групового повідомлення.</item>
   </plurals>
-  <!--Misc-->
+  
   <string name="now">зараз</string>
   <string name="show">Показати</string>
   <string name="hide">Приховати</string>
@@ -134,7 +134,7 @@
   <string name="status_heading">Статус</string>
   <string name="error">Помилка</string>
   <string name="info">Інформація</string>
-  <!--Contacts and Private Conversations-->
+  
   <string name="no_contacts">Немає контактів для відображення</string>
   <string name="no_contacts_action">Натисніть на символ \"+\" для того, щоб додати контакт</string>
   <string name="date_no_private_messages">Немає повідомлень.</string>
@@ -150,11 +150,11 @@
   <string name="set_contact_alias">Змінити ім\'я контакту</string>
   <string name="set_contact_alias_hint">Назва контакту</string>
   <string name="menu_item_disappearing_messages">Самознищувані повідомлення</string>
-  <!--The first placeholder will show a duration like "7 days". The second placeholder at the end will add "Tap to learn more."-->
+  
   <string name="auto_delete_msg_you_enabled">Ваші повідомлення самознищаться за %1$s. %2$s</string>
-  <!--The placeholder at the end will add "Tap to learn more."-->
+  
   <string name="auto_delete_msg_you_disabled">Ваші повідомлення не самознищуватимуться. %1$s</string>
-  <!--The first placeholder will show a contact's name. The second placeholder will show a duration like "7 days". The third placeholder at the end will add "Tap to learn more."-->
+  
   <string name="auto_delete_msg_contact_enabled">Повідомлення %1$s самознищаться за %2$s. %3$s</string>
   <plurals name="duration_minutes">
     <item quantity="one">%d хвилину</item>
@@ -174,7 +174,7 @@
     <item quantity="many">%d днів</item>
     <item quantity="other">%d днів</item>
   </plurals>
-  <!--The first placeholder will show a contact's name. The second placeholder at the end will add "Tap to learn more."-->
+  
   <string name="auto_delete_msg_contact_disabled">Повідомлення %1$s не самознищуватимуться. %2$s</string>
   <string name="tap_to_learn_more">Торкніть, щоб дізнатися більше.</string>
   <string name="auto_delete_changed_warning_title">Самознищення повідомлень змінено</string>
@@ -195,7 +195,7 @@
   <string name="dialog_title_delete_contact">Підтвердити вилучення контакту</string>
   <string name="dialog_message_delete_contact">Ви впевнені, що хочете видалити цей контакт і всю історію листування з ним?</string>
   <string name="contact_deleted_toast">Контакт було вилучено</string>
-  <!--This is shown in the action bar when opening an image in fullscreen that the user sent-->
+  
   <string name="you">Ви</string>
   <string name="save_image">Зберегти зображення</string>
   <string name="dialog_title_save_image">Слід зберегти зображення?</string>
@@ -208,7 +208,7 @@
   <string name="dialog_message_image_support">Натисніть на цю піктограму, щоб прикріпити зображення.</string>
   <string name="messaging_too_many_attachments_toast">Лише перші %d зображень буде надіслано</string>
   <string name="menu_contact">Контакти</string>
-  <!--Adding Contacts-->
+  
   <string name="add_contact_title">Додати контакт поблизу</string>
   <string name="add_contact_error_two_way">Чи Ви відсканували QR коди один одного?</string>
   <string name="continue_button">Продовжити</string>
@@ -223,7 +223,7 @@
   <string name="authenticating_with_device">Автентифікація з пристроєм\u2026</string>
   <string name="connection_error_title">Неможливо з\'єднатися з вашим контактом</string>
   <string name="connection_error_feedback">Якщо ця проблема збережеться, будь ласка, <a href="feedback">надішліть відгук</a>, щоб допомогти нам вдосконалити цей додаток.</string>
-  <!--Adding Contacts Remotely-->
+  
   <string name="add_contact_remotely_title_case">Додати контакт віддалено</string>
   <string name="add_contact_nearby_title">Додати контакт поблизу</string>
   <string name="add_contact_remotely_title">Додати контакт віддалено</string>
@@ -256,9 +256,9 @@
   <string name="unsupported_link">Це посилання надійшло від новішої версії Zerion. Будь ласка, оновіться до останньої версії та спробуйте знову.</string>
   <string name="intent_own_link">Ви відкрили своє власне посилання. Використовуйте одне з того контакту, який ви хочете додати!</string>
   <string name="missing_link">Будь ласка, введіть посилання</string>
-  <!--This is a numeral indicating the first step in a series of screens-->
+  
   <string name="step_1">1</string>
-  <!--This is a numeral indicating the second step in a series of screens-->
+  
   <string name="step_2">2</string>
   <plurals name="contact_added_notification_text">
     <item quantity="one">Новий контакт додано.</item>
@@ -270,25 +270,21 @@
   <string name="duplicate_link_dialog_title">Дублювати посилання</string>
   <string name="duplicate_link_dialog_text_1">У вас наявний нерозглянутий запит на контакт з цим посиланням: %s</string>
   <string name="duplicate_link_dialog_text_1_contact">Ви вже маєте контакт за цим посиланням: %s</string>
-  <!--This is a question asking whether two nicknames refer to the same person-->
+  
   <string name="duplicate_link_dialog_text_2">%1$s та %2$s — одна людина?</string>
-  <!--This is a button for answering that two nicknames do indeed refer to the same person. This
-	string will be used in a dialog button, so if the translation of this string is longer than 20
-	characters, please use "Yes" instead, and use "No" for the "Different Person" button-->
+  
   <string name="same_person_button">Одна й та ж особа</string>
-  <!--This is a button for answering that two nicknames refer to different people. This string
-	will be used in a dialog button, so if the translation of this string longer than 20 characters,
-	please use "No" instead, and use "Yes" for the "Same Person" button-->
+  
   <string name="different_person_button">Різні особи</string>
   <string name="duplicate_link_dialog_text_3">%1$s та %2$s надіслали вам однакові посилання.\n\nХтось із них, можливо, намагається виявити ваші контакти.\n\nНе кажіть їм, що вже отримували це посилання від когось іще.</string>
   <string name="pending_contact_updated_toast">Оновлено нерозглянутий контакт</string>
   <string name="info_both_must_enter_links">Ви повинні додати посилання один одного</string>
-  <!--Peer trust levels-->
+  
   <string name="peer_trust_level_unverified">Неперевірений контакт</string>
   <string name="peer_trust_level_verified">Перевірений контакт</string>
   <string name="peer_trust_level_ourselves">Я</string>
   <string name="peer_trust_level_stranger">Чужинець</string>
-  <!--Introductions-->
+  
   <string name="introduction_onboarding_title">Поділитися своїми контактами</string>
   <string name="introduction_onboarding_text">Представте свої контакти навзаєм, щоб вони могли спілкуватись у Zerion.</string>
   <string name="introduction_menu_item">Познайомити з контактом</string>
@@ -310,18 +306,7 @@
   <string name="introduction_response_accepted_received">%1$s прийняв(-ла) запит на знайомство із %2$s.</string>
   <string name="introduction_response_declined_received">%1$s відхилив(-ла) запит на знайомство з %2$s.</string>
   <string name="introduction_response_declined_received_by_introducee">%1$s повідомляє, що %2$s відхилив(-ла) запит на знайомство.</string>
-  <!--Connect via Bluetooth-->
-  <string name="menu_item_connect_via_bluetooth">З\'єднатися через Bluetooth</string>
-  <string name="connect_via_bluetooth_title">З\'єднатися через Bluetooth</string>
-  <string name="connect_via_bluetooth_intro">Якщо Bluetooth-з\'єднання не спрацьовують автоматично, можете з\'єднатися вручну на цьому екрані.\n\nВаш контакт має бути поруч, щоб це спрацювало.\n\nВам обом слід одночасно натиснути «Почати».</string>
-  <string name="connect_via_bluetooth_already_discovering">Спроба Bluetooth-з\'єднання вже триває. Повторіть трохи пізніше.</string>
-  <string name="connect_via_bluetooth_no_location_permission">Не вдається продовжити без дозволу на отримання місцезнаходження</string>
-  <string name="connect_via_bluetooth_no_bluetooth_permission">Неможливо продовжите без дозволу пристроїв поблизу</string>
-  <string name="connect_via_bluetooth_start">Триває Bluetooth-з\'єднання...</string>
-  <string name="connect_via_bluetooth_success">Bluetooth-з\'єднання успішне</string>
-  <string name="connect_via_bluetooth_error">Не вдалося з\'єднатися через Bluetooth.</string>
-  <string name="connect_via_bluetooth_error_not_supported">Пристрій не підтримує Bluetooth.</string>
-  <!--Private Groups-->
+  
   <string name="groups_list_empty">Немає груп для відображення</string>
   <string name="groups_list_empty_action">Натисніть на символ \"+\", щоб створити групу або попросіть у своїх контактів поділитися з вами групами</string>
   <string name="groups_created_by">Створено %s</string>
@@ -354,7 +339,7 @@
   <string name="groups_dissolve_button">Розформувати</string>
   <string name="groups_dissolved_dialog_title">Групу було розформовано</string>
   <string name="groups_dissolved_dialog_message">Засновник цієї групи розформував її.\n\nВи більше не зможете створювати повідомлення та можете не отримати усі дописи, що були написані.</string>
-  <!--Private Group Invitations-->
+  
   <string name="groups_invitations_title">Запрошення до групи</string>
   <string name="groups_invitations_invitation_sent">Ви запросили %1$s долучитися до групи \"%2$s\".</string>
   <string name="groups_invitations_invitation_received">%1$s запросив вас долучитися до групи \"%2$s\".</string>
@@ -372,14 +357,14 @@
   <string name="groups_invitations_response_accepted_received">%s прийняв(-ла) запрошення до групи.</string>
   <string name="groups_invitations_response_declined_received">%sвідхилив(-ла) запрошення до групи.</string>
   <string name="sharing_status_groups">Лише засновник групи може запрошувати нових учасників до групи. Нижче зазначено усх актуальних учасників групи.</string>
-  <!--Private Groups Revealing Contacts-->
+  
   <string name="groups_reveal_contacts">Відкрити контакти</string>
   <string name="groups_reveal_dialog_message">Ви можете обрати, чи будуть контакти відкритими для усіх поточних та майбутніх членів групи.\n\nВідкриття контактів робить ваше з\'єднання з групою швидшим та надійнішим, тому що ви можете спілкуватися з відкритими контактами навіть тоді, коли засновник групи знаходиться поза мережею.</string>
   <string name="groups_reveal_visible">Зв\'язки між контактами видимі групі</string>
   <string name="groups_reveal_visible_revealed_by_us">  Зв\'язки між контактами видимі групі (видимість встановлено вами)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Зв\'язки між контактами видимі групі (видимість встановлено %s)</string>
   <string name="groups_reveal_invisible">Зв\'язки між контактами невидимі групі</string>
-  <!--Forums-->
+  
   <string name="no_posts">Поки немає жодного допису</string>
   <plurals name="posts">
     <item quantity="one">%d допис</item>
@@ -389,7 +374,7 @@
   </plurals>
   <string name="btn_reply">Відповісти</string>
   <string name="dialog_button_leave">Залишити</string>
-  <!--Forum Sharing-->
+  
   <string name="contacts_selected">Обрані контакти</string>
   <string name="activity_share_toolbar_header">Обрати контакти</string>
   <string name="no_contacts_selector">Немає контактів для показу</string>
@@ -398,16 +383,16 @@
   <string name="sharing_status">Поширення статусу</string>
   <string name="shared_with">Поширено серед %1$d (%2$d онлайн)</string>
   <string name="nobody">Нікого</string>
-  <!--Blogs-->
+  
   <string name="read_more">дізнатися більше</string>
-  <!--Blog Sharing-->
-  <!--RSS Feeds-->
-  <!--Settings Profile Picture-->
+  
+  
+  
   <string name="change_profile_picture">Торкніться, щоб змінити зображення профілю</string>
   <string name="dialog_confirm_profile_picture_title">Змінити зображення профілю</string>
   <string name="dialog_confirm_profile_picture_remark">Лише ваші контакти можуть бачити це зображення</string>
   <string name="change_profile_picture_failed_message">Перепрошуємо, щось пішло не так при оновленні вашого зображення профілю</string>
-  <!--Settings Display-->
+  
   <string name="pref_language_title">Мова &amp; регіон</string>
   <string name="pref_language_changed">Ці налаштування набувають чинності після того, як ви перезапустите Zerion. Будь ласка, вийдіть з Zerion та перезапустіть його.</string>
   <string name="pref_language_default">Усталені в системі</string>
@@ -416,9 +401,8 @@
   <string name="pref_theme_light">Світла</string>
   <string name="pref_theme_dark">Темна</string>
   <string name="pref_theme_system">Усталена в системі</string>
-  <!--Settings Connections-->
+  
   <string name="network_settings_title">З\'єднання</string>
-  <string name="bluetooth_setting">З\'єднуватися з контактами через Bluetooth</string>
   <string name="wifi_setting">З\'єднуватися з контактами в спільній мережі Wi-Fi</string>
   <string name="tor_enable_title">З\'єднуватися з контактами через інтернет</string>
   <string name="tor_enable_summary">Всі з\'єднання спрямовано через мережу Tor для приватності</string>
@@ -427,28 +411,28 @@
   <string name="tor_network_setting_without_bridges">Використовувати мережу Tor без мостів</string>
   <string name="tor_network_setting_with_bridges">Використовувати мережу Tor із мостами</string>
   <string name="tor_network_setting_never">Не з\'єднуватися з інтернетом</string>
-  <!--How and when Zerion will connect to Tor: E.g. "Don't connect to the Internet (in China)" or "Use Tor network with bridges (in Belarus)"-->
+  
   <string name="tor_network_setting_summary">Автоматично: %1$s (через %2$s)</string>
   <string name="tor_mobile_data_title">Використовувати мобільну мережу</string>
   <string name="tor_only_when_charging_title">З\'єднуватися з інтернетом лише під час заряджання</string>
   <string name="tor_only_when_charging_summary">Вимикає з’єднання з інтернетом коли пристрій працює від батареї</string>
-  <!--Settings Security and Panic-->
+  
   <string name="security_settings_title">Безпека</string>
   <string name="pref_lock_title">Блокування програми</string>
   <string name="pref_lock_summary">Використовувати блокування екрану, щоб захистити Zerion, коли ви авторизовані</string>
   <string name="pref_lock_disabled_summary">Для того, щоб використовувати цю функцію, налаштуйте блокування екрану на своєму пристрої</string>
   <string name="pref_lock_timeout_title">Блокування додатку при неактивності</string>
-  <!--The %s placeholder is replaced with the following time spans, e.g. 5 Minutes, 1 Hour-->
+  
   <string name="pref_lock_timeout_summary">Автоматично блокувати Zerion після %s простою</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_1">1 хвилина</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_5">5 хвилин</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_15">15 хвилин</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_30">30 хвилин</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_60">1 година</string>
   <string name="pref_lock_timeout_never">Ніколи</string>
   <string name="pref_lock_timeout_never_summary">Ніколи не блокувати Zerion автоматично</string>
@@ -471,7 +455,7 @@
   <string name="panic_setting_signout_summary">Вийти з Zerion, якщо натиснуто тривожну кнопку</string>
   <string name="purge_setting_title">Видалити обліковий запис</string>
   <string name="purge_setting_summary">Видалити ваш обліковий запис Zerion, якщо натиснуто тривожну кнопку. Попередження: це назавжди видалить ваші особисті дані, контакти та повідомлення</string>
-  <!--Settings Notifications-->
+  
   <string name="notification_settings_title">Сповіщення</string>
   <string name="notify_sign_in_title">Нагадайте мені увійти</string>
   <string name="notify_sign_in_summary">Показувати нагадування, коли вмикаєте телефон або було оновлено додаток</string>
@@ -487,7 +471,7 @@
   <string name="notify_sound_setting_disabled">Немає</string>
   <string name="choose_ringtone_title">Обрати мелодію</string>
   <string name="cannot_load_ringtone">Неможливо завантажити мелодію</string>
-  <!--Mailbox-->
+  
   <string name="mailbox_settings_title">Mailbox</string>
   <string name="mailbox_setup_title">Налаштування Mailbox</string>
   <string name="mailbox_setup_intro">Скринька дає змогу контактам надсилати вам повідомлення, поки ви не в мережі. Скринька отримуватиме ваші повідомлення й зберігатиме їх до появи вас у мережі.\n
@@ -495,10 +479,8 @@
   <string name="mailbox_setup_download">Спершу встановіть застосунок Mailbox на інший пристрій, знайшовши «Zerion Mailbox» у Google Play чи іншому місці, звідки ви завантажили Zerion.\n
 		\nТоді з\'єднайте свій Mailbox із Zerion, просканувавши QR-код, показаний застосунком Mailbox.</string>
   <string name="mailbox_setup_download_link">Поширити посилання на завантаження</string>
-  <string name="mailbox_setup_button_scan">Сканувати QR-код Mailbox</string>
-  <string name="permission_camera_qr_denied_body">Ви заборонили доступ до камери, але камера потрібна для сканування QR-коду.\n\nБудь ласка, надайте доступ.</string>
   <string name="mailbox_setup_connecting">Під\'єднується до Mailbox…</string>
-  <!--This string is shown when connecting to a Mailbox for the first time. The placeholder will be replaced with a duration, e.g. "2 minutes".-->
+  
   <string name="mailbox_setup_connecting_info">Це може зайняти до %1s</string>
   <string name="mailbox_setup_already_paired_title">Mailbox уже під\'єднано</string>
   <string name="mailbox_setup_already_paired_description">Від\'єднайте Mailbox від свого іншого пристрою й повторіть спробу.</string>
@@ -523,9 +505,9 @@
   <string name="mailbox_status_mailbox_too_old_title">Версія потової скриньки занадто стара</string>
   <string name="mailbox_status_mailbox_too_old_message">Оновіть свою поштову скриньку до останньої версії програми та спробуйте ще раз.</string>
   <string name="mailbox_status_check_button">Перевірити з\'єднання</string>
-  <!--Example for string substitution: Last connection: 3min ago-->
+  
   <string name="mailbox_status_connected_info">З\'єднання було: %s</string>
-  <!--Indicates that there never was a connection to the mailbox. Last connection: Never-->
+  
   <string name="mailbox_status_connected_never">Ніколи</string>
   <string name="mailbox_status_unlink_button">Від\'єднати</string>
   <string name="mailbox_status_unlink_dialog_title">Від\'єднати потову скриньку?</string>
@@ -558,7 +540,7 @@
   <string name="mailbox_error_wizard_info1_1_4">Переконайтеся, що поштовий пристрій належним чином під\'єднано до Інтернету.\n\nПереконайтеся, що годинник на поштовому пристрої показує правильний час, дату та часовий пояс.\n\nПереконайтеся, що програми Поштова скринька та Zerion оновлено до останньої версії.\n\nП перезапустіть поштову скриньку та Zerion і повторіть спробу.</string>
   <string name="mailbox_error_wizard_info2">Будь ласка повертайтесь до цього екрану коли у вас буде доступ до пристрою</string>
   <string name="mailbox_error_wizard_info3">Будь ласка, від\'єднайте свою поштову скриньку за допомогою кнопки нижче.\n\nПісля від\'єднання старої поштової скриньки ви можете створити нову поштову скриньку в будь-який час.</string>
-  <!--About-->
+  
   <string name="about_title">Про</string>
   <string name="zerion_version">Версія Zerion %s</string>
   <string name="tor_version">Версія Tor %s</string>
@@ -567,9 +549,9 @@
   <string name="zerion_source_code">\u2022 <a href="">Вихідний код</a></string>
   <string name="zerion_changelog">\u2022 <a href="">Список змін та доповнень</a></string>
   <string name="zerion_privacy_policy">\u2022 <a href="">Політика конфіденційности</a></string>
-  <!--Here translators can add their names or Transifex usernames(eg "Thanks to all the contributors at the Localization Lab, especially Tom, Matthew and Jerry")-->
+  
   <string name="translator_thanks">Дякуємо всім хто вніс свій внесок у Localization Lab</string>
-  <!--Conversation Settings-->
+  
   <string name="disappearing_messages_title">Самознищувані повідомлення</string>
   <string name="disappearing_messages_explanation_long">Коли цей параметр увімкнено, нові
 		повідомлення в цій розмові самознищуватимуться автоматично за 7\u00A0днів.
@@ -582,17 +564,17 @@
 		Контакт також може змінити цей параметр для вас обох.</string>
   <string name="learn_more">Дізнатися більше</string>
   <string name="disappearing_messages_summary">Знищувати майбутні повідомлення в цій розмові автоматично за 7\u00A0днів.</string>
-  <!--Settings Actions-->
+  
   <string name="pref_category_actions">Дії</string>
   <string name="share_app_link">Поділитися посиланням для завантаження</string>
   <string name="share_app_link_text">Завантажити Zerion з %s</string>
   <string name="send_feedback">Надіслати відгук</string>
-  <!--Link Warning-->
+  
   <string name="link_warning_title">Попередження про посилання</string>
   <string name="link_warning_intro">Ви збираєтеся відкрити наступне посилання за допомогою зовнішньої програми.</string>
   <string name="link_warning_text">Це може бути використання для визначення вашої особи. Подумайте про те, чи довіряєте ви людині, яка надіслала вам це посилання, і подумайте про його відкриття за допомогою Tor Browser.</string>
   <string name="link_warning_open_link">Відкрити посилання</string>
-  <!--Crash Reporter-->
+  
   <string name="crash_report_title">Аварійний звіт Zerion</string>
   <string name="zerion_crashed">Перепрошуємо, Zerion зазнав збою</string>
   <string name="not_your_fault">Це не ваша провина.</string>
@@ -623,15 +605,15 @@
   <string name="dev_report_sent">Відгук надіслано</string>
   <string name="dev_report_saved">Звіт збережено. Його буде надіслано наступного разу, як ви увійдете до Zerion.</string>
   <string name="dev_report_error">Помилка: не вдалося надіслати звіт</string>
-  <!--Sign Out-->
+  
   <string name="progress_title_logout">Відбувається вихід з Zerion…</string>
-  <!--Screen Filters & Tapjacking-->
+  
   <string name="screen_filter_title">Виявлено накладення іншої програми</string>
   <string name="screen_filter_body">Інша програма накладається на Zerion. Для вашої безпеки, Zerion не реагуватиме на дотики, коли інша програма накладатиметься зверху.\n\nЗверху можуть накладатися наступні програми:\n\n%1$s</string>
   <string name="screen_filter_body_api_30">Над Zerion знаходиться інший застосунок. Щоб захистити вашу безпеку, Zerion не реагуватиме на дотики, поки той застосунок над ним.\n\nЗнайдіть цей застосунок у переліку внизу.</string>
   <string name="screen_filter_allow">Дозволити цим програмам накладатися зверху</string>
   <string name="screen_filter_review_apps">Перелічити застосунки</string>
-  <!--Permission Requests-->
+  
   <string name="permission_camera_title">Дозвіл камери</string>
   <string name="permission_camera_request_body">Щоб відсканувати цей QR-код, Zerion потрібен доступ до камери.</string>
   <string name="permission_location_title">Дозвіл на дані про місцезнаходження</string>
@@ -639,94 +621,20 @@
   <string name="permission_location_request_body">Щоб знайти Bluetooth-пристрої, Zerion потребує доступу до інформації про ваше місцезнаходження.\n\nZerion не зберігає дані про ваше місцезнаходження та не ділиться ні з ким цією інформацією.</string>
   <string name="permission_camera_location_title">Камера та місцезнаходження</string>
   <string name="permission_camera_location_request_body">Щоб відсканувати QR-код, Zerion потребує доступу до камери.\n\nЩоб знайти Bluetooth-пристрої, Zerion потребує доступу до інформації про ваше місцезнаходження.\n\nZerion не зберігає дані про ваше місцезнаходження та не ділиться ні з ким цією інформацією.</string>
-  <string name="permission_camera_bluetooth_title">Камера та пристрої поблизу</string>
-  <string name="permission_camera_bluetooth_request_body">Щоб просканувати QR-код, Zerion повинен мати доступ до камери.\n\nЩоб виявити Bluetooth-пристрої, Zerion повинен отримати дозвіл на пошук і під\'єднання до найближчих пристроїв.</string>
   <string name="permission_camera_denied_body">Ви відмовилися надати доступ до камери, але додавання контактів потребує використання камери.\n\nБудь ласка, подумайте про можливість надання доступу.</string>
   <string name="permission_location_denied_body">Ви заборонили доступ до місцеперебування, але Zerion потребує цього доступу, щоб знаходити Bluetooth-пристрої.\n\nБудь ласка, надайте доступ.</string>
   <string name="permission_location_setting_title">Визначення місцеперебування</string>
   <string name="permission_location_setting_body">Ваш пристрій не дозволяє визначати місцеперебування, а це потрібно для знаходження інших пристроїв через Bluetooth. Будь ласка, увімкніть визначення місцеперебування, щоб продовжити. Згодом ви зможете знову його вимкнути.</string>
-  <string name="permission_location_setting_hotspot_body">Для створення точки доступу Wi-Fi на вашому пристрої має бути ввімкнена функція визначення місця знаходження. Будь ласка, увімкніть визначення місце знаходження, щоб продовжити. Згодом її можна буде знову вимкнути.</string>
   <string name="permission_location_setting_button">Увімкнути визначення місцеперебування</string>
-  <string name="permission_bluetooth_title">Дозволи на пристроях поблизу</string>
-  <string name="permission_bluetooth_body">Щоб використовувати Bluetooth-зв\'язок, Zerion потребує дозволу на пошук і під\'єднання до пристроїв, розташованих поблизу.</string>
-  <string name="permission_bluetooth_denied_body">Ви заборонили доступ до сусідніх пристроїв, але Zerion потребує цього дозволу для використання Bluetooth.\n\nПодумайте, будь ласка, над тим, щоб дозволити доступ.</string>
-  <!--App Locking-->
   <string name="lock_unlock">Розблокувати Zerion</string>
   <string name="lock_unlock_verbose">Введіть PIN-код свого пристрою, графічний ключ або пароль, щоб розблокувати Zerion</string>
   <string name="lock_unlock_fingerprint_description">Щоб продовжити, доторкніться до сенсора відбитку пальця своїм зареєстрованим пальцем</string>
   <string name="lock_unlock_password">Використовуйте пароль</string>
   <string name="lock_is_locked">Zerion заблоковано</string>
   <string name="lock_tap_to_unlock">Натисніть, щоб розблокувати</string>
-  <!--Connections Screen-->
+  
   <string name="transports_help_text">Zerion може з\'єднуватися з вашими контактами через інтернет, Wi-Fi чи Bluetooth.\n\nУсі інтернет-з\'єднання спрямовано через мережу Tor для приватності.\n\nЯкщо до контакту є кілька шляхів, Zerion використовує їх паралельно.</string>
-  <!--Share app offline-->
-  <string name="hotspot_title">Поширити застосунок офлайн</string>
-  <string name="hotspot_intro">Поширте цей застосунок із кимось поруч без інтернет-з\'єднання, використовуючи лише Wi-Fi свого телефону.
-		\n\nВаш телефон стане точкою доступу Wi-Fi. Люди поруч зможуть з\'єднатися з точкою й завантажити застосунок Zerion із вашого телефону.</string>
-  <string name="hotspot_button_start_sharing">Увімкнути точку доступу</string>
-  <string name="hotspot_button_stop_sharing">Вимкнути точку доступу</string>
-  <string name="hotspot_progress_text_start">Запуск точки доступу...</string>
-  <string name="hotspot_notification_channel_title">Точка доступу Wi-Fi</string>
-  <string name="hotspot_notification_title">Поширення Zerion поза мережею</string>
-  <string name="hotspot_button_connected">Вперед</string>
-  <string name="permission_hotspot_location_request_body">Для створення точки доступу Wi-Fi треба дозвіл на отримання місцеперебування.\n\nZerion не зберігає місцеперебування й нікому його не передає.</string>
-  <string name="permission_hotspot_location_request_precise_body">Щоб створити точку доступу Wi-Fi, Zerion потрібен дозвіл на доступ до вашого точного місця знаходження.\n\nZerion не зберігає ваше місце знаходження і не передає його нікому.</string>
-  <string name="permission_hotspot_location_denied_body">Ви заборонили доступ до місцеперебування, але Zerion потребує цього доступу, щоб створити точку доступу Wi-Fi.\n\nБудь ласка, надайте доступ.</string>
-  <string name="permission_hotspot_location_denied_precise_body">Ви заборонили доступ до вашого точного місця знаходження, але Zerion потребує цього дозволу для створення точки доступу Wi-Fi.\n\nПодумайте, будь ласка, над тим, щоб надати доступ.</string>
-  <string name="permission_hotspot_nearby_wifi_request_body">Щоб створити точку доступу Wi-Fi, Zerion потрібен дозвіл на доступ до пристроїв, розташованих поблизу.</string>
-  <string name="permission_hotspot_nearby_wifi_denied_body">Ви заборонили доступ до сусідніх пристроїв, але Zerion потребує цього дозволу для створення точки доступу Wi-Fi.\n\nПодумайте, будь ласка, над тим, щоб дозволити доступ.</string>
-  <string name="wifi_settings_title">Налаштування Wi-Fi</string>
-  <string name="wifi_settings_request_enable_body">Будь ласка, ввімкніть Wi-Fi, щоб Zerion міг створити точку доступу.</string>
-  <string name="hotspot_tab_manual">Вручну</string>
-  <!--The placeholder to be inserted into the string 'hotspot_manual_wifi': People can connect by %s-->
-  <!--Wi-Fi setup-->
-  <string name="hotspot_manual_wifi">Ваш телефон надає точку доступу Wi-Fi. Щоб інші змогли завантажити Zerion, їм слід додати з\'єднання з цією точкою доступу в налаштуваннях Wi-Fi свого пристрою, ввівши дані внизу чи %s. Коли вони з\'єднаються з точкою доступу, натисніть «Далі».</string>
-  <string name="hotspot_manual_wifi_ssid">Назва мережі</string>
-  <string name="hotspot_qr_wifi">Ваш телефон надає точку доступу Wi-Fi. Щоб інші змогли завантажити Zerion, їм слід з\'єднатися з точкою доступу, просканувавши цей QR-код. Коли вони з\'єднаються з точкою доступу, натисніть «Далі».</string>
-  <string name="hotspot_no_peers_connected">Жодного пристрою не з\'єднано</string>
-  <plurals name="hotspot_peers_connected">
-    <item quantity="one">%s пристрій з\'єднано</item>
-    <item quantity="few">%s пристрої з\'єднано</item>
-    <item quantity="many">%s пристроїв з\'єднано</item>
-    <item quantity="other">%s пристроїв з\'єднано</item>
-  </plurals>
-  <!--Download link-->
-  <string name="hotspot_manual_site">Ваш телефон надає точку доступу Wi-Fi. З\'єднані з нею можуть завантажити Zerion, ввівши наступне посилання у вебпереглядач або %s.</string>
-  <string name="hotspot_manual_site_address">Адреса (URL)</string>
-  <string name="hotspot_qr_site">Ваш телефон надає точку доступу Wi-Fi. З\'єднані з нею можуть завантажити Zerion, просканувавши цей QR-код.</string>
-  <!--e.g. Download Zerion 1.2.20-->
-  <string name="website_download_title_1">Завантаження Zerion %s</string>
-  <string name="website_download_intro_1">Хтось поблизу поділився з вами Zerion.</string>
-  <string name="website_download_button">Завантажити Zerion</string>
-  <string name="website_download_outro">Після завантаження, відкрийте завантажений файл і встановіть його.</string>
-  <string name="website_troubleshooting_title">Виправлення неполадок</string>
-  <string name="website_troubleshooting_1">Якщо не вдається завантажити застосунок, повторіть спробу іншим вебпереглядачем.</string>
-  <string name="website_troubleshooting_2_old">Щоб встановити завантажений застосунок, може бути потрібно дозволити встановлення застосунків із «невідомих джерел» у налаштуваннях системи. Після цього, можливо, доведеться завантажити застосунок іще раз. Радимо вимкнути параметр «невідомих джерел» після встановлення застосунку.</string>
-  <string name="website_troubleshooting_2_new">Щоб встановити завантажений застосунок, може бути потрібно дозволити вебпереглядачу встановлювати невідомі застосунки. Після встановлення застосунку радимо вилучити у вебпереглядача цей дозвіл.</string>
-  <string name="hotspot_help_wifi_title">Проблеми з\'єднання з Wi-Fi:</string>
-  <string name="hotspot_help_wifi_1">Вимкніть і знов увімкніть Wi-Fi на обох телефонах і повторіть спробу.</string>
-  <string name="hotspot_help_wifi_2">Якщо телефон скаржиться на відсутність інтернету в мережі Wi-Fi, підтвердьте йому, що все одно бажаєте продовжити з\'єднання.</string>
-  <string name="hotspot_help_wifi_3">Перезавантажте телефон, на якому працює точка доступу Wi-Fi, запустіть Zerion і повторіть спробу поширення.</string>
-  <string name="hotspot_help_site_title">Проблеми відкриття локального вебсайту:</string>
-  <string name="hotspot_help_site_1">Ще раз перевірте, що ввели адресу точно так, як показано. Будь-який одрук може спричинити невдачу.</string>
-  <string name="hotspot_help_site_2">Переконайтесь, що телефон досі з\'єднано з правильною мережею Wi-Fi (див. вище) під час відкриття сайту.</string>
-  <string name="hotspot_help_site_3">Якщо маєте застосунок-файрвол, переконайтесь, що він не блокує доступ.</string>
-  <string name="hotspot_help_site_4">Якщо вдається відкрити сайт, але не завантажити застосунок Zerion, спробуйте завантажити іншим вебпереглядачем.</string>
-  <string name="hotspot_help_fallback_title">Нічого не працює?</string>
-  <string name="hotspot_help_fallback_intro">Можете зберегти застосунок як apk-файл і поширити його якось іще. Щойно файл передано на інший пристрій, за його допомогою можна встановити Zerion.
-		\n\nПорада: може бути потрібно спершу змінити суфікс файлу на .zip для Bluetooth-передання.</string>
-  <string name="hotspot_help_fallback_button">Зберегти застосунок</string>
-  <!--error handling-->
-  <string name="hotspot_error_intro">Щось пішло не так при спробі поширити застосунок через Wi-Fi:</string>
-  <string name="hotspot_error_no_wifi_direct">Пристрій не підтримує Wi-Fi Direct</string>
-  <string name="hotspot_error_start_callback_failed">Не вдалося створити точку доступу: помилка %s</string>
-  <string name="hotspot_error_start_callback_failed_unknown">Не вдалося створити точку доступу через невідому помилку: %d</string>
-  <string name="hotspot_error_start_callback_no_group_info">Не вдалося створити точку доступу: бракує даних групи</string>
-  <string name="hotspot_error_web_server_start">Помилка запуску вебсервера</string>
-  <string name="hotspot_error_web_server_serve">Помилка показу вебсайту.\n\nБудь ласка, надішліть відгук (з анонімними даними) застосунком Zerion, якщо проблема повторюватиметься.</string>
-  <string name="hotspot_flag_test">Попередження: застосунок встановлено Android Studio й НЕ може бути встановлено на інший пристрій.</string>
-  <string name="hotspot_error_framework_busy">Не вдалося створити точку доступу.\n\nЯкщо вже працює інша точка доступу чи ви роздаєте інтернет-з\'єднання через Wi-Fi, зупиніть це й повторіть спробу.</string>
-  <!--Transfer Data via Removable Drives-->
+  
   <string name="removable_drive_menu_title">З\'єднатися через флешку</string>
   <string name="removable_drive_intro">Якщо не вдається з\'єднатися з контактом через інтернет, Wi-Fi та Bluetooth, Zerion ще може передавати повідомлення за допомогою флешки чи SD-картки.</string>
   <string name="removable_drive_explanation">Якщо не вдається з\'єднатися з контактом через інтернет, Wi-Fi та Bluetooth, Zerion ще може передавати повідомлення за допомогою флешки чи SD-картки.\n\nКоли ви натиснете кнопку «Надіслати дані», будь-які дані в очікуванні надсилання контактові буде записано на флешку. Зокрема дані особистих повідомлень, прикріплень, блогів, форумів і приватних груп.\n\nПеред записом на флешку все буде зашифровано.\n\nОтримавши флешку, ваш контакт зможе імпортувати повідомлення в свій Zerion кнопкою «Отримати дані».</string>
@@ -747,17 +655,17 @@
   <string name="removable_drive_error_send_text">Запис даних до файлу зазнав збою.\nЯкщо використовуєте флешку, переконайтесь, що її правильно під\'єднано, й повторіть спробу.\n\nЯкщо збій повторюється, будь ласка, надішліть відгук, щоб команда Zerion дізналася про проблему.</string>
   <string name="removable_drive_error_receive_title">Помилка імпортування даних</string>
   <string name="removable_drive_error_receive_text">Обраний файл не містив нічого зрозумілого Zerion.\n\nБудь ласка, перевірте, що обрали правильний файл.\n\nЯкщо файл було створено контактом понад 28 днів тому, Zerion не зможе його розпізнати.</string>
-  <!--Screenshots-->
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
+  
   <string name="screenshot_alice">Аліса</string>
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
   <string name="screenshot_bob">Богдан</string>
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
   <string name="screenshot_carol">Віра</string>
-  <!--This is a message to be used in screenshots. Please use the same translation for Bob!-->
+  
   <string name="screenshot_message_1">Привіт, Богдане!</string>
-  <!--This is a message to be used in screenshots. Please use the same translation for Alice!-->
+  
   <string name="screenshot_message_2">Привіт, Алісо! Дякую, що розповіла мені про Zerion!</string>
-  <!--This is a message to be used in screenshots.-->
+  
   <string name="screenshot_message_3">Прошу! Сподіваюся, Zerion прийшовся тобі до вподоби 😀</string>
 </resources>

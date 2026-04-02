@@ -29,22 +29,25 @@ class VoiceCallKeyMaterialSource implements KeyMaterialSource {
 
 	@Override
 	public synchronized byte[] getKeyMaterial(int length) {
+		byte[] keyBytes = sourceKey.getBytes().clone();
 		try {
 			byte[] result = new byte[length];
 			int offset = 0;
 			while (offset < length) {
 				Mac mac = Mac.getInstance(HMAC_ALGORITHM);
-				mac.init(new SecretKeySpec(sourceKey.getBytes(), HMAC_ALGORITHM));
+				mac.init(new SecretKeySpec(keyBytes, HMAC_ALGORITHM));
 				byte[] counterBytes = intToBytes(counter++);
 				byte[] block = mac.doFinal(counterBytes);
 				int toCopy = Math.min(block.length, length - offset);
 				System.arraycopy(block, 0, result, offset, toCopy);
 				offset += toCopy;
+				java.util.Arrays.fill(block, (byte) 0);
 			}
-
 			return result;
 		} catch (GeneralSecurityException e) {
 			throw new RuntimeException("Failed to generate key material", e);
+		} finally {
+			java.util.Arrays.fill(keyBytes, (byte) 0);
 		}
 	}
 

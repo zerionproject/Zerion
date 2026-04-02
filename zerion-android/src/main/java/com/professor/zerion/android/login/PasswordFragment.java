@@ -178,9 +178,8 @@ public class PasswordFragment extends BaseFragment implements TextWatcher {
 	}
 
 	private void onSignInButtonClicked() {
-		String passwordStr = password.getText() != null ? password.getText().toString() : "";
-
-		if (passwordStr.isEmpty()) {
+		Editable editable = password.getText();
+		if (editable == null || editable.length() == 0) {
 			setError(input, getString(R.string.password_missing), true);
 			return;
 		}
@@ -199,14 +198,15 @@ public class PasswordFragment extends BaseFragment implements TextWatcher {
 	}
 
 	private void validatePassword() {
-		String passwordStr = password.getText() != null ? password.getText().toString() : "";
-		if (passwordStr.isEmpty()) {
+		Editable editable = password.getText();
+		if (editable == null || editable.length() == 0) {
 			signInButton.setVisibility(VISIBLE);
 			progress.setVisibility(INVISIBLE);
 			return;
 		}
 
-		char[] passwordChars = passwordStr.toCharArray();
+		char[] passwordChars = new char[editable.length()];
+		editable.getChars(0, editable.length(), passwordChars, 0);
 		password.setText(null);
 		viewModel.validatePassword(passwordChars);
 	}

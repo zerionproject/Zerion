@@ -99,6 +99,22 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 
 		setTopNotice(item);
 
+		float textSizeSp = com.professor.zerion.android.settings.ChatPreferences
+				.getMessageTextSizeSp(text.getContext());
+		text.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, textSizeSp);
+
+		if (outViewHolder != null) {
+			int bubbleColor = com.professor.zerion.android.settings.ChatPreferences
+					.getBubbleColor(layout.getContext());
+			android.graphics.drawable.Drawable bg = layout.getBackground();
+			if (bg != null) {
+				bg = bg.mutate();
+				bg.setColorFilter(bubbleColor,
+						android.graphics.PorterDuff.Mode.SRC_IN);
+				layout.setBackground(bg);
+			}
+		}
+
 		if (item.getText() != null) {
 			if (item.getText().startsWith("[VOICE:")) {
 				text.setText("");

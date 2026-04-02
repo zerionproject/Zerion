@@ -37,7 +37,7 @@ public class UnlockActivity extends BaseActivity {
 
 	private static final String KEYGUARD_SHOWN = "keyguardShown";
 
-	private static final int BRUTE_FORCE_DELAY_MS = 250;
+	private static final int BRUTE_FORCE_DELAY_MS = 800;
 
 	private static final String UNLOCK_SESSION_ID = "unlockSessionId";
 

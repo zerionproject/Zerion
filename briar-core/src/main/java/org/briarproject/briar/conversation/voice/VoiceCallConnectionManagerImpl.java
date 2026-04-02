@@ -279,15 +279,17 @@ class VoiceCallConnectionManagerImpl implements VoiceCallConnectionManager {
 	 * onion addresses even when using the same voiceCallKey.
 	 */
 	private SecretKey deriveEndpointKey(SecretKey voiceCallKey, String callId) {
+		byte[] keyBytes = voiceCallKey.getBytes().clone();
 		try {
 			javax.crypto.Mac mac = javax.crypto.Mac.getInstance("HmacSHA256");
-			mac.init(new javax.crypto.spec.SecretKeySpec(
-					voiceCallKey.getBytes(), "HmacSHA256"));
+			mac.init(new javax.crypto.spec.SecretKeySpec(keyBytes, "HmacSHA256"));
 			mac.update(callId.getBytes(java.nio.charset.StandardCharsets.UTF_8));
 			byte[] derived = mac.doFinal();
 			return new SecretKey(derived);
 		} catch (java.security.GeneralSecurityException e) {
 			throw new RuntimeException("Failed to derive endpoint key", e);
+		} finally {
+			java.util.Arrays.fill(keyBytes, (byte) 0);
 		}
 	}
 }

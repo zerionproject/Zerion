@@ -12,5 +12,5 @@ public interface PasswordStrengthEstimator {
 	float STRONG = 1;
 
 	
-	float estimateStrength(String password);
+	float estimateStrength(char[] password);
 }

@@ -638,37 +638,6 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		androidExecutor.runOnUiThread((Runnable) () -> blockGroups = false);
 	}
 
-	@Override
-	public void showHotspotNotification() {
-		final String HOTSPOT_CHANNEL_ID = "hotspot";
-		final int HOTSPOT_NOTIFICATION_ID = 11;
-
-		if (SDK_INT >= 26) {
-			String channelTitle = appContext
-					.getString(R.string.hotspot_notification_channel_title);
-			NotificationChannel channel = new NotificationChannel(
-					HOTSPOT_CHANNEL_ID, channelTitle, IMPORTANCE_LOW);
-			channel.setLockscreenVisibility(VISIBILITY_SECRET);
-			notificationManager.createNotificationChannel(channel);
-		}
-		ZerionNotificationBuilder b =
-				new ZerionNotificationBuilder(appContext, HOTSPOT_CHANNEL_ID);
-		b.setSmallIcon(R.drawable.logo);
-		b.setColorRes(R.color.zerion_brand_green);
-		b.setContentTitle(
-				appContext.getText(R.string.hotspot_notification_title));
-		b.setNotificationCategory(CATEGORY_SERVICE);
-		b.setOngoing(true);
-		b.setShowWhen(true);
-
-	}
-
-	@Override
-	public void clearHotspotNotification() {
-		final int HOTSPOT_NOTIFICATION_ID = 11;
-		notificationManager.cancel(HOTSPOT_NOTIFICATION_ID);
-	}
-
 	private void checkForIncomingCall(PrivateMessageReceivedEvent event) {
 		androidExecutor.runOnBackgroundThread(() -> {
 			try {
@@ -695,7 +664,6 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 						Intent intent = new Intent(appContext,
 								com.professor.zerion.android.conversation.voice.VoiceCallActivity.class);
 						intent.putExtra("contact_id", contactId.getInt());
-						intent.putExtra("contact_name", contact.getAlias());
 						intent.putExtra("is_incoming", true);
 						if (remoteCallId != null) {
 							intent.putExtra("call_id", remoteCallId);
@@ -783,10 +751,6 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 					intent.putExtra(
 							com.professor.zerion.android.conversation.voice.VoiceCallActivity.EXTRA_CONTACT_ID,
 							contactId.getInt());
-					intent.putExtra(
-							com.professor.zerion.android.conversation.voice.VoiceCallActivity.EXTRA_CONTACT_NAME,
-							contact.getAlias() != null ? contact.getAlias() :
-									contact.getAuthor().getName());
 					intent.putExtra(
 							com.professor.zerion.android.conversation.voice.VoiceCallActivity.EXTRA_IS_INCOMING,
 							true);

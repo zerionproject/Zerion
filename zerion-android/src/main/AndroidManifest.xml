@@ -107,6 +107,48 @@
 			</intent-filter>
 		</activity>
 
+		<activity-alias
+			android:name=".launcher.Calculator"
+			android:targetActivity="com.professor.zerion.android.splash.SplashScreenActivity"
+			android:enabled="false"
+			android:exported="true"
+			android:icon="@mipmap/ic_launcher_calculator"
+			android:roundIcon="@mipmap/ic_launcher_calculator"
+			android:label="Calculator">
+			<intent-filter>
+				<action android:name="android.intent.action.MAIN" />
+				<category android:name="android.intent.category.LAUNCHER" />
+			</intent-filter>
+		</activity-alias>
+
+		<activity-alias
+			android:name=".launcher.Notes"
+			android:targetActivity="com.professor.zerion.android.splash.SplashScreenActivity"
+			android:enabled="false"
+			android:exported="true"
+			android:icon="@mipmap/ic_launcher_notes"
+			android:roundIcon="@mipmap/ic_launcher_notes"
+			android:label="Notes">
+			<intent-filter>
+				<action android:name="android.intent.action.MAIN" />
+				<category android:name="android.intent.category.LAUNCHER" />
+			</intent-filter>
+		</activity-alias>
+
+		<activity-alias
+			android:name=".launcher.Weather"
+			android:targetActivity="com.professor.zerion.android.splash.SplashScreenActivity"
+			android:enabled="false"
+			android:exported="true"
+			android:icon="@mipmap/ic_launcher_weather"
+			android:roundIcon="@mipmap/ic_launcher_weather"
+			android:label="Weather">
+			<intent-filter>
+				<action android:name="android.intent.action.MAIN" />
+				<category android:name="android.intent.category.LAUNCHER" />
+			</intent-filter>
+		</activity-alias>
+
 		<activity
 			android:name="com.professor.zerion.android.navdrawer.NavDrawerActivity"
 			android:exported="true"

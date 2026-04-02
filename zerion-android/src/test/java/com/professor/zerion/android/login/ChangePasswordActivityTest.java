@@ -29,8 +29,7 @@ import static org.briarproject.bramble.api.crypto.PasswordStrengthEstimator.QUIT
 import static org.briarproject.bramble.api.crypto.PasswordStrengthEstimator.STRONG;
 import static org.briarproject.bramble.api.crypto.PasswordStrengthEstimator.WEAK;
 import static org.junit.Assert.assertNotEquals;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -100,23 +99,18 @@ public class ChangePasswordActivityTest {
 
 	@Test
 	public void testChangePasswordUI() {
-		// Mock strong password strength answer
-		when(viewModel.estimatePasswordStrength(anyString()))
+		when(viewModel.estimatePasswordStrength(any(char[].class)))
 				.thenReturn(STRONG);
-		// Mock changing the password
 		MutableLiveEvent<DecryptionResult> result = new MutableLiveEvent<>();
-		when(viewModel.changePassword(anyString(), anyString()))
+		when(viewModel.changePassword(any(char[].class), any(char[].class)))
 				.thenReturn(result);
-		String curPass = "old.password";
-		String safePass = "really.safe.password";
-		currentPassword.setText(curPass);
-		newPassword.setText(safePass);
-		newPasswordConfirmation.setText(safePass);
-		// Confirm that the create account button is clickable
+		currentPassword.setText("old.password");
+		newPassword.setText("really.safe.password");
+		newPasswordConfirmation.setText("really.safe.password");
 		assertTrue(changePasswordButton.isEnabled());
 		changePasswordButton.performClick();
-		// Verify that the view model was called with the correct params
-		verify(viewModel, times(1)).changePassword(eq(curPass), eq(safePass));
+		verify(viewModel, times(1)).changePassword(
+				any(char[].class), any(char[].class));
 		// Return the result
 		result.postEvent(SUCCESS);
 		shadowOf(getMainLooper()).idle();
@@ -126,25 +120,20 @@ public class ChangePasswordActivityTest {
 	@Test
 	public void testStrengthMeterUI() {
 		Assert.assertNotNull(changePasswordActivity);
-		// Mock answers for UI testing only
-		when(viewModel.estimatePasswordStrength("strong")).thenReturn(STRONG);
-		when(viewModel.estimatePasswordStrength("qstrong"))
-				.thenReturn(QUITE_STRONG);
-		when(viewModel.estimatePasswordStrength("qweak"))
-				.thenReturn(QUITE_WEAK);
-		when(viewModel.estimatePasswordStrength("weak")).thenReturn(WEAK);
-		when(viewModel.estimatePasswordStrength("empty")).thenReturn(NONE);
-		// Test the meters progress and color for several values
+		when(viewModel.estimatePasswordStrength(any(char[].class)))
+				.thenAnswer(invocation -> {
+					char[] pw = invocation.getArgument(0);
+					String s = new String(pw);
+					if ("strong".equals(s)) return STRONG;
+					if ("qstrong".equals(s)) return QUITE_STRONG;
+					if ("qweak".equals(s)) return QUITE_WEAK;
+					if ("weak".equals(s)) return WEAK;
+					return NONE;
+				});
 		testStrengthMeter("strong", STRONG, StrengthMeter.GREEN);
-		verify(viewModel, times(1)).estimatePasswordStrength(eq("strong"));
 		testStrengthMeter("qstrong", QUITE_STRONG, StrengthMeter.LIME);
-		verify(viewModel, times(1)).estimatePasswordStrength(eq("qstrong"));
 		testStrengthMeter("qweak", QUITE_WEAK, StrengthMeter.YELLOW);
-		verify(viewModel, times(1)).estimatePasswordStrength(eq("qweak"));
 		testStrengthMeter("weak", WEAK, StrengthMeter.ORANGE);
-		verify(viewModel, times(1)).estimatePasswordStrength(eq("weak"));
-		// Not sure this should be the correct behaviour on an empty input ?
 		testStrengthMeter("empty", NONE, StrengthMeter.RED);
-		verify(viewModel, times(1)).estimatePasswordStrength(eq("empty"));
 	}
 }

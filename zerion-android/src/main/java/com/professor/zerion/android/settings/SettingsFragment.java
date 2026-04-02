@@ -56,6 +56,7 @@ public class SettingsFragment extends Fragment {
 	private View securityCard;
 	private View notificationsCard;
 	private View aboutCard;
+	private View inviteFriendsCard;
 	private TextView devSectionHeader;
 	private View testDataCard;
 	private View testDataDivider;
@@ -98,6 +99,7 @@ public class SettingsFragment extends Fragment {
 		securityCard = view.findViewById(R.id.security_card);
 		notificationsCard = view.findViewById(R.id.notifications_card);
 		aboutCard = view.findViewById(R.id.about_card);
+		inviteFriendsCard = view.findViewById(R.id.invite_friends_card);
 		devSectionHeader = view.findViewById(R.id.dev_section_header);
 		testDataCard = view.findViewById(R.id.test_data_card);
 		testDataDivider = view.findViewById(R.id.test_data_divider);
@@ -119,6 +121,9 @@ public class SettingsFragment extends Fragment {
 		securityCard.setOnClickListener(v -> showSecuritySettings());
 		notificationsCard.setOnClickListener(v -> showNotificationsSettings());
 		aboutCard.setOnClickListener(v -> showAboutSettings());
+		if (inviteFriendsCard != null) {
+			inviteFriendsCard.setOnClickListener(v -> shareInvite());
+		}
 
 		if (IS_DEBUG_BUILD) {
 			testDataCard.setOnClickListener(v -> {
@@ -189,6 +194,15 @@ public class SettingsFragment extends Fragment {
 				.replace(R.id.fragmentContainer, new NotificationsFragment())
 				.addToBackStack(null)
 				.commit();
+	}
+
+	private void shareInvite() {
+		Intent shareIntent = new Intent(Intent.ACTION_SEND);
+		shareIntent.setType("text/plain");
+		shareIntent.putExtra(Intent.EXTRA_TEXT,
+				getString(R.string.invite_friends_message));
+		startActivity(Intent.createChooser(shareIntent,
+				getString(R.string.invite_friends_chooser)));
 	}
 
 	private void showAboutSettings() {

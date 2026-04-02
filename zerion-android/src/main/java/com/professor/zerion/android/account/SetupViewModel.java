@@ -89,7 +89,7 @@ class SetupViewModel extends AndroidViewModel {
 		}
 	}
 
-	float estimatePasswordStrength(String password) {
+	float estimatePasswordStrength(char[] password) {
 		return strengthEstimator.estimateStrength(password);
 	}
 

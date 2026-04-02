@@ -11,10 +11,10 @@ import javax.annotation.Nullable;
 public class VoiceCallKeyHolder {
 
 	@Nullable
-	private static volatile SecretKey pendingKey = null;
+	private static SecretKey pendingKey = null;
 
 	@Nullable
-	private static volatile byte[] pendingRemoteEphemeral = null;
+	private static byte[] pendingRemoteEphemeral = null;
 
 	public static synchronized void setKey(SecretKey key) {
 		SecretKey old = pendingKey;

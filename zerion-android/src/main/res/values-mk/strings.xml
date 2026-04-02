@@ -1,6 +1,6 @@
-﻿<?xml version='1.0' encoding='UTF-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
-	<!--Setup-->
+	
 	<string name="setup_title">Добредојде во Zerion</string>
 	<string name="setup_name_explanation">Вашето корисничко име ќе се појави до секоја содржина која ќе ја објавите. Истото не можете да го промените откога ќе ја креирате вашата сметка.</string>
 	<string name="setup_next">Следно</string>
@@ -24,7 +24,7 @@
 	<string name="dnkm_huawei_protected_help">Ако Zerion не е додаден на листата со заштитени апликации, ќе биде оневозможен да работи во позадина.</string>
 	<string name="dnkm_xiaomi_button">Заштити го Zerion</string>
 	<string name="dnkm_warning_dozed">%s беше оневозможен да работи во позадина</string>
-	<!--Login-->
+	
 	<string name="enter_password">Лозинка</string>
 	<string name="try_again">Погрешна лозинка</string>
 	<string name="dialog_title_cannot_check_password">Не може да се провери лозинката</string>
@@ -51,17 +51,17 @@
   <string name="startup_open_database">Декриптирање на базата на податоци...</string>
   <string name="startup_migrate_database">Ажурирање на базата на податоци...</string>
   <string name="startup_compact_database">Пакување на базата на податоци</string>
-  <!--Navigation Drawer-->
+  
   <string name="nav_drawer_open_description">Отвори ја навигационата лента</string>
   <string name="nav_drawer_close_description">Затвори ја навигационата лента</string>
   <string name="contact_list_button">Контакти</string>
   <string name="groups_button">Приватни групи</string>
-  <!--This is part of the main menu. The app will be locked when this is tapped.-->
+  
   <string name="lock_button">Заклучи ја апликацијата</string>
   <string name="settings_button">Поставки</string>
   <string name="sign_out_button">Одјави се</string>
   <string name="transports_onboarding_text">Допрете овде за да контролирате како Zerion се поврзува со вашите контакти.</string>
-  <!--Transports: Tor-->
+  
   <string name="transport_tor">Интернет</string>
   <string name="tor_device_status_online_wifi">Вашиот телефон има интернет пристап преку Wi-Fi</string>
   <string name="tor_device_status_online_mobile">Вашиот телефон има интернет пристап преку мобилни податоци</string>
@@ -73,10 +73,10 @@
   <string name="tor_plugin_status_disabled_mobile_data">Zerion е конфигуриран да не користи мобилни податоци</string>
   <string name="tor_plugin_status_disabled_battery">Zerion е конфигуриран да не користи Интернет додека е работи на батерија</string>
   <string name="tor_plugin_status_disabled_country_blocked">Zerion е конфигуриран да не користи Интернет во оваа држава</string>
-  <!--Transports: Wi-Fi-->
+  
   <string name="transport_lan_long">Иста Wi-Fi мрежа </string>
-  <!--Transports: Bluetooth-->
-  <!--Notifications-->
+  
+  
   <string name="reminder_notification_title">Одјави се од Zerion</string>
   <string name="reminder_notification_text">Допрете за да се најавите.</string>
   <string name="reminder_notification_channel_title">Zerion потсетување за најавување</string>
@@ -91,7 +91,7 @@
     <item quantity="one">Нова порака во група.</item>
     <item quantity="other">%d нови пораки во група.</item>
   </plurals>
-  <!--Misc-->
+  
   <string name="now">сега</string>
   <string name="show">Покажи</string>
   <string name="hide">Сокриј</string>
@@ -117,7 +117,7 @@
   <string name="sorry">Жал ни е</string>
   <string name="error_start_activity">Недостапно на вашиот систем</string>
   <string name="status_heading">Статус:</string>
-  <!--Contacts and Private Conversations-->
+  
   <string name="no_contacts">Нема контакти за прикажување</string>
   <string name="no_contacts_action">Допрете ја + иконата за да додадете контакт</string>
   <string name="date_no_private_messages">Нема пораки.</string>
@@ -129,12 +129,6 @@
   <string name="image_attach_error_invalid_mime_type">Форматот на сликата не е поддржан: %s</string>
   <string name="set_contact_alias">Промена на име на контакт</string>
   <string name="set_contact_alias_hint">Име на контакт</string>
-  <string name="menu_item_connect_via_bluetooth">Поврзи се преку Bluetooth</string>
-  <string name="connect_via_bluetooth_title">Поврзи се преку Bluetooth</string>
-  <!--The first placeholder will show a duration like "7 days". The second placeholder at the end will add "Tap to learn more."-->
-  <!--The placeholder at the end will add "Tap to learn more."-->
-  <!--The first placeholder will show a contact's name. The second placeholder will show a duration like "7 days". The third placeholder at the end will add "Tap to learn more."-->
-  <!--The first placeholder will show a contact's name. The second placeholder at the end will add "Tap to learn more."-->
   <string name="delete_all_messages">Избриши ги сите пораки</string>
   <string name="dialog_title_delete_all_messages">Потврди бришење на порака</string>
   <string name="dialog_message_delete_all_messages">Дали сте сигурни дека сакате да ги избришете сите пораки?</string>
@@ -149,7 +143,7 @@
   <string name="dialog_title_delete_contact">Потврди бришење на контакт</string>
   <string name="dialog_message_delete_contact">Дали сте сигурни дека сакате да го избришете овој контакт и сите пораки поврзани со него?</string>
   <string name="contact_deleted_toast">Избришан контакт</string>
-  <!--This is shown in the action bar when opening an image in fullscreen that the user sent-->
+  
   <string name="you">Вие</string>
   <string name="save_image">Зачувај слика</string>
   <string name="dialog_title_save_image">Зачувај слика?</string>
@@ -161,7 +155,7 @@
   <string name="dialog_title_image_support">Сега можете да му испраќате слики на овој контакт</string>
   <string name="dialog_message_image_support">Допрете ја оваа икона за да прикачите слики.</string>
   <string name="messaging_too_many_attachments_toast">Само првите %d слики ќе бидат испратени</string>
-  <!--Adding Contacts-->
+  
   <string name="add_contact_title">Додај контакт ВО БЛИЗИНА</string>
   <string name="continue_button">Продолжи</string>
   <string name="try_again_button">Обиди се повторно</string>
@@ -176,7 +170,7 @@
   <string name="authenticating_with_device">Автентикација со уред\u2026</string>
   <string name="connection_error_title">Не може да се поврзе со твојот контакт</string>
   <string name="connection_error_feedback">Ако овој проблем останува, ве молиме <a href="feedback">испратете повратна информација</a> за да ни помогнете да ја подобриме апликацијата.</string>
-  <!--Adding Contacts Remotely-->
+  
   <string name="add_contact_remotely_title_case">Додај контакт НА РАСТОЈАНИЕ</string>
   <string name="add_contact_nearby_title">Додај контакт во близина</string>
   <string name="add_contact_remotely_title">Додај контакт на растојание</string>
@@ -209,9 +203,9 @@
   <string name="unsupported_link">Овој линк доаѓа од понова верзија на Zerion. Ве молиме надградете во последна верзија и обидете се повторно.</string>
   <string name="intent_own_link">Го отвори твојот линк. Користи го линкот на контактот што сакаш да го додадеш!</string>
   <string name="missing_link">Ве молиме внесете линк</string>
-  <!--This is a numeral indicating the first step in a series of screens-->
+  
   <string name="step_1">1</string>
-  <!--This is a numeral indicating the second step in a series of screens-->
+  
   <string name="step_2">2</string>
   <plurals name="contact_added_notification_text">
     <item quantity="one">Нов контакт е додаден.</item>
@@ -221,19 +215,15 @@
   <string name="duplicate_link_dialog_title">Дуплицирање на линк</string>
   <string name="duplicate_link_dialog_text_1">Веќе имате контакт на чекање со овој линк: %s</string>
   <string name="duplicate_link_dialog_text_1_contact">Веќе имате контакт со овој линк: %s</string>
-  <!--This is a question asking whether two nicknames refer to the same person-->
+  
   <string name="duplicate_link_dialog_text_2">Дали %s и %s е истата личност?</string>
-  <!--This is a button for answering that two nicknames do indeed refer to the same person. This
-	string will be used in a dialog button, so if the translation of this string is longer than 20
-	characters, please use "Yes" instead, and use "No" for the "Different Person" button-->
+  
   <string name="same_person_button">Истата личност</string>
-  <!--This is a button for answering that two nicknames refer to different people. This string
-	will be used in a dialog button, so if the translation of this string longer than 20 characters,
-	please use "No" instead, and use "Yes" for the "Same Person" button-->
+  
   <string name="different_person_button">Различна личност</string>
   <string name="duplicate_link_dialog_text_3">%sи %s ти го испратија истиот линк.\n\nЕден од нив можеби се обидува да открие кои се твоите контакти.\n\nНе им кажувајте дека сте добиле ист линк од некој друг.</string>
   <string name="pending_contact_updated_toast">Контактот на чекање е ажуриран</string>
-  <!--Introductions-->
+  
   <string name="introduction_onboarding_title">Запознај ги твоите контакти</string>
   <string name="introduction_onboarding_text">Можете да ги запознаете вашите контакти меѓусебно, па тие нема да имаат потреба да се запознаваат лично за да се поврзат на Zerion.</string>
   <string name="introduction_menu_item">Направи запознавање</string>
@@ -254,7 +244,7 @@
   <string name="introduction_response_accepted_received">%1$s го прифативте запознавањето со %2$s.</string>
   <string name="introduction_response_declined_received">%1$s го одбивте запознавањето со %2$s.</string>
   <string name="introduction_response_declined_received_by_introducee">%1$s вели дека %2$s го одбил запознавањето.</string>
-  <!--Private Groups-->
+  
   <string name="groups_list_empty">Нема групи за прикажување</string>
   <string name="groups_list_empty_action">Допрете ја + иконата за да создадете група, или прашајте ги вашите контакти да споделат групи со вас</string>
   <string name="groups_created_by">Создадено од %s</string>
@@ -285,7 +275,7 @@
   <string name="groups_dissolve_button">Распуштање</string>
   <string name="groups_dissolved_dialog_title">Групата беше распуштена</string>
   <string name="groups_dissolved_dialog_message">Создавачот на оваа група ја распушти.\n\nВие повеќе не можете да пишувате пораки во групата и можеби нема да ги примите сите објави кои биле напишани.</string>
-  <!--Private Group Invitations-->
+  
   <string name="groups_invitations_title">Групни покани</string>
   <string name="groups_invitations_invitation_sent">Вие го / ја поканивте %1$sда се приклучи на групата \"%2$s\".</string>
   <string name="groups_invitations_invitation_received">%1$sве покани да се приклучите на групата \"%2$s\".</string>
@@ -300,14 +290,14 @@
   <string name="groups_invitations_response_accepted_received">%s ја прифати групната покана.</string>
   <string name="groups_invitations_response_declined_received">%s ја одби групната покана.</string>
   <string name="sharing_status_groups">Само содавачот може да покани нови членови во групата. Подолу се сите моментални членови на групата.</string>
-  <!--Private Groups Revealing Contacts-->
+  
   <string name="groups_reveal_contacts">Покажи контакти</string>
   <string name="groups_reveal_dialog_message">Можете да одберете да ги покажете контактите на сите моментални и идни членови на оваа група.\n\nОткривањето на контактите го прави вашето поврзување со групата побрзо и поверодостојно, затоа што ќе можете да комуницирате со откриените контакти дури и кога создавачот на групата е исклучен.</string>
   <string name="groups_reveal_visible">Контакт врската е видлива во групата</string>
   <string name="groups_reveal_visible_revealed_by_us">Контакт врската е видлива во групата (откриена од тебе)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Контакт врската е видилва во групата (открена од %s)</string>
   <string name="groups_reveal_invisible">Контакт врската не е видлива во групата</string>
-  <!--Forums-->
+  
   <string name="no_posts">Нема објави</string>
   <plurals name="posts">
     <item quantity="one">%dпост</item>
@@ -315,7 +305,7 @@
   </plurals>
   <string name="btn_reply">Одговор</string>
   <string name="dialog_button_leave">Напушти</string>
-  <!--Forum Sharing-->
+  
   <string name="contacts_selected">Избрани контакти</string>
   <string name="activity_share_toolbar_header">Избери контакти</string>
   <string name="no_contacts_selector">Нема контакти за прикажување</string>
@@ -324,12 +314,12 @@
   <string name="sharing_status">Споделување статус</string>
   <string name="shared_with">Споделено со %1$d (%2$d вклучен/и)</string>
   <string name="nobody">Никој</string>
-  <!--Blogs-->
+  
   <string name="read_more">прочитај повеќе</string>
-  <!--Blog Sharing-->
-  <!--RSS Feeds-->
-  <!--Settings Profile Picture-->
-  <!--Settings Display-->
+  
+  
+  
+  
   <string name="pref_language_title">Јазик &amp; регион</string>
   <string name="pref_language_changed">Оваа поставка ќе биде ефективна после рестартирањето на Zerion. Ве молиме одјавете се и рестартирајте го Zerion.</string>
   <string name="pref_language_default">Систем стандардно поставен</string>
@@ -339,9 +329,8 @@
   <string name="pref_theme_dark">Темно</string>
   <string name="pref_theme_auto">Автоматски (Дневно)</string>
   <string name="pref_theme_system">Систем стандардно поставен</string>
-  <!--Settings Connections-->
+  
   <string name="network_settings_title">Поврзувања</string>
-  <string name="bluetooth_setting">Поврзете се контактите преку Bluetooth</string>
   <string name="wifi_setting">Поврзете се со контактите на истата Wi-Fi мрежа</string>
   <string name="tor_enable_title">Поврзете се контактите преку Интернет</string>
   <string name="tor_enable_summary">Сите поврзувања одат преку Tor мрежата поради приватност</string>
@@ -350,28 +339,28 @@
   <string name="tor_network_setting_without_bridges">Користете Tor мрежа без мостови</string>
   <string name="tor_network_setting_with_bridges">Користете Tor мрежа со мостови</string>
   <string name="tor_network_setting_never">Не се поврзувај на Интернет</string>
-  <!--How and when Zerion will connect to Tor: E.g. "Don't connect to the Internet (in China)" or "Use Tor network with bridges (in Belarus)"-->
+  
   <string name="tor_network_setting_summary">Автоматски: %1$s (во %2$s)</string>
   <string name="tor_mobile_data_title">Користи мобилни податоци</string>
   <string name="tor_only_when_charging_title">Поврзи на Интернет само за време на полнење</string>
   <string name="tor_only_when_charging_summary">Оневозможи го Интернет поврзувањето кога уредот не е приклучен на полнач</string>
-  <!--Settings Security and Panic-->
+  
   <string name="security_settings_title">Безбедност</string>
   <string name="pref_lock_title">Апликацијата е заклучена</string>
   <string name="pref_lock_summary">Користете го екранот за заклучување на уредот за да го заштитите Zerion додека сте најавени</string>
   <string name="pref_lock_disabled_summary">За да ја користиш оваа карарактеристика, постави екран за заклучување на твојот уред</string>
   <string name="pref_lock_timeout_title">Неактивноста на заклучената апликација е истечена</string>
-  <!--The %s placeholder is replaced with the following time spans, e.g. 5 Minutes, 1 Hour-->
+  
   <string name="pref_lock_timeout_summary">Кога не го користите Zerion, автоматски се заклучува после %s</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_1">1 минута</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_5">5 минути</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_15">15 минути</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_30">30 минути</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_60">1 час</string>
   <string name="pref_lock_timeout_never">Никогаш</string>
   <string name="pref_lock_timeout_never_summary">Никогаш не го заклучувај Zerion автоматски</string>
@@ -394,7 +383,7 @@
   <string name="panic_setting_signout_summary">Одјави се од Zerion ако копчето паника е притиснато</string>
   <string name="purge_setting_title">Избриши сметка</string>
   <string name="purge_setting_summary">Избриши ја твојата Zerion сметка ако е притиснато копчето паника. Внимание: Ова трајно ќе ги избрише твоите идентитети, контакти и пораки</string>
-  <!--Settings Notifications-->
+  
   <string name="notification_settings_title">Известувања</string>
   <string name="notify_sign_in_title">Потсети ме да се најавам</string>
   <string name="notify_sign_in_summary">Покажи потсетник кога телефонот се вклучува или кога апликацијата е ажурирана</string>
@@ -410,16 +399,16 @@
   <string name="notify_sound_setting_disabled">Ништо</string>
   <string name="choose_ringtone_title">Избери рингтон</string>
   <string name="cannot_load_ringtone">Не може да вчита рингтон</string>
-  <!--Conversation Settings-->
+  
   <string name="learn_more">Научете повеќе</string>
-  <!--Settings Feedback-->
+  
   <string name="send_feedback">Испрати повратни информации</string>
-  <!--Link Warning-->
+  
   <string name="link_warning_title">Линк предупредување</string>
   <string name="link_warning_intro">Ќе го отворите следниот линк во надворешна апликација.</string>
   <string name="link_warning_text">Ова може да биде искористено за ваше идентификување. Размислете дали и верувате на оваа личност која ви го испраќа овој линк и размислете истиот да го отворите со Tor прелистувачот.</string>
   <string name="link_warning_open_link">Отвори линк</string>
-  <!--Crash Reporter-->
+  
   <string name="crash_report_title">Zerion извештај за срушување</string>
   <string name="zerion_crashed">Жал ни е, Zerion се сруши.</string>
   <string name="not_your_fault">Ова не е ваша гршка.</string>
@@ -434,13 +423,13 @@
   <string name="send_report">Испрати извештај</string>
   <string name="close">Затвори</string>
   <string name="dev_report_saved">Извештајот е зачуван. Ќе биде испратен следниот пат кога ќе се вклучите на Zerion.</string>
-  <!--Sign Out-->
+  
   <string name="progress_title_logout">Одјавување од Zerion</string>
-  <!--Screen Filters & Tapjacking-->
+  
   <string name="screen_filter_title">Детектиран е преклопувачки екран</string>
   <string name="screen_filter_body">Друга апликација е уклучена врз Zerion. За да ја зачува вашата безбедност, Zerion нема да одговори на допирите кога има друга апликација уклучена врз него.\n\nСледните апликации можат да бидат вклучени врз:\n\n%1$s</string>
   <string name="screen_filter_allow">Дозволете им на овие апликации да бидат уклучени врз</string>
-  <!--Permission Requests-->
+  
   <string name="permission_camera_title">Дозвола за камера</string>
   <string name="permission_camera_request_body">За да скенирате QR код, на Zerion му треба пристап до камерата.</string>
   <string name="permission_location_title">Дозвола за локација</string>
@@ -449,26 +438,26 @@
   <string name="permission_camera_location_request_body">За да го скенира QR кодот, на Zerion му е потребен пристап до камерата.\n\nЗа да открие Bluetooth уреди, на Zerion му е потребна дозвола за вашата локација.\n\nZerion не ја зачувува вашата локација или не ја споделува со никого.</string>
   <string name="permission_camera_denied_body">Го одбивте пристапот до камерата, но за додавање на контакти потребно е користење на камерата.\n\nВе молиме  размислете за давање пристап.</string>
   <string name="permission_location_denied_body">Го одбивте пристапот до вашата локација, но на Zerion му е потребна оваа дозвола за да ги открие Bluetooth уредите.\n\nВе молиме размислете за давање пристап.</string>
-  <!--App Locking-->
+  
   <string name="lock_unlock">Отклучи го Zerion</string>
   <string name="lock_unlock_verbose">Внесете го ПИН-от, шемата или лозинката на твојот уред за да го отклучите Zerion. </string>
   <string name="lock_unlock_fingerprint_description">Допрете го сензорот за отпечаток со прстот со кој сте се регистрирале за да продложите</string>
   <string name="lock_unlock_password">Користете лозинка</string>
   <string name="lock_is_locked">Zerion е заклучен</string>
   <string name="lock_tap_to_unlock">Допрете за отклучување</string>
-  <!--Connections Screen-->
+  
   <string name="transports_help_text">Zerion може да се поврзе со вашите контакти преку Интернет, Wi-Fi или Bluetooth.\n\nСите Интернет поврзувања одат преку Tor Мрежата поради приватност.\n\nАко контактот може да биде достапен преку повеќе начини, Zerion ќе ги користи паралелно. </string>
-  <!--Screenshots-->
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
+  
   <string name="screenshot_alice">Жарко</string>
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
   <string name="screenshot_bob">Лилјана</string>
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
   <string name="screenshot_carol">Ана</string>
-  <!--This is a message to be used in screenshots. Please use the same translation for Bob!-->
+  
   <string name="screenshot_message_1">Здраво Лилјана!</string>
-  <!--This is a message to be used in screenshots. Please use the same translation for Alice!-->
+  
   <string name="screenshot_message_2">Здраво Жарко! Ти благодарам што ми кажа за Zerion!</string>
-  <!--This is a message to be used in screenshots.-->
+  
   <string name="screenshot_message_3">Нема проблем, се надевам ти се допаѓа 😀</string>
 </resources>

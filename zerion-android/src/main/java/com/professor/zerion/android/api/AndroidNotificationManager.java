@@ -9,7 +9,6 @@ public interface AndroidNotificationManager {
     String ONGOING_CHANNEL_ID = "ONGOING_CHANNEL_ID";
     String ONGOING_CHANNEL_OLD_ID = "ONGOING_CHANNEL";
     int ONGOING_NOTIFICATION_ID = 1;
-    String ACTION_STOP_HOTSPOT = "com.professor.zerion.android.STOP_HOTSPOT";
     String ACTION_DISMISS_REMINDER = "com.professor.zerion.android.DISMISS_REMINDER";
     String CONTACT_CHANNEL_ID = "CONTACT_CHANNEL_ID";
     String GROUP_CHANNEL_ID = "GROUP_CHANNEL_ID";
@@ -44,7 +43,5 @@ public interface AndroidNotificationManager {
     void unblockSignInNotification();
     Notification getForegroundNotification();
     void updateForegroundNotification(boolean locked);
-    void showHotspotNotification();
-    void clearHotspotNotification();
 
 }

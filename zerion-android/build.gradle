@@ -75,8 +75,8 @@ android {
     defaultConfig {
         minSdkVersion 29
         targetSdkVersion 35
-        versionCode 10101
-        versionName "1.0.10"
+        versionCode 10200
+        versionName "1.2.0"
         applicationId "com.professor.zerion"
         buildConfigField "String", "VERSION_LABEL", "\"1.0.10\""
         buildConfigField "String", "TorVersion", "\"$tor_version\""
@@ -208,7 +208,6 @@ dependencies {
     implementation "org.jsoup:jsoup:$jsoup_version"
     implementation 'info.guardianproject.panic:panic:1.0'
     implementation 'de.hdodenhof:circleimageview:3.1.0'
-    implementation 'com.google.zxing:core:3.3.3'  // newer version need minSdk 24
     implementation 'uk.co.samuelwall:material-tap-target-prompt:3.3.2'
     implementation 'com.vanniktech:emoji-google:0.9.0' // newer versions are more work to adapt
     implementation files('libs/PhotoView-2.3.0.aar')

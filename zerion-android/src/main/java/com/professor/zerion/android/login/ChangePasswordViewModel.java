@@ -34,7 +34,7 @@ public class ChangePasswordViewModel extends ViewModel {
 	}
 
 	float estimatePasswordStrength(char[] password) {
-		return strengthEstimator.estimateStrength(new String(password));
+		return strengthEstimator.estimateStrength(password);
 	}
 
 	LiveEvent<DecryptionResult> changePassword(char[] oldPassword,

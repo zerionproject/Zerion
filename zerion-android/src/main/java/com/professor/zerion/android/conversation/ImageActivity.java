@@ -100,7 +100,8 @@ public class ImageActivity extends ZerionActivity
 		attachments =
 				requireNonNull(i.getParcelableArrayListExtra(ATTACHMENTS));
 		int position = i.getIntExtra(ATTACHMENT_POSITION, -1);
-		if (position == -1) throw new IllegalStateException();
+		if (position < 0 || position >= attachments.size())
+			throw new IllegalStateException();
 		String name = i.getStringExtra(NAME);
 		long time = i.getLongExtra(DATE, 0);
 		byte[] messageIdBytes = requireNonNull(i.getByteArrayExtra(ITEM_ID));

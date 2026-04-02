@@ -5,6 +5,7 @@ import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.PopupMenu;
@@ -150,6 +151,25 @@ public class NavDrawerActivity extends ZerionActivity implements
 		tabGroupChats = findViewById(R.id.tabGroupChats);
 		tabVault = findViewById(R.id.tabVault);
 		fabCompose = findViewById(R.id.fabCompose);
+
+		View bottomNav = findViewById(R.id.bottomNavigation);
+		if (bottomNav != null) {
+			int heightDp = com.professor.zerion.android.settings.ChatPreferences
+					.getNavBarHeightDp(this);
+			float density = getResources().getDisplayMetrics().density;
+			ViewGroup.LayoutParams lp = bottomNav.getLayoutParams();
+			lp.height = (int) (heightDp * density);
+			bottomNav.setLayoutParams(lp);
+
+			float textSizeSp = com.professor.zerion.android.settings.ChatPreferences
+					.getNavBarTextSizeSp(this);
+			tabContacts.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP,
+					textSizeSp);
+			tabGroupChats.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP,
+					textSizeSp);
+			tabVault.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP,
+					textSizeSp);
+		}
 	}
 
 	private void setupClickListeners() {

@@ -281,9 +281,25 @@ public class VoiceCallService extends Service implements EventListener {
 				return START_NOT_STICKY;
 			}
 
-			contactId = new ContactId(intent.getIntExtra(
-					VoiceCallActivity.EXTRA_CONTACT_ID, 0));
-			contactName = intent.getStringExtra(VoiceCallActivity.EXTRA_CONTACT_NAME);
+			boolean alreadyActive = callState != CallState.IDLE
+					&& callState != CallState.DISCONNECTED
+					&& callState != CallState.FAILED;
+
+			if (alreadyActive) {
+				boolean newVideoFlag = intent.getBooleanExtra("auto_video", false);
+				if (newVideoFlag && !isVideoCall) {
+					isVideoCall = true;
+				}
+				return START_NOT_STICKY;
+			}
+
+			int cid = intent.getIntExtra(VoiceCallActivity.EXTRA_CONTACT_ID, -1);
+			if (cid == -1) {
+				stopSelf();
+				return START_NOT_STICKY;
+			}
+			contactId = new ContactId(cid);
+			contactName = null;
 			isIncoming = intent.getBooleanExtra(
 					VoiceCallActivity.EXTRA_IS_INCOMING, false);
 			callId = intent.getStringExtra(VoiceCallActivity.EXTRA_CALL_ID);
@@ -313,6 +329,12 @@ public class VoiceCallService extends Service implements EventListener {
 				try {
 					Contact contact = contactManager.getContact(contactId);
 					conversationGroup = messagingManager.getContactGroup(contact);
+					if (contactName == null) {
+						contactName = contact.getAlias() != null
+								? contact.getAlias()
+								: contact.getAuthor().getName();
+						updateCallActivity();
+					}
 				} catch (DbException e) {
 				}
 			});
@@ -1604,7 +1626,6 @@ public class VoiceCallService extends Service implements EventListener {
 	private void launchCallActivity() {
 		Intent intent = new Intent(this, VoiceCallActivity.class);
 		intent.putExtra(VoiceCallActivity.EXTRA_CONTACT_ID, contactId.getInt());
-		intent.putExtra(VoiceCallActivity.EXTRA_CONTACT_NAME, contactName);
 		intent.putExtra(VoiceCallActivity.EXTRA_IS_INCOMING, isIncoming);
 		intent.putExtra(VoiceCallActivity.EXTRA_CALL_ID, callId);
 		intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -1614,7 +1635,6 @@ public class VoiceCallService extends Service implements EventListener {
 	private Notification createNotification() {
 		Intent intent = new Intent(this, VoiceCallActivity.class);
 		intent.putExtra(VoiceCallActivity.EXTRA_CONTACT_ID, contactId.getInt());
-		intent.putExtra(VoiceCallActivity.EXTRA_CONTACT_NAME, contactName);
 		intent.putExtra(VoiceCallActivity.EXTRA_IS_INCOMING, isIncoming);
 		intent.putExtra(VoiceCallActivity.EXTRA_CALL_ID, callId);
 		intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -2129,6 +2149,7 @@ public class VoiceCallService extends Service implements EventListener {
 
 			mainHandler.post(() -> {
 				if (callActivity != null) {
+					callActivity.onVideoStarted();
 					callActivity.getRemoteVideoSurfaceWhenReady(surface -> {
 						if (videoStreamManager == null ||
 								videoTorConnection == null) return;
@@ -2138,11 +2159,6 @@ public class VoiceCallService extends Service implements EventListener {
 											.getInputStream();
 							videoStreamManager.startReceiving(
 									videoIn, surface);
-							mainHandler.post(() -> {
-								if (callActivity != null) {
-									callActivity.onVideoStarted();
-								}
-							});
 						} catch (Exception e) {
 							stopVideoStreaming();
 						}

@@ -1,6 +1,6 @@
-﻿<?xml version='1.0' encoding='UTF-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
-	<!--Setup-->
+	
 	<string name="setup_title">ברוך בואך אל Zerion</string>
 	<string name="setup_name_explanation">כינויך יוראה ליד תוכן כלשהו שתכתוב. אינך יכול לשנות אותו לאחר יצירת חשבונך.</string>
 	<string name="setup_next">הבא</string>
@@ -24,7 +24,7 @@
 	<string name="dnkm_huawei_protected_help">אם Zerion אינו מוסף אל רשימת היישומים המוגנים, הוא לא יוכל לרוץ ברקע.</string>
 	<string name="dnkm_xiaomi_button">הגן על Zerion</string>
 	<string name="dnkm_warning_dozed">%s לא היה יכול לרוץ ברקע</string>
-	<!--Login-->
+	
 	<string name="enter_password">סיסמה</string>
 	<string name="try_again">סיסמה שגויה, נסה שוב</string>
 	<string name="dialog_title_cannot_check_password">לא יכול לבדוק סיסמה</string>
@@ -48,17 +48,17 @@
   <string name="startup_open_database">מפענח מסד נתונים…</string>
   <string name="startup_migrate_database">משדרג מסד נתונים…</string>
   <string name="startup_compact_database">מצופף מסד נתונים…</string>
-  <!--Navigation Drawer-->
+  
   <string name="nav_drawer_open_description">פתח את מגירת הניווט</string>
   <string name="nav_drawer_close_description">סגור את מגירת הניווט</string>
   <string name="contact_list_button">אנשי קשר</string>
   <string name="groups_button">קבוצות פרטיות</string>
-  <!--This is part of the main menu. The app will be locked when this is tapped.-->
+  
   <string name="lock_button">נעל יישום</string>
   <string name="settings_button">הגדרות</string>
   <string name="sign_out_button">יציאה</string>
   <string name="transports_onboarding_text">הקש כאן כדי לשלוט איך Zerion מתחבר אל אנשי הקשר שלך.</string>
-  <!--Transports: Tor-->
+  
   <string name="transport_tor">אינטרנט</string>
   <string name="tor_device_status_online_wifi">לטלפון שלך גישה לאינטרנט באמצעות רשת אלחוטית</string>
   <string name="tor_device_status_online_mobile">לטלפון שלך גישה לאינטרנט באמצעות נתונים ניידים</string>
@@ -70,10 +70,10 @@
   <string name="tor_plugin_status_disabled_mobile_data">Zerion מתוצר לא להשתמש בנתונים סלולריים</string>
   <string name="tor_plugin_status_disabled_battery">Zerion מתוצר לא להשתמש באינטרנט בעת הרצה על סוללה</string>
   <string name="tor_plugin_status_disabled_country_blocked">Zerion מתוצר לא להשתמש באינטרנט במדינה זו</string>
-  <!--Transports: Wi-Fi-->
+  
   <string name="transport_lan_long">אותה הרשת האלחוטית</string>
-  <!--Transports: Bluetooth-->
-  <!--Notifications-->
+  
+  
   <string name="reminder_notification_title">נותקת מן Zerion</string>
   <string name="reminder_notification_text">הקש כדי להתחבר חזרה.</string>
   <string name="reminder_notification_channel_title">תזכורת התחברות של Zerion</string>
@@ -92,7 +92,7 @@
     <item quantity="many">%d הודעות קבוצתיות חדשות.</item>
     <item quantity="other">%d הודעות קבוצתיות חדשות.</item>
   </plurals>
-  <!--Misc-->
+  
   <string name="now">עכשיו</string>
   <string name="show">הראה</string>
   <string name="hide">הסתר</string>
@@ -120,7 +120,7 @@
   <string name="error_start_activity">בלתי זמין במערכת שלך</string>
   <string name="status_heading">מצב</string>
   <string name="error">שגיאה</string>
-  <!--Contacts and Private Conversations-->
+  
   <string name="no_contacts">אין אנשי קשר להראות</string>
   <string name="no_contacts_action">הקש על הצלמית + כדי להוסיף איש קשר</string>
   <string name="date_no_private_messages">אין הודעות.</string>
@@ -133,10 +133,10 @@
   <string name="image_attach_error_invalid_mime_type">תסדיר תמונה בלתי נתמך: %s</string>
   <string name="set_contact_alias">שַׁנֵּה שם איש קשר</string>
   <string name="set_contact_alias_hint">שם איש הקשר</string>
-  <!--The first placeholder will show a duration like "7 days". The second placeholder at the end will add "Tap to learn more."-->
-  <!--The placeholder at the end will add "Tap to learn more."-->
-  <!--The first placeholder will show a contact's name. The second placeholder will show a duration like "7 days". The third placeholder at the end will add "Tap to learn more."-->
-  <!--The first placeholder will show a contact's name. The second placeholder at the end will add "Tap to learn more."-->
+  
+  
+  
+  
   <string name="delete_all_messages">מחיקת כל ההודעות</string>
   <string name="dialog_title_delete_all_messages">אשר מחיקת הודעה</string>
   <string name="dialog_message_delete_all_messages">האם אכן ברצונך למחוק את כל ההודעות?</string>
@@ -151,7 +151,7 @@
   <string name="dialog_title_delete_contact">אשר מחיקת איש קשר</string>
   <string name="dialog_message_delete_contact">האם אכן ברצונך למחוק איש קשר זה ואת כל ההודעות שהוחלפו עם איש קשר זה?</string>
   <string name="contact_deleted_toast">איש קשר נמחק</string>
-  <!--This is shown in the action bar when opening an image in fullscreen that the user sent-->
+  
   <string name="you">את/ה</string>
   <string name="save_image">שמור תמונה</string>
   <string name="dialog_title_save_image">לשמור את התמונה?</string>
@@ -164,7 +164,7 @@
   <string name="dialog_message_image_support">הקש על צלמית זו כדי לצרף תמונות.</string>
   <string name="messaging_too_many_attachments_toast">רק %d התמונות הראשונות יישלחו</string>
   <string name="menu_contact">צרו קשר</string>
-  <!--Adding Contacts-->
+  
   <string name="add_contact_title">הוסף איש קשר בקרבה</string>
   <string name="continue_button">המשך</string>
   <string name="try_again_button">ניסיון חוזר</string>
@@ -179,7 +179,7 @@
   <string name="authenticating_with_device">מזדהה מול המכשיר\u2026</string>
   <string name="connection_error_title">לא היה ניתן להתחבר אל איש הקשר שלך</string>
   <string name="connection_error_feedback">אם בעיה נמשכת, אנא <a href="feedback">שלח משוב</a> כדי לעזור לנו לשפר את היישום.</string>
-  <!--Adding Contacts Remotely-->
+  
   <string name="add_contact_remotely_title_case">הוסף איש קשר בקרבה</string>
   <string name="add_contact_nearby_title">הוסף איש קשר בקרבה</string>
   <string name="add_contact_remotely_title">הוסף איש קשר במרחק</string>
@@ -212,9 +212,9 @@
   <string name="unsupported_link">קישור זה מגיע מגרסה חדשה יותר של Zerion. אנא שדרג אל הגרסה האחרונה ונסה שוב.</string>
   <string name="intent_own_link">פתחת את הקישור של עצמך. יש להשתמש בקישור של איש הקשר שברצונך להוסיף!</string>
   <string name="missing_link">אנא הכנס קישור</string>
-  <!--This is a numeral indicating the first step in a series of screens-->
+  
   <string name="step_1">1</string>
-  <!--This is a numeral indicating the second step in a series of screens-->
+  
   <string name="step_2">2</string>
   <plurals name="contact_added_notification_text">
     <item quantity="one">איש קשר התווסף.</item>
@@ -226,13 +226,13 @@
   <string name="duplicate_link_dialog_title">קישור כפול</string>
   <string name="duplicate_link_dialog_text_1">יש לך כבר איש קשר ממתין עם קישור זה: %s</string>
   <string name="duplicate_link_dialog_text_1_contact">יש לך כבר איש קשר עם קישור זה: %s</string>
-  <!--This is a question asking whether two nicknames refer to the same person-->
-  <!--This is a button for answering that two nicknames do indeed refer to the same person. This -->
+  
+  
   <string name="same_person_button">אותו איש</string>
-  <!--This is a button for answering that two nicknames refer to different people. This string -->
+  
   <string name="different_person_button">איש שונה</string>
   <string name="pending_contact_updated_toast">איש קשר ממתין עודכן</string>
-  <!--Introductions-->
+  
   <string name="introduction_onboarding_title">הכר בין אנשי הקשר שלך</string>
   <string name="introduction_onboarding_text">אפשר להכיר בין אנשי הקשר שלך אחד עם השני, כך שהם לא צריכים להיפגש פנים מול פנים כדי להתחבר ב־Zerion.</string>
   <string name="introduction_menu_item">בצע היכרות</string>
@@ -253,10 +253,7 @@
   <string name="introduction_response_accepted_received">%1$s הסכים אל ההיכרות בפני %2$s.</string>
   <string name="introduction_response_declined_received">%1$s סירב אל ההיכרות בפני %2$s.</string>
   <string name="introduction_response_declined_received_by_introducee">%1$s אומר כי %2$s סירב אל ההיכרות.</string>
-  <!--Connect via Bluetooth-->
-  <string name="menu_item_connect_via_bluetooth">התחבר באמצעות שן כחולה</string>
-  <string name="connect_via_bluetooth_title">התחבר באמצעות שן כחולה</string>
-  <!--Private Groups-->
+  
   <string name="groups_list_empty">אין קבוצות להראות</string>
   <string name="groups_list_empty_action">הקש על הצלמית + כדי ליצור קבוצה, או בקש מאנשי הקשר שלך לשתף איתך קבוצות</string>
   <string name="groups_created_by">נוצר על ידי %s</string>
@@ -289,7 +286,7 @@
   <string name="groups_dissolve_button">פרק</string>
   <string name="groups_dissolved_dialog_title">הקבוצה פורקה</string>
   <string name="groups_dissolved_dialog_message">היוצר של הקבוצה הזאת פירק אותה.\n\nאי אפשר לכתוב הודעות לקבוצה יותר וכנראה שלא ייתקבלו כל הרשומות שנכתבו.</string>
-  <!--Private Group Invitations-->
+  
   <string name="groups_invitations_title">הזמנות לקבוצה</string>
   <string name="groups_invitations_invitation_sent">הזמנת את %1$s להצטרף אל הקבוצה \"%2$s\".</string>
   <string name="groups_invitations_invitation_received">%1$s הזמין אותך להצטרף אל הקבוצה \"%2$s\".</string>
@@ -306,13 +303,13 @@
   <string name="groups_invitations_response_accepted_received">%s הסכים אל ההזמנה הקבוצתית.</string>
   <string name="groups_invitations_response_declined_received">%s סירב אל ההזמנה הקבוצתית.</string>
   <string name="sharing_status_groups">רק היוצר יכול להזמין חברי קבוצה חדשים אל הקבוצה. להלן כל חברי הקבוצה הנוכחיים.</string>
-  <!--Private Groups Revealing Contacts-->
+  
   <string name="groups_reveal_contacts">חשוף אנשי קשר</string>
   <string name="groups_reveal_visible">יחסים עם אנשי קשר גלויים לקבוצה</string>
   <string name="groups_reveal_visible_revealed_by_us">יחסים עם אנשי קשר גלויים לקבוצה (נחשפים על ידך)</string>
   <string name="groups_reveal_visible_revealed_by_contact">יחסים עם אנשי קשר גלויים לקבוצה (נחשפים על ידי %s)</string>
   <string name="groups_reveal_invisible">יחסים עם אנשי קשר אינם גלויים לקבוצה</string>
-  <!--Forums-->
+  
   <string name="no_posts">אין רשומות</string>
   <plurals name="posts">
     <item quantity="one">רשומה %d</item>
@@ -322,7 +319,7 @@
   </plurals>
   <string name="btn_reply">השב</string>
   <string name="dialog_button_leave">עזיבה</string>
-  <!--Forum Sharing-->
+  
   <string name="contacts_selected">אנשי קשר נבחרו</string>
   <string name="activity_share_toolbar_header">בחר אנשי קשר</string>
   <string name="no_contacts_selector">אין אנשי קשר להראות</string>
@@ -331,16 +328,16 @@
   <string name="sharing_status">מעמד שיתוף</string>
   <string name="shared_with">משותף עם %1$d (%2$d מחוברים)</string>
   <string name="nobody">אף אחד</string>
-  <!--Blogs-->
+  
   <string name="read_more">קרא עוד</string>
-  <!--Blog Sharing-->
-  <!--RSS Feeds-->
-  <!--Settings Profile Picture-->
+  
+  
+  
   <string name="change_profile_picture">הקש כדי לשנות את תמונת הפרופיל שלך</string>
   <string name="dialog_confirm_profile_picture_title">שנה תמונת פרופיל</string>
   <string name="dialog_confirm_profile_picture_remark">רק אנשי הקשר שלך יכולים לראות את התמונה הזו</string>
   <string name="change_profile_picture_failed_message">אנו מצטערים משהו השתבש בעת עדכון תמונת הפרופיל שלך</string>
-  <!--Settings Display-->
+  
   <string name="pref_language_title">שפה ואזור</string>
   <string name="pref_language_changed">הגדרה זו תיכנס לתוקף כשתפעיל מחדש את Zerion. אנא התנתק והפעל מחדש את Zerion.</string>
   <string name="pref_language_default">ברירת מחדל של מערכת</string>
@@ -350,9 +347,8 @@
   <string name="pref_theme_dark">כהה</string>
   <string name="pref_theme_auto">אוטומטי (שעות יום)</string>
   <string name="pref_theme_system">ברירת מחדל של מערכת</string>
-  <!--Settings Connections-->
+  
   <string name="network_settings_title">חיבורים</string>
-  <string name="bluetooth_setting">התחבר אל אנשי קשר באמצעות Bluetooth</string>
   <string name="wifi_setting">התחבר אל אנשי קשר באותה הרשת האלחוטית</string>
   <string name="tor_enable_title">התחבר אל אנשי קשר באמצעות האינטרנט</string>
   <string name="tor_enable_summary">כל החיבורים עוברים דרך רשת Tor למען פרטיות</string>
@@ -361,28 +357,28 @@
   <string name="tor_network_setting_without_bridges">השתמש ברשת Tor בלי גשרים</string>
   <string name="tor_network_setting_with_bridges">השתמש ברשת Tor עם גשרים</string>
   <string name="tor_network_setting_never">אל תתחבר אל האינטרנט</string>
-  <!--How and when Zerion will connect to Tor: E.g. "Don't connect to the Internet (in China)" or "Use Tor network with bridges (in Belarus)"-->
+  
   <string name="tor_network_setting_summary">אוטומטי: %1$s (תוך %2$s)</string>
   <string name="tor_mobile_data_title">השתמש בנתונים סלולריים</string>
   <string name="tor_only_when_charging_title">התחבר אל האינטרנט רק בעת טעינה</string>
   <string name="tor_only_when_charging_summary">משבית חיבור אינטרנט כשהמכשיר עובד על סוללה</string>
-  <!--Settings Security and Panic-->
+  
   <string name="security_settings_title">אבטחה</string>
   <string name="pref_lock_title">נעילת יישום</string>
   <string name="pref_lock_summary">השתמש במסך הנעילה של המכשיר כדי להגן על Zerion כשאתה מחובר</string>
   <string name="pref_lock_disabled_summary">כדי להשתמש במאפיין זה, הגדר לראשונה מסך נעילה עבור מכשירך</string>
   <string name="pref_lock_timeout_title">הפוגת אי־פעילות של נעילת יישום</string>
-  <!--The %s placeholder is replaced with the following time spans, e.g. 5 Minutes, 1 Hour-->
+  
   <string name="pref_lock_timeout_summary">בעת אי־שימוש ב־Zerion, נעל אותו באופן אוטומטי לאחר %s</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_1">דקה 1</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_5">5 דקות</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_15">15 דקות</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_30">30 דקות</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_60">שעה 1</string>
   <string name="pref_lock_timeout_never">לעולם לא</string>
   <string name="pref_lock_timeout_never_summary">לעולם אל תנעל את Zerion באופן אוטומטי</string>
@@ -405,7 +401,7 @@
   <string name="panic_setting_signout_summary">התנתק מן Zerion אם כפתור בהלה נלחץ</string>
   <string name="purge_setting_title">מחק חשבון</string>
   <string name="purge_setting_summary">מחק את חשבון Zerion שלך אם כפתור בהלה נלחץ. זהירות: זה ימחק לצמיתות את הזהויות, אנשי הקשר וההודעות שלך</string>
-  <!--Settings Notifications-->
+  
   <string name="notification_settings_title">התראות</string>
   <string name="notify_sign_in_title">הזכר לי להתחבר</string>
   <string name="notify_sign_in_summary">הראה תזכורת כשהטלפון מתחיל או כשהיישום יעודכן</string>
@@ -421,17 +417,17 @@
   <string name="notify_sound_setting_disabled">כלום</string>
   <string name="choose_ringtone_title">בחר צלצול</string>
   <string name="cannot_load_ringtone">לא ניתן לטעון צלצול</string>
-  <!--Conversation Settings-->
+  
   <string name="learn_more">למד עוד</string>
-  <!--Settings Actions-->
+  
   <string name="pref_category_actions">פעולות</string>
   <string name="send_feedback">שלח משוב</string>
-  <!--Link Warning-->
+  
   <string name="link_warning_title">אזהרת קישור</string>
   <string name="link_warning_intro">הקישור הבא עומד להיפתח עם יישום חיצוני.</string>
   <string name="link_warning_text">זה יכול לשמש כדי לזהות אותך. נא לחשוב האם הנך בוטח/ת באיש ששלח לך את הקישור הזה ולשקול לפתוח את הקישור עם דפדפן Tor.</string>
   <string name="link_warning_open_link">פתח קישור</string>
-  <!--Crash Reporter-->
+  
   <string name="crash_report_title">דוח קריסת Zerion</string>
   <string name="not_your_fault">זאת לא אשמתך.</string>
   <string name="please_send_report">אנא עזור לנו לבנות Zerion טוב יותר ע״י שליחת דוח קריסה אלינו.</string>
@@ -458,15 +454,15 @@
   <string name="dev_report_sent">משוב נשלח</string>
   <string name="dev_report_saved">הדוח נשמר. הוא יישלח בפעם הבאה שתתחבר אל Zerion.</string>
   <string name="dev_report_error">שגיאה: שליחת דוח נכשלה</string>
-  <!--Sign Out-->
+  
   <string name="progress_title_logout">יוצא מ־Zerion…</string>
-  <!--Screen Filters & Tapjacking-->
+  
   <string name="screen_filter_title">ציפוי מסך התגלה</string>
   <string name="screen_filter_body">יישום אחר מציירת מעל Zerion. כדי להגן על אבטחתך, Zerion לא יגיב לנגיעות כאשר יישום אחר מצייר מעל.\n\nהיישומים הבאים יכולים לצייר מעל:\n\n%1$s</string>
   <string name="screen_filter_body_api_30">יישום אחר מצייר מעל Zerion. כדי להגן על אבטחתך, Zerion לא יגיב לנגיעות כאשר יישום אחר מצייר מעל.\n\nסקור יישומים למטה כדי למצוא את היישום האחראי.</string>
   <string name="screen_filter_allow">התר ליישומים אלו לצייר מעל</string>
   <string name="screen_filter_review_apps">סקור יישומים</string>
-  <!--Permission Requests-->
+  
   <string name="permission_camera_title">הרשאת מצלמה</string>
   <string name="permission_camera_request_body">כדי לסרוק את קוד ה־QR, היישום Zerion צריך גישה אל המצלמה.</string>
   <string name="permission_location_title">הרשאת מיקום</string>
@@ -475,36 +471,25 @@
   <string name="permission_camera_location_request_body">כדי לסרוק את קוד ה־QR, היישום Zerion צריך הרשאה אל המצלמה.\n\nכדי לגלות מכשירי שן־כחולה, Zerion צריך הרשאה להשיג גישה אל מיקומך.\n\nZerion אינו מאחסן את מיקומך או משתף אותו עם אף אחד.</string>
   <string name="permission_camera_denied_body">דחית גישה אל המצלמה, אבל הוספת אנשי קשר דורשת שימוש במצלמה.\n\nאנא שקול הענקת גישה.</string>
   <string name="permission_location_denied_body">דחית גישה אל המיקום שלך, אבל Zerion צריך הרשאה זו כדי לגלות מכשירי Bluetooth.\n\nאנא שקול להעניק גישה.</string>
-  <!--App Locking-->
+  
   <string name="lock_unlock">בטל נעילת Zerion</string>
   <string name="lock_unlock_verbose">אנא הכנס PIN, דפוס או סיסמה של מכשריך כדי לבטל נעילת Zerion</string>
   <string name="lock_unlock_fingerprint_description">גע בחיישן טביעת האצבע שלך עם האצבע הרשומה כדי להמשיך</string>
   <string name="lock_unlock_password">השתמש בסיסמה</string>
   <string name="lock_is_locked">Zerion נעול</string>
   <string name="lock_tap_to_unlock">הקשה תבטל את הנעילה</string>
-  <!--Connections Screen-->
+  
   <string name="transports_help_text">Zerion יכול להתחבר אל אנשי הקשר שלך באמצעות האינטרנט, הרשת האלחוטית או Bluetooth.\n\nכל חיבורי האינטרנט עוברים דרך רשת Tor למען פרטיות.\n\nאם איש קשר ניתן להשגה באמצעות שיטות רבות, Zerion משתמש בהן במקביל.</string>
-  <!--Share app offline-->
-  <string name="hotspot_notification_channel_title">נקודה חמה של Wi-Fi</string>
-  <string name="hotspot_button_connected">הבא</string>
-  <!--The placeholder to be inserted into the string 'hotspot_manual_wifi': People can connect by %s-->
-  <!--Wi-Fi setup-->
-  <!--Download link-->
-  <!--e.g. Download Zerion 1.2.20-->
-  <string name="website_troubleshooting_title">פתרון תקלות</string>
-  <!--error handling-->
-  <!--Transfer Data via Removable Drives-->
-  <!--Screenshots-->
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
   <string name="screenshot_alice">נועה</string>
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
   <string name="screenshot_bob">יהונתן</string>
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
   <string name="screenshot_carol">דניאל</string>
-  <!--This is a message to be used in screenshots. Please use the same translation for Bob!-->
+  
   <string name="screenshot_message_1">היי יהונתן!</string>
-  <!--This is a message to be used in screenshots. Please use the same translation for Alice!-->
+  
   <string name="screenshot_message_2">היי נועה! תודה שסיפרת לי על Zerion!</string>
-  <!--This is a message to be used in screenshots.-->
+  
   <string name="screenshot_message_3">על לא דבר, מקווה שאתה אוהב אותו 😀</string>
 </resources>

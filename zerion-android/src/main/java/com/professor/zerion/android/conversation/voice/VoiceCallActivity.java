@@ -153,8 +153,13 @@ public class VoiceCallActivity extends AppCompatActivity {
 		audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
 
 		Intent intent = getIntent();
-		contactId = new ContactId(intent.getIntExtra(EXTRA_CONTACT_ID, 0));
-		contactName = intent.getStringExtra(EXTRA_CONTACT_NAME);
+		int cid = intent.getIntExtra(EXTRA_CONTACT_ID, -1);
+		if (cid == -1) {
+			finish();
+			return;
+		}
+		contactId = new ContactId(cid);
+		contactName = null;
 		isIncoming = intent.getBooleanExtra(EXTRA_IS_INCOMING, false);
 		callId = intent.getStringExtra(EXTRA_CALL_ID);
 		String callerAddress = intent.getStringExtra(EXTRA_CALLER_ADDRESS);
@@ -168,7 +173,6 @@ public class VoiceCallActivity extends AppCompatActivity {
 
 		Intent serviceIntent = new Intent(this, VoiceCallService.class);
 		serviceIntent.putExtra(EXTRA_CONTACT_ID, contactId.getInt());
-		serviceIntent.putExtra(EXTRA_CONTACT_NAME, contactName);
 		serviceIntent.putExtra(EXTRA_IS_INCOMING, isIncoming);
 		serviceIntent.putExtra(EXTRA_CALL_ID, callId);
 		serviceIntent.putExtra("auto_video", autoVideo);

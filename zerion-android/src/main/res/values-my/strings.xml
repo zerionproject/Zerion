@@ -1,6 +1,6 @@
-﻿<?xml version='1.0' encoding='UTF-8'?>
-<resources xmlns:tools="http://schemas.android.com/tools">
-  <!--Setup-->
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+  
   <string name="setup_title">Zerion မှ ကြိုဆိုပါသည်</string>
   <string name="setup_name_explanation">သင့်နာမည်ပြောင်သည် သင်တင်ထားသမျှ၏ ဘေးတွင် ပေါ်နေပါလိမ့်မည်။ သို့ပါ၍ သင့်နာမည်ပြောင်အား အကောင့်ဖွင့်ပြီးနောက် ပြောင်း၍ မရတော့ပါ။</string>
   <string name="setup_next">ရှေ့သို့</string>
@@ -32,7 +32,7 @@
   <string name="dnkm_xiaomi_lock_apps_text">လုံခြုံရေးဆက်တင်များကိုဖွင့်ရန် အောက်ပါခလုတ်ကိုနှိပ်ပါ။ \"အရှိန်မြှင့်ရန်\" ကိုနှိပ်ပြီးနောက် \"အက်ပ်များကို လော့ခ်ချပါ\" ကိုနှိပ်ပြီး Zerion ကို \"လော့ခ်ချထားသည်\" ဟု သတ်မှတ်ကြောင်း သေချာပါစေ။</string>
   <string name="dnkm_xiaomi_lock_apps_help">Zerion သည် \"Lock apps\" မျက်နှာပြင်တွင် \"Locked\" ဟုသတ်မှတ်မထားပါက၊ ၎င်းသည် နောက်တွင် run နိုင်မည်မဟုတ်ပါ။</string>
   <string name="dnkm_warning_dozed_1">Zerion သည် နောက်တွင် မသုံးနိုင်ပါ</string>
-  <!--Login-->
+  
   <string name="enter_password">စကားဝှက်</string>
   <string name="try_again">စကားဝှက်မှားနေတယ်၊ ထပ်စမ်းကြည့်ပါ</string>
   <string name="dialog_title_cannot_check_password">စကားဝှက်ကို စစ်ဆေး၍မရပါ</string>
@@ -60,17 +60,17 @@
   <string name="startup_open_database">အချက်အလက်အစုကို ပြန်ဖြည်နေသည်…</string>
   <string name="startup_migrate_database">အချက်အလက်အစုကို အဆင့်မြှင့်နေသည်…</string>
   <string name="startup_compact_database">အချက်အလက်အစုကို သိပ်သည်းစေရန်လုပ်နေသည်…</string>
-  <!--Navigation Drawer-->
+  
   <string name="nav_drawer_open_description">လမ်းညွှန်အံ ဖွင့်မည်</string>
   <string name="nav_drawer_close_description">လမ်းညွှန်အံ ပိတ်မည်</string>
   <string name="contact_list_button">အဆက်အသွယ်များ</string>
   <string name="groups_button">ကိုယ်ရေးကိုယ်တာ အဖွဲ့များ</string>
-  <!--This is part of the main menu. The app will be locked when this is tapped.-->
+  
   <string name="lock_button">အပ္ပလီကေးရှင်းကို သော့ခတ်မယ်</string>
   <string name="settings_button">ဆက်တင်များ</string>
   <string name="sign_out_button">အကောင့်ထွက်မည်</string>
   <string name="transports_onboarding_text">Zerion က သင့်အဆက်အသွယ်များနှင့် မည်သို့ချိတ်ဆက်သည်ကို ထိန်းချုပ်ရန် ဤနေရာကိုနှိပ်ပါ။</string>
-  <!--Transports: Tor-->
+  
   <string name="transport_tor">အင်တာနက်</string>
   <string name="tor_device_status_online_wifi">သင့်ဖုန်းသည် ဝိုင်ဖိုင်မှတစ်ဆင့် အင်တာနက်ရရှိနေသည်</string>
   <string name="tor_device_status_online_mobile">သင့်ဖုန်းသည် မိုဘိုင်းလ်ဒေတာမှတစ်ဆင့် အင်တာနက်ရရှိနေသည်</string>
@@ -82,10 +82,10 @@
   <string name="tor_plugin_status_disabled_mobile_data">မိုဘိုင်းလ်ဒေတာအသုံးမပြုရန် Zerion ကို ချိန်ညှိထားသည်</string>
   <string name="tor_plugin_status_disabled_battery">ဘတ္ထရီအသုံးပြုနေပါက အင်တာနက်အသုံးမပြုရန် Zerion ကို ချိန်ညှိထားသည်</string>
   <string name="tor_plugin_status_disabled_country_blocked">ဤနိုင်ငံတွင် အင်တာနက်အသုံးမပြုရန် Zerion ကို ချိန်ညှိထားသည်</string>
-  <!--Transports: Wi-Fi-->
+  
   <string name="transport_lan_long">တူညီသော ဝိုင်ဖိုင်ကွန်ရက်</string>
-  <!--Transports: Bluetooth-->
-  <!--Notifications-->
+  
+  
   <string name="reminder_notification_title">Zerion မှ အကောင့်ထွက်ထားသည်</string>
   <string name="reminder_notification_text">အကောင့်ပြန်ဝင်ရန် နှိပ်ပါ။</string>
   <string name="reminder_notification_channel_title">Zerion အကောင့်ဝင်ရန် သတိပေးချက်</string>
@@ -98,7 +98,7 @@
   <plurals name="group_message_notification_text">
     <item quantity="other">အဖွဲ့မက်ဆေ့ချ်အသစ် %d ခု။</item>
   </plurals>
-  <!--Misc-->
+  
   <string name="now">ယခု</string>
   <string name="show">ပြမည်</string>
   <string name="hide">ဖျောက်ထားမည်</string>
@@ -127,7 +127,7 @@
   <string name="status_heading">အခြေအနေ -</string>
   <string name="error">ချို့ယွင်းချက်</string>
   <string name="info">သတင်းအချက်အလက်</string>
-  <!--Contacts and Private Conversations-->
+  
   <string name="no_contacts">ပြသစရာအဆက်အသွယ် မရှိပါ</string>
   <string name="no_contacts_action">+ (အပေါင်းအိုင်ကွန်) အား နှိပ်၍ အဆက်အသွယ်ကို ထည့်သွင်းပါ</string>
   <string name="date_no_private_messages">မက်ဆေ့ချ်များ မရှိပါ။</string>
@@ -143,11 +143,11 @@
   <string name="set_contact_alias">အဆက်အသွယ်အမည်အား ပြောင်းမည်</string>
   <string name="set_contact_alias_hint">အဆက်အသွယ်အမည်</string>
   <string name="menu_item_disappearing_messages">ပျောက်ကွယ် မက်ဆေ့ချ်များ</string>
-  <!--The first placeholder will show a duration like "7 days". The second placeholder at the end will add "Tap to learn more."-->
+  
   <string name="auto_delete_msg_you_enabled">သင်၏မက်ဆေ့ချ်များသည် %1$s အကြာတွင် ပျောက်ကွယ်သွားပါမည်။ %2$s</string>
-  <!--The placeholder at the end will add "Tap to learn more."-->
+  
   <string name="auto_delete_msg_you_disabled">သင်၏ မက်ဆေ့ချ်များသည် မပျောက်ကွယ်ပါ။ %1$s</string>
-  <!--The first placeholder will show a contact's name. The second placeholder will show a duration like "7 days". The third placeholder at the end will add "Tap to learn more."-->
+  
   <string name="auto_delete_msg_contact_enabled">%1$s ၏ မက်ဆေ့ချ်များသည် %2$s အကြာတွင် ပျောက်ကွယ်သွားပါမည်။ %3$s</string>
   <plurals name="duration_minutes">
     <item quantity="other">%d မိနစ်</item>
@@ -158,7 +158,7 @@
   <plurals name="duration_days">
     <item quantity="other">%d ရက်</item>
   </plurals>
-  <!--The first placeholder will show a contact's name. The second placeholder at the end will add "Tap to learn more."-->
+  
   <string name="auto_delete_msg_contact_disabled">%1$s၏ မက်ဆေ့ချ်များသည် မပျောက်ကွယ်ပါ။ %2$s</string>
   <string name="tap_to_learn_more">နှိပ်၍ ထပ်မံ လေ့လာပါ။</string>
   <string name="auto_delete_changed_warning_title">ပျောက်ကွယ်မက်ဆေ့ချ်များ ပြောင်းလဲထားပါသည်</string>
@@ -179,7 +179,7 @@
   <string name="dialog_title_delete_contact">အဆက်အသွယ်ကို အပြီးပယ်ဖျက်ခြင်းအား အတည်ပြုမည်</string>
   <string name="dialog_message_delete_contact">ဤအဆက်အသွယ်အပြင် ၎င်းနှင့်ပြောထားသမျှမက်ဆေ့ချ်အားလုံးကို ဖယ်ရှားချင်တာ သေချာပါသလား။</string>
   <string name="contact_deleted_toast">အဆက်အသွယ်ကို ဖျက်ပြီးပါပြီ</string>
-  <!--This is shown in the action bar when opening an image in fullscreen that the user sent-->
+  
   <string name="you">သင်</string>
   <string name="save_image">ရုပ်ပုံသိမ်းဆည်းမည်</string>
   <string name="dialog_title_save_image">ရုပ်ပုံ သိမ်းဆည်းမည်လား။</string>
@@ -192,7 +192,7 @@
   <string name="dialog_message_image_support">ဤအိုင်ကွန်ကို နှိပ်ပြီး ရုပ်ပုံများကို ပူးတွဲပါ</string>
   <string name="messaging_too_many_attachments_toast">ပထမဆုံး %d ရုပ်ပုံများသာလျှင် ပို့ပါမည်</string>
   <string name="menu_contact">ဆက်သွယ်ရန်</string>
-  <!--Adding Contacts-->
+  
   <string name="add_contact_title">အနီးနားရှိ အဆက်အသွယ်အား ထည့်သွင်းမည်</string>
   <string name="add_contact_error_two_way">သင်နှစ်ယောက်လုံး၏ QR ကုဒ်များကို စကင်ဖတ်ကြပါသလား။</string>
   <string name="continue_button">ဆက်လုပ်မည်</string>
@@ -207,7 +207,7 @@
   <string name="authenticating_with_device">ဤစက် \u2026 ကို စစ်မှန်ကြောင်း စစ်ဆေးနေပါသည်</string>
   <string name="connection_error_title">သင့်ရဲ့အဆက်အသွယ်လိပ်စာနှင့် ချိတ်ဆက်လို့မရပါ</string>
   <string name="connection_error_feedback">ဤပြဿနာသည် ဆက်လက်ဖြစ်ဆဲပါက ကျေးဇူးပြု၍ အပ္ပလီကေးရှင်းတိုးတက်ရန် <a href="feedback"> တုံ့ပြန်ချက် ပေးပို့ပေးပါ </a> ။</string>
-  <!--Adding Contacts Remotely-->
+  
   <string name="add_contact_remotely_title_case">အဝေးက အဆက်အသွယ်လိပ်စာကို ထည့်သွင်းမယ်</string>
   <string name="add_contact_nearby_title">အနီးနားရှိ အဆက်အသွယ်အား ထည့်သွင်းမယ်</string>
   <string name="add_contact_remotely_title">အဝေးက အဆက်အသွယ်လိပ်စာကို ထည့်သွင်းမည်</string>
@@ -240,9 +240,9 @@
   <string name="unsupported_link">ဤလင့်ခ်သည် Zerion ဗားရှင်းအသစ်မှ ဖြစ်ပါသည်။ ကျေးဇူးပြု၍ နောက်ဆုံးပေါ်ဗားရှင်းထိ မြှင့်တင်ပြီး ပြန်၍ကြိုးစားကြည့်ပါ။</string>
   <string name="intent_own_link">သင့်ရဲ့ ကိုယ်ပိုင်လင့်ခ်ကို သင်ကိုယ်တိုင် ဖွင့်ထားပါသည်။ သင်ထည့်ချင်တဲ့ အဆက်အသွယ်လိပ်စာကို အသုံးပြုပါ။</string>
   <string name="missing_link">ကျေးဇူးပြု၍ လင့်ခ်အား ထည့်သွင်းပါ။</string>
-  <!--This is a numeral indicating the first step in a series of screens-->
+  
   <string name="step_1">၁</string>
-  <!--This is a numeral indicating the second step in a series of screens-->
+  
   <string name="step_2">၂</string>
   <plurals name="contact_added_notification_text">
     <item quantity="other">%dအဆက်အသွယ်လိပ်စာများ ထပ်ထည့်ထားသည်။</item>
@@ -251,26 +251,22 @@
   <string name="duplicate_link_dialog_title">လင့်ခ်ကို ကူးပွားမည်</string>
   <string name="duplicate_link_dialog_text_1">သင့်မှာ ဒီလင့်ခ်နဲ့ ပတ်သက်ပြီး ဆိုင်းငံ့ထားသော အဆက်အသွယ်လိပ်စာ ရှိပြီးဖြစ်သည်: %s</string>
   <string name="duplicate_link_dialog_text_1_contact">သင့်မှာ ဒီလင့်ခ်နဲ့ အဆက်အသွယ်လိပ်စာ ရှိပြီးဖြစ်သည်: %s</string>
-  <!--This is a question asking whether two nicknames refer to the same person-->
+  
   <string name="duplicate_link_dialog_text_2">%1$sနဲ့ %2$sအတူတူပဲလား။</string>
-  <!--This is a button for answering that two nicknames do indeed refer to the same person. This
-	string will be used in a dialog button, so if the translation of this string is longer than 20
-	characters, please use "Yes" instead, and use "No" for the "Different Person" button-->
+  
   <string name="same_person_button">တစ်ဦးတည်း</string>
-  <!--This is a button for answering that two nicknames refer to different people. This string
-	will be used in a dialog button, so if the translation of this string longer than 20 characters,
-	please use "No" instead, and use "Yes" for the "Same Person" button-->
+  
   <string name="different_person_button">နောက်တစ်ယောက် </string>
   <string name="duplicate_link_dialog_text_3">%1$sနှင့်%2$s တူညီသောလင့်ခ်ကို သင့်အား ပေးပို့ခဲ့သည်။ \n\n သူတို့ထဲမှ တစ်ဦးက သင့်အဆက်အသွယ်များသည် မည်သူဖြစ်သည်ကို ရှာဖွေရန် ကြိုးစားနေပေမည်။ \n\nသင်သည် အခြားသူတစ်ဦးထံမှ တူညီသောလင့်ခ်ကို ရရှိထားကြောင်း ၎င်းတို့အား မပြောပါနှင့်။</string>
   <string name="pending_contact_updated_toast">ဆိုင်းငံ့ထားသော အဆက်အသွယ်ကို အပ်ဒိတ်လုပ်ပြီး</string>
   <string name="info_both_must_enter_links">နှစ်ဦးစလုံး အချင်းချင်း လင့်ခ်များ ထည့်ရပါမည်။</string>
-  <!--Peer trust levels-->
+  
   <string name="peer_trust_level_unverified">မစိစစ်ရသေးသော အဆက်အသွယ်</string>
   <string name="peer_trust_level_verified">စိစစ်ထားပြီးသော အဆက်အသွယ်
 </string>
   <string name="peer_trust_level_ourselves">ကျွနု်ပ်ကို</string>
   <string name="peer_trust_level_stranger">သူစိမ်း</string>
-  <!--Introductions-->
+  
   <string name="introduction_onboarding_title">သင့်ရဲ့ အဆက်အသွယ်လိပ်စာများကို မိတ်ဆက်ပါ</string>
   <string name="introduction_onboarding_text">Zerion တွင် ချိတ်ဆက်နိုင်စေရန် သင်၏အဆက်အသွယ်များကို အချင်းချင်း မိတ်ဆက်ပေးပါ။</string>
   <string name="introduction_menu_item">မိတ်ဆက်ခြင်း ပြုလုပ်ပါ</string>
@@ -292,18 +288,7 @@
   <string name="introduction_response_accepted_received">%2$s နှင့် မိတ်ဆက်ခြင်းကို %1$s က လက်ခံခဲ့ပါသည်။</string>
   <string name="introduction_response_declined_received">%2$s နှင့် မိတ်ဆက်ခြင်းကို %1$s က ငြင်းဆိုခဲ့ပါသည်။</string>
   <string name="introduction_response_declined_received_by_introducee">%2$s မှ မိတ်ဆက်ခြင်းအား ငြင်းဆိုခဲ့သည်ကို %1$s မှ ပြောပါသည်။</string>
-  <!--Connect via Bluetooth-->
-  <string name="menu_item_connect_via_bluetooth">ဘလူးတုသ်နှင့် ချိတ်မည်</string>
-  <string name="connect_via_bluetooth_title">ဘလူးတုသ်မှတစ်ဆင့် ချိတ်မည်</string>
-  <string name="connect_via_bluetooth_intro">ဘလူးတုသ်ချိတ်ဆက်မှုများ အလိုအလျောက် အလုပ်မလုပ်ပါက၊ သင်သည် ကိုယ်တိုင် ချိတ်ဆက်ရန် ဤစခရင်ကို အသုံးပြုနိုင်ပါသည်။ \n\n ၎င်းကို လုပ်ဆောင်ရန်အတွက် သင့်အဆက်အသွယ်သည် အနီးအနားတွင်ရှိရန် လိုအပ်ပါသည်။ \n\n သင်နှင့် သင့်အဆက်အသွယ်နှစ်ဦးစလုံးသည် \"Start\" ကို တစ်ပြိုင်နက်တည်း နှိပ်သင့်ပါသည်။</string>
-  <string name="connect_via_bluetooth_already_discovering">ဘလူးတုသ်မှတစ်ဆင့် ချိတ်ဆက်ရန် ကြိုးစားနေပြီဖြစ်သည်။ ခဏနေ ထပ်မံစမ်းကြည့်ပါ။ </string>
-  <string name="connect_via_bluetooth_no_location_permission">တည်နေရာ သုံးခွင့်မပါဘဲ ဆက်လက် မလုပ်ဆောင်နိုင်ပါ</string>
-  <string name="connect_via_bluetooth_no_bluetooth_permission">အနီးတဝိုက်ရှိ စက်ပစ္စည်းများ ခွင့်ပြုချက်မရှိဘဲ ရှေ့ဆက်၍မရပါ။</string>
-  <string name="connect_via_bluetooth_start">ဘလူးတုသ်နှင့် ချိတ်ဆက်နေသည်...</string>
-  <string name="connect_via_bluetooth_success">ဘလူးတုသ်နှင့် အောင်မြင်စွာ ချိတ်ဆက်ပြီး</string>
-  <string name="connect_via_bluetooth_error">ဘလူးတုသ်မှ တစ်ဆင့် ချိတ်ဆက်၍ မရပါ။</string>
-  <string name="connect_via_bluetooth_error_not_supported">ဘလူးတုသ်ကို စက်က မပံ့ပိုးပါ။</string>
-  <!--Private Groups-->
+  
   <string name="groups_list_empty">ပြသစရာအဖွဲ့များမရှိ</string>
   <string name="groups_list_empty_action">+ (အပေါင်းအိုင်ကွန်) အား နှိပ်၍ အဖွဲ့ဖန်တီးပါ သို့မဟုတ် သင့် အဆက်အသွယ်များကို သင့်စီသို့ အဖွဲ့များ ဝေမျှရန် တောင်းဆိုပါ</string>
   <string name="groups_created_by">%s မှ ဖန်တီးခဲ့သည်</string>
@@ -333,7 +318,7 @@
   <string name="groups_dissolve_button">ဖျက်သိမ်းမည်</string>
   <string name="groups_dissolved_dialog_title">အဖွဲ့အား ဖျက်သိမ်းပြီးပြီဖြစ်ပါသည်</string>
   <string name="groups_dissolved_dialog_message">ဤအဖွဲ့ဖန်တီးသူသည် ဤအဖွဲ့အား ဖျက်သိမ်းခဲ့ပါသည်။ ​\n\n သင်သည် အဖွဲ့စီသို့ မက်ဆေ့ချ်များ ရေးသား၍မရနိုင်ပါ နှင့် ယခင်က ရေးပြီးသားပို့စ်များကိုလည်း မလက်ခံနိုင်လောက်ပါ။</string>
-  <!--Private Group Invitations-->
+  
   <string name="groups_invitations_title">အဖွဲ့သို့ ဖိတ်ခေါ်မှုများ</string>
   <string name="groups_invitations_invitation_sent">သင်မှ %1$s ကို  \"%2$s\" အဖွဲ့သို့ ပါဝင်ရန် ဖိတ်ခေါ်ခဲ့ပါသည်။</string>
   <string name="groups_invitations_invitation_received">%1$sမှ သင့်ကို \"%2$s\" အဖွဲ့သို့ ပါဝင်ရန် ဖိတ်ခေါ်ခဲ့ပါသည်။</string>
@@ -348,21 +333,21 @@
   <string name="groups_invitations_response_accepted_received">%s သည် အဖွဲ့လိုက်ဖိတ်ခေါ်မှုအား လက်ခံခဲ့ပါသည်။</string>
   <string name="groups_invitations_response_declined_received">%s သည် အဖွဲ့လိုက်ဖိတ်ခေါ်မှုအား ငြင်းဆိုခဲ့ပါသည်။</string>
   <string name="sharing_status_groups">ဖန်းတီးသူသာ အဖွဲ့ထဲသို့ အဖွဲ့ဝင်အသစ်များ ဖိတ်ခေါ်ဆိုနိုင်ပါသည်။ အောက်ပါစာရင်းသည် လက်ရှိအဖွဲ့ဝင်များဖြစ်ပါသည်။</string>
-  <!--Private Groups Revealing Contacts-->
+  
   <string name="groups_reveal_contacts">အဆက်အသွယ်များ ထုတ်ဖော်မည်</string>
   <string name="groups_reveal_dialog_message">ယခု နှင့် နောင်အဖွဲ့ဝင်များစီသို့ သင်သည် အဆက်အသွယ်များ ထုတ်ဖေါ်ပြရန် ရွေးနိုင်ပါသည်။ \n\n အဆက်အသွယ်များထုတ်ဖေါ်ခြင်းသည် သင့် အဖွဲ့နှင့်ချိတ်ဆက်မှုလိုင်းအား ပိုမြန်စေပြီး ပိုစိတ်ချယုံကြည်စွာဖြစ်စေပါသည်၊ အဘယ်ကြောင့်ဆိုသည်မှာ အဖွဲ့ဖန်တီးသူ လိုင်းပေါ်မရှိလျှင်လည်း သင်သည် ထုတ်ဖေါ်ထားသော အဆက်အသွယ်များနှင့် ဆက်သွယ်နိုင်ပါသည်။</string>
   <string name="groups_reveal_visible">အဆက်အသွယ်နှင့် ဆက်သွယ်မှုသည် အဖွဲ့မှ တွေ့မြင်နိုင်ပါသည်</string>
   <string name="groups_reveal_visible_revealed_by_us">အဆက်အသွယ်နှင့် ဆက်သွယ်မှုသည် အဖွဲ့မှ တွေ့မြင်နိုင်ပါသည် (သင်မှ ထုတ်ဖော်ထားခြင်းဖြစ်၍)</string>
   <string name="groups_reveal_visible_revealed_by_contact">အဆက်အသွယ်နှင့် ဆက်သွယ်မှုသည် အဖွဲ့မှ တွေ့မြင်နိုင်ပါသည် (%s မှ ထုတ်ဖော်ထားခြင်းဖြစ်၍)</string>
   <string name="groups_reveal_invisible">အဆက်အသွယ်နှင့် ဆက်သွယ်မှုကို အဖွဲ့မှ မတွေ့မြင်နိုင်ပါ</string>
-  <!--Forums-->
+  
   <string name="no_posts">ပို့စ်များမရှိ</string>
   <plurals name="posts">
     <item quantity="other">ပို့စ် %d ခု</item>
   </plurals>
   <string name="btn_reply">ပြန်ကြားမည်</string>
   <string name="dialog_button_leave">ထွက်မည်</string>
-  <!--Forum Sharing-->
+  
   <string name="contacts_selected">အဆက်အသွယ်များ ရွေးထားသည်</string>
   <string name="activity_share_toolbar_header">အဆက်အသွယ်များ ရွေးမည်</string>
   <string name="no_contacts_selector">ပြသစရာအဆက်အသွယ် မရှိပါ</string>
@@ -371,16 +356,16 @@
   <string name="sharing_status">မျှဝေခြင်း အခြေအနေ</string>
   <string name="shared_with">%1$d နှင့် မျှဝေပြီး (%2$d သည် အွန်လိုင်းပေါ်ရှိ)</string>
   <string name="nobody">မည်သူမျှ</string>
-  <!--Blogs-->
+  
   <string name="read_more">ထပ်မံဖတ်ရှုမည်</string>
-  <!--Blog Sharing-->
-  <!--RSS Feeds-->
-  <!--Settings Profile Picture-->
+  
+  
+  
   <string name="change_profile_picture">နှိပ်၍ သင့် ပရိုဖိုင်းပုံ ပြောင်းလဲပါ</string>
   <string name="dialog_confirm_profile_picture_title">ပရိုဖိုင်းပုံ ပြောင်းလဲမည်</string>
   <string name="dialog_confirm_profile_picture_remark">သင့် အဆက်အသွယ်များသာ ဤရုပ်ပုံကို တွေ့မြင်ရပါသည်</string>
   <string name="change_profile_picture_failed_message">ဝမ်းနည်းပါသည်၊ သင့် ပရိုဖိုင်းပုံကို အပ်ဒိတ်ပြုလုပ်တုန်း တစ်ခုခု မှားယွင်းသွားပါသည်။</string>
-  <!--Settings Display-->
+  
   <string name="pref_language_title">ဘာသာစကား &amp; ဒေသ</string>
   <string name="pref_language_changed">Zerion အား ပြန်လည်စတင်လျှင် ဤအပြင်အဆင်သည် အကျိုးသက်ရောက်ပါမည်။ အကောင့်မှ ထွက်ခွာ၍ Zerion အား ပြန်လည်စတင်ပေးပါ။</string>
   <string name="pref_language_default">နဂိုမူလ စနစ်</string>
@@ -389,9 +374,8 @@
   <string name="pref_theme_light">အနုရောင်</string>
   <string name="pref_theme_dark">အနက်ရောင်</string>
   <string name="pref_theme_system">နဂိုမူလ စနစ်</string>
-  <!--Settings Connections-->
+  
   <string name="network_settings_title">ချိတ်ဆက်မှုများ</string>
-  <string name="bluetooth_setting">ဘလူးတုသ်မှတစ်ဆင့် အဆက်အသွယ်များနှင့် ချိတ်ဆက်မည်</string>
   <string name="wifi_setting">တူညီသော ဝိုင်ဖိုင်လိုင်းပေါ်ရှိ အဆက်အသွယ်များနှင့် ချိတ်ဆက်မယ်</string>
   <string name="tor_enable_title">အင်တာနက်သုံး၍ အဆက်အသွယ်များနှင့် ချိတ်ဆက်မယ်</string>
   <string name="tor_enable_summary">လုံခြုံမှုအတွက် ချိတ်ဆက်မှုများသည် Tor ကွန်ယက်ပေါ်  ဖြတ်သန်းပါသည်</string>
@@ -400,28 +384,28 @@
   <string name="tor_network_setting_without_bridges">Tor ကွန်ယက်အား ချိတ်ဆက်တံတားများမပါဘဲ အသုံးပြုမည်</string>
   <string name="tor_network_setting_with_bridges">Tor ကွန်ယက်အား ချိတ်ဆက်တံတားဖြင့် အသုံးပြုမည်</string>
   <string name="tor_network_setting_never">အင်တာနက်နှင့် မချိတ်ဆက်ပါ</string>
-  <!--How and when Zerion will connect to Tor: E.g. "Don't connect to the Internet (in China)" or "Use Tor network with bridges (in Belarus)"-->
+  
   <string name="tor_network_setting_summary">အလိုအလျောက် - %1$s (%2$s တွင်းရှိလျှင်)</string>
   <string name="tor_mobile_data_title">မိုဘိုင်းလ်ဒေတာ အသုံးပြုမည်</string>
   <string name="tor_only_when_charging_title">အားသွင်းနေမှသာ အင်တာနက်နှင့် ချိတ်ဆက်မည်</string>
   <string name="tor_only_when_charging_summary">ကိရိယာက ဘတ္ထရီအသုံးပြုနေလျှင် အင်တာနက်ချိတ်ဆက်မှုကို ပိတ်ပေးပါ</string>
-  <!--Settings Security and Panic-->
+  
   <string name="security_settings_title">လုံခြုံရေး</string>
   <string name="pref_lock_title">အပ္ပလီကေးရှင်း သော့</string>
   <string name="pref_lock_summary">အကောင့်ထဲဝင်နေတုန်း Zerion ကိုကာကွယ်ရန် စက်ကိရိယာ၏ စကင်ရင်သော့အား အသုံးပြုပါ</string>
   <string name="pref_lock_disabled_summary">ဤအင်္ဂါရပ်အားသုံးရန် သင့်စက်အတွက် စကင်သော့တပ်ဆင်ပေးပါ</string>
   <string name="pref_lock_timeout_title">အပ္ပလီကေးရှင်းသော့ လှုပ်ရှားမှုမရှိစွာ ခေတ္တရပ်ဆိုင်းခြင်း</string>
-  <!--The %s placeholder is replaced with the following time spans, e.g. 5 Minutes, 1 Hour-->
+  
   <string name="pref_lock_timeout_summary">Zerion ကိုအသုံးမပြုလျှင် %s အကြာတွင် သော့ခတ်လိုက်ပါ</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_1">၁ မိနစ်</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_5">၅ မိနစ်</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_15">၁၅ မိနစ်</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_30">၃၀ မိနစ်</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_60">၁ နာရီ</string>
   <string name="pref_lock_timeout_never">ဘယ်တော့မှ</string>
   <string name="pref_lock_timeout_never_summary">Zerion အား အလိုအလျောက် ဘယ်တော့မှ သော့မခတ်ပါနှင့်</string>
@@ -444,7 +428,7 @@
   <string name="panic_setting_signout_summary">ထိတ်လန့်ခလုတ် အားနှိပ်ခံရလျှင် Zerion အကောင့်မှ ထွက်ခွာမည်</string>
   <string name="purge_setting_title">အကောင့် ဖျက်သိမ်းမည်</string>
   <string name="purge_setting_summary">ထိတ်လန့်ခလုတ်အား နှိပ်ခံရလျှင် Zerion အကောင့်ကို ဖျက်သိမ်းမည်။ သတိ၊ ဤလုပ်ခြင်းဖြင့် သင့် အထောက်အထားများ၊ အဆက်အသွယ်များ နှင့် မက်ဆေ့ချ်များ ပါဖျက်သိမ်းခံရပါမည်။</string>
-  <!--Settings Notifications-->
+  
   <string name="notification_settings_title">အသိပေးချက်များ</string>
   <string name="notify_sign_in_title">အကောင့်ဝင်ရန် သတိပေးပါ</string>
   <string name="notify_sign_in_summary">ဖုန်းပွင့်သောအခါ (သို့) အက်ပ်ကို အပ်ဒိတ်လုပ်ပြီးသောအခါ သတိပေးချက်တစ်ခု ပြပါ</string>
@@ -460,7 +444,7 @@
   <string name="notify_sound_setting_disabled">ဘာမှမရှိ</string>
   <string name="choose_ringtone_title">ဖုန်းမြည်သံရွေးမည်</string>
   <string name="cannot_load_ringtone">ဖုန်းမြည်သံမဖွင့်နိုင်ပါ</string>
-  <!--Mailbox-->
+  
   <string name="mailbox_settings_title">စာတိုက်ပုံး</string>
   <string name="mailbox_setup_title">စာတိုက်ပုံး စနစ်ထည့်သွင်းခြင်း</string>
   <string name="mailbox_setup_intro">သင်အော့ဖ်လိုင်းဖြစ်နေချိန်တွင် သင့်အဆက်အသွယ်များကို မက်ဆေ့ခ်ျများပေးပို့ရန် စာတိုက်ပုံးကို ဖွင့်ပေးသည်။ သင်အွန်လိုင်းပေါ်မလာမချင်း စာတိုက်ပုံး သည် သင့်မက်ဆေ့ဂျ်များကို လက်ခံရရှိပြီး ၎င်းတို့ကို သိမ်းဆည်းပါမည်။\n
@@ -468,10 +452,8 @@
   <string name="mailbox_setup_download">ပထမဦးစွာ၊ Google Play တွင် \"Zerion စာတိုက်ပုံး\" ကို ရှာဖွေခြင်းဖြင့် အခြားစက်ပစ္စည်းပေါ်တွင် စာတိုက်ပုံး အက်ပ်ကို ထည့်သွင်းပါ။\n
 		\nထို့နောက် စာတိုက်ပုံး အက်ပ်မှပြသထားသည့် QR ကုဒ်ကို စကင်န်ဖတ်ခြင်းဖြင့် သင်၏ စာတိုက်ပုံးကို Zerion နှင့် ချိတ်ဆက်ပါ။</string>
   <string name="mailbox_setup_download_link">ဒေါင်းလုဒ်လင့်ခ်ကို မျှဝေပါ</string>
-  <string name="mailbox_setup_button_scan">စာတိုက်ပုံး QR ကုဒ်ကို စကင်န်ဖတ်ပါ</string>
-  <string name="permission_camera_qr_denied_body">သင်သည် ကင်မရာအသုံးပြုခွင့်ကို ငြင်းပယ်ထားသော်လည်း QR ကုဒ်ကို စကင်န်ဖတ်ရန် ကင်မရာကို အသုံးပြုရန် လိုအပ်ပါသည်။ \n\nကျေးဇူးပြု၍ ဝင်ရောက်ခွင့်ပြုရန် စဉ်းစားပါ။</string>
   <string name="mailbox_setup_connecting">စာတိုက်ပုံးသို့ ချိတ်ဆက်နေသည်...</string>
-  <!--This string is shown when connecting to a Mailbox for the first time. The placeholder will be replaced with a duration, e.g. "2 minutes".-->
+  
   <string name="mailbox_setup_connecting_info">%1sဤအထိ ကြာနိုင်သည်။</string>
   <string name="mailbox_setup_already_paired_title">Mailboxကို လင့်ခ်ချိတ်ထားပြီးသား</string>
   <string name="mailbox_setup_already_paired_description">သင့်အခြားစက်ပစ္စည်းရှိ Mailbox ကို လင့်ခ်ဖြုတ်ပြီး ထပ်စမ်းကြည့်ပါ။</string>
@@ -494,9 +476,9 @@
   <string name="mailbox_status_mailbox_too_old_title">Mailbox သည်အရမ်းဟောင်းနေပါပြီ</string>
   <string name="mailbox_status_mailbox_too_old_message">သင်၏ Mailbox ကို အက်ပ်၏ နောက်ဆုံးဗားရှင်းသို့ အပ်ဒိတ်လုပ်ပြီး ထပ်စမ်းကြည့်ပါ။</string>
   <string name="mailbox_status_check_button">ချိတ်ဆက်ခြင်းကို စစ်ဆေးပါ</string>
-  <!--Example for string substitution: Last connection: 3min ago-->
+  
   <string name="mailbox_status_connected_info">နောက်ဆုံးချိတ်ဆက်မှု- %s</string>
-  <!--Indicates that there never was a connection to the mailbox. Last connection: Never-->
+  
   <string name="mailbox_status_connected_never">ဘယ်တော့မှ</string>
   <string name="mailbox_status_unlink_button">လင့်ခ်ဖြုတ်ပါ
 </string>
@@ -530,7 +512,7 @@
   <string name="mailbox_error_wizard_info1_1_4">Mailbox စက်ပစ္စည်းသည် အင်တာနက်သို့ မှန်ကန်စွာချိတ်ဆက်ထားကြောင်း စစ်ဆေးပါ။\n\n Mailbox ကိရိယာရှိ နာရီသည် မှန်ကန်သောအချိန်၊ ရက်စွဲနှင့် အချိန်ဇုန်ကို ပြသကြောင်းစစ်ဆေးပါ။\n\nMailbox နှင့် Zerion အက်ပ်များကို နောက်ဆုံးဗားရှင်းသို့ အပ်ဒိတ်လုပ်ထားကြောင်း စစ်ဆေးပါ။\ n\nသင်၏ Mailbox နှင့် Zerion စက်များကို ပြန်လည်စတင်ပြီး ထပ်စမ်းကြည့်ပါ။</string>
   <string name="mailbox_error_wizard_info2">သင်သည် စက်ပစ္စည်းကို အသုံးပြုခွင့်ရသည့်အခါ ဤဖန်သားပြင်သို့ ပြန်လာပါ။</string>
   <string name="mailbox_error_wizard_info3">အောက်ပါခလုတ်ကို အသုံးပြု၍ သင့်Mailbox ကို လင့်ခ်ဖြုတ်ပါ။\n\nသင့်Mailboxဟောင်းကို လင့်ခ်ဖြုတ်ပြီးနောက်၊ သင်သည် Mailbox အသစ်ကို အချိန်မရွေး သတ်မှတ်နိုင်သည်။</string>
-  <!--About-->
+  
   <string name="about_title">အကြောင်း</string>
   <string name="zerion_version">Zerion ဗားရှင်း - %s</string>
   <string name="tor_version">Tor ဗားရှင်း - %s</string>
@@ -539,9 +521,9 @@
   <string name="zerion_source_code">\u2022 <a href="">ဆိုစ့်ကုဒ်</a></string>
   <string name="zerion_changelog">\u2022 <a href="">ပြောင်းလဲမှုမှတ်တမ်း</a></string>
   <string name="zerion_privacy_policy">\u2022 <a href="">ကိုယ်ရေးကိုယ်တာမူဝါဒ</a></string>
-  <!--Here translators can add their names or Transifex usernames(eg "Thanks to all the contributors at the Localization Lab, especially Tom, Matthew and Jerry")-->
+  
   <string name="translator_thanks">Localization Lab မှ ပံ့ပိုးကူညီသူများအားလုံးကို ကျေးဇူးတင်ပါသည်။</string>
-  <!--Conversation Settings-->
+  
   <string name="disappearing_messages_title">ပျောက်ကွယ် မက်ဆေ့ချ်များ</string>
   <string name="disappearing_messages_explanation_long">၎င်းအပြင်အဆင်ကို ဖွင့်ထားလျှင်
 		ဤစကားပြောဆိုမှုထဲရှိ မက်ဆေ့ချ်အသစ်များသည် 7\u00A0 ရက်အကြာတွင် အလိုအလျောက် ပျောက်ကွယ်သွားပါမည်။
@@ -554,17 +536,17 @@
 		 သင်၏အဆက်အသွယ်လည်း ၎င်းအပြင်အဆင်ကို ၎င်းတို့ နှစ်ဦးစလုံးအတွက် ပြောင်းလဲနိုင်ပါသည်။</string>
   <string name="learn_more">ထပ်မံလေ့လာမည်</string>
   <string name="disappearing_messages_summary">၎င်းစကားပြောဆိုမှုထဲရှိ နောင်မက်ဆေ့ချ်များကို 7\u00A0 ရက်အကြာတွင် အလိုအလျောက် ပျောက်ကွယ်မည်။</string>
-  <!--Settings Actions-->
+  
   <string name="pref_category_actions">လုပ်ဆောင်မှုများ</string>
   <string name="share_app_link">ဒေါင်းလုဒ်လင့်ခ်ကို မျှဝေမည်</string>
   <string name="share_app_link_text">Zerion ကို ဒေါင်းလုဒ်လုပ်လုပ်ရန်နေရာ - %s</string>
   <string name="send_feedback">တုံ့ပြန်ချက် ပေးပို့မည်</string>
-  <!--Link Warning-->
+  
   <string name="link_warning_title">လင့်ခ် သတိပေးချက်</string>
   <string name="link_warning_intro">သင်သည် ဖေါ်ပြပါလင့်ခ်အား ပြင်ပ အပ္ပလီကေးရှင်းဖြင့် ဖွင့်တော့ပါမည်။</string>
   <string name="link_warning_text">၎င်းအရာဖြင့် သင့်ကို ဖေါ်ထုတ်နိုင်ပါသည်။ သင့်စီသို့ ပေးပို့ခဲ့သော ပုဂ္ဂိုလ်အား သင်ယုံကြည်နိုင်ခြင်း ရှိမရှိအကဲဖြတ်၍ Tor ဘရောက်ဇာနှင့် ဖွင့်ရန် စဥ်းစားပါ။</string>
   <string name="link_warning_open_link">လင့်ခ်ဖွင့်မည်</string>
-  <!--Crash Reporter-->
+  
   <string name="crash_report_title">Zerion ပျက်ယွင်းမှုတိုင်ကြားခြင်း</string>
   <string name="zerion_crashed">ဝမ်းနည်းပါတယ်၊ Zerion ပျက်သွားပါပြီ</string>
   <string name="not_your_fault">သင့်အမှားမဟုတ်ပါ။</string>
@@ -595,15 +577,15 @@
   <string name="dev_report_sent">တုံ့ပြန်ချက် ပေးပို့ပြီး</string>
   <string name="dev_report_saved">တိုင်ကြားစာ သိမ်းဆည်းပြီး။ နောက်တစ်ကြိမ် သင် Zerion ထဲသို့ လော့အင်ဝင်လျှင် ပေးပို့လိုက်ပါမည်။</string>
   <string name="dev_report_error">ပျက်ကွက်မှု - တိုင်ကြားစာ ပေးပို့ခြင်း မအောင်မြင်ပါ</string>
-  <!--Sign Out-->
+  
   <string name="progress_title_logout">Zerion မှ အကောင့်ထွက်နေသည်…</string>
-  <!--Screen Filters & Tapjacking-->
+  
   <string name="screen_filter_title">စကင်ရင်အပေါ်လွှာ တွေ့ရှိထားပါသည်</string>
   <string name="screen_filter_body">အခြားအပ္ပလီကေးရှင်းသည် Zerion ကို ကျော်လွှား၍ သုံးစွဲနေပါသည်။ သင့်လုံခြုံရေးကို စောင့်ရှောက်ရန် အခြားအပ္ပလီကေးရှင်းမှ ကျော်လွှား၍ သုံးစွဲနေတုန်း Zerion မှ​ နှိပ်ပွတ်မှုများကို မတုံ့ပြန်ပါ။ \n\n အောက်ပါအပ္ပလီကေးရှင်းများသည် ကျော်လွှား၍ သုံးစွဲနေနိုင်ပါသည် - \n\n %1$s</string>
   <string name="screen_filter_body_api_30">အခြားအပ္ပလီကေးရှင်းသည် Zerion ကို ကျော်လွှား၍ သုံးစွဲနေပါသည်။ သင့်လုံခြုံရေးကို စောင့်ရှောက်ရန် အခြားအပ္ပလီကေးရှင်းမှ ကျော်လွှား၍ သုံးစွဲနေတုန်း Zerion မှ​ နှိပ်ပွတ်မှုများကို မတုံ့ပြန်ပါ။ \n\n အောက်ပါအပ္ပလီကေးရှင်းစာရင်းအား သုံးသပ်၍ တရားခံ အပ္ပလီကေးရှင်းအား ရှာဖွေပါ။</string>
   <string name="screen_filter_allow">ဤအပ္ပလီကေးရှင်းများ အပေါ်မှ ဆွဲရန် ခွင့်ပြုမည်</string>
   <string name="screen_filter_review_apps">အပ္ပလီကေးရှင်းများ သုံးသပ်မည်</string>
-  <!--Permission Requests-->
+  
   <string name="permission_camera_title">ကင်မရာသုံးခွင့်</string>
   <string name="permission_camera_request_body">QR ကုဒ်အား စကင်ဖတ်ရန် Zerion မှ ကင်မရာသုံးခွင့်လိုအပ်ပါသည်။</string>
   <string name="permission_location_title">တည်နေရာသုံးခွင့်</string>
@@ -611,90 +593,20 @@
   <string name="permission_location_request_body">ဘလူးတုသ် စက်ပစ္စည်းများ ရှာဖွေရန် Zerion မှ သင့် တည်နေရာသုံးခွင့် လိုအပ်ပါသည်။ \n\n Zerion မှ သင့် တည်နေရာအား သိမ်းဆည်းခြင်းနှင့် မည်သူစီသို့ မျှဝေခြင်း မပြုလုပ်ပါ။</string>
   <string name="permission_camera_location_title">ကင်မရာ နှင့် တည်နေရာ</string>
   <string name="permission_camera_location_request_body">QR ကုဒ် စကင်ဖတ်ရန် Zerion မှ ကင်မရာသုံးခွင့် လိုအပ်ပါသည်။ \n\n ဘလူးတုသ် စက်ပစ္စည်းများ ရှာဖွေရန် Zerion မှ သင့် တည်နေရာသုံးခွင့် လိုအပ်ပါသည်။ \n\n Zerion မှ သင့် တည်နေရာအား သိမ်းဆည်းခြင်းနှင့် မည်သူစီသို့ မျှဝေခြင်း မပြုလုပ်ပါ။</string>
-  <string name="permission_camera_bluetooth_title">ကင်မရာနှင့် အနီးနားရှိ စက်များ</string>
-  <string name="permission_camera_bluetooth_request_body">QR ကုဒ်ကို စကင်န်ဖတ်ရန်၊ Zerion သည် ကင်မရာသို့ ဝင်ရောက်ခွင့် လိုအပ်ပါသည်။\n\nဘလူးတုသ်ကိရိယာများကို ရှာဖွေရန်၊ Zerion သည် အနီးနားရှိ စက်များနှင့် ချိတ်ဆက်ရန် ခွင့်ပြုချက် လိုအပ်ပါသည်။</string>
   <string name="permission_camera_denied_body">သင်မှ ကင်မရာသုံးခွင့် ငြင်းပယ်ခဲ့ပါသည်၊ သို့သော်လည်း အဆက်အသွယ်များပေါင်းထည့်ရန် ကင်မရာသုံးခွင့် လိုအပ်ပါသည်။ \n\n ကျေးဇူးပြု၍ သုံးခွင့်ပေးရန် စဥ်းစားပေးပါ။</string>
   <string name="permission_location_denied_body">သင်မှ တည်နေရာသုံးခွင့် ငြင်းပယ်ခဲ့ပါသည်၊ သို့သော်လည်း ဘလူးတုသ်ရှာဖွေရန် Zerion မှ ဤသုံးခွင့် လိုအပ်ပါသည်။ \n\n ကျေးဇူးပြု၍ သုံးခွင့်ပေးရန် စဥ်းစားပေးပါ။</string>
   <string name="permission_location_setting_title">နေရာ အပြင်အဆင်</string>
   <string name="permission_location_setting_body">သင့်စက်၏ နေရာအပြင်အဆင်ကို ဖွင့်ထားမှသာလျှင် အခြားစက်များမှ ဘလူးတုသ်ဖြင့် ရှာဖွေနိုင်ပါမည်။ ဆက်လက်ရန် နေရာသုံးခွင့် ဖွင့်ထားပေးပါ။ နောက်မှ ပြန်ပိတ်လို့ရပါသည်။</string>
-  <string name="permission_location_setting_hotspot_body">Wi-Fi ဟော့စပေါ့ဖန်တီးရန် သင့်စက်ပစ္စည်း၏ တည်နေရာဆက်တင်ကို ဖွင့်ရပါမည်။ ရှေ့ဆက်ရန် တည်နေရာကို ဖွင့်ပါ။ နောက်မှ ပြန်ပိတ်နိုင်ပါတယ်။</string>
   <string name="permission_location_setting_button">နေရာ ဖွင့်သုံးမည်</string>
-  <string name="permission_bluetooth_title">အနီးနားရှိ စက်ပစ္စည်းများ ခွင့်ပြုချက်</string>
-  <string name="permission_bluetooth_body">ဘလူးတုသ် ဆက်သွယ်ရေးကို အသုံးပြုရန်၊ Zerion သည် အနီးနားရှိ စက်များနှင့် ချိတ်ဆက်ရန် ခွင့်ပြုချက် လိုအပ်ပါသည်။</string>
-  <string name="permission_bluetooth_denied_body">သင်သည် အနီးနားရှိ စက်များကို အသုံးပြုခွင့်ကို ငြင်းပယ်ထားသော်လည်း Zerion သည် Bluetooth ကို အသုံးပြုရန် ဤခွင့်ပြုချက် လိုအပ်ပါသည်။\n\nကျေးဇူးပြု၍ အသုံးပြုခွင့်ပေးရန် စဉ်းစားပါ။</string>
-  <!--App Locking-->
   <string name="lock_unlock">Zerion သော့ဖွင့်မယ်</string>
   <string name="lock_unlock_verbose">Zerion သော့ဖွင့်ရန် သင့် စက်၏ ပင်နံပါတ်၊ ကုဒ်ပုံစံ သို့မဟုတ် စကားဝှက်အား ရိုက်ထည့်ပေးပါ</string>
   <string name="lock_unlock_fingerprint_description">ဆက်လက်ရန် လက်ဗွေမှတ်ထားသော လက်ချောင်းဖြင့် လက်ဗွေမှတ်နေရာပေါ်နှိပ်ပါ</string>
   <string name="lock_unlock_password">စကားဝှက်အား အသုံးပြုပါ</string>
   <string name="lock_is_locked">Zerion အားသော့ခတ်ထားပါသည်</string>
   <string name="lock_tap_to_unlock">နှိပ်၍ သော့ဖွင့်မယ်</string>
-  <!--Connections Screen-->
+  
   <string name="transports_help_text">Zerion သည် သင့်အဆက်အသွယ်များကို အင်တာနက်၊ ဝိုင်ဖိုင်၊ သို့မဟုတ် ဘလူးတုသ် မှတစ်ဆင့် ချိတ်ဆက်နိုင်ပါသည်။ \n\n အင်တာနက်ချိတ်ဆက်မှုအားလုံးသည် လုံခြုံရေးအတွက် Tor ကွန်ယက်မှတစ်ဆင့် ဖြတ်သန်းပါသည်။ \n\n အဆက်အသွယ်တစ်ဦးကို နည်းမျိုးစုံနှင့် ဆက်သွယ်နိုင်ခဲ့လျှင် Zerion သည် နည်းမျိုးစုံအား တစ်ပြိုင်နက်တည်း အသုံးပြုနေပါသည်။</string>
-  <!--Share app offline-->
-  <string name="hotspot_title">ဤအက်ပ်ကို အော့ဖ်လိုင်းမျှဝေမည်</string>
-  <string name="hotspot_intro">သင့်ဖုန်း၏ ဝိုင်ဖိုင်ကို အသုံးပြုခြင်းဖြင့် အင်တာနက်ချိတ်ဆက်မှုမရှိဘဲ အနီးနားရှိ လူတစ်ဦးနှင့် မျှဝေပါ။ \n\n သင့်ဖုန်းသည် ဝိုင်ဖိုင်ဟော့စပေါ့တစ်ခု စတင်ပါမည်။ အနီးနားရှိလူများသည် ဟော့စပေါ့သို့ ချိတ်ဆက်နိုင်ပြီး သင့်ဖုန်းမှ Zerion အက်ပ်ကို ဒေါင်းလုဒ် လုပ်နိုင်ပါသည်။</string>
-  <string name="hotspot_button_start_sharing">hotspot ကို စတင်ပါ</string>
-  <string name="hotspot_button_stop_sharing">hotspot ကို ရပ်ပါ</string>
-  <string name="hotspot_progress_text_start">hotspot ကို တည်ဆောက်နေသည်...</string>
-  <string name="hotspot_notification_channel_title">ဝိုင်ဖိုင် ဟော့စပေါ့</string>
-  <string name="hotspot_notification_title">Zerion အော့ဖ်လိုင်း မျှဝေခြင်း</string>
-  <string name="hotspot_button_connected">ရှေ့သို့</string>
-  <string name="permission_hotspot_location_request_body">ဝိုင်ဖိုင်ဟော့စပေါ့ ဖန်တီးရန်၊ Zerion သည် သင့်တည်နေရာကို ဝင်ရောက်အသုံးပြုရန် ခွင့်ပြုချက် လိုအပ်ပါသည်။ \n\n Zerion သည် သင့်တည်နေရာကို သိမ်းဆည်းထားခြင်း သို့မဟုတ် ၎င်းကို မည်သူနှင့်မျှ မမျှဝေပါ။</string>
-  <string name="permission_hotspot_location_request_precise_body">Wi-Fi ဟော့စပေါ့တစ်ခုဖန်တီးရန်၊ Zerion သည် သင်၏တိကျသောတည်နေရာကို ဝင်ရောက်အသုံးပြုရန် ခွင့်ပြုချက်လိုအပ်ပါသည်။\n\nZerion သည် သင့်တည်နေရာကို သိမ်းဆည်းထားခြင်း သို့မဟုတ် ၎င်းကိုမည်သူနှင့်မျှ မမျှဝေပါ။</string>
-  <string name="permission_hotspot_location_denied_body">သင့်တည်နေရာသို့ ဝင်ရောက်ခွင့်ကို သင်ငြင်းဆိုထားသော်လည်း Zerion သည် ဝိုင်ဖိုင်ဟော့စပေါ့တစ်ခု ဖန်တီးရန် ဤခွင့်ပြုချက် လိုအပ်ပါသည်။ \n\n ကျေးဇူးပြု၍ အသုံးပြုခွင့်ပေးရန် စဉ်းစားပါ။</string>
-  <string name="permission_hotspot_location_denied_precise_body">သင်သည် သင်၏တိကျသောတည်နေရာကိုအသုံးပြုခွင့်ကို ငြင်းပယ်ထားသော်လည်း Zerion သည် Wi-Fi ဟော့စပေါ့တစ်ခုဖန်တီးရန် ဤခွင့်ပြုချက်လိုအပ်ပါသည်။\n\nကျေးဇူးပြု၍ အသုံးပြုခွင့်ပေးရန် စဉ်းစားပါ။</string>
-  <string name="permission_hotspot_nearby_wifi_request_body">Wi-Fi ဟော့စပေါ့ ဖန်တီးရန်၊ Zerion သည် အနီးနားရှိ စက်များကို အသုံးပြုခွင့် လိုအပ်ပါသည်။</string>
-  <string name="permission_hotspot_nearby_wifi_denied_body">သင်သည် အနီးတစ်ဝိုက်ရှိ စက်ပစ္စည်းများသို့ ဝင်သုံးခွင့်ကို ငြင်းပယ်ထားသော်လည်း Zerion သည် Wi-Fi ဟော့စပေါ့တစ်ခု ဖန်တီးရန် ဤခွင့်ပြုချက် လိုအပ်ပါသည်။\n\nကျေးဇူးပြု၍ အသုံးပြုခွင့်ပေးရန် စဉ်းစားပါ။</string>
-  <string name="wifi_settings_title">ဝိုင်ဖိုင်ဆက်တင်</string>
-  <string name="wifi_settings_request_enable_body">ဝိုင်ဖိုင်ဟော့စပေါ့ ဖန်တီးရန်၊ Zerion သည် ဝိုင်ဖိုင်ကို အသုံးပြုရန် လိုအပ်သည်။ ၎င်းကိုဖွင့်ပါ။</string>
-  <string name="hotspot_tab_manual">လမ်းညွှန်စာအုပ်</string>
-  <!--The placeholder to be inserted into the string 'hotspot_manual_wifi': People can connect by %s-->
-  <!--Wi-Fi setup-->
-  <string name="hotspot_manual_wifi">သင့်ဖုန်းသည် ဝိုင်ဖိုင်ဟော့စပေါ့ကို ပံ့ပိုးပေးနေသည်။ Zerion ကို ဒေါင်းလုဒ် လုပ်လိုသူများသည် အောက်ဖော်ပြပါ သေးစိတ်အချက်အလက်များကို အသုံးပြု၍ သို့မဟုတ် ၎င်းတို့၏ စက်ပစ္စည်း၏ ဝိုင်ဖိုင်ဆက်တင်များတွင် %sထည့်သွင်းခြင်းဖြင့် ဟော့စပေါ့သို့ ချိတ်ဆက်နိုင်ပါသည်။ ဟော့စပေါ့သို့ ချိတ်ဆက်ပြီးပါက \'Next\' ကိုနှိပ်ပါ။</string>
-  <string name="hotspot_manual_wifi_ssid">ကွန်ရက်အမည်</string>
-  <string name="hotspot_qr_wifi">သင့်ဖုန်းသည် ဝိုင်ဖိုင်ဟော့စပေါ့ကို ပံ့ပိုးပေးနေသည်။ Zerion ကို ဒေါင်းလုဒ်လုပ်လိုသူများသည် ဤ QR ကုဒ်ကိုစကင်န်ဖတ်ခြင်းဖြင့် ဟော့စပေါ့သို့ ချိတ်ဆက်နိုင်သည်။ ဟော့စပေါ့သို့ ချိတ်ဆက်ပြီးပါက \'Next\' ကိုနှိပ်ပါ။</string>
-  <string name="hotspot_no_peers_connected">ချိတ်ဆက်ထားသော စက်များမရှိပါ</string>
-  <plurals name="hotspot_peers_connected">
-    <item quantity="other">%sစက်ပစ္စည်းများကို ချိတ်ဆက်ထားသည်</item>
-  </plurals>
-  <!--Download link-->
-  <string name="hotspot_manual_site">သင့်ဖုန်းသည် ဝိုင်ဖိုင်ဟော့စပေါ့ကို ပံ့ပိုးပေးနေသည်။ ဝိုင်ဖိုင်ဟော့စပေါ့သို့ %sချိတ်ဆက်ထားသူများသည် ဝဘ်ဘရောက်ဆာတွင် အောက်ပါလင့်ခ်ကို ရိုက်ထည့်ခြင်းဖြင့် Zerion ကို ဒေါင်းလုဒ် လုပ်နိုင်သည်။</string>
-  <string name="hotspot_manual_site_address">လိပ်စာ (URL)</string>
-  <string name="hotspot_qr_site">သင့်ဖုန်းသည် ဝိုင်ဖိုင်ဟော့စပေါ့ကို ပံ့ပိုးပေးနေသည်။ ဟော့စပေါ့သို့ ချိတ်ဆက်ထားသူများသည် ဤ QR ကုဒ်ကို စကင်န်ဖတ်ခြင်းဖြင့် Zerion ကို ဒေါင်းလုဒ်လုပ်နိုင်ပါသည်။</string>
-  <!--e.g. Download Zerion 1.2.20-->
-  <string name="website_download_title_1">Zerion ကိုဒေါင်းလုဒ်လုပ်ပါ။ %s</string>
-  <string name="website_download_intro_1">အနီးတစ်ဝိုက်ရှိ တစ်စုံတစ်ဦးက Zerion ကို သင်နှင့် မျှဝေခဲ့သည်။</string>
-  <string name="website_download_button">Zerion ကိုဒေါင်းလုဒ်လုပ်ပါ။</string>
-  <string name="website_download_outro">ဒေါင်းလုဒ်ပြီးပါက ဒေါင်းလုဒ်လုပ်ထားသော ဖိုင်ကိုဖွင့်ပြီး ထည့်သွင်းပါ။</string>
-  <string name="website_troubleshooting_title">ပြဿနာရှာဖွေပြင်ဆင်ခြင်း</string>
-  <string name="website_troubleshooting_1">အက်ပ်ကို သင်ဒေါင်းလုဒ် မလုပ်နိုင်ပါက အခြား ဝဘ်ဘရောက်ဆာ အက်ပ်ဖြင့် ၎င်းကို စမ်းကြည့်ပါ။</string>
-  <string name="website_troubleshooting_2_old">ဒေါင်းလုဒ်လုပ်ထားသောအက်ပ်ကို ထည့်သွင်းရန်၊ စနစ်ဆက်တင်များတွင် \"အမည်မသိရင်းမြစ်များ\" မှ အက်ပ်များကို တပ်ဆင်ခွင့်ပြုရန် လိုအပ်နိုင်သည်။ ထို့နောက်တွင် သင်သည် အက်ပ်ကို ထပ်မံဒေါင်းလုဒ်လုပ်ရန် လိုအပ်နိုင်သည်။ အက်ပ်ကိုထည့်သွင်းပြီးနောက် \"အမည်မသိရင်းမြစ်များ\" ဆက်တင်ကို ပိတ်ရန် အကြံပြုအပ်ပါသည်။</string>
-  <string name="website_troubleshooting_2_new">ဒေါင်းလုဒ်လုပ်ထားသောအက်ပ်ကို ထည့်သွင်းရန်၊ သင့်ဘရောက်ဆာသည် အမည်မသိအက်ပ်များကို ထည့်သွင်းခွင့်ပြုရန် လိုအပ်နိုင်သည်။ အက်ပ်ကို ထည့်သွင်းပြီးနောက်၊ အမည်မသိအက်ပ်များကို ထည့်သွင်းရန် ဘရောက်ဆာ၏ ခွင့်ပြုချက်ကို ဖယ်ရှားရန် အကြံပြုအပ်ပါသည်။</string>
-  <string name="hotspot_help_wifi_title">ဝိုင်ဖိုင်သို့ ချိတ်ဆက်ရာတွင် ပြဿနာများ -</string>
-  <string name="hotspot_help_wifi_1">ဖုန်းနှစ်မျိုးလုံးတွင် ဝိုင်ဖိုင်ကို ပိတ်ထားပြီး ပြန်ဖွင့်ကြည့်ပါ။ ထပ်လုပ်ကြည့်ပါ။</string>
-  <string name="hotspot_help_wifi_2">သင့်ဖုန်းတွင် ဝိုင်ဖိုင်တွင် အင်တာနက်မရှိဟု ပြလာပါက၊ မည်သို့ပင်ဖြစ်စေ ချိတ်ဆက်လိုကြောင်း အသိပေးပါ။</string>
-  <string name="hotspot_help_wifi_3">ဝိုင်ဖိုင်ဟော့စပေါ့ကို အသုံးပြုနေသည့် ဖုန်းကို ပြန်လည်စတင်ပါ၊ ထို့နောက် Zerion ကို စတင်ပြီး ထပ်မံမျှဝေကြည့်ပါ။</string>
-  <string name="hotspot_help_site_title">စက်အတွင်းရှိ ဝဘ်ဆိုက်သို့ ဝင်ရောက်ကြည့်ရှုရာတွင် ပြဿနာများ -</string>
-  <string name="hotspot_help_site_1">သင်ပြထားသည့်အတိုင်း လိပ်စာအတိအကျကို ထည့်သွင်းထားကြောင်း နှစ်ခါ စစ်ဆေးပါ။ သေးငယ်တဲ့ ချို့ယွင်းချက်က ပျက်သွားနိုင်ပါသည်။</string>
-  <string name="hotspot_help_site_2">ဆိုက်ကိုဝင်ရောက်ရန် ကြိုးစားသောအခါတွင် သင့်ဖုန်းသည် မှန်ကန်သော ဝိုင်ဖိုင်နှင့် ချိတ်ဆက်နေသေးကြောင်း သေချာပါစေ။</string>
-  <string name="hotspot_help_site_3">သင့်တွင် firewall အက်ပ်တစ်ခုရှိပါက၊ ၎င်းသည် ဝင်ရောက်ခွင့်ကို ပိတ်ဆို့ထားခြင်း မဟုတ်ကြောင်း စစ်ဆေးပါ။</string>
-  <string name="hotspot_help_site_4">အကယ်၍ သင်သည် ဝဘ်ဆိုက်သို့ ဝင်ရောက်ကြည့်ရှုနိုင်သော်လည်း Zerion အက်ပ်ကို ဒေါင်းလုဒ်မလုပ်ပါက အခြား ဝဘ်ဘရောက်ဆာအက်ပ်ဖြင့် ၎င်းကို စမ်းကြည့်ပါ။</string>
-  <string name="hotspot_help_fallback_title">ဘာမှ အလုပ်မဖြစ်ဘူးလား။</string>
-  <string name="hotspot_help_fallback_intro">သင်သည် အက်ပ်အား .apk ဖိုင်အဖြစ် တစ်နည်းတစ်ဖုံ မျှဝေရန် ကြိုးစားနိုင်သည်။ ဖိုင်ကို အခြားစက်ပစ္စည်းသို့ လွှဲပြောင်းပြီးသည်နှင့် Zerion ကို ထည့်သွင်းရန် အသုံးပြုနိုင်သည်။
-\n\n အကြံပြုချက် - ဘလူးတုသ်မှ တစ်ဆင့် မျှဝေရန်အတွက်၊ သင်သည် .zip ဖြင့် ပထမအဆုံးသတ်ရန် ဖိုင်ကို အမည်ပြောင်းရန် လိုအပ်နိုင်သည်။</string>
-  <string name="hotspot_help_fallback_button">အက်ပ်ကို သိမ်းဆည်းပါ</string>
-  <!--error handling-->
-  <string name="hotspot_error_intro">အက်ပ်အား ဝိုင်ဖိုင်မှ တစ်ဆင့် မျှဝေရန် ကြိုးစားစဉ် တစ်ခုခု မှားသွားသည် -</string>
-  <string name="hotspot_error_no_wifi_direct">စက်ပစ္စည်းသည် Wi-Fi Direct ကို မပံ့ပိုးပါ။</string>
-  <string name="hotspot_error_start_callback_failed">Hotspot စတင်မှု မအောင်မြင်ပါ - ပြဿနာ %s</string>
-  <string name="hotspot_error_start_callback_failed_unknown">Hotspot ကို အမည်မသိအမှားဖြင့် စတင်ရန် မအောင်မြင်ပါ၊ အကြောင်းပြချက် %d</string>
-  <string name="hotspot_error_start_callback_no_group_info">Hotspot စတင်ရန် မအောင်မြင်ပါ - အဖွဲ့ အချက်အလက် မရှိပါ</string>
-  <string name="hotspot_error_web_server_start">ဝဘ်ဆာဗာကို စတင်ရာတွင် အမှားအယွင်း ရှိနေသည်</string>
-  <string name="hotspot_error_web_server_serve">ဝဘ်ဆိုဒ်ကို တင်ပြရာတွင် အမှားအယွင်းရှိနေပါသည်။ \n\n ပြဿနာ ဆက်လက်ရှိနေပါက Zerion အက်ပ်မှတစ်ဆင့် (အမည်မသိဒေတာဖြင့်) တုံ့ပြန်ချက်ပေးပို့ပါ။</string>
-  <string name="hotspot_flag_test">သတိပေးချက် - ဤအက်ပ်ကို Android Studio တွင် ထည့်သွင်းထားပြီး အခြားစက်ပစ္စည်းတွင် ထည့်သွင်း၍မရပါ။</string>
-  <string name="hotspot_error_framework_busy">ဟော့စပေါ့ကို စတင်၍မရပါ။ \n\n သင့်တွင် အခြားသော ဟော့စပေါ့တစ်ခု လုပ်ဆောင်နေပါက သို့မဟုတ် ဝိုင်ဖိုင်မှ တစ်ဆင့် သင့်အင်တာနက်ချိတ်ဆက်မှုကို မျှဝေနေပါက ၎င်းကို ရပ်လိုက်ပြီး နောက်မှ ထပ်စမ်းကြည့်ပါ။</string>
-  <!--Transfer Data via Removable Drives-->
+  
   <string name="removable_drive_menu_title">ဖယ်ရှားနိုင်သော Drive မှတစ်ဆင့် ချိတ်ဆက်ပါ</string>
   <string name="removable_drive_intro">အင်တာနက်၊ ဝိုင်ဖိုင်သို့မဟုတ် ဘလူးတုသ်မှ တဆင့် သင့်အဆက်အသွယ်ကို မချိတ်ဆက်နိုင်ပါက၊ Zerion သည် USB stick သို့မဟုတ် SD ကတ်ကဲ့သို့ ဖြုတ်တပ်နိုင်သော drive ပေါ်တွင် မက်ဆေ့ချ်များကို လွှဲပြောင်းနိုင်သည်။</string>
   <string name="removable_drive_explanation">အင်တာနက်၊ ဝိုင်ဖိုင်သို့မဟုတ် ဘလူးတုသ်မှတစ်ဆင့် သင့်အဆက်အသွယ်ထံသို့ ချိတ်ဆက်၍မရပါက၊ Zerion သည် USB stick သို့မဟုတ် SD ကတ်ကဲ့သို့ ဖြုတ်တပ်နိုင်သော drive ပေါ်တွင် မက်ဆေ့ချ်များကို လွှဲပြောင်းနိုင်သည်။ \n\nသင် \"ဒေတာပေးပို့ရန်\" ခလုတ်ကို အသုံးပြုသည့်အခါ၊ အဆက်အသွယ်ထံ ပေးပို့ရန် စောင့်ဆိုင်းနေသည့် မည်သည့်ဒေတာကို ဖယ်ရှားနိုင်သော drive သို့ စာရေးပါမည်။ ၎င်းတွင် ကိုယ်ရေးကိုယ်တာမက်ဆေ့ချ်များ၊ ပူးတွဲပါဖိုင်များ၊ ဘလော့ဂ်များ၊ ဖိုရမ်များနှင့် သီးသန့်အုပ်စုများ ပါဝင်သည်။ \n\nဖယ်ရှားနိုင်သော drive သို့ မရေးထားမီ အရာအားလုံးကို ကုဒ်ဝှက်ထားပါမည်။ \n\nသင်၏အဆက်အသွယ်သည် ဖြုတ်တပ်နိုင်သော drive ကို လက်ခံရရှိသည့်အခါ ၎င်းတို့သည် \"ဒေတာလက်ခံရယူရန်\" ခလုတ်ကို အသုံးပြုနိုင်ပါသည်။ မက်ဆေ့ချ်များကို Zerion သို့တင်သွင်းရန်။</string>
@@ -715,17 +627,17 @@
   <string name="removable_drive_error_send_text">ဖိုင်သို့ ဒေတာရေးရာတွင် အမှားအယွင်း တစ်ခုရှိခဲ့သည်။ \n\n ဖယ်ရှားနိုင်သော drive ကိုအသုံးပြုနေပါက ၎င်းကို မှန်ကန်စွာ ထည့်သွင်းထားကြောင်း သေချာစေရန်နှင့် ထပ်စမ်းကြည့်ပါ။ \n\n အမှား ဆက်လက်ရှိနေပါက Zerion အဖွဲ့အား အသိပေးရန်အတွက် အကြံပြုချက်ပေးပို့ပါ။ </string>
   <string name="removable_drive_error_receive_title">ဒေတာတင်သွင်းရာတွင် အမှားအယွင်း ရှိသည်</string>
   <string name="removable_drive_error_receive_text">ရွေးချယ်ထားသောဖိုင်တွင် Zerion မှတ်မိနိုင်သည့် မည်သည့်အရာမှ မပါဝင်ပါ။ \n\nမှန်ကန်သောဖိုင်ကို သင်ရွေးချယ်ထားကြောင်း စစ်ဆေးပါ။ \n\n သင်၏အဆက်အသွယ်သည် လွန်ခဲ့သည့် ၂၈ ရက်ကျော်က အဆိုပါဖိုင်ကို ဖန်တီးခဲ့ပါက၊ Zerion သည် ၎င်းကို မှတ်မိနိုင်မည်မဟုတ်ပေ။</string>
-  <!--Screenshots-->
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
+  
   <string name="screenshot_alice">Alice</string>
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
   <string name="screenshot_bob">Bob</string>
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
   <string name="screenshot_carol">Carol</string>
-  <!--This is a message to be used in screenshots. Please use the same translation for Bob!-->
+  
   <string name="screenshot_message_1">မင်္ဂလာပါ Bob!</string>
-  <!--This is a message to be used in screenshots. Please use the same translation for Alice!-->
+  
   <string name="screenshot_message_2">မင်္ဂလာပါ Alice! Zerion အကြောင်းပြောပြတဲ့အတွက် ကျေးဇူတင်ပါတယ်!</string>
-  <!--This is a message to be used in screenshots.-->
+  
   <string name="screenshot_message_3">ကိစ္စမရှိပါဘူး၊ မင်းကြိုက်မယ်လို့ မျှော်လင့်ပါတယ်။</string>
 </resources>

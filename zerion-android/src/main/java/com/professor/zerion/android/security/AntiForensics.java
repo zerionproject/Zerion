@@ -176,26 +176,26 @@ public class AntiForensics {
 		try {
 			File functionFile = new File(USB_FUNCTION_PATH);
 			if (functionFile.exists()) {
-				BufferedReader reader = new BufferedReader(
-						new InputStreamReader(new FileInputStream(functionFile)));
-				String function = reader.readLine();
-				reader.close();
-
-				if (function != null && (function.contains("mtp") ||
-						function.contains("ptp") || function.contains("adb"))) {
-					return true;
+				try (BufferedReader reader = new BufferedReader(
+						new InputStreamReader(new FileInputStream(functionFile),
+								StandardCharsets.UTF_8))) {
+					String function = reader.readLine();
+					if (function != null && (function.contains("mtp") ||
+							function.contains("ptp") || function.contains("adb"))) {
+						return true;
+					}
 				}
 			}
 
 			File stateFile = new File(USB_STATE_PATH);
 			if (stateFile.exists()) {
-				BufferedReader reader = new BufferedReader(
-						new InputStreamReader(new FileInputStream(stateFile)));
-				String state = reader.readLine();
-				reader.close();
-
-				if (state != null && state.contains("CONFIGURED")) {
-					return true;
+				try (BufferedReader reader = new BufferedReader(
+						new InputStreamReader(new FileInputStream(stateFile),
+								StandardCharsets.UTF_8))) {
+					String state = reader.readLine();
+					if (state != null && state.contains("CONFIGURED")) {
+						return true;
+					}
 				}
 			}
 		} catch (Exception e) {
@@ -263,12 +263,11 @@ public class AntiForensics {
 				return true;
 			}
 
-			// Use connect timeout to prevent indefinite hang
-			java.net.Socket socket = new java.net.Socket();
-			socket.connect(
-					new java.net.InetSocketAddress("127.0.0.1", 5555), 1000);
-			socket.close();
-			return true;
+			try (java.net.Socket socket = new java.net.Socket()) {
+				socket.connect(
+						new java.net.InetSocketAddress("127.0.0.1", 5555), 1000);
+				return true;
+			}
 		} catch (Exception e) {
 		}
 		return false;
@@ -326,17 +325,17 @@ public class AntiForensics {
 			if (file.exists() && file.canWrite()) {
 				long fileLen = file.length();
 				if (fileLen == 0) return;
-				RandomAccessFile raf = new RandomAccessFile(file, "rw");
-				byte[] chunk = new byte[(int) Math.min(fileLen, 65536)];
-				long remaining = fileLen;
-				while (remaining > 0) {
-					int toWrite = (int) Math.min(remaining, chunk.length);
-					secureRandom.nextBytes(chunk);
-					raf.write(chunk, 0, toWrite);
-					remaining -= toWrite;
+				try (RandomAccessFile raf = new RandomAccessFile(file, "rw")) {
+					byte[] chunk = new byte[(int) Math.min(fileLen, 65536)];
+					long remaining = fileLen;
+					while (remaining > 0) {
+						int toWrite = (int) Math.min(remaining, chunk.length);
+						secureRandom.nextBytes(chunk);
+						raf.write(chunk, 0, toWrite);
+						remaining -= toWrite;
+					}
+					raf.getFD().sync();
 				}
-				raf.getFD().sync();
-				raf.close();
 			}
 		} catch (Exception e) {
 		}
@@ -346,9 +345,12 @@ public class AntiForensics {
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
 			try {
 				Class<?> processClass = Class.forName("android.os.Process");
-				java.lang.reflect.Method method = processClass.getMethod(
+				java.lang.reflect.Method method = processClass.getDeclaredMethod(
 						"setMemoryProtection", int.class);
+				method.setAccessible(true);
 				method.invoke(null, 1);
+			} catch (NoSuchMethodException e) {
+			} catch (ClassNotFoundException e) {
 			} catch (Exception e) {
 			}
 		}
@@ -357,13 +359,11 @@ public class AntiForensics {
 	private void storeDeviceId(String deviceId) {
 		try {
 			File file = new File(context.getFilesDir(), ".device_id");
-			FileOutputStream fos = new FileOutputStream(file);
-
 			MessageDigest digest = MessageDigest.getInstance("SHA-256");
 			byte[] hash = digest.digest(deviceId.getBytes(StandardCharsets.UTF_8));
-
-			fos.write(hash);
-			fos.close();
+			try (FileOutputStream fos = new FileOutputStream(file)) {
+				fos.write(hash);
+			}
 		} catch (Exception e) {
 		}
 	}
@@ -374,12 +374,11 @@ public class AntiForensics {
 			if (!file.exists()) {
 				return null;
 			}
-
-			FileInputStream fis = new FileInputStream(file);
 			byte[] hash = new byte[32];
-			int read = fis.read(hash);
-			fis.close();
-
+			int read;
+			try (FileInputStream fis = new FileInputStream(file)) {
+				read = fis.read(hash);
+			}
 			if (read == 32) {
 				return bytesToHex(hash);
 			}

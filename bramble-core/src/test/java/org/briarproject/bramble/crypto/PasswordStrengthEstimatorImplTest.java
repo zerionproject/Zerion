@@ -13,18 +13,18 @@ public class PasswordStrengthEstimatorImplTest extends BrambleTestCase {
 	@Test
 	public void testWeakPasswords() {
 		PasswordStrengthEstimator e = new PasswordStrengthEstimatorImpl();
-		assertTrue(e.estimateStrength("") == NONE);
-		assertTrue(e.estimateStrength("password") < QUITE_STRONG);
-		assertTrue(e.estimateStrength("letmein") < QUITE_STRONG);
-		assertTrue(e.estimateStrength("123456") < QUITE_STRONG);
+		assertTrue(e.estimateStrength(new char[0]) == NONE);
+		assertTrue(e.estimateStrength("password".toCharArray()) < QUITE_STRONG);
+		assertTrue(e.estimateStrength("letmein".toCharArray()) < QUITE_STRONG);
+		assertTrue(e.estimateStrength("123456".toCharArray()) < QUITE_STRONG);
 	}
 
 	@Test
 	public void testStrongPasswords() {
 		PasswordStrengthEstimator e = new PasswordStrengthEstimatorImpl();
-		// Industry standard
-		assertTrue(e.estimateStrength("Tr0ub4dor&3") > QUITE_STRONG);
-		assertTrue(e.estimateStrength("correcthorsebatterystaple")
+		assertTrue(e.estimateStrength("Tr0ub4dor&3".toCharArray())
+				> QUITE_STRONG);
+		assertTrue(e.estimateStrength("correcthorsebatterystaple".toCharArray())
 				> QUITE_STRONG);
 	}
 }

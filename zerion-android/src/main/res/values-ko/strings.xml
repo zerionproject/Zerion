@@ -1,6 +1,6 @@
-﻿<?xml version='1.0' encoding='UTF-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
-	<!--Setup-->
+	
 	<string name="setup_title">Zerion에 오신 것을 환영합니다</string>
 	<string name="setup_name_explanation">별명은 게시한 모든 컨텐츠 옆에 보여지게 됩니다. 별명은 계정을 만든 후에는 바꿀 수 없습니다.</string>
 	<string name="setup_next">다음</string>
@@ -24,7 +24,7 @@
 	<string name="dnkm_huawei_protected_help">Zerion를 보호된 앱 목록에 추가하지 않는다면, 백그라운드에서 실행될 수 없습니다.</string>
 	<string name="dnkm_xiaomi_button">Zerion 보호하기</string>
 	<string name="dnkm_warning_dozed">%s가 백그라운드에서 실행될 수 없었습니다</string>
-	<!--Login-->
+	
 	<string name="enter_password">비밀번호</string>
 	<string name="try_again">잘못된 비밀번호입니다. 다시 시도하세요.</string>
 	<string name="dialog_title_cannot_check_password">비밀번호를 확인할 수 없습니다</string>
@@ -50,17 +50,17 @@
   <string name="startup_open_database">데이터베이스를 복호화하고 있습니다....</string>
   <string name="startup_migrate_database">데이터베이스를 업그레이드 하고 있습니다...</string>
   <string name="startup_compact_database">데이터베이스를 작게 만들고 있습니다...</string>
-  <!--Navigation Drawer-->
+  
   <string name="nav_drawer_open_description">탐색 창 열기</string>
   <string name="nav_drawer_close_description">탐색 창 닫기</string>
   <string name="contact_list_button">연락처</string>
   <string name="groups_button">프라이빗 모임</string>
-  <!--This is part of the main menu. The app will be locked when this is tapped.-->
+  
   <string name="lock_button">앱 잠그기</string>
   <string name="settings_button">설정</string>
   <string name="sign_out_button">로그아웃</string>
   <string name="transports_onboarding_text">여기를 눌러 Zerion가 연락처와 연결하는 방법을 설정하세요.</string>
-  <!--Transports: Tor-->
+  
   <string name="transport_tor">인터넷</string>
   <string name="tor_device_status_online_wifi">와이파이를 통해 인터넷에 연결하고 있습니다</string>
   <string name="tor_device_status_online_mobile">모바일 데이터로 인터넷에 연결하고 있습니다</string>
@@ -72,10 +72,10 @@
   <string name="tor_plugin_status_disabled_mobile_data">모바일 데이터를 사용하지 않도록 설정돼 있습니다</string>
   <string name="tor_plugin_status_disabled_battery">충전하지 않고 있을 때에는 인터넷을 사용하지 않도록 설정돼 있습니다</string>
   <string name="tor_plugin_status_disabled_country_blocked">이 국가에서는 인터넷을 사용하지 않도록 설정돼 있습니다</string>
-  <!--Transports: Wi-Fi-->
+  
   <string name="transport_lan_long">동일한 와이파이 네트워크입니다</string>
-  <!--Transports: Bluetooth-->
-  <!--Notifications-->
+  
+  
   <string name="reminder_notification_title">Zerion에서 로그아웃 됨</string>
   <string name="reminder_notification_text">눌러서 다시 로그인하세요.</string>
   <string name="reminder_notification_channel_title">Zerion 로그인 알림</string>
@@ -88,7 +88,7 @@
   <plurals name="group_message_notification_text">
     <item quantity="other">모임 메시지가 %d개 새로 왔습니다.</item>
   </plurals>
-  <!--Misc-->
+  
   <string name="now">지금</string>
   <string name="show">Show</string>
   <string name="hide">숨기기</string>
@@ -114,7 +114,7 @@
   <string name="sorry">죄송합니다</string>
   <string name="error_start_activity">이 시스템에서는 지원되지 않습니다</string>
   <string name="status_heading">상태</string>
-  <!--Contacts and Private Conversations-->
+  
   <string name="no_contacts">저장된 연락처가 없습니다</string>
   <string name="no_contacts_action">+ 상징을 눌러서 연락처를 추가하세요</string>
   <string name="date_no_private_messages">메시지가 없습니다.</string>
@@ -127,12 +127,6 @@
   <string name="image_attach_error_invalid_mime_type">%s는 지원되지 않는 이미지 형식입니다.</string>
   <string name="set_contact_alias">연락처 이름 바꾸기</string>
   <string name="set_contact_alias_hint">연락처 이름</string>
-  <string name="menu_item_connect_via_bluetooth">블루투스로 연결하기</string>
-  <string name="connect_via_bluetooth_title">블루투스로 연결하기</string>
-  <!--The first placeholder will show a duration like "7 days". The second placeholder at the end will add "Tap to learn more."-->
-  <!--The placeholder at the end will add "Tap to learn more."-->
-  <!--The first placeholder will show a contact's name. The second placeholder will show a duration like "7 days". The third placeholder at the end will add "Tap to learn more."-->
-  <!--The first placeholder will show a contact's name. The second placeholder at the end will add "Tap to learn more."-->
   <string name="delete_all_messages">모든 메시지 지우기</string>
   <string name="dialog_title_delete_all_messages">메시지 삭제 확인</string>
   <string name="dialog_message_delete_all_messages">정말로 모든 메시지를 지우려고 하시나요?</string>
@@ -147,7 +141,7 @@
   <string name="dialog_title_delete_contact">연락처 삭제 확인</string>
   <string name="dialog_message_delete_contact">정말로 이 연락처, 그리고 이 연락처와의 메시지를 모두 제거하시겠어요?</string>
   <string name="contact_deleted_toast">연락처가 삭제됐습니다</string>
-  <!--This is shown in the action bar when opening an image in fullscreen that the user sent-->
+  
   <string name="you">당신</string>
   <string name="save_image">이미지 저장하기</string>
   <string name="dialog_title_save_image">이미지를 저장하시겠어요?</string>
@@ -159,7 +153,7 @@
   <string name="dialog_title_image_support">이제 이 분에게 이미지를 보낼 수 있습니다</string>
   <string name="dialog_message_image_support">이 상징을 눌러 이미지를 첨부하세요.</string>
   <string name="messaging_too_many_attachments_toast">첫 %d개의 이미지만 보내질 것입니다</string>
-  <!--Adding Contacts-->
+  
   <string name="add_contact_title">근처의 연락처 추가하기</string>
   <string name="continue_button">계속하기</string>
   <string name="try_again_button">다시 시도하기</string>
@@ -174,7 +168,7 @@
   <string name="authenticating_with_device">\u2026 기기와 인증하고 있습니다</string>
   <string name="connection_error_title">연락처에 연결하지 못했습니다</string>
   <string name="connection_error_feedback">문제가 계속된다면, 부디 <a href="feedback">피드백을 남겨서</a> 앱이 좋아지게 도와주세요.</string>
-  <!--Adding Contacts Remotely-->
+  
   <string name="add_contact_remotely_title_case">원거리에서 연락처 추가하기</string>
   <string name="add_contact_nearby_title">근처의 연락처 추가하기</string>
   <string name="add_contact_remotely_title">원거리에서 연락처 추가하기</string>
@@ -207,9 +201,9 @@
   <string name="unsupported_link">이 링크는 더 새로운 버전인 Zerion에서 보냈습니다. 최신 버전으로 업그레이드하고 다시 시도해 주세요.</string>
   <string name="intent_own_link">자신의 링크를 열었습니다. 추가하고 싶은 연락처를 사용하세요!</string>
   <string name="missing_link">링크를 입력하세요</string>
-  <!--This is a numeral indicating the first step in a series of screens-->
+  
   <string name="step_1">1</string>
-  <!--This is a numeral indicating the second step in a series of screens-->
+  
   <string name="step_2">2</string>
   <plurals name="contact_added_notification_text">
     <item quantity="other">새로운 연락처 %d개를 추가했습니다.</item>
@@ -218,19 +212,15 @@
   <string name="duplicate_link_dialog_title">중복되는 링크입니다</string>
   <string name="duplicate_link_dialog_text_1">%s: 이미 이 링크를 통한 연락 요청이 있습니다.</string>
   <string name="duplicate_link_dialog_text_1_contact">%s: 이 링크의 연락처가 이미 있습니다.</string>
-  <!--This is a question asking whether two nicknames refer to the same person-->
+  
   <string name="duplicate_link_dialog_text_2">%s 님과 %s 님이 같은 사람인가요?</string>
-  <!--This is a button for answering that two nicknames do indeed refer to the same person. This
-	string will be used in a dialog button, so if the translation of this string is longer than 20
-	characters, please use "Yes" instead, and use "No" for the "Different Person" button-->
+  
   <string name="same_person_button">같은 사람</string>
-  <!--This is a button for answering that two nicknames refer to different people. This string
-	will be used in a dialog button, so if the translation of this string longer than 20 characters,
-	please use "No" instead, and use "Yes" for the "Same Person" button-->
+  
   <string name="different_person_button">다른 사람</string>
   <string name="duplicate_link_dialog_text_3">%s 님과 %s 님이 동일한 링크를 보냈습니다.\n\n누군가 당신의 연락처를 찾으려고 하는 것일 수도 있습니다.\n\n둘 중 누구에게라도 다른 사람에게서 동일한 링크를 받았다고 알리지 마십시오.</string>
   <string name="pending_contact_updated_toast">남은 연락 요청이 있는지 확인했습니다</string>
-  <!--Introductions-->
+  
   <string name="introduction_onboarding_title">지인 소개하기</string>
   <string name="introduction_onboarding_text">지인끼리 서로 소개해서, 직접 만날 필요 없이 Zerion로 연결될 수 있습니다.</string>
   <string name="introduction_menu_item">소개시키기</string>
@@ -251,7 +241,7 @@
   <string name="introduction_response_accepted_received">%1$s 님이 %2$s 님과의 소개를 승락했습니다.</string>
   <string name="introduction_response_declined_received">%1$s 님이 %2$s 님과의 소개를 거절했습니다.</string>
   <string name="introduction_response_declined_received_by_introducee">%1$s 님은 %2$s 님이 소개를 거절했다고 합니다.</string>
-  <!--Private Groups-->
+  
   <string name="groups_list_empty">모임이 없습니다.</string>
   <string name="groups_list_empty_action">+ 상징을 눌러 모임을 만들거나, 연락하는 분에게 모임을 공유해 달라고 여쭤보세요</string>
   <string name="groups_created_by">%s 님이 만듦</string>
@@ -281,7 +271,7 @@
   <string name="groups_dissolve_button">해체하기</string>
   <string name="groups_dissolved_dialog_title">모임이 해체됐습니다</string>
   <string name="groups_dissolved_dialog_message">이 모임을 만든 분이 모임을 해체하셨습니다.\n\n더 이상 모임에 메시지를 보내지 못하고, 올려진 게시글을 받아보지 못할 수 있습니다.</string>
-  <!--Private Group Invitations-->
+  
   <string name="groups_invitations_title">모임 초대장</string>
   <string name="groups_invitations_invitation_sent">%1$s을(를) \"%2$s\" 모임에 참가하도록 초대했습니다.</string>
   <string name="groups_invitations_invitation_received">%1$s 님이 \"%2$s\" 모임에 참가하도록 초대했습니다.</string>
@@ -295,21 +285,21 @@
   <string name="groups_invitations_response_accepted_received">%s 님이 모임 초대장을 승락했습니다.</string>
   <string name="groups_invitations_response_declined_received">%s 님이 모임 초대장을 거절했습니다.</string>
   <string name="sharing_status_groups">모임을 만든 분만 새로운 구성원을 초대할 수 있습니다. 다음은 모임의 모든 현재 구성원입니다.</string>
-  <!--Private Groups Revealing Contacts-->
+  
   <string name="groups_reveal_contacts">연락처 공개하기</string>
   <string name="groups_reveal_dialog_message">이 모임의 지금과 앞으로 들어올 구성원에게 연락처를 공개할지를 정할 수 있습니다.\n\n연락처를 공개하면, 모임을 만든 사람이 오프라인이어도 공개된 연락처와 연결할 수 있기 때문에 모임에 더 빠르고 안정적으로 연결할 수 있습니다.</string>
   <string name="groups_reveal_visible">연락처 관계가 모임에서 보입니다</string>
   <string name="groups_reveal_visible_revealed_by_us">(당신이) 모임에게 지인 관계 공개합니다</string>
   <string name="groups_reveal_visible_revealed_by_contact">(%s님이) 모임에게 지인 관계를 공개합니다</string>
   <string name="groups_reveal_invisible">모임에게 지인 관계를 공개하지 않습니다</string>
-  <!--Forums-->
+  
   <string name="no_posts">게시글이 없습니다</string>
   <plurals name="posts">
     <item quantity="other">게시글 %d개</item>
   </plurals>
   <string name="btn_reply">답장</string>
   <string name="dialog_button_leave">떠나기</string>
-  <!--Forum Sharing-->
+  
   <string name="contacts_selected">선택한 연락처</string>
   <string name="activity_share_toolbar_header">연락처 선택하기</string>
   <string name="no_contacts_selector">저장된 연락처가 없습니다</string>
@@ -318,12 +308,12 @@
   <string name="sharing_status">공유 상태</string>
   <string name="shared_with">와(과) 공유하고 있습니다.(%1$d %2$d명 온라인)</string>
   <string name="nobody">아무도 없음</string>
-  <!--Blogs-->
+  
   <string name="read_more">더 읽기</string>
-  <!--Blog Sharing-->
-  <!--RSS Feeds-->
-  <!--Settings Profile Picture-->
-  <!--Settings Display-->
+  
+  
+  
+  
   <string name="pref_language_title">Language &amp; region</string>
   <string name="pref_language_changed">Zerion를 다시 시작한 후에 설정이 적용됩니다. 부디 로그아웃하고 Zerion를 다시 시작해 주세요.</string>
   <string name="pref_language_default">기본 설정</string>
@@ -333,9 +323,8 @@
   <string name="pref_theme_dark">어둠</string>
   <string name="pref_theme_auto">자동(시간에 따라)</string>
   <string name="pref_theme_system">기본 설정</string>
-  <!--Settings Connections-->
+  
   <string name="network_settings_title">연결</string>
-  <string name="bluetooth_setting">블루투스로 지인과 연결하기</string>
   <string name="wifi_setting">같은 와이파이 네트워크에 연결된 지인과 연결하기</string>
   <string name="tor_enable_title">인터넷을 통해 지인과 연결하기</string>
   <string name="tor_enable_summary">프라이버시를 위해 모든 연결은 Tor 네트워크를 거칩니다</string>
@@ -344,28 +333,28 @@
   <string name="tor_network_setting_without_bridges">브리지 없이 Tor 네트워크 사용하기</string>
   <string name="tor_network_setting_with_bridges">브지를 통해 Tor 네트워크 사용하기</string>
   <string name="tor_network_setting_never">인터넷에 연결하지 않기</string>
-  <!--How and when Zerion will connect to Tor: E.g. "Don't connect to the Internet (in China)" or "Use Tor network with bridges (in Belarus)"-->
+  
   <string name="tor_network_setting_summary">자동: %1$s(%2$s에서)</string>
   <string name="tor_mobile_data_title">모바일 데이터 사용하기</string>
   <string name="tor_only_when_charging_title">충전할 때만 인터넷에 연결하기</string>
   <string name="tor_only_when_charging_summary">충전 중이지 않을 때에는 인터넷 연결을 비활성화</string>
-  <!--Settings Security and Panic-->
+  
   <string name="security_settings_title"> 보안</string>
   <string name="pref_lock_title">앱 잠금</string>
   <string name="pref_lock_summary">로그인한 동안 기기의 화면 잠금을 사용해서 Zerion 보호하기</string>
   <string name="pref_lock_disabled_summary">이 기능을 이용하려면 기기에 화면 잠금을 설정하세요</string>
   <string name="pref_lock_timeout_title">앱 잠금까지의 대기시간</string>
-  <!--The %s placeholder is replaced with the following time spans, e.g. 5 Minutes, 1 Hour-->
+  
   <string name="pref_lock_timeout_summary">Zerion를 사용하지 않으면 %s 후에 자동으로 잠그기</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_1">1분</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_5">5분</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_15">15분</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_30">30분</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_60">1시간</string>
   <string name="pref_lock_timeout_never">사용하지 않기</string>
   <string name="pref_lock_timeout_never_summary">절대 자동으로 Zerion 잠그지 않기</string>
@@ -388,7 +377,7 @@
   <string name="panic_setting_signout_summary">패닉 버튼이 눌리면 Zerion에서 로그아웃하기</string>
   <string name="purge_setting_title">계정 삭제하기</string>
   <string name="purge_setting_summary">패닉 버튼이 눌리면 Zerion 계정을 삭제하기. 주의: 계정, 연락처와 메시지가 영구적으로 지워집니다</string>
-  <!--Settings Notifications-->
+  
   <string name="notification_settings_title">알림</string>
   <string name="notify_sign_in_title">로그인 알려주기</string>
   <string name="notify_sign_in_summary">폰이 켜지거나 앱이 업데이트되면 알려주기</string>
@@ -404,16 +393,16 @@
   <string name="notify_sound_setting_disabled">없음</string>
   <string name="choose_ringtone_title">벨소리 정하기</string>
   <string name="cannot_load_ringtone">벨소리를 불러올 수 없었습니다</string>
-  <!--Conversation Settings-->
+  
   <string name="learn_more">더 알아보기</string>
-  <!--Settings Feedback-->
+  
   <string name="send_feedback">피드백 보내기</string>
-  <!--Link Warning-->
+  
   <string name="link_warning_title">링크 경고</string>
   <string name="link_warning_intro">외부 앱으로 링크를 열려고 합니다</string>
   <string name="link_warning_text">당신이 추적당할 수 있습니다. 이 링크를 보낸 사람을 믿을 수 있는지 생각해보고 Tor 브라우저로 여는 것을 고려하세요.</string>
   <string name="link_warning_open_link">링크 열기</string>
-  <!--Crash Reporter-->
+  
   <string name="crash_report_title">Zerion 사고 리포트</string>
   <string name="zerion_crashed">죄송해요, Zerion가 꺼졌어요.</string>
   <string name="not_your_fault">당신 탓이 아니에요.</string>
@@ -431,13 +420,13 @@
   <string name="send_report">리포트 보내기</string>
   <string name="close">닫기</string>
   <string name="dev_report_saved">리포트를 저장했습니다. 다음 번에 Zerion에 로그인 할 때 보내지게 됩니다.</string>
-  <!--Sign Out-->
+  
   <string name="progress_title_logout">Zerion에서 로그아웃하고 있습니다...</string>
-  <!--Screen Filters & Tapjacking-->
+  
   <string name="screen_filter_title">화면 위 발견</string>
   <string name="screen_filter_body">다른 앱이 Zerion 화면 위에 있습니다. 보안을 위해 Zerion는 다른 앱이 위에 있을 때는 만져도 반응하지 않습니다.\n\n다음 앱이 화면 위에 있을 수 있습니다.\n\n%1$s</string>
   <string name="screen_filter_allow">이 앱이 위에 있는 것을 허용하기</string>
-  <!--Permission Requests-->
+  
   <string name="permission_camera_title">카메라 권한</string>
   <string name="permission_camera_request_body">QR 코드를 스캔하려면 Zerion가 카메라를 사용할 수 있어야 합니다.</string>
   <string name="permission_location_title">위치 권한</string>
@@ -445,30 +434,30 @@
   <string name="permission_camera_location_title">카메라와 위치 정보</string>
   <string name="permission_camera_location_request_body">QR 코드를 스캔하려면, Zerion는 카메라를 사용할 수 있어야 합니다.\n\n블루투스 기기를 찾으려면, Zerion는 위치 정보에 대한 권한이 필요합니다.\n\nZerion는 위치 정보를 저장하거나 누구에게도 공유하지 않습니다.</string>
   <string name="permission_camera_denied_body">카메라 사용을 거절하셨지만, 연락처를 추가하기 위해서는 카메라를 사용해야 합니다.\n\n사용 허가를 고려해주시기 바랍니다.</string>
-  <!--App Locking-->
+  
   <string name="lock_unlock">Zerion 잠금 해제</string>
   <string name="lock_unlock_verbose">기기의 PIN, 패턴이나 비밀번호를 입력해 Zerion를 잠금 해제하세요</string>
   <string name="lock_unlock_fingerprint_description">계속하시려면 등록된 손가락으로 지문인식 센서를 만져주세요</string>
   <string name="lock_unlock_password">비밀번호 사용하기</string>
   <string name="lock_is_locked">Zerion가 잠겼습니다</string>
   <string name="lock_tap_to_unlock">눌러 잠금해제</string>
-  <!--Connections Screen-->
+  
   <string name="transports_help_text">Zerion는 인터넷이나 Wi-Fi, 블루투스를 통해 지인과 연결할 수 있습니다.\n\n인터넷에 연결할 때는 프라이버시를 위해 언제나 Tor 네트워크를 거칩니다.\n\nZerion는 가능한 연락처에 닿을 수 있는 여러 방식을 병용합니다.</string>
-  <!--Screenshots-->
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
+  
   <string name="screenshot_alice">영희</string>
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
   <string name="screenshot_bob">철수</string>
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
+  
   <string name="screenshot_carol">민수</string>
-  <!--This is a message to be used in screenshots. Please use the same translation for Bob!-->
+  
   <string name="screenshot_message_1">철수야, 안녕?</string>
-  <!--This is a message to be used in screenshots. Please use the same translation for Alice!-->
+  
   <string name="screenshot_message_2">영희야, 안녕! Zerion에 대해 알려줘서 고마워!</string>
-  <!--This is a message to be used in screenshots.-->
+  
   <string name="screenshot_message_3">문자나 전화할 때는 Signal도 사용해 봐^^ 엄청 편하고 안전해!</string>
 
-	<!-- Vault strings -->
+	
 	<string name="vault_unlock_button">잠금 해제</string>
 	<string name="vault_password_mismatch">비밀번호가 일치하지 않습니다</string>
 	<string name="vault_password_too_short">비밀번호는 8자 이상이어야 합니다</string>
@@ -492,19 +481,19 @@
 	<string name="vault_enable_biometric">생체 인식 잠금 해제 활성화</string>
 	<string name="vault_auto_lock_timeout">자동 잠금 시간 초과</string>
 
-	<!-- Security strings -->
+	
 	<string name="security_threat_detected">보안 위협이 감지되었습니다. 기기에 악성 소프트웨어가 있는지 확인하세요.</string>
 	<string name="pref_screenshot_protection_title">스크린샷 보호</string>
 	<string name="pref_screenshot_protection_summary">민감한 콘텐츠의 스크린샷 및 화면 녹화 방지</string>
 	<string name="security_warning_title">보안 경고</string>
 
-	<!-- Tor status strings -->
+	
 	<string name="tor_status_title">Tor 네트워크 상태</string>
 	<string name="tor_status_connected">Tor 네트워크에 연결됨</string>
 	<string name="tor_status_disconnected">Tor 네트워크에서 연결 해제됨</string>
 	<string name="tor_status_connecting">Tor 네트워크에 연결 중…</string>
 
-	<!-- Voice Call strings -->
+	
 	<string name="voice_call">음성 통화</string>
 
 </resources>

@@ -85,12 +85,9 @@ class AccountManagerImpl implements AccountManager {
 		if (!f.exists()) {
 			return null;
 		}
-		try {
-			BufferedReader reader = new BufferedReader(new InputStreamReader(
-					new FileInputStream(f), UTF_8));
-			String key = reader.readLine();
-			reader.close();
-			return key;
+		try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+				new FileInputStream(f), UTF_8))) {
+			return reader.readLine();
 		} catch (IOException e) {
 			return null;
 		}

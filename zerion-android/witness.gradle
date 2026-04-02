@@ -110,7 +110,6 @@ dependencyVerification {
 		'com.google.guava:listenablefuture:1.0:listenablefuture-1.0.jar:e4ad7607e5c0477c6f890ef26a49cb8d1bb4dffb650bab4502afee64644e3069',
 		'com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava:listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar:b372a037d4230aa57fbeffdef30fd6123f9c0c2db85d0aced00c91b974f33f99',
 		'com.google.j2objc:j2objc-annotations:1.1:j2objc-annotations-1.1.jar:2994a7eb78f2710bd3d3bfb639b2c94e219cedac0d4d084d516e78c16dddecf6',
-		'com.google.zxing:core:3.3.3:core-3.3.3.jar:5820f81e943e4bce0329306621e2d6255d2930b0a6ce934c5c23c0d6d3f20599',
 		'com.ibm.icu:icu4j:70.1:icu4j-70.1.jar:2b4d8d4e098e86aa5f905ec81c46751d218b16afd3f7fc02b64f80dd20fffa20',
 		'com.jraska:falcon:2.2.0:falcon-2.2.0.aar:8b016c6e016ef99fb493b8614b2362cfba540a68ac16a9bb6da310ae10e30b81',
 		'com.squareup.okhttp3:okhttp:4.12.0:okhttp-4.12.0.jar:b1050081b14bb7a3a7e55a4d3ef01b5dcfabc453b4573a4fc019767191d5f4e0',

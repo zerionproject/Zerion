@@ -181,6 +181,8 @@ public class ChangePasswordActivity extends ZerionActivity
 		currentPassword.getText().getChars(0, curPwd.length, curPwd, 0);
 		char[] newPwd = new char[newPassword.length()];
 		newPassword.getText().getChars(0, newPwd.length, newPwd, 0);
+		currentPassword.setText("");
+		newPassword.setText("");
 		viewModel.changePassword(curPwd, newPwd).observeEvent(this, result -> {
 					if (result == SUCCESS) {
 						Toast.makeText(ChangePasswordActivity.this,

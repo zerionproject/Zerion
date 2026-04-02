@@ -563,7 +563,7 @@ public class ConversationActivity extends ZerionActivity
 					if (!uiPrefs.getBoolean(
 						com.professor.zerion.android.settings
 								.SecurityFragment.PREF_LINK_PREVIEWS,
-						true)) {
+						false)) {
 						return;
 					}
 					String text = s.toString();
@@ -795,9 +795,6 @@ public class ConversationActivity extends ZerionActivity
 				com.professor.zerion.android.conversation.voice.VoiceCallActivity.class);
 		intent.putExtra(com.professor.zerion.android.conversation.voice.VoiceCallActivity.EXTRA_CONTACT_ID,
 				contactId.getInt());
-		String displayName = viewModel.getContactDisplayName().getValue();
-		intent.putExtra(com.professor.zerion.android.conversation.voice.VoiceCallActivity.EXTRA_CONTACT_NAME,
-				displayName != null ? displayName : "");
 		intent.putExtra(com.professor.zerion.android.conversation.voice.VoiceCallActivity.EXTRA_IS_INCOMING,
 				false);
 		startActivity(intent);
@@ -842,15 +839,9 @@ public class ConversationActivity extends ZerionActivity
 				com.professor.zerion.android.conversation.voice
 						.VoiceCallActivity.EXTRA_CONTACT_ID,
 				contactId.getInt());
-		String displayName = viewModel.getContactDisplayName().getValue();
-		intent.putExtra(
-				com.professor.zerion.android.conversation.voice
-						.VoiceCallActivity.EXTRA_CONTACT_NAME,
-				displayName != null ? displayName : "");
 		intent.putExtra(
 				com.professor.zerion.android.conversation.voice
 						.VoiceCallActivity.EXTRA_IS_INCOMING, false);
-		// Flag to auto-enable video after connection
 		intent.putExtra("auto_video", true);
 		startActivity(intent);
 	}
@@ -904,9 +895,6 @@ public class ConversationActivity extends ZerionActivity
 				com.professor.zerion.android.conversation.voice.VoiceCallActivity.class);
 		intent.putExtra(com.professor.zerion.android.conversation.voice.VoiceCallActivity.EXTRA_CONTACT_ID,
 				contactId.getInt());
-		String incomingName = viewModel.getContactDisplayName().getValue();
-		intent.putExtra(com.professor.zerion.android.conversation.voice.VoiceCallActivity.EXTRA_CONTACT_NAME,
-				incomingName != null ? incomingName : "");
 		intent.putExtra(com.professor.zerion.android.conversation.voice.VoiceCallActivity.EXTRA_IS_INCOMING,
 				true);
 		intent.putExtra(com.professor.zerion.android.conversation.voice.VoiceCallActivity.EXTRA_CALL_ID,

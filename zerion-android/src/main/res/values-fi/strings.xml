@@ -1,6 +1,6 @@
-﻿<?xml version='1.0' encoding='UTF-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
-	<!--Setup-->
+	
 	<string name="setup_title">Tervetuloa Zerioniin</string>
 	<string name="setup_name_explanation">Nimimerkkisi tulee näkymään julkaisemasi sisällön yhteydessä. Et voi muuttaa nimimerkkiä sen jälkeen kun olet luonut tilin.</string>
 	<string name="setup_next">Seuraava</string>
@@ -23,7 +23,7 @@
 	<string name="dnkm_huawei_protected_button">Suojaa Zerion</string>
 	<string name="dnkm_huawei_protected_help">Jos Zerionia ei lisätä suojattujen sovellusten listalle, se ei voi toimia taustalla.</string>
 	<string name="dnkm_warning_dozed">%s ei voinut toimia taustalla</string>
-	<!--Login-->
+	
 	<string name="enter_password">Salasana</string>
 	<string name="try_again">Väärä salasana, yritä uudelleen</string>
 	<string name="sign_in_button">Kirjaudu sisään</string>
@@ -45,18 +45,18 @@
   <string name="create_new_account">Sinun täytyy luoda uusi tili, mutta voit käyttää samaa tunnusta.</string>
   <string name="startup_open_database">Puretaan tietokannan salaus...</string>
   <string name="startup_migrate_database">Päivitetään tietokanta...</string>
-  <!--Navigation Drawer-->
+  
   <string name="nav_drawer_open_description">Avaa navigointilaatikko</string>
   <string name="nav_drawer_close_description">Sulje navigointilaatikko</string>
   <string name="contact_list_button">Yhteystiedot</string>
   <string name="groups_button">Yksityiset ryhmät</string>
-  <!--This is part of the main menu. The app will be locked when this is tapped.-->
+  
   <string name="lock_button">Lukitse sovellus</string>
   <string name="settings_button">Asetukset</string>
   <string name="sign_out_button">Kirjaudu ulos</string>
-  <!--Transports-->
+  
   <string name="transport_tor">Internet</string>
-  <!--Notifications-->
+  
   <string name="reminder_notification_title">Uloskirjautunut Zerionista</string>
   <string name="reminder_notification_text">Napauta kirjautuaksesi takaisin sisään.</string>
   <string name="reminder_notification_channel_title">Zerionin sisäänkirjautumisen muistutus</string>
@@ -71,7 +71,7 @@
     <item quantity="one">Uusi ryhmäviesti.</item>
     <item quantity="other">%d uutta ryhmäviestiä.</item>
   </plurals>
-  <!--Misc-->
+  
   <string name="now">nyt</string>
   <string name="show">Näytä</string>
   <string name="hide">Piilota</string>
@@ -94,7 +94,7 @@
   <string name="fix">Korjaa</string>
   <string name="help">Ohje</string>
   <string name="sorry">Pahoittelemme</string>
-  <!--Contacts and Private Conversations-->
+  
   <string name="no_contacts">Ei yhteystietoja</string>
   <string name="no_contacts_action">Napauta + nappia lisätäksesi yhteystiedon</string>
   <string name="date_no_private_messages">Ei viestejä.</string>
@@ -106,9 +106,9 @@
   <string name="dialog_title_delete_contact">Vahvista yhteystiedon poistaminen</string>
   <string name="dialog_message_delete_contact">Oletko varma, että haluat poistaa tämän yhteyshenkilön ja kaikki hänen kanssa vaihdetut viestit?</string>
   <string name="contact_deleted_toast">Yhteystieto poistettu</string>
-  <!--This is shown in the action bar when opening an image in fullscreen that the user sent-->
+  
   <string name="save_image">Tallenna kuva</string>
-  <!--Adding Contacts-->
+  
   <string name="continue_button">Jatka</string>
   <string name="try_again_button">Yritä uudelleen</string>
   <string name="waiting_for_contact_to_scan">Odotetaan, että käyttäjä skannaa ja saa yhteyden\u2026</string>
@@ -121,24 +121,20 @@
   <string name="connection_error_title">Yhteydenotto yhteystietoon epäonnistui</string>
   <string name="connection_error_explanation">Tarkista että olette kumpikin käyttämässä samaa Wi-Fi verkkoa.</string>
   <string name="connection_error_feedback">Jos tämä ongelma jatkuu, <a href="feedback">lähetä palautetta</a> jotta voimme parantaa sovellusta.</string>
-  <!--Adding Contacts Remotely-->
+  
   <string name="paste_button">Liitä</string>
   <string name="copy_button">Kopio</string>
   <string name="share_button">Jaa</string>
   <string name="add_contact_remote_connecting">Yhdistetään...</string>
   <string name="connecting">Yhdistetään...</string>
-  <!--This is a numeral indicating the first step in a series of screens-->
+  
   <string name="step_1">1</string>
-  <!--This is a numeral indicating the second step in a series of screens-->
+  
   <string name="step_2">2</string>
-  <!--This is a question asking whether two nicknames refer to the same person-->
-  <!--This is a button for answering that two nicknames do indeed refer to the same person. This
-	string will be used in a dialog button, so if the translation of this string is longer than 20
-	characters, please use "Yes" instead, and use "No" for the "Different Person" button-->
-  <!--This is a button for answering that two nicknames refer to different people. This string
-	will be used in a dialog button, so if the translation of this string longer than 20 characters,
-	please use "No" instead, and use "Yes" for the "Same Person" button-->
-  <!--Introductions-->
+  
+  
+  
+  
   <string name="introduction_onboarding_title">Esittele yhteyshenkilösi</string>
   <string name="introduction_onboarding_text">Voit esitellä muita käyttäjiä toisilleen, niin että heidän ei tarvitse tavata kasvokkain ollakseen yhteydessä Zerionin kautta.</string>
   <string name="introduction_menu_item">Tee esittely</string>
@@ -160,7 +156,7 @@
   <string name="introduction_response_accepted_received">%1$s hyväksyi esittelyn käyttäjälle %2$s.</string>
   <string name="introduction_response_declined_received">%1$s kieltäytyi esittelystä käyttäjälle %2$s.</string>
   <string name="introduction_response_declined_received_by_introducee">%1$s sanoo, että %2$s on kieltäytynyt esittelystä.</string>
-  <!--Private Groups-->
+  
   <string name="groups_list_empty">Ei ryhmiä</string>
   <string name="groups_list_empty_action">Napauta + nappia luodaksesi ryhmän tai pyydä yhteyshenkilöltä kutsua ryhmään</string>
   <string name="groups_created_by">Luonut %s</string>
@@ -191,7 +187,7 @@
   <string name="groups_dissolve_button">Hajauta</string>
   <string name="groups_dissolved_dialog_title">Ryhmä on nyt hajautettu</string>
   <string name="groups_dissolved_dialog_message">Tämän ryhmän aloittaja on hajauttanut sen.\n\nEt voi enää kirjoitta uusia viestejä ryhmälle, etkä välttämättä tule saamaan kaikkia tähän mennessä kirjoitettuja viestejä.</string>
-  <!--Private Group Invitations-->
+  
   <string name="groups_invitations_title">Ryhmäkutsut</string>
   <string name="groups_invitations_invitation_sent">Olet kutsunut käyttäjän %1$s mukaan ryhmään \"%2$s\".</string>
   <string name="groups_invitations_invitation_received">%1$s on kutsunut sinut mukaan ryhmään \"%2$s\".</string>
@@ -206,14 +202,14 @@
   <string name="groups_invitations_response_accepted_received">%s hyväksyi ryhmäkutsun.</string>
   <string name="groups_invitations_response_declined_received">%s kieltäytyi ryhmäkutsusta.</string>
   <string name="sharing_status_groups">Vain ryhmäkeskustelun aloittaja voi pyytää uusia jäseniä mukaan ryhmään. Alla ovat kaikki ryhmän nykyiset jäsenet.</string>
-  <!--Private Groups Revealing Contacts-->
+  
   <string name="groups_reveal_contacts">Näytä yhteystiedot</string>
   <string name="groups_reveal_dialog_message">Voit valita haluatko paljastaa yhteytesi muihin käyttäjiin tämän ryhmän nykyisille ja tuleville jäsenille.\n\nKäyttäjä yhteyksien paljastaminen tekee yhteydestä nopeamman ja luotettavamman, koska voit pitää yhteyttä muihin käyttäjiin myös silloin kun ryhmän aloittaja on poissa verkosta.</string>
   <string name="groups_reveal_visible">Yhteys käyttäjään on näkyvissä ryhmän jäsenille</string>
   <string name="groups_reveal_visible_revealed_by_us">Yhteys käyttäjään on näkyvissä ryhmän jäsenille (sinun paljastamana)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Yhteys käyttäjään on näkyvissä ryhmän jäsenille (käyttäjän %s paljastamana)</string>
   <string name="groups_reveal_invisible">Yhteys käyttäjään ei ole näkyvissä ryhmän jäsenille</string>
-  <!--Forums-->
+  
   <string name="no_posts">Ei kirjoituksia</string>
   <plurals name="posts">
     <item quantity="one">%d viesti</item>
@@ -221,7 +217,7 @@
   </plurals>
   <string name="btn_reply">Vastaa</string>
   <string name="dialog_button_leave">Lähde</string>
-  <!--Forum Sharing-->
+  
   <string name="contacts_selected">Yhteystiedot valittu</string>
   <string name="activity_share_toolbar_header">Valitse yhteystiedot</string>
   <string name="no_contacts_selector">Ei yhteystietoja</string>
@@ -230,11 +226,11 @@
   <string name="sharing_status">Jaetaan tilaa</string>
   <string name="shared_with">Jaettu %1$d kanssa (%2$d verkossa)</string>
   <string name="nobody">Ei kukaan</string>
-  <!--Blogs-->
+  
   <string name="read_more">lue lisää</string>
-  <!--Blog Sharing-->
-  <!--RSS Feeds-->
-  <!--Settings Display-->
+  
+  
+  
   <string name="pref_language_title">Kieli &amp; alue</string>
   <string name="pref_language_changed">Tämä asetus otetaan käyttöön kun uudelleenkäynnistät Zerionin. Kirjaudu ulos ja käynnistä Zerion uudelleen.</string>
   <string name="pref_language_default">Järjestelmäoletus</string>
@@ -244,9 +240,8 @@
   <string name="pref_theme_dark">Tumma</string>
   <string name="pref_theme_auto">Automaattinen (päiväsaika)</string>
   <string name="pref_theme_system">Järjestelmäoletus</string>
-  <!--Settings Network-->
+  
   <string name="network_settings_title">Verkot</string>
-  <string name="bluetooth_setting">Yhdistä Bluetoothin kautta</string>
   <string name="bluetooth_setting_enabled">Silloin kun yhteyshenkilöt ovat lähellä</string>
   <string name="bluetooth_setting_disabled">Vain kun yhteyshenkilöitä lisätään</string>
   <string name="tor_network_setting">Yhdistä verkon kautta (Tor)</string>
@@ -254,24 +249,24 @@
   <string name="tor_network_setting_without_bridges">Käytä Tor:ia ilman siltoja</string>
   <string name="tor_network_setting_with_bridges">Käytä Tor:ia siltojen kanssa</string>
   <string name="tor_network_setting_never">Älä yhdistä</string>
-  <!--How and when Tor will connect after Automatic: E.g. Don't connect (in China) or Use Tor with bridges (in Belarus)-->
+  
   <string name="tor_network_setting_summary">Automaattinen: %1$s (sijainnissa %2$s)</string>
   <string name="tor_mobile_data_title">Käytä mobiilitiedonsiirtoa</string>
-  <!--Settings Security and Panic-->
+  
   <string name="security_settings_title">Turvallisuus</string>
   <string name="pref_lock_summary">Käytä laitteen näytön lukitusta suojataksesi Zerion kun olet kirjautunut sisään</string>
   <string name="pref_lock_disabled_summary">Käyttääksesi tätä ominaisuutta, ota käyttöön laitteesi näytön lukitus</string>
-  <!--The %s placeholder is replaced with the following time spans, e.g. 5 Minutes, 1 Hour-->
+  
   <string name="pref_lock_timeout_summary">Kun Zerion ei ole käytössä, lukitse se automaattisesti %s jälkeen</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_1">1 minuutin</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_5">5 minuutin</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_15">15 minuutin</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_30">30 minuutin</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
+  
   <string name="pref_lock_timeout_60">1 tunnin</string>
   <string name="pref_lock_timeout_never">Ei koskaan</string>
   <string name="pref_lock_timeout_never_summary">Älä lukitse Zerionia automaattisesti</string>
@@ -295,7 +290,7 @@
   <string name="purge_setting_summary">Poista Zerion tilisi jos paniikkinappia on painettu. Varoitus: Tämä tulee pysyvästi poistamaan sinun tunnukset, yhteystiedot ja viestit</string>
   <string name="uninstall_setting_title">Poista Zerionin asennus</string>
   <string name="uninstall_setting_summary">Tämä tulee vaatimaan manuaalisen varmennuksen paniikkitilanteessa</string>
-  <!--Settings Notifications-->
+  
   <string name="notification_settings_title">Ilmoitukset</string>
   <string name="notify_sign_in_title">Muistuta minua kirjautumaan sisään</string>
   <string name="notify_sign_in_summary">Näytä muistutus kun puhelin käynnistyy tai kun sovellus on päivitetty</string>
@@ -311,14 +306,14 @@
   <string name="notify_sound_setting_disabled">Ei mikään</string>
   <string name="choose_ringtone_title">Valitse soittoääni</string>
   <string name="cannot_load_ringtone">Soittoäänen lataaminen epäonnistui</string>
-  <!--Settings Feedback-->
+  
   <string name="feedback_settings_title">Palaute</string>
   <string name="send_feedback">Lähetä palautetta</string>
-  <!--Link Warning-->
+  
   <string name="link_warning_title">Linkkivaroitus</string>
   <string name="link_warning_intro">Olet aikomassa avata seuraavan linkin toisessa sovelluksessa.</string>
   <string name="link_warning_open_link">Avaa linkki</string>
-  <!--Crash Reporter-->
+  
   <string name="crash_report_title">Zerion kaatumisilmoitus</string>
   <string name="zerion_crashed">Pahoittelemme, Zerion on kaatunut.</string>
   <string name="not_your_fault">Tämä ei ole sinun syysi.</string>
@@ -334,28 +329,28 @@
   <string name="send_report">Lähetä ilmoitus</string>
   <string name="close">Sulje</string>
   <string name="dev_report_saved">Ilmoitus tallennettu. Sen lähetys tapahtuu seuraavan kerran kun kirjaudut sisään Zerioniin.</string>
-  <!--Sign Out-->
+  
   <string name="progress_title_logout">Kirjaudutaan ulos Zerionista...</string>
-  <!--Screen Filters & Tapjacking-->
+  
   <string name="screen_filter_title">Näyttökerros havaittu</string>
   <string name="screen_filter_body">Toinen sovellus on piirtämässä Zerionin päälle. Suojellakseen sinun turvallisuutta, Zerion ei tule vastaamaan kosketuksiin silloin kun toinen sovellus on piirtämässä Zerionin päälle.\n\nOn mahdollista, että seuraavat sovellukset piirtävät päälle:\n\n%1$s</string>
   <string name="screen_filter_allow">Salli näiden sovellusten piirtää päälle</string>
-  <!--Permission Requests-->
+  
   <string name="permission_camera_title">Kameran käyttöoikeus</string>
   <string name="permission_camera_request_body">Skannatakseen QR koodin, Zerion tarvitsee luvan käyttää kameraa.</string>
   <string name="permission_camera_denied_body">Olet kieltänyt käyttämästä kameraa, mutta yhteyshenkilöiden lisääminen vaatii kameran käyttöä.\n\nOle hyvä ja harkitse kameraluvan myöntämistä.</string>
-  <!--App Locking-->
+  
   <string name="lock_unlock">Avaa Zerionin lukitus</string>
   <string name="lock_unlock_verbose">Syötä laitteesi PIN, kuvio tai salasana avataksesi Zerion</string>
   <string name="lock_unlock_fingerprint_description">Kosketa sormenjälkitunnistinta rekisteröidyllä sormella jatkaaksesi</string>
   <string name="lock_unlock_password">Käytä salasanaa</string>
   <string name="lock_is_locked">Zerion on lukittu</string>
   <string name="lock_tap_to_unlock">Napauta avataksesi lukitus</string>
-  <!--Screenshots-->
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
-  <!--This is a message to be used in screenshots. Please use the same translation for Bob!-->
-  <!--This is a message to be used in screenshots. Please use the same translation for Alice!-->
-  <!--This is a message to be used in screenshots.-->
+  
+  
+  
+  
+  
+  
+  
 </resources>
