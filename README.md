@@ -84,7 +84,7 @@ Any attempt to reconnect with weaker security is automatically blocked.
 
 **[Google Play](https://play.google.com/store/apps/details?id=com.professor.zerion)** — Get it on the Play Store
 
-**[Download APK](https://github.com/zerionproject/Zerion/releases/latest)** — v1.0.10 (direct from GitHub)
+**[Download APK](https://github.com/zerionproject/Zerion/releases/latest)** — v1.2.0 (direct from GitHub)
 
 **F-Droid:** [fdroid.zerion.chat](https://fdroid.zerion.chat/fdroid/repo)
 ```
@@ -95,15 +95,23 @@ Repo fingerprint: D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6888F704
 
 ## Changelog
 
-**v1.0.10 (Latest):**
+**v1.2.0 (Latest):**
+- Security hardening: video call camera deadlock fixed, password handling uses char[] throughout
+- Registration Lock: protect your account with PIN or password (PBKDF2-SHA256)
+- App icon changer: disguise as Calculator, Notes, or Weather
+- Chat text size chooser and bubble color picker
+- Navigation bar size setting
+- Invite Friends sharing feature
+- Edge-to-edge rendering for Android 15 (SDK 35)
+- Link previews default OFF (fetched via Tor when enabled)
+- Removed QR/zxing dependency, Bluetooth, Wi-Fi hotspot dead code
+- Cleaned 2,100+ dead localized strings across 47 languages
+
+**v1.0.10:**
 - Now available on Google Play Store
-- Fixed local self-view rotation during video calls (correct formula for front/back camera)
-- Fixed camera switch race condition: `onClosed()` callback ensures hardware is fully released before reopening
-- Descriptive camera error messages (ERROR_CAMERA_IN_USE, ERROR_CAMERA_DISABLED, etc.)
-- Edge-to-edge rendering support for Android 15+ (SDK 35 compliance)
-- Removed deprecated `setStatusBarColor`/`setNavigationBarColor` API usage
-- Removed screen orientation lock from VoiceCallActivity (supports large screens/foldables)
-- Vault UI refinements: cleaner onboarding text, minimal labels
+- Fixed local self-view rotation during video calls
+- Fixed camera switch race condition
+- Vault UI refinements
 
 **v1.0.9:**
 - UI/UX improvements: rich empty states with icons across all list screens
