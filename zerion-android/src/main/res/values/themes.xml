@@ -18,8 +18,8 @@
 		<item name="colorOnSurface">@android:color/white</item>
 		<item name="colorSurfaceDim">@color/zerion_dark_bg</item>
 		<item name="colorError">@color/zerion_error_red</item>
-		<item name="android:statusBarColor">@color/zerion_dark_bg</item>
-		<item name="android:navigationBarColor">@color/zerion_dark_bg</item>
+		<item name="android:statusBarColor">@android:color/transparent</item>
+		<item name="android:navigationBarColor">@android:color/transparent</item>
 
 		<item name="android:windowBackground">@color/zerion_dark_bg</item>
 		<item name="android:textColor">@android:color/white</item>
@@ -157,8 +157,8 @@
 		<item name="colorPrimaryContainer">@color/zerion_amoled_card</item>
 		<item name="colorTertiaryContainer">@color/zerion_amoled_card</item>
 		<item name="android:windowBackground">@color/zerion_amoled_bg</item>
-		<item name="android:statusBarColor">@color/zerion_amoled_bg</item>
-		<item name="android:navigationBarColor">@color/zerion_amoled_bg</item>
+		<item name="android:statusBarColor">@android:color/transparent</item>
+		<item name="android:navigationBarColor">@android:color/transparent</item>
 	</style>
 
 </resources>

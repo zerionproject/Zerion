@@ -42,10 +42,10 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
 
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
+
 import static android.view.View.GONE;
-import static android.view.View.SYSTEM_UI_FLAG_FULLSCREEN;
-import static android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN;
-import static android.view.View.SYSTEM_UI_FLAG_LAYOUT_STABLE;
 import static android.view.View.VISIBLE;
 import static com.google.android.material.snackbar.Snackbar.LENGTH_LONG;
 import static java.util.Objects.requireNonNull;
@@ -63,8 +63,7 @@ public class ImageActivity extends ZerionActivity
 	final static String DATE = "date";
 	final static String ITEM_ID = "itemId";
 
-	private final static int UI_FLAGS_DEFAULT =
-			SYSTEM_UI_FLAG_LAYOUT_STABLE | SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN;
+	private WindowInsetsControllerCompat insetsController;
 
 	@Inject
 	ViewModelProvider.Factory viewModelFactory;
@@ -115,7 +114,10 @@ public class ImageActivity extends ZerionActivity
 		layout.setCallback(this);
 		layout.getViewTreeObserver().addOnGlobalLayoutListener(this);
 
-		WindowCompat.setDecorFitsSystemWindows(window, false);
+		insetsController = WindowCompat.getInsetsController(window,
+				window.getDecorView());
+		insetsController.setSystemBarsBehavior(
+				WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
 
 		appBarLayout = findViewById(R.id.appBarLayout);
 		Toolbar toolbar = requireNonNull(setUpCustomToolbar(true));
@@ -133,7 +135,6 @@ public class ImageActivity extends ZerionActivity
 		viewPager.setCurrentItem(position);
 
 		viewModel.getOnImageClicked().observeEvent(this, this::onImageClicked);
-		window.getDecorView().setSystemUiVisibility(UI_FLAGS_DEFAULT);
 	}
 
 	@Override
@@ -208,8 +209,7 @@ public class ImageActivity extends ZerionActivity
 	}
 
 	private void hideSystemUi(View decorView) {
-		decorView.setSystemUiVisibility(
-				SYSTEM_UI_FLAG_FULLSCREEN | UI_FLAGS_DEFAULT);
+		insetsController.hide(WindowInsetsCompat.Type.systemBars());
 		appBarLayout.animate()
 				.translationYBy(-1 * appBarLayout.getHeight())
 				.alpha(0f)
@@ -218,7 +218,7 @@ public class ImageActivity extends ZerionActivity
 	}
 
 	private void showSystemUi(View decorView) {
-		decorView.setSystemUiVisibility(UI_FLAGS_DEFAULT);
+		insetsController.show(WindowInsetsCompat.Type.systemBars());
 		appBarLayout.animate()
 				.translationYBy(appBarLayout.getHeight())
 				.alpha(1f)
@@ -228,8 +228,7 @@ public class ImageActivity extends ZerionActivity
 
 	private void showStatusBarBeforeFinishing() {
 		if (appBarLayout.getVisibility() == GONE) {
-			View decorView = getWindow().getDecorView();
-			decorView.setSystemUiVisibility(UI_FLAGS_DEFAULT);
+			insetsController.show(WindowInsetsCompat.Type.systemBars());
 		}
 	}
 

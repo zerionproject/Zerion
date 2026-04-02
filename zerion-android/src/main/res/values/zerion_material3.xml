@@ -48,8 +48,8 @@
 
 		<!-- Window & Status Bar -->
 		<item name="android:windowBackground">@drawable/bg_zerion_gradient</item>
-		<item name="android:statusBarColor">@color/zerion_dark_bg</item>
-		<item name="android:navigationBarColor">@color/zerion_dark_bg</item>
+		<item name="android:statusBarColor">@android:color/transparent</item>
+		<item name="android:navigationBarColor">@android:color/transparent</item>
 		<item name="android:windowLightStatusBar">false</item>
 
 		<!-- Typography -->

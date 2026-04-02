@@ -39,7 +39,6 @@ import androidx.annotation.Nullable;
 
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
-@SuppressWarnings("deprecation")
 public class VideoPlayerActivity extends ZerionActivity {
 
 	static final String ATTACHMENT = "attachment";
@@ -90,12 +89,8 @@ public class VideoPlayerActivity extends ZerionActivity {
 		cleanupOrphanedTempFiles();
 
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-		getWindow().getDecorView().setSystemUiVisibility(
-				View.SYSTEM_UI_FLAG_FULLSCREEN |
-				View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
-				View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
-
 		setContentView(R.layout.activity_video_player);
+		hideSystemUi();
 
 		playerView = findViewById(R.id.player_view);
 		loadingIndicator = findViewById(R.id.loading_indicator);
@@ -389,12 +384,12 @@ public class VideoPlayerActivity extends ZerionActivity {
 	}
 
 	private void hideSystemUi() {
-		getWindow().getDecorView().setSystemUiVisibility(
-				View.SYSTEM_UI_FLAG_FULLSCREEN |
-				View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
-				View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY |
-				View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
-				View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
-				View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+		androidx.core.view.WindowInsetsControllerCompat controller =
+				androidx.core.view.WindowCompat.getInsetsController(
+						getWindow(), getWindow().getDecorView());
+		controller.setSystemBarsBehavior(
+				androidx.core.view.WindowInsetsControllerCompat
+						.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+		controller.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars());
 	}
 }
