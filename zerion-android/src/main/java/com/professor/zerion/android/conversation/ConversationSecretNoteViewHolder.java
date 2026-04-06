@@ -67,6 +67,14 @@ class ConversationSecretNoteViewHolder extends ConversationItemViewHolder {
 	}
 
 	private void bindIncoming(ConversationSecretNoteItem item) {
+		if (item.isRevealed()) {
+			lockIcon.setVisibility(GONE);
+			secretTitle.setText(R.string.secret_note_label);
+			secretSubtitle.setText(R.string.secret_note_expired);
+			secretContent.setVisibility(GONE);
+			layout.setOnClickListener(null);
+			return;
+		}
 		lockIcon.setVisibility(VISIBLE);
 		secretTitle.setText(R.string.secret_note_label);
 		secretSubtitle.setText(R.string.secret_note_tap_to_read);
@@ -78,6 +86,8 @@ class ConversationSecretNoteViewHolder extends ConversationItemViewHolder {
 		if (item.isRevealed()) return;
 		item.markRevealed();
 
+		listener.onSecretNoteRevealing(true);
+
 		String content = item.getSecretContent();
 		if (content != null) {
 			secretContent.setText(content);
@@ -86,17 +96,23 @@ class ConversationSecretNoteViewHolder extends ConversationItemViewHolder {
 		lockIcon.setVisibility(GONE);
 		layout.setOnClickListener(null);
 
-		startCountdown(item.getId(), item.getCountdownSeconds());
+		startCountdown(item, item.getCountdownSeconds());
 	}
 
-	private void startCountdown(MessageId id, int seconds) {
+	private void startCountdown(ConversationSecretNoteItem item, int seconds) {
 		if (seconds <= 0) {
-			listener.onSecretNoteOpened(id);
+			secretContent.setText("");
+			secretContent.setVisibility(GONE);
+			secretSubtitle.setText(R.string.secret_note_expired);
+			item.clearSecretContent();
+
+			listener.onSecretNoteRevealing(false);
+			listener.onSecretNoteOpened(item.getId());
 			return;
 		}
 		secretSubtitle.setText(secretSubtitle.getContext()
 				.getString(R.string.secret_note_deletes_in, seconds));
-		pendingStep = () -> startCountdown(id, seconds - 1);
+		pendingStep = () -> startCountdown(item, seconds - 1);
 		handler.postDelayed(pendingStep, 1000);
 	}
 

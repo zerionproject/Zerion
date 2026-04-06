@@ -1390,6 +1390,7 @@ public class ConversationActivity extends ZerionActivity
 			boolean seen) {
 		adapter.incrementRevision();
 		Set<MessageId> messages = new HashSet<>(messageIds);
+		List<MessageId> secretNotesToDelete = new ArrayList<>();
 		SparseArray<ConversationItem> list = adapter.getOutgoingMessages();
 		for (int i = 0; i < list.size(); i++) {
 			ConversationItem item = list.valueAt(i);
@@ -1397,7 +1398,13 @@ public class ConversationActivity extends ZerionActivity
 				item.setSent(sent);
 				item.setSeen(seen);
 				adapter.notifyItemChanged(list.keyAt(i));
+				if (seen && item instanceof ConversationSecretNoteItem) {
+					secretNotesToDelete.add(item.getId());
+				}
 			}
+		}
+		if (!secretNotesToDelete.isEmpty()) {
+			viewModel.deleteMessages(secretNotesToDelete);
 		}
 	}
 
@@ -1942,6 +1949,22 @@ public class ConversationActivity extends ZerionActivity
 						viewModel.sendReaction(item.getId(),
 								REACTION_EMOJIS[which]))
 				.show();
+	}
+
+	@Override
+	public void onSecretNoteRevealing(boolean revealing) {
+		if (revealing) {
+			getWindow().addFlags(
+					android.view.WindowManager.LayoutParams.FLAG_SECURE);
+		} else {
+			boolean userPref = uiPrefs.getBoolean(
+					com.professor.zerion.android.settings.SecurityFragment
+							.PREF_SCREENSHOT_PROTECTION, true);
+			if (!userPref) {
+				getWindow().clearFlags(
+						android.view.WindowManager.LayoutParams.FLAG_SECURE);
+			}
+		}
 	}
 
 	@Override

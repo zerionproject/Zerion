@@ -31,6 +31,8 @@ interface ConversationListener {
 
 	void onSecretNoteOpened(org.briarproject.bramble.api.sync.MessageId messageId);
 
+	void onSecretNoteRevealing(boolean revealing);
+
 	List<AttachmentItem> loadAttachmentsForItem(ConversationMessageItem item);
 
 }

@@ -68,6 +68,11 @@ class ConversationSecretNoteItem extends ConversationItem {
 		return text != null && text.startsWith(PREFIX);
 	}
 
+	@UiThread
+	void clearSecretContent() {
+		setText(null);
+	}
+
 	static String wrapContent(String text, int countdownSeconds) {
 		return PREFIX + countdownSeconds + ":" + text;
 	}
