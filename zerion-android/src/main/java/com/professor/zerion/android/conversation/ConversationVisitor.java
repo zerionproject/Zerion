@@ -104,7 +104,8 @@ class ConversationVisitor implements
 		if (h.hasText()) {
 			String text = textCache.getText(h.getId());
 			if (text != null && !text.startsWith("VOICE_CALL:") &&
-					!VoiceCallSignal.isSignal(text)) {
+					!VoiceCallSignal.isSignal(text) &&
+					!ConversationSecretNoteItem.isSecretNoteText(text)) {
 				item.setText(text);
 			}
 		}

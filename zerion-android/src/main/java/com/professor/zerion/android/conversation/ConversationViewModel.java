@@ -537,7 +537,12 @@ public class ConversationViewModel extends DbViewModel
 							message.getTimestamp(), true, true, false, false,
 							true, java.util.Collections.emptyList(),
 							m.getAutoDeleteTimer(), null);
-					txn.attach(() -> addedHeader.setEvent(h));
+					String finalText = secretText;
+					txn.attach(() -> {
+						messageTextLoaded.setEvent(
+								new Pair<>(message.getId(), finalText));
+						addedHeader.setEvent(h);
+					});
 				});
 			} catch (DbException e) {
 				handleException(e);

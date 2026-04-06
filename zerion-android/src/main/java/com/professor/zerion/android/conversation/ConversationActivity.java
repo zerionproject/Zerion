@@ -1324,6 +1324,22 @@ public class ConversationActivity extends ZerionActivity
 	private void displayMessageText(MessageId m, String text) {
 		runOnUiThreadUnlessDestroyed(() -> {
 			textCache.put(m, text);
+			if (ConversationSecretNoteItem.isSecretNoteText(text)) {
+				Pair<Integer, ConversationMessageItem> pair =
+						adapter.getMessageItem(m);
+				if (pair != null) {
+					ConversationMessageItem old = pair.getSecond();
+					ConversationSecretNoteItem secretItem =
+							new ConversationSecretNoteItem(
+									old.getHeader(), viewModel.getContactDisplayName());
+					secretItem.setText(text);
+					boolean scroll = shouldScrollWhenUpdatingMessage();
+					adapter.remove(old);
+					adapter.add(secretItem);
+					if (scroll) scrollToBottom();
+				}
+				return;
+			}
 			Pair<Integer, ConversationMessageItem> pair =
 					adapter.getMessageItem(m);
 			if (pair != null) {
