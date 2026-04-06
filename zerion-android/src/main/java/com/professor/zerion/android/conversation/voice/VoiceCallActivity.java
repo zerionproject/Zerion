@@ -514,6 +514,30 @@ public class VoiceCallActivity extends AppCompatActivity {
 	}
 
 	@Override
+	public void onUserLeaveHint() {
+		super.onUserLeaveHint();
+		if (isVideoActive && android.os.Build.VERSION.SDK_INT >= 26) {
+			try {
+				android.app.PictureInPictureParams.Builder pip =
+						new android.app.PictureInPictureParams.Builder();
+				pip.setAspectRatio(new android.util.Rational(9, 16));
+				enterPictureInPictureMode(pip.build());
+			} catch (Exception ignored) {
+			}
+		}
+	}
+
+	@Override
+	public void onPictureInPictureModeChanged(boolean inPip) {
+		super.onPictureInPictureModeChanged(inPip);
+		int controlsVisibility = inPip ? View.GONE : View.VISIBLE;
+		if (activeCallLayout != null) activeCallLayout.setVisibility(controlsVisibility);
+		if (contactNameText != null) contactNameText.setVisibility(controlsVisibility);
+		if (callStatusText != null) callStatusText.setVisibility(controlsVisibility);
+		if (callDuration != null) callDuration.setVisibility(controlsVisibility);
+	}
+
+	@Override
 	protected void onDestroy() {
 		super.onDestroy();
 

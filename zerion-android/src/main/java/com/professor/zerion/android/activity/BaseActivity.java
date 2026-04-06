@@ -96,10 +96,7 @@ public abstract class BaseActivity extends AppCompatActivity
 
 		super.onCreate(state);
 
-		androidx.core.view.WindowCompat.setDecorFitsSystemWindows(
-				getWindow(), false);
-		getWindow().setStatusBarColor(android.graphics.Color.TRANSPARENT);
-		getWindow().setNavigationBarColor(android.graphics.Color.TRANSPARENT);
+		androidx.activity.EdgeToEdge.enable(this);
 
 		securityManager.applyScreenshotProtection(this);
 

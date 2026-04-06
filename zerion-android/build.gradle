@@ -190,6 +190,7 @@ dependencies {
     implementation project(':briar-core')
 
     // newer versions of the libraries below require compileSdk 35
+    implementation 'androidx.activity:activity:1.9.3'
     implementation 'androidx.fragment:fragment:1.6.2'
     implementation 'androidx.preference:preference:1.2.1'
     implementation 'androidx.exifinterface:exifinterface:1.3.7'

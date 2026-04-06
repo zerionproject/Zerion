@@ -397,8 +397,7 @@
 			android:name=".android.contact.add.remote.QrScannerActivity"
 			android:exported="false"
 			android:label="@string/scan_qr_button"
-			android:theme="@style/ZerionTheme.NoActionBar"
-			android:screenOrientation="portrait" />
+			android:theme="@style/ZerionTheme.NoActionBar" />
 
 
 		<activity
@@ -438,6 +437,7 @@
 			android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize"
 			android:showWhenLocked="true"
 			android:turnScreenOn="true"
+			android:supportsPictureInPicture="true"
 			android:theme="@style/ZerionTheme.NoActionBar" />
 
 		<!-- Voice Call Service - supports microphone and special_use for permission fallback -->
