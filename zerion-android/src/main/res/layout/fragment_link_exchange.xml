@@ -139,6 +139,21 @@
 				app:layout_constraintTop_toBottomOf="@+id/yourLinkIcon"
 				tools:text="zerion://scnsdflamslkfjgluoblmksdfbwevlewajfdlkjewwhqliafskfjhskdjhvoieiv" />
 
+			<!-- QR code display for in-person exchange -->
+			<ImageView
+				android:id="@+id/qrCodeImage"
+				android:layout_width="200dp"
+				android:layout_height="200dp"
+				android:layout_marginTop="12dp"
+				android:background="@android:color/white"
+				android:padding="8dp"
+				android:scaleType="fitCenter"
+				android:visibility="gone"
+				android:contentDescription="@string/qr_code_description"
+				app:layout_constraintEnd_toEndOf="parent"
+				app:layout_constraintStart_toStartOf="parent"
+				app:layout_constraintTop_toBottomOf="@+id/linkView" />
+
 			<com.google.android.material.button.MaterialButton
 				android:id="@+id/copyButton"
 				style="@style/Zerion.Button.Text"
@@ -152,7 +167,7 @@
 				app:layout_constraintHorizontal_bias="1.0"
 				app:layout_constraintHorizontal_chainStyle="packed"
 				app:layout_constraintStart_toStartOf="parent"
-				app:layout_constraintTop_toBottomOf="@+id/linkView" />
+				app:layout_constraintTop_toBottomOf="@+id/qrCodeImage" />
 
 			<com.google.android.material.button.MaterialButton
 				android:id="@+id/shareButton"
@@ -222,6 +237,20 @@
 			</com.google.android.material.textfield.TextInputLayout>
 
 			<com.google.android.material.button.MaterialButton
+				android:id="@+id/scanQrButton"
+				style="@style/Zerion.Button.Text"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:text="@string/scan_qr_button"
+				app:icon="@drawable/ic_camera_24dp"
+				app:iconPadding="8dp"
+				app:layout_constraintEnd_toStartOf="@id/pasteButton"
+				app:layout_constraintHorizontal_chainStyle="packed"
+				app:layout_constraintStart_toStartOf="parent"
+				app:layout_constraintTop_toBottomOf="@+id/linkInputLayout"
+				app:layout_constraintVertical_bias="0.0" />
+
+			<com.google.android.material.button.MaterialButton
 				android:id="@+id/pasteButton"
 				style="@style/Zerion.Button.Text"
 				android:layout_width="wrap_content"
@@ -231,8 +260,7 @@
 				app:iconPadding="8dp"
 				app:layout_constraintBottom_toTopOf="@+id/infoView"
 				app:layout_constraintEnd_toEndOf="parent"
-				app:layout_constraintHorizontal_bias="1.0"
-				app:layout_constraintStart_toStartOf="parent"
+				app:layout_constraintStart_toEndOf="@id/scanQrButton"
 				app:layout_constraintTop_toBottomOf="@+id/linkInputLayout"
 				app:layout_constraintVertical_bias="0.0" />
 
