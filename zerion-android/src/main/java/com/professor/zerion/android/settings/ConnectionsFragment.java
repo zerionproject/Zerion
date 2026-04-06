@@ -51,7 +51,6 @@ public class ConnectionsFragment extends Fragment {
 
 	private MaterialCardView torNetworkCard;
 	private TextView torNetworkValue;
-	private SwitchMaterial torMobileSwitch;
 	private SwitchMaterial orbotProxySwitch;
 	private MaterialCardView orbotSettingsCard;
 	private TextView orbotProxyValue;
@@ -83,7 +82,6 @@ public class ConnectionsFragment extends Fragment {
 
 		torNetworkCard = view.findViewById(R.id.tor_network_card);
 		torNetworkValue = view.findViewById(R.id.tor_network_value);
-		torMobileSwitch = view.findViewById(R.id.tor_mobile_data_switch);
 		orbotProxySwitch = view.findViewById(R.id.orbot_proxy_switch);
 		orbotSettingsCard = view.findViewById(R.id.orbot_settings_card);
 		orbotProxyValue = view.findViewById(R.id.orbot_proxy_value);
@@ -91,11 +89,6 @@ public class ConnectionsFragment extends Fragment {
 		torNetworkEntries = getResources().getStringArray(R.array.tor_network_setting_names);
 		torNetworkValues = getResources().getStringArray(R.array.tor_network_setting_values);
 		torNetworkCard.setOnClickListener(v -> showTorNetworkDialog());
-		torMobileSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-			if (buttonView.isPressed()) {
-				connectionsManager.torStore.putBoolean(PREF_TOR_MOBILE, isChecked);
-			}
-		});
 		orbotProxySwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
 			if (buttonView.isPressed()) {
 				connectionsManager.torStore.putBoolean(PREF_KEY_ORBOT_ENABLED, isChecked);
@@ -110,16 +103,6 @@ public class ConnectionsFragment extends Fragment {
 	private void observeSettings() {
 		connectionsManager.torNetwork().observe(getViewLifecycleOwner(), value -> {
 			updateTorNetworkDisplay(value);
-		});
-
-		connectionsManager.torMobile().observe(getViewLifecycleOwner(), enabled -> {
-			torMobileSwitch.setOnCheckedChangeListener(null);
-			torMobileSwitch.setChecked(enabled);
-			torMobileSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-				if (buttonView.isPressed()) {
-					connectionsManager.torStore.putBoolean(PREF_TOR_MOBILE, isChecked);
-				}
-			});
 		});
 
 		connectionsManager.orbotEnabled().observe(getViewLifecycleOwner(), enabled -> {

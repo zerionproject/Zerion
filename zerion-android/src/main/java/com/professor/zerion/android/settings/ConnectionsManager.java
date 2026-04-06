@@ -48,8 +48,7 @@ class ConnectionsManager {
 				DEFAULT_PREF_TOR_NETWORK);
 		torNetwork.postValue(Integer.toString(torNetworkSetting));
 
-		torMobile.postValue(settings.getBoolean(PREF_TOR_MOBILE,
-				DEFAULT_PREF_TOR_MOBILE));
+		torMobile.postValue(true);
 		orbotEnabled.postValue(settings.getBoolean(PREF_KEY_ORBOT_ENABLED, false));
 		String host = settings.get(PREF_KEY_ORBOT_HOST);
 		orbotHost.postValue(host != null ? host : DEFAULT_ORBOT_HOST);
