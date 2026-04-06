@@ -49,8 +49,8 @@
 		android:supportsRtl="true"
 		android:theme="@style/Theme.Zerion"
 		android:enableOnBackInvokedCallback="true"
-		android:extractNativeLibs="true"
-		tools:ignore="GoogleAppIndexingWarning,UnusedAttribute">
+		tools:ignore="GoogleAppIndexingWarning,UnusedAttribute"
+		tools:targetApi="35">
 
 		<receiver
 			android:name="com.professor.zerion.android.login.SignInReminderReceiver"

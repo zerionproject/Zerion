@@ -75,7 +75,7 @@ android {
     defaultConfig {
         minSdkVersion 29
         targetSdkVersion 35
-        versionCode 10201
+        versionCode 10202
         versionName "1.2.1"
         applicationId "com.professor.zerion"
         buildConfigField "String", "VERSION_LABEL", "\"1.2.1\""
@@ -140,6 +140,12 @@ android {
     variantFilter { variant ->
         if (variant.flavors*.name.contains("screenshot") && variant.buildType.name == "release") {
             setIgnore(true)
+        }
+    }
+
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging = false
         }
     }
 
