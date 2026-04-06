@@ -405,6 +405,7 @@
 	<string name="secret_note_deletes_in">Deletes in %ds</string>
 	<string name="secret_note_sent">Secret note sent</string>
 	<string name="secret_note_waiting">Waiting to be read</string>
+	<string name="secret_note_read">Read</string>
 	<string name="secret_note_hint">Type your message, then tap 🔒 to send as secret note</string>
 	<string name="secret_note_button_desc">Send as secret note</string>
 	<string name="secret_note_timer_title">Self-destruct timer</string>

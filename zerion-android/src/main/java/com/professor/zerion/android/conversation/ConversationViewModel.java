@@ -497,9 +497,10 @@ public class ConversationViewModel extends DbViewModel
 	}
 
 	@UiThread
-	void sendSecretNote(String text, long timerMs) {
+	void sendSecretNote(String text, int countdownSeconds) {
 		if (text.trim().isEmpty()) return;
-		String secretText = ConversationSecretNoteItem.wrapContent(text.trim());
+		String secretText = ConversationSecretNoteItem.wrapContent(
+				text.trim(), countdownSeconds);
 		runOnDbThread(() -> {
 			try {
 				db.transaction(false, txn -> {
@@ -525,7 +526,7 @@ public class ConversationViewModel extends DbViewModel
 							m = privateMessageFactory.createPrivateMessage(
 									groupId, timestamp, secretText,
 									java.util.Collections.emptyList(),
-									timerMs, null);
+									NO_AUTO_DELETE_TIMER, null);
 						}
 					} catch (FormatException e) {
 						throw new AssertionError(e);
@@ -536,7 +537,7 @@ public class ConversationViewModel extends DbViewModel
 							message.getId(), message.getGroupId(),
 							message.getTimestamp(), true, true, false, false,
 							true, java.util.Collections.emptyList(),
-							m.getAutoDeleteTimer(), null);
+							NO_AUTO_DELETE_TIMER, null);
 					String finalText = secretText;
 					txn.attach(() -> {
 						messageTextLoaded.setEvent(

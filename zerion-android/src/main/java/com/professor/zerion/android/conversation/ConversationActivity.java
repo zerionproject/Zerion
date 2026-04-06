@@ -1430,6 +1430,11 @@ public class ConversationActivity extends ZerionActivity
 	}
 
 	@Override
+	public void onDisappearingMessagesTimerChanged(long timer) {
+		viewModel.setAutoDeleteTimer(timer);
+	}
+
+	@Override
 	public void onTooManyAttachments() {
 		new ZerionSnackbarBuilder()
 				.make(list, "Maximum " + MAX_ATTACHMENTS_PER_MESSAGE + " attachments allowed",
@@ -1953,18 +1958,11 @@ public class ConversationActivity extends ZerionActivity
 				getString(R.string.secret_note_timer_1h),
 				getString(R.string.secret_note_timer_12h)
 		};
-		long[] timers = {
-				0,
-				60_000,
-				300_000,
-				600_000,
-				3_600_000,
-				43_200_000
-		};
+		int[] countdowns = { 10, 60, 300, 600, 3600, 43200 };
 		new MaterialAlertDialogBuilder(this)
 				.setTitle(R.string.secret_note_timer_title)
 				.setItems(labels, (dialog, which) -> {
-					viewModel.sendSecretNote(text, timers[which]);
+					viewModel.sendSecretNote(text, countdowns[which]);
 					textInputView.clearText();
 				})
 				.show();

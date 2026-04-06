@@ -34,11 +34,32 @@ class ConversationSecretNoteItem extends ConversationItem {
 		revealed = true;
 	}
 
+	int getCountdownSeconds() {
+		String raw = getText();
+		if (raw != null && raw.startsWith(PREFIX)) {
+			String payload = raw.substring(PREFIX.length());
+			int sep = payload.indexOf(':');
+			if (sep > 0) {
+				try {
+					return Integer.parseInt(payload.substring(0, sep));
+				} catch (NumberFormatException e) {
+					return 10;
+				}
+			}
+		}
+		return 10;
+	}
+
 	@Nullable
 	String getSecretContent() {
 		String raw = getText();
 		if (raw != null && raw.startsWith(PREFIX)) {
-			return raw.substring(PREFIX.length());
+			String payload = raw.substring(PREFIX.length());
+			int sep = payload.indexOf(':');
+			if (sep >= 0) {
+				return payload.substring(sep + 1);
+			}
+			return payload;
 		}
 		return raw;
 	}
@@ -47,8 +68,8 @@ class ConversationSecretNoteItem extends ConversationItem {
 		return text != null && text.startsWith(PREFIX);
 	}
 
-	static String wrapContent(String text) {
-		return PREFIX + text;
+	static String wrapContent(String text, int countdownSeconds) {
+		return PREFIX + countdownSeconds + ":" + text;
 	}
 
 }

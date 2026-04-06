@@ -182,6 +182,8 @@ public class TextAttachmentController extends TextSendController
 			.setTitle(R.string.disappearing_message_timer_title)
 			.setItems(timerOptions, (dialog, which) -> {
 				expectedTimer = timerValues[which];
+				attachmentListener.onDisappearingMessagesTimerChanged(
+						timerValues[which]);
 				String message = which == 0 ?
 					ctx.getString(R.string.disappearing_timer_off) :
 					ctx.getString(R.string.disappearing_timer_set, timerOptions[which]);
@@ -367,5 +369,7 @@ public class TextAttachmentController extends TextSendController
 		void onAttachImageClicked();
 
 		void onTooManyAttachments();
+
+		void onDisappearingMessagesTimerChanged(long timer);
 	}
 }

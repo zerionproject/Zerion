@@ -48,15 +48,19 @@ class ConversationSecretNoteViewHolder extends ConversationItemViewHolder {
 		ConversationSecretNoteItem secretItem = (ConversationSecretNoteItem) item;
 
 		if (!item.isIncoming()) {
-			bindOutgoing();
+			bindOutgoing(secretItem);
 		} else {
 			bindIncoming(secretItem);
 		}
 	}
 
-	private void bindOutgoing() {
+	private void bindOutgoing(ConversationSecretNoteItem item) {
 		secretTitle.setText(R.string.secret_note_sent);
-		secretSubtitle.setText(R.string.secret_note_waiting);
+		if (item.isSeen()) {
+			secretSubtitle.setText(R.string.secret_note_read);
+		} else {
+			secretSubtitle.setText(R.string.secret_note_waiting);
+		}
 		lockIcon.setVisibility(VISIBLE);
 		secretContent.setVisibility(GONE);
 		layout.setOnClickListener(null);
@@ -82,7 +86,7 @@ class ConversationSecretNoteViewHolder extends ConversationItemViewHolder {
 		lockIcon.setVisibility(GONE);
 		layout.setOnClickListener(null);
 
-		startCountdown(item.getId(), 10);
+		startCountdown(item.getId(), item.getCountdownSeconds());
 	}
 
 	private void startCountdown(MessageId id, int seconds) {
