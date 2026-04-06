@@ -496,6 +496,55 @@ public class ConversationViewModel extends DbViewModel
 		}
 	}
 
+	@UiThread
+	void sendSecretNote(String text, long timerMs) {
+		if (text.trim().isEmpty()) return;
+		String secretText = ConversationSecretNoteItem.wrapContent(text.trim());
+		runOnDbThread(() -> {
+			try {
+				db.transaction(false, txn -> {
+					Contact contact =
+							requireNonNull(contactItem.getValue()).getContact();
+					GroupId groupId =
+							messagingManager.getContactGroup(contact).getId();
+					PrivateMessageFormat format =
+							requireNonNull(privateMessageFormat.getValue());
+					long timestamp = conversationManager
+							.getTimestampForOutgoingMessage(txn,
+									requireNonNull(contactId));
+					PrivateMessage m;
+					try {
+						if (format == TEXT_ONLY) {
+							m = privateMessageFactory.createLegacyPrivateMessage(
+									groupId, timestamp, secretText);
+						} else if (format == TEXT_IMAGES) {
+							m = privateMessageFactory.createPrivateMessage(
+									groupId, timestamp, secretText,
+									java.util.Collections.emptyList());
+						} else {
+							m = privateMessageFactory.createPrivateMessage(
+									groupId, timestamp, secretText,
+									java.util.Collections.emptyList(),
+									timerMs, null);
+						}
+					} catch (FormatException e) {
+						throw new AssertionError(e);
+					}
+					messagingManager.addLocalMessage(txn, m);
+					Message message = m.getMessage();
+					PrivateMessageHeader h = new PrivateMessageHeader(
+							message.getId(), message.getGroupId(),
+							message.getTimestamp(), true, true, false, false,
+							true, java.util.Collections.emptyList(),
+							m.getAutoDeleteTimer(), null);
+					txn.attach(() -> addedHeader.setEvent(h));
+				});
+			} catch (DbException e) {
+				handleException(e);
+			}
+		});
+	}
+
 	private void storeReplyContext(MessageId sentMessageId,
 			MessageId replyToId, @Nullable String replyToText) {
 		replyContextMap.put(sentMessageId,

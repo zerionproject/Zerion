@@ -9,7 +9,6 @@ import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
 import com.professor.zerion.android.fragment.BaseFragment.BaseFragmentListener;
-import org.briarproject.bramble.api.contact.ContactType;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
@@ -33,6 +32,7 @@ public class AddContactActivity extends ZerionActivity implements
 	ViewModelProvider.Factory viewModelFactory;
 	private AddContactViewModel viewModel;
 
+	// A zerion:// link received via share intent before the ViewModel is ready
 	@Nullable
 	private String pendingIncomingLink = null;
 
@@ -55,21 +55,32 @@ public class AddContactActivity extends ZerionActivity implements
 		}
 
 		viewModel.onCreate();
+
+		// Navigate to NicknameFragment once a remote link has been confirmed
+		// (triggered by both the URL path and the QR path)
 		viewModel.getRemoteLinkEntered().observeEvent(this, entered -> {
-			if (entered) {
-				NicknameFragment f = new NicknameFragment();
-				showNextFragment(f);
-			}
+			if (entered) showNextFragment(new NicknameFragment());
 		});
 
-		Intent i = getIntent();
+		// Chooser card selections
+		viewModel.getQrExchangeChosen().observeEvent(this,
+				v -> showNextFragment(new QrExchangeFragment()));
+		viewModel.getLinkExchangeChosen().observeEvent(this,
+				v -> showNextFragment(new LinkExchangeFragment()));
+
 		if (state == null) {
-			viewModel.setContactType(ContactType.ZERION);
-			onNewIntent(i);
-			showInitialFragment(new LinkExchangeFragment());
-			if (pendingIncomingLink != null) {
-				handleIncomingLink(pendingIncomingLink);
-				pendingIncomingLink = null;
+			Intent i = getIntent();
+			String incomingLink = extractLinkFromIntent(i);
+			if (incomingLink != null && viewModel.isValidRemoteContactLink(incomingLink)) {
+				// Opened via a shared zerion:// link — skip chooser, go to URL flow
+				viewModel.setRemoteHandshakeLink(incomingLink);
+				showInitialFragment(new LinkExchangeFragment());
+			} else {
+				// Normal entry — show the method chooser
+				showInitialFragment(new AddContactChooserFragment());
+			}
+			if (incomingLink != null && !viewModel.isValidRemoteContactLink(incomingLink)) {
+				Toast.makeText(this, R.string.invalid_link, LENGTH_LONG).show();
 			}
 		}
 	}
@@ -77,37 +88,30 @@ public class AddContactActivity extends ZerionActivity implements
 	@Override
 	protected void onNewIntent(Intent i) {
 		super.onNewIntent(i);
+		String link = extractLinkFromIntent(i);
+		if (link == null) return;
+		handleIncomingLink(link);
+	}
+
+	@Nullable
+	private String extractLinkFromIntent(Intent i) {
 		String action = i.getAction();
 		if (ACTION_SEND.equals(action) || ACTION_VIEW.equals(action)) {
 			String text = i.getStringExtra(EXTRA_TEXT);
-			String uri = i.getDataString();
-			if (text != null) handleOrDeferIncomingLink(text);
-			else if (uri != null) handleOrDeferIncomingLink(uri);
+			if (text != null) return text;
+			return i.getDataString();
 		}
-	}
-
-	private void handleOrDeferIncomingLink(String link) {
-		if (viewModel.getContactType() == null) {
-			if (viewModel.isValidRemoteContactLink(link)) {
-				pendingIncomingLink = link;
-			} else {
-				Toast.makeText(this, R.string.invalid_link, LENGTH_LONG)
-						.show();
-			}
-		} else {
-			handleIncomingLink(link);
-		}
+		return null;
 	}
 
 	private void handleIncomingLink(String link) {
-		if (link.equals(viewModel.getHandshakeLink().getValue())) {
-			Toast.makeText(this, R.string.intent_own_link, LENGTH_LONG)
-					.show();
+		String ownLink = viewModel.getHandshakeLink().getValue();
+		if (link.equals(ownLink)) {
+			Toast.makeText(this, R.string.intent_own_link, LENGTH_LONG).show();
 		} else if (viewModel.isValidRemoteContactLink(link)) {
 			viewModel.setRemoteHandshakeLink(link);
 		} else {
-			Toast.makeText(this, R.string.invalid_link, LENGTH_LONG)
-					.show();
+			Toast.makeText(this, R.string.invalid_link, LENGTH_LONG).show();
 		}
 	}
 

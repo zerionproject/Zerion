@@ -24,8 +24,19 @@
 			android:layout_width="0dp"
 			android:layout_height="wrap_content"
 			android:layout_weight="1"
-			android:layout_marginEnd="8dp"
+			android:layout_marginEnd="4dp"
 			app:maxTextLines="6" />
+
+		<ImageButton
+			android:id="@+id/secretNoteButton"
+			android:layout_width="36dp"
+			android:layout_height="36dp"
+			android:layout_marginEnd="4dp"
+			android:layout_gravity="center_vertical"
+			android:background="?attr/selectableItemBackgroundBorderless"
+			android:contentDescription="@string/secret_note_button_desc"
+			android:src="@drawable/ic_shield_lock"
+			android:alpha="0.55" />
 
 		<com.professor.zerion.android.view.CompositeSendButton
 			android:id="@+id/compositeSendButton"

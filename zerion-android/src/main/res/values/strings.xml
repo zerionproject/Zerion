@@ -398,9 +398,42 @@
 	<string name="connection_error_explanation">Please check that you are both connected to the same Wi-Fi network.</string>
 	<string name="connection_error_feedback">If this problem persists, please <a href="feedback">send feedback</a> to help us improve the app.</string>
 
+	<!-- Secret Notes -->
+
+	<string name="secret_note_label">Secret note</string>
+	<string name="secret_note_tap_to_read">Tap to read · self-destructs</string>
+	<string name="secret_note_deletes_in">Deletes in %ds</string>
+	<string name="secret_note_sent">Secret note sent</string>
+	<string name="secret_note_waiting">Waiting to be read</string>
+	<string name="secret_note_hint">Type your message, then tap 🔒 to send as secret note</string>
+	<string name="secret_note_button_desc">Send as secret note</string>
+	<string name="secret_note_timer_title">Self-destruct timer</string>
+	<string name="secret_note_timer_direct">After reading</string>
+	<string name="secret_note_timer_1m">1 minute</string>
+	<string name="secret_note_timer_5m">5 minutes</string>
+	<string name="secret_note_timer_10m">10 minutes</string>
+	<string name="secret_note_timer_1h">1 hour</string>
+	<string name="secret_note_timer_12h">12 hours</string>
+
+	<!-- Add Contact Method Chooser -->
+
+	<string name="add_contact_method_subtitle">Choose how to add a contact</string>
+	<string name="qr_exchange_card_title">Scan QR Codes</string>
+	<string name="qr_exchange_card_badge">In Person</string>
+	<string name="qr_exchange_card_description">Show your codes to each other and scan</string>
+	<string name="link_exchange_card_title">Share a Link</string>
+	<string name="link_exchange_card_badge">Remote</string>
+	<string name="link_exchange_card_description">Copy your link and paste theirs</string>
+	<string name="qr_exchange_camera_hint">Point at contact\'s code</string>
+	<string name="qr_exchange_your_code">Your code — show this to your contact</string>
+	<string name="qr_link_detected">Link found — connecting…</string>
+	<string name="qr_scanned_waiting">Scanned ✓</string>
+	<string name="qr_scanned_hint">Now let your contact scan your code</string>
+	<string name="qr_continue_button">Continue</string>
+
 	<!-- Adding Contacts Remotely -->
 
-	<string name="add_contact_remotely_title_case">Add Contact at a Distance</string>
+	<string name="add_contact_remotely_title_case">Add Contact</string>
 	<string name="add_contact_nearby_title">Add contact nearby</string>
 	<string name="add_contact_remotely_title">Add contact at a distance</string>
 	<string name="contact_link_intro">Enter the link from your contact here</string>

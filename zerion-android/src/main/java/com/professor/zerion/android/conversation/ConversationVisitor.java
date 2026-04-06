@@ -66,6 +66,12 @@ class ConversationVisitor implements
 				if (VoiceCallSignal.isSignal(text)) {
 					return null;
 				}
+				if (ConversationSecretNoteItem.isSecretNoteText(text)) {
+					ConversationSecretNoteItem secretItem =
+							new ConversationSecretNoteItem(h, contactName);
+					secretItem.setText(text);
+					return secretItem;
+				}
 			}
 		}
 

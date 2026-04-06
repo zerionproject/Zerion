@@ -98,6 +98,10 @@ class ConversationAdapter
 		} else if (type == R.layout.list_item_conversation_msg_out) {
 			return new ConversationMessageViewHolder(v, listener, false,
 					imageViewPool, imageItemDecoration, attachmentReader, dbExecutor);
+		} else if (type == R.layout.list_item_conversation_secret_in) {
+			return new ConversationSecretNoteViewHolder(v, listener, true);
+		} else if (type == R.layout.list_item_conversation_secret_out) {
+			return new ConversationSecretNoteViewHolder(v, listener, false);
 		} else if (type == R.layout.list_item_conversation_notice_in) {
 			return new ConversationNoticeViewHolder(v, listener, true);
 		} else if (type == R.layout.list_item_conversation_notice_out) {

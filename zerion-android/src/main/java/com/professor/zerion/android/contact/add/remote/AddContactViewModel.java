@@ -39,14 +39,14 @@ public class AddContactViewModel extends DbViewModel {
 			new MutableLiveData<>();
 	private final MutableLiveEvent<Boolean> remoteLinkEntered =
 			new MutableLiveEvent<>();
-	private final MutableLiveEvent<Boolean> contactTypeSelected =
+	private final MutableLiveEvent<Boolean> qrExchangeChosen =
+			new MutableLiveEvent<>();
+	private final MutableLiveEvent<Boolean> linkExchangeChosen =
 			new MutableLiveEvent<>();
 	private final MutableLiveData<LiveResult<Boolean>> addContactResult =
 			new MutableLiveData<>();
 	@Nullable
 	private String remoteHandshakeLink;
-	@Nullable
-	private ContactType selectedContactType;
 
 	@Inject
 	AddContactViewModel(Application application,
@@ -60,31 +60,15 @@ public class AddContactViewModel extends DbViewModel {
 	}
 
 	void onCreate() {
+		// Always load the Zerion handshake link — Briar mode is not supported
+		loadHandshakeLink();
 	}
 
-	
-	void setContactType(ContactType contactType) {
-		selectedContactType = contactType;
-		loadHandshakeLink(contactType);
-		contactTypeSelected.setEvent(true);
-	}
-
-	
-	@Nullable
-	ContactType getContactType() {
-		return selectedContactType;
-	}
-
-	
-	LiveEvent<Boolean> getContactTypeSelected() {
-		return contactTypeSelected;
-	}
-
-	private void loadHandshakeLink(ContactType contactType) {
+	private void loadHandshakeLink() {
 		runOnDbThread(() -> {
 			try {
 				handshakeLink.postValue(
-						contactManager.getHandshakeLink(contactType));
+						contactManager.getHandshakeLink(ContactType.ZERION));
 			} catch (DbException e) {
 				handleException(e);
 			}
@@ -93,6 +77,22 @@ public class AddContactViewModel extends DbViewModel {
 
 	LiveData<String> getHandshakeLink() {
 		return handshakeLink;
+	}
+
+	void onQrExchangeChosen() {
+		qrExchangeChosen.setEvent(true);
+	}
+
+	void onLinkExchangeChosen() {
+		linkExchangeChosen.setEvent(true);
+	}
+
+	LiveEvent<Boolean> getQrExchangeChosen() {
+		return qrExchangeChosen;
+	}
+
+	LiveEvent<Boolean> getLinkExchangeChosen() {
+		return linkExchangeChosen;
 	}
 
 	@Nullable
@@ -142,7 +142,7 @@ public class AddContactViewModel extends DbViewModel {
 				contactManager.removePendingContact(p.getId());
 				addContact(name);
 			} catch (NoSuchPendingContactException e) {
-				
+				// ignored
 			} catch (DbException e) {
 				addContactResult.postValue(new LiveResult<>(e));
 			}

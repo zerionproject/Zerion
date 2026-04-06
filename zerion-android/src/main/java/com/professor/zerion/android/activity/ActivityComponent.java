@@ -9,10 +9,11 @@ import com.professor.zerion.android.account.SetupFragment;
 import com.professor.zerion.android.account.UnlockActivity;
 import com.professor.zerion.android.contact.ContactListFragment;
 import com.professor.zerion.android.contact.add.remote.AddContactActivity;
-import com.professor.zerion.android.contact.add.remote.ContactTypeSelectionFragment;
+import com.professor.zerion.android.contact.add.remote.AddContactChooserFragment;
 import com.professor.zerion.android.contact.add.remote.LinkExchangeFragment;
 import com.professor.zerion.android.contact.add.remote.NicknameFragment;
 import com.professor.zerion.android.contact.add.remote.PendingContactListActivity;
+import com.professor.zerion.android.contact.add.remote.QrExchangeFragment;
 import com.professor.zerion.android.conversation.AliasDialogFragment;
 import com.professor.zerion.android.conversation.AllMediaActivity;
 import com.professor.zerion.android.conversation.ChatSettingsActivity;
@@ -146,7 +147,9 @@ public interface ActivityComponent {
 
 	void inject(RevealContactsFragment activity);
 
-	void inject(ContactTypeSelectionFragment fragment);
+	void inject(AddContactChooserFragment fragment);
+
+	void inject(QrExchangeFragment fragment);
 
 	void inject(LinkExchangeFragment fragment);
 

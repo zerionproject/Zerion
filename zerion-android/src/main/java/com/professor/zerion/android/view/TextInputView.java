@@ -119,6 +119,12 @@ public class TextInputView extends LinearLayout {
 		return textInput;
 	}
 
+	@javax.annotation.Nullable
+	public String getInputText() {
+		String t = textInput.getText();
+		return t != null ? t.trim() : null;
+	}
+
 	public void clearText() {
 		textInput.clearText();
 	}

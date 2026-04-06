@@ -477,6 +477,20 @@ public class ConversationActivity extends ZerionActivity
 				}
 			});
 		}
+
+		android.widget.ImageButton secretNoteButton =
+				textInputView.findViewById(R.id.secretNoteButton);
+		if (secretNoteButton != null) {
+			secretNoteButton.setOnClickListener(v -> {
+				String text = textInputView.getInputText();
+				if (text == null || text.isEmpty()) {
+					Toast.makeText(this, R.string.secret_note_hint,
+							Toast.LENGTH_SHORT).show();
+					return;
+				}
+				showSecretNoteTimerPicker(text);
+			});
+		}
 	}
 
 	private void setupTypingIndicator() {
@@ -1906,6 +1920,37 @@ public class ConversationActivity extends ZerionActivity
 				.setItems(REACTION_EMOJIS, (dialog, which) ->
 						viewModel.sendReaction(item.getId(),
 								REACTION_EMOJIS[which]))
+				.show();
+	}
+
+	@Override
+	public void onSecretNoteOpened(MessageId messageId) {
+		viewModel.deleteMessages(java.util.Collections.singleton(messageId));
+	}
+
+	private void showSecretNoteTimerPicker(String text) {
+		String[] labels = {
+				getString(R.string.secret_note_timer_direct),
+				getString(R.string.secret_note_timer_1m),
+				getString(R.string.secret_note_timer_5m),
+				getString(R.string.secret_note_timer_10m),
+				getString(R.string.secret_note_timer_1h),
+				getString(R.string.secret_note_timer_12h)
+		};
+		long[] timers = {
+				0,
+				60_000,
+				300_000,
+				600_000,
+				3_600_000,
+				43_200_000
+		};
+		new MaterialAlertDialogBuilder(this)
+				.setTitle(R.string.secret_note_timer_title)
+				.setItems(labels, (dialog, which) -> {
+					viewModel.sendSecretNote(text, timers[which]);
+					textInputView.clearText();
+				})
 				.show();
 	}
 

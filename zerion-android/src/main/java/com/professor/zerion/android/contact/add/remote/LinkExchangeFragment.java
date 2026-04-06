@@ -4,7 +4,6 @@ import android.content.ActivityNotFoundException;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Intent;
-import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -12,7 +11,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -31,8 +29,6 @@ import java.util.regex.Matcher;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.core.app.ShareCompat.IntentBuilder;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -59,22 +55,7 @@ public class LinkExchangeFragment extends BaseFragment {
 	private ClipboardManager clipboard;
 	private TextInputLayout linkInputLayout;
 	private TextInputEditText linkInput;
-	private ImageView qrCodeImage;
 	private final Handler clipboardHandler = new Handler(Looper.getMainLooper());
-
-	private final ActivityResultLauncher<Intent> qrScanLauncher =
-			registerForActivityResult(
-					new ActivityResultContracts.StartActivityForResult(),
-					result -> {
-						if (result.getResultCode() == android.app.Activity.RESULT_OK
-								&& result.getData() != null) {
-							String link = result.getData().getStringExtra(
-									QrScannerActivity.EXTRA_SCANNED_LINK);
-							if (link != null && linkInput != null) {
-								linkInput.setText(link);
-							}
-						}
-					});
 
 	@Override
 	public String getUniqueTag() {
@@ -100,7 +81,8 @@ public class LinkExchangeFragment extends BaseFragment {
 
 		linkInputLayout = v.findViewById(R.id.linkInputLayout);
 		linkInput = v.findViewById(R.id.linkInput);
-		qrCodeImage = v.findViewById(R.id.qrCodeImage);
+
+		// Pre-fill if a link was passed in via share intent
 		if (viewModel.getRemoteHandshakeLink() != null) {
 			linkInput.setText(viewModel.getRemoteHandshakeLink());
 		}
@@ -113,13 +95,6 @@ public class LinkExchangeFragment extends BaseFragment {
 			ClipData clipData = clipboard.getPrimaryClip();
 			if (clipData != null && clipData.getItemCount() > 0)
 				linkInput.setText(clipData.getItemAt(0).getText());
-		});
-
-		Button scanQrButton = v.findViewById(R.id.scanQrButton);
-		scanQrButton.setOnClickListener(view -> {
-			Intent intent = new Intent(requireContext(),
-					QrScannerActivity.class);
-			qrScanLauncher.launch(intent);
 		});
 
 		observeOnce(viewModel.getHandshakeLink(), this,
@@ -138,15 +113,6 @@ public class LinkExchangeFragment extends BaseFragment {
 
 		TextView linkView = v.findViewById(R.id.linkView);
 		linkView.setText(link);
-
-		// Generate and display QR code for in-person exchange
-		if (qrCodeImage != null) {
-			Bitmap qrBitmap = QrCodeUtils.generateQrCode(link);
-			if (qrBitmap != null) {
-				qrCodeImage.setImageBitmap(qrBitmap);
-				qrCodeImage.setVisibility(View.VISIBLE);
-			}
-		}
 
 		Button copyButton = v.findViewById(R.id.copyButton);
 		ClipData clip = ClipData.newPlainText(

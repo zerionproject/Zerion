@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:orientation="vertical"
+	android:keepScreenOn="true">
+
+	<!-- Top half: camera to scan contact's QR -->
+	<FrameLayout
+		android:layout_width="match_parent"
+		android:layout_height="0dp"
+		android:layout_weight="1"
+		android:background="@android:color/black">
+
+		<androidx.camera.view.PreviewView
+			android:id="@+id/previewView"
+			android:layout_width="match_parent"
+			android:layout_height="match_parent" />
+
+		<!-- Scan frame overlay -->
+		<View
+			android:layout_width="180dp"
+			android:layout_height="180dp"
+			android:layout_gravity="center"
+			android:background="@android:color/transparent"
+			android:foreground="@drawable/qr_scan_frame" />
+
+		<!-- Camera instruction -->
+		<TextView
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_gravity="top|center_horizontal"
+			android:layout_marginTop="16dp"
+			android:background="#80000000"
+			android:paddingHorizontal="16dp"
+			android:paddingVertical="6dp"
+			android:text="@string/qr_exchange_camera_hint"
+			android:textColor="@android:color/white"
+			android:textSize="13sp" />
+
+		<!-- Status overlay (link detected / scanned) -->
+		<TextView
+			android:id="@+id/statusText"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_gravity="bottom|center_horizontal"
+			android:layout_marginBottom="16dp"
+			android:background="#CC26B7F0"
+			android:paddingHorizontal="20dp"
+			android:paddingVertical="8dp"
+			android:textColor="@android:color/white"
+			android:textSize="14sp"
+			android:textStyle="bold"
+			android:visibility="gone" />
+
+	</FrameLayout>
+
+	<!-- Divider -->
+	<View
+		android:layout_width="match_parent"
+		android:layout_height="1dp"
+		android:background="#33FFFFFF" />
+
+	<!-- Bottom half: user's own QR code -->
+	<LinearLayout
+		android:layout_width="match_parent"
+		android:layout_height="0dp"
+		android:layout_weight="1"
+		android:background="@drawable/bg_zerion_gradient"
+		android:orientation="vertical"
+		android:gravity="center"
+		android:padding="16dp">
+
+		<ImageView
+			android:id="@+id/qrCodeImage"
+			android:layout_width="180dp"
+			android:layout_height="180dp"
+			android:background="@android:color/white"
+			android:padding="8dp"
+			android:scaleType="fitCenter"
+			android:contentDescription="@string/qr_code_description" />
+
+		<TextView
+			android:id="@+id/qrHintText"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_marginTop="12dp"
+			android:gravity="center"
+			android:text="@string/qr_exchange_your_code"
+			android:textColor="#B0FFFFFF"
+			android:textSize="13sp" />
+
+		<com.google.android.material.button.MaterialButton
+			android:id="@+id/continueButton"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_marginTop="16dp"
+			android:text="@string/qr_continue_button"
+			android:textColor="@android:color/white"
+			android:backgroundTint="#26B7F0"
+			android:visibility="gone" />
+
+	</LinearLayout>
+
+</LinearLayout>
