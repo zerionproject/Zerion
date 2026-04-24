@@ -8,7 +8,7 @@ import androidx.annotation.ColorRes;
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 
-import static androidx.core.app.NotificationCompat.VISIBILITY_PRIVATE;
+import static androidx.core.app.NotificationCompat.VISIBILITY_SECRET;
 
 public class ZerionNotificationBuilder extends NotificationCompat.Builder {
 
@@ -21,7 +21,7 @@ public class ZerionNotificationBuilder extends NotificationCompat.Builder {
 
 		setLights(ContextCompat.getColor(context, R.color.zerion_lime_400),
 				750, 500);
-		setVisibility(VISIBILITY_PRIVATE);
+		setVisibility(VISIBILITY_SECRET);
 	}
 
 	public ZerionNotificationBuilder setColorRes(@ColorRes int res) {

@@ -40,7 +40,6 @@ public class SecurityFragment extends Fragment {
 	public static final String PREF_SCREEN_LOCK_TIMEOUT = "pref_key_lock_timeout";
 	public static final String PREF_SCREENSHOT_PROTECTION = "pref_screenshot_protection";
 	public static final String PREF_TYPING_INDICATORS = "pref_typing_indicators";
-	public static final String PREF_LINK_PREVIEWS = "pref_link_previews";
 	public static final String PREF_VOICE_CALLS_ENABLED = "voice_calls_enabled";
 	public static final String PREF_VIDEO_CALLS_ENABLED = "video_calls_enabled";
 
@@ -61,7 +60,6 @@ public class SecurityFragment extends Fragment {
 	private SwitchMaterial lockSwitch;
 	private SwitchMaterial screenshotProtectionSwitch;
 	private SwitchMaterial typingIndicatorsSwitch;
-	private SwitchMaterial linkPreviewsSwitch;
 	private SwitchMaterial voiceCallsSwitch;
 	private SwitchMaterial videoCallsSwitch;
 	private MaterialCardView lockTimeoutCard;
@@ -137,20 +135,6 @@ public class SecurityFragment extends Fragment {
 				uiPrefs.edit().putBoolean(PREF_TYPING_INDICATORS, isChecked).apply();
 			}
 		});
-
-		linkPreviewsSwitch = view.findViewById(R.id.link_previews_switch);
-		if (linkPreviewsSwitch != null) {
-			boolean linkPreviewsEnabled = uiPrefs.getBoolean(
-					PREF_LINK_PREVIEWS, false);
-			linkPreviewsSwitch.setChecked(linkPreviewsEnabled);
-			linkPreviewsSwitch.setOnCheckedChangeListener(
-					(buttonView, isChecked) -> {
-				if (buttonView.isPressed()) {
-					uiPrefs.edit().putBoolean(PREF_LINK_PREVIEWS,
-							isChecked).apply();
-				}
-			});
-		}
 
 		voiceCallsSwitch = view.findViewById(R.id.voice_calls_switch);
 		if (voiceCallsSwitch != null) {

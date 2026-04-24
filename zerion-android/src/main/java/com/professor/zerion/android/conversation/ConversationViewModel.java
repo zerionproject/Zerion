@@ -162,8 +162,6 @@ public class ConversationViewModel extends DbViewModel
 			new MutableLiveData<>(false);
 	private final MutableLiveData<Map<MessageId, LinkPreview>> linkPreviewsMap =
 			new MutableLiveData<>();
-	private final MutableLiveData<LinkPreview> pendingLinkPreview =
-			new MutableLiveData<>();
 	static class MarkMessagesEvent {
 		final Collection<MessageId> messageIds;
 		final boolean sent;
@@ -1100,45 +1098,4 @@ public class ConversationViewModel extends DbViewModel
 		return linkPreviewsMap;
 	}
 
-	LiveData<LinkPreview> getPendingLinkPreview() {
-		return pendingLinkPreview;
-	}
-
-	void fetchLinkPreview(String url, int torSocksPort) {
-		runOnDbThread(() -> {
-			com.professor.zerion.android.conversation.linkpreview
-					.LinkPreviewFetcher fetcher =
-					new com.professor.zerion.android.conversation.linkpreview
-							.LinkPreviewFetcher(torSocksPort);
-			LinkPreview preview = fetcher.fetch(url);
-			pendingLinkPreview.postValue(preview);
-		});
-	}
-
-	void clearPendingLinkPreview() {
-		pendingLinkPreview.postValue(null);
-	}
-
-	@UiThread
-	LiveData<SendState> sendMessageWithPreview(@Nullable String text,
-			long expectedTimer, LinkPreview preview) {
-		MutableLiveData<SendState> liveData = new MutableLiveData<>();
-		if (contactId == null) {
-			liveData.setValue(ERROR);
-			return liveData;
-		}
-		final ContactId c = contactId;
-		runOnDbThread(() -> {
-			try {
-				db.transaction(false, txn -> {
-					messagingManager.addLocalLinkPreviewMessage(
-							txn, c, text, preview);
-					txn.attach(() -> liveData.setValue(SENT));
-				});
-			} catch (DbException e) {
-				liveData.postValue(ERROR);
-			}
-		});
-		return liveData;
-	}
 }

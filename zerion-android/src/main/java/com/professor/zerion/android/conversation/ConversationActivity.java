@@ -214,15 +214,6 @@ public class ConversationActivity extends ZerionActivity
 	private final TypingIndicatorManager typingManager =
 			new TypingIndicatorManager();
 
-	@Nullable
-	private View composeLinkPreviewCard;
-	@Nullable
-	private TextView composeLinkPreviewTitle;
-	@Nullable
-	private TextView composeLinkPreviewDomain;
-	@Nullable
-	private String lastDetectedUrl;
-
 	private final List<Integer> searchMatchPositions = new ArrayList<>();
 	private int searchMatchIndex = -1;
 
@@ -376,8 +367,6 @@ public class ConversationActivity extends ZerionActivity
 
 		typingIndicator = findViewById(R.id.typingIndicator);
 		setupTypingIndicator();
-		setupLinkPreviewDetection();
-
 		viewModel.getAutoDeleteTimer().observe(this, timer ->
 				sendController.setAutoDeleteTimer(timer));
 
@@ -551,91 +540,6 @@ public class ConversationActivity extends ZerionActivity
 				public void afterTextChanged(android.text.Editable s) {}
 			});
 		}
-	}
-
-	private void setupLinkPreviewDetection() {
-		composeLinkPreviewCard = findViewById(R.id.composeLinkPreviewCard);
-		composeLinkPreviewTitle = findViewById(R.id.composeLinkPreviewTitle);
-		composeLinkPreviewDomain = findViewById(R.id.composeLinkPreviewDomain);
-		ImageView dismiss = findViewById(R.id.composeLinkPreviewDismiss);
-		if (dismiss != null) {
-			dismiss.setOnClickListener(v -> {
-				viewModel.clearPendingLinkPreview();
-				hideLinkPreviewCompose();
-			});
-		}
-
-		viewModel.getPendingLinkPreview().observe(this, preview -> {
-			if (preview != null) {
-				showLinkPreviewCompose(preview);
-			} else {
-				hideLinkPreviewCompose();
-			}
-		});
-
-		android.widget.EditText editText = findViewById(R.id.input_text);
-		if (editText != null) {
-			editText.addTextChangedListener(
-					new android.text.TextWatcher() {
-				@Override
-				public void beforeTextChanged(CharSequence s, int start,
-						int count, int after) {}
-
-				@Override
-				public void onTextChanged(CharSequence s, int start,
-						int before, int count) {}
-
-				@Override
-				public void afterTextChanged(android.text.Editable s) {
-					if (!uiPrefs.getBoolean(
-						com.professor.zerion.android.settings
-								.SecurityFragment.PREF_LINK_PREVIEWS,
-						false)) {
-						return;
-					}
-					String text = s.toString();
-					String url = com.professor.zerion.android.conversation
-							.linkpreview.LinkPreviewFetcher
-							.extractUrl(text);
-					if (url != null && !url.equals(lastDetectedUrl)) {
-						lastDetectedUrl = url;
-						viewModel.fetchLinkPreview(url, getTorSocksPort());
-					} else if (url == null && lastDetectedUrl != null) {
-						lastDetectedUrl = null;
-						viewModel.clearPendingLinkPreview();
-					}
-				}
-			});
-		}
-	}
-
-	private int getTorSocksPort() {
-		return com.professor.zerion.android.AppModule
-				.getAndroidComponent(this).torSocksPort();
-	}
-
-	private void showLinkPreviewCompose(
-			org.briarproject.briar.api.messaging.LinkPreview preview) {
-		if (composeLinkPreviewCard == null) return;
-		if (composeLinkPreviewTitle != null) {
-			composeLinkPreviewTitle.setText(preview.getTitle());
-		}
-		if (composeLinkPreviewDomain != null) {
-			try {
-				composeLinkPreviewDomain.setText(
-						new java.net.URL(preview.getUrl()).getHost());
-			} catch (Exception e) {
-				composeLinkPreviewDomain.setText(preview.getUrl());
-			}
-		}
-		composeLinkPreviewCard.setVisibility(View.VISIBLE);
-	}
-
-	private void hideLinkPreviewCompose() {
-		if (composeLinkPreviewCard != null) {
-			composeLinkPreviewCard.setVisibility(View.GONE);
-		}
-		lastDetectedUrl = null;
 	}
 
 	private static final int REQUEST_CAMERA_PERMISSION = 1002;
@@ -1447,19 +1351,6 @@ public class ConversationActivity extends ZerionActivity
 	public LiveData<SendState> onSendClick(@Nullable String text,
 			List<AttachmentHeader> headers, long expectedAutoDeleteTimer) {
 		typingManager.onMessageSent();
-		// Check if there's a pending link preview to embed
-		org.briarproject.briar.api.messaging.LinkPreview preview =
-				viewModel.getPendingLinkPreview().getValue();
-		if (preview != null && text != null && !text.trim().isEmpty()
-				&& (headers == null || headers.isEmpty())) {
-			viewModel.clearPendingLinkPreview();
-			hideLinkPreviewCompose();
-			textInputView.hideReplyPreview();
-			return viewModel.sendMessageWithPreview(
-					text, expectedAutoDeleteTimer, preview);
-		}
-		viewModel.clearPendingLinkPreview();
-		hideLinkPreviewCompose();
 		ConversationItem replyToItem = textInputView.getReplyingToItem();
 		LiveData<SendState> result = viewModel.sendMessage(text, headers, expectedAutoDeleteTimer, replyToItem);
 		textInputView.hideReplyPreview();

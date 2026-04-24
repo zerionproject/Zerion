@@ -20,6 +20,7 @@ import com.professor.zerion.android.account.AccountWipeCleanup;
 import com.professor.zerion.android.api.AndroidNotificationManager;
 import com.professor.zerion.android.login.BruteForceProtection.FailureResult;
 import com.professor.zerion.android.login.BruteForceProtection.LockStatus;
+import com.professor.zerion.android.panic.WipePasswordManager;
 import com.professor.zerion.android.vault.VaultManager;
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -217,8 +218,33 @@ public class StartupViewModel extends AndroidViewModel
 				}
 			} catch (Exception e) {
 				operationalFailure.postEvent(true);
-			} finally {
-				Arrays.fill(password, '\0');
+			}
+
+			boolean duressMatch = false;
+			if (cryptographicFailure) {
+				try {
+					WipePasswordManager wpm =
+							WipePasswordManager.getInstance(getApplication());
+					if (wpm != null && wpm.isWipePasswordEnabled()
+							&& wpm.verifyWipePassword(password)) {
+						duressMatch = true;
+					}
+				} catch (Exception ignored) {
+				}
+			}
+			Arrays.fill(password, '\0');
+
+			if (duressMatch) {
+				try {
+					AccountWipeCleanup.wipe(getApplication(), vaultManager);
+					accountManager.deleteAccount();
+				} catch (Exception ignored) {
+				}
+				synchronized (bruteForceProtection) {
+					bruteForceProtection.clear();
+				}
+				triggerWipe.postEvent(true);
+				return;
 			}
 
 			if (cryptographicFailure && decryptionResult != null) {

@@ -233,8 +233,6 @@
 	<string name="typing_indicator">typing\u2026</string>
 	<string name="pref_typing_indicators_title">Typing indicators</string>
 	<string name="pref_typing_indicators_summary">Let contacts see when you are typing</string>
-	<string name="pref_link_previews_title">Link previews</string>
-	<string name="pref_link_previews_summary">Generate previews for URLs in messages (fetched via Tor)</string>
 	<string name="pref_calls_section_title">CALLS</string>
 	<string name="pref_voice_calls_title">Voice calls</string>
 	<string name="pref_voice_calls_summary">Allow voice calls to and from your contacts</string>
