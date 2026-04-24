@@ -130,6 +130,8 @@ public class ConversationViewModel extends DbViewModel
 			new MutableLiveData<>(false);
 	private final MutableLiveEvent<PrivateMessageHeader> addedHeader =
 			new MutableLiveEvent<>();
+	private final MutableLiveEvent<Pair<PrivateMessageHeader, String>> secretNoteAdded =
+			new MutableLiveEvent<>();
 	private final java.util.concurrent.ConcurrentHashMap<MessageId, Pair<MessageId, String>> replyContextMap =
 			new java.util.concurrent.ConcurrentHashMap<>();
 	private final MutableLiveData<ConversationItem> replyTarget =
@@ -538,11 +540,12 @@ public class ConversationViewModel extends DbViewModel
 							message.getTimestamp(), true, true, false, false,
 							true, java.util.Collections.emptyList(),
 							NO_AUTO_DELETE_TIMER, null);
-					String finalText = secretText;
+					final String finalText = secretText;
+					final MessageId finalId = message.getId();
 					txn.attach(() -> {
 						messageTextLoaded.setEvent(
-								new Pair<>(message.getId(), finalText));
-						addedHeader.setEvent(h);
+								new Pair<>(finalId, finalText));
+						secretNoteAdded.setEvent(new Pair<>(h, finalText));
 					});
 				});
 			} catch (DbException e) {
@@ -935,6 +938,10 @@ public class ConversationViewModel extends DbViewModel
 
 	LiveEvent<PrivateMessageHeader> getAddedPrivateMessage() {
 		return addedHeader;
+	}
+
+	LiveEvent<Pair<PrivateMessageHeader, String>> getSecretNoteAdded() {
+		return secretNoteAdded;
 	}
 
 	@UiThread

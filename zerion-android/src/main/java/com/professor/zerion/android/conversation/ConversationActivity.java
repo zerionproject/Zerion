@@ -290,6 +290,19 @@ public class ConversationActivity extends ZerionActivity
 		});
 		viewModel.getAddedPrivateMessage().observeEvent(this,
 				this::onAddedPrivateMessage);
+		viewModel.getSecretNoteAdded().observeEvent(this, pair -> {
+			if (pair != null) {
+				PrivateMessageHeader h = pair.getFirst();
+				String text = pair.getSecond();
+				textCache.put(h.getId(), text);
+				ConversationSecretNoteItem item =
+						new ConversationSecretNoteItem(h,
+								viewModel.getContactDisplayName());
+				item.setText(text);
+				adapter.add(item);
+				scrollToBottom();
+			}
+		});
 
 		visitor = new ConversationVisitor(this, this, this,
 				viewModel.getContactDisplayName(), viewModel);
@@ -1026,6 +1039,7 @@ public class ConversationActivity extends ZerionActivity
 		IntentFilter filter = new IntentFilter("com.professor.zerion.CLEANUP_VOICE_CALL");
 		LocalBroadcastManager.getInstance(this).registerReceiver(voiceCallCleanupReceiver, filter);
 		loadMessages();
+		invalidateOptionsMenu();
 	}
 
 	@Override
@@ -1106,6 +1120,17 @@ public class ConversationActivity extends ZerionActivity
 			});
 		}
 
+		boolean voiceEnabled = uiPrefs.getBoolean(
+				com.professor.zerion.android.settings.SecurityFragment
+						.PREF_VOICE_CALLS_ENABLED, false);
+		boolean videoEnabled = uiPrefs.getBoolean(
+				com.professor.zerion.android.settings.SecurityFragment
+						.PREF_VIDEO_CALLS_ENABLED, false);
+		MenuItem voiceCallItem = menu.findItem(R.id.action_voice_call);
+		MenuItem videoCallItem = menu.findItem(R.id.action_video_call);
+		if (voiceCallItem != null) voiceCallItem.setVisible(voiceEnabled);
+		if (videoCallItem != null) videoCallItem.setVisible(videoEnabled);
+
 		return super.onCreateOptionsMenu(menu);
 	}
 
@@ -1116,9 +1141,19 @@ public class ConversationActivity extends ZerionActivity
 			onBackPressed();
 			return true;
 		} else if (itemId == R.id.action_voice_call) {
+			if (!uiPrefs.getBoolean(
+					com.professor.zerion.android.settings.SecurityFragment
+							.PREF_VOICE_CALLS_ENABLED, false)) {
+				return true;
+			}
 			startVoiceCall();
 			return true;
 		} else if (itemId == R.id.action_video_call) {
+			if (!uiPrefs.getBoolean(
+					com.professor.zerion.android.settings.SecurityFragment
+							.PREF_VIDEO_CALLS_ENABLED, false)) {
+				return true;
+			}
 			startVideoCall();
 			return true;
 		} else if (itemId == R.id.action_all_media) {

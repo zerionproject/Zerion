@@ -41,6 +41,8 @@ public class SecurityFragment extends Fragment {
 	public static final String PREF_SCREENSHOT_PROTECTION = "pref_screenshot_protection";
 	public static final String PREF_TYPING_INDICATORS = "pref_typing_indicators";
 	public static final String PREF_LINK_PREVIEWS = "pref_link_previews";
+	public static final String PREF_VOICE_CALLS_ENABLED = "voice_calls_enabled";
+	public static final String PREF_VIDEO_CALLS_ENABLED = "video_calls_enabled";
 
 	@Inject
 	ViewModelProvider.Factory viewModelFactory;
@@ -60,6 +62,8 @@ public class SecurityFragment extends Fragment {
 	private SwitchMaterial screenshotProtectionSwitch;
 	private SwitchMaterial typingIndicatorsSwitch;
 	private SwitchMaterial linkPreviewsSwitch;
+	private SwitchMaterial voiceCallsSwitch;
+	private SwitchMaterial videoCallsSwitch;
 	private MaterialCardView lockTimeoutCard;
 	private TextView lockTimeoutValue;
 	private MaterialCardView changePasswordCard;
@@ -144,6 +148,46 @@ public class SecurityFragment extends Fragment {
 				if (buttonView.isPressed()) {
 					uiPrefs.edit().putBoolean(PREF_LINK_PREVIEWS,
 							isChecked).apply();
+				}
+			});
+		}
+
+		voiceCallsSwitch = view.findViewById(R.id.voice_calls_switch);
+		if (voiceCallsSwitch != null) {
+			boolean voiceEnabled = uiPrefs.getBoolean(
+					PREF_VOICE_CALLS_ENABLED, false);
+			voiceCallsSwitch.setChecked(voiceEnabled);
+			voiceCallsSwitch.setOnCheckedChangeListener(
+					(buttonView, isChecked) -> {
+				if (buttonView.isPressed()) {
+					uiPrefs.edit().putBoolean(PREF_VOICE_CALLS_ENABLED,
+							isChecked).apply();
+					if (!isChecked && videoCallsSwitch != null
+							&& videoCallsSwitch.isChecked()) {
+						videoCallsSwitch.setChecked(false);
+						uiPrefs.edit().putBoolean(PREF_VIDEO_CALLS_ENABLED,
+								false).apply();
+					}
+				}
+			});
+		}
+
+		videoCallsSwitch = view.findViewById(R.id.video_calls_switch);
+		if (videoCallsSwitch != null) {
+			boolean videoEnabled = uiPrefs.getBoolean(
+					PREF_VIDEO_CALLS_ENABLED, false);
+			videoCallsSwitch.setChecked(videoEnabled);
+			videoCallsSwitch.setOnCheckedChangeListener(
+					(buttonView, isChecked) -> {
+				if (buttonView.isPressed()) {
+					uiPrefs.edit().putBoolean(PREF_VIDEO_CALLS_ENABLED,
+							isChecked).apply();
+					if (isChecked && voiceCallsSwitch != null
+							&& !voiceCallsSwitch.isChecked()) {
+						voiceCallsSwitch.setChecked(true);
+						uiPrefs.edit().putBoolean(PREF_VOICE_CALLS_ENABLED,
+								true).apply();
+					}
 				}
 			});
 		}
@@ -304,20 +348,26 @@ public class SecurityFragment extends Fragment {
 							return;
 						}
 
-						if (!java.security.MessageDigest.isEqual(
-								new String(pw1).getBytes(java.nio.charset.StandardCharsets.UTF_8),
-								new String(pw2).getBytes(java.nio.charset.StandardCharsets.UTF_8))) {
+						if (!java.util.Arrays.equals(pw1, pw2)) {
 							showToast(R.string.wipe_password_mismatch);
 							return;
 						}
 
 						WipePasswordManager mgr = getWipePasswordManager();
-						if (mgr != null && mgr.setWipePassword(new String(pw1))) {
-							showToast(R.string.wipe_password_set_success);
-							updateWipePasswordSummary();
-						} else {
-							showToast(R.string.wipe_password_set_failed);
-						}
+						final char[] pwToSet = pw1;
+						new Thread(() -> {
+							boolean ok = mgr != null && mgr.setWipePassword(pwToSet);
+							java.util.Arrays.fill(pwToSet, '\0');
+							requireActivity().runOnUiThread(() -> {
+								if (ok) {
+									showToast(R.string.wipe_password_set_success);
+									updateWipePasswordSummary();
+								} else {
+									showToast(R.string.wipe_password_set_failed);
+								}
+							});
+						}).start();
+						pw1 = null;
 					} finally {
 						if (pw1 != null) java.util.Arrays.fill(pw1, '\0');
 						if (pw2 != null) java.util.Arrays.fill(pw2, '\0');

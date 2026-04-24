@@ -307,11 +307,29 @@ public class VoiceCallActivity extends AppCompatActivity {
 		muteButton.setOnClickListener(v -> toggleMute());
 		speakerButton.setOnClickListener(v -> toggleSpeaker());
 
+		android.content.SharedPreferences prefs =
+				com.professor.zerion.android.AppModule.getUiPrefs();
+		boolean videoEnabled = prefs != null && prefs.getBoolean(
+				com.professor.zerion.android.settings.SecurityFragment
+						.PREF_VIDEO_CALLS_ENABLED, false);
+
 		if (videoButton != null) {
-			videoButton.setOnClickListener(v -> toggleVideo());
+			if (videoEnabled) {
+				videoButton.setOnClickListener(v -> toggleVideo());
+			} else {
+				if (videoButtonContainer != null) {
+					videoButtonContainer.setVisibility(View.GONE);
+				} else {
+					videoButton.setVisibility(View.GONE);
+				}
+			}
 		}
 		if (switchCameraButton != null) {
-			switchCameraButton.setOnClickListener(v -> switchCamera());
+			if (videoEnabled) {
+				switchCameraButton.setOnClickListener(v -> switchCamera());
+			} else if (switchCameraContainer != null) {
+				switchCameraContainer.setVisibility(View.GONE);
+			}
 		}
 	}
 
@@ -470,6 +488,40 @@ public class VoiceCallActivity extends AppCompatActivity {
 			if (!isFinishing) {
 				isFinishing = true;
 				handler.postDelayed(this::finish, 2000);
+			}
+		});
+	}
+
+	public void onCallRejectedPeerDisabledCalls() {
+		runOnUiThread(() -> {
+			stopRingtone();
+			stopDialTone();
+			String name = contactNameText.getText() != null
+					? contactNameText.getText().toString() : "Contact";
+			callStatusText.setText(getString(
+					R.string.call_rejected_peer_disabled_calls, name)
+					+ "\n" + getString(
+					R.string.call_rejected_peer_disabled_calls_hint));
+			if (!isFinishing) {
+				isFinishing = true;
+				handler.postDelayed(this::finish, 3500);
+			}
+		});
+	}
+
+	public void onCallRejectedPeerDisabledVideo() {
+		runOnUiThread(() -> {
+			stopRingtone();
+			stopDialTone();
+			String name = contactNameText.getText() != null
+					? contactNameText.getText().toString() : "Contact";
+			callStatusText.setText(getString(
+					R.string.call_rejected_peer_disabled_video, name)
+					+ "\n" + getString(
+					R.string.call_rejected_peer_disabled_video_hint));
+			if (!isFinishing) {
+				isFinishing = true;
+				handler.postDelayed(this::finish, 3500);
 			}
 		});
 	}

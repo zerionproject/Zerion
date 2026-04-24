@@ -48,6 +48,9 @@ public interface VoiceSignalFactory {
 	VoiceSignal createCallReject(GroupId groupId, long timestamp,
 			String callId) throws FormatException;
 
+	VoiceSignal createCallReject(GroupId groupId, long timestamp,
+			String callId, @Nullable String reason) throws FormatException;
+
 	/**
 	 * Creates a voice signal for call end.
 	 *

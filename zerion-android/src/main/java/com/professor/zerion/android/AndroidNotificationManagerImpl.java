@@ -38,6 +38,8 @@ import com.professor.zerion.android.api.AndroidNotificationManager;
 import org.briarproject.briar.api.conversation.ConversationResponse;
 import org.briarproject.briar.api.conversation.event.ConversationMessageReceivedEvent;
 import org.briarproject.briar.api.messaging.MessagingManager;
+import org.briarproject.briar.api.messaging.VoiceSignal;
+import org.briarproject.briar.api.messaging.VoiceSignalFactory;
 import org.briarproject.briar.api.messaging.VoiceSignalHeader;
 import org.briarproject.briar.api.messaging.VoiceSignalType;
 import org.briarproject.briar.api.messaging.event.PrivateMessageReceivedEvent;
@@ -120,6 +122,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	private final MessagingManager messagingManager;
 	private final ContactManager contactManager;
 	private final SharedPreferences uiPrefs;
+	private final VoiceSignalFactory voiceSignalFactory;
 	private final AtomicBoolean used = new AtomicBoolean(false);
 
 	private final Multiset<ContactId> contactCounts = new Multiset<>();
@@ -142,12 +145,14 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	AndroidNotificationManagerImpl(SettingsManager settingsManager,
 			AndroidExecutor androidExecutor, Application app, Clock clock,
 			MessagingManager messagingManager, ContactManager contactManager,
+			VoiceSignalFactory voiceSignalFactory,
 			@AppModule.UiPrefs SharedPreferences uiPrefs) {
 		this.settingsManager = settingsManager;
 		this.androidExecutor = androidExecutor;
 		this.clock = clock;
 		this.messagingManager = messagingManager;
 		this.contactManager = contactManager;
+		this.voiceSignalFactory = voiceSignalFactory;
 		this.uiPrefs = uiPrefs;
 		appContext = app.getApplicationContext();
 		notificationManager = (NotificationManager)
@@ -713,7 +718,29 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 				String callId = header.getCallId();
 				String rawPayload = header.getPayload();
 
-					boolean isVideoCall = false;
+				boolean isVideoCall = false;
+				if (rawPayload != null) {
+					String[] parts = rawPayload.split("\\|");
+					if (parts.length >= 2 &&
+							"VIDEO".equals(parts[parts.length - 1])) {
+						isVideoCall = true;
+					}
+				}
+
+				boolean voiceEnabled = uiPrefs.getBoolean(
+						com.professor.zerion.android.settings.SecurityFragment
+								.PREF_VOICE_CALLS_ENABLED, false);
+				boolean videoEnabled = uiPrefs.getBoolean(
+						com.professor.zerion.android.settings.SecurityFragment
+								.PREF_VIDEO_CALLS_ENABLED, false);
+
+				if (!voiceEnabled || (isVideoCall && !videoEnabled)) {
+					String reason = (isVideoCall && !videoEnabled && voiceEnabled)
+							? "video_disabled" : "calls_disabled";
+					rejectIncomingCall(contact, callId, reason);
+					return;
+				}
+
 				if (rawPayload != null) {
 					String voiceCallKeyHex = rawPayload;
 					String ephemeralHex = null;
@@ -721,7 +748,6 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 					voiceCallKeyHex = parts[0];
 					if (parts.length >= 2) {
 						if ("VIDEO".equals(parts[parts.length - 1])) {
-							isVideoCall = true;
 							if (parts.length >= 3) {
 								ephemeralHex = parts[1];
 							}
@@ -764,6 +790,22 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 					appContext.startActivity(intent);
 				});
 			} catch (DbException e) {
+			}
+		});
+	}
+
+	private void rejectIncomingCall(Contact contact, String callId,
+			String reason) {
+		if (callId == null) return;
+		androidExecutor.runOnBackgroundThread(() -> {
+			try {
+				GroupId groupId =
+						messagingManager.getContactGroup(contact).getId();
+				long timestamp = clock.currentTimeMillis();
+				VoiceSignal signal = voiceSignalFactory.createCallReject(
+						groupId, timestamp, callId, reason);
+				messagingManager.addLocalVoiceSignal(signal);
+			} catch (Exception ignored) {
 			}
 		});
 	}

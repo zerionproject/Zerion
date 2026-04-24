@@ -235,6 +235,16 @@
 	<string name="pref_typing_indicators_summary">Let contacts see when you are typing</string>
 	<string name="pref_link_previews_title">Link previews</string>
 	<string name="pref_link_previews_summary">Generate previews for URLs in messages (fetched via Tor)</string>
+	<string name="pref_calls_section_title">CALLS</string>
+	<string name="pref_voice_calls_title">Voice calls</string>
+	<string name="pref_voice_calls_summary">Allow voice calls to and from your contacts</string>
+	<string name="pref_video_calls_title">Video calls</string>
+	<string name="pref_video_calls_summary">Allow video calls to and from your contacts</string>
+	<string name="pref_calls_footer">Off by default. Turn on to expose call buttons in chats and accept incoming calls. Otherwise callers will see a \"calls disabled\" notice.</string>
+	<string name="call_rejected_peer_disabled_calls">%s has calls disabled</string>
+	<string name="call_rejected_peer_disabled_calls_hint">Ask them to enable calls in Settings → Security</string>
+	<string name="call_rejected_peer_disabled_video">%s has video calls disabled</string>
+	<string name="call_rejected_peer_disabled_video_hint">They accept voice calls. Try a voice call instead.</string>
 	<string name="accept">Accept</string>
 	<string name="decline">Decline</string>
 	<string name="online">Online</string>

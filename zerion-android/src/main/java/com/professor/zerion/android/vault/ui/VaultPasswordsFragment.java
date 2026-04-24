@@ -250,35 +250,41 @@ public class VaultPasswordsFragment extends BaseFragment {
 	}
 
 	private String generateSecurePassword() {
-		String uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-		String lowercase = "abcdefghijklmnopqrstuvwxyz";
-		String digits = "0123456789";
-		String symbols = "!@#$%^&*()-_=+[]{}|;:,.<>?";
-		String allChars = uppercase + lowercase + digits + symbols;
+		char[] uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
+		char[] lowercase = "abcdefghijklmnopqrstuvwxyz".toCharArray();
+		char[] digits = "0123456789".toCharArray();
+		char[] symbols = "!@#$%^&*()-_=+[]{}|;:,.<>?".toCharArray();
+		char[] allChars = new char[uppercase.length + lowercase.length
+				+ digits.length + symbols.length];
+		int off = 0;
+		System.arraycopy(uppercase, 0, allChars, off, uppercase.length);
+		off += uppercase.length;
+		System.arraycopy(lowercase, 0, allChars, off, lowercase.length);
+		off += lowercase.length;
+		System.arraycopy(digits, 0, allChars, off, digits.length);
+		off += digits.length;
+		System.arraycopy(symbols, 0, allChars, off, symbols.length);
 
 		SecureRandom random = new SecureRandom();
-		StringBuilder password = new StringBuilder();
-
 		int passwordLength = 20;
-
-		password.append(uppercase.charAt(random.nextInt(uppercase.length())));
-		password.append(lowercase.charAt(random.nextInt(lowercase.length())));
-		password.append(digits.charAt(random.nextInt(digits.length())));
-		password.append(symbols.charAt(random.nextInt(symbols.length())));
-
+		char[] passwordArray = new char[passwordLength];
+		passwordArray[0] = uppercase[random.nextInt(uppercase.length)];
+		passwordArray[1] = lowercase[random.nextInt(lowercase.length)];
+		passwordArray[2] = digits[random.nextInt(digits.length)];
+		passwordArray[3] = symbols[random.nextInt(symbols.length)];
 		for (int i = 4; i < passwordLength; i++) {
-			password.append(allChars.charAt(random.nextInt(allChars.length())));
+			passwordArray[i] = allChars[random.nextInt(allChars.length)];
 		}
-
-		char[] passwordArray = password.toString().toCharArray();
 		for (int i = passwordArray.length - 1; i > 0; i--) {
 			int j = random.nextInt(i + 1);
 			char temp = passwordArray[i];
 			passwordArray[i] = passwordArray[j];
 			passwordArray[j] = temp;
 		}
-
-		return new String(passwordArray);
+		String out = new String(passwordArray);
+		java.util.Arrays.fill(passwordArray, '\0');
+		java.util.Arrays.fill(allChars, '\0');
+		return out;
 	}
 
 	private void copyToClipboard(String label, String text) {

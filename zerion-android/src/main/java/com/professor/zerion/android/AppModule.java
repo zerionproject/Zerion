@@ -106,7 +106,10 @@ public class AppModule {
 	@Retention(RUNTIME)
 	public @interface UiPrefs {}
 
-	
+	public static SharedPreferences getUiPrefs() {
+		return SecurePrefsHolder.getUiPrefs();
+	}
+
 	static class SecurePrefsHolder {
 		private static volatile SharedPreferences securePrefs;
 		private static volatile SharedPreferences uiPrefs;
@@ -172,7 +175,7 @@ public class AppModule {
 			return securePrefs;
 		}
 
-		static SharedPreferences getUiPrefs() {
+		public static SharedPreferences getUiPrefs() {
 			if (uiPrefs == null) {
 				throw new IllegalStateException("UiPrefs not initialized");
 			}

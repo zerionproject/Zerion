@@ -237,9 +237,21 @@ public class SetPasswordFragment extends SetupFragment {
 	private char[] sanitizePasswordChars(char[] password) {
 		if (password.length == 0) return new char[0];
 
-		// Normalizer requires CharSequence; wrap char[] and zero the temp String afterward
-		String tempForNorm = new String(password);
-		String normalized = Normalizer.normalize(tempForNorm, Normalizer.Form.NFC);
+		boolean allAscii = true;
+		for (char c : password) {
+			if (c > 0x7F) {
+				allAscii = false;
+				break;
+			}
+		}
+
+		CharSequence normalized;
+		if (allAscii) {
+			normalized = new CharArraySequence(password);
+		} else {
+			normalized = Normalizer.normalize(
+					new CharArraySequence(password), Normalizer.Form.NFC);
+		}
 
 		char[] result = new char[normalized.length()];
 		int pos = 0;

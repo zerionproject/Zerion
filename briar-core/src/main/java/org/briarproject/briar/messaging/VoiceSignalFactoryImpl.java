@@ -51,9 +51,16 @@ class VoiceSignalFactoryImpl implements VoiceSignalFactory {
 	@Override
 	public VoiceSignal createCallReject(GroupId groupId, long timestamp,
 			String callId) throws FormatException {
+		return createCallReject(groupId, timestamp, callId, null);
+	}
+
+	@Override
+	public VoiceSignal createCallReject(GroupId groupId, long timestamp,
+			String callId, @Nullable String reason) throws FormatException {
 		validateCallId(callId);
+		if (reason != null) validatePayload(reason);
 		return createSignal(groupId, timestamp, VoiceSignalType.CALL_REJECT,
-				callId, null, null);
+				callId, reason, null);
 	}
 
 	@Override

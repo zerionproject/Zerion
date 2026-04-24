@@ -1454,7 +1454,7 @@ public class VoiceCallService extends Service implements EventListener {
 						break;
 					case CALL_REJECT:
 						signal = voiceSignalFactory.createCallReject(
-								groupId, timestamp, callId);
+								groupId, timestamp, callId, payload);
 						break;
 					case CALL_END:
 						signal = voiceSignalFactory.createCallEnd(
@@ -1830,9 +1830,25 @@ public class VoiceCallService extends Service implements EventListener {
 				if (callId == null || !callId.equals(signalCallId)) {
 					return;
 				}
+				String rejectReason = header.getPayload();
+				if (rejectReason != null && callActivity != null) {
+					final String finalReason = rejectReason;
+					final VoiceCallActivity act = callActivity;
+					mainHandler.post(() -> {
+						if ("calls_disabled".equals(finalReason)) {
+							act.onCallRejectedPeerDisabledCalls();
+						} else if ("video_disabled".equals(finalReason)) {
+							act.onCallRejectedPeerDisabledVideo();
+						} else {
+							act.onCallDisconnected();
+						}
+					});
+				}
 				callState = CallState.DISCONNECTED;
 				zeroizeKeyMaterial();
-				updateCallActivity();
+				if (rejectReason == null) {
+					updateCallActivity();
+				}
 				stopSelf();
 				break;
 

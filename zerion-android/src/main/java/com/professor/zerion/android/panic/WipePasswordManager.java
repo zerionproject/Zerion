@@ -127,13 +127,24 @@ public class WipePasswordManager {
 	}
 
 	public synchronized boolean setWipePassword(String password) {
+		if (password == null) return false;
+		char[] chars = password.toCharArray();
+		try {
+			return setWipePassword(chars);
+		} finally {
+			java.util.Arrays.fill(chars, '\0');
+		}
+	}
+
+	public synchronized boolean setWipePassword(char[] password) {
 		enforceNonUiThread();
 
 		if (!secureStorageAvailable) {
 			return false;
 		}
 
-		if (password == null || password.trim().isEmpty()) {
+		if (password == null || password.length == 0 ||
+				isAllWhitespace(password)) {
 			return false;
 		}
 
@@ -158,14 +169,32 @@ public class WipePasswordManager {
 		}
 	}
 
+	private static boolean isAllWhitespace(char[] chars) {
+		for (char c : chars) {
+			if (!Character.isWhitespace(c)) return false;
+		}
+		return true;
+	}
+
 	public synchronized boolean verifyWipePassword(String password) {
+		if (password == null) return false;
+		char[] chars = password.toCharArray();
+		try {
+			return verifyWipePassword(chars);
+		} finally {
+			java.util.Arrays.fill(chars, '\0');
+		}
+	}
+
+	public synchronized boolean verifyWipePassword(char[] password) {
 		enforceNonUiThread();
 
 		long startTime = SystemClock.elapsedRealtime();
 
 		try {
 			if (!secureStorageAvailable || !isWipePasswordEnabled() ||
-			    password == null || password.trim().isEmpty()) {
+			    password == null || password.length == 0 ||
+			    isAllWhitespace(password)) {
 				return false;
 			}
 
@@ -197,7 +226,7 @@ public class WipePasswordManager {
 		}
 	}
 
-	private boolean verifyPBKDF2Password(String password) throws Exception {
+	private boolean verifyPBKDF2Password(char[] password) throws Exception {
 		String storedHashB64 = securePrefs.getString(PREF_HASH, null);
 		String saltB64 = securePrefs.getString(PREF_SALT, null);
 		int iterations = securePrefs.getInt(PREF_ITERATIONS, PBKDF2_ITERATIONS);
@@ -214,7 +243,8 @@ public class WipePasswordManager {
 		return MessageDigest.isEqual(storedHash, providedHash);
 	}
 
-	private boolean verifyLegacySHA256Password(String password) {
+	private boolean verifyLegacySHA256Password(char[] password) {
+		byte[] pwBytes = null;
 		try {
 			String storedHashB64 = securePrefs.getString(PREF_HASH, null);
 			String saltB64 = securePrefs.getString(PREF_SALT, null);
@@ -226,15 +256,32 @@ public class WipePasswordManager {
 			byte[] storedHash = Base64.decode(storedHashB64, Base64.NO_WRAP);
 			byte[] salt = Base64.decode(saltB64, Base64.NO_WRAP);
 
+			pwBytes = charsToUtf8Bytes(password);
+
 			MessageDigest digest = MessageDigest.getInstance("SHA-256");
 			digest.reset();
 			digest.update(salt);
-			byte[] providedHash = digest.digest(password.getBytes(StandardCharsets.UTF_8));
+			byte[] providedHash = digest.digest(pwBytes);
 
 			return MessageDigest.isEqual(storedHash, providedHash);
 		} catch (NoSuchAlgorithmException e) {
 			return false;
+		} finally {
+			if (pwBytes != null) java.util.Arrays.fill(pwBytes, (byte) 0);
 		}
+	}
+
+	private static byte[] charsToUtf8Bytes(char[] chars) {
+		java.nio.CharBuffer cb = java.nio.CharBuffer.wrap(chars);
+		java.nio.ByteBuffer bb = StandardCharsets.UTF_8.encode(cb);
+		byte[] out = new byte[bb.remaining()];
+		bb.get(out);
+		if (bb.hasArray()) {
+			byte[] backing = bb.array();
+			java.util.Arrays.fill(backing, bb.arrayOffset(),
+					bb.arrayOffset() + bb.limit(), (byte) 0);
+		}
+		return out;
 	}
 
 	public synchronized boolean removeWipePassword() {
@@ -257,8 +304,19 @@ public class WipePasswordManager {
 
 	private byte[] hashPasswordPBKDF2(String password, byte[] salt, int iterations)
 			throws NoSuchAlgorithmException, InvalidKeySpecException {
+		char[] chars = password.toCharArray();
+		try {
+			return hashPasswordPBKDF2(chars, salt, iterations);
+		} finally {
+			java.util.Arrays.fill(chars, '\0');
+		}
+	}
+
+	private byte[] hashPasswordPBKDF2(char[] password, byte[] salt,
+			int iterations)
+			throws NoSuchAlgorithmException, InvalidKeySpecException {
 		PBEKeySpec spec = new PBEKeySpec(
-				password.toCharArray(),
+				password,
 				salt,
 				iterations,
 				PBKDF2_KEY_LENGTH
