@@ -16,9 +16,11 @@ import org.briarproject.bramble.api.lifecycle.LifecycleManager.LifecycleState;
 import org.briarproject.bramble.api.lifecycle.event.LifecycleEvent;
 import com.professor.zerion.android.viewmodel.LiveEvent;
 import com.professor.zerion.android.viewmodel.MutableLiveEvent;
+import com.professor.zerion.android.account.AccountWipeCleanup;
 import com.professor.zerion.android.api.AndroidNotificationManager;
 import com.professor.zerion.android.login.BruteForceProtection.FailureResult;
 import com.professor.zerion.android.login.BruteForceProtection.LockStatus;
+import com.professor.zerion.android.vault.VaultManager;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.Arrays;
@@ -53,6 +55,7 @@ public class StartupViewModel extends AndroidViewModel
 	private final AndroidNotificationManager notificationManager;
 	private final BruteForceProtection bruteForceProtection;
 	private final EventBus eventBus;
+	private final VaultManager vaultManager;
 	@IoExecutor
 	private final Executor ioExecutor;
 	private final Handler mainHandler;
@@ -82,12 +85,14 @@ public class StartupViewModel extends AndroidViewModel
 			AndroidNotificationManager notificationManager,
 			BruteForceProtection bruteForceProtection,
 			EventBus eventBus,
+			VaultManager vaultManager,
 			@IoExecutor Executor ioExecutor) {
 		super(app);
 		this.accountManager = accountManager;
 		this.notificationManager = notificationManager;
 		this.bruteForceProtection = bruteForceProtection;
 		this.eventBus = eventBus;
+		this.vaultManager = vaultManager;
 		this.ioExecutor = ioExecutor;
 		this.mainHandler = new Handler(Looper.getMainLooper());
 
@@ -268,6 +273,7 @@ public class StartupViewModel extends AndroidViewModel
 	void deleteAccount() {
 		ioExecutor.execute(() -> {
 			try {
+				AccountWipeCleanup.wipe(getApplication(), vaultManager);
 				accountManager.deleteAccount();
 				synchronized (bruteForceProtection) {
 					bruteForceProtection.clear();

@@ -14,8 +14,10 @@ import org.briarproject.bramble.api.settings.SettingsManager;
 import com.professor.zerion.android.ZerionApplication;
 import com.professor.zerion.android.ZerionService;
 import com.professor.zerion.android.ZerionService.ZerionServiceConnection;
+import com.professor.zerion.android.account.AccountWipeCleanup;
 import com.professor.zerion.android.controller.handler.ResultHandler;
 import com.professor.zerion.android.api.DozeWatchdog;
+import com.professor.zerion.android.vault.VaultManager;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.concurrent.Executor;
@@ -42,6 +44,7 @@ public class ZerionControllerImpl implements ZerionController {
 	private final DozeWatchdog dozeWatchdog;
 	private final AndroidWakeLockManager wakeLockManager;
 	private final Activity activity;
+	private final VaultManager vaultManager;
 
 	private boolean bound = false;
 
@@ -53,6 +56,7 @@ public class ZerionControllerImpl implements ZerionController {
 			SettingsManager settingsManager,
 			DozeWatchdog dozeWatchdog,
 			AndroidWakeLockManager wakeLockManager,
+			VaultManager vaultManager,
 			Activity activity) {
 		this.serviceConnection = serviceConnection;
 		this.accountManager = accountManager;
@@ -61,6 +65,7 @@ public class ZerionControllerImpl implements ZerionController {
 		this.settingsManager = settingsManager;
 		this.dozeWatchdog = dozeWatchdog;
 		this.wakeLockManager = wakeLockManager;
+		this.vaultManager = vaultManager;
 		this.activity = activity;
 	}
 
@@ -142,7 +147,7 @@ public class ZerionControllerImpl implements ZerionController {
 				service.waitForShutdown();
 			} catch (InterruptedException e) {
 			} finally {
-				if (deleteAccount) accountManager.deleteAccount();
+				if (deleteAccount) fullAccountWipe();
 			}
 			handler.onResult(null);
 		}, "SignOut");
@@ -150,6 +155,11 @@ public class ZerionControllerImpl implements ZerionController {
 
 	@Override
 	public void deleteAccount() {
+		fullAccountWipe();
+	}
+
+	private void fullAccountWipe() {
+		AccountWipeCleanup.wipe(activity, vaultManager);
 		accountManager.deleteAccount();
 	}
 
