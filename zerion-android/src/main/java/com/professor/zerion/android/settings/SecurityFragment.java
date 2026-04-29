@@ -62,12 +62,12 @@ public class SecurityFragment extends Fragment {
 	private SwitchMaterial typingIndicatorsSwitch;
 	private SwitchMaterial voiceCallsSwitch;
 	private SwitchMaterial videoCallsSwitch;
-	private MaterialCardView lockTimeoutCard;
+	private View lockTimeoutCard;
 	private TextView lockTimeoutValue;
-	private MaterialCardView changePasswordCard;
-	private MaterialCardView registrationLockCard;
+	private View changePasswordCard;
+	private View registrationLockCard;
 	private TextView registrationLockSummary;
-	private MaterialCardView wipePasswordCard;
+	private View wipePasswordCard;
 	private TextView wipePasswordSummary;
 
 	private String[] timeoutEntries;

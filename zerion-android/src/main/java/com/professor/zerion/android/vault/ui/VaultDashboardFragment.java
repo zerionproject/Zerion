@@ -36,10 +36,10 @@ public class VaultDashboardFragment extends BaseFragment {
 	private TextView notesCount;
 	private TextView imagesCount;
 	private TextView docsCount;
-	private MaterialCardView notesCard;
-	private MaterialCardView galleryCard;
-	private MaterialCardView documentsCard;
-	private MaterialCardView passwordsCard;
+	private View notesCard;
+	private View galleryCard;
+	private View documentsCard;
+	private View passwordsCard;
 
 	public static VaultDashboardFragment newInstance() {
 		return new VaultDashboardFragment();

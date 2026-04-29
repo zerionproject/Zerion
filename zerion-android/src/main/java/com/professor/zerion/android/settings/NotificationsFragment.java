@@ -79,12 +79,12 @@ public class NotificationsFragment extends Fragment {
 	private SwitchMaterial notifyVoiceCallsSwitch;
 	private SwitchMaterial notifyVibrationSwitch;
 	private SwitchMaterial notifyQuickReplySwitch;
-	private MaterialCardView notifySoundCard;
+	private View notifySoundCard;
 	private TextView notifySoundValue;
-	private MaterialCardView notifyPrivateMessagesCard;
-	private MaterialCardView notifyGroupMessagesCard;
-	private MaterialCardView notifyVoiceCallsCard;
-	private MaterialCardView notifyVibrationCard;
+	private View notifyPrivateMessagesCard;
+	private View notifyGroupMessagesCard;
+	private View notifyVoiceCallsCard;
+	private View notifyVibrationCard;
 
 	@Override
 	public void onAttach(@NonNull Context context) {

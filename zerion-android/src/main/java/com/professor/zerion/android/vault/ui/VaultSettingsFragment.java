@@ -39,8 +39,8 @@ public class VaultSettingsFragment extends BaseFragment {
 
 	private VaultViewModel viewModel;
 
-	private MaterialCardView changePasswordCard;
-	private MaterialCardView autolockCard;
+	private View changePasswordCard;
+	private View autolockCard;
 	private SwitchMaterial biometricSwitch;
 	private TextView autolockValue;
 
@@ -48,8 +48,8 @@ public class VaultSettingsFragment extends BaseFragment {
 	private SwitchMaterial hideContentSwitch;
 	private TextView clipboardTimeoutValue;
 
-	private MaterialCardView exportCard;
-	private MaterialCardView wipeVaultCard;
+	private View exportCard;
+	private View wipeVaultCard;
 
 	private TextView itemsCountInfo;
 

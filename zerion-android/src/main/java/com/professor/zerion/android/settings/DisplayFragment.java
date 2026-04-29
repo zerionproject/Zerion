@@ -49,17 +49,17 @@ public class DisplayFragment extends Fragment {
 	@AppModule.UiPrefs
 	SharedPreferences uiPrefs;
 
-	private MaterialCardView languageCard;
+	private View languageCard;
 	private TextView languageValue;
-	private MaterialCardView themeCard;
+	private View themeCard;
 	private TextView themeValue;
-	private MaterialCardView appIconCard;
+	private View appIconCard;
 	private TextView appIconValue;
-	private MaterialCardView navSizeCard;
+	private View navSizeCard;
 	private TextView navSizeValue;
-	private MaterialCardView textSizeCard;
+	private View textSizeCard;
 	private TextView textSizeValue;
-	private MaterialCardView bubbleColorCard;
+	private View bubbleColorCard;
 	private TextView bubbleColorValue;
 	private View bubbleColorPreview;
 

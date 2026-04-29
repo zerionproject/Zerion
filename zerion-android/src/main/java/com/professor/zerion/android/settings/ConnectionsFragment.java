@@ -49,10 +49,10 @@ public class ConnectionsFragment extends Fragment {
 	private SettingsViewModel viewModel;
 	private ConnectionsManager connectionsManager;
 
-	private MaterialCardView torNetworkCard;
+	private View torNetworkCard;
 	private TextView torNetworkValue;
 	private SwitchMaterial orbotProxySwitch;
-	private MaterialCardView orbotSettingsCard;
+	private View orbotSettingsCard;
 	private TextView orbotProxyValue;
 
 	private String[] torNetworkEntries;
