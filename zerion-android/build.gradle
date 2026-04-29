@@ -81,6 +81,18 @@ android {
         buildConfigField "String", "VERSION_LABEL", "\"1.5.0\""
         buildConfigField "String", "TorVersion", "\"$tor_version\""
 
+        // B.3 — in-band hybrid-key signing gate.
+        // See docs/wire/B3_RECORD_PLACEMENT.md.
+        // OFF: write 4-slot CONTACT_INFO (legacy v1.4 layout), ignore any
+        //      received slot[4]. Byte-identical with v1.4 wire format.
+        // ON:  write 5-slot CONTACT_INFO with the B.3 proof at slot[4],
+        //      enforce the receiver state machine, advertise
+        //      messaging.minorVersion = 5.
+        // Flip to true ONLY after iOS confirms readiness and we've run a
+        // joint debug-build interop handshake. Wire-incompatible until both
+        // sides flip together.
+        buildConfigField "boolean", "B3_PROOF_ENABLED", "false"
+
         vectorDrawables.useSupportLibrary = true
 
         // For reproducible builds (F-Droid): use -Pfdroid flag to disable dynamic values
