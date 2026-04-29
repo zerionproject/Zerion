@@ -220,6 +220,85 @@ public class B3PqProofTest {
 	}
 
 	@Test
+	public void canonicalVectorMatchesIOS() {
+		// Pins our outputs to docs/wire/test_vectors/B3_v1.txt — the
+		// iOS-authored canonical cross-platform vector. PyNaCl-libsodium
+		// produced expected_sig; BC's Ed25519Signer must match byte-for-byte
+		// because Ed25519 is deterministic per RFC 8032. If this fails:
+		//
+		//   - role + sessionId asserts match  -> drift is in sigInput layout
+		//     (length prefixes? endianness? domain label encoding?)
+		//   - role wrong                       -> ephemeral compare regressed
+		//     to signed bytes (the 0x7F vs 0x80 trap)
+		//   - sessionId wrong                  -> BLAKE2b key handling drifted
+		//     (UTF-8 vs UTF-16, NUL termination, hash-then-key)
+		//   - all three correct, sig wrong     -> Ed25519 library mismatch
+		//
+		// All hex below is mirrored verbatim from B3_v1.txt.
+
+		byte[] aliceEph = hex(
+				"1112131415161718191a1b1c1d1e1f20" +
+				"2122232425262728292a2b2c2d2e2f30");
+		byte[] bobEph = hex(
+				"c0c1c2c3c4c5c6c7c8c9cacbcccdcecf" +
+				"d0d1d2d3d4d5d6d7d8d9dadbdcdddedf");
+		byte[] bobSigningSeed = hex(
+				"000102030405060708090a0b0c0d0e0f" +
+				"101112131415161718191a1b1c1d1e1f");
+		byte[] expectedBobSigningPub = hex(
+				"03a107bff3ce10be1d70dd18e74bc099" +
+				"67e4d6309ba50d5f1ddc8664125531b8");
+
+		// Synthetic 1184-byte ML-KEM-768 pubkey: byte i = (i ^ 0xA5) & 0xFF.
+		byte[] bobPq = new byte[1184];
+		for (int i = 0; i < bobPq.length; i++) {
+			bobPq[i] = (byte) ((i ^ 0xA5) & 0xFF);
+		}
+
+		byte expectedRoleByte = 0x02;
+		byte[] expectedSessionId = hex(
+				"9ddaa2c9b20ee986425a94bd5c8301a5" +
+				"9e8910358890da831e620e93fa93cf0a");
+		byte[] expectedSig = hex(
+				"f28960d7a3da8fe71be0671fec3956b4" +
+				"ee9c515ab68d325512fa2dcc1b058d06" +
+				"2acaf2bd81f0ba38ef57dd13cbeafdf5" +
+				"ac016370d17ee54e0b9a2d2cdfdd460a");
+
+		// Cross-check: Ed25519 pub-from-seed must match the pinned value.
+		// If this fails BC and libsodium disagree on Ed25519 key derivation,
+		// which would be unusual but worth catching before chasing sig bytes.
+		org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters sk =
+				new org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters(
+						bobSigningSeed, 0);
+		byte[] derivedPub = sk.generatePublicKey().getEncoded();
+		assertArrayEquals("Bob's signing pubkey derivation must match iOS",
+				expectedBobSigningPub, derivedPub);
+
+		// Bob's eph (0xc0...) is lex-greater than Alice's (0x11...), so Bob
+		// is the higher side and gets role 0x02.
+		byte role = B3PqProof.roleFor(bobEph, aliceEph);
+		assertEquals("Canonical role byte (Bob's eph lex-greater than Alice's)",
+				expectedRoleByte, role);
+
+		// sessionId derived from sortedConcat(min, max) under the session DS.
+		byte[] sessionId = B3PqProof.computeSessionId(bobEph, aliceEph);
+		assertArrayEquals("Canonical sessionId byte-equality across iOS/Android",
+				expectedSessionId, sessionId);
+
+		// The sig — all the way through the publisher pipeline.
+		byte[] sig = B3PqProof.sign(bobSigningSeed, bobEph, aliceEph, bobPq);
+		assertArrayEquals(
+				"Canonical Ed25519 signature byte-equality (PyNaCl <-> BC)",
+				expectedSig, sig);
+
+		// And verify on the receiver side using only the public material.
+		assertTrue("Canonical sig must verify on the Android side",
+				B3PqProof.verify(expectedBobSigningPub,
+						bobEph, aliceEph, bobPq, sig));
+	}
+
+	@Test
 	public void domainSeparatorChangesSignature() {
 		// Sanity: hand-computed signature on the same key but a one-byte
 		// modification to the input must produce a different sig.
@@ -276,6 +355,19 @@ public class B3PqProofTest {
 		StringBuilder sb = new StringBuilder(b.length * 2);
 		for (byte x : b) sb.append(String.format("%02x", x & 0xFF));
 		return sb.toString();
+	}
+
+	private static byte[] hex(String s) {
+		String clean = s.replaceAll("\\s+", "");
+		if ((clean.length() & 1) != 0) {
+			throw new IllegalArgumentException("odd-length hex string");
+		}
+		byte[] out = new byte[clean.length() / 2];
+		for (int i = 0; i < out.length; i++) {
+			out[i] = (byte) Integer.parseInt(
+					clean.substring(i * 2, i * 2 + 2), 16);
+		}
+		return out;
 	}
 
 	/** Ed25519 keypair generation via BC, decoupled from Bramble's

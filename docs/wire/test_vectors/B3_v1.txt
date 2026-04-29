@@ -1,0 +1,38 @@
+# B.3 in-band hybrid-key signing — canonical cross-platform test vector v1
+#
+# Spec: docs/wire/B3_B4_SPEC_v1.5.0.md (iOS-authored).
+# Origin: iOS Zerion (PyNaCl / libsodium reference implementation).
+# Reproducer: docs/wire/test_vectors/gen_b3_vector.py (iOS team).
+#
+# Both platforms MUST produce byte-identical outputs (expected_role_byte,
+# expected_session_id, expected_sig) given these exact inputs. Ed25519 is
+# deterministic per RFC 8032, so any divergence in expected_sig is upstream
+# of the signature itself — most likely sessionId or the key-proof input
+# layout. The Android pinning lives in
+# zerion-android/src/test/java/com/professor/zerion/android/contact/identity/
+# B3PqProofTest.canonicalVectorMatchesIOS.
+
+alice_eph_x25519_pub  = 1112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f30
+bob_eph_x25519_pub    = c0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedf
+
+bob_signing_seed      = 000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f
+bob_signing_pub       = 03a107bff3ce10be1d70dd18e74bc09967e4d6309ba50d5f1ddc8664125531b8
+
+# bob_pq_pub: 1184 bytes (ML-KEM-768 public-key length). For test purposes
+# we use a deterministic synthetic value so the vector is reproducible
+# without depending on a specific KEM key generation:
+#   for i in 0 .. 1183: bob_pq_pub[i] = (i XOR 0xA5) & 0xFF
+bob_pq_pub_formula    = bob_pq_pub[i] = (i ^ 0xA5) & 0xFF, for i in 0..1183
+
+# Bob's eph is lex-greater than Alice's (compares unsigned), so Bob is
+# the "higher" side and gets role byte 0x02.
+expected_role_byte    = 02
+
+# BLAKE2b-256 keyed with "ZERION_HANDSHAKE_SESSION_v1" (27 ASCII bytes,
+# no NUL) over sortedConcat(min(alice_eph, bob_eph), max(...)).
+expected_session_id   = 9ddaa2c9b20ee986425a94bd5c8301a59e8910358890da831e620e93fa93cf0a
+
+# Detached Ed25519 signature (64 bytes) over the spec's 1251-byte input
+# layout, signed with bob_signing_seed.
+expected_sig          = f28960d7a3da8fe71be0671fec3956b4ee9c515ab68d325512fa2dcc1b058d06
+                        2acaf2bd81f0ba38ef57dd13cbeafdf5ac016370d17ee54e0b9a2d2cdfdd460a
