@@ -32,9 +32,21 @@ public interface MessagingManager extends ConversationClient {
 
 	/**
 	 * The current minor version of the messaging client.
-	 * Version 4 adds support for chunked attachments (video/audio).
+	 *
+	 * <p>Version 4 adds support for chunked attachments (video/audio).
+	 *
+	 * <p>Version 5 adds the B.3 in-band hybrid-key signing proof at
+	 * slot[4] of the CONTACT_INFO BDF list. Conditional on the
+	 * compile-time-final {@link
+	 * org.briarproject.bramble.api.contact.B3Constants#B3_PROOF_ENABLED}
+	 * gate so peers only advertise v5 when they will actually send the
+	 * proof and enforce its presence on receive. When the gate is off,
+	 * this resolves to 4 and the wire format is byte-identical with
+	 * v1.4. See {@code docs/wire/B3_RECORD_PLACEMENT.md} §5.
 	 */
-	int MINOR_VERSION = 4;
+	int MINOR_VERSION =
+			org.briarproject.bramble.api.contact.B3Constants.B3_PROOF_ENABLED
+					? 5 : 4;
 
 	/**
 	 * Stores a local private message.
