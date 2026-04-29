@@ -43,7 +43,6 @@ import java.util.logging.Logger;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
-import static java.util.logging.Level.INFO;
 import static org.briarproject.bramble.api.contact.B3Constants.B3_DEBUG_LOG;
 import static org.briarproject.bramble.api.contact.B3Constants.B3_PQ_PUB_LEN;
 import static org.briarproject.bramble.api.contact.B3Constants.B3_PROOF_ENABLED;
@@ -194,19 +193,21 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 					localAuthor.getPrivateKey().getEncoded(),
 					ourEphX25519, theirEphX25519, ourStaticPqPub);
 			if (B3_DEBUG_LOG) {
-				B3_LOG.log(INFO, "[B3] encode: side={0} gate=ON "
-						+ "state=present sigLen={1} pqPubLen={2}",
-						new Object[] {alice ? "alice" : "bob",
-								localB3ProofSig.length, ourStaticPqPub.length});
+				B3_LOG.info(String.format(
+						"[B3] encode: side=%s gate=ON state=present "
+								+ "sigLen=%d pqPubLen=%d",
+						alice ? "alice" : "bob",
+						localB3ProofSig.length, ourStaticPqPub.length));
 			}
 		} else if (B3_DEBUG_LOG) {
-			B3_LOG.log(INFO, "[B3] encode: side={0} gate={1} "
-					+ "state={2} -> writing 4-slot legacy",
-					new Object[] {alice ? "alice" : "bob",
-							B3_PROOF_ENABLED ? "ON" : "OFF",
-							(ourStaticHybridPub != null && ourEphX25519 != null
-									&& theirEphX25519 != null)
-									? "present" : "missing"});
+			B3_LOG.info(String.format(
+					"[B3] encode: side=%s gate=%s state=%s "
+							+ "-> writing 4-slot legacy",
+					alice ? "alice" : "bob",
+					B3_PROOF_ENABLED ? "ON" : "OFF",
+					(ourStaticHybridPub != null && ourEphX25519 != null
+							&& theirEphX25519 != null)
+							? "present" : "missing"));
 		}
 
 		ContactInfo remoteInfo;
@@ -249,9 +250,10 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 					|| ourEphX25519 == null
 					|| theirEphX25519 == null) {
 				if (B3_DEBUG_LOG) {
-					B3_LOG.log(INFO, "[B3] verify: side={0} FAILED "
-							+ "(buffered handshake state missing)",
-							alice ? "alice" : "bob");
+					B3_LOG.info(String.format(
+							"[B3] verify: side=%s FAILED "
+									+ "(buffered handshake state missing)",
+							alice ? "alice" : "bob"));
 				}
 				throw new FormatException();
 			}
@@ -262,14 +264,16 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 					theirEphX25519, ourEphX25519,
 					theirStaticPqPub, remoteInfo.b3ProofSig);
 			if (B3_DEBUG_LOG) {
-				B3_LOG.log(INFO, "[B3] verify: side={0} result={1}",
-						new Object[] {alice ? "alice" : "bob",
-								ok ? "PASSED" : "FAILED"});
+				B3_LOG.info(String.format(
+						"[B3] verify: side=%s result=%s",
+						alice ? "alice" : "bob",
+						ok ? "PASSED" : "FAILED"));
 			}
 			if (!ok) throw new FormatException();
 		} else if (B3_DEBUG_LOG) {
-			B3_LOG.log(INFO, "[B3] verify: side={0} skipped (no slot[4])",
-					alice ? "alice" : "bob");
+			B3_LOG.info(String.format(
+					"[B3] verify: side=%s skipped (no slot[4])",
+					alice ? "alice" : "bob"));
 		}
 		long timestamp = Math.min(localTimestamp, remoteInfo.timestamp);
 		if (timestamp < MIN_REASONABLE_TIME_MS) {
@@ -329,9 +333,10 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			checkLength(b3ProofSig, B3_SIG_LEN, B3_SIG_LEN);
 		}
 		if (B3_DEBUG_LOG) {
-			B3_LOG.log(INFO, "[B3] decode: slots={0} sigLen={1}",
-					new Object[] {size,
-							b3ProofSig == null ? "absent" : b3ProofSig.length});
+			B3_LOG.info(String.format("[B3] decode: slots=%d sigLen=%s",
+					size,
+					b3ProofSig == null ? "absent"
+							: String.valueOf(b3ProofSig.length)));
 		}
 		return new ContactInfo(author, properties, signature, timestamp,
 				b3ProofSig);
