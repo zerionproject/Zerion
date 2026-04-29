@@ -22,6 +22,6 @@
 		android:layout_gravity="bottom|end|right"
 		android:scaleType="fitCenter"
 		tools:ignore="ContentDescription"
-		tools:src="@drawable/contact_online" />
+		tools:background="@drawable/bg_presence_online" />
 
 </FrameLayout>

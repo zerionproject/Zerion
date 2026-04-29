@@ -17,7 +17,7 @@
 		android:layout_marginEnd="@dimen/margin_medium"
 		android:layout_marginRight="@dimen/margin_medium"
 		android:minHeight="@dimen/text_input_height"
-		app:cardBackgroundColor="@color/card_background"
+		app:cardBackgroundColor="@color/zerion_surface_elevated"
 		app:cardCornerRadius="12dp">
 
 		<com.professor.zerion.android.view.EmojiTextInputView

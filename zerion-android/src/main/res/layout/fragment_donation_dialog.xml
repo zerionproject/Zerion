@@ -57,7 +57,7 @@
 		android:layout_width="0dp"
 		android:layout_height="52dp"
 		android:layout_marginTop="@dimen/margin_xlarge"
-		android:backgroundTint="@color/zerion_cyan"
+		android:backgroundTint="@color/zerion_primary_accent"
 		android:fontFamily="sans-serif-medium"
 		android:text="@string/donation_button_donate"
 		android:textAllCaps="false"
@@ -87,6 +87,6 @@
 		app:layout_constraintEnd_toEndOf="parent"
 		app:layout_constraintStart_toStartOf="parent"
 		app:layout_constraintTop_toBottomOf="@id/buttonDonate"
-		app:rippleColor="@color/zerion_card_bg" />
+		app:rippleColor="@color/zerion_surface_elevated" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -25,7 +25,7 @@
             android:layout_height="?attr/actionBarSize"
             android:background="@android:color/transparent"
             app:titleTextColor="@android:color/white"
-            app:subtitleTextColor="@color/zerion_cyan"
+            app:subtitleTextColor="@color/zerion_primary_accent"
             android:paddingStart="4dp"
             android:paddingEnd="4dp" />
 

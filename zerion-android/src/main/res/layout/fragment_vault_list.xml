@@ -52,7 +52,7 @@
         android:layout_marginEnd="24dp"
         android:layout_marginBottom="48dp"
         android:src="@drawable/ic_add_24dp"
-        app:backgroundTint="@color/zerion_cyan"
+        app:backgroundTint="@color/zerion_primary_accent"
         app:tint="@android:color/white"
         app:rippleColor="#FFFFFF"
         app:elevation="6dp" />

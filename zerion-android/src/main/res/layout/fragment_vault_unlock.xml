@@ -44,11 +44,11 @@
         android:layout_marginBottom="24dp"
         android:background="@android:color/transparent"
         app:endIconMode="password_toggle"
-        app:endIconTint="@color/zerion_cyan"
-        app:boxStrokeColor="@color/zerion_cyan"
+        app:endIconTint="@color/zerion_primary_accent"
+        app:boxStrokeColor="@color/zerion_primary_accent"
         app:boxStrokeWidth="2dp"
-        app:boxStrokeErrorColor="@color/zerion_cyan"
-        app:hintTextColor="@color/zerion_cyan"
+        app:boxStrokeErrorColor="@color/zerion_primary_accent"
+        app:hintTextColor="@color/zerion_primary_accent"
         app:boxBackgroundColor="#00000000"
         app:boxBackgroundMode="outline"
         app:boxCornerRadiusTopStart="12dp"
@@ -87,7 +87,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
-        android:indeterminateTint="@color/zerion_cyan"
+        android:indeterminateTint="@color/zerion_primary_accent"
         android:visibility="gone" />
 
 </LinearLayout>

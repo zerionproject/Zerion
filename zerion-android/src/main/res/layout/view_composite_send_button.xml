@@ -24,7 +24,7 @@
 		android:scaleType="center"
 		android:visibility="visible"
 		app:srcCompat="@drawable/ic_add_circle"
-		app:tint="@color/zerion_cyan" />
+		app:tint="@color/zerion_primary_accent" />
 
 	<!-- Send button container - tightly next to + button with no gap -->
 	<FrameLayout
@@ -46,7 +46,7 @@
 			android:scaleType="center"
 			android:visibility="visible"
 			app:srcCompat="@drawable/ic_mic_24dp"
-			app:tint="@color/zerion_cyan" />
+			app:tint="@color/zerion_primary_accent" />
 
 		<!-- Send button - INVISIBLE (not GONE) when input empty, VISIBLE when text present -->
 		<androidx.appcompat.widget.AppCompatImageButton
@@ -62,7 +62,7 @@
 			android:scaleType="center"
 			android:visibility="invisible"
 			app:srcCompat="@drawable/social_send_now_white"
-			app:tint="@color/zerion_cyan" />
+			app:tint="@color/zerion_primary_accent" />
 
 		<!-- Bomb badge - indicates disappearing messages are enabled -->
 		<ImageView

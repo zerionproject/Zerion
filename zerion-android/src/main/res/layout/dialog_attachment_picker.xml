@@ -33,7 +33,7 @@
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:src="@drawable/ic_camera_24dp"
-            app:tint="@color/zerion_cyan" />
+            app:tint="@color/zerion_primary_accent" />
 
         <TextView
             android:layout_width="0dp"
@@ -62,7 +62,7 @@
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:src="@drawable/ic_video"
-            app:tint="@color/zerion_cyan" />
+            app:tint="@color/zerion_primary_accent" />
 
         <TextView
             android:layout_width="0dp"
@@ -91,7 +91,7 @@
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:src="@drawable/ic_photo"
-            app:tint="@color/zerion_cyan" />
+            app:tint="@color/zerion_primary_accent" />
 
         <TextView
             android:layout_width="0dp"
@@ -120,7 +120,7 @@
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:src="@drawable/ic_vault"
-            app:tint="@color/zerion_cyan" />
+            app:tint="@color/zerion_primary_accent" />
 
         <TextView
             android:layout_width="0dp"
@@ -149,7 +149,7 @@
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:src="@drawable/ic_document"
-            app:tint="@color/zerion_cyan" />
+            app:tint="@color/zerion_primary_accent" />
 
         <TextView
             android:layout_width="0dp"
@@ -178,7 +178,7 @@
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:src="@drawable/ic_vault"
-            app:tint="@color/zerion_cyan" />
+            app:tint="@color/zerion_primary_accent" />
 
         <TextView
             android:layout_width="0dp"

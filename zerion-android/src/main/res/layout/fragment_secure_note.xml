@@ -59,7 +59,7 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_key"
-                    app:tint="@color/zerion_cyan"
+                    app:tint="@color/zerion_primary_accent"
                     android:layout_marginEnd="12dp" />
 
                 <LinearLayout
@@ -90,7 +90,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     app:thumbTint="@android:color/white"
-                    app:trackTint="@color/zerion_cyan" />
+                    app:trackTint="@color/zerion_primary_accent" />
 
             </LinearLayout>
 
@@ -169,7 +169,7 @@
         android:textColor="@android:color/white"
         app:icon="@drawable/ic_check_circle"
         app:iconTint="@android:color/white"
-        app:backgroundTint="@color/zerion_cyan"
+        app:backgroundTint="@color/zerion_primary_accent"
         app:rippleColor="#FFFFFF" />
 
     <!-- Progress Overlay -->
@@ -185,7 +185,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:indeterminateTint="@color/zerion_cyan" />
+            android:indeterminateTint="@color/zerion_primary_accent" />
 
     </FrameLayout>
 

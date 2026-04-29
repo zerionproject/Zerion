@@ -63,7 +63,7 @@
             android:padding="10dp"
             android:scaleType="center"
             app:srcCompat="@drawable/social_send_now_white"
-            app:tint="@color/zerion_cyan" />
+            app:tint="@color/zerion_primary_accent" />
 
     </LinearLayout>
 

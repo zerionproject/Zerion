@@ -45,7 +45,7 @@
 			android:scaleType="center"
 			android:contentDescription="@string/toggle_emoji_keyboard"
 			app:srcCompat="@drawable/ic_emoji_toggle"
-			app:tint="@color/zerion_cyan" />
+			app:tint="@color/zerion_primary_accent" />
 
 	</FrameLayout>
 

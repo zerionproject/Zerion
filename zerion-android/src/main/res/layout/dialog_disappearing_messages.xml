@@ -28,7 +28,7 @@
             android:text="@string/dialog_disappearing_30_seconds"
             android:textColor="@android:color/white"
             android:textSize="16sp"
-            android:buttonTint="@color/zerion_cyan" />
+            android:buttonTint="@color/zerion_primary_accent" />
 
         <RadioButton
             android:id="@+id/timer_5_minutes"
@@ -37,7 +37,7 @@
             android:text="@string/dialog_disappearing_5_minutes"
             android:textColor="@android:color/white"
             android:textSize="16sp"
-            android:buttonTint="@color/zerion_cyan" />
+            android:buttonTint="@color/zerion_primary_accent" />
 
         <RadioButton
             android:id="@+id/timer_30_minutes"
@@ -46,7 +46,7 @@
             android:text="@string/dialog_disappearing_30_minutes"
             android:textColor="@android:color/white"
             android:textSize="16sp"
-            android:buttonTint="@color/zerion_cyan" />
+            android:buttonTint="@color/zerion_primary_accent" />
 
         <RadioButton
             android:id="@+id/timer_1_hour"
@@ -55,7 +55,7 @@
             android:text="@string/dialog_disappearing_1_hour"
             android:textColor="@android:color/white"
             android:textSize="16sp"
-            android:buttonTint="@color/zerion_cyan" />
+            android:buttonTint="@color/zerion_primary_accent" />
 
         <RadioButton
             android:id="@+id/timer_8_hours"
@@ -64,7 +64,7 @@
             android:text="@string/dialog_disappearing_8_hours"
             android:textColor="@android:color/white"
             android:textSize="16sp"
-            android:buttonTint="@color/zerion_cyan" />
+            android:buttonTint="@color/zerion_primary_accent" />
 
         <RadioButton
             android:id="@+id/timer_12_hours"
@@ -73,7 +73,7 @@
             android:text="@string/dialog_disappearing_12_hours"
             android:textColor="@android:color/white"
             android:textSize="16sp"
-            android:buttonTint="@color/zerion_cyan" />
+            android:buttonTint="@color/zerion_primary_accent" />
 
         <RadioButton
             android:id="@+id/timer_24_hours"
@@ -82,7 +82,7 @@
             android:text="@string/dialog_disappearing_24_hours"
             android:textColor="@android:color/white"
             android:textSize="16sp"
-            android:buttonTint="@color/zerion_cyan" />
+            android:buttonTint="@color/zerion_primary_accent" />
 
         <RadioButton
             android:id="@+id/timer_1_week"
@@ -91,7 +91,7 @@
             android:text="@string/dialog_disappearing_1_week"
             android:textColor="@android:color/white"
             android:textSize="16sp"
-            android:buttonTint="@color/zerion_cyan" />
+            android:buttonTint="@color/zerion_primary_accent" />
 
         <RadioButton
             android:id="@+id/timer_4_weeks"
@@ -100,7 +100,7 @@
             android:text="@string/dialog_disappearing_4_weeks"
             android:textColor="@android:color/white"
             android:textSize="16sp"
-            android:buttonTint="@color/zerion_cyan" />
+            android:buttonTint="@color/zerion_primary_accent" />
 
         <RadioButton
             android:id="@+id/timer_off"
@@ -109,7 +109,7 @@
             android:text="@string/dialog_disappearing_off"
             android:textColor="@android:color/white"
             android:textSize="16sp"
-            android:buttonTint="@color/zerion_cyan"
+            android:buttonTint="@color/zerion_primary_accent"
             android:checked="true" />
 
     </RadioGroup>

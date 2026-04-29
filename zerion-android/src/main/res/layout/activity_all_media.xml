@@ -27,8 +27,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@android:color/transparent"
-        app:tabIndicatorColor="@color/zerion_cyan"
-        app:tabSelectedTextColor="@color/zerion_cyan"
+        app:tabIndicatorColor="@color/zerion_primary_accent"
+        app:tabSelectedTextColor="@color/zerion_primary_accent"
         app:tabTextColor="?android:attr/textColorSecondary" />
 
     <FrameLayout
@@ -61,7 +61,7 @@
                 android:layout_width="64dp"
                 android:layout_height="64dp"
                 android:src="@drawable/ic_image"
-                android:tint="@color/zerion_cyan"
+                android:tint="@color/zerion_primary_accent"
                 android:contentDescription="@string/all_media" />
 
             <TextView

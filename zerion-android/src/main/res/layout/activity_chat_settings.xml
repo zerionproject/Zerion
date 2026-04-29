@@ -90,7 +90,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
                         android:textSize="12sp"
-                        android:textColor="@color/zerion_cyan"
+                        android:textColor="@color/zerion_primary_accent"
                         android:visibility="gone"
                         tools:text="Verified Contact"
                         tools:visibility="visible" />
@@ -142,8 +142,8 @@
                         android:id="@+id/mute_notifications_switch"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        app:thumbTint="@color/zerion_cyan"
-                        app:trackTint="@color/card_background" />
+                        app:thumbTint="@color/zerion_primary_accent"
+                        app:trackTint="@color/zerion_surface_elevated" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -170,8 +170,8 @@
                         android:id="@+id/vibration_switch"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        app:thumbTint="@color/zerion_cyan"
-                        app:trackTint="@color/card_background" />
+                        app:thumbTint="@color/zerion_primary_accent"
+                        app:trackTint="@color/zerion_surface_elevated" />
                 </LinearLayout>
 
                 <!-- Disappearing Messages -->
@@ -206,7 +206,7 @@
                             android:id="@+id/disappearing_messages_value"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:textColor="@color/zerion_cyan"
+                            android:textColor="@color/zerion_primary_accent"
                             android:textSize="14sp"
                             tools:text="Off" />
 
@@ -261,7 +261,7 @@
                         android:layout_height="24dp"
                         android:src="@drawable/ic_lock"
                         android:contentDescription="@string/security_settings_title"
-                        app:tint="@color/zerion_cyan" />
+                        app:tint="@color/zerion_primary_accent" />
 
                     <LinearLayout
                         android:layout_width="0dp"

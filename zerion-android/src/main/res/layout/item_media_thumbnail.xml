@@ -33,7 +33,7 @@
             android:layout_height="48dp"
             android:src="@drawable/ic_document"
             android:contentDescription="@string/document"
-            android:tint="@color/zerion_cyan" />
+            android:tint="@color/zerion_primary_accent" />
 
         <TextView
             android:id="@+id/document_name"

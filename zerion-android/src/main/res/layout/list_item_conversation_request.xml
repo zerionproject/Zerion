@@ -41,10 +41,10 @@
 		android:layout_marginEnd="@dimen/message_bubble_margin_non_tail"
 		android:layout_marginRight="@dimen/message_bubble_margin_non_tail"
 		android:layout_marginBottom="@dimen/message_bubble_margin"
-		app:cardBackgroundColor="@color/zerion_card_bg"
+		app:cardBackgroundColor="@color/zerion_surface_elevated"
 		app:cardCornerRadius="16dp"
 		app:cardElevation="2dp"
-		app:strokeColor="@color/zerion_cyan"
+		app:strokeColor="@color/zerion_primary_accent"
 		app:strokeWidth="1dp">
 
 		<androidx.constraintlayout.widget.ConstraintLayout
@@ -119,7 +119,7 @@
 					android:textStyle="bold"
 					android:insetTop="0dp"
 					android:insetBottom="0dp"
-					app:backgroundTint="@color/zerion_cyan"
+					app:backgroundTint="@color/zerion_primary_accent"
 					app:cornerRadius="20dp" />
 
 			</LinearLayout>
