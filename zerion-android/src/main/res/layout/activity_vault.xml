@@ -14,14 +14,14 @@
         android:elevation="0dp"
         app:elevation="0dp">
 
-        <androidx.appcompat.widget.Toolbar
+        <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
+            style="@style/Zerion.Toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="@drawable/bg_toolbar_gradient"
-            app:titleTextColor="@android:color/white"
-            app:navigationIconTint="@color/zerion_cyan"
-            app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
+            android:background="@android:color/transparent"
+            app:titleTextColor="@color/zerion_text_primary"
+            app:navigationIconTint="@color/zerion_primary_accent" />
 
     </com.google.android.material.appbar.AppBarLayout>
 

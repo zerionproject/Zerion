@@ -15,7 +15,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="APP SECURITY"
+            android:text="@string/settings_section_app_security"
             android:textSize="12sp"
             android:textStyle="bold"
             android:textColor="?attr/colorPrimary"
@@ -26,8 +26,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="1dp">
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -79,8 +79,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="1dp">
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -134,8 +134,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="1dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp"
             android:clickable="true"
             android:focusable="true">
 
@@ -192,8 +192,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="1dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp"
             android:clickable="true"
             android:focusable="true">
 
@@ -247,7 +247,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="PRIVACY"
+            android:text="@string/settings_section_privacy"
             android:textSize="12sp"
             android:textStyle="bold"
             android:textColor="?attr/colorPrimary"
@@ -259,8 +259,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="1dp">
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -323,8 +323,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="1dp">
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -375,8 +375,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="1dp">
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -436,7 +436,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="EMERGENCY WIPE"
+            android:text="@string/settings_section_emergency_wipe"
             android:textSize="12sp"
             android:textStyle="bold"
             android:textColor="?attr/colorPrimary"
@@ -449,8 +449,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="1dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp"
             android:clickable="true"
             android:focusable="true">
 
@@ -507,8 +507,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="1dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp"
             app:cardBackgroundColor="?attr/colorErrorContainer"
             android:clickable="true"
             android:focusable="true">

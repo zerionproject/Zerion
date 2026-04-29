@@ -15,7 +15,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="TOR NETWORK"
+            android:text="@string/settings_section_tor_network"
             android:textSize="12sp"
             android:textStyle="bold"
             android:textColor="?attr/colorPrimary"
@@ -26,8 +26,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="1dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp"
             app:cardBackgroundColor="?attr/colorSurfaceVariant">
 
             <LinearLayout
@@ -62,8 +62,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="1dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp"
             android:clickable="true"
             android:focusable="true">
 
@@ -130,8 +130,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="1dp">
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -185,8 +185,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="1dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp"
             android:visibility="gone"
             android:clickable="true"
             android:focusable="true">
@@ -243,8 +243,8 @@
             android:id="@+id/orbot_info_card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="1dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp"
             app:cardBackgroundColor="?attr/colorSurfaceVariant">
 
             <LinearLayout

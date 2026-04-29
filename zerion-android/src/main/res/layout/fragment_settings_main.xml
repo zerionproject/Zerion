@@ -47,7 +47,7 @@
                     android:id="@+id/username_text"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Username"
+                    android:text="@string/setup_title"
                     android:textSize="17sp"
                     android:textColor="?android:attr/textColorPrimary"
                     android:maxLines="1"
@@ -58,7 +58,7 @@
                     style="@style/Widget.Material3.Button.TextButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Change Avatar"
+                    android:text="@string/settings_change_avatar"
                     android:textColor="?attr/colorPrimary"
                     android:textSize="14sp"
                     android:minHeight="0dp"
@@ -89,7 +89,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="SETTINGS"
+            android:text="@string/settings_section_header"
             android:textSize="13sp"
             android:textStyle="bold"
             android:textColor="?attr/colorPrimary"
@@ -137,7 +137,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Language and theme"
+                    android:text="@string/display_settings_summary"
                     android:textSize="13sp"
                     android:textColor="?android:attr/textColorSecondary"
                     android:layout_marginTop="2dp" />
@@ -198,7 +198,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Tor connection settings"
+                    android:text="@string/network_settings_summary"
                     android:textSize="13sp"
                     android:textColor="?android:attr/textColorSecondary"
                     android:layout_marginTop="2dp" />
@@ -259,7 +259,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Lock, password, and panic settings"
+                    android:text="@string/security_settings_summary"
                     android:textSize="13sp"
                     android:textColor="?android:attr/textColorSecondary"
                     android:layout_marginTop="2dp" />
@@ -320,7 +320,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Alerts, sounds, and vibration"
+                    android:text="@string/notification_settings_summary"
                     android:textSize="13sp"
                     android:textColor="?android:attr/textColorSecondary"
                     android:layout_marginTop="2dp" />
@@ -346,7 +346,7 @@
             android:id="@+id/dev_section_header"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="DEVELOPER"
+            android:text="@string/settings_developer_section_header"
             android:textSize="13sp"
             android:textStyle="bold"
             android:textColor="?attr/colorPrimary"
@@ -384,7 +384,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Create test data"
+                android:text="@string/settings_create_test_data"
                 android:textSize="16sp"
                 android:textColor="?android:attr/textColorPrimary" />
 
@@ -433,7 +433,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Crash (Debug)"
+                android:text="@string/settings_crash_debug"
                 android:textSize="16sp"
                 android:textColor="?attr/colorError" />
 

@@ -40,7 +40,7 @@
 			android:layout_height="match_parent"
 			android:layout_marginEnd="6dp"
 			android:layout_marginRight="6dp"
-			android:background="@color/zerion_primary" />
+			android:background="@color/zerion_primary_accent" />
 
 		<TextView
 			android:id="@+id/replyText"
