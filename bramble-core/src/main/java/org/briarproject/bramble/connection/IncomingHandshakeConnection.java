@@ -70,9 +70,16 @@ class IncomingHandshakeConnection extends HandshakeConnection
 			out.getOutputStream().flush();
 			HandshakeResult result =
 					handshakeManager.handshake(pendingContactId, in, out);
+			// Thread the B.3 buffered state through; the manager only
+			// uses it when the gate is on, otherwise it falls through
+			// to the legacy 4-slot path.
 			contactExchangeManager.exchangeContacts(pendingContactId,
 					connection, result.getMasterKey(), result.isAlice(), true,
-					classical, result.isMode3Capable());
+					classical, result.isMode3Capable(),
+					result.getOurStaticHybridPub(),
+					result.getTheirStaticHybridPub(),
+					result.getOurEphX25519(),
+					result.getTheirEphX25519());
 			cancelTimeout();
 			connectionRegistry.unregisterConnection(pendingContactId, true);
 			connectionManager.manageIncomingConnection(transportId, connection);

@@ -290,7 +290,26 @@ class HandshakeManagerImpl implements HandshakeManager {
 			throw new FormatException();
 		}
 
-		return new HandshakeResult(masterKey, alice, mode3Capable);
+		// B.3: buffer the inputs the receiver needs to verify the
+		// CONTACT_INFO slot[4] proof. Both sides' full 1216-byte hybrid
+		// static pubkeys (X25519 || ML-KEM-768) — sender signs over our
+		// ML-KEM-768 half, receiver verifies against theirs. Plus the
+		// X25519 portion of both ephemerals (first 32 B of each hybrid
+		// ephemeral) for sessionId + role derivation. The orchestrator
+		// passes these to ContactExchangeManager. Always populated on
+		// the hybrid path; ContactExchangeManager only consumes them
+		// when B3_PROOF_ENABLED.
+		byte[] ourStaticHybridPub =
+				ourHybridStaticKeyPair.getPublic().getEncoded();
+		byte[] theirStaticHybridPub = theirHybridStaticKey.getEncoded();
+		byte[] ourEphFull = ourHybridEphemeralKeyPair.getPublic().getEncoded();
+		byte[] theirEphFull = theirHybridEphemeralKey.getEncoded();
+		byte[] ourEphX25519 = Arrays.copyOfRange(ourEphFull, 0, 32);
+		byte[] theirEphX25519 = Arrays.copyOfRange(theirEphFull, 0, 32);
+
+		return new HandshakeResult(masterKey, alice, mode3Capable,
+				ourStaticHybridPub, theirStaticHybridPub,
+				ourEphX25519, theirEphX25519);
 	}
 
 	private void sendHybridStaticKey(RecordWriter w, PublicKey k)

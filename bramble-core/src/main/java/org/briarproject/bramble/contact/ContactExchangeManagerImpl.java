@@ -42,12 +42,14 @@ import java.util.Map;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
+import static org.briarproject.bramble.api.contact.B3Constants.B3_PQ_PUB_LEN;
+import static org.briarproject.bramble.api.contact.B3Constants.B3_PROOF_ENABLED;
+import static org.briarproject.bramble.api.contact.B3Constants.B3_SIG_LEN;
 import static org.briarproject.bramble.api.identity.AuthorConstants.MAX_SIGNATURE_LENGTH;
 import static org.briarproject.bramble.api.system.Clock.MIN_REASONABLE_TIME_MS;
 import static org.briarproject.bramble.contact.ContactExchangeConstants.PROTOCOL_VERSION;
 import static org.briarproject.bramble.contact.ContactExchangeRecordTypes.CONTACT_INFO;
 import static org.briarproject.bramble.util.ValidationUtils.checkLength;
-import static org.briarproject.bramble.util.ValidationUtils.checkSize;
 
 @Immutable
 @NotNullByDefault
@@ -101,14 +103,16 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 	public Contact exchangeContacts(DuplexTransportConnection conn,
 			SecretKey masterKey, boolean alice,
 			boolean verified) throws IOException, DbException {
-		return exchange(null, conn, masterKey, alice, verified, false);
+		return exchange(null, conn, masterKey, alice, verified, false, false,
+				null, null, null, null);
 	}
 
 	@Override
 	public Contact exchangeContacts(PendingContactId p,
 			DuplexTransportConnection conn, SecretKey masterKey, boolean alice,
 			boolean verified, boolean classical) throws IOException, DbException {
-		return exchange(p, conn, masterKey, alice, verified, classical, false);
+		return exchange(p, conn, masterKey, alice, verified, classical, false,
+				null, null, null, null);
 	}
 
 	@Override
@@ -117,18 +121,31 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			boolean verified, boolean classical, boolean mode3Capable)
 			throws IOException, DbException {
 		return exchange(p, conn, masterKey, alice, verified, classical,
-				mode3Capable);
+				mode3Capable, null, null, null, null);
+	}
+
+	@Override
+	public Contact exchangeContacts(PendingContactId p,
+			DuplexTransportConnection conn, SecretKey masterKey, boolean alice,
+			boolean verified, boolean classical, boolean mode3Capable,
+			@Nullable byte[] ourStaticHybridPub,
+			@Nullable byte[] theirStaticHybridPub,
+			@Nullable byte[] ourEphX25519,
+			@Nullable byte[] theirEphX25519)
+			throws IOException, DbException {
+		return exchange(p, conn, masterKey, alice, verified, classical,
+				mode3Capable,
+				ourStaticHybridPub, theirStaticHybridPub,
+				ourEphX25519, theirEphX25519);
 	}
 
 	private Contact exchange(@Nullable PendingContactId p,
 			DuplexTransportConnection conn, SecretKey masterKey, boolean alice,
-			boolean verified, boolean classical) throws IOException, DbException {
-		return exchange(p, conn, masterKey, alice, verified, classical, false);
-	}
-
-	private Contact exchange(@Nullable PendingContactId p,
-			DuplexTransportConnection conn, SecretKey masterKey, boolean alice,
-			boolean verified, boolean classical, boolean mode3Capable)
+			boolean verified, boolean classical, boolean mode3Capable,
+			@Nullable byte[] ourStaticHybridPub,
+			@Nullable byte[] theirStaticHybridPub,
+			@Nullable byte[] ourEphX25519,
+			@Nullable byte[] theirEphX25519)
 			throws IOException, DbException {
 		InputStream in = conn.getReader().getInputStream();
 		OutputStream out = conn.getWriter().getOutputStream();
@@ -150,15 +167,32 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 		byte[] localSignature = contactExchangeCrypto
 				.sign(localAuthor.getPrivateKey(), masterKey, alice);
 		long localTimestamp = clock.currentTimeMillis();
+
+		// B.3: when the gate is on and the orchestrator handed us all the
+		// hybrid handshake state, sign over our static ML-KEM-768 pubkey
+		// for slot[4]. Skip silently if any input is null — that's the
+		// legacy / non-hybrid path and slot[4] doesn't apply.
+		byte[] localB3ProofSig = null;
+		if (B3_PROOF_ENABLED
+				&& ourStaticHybridPub != null
+				&& ourEphX25519 != null
+				&& theirEphX25519 != null) {
+			byte[] ourStaticPqPub = java.util.Arrays.copyOfRange(
+					ourStaticHybridPub, 32, 32 + B3_PQ_PUB_LEN);
+			localB3ProofSig = B3PqProof.sign(
+					localAuthor.getPrivateKey().getEncoded(),
+					ourEphX25519, theirEphX25519, ourStaticPqPub);
+		}
+
 		ContactInfo remoteInfo;
 		if (alice) {
 			sendContactInfo(recordWriter, localAuthor, localProperties,
-					localSignature, localTimestamp);
+					localSignature, localTimestamp, localB3ProofSig);
 			remoteInfo = receiveContactInfo(recordReader);
 		} else {
 			remoteInfo = receiveContactInfo(recordReader);
 			sendContactInfo(recordWriter, localAuthor, localProperties,
-					localSignature, localTimestamp);
+					localSignature, localTimestamp, localB3ProofSig);
 		}
 		streamWriter.sendEndOfStream();
 		recordReader.readRecord(r -> false, IGNORE);
@@ -166,6 +200,27 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 		if (!contactExchangeCrypto.verify(remotePublicKey,
 				masterKey, !alice, remoteInfo.signature)) {
 			throw new FormatException();
+		}
+
+		// B.3: if the peer sent a slot[4] proof, verify it. We require
+		// the buffered handshake state to be present — receiving a proof
+		// without buffered state would mean the orchestrator failed to
+		// thread through the hybrid handshake context, which is a bug,
+		// not graceful degradation. Hard-reject in that case.
+		if (remoteInfo.b3ProofSig != null) {
+			if (theirStaticHybridPub == null
+					|| ourEphX25519 == null
+					|| theirEphX25519 == null) {
+				throw new FormatException();
+			}
+			byte[] theirStaticPqPub = java.util.Arrays.copyOfRange(
+					theirStaticHybridPub, 32, 32 + B3_PQ_PUB_LEN);
+			byte[] remoteSigningPubBytes = remotePublicKey.getEncoded();
+			if (!B3PqProof.verify(remoteSigningPubBytes,
+					theirEphX25519, ourEphX25519,
+					theirStaticPqPub, remoteInfo.b3ProofSig)) {
+				throw new FormatException();
+			}
 		}
 		long timestamp = Math.min(localTimestamp, remoteInfo.timestamp);
 		if (timestamp < MIN_REASONABLE_TIME_MS) {
@@ -180,10 +235,17 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 
 	private void sendContactInfo(RecordWriter recordWriter, Author author,
 			Map<TransportId, TransportProperties> properties, byte[] signature,
-			long timestamp) throws IOException {
+			long timestamp, @Nullable byte[] b3ProofSig) throws IOException {
 		BdfList authorList = clientHelper.toList(author);
 		BdfDictionary props = clientHelper.toDictionary(properties);
-		BdfList payload = BdfList.of(authorList, props, signature, timestamp);
+		// 4-slot legacy layout when no proof; 5-slot v1.5 layout with
+		// proof at slot[4] when caller has computed one. Wire-byte-
+		// identical with v1.4 in the legacy case (BDF list grows by
+		// exactly one slot).
+		BdfList payload = b3ProofSig == null
+				? BdfList.of(authorList, props, signature, timestamp)
+				: BdfList.of(authorList, props, signature, timestamp,
+						b3ProofSig);
 		recordWriter.writeRecord(new Record(PROTOCOL_VERSION, CONTACT_INFO,
 				clientHelper.toByteArray(payload)));
 		recordWriter.flush();
@@ -194,7 +256,13 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 		Record record = recordReader.readRecord(ACCEPT, IGNORE);
 		if (record == null) throw new EOFException();
 		BdfList payload = clientHelper.toList(record.getPayload());
-		checkSize(payload, 4);
+		// Accept either 4 (legacy v1.4) or 5 (v1.5 with B.3 proof) slots.
+		// Tolerate trailing slot via BDF's end-marker form on the reader
+		// side; the new slot[4] is only consumed when the list has
+		// length 5 and the caller has buffered handshake state to
+		// verify against.
+		int size = payload.size();
+		if (size != 4 && size != 5) throw new FormatException();
 		Author author = clientHelper.parseAndValidateAuthor(payload.getList(0));
 		BdfDictionary props = payload.getDictionary(1);
 		Map<TransportId, TransportProperties> properties =
@@ -203,7 +271,16 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 		checkLength(signature, 1, MAX_SIGNATURE_LENGTH);
 		long timestamp = payload.getLong(3);
 		if (timestamp < 0) throw new FormatException();
-		return new ContactInfo(author, properties, signature, timestamp);
+		byte[] b3ProofSig = null;
+		if (size == 5) {
+			b3ProofSig = payload.getRaw(4);
+			// Tight length check — Ed25519 sigs are exactly 64 bytes.
+			// A wrong-length slot[4] is malformed and rejected, not
+			// silently coerced.
+			checkLength(b3ProofSig, B3_SIG_LEN, B3_SIG_LEN);
+		}
+		return new ContactInfo(author, properties, signature, timestamp,
+				b3ProofSig);
 	}
 
 	private Contact addContact(@Nullable PendingContactId pendingContactId,
@@ -242,14 +319,19 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 		private final Map<TransportId, TransportProperties> properties;
 		private final byte[] signature;
 		private final long timestamp;
+		/** B.3 slot[4] proof sig, or null on legacy 4-slot records. */
+		@Nullable
+		private final byte[] b3ProofSig;
 
 		private ContactInfo(Author author,
 				Map<TransportId, TransportProperties> properties,
-				byte[] signature, long timestamp) {
+				byte[] signature, long timestamp,
+				@Nullable byte[] b3ProofSig) {
 			this.author = author;
 			this.properties = properties;
 			this.signature = signature;
 			this.timestamp = timestamp;
+			this.b3ProofSig = b3ProofSig;
 		}
 	}
 }
