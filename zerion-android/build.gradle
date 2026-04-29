@@ -81,7 +81,7 @@ android {
         buildConfigField "String", "VERSION_LABEL", "\"1.5.0\""
         buildConfigField "String", "TorVersion", "\"$tor_version\""
 
-        buildConfigField "boolean", "B3_PROOF_ENABLED", "false"
+        buildConfigField "boolean", "B3_PROOF_ENABLED", "true"
 
         vectorDrawables.useSupportLibrary = true
 
