@@ -74,8 +74,23 @@ class ImageCompressorImpl implements ImageCompressor {
 	private Bitmap createBitmap(InputStream is, String contentType, int maxSize)
 			throws IOException {
 		is = new BufferedInputStream(is);
+		is.mark(16);
+		byte[] head = com.professor.zerion.android.util
+				.SafeImageDecoder.sniffHead(is);
+		if (head == null
+				|| !com.professor.zerion.android.util
+						.SafeImageDecoder.hasAllowedMagic(head)) {
+			throw new IOException("unsupported image format");
+		}
+		is.reset();
 		Size size = imageSizeCalculator.getSize(is, contentType);
 		if (size.hasError()) throw new IOException();
+		if (size.getWidth() > com.professor.zerion.android.util
+				.SafeImageDecoder.MAX_DIMENSION
+				|| size.getHeight() > com.professor.zerion.android.util
+						.SafeImageDecoder.MAX_DIMENSION) {
+			throw new IOException("image dimensions too large");
+		}
 		int dimension = Math.max(size.getWidth(), size.getHeight());
 		int inSampleSize = 1;
 		while (dimension > maxSize) {

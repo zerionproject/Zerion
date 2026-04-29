@@ -152,10 +152,20 @@ public class VaultGalleryAdapter extends RecyclerView.Adapter<VaultGalleryAdapte
 						return;
 					}
 
+					if (!com.professor.zerion.android.util
+							.SafeImageDecoder.hasAllowedMagic(content)) {
+						Arrays.fill(content, (byte) 0);
+						return;
+					}
+					BitmapFactory.Options bounds = com.professor.zerion.android.util
+							.SafeImageDecoder.probeBounds(content);
+					if (bounds == null) {
+						Arrays.fill(content, (byte) 0);
+						return;
+					}
 					BitmapFactory.Options options = new BitmapFactory.Options();
-					options.inJustDecodeBounds = true;
-					BitmapFactory.decodeByteArray(content, 0, content.length, options);
-
+					options.outWidth = bounds.outWidth;
+					options.outHeight = bounds.outHeight;
 					options.inSampleSize = calculateInSampleSize(options, 300, 300);
 					options.inJustDecodeBounds = false;
 

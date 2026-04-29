@@ -19,6 +19,8 @@ public class VoiceMessagePayloadParser {
 	private static final int MAX_CHUNK_SIZE = 1_000_000;
 	private static final int MAX_DURATION_MS = 600_000;
 	private static final int MAX_PAYLOAD_SIZE = 2_000_000;
+	private static final int MAX_CHUNK_COUNT =
+			MAX_PAYLOAD_SIZE / (INT_LENGTH + TAG_LENGTH);
 
 	public static class ParsedPayload {
 		public final byte formatVersion;
@@ -81,7 +83,7 @@ public class VoiceMessagePayloadParser {
 		int chunkCount = bytesToInt(payload, offset);
 		offset += INT_LENGTH;
 
-		if (chunkCount <= 0) {
+		if (chunkCount <= 0 || chunkCount > MAX_CHUNK_COUNT) {
 			throw new IllegalArgumentException("Invalid chunk count: " + chunkCount);
 		}
 

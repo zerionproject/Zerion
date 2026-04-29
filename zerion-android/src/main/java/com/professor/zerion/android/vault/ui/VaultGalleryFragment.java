@@ -175,10 +175,10 @@ public class VaultGalleryFragment extends BaseFragment {
 			@Override
 			public void onContentRetrieved(byte[] content) {
 				new Thread(() -> {
-					android.graphics.BitmapFactory.Options options = new android.graphics.BitmapFactory.Options();
-					options.inJustDecodeBounds = false;
-					android.graphics.Bitmap bitmap = android.graphics.BitmapFactory.decodeByteArray(
-							content, 0, content.length, options);
+					android.graphics.Bitmap bitmap = com.professor.zerion.android.util
+							.SafeImageDecoder.decode(content,
+									com.professor.zerion.android.util
+											.SafeImageDecoder.MAX_DIMENSION);
 
 					if (bitmap == null) {
 						Activity a = getActivity();

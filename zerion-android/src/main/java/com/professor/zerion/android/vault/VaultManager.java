@@ -851,7 +851,7 @@ public class VaultManager {
 		if (maxMemory > 4L * 1024 * 1024 * 1024) {
 			return new Argon2.Argon2Params(
 					256 * 1024,
-					2,
+					3,
 					1,
 					32
 			);

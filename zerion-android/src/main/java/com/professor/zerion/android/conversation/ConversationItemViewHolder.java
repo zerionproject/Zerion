@@ -192,10 +192,15 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 			if (linkPreviewImage != null) {
 				if (preview.hasImage()) {
 					byte[] data = preview.getImageData();
-					linkPreviewImage.setImageBitmap(
-							BitmapFactory.decodeByteArray(
-									data, 0, data.length));
-					linkPreviewImage.setVisibility(VISIBLE);
+					android.graphics.Bitmap bmp =
+							com.professor.zerion.android.util
+									.SafeImageDecoder.decode(data, 1024);
+					if (bmp != null) {
+						linkPreviewImage.setImageBitmap(bmp);
+						linkPreviewImage.setVisibility(VISIBLE);
+					} else {
+						linkPreviewImage.setVisibility(GONE);
+					}
 				} else {
 					linkPreviewImage.setVisibility(GONE);
 				}

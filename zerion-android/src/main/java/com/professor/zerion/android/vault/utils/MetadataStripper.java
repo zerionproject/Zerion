@@ -47,13 +47,20 @@ public class MetadataStripper {
 	}
 
 	private byte[] stripImageMetadata(byte[] imageData, String mimeType) throws IOException {
-		BitmapFactory.Options options = new BitmapFactory.Options();
-		options.inJustDecodeBounds = true;
-		BitmapFactory.decodeByteArray(imageData, 0, imageData.length, options);
+		if (!com.professor.zerion.android.util
+				.SafeImageDecoder.hasAllowedMagic(imageData)) {
+			throw new IOException("unsupported image format");
+		}
+		BitmapFactory.Options bounds = com.professor.zerion.android.util
+				.SafeImageDecoder.probeBounds(imageData);
+		if (bounds == null) {
+			throw new IOException("unsupported image format");
+		}
 
 		int maxDimension = 4096;
-		int sampleSize = calculateSampleSize(options.outWidth, options.outHeight, maxDimension);
+		int sampleSize = calculateSampleSize(bounds.outWidth, bounds.outHeight, maxDimension);
 
+		BitmapFactory.Options options = new BitmapFactory.Options();
 		options.inJustDecodeBounds = false;
 		options.inSampleSize = sampleSize;
 		options.inPreferredConfig = Bitmap.Config.ARGB_8888;
@@ -381,9 +388,31 @@ public class MetadataStripper {
 	public static void stripExifFromFile(File imageFile) throws IOException {
 		if (!imageFile.exists()) return;
 
+		byte[] head = new byte[12];
+		try (java.io.FileInputStream fis = new java.io.FileInputStream(imageFile)) {
+			int read = 0;
+			while (read < head.length) {
+				int r = fis.read(head, read, head.length - read);
+				if (r < 0) break;
+				read += r;
+			}
+			if (read < 12 || !com.professor.zerion.android.util
+					.SafeImageDecoder.hasAllowedMagic(head)) {
+				throw new IOException("unsupported image format");
+			}
+		}
+
 		BitmapFactory.Options options = new BitmapFactory.Options();
 		options.inJustDecodeBounds = true;
 		BitmapFactory.decodeFile(imageFile.getAbsolutePath(), options);
+
+		if (options.outWidth <= 0 || options.outHeight <= 0
+				|| options.outWidth > com.professor.zerion.android.util
+						.SafeImageDecoder.MAX_DIMENSION
+				|| options.outHeight > com.professor.zerion.android.util
+						.SafeImageDecoder.MAX_DIMENSION) {
+			throw new IOException("unsupported image dimensions");
+		}
 
 		int maxDimension = 4096;
 		int sampleSize = 1;
