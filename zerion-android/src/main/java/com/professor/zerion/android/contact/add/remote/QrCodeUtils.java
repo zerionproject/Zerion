@@ -124,33 +124,45 @@ public class QrCodeUtils {
 	public static String decodeQrFromYuv(byte[] yPlane, int width, int height,
 			int left, int top, int rotationDegrees) {
 		if (yPlane == null || width <= 0 || height <= 0) return null;
+
+		// PlanarYUVLuminanceSource does NOT override rotateCounterClockwise
+		// (ZXing's base impl throws UnsupportedOperationException for it),
+		// so we rotate the Y plane bytes ourselves before constructing
+		// the source. CameraX rotationDegrees is the clockwise rotation
+		// needed to make the frame upright.
+		int normalised = ((rotationDegrees % 360) + 360) % 360;
+		byte[] rotated;
+		int sourceWidth;
+		int sourceHeight;
+		if (normalised == 0) {
+			rotated = yPlane;
+			sourceWidth = width;
+			sourceHeight = height;
+		} else if (normalised == 180) {
+			rotated = rotate180(yPlane, width, height);
+			sourceWidth = width;
+			sourceHeight = height;
+		} else if (normalised == 90) {
+			rotated = rotate90Cw(yPlane, width, height);
+			sourceWidth = height;
+			sourceHeight = width;
+		} else if (normalised == 270) {
+			rotated = rotate270Cw(yPlane, width, height);
+			sourceWidth = height;
+			sourceHeight = width;
+		} else {
+			// Non-orthogonal rotation (rare, e.g. 45° from a tilted
+			// device). Skip — QR codes need axis-aligned scanning.
+			return null;
+		}
+
 		try {
 			LuminanceSource source = new PlanarYUVLuminanceSource(
-					yPlane, width, height, left, top,
-					Math.min(width - left, width),
-					Math.min(height - top, height),
+					rotated, sourceWidth, sourceHeight,
+					left, top,
+					Math.min(sourceWidth - left, sourceWidth),
+					Math.min(sourceHeight - top, sourceHeight),
 					false);
-
-			// Apply rotation via the source itself. ZXing rotates 90°
-			// counter-clockwise per call, so map the CameraX clockwise
-			// rotation to the right number of CCW calls.
-			int normalised = ((rotationDegrees % 360) + 360) % 360;
-			switch (normalised) {
-				case 90:
-					source = source.rotateCounterClockwise();
-					source = source.rotateCounterClockwise();
-					source = source.rotateCounterClockwise();
-					break;
-				case 180:
-					source = source.rotateCounterClockwise();
-					source = source.rotateCounterClockwise();
-					break;
-				case 270:
-					source = source.rotateCounterClockwise();
-					break;
-				default:
-					// 0 — no rotation
-			}
 
 			BinaryBitmap bitmap =
 					new BinaryBitmap(new HybridBinarizer(source));
@@ -161,16 +173,46 @@ public class QrCodeUtils {
 		} catch (NotFoundException
 				| ChecksumException
 				| FormatException e) {
-			// Normal: no QR in this frame, or frame too noisy to parse.
-			// Caller will feed the next frame.
 			return null;
 		} catch (Throwable t) {
-			// Defensive — anything else (including OOM on a huge frame)
-			// shouldn't take the activity down. Just skip the frame.
 			return null;
 		} finally {
 			QRCodeReader r = READER.get();
 			if (r != null) r.reset();
 		}
+	}
+
+	private static byte[] rotate90Cw(byte[] src, int w, int h) {
+		byte[] dst = new byte[w * h];
+		for (int y = 0; y < h; y++) {
+			int srcRow = y * w;
+			int newCol = h - 1 - y;
+			for (int x = 0; x < w; x++) {
+				dst[x * h + newCol] = src[srcRow + x];
+			}
+		}
+		return dst;
+	}
+
+	private static byte[] rotate180(byte[] src, int w, int h) {
+		int len = w * h;
+		byte[] dst = new byte[len];
+		for (int i = 0; i < len; i++) {
+			dst[len - 1 - i] = src[i];
+		}
+		return dst;
+	}
+
+	private static byte[] rotate270Cw(byte[] src, int w, int h) {
+		byte[] dst = new byte[w * h];
+		for (int y = 0; y < h; y++) {
+			int srcRow = y * w;
+			for (int x = 0; x < w; x++) {
+				int newCol = y;
+				int newRow = w - 1 - x;
+				dst[newRow * h + newCol] = src[srcRow + x];
+			}
+		}
+		return dst;
 	}
 }
