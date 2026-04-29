@@ -42,6 +42,26 @@ public interface B3Constants {
 	boolean B3_PROOF_ENABLED = false;
 
 	/**
+	 * Temporary debug-logging gate for emulator testing of the B.3
+	 * encode / decode path.
+	 *
+	 * <p>When {@code true}, the encode + decode + verify checkpoints in
+	 * {@code ContactExchangeManagerImpl} emit short {@code Logger}
+	 * lines tagged {@code [B3]} so you can follow the wire-format flow
+	 * in {@code adb logcat}. Logs only contain lengths, slot counts,
+	 * pass/fail flags, and short non-secret SHA-256 prefixes — no
+	 * private keys, no signing material, no message content.
+	 *
+	 * <p>Default {@code false}. Compile-time-final — when off, the
+	 * compiler folds the entire log block out of the bytecode, so
+	 * release builds emit nothing regardless of log-level
+	 * configuration. Flip to {@code true}, rebuild, install, observe
+	 * via {@code adb logcat | grep B3}. After testing, flip back to
+	 * {@code false} before any production rebuild.
+	 */
+	boolean B3_DEBUG_LOG = false;
+
+	/**
 	 * Domain separator for the B.3 signature input. UTF-8, 22 bytes,
 	 * no NUL.
 	 */
