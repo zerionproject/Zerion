@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/bg_zerion_gradient">
@@ -71,7 +72,7 @@
                             style="@style/Widget.Material3.Button.OutlinedButton"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Previous"
+                            android:text="@string/vault_doc_previous"
                             android:textColor="@android:color/white"
                             app:strokeColor="@android:color/white" />
 
@@ -80,7 +81,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginHorizontal="16dp"
-                            android:text="Page 1 of 1"
+                            tools:text="Page 1 of 1"
                             android:textColor="@android:color/white"
                             android:textSize="14sp" />
 
@@ -89,7 +90,7 @@
                             style="@style/Widget.Material3.Button.OutlinedButton"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Next"
+                            android:text="@string/vault_doc_next"
                             android:textColor="@android:color/white"
                             app:strokeColor="@android:color/white" />
 
@@ -159,7 +160,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="24dp"
-                    android:text="Preview Not Available"
+                    android:text="@string/vault_doc_preview_unavailable_title"
                     android:textColor="@android:color/white"
                     android:textSize="20sp"
                     android:textStyle="bold"
@@ -170,7 +171,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
-                    android:text="This document type cannot be viewed inside the secure vault.\n\nYou may only store it, not open it."
+                    android:text="@string/vault_doc_preview_unavailable_message"
                     android:textColor="@android:color/white"
                     android:textSize="14sp"
                     android:gravity="center"

@@ -207,13 +207,9 @@ public class TextEditorFragment extends BaseFragment {
 
 	private void updateWordCount() {
 		String content = documentContentInput.getText().toString().trim();
-		if (content.isEmpty()) {
-			wordCount.setText("0 words");
-		} else {
-			String[] words = content.split("\\s+");
-			int count = words.length;
-			wordCount.setText(count + (count == 1 ? " word" : " words"));
-		}
+		int count = content.isEmpty() ? 0 : content.split("\\s+").length;
+		wordCount.setText(getResources().getQuantityString(
+				R.plurals.text_editor_word_count, count, count));
 	}
 
 	private void loadInitialContent() {

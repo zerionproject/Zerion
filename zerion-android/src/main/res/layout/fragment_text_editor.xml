@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
 	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
 	android:layout_width="match_parent"
 	android:layout_height="match_parent"
 	android:background="@drawable/bg_zerion_gradient">
@@ -107,7 +108,7 @@
 					style="@style/Zerion.Button.Text"
 					android:layout_width="wrap_content"
 					android:layout_height="36dp"
-					android:text="Monospace"
+					android:text="@string/text_editor_monospace"
 					android:textSize="12sp"
 					android:minWidth="0dp"
 					android:paddingStart="12dp"
@@ -125,7 +126,7 @@
 					android:layout_height="wrap_content"
 					android:layout_gravity="center_vertical"
 					android:layout_marginStart="12dp"
-					android:text="0 words"
+					tools:text="0 words"
 					android:textColor="@color/zerion_text_secondary"
 					android:textSize="12sp" />
 
@@ -156,7 +157,7 @@
 				<TextView
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
-					android:text="Content"
+					android:text="@string/text_editor_content"
 					android:textColor="@color/zerion_cyan"
 					android:textSize="12sp"
 					android:layout_marginBottom="8dp"

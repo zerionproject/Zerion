@@ -403,7 +403,8 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 
 			pdfPageView.setImageBitmap(currentPageBitmap);
 
-			pdfPageIndicator.setText("Page " + (pageIndex + 1) + " of " + pdfRenderer.getPageCount());
+			pdfPageIndicator.setText(getString(R.string.vault_doc_page_indicator,
+					pageIndex + 1, pdfRenderer.getPageCount()));
 			pdfPrevButton.setEnabled(pageIndex > 0);
 			pdfNextButton.setEnabled(pageIndex < pdfRenderer.getPageCount() - 1);
 

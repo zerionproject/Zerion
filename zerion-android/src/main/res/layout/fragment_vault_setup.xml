@@ -30,7 +30,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Create a secure password to protect your vault"
+            android:text="@string/vault_setup_subtitle"
             android:textAlignment="center"
             android:layout_marginBottom="32dp" />
 
