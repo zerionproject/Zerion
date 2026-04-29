@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content"
+	android:orientation="vertical"
+	android:padding="20dp">
+
+	<TextView
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:text="@string/settings_my_identity_summary"
+		android:textColor="@color/zerion_text_secondary"
+		android:textSize="13sp" />
+
+	<TextView
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_marginTop="14dp"
+		android:text="@string/identity_my_fingerprint_label"
+		android:textColor="@color/zerion_text_secondary"
+		android:textSize="11sp"
+		android:textAllCaps="true"
+		android:letterSpacing="0.05" />
+
+	<TextView
+		android:id="@+id/my_fingerprint_value"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:layout_marginTop="6dp"
+		android:fontFamily="monospace"
+		android:textColor="@color/zerion_text_primary"
+		android:textIsSelectable="true"
+		android:textSize="14sp"
+		tools:text="12345 67890 12345 67890 12345 67890" />
+
+</LinearLayout>

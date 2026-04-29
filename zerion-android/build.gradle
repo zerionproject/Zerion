@@ -189,6 +189,8 @@ dependencies {
     implementation project(':bramble-android')
     implementation project(':briar-core')
 
+    implementation "org.bouncycastle:bcprov-jdk15to18:$bouncy_castle_version"
+
     // newer versions of the libraries below require compileSdk 35
     implementation 'androidx.activity:activity:1.9.3'
     implementation 'androidx.fragment:fragment:1.6.2'

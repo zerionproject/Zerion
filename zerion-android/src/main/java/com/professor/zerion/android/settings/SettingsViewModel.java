@@ -237,4 +237,25 @@ class SettingsViewModel extends DbViewModel implements EventListener {
 		return screenLockTimeout;
 	}
 
+	private final com.professor.zerion.android.viewmodel.MutableLiveEvent<String> myFingerprint =
+			new com.professor.zerion.android.viewmodel.MutableLiveEvent<>();
+
+	public com.professor.zerion.android.viewmodel.LiveEvent<String> getMyFingerprint() {
+		return myFingerprint;
+	}
+
+	public void loadMyFingerprint() {
+		runOnDbThread(() -> {
+			try {
+				byte[] localPub = identityManager.getLocalAuthor()
+						.getPublicKey().getEncoded();
+				String fp = com.professor.zerion.android.contact.identity
+						.IdentityFingerprint.forSigningPub(localPub);
+				myFingerprint.postEvent(fp);
+			} catch (org.briarproject.bramble.api.db.DbException e) {
+				handleException(e);
+			}
+		});
+	}
+
 }

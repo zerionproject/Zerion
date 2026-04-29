@@ -293,6 +293,138 @@
 
             </LinearLayout>
 
+            <!-- Identity verification -->
+            <LinearLayout
+                android:id="@+id/identity_card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="16dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:background="@drawable/bg_contact_card"
+                android:padding="8dp"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/identity_section_title"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/zerion_text_primary"
+                    android:padding="16dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="16dp"
+                    android:text="@string/identity_safety_number_explain"
+                    android:textColor="@color/zerion_text_secondary"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="16dp"
+                    android:text="@string/identity_safety_number_label"
+                    android:textColor="@color/zerion_text_secondary"
+                    android:textSize="11sp"
+                    android:letterSpacing="0.05"
+                    android:textAllCaps="true" />
+
+                <TextView
+                    android:id="@+id/safety_number_value"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="16dp"
+                    android:fontFamily="monospace"
+                    android:lineSpacingExtra="4dp"
+                    android:textColor="@color/zerion_text_primary"
+                    android:textIsSelectable="true"
+                    android:textSize="15sp"
+                    tools:text="1234567890\n1234567890\n1234567890" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="0.5dp"
+                    android:layout_marginTop="14dp"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="16dp"
+                    android:background="@color/zerion_divider" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="16dp"
+                    android:text="@string/identity_my_fingerprint_label"
+                    android:textColor="@color/zerion_text_secondary"
+                    android:textSize="11sp"
+                    android:letterSpacing="0.05"
+                    android:textAllCaps="true" />
+
+                <TextView
+                    android:id="@+id/my_fingerprint_value"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="16dp"
+                    android:fontFamily="monospace"
+                    android:textColor="@color/zerion_text_primary"
+                    android:textIsSelectable="true"
+                    android:textSize="13sp"
+                    tools:text="12345 67890 12345 67890 12345 67890" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="16dp"
+                    android:text="@string/identity_their_fingerprint_label"
+                    android:textColor="@color/zerion_text_secondary"
+                    android:textSize="11sp"
+                    android:letterSpacing="0.05"
+                    android:textAllCaps="true" />
+
+                <TextView
+                    android:id="@+id/their_fingerprint_value"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="16dp"
+                    android:layout_marginBottom="4dp"
+                    android:fontFamily="monospace"
+                    android:textColor="@color/zerion_text_primary"
+                    android:textIsSelectable="true"
+                    android:textSize="13sp"
+                    tools:text="98765 43210 98765 43210 98765 43210" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/copy_safety_number_button"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="12dp"
+                    android:text="@string/identity_copy"
+                    app:icon="@drawable/ic_content_copy"
+                    app:iconGravity="textStart" />
+
+            </LinearLayout>
+
         </LinearLayout>
 
     </ScrollView>

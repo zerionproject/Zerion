@@ -31,6 +31,17 @@
 	<string name="settings_section_alerts">ALERTS</string>
 	<string name="settings_section_sounds_vibration">SOUNDS &amp; VIBRATION</string>
 	<string name="settings_section_appearance">APPEARANCE</string>
+	<string name="identity_section_title">Identity verification</string>
+	<string name="identity_safety_number_label">Safety number</string>
+	<string name="identity_safety_number_explain">Compare these 60 digits with your contact in person or over a trusted channel. If they match on both devices, your conversation is end-to-end secure.</string>
+	<string name="identity_my_fingerprint_label">My fingerprint</string>
+	<string name="identity_their_fingerprint_label">Their fingerprint</string>
+	<string name="identity_copied">Copied to clipboard</string>
+	<string name="identity_copy">Copy</string>
+	<string name="settings_my_identity_title">My identity</string>
+	<string name="settings_my_identity_summary">View your fingerprint to share with new contacts</string>
+	<string name="conversation_subtitle_encrypted">End-to-end encrypted</string>
+	<string name="conversation_subtitle_online">Online · End-to-end encrypted</string>
 	<string name="setup_name_explanation">Your nickname will be shown next to any content you post. You can\'t change it after creating your account.</string>
 	<string name="setup_next">Next</string>
 	<string name="setup_password_intro">Choose a Password</string>

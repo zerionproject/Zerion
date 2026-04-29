@@ -28,24 +28,49 @@
             android:paddingEnd="4dp">
 
             <LinearLayout
+                android:id="@+id/toolbarTitleBlock"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 android:orientation="horizontal"
-                android:gravity="center_vertical">
+                android:gravity="center_vertical"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:paddingStart="4dp"
+                android:paddingEnd="8dp">
 
                 <include layout="@layout/contact_avatar_status" />
 
-                <com.vanniktech.emoji.EmojiTextView
-                    android:id="@+id/contactName"
-                    style="@style/TextAppearance.AppCompat.Widget.ActionBar.Title.Inverse"
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="@dimen/margin_medium"
-                    android:layout_marginLeft="@dimen/margin_medium"
-                    android:ellipsize="end"
-                    android:maxLines="1"
-                    android:textColor="@android:color/white"
-                    tools:text="Contact Name" />
+                    android:layout_marginStart="12dp"
+                    android:orientation="vertical">
+
+                    <com.vanniktech.emoji.EmojiTextView
+                        android:id="@+id/contactName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:textColor="@android:color/white"
+                        android:textSize="17sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.01"
+                        tools:text="Contact Name" />
+
+                    <TextView
+                        android:id="@+id/contactSubtitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:textColor="#CCFFFFFF"
+                        android:textSize="11sp"
+                        android:letterSpacing="0.02"
+                        tools:text="End-to-end encrypted" />
+
+                </LinearLayout>
 
             </LinearLayout>
 

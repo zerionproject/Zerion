@@ -100,6 +100,7 @@ public class SettingsFragment extends Fragment {
 		notificationsCard = view.findViewById(R.id.notifications_card);
 		aboutCard = view.findViewById(R.id.about_card);
 		inviteFriendsCard = view.findViewById(R.id.invite_friends_card);
+		View myIdentityCard = view.findViewById(R.id.my_identity_card);
 		devSectionHeader = view.findViewById(R.id.dev_section_header);
 		testDataCard = view.findViewById(R.id.test_data_card);
 		testDataDivider = view.findViewById(R.id.test_data_divider);
@@ -123,6 +124,11 @@ public class SettingsFragment extends Fragment {
 		aboutCard.setOnClickListener(v -> showAboutSettings());
 		if (inviteFriendsCard != null) {
 			inviteFriendsCard.setOnClickListener(v -> shareInvite());
+		}
+		if (myIdentityCard != null) {
+			myIdentityCard.setOnClickListener(v -> showMyIdentityDialog());
+			viewModel.getMyFingerprint().observeEvent(getViewLifecycleOwner(),
+					this::showMyFingerprintInDialog);
 		}
 
 		if (IS_DEBUG_BUILD) {
@@ -210,6 +216,30 @@ public class SettingsFragment extends Fragment {
 				.replace(R.id.fragmentContainer, new AboutFragment())
 				.addToBackStack(null)
 				.commit();
+	}
+
+	@Nullable
+	private androidx.appcompat.app.AlertDialog myIdentityDialog;
+
+	private void showMyIdentityDialog() {
+		android.content.Context ctx = requireContext();
+		android.view.View dlgView = android.view.LayoutInflater.from(ctx)
+				.inflate(R.layout.dialog_my_identity, null);
+		myIdentityDialog =
+				new com.google.android.material.dialog.MaterialAlertDialogBuilder(
+						ctx, R.style.ZerionDialogTheme)
+						.setView(dlgView)
+						.setTitle(R.string.settings_my_identity_title)
+						.setPositiveButton(android.R.string.ok, null)
+						.create();
+		myIdentityDialog.show();
+		viewModel.loadMyFingerprint();
+	}
+
+	private void showMyFingerprintInDialog(@Nullable String fp) {
+		if (myIdentityDialog == null || fp == null) return;
+		TextView tv = myIdentityDialog.findViewById(R.id.my_fingerprint_value);
+		if (tv != null) tv.setText(fp);
 	}
 
 }

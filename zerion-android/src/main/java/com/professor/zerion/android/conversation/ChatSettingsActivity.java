@@ -66,6 +66,11 @@ public class ChatSettingsActivity extends ZerionActivity {
 	private TextView securityLevelDescription;
 	private LinearLayout disappearingMessagesOption;
 	private TextView disappearingMessagesValue;
+	private LinearLayout identityCard;
+	private TextView safetyNumberValue;
+	private TextView myFingerprintValue;
+	private TextView theirFingerprintValue;
+	private com.google.android.material.button.MaterialButton copySafetyNumberButton;
 
 
 	@Override
@@ -110,6 +115,40 @@ public class ChatSettingsActivity extends ZerionActivity {
 		disappearingMessagesOption = findViewById(R.id.disappearing_messages_option);
 		disappearingMessagesValue = findViewById(R.id.disappearing_messages_value);
 		disappearingMessagesOption.setOnClickListener(v -> showDisappearingMessagesDialog());
+
+		identityCard = findViewById(R.id.identity_card);
+		safetyNumberValue = findViewById(R.id.safety_number_value);
+		myFingerprintValue = findViewById(R.id.my_fingerprint_value);
+		theirFingerprintValue = findViewById(R.id.their_fingerprint_value);
+		copySafetyNumberButton = findViewById(R.id.copy_safety_number_button);
+
+		viewModel.getIdentityKeys().observeEvent(this, keys -> {
+			if (keys == null) return;
+			String safety = com.professor.zerion.android.contact.identity
+					.ContactSafetyNumber.forKeys(
+							keys.localSigningPub, keys.remoteSigningPub);
+			String myFp = com.professor.zerion.android.contact.identity
+					.IdentityFingerprint.forSigningPub(keys.localSigningPub);
+			String theirFp = com.professor.zerion.android.contact.identity
+					.IdentityFingerprint.forSigningPub(keys.remoteSigningPub);
+			safetyNumberValue.setText(formatSafetyNumberMultiline(safety));
+			myFingerprintValue.setText(myFp);
+			theirFingerprintValue.setText(theirFp);
+			identityCard.setVisibility(View.VISIBLE);
+			copySafetyNumberButton.setOnClickListener(v -> {
+				com.professor.zerion.android.util.Haptics.tap(v);
+				android.content.ClipboardManager cm =
+						(android.content.ClipboardManager)
+								getSystemService(CLIPBOARD_SERVICE);
+				if (cm == null) return;
+				cm.setPrimaryClip(android.content.ClipData.newPlainText(
+						getString(R.string.identity_section_title), safety));
+				android.widget.Toast.makeText(this,
+						R.string.identity_copied,
+						android.widget.Toast.LENGTH_SHORT).show();
+			});
+		});
+		viewModel.loadIdentityKeys();
 		viewModel.getAutoDeleteTimer().observe(this, timer -> {
 			if (timer != null) {
 				disappearingMessagesValue.setText(getTimerDisplayText(timer));
@@ -333,5 +372,17 @@ public class ChatSettingsActivity extends ZerionActivity {
 		if (radioId == R.id.timer_1_week) return 7 * 24 * 60 * 60 * 1000L;
 		if (radioId == R.id.timer_4_weeks) return 4 * 7 * 24 * 60 * 60 * 1000L;
 		return -1L;
+	}
+
+	private static String formatSafetyNumberMultiline(String single) {
+		if (single == null || single.isEmpty()) return "";
+		String[] groups = single.split(" ");
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < groups.length; i++) {
+			if (i > 0 && i % 2 == 0) sb.append('\n');
+			else if (i > 0) sb.append("   ");
+			sb.append(groups[i]);
+		}
+		return sb.toString();
 	}
 }

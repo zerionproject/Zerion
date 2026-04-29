@@ -198,6 +198,7 @@ public class ConversationActivity extends ZerionActivity
 	private CircleImageView toolbarAvatar;
 	private ImageView toolbarStatus;
 	private TextView toolbarTitle;
+	private TextView toolbarSubtitle;
 	private ZerionRecyclerView list;
 	private LinearLayoutManager layoutManager;
 	private TextInputView textInputView;
@@ -265,11 +266,22 @@ public class ConversationActivity extends ZerionActivity
 		toolbarAvatar = toolbar.findViewById(R.id.contactAvatar);
 		toolbarStatus = toolbar.findViewById(R.id.contactStatus);
 		toolbarTitle = toolbar.findViewById(R.id.contactName);
+		toolbarSubtitle = toolbar.findViewById(R.id.contactSubtitle);
+		if (toolbarSubtitle != null) {
+			toolbarSubtitle.setText(R.string.conversation_subtitle_encrypted);
+		}
+		View titleBlock = toolbar.findViewById(R.id.toolbarTitleBlock);
+		if (titleBlock != null) {
+			titleBlock.setOnClickListener(v -> {
+				Intent intent = new Intent(this, ChatSettingsActivity.class);
+				intent.putExtra(CONTACT_ID, contactId.getInt());
+				startActivity(intent);
+			});
+		}
 
 		viewModel.getContactItem().observe(this, contactItem -> {
 			requireNonNull(contactItem);
 			setAvatar(toolbarAvatar, contactItem);
-			toolbarAvatar.setOnClickListener(v -> showAvatarFullScreen(contactItem));
 		});
 		viewModel.getContactDisplayName().observe(this, contactName -> {
 			requireNonNull(contactName);
@@ -1205,9 +1217,17 @@ public class ConversationActivity extends ZerionActivity
 		if (connected) {
 			toolbarStatus.setImageResource(R.drawable.contact_online);
 			toolbarStatus.setContentDescription(getString(R.string.online));
+			if (toolbarSubtitle != null) {
+				toolbarSubtitle.setText(
+						R.string.conversation_subtitle_online);
+			}
 		} else {
 			toolbarStatus.setImageResource(R.drawable.contact_offline);
 			toolbarStatus.setContentDescription(getString(R.string.offline));
+			if (toolbarSubtitle != null) {
+				toolbarSubtitle.setText(
+						R.string.conversation_subtitle_encrypted);
+			}
 		}
 	}
 

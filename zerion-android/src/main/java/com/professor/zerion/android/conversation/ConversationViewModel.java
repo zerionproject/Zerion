@@ -174,6 +174,8 @@ public class ConversationViewModel extends DbViewModel
 		}
 	}
 
+	private final org.briarproject.bramble.api.identity.IdentityManager identityManager;
+
 	@Inject
 	ConversationViewModel(Application application,
 			@DatabaseExecutor Executor dbExecutor,
@@ -189,7 +191,8 @@ public class ConversationViewModel extends DbViewModel
 			AttachmentRetriever attachmentRetriever,
 			AttachmentCreator attachmentCreator,
 			AutoDeleteManager autoDeleteManager,
-			ConversationManager conversationManager) {
+			ConversationManager conversationManager,
+			org.briarproject.bramble.api.identity.IdentityManager identityManager) {
 		super(application, dbExecutor, lifecycleManager, db, androidExecutor);
 		this.db = db;
 		this.eventBus = eventBus;
@@ -202,6 +205,7 @@ public class ConversationViewModel extends DbViewModel
 		this.attachmentCreator = attachmentCreator;
 		this.autoDeleteManager = autoDeleteManager;
 		this.conversationManager = conversationManager;
+		this.identityManager = identityManager;
 		messagingGroupId = map(contactItem, c ->
 				messagingManager.getContactGroup(c.getContact()).getId());
 		eventBus.addListener(this);
@@ -1096,6 +1100,40 @@ public class ConversationViewModel extends DbViewModel
 
 	LiveData<Map<MessageId, LinkPreview>> getLinkPreviewsMap() {
 		return linkPreviewsMap;
+	}
+
+	public static class IdentityKeys {
+		public final byte[] localSigningPub;
+		public final byte[] remoteSigningPub;
+
+		public IdentityKeys(byte[] local, byte[] remote) {
+			this.localSigningPub = local;
+			this.remoteSigningPub = remote;
+		}
+	}
+
+	private final MutableLiveEvent<IdentityKeys> identityKeys =
+			new MutableLiveEvent<>();
+
+	public LiveEvent<IdentityKeys> getIdentityKeys() {
+		return identityKeys;
+	}
+
+	public void loadIdentityKeys() {
+		if (contactId == null) return;
+		final ContactId c = contactId;
+		runOnDbThread(() -> {
+			try {
+				byte[] local =
+						identityManager.getLocalAuthor().getPublicKey()
+								.getEncoded();
+				byte[] remote = contactManager.getContact(c)
+						.getAuthor().getPublicKey().getEncoded();
+				identityKeys.postEvent(new IdentityKeys(local, remote));
+			} catch (DbException e) {
+				handleException(e);
+			}
+		});
 	}
 
 }
