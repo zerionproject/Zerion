@@ -173,15 +173,36 @@ public class NavDrawerActivity extends ZerionActivity implements
 	}
 
 	private void setupClickListeners() {
-		profileIcon.setOnClickListener(v -> openSettings());
-		searchButton.setOnClickListener(v -> toggleNetworkStatus());
-		menuButton.setOnClickListener(v -> showOverflowMenu());
+		profileIcon.setOnClickListener(v -> {
+			com.professor.zerion.android.util.Haptics.tap(v);
+			openSettings();
+		});
+		searchButton.setOnClickListener(v -> {
+			com.professor.zerion.android.util.Haptics.tap(v);
+			toggleNetworkStatus();
+		});
+		menuButton.setOnClickListener(v -> {
+			com.professor.zerion.android.util.Haptics.tap(v);
+			showOverflowMenu();
+		});
 
-		tabContacts.setOnClickListener(v -> onTabClicked(TAB_CONTACTS));
-		tabGroupChats.setOnClickListener(v -> onTabClicked(TAB_GROUPS));
-		tabVault.setOnClickListener(v -> onTabClicked(TAB_VAULT));
+		tabContacts.setOnClickListener(v -> {
+			com.professor.zerion.android.util.Haptics.tap(v);
+			onTabClicked(TAB_CONTACTS);
+		});
+		tabGroupChats.setOnClickListener(v -> {
+			com.professor.zerion.android.util.Haptics.tap(v);
+			onTabClicked(TAB_GROUPS);
+		});
+		tabVault.setOnClickListener(v -> {
+			com.professor.zerion.android.util.Haptics.tap(v);
+			onTabClicked(TAB_VAULT);
+		});
 
-		fabCompose.setOnClickListener(v -> handleComposeFab());
+		fabCompose.setOnClickListener(v -> {
+			com.professor.zerion.android.util.Haptics.confirm(v);
+			handleComposeFab();
+		});
 	}
 
 	private void onTabClicked(int tab) {

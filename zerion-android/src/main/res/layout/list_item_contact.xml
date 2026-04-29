@@ -5,23 +5,19 @@
 	android:id="@+id/linearLayout4"
 	android:layout_width="match_parent"
 	android:layout_height="wrap_content"
-	android:layout_marginHorizontal="0dp"
-	android:layout_marginVertical="0dp"
 	android:background="?attr/selectableItemBackground"
-	android:elevation="0dp"
 	android:clickable="true"
 	android:focusable="true"
 	android:paddingStart="16dp"
 	android:paddingEnd="16dp"
-	android:paddingTop="12dp"
-	android:paddingBottom="12dp">
+	android:paddingTop="14dp"
+	android:paddingBottom="14dp">
 
 	<FrameLayout
 		android:id="@+id/avatarFrameView"
 		android:layout_width="@dimen/listitem_picture_frame_size"
 		android:layout_height="@dimen/listitem_picture_frame_size"
-		android:layout_margin="@dimen/listitem_horizontal_margin"
-		app:layout_constraintBottom_toTopOf="@+id/divider"
+		app:layout_constraintBottom_toBottomOf="parent"
 		app:layout_constraintStart_toStartOf="parent"
 		app:layout_constraintTop_toTopOf="parent">
 
@@ -30,7 +26,7 @@
 			style="@style/ZerionAvatar"
 			android:layout_width="@dimen/listitem_picture_size"
 			android:layout_height="@dimen/listitem_picture_size"
-			android:layout_gravity="bottom|left|start"
+			android:layout_gravity="center"
 			tools:src="@mipmap/ic_launcher_round" />
 
 	</FrameLayout>
@@ -40,7 +36,7 @@
 		android:layout_width="wrap_content"
 		android:layout_height="@dimen/unread_bubble_size"
 		android:background="@drawable/bubble"
-		android:backgroundTint="#26B7F0"
+		android:backgroundTint="@color/zerion_primary_accent"
 		android:gravity="center"
 		android:minWidth="@dimen/unread_bubble_size"
 		android:textColor="#FFFFFF"
@@ -48,110 +44,91 @@
 		android:textStyle="bold"
 		app:layout_constraintEnd_toEndOf="@+id/avatarFrameView"
 		app:layout_constraintTop_toTopOf="@+id/avatarFrameView"
-		tools:text="123" />
+		tools:text="3" />
 
 	<com.vanniktech.emoji.EmojiTextView
 		android:id="@+id/nameView"
 		android:layout_width="0dp"
 		android:layout_height="wrap_content"
-		android:layout_marginStart="@dimen/margin_medium"
-		android:layout_marginLeft="@dimen/margin_medium"
-		android:layout_marginTop="@dimen/listitem_vertical_margin"
-		android:layout_marginEnd="0dp"
-		android:layout_marginRight="0dp"
-		android:paddingStart="@dimen/margin_medium"
-		android:paddingEnd="4dp"
-		android:textColor="#FFFFFF"
-		android:textSize="@dimen/text_size_medium"
+		android:layout_marginStart="14dp"
+		android:layout_marginEnd="8dp"
+		android:ellipsize="end"
+		android:maxLines="1"
+		android:textColor="@color/zerion_text_primary"
+		android:textSize="16sp"
 		android:textStyle="bold"
-		app:layout_constraintBottom_toTopOf="@+id/trustIndicatorDescription"
-		app:layout_constraintEnd_toStartOf="@+id/pinIcon"
-		app:layout_constraintHorizontal_bias="0.0"
+		app:layout_constraintEnd_toStartOf="@+id/dateView"
+		app:layout_constraintHorizontal_chainStyle="spread_inside"
 		app:layout_constraintStart_toEndOf="@+id/avatarFrameView"
-		app:layout_constraintTop_toTopOf="parent"
-		app:layout_constraintVertical_chainStyle="packed"
-		tools:text="This is a name of a contact" />
+		app:layout_constraintTop_toTopOf="@+id/avatarFrameView"
+		tools:text="Contact name" />
+
+	<TextView
+		android:id="@+id/dateView"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:textColor="@color/zerion_text_secondary"
+		android:textSize="13sp"
+		app:layout_constraintBaseline_toBaselineOf="@+id/nameView"
+		app:layout_constraintEnd_toStartOf="@+id/pinIcon"
+		tools:text="14:32" />
 
 	<ImageView
 		android:id="@+id/pinIcon"
 		android:layout_width="14dp"
 		android:layout_height="14dp"
-		android:layout_marginEnd="@dimen/margin_medium"
+		android:layout_marginStart="6dp"
 		android:src="@drawable/ic_pin"
 		android:visibility="gone"
 		app:layout_constraintBottom_toBottomOf="@+id/nameView"
-		app:layout_constraintEnd_toStartOf="@+id/bulbView"
+		app:layout_constraintEnd_toEndOf="parent"
 		app:layout_constraintTop_toTopOf="@+id/nameView"
-		app:tint="#80FFFFFF"
+		app:tint="@color/zerion_text_secondary"
 		tools:ignore="ContentDescription"
 		tools:visibility="visible" />
 
-	<com.professor.zerion.android.view.TrustIndicatorView
-		android:id="@+id/trustIndicator"
-		android:layout_width="wrap_content"
-		android:layout_height="wrap_content"
-		android:layout_marginStart="16dp"
-		android:layout_marginLeft="16dp"
-		app:layout_constraintBottom_toTopOf="@+id/dateView"
-		app:layout_constraintEnd_toStartOf="@+id/trustIndicatorDescription"
-		app:layout_constraintStart_toEndOf="@+id/avatarFrameView"
-		app:layout_constraintTop_toBottomOf="@+id/nameView"
-		tools:src="@drawable/trust_indicator_verified" />
-
-	<TextView
-		android:id="@+id/trustIndicatorDescription"
+	<LinearLayout
+		android:id="@+id/subtitleRow"
 		android:layout_width="0dp"
 		android:layout_height="wrap_content"
+		android:layout_marginStart="14dp"
+		android:layout_marginTop="4dp"
 		android:layout_marginEnd="8dp"
-		android:layout_marginRight="8dp"
-		android:paddingStart="@dimen/margin_medium"
-		android:paddingEnd="@dimen/margin_medium"
-		android:textColor="#B3FFFFFF"
-		android:textSize="@dimen/text_size_small"
-		app:layout_constraintBottom_toTopOf="@+id/dateView"
+		android:gravity="center_vertical"
+		android:orientation="horizontal"
+		app:layout_constraintBottom_toBottomOf="@+id/avatarFrameView"
 		app:layout_constraintEnd_toStartOf="@+id/bulbView"
-		app:layout_constraintStart_toEndOf="@+id/trustIndicator"
-		app:layout_constraintTop_toBottomOf="@+id/nameView"
-		tools:text="verified contact"/>
-
-	<TextView
-		android:id="@+id/dateView"
-		android:layout_width="0dp"
-		android:layout_height="wrap_content"
-		android:layout_marginStart="@dimen/margin_medium"
-		android:layout_marginLeft="@dimen/margin_medium"
-		android:layout_marginEnd="@dimen/margin_medium"
-		android:layout_marginRight="@dimen/margin_medium"
-		android:layout_marginBottom="10dp"
-		android:paddingStart="@dimen/margin_medium"
-		android:paddingEnd="@dimen/margin_medium"
-		android:textColor="#80FFFFFF"
-		android:textSize="@dimen/text_size_small"
-		app:layout_constraintBottom_toTopOf="@id/divider"
-		app:layout_constraintEnd_toStartOf="@+id/bulbView"
-		app:layout_constraintHorizontal_bias="0.5"
 		app:layout_constraintStart_toEndOf="@+id/avatarFrameView"
-		app:layout_constraintTop_toBottomOf="@+id/trustIndicatorDescription"
-		tools:text="Dec 24" />
+		app:layout_constraintTop_toBottomOf="@+id/nameView">
+
+		<com.professor.zerion.android.view.TrustIndicatorView
+			android:id="@+id/trustIndicator"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			tools:src="@drawable/trust_indicator_verified" />
+
+		<TextView
+			android:id="@+id/trustIndicatorDescription"
+			android:layout_width="0dp"
+			android:layout_height="wrap_content"
+			android:layout_marginStart="6dp"
+			android:layout_weight="1"
+			android:ellipsize="end"
+			android:maxLines="1"
+			android:textColor="@color/zerion_text_secondary"
+			android:textSize="13sp"
+			tools:text="Verified contact" />
+
+	</LinearLayout>
 
 	<ImageView
 		android:id="@+id/bulbView"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
-		android:layout_margin="@dimen/listitem_horizontal_margin"
-		app:layout_constraintBottom_toBottomOf="parent"
+		app:layout_constraintBottom_toBottomOf="@+id/subtitleRow"
 		app:layout_constraintEnd_toEndOf="parent"
-		app:layout_constraintTop_toTopOf="parent"
+		app:layout_constraintTop_toTopOf="@+id/subtitleRow"
 		tools:ignore="ContentDescription"
 		tools:src="@drawable/contact_connected" />
-
-	<View
-		android:id="@+id/divider"
-		android:layout_width="0dp"
-		android:layout_height="0dp"
-		android:visibility="gone"
-		app:layout_constraintBottom_toBottomOf="parent"
-		app:layout_constraintEnd_toEndOf="parent"
-		app:layout_constraintStart_toStartOf="@+id/nameView" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -43,7 +43,7 @@
 		app:layout_constraintStart_toStartOf="parent"
 		app:layout_constraintTop_toTopOf="parent"
 		app:layout_constraintVertical_chainStyle="packed"
-		app:tint="?attr/colorControlNormal"
+		app:tint="@color/zerion_text_secondary"
 		tools:src="@drawable/il_empty_state_group_list" />
 
 	<TextView
@@ -53,6 +53,7 @@
 		android:gravity="center"
 		android:padding="@dimen/margin_large"
 		android:text="@string/no_data"
+		android:textColor="@color/zerion_text_primary"
 		android:textSize="@dimen/text_size_large"
 		app:layout_constraintBottom_toTopOf="@+id/emptyAction"
 		app:layout_constraintEnd_toEndOf="parent"
@@ -68,6 +69,7 @@
 		android:paddingLeft="@dimen/margin_large"
 		android:paddingRight="@dimen/margin_large"
 		android:paddingBottom="@dimen/margin_large"
+		android:textColor="@color/zerion_text_secondary"
 		android:textSize="@dimen/text_size_small"
 		app:layout_constraintBottom_toBottomOf="parent"
 		app:layout_constraintEnd_toEndOf="parent"

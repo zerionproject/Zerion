@@ -65,6 +65,8 @@ public class TextSendController implements TextInputListener {
 	@Override
 	public void onSendEvent() {
 		if (canSend()) {
+			com.professor.zerion.android.util.Haptics.confirm(
+					compositeSendButton);
 			listener.onSendClick(textInput.getText(), emptyList(),
 					expectedTimer).observe(listener, this::onSendStateChanged);
 		}
@@ -78,6 +80,8 @@ public class TextSendController implements TextInputListener {
 			boolean enabled = expectedTimer == NO_AUTO_DELETE_TIMER;
 			showTimerChangedDialog(enabled);
 		} else if (sendState == ERROR) {
+			com.professor.zerion.android.util.Haptics.error(
+					compositeSendButton);
 			Toast.makeText(textInput.getContext(), R.string.message_error,
 					LENGTH_LONG).show();
 		}
