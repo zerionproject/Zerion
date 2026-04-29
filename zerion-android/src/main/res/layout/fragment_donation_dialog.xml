@@ -49,44 +49,13 @@
 			android:textColor="@color/zerion_text_secondary"
 			android:textSize="14sp" />
 
-		<!-- Privacy notice -->
-		<LinearLayout
-			android:layout_width="match_parent"
-			android:layout_height="wrap_content"
-			android:layout_marginTop="18dp"
-			android:orientation="horizontal"
-			android:gravity="top"
-			android:background="@drawable/bg_donation_warning"
-			android:paddingHorizontal="14dp"
-			android:paddingVertical="12dp">
-
-			<ImageView
-				android:layout_width="18dp"
-				android:layout_height="18dp"
-				android:layout_marginEnd="10dp"
-				android:layout_marginTop="1dp"
-				android:src="@drawable/ic_warning"
-				app:tint="@color/zerion_warning"
-				android:importantForAccessibility="no" />
-
-			<TextView
-				android:layout_width="0dp"
-				android:layout_height="wrap_content"
-				android:layout_weight="1"
-				android:text="@string/donation_privacy_notice"
-				android:textColor="@color/zerion_warning"
-				android:textSize="12sp"
-				android:lineSpacingExtra="2dp" />
-
-		</LinearLayout>
-
 		<!-- QR code -->
 		<ImageView
 			android:id="@+id/donationQr"
 			android:layout_width="200dp"
 			android:layout_height="200dp"
 			android:layout_gravity="center_horizontal"
-			android:layout_marginTop="18dp"
+			android:layout_marginTop="20dp"
 			android:background="@android:color/white"
 			android:padding="6dp"
 			android:contentDescription="@string/donation_url_label"
