@@ -32,7 +32,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="No documents"
+            android:text="@string/vault_documents_empty_title"
             android:textSize="18sp"
             android:textColor="?android:attr/textColorSecondary"
             android:layout_marginBottom="8dp" />
@@ -40,7 +40,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Tap + to add secure documents"
+            android:text="@string/vault_documents_empty_subtitle"
             android:textSize="14sp"
             android:textColor="?android:attr/textColorTertiary" />
 
@@ -55,9 +55,9 @@
         android:layout_marginEnd="24dp"
         android:layout_marginBottom="48dp"
         android:src="@drawable/ic_add_24dp"
-        android:contentDescription="Add document"
-        app:backgroundTint="@color/zerion_cyan"
+        android:contentDescription="@string/vault_document_add_action"
+        app:backgroundTint="@color/zerion_primary_accent"
         app:tint="@android:color/white"
-        app:rippleColor="#FFFFFF" />
+        app:rippleColor="@color/zerion_text_primary" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -149,27 +149,27 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
-            android:text="120ms"
             android:textSize="12sp"
-            android:textColor="@color/zerion_lime_500" />
+            android:textColor="@color/zerion_lime_500"
+            tools:text="120ms" />
 
         <TextView
             android:id="@+id/packet_loss_badge"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
-            android:text="Loss: 2%"
             android:textSize="12sp"
             android:textColor="@color/zerion_orange_500"
-            android:visibility="gone" />
+            android:visibility="gone"
+            tools:text="Loss: 2%" />
 
         <TextView
             android:id="@+id/codec_bitrate_display"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
-            android:text="Opus 16kbps"
             android:textSize="12sp"
+            tools:text="Opus 16kbps"
             android:textColor="?android:attr/textColorTertiary" />
 
     </LinearLayout>

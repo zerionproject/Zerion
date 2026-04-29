@@ -447,7 +447,8 @@ public class VaultSettingsFragment extends BaseFragment {
 	private void observeViewModel() {
 		viewModel.getVaultItems().observe(getViewLifecycleOwner(), items -> {
 			if (items != null) {
-				itemsCountInfo.setText("Total Items: " + items.size());
+				itemsCountInfo.setText(getString(
+						R.string.vault_settings_info_items_count, items.size()));
 			}
 		});
 	}

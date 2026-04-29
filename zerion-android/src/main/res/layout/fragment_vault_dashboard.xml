@@ -1,327 +1,334 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@drawable/bg_zerion_gradient">
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="@drawable/bg_zerion_gradient">
 
-    <!-- Main Content scrollable -->
-    <androidx.core.widget.NestedScrollView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
+	<androidx.core.widget.NestedScrollView
+		android:layout_width="match_parent"
+		android:layout_height="match_parent">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
+		<LinearLayout
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:orientation="vertical"
+			android:paddingHorizontal="16dp"
+			android:paddingTop="16dp"
+			android:paddingBottom="32dp">
 
-            <!-- Stats Card -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/stats_card"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp">
+			<!-- Stats summary -->
+			<LinearLayout
+				android:id="@+id/stats_card"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:orientation="horizontal"
+				android:background="@drawable/bg_settings_group"
+				android:paddingVertical="18dp">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="16dp">
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:orientation="vertical"
+					android:gravity="center">
 
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:gravity="center">
+					<TextView
+						android:id="@+id/notes_count"
+						android:layout_width="wrap_content"
+						android:layout_height="wrap_content"
+						android:textSize="26sp"
+						android:textStyle="bold"
+						android:textColor="@color/zerion_primary_accent"
+						tools:text="12" />
 
-                        <TextView
-                            android:id="@+id/notes_count"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="0"
-                            android:textSize="24sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/zerion_cyan" />
+					<TextView
+						android:layout_width="wrap_content"
+						android:layout_height="wrap_content"
+						android:layout_marginTop="2dp"
+						android:text="@string/vault_stat_notes"
+						android:textSize="11sp"
+						android:letterSpacing="0.05"
+						android:textColor="@color/zerion_text_secondary" />
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Notes"
-                            android:textSize="12sp"
-                            android:textColor="?android:attr/textColorSecondary" />
+				</LinearLayout>
 
-                    </LinearLayout>
+				<View
+					android:layout_width="1dp"
+					android:layout_height="36dp"
+					android:layout_gravity="center_vertical"
+					android:background="@color/zerion_divider" />
 
-                    <View
-                        android:layout_width="1dp"
-                        android:layout_height="match_parent"
-                        android:background="?android:attr/listDivider" />
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:orientation="vertical"
+					android:gravity="center">
 
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:gravity="center">
+					<TextView
+						android:id="@+id/images_count"
+						android:layout_width="wrap_content"
+						android:layout_height="wrap_content"
+						android:textSize="26sp"
+						android:textStyle="bold"
+						android:textColor="@color/zerion_primary_accent"
+						tools:text="3" />
 
-                        <TextView
-                            android:id="@+id/images_count"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="0"
-                            android:textSize="24sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/zerion_cyan" />
+					<TextView
+						android:layout_width="wrap_content"
+						android:layout_height="wrap_content"
+						android:layout_marginTop="2dp"
+						android:text="@string/vault_stat_images"
+						android:textSize="11sp"
+						android:letterSpacing="0.05"
+						android:textColor="@color/zerion_text_secondary" />
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Images"
-                            android:textSize="12sp"
-                            android:textColor="?android:attr/textColorSecondary" />
+				</LinearLayout>
 
-                    </LinearLayout>
+				<View
+					android:layout_width="1dp"
+					android:layout_height="36dp"
+					android:layout_gravity="center_vertical"
+					android:background="@color/zerion_divider" />
 
-                    <View
-                        android:layout_width="1dp"
-                        android:layout_height="match_parent"
-                        android:background="?android:attr/listDivider" />
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:orientation="vertical"
+					android:gravity="center">
 
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:gravity="center">
+					<TextView
+						android:id="@+id/docs_count"
+						android:layout_width="wrap_content"
+						android:layout_height="wrap_content"
+						android:textSize="26sp"
+						android:textStyle="bold"
+						android:textColor="@color/zerion_primary_accent"
+						tools:text="0" />
 
-                        <TextView
-                            android:id="@+id/docs_count"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="0"
-                            android:textSize="24sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/zerion_cyan" />
+					<TextView
+						android:layout_width="wrap_content"
+						android:layout_height="wrap_content"
+						android:layout_marginTop="2dp"
+						android:text="@string/vault_stat_documents"
+						android:textSize="11sp"
+						android:letterSpacing="0.05"
+						android:textColor="@color/zerion_text_secondary" />
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Documents"
-                            android:textSize="12sp"
-                            android:textColor="?android:attr/textColorSecondary" />
+				</LinearLayout>
 
-                    </LinearLayout>
+			</LinearLayout>
 
-                </LinearLayout>
+			<!-- Categories grid -->
+			<GridLayout
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:layout_marginTop="14dp"
+				android:columnCount="2"
+				android:rowCount="2"
+				android:alignmentMode="alignMargins"
+				android:columnOrderPreserved="false"
+				android:rowOrderPreserved="false">
 
-            </com.google.android.material.card.MaterialCardView>
+				<!-- Notes -->
+				<LinearLayout
+					android:id="@+id/notes_card"
+					android:layout_width="0dp"
+					android:layout_height="148dp"
+					android:layout_columnWeight="1"
+					android:layout_margin="6dp"
+					android:orientation="vertical"
+					android:padding="18dp"
+					android:background="@drawable/bg_settings_group"
+					android:foreground="?attr/selectableItemBackground"
+					android:clickable="true"
+					android:focusable="true">
 
-            <!-- Categories Grid -->
-            <GridLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:columnCount="2"
-                android:rowCount="2"
-                android:alignmentMode="alignMargins"
-                android:columnOrderPreserved="false"
-                android:rowOrderPreserved="false">
+					<FrameLayout
+						android:layout_width="44dp"
+						android:layout_height="44dp"
+						android:background="@drawable/bg_vault_card_purple">
 
-                <!-- Notes Card -->
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/notes_card"
-                    android:layout_width="0dp"
-                    android:layout_height="140dp"
-                    android:layout_columnWeight="1"
-                    android:layout_margin="8dp"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="2dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:foreground="?android:attr/selectableItemBackground">
+						<ImageView
+							android:layout_width="22dp"
+							android:layout_height="22dp"
+							android:layout_gravity="center"
+							android:src="@drawable/ic_notes"
+							app:tint="#A78BFA"
+							android:importantForAccessibility="no" />
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="vertical"
-                        android:gravity="center"
-                        android:padding="16dp">
+					</FrameLayout>
 
-                        <ImageView
-                            android:layout_width="48dp"
-                            android:layout_height="48dp"
-                            android:src="@drawable/ic_notes"
-                            app:tint="@color/zerion_cyan"
-                            android:layout_marginBottom="8dp" />
+					<TextView
+						android:layout_width="wrap_content"
+						android:layout_height="wrap_content"
+						android:layout_marginTop="14dp"
+						android:text="@string/vault_card_notes_title"
+						android:textSize="16sp"
+						android:textStyle="bold"
+						android:textColor="@color/zerion_text_primary" />
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Secure Notes"
-                            android:textSize="16sp"
-                            android:textStyle="bold"
-                            android:textColor="?android:attr/textColorPrimary" />
+					<TextView
+						android:layout_width="wrap_content"
+						android:layout_height="wrap_content"
+						android:layout_marginTop="2dp"
+						android:text="@string/vault_card_notes_subtitle"
+						android:textSize="12sp"
+						android:textColor="@color/zerion_text_secondary" />
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Encrypted text notes"
-                            android:textSize="12sp"
-                            android:textColor="?android:attr/textColorSecondary"
-                            android:gravity="center" />
+				</LinearLayout>
 
-                    </LinearLayout>
+				<!-- Gallery -->
+				<LinearLayout
+					android:id="@+id/gallery_card"
+					android:layout_width="0dp"
+					android:layout_height="148dp"
+					android:layout_columnWeight="1"
+					android:layout_margin="6dp"
+					android:orientation="vertical"
+					android:padding="18dp"
+					android:background="@drawable/bg_settings_group"
+					android:foreground="?attr/selectableItemBackground"
+					android:clickable="true"
+					android:focusable="true">
 
-                </com.google.android.material.card.MaterialCardView>
+					<FrameLayout
+						android:layout_width="44dp"
+						android:layout_height="44dp"
+						android:background="@drawable/bg_vault_card_blue">
 
-                <!-- Gallery Card -->
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/gallery_card"
-                    android:layout_width="0dp"
-                    android:layout_height="140dp"
-                    android:layout_columnWeight="1"
-                    android:layout_margin="8dp"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="2dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:foreground="?android:attr/selectableItemBackground">
+						<ImageView
+							android:layout_width="22dp"
+							android:layout_height="22dp"
+							android:layout_gravity="center"
+							android:src="@drawable/ic_photo"
+							app:tint="@color/zerion_primary_accent"
+							android:importantForAccessibility="no" />
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="vertical"
-                        android:gravity="center"
-                        android:padding="16dp">
+					</FrameLayout>
 
-                        <ImageView
-                            android:layout_width="48dp"
-                            android:layout_height="48dp"
-                            android:src="@drawable/ic_photo"
-                            app:tint="@color/zerion_cyan"
-                            android:layout_marginBottom="8dp" />
+					<TextView
+						android:layout_width="wrap_content"
+						android:layout_height="wrap_content"
+						android:layout_marginTop="14dp"
+						android:text="@string/vault_card_gallery_title"
+						android:textSize="16sp"
+						android:textStyle="bold"
+						android:textColor="@color/zerion_text_primary" />
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Gallery"
-                            android:textSize="16sp"
-                            android:textStyle="bold"
-                            android:textColor="?android:attr/textColorPrimary" />
+					<TextView
+						android:layout_width="wrap_content"
+						android:layout_height="wrap_content"
+						android:layout_marginTop="2dp"
+						android:text="@string/vault_card_gallery_subtitle"
+						android:textSize="12sp"
+						android:textColor="@color/zerion_text_secondary" />
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Photos &amp; videos"
-                            android:textSize="12sp"
-                            android:textColor="?android:attr/textColorSecondary"
-                            android:gravity="center" />
+				</LinearLayout>
 
-                    </LinearLayout>
+				<!-- Documents -->
+				<LinearLayout
+					android:id="@+id/documents_card"
+					android:layout_width="0dp"
+					android:layout_height="148dp"
+					android:layout_columnWeight="1"
+					android:layout_margin="6dp"
+					android:orientation="vertical"
+					android:padding="18dp"
+					android:background="@drawable/bg_settings_group"
+					android:foreground="?attr/selectableItemBackground"
+					android:clickable="true"
+					android:focusable="true">
 
-                </com.google.android.material.card.MaterialCardView>
+					<FrameLayout
+						android:layout_width="44dp"
+						android:layout_height="44dp"
+						android:background="@drawable/bg_vault_card_orange">
 
-                <!-- Documents Card -->
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/documents_card"
-                    android:layout_width="0dp"
-                    android:layout_height="140dp"
-                    android:layout_columnWeight="1"
-                    android:layout_margin="8dp"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="2dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:foreground="?android:attr/selectableItemBackground">
+						<ImageView
+							android:layout_width="22dp"
+							android:layout_height="22dp"
+							android:layout_gravity="center"
+							android:src="@drawable/ic_document"
+							app:tint="#F59E0B"
+							android:importantForAccessibility="no" />
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="vertical"
-                        android:gravity="center"
-                        android:padding="16dp">
+					</FrameLayout>
 
-                        <ImageView
-                            android:layout_width="48dp"
-                            android:layout_height="48dp"
-                            android:src="@drawable/ic_document"
-                            app:tint="@color/zerion_cyan"
-                            android:layout_marginBottom="8dp" />
+					<TextView
+						android:layout_width="wrap_content"
+						android:layout_height="wrap_content"
+						android:layout_marginTop="14dp"
+						android:text="@string/vault_card_documents_title"
+						android:textSize="16sp"
+						android:textStyle="bold"
+						android:textColor="@color/zerion_text_primary" />
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Documents"
-                            android:textSize="16sp"
-                            android:textStyle="bold"
-                            android:textColor="?android:attr/textColorPrimary" />
+					<TextView
+						android:layout_width="wrap_content"
+						android:layout_height="wrap_content"
+						android:layout_marginTop="2dp"
+						android:text="@string/vault_card_documents_subtitle"
+						android:textSize="12sp"
+						android:textColor="@color/zerion_text_secondary" />
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="PDFs &amp; files"
-                            android:textSize="12sp"
-                            android:textColor="?android:attr/textColorSecondary"
-                            android:gravity="center" />
+				</LinearLayout>
 
-                    </LinearLayout>
+				<!-- Passwords -->
+				<LinearLayout
+					android:id="@+id/passwords_card"
+					android:layout_width="0dp"
+					android:layout_height="148dp"
+					android:layout_columnWeight="1"
+					android:layout_margin="6dp"
+					android:orientation="vertical"
+					android:padding="18dp"
+					android:background="@drawable/bg_settings_group"
+					android:foreground="?attr/selectableItemBackground"
+					android:clickable="true"
+					android:focusable="true">
 
-                </com.google.android.material.card.MaterialCardView>
+					<FrameLayout
+						android:layout_width="44dp"
+						android:layout_height="44dp"
+						android:background="@drawable/bg_vault_card_green">
 
-                <!-- Passwords Card -->
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/passwords_card"
-                    android:layout_width="0dp"
-                    android:layout_height="140dp"
-                    android:layout_columnWeight="1"
-                    android:layout_margin="8dp"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="2dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:foreground="?android:attr/selectableItemBackground">
+						<ImageView
+							android:layout_width="22dp"
+							android:layout_height="22dp"
+							android:layout_gravity="center"
+							android:src="@drawable/ic_key"
+							app:tint="@color/zerion_success"
+							android:importantForAccessibility="no" />
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="vertical"
-                        android:gravity="center"
-                        android:padding="16dp">
+					</FrameLayout>
 
-                        <ImageView
-                            android:layout_width="48dp"
-                            android:layout_height="48dp"
-                            android:src="@drawable/ic_key"
-                            app:tint="@color/zerion_cyan"
-                            android:layout_marginBottom="8dp" />
+					<TextView
+						android:layout_width="wrap_content"
+						android:layout_height="wrap_content"
+						android:layout_marginTop="14dp"
+						android:text="@string/vault_card_passwords_title"
+						android:textSize="16sp"
+						android:textStyle="bold"
+						android:textColor="@color/zerion_text_primary" />
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Passwords"
-                            android:textSize="16sp"
-                            android:textStyle="bold"
-                            android:textColor="?android:attr/textColorPrimary" />
+					<TextView
+						android:layout_width="wrap_content"
+						android:layout_height="wrap_content"
+						android:layout_marginTop="2dp"
+						android:text="@string/vault_card_passwords_subtitle"
+						android:textSize="12sp"
+						android:textColor="@color/zerion_text_secondary" />
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Credentials vault"
-                            android:textSize="12sp"
-                            android:textColor="?android:attr/textColorSecondary"
-                            android:gravity="center" />
+				</LinearLayout>
 
-                    </LinearLayout>
+			</GridLayout>
 
-                </com.google.android.material.card.MaterialCardView>
+		</LinearLayout>
 
-            </GridLayout>
-
-        </LinearLayout>
-
-    </androidx.core.widget.NestedScrollView>
+	</androidx.core.widget.NestedScrollView>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

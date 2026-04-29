@@ -71,7 +71,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Extra Security"
+                        android:text="@string/secure_note_extra_security"
                         android:textSize="14sp"
                         android:textStyle="bold"
                         android:textColor="@android:color/white" />
@@ -79,7 +79,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Add password to this note"
+                        android:text="@string/secure_note_add_password"
                         android:textSize="12sp"
                         android:textColor="#B3FFFFFF" />
 
@@ -165,7 +165,7 @@
         android:layout_gravity="bottom|end"
         android:layout_marginEnd="24dp"
         android:layout_marginBottom="48dp"
-        android:text="Save"
+        android:text="@string/secure_note_save"
         android:textColor="@android:color/white"
         app:icon="@drawable/ic_check_circle"
         app:iconTint="@android:color/white"

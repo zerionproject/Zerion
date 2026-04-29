@@ -30,7 +30,7 @@
             android:id="@+id/vault_subtitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Military-grade encrypted storage"
+            android:text="@string/vault_onboarding_subtitle"
             android:textSize="16sp"
             android:textColor="#B3FFFFFF"
             android:layout_marginBottom="24dp"
@@ -55,7 +55,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="AES-256-GCM · Hardware keystore · Auto-lock"
+                    android:text="@string/vault_onboarding_features"
                     android:textSize="13sp"
                     android:textColor="#B3FFFFFF"
                     android:gravity="center" />
@@ -68,7 +68,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Create password"
+            android:text="@string/vault_onboarding_create_password"
             android:textSize="18sp"
             android:textStyle="bold"
             android:textColor="@android:color/white"
@@ -79,10 +79,10 @@
             android:id="@+id/password_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Password"
+            android:hint="@string/vault_onboarding_password_hint"
             app:passwordToggleEnabled="true"
             app:endIconMode="password_toggle"
-            app:helperText="At least 8 characters"
+            app:helperText="@string/vault_onboarding_password_helper"
             style="@style/Zerion.TextInput.Outlined"
             android:layout_marginBottom="16dp">
 
@@ -104,7 +104,7 @@
             android:id="@+id/confirm_password_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Confirm Password"
+            android:hint="@string/vault_onboarding_confirm_password_hint"
             app:passwordToggleEnabled="true"
             app:endIconMode="password_toggle"
             style="@style/Zerion.TextInput.Outlined"
@@ -150,7 +150,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="No recovery possible. Keep your password safe."
+                    android:text="@string/vault_onboarding_warning"
                     android:textSize="13sp"
                     android:textColor="#856404" />
 
@@ -163,7 +163,7 @@
             android:id="@+id/create_vault_button"
             android:layout_width="match_parent"
             android:layout_height="56dp"
-            android:text="Create vault"
+            android:text="@string/vault_onboarding_create_button"
             android:textSize="16sp"
             android:enabled="false"
             style="@style/Zerion.Button.Primary"
