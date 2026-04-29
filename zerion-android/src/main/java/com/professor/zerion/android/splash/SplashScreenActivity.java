@@ -77,6 +77,7 @@ public class SplashScreenActivity extends BaseActivity {
 
 	private void applyLogoDecodeEffect() {
 		View logo = findViewById(R.id.logoView);
+		View tagline = findViewById(R.id.splashTagline);
 		if (logo == null) return;
 
 		logo.setAlpha(0f);
@@ -99,6 +100,24 @@ public class SplashScreenActivity extends BaseActivity {
 		animatorSet.playTogether(fadeIn, scaleX, scaleY);
 		animatorSet.setStartDelay(300);
 		animatorSet.start();
+
+		if (tagline != null) {
+			tagline.setAlpha(0f);
+			tagline.setTranslationY(8f);
+			ObjectAnimator tFade =
+					ObjectAnimator.ofFloat(tagline, "alpha", 0f, 1f);
+			tFade.setDuration(700);
+			tFade.setStartDelay(900);
+			tFade.setInterpolator(new AccelerateDecelerateInterpolator());
+			ObjectAnimator tRise =
+					ObjectAnimator.ofFloat(tagline, "translationY", 8f, 0f);
+			tRise.setDuration(700);
+			tRise.setStartDelay(900);
+			tRise.setInterpolator(new AccelerateDecelerateInterpolator());
+			AnimatorSet tSet = new AnimatorSet();
+			tSet.playTogether(tFade, tRise);
+			tSet.start();
+		}
 	}
 
 	private void startNextActivity(Class<? extends Activity> activityClass) {

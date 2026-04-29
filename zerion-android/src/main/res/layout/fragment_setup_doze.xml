@@ -17,15 +17,26 @@
 			android:paddingHorizontal="24dp"
 			android:paddingVertical="36dp">
 
+			<!-- Step indicator -->
+			<include
+				android:id="@+id/step_indicator"
+				layout="@layout/setup_step_indicator_3"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				app:layout_constraintTop_toTopOf="parent"
+				app:layout_constraintStart_toStartOf="parent"
+				app:layout_constraintEnd_toEndOf="parent" />
+
 			<!-- Zerion logo -->
 			<ImageView
 				android:id="@+id/logo"
-				android:layout_width="100dp"
-				android:layout_height="100dp"
+				android:layout_width="84dp"
+				android:layout_height="84dp"
 				android:src="@drawable/splash_screen"
-				android:layout_marginBottom="32dp"
+				android:layout_marginTop="20dp"
+				android:layout_marginBottom="28dp"
 				android:importantForAccessibility="no"
-				app:layout_constraintTop_toTopOf="parent"
+				app:layout_constraintTop_toBottomOf="@+id/step_indicator"
 				app:layout_constraintStart_toStartOf="parent"
 				app:layout_constraintEnd_toEndOf="parent"
 				app:layout_constraintBottom_toTopOf="@+id/dozeView"

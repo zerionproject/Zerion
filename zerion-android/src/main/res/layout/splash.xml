@@ -4,20 +4,37 @@
 	android:layout_height="match_parent"
 	android:background="@drawable/bg_zerion_gradient">
 
-	<!-- Particle field background -->
 	<com.professor.zerion.android.view.ParticleFieldView
 		android:id="@+id/particle_field_view"
 		android:layout_width="match_parent"
 		android:layout_height="match_parent" />
 
-	<!-- Zerion logo — centered, fades in with scale animation -->
-	<ImageView
-		android:id="@+id/logoView"
-		android:layout_width="120dp"
-		android:layout_height="120dp"
+	<LinearLayout
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
 		android:layout_gravity="center"
-		android:src="@drawable/logo_splash"
-		android:contentDescription="@string/app_name"
-		android:alpha="0" />
+		android:orientation="vertical"
+		android:gravity="center_horizontal">
+
+		<ImageView
+			android:id="@+id/logoView"
+			android:layout_width="120dp"
+			android:layout_height="120dp"
+			android:src="@drawable/logo_splash"
+			android:contentDescription="@string/app_name"
+			android:alpha="0" />
+
+		<TextView
+			android:id="@+id/splashTagline"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_marginTop="20dp"
+			android:text="@string/splash_tagline"
+			android:textColor="#CCFFFFFF"
+			android:textSize="13sp"
+			android:letterSpacing="0.05"
+			android:alpha="0" />
+
+	</LinearLayout>
 
 </FrameLayout>
