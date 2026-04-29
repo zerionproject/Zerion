@@ -4,7 +4,7 @@
 	xmlns:tools="http://schemas.android.com/tools"
 	android:layout_width="match_parent"
 	android:layout_height="match_parent"
-	android:background="@drawable/bg_zerion_gradient">
+	android:background="@color/zerion_dark_bg">
 
 	<!-- Logo at top -->
 	<ImageView
@@ -19,37 +19,47 @@
 		app:srcCompat="@drawable/logo"
 		tools:ignore="ContentDescription" />
 
-	<!-- Lock icon with progress -->
-	<ImageView
-		android:id="@+id/imageView"
-		android:layout_width="96dp"
-		android:layout_height="96dp"
-		android:layout_marginTop="48dp"
-		android:scaleType="center"
+	<!-- Lock icon centred inside the indeterminate ring -->
+	<androidx.constraintlayout.widget.ConstraintLayout
+		android:id="@+id/lockGroup"
+		android:layout_width="128dp"
+		android:layout_height="128dp"
+		android:layout_marginTop="56dp"
 		app:layout_constraintBottom_toTopOf="@+id/textView"
 		app:layout_constraintEnd_toEndOf="parent"
 		app:layout_constraintStart_toStartOf="parent"
 		app:layout_constraintTop_toBottomOf="@+id/logoView"
-		app:layout_constraintVertical_chainStyle="packed"
-		app:srcCompat="@drawable/startup_lock"
-		app:tint="#26B7F0"
-		tools:ignore="ContentDescription" />
+		app:layout_constraintVertical_chainStyle="packed">
 
-	<!-- Circular progress indicator (hidden - cleaner UI) -->
-	<com.google.android.material.progressindicator.CircularProgressIndicator
-		android:id="@+id/progressBar"
-		style="@style/Zerion.Progress.Circular"
-		android:layout_width="120dp"
-		android:layout_height="120dp"
-		android:visibility="gone"
-		app:trackThickness="3dp"
-		app:layout_constraintBottom_toBottomOf="@+id/imageView"
-		app:layout_constraintEnd_toEndOf="@+id/imageView"
-		app:layout_constraintStart_toStartOf="@+id/imageView"
-		app:layout_constraintTop_toTopOf="@+id/imageView"
-		tools:progress="50" />
+		<com.google.android.material.progressindicator.CircularProgressIndicator
+			android:id="@+id/progressBar"
+			style="@style/Zerion.Progress.Circular"
+			android:layout_width="match_parent"
+			android:layout_height="match_parent"
+			android:indeterminate="true"
+			app:indicatorColor="@color/zerion_primary_accent"
+			app:trackColor="@color/zerion_divider"
+			app:trackThickness="3dp"
+			app:layout_constraintBottom_toBottomOf="parent"
+			app:layout_constraintEnd_toEndOf="parent"
+			app:layout_constraintStart_toStartOf="parent"
+			app:layout_constraintTop_toTopOf="parent" />
 
-	<!-- Status text -->
+		<ImageView
+			android:id="@+id/imageView"
+			android:layout_width="64dp"
+			android:layout_height="64dp"
+			android:scaleType="center"
+			app:layout_constraintBottom_toBottomOf="parent"
+			app:layout_constraintEnd_toEndOf="parent"
+			app:layout_constraintStart_toStartOf="parent"
+			app:layout_constraintTop_toTopOf="parent"
+			app:srcCompat="@drawable/startup_lock"
+			app:tint="@color/zerion_primary_accent"
+			tools:ignore="ContentDescription" />
+
+	</androidx.constraintlayout.widget.ConstraintLayout>
+
 	<TextView
 		android:id="@+id/textView"
 		android:layout_width="wrap_content"
@@ -59,15 +69,14 @@
 		android:paddingLeft="@dimen/margin_large"
 		android:paddingRight="@dimen/margin_large"
 		android:text="@string/startup_open_database"
-		android:textColor="#FFFFFF"
+		android:textColor="@color/zerion_text_primary"
 		android:textSize="18sp"
 		android:textStyle="bold"
 		app:layout_constraintBottom_toTopOf="@+id/subtextView"
 		app:layout_constraintEnd_toEndOf="parent"
 		app:layout_constraintStart_toStartOf="parent"
-		app:layout_constraintTop_toBottomOf="@+id/imageView" />
+		app:layout_constraintTop_toBottomOf="@+id/lockGroup" />
 
-	<!-- Subtext for context -->
 	<TextView
 		android:id="@+id/subtextView"
 		android:layout_width="wrap_content"
@@ -76,8 +85,8 @@
 		android:gravity="center"
 		android:paddingLeft="@dimen/margin_large"
 		android:paddingRight="@dimen/margin_large"
-		android:text="Please wait while we decrypt your secure database..."
-		android:textColor="#B3FFFFFF"
+		android:text="@string/startup_open_database_subtitle"
+		android:textColor="@color/zerion_text_secondary"
 		android:textSize="14sp"
 		app:layout_constraintBottom_toBottomOf="parent"
 		app:layout_constraintEnd_toEndOf="parent"

@@ -4,7 +4,7 @@
 	xmlns:tools="http://schemas.android.com/tools"
 	android:layout_width="match_parent"
 	android:layout_height="match_parent"
-	android:background="@drawable/bg_zerion_gradient"
+	android:background="@color/zerion_dark_bg"
 	android:fillViewport="true">
 
 	<LinearLayout
@@ -13,68 +13,110 @@
 		android:orientation="vertical"
 		android:padding="20dp">
 
-		<com.google.android.material.card.MaterialCardView
+		<LinearLayout
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
-			android:layout_marginBottom="16dp"
-			app:cardBackgroundColor="#1E1E1E"
-			app:cardCornerRadius="16dp"
-			app:cardElevation="4dp">
+			android:background="@color/zerion_card_bg"
+			android:orientation="horizontal"
+			android:padding="16dp"
+			android:gravity="center_vertical"
+			android:layout_marginBottom="12dp">
+
+			<ImageView
+				android:id="@+id/torStatusIcon"
+				android:layout_width="32dp"
+				android:layout_height="32dp"
+				android:src="@drawable/transport_tor"
+				app:tint="@color/zerion_primary_accent" />
+
+			<LinearLayout
+				android:layout_width="0dp"
+				android:layout_height="wrap_content"
+				android:layout_weight="1"
+				android:layout_marginStart="14dp"
+				android:orientation="vertical">
+
+				<TextView
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:text="@string/transport_tor"
+					android:textColor="@color/zerion_text_primary"
+					android:textSize="17sp"
+					android:textStyle="bold" />
+
+				<TextView
+					android:id="@+id/torOnionAddress"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:layout_marginTop="2dp"
+					android:text="@string/generating"
+					android:textColor="@color/zerion_text_secondary"
+					android:textSize="12sp"
+					tools:text="@string/tor_hidden_services_active" />
+
+			</LinearLayout>
+
+			<TextView
+				android:id="@+id/torStatusText"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:text="@string/connected"
+				android:textColor="@color/zerion_success"
+				android:textSize="14sp"
+				android:textStyle="bold"
+				tools:text="@string/connected" />
+
+		</LinearLayout>
+
+		<LinearLayout
+			android:id="@+id/onionCard"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:background="@color/zerion_card_bg"
+			android:orientation="vertical"
+			android:padding="16dp"
+			android:visibility="gone"
+			tools:visibility="visible">
+
+			<TextView
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:text="@string/tor_your_onion_label"
+				android:textColor="@color/zerion_text_secondary"
+				android:textSize="12sp"
+				android:textAllCaps="true"
+				android:letterSpacing="0.05" />
+
+			<TextView
+				android:id="@+id/onionAddressValue"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:layout_marginTop="8dp"
+				android:fontFamily="monospace"
+				android:textColor="@color/zerion_text_primary"
+				android:textIsSelectable="true"
+				android:textSize="13sp"
+				tools:text="exampleabcd1234efgh5678ijkl90mnop123qrs456tuv789wxyz0123456.onion" />
 
 			<LinearLayout
 				android:layout_width="match_parent"
 				android:layout_height="wrap_content"
-				android:orientation="horizontal"
-				android:padding="16dp"
-				android:gravity="center_vertical">
+				android:layout_marginTop="12dp"
+				android:gravity="end"
+				android:orientation="horizontal">
 
-				<ImageView
-					android:id="@+id/torStatusIcon"
-					android:layout_width="32dp"
-					android:layout_height="32dp"
-					android:src="@drawable/transport_tor"
-					app:tint="#26B7F0"/>
-
-				<LinearLayout
-					android:layout_width="0dp"
-					android:layout_height="wrap_content"
-					android:layout_weight="1"
-					android:layout_marginStart="12dp"
-					android:orientation="vertical">
-
-					<TextView
-						android:layout_width="wrap_content"
-						android:layout_height="wrap_content"
-						android:text="@string/transport_tor"
-						android:textColor="#FFFFFF"
-						android:textSize="18sp"
-						android:textStyle="bold"/>
-
-					<TextView
-						android:id="@+id/torOnionAddress"
-						android:layout_width="wrap_content"
-						android:layout_height="wrap_content"
-						android:text="@string/generating"
-						android:textColor="#888888"
-						android:textSize="11sp"
-						android:layout_marginTop="2dp"
-						tools:text="Hidden service active"/>
-
-				</LinearLayout>
-
-				<TextView
-					android:id="@+id/torStatusText"
+				<com.google.android.material.button.MaterialButton
+					android:id="@+id/onionCopyButton"
+					style="@style/Widget.Material3.Button.TonalButton"
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
-					android:text="@string/connected"
-					android:textColor="#4CAF50"
-					android:textSize="14sp"
-					android:textStyle="bold"
-					tools:text="Connected"/>
+					android:text="@string/tor_onion_copy"
+					app:icon="@drawable/ic_content_copy"
+					app:iconGravity="textStart" />
 
 			</LinearLayout>
 
-		</com.google.android.material.card.MaterialCardView>
+		</LinearLayout>
 
 	</LinearLayout>
 

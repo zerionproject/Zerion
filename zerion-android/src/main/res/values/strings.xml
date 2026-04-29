@@ -12,6 +12,9 @@
 
 	<!-- Setup -->
 	<string name="setup_title">Welcome to Zerion</string>
+	<string name="login_tagline">Private messaging over Tor</string>
+	<string name="setup_password_subtitle">Your password protects your encrypted data. Choose a strong, unique one.</string>
+	<string name="startup_open_database_subtitle">Decrypting your local database…</string>
 	<string name="setup_name_explanation">Your nickname will be shown next to any content you post. You can\'t change it after creating your account.</string>
 	<string name="setup_next">Next</string>
 	<string name="setup_password_intro">Choose a Password</string>
@@ -133,6 +136,10 @@
 	<string name="not_available">Not available</string>
 	<string name="tor_hidden_services_active">Secure connection via Tor hidden services</string>
 	<string name="tor_hidden_services_connecting">Connecting to Tor hidden services…</string>
+	<string name="tor_your_onion_label">Your onion address</string>
+	<string name="tor_onion_copy">Copy</string>
+	<string name="tor_onion_copied">Onion address copied</string>
+	<string name="tor_onion_share_label">Zerion onion address</string>
 
 	<!-- Network Status Labels -->
 	<string name="network_status_label">Status:</string>

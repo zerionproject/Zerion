@@ -18,6 +18,8 @@ import org.briarproject.bramble.api.plugin.PluginManager;
 import org.briarproject.bramble.api.plugin.TorConstants;
 import org.briarproject.bramble.api.plugin.TransportId;
 import org.briarproject.bramble.api.plugin.event.TransportStateEvent;
+import org.briarproject.bramble.api.properties.TransportProperties;
+import org.briarproject.bramble.api.properties.TransportPropertyManager;
 import org.briarproject.bramble.api.settings.Settings;
 import org.briarproject.bramble.api.settings.SettingsManager;
 import org.briarproject.bramble.api.settings.event.SettingsUpdatedEvent;
@@ -43,6 +45,7 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 	private final SettingsManager settingsManager;
 	private final PluginManager pluginManager;
 	private final EventBus eventBus;
+	private final TransportPropertyManager transportPropertyManager;
 
 	private final MutableLiveData<State> torPluginState =
 			new MutableLiveData<>();
@@ -53,21 +56,27 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 	private final MutableLiveData<NetworkStatus> networkStatus =
 			new MutableLiveData<>();
 
+	private final MutableLiveData<String> torLocalOnion =
+			new MutableLiveData<>();
+
 	@Inject
 	PluginViewModel(Application app, @DatabaseExecutor Executor dbExecutor,
 			LifecycleManager lifecycleManager, TransactionManager db,
 			AndroidExecutor androidExecutor, SettingsManager settingsManager,
 			PluginManager pluginManager, EventBus eventBus,
-			NetworkManager networkManager) {
+			NetworkManager networkManager,
+			TransportPropertyManager transportPropertyManager) {
 		super(app, dbExecutor, lifecycleManager, db, androidExecutor);
 		this.app = app;
 		this.settingsManager = settingsManager;
 		this.pluginManager = pluginManager;
 		this.eventBus = eventBus;
+		this.transportPropertyManager = transportPropertyManager;
 		eventBus.addListener(this);
 		networkStatus.setValue(networkManager.getNetworkStatus());
 		torPluginState.setValue(getTransportState(TorConstants.ID));
 		loadSettings();
+		loadLocalOnion();
 	}
 
 	@Override
@@ -90,8 +99,32 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 			TransportStateEvent t = (TransportStateEvent) e;
 			if (t.getTransportId().equals(TorConstants.ID)) {
 				torPluginState.postValue(t.getState());
+				if (t.getState() == State.ACTIVE) {
+					loadLocalOnion();
+				}
 			}
 		}
+	}
+
+	LiveData<String> getLocalOnion() {
+		return torLocalOnion;
+	}
+
+	private void loadLocalOnion() {
+		runOnDbThread(() -> {
+			try {
+				TransportProperties props =
+						transportPropertyManager.getLocalProperties(
+								TorConstants.ID);
+				String onion = props == null ? null
+						: props.get(TorConstants.PROP_ONION_V3);
+				if (onion != null && !onion.isEmpty()) {
+					torLocalOnion.postValue(onion);
+				}
+			} catch (DbException e) {
+				handleException(e);
+			}
+		});
 	}
 
 	LiveData<State> getPluginState(TransportId id) {

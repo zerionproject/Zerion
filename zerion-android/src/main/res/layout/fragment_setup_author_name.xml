@@ -7,7 +7,7 @@
     android:id="@+id/setup_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/bg_zerion_gradient"
+    android:background="@color/zerion_dark_bg"
     android:fitsSystemWindows="false"
     tools:context=".android.setup.SetupNicknameFragment">
 
@@ -44,7 +44,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/setup_title"
-                android:textColor="#FFFFFF"
+                android:textColor="@color/zerion_text_primary"
                 android:textStyle="bold"
                 android:textSize="22sp"
                 android:gravity="center"
@@ -58,8 +58,8 @@
                 android:id="@+id/subtext"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="Choose a display name. This will be visible to your contacts."
-                android:textColor="#B3FFFFFF"
+                android:text="@string/setup_name_explanation"
+                android:textColor="@color/zerion_text_secondary"
                 android:textSize="14sp"
                 android:gravity="center"
                 android:layout_marginTop="8dp"
@@ -88,8 +88,8 @@
                     android:privateImeOptions="nm"
                     android:inputType="text|textCapWords"
                     android:maxLines="1"
-                    android:textColor="@android:color/white"
-                    android:textColorHint="#80FFFFFF"
+                    android:textColor="@color/zerion_text_primary"
+                    android:textColorHint="@color/zerion_text_secondary"
                     android:textSize="16sp"
                     android:importantForAutofill="no" />
 
@@ -104,7 +104,7 @@
                 android:layout_height="wrap_content"
                 android:text="@string/more_info"
                 app:icon="@drawable/ic_info_white"
-                app:iconTint="@color/zerion_cyan"
+                app:iconTint="@color/zerion_primary_accent"
                 app:iconPadding="8dp"
                 app:layout_constraintTop_toBottomOf="@+id/nickname_entry_wrapper"
                 app:layout_constraintStart_toStartOf="parent"

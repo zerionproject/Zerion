@@ -1,13 +1,18 @@
 package com.professor.zerion.android.navdrawer;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.google.android.material.button.MaterialButton;
 import com.professor.zerion.R;
 import com.professor.zerion.android.fragment.BaseFragment;
 
@@ -20,6 +25,7 @@ import javax.inject.Inject;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
 
 import static com.professor.zerion.android.AppModule.getAndroidComponent;
@@ -40,6 +46,9 @@ public class TorStatusFragment extends BaseFragment {
 	private ImageView torStatusIcon;
 	private TextView torStatusText;
 	private TextView torOnionAddress;
+	private LinearLayout onionCard;
+	private TextView onionAddressValue;
+	private MaterialButton onionCopyButton;
 
 	@Override
 	public void onAttach(@NonNull Context context) {
@@ -57,9 +66,17 @@ public class TorStatusFragment extends BaseFragment {
 		torStatusIcon = v.findViewById(R.id.torStatusIcon);
 		torStatusText = v.findViewById(R.id.torStatusText);
 		torOnionAddress = v.findViewById(R.id.torOnionAddress);
+		onionCard = v.findViewById(R.id.onionCard);
+		onionAddressValue = v.findViewById(R.id.onionAddressValue);
+		onionCopyButton = v.findViewById(R.id.onionCopyButton);
 
 		viewModel = new ViewModelProvider(requireActivity(), viewModelFactory)
 				.get(PluginViewModel.class);
+
+		onionCopyButton.setOnClickListener(view -> {
+			com.professor.zerion.android.util.Haptics.tap(view);
+			copyOnionToClipboard();
+		});
 
 		return v;
 	}
@@ -75,29 +92,57 @@ public class TorStatusFragment extends BaseFragment {
 						updateTorStatus(state);
 					}
 				});
+
+		viewModel.getLocalOnion().observe(getViewLifecycleOwner(), onion -> {
+			if (onion != null && !onion.isEmpty()) {
+				String full = onion + ".onion";
+				onionAddressValue.setText(full);
+				onionCard.setVisibility(View.VISIBLE);
+			} else {
+				onionCard.setVisibility(View.GONE);
+			}
+		});
 	}
 
-	@Override
-	public void onStop() {
-		super.onStop();
+	private void copyOnionToClipboard() {
+		Context ctx = requireContext();
+		String onion = onionAddressValue.getText().toString();
+		if (onion.isEmpty()) return;
+		ClipboardManager cm = (ClipboardManager)
+				ctx.getSystemService(Context.CLIPBOARD_SERVICE);
+		if (cm == null) return;
+		ClipData clip = ClipData.newPlainText(
+				ctx.getString(R.string.tor_onion_share_label), onion);
+		cm.setPrimaryClip(clip);
+		Toast.makeText(ctx, R.string.tor_onion_copied, Toast.LENGTH_SHORT).show();
 	}
 
-	private void updateTorStatus(org.briarproject.bramble.api.plugin.Plugin.State state) {
-		if (state == null || state == org.briarproject.bramble.api.plugin.Plugin.State.DISABLED) {
+	private void updateTorStatus(
+			org.briarproject.bramble.api.plugin.Plugin.State state) {
+		Context ctx = requireContext();
+		if (state == null
+				|| state == org.briarproject.bramble.api.plugin.Plugin.State.DISABLED) {
 			torStatusText.setText(R.string.disabled);
-			torStatusText.setTextColor(0xFFFF5252);
+			torStatusText.setTextColor(
+					ContextCompat.getColor(ctx, R.color.zerion_destructive));
 			torOnionAddress.setText(R.string.not_available);
-			torStatusIcon.setColorFilter(0xFFFF5252);
-		} else if (state == org.briarproject.bramble.api.plugin.Plugin.State.ACTIVE) {
+			torStatusIcon.setColorFilter(
+					ContextCompat.getColor(ctx, R.color.zerion_destructive));
+		} else if (state
+				== org.briarproject.bramble.api.plugin.Plugin.State.ACTIVE) {
 			torStatusText.setText(R.string.connected);
-			torStatusText.setTextColor(0xFF4CAF50);
+			torStatusText.setTextColor(
+					ContextCompat.getColor(ctx, R.color.zerion_success));
 			torOnionAddress.setText(R.string.tor_hidden_services_active);
-			torStatusIcon.setColorFilter(0xFF26B7F0);
+			torStatusIcon.setColorFilter(
+					ContextCompat.getColor(ctx, R.color.zerion_primary_accent));
 		} else {
 			torStatusText.setText(R.string.connecting);
-			torStatusText.setTextColor(0xFFFFA726);
+			torStatusText.setTextColor(
+					ContextCompat.getColor(ctx, R.color.zerion_warning));
 			torOnionAddress.setText(R.string.tor_hidden_services_connecting);
-			torStatusIcon.setColorFilter(0xFFFFA726);
+			torStatusIcon.setColorFilter(
+					ContextCompat.getColor(ctx, R.color.zerion_warning));
 		}
 	}
 
