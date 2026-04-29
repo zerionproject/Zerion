@@ -1,8 +1,11 @@
 package com.professor.zerion.android.widget;
 
 import android.app.Dialog;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
@@ -12,9 +15,14 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.TextView;
+import android.widget.Toast;
 
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.professor.zerion.R;
+import com.professor.zerion.android.contact.add.remote.QrCodeUtils;
 
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
@@ -59,16 +67,24 @@ public class DonationDialogFragment extends DialogFragment {
 			@Nullable ViewGroup container,
 			@Nullable Bundle savedInstanceState) {
 
-		View v = inflater.inflate(R.layout.fragment_donation_dialog, container, false);
+		View v = inflater.inflate(R.layout.fragment_donation_dialog, container,
+				false);
 
-		Button donateButton = v.findViewById(R.id.buttonDonate);
-		donateButton.setOnClickListener(v1 -> {
-			openDonationPage();
-			dismiss();
-		});
+		ImageView qr = v.findViewById(R.id.donationQr);
+		Bitmap bmp = QrCodeUtils.generateQrCode(DONATION_URL, 512);
+		if (bmp != null) qr.setImageBitmap(bmp);
 
-		Button laterButton = v.findViewById(R.id.buttonLater);
-		laterButton.setOnClickListener(v1 -> dismiss());
+		TextView urlView = v.findViewById(R.id.donationUrl);
+		urlView.setText(DONATION_URL);
+
+		MaterialButton copyButton = v.findViewById(R.id.buttonCopyLink);
+		copyButton.setOnClickListener(view -> copyDonationUrl());
+
+		MaterialButton openButton = v.findViewById(R.id.buttonOpenInBrowser);
+		openButton.setOnClickListener(view -> showBrowserWarning());
+
+		MaterialButton laterButton = v.findViewById(R.id.buttonLater);
+		laterButton.setOnClickListener(view -> dismiss());
 
 		return v;
 	}
@@ -80,19 +96,46 @@ public class DonationDialogFragment extends DialogFragment {
 		if (dialog != null) {
 			Window window = dialog.getWindow();
 			if (window != null) {
-				int width = (int) (getResources().getDisplayMetrics().widthPixels * 0.9);
-				window.setLayout(width, WindowManager.LayoutParams.WRAP_CONTENT);
+				int width = (int) (getResources().getDisplayMetrics().widthPixels * 0.92);
+				window.setLayout(width,
+						WindowManager.LayoutParams.WRAP_CONTENT);
 				window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
 			}
 		}
 	}
 
-	private void openDonationPage() {
+	private void copyDonationUrl() {
+		Context ctx = requireContext();
+		ClipboardManager cm = (ClipboardManager)
+				ctx.getSystemService(Context.CLIPBOARD_SERVICE);
+		if (cm == null) return;
+		ClipData clip = ClipData.newPlainText(
+				getString(R.string.donation_url_label), DONATION_URL);
+		cm.setPrimaryClip(clip);
+		Toast.makeText(ctx, R.string.donation_link_copied,
+				Toast.LENGTH_SHORT).show();
+	}
+
+	private void showBrowserWarning() {
+		Context ctx = requireContext();
+		new MaterialAlertDialogBuilder(ctx, R.style.ZerionDialogTheme)
+				.setTitle(R.string.donation_browser_warning_title)
+				.setMessage(R.string.donation_browser_warning_message)
+				.setNegativeButton(android.R.string.cancel, null)
+				.setPositiveButton(R.string.donation_browser_warning_open,
+						(d, which) -> {
+							openInBrowser();
+							dismiss();
+						})
+				.show();
+	}
+
+	private void openInBrowser() {
 		Context ctx = requireContext();
 		Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(DONATION_URL));
 		try {
 			startActivity(intent);
-		} catch (Exception e) {
+		} catch (Exception ignored) {
 		}
 	}
 

@@ -19,24 +19,17 @@ import javax.annotation.Nullable;
  * QR code generation utility for Zerion handshake links.
  * Uses ZXing core for encoding — no camera dependency.
  */
-class QrCodeUtils {
+public class QrCodeUtils {
 
 	private static final int QR_SIZE = 512;
 
-	/**
-	 * Generate a QR code bitmap from a Zerion handshake link.
-	 * Uses high error correction (L is sufficient for short links).
-	 *
-	 * @param link The zerion:// handshake link (53 chars base32 + prefix)
-	 * @return Bitmap of the QR code, or null if generation fails
-	 */
 	@Nullable
-	static Bitmap generateQrCode(String link) {
+	public static Bitmap generateQrCode(String link) {
 		return generateQrCode(link, QR_SIZE);
 	}
 
 	@Nullable
-	static Bitmap generateQrCode(String link, int size) {
+	public static Bitmap generateQrCode(String link, int size) {
 		try {
 			Map<EncodeHintType, Object> hints = new HashMap<>();
 			hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.M);

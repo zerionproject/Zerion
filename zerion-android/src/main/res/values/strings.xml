@@ -9,6 +9,14 @@
 	<string name="donation_subtitle">Your support helps us keep Zerion free, private, and secure for everyone. Every contribution makes a difference.</string>
 	<string name="donation_button_donate">Support Zerion</string>
 	<string name="donation_button_later">Maybe Later</string>
+	<string name="donation_privacy_notice">This page is on the clearnet, not Tor. Scan or copy the link below — opening it directly in your browser will reveal your IP to the donation page.</string>
+	<string name="donation_url_label">Donation link</string>
+	<string name="donation_button_copy">Copy link</string>
+	<string name="donation_button_open_in_browser">Open in browser</string>
+	<string name="donation_link_copied">Donation link copied</string>
+	<string name="donation_browser_warning_title">Open in browser?</string>
+	<string name="donation_browser_warning_message">Opening this link uses your default browser, not Tor. Your real IP address will be visible to zerion.chat and any tracker on the page. Continue only if you understand this leaves Zerion\'s privacy boundary.</string>
+	<string name="donation_browser_warning_open">Open anyway</string>
 
 	<!-- Setup -->
 	<string name="setup_title">Welcome to Zerion</string>
