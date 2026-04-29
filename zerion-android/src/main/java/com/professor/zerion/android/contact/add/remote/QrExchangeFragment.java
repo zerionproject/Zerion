@@ -3,7 +3,6 @@ package com.professor.zerion.android.contact.add.remote;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.media.Image;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,6 +15,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageAnalysis;
+import androidx.camera.core.ImageProxy;
 import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
@@ -24,11 +24,6 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.mlkit.vision.barcode.BarcodeScanner;
-import com.google.mlkit.vision.barcode.BarcodeScannerOptions;
-import com.google.mlkit.vision.barcode.BarcodeScanning;
-import com.google.mlkit.vision.barcode.common.Barcode;
-import com.google.mlkit.vision.common.InputImage;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.fragment.BaseFragment;
@@ -36,6 +31,7 @@ import com.professor.zerion.android.fragment.BaseFragment;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -64,7 +60,6 @@ public class QrExchangeFragment extends BaseFragment {
 	private MaterialButton continueButton;
 
 	private ExecutorService cameraExecutor;
-	private BarcodeScanner barcodeScanner;
 	private final AtomicBoolean scanComplete = new AtomicBoolean(false);
 
 	private final ActivityResultLauncher<String> requestCameraLauncher =
@@ -110,11 +105,6 @@ public class QrExchangeFragment extends BaseFragment {
 
 		cameraExecutor = Executors.newSingleThreadExecutor();
 
-		BarcodeScannerOptions options = new BarcodeScannerOptions.Builder()
-				.setBarcodeFormats(Barcode.FORMAT_QR_CODE)
-				.build();
-		barcodeScanner = BarcodeScanning.getClient(options);
-
 		viewModel.getHandshakeLink().observe(getViewLifecycleOwner(), link -> {
 			if (link != null) {
 				Bitmap qr = QrCodeUtils.generateQrCode(link);
@@ -157,32 +147,7 @@ public class QrExchangeFragment extends BaseFragment {
 								ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
 						.build();
 
-				analysis.setAnalyzer(cameraExecutor, imageProxy -> {
-					if (scanComplete.get()) {
-						imageProxy.close();
-						return;
-					}
-					Image mediaImage = imageProxy.getImage();
-					if (mediaImage == null) {
-						imageProxy.close();
-						return;
-					}
-					InputImage image = InputImage.fromMediaImage(mediaImage,
-							imageProxy.getImageInfo().getRotationDegrees());
-
-					barcodeScanner.process(image)
-							.addOnSuccessListener(barcodes -> {
-								for (Barcode barcode : barcodes) {
-									String raw = barcode.getRawValue();
-									if (raw != null
-											&& viewModel.isValidRemoteContactLink(raw)) {
-										onLinkScanned(raw);
-										break;
-									}
-								}
-							})
-							.addOnCompleteListener(task -> imageProxy.close());
-				});
+				analysis.setAnalyzer(cameraExecutor, this::analyzeFrame);
 
 				provider.unbindAll();
 				provider.bindToLifecycle(getViewLifecycleOwner(),
@@ -196,6 +161,53 @@ public class QrExchangeFragment extends BaseFragment {
 				}
 			}
 		}, ContextCompat.getMainExecutor(requireContext()));
+	}
+
+	private void analyzeFrame(ImageProxy imageProxy) {
+		if (scanComplete.get()) {
+			imageProxy.close();
+			return;
+		}
+		try {
+			byte[] yPlane = extractYPlane(imageProxy);
+			if (yPlane != null) {
+				int rotation = imageProxy.getImageInfo().getRotationDegrees();
+				String decoded = QrCodeUtils.decodeQrFromYuv(
+						yPlane, imageProxy.getWidth(), imageProxy.getHeight(),
+						0, 0, rotation);
+				if (decoded != null
+						&& viewModel.isValidRemoteContactLink(decoded)) {
+					onLinkScanned(decoded);
+				}
+			}
+		} finally {
+			imageProxy.close();
+		}
+	}
+
+	/** Copy the Y (luminance) plane out of a YUV_420_888 ImageProxy
+	 * with row-stride padding collapsed, so ZXing's
+	 * PlanarYUVLuminanceSource can index it as width*height bytes. */
+	@Nullable
+	private static byte[] extractYPlane(ImageProxy proxy) {
+		ImageProxy.PlaneProxy[] planes = proxy.getPlanes();
+		if (planes.length == 0) return null;
+		ImageProxy.PlaneProxy y = planes[0];
+		ByteBuffer buf = y.getBuffer();
+		int width = proxy.getWidth();
+		int height = proxy.getHeight();
+		int rowStride = y.getRowStride();
+		byte[] out = new byte[width * height];
+		if (rowStride == width) {
+			buf.get(out, 0, width * height);
+		} else {
+			byte[] row = new byte[rowStride];
+			for (int r = 0; r < height; r++) {
+				buf.get(row, 0, rowStride);
+				System.arraycopy(row, 0, out, r * width, width);
+			}
+		}
+		return out;
 	}
 
 	private void onLinkScanned(String link) {
@@ -222,9 +234,6 @@ public class QrExchangeFragment extends BaseFragment {
 		super.onDestroyView();
 		if (cameraExecutor != null) {
 			cameraExecutor.shutdown();
-		}
-		if (barcodeScanner != null) {
-			barcodeScanner.close();
 		}
 	}
 

@@ -81,16 +81,6 @@ android {
         buildConfigField "String", "VERSION_LABEL", "\"1.5.0\""
         buildConfigField "String", "TorVersion", "\"$tor_version\""
 
-        // B.3 — in-band hybrid-key signing gate.
-        // See docs/wire/B3_RECORD_PLACEMENT.md.
-        // OFF: write 4-slot CONTACT_INFO (legacy v1.4 layout), ignore any
-        //      received slot[4]. Byte-identical with v1.4 wire format.
-        // ON:  write 5-slot CONTACT_INFO with the B.3 proof at slot[4],
-        //      enforce the receiver state machine, advertise
-        //      messaging.minorVersion = 5.
-        // Flip to true ONLY after iOS confirms readiness and we've run a
-        // joint debug-build interop handshake. Wire-incompatible until both
-        // sides flip together.
         buildConfigField "boolean", "B3_PROOF_ENABLED", "false"
 
         vectorDrawables.useSupportLibrary = true
@@ -238,11 +228,9 @@ dependencies {
 
     // QR code generation (ZXing core — no camera UI, just encoding)
     implementation 'com.google.zxing:core:3.5.3'
-    // QR code scanning (CameraX + ML Kit barcode)
     implementation 'androidx.camera:camera-camera2:1.4.2'
     implementation 'androidx.camera:camera-lifecycle:1.4.2'
     implementation 'androidx.camera:camera-view:1.4.2'
-    implementation 'com.google.mlkit:barcode-scanning:17.3.0'
 
     annotationProcessor "com.google.dagger:dagger-compiler:$dagger_version"
     annotationProcessor "com.github.bumptech.glide:compiler:$glideVersion"

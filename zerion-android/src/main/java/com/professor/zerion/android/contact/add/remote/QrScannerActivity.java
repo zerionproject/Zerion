@@ -10,6 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageAnalysis;
+import androidx.camera.core.ImageProxy;
 import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
@@ -17,13 +18,9 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.mlkit.vision.barcode.BarcodeScanner;
-import com.google.mlkit.vision.barcode.BarcodeScannerOptions;
-import com.google.mlkit.vision.barcode.BarcodeScanning;
-import com.google.mlkit.vision.barcode.common.Barcode;
-import com.google.mlkit.vision.common.InputImage;
 import com.professor.zerion.R;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -32,10 +29,14 @@ import java.util.regex.Matcher;
 import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.LINK_REGEX;
 
 /**
- * Camera-based QR code scanner for reading Zerion handshake links.
- * Uses CameraX + ML Kit barcode scanning.
+ * Camera-based QR code scanner for Zerion handshake links.
  *
- * Returns the scanned link via EXTRA_SCANNED_LINK in the result Intent.
+ * <p>Uses CameraX for the preview + frame delivery, ZXing for the
+ * decode. No Google Play Services / ML Kit / Firebase dependency —
+ * earlier ML Kit-based path was dragging the Google CCT (Cloud
+ * Computing Toolkit) telemetry stack in transitively, which phoned
+ * home to firebaselogging.googleapis.com over clearnet HTTPS,
+ * bypassing the app's Tor-only network policy.
  */
 public class QrScannerActivity extends AppCompatActivity {
 
@@ -44,7 +45,6 @@ public class QrScannerActivity extends AppCompatActivity {
 
 	private PreviewView previewView;
 	private ExecutorService cameraExecutor;
-	private BarcodeScanner barcodeScanner;
 	private final AtomicBoolean scanComplete = new AtomicBoolean(false);
 
 	@Override
@@ -54,11 +54,6 @@ public class QrScannerActivity extends AppCompatActivity {
 
 		previewView = findViewById(R.id.previewView);
 		cameraExecutor = Executors.newSingleThreadExecutor();
-
-		BarcodeScannerOptions options = new BarcodeScannerOptions.Builder()
-				.setBarcodeFormats(Barcode.FORMAT_QR_CODE)
-				.build();
-		barcodeScanner = BarcodeScanning.getClient(options);
 
 		if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
 				== PackageManager.PERMISSION_GRANTED) {
@@ -104,33 +99,7 @@ public class QrScannerActivity extends AppCompatActivity {
 								ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
 						.build();
 
-				analysis.setAnalyzer(cameraExecutor, imageProxy -> {
-					if (scanComplete.get()) {
-						imageProxy.close();
-						return;
-					}
-					@SuppressWarnings("UnsafeOptInUsageError")
-					android.media.Image mediaImage = imageProxy.getImage();
-					if (mediaImage == null) {
-						imageProxy.close();
-						return;
-					}
-
-					InputImage image = InputImage.fromMediaImage(mediaImage,
-							imageProxy.getImageInfo().getRotationDegrees());
-
-					barcodeScanner.process(image)
-							.addOnSuccessListener(barcodes -> {
-								for (Barcode barcode : barcodes) {
-									String raw = barcode.getRawValue();
-									if (raw != null && isZerionLink(raw)) {
-										onLinkScanned(raw);
-										break;
-									}
-								}
-							})
-							.addOnCompleteListener(task -> imageProxy.close());
-				});
+				analysis.setAnalyzer(cameraExecutor, this::analyzeFrame);
 
 				provider.unbindAll();
 				provider.bindToLifecycle(this,
@@ -143,6 +112,53 @@ public class QrScannerActivity extends AppCompatActivity {
 				finish();
 			}
 		}, ContextCompat.getMainExecutor(this));
+	}
+
+	private void analyzeFrame(ImageProxy imageProxy) {
+		if (scanComplete.get()) {
+			imageProxy.close();
+			return;
+		}
+		try {
+			byte[] yPlane = extractYPlane(imageProxy);
+			if (yPlane != null) {
+				int rotation = imageProxy.getImageInfo().getRotationDegrees();
+				String decoded = QrCodeUtils.decodeQrFromYuv(
+						yPlane, imageProxy.getWidth(), imageProxy.getHeight(),
+						0, 0, rotation);
+				if (decoded != null && isZerionLink(decoded)) {
+					onLinkScanned(decoded);
+				}
+			}
+		} finally {
+			imageProxy.close();
+		}
+	}
+
+	/** Copy the Y (luminance) plane out of a YUV_420_888 ImageProxy
+	 * with row-stride padding collapsed, so ZXing's
+	 * PlanarYUVLuminanceSource can index it as width*height bytes. */
+	@androidx.annotation.Nullable
+	private static byte[] extractYPlane(ImageProxy proxy) {
+		ImageProxy.PlaneProxy[] planes = proxy.getPlanes();
+		if (planes.length == 0) return null;
+		ImageProxy.PlaneProxy y = planes[0];
+		ByteBuffer buf = y.getBuffer();
+		int width = proxy.getWidth();
+		int height = proxy.getHeight();
+		int rowStride = y.getRowStride();
+		// Pixel stride for the Y plane is always 1 in YUV_420_888.
+		byte[] out = new byte[width * height];
+		if (rowStride == width) {
+			buf.get(out, 0, width * height);
+		} else {
+			byte[] row = new byte[rowStride];
+			for (int r = 0; r < height; r++) {
+				buf.get(row, 0, rowStride);
+				System.arraycopy(row, 0, out, r * width, width);
+			}
+		}
+		return out;
 	}
 
 	private boolean isZerionLink(String text) {
@@ -165,6 +181,5 @@ public class QrScannerActivity extends AppCompatActivity {
 	protected void onDestroy() {
 		super.onDestroy();
 		cameraExecutor.shutdown();
-		barcodeScanner.close();
 	}
 }
