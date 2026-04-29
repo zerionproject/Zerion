@@ -4,14 +4,15 @@
 	xmlns:tools="http://schemas.android.com/tools"
 	android:layout_width="match_parent"
 	android:layout_height="wrap_content"
-	android:background="?attr/selectableItemBackground">
+	android:background="?attr/selectableItemBackground"
+	android:paddingVertical="10dp">
 
 	<com.professor.zerion.android.view.TextAvatarView
 		android:id="@+id/avatarView"
-		android:layout_width="@dimen/listitem_picture_frame_size"
-		android:layout_height="@dimen/listitem_picture_frame_size"
-		android:layout_margin="@dimen/listitem_horizontal_margin"
-		app:layout_constraintBottom_toTopOf="@+id/divider"
+		android:layout_width="52dp"
+		android:layout_height="52dp"
+		android:layout_marginStart="16dp"
+		android:layout_marginTop="2dp"
 		app:layout_constraintStart_toStartOf="parent"
 		app:layout_constraintTop_toTopOf="parent" />
 
@@ -19,97 +20,96 @@
 		android:id="@+id/nameView"
 		android:layout_width="0dp"
 		android:layout_height="wrap_content"
-		android:layout_margin="@dimen/listitem_horizontal_margin"
-		android:textColor="#FFFFFF"
-		android:textSize="@dimen/text_size_medium"
+		android:layout_marginStart="14dp"
+		android:layout_marginEnd="12dp"
+		android:ellipsize="end"
+		android:maxLines="1"
+		android:textColor="@color/zerion_text_primary"
+		android:textSize="16sp"
 		android:textStyle="bold"
-		app:layout_constraintEnd_toEndOf="parent"
-		app:layout_constraintStart_toEndOf="@+id/avatarView"
-		app:layout_constraintTop_toTopOf="parent"
-		tools:text="This is a name of a Private Group which can be quite long actually" />
-
-	<com.vanniktech.emoji.EmojiTextView
-		android:id="@+id/creatorView"
-		android:layout_width="0dp"
-		android:layout_height="wrap_content"
-		android:layout_marginTop="@dimen/margin_small"
-		android:layout_marginEnd="@dimen/listitem_horizontal_margin"
-		android:layout_marginRight="@dimen/listitem_horizontal_margin"
-		android:textColor="#B3FFFFFF"
-		android:textSize="@dimen/text_size_small"
-		app:layout_constraintEnd_toEndOf="parent"
-		app:layout_constraintStart_toStartOf="@+id/nameView"
-		app:layout_constraintTop_toBottomOf="@+id/nameView"
-		tools:text="Created by Santa Claus" />
-
-	<TextView
-		android:id="@+id/messageCountView"
-		android:layout_width="0dp"
-		android:layout_height="wrap_content"
-		android:layout_marginStart="@dimen/listitem_horizontal_margin"
-		android:layout_marginLeft="@dimen/listitem_horizontal_margin"
-		android:layout_marginTop="@dimen/margin_medium"
-		android:layout_marginEnd="@dimen/listitem_horizontal_margin"
-		android:layout_marginRight="@dimen/listitem_horizontal_margin"
-		android:textColor="#80FFFFFF"
-		android:textSize="@dimen/text_size_small"
+		android:letterSpacing="0.005"
 		app:layout_constraintEnd_toStartOf="@+id/dateView"
 		app:layout_constraintStart_toEndOf="@+id/avatarView"
-		app:layout_constraintTop_toBottomOf="@+id/creatorView"
-		tools:text="1337 messages"
-		tools:visibility="visible" />
+		app:layout_constraintTop_toTopOf="@+id/avatarView"
+		tools:text="Private Group Name" />
 
 	<TextView
 		android:id="@+id/dateView"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
-		android:layout_margin="@dimen/listitem_horizontal_margin"
-		android:textColor="#80FFFFFF"
-		android:textSize="@dimen/text_size_small"
-		app:layout_constraintBaseline_toBaselineOf="@+id/messageCountView"
+		android:layout_marginEnd="16dp"
+		android:textColor="@color/zerion_text_secondary"
+		android:textSize="12sp"
+		app:layout_constraintBaseline_toBaselineOf="@+id/nameView"
 		app:layout_constraintEnd_toEndOf="parent"
-		app:layout_constraintRight_toRightOf="parent"
-		tools:text="3 weeks ago, 12:00"
-		tools:visibility="visible" />
+		tools:text="3 weeks" />
+
+	<com.vanniktech.emoji.EmojiTextView
+		android:id="@+id/creatorView"
+		android:layout_width="0dp"
+		android:layout_height="wrap_content"
+		android:layout_marginStart="14dp"
+		android:layout_marginTop="2dp"
+		android:layout_marginEnd="16dp"
+		android:ellipsize="end"
+		android:maxLines="1"
+		android:textColor="@color/zerion_text_secondary"
+		android:textSize="13sp"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintStart_toEndOf="@+id/avatarView"
+		app:layout_constraintTop_toBottomOf="@+id/nameView"
+		tools:text="Created by Santa Claus" />
 
 	<TextView
 		android:id="@+id/statusView"
 		android:layout_width="0dp"
 		android:layout_height="wrap_content"
-		android:layout_marginStart="@dimen/listitem_horizontal_margin"
-		android:layout_marginLeft="@dimen/listitem_horizontal_margin"
-		android:layout_marginTop="@dimen/margin_medium"
-		android:layout_marginEnd="@dimen/listitem_horizontal_margin"
-		android:layout_marginRight="@dimen/listitem_horizontal_margin"
-		android:textColor="#66FFFFFF"
-		app:layout_constraintEnd_toStartOf="@+id/removeButton"
-		app:layout_constraintLeft_toRightOf="@+id/avatarView"
+		android:layout_marginStart="14dp"
+		android:layout_marginTop="2dp"
+		android:layout_marginEnd="12dp"
+		android:ellipsize="end"
+		android:maxLines="1"
+		android:textColor="@color/zerion_text_secondary"
+		android:textSize="13sp"
+		android:alpha="0.85"
+		app:layout_constraintEnd_toStartOf="@+id/messageCountView"
 		app:layout_constraintStart_toEndOf="@+id/avatarView"
-		app:layout_constraintTop_toBottomOf="@+id/messageCountView"
-		tools:text="This group is empty, but has a long status text" />
+		app:layout_constraintTop_toBottomOf="@+id/creatorView"
+		tools:text="This group is empty" />
+
+	<TextView
+		android:id="@+id/messageCountView"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_marginEnd="16dp"
+		android:textColor="@color/zerion_text_secondary"
+		android:textSize="12sp"
+		app:layout_constraintBaseline_toBaselineOf="@+id/statusView"
+		app:layout_constraintEnd_toEndOf="parent"
+		tools:text="1337 messages" />
 
 	<com.google.android.material.button.MaterialButton
 		android:id="@+id/removeButton"
 		style="@style/Zerion.Button.Negative"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
+		android:layout_marginEnd="8dp"
+		android:layout_marginTop="4dp"
 		android:text="@string/groups_remove"
 		android:visibility="gone"
-		app:layout_constraintBottom_toBottomOf="@+id/divider"
-		app:layout_constraintRight_toRightOf="parent"
-		app:layout_constraintTop_toTopOf="@+id/statusView"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintTop_toBottomOf="@+id/statusView"
 		tools:visibility="visible" />
 
 	<View
 		android:id="@+id/divider"
-		style="@style/Divider.ThreadItem"
 		android:layout_width="0dp"
-		android:layout_marginStart="@dimen/margin_medium"
-		android:layout_marginLeft="@dimen/margin_medium"
-		android:layout_marginTop="@dimen/listitem_horizontal_margin"
+		android:layout_height="1dp"
+		android:layout_marginStart="14dp"
+		android:layout_marginTop="10dp"
+		android:background="@color/zerion_divider"
 		app:layout_constraintEnd_toEndOf="parent"
 		app:layout_constraintStart_toEndOf="@+id/avatarView"
 		app:layout_constraintTop_toBottomOf="@+id/statusView" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
-

@@ -14,10 +14,10 @@
     android:focusable="true"
     android:foreground="?attr/selectableItemBackground"
     android:visibility="gone"
-    app:cardBackgroundColor="@color/card_background"
-    app:cardCornerRadius="24dp"
-    app:cardElevation="8dp"
-    app:strokeColor="@color/zerion_cyan"
+    app:cardBackgroundColor="@color/zerion_surface_elevated"
+    app:cardCornerRadius="22dp"
+    app:cardElevation="0dp"
+    app:strokeColor="@color/zerion_primary_accent"
     app:strokeWidth="1dp">
 
     <LinearLayout
@@ -36,7 +36,7 @@
             android:layout_height="20dp"
             android:layout_marginEnd="10dp"
             android:src="@drawable/ic_group_white"
-            app:tint="@color/zerion_cyan"
+            app:tint="@color/zerion_primary_accent"
             android:contentDescription="@null" />
 
         <!-- Invitation text -->
@@ -54,7 +54,7 @@
             android:layout_height="16dp"
             android:layout_marginStart="8dp"
             android:src="@drawable/chevron_right"
-            app:tint="@color/zerion_cyan"
+            app:tint="@color/zerion_primary_accent"
             android:contentDescription="@null" />
 
     </LinearLayout>
