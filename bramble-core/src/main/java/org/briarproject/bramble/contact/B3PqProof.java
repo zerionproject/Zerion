@@ -1,85 +1,86 @@
-package com.professor.zerion.android.contact.identity;
+package org.briarproject.bramble.contact;
 
 import org.bouncycastle.crypto.digests.Blake2bDigest;
 import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters;
 import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
 import org.bouncycastle.crypto.signers.Ed25519Signer;
+import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
+
+import javax.annotation.Nullable;
+
+import static org.briarproject.bramble.api.contact.B3Constants.B3_HANDSHAKE_SESSION_LABEL;
+import static org.briarproject.bramble.api.contact.B3Constants.B3_KEY_PROOF_LABEL;
+import static org.briarproject.bramble.api.contact.B3Constants.B3_PQ_PUB_LEN;
+import static org.briarproject.bramble.api.contact.B3Constants.B3_ROLE_ALICE;
+import static org.briarproject.bramble.api.contact.B3Constants.B3_ROLE_BOB;
+import static org.briarproject.bramble.api.contact.B3Constants.B3_SESSION_ID_LEN;
+import static org.briarproject.bramble.api.contact.B3Constants.B3_SIG_INPUT_LEN;
+import static org.briarproject.bramble.api.contact.B3Constants.B3_SIG_LEN;
 
 /**
  * B.3 — In-band hybrid-key signing.
  *
- * Wire spec: docs/wire/B3_B4_SPEC_v1.5.0.md (iOS-authored, byte-identical
- * with this Android implementation).
+ * <p>Wire spec: {@code docs/wire/B3_B4_SPEC_v1.5.0.md} (iOS-authored)
+ * and the placement decision {@code docs/wire/B3_RECORD_PLACEMENT.md}.
+ * Byte-identical with iOS via the canonical vector at
+ * {@code docs/wire/test_vectors/B3_v1.txt}.
  *
- * Binds an ML-KEM-768 public key to an Ed25519 signing key with a
+ * <p>Binds an ML-KEM-768 public key to an Ed25519 signing key with a
  * domain-separated, length-prefixed signature. Closes the
  * trust-on-first-use downgrade path on the post-quantum half of the
  * handshake.
  *
- * This class is pure crypto + byte layout. It does not touch the wire
- * record (CONTACT_INFO BDF list slot[4]) — that integration lives in the
- * messaging client where the record is encoded / decoded.
+ * <p>Pure crypto + byte layout. Does not touch the wire record
+ * ({@code CONTACT_INFO} BDF list slot[4]) — that integration lives in
+ * {@code ContactExchangeManagerImpl} where the record is encoded /
+ * decoded.
  */
+@NotNullByDefault
 public final class B3PqProof {
 
-	/** Domain separator for the signature input. UTF-8, 22 bytes, no NUL. */
 	private static final byte[] LABEL =
-			"ZERION_PQ_KEY_PROOF_v1".getBytes(StandardCharsets.UTF_8);
+			B3_KEY_PROOF_LABEL.getBytes(StandardCharsets.UTF_8);
 
-	/** Domain separator used as the BLAKE2b-256 key for sessionId.
-	 * UTF-8, 27 bytes, no NUL. */
 	private static final byte[] SESSION_KEY =
-			"ZERION_HANDSHAKE_SESSION_v1".getBytes(StandardCharsets.UTF_8);
-
-	/** Role byte: lower-pubkey side (Alice / initiator). */
-	public static final byte ROLE_ALICE = 0x01;
-
-	/** Role byte: higher-pubkey side (Bob / responder). */
-	public static final byte ROLE_BOB = 0x02;
+			B3_HANDSHAKE_SESSION_LABEL.getBytes(StandardCharsets.UTF_8);
 
 	private static final int X25519_PUB_LEN = 32;
-	private static final int SESSION_ID_LEN = 32;
-	private static final int MLKEM_768_PUB_LEN = 1184;
-	private static final int SIG_LEN = 64;
-
-	/** Total signature input length: 4+22 + 1 + 4+32 + 4+1184 = 1251. */
-	static final int SIG_INPUT_LEN = 1251;
 
 	private B3PqProof() {
 	}
 
 	/**
-	 * Compute the role byte for the side whose ephemeral is {@code localEph}
-	 * given the peer's ephemeral {@code remoteEph}. Both sides arrive at the
-	 * same Alice/Bob assignment regardless of who saw whose pubkey first
-	 * because the comparison is on the raw 32-byte X25519 pubkey values
-	 * with unsigned-byte semantics.
+	 * Compute the role byte for the side whose ephemeral is
+	 * {@code localEph} given the peer's ephemeral {@code remoteEph}.
+	 * Both sides arrive at the same Alice/Bob assignment regardless
+	 * of who saw whose pubkey first, because the comparison is on the
+	 * raw 32-byte X25519 pubkey values with unsigned-byte semantics.
 	 *
-	 * @return {@link #ROLE_ALICE} if {@code localEph} is lex-smaller than
-	 *         {@code remoteEph}, {@link #ROLE_BOB} otherwise.
+	 * @return {@link org.briarproject.bramble.api.contact.B3Constants#B3_ROLE_ALICE}
+	 *         if {@code localEph} is lex-smaller than {@code remoteEph},
+	 *         {@link org.briarproject.bramble.api.contact.B3Constants#B3_ROLE_BOB}
+	 *         otherwise.
 	 */
 	public static byte roleFor(byte[] localEph, byte[] remoteEph) {
-		require(localEph != null && localEph.length == X25519_PUB_LEN,
-				"localEph must be 32 bytes");
-		require(remoteEph != null && remoteEph.length == X25519_PUB_LEN,
-				"remoteEph must be 32 bytes");
-		return compareUnsigned(localEph, remoteEph) < 0 ? ROLE_ALICE : ROLE_BOB;
+		requireLen(localEph, X25519_PUB_LEN, "localEph");
+		requireLen(remoteEph, X25519_PUB_LEN, "remoteEph");
+		return compareUnsigned(localEph, remoteEph) < 0
+				? B3_ROLE_ALICE : B3_ROLE_BOB;
 	}
 
 	/**
 	 * BLAKE2b-256 over the sorted concatenation of the two ephemerals,
-	 * keyed with the session domain separator. The sort is what makes the
-	 * sessionId symmetric — both sides produce the same 32 bytes.
+	 * keyed with the session domain separator. The sort is what makes
+	 * the sessionId symmetric — both sides produce the same 32 bytes.
 	 */
 	public static byte[] computeSessionId(byte[] localEph, byte[] remoteEph) {
-		require(localEph != null && localEph.length == X25519_PUB_LEN,
-				"localEph must be 32 bytes");
-		require(remoteEph != null && remoteEph.length == X25519_PUB_LEN,
-				"remoteEph must be 32 bytes");
+		requireLen(localEph, X25519_PUB_LEN, "localEph");
+		requireLen(remoteEph, X25519_PUB_LEN, "remoteEph");
 		byte[] first;
 		byte[] second;
 		if (compareUnsigned(localEph, remoteEph) < 0) {
@@ -90,10 +91,10 @@ public final class B3PqProof {
 			second = localEph;
 		}
 		Blake2bDigest digest = new Blake2bDigest(SESSION_KEY,
-				SESSION_ID_LEN, null, null);
+				B3_SESSION_ID_LEN, null, null);
 		digest.update(first, 0, first.length);
 		digest.update(second, 0, second.length);
-		byte[] out = new byte[SESSION_ID_LEN];
+		byte[] out = new byte[B3_SESSION_ID_LEN];
 		digest.doFinal(out, 0);
 		return out;
 	}
@@ -111,14 +112,13 @@ public final class B3PqProof {
 	 */
 	public static byte[] computeSigInput(byte role, byte[] sessionId,
 			byte[] pqPubKey) {
-		require(role == ROLE_ALICE || role == ROLE_BOB,
-				"role must be 0x01 or 0x02");
-		require(sessionId != null && sessionId.length == SESSION_ID_LEN,
-				"sessionId must be 32 bytes");
-		require(pqPubKey != null && pqPubKey.length == MLKEM_768_PUB_LEN,
-				"pqPubKey must be 1184 bytes (ML-KEM-768)");
+		if (role != B3_ROLE_ALICE && role != B3_ROLE_BOB) {
+			throw new IllegalArgumentException("role must be 0x01 or 0x02");
+		}
+		requireLen(sessionId, B3_SESSION_ID_LEN, "sessionId");
+		requireLen(pqPubKey, B3_PQ_PUB_LEN, "pqPubKey");
 
-		ByteBuffer buf = ByteBuffer.allocate(SIG_INPUT_LEN)
+		ByteBuffer buf = ByteBuffer.allocate(B3_SIG_INPUT_LEN)
 				.order(ByteOrder.BIG_ENDIAN);
 		buf.putInt(LABEL.length);
 		buf.put(LABEL);
@@ -141,8 +141,7 @@ public final class B3PqProof {
 	 */
 	public static byte[] sign(byte[] signingPriv,
 			byte[] localEph, byte[] remoteEph, byte[] pqPubKey) {
-		require(signingPriv != null && signingPriv.length == 32,
-				"signingPriv must be 32 bytes (Ed25519 seed)");
+		requireLen(signingPriv, 32, "signingPriv");
 		byte role = roleFor(localEph, remoteEph);
 		byte[] sessionId = computeSessionId(localEph, remoteEph);
 		byte[] input = computeSigInput(role, sessionId, pqPubKey);
@@ -166,10 +165,9 @@ public final class B3PqProof {
 	 */
 	public static boolean verify(byte[] signingPub,
 			byte[] signerEph, byte[] verifierEph,
-			byte[] pqPubKey, byte[] sig) {
-		require(signingPub != null && signingPub.length == 32,
-				"signingPub must be 32 bytes");
-		if (sig == null || sig.length != SIG_LEN) return false;
+			byte[] pqPubKey, @Nullable byte[] sig) {
+		requireLen(signingPub, 32, "signingPub");
+		if (sig == null || sig.length != B3_SIG_LEN) return false;
 		byte signerRole = roleFor(signerEph, verifierEph);
 		byte[] sessionId = computeSessionId(signerEph, verifierEph);
 		byte[] input = computeSigInput(signerRole, sessionId, pqPubKey);
@@ -195,7 +193,20 @@ public final class B3PqProof {
 		return a.length - b.length;
 	}
 
-	private static void require(boolean condition, String msg) {
-		if (!condition) throw new IllegalArgumentException(msg);
+	/**
+	 * Length check for a byte array. The class is {@code @NotNullByDefault}
+	 * so callers cannot legitimately pass null; this method still does an
+	 * explicit non-null check via {@link Objects#requireNonNull} so the
+	 * IDE's null-flow analyser narrows the type after the call returns,
+	 * which would otherwise complain about the buffer arithmetic that
+	 * follows.
+	 */
+	private static void requireLen(byte[] bytes, int expectedLen,
+			String name) {
+		Objects.requireNonNull(bytes, name + " must not be null");
+		if (bytes.length != expectedLen) {
+			throw new IllegalArgumentException(name + " must be "
+					+ expectedLen + " bytes (got " + bytes.length + ")");
+		}
 	}
 }

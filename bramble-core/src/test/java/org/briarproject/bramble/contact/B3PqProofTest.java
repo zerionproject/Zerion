@@ -1,13 +1,13 @@
-package com.professor.zerion.android.contact.identity;
+package org.briarproject.bramble.contact;
 
 import org.junit.Test;
 
 import java.security.SecureRandom;
 import java.util.Arrays;
 
-import static com.professor.zerion.android.contact.identity.B3PqProof.ROLE_ALICE;
-import static com.professor.zerion.android.contact.identity.B3PqProof.ROLE_BOB;
-import static com.professor.zerion.android.contact.identity.B3PqProof.SIG_INPUT_LEN;
+import static org.briarproject.bramble.api.contact.B3Constants.B3_ROLE_ALICE;
+import static org.briarproject.bramble.api.contact.B3Constants.B3_ROLE_BOB;
+import static org.briarproject.bramble.api.contact.B3Constants.B3_SIG_INPUT_LEN;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -35,8 +35,8 @@ public class B3PqProofTest {
 	public void roleIsLowerLexEphemeral() {
 		byte[] ephLow = bytes(0x00, 32);
 		byte[] ephHigh = bytes(0xFF, 32);
-		assertEquals(ROLE_ALICE, B3PqProof.roleFor(ephLow, ephHigh));
-		assertEquals(ROLE_BOB, B3PqProof.roleFor(ephHigh, ephLow));
+		assertEquals(B3_ROLE_ALICE, B3PqProof.roleFor(ephLow, ephHigh));
+		assertEquals(B3_ROLE_BOB, B3PqProof.roleFor(ephHigh, ephLow));
 	}
 
 	@Test
@@ -48,8 +48,8 @@ public class B3PqProofTest {
 		byte[] ephSeven = bytes(0x7F, 32);
 		byte[] ephEight = bytes(0x80, 32);
 		assertEquals("0x7F should compare LESS THAN 0x80 unsigned",
-				ROLE_ALICE, B3PqProof.roleFor(ephSeven, ephEight));
-		assertEquals(ROLE_BOB, B3PqProof.roleFor(ephEight, ephSeven));
+				B3_ROLE_ALICE, B3PqProof.roleFor(ephSeven, ephEight));
+		assertEquals(B3_ROLE_BOB, B3PqProof.roleFor(ephEight, ephSeven));
 	}
 
 	@Test
@@ -79,10 +79,10 @@ public class B3PqProofTest {
 	public void sigInputMatchesSpecLayout() {
 		byte[] sessionId = randomBytes(32, 4);
 		byte[] pqPub = randomBytes(1184, 5);
-		byte[] input = B3PqProof.computeSigInput(ROLE_BOB, sessionId, pqPub);
+		byte[] input = B3PqProof.computeSigInput(B3_ROLE_BOB, sessionId, pqPub);
 
 		assertEquals("Total length per spec section 1.4 = 1251 bytes",
-				SIG_INPUT_LEN, input.length);
+				B3_SIG_INPUT_LEN, input.length);
 
 		// Bytes 0..3:  uint32_BE(22)
 		assertEquals(0x00, input[0]);
@@ -95,7 +95,7 @@ public class B3PqProofTest {
 				Arrays.copyOfRange(input, 4, 26));
 
 		// Byte 26: role
-		assertEquals(ROLE_BOB, input[26]);
+		assertEquals(B3_ROLE_BOB, input[26]);
 
 		// Bytes 27..30: uint32_BE(32)
 		assertEquals(0x00, input[27]);
