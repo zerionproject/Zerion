@@ -1214,15 +1214,16 @@ public class ConversationActivity extends ZerionActivity
 
 	@UiThread
 	private void updateConnectionStatusUI(boolean connected) {
+		toolbarStatus.setImageDrawable(null);
 		if (connected) {
-			toolbarStatus.setImageResource(R.drawable.contact_online);
+			toolbarStatus.setBackgroundResource(R.drawable.bg_presence_online);
 			toolbarStatus.setContentDescription(getString(R.string.online));
 			if (toolbarSubtitle != null) {
 				toolbarSubtitle.setText(
 						R.string.conversation_subtitle_online);
 			}
 		} else {
-			toolbarStatus.setImageResource(R.drawable.contact_offline);
+			toolbarStatus.setBackgroundResource(R.drawable.bg_presence_offline);
 			toolbarStatus.setContentDescription(getString(R.string.offline));
 			if (toolbarSubtitle != null) {
 				toolbarSubtitle.setText(
