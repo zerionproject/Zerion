@@ -13,11 +13,11 @@
 	<androidx.constraintlayout.widget.ConstraintLayout
 		android:id="@+id/appBar"
 		android:layout_width="0dp"
-		android:layout_height="56dp"
+		android:layout_height="60dp"
 		android:background="@android:color/transparent"
 		android:elevation="0dp"
-		android:paddingStart="4dp"
-		android:paddingEnd="4dp"
+		android:paddingStart="6dp"
+		android:paddingEnd="6dp"
 		app:layout_constraintEnd_toEndOf="parent"
 		app:layout_constraintStart_toStartOf="parent"
 		app:layout_constraintTop_toTopOf="parent">
@@ -47,18 +47,19 @@
 
 		</com.google.android.material.card.MaterialCardView>
 
-		<!-- Screen Title (Center) -->
+		<!-- Screen Title (left-aligned, large) -->
 		<TextView
 			android:id="@+id/toolbarTitle"
 			android:layout_width="0dp"
 			android:layout_height="wrap_content"
-			android:layout_marginStart="16dp"
-			android:layout_marginEnd="16dp"
-			android:gravity="center"
+			android:layout_marginStart="14dp"
+			android:layout_marginEnd="8dp"
+			android:gravity="start|center_vertical"
 			android:text="@string/contact_list_button"
-			android:textColor="@android:color/white"
-			android:textSize="20sp"
+			android:textColor="@color/zerion_text_primary"
+			android:textSize="22sp"
 			android:textStyle="bold"
+			android:letterSpacing="-0.01"
 			android:singleLine="true"
 			android:ellipsize="end"
 			app:layout_constraintBottom_toBottomOf="parent"
@@ -69,31 +70,31 @@
 		<!-- Network Status Button -->
 		<ImageButton
 			android:id="@+id/searchButton"
-			android:layout_width="48dp"
-			android:layout_height="48dp"
+			android:layout_width="44dp"
+			android:layout_height="44dp"
 			android:background="?attr/selectableItemBackgroundBorderless"
 			android:contentDescription="@string/network_status_title"
-			android:padding="12dp"
+			android:padding="10dp"
 			android:src="@drawable/transport_tor"
 			app:layout_constraintBottom_toBottomOf="parent"
 			app:layout_constraintEnd_toStartOf="@+id/menuButton"
 			app:layout_constraintTop_toTopOf="parent"
-			app:tint="@android:color/white" />
+			app:tint="@color/zerion_text_primary" />
 
 		<!-- Menu Button (3-dot) -->
 		<ImageButton
 			android:id="@+id/menuButton"
-			android:layout_width="48dp"
-			android:layout_height="48dp"
+			android:layout_width="44dp"
+			android:layout_height="44dp"
 			android:layout_marginEnd="4dp"
 			android:background="?attr/selectableItemBackgroundBorderless"
 			android:contentDescription="@string/settings_button"
-			android:padding="12dp"
+			android:padding="10dp"
 			android:src="@drawable/ic_more_vert_accent"
 			app:layout_constraintBottom_toBottomOf="parent"
 			app:layout_constraintEnd_toEndOf="parent"
 			app:layout_constraintTop_toTopOf="parent"
-			app:tint="@android:color/white" />
+			app:tint="@color/zerion_text_primary" />
 
 	</androidx.constraintlayout.widget.ConstraintLayout>
 

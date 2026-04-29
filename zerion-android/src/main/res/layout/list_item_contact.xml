@@ -10,13 +10,13 @@
 	android:focusable="true"
 	android:paddingStart="16dp"
 	android:paddingEnd="16dp"
-	android:paddingTop="14dp"
-	android:paddingBottom="14dp">
+	android:paddingTop="12dp"
+	android:paddingBottom="12dp">
 
 	<FrameLayout
 		android:id="@+id/avatarFrameView"
-		android:layout_width="@dimen/listitem_picture_frame_size"
-		android:layout_height="@dimen/listitem_picture_frame_size"
+		android:layout_width="52dp"
+		android:layout_height="52dp"
 		app:layout_constraintBottom_toBottomOf="parent"
 		app:layout_constraintStart_toStartOf="parent"
 		app:layout_constraintTop_toTopOf="parent">
@@ -24,27 +24,19 @@
 		<de.hdodenhof.circleimageview.CircleImageView
 			android:id="@+id/avatarView"
 			style="@style/ZerionAvatar"
-			android:layout_width="@dimen/listitem_picture_size"
-			android:layout_height="@dimen/listitem_picture_size"
-			android:layout_gravity="center"
+			android:layout_width="match_parent"
+			android:layout_height="match_parent"
 			tools:src="@mipmap/ic_launcher_round" />
 
-	</FrameLayout>
+		<View
+			android:id="@+id/bulbView"
+			android:layout_width="14dp"
+			android:layout_height="14dp"
+			android:layout_gravity="bottom|end"
+			android:background="@drawable/bg_presence_offline"
+			tools:background="@drawable/bg_presence_online" />
 
-	<TextView
-		android:id="@+id/unreadCountView"
-		android:layout_width="wrap_content"
-		android:layout_height="@dimen/unread_bubble_size"
-		android:background="@drawable/bubble"
-		android:backgroundTint="@color/zerion_primary_accent"
-		android:gravity="center"
-		android:minWidth="@dimen/unread_bubble_size"
-		android:textColor="#FFFFFF"
-		android:textSize="@dimen/unread_bubble_text_size"
-		android:textStyle="bold"
-		app:layout_constraintEnd_toEndOf="@+id/avatarFrameView"
-		app:layout_constraintTop_toTopOf="@+id/avatarFrameView"
-		tools:text="3" />
+	</FrameLayout>
 
 	<com.vanniktech.emoji.EmojiTextView
 		android:id="@+id/nameView"
@@ -58,7 +50,6 @@
 		android:textSize="16sp"
 		android:textStyle="bold"
 		app:layout_constraintEnd_toStartOf="@+id/dateView"
-		app:layout_constraintHorizontal_chainStyle="spread_inside"
 		app:layout_constraintStart_toEndOf="@+id/avatarFrameView"
 		app:layout_constraintTop_toTopOf="@+id/avatarFrameView"
 		tools:text="Contact name" />
@@ -68,24 +59,10 @@
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
 		android:textColor="@color/zerion_text_secondary"
-		android:textSize="13sp"
+		android:textSize="12sp"
 		app:layout_constraintBaseline_toBaselineOf="@+id/nameView"
-		app:layout_constraintEnd_toStartOf="@+id/pinIcon"
-		tools:text="14:32" />
-
-	<ImageView
-		android:id="@+id/pinIcon"
-		android:layout_width="14dp"
-		android:layout_height="14dp"
-		android:layout_marginStart="6dp"
-		android:src="@drawable/ic_pin"
-		android:visibility="gone"
-		app:layout_constraintBottom_toBottomOf="@+id/nameView"
 		app:layout_constraintEnd_toEndOf="parent"
-		app:layout_constraintTop_toTopOf="@+id/nameView"
-		app:tint="@color/zerion_text_secondary"
-		tools:ignore="ContentDescription"
-		tools:visibility="visible" />
+		tools:text="14:32" />
 
 	<LinearLayout
 		android:id="@+id/subtitleRow"
@@ -97,7 +74,7 @@
 		android:gravity="center_vertical"
 		android:orientation="horizontal"
 		app:layout_constraintBottom_toBottomOf="@+id/avatarFrameView"
-		app:layout_constraintEnd_toStartOf="@+id/bulbView"
+		app:layout_constraintEnd_toStartOf="@+id/unreadCountView"
 		app:layout_constraintStart_toEndOf="@+id/avatarFrameView"
 		app:layout_constraintTop_toBottomOf="@+id/nameView">
 
@@ -121,14 +98,35 @@
 
 	</LinearLayout>
 
-	<ImageView
-		android:id="@+id/bulbView"
+	<TextView
+		android:id="@+id/unreadCountView"
 		android:layout_width="wrap_content"
-		android:layout_height="wrap_content"
+		android:layout_height="22dp"
+		android:background="@drawable/bg_unread_pill"
+		android:gravity="center"
+		android:minWidth="22dp"
+		android:paddingStart="7dp"
+		android:paddingEnd="7dp"
+		android:textColor="#FFFFFF"
+		android:textSize="12sp"
+		android:textStyle="bold"
+		app:layout_constraintBottom_toBottomOf="@+id/subtitleRow"
+		app:layout_constraintEnd_toStartOf="@+id/pinIcon"
+		app:layout_constraintTop_toTopOf="@+id/subtitleRow"
+		tools:text="3" />
+
+	<ImageView
+		android:id="@+id/pinIcon"
+		android:layout_width="14dp"
+		android:layout_height="14dp"
+		android:layout_marginStart="6dp"
+		android:src="@drawable/ic_pin"
+		android:visibility="gone"
 		app:layout_constraintBottom_toBottomOf="@+id/subtitleRow"
 		app:layout_constraintEnd_toEndOf="parent"
 		app:layout_constraintTop_toTopOf="@+id/subtitleRow"
+		app:tint="@color/zerion_text_secondary"
 		tools:ignore="ContentDescription"
-		tools:src="@drawable/contact_connected" />
+		tools:visibility="visible" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

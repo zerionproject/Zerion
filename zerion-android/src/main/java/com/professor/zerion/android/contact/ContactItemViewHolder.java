@@ -27,7 +27,7 @@ public class ContactItemViewHolder<I extends ContactItem>
 	protected final ImageView avatar;
 	protected final TextView name;
 	@Nullable
-	protected final ImageView bulb;
+	protected final View bulb;
 	@Nullable
 	protected final TrustIndicatorView trustIndicator;
 	@Nullable
@@ -50,10 +50,11 @@ public class ContactItemViewHolder<I extends ContactItem>
 		name.setText(getContactDisplayName(item.getContact()));
 
 		if (bulb != null) {
-			if (item.isConnected()) {
-				bulb.setImageResource(R.drawable.contact_connected);
-			} else {
-				bulb.setImageResource(R.drawable.contact_disconnected);
+			bulb.setBackgroundResource(item.isConnected()
+					? R.drawable.bg_presence_online
+					: R.drawable.bg_presence_offline);
+			if (bulb instanceof ImageView) {
+				((ImageView) bulb).setImageDrawable(null);
 			}
 		}
 
