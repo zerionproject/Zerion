@@ -17,6 +17,7 @@
 	<string name="donation_browser_warning_title">Open in browser?</string>
 	<string name="donation_browser_warning_message">Opening this link uses your default browser, not Tor. Your real IP address will be visible to zerion.chat and any tracker on the page. Continue only if you understand this leaves Zerion\'s privacy boundary.</string>
 	<string name="donation_browser_warning_open">Open anyway</string>
+	<string name="settings_support_summary">Help keep Zerion free and private</string>
 
 	<!-- Setup -->
 	<string name="setup_title">Welcome to Zerion</string>

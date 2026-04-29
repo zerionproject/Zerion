@@ -56,6 +56,7 @@ public class SettingsFragment extends Fragment {
 	private View securityCard;
 	private View notificationsCard;
 	private View aboutCard;
+	private View supportCard;
 	private View inviteFriendsCard;
 	private TextView devSectionHeader;
 	private View testDataCard;
@@ -99,6 +100,7 @@ public class SettingsFragment extends Fragment {
 		securityCard = view.findViewById(R.id.security_card);
 		notificationsCard = view.findViewById(R.id.notifications_card);
 		aboutCard = view.findViewById(R.id.about_card);
+		supportCard = view.findViewById(R.id.support_card);
 		inviteFriendsCard = view.findViewById(R.id.invite_friends_card);
 		View myIdentityCard = view.findViewById(R.id.my_identity_card);
 		devSectionHeader = view.findViewById(R.id.dev_section_header);
@@ -122,6 +124,9 @@ public class SettingsFragment extends Fragment {
 		securityCard.setOnClickListener(v -> showSecuritySettings());
 		notificationsCard.setOnClickListener(v -> showNotificationsSettings());
 		aboutCard.setOnClickListener(v -> showAboutSettings());
+		if (supportCard != null) {
+			supportCard.setOnClickListener(v -> showDonationDialog());
+		}
 		if (inviteFriendsCard != null) {
 			inviteFriendsCard.setOnClickListener(v -> shareInvite());
 		}
@@ -216,6 +221,14 @@ public class SettingsFragment extends Fragment {
 				.replace(R.id.fragmentContainer, new AboutFragment())
 				.addToBackStack(null)
 				.commit();
+	}
+
+	private void showDonationDialog() {
+		com.professor.zerion.android.widget.DonationDialogFragment dialog =
+				com.professor.zerion.android.widget.DonationDialogFragment
+						.newInstance();
+		dialog.show(getParentFragmentManager(),
+				com.professor.zerion.android.widget.DonationDialogFragment.TAG);
 	}
 
 	@Nullable
