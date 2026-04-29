@@ -207,6 +207,18 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 		// without buffered state would mean the orchestrator failed to
 		// thread through the hybrid handshake context, which is a bug,
 		// not graceful degradation. Hard-reject in that case.
+		//
+		// v1.5.1 strict-reject hook: when the messaging.minorVersion
+		// sync record from a peer advertising v5 arrives post-
+		// handshake, we'll need to confirm slot[4] was present here.
+		// Two ways to resolve in v1.5.1:
+		//   (a) persist a per-contact flag here;
+		//   (b) derive — any contact in our DB advertising v5 MUST
+		//       have passed verify, since this method throws on
+		//       verify-fail and the contact wouldn't have been
+		//       promoted.
+		// iOS persists for forward-compat. Either is fine; we'll pick
+		// at v1.5.1 implementation time.
 		if (remoteInfo.b3ProofSig != null) {
 			if (theirStaticHybridPub == null
 					|| ourEphX25519 == null
