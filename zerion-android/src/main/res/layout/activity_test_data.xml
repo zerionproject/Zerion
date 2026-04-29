@@ -5,8 +5,7 @@
 	android:layout_width="match_parent"
 	android:layout_height="match_parent"
 	android:fillViewport="true"
-	android:padding="@dimen/margin_medium"
-	tools:ignore="HardcodedText">
+	android:padding="@dimen/margin_medium">
 
 	<androidx.constraintlayout.widget.ConstraintLayout
 		android:layout_width="match_parent"
@@ -17,7 +16,7 @@
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
 			android:layout_margin="@dimen/margin_medium"
-			android:text="Number of contacts"
+			android:text="@string/test_data_contacts_label"
 			app:layout_constraintStart_toStartOf="parent"
 			app:layout_constraintTop_toTopOf="parent" />
 
@@ -46,7 +45,7 @@
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
 			android:layout_margin="@dimen/margin_medium"
-			android:text="Number of messages per contact"
+			android:text="@string/test_data_messages_label"
 			app:layout_constraintStart_toStartOf="parent"
 			app:layout_constraintTop_toBottomOf="@+id/seekBarContacts" />
 
@@ -76,7 +75,7 @@
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
 			android:layout_margin="@dimen/margin_medium"
-			android:text="Percentage of contacts with profile pictures"
+			android:text="@string/test_data_avatars_label"
 			app:layout_constraintStart_toStartOf="parent"
 			app:layout_constraintTop_toBottomOf="@+id/seekBarMessages" />
 
@@ -106,7 +105,7 @@
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
 			android:layout_margin="@dimen/margin_medium"
-			android:text="Number of private groups"
+			android:text="@string/test_data_groups_label"
 			app:layout_constraintStart_toStartOf="parent"
 			app:layout_constraintTop_toBottomOf="@+id/seekBarAvatars" />
 
@@ -136,7 +135,7 @@
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
 			android:layout_margin="@dimen/margin_medium"
-			android:text="Number of private group messages"
+			android:text="@string/test_data_group_messages_label"
 			app:layout_constraintStart_toStartOf="parent"
 			app:layout_constraintTop_toBottomOf="@+id/seekBarPrivateGroups" />
 
@@ -168,7 +167,7 @@
 			android:layout_height="wrap_content"
 			android:layout_marginTop="15dp"
 			android:textSize="@dimen/text_size_tiny"
-			android:text="Zero values"
+			android:text="@string/test_data_zero_values"
 			app:layout_constraintEnd_toEndOf="parent"
 			app:layout_constraintStart_toStartOf="parent"
 			app:layout_constraintTop_toBottomOf="@+id/seekBarPrivateGroupMessages"
@@ -180,7 +179,7 @@
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
 			android:layout_margin="10dp"
-			android:text="Create test data"
+			android:text="@string/test_data_create"
 			app:layout_constraintBottom_toBottomOf="parent"
 			app:layout_constraintEnd_toEndOf="parent"
 			app:layout_constraintStart_toStartOf="parent"

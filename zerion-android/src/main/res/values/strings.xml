@@ -115,6 +115,13 @@
 	<string name="dialog_show_password">Show password</string>
 	<string name="text_editor_monospace">Monospace</string>
 	<string name="text_editor_content">Content</string>
+	<string name="test_data_contacts_label">Number of contacts</string>
+	<string name="test_data_messages_label">Number of messages per contact</string>
+	<string name="test_data_avatars_label">Percentage of contacts with profile pictures</string>
+	<string name="test_data_groups_label">Number of private groups</string>
+	<string name="test_data_group_messages_label">Number of private group messages</string>
+	<string name="test_data_zero_values">Zero values</string>
+	<string name="test_data_create">Create test data</string>
 	<plurals name="text_editor_word_count">
 		<item quantity="one">%1$d word</item>
 		<item quantity="other">%1$d words</item>
