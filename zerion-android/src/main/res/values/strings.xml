@@ -45,6 +45,11 @@
 	<string name="unlock_subtitle">Use your fingerprint or device credentials</string>
 	<string name="splash_tagline">Private messaging over Tor</string>
 	<string name="setup_step_indicator">Step %1$d of %2$d</string>
+	<string name="change_password_summary">Update your account password</string>
+	<string name="settings_section_about">ABOUT</string>
+	<string name="settings_default_value">Default</string>
+	<string name="settings_theme_system_default">System default</string>
+	<string name="settings_theme_dark">Dark</string>
 	<string name="setup_name_explanation">Your nickname will be shown next to any content you post. You can\'t change it after creating your account.</string>
 	<string name="setup_next">Next</string>
 	<string name="setup_password_intro">Choose a Password</string>

@@ -1,278 +1,204 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@drawable/bg_zerion_gradient">
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="@drawable/bg_zerion_gradient">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp">
+	<LinearLayout
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:orientation="vertical"
+		android:paddingHorizontal="16dp"
+		android:paddingBottom="32dp">
 
-        <!-- TOR NETWORK Section -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/settings_section_tor_network"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            android:textColor="?attr/colorPrimary"
-            android:layout_marginBottom="12dp" />
+		<!-- ====== TOR NETWORK ====== -->
+		<TextView
+			style="@style/Zerion.Settings.SectionHeader"
+			android:text="@string/settings_section_tor_network" />
 
-        <!-- Info Card -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="0dp"
-            app:cardBackgroundColor="?attr/colorSurfaceVariant">
+		<!-- Info card -->
+		<LinearLayout
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:orientation="horizontal"
+			android:gravity="center_vertical"
+			android:background="@drawable/bg_settings_info_card"
+			android:paddingHorizontal="14dp"
+			android:paddingVertical="12dp">
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="16dp"
-                android:gravity="center_vertical">
+			<ImageView
+				android:layout_width="20dp"
+				android:layout_height="20dp"
+				android:layout_marginEnd="12dp"
+				android:src="@drawable/ic_info_dark"
+				app:tint="@color/zerion_primary_accent"
+				android:importantForAccessibility="no" />
 
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_info_dark"
-                    app:tint="?attr/colorPrimary"
-                    android:layout_marginEnd="16dp" />
+			<TextView
+				android:layout_width="0dp"
+				android:layout_height="wrap_content"
+				android:layout_weight="1"
+				android:text="@string/tor_info_message"
+				android:textSize="13sp"
+				android:textColor="@color/zerion_text_secondary"
+				android:lineSpacingExtra="1dp" />
 
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/tor_info_message"
-                    android:textSize="13sp"
-                    android:textColor="?android:attr/textColorSecondary" />
+		</LinearLayout>
 
-            </LinearLayout>
+		<LinearLayout
+			style="@style/Zerion.Settings.Group"
+			android:layout_marginTop="14dp">
 
-        </com.google.android.material.card.MaterialCardView>
+			<LinearLayout
+				android:id="@+id/tor_network_card"
+				style="@style/Zerion.Settings.Row.Clickable">
 
-        <!-- Tor Network Type -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/tor_network_card"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="0dp"
-            android:clickable="true"
-            android:focusable="true">
+				<ImageView
+					style="@style/Zerion.Settings.Row.Icon"
+					android:src="@drawable/transport_tor"
+					android:importantForAccessibility="no" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="16dp"
-                android:gravity="center_vertical">
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:orientation="vertical">
 
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/transport_tor"
-                    app:tint="?android:attr/textColorPrimary"
-                    android:layout_marginEnd="16dp" />
+					<TextView
+						style="@style/Zerion.Settings.Row.Title"
+						android:text="@string/tor_network_setting" />
 
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
+					<TextView
+						android:id="@+id/tor_network_value"
+						style="@style/Zerion.Settings.Row.Summary"
+						android:text="@string/tor_network_setting_automatic" />
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/tor_network_setting"
-                        android:textSize="16sp"
-                        android:textColor="?android:attr/textColorPrimary" />
+				</LinearLayout>
 
-                    <TextView
-                        android:id="@+id/tor_network_value"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/tor_network_setting_automatic"
-                        android:textSize="13sp"
-                        android:textColor="?android:attr/textColorSecondary" />
+				<ImageView
+					android:layout_width="20dp"
+					android:layout_height="20dp"
+					android:src="@drawable/ic_chevron_right"
+					app:tint="@color/zerion_text_secondary"
+					android:importantForAccessibility="no" />
 
-                </LinearLayout>
+			</LinearLayout>
 
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_chevron_right"
-                    app:tint="?android:attr/textColorSecondary" />
+		</LinearLayout>
 
-            </LinearLayout>
+		<!-- ====== PROXY ====== -->
+		<TextView
+			style="@style/Zerion.Settings.SectionHeader"
+			android:text="@string/proxy_section_title" />
 
-        </com.google.android.material.card.MaterialCardView>
+		<LinearLayout style="@style/Zerion.Settings.Group">
 
-        <!-- PROXY Section -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/proxy_section_title"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            android:textColor="?attr/colorPrimary"
-            android:layout_marginBottom="12dp" />
+			<LinearLayout
+				android:id="@+id/orbot_proxy_card"
+				style="@style/Zerion.Settings.Row">
 
-        <!-- Use Orbot Proxy -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/orbot_proxy_card"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="0dp">
+				<ImageView
+					style="@style/Zerion.Settings.Row.Icon"
+					android:src="@drawable/ic_settings"
+					android:importantForAccessibility="no" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="16dp"
-                android:gravity="center_vertical">
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:orientation="vertical">
 
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_settings"
-                    app:tint="?android:attr/textColorPrimary"
-                    android:layout_marginEnd="16dp" />
+					<TextView
+						style="@style/Zerion.Settings.Row.Title"
+						android:text="@string/orbot_proxy_title" />
 
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
+					<TextView
+						style="@style/Zerion.Settings.Row.Summary"
+						android:text="@string/orbot_proxy_summary" />
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/orbot_proxy_title"
-                        android:textSize="16sp"
-                        android:textColor="?android:attr/textColorPrimary" />
+				</LinearLayout>
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/orbot_proxy_summary"
-                        android:textSize="13sp"
-                        android:textColor="?android:attr/textColorSecondary" />
+				<com.google.android.material.switchmaterial.SwitchMaterial
+					android:id="@+id/orbot_proxy_switch"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:checked="false" />
 
-                </LinearLayout>
+			</LinearLayout>
 
-                <com.google.android.material.switchmaterial.SwitchMaterial
-                    android:id="@+id/orbot_proxy_switch"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:checked="false" />
+			<LinearLayout
+				android:id="@+id/orbot_settings_card"
+				style="@style/Zerion.Settings.Row.Clickable"
+				android:visibility="gone"
+				tools:visibility="visible">
 
-            </LinearLayout>
+				<ImageView
+					style="@style/Zerion.Settings.Row.Icon"
+					android:src="@drawable/ic_settings"
+					android:importantForAccessibility="no" />
 
-        </com.google.android.material.card.MaterialCardView>
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:orientation="vertical">
 
-        <!-- Orbot Proxy Settings (shown when enabled) -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/orbot_settings_card"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="0dp"
-            android:visibility="gone"
-            android:clickable="true"
-            android:focusable="true">
+					<TextView
+						style="@style/Zerion.Settings.Row.Title"
+						android:text="@string/orbot_proxy_settings" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="16dp"
-                android:gravity="center_vertical">
+					<TextView
+						android:id="@+id/orbot_proxy_value"
+						style="@style/Zerion.Settings.Row.Summary"
+						android:fontFamily="monospace"
+						tools:text="127.0.0.1:9050" />
 
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_settings"
-                    app:tint="?android:attr/textColorPrimary"
-                    android:layout_marginEnd="16dp" />
+				</LinearLayout>
 
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
+				<ImageView
+					android:layout_width="20dp"
+					android:layout_height="20dp"
+					android:src="@drawable/ic_chevron_right"
+					app:tint="@color/zerion_text_secondary"
+					android:importantForAccessibility="no" />
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/orbot_proxy_settings"
-                        android:textSize="16sp"
-                        android:textColor="?android:attr/textColorPrimary" />
+			</LinearLayout>
 
-                    <TextView
-                        android:id="@+id/orbot_proxy_value"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="127.0.0.1:9050"
-                        android:textSize="13sp"
-                        android:textColor="?android:attr/textColorSecondary" />
+		</LinearLayout>
 
-                </LinearLayout>
+		<!-- Orbot info -->
+		<LinearLayout
+			android:id="@+id/orbot_info_card"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:orientation="horizontal"
+			android:gravity="center_vertical"
+			android:layout_marginTop="14dp"
+			android:background="@drawable/bg_settings_info_card"
+			android:paddingHorizontal="14dp"
+			android:paddingVertical="12dp">
 
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_chevron_right"
-                    app:tint="?android:attr/textColorSecondary" />
+			<ImageView
+				android:layout_width="20dp"
+				android:layout_height="20dp"
+				android:layout_marginEnd="12dp"
+				android:src="@drawable/ic_info_dark"
+				app:tint="@color/zerion_primary_accent"
+				android:importantForAccessibility="no" />
 
-            </LinearLayout>
+			<TextView
+				android:layout_width="0dp"
+				android:layout_height="wrap_content"
+				android:layout_weight="1"
+				android:text="@string/orbot_info_message"
+				android:textSize="13sp"
+				android:textColor="@color/zerion_text_secondary"
+				android:lineSpacingExtra="1dp" />
 
-        </com.google.android.material.card.MaterialCardView>
+		</LinearLayout>
 
-        <!-- Orbot Info Card -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/orbot_info_card"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="0dp"
-            app:cardBackgroundColor="?attr/colorSurfaceVariant">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="16dp"
-                android:gravity="center_vertical">
-
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_info_dark"
-                    app:tint="?attr/colorPrimary"
-                    android:layout_marginEnd="16dp" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/orbot_info_message"
-                    android:textSize="13sp"
-                    android:textColor="?android:attr/textColorSecondary" />
-
-            </LinearLayout>
-
-        </com.google.android.material.card.MaterialCardView>
-
-    </LinearLayout>
+	</LinearLayout>
 
 </ScrollView>
