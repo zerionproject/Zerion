@@ -17,7 +17,7 @@
 | 4.6 Dialer prefers pending onion | ✅ | `TransportPropertyManagerImpl.getRemoteProperties` substitutes pending onion in the returned `tor.onion3` for Tor-transport queries |
 | 4.7 Completion + retire | ✅ | `evaluateCompletion` retires when all peers `MIGRATED` or 90 days elapsed |
 | 4.8 Force-expire timer | ✅ | `evaluateForceExpire()` callable; integrated into `evaluateCompletion` |
-| 4.9 Manual "Rotate Now" UI | ⏳ | Deferred to follow-up commit. Workaround: see §3 below |
+| 4.9 Manual "Rotate Now" UI | ✅ | Settings → Security → Privacy → "Rotate onion now". Wired in `SecurityFragment.showRotateOnionDialog`, forceRotate runs on `@IoExecutor`. |
 | 4.10 Gate | ✅ | `B4_ROTATION_ENABLED = true` on this branch, `false` on master |
 | 4.11 Per-contact storage keys | ✅ | All `b4.*` keys field-encrypted under SQLCipher master key via `FieldEncryption` (AES-256-GCM, byte-shape parity with iOS CryptoKit `SealedBox.combined`) |
 
@@ -53,7 +53,9 @@ If the bytecode shows `B4_ROTATION_ENABLED = true`, the gate is correctly flippe
 
 The opportunistic trigger fires once a contact has been online and `days_since_last_rotation >= ROTATION_MIN_DAYS` (5). For Phase 5 cross-platform testing, you don't want to wait 5 real days.
 
-**Option A — temporarily lower the trigger window in B4Constants.** On the `b4-rotation` branch, edit [bramble-api/.../api/plugin/B4Constants.java](../../bramble-api/src/main/java/org/briarproject/bramble/api/plugin/B4Constants.java):
+**Option A — manual rotate button (preferred).** On the device: open the app → ☰ menu → Settings → Security → Privacy → tap "Rotate onion now" → confirm. `forceRotate()` runs on the IO executor, mints a fresh onion via Tor, advertises it to all contacts, and shows a toast. Ignores the 5/7/14 day window — fires on demand. Use this for every Phase 5 scenario that needs an immediate rotation.
+
+**Option B — temporarily lower the trigger window in B4Constants.** Only needed if you want to test the *automatic* trigger path (i.e. "rotation fires on its own when conditions are met") rather than the manual path. On the `b4-rotation` branch, edit [bramble-api/.../api/plugin/B4Constants.java](../../bramble-api/src/main/java/org/briarproject/bramble/api/plugin/B4Constants.java):
 
 ```java
 int ROTATION_MIN_DAYS = 0;
@@ -61,9 +63,7 @@ int ROTATION_MAX_DAYS = 1;
 int FORCE_EXPIRE_DAYS = 1;
 ```
 
-Rebuild + install. Now any sync session will trigger a rotation (because days_since=0 already meets the 0-day floor). After Phase 5 testing succeeds, **revert these constants to 5/14/90 before merging to master**. The iOS team must agree to mirror any temporary debug values they're using too — the values don't go on the wire so they don't have to match exactly, but they do affect when each side fires.
-
-**Option B — manual rotate button (preferred for v1.5 ship).** Adding a button to Settings → Privacy → "Rotate onion now" is a follow-up commit on this branch. It calls `b4OnionRotation.forceRotate()` directly, ignoring the day window. Until that lands, Option A is the only path.
+Rebuild + install. Any `ContactConnectedEvent` will then trigger a rotation (because days_since=0 already meets the 0-day floor). After Phase 5 testing succeeds, **revert these constants to 5/14/90 before merging to master**. The iOS team must agree to mirror any temporary debug values they're using too — the values don't go on the wire so they don't have to match exactly, but they do affect when each side fires.
 
 ---
 
