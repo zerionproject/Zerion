@@ -3,7 +3,6 @@ package org.briarproject.bramble.plugin.tor;
 import org.briarproject.bramble.api.account.AccountManager;
 import org.briarproject.bramble.api.contact.Contact;
 import org.briarproject.bramble.api.contact.ContactId;
-import org.briarproject.bramble.api.contact.ContactManager;
 import org.briarproject.bramble.api.crypto.SecretKey;
 import org.briarproject.bramble.api.db.DatabaseComponent;
 import org.briarproject.bramble.api.db.DbException;
@@ -95,22 +94,24 @@ public class B4OnionRotation {
 	private final DatabaseComponent db;
 	private final SettingsManager settingsManager;
 	private final AccountManager accountManager;
-	private final ContactManager contactManager;
 	private final Clock clock;
 
 	@Nullable
 	private volatile B4TorAdapter adapter;
 
+	// ContactManager intentionally NOT injected here — it depends on
+	// KeyManager which depends on PluginConfig which depends on
+	// TorPluginFactory which depends on B4OnionRotation, forming a
+	// Dagger cycle. DatabaseComponent.getContacts(txn) gives the same
+	// list without crossing the contact-management module boundary.
 	@Inject
 	public B4OnionRotation(DatabaseComponent db,
 			SettingsManager settingsManager,
 			AccountManager accountManager,
-			ContactManager contactManager,
 			Clock clock) {
 		this.db = db;
 		this.settingsManager = settingsManager;
 		this.accountManager = accountManager;
-		this.contactManager = contactManager;
 		this.clock = clock;
 	}
 
@@ -273,7 +274,7 @@ public class B4OnionRotation {
 			update.put(B4_ALICE_ONION3_NEXT_PRIVKEY_KEY,
 					sealString(newPrivKey));
 			settingsManager.mergeSettings(txn, update, B4_SETTINGS_NAMESPACE);
-			Collection<Contact> contacts = contactManager.getContacts(txn);
+			Collection<Contact> contacts = db.getContacts(txn);
 			for (Contact c : contacts) {
 				setPeerState(txn, c.getId(), PeerRotationState.CURRENT);
 				contactIds.add(c.getId());
@@ -348,7 +349,7 @@ public class B4OnionRotation {
 					sealString(RotationPhase.IDLE.name()));
 			update.put(B4_ALICE_PROMOTING_SENTINEL_KEY, "");
 			settingsManager.mergeSettings(txn, update, B4_SETTINGS_NAMESPACE);
-			Collection<Contact> contacts = contactManager.getContacts(txn);
+			Collection<Contact> contacts = db.getContacts(txn);
 			for (Contact c : contacts) {
 				setPeerState(txn, c.getId(), PeerRotationState.CURRENT);
 			}
@@ -361,7 +362,7 @@ public class B4OnionRotation {
 		long daysSince = DAYS.convert(now - last,
 				java.util.concurrent.TimeUnit.MILLISECONDS);
 		if (daysSince >= FORCE_EXPIRE_DAYS) return true;
-		Collection<Contact> contacts = contactManager.getContacts(txn);
+		Collection<Contact> contacts = db.getContacts(txn);
 		if (contacts.isEmpty()) return false;
 		for (Contact c : contacts) {
 			if (loadPeerState(txn, c.getId()) != PeerRotationState.MIGRATED) {
@@ -372,7 +373,7 @@ public class B4OnionRotation {
 	}
 
 	private boolean hasActiveContacts(Transaction txn) throws DbException {
-		return !contactManager.getContacts(txn).isEmpty();
+		return !db.getContacts(txn).isEmpty();
 	}
 
 	// Persistence -------------------------------------------------------
