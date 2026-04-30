@@ -208,6 +208,17 @@ public class B4OnionRotation {
 						B4_CONTACT_ONION3_PENDING_KEY_PREFIX + cid.getInt()));
 	}
 
+	// Same lookup but reusing an existing transaction — for callers
+	// like TransportPropertyManager that already have one open. Avoids
+	// nesting transactions during the dial-prep path.
+	@Nullable
+	public String getPendingOnionForContact(Transaction txn, ContactId cid)
+			throws DbException {
+		if (!B4_ROTATION_ENABLED) return null;
+		return loadEncryptedString(txn,
+				B4_CONTACT_ONION3_PENDING_KEY_PREFIX + cid.getInt());
+	}
+
 	public void resumeIfPromotionInterrupted() throws DbException {
 		if (!B4_ROTATION_ENABLED) return;
 		if (adapter == null) return;

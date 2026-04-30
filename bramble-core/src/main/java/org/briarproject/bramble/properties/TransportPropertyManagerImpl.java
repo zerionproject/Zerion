@@ -296,10 +296,28 @@ class TransportPropertyManagerImpl implements TransportPropertyManager,
 			BdfDictionary meta =
 					clientHelper.getGroupMetadataAsDictionary(txn, g.getId());
 			BdfDictionary d = meta.getOptionalDictionary(GROUP_KEY_DISCOVERED);
-			if (d == null) return remote;
-			TransportProperties merged =
-					clientHelper.parseAndValidateTransportProperties(d);
-			merged.putAll(remote);
+			TransportProperties merged;
+			if (d == null) {
+				merged = remote;
+			} else {
+				merged = clientHelper.parseAndValidateTransportProperties(d);
+				merged.putAll(remote);
+			}
+			// B.4 dialer (subtask 4.6): when a pending onion has been
+			// announced for this peer, substitute it for the current
+			// tor.onion3 in the dial-target view. Old onion is still
+			// running on the peer's side (announcing phase) but the new
+			// one is the canonical address going forward. Tor-only path.
+			if (TorConstants.ID.equals(t)) {
+				String pending = b4OnionRotation
+						.getPendingOnionForContact(txn, c.getId());
+				if (pending != null && !pending.isEmpty()) {
+					merged.put(
+							org.briarproject.bramble.api.plugin
+									.TorConstants.PROP_ONION_V3,
+							pending);
+				}
+			}
 			return merged;
 		} catch (FormatException e) {
 			throw new DbException(e);

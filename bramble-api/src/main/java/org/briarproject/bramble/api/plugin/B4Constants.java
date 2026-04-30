@@ -44,7 +44,7 @@ public interface B4Constants {
 	 * cross-platform rotation interop test (Phase 5 in the plan) must
 	 * pass before either side ships a release with the gate on.
 	 */
-	boolean B4_ROTATION_ENABLED = false;
+	boolean B4_ROTATION_ENABLED = true;
 
 	/** Earliest a rotation can fire after the previous one (days). */
 	int ROTATION_MIN_DAYS = 5;

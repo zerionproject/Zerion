@@ -473,6 +473,26 @@ class TorPlugin implements DuplexPlugin, EventListener,
 		} else if (e instanceof BatteryEvent) {
 			updateConnectionStatus(networkManager.getNetworkStatus(),
 					((BatteryEvent) e).isCharging());
+		} else if (e instanceof
+				org.briarproject.bramble.api.plugin.event.ContactConnectedEvent) {
+			// B.4 trigger hook (subtask 4.2): every time a contact comes
+			// online over any transport, give the rotation orchestrator
+			// a chance to fire if we're in the 5–14 day window. Also
+			// mark the peer's per-contact state as PRE_ANNOUNCED if a
+			// rotation is currently in flight, so they get the announce
+			// on this session.
+			ioExecutor.execute(() -> {
+				try {
+					b4OnionRotation.evaluateTrigger();
+					org.briarproject.bramble.api.contact.ContactId cid =
+							((org.briarproject.bramble.api.plugin.event
+									.ContactConnectedEvent) e).getContactId();
+					b4OnionRotation.onPeerSyncSessionEstablished(cid);
+				} catch (org.briarproject.bramble.api.db.DbException dbEx) {
+					// Best-effort; trigger fires again on the next
+					// contact-connected event.
+				}
+			});
 		}
 	}
 
