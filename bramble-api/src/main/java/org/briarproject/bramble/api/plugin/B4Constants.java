@@ -103,6 +103,7 @@ public interface B4Constants {
 	/** Alice's own rotation state keys (no contact id suffix). */
 	String B4_ALICE_ONION3_CURRENT_KEY = "alice_onion3_current";
 	String B4_ALICE_ONION3_NEXT_KEY = "alice_onion3_next";
+	String B4_ALICE_ONION3_NEXT_PRIVKEY_KEY = "alice_onion3_next_privkey";
 	String B4_ALICE_LAST_ROTATION_TIME_MS_KEY = "alice_last_rotation_time_ms";
 	String B4_ALICE_ROTATION_PHASE_KEY = "alice_rotation_phase";
 }

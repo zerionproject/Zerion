@@ -79,7 +79,8 @@ import static org.briarproject.onionwrapper.CircumventionProvider.BridgeType.MEE
 import static org.briarproject.onionwrapper.CircumventionProvider.BridgeType.SNOWFLAKE;
 
 @InterfaceNotNullByDefault
-class TorPlugin implements DuplexPlugin, EventListener {
+class TorPlugin implements DuplexPlugin, EventListener,
+		B4OnionRotation.B4TorAdapter {
 	private static final Pattern ONION_V3 = Pattern.compile("[a-z2-7]{56}");
 
 	protected final Executor ioExecutor;
@@ -98,11 +99,16 @@ class TorPlugin implements DuplexPlugin, EventListener {
 	private final int maxIdleTime;
 	private final int socketTimeout;
 	private final AtomicBoolean used = new AtomicBoolean(false);
+	private final B4OnionRotation b4OnionRotation;
 
 	protected final PluginState state = new PluginState();
 
 	private volatile Settings settings = null;
 	private volatile State lastReportedState = null;
+	// Set by publishHiddenService once Tor binds; read by the
+	// B4TorAdapter callbacks when the rotation orchestrator calls back
+	// in to mint or retire a hidden service.
+	private volatile int b4LocalPort = 0;
 
 	TorPlugin(Executor ioExecutor,
 			Executor wakefulIoExecutor,
@@ -116,7 +122,8 @@ class TorPlugin implements DuplexPlugin, EventListener {
 			TorWrapper tor,
 			PluginCallback callback,
 			long maxLatency,
-			int maxIdleTime) {
+			int maxIdleTime,
+			B4OnionRotation b4OnionRotation) {
 		this.ioExecutor = ioExecutor;
 		this.wakefulIoExecutor = wakefulIoExecutor;
 		this.networkManager = networkManager;
@@ -130,6 +137,7 @@ class TorPlugin implements DuplexPlugin, EventListener {
 		this.callback = callback;
 		this.maxLatency = maxLatency;
 		this.maxIdleTime = maxIdleTime;
+		this.b4OnionRotation = b4OnionRotation;
 		if (maxIdleTime > Integer.MAX_VALUE / 2) {
 			socketTimeout = Integer.MAX_VALUE;
 		} else {
@@ -240,6 +248,43 @@ class TorPlugin implements DuplexPlugin, EventListener {
 			s.put(HS_PRIVATE_KEY_V3, hsProps.privKey);
 			callback.mergeSettings(s);
 		}
+		// Tor is up + the primary onion is published. Expose ourselves
+		// to the B.4 rotation orchestrator. From this point onward it
+		// can ask us to mint or retire a second concurrent onion. If a
+		// promotion was interrupted by an app kill, this is also where
+		// recovery runs.
+		b4LocalPort = localPort;
+		b4OnionRotation.bindAdapter(this);
+		try {
+			b4OnionRotation.resumeIfPromotionInterrupted();
+		} catch (org.briarproject.bramble.api.db.DbException e) {
+			// Recovery is best-effort; if it fails, manual rotate from
+			// the UI is the user-visible escape hatch. Logging would
+			// leak metadata, so silent.
+		}
+	}
+
+	@Override
+	public HiddenServiceProperties publishHiddenService(@Nullable String privKey)
+			throws IOException {
+		return tor.publishHiddenService(b4LocalPort, 80, privKey);
+	}
+
+	@Override
+	public void removeHiddenService(String onion) throws IOException {
+		tor.removeHiddenService(onion);
+	}
+
+	@Override
+	public void updateTorCurrentPrivKey(String newPrivKey) {
+		Settings s = new Settings();
+		s.put(HS_PRIVATE_KEY_V3, newPrivKey);
+		callback.mergeSettings(s);
+	}
+
+	@Override
+	public void mergeTorLocalProperties(TransportProperties props) {
+		callback.mergeLocalProperties(props);
 	}
 
 	private void acceptContactConnections(ServerSocket ss) {

@@ -14,8 +14,10 @@ import org.briarproject.bramble.api.db.DbException;
 import org.briarproject.bramble.api.db.Metadata;
 import org.briarproject.bramble.api.db.Transaction;
 import org.briarproject.bramble.api.lifecycle.LifecycleManager.OpenDatabaseHook;
+import org.briarproject.bramble.api.plugin.TorConstants;
 import org.briarproject.bramble.api.plugin.TransportId;
 import org.briarproject.bramble.api.properties.TransportProperties;
+import org.briarproject.bramble.plugin.tor.B4OnionRotation;
 import org.briarproject.bramble.api.properties.TransportPropertyManager;
 import org.briarproject.bramble.api.properties.event.RemoteTransportPropertiesUpdatedEvent;
 import org.briarproject.bramble.api.sync.Group;
@@ -39,6 +41,8 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
 
+import static org.briarproject.bramble.api.plugin.B4Constants.WIRE_KEY_ONION3_ANNOUNCED_AT_MS;
+import static org.briarproject.bramble.api.plugin.B4Constants.WIRE_KEY_ONION3_NEXT;
 import static org.briarproject.bramble.api.properties.TransportPropertyConstants.GROUP_KEY_DISCOVERED;
 import static org.briarproject.bramble.api.properties.TransportPropertyConstants.MSG_KEY_LOCAL;
 import static org.briarproject.bramble.api.properties.TransportPropertyConstants.MSG_KEY_TRANSPORT_ID;
@@ -59,6 +63,7 @@ class TransportPropertyManagerImpl implements TransportPropertyManager,
 	private final MetadataParser metadataParser;
 	private final ContactGroupFactory contactGroupFactory;
 	private final Clock clock;
+	private final B4OnionRotation b4OnionRotation;
 	private final Group localGroup;
 
 	@Inject
@@ -66,13 +71,15 @@ class TransportPropertyManagerImpl implements TransportPropertyManager,
 			ClientHelper clientHelper,
 			ClientVersioningManager clientVersioningManager,
 			MetadataParser metadataParser,
-			ContactGroupFactory contactGroupFactory, Clock clock) {
+			ContactGroupFactory contactGroupFactory, Clock clock,
+			B4OnionRotation b4OnionRotation) {
 		this.db = db;
 		this.clientHelper = clientHelper;
 		this.clientVersioningManager = clientVersioningManager;
 		this.metadataParser = metadataParser;
 		this.contactGroupFactory = contactGroupFactory;
 		this.clock = clock;
+		this.b4OnionRotation = b4OnionRotation;
 		localGroup = contactGroupFactory.createLocalGroup(CLIENT_ID,
 				MAJOR_VERSION);
 	}
@@ -125,6 +132,30 @@ class TransportPropertyManagerImpl implements TransportPropertyManager,
 					db.deleteMessage(txn, m.getId());
 					db.deleteMessageMetadata(txn, m.getId());
 					return ACCEPT_DO_NOT_SHARE;
+				}
+			}
+			// B.4 receiver: when a peer's tor transport property update
+			// carries tor.onion3_next + tor.onion3_announced_at_ms,
+			// route the announce to the rotation orchestrator. Tor-only
+			// transport — other transports never carry these keys.
+			if (TorConstants.ID.equals(t)) {
+				BdfList body = clientHelper.toList(m);
+				TransportProperties props = parseProperties(body);
+				String pendingOnion = props.get(WIRE_KEY_ONION3_NEXT);
+				String announcedAt =
+						props.get(WIRE_KEY_ONION3_ANNOUNCED_AT_MS);
+				if (!isNullOrEmpty(pendingOnion)
+						&& !isNullOrEmpty(announcedAt)) {
+					try {
+						long ts = Long.parseLong(announcedAt);
+						ContactId cid = clientHelper.getContactId(txn,
+								m.getGroupId());
+						b4OnionRotation.onAnnounceReceived(cid, pendingOnion,
+								ts);
+					} catch (NumberFormatException ignored) {
+						// Malformed announce timestamp; drop B.4 routing
+						// but accept the rest of the property update.
+					}
 				}
 			}
 			txn.attach(new RemoteTransportPropertiesUpdatedEvent(t));

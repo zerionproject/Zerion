@@ -20,6 +20,7 @@ import org.briarproject.bramble.api.sync.Message;
 import org.briarproject.bramble.api.sync.MessageId;
 import org.briarproject.bramble.api.system.Clock;
 import org.briarproject.bramble.api.versioning.ClientVersioningManager;
+import org.briarproject.bramble.plugin.tor.B4OnionRotation;
 import org.briarproject.bramble.test.BrambleMockTestCase;
 import org.briarproject.bramble.test.DbExpectations;
 import org.jmock.Expectations;
@@ -61,6 +62,8 @@ public class TransportPropertyManagerImplTest extends BrambleMockTestCase {
 	private final ContactGroupFactory contactGroupFactory =
 			context.mock(ContactGroupFactory.class);
 	private final Clock clock = context.mock(Clock.class);
+	private final B4OnionRotation b4OnionRotation =
+			context.mock(B4OnionRotation.class);
 
 	private final Group localGroup = getGroup(CLIENT_ID, MAJOR_VERSION);
 	private final BdfDictionary fooPropertiesDict, barPropertiesDict;
@@ -95,7 +98,7 @@ public class TransportPropertyManagerImplTest extends BrambleMockTestCase {
 		}});
 		return new TransportPropertyManagerImpl(db, clientHelper,
 				clientVersioningManager, metadataParser, contactGroupFactory,
-				clock);
+				clock, b4OnionRotation);
 	}
 
 	@Test

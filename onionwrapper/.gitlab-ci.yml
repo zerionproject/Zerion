@@ -1,0 +1,60 @@
+image: briar/ci-image-android:latest
+
+stages:
+  - test
+  - optional_tests
+
+workflow:
+  # when to create a CI pipeline
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS'
+      when: never # avoids duplicate jobs for branch and MR
+    - if: '$CI_COMMIT_BRANCH'
+    - if: '$CI_COMMIT_TAG'
+
+.base-test:
+  before_script:
+    - set -e
+    - export GRADLE_USER_HOME=$PWD/.gradle
+  cache:
+    key: "$CI_COMMIT_REF_SLUG"
+    paths:
+      - .gradle/wrapper
+      - .gradle/caches
+  after_script:
+    # these file change every time and should not be cached
+    - rm -f $GRADLE_USER_HOME/caches/modules-2/modules-2.lock
+    - rm -fr $GRADLE_USER_HOME/caches/*/plugin-resolution/
+
+test:
+  extends: .base-test
+  stage: test
+  script:
+    - ./gradlew assemble check
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: always
+    - when: always
+
+.optional_tests:
+  stage: optional_tests
+  extends: .base-test
+
+bridge test:
+  extends: .optional_tests
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+      when: on_success
+      allow_failure: false
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - "onionwrapper-core/src/main/resources/*"
+      when: always
+      allow_failure: false
+    - if: '$CI_COMMIT_TAG == null'
+      when: manual
+      allow_failure: true
+  script:
+    - OPTIONAL_TESTS=org.briarproject.onionwrapper.BridgeTest ./gradlew --info onionwrapper-java:test --tests BridgeTest
+  timeout: 6h
