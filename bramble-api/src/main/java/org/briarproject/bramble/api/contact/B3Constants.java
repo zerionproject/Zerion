@@ -75,4 +75,26 @@ public interface B3Constants {
 	 * Total signature input length: 4+22 + 1 + 4+32 + 4+1184 = 1251.
 	 */
 	int B3_SIG_INPUT_LEN = 1251;
+
+	/**
+	 * SettingsManager namespace for v5.1 strict-reject state. Three keys
+	 * per contact, identified by the integer contact id:
+	 *
+	 * <ul>
+	 *   <li>{@code slot_present.<id>} — {@code "1"} if the peer's
+	 *       CONTACT_INFO carried a verified slot[4] proof at contact-add
+	 *       time, {@code "0"} if the peer sent a 4-slot record. Absent
+	 *       means the contact predates v5.1 and strict-reject is skipped.
+	 *   <li>{@code peer_messaging_minor.<id>} — peer's most recently
+	 *       advertised {@code messaging.minorVersion} as a string.
+	 *   <li>{@code strict_reject.<id>} — {@code "1"} once a downgrade has
+	 *       been detected (peer claimed minorVersion ≥ 5 while
+	 *       slot_present is {@code "0"}). Surfaced by the v5.2 Contact
+	 *       Info UI; never auto-tears down the contact.
+	 * </ul>
+	 */
+	String B3_SETTINGS_NAMESPACE = "b3";
+	String B3_SLOT_PRESENT_KEY_PREFIX = "slot_present.";
+	String B3_PEER_MESSAGING_MINOR_KEY_PREFIX = "peer_messaging_minor.";
+	String B3_STRICT_REJECT_KEY_PREFIX = "strict_reject.";
 }

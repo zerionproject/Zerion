@@ -10,6 +10,7 @@ import org.briarproject.bramble.api.db.DatabaseComponent;
 import org.briarproject.bramble.api.db.DbException;
 import org.briarproject.bramble.api.db.Metadata;
 import org.briarproject.bramble.api.db.Transaction;
+import org.briarproject.bramble.api.settings.SettingsManager;
 import org.briarproject.bramble.api.sync.ClientId;
 import org.briarproject.bramble.api.sync.Group;
 import org.briarproject.bramble.api.sync.Group.Visibility;
@@ -50,6 +51,8 @@ public class ClientVersioningManagerImplTest extends BrambleMockTestCase {
 	private final ContactGroupFactory contactGroupFactory =
 			context.mock(ContactGroupFactory.class);
 	private final Clock clock = context.mock(Clock.class);
+	private final SettingsManager settingsManager =
+			context.mock(SettingsManager.class);
 	private final ClientVersioningHook hook =
 			context.mock(ClientVersioningHook.class);
 
@@ -67,7 +70,7 @@ public class ClientVersioningManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(localGroup));
 		}});
 		return new ClientVersioningManagerImpl(db, clientHelper,
-				contactGroupFactory, clock);
+				contactGroupFactory, clock, settingsManager);
 	}
 
 	@Test

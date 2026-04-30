@@ -27,6 +27,8 @@ import org.briarproject.bramble.api.record.RecordReader.RecordPredicate;
 import org.briarproject.bramble.api.record.RecordReaderFactory;
 import org.briarproject.bramble.api.record.RecordWriter;
 import org.briarproject.bramble.api.record.RecordWriterFactory;
+import org.briarproject.bramble.api.settings.Settings;
+import org.briarproject.bramble.api.settings.SettingsManager;
 import org.briarproject.bramble.api.system.Clock;
 import org.briarproject.bramble.api.transport.StreamReaderFactory;
 import org.briarproject.bramble.api.transport.StreamWriter;
@@ -44,7 +46,9 @@ import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
 import static org.briarproject.bramble.api.contact.B3Constants.B3_PQ_PUB_LEN;
 import static org.briarproject.bramble.api.contact.B3Constants.B3_PROOF_ENABLED;
+import static org.briarproject.bramble.api.contact.B3Constants.B3_SETTINGS_NAMESPACE;
 import static org.briarproject.bramble.api.contact.B3Constants.B3_SIG_LEN;
+import static org.briarproject.bramble.api.contact.B3Constants.B3_SLOT_PRESENT_KEY_PREFIX;
 import static org.briarproject.bramble.api.identity.AuthorConstants.MAX_SIGNATURE_LENGTH;
 import static org.briarproject.bramble.api.system.Clock.MIN_REASONABLE_TIME_MS;
 import static org.briarproject.bramble.contact.ContactExchangeConstants.PROTOCOL_VERSION;
@@ -77,6 +81,7 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 	private final ContactExchangeCrypto contactExchangeCrypto;
 	private final StreamReaderFactory streamReaderFactory;
 	private final StreamWriterFactory streamWriterFactory;
+	private final SettingsManager settingsManager;
 
 	@Inject
 	ContactExchangeManagerImpl(DatabaseComponent db, ClientHelper clientHelper,
@@ -86,7 +91,8 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			TransportPropertyManager transportPropertyManager,
 			ContactExchangeCrypto contactExchangeCrypto,
 			StreamReaderFactory streamReaderFactory,
-			StreamWriterFactory streamWriterFactory) {
+			StreamWriterFactory streamWriterFactory,
+			SettingsManager settingsManager) {
 		this.db = db;
 		this.clientHelper = clientHelper;
 		this.recordReaderFactory = recordReaderFactory;
@@ -98,6 +104,7 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 		this.contactExchangeCrypto = contactExchangeCrypto;
 		this.streamReaderFactory = streamReaderFactory;
 		this.streamWriterFactory = streamWriterFactory;
+		this.settingsManager = settingsManager;
 	}
 
 	@Override
@@ -240,7 +247,7 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 		}
 		Contact contact = addContact(p, remoteInfo.author, localAuthor,
 				masterKey, timestamp, alice, verified, remoteInfo.properties,
-				mode3Capable);
+				mode3Capable, remoteInfo.b3ProofSig != null);
 
 		return contact;
 	}
@@ -299,7 +306,7 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			Author remoteAuthor, LocalAuthor localAuthor, SecretKey masterKey,
 			long timestamp, boolean alice, boolean verified,
 			Map<TransportId, TransportProperties> remoteProperties,
-			boolean mode3Capable)
+			boolean mode3Capable, boolean b3SlotPresent)
 			throws DbException, FormatException {
 		Transaction txn = db.startTransaction(false);
 		try {
@@ -315,6 +322,14 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			}
 			transportPropertyManager.addRemoteProperties(txn, contactId,
 					remoteProperties);
+			// v5.1 strict-reject: pin "1" or "0" so a future versioning
+			// record claiming minorVersion >= 5 from this peer can be
+			// cross-checked. Absent reading at check-time means a contact
+			// from before this persistence step landed — skip silently.
+			Settings b3 = new Settings();
+			b3.put(B3_SLOT_PRESENT_KEY_PREFIX + contactId.getInt(),
+					b3SlotPresent ? "1" : "0");
+			settingsManager.mergeSettings(txn, b3, B3_SETTINGS_NAMESPACE);
 			Contact contact = contactManager.getContact(txn, contactId);
 			db.commitTransaction(txn);
 			return contact;
