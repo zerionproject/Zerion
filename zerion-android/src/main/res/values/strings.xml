@@ -369,6 +369,14 @@
 	<string name="typing_indicator">typing\u2026</string>
 	<string name="pref_typing_indicators_title">Typing indicators</string>
 	<string name="pref_typing_indicators_summary">Let contacts see when you are typing</string>
+	<string name="pref_rotate_onion_title">Rotate onion now</string>
+	<string name="pref_rotate_onion_summary">Mint a new Tor address and announce it to your contacts</string>
+	<string name="pref_rotate_onion_confirm_title">Rotate onion address?</string>
+	<string name="pref_rotate_onion_confirm_message">A new Tor address will be generated and shared with your contacts on their next connection. Your old address keeps working until every contact has migrated.</string>
+	<string name="pref_rotate_onion_confirm_action">Rotate</string>
+	<string name="pref_rotate_onion_started">Rotation started — contacts will migrate as they reconnect</string>
+	<string name="pref_rotate_onion_already_running">A rotation is already in progress</string>
+	<string name="pref_rotate_onion_failed">Rotation failed — check that Tor is running</string>
 	<string name="pref_calls_section_title">CALLS</string>
 	<string name="pref_voice_calls_title">Voice calls</string>
 	<string name="pref_voice_calls_summary">Allow voice calls to and from your contacts</string>

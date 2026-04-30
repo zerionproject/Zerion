@@ -8,6 +8,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -18,6 +19,12 @@ import com.professor.zerion.R;
 import com.professor.zerion.android.login.ChangePasswordActivity;
 import com.professor.zerion.android.panic.WipePasswordManager;
 import com.professor.zerion.android.AppModule;
+
+import org.briarproject.bramble.api.db.DbException;
+import org.briarproject.bramble.api.lifecycle.IoExecutor;
+import org.briarproject.bramble.plugin.tor.B4OnionRotation;
+
+import java.util.concurrent.Executor;
 
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
@@ -53,6 +60,13 @@ public class SecurityFragment extends Fragment {
 	@Inject
 	com.professor.zerion.android.security.SecurityManager securityManager;
 
+	@Inject
+	B4OnionRotation b4OnionRotation;
+
+	@Inject
+	@IoExecutor
+	Executor ioExecutor;
+
 	private SettingsViewModel viewModel;
 	private WipePasswordManager wipePasswordManager;
 
@@ -69,6 +83,7 @@ public class SecurityFragment extends Fragment {
 	private TextView registrationLockSummary;
 	private View wipePasswordCard;
 	private TextView wipePasswordSummary;
+	private View rotateOnionCard;
 
 	private String[] timeoutEntries;
 	private String[] timeoutValues;
@@ -111,6 +126,7 @@ public class SecurityFragment extends Fragment {
 		registrationLockSummary = view.findViewById(R.id.reg_lock_summary);
 		wipePasswordCard = view.findViewById(R.id.wipe_password_card);
 		wipePasswordSummary = view.findViewById(R.id.wipe_password_summary);
+		rotateOnionCard = view.findViewById(R.id.rotate_onion_card);
 
 
 		timeoutEntries = getResources().getStringArray(R.array.pref_key_lock_timeout_entries);
@@ -135,6 +151,10 @@ public class SecurityFragment extends Fragment {
 				uiPrefs.edit().putBoolean(PREF_TYPING_INDICATORS, isChecked).apply();
 			}
 		});
+
+		if (rotateOnionCard != null) {
+			rotateOnionCard.setOnClickListener(v -> showRotateOnionDialog());
+		}
 
 		voiceCallsSwitch = view.findViewById(R.id.voice_calls_switch);
 		if (voiceCallsSwitch != null) {
@@ -279,6 +299,46 @@ public class SecurityFragment extends Fragment {
 	public void onStart() {
 		super.onStart();
 		requireActivity().setTitle(R.string.security_settings_title);
+	}
+
+	private void showRotateOnionDialog() {
+		new MaterialAlertDialogBuilder(requireContext())
+				.setTitle(R.string.pref_rotate_onion_confirm_title)
+				.setMessage(R.string.pref_rotate_onion_confirm_message)
+				.setPositiveButton(R.string.pref_rotate_onion_confirm_action,
+						(dialog, which) -> triggerRotation())
+				.setNegativeButton(R.string.cancel, null)
+				.show();
+	}
+
+	private void triggerRotation() {
+		// Run on the IO executor — forceRotate opens a DB transaction +
+		// blocks on the rotation lock + does a Tor ADD_ONION call. Must
+		// not run on main thread.
+		Context appContext = requireContext().getApplicationContext();
+		ioExecutor.execute(() -> {
+			boolean success;
+			try {
+				b4OnionRotation.forceRotate();
+				success = true;
+			} catch (DbException e) {
+				success = false;
+			}
+			boolean ok = success;
+			if (getActivity() == null) return;
+			requireActivity().runOnUiThread(() -> {
+				if (getContext() == null) return;
+				if (ok) {
+					Toast.makeText(appContext,
+							R.string.pref_rotate_onion_started,
+							Toast.LENGTH_LONG).show();
+				} else {
+					Toast.makeText(appContext,
+							R.string.pref_rotate_onion_failed,
+							Toast.LENGTH_LONG).show();
+				}
+			});
+		});
 	}
 
 	private void updateWipePasswordSummary() {
