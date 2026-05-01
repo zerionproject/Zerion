@@ -39,9 +39,15 @@ public interface B4Constants {
 
 	int B4_PENDING_DIAL_FAILURE_THRESHOLD = 3;
 
-	String B4_LOCAL_FALLBACK_ONION_KEY = "onion3_local_fallback";
+	long B4_ANNOUNCE_RATE_LIMIT_MS = 3_600_000L;
 
-	String B4_LOCAL_CONTACT_ID_KEY = "onion3_local_contact_id";
+	String B4_LOCAL_KEY_PREFIX = "_local_";
+
+	String B4_LOCAL_FALLBACK_ONION_KEY = B4_LOCAL_KEY_PREFIX
+			+ "onion3_fallback";
+
+	String B4_LOCAL_CONTACT_ID_KEY = B4_LOCAL_KEY_PREFIX
+			+ "onion3_contact_id";
 
 	long B4_ACCEPT_CORRELATION_WINDOW_MS = 30_000L;
 

@@ -110,8 +110,25 @@ class TorPlugin implements DuplexPlugin, EventListener,
 			b4OnionToServerSocket =
 			new java.util.concurrent.ConcurrentHashMap<>();
 
-	private final java.util.Queue<Long> recentB4Accepts =
-			new java.util.concurrent.ConcurrentLinkedQueue<>();
+	private static final class B4AcceptRecord {
+		final long timestamp;
+		final java.util.Set<org.briarproject.bramble.api.contact.ContactId>
+				connectedAtAccept;
+
+		B4AcceptRecord(long timestamp,
+				java.util.Set<org.briarproject.bramble.api.contact.ContactId>
+						connectedAtAccept) {
+			this.timestamp = timestamp;
+			this.connectedAtAccept = connectedAtAccept;
+		}
+	}
+
+	private final java.util.Deque<B4AcceptRecord> recentB4Accepts =
+			new java.util.concurrent.ConcurrentLinkedDeque<>();
+
+	private final java.util.Set<org.briarproject.bramble.api.contact.ContactId>
+			currentlyConnectedContacts =
+			java.util.concurrent.ConcurrentHashMap.newKeySet();
 
 	TorPlugin(Executor ioExecutor,
 			Executor wakefulIoExecutor,
@@ -319,7 +336,9 @@ class TorPlugin implements DuplexPlugin, EventListener,
 			} catch (IOException e) {
 				return;
 			}
-			recentB4Accepts.add(System.currentTimeMillis());
+			recentB4Accepts.add(new B4AcceptRecord(
+					System.currentTimeMillis(),
+					new java.util.HashSet<>(currentlyConnectedContacts)));
 			if (org.briarproject.bramble.api.plugin.B4Constants.B4_DEBUG_LOG) {
 				java.util.logging.Logger.getLogger(TorPlugin.class.getName())
 						.info("[B4] TorPlugin: accepted inbound on new-"
@@ -380,6 +399,8 @@ class TorPlugin implements DuplexPlugin, EventListener,
 		}
 		b4OnionToServerSocket.clear();
 		recentB4Accepts.clear();
+		currentlyConnectedContacts.clear();
+		b4OnionRotation.shutdown();
 		try {
 			tor.stop();
 		} catch (IOException e) {
@@ -607,12 +628,24 @@ class TorPlugin implements DuplexPlugin, EventListener,
 				long now = System.currentTimeMillis();
 				long window = org.briarproject.bramble.api.plugin
 						.B4Constants.B4_ACCEPT_CORRELATION_WINDOW_MS;
-				Long acceptTime = recentB4Accepts.poll();
-				while (acceptTime != null && now - acceptTime > window) {
-					acceptTime = recentB4Accepts.poll();
+				boolean claimed = false;
+				java.util.Iterator<B4AcceptRecord> it =
+						recentB4Accepts.iterator();
+				while (it.hasNext()) {
+					B4AcceptRecord ar = it.next();
+					if (now - ar.timestamp > window) {
+						it.remove();
+						continue;
+					}
+					if (!ar.connectedAtAccept.contains(cid)) {
+						it.remove();
+						claimed = true;
+						break;
+					}
 				}
-				migrated = acceptTime != null;
+				migrated = claimed;
 			}
+			currentlyConnectedContacts.add(cid);
 			ioExecutor.execute(() -> {
 				try {
 					b4OnionRotation.evaluateTrigger();
@@ -623,6 +656,12 @@ class TorPlugin implements DuplexPlugin, EventListener,
 				} catch (org.briarproject.bramble.api.db.DbException dbEx) {
 				}
 			});
+		} else if (e instanceof
+				org.briarproject.bramble.api.plugin.event.ContactDisconnectedEvent) {
+			final org.briarproject.bramble.api.contact.ContactId cid =
+					((org.briarproject.bramble.api.plugin.event
+							.ContactDisconnectedEvent) e).getContactId();
+			currentlyConnectedContacts.remove(cid);
 		}
 	}
 

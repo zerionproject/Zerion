@@ -355,18 +355,16 @@ public class SecurityFragment extends Fragment {
 	private void triggerForceCompleteRotation() {
 		Context appContext = requireContext().getApplicationContext();
 		ioExecutor.execute(() -> {
-			boolean wasAnnouncing = false;
+			boolean promoted = false;
 			try {
-				wasAnnouncing = b4OnionRotation.getPhase()
-						== B4OnionRotation.RotationPhase.ANNOUNCING;
-				b4OnionRotation.forceCompleteRotation();
+				promoted = b4OnionRotation.forceCompleteRotation();
 			} catch (DbException ignored) {
 			}
-			final boolean wasAnnouncingFinal = wasAnnouncing;
+			final boolean promotedFinal = promoted;
 			if (getActivity() == null) return;
 			requireActivity().runOnUiThread(() -> {
 				if (getContext() == null) return;
-				Toast.makeText(appContext, wasAnnouncingFinal
+				Toast.makeText(appContext, promotedFinal
 								? R.string.pref_force_complete_rotation_done
 								: R.string.pref_force_complete_rotation_not_announcing,
 						Toast.LENGTH_LONG).show();

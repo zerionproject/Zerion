@@ -42,6 +42,7 @@ import static org.briarproject.bramble.api.plugin.B4Constants.B4_ALICE_ONION3_NE
 import static org.briarproject.bramble.api.plugin.B4Constants.B4_ALICE_ROTATION_PHASE_KEY;
 import static org.briarproject.bramble.api.plugin.B4Constants.B4_CONTACT_ONION3_ANNOUNCED_AT_MS_KEY_PREFIX;
 import static org.briarproject.bramble.api.plugin.B4Constants.B4_CONTACT_ONION3_PENDING_KEY_PREFIX;
+import static org.briarproject.bramble.api.plugin.B4Constants.B4_ANNOUNCE_RATE_LIMIT_MS;
 import static org.briarproject.bramble.api.plugin.B4Constants.B4_CONTACT_PENDING_DIAL_FAILURES_KEY_PREFIX;
 import static org.briarproject.bramble.api.plugin.B4Constants.B4_CONTACT_PENDING_DIAL_SUCCEEDED_KEY_PREFIX;
 import static org.briarproject.bramble.api.plugin.B4Constants.B4_PENDING_DIAL_FAILURE_THRESHOLD;
@@ -232,6 +233,30 @@ public class B4OnionRotation {
 						pendingOnion, from.getInt()));
 			}
 			return;
+		}
+		if (existingPending != null) {
+			String lastRaw = loadEncryptedString(txn,
+					B4_CONTACT_ONION3_ANNOUNCED_AT_MS_KEY_PREFIX
+							+ from.getInt());
+			if (lastRaw != null) {
+				try {
+					long lastMs = Long.parseLong(lastRaw);
+					long now = clock.currentTimeMillis();
+					if (now - lastMs < B4_ANNOUNCE_RATE_LIMIT_MS) {
+						if (B4_DEBUG_LOG) {
+							B4_LOG.warning(String.format(
+									"[B4] onAnnounceReceived: rate-limit "
+											+ "from contact=%d — %dms since "
+											+ "last announce < %dms threshold, "
+											+ "ignoring new pending=%s",
+									from.getInt(), now - lastMs,
+									B4_ANNOUNCE_RATE_LIMIT_MS, pendingOnion));
+						}
+						return;
+					}
+				} catch (NumberFormatException ignored) {
+				}
+			}
 		}
 		if (B4_DEBUG_LOG) {
 			B4_LOG.info(String.format(
@@ -501,16 +526,33 @@ public class B4OnionRotation {
 	}
 
 	/**
+	 * Stops B.4 from interacting with the now-defunct host plugin so
+	 * pending rebroadcast tasks can't fire after teardown (e.g. on
+	 * logout). Tasks already in the daemon scheduler check {@code
+	 * adapter == null} and bail. Idempotent. The scheduler itself stays
+	 * alive — it's a daemon thread, dies with the JVM, and a
+	 * subsequent {@code bindAdapter} re-arms operation cleanly.
+	 */
+	public void shutdown() {
+		adapter = null;
+	}
+
+	/**
 	 * User-triggered "Force complete rotation now" — retires the old
 	 * onion immediately, equivalent to the 90-day force-expire path
 	 * but on demand. Single-flight via {@code rotationLock}; no-op if
 	 * not currently in {@link RotationPhase#ANNOUNCING}. Peers that
 	 * haven't migrated yet will lose connectivity until they reconnect
 	 * through another channel — UI must warn before invoking.
+	 *
+	 * @return {@code true} if a promotion actually ran; {@code false}
+	 * if no rotation was in progress (no-op). Used by the UI so the
+	 * confirmation toast doesn't lie when a peer-driven promotion
+	 * happens to win the race against the user's tap.
 	 */
-	public void forceCompleteRotation() throws DbException {
-		if (!B4_ROTATION_ENABLED) return;
-		if (adapter == null) return;
+	public boolean forceCompleteRotation() throws DbException {
+		if (!B4_ROTATION_ENABLED) return false;
+		if (adapter == null) return false;
 		synchronized (rotationLock) {
 			RotationPhase phase = db.transactionWithResult(true,
 					this::loadPhase);
@@ -520,7 +562,7 @@ public class B4OnionRotation {
 							"[B4] forceCompleteRotation: ignored — phase=%s",
 							phase));
 				}
-				return;
+				return false;
 			}
 			if (B4_DEBUG_LOG) {
 				B4_LOG.info(
@@ -528,6 +570,7 @@ public class B4OnionRotation {
 								+ "promotion, retiring old onion now");
 			}
 			executePromotion();
+			return true;
 		}
 	}
 

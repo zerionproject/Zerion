@@ -41,6 +41,7 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
 
+import static org.briarproject.bramble.api.plugin.B4Constants.B4_LOCAL_KEY_PREFIX;
 import static org.briarproject.bramble.api.plugin.B4Constants.WIRE_KEY_ONION3;
 import static org.briarproject.bramble.api.plugin.B4Constants.WIRE_KEY_ONION3_ANNOUNCED_AT_MS;
 import static org.briarproject.bramble.api.plugin.B4Constants.WIRE_KEY_ONION3_NEXT;
@@ -97,6 +98,11 @@ class TransportPropertyManagerImpl implements TransportPropertyManager,
 				Group g = getContactGroup(c);
 				if (db.containsGroup(txn, g.getId())) {
 					db.setGroupVisibility(txn, c.getId(), g.getId(), SHARED);
+					try {
+						clientHelper.getContactId(txn, g.getId());
+					} catch (DbException missing) {
+						clientHelper.setContactId(txn, g.getId(), c.getId());
+					}
 				}
 			}
 		}
@@ -107,6 +113,7 @@ class TransportPropertyManagerImpl implements TransportPropertyManager,
 		Group g = getContactGroup(c);
 		db.addGroup(txn, g);
 		db.setGroupVisibility(txn, c.getId(), g.getId(), SHARED);
+		clientHelper.setContactId(txn, g.getId(), c.getId());
 		Map<TransportId, TransportProperties> local = getLocalProperties(txn);
 		for (Entry<TransportId, TransportProperties> e : local.entrySet()) {
 			storeMessage(txn, g.getId(), e.getKey(), e.getValue(), 1,
@@ -150,12 +157,11 @@ class TransportPropertyManagerImpl implements TransportPropertyManager,
 				String announcedAt =
 						props.get(WIRE_KEY_ONION3_ANNOUNCED_AT_MS);
 				String currentOnion = props.get(WIRE_KEY_ONION3);
-				ContactId cid = null;
-				for (Contact c : db.getContacts(txn)) {
-					if (getContactGroup(c).getId().equals(m.getGroupId())) {
-						cid = c.getId();
-						break;
-					}
+				ContactId cid;
+				try {
+					cid = clientHelper.getContactId(txn, m.getGroupId());
+				} catch (DbException ignored) {
+					cid = null;
 				}
 				if (cid != null && !isNullOrEmpty(pendingOnion)
 						&& !isNullOrEmpty(announcedAt)) {
@@ -358,6 +364,12 @@ class TransportPropertyManagerImpl implements TransportPropertyManager,
 	@Override
 	public void mergeLocalProperties(TransportId t, TransportProperties p)
 			throws DbException {
+		Iterator<String> stripIt = p.keySet().iterator();
+		while (stripIt.hasNext()) {
+			if (stripIt.next().startsWith(B4_LOCAL_KEY_PREFIX)) {
+				stripIt.remove();
+			}
+		}
 		try {
 			db.transaction(false, txn -> {
 				TransportProperties merged;
