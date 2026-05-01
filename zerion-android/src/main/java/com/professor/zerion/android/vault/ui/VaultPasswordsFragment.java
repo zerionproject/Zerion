@@ -140,7 +140,16 @@ public class VaultPasswordsFragment extends BaseFragment {
 
 		if (titleText != null) titleText.setText(entry.title != null ? entry.title : "");
 		if (usernameText != null) usernameText.setText(entry.username != null ? entry.username : "");
-		if (passwordText != null) passwordText.setText(entry.password != null ? entry.password : "");
+		final String passwordValue = entry.password != null ? entry.password : "";
+		final boolean[] passwordRevealed = { false };
+		if (passwordText != null) {
+			passwordText.setText(maskPassword(passwordValue));
+			passwordText.setOnClickListener(v -> {
+				passwordRevealed[0] = !passwordRevealed[0];
+				passwordText.setText(passwordRevealed[0]
+						? passwordValue : maskPassword(passwordValue));
+			});
+		}
 		if (urlText != null) urlText.setText(entry.url != null ? entry.url : "");
 		if (notesText != null) notesText.setText(entry.notes != null ? entry.notes : "");
 
@@ -296,6 +305,13 @@ public class VaultPasswordsFragment extends BaseFragment {
 		}
 
 		ClipData clip = ClipData.newPlainText(label, text);
+		if (android.os.Build.VERSION.SDK_INT
+				>= android.os.Build.VERSION_CODES.TIRAMISU) {
+			android.os.PersistableBundle extras = new android.os.PersistableBundle();
+			extras.putBoolean(
+					android.content.ClipDescription.EXTRA_IS_SENSITIVE, true);
+			clip.getDescription().setExtras(extras);
+		}
 		clipboard.setPrimaryClip(clip);
 
 		boolean clipboardClearEnabled = securePrefs.getBoolean("clipboard_clear_enabled", true);
@@ -329,6 +345,14 @@ public class VaultPasswordsFragment extends BaseFragment {
 			} catch (Exception e) {
 			}
 		}, clipboardTimeoutMs);
+	}
+
+	private static String maskPassword(String s) {
+		if (s == null) return "";
+		int n = s.length();
+		StringBuilder b = new StringBuilder(n);
+		for (int i = 0; i < n; i++) b.append('•');
+		return b.toString();
 	}
 
 	private boolean validatePasswordEntry(String title, String password) {

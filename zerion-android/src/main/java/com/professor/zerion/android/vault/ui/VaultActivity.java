@@ -57,6 +57,10 @@ public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFr
 				WindowManager.LayoutParams.FLAG_SECURE,
 				WindowManager.LayoutParams.FLAG_SECURE
 		);
+		if (android.os.Build.VERSION.SDK_INT
+				>= android.os.Build.VERSION_CODES.S) {
+			getWindow().setHideOverlayWindows(true);
+		}
 
 		setContentView(R.layout.activity_vault);
 		Intent intent = getIntent();

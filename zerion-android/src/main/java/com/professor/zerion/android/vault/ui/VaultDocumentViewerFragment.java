@@ -75,6 +75,7 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 	private PdfRenderer pdfRenderer;
 	private ParcelFileDescriptor pdfFileDescriptor;
 	private byte[] pdfBytes;
+	private java.io.File pdfTempFile;
 	private int currentPdfPage = 0;
 	private Bitmap currentPageBitmap;
 
@@ -347,24 +348,17 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 		try {
 			pdfBytes = pdfContent;
 
-			ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createPipe();
-			ParcelFileDescriptor readFd = pipe[0];
-			ParcelFileDescriptor writeFd = pipe[1];
+			java.io.File cacheDir = requireContext().getCacheDir();
+			pdfTempFile = new java.io.File(cacheDir,
+					"vault_pdf_" + System.nanoTime() + ".pdf");
+			try (java.io.FileOutputStream fos =
+					new java.io.FileOutputStream(pdfTempFile)) {
+				fos.write(pdfContent);
+				fos.getFD().sync();
+			}
 
-			new Thread(() -> {
-				try {
-					java.io.OutputStream outputStream = new ParcelFileDescriptor.AutoCloseOutputStream(writeFd);
-					outputStream.write(pdfContent);
-					outputStream.close();
-				} catch (Exception e) {
-					try {
-						writeFd.close();
-					} catch (Exception ignored) {
-					}
-				}
-			}).start();
-
-			pdfFileDescriptor = readFd;
+			pdfFileDescriptor = ParcelFileDescriptor.open(pdfTempFile,
+					ParcelFileDescriptor.MODE_READ_ONLY);
 			pdfRenderer = new PdfRenderer(pdfFileDescriptor);
 
 			pdfScrollView.setVisibility(View.VISIBLE);
@@ -587,6 +581,28 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 			} catch (Exception ignored) {
 			}
 			pdfFileDescriptor = null;
+		}
+
+		if (pdfTempFile != null) {
+			try {
+				if (pdfTempFile.exists()) {
+					long len = pdfTempFile.length();
+					try (java.io.RandomAccessFile raf =
+							new java.io.RandomAccessFile(pdfTempFile, "rw")) {
+						byte[] zero = new byte[4096];
+						long written = 0;
+						while (written < len) {
+							int n = (int) Math.min(zero.length, len - written);
+							raf.write(zero, 0, n);
+							written += n;
+						}
+						raf.getFD().sync();
+					}
+				}
+			} catch (Exception ignored) {
+			}
+			pdfTempFile.delete();
+			pdfTempFile = null;
 		}
 
 		if (textContentView != null) {

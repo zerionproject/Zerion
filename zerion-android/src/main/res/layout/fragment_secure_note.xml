@@ -33,6 +33,7 @@
                 android:imeOptions="flagNoPersonalizedLearning"
                 android:privateImeOptions="nm"
                 android:importantForAutofill="no"
+                android:saveEnabled="false"
                 android:maxLines="1" />
 
         </com.google.android.material.textfield.TextInputLayout>
@@ -149,7 +150,8 @@
                 android:scrollbars="vertical"
                 android:background="@android:color/transparent"
                 android:textColor="@android:color/black"
-                android:textSize="15sp" />
+                android:textSize="15sp"
+                android:saveEnabled="false" />
 
         </com.google.android.material.card.MaterialCardView>
 
