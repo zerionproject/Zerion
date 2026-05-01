@@ -1,0 +1,35 @@
+plugins {
+    id 'java-library'
+    id 'com.vanniktech.maven.publish' version '0.18.0'
+    id 'checkstyle'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+checkstyle {
+    configFile = new File('../config/checkstyle/checkstyle.xml')
+}
+
+dependencies {
+    api 'org.briarproject:null-safety:0.1'
+    api 'com.google.code.findbugs:jsr305:3.0.2'
+    api 'javax.inject:javax.inject:1'
+    api 'org.briarproject:jtorctl:0.5'
+
+    testImplementation "junit:junit:4.13.2"
+}
+
+// Make test classes available to other modules
+configurations {
+    testOutput.extendsFrom(testCompile)
+}
+task jarTest(type: Jar, dependsOn: testClasses) {
+    from sourceSets.test.output, sourceSets.main.output
+    classifier = 'test'
+}
+artifacts {
+    testOutput jarTest
+}

@@ -1,0 +1,58 @@
+plugins {
+    id 'com.android.library'
+    id 'com.vanniktech.maven.publish' version '0.18.0'
+    id 'checkstyle'
+}
+
+android {
+    compileSdk 33
+
+    packagingOptions {
+        doNotStrip '**/*.so'
+    }
+
+    defaultConfig {
+        minSdk 16
+        targetSdk 33
+        versionCode 1
+        versionName "0.0.1"
+        consumerProguardFiles 'proguard-rules.pro'
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunnerArguments disableAnalytics: 'true'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+checkstyle {
+    configFile = new File('../config/checkstyle/checkstyle.xml')
+}
+
+dependencies {
+    api project(':onionwrapper-core')
+    api 'org.briarproject:dont-kill-me-lib:0.2.7'
+}
+
+mavenPublishing {
+    pom {
+        withXml {
+            // Dependencies on other modules are represented in the POM with a groupId equal to
+            // the project's name and an unspecified version. Rewrite them with the correct
+            // groupId and version.
+            Node pomNode = asNode()
+            String name = pomNode.get('name').text()
+            String groupId = pomNode.groupId.text()
+            String version = pomNode.version.text()
+            pomNode.dependencies.dependency.each() { node ->
+                if (node.groupId.text() == name) {
+                    node.groupId.each() { n -> n.value = groupId }
+                    node.version.each() { n -> n.value = version }
+                }
+            }
+        }
+    }
+}

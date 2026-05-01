@@ -39,27 +39,7 @@ public interface B3Constants {
 	 * {@code B3_RECORD_PLACEMENT.md} §4. Hard-rejects on missing-from-v5,
 	 * malformed sig, or verify-fail.
 	 */
-	boolean B3_PROOF_ENABLED = false;
-
-	/**
-	 * Temporary debug-logging gate for emulator testing of the B.3
-	 * encode / decode path.
-	 *
-	 * <p>When {@code true}, the encode + decode + verify checkpoints in
-	 * {@code ContactExchangeManagerImpl} emit short {@code Logger}
-	 * lines tagged {@code [B3]} so you can follow the wire-format flow
-	 * in {@code adb logcat}. Logs only contain lengths, slot counts,
-	 * pass/fail flags, and short non-secret SHA-256 prefixes — no
-	 * private keys, no signing material, no message content.
-	 *
-	 * <p>Default {@code false}. Compile-time-final — when off, the
-	 * compiler folds the entire log block out of the bytecode, so
-	 * release builds emit nothing regardless of log-level
-	 * configuration. Flip to {@code true}, rebuild, install, observe
-	 * via {@code adb logcat | grep B3}. After testing, flip back to
-	 * {@code false} before any production rebuild.
-	 */
-	boolean B3_DEBUG_LOG = false;
+	boolean B3_PROOF_ENABLED = true;
 
 	/**
 	 * Domain separator for the B.3 signature input. UTF-8, 22 bytes,
@@ -95,4 +75,26 @@ public interface B3Constants {
 	 * Total signature input length: 4+22 + 1 + 4+32 + 4+1184 = 1251.
 	 */
 	int B3_SIG_INPUT_LEN = 1251;
+
+	/**
+	 * SettingsManager namespace for v5.1 strict-reject state. Three keys
+	 * per contact, identified by the integer contact id:
+	 *
+	 * <ul>
+	 *   <li>{@code slot_present.<id>} — {@code "1"} if the peer's
+	 *       CONTACT_INFO carried a verified slot[4] proof at contact-add
+	 *       time, {@code "0"} if the peer sent a 4-slot record. Absent
+	 *       means the contact predates v5.1 and strict-reject is skipped.
+	 *   <li>{@code peer_messaging_minor.<id>} — peer's most recently
+	 *       advertised {@code messaging.minorVersion} as a string.
+	 *   <li>{@code strict_reject.<id>} — {@code "1"} once a downgrade has
+	 *       been detected (peer claimed minorVersion ≥ 5 while
+	 *       slot_present is {@code "0"}). Surfaced by the v5.2 Contact
+	 *       Info UI; never auto-tears down the contact.
+	 * </ul>
+	 */
+	String B3_SETTINGS_NAMESPACE = "b3";
+	String B3_SLOT_PRESENT_KEY_PREFIX = "slot_present.";
+	String B3_PEER_MESSAGING_MINOR_KEY_PREFIX = "peer_messaging_minor.";
+	String B3_STRICT_REJECT_KEY_PREFIX = "strict_reject.";
 }

@@ -1,0 +1,45 @@
+name: Onion Wrapper CI
+on:
+  push:
+    branches:
+      - '*'
+  pull_request:
+    branches:
+      - master
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    - name: Setup Java
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+    - name: Run Gradle tests
+      run: ./gradlew check --info --stacktrace
+  build-windows:
+    runs-on: windows-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    - name: Setup Java
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+    - name: Run Gradle tests
+      run: ./gradlew check --info --stacktrace
+  build-macos:
+    runs-on: macos-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    - name: Setup Java
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+    - name: Run Gradle tests
+      run: ./gradlew check --info --stacktrace

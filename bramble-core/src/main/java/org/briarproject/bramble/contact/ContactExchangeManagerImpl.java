@@ -27,6 +27,8 @@ import org.briarproject.bramble.api.record.RecordReader.RecordPredicate;
 import org.briarproject.bramble.api.record.RecordReaderFactory;
 import org.briarproject.bramble.api.record.RecordWriter;
 import org.briarproject.bramble.api.record.RecordWriterFactory;
+import org.briarproject.bramble.api.settings.Settings;
+import org.briarproject.bramble.api.settings.SettingsManager;
 import org.briarproject.bramble.api.system.Clock;
 import org.briarproject.bramble.api.transport.StreamReaderFactory;
 import org.briarproject.bramble.api.transport.StreamWriter;
@@ -39,14 +41,14 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.GeneralSecurityException;
 import java.util.Map;
-import java.util.logging.Logger;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
-import static org.briarproject.bramble.api.contact.B3Constants.B3_DEBUG_LOG;
 import static org.briarproject.bramble.api.contact.B3Constants.B3_PQ_PUB_LEN;
 import static org.briarproject.bramble.api.contact.B3Constants.B3_PROOF_ENABLED;
+import static org.briarproject.bramble.api.contact.B3Constants.B3_SETTINGS_NAMESPACE;
 import static org.briarproject.bramble.api.contact.B3Constants.B3_SIG_LEN;
+import static org.briarproject.bramble.api.contact.B3Constants.B3_SLOT_PRESENT_KEY_PREFIX;
 import static org.briarproject.bramble.api.identity.AuthorConstants.MAX_SIGNATURE_LENGTH;
 import static org.briarproject.bramble.api.system.Clock.MIN_REASONABLE_TIME_MS;
 import static org.briarproject.bramble.contact.ContactExchangeConstants.PROTOCOL_VERSION;
@@ -56,13 +58,6 @@ import static org.briarproject.bramble.util.ValidationUtils.checkLength;
 @Immutable
 @NotNullByDefault
 class ContactExchangeManagerImpl implements ContactExchangeManager {
-
-	// B.3 debug-logging gate. Compile-time-final via B3_DEBUG_LOG; the
-	// JIT folds every log call out of the bytecode when the flag is
-	// off, so release builds emit nothing. Flip B3_DEBUG_LOG=true in
-	// B3Constants to activate during emulator testing, then flip back.
-	private static final Logger B3_LOG =
-			Logger.getLogger(ContactExchangeManagerImpl.class.getName());
 
 	private static final RecordPredicate ACCEPT = r ->
 			r.getProtocolVersion() == PROTOCOL_VERSION &&
@@ -86,6 +81,7 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 	private final ContactExchangeCrypto contactExchangeCrypto;
 	private final StreamReaderFactory streamReaderFactory;
 	private final StreamWriterFactory streamWriterFactory;
+	private final SettingsManager settingsManager;
 
 	@Inject
 	ContactExchangeManagerImpl(DatabaseComponent db, ClientHelper clientHelper,
@@ -95,7 +91,8 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			TransportPropertyManager transportPropertyManager,
 			ContactExchangeCrypto contactExchangeCrypto,
 			StreamReaderFactory streamReaderFactory,
-			StreamWriterFactory streamWriterFactory) {
+			StreamWriterFactory streamWriterFactory,
+			SettingsManager settingsManager) {
 		this.db = db;
 		this.clientHelper = clientHelper;
 		this.recordReaderFactory = recordReaderFactory;
@@ -107,6 +104,7 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 		this.contactExchangeCrypto = contactExchangeCrypto;
 		this.streamReaderFactory = streamReaderFactory;
 		this.streamWriterFactory = streamWriterFactory;
+		this.settingsManager = settingsManager;
 	}
 
 	@Override
@@ -178,10 +176,6 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 				.sign(localAuthor.getPrivateKey(), masterKey, alice);
 		long localTimestamp = clock.currentTimeMillis();
 
-		// B.3: when the gate is on and the orchestrator handed us all the
-		// hybrid handshake state, sign over our static ML-KEM-768 pubkey
-		// for slot[4]. Skip silently if any input is null — that's the
-		// legacy / non-hybrid path and slot[4] doesn't apply.
 		byte[] localB3ProofSig = null;
 		if (B3_PROOF_ENABLED
 				&& ourStaticHybridPub != null
@@ -192,22 +186,6 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			localB3ProofSig = B3PqProof.sign(
 					localAuthor.getPrivateKey().getEncoded(),
 					ourEphX25519, theirEphX25519, ourStaticPqPub);
-			if (B3_DEBUG_LOG) {
-				B3_LOG.info(String.format(
-						"[B3] encode: side=%s gate=ON state=present "
-								+ "sigLen=%d pqPubLen=%d",
-						alice ? "alice" : "bob",
-						localB3ProofSig.length, ourStaticPqPub.length));
-			}
-		} else if (B3_DEBUG_LOG) {
-			B3_LOG.info(String.format(
-					"[B3] encode: side=%s gate=%s state=%s "
-							+ "-> writing 4-slot legacy",
-					alice ? "alice" : "bob",
-					B3_PROOF_ENABLED ? "ON" : "OFF",
-					(ourStaticHybridPub != null && ourEphX25519 != null
-							&& theirEphX25519 != null)
-							? "present" : "missing"));
 		}
 
 		ContactInfo remoteInfo;
@@ -228,33 +206,10 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			throw new FormatException();
 		}
 
-		// B.3: if the peer sent a slot[4] proof, verify it. We require
-		// the buffered handshake state to be present — receiving a proof
-		// without buffered state would mean the orchestrator failed to
-		// thread through the hybrid handshake context, which is a bug,
-		// not graceful degradation. Hard-reject in that case.
-		//
-		// v1.5.1 strict-reject hook: when the messaging.minorVersion
-		// sync record from a peer advertising v5 arrives post-
-		// handshake, we'll need to confirm slot[4] was present here.
-		// Two ways to resolve in v1.5.1:
-		//   (a) persist a per-contact flag here;
-		//   (b) derive — any contact in our DB advertising v5 MUST
-		//       have passed verify, since this method throws on
-		//       verify-fail and the contact wouldn't have been
-		//       promoted.
-		// iOS persists for forward-compat. Either is fine; we'll pick
-		// at v1.5.1 implementation time.
 		if (remoteInfo.b3ProofSig != null) {
 			if (theirStaticHybridPub == null
 					|| ourEphX25519 == null
 					|| theirEphX25519 == null) {
-				if (B3_DEBUG_LOG) {
-					B3_LOG.info(String.format(
-							"[B3] verify: side=%s FAILED "
-									+ "(buffered handshake state missing)",
-							alice ? "alice" : "bob"));
-				}
 				throw new FormatException();
 			}
 			byte[] theirStaticPqPub = java.util.Arrays.copyOfRange(
@@ -263,17 +218,7 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			boolean ok = B3PqProof.verify(remoteSigningPubBytes,
 					theirEphX25519, ourEphX25519,
 					theirStaticPqPub, remoteInfo.b3ProofSig);
-			if (B3_DEBUG_LOG) {
-				B3_LOG.info(String.format(
-						"[B3] verify: side=%s result=%s",
-						alice ? "alice" : "bob",
-						ok ? "PASSED" : "FAILED"));
-			}
 			if (!ok) throw new FormatException();
-		} else if (B3_DEBUG_LOG) {
-			B3_LOG.info(String.format(
-					"[B3] verify: side=%s skipped (no slot[4])",
-					alice ? "alice" : "bob"));
 		}
 		long timestamp = Math.min(localTimestamp, remoteInfo.timestamp);
 		if (timestamp < MIN_REASONABLE_TIME_MS) {
@@ -281,7 +226,7 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 		}
 		Contact contact = addContact(p, remoteInfo.author, localAuthor,
 				masterKey, timestamp, alice, verified, remoteInfo.properties,
-				mode3Capable);
+				mode3Capable, remoteInfo.b3ProofSig != null);
 
 		return contact;
 	}
@@ -291,10 +236,6 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			long timestamp, @Nullable byte[] b3ProofSig) throws IOException {
 		BdfList authorList = clientHelper.toList(author);
 		BdfDictionary props = clientHelper.toDictionary(properties);
-		// 4-slot legacy layout when no proof; 5-slot v1.5 layout with
-		// proof at slot[4] when caller has computed one. Wire-byte-
-		// identical with v1.4 in the legacy case (BDF list grows by
-		// exactly one slot).
 		BdfList payload = b3ProofSig == null
 				? BdfList.of(authorList, props, signature, timestamp)
 				: BdfList.of(authorList, props, signature, timestamp,
@@ -309,11 +250,6 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 		Record record = recordReader.readRecord(ACCEPT, IGNORE);
 		if (record == null) throw new EOFException();
 		BdfList payload = clientHelper.toList(record.getPayload());
-		// Accept either 4 (legacy v1.4) or 5 (v1.5 with B.3 proof) slots.
-		// Tolerate trailing slot via BDF's end-marker form on the reader
-		// side; the new slot[4] is only consumed when the list has
-		// length 5 and the caller has buffered handshake state to
-		// verify against.
 		int size = payload.size();
 		if (size != 4 && size != 5) throw new FormatException();
 		Author author = clientHelper.parseAndValidateAuthor(payload.getList(0));
@@ -327,16 +263,7 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 		byte[] b3ProofSig = null;
 		if (size == 5) {
 			b3ProofSig = payload.getRaw(4);
-			// Tight length check — Ed25519 sigs are exactly 64 bytes.
-			// A wrong-length slot[4] is malformed and rejected, not
-			// silently coerced.
 			checkLength(b3ProofSig, B3_SIG_LEN, B3_SIG_LEN);
-		}
-		if (B3_DEBUG_LOG) {
-			B3_LOG.info(String.format("[B3] decode: slots=%d sigLen=%s",
-					size,
-					b3ProofSig == null ? "absent"
-							: String.valueOf(b3ProofSig.length)));
 		}
 		return new ContactInfo(author, properties, signature, timestamp,
 				b3ProofSig);
@@ -346,7 +273,7 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			Author remoteAuthor, LocalAuthor localAuthor, SecretKey masterKey,
 			long timestamp, boolean alice, boolean verified,
 			Map<TransportId, TransportProperties> remoteProperties,
-			boolean mode3Capable)
+			boolean mode3Capable, boolean b3SlotPresent)
 			throws DbException, FormatException {
 		Transaction txn = db.startTransaction(false);
 		try {
@@ -362,6 +289,10 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			}
 			transportPropertyManager.addRemoteProperties(txn, contactId,
 					remoteProperties);
+			Settings b3 = new Settings();
+			b3.put(B3_SLOT_PRESENT_KEY_PREFIX + contactId.getInt(),
+					b3SlotPresent ? "1" : "0");
+			settingsManager.mergeSettings(txn, b3, B3_SETTINGS_NAMESPACE);
 			Contact contact = contactManager.getContact(txn, contactId);
 			db.commitTransaction(txn);
 			return contact;

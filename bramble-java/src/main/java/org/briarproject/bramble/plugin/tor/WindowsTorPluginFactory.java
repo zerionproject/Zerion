@@ -50,11 +50,12 @@ public class WindowsTorPluginFactory extends TorPluginFactory {
 			CryptoComponent crypto,
 			@TorDirectory File torDirectory,
 			@TorSocksPort int torSocksPort,
-			@TorControlPort int torControlPort) {
+			@TorControlPort int torControlPort,
+			B4OnionRotation b4OnionRotation) {
 		super(ioExecutor, eventExecutor, wakefulIoExecutor, networkManager,
 				locationUtils, eventBus, torSocketFactory, backoffFactory,
 				circumventionProvider, batteryManager, clock, crypto,
-				torDirectory, torSocksPort, torControlPort);
+				torDirectory, torSocksPort, torControlPort, b4OnionRotation);
 	}
 
 	@Nullable
@@ -78,6 +79,6 @@ public class WindowsTorPluginFactory extends TorPluginFactory {
 		return new TorPlugin(ioExecutor, wakefulIoExecutor, networkManager,
 				locationUtils, torSocketFactory, circumventionProvider,
 				batteryManager, backoff, torRendezvousCrypto, tor, callback,
-				MAX_LATENCY, MAX_IDLE_TIME);
+				MAX_LATENCY, MAX_IDLE_TIME, b4OnionRotation);
 	}
 }

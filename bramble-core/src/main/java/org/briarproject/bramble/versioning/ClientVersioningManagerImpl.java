@@ -15,6 +15,8 @@ import org.briarproject.bramble.api.db.Transaction;
 import org.briarproject.bramble.api.lifecycle.LifecycleManager.OpenDatabaseHook;
 import org.briarproject.bramble.api.lifecycle.Service;
 import org.briarproject.bramble.api.lifecycle.ServiceException;
+import org.briarproject.bramble.api.settings.Settings;
+import org.briarproject.bramble.api.settings.SettingsManager;
 import org.briarproject.bramble.api.sync.ClientId;
 import org.briarproject.bramble.api.sync.Group;
 import org.briarproject.bramble.api.sync.Group.Visibility;
@@ -47,6 +49,10 @@ import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 import static java.util.Collections.emptyList;
+import static org.briarproject.bramble.api.contact.B3Constants.B3_PEER_MESSAGING_MINOR_KEY_PREFIX;
+import static org.briarproject.bramble.api.contact.B3Constants.B3_SETTINGS_NAMESPACE;
+import static org.briarproject.bramble.api.contact.B3Constants.B3_SLOT_PRESENT_KEY_PREFIX;
+import static org.briarproject.bramble.api.contact.B3Constants.B3_STRICT_REJECT_KEY_PREFIX;
 import static org.briarproject.bramble.api.sync.Group.Visibility.INVISIBLE;
 import static org.briarproject.bramble.api.sync.Group.Visibility.SHARED;
 import static org.briarproject.bramble.api.sync.Group.Visibility.VISIBLE;
@@ -58,10 +64,17 @@ import static org.briarproject.bramble.versioning.ClientVersioningConstants.MSG_
 class ClientVersioningManagerImpl implements ClientVersioningManager,
 		Service, OpenDatabaseHook, ContactHook, IncomingMessageHook {
 
+	// Hardcoded to avoid a layer dependency on briar-api. Mirrors
+	// MessagingManager.CLIENT_ID — peer's claimed minorVersion for this
+	// client is what v5.1 strict-reject checks against.
+	private static final String MESSAGING_CLIENT_ID =
+			"org.briarproject.briar.messaging";
+
 	private final DatabaseComponent db;
 	private final ClientHelper clientHelper;
 	private final ContactGroupFactory contactGroupFactory;
 	private final Clock clock;
+	private final SettingsManager settingsManager;
 	private final Group localGroup;
 
 	private final List<ClientVersion> clients = new CopyOnWriteArrayList<>();
@@ -70,11 +83,13 @@ class ClientVersioningManagerImpl implements ClientVersioningManager,
 
 	@Inject
 	ClientVersioningManagerImpl(DatabaseComponent db, ClientHelper clientHelper,
-			ContactGroupFactory contactGroupFactory, Clock clock) {
+			ContactGroupFactory contactGroupFactory, Clock clock,
+			SettingsManager settingsManager) {
 		this.db = db;
 		this.clientHelper = clientHelper;
 		this.contactGroupFactory = contactGroupFactory;
 		this.clock = clock;
+		this.settingsManager = settingsManager;
 		localGroup = contactGroupFactory.createLocalGroup(CLIENT_ID,
 				MAJOR_VERSION);
 	}
@@ -219,10 +234,44 @@ class ClientVersioningManagerImpl implements ClientVersioningManager,
 							new ClientVersionUpdatedEvent(c, cs.clientVersion));
 				}
 			}
+			checkB3StrictReject(txn, c, newRemoteStates);
 		} catch (FormatException e) {
 			throw new InvalidMessageException(e);
 		}
 		return ACCEPT_DO_NOT_SHARE;
+	}
+
+	// v5.1 strict-reject (downgrade defence). When a peer's versioning
+	// record advertises messaging.minorVersion >= 5 but we recorded
+	// slot_present="0" for them at contact-add (i.e. their CONTACT_INFO
+	// had no slot[4]), persist strict_reject="1". Surfaced by the v5.2
+	// Contact Info UI; no log line, no auto-teardown. Three-state semantics:
+	// "1" = verified, "0" = absent-and-recorded, key-missing = pre-feature
+	// contact, skip silently to avoid false-positives on upgrade.
+	private void checkB3StrictReject(Transaction txn, ContactId c,
+			List<ClientState> remoteStates) throws DbException {
+		int peerMinor = -1;
+		for (ClientState cs : remoteStates) {
+			if (MESSAGING_CLIENT_ID.equals(
+					cs.clientVersion.getClientId().getString())) {
+				peerMinor = cs.clientVersion.getMinorVersion();
+				break;
+			}
+		}
+		if (peerMinor < 0) return;
+		Settings existing =
+				settingsManager.getSettings(txn, B3_SETTINGS_NAMESPACE);
+		Settings update = new Settings();
+		update.put(B3_PEER_MESSAGING_MINOR_KEY_PREFIX + c.getInt(),
+				String.valueOf(peerMinor));
+		if (peerMinor >= 5) {
+			String slot = existing.get(
+					B3_SLOT_PRESENT_KEY_PREFIX + c.getInt());
+			if ("0".equals(slot)) {
+				update.put(B3_STRICT_REJECT_KEY_PREFIX + c.getInt(), "1");
+			}
+		}
+		settingsManager.mergeSettings(txn, update, B3_SETTINGS_NAMESPACE);
 	}
 
 	private void storeClientVersions(Transaction txn,
