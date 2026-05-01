@@ -176,6 +176,11 @@ class SqlCipherDatabase extends JdbcDatabase {
 					try { c.close(); } catch (SQLException ignored) {}
 				}
 				throw new DbException(e);
+			} finally {
+				if (key != null) {
+					key.clear();
+					key = null;
+				}
 			}
 		}
 	}

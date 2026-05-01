@@ -112,6 +112,14 @@ public interface CryptoComponent {
 	
 	boolean isEncryptedWithStrengthenedKey(byte[] ciphertext);
 
+	/**
+	 * Returns true if the ciphertext was produced with a superseded
+	 * password-based KDF (currently: Scrypt). Used to opportunistically
+	 * upgrade stored database-key blobs to the current default
+	 * (Argon2id) on the next successful sign-in.
+	 */
+	boolean isEncryptedWithLegacyKdf(byte[] ciphertext);
+
 	
 	byte[] encryptToKey(PublicKey publicKey, byte[] plaintext);
 

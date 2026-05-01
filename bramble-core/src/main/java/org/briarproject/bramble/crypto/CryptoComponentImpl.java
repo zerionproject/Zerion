@@ -60,11 +60,14 @@ class CryptoComponentImpl implements CryptoComponent {
 	private static final int PBKDF_SALT_BYTES = 32;
 	private static final byte PBKDF_FORMAT_SCRYPT = 0;
 	private static final byte PBKDF_FORMAT_SCRYPT_STRENGTHENED = 1;
+	private static final byte PBKDF_FORMAT_ARGON2ID = 2;
+	private static final byte PBKDF_FORMAT_ARGON2ID_STRENGTHENED = 3;
 	private static final byte ONION_HS_PROTOCOL_VERSION = 3;
 	private static final int ONION_CHECKSUM_BYTES = 2;
 
 	private final SecureRandom secureRandom;
-	private final PasswordBasedKdf passwordBasedKdf;
+	private final PasswordBasedKdf scryptKdf;
+	private final PasswordBasedKdf argon2idKdf;
 	private final Curve25519 curve25519;
 	private final KeyPairGenerator signatureKeyPairGenerator;
 	private final KeyParser agreementKeyParser, signatureKeyParser;
@@ -76,13 +79,14 @@ class CryptoComponentImpl implements CryptoComponent {
 
 	@Inject
 	CryptoComponentImpl(SecureRandomProvider secureRandomProvider,
-			PasswordBasedKdf passwordBasedKdf) {
+			ScryptKdf scryptKdf, Argon2idKdf argon2idKdf) {
 		Provider provider = secureRandomProvider.getProvider();
 		if (provider != null) {
 			installSecureRandomProvider(provider);
 		}
 		secureRandom = new SecureRandom();
-		this.passwordBasedKdf = passwordBasedKdf;
+		this.scryptKdf = scryptKdf;
+		this.argon2idKdf = argon2idKdf;
 		curve25519 = Curve25519.getInstance("java");
 		signatureKeyPairGenerator = new KeyPairGenerator();
 		signatureKeyPairGenerator.initialize(SIGNATURE_KEY_PAIR_BITS,
@@ -347,8 +351,8 @@ class CryptoComponentImpl implements CryptoComponent {
 		int macBytes = cipher.getMacBytes();
 		byte[] salt = new byte[PBKDF_SALT_BYTES];
 		secureRandom.nextBytes(salt);
-		int cost = passwordBasedKdf.chooseCostParameter();
-		SecretKey key = passwordBasedKdf.deriveKey(password, salt, cost);
+		int cost = argon2idKdf.chooseCostParameter();
+		SecretKey key = argon2idKdf.deriveKey(password, salt, cost);
 		if (keyStrengthener != null) key = keyStrengthener.strengthenKey(key);
 		byte[] iv = new byte[STORAGE_IV_BYTES];
 		secureRandom.nextBytes(iv);
@@ -357,7 +361,7 @@ class CryptoComponentImpl implements CryptoComponent {
 		byte[] output = new byte[outputLen];
 		int outputOff = 0;
 		byte formatVersion = keyStrengthener == null
-				? PBKDF_FORMAT_SCRYPT : PBKDF_FORMAT_SCRYPT_STRENGTHENED;
+				? PBKDF_FORMAT_ARGON2ID : PBKDF_FORMAT_ARGON2ID_STRENGTHENED;
 		output[outputOff] = formatVersion;
 		outputOff++;
 		arraycopy(salt, 0, output, outputOff, salt.length);
@@ -389,7 +393,9 @@ class CryptoComponentImpl implements CryptoComponent {
 		byte formatVersion = input[inputOff];
 		inputOff++;
 		if (formatVersion != PBKDF_FORMAT_SCRYPT &&
-				formatVersion != PBKDF_FORMAT_SCRYPT_STRENGTHENED) {
+				formatVersion != PBKDF_FORMAT_SCRYPT_STRENGTHENED &&
+				formatVersion != PBKDF_FORMAT_ARGON2ID &&
+				formatVersion != PBKDF_FORMAT_ARGON2ID_STRENGTHENED) {
 			throw new DecryptionException(INVALID_CIPHERTEXT);
 		}
 		byte[] salt = new byte[PBKDF_SALT_BYTES];
@@ -403,8 +409,13 @@ class CryptoComponentImpl implements CryptoComponent {
 		byte[] iv = new byte[STORAGE_IV_BYTES];
 		arraycopy(input, inputOff, iv, 0, iv.length);
 		inputOff += iv.length;
-		SecretKey key = passwordBasedKdf.deriveKey(password, salt, (int) cost);
-		if (formatVersion == PBKDF_FORMAT_SCRYPT_STRENGTHENED) {
+		boolean isArgon2id =
+				formatVersion == PBKDF_FORMAT_ARGON2ID ||
+				formatVersion == PBKDF_FORMAT_ARGON2ID_STRENGTHENED;
+		PasswordBasedKdf kdf = isArgon2id ? argon2idKdf : scryptKdf;
+		SecretKey key = kdf.deriveKey(password, salt, (int) cost);
+		if (formatVersion == PBKDF_FORMAT_SCRYPT_STRENGTHENED ||
+				formatVersion == PBKDF_FORMAT_ARGON2ID_STRENGTHENED) {
 			if (keyStrengthener == null || !keyStrengthener.isInitialised()) {
 				throw new DecryptionException(KEY_STRENGTHENER_ERROR);
 			}
@@ -427,8 +438,18 @@ class CryptoComponentImpl implements CryptoComponent {
 
 	@Override
 	public boolean isEncryptedWithStrengthenedKey(byte[] ciphertext) {
-		return ciphertext.length > 0 &&
-				ciphertext[0] == PBKDF_FORMAT_SCRYPT_STRENGTHENED;
+		if (ciphertext.length == 0) return false;
+		byte fv = ciphertext[0];
+		return fv == PBKDF_FORMAT_SCRYPT_STRENGTHENED
+				|| fv == PBKDF_FORMAT_ARGON2ID_STRENGTHENED;
+	}
+
+	@Override
+	public boolean isEncryptedWithLegacyKdf(byte[] ciphertext) {
+		if (ciphertext.length == 0) return false;
+		byte fv = ciphertext[0];
+		return fv == PBKDF_FORMAT_SCRYPT
+				|| fv == PBKDF_FORMAT_SCRYPT_STRENGTHENED;
 	}
 
 	@Override

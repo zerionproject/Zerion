@@ -151,7 +151,7 @@ public class VaultItem {
 
 		ItemType type = ItemType.fromValue(buffer.getInt());
 
-		int nameLength = buffer.getInt();
+		int nameLength = readBoundedLength(buffer, 4096);
 		byte[] nameBytes = new byte[nameLength];
 		buffer.get(nameBytes);
 		String name = new String(nameBytes, StandardCharsets.UTF_8);
@@ -161,20 +161,20 @@ public class VaultItem {
 
 		long size = buffer.getLong();
 
-		int thumbKeyLength = buffer.getInt();
+		int thumbKeyLength = readBoundedLength(buffer, 4096);
 		byte[] thumbnailKey = new byte[thumbKeyLength];
 		buffer.get(thumbnailKey);
 
 		boolean hasExtraPassword = buffer.get() == 1;
-		int saltLength = buffer.getInt();
+		int saltLength = readBoundedLength(buffer, 256);
 		byte[] extraPasswordSalt = new byte[saltLength];
 		buffer.get(extraPasswordSalt);
 
-		int keyLength = buffer.getInt();
+		int keyLength = readBoundedLength(buffer, 1024);
 		byte[] encryptedKey = new byte[keyLength];
 		buffer.get(encryptedKey);
 
-		int nonceLength = buffer.getInt();
+		int nonceLength = readBoundedLength(buffer, 64);
 		byte[] nonce = new byte[nonceLength];
 		buffer.get(nonce);
 
@@ -185,6 +185,15 @@ public class VaultItem {
 				thumbnailKey, hasExtraPassword, extraPasswordSalt,
 				encryptedKey, nonce, version
 		);
+	}
+
+	private static int readBoundedLength(ByteBuffer buffer, int max) {
+		int len = buffer.getInt();
+		if (len < 0 || len > max || len > buffer.remaining()) {
+			throw new IllegalArgumentException(
+					"Vault metadata length out of bounds: " + len);
+		}
+		return len;
 	}
 
 	public VaultItem updateModified() {

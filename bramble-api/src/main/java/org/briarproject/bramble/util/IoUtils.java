@@ -8,8 +8,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.RandomAccessFile;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.security.SecureRandom;
 
 import javax.annotation.Nullable;
 
@@ -29,6 +31,28 @@ public class IoUtils {
 	}
 
 	public static void delete(File f) {
+		if (f.isFile()) {
+			try {
+				long len = f.length();
+				if (len > 0) {
+					byte[] buf = new byte[4096];
+					SecureRandom random = new SecureRandom();
+					try (RandomAccessFile raf =
+							new RandomAccessFile(f, "rw")) {
+						long written = 0;
+						while (written < len) {
+							random.nextBytes(buf);
+							int n = (int) Math.min(buf.length, len - written);
+							raf.write(buf, 0, n);
+							written += n;
+						}
+						raf.getFD().sync();
+					}
+				}
+			} catch (IOException e) {
+			} catch (SecurityException e) {
+			}
+		}
 		f.delete();
 	}
 

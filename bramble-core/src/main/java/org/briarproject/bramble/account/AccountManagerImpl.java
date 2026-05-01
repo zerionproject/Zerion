@@ -156,7 +156,10 @@ class AccountManagerImpl implements AccountManager {
 		synchronized (stateChangeLock) {
 			IoUtils.deleteFileOrDir(databaseConfig.getDatabaseKeyDirectory());
 			IoUtils.deleteFileOrDir(databaseConfig.getDatabaseDirectory());
-			databaseKey = null;
+			if (databaseKey != null) {
+				databaseKey.clear();
+				databaseKey = null;
+			}
 		}
 	}
 
@@ -253,8 +256,10 @@ class AccountManagerImpl implements AccountManager {
 		byte[] plaintext = crypto.decryptWithPassword(ciphertext, password,
 				keyStrengthener);
 		SecretKey key = new SecretKey(plaintext);
-		if (keyStrengthener != null &&
-				!crypto.isEncryptedWithStrengthenedKey(ciphertext)) {
+		boolean needsStrengthenerUpgrade = keyStrengthener != null &&
+				!crypto.isEncryptedWithStrengthenedKey(ciphertext);
+		boolean needsKdfUpgrade = crypto.isEncryptedWithLegacyKdf(ciphertext);
+		if (needsStrengthenerUpgrade || needsKdfUpgrade) {
 			encryptAndStoreDatabaseKey(key, password);
 		}
 		return key;
@@ -266,7 +271,7 @@ class AccountManagerImpl implements AccountManager {
 		synchronized (stateChangeLock) {
 			SecretKey key = loadAndDecryptDatabaseKey(oldPassword);
 			encryptAndStoreDatabaseKey(key, newPassword);
-			databaseKey = null;
+			if (databaseKey != null) databaseKey.clear();
 			databaseKey = key;
 		}
 		java.util.Arrays.fill(oldPassword, '\0');

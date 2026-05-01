@@ -2,10 +2,8 @@ package com.professor.zerion.android.vault.model;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
-import java.io.Serializable;
-
 @NotNullByDefault
-public class PasswordEntry implements Serializable {
+public class PasswordEntry {
 
 	public final String title;
 	public final String username;
