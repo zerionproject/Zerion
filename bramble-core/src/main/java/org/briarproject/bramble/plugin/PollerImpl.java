@@ -96,7 +96,11 @@ class PollerImpl implements Poller, EventListener {
 			}
 		} else if (e instanceof ConnectionOpenedEvent) {
 			ConnectionOpenedEvent c = (ConnectionOpenedEvent) e;
-			reschedule(c.getTransportId());
+			if (c.isIncoming()) {
+				pollNow(c.getTransportId());
+			} else {
+				reschedule(c.getTransportId());
+			}
 		} else if (e instanceof TransportActiveEvent) {
 			TransportActiveEvent t = (TransportActiveEvent) e;
 			pollNow(t.getTransportId());
