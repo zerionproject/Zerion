@@ -41,8 +41,10 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
 
+import static org.briarproject.bramble.api.plugin.B4Constants.WIRE_KEY_ONION3;
 import static org.briarproject.bramble.api.plugin.B4Constants.WIRE_KEY_ONION3_ANNOUNCED_AT_MS;
 import static org.briarproject.bramble.api.plugin.B4Constants.WIRE_KEY_ONION3_NEXT;
+import static org.briarproject.bramble.api.sync.Group.Visibility.SHARED;
 import static org.briarproject.bramble.api.properties.TransportPropertyConstants.GROUP_KEY_DISCOVERED;
 import static org.briarproject.bramble.api.properties.TransportPropertyConstants.MSG_KEY_LOCAL;
 import static org.briarproject.bramble.api.properties.TransportPropertyConstants.MSG_KEY_TRANSPORT_ID;
@@ -86,18 +88,25 @@ class TransportPropertyManagerImpl implements TransportPropertyManager,
 
 	@Override
 	public void onDatabaseOpened(Transaction txn) throws DbException {
-		if (db.containsGroup(txn, localGroup.getId())) return;
-		db.addGroup(txn, localGroup);
-		for (Contact c : db.getContacts(txn)) addingContact(txn, c);
+		boolean firstRun = !db.containsGroup(txn, localGroup.getId());
+		if (firstRun) {
+			db.addGroup(txn, localGroup);
+			for (Contact c : db.getContacts(txn)) addingContact(txn, c);
+		} else {
+			for (Contact c : db.getContacts(txn)) {
+				Group g = getContactGroup(c);
+				if (db.containsGroup(txn, g.getId())) {
+					db.setGroupVisibility(txn, c.getId(), g.getId(), SHARED);
+				}
+			}
+		}
 	}
 
 	@Override
 	public void addingContact(Transaction txn, Contact c) throws DbException {
 		Group g = getContactGroup(c);
 		db.addGroup(txn, g);
-		Visibility client = clientVersioningManager.getClientVisibility(txn,
-				c.getId(), CLIENT_ID, MAJOR_VERSION);
-		db.setGroupVisibility(txn, c.getId(), g.getId(), client);
+		db.setGroupVisibility(txn, c.getId(), g.getId(), SHARED);
 		Map<TransportId, TransportProperties> local = getLocalProperties(txn);
 		for (Entry<TransportId, TransportProperties> e : local.entrySet()) {
 			storeMessage(txn, g.getId(), e.getKey(), e.getValue(), 1,
@@ -114,7 +123,7 @@ class TransportPropertyManagerImpl implements TransportPropertyManager,
 	public void onClientVisibilityChanging(Transaction txn, Contact c,
 			Visibility v) throws DbException {
 		Group g = getContactGroup(c);
-		db.setGroupVisibility(txn, c.getId(), g.getId(), v);
+		db.setGroupVisibility(txn, c.getId(), g.getId(), SHARED);
 	}
 
 	@Override
@@ -134,28 +143,32 @@ class TransportPropertyManagerImpl implements TransportPropertyManager,
 					return ACCEPT_DO_NOT_SHARE;
 				}
 			}
-			// B.4 receiver: when a peer's tor transport property update
-			// carries tor.onion3_next + tor.onion3_announced_at_ms,
-			// route the announce to the rotation orchestrator. Tor-only
-			// transport — other transports never carry these keys.
 			if (TorConstants.ID.equals(t)) {
-				BdfList body = clientHelper.toList(m);
+				BdfList body = clientHelper.toList(m, false);
 				TransportProperties props = parseProperties(body);
 				String pendingOnion = props.get(WIRE_KEY_ONION3_NEXT);
 				String announcedAt =
 						props.get(WIRE_KEY_ONION3_ANNOUNCED_AT_MS);
-				if (!isNullOrEmpty(pendingOnion)
+				String currentOnion = props.get(WIRE_KEY_ONION3);
+				ContactId cid = null;
+				for (Contact c : db.getContacts(txn)) {
+					if (getContactGroup(c).getId().equals(m.getGroupId())) {
+						cid = c.getId();
+						break;
+					}
+				}
+				if (cid != null && !isNullOrEmpty(pendingOnion)
 						&& !isNullOrEmpty(announcedAt)) {
 					try {
 						long ts = Long.parseLong(announcedAt);
-						ContactId cid = clientHelper.getContactId(txn,
-								m.getGroupId());
-						b4OnionRotation.onAnnounceReceived(cid, pendingOnion,
-								ts);
+						b4OnionRotation.onAnnounceReceived(txn, cid,
+								pendingOnion, ts);
 					} catch (NumberFormatException ignored) {
-						// Malformed announce timestamp; drop B.4 routing
-						// but accept the rest of the property update.
 					}
+				}
+				if (cid != null && !isNullOrEmpty(currentOnion)) {
+					b4OnionRotation.onPeerRotationComplete(txn, cid,
+							currentOnion);
 				}
 			}
 			txn.attach(new RemoteTransportPropertiesUpdatedEvent(t));
@@ -303,19 +316,30 @@ class TransportPropertyManagerImpl implements TransportPropertyManager,
 				merged = clientHelper.parseAndValidateTransportProperties(d);
 				merged.putAll(remote);
 			}
-			// B.4 dialer (subtask 4.6): when a pending onion has been
-			// announced for this peer, substitute it for the current
-			// tor.onion3 in the dial-target view. Old onion is still
-			// running on the peer's side (announcing phase) but the new
-			// one is the canonical address going forward. Tor-only path.
 			if (TorConstants.ID.equals(t)) {
 				String pending = b4OnionRotation
 						.getPendingOnionForContact(txn, c.getId());
 				if (pending != null && !pending.isEmpty()) {
+					String previousOnion = merged.get(
+							org.briarproject.bramble.api.plugin
+									.TorConstants.PROP_ONION_V3);
 					merged.put(
 							org.briarproject.bramble.api.plugin
 									.TorConstants.PROP_ONION_V3,
 							pending);
+					if (previousOnion != null
+							&& !previousOnion.isEmpty()
+							&& !previousOnion.equals(pending)) {
+						merged.put(
+								org.briarproject.bramble.api.plugin
+										.B4Constants
+										.B4_LOCAL_FALLBACK_ONION_KEY,
+								previousOnion);
+					}
+					merged.put(
+							org.briarproject.bramble.api.plugin
+									.B4Constants.B4_LOCAL_CONTACT_ID_KEY,
+							String.valueOf(c.getId().getInt()));
 				}
 			}
 			return merged;

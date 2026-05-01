@@ -31,6 +31,7 @@ import static org.briarproject.bramble.api.lifecycle.LifecycleManager.LifecycleS
 @ThreadSafe
 @NotNullByDefault
 class IncomingSession implements SyncSession, EventListener {
+
 	private final DatabaseComponent db;
 	private final Executor dbExecutor;
 	private final EventBus eventBus;

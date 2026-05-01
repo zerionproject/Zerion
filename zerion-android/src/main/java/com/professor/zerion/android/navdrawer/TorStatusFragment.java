@@ -18,6 +18,7 @@ import com.professor.zerion.android.fragment.BaseFragment;
 
 import org.briarproject.bramble.api.plugin.TorConstants;
 import org.briarproject.bramble.api.plugin.TransportId;
+import org.briarproject.bramble.plugin.tor.B4OnionRotation;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
@@ -49,6 +50,8 @@ public class TorStatusFragment extends BaseFragment {
 	private LinearLayout onionCard;
 	private TextView onionAddressValue;
 	private MaterialButton onionCopyButton;
+	private LinearLayout rotationCard;
+	private TextView rotationPendingValue;
 
 	@Override
 	public void onAttach(@NonNull Context context) {
@@ -69,6 +72,8 @@ public class TorStatusFragment extends BaseFragment {
 		onionCard = v.findViewById(R.id.onionCard);
 		onionAddressValue = v.findViewById(R.id.onionAddressValue);
 		onionCopyButton = v.findViewById(R.id.onionCopyButton);
+		rotationCard = v.findViewById(R.id.rotationCard);
+		rotationPendingValue = v.findViewById(R.id.rotationPendingValue);
 
 		viewModel = new ViewModelProvider(requireActivity(), viewModelFactory)
 				.get(PluginViewModel.class);
@@ -102,6 +107,30 @@ public class TorStatusFragment extends BaseFragment {
 				onionCard.setVisibility(View.GONE);
 			}
 		});
+
+		viewModel.getRotationPhase().observe(getViewLifecycleOwner(), phase ->
+				updateRotationCard(phase,
+						viewModel.getRotationPendingOnion().getValue()));
+
+		viewModel.getRotationPendingOnion().observe(getViewLifecycleOwner(),
+				pending -> updateRotationCard(
+						viewModel.getRotationPhase().getValue(), pending));
+
+		// Refresh once on entry so the card reflects current state even
+		// if no event has fired since the last navigation.
+		viewModel.refreshTorState();
+	}
+
+	private void updateRotationCard(
+			@Nullable B4OnionRotation.RotationPhase phase,
+			@Nullable String pendingOnion) {
+		if (phase == B4OnionRotation.RotationPhase.ANNOUNCING
+				&& pendingOnion != null && !pendingOnion.isEmpty()) {
+			rotationPendingValue.setText(pendingOnion + ".onion");
+			rotationCard.setVisibility(View.VISIBLE);
+		} else {
+			rotationCard.setVisibility(View.GONE);
+		}
 	}
 
 	private void copyOnionToClipboard() {

@@ -13,6 +13,7 @@ public interface AndroidNotificationManager {
     String CONTACT_CHANNEL_ID = "CONTACT_CHANNEL_ID";
     String GROUP_CHANNEL_ID = "GROUP_CHANNEL_ID";
     String REMINDER_CHANNEL_ID = "REMINDER_CHANNEL_ID";
+    String ROTATION_CHANNEL_ID = "ROTATION_CHANNEL_ID";
 
     String PREF_NOTIFY_GROUP = "pref_key_notify_group";
     String PREF_NOTIFY_PRIVATE = "pref_key_notify_private";

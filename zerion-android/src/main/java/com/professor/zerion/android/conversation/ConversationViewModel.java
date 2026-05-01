@@ -150,6 +150,12 @@ public class ConversationViewModel extends DbViewModel
 			new MutableLiveEvent<>();
 	private final MutableLiveData<Boolean> contactConnected =
 			new MutableLiveData<>();
+
+	private static final long OFFLINE_DEBOUNCE_MS = 10_000L;
+	private final android.os.Handler offlineDebounceHandler =
+			new android.os.Handler(android.os.Looper.getMainLooper());
+	@Nullable
+	private Runnable pendingOfflineCallback;
 	private final MutableLiveEvent<ConversationMessageHeader> newMessageReceived =
 			new MutableLiveEvent<>();
 	private final MutableLiveEvent<ClientId> clientVersionUpdated =
@@ -216,7 +222,26 @@ public class ConversationViewModel extends DbViewModel
 		super.onCleared();
 		attachmentCreator.cancel();
 		eventBus.removeListener(this);
+		offlineDebounceHandler.removeCallbacksAndMessages(null);
+		pendingOfflineCallback = null;
 		zeroizeVoiceRecordingState();
+	}
+
+	private void cancelPendingOffline() {
+		if (pendingOfflineCallback != null) {
+			offlineDebounceHandler.removeCallbacks(pendingOfflineCallback);
+			pendingOfflineCallback = null;
+		}
+	}
+
+	private void scheduleOffline() {
+		cancelPendingOffline();
+		Runnable r = () -> {
+			pendingOfflineCallback = null;
+			contactConnected.postValue(false);
+		};
+		pendingOfflineCallback = r;
+		offlineDebounceHandler.postDelayed(r, OFFLINE_DEBOUNCE_MS);
 	}
 
 	@Override
@@ -263,12 +288,13 @@ public class ConversationViewModel extends DbViewModel
 		} else if (e instanceof ContactConnectedEvent) {
 			ContactConnectedEvent c = (ContactConnectedEvent) e;
 			if (c.getContactId().equals(contactId)) {
+				cancelPendingOffline();
 				contactConnected.postValue(true);
 			}
 		} else if (e instanceof ContactDisconnectedEvent) {
 			ContactDisconnectedEvent c = (ContactDisconnectedEvent) e;
 			if (c.getContactId().equals(contactId)) {
-				contactConnected.postValue(false);
+				scheduleOffline();
 			}
 		} else if (e instanceof ClientVersionUpdatedEvent) {
 			ClientVersionUpdatedEvent c = (ClientVersionUpdatedEvent) e;
@@ -795,7 +821,6 @@ public class ConversationViewModel extends DbViewModel
 					messageTextLoaded.postEvent(new Pair<>(messageId, text));
 				}
 			} catch (org.briarproject.bramble.api.db.NoSuchMessageException e) {
-				// Message was deleted (auto-delete timer, cleanup) — ignore
 			} catch (DbException e) {
 				handleException(e);
 			}

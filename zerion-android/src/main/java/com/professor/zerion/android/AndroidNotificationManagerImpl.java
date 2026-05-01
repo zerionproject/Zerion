@@ -13,6 +13,8 @@ import android.net.Uri;
 import org.briarproject.bramble.api.Multiset;
 import org.briarproject.bramble.api.contact.ContactId;
 import org.briarproject.bramble.api.contact.event.ContactAddedEvent;
+import org.briarproject.bramble.api.plugin.event.B4OwnRotationCompletedEvent;
+import org.briarproject.bramble.api.plugin.event.B4PeerOnionAnnouncedEvent;
 import org.briarproject.bramble.api.crypto.SecretKey;
 import com.professor.zerion.android.conversation.voice.VoiceCallKeyHolder;
 import org.briarproject.bramble.api.db.DbException;
@@ -173,6 +175,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 						R.string.contact_list_button);
 				createNotificationChannel(GROUP_CHANNEL_ID,
 						R.string.groups_button);
+				createRotationNotificationChannel();
 				return null;
 			};
 			try {
@@ -194,6 +197,35 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		nc.enableLights(true);
 		nc.setLightColor(getColor(appContext, R.color.zerion_lime_400));
 		notificationManager.createNotificationChannel(nc);
+	}
+
+	@TargetApi(26)
+	private void createRotationNotificationChannel() {
+		NotificationChannel nc = new NotificationChannel(ROTATION_CHANNEL_ID,
+				appContext.getString(
+						R.string.rotation_notification_channel_title),
+				IMPORTANCE_DEFAULT);
+		nc.setShowBadge(false);
+		nc.enableVibration(true);
+		nc.setLockscreenVisibility(
+				android.app.Notification.VISIBILITY_PUBLIC);
+		notificationManager.createNotificationChannel(nc);
+	}
+
+	private void showRotationNotification(@StringRes int bodyResId,
+			String idPrefix) {
+		NotificationCompat.Builder b =
+				new NotificationCompat.Builder(appContext, ROTATION_CHANNEL_ID)
+						.setSmallIcon(R.drawable.ic_notifications)
+						.setContentTitle(appContext.getString(R.string.app_name))
+						.setContentText(appContext.getString(bodyResId))
+						.setGroup("rotation")
+						.setCategory(NotificationCompat.CATEGORY_STATUS)
+						.setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+						.setAutoCancel(true);
+		int id = (int) (java.util.UUID.randomUUID().getMostSignificantBits()
+				& 0x7fffffff);
+		notificationManager.notify(idPrefix + id, 0, b.build());
 	}
 
 	@Override
@@ -218,7 +250,6 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 			notificationManager.cancel(id);
 		}
 		activeContactNotificationIds.clear();
-		// Also cancel legacy global ID in case of upgrade
 		notificationManager.cancel(PRIVATE_MESSAGE_NOTIFICATION_ID);
 	}
 
@@ -266,6 +297,12 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 			if (header.getSignalType() == VoiceSignalType.CALL_OFFER) {
 				handleIncomingVoiceCall(voiceEvent.getContactId(), header);
 			}
+		} else if (e instanceof B4OwnRotationCompletedEvent) {
+			showRotationNotification(R.string.rotation_notification_own_body,
+					"rotation_own_");
+		} else if (e instanceof B4PeerOnionAnnouncedEvent) {
+			showRotationNotification(R.string.rotation_notification_peer_body,
+					"rotation_peer_");
 		}
 	}
 
@@ -322,8 +359,6 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	public void clearContactNotification(ContactId c) {
 		androidExecutor.runOnUiThread(() -> {
 			contactCounts.removeAll(c);
-			// Always cancel — even after process restart when
-			// contactCounts is empty, the notification may still exist
 			int notifId = CONTACT_NOTIFICATION_ID_BASE + c.getInt();
 			notificationManager.cancel(notifId);
 			activeContactNotificationIds.remove(notifId);
@@ -352,11 +387,9 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		b.setNotificationCategory(CATEGORY_MESSAGE);
 		if (mayAlert) setAlertProperties(b);
 
-		// Per-contact delete intent for swipe dismiss
 		setDeleteIntent(b,
 				Uri.parse(CONTACT_URI + "/" + c.getInt()));
 
-		// Content intent — open conversation
 		Intent i = new Intent(appContext, ConversationActivity.class);
 		i.putExtra(CONTACT_ID, c.getInt());
 		i.setData(Uri.parse(CONTACT_URI + "/" + c.getInt()));
@@ -367,7 +400,6 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		b.setContentIntent(t.getPendingIntent(nextRequestId++,
 				getImmutableFlags(0)));
 
-		// Quick reply action (if enabled in settings)
 		boolean quickReplyEnabled = uiPrefs.getBoolean(
 				com.professor.zerion.android.settings.NotificationsFragment
 						.PREF_NOTIFY_QUICK_REPLY, true);
@@ -380,7 +412,6 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 			Intent replyIntent = new Intent(appContext,
 					NotificationQuickReplyReceiver.class);
 			replyIntent.putExtra(CONTACT_ID, c.getInt());
-			// RemoteInput requires FLAG_MUTABLE on Android 12+
 			int replyFlags = PendingIntent.FLAG_UPDATE_CURRENT;
 			if (android.os.Build.VERSION.SDK_INT >= 31) {
 				replyFlags |= PendingIntent.FLAG_MUTABLE;

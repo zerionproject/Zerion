@@ -84,6 +84,7 @@ public class SecurityFragment extends Fragment {
 	private View wipePasswordCard;
 	private TextView wipePasswordSummary;
 	private View rotateOnionCard;
+	private View forceCompleteRotationCard;
 
 	private String[] timeoutEntries;
 	private String[] timeoutValues;
@@ -127,6 +128,8 @@ public class SecurityFragment extends Fragment {
 		wipePasswordCard = view.findViewById(R.id.wipe_password_card);
 		wipePasswordSummary = view.findViewById(R.id.wipe_password_summary);
 		rotateOnionCard = view.findViewById(R.id.rotate_onion_card);
+		forceCompleteRotationCard =
+				view.findViewById(R.id.force_complete_rotation_card);
 
 
 		timeoutEntries = getResources().getStringArray(R.array.pref_key_lock_timeout_entries);
@@ -154,6 +157,11 @@ public class SecurityFragment extends Fragment {
 
 		if (rotateOnionCard != null) {
 			rotateOnionCard.setOnClickListener(v -> showRotateOnionDialog());
+		}
+
+		if (forceCompleteRotationCard != null) {
+			forceCompleteRotationCard.setOnClickListener(
+					v -> showForceCompleteRotationDialog());
 		}
 
 		voiceCallsSwitch = view.findViewById(R.id.voice_calls_switch);
@@ -299,6 +307,27 @@ public class SecurityFragment extends Fragment {
 	public void onStart() {
 		super.onStart();
 		requireActivity().setTitle(R.string.security_settings_title);
+		refreshForceCompleteVisibility();
+	}
+
+	private void refreshForceCompleteVisibility() {
+		if (forceCompleteRotationCard == null) return;
+		ioExecutor.execute(() -> {
+			B4OnionRotation.RotationPhase phase;
+			try {
+				phase = b4OnionRotation.getPhase();
+			} catch (DbException e) {
+				phase = B4OnionRotation.RotationPhase.IDLE;
+			}
+			final boolean show =
+					phase == B4OnionRotation.RotationPhase.ANNOUNCING;
+			if (getActivity() == null) return;
+			requireActivity().runOnUiThread(() -> {
+				if (forceCompleteRotationCard == null) return;
+				forceCompleteRotationCard.setVisibility(
+						show ? View.VISIBLE : View.GONE);
+			});
+		});
 	}
 
 	private void showRotateOnionDialog() {
@@ -311,30 +340,79 @@ public class SecurityFragment extends Fragment {
 				.show();
 	}
 
-	private void triggerRotation() {
-		// Run on the IO executor — forceRotate opens a DB transaction +
-		// blocks on the rotation lock + does a Tor ADD_ONION call. Must
-		// not run on main thread.
+	private void showForceCompleteRotationDialog() {
+		new MaterialAlertDialogBuilder(requireContext())
+				.setTitle(R.string.pref_force_complete_rotation_confirm_title)
+				.setMessage(
+						R.string.pref_force_complete_rotation_confirm_message)
+				.setPositiveButton(
+						R.string.pref_force_complete_rotation_confirm_action,
+						(dialog, which) -> triggerForceCompleteRotation())
+				.setNegativeButton(R.string.cancel, null)
+				.show();
+	}
+
+	private void triggerForceCompleteRotation() {
 		Context appContext = requireContext().getApplicationContext();
 		ioExecutor.execute(() -> {
-			boolean success;
+			boolean wasAnnouncing = false;
 			try {
-				b4OnionRotation.forceRotate();
-				success = true;
-			} catch (DbException e) {
-				success = false;
+				wasAnnouncing = b4OnionRotation.getPhase()
+						== B4OnionRotation.RotationPhase.ANNOUNCING;
+				b4OnionRotation.forceCompleteRotation();
+			} catch (DbException ignored) {
 			}
-			boolean ok = success;
+			final boolean wasAnnouncingFinal = wasAnnouncing;
 			if (getActivity() == null) return;
 			requireActivity().runOnUiThread(() -> {
 				if (getContext() == null) return;
-				if (ok) {
-					Toast.makeText(appContext,
-							R.string.pref_rotate_onion_started,
-							Toast.LENGTH_LONG).show();
+				Toast.makeText(appContext, wasAnnouncingFinal
+								? R.string.pref_force_complete_rotation_done
+								: R.string.pref_force_complete_rotation_not_announcing,
+						Toast.LENGTH_LONG).show();
+				refreshForceCompleteVisibility();
+				new androidx.lifecycle.ViewModelProvider(
+						requireActivity(), viewModelFactory)
+						.get(com.professor.zerion.android.navdrawer
+								.PluginViewModel.class)
+						.refreshTorState();
+			});
+		});
+	}
+
+	private void triggerRotation() {
+		Context appContext = requireContext().getApplicationContext();
+		ioExecutor.execute(() -> {
+			String newOnion = null;
+			boolean success = false;
+			try {
+				b4OnionRotation.forceRotate();
+				newOnion = b4OnionRotation.getAliceNextOnion();
+				success = true;
+			} catch (DbException ignored) {
+			}
+			boolean ok = success;
+			String displayOnion = newOnion;
+			if (getActivity() == null) return;
+			requireActivity().runOnUiThread(() -> {
+				if (getContext() == null) return;
+				if (ok && displayOnion != null) {
+					new androidx.lifecycle.ViewModelProvider(
+							requireActivity(), viewModelFactory)
+							.get(com.professor.zerion.android.navdrawer
+									.PluginViewModel.class)
+							.refreshTorState();
+					new MaterialAlertDialogBuilder(requireContext())
+							.setTitle(R.string.pref_rotate_onion_success_title)
+							.setMessage(getString(
+									R.string.pref_rotate_onion_success_message,
+									displayOnion + ".onion"))
+							.setPositiveButton(android.R.string.ok, null)
+							.show();
 				} else {
 					Toast.makeText(appContext,
-							R.string.pref_rotate_onion_failed,
+							ok ? R.string.pref_rotate_onion_started
+									: R.string.pref_rotate_onion_failed,
 							Toast.LENGTH_LONG).show();
 				}
 			});

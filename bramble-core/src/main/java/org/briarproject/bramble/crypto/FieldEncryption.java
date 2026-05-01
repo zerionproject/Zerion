@@ -73,10 +73,6 @@ public final class FieldEncryption {
 			out.put(ciphertextWithTag);
 			return out.array();
 		} finally {
-			// SecretKeySpec.getEncoded() returns a copy on most JDKs but
-			// the spec object itself still holds the bytes; nothing we
-			// can reliably zero here without reflection. Best-effort:
-			// limit the spec's lifetime to this method scope.
 		}
 	}
 

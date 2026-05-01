@@ -176,10 +176,6 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 				.sign(localAuthor.getPrivateKey(), masterKey, alice);
 		long localTimestamp = clock.currentTimeMillis();
 
-		// B.3: when the gate is on and the orchestrator handed us all the
-		// hybrid handshake state, sign over our static ML-KEM-768 pubkey
-		// for slot[4]. Skip silently if any input is null — that's the
-		// legacy / non-hybrid path and slot[4] doesn't apply.
 		byte[] localB3ProofSig = null;
 		if (B3_PROOF_ENABLED
 				&& ourStaticHybridPub != null
@@ -210,23 +206,6 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			throw new FormatException();
 		}
 
-		// B.3: if the peer sent a slot[4] proof, verify it. We require
-		// the buffered handshake state to be present — receiving a proof
-		// without buffered state would mean the orchestrator failed to
-		// thread through the hybrid handshake context, which is a bug,
-		// not graceful degradation. Hard-reject in that case.
-		//
-		// v1.5.1 strict-reject hook: when the messaging.minorVersion
-		// sync record from a peer advertising v5 arrives post-
-		// handshake, we'll need to confirm slot[4] was present here.
-		// Two ways to resolve in v1.5.1:
-		//   (a) persist a per-contact flag here;
-		//   (b) derive — any contact in our DB advertising v5 MUST
-		//       have passed verify, since this method throws on
-		//       verify-fail and the contact wouldn't have been
-		//       promoted.
-		// iOS persists for forward-compat. Either is fine; we'll pick
-		// at v1.5.1 implementation time.
 		if (remoteInfo.b3ProofSig != null) {
 			if (theirStaticHybridPub == null
 					|| ourEphX25519 == null
@@ -257,10 +236,6 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			long timestamp, @Nullable byte[] b3ProofSig) throws IOException {
 		BdfList authorList = clientHelper.toList(author);
 		BdfDictionary props = clientHelper.toDictionary(properties);
-		// 4-slot legacy layout when no proof; 5-slot v1.5 layout with
-		// proof at slot[4] when caller has computed one. Wire-byte-
-		// identical with v1.4 in the legacy case (BDF list grows by
-		// exactly one slot).
 		BdfList payload = b3ProofSig == null
 				? BdfList.of(authorList, props, signature, timestamp)
 				: BdfList.of(authorList, props, signature, timestamp,
@@ -275,11 +250,6 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 		Record record = recordReader.readRecord(ACCEPT, IGNORE);
 		if (record == null) throw new EOFException();
 		BdfList payload = clientHelper.toList(record.getPayload());
-		// Accept either 4 (legacy v1.4) or 5 (v1.5 with B.3 proof) slots.
-		// Tolerate trailing slot via BDF's end-marker form on the reader
-		// side; the new slot[4] is only consumed when the list has
-		// length 5 and the caller has buffered handshake state to
-		// verify against.
 		int size = payload.size();
 		if (size != 4 && size != 5) throw new FormatException();
 		Author author = clientHelper.parseAndValidateAuthor(payload.getList(0));
@@ -293,9 +263,6 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 		byte[] b3ProofSig = null;
 		if (size == 5) {
 			b3ProofSig = payload.getRaw(4);
-			// Tight length check — Ed25519 sigs are exactly 64 bytes.
-			// A wrong-length slot[4] is malformed and rejected, not
-			// silently coerced.
 			checkLength(b3ProofSig, B3_SIG_LEN, B3_SIG_LEN);
 		}
 		return new ContactInfo(author, properties, signature, timestamp,
@@ -322,10 +289,6 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			}
 			transportPropertyManager.addRemoteProperties(txn, contactId,
 					remoteProperties);
-			// v5.1 strict-reject: pin "1" or "0" so a future versioning
-			// record claiming minorVersion >= 5 from this peer can be
-			// cross-checked. Absent reading at check-time means a contact
-			// from before this persistence step landed — skip silently.
 			Settings b3 = new Settings();
 			b3.put(B3_SLOT_PRESENT_KEY_PREFIX + contactId.getInt(),
 					b3SlotPresent ? "1" : "0");

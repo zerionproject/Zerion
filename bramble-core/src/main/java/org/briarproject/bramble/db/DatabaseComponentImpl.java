@@ -93,6 +93,7 @@ import static org.briarproject.bramble.db.DatabaseConstants.MAX_OFFERED_MESSAGES
 @ThreadSafe
 @NotNullByDefault
 class DatabaseComponentImpl<T> implements DatabaseComponent {
+
 	private final Database<T> db;
 	private final Class<T> txnClass;
 	private final EventBus eventBus;

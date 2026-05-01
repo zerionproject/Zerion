@@ -24,6 +24,7 @@ import org.briarproject.bramble.api.settings.Settings;
 import org.briarproject.bramble.api.settings.SettingsManager;
 import org.briarproject.bramble.api.settings.event.SettingsUpdatedEvent;
 import org.briarproject.bramble.api.system.AndroidExecutor;
+import org.briarproject.bramble.plugin.tor.B4OnionRotation;
 import com.professor.zerion.android.viewmodel.DbViewModel;
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -59,24 +60,36 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 	private final MutableLiveData<String> torLocalOnion =
 			new MutableLiveData<>();
 
+	private final MutableLiveData<B4OnionRotation.RotationPhase>
+			rotationPhase = new MutableLiveData<>(
+			B4OnionRotation.RotationPhase.IDLE);
+
+	private final MutableLiveData<String> rotationPendingOnion =
+			new MutableLiveData<>();
+
+	private final B4OnionRotation b4OnionRotation;
+
 	@Inject
 	PluginViewModel(Application app, @DatabaseExecutor Executor dbExecutor,
 			LifecycleManager lifecycleManager, TransactionManager db,
 			AndroidExecutor androidExecutor, SettingsManager settingsManager,
 			PluginManager pluginManager, EventBus eventBus,
 			NetworkManager networkManager,
-			TransportPropertyManager transportPropertyManager) {
+			TransportPropertyManager transportPropertyManager,
+			B4OnionRotation b4OnionRotation) {
 		super(app, dbExecutor, lifecycleManager, db, androidExecutor);
 		this.app = app;
 		this.settingsManager = settingsManager;
 		this.pluginManager = pluginManager;
 		this.eventBus = eventBus;
 		this.transportPropertyManager = transportPropertyManager;
+		this.b4OnionRotation = b4OnionRotation;
 		eventBus.addListener(this);
 		networkStatus.setValue(networkManager.getNetworkStatus());
 		torPluginState.setValue(getTransportState(TorConstants.ID));
 		loadSettings();
 		loadLocalOnion();
+		loadRotationState();
 	}
 
 	@Override
@@ -110,6 +123,25 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 		return torLocalOnion;
 	}
 
+	LiveData<B4OnionRotation.RotationPhase> getRotationPhase() {
+		return rotationPhase;
+	}
+
+	LiveData<String> getRotationPendingOnion() {
+		return rotationPendingOnion;
+	}
+
+	/**
+	 * Re-read current onion + B.4 rotation state. Called from
+	 * TorStatusFragment.onStart and after a manual Rotate Now so the
+	 * UI reflects the post-rotation state without waiting for an
+	 * unrelated event to fire a refresh.
+	 */
+	public void refreshTorState() {
+		loadLocalOnion();
+		loadRotationState();
+	}
+
 	private void loadLocalOnion() {
 		runOnDbThread(() -> {
 			try {
@@ -120,6 +152,24 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 						: props.get(TorConstants.PROP_ONION_V3);
 				if (onion != null && !onion.isEmpty()) {
 					torLocalOnion.postValue(onion);
+				}
+			} catch (DbException e) {
+				handleException(e);
+			}
+		});
+	}
+
+	private void loadRotationState() {
+		runOnDbThread(() -> {
+			try {
+				B4OnionRotation.RotationPhase phase =
+						b4OnionRotation.getPhase();
+				rotationPhase.postValue(phase);
+				if (phase == B4OnionRotation.RotationPhase.ANNOUNCING) {
+					rotationPendingOnion.postValue(
+							b4OnionRotation.getAliceNextOnion());
+				} else {
+					rotationPendingOnion.postValue(null);
 				}
 			} catch (DbException e) {
 				handleException(e);
