@@ -33,8 +33,13 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
+
+import android.os.Handler;
+import android.os.Looper;
 
 import javax.inject.Inject;
 
@@ -56,6 +61,12 @@ public class ContactsViewModel extends DbViewModel implements EventListener {
 
 	private final MutableLiveData<LiveResult<List<ContactListItem>>>
 			contactListItems = new MutableLiveData<>();
+
+	private static final long OFFLINE_DEBOUNCE_MS = 10_000L;
+	private final Handler debounceHandler =
+			new Handler(Looper.getMainLooper());
+	private final Map<ContactId, Runnable> pendingOfflineCallbacks =
+			new HashMap<>();
 
 	@Inject
 	public ContactsViewModel(Application application,
@@ -80,6 +91,8 @@ public class ContactsViewModel extends DbViewModel implements EventListener {
 	protected void onCleared() {
 		super.onCleared();
 		eventBus.removeListener(this);
+		debounceHandler.removeCallbacksAndMessages(null);
+		pendingOfflineCallbacks.clear();
 	}
 
 	protected void loadContacts() {
@@ -104,7 +117,6 @@ public class ContactsViewModel extends DbViewModel implements EventListener {
 			contacts.add(new ContactListItem(c, authorInfo, connected, count,
 					pinned));
 		}
-		// Prune stale pinned entries for deleted contacts
 		pinnedContactManager.pruneStaleEntries(validIds);
 		Collections.sort(contacts);
 		return contacts;
@@ -119,11 +131,11 @@ public class ContactsViewModel extends DbViewModel implements EventListener {
 		if (e instanceof ContactAddedEvent) {
 			loadContacts();
 		} else if (e instanceof ContactConnectedEvent) {
-			updateItem(((ContactConnectedEvent) e).getContactId(),
-					item -> new ContactListItem(item, true), false);
+			ContactId cid = ((ContactConnectedEvent) e).getContactId();
+			cancelPendingOffline(cid);
+			updateItem(cid, item -> new ContactListItem(item, true), false);
 		} else if (e instanceof ContactDisconnectedEvent) {
-			updateItem(((ContactDisconnectedEvent) e).getContactId(),
-					item -> new ContactListItem(item, false), false);
+			scheduleOffline(((ContactDisconnectedEvent) e).getContactId());
 		} else if (e instanceof ContactRemovedEvent) {
 			removeItem(((ContactRemovedEvent) e).getContactId());
 		} else if (e instanceof ConversationMessageTrackedEvent) {
@@ -164,6 +176,21 @@ public class ContactsViewModel extends DbViewModel implements EventListener {
 
 	public LiveData<LiveResult<List<ContactListItem>>> getContactListItems() {
 		return contactListItems;
+	}
+
+	private void cancelPendingOffline(ContactId cid) {
+		Runnable pending = pendingOfflineCallbacks.remove(cid);
+		if (pending != null) debounceHandler.removeCallbacks(pending);
+	}
+
+	private void scheduleOffline(ContactId cid) {
+		cancelPendingOffline(cid);
+		Runnable r = () -> {
+			pendingOfflineCallbacks.remove(cid);
+			updateItem(cid, item -> new ContactListItem(item, false), false);
+		};
+		pendingOfflineCallbacks.put(cid, r);
+		debounceHandler.postDelayed(r, OFFLINE_DEBOUNCE_MS);
 	}
 
 	@UiThread

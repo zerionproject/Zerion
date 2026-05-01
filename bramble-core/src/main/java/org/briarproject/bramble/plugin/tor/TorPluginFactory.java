@@ -49,6 +49,7 @@ abstract class TorPluginFactory implements DuplexPluginFactory {
 	protected final File torDirectory;
 	protected final int torSocksPort;
 	protected final int torControlPort;
+	protected final B4OnionRotation b4OnionRotation;
 
 	TorPluginFactory(@IoExecutor Executor ioExecutor,
 			@EventExecutor Executor eventExecutor,
@@ -64,7 +65,8 @@ abstract class TorPluginFactory implements DuplexPluginFactory {
 			CryptoComponent crypto,
 			@TorDirectory File torDirectory,
 			@TorSocksPort int torSocksPort,
-			@TorControlPort int torControlPort) {
+			@TorControlPort int torControlPort,
+			B4OnionRotation b4OnionRotation) {
 		this.ioExecutor = ioExecutor;
 		this.eventExecutor = eventExecutor;
 		this.wakefulIoExecutor = wakefulIoExecutor;
@@ -80,6 +82,7 @@ abstract class TorPluginFactory implements DuplexPluginFactory {
 		this.torDirectory = torDirectory;
 		this.torSocksPort = torSocksPort;
 		this.torControlPort = torControlPort;
+		this.b4OnionRotation = b4OnionRotation;
 	}
 
 	@Nullable

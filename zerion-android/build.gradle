@@ -82,7 +82,7 @@ android {
         buildConfigField "String", "TorVersion", "\"$tor_version\""
 
         buildConfigField "boolean", "B3_PROOF_ENABLED", "true"
-        buildConfigField "boolean", "B4_ROTATION_ENABLED", "false"
+        buildConfigField "boolean", "B4_ROTATION_ENABLED", "true"
 
         vectorDrawables.useSupportLibrary = true
 

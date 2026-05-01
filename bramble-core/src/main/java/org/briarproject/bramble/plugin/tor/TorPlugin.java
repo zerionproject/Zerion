@@ -79,7 +79,8 @@ import static org.briarproject.onionwrapper.CircumventionProvider.BridgeType.MEE
 import static org.briarproject.onionwrapper.CircumventionProvider.BridgeType.SNOWFLAKE;
 
 @InterfaceNotNullByDefault
-class TorPlugin implements DuplexPlugin, EventListener {
+class TorPlugin implements DuplexPlugin, EventListener,
+		B4OnionRotation.B4TorAdapter {
 	private static final Pattern ONION_V3 = Pattern.compile("[a-z2-7]{56}");
 
 	protected final Executor ioExecutor;
@@ -98,11 +99,19 @@ class TorPlugin implements DuplexPlugin, EventListener {
 	private final int maxIdleTime;
 	private final int socketTimeout;
 	private final AtomicBoolean used = new AtomicBoolean(false);
+	private final B4OnionRotation b4OnionRotation;
 
 	protected final PluginState state = new PluginState();
 
 	private volatile Settings settings = null;
 	private volatile State lastReportedState = null;
+
+	private final java.util.Map<String, ServerSocket>
+			b4OnionToServerSocket =
+			new java.util.concurrent.ConcurrentHashMap<>();
+
+	private final java.util.Queue<Long> recentB4Accepts =
+			new java.util.concurrent.ConcurrentLinkedQueue<>();
 
 	TorPlugin(Executor ioExecutor,
 			Executor wakefulIoExecutor,
@@ -116,7 +125,8 @@ class TorPlugin implements DuplexPlugin, EventListener {
 			TorWrapper tor,
 			PluginCallback callback,
 			long maxLatency,
-			int maxIdleTime) {
+			int maxIdleTime,
+			B4OnionRotation b4OnionRotation) {
 		this.ioExecutor = ioExecutor;
 		this.wakefulIoExecutor = wakefulIoExecutor;
 		this.networkManager = networkManager;
@@ -130,6 +140,7 @@ class TorPlugin implements DuplexPlugin, EventListener {
 		this.callback = callback;
 		this.maxLatency = maxLatency;
 		this.maxIdleTime = maxIdleTime;
+		this.b4OnionRotation = b4OnionRotation;
 		if (maxIdleTime > Integer.MAX_VALUE / 2) {
 			socketTimeout = Integer.MAX_VALUE;
 		} else {
@@ -240,6 +251,95 @@ class TorPlugin implements DuplexPlugin, EventListener {
 			s.put(HS_PRIVATE_KEY_V3, hsProps.privKey);
 			callback.mergeSettings(s);
 		}
+		b4OnionRotation.bindAdapter(this);
+		if (org.briarproject.bramble.api.plugin.B4Constants.B4_DEBUG_LOG) {
+			java.util.logging.Logger.getLogger(TorPlugin.class.getName())
+					.info(String.format(
+							"[B4] TorPlugin: B.4 adapter bound, "
+									+ "localPort=%d",
+							localPort));
+		}
+		try {
+			b4OnionRotation.resumeIfPromotionInterrupted();
+		} catch (org.briarproject.bramble.api.db.DbException e) {
+		}
+	}
+
+	@Override
+	public HiddenServiceProperties publishHiddenService(@Nullable String privKey)
+			throws IOException {
+		ServerSocket b4Ss = new ServerSocket();
+		try {
+			b4Ss.bind(new InetSocketAddress("127.0.0.1", 0));
+		} catch (IOException e) {
+			tryToClose(b4Ss);
+			throw e;
+		}
+		int b4Port = b4Ss.getLocalPort();
+		HiddenServiceProperties hsProps;
+		try {
+			hsProps = tor.publishHiddenService(b4Port, 80, privKey);
+		} catch (IOException e) {
+			tryToClose(b4Ss);
+			throw e;
+		}
+		b4OnionToServerSocket.put(hsProps.onion, b4Ss);
+		ioExecutor.execute(() -> acceptB4NewOnionConnections(b4Ss));
+		if (org.briarproject.bramble.api.plugin.B4Constants.B4_DEBUG_LOG) {
+			java.util.logging.Logger.getLogger(TorPlugin.class.getName())
+					.info(String.format(
+							"[B4] TorPlugin: bound new onion=%s.onion on "
+									+ "localPort=%d (separate ServerSocket "
+									+ "for migration detection)",
+							hsProps.onion, b4Port));
+		}
+		return hsProps;
+	}
+
+	@Override
+	public void removeHiddenService(String onion) throws IOException {
+		tor.removeHiddenService(onion);
+		ServerSocket ss = b4OnionToServerSocket.remove(onion);
+		if (ss != null) tryToClose(ss);
+		if (org.briarproject.bramble.api.plugin.B4Constants.B4_DEBUG_LOG) {
+			java.util.logging.Logger.getLogger(TorPlugin.class.getName())
+					.info(String.format(
+							"[B4] TorPlugin: removed onion=%s.onion + closed "
+									+ "its ServerSocket",
+							onion));
+		}
+	}
+
+	private void acceptB4NewOnionConnections(ServerSocket ss) {
+		while (true) {
+			Socket s;
+			try {
+				s = ss.accept();
+				s.setSoTimeout(socketTimeout);
+			} catch (IOException e) {
+				return;
+			}
+			recentB4Accepts.add(System.currentTimeMillis());
+			if (org.briarproject.bramble.api.plugin.B4Constants.B4_DEBUG_LOG) {
+				java.util.logging.Logger.getLogger(TorPlugin.class.getName())
+						.info("[B4] TorPlugin: accepted inbound on new-"
+								+ "onion port (awaiting ContactConnectedEvent "
+								+ "correlation)");
+			}
+			callback.handleConnection(new TorTransportConnection(this, s));
+		}
+	}
+
+	@Override
+	public void updateTorCurrentPrivKey(String newPrivKey) {
+		Settings s = new Settings();
+		s.put(HS_PRIVATE_KEY_V3, newPrivKey);
+		callback.mergeSettings(s);
+	}
+
+	@Override
+	public void mergeTorLocalProperties(TransportProperties props) {
+		callback.mergeLocalProperties(props);
 	}
 
 	private void acceptContactConnections(ServerSocket ss) {
@@ -275,6 +375,11 @@ class TorPlugin implements DuplexPlugin, EventListener {
 	public void stop() {
 		ServerSocket ss = state.setStopped();
 		tryToClose(ss);
+		for (ServerSocket b4Ss : b4OnionToServerSocket.values()) {
+			tryToClose(b4Ss);
+		}
+		b4OnionToServerSocket.clear();
+		recentB4Accepts.clear();
 		try {
 			tor.stop();
 		} catch (IOException e) {
@@ -330,10 +435,75 @@ class TorPlugin implements DuplexPlugin, EventListener {
 		if (onion3 != null && !ONION_V3.matcher(onion3).matches()) {
 			onion3 = null;
 		}
-		if (onion3 == null) return null;
+		String fallback = p.get(
+				org.briarproject.bramble.api.plugin.B4Constants
+						.B4_LOCAL_FALLBACK_ONION_KEY);
+		if (fallback != null && !ONION_V3.matcher(fallback).matches()) {
+			fallback = null;
+		}
+		String contactIdStr = p.get(
+				org.briarproject.bramble.api.plugin.B4Constants
+						.B4_LOCAL_CONTACT_ID_KEY);
+		org.briarproject.bramble.api.contact.ContactId b4Cid = null;
+		if (contactIdStr != null && !contactIdStr.isEmpty()) {
+			try {
+				b4Cid = new org.briarproject.bramble.api.contact.ContactId(
+						Integer.parseInt(contactIdStr));
+			} catch (NumberFormatException ignored) {
+			}
+		}
+		if (onion3 == null && fallback == null) return null;
+
+		DuplexTransportConnection conn = dialOnion(onion3);
+		if (conn != null) {
+			if (b4Cid != null && onion3 != null
+					&& !onion3.equals(fallback)) {
+				try {
+					b4OnionRotation.onSuccessfulConnect(b4Cid, onion3);
+				} catch (org.briarproject.bramble.api.db.DbException e) {
+					if (org.briarproject.bramble.api.plugin.B4Constants
+							.B4_DEBUG_LOG) {
+						java.util.logging.Logger
+								.getLogger(TorPlugin.class.getName())
+								.warning(
+										"[B4] TorPlugin: onSuccessfulConnect "
+												+ "failed: " + e.getMessage());
+					}
+				}
+			}
+			return conn;
+		}
+		if (fallback != null && !fallback.equals(onion3)) {
+			if (b4Cid != null && onion3 != null) {
+				try {
+					b4OnionRotation.onPendingDialFailed(b4Cid);
+				} catch (org.briarproject.bramble.api.db.DbException e) {
+					if (org.briarproject.bramble.api.plugin.B4Constants
+							.B4_DEBUG_LOG) {
+						java.util.logging.Logger
+								.getLogger(TorPlugin.class.getName())
+								.warning(
+										"[B4] TorPlugin: onPendingDialFailed "
+												+ "failed: " + e.getMessage());
+					}
+				}
+			}
+			if (org.briarproject.bramble.api.plugin.B4Constants.B4_DEBUG_LOG) {
+				java.util.logging.Logger.getLogger(TorPlugin.class.getName())
+						.info("[B4] TorPlugin: pending onion dial failed, "
+								+ "falling back to previous onion");
+			}
+			return dialOnion(fallback);
+		}
+		return null;
+	}
+
+	@Nullable
+	private DuplexTransportConnection dialOnion(@Nullable String onion) {
+		if (onion == null) return null;
 		Socket s = null;
 		try {
-			s = torSocketFactory.createSocket(onion3 + ".onion", 80);
+			s = torSocketFactory.createSocket(onion + ".onion", 80);
 			s.setSoTimeout(socketTimeout);
 			return new TorTransportConnection(this, s);
 		} catch (IOException e) {
@@ -388,7 +558,6 @@ class TorPlugin implements DuplexPlugin, EventListener {
 								new TorTransportConnection(this, s));
 					}
 				} catch (IOException e) {
-					// Socket closed when endpoint is closed
 				}
 			});
 			tor.publishHiddenService(port, 80, blob);
@@ -428,6 +597,32 @@ class TorPlugin implements DuplexPlugin, EventListener {
 		} else if (e instanceof BatteryEvent) {
 			updateConnectionStatus(networkManager.getNetworkStatus(),
 					((BatteryEvent) e).isCharging());
+		} else if (e instanceof
+				org.briarproject.bramble.api.plugin.event.ContactConnectedEvent) {
+			final org.briarproject.bramble.api.contact.ContactId cid =
+					((org.briarproject.bramble.api.plugin.event
+							.ContactConnectedEvent) e).getContactId();
+			final boolean migrated;
+			{
+				long now = System.currentTimeMillis();
+				long window = org.briarproject.bramble.api.plugin
+						.B4Constants.B4_ACCEPT_CORRELATION_WINDOW_MS;
+				Long acceptTime = recentB4Accepts.poll();
+				while (acceptTime != null && now - acceptTime > window) {
+					acceptTime = recentB4Accepts.poll();
+				}
+				migrated = acceptTime != null;
+			}
+			ioExecutor.execute(() -> {
+				try {
+					b4OnionRotation.evaluateTrigger();
+					b4OnionRotation.onPeerSyncSessionEstablished(cid);
+					if (migrated) {
+						b4OnionRotation.onInboundConnectionOnNewOnion(cid);
+					}
+				} catch (org.briarproject.bramble.api.db.DbException dbEx) {
+				}
+			});
 		}
 	}
 

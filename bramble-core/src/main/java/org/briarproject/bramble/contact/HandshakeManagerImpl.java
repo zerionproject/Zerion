@@ -114,10 +114,6 @@ class HandshakeManagerImpl implements HandshakeManager {
 			if (pendingContact.isPostQuantum()) {
 				hybridKeyPair = identityManager.getHybridHandshakeKeys(txn);
 				if (hybridKeyPair == null) {
-					// Post-quantum contact but hybrid keys unavailable —
-					// fall back to classical handshake. This is a security
-					// downgrade: the contact was added as post-quantum but
-					// the handshake will use classical crypto only.
 					keyPair = identityManager.getHandshakeKeys(txn);
 				} else {
 					keyPair = hybridKeyPair;
@@ -136,8 +132,6 @@ class HandshakeManagerImpl implements HandshakeManager {
 			return performHybridHandshake(ctx, in, out);
 		} else {
 			if (ctx.pendingContact.isPostQuantum()) {
-				// Hybrid keys unavailable for PQ contact — reject handshake
-				// to prevent silent security downgrade
 				throw new IOException(
 						"Post-quantum handshake requested but hybrid keys unavailable");
 			}
@@ -290,15 +284,6 @@ class HandshakeManagerImpl implements HandshakeManager {
 			throw new FormatException();
 		}
 
-		// B.3: buffer the inputs the receiver needs to verify the
-		// CONTACT_INFO slot[4] proof. Both sides' full 1216-byte hybrid
-		// static pubkeys (X25519 || ML-KEM-768) — sender signs over our
-		// ML-KEM-768 half, receiver verifies against theirs. Plus the
-		// X25519 portion of both ephemerals (first 32 B of each hybrid
-		// ephemeral) for sessionId + role derivation. The orchestrator
-		// passes these to ContactExchangeManager. Always populated on
-		// the hybrid path; ContactExchangeManager only consumes them
-		// when B3_PROOF_ENABLED.
 		byte[] ourStaticHybridPub =
 				ourHybridStaticKeyPair.getPublic().getEncoded();
 		byte[] theirStaticHybridPub = theirHybridStaticKey.getEncoded();

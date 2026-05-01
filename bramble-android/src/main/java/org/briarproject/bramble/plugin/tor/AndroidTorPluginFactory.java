@@ -56,11 +56,12 @@ public class AndroidTorPluginFactory extends TorPluginFactory {
 			@TorSocksPort int torSocksPort,
 			@TorControlPort int torControlPort,
 			Application app,
-			AndroidWakeLockManager wakeLockManager) {
+			AndroidWakeLockManager wakeLockManager,
+			B4OnionRotation b4OnionRotation) {
 		super(ioExecutor, eventExecutor, wakefulIoExecutor, networkManager,
 				locationUtils, eventBus, torSocketFactory, backoffFactory,
 				circumventionProvider, batteryManager, clock, crypto,
-				torDirectory, torSocksPort, torControlPort);
+				torDirectory, torSocksPort, torControlPort, b4OnionRotation);
 		this.app = app;
 		this.wakeLockManager = wakeLockManager;
 	}
@@ -87,6 +88,6 @@ public class AndroidTorPluginFactory extends TorPluginFactory {
 				networkManager, locationUtils, torSocketFactory,
 				circumventionProvider, batteryManager, backoff,
 				torRendezvousCrypto, tor, callback, MAX_LATENCY,
-				MAX_IDLE_TIME);
+				MAX_IDLE_TIME, b4OnionRotation);
 	}
 }
