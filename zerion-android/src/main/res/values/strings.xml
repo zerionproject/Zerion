@@ -381,6 +381,7 @@
 	<string name="pref_rotate_onion_success_message">Your old address keeps working until every contact has connected on the new one.\n\nNew address:\n%1$s</string>
 	<string name="tor_rotation_in_progress">Rotating to new address</string>
 	<string name="tor_rotation_explainer">Old address still active. Contacts migrate as they reconnect.</string>
+	<string name="onion_rotation_section_title">ONION ROTATION</string>
 	<string name="pref_force_complete_rotation_title">Force complete now</string>
 	<string name="pref_force_complete_rotation_summary">Retire the old address immediately</string>
 	<string name="pref_force_complete_rotation_confirm_title">Force complete rotation?</string>

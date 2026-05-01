@@ -20,12 +20,6 @@ import com.professor.zerion.android.login.ChangePasswordActivity;
 import com.professor.zerion.android.panic.WipePasswordManager;
 import com.professor.zerion.android.AppModule;
 
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.lifecycle.IoExecutor;
-import org.briarproject.bramble.plugin.tor.B4OnionRotation;
-
-import java.util.concurrent.Executor;
-
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
@@ -60,13 +54,6 @@ public class SecurityFragment extends Fragment {
 	@Inject
 	com.professor.zerion.android.security.SecurityManager securityManager;
 
-	@Inject
-	B4OnionRotation b4OnionRotation;
-
-	@Inject
-	@IoExecutor
-	Executor ioExecutor;
-
 	private SettingsViewModel viewModel;
 	private WipePasswordManager wipePasswordManager;
 
@@ -83,8 +70,6 @@ public class SecurityFragment extends Fragment {
 	private TextView registrationLockSummary;
 	private View wipePasswordCard;
 	private TextView wipePasswordSummary;
-	private View rotateOnionCard;
-	private View forceCompleteRotationCard;
 
 	private String[] timeoutEntries;
 	private String[] timeoutValues;
@@ -127,9 +112,6 @@ public class SecurityFragment extends Fragment {
 		registrationLockSummary = view.findViewById(R.id.reg_lock_summary);
 		wipePasswordCard = view.findViewById(R.id.wipe_password_card);
 		wipePasswordSummary = view.findViewById(R.id.wipe_password_summary);
-		rotateOnionCard = view.findViewById(R.id.rotate_onion_card);
-		forceCompleteRotationCard =
-				view.findViewById(R.id.force_complete_rotation_card);
 
 
 		timeoutEntries = getResources().getStringArray(R.array.pref_key_lock_timeout_entries);
@@ -154,15 +136,6 @@ public class SecurityFragment extends Fragment {
 				uiPrefs.edit().putBoolean(PREF_TYPING_INDICATORS, isChecked).apply();
 			}
 		});
-
-		if (rotateOnionCard != null) {
-			rotateOnionCard.setOnClickListener(v -> showRotateOnionDialog());
-		}
-
-		if (forceCompleteRotationCard != null) {
-			forceCompleteRotationCard.setOnClickListener(
-					v -> showForceCompleteRotationDialog());
-		}
 
 		voiceCallsSwitch = view.findViewById(R.id.voice_calls_switch);
 		if (voiceCallsSwitch != null) {
@@ -307,114 +280,6 @@ public class SecurityFragment extends Fragment {
 	public void onStart() {
 		super.onStart();
 		requireActivity().setTitle(R.string.security_settings_title);
-		refreshForceCompleteVisibility();
-	}
-
-	private void refreshForceCompleteVisibility() {
-		if (forceCompleteRotationCard == null) return;
-		ioExecutor.execute(() -> {
-			B4OnionRotation.RotationPhase phase;
-			try {
-				phase = b4OnionRotation.getPhase();
-			} catch (DbException e) {
-				phase = B4OnionRotation.RotationPhase.IDLE;
-			}
-			final boolean show =
-					phase == B4OnionRotation.RotationPhase.ANNOUNCING;
-			if (getActivity() == null) return;
-			requireActivity().runOnUiThread(() -> {
-				if (forceCompleteRotationCard == null) return;
-				forceCompleteRotationCard.setVisibility(
-						show ? View.VISIBLE : View.GONE);
-			});
-		});
-	}
-
-	private void showRotateOnionDialog() {
-		new MaterialAlertDialogBuilder(requireContext())
-				.setTitle(R.string.pref_rotate_onion_confirm_title)
-				.setMessage(R.string.pref_rotate_onion_confirm_message)
-				.setPositiveButton(R.string.pref_rotate_onion_confirm_action,
-						(dialog, which) -> triggerRotation())
-				.setNegativeButton(R.string.cancel, null)
-				.show();
-	}
-
-	private void showForceCompleteRotationDialog() {
-		new MaterialAlertDialogBuilder(requireContext())
-				.setTitle(R.string.pref_force_complete_rotation_confirm_title)
-				.setMessage(
-						R.string.pref_force_complete_rotation_confirm_message)
-				.setPositiveButton(
-						R.string.pref_force_complete_rotation_confirm_action,
-						(dialog, which) -> triggerForceCompleteRotation())
-				.setNegativeButton(R.string.cancel, null)
-				.show();
-	}
-
-	private void triggerForceCompleteRotation() {
-		Context appContext = requireContext().getApplicationContext();
-		ioExecutor.execute(() -> {
-			boolean promoted = false;
-			try {
-				promoted = b4OnionRotation.forceCompleteRotation();
-			} catch (DbException ignored) {
-			}
-			final boolean promotedFinal = promoted;
-			if (getActivity() == null) return;
-			requireActivity().runOnUiThread(() -> {
-				if (getContext() == null) return;
-				Toast.makeText(appContext, promotedFinal
-								? R.string.pref_force_complete_rotation_done
-								: R.string.pref_force_complete_rotation_not_announcing,
-						Toast.LENGTH_LONG).show();
-				refreshForceCompleteVisibility();
-				new androidx.lifecycle.ViewModelProvider(
-						requireActivity(), viewModelFactory)
-						.get(com.professor.zerion.android.navdrawer
-								.PluginViewModel.class)
-						.refreshTorState();
-			});
-		});
-	}
-
-	private void triggerRotation() {
-		Context appContext = requireContext().getApplicationContext();
-		ioExecutor.execute(() -> {
-			String newOnion = null;
-			boolean success = false;
-			try {
-				b4OnionRotation.forceRotate();
-				newOnion = b4OnionRotation.getAliceNextOnion();
-				success = true;
-			} catch (DbException ignored) {
-			}
-			boolean ok = success;
-			String displayOnion = newOnion;
-			if (getActivity() == null) return;
-			requireActivity().runOnUiThread(() -> {
-				if (getContext() == null) return;
-				if (ok && displayOnion != null) {
-					new androidx.lifecycle.ViewModelProvider(
-							requireActivity(), viewModelFactory)
-							.get(com.professor.zerion.android.navdrawer
-									.PluginViewModel.class)
-							.refreshTorState();
-					new MaterialAlertDialogBuilder(requireContext())
-							.setTitle(R.string.pref_rotate_onion_success_title)
-							.setMessage(getString(
-									R.string.pref_rotate_onion_success_message,
-									displayOnion + ".onion"))
-							.setPositiveButton(android.R.string.ok, null)
-							.show();
-				} else {
-					Toast.makeText(appContext,
-							ok ? R.string.pref_rotate_onion_started
-									: R.string.pref_rotate_onion_failed,
-							Toast.LENGTH_LONG).show();
-				}
-			});
-		});
 	}
 
 	private void updateWipePasswordSummary() {
