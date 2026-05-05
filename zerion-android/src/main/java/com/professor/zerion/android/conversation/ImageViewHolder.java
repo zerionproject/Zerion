@@ -75,11 +75,13 @@ class ImageViewHolder extends ViewHolder {
 
 	void bind(AttachmentItem attachment, Radii r, boolean single,
 			boolean needsStretch) {
-		setViewDimensions(attachment, single, needsStretch);
+		boolean isSticker = attachment.isSticker();
+		setViewDimensions(attachment, single, needsStretch, isSticker);
 
 		boolean isVideo = attachment.isVideo();
 		if (playOverlay != null) {
-			playOverlay.setVisibility(isVideo ? View.VISIBLE : View.GONE);
+			playOverlay.setVisibility(
+					isVideo && !isSticker ? View.VISIBLE : View.GONE);
 		}
 
 		if (attachment.getState() != AVAILABLE) {
@@ -91,6 +93,12 @@ class ImageViewHolder extends ViewHolder {
 			}
 			imageView.setScaleType(FIT_CENTER);
 			if (playOverlay != null) playOverlay.setVisibility(View.GONE);
+		} else if (isSticker) {
+			// Chromeless: no rounded corners, no crop. The image is the
+			// bubble — the Radii parameter is ignored on purpose so a
+			// transparent PNG renders as cleanly as on iOS.
+			loadStickerImage(attachment);
+			imageView.setScaleType(FIT_CENTER);
 		} else if (isVideo) {
 			loadVideoThumbnail(attachment, r);
 			imageView.setScaleType(CENTER_CROP);
@@ -103,21 +111,37 @@ class ImageViewHolder extends ViewHolder {
 	}
 
 	private void setViewDimensions(AttachmentItem a, boolean single,
-			boolean needsStretch) {
+			boolean needsStretch, boolean isSticker) {
+		// Stickers render at a fixed 160dp square regardless of the
+		// thumbnail dimensions the receive path computed — matches iOS.
+		int stickerPx = (int) (160 * itemView.getResources()
+				.getDisplayMetrics().density);
 		View container = itemView;
 		if (container instanceof ViewGroup) {
 			LayoutParams params = (LayoutParams) container.getLayoutParams();
-			int width = needsStretch ? imageSize * 2 : imageSize;
-			params.width = single ? a.getThumbnailWidth() : width;
-			params.height = single ? a.getThumbnailHeight() : imageSize;
-			params.setFullSpan(!single && needsStretch);
+			if (isSticker) {
+				params.width = stickerPx;
+				params.height = stickerPx;
+				params.setFullSpan(false);
+			} else {
+				int width = needsStretch ? imageSize * 2 : imageSize;
+				params.width = single ? a.getThumbnailWidth() : width;
+				params.height = single ? a.getThumbnailHeight() : imageSize;
+				params.setFullSpan(!single && needsStretch);
+			}
 			container.setLayoutParams(params);
 		} else {
 			LayoutParams params = (LayoutParams) imageView.getLayoutParams();
-			int width = needsStretch ? imageSize * 2 : imageSize;
-			params.width = single ? a.getThumbnailWidth() : width;
-			params.height = single ? a.getThumbnailHeight() : imageSize;
-			params.setFullSpan(!single && needsStretch);
+			if (isSticker) {
+				params.width = stickerPx;
+				params.height = stickerPx;
+				params.setFullSpan(false);
+			} else {
+				int width = needsStretch ? imageSize * 2 : imageSize;
+				params.width = single ? a.getThumbnailWidth() : width;
+				params.height = single ? a.getThumbnailHeight() : imageSize;
+				params.setFullSpan(!single && needsStretch);
+			}
 			imageView.setLayoutParams(params);
 		}
 	}
@@ -129,6 +153,16 @@ class ImageViewHolder extends ViewHolder {
 				.diskCacheStrategy(NONE)
 				.error(ERROR_RES)
 				.transform(transformation)
+				.transition(withCrossFade())
+				.into(imageView)
+				.waitForLayout();
+	}
+
+	private void loadStickerImage(AttachmentItem a) {
+		Glide.with(imageView)
+				.load(a.getHeader())
+				.diskCacheStrategy(NONE)
+				.error(ERROR_RES)
 				.transition(withCrossFade())
 				.into(imageView)
 				.waitForLayout();

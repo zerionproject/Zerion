@@ -462,6 +462,12 @@
 	<string name="attachment_from_vault_gallery">Vault Gallery</string>
 	<string name="attachment_from_phone_documents">Phone Documents</string>
 	<string name="attachment_from_vault_documents">Vault Documents</string>
+	<string name="attachment_stickers">Stickers</string>
+	<string name="sticker_tab_standard">Standard</string>
+	<string name="sticker_tab_mine">My Stickers</string>
+	<string name="sticker_import">Import sticker</string>
+	<string name="sticker_import_failed">Could not import sticker</string>
+	<string name="sticker_delete_confirm">Delete this sticker?</string>
 	<string name="scroll_to_bottom">Scroll to bottom</string>
 	<string name="all_media">All Media</string>
 	<string name="no_media">No media shared yet</string>

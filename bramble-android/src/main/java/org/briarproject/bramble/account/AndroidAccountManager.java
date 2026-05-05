@@ -87,6 +87,18 @@ class AndroidAccountManager extends AccountManagerImpl
 		for (File file : files) {
 			deleteFileOrDir(file);
 		}
+		// The sticker dir under getFilesDir()/stickers is already nuked
+		// above; also drop the Keystore-resident AES alias so a re-add
+		// of the same account doesn't carry forward an orphaned key.
+		try {
+			java.security.KeyStore ks =
+					java.security.KeyStore.getInstance("AndroidKeyStore");
+			ks.load(null);
+			if (ks.containsAlias("zerion_sticker_aes_v1")) {
+				ks.deleteEntry("zerion_sticker_aes_v1");
+			}
+		} catch (Exception ignored) {
+		}
 	}
 
 	private File getDataDir() {

@@ -74,6 +74,36 @@
             android:textSize="16sp" />
     </LinearLayout>
 
+    <!-- Stickers -->
+    <LinearLayout
+        android:id="@+id/attachment_stickers"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="?attr/selectableItemBackground"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp">
+
+        <TextView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:text="🎁"
+            android:textSize="20sp"
+            android:gravity="center" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="16dp"
+            android:text="@string/attachment_stickers"
+            android:textColor="@android:color/white"
+            android:textSize="16sp" />
+    </LinearLayout>
+
     <!-- Phone Gallery -->
     <LinearLayout
         android:id="@+id/attachment_phone_gallery"

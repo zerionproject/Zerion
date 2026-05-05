@@ -91,7 +91,7 @@ class ConversationMessageViewHolder extends ConversationItemViewHolder {
 		if (hasVoiceMessage) {
 			bindVoiceMessage(item);
 		} else if (item.getAttachments().isEmpty()) {
-			bindTextItem();
+			bindTextItem(item);
 		} else {
 			bindImageItem(item);
 		}
@@ -147,12 +147,22 @@ class ConversationMessageViewHolder extends ConversationItemViewHolder {
 		text.setVisibility(GONE);
 	}
 
-	private void bindTextItem() {
+	private void bindTextItem(ConversationMessageItem item) {
 		voiceMessageView.setVisibility(GONE);
 		text.setVisibility(VISIBLE);
 		resetStatusLayoutForText();
 		textConstraints.applyTo(layout);
 		adapter.clear();
+
+		// Single-emoji "sticker": render at 64sp with no bubble
+		// background — wire-compatible with iOS (the emoji travels as
+		// a regular text message; only the renderer differs).
+		String body = item.getText();
+		if (com.professor.zerion.android.sticker.StickerUtils
+				.isSingleEmojiSticker(body)) {
+			text.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 64f);
+			layout.setBackground(null);
+		}
 
 		if (voiceHolder != null) {
 			voiceHolder.onRecycled();
@@ -169,11 +179,20 @@ class ConversationMessageViewHolder extends ConversationItemViewHolder {
 			voiceHolder = null;
 		}
 
+		boolean isStickerOnly = item.getText() == null
+				&& item.getAttachments().size() == 1
+				&& item.getAttachments().get(0).isSticker();
+
 		ConstraintSet constraintSet;
 		if (item.getText() == null) {
-			statusLayout.setBackgroundResource(R.drawable.msg_status_bubble);
-			time.setTextColor(timeColorBubble);
-			setImageTintList(bomb, ColorStateList.valueOf(timeColorBubble));
+			if (isStickerOnly) {
+				resetStatusLayoutForText();
+				layout.setBackground(null);
+			} else {
+				statusLayout.setBackgroundResource(R.drawable.msg_status_bubble);
+				time.setTextColor(timeColorBubble);
+				setImageTintList(bomb, ColorStateList.valueOf(timeColorBubble));
+			}
 			constraintSet = imageConstraints;
 		} else {
 			resetStatusLayoutForText();
@@ -182,10 +201,17 @@ class ConversationMessageViewHolder extends ConversationItemViewHolder {
 
 		if (item.getAttachments().size() == 1) {
 			AttachmentItem attachment = item.getAttachments().get(0);
-			int width = attachment.getThumbnailWidth();
-			int height = attachment.getThumbnailHeight();
-			constraintSet.constrainWidth(R.id.imageList, width);
-			constraintSet.constrainHeight(R.id.imageList, height);
+			if (attachment.isSticker()) {
+				int stickerPx = (int) (160 * itemView.getResources()
+						.getDisplayMetrics().density);
+				constraintSet.constrainWidth(R.id.imageList, stickerPx);
+				constraintSet.constrainHeight(R.id.imageList, stickerPx);
+			} else {
+				int width = attachment.getThumbnailWidth();
+				int height = attachment.getThumbnailHeight();
+				constraintSet.constrainWidth(R.id.imageList, width);
+				constraintSet.constrainHeight(R.id.imageList, height);
+			}
 		} else {
 			constraintSet.constrainWidth(R.id.imageList, WRAP_CONTENT);
 			constraintSet.constrainHeight(R.id.imageList, WRAP_CONTENT);

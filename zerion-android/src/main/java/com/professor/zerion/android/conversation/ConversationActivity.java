@@ -122,6 +122,7 @@ import static java.util.Collections.sort;
 import static java.util.Objects.requireNonNull;
 import static org.briarproject.bramble.util.StringUtils.fromHexString;
 import static org.briarproject.bramble.util.StringUtils.join;
+import static org.briarproject.briar.api.autodelete.AutoDeleteConstants.NO_AUTO_DELETE_TIMER;
 import static com.professor.zerion.android.activity.RequestCodes.REQUEST_INTRODUCTION;
 import static com.professor.zerion.android.conversation.ImageActivity.ATTACHMENTS;
 import static com.professor.zerion.android.conversation.ImageActivity.ATTACHMENT_POSITION;
@@ -142,6 +143,7 @@ public class ConversationActivity extends ZerionActivity
 		implements BaseFragmentListener, ConversationListener,
 		TextCache, AttachmentCache, AttachmentListener, ActionMode.Callback,
 		AttachmentPickerDialog.AttachmentPickerListener,
+		com.professor.zerion.android.sticker.StickerPickerDialog.StickerPickerListener,
 		VoiceRecordingController.VoiceRecordingHost {
 
 	public static final String CONTACT_ID = "zerion.CONTACT_ID";
@@ -173,6 +175,9 @@ public class ConversationActivity extends ZerionActivity
 	@Inject
 	@IoExecutor
 	Executor ioExecutor;
+
+	@Inject
+	MessagingManager messagingManager;
 
 	@Inject
 	@com.professor.zerion.android.AppModule.UiPrefs
@@ -1499,6 +1504,62 @@ public class ConversationActivity extends ZerionActivity
 		intent.putExtra(VaultActivity.EXTRA_PICKER_MODE, true);
 		intent.putExtra(VaultActivity.EXTRA_PICKER_TYPE, VaultActivity.PICKER_TYPE_DOCUMENTS);
 		startActivityForResult(intent, REQUEST_VAULT_DOCUMENTS);
+	}
+
+	@Override
+	public void onStickersSelected() {
+		com.professor.zerion.android.sticker.StickerPickerDialog dialog =
+				com.professor.zerion.android.sticker.StickerPickerDialog
+						.newInstance();
+		dialog.show(getSupportFragmentManager(), "sticker_picker");
+	}
+
+	@Override
+	public void onStickerEmojiPicked(String emoji) {
+		// Standard pack: send the emoji as a plain text message. iOS
+		// detects single-emoji bodies and renders them oversize; older
+		// peers see a normal text message with one emoji.
+		Long timerObj = viewModel.getAutoDeleteTimer().getValue();
+		long timer = timerObj == null ? NO_AUTO_DELETE_TIMER : timerObj;
+		viewModel.sendMessage(emoji, java.util.Collections.emptyList(),
+				timer, null);
+	}
+
+	@Override
+	public void onCustomStickerPicked(byte[] pngBytes) {
+		// Custom sticker: persist as an inline-image attachment with
+		// "image/png; profile=sticker", then ship a private message
+		// pointing at the resulting AttachmentHeader. Older peers see
+		// a small photo; iOS / future Android clients render chromeless.
+		org.briarproject.bramble.api.sync.GroupId gid =
+				viewModel.getMessagingGroupId().getValue();
+		if (gid == null) {
+			Toast.makeText(this, R.string.sticker_import_failed,
+					Toast.LENGTH_SHORT).show();
+			return;
+		}
+		com.professor.zerion.android.sticker.StickerSendTask task =
+				new com.professor.zerion.android.sticker.StickerSendTask(
+						ioExecutor, messagingManager);
+		task.send(gid, pngBytes,
+				new com.professor.zerion.android.sticker.StickerSendTask.Callback() {
+					@Override
+					public void onStickerHeaderReady(
+							org.briarproject.briar.api.attachment.AttachmentHeader h) {
+						Long t = viewModel.getAutoDeleteTimer().getValue();
+						long timer = t == null ? NO_AUTO_DELETE_TIMER : t;
+						viewModel.sendMessage(null,
+								java.util.Collections.singletonList(h),
+								timer, null);
+					}
+
+					@Override
+					public void onStickerSendFailed(Exception e) {
+						Toast.makeText(ConversationActivity.this,
+								R.string.sticker_import_failed,
+								Toast.LENGTH_SHORT).show();
+					}
+				});
 	}
 
 	@Override

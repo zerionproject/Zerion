@@ -959,6 +959,10 @@ public class ConversationViewModel extends DbViewModel
 		return autoDeleteTimer;
 	}
 
+	LiveData<GroupId> getMessagingGroupId() {
+		return messagingGroupId;
+	}
+
 	LiveData<Boolean> isContactDeleted() {
 		return contactDeleted;
 	}
