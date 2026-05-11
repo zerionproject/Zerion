@@ -152,6 +152,7 @@ All records ride the existing private-message 1:1 channel (`org.briarproject.bri
 | 35 | `GROUP_MEMBER_LEFT` | Signed by the leaver |
 | 36 | `GROUP_DISSOLVED` | Signed by group creator |
 | 37 | `GROUP_EPOCH_COMMIT` | Signed by creator — announces the epoch a removal commits to (see §8.3) |
+| 38 | `GROUP_MEMBER_ROLE_CHANGED` | Signed by creator — promotes a member to admin or demotes back to member (multi-admin, see §8.5) |
 
 Numbers reserve a clear band (32–63) for group-over-private records. No conflicts with current Briar group BSP types (0–3).
 
@@ -163,19 +164,28 @@ Numbers reserve a clear band (32–63) for group-over-private records. No confli
   groupId,             // raw 32B
   epoch,               // int — current group epoch (see §8.3)
   senderPubKey,        // raw 32B — Ed25519 signing pubkey of sender
-  ciphertext,          // raw — payload encrypted by the *pairwise* Triple Ratchet
-                       //       between sender and this recipient (already includes
-                       //       frame counter, AEAD tag, ratchet header)
+  senderName,          // string — sender's display name for this post,
+                       //          substituted with stealth alias if set
+                       //          (see §8 — stealth name lives in the wire
+                       //          so each post can carry a different name)
+  body,                // raw — payload bytes; the 1:1 stream-level
+                       //       Triple Ratchet provides the actual ratchet
+                       //       FS / PCS / hybrid-PQ. The body is plaintext
+                       //       after stream-decrypt.
   recordSig,           // raw 64B — Ed25519 sig over [groupId ‖ epoch(4 BE) ‖
-                       //                            senderPubKey ‖ blake2b(ciphertext)]
+                       //                            senderPubKey ‖
+                       //                            blake2b(senderName) ‖
+                       //                            blake2b(body)]
                        //         under label "org.briarproject.zerion/GROUP_POST"
   autoDeleteTimerMs    // int — OPTIONAL, omit for permanent messages
 ]
 ```
 
-The `ciphertext` is opaque to the wire layer — it carries the Triple Ratchet header + AEAD output exactly as a 1:1 message would. The receiver decrypts it through the same `PcsStreamDecrypterImpl` already used for 1:1 chat.
+Body size: **7 or 8 BDF elements** (8 when `autoDeleteTimerMs` is appended).
 
-The `recordSig` defends against the only attack the pairwise ratchet does not cover: a malicious contact tampering with a forwarded record before re-broadcasting. It is signed AFTER ratchet encryption, so the signature covers the ciphertext-and-context, not the plaintext.
+The `body` is opaque to the group layer — the 1:1 stream-level Triple Ratchet (Mode 3: X25519 + ML-KEM-768 + symmetric chain) handles per-message FS + PCS + hybrid PQ for the bytes in transit. After the 1:1 decrypt, the `body` is the upper-layer payload (UTF-8 text in the current UI).
+
+The `recordSig` defends against the only attack the pairwise 1:1 ratchet does not cover: a malicious contact tampering with a forwarded record before re-broadcasting. It is signed AFTER 1:1 decrypt at the group layer, so the signature covers the body-and-context.
 
 ### 5.3 Membership records (msgType 33–36)
 

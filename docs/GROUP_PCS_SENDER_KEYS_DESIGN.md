@@ -1,8 +1,8 @@
 # Group PCS Design: Sender Keys Architecture
 
-**Status:** IMPLEMENTED - Core Sender Keys Active
-**Version:** 1.0
-**Date:** 2026-02-04
+**Status:** SUPERSEDED — replaced by Group Triple Ratchet (see [GROUP_TRIPLE_RATCHET_PQ_DESIGN.md](GROUP_TRIPLE_RATCHET_PQ_DESIGN.md)). The Sender Keys code in `briar-core/.../privategroup/senderkeys/` remains in the tree for backward compatibility with existing legacy groups; new groups default to the Triple Ratchet wire (msgType 32–38). This document is preserved for historical reference of the prior design.
+**Version:** 1.0 (historical)
+**Date:** 2026-02-04 (superseded 2026-05-11)
 **Author:** Professor
 
 **Related Documents:**
