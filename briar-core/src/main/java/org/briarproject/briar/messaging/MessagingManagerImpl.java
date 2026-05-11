@@ -253,7 +253,9 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			} else if (messageType == MessageTypes.GROUP_MEMBER_ADDED
 					|| messageType == MessageTypes.GROUP_MEMBER_REMOVED
 					|| messageType == MessageTypes.GROUP_MEMBER_LEFT
-					|| messageType == MessageTypes.GROUP_DISSOLVED) {
+					|| messageType == MessageTypes.GROUP_DISSOLVED
+					|| messageType ==
+							MessageTypes.GROUP_MEMBER_ROLE_CHANGED) {
 				incomingGroupMembership(txn, m, metaDict, messageType);
 			} else if (messageType == MessageTypes.GROUP_EPOCH_COMMIT) {
 				incomingGroupEpochCommit(txn, m, metaDict);
@@ -1153,10 +1155,24 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			epoch = meta.getLong(MessagingConstants.MSG_KEY_GROUP_EPOCH);
 			targetPubKey = meta.getRaw(
 					MessagingConstants.MSG_KEY_GROUP_LEAVING_PUBKEY);
-		} else {
+		} else if (messageType == MessageTypes.GROUP_DISSOLVED) {
 			kind = org.briarproject.briar.api.messaging.event
 					.GroupMembershipChangedEvent.ChangeKind.GROUP_DISSOLVED;
 			epoch = meta.getLong(MessagingConstants.MSG_KEY_GROUP_EPOCH);
+		} else {
+			kind = org.briarproject.briar.api.messaging.event
+					.GroupMembershipChangedEvent.ChangeKind.ROLE_CHANGED;
+			epoch = meta.getLong(MessagingConstants.MSG_KEY_GROUP_EPOCH);
+			targetPubKey = meta.getRaw(
+					MessagingConstants.MSG_KEY_GROUP_TARGET_PUBKEY);
+			int newRoleInt = meta.getLong(
+					MessagingConstants.MSG_KEY_GROUP_NEW_ROLE).intValue();
+			txn.attach(new org.briarproject.briar.api.messaging.event
+					.GroupMembershipChangedEvent(contactId, kind, groupId,
+					epoch, timestamp, targetPubKey, targetName,
+					fromEpoch, toEpoch, recordSig, signedInput,
+					newRoleInt));
+			return;
 		}
 		txn.attach(new org.briarproject.briar.api.messaging.event
 				.GroupMembershipChangedEvent(contactId, kind, groupId,

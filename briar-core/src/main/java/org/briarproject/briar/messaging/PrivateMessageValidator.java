@@ -47,6 +47,7 @@ import static org.briarproject.briar.messaging.MessageTypes.GROUP_EPOCH_COMMIT;
 import static org.briarproject.briar.messaging.MessageTypes.GROUP_MEMBER_ADDED;
 import static org.briarproject.briar.messaging.MessageTypes.GROUP_MEMBER_LEFT;
 import static org.briarproject.briar.messaging.MessageTypes.GROUP_MEMBER_REMOVED;
+import static org.briarproject.briar.messaging.MessageTypes.GROUP_MEMBER_ROLE_CHANGED;
 import static org.briarproject.briar.messaging.MessageTypes.GROUP_POST;
 import static org.briarproject.briar.messaging.MessageTypes.PRIVATE_MESSAGE;
 import static org.briarproject.briar.messaging.MessageTypes.MESSAGE_REACTION;
@@ -83,6 +84,8 @@ import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_GROUP_
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_GROUP_FROM_EPOCH;
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_GROUP_TO_EPOCH;
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_GROUP_PQ_SEED;
+import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_GROUP_TARGET_PUBKEY;
+import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_GROUP_NEW_ROLE;
 import static org.briarproject.briar.messaging.MessagingConstants.SIGNING_LABEL_GROUP_POST;
 import static org.briarproject.briar.messaging.MessagingConstants.SIGNING_LABEL_GROUP_MEMBERSHIP;
 import static org.briarproject.briar.util.ValidationUtils.validateAutoDeleteTimer;
@@ -168,6 +171,9 @@ class PrivateMessageValidator implements MessageValidator {
 				} else if (messageType == GROUP_EPOCH_COMMIT) {
 					if (!reader.eof()) throw new FormatException();
 					context = validateGroupEpochCommit(m, list);
+				} else if (messageType == GROUP_MEMBER_ROLE_CHANGED) {
+					if (!reader.eof()) throw new FormatException();
+					context = validateGroupRoleChanged(m, list);
 				} else {
 					throw new InvalidMessageException();
 				}
@@ -682,6 +688,51 @@ class PrivateMessageValidator implements MessageValidator {
 			out[36 + i] = (byte) (timestamp >>> ((7 - i) * 8));
 		}
 		out[44] = (byte) 0x04;
+		return out;
+	}
+
+	private BdfMessageContext validateGroupRoleChanged(Message m,
+			BdfList body) throws FormatException {
+		checkSize(body, 7);
+		byte[] groupId = body.getRaw(1);
+		checkLength(groupId, 32);
+		byte[] targetPubKey = body.getRaw(2);
+		checkLength(targetPubKey, 32);
+		long newRole = body.getLong(3);
+		if (newRole < 0L || newRole > 2L) throw new FormatException();
+		long epoch = body.getLong(4);
+		if (epoch < 0L || epoch > 0xFFFFFFFFL) throw new FormatException();
+		long timestamp = body.getLong(5);
+		byte[] sig = body.getRaw(6);
+		checkLength(sig, 1, 128);
+		byte[] signedInput = roleChangedSignedInput(groupId, targetPubKey,
+				(int) newRole, (int) epoch, timestamp);
+		BdfDictionary meta = new BdfDictionary();
+		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
+		meta.put(MSG_KEY_LOCAL, false);
+		meta.put(MSG_KEY_MSG_TYPE, GROUP_MEMBER_ROLE_CHANGED);
+		meta.put(MSG_KEY_GROUP_ID, groupId);
+		meta.put(MSG_KEY_GROUP_TARGET_PUBKEY, targetPubKey);
+		meta.put(MSG_KEY_GROUP_NEW_ROLE, newRole);
+		meta.put(MSG_KEY_GROUP_EPOCH, epoch);
+		meta.put(MSG_KEY_GROUP_RECORD_SIG, sig);
+		meta.put("groupMembershipSignedInput", signedInput);
+		return new BdfMessageContext(meta);
+	}
+
+	private byte[] roleChangedSignedInput(byte[] groupId,
+			byte[] targetPubKey, int newRole, int epoch, long timestamp) {
+		byte[] out = new byte[32 + 32 + 1 + 4 + 8 + 1];
+		System.arraycopy(groupId, 0, out, 0, 32);
+		System.arraycopy(targetPubKey, 0, out, 32, 32);
+		out[64] = (byte) newRole;
+		for (int i = 0; i < 4; i++) {
+			out[65 + i] = (byte) (epoch >>> ((3 - i) * 8));
+		}
+		for (int i = 0; i < 8; i++) {
+			out[69 + i] = (byte) (timestamp >>> ((7 - i) * 8));
+		}
+		out[77] = (byte) 0x06;
 		return out;
 	}
 

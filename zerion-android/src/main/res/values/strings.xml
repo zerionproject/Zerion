@@ -475,6 +475,9 @@
 	<string name="grouptr_meta">Epoch %1$d · %2$d members</string>
 	<string name="grouptr_dissolved_suffix">(dissolved)</string>
 	<string name="grouptr_creator_tag">(creator)</string>
+	<string name="grouptr_admin_tag">(admin)</string>
+	<string name="grouptr_promote">Promote</string>
+	<string name="grouptr_demote">Demote</string>
 	<string name="grouptr_you_tag">(you)</string>
 	<string name="grouptr_remove">Remove</string>
 	<string name="grouptr_add_member">Add member</string>

@@ -29,6 +29,7 @@ import org.briarproject.briar.api.grouptr.GroupTrManager;
 import org.briarproject.briar.api.grouptr.GroupTrMember;
 import org.briarproject.briar.api.grouptr.GroupTrPost;
 import org.briarproject.briar.api.grouptr.GroupTrState;
+import org.briarproject.briar.api.grouptr.MemberRole;
 import org.briarproject.briar.api.messaging.MessagingManager;
 import org.briarproject.briar.api.messaging.event.GroupEpochCommitEvent;
 import org.briarproject.briar.api.messaging.event.GroupMembershipChangedEvent;
@@ -156,9 +157,92 @@ class GroupTrManagerImpl
 	public java.util.List<GroupTrPost> getRecentPosts(byte[] groupId) {
 		String key = toHexString(groupId);
 		java.util.ArrayDeque<GroupTrPost> q = postCache.get(key);
-		if (q == null) return java.util.Collections.emptyList();
+		if (q == null) {
+			try {
+				loadHistoryIntoCache(groupId);
+				q = postCache.get(key);
+				if (q == null) return java.util.Collections.emptyList();
+			} catch (DbException ex) {
+				return java.util.Collections.emptyList();
+			}
+		}
 		synchronized (q) {
 			return new ArrayList<>(q);
+		}
+	}
+
+	private void loadHistoryIntoCache(byte[] groupId) throws DbException {
+		String key = toHexString(groupId);
+		java.util.ArrayDeque<GroupTrPost> q =
+				postCache.computeIfAbsent(key,
+						k -> new java.util.ArrayDeque<>());
+		java.util.TreeMap<Long, GroupTrPost> ordered =
+				new java.util.TreeMap<>();
+		java.util.HashSet<String> seenLocalIds = new java.util.HashSet<>();
+		db.transaction(true, txn -> {
+			byte[] localPub;
+			try {
+				localPub = identityManager.getLocalAuthor(txn)
+						.getPublicKey().getEncoded();
+			} catch (DbException ex) {
+				localPub = new byte[0];
+			}
+			for (Contact c : contactManager.getContacts(txn)) {
+				org.briarproject.bramble.api.sync.GroupId cg =
+						messagingManager.getContactGroup(c).getId();
+				try {
+					java.util.Map<org.briarproject.bramble.api.sync.MessageId,
+							org.briarproject.bramble.api.data.BdfDictionary>
+							msgs = clientHelper
+									.getMessageMetadataAsDictionary(txn, cg);
+					for (java.util.Map.Entry<
+							org.briarproject.bramble.api.sync.MessageId,
+							org.briarproject.bramble.api.data.BdfDictionary>
+							e : msgs.entrySet()) {
+						org.briarproject.bramble.api.data.BdfDictionary
+								meta = e.getValue();
+						Integer mt = meta.getOptionalInt(
+								"messageType");
+						if (mt == null || mt != 32) continue;
+						byte[] gid = meta.getOptionalRaw("groupId");
+						if (gid == null || !Arrays.equals(gid, groupId))
+							continue;
+						long epoch = meta.getLong("groupEpoch", 0L);
+						byte[] senderPub = meta.getRaw(
+								"groupSenderPubKey");
+						String senderName = meta.getOptionalString(
+								"groupSenderName");
+						if (senderName == null) senderName = "";
+						byte[] body = meta.getRaw(
+								"groupCiphertext");
+						long ts = meta.getLong("timestamp",
+								0L);
+						boolean local = Arrays.equals(senderPub,
+								localPub);
+						if (local) {
+							String dedupKey = ts + ":" + epoch;
+							if (!seenLocalIds.add(dedupKey)) continue;
+						}
+						ordered.put(ts * 100_000L
+										+ (long) ordered.size(),
+								new GroupTrPost(groupId, senderPub,
+										senderName, body, ts, epoch,
+										local));
+					}
+				} catch (FormatException ex) {
+					// skip bad row
+				}
+			}
+		});
+		synchronized (q) {
+			q.clear();
+			int skip = Math.max(0, ordered.size()
+					- MAX_CACHED_POSTS_PER_GROUP);
+			int i = 0;
+			for (GroupTrPost p : ordered.values()) {
+				if (i++ < skip) continue;
+				q.addLast(p);
+			}
 		}
 	}
 
@@ -206,7 +290,8 @@ class GroupTrManagerImpl
 			String creatorName = la.getName();
 			byte[] groupId = deriveGroupId(creatorName, creatorPub, name, salt);
 			List<GroupTrMember> members = new ArrayList<>(1);
-			members.add(new GroupTrMember(creatorPub, creatorName, now, 0L));
+			members.add(new GroupTrMember(creatorPub, creatorName, now, 0L,
+					MemberRole.CREATOR));
 			GroupTrState s = new GroupTrState(groupId, name, salt,
 					creatorPub, creatorName, now, 0L, false, members);
 			persist(s);
@@ -280,6 +365,11 @@ class GroupTrManagerImpl
 					s.setDissolved(true);
 					s.setEpoch(s.getEpoch() + 1);
 					persist(s);
+					break;
+				case ROLE_CHANGED:
+					if (!verify(sig, SIGNING_LABEL_GROUP_MEMBERSHIP,
+							signedInput, s.getCreatorPubKey())) return;
+					applyRoleChanged(s, e);
 					break;
 			}
 		} catch (DbException | FormatException ex) {
@@ -385,6 +475,7 @@ class GroupTrManagerImpl
 			ml.add(m.getName());
 			ml.add(m.getJoinedAt());
 			ml.add(m.getJoinedAtEpoch());
+			ml.add((long) m.getRole().getInt());
 			list.add(ml);
 		}
 		out.put(S_MEMBERS, toHexString(clientHelper.toByteArray(list)));
@@ -412,8 +503,15 @@ class GroupTrManagerImpl
 		List<GroupTrMember> members = new ArrayList<>(memberList.size());
 		for (int i = 0; i < memberList.size(); i++) {
 			BdfList ml = memberList.getList(i);
-			members.add(new GroupTrMember(ml.getRaw(0), ml.getString(1),
-					ml.getLong(2), ml.getLong(3)));
+			MemberRole r = ml.size() >= 5
+					? MemberRole.valueOf(ml.getLong(4).intValue())
+					: MemberRole.MEMBER;
+			byte[] pk = ml.getRaw(0);
+			MemberRole effective = Arrays.equals(pk,
+					fromHexString(creatorPubHex))
+					? MemberRole.CREATOR : r;
+			members.add(new GroupTrMember(pk, ml.getString(1),
+					ml.getLong(2), ml.getLong(3), effective));
 		}
 		return new GroupTrState(groupId, name, salt, creatorPub,
 				creatorName, created, epoch, dissolved, members,
@@ -758,6 +856,112 @@ class GroupTrManagerImpl
 		} catch (FormatException ex) {
 			throw new DbException(ex);
 		}
+	}
+
+	private void applyRoleChanged(GroupTrState s,
+			GroupMembershipChangedEvent e)
+			throws DbException, FormatException {
+		byte[] target = e.getTargetPubKey();
+		if (target == null) return;
+		if (Arrays.equals(target, s.getCreatorPubKey())) return;
+		MemberRole newRole = MemberRole.valueOf(e.getNewRole());
+		if (newRole == MemberRole.CREATOR) return;
+		List<GroupTrMember> next = new ArrayList<>(s.getMembers().size());
+		boolean found = false;
+		for (GroupTrMember m : s.getMembers()) {
+			if (Arrays.equals(m.getPubKey(), target)) {
+				next.add(m.withRole(newRole));
+				found = true;
+			} else {
+				next.add(m);
+			}
+		}
+		if (!found) return;
+		s.setMembers(next);
+		s.setEpoch(e.getEpoch());
+		persist(s);
+	}
+
+	@Override
+	public void promoteToAdmin(byte[] groupId, byte[] targetPubKey)
+			throws DbException {
+		changeRole(groupId, targetPubKey, MemberRole.ADMIN);
+	}
+
+	@Override
+	public void demoteToMember(byte[] groupId, byte[] targetPubKey)
+			throws DbException {
+		changeRole(groupId, targetPubKey, MemberRole.MEMBER);
+	}
+
+	private void changeRole(byte[] groupId, byte[] targetPubKey,
+			MemberRole newRole) throws DbException {
+		GroupTrState s = requireWritable(groupId);
+		requireLocalIsCreator(s);
+		if (Arrays.equals(targetPubKey, s.getCreatorPubKey())) {
+			throw new GroupTrAuthException(
+					GroupTrAuthException.Reason.NOT_CREATOR);
+		}
+		boolean isMember = false;
+		for (GroupTrMember m : s.getMembers()) {
+			if (Arrays.equals(m.getPubKey(), targetPubKey)) {
+				isMember = true;
+				break;
+			}
+		}
+		if (!isMember) {
+			throw new GroupTrAuthException(
+					GroupTrAuthException.Reason.CONTACT_NOT_FOUND);
+		}
+		LocalAuthor la = db.transactionWithResult(true,
+				identityManager::getLocalAuthor);
+		PrivateKey signingKey = la.getPrivateKey();
+		long timestamp = clock.currentTimeMillis();
+		int newEpoch = (int) s.getEpoch() + 1;
+		byte[] signed = roleChangedSignedInput(groupId, targetPubKey,
+				newRole.getInt(), newEpoch, timestamp);
+		byte[] sig = signOrThrow(SIGNING_LABEL_GROUP_MEMBERSHIP, signed,
+				signingKey);
+		BdfList body = BdfList.of(38L, groupId, targetPubKey,
+				(long) newRole.getInt(), (long) newEpoch, timestamp, sig);
+		db.transaction(false, txn -> fanOut(txn, s, body, timestamp,
+				null));
+		applyLocalRoleChange(s, targetPubKey, newRole, newEpoch);
+	}
+
+	private void applyLocalRoleChange(GroupTrState s, byte[] target,
+			MemberRole newRole, int newEpoch) throws DbException {
+		List<GroupTrMember> next = new ArrayList<>(s.getMembers().size());
+		for (GroupTrMember m : s.getMembers()) {
+			if (Arrays.equals(m.getPubKey(), target)) {
+				next.add(m.withRole(newRole));
+			} else {
+				next.add(m);
+			}
+		}
+		s.setMembers(next);
+		s.setEpoch(newEpoch);
+		try {
+			persist(s);
+		} catch (FormatException ex) {
+			throw new DbException(ex);
+		}
+	}
+
+	private byte[] roleChangedSignedInput(byte[] groupId,
+			byte[] targetPubKey, int newRole, int epoch, long timestamp) {
+		byte[] out = new byte[32 + 32 + 1 + 4 + 8 + 1];
+		System.arraycopy(groupId, 0, out, 0, 32);
+		System.arraycopy(targetPubKey, 0, out, 32, 32);
+		out[64] = (byte) newRole;
+		for (int i = 0; i < 4; i++) {
+			out[65 + i] = (byte) (epoch >>> ((3 - i) * 8));
+		}
+		for (int i = 0; i < 8; i++) {
+			out[69 + i] = (byte) (timestamp >>> ((7 - i) * 8));
+		}
+		out[77] = (byte) 0x06;
+		return out;
 	}
 
 	private void applyLocalLeave(GroupTrState s, byte[] pk, int newEpoch)

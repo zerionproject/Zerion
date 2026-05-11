@@ -39,6 +39,8 @@ interface MessagingConstants {
 	String MSG_KEY_GROUP_FROM_EPOCH = "groupFromEpoch";
 	String MSG_KEY_GROUP_TO_EPOCH = "groupToEpoch";
 	String MSG_KEY_GROUP_PQ_SEED = "groupPqSeed";
+	String MSG_KEY_GROUP_TARGET_PUBKEY = "groupTargetPubKey";
+	String MSG_KEY_GROUP_NEW_ROLE = "groupNewRole";
 
 	String SIGNING_LABEL_GROUP_POST =
 			"org.briarproject.zerion/GROUP_POST";

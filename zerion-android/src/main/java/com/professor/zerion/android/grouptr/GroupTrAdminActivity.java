@@ -26,6 +26,7 @@ import org.briarproject.bramble.api.lifecycle.IoExecutor;
 import org.briarproject.briar.api.grouptr.GroupTrManager;
 import org.briarproject.briar.api.grouptr.GroupTrMember;
 import org.briarproject.briar.api.grouptr.GroupTrState;
+import org.briarproject.briar.api.grouptr.MemberRole;
 import org.briarproject.bramble.util.StringUtils;
 
 import java.util.ArrayList;
@@ -129,12 +130,26 @@ public class GroupTrAdminActivity extends ZerionActivity {
 					s.getCreatorPubKey());
 			String label = m.getName();
 			if (creator) label += " " + getString(R.string.grouptr_creator_tag);
+			else if (m.getRole() == MemberRole.ADMIN) {
+				label += " " + getString(R.string.grouptr_admin_tag);
+			}
 			if (self) label += " " + getString(R.string.grouptr_you_tag);
 			name.setText(label);
 			LinearLayout.LayoutParams nameLp = new LinearLayout.LayoutParams(
 					0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
 			row.addView(name, nameLp);
 			if (isCreator && !creator) {
+				if (m.getRole() == MemberRole.ADMIN) {
+					Button dem = new Button(this);
+					dem.setText(R.string.grouptr_demote);
+					dem.setOnClickListener(v -> demote(s, m));
+					row.addView(dem);
+				} else {
+					Button pro = new Button(this);
+					pro.setText(R.string.grouptr_promote);
+					pro.setOnClickListener(v -> promote(s, m));
+					row.addView(pro);
+				}
 				Button rm = new Button(this);
 				rm.setText(R.string.grouptr_remove);
 				rm.setOnClickListener(v -> confirmRemove(s, m));
@@ -161,8 +176,83 @@ public class GroupTrAdminActivity extends ZerionActivity {
 				actions.addView(leave);
 			}
 			section.addView(actions);
+
+			if (isMember(s, localPub)) {
+				Button stealth = new Button(this);
+				stealth.setText(R.string.grouptr_stealth_name_set);
+				stealth.setOnClickListener(v -> showStealthDialog(s));
+				section.addView(stealth);
+			}
 		}
 		return section;
+	}
+
+	private void promote(GroupTrState s, GroupTrMember m) {
+		ioExecutor.execute(() -> {
+			try {
+				groupTrManager.promoteToAdmin(s.getGroupId(),
+						m.getPubKey());
+				runOnUiThread(this::render);
+			} catch (DbException ex) {
+				runOnUiThread(() -> toast(R.string.grouptr_error_save));
+			}
+		});
+	}
+
+	private void demote(GroupTrState s, GroupTrMember m) {
+		ioExecutor.execute(() -> {
+			try {
+				groupTrManager.demoteToMember(s.getGroupId(),
+						m.getPubKey());
+				runOnUiThread(this::render);
+			} catch (DbException ex) {
+				runOnUiThread(() -> toast(R.string.grouptr_error_save));
+			}
+		});
+	}
+
+	private void showStealthDialog(GroupTrState s) {
+		final EditText editor = new EditText(this);
+		editor.setInputType(android.text.InputType.TYPE_CLASS_TEXT);
+		ioExecutor.execute(() -> {
+			try {
+				String current = groupTrManager.getStealthName(
+						s.getGroupId());
+				runOnUiThread(() -> {
+					if (current != null) editor.setText(current);
+					new androidx.appcompat.app.AlertDialog.Builder(this)
+							.setTitle(R.string.grouptr_stealth_name_set)
+							.setMessage(R.string.grouptr_stealth_name_msg)
+							.setView(editor)
+							.setPositiveButton(android.R.string.ok,
+									(d, w) -> {
+										String v = editor.getText()
+												.toString().trim();
+										persistStealth(s,
+												v.isEmpty() ? null : v);
+									})
+							.setNeutralButton(
+									R.string.grouptr_stealth_clear,
+									(d, w) -> persistStealth(s, null))
+							.setNegativeButton(android.R.string.cancel,
+									null)
+							.show();
+				});
+			} catch (DbException ex) {
+				runOnUiThread(() -> toast(R.string.grouptr_error_load));
+			}
+		});
+	}
+
+	private void persistStealth(GroupTrState s, @Nullable String alias) {
+		ioExecutor.execute(() -> {
+			try {
+				groupTrManager.setStealthName(s.getGroupId(), alias);
+				runOnUiThread(this::render);
+			} catch (DbException ex) {
+				runOnUiThread(() -> toast(R.string.grouptr_error_save));
+			}
+		});
 	}
 
 	private boolean isMember(GroupTrState s, byte[] pub) {

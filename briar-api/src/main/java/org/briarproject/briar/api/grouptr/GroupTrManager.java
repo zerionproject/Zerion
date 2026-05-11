@@ -38,6 +38,12 @@ public interface GroupTrManager {
 
 	void dissolveGroup(byte[] groupId) throws DbException;
 
+	void promoteToAdmin(byte[] groupId, byte[] targetPubKey)
+			throws DbException;
+
+	void demoteToMember(byte[] groupId, byte[] targetPubKey)
+			throws DbException;
+
 	void setGroupAutoDeleteTimer(byte[] groupId, long ms) throws DbException;
 
 	@Nullable

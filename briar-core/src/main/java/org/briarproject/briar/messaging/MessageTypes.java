@@ -19,4 +19,5 @@ public interface MessageTypes {
 	int GROUP_MEMBER_LEFT = 35;
 	int GROUP_DISSOLVED = 36;
 	int GROUP_EPOCH_COMMIT = 37;
+	int GROUP_MEMBER_ROLE_CHANGED = 38;
 }

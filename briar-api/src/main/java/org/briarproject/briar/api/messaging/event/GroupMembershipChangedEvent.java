@@ -15,7 +15,8 @@ public class GroupMembershipChangedEvent extends Event {
 		MEMBER_ADDED,
 		MEMBER_REMOVED,
 		MEMBER_LEFT,
-		GROUP_DISSOLVED
+		GROUP_DISSOLVED,
+		ROLE_CHANGED
 	}
 
 	private final ContactId contactId;
@@ -31,12 +32,23 @@ public class GroupMembershipChangedEvent extends Event {
 	private final long toEpoch;
 	private final byte[] recordSig;
 	private final byte[] signedInput;
+	private final int newRole;
 
 	public GroupMembershipChangedEvent(ContactId contactId, ChangeKind kind,
 			byte[] groupId, long epoch, long timestamp,
 			@Nullable byte[] targetPubKey, @Nullable String targetName,
 			long fromEpoch, long toEpoch,
 			byte[] recordSig, byte[] signedInput) {
+		this(contactId, kind, groupId, epoch, timestamp, targetPubKey,
+				targetName, fromEpoch, toEpoch, recordSig, signedInput,
+				0);
+	}
+
+	public GroupMembershipChangedEvent(ContactId contactId, ChangeKind kind,
+			byte[] groupId, long epoch, long timestamp,
+			@Nullable byte[] targetPubKey, @Nullable String targetName,
+			long fromEpoch, long toEpoch,
+			byte[] recordSig, byte[] signedInput, int newRole) {
 		this.contactId = contactId;
 		this.kind = kind;
 		this.groupId = groupId;
@@ -48,6 +60,11 @@ public class GroupMembershipChangedEvent extends Event {
 		this.toEpoch = toEpoch;
 		this.recordSig = recordSig;
 		this.signedInput = signedInput;
+		this.newRole = newRole;
+	}
+
+	public int getNewRole() {
+		return newRole;
 	}
 
 	public ContactId getContactId() {
