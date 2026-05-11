@@ -20,6 +20,14 @@ public interface GroupMessageFactory {
 
 	String SIGNING_LABEL_JOIN = CLIENT_ID.getString() + "/JOIN";
 	String SIGNING_LABEL_POST = CLIENT_ID.getString() + "/POST";
+	// Group-membership v2 signing labels. The signed-input layout (per record
+	// type) is described in ANDROID_GROUP_PROTOCOL_V2.md §3 — caller is
+	// responsible for building the exact byte sequence and passing it to
+	// CryptoComponent.sign / verifySignature with these labels.
+	String SIGNING_LABEL_MEMBERSHIP =
+			CLIENT_ID.getString() + "/MEMBERSHIP";
+	String SIGNING_LABEL_SENDER_KEY_BROADCAST =
+			CLIENT_ID.getString() + "/SENDER_KEY_BROADCAST";
 
 	/**
 	 * Creates a join announcement message for the creator of a group.
