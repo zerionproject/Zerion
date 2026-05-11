@@ -194,4 +194,6 @@ public interface ActivityComponent {
 
 	void inject(com.professor.zerion.android.vault.ui.TextEditorFragment fragment);
 
+	void inject(com.professor.zerion.android.grouptr.GroupTrAdminActivity activity);
+
 }

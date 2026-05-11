@@ -62,6 +62,7 @@ import org.briarproject.briar.api.messaging.PrivateMessageFactory;
 import org.briarproject.briar.api.messaging.VoiceSignalFactory;
 import org.briarproject.briar.api.privategroup.GroupMessageFactory;
 import org.briarproject.briar.api.privategroup.PrivateGroupFactory;
+import org.briarproject.briar.api.grouptr.GroupTrManager;
 import org.briarproject.briar.api.privategroup.PrivateGroupManager;
 import org.briarproject.briar.api.privategroup.invitation.GroupInvitationFactory;
 import org.briarproject.briar.api.privategroup.invitation.GroupInvitationManager;
@@ -134,6 +135,8 @@ public interface AndroidComponent
 	VoiceSignalFactory voiceSignalFactory();
 
 	PrivateGroupManager privateGroupManager();
+
+	GroupTrManager groupTrManager();
 
 	GroupInvitationFactory groupInvitationFactory();
 
