@@ -24,4 +24,17 @@ public interface GroupTrManager {
 	long getEpoch(byte[] groupId) throws DbException;
 
 	boolean isDissolved(byte[] groupId) throws DbException;
+
+	void sendGroupPost(byte[] groupId, byte[] body, long autoDeleteTimerMs)
+			throws DbException;
+
+	void addMember(byte[] groupId, byte[] addedPubKey, String addedName)
+			throws DbException;
+
+	void removeMember(byte[] groupId, byte[] removedPubKey)
+			throws DbException;
+
+	void leaveGroup(byte[] groupId) throws DbException;
+
+	void dissolveGroup(byte[] groupId) throws DbException;
 }

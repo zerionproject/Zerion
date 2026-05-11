@@ -2,9 +2,13 @@ package org.briarproject.briar.grouptr;
 
 import org.briarproject.bramble.api.FormatException;
 import org.briarproject.bramble.api.client.ClientHelper;
+import org.briarproject.bramble.api.contact.Contact;
+import org.briarproject.bramble.api.contact.ContactManager;
 import org.briarproject.bramble.api.crypto.CryptoComponent;
+import org.briarproject.bramble.api.crypto.PrivateKey;
 import org.briarproject.bramble.api.crypto.PublicKey;
 import org.briarproject.bramble.api.crypto.SignaturePublicKey;
+import org.briarproject.bramble.api.data.BdfDictionary;
 import org.briarproject.bramble.api.data.BdfList;
 import org.briarproject.bramble.api.db.DatabaseComponent;
 import org.briarproject.bramble.api.db.DbException;
@@ -17,11 +21,14 @@ import org.briarproject.bramble.api.identity.LocalAuthor;
 import org.briarproject.bramble.api.lifecycle.LifecycleManager.OpenDatabaseHook;
 import org.briarproject.bramble.api.settings.Settings;
 import org.briarproject.bramble.api.settings.SettingsManager;
+import org.briarproject.bramble.api.sync.Message;
 import org.briarproject.bramble.api.system.Clock;
 import org.briarproject.bramble.util.ByteUtils;
+import org.briarproject.briar.api.grouptr.GroupTrAuthException;
 import org.briarproject.briar.api.grouptr.GroupTrManager;
 import org.briarproject.briar.api.grouptr.GroupTrMember;
 import org.briarproject.briar.api.grouptr.GroupTrState;
+import org.briarproject.briar.api.messaging.MessagingManager;
 import org.briarproject.briar.api.messaging.event.GroupEpochCommitEvent;
 import org.briarproject.briar.api.messaging.event.GroupMembershipChangedEvent;
 import org.briarproject.nullsafety.NotNullByDefault;
@@ -69,6 +76,8 @@ class GroupTrManagerImpl
 	private final ClientHelper clientHelper;
 	private final CryptoComponent crypto;
 	private final IdentityManager identityManager;
+	private final ContactManager contactManager;
+	private final MessagingManager messagingManager;
 	private final EventBus eventBus;
 	private final Clock clock;
 	private final SecureRandom random;
@@ -77,12 +86,15 @@ class GroupTrManagerImpl
 	GroupTrManagerImpl(DatabaseComponent db,
 			SettingsManager settingsManager, ClientHelper clientHelper,
 			CryptoComponent crypto, IdentityManager identityManager,
+			ContactManager contactManager, MessagingManager messagingManager,
 			EventBus eventBus, Clock clock) {
 		this.db = db;
 		this.settingsManager = settingsManager;
 		this.clientHelper = clientHelper;
 		this.crypto = crypto;
 		this.identityManager = identityManager;
+		this.contactManager = contactManager;
+		this.messagingManager = messagingManager;
 		this.eventBus = eventBus;
 		this.clock = clock;
 		this.random = new SecureRandom();
@@ -387,5 +399,351 @@ class GroupTrManagerImpl
 
 	private static String nsOf(byte[] groupId) {
 		return SETTINGS_NS_PREFIX + toHexString(groupId);
+	}
+
+	@Override
+	public void sendGroupPost(byte[] groupId, byte[] body,
+			long autoDeleteTimerMs) throws DbException {
+		GroupTrState s = getGroup(groupId);
+		if (s == null) {
+			throw new GroupTrAuthException(
+					GroupTrAuthException.Reason.GROUP_NOT_FOUND);
+		}
+		if (s.isDissolved()) {
+			throw new GroupTrAuthException(
+					GroupTrAuthException.Reason.GROUP_DISSOLVED);
+		}
+		LocalAuthor la = db.transactionWithResult(true,
+				identityManager::getLocalAuthor);
+		byte[] localPub = la.getPublicKey().getEncoded();
+		PrivateKey signingKey = la.getPrivateKey();
+		long timestamp = clock.currentTimeMillis();
+		int epoch = (int) s.getEpoch();
+		byte[] ctHash = crypto.hash(
+				"org.briarproject.zerion/GROUP_POST_CT", body);
+		byte[] signed = new byte[32 + 4 + 32 + ctHash.length];
+		System.arraycopy(groupId, 0, signed, 0, 32);
+		for (int i = 0; i < 4; i++) {
+			signed[32 + i] = (byte) (epoch >>> ((3 - i) * 8));
+		}
+		System.arraycopy(localPub, 0, signed, 36, 32);
+		System.arraycopy(ctHash, 0, signed, 68, ctHash.length);
+		byte[] sig;
+		try {
+			sig = crypto.sign(
+					"org.briarproject.zerion/GROUP_POST",
+					signed, signingKey);
+		} catch (GeneralSecurityException ex) {
+			throw new DbException(ex);
+		}
+		db.transaction(false, txn -> {
+			for (GroupTrMember m : s.getMembers()) {
+				if (Arrays.equals(m.getPubKey(), localPub)) continue;
+				Contact c = findContactByPubKey(txn, m.getPubKey());
+				if (c == null) continue;
+				BdfList msgBody = autoDeleteTimerMs > 0
+						? BdfList.of(32L, groupId, (long) epoch,
+								localPub, body, sig,
+								autoDeleteTimerMs)
+						: BdfList.of(32L, groupId, (long) epoch,
+								localPub, body, sig);
+				dispatchToContact(txn, c, timestamp, msgBody);
+			}
+		});
+	}
+
+	@Override
+	public void addMember(byte[] groupId, byte[] addedPubKey,
+			String addedName) throws DbException {
+		GroupTrState s = requireWritable(groupId);
+		requireLocalIsCreator(s);
+		LocalAuthor la = db.transactionWithResult(true,
+				identityManager::getLocalAuthor);
+		PrivateKey signingKey = la.getPrivateKey();
+		long timestamp = clock.currentTimeMillis();
+		int newEpoch = (int) s.getEpoch() + 1;
+		byte[] signed = membershipSignedInput(groupId, addedPubKey,
+				newEpoch, timestamp, (byte) 0x01);
+		byte[] sig = signOrThrow(SIGNING_LABEL_GROUP_MEMBERSHIP, signed,
+				signingKey);
+		BdfList body = BdfList.of(33L, groupId, addedPubKey, addedName,
+				(long) newEpoch, timestamp, sig);
+		db.transaction(false, txn -> fanOut(txn, s, body, timestamp,
+				null));
+		applyLocalAdd(s, addedPubKey, addedName, timestamp, newEpoch);
+	}
+
+	@Override
+	public void removeMember(byte[] groupId, byte[] removedPubKey)
+			throws DbException {
+		GroupTrState s = requireWritable(groupId);
+		requireLocalIsCreator(s);
+		if (Arrays.equals(removedPubKey, s.getCreatorPubKey())) {
+			throw new GroupTrAuthException(
+					GroupTrAuthException.Reason.CANNOT_REMOVE_CREATOR);
+		}
+		LocalAuthor la = db.transactionWithResult(true,
+				identityManager::getLocalAuthor);
+		PrivateKey signingKey = la.getPrivateKey();
+		long timestamp = clock.currentTimeMillis();
+		int fromEpoch = (int) s.getEpoch();
+		int toEpoch = fromEpoch + 1;
+		byte[] signedRemoved = removedSignedInput(groupId, removedPubKey,
+				fromEpoch, toEpoch, timestamp);
+		byte[] sigRemoved = signOrThrow(SIGNING_LABEL_GROUP_MEMBERSHIP,
+				signedRemoved, signingKey);
+		BdfList removedBody = BdfList.of(34L, groupId, removedPubKey,
+				(long) fromEpoch, (long) toEpoch, timestamp, sigRemoved);
+		byte[] pqSeed = new byte[32];
+		random.nextBytes(pqSeed);
+		byte[] signedCommit = epochCommitSignedInput(groupId, fromEpoch,
+				toEpoch, pqSeed, timestamp);
+		byte[] sigCommit = signOrThrow(SIGNING_LABEL_GROUP_EPOCH_COMMIT,
+				signedCommit, signingKey);
+		BdfList commitBody = BdfList.of(37L, groupId, (long) fromEpoch,
+				(long) toEpoch, pqSeed, sigCommit);
+		db.transaction(false, txn -> {
+			fanOut(txn, s, removedBody, timestamp, removedPubKey);
+			fanOut(txn, s, commitBody, timestamp, removedPubKey);
+		});
+		applyLocalRemove(s, removedPubKey, toEpoch);
+	}
+
+	@Override
+	public void leaveGroup(byte[] groupId) throws DbException {
+		GroupTrState s = requireWritable(groupId);
+		LocalAuthor la = db.transactionWithResult(true,
+				identityManager::getLocalAuthor);
+		byte[] localPub = la.getPublicKey().getEncoded();
+		if (Arrays.equals(localPub, s.getCreatorPubKey())) {
+			throw new GroupTrAuthException(
+					GroupTrAuthException.Reason.CANNOT_LEAVE_AS_CREATOR);
+		}
+		PrivateKey signingKey = la.getPrivateKey();
+		long timestamp = clock.currentTimeMillis();
+		int newEpoch = (int) s.getEpoch() + 1;
+		byte[] signed = membershipSignedInput(groupId, localPub, newEpoch,
+				timestamp, (byte) 0x03);
+		byte[] sig = signOrThrow(SIGNING_LABEL_GROUP_MEMBERSHIP, signed,
+				signingKey);
+		BdfList body = BdfList.of(35L, groupId, localPub,
+				(long) newEpoch, timestamp, sig);
+		db.transaction(false, txn -> fanOut(txn, s, body, timestamp,
+				localPub));
+		applyLocalLeave(s, localPub, newEpoch);
+	}
+
+	@Override
+	public void dissolveGroup(byte[] groupId) throws DbException {
+		GroupTrState s = requireWritable(groupId);
+		requireLocalIsCreator(s);
+		LocalAuthor la = db.transactionWithResult(true,
+				identityManager::getLocalAuthor);
+		PrivateKey signingKey = la.getPrivateKey();
+		long timestamp = clock.currentTimeMillis();
+		int newEpoch = (int) s.getEpoch() + 1;
+		byte[] signed = dissolveSignedInput(groupId, newEpoch, timestamp);
+		byte[] sig = signOrThrow(SIGNING_LABEL_GROUP_MEMBERSHIP, signed,
+				signingKey);
+		BdfList body = BdfList.of(36L, groupId, (long) newEpoch,
+				timestamp, sig);
+		db.transaction(false, txn -> fanOut(txn, s, body, timestamp,
+				null));
+		s.setDissolved(true);
+		s.setEpoch(newEpoch);
+		try {
+			persist(s);
+		} catch (FormatException ex) {
+			throw new DbException(ex);
+		}
+	}
+
+	private GroupTrState requireWritable(byte[] groupId) throws DbException {
+		GroupTrState s = getGroup(groupId);
+		if (s == null) {
+			throw new GroupTrAuthException(
+					GroupTrAuthException.Reason.GROUP_NOT_FOUND);
+		}
+		if (s.isDissolved()) {
+			throw new GroupTrAuthException(
+					GroupTrAuthException.Reason.GROUP_DISSOLVED);
+		}
+		return s;
+	}
+
+	private void requireLocalIsCreator(GroupTrState s) throws DbException {
+		LocalAuthor la = db.transactionWithResult(true,
+				identityManager::getLocalAuthor);
+		if (!Arrays.equals(la.getPublicKey().getEncoded(),
+				s.getCreatorPubKey())) {
+			throw new GroupTrAuthException(
+					GroupTrAuthException.Reason.NOT_CREATOR);
+		}
+	}
+
+	private byte[] signOrThrow(String label, byte[] signed,
+			PrivateKey key) throws DbException {
+		try {
+			return crypto.sign(label, signed, key);
+		} catch (GeneralSecurityException ex) {
+			throw new DbException(ex);
+		}
+	}
+
+	@Nullable
+	private Contact findContactByPubKey(Transaction txn, byte[] pubKey)
+			throws DbException {
+		for (Contact c : contactManager.getContacts(txn)) {
+			byte[] p = c.getAuthor().getPublicKey().getEncoded();
+			if (Arrays.equals(p, pubKey)) return c;
+		}
+		return null;
+	}
+
+	private void fanOut(Transaction txn, GroupTrState s, BdfList body,
+			long timestamp, @Nullable byte[] skipPubKey)
+			throws DbException {
+		LocalAuthor la = identityManager.getLocalAuthor(txn);
+		byte[] localPub = la.getPublicKey().getEncoded();
+		for (GroupTrMember m : s.getMembers()) {
+			if (Arrays.equals(m.getPubKey(), localPub)) continue;
+			if (skipPubKey != null
+					&& Arrays.equals(m.getPubKey(), skipPubKey)) continue;
+			Contact c = findContactByPubKey(txn, m.getPubKey());
+			if (c == null) continue;
+			dispatchToContact(txn, c, timestamp, body);
+		}
+	}
+
+	private void dispatchToContact(Transaction txn, Contact c,
+			long timestamp, BdfList body) throws DbException {
+		byte[] contactGroupId =
+				messagingManager.getContactGroup(c).getId().getBytes();
+		try {
+			byte[] bodyBytes = clientHelper.toByteArray(body);
+			Message m = clientHelper.createMessage(
+					new org.briarproject.bramble.api.sync.GroupId(
+							contactGroupId),
+					timestamp, bodyBytes);
+			clientHelper.addLocalMessage(txn, m, new BdfDictionary(),
+					true, false);
+		} catch (FormatException ex) {
+			throw new DbException(ex);
+		}
+	}
+
+	private void applyLocalAdd(GroupTrState s, byte[] pk, String name,
+			long timestamp, int newEpoch) throws DbException {
+		for (GroupTrMember m : s.getMembers()) {
+			if (Arrays.equals(m.getPubKey(), pk)) return;
+		}
+		List<GroupTrMember> next = new ArrayList<>(s.getMembers());
+		next.add(new GroupTrMember(pk, name, timestamp, newEpoch));
+		s.setMembers(next);
+		s.setEpoch(newEpoch);
+		try {
+			persist(s);
+		} catch (FormatException ex) {
+			throw new DbException(ex);
+		}
+	}
+
+	private void applyLocalRemove(GroupTrState s, byte[] pk, int newEpoch)
+			throws DbException {
+		List<GroupTrMember> next = new ArrayList<>(s.getMembers().size());
+		for (GroupTrMember m : s.getMembers()) {
+			if (!Arrays.equals(m.getPubKey(), pk)) next.add(m);
+		}
+		s.setMembers(next);
+		s.setEpoch(newEpoch);
+		try {
+			persist(s);
+		} catch (FormatException ex) {
+			throw new DbException(ex);
+		}
+	}
+
+	private void applyLocalLeave(GroupTrState s, byte[] pk, int newEpoch)
+			throws DbException {
+		s.setDissolved(true);
+		s.setEpoch(newEpoch);
+		List<GroupTrMember> next = new ArrayList<>(s.getMembers().size());
+		for (GroupTrMember m : s.getMembers()) {
+			if (!Arrays.equals(m.getPubKey(), pk)) next.add(m);
+		}
+		s.setMembers(next);
+		try {
+			persist(s);
+		} catch (FormatException ex) {
+			throw new DbException(ex);
+		}
+	}
+
+	private byte[] membershipSignedInput(byte[] groupId,
+			byte[] targetPubKey, int epoch, long timestamp, byte action) {
+		byte[] out = new byte[32 + 32 + 4 + 8 + 1];
+		System.arraycopy(groupId, 0, out, 0, 32);
+		System.arraycopy(targetPubKey, 0, out, 32, 32);
+		for (int i = 0; i < 4; i++) {
+			out[64 + i] = (byte) (epoch >>> ((3 - i) * 8));
+		}
+		for (int i = 0; i < 8; i++) {
+			out[68 + i] = (byte) (timestamp >>> ((7 - i) * 8));
+		}
+		out[76] = action;
+		return out;
+	}
+
+	private byte[] removedSignedInput(byte[] groupId, byte[] removedPubKey,
+			int fromEpoch, int toEpoch, long timestamp) {
+		byte[] out = new byte[32 + 32 + 4 + 4 + 8 + 1];
+		System.arraycopy(groupId, 0, out, 0, 32);
+		System.arraycopy(removedPubKey, 0, out, 32, 32);
+		for (int i = 0; i < 4; i++) {
+			out[64 + i] = (byte) (fromEpoch >>> ((3 - i) * 8));
+		}
+		for (int i = 0; i < 4; i++) {
+			out[68 + i] = (byte) (toEpoch >>> ((3 - i) * 8));
+		}
+		for (int i = 0; i < 8; i++) {
+			out[72 + i] = (byte) (timestamp >>> ((7 - i) * 8));
+		}
+		out[80] = (byte) 0x02;
+		return out;
+	}
+
+	private byte[] dissolveSignedInput(byte[] groupId, int epoch,
+			long timestamp) {
+		byte[] out = new byte[32 + 4 + 8 + 1];
+		System.arraycopy(groupId, 0, out, 0, 32);
+		for (int i = 0; i < 4; i++) {
+			out[32 + i] = (byte) (epoch >>> ((3 - i) * 8));
+		}
+		for (int i = 0; i < 8; i++) {
+			out[36 + i] = (byte) (timestamp >>> ((7 - i) * 8));
+		}
+		out[44] = (byte) 0x04;
+		return out;
+	}
+
+	private byte[] epochCommitSignedInput(byte[] groupId, int fromEpoch,
+			int toEpoch, byte[] pqSeed, long timestamp) {
+		byte[] seedHash = crypto.hash(
+				"org.briarproject.zerion/GROUP_EPOCH_SEED", pqSeed);
+		byte[] out = new byte[32 + 4 + 4 + seedHash.length + 8 + 1];
+		System.arraycopy(groupId, 0, out, 0, 32);
+		for (int i = 0; i < 4; i++) {
+			out[32 + i] = (byte) (fromEpoch >>> ((3 - i) * 8));
+		}
+		for (int i = 0; i < 4; i++) {
+			out[36 + i] = (byte) (toEpoch >>> ((3 - i) * 8));
+		}
+		System.arraycopy(seedHash, 0, out, 40, seedHash.length);
+		int off = 40 + seedHash.length;
+		for (int i = 0; i < 8; i++) {
+			out[off + i] = (byte) (timestamp >>> ((7 - i) * 8));
+		}
+		out[off + 8] = (byte) 0x05;
+		return out;
 	}
 }
