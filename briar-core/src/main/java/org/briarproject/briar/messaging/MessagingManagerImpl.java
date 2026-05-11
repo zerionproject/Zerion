@@ -1102,9 +1102,11 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		if (ttl != NO_AUTO_DELETE_TIMER) {
 			db.setCleanupTimerDuration(txn, m.getId(), ttl);
 		}
+		String senderName = meta.getOptionalString("groupSenderName");
+		if (senderName == null) senderName = "";
 		txn.attach(new org.briarproject.briar.api.messaging.event
 				.GroupPostReceivedEvent(contactId, m.getId(), groupId,
-				epoch, senderPubKey, ciphertext, timestamp,
+				epoch, senderPubKey, senderName, ciphertext, timestamp,
 				ttl == NO_AUTO_DELETE_TIMER ? 0L : ttl));
 	}
 

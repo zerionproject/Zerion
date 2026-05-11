@@ -16,21 +16,28 @@ public class GroupPostReceivedEvent extends Event {
 	private final byte[] groupId;
 	private final long epoch;
 	private final byte[] senderPubKey;
+	private final String senderName;
 	private final byte[] ciphertext;
 	private final long timestamp;
 	private final long autoDeleteTimerMs;
 
 	public GroupPostReceivedEvent(ContactId contactId, MessageId messageId,
 			byte[] groupId, long epoch, byte[] senderPubKey,
-			byte[] ciphertext, long timestamp, long autoDeleteTimerMs) {
+			String senderName, byte[] ciphertext, long timestamp,
+			long autoDeleteTimerMs) {
 		this.contactId = contactId;
 		this.messageId = messageId;
 		this.groupId = groupId;
 		this.epoch = epoch;
 		this.senderPubKey = senderPubKey;
+		this.senderName = senderName;
 		this.ciphertext = ciphertext;
 		this.timestamp = timestamp;
 		this.autoDeleteTimerMs = autoDeleteTimerMs;
+	}
+
+	public String getSenderName() {
+		return senderName;
 	}
 
 	public ContactId getContactId() {

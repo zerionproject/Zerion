@@ -107,6 +107,14 @@ public class GroupTrAdminActivity extends ZerionActivity {
 				? " " + getString(R.string.grouptr_dissolved_suffix) : ""));
 		title.setTextSize(18);
 		section.addView(title);
+		if (!s.isDissolved()) {
+			Button open = new Button(this);
+			open.setText(R.string.grouptr_open);
+			open.setOnClickListener(v -> startActivity(
+					GroupTrConversationActivity.intent(this,
+							s.getGroupId())));
+			section.addView(open);
+		}
 		TextView meta = new TextView(this);
 		meta.setText(getString(R.string.grouptr_meta,
 				s.getEpoch(), s.getMembers().size()));

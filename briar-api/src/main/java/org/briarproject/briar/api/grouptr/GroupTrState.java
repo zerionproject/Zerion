@@ -17,10 +17,19 @@ public class GroupTrState {
 	private long epoch;
 	private boolean dissolved;
 	private List<GroupTrMember> members;
+	private long defaultAutoDeleteTimerMs;
 
 	public GroupTrState(byte[] groupId, String name, byte[] salt,
 			byte[] creatorPubKey, String creatorName, long created,
 			long epoch, boolean dissolved, List<GroupTrMember> members) {
+		this(groupId, name, salt, creatorPubKey, creatorName, created,
+				epoch, dissolved, members, 0L);
+	}
+
+	public GroupTrState(byte[] groupId, String name, byte[] salt,
+			byte[] creatorPubKey, String creatorName, long created,
+			long epoch, boolean dissolved, List<GroupTrMember> members,
+			long defaultAutoDeleteTimerMs) {
 		this.groupId = groupId;
 		this.name = name;
 		this.salt = salt;
@@ -30,6 +39,15 @@ public class GroupTrState {
 		this.epoch = epoch;
 		this.dissolved = dissolved;
 		this.members = members;
+		this.defaultAutoDeleteTimerMs = defaultAutoDeleteTimerMs;
+	}
+
+	public long getDefaultAutoDeleteTimerMs() {
+		return defaultAutoDeleteTimerMs;
+	}
+
+	public void setDefaultAutoDeleteTimerMs(long ms) {
+		this.defaultAutoDeleteTimerMs = ms;
 	}
 
 	public byte[] getGroupId() {

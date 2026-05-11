@@ -27,10 +27,12 @@ import org.briarproject.bramble.util.ByteUtils;
 import org.briarproject.briar.api.grouptr.GroupTrAuthException;
 import org.briarproject.briar.api.grouptr.GroupTrManager;
 import org.briarproject.briar.api.grouptr.GroupTrMember;
+import org.briarproject.briar.api.grouptr.GroupTrPost;
 import org.briarproject.briar.api.grouptr.GroupTrState;
 import org.briarproject.briar.api.messaging.MessagingManager;
 import org.briarproject.briar.api.messaging.event.GroupEpochCommitEvent;
 import org.briarproject.briar.api.messaging.event.GroupMembershipChangedEvent;
+import org.briarproject.briar.api.messaging.event.GroupPostReceivedEvent;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.security.GeneralSecurityException;
@@ -59,12 +61,14 @@ import static org.briarproject.briar.grouptr.GroupTrConstants.SIGNING_LABEL_GROU
 import static org.briarproject.briar.grouptr.GroupTrConstants.S_CREATED;
 import static org.briarproject.briar.grouptr.GroupTrConstants.S_CREATOR_NAME;
 import static org.briarproject.briar.grouptr.GroupTrConstants.S_CREATOR_PUBKEY;
+import static org.briarproject.briar.grouptr.GroupTrConstants.S_DEFAULT_TTL;
 import static org.briarproject.briar.grouptr.GroupTrConstants.S_DISSOLVED;
 import static org.briarproject.briar.grouptr.GroupTrConstants.S_EPOCH;
 import static org.briarproject.briar.grouptr.GroupTrConstants.S_GROUP_IDS;
 import static org.briarproject.briar.grouptr.GroupTrConstants.S_MEMBERS;
 import static org.briarproject.briar.grouptr.GroupTrConstants.S_NAME;
 import static org.briarproject.briar.grouptr.GroupTrConstants.S_SALT;
+import static org.briarproject.briar.grouptr.GroupTrConstants.S_STEALTH_NAME;
 
 @ThreadSafe
 @NotNullByDefault
@@ -81,6 +85,9 @@ class GroupTrManagerImpl
 	private final EventBus eventBus;
 	private final Clock clock;
 	private final SecureRandom random;
+	private final java.util.Map<String, java.util.ArrayDeque<GroupTrPost>>
+			postCache = new java.util.concurrent.ConcurrentHashMap<>();
+	private static final int MAX_CACHED_POSTS_PER_GROUP = 200;
 
 	@Inject
 	GroupTrManagerImpl(DatabaseComponent db,
@@ -111,6 +118,47 @@ class GroupTrManagerImpl
 			handleMembershipEvent((GroupMembershipChangedEvent) e);
 		} else if (e instanceof GroupEpochCommitEvent) {
 			handleEpochCommit((GroupEpochCommitEvent) e);
+		} else if (e instanceof GroupPostReceivedEvent) {
+			cachePost((GroupPostReceivedEvent) e);
+		}
+	}
+
+	private void cachePost(GroupPostReceivedEvent e) {
+		String key = toHexString(e.getGroupId());
+		java.util.ArrayDeque<GroupTrPost> q = postCache.computeIfAbsent(
+				key, k -> new java.util.ArrayDeque<>());
+		synchronized (q) {
+			q.addLast(new GroupTrPost(e.getGroupId(),
+					e.getSenderPubKey(), e.getSenderName(),
+					e.getCiphertext(), e.getTimestamp(), e.getEpoch(),
+					false));
+			while (q.size() > MAX_CACHED_POSTS_PER_GROUP) {
+				q.pollFirst();
+			}
+		}
+	}
+
+	private void cacheLocalPost(byte[] groupId, byte[] senderPub,
+			String senderName, byte[] body, long timestamp, long epoch) {
+		String key = toHexString(groupId);
+		java.util.ArrayDeque<GroupTrPost> q = postCache.computeIfAbsent(
+				key, k -> new java.util.ArrayDeque<>());
+		synchronized (q) {
+			q.addLast(new GroupTrPost(groupId, senderPub, senderName,
+					body, timestamp, epoch, true));
+			while (q.size() > MAX_CACHED_POSTS_PER_GROUP) {
+				q.pollFirst();
+			}
+		}
+	}
+
+	@Override
+	public java.util.List<GroupTrPost> getRecentPosts(byte[] groupId) {
+		String key = toHexString(groupId);
+		java.util.ArrayDeque<GroupTrPost> q = postCache.get(key);
+		if (q == null) return java.util.Collections.emptyList();
+		synchronized (q) {
+			return new ArrayList<>(q);
 		}
 	}
 
@@ -329,6 +377,7 @@ class GroupTrManagerImpl
 		out.putLong(S_CREATED, s.getCreated());
 		out.putLong(S_EPOCH, s.getEpoch());
 		out.putBoolean(S_DISSOLVED, s.isDissolved());
+		out.putLong(S_DEFAULT_TTL, s.getDefaultAutoDeleteTimerMs());
 		BdfList list = new BdfList();
 		for (GroupTrMember m : s.getMembers()) {
 			BdfList ml = new BdfList();
@@ -351,6 +400,7 @@ class GroupTrManagerImpl
 		long created = s.getLong(S_CREATED, 0L);
 		long epoch = s.getLong(S_EPOCH, 0L);
 		boolean dissolved = s.getBoolean(S_DISSOLVED, false);
+		long defaultTtl = s.getLong(S_DEFAULT_TTL, 0L);
 		String membersHex = s.get(S_MEMBERS);
 		if (name == null || saltHex == null || creatorPubHex == null
 				|| creatorName == null || membersHex == null) {
@@ -366,7 +416,8 @@ class GroupTrManagerImpl
 					ml.getLong(2), ml.getLong(3)));
 		}
 		return new GroupTrState(groupId, name, salt, creatorPub,
-				creatorName, created, epoch, dissolved, members);
+				creatorName, created, epoch, dissolved, members,
+				defaultTtl);
 	}
 
 	private void addToIndex(byte[] groupId) throws DbException {
@@ -413,21 +464,33 @@ class GroupTrManagerImpl
 			throw new GroupTrAuthException(
 					GroupTrAuthException.Reason.GROUP_DISSOLVED);
 		}
+		long effectiveTtl = autoDeleteTimerMs > 0
+				? autoDeleteTimerMs
+				: s.getDefaultAutoDeleteTimerMs();
 		LocalAuthor la = db.transactionWithResult(true,
 				identityManager::getLocalAuthor);
 		byte[] localPub = la.getPublicKey().getEncoded();
 		PrivateKey signingKey = la.getPrivateKey();
 		long timestamp = clock.currentTimeMillis();
 		int epoch = (int) s.getEpoch();
+		String alias = getStealthName(groupId);
+		String senderName = alias != null ? alias : la.getName();
+		byte[] nameHash = crypto.hash(
+				"org.briarproject.zerion/GROUP_POST_NAME",
+				senderName.getBytes(
+						java.nio.charset.StandardCharsets.UTF_8));
 		byte[] ctHash = crypto.hash(
 				"org.briarproject.zerion/GROUP_POST_CT", body);
-		byte[] signed = new byte[32 + 4 + 32 + ctHash.length];
+		byte[] signed = new byte[32 + 4 + 32 + nameHash.length
+				+ ctHash.length];
 		System.arraycopy(groupId, 0, signed, 0, 32);
 		for (int i = 0; i < 4; i++) {
 			signed[32 + i] = (byte) (epoch >>> ((3 - i) * 8));
 		}
 		System.arraycopy(localPub, 0, signed, 36, 32);
-		System.arraycopy(ctHash, 0, signed, 68, ctHash.length);
+		System.arraycopy(nameHash, 0, signed, 68, nameHash.length);
+		System.arraycopy(ctHash, 0, signed, 68 + nameHash.length,
+				ctHash.length);
 		byte[] sig;
 		try {
 			sig = crypto.sign(
@@ -436,20 +499,54 @@ class GroupTrManagerImpl
 		} catch (GeneralSecurityException ex) {
 			throw new DbException(ex);
 		}
+		final String finalSenderName = senderName;
 		db.transaction(false, txn -> {
 			for (GroupTrMember m : s.getMembers()) {
 				if (Arrays.equals(m.getPubKey(), localPub)) continue;
 				Contact c = findContactByPubKey(txn, m.getPubKey());
 				if (c == null) continue;
-				BdfList msgBody = autoDeleteTimerMs > 0
+				BdfList msgBody = effectiveTtl > 0
 						? BdfList.of(32L, groupId, (long) epoch,
-								localPub, body, sig,
-								autoDeleteTimerMs)
+								localPub, finalSenderName, body, sig,
+								effectiveTtl)
 						: BdfList.of(32L, groupId, (long) epoch,
-								localPub, body, sig);
+								localPub, finalSenderName, body, sig);
 				dispatchToContact(txn, c, timestamp, msgBody);
 			}
 		});
+		cacheLocalPost(groupId, localPub, finalSenderName, body,
+				timestamp, epoch);
+	}
+
+	@Override
+	public void setGroupAutoDeleteTimer(byte[] groupId, long ms)
+			throws DbException {
+		GroupTrState s = requireWritable(groupId);
+		requireLocalIsCreator(s);
+		s.setDefaultAutoDeleteTimerMs(ms < 0 ? 0 : ms);
+		try {
+			persist(s);
+		} catch (FormatException ex) {
+			throw new DbException(ex);
+		}
+	}
+
+	@Nullable
+	@Override
+	public String getStealthName(byte[] groupId) throws DbException {
+		Settings s = settingsManager.getSettings(
+				"grouptr.alias." + toHexString(groupId));
+		String v = s.get(S_STEALTH_NAME);
+		return v == null || v.isEmpty() ? null : v;
+	}
+
+	@Override
+	public void setStealthName(byte[] groupId, @Nullable String alias)
+			throws DbException {
+		Settings out = new Settings();
+		out.put(S_STEALTH_NAME, alias == null ? "" : alias);
+		settingsManager.mergeSettings(out,
+				"grouptr.alias." + toHexString(groupId));
 	}
 
 	@Override

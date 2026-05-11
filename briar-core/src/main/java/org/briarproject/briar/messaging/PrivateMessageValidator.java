@@ -424,23 +424,25 @@ class PrivateMessageValidator implements MessageValidator {
 
 	private BdfMessageContext validateGroupPost(Message m, BdfList body)
 			throws FormatException {
-		checkSize(body, 6, 7);
+		checkSize(body, 7, 8);
 		byte[] groupId = body.getRaw(1);
 		checkLength(groupId, 32);
 		long epoch = body.getLong(2);
 		if (epoch < 0L || epoch > 0xFFFFFFFFL) throw new FormatException();
 		byte[] senderPubKey = body.getRaw(3);
 		checkLength(senderPubKey, 32);
-		byte[] ciphertext = body.getRaw(4);
+		String senderName = body.getString(4);
+		checkLength(senderName, 0, 256);
+		byte[] ciphertext = body.getRaw(5);
 		checkLength(ciphertext, 1, MAX_PRIVATE_MESSAGE_TEXT_LENGTH + 1024);
-		byte[] recordSig = body.getRaw(5);
+		byte[] recordSig = body.getRaw(6);
 		checkLength(recordSig, 1, 128);
 		long autoDeleteTimer = NO_AUTO_DELETE_TIMER;
-		if (body.size() == 7) {
-			autoDeleteTimer = validateAutoDeleteTimer(body.getOptionalLong(6));
+		if (body.size() == 8) {
+			autoDeleteTimer = validateAutoDeleteTimer(body.getOptionalLong(7));
 		}
 		byte[] signedInput = buildGroupPostSignedInput(
-				groupId, (int) epoch, senderPubKey, ciphertext);
+				groupId, (int) epoch, senderPubKey, senderName, ciphertext);
 		verifyOrThrow(recordSig, SIGNING_LABEL_GROUP_POST,
 				signedInput, senderPubKey);
 		BdfDictionary meta = new BdfDictionary();
@@ -451,6 +453,7 @@ class PrivateMessageValidator implements MessageValidator {
 		meta.put(MSG_KEY_GROUP_ID, groupId);
 		meta.put(MSG_KEY_GROUP_EPOCH, epoch);
 		meta.put(MSG_KEY_GROUP_SENDER_PUBKEY, senderPubKey);
+		meta.put("groupSenderName", senderName);
 		meta.put(MSG_KEY_GROUP_CIPHERTEXT, ciphertext);
 		meta.put(MSG_KEY_GROUP_RECORD_SIG, recordSig);
 		if (autoDeleteTimer != NO_AUTO_DELETE_TIMER) {
@@ -616,16 +619,22 @@ class PrivateMessageValidator implements MessageValidator {
 	}
 
 	private byte[] buildGroupPostSignedInput(byte[] groupId, int epoch,
-			byte[] senderPubKey, byte[] ciphertext) {
+			byte[] senderPubKey, String senderName, byte[] ciphertext) {
+		byte[] nameHash = crypto.hash(
+				"org.briarproject.zerion/GROUP_POST_NAME",
+				senderName.getBytes(java.nio.charset.StandardCharsets.UTF_8));
 		byte[] ctHash = crypto.hash(
 				"org.briarproject.zerion/GROUP_POST_CT", ciphertext);
-		byte[] out = new byte[32 + 4 + 32 + ctHash.length];
+		byte[] out = new byte[32 + 4 + 32 + nameHash.length
+				+ ctHash.length];
 		System.arraycopy(groupId, 0, out, 0, 32);
 		for (int i = 0; i < 4; i++) {
 			out[32 + i] = (byte) (epoch >>> ((3 - i) * 8));
 		}
 		System.arraycopy(senderPubKey, 0, out, 36, 32);
-		System.arraycopy(ctHash, 0, out, 68, ctHash.length);
+		System.arraycopy(nameHash, 0, out, 68, nameHash.length);
+		System.arraycopy(ctHash, 0, out, 68 + nameHash.length,
+				ctHash.length);
 		return out;
 	}
 

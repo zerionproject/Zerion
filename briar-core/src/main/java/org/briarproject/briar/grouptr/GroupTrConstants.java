@@ -24,6 +24,8 @@ interface GroupTrConstants {
 	String S_EPOCH = "epoch";
 	String S_DISSOLVED = "dissolved";
 	String S_MEMBERS = "members";
+	String S_DEFAULT_TTL = "defaultAutoDeleteTimerMs";
+	String S_STEALTH_NAME = "stealthName";
 
 	String S_GROUP_IDS = "groupIds";
 

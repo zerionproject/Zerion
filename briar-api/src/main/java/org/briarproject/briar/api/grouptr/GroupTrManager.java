@@ -37,4 +37,14 @@ public interface GroupTrManager {
 	void leaveGroup(byte[] groupId) throws DbException;
 
 	void dissolveGroup(byte[] groupId) throws DbException;
+
+	void setGroupAutoDeleteTimer(byte[] groupId, long ms) throws DbException;
+
+	@Nullable
+	String getStealthName(byte[] groupId) throws DbException;
+
+	void setStealthName(byte[] groupId, @Nullable String alias)
+			throws DbException;
+
+	java.util.List<GroupTrPost> getRecentPosts(byte[] groupId);
 }

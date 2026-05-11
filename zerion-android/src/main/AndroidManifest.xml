@@ -440,6 +440,18 @@
 				android:value="com.professor.zerion.android.navdrawer.NavDrawerActivity" />
 		</activity>
 
+		<activity
+			android:name="com.professor.zerion.android.grouptr.GroupTrConversationActivity"
+			android:exported="false"
+			android:label="@string/grouptr_title"
+			android:parentActivityName="com.professor.zerion.android.grouptr.GroupTrAdminActivity"
+			android:theme="@style/ZerionTheme"
+			android:windowSoftInputMode="adjustResize">
+			<meta-data
+				android:name="android.support.PARENT_ACTIVITY"
+				android:value="com.professor.zerion.android.grouptr.GroupTrAdminActivity" />
+		</activity>
+
 		<!-- Voice Call Activity -->
 		<activity
 			android:name=".android.conversation.voice.VoiceCallActivity"
