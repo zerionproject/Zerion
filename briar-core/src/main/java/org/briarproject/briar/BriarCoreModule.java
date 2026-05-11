@@ -6,6 +6,7 @@ import org.briarproject.briar.avatar.AvatarModule;
 import org.briarproject.briar.client.BriarClientModule;
 import org.briarproject.briar.conversation.ConversationModule;
 import org.briarproject.briar.conversation.voice.VoiceCallModule;
+import org.briarproject.briar.grouptr.GroupTrModule;
 import org.briarproject.briar.identity.IdentityModule;
 import org.briarproject.briar.introduction.IntroductionModule;
 import org.briarproject.briar.messaging.MessagingModule;
@@ -23,6 +24,7 @@ import dagger.Module;
 		BriarClientModule.class,
 		ConversationModule.class,
 		GroupInvitationModule.class,
+		GroupTrModule.class,
 		IdentityModule.class,
 		IntroductionModule.class,
 		MessagingModule.class,
