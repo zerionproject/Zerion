@@ -248,6 +248,15 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				incomingTypingIndicator(txn, m, metaDict);
 			} else if (messageType == MessageTypes.LINK_PREVIEW_MESSAGE) {
 				incomingLinkPreviewMessage(txn, m, metaDict);
+			} else if (messageType == MessageTypes.GROUP_POST) {
+				incomingGroupPost(txn, m, metaDict);
+			} else if (messageType == MessageTypes.GROUP_MEMBER_ADDED
+					|| messageType == MessageTypes.GROUP_MEMBER_REMOVED
+					|| messageType == MessageTypes.GROUP_MEMBER_LEFT
+					|| messageType == MessageTypes.GROUP_DISSOLVED) {
+				incomingGroupMembership(txn, m, metaDict, messageType);
+			} else if (messageType == MessageTypes.GROUP_EPOCH_COMMIT) {
+				incomingGroupEpochCommit(txn, m, metaDict);
 			} else {
 				throw new InvalidMessageException();
 			}
@@ -1075,5 +1084,103 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		} catch (FormatException e) {
 			throw new DbException(e);
 		}
+	}
+
+	private void incomingGroupPost(Transaction txn, Message m,
+			BdfDictionary meta) throws DbException, FormatException {
+		ContactId contactId = getContactId(txn, m.getGroupId());
+		byte[] groupId = meta.getRaw(MessagingConstants.MSG_KEY_GROUP_ID);
+		long epoch = meta.getLong(MessagingConstants.MSG_KEY_GROUP_EPOCH);
+		byte[] senderPubKey = meta.getRaw(
+				MessagingConstants.MSG_KEY_GROUP_SENDER_PUBKEY);
+		byte[] ciphertext = meta.getRaw(
+				MessagingConstants.MSG_KEY_GROUP_CIPHERTEXT);
+		long timestamp = meta.getLong(MSG_KEY_TIMESTAMP);
+		long ttl = meta.getLong(MSG_KEY_AUTO_DELETE_TIMER,
+				NO_AUTO_DELETE_TIMER);
+		conversationManager.trackIncomingMessage(txn, m);
+		if (ttl != NO_AUTO_DELETE_TIMER) {
+			db.setCleanupTimerDuration(txn, m.getId(), ttl);
+		}
+		txn.attach(new org.briarproject.briar.api.messaging.event
+				.GroupPostReceivedEvent(contactId, m.getId(), groupId,
+				epoch, senderPubKey, ciphertext, timestamp,
+				ttl == NO_AUTO_DELETE_TIMER ? 0L : ttl));
+	}
+
+	private void incomingGroupMembership(Transaction txn, Message m,
+			BdfDictionary meta, int messageType)
+			throws DbException, FormatException {
+		ContactId contactId = getContactId(txn, m.getGroupId());
+		byte[] groupId = meta.getRaw(MessagingConstants.MSG_KEY_GROUP_ID);
+		long timestamp = meta.getLong(MSG_KEY_TIMESTAMP);
+		byte[] recordSig = meta.getRaw(
+				MessagingConstants.MSG_KEY_GROUP_RECORD_SIG);
+		byte[] signedInput = meta.getOptionalRaw(
+				"groupMembershipSignedInput");
+		if (signedInput == null) signedInput = new byte[0];
+		conversationManager.trackIncomingMessage(txn, m);
+		org.briarproject.briar.api.messaging.event
+				.GroupMembershipChangedEvent.ChangeKind kind;
+		long epoch = 0L;
+		long fromEpoch = 0L;
+		long toEpoch = 0L;
+		byte[] targetPubKey = null;
+		String targetName = null;
+		if (messageType == MessageTypes.GROUP_MEMBER_ADDED) {
+			kind = org.briarproject.briar.api.messaging.event
+					.GroupMembershipChangedEvent.ChangeKind.MEMBER_ADDED;
+			epoch = meta.getLong(MessagingConstants.MSG_KEY_GROUP_EPOCH);
+			targetPubKey = meta.getRaw(
+					MessagingConstants.MSG_KEY_GROUP_ADDED_PUBKEY);
+			targetName = meta.getString(
+					MessagingConstants.MSG_KEY_GROUP_ADDED_NAME);
+		} else if (messageType == MessageTypes.GROUP_MEMBER_REMOVED) {
+			kind = org.briarproject.briar.api.messaging.event
+					.GroupMembershipChangedEvent.ChangeKind.MEMBER_REMOVED;
+			fromEpoch = meta.getLong(
+					MessagingConstants.MSG_KEY_GROUP_FROM_EPOCH);
+			toEpoch = meta.getLong(
+					MessagingConstants.MSG_KEY_GROUP_TO_EPOCH);
+			epoch = toEpoch;
+			targetPubKey = meta.getRaw(
+					MessagingConstants.MSG_KEY_GROUP_REMOVED_PUBKEY);
+		} else if (messageType == MessageTypes.GROUP_MEMBER_LEFT) {
+			kind = org.briarproject.briar.api.messaging.event
+					.GroupMembershipChangedEvent.ChangeKind.MEMBER_LEFT;
+			epoch = meta.getLong(MessagingConstants.MSG_KEY_GROUP_EPOCH);
+			targetPubKey = meta.getRaw(
+					MessagingConstants.MSG_KEY_GROUP_LEAVING_PUBKEY);
+		} else {
+			kind = org.briarproject.briar.api.messaging.event
+					.GroupMembershipChangedEvent.ChangeKind.GROUP_DISSOLVED;
+			epoch = meta.getLong(MessagingConstants.MSG_KEY_GROUP_EPOCH);
+		}
+		txn.attach(new org.briarproject.briar.api.messaging.event
+				.GroupMembershipChangedEvent(contactId, kind, groupId,
+				epoch, timestamp, targetPubKey, targetName,
+				fromEpoch, toEpoch, recordSig, signedInput));
+	}
+
+	private void incomingGroupEpochCommit(Transaction txn, Message m,
+			BdfDictionary meta) throws DbException, FormatException {
+		ContactId contactId = getContactId(txn, m.getGroupId());
+		byte[] groupId = meta.getRaw(MessagingConstants.MSG_KEY_GROUP_ID);
+		long fromEpoch = meta.getLong(
+				MessagingConstants.MSG_KEY_GROUP_FROM_EPOCH);
+		long toEpoch = meta.getLong(
+				MessagingConstants.MSG_KEY_GROUP_TO_EPOCH);
+		byte[] pqSeed = meta.getRaw(
+				MessagingConstants.MSG_KEY_GROUP_PQ_SEED);
+		byte[] recordSig = meta.getRaw(
+				MessagingConstants.MSG_KEY_GROUP_RECORD_SIG);
+		byte[] signedInput = meta.getOptionalRaw(
+				"groupEpochCommitSignedInput");
+		if (signedInput == null) signedInput = new byte[0];
+		long timestamp = meta.getLong(MSG_KEY_TIMESTAMP);
+		conversationManager.trackIncomingMessage(txn, m);
+		txn.attach(new org.briarproject.briar.api.messaging.event
+				.GroupEpochCommitEvent(contactId, groupId, fromEpoch,
+				toEpoch, pqSeed, recordSig, signedInput, timestamp));
 	}
 }

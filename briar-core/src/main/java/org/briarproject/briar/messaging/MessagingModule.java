@@ -51,9 +51,10 @@ public class MessagingModule {
 	@Singleton
 	PrivateMessageValidator getValidator(ValidationManager validationManager,
 			BdfReaderFactory bdfReaderFactory, MetadataEncoder metadataEncoder,
-			Clock clock) {
+			Clock clock,
+			org.briarproject.bramble.api.crypto.CryptoComponent crypto) {
 		PrivateMessageValidator validator = new PrivateMessageValidator(
-				bdfReaderFactory, metadataEncoder, clock);
+				bdfReaderFactory, metadataEncoder, clock, crypto);
 		validationManager.registerMessageValidator(CLIENT_ID, MAJOR_VERSION,
 				validator);
 		return validator;

@@ -12,4 +12,11 @@ public interface MessageTypes {
 	int MESSAGE_REACTION = 7;
 	int TYPING_INDICATOR = 8;
 	int LINK_PREVIEW_MESSAGE = 9;
+
+	int GROUP_POST = 32;
+	int GROUP_MEMBER_ADDED = 33;
+	int GROUP_MEMBER_REMOVED = 34;
+	int GROUP_MEMBER_LEFT = 35;
+	int GROUP_DISSOLVED = 36;
+	int GROUP_EPOCH_COMMIT = 37;
 }

@@ -27,5 +27,25 @@ interface MessagingConstants {
 	String MSG_KEY_PREVIEW_DESCRIPTION = "previewDesc";
 	String MSG_KEY_HAS_PREVIEW_IMAGE = "hasPreviewImage";
 
+	String MSG_KEY_GROUP_ID = "groupId";
+	String MSG_KEY_GROUP_EPOCH = "groupEpoch";
+	String MSG_KEY_GROUP_SENDER_PUBKEY = "groupSenderPubKey";
+	String MSG_KEY_GROUP_CIPHERTEXT = "groupCiphertext";
+	String MSG_KEY_GROUP_RECORD_SIG = "groupRecordSig";
+	String MSG_KEY_GROUP_ADDED_PUBKEY = "groupAddedPubKey";
+	String MSG_KEY_GROUP_ADDED_NAME = "groupAddedName";
+	String MSG_KEY_GROUP_REMOVED_PUBKEY = "groupRemovedPubKey";
+	String MSG_KEY_GROUP_LEAVING_PUBKEY = "groupLeavingPubKey";
+	String MSG_KEY_GROUP_FROM_EPOCH = "groupFromEpoch";
+	String MSG_KEY_GROUP_TO_EPOCH = "groupToEpoch";
+	String MSG_KEY_GROUP_PQ_SEED = "groupPqSeed";
+
+	String SIGNING_LABEL_GROUP_POST =
+			"org.briarproject.zerion/GROUP_POST";
+	String SIGNING_LABEL_GROUP_MEMBERSHIP =
+			"org.briarproject.zerion/GROUP_MEMBERSHIP";
+	String SIGNING_LABEL_GROUP_EPOCH_COMMIT =
+			"org.briarproject.zerion/GROUP_EPOCH_COMMIT";
+
 	long MISSING_ATTACHMENT_CLEANUP_DURATION_MS = DAYS.toMillis(28);
 }
