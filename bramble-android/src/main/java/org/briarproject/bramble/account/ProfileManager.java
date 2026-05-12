@@ -124,6 +124,34 @@ public class ProfileManager {
 		return new File(filesDir, "login.lockout");
 	}
 
+	public File getDisplayNameFile(String profileId) {
+		return new File(getKeyDir(profileId), "display_name");
+	}
+
+	public void writeDisplayName(String profileId, String name) {
+		File f = getDisplayNameFile(profileId);
+		try (java.io.FileOutputStream out =
+				new java.io.FileOutputStream(f)) {
+			out.write(name.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+			out.flush();
+		} catch (java.io.IOException ignored) {
+		}
+	}
+
+	@javax.annotation.Nullable
+	public String readDisplayName(String profileId) {
+		File f = getDisplayNameFile(profileId);
+		if (!f.exists()) return null;
+		try (java.io.BufferedReader r = new java.io.BufferedReader(
+				new java.io.InputStreamReader(new java.io.FileInputStream(f),
+						java.nio.charset.StandardCharsets.UTF_8))) {
+			String line = r.readLine();
+			return line == null || line.isEmpty() ? null : line;
+		} catch (java.io.IOException e) {
+			return null;
+		}
+	}
+
 	public String generateProfileId() {
 		return java.util.UUID.randomUUID().toString();
 	}

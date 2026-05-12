@@ -935,6 +935,11 @@
 	<string name="profiles_current_title">Profiles on this device</string>
 	<string name="profiles_count_one">1 profile</string>
 	<string name="profiles_count_other">%d profiles</string>
+	<string name="profiles_row_active">Active</string>
+	<string name="profiles_row_tap_to_switch">Tap to switch</string>
+	<string name="profiles_row_unknown_name">Profile</string>
+	<string name="profiles_switch_to_title">Switch to %1$s?</string>
+	<string name="profiles_switch_to_message">You\'ll be signed out. Reopen the app and enter %1$s\'s password to switch.</string>
 	<string name="profiles_add_title">Create new profile</string>
 	<string name="profiles_add_summary">Hidden, separate identity. Sign in with its own password.</string>
 	<string name="profiles_switch_title">Switch profile</string>

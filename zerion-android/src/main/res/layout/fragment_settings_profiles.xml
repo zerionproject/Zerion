@@ -17,35 +17,17 @@
 			style="@style/Zerion.Settings.SectionHeader"
 			android:text="@string/profiles_section_current" />
 
-		<LinearLayout style="@style/Zerion.Settings.Group">
+		<LinearLayout
+			android:id="@+id/profiles_list_group"
+			style="@style/Zerion.Settings.Group" />
 
-			<LinearLayout style="@style/Zerion.Settings.Row">
-
-				<ImageView
-					style="@style/Zerion.Settings.Row.Icon"
-					android:src="@drawable/ic_settings_security"
-					android:importantForAccessibility="no" />
-
-				<LinearLayout
-					android:layout_width="0dp"
-					android:layout_height="wrap_content"
-					android:layout_weight="1"
-					android:orientation="vertical">
-
-					<TextView
-						style="@style/Zerion.Settings.Row.Title"
-						android:text="@string/profiles_current_title" />
-
-					<TextView
-						android:id="@+id/profile_count_summary"
-						style="@style/Zerion.Settings.Row.Summary"
-						tools:text="1 profile" />
-
-				</LinearLayout>
-
-			</LinearLayout>
-
-		</LinearLayout>
+		<TextView
+			android:id="@+id/profile_count_summary"
+			style="@style/Zerion.Settings.Row.Summary"
+			android:paddingHorizontal="16dp"
+			android:paddingTop="4dp"
+			android:paddingBottom="8dp"
+			tools:text="1 profile" />
 
 		<TextView
 			style="@style/Zerion.Settings.SectionHeader"

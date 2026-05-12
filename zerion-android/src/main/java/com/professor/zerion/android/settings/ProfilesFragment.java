@@ -19,10 +19,13 @@ import com.google.android.material.textfield.TextInputLayout;
 import com.professor.zerion.R;
 
 import org.briarproject.bramble.account.AndroidAccountManager;
+import org.briarproject.bramble.api.identity.IdentityManager;
+import org.briarproject.bramble.api.identity.LocalAuthor;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.Executor;
 
 import javax.inject.Inject;
@@ -36,11 +39,16 @@ public class ProfilesFragment extends Fragment {
 	@Inject
 	AndroidAccountManager accountManager;
 
+	@Inject
+	IdentityManager identityManager;
+
 	private final Executor io = java.util.concurrent.Executors
 			.newSingleThreadExecutor();
 
 	@Nullable
 	private TextView profileCountSummary;
+	@Nullable
+	private android.widget.LinearLayout profilesListGroup;
 
 	@Override
 	public void onAttach(@NonNull Context context) {
@@ -62,20 +70,27 @@ public class ProfilesFragment extends Fragment {
 			@Nullable Bundle savedInstanceState) {
 		super.onViewCreated(view, savedInstanceState);
 		profileCountSummary = view.findViewById(R.id.profile_count_summary);
+		profilesListGroup = view.findViewById(R.id.profiles_list_group);
 		view.findViewById(R.id.add_profile_card)
 				.setOnClickListener(v -> showAddProfileDialog());
 		view.findViewById(R.id.switch_profile_card)
 				.setOnClickListener(v -> showSwitchProfileDialog());
 		view.findViewById(R.id.delete_profile_card)
 				.setOnClickListener(v -> showDeleteProfileDialog());
-		refreshProfileCount();
+		refreshProfileList();
 	}
 
 	@Override
 	public void onStart() {
 		super.onStart();
 		requireActivity().setTitle(R.string.profiles_settings_title);
+		refreshProfileList();
+	}
+
+	private void refreshProfileList() {
 		refreshProfileCount();
+		backfillActiveDisplayNameIfNeeded();
+		renderProfileRows();
 	}
 
 	private void refreshProfileCount() {
@@ -85,6 +100,72 @@ public class ProfilesFragment extends Fragment {
 				? getString(R.string.profiles_count_one)
 				: getString(R.string.profiles_count_other, n);
 		profileCountSummary.setText(summary);
+	}
+
+	private void backfillActiveDisplayNameIfNeeded() {
+		String activeId = accountManager.getActiveProfileId();
+		if (accountManager.readDisplayName(activeId) != null) return;
+		io.execute(() -> {
+			String name = null;
+			try {
+				LocalAuthor la = identityManager.getLocalAuthor();
+				name = la.getName();
+			} catch (Exception ignored) {
+			}
+			final String finalName = name;
+			if (finalName == null || finalName.isEmpty()) return;
+			accountManager.ensureActiveDisplayName(finalName);
+			android.app.Activity a = getActivity();
+			if (a != null) a.runOnUiThread(this::renderProfileRows);
+		});
+	}
+
+	private void renderProfileRows() {
+		if (profilesListGroup == null) return;
+		profilesListGroup.removeAllViews();
+		String activeId = accountManager.getActiveProfileId();
+		List<String> ids = accountManager.listProfileIds();
+		for (String id : ids) {
+			String name = accountManager.readDisplayName(id);
+			boolean isActive = id.equals(activeId);
+			View row = buildProfileRow(name, isActive, id);
+			profilesListGroup.addView(row);
+		}
+	}
+
+	private View buildProfileRow(@Nullable String name, boolean isActive,
+			String id) {
+		View row = getLayoutInflater().inflate(
+				R.layout.row_profile_entry, profilesListGroup, false);
+		TextView titleView = row.findViewById(R.id.profile_row_title);
+		TextView summaryView = row.findViewById(R.id.profile_row_summary);
+		android.widget.ImageView chevron =
+				row.findViewById(R.id.profile_row_chevron);
+		String display = (name == null || name.isEmpty())
+				? getString(R.string.profiles_row_unknown_name) : name;
+		titleView.setText(display);
+		if (isActive) {
+			summaryView.setText(R.string.profiles_row_active);
+			chevron.setVisibility(View.GONE);
+			row.setClickable(false);
+			row.setFocusable(false);
+		} else {
+			summaryView.setText(R.string.profiles_row_tap_to_switch);
+			row.setOnClickListener(v -> showSwitchToProfileDialog(display));
+		}
+		return row;
+	}
+
+	private void showSwitchToProfileDialog(String displayName) {
+		String msg = getString(R.string.profiles_switch_to_message, displayName);
+		new MaterialAlertDialogBuilder(requireContext())
+				.setTitle(getString(R.string.profiles_switch_to_title,
+						displayName))
+				.setMessage(msg)
+				.setPositiveButton(R.string.profiles_switch_action,
+						(d, w) -> signOutAndExit())
+				.setNegativeButton(R.string.cancel, null)
+				.show();
 	}
 
 	private void showAddProfileDialog() {

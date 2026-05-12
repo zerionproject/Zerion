@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content"
+	android:orientation="horizontal"
+	android:paddingStart="16dp"
+	android:paddingEnd="16dp"
+	android:paddingTop="14dp"
+	android:paddingBottom="14dp"
+	android:gravity="center_vertical"
+	android:clickable="true"
+	android:focusable="true"
+	android:background="?attr/selectableItemBackground">
+
+	<ImageView
+		android:layout_width="24dp"
+		android:layout_height="24dp"
+		android:src="@drawable/ic_person"
+		app:tint="?android:attr/textColorPrimary"
+		android:layout_marginEnd="16dp"
+		android:importantForAccessibility="no" />
+
+	<LinearLayout
+		android:layout_width="0dp"
+		android:layout_height="wrap_content"
+		android:layout_weight="1"
+		android:orientation="vertical">
+
+		<TextView
+			android:id="@+id/profile_row_title"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:textSize="16sp"
+			android:textColor="?android:attr/textColorPrimary"
+			tools:text="Hans" />
+
+		<TextView
+			android:id="@+id/profile_row_summary"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:textSize="13sp"
+			android:textColor="?android:attr/textColorSecondary"
+			android:layout_marginTop="2dp"
+			tools:text="Active" />
+
+	</LinearLayout>
+
+	<ImageView
+		android:id="@+id/profile_row_chevron"
+		android:layout_width="20dp"
+		android:layout_height="20dp"
+		android:src="@drawable/ic_chevron_right"
+		app:tint="?android:attr/textColorSecondary"
+		android:importantForAccessibility="no" />
+
+</LinearLayout>

@@ -200,6 +200,22 @@ public class AndroidAccountManager extends AccountManagerImpl
 		return profileManager.listProfileIds().size();
 	}
 
+	public java.util.List<String> listProfileIds() {
+		return profileManager.listProfileIds();
+	}
+
+	@Nullable
+	public String readDisplayName(String profileId) {
+		return profileManager.readDisplayName(profileId);
+	}
+
+	public void ensureActiveDisplayName(String fallbackName) {
+		String id = profileManager.getActiveProfileId();
+		if (profileManager.readDisplayName(id) != null) return;
+		if (fallbackName == null || fallbackName.isEmpty()) return;
+		profileManager.writeDisplayName(id, fallbackName);
+	}
+
 	/**
 	 * Creates a new profile directory, generates a fresh database key,
 	 * encrypts it with the supplied password, and writes the encrypted key
@@ -229,6 +245,7 @@ public class AndroidAccountManager extends AccountManagerImpl
 					return null;
 				}
 				writePendingIdentityName(newId, displayName);
+				profileManager.writeDisplayName(newId, displayName);
 				freshKey.clear();
 				return newId;
 			} catch (Exception e) {
