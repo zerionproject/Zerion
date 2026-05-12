@@ -54,6 +54,7 @@ public class SettingsFragment extends Fragment {
 	private View displayCard;
 	private View networkCard;
 	private View securityCard;
+	private View profilesCard;
 	private View notificationsCard;
 	private View aboutCard;
 	private View supportCard;
@@ -98,6 +99,7 @@ public class SettingsFragment extends Fragment {
 		displayCard = view.findViewById(R.id.display_card);
 		networkCard = view.findViewById(R.id.network_card);
 		securityCard = view.findViewById(R.id.security_card);
+		profilesCard = view.findViewById(R.id.profiles_card);
 		notificationsCard = view.findViewById(R.id.notifications_card);
 		aboutCard = view.findViewById(R.id.about_card);
 		supportCard = view.findViewById(R.id.support_card);
@@ -122,6 +124,9 @@ public class SettingsFragment extends Fragment {
 		displayCard.setOnClickListener(v -> showDisplaySettings());
 		networkCard.setOnClickListener(v -> showNetworkSettings());
 		securityCard.setOnClickListener(v -> showSecuritySettings());
+		if (profilesCard != null) {
+			profilesCard.setOnClickListener(v -> showProfilesSettings());
+		}
 		notificationsCard.setOnClickListener(v -> showNotificationsSettings());
 		aboutCard.setOnClickListener(v -> showAboutSettings());
 		if (supportCard != null) {
@@ -196,6 +201,13 @@ public class SettingsFragment extends Fragment {
 	private void showSecuritySettings() {
 		requireActivity().getSupportFragmentManager().beginTransaction()
 				.replace(R.id.fragmentContainer, new SecurityFragment())
+				.addToBackStack(null)
+				.commit();
+	}
+
+	private void showProfilesSettings() {
+		requireActivity().getSupportFragmentManager().beginTransaction()
+				.replace(R.id.fragmentContainer, new ProfilesFragment())
 				.addToBackStack(null)
 				.commit();
 	}

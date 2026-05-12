@@ -929,6 +929,7 @@
 
 	<!-- Settings Profiles -->
 	<string name="profiles_settings_title">Profiles</string>
+	<string name="profiles_settings_summary">Create, switch, or delete hidden profiles</string>
 	<string name="profiles_section_current">Current profile</string>
 	<string name="profiles_section_actions">Profile actions</string>
 	<string name="profiles_current_title">Profiles on this device</string>
