@@ -143,15 +143,30 @@ class MessageEncoderImpl implements MessageEncoder {
 	public Message encodeAcceptMessage(GroupId contactGroupId, long timestamp,
 			@Nullable MessageId previousMessageId, SessionId sessionId,
 			PublicKey ephemeralPublicKey, long acceptTimestamp,
-			Map<TransportId, TransportProperties> transportProperties) {
-		BdfList body = BdfList.of(
-				ACCEPT.getValue(),
-				sessionId,
-				previousMessageId,
-				ephemeralPublicKey.getEncoded(),
-				acceptTimestamp,
-				clientHelper.toDictionary(transportProperties)
-		);
+			Map<TransportId, TransportProperties> transportProperties,
+			@Nullable byte[] mlDsaPubKey) {
+		BdfList body;
+		if (mlDsaPubKey == null) {
+			body = BdfList.of(
+					ACCEPT.getValue(),
+					sessionId,
+					previousMessageId,
+					ephemeralPublicKey.getEncoded(),
+					acceptTimestamp,
+					clientHelper.toDictionary(transportProperties)
+			);
+		} else {
+			body = BdfList.of(
+					ACCEPT.getValue(),
+					sessionId,
+					previousMessageId,
+					ephemeralPublicKey.getEncoded(),
+					acceptTimestamp,
+					clientHelper.toDictionary(transportProperties),
+					null,
+					mlDsaPubKey
+			);
+		}
 		return createMessage(contactGroupId, timestamp, body);
 	}
 
@@ -160,16 +175,30 @@ class MessageEncoderImpl implements MessageEncoder {
 			@Nullable MessageId previousMessageId, SessionId sessionId,
 			PublicKey ephemeralPublicKey, long acceptTimestamp,
 			Map<TransportId, TransportProperties> transportProperties,
-			long autoDeleteTimer) {
-		BdfList body = BdfList.of(
-				ACCEPT.getValue(),
-				sessionId,
-				previousMessageId,
-				ephemeralPublicKey.getEncoded(),
-				acceptTimestamp,
-				clientHelper.toDictionary(transportProperties),
-				encodeTimer(autoDeleteTimer)
-		);
+			long autoDeleteTimer, @Nullable byte[] mlDsaPubKey) {
+		BdfList body;
+		if (mlDsaPubKey == null) {
+			body = BdfList.of(
+					ACCEPT.getValue(),
+					sessionId,
+					previousMessageId,
+					ephemeralPublicKey.getEncoded(),
+					acceptTimestamp,
+					clientHelper.toDictionary(transportProperties),
+					encodeTimer(autoDeleteTimer)
+			);
+		} else {
+			body = BdfList.of(
+					ACCEPT.getValue(),
+					sessionId,
+					previousMessageId,
+					ephemeralPublicKey.getEncoded(),
+					acceptTimestamp,
+					clientHelper.toDictionary(transportProperties),
+					encodeTimer(autoDeleteTimer),
+					mlDsaPubKey
+			);
+		}
 		return createMessage(contactGroupId, timestamp, body);
 	}
 

@@ -3,6 +3,8 @@ package org.briarproject.briar.introduction;
 import org.briarproject.bramble.api.FormatException;
 import org.briarproject.bramble.api.client.ClientHelper;
 import org.briarproject.bramble.api.crypto.CryptoComponent;
+import org.briarproject.bramble.api.crypto.HybridSignaturePrivateKey;
+import org.briarproject.bramble.api.crypto.HybridSignaturePublicKey;
 import org.briarproject.bramble.api.crypto.KeyPair;
 import org.briarproject.bramble.api.crypto.PrivateKey;
 import org.briarproject.bramble.api.crypto.PublicKey;
@@ -17,8 +19,11 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.security.GeneralSecurityException;
 
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
+
+import static org.briarproject.bramble.api.crypto.PostQuantumConstants.HYBRID_SIGNATURE_BYTES;
 
 import static org.briarproject.briar.api.introduction.IntroductionConstants.LABEL_ACTIVATE_MAC;
 import static org.briarproject.briar.api.introduction.IntroductionConstants.LABEL_ALICE_MAC_KEY;
@@ -170,9 +175,18 @@ class IntroductionCryptoImpl implements IntroductionCrypto {
 	}
 
 	@Override
-	public byte[] sign(SecretKey macKey, PrivateKey privateKey)
+	public byte[] sign(SecretKey macKey, PrivateKey privateKey,
+			@Nullable byte[] localMlDsaPriv,
+			@Nullable byte[] remoteMlDsaPub)
 			throws GeneralSecurityException {
-		return crypto.sign(LABEL_AUTH_SIGN, getNonce(macKey), privateKey);
+		byte[] nonce = getNonce(macKey);
+		if (localMlDsaPriv != null && remoteMlDsaPub != null) {
+			HybridSignaturePrivateKey hybridKey =
+					new HybridSignaturePrivateKey(privateKey.getEncoded(),
+							localMlDsaPriv);
+			return crypto.hybridSign(LABEL_AUTH_SIGN, nonce, hybridKey);
+		}
+		return crypto.sign(LABEL_AUTH_SIGN, nonce, privateKey);
 	}
 
 	@Override
@@ -180,14 +194,31 @@ class IntroductionCryptoImpl implements IntroductionCrypto {
 	public void verifySignature(byte[] signature, IntroduceeSession s)
 			throws GeneralSecurityException {
 		SecretKey macKey = new SecretKey(s.getRemote().macKey);
-		verifySignature(macKey, s.getRemote().author.getPublicKey(), signature);
+		verifySignature(macKey, s.getRemote().author.getPublicKey(), signature,
+				s.getRemote().mlDsaPubKey);
 	}
 
-	void verifySignature(SecretKey macKey, PublicKey publicKey,
-			byte[] signature) throws GeneralSecurityException {
+	void verifySignature(SecretKey macKey, PublicKey ed25519PublicKey,
+			byte[] signature, @Nullable byte[] remoteMlDsaPubKey)
+			throws GeneralSecurityException {
 		byte[] nonce = getNonce(macKey);
-		if (!crypto.verifySignature(signature, LABEL_AUTH_SIGN, nonce,
-				publicKey)) {
+		boolean sigIsHybrid = signature.length == HYBRID_SIGNATURE_BYTES;
+		if (sigIsHybrid && remoteMlDsaPubKey != null) {
+			HybridSignaturePublicKey hybridPub = new HybridSignaturePublicKey(
+					ed25519PublicKey.getEncoded(), remoteMlDsaPubKey);
+			if (!crypto.verifySignature(signature, LABEL_AUTH_SIGN, nonce,
+					hybridPub)) {
+				throw new GeneralSecurityException();
+			}
+			return;
+		}
+		byte[] ed25519Sig = signature;
+		if (sigIsHybrid) {
+			ed25519Sig = new byte[64];
+			System.arraycopy(signature, 0, ed25519Sig, 0, 64);
+		}
+		if (!crypto.verifySignature(ed25519Sig, LABEL_AUTH_SIGN, nonce,
+				ed25519PublicKey)) {
 			throw new GeneralSecurityException();
 		}
 	}

@@ -36,4 +36,6 @@ interface IntroductionConstants {
 
 	String SESSION_KEY_REMOTE_AUTHOR = "remoteAuthor";
 
+	String SESSION_KEY_ML_DSA_PUB_KEY = "mlDsaPubKey";
+
 }

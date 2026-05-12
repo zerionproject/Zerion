@@ -273,21 +273,23 @@ class IntroduceeProtocolEngine
 		Map<TransportId, TransportProperties> transportProperties =
 				transportPropertyManager.getLocalProperties(txn);
 		long localTimestamp = getTimestampForVisibleMessage(txn, s);
+		byte[] localMlDsaPubKey =
+				identityManager.getLocalMlDsaSigPublicKey(txn);
 		Message sent = sendAcceptMessage(txn, s, localTimestamp, publicKey,
-				localTimestamp, transportProperties, true);
+				localTimestamp, transportProperties, true, localMlDsaPubKey);
 		conversationManager.trackOutgoingMessage(txn, sent);
 		switch (s.getState()) {
 			case AWAIT_RESPONSES:
 				return IntroduceeSession.addLocalAccept(s, LOCAL_ACCEPTED, sent,
 						publicKey, privateKey, localTimestamp,
-						transportProperties);
+						transportProperties, localMlDsaPubKey);
 			case REMOTE_DECLINED:
 				return IntroduceeSession.clear(s, START, sent.getId(),
 						localTimestamp, s.getLastRemoteMessageId());
 			case REMOTE_ACCEPTED:
 				return onLocalAuth(txn, IntroduceeSession.addLocalAccept(s,
 						AWAIT_AUTH, sent, publicKey, privateKey, localTimestamp,
-						transportProperties));
+						transportProperties, localMlDsaPubKey));
 			default:
 				throw new AssertionError();
 		}
@@ -363,7 +365,10 @@ class IntroduceeProtocolEngine
 			SecretKey ourMacKey = s.getLocal().alice ? aliceMacKey : bobMacKey;
 			LocalAuthor localAuthor = identityManager.getLocalAuthor(txn);
 			mac = crypto.authMac(ourMacKey, s, localAuthor.getId());
-			signature = crypto.sign(ourMacKey, localAuthor.getPrivateKey());
+			byte[] localMlDsaPriv =
+					identityManager.getLocalMlDsaSigPrivateKey(txn);
+			signature = crypto.sign(ourMacKey, localAuthor.getPrivateKey(),
+					localMlDsaPriv, s.getRemote().mlDsaPubKey);
 		} catch (GeneralSecurityException e) {
 			return abort(txn, s, s.getLastRemoteMessageId());
 		}

@@ -20,6 +20,8 @@ import javax.annotation.concurrent.Immutable;
 import static java.util.Collections.singletonList;
 import static org.briarproject.bramble.api.crypto.CryptoConstants.MAC_BYTES;
 import static org.briarproject.bramble.api.crypto.CryptoConstants.MAX_SIGNATURE_BYTES;
+import static org.briarproject.bramble.api.crypto.PostQuantumConstants.HYBRID_SIGNATURE_BYTES;
+import static org.briarproject.bramble.api.crypto.PostQuantumConstants.ML_DSA_65_PUBLIC_KEY_BYTES;
 import static org.briarproject.bramble.api.identity.AuthorConstants.MAX_PUBLIC_KEY_LENGTH;
 import static org.briarproject.bramble.util.ValidationUtils.checkLength;
 import static org.briarproject.bramble.util.ValidationUtils.checkSize;
@@ -97,7 +99,7 @@ class IntroductionValidator extends BdfMessageValidator {
 
 	private BdfMessageContext validateAcceptMessage(Message m, BdfList body)
 			throws FormatException {
-		checkSize(body, 6, 7);
+		checkSize(body, 6, 8);
 
 		byte[] sessionIdBytes = body.getRaw(1);
 		checkLength(sessionIdBytes, UniqueId.LENGTH);
@@ -118,8 +120,14 @@ class IntroductionValidator extends BdfMessageValidator {
 				.parseAndValidateTransportPropertiesMap(transportProperties);
 
 		long timer = NO_AUTO_DELETE_TIMER;
-		if (body.size() == 7) {
+		if (body.size() >= 7) {
 			timer = validateAutoDeleteTimer(body.getOptionalLong(6));
+		}
+		if (body.size() == 8) {
+			byte[] mlDsaPubKey = body.getOptionalRaw(7);
+			if (mlDsaPubKey != null) {
+				checkLength(mlDsaPubKey, ML_DSA_65_PUBLIC_KEY_BYTES);
+			}
 		}
 
 		SessionId sessionId = new SessionId(sessionIdBytes);
@@ -173,7 +181,8 @@ class IntroductionValidator extends BdfMessageValidator {
 		checkLength(mac, MAC_BYTES);
 
 		byte[] signature = body.getRaw(4);
-		checkLength(signature, 1, MAX_SIGNATURE_BYTES);
+		checkLength(signature, 1, Math.max(MAX_SIGNATURE_BYTES,
+				HYBRID_SIGNATURE_BYTES));
 
 		SessionId sessionId = new SessionId(sessionIdBytes);
 		BdfDictionary meta = messageEncoder.encodeMetadata(AUTH, sessionId,

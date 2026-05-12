@@ -258,7 +258,7 @@ class IntroducerProtocolEngine
 		long localTimestamp = getTimestampForInvisibleMessage(s, i);
 		Message sent = sendAcceptMessage(txn, i, localTimestamp,
 				m.getEphemeralPublicKey(), m.getAcceptTimestamp(),
-				m.getTransportProperties(), false);
+				m.getTransportProperties(), false, m.getMlDsaPubKey());
 		IntroducerState state = AWAIT_AUTHS;
 		Introducee introduceeA, introduceeB;
 		Author sender, other;
@@ -305,7 +305,7 @@ class IntroducerProtocolEngine
 		long localTimestamp = getTimestampForInvisibleMessage(s, i);
 		Message sent = sendAcceptMessage(txn, i, localTimestamp,
 				m.getEphemeralPublicKey(), m.getAcceptTimestamp(),
-				m.getTransportProperties(), false);
+				m.getTransportProperties(), false, m.getMlDsaPubKey());
 
 		Introducee introduceeA, introduceeB;
 		Author sender, other;

@@ -37,6 +37,7 @@ import static org.briarproject.briar.introduction.IntroductionConstants.SESSION_
 import static org.briarproject.briar.introduction.IntroductionConstants.SESSION_KEY_LOCAL_TIMESTAMP;
 import static org.briarproject.briar.introduction.IntroductionConstants.SESSION_KEY_MAC_KEY;
 import static org.briarproject.briar.introduction.IntroductionConstants.SESSION_KEY_MASTER_KEY;
+import static org.briarproject.briar.introduction.IntroductionConstants.SESSION_KEY_ML_DSA_PUB_KEY;
 import static org.briarproject.briar.introduction.IntroductionConstants.SESSION_KEY_REMOTE;
 import static org.briarproject.briar.introduction.IntroductionConstants.SESSION_KEY_REMOTE_AUTHOR;
 import static org.briarproject.briar.introduction.IntroductionConstants.SESSION_KEY_REQUEST_TIMESTAMP;
@@ -114,6 +115,7 @@ class SessionEncoderImpl implements SessionEncoder {
 						clientHelper.toDictionary(s.transportProperties));
 		d.put(SESSION_KEY_ACCEPT_TIMESTAMP, s.acceptTimestamp);
 		putNullable(d, SESSION_KEY_MAC_KEY, s.macKey);
+		putNullable(d, SESSION_KEY_ML_DSA_PUB_KEY, s.mlDsaPubKey);
 		return d;
 	}
 

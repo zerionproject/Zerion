@@ -122,7 +122,7 @@ abstract class AbstractProtocolEngine<S extends Session<?>>
 	Message sendAcceptMessage(Transaction txn, PeerSession s, long timestamp,
 			PublicKey ephemeralPublicKey, long acceptTimestamp,
 			Map<TransportId, TransportProperties> transportProperties,
-			boolean visible) throws DbException {
+			boolean visible, @Nullable byte[] mlDsaPubKey) throws DbException {
 		Message m;
 		ContactId c = clientHelper.getContactId(txn, s.getContactGroupId());
 		if (contactSupportsAutoDeletion(txn, c)) {
@@ -131,7 +131,7 @@ abstract class AbstractProtocolEngine<S extends Session<?>>
 			m = messageEncoder.encodeAcceptMessage(s.getContactGroupId(),
 					timestamp, s.getLastLocalMessageId(), s.getSessionId(),
 					ephemeralPublicKey, acceptTimestamp, transportProperties,
-					timer);
+					timer, mlDsaPubKey);
 			sendMessage(txn, ACCEPT, s.getSessionId(), m, visible, timer);
 			if (timer != NO_AUTO_DELETE_TIMER) {
 				db.setCleanupTimerDuration(txn, m.getId(), timer);
@@ -139,7 +139,8 @@ abstract class AbstractProtocolEngine<S extends Session<?>>
 		} else {
 			m = messageEncoder.encodeAcceptMessage(s.getContactGroupId(),
 					timestamp, s.getLastLocalMessageId(), s.getSessionId(),
-					ephemeralPublicKey, acceptTimestamp, transportProperties);
+					ephemeralPublicKey, acceptTimestamp, transportProperties,
+					mlDsaPubKey);
 			sendMessage(txn, ACCEPT, s.getSessionId(), m, visible,
 					NO_AUTO_DELETE_TIMER);
 		}

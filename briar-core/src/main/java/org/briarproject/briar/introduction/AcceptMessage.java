@@ -21,6 +21,23 @@ class AcceptMessage extends AbstractIntroductionMessage {
 	private final PublicKey ephemeralPublicKey;
 	private final long acceptTimestamp;
 	private final Map<TransportId, TransportProperties> transportProperties;
+	@Nullable
+	private final byte[] mlDsaPubKey;
+
+	protected AcceptMessage(MessageId messageId, GroupId groupId,
+			long timestamp, @Nullable MessageId previousMessageId,
+			SessionId sessionId, PublicKey ephemeralPublicKey,
+			long acceptTimestamp,
+			Map<TransportId, TransportProperties> transportProperties,
+			long autoDeleteTimer, @Nullable byte[] mlDsaPubKey) {
+		super(messageId, groupId, timestamp, previousMessageId,
+				autoDeleteTimer);
+		this.sessionId = sessionId;
+		this.ephemeralPublicKey = ephemeralPublicKey;
+		this.acceptTimestamp = acceptTimestamp;
+		this.transportProperties = transportProperties;
+		this.mlDsaPubKey = mlDsaPubKey;
+	}
 
 	protected AcceptMessage(MessageId messageId, GroupId groupId,
 			long timestamp, @Nullable MessageId previousMessageId,
@@ -28,12 +45,9 @@ class AcceptMessage extends AbstractIntroductionMessage {
 			long acceptTimestamp,
 			Map<TransportId, TransportProperties> transportProperties,
 			long autoDeleteTimer) {
-		super(messageId, groupId, timestamp, previousMessageId,
-				autoDeleteTimer);
-		this.sessionId = sessionId;
-		this.ephemeralPublicKey = ephemeralPublicKey;
-		this.acceptTimestamp = acceptTimestamp;
-		this.transportProperties = transportProperties;
+		this(messageId, groupId, timestamp, previousMessageId, sessionId,
+				ephemeralPublicKey, acceptTimestamp, transportProperties,
+				autoDeleteTimer, null);
 	}
 
 	public SessionId getSessionId() {
@@ -50,6 +64,11 @@ class AcceptMessage extends AbstractIntroductionMessage {
 
 	public Map<TransportId, TransportProperties> getTransportProperties() {
 		return transportProperties;
+	}
+
+	@Nullable
+	public byte[] getMlDsaPubKey() {
+		return mlDsaPubKey;
 	}
 
 }

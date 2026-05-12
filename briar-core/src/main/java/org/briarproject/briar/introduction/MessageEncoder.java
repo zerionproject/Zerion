@@ -46,18 +46,19 @@ interface MessageEncoder {
 			@Nullable MessageId previousMessageId, Author author,
 			@Nullable String text, long autoDeleteTimer);
 
-	
-	Message encodeAcceptMessage(GroupId contactGroupId, long timestamp,
-			@Nullable MessageId previousMessageId, SessionId sessionId,
-			PublicKey ephemeralPublicKey, long acceptTimestamp,
-			Map<TransportId, TransportProperties> transportProperties);
 
-	
 	Message encodeAcceptMessage(GroupId contactGroupId, long timestamp,
 			@Nullable MessageId previousMessageId, SessionId sessionId,
 			PublicKey ephemeralPublicKey, long acceptTimestamp,
 			Map<TransportId, TransportProperties> transportProperties,
-			long autoDeleteTimer);
+			@Nullable byte[] mlDsaPubKey);
+
+
+	Message encodeAcceptMessage(GroupId contactGroupId, long timestamp,
+			@Nullable MessageId previousMessageId, SessionId sessionId,
+			PublicKey ephemeralPublicKey, long acceptTimestamp,
+			Map<TransportId, TransportProperties> transportProperties,
+			long autoDeleteTimer, @Nullable byte[] mlDsaPubKey);
 
 	
 	Message encodeDeclineMessage(GroupId contactGroupId, long timestamp,
