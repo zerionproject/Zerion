@@ -1,10 +1,13 @@
-package com.professor.zerion.android.profile;
+package org.briarproject.bramble.account;
 
 import android.content.Context;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import javax.annotation.concurrent.GuardedBy;
 
@@ -81,6 +84,96 @@ public class ProfileManager {
 
 	public File getTorDir(String profileId) {
 		return ensureDir(new File(getProfileRoot(profileId), TOR_SUBDIR));
+	}
+
+	public File getAppFilesRoot() {
+		return filesDir;
+	}
+
+	public List<String> listProfileIds() {
+		File root = getProfilesRoot();
+		if (!root.exists() || !root.isDirectory()) {
+			return Collections.emptyList();
+		}
+		String[] names = root.list();
+		if (names == null || names.length == 0) {
+			return Collections.emptyList();
+		}
+		List<String> out = new ArrayList<>(names.length);
+		for (String n : names) {
+			File p = new File(root, n);
+			if (p.isDirectory()) out.add(n);
+		}
+		Collections.sort(out);
+		return out;
+	}
+
+	public boolean profileExists(String profileId) {
+		return getProfileRoot(profileId).isDirectory();
+	}
+
+	public File getDbKeyFile(String profileId) {
+		return new File(getKeyDir(profileId), "db.key");
+	}
+
+	public File getDbKeyBackupFile(String profileId) {
+		return new File(getKeyDir(profileId), "db.key.bak");
+	}
+
+	public File getLockoutFile() {
+		return new File(filesDir, "login.lockout");
+	}
+
+	public String generateProfileId() {
+		return java.util.UUID.randomUUID().toString();
+	}
+
+	public boolean createProfileDir(String profileId) {
+		File root = getProfileRoot(profileId);
+		if (root.exists()) return false;
+		if (!root.mkdirs()) return false;
+		getDbDir(profileId);
+		getKeyDir(profileId);
+		getTorDir(profileId);
+		return true;
+	}
+
+	public void secureWipeProfile(String profileId) {
+		File root = getProfileRoot(profileId);
+		if (!root.exists()) return;
+		secureWipeRecursive(root);
+	}
+
+	private void secureWipeRecursive(File f) {
+		if (f.isDirectory()) {
+			File[] children = f.listFiles();
+			if (children != null) {
+				for (File c : children) secureWipeRecursive(c);
+			}
+			//noinspection ResultOfMethodCallIgnored
+			f.delete();
+			return;
+		}
+		try {
+			long len = f.length();
+			if (len > 0 && len < 200L * 1024 * 1024) {
+				try (java.io.RandomAccessFile raf =
+						new java.io.RandomAccessFile(f, "rw")) {
+					byte[] zeroes = new byte[8192];
+					long written = 0;
+					while (written < len) {
+						int chunk = (int) Math.min(zeroes.length,
+								len - written);
+						raf.write(zeroes, 0, chunk);
+						written += chunk;
+					}
+					raf.getFD().sync();
+				}
+			}
+		} catch (java.io.IOException ignored) {
+		}
+		//noinspection ResultOfMethodCallIgnored
+		f.delete();
 	}
 
 	private File ensureDir(File f) {

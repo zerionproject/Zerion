@@ -36,10 +36,9 @@ class AccountManagerImpl implements AccountManager {
 	private static final int MAX_FAILED_ATTEMPTS = 10;
 	private static final long LOCKOUT_DURATION_MS = 5 * 60 * 1000;
 
-	private final DatabaseConfig databaseConfig;
-	private final CryptoComponent crypto;
+	protected final DatabaseConfig databaseConfig;
+	protected final CryptoComponent crypto;
 	private final IdentityManager identityManager;
-	private final File dbKeyFile, dbKeyBackupFile, lockoutFile;
 
 	final Object stateChangeLock = new Object();
 
@@ -52,10 +51,21 @@ class AccountManagerImpl implements AccountManager {
 		this.databaseConfig = databaseConfig;
 		this.crypto = crypto;
 		this.identityManager = identityManager;
-		File keyDir = databaseConfig.getDatabaseKeyDirectory();
-		dbKeyFile = new File(keyDir, DB_KEY_FILENAME);
-		dbKeyBackupFile = new File(keyDir, DB_KEY_BACKUP_FILENAME);
-		lockoutFile = new File(keyDir, LOCKOUT_FILENAME);
+	}
+
+	protected File dbKeyFile() {
+		return new File(databaseConfig.getDatabaseKeyDirectory(),
+				DB_KEY_FILENAME);
+	}
+
+	protected File dbKeyBackupFile() {
+		return new File(databaseConfig.getDatabaseKeyDirectory(),
+				DB_KEY_BACKUP_FILENAME);
+	}
+
+	protected File lockoutFile() {
+		return new File(databaseConfig.getDatabaseKeyDirectory(),
+				LOCKOUT_FILENAME);
 	}
 
 	@Override
@@ -72,9 +82,9 @@ class AccountManagerImpl implements AccountManager {
 	@GuardedBy("stateChangeLock")
 	@Nullable
 	String loadEncryptedDatabaseKey() {
-		String key = readDbKeyFromFile(dbKeyFile);
+		String key = readDbKeyFromFile(dbKeyFile());
 		if (key == null) {
-			key = readDbKeyFromFile(dbKeyBackupFile);
+			key = readDbKeyFromFile(dbKeyBackupFile());
 		}
 		return key;
 	}
@@ -96,6 +106,8 @@ class AccountManagerImpl implements AccountManager {
 	@GuardedBy("stateChangeLock")
 	boolean storeEncryptedDatabaseKey(String hex) {
 		databaseConfig.getDatabaseKeyDirectory().mkdirs();
+		File dbKeyFile = dbKeyFile();
+		File dbKeyBackupFile = dbKeyBackupFile();
 		if (dbKeyBackupFile.exists() && !dbKeyFile.exists()) {
 			dbKeyBackupFile.renameTo(dbKeyFile);
 		}
@@ -178,7 +190,8 @@ class AccountManagerImpl implements AccountManager {
 	}
 
 	@GuardedBy("stateChangeLock")
-	private void checkLockout() throws DecryptionException {
+	protected void checkLockout() throws DecryptionException {
+		File lockoutFile = lockoutFile();
 		if (!lockoutFile.exists()) return;
 		try {
 			BufferedReader reader = new BufferedReader(new InputStreamReader(
@@ -203,7 +216,8 @@ class AccountManagerImpl implements AccountManager {
 	}
 
 	@GuardedBy("stateChangeLock")
-	private void recordFailedAttempt() {
+	protected void recordFailedAttempt() {
+		File lockoutFile = lockoutFile();
 		int attempts = 0;
 		if (lockoutFile.exists()) {
 			try {
@@ -233,10 +247,15 @@ class AccountManagerImpl implements AccountManager {
 	}
 
 	@GuardedBy("stateChangeLock")
-	private void resetLockout() {
+	protected void resetLockout() {
+		File lockoutFile = lockoutFile();
 		if (lockoutFile.exists()) {
 			lockoutFile.delete();
 		}
+	}
+
+	protected void setDatabaseKey(SecretKey key) {
+		this.databaseKey = key;
 	}
 
 	@GuardedBy("stateChangeLock")

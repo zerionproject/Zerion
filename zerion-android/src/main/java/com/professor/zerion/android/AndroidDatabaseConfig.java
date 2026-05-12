@@ -1,5 +1,6 @@
 package com.professor.zerion.android;
 
+import org.briarproject.bramble.account.ProfileManager;
 import org.briarproject.bramble.api.crypto.KeyStrengthener;
 import org.briarproject.bramble.api.db.DatabaseConfig;
 import org.briarproject.nullsafety.NotNullByDefault;
@@ -11,25 +12,24 @@ import javax.annotation.Nullable;
 @NotNullByDefault
 class AndroidDatabaseConfig implements DatabaseConfig {
 
-	private final File dbDir, keyDir;
+	private final ProfileManager profileManager;
 	@Nullable
 	private final KeyStrengthener keyStrengthener;
 
-	AndroidDatabaseConfig(File dbDir, File keyDir,
+	AndroidDatabaseConfig(ProfileManager profileManager,
 			@Nullable KeyStrengthener keyStrengthener) {
-		this.dbDir = dbDir;
-		this.keyDir = keyDir;
+		this.profileManager = profileManager;
 		this.keyStrengthener = keyStrengthener;
 	}
 
 	@Override
 	public File getDatabaseDirectory() {
-		return dbDir;
+		return profileManager.getActiveDbDir();
 	}
 
 	@Override
 	public File getDatabaseKeyDirectory() {
-		return keyDir;
+		return profileManager.getActiveKeyDir();
 	}
 
 	@Nullable

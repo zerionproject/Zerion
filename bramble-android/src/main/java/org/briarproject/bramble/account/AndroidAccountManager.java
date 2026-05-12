@@ -7,10 +7,17 @@ import android.preference.PreferenceManager;
 
 import org.briarproject.bramble.api.account.AccountManager;
 import org.briarproject.bramble.api.crypto.CryptoComponent;
+import org.briarproject.bramble.api.crypto.DecryptionException;
+import org.briarproject.bramble.api.crypto.KeyStrengthener;
+import org.briarproject.bramble.api.crypto.SecretKey;
 import org.briarproject.bramble.api.db.DatabaseConfig;
 import org.briarproject.bramble.api.identity.IdentityManager;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -19,29 +26,157 @@ import javax.annotation.concurrent.GuardedBy;
 import javax.inject.Inject;
 
 import static java.util.Arrays.asList;
+import static org.briarproject.bramble.api.crypto.DecryptionResult.INVALID_CIPHERTEXT;
 import static org.briarproject.bramble.util.IoUtils.deleteFileOrDir;
+import static org.briarproject.bramble.util.StringUtils.UTF_8;
+import static org.briarproject.bramble.util.StringUtils.fromHexString;
 class AndroidAccountManager extends AccountManagerImpl
 		implements AccountManager {
-	
+
 	private static final List<String> PROTECTED_DIR_NAMES =
 			asList("cache", "code_cache", "lib", "shared_prefs");
 
 	protected final Context appContext;
 	private final SharedPreferences prefs;
+	private final ProfileManager profileManager;
 
 	@Inject
 	AndroidAccountManager(DatabaseConfig databaseConfig,
 			CryptoComponent crypto, IdentityManager identityManager,
-			SharedPreferences prefs, Application app) {
+			SharedPreferences prefs, Application app,
+			ProfileManager profileManager) {
 		super(databaseConfig, crypto, identityManager);
 		this.prefs = prefs;
+		this.profileManager = profileManager;
 		appContext = app.getApplicationContext();
 	}
 
 	@Override
 	public boolean accountExists() {
-		boolean exists = super.accountExists();
-		return exists;
+		synchronized (stateChangeLock) {
+			for (String id : profileManager.listProfileIds()) {
+				if (profileManager.getDbKeyFile(id).exists()
+						|| profileManager.getDbKeyBackupFile(id).exists()) {
+					return true;
+				}
+			}
+			return false;
+		}
+	}
+
+	@Override
+	public void signIn(char[] password) throws DecryptionException {
+		synchronized (stateChangeLock) {
+			checkGlobalLockout();
+			List<String> profiles = profileManager.listProfileIds();
+			if (profiles.isEmpty()) {
+				recordGlobalFailedAttempt();
+				throw new DecryptionException(INVALID_CIPHERTEXT);
+			}
+			String previousActive = profileManager.getActiveProfileId();
+			for (String id : profiles) {
+				profileManager.setActiveProfileId(id);
+				String hex = loadEncryptedDatabaseKey();
+				if (hex == null) continue;
+				try {
+					byte[] ciphertext = fromHexString(hex);
+					KeyStrengthener strengthener =
+							databaseConfig.getKeyStrengthener();
+					byte[] plaintext = crypto.decryptWithPassword(ciphertext,
+							password, strengthener);
+					SecretKey key = new SecretKey(plaintext);
+					boolean needsStrengthenerUpgrade = strengthener != null
+							&& !crypto.isEncryptedWithStrengthenedKey(
+									ciphertext);
+					boolean needsKdfUpgrade =
+							crypto.isEncryptedWithLegacyKdf(ciphertext);
+					if (needsStrengthenerUpgrade || needsKdfUpgrade) {
+						encryptAndReplaceDatabaseKey(key, password);
+					}
+					setDatabaseKey(key);
+					resetGlobalLockout();
+					return;
+				} catch (DecryptionException ignored) {
+				} catch (org.briarproject.bramble.api.FormatException
+						ignored) {
+				}
+			}
+			profileManager.setActiveProfileId(previousActive);
+			recordGlobalFailedAttempt();
+			throw new DecryptionException(INVALID_CIPHERTEXT);
+		}
+	}
+
+	@GuardedBy("stateChangeLock")
+	private void encryptAndReplaceDatabaseKey(SecretKey key, char[] password) {
+		byte[] plaintext = key.getBytes();
+		byte[] ciphertext = crypto.encryptWithPassword(plaintext, password,
+				databaseConfig.getKeyStrengthener());
+		storeEncryptedDatabaseKey(
+				org.briarproject.bramble.util.StringUtils.toHexString(
+						ciphertext));
+	}
+
+	@GuardedBy("stateChangeLock")
+	private void checkGlobalLockout() throws DecryptionException {
+		File lockoutFile = profileManager.getLockoutFile();
+		if (!lockoutFile.exists()) return;
+		try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+				new FileInputStream(lockoutFile), UTF_8))) {
+			String line = reader.readLine();
+			if (line == null) return;
+			String[] parts = line.split(",");
+			if (parts.length != 2) return;
+			int attempts = Integer.parseInt(parts[0]);
+			long lastFailTime = Long.parseLong(parts[1]);
+			if (attempts >= 10) {
+				long elapsed = System.currentTimeMillis() - lastFailTime;
+				if (elapsed < 5L * 60 * 1000) {
+					throw new DecryptionException(INVALID_CIPHERTEXT);
+				}
+				resetGlobalLockout();
+			}
+		} catch (IOException | NumberFormatException e) {
+			//noinspection ResultOfMethodCallIgnored
+			lockoutFile.delete();
+		}
+	}
+
+	@GuardedBy("stateChangeLock")
+	private void recordGlobalFailedAttempt() {
+		File lockoutFile = profileManager.getLockoutFile();
+		int attempts = 0;
+		if (lockoutFile.exists()) {
+			try (BufferedReader reader = new BufferedReader(
+					new InputStreamReader(new FileInputStream(lockoutFile),
+							UTF_8))) {
+				String line = reader.readLine();
+				if (line != null) {
+					String[] parts = line.split(",");
+					if (parts.length == 2) {
+						attempts = Integer.parseInt(parts[0]);
+					}
+				}
+			} catch (IOException | NumberFormatException ignored) {
+			}
+		}
+		attempts++;
+		try (java.io.FileOutputStream out =
+				new java.io.FileOutputStream(lockoutFile)) {
+			String data = attempts + "," + System.currentTimeMillis();
+			out.write(data.getBytes(UTF_8));
+			out.flush();
+		} catch (IOException ignored) {
+		}
+	}
+
+	@GuardedBy("stateChangeLock")
+	private void resetGlobalLockout() {
+		File lockoutFile = profileManager.getLockoutFile();
+		if (lockoutFile.exists()) {
+			//noinspection ResultOfMethodCallIgnored
+			lockoutFile.delete();
+		}
 	}
 
 	@Override
@@ -87,9 +222,6 @@ class AndroidAccountManager extends AccountManagerImpl
 		for (File file : files) {
 			deleteFileOrDir(file);
 		}
-		// The sticker dir under getFilesDir()/stickers is already nuked
-		// above; also drop the Keystore-resident AES alias so a re-add
-		// of the same account doesn't carry forward an orphaned key.
 		try {
 			java.security.KeyStore ks =
 					java.security.KeyStore.getInstance("AndroidKeyStore");

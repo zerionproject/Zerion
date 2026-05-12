@@ -39,8 +39,8 @@ import com.professor.zerion.android.login.LoginModule;
 import com.professor.zerion.android.navdrawer.NavDrawerModule;
 import com.professor.zerion.android.privategroup.conversation.GroupConversationModule;
 import com.professor.zerion.android.privategroup.list.GroupListModule;
-import com.professor.zerion.android.profile.ProfileManager;
 import com.professor.zerion.android.removabledrive.TransferDataModule;
+import org.briarproject.bramble.account.ProfileManager;
 import com.professor.zerion.android.vault.VaultManager;
 import com.professor.zerion.android.security.SecurityManager;
 import com.professor.zerion.android.security.AntiForensics;
@@ -250,11 +250,9 @@ public class AppModule {
 		StrictMode.ThreadPolicy oldPolicy = StrictMode.allowThreadDiskReads();
 		try {
 			StrictMode.allowThreadDiskWrites();
-			File dbDir = profileManager.getActiveDbDir();
-			File keyDir = profileManager.getActiveKeyDir();
 			KeyStrengthener keyStrengthener = SDK_INT >= 23
 					? new AndroidKeyStrengthener() : null;
-			return new AndroidDatabaseConfig(dbDir, keyDir, keyStrengthener);
+			return new AndroidDatabaseConfig(profileManager, keyStrengthener);
 		} finally {
 			StrictMode.setThreadPolicy(oldPolicy);
 		}
