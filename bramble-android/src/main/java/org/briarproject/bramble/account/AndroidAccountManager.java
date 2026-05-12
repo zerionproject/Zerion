@@ -30,7 +30,7 @@ import static org.briarproject.bramble.api.crypto.DecryptionResult.INVALID_CIPHE
 import static org.briarproject.bramble.util.IoUtils.deleteFileOrDir;
 import static org.briarproject.bramble.util.StringUtils.UTF_8;
 import static org.briarproject.bramble.util.StringUtils.fromHexString;
-class AndroidAccountManager extends AccountManagerImpl
+public class AndroidAccountManager extends AccountManagerImpl
 		implements AccountManager {
 
 	private static final List<String> PROTECTED_DIR_NAMES =
@@ -93,6 +93,7 @@ class AndroidAccountManager extends AccountManagerImpl
 					if (needsStrengthenerUpgrade || needsKdfUpgrade) {
 						encryptAndReplaceDatabaseKey(key, password);
 					}
+					materializePendingIdentityIfPresent(id);
 					setDatabaseKey(key);
 					resetGlobalLockout();
 					return;
@@ -105,6 +106,16 @@ class AndroidAccountManager extends AccountManagerImpl
 			recordGlobalFailedAttempt();
 			throw new DecryptionException(INVALID_CIPHERTEXT);
 		}
+	}
+
+	@GuardedBy("stateChangeLock")
+	private void materializePendingIdentityIfPresent(String profileId) {
+		String name = readPendingIdentityName(profileId);
+		if (name == null) return;
+		org.briarproject.bramble.api.identity.Identity identity =
+				identityManager.createIdentity(name);
+		identityManager.registerIdentity(identity);
+		clearPendingIdentityName(profileId);
 	}
 
 	@GuardedBy("stateChangeLock")
@@ -176,6 +187,99 @@ class AndroidAccountManager extends AccountManagerImpl
 		if (lockoutFile.exists()) {
 			//noinspection ResultOfMethodCallIgnored
 			lockoutFile.delete();
+		}
+	}
+
+	public String getActiveProfileId() {
+		return profileManager.getActiveProfileId();
+	}
+
+	public int profileCount() {
+		return profileManager.listProfileIds().size();
+	}
+
+	/**
+	 * Creates a new profile directory, generates a fresh database key,
+	 * encrypts it with the supplied password, and writes the encrypted key
+	 * plus a "pending identity name" marker so that on first sign-in to this
+	 * profile the identity is materialised with the given display name.
+	 *
+	 * Returns the new profile ID on success, or null on failure. Does NOT
+	 * change the active profile or sign out the current session.
+	 */
+	@Nullable
+	public String scheduleProfileCreation(String displayName, char[] password) {
+		synchronized (stateChangeLock) {
+			String newId = profileManager.generateProfileId();
+			if (!profileManager.createProfileDir(newId)) return null;
+			String previousActive = profileManager.getActiveProfileId();
+			try {
+				profileManager.setActiveProfileId(newId);
+				SecretKey freshKey = crypto.generateSecretKey();
+				byte[] plaintext = freshKey.getBytes();
+				byte[] ciphertext = crypto.encryptWithPassword(plaintext,
+						password, databaseConfig.getKeyStrengthener());
+				boolean ok = storeEncryptedDatabaseKey(
+						org.briarproject.bramble.util.StringUtils.toHexString(
+								ciphertext));
+				if (!ok) {
+					profileManager.secureWipeProfile(newId);
+					return null;
+				}
+				writePendingIdentityName(newId, displayName);
+				freshKey.clear();
+				return newId;
+			} catch (Exception e) {
+				profileManager.secureWipeProfile(newId);
+				return null;
+			} finally {
+				profileManager.setActiveProfileId(previousActive);
+			}
+		}
+	}
+
+	private void writePendingIdentityName(String profileId, String name) {
+		File marker = new File(profileManager.getKeyDir(profileId),
+				"pending_identity_name");
+		try (java.io.FileOutputStream out =
+				new java.io.FileOutputStream(marker)) {
+			out.write(name.getBytes(UTF_8));
+			out.flush();
+		} catch (IOException ignored) {
+		}
+	}
+
+	@Nullable
+	public String readPendingIdentityName(String profileId) {
+		File marker = new File(profileManager.getKeyDir(profileId),
+				"pending_identity_name");
+		if (!marker.exists()) return null;
+		try (BufferedReader reader = new BufferedReader(
+				new InputStreamReader(new FileInputStream(marker), UTF_8))) {
+			return reader.readLine();
+		} catch (IOException e) {
+			return null;
+		}
+	}
+
+	public void clearPendingIdentityName(String profileId) {
+		File marker = new File(profileManager.getKeyDir(profileId),
+				"pending_identity_name");
+		if (marker.exists()) {
+			//noinspection ResultOfMethodCallIgnored
+			marker.delete();
+		}
+	}
+
+	/**
+	 * Securely wipes the currently-active profile's data directory and
+	 * removes its db.key. Does NOT stop services or clear in-memory state;
+	 * callers should sign out + exit after this returns.
+	 */
+	public void deleteActiveProfile() {
+		synchronized (stateChangeLock) {
+			String id = profileManager.getActiveProfileId();
+			profileManager.secureWipeProfile(id);
 		}
 	}
 

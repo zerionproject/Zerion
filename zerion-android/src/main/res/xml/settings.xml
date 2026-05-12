@@ -20,6 +20,11 @@
 		app:icon="@drawable/ic_settings_security" />
 
 	<Preference
+		android:title="@string/profiles_settings_title"
+		app:fragment="com.professor.zerion.android.settings.ProfilesFragment"
+		app:icon="@drawable/ic_settings_security" />
+
+	<Preference
 		android:title="@string/notification_settings_title"
 		app:fragment="com.professor.zerion.android.settings.NotificationsFragment"
 		app:icon="@drawable/ic_notifications" />

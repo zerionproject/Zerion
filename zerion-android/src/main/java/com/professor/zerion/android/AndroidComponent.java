@@ -226,6 +226,8 @@ public interface AndroidComponent
 
 	void inject(SecurityFragment securityFragment);
 
+	void inject(com.professor.zerion.android.settings.ProfilesFragment profilesFragment);
+
 	void inject(NotificationsFragment notificationsFragment);
 
 	void inject(ChooserFragment chooserFragment);

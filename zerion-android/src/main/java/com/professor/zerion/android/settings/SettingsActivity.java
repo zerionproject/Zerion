@@ -99,4 +99,8 @@ public class SettingsActivity extends ZerionActivity
 		}
 	}
 
+	public void requestProfileSignOut() {
+		signOut(true, false);
+	}
+
 }

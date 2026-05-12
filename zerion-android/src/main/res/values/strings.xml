@@ -927,6 +927,39 @@
 	<string name="orbot_port_label">Port</string>
 	<string name="orbot_info_message">Orbot provides additional privacy by using its own Tor connection. Install Orbot from F-Droid or Google Play and start it before enabling this option.</string>
 
+	<!-- Settings Profiles -->
+	<string name="profiles_settings_title">Profiles</string>
+	<string name="profiles_section_current">Current profile</string>
+	<string name="profiles_section_actions">Profile actions</string>
+	<string name="profiles_current_title">Profiles on this device</string>
+	<string name="profiles_count_one">1 profile</string>
+	<string name="profiles_count_other">%d profiles</string>
+	<string name="profiles_add_title">Create new profile</string>
+	<string name="profiles_add_summary">Hidden, separate identity. Sign in with its own password.</string>
+	<string name="profiles_switch_title">Switch profile</string>
+	<string name="profiles_switch_summary">Sign out, then sign in with the target profile\'s password.</string>
+	<string name="profiles_delete_title">Delete this profile</string>
+	<string name="profiles_delete_summary">Securely wipe this profile\'s data. Cannot be undone.</string>
+	<string name="profiles_add_dialog_title">Create new profile</string>
+	<string name="profiles_add_dialog_message">You will be signed out. Once the new profile is created, sign in with its password to use it.</string>
+	<string name="profiles_add_name_hint">Profile name</string>
+	<string name="profiles_add_password_hint">New password</string>
+	<string name="profiles_add_password_confirm_hint">Confirm password</string>
+	<string name="profiles_password_mismatch">Passwords do not match</string>
+	<string name="profiles_password_too_short">Password must be at least 8 characters</string>
+	<string name="profiles_name_too_short">Profile name cannot be empty</string>
+	<string name="profiles_password_same_as_existing">Password matches an existing profile. Choose a different password.</string>
+	<string name="profiles_creating">Creating profile…</string>
+	<string name="profiles_created_success">Profile created. Sign in with its password.</string>
+	<string name="profiles_create_failed">Failed to create profile</string>
+	<string name="profiles_switch_dialog_title">Switch profile</string>
+	<string name="profiles_switch_dialog_message">You will be signed out of this profile. Reopen the app and enter the target profile\'s password to switch.</string>
+	<string name="profiles_switch_action">Sign out</string>
+	<string name="profiles_delete_dialog_title">Delete this profile?</string>
+	<string name="profiles_delete_dialog_message">All messages, contacts, and identity for this profile will be securely wiped. This cannot be undone.</string>
+	<string name="profiles_delete_action">Delete profile</string>
+	<string name="profiles_delete_last_warning">This is the only profile. Deleting it will reset the app.</string>
+
 	<!-- Settings Security and Panic -->
 	<string name="security_settings_title">Security</string>
 	<string name="pref_lock_title">App lock</string>

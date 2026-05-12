@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="@drawable/bg_zerion_gradient">
+
+	<LinearLayout
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:orientation="vertical"
+		android:paddingHorizontal="16dp"
+		android:paddingBottom="32dp">
+
+		<TextView
+			style="@style/Zerion.Settings.SectionHeader"
+			android:text="@string/profiles_section_current" />
+
+		<LinearLayout style="@style/Zerion.Settings.Group">
+
+			<LinearLayout style="@style/Zerion.Settings.Row">
+
+				<ImageView
+					style="@style/Zerion.Settings.Row.Icon"
+					android:src="@drawable/ic_settings_security"
+					android:importantForAccessibility="no" />
+
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:orientation="vertical">
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Title"
+						android:text="@string/profiles_current_title" />
+
+					<TextView
+						android:id="@+id/profile_count_summary"
+						style="@style/Zerion.Settings.Row.Summary"
+						tools:text="1 profile" />
+
+				</LinearLayout>
+
+			</LinearLayout>
+
+		</LinearLayout>
+
+		<TextView
+			style="@style/Zerion.Settings.SectionHeader"
+			android:text="@string/profiles_section_actions" />
+
+		<LinearLayout style="@style/Zerion.Settings.Group">
+
+			<LinearLayout
+				android:id="@+id/add_profile_card"
+				style="@style/Zerion.Settings.Row.Clickable">
+
+				<ImageView
+					style="@style/Zerion.Settings.Row.Icon"
+					android:src="@drawable/ic_add_white"
+					android:importantForAccessibility="no" />
+
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:orientation="vertical">
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Title"
+						android:text="@string/profiles_add_title" />
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Summary"
+						android:text="@string/profiles_add_summary" />
+
+				</LinearLayout>
+
+				<ImageView
+					android:layout_width="20dp"
+					android:layout_height="20dp"
+					android:src="@drawable/ic_chevron_right"
+					app:tint="@color/zerion_text_secondary"
+					android:importantForAccessibility="no" />
+
+			</LinearLayout>
+
+			<LinearLayout
+				android:id="@+id/switch_profile_card"
+				style="@style/Zerion.Settings.Row.Clickable">
+
+				<ImageView
+					style="@style/Zerion.Settings.Row.Icon"
+					android:src="@drawable/ic_lock_open_white"
+					android:importantForAccessibility="no" />
+
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:orientation="vertical">
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Title"
+						android:text="@string/profiles_switch_title" />
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Summary"
+						android:text="@string/profiles_switch_summary" />
+
+				</LinearLayout>
+
+				<ImageView
+					android:layout_width="20dp"
+					android:layout_height="20dp"
+					android:src="@drawable/ic_chevron_right"
+					app:tint="@color/zerion_text_secondary"
+					android:importantForAccessibility="no" />
+
+			</LinearLayout>
+
+			<LinearLayout
+				android:id="@+id/delete_profile_card"
+				style="@style/Zerion.Settings.Row.Clickable">
+
+				<ImageView
+					style="@style/Zerion.Settings.Row.Icon"
+					android:src="@drawable/ic_warning"
+					android:importantForAccessibility="no" />
+
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:orientation="vertical">
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Title"
+						android:text="@string/profiles_delete_title" />
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Summary"
+						android:text="@string/profiles_delete_summary" />
+
+				</LinearLayout>
+
+				<ImageView
+					android:layout_width="20dp"
+					android:layout_height="20dp"
+					android:src="@drawable/ic_chevron_right"
+					app:tint="@color/zerion_text_secondary"
+					android:importantForAccessibility="no" />
+
+			</LinearLayout>
+
+		</LinearLayout>
+
+	</LinearLayout>
+
+</ScrollView>

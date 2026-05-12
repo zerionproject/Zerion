@@ -38,7 +38,7 @@ class AccountManagerImpl implements AccountManager {
 
 	protected final DatabaseConfig databaseConfig;
 	protected final CryptoComponent crypto;
-	private final IdentityManager identityManager;
+	protected final IdentityManager identityManager;
 
 	final Object stateChangeLock = new Object();
 
