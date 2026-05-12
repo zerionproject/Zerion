@@ -1749,6 +1749,67 @@ collected or transmitted.
 - RTL layout support
 - Culturally appropriate content
 
+### 10.6 Multi-Profile Isolation
+
+Zerion supports multiple, fully isolated identities on a single device — for users who need separate work / personal contexts, or who need plausible deniability that a secondary profile exists at all.
+
+**Design choices**:
+
+- **Password-only hidden profiles.** The login screen shows no profile names and no profile count. The user types one password; the app silently routes to the profile whose stored database key decrypts under that password. An observer of the unlocked phone screen cannot tell how many profiles exist on the device.
+- **Restart-on-switch.** Switching profile cleanly stops the current profile's services (database close, Tor data directory release), terminates the process, and re-launches into the login screen. The two profiles never co-exist in memory or on the network simultaneously.
+- **Secure wipe on delete.** Deleting a profile overwrites every file in that profile's data directory with zeros (`fd.sync()`'d) before unlinking. The same overwrite-then-delete pattern protects voice and video temp cache files.
+
+**On-disk layout**:
+
+```
+<app private files dir>/
+  profiles/
+    <profile-uuid-1>/
+      db/        # SQLCipher database for this profile
+      key/       # Argon2id-encrypted DB key + display name marker
+      tor/       # Per-profile Tor data dir (own v3 onion key)
+    <profile-uuid-2>/
+      ...
+  login.lockout  # Global failed-attempt counter (not per profile)
+```
+
+**Cryptographic isolation per profile**:
+
+| Material | Per-profile? |
+|---|---|
+| Argon2id salt | Independent per profile (baked into the encrypted DB key blob) |
+| Database key | Independent per profile |
+| Local identity Ed25519 + ML-DSA-65 keypair | Independent per profile |
+| Tor v3 onion key | Independent per profile |
+| Vault contents | Independent per profile |
+| SkippedKeyStore + ratchet state | Tied to the active profile's database |
+
+**Threat model notes**:
+
+- A forensic dump of profile A's ciphertext yields nothing decryptable about profile B even with profile A's password in hand. The two databases use independently derived keys.
+- An attacker who briefly observes the unlocked phone screen sees only the active profile. No UI hint exists that other profiles are present, unless the user navigates to Settings → Profiles.
+- Wrong-password feedback time scales with profile count (one Argon2id evaluation per stored profile per failed attempt). This is intentional: an attacker cannot tell from timing alone whether the device has 1 profile or 5.
+- Switching profiles tears down Tor completely before the new profile starts, so an on-device passive observer cannot correlate the two profiles' Tor circuits.
+
+**Login flow**:
+
+```
+On signIn(password):
+    for profileId in stored profiles:
+        salt, encryptedDbKey = read profile dir
+        KEK = Argon2id(password, salt, cost)
+        try:
+            dbKey = decrypt(encryptedDbKey, KEK)
+            open SQLCipher with dbKey
+            set active profile = profileId
+            return success (no signal of which profile matched)
+        on decryption failure:
+            try next profile
+    record failed attempt
+    increment global lockout counter
+    return INVALID_CIPHERTEXT (no detail of which profile or how many tried)
+```
+
 ---
 
 ## 11. SECURITY PROPERTIES
