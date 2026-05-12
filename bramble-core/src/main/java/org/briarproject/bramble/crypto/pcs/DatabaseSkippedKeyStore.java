@@ -14,6 +14,7 @@ import javax.inject.Inject;
 
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MAX_SKIP;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MAX_SKIP_AGE_MS;
+import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.SKIP_CLOCK_REWIND_THRESHOLD_MS;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.SKIP_PRUNE_INTERVAL_MS;
 import static org.briarproject.bramble.api.db.DatabaseComponent.PCS_DIRECTION_RECEIVE;
 import static org.briarproject.bramble.api.db.DatabaseComponent.PCS_DIRECTION_SEND;
@@ -27,6 +28,7 @@ public class DatabaseSkippedKeyStore implements SkippedKeyStore {
 
 	private final DatabaseComponent db;
 	private volatile long lastPruneMs = 0L;
+	private volatile long highestSeenTimestamp = 0L;
 
 	@Inject
 	public DatabaseSkippedKeyStore(DatabaseComponent db) {
@@ -38,6 +40,18 @@ public class DatabaseSkippedKeyStore implements SkippedKeyStore {
 			SecretKey messageKey, long timestamp) {
 		ContactId contactId = extractContactId(chainId);
 		int direction = extractDirection(chainId);
+
+		if (highestSeenTimestamp > 0
+				&& highestSeenTimestamp - timestamp
+						> SKIP_CLOCK_REWIND_THRESHOLD_MS) {
+			wipeAllSkippedKeys();
+			highestSeenTimestamp = timestamp;
+			lastPruneMs = timestamp;
+			return;
+		}
+		if (timestamp > highestSeenTimestamp) {
+			highestSeenTimestamp = timestamp;
+		}
 
 		maybeOpportunisticPrune(timestamp);
 
@@ -54,6 +68,13 @@ public class DatabaseSkippedKeyStore implements SkippedKeyStore {
 				db.addPcsSkippedKey(txn, contactId, direction,
 						messageNumber, messageKey, timestamp);
 			});
+		} catch (DbException e) {
+		}
+	}
+
+	private void wipeAllSkippedKeys() {
+		try {
+			db.transaction(false, txn -> db.prunePcsSkippedKeys(txn, 0));
 		} catch (DbException e) {
 		}
 	}

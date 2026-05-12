@@ -18,6 +18,9 @@ public interface PcsConstants {
 
 	long SKIP_PRUNE_INTERVAL_MS = 60L * 60 * 1000;
 
+
+	long SKIP_CLOCK_REWIND_THRESHOLD_MS = 60L * 60 * 1000;
+
 	
 	String PCS_ROOT_KDF_LABEL = "org.briarproject.zerion/PCS_ROOT_KDF";
 

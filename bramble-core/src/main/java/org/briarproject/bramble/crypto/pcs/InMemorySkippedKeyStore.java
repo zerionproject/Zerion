@@ -17,6 +17,7 @@ import javax.annotation.concurrent.ThreadSafe;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MAX_SKIP;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MAX_SKIP_AGE_MS;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MAX_TOTAL_SKIP;
+import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.SKIP_CLOCK_REWIND_THRESHOLD_MS;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.SKIP_PRUNE_INTERVAL_MS;
 
 
@@ -69,6 +70,9 @@ public class InMemorySkippedKeyStore implements SkippedKeyStore {
 	@GuardedBy("this")
 	private long lastPruneMs = 0L;
 
+	@GuardedBy("this")
+	private long highestSeenTimestamp = 0L;
+
 	public InMemorySkippedKeyStore() {
 		this.skippedKeys = new LinkedHashMap<>(16, 0.75f, true);
 		this.keysPerChain = new HashMap<>();
@@ -77,6 +81,18 @@ public class InMemorySkippedKeyStore implements SkippedKeyStore {
 	@Override
 	public synchronized void storeSkippedKey(byte[] chainId, int messageNumber,
 			SecretKey messageKey, long timestamp) {
+		if (highestSeenTimestamp > 0
+				&& highestSeenTimestamp - timestamp
+						> SKIP_CLOCK_REWIND_THRESHOLD_MS) {
+			skippedKeys.clear();
+			keysPerChain.clear();
+			highestSeenTimestamp = timestamp;
+			lastPruneMs = timestamp;
+			return;
+		}
+		if (timestamp > highestSeenTimestamp) {
+			highestSeenTimestamp = timestamp;
+		}
 		if (timestamp - lastPruneMs > SKIP_PRUNE_INTERVAL_MS) {
 			pruneExpiredLocked(timestamp);
 			lastPruneMs = timestamp;
