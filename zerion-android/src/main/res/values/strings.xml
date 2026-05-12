@@ -956,6 +956,7 @@
 	<string name="profiles_switch_dialog_title">Switch profile</string>
 	<string name="profiles_switch_dialog_message">You will be signed out of this profile. Reopen the app and enter the target profile\'s password to switch.</string>
 	<string name="profiles_switch_action">Sign out</string>
+	<string name="profiles_switch_progress">Switching profile…</string>
 	<string name="profiles_delete_dialog_title">Delete this profile?</string>
 	<string name="profiles_delete_dialog_message">All messages, contacts, and identity for this profile will be securely wiped. This cannot be undone.</string>
 	<string name="profiles_delete_action">Delete profile</string>

@@ -9,7 +9,6 @@ import org.briarproject.bramble.BrambleAppComponent;
 import org.briarproject.bramble.BrambleCoreEagerSingletons;
 import org.briarproject.bramble.BrambleCoreModule;
 import org.briarproject.bramble.db.AndroidDatabaseModule;
-import org.briarproject.bramble.account.AccountModule;
 import org.briarproject.bramble.api.FeatureFlags;
 import org.briarproject.bramble.api.account.AccountManager;
 import org.briarproject.bramble.api.connection.ConnectionRegistry;
@@ -83,7 +82,6 @@ import dagger.Component;
 		AndroidDatabaseModule.class,
 		BriarCoreModule.class,
 		BrambleAndroidModule.class,
-		AccountModule.class,
 		AppModule.class,
 		AttachmentModule.class,
 		ClockModule.class,

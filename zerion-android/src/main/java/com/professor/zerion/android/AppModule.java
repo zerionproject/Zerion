@@ -40,7 +40,9 @@ import com.professor.zerion.android.navdrawer.NavDrawerModule;
 import com.professor.zerion.android.privategroup.conversation.GroupConversationModule;
 import com.professor.zerion.android.privategroup.list.GroupListModule;
 import com.professor.zerion.android.removabledrive.TransferDataModule;
+import org.briarproject.bramble.account.AndroidAccountManager;
 import org.briarproject.bramble.account.ProfileManager;
+import org.briarproject.bramble.api.account.AccountManager;
 import com.professor.zerion.android.vault.VaultManager;
 import com.professor.zerion.android.security.SecurityManager;
 import com.professor.zerion.android.security.AntiForensics;
@@ -242,6 +244,12 @@ public class AppModule {
 		} finally {
 			StrictMode.setThreadPolicy(oldPolicy);
 		}
+	}
+
+	@Provides
+	@Singleton
+	AccountManager provideAccountManager(AndroidAccountManager am) {
+		return am;
 	}
 
 	@Provides

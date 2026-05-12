@@ -19,7 +19,6 @@ import com.google.android.material.textfield.TextInputLayout;
 import com.professor.zerion.R;
 
 import org.briarproject.bramble.account.AndroidAccountManager;
-import org.briarproject.bramble.api.account.AccountManager;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
@@ -35,7 +34,7 @@ import static com.professor.zerion.android.AppModule.getAndroidComponent;
 public class ProfilesFragment extends Fragment {
 
 	@Inject
-	AccountManager accountManager;
+	AndroidAccountManager accountManager;
 
 	private final Executor io = java.util.concurrent.Executors
 			.newSingleThreadExecutor();
@@ -80,19 +79,12 @@ public class ProfilesFragment extends Fragment {
 	}
 
 	private void refreshProfileCount() {
-		AndroidAccountManager am = androidAccountManager();
-		if (am == null || profileCountSummary == null) return;
-		int n = am.profileCount();
+		if (profileCountSummary == null) return;
+		int n = accountManager.profileCount();
 		String summary = n == 1
 				? getString(R.string.profiles_count_one)
 				: getString(R.string.profiles_count_other, n);
 		profileCountSummary.setText(summary);
-	}
-
-	@Nullable
-	private AndroidAccountManager androidAccountManager() {
-		return accountManager instanceof AndroidAccountManager
-				? (AndroidAccountManager) accountManager : null;
 	}
 
 	private void showAddProfileDialog() {
@@ -150,11 +142,10 @@ public class ProfilesFragment extends Fragment {
 				toast(R.string.profiles_password_mismatch);
 				return;
 			}
-			AndroidAccountManager am = androidAccountManager();
-			if (am == null) return;
 			final char[] pwToUse = pw;
 			io.execute(() -> {
-				String newId = am.scheduleProfileCreation(name, pwToUse);
+				String newId = accountManager.scheduleProfileCreation(name,
+						pwToUse);
 				Arrays.fill(pwToUse, '\0');
 				requireActivity().runOnUiThread(() -> {
 					if (newId != null) {
@@ -183,8 +174,7 @@ public class ProfilesFragment extends Fragment {
 	}
 
 	private void showDeleteProfileDialog() {
-		AndroidAccountManager am = androidAccountManager();
-		boolean isLast = am != null && am.profileCount() <= 1;
+		boolean isLast = accountManager.profileCount() <= 1;
 		String msg = getString(R.string.profiles_delete_dialog_message);
 		if (isLast) {
 			msg += "\n\n" + getString(R.string.profiles_delete_last_warning);
@@ -200,19 +190,39 @@ public class ProfilesFragment extends Fragment {
 	}
 
 	private void doDeleteActiveProfile() {
-		AndroidAccountManager am = androidAccountManager();
-		if (am == null) return;
-		am.deleteActiveProfile();
+		accountManager.deleteActiveProfile();
 		signOutAndExit();
 	}
 
 	private void signOutAndExit() {
+		toast(R.string.profiles_switch_progress);
+		scheduleRestart();
 		if (getActivity() instanceof SettingsActivity) {
 			((SettingsActivity) getActivity()).requestProfileSignOut();
 		} else if (getActivity() != null) {
 			getActivity().finishAffinity();
 			System.exit(0);
 		}
+	}
+
+	private void scheduleRestart() {
+		Context ctx = requireContext().getApplicationContext();
+		android.content.Intent restartIntent =
+				ctx.getPackageManager().getLaunchIntentForPackage(
+						ctx.getPackageName());
+		if (restartIntent == null) return;
+		restartIntent.addFlags(
+				android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+				| android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK);
+		android.app.PendingIntent pi = android.app.PendingIntent.getActivity(
+				ctx, 0, restartIntent,
+				android.app.PendingIntent.FLAG_CANCEL_CURRENT
+				| android.app.PendingIntent.FLAG_IMMUTABLE);
+		android.app.AlarmManager am = (android.app.AlarmManager)
+				ctx.getSystemService(Context.ALARM_SERVICE);
+		if (am == null) return;
+		am.set(android.app.AlarmManager.RTC,
+				System.currentTimeMillis() + 250, pi);
 	}
 
 	private void toast(int resId) {

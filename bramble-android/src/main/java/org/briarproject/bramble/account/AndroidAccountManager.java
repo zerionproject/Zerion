@@ -24,12 +24,14 @@ import java.util.Set;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import static java.util.Arrays.asList;
 import static org.briarproject.bramble.api.crypto.DecryptionResult.INVALID_CIPHERTEXT;
 import static org.briarproject.bramble.util.IoUtils.deleteFileOrDir;
 import static org.briarproject.bramble.util.StringUtils.UTF_8;
 import static org.briarproject.bramble.util.StringUtils.fromHexString;
+@Singleton
 public class AndroidAccountManager extends AccountManagerImpl
 		implements AccountManager {
 

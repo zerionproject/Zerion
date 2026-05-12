@@ -10,8 +10,7 @@ public enum MessageType {
 
 	JOIN(0),
 	POST(1),
-	ENCRYPTED_POST(2),
-	SENDER_KEYS_POST(3);
+	ENCRYPTED_POST(2);
 
 	private final int value;
 

@@ -4,7 +4,6 @@ import org.briarproject.bramble.api.FormatException;
 import org.briarproject.bramble.api.client.BdfMessageContext;
 import org.briarproject.bramble.api.client.BdfMessageValidator;
 import org.briarproject.bramble.api.client.ClientHelper;
-import org.briarproject.bramble.api.crypto.CryptoComponent;
 import org.briarproject.bramble.api.data.BdfDictionary;
 import org.briarproject.bramble.api.data.BdfList;
 import org.briarproject.bramble.api.data.MetadataEncoder;
@@ -17,7 +16,6 @@ import org.briarproject.bramble.api.system.Clock;
 import org.briarproject.briar.api.privategroup.PrivateGroup;
 import org.briarproject.briar.api.privategroup.PrivateGroupFactory;
 import org.briarproject.briar.api.privategroup.invitation.GroupInvitationFactory;
-import org.briarproject.briar.api.privategroup.senderkeys.GroupMessageCrypto;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.security.GeneralSecurityException;
@@ -33,19 +31,13 @@ import static org.briarproject.briar.api.privategroup.GroupMessageFactory.SIGNIN
 import static org.briarproject.briar.api.privategroup.GroupMessageFactory.SIGNING_LABEL_POST;
 import static org.briarproject.briar.api.privategroup.MessageType.JOIN;
 import static org.briarproject.briar.api.privategroup.MessageType.POST;
-import static org.briarproject.briar.api.privategroup.MessageType.SENDER_KEYS_POST;
 import static org.briarproject.briar.api.privategroup.PrivateGroupConstants.MAX_GROUP_POST_TEXT_LENGTH;
 import static org.briarproject.briar.api.privategroup.invitation.GroupInvitationFactory.SIGNING_LABEL_INVITE;
-import static org.briarproject.briar.privategroup.GroupConstants.KEY_CIPHERTEXT;
-import static org.briarproject.briar.privategroup.GroupConstants.KEY_EPOCH;
 import static org.briarproject.briar.privategroup.GroupConstants.KEY_INITIAL_JOIN_MSG;
 import static org.briarproject.briar.privategroup.GroupConstants.KEY_MEMBER;
-import static org.briarproject.briar.privategroup.GroupConstants.KEY_MESSAGE_INDEX;
-import static org.briarproject.briar.privategroup.GroupConstants.KEY_NONCE;
 import static org.briarproject.briar.privategroup.GroupConstants.KEY_PARENT_MSG_ID;
 import static org.briarproject.briar.privategroup.GroupConstants.KEY_PREVIOUS_MSG_ID;
 import static org.briarproject.briar.privategroup.GroupConstants.KEY_READ;
-import static org.briarproject.briar.privategroup.GroupConstants.KEY_SIGNATURE;
 import static org.briarproject.briar.privategroup.GroupConstants.KEY_TIMESTAMP;
 import static org.briarproject.briar.privategroup.GroupConstants.KEY_TYPE;
 
@@ -53,28 +45,22 @@ import static org.briarproject.briar.privategroup.GroupConstants.KEY_TYPE;
 @NotNullByDefault
 class GroupMessageValidator extends BdfMessageValidator {
 
-	private static final int NONCE_SIZE = 12;
-	private static final int TAG_SIZE = 16;
-
 	private final PrivateGroupFactory privateGroupFactory;
 	private final GroupInvitationFactory groupInvitationFactory;
-	private final CryptoComponent crypto;
 
 	GroupMessageValidator(PrivateGroupFactory privateGroupFactory,
 			ClientHelper clientHelper, MetadataEncoder metadataEncoder,
-			Clock clock, GroupInvitationFactory groupInvitationFactory,
-			CryptoComponent crypto) {
+			Clock clock, GroupInvitationFactory groupInvitationFactory) {
 		super(clientHelper, metadataEncoder, clock);
 		this.privateGroupFactory = privateGroupFactory;
 		this.groupInvitationFactory = groupInvitationFactory;
-		this.crypto = crypto;
 	}
 
 	@Override
 	protected BdfMessageContext validateMessage(Message m, Group g,
 			BdfList body) throws InvalidMessageException, FormatException {
 
-		checkSize(body, 4, 9);
+		checkSize(body, 4, 6);
 		int type = body.getInt(0);
 		BdfList memberList = body.getList(1);
 		Author member = clientHelper.parseAndValidateAuthor(memberList);
@@ -85,9 +71,6 @@ class GroupMessageValidator extends BdfMessageValidator {
 			addMessageMetadata(c, memberList, m.getTimestamp());
 		} else if (type == POST.getInt()) {
 			c = validatePost(m, g, body, member);
-			addMessageMetadata(c, memberList, m.getTimestamp());
-		} else if (type == SENDER_KEYS_POST.getInt()) {
-			c = validateSenderKeysPost(m, g, body, member);
 			addMessageMetadata(c, memberList, m.getTimestamp());
 		} else {
 			throw new InvalidMessageException("Unknown Message Type");
@@ -177,63 +160,6 @@ class GroupMessageValidator extends BdfMessageValidator {
 		if (parentId != null) meta.put(KEY_PARENT_MSG_ID, parentId);
 		meta.put(KEY_PREVIOUS_MSG_ID, previousMessageId);
 		return new BdfMessageContext(meta, dependencies);
-	}
-
-	private BdfMessageContext validateSenderKeysPost(Message m, Group g,
-			BdfList body, Author member) throws FormatException {
-		checkSize(body, 9);
-		byte[] parentId = body.getOptionalRaw(2);
-		checkLength(parentId, MessageId.LENGTH);
-		byte[] previousMessageId = body.getRaw(3);
-		checkLength(previousMessageId, MessageId.LENGTH);
-		byte[] ciphertext = body.getRaw(4);
-		int maxCiphertextLength = MAX_GROUP_POST_TEXT_LENGTH + TAG_SIZE;
-		checkLength(ciphertext, TAG_SIZE + 1, maxCiphertextLength);
-		byte[] nonce = body.getRaw(5);
-		checkLength(nonce, NONCE_SIZE, NONCE_SIZE);
-		int epoch = body.getInt(6);
-		if (epoch < 0) throw new FormatException();
-		int messageIndex = body.getInt(7);
-		if (messageIndex < 0) throw new FormatException();
-		byte[] signature = body.getRaw(8);
-		checkLength(signature, 1, MAX_SIGNATURE_LENGTH);
-
-		byte[] signatureInput = buildSignatureInput(ciphertext, nonce,
-				g.getId().getBytes());
-
-		try {
-			crypto.verifySignature(signature,
-					GroupMessageCrypto.MESSAGE_SIGNATURE_LABEL,
-					signatureInput, member.getPublicKey());
-		} catch (GeneralSecurityException e) {
-			throw new FormatException();
-		}
-
-		Collection<MessageId> dependencies = new ArrayList<>();
-		if (parentId != null) dependencies.add(new MessageId(parentId));
-		dependencies.add(new MessageId(previousMessageId));
-
-		BdfDictionary meta = new BdfDictionary();
-		if (parentId != null) meta.put(KEY_PARENT_MSG_ID, parentId);
-		meta.put(KEY_PREVIOUS_MSG_ID, previousMessageId);
-		meta.put(KEY_CIPHERTEXT, ciphertext);
-		meta.put(KEY_NONCE, nonce);
-		meta.put(KEY_EPOCH, epoch);
-		meta.put(KEY_MESSAGE_INDEX, messageIndex);
-		meta.put(KEY_SIGNATURE, signature);
-		return new BdfMessageContext(meta, dependencies);
-	}
-
-	private byte[] buildSignatureInput(byte[] ciphertext, byte[] nonce,
-			byte[] groupId) {
-		byte[] input = new byte[ciphertext.length + nonce.length + groupId.length];
-		int offset = 0;
-		System.arraycopy(ciphertext, 0, input, offset, ciphertext.length);
-		offset += ciphertext.length;
-		System.arraycopy(nonce, 0, input, offset, nonce.length);
-		offset += nonce.length;
-		System.arraycopy(groupId, 0, input, offset, groupId.length);
-		return input;
 	}
 
 	private void addMessageMetadata(BdfMessageContext c, BdfList member,
