@@ -39,6 +39,7 @@ import com.professor.zerion.android.login.LoginModule;
 import com.professor.zerion.android.navdrawer.NavDrawerModule;
 import com.professor.zerion.android.privategroup.conversation.GroupConversationModule;
 import com.professor.zerion.android.privategroup.list.GroupListModule;
+import com.professor.zerion.android.profile.ProfileManager;
 import com.professor.zerion.android.removabledrive.TransferDataModule;
 import com.professor.zerion.android.vault.VaultManager;
 import com.professor.zerion.android.security.SecurityManager;
@@ -233,12 +234,24 @@ public class AppModule {
 
 	@Provides
 	@Singleton
-	DatabaseConfig provideDatabaseConfig(Application app) {
+	ProfileManager provideProfileManager(Application app) {
 		StrictMode.ThreadPolicy oldPolicy = StrictMode.allowThreadDiskReads();
 		try {
 			StrictMode.allowThreadDiskWrites();
-			File dbDir = app.getApplicationContext().getDir("db", MODE_PRIVATE);
-			File keyDir = app.getApplicationContext().getDir("key", MODE_PRIVATE);
+			return new ProfileManager(app.getApplicationContext());
+		} finally {
+			StrictMode.setThreadPolicy(oldPolicy);
+		}
+	}
+
+	@Provides
+	@Singleton
+	DatabaseConfig provideDatabaseConfig(ProfileManager profileManager) {
+		StrictMode.ThreadPolicy oldPolicy = StrictMode.allowThreadDiskReads();
+		try {
+			StrictMode.allowThreadDiskWrites();
+			File dbDir = profileManager.getActiveDbDir();
+			File keyDir = profileManager.getActiveKeyDir();
 			KeyStrengthener keyStrengthener = SDK_INT >= 23
 					? new AndroidKeyStrengthener() : null;
 			return new AndroidDatabaseConfig(dbDir, keyDir, keyStrengthener);
@@ -250,11 +263,11 @@ public class AppModule {
 	@Provides
 	@Singleton
 	@TorDirectory
-	File provideTorDirectory(Application app) {
+	File provideTorDirectory(ProfileManager profileManager) {
 		StrictMode.ThreadPolicy oldPolicy = StrictMode.allowThreadDiskReads();
 		try {
 			StrictMode.allowThreadDiskWrites();
-			return app.getDir("tor", MODE_PRIVATE);
+			return profileManager.getActiveTorDir();
 		} finally {
 			StrictMode.setThreadPolicy(oldPolicy);
 		}
