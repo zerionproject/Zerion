@@ -2,6 +2,9 @@ package com.professor.zerion.android.vault.crypto;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
+import org.bouncycastle.crypto.generators.Argon2BytesGenerator;
+import org.bouncycastle.crypto.params.Argon2Parameters;
+
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
@@ -13,12 +16,20 @@ import javax.crypto.spec.PBEKeySpec;
 
 
 /**
- * Key derivation for vault password hashing.
- * NOTE: Despite the class name (kept for API compatibility), this implementation
- * uses PBKDF2-HMAC-SHA256 (not Argon2id), because Argon2 is not available in the
- * Android standard library without a native dependency. The iteration count is
- * enforced to a minimum of 200,000 rounds to compensate. Params (memory/iterations)
- * map conceptually to the Argon2Params structure for future migration.
+ * Vault password key derivation.
+ *
+ * Algorithm selection by Argon2Params.algorithm:
+ *   ALGO_ARGON2ID  — real Argon2id via Bouncy Castle (post-quantum hardened
+ *                    via memory-hardness; default for new vaults).
+ *   ALGO_PBKDF2    — legacy PBKDF2-HMAC-SHA256 for vaults written before
+ *                    the Argon2id switch. Kept only for backward compat so
+ *                    existing vault headers continue to unlock; new code
+ *                    must not write this.
+ *
+ * The vault header (see VaultHeader.featureFlags bit 0) records which
+ * algorithm produced the stored password verification MAC and wrapped
+ * keystore blob. VaultManager reads that flag and passes the matching
+ * Argon2Params to deriveKey.
  */
 @NotNullByDefault
 public class Argon2 {
@@ -33,13 +44,44 @@ public class Argon2 {
 	public static final int LOW_MEMORY_KB = 128 * 1024;
 	public static final int LOW_ITERATIONS = 2;
 
+	public static final int ALGO_PBKDF2 = 0;
+	public static final int ALGO_ARGON2ID = 1;
+
 	private final SecureRandom secureRandom = new SecureRandom();
 
 	public byte[] deriveKey(char[] password, byte[] salt, Argon2Params params) {
 		try {
+			if (params.algorithm == ALGO_ARGON2ID) {
+				return deriveKeyArgon2id(password, salt, params);
+			}
 			return deriveKeyPBKDF2(password, salt, params);
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to derive key", e);
+		}
+	}
+
+	private byte[] deriveKeyArgon2id(char[] password, byte[] salt,
+			Argon2Params params) {
+		ByteBuffer byteBuffer = StandardCharsets.UTF_8.encode(
+				CharBuffer.wrap(password));
+		byte[] passwordBytes = new byte[byteBuffer.remaining()];
+		byteBuffer.get(passwordBytes);
+		try {
+			Argon2Parameters bcParams =
+					new Argon2Parameters.Builder(Argon2Parameters.ARGON2_id)
+							.withMemoryAsKB(params.memoryKb)
+							.withIterations(params.iterations)
+							.withParallelism(params.parallelism)
+							.withSalt(salt)
+							.build();
+			Argon2BytesGenerator generator = new Argon2BytesGenerator();
+			generator.init(bcParams);
+			byte[] output = new byte[params.hashLength];
+			generator.generateBytes(passwordBytes, output);
+			return output;
+		} finally {
+			Arrays.fill(passwordBytes, (byte) 0);
+			Arrays.fill(byteBuffer.array(), (byte) 0);
 		}
 	}
 
@@ -103,12 +145,25 @@ public class Argon2 {
 		public final int iterations;
 		public final int parallelism;
 		public final int hashLength;
+		public final int algorithm;
 
-		public Argon2Params(int memoryKb, int iterations, int parallelism, int hashLength) {
+		public Argon2Params(int memoryKb, int iterations, int parallelism,
+				int hashLength) {
+			this(memoryKb, iterations, parallelism, hashLength, ALGO_ARGON2ID);
+		}
+
+		public Argon2Params(int memoryKb, int iterations, int parallelism,
+				int hashLength, int algorithm) {
 			this.memoryKb = memoryKb;
 			this.iterations = iterations;
 			this.parallelism = parallelism;
 			this.hashLength = hashLength;
+			this.algorithm = algorithm;
+		}
+
+		public Argon2Params withAlgorithm(int newAlgorithm) {
+			return new Argon2Params(memoryKb, iterations, parallelism,
+					hashLength, newAlgorithm);
 		}
 
 		public static Argon2Params getDefault() {
@@ -116,7 +171,8 @@ public class Argon2 {
 					DEFAULT_MEMORY_KB,
 					DEFAULT_ITERATIONS,
 					DEFAULT_PARALLELISM,
-					DEFAULT_HASH_LENGTH
+					DEFAULT_HASH_LENGTH,
+					ALGO_ARGON2ID
 			);
 		}
 
@@ -125,7 +181,8 @@ public class Argon2 {
 					LOW_MEMORY_KB,
 					LOW_ITERATIONS,
 					DEFAULT_PARALLELISM,
-					DEFAULT_HASH_LENGTH
+					DEFAULT_HASH_LENGTH,
+					ALGO_ARGON2ID
 			);
 		}
 
@@ -144,7 +201,8 @@ public class Argon2 {
 					buffer.getInt(),
 					buffer.getInt(),
 					buffer.getInt(),
-					buffer.getInt()
+					buffer.getInt(),
+					ALGO_ARGON2ID
 			);
 		}
 	}

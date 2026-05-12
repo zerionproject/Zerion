@@ -26,14 +26,18 @@ public interface AndroidNotificationManager {
     void showContactAddedNotification(ContactId c);
     void showPrivateMessageNotification(ContactId c);
     void showGroupMessageNotification(GroupId g);
+    void showGroupTrPostNotification(byte[] groupTrId);
     void clearContactNotification(ContactId c);
     void clearGroupMessageNotification(GroupId g);
+    void clearGroupTrPostNotification(byte[] groupTrId);
     void clearAllContactNotifications();
     void clearAllGroupMessageNotifications();
     void clearAllContactAddedNotifications();
     void blockNotification(GroupId g);
+    void blockGroupTrNotification(byte[] groupTrId);
     void blockContactNotification(ContactId c);
     void unblockNotification(GroupId g);
+    void unblockGroupTrNotification(byte[] groupTrId);
     void unblockContactNotification(ContactId c);
     void blockAllGroupMessageNotifications();
     void unblockAllGroupMessageNotifications();

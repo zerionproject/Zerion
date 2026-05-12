@@ -44,8 +44,10 @@ import org.briarproject.briar.api.messaging.VoiceSignal;
 import org.briarproject.briar.api.messaging.VoiceSignalFactory;
 import org.briarproject.briar.api.messaging.VoiceSignalHeader;
 import org.briarproject.briar.api.messaging.VoiceSignalType;
+import org.briarproject.briar.api.messaging.event.GroupPostReceivedEvent;
 import org.briarproject.briar.api.messaging.event.PrivateMessageReceivedEvent;
 import org.briarproject.briar.api.messaging.event.VoiceSignalReceivedEvent;
+import com.professor.zerion.android.grouptr.GroupTrConversationActivity;
 import org.briarproject.bramble.api.contact.ContactManager;
 import org.briarproject.bramble.api.contact.Contact;
 import org.briarproject.briar.api.privategroup.event.GroupMessageAddedEvent;
@@ -115,6 +117,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	private static final int SIGN_IN_NOTIFICATION_ID = 5;
 	private static final int REMINDER_NOTIFICATION_ID = 6;
 	static final int CONTACT_NOTIFICATION_ID_BASE = 1000;
+	static final int GROUP_TR_NOTIFICATION_ID_BASE = 5000;
 
 	private final SettingsManager settingsManager;
 	private final AndroidExecutor androidExecutor;
@@ -131,12 +134,16 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	private final Set<Integer> activeContactNotificationIds =
 			new HashSet<>();
 	private final Multiset<GroupId> groupCounts = new Multiset<>();
+	private final Multiset<String> groupTrCounts = new Multiset<>();
+	private final Set<Integer> activeGroupTrNotificationIds = new HashSet<>();
 	private int contactAddedTotal = 0;
 	private int nextRequestId = 0;
 	@Nullable
 	private ContactId blockedContact = null;
 	@Nullable
 	private GroupId blockedGroup = null;
+	@Nullable
+	private String blockedGroupTr = null;
 	private boolean blockSignInReminder = false;
 	private boolean blockGroups = false;
 	private long lastSound = 0;
@@ -233,6 +240,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		Future<Void> f = androidExecutor.runOnUiThread(() -> {
 			clearContactNotification();
 			clearGroupMessageNotification();
+			clearAllGroupTrNotifications();
 			clearContactAddedNotification();
 			return null;
 		});
@@ -288,6 +296,9 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		} else if (e instanceof GroupMessageAddedEvent) {
 			GroupMessageAddedEvent g = (GroupMessageAddedEvent) e;
 			if (!g.isLocal()) showGroupMessageNotification(g.getGroupId());
+		} else if (e instanceof GroupPostReceivedEvent) {
+			GroupPostReceivedEvent g = (GroupPostReceivedEvent) e;
+			showGroupTrPostNotification(g.getGroupId());
 		} else if (e instanceof ContactAddedEvent) {
 			ContactAddedEvent c = (ContactAddedEvent) e;
 			if (!c.isVerified()) showContactAddedNotification();
@@ -542,6 +553,86 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	public void clearAllGroupMessageNotifications() {
 		androidExecutor.runOnUiThread(
 				(Runnable) this::clearGroupMessageNotification);
+	}
+
+	@Override
+	public void showGroupTrPostNotification(byte[] groupTrId) {
+		androidExecutor.runOnUiThread(() -> {
+			String hex = StringUtils.toHexString(groupTrId);
+			if (hex.equals(blockedGroupTr)) return;
+			if (!settings.getBoolean(PREF_NOTIFY_GROUP, true)) return;
+			groupTrCounts.add(hex);
+			postGroupTrNotification(groupTrId, hex, true);
+		});
+	}
+
+	@Override
+	public void clearGroupTrPostNotification(byte[] groupTrId) {
+		androidExecutor.runOnUiThread(() -> {
+			String hex = StringUtils.toHexString(groupTrId);
+			if (groupTrCounts.removeAll(hex) > 0) {
+				int id = groupTrNotificationId(hex);
+				notificationManager.cancel(id);
+				activeGroupTrNotificationIds.remove(id);
+			}
+		});
+	}
+
+	@UiThread
+	private void clearAllGroupTrNotifications() {
+		groupTrCounts.clear();
+		for (int id : activeGroupTrNotificationIds) {
+			notificationManager.cancel(id);
+		}
+		activeGroupTrNotificationIds.clear();
+	}
+
+	private static int groupTrNotificationId(String hex) {
+		return GROUP_TR_NOTIFICATION_ID_BASE
+				+ (hex.hashCode() & 0x0FFFFFFF);
+	}
+
+	@UiThread
+	private void postGroupTrNotification(byte[] groupTrId, String hex,
+			boolean mayAlertAgain) {
+		int count = groupTrCounts.getCount(hex);
+		if (count == 0) return;
+		ZerionNotificationBuilder b =
+				new ZerionNotificationBuilder(appContext, GROUP_CHANNEL_ID);
+		b.setSmallIcon(R.drawable.logo);
+		b.setColorRes(R.color.zerion_primary);
+		b.setContentTitle(appContext.getText(R.string.app_name));
+		b.setContentText(appContext.getResources().getQuantityString(
+				R.plurals.group_message_notification_text, count, count));
+		b.setNumber(count);
+		b.setNotificationCategory(CATEGORY_SOCIAL);
+		if (mayAlertAgain) setAlertProperties(b);
+		Intent i = new Intent(appContext, GroupTrConversationActivity.class);
+		i.putExtra(GroupTrConversationActivity.EXTRA_GROUP_ID, hex);
+		i.setData(Uri.parse("zerion://grouptr/" + hex));
+		i.setFlags(FLAG_ACTIVITY_CLEAR_TOP);
+		TaskStackBuilder t = TaskStackBuilder.create(appContext);
+		t.addParentStack(GroupTrConversationActivity.class);
+		t.addNextIntent(i);
+		b.setContentIntent(t.getPendingIntent(nextRequestId++,
+				getImmutableFlags(0)));
+		int id = groupTrNotificationId(hex);
+		activeGroupTrNotificationIds.add(id);
+		notificationManager.notify(id, b.build());
+	}
+
+	@Override
+	public void blockGroupTrNotification(byte[] groupTrId) {
+		androidExecutor.runOnUiThread(() ->
+				blockedGroupTr = StringUtils.toHexString(groupTrId));
+	}
+
+	@Override
+	public void unblockGroupTrNotification(byte[] groupTrId) {
+		androidExecutor.runOnUiThread(() -> {
+			String hex = StringUtils.toHexString(groupTrId);
+			if (hex.equals(blockedGroupTr)) blockedGroupTr = null;
+		});
 	}
 
 	@Override

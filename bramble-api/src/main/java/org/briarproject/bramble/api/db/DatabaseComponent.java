@@ -67,12 +67,18 @@ public interface DatabaseComponent extends TransactionManager {
 			@Nullable PublicKey handshake, boolean verified, boolean postQuantum,
 			boolean pcsEnabled) throws DbException;
 
-	
+
 	ContactId addContact(Transaction txn, Author remote, AuthorId local,
 			@Nullable PublicKey handshake, boolean verified, boolean postQuantum,
 			boolean pcsEnabled, boolean mode3Capable) throws DbException;
 
-	
+
+	ContactId addContact(Transaction txn, Author remote, AuthorId local,
+			@Nullable PublicKey handshake, boolean verified, boolean postQuantum,
+			boolean pcsEnabled, boolean mode3Capable,
+			@Nullable byte[] mlDsaSigPublicKey) throws DbException;
+
+
 	void addGroup(Transaction txn, Group g) throws DbException;
 
 	
@@ -418,11 +424,19 @@ public interface DatabaseComponent extends TransactionManager {
 	void setHandshakeKeyPair(Transaction txn, AuthorId local,
 			PublicKey publicKey, PrivateKey privateKey) throws DbException;
 
-	
+
 	void setHybridHandshakeKeyPair(Transaction txn, AuthorId local,
 			PublicKey publicKey, PrivateKey privateKey) throws DbException;
 
-	
+
+	void setMlDsaSigKeyPair(Transaction txn, AuthorId local,
+			byte[] publicKey, byte[] privateKey) throws DbException;
+
+
+	void setContactMlDsaSigPublicKey(Transaction txn, ContactId c,
+			byte[] publicKey) throws DbException;
+
+
 	void setReorderingWindow(Transaction txn, KeySetId k, TransportId t,
 			long timePeriod, long base, byte[] bitmap) throws DbException;
 

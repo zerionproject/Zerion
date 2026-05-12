@@ -6,13 +6,16 @@ import org.briarproject.bramble.api.crypto.StreamDecrypter;
 import org.briarproject.bramble.api.crypto.StreamDecrypterFactory;
 import org.briarproject.bramble.api.crypto.pcs.PcsRatchet;
 import org.briarproject.bramble.api.crypto.pcs.PcsSessionState;
+import org.briarproject.bramble.api.crypto.pcs.PqRatchet;
 import org.briarproject.bramble.api.crypto.pcs.PqRatchetState;
 import org.briarproject.bramble.api.crypto.pcs.SkippedKeyStore;
 import org.briarproject.bramble.api.transport.StreamContext;
 import org.briarproject.bramble.crypto.pcs.DatabaseSkippedKeyStore;
+import org.briarproject.bramble.crypto.pcs.PcsStateManager;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.InputStream;
+import java.util.function.Consumer;
 
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
@@ -24,14 +27,20 @@ class StreamDecrypterFactoryImpl implements StreamDecrypterFactory {
 
 	private final Provider<AuthenticatedCipher> cipherProvider;
 	private final PcsRatchet pcsRatchet;
+	private final PqRatchet pqRatchet;
 	private final SkippedKeyStore skippedKeyStore;
+	private final PcsStateManager pcsStateManager;
 
 	@Inject
 	StreamDecrypterFactoryImpl(Provider<AuthenticatedCipher> cipherProvider,
-			PcsRatchet pcsRatchet, SkippedKeyStore skippedKeyStore) {
+			PcsRatchet pcsRatchet, PqRatchet pqRatchet,
+			SkippedKeyStore skippedKeyStore,
+			PcsStateManager pcsStateManager) {
 		this.cipherProvider = cipherProvider;
 		this.pcsRatchet = pcsRatchet;
+		this.pqRatchet = pqRatchet;
 		this.skippedKeyStore = skippedKeyStore;
+		this.pcsStateManager = pcsStateManager;
 	}
 
 	@Override
@@ -52,9 +61,27 @@ class StreamDecrypterFactoryImpl implements StreamDecrypterFactory {
 
 		byte[] chainId = DatabaseSkippedKeyStore.createChainId(contactId, false);
 
+		PqRatchetState pqState = ctx.getPqRatchetState();
+		boolean isMode3 = pcsState.isMode3() && pqState != null;
+
+		final ContactId cid = contactId;
+		Consumer<PcsSessionState> recvStateCallback =
+				s -> pcsStateManager.saveReceiveState(cid, s);
+		Consumer<PqRatchetState> pqCallback =
+				s -> pcsStateManager.savePqState(cid, s);
+		Consumer<SecretKey> pqCrossMix = pqSecret -> pcsStateManager
+				.mixPqSecretIntoSendRoot(cid, pqSecret, pqRatchet);
+
+		if (isMode3) {
+			return new PcsStreamDecrypterImpl(in, cipher, pcsRatchet,
+					skippedKeyStore, chainId, ctx.getStreamNumber(),
+					ctx.getHeaderKey(), pcsState, recvStateCallback, null,
+					pqRatchet, pqState, pqCallback, pqCrossMix);
+		}
+
 		return new PcsStreamDecrypterImpl(in, cipher, pcsRatchet,
 				skippedKeyStore, chainId, ctx.getStreamNumber(),
-				ctx.getHeaderKey(), pcsState, null);
+				ctx.getHeaderKey(), pcsState, recvStateCallback);
 	}
 
 	@Override

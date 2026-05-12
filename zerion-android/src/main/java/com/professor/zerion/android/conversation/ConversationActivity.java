@@ -66,6 +66,7 @@ import com.professor.zerion.android.widget.LinkDialogFragment;
 import com.professor.zerion.android.api.AndroidNotificationManager;
 import java.util.concurrent.Executor;
 import org.briarproject.briar.api.attachment.AttachmentHeader;
+import org.briarproject.briar.api.identity.AuthorInfo;
 import org.briarproject.briar.api.conversation.ConversationMessageHeader;
 import org.briarproject.briar.api.conversation.ConversationMessageVisitor;
 import org.briarproject.briar.api.conversation.ConversationRequest;
@@ -224,6 +225,7 @@ public class ConversationActivity extends ZerionActivity
 	private int searchMatchIndex = -1;
 
 	private volatile ContactId contactId;
+	private volatile boolean contactVerified = false;
 
 	private BroadcastReceiver voiceCallCleanupReceiver = new BroadcastReceiver() {
 		@Override
@@ -287,6 +289,9 @@ public class ConversationActivity extends ZerionActivity
 		viewModel.getContactItem().observe(this, contactItem -> {
 			requireNonNull(contactItem);
 			setAvatar(toolbarAvatar, contactItem);
+			contactVerified = contactItem.getAuthorInfo().getStatus()
+					== AuthorInfo.Status.VERIFIED;
+			updateVerifyBanner();
 		});
 		viewModel.getContactDisplayName().observe(this, contactName -> {
 			requireNonNull(contactName);
@@ -484,11 +489,13 @@ public class ConversationActivity extends ZerionActivity
 			TextAttachmentController attachmentController = (TextAttachmentController) sendController;
 
 			attachmentController.setOnAttachmentClickListener(v -> {
+				if (!requireVerifiedToSendMedia()) return;
 				AttachmentPickerDialog dialog = AttachmentPickerDialog.newInstance();
 				dialog.show(getSupportFragmentManager(), "attachment_picker");
 			});
 
 			attachmentController.setOnVoiceClickListener(v -> {
+				if (!requireVerifiedToSendMedia()) return;
 				if (checkVoicePermission()) {
 					startVoiceRecording();
 				} else {
@@ -510,6 +517,36 @@ public class ConversationActivity extends ZerionActivity
 				showSecretNoteTimerPicker(text);
 			});
 		}
+
+		TextView banner = findViewById(R.id.verifyMediaBanner);
+		if (banner != null) {
+			banner.setOnClickListener(v -> openContactInfo());
+		}
+	}
+
+	private boolean requireVerifiedToSendMedia() {
+		if (contactVerified) return true;
+		new MaterialAlertDialogBuilder(this)
+				.setTitle(R.string.verify_to_send_media_title)
+				.setMessage(R.string.verify_to_send_media_message)
+				.setPositiveButton(R.string.verify_to_send_media_open_info,
+						(d, w) -> openContactInfo())
+				.setNegativeButton(android.R.string.cancel, null)
+				.show();
+		return false;
+	}
+
+	private void openContactInfo() {
+		Intent intent = new Intent(this, ChatSettingsActivity.class);
+		intent.putExtra(CONTACT_ID, contactId.getInt());
+		startActivity(intent);
+	}
+
+	@UiThread
+	private void updateVerifyBanner() {
+		TextView banner = findViewById(R.id.verifyMediaBanner);
+		if (banner == null) return;
+		banner.setVisibility(contactVerified ? View.GONE : View.VISIBLE);
 	}
 
 	private void setupTypingIndicator() {
@@ -1508,6 +1545,7 @@ public class ConversationActivity extends ZerionActivity
 
 	@Override
 	public void onStickersSelected() {
+		if (!requireVerifiedToSendMedia()) return;
 		com.professor.zerion.android.sticker.StickerPickerDialog dialog =
 				com.professor.zerion.android.sticker.StickerPickerDialog
 						.newInstance();

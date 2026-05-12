@@ -11,6 +11,7 @@ import org.briarproject.bramble.api.crypto.pcs.DhRatchetState;
 import org.briarproject.bramble.api.crypto.pcs.MlKemKeyPair;
 import org.briarproject.bramble.api.crypto.pcs.PcsSessionState;
 import org.briarproject.bramble.api.crypto.pcs.PqEpochState;
+import org.briarproject.bramble.api.crypto.pcs.PqRatchet;
 import org.briarproject.bramble.api.crypto.pcs.PqRatchetState;
 import org.briarproject.bramble.api.db.DatabaseComponent;
 import org.briarproject.bramble.api.db.DbException;
@@ -55,9 +56,45 @@ public class PcsStateManager {
 		saveState(contactId, PCS_DIRECTION_SEND, state);
 	}
 
-	
+
 	public void saveReceiveState(ContactId contactId, PcsSessionState state) {
 		saveState(contactId, PCS_DIRECTION_RECEIVE, state);
+	}
+
+
+	public void mixPqSecretIntoReceiveRoot(ContactId contactId,
+			SecretKey pqSecret, PqRatchet pqRatchet) {
+		try {
+			db.transaction(false, txn -> {
+				PcsSessionState recv = loadState(txn, contactId,
+						PCS_DIRECTION_RECEIVE);
+				if (recv == null || recv.getRootKey() == null) return;
+				SecretKey newRoot = pqRatchet.mixPqSecretIntoRootKey(
+						recv.getRootKey(), pqSecret);
+				saveState(txn, contactId, PCS_DIRECTION_RECEIVE,
+						recv.afterPqRatchet(newRoot,
+								recv.getPqEpoch() + 1));
+			});
+		} catch (DbException e) {
+		}
+	}
+
+
+	public void mixPqSecretIntoSendRoot(ContactId contactId,
+			SecretKey pqSecret, PqRatchet pqRatchet) {
+		try {
+			db.transaction(false, txn -> {
+				PcsSessionState send = loadState(txn, contactId,
+						PCS_DIRECTION_SEND);
+				if (send == null || send.getRootKey() == null) return;
+				SecretKey newRoot = pqRatchet.mixPqSecretIntoRootKey(
+						send.getRootKey(), pqSecret);
+				saveState(txn, contactId, PCS_DIRECTION_SEND,
+						send.afterPqRatchet(newRoot,
+								send.getPqEpoch() + 1));
+			});
+		} catch (DbException e) {
+		}
 	}
 
 	public void initializeMode2State(ContactId contactId,
@@ -308,6 +345,11 @@ public class PcsStateManager {
 		byte[] pendingChunks = (byte[]) result[14];
 
 		PqEpochState state = PqEpochState.fromValue(stateValue);
+		if (state != PqEpochState.PQ_INACTIVE
+				&& state != PqEpochState.PQ_READY
+				&& state != PqEpochState.PQ_COMPLETE) {
+			return PqRatchetState.createReady(System.currentTimeMillis());
+		}
 		MlKemKeyPair ourKeyPair = null;
 		if (ourEkSeed != null && ourEkVector != null && ourDecapsKey != null) {
 			ourKeyPair = MlKemKeyPair.fromComponents(ourEkSeed, ourEkVector, ourDecapsKey);

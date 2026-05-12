@@ -20,11 +20,21 @@ public class GroupPostReceivedEvent extends Event {
 	private final byte[] ciphertext;
 	private final long timestamp;
 	private final long autoDeleteTimerMs;
+	private final byte[] recordSig;
 
 	public GroupPostReceivedEvent(ContactId contactId, MessageId messageId,
 			byte[] groupId, long epoch, byte[] senderPubKey,
 			String senderName, byte[] ciphertext, long timestamp,
 			long autoDeleteTimerMs) {
+		this(contactId, messageId, groupId, epoch, senderPubKey,
+				senderName, ciphertext, timestamp, autoDeleteTimerMs,
+				new byte[0]);
+	}
+
+	public GroupPostReceivedEvent(ContactId contactId, MessageId messageId,
+			byte[] groupId, long epoch, byte[] senderPubKey,
+			String senderName, byte[] ciphertext, long timestamp,
+			long autoDeleteTimerMs, byte[] recordSig) {
 		this.contactId = contactId;
 		this.messageId = messageId;
 		this.groupId = groupId;
@@ -34,6 +44,11 @@ public class GroupPostReceivedEvent extends Event {
 		this.ciphertext = ciphertext;
 		this.timestamp = timestamp;
 		this.autoDeleteTimerMs = autoDeleteTimerMs;
+		this.recordSig = recordSig;
+	}
+
+	public byte[] getRecordSig() {
+		return recordSig;
 	}
 
 	public String getSenderName() {

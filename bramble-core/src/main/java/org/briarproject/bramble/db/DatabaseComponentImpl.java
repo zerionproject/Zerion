@@ -249,6 +249,16 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 			AuthorId local, @Nullable PublicKey handshake, boolean verified,
 			boolean postQuantum, boolean pcsEnabled, boolean mode3Capable)
 			throws DbException {
+		return addContact(transaction, remote, local, handshake, verified,
+				postQuantum, pcsEnabled, mode3Capable, null);
+	}
+
+	@Override
+	public ContactId addContact(Transaction transaction, Author remote,
+			AuthorId local, @Nullable PublicKey handshake, boolean verified,
+			boolean postQuantum, boolean pcsEnabled, boolean mode3Capable,
+			@Nullable byte[] mlDsaSigPublicKey)
+			throws DbException {
 		if (transaction.isReadOnly()) throw new IllegalArgumentException();
 		T txn = unbox(transaction);
 		if (!db.containsIdentity(txn, local))
@@ -258,7 +268,7 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		if (db.containsContact(txn, remote.getId(), local))
 			throw new ContactExistsException(local, remote);
 		ContactId c = db.addContact(txn, remote, local, handshake, verified,
-				postQuantum, pcsEnabled, mode3Capable);
+				postQuantum, pcsEnabled, mode3Capable, mlDsaSigPublicKey);
 		transaction.attach(new ContactAddedEvent(c, verified));
 		return c;
 	}
@@ -1302,6 +1312,24 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		if (!db.containsIdentity(txn, local))
 			throw new NoSuchIdentityException();
 		db.setHybridHandshakeKeyPair(txn, local, publicKey, privateKey);
+	}
+
+	@Override
+	public void setMlDsaSigKeyPair(Transaction transaction, AuthorId local,
+			byte[] publicKey, byte[] privateKey) throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		T txn = unbox(transaction);
+		if (!db.containsIdentity(txn, local))
+			throw new NoSuchIdentityException();
+		db.setMlDsaSigKeyPair(txn, local, publicKey, privateKey);
+	}
+
+	@Override
+	public void setContactMlDsaSigPublicKey(Transaction transaction,
+			ContactId c, byte[] publicKey) throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		T txn = unbox(transaction);
+		db.setContactMlDsaSigPublicKey(txn, c, publicKey);
 	}
 
 	@Override

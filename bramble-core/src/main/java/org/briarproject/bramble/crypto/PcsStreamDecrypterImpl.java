@@ -66,6 +66,8 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 	private final PqRatchet pqRatchet;
 	@Nullable
 	private final Consumer<PqRatchetState> pqStateCallback;
+	@Nullable
+	private final Consumer<SecretKey> pqCrossMixCallback;
 	private final PcsHeaderCodec headerCodec;
 
 	@Nullable
@@ -88,7 +90,7 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 			@Nullable Consumer<PcsSessionState> stateCallback) {
 		this(in, cipher, ratchet, skippedKeyStore, chainId, streamNumber,
 				streamHeaderKey, initialState, stateCallback, null,
-				null, null, null);
+				null, null, null, null);
 	}
 
 	PcsStreamDecrypterImpl(InputStream in, AuthenticatedCipher cipher,
@@ -99,7 +101,7 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 			@Nullable KeyParser keyParser) {
 		this(in, cipher, ratchet, skippedKeyStore, chainId, streamNumber,
 				streamHeaderKey, initialState, stateCallback, keyParser,
-				null, null, null);
+				null, null, null, null);
 	}
 
 	PcsStreamDecrypterImpl(InputStream in, AuthenticatedCipher cipher,
@@ -111,6 +113,21 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 			@Nullable PqRatchet pqRatchet,
 			@Nullable PqRatchetState initialPqState,
 			@Nullable Consumer<PqRatchetState> pqStateCallback) {
+		this(in, cipher, ratchet, skippedKeyStore, chainId, streamNumber,
+				streamHeaderKey, initialState, stateCallback, keyParser,
+				pqRatchet, initialPqState, pqStateCallback, null);
+	}
+
+	PcsStreamDecrypterImpl(InputStream in, AuthenticatedCipher cipher,
+			PcsRatchet ratchet, SkippedKeyStore skippedKeyStore,
+			byte[] chainId, long streamNumber, SecretKey streamHeaderKey,
+			@Nullable PcsSessionState initialState,
+			@Nullable Consumer<PcsSessionState> stateCallback,
+			@Nullable KeyParser keyParser,
+			@Nullable PqRatchet pqRatchet,
+			@Nullable PqRatchetState initialPqState,
+			@Nullable Consumer<PqRatchetState> pqStateCallback,
+			@Nullable Consumer<SecretKey> pqCrossMixCallback) {
 		this.in = in;
 		this.cipher = cipher;
 		this.ratchet = ratchet;
@@ -124,6 +141,7 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 		this.pqRatchet = pqRatchet;
 		this.pqState = initialPqState;
 		this.pqStateCallback = pqStateCallback;
+		this.pqCrossMixCallback = pqCrossMixCallback;
 		this.headerCodec = new PcsHeaderCodec();
 		frameNonce = new byte[FRAME_NONCE_LENGTH];
 		frameHeader = new byte[FRAME_HEADER_PLAINTEXT_LENGTH];
@@ -272,6 +290,9 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 							recvState.getRootKey(), pqSecret);
 					recvState = recvState.afterPqRatchet(newRootKey,
 							pqState.getCurrentEpoch());
+					if (pqCrossMixCallback != null) {
+						pqCrossMixCallback.accept(pqSecret);
+					}
 					pqState = pqRatchet.completeEpoch(pqState,
 							System.currentTimeMillis());
 				} catch (Exception e) {

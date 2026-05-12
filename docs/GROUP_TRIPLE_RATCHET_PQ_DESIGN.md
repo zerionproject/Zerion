@@ -1,14 +1,44 @@
 # Group Triple Ratchet (Post-Quantum) Technical Design
 
-**Version:** 0.1 (DRAFT)
-**Date:** 2026-05-11
-**Status:** PROPOSAL — pending cross-platform alignment with iOS
+**Version:** 0.2
+**Date:** 2026-05-12
+**Status:** SHIPPED on Android dev (v1.6) — pending cross-platform alignment with iOS
 **Author:** Zerion Project
 
 **Related documents**
 - [PCS_DESIGN.md](PCS_DESIGN.md) — pairwise PCS specification (Mode 1/2/3)
 - [TRIPLE_RATCHET_DESIGN.md](TRIPLE_RATCHET_DESIGN.md) — post-quantum ratchet specification
-- [GROUP_PCS_SENDER_KEYS_DESIGN.md](GROUP_PCS_SENDER_KEYS_DESIGN.md) — current Sender Keys design (this proposal supersedes)
+- [GROUP_PCS_SENDER_KEYS_DESIGN.md](GROUP_PCS_SENDER_KEYS_DESIGN.md) — superseded Sender Keys design
+
+> **v1.6 amendment.** This design originally specified pure-Ed25519
+> signatures on group records. v1.6 raised every group-record signature
+> to hybrid Ed25519 + ML-DSA-65 (3,373 bytes total: 64 bytes Ed25519 +
+> 3,309 bytes ML-DSA-65). `CONTACT_INFO` bumped to a 6-slot BDF list
+> carrying the peer's ML-DSA-65 public key (1,952 bytes) at slot[5].
+> Local identities generate an ML-DSA-65 keypair at account creation;
+> existing accounts lazy-backfill on first sign-in after upgrade. The
+> Ed25519 portion of the hybrid identity is the same key bound to the
+> AuthorId — there is no Author-rotation. The verifier looks up the
+> peer's ML-DSA-65 pubkey from the Contact row and assembles a
+> `HybridSignaturePublicKey` for `crypto.verifySignature`. For legacy
+> contacts paired before v1.6 (no ML-DSA pubkey persisted), the
+> verifier falls back to extracting the Ed25519 prefix of a hybrid
+> signature — same security as pre-upgrade, no regression. The UI tier
+> at Chat Settings shows three states: full PQ, post-quantum encryption
+> + legacy authentication, classical. Database schema bumps v62 → v63
+> with nullable ML-DSA columns on `localAuthors` and `contacts`.
+>
+> Audit findings closed in v1.6 (caught before tag): GROUP_POST hybrid
+> verification gap (validator only verified the Ed25519 prefix; manager
+> didn't re-verify — fixed by carrying `recordSig` in
+> `GroupPostReceivedEvent` and re-verifying in `cachePost`);
+> GROUP_MEMBER_LEFT same fix at manager layer; TOCTOU race in PQ
+> cross-direction mix closed via atomic transaction in `PcsStateManager`.
+>
+> Performance: cache of peer ML-DSA pubkey by Ed25519 hex key in
+> `GroupTrManagerImpl` (`mlDsaPubKeyCache`), populated lazily, invalidated
+> on `ContactAddedEvent` / `ContactRemovedEvent`. Signature verification
+> is O(1) after the first lookup.
 
 ---
 
@@ -360,6 +390,8 @@ The removed peer:
 - Cannot decrypt any subsequent group POST because the next ratchet step on each pair was triggered AFTER the removal commit — the new sending chain key is derived from a fresh DH + PQ seed the removed peer never saw.
 
 **This is the cryptographic enforcement Sender Keys lacks.** Forward-secret AND post-compromise-secure.
+
+**Implementation note (Android v1):** the §8.3 "forced DH ratchet step" is achieved implicitly rather than via an explicit `forceDhRatchetStep()` primitive. Sending `GROUP_MEMBER_REMOVED + GROUP_EPOCH_COMMIT` as real outbound messages on each surviving pair (via `clientHelper.addLocalMessage`) is processed by the existing 1:1 PCS encrypter, which naturally rotates the sending chain and fires a fresh X25519 DH agreement on its next chain-start within 1–2 message exchanges. The removed peer has no access to surviving pairs' 1:1 channels, so the new DH material is never visible to them. An explicit primitive that bypasses the encrypter's natural chain-rotation logic would require modifying audited bramble-core crypto and is deferred to a future revision (post Trail of Bits review).
 
 ### 8.4 Dissolve
 

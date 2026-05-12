@@ -75,12 +75,18 @@ interface Database<T> {
 			@Nullable PublicKey handshake, boolean verified, boolean postQuantum,
 			boolean pcsEnabled) throws DbException;
 
-	
+
 	ContactId addContact(T txn, Author remote, AuthorId local,
 			@Nullable PublicKey handshake, boolean verified, boolean postQuantum,
 			boolean pcsEnabled, boolean mode3Capable) throws DbException;
 
-	
+
+	ContactId addContact(T txn, Author remote, AuthorId local,
+			@Nullable PublicKey handshake, boolean verified, boolean postQuantum,
+			boolean pcsEnabled, boolean mode3Capable,
+			@Nullable byte[] mlDsaSigPublicKey) throws DbException;
+
+
 	void addGroup(T txn, Group g) throws DbException;
 
 	
@@ -423,11 +429,19 @@ interface Database<T> {
 	void setHandshakeKeyPair(T txn, AuthorId local, PublicKey publicKey,
 			PrivateKey privateKey) throws DbException;
 
-	
+
 	void setHybridHandshakeKeyPair(T txn, AuthorId local, PublicKey publicKey,
 			PrivateKey privateKey) throws DbException;
 
-	
+
+	void setMlDsaSigKeyPair(T txn, AuthorId local, byte[] publicKey,
+			byte[] privateKey) throws DbException;
+
+
+	void setContactMlDsaSigPublicKey(T txn, ContactId c, byte[] publicKey)
+			throws DbException;
+
+
 	void setMessagePermanent(T txn, MessageId m) throws DbException;
 
 	

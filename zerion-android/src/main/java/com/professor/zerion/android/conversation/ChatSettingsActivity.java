@@ -161,10 +161,17 @@ public class ChatSettingsActivity extends ZerionActivity {
 				contactName.setText(contactItem.getContact().getAuthor().getName());
 
 				contactAvatar.setOnClickListener(v -> showAvatarFullScreen(contactItem));
-				if (contactItem.isPostQuantum()) {
+				boolean hybridSig = contactItem.getContact()
+						.hasHybridSigCapability();
+				if (contactItem.isPostQuantum() && hybridSig) {
 					securityLevelTitle.setText(R.string.security_level_post_quantum);
 					securityLevelDescription.setText(
 							R.string.security_level_post_quantum_description);
+				} else if (contactItem.isPostQuantum()) {
+					securityLevelTitle.setText(
+							R.string.security_level_post_quantum);
+					securityLevelDescription.setText(
+							R.string.security_level_legacy_auth_description);
 				} else {
 					securityLevelTitle.setText(R.string.security_level_classical);
 					securityLevelDescription.setText(

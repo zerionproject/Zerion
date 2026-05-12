@@ -1,5 +1,6 @@
 package org.briarproject.bramble.crypto;
 
+import org.briarproject.bramble.api.contact.ContactId;
 import org.briarproject.bramble.api.crypto.CryptoComponent;
 import org.briarproject.bramble.api.crypto.SecretKey;
 import org.briarproject.bramble.api.crypto.StreamEncrypter;
@@ -10,9 +11,11 @@ import org.briarproject.bramble.api.crypto.pcs.PcsSessionState;
 import org.briarproject.bramble.api.crypto.pcs.PqRatchet;
 import org.briarproject.bramble.api.crypto.pcs.PqRatchetState;
 import org.briarproject.bramble.api.transport.StreamContext;
+import org.briarproject.bramble.crypto.pcs.PcsStateManager;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.OutputStream;
+import java.util.function.Consumer;
 
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
@@ -31,18 +34,21 @@ class StreamEncrypterFactoryImpl implements StreamEncrypterFactory {
 	private final Provider<AuthenticatedCipher> cipherProvider;
 	private final PcsRatchet pcsRatchet;
 	private final PqRatchet pqRatchet;
+	private final PcsStateManager pcsStateManager;
 
 	@Inject
 	StreamEncrypterFactoryImpl(CryptoComponent crypto,
 			TransportCrypto transportCrypto,
 			Provider<AuthenticatedCipher> cipherProvider,
 			PcsRatchet pcsRatchet,
-			PqRatchet pqRatchet) {
+			PqRatchet pqRatchet,
+			PcsStateManager pcsStateManager) {
 		this.crypto = crypto;
 		this.transportCrypto = transportCrypto;
 		this.cipherProvider = cipherProvider;
 		this.pcsRatchet = pcsRatchet;
 		this.pqRatchet = pqRatchet;
+		this.pcsStateManager = pcsStateManager;
 	}
 
 	@Override
@@ -70,15 +76,29 @@ class StreamEncrypterFactoryImpl implements StreamEncrypterFactory {
 		PqRatchetState pqState = ctx.getPqRatchetState();
 		boolean isMode3 = pcsState.isMode3() && pqState != null;
 
+		ContactId contactId = ctx.getContactId();
+		Consumer<PcsSessionState> sendStateCallback = contactId == null
+				? null
+				: s -> pcsStateManager.saveSendState(contactId, s);
+		Consumer<PqRatchetState> pqCallback = contactId == null
+				? null
+				: s -> pcsStateManager.savePqState(contactId, s);
+		Consumer<SecretKey> pqCrossMix = contactId == null
+				? null
+				: pqSecret -> pcsStateManager
+						.mixPqSecretIntoReceiveRoot(contactId, pqSecret,
+								pqRatchet);
+
 		if (isMode3) {
 			return new PcsStreamEncrypterImpl(out, cipher, pcsRatchet,
 					streamNumber, tag, streamHeaderNonce, ctx.getHeaderKey(),
-					pcsState, null, pqRatchet, pqState, null);
+					pcsState, sendStateCallback, pqRatchet, pqState,
+					pqCallback, pqCrossMix);
 		}
 
 		return new PcsStreamEncrypterImpl(out, cipher, pcsRatchet,
 				streamNumber, tag, streamHeaderNonce, ctx.getHeaderKey(),
-				pcsState, null);
+				pcsState, sendStateCallback);
 	}
 
 	@Override

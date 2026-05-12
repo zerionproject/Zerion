@@ -527,6 +527,10 @@
 	<string name="mute_notifications">Mute Notifications</string>
 	<string name="vibration">Vibration</string>
 	<string name="verified_contact">Verified Contact</string>
+	<string name="verify_to_send_media_banner">Verify this contact to send stickers and attachments</string>
+	<string name="verify_to_send_media_title">Verify this contact first</string>
+	<string name="verify_to_send_media_message">For your security, attachments, stickers and voice messages can only be sent between contacts who have verified each other. Open contact info to compare safety numbers.</string>
+	<string name="verify_to_send_media_open_info">Open contact info</string>
 	<string name="trust_indicator">Trust Indicator</string>
 	<string name="all">All</string>
 	<string name="images">Images</string>
@@ -1257,7 +1261,8 @@
 	<string name="security_level_post_quantum_short">PQ</string>
 	<string name="security_level_classical">Classical Security</string>
 	<string name="security_level_classical_short">Classic</string>
-	<string name="security_level_post_quantum_description">This contact uses hybrid post-quantum cryptography (X25519 + ML-KEM-768), providing protection against future quantum computer attacks.</string>
+	<string name="security_level_post_quantum_description">This contact uses hybrid post-quantum cryptography (X25519 + ML-KEM-768) for encryption and hybrid signatures (Ed25519 + ML-DSA-65) for authenticity. Full protection against future quantum computer attacks.</string>
+	<string name="security_level_legacy_auth_description">This contact has post-quantum encryption but legacy (Ed25519) signatures. Their messages are confidential against quantum attackers, but authorship is only classically authenticated. Re-add this contact after both apps upgrade for full hybrid authentication.</string>
 	<string name="security_level_classical_description">This contact uses classical cryptography. Upgrade both apps to Zerion for post-quantum security.</string>
 
 	<!-- Voice Call strings -->

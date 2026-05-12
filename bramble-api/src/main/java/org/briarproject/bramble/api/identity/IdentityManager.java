@@ -30,11 +30,27 @@ public interface IdentityManager {
 	
 	KeyPair getHandshakeKeys(Transaction txn) throws DbException;
 
-	
+
 	@Nullable
 	KeyPair getHybridHandshakeKeys(Transaction txn) throws DbException;
 
-	
+
+	@Nullable
+	byte[] getLocalMlDsaSigPublicKey() throws DbException;
+
+
+	@Nullable
+	byte[] getLocalMlDsaSigPublicKey(Transaction txn) throws DbException;
+
+
+	@Nullable
+	byte[] getLocalMlDsaSigPrivateKey() throws DbException;
+
+
+	@Nullable
+	byte[] getLocalMlDsaSigPrivateKey(Transaction txn) throws DbException;
+
+
 	Identity getIdentity(Transaction txn) throws DbException;
 
 	

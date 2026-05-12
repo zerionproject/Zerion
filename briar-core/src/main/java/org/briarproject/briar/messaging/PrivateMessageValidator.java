@@ -47,6 +47,7 @@ import static org.briarproject.briar.messaging.MessageTypes.GROUP_EPOCH_COMMIT;
 import static org.briarproject.briar.messaging.MessageTypes.GROUP_MEMBER_ADDED;
 import static org.briarproject.briar.messaging.MessageTypes.GROUP_MEMBER_LEFT;
 import static org.briarproject.briar.messaging.MessageTypes.GROUP_MEMBER_REMOVED;
+import static org.briarproject.briar.messaging.MessageTypes.GROUP_MEMBER_LIST_SNAPSHOT;
 import static org.briarproject.briar.messaging.MessageTypes.GROUP_MEMBER_ROLE_CHANGED;
 import static org.briarproject.briar.messaging.MessageTypes.GROUP_POST;
 import static org.briarproject.briar.messaging.MessageTypes.PRIVATE_MESSAGE;
@@ -86,6 +87,7 @@ import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_GROUP_
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_GROUP_PQ_SEED;
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_GROUP_TARGET_PUBKEY;
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_GROUP_NEW_ROLE;
+import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_GROUP_MEMBER_LIST;
 import static org.briarproject.briar.messaging.MessagingConstants.SIGNING_LABEL_GROUP_POST;
 import static org.briarproject.briar.messaging.MessagingConstants.SIGNING_LABEL_GROUP_MEMBERSHIP;
 import static org.briarproject.briar.util.ValidationUtils.validateAutoDeleteTimer;
@@ -174,6 +176,9 @@ class PrivateMessageValidator implements MessageValidator {
 				} else if (messageType == GROUP_MEMBER_ROLE_CHANGED) {
 					if (!reader.eof()) throw new FormatException();
 					context = validateGroupRoleChanged(m, list);
+				} else if (messageType == GROUP_MEMBER_LIST_SNAPSHOT) {
+					if (!reader.eof()) throw new FormatException();
+					context = validateGroupMemberListSnapshot(m, list);
 				} else {
 					throw new InvalidMessageException();
 				}
@@ -442,14 +447,20 @@ class PrivateMessageValidator implements MessageValidator {
 		byte[] ciphertext = body.getRaw(5);
 		checkLength(ciphertext, 1, MAX_PRIVATE_MESSAGE_TEXT_LENGTH + 1024);
 		byte[] recordSig = body.getRaw(6);
-		checkLength(recordSig, 1, 128);
+		checkLength(recordSig, 1, 4096);
 		long autoDeleteTimer = NO_AUTO_DELETE_TIMER;
 		if (body.size() == 8) {
 			autoDeleteTimer = validateAutoDeleteTimer(body.getOptionalLong(7));
 		}
 		byte[] signedInput = buildGroupPostSignedInput(
 				groupId, (int) epoch, senderPubKey, senderName, ciphertext);
-		verifyOrThrow(recordSig, SIGNING_LABEL_GROUP_POST,
+		byte[] sigToVerify = recordSig;
+		if (recordSig.length == org.briarproject.bramble.api.crypto
+				.PostQuantumConstants.HYBRID_SIGNATURE_BYTES) {
+			sigToVerify = new byte[64];
+			System.arraycopy(recordSig, 0, sigToVerify, 0, 64);
+		}
+		verifyOrThrow(sigToVerify, SIGNING_LABEL_GROUP_POST,
 				signedInput, senderPubKey);
 		BdfDictionary meta = new BdfDictionary();
 		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
@@ -481,7 +492,7 @@ class PrivateMessageValidator implements MessageValidator {
 		if (epoch < 0L || epoch > 0xFFFFFFFFL) throw new FormatException();
 		long timestamp = body.getLong(5);
 		byte[] sig = body.getRaw(6);
-		checkLength(sig, 1, 128);
+		checkLength(sig, 1, 4096);
 		byte[] signedInput = membershipSignedInput(
 				groupId, addedPubKey, (int) epoch, timestamp, (byte) 0x01);
 		BdfDictionary meta = new BdfDictionary();
@@ -513,7 +524,7 @@ class PrivateMessageValidator implements MessageValidator {
 		}
 		long timestamp = body.getLong(5);
 		byte[] sig = body.getRaw(6);
-		checkLength(sig, 1, 128);
+		checkLength(sig, 1, 4096);
 		byte[] signedInput = removedSignedInput(groupId, removedPubKey,
 				(int) fromEpoch, (int) toEpoch, timestamp);
 		BdfDictionary meta = new BdfDictionary();
@@ -540,10 +551,16 @@ class PrivateMessageValidator implements MessageValidator {
 		if (epoch < 0L || epoch > 0xFFFFFFFFL) throw new FormatException();
 		long timestamp = body.getLong(4);
 		byte[] sig = body.getRaw(5);
-		checkLength(sig, 1, 128);
+		checkLength(sig, 1, 4096);
 		byte[] signedInput = membershipSignedInput(
 				groupId, leavingPubKey, (int) epoch, timestamp, (byte) 0x03);
-		verifyOrThrow(sig, SIGNING_LABEL_GROUP_MEMBERSHIP,
+		byte[] sigToVerify = sig;
+		if (sig.length == org.briarproject.bramble.api.crypto
+				.PostQuantumConstants.HYBRID_SIGNATURE_BYTES) {
+			sigToVerify = new byte[64];
+			System.arraycopy(sig, 0, sigToVerify, 0, 64);
+		}
+		verifyOrThrow(sigToVerify, SIGNING_LABEL_GROUP_MEMBERSHIP,
 				signedInput, leavingPubKey);
 		BdfDictionary meta = new BdfDictionary();
 		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
@@ -565,7 +582,7 @@ class PrivateMessageValidator implements MessageValidator {
 		if (epoch < 0L || epoch > 0xFFFFFFFFL) throw new FormatException();
 		long timestamp = body.getLong(3);
 		byte[] sig = body.getRaw(4);
-		checkLength(sig, 1, 128);
+		checkLength(sig, 1, 4096);
 		byte[] signedInput = dissolveSignedInput(
 				groupId, (int) epoch, timestamp);
 		BdfDictionary meta = new BdfDictionary();
@@ -594,7 +611,7 @@ class PrivateMessageValidator implements MessageValidator {
 		byte[] pqSeed = body.getRaw(4);
 		checkLength(pqSeed, 1, 4096);
 		byte[] sig = body.getRaw(5);
-		checkLength(sig, 1, 128);
+		checkLength(sig, 1, 4096);
 		byte[] signedInput = epochCommitSignedInput(
 				groupId, (int) fromEpoch, (int) toEpoch, pqSeed,
 				m.getTimestamp());
@@ -704,7 +721,7 @@ class PrivateMessageValidator implements MessageValidator {
 		if (epoch < 0L || epoch > 0xFFFFFFFFL) throw new FormatException();
 		long timestamp = body.getLong(5);
 		byte[] sig = body.getRaw(6);
-		checkLength(sig, 1, 128);
+		checkLength(sig, 1, 4096);
 		byte[] signedInput = roleChangedSignedInput(groupId, targetPubKey,
 				(int) newRole, (int) epoch, timestamp);
 		BdfDictionary meta = new BdfDictionary();
@@ -733,6 +750,77 @@ class PrivateMessageValidator implements MessageValidator {
 			out[69 + i] = (byte) (timestamp >>> ((7 - i) * 8));
 		}
 		out[77] = (byte) 0x06;
+		return out;
+	}
+
+	private BdfMessageContext validateGroupMemberListSnapshot(Message m,
+			BdfList body) throws FormatException {
+		checkSize(body, 6);
+		byte[] groupId = body.getRaw(1);
+		checkLength(groupId, 32);
+		long epoch = body.getLong(2);
+		if (epoch < 0L || epoch > 0xFFFFFFFFL) throw new FormatException();
+		long timestamp = body.getLong(3);
+		BdfList memberList = body.getList(4);
+		checkSize(memberList, 0, 1000);
+		byte[] memberCanonical =
+				new byte[memberList.size() * (32 + 1 + 4)];
+		int off = 0;
+		for (int i = 0; i < memberList.size(); i++) {
+			BdfList m2 = memberList.getList(i);
+			checkSize(m2, 5);
+			byte[] pk = m2.getRaw(0);
+			checkLength(pk, 32);
+			String name = m2.getString(1);
+			checkLength(name, 0, 256);
+			long joinedAt = m2.getLong(2);
+			if (joinedAt < 0L) throw new FormatException();
+			long joinedAtEpoch = m2.getLong(3);
+			if (joinedAtEpoch < 0L || joinedAtEpoch > 0xFFFFFFFFL) {
+				throw new FormatException();
+			}
+			long role = m2.getLong(4);
+			if (role < 0L || role > 2L) throw new FormatException();
+			System.arraycopy(pk, 0, memberCanonical, off, 32);
+			memberCanonical[off + 32] = (byte) role;
+			int je = (int) joinedAtEpoch;
+			for (int j = 0; j < 4; j++) {
+				memberCanonical[off + 33 + j] =
+						(byte) (je >>> ((3 - j) * 8));
+			}
+			off += 37;
+		}
+		byte[] sig = body.getRaw(5);
+		checkLength(sig, 1, 4096);
+		byte[] signedInput = snapshotSignedInput(groupId, (int) epoch,
+				timestamp, memberCanonical);
+		BdfDictionary meta = new BdfDictionary();
+		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
+		meta.put(MSG_KEY_LOCAL, false);
+		meta.put(MSG_KEY_MSG_TYPE, GROUP_MEMBER_LIST_SNAPSHOT);
+		meta.put(MSG_KEY_GROUP_ID, groupId);
+		meta.put(MSG_KEY_GROUP_EPOCH, epoch);
+		meta.put(MSG_KEY_GROUP_MEMBER_LIST, memberCanonical);
+		meta.put(MSG_KEY_GROUP_RECORD_SIG, sig);
+		meta.put("groupMembershipSignedInput", signedInput);
+		return new BdfMessageContext(meta);
+	}
+
+	private byte[] snapshotSignedInput(byte[] groupId, int epoch,
+			long timestamp, byte[] memberCanonical) {
+		byte[] mlHash = crypto.hash(
+				"org.briarproject.zerion/GROUP_MEMBER_LIST",
+				memberCanonical);
+		byte[] out = new byte[32 + 4 + 8 + mlHash.length + 1];
+		System.arraycopy(groupId, 0, out, 0, 32);
+		for (int i = 0; i < 4; i++) {
+			out[32 + i] = (byte) (epoch >>> ((3 - i) * 8));
+		}
+		for (int i = 0; i < 8; i++) {
+			out[36 + i] = (byte) (timestamp >>> ((7 - i) * 8));
+		}
+		System.arraycopy(mlHash, 0, out, 44, mlHash.length);
+		out[44 + mlHash.length] = (byte) 0x07;
 		return out;
 	}
 

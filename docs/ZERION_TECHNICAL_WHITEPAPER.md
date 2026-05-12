@@ -62,7 +62,9 @@ Zerion is an end-to-end encrypted, peer-to-peer secure messaging application for
 2. **Step 2: Password Creation**
    - Minimum 8 characters (simplified from original strict requirements)
    - Real-time strength estimation
-   - Password used to derive database encryption key via Scrypt KDF
+   - Password used to derive database encryption key via Argon2id
+     (memory-hard, quantum-resistant; legacy Scrypt-derived keys are
+     auto-migrated on first sign-in, see §9.2)
    - Key derivation parameters calibrated to device performance
 
 3. **Step 3: Battery Optimization**
@@ -74,11 +76,11 @@ Zerion is an end-to-end encrypted, peer-to-peer secure messaging application for
 ```
 User Password
      ↓
-[Scrypt KDF] ← Random Salt (256-bit)
+[Argon2id KDF] ← Random Salt (256-bit)
      ↓
 Database Encryption Key (256-bit)
      ↓
-[Encrypted SQLite Database]
+[Encrypted SQLite Database (SQLCipher)]
 ```
 
 ### 1.3 Identity Generation
@@ -131,36 +133,99 @@ Message {
 - **Read Receipts**: Optional read status
 - **Auto-Delete**: Timer-based disappearing messages
 
-### 2.2 Private Group Messaging
+### 2.2 Group Messaging — Pairwise Triple Ratchet over Hybrid PQ
 
-**Group Architecture**:
+Zerion does not use the legacy Briar `PrivateGroup` client (sender-key fan-out)
+for end-user group chats. Instead, each authored group post is fanned out as
+N-1 individually-encrypted messages, one per other member, over the same
+pairwise Triple-Ratchet channels that 1:1 conversations use (see §5.3
+Mode 3). This means group messages inherit the same security properties as
+1:1 messages — full hybrid post-quantum key agreement (X25519 +
+ML-KEM-768), Ed25519 + ML-DSA-65 signatures, forward secrecy via the
+sending chain, post-compromise security via the DH ratchet step.
+
+**Group state model (`GroupTrManager`)**:
 
 ```
-Group Structure:
-├── Creator (Author ID)
-├── Members (List<Author>)
-│   ├── Visibility Status (VISIBLE/INVISIBLE)
-│   └── Invitation State
-├── Messages (Threaded)
-│   ├── Parent Message ID (for threading)
-│   └── Previous Message ID (for ordering)
-└── Metadata (Encrypted)
+GroupTrState {
+    groupId:       BLAKE2b-256(creatorName || creatorPubKey || name || salt)
+    name:          UTF-8, ≤ 256 bytes
+    salt:          32 bytes, random at creation
+    creatorPubKey: 32-byte Ed25519
+    creatorName:   UTF-8
+    created:       int64 ms
+    epoch:         uint32, monotonically increasing
+    dissolved:     bool
+    members:       List<GroupTrMember>
+    defaultTTL:    int64 ms (auto-delete)
+}
+
+GroupTrMember {
+    pubKey, name, joinedAt, joinedAtEpoch, role ∈ {MEMBER, ADMIN, CREATOR}
+}
 ```
 
-**Message Types**:
-- **JOIN**: Member joins group
-- **POST**: Standard group message
+State is persisted via `SettingsManager` (encrypted at rest by SQLCipher);
+there is no shared group sync client and no on-disk group message table —
+group posts live in each pairwise contact group as ordinary 1:1 records
+tagged with the group ID.
 
-**Member Visibility Modes**:
-- **VISIBLE**: Member known to all
-- **INVISIBLE**: Hidden membership (privacy feature)
-- **REVEALED_BY_US**: We revealed to contact
-- **REVEALED_BY_CONTACT**: Contact revealed to us
+**Wire message types** (over the pairwise 1:1 channel):
 
-**Threading Model**:
-- Messages can reference parent for context
-- Chronological ordering via previous message IDs
-- Timestamp validation for consistency
+| msgType | Name                         | Authed by      |
+| ------- | ---------------------------- | -------------- |
+| 32      | GROUP_POST                   | sender Ed25519 |
+| 33      | GROUP_MEMBER_ADDED           | creator        |
+| 34      | GROUP_MEMBER_REMOVED         | creator        |
+| 35      | GROUP_MEMBER_LEFT            | leaver         |
+| 36      | GROUP_DISSOLVED              | creator        |
+| 37      | GROUP_EPOCH_COMMIT           | creator        |
+| 38      | GROUP_MEMBER_ROLE_CHANGED    | creator        |
+| 41      | GROUP_MEMBER_LIST_SNAPSHOT   | creator        |
+
+All membership records carry a domain-separated Ed25519 signature over
+`(groupId, target, epoch, timestamp, action_byte)`; the receive validator
+(`PrivateMessageValidator`) verifies the signature against the claimed
+signer and rejects malformed or stale records before delivery.
+
+**Epoch-bound post-compromise security**:
+
+When the creator removes a member, the `GROUP_MEMBER_REMOVED` record and a
+`GROUP_EPOCH_COMMIT` (carrying a 32-byte fresh PQ seed) are fanned out
+atomically. Remaining members advance their local epoch on commit. The act
+of dispatching these records over each pair's Triple-Ratchet channel
+naturally triggers the encrypter's DH-ratchet step on the next send,
+which gives the new epoch the same post-compromise property as a 1:1
+ratchet rotation.
+
+**Out-of-order epoch handling**:
+
+A receiver tolerates posts arriving up to `EPOCH_BUFFER_TOLERANCE = 5`
+epochs ahead of its local view (e.g., during a connection gap). Buffered
+posts are released on the next legitimate epoch advance. Posts older than
+`localEpoch - 1` are dropped.
+
+**Privacy features**:
+
+- **Stealth name**: A member may set a per-group display alias (separate
+  from their identity name); only the alias is signed into outbound
+  `GROUP_POST` records.
+- **Group-default auto-delete TTL**: Creator-settable; if a sender does
+  not specify a per-post timer, the group default is applied.
+- **No mutual-contact assumption**: A group may include members who are
+  not 1:1 contacts of each other. Inviter delivery only — non-mutual
+  members cannot derive private contact channels from group membership
+  alone. Direct messaging between non-mutual members across a group is a
+  future opt-in design (see internal relay-privacy design).
+
+**Member-list snapshot**:
+
+The creator may publish a `GROUP_MEMBER_LIST_SNAPSHOT` (msgType=41)
+signed over the canonical concatenation of
+`pubKey(32) || role(1) || joinedAtEpoch(4 BE)` per member. Members
+reconcile their local roster from the snapshot when the snapshot epoch
+≥ local epoch, allowing late joiners and clients that missed
+intermediate `MEMBER_ADDED/REMOVED` records to recover canonical state.
 
 ### 2.3 Transport Layer Encryption
 
@@ -1606,6 +1671,16 @@ Attachment File
 - Progress bar
 - Duration display
 
+### 10.2.1 Stickers
+
+A built-in catalogue of expressive image stickers, shipped with the app
+(no external download, no network egress, no third-party CDN). Stickers
+are sent as standard image attachments encrypted under the conversation's
+Triple Ratchet — they carry no special wire type and inherit identical
+confidentiality, forward secrecy, and PCS properties as any other image
+attachment. The catalogue is local-only; no per-user usage telemetry is
+collected or transmitted.
+
 ### 10.3 Rich Attachments
 
 **Supported Types**:
@@ -1821,6 +1896,34 @@ Attachment File
 - **Sync Protocol**: v2
 - **Handshake Protocol**: v1 (classical) / v2 (hybrid PQ)
 - **Database Schema**: v52
+
+### 12.4.1 Application Message Type Numbers
+
+All application records carried over a pairwise contact's 1:1 client
+group use the following msgType assignments. Numbers ≤ 31 are reserved
+for direct conversation; 32–63 are reserved for group-chat protocol
+records; new numbers must be added monotonically and never reused.
+
+| Number | Name                          | Direction                    |
+| ------ | ----------------------------- | ---------------------------- |
+| 0      | PRIVATE_MESSAGE               | peer ↔ peer                  |
+| 1      | ATTACHMENT                    | peer ↔ peer                  |
+| 2      | VOICE_SIGNAL                  | peer ↔ peer                  |
+| 3      | ATTACHMENT_MANIFEST           | peer ↔ peer                  |
+| 4      | ATTACHMENT_CHUNK              | peer ↔ peer                  |
+| 5      | SENDER_KEY_DISTRIBUTION       | reserved (legacy)            |
+| 6      | REKEY_REQUEST                 | reserved                     |
+| 7      | MESSAGE_REACTION              | peer ↔ peer                  |
+| 8      | TYPING_INDICATOR              | peer ↔ peer                  |
+| 9      | LINK_PREVIEW_MESSAGE          | peer ↔ peer                  |
+| 32     | GROUP_POST                    | sender → each member         |
+| 33     | GROUP_MEMBER_ADDED            | creator → each member        |
+| 34     | GROUP_MEMBER_REMOVED          | creator → each member        |
+| 35     | GROUP_MEMBER_LEFT             | leaver → each member         |
+| 36     | GROUP_DISSOLVED               | creator → each member        |
+| 37     | GROUP_EPOCH_COMMIT            | creator → each member        |
+| 38     | GROUP_MEMBER_ROLE_CHANGED     | creator → each member        |
+| 41     | GROUP_MEMBER_LIST_SNAPSHOT    | creator → each member        |
 
 ### 12.5 Network Parameters
 

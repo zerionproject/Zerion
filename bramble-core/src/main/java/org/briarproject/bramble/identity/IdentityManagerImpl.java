@@ -1,6 +1,8 @@
 package org.briarproject.bramble.identity;
 
 import org.briarproject.bramble.api.crypto.CryptoComponent;
+import org.briarproject.bramble.api.crypto.HybridSignaturePrivateKey;
+import org.briarproject.bramble.api.crypto.HybridSignaturePublicKey;
 import org.briarproject.bramble.api.crypto.KeyPair;
 import org.briarproject.bramble.api.crypto.PrivateKey;
 import org.briarproject.bramble.api.crypto.PublicKey;
@@ -39,6 +41,8 @@ class IdentityManagerImpl implements IdentityManager, OpenDatabaseHook {
 
 	private volatile boolean shouldStoreHybridKeys = false;
 
+	private volatile boolean shouldStoreMlDsaKeys = false;
+
 	@Inject
 	IdentityManagerImpl(DatabaseComponent db, CryptoComponent crypto,
 			AuthorFactory authorFactory, Clock clock) {
@@ -58,8 +62,15 @@ class IdentityManagerImpl implements IdentityManager, OpenDatabaseHook {
 		PublicKey hybridPub = hybridKeyPair.getPublic();
 		PrivateKey hybridPriv = hybridKeyPair.getPrivate();
 
+		KeyPair hybridSigKeyPair = crypto.generateHybridSignatureKeyPair();
+		byte[] mlDsaPub = ((HybridSignaturePublicKey)
+				hybridSigKeyPair.getPublic()).getMlDsaPublicKey();
+		byte[] mlDsaPriv = ((HybridSignaturePrivateKey)
+				hybridSigKeyPair.getPrivate()).getMlDsaPrivateKey();
+
 		return new Identity(localAuthor, classicalPub, classicalPriv,
-				hybridPub, hybridPriv, clock.currentTimeMillis());
+				hybridPub, hybridPriv, mlDsaPub, mlDsaPriv,
+				clock.currentTimeMillis());
 	}
 
 	@Override
@@ -89,6 +100,27 @@ class IdentityManagerImpl implements IdentityManager, OpenDatabaseHook {
 					requireNonNull(cached.getHybridHandshakePrivateKey());
 			db.setHybridHandshakeKeyPair(txn, cached.getId(), hybridPub,
 					hybridPriv);
+		}
+		if (!cached.hasMlDsaSigKeyPair()) {
+			KeyPair hybridSigKeyPair = crypto.generateHybridSignatureKeyPair();
+			byte[] mlDsaPub = ((HybridSignaturePublicKey)
+					hybridSigKeyPair.getPublic()).getMlDsaPublicKey();
+			byte[] mlDsaPriv = ((HybridSignaturePrivateKey)
+					hybridSigKeyPair.getPrivate()).getMlDsaPrivateKey();
+			db.setMlDsaSigKeyPair(txn, cached.getId(), mlDsaPub, mlDsaPriv);
+			cachedIdentity = new Identity(
+					cached.getLocalAuthor(),
+					cached.getHandshakePublicKey(),
+					cached.getHandshakePrivateKey(),
+					cached.getHybridHandshakePublicKey(),
+					cached.getHybridHandshakePrivateKey(),
+					mlDsaPub, mlDsaPriv,
+					cached.getTimeCreated());
+		}
+		if (shouldStoreMlDsaKeys && cached.hasMlDsaSigKeyPair()) {
+			byte[] mlDsaPub = requireNonNull(cached.getMlDsaSigPublicKey());
+			byte[] mlDsaPriv = requireNonNull(cached.getMlDsaSigPrivateKey());
+			db.setMlDsaSigKeyPair(txn, cached.getId(), mlDsaPub, mlDsaPriv);
 		}
 	}
 
@@ -124,6 +156,40 @@ class IdentityManagerImpl implements IdentityManager, OpenDatabaseHook {
 		PublicKey hybridPub = requireNonNull(cached.getHybridHandshakePublicKey());
 		PrivateKey hybridPriv = requireNonNull(cached.getHybridHandshakePrivateKey());
 		return new KeyPair(hybridPub, hybridPriv);
+	}
+
+	@Override
+	@Nullable
+	public byte[] getLocalMlDsaSigPublicKey() throws DbException {
+		Identity cached = cachedIdentity;
+		if (cached == null) {
+			cached = db.transactionWithResult(true, this::getCachedIdentity);
+		}
+		return cached.getMlDsaSigPublicKey();
+	}
+
+	@Override
+	@Nullable
+	public byte[] getLocalMlDsaSigPublicKey(Transaction txn)
+			throws DbException {
+		return getCachedIdentity(txn).getMlDsaSigPublicKey();
+	}
+
+	@Override
+	@Nullable
+	public byte[] getLocalMlDsaSigPrivateKey() throws DbException {
+		Identity cached = cachedIdentity;
+		if (cached == null) {
+			cached = db.transactionWithResult(true, this::getCachedIdentity);
+		}
+		return cached.getMlDsaSigPrivateKey();
+	}
+
+	@Override
+	@Nullable
+	public byte[] getLocalMlDsaSigPrivateKey(Transaction txn)
+			throws DbException {
+		return getCachedIdentity(txn).getMlDsaSigPrivateKey();
 	}
 
 	@Override

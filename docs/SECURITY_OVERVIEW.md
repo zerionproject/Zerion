@@ -1,7 +1,7 @@
 # Zerion Security Overview
 
-**Version:** 1.0.2
-**Last reviewed:** February 2026
+**Version:** 1.1.0
+**Last reviewed:** May 2026 (v1.6)
 
 ---
 
@@ -9,7 +9,14 @@
 
 Zerion is a peer-to-peer encrypted messenger for Android with voice calls over Tor. All traffic routes exclusively through the Tor network. There are no central servers, no metadata collection, and no logging in production builds.
 
-A comprehensive security audit covering 10 domains (cryptography, network, voice calls, Android platform, authentication, database, input validation, dependencies, logging, memory safety) was completed and all actionable findings have been resolved.
+A comprehensive security audit covering 10 domains (cryptography, network, voice calls, Android platform, authentication, database, input validation, dependencies, logging, memory safety) was completed and all actionable findings have been resolved. An additional internal audit was run during the v1.6 development cycle focused on the PCS Mode 3 rewrite and the hybrid-signing migration; four findings (one critical, one high, two medium) were caught and patched before tag — see the v1.6 audit notes below.
+
+## v1.6 status (May 2026)
+
+- **PCS Mode 3 post-quantum ratchet** now actually completes epochs end-to-end. Phase 4d (January 2026) shipped Mode 3 framing on the wire but three latent bugs prevented any PQ epoch from completing: responder chunk-type dispatch missing, responder shared secret wiped before use, factory state callbacks `null` in production. All three fixed in v1.6, plus cross-direction PQ mixing per epoch (one epoch now PQ-protects both directions, was one-direction-only in Phase 4d), self-heal on crash + stuck-state recovery, pubkey-comparison tiebreak on simultaneous epoch starts. ML-KEM-768 shared secret is now mixed into the root key every 25 messages or 24 hours, both directions, persisted across reconnects.
+- **Hybrid identity signatures on group records.** Every group record (GROUP_POST, MEMBER_ADDED/REMOVED/LEFT, DISSOLVED, EPOCH_COMMIT, ROLE_CHANGED, MEMBER_LIST_SNAPSHOT) now carries a hybrid Ed25519 + ML-DSA-65 signature (3,373 bytes). CONTACT_INFO bumped to 6-slot to carry the peer's ML-DSA-65 public key. Database schema migration v62 → v63 adds nullable ML-DSA columns on `localAuthors` and `contacts`; existing accounts lazy-backfill an ML-DSA-65 keypair on first sign-in. AuthorId stays stable.
+- **Vault Argon2id alignment.** The vault password KDF was internally PBKDF2-HMAC-SHA256 in earlier releases (acknowledged placeholder). v1.6 uses real Argon2id via Bouncy Castle (same generator as the database KDF). Legacy vaults still readable via a feature-flag bit in the vault header. Export bundle format bumped to v2.
+- **v1.6 audit findings (patched before tag):** GROUP_POST hybrid signature was only verified at Ed25519-prefix level by the validator and never re-verified at the manager layer (critical, fixed by passing recordSig in GroupPostReceivedEvent and re-verifying in cachePost); GROUP_MEMBER_LEFT same pattern, now verified at manager layer; TOCTOU race in cross-direction PQ mixing closed via atomic single-transaction `PcsStateManager.mixPqSecretInto*Root`; ML-KEM shared secret zeroed immediately after clone in `deriveEpochSecret`.
 
 ---
 

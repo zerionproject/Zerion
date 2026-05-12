@@ -1,13 +1,79 @@
 # Zerion Post-Compromise Security (PCS) Technical Design
 
-**Version:** 1.3
-**Date:** 2026-01-23
-**Status:** IMPLEMENTED - All Phases Complete (Phase 4d: Mode 3 Active)
+**Version:** 1.4
+**Date:** 2026-05-12
+**Status:** IMPLEMENTED — Phase 5 (v1.6) closes the on-the-wire gaps that
+prevented Mode 3 PQ rotation from completing in Phase 4d
 **Author:** Zerion Project
 
 **Related Documents:**
 - [TRIPLE_RATCHET_DESIGN.md](TRIPLE_RATCHET_DESIGN.md) - Mode 3 (Post-Quantum Ratchet) specification
+- [RATCHET_MODES.md](RATCHET_MODES.md) - Layered mode 1/2/3 explainer
 - [THREAT_MODEL.md](THREAT_MODEL.md) - Explicit threat model and weakness documentation
+
+---
+
+## v1.6 amendment — what changed since Phase 4d
+
+Phase 4d (January 2026) shipped Mode 3 *structurally*: the stream-header
+flag, the per-frame PCS header with `FLAG_PQ_ENABLED`, the chunk codec,
+and the state machine were all on the wire. But three latent bugs meant
+the post-quantum epoch rotation never **completed** end-to-end:
+
+1. The responder's stream-decrypter dispatch had no chunk-type switch.
+   When peer's `EK_SEED` chunk arrived in `PQ_READY`, it was silently
+   absorbed instead of transitioning into `PQ_RECEIVING_EK_VEC`.
+2. When the responder did encapsulate, it cloned the ML-KEM-768
+   ciphertext and immediately zeroed the resulting shared secret. At
+   epoch derive-time, the code re-encapsulated to recover the secret —
+   but Bouncy Castle's ML-KEM generator is randomized per call, so the
+   re-encapsulation produced a different ciphertext and the equality
+   check always failed.
+3. `StreamEncrypterFactoryImpl` and `StreamDecrypterFactoryImpl` both
+   passed `null` for their state callbacks. Every Mode 2 DH-ratchet step
+   and every Mode 3 PQ-epoch completion was computed in memory and
+   discarded when the stream closed. New streams loaded the initial
+   contact-add state.
+
+v1.6 (May 2026) fixes all three. Plus:
+
+- **Cross-direction PQ mixing per epoch.** Phase 4d mixed the ML-KEM
+  shared secret into one direction's root key per epoch (whichever side
+  supplied the ciphertext). Full bidirectional PQ took two epochs. v1.6
+  mixes the same secret into both `sendState` and `recvState` root keys
+  atomically; one epoch now PQ-protects both directions.
+- **Self-heal.** On database load, any transient ratchet state
+  (`PQ_SENDING_*`, `PQ_RECEIVING_EK_VEC`, `PQ_AWAITING_CT`) is reset to
+  `PQ_READY`. `shouldStartNewEpoch` also fires from stuck non-`PQ_READY`
+  states after `2 × PQ_EPOCH_MESSAGE_THRESHOLD` messages or the time
+  threshold, so a peer crash mid-epoch self-heals on the next cycle.
+- **Pubkey-comparison tiebreak.** When both peers hit the threshold
+  within the same RTT and both emit `EK_SEED`, the receiver compares
+  the 32-byte seeds lexicographically. Lower wins, stays initiator. The
+  other side aborts its emission and becomes responder. Both converge
+  on a single shared secret per epoch.
+- **Atomic cross-mix.** The decrypter / encrypter callbacks that update
+  the *other* direction's stored root key now use a single-transaction
+  load-modify-save (`PcsStateManager.mixPqSecretIntoReceiveRoot` /
+  `mixPqSecretIntoSendRoot`) to close a TOCTOU race against the other
+  thread's chain-key advance.
+- **Audit-found bug fixes** (caught and patched before v1.6 tag):
+  GROUP_POST hybrid-signature verification gap (validator only verified
+  the Ed25519 prefix; manager never re-verified the ML-DSA half — fixed
+  by adding the recordSig to the event and re-verifying in cachePost);
+  GROUP_MEMBER_LEFT same pattern, now verified at manager layer; ML-KEM
+  shared secret zeroed immediately after clone in `deriveEpochSecret`
+  instead of waiting for GC.
+
+Net effect: from Phase 4d to v1.6, the change is from "Mode 3 framed
+on the wire but PQ rotation never completes" to "ML-KEM-768 secret
+mixed into the root key every 25 messages or 24 hours, both directions,
+persisted across reconnects, with crash recovery."
+
+A companion change in v1.6 raises identity-layer signing from pure
+Ed25519 to hybrid Ed25519 + ML-DSA-65 on every group record. See
+[GROUP_TRIPLE_RATCHET_PQ_DESIGN.md](GROUP_TRIPLE_RATCHET_PQ_DESIGN.md)
+for the signing-layer side of the v1.6 work.
 
 ---
 
@@ -888,7 +954,11 @@ Mode 3 (Triple Ratchet) is implemented and active. See [TRIPLE_RATCHET_DESIGN.md
 - Phase 4a: Core ML-KEM implementation - COMPLETE
 - Phase 4b: Integration with PCS streams - COMPLETE
 - Phase 4c: Testing and verification - COMPLETE
-- Phase 4d: General release (MODE3_ENABLED = true) - COMPLETE
+- Phase 4d: General release (MODE3_ENABLED = true) - COMPLETE (wire framing)
+- Phase 5 (v1.6): Production fixes — responder chunk dispatch, responder
+  shared-secret persistence, factory state callbacks wired, cross-direction
+  PQ mixing per epoch, self-heal, pubkey-comparison tiebreak, atomic
+  cross-direction mix. End-to-end PQ epoch completion verified. COMPLETE.
 
 **Previous concerns (resolved):**
 - Bandwidth constraints on Tor → Sparse ratcheting + chunking (~3x overhead, acceptable)

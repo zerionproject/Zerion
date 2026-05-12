@@ -41,6 +41,10 @@ interface MessagingConstants {
 	String MSG_KEY_GROUP_PQ_SEED = "groupPqSeed";
 	String MSG_KEY_GROUP_TARGET_PUBKEY = "groupTargetPubKey";
 	String MSG_KEY_GROUP_NEW_ROLE = "groupNewRole";
+	String MSG_KEY_GROUP_MEMBER_LIST = "groupMemberList";
+
+	String SIGNING_LABEL_GROUP_MEMBER_LIST_SNAPSHOT =
+			"org.briarproject.zerion/GROUP_MEMBER_LIST_SNAPSHOT";
 
 	String SIGNING_LABEL_GROUP_POST =
 			"org.briarproject.zerion/GROUP_POST";

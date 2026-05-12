@@ -24,23 +24,41 @@ public class Identity {
 	private final PublicKey hybridHandshakePublicKey;
 	@Nullable
 	private final PrivateKey hybridHandshakePrivateKey;
+	@Nullable
+	private final byte[] mlDsaPublicKey;
+	@Nullable
+	private final byte[] mlDsaPrivateKey;
 
 	private final long created;
 
-	
+
 	public Identity(LocalAuthor localAuthor,
 			@Nullable PublicKey handshakePublicKey,
 			@Nullable PrivateKey handshakePrivateKey, long created) {
 		this(localAuthor, handshakePublicKey, handshakePrivateKey,
-				null, null, created);
+				null, null, null, null, created);
 	}
 
-	
+
 	public Identity(LocalAuthor localAuthor,
 			@Nullable PublicKey handshakePublicKey,
 			@Nullable PrivateKey handshakePrivateKey,
 			@Nullable PublicKey hybridHandshakePublicKey,
 			@Nullable PrivateKey hybridHandshakePrivateKey,
+			long created) {
+		this(localAuthor, handshakePublicKey, handshakePrivateKey,
+				hybridHandshakePublicKey, hybridHandshakePrivateKey,
+				null, null, created);
+	}
+
+
+	public Identity(LocalAuthor localAuthor,
+			@Nullable PublicKey handshakePublicKey,
+			@Nullable PrivateKey handshakePrivateKey,
+			@Nullable PublicKey hybridHandshakePublicKey,
+			@Nullable PrivateKey hybridHandshakePrivateKey,
+			@Nullable byte[] mlDsaPublicKey,
+			@Nullable byte[] mlDsaPrivateKey,
 			long created) {
 		if (handshakePublicKey != null) {
 			if (handshakePrivateKey == null)
@@ -68,11 +86,17 @@ public class Identity {
 					.equals(KEY_TYPE_HYBRID_AGREEMENT))
 				throw new IllegalArgumentException();
 		}
+		if (mlDsaPublicKey != null && mlDsaPrivateKey == null)
+			throw new IllegalArgumentException();
+		if (mlDsaPrivateKey != null && mlDsaPublicKey == null)
+			throw new IllegalArgumentException();
 		this.localAuthor = localAuthor;
 		this.handshakePublicKey = handshakePublicKey;
 		this.handshakePrivateKey = handshakePrivateKey;
 		this.hybridHandshakePublicKey = hybridHandshakePublicKey;
 		this.hybridHandshakePrivateKey = hybridHandshakePrivateKey;
+		this.mlDsaPublicKey = mlDsaPublicKey;
+		this.mlDsaPrivateKey = mlDsaPrivateKey;
 		this.created = created;
 	}
 
@@ -129,5 +153,22 @@ public class Identity {
 	
 	public boolean supportsPostQuantum() {
 		return hasHybridHandshakeKeyPair();
+	}
+
+
+	public boolean hasMlDsaSigKeyPair() {
+		return mlDsaPublicKey != null && mlDsaPrivateKey != null;
+	}
+
+
+	@Nullable
+	public byte[] getMlDsaSigPublicKey() {
+		return mlDsaPublicKey;
+	}
+
+
+	@Nullable
+	public byte[] getMlDsaSigPrivateKey() {
+		return mlDsaPrivateKey;
 	}
 }

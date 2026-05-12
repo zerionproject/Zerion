@@ -259,6 +259,9 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				incomingGroupMembership(txn, m, metaDict, messageType);
 			} else if (messageType == MessageTypes.GROUP_EPOCH_COMMIT) {
 				incomingGroupEpochCommit(txn, m, metaDict);
+			} else if (messageType ==
+					MessageTypes.GROUP_MEMBER_LIST_SNAPSHOT) {
+				incomingGroupMemberListSnapshot(txn, m, metaDict);
 			} else {
 				throw new InvalidMessageException();
 			}
@@ -1106,10 +1109,13 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		}
 		String senderName = meta.getOptionalString("groupSenderName");
 		if (senderName == null) senderName = "";
+		byte[] recordSig = meta.getOptionalRaw(
+				MessagingConstants.MSG_KEY_GROUP_RECORD_SIG);
+		if (recordSig == null) recordSig = new byte[0];
 		txn.attach(new org.briarproject.briar.api.messaging.event
 				.GroupPostReceivedEvent(contactId, m.getId(), groupId,
 				epoch, senderPubKey, senderName, ciphertext, timestamp,
-				ttl == NO_AUTO_DELETE_TIMER ? 0L : ttl));
+				ttl == NO_AUTO_DELETE_TIMER ? 0L : ttl, recordSig));
 	}
 
 	private void incomingGroupMembership(Transaction txn, Message m,
@@ -1200,5 +1206,24 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		txn.attach(new org.briarproject.briar.api.messaging.event
 				.GroupEpochCommitEvent(contactId, groupId, fromEpoch,
 				toEpoch, pqSeed, recordSig, signedInput, timestamp));
+	}
+
+	private void incomingGroupMemberListSnapshot(Transaction txn, Message m,
+			BdfDictionary meta) throws DbException, FormatException {
+		ContactId contactId = getContactId(txn, m.getGroupId());
+		byte[] groupId = meta.getRaw(MessagingConstants.MSG_KEY_GROUP_ID);
+		long epoch = meta.getLong(MessagingConstants.MSG_KEY_GROUP_EPOCH);
+		byte[] memberCanonical = meta.getRaw(
+				MessagingConstants.MSG_KEY_GROUP_MEMBER_LIST);
+		byte[] recordSig = meta.getRaw(
+				MessagingConstants.MSG_KEY_GROUP_RECORD_SIG);
+		byte[] signedInput = meta.getOptionalRaw(
+				"groupMembershipSignedInput");
+		if (signedInput == null) signedInput = new byte[0];
+		long timestamp = meta.getLong(MSG_KEY_TIMESTAMP);
+		conversationManager.trackIncomingMessage(txn, m);
+		txn.attach(new org.briarproject.briar.api.messaging.event
+				.GroupMemberListSnapshotEvent(contactId, groupId, epoch,
+				timestamp, memberCanonical, recordSig, signedInput));
 	}
 }

@@ -95,8 +95,17 @@ class ContactManagerImpl implements ContactManager, EventListener {
 	public ContactId addContact(Transaction txn, Author remote, AuthorId local,
 			SecretKey rootKey, long timestamp, boolean alice, boolean verified,
 			boolean active, boolean mode3Capable) throws DbException {
+		return addContact(txn, remote, local, rootKey, timestamp, alice,
+				verified, active, mode3Capable, null);
+	}
+
+	@Override
+	public ContactId addContact(Transaction txn, Author remote, AuthorId local,
+			SecretKey rootKey, long timestamp, boolean alice, boolean verified,
+			boolean active, boolean mode3Capable,
+			@Nullable byte[] peerMlDsaSigPublicKey) throws DbException {
 		ContactId c = db.addContact(txn, remote, local, null, verified, false,
-				false, mode3Capable);
+				false, mode3Capable, peerMlDsaSigPublicKey);
 		keyManager.addRotationKeys(txn, c, rootKey, timestamp, alice, active);
 		initializePcsState(txn, c, rootKey, mode3Capable);
 		Contact contact = db.getContact(txn, c);
@@ -118,6 +127,17 @@ class ContactManagerImpl implements ContactManager, EventListener {
 			Author remote, AuthorId local, SecretKey rootKey, long timestamp,
 			boolean alice, boolean verified, boolean active, boolean mode3Capable)
 			throws DbException, GeneralSecurityException {
+		return addContact(txn, p, remote, local, rootKey, timestamp, alice,
+				verified, active, mode3Capable, null);
+	}
+
+	@Override
+	public ContactId addContact(Transaction txn, PendingContactId p,
+			Author remote, AuthorId local, SecretKey rootKey, long timestamp,
+			boolean alice, boolean verified, boolean active,
+			boolean mode3Capable,
+			@Nullable byte[] peerMlDsaSigPublicKey)
+			throws DbException, GeneralSecurityException {
 		PendingContact pendingContact = db.getPendingContact(txn, p);
 		boolean postQuantum = pendingContact.isPostQuantum();
 		checkForSecurityDowngrade(txn, remote.getId(), postQuantum);
@@ -125,7 +145,8 @@ class ContactManagerImpl implements ContactManager, EventListener {
 		states.remove(p);
 		PublicKey theirPublicKey = pendingContact.getPublicKey();
 		ContactId c = db.addContact(txn, remote, local, theirPublicKey,
-				verified, postQuantum, false, mode3Capable);
+				verified, postQuantum, false, mode3Capable,
+				peerMlDsaSigPublicKey);
 		String alias = pendingContact.getAlias();
 		if (!alias.equals(remote.getName())) db.setContactAlias(txn, c, alias);
 		KeyPair ourKeyPair = identityManager.getHandshakeKeys(txn);

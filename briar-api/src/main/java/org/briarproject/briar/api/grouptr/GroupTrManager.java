@@ -44,6 +44,8 @@ public interface GroupTrManager {
 	void demoteToMember(byte[] groupId, byte[] targetPubKey)
 			throws DbException;
 
+	void sendMemberListSnapshot(byte[] groupId) throws DbException;
+
 	void setGroupAutoDeleteTimer(byte[] groupId, long ms) throws DbException;
 
 	@Nullable

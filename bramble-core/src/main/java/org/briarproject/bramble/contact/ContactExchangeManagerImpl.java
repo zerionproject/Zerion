@@ -188,15 +188,18 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 					ourEphX25519, theirEphX25519, ourStaticPqPub);
 		}
 
+		byte[] localMlDsaSigPub = identityManager.getLocalMlDsaSigPublicKey();
 		ContactInfo remoteInfo;
 		if (alice) {
 			sendContactInfo(recordWriter, localAuthor, localProperties,
-					localSignature, localTimestamp, localB3ProofSig);
+					localSignature, localTimestamp, localB3ProofSig,
+					localMlDsaSigPub);
 			remoteInfo = receiveContactInfo(recordReader);
 		} else {
 			remoteInfo = receiveContactInfo(recordReader);
 			sendContactInfo(recordWriter, localAuthor, localProperties,
-					localSignature, localTimestamp, localB3ProofSig);
+					localSignature, localTimestamp, localB3ProofSig,
+					localMlDsaSigPub);
 		}
 		streamWriter.sendEndOfStream();
 		recordReader.readRecord(r -> false, IGNORE);
@@ -226,20 +229,29 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 		}
 		Contact contact = addContact(p, remoteInfo.author, localAuthor,
 				masterKey, timestamp, alice, verified, remoteInfo.properties,
-				mode3Capable, remoteInfo.b3ProofSig != null);
+				mode3Capable, remoteInfo.b3ProofSig != null,
+				remoteInfo.mlDsaSigPubKey);
 
 		return contact;
 	}
 
 	private void sendContactInfo(RecordWriter recordWriter, Author author,
 			Map<TransportId, TransportProperties> properties, byte[] signature,
-			long timestamp, @Nullable byte[] b3ProofSig) throws IOException {
+			long timestamp, @Nullable byte[] b3ProofSig,
+			@Nullable byte[] mlDsaSigPub) throws IOException {
 		BdfList authorList = clientHelper.toList(author);
 		BdfDictionary props = clientHelper.toDictionary(properties);
-		BdfList payload = b3ProofSig == null
-				? BdfList.of(authorList, props, signature, timestamp)
-				: BdfList.of(authorList, props, signature, timestamp,
-						b3ProofSig);
+		BdfList payload;
+		if (mlDsaSigPub != null) {
+			byte[] safeB3 = b3ProofSig != null ? b3ProofSig : new byte[0];
+			payload = BdfList.of(authorList, props, signature, timestamp,
+					safeB3, mlDsaSigPub);
+		} else if (b3ProofSig != null) {
+			payload = BdfList.of(authorList, props, signature, timestamp,
+					b3ProofSig);
+		} else {
+			payload = BdfList.of(authorList, props, signature, timestamp);
+		}
 		recordWriter.writeRecord(new Record(PROTOCOL_VERSION, CONTACT_INFO,
 				clientHelper.toByteArray(payload)));
 		recordWriter.flush();
@@ -251,7 +263,7 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 		if (record == null) throw new EOFException();
 		BdfList payload = clientHelper.toList(record.getPayload());
 		int size = payload.size();
-		if (size != 4 && size != 5) throw new FormatException();
+		if (size != 4 && size != 5 && size != 6) throw new FormatException();
 		Author author = clientHelper.parseAndValidateAuthor(payload.getList(0));
 		BdfDictionary props = payload.getDictionary(1);
 		Map<TransportId, TransportProperties> properties =
@@ -261,19 +273,33 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 		long timestamp = payload.getLong(3);
 		if (timestamp < 0) throw new FormatException();
 		byte[] b3ProofSig = null;
-		if (size == 5) {
-			b3ProofSig = payload.getRaw(4);
-			checkLength(b3ProofSig, B3_SIG_LEN, B3_SIG_LEN);
+		byte[] mlDsaSigPub = null;
+		if (size >= 5) {
+			byte[] slot4 = payload.getRaw(4);
+			if (slot4.length == B3_SIG_LEN) {
+				b3ProofSig = slot4;
+			} else if (slot4.length != 0) {
+				throw new FormatException();
+			}
+		}
+		if (size == 6) {
+			mlDsaSigPub = payload.getRaw(5);
+			checkLength(mlDsaSigPub,
+					org.briarproject.bramble.api.crypto.PostQuantumConstants
+							.ML_DSA_65_PUBLIC_KEY_BYTES,
+					org.briarproject.bramble.api.crypto.PostQuantumConstants
+							.ML_DSA_65_PUBLIC_KEY_BYTES);
 		}
 		return new ContactInfo(author, properties, signature, timestamp,
-				b3ProofSig);
+				b3ProofSig, mlDsaSigPub);
 	}
 
 	private Contact addContact(@Nullable PendingContactId pendingContactId,
 			Author remoteAuthor, LocalAuthor localAuthor, SecretKey masterKey,
 			long timestamp, boolean alice, boolean verified,
 			Map<TransportId, TransportProperties> remoteProperties,
-			boolean mode3Capable, boolean b3SlotPresent)
+			boolean mode3Capable, boolean b3SlotPresent,
+			@Nullable byte[] peerMlDsaSigPubKey)
 			throws DbException, FormatException {
 		Transaction txn = db.startTransaction(false);
 		try {
@@ -281,11 +307,12 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			if (pendingContactId == null) {
 				contactId = contactManager.addContact(txn, remoteAuthor,
 						localAuthor.getId(), masterKey, timestamp, alice,
-						verified, true, mode3Capable);
+						verified, true, mode3Capable, peerMlDsaSigPubKey);
 			} else {
 				contactId = contactManager.addContact(txn, pendingContactId,
 						remoteAuthor, localAuthor.getId(), masterKey,
-						timestamp, alice, verified, true, mode3Capable);
+						timestamp, alice, verified, true, mode3Capable,
+						peerMlDsaSigPubKey);
 			}
 			transportPropertyManager.addRemoteProperties(txn, contactId,
 					remoteProperties);
@@ -312,16 +339,20 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 		/** B.3 slot[4] proof sig, or null on legacy 4-slot records. */
 		@Nullable
 		private final byte[] b3ProofSig;
+		@Nullable
+		private final byte[] mlDsaSigPubKey;
 
 		private ContactInfo(Author author,
 				Map<TransportId, TransportProperties> properties,
 				byte[] signature, long timestamp,
-				@Nullable byte[] b3ProofSig) {
+				@Nullable byte[] b3ProofSig,
+				@Nullable byte[] mlDsaSigPubKey) {
 			this.author = author;
 			this.properties = properties;
 			this.signature = signature;
 			this.timestamp = timestamp;
 			this.b3ProofSig = b3ProofSig;
+			this.mlDsaSigPubKey = mlDsaSigPubKey;
 		}
 	}
 }

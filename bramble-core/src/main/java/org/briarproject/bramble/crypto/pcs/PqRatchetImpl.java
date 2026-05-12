@@ -5,6 +5,7 @@ import org.briarproject.bramble.api.crypto.SecretKey;
 import org.briarproject.bramble.api.crypto.pcs.MlKemEncapsulation;
 import org.briarproject.bramble.api.crypto.pcs.MlKemKeyPair;
 import org.briarproject.bramble.api.crypto.pcs.MlKemProvider;
+import org.briarproject.bramble.api.crypto.pcs.PcsConstants;
 import org.briarproject.bramble.api.crypto.pcs.PcsException;
 import org.briarproject.bramble.api.crypto.pcs.PqChunk;
 import org.briarproject.bramble.api.crypto.pcs.PqEpochState;
@@ -18,8 +19,6 @@ import java.util.Arrays;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 
-import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MLKEM_CIPHERTEXT_SIZE;
-import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MLKEM_EK_VECTOR_SIZE;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PCS_HYBRID_CHAIN_LABEL;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PCS_HYBRID_ROOT_LABEL;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PCS_PQ_ROOT_UPDATE_LABEL;
@@ -70,17 +69,18 @@ class PqRatchetImpl implements PqRatchet {
 
 		switch (state.getState()) {
 			case PQ_SENDING_EK_SEED:
-				return updated.withState(PqEpochState.PQ_SENDING_EK_VEC)
-						.withChunkSent();
+				return updated.withPhaseTransition(
+						PqEpochState.PQ_SENDING_EK_VEC);
 
 			case PQ_SENDING_EK_VEC:
-				if (chunkingManager.isEkVectorSendComplete(updated)) {
-					return updated.withState(PqEpochState.PQ_AWAITING_CT);
+				if (updated.getChunksSent() >= PQ_EK_VECTOR_CHUNKS) {
+					return updated.withPhaseTransition(
+							PqEpochState.PQ_AWAITING_CT);
 				}
 				return updated;
 
 			case PQ_SENDING_CT:
-				if (chunkingManager.isCiphertextSendComplete(updated)) {
+				if (updated.getChunksSent() >= PQ_CIPHERTEXT_CHUNKS) {
 					return updated.withState(PqEpochState.PQ_COMPLETE);
 				}
 				return updated;
@@ -93,62 +93,132 @@ class PqRatchetImpl implements PqRatchet {
 	@Override
 	public PqRatchetState processChunkReceived(PqRatchetState state,
 			PqChunk chunk) {
+		byte chunkType = chunk.getType();
+		PqEpochState st = state.getState();
+
+		if (chunkType == PcsConstants.PQ_CHUNK_TYPE_EK_SEED) {
+			return handleEkSeedChunk(state, chunk);
+		}
+
+		if (chunkType == PcsConstants.PQ_CHUNK_TYPE_EK_VEC) {
+			if (st != PqEpochState.PQ_RECEIVING_EK_VEC) {
+				return state;
+			}
+			return handleEkVectorChunk(state, chunk);
+		}
+
+		if (chunkType == PcsConstants.PQ_CHUNK_TYPE_CT) {
+			if (st != PqEpochState.PQ_AWAITING_CT) {
+				return state;
+			}
+			return handleCiphertextChunk(state, chunk);
+		}
+
+		return state;
+	}
+
+	private PqRatchetState handleEkSeedChunk(PqRatchetState state,
+			PqChunk chunk) {
+		if (chunk.getIndex() != 0) return state;
+		byte[] data = chunk.getData();
+		if (data.length != PcsConstants.MLKEM_EK_SEED_TOTAL_SIZE) return state;
+		byte[] peerEkSeed = Arrays.copyOfRange(data, 0,
+				PcsConstants.MLKEM_EK_SEED_SIZE);
+		byte[] peerEkHash = Arrays.copyOfRange(data,
+				PcsConstants.MLKEM_EK_SEED_SIZE,
+				PcsConstants.MLKEM_EK_SEED_TOTAL_SIZE);
+
+		PqEpochState st = state.getState();
+		if (st == PqEpochState.PQ_READY
+				|| st == PqEpochState.PQ_COMPLETE
+				|| st == PqEpochState.PQ_INACTIVE) {
+			return state.startResponderEpoch(peerEkSeed, peerEkHash);
+		}
+
+		if (st == PqEpochState.PQ_SENDING_EK_SEED
+				|| st == PqEpochState.PQ_SENDING_EK_VEC) {
+			MlKemKeyPair ourKp = state.getOurKeyPair();
+			if (ourKp == null) {
+				return state.startResponderEpoch(peerEkSeed, peerEkHash);
+			}
+			byte[] ourSeed = ourKp.getEkSeed();
+			int cmp = compareBytes(ourSeed, peerEkSeed);
+			if (cmp < 0) {
+				return state;
+			}
+			return state.startResponderEpoch(peerEkSeed, peerEkHash);
+		}
+
+		return state;
+	}
+
+	private PqRatchetState handleEkVectorChunk(PqRatchetState state,
+			PqChunk chunk) {
 		int expectedIndex = state.getChunksReceived();
 		if (chunk.getIndex() != expectedIndex) {
 			return state.reset();
 		}
-
 		byte[] pending = state.getPendingChunks();
 		if (pending == null) pending = new byte[0];
-
 		byte[] newPending = chunkingManager.appendChunk(pending,
 				chunk.getData());
 		PqRatchetState updated = state.withChunkReceived(newPending);
 
-		switch (state.getState()) {
-			case PQ_RECEIVING_EK_VEC:
-				if (updated.getChunksReceived() >= PQ_EK_VECTOR_CHUNKS) {
-					byte[] ekVector = chunkingManager.assembleEkVector(
-							newPending, PQ_EK_VECTOR_CHUNKS);
-					if (ekVector != null) {
-						byte[] ekSeed = state.getTheirEkSeed();
-						byte[] ekHash = state.getTheirEkHash();
-						if (ekSeed != null && ekHash != null) {
-							if (mlKemProvider.verifyEkHash(ekSeed, ekVector,
-									ekHash)) {
-								byte[] fullEk = assembleEncapsulationKey(
-										ekSeed, ekVector);
-								MlKemEncapsulation enc =
-										mlKemProvider.encapsulate(fullEk);
-								byte[] ct = enc.getCiphertext();
-								Arrays.fill(enc.getSharedSecret(), (byte) 0);
-								return updated
-										.withEkVector(ekVector)
-										.withCiphertext(ct)
-										.withState(PqEpochState.PQ_SENDING_CT);
-							}
-						}
-					}
-					return state.reset();
-				}
-				return updated;
-
-			case PQ_AWAITING_CT:
-				if (updated.getChunksReceived() >= PQ_CIPHERTEXT_CHUNKS) {
-					byte[] ct = chunkingManager.assembleCiphertext(
-							newPending, PQ_CIPHERTEXT_CHUNKS);
-					if (ct != null) {
-						return updated
-								.withCiphertext(ct)
-								.withState(PqEpochState.PQ_COMPLETE);
-					}
-					return state.reset();
-				}
-				return updated;
-
-			default:
-				return updated;
+		if (updated.getChunksReceived() < PQ_EK_VECTOR_CHUNKS) {
+			return updated;
 		}
+		byte[] ekVector = chunkingManager.assembleEkVector(newPending,
+				PQ_EK_VECTOR_CHUNKS);
+		if (ekVector == null) return state.reset();
+		byte[] ekSeed = state.getTheirEkSeed();
+		byte[] ekHash = state.getTheirEkHash();
+		if (ekSeed == null || ekHash == null) return state.reset();
+		if (!mlKemProvider.verifyEkHash(ekSeed, ekVector, ekHash)) {
+			return state.reset();
+		}
+		byte[] fullEk = assembleEncapsulationKey(ekSeed, ekVector);
+		MlKemEncapsulation enc = mlKemProvider.encapsulate(fullEk);
+		byte[] ct = enc.getCiphertext();
+		byte[] sharedSecret = enc.getSharedSecret().clone();
+		Arrays.fill(enc.getSharedSecret(), (byte) 0);
+		return updated
+				.withEkVector(ekVector)
+				.withCiphertext(ct)
+				.withSharedSecret(sharedSecret)
+				.withPhaseTransition(PqEpochState.PQ_SENDING_CT);
+	}
+
+	private PqRatchetState handleCiphertextChunk(PqRatchetState state,
+			PqChunk chunk) {
+		int expectedIndex = state.getChunksReceived();
+		if (chunk.getIndex() != expectedIndex) {
+			return state.reset();
+		}
+		byte[] pending = state.getPendingChunks();
+		if (pending == null) pending = new byte[0];
+		byte[] newPending = chunkingManager.appendChunk(pending,
+				chunk.getData());
+		PqRatchetState updated = state.withChunkReceived(newPending);
+
+		if (updated.getChunksReceived() < PQ_CIPHERTEXT_CHUNKS) {
+			return updated;
+		}
+		byte[] ct = chunkingManager.assembleCiphertext(newPending,
+				PQ_CIPHERTEXT_CHUNKS);
+		if (ct == null) return state.reset();
+		return updated
+				.withCiphertext(ct)
+				.withState(PqEpochState.PQ_COMPLETE);
+	}
+
+	private static int compareBytes(byte[] a, byte[] b) {
+		int n = Math.min(a.length, b.length);
+		for (int i = 0; i < n; i++) {
+			int ai = a[i] & 0xFF;
+			int bi = b[i] & 0xFF;
+			if (ai != bi) return ai - bi;
+		}
+		return a.length - b.length;
 	}
 
 	@Override
@@ -174,20 +244,12 @@ class PqRatchetImpl implements PqRatchet {
 			sharedSecret = mlKemProvider.decapsulate(
 					keyPair.getDecapsulationKey(), ciphertext);
 		} else {
-			byte[] ekSeed = state.getTheirEkSeed();
-			byte[] ekVector = state.getTheirEkVector();
-			byte[] ciphertext = state.getCiphertext();
-			if (ekSeed == null || ekVector == null || ciphertext == null) {
-				throw new PcsException("Missing key material");
+			byte[] stored = state.getPqSharedSecret();
+			if (stored == null) {
+				throw new PcsException("Missing shared secret");
 			}
-			byte[] fullEk = assembleEncapsulationKey(ekSeed, ekVector);
-			MlKemEncapsulation enc = mlKemProvider.encapsulate(fullEk);
-			if (!Arrays.equals(enc.getCiphertext(), ciphertext)) {
-				Arrays.fill(enc.getSharedSecret(), (byte) 0);
-				throw new PcsException("Ciphertext mismatch");
-			}
-			sharedSecret = enc.getSharedSecret().clone();
-			Arrays.fill(enc.getSharedSecret(), (byte) 0);
+			sharedSecret = stored.clone();
+			Arrays.fill(stored, (byte) 0);
 		}
 
 		return new SecretKey(sharedSecret);

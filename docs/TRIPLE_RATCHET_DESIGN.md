@@ -1,9 +1,22 @@
 # Zerion Triple Ratchet (Post-Quantum Ratchet) Technical Design
 
-**Version:** 1.1
-**Date:** 2026-01-23
-**Status:** ACTIVE - Phase 4d Complete
+**Version:** 1.2
+**Date:** 2026-05-12
+**Status:** ACTIVE — Phase 5 (v1.6) fixes the latent bugs that prevented
+Phase 4d from completing PQ epochs end-to-end; ML-KEM-768 rotation now
+actually runs on the wire, both directions per epoch
 **Author:** Zerion Project
+
+> **v1.6 note:** Phase 4d shipped the wire framing for Mode 3 in January
+> 2026 but had three latent bugs (responder chunk-type dispatch missing,
+> responder shared secret wiped before use, factory state callbacks
+> `null` in production) that prevented any PQ epoch from completing
+> end-to-end. v1.6 (May 2026) closes all three plus adds cross-direction
+> mixing, self-heal, and a pubkey-comparison tiebreak on simultaneous
+> epoch starts. See [PCS_DESIGN.md §v1.6 amendment](PCS_DESIGN.md) for
+> the full diff. Identity signing in v1.6 also goes hybrid Ed25519 +
+> ML-DSA-65 on every group record — see
+> [GROUP_TRIPLE_RATCHET_PQ_DESIGN.md](GROUP_TRIPLE_RATCHET_PQ_DESIGN.md).
 
 ---
 

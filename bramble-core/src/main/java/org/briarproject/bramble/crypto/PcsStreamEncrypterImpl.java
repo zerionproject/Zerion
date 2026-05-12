@@ -66,6 +66,8 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 	private final PqRatchet pqRatchet;
 	@Nullable
 	private final Consumer<PqRatchetState> pqStateCallback;
+	@Nullable
+	private final Consumer<SecretKey> pqCrossMixCallback;
 	private final PcsHeaderCodec headerCodec;
 
 	private PcsSessionState sendState;
@@ -80,7 +82,8 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 			PcsSessionState initialState,
 			@Nullable Consumer<PcsSessionState> stateCallback) {
 		this(out, cipher, ratchet, streamNumber, tag, streamHeaderNonce,
-				streamHeaderKey, initialState, stateCallback, null, null, null);
+				streamHeaderKey, initialState, stateCallback, null, null,
+				null, null);
 	}
 
 	PcsStreamEncrypterImpl(OutputStream out, AuthenticatedCipher cipher,
@@ -91,6 +94,20 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 			@Nullable PqRatchet pqRatchet,
 			@Nullable PqRatchetState initialPqState,
 			@Nullable Consumer<PqRatchetState> pqStateCallback) {
+		this(out, cipher, ratchet, streamNumber, tag, streamHeaderNonce,
+				streamHeaderKey, initialState, stateCallback, pqRatchet,
+				initialPqState, pqStateCallback, null);
+	}
+
+	PcsStreamEncrypterImpl(OutputStream out, AuthenticatedCipher cipher,
+			PcsRatchet ratchet, long streamNumber, @Nullable byte[] tag,
+			byte[] streamHeaderNonce, SecretKey streamHeaderKey,
+			PcsSessionState initialState,
+			@Nullable Consumer<PcsSessionState> stateCallback,
+			@Nullable PqRatchet pqRatchet,
+			@Nullable PqRatchetState initialPqState,
+			@Nullable Consumer<PqRatchetState> pqStateCallback,
+			@Nullable Consumer<SecretKey> pqCrossMixCallback) {
 		this.out = out;
 		this.cipher = cipher;
 		this.ratchet = ratchet;
@@ -103,6 +120,7 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 		this.pqRatchet = pqRatchet;
 		this.pqState = initialPqState;
 		this.pqStateCallback = pqStateCallback;
+		this.pqCrossMixCallback = pqCrossMixCallback;
 		this.headerCodec = new PcsHeaderCodec();
 		frameNonce = new byte[FRAME_NONCE_LENGTH];
 		frameHeader = new byte[FRAME_HEADER_PLAINTEXT_LENGTH];
@@ -218,6 +236,9 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 							sendState.getRootKey(), pqSecret);
 					sendState = sendState.afterPqRatchet(newRootKey,
 							pqState.getCurrentEpoch());
+					if (pqCrossMixCallback != null) {
+						pqCrossMixCallback.accept(pqSecret);
+					}
 					pqState = pqRatchet.completeEpoch(pqState,
 							System.currentTimeMillis());
 				} catch (Exception e) {

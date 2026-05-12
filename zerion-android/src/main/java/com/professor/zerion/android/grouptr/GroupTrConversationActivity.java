@@ -20,6 +20,7 @@ import androidx.appcompat.app.AlertDialog;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
+import com.professor.zerion.android.api.AndroidNotificationManager;
 
 import org.briarproject.bramble.api.db.DbException;
 import org.briarproject.bramble.api.event.Event;
@@ -55,6 +56,8 @@ public class GroupTrConversationActivity extends ZerionActivity
 	IdentityManager identityManager;
 	@Inject
 	EventBus eventBus;
+	@Inject
+	AndroidNotificationManager notificationManager;
 	@Inject
 	@IoExecutor
 	Executor ioExecutor;
@@ -111,12 +114,19 @@ public class GroupTrConversationActivity extends ZerionActivity
 	public void onStart() {
 		super.onStart();
 		eventBus.addListener(this);
+		if (groupId != null) {
+			notificationManager.blockGroupTrNotification(groupId);
+			notificationManager.clearGroupTrPostNotification(groupId);
+		}
 	}
 
 	@Override
 	public void onStop() {
 		super.onStop();
 		eventBus.removeListener(this);
+		if (groupId != null) {
+			notificationManager.unblockGroupTrNotification(groupId);
+		}
 	}
 
 	@Override

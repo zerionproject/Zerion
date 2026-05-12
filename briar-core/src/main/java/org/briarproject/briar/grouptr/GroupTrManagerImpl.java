@@ -32,6 +32,7 @@ import org.briarproject.briar.api.grouptr.GroupTrState;
 import org.briarproject.briar.api.grouptr.MemberRole;
 import org.briarproject.briar.api.messaging.MessagingManager;
 import org.briarproject.briar.api.messaging.event.GroupEpochCommitEvent;
+import org.briarproject.briar.api.messaging.event.GroupMemberListSnapshotEvent;
 import org.briarproject.briar.api.messaging.event.GroupMembershipChangedEvent;
 import org.briarproject.briar.api.messaging.event.GroupPostReceivedEvent;
 import org.briarproject.nullsafety.NotNullByDefault;
@@ -88,7 +89,16 @@ class GroupTrManagerImpl
 	private final SecureRandom random;
 	private final java.util.Map<String, java.util.ArrayDeque<GroupTrPost>>
 			postCache = new java.util.concurrent.ConcurrentHashMap<>();
+	private final java.util.Map<String,
+			java.util.TreeMap<Long, java.util.List<GroupTrPost>>>
+			futureBuffer = new java.util.concurrent.ConcurrentHashMap<>();
 	private static final int MAX_CACHED_POSTS_PER_GROUP = 200;
+	private static final int EPOCH_BUFFER_TOLERANCE = 5;
+	private static final int MAX_BUFFERED_POSTS_PER_GROUP = 500;
+
+	private final java.util.Map<String, byte[]> mlDsaPubKeyCache =
+			new java.util.concurrent.ConcurrentHashMap<>();
+	private static final byte[] NEGATIVE_CACHE_SENTINEL = new byte[0];
 
 	@Inject
 	GroupTrManagerImpl(DatabaseComponent db,
@@ -121,22 +131,107 @@ class GroupTrManagerImpl
 			handleEpochCommit((GroupEpochCommitEvent) e);
 		} else if (e instanceof GroupPostReceivedEvent) {
 			cachePost((GroupPostReceivedEvent) e);
+		} else if (e instanceof GroupMemberListSnapshotEvent) {
+			handleMemberListSnapshot((GroupMemberListSnapshotEvent) e);
+		} else if (e instanceof org.briarproject.bramble.api.contact.event
+				.ContactRemovedEvent
+				|| e instanceof org.briarproject.bramble.api.contact.event
+				.ContactAddedEvent) {
+			mlDsaPubKeyCache.clear();
 		}
 	}
 
 	private void cachePost(GroupPostReceivedEvent e) {
+		byte[] sig = e.getRecordSig();
+		if (sig == null || sig.length == 0) return;
+		byte[] signedInput = buildGroupPostSignedInput(
+				e.getGroupId(), (int) e.getEpoch(),
+				e.getSenderPubKey(), e.getSenderName(),
+				e.getCiphertext());
+		if (!verify(sig, "org.briarproject.zerion/GROUP_POST",
+				signedInput, e.getSenderPubKey())) {
+			return;
+		}
 		String key = toHexString(e.getGroupId());
+		long postEpoch = e.getEpoch();
+		long localEpoch;
+		try {
+			GroupTrState s = getGroup(e.getGroupId());
+			localEpoch = s == null ? 0L : s.getEpoch();
+		} catch (DbException ex) {
+			localEpoch = 0L;
+		}
+		GroupTrPost p = new GroupTrPost(e.getGroupId(),
+				e.getSenderPubKey(), e.getSenderName(),
+				e.getCiphertext(), e.getTimestamp(), postEpoch, false);
+		if (postEpoch < localEpoch - 1L) {
+			return;
+		}
+		if (postEpoch > localEpoch + EPOCH_BUFFER_TOLERANCE) {
+			bufferFuturePost(key, p);
+			return;
+		}
+		deliverToCache(key, p);
+	}
+
+	private void deliverToCache(String key, GroupTrPost p) {
 		java.util.ArrayDeque<GroupTrPost> q = postCache.computeIfAbsent(
 				key, k -> new java.util.ArrayDeque<>());
 		synchronized (q) {
-			q.addLast(new GroupTrPost(e.getGroupId(),
-					e.getSenderPubKey(), e.getSenderName(),
-					e.getCiphertext(), e.getTimestamp(), e.getEpoch(),
-					false));
+			q.addLast(p);
 			while (q.size() > MAX_CACHED_POSTS_PER_GROUP) {
 				q.pollFirst();
 			}
 		}
+	}
+
+	private void bufferFuturePost(String key, GroupTrPost p) {
+		java.util.TreeMap<Long, java.util.List<GroupTrPost>> bucket =
+				futureBuffer.computeIfAbsent(key,
+						k -> new java.util.TreeMap<>());
+		synchronized (bucket) {
+			int total = 0;
+			for (java.util.List<GroupTrPost> v : bucket.values()) {
+				total += v.size();
+			}
+			if (total >= MAX_BUFFERED_POSTS_PER_GROUP) {
+				java.util.Map.Entry<Long, java.util.List<GroupTrPost>>
+						first = bucket.firstEntry();
+				if (first != null) {
+					java.util.List<GroupTrPost> oldest = first.getValue();
+					if (!oldest.isEmpty()) oldest.remove(0);
+					if (oldest.isEmpty()) bucket.remove(first.getKey());
+				}
+			}
+			bucket.computeIfAbsent(p.getEpoch(),
+					k -> new ArrayList<>()).add(p);
+		}
+	}
+
+	private void drainFutureBuffer(byte[] groupId, long newLocalEpoch) {
+		String key = toHexString(groupId);
+		java.util.TreeMap<Long, java.util.List<GroupTrPost>> bucket =
+				futureBuffer.get(key);
+		if (bucket == null) return;
+		java.util.List<GroupTrPost> released = new ArrayList<>();
+		synchronized (bucket) {
+			java.util.Iterator<java.util.Map.Entry<Long,
+					java.util.List<GroupTrPost>>> it =
+					bucket.entrySet().iterator();
+			while (it.hasNext()) {
+				java.util.Map.Entry<Long, java.util.List<GroupTrPost>>
+						entry = it.next();
+				if (entry.getKey() <= newLocalEpoch
+						+ EPOCH_BUFFER_TOLERANCE) {
+					released.addAll(entry.getValue());
+					it.remove();
+				} else {
+					break;
+				}
+			}
+			if (bucket.isEmpty()) futureBuffer.remove(key);
+		}
+		for (GroupTrPost p : released) deliverToCache(key, p);
 	}
 
 	private void cacheLocalPost(byte[] groupId, byte[] senderPub,
@@ -357,6 +452,8 @@ class GroupTrManagerImpl
 				case MEMBER_LEFT:
 					if (Arrays.equals(e.getTargetPubKey(),
 							s.getCreatorPubKey())) return;
+					if (!verify(sig, SIGNING_LABEL_GROUP_MEMBERSHIP,
+							signedInput, e.getTargetPubKey())) return;
 					applyMemberLeft(s, e);
 					break;
 				case GROUP_DISSOLVED:
@@ -387,6 +484,55 @@ class GroupTrManagerImpl
 					s.getCreatorPubKey())) return;
 			s.setEpoch(e.getToEpoch());
 			persist(s);
+			drainFutureBuffer(s.getGroupId(), e.getToEpoch());
+		} catch (DbException | FormatException ex) {
+			// drop silently
+		}
+	}
+
+	private void handleMemberListSnapshot(GroupMemberListSnapshotEvent e) {
+		try {
+			GroupTrState s = getGroup(e.getGroupId());
+			if (s == null || s.isDissolved()) return;
+			if (e.getEpoch() < s.getEpoch()) return;
+			if (!verify(e.getRecordSig(),
+					"org.briarproject.zerion/GROUP_MEMBER_LIST_SNAPSHOT",
+					e.getSignedInput(), s.getCreatorPubKey())) return;
+			byte[] mc = e.getMemberCanonical();
+			if (mc.length % 37 != 0) return;
+			int n = mc.length / 37;
+			List<GroupTrMember> reconciled = new ArrayList<>(n);
+			List<GroupTrMember> prev = s.getMembers();
+			for (int i = 0; i < n; i++) {
+				byte[] pk = new byte[32];
+				System.arraycopy(mc, i * 37, pk, 0, 32);
+				int roleInt = mc[i * 37 + 32] & 0xFF;
+				long joinedAtEpoch = 0L;
+				for (int j = 0; j < 4; j++) {
+					joinedAtEpoch = (joinedAtEpoch << 8)
+							| (mc[i * 37 + 33 + j] & 0xFFL);
+				}
+				MemberRole r = Arrays.equals(pk, s.getCreatorPubKey())
+						? MemberRole.CREATOR
+						: MemberRole.valueOf(roleInt);
+				String name = "";
+				long joinedAt = 0L;
+				for (GroupTrMember pm : prev) {
+					if (Arrays.equals(pm.getPubKey(), pk)) {
+						name = pm.getName();
+						joinedAt = pm.getJoinedAt();
+						break;
+					}
+				}
+				reconciled.add(new GroupTrMember(pk, name, joinedAt,
+						joinedAtEpoch, r));
+			}
+			s.setMembers(reconciled);
+			if (e.getEpoch() > s.getEpoch()) {
+				s.setEpoch(e.getEpoch());
+			}
+			persist(s);
+			drainFutureBuffer(s.getGroupId(), s.getEpoch());
 		} catch (DbException | FormatException ex) {
 			// drop silently
 		}
@@ -410,6 +556,7 @@ class GroupTrManagerImpl
 		s.setMembers(next);
 		s.setEpoch(e.getEpoch());
 		persist(s);
+		drainFutureBuffer(s.getGroupId(), e.getEpoch());
 	}
 
 	private void applyMemberRemoved(GroupTrState s,
@@ -424,6 +571,7 @@ class GroupTrManagerImpl
 		s.setMembers(next);
 		s.setEpoch(e.getToEpoch());
 		persist(s);
+		drainFutureBuffer(s.getGroupId(), e.getToEpoch());
 	}
 
 	private void applyMemberLeft(GroupTrState s,
@@ -444,17 +592,86 @@ class GroupTrManagerImpl
 		s.setMembers(next);
 		s.setEpoch(s.getEpoch() + 1);
 		persist(s);
+		drainFutureBuffer(s.getGroupId(), s.getEpoch());
 	}
 
 	private boolean verify(byte[] sig, String label, byte[] signed,
 			byte[] pubKeyBytes) {
 		if (signed.length == 0) return false;
-		PublicKey p = new SignaturePublicKey(pubKeyBytes);
 		try {
-			return crypto.verifySignature(sig, label, signed, p);
+			boolean sigIsHybrid = sig.length ==
+					org.briarproject.bramble.api.crypto.PostQuantumConstants
+							.HYBRID_SIGNATURE_BYTES;
+			byte[] peerMlDsaPub = lookupPeerMlDsaPubKey(pubKeyBytes);
+			if (sigIsHybrid && peerMlDsaPub != null) {
+				org.briarproject.bramble.api.crypto.HybridSignaturePublicKey
+						hybridPub = new org.briarproject.bramble.api.crypto
+						.HybridSignaturePublicKey(pubKeyBytes, peerMlDsaPub);
+				return crypto.verifySignature(sig, label, signed, hybridPub);
+			}
+			byte[] ed25519Sig = sig;
+			if (sigIsHybrid) {
+				ed25519Sig = new byte[64];
+				System.arraycopy(sig, 0, ed25519Sig, 0, 64);
+			}
+			PublicKey p = new SignaturePublicKey(pubKeyBytes);
+			return crypto.verifySignature(ed25519Sig, label, signed, p);
 		} catch (GeneralSecurityException ex) {
 			return false;
+		} catch (DbException ex) {
+			return false;
 		}
+	}
+
+	private byte[] buildGroupPostSignedInput(byte[] groupId, int epoch,
+			byte[] senderPubKey, String senderName, byte[] ciphertext) {
+		byte[] nameHash = crypto.hash(
+				"org.briarproject.zerion/GROUP_POST_NAME",
+				senderName.getBytes(
+						java.nio.charset.StandardCharsets.UTF_8));
+		byte[] ctHash = crypto.hash(
+				"org.briarproject.zerion/GROUP_POST_CT", ciphertext);
+		byte[] out = new byte[32 + 4 + 32 + nameHash.length
+				+ ctHash.length];
+		System.arraycopy(groupId, 0, out, 0, 32);
+		for (int i = 0; i < 4; i++) {
+			out[32 + i] = (byte) (epoch >>> ((3 - i) * 8));
+		}
+		System.arraycopy(senderPubKey, 0, out, 36, 32);
+		System.arraycopy(nameHash, 0, out, 68, nameHash.length);
+		System.arraycopy(ctHash, 0, out, 68 + nameHash.length,
+				ctHash.length);
+		return out;
+	}
+
+	@javax.annotation.Nullable
+	private byte[] lookupPeerMlDsaPubKey(byte[] ed25519PubKey)
+			throws DbException {
+		String key = toHexString(ed25519PubKey);
+		byte[] cached = mlDsaPubKeyCache.get(key);
+		if (cached != null) {
+			return cached == NEGATIVE_CACHE_SENTINEL ? null : cached;
+		}
+		LocalAuthor la = db.transactionWithResult(true,
+				identityManager::getLocalAuthor);
+		if (Arrays.equals(la.getPublicKey().getEncoded(), ed25519PubKey)) {
+			byte[] local = identityManager.getLocalMlDsaSigPublicKey();
+			mlDsaPubKeyCache.put(key,
+					local != null ? local : NEGATIVE_CACHE_SENTINEL);
+			return local;
+		}
+		byte[] result = db.transactionWithNullableResult(true, txn -> {
+			for (Contact c : contactManager.getContacts(txn)) {
+				byte[] p = c.getAuthor().getPublicKey().getEncoded();
+				if (Arrays.equals(p, ed25519PubKey)) {
+					return c.getMlDsaSigPublicKey();
+				}
+			}
+			return null;
+		});
+		mlDsaPubKeyCache.put(key,
+				result != null ? result : NEGATIVE_CACHE_SENTINEL);
+		return result;
 	}
 
 	private void persist(GroupTrState s)
@@ -589,14 +806,9 @@ class GroupTrManagerImpl
 		System.arraycopy(nameHash, 0, signed, 68, nameHash.length);
 		System.arraycopy(ctHash, 0, signed, 68 + nameHash.length,
 				ctHash.length);
-		byte[] sig;
-		try {
-			sig = crypto.sign(
-					"org.briarproject.zerion/GROUP_POST",
-					signed, signingKey);
-		} catch (GeneralSecurityException ex) {
-			throw new DbException(ex);
-		}
+		byte[] sig = signOrThrow(
+				"org.briarproject.zerion/GROUP_POST",
+				signed, signingKey);
 		final String finalSenderName = senderName;
 		db.transaction(false, txn -> {
 			for (GroupTrMember m : s.getMembers()) {
@@ -779,6 +991,14 @@ class GroupTrManagerImpl
 	private byte[] signOrThrow(String label, byte[] signed,
 			PrivateKey key) throws DbException {
 		try {
+			byte[] mlDsaPriv = identityManager.getLocalMlDsaSigPrivateKey();
+			if (mlDsaPriv != null) {
+				org.briarproject.bramble.api.crypto.HybridSignaturePrivateKey
+						hybridKey = new org.briarproject.bramble.api.crypto
+						.HybridSignaturePrivateKey(key.getEncoded(),
+						mlDsaPriv);
+				return crypto.hybridSign(label, signed, hybridKey);
+			}
 			return crypto.sign(label, signed, key);
 		} catch (GeneralSecurityException ex) {
 			throw new DbException(ex);
@@ -880,6 +1100,7 @@ class GroupTrManagerImpl
 		s.setMembers(next);
 		s.setEpoch(e.getEpoch());
 		persist(s);
+		drainFutureBuffer(s.getGroupId(), e.getEpoch());
 	}
 
 	@Override
@@ -892,6 +1113,64 @@ class GroupTrManagerImpl
 	public void demoteToMember(byte[] groupId, byte[] targetPubKey)
 			throws DbException {
 		changeRole(groupId, targetPubKey, MemberRole.MEMBER);
+	}
+
+	@Override
+	public void sendMemberListSnapshot(byte[] groupId) throws DbException {
+		GroupTrState s = requireWritable(groupId);
+		requireLocalIsCreator(s);
+		LocalAuthor la = db.transactionWithResult(true,
+				identityManager::getLocalAuthor);
+		PrivateKey signingKey = la.getPrivateKey();
+		long timestamp = clock.currentTimeMillis();
+		int epoch = (int) s.getEpoch();
+		List<GroupTrMember> members = s.getMembers();
+		BdfList memberList = new BdfList();
+		byte[] memberCanonical = new byte[members.size() * 37];
+		int off = 0;
+		for (GroupTrMember m : members) {
+			BdfList ml = new BdfList();
+			ml.add(m.getPubKey());
+			ml.add(m.getName());
+			ml.add(m.getJoinedAt());
+			ml.add(m.getJoinedAtEpoch());
+			ml.add((long) m.getRole().getInt());
+			memberList.add(ml);
+			System.arraycopy(m.getPubKey(), 0, memberCanonical, off, 32);
+			memberCanonical[off + 32] = (byte) m.getRole().getInt();
+			int je = (int) m.getJoinedAtEpoch();
+			for (int j = 0; j < 4; j++) {
+				memberCanonical[off + 33 + j] =
+						(byte) (je >>> ((3 - j) * 8));
+			}
+			off += 37;
+		}
+		byte[] signed = snapshotSignedInput(groupId, epoch, timestamp,
+				memberCanonical);
+		byte[] sig = signOrThrow(
+				"org.briarproject.zerion/GROUP_MEMBER_LIST_SNAPSHOT",
+				signed, signingKey);
+		BdfList body = BdfList.of(41L, groupId, (long) epoch, timestamp,
+				memberList, sig);
+		db.transaction(false, txn -> fanOut(txn, s, body, timestamp, null));
+	}
+
+	private byte[] snapshotSignedInput(byte[] groupId, int epoch,
+			long timestamp, byte[] memberCanonical) {
+		byte[] mlHash = crypto.hash(
+				"org.briarproject.zerion/GROUP_MEMBER_LIST",
+				memberCanonical);
+		byte[] out = new byte[32 + 4 + 8 + mlHash.length + 1];
+		System.arraycopy(groupId, 0, out, 0, 32);
+		for (int i = 0; i < 4; i++) {
+			out[32 + i] = (byte) (epoch >>> ((3 - i) * 8));
+		}
+		for (int i = 0; i < 8; i++) {
+			out[36 + i] = (byte) (timestamp >>> ((7 - i) * 8));
+		}
+		System.arraycopy(mlHash, 0, out, 44, mlHash.length);
+		out[44 + mlHash.length] = (byte) 0x07;
+		return out;
 	}
 
 	private void changeRole(byte[] groupId, byte[] targetPubKey,

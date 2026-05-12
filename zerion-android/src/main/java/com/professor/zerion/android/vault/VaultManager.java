@@ -159,11 +159,15 @@ public class VaultManager {
 			byte[] randomSecret = keystore.unwrapSecret(
 					currentHeader.wrappedKeystoreBlob, keystoreKey);
 
+			int algo = currentHeader.usesArgon2id()
+					? Argon2.ALGO_ARGON2ID
+					: Argon2.ALGO_PBKDF2;
 			Argon2.Argon2Params params = new Argon2.Argon2Params(
 					currentHeader.kdfMemoryKb,
 					currentHeader.kdfIterations,
 					currentHeader.kdfParallelism,
-					32
+					32,
+					algo
 			);
 			byte[] passwordKey = argon2.deriveKey(password, currentHeader.salt, params);
 
@@ -368,7 +372,7 @@ public class VaultManager {
 				new SecureRandom().nextBytes(passwordSalt);
 
 				passwordKey = argon2.deriveKey(extraPassword, passwordSalt,
-						com.professor.zerion.android.vault.crypto.Argon2.Argon2Params.getDefault());
+						extraPasswordParams());
 
 				VaultCrypto.EncryptedData passwordEncrypted = crypto.encrypt(
 						content, passwordKey, name.getBytes(StandardCharsets.UTF_8)
@@ -564,7 +568,7 @@ public class VaultManager {
 			nestedContent = crypto.decrypt(contentWrapper, itemKey, item.name.getBytes(StandardCharsets.UTF_8));
 
 			passwordKey = argon2.deriveKey(extraPassword, item.extraPasswordSalt,
-					com.professor.zerion.android.vault.crypto.Argon2.Argon2Params.getDefault());
+					extraPasswordParams());
 
 			VaultCrypto.EncryptedData passwordWrapper =
 					VaultCrypto.EncryptedData.fromBytes(nestedContent);
@@ -864,13 +868,21 @@ public class VaultManager {
 		}
 	}
 
+
+	private Argon2.Argon2Params extraPasswordParams() {
+		int algo = (currentHeader != null && !currentHeader.usesArgon2id())
+				? Argon2.ALGO_PBKDF2
+				: Argon2.ALGO_ARGON2ID;
+		return Argon2.Argon2Params.getDefault().withAlgorithm(algo);
+	}
+
 	public byte[] exportVault(char[] exportPassword) throws Exception {
 		requireUnlocked();
 
 		java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
 		java.io.DataOutputStream dos = new java.io.DataOutputStream(baos);
 
-		dos.writeInt(1);
+		dos.writeInt(2);
 
 		dos.writeInt(currentHeader.version);
 
@@ -917,7 +929,7 @@ public class VaultManager {
 		java.io.DataInputStream dis = new java.io.DataInputStream(bais);
 
 		int exportFormatVersion = dis.readInt();
-		if (exportFormatVersion != 1) {
+		if (exportFormatVersion != 1 && exportFormatVersion != 2) {
 			throw new IOException("Unsupported export version: " + exportFormatVersion);
 		}
 
@@ -926,7 +938,11 @@ public class VaultManager {
 		byte[] exportSalt = new byte[32];
 		dis.readFully(exportSalt);
 
-		Argon2.Argon2Params params = getArgon2Params();
+		int importAlgo = (exportFormatVersion >= 2)
+				? Argon2.ALGO_ARGON2ID
+				: Argon2.ALGO_PBKDF2;
+		Argon2.Argon2Params params =
+				getArgon2Params().withAlgorithm(importAlgo);
 		byte[] exportKey = argon2.deriveKey(exportPassword, exportSalt, params);
 
 		int itemCount = dis.readInt();
