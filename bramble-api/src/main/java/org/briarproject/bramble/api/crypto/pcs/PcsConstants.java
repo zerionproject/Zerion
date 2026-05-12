@@ -7,10 +7,10 @@ public interface PcsConstants {
 	int PCS_PROTOCOL_VERSION = 6;
 
 	
-	int MAX_SKIP = 1000;
+	int MAX_SKIP = 250;
 
 
-	int MAX_TOTAL_SKIP = 50_000;
+	int MAX_TOTAL_SKIP = 4000;
 
 
 	long MAX_SKIP_AGE_MS = 7L * 24 * 60 * 60 * 1000;
