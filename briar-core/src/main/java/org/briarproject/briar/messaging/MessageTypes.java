@@ -7,9 +7,6 @@ public interface MessageTypes {
 	int VOICE_SIGNAL = 2;
 	int ATTACHMENT_MANIFEST = 3;
 	int ATTACHMENT_CHUNK = 4;
-	// 5 was SENDER_KEY_DISTRIBUTION — removed in 391027f (Sender Keys
-	//   replaced by GroupTr Triple Ratchet). Reserved, do not reuse.
-	// 6 was REKEY_REQUEST — same provenance, same reservation.
 	int MESSAGE_REACTION = 7;
 	int TYPING_INDICATOR = 8;
 	int LINK_PREVIEW_MESSAGE = 9;
