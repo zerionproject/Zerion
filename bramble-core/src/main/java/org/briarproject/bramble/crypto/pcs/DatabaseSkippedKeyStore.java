@@ -11,7 +11,10 @@ import java.nio.ByteBuffer;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
+
+import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MAX_SKIP;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MAX_SKIP_AGE_MS;
+import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.SKIP_PRUNE_INTERVAL_MS;
 import static org.briarproject.bramble.api.db.DatabaseComponent.PCS_DIRECTION_RECEIVE;
 import static org.briarproject.bramble.api.db.DatabaseComponent.PCS_DIRECTION_SEND;
 
@@ -19,10 +22,11 @@ import static org.briarproject.bramble.api.db.DatabaseComponent.PCS_DIRECTION_SE
 @ThreadSafe
 @NotNullByDefault
 public class DatabaseSkippedKeyStore implements SkippedKeyStore {
-	
+
 	private static final int CHAIN_ID_LENGTH = 5;
 
 	private final DatabaseComponent db;
+	private volatile long lastPruneMs = 0L;
 
 	@Inject
 	public DatabaseSkippedKeyStore(DatabaseComponent db) {
@@ -35,11 +39,31 @@ public class DatabaseSkippedKeyStore implements SkippedKeyStore {
 		ContactId contactId = extractContactId(chainId);
 		int direction = extractDirection(chainId);
 
+		maybeOpportunisticPrune(timestamp);
+
 		try {
 			db.transaction(false, txn -> {
+				int count = db.getPcsSkippedKeyCount(txn, contactId, direction);
+				if (count >= MAX_SKIP) {
+					db.prunePcsSkippedKeys(txn, MAX_SKIP_AGE_MS);
+					count = db.getPcsSkippedKeyCount(txn, contactId, direction);
+					if (count >= MAX_SKIP) {
+						return;
+					}
+				}
 				db.addPcsSkippedKey(txn, contactId, direction,
 						messageNumber, messageKey, timestamp);
 			});
+		} catch (DbException e) {
+		}
+	}
+
+	private void maybeOpportunisticPrune(long now) {
+		if (now - lastPruneMs <= SKIP_PRUNE_INTERVAL_MS) return;
+		lastPruneMs = now;
+		try {
+			db.transaction(false, txn ->
+					db.prunePcsSkippedKeys(txn, MAX_SKIP_AGE_MS));
 		} catch (DbException e) {
 		}
 	}
@@ -93,7 +117,7 @@ public class DatabaseSkippedKeyStore implements SkippedKeyStore {
 		}
 	}
 
-	
+
 	public static byte[] createChainId(ContactId contactId, boolean send) {
 		byte[] chainId = new byte[CHAIN_ID_LENGTH];
 		ByteBuffer.wrap(chainId).putInt(contactId.getInt());
@@ -101,7 +125,7 @@ public class DatabaseSkippedKeyStore implements SkippedKeyStore {
 		return chainId;
 	}
 
-	
+
 	private ContactId extractContactId(byte[] chainId) {
 		if (chainId.length < 4) {
 			throw new IllegalArgumentException("Invalid chain ID length");
@@ -110,7 +134,7 @@ public class DatabaseSkippedKeyStore implements SkippedKeyStore {
 		return new ContactId(id);
 	}
 
-	
+
 	private int extractDirection(byte[] chainId) {
 		if (chainId.length < CHAIN_ID_LENGTH) {
 			throw new IllegalArgumentException("Invalid chain ID length");

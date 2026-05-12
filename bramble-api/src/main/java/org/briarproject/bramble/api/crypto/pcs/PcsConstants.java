@@ -9,8 +9,14 @@ public interface PcsConstants {
 	
 	int MAX_SKIP = 1000;
 
-	
+
+	int MAX_TOTAL_SKIP = 50_000;
+
+
 	long MAX_SKIP_AGE_MS = 7L * 24 * 60 * 60 * 1000;
+
+
+	long SKIP_PRUNE_INTERVAL_MS = 60L * 60 * 1000;
 
 	
 	String PCS_ROOT_KDF_LABEL = "org.briarproject.zerion/PCS_ROOT_KDF";

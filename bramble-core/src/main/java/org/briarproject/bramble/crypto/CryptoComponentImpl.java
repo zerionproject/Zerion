@@ -352,8 +352,9 @@ class CryptoComponentImpl implements CryptoComponent {
 		byte[] salt = new byte[PBKDF_SALT_BYTES];
 		secureRandom.nextBytes(salt);
 		int cost = argon2idKdf.chooseCostParameter();
-		SecretKey key = argon2idKdf.deriveKey(password, salt, cost);
-		if (keyStrengthener != null) key = keyStrengthener.strengthenKey(key);
+		SecretKey kdfKey = argon2idKdf.deriveKey(password, salt, cost);
+		SecretKey key = keyStrengthener != null
+				? keyStrengthener.strengthenKey(kdfKey) : kdfKey;
 		byte[] iv = new byte[STORAGE_IV_BYTES];
 		secureRandom.nextBytes(iv);
 		int outputLen = 1 + salt.length + INT_32_BYTES + iv.length
@@ -376,6 +377,11 @@ class CryptoComponentImpl implements CryptoComponent {
 			return output;
 		} catch (GeneralSecurityException e) {
 			throw new RuntimeException(e);
+		} finally {
+			java.util.Arrays.fill(kdfKey.getBytes(), (byte) 0);
+			if (key != kdfKey) {
+				java.util.Arrays.fill(key.getBytes(), (byte) 0);
+			}
 		}
 	}
 
@@ -413,13 +419,15 @@ class CryptoComponentImpl implements CryptoComponent {
 				formatVersion == PBKDF_FORMAT_ARGON2ID ||
 				formatVersion == PBKDF_FORMAT_ARGON2ID_STRENGTHENED;
 		PasswordBasedKdf kdf = isArgon2id ? argon2idKdf : scryptKdf;
-		SecretKey key = kdf.deriveKey(password, salt, (int) cost);
+		SecretKey kdfKey = kdf.deriveKey(password, salt, (int) cost);
+		SecretKey key = kdfKey;
 		if (formatVersion == PBKDF_FORMAT_SCRYPT_STRENGTHENED ||
 				formatVersion == PBKDF_FORMAT_ARGON2ID_STRENGTHENED) {
 			if (keyStrengthener == null || !keyStrengthener.isInitialised()) {
+				java.util.Arrays.fill(kdfKey.getBytes(), (byte) 0);
 				throw new DecryptionException(KEY_STRENGTHENER_ERROR);
 			}
-			key = keyStrengthener.strengthenKey(key);
+			key = keyStrengthener.strengthenKey(kdfKey);
 		}
 		try {
 			cipher.init(false, key, iv);
@@ -433,6 +441,11 @@ class CryptoComponentImpl implements CryptoComponent {
 			return output;
 		} catch (GeneralSecurityException e) {
 			throw new DecryptionException(INVALID_PASSWORD);
+		} finally {
+			java.util.Arrays.fill(kdfKey.getBytes(), (byte) 0);
+			if (key != kdfKey) {
+				java.util.Arrays.fill(key.getBytes(), (byte) 0);
+			}
 		}
 	}
 

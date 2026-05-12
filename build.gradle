@@ -45,3 +45,11 @@ buildscript {
 	}
 }
 
+// Dependency vulnerability scanning is performed via the standalone OWASP
+// dependency-check CLI rather than the Gradle plugin (the plugin would add
+// dozens of transitive deps that are incompatible with our Gradle dependency
+// verification metadata). See scripts/run-dependency-check.sh for the
+// recommended CI invocation, and config/owasp-suppressions.xml for accepted
+// false-positives. The CLI is run against the assembled APK / module JARs
+// and reports HTML + JSON to build/reports/dependency-check/.
+

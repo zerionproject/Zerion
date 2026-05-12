@@ -180,6 +180,7 @@ class AccountManagerImpl implements AccountManager {
 		synchronized (stateChangeLock) {
 			checkLockout();
 			try {
+				if (databaseKey != null) databaseKey.clear();
 				databaseKey = loadAndDecryptDatabaseKey(password);
 				resetLockout();
 			} catch (DecryptionException e) {
@@ -255,7 +256,9 @@ class AccountManagerImpl implements AccountManager {
 	}
 
 	protected void setDatabaseKey(SecretKey key) {
+		SecretKey old = this.databaseKey;
 		this.databaseKey = key;
+		if (old != null && old != key) old.clear();
 	}
 
 	@GuardedBy("stateChangeLock")

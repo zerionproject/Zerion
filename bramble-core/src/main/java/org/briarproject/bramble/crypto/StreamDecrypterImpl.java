@@ -143,5 +143,6 @@ class StreamDecrypterImpl implements StreamDecrypter {
 		System.arraycopy(streamHeaderPlaintext, INT_16_BYTES + INT_64_BYTES,
 				frameKeyBytes, 0, SecretKey.LENGTH);
 		frameKey = new SecretKey(frameKeyBytes);
+		java.util.Arrays.fill(streamHeaderPlaintext, (byte) 0);
 	}
 }

@@ -16,6 +16,8 @@ import javax.annotation.concurrent.ThreadSafe;
 
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MAX_SKIP;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MAX_SKIP_AGE_MS;
+import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MAX_TOTAL_SKIP;
+import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.SKIP_PRUNE_INTERVAL_MS;
 
 
 @ThreadSafe
@@ -64,6 +66,9 @@ public class InMemorySkippedKeyStore implements SkippedKeyStore {
 	@GuardedBy("this")
 	private final Map<Bytes, Integer> keysPerChain;
 
+	@GuardedBy("this")
+	private long lastPruneMs = 0L;
+
 	public InMemorySkippedKeyStore() {
 		this.skippedKeys = new LinkedHashMap<>(16, 0.75f, true);
 		this.keysPerChain = new HashMap<>();
@@ -72,16 +77,62 @@ public class InMemorySkippedKeyStore implements SkippedKeyStore {
 	@Override
 	public synchronized void storeSkippedKey(byte[] chainId, int messageNumber,
 			SecretKey messageKey, long timestamp) {
+		if (timestamp - lastPruneMs > SKIP_PRUNE_INTERVAL_MS) {
+			pruneExpiredLocked(timestamp);
+			lastPruneMs = timestamp;
+		}
+		if (skippedKeys.size() >= MAX_TOTAL_SKIP) {
+			evictGlobalOldest();
+			if (skippedKeys.size() >= MAX_TOTAL_SKIP) {
+				return;
+			}
+		}
 		Bytes chainIdBytes = new Bytes(chainId);
 		SkippedKeyId keyId = new SkippedKeyId(chainId, messageNumber);
 		int chainCount = keysPerChain.getOrDefault(chainIdBytes, 0);
 		if (chainCount >= MAX_SKIP) {
 			evictOldestKey(chainIdBytes);
+			chainCount = keysPerChain.getOrDefault(chainIdBytes, 0);
 		}
 		SkippedKeyEntry entry = new SkippedKeyEntry(messageKey, timestamp);
 		SkippedKeyEntry previous = skippedKeys.put(keyId, entry);
 		if (previous == null) {
 			keysPerChain.put(chainIdBytes, chainCount + 1);
+		}
+	}
+
+	@GuardedBy("this")
+	private void pruneExpiredLocked(long currentTime) {
+		long expirationThreshold = currentTime - MAX_SKIP_AGE_MS;
+		Iterator<Map.Entry<SkippedKeyId, SkippedKeyEntry>> it =
+				skippedKeys.entrySet().iterator();
+		while (it.hasNext()) {
+			Map.Entry<SkippedKeyId, SkippedKeyEntry> entry = it.next();
+			if (entry.getValue().timestamp < expirationThreshold) {
+				it.remove();
+				decrementChainCount(entry.getKey().chainId);
+			}
+		}
+	}
+
+	@GuardedBy("this")
+	private void evictGlobalOldest() {
+		Iterator<Map.Entry<SkippedKeyId, SkippedKeyEntry>> it =
+				skippedKeys.entrySet().iterator();
+		if (it.hasNext()) {
+			Map.Entry<SkippedKeyId, SkippedKeyEntry> entry = it.next();
+			it.remove();
+			decrementChainCount(entry.getKey().chainId);
+		}
+	}
+
+	@GuardedBy("this")
+	private void decrementChainCount(Bytes chainIdBytes) {
+		int count = keysPerChain.getOrDefault(chainIdBytes, 1);
+		if (count <= 1) {
+			keysPerChain.remove(chainIdBytes);
+		} else {
+			keysPerChain.put(chainIdBytes, count - 1);
 		}
 	}
 

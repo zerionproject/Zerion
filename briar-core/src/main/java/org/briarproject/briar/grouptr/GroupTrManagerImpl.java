@@ -435,18 +435,27 @@ class GroupTrManagerImpl
 			if (s.isDissolved()) return;
 			byte[] sig = e.getRecordSig();
 			byte[] signedInput = e.getSignedInput();
+			byte[] senderPubKey = lookupSenderPubKey(e.getContactId());
 			switch (e.getKind()) {
 				case MEMBER_ADDED:
-					if (!verify(sig, SIGNING_LABEL_GROUP_MEMBERSHIP,
-							signedInput, s.getCreatorPubKey())) return;
+					if (!verifyByCreatorOrAdmin(s, senderPubKey, sig,
+							SIGNING_LABEL_GROUP_MEMBERSHIP, signedInput))
+						return;
 					applyMemberAdded(s, e);
 					break;
 				case MEMBER_REMOVED:
 					if (Arrays.equals(e.getTargetPubKey(),
 							s.getCreatorPubKey())) return;
 					if (e.getToEpoch() != s.getEpoch() + 1) return;
-					if (!verify(sig, SIGNING_LABEL_GROUP_MEMBERSHIP,
-							signedInput, s.getCreatorPubKey())) return;
+					if (!verifyByCreatorOrAdmin(s, senderPubKey, sig,
+							SIGNING_LABEL_GROUP_MEMBERSHIP, signedInput))
+						return;
+					if (senderPubKey != null
+							&& !Arrays.equals(senderPubKey,
+									s.getCreatorPubKey())) {
+						MemberRole targetRole = roleOf(s, e.getTargetPubKey());
+						if (targetRole == MemberRole.ADMIN) return;
+					}
 					applyMemberRemoved(s, e);
 					break;
 				case MEMBER_LEFT:
@@ -474,14 +483,50 @@ class GroupTrManagerImpl
 		}
 	}
 
+	@javax.annotation.Nullable
+	private byte[] lookupSenderPubKey(
+			org.briarproject.bramble.api.contact.ContactId contactId) {
+		try {
+			return db.transactionWithNullableResult(true, txn -> {
+				try {
+					org.briarproject.bramble.api.contact.Contact c =
+							contactManager.getContact(txn, contactId);
+					return c.getAuthor().getPublicKey().getEncoded();
+				} catch (DbException ex) {
+					return null;
+				}
+			});
+		} catch (DbException ex) {
+			return null;
+		}
+	}
+
+	private boolean verifyByCreatorOrAdmin(GroupTrState s,
+			@javax.annotation.Nullable byte[] senderPubKey,
+			byte[] sig, String label, byte[] signed) {
+		if (senderPubKey == null) return false;
+		if (!isCreatorOrAdmin(s, senderPubKey)) return false;
+		return verify(sig, label, signed, senderPubKey);
+	}
+
+	private MemberRole roleOf(GroupTrState s, @javax.annotation.Nullable byte[] pk) {
+		if (pk == null) return null;
+		if (Arrays.equals(pk, s.getCreatorPubKey())) return MemberRole.CREATOR;
+		for (GroupTrMember m : s.getMembers()) {
+			if (Arrays.equals(m.getPubKey(), pk)) return m.getRole();
+		}
+		return null;
+	}
+
 	private void handleEpochCommit(GroupEpochCommitEvent e) {
 		try {
 			GroupTrState s = getGroup(e.getGroupId());
 			if (s == null || s.isDissolved()) return;
 			if (e.getFromEpoch() != s.getEpoch()) return;
-			if (!verify(e.getRecordSig(),
-					SIGNING_LABEL_GROUP_EPOCH_COMMIT, e.getSignedInput(),
-					s.getCreatorPubKey())) return;
+			byte[] senderPubKey = lookupSenderPubKey(e.getContactId());
+			if (!verifyByCreatorOrAdmin(s, senderPubKey, e.getRecordSig(),
+					SIGNING_LABEL_GROUP_EPOCH_COMMIT, e.getSignedInput()))
+				return;
 			s.setEpoch(e.getToEpoch());
 			persist(s);
 			drainFutureBuffer(s.getGroupId(), e.getToEpoch());

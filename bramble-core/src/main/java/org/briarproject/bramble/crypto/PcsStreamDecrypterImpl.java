@@ -312,6 +312,8 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 				throw new FormatException();
 		}
 
+		java.util.Arrays.fill(decryptedPayload, (byte) 0);
+
 		frameNumber++;
 
 		if (stateCallback != null) {
@@ -373,6 +375,7 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 		System.arraycopy(streamHeaderPlaintext, INT_16_BYTES + INT_64_BYTES,
 				chainKeyBytes, 0, SecretKey.LENGTH);
 		SecretKey chainKey = new SecretKey(chainKeyBytes);
+		java.util.Arrays.fill(streamHeaderPlaintext, (byte) 0);
 		recvState = ratchet.initializeMode2AsInitiator(chainKey);
 		streamHeaderRead = true;
 	}
