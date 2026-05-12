@@ -121,6 +121,15 @@ public class GroupTrAdminActivity extends ZerionActivity {
 				s.getEpoch(), s.getMembers().size()));
 		section.addView(meta);
 		boolean isCreator = Arrays.equals(localPub, s.getCreatorPubKey());
+		boolean isAdmin = false;
+		for (GroupTrMember m : s.getMembers()) {
+			if (Arrays.equals(m.getPubKey(), localPub)
+					&& m.getRole() == MemberRole.ADMIN) {
+				isAdmin = true;
+				break;
+			}
+		}
+		boolean canManage = isCreator || isAdmin;
 		for (GroupTrMember m : s.getMembers()) {
 			LinearLayout row = new LinearLayout(this);
 			row.setOrientation(LinearLayout.HORIZONTAL);
@@ -138,33 +147,39 @@ public class GroupTrAdminActivity extends ZerionActivity {
 			LinearLayout.LayoutParams nameLp = new LinearLayout.LayoutParams(
 					0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
 			row.addView(name, nameLp);
-			if (isCreator && !creator) {
-				if (m.getRole() == MemberRole.ADMIN) {
-					Button dem = new Button(this);
-					dem.setText(R.string.grouptr_demote);
-					dem.setOnClickListener(v -> demote(s, m));
-					row.addView(dem);
-				} else {
-					Button pro = new Button(this);
-					pro.setText(R.string.grouptr_promote);
-					pro.setOnClickListener(v -> promote(s, m));
-					row.addView(pro);
+			if (canManage && !creator && !self) {
+				if (isCreator) {
+					if (m.getRole() == MemberRole.ADMIN) {
+						Button dem = new Button(this);
+						dem.setText(R.string.grouptr_demote);
+						dem.setOnClickListener(v -> demote(s, m));
+						row.addView(dem);
+					} else {
+						Button pro = new Button(this);
+						pro.setText(R.string.grouptr_promote);
+						pro.setOnClickListener(v -> promote(s, m));
+						row.addView(pro);
+					}
 				}
-				Button rm = new Button(this);
-				rm.setText(R.string.grouptr_remove);
-				rm.setOnClickListener(v -> confirmRemove(s, m));
-				row.addView(rm);
+				if (isCreator || m.getRole() != MemberRole.ADMIN) {
+					Button rm = new Button(this);
+					rm.setText(R.string.grouptr_remove);
+					rm.setOnClickListener(v -> confirmRemove(s, m));
+					row.addView(rm);
+				}
 			}
 			section.addView(row);
 		}
 		if (!s.isDissolved()) {
 			LinearLayout actions = new LinearLayout(this);
 			actions.setOrientation(LinearLayout.HORIZONTAL);
-			if (isCreator) {
+			if (canManage) {
 				Button addBtn = new Button(this);
 				addBtn.setText(R.string.grouptr_add_member);
 				addBtn.setOnClickListener(v -> showAddMemberDialog(s));
 				actions.addView(addBtn);
+			}
+			if (isCreator) {
 				Button diss = new Button(this);
 				diss.setText(R.string.grouptr_dissolve);
 				diss.setOnClickListener(v -> confirmDissolve(s));

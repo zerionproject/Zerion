@@ -186,6 +186,14 @@ public class GroupTrConversationActivity extends ZerionActivity
 		root.addView(ttl, new LinearLayout.LayoutParams(
 				ViewGroup.LayoutParams.MATCH_PARENT,
 				ViewGroup.LayoutParams.WRAP_CONTENT));
+
+		Button manage = new Button(this);
+		manage.setText(R.string.grouptr_manage_members);
+		manage.setOnClickListener(v -> startActivity(new Intent(this,
+				GroupTrAdminActivity.class)));
+		root.addView(manage, new LinearLayout.LayoutParams(
+				ViewGroup.LayoutParams.MATCH_PARENT,
+				ViewGroup.LayoutParams.WRAP_CONTENT));
 	}
 
 	private void renderPosts(List<GroupTrPost> posts) {

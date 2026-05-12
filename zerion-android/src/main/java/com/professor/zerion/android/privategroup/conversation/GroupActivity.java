@@ -12,7 +12,6 @@ import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.privategroup.creation.GroupInviteActivity;
 import com.professor.zerion.android.privategroup.memberlist.GroupMemberListActivity;
-import com.professor.zerion.android.privategroup.reveal.RevealContactsActivity;
 import com.professor.zerion.android.threaded.ThreadListActivity;
 import com.professor.zerion.android.threaded.ThreadListViewModel;
 import com.professor.zerion.android.widget.LinkDialogFragment;
@@ -91,7 +90,6 @@ public class GroupActivity extends
 		inflater.inflate(R.menu.group_actions, menu);
 
 		observeOnce(viewModel.isCreator(), this, isCreator -> {
-			menu.findItem(R.id.action_group_reveal).setVisible(!isCreator);
 			menu.findItem(R.id.action_group_invite).setVisible(isCreator);
 			menu.findItem(R.id.action_group_leave).setVisible(!isCreator);
 			menu.findItem(R.id.action_group_dissolve).setVisible(isCreator);
@@ -105,13 +103,6 @@ public class GroupActivity extends
 		int itemId = item.getItemId();
 		if (itemId == R.id.action_group_member_list) {
 			Intent i = new Intent(this, GroupMemberListActivity.class);
-			i.putExtra(GROUP_ID, groupId.getBytes());
-			startActivity(i);
-			return true;
-		} else if (itemId == R.id.action_group_reveal) {
-			if (requireNonNull(viewModel.isCreator().getValue()))
-				throw new IllegalStateException();
-			Intent i = new Intent(this, RevealContactsActivity.class);
 			i.putExtra(GROUP_ID, groupId.getBytes());
 			startActivity(i);
 			return true;

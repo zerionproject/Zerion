@@ -471,6 +471,7 @@
 
 	<string name="grouptr_title">Triple Ratchet Groups</string>
 	<string name="grouptr_create">Create group</string>
+	<string name="grouptr_manage_members">Manage members &amp; admins</string>
 	<string name="grouptr_empty">No groups yet.</string>
 	<string name="grouptr_meta">Epoch %1$d · %2$d members</string>
 	<string name="grouptr_dissolved_suffix">(dissolved)</string>

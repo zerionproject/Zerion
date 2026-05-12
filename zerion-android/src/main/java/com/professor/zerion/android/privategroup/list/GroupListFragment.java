@@ -18,6 +18,7 @@ import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.fragment.BaseFragment;
 import com.professor.zerion.android.privategroup.creation.CreateGroupActivity;
+import com.professor.zerion.android.grouptr.GroupTrAdminActivity;
 import com.professor.zerion.android.privategroup.invitation.GroupInvitationActivity;
 import com.professor.zerion.android.privategroup.list.GroupViewHolder.OnGroupRemoveClickListener;
 import com.professor.zerion.android.view.ZerionRecyclerView;
@@ -84,7 +85,7 @@ public class GroupListFragment extends BaseFragment implements
 		);
 		FloatingActionButton fab = v.findViewById(R.id.fab_add_group);
 		fab.setOnClickListener(view -> {
-			Intent i = new Intent(getContext(), CreateGroupActivity.class);
+			Intent i = new Intent(getContext(), GroupTrAdminActivity.class);
 			startActivity(i);
 		});
 		invitationBanner = v.findViewById(R.id.invitation_banner);
@@ -130,7 +131,7 @@ public class GroupListFragment extends BaseFragment implements
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		if (item.getItemId() == R.id.action_add_group) {
-			Intent i = new Intent(getContext(), CreateGroupActivity.class);
+			Intent i = new Intent(getContext(), GroupTrAdminActivity.class);
 			startActivity(i);
 			return true;
 		}

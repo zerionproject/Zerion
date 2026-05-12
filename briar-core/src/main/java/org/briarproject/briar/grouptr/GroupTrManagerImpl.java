@@ -863,7 +863,7 @@ class GroupTrManagerImpl
 	public void addMember(byte[] groupId, byte[] addedPubKey,
 			String addedName) throws DbException {
 		GroupTrState s = requireWritable(groupId);
-		requireLocalIsCreator(s);
+		requireLocalIsCreatorOrAdmin(s);
 		LocalAuthor la = db.transactionWithResult(true,
 				identityManager::getLocalAuthor);
 		PrivateKey signingKey = la.getPrivateKey();
@@ -884,10 +884,24 @@ class GroupTrManagerImpl
 	public void removeMember(byte[] groupId, byte[] removedPubKey)
 			throws DbException {
 		GroupTrState s = requireWritable(groupId);
-		requireLocalIsCreator(s);
+		requireLocalIsCreatorOrAdmin(s);
 		if (Arrays.equals(removedPubKey, s.getCreatorPubKey())) {
 			throw new GroupTrAuthException(
 					GroupTrAuthException.Reason.CANNOT_REMOVE_CREATOR);
+		}
+		LocalAuthor localAuthor = db.transactionWithResult(true,
+				identityManager::getLocalAuthor);
+		byte[] localPub = localAuthor.getPublicKey().getEncoded();
+		boolean localIsCreator =
+				Arrays.equals(localPub, s.getCreatorPubKey());
+		if (!localIsCreator) {
+			for (GroupTrMember m : s.getMembers()) {
+				if (Arrays.equals(m.getPubKey(), removedPubKey)
+						&& m.getRole() == MemberRole.ADMIN) {
+					throw new GroupTrAuthException(
+							GroupTrAuthException.Reason.NOT_CREATOR);
+				}
+			}
 		}
 		LocalAuthor la = db.transactionWithResult(true,
 				identityManager::getLocalAuthor);
@@ -986,6 +1000,33 @@ class GroupTrManagerImpl
 			throw new GroupTrAuthException(
 					GroupTrAuthException.Reason.NOT_CREATOR);
 		}
+	}
+
+	private void requireLocalIsCreatorOrAdmin(GroupTrState s)
+			throws DbException {
+		LocalAuthor la = db.transactionWithResult(true,
+				identityManager::getLocalAuthor);
+		byte[] localPub = la.getPublicKey().getEncoded();
+		if (Arrays.equals(localPub, s.getCreatorPubKey())) return;
+		for (GroupTrMember m : s.getMembers()) {
+			if (Arrays.equals(m.getPubKey(), localPub)
+					&& m.getRole() == MemberRole.ADMIN) {
+				return;
+			}
+		}
+		throw new GroupTrAuthException(
+				GroupTrAuthException.Reason.NOT_CREATOR);
+	}
+
+	private boolean isCreatorOrAdmin(GroupTrState s, byte[] pubKey) {
+		if (Arrays.equals(pubKey, s.getCreatorPubKey())) return true;
+		for (GroupTrMember m : s.getMembers()) {
+			if (Arrays.equals(m.getPubKey(), pubKey)
+					&& m.getRole() == MemberRole.ADMIN) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private byte[] signOrThrow(String label, byte[] signed,

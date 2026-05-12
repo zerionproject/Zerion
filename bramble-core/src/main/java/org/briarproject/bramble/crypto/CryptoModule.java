@@ -10,6 +10,7 @@ import org.briarproject.bramble.api.crypto.pcs.PcsRatchet;
 import org.briarproject.bramble.api.crypto.pcs.PqRatchet;
 import org.briarproject.bramble.api.crypto.pcs.SkippedKeyStore;
 import org.briarproject.bramble.api.system.SecureRandomProvider;
+import org.briarproject.bramble.crypto.pcs.PcsStateManager;
 
 import java.security.SecureRandom;
 
@@ -51,18 +52,20 @@ public class CryptoModule {
 	@Provides
 	StreamDecrypterFactory provideStreamDecrypterFactory(
 			Provider<AuthenticatedCipher> cipherProvider,
-			PcsRatchet pcsRatchet, SkippedKeyStore skippedKeyStore) {
+			PcsRatchet pcsRatchet, PqRatchet pqRatchet,
+			SkippedKeyStore skippedKeyStore,
+			PcsStateManager pcsStateManager) {
 		return new StreamDecrypterFactoryImpl(cipherProvider, pcsRatchet,
-				skippedKeyStore);
+				pqRatchet, skippedKeyStore, pcsStateManager);
 	}
 
 	@Provides
 	StreamEncrypterFactory provideStreamEncrypterFactory(
 			CryptoComponent crypto, TransportCrypto transportCrypto,
 			Provider<AuthenticatedCipher> cipherProvider, PcsRatchet pcsRatchet,
-			PqRatchet pqRatchet) {
+			PqRatchet pqRatchet, PcsStateManager pcsStateManager) {
 		return new StreamEncrypterFactoryImpl(crypto, transportCrypto,
-				cipherProvider, pcsRatchet, pqRatchet);
+				cipherProvider, pcsRatchet, pqRatchet, pcsStateManager);
 	}
 
 	@Provides

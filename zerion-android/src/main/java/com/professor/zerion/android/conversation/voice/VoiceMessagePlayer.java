@@ -103,15 +103,13 @@ public class VoiceMessagePlayer {
 				}
 			});
 
-			if (ephemeral && audioFile.exists()) {
-				audioFile.delete();
-			}
-
+			wipeDecryptedFile(audioFile);
 			releasePlayer();
 		});
 
 		mediaPlayer.setOnErrorListener((mp, what, extra) -> {
 			notifyError("Playback error");
+			wipeDecryptedFile(audioFile);
 			releasePlayer();
 			return true;
 		});
@@ -151,13 +149,39 @@ public class VoiceMessagePlayer {
 	public void stopPlayback() {
 		isPlaying = false;
 		stopProgressUpdates();
+		File toWipe = currentFile;
 		releasePlayer();
+		if (toWipe != null) wipeDecryptedFile(toWipe);
 
 		mainHandler.post(() -> {
 			if (currentCallback != null) {
 				currentCallback.onPlaybackCompleted();
 			}
 		});
+	}
+
+	private void wipeDecryptedFile(File f) {
+		if (f == null || !f.exists()) return;
+		try {
+			long len = f.length();
+			if (len > 0 && len < 64 * 1024 * 1024) {
+				try (java.io.RandomAccessFile raf =
+						new java.io.RandomAccessFile(f, "rw")) {
+					byte[] zeroes = new byte[8192];
+					long written = 0;
+					while (written < len) {
+						int chunk = (int) Math.min(zeroes.length,
+								len - written);
+						raf.write(zeroes, 0, chunk);
+						written += chunk;
+					}
+					raf.getFD().sync();
+				}
+			}
+		} catch (java.io.IOException ignored) {
+		} finally {
+			f.delete();
+		}
 	}
 
 	public void seekTo(int positionMs) {

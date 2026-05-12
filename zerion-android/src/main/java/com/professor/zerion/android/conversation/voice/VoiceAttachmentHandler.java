@@ -241,6 +241,25 @@ public class VoiceAttachmentHandler {
 	private void deleteOutputFile() {
 		if (outputFile != null) {
 			if (outputFile.exists()) {
+				try {
+					long len = outputFile.length();
+					if (len > 0 && len < 50L * 1024 * 1024) {
+						try (java.io.RandomAccessFile raf =
+								new java.io.RandomAccessFile(
+										outputFile, "rw")) {
+							byte[] zeroes = new byte[8192];
+							long written = 0;
+							while (written < len) {
+								int chunk = (int) Math.min(zeroes.length,
+										len - written);
+								raf.write(zeroes, 0, chunk);
+								written += chunk;
+							}
+							raf.getFD().sync();
+						}
+					}
+				} catch (java.io.IOException ignored) {
+				}
 				outputFile.delete();
 			}
 			outputFile = null;
