@@ -55,7 +55,6 @@ public class GroupTrCreateActivity extends ZerionActivity {
 		setContentView(R.layout.activity_grouptr_create);
 
 		MaterialToolbar toolbar = findViewById(R.id.toolbar);
-		setSupportActionBar(toolbar);
 		toolbar.setNavigationOnClickListener(v -> finish());
 
 		nameInput = findViewById(R.id.groupNameInput);
