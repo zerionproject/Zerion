@@ -225,17 +225,6 @@
 		</activity>
 
 		<activity
-			android:name="com.professor.zerion.android.privategroup.creation.CreateGroupActivity"
-			android:exported="false"
-			android:label="@string/groups_create_group_title"
-			android:parentActivityName="com.professor.zerion.android.navdrawer.NavDrawerActivity"
-			android:windowSoftInputMode="adjustResize|stateAlwaysVisible">
-			<meta-data
-				android:name="android.support.PARENT_ACTIVITY"
-				android:value="com.professor.zerion.android.navdrawer.NavDrawerActivity" />
-		</activity>
-
-		<activity
 			android:name="com.professor.zerion.android.privategroup.conversation.GroupActivity"
 			android:exported="false"
 			android:label="@string/app_name"
@@ -272,17 +261,6 @@
 			android:exported="false"
 			android:label="@string/groups_reveal_contacts"
 			android:parentActivityName="com.professor.zerion.android.privategroup.conversation.GroupActivity">
-			<meta-data
-				android:name="android.support.PARENT_ACTIVITY"
-				android:value="com.professor.zerion.android.privategroup.conversation.GroupActivity" />
-		</activity>
-
-		<activity
-			android:name="com.professor.zerion.android.privategroup.creation.GroupInviteActivity"
-			android:exported="false"
-			android:label="@string/groups_invite_members"
-			android:parentActivityName="com.professor.zerion.android.privategroup.conversation.GroupActivity"
-			android:windowSoftInputMode="adjustResize|stateHidden">
 			<meta-data
 				android:name="android.support.PARENT_ACTIVITY"
 				android:value="com.professor.zerion.android.privategroup.conversation.GroupActivity" />

@@ -35,11 +35,6 @@ import com.professor.zerion.android.navdrawer.TransportsActivity;
 import com.professor.zerion.android.panic.PanicPreferencesActivity;
 import com.professor.zerion.android.panic.PanicResponderActivity;
 import com.professor.zerion.android.privategroup.conversation.GroupActivity;
-import com.professor.zerion.android.privategroup.creation.CreateGroupActivity;
-import com.professor.zerion.android.privategroup.creation.CreateGroupFragment;
-import com.professor.zerion.android.privategroup.creation.CreateGroupModule;
-import com.professor.zerion.android.privategroup.creation.GroupInviteActivity;
-import com.professor.zerion.android.privategroup.creation.GroupInviteFragment;
 import com.professor.zerion.android.privategroup.invitation.GroupInvitationActivity;
 import com.professor.zerion.android.privategroup.invitation.GroupInvitationModule;
 import com.professor.zerion.android.privategroup.list.GroupListFragment;
@@ -61,7 +56,6 @@ import dagger.Component;
 @ActivityScope
 @Component(modules = {
 		ActivityModule.class,
-		CreateGroupModule.class,
 		GroupInvitationModule.class,
 		GroupMemberModule.class,
 		GroupRevealModule.class,
@@ -96,11 +90,7 @@ public interface ActivityComponent {
 	void inject(com.professor.zerion.android.vault.ui.VaultActivity activity);
 
 
-	void inject(CreateGroupActivity activity);
-
 	void inject(GroupActivity activity);
-
-	void inject(GroupInviteActivity activity);
 
 	void inject(GroupInvitationActivity activity);
 
@@ -139,11 +129,7 @@ public interface ActivityComponent {
 
 	void inject(ContactListFragment fragment);
 
-	void inject(CreateGroupFragment fragment);
-
 	void inject(GroupListFragment fragment);
-
-	void inject(GroupInviteFragment fragment);
 
 	void inject(RevealContactsFragment activity);
 

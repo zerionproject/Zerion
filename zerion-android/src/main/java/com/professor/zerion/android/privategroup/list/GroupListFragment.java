@@ -12,13 +12,9 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.google.android.material.card.MaterialCardView;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.fragment.BaseFragment;
-import com.professor.zerion.android.privategroup.creation.CreateGroupActivity;
-import com.professor.zerion.android.grouptr.GroupTrAdminActivity;
 import com.professor.zerion.android.privategroup.invitation.GroupInvitationActivity;
 import com.professor.zerion.android.privategroup.list.GroupViewHolder.OnGroupRemoveClickListener;
 import com.professor.zerion.android.view.ZerionRecyclerView;
@@ -83,11 +79,6 @@ public class GroupListFragment extends BaseFragment implements
 					if (requireNonNull(items).size() == 0) list.showData();
 				})
 		);
-		FloatingActionButton fab = v.findViewById(R.id.fab_add_group);
-		fab.setOnClickListener(view -> {
-			Intent i = new Intent(getContext(), GroupTrAdminActivity.class);
-			startActivity(i);
-		});
 		invitationBanner = v.findViewById(R.id.invitation_banner);
 		invitationText = v.findViewById(R.id.invitation_text);
 		invitationBanner.setOnClickListener(this);
@@ -122,21 +113,6 @@ public class GroupListFragment extends BaseFragment implements
 		viewModel.unblockAllGroupMessageNotifications();
 	}
 
-	@Override
-	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-		inflater.inflate(R.menu.groups_list_actions, menu);
-		super.onCreateOptionsMenu(menu, inflater);
-	}
-
-	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
-		if (item.getItemId() == R.id.action_add_group) {
-			Intent i = new Intent(getContext(), GroupTrAdminActivity.class);
-			startActivity(i);
-			return true;
-		}
-		return super.onOptionsItemSelected(item);
-	}
 
 	@UiThread
 	@Override

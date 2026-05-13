@@ -10,7 +10,6 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
-import com.professor.zerion.android.privategroup.creation.GroupInviteActivity;
 import com.professor.zerion.android.privategroup.memberlist.GroupMemberListActivity;
 import com.professor.zerion.android.threaded.ThreadListActivity;
 import com.professor.zerion.android.threaded.ThreadListViewModel;
@@ -26,7 +25,6 @@ import androidx.lifecycle.ViewModelProvider;
 
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
-import static com.professor.zerion.android.activity.RequestCodes.REQUEST_GROUP_INVITE;
 import static com.professor.zerion.android.util.UiUtils.observeOnce;
 import static org.briarproject.briar.api.privategroup.PrivateGroupConstants.MAX_GROUP_POST_TEXT_LENGTH;
 import static org.briarproject.nullsafety.NullSafety.requireNonNull;
@@ -106,13 +104,6 @@ public class GroupActivity extends
 			i.putExtra(GROUP_ID, groupId.getBytes());
 			startActivity(i);
 			return true;
-		} else if (itemId == R.id.action_group_invite) {
-			if (!requireNonNull(viewModel.isCreator().getValue()))
-				throw new IllegalStateException();
-			Intent i = new Intent(this, GroupInviteActivity.class);
-			i.putExtra(GROUP_ID, groupId.getBytes());
-			startActivityForResult(i, REQUEST_GROUP_INVITE);
-			return true;
 		} else if (itemId == R.id.action_group_leave) {
 			if (requireNonNull(viewModel.isCreator().getValue()))
 				throw new IllegalStateException();
@@ -143,13 +134,6 @@ public class GroupActivity extends
 		displaySnackbar(R.string.group_clear_not_supported);
 	}
 
-	@Override
-	protected void onActivityResult(int request, int result,
-			@Nullable Intent data) {
-		if (request == REQUEST_GROUP_INVITE && result == RESULT_OK) {
-			displaySnackbar(R.string.groups_invitation_sent);
-		} else super.onActivityResult(request, result, data);
-	}
 
 	@Override
 	protected int getMaxTextLength() {

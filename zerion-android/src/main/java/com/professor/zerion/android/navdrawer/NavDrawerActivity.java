@@ -26,7 +26,7 @@ import com.professor.zerion.android.contact.add.remote.AddContactActivity;
 import com.professor.zerion.android.fragment.BaseFragment;
 import com.professor.zerion.android.fragment.BaseFragment.BaseFragmentListener;
 import com.professor.zerion.android.logout.SignOutFragment;
-import com.professor.zerion.android.privategroup.creation.CreateGroupActivity;
+import com.professor.zerion.android.grouptr.GroupTrAdminActivity;
 import com.professor.zerion.android.privategroup.list.GroupListFragment;
 import com.professor.zerion.android.settings.SettingsActivity;
 import com.professor.zerion.android.donation.DonationManager;
@@ -344,7 +344,7 @@ public class NavDrawerActivity extends ZerionActivity implements
 			Intent intent = new Intent(this, AddContactActivity.class);
 			startActivity(intent);
 		} else if (currentTab == TAB_GROUPS) {
-			Intent intent = new Intent(this, CreateGroupActivity.class);
+			Intent intent = new Intent(this, GroupTrAdminActivity.class);
 			startActivity(intent);
 		}
 	}
