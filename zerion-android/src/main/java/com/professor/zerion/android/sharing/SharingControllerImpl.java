@@ -1,5 +1,8 @@
 package com.professor.zerion.android.sharing;
 
+import android.os.Handler;
+import android.os.Looper;
+
 import org.briarproject.bramble.api.connection.ConnectionRegistry;
 import org.briarproject.bramble.api.contact.ContactId;
 import org.briarproject.bramble.api.event.Event;
@@ -13,6 +16,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 import androidx.annotation.UiThread;
@@ -22,12 +26,17 @@ import androidx.lifecycle.MutableLiveData;
 @NotNullByDefault
 public class SharingControllerImpl implements SharingController, EventListener {
 
+	private static final long EVENT_DEBOUNCE_MS = 400L;
+
 	private final EventBus eventBus;
 	private final ConnectionRegistry connectionRegistry;
+	private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
 	private final Set<ContactId> contacts = new HashSet<>();
 	private final MutableLiveData<SharingInfo> sharingInfo =
 			new MutableLiveData<>();
+	@Nullable
+	private Runnable pendingEventUpdate;
 
 	@Inject
 	SharingControllerImpl(EventBus eventBus,
@@ -40,28 +49,48 @@ public class SharingControllerImpl implements SharingController, EventListener {
 	@Override
 	public void onCleared() {
 		eventBus.removeListener(this);
+		if (pendingEventUpdate != null) {
+			mainHandler.removeCallbacks(pendingEventUpdate);
+			pendingEventUpdate = null;
+		}
 	}
 
 	@Override
 	public void eventOccurred(Event e) {
 		if (e instanceof ContactConnectedEvent) {
-			setConnected(((ContactConnectedEvent) e).getContactId());
+			scheduleEventDrivenUpdate(
+					((ContactConnectedEvent) e).getContactId());
 		} else if (e instanceof ContactDisconnectedEvent) {
-			setConnected(((ContactDisconnectedEvent) e).getContactId());
+			scheduleEventDrivenUpdate(
+					((ContactDisconnectedEvent) e).getContactId());
 		}
 	}
 
-	@UiThread
-	private void setConnected(ContactId c) {
-		if (contacts.contains(c)) {
-			updateLiveData();
-		}
+	private void scheduleEventDrivenUpdate(ContactId c) {
+		mainHandler.post(() -> {
+			if (!contacts.contains(c)) return;
+			if (pendingEventUpdate != null) {
+				mainHandler.removeCallbacks(pendingEventUpdate);
+			}
+			pendingEventUpdate = () -> {
+				pendingEventUpdate = null;
+				updateLiveData();
+			};
+			mainHandler.postDelayed(pendingEventUpdate, EVENT_DEBOUNCE_MS);
+		});
 	}
 
 	@UiThread
 	private void updateLiveData() {
 		int online = getOnlineCount();
-		sharingInfo.setValue(new SharingInfo(contacts.size(), online));
+		SharingInfo current = sharingInfo.getValue();
+		SharingInfo next = new SharingInfo(contacts.size(), online);
+		if (current != null
+				&& current.total == next.total
+				&& current.online == next.online) {
+			return;
+		}
+		sharingInfo.setValue(next);
 	}
 
 	private int getOnlineCount() {
