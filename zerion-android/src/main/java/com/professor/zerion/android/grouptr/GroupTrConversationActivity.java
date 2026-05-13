@@ -151,49 +151,73 @@ public class GroupTrConversationActivity extends ZerionActivity
 		postsScroll = new ScrollView(this);
 		postsContainer = new LinearLayout(this);
 		postsContainer.setOrientation(LinearLayout.VERTICAL);
-		postsContainer.setPadding(24, 24, 24, 24);
+		int pad = (int) (16 * getResources().getDisplayMetrics().density);
+		postsContainer.setPadding(pad, pad, pad, pad);
 		postsScroll.addView(postsContainer);
 		root.addView(postsScroll, new LinearLayout.LayoutParams(
 				ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
 
 		LinearLayout inputRow = new LinearLayout(this);
 		inputRow.setOrientation(LinearLayout.HORIZONTAL);
-		inputRow.setPadding(16, 8, 16, 16);
-		input = new EditText(this);
+		inputRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+		int rowPad = (int) (12 * getResources().getDisplayMetrics().density);
+		inputRow.setPadding(rowPad, rowPad / 2, rowPad / 2, rowPad);
+
+		com.google.android.material.textfield.TextInputLayout inputWrap =
+				new com.google.android.material.textfield.TextInputLayout(this);
+		inputWrap.setHint(getString(R.string.grouptr_input_hint));
+		input = new com.google.android.material.textfield.TextInputEditText(
+				inputWrap.getContext());
 		input.setInputType(InputType.TYPE_CLASS_TEXT
 				| InputType.TYPE_TEXT_FLAG_MULTI_LINE);
-		input.setHint(R.string.grouptr_input_hint);
-		Button send = new Button(this);
-		send.setText(android.R.string.ok);
-		send.setOnClickListener(v -> onSend());
-		inputRow.addView(input, new LinearLayout.LayoutParams(
+		inputWrap.addView(input);
+		inputRow.addView(inputWrap, new LinearLayout.LayoutParams(
 				0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-		inputRow.addView(send);
+
+		com.google.android.material.floatingactionbutton.FloatingActionButton
+				send = new com.google.android.material.floatingactionbutton
+				.FloatingActionButton(this);
+		send.setImageResource(android.R.drawable.ic_menu_send);
+		send.setContentDescription(getString(android.R.string.ok));
+		send.setSize(com.google.android.material.floatingactionbutton
+				.FloatingActionButton.SIZE_MINI);
+		send.setOnClickListener(v -> onSend());
+		LinearLayout.LayoutParams sendLp = new LinearLayout.LayoutParams(
+				ViewGroup.LayoutParams.WRAP_CONTENT,
+				ViewGroup.LayoutParams.WRAP_CONTENT);
+		sendLp.leftMargin = rowPad / 2;
+		inputRow.addView(send, sendLp);
+
 		root.addView(inputRow, new LinearLayout.LayoutParams(
 				ViewGroup.LayoutParams.MATCH_PARENT,
 				ViewGroup.LayoutParams.WRAP_CONTENT));
+	}
 
-		Button stealth = new Button(this);
-		stealth.setText(R.string.grouptr_stealth_name_set);
-		stealth.setOnClickListener(v -> showStealthNameDialog());
-		root.addView(stealth, new LinearLayout.LayoutParams(
-				ViewGroup.LayoutParams.MATCH_PARENT,
-				ViewGroup.LayoutParams.WRAP_CONTENT));
+	@Override
+	public boolean onCreateOptionsMenu(android.view.Menu menu) {
+		menu.add(0, 1, 0, R.string.grouptr_manage_members)
+				.setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
+		menu.add(0, 2, 0, R.string.grouptr_stealth_name_set)
+				.setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
+		menu.add(0, 3, 0, R.string.grouptr_default_ttl_set)
+				.setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
+		return true;
+	}
 
-		Button ttl = new Button(this);
-		ttl.setText(R.string.grouptr_default_ttl_set);
-		ttl.setOnClickListener(v -> showTtlDialog());
-		root.addView(ttl, new LinearLayout.LayoutParams(
-				ViewGroup.LayoutParams.MATCH_PARENT,
-				ViewGroup.LayoutParams.WRAP_CONTENT));
-
-		Button manage = new Button(this);
-		manage.setText(R.string.grouptr_manage_members);
-		manage.setOnClickListener(v -> startActivity(new Intent(this,
-				GroupTrAdminActivity.class)));
-		root.addView(manage, new LinearLayout.LayoutParams(
-				ViewGroup.LayoutParams.MATCH_PARENT,
-				ViewGroup.LayoutParams.WRAP_CONTENT));
+	@Override
+	public boolean onOptionsItemSelected(android.view.MenuItem item) {
+		int id = item.getItemId();
+		if (id == 1) {
+			startActivity(new Intent(this, GroupTrAdminActivity.class));
+			return true;
+		} else if (id == 2) {
+			showStealthNameDialog();
+			return true;
+		} else if (id == 3) {
+			showTtlDialog();
+			return true;
+		}
+		return super.onOptionsItemSelected(item);
 	}
 
 	private void renderPosts(List<GroupTrPost> posts) {

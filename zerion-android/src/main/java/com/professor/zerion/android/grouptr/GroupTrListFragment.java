@@ -192,17 +192,30 @@ public class GroupTrListFragment extends BaseFragment {
 	}
 
 	private void showCreateDialog() {
-		final EditText input = new EditText(requireContext());
-		input.setInputType(InputType.TYPE_CLASS_TEXT);
-		FrameLayout wrap = new FrameLayout(requireContext());
-		int pad = dp(20);
-		wrap.setPadding(pad, dp(8), pad, 0);
+		com.google.android.material.textfield.TextInputLayout wrap =
+				new com.google.android.material.textfield.TextInputLayout(
+						requireContext());
+		wrap.setHint(getString(R.string.grouptr_group_name_hint));
+		wrap.setBoxBackgroundMode(com.google.android.material.textfield
+				.TextInputLayout.BOX_BACKGROUND_OUTLINE);
+		final com.google.android.material.textfield.TextInputEditText input =
+				new com.google.android.material.textfield.TextInputEditText(
+						wrap.getContext());
+		input.setInputType(InputType.TYPE_CLASS_TEXT
+				| InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+		input.setMaxLines(1);
+		input.setSingleLine(true);
 		wrap.addView(input);
+		FrameLayout pad = new FrameLayout(requireContext());
+		int p = dp(20);
+		pad.setPadding(p, dp(8), p, 0);
+		pad.addView(wrap);
 		new AlertDialog.Builder(requireContext())
 				.setTitle(R.string.grouptr_create)
-				.setView(wrap)
+				.setView(pad)
 				.setPositiveButton(android.R.string.ok, (d, w) -> {
-					String name = input.getText().toString().trim();
+					String name = input.getText() == null
+							? "" : input.getText().toString().trim();
 					if (name.isEmpty()) return;
 					ioExecutor.execute(() -> {
 						try {
