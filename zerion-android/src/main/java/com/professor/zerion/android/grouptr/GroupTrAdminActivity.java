@@ -1,17 +1,24 @@
 package com.professor.zerion.android.grouptr;
 
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.text.InputType;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
@@ -59,25 +66,35 @@ public class GroupTrAdminActivity extends ZerionActivity {
 	@Override
 	public void onCreate(@Nullable Bundle state) {
 		super.onCreate(state);
+		FrameLayout container = new FrameLayout(this);
+		ScrollView scroll = new ScrollView(this);
 		root = new LinearLayout(this);
 		root.setOrientation(LinearLayout.VERTICAL);
-		root.setPadding(32, 32, 32, 32);
-		setContentView(root);
+		root.setPadding(32, 32, 32, 200);
+		scroll.addView(root, new ScrollView.LayoutParams(
+				ScrollView.LayoutParams.MATCH_PARENT,
+				ScrollView.LayoutParams.WRAP_CONTENT));
+		container.addView(scroll, new FrameLayout.LayoutParams(
+				FrameLayout.LayoutParams.MATCH_PARENT,
+				FrameLayout.LayoutParams.MATCH_PARENT));
+		FloatingActionButton fab = new FloatingActionButton(this);
+		fab.setImageResource(android.R.drawable.ic_input_add);
+		fab.setContentDescription(getString(R.string.grouptr_create));
+		fab.setOnClickListener(v -> showCreateDialog());
+		FrameLayout.LayoutParams fabLp = new FrameLayout.LayoutParams(
+				FrameLayout.LayoutParams.WRAP_CONTENT,
+				FrameLayout.LayoutParams.WRAP_CONTENT);
+		fabLp.gravity = Gravity.BOTTOM | Gravity.END;
+		fabLp.bottomMargin = 48;
+		fabLp.rightMargin = 48;
+		container.addView(fab, fabLp);
+		setContentView(container);
 		setTitle(R.string.grouptr_title);
 		render();
 	}
 
 	private void render() {
 		root.removeAllViews();
-		com.google.android.material.button.MaterialButton create =
-				new com.google.android.material.button.MaterialButton(this);
-		create.setText(R.string.grouptr_create);
-		create.setOnClickListener(v -> showCreateDialog());
-		LinearLayout.LayoutParams createLp = new LinearLayout.LayoutParams(
-				LinearLayout.LayoutParams.MATCH_PARENT,
-				LinearLayout.LayoutParams.WRAP_CONTENT);
-		createLp.bottomMargin = 24;
-		root.addView(create, createLp);
 		ioExecutor.execute(() -> {
 			try {
 				Collection<GroupTrState> groups = groupTrManager.getGroups();
