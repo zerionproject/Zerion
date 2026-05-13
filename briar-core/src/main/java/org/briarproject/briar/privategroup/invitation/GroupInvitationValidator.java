@@ -41,6 +41,9 @@ import static org.briarproject.briar.util.ValidationUtils.validateAutoDeleteTime
 @NotNullByDefault
 class GroupInvitationValidator extends BdfMessageValidator {
 
+	private static final java.util.logging.Logger DIAG =
+			java.util.logging.Logger.getLogger("ZN-DIAG-INVITE-VALIDATOR");
+
 	private final PrivateGroupFactory privateGroupFactory;
 	private final MessageEncoder messageEncoder;
 
@@ -73,6 +76,11 @@ class GroupInvitationValidator extends BdfMessageValidator {
 
 	private BdfMessageContext validateInviteMessage(Message m, BdfList body)
 			throws FormatException {
+		DIAG.info("validateInviteMessage entry body.size=" + body.size()
+				+ " m.ts=" + m.getTimestamp()
+				+ " m.gid=" + java.util.HexFormat.of().formatHex(
+						java.util.Arrays.copyOf(
+								m.getGroupId().getBytes(), 8)));
 		checkSize(body, 6, 7);
 		BdfList creatorList = body.getList(1);
 		String groupName = body.getString(2);
@@ -82,6 +90,9 @@ class GroupInvitationValidator extends BdfMessageValidator {
 		String text = body.getOptionalString(4);
 		checkLength(text, 1, MAX_GROUP_INVITATION_TEXT_LENGTH);
 		byte[] signature = body.getRaw(5);
+		DIAG.info("validateInviteMessage sig.len=" + signature.length
+				+ " (hybrid=" + (signature.length == HYBRID_SIGNATURE_BYTES)
+				+ ")");
 		checkLength(signature, 1, HYBRID_SIGNATURE_BYTES);
 		long timer = NO_AUTO_DELETE_TIMER;
 		if (body.size() == 7) {
@@ -103,7 +114,12 @@ class GroupInvitationValidator extends BdfMessageValidator {
 		try {
 			clientHelper.verifySignature(ed25519Sig, SIGNING_LABEL_INVITE,
 					signed, creator.getPublicKey());
+			DIAG.info("validateInviteMessage Ed25519 verify PASS");
 		} catch (GeneralSecurityException e) {
+			DIAG.severe("validateInviteMessage Ed25519 verify FAIL: " + e
+					+ " ed25519Sig.len=" + ed25519Sig.length
+					+ " creator.pub.len="
+					+ creator.getPublicKey().getEncoded().length);
 			throw new FormatException();
 		}
 		BdfDictionary meta = messageEncoder.encodeMetadata(INVITE,

@@ -42,6 +42,9 @@ class GroupInvitationFactoryImpl implements GroupInvitationFactory {
 		this.identityManager = identityManager;
 	}
 
+	private static final java.util.logging.Logger DIAG =
+			java.util.logging.Logger.getLogger("ZN-DIAG-INVITE-SIGN");
+
 	@Override
 	public byte[] signInvitation(Contact c, GroupId privateGroupId,
 			long timestamp, PrivateKey privateKey) {
@@ -51,16 +54,30 @@ class GroupInvitationFactoryImpl implements GroupInvitationFactory {
 				timestamp);
 		try {
 			byte[] mlDsaPriv = identityManager.getLocalMlDsaSigPrivateKey();
+			DIAG.info("signInvitation ts=" + timestamp
+					+ " mlDsaPriv=" + (mlDsaPriv == null ? "null"
+							: ("present:" + mlDsaPriv.length + "B"))
+					+ " edPriv.len=" + privateKey.getEncoded().length);
 			if (mlDsaPriv != null) {
 				byte[] signedBytes = clientHelper.toByteArray(token);
+				DIAG.info("signInvitation signedBytes.len=" + signedBytes.length
+						+ " sha256-prefix=" + java.util.HexFormat.of()
+								.formatHex(java.util.Arrays.copyOf(
+										java.security.MessageDigest
+												.getInstance("SHA-256")
+												.digest(signedBytes), 8)));
 				HybridSignaturePrivateKey hybridKey =
 						new HybridSignaturePrivateKey(privateKey.getEncoded(),
 								mlDsaPriv);
-				return crypto.hybridSign(SIGNING_LABEL_INVITE, signedBytes,
-						hybridKey);
+				byte[] sig = crypto.hybridSign(SIGNING_LABEL_INVITE,
+						signedBytes, hybridKey);
+				DIAG.info("signInvitation EMITTED sig.len=" + sig.length);
+				return sig;
 			}
+			DIAG.info("signInvitation FALLBACK to Ed25519-only (no ML-DSA)");
 			return clientHelper.sign(SIGNING_LABEL_INVITE, token, privateKey);
 		} catch (GeneralSecurityException e) {
+			DIAG.severe("signInvitation FAILED: " + e);
 			throw new IllegalArgumentException(e);
 		} catch (FormatException e) {
 			throw new AssertionError(e);
