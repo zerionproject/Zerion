@@ -69,10 +69,15 @@ public class GroupTrAdminActivity extends ZerionActivity {
 
 	private void render() {
 		root.removeAllViews();
-		Button create = new Button(this);
+		com.google.android.material.button.MaterialButton create =
+				new com.google.android.material.button.MaterialButton(this);
 		create.setText(R.string.grouptr_create);
 		create.setOnClickListener(v -> showCreateDialog());
-		root.addView(create);
+		LinearLayout.LayoutParams createLp = new LinearLayout.LayoutParams(
+				LinearLayout.LayoutParams.MATCH_PARENT,
+				LinearLayout.LayoutParams.WRAP_CONTENT);
+		createLp.bottomMargin = 24;
+		root.addView(create, createLp);
 		ioExecutor.execute(() -> {
 			try {
 				Collection<GroupTrState> groups = groupTrManager.getGroups();
