@@ -91,6 +91,8 @@ class PrivateGroupManagerImpl extends BdfIncomingMessageHook
 	private final AuthorManager authorManager;
 	private final MessageTracker messageTracker;
 	private final CryptoComponent crypto;
+	private final org.briarproject.briar.api.privategroup.invitation
+			.GroupInvitationFactory groupInvitationFactory;
 	private final List<PrivateGroupHook> hooks;
 
 	@Inject
@@ -99,7 +101,9 @@ class PrivateGroupManagerImpl extends BdfIncomingMessageHook
 			PrivateGroupFactory privateGroupFactory,
 			ContactManager contactManager, IdentityManager identityManager,
 			AuthorManager authorManager, MessageTracker messageTracker,
-			CryptoComponent crypto) {
+			CryptoComponent crypto,
+			org.briarproject.briar.api.privategroup.invitation
+					.GroupInvitationFactory groupInvitationFactory) {
 		super(db, clientHelper, metadataParser);
 		this.privateGroupFactory = privateGroupFactory;
 		this.contactManager = contactManager;
@@ -107,6 +111,7 @@ class PrivateGroupManagerImpl extends BdfIncomingMessageHook
 		this.authorManager = authorManager;
 		this.messageTracker = messageTracker;
 		this.crypto = crypto;
+		this.groupInvitationFactory = groupInvitationFactory;
 		hooks = new CopyOnWriteArrayList<>();
 	}
 
@@ -135,11 +140,12 @@ class PrivateGroupManagerImpl extends BdfIncomingMessageHook
 		byte[] sig;
 		BdfList signed;
 		String label;
+		BdfList carriedInviteList = null;
 		if (type == JOIN) {
-			BdfList inviteList = body.getOptionalList(2);
+			carriedInviteList = body.getOptionalList(2);
 			sig = body.getRaw(3);
 			signed = BdfList.of(m.getGroupId(), m.getTimestamp(), memberList,
-					inviteList);
+					carriedInviteList);
 			label = org.briarproject.briar.api.privategroup
 					.GroupMessageFactory.SIGNING_LABEL_JOIN;
 		} else {
@@ -166,6 +172,38 @@ class PrivateGroupManagerImpl extends BdfIncomingMessageHook
 				}
 			} catch (java.security.GeneralSecurityException e) {
 				throw new FormatException();
+			}
+		}
+		if (type == JOIN && carriedInviteList != null) {
+			PrivateGroup pg = privateGroupFactory.parsePrivateGroup(
+					db.getGroup(txn, m.getGroupId()));
+			Author creator = pg.getCreator();
+			byte[] creatorPub = creator.getPublicKey().getEncoded();
+			byte[] creatorMlDsaPub = lookupAuthorMlDsaPub(txn, creatorPub);
+			if (creatorMlDsaPub != null) {
+				byte[] carriedSig = carriedInviteList.getRaw(1);
+				if (carriedSig.length != org.briarproject.bramble.api.crypto
+						.PostQuantumConstants.HYBRID_SIGNATURE_BYTES) {
+					throw new FormatException();
+				}
+				long carriedTs = carriedInviteList.getLong(0);
+				BdfList carriedToken = groupInvitationFactory.createInviteToken(
+						creator.getId(), member.getId(), pg.getId(),
+						carriedTs);
+				HybridSignaturePublicKey creatorHpk =
+						new HybridSignaturePublicKey(creatorPub, creatorMlDsaPub);
+				try {
+					byte[] carriedSignedBytes =
+							clientHelper.toByteArray(carriedToken);
+					if (!crypto.verifySignature(carriedSig,
+							org.briarproject.briar.api.privategroup.invitation
+									.GroupInvitationFactory.SIGNING_LABEL_INVITE,
+							carriedSignedBytes, creatorHpk)) {
+						throw new FormatException();
+					}
+				} catch (java.security.GeneralSecurityException e) {
+					throw new FormatException();
+				}
 			}
 		}
 	}
