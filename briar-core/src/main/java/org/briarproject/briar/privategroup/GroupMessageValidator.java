@@ -24,7 +24,7 @@ import java.util.Collection;
 
 import javax.annotation.concurrent.Immutable;
 
-import static org.briarproject.bramble.api.identity.AuthorConstants.MAX_SIGNATURE_LENGTH;
+import static org.briarproject.bramble.api.crypto.PostQuantumConstants.HYBRID_SIGNATURE_BYTES;
 import static org.briarproject.bramble.util.ValidationUtils.checkLength;
 import static org.briarproject.bramble.util.ValidationUtils.checkSize;
 import static org.briarproject.briar.api.privategroup.GroupMessageFactory.SIGNING_LABEL_JOIN;
@@ -84,7 +84,7 @@ class GroupMessageValidator extends BdfMessageValidator {
 		checkSize(body, 4);
 		BdfList inviteList = body.getOptionalList(2);
 		byte[] memberSignature = body.getRaw(3);
-		checkLength(memberSignature, 1, MAX_SIGNATURE_LENGTH);
+		checkLength(memberSignature, 1, HYBRID_SIGNATURE_BYTES);
 		PrivateGroup pg = privateGroupFactory.parsePrivateGroup(g);
 		Author creator = pg.getCreator();
 		boolean isCreator = member.equals(creator);
@@ -97,12 +97,17 @@ class GroupMessageValidator extends BdfMessageValidator {
 			if (m.getTimestamp() <= inviteTimestamp)
 				throw new FormatException();
 			byte[] creatorSignature = inviteList.getRaw(1);
-			checkLength(creatorSignature, 1, MAX_SIGNATURE_LENGTH);
+			checkLength(creatorSignature, 1, HYBRID_SIGNATURE_BYTES);
 			BdfList token = groupInvitationFactory.createInviteToken(
 					creator.getId(), member.getId(), g.getId(),
 					inviteTimestamp);
+			byte[] creatorEd25519Sig = creatorSignature;
+			if (creatorSignature.length == HYBRID_SIGNATURE_BYTES) {
+				creatorEd25519Sig = new byte[64];
+				System.arraycopy(creatorSignature, 0, creatorEd25519Sig, 0, 64);
+			}
 			try {
-				clientHelper.verifySignature(creatorSignature,
+				clientHelper.verifySignature(creatorEd25519Sig,
 						SIGNING_LABEL_INVITE,
 						token, creator.getPublicKey());
 			} catch (GeneralSecurityException e) {
@@ -116,8 +121,13 @@ class GroupMessageValidator extends BdfMessageValidator {
 				memberList,
 				inviteList
 		);
+		byte[] memberEd25519Sig = memberSignature;
+		if (memberSignature.length == HYBRID_SIGNATURE_BYTES) {
+			memberEd25519Sig = new byte[64];
+			System.arraycopy(memberSignature, 0, memberEd25519Sig, 0, 64);
+		}
 		try {
-			clientHelper.verifySignature(memberSignature, SIGNING_LABEL_JOIN,
+			clientHelper.verifySignature(memberEd25519Sig, SIGNING_LABEL_JOIN,
 					signed, member.getPublicKey());
 		} catch (GeneralSecurityException e) {
 			throw new FormatException();
@@ -137,7 +147,7 @@ class GroupMessageValidator extends BdfMessageValidator {
 		String text = body.getString(4);
 		checkLength(text, 1, MAX_GROUP_POST_TEXT_LENGTH);
 		byte[] signature = body.getRaw(5);
-		checkLength(signature, 1, MAX_SIGNATURE_LENGTH);
+		checkLength(signature, 1, HYBRID_SIGNATURE_BYTES);
 		BdfList memberList = body.getList(1);
 		BdfList signed = BdfList.of(
 				g.getId(),
@@ -147,8 +157,13 @@ class GroupMessageValidator extends BdfMessageValidator {
 				previousMessageId,
 				text
 		);
+		byte[] ed25519Sig = signature;
+		if (signature.length == HYBRID_SIGNATURE_BYTES) {
+			ed25519Sig = new byte[64];
+			System.arraycopy(signature, 0, ed25519Sig, 0, 64);
+		}
 		try {
-			clientHelper.verifySignature(signature, SIGNING_LABEL_POST,
+			clientHelper.verifySignature(ed25519Sig, SIGNING_LABEL_POST,
 					signed, member.getPublicKey());
 		} catch (GeneralSecurityException e) {
 			throw new FormatException();

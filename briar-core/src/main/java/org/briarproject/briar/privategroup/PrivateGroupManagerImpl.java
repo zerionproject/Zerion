@@ -3,8 +3,11 @@ package org.briarproject.briar.privategroup;
 import org.briarproject.bramble.api.FormatException;
 import org.briarproject.bramble.api.client.BdfIncomingMessageHook;
 import org.briarproject.bramble.api.client.ClientHelper;
+import org.briarproject.bramble.api.contact.Contact;
 import org.briarproject.bramble.api.contact.ContactId;
 import org.briarproject.bramble.api.contact.ContactManager;
+import org.briarproject.bramble.api.crypto.CryptoComponent;
+import org.briarproject.bramble.api.crypto.HybridSignaturePublicKey;
 import org.briarproject.bramble.api.data.BdfDictionary;
 import org.briarproject.bramble.api.data.BdfEntry;
 import org.briarproject.bramble.api.data.BdfList;
@@ -87,6 +90,7 @@ class PrivateGroupManagerImpl extends BdfIncomingMessageHook
 	private final IdentityManager identityManager;
 	private final AuthorManager authorManager;
 	private final MessageTracker messageTracker;
+	private final CryptoComponent crypto;
 	private final List<PrivateGroupHook> hooks;
 
 	@Inject
@@ -94,14 +98,76 @@ class PrivateGroupManagerImpl extends BdfIncomingMessageHook
 			MetadataParser metadataParser, DatabaseComponent db,
 			PrivateGroupFactory privateGroupFactory,
 			ContactManager contactManager, IdentityManager identityManager,
-			AuthorManager authorManager, MessageTracker messageTracker) {
+			AuthorManager authorManager, MessageTracker messageTracker,
+			CryptoComponent crypto) {
 		super(db, clientHelper, metadataParser);
 		this.privateGroupFactory = privateGroupFactory;
 		this.contactManager = contactManager;
 		this.identityManager = identityManager;
 		this.authorManager = authorManager;
 		this.messageTracker = messageTracker;
+		this.crypto = crypto;
 		hooks = new CopyOnWriteArrayList<>();
+	}
+
+	private byte[] lookupAuthorMlDsaPub(Transaction txn, byte[] ed25519PubKey)
+			throws DbException {
+		LocalAuthor la = identityManager.getLocalAuthor(txn);
+		if (java.util.Arrays.equals(la.getPublicKey().getEncoded(),
+				ed25519PubKey)) {
+			return identityManager.getLocalMlDsaSigPublicKey(txn);
+		}
+		for (Contact c : contactManager.getContacts(txn)) {
+			byte[] p = c.getAuthor().getPublicKey().getEncoded();
+			if (java.util.Arrays.equals(p, ed25519PubKey)) {
+				return c.getMlDsaSigPublicKey();
+			}
+		}
+		return null;
+	}
+
+	private void enforceHybridLock(Transaction txn, Message m, BdfList body,
+			MessageType type) throws DbException, FormatException {
+		BdfList memberList = body.getList(1);
+		Author member = clientHelper.parseAndValidateAuthor(memberList);
+		byte[] memberPub = member.getPublicKey().getEncoded();
+		byte[] memberMlDsaPub = lookupAuthorMlDsaPub(txn, memberPub);
+		byte[] sig;
+		BdfList signed;
+		String label;
+		if (type == JOIN) {
+			BdfList inviteList = body.getOptionalList(2);
+			sig = body.getRaw(3);
+			signed = BdfList.of(m.getGroupId(), m.getTimestamp(), memberList,
+					inviteList);
+			label = org.briarproject.briar.api.privategroup
+					.GroupMessageFactory.SIGNING_LABEL_JOIN;
+		} else {
+			byte[] parentId = body.getOptionalRaw(2);
+			byte[] previousId = body.getRaw(3);
+			String text = body.getString(4);
+			sig = body.getRaw(5);
+			signed = BdfList.of(m.getGroupId(), m.getTimestamp(), memberList,
+					parentId, previousId, text);
+			label = org.briarproject.briar.api.privategroup
+					.GroupMessageFactory.SIGNING_LABEL_POST;
+		}
+		if (memberMlDsaPub != null) {
+			if (sig.length != org.briarproject.bramble.api.crypto
+					.PostQuantumConstants.HYBRID_SIGNATURE_BYTES) {
+				throw new FormatException();
+			}
+			HybridSignaturePublicKey hpk = new HybridSignaturePublicKey(
+					memberPub, memberMlDsaPub);
+			try {
+				byte[] signedBytes = clientHelper.toByteArray(signed);
+				if (!crypto.verifySignature(sig, label, signedBytes, hpk)) {
+					throw new FormatException();
+				}
+			} catch (java.security.GeneralSecurityException e) {
+				throw new FormatException();
+			}
+		}
 	}
 
 	@Override
@@ -544,6 +610,7 @@ class PrivateGroupManagerImpl extends BdfIncomingMessageHook
 			throws DbException, FormatException {
 
 		MessageType type = MessageType.valueOf(meta.getInt(KEY_TYPE));
+		enforceHybridLock(txn, m, body, type);
 		switch (type) {
 			case JOIN:
 				handleJoinMessage(txn, m, meta);

@@ -4,9 +4,12 @@ import org.briarproject.bramble.api.FormatException;
 import org.briarproject.bramble.api.client.ClientHelper;
 import org.briarproject.bramble.api.client.ContactGroupFactory;
 import org.briarproject.bramble.api.contact.Contact;
+import org.briarproject.bramble.api.crypto.CryptoComponent;
+import org.briarproject.bramble.api.crypto.HybridSignaturePrivateKey;
 import org.briarproject.bramble.api.crypto.PrivateKey;
 import org.briarproject.bramble.api.data.BdfList;
 import org.briarproject.bramble.api.identity.AuthorId;
+import org.briarproject.bramble.api.identity.IdentityManager;
 import org.briarproject.bramble.api.sync.Group;
 import org.briarproject.bramble.api.sync.GroupId;
 import org.briarproject.briar.api.privategroup.invitation.GroupInvitationFactory;
@@ -26,12 +29,17 @@ class GroupInvitationFactoryImpl implements GroupInvitationFactory {
 
 	private final ContactGroupFactory contactGroupFactory;
 	private final ClientHelper clientHelper;
+	private final CryptoComponent crypto;
+	private final IdentityManager identityManager;
 
 	@Inject
 	GroupInvitationFactoryImpl(ContactGroupFactory contactGroupFactory,
-			ClientHelper clientHelper) {
+			ClientHelper clientHelper, CryptoComponent crypto,
+			IdentityManager identityManager) {
 		this.contactGroupFactory = contactGroupFactory;
 		this.clientHelper = clientHelper;
+		this.crypto = crypto;
+		this.identityManager = identityManager;
 	}
 
 	@Override
@@ -42,11 +50,22 @@ class GroupInvitationFactoryImpl implements GroupInvitationFactory {
 		BdfList token = createInviteToken(creatorId, memberId, privateGroupId,
 				timestamp);
 		try {
+			byte[] mlDsaPriv = identityManager.getLocalMlDsaSigPrivateKey();
+			if (mlDsaPriv != null) {
+				byte[] signedBytes = clientHelper.toByteArray(token);
+				HybridSignaturePrivateKey hybridKey =
+						new HybridSignaturePrivateKey(privateKey.getEncoded(),
+								mlDsaPriv);
+				return crypto.hybridSign(SIGNING_LABEL_INVITE, signedBytes,
+						hybridKey);
+			}
 			return clientHelper.sign(SIGNING_LABEL_INVITE, token, privateKey);
 		} catch (GeneralSecurityException e) {
 			throw new IllegalArgumentException(e);
 		} catch (FormatException e) {
 			throw new AssertionError(e);
+		} catch (org.briarproject.bramble.api.db.DbException e) {
+			throw new IllegalStateException(e);
 		}
 	}
 

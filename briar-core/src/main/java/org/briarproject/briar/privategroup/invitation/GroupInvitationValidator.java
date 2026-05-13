@@ -23,7 +23,7 @@ import java.util.Collections;
 
 import javax.annotation.concurrent.Immutable;
 
-import static org.briarproject.bramble.api.identity.AuthorConstants.MAX_SIGNATURE_LENGTH;
+import static org.briarproject.bramble.api.crypto.PostQuantumConstants.HYBRID_SIGNATURE_BYTES;
 import static org.briarproject.bramble.util.ValidationUtils.checkLength;
 import static org.briarproject.bramble.util.ValidationUtils.checkSize;
 import static org.briarproject.briar.api.autodelete.AutoDeleteConstants.NO_AUTO_DELETE_TIMER;
@@ -82,7 +82,7 @@ class GroupInvitationValidator extends BdfMessageValidator {
 		String text = body.getOptionalString(4);
 		checkLength(text, 1, MAX_GROUP_INVITATION_TEXT_LENGTH);
 		byte[] signature = body.getRaw(5);
-		checkLength(signature, 1, MAX_SIGNATURE_LENGTH);
+		checkLength(signature, 1, HYBRID_SIGNATURE_BYTES);
 		long timer = NO_AUTO_DELETE_TIMER;
 		if (body.size() == 7) {
 			timer = validateAutoDeleteTimer(body.getOptionalLong(6));
@@ -95,8 +95,13 @@ class GroupInvitationValidator extends BdfMessageValidator {
 				m.getGroupId(),
 				privateGroup.getId()
 		);
+		byte[] ed25519Sig = signature;
+		if (signature.length == HYBRID_SIGNATURE_BYTES) {
+			ed25519Sig = new byte[64];
+			System.arraycopy(signature, 0, ed25519Sig, 0, 64);
+		}
 		try {
-			clientHelper.verifySignature(signature, SIGNING_LABEL_INVITE,
+			clientHelper.verifySignature(ed25519Sig, SIGNING_LABEL_INVITE,
 					signed, creator.getPublicKey());
 		} catch (GeneralSecurityException e) {
 			throw new FormatException();

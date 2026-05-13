@@ -7,6 +7,8 @@ import org.briarproject.bramble.api.client.ContactGroupFactory;
 import org.briarproject.bramble.api.contact.Contact;
 import org.briarproject.bramble.api.contact.ContactId;
 import org.briarproject.bramble.api.contact.ContactManager.ContactHook;
+import org.briarproject.bramble.api.crypto.CryptoComponent;
+import org.briarproject.bramble.api.crypto.HybridSignaturePublicKey;
 import org.briarproject.bramble.api.data.BdfDictionary;
 import org.briarproject.bramble.api.data.BdfList;
 import org.briarproject.bramble.api.data.MetadataParser;
@@ -87,6 +89,9 @@ class GroupInvitationManagerImpl extends ConversationClientImpl
 	private final ProtocolEngine<CreatorSession> creatorEngine;
 	private final ProtocolEngine<InviteeSession> inviteeEngine;
 	private final ProtocolEngine<PeerSession> peerEngine;
+	private final CryptoComponent crypto;
+	private final org.briarproject.bramble.api.identity.IdentityManager
+			identityManager;
 
 	@Inject
 	GroupInvitationManagerImpl(DatabaseComponent db,
@@ -98,7 +103,10 @@ class GroupInvitationManagerImpl extends ConversationClientImpl
 			PrivateGroupManager privateGroupManager,
 			MessageParser messageParser, SessionParser sessionParser,
 			SessionEncoder sessionEncoder,
-			ProtocolEngineFactory engineFactory) {
+			ProtocolEngineFactory engineFactory,
+			CryptoComponent crypto,
+			org.briarproject.bramble.api.identity.IdentityManager
+					identityManager) {
 		super(db, clientHelper, metadataParser, messageTracker);
 		this.clientVersioningManager = clientVersioningManager;
 		this.contactGroupFactory = contactGroupFactory;
@@ -107,9 +115,62 @@ class GroupInvitationManagerImpl extends ConversationClientImpl
 		this.messageParser = messageParser;
 		this.sessionParser = sessionParser;
 		this.sessionEncoder = sessionEncoder;
+		this.crypto = crypto;
+		this.identityManager = identityManager;
 		creatorEngine = engineFactory.createCreatorEngine();
 		inviteeEngine = engineFactory.createInviteeEngine();
 		peerEngine = engineFactory.createPeerEngine();
+	}
+
+	private byte[] lookupAuthorMlDsaPub(Transaction txn, byte[] ed25519PubKey)
+			throws DbException {
+		org.briarproject.bramble.api.identity.LocalAuthor la =
+				identityManager.getLocalAuthor(txn);
+		if (java.util.Arrays.equals(la.getPublicKey().getEncoded(),
+				ed25519PubKey)) {
+			return identityManager.getLocalMlDsaSigPublicKey(txn);
+		}
+		for (Contact c : db.getContacts(txn)) {
+			byte[] p = c.getAuthor().getPublicKey().getEncoded();
+			if (java.util.Arrays.equals(p, ed25519PubKey)) {
+				return c.getMlDsaSigPublicKey();
+			}
+		}
+		return null;
+	}
+
+	private void enforceInviteHybridLock(Transaction txn, Message m,
+			BdfList body) throws DbException, FormatException {
+		int type = body.getInt(0);
+		if (type != INVITE.getValue()) return;
+		BdfList creatorList = body.getList(1);
+		org.briarproject.bramble.api.identity.Author creator =
+				clientHelper.parseAndValidateAuthor(creatorList);
+		byte[] creatorPub = creator.getPublicKey().getEncoded();
+		byte[] creatorMlDsaPub = lookupAuthorMlDsaPub(txn, creatorPub);
+		if (creatorMlDsaPub == null) return;
+		byte[] sig = body.getRaw(5);
+		if (sig.length != org.briarproject.bramble.api.crypto
+				.PostQuantumConstants.HYBRID_SIGNATURE_BYTES) {
+			throw new FormatException();
+		}
+		PrivateGroup pg = privateGroupFactory.createPrivateGroup(
+				body.getString(2), creator, body.getRaw(3));
+		BdfList signed = BdfList.of(m.getTimestamp(), m.getGroupId(),
+				pg.getId());
+		HybridSignaturePublicKey hpk = new HybridSignaturePublicKey(
+				creatorPub, creatorMlDsaPub);
+		try {
+			byte[] signedBytes = clientHelper.toByteArray(signed);
+			if (!crypto.verifySignature(sig,
+					org.briarproject.briar.api.privategroup.invitation
+							.GroupInvitationFactory.SIGNING_LABEL_INVITE,
+					signedBytes, hpk)) {
+				throw new FormatException();
+			}
+		} catch (java.security.GeneralSecurityException e) {
+			throw new FormatException();
+		}
 	}
 
 	@Override
@@ -190,6 +251,7 @@ class GroupInvitationManagerImpl extends ConversationClientImpl
 	protected DeliveryAction incomingMessage(Transaction txn, Message m,
 			BdfList body, BdfDictionary bdfMeta)
 			throws DbException, FormatException {
+		enforceInviteHybridLock(txn, m, body);
 		MessageMetadata meta = messageParser.parseMetadata(bdfMeta);
 		long timer = meta.getAutoDeleteTimer();
 		if (timer != NO_AUTO_DELETE_TIMER) {
