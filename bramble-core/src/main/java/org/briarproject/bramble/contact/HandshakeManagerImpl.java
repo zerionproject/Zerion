@@ -260,6 +260,14 @@ class HandshakeManagerImpl implements HandshakeManager {
 			throw new FormatException();
 		} finally {
 			Arrays.fill(kemSecret, (byte) 0);
+			org.briarproject.bramble.api.crypto.PrivateKey ephPriv =
+					ourHybridEphemeralKeyPair.getPrivate();
+			if (ephPriv instanceof
+					org.briarproject.bramble.api.crypto
+							.HybridAgreementPrivateKey) {
+				((org.briarproject.bramble.api.crypto
+						.HybridAgreementPrivateKey) ephPriv).clear();
+			}
 		}
 
 		byte[] ourProof = handshakeCrypto.proveOwnership(masterKey, alice);
