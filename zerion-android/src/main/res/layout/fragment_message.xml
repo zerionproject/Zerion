@@ -23,18 +23,18 @@
 	<com.professor.zerion.android.view.LargeTextInputView
 		android:id="@+id/messageView"
 		android:layout_width="0dp"
-		android:layout_height="0dp"
+		android:layout_height="wrap_content"
 		android:layout_marginTop="@dimen/margin_small"
 		app:allowEmptyText="true"
 		app:buttonText="@string/share_button"
 		app:fillHeight="false"
 		app:hint="@string/share_hint_short"
 		app:maxLines="6"
+		app:layout_constrainedHeight="true"
 		app:layout_constraintBottom_toBottomOf="parent"
 		app:layout_constraintEnd_toEndOf="parent"
 		app:layout_constraintStart_toStartOf="parent"
 		app:layout_constraintTop_toBottomOf="@+id/message_label"
-		app:layout_constraintHeight_default="wrap"
 		app:layout_constraintVertical_bias="0" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
