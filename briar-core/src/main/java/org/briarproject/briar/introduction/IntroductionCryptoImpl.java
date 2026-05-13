@@ -202,8 +202,10 @@ class IntroductionCryptoImpl implements IntroductionCrypto {
 			byte[] signature, @Nullable byte[] remoteMlDsaPubKey)
 			throws GeneralSecurityException {
 		byte[] nonce = getNonce(macKey);
-		boolean sigIsHybrid = signature.length == HYBRID_SIGNATURE_BYTES;
-		if (sigIsHybrid && remoteMlDsaPubKey != null) {
+		if (remoteMlDsaPubKey != null) {
+			if (signature.length != HYBRID_SIGNATURE_BYTES) {
+				throw new GeneralSecurityException();
+			}
 			HybridSignaturePublicKey hybridPub = new HybridSignaturePublicKey(
 					ed25519PublicKey.getEncoded(), remoteMlDsaPubKey);
 			if (!crypto.verifySignature(signature, LABEL_AUTH_SIGN, nonce,
@@ -212,12 +214,10 @@ class IntroductionCryptoImpl implements IntroductionCrypto {
 			}
 			return;
 		}
-		byte[] ed25519Sig = signature;
-		if (sigIsHybrid) {
-			ed25519Sig = new byte[64];
-			System.arraycopy(signature, 0, ed25519Sig, 0, 64);
+		if (signature.length != 64) {
+			throw new GeneralSecurityException();
 		}
-		if (!crypto.verifySignature(ed25519Sig, LABEL_AUTH_SIGN, nonce,
+		if (!crypto.verifySignature(signature, LABEL_AUTH_SIGN, nonce,
 				ed25519PublicKey)) {
 			throw new GeneralSecurityException();
 		}

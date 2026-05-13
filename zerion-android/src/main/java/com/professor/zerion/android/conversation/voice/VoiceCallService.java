@@ -1743,6 +1743,7 @@ public class VoiceCallService extends Service implements EventListener {
 			proximityWakeLock.release();
 		}
 		zeroizeKeyMaterial();
+		VoiceCallKeyHolder.clear();
 
 		executorService.shutdown();
 		try {

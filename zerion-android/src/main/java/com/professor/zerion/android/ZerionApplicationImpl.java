@@ -31,6 +31,14 @@ import static com.professor.zerion.android.settings.DisplayFragment.PREF_THEME;
 public class ZerionApplicationImpl extends Application
 		implements ZerionApplication {
 
+	static {
+		if (!IS_DEBUG_BUILD) {
+			java.util.logging.LogManager.getLogManager().reset();
+			java.util.logging.Logger.getLogger("")
+					.setLevel(java.util.logging.Level.OFF);
+		}
+	}
+
 	private AndroidComponent applicationComponent;
 	private volatile SharedPreferences prefs;
 

@@ -672,23 +672,20 @@ class GroupTrManagerImpl
 			byte[] pubKeyBytes) {
 		if (signed.length == 0) return false;
 		try {
-			boolean sigIsHybrid = sig.length ==
-					org.briarproject.bramble.api.crypto.PostQuantumConstants
-							.HYBRID_SIGNATURE_BYTES;
 			byte[] peerMlDsaPub = lookupPeerMlDsaPubKey(pubKeyBytes);
-			if (sigIsHybrid && peerMlDsaPub != null) {
+			if (peerMlDsaPub != null) {
+				if (sig.length != org.briarproject.bramble.api.crypto
+						.PostQuantumConstants.HYBRID_SIGNATURE_BYTES) {
+					return false;
+				}
 				org.briarproject.bramble.api.crypto.HybridSignaturePublicKey
 						hybridPub = new org.briarproject.bramble.api.crypto
 						.HybridSignaturePublicKey(pubKeyBytes, peerMlDsaPub);
 				return crypto.verifySignature(sig, label, signed, hybridPub);
 			}
-			byte[] ed25519Sig = sig;
-			if (sigIsHybrid) {
-				ed25519Sig = new byte[64];
-				System.arraycopy(sig, 0, ed25519Sig, 0, 64);
-			}
+			if (sig.length != 64) return false;
 			PublicKey p = new SignaturePublicKey(pubKeyBytes);
-			return crypto.verifySignature(ed25519Sig, label, signed, p);
+			return crypto.verifySignature(sig, label, signed, p);
 		} catch (GeneralSecurityException ex) {
 			return false;
 		} catch (DbException ex) {
