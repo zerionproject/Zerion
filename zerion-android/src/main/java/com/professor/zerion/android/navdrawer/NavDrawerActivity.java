@@ -91,6 +91,10 @@ public class NavDrawerActivity extends ZerionActivity implements
 	@Inject
 	DonationManager donationManager;
 
+	@Inject
+	@org.briarproject.bramble.api.lifecycle.IoExecutor
+	java.util.concurrent.Executor ioExecutor;
+
 	private MaterialCardView profileIcon;
 	private CircleImageView profileAvatar;
 	private TextView toolbarTitle;
@@ -371,13 +375,15 @@ public class NavDrawerActivity extends ZerionActivity implements
 	}
 
 	private void checkAndShowDonationDialog() {
-		if (donationManager.shouldShowDonationDialog()) {
-			getWindow().getDecorView().postDelayed(() -> {
+		ioExecutor.execute(() -> {
+			boolean shouldShow = donationManager.shouldShowDonationDialog();
+			if (!shouldShow) return;
+			runOnUiThread(() -> getWindow().getDecorView().postDelayed(() -> {
 				if (!isFinishing() && !isDestroyed()) {
 					showDonationDialog();
 				}
-			}, 1500);
-		}
+			}, 1500));
+		});
 	}
 
 	private void showDonationDialog() {

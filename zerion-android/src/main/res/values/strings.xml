@@ -517,6 +517,7 @@
 	<string name="grouptr_ttl_30days">30 days</string>
 	<string name="grouptr_unnamed_group">Untitled group</string>
 	<string name="grouptr_group_name_hint">Group name</string>
+	<string name="grouptr_invite_received_toast">You were added to a new group</string>
 	<string name="scroll_to_bottom">Scroll to bottom</string>
 	<string name="all_media">All Media</string>
 	<string name="no_media">No media shared yet</string>

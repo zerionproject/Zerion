@@ -23,9 +23,14 @@ import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.fragment.BaseFragment;
 
 import org.briarproject.bramble.api.db.DbException;
+import org.briarproject.bramble.api.event.Event;
+import org.briarproject.bramble.api.event.EventBus;
+import org.briarproject.bramble.api.event.EventListener;
 import org.briarproject.bramble.api.lifecycle.IoExecutor;
 import org.briarproject.briar.api.grouptr.GroupTrManager;
 import org.briarproject.briar.api.grouptr.GroupTrState;
+import org.briarproject.briar.api.messaging.event.GroupMembershipChangedEvent;
+import org.briarproject.briar.api.messaging.event.GroupEpochCommitEvent;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
@@ -39,7 +44,8 @@ import javax.inject.Inject;
 
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
-public class GroupTrListFragment extends BaseFragment {
+public class GroupTrListFragment extends BaseFragment
+		implements EventListener {
 
 	public static final String TAG = GroupTrListFragment.class.getName();
 
@@ -49,6 +55,8 @@ public class GroupTrListFragment extends BaseFragment {
 
 	@Inject
 	GroupTrManager groupTrManager;
+	@Inject
+	EventBus eventBus;
 	@Inject
 	@IoExecutor
 	Executor ioExecutor;
@@ -114,7 +122,34 @@ public class GroupTrListFragment extends BaseFragment {
 	@Override
 	public void onStart() {
 		super.onStart();
+		eventBus.addListener(this);
 		loadGroups();
+	}
+
+	@Override
+	public void onStop() {
+		super.onStop();
+		eventBus.removeListener(this);
+	}
+
+	@Override
+	public void eventOccurred(Event e) {
+		if (e instanceof GroupMembershipChangedEvent
+				|| e instanceof GroupEpochCommitEvent) {
+			requireActivity().runOnUiThread(() -> {
+				if (e instanceof GroupMembershipChangedEvent) {
+					GroupMembershipChangedEvent ev =
+							(GroupMembershipChangedEvent) e;
+					if (ev.getKind() == GroupMembershipChangedEvent
+							.ChangeKind.MEMBER_ADDED) {
+						Toast.makeText(requireContext(),
+								R.string.grouptr_invite_received_toast,
+								Toast.LENGTH_LONG).show();
+					}
+				}
+				loadGroups();
+			});
+		}
 	}
 
 	private void loadGroups() {
