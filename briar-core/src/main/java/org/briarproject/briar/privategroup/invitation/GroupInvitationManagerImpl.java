@@ -184,7 +184,7 @@ class GroupInvitationManagerImpl extends ConversationClientImpl
 									java.security.MessageDigest
 											.getInstance("SHA-256")
 											.digest(signedBytes), 8)));
-			boolean ok = crypto.verifySignature(sig,
+			boolean ok = crypto.verifyHybridSignature(sig,
 					org.briarproject.briar.api.privategroup.invitation
 							.GroupInvitationFactory.SIGNING_LABEL_INVITE,
 					signedBytes, hpk);

@@ -208,8 +208,8 @@ class IntroductionCryptoImpl implements IntroductionCrypto {
 			}
 			HybridSignaturePublicKey hybridPub = new HybridSignaturePublicKey(
 					ed25519PublicKey.getEncoded(), remoteMlDsaPubKey);
-			if (!crypto.verifySignature(signature, LABEL_AUTH_SIGN, nonce,
-					hybridPub)) {
+			if (!crypto.verifyHybridSignature(signature, LABEL_AUTH_SIGN,
+					nonce, hybridPub)) {
 				throw new GeneralSecurityException();
 			}
 			return;

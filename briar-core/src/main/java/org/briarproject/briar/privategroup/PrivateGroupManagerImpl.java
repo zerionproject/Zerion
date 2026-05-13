@@ -167,7 +167,8 @@ class PrivateGroupManagerImpl extends BdfIncomingMessageHook
 					memberPub, memberMlDsaPub);
 			try {
 				byte[] signedBytes = clientHelper.toByteArray(signed);
-				if (!crypto.verifySignature(sig, label, signedBytes, hpk)) {
+				if (!crypto.verifyHybridSignature(sig, label, signedBytes,
+						hpk)) {
 					throw new FormatException();
 				}
 			} catch (java.security.GeneralSecurityException e) {
@@ -195,7 +196,7 @@ class PrivateGroupManagerImpl extends BdfIncomingMessageHook
 				try {
 					byte[] carriedSignedBytes =
 							clientHelper.toByteArray(carriedToken);
-					if (!crypto.verifySignature(carriedSig,
+					if (!crypto.verifyHybridSignature(carriedSig,
 							org.briarproject.briar.api.privategroup.invitation
 									.GroupInvitationFactory.SIGNING_LABEL_INVITE,
 							carriedSignedBytes, creatorHpk)) {

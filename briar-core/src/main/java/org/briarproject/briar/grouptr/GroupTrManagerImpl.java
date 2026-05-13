@@ -681,7 +681,8 @@ class GroupTrManagerImpl
 				org.briarproject.bramble.api.crypto.HybridSignaturePublicKey
 						hybridPub = new org.briarproject.bramble.api.crypto
 						.HybridSignaturePublicKey(pubKeyBytes, peerMlDsaPub);
-				return crypto.verifySignature(sig, label, signed, hybridPub);
+				return crypto.verifyHybridSignature(sig, label, signed,
+						hybridPub);
 			}
 			if (sig.length != 64) return false;
 			PublicKey p = new SignaturePublicKey(pubKeyBytes);
