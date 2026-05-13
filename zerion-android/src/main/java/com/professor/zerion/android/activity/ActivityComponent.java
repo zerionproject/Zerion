@@ -131,6 +131,8 @@ public interface ActivityComponent {
 
 	void inject(GroupListFragment fragment);
 
+	void inject(com.professor.zerion.android.grouptr.GroupTrListFragment fragment);
+
 	void inject(RevealContactsFragment activity);
 
 	void inject(AddContactChooserFragment fragment);

@@ -27,6 +27,7 @@ import com.professor.zerion.android.fragment.BaseFragment;
 import com.professor.zerion.android.fragment.BaseFragment.BaseFragmentListener;
 import com.professor.zerion.android.logout.SignOutFragment;
 import com.professor.zerion.android.grouptr.GroupTrAdminActivity;
+import com.professor.zerion.android.grouptr.GroupTrListFragment;
 import com.professor.zerion.android.privategroup.list.GroupListFragment;
 import com.professor.zerion.android.settings.SettingsActivity;
 import com.professor.zerion.android.donation.DonationManager;
@@ -233,7 +234,7 @@ public class NavDrawerActivity extends ZerionActivity implements
 				break;
 			case TAB_GROUPS:
 				toolbarTitle.setText(R.string.groups_button);
-				fragment = GroupListFragment.newInstance();
+				fragment = GroupTrListFragment.newInstance();
 				break;
 			case TAB_VAULT:
 				toolbarTitle.setText(R.string.vault_button);

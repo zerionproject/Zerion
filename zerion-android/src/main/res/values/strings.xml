@@ -293,6 +293,11 @@
 		<item quantity="other">%d new group messages.</item>
 	</plurals>
 
+	<plurals name="grouptr_member_count">
+		<item quantity="one">%d member</item>
+		<item quantity="other">%d members</item>
+	</plurals>
+
 	<!-- Voice Messages -->
 	<string name="voice_message">Voice message</string>
 	<string name="play_pause">Play/Pause</string>
@@ -510,6 +515,7 @@
 	<string name="grouptr_ttl_1day">1 day</string>
 	<string name="grouptr_ttl_7days">7 days</string>
 	<string name="grouptr_ttl_30days">30 days</string>
+	<string name="grouptr_unnamed_group">Untitled group</string>
 	<string name="scroll_to_bottom">Scroll to bottom</string>
 	<string name="all_media">All Media</string>
 	<string name="no_media">No media shared yet</string>
