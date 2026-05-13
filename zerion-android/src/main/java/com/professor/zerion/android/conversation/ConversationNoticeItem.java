@@ -1,5 +1,6 @@
 package com.professor.zerion.android.conversation;
 
+import org.briarproject.briar.api.conversation.ConversationMessageHeader;
 import org.briarproject.briar.api.conversation.ConversationRequest;
 import org.briarproject.briar.api.conversation.ConversationResponse;
 import org.briarproject.nullsafety.NotNullByDefault;
@@ -27,6 +28,13 @@ class ConversationNoticeItem extends ConversationItem {
 	ConversationNoticeItem(@LayoutRes int layoutRes, String text,
 			LiveData<String> contactName, ConversationResponse r) {
 		super(layoutRes, r, contactName);
+		this.text = text;
+		this.msgText = null;
+	}
+
+	ConversationNoticeItem(@LayoutRes int layoutRes, String text,
+			LiveData<String> contactName, ConversationMessageHeader h) {
+		super(layoutRes, h, contactName);
 		this.text = text;
 		this.msgText = null;
 	}

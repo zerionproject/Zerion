@@ -1,13 +1,10 @@
 package com.professor.zerion.android.grouptr;
 
-import android.content.Intent;
 import android.os.Bundle;
-import android.text.InputType;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -15,7 +12,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.professor.zerion.R;
@@ -107,7 +103,8 @@ public class GroupTrListFragment extends BaseFragment
 		FloatingActionButton fab = new FloatingActionButton(requireContext());
 		fab.setImageResource(android.R.drawable.ic_input_add);
 		fab.setContentDescription(getString(R.string.grouptr_create));
-		fab.setOnClickListener(v -> showCreateDialog());
+		fab.setOnClickListener(v -> startActivity(
+				GroupTrCreateActivity.intent(requireContext())));
 		FrameLayout.LayoutParams fabLp = new FrameLayout.LayoutParams(
 				FrameLayout.LayoutParams.WRAP_CONTENT,
 				FrameLayout.LayoutParams.WRAP_CONTENT);
@@ -224,54 +221,6 @@ public class GroupTrListFragment extends BaseFragment
 		wrapper.addView(row);
 		wrapper.addView(divider);
 		return wrapper;
-	}
-
-	private void showCreateDialog() {
-		com.google.android.material.textfield.TextInputLayout wrap =
-				new com.google.android.material.textfield.TextInputLayout(
-						requireContext());
-		wrap.setHint(getString(R.string.grouptr_group_name_hint));
-		wrap.setBoxBackgroundMode(com.google.android.material.textfield
-				.TextInputLayout.BOX_BACKGROUND_OUTLINE);
-		final com.google.android.material.textfield.TextInputEditText input =
-				new com.google.android.material.textfield.TextInputEditText(
-						wrap.getContext());
-		input.setInputType(InputType.TYPE_CLASS_TEXT
-				| InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
-		input.setMaxLines(1);
-		input.setSingleLine(true);
-		wrap.addView(input);
-		FrameLayout pad = new FrameLayout(requireContext());
-		int p = dp(20);
-		pad.setPadding(p, dp(8), p, 0);
-		pad.addView(wrap);
-		new AlertDialog.Builder(requireContext())
-				.setTitle(R.string.grouptr_create)
-				.setView(pad)
-				.setPositiveButton(android.R.string.ok, (d, w) -> {
-					String name = input.getText() == null
-							? "" : input.getText().toString().trim();
-					if (name.isEmpty()) return;
-					ioExecutor.execute(() -> {
-						try {
-							GroupTrState s = groupTrManager.createGroup(name);
-							requireActivity().runOnUiThread(() -> {
-								loadGroups();
-								startActivity(GroupTrConversationActivity
-										.intent(requireContext(),
-												s.getGroupId()));
-							});
-						} catch (DbException ex) {
-							requireActivity().runOnUiThread(() ->
-									Toast.makeText(requireContext(),
-													R.string.grouptr_error_create,
-													Toast.LENGTH_SHORT)
-											.show());
-						}
-					});
-				})
-				.setNegativeButton(android.R.string.cancel, null)
-				.show();
 	}
 
 	private int dp(int value) {

@@ -16,6 +16,8 @@ import org.briarproject.bramble.api.db.DbException;
 import org.briarproject.bramble.api.db.Metadata;
 import org.briarproject.bramble.api.db.NoSuchMessageException;
 import org.briarproject.bramble.api.db.Transaction;
+import org.briarproject.bramble.api.identity.IdentityManager;
+import org.briarproject.bramble.api.identity.LocalAuthor;
 import org.briarproject.bramble.api.lifecycle.LifecycleManager.OpenDatabaseHook;
 import org.briarproject.bramble.api.sync.Group;
 import org.briarproject.bramble.api.sync.Group.Visibility;
@@ -37,6 +39,7 @@ import org.briarproject.briar.api.conversation.ConversationManager;
 import org.briarproject.briar.api.conversation.ConversationManager.ConversationClient;
 import org.briarproject.briar.api.conversation.ConversationMessageHeader;
 import org.briarproject.briar.api.conversation.DeletionResult;
+import org.briarproject.briar.api.grouptr.GroupTrInvitationHeader;
 import org.briarproject.briar.api.messaging.LinkPreview;
 import org.briarproject.briar.api.messaging.MessagingManager;
 import org.briarproject.briar.api.messaging.PrivateMessage;
@@ -84,6 +87,9 @@ import static org.briarproject.briar.messaging.MessageTypes.ATTACHMENT_MANIFEST;
 import static org.briarproject.briar.messaging.MessageTypes.PRIVATE_MESSAGE;
 import static org.briarproject.briar.messaging.MessagingConstants.MISSING_ATTACHMENT_CLEANUP_DURATION_MS;
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_ATTACHMENT_HEADERS;
+import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_GROUP_ADDED_NAME;
+import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_GROUP_ADDED_PUBKEY;
+import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_GROUP_ID;
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_AUTO_DELETE_TIMER;
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_HAS_TEXT;
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_IS_TYPING;
@@ -112,6 +118,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 	private final ContactGroupFactory contactGroupFactory;
 	private final AutoDeleteManager autoDeleteManager;
 	private final StreamingAttachmentWriter streamingAttachmentWriter;
+	private final IdentityManager identityManager;
 
 	@Inject
 	MessagingManagerImpl(
@@ -123,7 +130,8 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			MessageTracker messageTracker,
 			ContactGroupFactory contactGroupFactory,
 			AutoDeleteManager autoDeleteManager,
-			StreamingAttachmentWriter streamingAttachmentWriter) {
+			StreamingAttachmentWriter streamingAttachmentWriter,
+			IdentityManager identityManager) {
 		this.db = db;
 		this.clientHelper = clientHelper;
 		this.metadataParser = metadataParser;
@@ -133,6 +141,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		this.contactGroupFactory = contactGroupFactory;
 		this.autoDeleteManager = autoDeleteManager;
 		this.streamingAttachmentWriter = streamingAttachmentWriter;
+		this.identityManager = identityManager;
 	}
 
 	@Override
@@ -591,12 +600,35 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			throw new DbException(e);
 		}
 		Collection<ConversationMessageHeader> headers = new ArrayList<>();
+		LocalAuthor localAuthor = identityManager.getLocalAuthor(txn);
+		byte[] localPubKey = localAuthor.getPublicKey().getEncoded();
 		for (MessageStatus s : statuses) {
 			MessageId id = s.getMessageId();
 			BdfDictionary meta = metadata.get(id);
 			if (meta == null) continue;
 			try {
 				Integer messageType = meta.getOptionalInt(MSG_KEY_MSG_TYPE);
+				if (messageType != null
+						&& messageType == MessageTypes.GROUP_MEMBER_ADDED) {
+					if (meta.getBoolean(MSG_KEY_LOCAL)) continue;
+					byte[] addedPubKey =
+							meta.getOptionalRaw(MSG_KEY_GROUP_ADDED_PUBKEY);
+					if (addedPubKey == null
+							|| !java.util.Arrays.equals(addedPubKey,
+									localPubKey)) continue;
+					byte[] groupIdRaw = meta.getOptionalRaw(MSG_KEY_GROUP_ID);
+					if (groupIdRaw == null) continue;
+					String addedName =
+							meta.getOptionalString(MSG_KEY_GROUP_ADDED_NAME);
+					long timestamp = meta.getLong(MSG_KEY_TIMESTAMP);
+					boolean local = meta.getBoolean(MSG_KEY_LOCAL);
+					boolean read = meta.getBoolean(MSG_KEY_READ);
+					headers.add(new GroupTrInvitationHeader(id, g, timestamp,
+							local, read, s.isSent(), s.isSeen(),
+							new GroupId(groupIdRaw),
+							addedName == null ? "" : addedName));
+					continue;
+				}
 				if (messageType != null && messageType != PRIVATE_MESSAGE
 						&& messageType != MessageTypes.LINK_PREVIEW_MESSAGE)
 					continue;

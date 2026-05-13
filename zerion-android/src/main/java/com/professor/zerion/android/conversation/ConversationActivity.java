@@ -2117,6 +2117,14 @@ public class ConversationActivity extends ZerionActivity
 	}
 
 	@Override
+	public void onGroupTrInvitationOpen(
+			ConversationGroupTrInvitationItem item) {
+		startActivity(com.professor.zerion.android.grouptr
+				.GroupTrConversationActivity.intent(this,
+						item.getGroupTrGroupId().getBytes()));
+	}
+
+	@Override
 	public void onAttachmentClicked(View view, ConversationMessageItem messageItem,
 			AttachmentItem attachmentItem) {
 		if (attachmentItem.getState() != AttachmentItem.State.ERROR) {

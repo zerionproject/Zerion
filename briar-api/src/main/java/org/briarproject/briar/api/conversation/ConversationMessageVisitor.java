@@ -1,5 +1,6 @@
 package org.briarproject.briar.api.conversation;
 
+import org.briarproject.briar.api.grouptr.GroupTrInvitationHeader;
 import org.briarproject.briar.api.introduction.IntroductionRequest;
 import org.briarproject.briar.api.introduction.IntroductionResponse;
 import org.briarproject.briar.api.messaging.PrivateMessageHeader;
@@ -19,4 +20,6 @@ public interface ConversationMessageVisitor<T> {
 	T visitIntroductionRequest(IntroductionRequest r);
 
 	T visitIntroductionResponse(IntroductionResponse r);
+
+	T visitGroupTrInvitation(GroupTrInvitationHeader h);
 }

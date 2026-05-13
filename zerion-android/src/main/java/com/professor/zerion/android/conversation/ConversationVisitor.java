@@ -6,6 +6,7 @@ import org.briarproject.bramble.api.sync.MessageId;
 import com.professor.zerion.R;
 import com.professor.zerion.android.attachment.AttachmentItem;
 import org.briarproject.briar.api.conversation.ConversationMessageVisitor;
+import org.briarproject.briar.api.grouptr.GroupTrInvitationHeader;
 import org.briarproject.briar.api.introduction.IntroductionRequest;
 import org.briarproject.briar.api.introduction.IntroductionResponse;
 import org.briarproject.briar.api.messaging.PrivateMessageHeader;
@@ -273,6 +274,23 @@ class ConversationVisitor implements
 					R.layout.list_item_conversation_notice_in, text,
 					contactName, r);
 		}
+	}
+
+	@Override
+	public ConversationItem visitGroupTrInvitation(
+			GroupTrInvitationHeader h) {
+		String groupName = h.getGroupName();
+		String text;
+		if (groupName.isEmpty()) {
+			text = ctx.getString(R.string.grouptr_invitation_received_no_name,
+					getContactNameOrDefault());
+		} else {
+			text = ctx.getString(R.string.grouptr_invitation_received,
+					getContactNameOrDefault(), groupName);
+		}
+		return new ConversationGroupTrInvitationItem(
+				R.layout.list_item_conversation_notice_in, text,
+				contactName, h);
 	}
 
 	@Nullable

@@ -518,6 +518,23 @@
 	<string name="grouptr_unnamed_group">Untitled group</string>
 	<string name="grouptr_group_name_hint">Group name</string>
 	<string name="grouptr_invite_received_toast">You were added to a new group</string>
+	<string name="grouptr_invitation_received">%1$s added you to the group \"%2$s\". Tap to open.</string>
+	<string name="grouptr_invitation_received_no_name">%1$s added you to a group. Tap to open.</string>
+	<string name="grouptr_create_title">New group</string>
+	<string name="grouptr_create_name_hint">Group name (required)</string>
+	<string name="grouptr_create_invite_after_hint">You can add or invite friends after creating this group.</string>
+	<string name="grouptr_create_disappearing">Disappearing messages</string>
+	<string name="grouptr_create_screenshot_block">Screenshot blocking</string>
+	<string name="grouptr_create_action">Create</string>
+	<string name="grouptr_set_avatar">Set group avatar</string>
+	<string name="grouptr_ttl_1h">1 hour</string>
+	<string name="grouptr_invite_members_title">Add members</string>
+	<string name="grouptr_invite_confirm">Send invites</string>
+	<string name="grouptr_invite_partial">Some invites could not be sent.</string>
+	<plurals name="grouptr_invite_sent">
+		<item quantity="one">Invite sent to %d contact</item>
+		<item quantity="other">Invites sent to %d contacts</item>
+	</plurals>
 	<string name="scroll_to_bottom">Scroll to bottom</string>
 	<string name="all_media">All Media</string>
 	<string name="no_media">No media shared yet</string>

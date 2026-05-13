@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="@drawable/bg_zerion_gradient"
+	android:fitsSystemWindows="true"
+	android:orientation="vertical">
+
+	<com.google.android.material.appbar.AppBarLayout
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:background="@drawable/bg_toolbar_gradient"
+		android:elevation="0dp"
+		app:elevation="0dp">
+
+		<com.google.android.material.appbar.MaterialToolbar
+			android:id="@+id/toolbar"
+			style="@style/ZerionToolbar"
+			android:layout_width="match_parent"
+			android:layout_height="?attr/actionBarSize"
+			android:background="@android:color/transparent"
+			android:elevation="0dp"
+			app:title="@string/grouptr_create_title"
+			app:titleTextColor="@color/zerion_text_primary"
+			app:navigationIcon="@drawable/ic_arrow_back"
+			app:navigationIconTint="@color/zerion_primary_accent" />
+
+	</com.google.android.material.appbar.AppBarLayout>
+
+	<androidx.core.widget.NestedScrollView
+		android:layout_width="match_parent"
+		android:layout_height="0dp"
+		android:layout_weight="1"
+		android:clipToPadding="false"
+		android:paddingBottom="96dp">
+
+		<LinearLayout
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:orientation="vertical"
+			android:paddingTop="24dp">
+
+			<com.google.android.material.card.MaterialCardView
+				android:id="@+id/avatarCard"
+				android:layout_width="96dp"
+				android:layout_height="96dp"
+				android:layout_gravity="center_horizontal"
+				android:layout_marginBottom="20dp"
+				app:cardBackgroundColor="@color/zerion_surface_elevated"
+				app:cardCornerRadius="48dp"
+				app:cardElevation="0dp"
+				app:strokeColor="@color/zerion_primary_accent"
+				app:strokeWidth="1dp">
+
+				<ImageView
+					android:layout_width="36dp"
+					android:layout_height="36dp"
+					android:layout_gravity="center"
+					android:src="@drawable/ic_camera_24dp"
+					app:tint="@color/zerion_text_secondary"
+					android:contentDescription="@string/grouptr_set_avatar" />
+
+			</com.google.android.material.card.MaterialCardView>
+
+			<com.google.android.material.textfield.TextInputLayout
+				android:id="@+id/groupNameLayout"
+				style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:layout_marginHorizontal="20dp"
+				android:hint="@string/grouptr_create_name_hint"
+				app:boxStrokeColor="@color/zerion_primary_accent"
+				app:hintTextColor="@color/zerion_primary_accent">
+
+				<com.google.android.material.textfield.TextInputEditText
+					android:id="@+id/groupNameInput"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:inputType="textCapSentences"
+					android:maxLength="64"
+					android:maxLines="1"
+					android:singleLine="true"
+					android:textColor="@color/zerion_text_primary" />
+
+			</com.google.android.material.textfield.TextInputLayout>
+
+			<TextView
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:layout_marginHorizontal="20dp"
+				android:layout_marginTop="8dp"
+				android:layout_marginBottom="24dp"
+				android:text="@string/grouptr_create_invite_after_hint"
+				android:textColor="@color/zerion_text_secondary"
+				android:textSize="13sp" />
+
+			<View
+				android:layout_width="match_parent"
+				android:layout_height="1dp"
+				android:layout_marginHorizontal="20dp"
+				android:background="@color/zerion_surface_elevated" />
+
+			<LinearLayout
+				android:id="@+id/disappearingRow"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:background="?attr/selectableItemBackground"
+				android:clickable="true"
+				android:focusable="true"
+				android:gravity="center_vertical"
+				android:orientation="horizontal"
+				android:paddingHorizontal="20dp"
+				android:paddingVertical="16dp">
+
+				<ImageView
+					android:layout_width="24dp"
+					android:layout_height="24dp"
+					android:src="@drawable/ic_bomb"
+					app:tint="@color/zerion_text_secondary"
+					android:contentDescription="@null" />
+
+				<TextView
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_marginStart="16dp"
+					android:layout_weight="1"
+					android:text="@string/grouptr_create_disappearing"
+					android:textColor="@color/zerion_text_primary"
+					android:textSize="16sp" />
+
+				<TextView
+					android:id="@+id/disappearingValue"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:text="@string/grouptr_ttl_off"
+					android:textColor="@color/zerion_primary_accent"
+					android:textSize="15sp" />
+
+				<ImageView
+					android:layout_width="20dp"
+					android:layout_height="20dp"
+					android:layout_marginStart="6dp"
+					android:src="@drawable/ic_chevron_right"
+					app:tint="@color/zerion_text_secondary"
+					android:contentDescription="@null" />
+
+			</LinearLayout>
+
+			<View
+				android:layout_width="match_parent"
+				android:layout_height="1dp"
+				android:layout_marginHorizontal="20dp"
+				android:background="@color/zerion_surface_elevated" />
+
+			<LinearLayout
+				android:id="@+id/screenshotRow"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:background="?attr/selectableItemBackground"
+				android:clickable="true"
+				android:focusable="true"
+				android:gravity="center_vertical"
+				android:orientation="horizontal"
+				android:paddingHorizontal="20dp"
+				android:paddingVertical="12dp">
+
+				<ImageView
+					android:layout_width="24dp"
+					android:layout_height="24dp"
+					android:src="@drawable/ic_lock"
+					app:tint="@color/zerion_text_secondary"
+					android:contentDescription="@null" />
+
+				<TextView
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_marginStart="16dp"
+					android:layout_weight="1"
+					android:text="@string/grouptr_create_screenshot_block"
+					android:textColor="@color/zerion_text_primary"
+					android:textSize="16sp" />
+
+				<com.google.android.material.materialswitch.MaterialSwitch
+					android:id="@+id/screenshotSwitch"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content" />
+
+			</LinearLayout>
+
+		</LinearLayout>
+
+	</androidx.core.widget.NestedScrollView>
+
+	<com.google.android.material.button.MaterialButton
+		android:id="@+id/createButton"
+		android:layout_width="wrap_content"
+		android:layout_height="48dp"
+		android:layout_gravity="end"
+		android:layout_marginEnd="20dp"
+		android:layout_marginBottom="20dp"
+		android:enabled="false"
+		android:minWidth="120dp"
+		android:paddingHorizontal="24dp"
+		android:text="@string/grouptr_create_action"
+		android:textColor="@android:color/white"
+		android:textStyle="bold"
+		app:backgroundTint="@color/zerion_primary_accent"
+		app:cornerRadius="24dp" />
+
+</LinearLayout>

@@ -186,4 +186,8 @@ public interface ActivityComponent {
 
 	void inject(com.professor.zerion.android.grouptr.GroupTrConversationActivity activity);
 
+	void inject(com.professor.zerion.android.grouptr.GroupTrCreateActivity activity);
+
+	void inject(com.professor.zerion.android.grouptr.GroupTrInviteMembersActivity activity);
+
 }
