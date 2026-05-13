@@ -444,24 +444,22 @@ class GroupTrManagerImpl
 			byte[] senderPubKey = lookupSenderPubKey(e.getContactId());
 			switch (e.getKind()) {
 				case MEMBER_ADDED:
-					if (!verifyByCreatorOrAdmin(s, senderPubKey, sig,
-							SIGNING_LABEL_GROUP_MEMBERSHIP, signedInput))
-						return;
+					if (senderPubKey == null
+							|| !Arrays.equals(senderPubKey,
+									s.getCreatorPubKey())) return;
+					if (!verify(sig, SIGNING_LABEL_GROUP_MEMBERSHIP,
+							signedInput, senderPubKey)) return;
 					applyMemberAdded(s, e);
 					break;
 				case MEMBER_REMOVED:
 					if (Arrays.equals(e.getTargetPubKey(),
 							s.getCreatorPubKey())) return;
 					if (e.getToEpoch() != s.getEpoch() + 1) return;
-					if (!verifyByCreatorOrAdmin(s, senderPubKey, sig,
-							SIGNING_LABEL_GROUP_MEMBERSHIP, signedInput))
-						return;
-					if (senderPubKey != null
-							&& !Arrays.equals(senderPubKey,
-									s.getCreatorPubKey())) {
-						MemberRole targetRole = roleOf(s, e.getTargetPubKey());
-						if (targetRole == MemberRole.ADMIN) return;
-					}
+					if (senderPubKey == null
+							|| !Arrays.equals(senderPubKey,
+									s.getCreatorPubKey())) return;
+					if (!verify(sig, SIGNING_LABEL_GROUP_MEMBERSHIP,
+							signedInput, senderPubKey)) return;
 					applyMemberRemoved(s, e);
 					break;
 				case MEMBER_LEFT:
@@ -472,10 +470,11 @@ class GroupTrManagerImpl
 					applyMemberLeft(s, e);
 					break;
 				case GROUP_DISSOLVED:
+					if (e.getEpoch() <= s.getEpoch()) return;
 					if (!verify(sig, SIGNING_LABEL_GROUP_MEMBERSHIP,
 							signedInput, s.getCreatorPubKey())) return;
 					s.setDissolved(true);
-					s.setEpoch(s.getEpoch() + 1);
+					s.setEpoch(e.getEpoch());
 					persist(s);
 					break;
 				case ROLE_CHANGED:
@@ -507,23 +506,6 @@ class GroupTrManagerImpl
 		}
 	}
 
-	private boolean verifyByCreatorOrAdmin(GroupTrState s,
-			@javax.annotation.Nullable byte[] senderPubKey,
-			byte[] sig, String label, byte[] signed) {
-		if (senderPubKey == null) return false;
-		if (!isCreatorOrAdmin(s, senderPubKey)) return false;
-		return verify(sig, label, signed, senderPubKey);
-	}
-
-	private MemberRole roleOf(GroupTrState s, @javax.annotation.Nullable byte[] pk) {
-		if (pk == null) return null;
-		if (Arrays.equals(pk, s.getCreatorPubKey())) return MemberRole.CREATOR;
-		for (GroupTrMember m : s.getMembers()) {
-			if (Arrays.equals(m.getPubKey(), pk)) return m.getRole();
-		}
-		return null;
-	}
-
 	private void autoApplyMemberAddedOfSelf(GroupMembershipChangedEvent e)
 			throws DbException, FormatException {
 		byte[] targetPub = e.getTargetPubKey();
@@ -552,9 +534,7 @@ class GroupTrManagerImpl
 				0L, MemberRole.CREATOR));
 		members.add(new GroupTrMember(localPub, targetName, e.getTimestamp(),
 				e.getEpoch()));
-		String placeholderName = senderName.isEmpty()
-				? "Group" : "Group from " + senderName;
-		GroupTrState s = new GroupTrState(e.getGroupId(), placeholderName,
+		GroupTrState s = new GroupTrState(e.getGroupId(), "",
 				new byte[32], senderPub, senderName,
 				e.getTimestamp(), e.getEpoch(), false, members);
 		persist(s);
@@ -567,9 +547,11 @@ class GroupTrManagerImpl
 			if (s == null || s.isDissolved()) return;
 			if (e.getFromEpoch() != s.getEpoch()) return;
 			byte[] senderPubKey = lookupSenderPubKey(e.getContactId());
-			if (!verifyByCreatorOrAdmin(s, senderPubKey, e.getRecordSig(),
-					SIGNING_LABEL_GROUP_EPOCH_COMMIT, e.getSignedInput()))
+			if (senderPubKey == null
+					|| !Arrays.equals(senderPubKey, s.getCreatorPubKey()))
 				return;
+			if (!verify(e.getRecordSig(), SIGNING_LABEL_GROUP_EPOCH_COMMIT,
+					e.getSignedInput(), senderPubKey)) return;
 			s.setEpoch(e.getToEpoch());
 			persist(s);
 			drainFutureBuffer(s.getGroupId(), e.getToEpoch());
@@ -631,6 +613,7 @@ class GroupTrManagerImpl
 			throws DbException, FormatException {
 		byte[] pk = e.getTargetPubKey();
 		if (pk == null) return;
+		if (e.getEpoch() <= s.getEpoch()) return;
 		String mname = e.getTargetName();
 		if (mname == null) mname = "";
 		for (GroupTrMember m : s.getMembers()) {
@@ -652,6 +635,7 @@ class GroupTrManagerImpl
 			throws DbException, FormatException {
 		byte[] pk = e.getTargetPubKey();
 		if (pk == null) return;
+		if (e.getToEpoch() <= s.getEpoch()) return;
 		List<GroupTrMember> next = new ArrayList<>(s.getMembers().size());
 		for (GroupTrMember m : s.getMembers()) {
 			if (!Arrays.equals(m.getPubKey(), pk)) next.add(m);
@@ -667,6 +651,7 @@ class GroupTrManagerImpl
 			throws DbException, FormatException {
 		byte[] pk = e.getTargetPubKey();
 		if (pk == null) return;
+		if (e.getEpoch() <= s.getEpoch()) return;
 		List<GroupTrMember> next = new ArrayList<>(s.getMembers().size());
 		boolean found = false;
 		for (GroupTrMember m : s.getMembers()) {
@@ -678,7 +663,7 @@ class GroupTrManagerImpl
 		}
 		if (!found) return;
 		s.setMembers(next);
-		s.setEpoch(s.getEpoch() + 1);
+		s.setEpoch(e.getEpoch());
 		persist(s);
 		drainFutureBuffer(s.getGroupId(), s.getEpoch());
 	}
@@ -951,7 +936,7 @@ class GroupTrManagerImpl
 	public void addMember(byte[] groupId, byte[] addedPubKey,
 			String addedName) throws DbException {
 		GroupTrState s = requireWritable(groupId);
-		requireLocalIsCreatorOrAdmin(s);
+		requireLocalIsCreator(s);
 		LocalAuthor la = db.transactionWithResult(true,
 				identityManager::getLocalAuthor);
 		PrivateKey signingKey = la.getPrivateKey();
@@ -990,24 +975,10 @@ class GroupTrManagerImpl
 	public void removeMember(byte[] groupId, byte[] removedPubKey)
 			throws DbException {
 		GroupTrState s = requireWritable(groupId);
-		requireLocalIsCreatorOrAdmin(s);
+		requireLocalIsCreator(s);
 		if (Arrays.equals(removedPubKey, s.getCreatorPubKey())) {
 			throw new GroupTrAuthException(
 					GroupTrAuthException.Reason.CANNOT_REMOVE_CREATOR);
-		}
-		LocalAuthor localAuthor = db.transactionWithResult(true,
-				identityManager::getLocalAuthor);
-		byte[] localPub = localAuthor.getPublicKey().getEncoded();
-		boolean localIsCreator =
-				Arrays.equals(localPub, s.getCreatorPubKey());
-		if (!localIsCreator) {
-			for (GroupTrMember m : s.getMembers()) {
-				if (Arrays.equals(m.getPubKey(), removedPubKey)
-						&& m.getRole() == MemberRole.ADMIN) {
-					throw new GroupTrAuthException(
-							GroupTrAuthException.Reason.NOT_CREATOR);
-				}
-			}
 		}
 		LocalAuthor la = db.transactionWithResult(true,
 				identityManager::getLocalAuthor);
@@ -1108,33 +1079,6 @@ class GroupTrManagerImpl
 		}
 	}
 
-	private void requireLocalIsCreatorOrAdmin(GroupTrState s)
-			throws DbException {
-		LocalAuthor la = db.transactionWithResult(true,
-				identityManager::getLocalAuthor);
-		byte[] localPub = la.getPublicKey().getEncoded();
-		if (Arrays.equals(localPub, s.getCreatorPubKey())) return;
-		for (GroupTrMember m : s.getMembers()) {
-			if (Arrays.equals(m.getPubKey(), localPub)
-					&& m.getRole() == MemberRole.ADMIN) {
-				return;
-			}
-		}
-		throw new GroupTrAuthException(
-				GroupTrAuthException.Reason.NOT_CREATOR);
-	}
-
-	private boolean isCreatorOrAdmin(GroupTrState s, byte[] pubKey) {
-		if (Arrays.equals(pubKey, s.getCreatorPubKey())) return true;
-		for (GroupTrMember m : s.getMembers()) {
-			if (Arrays.equals(m.getPubKey(), pubKey)
-					&& m.getRole() == MemberRole.ADMIN) {
-				return true;
-			}
-		}
-		return false;
-	}
-
 	private byte[] signOrThrow(String label, byte[] signed,
 			PrivateKey key) throws DbException {
 		try {
@@ -1230,6 +1174,7 @@ class GroupTrManagerImpl
 			throws DbException, FormatException {
 		byte[] target = e.getTargetPubKey();
 		if (target == null) return;
+		if (e.getEpoch() <= s.getEpoch()) return;
 		if (Arrays.equals(target, s.getCreatorPubKey())) return;
 		MemberRole newRole = MemberRole.valueOf(e.getNewRole());
 		if (newRole == MemberRole.CREATOR) return;
