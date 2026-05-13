@@ -610,7 +610,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				Integer messageType = meta.getOptionalInt(MSG_KEY_MSG_TYPE);
 				if (messageType != null
 						&& messageType == MessageTypes.GROUP_MEMBER_ADDED) {
-					if (meta.getBoolean(MSG_KEY_LOCAL)) continue;
+					if (meta.getBoolean(MSG_KEY_LOCAL, false)) continue;
 					byte[] addedPubKey =
 							meta.getOptionalRaw(MSG_KEY_GROUP_ADDED_PUBKEY);
 					if (addedPubKey == null
@@ -621,10 +621,9 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 					String addedName =
 							meta.getOptionalString(MSG_KEY_GROUP_ADDED_NAME);
 					long timestamp = meta.getLong(MSG_KEY_TIMESTAMP);
-					boolean local = meta.getBoolean(MSG_KEY_LOCAL);
-					boolean read = meta.getBoolean(MSG_KEY_READ);
+					boolean read = meta.getBoolean(MSG_KEY_READ, false);
 					headers.add(new GroupTrInvitationHeader(id, g, timestamp,
-							local, read, s.isSent(), s.isSeen(),
+							false, read, s.isSent(), s.isSeen(),
 							new GroupId(groupIdRaw),
 							addedName == null ? "" : addedName));
 					continue;
