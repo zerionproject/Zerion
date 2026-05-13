@@ -155,14 +155,29 @@ class GroupTrManagerImpl
 		String key = toHexString(e.getGroupId());
 		long postEpoch = e.getEpoch();
 		long localEpoch;
+		GroupTrState s;
 		try {
-			GroupTrState s = getGroup(e.getGroupId());
+			s = getGroup(e.getGroupId());
 			localEpoch = s == null ? 0L : s.getEpoch();
 		} catch (DbException ex) {
-			localEpoch = 0L;
+			return;
 		}
+		if (s == null || s.isDissolved()) return;
+		boolean senderIsMember = false;
+		byte[] senderPub = e.getSenderPubKey();
+		if (Arrays.equals(senderPub, s.getCreatorPubKey())) {
+			senderIsMember = true;
+		} else {
+			for (GroupTrMember m : s.getMembers()) {
+				if (Arrays.equals(m.getPubKey(), senderPub)) {
+					senderIsMember = true;
+					break;
+				}
+			}
+		}
+		if (!senderIsMember) return;
 		GroupTrPost p = new GroupTrPost(e.getGroupId(),
-				e.getSenderPubKey(), e.getSenderName(),
+				senderPub, e.getSenderName(),
 				e.getCiphertext(), e.getTimestamp(), postEpoch, false);
 		if (postEpoch < localEpoch - 1L) {
 			return;
