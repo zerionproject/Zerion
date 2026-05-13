@@ -22,7 +22,7 @@
 set -euo pipefail
 
 CVSS_FAIL="${CVSS_FAIL:-7.0}"
-DC_VERSION="${DC_VERSION:-10.0.4}"
+DC_VERSION="${DC_VERSION:-12.2.2}"
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 BUILD_DIR="$ROOT_DIR/build"
 CLI_DIR="$BUILD_DIR/owasp-cli"
@@ -36,8 +36,11 @@ BIN="$CLI_DIR/dependency-check/bin/dependency-check.sh"
 
 if [ ! -x "$BIN" ]; then
 	echo ">>> Downloading OWASP dependency-check $DC_VERSION CLI..."
-	URL="https://github.com/jeremylong/DependencyCheck/releases/download/v${DC_VERSION}/dependency-check-${DC_VERSION}-release.zip"
-	curl -fsSL -o "$ZIP" "$URL"
+	URL="https://github.com/dependency-check/DependencyCheck/releases/download/v${DC_VERSION}/dependency-check-${DC_VERSION}-release.zip"
+	if ! curl -fsSL -o "$ZIP" "$URL"; then
+		URL="https://github.com/jeremylong/DependencyCheck/releases/download/v${DC_VERSION}/dependency-check-${DC_VERSION}-release.zip"
+		curl -fsSL -o "$ZIP" "$URL"
+	fi
 	(cd "$CLI_DIR" && unzip -q -o "$ZIP")
 fi
 

@@ -431,7 +431,13 @@ class GroupTrManagerImpl
 	private void handleMembershipEvent(GroupMembershipChangedEvent e) {
 		try {
 			GroupTrState s = getGroup(e.getGroupId());
-			if (s == null) return;
+			if (s == null) {
+				if (e.getKind() ==
+						GroupMembershipChangedEvent.ChangeKind.MEMBER_ADDED) {
+					autoApplyMemberAddedOfSelf(e);
+				}
+				return;
+			}
 			if (s.isDissolved()) return;
 			byte[] sig = e.getRecordSig();
 			byte[] signedInput = e.getSignedInput();
@@ -516,6 +522,43 @@ class GroupTrManagerImpl
 			if (Arrays.equals(m.getPubKey(), pk)) return m.getRole();
 		}
 		return null;
+	}
+
+	private void autoApplyMemberAddedOfSelf(GroupMembershipChangedEvent e)
+			throws DbException, FormatException {
+		byte[] targetPub = e.getTargetPubKey();
+		if (targetPub == null || targetPub.length != 32) return;
+		LocalAuthor la = db.transactionWithResult(true,
+				identityManager::getLocalAuthor);
+		byte[] localPub = la.getPublicKey().getEncoded();
+		if (!Arrays.equals(targetPub, localPub)) return;
+		byte[] senderPub = lookupSenderPubKey(e.getContactId());
+		if (senderPub == null) return;
+		if (!verify(e.getRecordSig(), SIGNING_LABEL_GROUP_MEMBERSHIP,
+				e.getSignedInput(), senderPub)) return;
+		Contact senderContact = db.transactionWithNullableResult(true, txn -> {
+			try {
+				return contactManager.getContact(txn, e.getContactId());
+			} catch (DbException ex) {
+				return null;
+			}
+		});
+		if (senderContact == null) return;
+		String senderName = senderContact.getAuthor().getName();
+		String targetName = e.getTargetName() != null
+				? e.getTargetName() : la.getName();
+		List<GroupTrMember> members = new ArrayList<>(2);
+		members.add(new GroupTrMember(senderPub, senderName, e.getTimestamp(),
+				0L, MemberRole.CREATOR));
+		members.add(new GroupTrMember(localPub, targetName, e.getTimestamp(),
+				e.getEpoch()));
+		String placeholderName = senderName.isEmpty()
+				? "Group" : "Group from " + senderName;
+		GroupTrState s = new GroupTrState(e.getGroupId(), placeholderName,
+				new byte[32], senderPub, senderName,
+				e.getTimestamp(), e.getEpoch(), false, members);
+		persist(s);
+		addToIndex(e.getGroupId());
 	}
 
 	private void handleEpochCommit(GroupEpochCommitEvent e) {
@@ -920,9 +963,27 @@ class GroupTrManagerImpl
 				signingKey);
 		BdfList body = BdfList.of(33L, groupId, addedPubKey, addedName,
 				(long) newEpoch, timestamp, sig);
-		db.transaction(false, txn -> fanOut(txn, s, body, timestamp,
-				null));
+		db.transaction(false, txn ->
+				fanOutToAllPlusTarget(txn, s, body, timestamp, addedPubKey));
 		applyLocalAdd(s, addedPubKey, addedName, timestamp, newEpoch);
+	}
+
+	private void fanOutToAllPlusTarget(Transaction txn, GroupTrState s,
+			BdfList body, long timestamp, byte[] targetPubKey)
+			throws DbException {
+		LocalAuthor la = identityManager.getLocalAuthor(txn);
+		byte[] localPub = la.getPublicKey().getEncoded();
+		Contact target = findContactByPubKey(txn, targetPubKey);
+		if (target != null) {
+			dispatchToContact(txn, target, timestamp, body);
+		}
+		for (GroupTrMember m : s.getMembers()) {
+			if (Arrays.equals(m.getPubKey(), localPub)) continue;
+			if (Arrays.equals(m.getPubKey(), targetPubKey)) continue;
+			Contact c = findContactByPubKey(txn, m.getPubKey());
+			if (c == null) continue;
+			dispatchToContact(txn, c, timestamp, body);
+		}
 	}
 
 	@Override
