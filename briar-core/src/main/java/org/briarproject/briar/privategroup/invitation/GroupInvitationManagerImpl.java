@@ -139,34 +139,19 @@ class GroupInvitationManagerImpl extends ConversationClientImpl
 		return null;
 	}
 
-	private static final java.util.logging.Logger DIAG =
-			java.util.logging.Logger.getLogger("ZN-DIAG-INVITE-LOCK");
-
 	private void enforceInviteHybridLock(Transaction txn, Message m,
 			BdfList body) throws DbException, FormatException {
 		int type = body.getInt(0);
-		DIAG.info("enforceInviteHybridLock entry type=" + type);
 		if (type != INVITE.getValue()) return;
 		BdfList creatorList = body.getList(1);
 		org.briarproject.bramble.api.identity.Author creator =
 				clientHelper.parseAndValidateAuthor(creatorList);
 		byte[] creatorPub = creator.getPublicKey().getEncoded();
 		byte[] creatorMlDsaPub = lookupAuthorMlDsaPub(txn, creatorPub);
-		DIAG.info("enforceInviteHybridLock creator.pub.len="
-				+ creatorPub.length
-				+ " creatorMlDsaPub=" + (creatorMlDsaPub == null ? "null"
-						: ("present:" + creatorMlDsaPub.length + "B")));
-		if (creatorMlDsaPub == null) {
-			DIAG.info("enforceInviteHybridLock SKIP (peer has no ML-DSA)");
-			return;
-		}
+		if (creatorMlDsaPub == null) return;
 		byte[] sig = body.getRaw(5);
-		DIAG.info("enforceInviteHybridLock sig.len=" + sig.length
-				+ " expected=" + org.briarproject.bramble.api.crypto
-						.PostQuantumConstants.HYBRID_SIGNATURE_BYTES);
 		if (sig.length != org.briarproject.bramble.api.crypto
 				.PostQuantumConstants.HYBRID_SIGNATURE_BYTES) {
-			DIAG.severe("enforceInviteHybridLock REJECT: sig length mismatch");
 			throw new FormatException();
 		}
 		PrivateGroup pg = privateGroupFactory.createPrivateGroup(
@@ -177,25 +162,13 @@ class GroupInvitationManagerImpl extends ConversationClientImpl
 				creatorPub, creatorMlDsaPub);
 		try {
 			byte[] signedBytes = clientHelper.toByteArray(signed);
-			DIAG.info("enforceInviteHybridLock signedBytes.len="
-					+ signedBytes.length
-					+ " sha256-prefix=" + java.util.HexFormat.of().formatHex(
-							java.util.Arrays.copyOf(
-									java.security.MessageDigest
-											.getInstance("SHA-256")
-											.digest(signedBytes), 8)));
-			boolean ok = crypto.verifyHybridSignature(sig,
+			if (!crypto.verifyHybridSignature(sig,
 					org.briarproject.briar.api.privategroup.invitation
 							.GroupInvitationFactory.SIGNING_LABEL_INVITE,
-					signedBytes, hpk);
-			if (!ok) {
-				DIAG.severe("enforceInviteHybridLock REJECT: hybrid verify "
-						+ "returned false");
+					signedBytes, hpk)) {
 				throw new FormatException();
 			}
-			DIAG.info("enforceInviteHybridLock hybrid verify PASS");
 		} catch (java.security.GeneralSecurityException e) {
-			DIAG.severe("enforceInviteHybridLock REJECT: " + e);
 			throw new FormatException();
 		}
 	}
