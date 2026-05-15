@@ -9,7 +9,6 @@ import org.briarproject.bramble.api.crypto.PrivateKey;
 import org.briarproject.bramble.api.crypto.PublicKey;
 import org.briarproject.bramble.api.crypto.SignaturePublicKey;
 import org.briarproject.bramble.api.data.BdfDictionary;
-import org.briarproject.bramble.api.data.BdfEntry;
 import org.briarproject.bramble.api.data.BdfList;
 import org.briarproject.bramble.api.db.DatabaseComponent;
 import org.briarproject.bramble.api.db.DbException;
@@ -1191,8 +1190,8 @@ class GroupTrManagerImpl
 		mlDsaPubKeyCache.clear();
 		try {
 			db.transaction(false, txn -> {
-				BdfDictionary query = BdfDictionary.of(
-						new BdfEntry("groupId", groupId));
+				BdfDictionary query = new BdfDictionary();
+				query.put("groupId", groupId);
 				for (Contact c : contactManager.getContacts(txn)) {
 					try {
 						org.briarproject.bramble.api.sync.GroupId contactGid =
