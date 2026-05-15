@@ -315,7 +315,7 @@ class ConversationVisitor implements
 		}
 		return new ConversationRequestItem(
 				R.layout.list_item_conversation_request, text, contactName,
-				h, h.getGroupTrGroupId().getBytes(), false);
+				h, h.getGroupTrGroupId().getBytes(), h.isRead());
 	}
 
 	@Nullable

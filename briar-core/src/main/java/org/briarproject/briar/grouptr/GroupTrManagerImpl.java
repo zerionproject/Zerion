@@ -83,7 +83,6 @@ import static org.briarproject.briar.grouptr.GroupTrConstants.SETTINGS_NS_OFFERS
 import static org.briarproject.briar.grouptr.GroupTrConstants.SIGNING_LABEL_GROUPTR_INVITE_OFFER;
 import static org.briarproject.briar.grouptr.GroupTrConstants.SIGNING_LABEL_GROUPTR_INVITE_ACCEPT;
 import static org.briarproject.briar.grouptr.GroupTrConstants.SIGNING_LABEL_GROUPTR_INVITE_DECLINE;
-import static org.briarproject.briar.api.autodelete.AutoDeleteConstants.NO_AUTO_DELETE_TIMER;
 
 @ThreadSafe
 @NotNullByDefault
@@ -593,8 +592,7 @@ class GroupTrManagerImpl
 			if (list.size() < 2) return null;
 			byte[] contactPubKey = list.getRaw(0);
 			String contactName = list.getString(1);
-			return new PendingInviteSent(grouptrGroupId, contactId,
-					contactPubKey, contactName);
+			return new PendingInviteSent(contactPubKey, contactName);
 		} catch (DbException | FormatException ex) {
 			return null;
 		}
@@ -638,7 +636,7 @@ class GroupTrManagerImpl
 			byte[] creatorPubKey = list.getRaw(3);
 			int contactInt = list.getLong(4).intValue();
 			long inviteTs = list.getLong(5);
-			return new PendingInviteReceived(grouptrGroupId, groupName, salt,
+			return new PendingInviteReceived(groupName, salt,
 					creatorName, creatorPubKey, new ContactId(contactInt),
 					inviteTs);
 		} catch (DbException | FormatException ex) {
@@ -654,22 +652,16 @@ class GroupTrManagerImpl
 	}
 
 	private static final class PendingInviteSent {
-		final byte[] grouptrGroupId;
-		final ContactId contactId;
 		final byte[] contactPubKey;
 		final String contactName;
 
-		PendingInviteSent(byte[] grouptrGroupId, ContactId contactId,
-				byte[] contactPubKey, String contactName) {
-			this.grouptrGroupId = grouptrGroupId;
-			this.contactId = contactId;
+		PendingInviteSent(byte[] contactPubKey, String contactName) {
 			this.contactPubKey = contactPubKey;
 			this.contactName = contactName;
 		}
 	}
 
 	private static final class PendingInviteReceived {
-		final byte[] grouptrGroupId;
 		final String groupName;
 		final byte[] salt;
 		final String creatorName;
@@ -677,10 +669,9 @@ class GroupTrManagerImpl
 		final ContactId contactId;
 		final long inviteTimestamp;
 
-		PendingInviteReceived(byte[] grouptrGroupId, String groupName,
+		PendingInviteReceived(String groupName,
 				byte[] salt, String creatorName, byte[] creatorPubKey,
 				ContactId contactId, long inviteTimestamp) {
-			this.grouptrGroupId = grouptrGroupId;
 			this.groupName = groupName;
 			this.salt = salt;
 			this.creatorName = creatorName;
@@ -1493,7 +1484,6 @@ class GroupTrManagerImpl
 				signingKey);
 		BdfList body = BdfList.of(35L, groupId, localPub,
 				(long) newEpoch, timestamp, sig);
-		int recipients = s.getMembers().size() - 1;
 		db.transaction(false, txn -> fanOut(txn, s, body, timestamp,
 				localPub));
 		applyLocalLeave(s, localPub, newEpoch);
