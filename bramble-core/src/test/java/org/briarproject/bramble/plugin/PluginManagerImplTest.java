@@ -36,7 +36,6 @@ public class PluginManagerImplTest extends BrambleMockTestCase {
 		TransportPropertyManager transportPropertyManager =
 				context.mock(TransportPropertyManager.class);
 
-		// Two simplex plugin factories: both create plugins, one fails to start
 		SimplexPluginFactory simplexFactory =
 				context.mock(SimplexPluginFactory.class);
 		SimplexPlugin simplexPlugin = context.mock(SimplexPlugin.class);
@@ -47,7 +46,6 @@ public class PluginManagerImplTest extends BrambleMockTestCase {
 				context.mock(SimplexPlugin.class, "simplexFailPlugin");
 		TransportId simplexFailId = getTransportId();
 
-		// Two duplex plugin factories: one creates a plugin, the other fails
 		DuplexPluginFactory duplexFactory =
 				context.mock(DuplexPluginFactory.class);
 		DuplexPlugin duplexPlugin = context.mock(DuplexPlugin.class);
@@ -65,40 +63,38 @@ public class PluginManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(duplexId));
 			allowing(pluginConfig).shouldPoll();
 			will(returnValue(false));
-			// start()
-			// First simplex plugin
+
 			oneOf(pluginConfig).getSimplexFactories();
 			will(returnValue(Arrays.asList(simplexFactory,
 					simplexFailFactory)));
 			oneOf(simplexFactory).getId();
 			will(returnValue(simplexId));
 			oneOf(simplexFactory).createPlugin(with(any(PluginCallback.class)));
-			will(returnValue(simplexPlugin)); // Created
+			will(returnValue(simplexPlugin));
 			oneOf(simplexPlugin).start();
-			// Second simplex plugin
+
 			oneOf(simplexFailFactory).getId();
 			will(returnValue(simplexFailId));
 			oneOf(simplexFailFactory).createPlugin(with(any(
 					PluginCallback.class)));
-			will(returnValue(simplexFailPlugin)); // Created
+			will(returnValue(simplexFailPlugin));
 			oneOf(simplexFailPlugin).start();
 			will(throwException(new PluginException()));
-			// First duplex plugin
+
 			oneOf(pluginConfig).getDuplexFactories();
 			will(returnValue(Arrays.asList(duplexFactory, duplexFailFactory)));
 			oneOf(duplexFactory).getId();
 			will(returnValue(duplexId));
 			oneOf(duplexFactory).createPlugin(with(any(PluginCallback.class)));
-			will(returnValue(duplexPlugin)); // Created
+			will(returnValue(duplexPlugin));
 			oneOf(duplexPlugin).start();
-			// Second duplex plugin
+
 			oneOf(duplexFailFactory).getId();
 			will(returnValue(duplexFailId));
 			oneOf(duplexFailFactory).createPlugin(with(any(
 					PluginCallback.class)));
-			will(returnValue(null)); // Failed to create a plugin
-			// stop()
-			// Stop the plugins
+			will(returnValue(null));
+
 			oneOf(simplexPlugin).stop();
 			oneOf(simplexFailPlugin).stop();
 			oneOf(duplexPlugin).stop();
@@ -108,7 +104,6 @@ public class PluginManagerImplTest extends BrambleMockTestCase {
 				eventBus, pluginConfig, connectionManager, settingsManager,
 				transportPropertyManager);
 
-		// Two plugins should be started and stopped
 		p.startService();
 		p.stopService();
 	}

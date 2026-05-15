@@ -4,7 +4,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.Arrays;
 
-
 @NotNullByDefault
 public class HybridEncapsulationResult {
 
@@ -16,17 +15,14 @@ public class HybridEncapsulationResult {
 		this.sharedSecret = sharedSecret;
 	}
 
-	
 	public byte[] getCiphertext() {
 		return ciphertext;
 	}
 
-	
 	public byte[] getSharedSecret() {
 		return sharedSecret;
 	}
 
-	
 	public void clearSecret() {
 		Arrays.fill(sharedSecret, (byte) 0);
 	}

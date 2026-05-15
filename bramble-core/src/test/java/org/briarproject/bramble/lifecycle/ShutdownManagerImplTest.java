@@ -18,12 +18,12 @@ public class ShutdownManagerImplTest extends BrambleTestCase {
 		Set<Integer> handles = new HashSet<>();
 		for (int i = 0; i < 100; i++) {
 			int handle = s.addShutdownHook(() -> {});
-			// The handles should all be distinct
+
 			assertTrue(handles.add(handle));
 		}
-		// The hooks should be removable
+
 		for (int handle : handles) assertTrue(s.removeShutdownHook(handle));
-		// The hooks should no longer be removable
+
 		for (int handle : handles) assertFalse(s.removeShutdownHook(handle));
 	}
 

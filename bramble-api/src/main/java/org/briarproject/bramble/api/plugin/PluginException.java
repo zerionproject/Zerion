@@ -1,6 +1,5 @@
 package org.briarproject.bramble.api.plugin;
 
-
 public class PluginException extends Exception {
 
 	public PluginException() {

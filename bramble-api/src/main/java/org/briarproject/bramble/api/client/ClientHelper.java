@@ -47,7 +47,6 @@ public interface ClientHelper {
 	BdfList getMessageAsList(Transaction txn, MessageId m) throws DbException,
 			FormatException;
 
-	
 	@Deprecated
 	BdfList getMessageAsList(Transaction txn, MessageId m, boolean canonical)
 			throws DbException, FormatException;
@@ -109,7 +108,6 @@ public interface ClientHelper {
 
 	BdfList toList(Message m) throws FormatException;
 
-	
 	@Deprecated
 	BdfList toList(Message m, boolean canonical) throws FormatException;
 
@@ -133,11 +131,9 @@ public interface ClientHelper {
 	Map<TransportId, TransportProperties> parseAndValidateTransportPropertiesMap(
 			BdfDictionary properties) throws FormatException;
 
-	
 	ContactId getContactId(Transaction txn, GroupId contactGroupId)
 			throws DbException;
 
-	
 	void setContactId(Transaction txn, GroupId contactGroupId, ContactId c)
 			throws DbException;
 }

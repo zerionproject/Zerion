@@ -7,7 +7,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import static org.briarproject.bramble.db.JdbcUtils.tryToClose;
 
-
 class Migration56_57 implements Migration<Connection> {
 	private final DatabaseTypes dbTypes;
 

@@ -7,7 +7,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.annotation.concurrent.ThreadSafe;
 
-
 @ThreadSafe
 @NotNullByDefault
 public class OutgoingSessionRecord {

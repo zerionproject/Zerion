@@ -28,16 +28,6 @@ import java.util.regex.Matcher;
 
 import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.LINK_REGEX;
 
-/**
- * Camera-based QR code scanner for Zerion handshake links.
- *
- * <p>Uses CameraX for the preview + frame delivery, ZXing for the
- * decode. No Google Play Services / ML Kit / Firebase dependency —
- * earlier ML Kit-based path was dragging the Google CCT (Cloud
- * Computing Toolkit) telemetry stack in transitively, which phoned
- * home to firebaselogging.googleapis.com over clearnet HTTPS,
- * bypassing the app's Tor-only network policy.
- */
 public class QrScannerActivity extends AppCompatActivity {
 
 	public static final String EXTRA_SCANNED_LINK = "scanned_link";
@@ -135,9 +125,6 @@ public class QrScannerActivity extends AppCompatActivity {
 		}
 	}
 
-	/** Copy the Y (luminance) plane out of a YUV_420_888 ImageProxy
-	 * with row-stride padding collapsed, so ZXing's
-	 * PlanarYUVLuminanceSource can index it as width*height bytes. */
 	@androidx.annotation.Nullable
 	private static byte[] extractYPlane(ImageProxy proxy) {
 		ImageProxy.PlaneProxy[] planes = proxy.getPlanes();
@@ -147,7 +134,7 @@ public class QrScannerActivity extends AppCompatActivity {
 		int width = proxy.getWidth();
 		int height = proxy.getHeight();
 		int rowStride = y.getRowStride();
-		// Pixel stride for the Y plane is always 1 in YUV_420_888.
+
 		byte[] out = new byte[width * height];
 		if (rowStride == width) {
 			buf.get(out, 0, width * height);

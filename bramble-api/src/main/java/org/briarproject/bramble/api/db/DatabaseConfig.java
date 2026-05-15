@@ -10,13 +10,10 @@ import javax.annotation.Nullable;
 @NotNullByDefault
 public interface DatabaseConfig {
 
-	
 	File getDatabaseDirectory();
 
-	
 	File getDatabaseKeyDirectory();
 
-	
 	@Nullable
 	KeyStrengthener getKeyStrengthener();
 }

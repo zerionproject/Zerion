@@ -77,12 +77,6 @@ public class B4OnionRotation {
 		MIGRATED,
 	}
 
-	/**
-	 * The Tor + TPM calls B.4 needs to mint, retire, and advertise
-	 * onions. Implemented by {@code TorPlugin}; pulled out as an
-	 * interface to avoid a Dagger cycle (TorPlugin → B4OnionRotation →
-	 * TorPlugin).
-	 */
 	public interface B4TorAdapter {
 		HiddenServiceProperties publishHiddenService(@Nullable String privKey)
 				throws IOException;
@@ -278,20 +272,6 @@ public class B4OnionRotation {
 		txn.attach(new B4PeerOnionAnnouncedEvent(from));
 	}
 
-	/**
-	 * Called by {@code TorPlugin.createConnection} after a successful
-	 * dial. If the dialed onion equals the stored pending for this
-	 * contact, the peer's rotation is complete from our side: the new
-	 * onion is reachable and the peer's HSDir descriptor has propagated.
-	 *
-	 * <p>We don't try to overwrite the contact's stored {@code onion3} in
-	 * the TPM contact group here — the peer publishes a regular TPM
-	 * update with the new {@code onion3} immediately after their own
-	 * promotion completes, and Bramble's TPM dedup will replace the old
-	 * value at that point. Until that arrives, leaving the pending in
-	 * place keeps {@code getRemoteProperties} substituting the right
-	 * onion on subsequent dials.
-	 */
 	public void onSuccessfulConnect(ContactId cid, String dialedOnion)
 			throws DbException {
 		if (!B4_ROTATION_ENABLED) return;
@@ -319,21 +299,6 @@ public class B4OnionRotation {
 		});
 	}
 
-	/**
-	 * Atomic swap: called from {@code
-	 * TransportPropertyManagerImpl.incomingMessage} when a regular
-	 * tor-transport TPM update arrives whose {@code onion3} value matches
-	 * our stored pending for this contact. That's the peer confirming
-	 * their {@code executePromotion} has run — the new onion is now
-	 * their "current" and the old one is retired. Wipe pending state so
-	 * subsequent dials skip the substitution path and target the (now-
-	 * up-to-date) {@code onion3} directly. Without this, every Bramble
-	 * Poller tick re-runs the migration code path even though there's
-	 * nothing left to migrate.
-	 *
-	 * <p>Reuses the caller's transaction (called from inside the TPM
-	 * incomingMessage hook).
-	 */
 	public void onPeerRotationComplete(Transaction txn, ContactId cid,
 			String newCurrentOnion) throws DbException {
 		if (!B4_ROTATION_ENABLED) return;
@@ -359,15 +324,6 @@ public class B4OnionRotation {
 		}
 	}
 
-	/**
-	 * Called by {@code TorPlugin.createConnection} when the pending-onion
-	 * dial fails. Increments the per-contact failure counter; once it
-	 * reaches {@link
-	 * org.briarproject.bramble.api.plugin.B4Constants#B4_PENDING_DIAL_FAILURE_THRESHOLD}
-	 * subsequent {@link #getPendingOnionForContact(Transaction,
-	 * ContactId)} calls return null so the dialer reverts to the
-	 * previous (current) onion until the peer announces again.
-	 */
 	public void onPendingDialFailed(ContactId cid) throws DbException {
 		if (!B4_ROTATION_ENABLED) return;
 		db.transaction(false, txn -> {
@@ -525,31 +481,10 @@ public class B4OnionRotation {
 		}
 	}
 
-	/**
-	 * Stops B.4 from interacting with the now-defunct host plugin so
-	 * pending rebroadcast tasks can't fire after teardown (e.g. on
-	 * logout). Tasks already in the daemon scheduler check {@code
-	 * adapter == null} and bail. Idempotent. The scheduler itself stays
-	 * alive — it's a daemon thread, dies with the JVM, and a
-	 * subsequent {@code bindAdapter} re-arms operation cleanly.
-	 */
 	public void shutdown() {
 		adapter = null;
 	}
 
-	/**
-	 * User-triggered "Force complete rotation now" — retires the old
-	 * onion immediately, equivalent to the 90-day force-expire path
-	 * but on demand. Single-flight via {@code rotationLock}; no-op if
-	 * not currently in {@link RotationPhase#ANNOUNCING}. Peers that
-	 * haven't migrated yet will lose connectivity until they reconnect
-	 * through another channel — UI must warn before invoking.
-	 *
-	 * @return {@code true} if a promotion actually ran; {@code false}
-	 * if no rotation was in progress (no-op). Used by the UI so the
-	 * confirmation toast doesn't lie when a peer-driven promotion
-	 * happens to win the race against the user's tap.
-	 */
 	public boolean forceCompleteRotation() throws DbException {
 		if (!B4_ROTATION_ENABLED) return false;
 		if (adapter == null) return false;
@@ -811,13 +746,6 @@ public class B4OnionRotation {
 		return !db.getContacts(txn).isEmpty();
 	}
 
-	/**
-	 * Validate a v3 onion address. 56 chars base32 lowercase ending in
-	 * {@code 'd'} (the v3 checksum byte rendered as base32 always ends
-	 * in 'd'). Conservative — match iOS
-	 * {@code B4OnionRotation.isValidV3Onion} byte-for-byte so peers
-	 * don't accept what the other side rejects (and vice versa).
-	 */
 	private static boolean isValidV3Onion(String s) {
 		if (s.length() != 56) return false;
 		for (int i = 0; i < s.length(); i++) {

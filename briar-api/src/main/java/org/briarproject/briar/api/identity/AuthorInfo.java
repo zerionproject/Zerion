@@ -62,9 +62,9 @@ public class AuthorInfo {
 		if (!(o instanceof AuthorInfo)) return false;
 		AuthorInfo info = (AuthorInfo) o;
 		return status == info.status &&
-				// aliases are equal
+
 				NullSafety.equals(alias, info.alias) &&
-				// avatars are equal
+
 				NullSafety.equals(avatarHeader, info.avatarHeader);
 	}
 }

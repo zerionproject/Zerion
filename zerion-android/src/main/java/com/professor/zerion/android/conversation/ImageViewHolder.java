@@ -94,9 +94,7 @@ class ImageViewHolder extends ViewHolder {
 			imageView.setScaleType(FIT_CENTER);
 			if (playOverlay != null) playOverlay.setVisibility(View.GONE);
 		} else if (isSticker) {
-			// Chromeless: no rounded corners, no crop. The image is the
-			// bubble — the Radii parameter is ignored on purpose so a
-			// transparent PNG renders as cleanly as on iOS.
+
 			loadStickerImage(attachment);
 			imageView.setScaleType(FIT_CENTER);
 		} else if (isVideo) {
@@ -112,8 +110,7 @@ class ImageViewHolder extends ViewHolder {
 
 	private void setViewDimensions(AttachmentItem a, boolean single,
 			boolean needsStretch, boolean isSticker) {
-		// Stickers render at a fixed 160dp square regardless of the
-		// thumbnail dimensions the receive path computed — matches iOS.
+
 		int stickerPx = (int) (160 * itemView.getResources()
 				.getDisplayMetrics().density);
 		View container = itemView;

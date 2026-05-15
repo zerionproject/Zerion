@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="@drawable/bg_zerion_gradient"
+	android:fitsSystemWindows="true">
+
+	<com.google.android.material.appbar.AppBarLayout
+		android:id="@+id/appBarLayout"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:background="@drawable/bg_toolbar_transparent"
+		android:elevation="6dp"
+		app:elevation="6dp">
+
+		<com.google.android.material.appbar.MaterialToolbar
+			android:id="@+id/toolbar"
+			style="@style/Zerion.Toolbar"
+			android:layout_width="match_parent"
+			android:layout_height="?attr/actionBarSize"
+			android:background="@android:color/transparent"
+			android:paddingStart="4dp"
+			android:paddingEnd="4dp"
+			app:navigationIcon="@drawable/ic_arrow_back"
+			app:navigationIconTint="@android:color/white">
+
+			<LinearLayout
+				android:id="@+id/toolbarTitleBlock"
+				android:layout_width="wrap_content"
+				android:layout_height="match_parent"
+				android:background="?attr/selectableItemBackground"
+				android:clickable="true"
+				android:focusable="true"
+				android:gravity="center_vertical"
+				android:orientation="horizontal"
+				android:paddingStart="4dp"
+				android:paddingEnd="8dp">
+
+				<TextView
+					android:id="@+id/groupAvatar"
+					android:layout_width="36dp"
+					android:layout_height="36dp"
+					android:background="@drawable/badge_circle_cyan"
+					android:gravity="center"
+					android:textColor="@android:color/white"
+					android:textSize="15sp"
+					android:textStyle="bold"
+					tools:text="F" />
+
+				<LinearLayout
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:layout_marginStart="12dp"
+					android:orientation="vertical">
+
+					<TextView
+						android:id="@+id/groupTitle"
+						android:layout_width="wrap_content"
+						android:layout_height="wrap_content"
+						android:ellipsize="end"
+						android:letterSpacing="0.01"
+						android:maxLines="1"
+						android:textColor="@android:color/white"
+						android:textSize="17sp"
+						android:textStyle="bold"
+						tools:text="Family" />
+
+					<TextView
+						android:id="@+id/groupSubtitle"
+						android:layout_width="wrap_content"
+						android:layout_height="wrap_content"
+						android:ellipsize="end"
+						android:letterSpacing="0.02"
+						android:maxLines="1"
+						android:textColor="#CCFFFFFF"
+						android:textSize="11sp"
+						tools:text="4 members · End-to-end encrypted" />
+
+				</LinearLayout>
+
+			</LinearLayout>
+
+		</com.google.android.material.appbar.MaterialToolbar>
+
+	</com.google.android.material.appbar.AppBarLayout>
+
+	<LinearLayout
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:orientation="vertical"
+		app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+		<FrameLayout
+			android:layout_width="match_parent"
+			android:layout_height="0dp"
+			android:layout_weight="1"
+			android:background="@android:color/transparent">
+
+			<androidx.core.widget.NestedScrollView
+				android:id="@+id/postsScroll"
+				android:layout_width="match_parent"
+				android:layout_height="match_parent"
+				android:clipToPadding="false"
+				android:paddingHorizontal="8dp"
+				android:paddingTop="8dp"
+				android:paddingBottom="8dp">
+
+				<LinearLayout
+					android:id="@+id/postsContainer"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:orientation="vertical" />
+
+			</androidx.core.widget.NestedScrollView>
+
+			<TextView
+				android:id="@+id/emptyState"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:layout_gravity="center"
+				android:gravity="center"
+				android:padding="32dp"
+				android:text="@string/grouptr_empty_conversation"
+				android:textColor="@color/zerion_text_secondary"
+				android:textSize="14sp"
+				android:visibility="gone"
+				tools:visibility="visible" />
+
+		</FrameLayout>
+
+		<TextView
+			android:id="@+id/removedBanner"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:layout_marginHorizontal="16dp"
+			android:layout_marginBottom="8dp"
+			android:background="@drawable/bg_contact_card"
+			android:gravity="center"
+			android:padding="14dp"
+			android:textColor="@color/zerion_red_500_new"
+			android:textSize="13sp"
+			android:visibility="gone"
+			tools:text="You were removed from this group by Alice."
+			tools:visibility="visible" />
+
+		<FrameLayout
+			android:id="@+id/input_container"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:layout_marginStart="8dp"
+			android:layout_marginEnd="8dp"
+			android:layout_marginBottom="8dp">
+
+			<LinearLayout
+				android:id="@+id/composerRow"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:background="@drawable/bg_input_bar"
+				android:clipToPadding="false"
+				android:elevation="8dp"
+				android:gravity="center_vertical"
+				android:orientation="horizontal"
+				android:paddingStart="8dp"
+				android:paddingEnd="4dp"
+				android:paddingTop="8dp"
+				android:paddingBottom="8dp">
+
+				<FrameLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_gravity="center_vertical"
+					android:layout_marginEnd="4dp"
+					android:layout_weight="1">
+
+					<com.vanniktech.emoji.EmojiEditText
+						android:id="@+id/messageInput"
+						android:layout_width="match_parent"
+						android:layout_height="wrap_content"
+						android:background="@drawable/text_input_background"
+						android:hint="@string/grouptr_input_hint"
+						android:imeOptions="flagNoPersonalizedLearning"
+						android:importantForAutofill="no"
+						android:inputType="textMultiLine|textCapSentences|textNoSuggestions"
+						android:maxLines="6"
+						android:minHeight="44dp"
+						android:paddingStart="40dp"
+						android:paddingTop="12dp"
+						android:paddingEnd="16dp"
+						android:paddingBottom="12dp"
+						android:privateImeOptions="nm"
+						android:scrollbars="vertical"
+						android:textColor="?android:attr/textColorPrimary"
+						android:textColorHint="@color/zerion_text_secondary"
+						android:textSize="15sp" />
+
+					<androidx.appcompat.widget.AppCompatImageButton
+						android:id="@+id/emojiToggle"
+						android:layout_width="40dp"
+						android:layout_height="40dp"
+						android:layout_gravity="start|center_vertical"
+						android:layout_marginStart="2dp"
+						android:background="@android:color/transparent"
+						android:contentDescription="@string/toggle_emoji_keyboard"
+						android:padding="8dp"
+						android:scaleType="center"
+						app:srcCompat="@drawable/ic_emoji_toggle"
+						app:tint="@color/zerion_primary_accent" />
+
+				</FrameLayout>
+
+				<androidx.appcompat.widget.AppCompatImageButton
+					android:id="@+id/attachmentButton"
+					android:layout_width="44dp"
+					android:layout_height="44dp"
+					android:layout_gravity="center_vertical"
+					android:background="?attr/selectableItemBackground"
+					android:clickable="true"
+					android:contentDescription="@string/add_attachment"
+					android:focusable="true"
+					android:padding="10dp"
+					android:scaleType="center"
+					app:srcCompat="@drawable/ic_add_circle"
+					app:tint="@color/zerion_primary_accent" />
+
+				<FrameLayout
+					android:layout_width="44dp"
+					android:layout_height="44dp"
+					android:layout_gravity="center_vertical">
+
+					<androidx.appcompat.widget.AppCompatImageButton
+						android:id="@+id/voiceButton"
+						android:layout_width="44dp"
+						android:layout_height="44dp"
+						android:background="?attr/selectableItemBackground"
+						android:clickable="true"
+						android:contentDescription="@string/record_voice_message"
+						android:focusable="true"
+						android:padding="10dp"
+						android:scaleType="center"
+						app:srcCompat="@drawable/ic_mic_24dp"
+						app:tint="@color/zerion_primary_accent" />
+
+					<androidx.appcompat.widget.AppCompatImageButton
+						android:id="@+id/sendButton"
+						android:layout_width="44dp"
+						android:layout_height="44dp"
+						android:background="?attr/selectableItemBackground"
+						android:clickable="true"
+						android:contentDescription="@string/grouptr_send"
+						android:enabled="false"
+						android:focusable="true"
+						android:padding="10dp"
+						android:scaleType="center"
+						android:visibility="invisible"
+						app:srcCompat="@drawable/social_send_now_white"
+						app:tint="@color/zerion_primary_accent" />
+
+				</FrameLayout>
+
+			</LinearLayout>
+
+			<LinearLayout
+				android:id="@+id/recordingOverlay"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:background="@drawable/bg_input_bar"
+				android:elevation="8dp"
+				android:gravity="center_vertical"
+				android:orientation="horizontal"
+				android:paddingStart="14dp"
+				android:paddingEnd="4dp"
+				android:paddingTop="8dp"
+				android:paddingBottom="8dp"
+				android:visibility="gone">
+
+				<View
+					android:id="@+id/recordingDot"
+					android:layout_width="10dp"
+					android:layout_height="10dp"
+					android:background="@drawable/bg_recording_dot" />
+
+				<TextView
+					android:id="@+id/recordingTimer"
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_marginStart="12dp"
+					android:layout_weight="1"
+					android:fontFamily="monospace"
+					android:textColor="@color/zerion_text_primary"
+					android:textSize="15sp"
+					tools:text="0:04" />
+
+				<androidx.appcompat.widget.AppCompatImageButton
+					android:id="@+id/recordingCancel"
+					android:layout_width="44dp"
+					android:layout_height="44dp"
+					android:background="?attr/selectableItemBackground"
+					android:clickable="true"
+					android:contentDescription="@string/cancel"
+					android:focusable="true"
+					android:padding="11dp"
+					android:scaleType="center"
+					app:srcCompat="@drawable/ic_close"
+					app:tint="@color/zerion_text_secondary" />
+
+				<androidx.appcompat.widget.AppCompatImageButton
+					android:id="@+id/recordingSend"
+					android:layout_width="44dp"
+					android:layout_height="44dp"
+					android:background="?attr/selectableItemBackground"
+					android:clickable="true"
+					android:contentDescription="@string/grouptr_send"
+					android:focusable="true"
+					android:padding="10dp"
+					android:scaleType="center"
+					app:srcCompat="@drawable/social_send_now_white"
+					app:tint="@color/zerion_primary_accent" />
+
+			</LinearLayout>
+
+		</FrameLayout>
+
+	</LinearLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

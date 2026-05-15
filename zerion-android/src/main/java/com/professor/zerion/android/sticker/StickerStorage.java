@@ -20,18 +20,6 @@ import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 
-/**
- * On-disk store for user-imported custom stickers.
- *
- *   - Files live at getFilesDir()/stickers/<id>.bin
- *   - Each file is AES-256-GCM(plaintext = PNG bytes) under the key from
- *     {@link StickerKeystore}. Wire format: [12B nonce][ciphertext+tag].
- *   - Caps: 200 stickers max, 256 KB max per encrypted file (matches iOS).
- *   - Delete does a single-pass random-byte overwrite + fsync before
- *     unlink so a forensic recovery on the inode does not surface
- *     plaintext from the previous AES-key layer (iOS parity, same
- *     defence-in-depth as the existing IoUtils delete in v1.5.0).
- */
 @NotNullByDefault
 public final class StickerStorage {
 
@@ -48,7 +36,7 @@ public final class StickerStorage {
 	public StickerStorage(Context appContext) {
 		this.dir = new File(appContext.getFilesDir(), DIR);
 		if (!dir.exists()) {
-			//noinspection ResultOfMethodCallIgnored
+
 			dir.mkdirs();
 		}
 	}
@@ -57,7 +45,6 @@ public final class StickerStorage {
 		return dir;
 	}
 
-	/** Save a fresh sticker. PNG bytes in, returns the new sticker id. */
 	public String save(byte[] pngBytes) throws IOException {
 		if (pngBytes.length > MAX_FILE_BYTES) {
 			throw new IOException("sticker too large: " + pngBytes.length);
@@ -90,7 +77,6 @@ public final class StickerStorage {
 		return id;
 	}
 
-	/** Decrypt and return the raw PNG bytes for the given sticker. */
 	public byte[] load(String id) throws IOException {
 		File f = new File(dir, id + ".bin");
 		long len = f.length();
@@ -128,7 +114,7 @@ public final class StickerStorage {
 		File[] files = dir.listFiles();
 		List<String> ids = new ArrayList<>();
 		if (files == null) return ids;
-		// Sort newest-first so the picker shows recent imports up top.
+
 		Arrays.sort(files, Comparator.comparingLong(File::lastModified).reversed());
 		for (File f : files) {
 			String name = f.getName();
@@ -143,7 +129,6 @@ public final class StickerStorage {
 		return listIds().size();
 	}
 
-	/** Zero-overwrite + fsync, then unlink. Matches iOS per-file wipe. */
 	public boolean delete(String id) {
 		File f = new File(dir, id + ".bin");
 		if (!f.exists()) return false;
@@ -164,7 +149,6 @@ public final class StickerStorage {
 		return f.delete();
 	}
 
-	/** Wipe everything — used by account-delete sweeps. */
 	public void wipeAll() {
 		for (String id : listIds()) {
 			delete(id);
@@ -180,7 +164,6 @@ public final class StickerStorage {
 		return sb.toString();
 	}
 
-	/** Helper for unit/UI tests — encode raw bytes the way save() does. */
 	public static byte[] readFully(FileInputStream in, int max) throws IOException {
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		byte[] buf = new byte[8192];

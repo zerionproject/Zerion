@@ -61,7 +61,6 @@ public class Localizer {
 		return Locale.forLanguageTag(tag);
 	}
 
-	
 	public Context applyLocaleToContext(Context context) {
 		Resources res = context.getResources();
 		Configuration conf = new Configuration(res.getConfiguration());
@@ -79,7 +78,6 @@ public class Localizer {
 		return context.createConfigurationContext(conf);
 	}
 
-	
 	public void setLocaleWithPersistence(Context context) {
 		if (SDK_INT >= 33) {
 			LocaleManager localeManager = context.getSystemService(LocaleManager.class);
@@ -89,7 +87,6 @@ public class Localizer {
 		}
 	}
 
-	
 	@Deprecated
 	public Context setLocale(Context context) {
 		return applyLocaleToContext(context);

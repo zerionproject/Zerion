@@ -51,7 +51,6 @@ public class SettingsActivityScreenshotTest extends ScreenshotTest {
 
 		screenshot("manual_dark_theme_settings", testRule.getActivity());
 
-		// switch to dark theme
 		onView(withText(R.string.pref_theme_title))
 				.check(matches(isDisplayed()))
 				.perform(click());
@@ -63,7 +62,6 @@ public class SettingsActivityScreenshotTest extends ScreenshotTest {
 
 		screenshot("manual_dark_theme_nav_drawer", testRule.getActivity());
 
-		// switch to back to light theme
 		onView(withText(R.string.settings_button))
 				.check(matches(isDisplayed()))
 				.perform(click());
@@ -87,7 +85,6 @@ public class SettingsActivityScreenshotTest extends ScreenshotTest {
 				.perform(waitUntilMatches(isDisplayed()))
 				.perform(click(), click());
 
-		// ensure app lock is displayed and enabled
 		onView(withText(R.string.pref_lock_title))
 				.check(matches(isDisplayed()))
 				.perform(waitUntilMatches(isEnabled()))
@@ -105,12 +102,11 @@ public class SettingsActivityScreenshotTest extends ScreenshotTest {
 
 	@Test
 	public void torSettings() {
-		// click network/connections settings
+
 		onView(withText(R.string.network_settings_title))
 				.perform(waitUntilMatches(isDisplayed()))
 				.perform(click(), click());
 
-		// wait for settings to get loaded and enabled
 		onView(withText(R.string.tor_network_setting))
 				.check(matches(isDisplayed()))
 				.perform(waitUntilMatches(isEnabled()));
@@ -119,12 +115,11 @@ public class SettingsActivityScreenshotTest extends ScreenshotTest {
 	}
 
 	private void openNavDrawer() {
-		// start main activity
+
 		Intent i =
 				new Intent(testRule.getActivity(), NavDrawerActivity.class);
 		testRule.getActivity().startActivity(i);
 
-		// open navigation drawer
 		onView(withId(R.id.drawer_layout))
 				.check(matches(isClosed(Gravity.START)))
 				.perform(DrawerActions.open());

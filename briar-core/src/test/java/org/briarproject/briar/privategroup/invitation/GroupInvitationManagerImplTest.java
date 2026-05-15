@@ -128,7 +128,6 @@ public class GroupInvitationManagerImplTest extends BrambleMockTestCase {
 	private final Map<MessageId, BdfDictionary> noResults =
 			Collections.emptyMap();
 
-
 	public GroupInvitationManagerImplTest() {
 		context.setImposteriser(ByteBuddyClassImposteriser.INSTANCE);
 		creatorEngine = context.mock(CreatorProtocolEngine.class);
@@ -269,7 +268,7 @@ public class GroupInvitationManagerImplTest extends BrambleMockTestCase {
 			oneOf(privateGroupManager).isOurPrivateGroup(txn, privateGroup);
 			will(returnValue(false));
 		}});
-		// creates PEER session
+
 		expectAddingMember(privateGroup.getId(), contact);
 
 		groupInvitationManager.addingContact(txn, contact);
@@ -760,7 +759,7 @@ public class GroupInvitationManagerImplTest extends BrambleMockTestCase {
 			oneOf(clientHelper).getMessageMetadataAsDictionary(txn,
 					contactGroup.getId(), query);
 			will(returnValue(results));
-			// first message
+
 			oneOf(messageParser).parseMetadata(meta);
 			will(returnValue(messageMetadata1));
 			oneOf(db).getMessageStatus(txn, contactId, message.getId());
@@ -771,7 +770,7 @@ public class GroupInvitationManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(pg));
 			oneOf(db).containsGroup(txn, privateGroup.getId());
 			will(returnValue(true));
-			// second message
+
 			oneOf(messageParser).parseMetadata(meta2);
 			will(returnValue(messageMetadata2));
 			oneOf(db).getMessageStatus(txn, contactId, messageId2);
@@ -828,13 +827,13 @@ public class GroupInvitationManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(contactGroup));
 			oneOf(clientHelper).getMessageIds(txn, contactGroup.getId(), query);
 			will(returnValue(results));
-			// message 1
+
 			oneOf(messageParser).getInviteMessage(txn, message.getId());
 			will(returnValue(inviteMessage1));
 			oneOf(privateGroupFactory).createPrivateGroup(groupName, author,
 					salt);
 			will(returnValue(pg));
-			// message 2
+
 			oneOf(messageParser).getInviteMessage(txn, message2.getId());
 			will(returnValue(inviteMessage2));
 			oneOf(privateGroupFactory).createPrivateGroup(groupName, author,
@@ -868,7 +867,7 @@ public class GroupInvitationManagerImplTest extends BrambleMockTestCase {
 					.getSharingStatus(contact, privateGroup.getId());
 			fail();
 		} catch (ProtocolStateException e) {
-			// expected
+
 		}
 
 		expectIsInvitationAllowed(CreatorState.ERROR);
@@ -952,7 +951,7 @@ public class GroupInvitationManagerImplTest extends BrambleMockTestCase {
 			oneOf(contactGroupFactory).createContactGroup(CLIENT_ID,
 					MAJOR_VERSION, contact3);
 			will(returnValue(contactGroup3));
-			// session 1
+
 			oneOf(sessionParser).getRole(bdfSession);
 			will(returnValue(Role.CREATOR));
 			oneOf(sessionParser)
@@ -960,7 +959,7 @@ public class GroupInvitationManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(creatorSession));
 			oneOf(creatorEngine).onLeaveAction(txn, creatorSession, false);
 			will(returnValue(creatorSession));
-			// session 2
+
 			oneOf(sessionParser).getRole(bdfSession2);
 			will(returnValue(Role.INVITEE));
 			oneOf(sessionParser)
@@ -968,7 +967,7 @@ public class GroupInvitationManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(inviteeSession));
 			oneOf(inviteeEngine).onLeaveAction(txn, inviteeSession, false);
 			will(returnValue(inviteeSession));
-			// session 3
+
 			oneOf(sessionParser).getRole(bdfSession3);
 			will(returnValue(Role.PEER));
 			oneOf(sessionParser)

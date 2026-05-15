@@ -10,25 +10,18 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.Collection;
 
-
 @NotNullByDefault
 public interface PluginCallback extends ConnectionHandler {
 
-	
 	Settings getSettings();
 
-	
 	TransportProperties getLocalProperties();
 
-	
 	Collection<TransportProperties> getRemoteProperties();
 
-	
 	void mergeSettings(Settings s);
 
-	
 	void mergeLocalProperties(TransportProperties p);
 
-	
 	void pluginStateChanged(State state);
 }

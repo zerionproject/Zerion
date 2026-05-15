@@ -2,19 +2,14 @@ package org.briarproject.bramble.util;
 
 public class ByteUtils {
 
-	
 	public static final int MAX_16_BIT_UNSIGNED = 65535;
 
-	
 	public static final long MAX_32_BIT_UNSIGNED = 4294967295L;
 
-	
 	public static final int INT_16_BYTES = 2;
 
-	
 	public static final int INT_32_BYTES = 4;
 
-	
 	public static final int INT_64_BYTES = 8;
 
 	public static void writeUint16(int src, byte[] dest, int offset) {

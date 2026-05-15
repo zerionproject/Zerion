@@ -593,7 +593,6 @@ class CryptoComponentImpl implements CryptoComponent {
 		return secret;
 	}
 
-	
 	private byte[] createLabeledMessage(String label, byte[] message) {
 		byte[] labelBytes = StringUtils.toUtf8(label);
 		byte[] result = new byte[INT_32_BYTES + labelBytes.length + INT_32_BYTES + message.length];

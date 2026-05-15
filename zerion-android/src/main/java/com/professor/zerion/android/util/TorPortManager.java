@@ -11,7 +11,6 @@ import static org.briarproject.bramble.api.plugin.TorConstants.DEFAULT_SOCKS_POR
 import static org.briarproject.bramble.api.plugin.TorConstants.MAX_DYNAMIC_PORT;
 import static org.briarproject.bramble.api.plugin.TorConstants.MIN_DYNAMIC_PORT;
 
-
 @NotNullByDefault
 public class TorPortManager {
 
@@ -27,7 +26,6 @@ public class TorPortManager {
 		initializePorts();
 	}
 
-	
 	private void initializePorts() {
 		int savedSocksPort = prefs.getInt(PREF_SOCKS_PORT, -1);
 		int savedControlPort = prefs.getInt(PREF_CONTROL_PORT, -1);
@@ -64,7 +62,6 @@ public class TorPortManager {
 		}
 	}
 
-	
 	private boolean isPortAvailable(int port) {
 		if (port < 1 || port > 65535) return false;
 
@@ -88,7 +85,6 @@ public class TorPortManager {
 		}
 	}
 
-	
 	private int findAvailablePort(int startPort) {
 		for (int port = startPort; port <= MAX_DYNAMIC_PORT; port++) {
 			if (isPortAvailable(port)) {
@@ -98,7 +94,6 @@ public class TorPortManager {
 		return -1;
 	}
 
-	
 	private void savePorts() {
 		prefs.edit()
 				.putInt(PREF_SOCKS_PORT, socksPort)
@@ -106,17 +101,14 @@ public class TorPortManager {
 				.apply();
 	}
 
-	
 	public int getSocksPort() {
 		return socksPort;
 	}
 
-	
 	public int getControlPort() {
 		return controlPort;
 	}
 
-	
 	public void resetPorts() {
 		prefs.edit()
 				.remove(PREF_SOCKS_PORT)

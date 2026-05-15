@@ -63,21 +63,19 @@ public class StringUtilsTest extends BrambleTestCase {
 
 	@Test
 	public void testToUtf8EncodesNullCharacterAsStandardUtf8() {
-		// The Unicode null character should be encoded as a single null byte,
-		// not as two bytes as in CESU-8 and modified UTF-8
+
 		String s = "\u0000";
 		assertArrayEquals(new byte[1], StringUtils.toUtf8(s));
 	}
 
 	@Test
 	public void testToUtf8EncodesSupplementaryCharactersAsStandardUtf8() {
-		// A supplementary character should be encoded as four bytes, not as a
-		// surrogate pair as in CESU-8 and modified UTF-8
+
 		String s = "\u0045\u0205\uD801\uDC00";
 		byte[] expected = new byte[] {
-				0x45, // U+0045
-				(byte) 0xC8, (byte) 0x85, // U+0205
-				(byte) 0xF0, (byte) 0x90, (byte) 0x90, (byte) 0x80 // U+10400
+				0x45,
+				(byte) 0xC8, (byte) 0x85,
+				(byte) 0xF0, (byte) 0x90, (byte) 0x90, (byte) 0x80
 		};
 		assertArrayEquals(expected, StringUtils.toUtf8(s));
 	}
@@ -90,21 +88,21 @@ public class StringUtilsTest extends BrambleTestCase {
 	@Test
 	public void testFromUtf8AcceptsNullCharacterUsingStandardUtf8()
 			throws Exception {
-		// The UTF-8 encoding of the null character is valid
+
 		byte[] utf8 = new byte[1];
 		String actual = StringUtils.fromUtf8(utf8);
 		assertEquals("\u0000", actual);
-		// When we convert back to UTF-8 we should get the original encoding
+
 		assertArrayEquals(utf8, StringUtils.toUtf8(actual));
 	}
 
 	@Test(expected = FormatException.class)
 	public void testFromUtf8RejectsNullCharacterUsingModifiedUtf8()
 			throws Exception {
-		// The modified UTF-8 encoding of the null character is not valid
+
 		byte[] b = new byte[] {
-				(byte) 0xC0, (byte) 0x80, // Null character as modified UTF-8
-				(byte) 0xC8, (byte) 0x85 // U+0205
+				(byte) 0xC0, (byte) 0x80,
+				(byte) 0xC8, (byte) 0x85
 		};
 		StringUtils.fromUtf8(b);
 	}
@@ -112,28 +110,26 @@ public class StringUtilsTest extends BrambleTestCase {
 	@Test
 	public void testFromUtf8AcceptsSupplementaryCharacterUsingStandardUtf8()
 			throws Exception {
-		// The UTF-8 encoding of a supplementary character is valid and should
-		// be converted to a surrogate pair
+
 		byte[] utf8 = new byte[] {
-				(byte) 0xF0, (byte) 0x90, (byte) 0x90, (byte) 0x80, // U+10400
-				(byte) 0xC8, (byte) 0x85 // U+0205
+				(byte) 0xF0, (byte) 0x90, (byte) 0x90, (byte) 0x80,
+				(byte) 0xC8, (byte) 0x85
 		};
-		String expected = "\uD801\uDC00\u0205"; // Surrogate pair
+		String expected = "\uD801\uDC00\u0205";
 		String actual = StringUtils.fromUtf8(utf8);
 		assertEquals(expected, actual);
-		// When we convert back to UTF-8 we should get the original encoding
+
 		assertArrayEquals(utf8, StringUtils.toUtf8(actual));
 	}
 
 	@Test(expected = FormatException.class)
 	public void testFromUtf8RejectsSupplementaryCharacterUsingModifiedUtf8()
 			throws Exception {
-		// The CESU-8 or modified UTF-8 encoding of a supplementary character
-		// is not valid
+
 		byte[] utf8 = new byte[] {
-				(byte) 0xED, (byte) 0xA0, (byte) 0x81, // U+10400 as CSEU-8
+				(byte) 0xED, (byte) 0xA0, (byte) 0x81,
 				(byte) 0xED, (byte) 0xB0, (byte) 0x80,
-				(byte) 0xC8, (byte) 0x85 // U+0205
+				(byte) 0xC8, (byte) 0x85
 		};
 		StringUtils.fromUtf8(utf8);
 	}
@@ -154,27 +150,27 @@ public class StringUtilsTest extends BrambleTestCase {
 		String s = "H\u0205llo";
 		assertEquals(5, s.length());
 		assertEquals(6, StringUtils.toUtf8(s).length);
-		String expected = "H\u0205ll"; // Sixth byte removed
+		String expected = "H\u0205ll";
 		assertEquals(expected, StringUtils.truncateUtf8(s, 5));
 	}
 
 	@Test
 	public void testTruncateUtf8RemovesTruncatedCharacter() {
-		String s = "\u0205\u0205"; // String requires four bytes
-		String expected = "\u0205"; // Partial character removed
+		String s = "\u0205\u0205";
+		String expected = "\u0205";
 		String truncated = StringUtils.truncateUtf8(s, 3);
 		assertEquals(expected, truncated);
-		// Converting the truncated string should not exceed the max length
+
 		assertEquals(2, StringUtils.toUtf8(truncated).length);
 	}
 
 	@Test
 	public void testTruncateUtf8RemovesTruncatedSurrogatePair() {
-		String s = "\u0205\uD801\uDC00"; // String requires six bytes
-		String expected = "\u0205"; // Partial character removed
+		String s = "\u0205\uD801\uDC00";
+		String expected = "\u0205";
 		String truncated = StringUtils.truncateUtf8(s, 3);
 		assertEquals(expected, truncated);
-		// Converting the truncated string should not exceed the max length
+
 		assertEquals(2, StringUtils.toUtf8(truncated).length);
 	}
 

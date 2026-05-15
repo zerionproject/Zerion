@@ -301,7 +301,6 @@ public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFr
 				.beginTransaction()
 				.replace(R.id.vault_container, fragment, tag);
 
-
 		if (addToBackStack) {
 			transaction.addToBackStack(tag);
 		}

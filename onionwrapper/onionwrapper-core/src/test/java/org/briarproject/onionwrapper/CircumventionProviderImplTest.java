@@ -59,15 +59,14 @@ public class CircumventionProviderImplTest extends BaseTest {
 		for (String countryCode : COUNTRIES_SNOWFLAKE) {
 			testBridgesAreSuitableAndExist(SNOWFLAKE, countryCode);
 		}
-		// If bridges are enabled manually in a country with no specific bridge recommendations,
-		// we should use default obfs4 and vanilla
+
 		testBridgesAreSuitableAndExist(DEFAULT_OBFS4, "US");
 		testBridgesAreSuitableAndExist(VANILLA, "US");
 	}
 
 	@Test
 	public void testIPv6BridgeTypes() {
-		// If we're on an IPv6-only network we'll use meek and snowflake in any country
+
 		assertFalse(provider.getBridges(MEEK, "US").isEmpty());
 		assertFalse(provider.getBridges(SNOWFLAKE, "US").isEmpty());
 	}

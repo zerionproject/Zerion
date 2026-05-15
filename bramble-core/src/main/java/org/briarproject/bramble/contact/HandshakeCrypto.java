@@ -13,36 +13,29 @@ interface HandshakeCrypto {
 
 	KeyPair generateEphemeralKeyPair();
 
-	
 	KeyPair generateHybridEphemeralKeyPair();
 
-	
 	@Deprecated
 	SecretKey deriveMasterKey_0_0(PublicKey theirStaticPublicKey,
 			PublicKey theirEphemeralPublicKey, KeyPair ourStaticKeyPair,
 			KeyPair ourEphemeralKeyPair, boolean alice)
 			throws GeneralSecurityException;
 
-	
 	SecretKey deriveMasterKey_0_1(PublicKey theirStaticPublicKey,
 			PublicKey theirEphemeralPublicKey, KeyPair ourStaticKeyPair,
 			KeyPair ourEphemeralKeyPair, boolean alice)
 			throws GeneralSecurityException;
 
-	
 	HybridEncapsulationResult hybridEncapsulate(PublicKey theirPublicKey)
 			throws GeneralSecurityException;
 
-	
 	SecretKey deriveHybridMasterKey(PublicKey theirStaticPublicKey,
 			PublicKey theirEphemeralPublicKey, KeyPair ourStaticKeyPair,
 			KeyPair ourEphemeralKeyPair, byte[] kemCiphertext,
 			byte[] kemSecret, boolean alice)
 			throws GeneralSecurityException;
 
-	
 	byte[] proveOwnership(SecretKey masterKey, boolean alice);
 
-	
 	boolean verifyOwnership(SecretKey masterKey, boolean alice, byte[] proof);
 }

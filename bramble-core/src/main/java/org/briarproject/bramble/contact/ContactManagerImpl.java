@@ -158,7 +158,6 @@ class ContactManagerImpl implements ContactManager, EventListener {
 		return c;
 	}
 
-	
 	private void checkForSecurityDowngrade(Transaction txn, AuthorId remoteId,
 			boolean newIsPostQuantum) throws DbException {
 		Collection<Contact> existingContacts =
@@ -224,7 +223,7 @@ class ContactManagerImpl implements ContactManager, EventListener {
 			throws DbException, FormatException, GeneralSecurityException {
 		PendingContact p =
 				pendingContactFactory.createPendingContact(link, alias);
-		// Check for duplicate pending contact with same public key
+
 		byte[] newKey = p.getPublicKey().getEncoded();
 		for (PendingContact existing : db.getPendingContacts(txn)) {
 			if (java.util.Arrays.equals(

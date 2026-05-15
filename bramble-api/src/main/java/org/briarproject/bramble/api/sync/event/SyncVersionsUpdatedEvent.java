@@ -8,7 +8,6 @@ import java.util.List;
 
 import javax.annotation.concurrent.Immutable;
 
-
 @Immutable
 @NotNullByDefault
 public class SyncVersionsUpdatedEvent extends Event {

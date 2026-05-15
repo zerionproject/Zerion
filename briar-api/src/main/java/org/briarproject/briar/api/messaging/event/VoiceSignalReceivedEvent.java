@@ -7,14 +7,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.Immutable;
 
-/**
- * An event that is broadcast when a voice call signal is received.
- * This event is separate from ConversationMessageReceivedEvent because
- * voice signals should NOT appear in the conversation UI.
- *
- * VoiceCallService listens for this event and handles call state changes.
- * ConversationActivity does NOT listen for this event.
- */
 @Immutable
 @NotNullByDefault
 public class VoiceSignalReceivedEvent extends Event {

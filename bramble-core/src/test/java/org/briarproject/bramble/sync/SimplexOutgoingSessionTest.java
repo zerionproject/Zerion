@@ -52,24 +52,24 @@ public class SimplexOutgoingSessionTest extends BrambleMockTestCase {
 		Transaction noMsgTxn = new Transaction(null, false);
 
 		context.checking(new DbExpectations() {{
-			// Add listener
+
 			oneOf(eventBus).addListener(session);
-			// Send the protocol versions
+
 			oneOf(recordWriter).writeVersions(with(any(Versions.class)));
-			// No acks to send
+
 			oneOf(db).transactionWithNullableResult(with(false),
 					withNullableDbCallable(noAckTxn));
 			oneOf(db).generateAck(noAckTxn, contactId, MAX_MESSAGE_IDS);
 			will(returnValue(null));
-			// No messages to send
+
 			oneOf(db).transactionWithNullableResult(with(false),
 					withNullableDbCallable(noMsgTxn));
 			oneOf(db).generateBatch(noMsgTxn, contactId,
 					BATCH_CAPACITY, MAX_LATENCY);
 			will(returnValue(null));
-			// Send the end of stream marker
+
 			oneOf(streamWriter).sendEndOfStream();
-			// Remove listener
+
 			oneOf(eventBus).removeListener(session);
 		}});
 
@@ -88,37 +88,37 @@ public class SimplexOutgoingSessionTest extends BrambleMockTestCase {
 		Transaction noMsgTxn = new Transaction(null, false);
 
 		context.checking(new DbExpectations() {{
-			// Add listener
+
 			oneOf(eventBus).addListener(session);
-			// Send the protocol versions
+
 			oneOf(recordWriter).writeVersions(with(any(Versions.class)));
-			// One ack to send
+
 			oneOf(db).transactionWithNullableResult(with(false),
 					withNullableDbCallable(ackTxn));
 			oneOf(db).generateAck(ackTxn, contactId, MAX_MESSAGE_IDS);
 			will(returnValue(ack));
 			oneOf(recordWriter).writeAck(ack);
-			// No more acks
+
 			oneOf(db).transactionWithNullableResult(with(false),
 					withNullableDbCallable(noAckTxn));
 			oneOf(db).generateAck(noAckTxn, contactId, MAX_MESSAGE_IDS);
 			will(returnValue(null));
-			// One message to send
+
 			oneOf(db).transactionWithNullableResult(with(false),
 					withNullableDbCallable(msgTxn));
 			oneOf(db).generateBatch(msgTxn, contactId,
 					BATCH_CAPACITY, MAX_LATENCY);
 			will(returnValue(singletonList(message)));
 			oneOf(recordWriter).writeMessage(message);
-			// No more messages
+
 			oneOf(db).transactionWithNullableResult(with(false),
 					withNullableDbCallable(noMsgTxn));
 			oneOf(db).generateBatch(noMsgTxn, contactId,
 					BATCH_CAPACITY, MAX_LATENCY);
 			will(returnValue(null));
-			// Send the end of stream marker
+
 			oneOf(streamWriter).sendEndOfStream();
-			// Remove listener
+
 			oneOf(eventBus).removeListener(session);
 		}});
 

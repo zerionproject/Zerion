@@ -329,7 +329,6 @@ public class TestDataCreatorImpl implements TestDataCreator {
 		}
 	}
 
-
 	private List<PrivateGroup> createPrivateGroups(List<Contact> contacts,
 			int numPrivateGroups) throws DbException {
 		if (!featureFlags.shouldEnablePrivateGroupsInCore()) return emptyList();

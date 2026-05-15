@@ -33,17 +33,17 @@ public class ModemPluginTest extends BrambleMockTestCase {
 			oneOf(callback).pluginStateChanged(ENABLING);
 			oneOf(serialPortList).getPortNames();
 			will(returnValue(new String[] {"foo", "bar", "baz"}));
-			// First call to createModem() returns false
+
 			oneOf(modemFactory).createModem(plugin, "foo");
 			will(returnValue(modem));
 			oneOf(modem).start();
 			will(returnValue(false));
-			// Second call to createModem() throws an exception
+
 			oneOf(modemFactory).createModem(plugin, "bar");
 			will(returnValue(modem));
 			oneOf(modem).start();
 			will(throwException(new IOException()));
-			// Third call to createModem() returns true
+
 			oneOf(modemFactory).createModem(plugin, "baz");
 			will(returnValue(modem));
 			oneOf(modem).start();
@@ -63,7 +63,7 @@ public class ModemPluginTest extends BrambleMockTestCase {
 		remote.put("number", NUMBER);
 
 		context.checking(new Expectations() {{
-			// start()
+
 			oneOf(callback).pluginStateChanged(ENABLING);
 			oneOf(serialPortList).getPortNames();
 			will(returnValue(new String[] {"foo"}));
@@ -72,7 +72,7 @@ public class ModemPluginTest extends BrambleMockTestCase {
 			oneOf(modem).start();
 			will(returnValue(true));
 			oneOf(callback).pluginStateChanged(ACTIVE);
-			// createConnection()
+
 			oneOf(callback).getLocalProperties();
 			will(returnValue(local));
 			oneOf(modem).dial(NUMBER);
@@ -80,7 +80,7 @@ public class ModemPluginTest extends BrambleMockTestCase {
 		}});
 
 		plugin.start();
-		// A connection should be returned
+
 		assertNotNull(plugin.createConnection(remote));
 	}
 
@@ -93,7 +93,7 @@ public class ModemPluginTest extends BrambleMockTestCase {
 		remote.put("number", NUMBER);
 
 		context.checking(new Expectations() {{
-			// start()
+
 			oneOf(callback).pluginStateChanged(ENABLING);
 			oneOf(serialPortList).getPortNames();
 			will(returnValue(new String[] {"foo"}));
@@ -102,7 +102,7 @@ public class ModemPluginTest extends BrambleMockTestCase {
 			oneOf(modem).start();
 			will(returnValue(true));
 			oneOf(callback).pluginStateChanged(ACTIVE);
-			// createConnection()
+
 			oneOf(callback).getLocalProperties();
 			will(returnValue(local));
 			oneOf(modem).dial(NUMBER);
@@ -110,7 +110,7 @@ public class ModemPluginTest extends BrambleMockTestCase {
 		}});
 
 		plugin.start();
-		// No connection should be returned
+
 		assertNull(plugin.createConnection(remote));
 	}
 
@@ -123,7 +123,7 @@ public class ModemPluginTest extends BrambleMockTestCase {
 		remote.put("number", NUMBER);
 
 		context.checking(new Expectations() {{
-			// start()
+
 			oneOf(callback).pluginStateChanged(ENABLING);
 			oneOf(serialPortList).getPortNames();
 			will(returnValue(new String[] {"foo"}));
@@ -132,12 +132,12 @@ public class ModemPluginTest extends BrambleMockTestCase {
 			oneOf(modem).start();
 			will(returnValue(true));
 			oneOf(callback).pluginStateChanged(ACTIVE);
-			// createConnection()
+
 			oneOf(callback).getLocalProperties();
 			will(returnValue(local));
 			oneOf(modem).dial(NUMBER);
 			will(throwException(new IOException()));
-			// resetModem()
+
 			oneOf(serialPortList).getPortNames();
 			will(returnValue(new String[] {"foo"}));
 			oneOf(modemFactory).createModem(plugin, "foo");
@@ -147,7 +147,7 @@ public class ModemPluginTest extends BrambleMockTestCase {
 		}});
 
 		plugin.start();
-		// No connection should be returned
+
 		assertNull(plugin.createConnection(remote));
 	}
 }

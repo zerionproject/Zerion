@@ -119,12 +119,6 @@ class ConversationAdapter
 		ConversationItem item = items.get(position);
 		boolean selected = false;
 		ui.bind(item, selected);
-		if (item instanceof ConversationGroupTrInvitationItem) {
-			ConversationGroupTrInvitationItem inv =
-					(ConversationGroupTrInvitationItem) item;
-			ui.itemView.setOnClickListener(
-					v -> listener.onGroupTrInvitationOpen(inv));
-		}
 		if (position == highlightedPosition) {
 			ui.itemView.setAlpha(1.0f);
 		} else if (highlightedPosition >= 0) {

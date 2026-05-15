@@ -55,23 +55,23 @@ public class EagerSimplexOutgoingSessionTest extends BrambleMockTestCase {
 		Transaction noIdsTxn = new Transaction(null, true);
 
 		context.checking(new DbExpectations() {{
-			// Add listener
+
 			oneOf(eventBus).addListener(session);
-			// Send the protocol versions
+
 			oneOf(recordWriter).writeVersions(with(any(Versions.class)));
-			// No acks to send
+
 			oneOf(db).transactionWithNullableResult(with(false),
 					withNullableDbCallable(noAckTxn));
 			oneOf(db).generateAck(noAckTxn, contactId, MAX_MESSAGE_IDS);
 			will(returnValue(null));
-			// No messages to send
+
 			oneOf(db).transactionWithResult(with(true),
 					withDbCallable(noIdsTxn));
 			oneOf(db).getUnackedMessagesToSend(noIdsTxn, contactId);
 			will(returnValue(emptyList()));
-			// Send the end of stream marker
+
 			oneOf(streamWriter).sendEndOfStream();
-			// Remove listener
+
 			oneOf(eventBus).removeListener(session);
 		}});
 
@@ -91,41 +91,41 @@ public class EagerSimplexOutgoingSessionTest extends BrambleMockTestCase {
 		Transaction msgTxn1 = new Transaction(null, false);
 
 		context.checking(new DbExpectations() {{
-			// Add listener
+
 			oneOf(eventBus).addListener(session);
-			// Send the protocol versions
+
 			oneOf(recordWriter).writeVersions(with(any(Versions.class)));
-			// One ack to send
+
 			oneOf(db).transactionWithNullableResult(with(false),
 					withNullableDbCallable(ackTxn));
 			oneOf(db).generateAck(ackTxn, contactId, MAX_MESSAGE_IDS);
 			will(returnValue(ack));
 			oneOf(recordWriter).writeAck(ack);
-			// No more acks
+
 			oneOf(db).transactionWithNullableResult(with(false),
 					withNullableDbCallable(noAckTxn));
 			oneOf(db).generateAck(noAckTxn, contactId, MAX_MESSAGE_IDS);
 			will(returnValue(null));
-			// Two messages to send
+
 			oneOf(db).transactionWithResult(with(true), withDbCallable(idsTxn));
 			oneOf(db).getUnackedMessagesToSend(idsTxn, contactId);
 			will(returnValue(asList(message.getId(), message1.getId())));
-			// Try to send the first message - it's no longer shared
+
 			oneOf(db).transactionWithNullableResult(with(false),
 					withNullableDbCallable(msgTxn));
 			oneOf(db).getMessageToSend(msgTxn, contactId, message.getId(),
 					MAX_LATENCY, true);
 			will(returnValue(null));
-			// Send the second message
+
 			oneOf(db).transactionWithNullableResult(with(false),
 					withNullableDbCallable(msgTxn1));
 			oneOf(db).getMessageToSend(msgTxn1, contactId, message1.getId(),
 					MAX_LATENCY, true);
 			will(returnValue(message1));
 			oneOf(recordWriter).writeMessage(message1);
-			// Send the end of stream marker
+
 			oneOf(streamWriter).sendEndOfStream();
-			// Remove listener
+
 			oneOf(eventBus).removeListener(session);
 		}});
 

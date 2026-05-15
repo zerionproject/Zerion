@@ -35,6 +35,8 @@ import org.briarproject.briar.api.messaging.event.GroupEpochCommitEvent;
 import org.briarproject.briar.api.messaging.event.GroupMemberListSnapshotEvent;
 import org.briarproject.briar.api.messaging.event.GroupMembershipChangedEvent;
 import org.briarproject.briar.api.messaging.event.GroupPostReceivedEvent;
+import org.briarproject.briar.messaging.MessageTypes;
+import org.briarproject.bramble.api.contact.ContactId;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.security.GeneralSecurityException;
@@ -69,8 +71,17 @@ import static org.briarproject.briar.grouptr.GroupTrConstants.S_EPOCH;
 import static org.briarproject.briar.grouptr.GroupTrConstants.S_GROUP_IDS;
 import static org.briarproject.briar.grouptr.GroupTrConstants.S_MEMBERS;
 import static org.briarproject.briar.grouptr.GroupTrConstants.S_NAME;
+import static org.briarproject.briar.grouptr.GroupTrConstants.S_REMOVED;
 import static org.briarproject.briar.grouptr.GroupTrConstants.S_SALT;
 import static org.briarproject.briar.grouptr.GroupTrConstants.S_STEALTH_NAME;
+import static org.briarproject.briar.grouptr.GroupTrConstants.SETTINGS_NS_LOCAL_PREFIX;
+import static org.briarproject.briar.grouptr.GroupTrConstants.S_SCREENSHOT_BLOCKED;
+import static org.briarproject.briar.grouptr.GroupTrConstants.SETTINGS_NS_INVITES_SENT;
+import static org.briarproject.briar.grouptr.GroupTrConstants.SETTINGS_NS_OFFERS_PENDING;
+import static org.briarproject.briar.grouptr.GroupTrConstants.SIGNING_LABEL_GROUPTR_INVITE_OFFER;
+import static org.briarproject.briar.grouptr.GroupTrConstants.SIGNING_LABEL_GROUPTR_INVITE_ACCEPT;
+import static org.briarproject.briar.grouptr.GroupTrConstants.SIGNING_LABEL_GROUPTR_INVITE_DECLINE;
+import static org.briarproject.briar.api.autodelete.AutoDeleteConstants.NO_AUTO_DELETE_TIMER;
 
 @ThreadSafe
 @NotNullByDefault
@@ -133,6 +144,16 @@ class GroupTrManagerImpl
 			cachePost((GroupPostReceivedEvent) e);
 		} else if (e instanceof GroupMemberListSnapshotEvent) {
 			handleMemberListSnapshot((GroupMemberListSnapshotEvent) e);
+		} else if (e instanceof org.briarproject.briar.api.messaging.event
+				.GroupTrInviteOfferReceivedEvent) {
+			handleGrouptrInviteOffer(
+					(org.briarproject.briar.api.messaging.event
+							.GroupTrInviteOfferReceivedEvent) e);
+		} else if (e instanceof org.briarproject.briar.api.messaging.event
+				.GroupTrInviteResponseReceivedEvent) {
+			handleGrouptrInviteResponse(
+					(org.briarproject.briar.api.messaging.event
+							.GroupTrInviteResponseReceivedEvent) e);
 		} else if (e instanceof org.briarproject.bramble.api.contact.event
 				.ContactRemovedEvent
 				|| e instanceof org.briarproject.bramble.api.contact.event
@@ -178,7 +199,8 @@ class GroupTrManagerImpl
 		if (!senderIsMember) return;
 		GroupTrPost p = new GroupTrPost(e.getGroupId(),
 				senderPub, e.getSenderName(),
-				e.getCiphertext(), e.getTimestamp(), postEpoch, false);
+				e.getCiphertext(), e.getTimestamp(), postEpoch, false,
+				e.getAutoDeleteTimerMs());
 		if (postEpoch < localEpoch - 1L) {
 			return;
 		}
@@ -250,13 +272,14 @@ class GroupTrManagerImpl
 	}
 
 	private void cacheLocalPost(byte[] groupId, byte[] senderPub,
-			String senderName, byte[] body, long timestamp, long epoch) {
+			String senderName, byte[] body, long timestamp, long epoch,
+			long autoDeleteTimerMs) {
 		String key = toHexString(groupId);
 		java.util.ArrayDeque<GroupTrPost> q = postCache.computeIfAbsent(
 				key, k -> new java.util.ArrayDeque<>());
 		synchronized (q) {
 			q.addLast(new GroupTrPost(groupId, senderPub, senderName,
-					body, timestamp, epoch, true));
+					body, timestamp, epoch, true, autoDeleteTimerMs));
 			while (q.size() > MAX_CACHED_POSTS_PER_GROUP) {
 				q.pollFirst();
 			}
@@ -340,7 +363,7 @@ class GroupTrManagerImpl
 										local));
 					}
 				} catch (FormatException ex) {
-					// skip bad row
+
 				}
 			}
 		});
@@ -362,6 +385,7 @@ class GroupTrManagerImpl
 		try {
 			Settings s = settingsManager.getSettings(nsOf(groupId));
 			if (s.isEmpty()) return null;
+			if (s.getBoolean(S_REMOVED, false)) return null;
 			return deserialize(groupId, s);
 		} catch (FormatException ex) {
 			throw new DbException(ex);
@@ -413,6 +437,324 @@ class GroupTrManagerImpl
 	}
 
 	@Override
+	public void inviteContactToGroup(byte[] grouptrGroupId, ContactId contactId,
+			byte[] contactPubKey, String contactName) throws DbException {
+		GroupTrState s = getGroup(grouptrGroupId);
+		if (s == null) {
+			throw new GroupTrAuthException(
+					GroupTrAuthException.Reason.GROUP_NOT_FOUND);
+		}
+		if (s.isDissolved()) {
+			throw new GroupTrAuthException(
+					GroupTrAuthException.Reason.GROUP_DISSOLVED);
+		}
+		LocalAuthor la = db.transactionWithResult(true,
+				identityManager::getLocalAuthor);
+		byte[] creatorPub = la.getPublicKey().getEncoded();
+		if (!Arrays.equals(creatorPub, s.getCreatorPubKey())) {
+			throw new GroupTrAuthException(
+					GroupTrAuthException.Reason.NOT_CREATOR);
+		}
+		for (GroupTrMember m : s.getMembers()) {
+			if (Arrays.equals(m.getPubKey(), contactPubKey)) {
+				return;
+			}
+		}
+		long timestamp = clock.currentTimeMillis();
+		byte[] signed = offerSignedInput(grouptrGroupId, creatorPub,
+				contactPubKey, timestamp);
+		byte[] sig = signOrThrow(SIGNING_LABEL_GROUPTR_INVITE_OFFER,
+				signed, la.getPrivateKey());
+		BdfList body = BdfList.of(
+				(long) MessageTypes.GROUPTR_INVITE_OFFER,
+				grouptrGroupId, s.getName(), s.getSalt(), s.getCreatorName(),
+				creatorPub, timestamp, sig);
+		db.transaction(false, txn -> {
+			Contact c = contactManager.getContact(txn, contactId);
+			dispatchToContact(txn, c, timestamp, body);
+			persistInviteSent(txn, grouptrGroupId, contactId, contactPubKey,
+					contactName);
+		});
+	}
+
+	@Override
+	public void acceptInvite(byte[] grouptrGroupId) throws DbException {
+		PendingInviteReceived pi = loadInviteReceived(grouptrGroupId);
+		if (pi == null) return;
+		if (getGroup(grouptrGroupId) != null) {
+			removeInviteReceived(grouptrGroupId);
+			return;
+		}
+		LocalAuthor la = db.transactionWithResult(true,
+				identityManager::getLocalAuthor);
+		byte[] localPub = la.getPublicKey().getEncoded();
+		long ts = clock.currentTimeMillis();
+		byte[] signed = offerSignedInput(grouptrGroupId, localPub,
+				pi.creatorPubKey, ts);
+		byte[] sig = signOrThrow(SIGNING_LABEL_GROUPTR_INVITE_ACCEPT,
+				signed, la.getPrivateKey());
+		BdfList body = BdfList.of(
+				(long) MessageTypes.GROUPTR_INVITE_ACCEPT,
+				grouptrGroupId, ts, sig);
+		db.transaction(false, txn -> {
+			Contact c = contactManager.getContact(txn, pi.contactId);
+			dispatchToContact(txn, c, ts, body);
+		});
+		materializeLocalState(grouptrGroupId, pi.creatorPubKey,
+				pi.creatorName, pi.groupName, pi.salt, pi.inviteTimestamp,
+				la);
+		removeInviteReceived(grouptrGroupId);
+	}
+
+	@Override
+	public void declineInvite(byte[] grouptrGroupId) throws DbException {
+		PendingInviteReceived pi = loadInviteReceived(grouptrGroupId);
+		if (pi == null) return;
+		LocalAuthor la = db.transactionWithResult(true,
+				identityManager::getLocalAuthor);
+		byte[] localPub = la.getPublicKey().getEncoded();
+		long ts = clock.currentTimeMillis();
+		byte[] signed = offerSignedInput(grouptrGroupId, localPub,
+				pi.creatorPubKey, ts);
+		byte[] sig = signOrThrow(SIGNING_LABEL_GROUPTR_INVITE_DECLINE,
+				signed, la.getPrivateKey());
+		BdfList body = BdfList.of(
+				(long) MessageTypes.GROUPTR_INVITE_DECLINE,
+				grouptrGroupId, ts, sig);
+		db.transaction(false, txn -> {
+			Contact c = contactManager.getContact(txn, pi.contactId);
+			dispatchToContact(txn, c, ts, body);
+		});
+		removeInviteReceived(grouptrGroupId);
+	}
+
+	private void materializeLocalState(byte[] grouptrGroupId,
+			byte[] creatorPubKey, String creatorName, String groupName,
+			byte[] salt, long timestamp, LocalAuthor la) throws DbException {
+		byte[] localPub = la.getPublicKey().getEncoded();
+		List<GroupTrMember> members = new ArrayList<>(2);
+		members.add(new GroupTrMember(creatorPubKey, creatorName,
+				timestamp, 0L, MemberRole.CREATOR));
+		members.add(new GroupTrMember(localPub, la.getName(), timestamp,
+				0L));
+		GroupTrState s = new GroupTrState(grouptrGroupId, groupName, salt,
+				creatorPubKey, creatorName, timestamp, 0L, false, members);
+		try {
+			persist(s);
+		} catch (FormatException ex) {
+			throw new DbException(ex);
+		}
+		addToIndex(grouptrGroupId);
+		eventBus.broadcast(new org.briarproject.briar.api.messaging.event
+				.GroupTrLocalStateChangedEvent(grouptrGroupId,
+				org.briarproject.briar.api.messaging.event
+						.GroupTrLocalStateChangedEvent.Kind.CREATED));
+	}
+
+	private static byte[] offerSignedInput(byte[] grouptrGid, byte[] aPub,
+			byte[] bPub, long ts) {
+		byte[] out = new byte[32 + 32 + 32 + 8];
+		System.arraycopy(grouptrGid, 0, out, 0, 32);
+		System.arraycopy(aPub, 0, out, 32, 32);
+		System.arraycopy(bPub, 0, out, 64, 32);
+		for (int i = 0; i < 8; i++) {
+			out[96 + i] = (byte) (ts >>> ((7 - i) * 8));
+		}
+		return out;
+	}
+
+	private void persistInviteSent(Transaction txn, byte[] grouptrGroupId,
+			ContactId contactId, byte[] contactPubKey, String contactName)
+			throws DbException {
+		try {
+			BdfList list = BdfList.of(contactPubKey, contactName);
+			String hex = toHexString(clientHelper.toByteArray(list));
+			Settings out = new Settings();
+			out.put(toHexString(grouptrGroupId) + ":" + contactId.getInt(),
+					hex);
+			settingsManager.mergeSettings(txn, out,
+					SETTINGS_NS_INVITES_SENT);
+		} catch (FormatException ex) {
+			throw new DbException(ex);
+		}
+	}
+
+	@javax.annotation.Nullable
+	private PendingInviteSent loadInviteSent(byte[] grouptrGroupId,
+			ContactId contactId) {
+		try {
+			Settings s = settingsManager.getSettings(SETTINGS_NS_INVITES_SENT);
+			String hex = s.get(toHexString(grouptrGroupId) + ":"
+					+ contactId.getInt());
+			if (hex == null || hex.isEmpty()) return null;
+			BdfList list = clientHelper.toList(fromHexString(hex));
+			if (list.size() < 2) return null;
+			byte[] contactPubKey = list.getRaw(0);
+			String contactName = list.getString(1);
+			return new PendingInviteSent(grouptrGroupId, contactId,
+					contactPubKey, contactName);
+		} catch (DbException | FormatException ex) {
+			return null;
+		}
+	}
+
+	private void removeInviteSent(byte[] grouptrGroupId, ContactId contactId)
+			throws DbException {
+		Settings out = new Settings();
+		out.put(toHexString(grouptrGroupId) + ":" + contactId.getInt(), "");
+		settingsManager.mergeSettings(out, SETTINGS_NS_INVITES_SENT);
+	}
+
+	private void persistInviteReceived(byte[] grouptrGroupId,
+			String groupName, byte[] salt, String creatorName,
+			byte[] creatorPubKey, ContactId contactId, long inviteTimestamp)
+			throws DbException {
+		try {
+			BdfList list = BdfList.of(groupName, salt, creatorName,
+					creatorPubKey, (long) contactId.getInt(), inviteTimestamp);
+			String hex = toHexString(clientHelper.toByteArray(list));
+			Settings out = new Settings();
+			out.put(toHexString(grouptrGroupId), hex);
+			settingsManager.mergeSettings(out, SETTINGS_NS_OFFERS_PENDING);
+		} catch (FormatException ex) {
+			throw new DbException(ex);
+		}
+	}
+
+	@javax.annotation.Nullable
+	private PendingInviteReceived loadInviteReceived(byte[] grouptrGroupId) {
+		try {
+			Settings s = settingsManager.getSettings(
+					SETTINGS_NS_OFFERS_PENDING);
+			String hex = s.get(toHexString(grouptrGroupId));
+			if (hex == null || hex.isEmpty()) return null;
+			BdfList list = clientHelper.toList(fromHexString(hex));
+			if (list.size() < 6) return null;
+			String groupName = list.getString(0);
+			byte[] salt = list.getRaw(1);
+			String creatorName = list.getString(2);
+			byte[] creatorPubKey = list.getRaw(3);
+			int contactInt = list.getLong(4).intValue();
+			long inviteTs = list.getLong(5);
+			return new PendingInviteReceived(grouptrGroupId, groupName, salt,
+					creatorName, creatorPubKey, new ContactId(contactInt),
+					inviteTs);
+		} catch (DbException | FormatException ex) {
+			return null;
+		}
+	}
+
+	private void removeInviteReceived(byte[] grouptrGroupId)
+			throws DbException {
+		Settings out = new Settings();
+		out.put(toHexString(grouptrGroupId), "");
+		settingsManager.mergeSettings(out, SETTINGS_NS_OFFERS_PENDING);
+	}
+
+	private static final class PendingInviteSent {
+		final byte[] grouptrGroupId;
+		final ContactId contactId;
+		final byte[] contactPubKey;
+		final String contactName;
+
+		PendingInviteSent(byte[] grouptrGroupId, ContactId contactId,
+				byte[] contactPubKey, String contactName) {
+			this.grouptrGroupId = grouptrGroupId;
+			this.contactId = contactId;
+			this.contactPubKey = contactPubKey;
+			this.contactName = contactName;
+		}
+	}
+
+	private static final class PendingInviteReceived {
+		final byte[] grouptrGroupId;
+		final String groupName;
+		final byte[] salt;
+		final String creatorName;
+		final byte[] creatorPubKey;
+		final ContactId contactId;
+		final long inviteTimestamp;
+
+		PendingInviteReceived(byte[] grouptrGroupId, String groupName,
+				byte[] salt, String creatorName, byte[] creatorPubKey,
+				ContactId contactId, long inviteTimestamp) {
+			this.grouptrGroupId = grouptrGroupId;
+			this.groupName = groupName;
+			this.salt = salt;
+			this.creatorName = creatorName;
+			this.creatorPubKey = creatorPubKey;
+			this.contactId = contactId;
+			this.inviteTimestamp = inviteTimestamp;
+		}
+	}
+
+	private void handleGrouptrInviteOffer(
+			org.briarproject.briar.api.messaging.event
+					.GroupTrInviteOfferReceivedEvent ev) {
+		byte[] grouptrGid = ev.getGrouptrGroupId();
+		byte[] creatorPub = ev.getCreatorPubKey();
+		try {
+			byte[] senderPub = lookupSenderPubKey(ev.getContactId());
+			if (senderPub == null
+					|| !Arrays.equals(senderPub, creatorPub)) return;
+			LocalAuthor la = db.transactionWithResult(true,
+					identityManager::getLocalAuthor);
+			byte[] localPub = la.getPublicKey().getEncoded();
+			byte[] signed = offerSignedInput(grouptrGid, creatorPub,
+					localPub, ev.getInviteTimestamp());
+			if (!verify(ev.getRecordSig(),
+					SIGNING_LABEL_GROUPTR_INVITE_OFFER, signed, creatorPub)) {
+				return;
+			}
+			byte[] derived = deriveGroupId(ev.getCreatorName(), creatorPub,
+					ev.getGroupName(), ev.getSalt());
+			if (!Arrays.equals(derived, grouptrGid)) return;
+			persistInviteReceived(grouptrGid, ev.getGroupName(),
+					ev.getSalt(), ev.getCreatorName(), creatorPub,
+					ev.getContactId(), ev.getInviteTimestamp());
+		} catch (DbException | FormatException ex) {
+		}
+	}
+
+	private void handleGrouptrInviteResponse(
+			org.briarproject.briar.api.messaging.event
+					.GroupTrInviteResponseReceivedEvent ev) {
+		byte[] grouptrGid = ev.getGrouptrGroupId();
+		ContactId contactId = ev.getContactId();
+		PendingInviteSent pis = loadInviteSent(grouptrGid, contactId);
+		if (pis == null) return;
+		byte[] responderPub = lookupSenderPubKey(contactId);
+		if (responderPub == null
+				|| !Arrays.equals(responderPub, pis.contactPubKey)) return;
+		GroupTrState s;
+		try {
+			s = getGroup(grouptrGid);
+		} catch (DbException ex) {
+			return;
+		}
+		if (s == null) return;
+		byte[] signed = offerSignedInput(grouptrGid, responderPub,
+				s.getCreatorPubKey(), ev.getInviteTimestamp());
+		String label = ev.getKind() ==
+				org.briarproject.briar.api.messaging.event
+						.GroupTrInviteResponseReceivedEvent.Kind.ACCEPT
+				? SIGNING_LABEL_GROUPTR_INVITE_ACCEPT
+				: SIGNING_LABEL_GROUPTR_INVITE_DECLINE;
+		if (!verify(ev.getRecordSig(), label, signed, responderPub)) return;
+		try {
+			removeInviteSent(grouptrGid, contactId);
+		} catch (DbException ex) {
+		}
+		if (ev.getKind() == org.briarproject.briar.api.messaging.event
+				.GroupTrInviteResponseReceivedEvent.Kind.ACCEPT) {
+			try {
+				addMember(grouptrGid, pis.contactPubKey, pis.contactName);
+			} catch (DbException ex) {
+			}
+		}
+	}
+
+	@Override
 	public boolean isCreator(byte[] groupId, byte[] pubKey)
 			throws DbException {
 		GroupTrState s = getGroup(groupId);
@@ -447,10 +789,6 @@ class GroupTrManagerImpl
 		try {
 			GroupTrState s = getGroup(e.getGroupId());
 			if (s == null) {
-				if (e.getKind() ==
-						GroupMembershipChangedEvent.ChangeKind.MEMBER_ADDED) {
-					autoApplyMemberAddedOfSelf(e);
-				}
 				return;
 			}
 			if (s.isDissolved()) return;
@@ -499,7 +837,6 @@ class GroupTrManagerImpl
 					break;
 			}
 		} catch (DbException | FormatException ex) {
-			// drop silently — no logging in production per project policy
 		}
 	}
 
@@ -521,46 +858,12 @@ class GroupTrManagerImpl
 		}
 	}
 
-	private void autoApplyMemberAddedOfSelf(GroupMembershipChangedEvent e)
-			throws DbException, FormatException {
-		byte[] targetPub = e.getTargetPubKey();
-		if (targetPub == null || targetPub.length != 32) return;
-		LocalAuthor la = db.transactionWithResult(true,
-				identityManager::getLocalAuthor);
-		byte[] localPub = la.getPublicKey().getEncoded();
-		if (!Arrays.equals(targetPub, localPub)) return;
-		byte[] senderPub = lookupSenderPubKey(e.getContactId());
-		if (senderPub == null) return;
-		if (!verify(e.getRecordSig(), SIGNING_LABEL_GROUP_MEMBERSHIP,
-				e.getSignedInput(), senderPub)) return;
-		Contact senderContact = db.transactionWithNullableResult(true, txn -> {
-			try {
-				return contactManager.getContact(txn, e.getContactId());
-			} catch (DbException ex) {
-				return null;
-			}
-		});
-		if (senderContact == null) return;
-		String senderName = senderContact.getAuthor().getName();
-		String targetName = e.getTargetName() != null
-				? e.getTargetName() : la.getName();
-		List<GroupTrMember> members = new ArrayList<>(2);
-		members.add(new GroupTrMember(senderPub, senderName, e.getTimestamp(),
-				0L, MemberRole.CREATOR));
-		members.add(new GroupTrMember(localPub, targetName, e.getTimestamp(),
-				e.getEpoch()));
-		GroupTrState s = new GroupTrState(e.getGroupId(), "",
-				new byte[32], senderPub, senderName,
-				e.getTimestamp(), e.getEpoch(), false, members);
-		persist(s);
-		addToIndex(e.getGroupId());
-	}
-
 	private void handleEpochCommit(GroupEpochCommitEvent e) {
 		try {
 			GroupTrState s = getGroup(e.getGroupId());
 			if (s == null || s.isDissolved()) return;
 			if (e.getFromEpoch() != s.getEpoch()) return;
+			if (e.getToEpoch() != e.getFromEpoch() + 1) return;
 			byte[] senderPubKey = lookupSenderPubKey(e.getContactId());
 			if (senderPubKey == null
 					|| !Arrays.equals(senderPubKey, s.getCreatorPubKey()))
@@ -571,7 +874,7 @@ class GroupTrManagerImpl
 			persist(s);
 			drainFutureBuffer(s.getGroupId(), e.getToEpoch());
 		} catch (DbException | FormatException ex) {
-			// drop silently
+
 		}
 	}
 
@@ -619,7 +922,7 @@ class GroupTrManagerImpl
 			persist(s);
 			drainFutureBuffer(s.getGroupId(), s.getEpoch());
 		} catch (DbException | FormatException ex) {
-			// drop silently
+
 		}
 	}
 
@@ -742,8 +1045,11 @@ class GroupTrManagerImpl
 				identityManager::getLocalAuthor);
 		if (Arrays.equals(la.getPublicKey().getEncoded(), ed25519PubKey)) {
 			byte[] local = identityManager.getLocalMlDsaSigPublicKey();
-			mlDsaPubKeyCache.put(key,
+			byte[] existing = mlDsaPubKeyCache.putIfAbsent(key,
 					local != null ? local : NEGATIVE_CACHE_SENTINEL);
+			if (existing != null && existing != NEGATIVE_CACHE_SENTINEL) {
+				return existing;
+			}
 			return local;
 		}
 		byte[] result = db.transactionWithNullableResult(true, txn -> {
@@ -755,8 +1061,11 @@ class GroupTrManagerImpl
 			}
 			return null;
 		});
-		mlDsaPubKeyCache.put(key,
+		byte[] existing = mlDsaPubKeyCache.putIfAbsent(key,
 				result != null ? result : NEGATIVE_CACHE_SENTINEL);
+		if (existing != null && existing != NEGATIVE_CACHE_SENTINEL) {
+			return existing;
+		}
 		return result;
 	}
 
@@ -770,6 +1079,7 @@ class GroupTrManagerImpl
 		out.putLong(S_CREATED, s.getCreated());
 		out.putLong(S_EPOCH, s.getEpoch());
 		out.putBoolean(S_DISSOLVED, s.isDissolved());
+		out.putBoolean(S_REMOVED, false);
 		out.putLong(S_DEFAULT_TTL, s.getDefaultAutoDeleteTimerMs());
 		BdfList list = new BdfList();
 		for (GroupTrMember m : s.getMembers()) {
@@ -833,6 +1143,38 @@ class GroupTrManagerImpl
 			return;
 		}
 		settingsManager.mergeSettings(index, SETTINGS_NS_INDEX);
+	}
+
+	private void removeFromIndex(byte[] groupId) throws DbException {
+		Settings index = settingsManager.getSettings(SETTINGS_NS_INDEX);
+		String existing = index.get(S_GROUP_IDS);
+		if (existing == null || existing.isEmpty()) return;
+		String hex = toHexString(groupId);
+		String[] parts = existing.split(",");
+		StringBuilder sb = new StringBuilder();
+		for (String p : parts) {
+			if (p.isEmpty() || p.equals(hex)) continue;
+			if (sb.length() > 0) sb.append(',');
+			sb.append(p);
+		}
+		Settings out = new Settings();
+		out.put(S_GROUP_IDS, sb.toString());
+		settingsManager.mergeSettings(out, SETTINGS_NS_INDEX);
+	}
+
+	@Override
+	public void removeFromDevice(byte[] groupId) throws DbException {
+		Settings tombstone = new Settings();
+		tombstone.putBoolean(S_REMOVED, true);
+		settingsManager.mergeSettings(tombstone, nsOf(groupId));
+		removeFromIndex(groupId);
+		String hex = toHexString(groupId);
+		postCache.remove(hex);
+		futureBuffer.remove(hex);
+		eventBus.broadcast(new org.briarproject.briar.api.messaging.event
+				.GroupTrLocalStateChangedEvent(groupId,
+				org.briarproject.briar.api.messaging.event
+						.GroupTrLocalStateChangedEvent.Kind.REMOVED));
 	}
 
 	private byte[] deriveGroupId(String creatorName, byte[] creatorPubKey,
@@ -911,7 +1253,7 @@ class GroupTrManagerImpl
 			}
 		});
 		cacheLocalPost(groupId, localPub, finalSenderName, body,
-				timestamp, epoch);
+				timestamp, epoch, effectiveTtl);
 	}
 
 	@Override
@@ -946,10 +1288,30 @@ class GroupTrManagerImpl
 	}
 
 	@Override
+	public boolean isLocalScreenshotBlocked(byte[] groupId) throws DbException {
+		Settings s = settingsManager.getSettings(
+				SETTINGS_NS_LOCAL_PREFIX + toHexString(groupId));
+		return s.getBoolean(S_SCREENSHOT_BLOCKED, false);
+	}
+
+	@Override
+	public void setLocalScreenshotBlocked(byte[] groupId, boolean blocked)
+			throws DbException {
+		Settings out = new Settings();
+		out.putBoolean(S_SCREENSHOT_BLOCKED, blocked);
+		settingsManager.mergeSettings(out,
+				SETTINGS_NS_LOCAL_PREFIX + toHexString(groupId));
+	}
+
+	@Override
 	public void addMember(byte[] groupId, byte[] addedPubKey,
 			String addedName) throws DbException {
 		GroupTrState s = requireWritable(groupId);
 		requireLocalIsCreator(s);
+		if (s.getEpoch() >= Integer.MAX_VALUE - 1) {
+			throw new GroupTrAuthException(
+					GroupTrAuthException.Reason.EPOCH_OVERFLOW);
+		}
 		LocalAuthor la = db.transactionWithResult(true,
 				identityManager::getLocalAuthor);
 		PrivateKey signingKey = la.getPrivateKey();
@@ -1039,6 +1401,7 @@ class GroupTrManagerImpl
 				signingKey);
 		BdfList body = BdfList.of(35L, groupId, localPub,
 				(long) newEpoch, timestamp, sig);
+		int recipients = s.getMembers().size() - 1;
 		db.transaction(false, txn -> fanOut(txn, s, body, timestamp,
 				localPub));
 		applyLocalLeave(s, localPub, newEpoch);
@@ -1165,6 +1528,10 @@ class GroupTrManagerImpl
 		} catch (FormatException ex) {
 			throw new DbException(ex);
 		}
+		eventBus.broadcast(new org.briarproject.briar.api.messaging.event
+				.GroupTrLocalStateChangedEvent(s.getGroupId(),
+				org.briarproject.briar.api.messaging.event
+						.GroupTrLocalStateChangedEvent.Kind.MEMBER_ADDED));
 	}
 
 	private void applyLocalRemove(GroupTrState s, byte[] pk, int newEpoch)
@@ -1180,6 +1547,10 @@ class GroupTrManagerImpl
 		} catch (FormatException ex) {
 			throw new DbException(ex);
 		}
+		eventBus.broadcast(new org.briarproject.briar.api.messaging.event
+				.GroupTrLocalStateChangedEvent(s.getGroupId(),
+				org.briarproject.briar.api.messaging.event
+						.GroupTrLocalStateChangedEvent.Kind.MEMBER_REMOVED));
 	}
 
 	private void applyRoleChanged(GroupTrState s,

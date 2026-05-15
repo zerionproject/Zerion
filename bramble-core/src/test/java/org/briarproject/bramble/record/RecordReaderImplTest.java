@@ -25,7 +25,7 @@ public class RecordReaderImplTest extends BrambleTestCase {
 
 	@Test
 	public void testAcceptsEmptyPayload() throws Exception {
-		// Version 1, type 2, payload length 0 (6-byte extended header)
+
 		byte[] header = new byte[] {1, 2, 0, 0, 0, 0};
 		ByteArrayInputStream in = new ByteArrayInputStream(header);
 		RecordReader reader = new RecordReaderImpl(in);
@@ -39,7 +39,7 @@ public class RecordReaderImplTest extends BrambleTestCase {
 	public void testAcceptsMaxLengthPayload() throws Exception {
 		byte[] record =
 				new byte[RECORD_HEADER_BYTES + MAX_RECORD_PAYLOAD_BYTES];
-		// Version 1, type 2, payload length MAX_RECORD_PAYLOAD_BYTES
+
 		record[0] = 1;
 		record[1] = 2;
 		ByteUtils.writeUint32(MAX_RECORD_PAYLOAD_BYTES, record, 2);
@@ -51,7 +51,7 @@ public class RecordReaderImplTest extends BrambleTestCase {
 	@Test(expected = FormatException.class)
 	public void testFormatExceptionIfPayloadLengthIsNegative()
 			throws Exception {
-		// Version 1, type 2, payload length -1 as unsigned (all 0xFF bytes)
+
 		byte[] header = new byte[] {1, 2, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF};
 		ByteArrayInputStream in = new ByteArrayInputStream(header);
 		RecordReader reader = new RecordReaderImpl(in);
@@ -61,7 +61,7 @@ public class RecordReaderImplTest extends BrambleTestCase {
 	@Test(expected = FormatException.class)
 	public void testFormatExceptionIfPayloadLengthIsTooLarge()
 			throws Exception {
-		// Version 1, type 2, payload length MAX_RECORD_PAYLOAD_BYTES + 1
+
 		byte[] header = new byte[RECORD_HEADER_BYTES];
 		header[0] = 1;
 		header[1] = 2;
@@ -94,7 +94,7 @@ public class RecordReaderImplTest extends BrambleTestCase {
 
 	@Test(expected = EOFException.class)
 	public void testEofExceptionIfPayloadLengthIsTruncated() throws Exception {
-		// Only 5 bytes (need 6 for extended header)
+
 		ByteArrayInputStream in = new ByteArrayInputStream(new byte[5]);
 		RecordReader reader = new RecordReaderImpl(in);
 		reader.readRecord();
@@ -102,7 +102,7 @@ public class RecordReaderImplTest extends BrambleTestCase {
 
 	@Test(expected = EOFException.class)
 	public void testEofExceptionIfPayloadIsTruncated() throws Exception {
-		// Version 0, type 0, payload length 1 (6-byte extended header)
+
 		byte[] header = new byte[] {0, 0, 0, 0, 0, 1};
 		ByteArrayInputStream in = new ByteArrayInputStream(header);
 		RecordReader reader = new RecordReaderImpl(in);
@@ -111,13 +111,13 @@ public class RecordReaderImplTest extends BrambleTestCase {
 
 	@Test
 	public void testAcceptsAndRejectsRecords() throws Exception {
-		// Version 0, type 0, payload length 123 (6-byte extended header)
+
 		byte[] header1 = new byte[] {0, 0, 0, 0, 0, 123};
-		// Version 0, type 1, payload length 123
+
 		byte[] header2 = new byte[] {0, 1, 0, 0, 0, 123};
-		// Version 1, type 0, payload length 123
+
 		byte[] header3 = new byte[] {1, 0, 0, 0, 0, 123};
-		// Same payload for all records
+
 		byte[] payload = getRandomBytes(123);
 
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -130,49 +130,45 @@ public class RecordReaderImplTest extends BrambleTestCase {
 		ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
 		RecordReader reader = new RecordReaderImpl(in);
 
-		// Accept records with version 0, type 0 or 1
 		RecordPredicate accept = r -> {
 			byte version = r.getProtocolVersion(), type = r.getRecordType();
 			return version == 0 && (type == 0 || type == 1);
 		};
-		// Ignore records with version 0, any other type
+
 		RecordPredicate ignore = r -> {
 			byte version = r.getProtocolVersion(), type = r.getRecordType();
 			return version == 0 && !(type == 0 || type == 1);
 		};
 
-		// The first record should be accepted
 		Record r = reader.readRecord(accept, ignore);
 		assertNotNull(r);
 		assertEquals(0, r.getProtocolVersion());
 		assertEquals(0, r.getRecordType());
 		assertArrayEquals(payload, r.getPayload());
 
-		// The second record should be accepted
 		r = reader.readRecord(accept, ignore);
 		assertNotNull(r);
 		assertEquals(0, r.getProtocolVersion());
 		assertEquals(1, r.getRecordType());
 		assertArrayEquals(payload, r.getPayload());
 
-		// The third record should be rejected
 		try {
 			reader.readRecord(accept, ignore);
 			fail();
 		} catch (FormatException expected) {
-			// Expected
+
 		}
 	}
 
 	@Test
 	public void testAcceptsAndIgnoresRecords() throws Exception {
-		// Version 0, type 0, payload length 123 (6-byte extended header)
+
 		byte[] header1 = new byte[] {0, 0, 0, 0, 0, 123};
-		// Version 0, type 2, payload length 123
+
 		byte[] header2 = new byte[] {0, 2, 0, 0, 0, 123};
-		// Version 0, type 1, payload length 123
+
 		byte[] header3 = new byte[] {0, 1, 0, 0, 0, 123};
-		// Same payload for all records
+
 		byte[] payload = getRandomBytes(123);
 
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -185,32 +181,28 @@ public class RecordReaderImplTest extends BrambleTestCase {
 		ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
 		RecordReader reader = new RecordReaderImpl(in);
 
-		// Accept records with version 0, type 0 or 1
 		RecordPredicate accept = r -> {
 			byte version = r.getProtocolVersion(), type = r.getRecordType();
 			return version == 0 && (type == 0 || type == 1);
 		};
-		// Ignore records with version 0, any other type
+
 		RecordPredicate ignore = r -> {
 			byte version = r.getProtocolVersion(), type = r.getRecordType();
 			return version == 0 && !(type == 0 || type == 1);
 		};
 
-		// The first record should be accepted
 		Record r = reader.readRecord(accept, ignore);
 		assertNotNull(r);
 		assertEquals(0, r.getProtocolVersion());
 		assertEquals(0, r.getRecordType());
 		assertArrayEquals(payload, r.getPayload());
 
-		// The second record should be ignored, the third should be accepted
 		r = reader.readRecord(accept, ignore);
 		assertNotNull(r);
 		assertEquals(0, r.getProtocolVersion());
 		assertEquals(1, r.getRecordType());
 		assertArrayEquals(payload, r.getPayload());
 
-		// The reader should have reached the end of the stream
 		assertNull(reader.readRecord(accept, ignore));
 	}
 }

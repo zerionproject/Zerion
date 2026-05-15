@@ -8,7 +8,6 @@ import java.sql.Statement;
 
 import static org.briarproject.bramble.db.JdbcUtils.tryToClose;
 
-
 class Migration62_63 implements Migration<Connection> {
 
 	@Override

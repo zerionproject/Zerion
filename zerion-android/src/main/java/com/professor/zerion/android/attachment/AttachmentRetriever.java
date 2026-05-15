@@ -15,7 +15,6 @@ import java.util.List;
 
 import androidx.lifecycle.LiveData;
 
-
 @NotNullByDefault
 public interface AttachmentRetriever {
 

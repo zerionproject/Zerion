@@ -7,7 +7,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.Immutable;
 
-
 @Immutable
 @NotNullByDefault
 public class RemoteTransportPropertiesUpdatedEvent extends Event {

@@ -1,6 +1,5 @@
 package com.professor.zerion.android.widget;
 
-
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;

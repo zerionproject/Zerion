@@ -17,7 +17,6 @@ import com.professor.zerion.android.api.LockManager;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
-
 import javax.inject.Inject;
 
 import androidx.annotation.Nullable;

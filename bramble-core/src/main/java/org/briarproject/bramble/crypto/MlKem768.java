@@ -18,7 +18,6 @@ import java.util.Arrays;
 
 import javax.annotation.concurrent.Immutable;
 
-
 @NotNullByDefault
 @Immutable
 class MlKem768 {
@@ -29,7 +28,6 @@ class MlKem768 {
 		this.secureRandom = secureRandom;
 	}
 
-	
 	MlKemKeyPair generateKeyPair() {
 		MLKEMKeyPairGenerator keyGen = new MLKEMKeyPairGenerator();
 		keyGen.init(new MLKEMKeyGenerationParameters(secureRandom,
@@ -45,7 +43,6 @@ class MlKem768 {
 		return new MlKemKeyPair(publicKey.getEncoded(), privateKey.getEncoded());
 	}
 
-	
 	MlKemEncapsulation encapsulate(byte[] publicKeyBytes)
 			throws GeneralSecurityException {
 		if (publicKeyBytes.length != PostQuantumConstants.ML_KEM_768_PUBLIC_KEY_BYTES) {
@@ -65,7 +62,6 @@ class MlKem768 {
 		return new MlKemEncapsulation(ciphertext, sharedSecret);
 	}
 
-	
 	byte[] decapsulate(byte[] privateKeyBytes, byte[] ciphertext)
 			throws GeneralSecurityException {
 		if (privateKeyBytes.length != PostQuantumConstants.ML_KEM_768_PRIVATE_KEY_BYTES) {
@@ -84,7 +80,6 @@ class MlKem768 {
 		return extractor.extractSecret(ciphertext);
 	}
 
-	
 	boolean isValidPublicKey(byte[] publicKeyBytes) {
 		if (publicKeyBytes.length != PostQuantumConstants.ML_KEM_768_PUBLIC_KEY_BYTES) {
 			return false;
@@ -97,7 +92,6 @@ class MlKem768 {
 		}
 	}
 
-	
 	static class MlKemKeyPair {
 		private final byte[] publicKey;
 		private final byte[] privateKey;
@@ -115,13 +109,11 @@ class MlKem768 {
 			return privateKey;
 		}
 
-		
 		void clearPrivateKey() {
 			Arrays.fill(privateKey, (byte) 0);
 		}
 	}
 
-	
 	static class MlKemEncapsulation {
 		private final byte[] ciphertext;
 		private final byte[] sharedSecret;
@@ -131,17 +123,14 @@ class MlKem768 {
 			this.sharedSecret = sharedSecret;
 		}
 
-		
 		byte[] getCiphertext() {
 			return ciphertext;
 		}
 
-		
 		byte[] getSharedSecret() {
 			return sharedSecret;
 		}
 
-		
 		void clearSecret() {
 			Arrays.fill(sharedSecret, (byte) 0);
 		}

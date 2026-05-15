@@ -34,8 +34,6 @@ public class ConversationActivityScreenshotTest extends ScreenshotTest {
 		intent.putExtra(CONTACT_ID, 1);
 		testRule.launchActivity(intent);
 
-		// TODO add test data and wait for it do appear
-
 		screenshot("manual_messaging", testRule.getActivity());
 	}
 

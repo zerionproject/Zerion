@@ -70,18 +70,6 @@ public class IncognitoInputHelper {
 		configureIncognitoInput(editText, true);
 	}
 
-	/**
-	 * Recursively walks the view tree and enforces secure keyboard flags
-	 * on every EditText found. This is the global enforcement mechanism
-	 * called from BaseActivity to ensure no input field leaks data to IMEs.
-	 *
-	 * This method applies a lighter touch than configureIncognitoInput()
-	 * to avoid breaking field-specific inputType configurations:
-	 * - Adds IME_FLAG_NO_PERSONALIZED_LEARNING to existing imeOptions
-	 * - Sets privateImeOptions to disable IME learning/telemetry
-	 * - Adds TYPE_TEXT_FLAG_NO_SUGGESTIONS to existing inputType
-	 * - Disables autofill (API 26+)
-	 */
 	public static void enforceSecureInputsOnViewTree(View root) {
 		if (root instanceof EditText) {
 			enforceSecureInput((EditText) root);
@@ -95,20 +83,18 @@ public class IncognitoInputHelper {
 	}
 
 	private static void enforceSecureInput(EditText editText) {
-		// Add NO_PERSONALIZED_LEARNING to existing imeOptions
+
 		int currentIme = editText.getImeOptions();
 		if ((currentIme & EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING) == 0) {
 			editText.setImeOptions(currentIme |
 					EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING);
 		}
 
-		// Set private IME options to disable learning/telemetry
 		String currentPrivate = editText.getPrivateImeOptions();
 		if (currentPrivate == null || !currentPrivate.contains("nm=1")) {
 			editText.setPrivateImeOptions(PRIVATE_IME_OPTIONS);
 		}
 
-		// Add NO_SUGGESTIONS to existing inputType (preserve other flags)
 		int currentType = editText.getInputType();
 		if ((currentType & InputType.TYPE_MASK_CLASS) == InputType.TYPE_CLASS_TEXT) {
 			if ((currentType & InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS) == 0) {
@@ -117,7 +103,6 @@ public class IncognitoInputHelper {
 			}
 		}
 
-		// Disable autofill (API 26+)
 		if (Build.VERSION.SDK_INT >= 26) {
 			editText.setImportantForAutofill(
 					View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS);

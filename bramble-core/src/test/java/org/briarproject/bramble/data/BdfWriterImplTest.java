@@ -30,7 +30,7 @@ public class BdfWriterImplTest extends BrambleTestCase {
 	public void testWriteBoolean() throws IOException {
 		w.writeBoolean(true);
 		w.writeBoolean(false);
-		// TRUE tag, FALSE tag
+
 		checkContents("11" + "10");
 	}
 
@@ -46,7 +46,7 @@ public class BdfWriterImplTest extends BrambleTestCase {
 		w.writeLong(Integer.MIN_VALUE);
 		w.writeLong(Long.MAX_VALUE);
 		w.writeLong(Long.MIN_VALUE);
-		// INTEGER_8 tag, 0, INTEGER_8 tag, -1, etc
+
 		checkContents("21" + "00" + "21" + "FF" +
 				"21" + "7F" + "21" + "80" +
 				"22" + "7FFF" + "22" + "8000" +
@@ -56,16 +56,15 @@ public class BdfWriterImplTest extends BrambleTestCase {
 
 	@Test
 	public void testWriteDouble() throws IOException {
-		// http://babbage.cs.qc.edu/IEEE-754/Decimal.html
-		// 1 bit for sign, 11 for exponent, 52 for significand
-		w.writeDouble(0.0); // 0 0 0 -> 0x0000000000000000
-		w.writeDouble(1.0); // 0 1023 1 -> 0x3FF0000000000000
-		w.writeDouble(2.0); // 0 1024 1 -> 0x4000000000000000
-		w.writeDouble(-1.0); // 1 1023 1 -> 0xBFF0000000000000
-		w.writeDouble(-0.0); // 1 0 0 -> 0x8000000000000000
-		w.writeDouble(Double.NEGATIVE_INFINITY); // 1 2047 0 -> 0xFFF00000...
-		w.writeDouble(Double.POSITIVE_INFINITY); // 0 2047 0 -> 0x7FF00000...
-		w.writeDouble(Double.NaN); // 0 2047 1 -> 0x7FF8000000000000
+
+		w.writeDouble(0.0);
+		w.writeDouble(1.0);
+		w.writeDouble(2.0);
+		w.writeDouble(-1.0);
+		w.writeDouble(-0.0);
+		w.writeDouble(Double.NEGATIVE_INFINITY);
+		w.writeDouble(Double.POSITIVE_INFINITY);
+		w.writeDouble(Double.NaN);
 		checkContents("38" + "0000000000000000" + "38" + "3FF0000000000000"
 				+ "38" + "4000000000000000" + "38" + "BFF0000000000000"
 				+ "38" + "8000000000000000" + "38" + "FFF0000000000000"
@@ -78,8 +77,7 @@ public class BdfWriterImplTest extends BrambleTestCase {
 		String longHex = StringUtils.toHexString(longest.getBytes("UTF-8"));
 		w.writeString("foo bar baz bam ");
 		w.writeString(longest);
-		// STRING_8 tag, length 16, UTF-8 bytes, STRING_8 tag, length 127,
-		// UTF-8 bytes
+
 		checkContents("41" + "10" + "666F6F206261722062617A2062616D20" +
 				"41" + "7F" + longHex);
 	}
@@ -92,8 +90,7 @@ public class BdfWriterImplTest extends BrambleTestCase {
 		String longHex = StringUtils.toHexString(longest.getBytes("UTF-8"));
 		w.writeString(shortest);
 		w.writeString(longest);
-		// STRING_16 tag, length 128, UTF-8 bytes, STRING_16 tag,
-		// length 2^15 - 1, UTF-8 bytes
+
 		checkContents("42" + "0080" + shortHex + "42" + "7FFF" + longHex);
 	}
 
@@ -102,7 +99,7 @@ public class BdfWriterImplTest extends BrambleTestCase {
 		String shortest = StringUtils.getRandomString(Short.MAX_VALUE + 1);
 		String shortHex = StringUtils.toHexString(shortest.getBytes("UTF-8"));
 		w.writeString(shortest);
-		// STRING_32 tag, length 2^15, UTF-8 bytes
+
 		checkContents("44" + "00008000" + shortHex);
 	}
 
@@ -111,7 +108,7 @@ public class BdfWriterImplTest extends BrambleTestCase {
 		String unicode = "\uFDD0\uFDD1\uFDD2\uFDD3";
 		String hex = StringUtils.toHexString(unicode.getBytes("UTF-8"));
 		w.writeString(unicode);
-		// STRING_8 tag, length 12, UTF-8 bytes
+
 		checkContents("41" + "0C" + hex);
 	}
 
@@ -121,7 +118,7 @@ public class BdfWriterImplTest extends BrambleTestCase {
 		String longHex = StringUtils.toHexString(longest);
 		w.writeRaw(new byte[] {1, 2, 3});
 		w.writeRaw(longest);
-		// RAW_8 tag, length 3, bytes, RAW_8 tag, length 127, bytes
+
 		checkContents("51" + "03" + "010203" + "51" + "7F" + longHex);
 	}
 
@@ -133,7 +130,7 @@ public class BdfWriterImplTest extends BrambleTestCase {
 		String longHex = StringUtils.toHexString(longest);
 		w.writeRaw(shortest);
 		w.writeRaw(longest);
-		// RAW_16 tag, length 128, bytes, RAW_16 tag, length 2^15 - 1, bytes
+
 		checkContents("52" + "0080" + shortHex + "52" + "7FFF" + longHex);
 	}
 
@@ -142,7 +139,7 @@ public class BdfWriterImplTest extends BrambleTestCase {
 		byte[] shortest = new byte[Short.MAX_VALUE + 1];
 		String shortHex = StringUtils.toHexString(shortest);
 		w.writeRaw(shortest);
-		// RAW_32 tag, length 2^15, bytes
+
 		checkContents("54" + "00008000" + shortHex);
 	}
 
@@ -151,7 +148,7 @@ public class BdfWriterImplTest extends BrambleTestCase {
 		List<Object> l = new ArrayList<>();
 		for (int i = 0; i < 3; i++) l.add(i);
 		w.writeList(l);
-		// LIST tag, elements as integers, END tag
+
 		checkContents("60" + "21" + "00" + "21" + "01" + "21" + "02" + "80");
 	}
 
@@ -163,19 +160,17 @@ public class BdfWriterImplTest extends BrambleTestCase {
 		l.add(NULL_VALUE);
 		l.add(2);
 		w.writeList(l);
-		// LIST tag, 1 as integer, NULL tag, NULL tag, 2 as integer, END tag
+
 		checkContents("60" + "21" + "01" + "00" + "00" + "21" + "02" + "80");
 	}
 
 	@Test
 	public void testWriteDictionary() throws IOException {
-		// Add entries to dictionary in descending order - they should be
-		// output in ascending order. Use LinkedHashMap to get predictable
-		// iteration order
+
 		Map<String, Object> m = new LinkedHashMap<>();
 		for (int i = 3; i >= 0; i--) m.put(String.valueOf(i), i);
 		w.writeDictionary(m);
-		// DICTIONARY tag, keys as strings and values as integers, END tag
+
 		checkContents("70" + "41" + "01" + "30" + "21" + "00" +
 				"41" + "01" + "31" + "21" + "01" +
 				"41" + "01" + "32" + "21" + "02" +
@@ -184,12 +179,11 @@ public class BdfWriterImplTest extends BrambleTestCase {
 
 	@Test
 	public void testWriteBdfDictionary() throws IOException {
-		// Add entries to dictionary in descending order - they should be
-		// output in ascending order
+
 		BdfDictionary d = new BdfDictionary();
 		for (int i = 3; i >= 0; i--) d.put(String.valueOf(i), i);
 		w.writeDictionary(d);
-		// DICTIONARY tag, keys as strings and values as integers, END tag
+
 		checkContents("70" + "41" + "01" + "30" + "21" + "00" +
 				"41" + "01" + "31" + "21" + "01" +
 				"41" + "01" + "32" + "21" + "02" +
@@ -206,8 +200,7 @@ public class BdfWriterImplTest extends BrambleTestCase {
 		Map<String, Object> outer = new LinkedHashMap<>();
 		outer.put("foo", list);
 		w.writeDictionary(outer);
-		// DICTIONARY tag, "foo" as string, LIST tag, 1 as integer,
-		// DICTIONARY tag, "bar" as string, {} as raw, END tag, END tag, END tag
+
 		checkContents("70" + "41" + "03" + "666F6F" + "60" +
 				"21" + "01" + "70" + "41" + "03" + "626172" + "51" + "00" +
 				"80" + "80" + "80");

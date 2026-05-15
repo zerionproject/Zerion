@@ -2,29 +2,21 @@ package org.briarproject.bramble.api.crypto;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
-
 @NotNullByDefault
 public enum CryptoAlgorithm {
 
-	
 	X25519("X25519", AlgorithmType.KEY_AGREEMENT, false, 32, 32, 0),
 
-	
 	ML_KEM_768("ML-KEM-768", AlgorithmType.KEY_AGREEMENT, true, 1184, 2400, 1088),
 
-	
 	HYBRID_X25519_ML_KEM_768("Hybrid-X25519-ML-KEM-768", AlgorithmType.KEY_AGREEMENT, true, 1216, 2432, 1088),
 
-	
 	ED25519("Ed25519", AlgorithmType.SIGNATURE, false, 32, 32, 64),
 
-	
 	ML_DSA_65("ML-DSA-65", AlgorithmType.SIGNATURE, true, 1952, 4032, 3293),
 
-	
 	HYBRID_ED25519_ML_DSA_65("Hybrid-Ed25519-ML-DSA-65", AlgorithmType.SIGNATURE, true, 1984, 4064, 3357);
 
-	
 	public enum AlgorithmType {
 		KEY_AGREEMENT,
 		SIGNATURE
@@ -47,52 +39,42 @@ public enum CryptoAlgorithm {
 		this.outputBytes = outputBytes;
 	}
 
-	
 	public String getAlgorithmName() {
 		return name;
 	}
 
-	
 	public AlgorithmType getType() {
 		return type;
 	}
 
-	
 	public boolean isPostQuantum() {
 		return postQuantum;
 	}
 
-	
 	public boolean isHybrid() {
 		return name.startsWith("Hybrid");
 	}
 
-	
 	public int getPublicKeyBytes() {
 		return publicKeyBytes;
 	}
 
-	
 	public int getPrivateKeyBytes() {
 		return privateKeyBytes;
 	}
 
-	
 	public int getOutputBytes() {
 		return outputBytes;
 	}
 
-	
 	public boolean isKeyAgreement() {
 		return type == AlgorithmType.KEY_AGREEMENT;
 	}
 
-	
 	public boolean isSignature() {
 		return type == AlgorithmType.SIGNATURE;
 	}
 
-	
 	public CryptoAlgorithm getLegacyAlgorithm() {
 		switch (this) {
 			case ML_KEM_768:
@@ -106,7 +88,6 @@ public enum CryptoAlgorithm {
 		}
 	}
 
-	
 	public CryptoAlgorithm getHybridAlgorithm() {
 		switch (this) {
 			case X25519:
@@ -122,7 +103,6 @@ public enum CryptoAlgorithm {
 		}
 	}
 
-	
 	public static CryptoAlgorithm fromName(String name) {
 		for (CryptoAlgorithm algo : values()) {
 			if (algo.name.equals(name)) {
@@ -132,22 +112,18 @@ public enum CryptoAlgorithm {
 		throw new IllegalArgumentException("Unknown algorithm: " + name);
 	}
 
-	
 	public static CryptoAlgorithm getDefaultKeyAgreement() {
 		return HYBRID_X25519_ML_KEM_768;
 	}
 
-	
 	public static CryptoAlgorithm getDefaultSignature() {
 		return HYBRID_ED25519_ML_DSA_65;
 	}
 
-	
 	public static CryptoAlgorithm getLegacyKeyAgreement() {
 		return X25519;
 	}
 
-	
 	public static CryptoAlgorithm getLegacySignature() {
 		return ED25519;
 	}

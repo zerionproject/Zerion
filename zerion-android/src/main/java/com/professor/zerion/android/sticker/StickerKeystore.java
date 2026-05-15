@@ -10,16 +10,6 @@ import java.security.KeyStore;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 
-/**
- * Android-Keystore-backed AES-256-GCM key for at-rest sticker encryption.
- * The key is non-extractable (StrongBox/TEE where available) and bound to
- * this app install — wipe-on-uninstall is automatic.
- *
- * Stickers themselves are stored under getFilesDir()/stickers (Android
- * FBE already encrypts that at rest), but we keep a second crypto layer
- * for parity with iOS commit 3311da4 which uses FileEncryption: a partial
- * disk dump must not see plaintext PNG bytes even with the device unlocked.
- */
 @NotNullByDefault
 public final class StickerKeystore {
 

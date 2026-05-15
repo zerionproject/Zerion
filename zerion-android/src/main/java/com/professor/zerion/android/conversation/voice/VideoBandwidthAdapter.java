@@ -2,18 +2,14 @@ package com.professor.zerion.android.conversation.voice;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
-/**
- * Adaptive video quality controller for Tor bandwidth constraints.
- * Monitors network conditions and adjusts video parameters.
- */
 @NotNullByDefault
 class VideoBandwidthAdapter {
 
 	enum Quality {
-		FULL(250_000, 15),     // 250 kbps, 15 fps
-		REDUCED(150_000, 10),  // 150 kbps, 10 fps
-		MINIMAL(80_000, 5),    // 80 kbps, 5 fps
-		OFF(0, 0);             // Video disabled
+		FULL(250_000, 15),
+		REDUCED(150_000, 10),
+		MINIMAL(80_000, 5),
+		OFF(0, 0);
 
 		final int bitRate;
 		final int frameRate;
@@ -28,7 +24,6 @@ class VideoBandwidthAdapter {
 	private long lastAdjustmentTime = 0;
 	private static final long ADJUSTMENT_COOLDOWN_MS = 5000;
 
-	// Smoothed metrics
 	private float smoothedLatency = 0;
 	private float smoothedPacketLoss = 0;
 
@@ -36,11 +31,8 @@ class VideoBandwidthAdapter {
 		return currentQuality;
 	}
 
-	/**
-	 * Update with current network metrics and return recommended quality.
-	 */
 	Quality updateMetrics(float latencyMs, float packetLossPercent) {
-		// Exponential moving average
+
 		smoothedLatency = smoothedLatency * 0.7f + latencyMs * 0.3f;
 		smoothedPacketLoss = smoothedPacketLoss * 0.7f +
 				packetLossPercent * 0.3f;

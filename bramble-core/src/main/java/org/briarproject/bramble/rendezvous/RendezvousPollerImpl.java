@@ -162,8 +162,7 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 	}
 	private void addPendingContact(PendingContact p) {
 		long now = clock.currentTimeMillis();
-		// Use the later of link creation or now as the base for expiry,
-		// so devices that come online late still get the full timeout window
+
 		long base = Math.max(p.getTimestamp(), now);
 		long expiry = base + RENDEZVOUS_TIMEOUT_MS;
 		try {
@@ -194,8 +193,7 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 							keyManager.addHybridPendingContact(txn, p.getId(),
 									finalRendezvousKey, finalAlice));
 				} catch (DbException e) {
-					// Keys may already exist from a previous session —
-					// expected on app restart, continue with polling
+
 				}
 			} else {
 				if (handshakeKeyPair == null) {
@@ -224,7 +222,7 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 			else broadcastState(p.getId(), WAITING_FOR_CONNECTION);
 			if (cryptoStates.size() == 1) {
 				requireNull(pollTask);
-				// Use fast interval — poll() filters per-contact based on age
+
 				pollTask = scheduler.scheduleWithFixedDelay(this::poll, worker,
 						FAST_POLLING_INTERVAL_MS, FAST_POLLING_INTERVAL_MS,
 						MILLISECONDS);
@@ -289,8 +287,7 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 			PendingContactId pid = e.getKey();
 			CryptoState cs = cryptoStates.get(pid);
 			if (cs == null) continue;
-			// Contacts added < 60s ago get fast polling (every 10s).
-			// After that, only poll if 30s has elapsed since last poll.
+
 			boolean fastMode =
 					(now - cs.createdAt) < FAST_POLLING_DURATION_MS;
 			if (!fastMode) {
@@ -427,7 +424,7 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 	private void connectionFailed(PendingContactId p) {
 		if (cryptoStates.containsKey(p)) {
 			broadcastState(p, WAITING_FOR_CONNECTION);
-			// Immediately re-poll this contact instead of waiting for interval
+
 			poll(p);
 		}
 	}

@@ -28,10 +28,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Integration tests for PCS Mode 2 (Full Double Ratchet) stream encryption.
- * Tests the DH ratchet functionality with per-message ephemeral keys.
- */
 public class PcsMode2IntegrationTest {
 
 	private CryptoComponent crypto;
@@ -41,7 +37,7 @@ public class PcsMode2IntegrationTest {
 
 	@Before
 	public void setUp() {
-		// Directly instantiate CryptoComponentImpl (package-accessible)
+
 		crypto = new CryptoComponentImpl(new TestSecureRandomProvider(), null);
 
 		Clock clock = new Clock() {
@@ -70,14 +66,12 @@ public class PcsMode2IntegrationTest {
 	public void testMode2Initialization() throws Exception {
 		SecretKey rootKey = generateKey();
 
-		// Alice initializes as initiator
 		PcsSessionState aliceState = ratchet.initializeMode2AsInitiator(rootKey);
 		assertNotNull(aliceState);
 		assertTrue(aliceState.isMode2());
 		assertNotNull(aliceState.getDhState());
 		assertNotNull(aliceState.getDhState().getDhPublicKey());
 
-		// Bob initializes as responder with Alice's public key
 		PublicKey alicePublicKey = aliceState.getDhState().getDhPublicKey();
 		PcsSessionState bobState = ratchet.initializeMode2AsResponder(rootKey, alicePublicKey);
 		assertNotNull(bobState);
@@ -89,16 +83,13 @@ public class PcsMode2IntegrationTest {
 	public void testDhRatchetProducesUniqueKeys() throws Exception {
 		SecretKey rootKey = generateKey();
 
-		// Initialize Alice and Bob
 		PcsSessionState aliceState = ratchet.initializeMode2AsInitiator(rootKey);
 		PublicKey alicePublicKey = aliceState.getDhState().getDhPublicKey();
 		PcsSessionState bobState = ratchet.initializeMode2AsResponder(rootKey, alicePublicKey);
 
-		// Collect DH public keys across multiple ratchet steps
 		PublicKey[] aliceKeys = new PublicKey[5];
 		PcsSessionState currentAliceState = aliceState;
 
-		// First, Alice needs Bob's public key to do DH ratchet
 		PublicKey bobPublicKey = bobState.getDhState().getDhPublicKey();
 		DhRatchetResult aliceResult = ratchet.performReceiveDhRatchet(
 				currentAliceState, bobPublicKey);
@@ -110,7 +101,6 @@ public class PcsMode2IntegrationTest {
 			currentAliceState = result.getNewState();
 		}
 
-		// Verify all public keys are unique
 		for (int i = 0; i < aliceKeys.length; i++) {
 			for (int j = i + 1; j < aliceKeys.length; j++) {
 				byte[] key1 = aliceKeys[i].getEncoded();
@@ -123,22 +113,18 @@ public class PcsMode2IntegrationTest {
 
 	@Test
 	public void testMode2SingleMessageRoundTrip() throws Exception {
-		// Generate shared keys
+
 		SecretKey rootKey = generateKey();
 		SecretKey streamHeaderKey = generateKey();
 
-		// Alice (sender) initializes Mode 2
 		PcsSessionState aliceSendState = ratchet.initializeMode2AsInitiator(rootKey);
 
-		// Create stream header nonce
 		byte[] streamHeaderNonce = new byte[24];
 		crypto.getSecureRandom().nextBytes(streamHeaderNonce);
 
-		// Alice encrypts a message
 		byte[] message = "Hello, Mode 2 DH Ratchet!".getBytes();
 		ByteArrayOutputStream encryptedStream = new ByteArrayOutputStream();
 
-		// Use separate cipher instances for encrypt and decrypt
 		AuthenticatedCipher encryptCipher = new XSalsa20Poly1305AuthenticatedCipher();
 		StreamEncrypter encrypter = new PcsStreamEncrypterImpl(
 				encryptedStream, encryptCipher, ratchet, 1L, null,
@@ -147,12 +133,10 @@ public class PcsMode2IntegrationTest {
 		encrypter.writeFrame(message, message.length, 0, true);
 		encrypter.flush();
 
-		// Bob (receiver) initializes with Alice's public key
 		PublicKey alicePublicKey = aliceSendState.getDhState().getDhPublicKey();
 		PcsSessionState bobRecvState = ratchet.initializeMode2AsResponder(
 				rootKey, alicePublicKey);
 
-		// Bob decrypts the message
 		ByteArrayInputStream inputStream = new ByteArrayInputStream(
 				encryptedStream.toByteArray());
 
@@ -166,7 +150,6 @@ public class PcsMode2IntegrationTest {
 		byte[] decrypted = new byte[MAX_PAYLOAD_LENGTH];
 		int length = decrypter.readFrame(decrypted);
 
-		// Verify
 		assertTrue(length > 0);
 		byte[] result = Arrays.copyOf(decrypted, length);
 		assertArrayEquals(message, result);
@@ -174,46 +157,36 @@ public class PcsMode2IntegrationTest {
 
 	@Test
 	public void testMode2MultipleMessagesAlternating() throws Exception {
-		// This test simulates a conversation where Alice and Bob alternate
-		// sending messages, triggering DH ratchet steps
 
 		SecretKey rootKey = generateKey();
 
-		// Initialize both parties
 		PcsSessionState aliceState = ratchet.initializeMode2AsInitiator(rootKey);
 		PublicKey aliceInitialKey = aliceState.getDhState().getDhPublicKey();
 		PcsSessionState bobState = ratchet.initializeMode2AsResponder(
 				rootKey, aliceInitialKey);
 
-		// Simulate Alice receiving Bob's first key (DH ratchet step)
 		PublicKey bobInitialKey = bobState.getDhState().getDhPublicKey();
 		DhRatchetResult aliceResult = ratchet.performReceiveDhRatchet(
 				aliceState, bobInitialKey);
 		aliceState = aliceResult.getNewState();
 
-		// Now simulate Alice sending
 		DhRatchetResult aliceSend1 = ratchet.performSendDhRatchet(aliceState);
 		aliceState = aliceSend1.getNewState();
 
-		// Bob receives Alice's new key
 		DhRatchetResult bobRecv1 = ratchet.performReceiveDhRatchet(
 				bobState, aliceSend1.getDhPublicKey());
 		bobState = bobRecv1.getNewState();
 
-		// Bob sends reply
 		DhRatchetResult bobSend1 = ratchet.performSendDhRatchet(bobState);
 		bobState = bobSend1.getNewState();
 
-		// Alice receives Bob's reply
 		DhRatchetResult aliceRecv1 = ratchet.performReceiveDhRatchet(
 				aliceState, bobSend1.getDhPublicKey());
 		aliceState = aliceRecv1.getNewState();
 
-		// Verify both parties have progressed through multiple DH ratchet steps
 		assertNotNull(aliceState.getDhState());
 		assertNotNull(bobState.getDhState());
 
-		// Verify keys have changed from initial
 		assertFalse(Arrays.equals(
 				aliceInitialKey.getEncoded(),
 				aliceState.getDhState().getDhPublicKey().getEncoded()
@@ -226,34 +199,26 @@ public class PcsMode2IntegrationTest {
 
 	@Test
 	public void testMode2PostCompromiseRecovery() throws Exception {
-		// This test verifies that after a simulated compromise,
-		// the next DH ratchet step produces completely new keys
 
 		SecretKey rootKey = generateKey();
 
-		// Initialize Alice
 		PcsSessionState aliceState = ratchet.initializeMode2AsInitiator(rootKey);
 		PublicKey aliceInitialKey = aliceState.getDhState().getDhPublicKey();
 
-		// Bob initializes
 		PcsSessionState bobState = ratchet.initializeMode2AsResponder(
 				rootKey, aliceInitialKey);
 		PublicKey bobInitialKey = bobState.getDhState().getDhPublicKey();
 
-		// Simulate compromise - attacker captures current state
 		SecretKey compromisedRootKey = aliceState.getRootKey();
 		SecretKey compromisedChainKey = aliceState.getChainKey();
 
-		// Continue communication - Alice receives Bob's key
 		DhRatchetResult aliceRatchet = ratchet.performReceiveDhRatchet(
 				aliceState, bobInitialKey);
 		aliceState = aliceRatchet.getNewState();
 
-		// After DH ratchet, the new keys should be different from compromised keys
 		SecretKey newRootKey = aliceState.getRootKey();
 		SecretKey newChainKey = aliceState.getChainKey();
 
-		// Verify keys have changed (post-compromise recovery)
 		assertNotNull(newRootKey);
 		assertNotNull(newChainKey);
 		assertFalse("Root key should change after DH ratchet",
@@ -266,17 +231,14 @@ public class PcsMode2IntegrationTest {
 	public void testKdfRkProducesUniqueOutputs() throws Exception {
 		SecretKey rootKey = generateKey();
 
-		// Generate different DH outputs
 		byte[] dhOutput1 = new byte[32];
 		byte[] dhOutput2 = new byte[32];
 		crypto.getSecureRandom().nextBytes(dhOutput1);
 		crypto.getSecureRandom().nextBytes(dhOutput2);
 
-		// Derive keys with same root but different DH outputs
 		PcsRatchet.KdfRkResult result1 = ratchet.kdfRk(rootKey, dhOutput1);
 		PcsRatchet.KdfRkResult result2 = ratchet.kdfRk(rootKey, dhOutput2);
 
-		// Verify outputs are different
 		assertFalse("Different DH outputs should produce different root keys",
 				Arrays.equals(result1.getNewRootKey().getBytes(),
 						result2.getNewRootKey().getBytes()));
@@ -284,7 +246,6 @@ public class PcsMode2IntegrationTest {
 				Arrays.equals(result1.getChainKey().getBytes(),
 						result2.getChainKey().getBytes()));
 
-		// Verify root key and chain key from same KDF_RK are different
 		assertFalse("Root key and chain key should be different",
 				Arrays.equals(result1.getNewRootKey().getBytes(),
 						result1.getChainKey().getBytes()));
@@ -292,12 +253,11 @@ public class PcsMode2IntegrationTest {
 
 	@Test
 	public void testMode2SymmetricRatchetStillWorks() throws Exception {
-		// Verify that symmetric ratchet (KDF_CK) still works correctly in Mode 2
+
 		SecretKey rootKey = generateKey();
 
 		PcsSessionState state = ratchet.initializeMode2AsInitiator(rootKey);
 
-		// Advance send chain multiple times
 		SecretKey[] messageKeys = new SecretKey[5];
 		for (int i = 0; i < 5; i++) {
 			PcsRatchet.AdvanceResult result = ratchet.advanceSendChain(state);
@@ -305,7 +265,6 @@ public class PcsMode2IntegrationTest {
 			state = result.getNewState();
 		}
 
-		// Verify all message keys are unique
 		for (int i = 0; i < messageKeys.length; i++) {
 			for (int j = i + 1; j < messageKeys.length; j++) {
 				assertFalse("Message keys should be unique",
@@ -314,7 +273,6 @@ public class PcsMode2IntegrationTest {
 			}
 		}
 
-		// Verify message number progressed
 		assertEquals(5, state.getMessageNumber());
 	}
 }

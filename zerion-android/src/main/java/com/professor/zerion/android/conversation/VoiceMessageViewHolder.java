@@ -283,7 +283,6 @@ public class VoiceMessageViewHolder {
 		durationText.setText(String.format("%d:%02d", minutes, secs));
 	}
 
-	
 	private void showLoadingState() {
 		loadingState = STATE_LOADING;
 		playPauseButton.setEnabled(false);
@@ -293,7 +292,6 @@ public class VoiceMessageViewHolder {
 		durationText.setText("Decrypting...");
 	}
 
-	
 	private void showReadyState() {
 		loadingState = STATE_READY;
 		playPauseButton.setEnabled(true);
@@ -301,7 +299,6 @@ public class VoiceMessageViewHolder {
 		updatePlayPauseButton();
 	}
 
-	
 	private void showErrorState(String message) {
 		loadingState = STATE_ERROR;
 		playPauseButton.setEnabled(false);

@@ -57,7 +57,7 @@ abstract class Connection {
 		try {
 			reader.dispose(true, recognised);
 		} catch (IOException e) {
-			// ignored
+
 		}
 	}
 
@@ -65,7 +65,7 @@ abstract class Connection {
 		try {
 			writer.dispose(true);
 		} catch (IOException e) {
-			// ignored
+
 		}
 	}
 }

@@ -73,8 +73,7 @@ class VoiceCallConnectionManagerImpl implements VoiceCallConnectionManager {
 
 		for (String callId : expired) {
 			closeEndpoint(callId);
-			// Delay between consecutive hidden service removals
-			// to avoid destabilizing the Tor daemon
+
 			try {
 				Thread.sleep(500);
 			} catch (InterruptedException e) {
@@ -99,9 +98,6 @@ class VoiceCallConnectionManagerImpl implements VoiceCallConnectionManager {
 			throw new IOException("Tor plugin does not support rendezvous");
 		}
 
-		// Derive key material using callId as additional input so that
-		// voice (callId="X") and video (callId="X-video") endpoints get
-		// different onion addresses from the same voiceCallKey.
 		SecretKey endpointKey = deriveEndpointKey(voiceCallKey, callId);
 		KeyMaterialSource keyMaterialForOnion = crypto.createKeyMaterialSource(
 				endpointKey, TorConstants.ID);
@@ -273,11 +269,6 @@ class VoiceCallConnectionManagerImpl implements VoiceCallConnectionManager {
 		}
 	}
 
-	/**
-	 * Derive a per-endpoint key by mixing the callId into the voice call key.
-	 * This ensures that different endpoints (voice vs video) get different
-	 * onion addresses even when using the same voiceCallKey.
-	 */
 	private SecretKey deriveEndpointKey(SecretKey voiceCallKey, String callId) {
 		byte[] keyBytes = voiceCallKey.getBytes().clone();
 		try {

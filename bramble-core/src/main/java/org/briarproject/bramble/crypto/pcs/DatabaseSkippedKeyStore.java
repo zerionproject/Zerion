@@ -19,7 +19,6 @@ import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.SKIP_PRUNE_IN
 import static org.briarproject.bramble.api.db.DatabaseComponent.PCS_DIRECTION_RECEIVE;
 import static org.briarproject.bramble.api.db.DatabaseComponent.PCS_DIRECTION_SEND;
 
-
 @ThreadSafe
 @NotNullByDefault
 public class DatabaseSkippedKeyStore implements SkippedKeyStore {
@@ -138,14 +137,12 @@ public class DatabaseSkippedKeyStore implements SkippedKeyStore {
 		}
 	}
 
-
 	public static byte[] createChainId(ContactId contactId, boolean send) {
 		byte[] chainId = new byte[CHAIN_ID_LENGTH];
 		ByteBuffer.wrap(chainId).putInt(contactId.getInt());
 		chainId[4] = (byte) (send ? PCS_DIRECTION_SEND : PCS_DIRECTION_RECEIVE);
 		return chainId;
 	}
-
 
 	private ContactId extractContactId(byte[] chainId) {
 		if (chainId.length < 4) {
@@ -154,7 +151,6 @@ public class DatabaseSkippedKeyStore implements SkippedKeyStore {
 		int id = ByteBuffer.wrap(chainId, 0, 4).getInt();
 		return new ContactId(id);
 	}
-
 
 	private int extractDirection(byte[] chainId) {
 		if (chainId.length < CHAIN_ID_LENGTH) {

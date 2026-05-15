@@ -9,11 +9,9 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.Collection;
 
-
 @NotNullByDefault
 public interface CleanupHook {
 
-	
 	void deleteMessages(Transaction txn, GroupId g,
 			Collection<MessageId> messageIds) throws DbException;
 }

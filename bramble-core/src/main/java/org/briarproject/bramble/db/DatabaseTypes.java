@@ -14,7 +14,6 @@ class DatabaseTypes {
 		this.stringType = stringType;
 	}
 
-	
 	String replaceTypes(String s) {
 		s = s.replaceAll("_HASH", hashType);
 		s = s.replaceAll("_SECRET", secretType);

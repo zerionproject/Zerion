@@ -18,7 +18,6 @@ import com.professor.zerion.android.util.ActivityLaunchers.CreateDocumentAdvance
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
-
 import javax.inject.Inject;
 
 import androidx.activity.result.ActivityResultLauncher;

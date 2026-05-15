@@ -12,7 +12,8 @@ public class GroupTrAuthException extends DbException {
 		CANNOT_LEAVE_AS_CREATOR,
 		GROUP_DISSOLVED,
 		GROUP_NOT_FOUND,
-		CONTACT_NOT_FOUND
+		CONTACT_NOT_FOUND,
+		EPOCH_OVERFLOW
 	}
 
 	private final Reason reason;

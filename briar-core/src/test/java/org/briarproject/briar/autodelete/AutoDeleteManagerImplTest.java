@@ -33,7 +33,7 @@ import static org.briarproject.briar.autodelete.AutoDeleteConstants.NO_PREVIOUS_
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-@SuppressWarnings("UnnecessaryLocalVariable") // Using them for readability
+@SuppressWarnings("UnnecessaryLocalVariable")
 public class AutoDeleteManagerImplTest extends BrambleMockTestCase {
 
 	private final DatabaseComponent db = context.mock(DatabaseComponent.class);
@@ -247,7 +247,6 @@ public class AutoDeleteManagerImplTest extends BrambleMockTestCase {
 		autoDeleteManager.receiveAutoDeleteTimer(txn, contact.getId(),
 				remoteTimer, remoteTimestamp);
 
-		// no events broadcast
 		assertTrue(txn.getActions().isEmpty());
 	}
 
@@ -261,7 +260,7 @@ public class AutoDeleteManagerImplTest extends BrambleMockTestCase {
 				new BdfEntry(GROUP_KEY_TIMER, localTimer),
 				new BdfEntry(GROUP_KEY_PREVIOUS_TIMER, NO_PREVIOUS_TIMER),
 				new BdfEntry(GROUP_KEY_TIMESTAMP, now));
-		// The timestamp should be updated and the timer should be mirrored
+
 		BdfDictionary newMeta = BdfDictionary.of(
 				new BdfEntry(GROUP_KEY_TIMESTAMP, remoteTimestamp),
 				new BdfEntry(GROUP_KEY_TIMER, remoteTimer));
@@ -279,7 +278,6 @@ public class AutoDeleteManagerImplTest extends BrambleMockTestCase {
 		autoDeleteManager.receiveAutoDeleteTimer(txn, contact.getId(),
 				remoteTimer, remoteTimestamp);
 
-		// assert that event is broadcast with new timer
 		assertEvent(txn, remoteTimer);
 	}
 
@@ -294,7 +292,7 @@ public class AutoDeleteManagerImplTest extends BrambleMockTestCase {
 				new BdfEntry(GROUP_KEY_TIMER, localTimer),
 				new BdfEntry(GROUP_KEY_PREVIOUS_TIMER, remoteTimer),
 				new BdfEntry(GROUP_KEY_TIMESTAMP, now));
-		// The timestamp should be updated but the timer should not revert
+
 		BdfDictionary newMeta = BdfDictionary.of(
 				new BdfEntry(GROUP_KEY_TIMESTAMP, remoteTimestamp));
 
@@ -311,7 +309,6 @@ public class AutoDeleteManagerImplTest extends BrambleMockTestCase {
 		autoDeleteManager.receiveAutoDeleteTimer(txn, contact.getId(),
 				remoteTimer, remoteTimestamp);
 
-		// no events broadcast
 		assertTrue(txn.getActions().isEmpty());
 	}
 
@@ -327,8 +324,7 @@ public class AutoDeleteManagerImplTest extends BrambleMockTestCase {
 				new BdfEntry(GROUP_KEY_TIMER, localTimer),
 				new BdfEntry(GROUP_KEY_PREVIOUS_TIMER, oldRemoteTimer),
 				new BdfEntry(GROUP_KEY_TIMESTAMP, now));
-		// The timestamp should be updated , the timer should be mirrored and
-		// the previous timer should be cleared
+
 		BdfDictionary newMeta = BdfDictionary.of(
 				new BdfEntry(GROUP_KEY_TIMESTAMP, remoteTimestamp),
 				new BdfEntry(GROUP_KEY_TIMER, newRemoteTimer),
@@ -347,7 +343,6 @@ public class AutoDeleteManagerImplTest extends BrambleMockTestCase {
 		autoDeleteManager.receiveAutoDeleteTimer(txn, contact.getId(),
 				newRemoteTimer, remoteTimestamp);
 
-		// assert that event is broadcast with new timer
 		assertEvent(txn, newRemoteTimer);
 	}
 

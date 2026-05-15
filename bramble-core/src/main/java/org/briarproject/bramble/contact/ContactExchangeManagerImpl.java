@@ -336,7 +336,7 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 		private final Map<TransportId, TransportProperties> properties;
 		private final byte[] signature;
 		private final long timestamp;
-		/** B.3 slot[4] proof sig, or null on legacy 4-slot records. */
+
 		@Nullable
 		private final byte[] b3ProofSig;
 		@Nullable

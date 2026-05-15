@@ -60,7 +60,6 @@ import static org.briarproject.bramble.util.ValidationUtils.checkSize;
 @NotNullByDefault
 class ClientHelperImpl implements ClientHelper {
 
-	
 	private static final int SALT_LENGTH = 32;
 
 	private final DatabaseComponent db;

@@ -14,26 +14,8 @@ import java.util.Arrays;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 
-
-/**
- * Vault password key derivation.
- *
- * Algorithm selection by Argon2Params.algorithm:
- *   ALGO_ARGON2ID  — real Argon2id via Bouncy Castle (post-quantum hardened
- *                    via memory-hardness; default for new vaults).
- *   ALGO_PBKDF2    — legacy PBKDF2-HMAC-SHA256 for vaults written before
- *                    the Argon2id switch. Kept only for backward compat so
- *                    existing vault headers continue to unlock; new code
- *                    must not write this.
- *
- * The vault header (see VaultHeader.featureFlags bit 0) records which
- * algorithm produced the stored password verification MAC and wrapped
- * keystore blob. VaultManager reads that flag and passes the matching
- * Argon2Params to deriveKey.
- */
 @NotNullByDefault
 public class Argon2 {
-
 
 	public static final int DEFAULT_MEMORY_KB = 256 * 1024;
 	public static final int DEFAULT_ITERATIONS = 3;

@@ -17,7 +17,6 @@ import androidx.test.espresso.intent.rule.IntentsTestRule;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 
-
 @SuppressWarnings("WeakerAccess")
 public abstract class UiTest {
 

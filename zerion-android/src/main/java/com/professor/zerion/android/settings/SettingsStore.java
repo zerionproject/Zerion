@@ -10,10 +10,8 @@ import java.util.concurrent.Executor;
 import androidx.annotation.Nullable;
 import androidx.preference.PreferenceDataStore;
 
-
 @NotNullByDefault
 class SettingsStore extends PreferenceDataStore {
-
 
 	private final SettingsManager settingsManager;
 	private final Executor dbExecutor;
@@ -53,7 +51,7 @@ class SettingsStore extends PreferenceDataStore {
 			try {
 				settingsManager.mergeSettings(s, namespace);
 			} catch (DbException e) {
-				
+
 			}
 		});
 	}

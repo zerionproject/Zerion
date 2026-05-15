@@ -12,7 +12,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-/** Curated 36-emoji grid for the Standard sticker tab. */
 @NotNullByDefault
 class StandardStickerAdapter extends RecyclerView.Adapter<StandardStickerAdapter.VH> {
 

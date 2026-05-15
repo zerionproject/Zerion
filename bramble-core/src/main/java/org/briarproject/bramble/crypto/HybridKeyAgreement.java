@@ -18,7 +18,6 @@ import javax.annotation.concurrent.Immutable;
 import static org.briarproject.bramble.api.crypto.PostQuantumConstants.HYBRID_SHARED_SECRET_LABEL;
 import static org.briarproject.bramble.util.ByteUtils.INT_32_BYTES;
 
-
 @NotNullByDefault
 @Immutable
 class HybridKeyAgreement {
@@ -33,7 +32,6 @@ class HybridKeyAgreement {
 		this.mlKem768 = new MlKem768(secureRandom);
 	}
 
-	
 	KeyPair generateKeyPair() {
 		org.whispersystems.curve25519.Curve25519KeyPair x25519KeyPair =
 				curve25519.generateKeyPair();
@@ -51,7 +49,6 @@ class HybridKeyAgreement {
 		return new KeyPair(publicKey, privateKey);
 	}
 
-	
 	SecretKey deriveSharedSecret(String label,
 			HybridAgreementPublicKey theirPublicKey,
 			KeyPair ourKeyPair,
@@ -82,7 +79,6 @@ class HybridKeyAgreement {
 		return sharedSecret;
 	}
 
-	
 	HybridEncapsulation encapsulate(HybridAgreementPublicKey theirPublicKey)
 			throws GeneralSecurityException {
 		MlKem768.MlKemEncapsulation enc = mlKem768.encapsulate(
@@ -91,7 +87,6 @@ class HybridKeyAgreement {
 		return new HybridEncapsulation(enc.getCiphertext(), enc.getSharedSecret());
 	}
 
-	
 	SecretKey deriveSharedSecretAsResponder(String label,
 			HybridAgreementPublicKey theirPublicKey,
 			KeyPair ourKeyPair,
@@ -117,7 +112,6 @@ class HybridKeyAgreement {
 		return sharedSecret;
 	}
 
-	
 	private SecretKey combineSecrets(String label,
 			byte[] x25519Secret,
 			byte[] kemSecret,
@@ -163,7 +157,6 @@ class HybridKeyAgreement {
 		return new SecretKey(output);
 	}
 
-	
 	private int compareBytes(byte[] a, byte[] b) {
 		int minLen = Math.min(a.length, b.length);
 		int result = a.length - b.length;
@@ -175,7 +168,6 @@ class HybridKeyAgreement {
 		return result;
 	}
 
-	
 	private boolean isAllZeros(byte[] bytes) {
 		int acc = 0;
 		for (byte b : bytes) {
@@ -184,7 +176,6 @@ class HybridKeyAgreement {
 		return acc == 0;
 	}
 
-	
 	static class HybridEncapsulation {
 		private final byte[] ciphertext;
 		private final byte[] sharedSecret;
@@ -194,17 +185,14 @@ class HybridKeyAgreement {
 			this.sharedSecret = sharedSecret;
 		}
 
-		
 		byte[] getCiphertext() {
 			return ciphertext;
 		}
 
-		
 		byte[] getSharedSecret() {
 			return sharedSecret;
 		}
 
-		
 		void clearSecret() {
 			Arrays.fill(sharedSecret, (byte) 0);
 		}

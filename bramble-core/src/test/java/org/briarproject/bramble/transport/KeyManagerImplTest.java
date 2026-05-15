@@ -71,22 +71,19 @@ public class KeyManagerImplTest extends BrambleMockTestCase {
 	private SecretKey rootKey;
 	private Random random;
 
-	// Mock contact for testing - classical contact (isPostQuantum=false)
 	private AuthorId authorId;
 	private Author author;
 	private Contact contact;
 
-	// Mock pending contact for testing - classical (formatVersion=0)
 	private PendingContact pendingContact;
 
 	private KeyManagerImpl keyManager;
 
 	@Before
 	public void setUp() throws Exception {
-		// Enable mocking of concrete classes
+
 		context.setImposteriser(ByteBuddyClassImposteriser.INSTANCE);
 
-		// Create mocks
 		db = context.mock(DatabaseComponent.class);
 		pluginConfig = context.mock(PluginConfig.class);
 		transportKeyManagerFactory = context.mock(TransportKeyManagerFactory.class);
@@ -94,7 +91,6 @@ public class KeyManagerImplTest extends BrambleMockTestCase {
 		transportCrypto = context.mock(TransportCrypto.class);
 		pcsStateManager = context.mock(PcsStateManager.class);
 
-		// Initialize test data
 		executor = new DeterministicExecutor();
 		txn = new Transaction(null, false);
 		contactId = getContactId();
@@ -116,12 +112,11 @@ public class KeyManagerImplTest extends BrambleMockTestCase {
 		authorId = new AuthorId(getRandomId());
 		author = new Author(authorId, 1, "Test Author", getSignaturePublicKey());
 		contact = new Contact(contactId, author, authorId,
-				null, null, false, false); // postQuantum=false -> isClassical()=true
+				null, null, false, false);
 
 		pendingContact = new PendingContact(pendingContactId, theirPublicKey,
-				"Pending", System.currentTimeMillis(), 0); // formatVersion=0 (classical)
+				"Pending", System.currentTimeMillis(), 0);
 
-		// Start the key manager service
 		startService();
 	}
 
@@ -254,13 +249,13 @@ public class KeyManagerImplTest extends BrambleMockTestCase {
 
 	@Test
 	public void testGetStreamContextForPendingContact() throws Exception {
-		// The implementation now looks up the pending contact to get the classical flag
+
 		context.checking(new DbExpectations() {{
 			oneOf(db).transactionWithNullableResult(with(false),
 					withNullableDbCallable(txn));
 			oneOf(db).getPendingContact(txn, pendingContactId);
 			will(returnValue(pendingContact));
-			oneOf(transportKeyManager).getStreamContext(txn, pendingContactId, true); // classical=true
+			oneOf(transportKeyManager).getStreamContext(txn, pendingContactId, true);
 			will(returnValue(pendingContactStreamContext));
 		}});
 
@@ -276,20 +271,17 @@ public class KeyManagerImplTest extends BrambleMockTestCase {
 
 	@Test
 	public void testGetStreamContextForTag() throws Exception {
-		// The implementation now does a two-step lookup:
-		// 1. Get temp context to find contactId
-		// 2. Look up contact to get classical flag
-		// 3. Get final context with classical flag
+
 		context.checking(new DbExpectations() {{
 			oneOf(db).transactionWithNullableResult(with(false),
 					withNullableDbCallable(txn));
-			// First call to get temp context
+
 			oneOf(transportKeyManager).getStreamContextOnly(txn, tag, false);
 			will(returnValue(contactStreamContext));
-			// Look up contact
+
 			oneOf(db).getContact(txn, contactId);
 			will(returnValue(contact));
-			// Second call with classical flag
+
 			oneOf(transportKeyManager).getStreamContext(txn, tag, true);
 			will(returnValue(contactStreamContext));
 		}});

@@ -21,9 +21,6 @@ import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static com.professor.zerion.android.ViewActions.waitFor;
 import static org.hamcrest.CoreMatchers.allOf;
 
-/**
- * This relies on class sorting to run after {@link SignInTestCreateAccount}.
- */
 @RunWith(AndroidJUnit4.class)
 public class SignInTestSignIn extends UiTest {
 
@@ -38,7 +35,6 @@ public class SignInTestSignIn extends UiTest {
 
 		waitFor(StartupActivity.class);
 
-		// enter password
 		onView(withId(R.id.edit_password))
 				.check(matches(isDisplayed()))
 				.perform(replaceText(PASSWORD));
@@ -49,7 +45,6 @@ public class SignInTestSignIn extends UiTest {
 		lifecycleManager.waitForStartup();
 		waitFor(NavDrawerActivity.class);
 
-		// Ensure bottom navigation is visible
 		onView(withId(R.id.bottomNavigation))
 				.check(matches(isDisplayed()));
 	}

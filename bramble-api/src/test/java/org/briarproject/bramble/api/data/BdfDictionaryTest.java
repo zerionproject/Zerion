@@ -104,7 +104,7 @@ public class BdfDictionaryTest extends BrambleTestCase {
 		d.put("d", 4);
 		d.put("b", 2);
 		d.put("c", 3);
-		// Keys should be returned in their natural order
+
 		Iterator<String> it = d.keySet().iterator();
 		assertTrue(it.hasNext());
 		assertEquals("a", it.next());
@@ -123,7 +123,7 @@ public class BdfDictionaryTest extends BrambleTestCase {
 		d.put("d", 4);
 		d.put("b", 2);
 		d.put("c", 3);
-		// Values should be returned in the natural order of their keys
+
 		Iterator<Object> it = d.values().iterator();
 		assertTrue(it.hasNext());
 		assertEquals(1, it.next());
@@ -142,7 +142,7 @@ public class BdfDictionaryTest extends BrambleTestCase {
 		d.put("d", 4);
 		d.put("b", 2);
 		d.put("c", 3);
-		// Entries should be returned in the natural order of their keys
+
 		Iterator<Entry<String, Object>> it = d.entrySet().iterator();
 		assertTrue(it.hasNext());
 		Entry<String, Object> e = it.next();

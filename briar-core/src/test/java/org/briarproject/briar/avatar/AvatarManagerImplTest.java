@@ -99,7 +99,6 @@ public class AvatarManagerImplTest extends BrambleMockTestCase {
 	public void testOpenDatabaseHookWhenGroupExists() throws DbException {
 		Transaction txn = new Transaction(null, false);
 
-		// local group already exists, so nothing more to do
 		expectCreateGroup(localAuthor.getId(), localGroup);
 		context.checking(new Expectations() {{
 			oneOf(identityManager).getLocalAuthor(txn);
@@ -114,7 +113,6 @@ public class AvatarManagerImplTest extends BrambleMockTestCase {
 	public void testOpenDatabaseHook() throws DbException, FormatException {
 		Transaction txn = new Transaction(null, false);
 
-		// local group does not exist, so we need to set things up for contacts
 		expectCreateGroup(localAuthor.getId(), localGroup);
 		context.checking(new Expectations() {{
 			oneOf(identityManager).getLocalAuthor(txn);
@@ -224,7 +222,7 @@ public class AvatarManagerImplTest extends BrambleMockTestCase {
 		context.checking(new Expectations() {{
 			oneOf(metadataParser).parse(meta);
 			will(returnValue(d));
-			// delete old "latest" message
+
 			oneOf(db).deleteMessage(txn, latestMsgId);
 			oneOf(db).deleteMessageMetadata(txn, latestMsgId);
 		}});
@@ -234,7 +232,6 @@ public class AvatarManagerImplTest extends BrambleMockTestCase {
 		assertEquals(ACCEPT_DO_NOT_SHARE,
 				avatarManager.incomingMessage(txn, contactMsg, meta));
 
-		// event to broadcast
 		assertEquals(1, txn.getActions().size());
 	}
 
@@ -256,7 +253,7 @@ public class AvatarManagerImplTest extends BrambleMockTestCase {
 		context.checking(new Expectations() {{
 			oneOf(metadataParser).parse(meta);
 			will(returnValue(d));
-			// delete older incoming message
+
 			oneOf(db).deleteMessage(txn, contactMsg.getId());
 			oneOf(db).deleteMessageMetadata(txn, contactMsg.getId());
 		}});
@@ -265,7 +262,6 @@ public class AvatarManagerImplTest extends BrambleMockTestCase {
 		assertEquals(ACCEPT_DO_NOT_SHARE,
 				avatarManager.incomingMessage(txn, contactMsg, meta));
 
-		// no event to broadcast
 		assertEquals(0, txn.getActions().size());
 	}
 
@@ -338,11 +334,11 @@ public class AvatarManagerImplTest extends BrambleMockTestCase {
 					latestVersion + 1, contentType, inputStream);
 			will(returnValue(new Pair<>(newMsg, newMeta)));
 			oneOf(db).transactionWithResult(with(false), withDbCallable(txn2));
-			// no deletion or storing happening
+
 		}});
 		expectGetOurGroup(txn);
 		expectFindLatest(txn, localGroupId, ourMsg.getId(), metaDict);
-		// second query for latest update returns higher version
+
 		expectFindLatest(txn2, localGroupId, ourMsg.getId(), newMeta);
 
 		AttachmentHeader header =

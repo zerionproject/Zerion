@@ -7,7 +7,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import static org.briarproject.bramble.db.JdbcUtils.tryToClose;
 
-
 class Migration50_51 implements Migration<Connection> {
 	@Override
 	public int getStartVersion() {

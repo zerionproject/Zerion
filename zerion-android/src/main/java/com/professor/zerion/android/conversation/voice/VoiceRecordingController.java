@@ -73,14 +73,12 @@ public class VoiceRecordingController implements DefaultLifecycleObserver {
 		this.dbExecutor = dbExecutor;
 	}
 
-	
 	@UiThread
 	public void initRecorder(android.content.Context context) {
 		voiceRecorder = new VoiceMessageRecorder(context, dbExecutor);
 		attachmentHandler = new VoiceAttachmentHandler(context, dbExecutor);
 	}
 
-	
 	@UiThread
 	public void bindViews(
 			@Nullable View overlay,
@@ -104,19 +102,16 @@ public class VoiceRecordingController implements DefaultLifecycleObserver {
 		}
 	}
 
-	
 	@UiThread
 	public void startRecording() {
 		startRecording(RecordingMode.SHORT_MESSAGE);
 	}
 
-	
 	@UiThread
 	public void startAttachmentRecording() {
 		startRecording(RecordingMode.ATTACHMENT);
 	}
 
-	
 	@UiThread
 	public void startRecording(RecordingMode mode) {
 		if (isRecording) return;
@@ -134,7 +129,6 @@ public class VoiceRecordingController implements DefaultLifecycleObserver {
 		}
 	}
 
-	
 	@UiThread
 	public void stopRecording() {
 		if (!isRecording) return;
@@ -158,7 +152,6 @@ public class VoiceRecordingController implements DefaultLifecycleObserver {
 		host.onRecordingCancelled();
 	}
 
-	
 	@UiThread
 	public void finishRecording() {
 		if (!isRecording) return;
@@ -180,7 +173,6 @@ public class VoiceRecordingController implements DefaultLifecycleObserver {
 		}
 	}
 
-	
 	@UiThread
 	public void forceCancel() {
 		if (isRecording) {
@@ -195,12 +187,10 @@ public class VoiceRecordingController implements DefaultLifecycleObserver {
 		}
 	}
 
-	
 	public RecordingMode getCurrentMode() {
 		return currentMode;
 	}
 
-	
 	public int getMaxDurationSeconds() {
 		return currentMode == RecordingMode.SHORT_MESSAGE ? 30 : VoiceAttachmentHandler.getMaxDurationSeconds();
 	}
@@ -292,7 +282,6 @@ public class VoiceRecordingController implements DefaultLifecycleObserver {
 		}
 	}
 
-	
 	private void showAttachmentRecordingUI() {
 		if (textInputView != null) {
 			textInputView.setVisibility(View.GONE);
@@ -363,7 +352,6 @@ public class VoiceRecordingController implements DefaultLifecycleObserver {
 		}
 	}
 
-	
 	private void showProcessingState() {
 		stopPulseAnimation();
 		if (cancelRecordingButton != null) {
@@ -379,7 +367,6 @@ public class VoiceRecordingController implements DefaultLifecycleObserver {
 		}
 	}
 
-	
 	private void resetProcessingState() {
 		if (cancelRecordingButton != null) {
 			cancelRecordingButton.setEnabled(true);

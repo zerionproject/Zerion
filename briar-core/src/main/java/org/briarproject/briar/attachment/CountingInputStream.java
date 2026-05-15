@@ -7,7 +7,6 @@ import java.io.InputStream;
 
 import javax.annotation.concurrent.NotThreadSafe;
 
-
 @NotThreadSafe
 @NotNullByDefault
 public class CountingInputStream extends InputStream {

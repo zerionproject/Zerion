@@ -169,20 +169,20 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 	public void testSimpleCalls() throws Exception {
 		int shutdownHandle = 12345;
 		context.checking(new Expectations() {{
-			// open()
+
 			oneOf(database).open(key, null);
 			will(returnValue(false));
 			oneOf(shutdownManager).addShutdownHook(with(any(Runnable.class)));
 			will(returnValue(shutdownHandle));
-			// startTransaction()
+
 			oneOf(database).startTransaction();
 			will(returnValue(txn));
-			// addIdentity()
+
 			oneOf(database).containsIdentity(txn, localAuthor.getId());
 			will(returnValue(false));
 			oneOf(database).addIdentity(txn, identity);
 			oneOf(eventBus).broadcast(with(any(IdentityAddedEvent.class)));
-			// addContact()
+
 			oneOf(database).containsIdentity(txn, localAuthor.getId());
 			will(returnValue(true));
 			oneOf(database).containsIdentity(txn, author.getId());
@@ -194,21 +194,21 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					null, true, false, false, false);
 			will(returnValue(contactId));
 			oneOf(eventBus).broadcast(with(any(ContactAddedEvent.class)));
-			// getContacts()
+
 			oneOf(database).getContacts(txn);
 			will(returnValue(singletonList(contact)));
-			// addGroup()
+
 			oneOf(database).containsGroup(txn, groupId);
 			will(returnValue(false));
 			oneOf(database).addGroup(txn, group);
 			oneOf(eventBus).broadcast(with(any(GroupAddedEvent.class)));
-			// addGroup() again
+
 			oneOf(database).containsGroup(txn, groupId);
 			will(returnValue(true));
-			// getGroups()
+
 			oneOf(database).getGroups(txn, clientId, majorVersion);
 			will(returnValue(singletonList(group)));
-			// removeGroup()
+
 			oneOf(database).containsGroup(txn, groupId);
 			will(returnValue(true));
 			oneOf(database).getGroupVisibility(txn, groupId);
@@ -217,19 +217,19 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 			oneOf(eventBus).broadcast(with(any(GroupRemovedEvent.class)));
 			oneOf(eventBus).broadcast(with(any(
 					GroupVisibilityUpdatedEvent.class)));
-			// removeContact()
+
 			oneOf(database).containsContact(txn, contactId);
 			will(returnValue(true));
 			oneOf(database).removeContact(txn, contactId);
 			oneOf(eventBus).broadcast(with(any(ContactRemovedEvent.class)));
-			// removeIdentity()
+
 			oneOf(database).containsIdentity(txn, localAuthor.getId());
 			will(returnValue(true));
 			oneOf(database).removeIdentity(txn, localAuthor.getId());
 			oneOf(eventBus).broadcast(with(any(IdentityRemovedEvent.class)));
-			// endTransaction()
+
 			oneOf(database).commitTransaction(txn);
-			// close()
+
 			oneOf(database).close();
 		}});
 		DatabaseComponent db = createDatabaseComponent(database, eventBus,
@@ -242,8 +242,8 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					localAuthor.getId(), null, true));
 			assertEquals(singletonList(contact),
 					db.getContacts(transaction));
-			db.addGroup(transaction, group); // First time - listeners called
-			db.addGroup(transaction, group); // Second time - not called
+			db.addGroup(transaction, group);
+			db.addGroup(transaction, group);
 			assertEquals(singletonList(group),
 					db.getGroups(transaction, clientId, majorVersion));
 			db.removeGroup(transaction, group);
@@ -284,11 +284,11 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					temporary, null);
 			oneOf(database).mergeMessageMetadata(txn, messageId, metadata);
 			oneOf(database).commitTransaction(txn);
-			// Broadcast events for message being added and changing state
+
 			oneOf(eventBus).broadcast(with(any(MessageAddedEvent.class)));
 			oneOf(eventBus).broadcast(with(any(
 					MessageStateChangedEvent.class)));
-			// If message is shared, get group visibility and broadcast event
+
 			if (shared) {
 				oneOf(database).getGroupVisibility(txn, groupId);
 				will(returnValue(singletonMap(contactId, true)));
@@ -307,7 +307,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 	public void testVariousMethodsThrowExceptionIfContactIsMissing()
 			throws Exception {
 		context.checking(new Expectations() {{
-			// Check whether the contact is in the DB (which it's not)
+
 			exactly(27).of(database).startTransaction();
 			will(returnValue(txn));
 			exactly(27).of(database).containsContact(txn, contactId);
@@ -323,7 +323,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 							createTransportKeys()));
 			fail();
 		} catch (NoSuchContactException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -331,7 +331,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.containsAcksToSend(transaction, contactId));
 			fail();
 		} catch (NoSuchContactException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -340,7 +340,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 							123, true));
 			fail();
 		} catch (NoSuchContactException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -348,7 +348,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.generateAck(transaction, contactId, 123));
 			fail();
 		} catch (NoSuchContactException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -356,7 +356,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.generateBatch(transaction, contactId, 123, 456));
 			fail();
 		} catch (NoSuchContactException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -364,7 +364,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.generateOffer(transaction, contactId, 123, 456));
 			fail();
 		} catch (NoSuchContactException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -372,7 +372,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.generateRequest(transaction, contactId, 123));
 			fail();
 		} catch (NoSuchContactException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -380,7 +380,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.getContact(transaction, contactId));
 			fail();
 		} catch (NoSuchContactException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -389,7 +389,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 							true));
 			fail();
 		} catch (NoSuchContactException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -397,7 +397,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.getMessagesToAck(transaction, contactId));
 			fail();
 		} catch (NoSuchContactException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -405,7 +405,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.getMessagesToSend(transaction, contactId, 123, 456));
 			fail();
 		} catch (NoSuchContactException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -413,7 +413,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.getUnackedMessagesToSend(transaction, contactId));
 			fail();
 		} catch (NoSuchContactException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -421,7 +421,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.getUnackedMessageBytesToSend(transaction, contactId));
 			fail();
 		} catch (NoSuchContactException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -429,7 +429,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.getMessageStatus(transaction, contactId, groupId));
 			fail();
 		} catch (NoSuchContactException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -437,7 +437,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.getMessageStatus(transaction, contactId, messageId));
 			fail();
 		} catch (NoSuchContactException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -445,7 +445,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.getGroupVisibility(transaction, contactId, groupId));
 			fail();
 		} catch (NoSuchContactException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -453,7 +453,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.getSyncVersions(transaction, contactId));
 			fail();
 		} catch (NoSuchContactException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -462,7 +462,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.receiveAck(transaction, contactId, a));
 			fail();
 		} catch (NoSuchContactException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -470,7 +470,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.receiveMessage(transaction, contactId, message));
 			fail();
 		} catch (NoSuchContactException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -479,7 +479,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.receiveOffer(transaction, contactId, o));
 			fail();
 		} catch (NoSuchContactException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -488,7 +488,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.receiveRequest(transaction, contactId, r));
 			fail();
 		} catch (NoSuchContactException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -496,7 +496,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.removeContact(transaction, contactId));
 			fail();
 		} catch (NoSuchContactException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -505,7 +505,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 							singletonList(messageId)));
 			fail();
 		} catch (NoSuchContactException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -513,7 +513,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.setContactAlias(transaction, contactId, alias));
 			fail();
 		} catch (NoSuchContactException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -522,7 +522,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 							SHARED));
 			fail();
 		} catch (NoSuchContactException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -531,7 +531,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 							singletonList(messageId), 123));
 			fail();
 		} catch (NoSuchContactException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -539,7 +539,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.setSyncVersions(transaction, contactId, emptyList()));
 			fail();
 		} catch (NoSuchContactException expected) {
-			// Expected
+
 		}
 	}
 
@@ -547,7 +547,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 	public void testVariousMethodsThrowExceptionIfIdentityIsMissing()
 			throws Exception {
 		context.checking(new Expectations() {{
-			// Check whether the identity is in the DB (which it's not)
+
 			exactly(4).of(database).startTransaction();
 			will(returnValue(txn));
 			exactly(4).of(database).containsIdentity(txn, localAuthor.getId());
@@ -563,7 +563,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 							null, true));
 			fail();
 		} catch (NoSuchIdentityException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -571,7 +571,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.getIdentity(transaction, localAuthor.getId()));
 			fail();
 		} catch (NoSuchIdentityException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -579,7 +579,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.removeIdentity(transaction, localAuthor.getId()));
 			fail();
 		} catch (NoSuchIdentityException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -590,7 +590,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 							publicKey, privateKey));
 			fail();
 		} catch (NoSuchIdentityException expected) {
-			// Expected
+
 		}
 	}
 
@@ -598,13 +598,13 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 	public void testVariousMethodsThrowExceptionIfGroupIsMissing()
 			throws Exception {
 		context.checking(new Expectations() {{
-			// Check whether the group is in the DB (which it's not)
+
 			exactly(10).of(database).startTransaction();
 			will(returnValue(txn));
 			exactly(10).of(database).containsGroup(txn, groupId);
 			will(returnValue(false));
 			exactly(10).of(database).abortTransaction(txn);
-			// Allow other checks to pass
+
 			allowing(database).containsContact(txn, contactId);
 			will(returnValue(true));
 		}});
@@ -616,7 +616,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.getGroup(transaction, groupId));
 			fail();
 		} catch (NoSuchGroupException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -624,7 +624,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.getGroupMetadata(transaction, groupId));
 			fail();
 		} catch (NoSuchGroupException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -632,7 +632,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.getMessageIds(transaction, groupId));
 			fail();
 		} catch (NoSuchGroupException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -640,7 +640,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.getMessageIds(transaction, groupId, new Metadata()));
 			fail();
 		} catch (NoSuchGroupException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -648,7 +648,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.getMessageMetadata(transaction, groupId));
 			fail();
 		} catch (NoSuchGroupException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -657,7 +657,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 							new Metadata()));
 			fail();
 		} catch (NoSuchGroupException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -665,7 +665,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.getMessageStatus(transaction, contactId, groupId));
 			fail();
 		} catch (NoSuchGroupException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -673,7 +673,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.mergeGroupMetadata(transaction, groupId, metadata));
 			fail();
 		} catch (NoSuchGroupException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -681,7 +681,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.removeGroup(transaction, group));
 			fail();
 		} catch (NoSuchGroupException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -690,7 +690,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 							SHARED));
 			fail();
 		} catch (NoSuchGroupException expected) {
-			// Expected
+
 		}
 	}
 
@@ -698,13 +698,13 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 	public void testVariousMethodsThrowExceptionIfMessageIsMissing()
 			throws Exception {
 		context.checking(new Expectations() {{
-			// Check whether the message is in the DB (which it's not)
+
 			exactly(16).of(database).startTransaction();
 			will(returnValue(txn));
 			exactly(16).of(database).containsMessage(txn, messageId);
 			will(returnValue(false));
 			exactly(16).of(database).abortTransaction(txn);
-			// Allow other checks to pass
+
 			allowing(database).containsContact(txn, contactId);
 			will(returnValue(true));
 		}});
@@ -716,7 +716,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.deleteMessage(transaction, messageId));
 			fail();
 		} catch (NoSuchMessageException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -724,7 +724,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.deleteMessageMetadata(transaction, messageId));
 			fail();
 		} catch (NoSuchMessageException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -732,7 +732,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.getGroupId(transaction, messageId));
 			fail();
 		} catch (NoSuchMessageException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -740,7 +740,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.getMessage(transaction, messageId));
 			fail();
 		} catch (NoSuchMessageException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -748,7 +748,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.getMessageMetadata(transaction, messageId));
 			fail();
 		} catch (NoSuchMessageException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -756,7 +756,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.getMessageState(transaction, messageId));
 			fail();
 		} catch (NoSuchMessageException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -764,7 +764,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.getMessageStatus(transaction, contactId, messageId));
 			fail();
 		} catch (NoSuchMessageException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -772,7 +772,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.mergeMessageMetadata(transaction, messageId, metadata));
 			fail();
 		} catch (NoSuchMessageException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -781,7 +781,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 							HOURS.toMillis(1)));
 			fail();
 		} catch (NoSuchMessageException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -789,7 +789,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.setMessagePermanent(transaction, message.getId()));
 			fail();
 		} catch (NoSuchMessageException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -797,7 +797,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.setMessageShared(transaction, message.getId()));
 			fail();
 		} catch (NoSuchMessageException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -805,7 +805,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.setMessageState(transaction, messageId, DELIVERED));
 			fail();
 		} catch (NoSuchMessageException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -813,7 +813,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.getMessageDependencies(transaction, messageId));
 			fail();
 		} catch (NoSuchMessageException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -821,7 +821,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.getMessageDependents(transaction, messageId));
 			fail();
 		} catch (NoSuchMessageException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -829,7 +829,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.startCleanupTimer(transaction, messageId));
 			fail();
 		} catch (NoSuchMessageException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -837,7 +837,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.stopCleanupTimer(transaction, messageId));
 			fail();
 		} catch (NoSuchMessageException expected) {
-			// Expected
+
 		}
 	}
 
@@ -845,13 +845,13 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 	public void testVariousMethodsThrowExceptionIfTransportIsMissing()
 			throws Exception {
 		context.checking(new Expectations() {{
-			// Check whether the transport is in the DB (which it's not)
+
 			exactly(8).of(database).startTransaction();
 			will(returnValue(txn));
 			exactly(8).of(database).containsTransport(txn, transportId);
 			will(returnValue(false));
 			exactly(8).of(database).abortTransaction(txn);
-			// Allow other checks to pass
+
 			allowing(database).containsContact(txn, contactId);
 			will(returnValue(true));
 			allowing(database).containsPendingContact(txn, pendingContactId);
@@ -866,7 +866,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 							createHandshakeKeys()));
 			fail();
 		} catch (NoSuchTransportException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -875,7 +875,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 							createHandshakeKeys()));
 			fail();
 		} catch (NoSuchTransportException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -883,7 +883,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.getTransportKeys(transaction, transportId));
 			fail();
 		} catch (NoSuchTransportException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -892,7 +892,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 							keySetId));
 			fail();
 		} catch (NoSuchTransportException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -900,7 +900,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.removeTransportKeys(transaction, transportId, keySetId));
 			fail();
 		} catch (NoSuchTransportException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -908,7 +908,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.removeTransport(transaction, transportId));
 			fail();
 		} catch (NoSuchTransportException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -917,7 +917,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 							0, 0, new byte[REORDERING_WINDOW_SIZE / 8]));
 			fail();
 		} catch (NoSuchTransportException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -926,7 +926,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 							keySetId));
 			fail();
 		} catch (NoSuchTransportException expected) {
-			// Expected
+
 		}
 	}
 
@@ -934,7 +934,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 	public void testVariousMethodsThrowExceptionIfPendingContactIsMissing()
 			throws Exception {
 		context.checking(new Expectations() {{
-			// Check whether the pending contact is in the DB (which it's not)
+
 			exactly(3).of(database).startTransaction();
 			will(returnValue(txn));
 			exactly(3).of(database).containsPendingContact(txn,
@@ -951,7 +951,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 							createHandshakeKeys()));
 			fail();
 		} catch (NoSuchPendingContactException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -959,7 +959,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.getPendingContact(transaction, pendingContactId));
 			fail();
 		} catch (NoSuchPendingContactException expected) {
-			// Expected
+
 		}
 
 		try {
@@ -967,7 +967,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					db.removePendingContact(transaction, pendingContactId));
 			fail();
 		} catch (NoSuchPendingContactException expected) {
-			// Expected
+
 		}
 	}
 
@@ -1006,12 +1006,12 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 			oneOf(database).getMessagesToSend(txn, contactId,
 					BATCH_CAPACITY, maxLatency);
 			will(returnValue(ids));
-			// First message
+
 			oneOf(database).getMessage(txn, messageId);
 			will(returnValue(message));
 			oneOf(database).updateRetransmissionData(txn, contactId, messageId,
 					maxLatency);
-			// Second message
+
 			oneOf(database).getMessage(txn, messageId1);
 			will(returnValue(message1));
 			oneOf(database).updateRetransmissionData(txn, contactId, messageId1,
@@ -1091,12 +1091,12 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 			oneOf(database).getRequestedMessagesToSend(txn, contactId,
 					BATCH_CAPACITY, maxLatency);
 			will(returnValue(ids));
-			// First message
+
 			oneOf(database).getMessage(txn, messageId);
 			will(returnValue(message));
 			oneOf(database).updateRetransmissionData(txn, contactId,
 					messageId, maxLatency);
-			// Second message
+
 			oneOf(database).getMessage(txn, messageId1);
 			will(returnValue(message1));
 			oneOf(database).updateRetransmissionData(txn, contactId,
@@ -1191,7 +1191,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 			oneOf(database).raiseSeenFlag(txn, contactId, messageId);
 			will(returnValue(true));
 			oneOf(database).startCleanupTimer(txn, messageId);
-			will(returnValue(TIMER_NOT_STARTED)); // No cleanup duration was set
+			will(returnValue(TIMER_NOT_STARTED));
 			oneOf(database).commitTransaction(txn);
 			oneOf(eventBus).broadcast(with(any(MessagesAckedEvent.class)));
 		}});
@@ -1214,7 +1214,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 			oneOf(database).containsVisibleMessage(txn, contactId, messageId);
 			will(returnValue(true));
 			oneOf(database).raiseSeenFlag(txn, contactId, messageId);
-			will(returnValue(false)); // Already acked
+			will(returnValue(false));
 			oneOf(database).commitTransaction(txn);
 		}});
 		DatabaseComponent db = createDatabaseComponent(database, eventBus,
@@ -1259,7 +1259,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 		context.checking(new Expectations() {{
 			oneOf(database).startTransaction();
 			will(returnValue(txn));
-			// First time
+
 			oneOf(database).containsContact(txn, contactId);
 			will(returnValue(true));
 			oneOf(database).getGroupVisibility(txn, contactId, groupId);
@@ -1268,7 +1268,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 			will(returnValue(false));
 			oneOf(database).addMessage(txn, message, UNKNOWN, false, false,
 					contactId);
-			// Second time
+
 			oneOf(database).containsContact(txn, contactId);
 			will(returnValue(true));
 			oneOf(database).getGroupVisibility(txn, contactId, groupId);
@@ -1278,17 +1278,17 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 			oneOf(database).raiseSeenFlag(txn, contactId, messageId);
 			oneOf(database).raiseAckFlag(txn, contactId, messageId);
 			oneOf(database).commitTransaction(txn);
-			// First time: the message was received and added
+
 			oneOf(eventBus).broadcast(with(any(MessageToAckEvent.class)));
 			oneOf(eventBus).broadcast(with(any(MessageAddedEvent.class)));
-			// Second time: the message needs to be acked
+
 			oneOf(eventBus).broadcast(with(any(MessageToAckEvent.class)));
 		}});
 		DatabaseComponent db = createDatabaseComponent(database, eventBus,
 				eventExecutor, shutdownManager);
 
 		db.transaction(false, transaction -> {
-			// Receive the message twice
+
 			db.receiveMessage(transaction, contactId, message);
 			db.receiveMessage(transaction, contactId, message);
 		});
@@ -1305,11 +1305,11 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 			will(returnValue(true));
 			oneOf(database).getGroupVisibility(txn, contactId, groupId);
 			will(returnValue(VISIBLE));
-			// The message wasn't stored but it must still be acked
+
 			oneOf(database).raiseSeenFlag(txn, contactId, messageId);
 			oneOf(database).raiseAckFlag(txn, contactId, messageId);
 			oneOf(database).commitTransaction(txn);
-			// The message was received but not added
+
 			oneOf(eventBus).broadcast(with(any(MessageToAckEvent.class)));
 		}});
 		DatabaseComponent db = createDatabaseComponent(database, eventBus,
@@ -1347,23 +1347,23 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 			will(returnValue(txn));
 			oneOf(database).containsContact(txn, contactId);
 			will(returnValue(true));
-			// There's room for two more offered messages
+
 			oneOf(database).countOfferedMessages(txn, contactId);
 			will(returnValue(MAX_OFFERED_MESSAGES - 2));
-			// The first message isn't visible - request it
+
 			oneOf(database).containsVisibleMessage(txn, contactId, messageId);
 			will(returnValue(false));
 			oneOf(database).addOfferedMessage(txn, contactId, messageId);
-			// The second message is visible - ack it
+
 			oneOf(database).containsVisibleMessage(txn, contactId, messageId1);
 			will(returnValue(true));
 			oneOf(database).raiseSeenFlag(txn, contactId, messageId1);
 			oneOf(database).raiseAckFlag(txn, contactId, messageId1);
-			// The third message isn't visible - request it
+
 			oneOf(database).containsVisibleMessage(txn, contactId, messageId2);
 			will(returnValue(false));
 			oneOf(database).addOfferedMessage(txn, contactId, messageId2);
-			// The fourth message isn't visible, but there's no room to store it
+
 			oneOf(database).containsVisibleMessage(txn, contactId, messageId3);
 			will(returnValue(false));
 			oneOf(database).commitTransaction(txn);
@@ -1428,14 +1428,14 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 			will(returnValue(txn));
 			oneOf(database).containsContact(txn, contactId);
 			will(returnValue(true));
-			// First message is still visible to the contact - mark as sent
+
 			oneOf(database).containsVisibleMessage(txn, contactId, messageId);
 			will(returnValue(true));
 			oneOf(database).getMessageLength(txn, messageId);
 			will(returnValue(message.getRawLength()));
 			oneOf(database).updateRetransmissionData(txn, contactId, messageId,
 					maxLatency);
-			// Second message is no longer visible - don't mark as sent
+
 			oneOf(database).containsVisibleMessage(txn, contactId, messageId1);
 			will(returnValue(false));
 			oneOf(database).lowerRequestedFlag(txn, contactId,
@@ -1529,7 +1529,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 			oneOf(database).containsGroup(txn, groupId);
 			will(returnValue(true));
 			oneOf(database).getGroupVisibility(txn, contactId, groupId);
-			will(returnValue(VISIBLE)); // Already visible
+			will(returnValue(VISIBLE));
 			oneOf(database).commitTransaction(txn);
 		}});
 		DatabaseComponent db = createDatabaseComponent(database, eventBus,
@@ -1548,19 +1548,19 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 		Collection<TransportKeySet> keys = singletonList(ks);
 
 		context.checking(new Expectations() {{
-			// startTransaction()
+
 			oneOf(database).startTransaction();
 			will(returnValue(txn));
-			// updateTransportKeys()
+
 			oneOf(database).containsTransport(txn, transportId);
 			will(returnValue(true));
 			oneOf(database).updateTransportKeys(txn, ks);
-			// getTransportKeys()
+
 			oneOf(database).containsTransport(txn, transportId);
 			will(returnValue(true));
 			oneOf(database).getTransportKeys(txn, transportId);
 			will(returnValue(keys));
-			// endTransaction()
+
 			oneOf(database).commitTransaction(txn);
 		}});
 		DatabaseComponent db = createDatabaseComponent(database, eventBus,
@@ -1578,10 +1578,10 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 				new MessageStatus(messageId, contactId, true, true);
 
 		context.checking(new Expectations() {{
-			// startTransaction()
+
 			oneOf(database).startTransaction();
 			will(returnValue(txn));
-			// getMessageStatus()
+
 			oneOf(database).containsContact(txn, contactId);
 			will(returnValue(true));
 			oneOf(database).containsGroup(txn, groupId);
@@ -1590,7 +1590,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 			will(returnValue(VISIBLE));
 			oneOf(database).getMessageStatus(txn, contactId, groupId);
 			will(returnValue(singletonList(status)));
-			// getMessageStatus() again
+
 			oneOf(database).containsContact(txn, contactId);
 			will(returnValue(true));
 			oneOf(database).containsGroup(txn, groupId);
@@ -1599,14 +1599,14 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 			will(returnValue(INVISIBLE));
 			oneOf(database).getMessageIds(txn, groupId);
 			will(returnValue(singletonList(messageId)));
-			// endTransaction()
+
 			oneOf(database).commitTransaction(txn);
 		}});
 		DatabaseComponent db = createDatabaseComponent(database, eventBus,
 				eventExecutor, shutdownManager);
 
 		db.transaction(true, transaction -> {
-			// With visible group - return stored status
+
 			Collection<MessageStatus> statuses =
 					db.getMessageStatus(transaction, contactId, groupId);
 			assertEquals(1, statuses.size());
@@ -1615,7 +1615,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 			assertEquals(contactId, s.getContactId());
 			assertTrue(s.isSent());
 			assertTrue(s.isSeen());
-			// With invisible group - return default status
+
 			statuses = db.getMessageStatus(transaction, contactId, groupId);
 			assertEquals(1, statuses.size());
 			s = statuses.iterator().next();
@@ -1632,38 +1632,38 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 				new MessageStatus(messageId, contactId, true, true);
 
 		context.checking(new Expectations() {{
-			// startTransaction()
+
 			oneOf(database).startTransaction();
 			will(returnValue(txn));
-			// getMessageStatus()
+
 			oneOf(database).containsContact(txn, contactId);
 			will(returnValue(true));
 			oneOf(database).containsMessage(txn, messageId);
 			will(returnValue(true));
 			oneOf(database).getMessageStatus(txn, contactId, messageId);
 			will(returnValue(status));
-			// getMessageStatus() again
+
 			oneOf(database).containsContact(txn, contactId);
 			will(returnValue(true));
 			oneOf(database).containsMessage(txn, messageId);
 			will(returnValue(true));
 			oneOf(database).getMessageStatus(txn, contactId, messageId);
 			will(returnValue(null));
-			// endTransaction()
+
 			oneOf(database).commitTransaction(txn);
 		}});
 		DatabaseComponent db = createDatabaseComponent(database, eventBus,
 				eventExecutor, shutdownManager);
 
 		db.transaction(true, transaction -> {
-			// With visible group - return stored status
+
 			MessageStatus s =
 					db.getMessageStatus(transaction, contactId, messageId);
 			assertEquals(messageId, s.getMessageId());
 			assertEquals(contactId, s.getContactId());
 			assertTrue(s.isSent());
 			assertTrue(s.isSeen());
-			// With invisible group - return default status
+
 			s = db.getMessageStatus(transaction, contactId, messageId);
 			assertEquals(messageId, s.getMessageId());
 			assertEquals(contactId, s.getContactId());
@@ -1724,18 +1724,18 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 		merged.put("foo", "bar");
 		merged.put("baz", "qux");
 		context.checking(new Expectations() {{
-			// startTransaction()
+
 			oneOf(database).startTransaction();
 			will(returnValue(txn));
-			// mergeSettings()
+
 			oneOf(database).getSettings(txn, "namespace");
 			will(returnValue(before));
 			oneOf(database).mergeSettings(txn, update, "namespace");
 			oneOf(eventBus).broadcast(with(any(SettingsUpdatedEvent.class)));
-			// mergeSettings() again
+
 			oneOf(database).getSettings(txn, "namespace");
 			will(returnValue(merged));
-			// endTransaction()
+
 			oneOf(database).commitTransaction(txn);
 		}});
 
@@ -1743,9 +1743,9 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 				eventExecutor, shutdownManager);
 
 		db.transaction(false, transaction -> {
-			// First merge should broadcast an event
+
 			db.mergeSettings(transaction, update, "namespace");
-			// Second merge should not broadcast an event
+
 			db.mergeSettings(transaction, update, "namespace");
 		});
 	}
@@ -1797,7 +1797,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 			will(returnValue(txn));
 			oneOf(database).containsIdentity(txn, localAuthor.getId());
 			will(returnValue(true));
-			// Contact is a local identity
+
 			oneOf(database).containsIdentity(txn, author.getId());
 			will(returnValue(true));
 			oneOf(database).abortTransaction(txn);
@@ -1826,7 +1826,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 			will(returnValue(true));
 			oneOf(database).containsIdentity(txn, author.getId());
 			will(returnValue(false));
-			// Contact already exists for this local identity
+
 			oneOf(database).containsContact(txn, author.getId(),
 					localAuthor.getId());
 			will(returnValue(true));
@@ -1853,15 +1853,15 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 		MessageId messageId2 = new MessageId(getRandomId());
 
 		context.checking(new Expectations() {{
-			// open()
+
 			oneOf(database).open(key, null);
 			will(returnValue(false));
 			oneOf(shutdownManager).addShutdownHook(with(any(Runnable.class)));
 			will(returnValue(shutdownHandle));
-			// startTransaction()
+
 			oneOf(database).startTransaction();
 			will(returnValue(txn));
-			// addLocalMessage()
+
 			oneOf(database).containsGroup(txn, groupId);
 			will(returnValue(true));
 			oneOf(database).containsMessage(txn, messageId);
@@ -1869,7 +1869,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 			oneOf(database).addMessage(txn, message, DELIVERED, shared,
 					temporary, null);
 			oneOf(database).mergeMessageMetadata(txn, messageId, metadata);
-			// addMessageDependencies()
+
 			oneOf(database).containsMessage(txn, messageId);
 			will(returnValue(true));
 			oneOf(database).getMessageState(txn, messageId);
@@ -1878,27 +1878,27 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 					DELIVERED);
 			oneOf(database).addMessageDependency(txn, message, messageId2,
 					DELIVERED);
-			// getMessageDependencies()
+
 			oneOf(database).containsMessage(txn, messageId);
 			will(returnValue(true));
 			oneOf(database).getMessageDependencies(txn, messageId);
-			// getMessageDependents()
+
 			oneOf(database).containsMessage(txn, messageId);
 			will(returnValue(true));
 			oneOf(database).getMessageDependents(txn, messageId);
-			// Broadcast events for message being added and changing state
+
 			oneOf(eventBus).broadcast(with(any(MessageAddedEvent.class)));
 			oneOf(eventBus).broadcast(with(any(
 					MessageStateChangedEvent.class)));
-			// If message is shared, get group visibility and broadcast event
+
 			if (shared) {
 				oneOf(database).getGroupVisibility(txn, groupId);
 				will(returnValue(singletonMap(contactId, true)));
 				oneOf(eventBus).broadcast(with(any(MessageSharedEvent.class)));
 			}
-			// endTransaction()
+
 			oneOf(database).commitTransaction(txn);
-			// close()
+
 			oneOf(database).close();
 		}});
 		DatabaseComponent db = createDatabaseComponent(database, eventBus,

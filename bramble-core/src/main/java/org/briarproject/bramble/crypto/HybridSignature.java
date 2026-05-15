@@ -21,7 +21,6 @@ import javax.annotation.concurrent.Immutable;
 import static org.briarproject.bramble.api.crypto.PostQuantumConstants.HYBRID_SIGNATURE_BYTES;
 import static org.briarproject.bramble.api.crypto.PostQuantumConstants.ML_DSA_65_SIGNATURE_BYTES;
 
-
 @NotNullByDefault
 @Immutable
 class HybridSignature {
@@ -41,7 +40,6 @@ class HybridSignature {
 		this.mlDsa65 = new MlDsa65(secureRandom);
 	}
 
-	
 	KeyPair generateKeyPair() {
 		java.security.KeyPair ed25519KeyPair = ed25519KeyPairGenerator.generateKeyPair();
 		EdDSAPublicKey edPublicKey = (EdDSAPublicKey) ed25519KeyPair.getPublic();
@@ -60,7 +58,6 @@ class HybridSignature {
 		return new KeyPair(publicKey, privateKey);
 	}
 
-	
 	byte[] sign(byte[] message, HybridSignaturePrivateKey privateKey)
 			throws GeneralSecurityException {
 		byte[] ed25519Signature = signEd25519(message, privateKey.getEd25519PrivateKey());
@@ -72,7 +69,6 @@ class HybridSignature {
 		return hybridSignature;
 	}
 
-	
 	boolean verify(byte[] signature, byte[] message, HybridSignaturePublicKey publicKey)
 			throws GeneralSecurityException {
 		if (signature.length != HYBRID_SIGNATURE_BYTES) {
@@ -89,7 +85,6 @@ class HybridSignature {
 		return ed25519Valid && mlDsaValid;
 	}
 
-	
 	private byte[] signEd25519(byte[] message, byte[] privateKeySeed)
 			throws GeneralSecurityException {
 		EdSignature signature = new EdSignature();
@@ -98,7 +93,6 @@ class HybridSignature {
 		return signature.sign();
 	}
 
-	
 	private boolean verifyEd25519(byte[] signature, byte[] message, byte[] publicKeyBytes)
 			throws GeneralSecurityException {
 		try {
@@ -111,7 +105,6 @@ class HybridSignature {
 		}
 	}
 
-	
 	boolean isValidPublicKey(HybridSignaturePublicKey publicKey) {
 		try {
 			new EdDSAPublicKeySpec(publicKey.getEd25519PublicKey(), ED25519_SPEC);

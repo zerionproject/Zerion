@@ -25,7 +25,6 @@ public class Group {
 		}
 	}
 
-	
 	public static final int FORMAT_VERSION = 1;
 
 	private final GroupId id;
@@ -43,22 +42,18 @@ public class Group {
 		this.descriptor = descriptor;
 	}
 
-	
 	public GroupId getId() {
 		return id;
 	}
 
-	
 	public ClientId getClientId() {
 		return clientId;
 	}
 
-	
 	public int getMajorVersion() {
 		return majorVersion;
 	}
 
-	
 	public byte[] getDescriptor() {
 		return descriptor;
 	}

@@ -11,22 +11,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-/**
- * Decodes a user-picked image, normalises it for use as a sticker, and
- * persists it via {@link StickerStorage}.
- *
- * Pipeline (mirrors iOS StickerImporter.swift):
- *   1. Probe dimensions with inJustDecodeBounds — reject pre-decode if
- *      either axis exceeds 8000 px (ZIP-bomb / decoder OOM defence).
- *   2. inSampleSize-aware decode with a memory cap.
- *   3. Resize to ≤512 px on the longest edge (sticker render is 160 dp,
- *      512 px gives 3× density head-room and still fits the 256 KB cap).
- *   4. PNG re-encode at quality 100. PNG-on-PNG kills EXIF/ICC/LSB
- *      stego — sender-side metadata stripping before bytes leave the
- *      device.
- *   5. If the encoded PNG is over the per-file cap, downscale to 75 %
- *      and retry once.
- */
 @NotNullByDefault
 public final class StickerImporter {
 
@@ -40,7 +24,7 @@ public final class StickerImporter {
 	}
 
 	public String importFromUri(ContentResolver cr, Uri uri) throws IOException {
-		// Step 1 — bounds probe
+
 		BitmapFactory.Options bounds = new BitmapFactory.Options();
 		bounds.inJustDecodeBounds = true;
 		try (InputStream is = cr.openInputStream(uri)) {
@@ -55,7 +39,6 @@ public final class StickerImporter {
 					+ bounds.outWidth + "x" + bounds.outHeight);
 		}
 
-		// Step 2 — inSampleSize-aware decode
 		BitmapFactory.Options decode = new BitmapFactory.Options();
 		decode.inSampleSize = computeInSampleSize(
 				bounds.outWidth, bounds.outHeight, TARGET_LONG_EDGE);
@@ -68,10 +51,10 @@ public final class StickerImporter {
 		if (raw == null) throw new IOException("decode returned null");
 
 		try {
-			// Step 3 — resize
+
 			Bitmap resized = resizeLongEdge(raw, TARGET_LONG_EDGE);
 			try {
-				// Steps 4–5 — PNG encode (with single 75 % retry on cap miss)
+
 				byte[] png = encodePng(resized);
 				if (png.length > StickerStorage.MAX_FILE_BYTES) {
 					Bitmap smaller = resizeLongEdge(resized,

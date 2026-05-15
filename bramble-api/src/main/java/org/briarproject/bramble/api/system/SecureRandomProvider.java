@@ -7,11 +7,9 @@ import java.security.SecureRandom;
 
 import javax.annotation.Nullable;
 
-
 @NotNullByDefault
 public interface SecureRandomProvider {
 
-	
 	@Nullable
 	Provider getProvider();
 }

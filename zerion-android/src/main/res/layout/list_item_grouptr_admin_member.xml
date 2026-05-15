@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content"
+	android:gravity="center_vertical"
+	android:minHeight="56dp"
+	android:orientation="horizontal"
+	android:paddingHorizontal="20dp"
+	android:paddingVertical="10dp">
+
+	<TextView
+		android:id="@+id/memberAvatar"
+		android:layout_width="36dp"
+		android:layout_height="36dp"
+		android:background="@drawable/badge_circle_cyan"
+		android:gravity="center"
+		android:textColor="@android:color/white"
+		android:textSize="15sp"
+		android:textStyle="bold"
+		tools:text="A" />
+
+	<LinearLayout
+		android:layout_width="0dp"
+		android:layout_height="wrap_content"
+		android:layout_marginStart="14dp"
+		android:layout_weight="1"
+		android:orientation="vertical">
+
+		<TextView
+			android:id="@+id/memberName"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:ellipsize="end"
+			android:maxLines="1"
+			android:textColor="@color/zerion_text_primary"
+			android:textSize="15sp"
+			tools:text="Alice" />
+
+		<TextView
+			android:id="@+id/memberRole"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_marginTop="2dp"
+			android:textColor="@color/zerion_text_secondary"
+			android:textSize="11sp"
+			android:visibility="gone"
+			tools:text="creator"
+			tools:visibility="visible" />
+
+	</LinearLayout>
+
+	<com.google.android.material.button.MaterialButton
+		android:id="@+id/memberMenuButton"
+		style="@style/Widget.Material3.Button.IconButton"
+		android:layout_width="40dp"
+		android:layout_height="40dp"
+		android:insetTop="0dp"
+		android:insetBottom="0dp"
+		android:visibility="gone"
+		app:icon="@drawable/ic_more_vert"
+		app:iconSize="20dp"
+		app:iconTint="@color/zerion_text_secondary"
+		tools:visibility="visible" />
+
+</LinearLayout>

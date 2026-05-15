@@ -43,7 +43,7 @@ public class TestEventListener<T extends Event> implements EventListener {
 	@Override
 	public void eventOccurred(Event e) {
 		if (e.getClass().equals(clazz)) {
-			//noinspection unchecked
+
 			assertNull("Event already received", event.getAndSet((T) e));
 		}
 	}

@@ -32,7 +32,6 @@ import static org.briarproject.briar.introduction.MessageType.ACTIVATE;
 import static org.briarproject.briar.introduction.MessageType.AUTH;
 import static org.briarproject.briar.util.ValidationUtils.validateAutoDeleteTimer;
 
-
 @Immutable
 @NotNullByDefault
 class IntroductionValidator extends BdfMessageValidator {

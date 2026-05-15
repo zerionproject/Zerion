@@ -23,7 +23,6 @@ import com.professor.zerion.android.api.LockManager;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
-
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 
@@ -51,7 +50,6 @@ public abstract class ZerionActivity extends BaseActivity {
 
 	public static final String GROUP_ID = "zerion.GROUP_ID";
 	public static final String GROUP_NAME = "zerion.GROUP_NAME";
-
 
 	@Inject
 	ZerionController briarController;

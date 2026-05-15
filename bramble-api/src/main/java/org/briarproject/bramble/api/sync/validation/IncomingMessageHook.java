@@ -8,22 +8,17 @@ import org.briarproject.bramble.api.sync.Message;
 
 public interface IncomingMessageHook {
 
-	
 	DeliveryAction incomingMessage(Transaction txn, Message m, Metadata meta)
 			throws DbException, InvalidMessageException;
 
 	enum DeliveryAction {
 
-		
 		REJECT,
 
-		
 		DEFER,
 
-		
 		ACCEPT_SHARE,
 
-		
 		ACCEPT_DO_NOT_SHARE
 	}
 }

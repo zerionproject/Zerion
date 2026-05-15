@@ -23,9 +23,6 @@ import static org.junit.Assert.assertFalse;
 
 public class KeyAgreementTest extends BrambleTestCase {
 
-	// Test vector from RFC 7748: Alice's private and public keys, Bob's
-	// private and public keys, and the shared secret
-	// https://tools.ietf.org/html/rfc7748#section-6.1
 	private static final String ALICE_PRIVATE =
 			"77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a";
 	private static final String ALICE_PUBLIC =
@@ -121,11 +118,9 @@ public class KeyAgreementTest extends BrambleTestCase {
 		byte[] sharedSecret = fromHexString(SHARED_SECRET);
 		Curve25519 curve25519 = Curve25519.getInstance("java");
 
-		// Flip the unused most significant bit of the little-endian public key
 		byte[] aPubEquiv = aPub.clone();
 		aPubEquiv[31] ^= (byte) 128;
 
-		// The public keys should be different but give the same shared secret
 		assertFalse(Arrays.equals(aPub, aPubEquiv));
 		assertArrayEquals(sharedSecret,
 				curve25519.calculateAgreement(aPub, bPriv));
@@ -139,14 +134,12 @@ public class KeyAgreementTest extends BrambleTestCase {
 		KeyPair aPair = crypto.generateAgreementKeyPair();
 		KeyPair bPair = crypto.generateAgreementKeyPair();
 
-		// Flip the unused most significant bit of the little-endian public key
 		byte[] aPub = aPair.getPublic().getEncoded();
 		byte[] aPubEquiv = aPub.clone();
 		aPubEquiv[31] ^= (byte) 128;
 		KeyPair aPairEquiv = new KeyPair(new AgreementPublicKey(aPubEquiv),
 				aPair.getPrivate());
 
-		// The public keys should be different but give the same shared secret
 		assertFalse(Arrays.equals(aPub, aPubEquiv));
 		SecretKey shared = crypto.deriveSharedSecret(label,
 				aPair.getPublic(), bPair);
@@ -161,14 +154,12 @@ public class KeyAgreementTest extends BrambleTestCase {
 		KeyPair aPair = crypto.generateAgreementKeyPair();
 		KeyPair bPair = crypto.generateAgreementKeyPair();
 
-		// Flip the unused most significant bit of the little-endian public key
 		byte[] aPub = aPair.getPublic().getEncoded();
 		byte[] aPubEquiv = aPub.clone();
 		aPubEquiv[31] ^= (byte) 128;
 		KeyPair aPairEquiv = new KeyPair(new AgreementPublicKey(aPubEquiv),
 				aPair.getPrivate());
 
-		// The public keys should be different and give different shared secrets
 		assertFalse(Arrays.equals(aPub, aPubEquiv));
 		SecretKey shared = deriveSharedSecretWithPublicKeysHashedIn(label,
 				aPair.getPublic(), bPair);
@@ -187,8 +178,7 @@ public class KeyAgreementTest extends BrambleTestCase {
 	}
 
 	private byte[] parsePrivateKey(String hex) throws FormatException {
-		// Private keys need to be clamped because curve25519-java does the
-		// clamping at key generation time, not multiplication time
+
 		return AgreementKeyParser.clamp(fromHexString(hex));
 	}
 }

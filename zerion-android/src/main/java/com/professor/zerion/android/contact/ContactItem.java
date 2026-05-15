@@ -37,7 +37,6 @@ public class ContactItem {
 		return connected;
 	}
 
-	
 	public boolean isPostQuantum() {
 		return contact.isPostQuantum();
 	}

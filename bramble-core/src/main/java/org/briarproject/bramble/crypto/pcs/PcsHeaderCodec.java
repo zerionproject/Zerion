@@ -24,7 +24,6 @@ import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PQ_CHUNK_SIZE
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PQ_EPOCH_SIZE;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PREVIOUS_CHAIN_LENGTH_SIZE;
 
-
 @Immutable
 @NotNullByDefault
 public class PcsHeaderCodec {

@@ -136,13 +136,13 @@ public class IntroduceeProtocolEngineTest extends BrambleMockTestCase {
 		BdfDictionary activateMeta = new BdfDictionary();
 
 		context.checking(new Expectations() {{
-			// Verify the auth message
+
 			oneOf(identityManager).getLocalAuthor(txn);
 			will(returnValue(localIntroducee));
 			oneOf(crypto).verifyAuthMac(remoteMac, session,
 					localIntroducee.getId());
 			oneOf(crypto).verifySignature(remoteSignature, session);
-			// Add the contact
+
 			oneOf(contactManager).addContact(txn, remoteIntroducee,
 					localIntroducee.getId(), false);
 			will(returnValue(contactId));
@@ -151,7 +151,7 @@ public class IntroduceeProtocolEngineTest extends BrambleMockTestCase {
 			will(returnValue(emptyMap()));
 			oneOf(transportPropertyManager).addRemoteProperties(txn, contactId,
 					emptyMap());
-			// Send the activate message
+
 			oneOf(crypto).activateMac(session);
 			will(returnValue(localMac));
 			oneOf(clock).currentTimeMillis();
@@ -204,13 +204,13 @@ public class IntroduceeProtocolEngineTest extends BrambleMockTestCase {
 		BdfDictionary abortMeta = new BdfDictionary();
 
 		context.checking(new Expectations() {{
-			// Verify the auth message
+
 			oneOf(identityManager).getLocalAuthor(txn);
 			will(returnValue(localIntroducee));
 			oneOf(crypto).verifyAuthMac(remoteMac, session,
 					localIntroducee.getId());
 			oneOf(crypto).verifySignature(remoteSignature, session);
-			// Abort the session
+
 			oneOf(messageParser).getRequestsAvailableToAnswerQuery(sessionId);
 			will(returnValue(query));
 			oneOf(clientHelper).getMessageIds(txn, contactGroupId, query);

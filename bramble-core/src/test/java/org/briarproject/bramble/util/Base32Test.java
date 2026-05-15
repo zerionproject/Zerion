@@ -10,9 +10,6 @@ import static org.junit.Assert.assertEquals;
 
 public class Base32Test extends BrambleTestCase {
 
-	// Test vectors from RFC 4648
-	// https://tools.ietf.org/html/rfc4648#section-10
-
 	@Test
 	public void testEncoding() {
 		assertEquals("", Base32.encode(new byte[0]));

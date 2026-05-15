@@ -9,6 +9,9 @@
 	<cache-path
 		name="zenc_share"
 		path="zenc_share/" />
+	<cache-path
+		name="grouptr_view"
+		path="grouptr_view/" />
 	<files-path
 		name="camera"
 		path="camera/" />

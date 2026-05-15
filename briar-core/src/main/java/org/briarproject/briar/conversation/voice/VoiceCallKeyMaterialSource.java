@@ -10,7 +10,6 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.GeneralSecurityException;
 
-
 @ThreadSafe
 @NotNullByDefault
 class VoiceCallKeyMaterialSource implements KeyMaterialSource {
@@ -22,7 +21,6 @@ class VoiceCallKeyMaterialSource implements KeyMaterialSource {
 	@GuardedBy("this")
 	private int counter = 0;
 
-	
 	VoiceCallKeyMaterialSource(SecretKey sourceKey) {
 		this.sourceKey = sourceKey;
 	}
@@ -51,7 +49,6 @@ class VoiceCallKeyMaterialSource implements KeyMaterialSource {
 		}
 	}
 
-	
 	private byte[] intToBytes(int value) {
 		return new byte[] {
 			(byte) (value >>> 24),

@@ -8,14 +8,11 @@ import java.io.OutputStream;
 @NotNullByDefault
 public interface StreamEncrypterFactory {
 
-	
 	StreamEncrypter createStreamEncrypter(OutputStream out, StreamContext ctx);
 
-	
 	StreamEncrypter createContactExchangeStreamEncrypter(OutputStream out,
 			SecretKey headerKey);
 
-	
 	StreamEncrypter createLogStreamEncrypter(OutputStream out,
 			SecretKey headerKey);
 }

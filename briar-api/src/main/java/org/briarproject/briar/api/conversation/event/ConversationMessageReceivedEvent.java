@@ -7,9 +7,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.Immutable;
 
-/**
- * An event that is broadcast when a new conversation message is received.
- */
 @Immutable
 @NotNullByDefault
 public abstract class ConversationMessageReceivedEvent<H extends ConversationMessageHeader>

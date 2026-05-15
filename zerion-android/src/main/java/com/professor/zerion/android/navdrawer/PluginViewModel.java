@@ -131,12 +131,6 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 		return rotationPendingOnion;
 	}
 
-	/**
-	 * Re-read current onion + B.4 rotation state. Called from
-	 * TorStatusFragment.onStart and after a manual Rotate Now so the
-	 * UI reflects the post-rotation state without waiting for an
-	 * unrelated event to fire a refresh.
-	 */
 	public void refreshTorState() {
 		loadLocalOnion();
 		loadRotationState();

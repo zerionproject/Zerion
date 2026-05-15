@@ -41,12 +41,10 @@ public class ConversationCache {
 		return instance;
 	}
 
-	
 	public void put(ContactId contactId, List<ConversationMessageHeader> headers) {
 		put(contactId, headers, null);
 	}
 
-	
 	public void put(ContactId contactId, List<ConversationMessageHeader> headers,
 			@Nullable Map<MessageId, String> texts) {
 		synchronized (accessOrder) {
@@ -69,7 +67,6 @@ public class ConversationCache {
 		cache.put(contactId, new CachedConversation(limitedHeaders, texts, System.currentTimeMillis()));
 	}
 
-	
 	public Map<MessageId, String> getCachedTexts(ContactId contactId) {
 		CachedConversation cached = cache.get(contactId);
 		if (cached == null) {
@@ -78,7 +75,6 @@ public class ConversationCache {
 		return new HashMap<>(cached.texts);
 	}
 
-	
 	@Nullable
 	public List<ConversationMessageHeader> getSnapshot(ContactId contactId) {
 		CachedConversation cached = cache.get(contactId);
@@ -100,14 +96,12 @@ public class ConversationCache {
 		return new ArrayList<>(cached.headers);
 	}
 
-	
 	public boolean hasValidCache(ContactId contactId) {
 		CachedConversation cached = cache.get(contactId);
 		if (cached == null) return false;
 		return System.currentTimeMillis() - cached.timestamp <= CACHE_EXPIRY_MS;
 	}
 
-	
 	public void addMessage(ContactId contactId, ConversationMessageHeader header) {
 		CachedConversation cached = cache.get(contactId);
 		if (cached != null) {
@@ -131,7 +125,6 @@ public class ConversationCache {
 		}
 	}
 
-	
 	public void invalidate(ContactId contactId) {
 		cache.remove(contactId);
 		synchronized (accessOrder) {
@@ -139,7 +132,6 @@ public class ConversationCache {
 		}
 	}
 
-	
 	public void clearAll() {
 		cache.clear();
 		synchronized (accessOrder) {
@@ -147,7 +139,6 @@ public class ConversationCache {
 		}
 	}
 
-	
 	private static class CachedConversation {
 		final List<ConversationMessageHeader> headers;
 		final Map<MessageId, String> texts;

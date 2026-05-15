@@ -6,10 +6,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.Immutable;
 
-/**
- * An event that is broadcast when a new conversation message is tracked.
- * Allows the UI to update the conversation's group count.
- */
 @Immutable
 @NotNullByDefault
 public class ConversationMessageTrackedEvent extends Event {

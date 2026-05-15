@@ -1,6 +1,79 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
 
+	<style name="GroupTrAdminSectionLabel">
+		<item name="android:layout_width">match_parent</item>
+		<item name="android:layout_height">wrap_content</item>
+		<item name="android:layout_marginStart">8dp</item>
+		<item name="android:layout_marginBottom">8dp</item>
+		<item name="android:textColor">@color/zerion_text_secondary</item>
+		<item name="android:textSize">11sp</item>
+		<item name="android:textStyle">bold</item>
+		<item name="android:letterSpacing">0.08</item>
+	</style>
+
+	<style name="GroupTrAdminActionRow">
+		<item name="android:layout_width">match_parent</item>
+		<item name="android:layout_height">wrap_content</item>
+		<item name="android:minHeight">52dp</item>
+		<item name="android:gravity">center_vertical</item>
+		<item name="android:orientation">horizontal</item>
+		<item name="android:paddingHorizontal">20dp</item>
+		<item name="android:paddingVertical">8dp</item>
+		<item name="android:background">?attr/selectableItemBackground</item>
+		<item name="android:clickable">true</item>
+		<item name="android:focusable">true</item>
+	</style>
+
+	<style name="GroupTrAdminActionIcon">
+		<item name="android:layout_width">22dp</item>
+		<item name="android:layout_height">22dp</item>
+		<item name="android:layout_marginEnd">18dp</item>
+	</style>
+
+	<style name="GroupTrAdminActionText">
+		<item name="android:layout_width">0dp</item>
+		<item name="android:layout_height">wrap_content</item>
+		<item name="android:layout_weight">1</item>
+		<item name="android:textColor">@color/zerion_text_primary</item>
+		<item name="android:textSize">15sp</item>
+	</style>
+
+	<style name="GroupTrAdminActionTextDanger" parent="GroupTrAdminActionText">
+		<item name="android:textColor">@color/zerion_red_500_new</item>
+	</style>
+
+	<style name="GroupTrAdminDivider">
+		<item name="android:layout_width">match_parent</item>
+		<item name="android:layout_height">0.5dp</item>
+		<item name="android:layout_marginStart">60dp</item>
+		<item name="android:background">#1AFFFFFF</item>
+	</style>
+
+	<style name="GroupTrAdminDetailRow">
+		<item name="android:layout_width">match_parent</item>
+		<item name="android:layout_height">wrap_content</item>
+		<item name="android:minHeight">36dp</item>
+		<item name="android:gravity">center_vertical</item>
+		<item name="android:orientation">horizontal</item>
+		<item name="android:paddingVertical">6dp</item>
+	</style>
+
+	<style name="GroupTrAdminDetailLabel">
+		<item name="android:layout_width">0dp</item>
+		<item name="android:layout_height">wrap_content</item>
+		<item name="android:layout_weight">1</item>
+		<item name="android:textColor">@color/zerion_text_secondary</item>
+		<item name="android:textSize">14sp</item>
+	</style>
+
+	<style name="GroupTrAdminDetailValue">
+		<item name="android:layout_width">wrap_content</item>
+		<item name="android:layout_height">wrap_content</item>
+		<item name="android:textColor">@color/zerion_text_primary</item>
+		<item name="android:textSize">14sp</item>
+	</style>
+
 	<style name="ZerionToolbar" parent="Widget.Material3.Toolbar">
 		<item name="android:background">@color/zerion_dark_bg</item>
 		<item name="titleTextColor">@color/zerion_text_secondary</item>

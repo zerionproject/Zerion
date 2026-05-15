@@ -35,7 +35,6 @@ import java.util.List;
 
 import static net.i2p.crypto.eddsa.EdDSAEngine.SIGNATURE_ALGORITHM;
 
-// Not a JUnit test
 public class EllipticCurvePerformanceTest {
 
 	private static final SecureRandom random = new SecureRandom();
@@ -63,16 +62,16 @@ public class EllipticCurvePerformanceTest {
 	}
 
 	private static void runTest(String name, ECDomainParameters params) {
-		// Generate two key pairs using the given parameters
+
 		ECKeyPairGenerator generator = new ECKeyPairGenerator();
 		generator.init(new ECKeyGenerationParameters(params, random));
 		AsymmetricCipherKeyPair keyPair1 = generator.generateKeyPair();
 		AsymmetricCipherKeyPair keyPair2 = generator.generateKeyPair();
-		// Time some ECDH and ECDHC key agreements
+
 		long agreementMedian = runAgreementTest(keyPair1, keyPair2, false);
 		long agreementWithCofactorMedian =
 				runAgreementTest(keyPair1, keyPair2, true);
-		// Time some signatures
+
 		List<Long> samples = new ArrayList<>();
 		List<byte[]> signatures = new ArrayList<>();
 		for (int i = 0; i < SAMPLES; i++) {
@@ -88,7 +87,7 @@ public class EllipticCurvePerformanceTest {
 			samples.add(System.nanoTime() - start);
 		}
 		long signatureMedian = median(samples);
-		// Time some signature verifications
+
 		samples.clear();
 		for (int i = 0; i < SAMPLES; i++) {
 			Digest digest = new Blake2bDigest(256);
@@ -130,7 +129,7 @@ public class EllipticCurvePerformanceTest {
 		Curve25519 curve25519 = Curve25519.getInstance("java");
 		Curve25519KeyPair keyPair1 = curve25519.generateKeyPair();
 		Curve25519KeyPair keyPair2 = curve25519.generateKeyPair();
-		// Time some key agreements
+
 		List<Long> samples = new ArrayList<>();
 		for (int i = 0; i < SAMPLES; i++) {
 			long start = System.nanoTime();
@@ -145,7 +144,7 @@ public class EllipticCurvePerformanceTest {
 
 	private static void runEd25519Test() throws GeneralSecurityException {
 		KeyPair keyPair = new KeyPairGenerator().generateKeyPair();
-		// Time some signatures
+
 		List<Long> samples = new ArrayList<>();
 		List<byte[]> signatures = new ArrayList<>();
 		for (int i = 0; i < SAMPLES; i++) {
@@ -158,7 +157,7 @@ public class EllipticCurvePerformanceTest {
 			samples.add(System.nanoTime() - start);
 		}
 		long signatureMedian = median(samples);
-		// Time some signature verifications
+
 		samples.clear();
 		for (int i = 0; i < SAMPLES; i++) {
 			Signature signature =

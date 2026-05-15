@@ -56,7 +56,7 @@ public class PngSuiteImageCompressorTest
 				testCompress("PngSuite/" + filename, "image/png");
 				fail();
 			} catch (IOException expected) {
-				// Expected
+
 			}
 		} else {
 			testCompress("PngSuite/" + filename, "image/png");

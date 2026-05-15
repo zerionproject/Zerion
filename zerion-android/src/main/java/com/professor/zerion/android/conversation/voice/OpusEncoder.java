@@ -43,8 +43,7 @@ public class OpusEncoder {
 			format.setInteger(MediaFormat.KEY_BIT_RATE, bitrate);
 			format.setInteger("opus-frame-size", (sampleRate / 1000) * 20);
 			format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 4096);
-			// Enable DTX (discontinuous transmission) for VAD
-			// Reduces bandwidth during silence, improving battery life
+
 			format.setInteger("opus-dtx", 1);
 
 			encoder = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_AUDIO_OPUS);

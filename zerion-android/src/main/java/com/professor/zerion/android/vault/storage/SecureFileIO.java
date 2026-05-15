@@ -147,7 +147,6 @@ public class SecureFileIO {
 
 			syncDirectory();
 
-
 		} finally {
 			if (bos != null) try { bos.close(); } catch (IOException ignored) {}
 			if (channel != null) try { channel.close(); } catch (IOException ignored) {}

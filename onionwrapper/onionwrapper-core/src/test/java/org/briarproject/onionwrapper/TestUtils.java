@@ -30,7 +30,7 @@ public class TestUtils {
 
 	public static void deleteTestDirectory(File testDir) {
 		deleteFileOrDir(testDir);
-		// Delete test.tmp if empty
+
 		testDir.getParentFile().delete();
 	}
 
@@ -61,7 +61,7 @@ public class TestUtils {
 		String arch = System.getProperty("os.arch");
 		if (arch == null) return null;
 		if (isLinux()) {
-			//noinspection IfCanBeSwitch
+
 			if (arch.equals("amd64")) return "x86_64";
 			else if (arch.equals("aarch64")) return "aarch64";
 			else if (arch.equals("arm")) return "armhf";

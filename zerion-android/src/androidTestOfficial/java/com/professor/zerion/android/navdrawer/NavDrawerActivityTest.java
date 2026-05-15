@@ -33,11 +33,11 @@ public class NavDrawerActivityTest extends UiTest {
 
 	@Test
 	public void openSettings() {
-		// Click the menu button (3-dot overflow)
+
 		onView(withId(R.id.menuButton))
 				.check(matches(isDisplayed()))
 				.perform(click());
-		// Click Settings in the popup menu
+
 		onView(withText(R.string.settings_button))
 				.check(matches(isDisplayed()))
 				.perform(click());

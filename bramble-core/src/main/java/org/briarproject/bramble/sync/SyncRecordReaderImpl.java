@@ -68,7 +68,6 @@ class SyncRecordReaderImpl implements SyncRecordReader {
 		return nextRecord.getRecordType();
 	}
 
-	
 	@Override
 	public boolean eof() throws IOException {
 		if (nextRecord != null) return false;

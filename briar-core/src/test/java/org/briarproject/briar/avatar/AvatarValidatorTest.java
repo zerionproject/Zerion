@@ -47,8 +47,7 @@ public class AvatarValidatorTest extends BrambleMockTestCase {
 	private final BdfDictionary meta = BdfDictionary.of(
 			new BdfEntry(MSG_KEY_VERSION, version),
 			new BdfEntry(MSG_KEY_CONTENT_TYPE, contentType),
-			// Descriptor length is zero as the test doesn't read from the
-			// counting input stream
+
 			new BdfEntry(MSG_KEY_DESCRIPTOR_LENGTH, 0L)
 	);
 

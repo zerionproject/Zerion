@@ -9,12 +9,10 @@ import static org.briarproject.bramble.api.crypto.PostQuantumConstants.HYBRID_AG
 import static org.briarproject.bramble.api.crypto.PostQuantumConstants.KEY_TYPE_HYBRID_AGREEMENT;
 import static org.briarproject.bramble.api.crypto.PostQuantumConstants.ML_KEM_768_PUBLIC_KEY_BYTES;
 
-
 @Immutable
 @NotNullByDefault
 public class HybridAgreementPublicKey extends Bytes implements PublicKey {
 
-	
 	public HybridAgreementPublicKey(byte[] encoded) {
 		super(encoded);
 		if (encoded.length != HYBRID_AGREEMENT_PUBLIC_KEY_BYTES) {
@@ -24,7 +22,6 @@ public class HybridAgreementPublicKey extends Bytes implements PublicKey {
 		}
 	}
 
-	
 	public HybridAgreementPublicKey(byte[] x25519PublicKey, byte[] mlKemPublicKey) {
 		super(combineKeys(x25519PublicKey, mlKemPublicKey));
 	}
@@ -55,21 +52,18 @@ public class HybridAgreementPublicKey extends Bytes implements PublicKey {
 		return getBytes();
 	}
 
-	
 	public byte[] getX25519PublicKey() {
 		byte[] x25519 = new byte[32];
 		System.arraycopy(getBytes(), 0, x25519, 0, 32);
 		return x25519;
 	}
 
-	
 	public byte[] getMlKemPublicKey() {
 		byte[] mlKem = new byte[ML_KEM_768_PUBLIC_KEY_BYTES];
 		System.arraycopy(getBytes(), 32, mlKem, 0, ML_KEM_768_PUBLIC_KEY_BYTES);
 		return mlKem;
 	}
 
-	
 	public AgreementPublicKey getX25519Component() {
 		return new AgreementPublicKey(getX25519PublicKey());
 	}

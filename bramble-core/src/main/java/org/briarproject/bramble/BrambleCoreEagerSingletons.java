@@ -28,7 +28,6 @@ public interface BrambleCoreEagerSingletons {
 
 	void inject(LifecycleModule.EagerSingletons init);
 
-
 	void inject(PluginModule.EagerSingletons init);
 
 	void inject(PropertiesModule.EagerSingletons init);

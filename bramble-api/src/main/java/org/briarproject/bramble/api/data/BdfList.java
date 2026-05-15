@@ -12,11 +12,9 @@ import javax.annotation.concurrent.NotThreadSafe;
 
 import static org.briarproject.bramble.api.data.BdfDictionary.NULL_VALUE;
 
-
 @NotThreadSafe
 public final class BdfList extends ArrayList<Object> {
 
-	
 	public static BdfList of(Object... items) {
 		return new BdfList(Arrays.asList(items));
 	}
@@ -78,14 +76,12 @@ public final class BdfList extends ArrayList<Object> {
 		return value == null ? defaultValue : value;
 	}
 
-	
 	public Integer getInt(int index) throws FormatException {
 		Integer value = getOptionalInt(index);
 		if (value == null) throw new FormatException();
 		return value;
 	}
 
-	
 	@Nullable
 	public Integer getOptionalInt(int index) throws FormatException {
 		Long value = getOptionalLong(index);
@@ -96,7 +92,6 @@ public final class BdfList extends ArrayList<Object> {
 		return value.intValue();
 	}
 
-	
 	public Integer getInt(int index, Integer defaultValue)
 			throws FormatException {
 		Integer value = getOptionalInt(index);

@@ -6,9 +6,6 @@ import java.security.SecureRandomSpi;
 
 import static java.util.Arrays.fill;
 
-/**
- * A fake SecureRandom implementation for testing, which returns all zeroes.
- */
 public class NeitherSecureNorRandom extends SecureRandom {
 
 	private static final Provider PROVIDER =
@@ -32,7 +29,7 @@ public class NeitherSecureNorRandom extends SecureRandom {
 
 		@Override
 		protected void engineSetSeed(byte[] seed) {
-			// Thank you for your input
+
 		}
 	}
 

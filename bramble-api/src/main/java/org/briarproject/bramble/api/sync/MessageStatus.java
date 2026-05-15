@@ -16,22 +16,18 @@ public class MessageStatus {
 		this.seen = seen;
 	}
 
-	
 	public MessageId getMessageId() {
 		return messageId;
 	}
 
-	
 	public ContactId getContactId() {
 		return contactId;
 	}
 
-	
 	public boolean isSent() {
 		return sent;
 	}
 
-	
 	public boolean isSeen() {
 		return seen;
 	}

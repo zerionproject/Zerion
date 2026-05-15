@@ -4,7 +4,6 @@ import org.briarproject.bramble.api.data.BdfList;
 
 import java.io.IOException;
 
-
 public abstract class KeyAgreementListener {
 
 	private final BdfList descriptor;
@@ -13,14 +12,11 @@ public abstract class KeyAgreementListener {
 		this.descriptor = descriptor;
 	}
 
-	
 	public BdfList getDescriptor() {
 		return descriptor;
 	}
 
-	
 	public abstract KeyAgreementConnection accept() throws IOException;
 
-	
 	public abstract void close();
 }

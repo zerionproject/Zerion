@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content"
+	android:layout_marginTop="2dp"
+	android:layout_marginBottom="2dp"
+	android:orientation="vertical">
+
+	<TextView
+		android:id="@+id/senderName"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_marginStart="14dp"
+		android:layout_marginBottom="2dp"
+		android:textColor="@color/zerion_primary_accent"
+		android:textSize="12sp"
+		android:textStyle="bold"
+		tools:text="Alice" />
+
+	<androidx.constraintlayout.widget.ConstraintLayout
+		android:id="@+id/bubble"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_marginEnd="48dp"
+		android:background="@drawable/msg_in"
+		android:elevation="@dimen/message_bubble_elevation"
+		android:paddingHorizontal="12dp"
+		android:paddingVertical="8dp">
+
+		<TextView
+			android:id="@+id/postText"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:maxWidth="260dp"
+			android:textColor="@color/zerion_text_primary"
+			android:textSize="15sp"
+			tools:text="Hello group" />
+
+		<TextView
+			android:id="@+id/postTime"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_marginTop="2dp"
+			android:layout_marginStart="8dp"
+			android:textColor="@color/zerion_text_secondary"
+			android:textSize="10sp"
+			app:layout_constraintBottom_toBottomOf="@+id/postText"
+			app:layout_constraintStart_toEndOf="@+id/postText"
+			xmlns:app="http://schemas.android.com/apk/res-auto"
+			tools:text="13:37" />
+
+	</androidx.constraintlayout.widget.ConstraintLayout>
+
+</LinearLayout>

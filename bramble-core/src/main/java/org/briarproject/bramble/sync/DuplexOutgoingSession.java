@@ -60,7 +60,6 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 			NEXT_SEND_TIME_DECREASED = () -> {
 	};
 
-	
 	private static final int BATCH_CAPACITY =
 			(RECORD_HEADER_BYTES + MAX_MESSAGE_LENGTH) * 2;
 

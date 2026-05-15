@@ -9,19 +9,15 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.Nullable;
 
-
 @NotNullByDefault
 public interface SimplexPlugin extends Plugin {
 
-	
 	boolean isLossyAndCheap();
 
-	
 	@Wakeful
 	@Nullable
 	TransportConnectionReader createReader(TransportProperties p);
 
-	
 	@Wakeful
 	@Nullable
 	TransportConnectionWriter createWriter(TransportProperties p);

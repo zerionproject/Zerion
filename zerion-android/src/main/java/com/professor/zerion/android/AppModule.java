@@ -37,8 +37,6 @@ import com.professor.zerion.android.contact.ContactListModule;
 import com.professor.zerion.android.introduction.IntroductionModule;
 import com.professor.zerion.android.login.LoginModule;
 import com.professor.zerion.android.navdrawer.NavDrawerModule;
-import com.professor.zerion.android.privategroup.conversation.GroupConversationModule;
-import com.professor.zerion.android.privategroup.list.GroupListModule;
 import com.professor.zerion.android.removabledrive.TransferDataModule;
 import org.briarproject.bramble.account.AndroidAccountManager;
 import org.briarproject.bramble.account.ProfileManager;
@@ -94,8 +92,6 @@ import static com.professor.zerion.android.TestingConstants.IS_DEBUG_BUILD;
 		SettingsModule.class,
 		ContactListModule.class,
 		IntroductionModule.class,
-		GroupListModule.class,
-		GroupConversationModule.class,
 		SharingModule.class,
 		TransferDataModule.class,
 })
@@ -126,7 +122,6 @@ public class AppModule {
 			}
 		}
 
-		
 		static void initializeWithStrictModeBypass(Application app) {
 			synchronized (lock) {
 				if (securePrefs == null) {
@@ -348,7 +343,6 @@ public class AppModule {
 		return testAvatarCreator;
 	}
 
-	
 	@Provides
 	@Singleton
 	@SecurePrefs
@@ -360,7 +354,6 @@ public class AppModule {
 		return SecurePrefsHolder.getSecurePrefs();
 	}
 
-	
 	@Provides
 	@Singleton
 	@UiPrefs
@@ -489,7 +482,7 @@ public class AppModule {
 
 			@Override
 			public boolean shouldEnablePrivateGroupsInCore() {
-				return true;
+				return false;
 			}
 		};
 	}

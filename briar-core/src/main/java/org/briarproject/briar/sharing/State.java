@@ -15,13 +15,13 @@ import static org.briarproject.bramble.api.sync.Group.Visibility.VISIBLE;
 enum State {
 
 	START(0, INVISIBLE),
-	
+
 	LOCAL_INVITED(1, INVISIBLE),
-	
+
 	REMOTE_INVITED(2, VISIBLE),
 	SHARING(3, SHARED),
 	LOCAL_LEFT(4, INVISIBLE),
-	
+
 	REMOTE_HANGING(5, INVISIBLE);
 
 	private final int value;

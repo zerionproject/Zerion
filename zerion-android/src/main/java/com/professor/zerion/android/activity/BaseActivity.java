@@ -55,7 +55,6 @@ import static com.professor.zerion.android.util.UiUtils.showFragment;
 public abstract class BaseActivity extends AppCompatActivity
 		implements DestroyableContext, OnTapFilteredListener {
 
-
 	@Inject
 	protected ScreenFilterMonitor screenFilterMonitor;
 
@@ -146,11 +145,6 @@ public abstract class BaseActivity extends AppCompatActivity
 		enforceSecureInputs();
 	}
 
-	/**
-	 * Walks the entire view tree and enforces secure keyboard flags on
-	 * every EditText. This is the global enforcement mechanism that
-	 * prevents IME learning, suggestions, and autofill on all inputs.
-	 */
 	private void enforceSecureInputs() {
 		View decorView = getWindow().getDecorView();
 		IncognitoInputHelper.enforceSecureInputsOnViewTree(decorView);

@@ -18,7 +18,7 @@ import javax.inject.Inject;
 @NotNullByDefault
 public class ModemPluginFactory implements DuplexPluginFactory {
 
-	private static final int MAX_LATENCY = 30 * 1000; // 30 seconds
+	private static final int MAX_LATENCY = 30 * 1000;
 
 	private final ModemFactory modemFactory;
 	private final SerialPortList serialPortList;
@@ -42,7 +42,7 @@ public class ModemPluginFactory implements DuplexPluginFactory {
 
 	@Override
 	public DuplexPlugin createPlugin(PluginCallback callback) {
-		// This plugin is not enabled by default
+
 		String enabled = callback.getSettings().get("enabled");
 		if (StringUtils.isNullOrEmpty(enabled)) return null;
 		return new ModemPlugin(modemFactory, serialPortList, callback,

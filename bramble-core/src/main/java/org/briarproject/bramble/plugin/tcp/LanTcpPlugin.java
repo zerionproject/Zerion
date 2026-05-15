@@ -54,10 +54,8 @@ import static org.briarproject.bramble.util.StringUtils.utf8IsTooLong;
 class LanTcpPlugin extends TcpPlugin {
 	private static final String SEPARATOR = ",";
 
-	
 	private static final InetAddress WIFI_AP_ADDRESS;
 
-	
 	private static final InetAddress WIFI_DIRECT_AP_ADDRESS;
 
 	static {

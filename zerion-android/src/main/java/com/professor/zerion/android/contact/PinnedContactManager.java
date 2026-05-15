@@ -64,11 +64,6 @@ public class PinnedContactManager {
 		prefs.edit().putStringSet(PREF_PINNED_CONTACTS, pinned).apply();
 	}
 
-	/**
-	 * Remove stale pin entries for contacts that no longer exist.
-	 * Call during contact list load to prevent orphaned pins from
-	 * consuming MAX_PINNED slots.
-	 */
 	public void pruneStaleEntries(Set<ContactId> validContacts) {
 		Set<String> pinned = new HashSet<>(prefs.getStringSet(
 				PREF_PINNED_CONTACTS, new HashSet<>()));

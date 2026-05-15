@@ -77,7 +77,6 @@ public class VaultManager {
 		this.lastActivityTime = System.currentTimeMillis();
 	}
 
-	
 	private void ensureHeaderLoaded() {
 		if (currentHeader == null && fileIO.exists(HEADER_FILE)) {
 			try {
@@ -95,7 +94,6 @@ public class VaultManager {
 		if (vaultExists()) {
 			throw new IllegalStateException("Vault already exists");
 		}
-
 
 		byte[] salt = argon2.generateSalt();
 		byte[] bioSalt = argon2.generateSalt(16);
@@ -867,7 +865,6 @@ public class VaultManager {
 			return Argon2.Argon2Params.getLowMemory();
 		}
 	}
-
 
 	private Argon2.Argon2Params extraPasswordParams() {
 		int algo = (currentHeader != null && !currentHeader.usesArgon2id())

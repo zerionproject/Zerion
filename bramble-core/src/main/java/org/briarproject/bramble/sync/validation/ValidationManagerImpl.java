@@ -326,7 +326,6 @@ class ValidationManagerImpl implements ValidationManager, Service,
 		}
 	}
 
-	
 	private void shareNextMessageAsync(Queue<MessageId> toShare) {
 		if (toShare.isEmpty()) return;
 		dbExecutor.execute(() -> shareNextMessage(toShare));

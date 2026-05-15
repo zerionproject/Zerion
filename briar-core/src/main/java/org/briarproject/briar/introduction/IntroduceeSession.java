@@ -235,7 +235,6 @@ class IntroduceeSession extends Session<IntroduceeState>
 			this.ephemeralPrivateKey = ephemeralPrivateKey;
 		}
 
-
 		private static Local clear(Local s,
 				@Nullable MessageId lastMessageId, long lastMessageTimestamp) {
 			return new Local(s.alice, lastMessageId, lastMessageTimestamp,
@@ -258,13 +257,11 @@ class IntroduceeSession extends Session<IntroduceeState>
 			this.author = author;
 		}
 
-
 		private Remote(Remote s, @Nullable MessageId lastMessageId) {
 			this(s.alice, s.author, lastMessageId, s.ephemeralPublicKey,
 					s.transportProperties, s.acceptTimestamp, s.macKey,
 					s.mlDsaPubKey);
 		}
-
 
 		private static Remote clear(Remote s,
 				@Nullable MessageId lastMessageId) {

@@ -319,7 +319,6 @@ abstract class AbstractProtocolEngine<S extends Session<?>>
 				.addPrivateGroup(txn, privateGroup, joinMessage, false);
 	}
 
-	
 	long getTimestampForVisibleMessage(Transaction txn, S s)
 			throws DbException {
 		ContactId c = clientHelper.getContactId(txn, s.getContactGroupId());
@@ -328,12 +327,10 @@ abstract class AbstractProtocolEngine<S extends Session<?>>
 		return max(conversationTimestamp, getSessionTimestamp(s) + 1);
 	}
 
-	
 	long getTimestampForInvisibleMessage(S s) {
 		return max(clock.currentTimeMillis(), getSessionTimestamp(s) + 1);
 	}
 
-	
 	private long getSessionTimestamp(S s) {
 		return max(s.getLocalTimestamp(), s.getInviteTimestamp());
 	}

@@ -20,7 +20,6 @@ import java.util.concurrent.Executor;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-/** Imported-stickers grid with tap-to-send and long-press-to-delete. */
 @NotNullByDefault
 class MyStickersAdapter extends RecyclerView.Adapter<MyStickersAdapter.VH> {
 

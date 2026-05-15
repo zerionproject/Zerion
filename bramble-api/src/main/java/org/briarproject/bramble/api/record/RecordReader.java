@@ -12,17 +12,14 @@ import javax.annotation.Nullable;
 @NotNullByDefault
 public interface RecordReader {
 
-	
 	Record readRecord() throws IOException;
 
-	
 	@Nullable
 	Record readRecord(RecordPredicate accept, RecordPredicate ignore)
 			throws IOException;
 
 	void close() throws IOException;
 
-	
 	interface RecordPredicate extends Predicate<Record> {
 	}
 }

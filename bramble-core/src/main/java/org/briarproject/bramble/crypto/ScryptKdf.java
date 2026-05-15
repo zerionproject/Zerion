@@ -54,7 +54,7 @@ class ScryptKdf implements PasswordBasedKdf {
 			return new SecretKey(SCrypt.generate(passwordBytes, salt, cost,
 					BLOCK_SIZE, PARALLELIZATION, SecretKey.LENGTH));
 		} finally {
-			// Zero password bytes after KDF
+
 			java.util.Arrays.fill(passwordBytes, (byte) 0);
 			java.util.Arrays.fill(byteBuffer.array(), (byte) 0);
 		}

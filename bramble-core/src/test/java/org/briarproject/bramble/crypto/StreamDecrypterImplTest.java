@@ -29,7 +29,7 @@ public class StreamDecrypterImplTest extends BrambleTestCase {
 	private final long streamNumber = 1234;
 
 	public StreamDecrypterImplTest() {
-		cipher = new TestAuthenticatedCipher(); // Null cipher
+		cipher = new TestAuthenticatedCipher();
 		streamHeaderKey = TestUtils.getSecretKey();
 		frameKey = TestUtils.getSecretKey();
 		streamHeaderNonce =
@@ -72,16 +72,13 @@ public class StreamDecrypterImplTest extends BrambleTestCase {
 		StreamDecrypterImpl s = new StreamDecrypterImpl(in, cipher,
 				streamNumber, streamHeaderKey);
 
-		// Read the first frame
 		byte[] buffer = new byte[MAX_PAYLOAD_LENGTH];
 		assertEquals(payloadLength, s.readFrame(buffer));
 		assertArrayStartsWith(payload, buffer, payloadLength);
 
-		// Read the second frame
 		assertEquals(payloadLength1, s.readFrame(buffer));
 		assertArrayStartsWith(payload1, buffer, payloadLength1);
 
-		// End of stream
 		assertEquals(-1, s.readFrame(buffer));
 	}
 
@@ -120,7 +117,6 @@ public class StreamDecrypterImplTest extends BrambleTestCase {
 		StreamDecrypterImpl s = new StreamDecrypterImpl(in, cipher,
 				streamNumber, streamHeaderKey);
 
-		// Try to read the first frame
 		byte[] buffer = new byte[MAX_PAYLOAD_LENGTH];
 		s.readFrame(buffer);
 	}
@@ -159,7 +155,6 @@ public class StreamDecrypterImplTest extends BrambleTestCase {
 		StreamDecrypterImpl s = new StreamDecrypterImpl(in, cipher,
 				streamNumber, streamHeaderKey);
 
-		// Try to read the first frame
 		byte[] buffer = new byte[MAX_PAYLOAD_LENGTH];
 		s.readFrame(buffer);
 	}
@@ -179,13 +174,12 @@ public class StreamDecrypterImplTest extends BrambleTestCase {
 		out.write(frameHeader);
 		out.write(payload);
 		out.write(new byte[paddingLength]);
-		out.write(new byte[MAC_LENGTH - 1]); // Chop off the last byte
+		out.write(new byte[MAC_LENGTH - 1]);
 
 		ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
 		StreamDecrypterImpl s = new StreamDecrypterImpl(in, cipher,
 				streamNumber, streamHeaderKey);
 
-		// Try to read the truncated frame
 		byte[] buffer = new byte[MAX_PAYLOAD_LENGTH];
 		s.readFrame(buffer);
 	}
@@ -194,7 +188,7 @@ public class StreamDecrypterImplTest extends BrambleTestCase {
 	public void testInvalidPayloadAndPaddingLengthThrowsException()
 			throws Exception {
 		byte[] frameHeader = new byte[FRAME_HEADER_LENGTH];
-		// The payload length plus padding length is invalid
+
 		int payloadLength = MAX_PAYLOAD_LENGTH - 1, paddingLength = 2;
 		ByteUtils.writeUint16(payloadLength, frameHeader, 0);
 		ByteUtils.writeUint16(paddingLength, frameHeader, INT_16_BYTES);
@@ -215,7 +209,6 @@ public class StreamDecrypterImplTest extends BrambleTestCase {
 		StreamDecrypterImpl s = new StreamDecrypterImpl(in, cipher,
 				streamNumber, streamHeaderKey);
 
-		// Try to read the invalid frame
 		byte[] buffer = new byte[MAX_PAYLOAD_LENGTH];
 		s.readFrame(buffer);
 	}
@@ -225,7 +218,7 @@ public class StreamDecrypterImplTest extends BrambleTestCase {
 		byte[] frameHeader = new byte[FRAME_HEADER_LENGTH];
 		FrameEncoder.encodeHeader(frameHeader, false, payloadLength,
 				paddingLength);
-		// Set one of the padding bytes non-zero
+
 		byte[] padding = new byte[paddingLength];
 		padding[paddingLength - 1] = 1;
 
@@ -244,7 +237,6 @@ public class StreamDecrypterImplTest extends BrambleTestCase {
 		StreamDecrypterImpl s = new StreamDecrypterImpl(in, cipher,
 				streamNumber, streamHeaderKey);
 
-		// Try to read the invalid frame
 		byte[] buffer = new byte[MAX_PAYLOAD_LENGTH];
 		s.readFrame(buffer);
 	}
@@ -265,22 +257,19 @@ public class StreamDecrypterImplTest extends BrambleTestCase {
 		out.write(payload);
 		out.write(new byte[paddingLength]);
 		out.write(new byte[MAC_LENGTH]);
-		// Add some data beyond the final frame
+
 		out.write(new byte[1024]);
 
 		ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
 		StreamDecrypterImpl s = new StreamDecrypterImpl(in, cipher,
 				streamNumber, streamHeaderKey);
 
-		// Read the first frame
 		byte[] buffer = new byte[MAX_PAYLOAD_LENGTH];
 		assertEquals(payloadLength, s.readFrame(buffer));
 		assertArrayStartsWith(payload, buffer, payloadLength);
 
-		// End of stream
 		assertEquals(-1, s.readFrame(buffer));
 
-		// Yup, definitely end of stream
 		assertEquals(-1, s.readFrame(buffer));
 	}
 

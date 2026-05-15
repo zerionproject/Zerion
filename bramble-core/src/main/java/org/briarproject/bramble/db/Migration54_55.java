@@ -7,7 +7,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import static org.briarproject.bramble.db.JdbcUtils.tryToClose;
 
-
 class Migration54_55 implements Migration<Connection> {
 	private final DatabaseTypes dbTypes;
 
@@ -33,7 +32,7 @@ class Migration54_55 implements Migration<Connection> {
 			s.execute(dbTypes.replaceTypes(
 					"CREATE TABLE pcsSessionState"
 							+ " (contactId INT NOT NULL,"
-							+ " direction SMALLINT NOT NULL," // 0=send, 1=receive
+							+ " direction SMALLINT NOT NULL,"
 							+ " chainKey _SECRET NOT NULL,"
 							+ " messageNumber INT NOT NULL,"
 							+ " previousChainLength INT NOT NULL,"
@@ -44,7 +43,7 @@ class Migration54_55 implements Migration<Connection> {
 			s.execute(dbTypes.replaceTypes(
 					"CREATE TABLE pcsSkippedKeys"
 							+ " (contactId INT NOT NULL,"
-							+ " direction SMALLINT NOT NULL," // 0=send, 1=receive
+							+ " direction SMALLINT NOT NULL,"
 							+ " messageNumber INT NOT NULL,"
 							+ " messageKey _SECRET NOT NULL,"
 							+ " timestamp BIGINT NOT NULL,"

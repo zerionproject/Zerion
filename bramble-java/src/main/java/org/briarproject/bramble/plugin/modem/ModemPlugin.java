@@ -162,19 +162,19 @@ class ModemPlugin implements DuplexPlugin, Modem.Callback {
 	@Override
 	public DuplexTransportConnection createConnection(TransportProperties p) {
 		if (getState() != ACTIVE) return null;
-		// Get the ISO 3166 code for the caller's country
+
 		String fromIso = callback.getLocalProperties().get("iso3166");
 		if (isNullOrEmpty(fromIso)) return null;
-		// Get the ISO 3166 code for the callee's country
+
 		String toIso = p.get("iso3166");
 		if (isNullOrEmpty(toIso)) return null;
-		// Get the callee's phone number
+
 		String number = p.get("number");
 		if (isNullOrEmpty(number)) return null;
-		// Convert the number into direct dialling form
+
 		number = CountryCodes.translate(number, fromIso, toIso);
 		if (number == null) return null;
-		// Dial the number
+
 		try {
 			if (!modem.dial(number)) return null;
 		} catch (IOException e) {

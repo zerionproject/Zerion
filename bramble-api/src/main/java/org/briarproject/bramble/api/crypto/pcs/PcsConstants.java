@@ -1,154 +1,104 @@
 package org.briarproject.bramble.api.crypto.pcs;
 
-
 public interface PcsConstants {
 
-	
 	int PCS_PROTOCOL_VERSION = 6;
 
-	
 	int MAX_SKIP = 250;
-
 
 	int MAX_TOTAL_SKIP = 4000;
 
-
 	long MAX_SKIP_AGE_MS = 7L * 24 * 60 * 60 * 1000;
-
 
 	long SKIP_PRUNE_INTERVAL_MS = 60L * 60 * 1000;
 
-
 	long SKIP_CLOCK_REWIND_THRESHOLD_MS = 60L * 60 * 1000;
 
-	
 	String PCS_ROOT_KDF_LABEL = "org.briarproject.zerion/PCS_ROOT_KDF";
 
-	
 	String PCS_CHAIN_KEY_LABEL = "org.briarproject.zerion/PCS_CHAIN_KEY";
 
-	
 	String PCS_MESSAGE_KEY_LABEL = "org.briarproject.zerion/PCS_MESSAGE_KEY";
 
-	
 	String PCS_DH_RATCHET_LABEL = "org.briarproject.zerion/PCS_DH_RATCHET";
 
-	
 	String PCS_DH_SECRET_LABEL = "org.briarproject.zerion/PCS_DH_SECRET";
 
-	
 	byte CHAIN_KEY_INPUT = 0x01;
 
-	
 	byte MESSAGE_KEY_INPUT = 0x02;
 
-	
 	int PCS_VERSION_SIZE = 1;
 
-	
 	int PCS_FLAGS_SIZE = 1;
 
-	
 	int MESSAGE_NUMBER_SIZE = 4;
 
-	
 	int PREVIOUS_CHAIN_LENGTH_SIZE = 4;
 
-	
 	int PCS_HEADER_MIN_SIZE = PCS_VERSION_SIZE + PCS_FLAGS_SIZE +
 			MESSAGE_NUMBER_SIZE + PREVIOUS_CHAIN_LENGTH_SIZE;
 
-	
 	int DH_PUBLIC_KEY_SIZE = 32;
 
-	
 	int PCS_HEADER_MAX_SIZE = PCS_HEADER_MIN_SIZE + DH_PUBLIC_KEY_SIZE;
 
-	
 	byte FLAG_PCS_ENABLED = 0x01;
 
-	
 	byte FLAG_DH_RATCHET = 0x02;
 
-	
 	byte FLAG_PQ_ENABLED = 0x04;
 
-	
 	byte FLAG_PQ_CHUNK = 0x08;
 
-	
 	boolean MODE3_ENABLED = true;
 
-	
 	int MLKEM_ENCAPSULATION_KEY_SIZE = 1184;
 
-	
 	int MLKEM_DECAPSULATION_KEY_SIZE = 2400;
 
-	
 	int MLKEM_CIPHERTEXT_SIZE = 1088;
 
-	
 	int MLKEM_SHARED_SECRET_SIZE = 32;
 
-	
 	int MLKEM_EK_SEED_SIZE = 32;
 
-	
 	int MLKEM_EK_HASH_SIZE = 32;
 
-	
 	int MLKEM_EK_SEED_TOTAL_SIZE = MLKEM_EK_SEED_SIZE + MLKEM_EK_HASH_SIZE;
 
-	
 	int MLKEM_EK_VECTOR_SIZE = MLKEM_ENCAPSULATION_KEY_SIZE - MLKEM_EK_SEED_SIZE;
 
-	
 	int PQ_CHUNK_SIZE = 256;
 
-	
 	int PQ_EK_VECTOR_CHUNKS = (MLKEM_EK_VECTOR_SIZE + PQ_CHUNK_SIZE - 1) / PQ_CHUNK_SIZE;
 
-	
 	int PQ_CIPHERTEXT_CHUNKS = (MLKEM_CIPHERTEXT_SIZE + PQ_CHUNK_SIZE - 1) / PQ_CHUNK_SIZE;
 
-	
 	int PQ_TOTAL_CHUNKS_PER_EPOCH = 1 + PQ_EK_VECTOR_CHUNKS + PQ_CIPHERTEXT_CHUNKS;
 
-	
 	int PQ_EPOCH_MESSAGE_THRESHOLD = 25;
 
-	
 	long PQ_EPOCH_TIME_THRESHOLD_MS = 24L * 60 * 60 * 1000;
 
-	
 	String PCS_PQ_ROOT_UPDATE_LABEL = "org.briarproject.zerion/PCS_PQ_ROOT_UPDATE";
 
-	
 	String PCS_HYBRID_ROOT_LABEL = "org.briarproject.zerion/PCS_HYBRID_ROOT";
 
-	
 	String PCS_HYBRID_CHAIN_LABEL = "org.briarproject.zerion/PCS_HYBRID_CHAIN";
 
-	
 	int PQ_EPOCH_SIZE = 4;
 
-	
 	int PQ_CHUNK_HEADER_SIZE = 4;
 
-	
 	byte PQ_CHUNK_TYPE_EK_SEED = 0x00;
 
-	
 	byte PQ_CHUNK_TYPE_EK_VEC = 0x01;
 
-	
 	byte PQ_CHUNK_TYPE_CT = 0x02;
 
-	
 	int PCS_MODE3_HEADER_MIN_SIZE = PCS_HEADER_MAX_SIZE + PQ_EPOCH_SIZE;
 
-	
 	int PCS_MODE3_HEADER_MAX_SIZE = PCS_MODE3_HEADER_MIN_SIZE +
 			PQ_CHUNK_HEADER_SIZE + PQ_CHUNK_SIZE;
 }

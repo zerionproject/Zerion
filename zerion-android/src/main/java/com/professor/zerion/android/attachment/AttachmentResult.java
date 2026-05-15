@@ -34,12 +34,10 @@ public class AttachmentResult {
 		return finished;
 	}
 
-	
 	public float getProgress() {
 		return progress;
 	}
 
-	
 	public boolean hasProgress() {
 		return !finished && progress > 0.0f && progress < 1.0f;
 	}

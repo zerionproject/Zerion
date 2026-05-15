@@ -1,6 +1,5 @@
 package org.briarproject.bramble.api;
 
-
 public class UnsupportedVersionException extends FormatException {
 
 	private final boolean tooOld;

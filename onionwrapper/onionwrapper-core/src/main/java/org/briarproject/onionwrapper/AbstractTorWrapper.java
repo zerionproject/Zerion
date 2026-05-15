@@ -123,21 +123,21 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 
 	@Override
 	public void start() throws IOException, InterruptedException {
-		if (!state.setStarting()) return; // Not in the appropriate state
+		if (!state.setStarting()) return;
 		try {
 			if (!torDirectory.exists()) {
 				if (!torDirectory.mkdirs()) {
 					throw new IOException("Could not create Tor directory");
 				}
 			}
-			// Install or update the assets if necessary
+
 			if (!assetsAreUpToDate()) installAssets();
-			// Start from the default config every time
+
 			extract(getConfigInputStream(), configFile);
 			if (cookieFile.exists() && !cookieFile.delete()) {
 				LOG.warning("Old auth cookie not deleted");
 			}
-			// Start a new Tor process
+
 			LOG.info("Starting Tor");
 			File torFile = getTorExecutableFile();
 			String torPath = torFile.getAbsolutePath();
@@ -153,43 +153,43 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 			} catch (SecurityException e) {
 				throw new IOException(e);
 			}
-			// Wait for the Tor process to start
+
 			waitForTorToStart(requireNonNull(torProcess));
-			// Wait for the auth cookie file to be created/updated
+
 			long start = System.currentTimeMillis();
 			while (cookieFile.length() < 32) {
 				if (System.currentTimeMillis() - start > COOKIE_TIMEOUT_MS) {
 					throw new IOException("Auth cookie not created");
 				}
-				//noinspection BusyWait
+
 				Thread.sleep(COOKIE_POLLING_INTERVAL_MS);
 			}
 			LOG.info("Auth cookie created");
-			// Open a control connection and authenticate using the cookie file
+
 			controlSocket = new Socket("127.0.0.1", torControlPort);
 			controlConnection = new TorControlConnection(controlSocket);
 			controlConnection.authenticate(read(cookieFile));
-			// Tell Tor to exit when the control connection is closed
+
 			controlConnection.takeOwnership();
 			controlConnection.resetConf(singletonList(OWNER));
-			// Register to receive events from the Tor process
+
 			controlConnection.setEventHandler(this);
 			controlConnection.setEvents(asList(EVENTS));
-			// Check whether Tor has already bootstrapped
+
 			String info = controlConnection.getInfo("status/bootstrap-phase");
 			if (info != null && info.contains("PROGRESS=")) {
 				int percentage = parseBootstrapPercentage(info);
 				if (percentage == 100) LOG.info("Tor has already bootstrapped");
 				state.setBootstrapPercentage(percentage);
 			}
-			// Check whether Tor has already built a circuit
+
 			info = controlConnection.getInfo("status/circuit-established");
 			if ("1".equals(info)) {
 				LOG.info("Tor has already built a circuit");
 				state.setCircuitBuilt(true);
 			}
 		} catch (IOException e) {
-			// Clean up
+
 			if (controlSocket != null) {
 				tryToClose(controlSocket, LOG, WARNING);
 				controlSocket = null;
@@ -211,8 +211,7 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 	}
 
 	private void installAssets() throws IOException {
-		// The done file may already exist from a previous installation
-		//noinspection ResultOfMethodCallIgnored
+
 		doneFile.delete();
 		installTorExecutable();
 		installLyrebirdExecutable();
@@ -298,16 +297,15 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 	}
 
 	protected void waitForTorToStart(Process torProcess) throws InterruptedException, IOException {
-		// Wait for the control port to be opened, then continue to read Tor's
-		// stdout and stderr in a background thread until it exits.
+
 		BlockingQueue<Boolean> success = new ArrayBlockingQueue<>(1);
 		ioExecutor.execute(() -> {
 			boolean started = false;
-			// Read the process's stdout (and redirected stderr)
+
 			Scanner stdout = new Scanner(torProcess.getInputStream());
-			// Log the first line of stdout (contains Tor and library versions)
+
 			if (stdout.hasNextLine()) LOG.info(stdout.nextLine());
-			// Startup has succeeded when the control port is open
+
 			while (stdout.hasNextLine()) {
 				String line = stdout.nextLine();
 				if (!started && line.contains("Opened Control listener")) {
@@ -316,9 +314,9 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 				}
 			}
 			stdout.close();
-			// If the control port wasn't opened, startup has failed
+
 			if (!started) success.add(false);
-			// Wait for the process to exit
+
 			try {
 				int exit = torProcess.waitFor();
 				if (LOG.isLoggable(INFO)) LOG.info("Tor exited with value " + exit);
@@ -327,7 +325,7 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 				Thread.currentThread().interrupt();
 			}
 		});
-		// Wait for the startup result
+
 		if (!success.take()) throw new IOException();
 	}
 
@@ -335,7 +333,7 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 	public HiddenServiceProperties publishHiddenService(int localPort,
 			int remotePort, @Nullable String privKey) throws IOException {
 		Map<Integer, String> portLines = singletonMap(remotePort, "127.0.0.1:" + localPort);
-		// Use the control connection to set up the hidden service
+
 		Map<String, String> response;
 		if (privKey == null) {
 			response = getControlConnection().addOnion("NEW:ED25519-V3", portLines, null);
@@ -360,13 +358,13 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 
 	@Override
 	public void enableNetwork(boolean enable) throws IOException {
-		if (!state.enableNetwork(enable)) return; // Unchanged
+		if (!state.enableNetwork(enable)) return;
 		getControlConnection().setConf("DisableNetwork", enable ? "0" : "1");
 	}
 
 	@Override
 	public void enableBridges(List<String> bridges) throws IOException {
-		if (!state.setBridges(bridges)) return; // Unchanged
+		if (!state.setBridges(bridges)) return;
 		if (bridges.isEmpty()) {
 			throw new IllegalArgumentException("Bridges can't be empty.");
 		}
@@ -378,13 +376,13 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 
 	@Override
 	public void disableBridges() throws IOException {
-		if (!state.setBridges(emptyList())) return; // Unchanged
+		if (!state.setBridges(emptyList())) return;
 		getControlConnection().setConf("UseBridges", "0");
 	}
 
 	@Override
 	public void stop() throws IOException, InterruptedException {
-		if (!state.setStopping()) return; // Not in the appropriate state
+		if (!state.setStopping()) return;
 		try {
 			if (controlConnection != null) {
 				controlConnection.shutdownTor("TERM");
@@ -406,8 +404,7 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 
 	@Override
 	public void circuitStatus(String status, String id, String path) {
-		// In case of races between receiving CIRCUIT_ESTABLISHED and setting
-		// DisableNetwork, set our circuitBuilt flag if not already set
+
 		if (status.equals("BUILT") && state.setCircuitBuilt(true)) {
 			LOG.info("Circuit built");
 		}
@@ -470,9 +467,7 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 		} else if (msg.startsWith("CIRCUIT_NOT_ESTABLISHED")) {
 			if (state.setCircuitBuilt(false)) {
 				LOG.info("Circuit not built");
-				// TODO: Disable and re-enable network to prompt Tor to rebuild
-				//  its guard/bridge connections? This will also close any
-				//  established circuits, which might still be functioning
+
 			}
 		}
 	}
@@ -483,7 +478,7 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 			try {
 				return Integer.parseInt(matcher.group(1));
 			} catch (NumberFormatException e) {
-				// Fall through
+
 			}
 		}
 		if (LOG.isLoggable(WARNING)) {
@@ -530,20 +525,20 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 	@Override
 	public void controlConnectionClosed() {
 		if (state.isTorRunning()) {
-			// TODO: Restart the Tor process
+
 			LOG.warning("Control connection closed");
 		}
 	}
 
 	@Override
 	public void enableConnectionPadding(boolean enable) throws IOException {
-		if (!state.enableConnectionPadding(enable)) return; // Unchanged
+		if (!state.enableConnectionPadding(enable)) return;
 		getControlConnection().setConf("ConnectionPadding", enable ? "1" : "0");
 	}
 
 	@Override
 	public void enableIpv6(boolean enable) throws IOException {
-		if (!state.enableIpv6(enable)) return; // Unchanged
+		if (!state.enableIpv6(enable)) return;
 		getControlConnection().setConf("ClientUseIPv4", enable ? "0" : "1");
 		getControlConnection().setConf("ClientUseIPv6", enable ? "1" : "0");
 	}
@@ -611,20 +606,14 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 			if (newState != state) {
 				state = newState;
 				if (observer != null) {
-					// Notify the observer on the event executor
+
 					eventExecutor.execute(() -> observer.onState(newState));
 				}
 			}
 		}
 
-		/**
-		 * If the current process state is {@link ProcessState#NOT_STARTED NOT_STARTED} or
-		 * {@link ProcessState#STOPPED STOPPED}, sets the process state to
-		 * {@link ProcessState#STARTING STARTING} and returns true. Otherwise returns false.
-		 */
 		private synchronized boolean setStarting() {
-			// It's appropriate to call start() if the wrapper has never been started,
-			// or has been started and then stopped
+
 			if (processState != ProcessState.NOT_STARTED && processState != ProcessState.STOPPED) {
 				return false;
 			}
@@ -634,17 +623,17 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 		}
 
 		private synchronized void setStarted() {
-			// We should always be in the STARTING state when this is called
+
 			if (processState != ProcessState.STARTING) throw new IllegalStateException();
 			processState = ProcessState.STARTED;
 			updateState();
 		}
 
 		private synchronized void setStartupFailed() {
-			// We should always be in the STARTING state when this is called
+
 			if (processState != ProcessState.STARTING) throw new IllegalStateException();
 			processState = ProcessState.STOPPED;
-			// Reset all state related to the failed attempt
+
 			networkInitialised = false;
 			networkEnabled = false;
 			paddingEnabled = false;
@@ -656,22 +645,13 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 			updateState();
 		}
 
-		/**
-		 * Returns true if the current process state is {@link ProcessState#STARTED STARTED}.
-		 */
 		@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 		private synchronized boolean isTorRunning() {
 			return processState == ProcessState.STARTED;
 		}
 
-		/**
-		 * If the current process state is {@link ProcessState#STARTING STARTING} or
-		 * {@link ProcessState#STARTED STARTED}, changes the process state to
-		 * {@link ProcessState#STOPPING STOPPING} and returns true. Otherwise returns false.
-		 */
 		private synchronized boolean setStopping() {
-			// It's appropriate to call stop() if start() has returned without throwing
-			// an exception
+
 			if (processState != ProcessState.STARTED) return false;
 			processState = ProcessState.STOPPING;
 			updateState();
@@ -679,10 +659,10 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 		}
 
 		private synchronized void setStopped() {
-			// We should always be in the STOPPING state when this is called
+
 			if (processState != ProcessState.STOPPING) throw new IllegalStateException();
 			processState = ProcessState.STOPPED;
-			// Reset all state related to the process that has stopped
+
 			networkInitialised = false;
 			networkEnabled = false;
 			paddingEnabled = false;
@@ -698,27 +678,19 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 			if (percentage == bootstrapPercentage) return;
 			bootstrapPercentage = percentage;
 			if (observer != null) {
-				// Notify the observer on the event executor
+
 				eventExecutor.execute(() -> observer.onBootstrapPercentage(percentage));
 			}
 			updateState();
 		}
 
-		/**
-		 * Sets the `circuitBuilt` flag and returns true if the flag has
-		 * changed.
-		 */
 		private synchronized boolean setCircuitBuilt(boolean built) {
-			if (built == circuitBuilt) return false; // Unchanged
+			if (built == circuitBuilt) return false;
 			circuitBuilt = built;
 			updateState();
-			return true; // Changed
+			return true;
 		}
 
-		/**
-		 * Sets the `networkEnabled` flag and returns true if the flag has
-		 * changed.
-		 */
 		private synchronized boolean enableNetwork(boolean enable) {
 			boolean wasInitialised = networkInitialised;
 			boolean wasEnabled = networkEnabled;
@@ -731,36 +703,23 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 			return enable != wasEnabled;
 		}
 
-		/**
-		 * Sets the `paddingEnabled` flag and returns true if the flag has
-		 * changed. Doesn't affect getState().
-		 */
 		private synchronized boolean enableConnectionPadding(boolean enable) {
-			if (enable == paddingEnabled) return false; // Unchanged
+			if (enable == paddingEnabled) return false;
 			paddingEnabled = enable;
-			return true; // Changed
+			return true;
 		}
 
-		/**
-		 * Sets the `ipv6Enabled` flag and returns true if the flag has
-		 * changed. Doesn't affect getState().
-		 */
 		private synchronized boolean enableIpv6(boolean enable) {
-			if (enable == ipv6Enabled) return false; // Unchanged
+			if (enable == ipv6Enabled) return false;
 			ipv6Enabled = enable;
-			return true; // Changed
+			return true;
 		}
 
-		/**
-		 * Sets the list of bridges being used and returns true if the
-		 * list has changed. The list is empty if bridges are disabled.
-		 * Doesn't affect getState().
-		 */
 		@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 		private synchronized boolean setBridges(List<String> bridges) {
-			if (this.bridges.equals(bridges)) return false; // Unchanged
+			if (this.bridges.equals(bridges)) return false;
 			this.bridges = bridges;
-			return true; // Changed
+			return true;
 		}
 
 		private synchronized TorState getState() {
@@ -803,14 +762,14 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 
 		private synchronized void onHsDescriptorUploaded(String onion) {
 			if (observer != null) {
-				// Notify the observer on the event executor
+
 				eventExecutor.execute(() -> observer.onHsDescriptorUpload(onion));
 			}
 		}
 
 		private synchronized void onClockSkewDetected(long skewSeconds) {
 			if (observer != null) {
-				// Notify the observer on the event executor
+
 				eventExecutor.execute(() -> observer.onClockSkewDetected(skewSeconds));
 			}
 		}

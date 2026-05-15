@@ -114,14 +114,11 @@ public class TransportKeyAgreementManagerImplTest extends BrambleMockTestCase {
 	private final long localTimestamp = localKeyMessage.getTimestamp();
 	private final long remoteTimestamp = remoteKeyMessage.getTimestamp();
 
-	// These query and metadata dictionaries are handled by the manager without
-	// inspecting their contents, so we can use empty dictionaries for testing
 	private final BdfDictionary sessionQuery = new BdfDictionary();
 	private final BdfDictionary sessionMeta = new BdfDictionary();
 	private final BdfDictionary localKeyMeta = new BdfDictionary();
 	private final BdfDictionary localActivateMeta = new BdfDictionary();
 
-	// The manager doesn't use the incoming message body, so it can be empty
 	private final BdfList remoteMessageBody = new BdfList();
 
 	private final BdfDictionary remoteKeyMeta = BdfDictionary.of(
@@ -167,11 +164,11 @@ public class TransportKeyAgreementManagerImplTest extends BrambleMockTestCase {
 		context.checking(new Expectations() {{
 			oneOf(db).getContacts(txn);
 			will(returnValue(singletonList(contact)));
-			// The local group doesn't exist so we need to create contact groups
+
 			oneOf(db).containsGroup(txn, localGroup.getId());
 			will(returnValue(false));
 			oneOf(db).addGroup(txn, localGroup);
-			// Create the contact group and set it up
+
 			oneOf(contactGroupFactory).createContactGroup(CLIENT_ID,
 					MAJOR_VERSION, contact);
 			will(returnValue(contactGroup));
@@ -183,7 +180,7 @@ public class TransportKeyAgreementManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(VISIBLE));
 			oneOf(db).setGroupVisibility(txn, contact.getId(),
 					contactGroup.getId(), VISIBLE);
-			// We already have keys for both transports
+
 			oneOf(db).getTransportsWithKeys(txn);
 			will(returnValue(singletonMap(contact.getId(),
 					asList(simplexTransportId, duplexTransportId))));
@@ -200,10 +197,10 @@ public class TransportKeyAgreementManagerImplTest extends BrambleMockTestCase {
 		context.checking(new Expectations() {{
 			oneOf(db).getContacts(txn);
 			will(returnValue(singletonList(contact)));
-			// The local group exists so we don't need to create contact groups
+
 			oneOf(db).containsGroup(txn, localGroup.getId());
 			will(returnValue(true));
-			// We already have keys for both transports
+
 			oneOf(db).getTransportsWithKeys(txn);
 			will(returnValue(singletonMap(contact.getId(),
 					asList(simplexTransportId, duplexTransportId))));
@@ -219,26 +216,25 @@ public class TransportKeyAgreementManagerImplTest extends BrambleMockTestCase {
 		context.checking(new Expectations() {{
 			oneOf(db).getContacts(txn);
 			will(returnValue(singletonList(contact)));
-			// The local group exists so we don't need to create contact groups
+
 			oneOf(db).containsGroup(txn, localGroup.getId());
 			will(returnValue(true));
-			// We need keys for the simplex transport
+
 			oneOf(db).getTransportsWithKeys(txn);
 			will(returnValue(singletonMap(contact.getId(),
 					singletonList(duplexTransportId))));
-			// Get the contact group ID
+
 			oneOf(contactGroupFactory)
 					.createContactGroup(CLIENT_ID, MAJOR_VERSION, contact);
 			will(returnValue(contactGroup));
 		}});
 
-		// Check whether a session exists - it doesn't
 		expectSessionDoesNotExist(txn);
-		// Generate the local key pair
+
 		expectGenerateLocalKeyPair();
-		// Send a key message
+
 		expectSendKeyMessage(txn);
-		// Save the session
+
 		expectCreateStorageMessage(txn);
 		AtomicReference<Session> savedSession = expectSaveSession(txn);
 
@@ -270,19 +266,18 @@ public class TransportKeyAgreementManagerImplTest extends BrambleMockTestCase {
 		Session loadedSession = new Session(AWAIT_KEY,
 				localKeyMessage.getId(), localKeyPair, localTimestamp, null);
 
-		// Check whether a session exists - it does
 		expectLoadSession(txn, loadedSession);
-		// Load the contact ID
+
 		expectLoadContactId(txn);
-		// Check whether we already have keys - we don't
+
 		expectKeysExist(txn, false);
-		// Parse the remote public key
+
 		expectParseRemotePublicKey();
-		// Derive and store the transport keys
+
 		expectDeriveAndStoreTransportKeys(txn);
-		// Send an activate message
+
 		expectSendActivateMessage(txn);
-		// Save the session
+
 		AtomicReference<Session> savedSession = expectSaveSession(txn);
 
 		assertEquals(ACCEPT_DO_NOT_SHARE, manager.incomingMessage(txn,
@@ -301,23 +296,22 @@ public class TransportKeyAgreementManagerImplTest extends BrambleMockTestCase {
 			throws Exception {
 		Transaction txn = new Transaction(null, false);
 
-		// Check whether a session exists - it doesn't
 		expectSessionDoesNotExist(txn);
-		// Load the contact ID
+
 		expectLoadContactId(txn);
-		// Check whether we already have keys - we do
+
 		expectKeysExist(txn, true);
-		// Generate the local key pair
+
 		expectGenerateLocalKeyPair();
-		// Parse the remote public key
+
 		expectParseRemotePublicKey();
-		// Send a key message
+
 		expectSendKeyMessage(txn);
-		// Derive and store the transport keys
+
 		expectDeriveAndStoreTransportKeys(txn);
-		// Send an activate message
+
 		expectSendActivateMessage(txn);
-		// Save the session
+
 		expectCreateStorageMessage(txn);
 		AtomicReference<Session> savedSession = expectSaveSession(txn);
 
@@ -350,11 +344,10 @@ public class TransportKeyAgreementManagerImplTest extends BrambleMockTestCase {
 			throws Exception {
 		Transaction txn = new Transaction(null, false);
 
-		// Check whether a session exists - it does
 		expectLoadSession(txn, loadedSession);
-		// Load the contact ID
+
 		expectLoadContactId(txn);
-		// Check whether we already have keys - we don't
+
 		expectKeysExist(txn, false);
 
 		assertEquals(REJECT, manager.incomingMessage(txn,
@@ -368,16 +361,13 @@ public class TransportKeyAgreementManagerImplTest extends BrambleMockTestCase {
 		Session loadedSession = new Session(AWAIT_ACTIVATE,
 				localActivateMessage.getId(), null, null, keySetId);
 
-		// Check whether a session exists - it does
 		expectLoadSession(txn, loadedSession);
 
-		// Activate the transport keys
 		context.checking(new Expectations() {{
 			oneOf(keyManager).activateKeys(txn,
 					singletonMap(simplexTransportId, keySetId));
 		}});
 
-		// Save the session
 		AtomicReference<Session> savedSession = expectSaveSession(txn);
 
 		assertEquals(ACCEPT_DO_NOT_SHARE, manager.incomingMessage(txn,
@@ -395,7 +385,6 @@ public class TransportKeyAgreementManagerImplTest extends BrambleMockTestCase {
 	public void testRejectsActivateMessageWithNoSession() throws Exception {
 		Transaction txn = new Transaction(null, false);
 
-		// Check whether a session exists - it doesn't
 		expectSessionDoesNotExist(txn);
 
 		assertEquals(REJECT, manager.incomingMessage(txn,
@@ -420,7 +409,6 @@ public class TransportKeyAgreementManagerImplTest extends BrambleMockTestCase {
 			Session loadedSession) throws Exception {
 		Transaction txn = new Transaction(null, false);
 
-		// Check whether a session exists - it does
 		expectLoadSession(txn, loadedSession);
 
 		assertEquals(REJECT, manager.incomingMessage(txn,

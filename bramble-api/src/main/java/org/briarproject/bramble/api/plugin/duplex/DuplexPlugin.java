@@ -12,31 +12,24 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.Nullable;
 
-
 @NotNullByDefault
 public interface DuplexPlugin extends Plugin {
 
-	
 	@Wakeful
 	@Nullable
 	DuplexTransportConnection createConnection(TransportProperties p);
 
-	
 	boolean supportsKeyAgreement();
 
-	
 	@Nullable
 	KeyAgreementListener createKeyAgreementListener(byte[] localCommitment);
 
-	
 	@Nullable
 	DuplexTransportConnection createKeyAgreementConnection(
 			byte[] remoteCommitment, BdfList descriptor);
 
-	
 	boolean supportsRendezvous();
 
-	
 	@Nullable
 	RendezvousEndpoint createRendezvousEndpoint(KeyMaterialSource k,
 			boolean alice, ConnectionHandler incoming);

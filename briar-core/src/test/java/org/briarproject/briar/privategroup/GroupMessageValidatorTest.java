@@ -85,8 +85,6 @@ public class GroupMessageValidatorTest extends ValidatorTestCase {
 			new GroupMessageValidator(privateGroupFactory, clientHelper,
 					metadataEncoder, clock, groupInvitationFactory, crypto);
 
-	// JOIN message
-
 	@Test(expected = FormatException.class)
 	public void testRejectsTooShortJoinMessage() throws Exception {
 		BdfList body = BdfList.of(JOIN.getInt(), memberList, invite);
@@ -429,8 +427,6 @@ public class GroupMessageValidatorTest extends ValidatorTestCase {
 			}
 		}});
 	}
-
-	// POST Message
 
 	@Test(expected = FormatException.class)
 	public void testRejectsTooShortPost() throws Exception {

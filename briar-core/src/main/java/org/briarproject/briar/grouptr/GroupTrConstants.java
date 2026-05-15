@@ -13,8 +13,17 @@ interface GroupTrConstants {
 	String SIGNING_LABEL_GROUP_EPOCH_COMMIT =
 			"org.briarproject.zerion/GROUP_EPOCH_COMMIT";
 
+	String SIGNING_LABEL_GROUPTR_INVITE_OFFER =
+			"org.briarproject.zerion/GROUPTR_INVITE_OFFER";
+	String SIGNING_LABEL_GROUPTR_INVITE_ACCEPT =
+			"org.briarproject.zerion/GROUPTR_INVITE_ACCEPT";
+	String SIGNING_LABEL_GROUPTR_INVITE_DECLINE =
+			"org.briarproject.zerion/GROUPTR_INVITE_DECLINE";
+
 	String SETTINGS_NS_PREFIX = "grouptr.g.";
 	String SETTINGS_NS_INDEX = "grouptr.index";
+	String SETTINGS_NS_LOCAL_PREFIX = "grouptr.local.";
+	String S_SCREENSHOT_BLOCKED = "screenshotBlocked";
 
 	String S_NAME = "name";
 	String S_SALT = "salt";
@@ -26,6 +35,10 @@ interface GroupTrConstants {
 	String S_MEMBERS = "members";
 	String S_DEFAULT_TTL = "defaultAutoDeleteTimerMs";
 	String S_STEALTH_NAME = "stealthName";
+	String S_REMOVED = "removed";
+
+	String SETTINGS_NS_INVITES_SENT = "grouptr.invites_sent";
+	String SETTINGS_NS_OFFERS_PENDING = "grouptr.offers_pending";
 
 	String S_GROUP_IDS = "groupIds";
 

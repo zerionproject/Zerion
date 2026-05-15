@@ -14,13 +14,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.concurrent.Executor;
 
-/**
- * One-shot task that takes pre-encoded sticker PNG bytes and ships them
- * via the existing inline-attachment write path with the sticker
- * contentType ("image/png; profile=sticker"). The contentType parameter
- * is what tells iOS / a future Android version that this attachment is
- * a sticker; older clients see it as a regular small photo.
- */
 @NotNullByDefault
 public final class StickerSendTask {
 

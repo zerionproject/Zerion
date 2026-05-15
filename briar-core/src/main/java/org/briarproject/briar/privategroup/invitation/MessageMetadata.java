@@ -59,7 +59,6 @@ class MessageMetadata {
 		return available;
 	}
 
-	
 	public boolean wasAccepted() {
 		return accepted;
 	}

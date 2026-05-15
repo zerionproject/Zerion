@@ -30,14 +30,7 @@ public class MessageTreeImplTest {
 		for (int i = 0; i < nodes.length; i++) {
 			nodes[i] = new TestNode();
 		}
-		/*
-		Construct the following tree:
-		4
-		1 ->
-		   0  ->
-		       2
-		   3
-		 */
+
 		nodes[0].setParentId(nodes[1].getId());
 		nodes[2].setParentId(nodes[0].getId());
 		nodes[3].setParentId(nodes[1].getId());
@@ -47,7 +40,7 @@ public class MessageTreeImplTest {
 		nodes[0].setTimestamp(timestamp - 3);
 		nodes[3].setTimestamp(timestamp - 2);
 		nodes[2].setTimestamp(timestamp - 1);
-		// add all nodes except the last one
+
 		tree.add(Arrays.asList(Arrays.copyOf(nodes, nodes.length - 1)));
 		tree.add(Collections.singletonList(nodes[nodes.length - 1]));
 		TestNode[] sortedNodes =

@@ -4,7 +4,6 @@ import com.professor.zerion.android.view.ZerionRecyclerViewScrollListener;
 import com.professor.zerion.android.view.UnreadMessageButton;
 import org.briarproject.nullsafety.NotNullByDefault;
 
-
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import static androidx.recyclerview.widget.RecyclerView.NO_POSITION;
@@ -12,7 +11,6 @@ import static java.util.Objects.requireNonNull;
 @NotNullByDefault
 class ThreadScrollListener<I extends ThreadItem>
 		extends ZerionRecyclerViewScrollListener<ThreadItemAdapter<I>, I> {
-
 
 	private final ThreadListViewModel<I> viewModel;
 	private final UnreadMessageButton upButton, downButton;

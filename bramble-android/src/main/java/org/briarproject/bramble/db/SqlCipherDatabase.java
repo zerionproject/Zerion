@@ -114,14 +114,6 @@ class SqlCipherDatabase extends JdbcDatabase {
 		return reopen;
 	}
 
-	/**
-	 * Checks whether the database file has a valid schema AND contains at
-	 * least one identity row. A database with correct schema but no identity
-	 * is unusable (e.g. created by a previous failed startup) and must be
-	 * treated as invalid to avoid an infinite error loop.
-	 * <p>
-	 * Package-private for testing.
-	 */
 	static boolean hasValidSchema(File dbFile, SecretKey key) {
 		String hexKey = StringUtils.toHexString(key.getBytes());
 		SQLiteDatabase db = null;
@@ -238,12 +230,6 @@ class SqlCipherDatabase extends JdbcDatabase {
 		throw new SQLException("Failed to open database");
 	}
 
-	/**
-	 * Called by JdbcDatabase.open() when the database was dirty or migrated.
-	 * Defers the actual VACUUM to avoid lock contention during startup.
-	 * The deferred VACUUM runs at the end of openInternal() while still
-	 * holding DB_OPEN_LOCK with an empty connection pool.
-	 */
 	@Override
 	protected void compactAndClose() throws DbException {
 		needsCompaction = true;

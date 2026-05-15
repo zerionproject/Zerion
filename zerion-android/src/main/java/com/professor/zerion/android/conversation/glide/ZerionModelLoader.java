@@ -1,6 +1,5 @@
 package com.professor.zerion.android.conversation.glide;
 
-
 import com.bumptech.glide.load.Options;
 import com.bumptech.glide.load.model.ModelLoader;
 import com.bumptech.glide.signature.ObjectKey;

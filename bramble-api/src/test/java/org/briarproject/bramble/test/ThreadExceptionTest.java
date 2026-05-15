@@ -9,7 +9,7 @@ public class ThreadExceptionTest extends BrambleTestCase {
 
 	@Test(expected = AssertionError.class)
 	public void testAssertionErrorMakesTestCaseFail() {
-		// This is what BrambleTestCase does, too:
+
 		fail();
 	}
 

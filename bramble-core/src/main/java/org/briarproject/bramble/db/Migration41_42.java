@@ -48,8 +48,8 @@ class Migration41_42 implements Migration<Connection> {
 					+ " (transportId _STRING NOT NULL,"
 					+ " keySetId _COUNTER,"
 					+ " timePeriod BIGINT NOT NULL,"
-					+ " contactId INT," // Null if contact is pending
-					+ " pendingContactId _HASH," // Null if not pending
+					+ " contactId INT,"
+					+ " pendingContactId _HASH,"
 					+ " rootKey _SECRET NOT NULL,"
 					+ " alice BOOLEAN NOT NULL,"
 					+ " tagKey _SECRET NOT NULL,"

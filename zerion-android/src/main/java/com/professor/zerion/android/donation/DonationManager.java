@@ -12,7 +12,6 @@ import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-
 @Singleton
 @NotNullByDefault
 public class DonationManager {
@@ -33,7 +32,6 @@ public class DonationManager {
 		this.prefs = prefs;
 		this.random = new Random();
 	}
-
 
 	public boolean shouldShowDonationDialog() {
 		long now = System.currentTimeMillis();
@@ -66,7 +64,6 @@ public class DonationManager {
 		return shouldShow;
 	}
 
-	
 	public void onDialogShown() {
 		long now = System.currentTimeMillis();
 		int currentDay = (int) TimeUnit.MILLISECONDS.toDays(now);
@@ -79,12 +76,10 @@ public class DonationManager {
 				.apply();
 	}
 
-	
 	public int getPromptCount() {
 		return prefs.getInt(PREF_DONATION_PROMPT_COUNT, 0);
 	}
 
-	
 	public void resetForTesting() {
 		prefs.edit()
 				.remove(PREF_LAST_DONATION_PROMPT)

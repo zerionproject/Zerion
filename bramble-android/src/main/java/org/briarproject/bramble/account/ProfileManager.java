@@ -178,7 +178,7 @@ public class ProfileManager {
 			if (children != null) {
 				for (File c : children) secureWipeRecursive(c);
 			}
-			//noinspection ResultOfMethodCallIgnored
+
 			f.delete();
 			return;
 		}
@@ -200,13 +200,13 @@ public class ProfileManager {
 			}
 		} catch (java.io.IOException ignored) {
 		}
-		//noinspection ResultOfMethodCallIgnored
+
 		f.delete();
 	}
 
 	private File ensureDir(File f) {
 		if (!f.exists()) {
-			//noinspection ResultOfMethodCallIgnored
+
 			f.mkdirs();
 		}
 		return f;
@@ -227,13 +227,13 @@ public class ProfileManager {
 				|| legacyDbHasContents(legacyTor);
 
 		if (!haveLegacyData) {
-			//noinspection ResultOfMethodCallIgnored
+
 			profilesRoot.mkdirs();
 			return;
 		}
 
 		File targetRoot = new File(profilesRoot, DEFAULT_PROFILE_ID);
-		//noinspection ResultOfMethodCallIgnored
+
 		targetRoot.mkdirs();
 
 		moveIfPresent(legacyDb, new File(targetRoot, DB_SUBDIR));
@@ -256,14 +256,14 @@ public class ProfileManager {
 
 	private void copyTreeBestEffort(File src, File dst) {
 		if (src.isDirectory()) {
-			//noinspection ResultOfMethodCallIgnored
+
 			dst.mkdirs();
 			File[] children = src.listFiles();
 			if (children == null) return;
 			for (File child : children) {
 				copyTreeBestEffort(child, new File(dst, child.getName()));
 			}
-			//noinspection ResultOfMethodCallIgnored
+
 			src.delete();
 		} else {
 			try (java.io.FileInputStream in = new java.io.FileInputStream(src);
@@ -273,7 +273,7 @@ public class ProfileManager {
 				int n;
 				while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
 				out.getFD().sync();
-				//noinspection ResultOfMethodCallIgnored
+
 				src.delete();
 			} catch (java.io.IOException ignored) {
 			}

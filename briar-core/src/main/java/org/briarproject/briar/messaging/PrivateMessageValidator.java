@@ -179,6 +179,17 @@ class PrivateMessageValidator implements MessageValidator {
 				} else if (messageType == GROUP_MEMBER_LIST_SNAPSHOT) {
 					if (!reader.eof()) throw new FormatException();
 					context = validateGroupMemberListSnapshot(m, list);
+				} else if (messageType == MessageTypes.GROUPTR_INVITE_OFFER) {
+					if (!reader.eof()) throw new FormatException();
+					context = validateGrouptrInviteOffer(m, list);
+				} else if (messageType == MessageTypes.GROUPTR_INVITE_ACCEPT) {
+					if (!reader.eof()) throw new FormatException();
+					context = validateGrouptrInviteResponse(m, list,
+							MessageTypes.GROUPTR_INVITE_ACCEPT);
+				} else if (messageType == MessageTypes.GROUPTR_INVITE_DECLINE) {
+					if (!reader.eof()) throw new FormatException();
+					context = validateGrouptrInviteResponse(m, list,
+							MessageTypes.GROUPTR_INVITE_DECLINE);
 				} else {
 					throw new InvalidMessageException();
 				}
@@ -625,6 +636,58 @@ class PrivateMessageValidator implements MessageValidator {
 		meta.put(MSG_KEY_GROUP_PQ_SEED, pqSeed);
 		meta.put(MSG_KEY_GROUP_RECORD_SIG, sig);
 		meta.put("groupEpochCommitSignedInput", signedInput);
+		return new BdfMessageContext(meta);
+	}
+
+	private BdfMessageContext validateGrouptrInviteOffer(Message m,
+			BdfList body) throws FormatException {
+		checkSize(body, 8);
+		byte[] grouptrGroupId = body.getRaw(1);
+		checkLength(grouptrGroupId, 32);
+		String groupName = body.getString(2);
+		checkLength(groupName, 0, 256);
+		byte[] salt = body.getRaw(3);
+		checkLength(salt, 32);
+		String creatorName = body.getString(4);
+		checkLength(creatorName, 1, 256);
+		byte[] creatorPubKey = body.getRaw(5);
+		checkLength(creatorPubKey, 32);
+		long timestamp = body.getLong(6);
+		byte[] sig = body.getRaw(7);
+		checkLength(sig, 1, 4096);
+		BdfDictionary meta = new BdfDictionary();
+		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
+		meta.put(MSG_KEY_LOCAL, false);
+		meta.put(MSG_KEY_READ, false);
+		meta.put(MSG_KEY_MSG_TYPE,
+				(long) MessageTypes.GROUPTR_INVITE_OFFER);
+		meta.put(MSG_KEY_GROUP_ID, grouptrGroupId);
+		meta.put(MessagingConstants.MSG_KEY_GTR_INVITE_NAME, groupName);
+		meta.put(MessagingConstants.MSG_KEY_GTR_INVITE_SALT, salt);
+		meta.put(MessagingConstants.MSG_KEY_GTR_INVITE_CREATOR_NAME,
+				creatorName);
+		meta.put(MessagingConstants.MSG_KEY_GTR_INVITE_CREATOR_PUB,
+				creatorPubKey);
+		meta.put("gtrInviteTimestamp", timestamp);
+		meta.put(MSG_KEY_GROUP_RECORD_SIG, sig);
+		return new BdfMessageContext(meta);
+	}
+
+	private BdfMessageContext validateGrouptrInviteResponse(Message m,
+			BdfList body, int kind) throws FormatException {
+		checkSize(body, 4);
+		byte[] grouptrGroupId = body.getRaw(1);
+		checkLength(grouptrGroupId, 32);
+		long timestamp = body.getLong(2);
+		byte[] sig = body.getRaw(3);
+		checkLength(sig, 1, 4096);
+		BdfDictionary meta = new BdfDictionary();
+		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
+		meta.put(MSG_KEY_LOCAL, false);
+		meta.put(MSG_KEY_MSG_TYPE, (long) kind);
+		meta.put(MSG_KEY_GROUP_ID, grouptrGroupId);
+		meta.put("gtrInviteTimestamp", timestamp);
+		meta.put(MSG_KEY_GROUP_RECORD_SIG, sig);
 		return new BdfMessageContext(meta);
 	}
 

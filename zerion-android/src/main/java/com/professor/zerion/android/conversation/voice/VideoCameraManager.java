@@ -47,7 +47,7 @@ class VideoCameraManager {
 	private Surface previewSurface;
 	@Nullable
 	private Surface encoderSurfaceRef;
-	// Pending switch: set by switchCamera(), consumed in onClosed()
+
 	@Nullable
 	private Context pendingSwitchContext;
 	@Nullable
@@ -118,7 +118,7 @@ class VideoCameraManager {
 
 				@Override
 				public void onClosed(CameraDevice camera) {
-					// Camera fully closed — open the pending switch if any
+
 					if (pendingSwitchContext != null) {
 						Context ctx = pendingSwitchContext;
 						Surface surf = pendingSwitchEncoderSurface;
@@ -251,7 +251,7 @@ class VideoCameraManager {
 
 	void switchCamera(Context context, Surface encoderSurface) {
 		useFrontCamera = !useFrontCamera;
-		// Store target params; openCamera() is called from onClosed() to avoid race
+
 		pendingSwitchContext = context;
 		pendingSwitchEncoderSurface = encoderSurface;
 		stopCamera();

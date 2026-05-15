@@ -89,7 +89,6 @@ public class VaultKeystore {
 				.setKeySize(256)
 				.setRandomizedEncryptionRequired(true);
 
-
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && hasStrongBox) {
 			builder.setIsStrongBoxBacked(true);
 		}

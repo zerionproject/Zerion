@@ -26,7 +26,6 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
 
-
 @Immutable
 @NotNullByDefault
 class SyncSessionFactoryImpl implements SyncSessionFactory {

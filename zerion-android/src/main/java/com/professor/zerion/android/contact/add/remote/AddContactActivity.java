@@ -32,7 +32,6 @@ public class AddContactActivity extends ZerionActivity implements
 	ViewModelProvider.Factory viewModelFactory;
 	private AddContactViewModel viewModel;
 
-	// A zerion:// link received via share intent before the ViewModel is ready
 	@Nullable
 	private String pendingIncomingLink = null;
 
@@ -56,13 +55,10 @@ public class AddContactActivity extends ZerionActivity implements
 
 		viewModel.onCreate();
 
-		// Navigate to NicknameFragment once a remote link has been confirmed
-		// (triggered by both the URL path and the QR path)
 		viewModel.getRemoteLinkEntered().observeEvent(this, entered -> {
 			if (entered) showNextFragment(new NicknameFragment());
 		});
 
-		// Chooser card selections
 		viewModel.getQrExchangeChosen().observeEvent(this,
 				v -> showNextFragment(new QrExchangeFragment()));
 		viewModel.getLinkExchangeChosen().observeEvent(this,
@@ -72,11 +68,11 @@ public class AddContactActivity extends ZerionActivity implements
 			Intent i = getIntent();
 			String incomingLink = extractLinkFromIntent(i);
 			if (incomingLink != null && viewModel.isValidRemoteContactLink(incomingLink)) {
-				// Opened via a shared zerion:// link — skip chooser, go to URL flow
+
 				viewModel.setRemoteHandshakeLink(incomingLink);
 				showInitialFragment(new LinkExchangeFragment());
 			} else {
-				// Normal entry — show the method chooser
+
 				showInitialFragment(new AddContactChooserFragment());
 			}
 			if (incomingLink != null && !viewModel.isValidRemoteContactLink(incomingLink)) {

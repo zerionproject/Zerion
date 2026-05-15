@@ -29,7 +29,6 @@ import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.RAW_LI
 import static org.briarproject.bramble.api.crypto.CryptoConstants.KEY_TYPE_AGREEMENT;
 import static org.briarproject.bramble.api.crypto.PostQuantumConstants.KEY_TYPE_HYBRID_AGREEMENT;
 
-
 @NotNullByDefault
 class PendingContactFactoryImpl implements PendingContactFactory {
 
@@ -67,7 +66,6 @@ class PendingContactFactoryImpl implements PendingContactFactory {
 		}
 	}
 
-	
 	private String createClassicalHandshakeLink(PublicKey k) {
 		byte[] encoded = k.getEncoded();
 		if (encoded.length != RAW_LINK_BYTES_CLASSICAL - 1) {
@@ -91,7 +89,6 @@ class PendingContactFactoryImpl implements PendingContactFactory {
 		return "zerion://" + Base32.encode(raw).toLowerCase(Locale.US);
 	}
 
-	
 	public boolean verifyHybridKeyCommitment(PublicKey receivedKey,
 			byte[] commitment) {
 		byte[] expectedCommitment = crypto.hash(HYBRID_COMMITMENT_LABEL,
@@ -140,7 +137,6 @@ class PendingContactFactoryImpl implements PendingContactFactory {
 		return new PendingContactId(hash);
 	}
 
-	
 	private boolean constantTimeEquals(byte[] a, byte[] b) {
 		if (a.length != b.length) return false;
 		int result = 0;
@@ -150,7 +146,6 @@ class PendingContactFactoryImpl implements PendingContactFactory {
 		return result == 0;
 	}
 
-	
 	private static class ParsedLink {
 		final int version;
 		final PublicKey publicKeyOrCommitment;
@@ -161,7 +156,6 @@ class PendingContactFactoryImpl implements PendingContactFactory {
 		}
 	}
 
-	
 	private static class CommitmentKey implements PublicKey {
 		private static final String KEY_TYPE = "Hybrid-Commitment";
 		private final byte[] commitment;

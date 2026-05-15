@@ -60,7 +60,7 @@ public class AddContactViewModel extends DbViewModel {
 	}
 
 	void onCreate() {
-		// Always load the Zerion handshake link — Briar mode is not supported
+
 		loadHandshakeLink();
 	}
 
@@ -142,7 +142,7 @@ public class AddContactViewModel extends DbViewModel {
 				contactManager.removePendingContact(p.getId());
 				addContact(name);
 			} catch (NoSuchPendingContactException e) {
-				// ignored
+
 			} catch (DbException e) {
 				addContactResult.postValue(new LiveResult<>(e));
 			}

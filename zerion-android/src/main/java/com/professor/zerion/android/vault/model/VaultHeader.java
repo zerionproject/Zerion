@@ -12,7 +12,6 @@ public class VaultHeader {
 	public static final int CURRENT_VERSION = 1;
 	private static final byte[] MAGIC_BYTES = "ZVLT".getBytes(StandardCharsets.US_ASCII);
 
-
 	public static final int FEATURE_FLAG_KDF_ARGON2ID = 0x00000001;
 
 	public final int version;
@@ -61,7 +60,6 @@ public class VaultHeader {
 				FEATURE_FLAG_KDF_ARGON2ID
 		);
 	}
-
 
 	public boolean usesArgon2id() {
 		return (featureFlags & FEATURE_FLAG_KDF_ARGON2ID) != 0;

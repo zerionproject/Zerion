@@ -54,7 +54,6 @@ class AttachmentCreationTask {
 			"video/avi"
 	));
 
-
 	private final MessagingManager messagingManager;
 	private final ContentResolver contentResolver;
 	private final ImageCompressor imageCompressor;
@@ -156,7 +155,6 @@ class AttachmentCreationTask {
 			throw new org.briarproject.briar.api.attachment.FileTooBigException();
 		}
 
-		// Strip metadata from video files before sending
 		File strippedFile = null;
 		InputStream is;
 		try {

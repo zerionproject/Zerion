@@ -14,7 +14,6 @@ import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.LINK_R
 
 class IntentRouter {
 
-	// Maximum URI/deep link length to prevent abuse
 	private static final int MAX_URI_LENGTH = 2048;
 
 	static void handleExternalIntent(Context ctx, Intent i) {
@@ -36,10 +35,10 @@ class IntentRouter {
 
 	private static void redirectSanitized(Context ctx, Intent original,
 			Class<? extends ZerionActivity> activityClass) {
-		// Create a clean intent — never forward untrusted extras
+
 		Intent clean = new Intent(ctx, activityClass);
 		clean.addFlags(FLAG_ACTIVITY_CLEAR_TOP);
-		// Only propagate the data we actually need
+
 		if (original.getData() != null) {
 			clean.setData(original.getData());
 		}

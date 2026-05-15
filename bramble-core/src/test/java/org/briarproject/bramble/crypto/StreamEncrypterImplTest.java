@@ -29,7 +29,7 @@ public class StreamEncrypterImplTest extends BrambleTestCase {
 	private final int payloadLength = 123, paddingLength = 234;
 
 	public StreamEncrypterImplTest() {
-		cipher = new TestAuthenticatedCipher(); // Null cipher
+		cipher = new TestAuthenticatedCipher();
 		streamHeaderKey = TestUtils.getSecretKey();
 		frameKey = TestUtils.getSecretKey();
 		tag = TestUtils.getRandomBytes(TAG_LENGTH);
@@ -108,7 +108,6 @@ public class StreamEncrypterImplTest extends BrambleTestCase {
 
 		s.writeFrame(payload, payloadLength, 0, false);
 
-		// Expect the tag, stream header, frame header, payload and MAC
 		ByteArrayOutputStream expected = new ByteArrayOutputStream();
 		expected.write(tag);
 		expected.write(streamHeaderNonce);
@@ -134,7 +133,6 @@ public class StreamEncrypterImplTest extends BrambleTestCase {
 
 		s.writeFrame(payload, payloadLength, 0, true);
 
-		// Expect the tag, stream header, frame header, payload and MAC
 		ByteArrayOutputStream expected = new ByteArrayOutputStream();
 		expected.write(tag);
 		expected.write(streamHeaderNonce);
@@ -160,7 +158,6 @@ public class StreamEncrypterImplTest extends BrambleTestCase {
 
 		s.writeFrame(payload, payloadLength, 0, false);
 
-		// Expect the stream header, frame header, payload and MAC
 		ByteArrayOutputStream expected = new ByteArrayOutputStream();
 		expected.write(streamHeaderNonce);
 		expected.write(protocolVersionBytes);
@@ -185,7 +182,6 @@ public class StreamEncrypterImplTest extends BrambleTestCase {
 
 		s.writeFrame(payload, payloadLength, 0, true);
 
-		// Expect the stream header, frame header, payload and MAC
 		ByteArrayOutputStream expected = new ByteArrayOutputStream();
 		expected.write(streamHeaderNonce);
 		expected.write(protocolVersionBytes);
@@ -210,7 +206,6 @@ public class StreamEncrypterImplTest extends BrambleTestCase {
 
 		s.writeFrame(payload, payloadLength, paddingLength, false);
 
-		// Expect the tag, stream header, frame header, payload, padding and MAC
 		ByteArrayOutputStream expected = new ByteArrayOutputStream();
 		expected.write(tag);
 		expected.write(streamHeaderNonce);
@@ -238,7 +233,6 @@ public class StreamEncrypterImplTest extends BrambleTestCase {
 
 		s.writeFrame(payload, payloadLength, paddingLength, true);
 
-		// Expect the tag, stream header, frame header, payload, padding and MAC
 		ByteArrayOutputStream expected = new ByteArrayOutputStream();
 		expected.write(tag);
 		expected.write(streamHeaderNonce);
@@ -266,7 +260,6 @@ public class StreamEncrypterImplTest extends BrambleTestCase {
 
 		s.writeFrame(payload, payloadLength, paddingLength, false);
 
-		// Expect the stream header, frame header, payload, padding and MAC
 		ByteArrayOutputStream expected = new ByteArrayOutputStream();
 		expected.write(streamHeaderNonce);
 		expected.write(protocolVersionBytes);
@@ -293,7 +286,6 @@ public class StreamEncrypterImplTest extends BrambleTestCase {
 
 		s.writeFrame(payload, payloadLength, paddingLength, true);
 
-		// Expect the stream header, frame header, payload, padding and MAC
 		ByteArrayOutputStream expected = new ByteArrayOutputStream();
 		expected.write(streamHeaderNonce);
 		expected.write(protocolVersionBytes);
@@ -323,8 +315,6 @@ public class StreamEncrypterImplTest extends BrambleTestCase {
 		s.writeFrame(payload, payloadLength, paddingLength, false);
 		s.writeFrame(payload1, payloadLength1, paddingLength1, true);
 
-		// Expect the tag, stream header, first frame header, payload, padding,
-		// MAC, second frame header, payload, padding, MAC
 		ByteArrayOutputStream expected = new ByteArrayOutputStream();
 		expected.write(tag);
 		expected.write(streamHeaderNonce);
@@ -358,10 +348,8 @@ public class StreamEncrypterImplTest extends BrambleTestCase {
 				streamNumber, tag, streamHeaderNonce, streamHeaderKey,
 				frameKey);
 
-		// Flush the stream once
 		s.flush();
 
-		// Expect the tag and stream header
 		ByteArrayOutputStream expected = new ByteArrayOutputStream();
 		expected.write(tag);
 		expected.write(streamHeaderNonce);
@@ -381,11 +369,9 @@ public class StreamEncrypterImplTest extends BrambleTestCase {
 				streamNumber, tag, streamHeaderNonce, streamHeaderKey,
 				frameKey);
 
-		// Flush the stream twice
 		s.flush();
 		s.flush();
 
-		// Expect the tag and stream header
 		ByteArrayOutputStream expected = new ByteArrayOutputStream();
 		expected.write(tag);
 		expected.write(streamHeaderNonce);
@@ -404,10 +390,8 @@ public class StreamEncrypterImplTest extends BrambleTestCase {
 				streamNumber, null, streamHeaderNonce, streamHeaderKey,
 				frameKey);
 
-		// Flush the stream once
 		s.flush();
 
-		// Expect the stream header
 		ByteArrayOutputStream expected = new ByteArrayOutputStream();
 		expected.write(streamHeaderNonce);
 		expected.write(protocolVersionBytes);

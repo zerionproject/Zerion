@@ -8,7 +8,6 @@ import javax.annotation.concurrent.Immutable;
 import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.FORMAT_VERSION_CLASSICAL;
 import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.FORMAT_VERSION_HYBRID;
 
-
 @Immutable
 @NotNullByDefault
 public class PendingContact {
@@ -19,13 +18,11 @@ public class PendingContact {
 	private final long timestamp;
 	private final int formatVersion;
 
-	
 	public PendingContact(PendingContactId id, PublicKey publicKey,
 			String alias, long timestamp) {
 		this(id, publicKey, alias, timestamp, FORMAT_VERSION_CLASSICAL);
 	}
 
-	
 	public PendingContact(PendingContactId id, PublicKey publicKey,
 			String alias, long timestamp, int formatVersion) {
 		this.id = id;
@@ -51,17 +48,14 @@ public class PendingContact {
 		return timestamp;
 	}
 
-	
 	public int getFormatVersion() {
 		return formatVersion;
 	}
 
-	
 	public boolean isPostQuantum() {
 		return formatVersion == FORMAT_VERSION_HYBRID;
 	}
 
-	
 	public boolean isClassical() {
 		return formatVersion == FORMAT_VERSION_CLASSICAL;
 	}

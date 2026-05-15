@@ -2,7 +2,6 @@ package org.briarproject.bramble.api.db;
 
 import org.briarproject.bramble.api.identity.AuthorId;
 
-
 public class SecurityDowngradeException extends DbException {
 
 	private final AuthorId remoteAuthorId;

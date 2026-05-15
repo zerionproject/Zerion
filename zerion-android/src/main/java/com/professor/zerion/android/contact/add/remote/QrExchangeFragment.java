@@ -185,9 +185,6 @@ public class QrExchangeFragment extends BaseFragment {
 		}
 	}
 
-	/** Copy the Y (luminance) plane out of a YUV_420_888 ImageProxy
-	 * with row-stride padding collapsed, so ZXing's
-	 * PlanarYUVLuminanceSource can index it as width*height bytes. */
 	@Nullable
 	private static byte[] extractYPlane(ImageProxy proxy) {
 		ImageProxy.PlaneProxy[] planes = proxy.getPlanes();

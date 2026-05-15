@@ -39,7 +39,6 @@ import static java.util.Objects.requireNonNull;
 @NotNullByDefault
 class IntroductionViewModel extends ContactsViewModel {
 
-
 	private final ContactManager contactManager;
 	private final AuthorManager authorManager;
 	private final IntroductionManager introductionManager;

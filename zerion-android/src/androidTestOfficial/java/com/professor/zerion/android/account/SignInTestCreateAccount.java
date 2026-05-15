@@ -40,18 +40,15 @@ public class SignInTestCreateAccount extends UiTest {
 		lifecycleManager.waitForStartup();
 		waitFor(NavDrawerActivity.class);
 
-		// Open menu (3-dot overflow)
 		onView(withId(R.id.menuButton))
 				.check(matches(isDisplayed()))
 				.perform(click());
 
-		// click onboarding away (once shown)
 		onView(isRoot()).perform(waitUntilMatches(hasDescendant(
 				withClassName(endsWith("PromptView")))));
 		onView(withClassName(endsWith("PromptView")))
 				.perform(click());
 
-		// sign-out manually
 		onView(withText(R.string.sign_out_button))
 				.check(matches(isDisplayed()))
 				.perform(click());

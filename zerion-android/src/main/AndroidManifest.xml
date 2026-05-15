@@ -224,47 +224,6 @@
 				android:value="com.professor.zerion.android.conversation.ConversationActivity" />
 		</activity>
 
-		<activity
-			android:name="com.professor.zerion.android.privategroup.conversation.GroupActivity"
-			android:exported="false"
-			android:label="@string/app_name"
-			android:parentActivityName="com.professor.zerion.android.navdrawer.NavDrawerActivity"
-			android:theme="@style/ZerionTheme.NoActionBar"
-			android:windowSoftInputMode="adjustResize|stateHidden">
-			<meta-data
-				android:name="android.support.PARENT_ACTIVITY"
-				android:value="com.professor.zerion.android.navdrawer.NavDrawerActivity" />
-		</activity>
-
-		<activity
-			android:name="com.professor.zerion.android.privategroup.invitation.GroupInvitationActivity"
-			android:exported="false"
-			android:label="@string/groups_invitations_title"
-			android:parentActivityName="com.professor.zerion.android.navdrawer.NavDrawerActivity">
-			<meta-data
-				android:name="android.support.PARENT_ACTIVITY"
-				android:value="com.professor.zerion.android.navdrawer.NavDrawerActivity" />
-		</activity>
-
-		<activity
-			android:name="com.professor.zerion.android.privategroup.memberlist.GroupMemberListActivity"
-			android:exported="false"
-			android:label="@string/groups_member_list"
-			android:parentActivityName="com.professor.zerion.android.privategroup.conversation.GroupActivity">
-			<meta-data
-				android:name="android.support.PARENT_ACTIVITY"
-				android:value="com.professor.zerion.android.privategroup.conversation.GroupActivity" />
-		</activity>
-
-		<activity
-			android:name="com.professor.zerion.android.privategroup.reveal.RevealContactsActivity"
-			android:exported="false"
-			android:label="@string/groups_reveal_contacts"
-			android:parentActivityName="com.professor.zerion.android.privategroup.conversation.GroupActivity">
-			<meta-data
-				android:name="android.support.PARENT_ACTIVITY"
-				android:value="com.professor.zerion.android.privategroup.conversation.GroupActivity" />
-		</activity>
 
 		<activity
 			android:name="com.professor.zerion.android.introduction.IntroductionActivity"
@@ -412,7 +371,7 @@
 			android:exported="false"
 			android:label="@string/grouptr_title"
 			android:parentActivityName="com.professor.zerion.android.navdrawer.NavDrawerActivity"
-			android:theme="@style/ZerionTheme">
+			android:theme="@style/ZerionTheme.NoActionBar">
 			<meta-data
 				android:name="android.support.PARENT_ACTIVITY"
 				android:value="com.professor.zerion.android.navdrawer.NavDrawerActivity" />
@@ -423,7 +382,7 @@
 			android:exported="false"
 			android:label="@string/grouptr_title"
 			android:parentActivityName="com.professor.zerion.android.navdrawer.NavDrawerActivity"
-			android:theme="@style/ZerionTheme"
+			android:theme="@style/ZerionTheme.NoActionBar"
 			android:windowSoftInputMode="adjustResize">
 			<meta-data
 				android:name="android.support.PARENT_ACTIVITY"
@@ -435,7 +394,7 @@
 			android:exported="false"
 			android:label="@string/grouptr_create_title"
 			android:parentActivityName="com.professor.zerion.android.navdrawer.NavDrawerActivity"
-			android:theme="@style/ZerionTheme"
+			android:theme="@style/ZerionTheme.NoActionBar"
 			android:windowSoftInputMode="adjustResize">
 			<meta-data
 				android:name="android.support.PARENT_ACTIVITY"
@@ -447,7 +406,7 @@
 			android:exported="false"
 			android:label="@string/grouptr_invite_members_title"
 			android:parentActivityName="com.professor.zerion.android.navdrawer.NavDrawerActivity"
-			android:theme="@style/ZerionTheme">
+			android:theme="@style/ZerionTheme.NoActionBar">
 			<meta-data
 				android:name="android.support.PARENT_ACTIVITY"
 				android:value="com.professor.zerion.android.navdrawer.NavDrawerActivity" />

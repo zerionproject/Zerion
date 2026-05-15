@@ -51,7 +51,6 @@ import static org.briarproject.bramble.util.AndroidUtils.registerReceiver;
 @NotNullByDefault
 class ScreenFilterMonitorImpl implements ScreenFilterMonitor, Service {
 
-
 	private static class AppDetailsImpl implements AppDetails {
 		private final String name;
 		private final String packageName;

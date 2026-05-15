@@ -2,7 +2,6 @@ package info.guardianproject;
 
 import info.guardianproject.trustedintents.ApkSignaturePin;
 
-
 public final class GuardianProjectRSA4096 extends ApkSignaturePin {
 
    public GuardianProjectRSA4096() {

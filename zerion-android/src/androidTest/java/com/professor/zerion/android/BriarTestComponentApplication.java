@@ -10,8 +10,7 @@ public class BriarTestComponentApplication extends ZerionApplicationImpl {
 	protected AndroidComponent createApplicationComponent() {
 		AndroidComponent component = DaggerBriarUiTestComponent.builder()
 				.appModule(new AppModule(this)).build();
-		// We need to load the eager singletons directly after making the
-		// dependency graphs
+
 		BrambleCoreEagerSingletons.Helper.injectEagerSingletons(component);
 		BrambleAndroidEagerSingletons.Helper.injectEagerSingletons(component);
 		BriarCoreEagerSingletons.Helper.injectEagerSingletons(component);

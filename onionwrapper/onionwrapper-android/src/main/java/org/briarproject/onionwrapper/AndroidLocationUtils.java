@@ -28,24 +28,6 @@ class AndroidLocationUtils implements LocationUtils {
 		appContext = app.getApplicationContext();
 	}
 
-	/**
-	 * This guesses the current country from the first of these sources that
-	 * succeeds (also in order of likelihood of being correct):
-	 *
-	 * <ul>
-	 * <li>Phone network. This works even when no SIM card is inserted, or a
-	 *     foreign SIM card is inserted.</li>
-	 * <li>SIM card. This is only an heuristic and assumes the user is not
-	 *     roaming.</li>
-	 * <li>User locale. This is an even worse heuristic.</li>
-	 * </ul>
-	 * <p>
-	 * Note: this is very similar to
-	 * <a href="https://android.googlesource.com/platform/frameworks/base/+/cd92588%5E/location/java/android/location/CountryDetector.java">
-	 * this API</a> except it seems that Google doesn't want us to use it for
-	 * some reason - both that class and {@code Context.COUNTRY_CODE} are
-	 * annotated {@code @hide}.
-	 */
 	@Override
 	@SuppressLint("DefaultLocale")
 	public String getCurrentCountry() {

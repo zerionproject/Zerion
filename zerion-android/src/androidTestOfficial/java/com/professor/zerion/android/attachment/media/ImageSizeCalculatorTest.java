@@ -59,21 +59,21 @@ public class ImageSizeCalculatorTest
 
 	@Test
 	public void testCalculateSizeAnimatedGif1() throws Exception {
-		// TODO: Remove this assumption when we support large messages
+
 		assumeTrue(SDK_INT >= 24);
 		testCanCalculateSize("animated.gif", "image/gif", 65535, 65535);
 	}
 
 	@Test
 	public void testCalculateSizeAnimatedGif2() throws Exception {
-		// TODO: Remove this assumption when we support large messages
+
 		assumeTrue(SDK_INT >= 24);
 		testCanCalculateSize("animated2.gif", "image/gif", 10000, 10000);
 	}
 
 	@Test
 	public void testCalculateSizeVeryLargeGif() throws Exception {
-		// TODO: Remove this assumption when we support large messages
+
 		assumeTrue(SDK_INT >= 24);
 		testCanCalculateSize("error_large.gif", "image/gif", 16384, 16384);
 	}

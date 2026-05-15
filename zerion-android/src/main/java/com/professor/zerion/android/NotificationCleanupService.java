@@ -45,7 +45,7 @@ public class NotificationCleanupService extends IntentService {
 		if (uri.equals(CONTACT_URI)) {
 			notificationManager.clearAllContactNotifications();
 		} else if (uriStr.startsWith(contactUriStr + "/")) {
-			// Per-contact swipe dismiss
+
 			String idStr = uri.getLastPathSegment();
 			if (idStr != null) {
 				try {

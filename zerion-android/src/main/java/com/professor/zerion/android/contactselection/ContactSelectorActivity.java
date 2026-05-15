@@ -91,5 +91,4 @@ public abstract class ContactSelectorActivity
 		return contacts;
 	}
 
-
 }

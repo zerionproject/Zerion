@@ -27,7 +27,6 @@ public class VersioningModule {
 		ClientVersioningValidator clientVersioningValidator;
 	}
 
-
 	@Provides
 	@Singleton
 	ClientVersioningManager provideClientVersioningManager(

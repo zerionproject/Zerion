@@ -603,7 +603,7 @@ class IntroductionManagerImpl extends ConversationClientImpl
 
 	@FunctionalInterface
 	private interface MessageRetriever {
-		
+
 		Set<MessageId> getMessages(Set<MessageId> allMessages);
 	}
 

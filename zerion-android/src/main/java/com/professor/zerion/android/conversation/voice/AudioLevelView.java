@@ -44,7 +44,6 @@ public class AudioLevelView extends View {
 		}
 	}
 
-	
 	public void setAmplitude(int amplitude) {
 		currentAmplitude = Math.max(0, Math.min(100, amplitude));
 		updateBarHeights();

@@ -59,7 +59,7 @@ class PortMapperImpl implements PortMapper {
 	}
 
 	private void start() {
-		// UPnP disabled — not used by Zerion
+
 		gateway = null;
 	}
 

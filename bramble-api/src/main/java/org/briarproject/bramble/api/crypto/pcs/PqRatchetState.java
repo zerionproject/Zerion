@@ -71,7 +71,6 @@ public class PqRatchetState {
 				false, 0, 0, null, null, null, null, null, null, null);
 	}
 
-
 	public static PqRatchetState fromDatabase(long currentEpoch, long epochStartTime,
 			int messagesSinceEpoch, PqEpochState state, boolean isInitiator,
 			int chunksSent, int chunksReceived,

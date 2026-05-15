@@ -54,7 +54,6 @@ import static org.briarproject.bramble.contact.HandshakeRecordTypes.RECORD_TYPE_
 import static org.briarproject.bramble.contact.HandshakeRecordTypes.RECORD_TYPE_PROOF_OF_OWNERSHIP;
 import static org.briarproject.bramble.util.ValidationUtils.checkLength;
 
-
 @Immutable
 @NotNullByDefault
 class HandshakeManagerImpl implements HandshakeManager {
@@ -361,7 +360,6 @@ class HandshakeManagerImpl implements HandshakeManager {
 		w.flush();
 	}
 
-	
 	private Pair<Byte, PublicKey> receiveMinorVersionAndKey(RecordReader r)
 			throws IOException {
 		byte theirMinorVersion;
@@ -442,7 +440,6 @@ class HandshakeManagerImpl implements HandshakeManager {
 		return rec;
 	}
 
-	
 	private static class HandshakeContext {
 		final PendingContact pendingContact;
 		final KeyPair keyPair;

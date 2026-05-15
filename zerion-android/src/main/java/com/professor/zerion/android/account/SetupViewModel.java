@@ -31,7 +31,6 @@ import static com.professor.zerion.android.account.SetupViewModel.State.SET_PASS
 class SetupViewModel extends AndroidViewModel {
 	enum State {AUTHOR_NAME, SET_PASSWORD, DOZE, CREATED, FAILED}
 
-
 	@Nullable
 	private String authorName;
 	@Nullable

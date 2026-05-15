@@ -17,7 +17,6 @@ import java.util.Arrays;
 
 import javax.annotation.concurrent.Immutable;
 
-
 @NotNullByDefault
 @Immutable
 class MlDsa65 {
@@ -28,7 +27,6 @@ class MlDsa65 {
 		this.secureRandom = secureRandom;
 	}
 
-	
 	MlDsaKeyPair generateKeyPair() {
 		MLDSAKeyPairGenerator keyGen = new MLDSAKeyPairGenerator();
 		keyGen.init(new MLDSAKeyGenerationParameters(secureRandom,
@@ -44,7 +42,6 @@ class MlDsa65 {
 		return new MlDsaKeyPair(publicKey.getEncoded(), privateKey.getEncoded());
 	}
 
-	
 	byte[] sign(byte[] privateKeyBytes, byte[] message)
 			throws GeneralSecurityException {
 		if (privateKeyBytes.length != PostQuantumConstants.ML_DSA_65_PRIVATE_KEY_BYTES) {
@@ -66,7 +63,6 @@ class MlDsa65 {
 		}
 	}
 
-	
 	boolean verify(byte[] publicKeyBytes, byte[] message, byte[] signature)
 			throws GeneralSecurityException {
 		if (publicKeyBytes.length != PostQuantumConstants.ML_DSA_65_PUBLIC_KEY_BYTES) {
@@ -91,7 +87,6 @@ class MlDsa65 {
 		}
 	}
 
-	
 	boolean isValidPublicKey(byte[] publicKeyBytes) {
 		if (publicKeyBytes.length != PostQuantumConstants.ML_DSA_65_PUBLIC_KEY_BYTES) {
 			return false;
@@ -104,7 +99,6 @@ class MlDsa65 {
 		}
 	}
 
-	
 	boolean isValidPrivateKey(byte[] privateKeyBytes) {
 		if (privateKeyBytes.length != PostQuantumConstants.ML_DSA_65_PRIVATE_KEY_BYTES) {
 			return false;
@@ -117,7 +111,6 @@ class MlDsa65 {
 		}
 	}
 
-	
 	static class MlDsaKeyPair {
 		private final byte[] publicKey;
 		private final byte[] privateKey;
@@ -135,7 +128,6 @@ class MlDsa65 {
 			return privateKey;
 		}
 
-		
 		void clearPrivateKey() {
 			Arrays.fill(privateKey, (byte) 0);
 		}

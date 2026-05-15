@@ -27,12 +27,9 @@ public interface TorConstants {
 	boolean DEFAULT_PREF_TOR_MOBILE = true;
 	boolean DEFAULT_PREF_TOR_ONLY_WHEN_CHARGING = false;
 
-	
 	int REASON_BATTERY = 2;
 
-	
 	int REASON_MOBILE_DATA = 4;
 
-	
 	int REASON_COUNTRY_BLOCKED = 8;
 }

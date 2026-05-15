@@ -17,7 +17,6 @@ import org.briarproject.bramble.api.db.Metadata;
 import org.briarproject.bramble.api.db.NoSuchMessageException;
 import org.briarproject.bramble.api.db.Transaction;
 import org.briarproject.bramble.api.identity.IdentityManager;
-import org.briarproject.bramble.api.identity.LocalAuthor;
 import org.briarproject.bramble.api.lifecycle.LifecycleManager.OpenDatabaseHook;
 import org.briarproject.bramble.api.sync.Group;
 import org.briarproject.bramble.api.sync.Group.Visibility;
@@ -39,7 +38,6 @@ import org.briarproject.briar.api.conversation.ConversationManager;
 import org.briarproject.briar.api.conversation.ConversationManager.ConversationClient;
 import org.briarproject.briar.api.conversation.ConversationMessageHeader;
 import org.briarproject.briar.api.conversation.DeletionResult;
-import org.briarproject.briar.api.grouptr.GroupTrInvitationHeader;
 import org.briarproject.briar.api.messaging.LinkPreview;
 import org.briarproject.briar.api.messaging.MessagingManager;
 import org.briarproject.briar.api.messaging.PrivateMessage;
@@ -87,9 +85,6 @@ import static org.briarproject.briar.messaging.MessageTypes.ATTACHMENT_MANIFEST;
 import static org.briarproject.briar.messaging.MessageTypes.PRIVATE_MESSAGE;
 import static org.briarproject.briar.messaging.MessagingConstants.MISSING_ATTACHMENT_CLEANUP_DURATION_MS;
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_ATTACHMENT_HEADERS;
-import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_GROUP_ADDED_NAME;
-import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_GROUP_ADDED_PUBKEY;
-import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_GROUP_ID;
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_AUTO_DELETE_TIMER;
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_HAS_TEXT;
 import static org.briarproject.briar.messaging.MessagingConstants.MSG_KEY_IS_TYPING;
@@ -164,8 +159,6 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		for (Contact c : db.getContacts(txn)) addingContact(txn, c);
 	}
 
-	// Only purge ephemeral messages older than this threshold so that
-	// in-flight call signals survive a quick app restart.
 	private static final long EPHEMERAL_PURGE_AGE_MS = 5 * 60 * 1000;
 
 	private void purgeStaleEphemeralMessages(Transaction txn)
@@ -271,6 +264,11 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			} else if (messageType ==
 					MessageTypes.GROUP_MEMBER_LIST_SNAPSHOT) {
 				incomingGroupMemberListSnapshot(txn, m, metaDict);
+			} else if (messageType == MessageTypes.GROUPTR_INVITE_OFFER) {
+				incomingGrouptrInviteOffer(txn, m, metaDict);
+			} else if (messageType == MessageTypes.GROUPTR_INVITE_ACCEPT
+					|| messageType == MessageTypes.GROUPTR_INVITE_DECLINE) {
+				incomingGrouptrInviteResponse(txn, m, metaDict, messageType);
 			} else {
 				throw new InvalidMessageException();
 			}
@@ -398,7 +396,6 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		txn.attach(new AttachmentReceivedEvent(m.getId(), contactId));
 	}
 
-	
 	private void incomingVoiceSignal(Transaction txn, Message m,
 			BdfDictionary meta) throws DbException, FormatException {
 		GroupId groupId = m.getGroupId();
@@ -422,12 +419,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		VoiceSignalReceivedEvent event =
 				new VoiceSignalReceivedEvent(header, contactId);
 		txn.attach(event);
-		// Do NOT call db.removeMessage() here — the caller
-		// (ValidationManagerImpl) will call setMessageState(DELIVERED)
-		// on this message after we return. Removing it here causes
-		// setMessageState to throw NoSuchMessageException, which
-		// rolls back the transaction and prevents the event from firing.
-		// Voice signals are cleaned up by purgeStaleEphemeralMessages().
+
 	}
 
 	@Override
@@ -600,8 +592,6 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			throw new DbException(e);
 		}
 		Collection<ConversationMessageHeader> headers = new ArrayList<>();
-		LocalAuthor localAuthor = identityManager.getLocalAuthor(txn);
-		byte[] localPubKey = localAuthor.getPublicKey().getEncoded();
 		for (MessageStatus s : statuses) {
 			MessageId id = s.getMessageId();
 			BdfDictionary meta = metadata.get(id);
@@ -609,23 +599,33 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			try {
 				Integer messageType = meta.getOptionalInt(MSG_KEY_MSG_TYPE);
 				if (messageType != null
-						&& messageType == MessageTypes.GROUP_MEMBER_ADDED) {
+						&& messageType == MessageTypes.GROUPTR_INVITE_OFFER) {
 					if (meta.getBoolean(MSG_KEY_LOCAL, false)) continue;
-					byte[] addedPubKey =
-							meta.getOptionalRaw(MSG_KEY_GROUP_ADDED_PUBKEY);
-					if (addedPubKey == null
-							|| !java.util.Arrays.equals(addedPubKey,
-									localPubKey)) continue;
-					byte[] groupIdRaw = meta.getOptionalRaw(MSG_KEY_GROUP_ID);
-					if (groupIdRaw == null) continue;
-					String addedName =
-							meta.getOptionalString(MSG_KEY_GROUP_ADDED_NAME);
-					long timestamp = meta.getLong(MSG_KEY_TIMESTAMP);
+					byte[] grouptrGidRaw = meta.getOptionalRaw(
+							MessagingConstants.MSG_KEY_GROUP_ID);
+					if (grouptrGidRaw == null) continue;
+					String groupName = meta.getOptionalString(
+							MessagingConstants.MSG_KEY_GTR_INVITE_NAME);
+					byte[] salt = meta.getOptionalRaw(
+							MessagingConstants.MSG_KEY_GTR_INVITE_SALT);
+					String creatorName = meta.getOptionalString(
+							MessagingConstants
+									.MSG_KEY_GTR_INVITE_CREATOR_NAME);
+					byte[] creatorPub = meta.getOptionalRaw(
+							MessagingConstants
+									.MSG_KEY_GTR_INVITE_CREATOR_PUB);
+					long inviteTs = meta.getLong("gtrInviteTimestamp");
+					long ts = meta.getLong(MSG_KEY_TIMESTAMP);
 					boolean read = meta.getBoolean(MSG_KEY_READ, false);
-					headers.add(new GroupTrInvitationHeader(id, g, timestamp,
-							false, read, s.isSent(), s.isSeen(),
-							new GroupId(groupIdRaw),
-							addedName == null ? "" : addedName));
+					if (salt == null || creatorPub == null
+							|| creatorName == null || groupName == null) {
+						continue;
+					}
+					headers.add(new org.briarproject.briar.api.grouptr
+							.GroupTrInvitationHeader(id, g, ts, false, read,
+							s.isSent(), s.isSeen(),
+							new GroupId(grouptrGidRaw), groupName, salt,
+							creatorName, creatorPub, inviteTs));
 					continue;
 				}
 				if (messageType != null && messageType != PRIVATE_MESSAGE
@@ -728,7 +728,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				} catch (FormatException e) {
 				} catch (
 						org.briarproject.bramble.api.db.NoSuchMessageException e) {
-					// Message body was deleted — skip this message
+
 				}
 			}
 		} catch (FormatException e) {
@@ -752,10 +752,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 	public DeletionResult deleteAllMessages(Transaction txn, ContactId c)
 			throws DbException {
 		GroupId g = getContactGroup(db.getContact(txn, c)).getId();
-		// Bulk delete: explicitly removes from statuses, messageMetadata,
-		// messageDependencies, and messages tables by groupId.
-		// Cannot rely on ON DELETE CASCADE — SQLite PRAGMA foreign_keys
-		// is OFF so cascades do not fire.
+
 		db.removeAllGroupMessages(txn, g);
 		messageTracker.initializeGroupCount(txn, g);
 		return new DeletionResult();
@@ -795,7 +792,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			}
 			db.removeMessage(txn, m);
 		} catch (NoSuchMessageException e) {
-			// Message already deleted — skip
+
 		} catch (FormatException e) {
 			throw new DbException(e);
 		}
@@ -831,8 +828,6 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		String emoji = meta.getString(MSG_KEY_REACTION_EMOJI);
 		ContactId contactId = getContactId(txn, groupId);
 
-		// Idempotency: check for existing remote reaction with same
-		// target + emoji — if found, remove old one (toggle off)
 		BdfDictionary query = BdfDictionary.of(
 				new BdfEntry(MSG_KEY_MSG_TYPE,
 						MessageTypes.MESSAGE_REACTION));
@@ -847,8 +842,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			String eEmoji = eMeta.getString(MSG_KEY_REACTION_EMOJI);
 			if (java.util.Arrays.equals(eTarget, targetIdBytes) &&
 					emoji.equals(eEmoji)) {
-				// Toggle off: remove old reaction, keep the new one
-				// (which replaces it). Delete the old entry.
+
 				db.removeMessage(txn, entry.getKey());
 				break;
 			}
@@ -867,9 +861,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		TypingIndicatorReceivedEvent event =
 				new TypingIndicatorReceivedEvent(contactId, isTyping);
 		txn.attach(event);
-		// Do NOT call db.removeMessage() here — same reason as
-		// incomingVoiceSignal: caller calls setMessageState(DELIVERED)
-		// after we return, which would throw on a removed message.
+
 	}
 
 	private void incomingLinkPreviewMessage(Transaction txn, Message m,
@@ -892,9 +884,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 
 	private boolean peerSupportsExtendedMessages(Transaction txn,
 			ContactId contactId) throws DbException {
-		// Zerion-only: all peers run Zerion with MINOR_VERSION 4.
-		// The version negotiation may return 0 before sync completes,
-		// so we default to true to avoid silently blocking features.
+
 		return true;
 	}
 
@@ -907,8 +897,6 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				Contact contact = db.getContact(txn, contactId);
 				GroupId groupId = getContactGroup(contact).getId();
 
-				// Idempotency: check for existing local reaction with
-				// same target + emoji — if found, remove it (toggle off)
 				BdfDictionary query = BdfDictionary.of(
 						new BdfEntry(MSG_KEY_MSG_TYPE,
 								MessageTypes.MESSAGE_REACTION));
@@ -926,7 +914,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 					if (java.util.Arrays.equals(eTarget,
 							targetMessageId.getBytes()) &&
 							emoji.equals(eEmoji)) {
-						// Toggle off: remove existing reaction
+
 						db.removeMessage(txn, entry.getKey());
 						ReactionReceivedEvent event =
 								new ReactionReceivedEvent(contactId,
@@ -936,7 +924,6 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 					}
 				}
 
-				// No existing match — add new reaction
 				long timestamp = System.currentTimeMillis();
 				BdfList body = BdfList.of(MessageTypes.MESSAGE_REACTION,
 						targetMessageId.getBytes(), emoji);
@@ -1134,7 +1121,6 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		long timestamp = meta.getLong(MSG_KEY_TIMESTAMP);
 		long ttl = meta.getLong(MSG_KEY_AUTO_DELETE_TIMER,
 				NO_AUTO_DELETE_TIMER);
-		conversationManager.trackIncomingMessage(txn, m);
 		if (ttl != NO_AUTO_DELETE_TIMER) {
 			db.setCleanupTimerDuration(txn, m.getId(), ttl);
 		}
@@ -1160,7 +1146,6 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		byte[] signedInput = meta.getOptionalRaw(
 				"groupMembershipSignedInput");
 		if (signedInput == null) signedInput = new byte[0];
-		conversationManager.trackIncomingMessage(txn, m);
 		org.briarproject.briar.api.messaging.event
 				.GroupMembershipChangedEvent.ChangeKind kind;
 		long epoch = 0L;
@@ -1233,7 +1218,6 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				"groupEpochCommitSignedInput");
 		if (signedInput == null) signedInput = new byte[0];
 		long timestamp = meta.getLong(MSG_KEY_TIMESTAMP);
-		conversationManager.trackIncomingMessage(txn, m);
 		txn.attach(new org.briarproject.briar.api.messaging.event
 				.GroupEpochCommitEvent(contactId, groupId, fromEpoch,
 				toEpoch, pqSeed, recordSig, signedInput, timestamp));
@@ -1252,9 +1236,52 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				"groupMembershipSignedInput");
 		if (signedInput == null) signedInput = new byte[0];
 		long timestamp = meta.getLong(MSG_KEY_TIMESTAMP);
-		conversationManager.trackIncomingMessage(txn, m);
 		txn.attach(new org.briarproject.briar.api.messaging.event
 				.GroupMemberListSnapshotEvent(contactId, groupId, epoch,
 				timestamp, memberCanonical, recordSig, signedInput));
+	}
+
+	private void incomingGrouptrInviteOffer(Transaction txn, Message m,
+			BdfDictionary meta) throws DbException, FormatException {
+		ContactId contactId = getContactId(txn, m.getGroupId());
+		byte[] grouptrGid = meta.getRaw(MessagingConstants.MSG_KEY_GROUP_ID);
+		String groupName = meta.getString(
+				MessagingConstants.MSG_KEY_GTR_INVITE_NAME);
+		byte[] salt = meta.getRaw(
+				MessagingConstants.MSG_KEY_GTR_INVITE_SALT);
+		String creatorName = meta.getString(
+				MessagingConstants.MSG_KEY_GTR_INVITE_CREATOR_NAME);
+		byte[] creatorPub = meta.getRaw(
+				MessagingConstants.MSG_KEY_GTR_INVITE_CREATOR_PUB);
+		long inviteTs = meta.getLong("gtrInviteTimestamp");
+		byte[] recordSig = meta.getRaw(
+				MessagingConstants.MSG_KEY_GROUP_RECORD_SIG);
+		conversationManager.trackIncomingMessage(txn, m);
+		txn.attach(new org.briarproject.briar.api.messaging.event
+				.GroupTrInviteOfferReceivedEvent(contactId, m.getId(),
+				grouptrGid, groupName, salt, creatorName, creatorPub,
+				inviteTs, recordSig));
+	}
+
+	private void incomingGrouptrInviteResponse(Transaction txn, Message m,
+			BdfDictionary meta, int messageType)
+			throws DbException, FormatException {
+		ContactId contactId = getContactId(txn, m.getGroupId());
+		byte[] grouptrGid = meta.getRaw(MessagingConstants.MSG_KEY_GROUP_ID);
+		long inviteTs = meta.getLong("gtrInviteTimestamp");
+		byte[] recordSig = meta.getRaw(
+				MessagingConstants.MSG_KEY_GROUP_RECORD_SIG);
+		org.briarproject.briar.api.messaging.event
+				.GroupTrInviteResponseReceivedEvent.Kind kind =
+				messageType == MessageTypes.GROUPTR_INVITE_ACCEPT
+						? org.briarproject.briar.api.messaging.event
+								.GroupTrInviteResponseReceivedEvent.Kind
+								.ACCEPT
+						: org.briarproject.briar.api.messaging.event
+								.GroupTrInviteResponseReceivedEvent.Kind
+								.DECLINE;
+		txn.attach(new org.briarproject.briar.api.messaging.event
+				.GroupTrInviteResponseReceivedEvent(contactId, grouptrGid,
+				inviteTs, recordSig, kind));
 	}
 }

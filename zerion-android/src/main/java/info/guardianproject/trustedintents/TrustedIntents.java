@@ -35,17 +35,14 @@ public class TrustedIntents {
       return instance;
    }
 
-   
    public boolean isReceiverTrusted(ResolveInfo resolveInfo) {
       return isPackageNameTrusted(resolveInfo.activityInfo.packageName);
    }
 
-   
    public boolean isReceiverTrusted(ActivityInfo activityInfo) {
       return isPackageNameTrusted(activityInfo.packageName);
    }
 
-   
    public boolean isReceiverTrusted(Intent intent) {
       if (!isIntentSane(intent))
          return false;
@@ -56,7 +53,6 @@ public class TrustedIntents {
       return isPackageNameTrusted(packageName);
    }
 
-   
    public boolean isPackageNameTrusted(String packageName) {
       try {
          checkTrustedSigner(packageName);
@@ -68,7 +64,6 @@ public class TrustedIntents {
       return true;
    }
 
-   
    public Intent getIntentFromTrustedSender(Activity activity) {
       Intent intent = activity.getIntent();
       String packageName = getCallingPackageName(activity);
@@ -81,7 +76,6 @@ public class TrustedIntents {
       return null;
    }
 
-   
    public static String getCallingPackageName(Activity activity) {
       ComponentName componentName = activity.getCallingActivity();
       if (componentName == null)
@@ -90,7 +84,6 @@ public class TrustedIntents {
       return packageName;
    }
 
-   
    private boolean isIntentSane(Intent intent) {
       if (intent == null)
          return false;
@@ -103,7 +96,6 @@ public class TrustedIntents {
       return true;
    }
 
-   
    public boolean addTrustedSigner(Class<? extends ApkSignaturePin> cls) {
       try {
          Constructor<? extends ApkSignaturePin> constructor = cls.getConstructor();
@@ -113,7 +105,6 @@ public class TrustedIntents {
       }
    }
 
-   
    public boolean removeTrustedSigner(Class<? extends ApkSignaturePin> cls) {
       for (ApkSignaturePin pin : pinList) {
          if (pin.getClass().equals(cls)) {
@@ -123,13 +114,11 @@ public class TrustedIntents {
       return false;
    }
 
-   
    public boolean removeAllTrustedSigners() {
       pinList.clear();
       return pinList.isEmpty();
    }
 
-   
    public boolean isTrustedSigner(Class<? extends ApkSignaturePin> cls) {
       for (ApkSignaturePin pin : pinList) {
          if (pin.getClass().equals(cls)) {

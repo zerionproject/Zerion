@@ -85,7 +85,6 @@ public class StringUtils {
 		}
 	}
 
-	
 	private static char[] toHexChars(byte[] bytes) {
 		char[] hex = new char[bytes.length * 2];
 		for (int i = 0, j = 0; i < bytes.length; i++) {
@@ -95,12 +94,10 @@ public class StringUtils {
 		return hex;
 	}
 
-	
 	public static String toHexString(byte[] bytes) {
 		return new String(toHexChars(bytes));
 	}
 
-	
 	public static byte[] fromHexString(String hex) throws FormatException {
 		int len = hex.length();
 		if (len % 2 != 0)
@@ -125,7 +122,6 @@ public class StringUtils {
 		return s.trim();
 	}
 
-	
 	public static boolean utf8IsTooLong(String s, int maxLength) {
 		return toUtf8(s).length > maxLength;
 	}

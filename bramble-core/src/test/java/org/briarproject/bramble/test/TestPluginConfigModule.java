@@ -27,7 +27,7 @@ public class TestPluginConfigModule {
 
 	public static final TransportId SIMPLEX_TRANSPORT_ID = getTransportId();
 	public static final TransportId DUPLEX_TRANSPORT_ID = getTransportId();
-	private static final int MAX_LATENCY = 30_000; // 30 seconds
+	private static final int MAX_LATENCY = 30_000;
 
 	private final TransportId simplexTransportId, duplexTransportId;
 

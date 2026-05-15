@@ -64,9 +64,6 @@ import static org.briarproject.bramble.versioning.ClientVersioningConstants.MSG_
 class ClientVersioningManagerImpl implements ClientVersioningManager,
 		Service, OpenDatabaseHook, ContactHook, IncomingMessageHook {
 
-	// Hardcoded to avoid a layer dependency on briar-api. Mirrors
-	// MessagingManager.CLIENT_ID — peer's claimed minorVersion for this
-	// client is what v5.1 strict-reject checks against.
 	private static final String MESSAGING_CLIENT_ID =
 			"org.briarproject.briar.messaging";
 
@@ -241,13 +238,6 @@ class ClientVersioningManagerImpl implements ClientVersioningManager,
 		return ACCEPT_DO_NOT_SHARE;
 	}
 
-	// v5.1 strict-reject (downgrade defence). When a peer's versioning
-	// record advertises messaging.minorVersion >= 5 but we recorded
-	// slot_present="0" for them at contact-add (i.e. their CONTACT_INFO
-	// had no slot[4]), persist strict_reject="1". Surfaced by the v5.2
-	// Contact Info UI; no log line, no auto-teardown. Three-state semantics:
-	// "1" = verified, "0" = absent-and-recorded, key-missing = pre-feature
-	// contact, skip silently to avoid false-positives on upgrade.
 	private void checkB3StrictReject(Transaction txn, ContactId c,
 			List<ClientState> remoteStates) throws DbException {
 		int peerMinor = -1;
@@ -298,7 +288,6 @@ class ClientVersioningManagerImpl implements ClientVersioningManager,
 				cv.getMinorVersion());
 	}
 
-	
 	private boolean updateClientVersions(Transaction txn,
 			List<ClientVersion> newVersions) throws DbException {
 		Collection<MessageId> ids = db.getMessageIds(txn, localGroup.getId());

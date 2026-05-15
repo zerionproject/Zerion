@@ -30,25 +30,19 @@ public class IdentityManagerImplTest extends BrambleMockTestCase {
 
 	private final Transaction txn = new Transaction(null, false);
 
-	// Classical handshake keys
 	private final PublicKey handshakePublicKey = TestUtils.getAgreementPublicKey();
 	private final PrivateKey handshakePrivateKey = TestUtils.getAgreementPrivateKey();
 	private final KeyPair handshakeKeyPair =
 			new KeyPair(handshakePublicKey, handshakePrivateKey);
 
-	// Hybrid handshake keys (post-quantum) - use mock keys for testing
-	// Note: These are returned by mocked crypto.generateHybridAgreementKeyPair()
 	private final PublicKey hybridPublicKey = TestUtils.getAgreementPublicKey();
 	private final PrivateKey hybridPrivateKey = TestUtils.getAgreementPrivateKey();
 	private final KeyPair hybridKeyPair =
 			new KeyPair(hybridPublicKey, hybridPrivateKey);
 
-	// Identity with classical keys only (from TestUtils.getIdentity)
-	// This is the typical case for existing identities that need hybrid key upgrade
 	private final Identity identityWithClassicalKeys = TestUtils.getIdentity();
 	private final LocalAuthor localAuthor = identityWithClassicalKeys.getLocalAuthor();
 
-	// Identity without any keys
 	private final Identity identityWithoutKeys = new Identity(localAuthor,
 			null, null, identityWithClassicalKeys.getTimeCreated());
 
@@ -57,9 +51,7 @@ public class IdentityManagerImplTest extends BrambleMockTestCase {
 
 	@Test
 	public void testOpenDatabaseIdentityRegistered() throws Exception {
-		// When identity is registered, it gets stored.
-		// Since identityWithClassicalKeys only has classical keys, hybrid keys
-		// would need to be generated later, but that happens via registerIdentity path.
+
 		context.checking(new Expectations() {{
 			oneOf(db).addIdentity(with(any(Transaction.class)), with(any(Identity.class)));
 		}});
@@ -68,17 +60,10 @@ public class IdentityManagerImplTest extends BrambleMockTestCase {
 		identityManager.onDatabaseOpened(txn);
 	}
 
-	// Note: Tests for key generation are covered by integration tests.
-	// Unit tests cannot easily mock the hybrid key types required by Identity constructor.
-
 	@Test
 	public void testGetLocalAuthorIdentityRegistered() throws DbException {
 		identityManager.registerIdentity(identityWithClassicalKeys);
 		assertEquals(localAuthor, identityManager.getLocalAuthor());
 	}
-
-	// Note: Tests for getLocalAuthor with key generation (testGetLocalAuthorHandshakeKeysGenerated,
-	// testGetLocalAuthorHybridKeysGenerated) are covered by integration tests because
-	// unit tests cannot easily mock the hybrid key types required by Identity constructor.
 
 }

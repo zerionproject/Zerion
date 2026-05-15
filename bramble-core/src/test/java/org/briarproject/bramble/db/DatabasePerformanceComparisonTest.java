@@ -25,9 +25,6 @@ import static org.briarproject.bramble.test.UTest.Z_CRITICAL_0_01;
 public abstract class DatabasePerformanceComparisonTest
 		extends DatabasePerformanceTest {
 
-	/**
-	 * How many blocks of each condition to compare.
-	 */
 	private static final int COMPARISON_BLOCKS = 10;
 	private SecretKey databaseKey = getSecretKey();
 
@@ -42,7 +39,7 @@ public abstract class DatabasePerformanceComparisonTest
 		List<Double> bDurations = new ArrayList<>();
 		boolean aFirst = true;
 		for (int i = 0; i < COMPARISON_BLOCKS; i++) {
-			// Alternate between running the A and B benchmarks first
+
 			if (aFirst) {
 				aDurations.addAll(benchmark(true, task).durations);
 				bDurations.addAll(benchmark(false, task).durations);
@@ -52,9 +49,7 @@ public abstract class DatabasePerformanceComparisonTest
 			}
 			aFirst = !aFirst;
 		}
-		// Compare the results using a small P value, which increases our
-		// chance of getting an inconclusive result, making this a conservative
-		// test for performance differences
+
 		UTest.Result comparison = UTest.test(aDurations, bDurations,
 				Z_CRITICAL_0_01);
 		writeResult(name, aDurations, bDurations, comparison);
@@ -67,7 +62,7 @@ public abstract class DatabasePerformanceComparisonTest
 		populateDatabase(db);
 		db.close();
 		db = openDatabase(conditionA);
-		// Measure blocks of iterations until we reach a steady state
+
 		SteadyStateResult result = measureSteadyState(db, task);
 		db.close();
 		return result;

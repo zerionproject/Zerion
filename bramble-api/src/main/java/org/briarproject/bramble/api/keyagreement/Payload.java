@@ -7,7 +7,6 @@ import java.util.List;
 
 import javax.annotation.concurrent.Immutable;
 
-
 @Immutable
 @NotNullByDefault
 public class Payload implements Comparable<Payload> {
@@ -20,12 +19,10 @@ public class Payload implements Comparable<Payload> {
 		this.descriptors = descriptors;
 	}
 
-	
 	public byte[] getCommitment() {
 		return commitment.getBytes();
 	}
 
-	
 	public List<TransportDescriptor> getTransportDescriptors() {
 		return descriptors;
 	}

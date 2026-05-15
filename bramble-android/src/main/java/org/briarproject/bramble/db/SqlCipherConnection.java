@@ -20,10 +20,6 @@ import java.sql.Struct;
 import java.util.Map;
 import java.util.Properties;
 
-/**
- * Minimal JDBC Connection wrapping SQLCipher's SQLiteDatabase.
- * Only implements the methods used by JdbcDatabase.
- */
 class SqlCipherConnection implements Connection {
 
 	private final SQLiteDatabase db;
@@ -100,8 +96,6 @@ class SqlCipherConnection implements Connection {
 	public boolean isClosed() throws SQLException {
 		return closed;
 	}
-
-	// --- Unimplemented methods ---
 
 	@Override public DatabaseMetaData getMetaData() throws SQLException { throw new UnsupportedOperationException(); }
 	@Override public void setReadOnly(boolean b) throws SQLException {}

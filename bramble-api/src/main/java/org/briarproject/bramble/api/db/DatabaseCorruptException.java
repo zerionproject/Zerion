@@ -1,6 +1,5 @@
 package org.briarproject.bramble.api.db;
 
-
 public class DatabaseCorruptException extends DbException {
 
 	public DatabaseCorruptException() {

@@ -31,9 +31,6 @@ import static java.util.Arrays.asList;
 import static java.util.logging.Level.INFO;
 import static java.util.logging.Logger.getLogger;
 
-/**
- * A Tor wrapper for the Android operating system.
- */
 @NotNullByDefault
 public class AndroidTorWrapper extends AbstractTorWrapper {
 
@@ -49,23 +46,6 @@ public class AndroidTorWrapper extends AbstractTorWrapper {
 	private final AndroidWakeLock wakeLock;
 	private final File torLib, lyrebirdLib;
 
-	/**
-	 * @param app The application instance.
-	 * @param wakeLockManager The interface for managing a shared wake lock.
-	 * @param ioExecutor The wrapper will use this executor to run IO tasks,
-	 * 		some of which may run for the lifetime of the wrapper, so the executor
-	 * 		should have an unlimited thread pool.
-	 * @param eventExecutor The wrapper will use this executor to call the
-	 *        {@link Observer observer} (if any). To ensure that events are observed
-	 * 		in the order they occur, this executor should have a single thread (eg
-	 * 		the app's main thread).
-	 * @param architecture The processor architecture of the Tor and pluggable
-	 * 		transport binaries.
-	 * @param torDirectory The directory where the Tor process should keep its
-	 * 		state.
-	 * @param torSocksPort The port number to use for Tor's SOCKS port.
-	 * @param torControlPort The port number to use for Tor's control port.
-	 */
 	public AndroidTorWrapper(Application app,
 			AndroidWakeLockManager wakeLockManager,
 			Executor ioExecutor,
@@ -101,7 +81,7 @@ public class AndroidTorWrapper extends AbstractTorWrapper {
 	@Override
 	public InputStream getResourceInputStream(String name, String extension) {
 		Resources res = app.getResources();
-		// Extension is ignored on Android, resources are retrieved without it
+
 		int resId = res.getIdentifier(name, "raw", app.getPackageName());
 		return res.openRawResource(resId);
 	}
@@ -147,16 +127,16 @@ public class AndroidTorWrapper extends AbstractTorWrapper {
 
 	private void installExecutable(File extracted, File lib, String libName) throws IOException {
 		if (lib.exists()) {
-			// If an older version left behind a binary, delete it
+
 			if (extracted.exists()) {
 				if (extracted.delete()) LOG.info("Deleted old binary");
 				else LOG.info("Failed to delete old binary");
 			}
 		} else if (SDK_INT < 29) {
-			// The binary wasn't extracted at install time. Try to extract it
+
 			extractLibraryFromApk(libName, extracted);
 		} else {
-			// No point extracting the binary, we won't be allowed to execute it
+
 			throw new FileNotFoundException(lib.getAbsolutePath());
 		}
 	}
@@ -164,7 +144,7 @@ public class AndroidTorWrapper extends AbstractTorWrapper {
 	private void extractLibraryFromApk(String libName, File dest) throws IOException {
 		File sourceDir = new File(app.getApplicationInfo().sourceDir);
 		if (sourceDir.isFile()) {
-			// Look for other APK files in the same directory, if we're allowed
+
 			File parent = sourceDir.getParentFile();
 			if (parent != null) sourceDir = parent;
 		}
@@ -177,7 +157,7 @@ public class AndroidTorWrapper extends AbstractTorWrapper {
 					if (LOG.isLoggable(INFO)) {
 						LOG.info("Extracting " + e.getName() + " from " + apk.getAbsolutePath());
 					}
-					extract(zin, dest); // Zip input stream will be closed
+					extract(zin, dest);
 					return;
 				}
 			}
@@ -186,9 +166,6 @@ public class AndroidTorWrapper extends AbstractTorWrapper {
 		throw new FileNotFoundException(libName);
 	}
 
-	/**
-	 * Returns all files with the extension .apk or .APK under the given root.
-	 */
 	private List<File> findApkFiles(File root) {
 		List<File> files = new ArrayList<>();
 		findApkFiles(root, files);
@@ -206,11 +183,6 @@ public class AndroidTorWrapper extends AbstractTorWrapper {
 		}
 	}
 
-	/**
-	 * Returns the paths at which libraries with the given name would be found
-	 * inside an APK file, for all architectures supported by the device, in
-	 * order of preference.
-	 */
 	private List<String> getSupportedLibraryPaths(String libName) {
 		List<String> architectures = new ArrayList<>();
 		for (String abi : getSupportedArchitectures()) {

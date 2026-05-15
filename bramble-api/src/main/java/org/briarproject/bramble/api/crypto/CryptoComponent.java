@@ -27,49 +27,37 @@ public interface CryptoComponent {
 
 	KeyParser getMessageKeyParser();
 
-	
 	KeyPair generateHybridAgreementKeyPair();
 
-	
 	KeyParser getHybridAgreementKeyParser();
 
-	
 	KeyPair generateHybridSignatureKeyPair();
 
-	
 	KeyParser getHybridSignatureKeyParser();
 
-	
 	byte[] hybridSign(String label, byte[] toSign, PrivateKey privateKey)
 			throws GeneralSecurityException;
 
-	
 	boolean verifyHybridSignature(byte[] signature, String label, byte[] signed,
 			PublicKey publicKey) throws GeneralSecurityException;
 
-	
 	HybridEncapsulationResult hybridEncapsulate(PublicKey theirPublicKey)
 			throws GeneralSecurityException;
 
-	
 	SecretKey deriveHybridSharedSecret(String label, PublicKey theirPublicKey,
 			KeyPair ourKeyPair, byte[] kemCiphertext, byte[]... inputs)
 			throws GeneralSecurityException;
 
-	
 	SecretKey deriveHybridSharedSecretAsResponder(String label,
 			PublicKey theirPublicKey, KeyPair ourKeyPair, byte[] kemSecret,
 			byte[]... inputs) throws GeneralSecurityException;
 
-	
 	SecretKey deriveKey(String label, SecretKey k, byte[]... inputs);
 
-	
 	SecretKey deriveSharedSecret(String label, PublicKey theirPublicKey,
 			KeyPair ourKeyPair, byte[]... inputs)
 			throws GeneralSecurityException;
 
-	
 	@Deprecated
 	SecretKey deriveSharedSecretBadly(String label,
 			PublicKey theirStaticPublicKey, PublicKey theirEphemeralPublicKey,
@@ -77,31 +65,24 @@ public interface CryptoComponent {
 			boolean alice, byte[]... inputs)
 			throws GeneralSecurityException;
 
-	
 	SecretKey deriveSharedSecret(String label, PublicKey theirStaticPublicKey,
 			PublicKey theirEphemeralPublicKey, KeyPair ourStaticKeyPair,
 			KeyPair ourEphemeralKeyPair, boolean alice, byte[]... inputs)
 			throws GeneralSecurityException;
 
-	
 	byte[] sign(String label, byte[] toSign, PrivateKey privateKey)
 			throws GeneralSecurityException;
 
-	
 	boolean verifySignature(byte[] signature, String label, byte[] signed,
 			PublicKey publicKey) throws GeneralSecurityException;
 
-	
 	byte[] hash(String label, byte[]... inputs);
 
-	
 	byte[] mac(String label, SecretKey macKey, byte[]... inputs);
 
-	
 	boolean verifyMac(byte[] mac, String label, SecretKey macKey,
 			byte[]... inputs);
 
-	
 	byte[] encryptWithPassword(byte[] plaintext, char[] password,
 			@Nullable KeyStrengthener keyStrengthener);
 
@@ -109,24 +90,14 @@ public interface CryptoComponent {
 			@Nullable KeyStrengthener keyStrengthener)
 			throws DecryptionException;
 
-	
 	boolean isEncryptedWithStrengthenedKey(byte[] ciphertext);
 
-	/**
-	 * Returns true if the ciphertext was produced with a superseded
-	 * password-based KDF (currently: Scrypt). Used to opportunistically
-	 * upgrade stored database-key blobs to the current default
-	 * (Argon2id) on the next successful sign-in.
-	 */
 	boolean isEncryptedWithLegacyKdf(byte[] ciphertext);
 
-	
 	byte[] encryptToKey(PublicKey publicKey, byte[] plaintext);
 
-	
 	String asciiArmour(byte[] b, int lineLength);
 
-	
 	String encodeOnion(byte[] publicKey);
 
 }

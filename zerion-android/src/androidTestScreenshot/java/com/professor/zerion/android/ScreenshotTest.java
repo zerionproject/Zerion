@@ -42,8 +42,7 @@ public abstract class ScreenshotTest extends UiTest {
 			if (e.getMessage() == null ||
 					!e.getMessage().equals("Unable to capture screenshot."))
 				throw e;
-			// The tests should still pass when run from AndroidStudio
-			// without manually granting permissions like fastlane does.
+
 			Log.w("Screengrab", "Permission to write screenshot is missing.");
 		}
 	}

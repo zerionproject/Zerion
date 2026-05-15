@@ -24,13 +24,11 @@ import java.util.concurrent.Executor;
 
 import androidx.annotation.CallSuper;
 
-
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
 public abstract class InvitationControllerImpl<I extends InvitationItem>
 		extends DbControllerImpl
 		implements InvitationController<I>, EventListener {
-
 
 	private final EventBus eventBus;
 

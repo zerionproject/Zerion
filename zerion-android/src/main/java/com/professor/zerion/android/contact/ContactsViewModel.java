@@ -48,7 +48,6 @@ import androidx.arch.core.util.Function;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
-
 @NotNullByDefault
 public class ContactsViewModel extends DbViewModel implements EventListener {
 

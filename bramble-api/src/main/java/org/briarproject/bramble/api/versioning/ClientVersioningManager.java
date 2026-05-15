@@ -13,26 +13,21 @@ import org.briarproject.nullsafety.NotNullByDefault;
 @NotNullByDefault
 public interface ClientVersioningManager {
 
-	
 	ClientId CLIENT_ID = new ClientId("org.briarproject.bramble.versioning");
 
-	
 	int MAJOR_VERSION = 0;
 
-	
 	void registerClient(ClientId clientId, int majorVersion, int minorVersion,
 			ClientVersioningHook hook);
 
-	
 	Visibility getClientVisibility(Transaction txn, ContactId contactId,
 			ClientId clientId, int majorVersion) throws DbException;
 
-	
 	int getClientMinorVersion(Transaction txn, ContactId contactId,
 			ClientId clientId, int majorVersion) throws DbException;
 
 	interface ClientVersioningHook {
-		
+
 		void onClientVisibilityChanging(Transaction txn, Contact c,
 				Visibility v) throws DbException;
 	}

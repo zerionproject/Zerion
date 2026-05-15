@@ -29,7 +29,6 @@ public class CryptoExecutorModule {
 		ExecutorService cryptoExecutor;
 	}
 
-	
 	private static final int MAX_EXECUTOR_THREADS =
 			Math.max(1, Runtime.getRuntime().availableProcessors() - 1);
 

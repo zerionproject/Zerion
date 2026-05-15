@@ -45,7 +45,6 @@ import static java.util.Objects.requireNonNull;
 public abstract class ThreadListViewModel<I extends ThreadItem>
 		extends DbViewModel implements EventListener {
 
-
 	protected final IdentityManager identityManager;
 	protected final AndroidNotificationManager notificationManager;
 	protected final SharingController sharingController;

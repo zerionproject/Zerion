@@ -7,11 +7,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
-/**
- * Header information for a received voice signal.
- * Unlike PrivateMessageHeader, this does NOT extend ConversationMessageHeader
- * because voice signals should NOT appear in the conversation UI.
- */
 @Immutable
 @NotNullByDefault
 public class VoiceSignalHeader {

@@ -5,7 +5,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.ThreadSafe;
 
-
 @ThreadSafe
 @NotNullByDefault
 public class PendingContactId extends UniqueId {

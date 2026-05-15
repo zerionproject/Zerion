@@ -53,8 +53,6 @@ public class InviteeProtocolEngineTest extends AbstractProtocolEngineTest {
 				inviteTimestamp, state);
 	}
 
-	// onInviteAction
-
 	@Test(expected = UnsupportedOperationException.class)
 	public void testOnInviteActionFromStart() {
 		engine.onInviteAction(txn, getDefaultSession(START), null,
@@ -96,8 +94,6 @@ public class InviteeProtocolEngineTest extends AbstractProtocolEngineTest {
 		engine.onInviteAction(txn, getDefaultSession(ERROR), null,
 				messageTimestamp, signature, NO_AUTO_DELETE_TIMER);
 	}
-
-	// onJoinAction
 
 	@Test(expected = ProtocolStateException.class)
 	public void testOnJoinActionFromStart() throws Exception {
@@ -188,8 +184,6 @@ public class InviteeProtocolEngineTest extends AbstractProtocolEngineTest {
 		engine.onJoinAction(txn, session);
 	}
 
-	// onLeaveAction
-
 	@Test
 	public void testOnLeaveActionFromStart() throws Exception {
 		InviteeSession session = getDefaultSession(START);
@@ -264,8 +258,6 @@ public class InviteeProtocolEngineTest extends AbstractProtocolEngineTest {
 		assertSessionConstantsUnchanged(session, newSession);
 	}
 
-	// onMemberAddedAction
-
 	@Test
 	public void testOnMemberAddedFromStart() {
 		InviteeSession session = getDefaultSession(START);
@@ -307,8 +299,6 @@ public class InviteeProtocolEngineTest extends AbstractProtocolEngineTest {
 		InviteeSession session = getDefaultSession(ERROR);
 		assertEquals(session, engine.onMemberAddedAction(txn, session));
 	}
-
-	// onInviteMessage
 
 	@Test
 	public void testOnInviteMessageFromStartWithLowerTimestamp()
@@ -443,8 +433,6 @@ public class InviteeProtocolEngineTest extends AbstractProtocolEngineTest {
 				engine.onInviteMessage(txn, session, inviteMessage));
 	}
 
-	// onJoinMessage
-
 	@Test
 	public void testOnJoinMessageFromStart() throws Exception {
 		expectAbortWhenSubscribedToGroup();
@@ -539,7 +527,6 @@ public class InviteeProtocolEngineTest extends AbstractProtocolEngineTest {
 
 		expectSetPrivateGroupVisibility(SHARED);
 
-
 		InviteeSession newSession =
 				engine.onJoinMessage(txn, session, properJoinMessage);
 
@@ -560,8 +547,6 @@ public class InviteeProtocolEngineTest extends AbstractProtocolEngineTest {
 		InviteeSession session = getDefaultSession(ERROR);
 		assertEquals(session, engine.onJoinMessage(txn, session, joinMessage));
 	}
-
-	// onLeaveMessage
 
 	@Test
 	public void testOnLeaveMessageFromStart() throws Exception {
@@ -701,8 +686,6 @@ public class InviteeProtocolEngineTest extends AbstractProtocolEngineTest {
 		assertSessionConstantsUnchanged(session, newSession);
 	}
 
-	// onAbortMessage
-
 	@Test
 	public void testOnAbortMessageWhenNotSubscribed() throws Exception {
 		InviteeSession session = getDefaultSession(START);
@@ -722,8 +705,6 @@ public class InviteeProtocolEngineTest extends AbstractProtocolEngineTest {
 				engine.onAbortMessage(txn, session, abortMessage);
 		assertSessionAborted(session, newSession);
 	}
-
-	// helper methods
 
 	private void expectMarkMessageAvailableToAnswer(MessageId id,
 			boolean available) throws Exception {

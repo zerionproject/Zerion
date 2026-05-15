@@ -47,7 +47,6 @@ public class PngSuiteImageSizeCalculatorTest
 		this.filename = filename;
 	}
 
-	//  some files have sizes other than 32x32
 	private Map<String, Size> customSizes = new HashMap<>();
 
 	{

@@ -55,13 +55,13 @@ public class MessageSizeIntegrationTest extends BrambleTestCase {
 
 	@Test
 	public void testLegacyPrivateMessageFitsIntoRecord() throws Exception {
-		// Create a maximum-length private message
+
 		GroupId groupId = new GroupId(getRandomId());
 		long timestamp = Long.MAX_VALUE;
 		String text = getRandomString(MAX_PRIVATE_MESSAGE_TEXT_LENGTH);
 		PrivateMessage message = privateMessageFactory
 				.createLegacyPrivateMessage(groupId, timestamp, text);
-		// Check the size of the serialised message
+
 		int length = message.getMessage().getRawLength();
 		assertTrue(length > UniqueId.LENGTH + 8
 				+ MAX_PRIVATE_MESSAGE_TEXT_LENGTH);
@@ -70,11 +70,11 @@ public class MessageSizeIntegrationTest extends BrambleTestCase {
 
 	@Test
 	public void testPrivateMessageFitsIntoRecord() throws Exception {
-		// Create a maximum-length private message
+
 		GroupId groupId = new GroupId(getRandomId());
 		long timestamp = Long.MAX_VALUE;
 		String text = getRandomString(MAX_PRIVATE_MESSAGE_TEXT_LENGTH);
-		// Create the maximum number of maximum-length attachment headers
+
 		List<AttachmentHeader> headers = new ArrayList<>();
 		for (int i = 0; i < MAX_ATTACHMENTS_PER_MESSAGE; i++) {
 			headers.add(new AttachmentHeader(groupId,
@@ -83,7 +83,7 @@ public class MessageSizeIntegrationTest extends BrambleTestCase {
 		}
 		PrivateMessage message = privateMessageFactory.createPrivateMessage(
 				groupId, timestamp, text, headers, MAX_AUTO_DELETE_TIMER_MS);
-		// Check the size of the serialised message
+
 		int length = message.getMessage().getRawLength();
 		assertTrue(length > UniqueId.LENGTH + 8
 				+ MAX_PRIVATE_MESSAGE_TEXT_LENGTH + MAX_ATTACHMENTS_PER_MESSAGE
@@ -93,7 +93,7 @@ public class MessageSizeIntegrationTest extends BrambleTestCase {
 
 	@Test
 	public void testAttachmentFitsIntoRecord() throws Exception {
-		// Create a maximum-length attachment
+
 		String contentType = getRandomString(MAX_CONTENT_TYPE_BYTES);
 		byte[] data = getRandomBytes(MAX_IMAGE_SIZE);
 
@@ -110,7 +110,6 @@ public class MessageSizeIntegrationTest extends BrambleTestCase {
 		Message message =
 				messageFactory.createMessage(groupId, timestamp, body);
 
-		// Check the size of the serialised message
 		int length = message.getRawLength();
 		assertTrue(length > UniqueId.LENGTH + 8
 				+ 1 + MAX_CONTENT_TYPE_BYTES + MAX_IMAGE_SIZE);

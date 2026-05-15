@@ -20,13 +20,11 @@ import java.util.concurrent.Executor;
 
 import javax.annotation.concurrent.Immutable;
 
-
 @Immutable
 @NotNullByDefault
 public abstract class ContactSelectorControllerImpl
 		extends DbControllerImpl
 		implements ContactSelectorController<SelectableContactItem> {
-
 
 	private final ContactManager contactManager;
 	private final AuthorManager authorManager;

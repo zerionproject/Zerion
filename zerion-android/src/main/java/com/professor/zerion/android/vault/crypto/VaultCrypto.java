@@ -94,14 +94,13 @@ public class VaultCrypto {
 
 	public byte[] hkdfSha256(byte[] inputKeyMaterial, String info, int outputLength) {
 		try {
-			// HKDF per RFC 5869 using standard JCA HMAC-SHA256
+
 			byte[] salt = new byte[32];
-			// Extract: PRK = HMAC-SHA256(salt, IKM)
+
 			Mac extractMac = Mac.getInstance("HmacSHA256");
 			extractMac.init(new SecretKeySpec(salt, "HmacSHA256"));
 			byte[] prk = extractMac.doFinal(inputKeyMaterial);
 
-			// Expand: OKM = T(1) || T(2) || ... truncated to outputLength
 			byte[] infoBytes = info.getBytes(java.nio.charset.StandardCharsets.UTF_8);
 			int hashLen = 32;
 			int n = (outputLength + hashLen - 1) / hashLen;

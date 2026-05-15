@@ -18,23 +18,19 @@ public class Multiset<T> {
 
 	private int total = 0;
 
-	
 	public int getTotal() {
 		return total;
 	}
 
-	
 	public int getUnique() {
 		return map.size();
 	}
 
-	
 	public int getCount(T t) {
 		Integer count = map.get(t);
 		return count == null ? 0 : count;
 	}
 
-	
 	public int add(T t) {
 		Integer count = map.get(t);
 		if (count == null) count = 0;
@@ -43,7 +39,6 @@ public class Multiset<T> {
 		return count + 1;
 	}
 
-	
 	public int remove(T t) {
 		Integer count = map.get(t);
 		if (count == null) throw new NoSuchElementException();
@@ -53,7 +48,6 @@ public class Multiset<T> {
 		return count - 1;
 	}
 
-	
 	public int removeAll(T t) {
 		Integer count = map.remove(t);
 		if (count == null) return 0;
@@ -61,18 +55,15 @@ public class Multiset<T> {
 		return count;
 	}
 
-	
 	public boolean contains(T t) {
 		return map.containsKey(t);
 	}
 
-	
 	public void clear() {
 		map.clear();
 		total = 0;
 	}
 
-	
 	public Set<T> keySet() {
 		return Collections.unmodifiableSet(map.keySet());
 	}

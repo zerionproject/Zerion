@@ -2,10 +2,8 @@ package org.briarproject.bramble.api.plugin;
 
 import org.briarproject.bramble.util.StringUtils;
 
-
 public class TransportId {
 
-	
 	public static int MAX_TRANSPORT_ID_LENGTH = 100;
 
 	private final String id;

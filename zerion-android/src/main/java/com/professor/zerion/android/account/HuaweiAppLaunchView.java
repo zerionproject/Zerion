@@ -1,6 +1,5 @@
 package com.professor.zerion.android.account;
 
-
 import android.content.Context;
 import android.content.Intent;
 import android.util.AttributeSet;
@@ -8,7 +7,6 @@ import android.widget.Toast;
 
 import com.professor.zerion.R;
 import org.briarproject.nullsafety.NotNullByDefault;
-
 
 import javax.annotation.Nullable;
 
@@ -22,7 +20,6 @@ import static org.briarproject.android.dontkillmelib.HuaweiUtils.getHuaweiAppLau
 @UiThread
 @NotNullByDefault
 class HuaweiAppLaunchView extends PowerView {
-
 
 	public HuaweiAppLaunchView(Context context) {
 		this(context, null);
@@ -63,7 +60,7 @@ class HuaweiAppLaunchView extends PowerView {
 				setChecked(true);
 				return;
 			} catch (Exception e) {
-				
+
 			}
 		}
 		Toast.makeText(context, R.string.dnkm_huawei_app_launch_error_toast,

@@ -18,7 +18,6 @@ public class PoliteExecutor implements Executor {
 	@GuardedBy("lock")
 	private int concurrentTasks = 0;
 
-	
 	public PoliteExecutor(String tag, Executor delegate,
 			int maxConcurrentTasks) {
 		this.delegate = delegate;

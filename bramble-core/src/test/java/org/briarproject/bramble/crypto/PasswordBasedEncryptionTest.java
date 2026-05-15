@@ -42,7 +42,6 @@ public class PasswordBasedEncryptionTest extends BrambleMockTestCase {
 		char[] password = "password".toCharArray();
 		byte[] ciphertext = crypto.encryptWithPassword(input, password, null);
 
-		// Modify the format version
 		ciphertext[0] ^= (byte) 0xFF;
 		try {
 			crypto.decryptWithPassword(ciphertext, password, null);
@@ -57,7 +56,6 @@ public class PasswordBasedEncryptionTest extends BrambleMockTestCase {
 		byte[] input = getRandomBytes(1234);
 		byte[] ciphertext = crypto.encryptWithPassword(input, "password".toCharArray(), null);
 
-		// Try to decrypt with the wrong password
 		try {
 			crypto.decryptWithPassword(ciphertext, "wrong".toCharArray(), null);
 			fail();
@@ -74,13 +72,11 @@ public class PasswordBasedEncryptionTest extends BrambleMockTestCase {
 			will(returnValue(strengthened));
 		}});
 
-		// Use the key strengthener during encryption
 		byte[] input = getRandomBytes(1234);
 		char[] password = "password".toCharArray();
 		byte[] ciphertext =
 				crypto.encryptWithPassword(input, password, keyStrengthener);
 
-		// The key strengthener is missing during decryption
 		try {
 			crypto.decryptWithPassword(ciphertext, password, null);
 			fail();
@@ -99,13 +95,11 @@ public class PasswordBasedEncryptionTest extends BrambleMockTestCase {
 			will(returnValue(false));
 		}});
 
-		// Use the key strengthener during encryption
 		byte[] input = getRandomBytes(1234);
 		char[] password = "password".toCharArray();
 		byte[] ciphertext =
 				crypto.encryptWithPassword(input, password, keyStrengthener);
 
-		// The key strengthener fails during decryption
 		try {
 			crypto.decryptWithPassword(ciphertext, password, keyStrengthener);
 			fail();

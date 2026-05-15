@@ -54,7 +54,6 @@ public class SetupViewModelTest extends BrambleMockTestCase {
 			will(returnValue(appContext));
 			allowing(appContext).getPackageManager();
 
-			// Create the account
 			oneOf(accountManager).createAccount(authorName, password);
 			will(returnValue(true));
 		}});

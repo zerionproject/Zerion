@@ -8,22 +8,16 @@ import javax.annotation.concurrent.Immutable;
 @NotNullByDefault
 public class Record {
 
-	
 	public static final int RECORD_HEADER_BYTES_CLASSICAL = 4;
 
-	
 	public static final int RECORD_HEADER_BYTES_EXTENDED = 6;
 
-	
 	public static final int RECORD_HEADER_BYTES = RECORD_HEADER_BYTES_EXTENDED;
 
-	
 	public static final int MAX_RECORD_PAYLOAD_BYTES_CLASSICAL = 48 * 1024;
 
-	
 	public static final int MAX_RECORD_PAYLOAD_BYTES_EXTENDED = 10 * 1024 * 1024;
 
-	
 	public static final int MAX_RECORD_PAYLOAD_BYTES = MAX_RECORD_PAYLOAD_BYTES_EXTENDED;
 
 	private final byte protocolVersion, recordType;

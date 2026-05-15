@@ -14,21 +14,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * B.3 — In-band hybrid-key signing tests.
- *
- * Validates the byte layout, role-byte computation, sessionId derivation,
- * and Ed25519 sign/verify round-trip against the wire spec at
- * docs/wire/B3_B4_SPEC_v1.5.0.md. When iOS publishes the canonical test
- * vector (docs/wire/test_vectors/B3_v1.txt) we'll add an additional
- * test case here that pins our outputs to the canonical bytes.
- */
 public class B3PqProofTest {
 
-	// Deterministic local example vector — reproducible across runs via
-	// the seeded SecureRandom. iOS will publish a canonical vector this
-	// week; once it lands, we add a second test case keyed on those exact
-	// inputs and assert byte-identical outputs.
 	private static final long SEED = 0xC0FFEE_BABEL;
 
 	@Test
@@ -41,10 +28,7 @@ public class B3PqProofTest {
 
 	@Test
 	public void roleHandlesUnsignedHighBitCorrectly() {
-		// 0x7F vs 0x80 — the trap that catches signed-byte comparators.
-		// In signed bytes, 0x80 = -128, which would compare as LESS THAN
-		// 0x7F = +127. Unsigned: 0x7F (127) < 0x80 (128), so the all-0x7F
-		// pubkey is Alice (lex-lower).
+
 		byte[] ephSeven = bytes(0x7F, 32);
 		byte[] ephEight = bytes(0x80, 32);
 		assertEquals("0x7F should compare LESS THAN 0x80 unsigned",
@@ -84,35 +68,28 @@ public class B3PqProofTest {
 		assertEquals("Total length per spec section 1.4 = 1251 bytes",
 				B3_SIG_INPUT_LEN, input.length);
 
-		// Bytes 0..3:  uint32_BE(22)
 		assertEquals(0x00, input[0]);
 		assertEquals(0x00, input[1]);
 		assertEquals(0x00, input[2]);
-		assertEquals(0x16, input[3]); // 22 = 0x16
+		assertEquals(0x16, input[3]);
 
-		// Bytes 4..25: "ZERION_PQ_KEY_PROOF_v1"
 		assertArrayEquals("ZERION_PQ_KEY_PROOF_v1".getBytes(),
 				Arrays.copyOfRange(input, 4, 26));
 
-		// Byte 26: role
 		assertEquals(B3_ROLE_BOB, input[26]);
 
-		// Bytes 27..30: uint32_BE(32)
 		assertEquals(0x00, input[27]);
 		assertEquals(0x00, input[28]);
 		assertEquals(0x00, input[29]);
-		assertEquals(0x20, input[30]); // 32 = 0x20
+		assertEquals(0x20, input[30]);
 
-		// Bytes 31..62: sessionId
 		assertArrayEquals(sessionId, Arrays.copyOfRange(input, 31, 63));
 
-		// Bytes 63..66: uint32_BE(1184)
 		assertEquals(0x00, input[63]);
 		assertEquals(0x00, input[64]);
-		assertEquals(0x04, input[65]); // 1184 = 0x04A0
+		assertEquals(0x04, input[65]);
 		assertEquals((byte) 0xA0, input[66]);
 
-		// Bytes 67..1250: pqPub
 		assertArrayEquals(pqPub, Arrays.copyOfRange(input, 67, 1251));
 	}
 
@@ -123,12 +100,9 @@ public class B3PqProofTest {
 		byte[] bobEph = randomBytes(32, 12);
 		byte[] bobPq = randomBytes(1184, 13);
 
-		// Bob signs his binding.
 		byte[] sig = B3PqProof.sign(signing.priv, bobEph, aliceEph, bobPq);
 		assertEquals("Ed25519 sig is 64 bytes", 64, sig.length);
 
-		// Alice verifies — passes Bob's eph as signerEph, her own as
-		// verifierEph. Both sides compute sessionId + role identically.
 		assertTrue("Honest signature must verify",
 				B3PqProof.verify(signing.pub, bobEph, aliceEph, bobPq, sig));
 	}
@@ -141,7 +115,6 @@ public class B3PqProofTest {
 		byte[] bobPq = randomBytes(1184, 23);
 		byte[] sig = B3PqProof.sign(signing.priv, bobEph, aliceEph, bobPq);
 
-		// Attacker swaps the PQ pubkey for a substitute.
 		byte[] attackerPq = randomBytes(1184, 24);
 		assertFalse("Substituted PQ pubkey must NOT verify",
 				B3PqProof.verify(signing.pub, bobEph, aliceEph,
@@ -150,20 +123,15 @@ public class B3PqProofTest {
 
 	@Test
 	public void verifyRejectsTamperedRole() {
-		// Generate two different sessions where the role byte differs and
-		// confirm that a sig from one will not verify for the other.
+
 		Ed25519KeyPair signing = Ed25519KeyPair.generate(seededRng(30));
 		byte[] lowEph = bytes(0x10, 32);
 		byte[] highEph = bytes(0xF0, 32);
 		byte[] pq = randomBytes(1184, 31);
 
-		// Sign as Alice (publisher's eph is lower).
 		byte[] sigAlice = B3PqProof.sign(signing.priv, lowEph, highEph, pq);
 		assertTrue(B3PqProof.verify(signing.pub, lowEph, highEph, pq, sigAlice));
 
-		// A sig minted with role=Alice cannot verify under role=Bob.
-		// Swapping the eph order in verify flips both role *and* sessionId
-		// so the sig fails — exactly the desired property.
 		assertFalse(B3PqProof.verify(signing.pub, highEph, lowEph, pq,
 				sigAlice));
 	}
@@ -200,11 +168,7 @@ public class B3PqProofTest {
 
 	@Test
 	public void deterministicVectorIsReproducible() {
-		// The whole point of the example vector — same inputs, same outputs,
-		// every run, every machine. Ed25519 is deterministic; BLAKE2b is
-		// deterministic; our byte layout is fixed. So this entire pipeline
-		// is reproducible. Catches accidental nondeterminism in the
-		// implementation (e.g. someone swapping in a randomized signer).
+
 		Ed25519KeyPair signing = Ed25519KeyPair.generate(seededRng(SEED));
 		byte[] aliceEph = randomBytes(32, SEED + 1);
 		byte[] bobEph = randomBytes(32, SEED + 2);
@@ -221,20 +185,6 @@ public class B3PqProofTest {
 
 	@Test
 	public void canonicalVectorMatchesIOS() {
-		// Pins our outputs to docs/wire/test_vectors/B3_v1.txt — the
-		// iOS-authored canonical cross-platform vector. PyNaCl-libsodium
-		// produced expected_sig; BC's Ed25519Signer must match byte-for-byte
-		// because Ed25519 is deterministic per RFC 8032. If this fails:
-		//
-		//   - role + sessionId asserts match  -> drift is in sigInput layout
-		//     (length prefixes? endianness? domain label encoding?)
-		//   - role wrong                       -> ephemeral compare regressed
-		//     to signed bytes (the 0x7F vs 0x80 trap)
-		//   - sessionId wrong                  -> BLAKE2b key handling drifted
-		//     (UTF-8 vs UTF-16, NUL termination, hash-then-key)
-		//   - all three correct, sig wrong     -> Ed25519 library mismatch
-		//
-		// All hex below is mirrored verbatim from B3_v1.txt.
 
 		byte[] aliceEph = hex(
 				"1112131415161718191a1b1c1d1e1f20" +
@@ -249,7 +199,6 @@ public class B3PqProofTest {
 				"03a107bff3ce10be1d70dd18e74bc099" +
 				"67e4d6309ba50d5f1ddc8664125531b8");
 
-		// Synthetic 1184-byte ML-KEM-768 pubkey: byte i = (i ^ 0xA5) & 0xFF.
 		byte[] bobPq = new byte[1184];
 		for (int i = 0; i < bobPq.length; i++) {
 			bobPq[i] = (byte) ((i ^ 0xA5) & 0xFF);
@@ -265,9 +214,6 @@ public class B3PqProofTest {
 				"2acaf2bd81f0ba38ef57dd13cbeafdf5" +
 				"ac016370d17ee54e0b9a2d2cdfdd460a");
 
-		// Cross-check: Ed25519 pub-from-seed must match the pinned value.
-		// If this fails BC and libsodium disagree on Ed25519 key derivation,
-		// which would be unusual but worth catching before chasing sig bytes.
 		org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters sk =
 				new org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters(
 						bobSigningSeed, 0);
@@ -275,24 +221,19 @@ public class B3PqProofTest {
 		assertArrayEquals("Bob's signing pubkey derivation must match iOS",
 				expectedBobSigningPub, derivedPub);
 
-		// Bob's eph (0xc0...) is lex-greater than Alice's (0x11...), so Bob
-		// is the higher side and gets role 0x02.
 		byte role = B3PqProof.roleFor(bobEph, aliceEph);
 		assertEquals("Canonical role byte (Bob's eph lex-greater than Alice's)",
 				expectedRoleByte, role);
 
-		// sessionId derived from sortedConcat(min, max) under the session DS.
 		byte[] sessionId = B3PqProof.computeSessionId(bobEph, aliceEph);
 		assertArrayEquals("Canonical sessionId byte-equality across iOS/Android",
 				expectedSessionId, sessionId);
 
-		// The sig — all the way through the publisher pipeline.
 		byte[] sig = B3PqProof.sign(bobSigningSeed, bobEph, aliceEph, bobPq);
 		assertArrayEquals(
 				"Canonical Ed25519 signature byte-equality (PyNaCl <-> BC)",
 				expectedSig, sig);
 
-		// And verify on the receiver side using only the public material.
 		assertTrue("Canonical sig must verify on the Android side",
 				B3PqProof.verify(expectedBobSigningPub,
 						bobEph, aliceEph, bobPq, sig));
@@ -300,8 +241,7 @@ public class B3PqProofTest {
 
 	@Test
 	public void domainSeparatorChangesSignature() {
-		// Sanity: hand-computed signature on the same key but a one-byte
-		// modification to the input must produce a different sig.
+
 		Ed25519KeyPair signing = Ed25519KeyPair.generate(seededRng(60));
 		byte[] aliceEph = randomBytes(32, 61);
 		byte[] bobEph = randomBytes(32, 62);
@@ -314,8 +254,6 @@ public class B3PqProofTest {
 		assertNotEquals("One bit flip in input must change the sig",
 				toHex(sig1), toHex(sig2));
 	}
-
-	// ---------- helpers ----------
 
 	private static byte[] bytes(int value, int len) {
 		byte[] b = new byte[len];
@@ -330,9 +268,7 @@ public class B3PqProofTest {
 	}
 
 	private static SecureRandom seededRng(long seed) {
-		// SecureRandom seeded with a long is deterministic on the standard
-		// SUN/SHA1PRNG provider, which is what we want for reproducible
-		// test vectors.
+
 		try {
 			SecureRandom r = SecureRandom.getInstance("SHA1PRNG");
 			r.setSeed(longToBytes(seed));
@@ -370,8 +306,6 @@ public class B3PqProofTest {
 		return out;
 	}
 
-	/** Ed25519 keypair generation via BC, decoupled from Bramble's
-	 * crypto component so this test is pure unit / no DI. */
 	private static final class Ed25519KeyPair {
 		final byte[] priv;
 		final byte[] pub;

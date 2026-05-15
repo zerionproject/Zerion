@@ -6,7 +6,6 @@ import java.util.Collection;
 
 import javax.annotation.concurrent.Immutable;
 
-
 @Immutable
 @NotNullByDefault
 public class Request {
@@ -17,7 +16,6 @@ public class Request {
 		this.requested = requested;
 	}
 
-	
 	public Collection<MessageId> getMessageIds() {
 		return requested;
 	}

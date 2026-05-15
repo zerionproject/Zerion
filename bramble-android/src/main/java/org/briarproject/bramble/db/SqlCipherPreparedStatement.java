@@ -34,10 +34,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
-/**
- * Minimal JDBC PreparedStatement wrapping SQLCipher's SQLiteDatabase.
- * Only implements the methods used by JdbcDatabase.
- */
 class SqlCipherPreparedStatement implements PreparedStatement {
 
 	private final SQLiteDatabase db;
@@ -187,8 +183,6 @@ class SqlCipherPreparedStatement implements PreparedStatement {
 	public boolean isClosed() throws SQLException {
 		return closed;
 	}
-
-	// --- Unimplemented methods ---
 
 	@Override public void setByte(int i, byte b) throws SQLException { throw new UnsupportedOperationException(); }
 	@Override public void setShort(int i, short s) throws SQLException { throw new UnsupportedOperationException(); }

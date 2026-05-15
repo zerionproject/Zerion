@@ -57,7 +57,6 @@ public class SecurityFragment extends Fragment {
 	private SettingsViewModel viewModel;
 	private WipePasswordManager wipePasswordManager;
 
-
 	private SwitchMaterial lockSwitch;
 	private SwitchMaterial screenshotProtectionSwitch;
 	private SwitchMaterial typingIndicatorsSwitch;
@@ -82,7 +81,6 @@ public class SecurityFragment extends Fragment {
 				.get(SettingsViewModel.class);
 	}
 
-	
 	@Nullable
 	private WipePasswordManager getWipePasswordManager() {
 		if (wipePasswordManager == null) {
@@ -102,7 +100,6 @@ public class SecurityFragment extends Fragment {
 	public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
 		super.onViewCreated(view, savedInstanceState);
 
-
 		lockSwitch = view.findViewById(R.id.lock_switch);
 		screenshotProtectionSwitch = view.findViewById(R.id.screenshot_protection_switch);
 		lockTimeoutCard = view.findViewById(R.id.lock_timeout_card);
@@ -112,7 +109,6 @@ public class SecurityFragment extends Fragment {
 		registrationLockSummary = view.findViewById(R.id.reg_lock_summary);
 		wipePasswordCard = view.findViewById(R.id.wipe_password_card);
 		wipePasswordSummary = view.findViewById(R.id.wipe_password_summary);
-
 
 		timeoutEntries = getResources().getStringArray(R.array.pref_key_lock_timeout_entries);
 		timeoutValues = getResources().getStringArray(R.array.pref_key_lock_timeout_values);
@@ -182,7 +178,6 @@ public class SecurityFragment extends Fragment {
 			startActivity(intent);
 		});
 
-
 		if (registrationLockCard != null) {
 			registrationLockCard.setOnClickListener(v -> showRegistrationLockDialog());
 			updateRegistrationLockSummary();
@@ -196,7 +191,6 @@ public class SecurityFragment extends Fragment {
 				showWipePasswordSetDialog();
 			}
 		});
-
 
 		observeSettings();
 		updateWipePasswordSummary();
@@ -299,10 +293,8 @@ public class SecurityFragment extends Fragment {
 		TextInputEditText passwordInput2 = dialogView.findViewById(R.id.password_input_2);
 		TextView warningText = dialogView.findViewById(R.id.warning_text);
 
-
 		if (passwordLayout1 != null) passwordLayout1.setHint(getString(R.string.wipe_password_enter));
 		if (passwordLayout2 != null) passwordLayout2.setHint(getString(R.string.wipe_password_confirm));
-
 
 		if (warningText != null) {
 			warningText.setText(R.string.wipe_password_warning);

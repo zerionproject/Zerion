@@ -22,7 +22,6 @@ public abstract class BdfMessageValidator implements MessageValidator {
 	protected final Clock clock;
 	protected final boolean canonical;
 
-	
 	@Deprecated
 	protected BdfMessageValidator(ClientHelper clientHelper,
 			MetadataEncoder metadataEncoder, Clock clock, boolean canonical) {

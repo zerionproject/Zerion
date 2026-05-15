@@ -33,7 +33,6 @@ import com.professor.zerion.R;
 import com.professor.zerion.android.conversation.ConversationActivity;
 import com.professor.zerion.android.login.SignInReminderReceiver;
 import com.professor.zerion.android.navdrawer.NavDrawerActivity;
-import com.professor.zerion.android.privategroup.conversation.GroupActivity;
 import com.professor.zerion.android.splash.SplashScreenActivity;
 import com.professor.zerion.android.util.ZerionNotificationBuilder;
 import com.professor.zerion.android.api.AndroidNotificationManager;
@@ -96,7 +95,6 @@ import static androidx.core.app.NotificationCompat.PRIORITY_MIN;
 import static androidx.core.app.NotificationCompat.VISIBILITY_SECRET;
 import static androidx.core.content.ContextCompat.getColor;
 import static org.briarproject.bramble.util.AndroidUtils.getImmutableFlags;
-import static com.professor.zerion.android.activity.ZerionActivity.GROUP_ID;
 import static com.professor.zerion.android.conversation.ConversationActivity.CONTACT_ID;
 import static com.professor.zerion.android.navdrawer.NavDrawerActivity.CONTACT_ADDED_URI;
 import static com.professor.zerion.android.navdrawer.NavDrawerActivity.CONTACT_URI;
@@ -376,10 +374,6 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		});
 	}
 
-	/**
-	 * Post or update the notification for a single contact.
-	 * Only alerts (sound/vibrate) if mayAlert is true.
-	 */
 	@UiThread
 	private void postContactNotification(ContactId c, boolean mayAlert) {
 		int count = contactCounts.getCount(c);
@@ -521,29 +515,14 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 			b.setNotificationCategory(CATEGORY_SOCIAL);
 			if (mayAlertAgain) setAlertProperties(b);
 			setDeleteIntent(b, GROUP_URI);
-			Set<GroupId> groups = groupCounts.keySet();
-			if (groups.size() == 1) {
-				Intent i = new Intent(appContext, GroupActivity.class);
-				GroupId g = groups.iterator().next();
-				i.putExtra(GROUP_ID, g.getBytes());
-				String idHex = StringUtils.toHexString(g.getBytes());
-				i.setData(Uri.parse(GROUP_URI + "/" + idHex));
-				i.setFlags(FLAG_ACTIVITY_CLEAR_TOP);
-				TaskStackBuilder t = TaskStackBuilder.create(appContext);
-				t.addParentStack(GroupActivity.class);
-				t.addNextIntent(i);
-				b.setContentIntent(t.getPendingIntent(nextRequestId++,
-						getImmutableFlags(0)));
-			} else {
-				Intent i = new Intent(appContext, NavDrawerActivity.class);
-				i.setFlags(FLAG_ACTIVITY_CLEAR_TOP);
-				i.setData(GROUP_URI);
-				TaskStackBuilder t = TaskStackBuilder.create(appContext);
-				t.addParentStack(NavDrawerActivity.class);
-				t.addNextIntent(i);
-				b.setContentIntent(t.getPendingIntent(nextRequestId++,
-						getImmutableFlags(0)));
-			}
+			Intent i = new Intent(appContext, NavDrawerActivity.class);
+			i.setFlags(FLAG_ACTIVITY_CLEAR_TOP);
+			i.setData(GROUP_URI);
+			TaskStackBuilder t = TaskStackBuilder.create(appContext);
+			t.addParentStack(NavDrawerActivity.class);
+			t.addNextIntent(i);
+			b.setContentIntent(t.getPendingIntent(nextRequestId++,
+					getImmutableFlags(0)));
 			notificationManager.notify(GROUP_MESSAGE_NOTIFICATION_ID,
 					b.build());
 		}
@@ -831,7 +810,6 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		}
 	}
 
-	
 	private void handleIncomingVoiceCall(ContactId contactId,
 			VoiceSignalHeader header) {
 		androidExecutor.runOnBackgroundThread(() -> {

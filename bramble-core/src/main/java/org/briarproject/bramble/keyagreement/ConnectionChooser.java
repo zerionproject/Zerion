@@ -8,13 +8,10 @@ import javax.annotation.Nullable;
 
 interface ConnectionChooser {
 
-	
 	void submit(Callable<KeyAgreementConnection> task);
 
-	
 	@Nullable
 	KeyAgreementConnection poll(long timeout) throws InterruptedException;
 
-	
 	void stop();
 }

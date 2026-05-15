@@ -62,14 +62,12 @@ public class VaultOnboardingFragment extends BaseFragment {
 		confirmPasswordInput = view.findViewById(R.id.confirm_password_input);
 		createVaultButton = view.findViewById(R.id.create_vault_button);
 
-
 		return view;
 	}
 
 	@Override
 	public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
 		super.onViewCreated(view, savedInstanceState);
-
 
 		try {
 			viewModel = new ViewModelProvider(requireActivity(), viewModelFactory)
@@ -117,7 +115,6 @@ public class VaultOnboardingFragment extends BaseFragment {
 			confirmPasswordLayout.startAnimation(slideUpFadeIn);
 
 			createVaultButton.startAnimation(buttonFadeIn);
-
 
 		} catch (Exception e) {
 		}

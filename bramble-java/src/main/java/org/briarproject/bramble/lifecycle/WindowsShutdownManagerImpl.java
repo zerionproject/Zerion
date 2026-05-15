@@ -43,10 +43,10 @@ class WindowsShutdownManagerImpl extends ShutdownManagerImpl {
 
 	private final Map<String, Object> options;
 
-	private boolean initialised = false; // Locking: lock
+	private boolean initialised = false;
 
 	WindowsShutdownManagerImpl() {
-		// Use the Unicode versions of Win32 API calls
+
 		Map<String, Object> m = new HashMap<>();
 		m.put(OPTION_TYPE_MAPPER, W32APITypeMapper.UNICODE);
 		m.put(OPTION_FUNCTION_MAPPER, W32APIFunctionMapper.UNICODE);
@@ -69,7 +69,6 @@ class WindowsShutdownManagerImpl extends ShutdownManagerImpl {
 		return new StartOnce(r);
 	}
 
-	// Locking: lock
 	private void initialise() {
 		if (isWindows()) {
 			new EventLoop().start();
@@ -79,14 +78,13 @@ class WindowsShutdownManagerImpl extends ShutdownManagerImpl {
 		initialised = true;
 	}
 
-	// Package access for testing
 	void runShutdownHooks() {
 		lock.lock();
 		try {
 			boolean interrupted = false;
-			// Start each hook in its own thread
+
 			for (Thread hook : hooks.values()) hook.start();
-			// Wait for all the hooks to finish
+
 			for (Thread hook : hooks.values()) {
 				try {
 					hook.join();
@@ -110,32 +108,32 @@ class WindowsShutdownManagerImpl extends ShutdownManagerImpl {
 		@Override
 		public void run() {
 			try {
-				// Load user32.dll
+
 				User32 user32 = Native.loadLibrary("user32",
 						User32.class, options);
-				// Create a callback to handle the WM_QUERYENDSESSION message
+
 				WindowProc proc = (hwnd, msg, wp, lp) -> {
 					if (msg == WM_QUERYENDSESSION) {
-						// It's safe to delay returning from this message
+
 						runShutdownHooks();
 					}
-					// Pass the message to the default window procedure
+
 					return user32.DefWindowProc(hwnd, msg, wp, lp);
 				};
-				// Create a native window
+
 				HWND hwnd = user32.CreateWindowEx(0, "STATIC", "", WS_MINIMIZE,
 						0, 0, 0, 0, null, null, null, null);
-				// Register the callback
+
 				try {
-					// Use SetWindowLongPtr if available (64-bit safe)
+
 					user32.SetWindowLongPtr(hwnd, GWL_WNDPROC, proc);
 					LOG.info("Registered 64-bit callback");
 				} catch (UnsatisfiedLinkError e) {
-					// Use SetWindowLong if SetWindowLongPtr isn't available
+
 					user32.SetWindowLong(hwnd, GWL_WNDPROC, proc);
 					LOG.info("Registered 32-bit callback");
 				}
-				// Handle events until the window is destroyed
+
 				MSG msg = new MSG();
 				while (user32.GetMessage(msg, null, 0, 0) > 0) {
 					user32.TranslateMessage(msg);
@@ -157,7 +155,7 @@ class WindowsShutdownManagerImpl extends ShutdownManagerImpl {
 
 		@Override
 		public void start() {
-			// Ensure the thread is only started once
+
 			if (!called.getAndSet(true)) super.start();
 		}
 	}

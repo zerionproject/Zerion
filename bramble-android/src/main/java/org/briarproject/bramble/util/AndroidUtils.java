@@ -39,7 +39,6 @@ public class AndroidUtils {
 		return new File(ctx.getFilesDir(), STORED_LOGCAT);
 	}
 
-	
 	public static String[] getSupportedImageContentTypes() {
 		return new String[] {"image/jpeg", "image/png", "image/gif", "image/webp"};
 	}
@@ -55,9 +54,8 @@ public class AndroidUtils {
 		return flags;
 	}
 
-	
 	@Nullable
-	@SuppressLint("UnspecifiedRegisterReceiverFlag") // we specify where needed
+	@SuppressLint("UnspecifiedRegisterReceiverFlag")
 	public static Intent registerReceiver(Context ctx,
 			@Nullable BroadcastReceiver receiver, IntentFilter filter) {
 		if (SDK_INT >= 33) {

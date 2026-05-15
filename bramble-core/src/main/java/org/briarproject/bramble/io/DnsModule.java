@@ -4,7 +4,6 @@ import dagger.Module;
 import dagger.Provides;
 import okhttp3.Dns;
 
-
 @Module
 public class DnsModule {
 

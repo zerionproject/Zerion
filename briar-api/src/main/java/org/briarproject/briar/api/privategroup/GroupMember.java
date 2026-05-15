@@ -40,10 +40,6 @@ public class GroupMember {
 		return isCreator;
 	}
 
-	/**
-	 * Returns the ContactId of a visible contact
-	 * or null if the contact is not visible or the member is no contact.
-	 */
 	@Nullable
 	public ContactId getContactId() {
 		return contactId;

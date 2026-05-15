@@ -72,7 +72,6 @@ public class ChatSettingsActivity extends ZerionActivity {
 	private TextView theirFingerprintValue;
 	private com.google.android.material.button.MaterialButton copySafetyNumberButton;
 
-
 	@Override
 	public void injectActivity(ActivityComponent component) {
 		component.inject(this);
@@ -205,7 +204,6 @@ public class ChatSettingsActivity extends ZerionActivity {
 
 		loadSettings();
 
-
 		muteNotificationsSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
 			prefs.edit().putBoolean(PREF_MUTE_PREFIX + contactId.getInt(), isChecked).apply();
 		});
@@ -223,7 +221,6 @@ public class ChatSettingsActivity extends ZerionActivity {
 		vibrationSwitch.setChecked(vibrationEnabled);
 
 	}
-
 
 	@Override
 	public boolean onSupportNavigateUp() {

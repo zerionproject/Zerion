@@ -2,7 +2,6 @@ package org.briarproject.bramble.api.db;
 
 import org.briarproject.bramble.api.event.EventExecutor;
 
-
 public class TaskAction implements CommitAction {
 
 	private final Runnable task;

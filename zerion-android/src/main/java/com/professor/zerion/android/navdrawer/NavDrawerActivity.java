@@ -28,7 +28,7 @@ import com.professor.zerion.android.fragment.BaseFragment.BaseFragmentListener;
 import com.professor.zerion.android.logout.SignOutFragment;
 import com.professor.zerion.android.grouptr.GroupTrCreateActivity;
 import com.professor.zerion.android.grouptr.GroupTrListFragment;
-import com.professor.zerion.android.privategroup.list.GroupListFragment;
+import com.professor.zerion.android.grouptr.GroupTrListFragment;
 import com.professor.zerion.android.settings.SettingsActivity;
 import com.professor.zerion.android.donation.DonationManager;
 import com.professor.zerion.android.vault.VaultManager;
@@ -427,7 +427,7 @@ public class NavDrawerActivity extends ZerionActivity implements
 	}
 
 	private void exitIfStartupFailed(Intent intent) {
-		// Only process startup failure from our own package, not external intents
+
 		if (intent.getComponent() != null
 				&& getPackageName().equals(
 						intent.getComponent().getPackageName())
@@ -468,7 +468,6 @@ public class NavDrawerActivity extends ZerionActivity implements
 		startFragment(new SignOutFragment());
 	}
 
-	
 	private void startFragment(BaseFragment f) {
 		getSupportFragmentManager()
 				.beginTransaction()
@@ -483,7 +482,7 @@ public class NavDrawerActivity extends ZerionActivity implements
 
 	private void updateFabVisibilityForFragment(BaseFragment f) {
 		boolean isMainContacts = f instanceof ContactListFragment;
-		boolean isMainGroups = f instanceof GroupListFragment;
+		boolean isMainGroups = f instanceof GroupTrListFragment;
 
 		if (isMainContacts || isMainGroups) {
 			fabCompose.setVisibility(VISIBLE);

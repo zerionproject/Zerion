@@ -134,8 +134,6 @@ public class LifecycleManagerImplTest extends BrambleMockTestCase {
 		assertEquals(RUNNING, lifecycleManager.getLifecycleState());
 		context.assertIsSatisfied();
 
-		// Calling startServices() again should not try to open the DB or
-		// start the services again
 		assertEquals(ALREADY_RUNNING, lifecycleManager.startServices(dbKey));
 		assertEquals(RUNNING, lifecycleManager.getLifecycleState());
 	}
@@ -168,8 +166,6 @@ public class LifecycleManagerImplTest extends BrambleMockTestCase {
 		assertEquals(STOPPED, lifecycleManager.getLifecycleState());
 		context.assertIsSatisfied();
 
-		// Calling stopServices() again should not broadcast another event or
-		// try to close the DB again
 		lifecycleManager.stopServices();
 		assertEquals(STOPPED, lifecycleManager.getLifecycleState());
 	}

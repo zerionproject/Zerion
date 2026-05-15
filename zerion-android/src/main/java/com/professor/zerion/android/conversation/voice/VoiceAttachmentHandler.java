@@ -15,7 +15,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.Nullable;
 
-
 @NotNullByDefault
 public class VoiceAttachmentHandler {
 	private static final int SAMPLE_RATE = 16000;
@@ -53,7 +52,6 @@ public class VoiceAttachmentHandler {
 		this.mainHandler = new Handler(Looper.getMainLooper());
 	}
 
-	
 	public boolean startRecording(AttachmentRecordingCallback callback) {
 		if (isRecording.get()) {
 			callback.onRecordingError("Recording already in progress");
@@ -140,7 +138,6 @@ public class VoiceAttachmentHandler {
 		}, PROGRESS_UPDATE_INTERVAL_MS);
 	}
 
-	
 	public void stopRecording() {
 		if (!isRecording.get() || mediaRecorder == null) return;
 
@@ -187,7 +184,6 @@ public class VoiceAttachmentHandler {
 		}
 	}
 
-	
 	public void cancelRecording() {
 		if (!isRecording.get()) return;
 
@@ -202,7 +198,6 @@ public class VoiceAttachmentHandler {
 		});
 	}
 
-	
 	@Nullable
 	public Uri getRecordedFileUri() {
 		if (outputFile != null && outputFile.exists()) {
@@ -211,7 +206,6 @@ public class VoiceAttachmentHandler {
 		return null;
 	}
 
-	
 	public void cleanupTempFile() {
 		deleteOutputFile();
 	}
@@ -272,7 +266,6 @@ public class VoiceAttachmentHandler {
 		deleteOutputFile();
 	}
 
-	
 	public void release() {
 		if (isRecording.get()) {
 			cancelRecording();
@@ -280,7 +273,6 @@ public class VoiceAttachmentHandler {
 		cleanup();
 	}
 
-	
 	public static int getMaxDurationSeconds() {
 		return 20;
 	}

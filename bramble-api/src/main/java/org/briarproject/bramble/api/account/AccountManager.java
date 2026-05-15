@@ -10,19 +10,14 @@ import javax.annotation.Nullable;
 @NotNullByDefault
 public interface AccountManager {
 
-	
 	boolean hasDatabaseKey();
 
-	
 	@Nullable
 	SecretKey getDatabaseKey();
 
-	
 	boolean accountExists();
 
-	
 	boolean createAccount(String name, char[] password);
-
 
 	void deleteAccount();
 

@@ -34,15 +34,6 @@ import com.professor.zerion.android.navdrawer.NavDrawerActivity;
 import com.professor.zerion.android.navdrawer.TransportsActivity;
 import com.professor.zerion.android.panic.PanicPreferencesActivity;
 import com.professor.zerion.android.panic.PanicResponderActivity;
-import com.professor.zerion.android.privategroup.conversation.GroupActivity;
-import com.professor.zerion.android.privategroup.invitation.GroupInvitationActivity;
-import com.professor.zerion.android.privategroup.invitation.GroupInvitationModule;
-import com.professor.zerion.android.privategroup.list.GroupListFragment;
-import com.professor.zerion.android.privategroup.memberlist.GroupMemberListActivity;
-import com.professor.zerion.android.privategroup.memberlist.GroupMemberModule;
-import com.professor.zerion.android.privategroup.reveal.GroupRevealModule;
-import com.professor.zerion.android.privategroup.reveal.RevealContactsActivity;
-import com.professor.zerion.android.privategroup.reveal.RevealContactsFragment;
 import com.professor.zerion.android.removabledrive.RemovableDriveActivity;
 import com.professor.zerion.android.settings.ConfirmAvatarDialogFragment;
 import com.professor.zerion.android.settings.SettingsActivity;
@@ -56,9 +47,6 @@ import dagger.Component;
 @ActivityScope
 @Component(modules = {
 		ActivityModule.class,
-		GroupInvitationModule.class,
-		GroupMemberModule.class,
-		GroupRevealModule.class,
 		SharingModule.SharingLegacyModule.class
 }, dependencies = AndroidComponent.class)
 public interface ActivityComponent {
@@ -89,16 +77,6 @@ public interface ActivityComponent {
 
 	void inject(com.professor.zerion.android.vault.ui.VaultActivity activity);
 
-
-	void inject(GroupActivity activity);
-
-	void inject(GroupInvitationActivity activity);
-
-	void inject(GroupMemberListActivity activity);
-
-	void inject(RevealContactsActivity activity);
-
-
 	void inject(SettingsActivity activity);
 
 	void inject(TransportsActivity activity);
@@ -108,7 +86,6 @@ public interface ActivityComponent {
 	void inject(ChangePasswordActivity activity);
 
 	void inject(IntroductionActivity activity);
-
 
 	void inject(StartupFailureActivity activity);
 
@@ -120,7 +97,6 @@ public interface ActivityComponent {
 
 	void inject(RemovableDriveActivity activity);
 
-
 	void inject(SetupFragment fragment);
 
 	void inject(PasswordFragment imageFragment);
@@ -129,11 +105,7 @@ public interface ActivityComponent {
 
 	void inject(ContactListFragment fragment);
 
-	void inject(GroupListFragment fragment);
-
 	void inject(com.professor.zerion.android.grouptr.GroupTrListFragment fragment);
-
-	void inject(RevealContactsFragment activity);
 
 	void inject(AddContactChooserFragment fragment);
 
@@ -144,7 +116,6 @@ public interface ActivityComponent {
 	void inject(NicknameFragment fragment);
 
 	void inject(ContactChooserFragment fragment);
-
 
 	void inject(IntroductionMessageFragment fragment);
 

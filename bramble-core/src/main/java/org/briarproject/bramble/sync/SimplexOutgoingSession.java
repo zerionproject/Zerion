@@ -31,11 +31,10 @@ import static org.briarproject.bramble.api.sync.SyncConstants.MAX_MESSAGE_IDS;
 import static org.briarproject.bramble.api.sync.SyncConstants.MAX_MESSAGE_LENGTH;
 import static org.briarproject.bramble.api.sync.SyncConstants.SUPPORTED_VERSIONS;
 
-
 @ThreadSafe
 @NotNullByDefault
 class SimplexOutgoingSession implements SyncSession, EventListener {
-	
+
 	static final int BATCH_CAPACITY =
 			(RECORD_HEADER_BYTES + MAX_MESSAGE_LENGTH) * 2;
 

@@ -47,7 +47,6 @@ import com.professor.zerion.android.conversation.ConversationVisitor.AttachmentC
 import com.professor.zerion.android.conversation.ConversationVisitor.TextCache;
 import com.professor.zerion.android.fragment.BaseFragment.BaseFragmentListener;
 import com.professor.zerion.android.introduction.IntroductionActivity;
-import com.professor.zerion.android.privategroup.conversation.GroupActivity;
 import com.professor.zerion.android.vault.ui.VaultActivity;
 import com.professor.zerion.android.util.ActivityLaunchers.GetMultipleImagesAdvanced;
 import com.professor.zerion.android.util.ActivityLaunchers.GetMultipleMediaAdvanced;
@@ -78,7 +77,6 @@ import org.briarproject.briar.api.messaging.MessagingManager;
 import org.briarproject.briar.api.messaging.event.ReactionReceivedEvent;
 import org.briarproject.briar.api.messaging.PrivateMessageFormat;
 import org.briarproject.briar.api.messaging.PrivateMessageHeader;
-import org.briarproject.briar.api.privategroup.invitation.GroupInvitationManager;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
@@ -168,7 +166,7 @@ public class ConversationActivity extends ZerionActivity
 	Executor dbExecutor;
 
 	@Inject
-	GroupInvitationManager groupInvitationManager;
+	org.briarproject.briar.api.grouptr.GroupTrManager groupTrManager;
 
 	@Inject
 	IntroductionManager introductionManager;
@@ -318,7 +316,7 @@ public class ConversationActivity extends ZerionActivity
 		});
 
 		visitor = new ConversationVisitor(this, this, this,
-				viewModel.getContactDisplayName(), viewModel);
+				viewModel.getContactDisplayName(), viewModel, groupTrManager);
 		adapter = new ConversationAdapter(this, this,
 				attachmentRetriever.getAttachmentReader(), dbExecutor);
 		list = findViewById(R.id.conversationView);
@@ -471,8 +469,7 @@ public class ConversationActivity extends ZerionActivity
 
 		viewModel.getReactionReceived().observeEvent(this, event -> {
 			if (event != null) {
-				// Reload all reactions from DB to get correct state
-				// (handles both add and toggle-off correctly)
+
 				viewModel.loadReactions();
 			}
 		});
@@ -786,8 +783,7 @@ public class ConversationActivity extends ZerionActivity
 	}
 
 	private void startVideoCall() {
-		// Video call starts as voice call — video is upgraded mid-call
-		// Request both audio and camera permissions
+
 		boolean hasAudio = ContextCompat.checkSelfPermission(this,
 				android.Manifest.permission.RECORD_AUDIO)
 				== android.content.pm.PackageManager.PERMISSION_GRANTED;
@@ -1283,7 +1279,7 @@ public class ConversationActivity extends ZerionActivity
 		List<ConversationMessageHeader> sorted = new ArrayList<>(headers);
 		sort(sorted, (a, b) -> Long.compare(b.getTimestamp(), a.getTimestamp()));
 		displayMessages(sorted);
-		// Load reactions and link previews AFTER messages populate the adapter
+
 		viewModel.loadReactions();
 		viewModel.loadLinkPreviews();
 	}
@@ -1446,9 +1442,6 @@ public class ConversationActivity extends ZerionActivity
 		return text;
 	}
 
-	/**
-	 * Called by {@link PrivateMessageHeader#accept(ConversationMessageVisitor)}
-	 */
 	@Override
 	public List<AttachmentItem> getAttachmentItems(PrivateMessageHeader h) {
 		List<LiveData<AttachmentItem>> liveDataList =
@@ -1554,9 +1547,7 @@ public class ConversationActivity extends ZerionActivity
 
 	@Override
 	public void onStickerEmojiPicked(String emoji) {
-		// Standard pack: send the emoji as a plain text message. iOS
-		// detects single-emoji bodies and renders them oversize; older
-		// peers see a normal text message with one emoji.
+
 		Long timerObj = viewModel.getAutoDeleteTimer().getValue();
 		long timer = timerObj == null ? NO_AUTO_DELETE_TIMER : timerObj;
 		viewModel.sendMessage(emoji, java.util.Collections.emptyList(),
@@ -1565,10 +1556,7 @@ public class ConversationActivity extends ZerionActivity
 
 	@Override
 	public void onCustomStickerPicked(byte[] pngBytes) {
-		// Custom sticker: persist as an inline-image attachment with
-		// "image/png; profile=sticker", then ship a private message
-		// pointing at the resulting AttachmentHeader. Older peers see
-		// a small photo; iOS / future Android clients render chromeless.
+
 		org.briarproject.bramble.api.sync.GroupId gid =
 				viewModel.getMessagingGroupId().getValue();
 		if (gid == null) {
@@ -1870,7 +1858,7 @@ public class ConversationActivity extends ZerionActivity
 			if (pos < 0) continue;
 			ConversationItem item = adapter.getItemAt(pos);
 			if (item == null) continue;
-			// Only forward actual user messages, not system/notice/call items
+
 			if (!(item instanceof ConversationMessageItem)) continue;
 			String text = item.getText();
 			if (text != null && !text.isEmpty()) {
@@ -1883,7 +1871,7 @@ public class ConversationActivity extends ZerionActivity
 			return;
 		}
 		String rawText = sb.toString();
-		// Truncate to max message length to prevent FormatException
+
 		int maxLen = org.briarproject.briar.api.messaging
 				.MessagingConstants.MAX_PRIVATE_MESSAGE_TEXT_LENGTH;
 		String forwardText = rawText.length() > maxLen
@@ -2049,14 +2037,12 @@ public class ConversationActivity extends ZerionActivity
 				item.getReactions().putAll(msgReactions);
 				adapter.notifyItemChanged(i);
 			} else if (item.hasReactions()) {
-				// Clear reactions that were removed (toggle-off)
+
 				item.getReactions().clear();
 				adapter.notifyItemChanged(i);
 			}
 		}
 	}
-
-
 
 	@UiThread
 	private void applyLinkPreviewsToItems(
@@ -2078,23 +2064,27 @@ public class ConversationActivity extends ZerionActivity
 		item.setAnswered();
 		SessionId sessionId = item.getSessionId();
 		ConversationRequestItem.RequestType type = item.getRequestType();
+		final byte[] grouptrGid = item.getGrouptrGid();
 
 		dbExecutor.execute(() -> {
 			try {
-				if (type == ConversationRequestItem.RequestType.GROUP) {
-					groupInvitationManager.respondToInvitation(contactId, sessionId, accept);
+				if (type == ConversationRequestItem.RequestType.GROUPTR) {
+					if (grouptrGid == null) return;
+					if (accept) {
+						groupTrManager.acceptInvite(grouptrGid);
+					} else {
+						groupTrManager.declineInvite(grouptrGid);
+					}
 				} else if (type == ConversationRequestItem.RequestType.INTRODUCTION) {
+					if (sessionId == null) return;
 					introductionManager.respondToIntroduction(contactId, sessionId, accept);
 				}
 				runOnUiThread(() -> {
-					if (accept) {
-						if (type == ConversationRequestItem.RequestType.GROUP) {
-							Snackbar.make(list, R.string.groups_invitations_joined, Snackbar.LENGTH_SHORT).show();
-						}
-					} else {
-						if (type == ConversationRequestItem.RequestType.GROUP) {
-							Snackbar.make(list, R.string.groups_invitations_declined, Snackbar.LENGTH_SHORT).show();
-						}
+					if (type == ConversationRequestItem.RequestType.GROUPTR) {
+						Snackbar.make(list,
+								accept ? R.string.groups_invitations_joined
+										: R.string.groups_invitations_declined,
+								Snackbar.LENGTH_SHORT).show();
 					}
 					adapter.notifyDataSetChanged();
 				});
@@ -2106,22 +2096,14 @@ public class ConversationActivity extends ZerionActivity
 
 	@Override
 	public void openRequestedShareable(ConversationRequestItem item) {
-		if (item.getRequestType() == ConversationRequestItem.RequestType.GROUP) {
-			GroupId groupId = item.getRequestedGroupId();
-			if (groupId != null) {
-				Intent intent = new Intent(this, GroupActivity.class);
-				intent.putExtra(GroupActivity.GROUP_ID, groupId.getBytes());
-				startActivity(intent);
+		if (item.getRequestType() == ConversationRequestItem.RequestType.GROUPTR) {
+			byte[] grouptrGid = item.getGrouptrGid();
+			if (grouptrGid != null) {
+				startActivity(com.professor.zerion.android.grouptr
+						.GroupTrConversationActivity
+						.intent(this, grouptrGid));
 			}
 		}
-	}
-
-	@Override
-	public void onGroupTrInvitationOpen(
-			ConversationGroupTrInvitationItem item) {
-		startActivity(com.professor.zerion.android.grouptr
-				.GroupTrConversationActivity.intent(this,
-						item.getGroupTrGroupId().getBytes()));
 	}
 
 	@Override
@@ -2177,10 +2159,6 @@ public class ConversationActivity extends ZerionActivity
 		}
 	}
 
-	/**
-	 * Checks if a message is a voice call signal using the structured format.
-	 * Uses VoiceCallSignal.isSignal() for fast prefix detection without full parsing.
-	 */
 	private boolean isVoiceCallSignal(String text) {
 		if (text == null || text.isEmpty()) {
 			return false;
@@ -2245,7 +2223,7 @@ public class ConversationActivity extends ZerionActivity
 				searchMatchIndex >= searchMatchPositions.size()) return;
 		int position = searchMatchPositions.get(searchMatchIndex);
 		if (position >= adapter.getItemCount()) {
-			// Position stale after dataset change; clear search
+
 			clearSearchHighlight();
 			return;
 		}

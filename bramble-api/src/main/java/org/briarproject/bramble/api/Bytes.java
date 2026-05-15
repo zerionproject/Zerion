@@ -8,7 +8,6 @@ import java.util.Arrays;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
-
 @ThreadSafe
 @NotNullByDefault
 public class Bytes implements Comparable<Bytes> {

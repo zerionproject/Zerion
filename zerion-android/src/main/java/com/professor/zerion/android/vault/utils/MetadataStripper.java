@@ -152,7 +152,7 @@ public class MetadataStripper {
 	}
 
 	private byte[] stripVideoMetadata(byte[] videoData) {
-		// For byte[] path (vault), re-mux via temp files
+
 		File tempIn = null;
 		File tempOut = null;
 		try {
@@ -178,10 +178,6 @@ public class MetadataStripper {
 		}
 	}
 
-	/**
-	 * Strip metadata from a video at the given URI.
-	 * Returns a temp file containing the clean video (caller must delete it).
-	 */
 	public File stripVideoMetadataFromUri(Uri uri, ContentResolver resolver)
 			throws IOException {
 		ParcelFileDescriptor pfd = null;
@@ -206,7 +202,6 @@ public class MetadataStripper {
 			int[] trackMap = new int[trackCount];
 			boolean[] includeTrack = new boolean[trackCount];
 
-			// Only include video and audio tracks — skip metadata tracks
 			for (int i = 0; i < trackCount; i++) {
 				MediaFormat format = extractor.getTrackFormat(i);
 				String mime = format.getString(MediaFormat.KEY_MIME);

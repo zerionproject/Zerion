@@ -9,7 +9,6 @@ public interface BdfReaderFactory {
 
 	BdfReader createReader(InputStream in);
 
-	
 	@Deprecated
 	BdfReader createReader(InputStream in, boolean canonical);
 

@@ -30,7 +30,6 @@ public abstract class BdfIncomingMessageHook implements IncomingMessageHook {
 		this.metadataParser = metadataParser;
 	}
 
-	
 	protected abstract DeliveryAction incomingMessage(Transaction txn,
 			Message m, BdfList body, BdfDictionary meta)
 			throws DbException, FormatException;

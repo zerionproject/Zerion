@@ -15,7 +15,6 @@ interface ProtocolEngine<S extends Session<?>> {
 
 	S onAcceptAction(Transaction txn, S session) throws DbException;
 
-	
 	S onDeclineAction(Transaction txn, S session, boolean isAutoDecline)
 			throws DbException;
 

@@ -56,7 +56,7 @@ class CircumventionProviderImpl implements CircumventionProvider {
 		if (USE_VANILLA.contains(countryCode)) types.add(VANILLA);
 		if (USE_MEEK.contains(countryCode)) types.add(MEEK);
 		if (USE_SNOWFLAKE.contains(countryCode)) types.add(SNOWFLAKE);
-		// If we don't have any recommendations for this country then use the defaults
+
 		if (types.isEmpty()) {
 			types.add(DEFAULT_OBFS4);
 			types.add(VANILLA);
@@ -67,11 +67,11 @@ class CircumventionProviderImpl implements CircumventionProvider {
 	@Override
 	public List<String> getBridges(BridgeType type, String countryCode) {
 		ClassLoader cl = getClass().getClassLoader();
-		// Try to load bridges that are specific to this country code
+
 		String filename = makeResourceFilename(type, countryCode);
 		InputStream is = cl.getResourceAsStream(filename);
 		if (is == null) {
-			// No resource for this country code - use the fallback resource
+
 			filename = makeResourceFilename(type, DEFAULT_COUNTRY_CODE);
 			is = requireNonNull(cl.getResourceAsStream(filename));
 		}

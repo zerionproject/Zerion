@@ -62,7 +62,7 @@ class TransportKeyManagerImpl implements TransportKeyManager {
 	@GuardedBy("lock")
 	private final Map<PendingContactId, MutableTransportKeySet>
 			pendingContactOutContexts = new HashMap<>();
-	// Track pending contacts with active handshake connections
+
 	@GuardedBy("lock")
 	private final Map<PendingContactId, Integer> activeHandshakes =
 			new HashMap<>();
@@ -240,7 +240,7 @@ class TransportKeyManagerImpl implements TransportKeyManager {
 			SecretKey rootKey, boolean alice) throws DbException {
 		lock.lock();
 		try {
-			// If keys already exist (loaded by start()), skip insertion
+
 			MutableTransportKeySet existing =
 					pendingContactOutContexts.get(p);
 			if (existing != null) return existing.getKeySetId();
@@ -290,7 +290,7 @@ class TransportKeyManagerImpl implements TransportKeyManager {
 	public void removePendingContact(PendingContactId p) {
 		lock.lock();
 		try {
-			// Don't remove keys while a handshake is actively using them
+
 			Integer active = activeHandshakes.get(p);
 			if (active != null && active > 0) return;
 			activeHandshakes.remove(p);
@@ -306,10 +306,6 @@ class TransportKeyManagerImpl implements TransportKeyManager {
 		}
 	}
 
-	/**
-	 * Marks a pending contact as having an active handshake in progress.
-	 * While active, transport keys won't be removed by removePendingContact().
-	 */
 	public void acquireHandshakeLock(PendingContactId p) {
 		lock.lock();
 		try {
@@ -319,10 +315,6 @@ class TransportKeyManagerImpl implements TransportKeyManager {
 		}
 	}
 
-	/**
-	 * Releases the handshake lock. If no more active handshakes remain
-	 * and removal was requested, keys will be cleaned up on next removal call.
-	 */
 	public void releaseHandshakeLock(PendingContactId p) {
 		lock.lock();
 		try {

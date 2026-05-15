@@ -6,7 +6,6 @@ import java.util.Map.Entry;
 
 import javax.annotation.concurrent.Immutable;
 
-
 @Immutable
 @NotNullByDefault
 public class BdfEntry implements Entry<String, Object>, Comparable<BdfEntry> {

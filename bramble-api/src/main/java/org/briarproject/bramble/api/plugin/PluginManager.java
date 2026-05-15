@@ -8,27 +8,20 @@ import java.util.Collection;
 
 import javax.annotation.Nullable;
 
-
 @NotNullByDefault
 public interface PluginManager {
 
-	
 	@Nullable
 	Plugin getPlugin(TransportId t);
 
-	
 	Collection<SimplexPlugin> getSimplexPlugins();
 
-	
 	Collection<DuplexPlugin> getDuplexPlugins();
 
-	
 	Collection<DuplexPlugin> getKeyAgreementPlugins();
 
-	
 	Collection<DuplexPlugin> getRendezvousPlugins();
 
-	
 	void setPluginEnabled(TransportId t, boolean enabled);
 
 }

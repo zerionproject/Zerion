@@ -9,10 +9,6 @@ import java.util.Collection;
 
 import javax.annotation.concurrent.Immutable;
 
-/**
- * An event that is broadcast when one or more messages
- * in the private conversation with a contact have been deleted.
- */
 @Immutable
 @NotNullByDefault
 public class ConversationMessagesDeletedEvent extends Event {

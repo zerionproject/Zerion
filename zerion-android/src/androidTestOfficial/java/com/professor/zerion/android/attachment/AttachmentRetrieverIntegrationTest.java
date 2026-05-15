@@ -256,8 +256,7 @@ public class AttachmentRetrieverIntegrationTest {
 	}
 
 	private InputStream getAssetInputStream(String name) throws Exception {
-		// pm.getResourcesForApplication(packageName).getAssets() did not work
-		//noinspection deprecation
+
 		return getContext().getAssets().open(name);
 	}
 

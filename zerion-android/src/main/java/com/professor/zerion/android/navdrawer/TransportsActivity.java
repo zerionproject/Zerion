@@ -60,7 +60,6 @@ public class TransportsActivity extends ZerionActivity {
 	private PluginViewModel viewModel;
 	private BaseAdapter transportsAdapter;
 
-
 	@Override
 	public void injectActivity(ActivityComponent component) {
 		component.inject(this);
@@ -213,7 +212,6 @@ public class TransportsActivity extends ZerionActivity {
 		}
 	}
 
-
 	@StringRes
 	private int getPluginStatus(TransportId id, State state) {
 		if (id.equals(TorConstants.ID)) {
@@ -244,7 +242,6 @@ public class TransportsActivity extends ZerionActivity {
 		}
 	}
 
-
 	private Transport createTransport(TransportId id,
 			@DrawableRes int iconDrawable, @StringRes int title,
 			@StringRes int switchLabel, @StringRes int summary,
@@ -263,7 +260,6 @@ public class TransportsActivity extends ZerionActivity {
 		});
 		return transport;
 	}
-
 
 	private static class Transport {
 

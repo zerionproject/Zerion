@@ -10,7 +10,7 @@ public class TestSecureRandomProvider implements SecureRandomProvider {
 
 	@Override
 	public Provider getProvider() {
-		// Use the default provider
+
 		return null;
 	}
 }

@@ -5,10 +5,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.ThreadSafe;
 
-/**
- * Type-safe wrapper for a byte array that uniquely identifies a protocol
- * session.
- */
 @ThreadSafe
 @NotNullByDefault
 public class SessionId extends UniqueId {

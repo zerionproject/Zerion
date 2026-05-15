@@ -89,8 +89,7 @@ public class PrivateMessageValidatorTest extends BrambleMockTestCase {
 			new BdfEntry(MSG_KEY_TIMESTAMP, message.getTimestamp()),
 			new BdfEntry(MSG_KEY_LOCAL, false),
 			new BdfEntry(MSG_KEY_MSG_TYPE, ATTACHMENT),
-			// Descriptor length is zero as the test doesn't read from the
-			// counting input stream
+
 			new BdfEntry(MSG_KEY_DESCRIPTOR_LENGTH, 0L),
 			new BdfEntry(MSG_KEY_CONTENT_TYPE, contentType)
 	);
@@ -288,7 +287,6 @@ public class PrivateMessageValidatorTest extends BrambleMockTestCase {
 				BdfList.of(invalidHeader)));
 	}
 
-
 	@Test(expected = InvalidMessageException.class)
 	public void testRejectsNullContentTypeForPrivateMessage()
 			throws Exception {
@@ -331,8 +329,7 @@ public class PrivateMessageValidatorTest extends BrambleMockTestCase {
 			throws Exception {
 		expectCheckTimestamp(now);
 		expectParseList(BdfList.of(ATTACHMENT));
-		// Single-element list is interpreted as a legacy private message, so
-		// EOF is expected
+
 		expectReadEof(true);
 
 		validator.validateMessage(message, group);
@@ -343,8 +340,7 @@ public class PrivateMessageValidatorTest extends BrambleMockTestCase {
 			throws Exception {
 		expectCheckTimestamp(now);
 		expectParseList(BdfList.of(ATTACHMENT));
-		// Single-element list is interpreted as a legacy private message, so
-		// EOF is expected
+
 		expectReadEof(false);
 
 		validator.validateMessage(message, group);
@@ -436,8 +432,6 @@ public class PrivateMessageValidatorTest extends BrambleMockTestCase {
 		testAcceptsPrivateMessage(BdfList.of(PRIVATE_MESSAGE, text,
 				new BdfList(), MAX_AUTO_DELETE_TIMER_MS), maxTimerMeta);
 	}
-
-	// ---- Voice signal validation tests ----
 
 	@Test
 	public void testAcceptsCallOfferVoiceSignal() throws Exception {

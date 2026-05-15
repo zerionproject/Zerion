@@ -23,30 +23,24 @@ interface MessageEncoder {
 
 	void setInvitationAccepted(BdfDictionary meta, boolean accepted);
 
-	
 	Message encodeInviteMessage(GroupId contactGroupId, long timestamp,
 			@Nullable MessageId previousMessageId, BdfList descriptor,
 			@Nullable String text);
 
-	
 	Message encodeInviteMessage(GroupId contactGroupId, long timestamp,
 			@Nullable MessageId previousMessageId, BdfList descriptor,
 			@Nullable String text, long autoDeleteTimer);
 
-	
 	Message encodeAcceptMessage(GroupId contactGroupId, GroupId shareableId,
 			long timestamp, @Nullable MessageId previousMessageId);
 
-	
 	Message encodeAcceptMessage(GroupId contactGroupId, GroupId shareableId,
 			long timestamp, @Nullable MessageId previousMessageId,
 			long autoDeleteTimer);
 
-	
 	Message encodeDeclineMessage(GroupId contactGroupId, GroupId shareableId,
 			long timestamp, @Nullable MessageId previousMessageId);
 
-	
 	Message encodeDeclineMessage(GroupId contactGroupId, GroupId shareableId,
 			long timestamp, @Nullable MessageId previousMessageId,
 			long autoDeleteTimer);

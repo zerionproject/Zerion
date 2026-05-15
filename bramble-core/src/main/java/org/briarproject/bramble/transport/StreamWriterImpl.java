@@ -9,7 +9,6 @@ import java.io.OutputStream;
 
 import javax.annotation.concurrent.NotThreadSafe;
 
-
 @NotThreadSafe
 @NotNullByDefault
 class StreamWriterImpl extends OutputStream implements StreamWriter {

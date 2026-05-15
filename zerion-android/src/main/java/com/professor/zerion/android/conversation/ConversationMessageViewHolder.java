@@ -96,9 +96,6 @@ class ConversationMessageViewHolder extends ConversationItemViewHolder {
 			bindImageItem(item);
 		}
 
-		// Re-bind reply context, reactions, and link preview AFTER
-		// constraint sets are applied, because ConstraintSet.applyTo()
-		// resets view visibility to XML defaults (GONE)
 		bindReplyContext(conversationItem);
 		bindReactions(conversationItem);
 		bindLinkPreview(conversationItem);
@@ -154,9 +151,6 @@ class ConversationMessageViewHolder extends ConversationItemViewHolder {
 		textConstraints.applyTo(layout);
 		adapter.clear();
 
-		// Single-emoji "sticker": render at 64sp with no bubble
-		// background — wire-compatible with iOS (the emoji travels as
-		// a regular text message; only the renderer differs).
 		String body = item.getText();
 		if (com.professor.zerion.android.sticker.StickerUtils
 				.isSingleEmojiSticker(body)) {

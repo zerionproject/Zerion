@@ -26,11 +26,9 @@ interface MessageEncoder {
 
 	void setInvitationAccepted(BdfDictionary meta, boolean accepted);
 
-	
 	Message encodeInviteMessage(GroupId contactGroupId, GroupId privateGroupId,
 			long timestamp, String groupName, Author creator, byte[] salt,
 			@Nullable String text, byte[] signature);
-
 
 	Message encodeInviteMessage(GroupId contactGroupId, GroupId privateGroupId,
 			long timestamp, String groupName, Author creator, byte[] salt,
@@ -41,10 +39,8 @@ interface MessageEncoder {
 			@Nullable String text, byte[] signature, long autoDeleteTimer,
 			byte[] creatorEphemeralPublic);
 
-
 	Message encodeJoinMessage(GroupId contactGroupId, GroupId privateGroupId,
 			long timestamp, @Nullable MessageId previousMessageId);
-
 
 	Message encodeJoinMessage(GroupId contactGroupId, GroupId privateGroupId,
 			long timestamp, @Nullable MessageId previousMessageId,
@@ -54,11 +50,9 @@ interface MessageEncoder {
 			long timestamp, @Nullable MessageId previousMessageId,
 			long autoDeleteTimer, byte[] memberEphemeralPublic);
 
-	
 	Message encodeLeaveMessage(GroupId contactGroupId, GroupId privateGroupId,
 			long timestamp, @Nullable MessageId previousMessageId);
 
-	
 	Message encodeLeaveMessage(GroupId contactGroupId, GroupId privateGroupId,
 			long timestamp, @Nullable MessageId previousMessageId,
 			long autoDeleteTimer);

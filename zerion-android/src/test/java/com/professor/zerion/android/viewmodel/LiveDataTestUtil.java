@@ -1,7 +1,4 @@
-/* Copyright 2019 Google LLC.
-   SPDX-License-Identifier: Apache-2.0
-   https://gist.github.com/JoseAlcerreca/1e9ee05dcdd6a6a6fa1cbfc125559bba
-   */
+
 
 package com.professor.zerion.android.viewmodel;
 
@@ -27,7 +24,7 @@ public class LiveDataTestUtil {
 			}
 		};
 		liveData.observeForever(observer);
-		// Don't wait indefinitely if the LiveData is not set.
+
 		if (!latch.await(2, TimeUnit.SECONDS)) {
 			throw new RuntimeException("LiveData value was never set.");
 		}

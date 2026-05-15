@@ -26,7 +26,6 @@ import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_ENABLED
 import static org.briarproject.bramble.api.db.DatabaseComponent.PCS_DIRECTION_RECEIVE;
 import static org.briarproject.bramble.api.db.DatabaseComponent.PCS_DIRECTION_SEND;
 
-
 @ThreadSafe
 @NotNullByDefault
 public class PcsStateManager {
@@ -39,28 +38,23 @@ public class PcsStateManager {
 		this.crypto = crypto;
 	}
 
-	
 	@Nullable
 	public PcsSessionState loadSendState(ContactId contactId) {
 		return loadState(contactId, PCS_DIRECTION_SEND);
 	}
 
-	
 	@Nullable
 	public PcsSessionState loadReceiveState(ContactId contactId) {
 		return loadState(contactId, PCS_DIRECTION_RECEIVE);
 	}
 
-	
 	public void saveSendState(ContactId contactId, PcsSessionState state) {
 		saveState(contactId, PCS_DIRECTION_SEND, state);
 	}
 
-
 	public void saveReceiveState(ContactId contactId, PcsSessionState state) {
 		saveState(contactId, PCS_DIRECTION_RECEIVE, state);
 	}
-
 
 	public void mixPqSecretIntoReceiveRoot(ContactId contactId,
 			SecretKey pqSecret, PqRatchet pqRatchet) {
@@ -78,7 +72,6 @@ public class PcsStateManager {
 		} catch (DbException e) {
 		}
 	}
-
 
 	public void mixPqSecretIntoSendRoot(ContactId contactId,
 			SecretKey pqSecret, PqRatchet pqRatchet) {
@@ -107,7 +100,6 @@ public class PcsStateManager {
 		}
 	}
 
-	
 	public void initializeMode2State(Transaction txn, ContactId contactId,
 			PcsSessionState sendState, PcsSessionState receiveState)
 			throws DbException {
@@ -115,7 +107,6 @@ public class PcsStateManager {
 		saveMode2State(txn, contactId, PCS_DIRECTION_RECEIVE, receiveState);
 	}
 
-	
 	public boolean hasState(ContactId contactId) {
 		try {
 			return db.transactionWithResult(true, txn ->
@@ -125,13 +116,11 @@ public class PcsStateManager {
 		}
 	}
 
-	
 	public boolean hasState(Transaction txn, ContactId contactId)
 			throws DbException {
 		return db.containsPcsSessionState(txn, contactId);
 	}
 
-	
 	public void removeState(ContactId contactId) {
 		try {
 			db.transaction(false, txn ->
@@ -140,7 +129,6 @@ public class PcsStateManager {
 		}
 	}
 
-	
 	@Nullable
 	public PcsSessionState loadSendState(Transaction txn, ContactId contactId)
 			throws DbException {

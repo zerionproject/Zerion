@@ -28,8 +28,8 @@ public class BdfReaderImplFuzzingTest extends BrambleTestCase {
 		ByteArrayInputStream in = new ByteArrayInputStream(buf);
 		for (int i = 0; i < 100_000_000; i++) {
 			random.nextBytes(buf);
-			buf[0] = 0x41; // String with 1-byte length
-			buf[1] = 0x14; // Length 20 bytes
+			buf[0] = 0x41;
+			buf[1] = 0x14;
 			in.reset();
 			BdfReaderImpl r = new BdfReaderImpl(in, DEFAULT_NESTED_LIMIT,
 					DEFAULT_MAX_BUFFER_SIZE, true);
@@ -38,7 +38,7 @@ public class BdfReaderImplFuzzingTest extends BrambleTestCase {
 				assertTrue(length <= 20);
 				assertTrue(r.eof());
 			} catch (FormatException e) {
-				// Expected when bytes are not valid UTF-8
+
 			}
 		}
 	}

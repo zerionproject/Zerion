@@ -43,13 +43,9 @@ public class TestDuplexTransportConnection
 		return new TransportProperties();
 	}
 
-	/**
-	 * Creates and returns a pair of TestDuplexTransportConnections that are
-	 * connected to each other.
-	 */
 	public static TestDuplexTransportConnection[] createPair()
 			throws IOException {
-		// Use 64k buffers to prevent deadlock
+
 		PipedInputStream aliceIn = new PipedInputStream(1 << 16);
 		PipedInputStream bobIn = new PipedInputStream(1 << 16);
 		PipedOutputStream aliceOut = new PipedOutputStream(bobIn);

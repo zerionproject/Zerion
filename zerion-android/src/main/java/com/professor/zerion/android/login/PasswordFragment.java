@@ -130,7 +130,6 @@ public class PasswordFragment extends BaseFragment implements TextWatcher {
 		return v;
 	}
 
-	
 	private void setupKeyboardInsetsHandling(View rootView) {
 		View loginContent = rootView.findViewById(R.id.login_content);
 		View particleFieldView = rootView.findViewById(R.id.particle_field_view);

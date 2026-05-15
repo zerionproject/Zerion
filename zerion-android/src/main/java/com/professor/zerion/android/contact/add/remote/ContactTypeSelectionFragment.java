@@ -13,7 +13,6 @@ import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
 import javax.annotation.Nullable;
 
-// Replaced by AddContactChooserFragment. Kept to avoid removing inject entry during transition.
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
 public class ContactTypeSelectionFragment extends BaseFragment {

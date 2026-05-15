@@ -62,7 +62,6 @@ class ConnectionManagerImpl implements ConnectionManager {
 		this.secureRandom = secureRandom;
 	}
 
-
 	@Override
 	public void manageIncomingConnection(TransportId t,
 			TransportConnectionReader r) {

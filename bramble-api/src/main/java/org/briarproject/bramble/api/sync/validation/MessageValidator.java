@@ -7,7 +7,6 @@ import org.briarproject.bramble.api.sync.MessageContext;
 
 public interface MessageValidator {
 
-	
 	MessageContext validateMessage(Message m, Group g)
 			throws InvalidMessageException;
 }

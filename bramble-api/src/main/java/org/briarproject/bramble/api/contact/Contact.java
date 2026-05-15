@@ -11,7 +11,6 @@ import javax.annotation.concurrent.Immutable;
 import static org.briarproject.bramble.api.identity.AuthorConstants.MAX_AUTHOR_NAME_LENGTH;
 import static org.briarproject.bramble.util.StringUtils.toUtf8;
 
-
 @Immutable
 @NotNullByDefault
 public class Contact {
@@ -30,14 +29,12 @@ public class Contact {
 	@Nullable
 	private final byte[] mlDsaSigPublicKey;
 
-
 	public Contact(ContactId id, Author author, AuthorId localAuthorId,
 			@Nullable String alias, @Nullable PublicKey handshakePublicKey,
 			boolean verified) {
 		this(id, author, localAuthorId, alias, handshakePublicKey, verified,
 				false, false, false, null);
 	}
-
 
 	public Contact(ContactId id, Author author, AuthorId localAuthorId,
 			@Nullable String alias, @Nullable PublicKey handshakePublicKey,
@@ -46,14 +43,12 @@ public class Contact {
 				postQuantum, false, false, null);
 	}
 
-
 	public Contact(ContactId id, Author author, AuthorId localAuthorId,
 			@Nullable String alias, @Nullable PublicKey handshakePublicKey,
 			boolean verified, boolean postQuantum, boolean pcsEnabled) {
 		this(id, author, localAuthorId, alias, handshakePublicKey, verified,
 				postQuantum, pcsEnabled, false, null);
 	}
-
 
 	public Contact(ContactId id, Author author, AuthorId localAuthorId,
 			@Nullable String alias, @Nullable PublicKey handshakePublicKey,
@@ -62,7 +57,6 @@ public class Contact {
 		this(id, author, localAuthorId, alias, handshakePublicKey, verified,
 				postQuantum, pcsEnabled, mode3Capable, null);
 	}
-
 
 	public Contact(ContactId id, Author author, AuthorId localAuthorId,
 			@Nullable String alias, @Nullable PublicKey handshakePublicKey,
@@ -111,32 +105,26 @@ public class Contact {
 		return verified;
 	}
 
-	
 	public boolean isPostQuantum() {
 		return postQuantum;
 	}
 
-	
 	public boolean isClassical() {
 		return !postQuantum;
 	}
 
-	
 	public boolean isPcsEnabled() {
 		return pcsEnabled;
 	}
-
 
 	public boolean isMode3Capable() {
 		return mode3Capable;
 	}
 
-
 	@Nullable
 	public byte[] getMlDsaSigPublicKey() {
 		return mlDsaSigPublicKey;
 	}
-
 
 	public boolean hasHybridSigCapability() {
 		return mlDsaSigPublicKey != null;

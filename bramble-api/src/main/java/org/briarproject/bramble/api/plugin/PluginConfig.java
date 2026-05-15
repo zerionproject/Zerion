@@ -17,6 +17,5 @@ public interface PluginConfig {
 
 	boolean shouldPoll();
 
-	
 	Map<TransportId, List<TransportId>> getTransportPreferences();
 }

@@ -1,10 +1,4 @@
-/*
- * Some code was taken from:
- *
- * RIG – Random Image Generator
- * https://github.com/stedi-akk/RandomImageGenerator
- * licenced under Apache2 license.
- */
+
 
 package com.professor.zerion.android.test;
 
@@ -47,7 +41,7 @@ public class TestAvatarCreatorImpl implements TestAvatarCreator {
 	}
 
 	private Bitmap generateBitmap() {
-		// one pattern is boring, let's at least use two
+
 		if (random.nextBoolean()) {
 			return generateColoredPixels();
 		} else {

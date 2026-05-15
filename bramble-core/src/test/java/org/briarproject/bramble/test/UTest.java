@@ -20,71 +20,34 @@ public class UTest {
 
 	public enum Result {
 
-		/**
-		 * The first sample has significantly smaller values than the second.
-		 */
 		SMALLER,
 
-		/**
-		 * There is no significant difference between the samples.
-		 */
 		INCONCLUSIVE,
 
-		/**
-		 * The first sample has significantly larger values than the second.
-		 */
 		LARGER
 	}
 
-	/**
-	 * Critical z value for P = 0.01, two-tailed test.
-	 */
 	public static final double Z_CRITICAL_0_01 = 2.576;
 
-	/**
-	 * Critical z value for P = 0.05, two-tailed test.
-	 */
 	public static final double Z_CRITICAL_0_05 = 1.960;
 
-	/**
-	 * Critical z value for P = 0.1, two-tailed test.
-	 */
 	public static final double Z_CRITICAL_0_1 = 1.645;
 
-	/**
-	 * Performs a two-tailed Mann-Whitney U test on the given samples using the
-	 * critical z value for P = 0.01.
-	 * <p/>
-	 * The method used here is explained at
-	 * http://faculty.vassar.edu/lowry/ch11a.html
-	 */
 	public static Result test(List<Double> a, List<Double> b) {
 		return test(a, b, Z_CRITICAL_0_01);
 	}
 
-	/**
-	 * Performs a two-tailed Mann-Whitney U test on the given samples using the
-	 * given critical z value.
-	 * <p/>
-	 * The method used here is explained at
-	 * http://faculty.vassar.edu/lowry/ch11a.html
-	 * <p/>
-	 * Critical z values for two-tailed tests can be found at
-	 * http://sphweb.bumc.bu.edu/otlt/mph-modules/bs/bs704_hypothesistest-means-proportions/bs704_hypothesistest-means-proportions3.html
-	 */
 	public static Result test(List<Double> a, List<Double> b,
 			double zCritical) {
 		int nA = a.size(), nB = b.size();
 		if (nA < 5 || nB < 5)
 			throw new IllegalArgumentException("Too few values for U test");
 
-		// Sort the values, keeping track of which sample they belong to
 		List<Value> sorted = new ArrayList<>(nA + nB);
 		for (Double d : a) sorted.add(new Value(d, true));
 		for (Double d : b) sorted.add(new Value(d, false));
 		Collections.sort(sorted);
 
-		// Assign ranks to the values
 		int i = 0, size = sorted.size();
 		while (i < size) {
 			double value = sorted.get(i).value;
@@ -99,28 +62,23 @@ public class UTest {
 			i += ties;
 		}
 
-		// Calculate the total rank of each sample
 		double tA = 0, tB = 0;
 		for (Value v : sorted) {
 			if (v.a) tA += v.rank;
 			else tB += v.rank;
 		}
 
-		// The standard deviation of both total ranks is the same
 		double sigma = Math.sqrt(nA * nB * (nA + nB + 1.0) / 12.0);
 
-		// Means of the distributions of the total ranks
 		double muA = nA * (nA + nB + 1.0) / 2.0;
 		double muB = nB * (nA + nB + 1.0) / 2.0;
 
-		// Calculate z scores
 		double zA, zB;
 		if (tA > muA) zA = (tA - muA - 0.5) / sigma;
 		else zA = (tA - muA + 0.5) / sigma;
 		if (tB > muB) zB = (tB - muB - 0.5) / sigma;
 		else zB = (tB - muB + 0.5) / sigma;
 
-		// Compare z scores to critical value
 		if (zA > zCritical) return LARGER;
 		else if (zB > zCritical) return SMALLER;
 		else return INCONCLUSIVE;

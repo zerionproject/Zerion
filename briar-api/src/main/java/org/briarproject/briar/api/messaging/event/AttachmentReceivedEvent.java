@@ -7,9 +7,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.Immutable;
 
-/**
- * An event that is broadcast when a new attachment is received.
- */
 @Immutable
 @NotNullByDefault
 public class AttachmentReceivedEvent extends Event {

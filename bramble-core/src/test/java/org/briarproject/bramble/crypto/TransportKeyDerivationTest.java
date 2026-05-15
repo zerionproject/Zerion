@@ -88,65 +88,59 @@ public class TransportKeyDerivationTest extends BrambleTestCase {
 
 	@Test
 	public void testCurrentRotationKeysMatchContact() {
-		// Start in time period 123
+
 		TransportKeys kA = transportCrypto.deriveRotationKeys(transportId,
 				rootKey, 123, true, true);
 		TransportKeys kB = transportCrypto.deriveRotationKeys(transportId,
 				rootKey, 123, false, true);
-		// Alice's incoming keys should equal Bob's outgoing keys
+
 		assertMatches(kA.getCurrentIncomingKeys(), kB.getCurrentOutgoingKeys());
-		// Bob's incoming keys should equal Alice's outgoing keys
+
 		assertMatches(kB.getCurrentIncomingKeys(), kA.getCurrentOutgoingKeys());
-		// Rotate into the future
+
 		kA = transportCrypto.updateTransportKeys(kA, 456);
 		kB = transportCrypto.updateTransportKeys(kB, 456);
-		// Alice's incoming keys should equal Bob's outgoing keys
+
 		assertMatches(kA.getCurrentIncomingKeys(), kB.getCurrentOutgoingKeys());
-		// Bob's incoming keys should equal Alice's outgoing keys
+
 		assertMatches(kB.getCurrentIncomingKeys(), kA.getCurrentOutgoingKeys());
 	}
 
 	@Test
 	public void testPreviousRotationKeysMatchContact() {
-		// Start in time period 123
+
 		TransportKeys kA = transportCrypto.deriveRotationKeys(transportId,
 				rootKey, 123, true, true);
 		TransportKeys kB = transportCrypto.deriveRotationKeys(transportId,
 				rootKey, 123, false, true);
-		// Compare Alice's previous keys in period 456 with Bob's current keys
-		// in period 455
+
 		kA = transportCrypto.updateTransportKeys(kA, 456);
 		kB = transportCrypto.updateTransportKeys(kB, 455);
-		// Alice's previous incoming keys should equal Bob's current
-		// outgoing keys
+
 		assertMatches(kA.getPreviousIncomingKeys(),
 				kB.getCurrentOutgoingKeys());
-		// Compare Alice's current keys in period 456 with Bob's previous keys
-		// in period 457
+
 		kB = transportCrypto.updateTransportKeys(kB, 457);
-		// Bob's previous incoming keys should equal Alice's current
-		// outgoing keys
+
 		assertMatches(kB.getPreviousIncomingKeys(),
 				kA.getCurrentOutgoingKeys());
 	}
 
 	@Test
 	public void testNextRotationKeysMatchContact() {
-		// Start in time period 123
+
 		TransportKeys kA = transportCrypto.deriveRotationKeys(transportId,
 				rootKey, 123, true, true);
 		TransportKeys kB = transportCrypto.deriveRotationKeys(transportId,
 				rootKey, 123, false, true);
-		// Compare Alice's current keys in period 456 with Bob's next keys in
-		// period 455
+
 		kA = transportCrypto.updateTransportKeys(kA, 456);
 		kB = transportCrypto.updateTransportKeys(kB, 455);
-		// Bob's next incoming keys should equal Alice's current outgoing keys
+
 		assertMatches(kB.getNextIncomingKeys(), kA.getCurrentOutgoingKeys());
-		// Compare Alice's next keys in period 456 with Bob's current keys
-		// in period 457
+
 		kB = transportCrypto.updateTransportKeys(kB, 457);
-		// Alice's next incoming keys should equal Bob's current outgoing keys
+
 		assertMatches(kA.getNextIncomingKeys(), kB.getCurrentOutgoingKeys());
 	}
 
@@ -225,65 +219,59 @@ public class TransportKeyDerivationTest extends BrambleTestCase {
 
 	@Test
 	public void testCurrentHandshakeKeysMatchContact() {
-		// Start in time period 123
+
 		TransportKeys kA = transportCrypto.deriveHandshakeKeys(transportId,
 				rootKey, 123, true);
 		TransportKeys kB = transportCrypto.deriveHandshakeKeys(transportId,
 				rootKey, 123, false);
-		// Alice's incoming keys should equal Bob's outgoing keys
+
 		assertMatches(kA.getCurrentIncomingKeys(), kB.getCurrentOutgoingKeys());
-		// Bob's incoming keys should equal Alice's outgoing keys
+
 		assertMatches(kB.getCurrentIncomingKeys(), kA.getCurrentOutgoingKeys());
-		// Update into the future
+
 		kA = transportCrypto.updateTransportKeys(kA, 456);
 		kB = transportCrypto.updateTransportKeys(kB, 456);
-		// Alice's incoming keys should equal Bob's outgoing keys
+
 		assertMatches(kA.getCurrentIncomingKeys(), kB.getCurrentOutgoingKeys());
-		// Bob's incoming keys should equal Alice's outgoing keys
+
 		assertMatches(kB.getCurrentIncomingKeys(), kA.getCurrentOutgoingKeys());
 	}
 
 	@Test
 	public void testPreviousHandshakeKeysMatchContact() {
-		// Start in time period 123
+
 		TransportKeys kA = transportCrypto.deriveHandshakeKeys(transportId,
 				rootKey, 123, true);
 		TransportKeys kB = transportCrypto.deriveHandshakeKeys(transportId,
 				rootKey, 123, false);
-		// Compare Alice's previous keys in period 456 with Bob's current keys
-		// in period 455
+
 		kA = transportCrypto.updateTransportKeys(kA, 456);
 		kB = transportCrypto.updateTransportKeys(kB, 455);
-		// Alice's previous incoming keys should equal Bob's current
-		// outgoing keys
+
 		assertMatches(kA.getPreviousIncomingKeys(),
 				kB.getCurrentOutgoingKeys());
-		// Compare Alice's current keys in period 456 with Bob's previous keys
-		// in period 457
+
 		kB = transportCrypto.updateTransportKeys(kB, 457);
-		// Bob's previous incoming keys should equal Alice's current
-		// outgoing keys
+
 		assertMatches(kB.getPreviousIncomingKeys(),
 				kA.getCurrentOutgoingKeys());
 	}
 
 	@Test
 	public void testNextHandshakeKeysMatchContact() {
-		// Start in time period 123
+
 		TransportKeys kA = transportCrypto.deriveHandshakeKeys(transportId,
 				rootKey, 123, true);
 		TransportKeys kB = transportCrypto.deriveHandshakeKeys(transportId,
 				rootKey, 123, false);
-		// Compare Alice's current keys in period 456 with Bob's next keys in
-		// period 455
+
 		kA = transportCrypto.updateTransportKeys(kA, 456);
 		kB = transportCrypto.updateTransportKeys(kB, 455);
-		// Bob's next incoming keys should equal Alice's current outgoing keys
+
 		assertMatches(kB.getNextIncomingKeys(), kA.getCurrentOutgoingKeys());
-		// Compare Alice's next keys in period 456 with Bob's current keys
-		// in period 457
+
 		kB = transportCrypto.updateTransportKeys(kB, 457);
-		// Alice's next incoming keys should equal Bob's current outgoing keys
+
 		assertMatches(kA.getNextIncomingKeys(), kB.getCurrentOutgoingKeys());
 	}
 

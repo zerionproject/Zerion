@@ -30,7 +30,6 @@ class Argon2idKdf implements PasswordBasedKdf {
 		this.clock = clock;
 	}
 
-	
 	@Override
 	public int chooseCostParameter() {
 		long maxMemory = Runtime.getRuntime().maxMemory();
@@ -49,12 +48,10 @@ class Argon2idKdf implements PasswordBasedKdf {
 		return cost;
 	}
 
-	
 	static int decodeMemoryKb(int cost) {
 		return cost >> 8;
 	}
 
-	
 	static int decodeIterations(int cost) {
 		return cost & 0xFF;
 	}
@@ -109,13 +106,12 @@ class Argon2idKdf implements PasswordBasedKdf {
 
 			return new SecretKey(output);
 		} finally {
-			// Zero password bytes after KDF
+
 			java.util.Arrays.fill(passwordBytes, (byte) 0);
 			java.util.Arrays.fill(byteBuffer.array(), (byte) 0);
 		}
 	}
 
-	
 	public static int encodeCostParameter(int memoryKb, int iterations) {
 		return (memoryKb << 8) | (iterations & 0xFF);
 	}

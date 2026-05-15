@@ -12,9 +12,8 @@ import static org.junit.Assert.assertArrayEquals;
 
 public class Blake2bDigestTest extends BrambleTestCase {
 
-	// Vectors from BLAKE2 web site: https://blake2.net/Blake2b-test.txt
 	private static final String[][] KEYED_TEST_VECTORS = {
-			// input/message, key, hash
+
 			{
 					"",
 					"000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
@@ -93,30 +92,29 @@ public class Blake2bDigestTest extends BrambleTestCase {
 
 	@Test
 	public void testReset() {
-		// Generate a non-zero key
+
 		byte[] key = new byte[32];
 		for (byte i = 0; i < key.length; i++) key[i] = i;
-		// Generate some non-zero input longer than the key
+
 		byte[] input = new byte[key.length + 1];
 		for (byte i = 0; i < input.length; i++) input[i] = i;
-		// Hash the input
+
 		Blake2bDigest digest = new Blake2bDigest(key);
 		digest.update(input, 0, input.length);
 		byte[] hash = new byte[digest.getDigestSize()];
 		digest.doFinal(hash, 0);
-		// Create a second instance, hash the input without calling doFinal()
+
 		Blake2bDigest digest1 = new Blake2bDigest(key);
 		digest1.update(input, 0, input.length);
-		// Reset the second instance and hash the input again
+
 		digest1.reset();
 		digest1.update(input, 0, input.length);
 		byte[] hash1 = new byte[digest.getDigestSize()];
 		digest1.doFinal(hash1, 0);
-		// The hashes should be identical
+
 		assertArrayEquals(hash, hash1);
 	}
 
-	// Self-test routine from https://tools.ietf.org/html/rfc7693#appendix-E
 	private static final String SELF_TEST_RESULT =
 			"C23A7800D98123BD10F506C61E29DA5603D763B8BBAD2E737F5E765A7BCCD475";
 	private static final int[] SELF_TEST_DIGEST_LEN = {20, 32, 48, 64};
@@ -149,21 +147,19 @@ public class Blake2bDigestTest extends BrambleTestCase {
 			for (int j = 0; j < 6; j++) {
 				int inlen = SELF_TEST_INPUT_LEN[j];
 
-				// unkeyed hash
 				byte[] in = selfTestSequence(inlen, inlen);
 				Blake2bDigest unkeyedDigest = new Blake2bDigest(outlen * 8);
 				unkeyedDigest.update(in, 0, inlen);
 				unkeyedDigest.doFinal(md, 0);
-				// hash the hash
+
 				testDigest.update(md, 0, outlen);
 
-				// keyed hash
 				byte[] key = selfTestSequence(outlen, outlen);
 				Blake2bDigest keyedDigest = new Blake2bDigest(key, outlen, null,
 						null);
 				keyedDigest.update(in, 0, inlen);
 				keyedDigest.doFinal(md, 0);
-				// hash the hash
+
 				testDigest.update(md, 0, outlen);
 			}
 		}

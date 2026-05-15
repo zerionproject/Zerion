@@ -6,44 +6,31 @@ import static org.briarproject.bramble.api.crypto.PostQuantumConstants.HYBRID_AG
 
 public interface HandshakeLinkConstants {
 
-	
 	int FORMAT_VERSION_CLASSICAL = 0;
 
-	
 	int BASE32_LINK_BYTES_CLASSICAL = 53;
 
-	
 	int RAW_LINK_BYTES_CLASSICAL = 33;
 
-	
 	int FORMAT_VERSION_HYBRID = 1;
 
-	
 	int BASE32_LINK_BYTES_HYBRID = 53;
 
-	
 	int RAW_LINK_BYTES_HYBRID = 33;
 
-	
 	int HYBRID_PUBLIC_KEY_BYTES = HYBRID_AGREEMENT_PUBLIC_KEY_BYTES;
 
-	
 	int FORMAT_VERSION = FORMAT_VERSION_HYBRID;
 
-	
 	int BASE32_LINK_BYTES = BASE32_LINK_BYTES_HYBRID;
 
-	
 	int RAW_LINK_BYTES = RAW_LINK_BYTES_HYBRID;
 
-	
 	Pattern LINK_REGEX =
 			Pattern.compile("(?:(?:zerion|briar)://)?([a-z2-7]{" + BASE32_LINK_BYTES + "})(?:\\?.*)?");
 
-	
 	String ID_LABEL = "org.briarproject.bramble/HANDSHAKE_KEY_ID";
 
-	
 	String HYBRID_COMMITMENT_LABEL =
 			"org.briarproject.bramble/HYBRID_KEY_COMMITMENT";
 }

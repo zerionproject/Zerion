@@ -1,6 +1,5 @@
 package org.briarproject.bramble.api.crypto.pcs;
 
-
 public class PcsException extends Exception {
 
 	public PcsException(String message) {

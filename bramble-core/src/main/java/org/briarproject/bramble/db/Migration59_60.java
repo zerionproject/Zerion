@@ -4,7 +4,6 @@ import org.briarproject.bramble.api.db.DbException;
 
 import java.sql.Connection;
 
-
 class Migration59_60 implements Migration<Connection> {
 
 	@Override

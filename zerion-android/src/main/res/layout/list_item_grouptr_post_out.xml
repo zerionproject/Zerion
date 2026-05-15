@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content"
+	android:layout_marginTop="2dp"
+	android:layout_marginBottom="2dp"
+	android:gravity="end"
+	android:orientation="vertical">
+
+	<androidx.constraintlayout.widget.ConstraintLayout
+		android:id="@+id/bubble"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_marginStart="48dp"
+		android:background="@drawable/msg_out"
+		android:elevation="@dimen/message_bubble_elevation"
+		android:paddingHorizontal="12dp"
+		android:paddingVertical="8dp">
+
+		<TextView
+			android:id="@+id/postText"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:maxWidth="260dp"
+			android:textColor="@android:color/white"
+			android:textSize="15sp"
+			tools:text="Reply" />
+
+		<TextView
+			android:id="@+id/postTime"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_marginTop="2dp"
+			android:layout_marginStart="8dp"
+			android:textColor="#CCFFFFFF"
+			android:textSize="10sp"
+			app:layout_constraintBottom_toBottomOf="@+id/postText"
+			app:layout_constraintStart_toEndOf="@+id/postText"
+			xmlns:app="http://schemas.android.com/apk/res-auto"
+			tools:text="13:37" />
+
+	</androidx.constraintlayout.widget.ConstraintLayout>
+
+</LinearLayout>

@@ -165,31 +165,26 @@ public class GroupInvitationIntegrationTest
 		}
 		assertTrue(foundResponse);
 
-		// no invitations are open
 		assertTrue(groupInvitationManager1.getInvitations().isEmpty());
-		// no groups were added
+
 		assertEquals(0, groupManager1.getPrivateGroups().size());
 	}
 
 	@Test
 	public void testInvitationDeclineWithAutoDelete() throws Exception {
-		// 0 and 1 set an auto-delete timer for their conversation
+
 		setAutoDeleteTimer(c0, contactId1From0, MIN_AUTO_DELETE_TIMER_MS);
 		setAutoDeleteTimer(c1, contactId0From1, MIN_AUTO_DELETE_TIMER_MS);
 
-		// Send invitation
 		sendInvitation(c0.getClock().currentTimeMillis(), null);
 		sync0To1(1, true);
 
-		// Decline invitation
 		groupInvitationManager1
 				.respondToInvitation(contactId0From1, privateGroup, false);
 		sync1To0(1, true);
 
-		// Group was not added
 		assertTrue(groupManager1.getPrivateGroups().isEmpty());
 
-		// All visible messages between 0 and 1 should have auto-delete timers
 		for (ConversationMessageHeader h : getMessages1From0()) {
 			assertEquals(MIN_AUTO_DELETE_TIMER_MS, h.getAutoDeleteTimer());
 		}
@@ -203,7 +198,6 @@ public class GroupInvitationIntegrationTest
 		long timestamp = c0.getClock().currentTimeMillis();
 		sendInvitation(timestamp, null);
 
-		// check that invitation message state is correct
 		Collection<ConversationMessageHeader> messages = getMessages1From0();
 		assertEquals(1, messages.size());
 		assertMessageState(messages.iterator().next(), true, false, false);
@@ -248,9 +242,8 @@ public class GroupInvitationIntegrationTest
 		}
 		assertTrue(foundResponse);
 
-		// no invitations are open
 		assertTrue(groupInvitationManager1.getInvitations().isEmpty());
-		// group was added
+
 		Collection<PrivateGroup> groups = groupManager1.getPrivateGroups();
 		assertEquals(1, groups.size());
 		assertEquals(privateGroup, groups.iterator().next());
@@ -258,25 +251,21 @@ public class GroupInvitationIntegrationTest
 
 	@Test
 	public void testInvitationAcceptWithAutoDelete() throws Exception {
-		// 0 and 1 set an auto-delete timer for their conversation
+
 		setAutoDeleteTimer(c0, contactId1From0, MIN_AUTO_DELETE_TIMER_MS);
 		setAutoDeleteTimer(c1, contactId0From1, MIN_AUTO_DELETE_TIMER_MS);
 
-		// Send invitation
 		sendInvitation(c0.getClock().currentTimeMillis(), null);
 		sync0To1(1, true);
 
-		// Accept invitation
 		groupInvitationManager1
 				.respondToInvitation(contactId0From1, privateGroup, true);
 		sync1To0(1, true);
 
-		// Group was added
 		Collection<PrivateGroup> groups = groupManager1.getPrivateGroups();
 		assertEquals(1, groups.size());
 		assertEquals(privateGroup, groups.iterator().next());
 
-		// All visible messages between 0 and 1 should have auto-delete timers
 		for (ConversationMessageHeader h : getMessages1From0()) {
 			assertEquals(MIN_AUTO_DELETE_TIMER_MS, h.getAutoDeleteTimer());
 		}
@@ -290,13 +279,11 @@ public class GroupInvitationIntegrationTest
 		long timestamp = c0.getClock().currentTimeMillis();
 		sendInvitation(timestamp, null);
 
-		// 0 has one read outgoing message
 		Group g1 = groupInvitationManager0.getContactGroup(contact1From0);
 		assertGroupCount(messageTracker0, g1.getId(), 1, 0, timestamp);
 
 		sync0To1(1, true);
 
-		// 1 has one unread message
 		Group g0 = groupInvitationManager1.getContactGroup(contact0From1);
 		assertGroupCount(messageTracker1, g0.getId(), 1, 1, timestamp);
 		ConversationMessageHeader m = getMessages0From1().iterator().next();
@@ -304,16 +291,13 @@ public class GroupInvitationIntegrationTest
 		groupInvitationManager1
 				.respondToInvitation(contactId0From1, privateGroup, true);
 
-		// 1 has two messages, one still unread
 		assertGroupCount(messageTracker1, g0.getId(), 2, 1);
 
-		// now all messages should be read
 		conversationManager1.setReadFlag(g0.getId(), m.getId(), true);
 		assertGroupCount(messageTracker1, g0.getId(), 2, 0);
 
 		sync1To0(1, true);
 
-		// now 0 has two messages, one of them unread
 		assertGroupCount(messageTracker0, g1.getId(), 2, 1);
 	}
 
@@ -321,38 +305,32 @@ public class GroupInvitationIntegrationTest
 	public void testMultipleInvitations() throws Exception {
 		sendInvitation(c0.getClock().currentTimeMillis(), null);
 
-		// invitation is not allowed before the first hasn't been answered
 		assertEquals(INVITE_SENT, groupInvitationManager0
 				.getSharingStatus(contact1From0, privateGroup.getId()));
 
-		// deliver invitation and response
 		sync0To1(1, true);
 		groupInvitationManager1
 				.respondToInvitation(contactId0From1, privateGroup, false);
 		sync1To0(1, true);
 
-		// after invitation was declined, inviting again is possible
 		assertEquals(SHAREABLE, groupInvitationManager0
 				.getSharingStatus(contact1From0, privateGroup.getId()));
 
-		// send and accept the second invitation
 		sendInvitation(c0.getClock().currentTimeMillis(), "Second Invitation");
 		sync0To1(1, true);
 		groupInvitationManager1
 				.respondToInvitation(contactId0From1, privateGroup, true);
 		sync1To0(1, true);
 
-		// invitation is not allowed since the member joined the group now
 		assertEquals(SHARING, groupInvitationManager0
 				.getSharingStatus(contact1From0, privateGroup.getId()));
 
-		// don't allow another invitation request
 		try {
 			sendInvitation(c0.getClock().currentTimeMillis(),
 					"Third Invitation");
 			fail();
 		} catch (ProtocolStateException e) {
-			// expected
+
 		}
 	}
 
@@ -375,22 +353,17 @@ public class GroupInvitationIntegrationTest
 
 	@Test(expected = ProtocolStateException.class)
 	public void testCreatorLeavesBeforeInvitationAccepted() throws Exception {
-		// Creator invites invitee to join group
+
 		sendInvitation(c0.getClock().currentTimeMillis(), null);
 
-		// Creator's invite message is delivered to invitee
 		sync0To1(1, true);
 
-		// Creator leaves group
 		assertEquals(1, groupManager0.getPrivateGroups().size());
 		groupManager0.removePrivateGroup(privateGroup.getId());
 		assertEquals(0, groupManager0.getPrivateGroups().size());
 
-		// Creator's leave message is delivered to invitee
 		sync0To1(1, true);
 
-		// Invitee accepts invitation, but it's no longer open - exception is
-		// thrown as the action has failed
 		assertEquals(0, groupManager1.getPrivateGroups().size());
 		groupInvitationManager1
 				.respondToInvitation(contactId0From1, privateGroup, true);
@@ -398,25 +371,19 @@ public class GroupInvitationIntegrationTest
 
 	@Test
 	public void testCreatorLeavesBeforeInvitationDeclined() throws Exception {
-		// Creator invites invitee to join group
+
 		sendInvitation(c0.getClock().currentTimeMillis(), null);
 
-		// Creator's invite message is delivered to invitee
 		sync0To1(1, true);
 
-		// Creator leaves group
 		assertEquals(1, groupManager0.getPrivateGroups().size());
 		groupManager0.removePrivateGroup(privateGroup.getId());
 		assertEquals(0, groupManager0.getPrivateGroups().size());
 
-		// Creator's leave message is delivered to invitee
 		sync0To1(1, true);
 
-		// invitee should have no more open invitations
 		assertTrue(groupInvitationManager1.getInvitations().isEmpty());
 
-		// Invitee declines invitation, but it's no longer open - no exception
-		// as the action has succeeded
 		assertEquals(0, groupManager1.getPrivateGroups().size());
 		groupInvitationManager1
 				.respondToInvitation(contactId0From1, privateGroup, false);
@@ -425,109 +392,88 @@ public class GroupInvitationIntegrationTest
 	@Test
 	public void testCreatorLeavesConcurrentlyWithInvitationAccepted()
 			throws Exception {
-		// Creator invites invitee to join group
+
 		sendInvitation(c0.getClock().currentTimeMillis(), null);
 
-		// Creator's invite message is delivered to invitee
 		sync0To1(1, true);
 
-		// Creator leaves group
 		assertEquals(1, groupManager0.getPrivateGroups().size());
 		groupManager0.removePrivateGroup(privateGroup.getId());
 		assertEquals(0, groupManager0.getPrivateGroups().size());
 
-		// Invitee accepts invitation
 		assertEquals(0, groupManager1.getPrivateGroups().size());
 		groupInvitationManager1
 				.respondToInvitation(contactId0From1, privateGroup, true);
 		assertEquals(1, groupManager1.getPrivateGroups().size());
 		assertFalse(groupManager1.isDissolved(privateGroup.getId()));
 
-		// Invitee's join message is delivered to creator
 		sync1To0(1, true);
 
-		// Creator's leave message is delivered to invitee
 		sync0To1(1, true);
 
-		// Group is marked as dissolved
 		assertTrue(groupManager1.isDissolved(privateGroup.getId()));
 	}
 
 	@Test
 	public void testCreatorLeavesConcurrentlyWithInvitationDeclined()
 			throws Exception {
-		// Creator invites invitee to join group
+
 		sendInvitation(c0.getClock().currentTimeMillis(), null);
 
-		// Creator's invite message is delivered to invitee
 		sync0To1(1, true);
 
-		// Creator leaves group
 		assertEquals(1, groupManager0.getPrivateGroups().size());
 		groupManager0.removePrivateGroup(privateGroup.getId());
 		assertEquals(0, groupManager0.getPrivateGroups().size());
 
-		// Invitee declines invitation
 		assertEquals(0, groupManager1.getPrivateGroups().size());
 		groupInvitationManager1
 				.respondToInvitation(contactId0From1, privateGroup, false);
 		assertEquals(0, groupManager1.getPrivateGroups().size());
 
-		// Invitee's leave message is delivered to creator
 		sync1To0(1, true);
 
-		// Creator's leave message is delivered to invitee
 		sync0To1(1, true);
 	}
 
 	@Test
 	public void testCreatorLeavesConcurrentlyWithMemberLeaving()
 			throws Exception {
-		// Creator invites invitee to join group
+
 		sendInvitation(c0.getClock().currentTimeMillis(), null);
 
-		// Creator's invite message is delivered to invitee
 		sync0To1(1, true);
 
-		// Invitee responds to invitation
 		assertEquals(0, groupManager1.getPrivateGroups().size());
 		groupInvitationManager1
 				.respondToInvitation(contactId0From1, privateGroup, true);
 		assertEquals(1, groupManager1.getPrivateGroups().size());
 
-		// Invitee's (sharing) join message is delivered to creator
 		sync1To0(1, true);
 
-		// Creator's (sharing and group) join messages are delivered to invitee
 		sync0To1(2, true);
 
-		// Invitee's (group) join message is delivered to creator
 		sync1To0(1, true);
 
-		// Creator leaves group
 		assertEquals(1, groupManager0.getPrivateGroups().size());
 		groupManager0.removePrivateGroup(privateGroup.getId());
 		assertEquals(0, groupManager0.getPrivateGroups().size());
 
-		// Invitee leaves group
 		groupManager1.removePrivateGroup(privateGroup.getId());
 		assertEquals(0, groupManager1.getPrivateGroups().size());
 
-		// Creator's leave message is delivered to invitee
 		sync0To1(1, true);
 
-		// Invitee's leave message is delivered to creator
 		sync1To0(1, true);
 	}
 
 	@Test
 	public void testDeletingAllMessagesWhenCompletingSession()
 			throws Exception {
-		// send invitation
+
 		sendInvitation(c0.getClock().currentTimeMillis(), null);
 		sync0To1(1, true);
 
-		// messages can not be deleted
 		assertFalse(deleteAllMessages1From0().allDeleted());
 		assertTrue(deleteAllMessages1From0().hasInvitationSessionInProgress());
 		assertEquals(1, getMessages1From0().size());
@@ -535,108 +481,87 @@ public class GroupInvitationIntegrationTest
 		assertTrue(deleteAllMessages0From1().hasInvitationSessionInProgress());
 		assertEquals(1, getMessages0From1().size());
 
-		// respond
 		groupInvitationManager1
 				.respondToInvitation(contactId0From1, privateGroup, true);
 		sync1To0(1, true);
 
-		// check group count
 		assertGroupCount(messageTracker0, g1From0.getId(), 2, 1);
 		assertGroupCount(messageTracker1, g0From1.getId(), 2, 1);
 
-		// messages can be deleted now by creator, invitee needs to wait for ACK
 		assertTrue(deleteAllMessages1From0().allDeleted());
 		assertEquals(0, getMessages1From0().size());
 		assertTrue(deleteAllMessages1From0()
-				.allDeleted());  // a second time nothing happens
+				.allDeleted());
 		assertGroupCount(messageTracker0, g1From0.getId(), 0, 0);
 
-		// trying to delete fails for invitee
 		assertFalse(deleteAllMessages0From1().allDeleted());
 		assertTrue(deleteAllMessages0From1().hasInvitationSessionInProgress());
 		assertEquals(2, getMessages0From1().size());
 
-		// creator sends two JOIN messages (one sharing + one in private group)
-		// this includes the ACK for response
 		sync0To1(2, true);
 
-		// now invitee can also delete messages
 		assertTrue(deleteAllMessages0From1().allDeleted());
 		assertEquals(0, getMessages0From1().size());
-		// a second time nothing happens
+
 		assertTrue(deleteAllMessages0From1().allDeleted());
 		assertGroupCount(messageTracker1, g0From1.getId(), 0, 0);
 
-		// invitee now leaves
 		groupManager1.removePrivateGroup(privateGroup.getId());
 		sync1To0(1, true);
 
-		// no new messages to delete
 		assertEquals(0, getMessages1From0().size());
 		assertEquals(0, getMessages0From1().size());
 	}
 
 	@Test
 	public void testDeletingAllMessagesWhenDeclining() throws Exception {
-		// send invitation
+
 		sendInvitation(c0.getClock().currentTimeMillis(), null);
 		sync0To1(1, true);
 
-		// respond
 		groupInvitationManager1
 				.respondToInvitation(contactId0From1, privateGroup, false);
 		sync1To0(1, true);
 
-		// check group count
 		Group g1From0 = groupInvitationManager0.getContactGroup(contact1From0);
 		Group g0From1 = groupInvitationManager1.getContactGroup(contact0From1);
 		assertGroupCount(messageTracker0, g1From0.getId(), 2, 1);
 		assertGroupCount(messageTracker1, g0From1.getId(), 2, 1);
 
-		// messages can be deleted now by creator, invitee needs to wait for ACK
 		assertTrue(deleteAllMessages1From0().allDeleted());
 		assertEquals(0, getMessages1From0().size());
-		// a second time nothing happens
+
 		assertTrue(deleteAllMessages1From0().allDeleted());
 
-		// trying to delete fails for invitee
 		assertFalse(deleteAllMessages0From1().allDeleted());
 		assertTrue(deleteAllMessages0From1().hasInvitationSessionInProgress());
 		assertEquals(2, getMessages0From1().size());
 
-		// creator sends ACK
 		ack0To1(1);
 
-		// now invitee can also delete messages
 		assertTrue(deleteAllMessages0From1().allDeleted());
 		assertEquals(0, getMessages0From1().size());
-		// a second time nothing happens
+
 		assertTrue(deleteAllMessages0From1().allDeleted());
 		assertGroupCount(messageTracker1, g0From1.getId(), 0, 0);
 
-		// creator can re-invite
 		sendInvitation(c0.getClock().currentTimeMillis(), null);
 		sync0To1(1, true);
 
-		// now new messages can not be deleted anymore
 		assertFalse(deleteAllMessages1From0().allDeleted());
 		assertTrue(deleteAllMessages1From0().hasInvitationSessionInProgress());
 		assertFalse(deleteAllMessages0From1().allDeleted());
 		assertTrue(deleteAllMessages0From1().hasInvitationSessionInProgress());
 
-		// responding again
 		groupInvitationManager1
 				.respondToInvitation(contactId0From1, privateGroup, false);
 		sync1To0(1, true);
 
-		// creator sends ACK
 		ack0To1(1);
 
-		// asserting group counts
 		assertGroupCount(messageTracker1, g0From1.getId(), 2, 1);
 		assertGroupCount(messageTracker0, g1From0.getId(), 2, 1);
 
-		// deleting is possible again
 		assertTrue(deleteAllMessages1From0().allDeleted());
 		assertTrue(deleteAllMessages0From1().allDeleted());
 		assertGroupCount(messageTracker1, g0From1.getId(), 0, 0);
@@ -645,11 +570,10 @@ public class GroupInvitationIntegrationTest
 
 	@Test
 	public void testDeletingSomeMessages() throws Exception {
-		// send invitation
+
 		sendInvitation(c0.getClock().currentTimeMillis(), null);
 		sync0To1(1, true);
 
-		// deleting the invitation will fail for both
 		Collection<ConversationMessageHeader> m0 = getMessages1From0();
 		assertEquals(1, m0.size());
 		MessageId messageId = m0.iterator().next().getId();
@@ -662,13 +586,10 @@ public class GroupInvitationIntegrationTest
 		assertTrue(deleteMessages0From1(toDelete)
 				.hasInvitationSessionInProgress());
 
-		// respond
 		groupInvitationManager1
 				.respondToInvitation(contactId0From1, privateGroup, false);
 		sync1To0(1, true);
 
-		// both can still not delete the invitation,
-		// because the response was not selected for deletion as well
 		assertFalse(deleteMessages1From0(toDelete).allDeleted());
 		assertTrue(
 				deleteMessages1From0(toDelete).hasNotAllInvitationSelected());
@@ -676,7 +597,6 @@ public class GroupInvitationIntegrationTest
 		assertTrue(
 				deleteMessages0From1(toDelete).hasNotAllInvitationSelected());
 
-		// after selecting response, both messages can be deleted by creator
 		m0 = getMessages1From0();
 		assertEquals(2, m0.size());
 		for (ConversationMessageHeader h : m0) {
@@ -685,25 +605,22 @@ public class GroupInvitationIntegrationTest
 		assertGroupCount(messageTracker0, g1From0.getId(), 2, 1);
 		assertTrue(deleteMessages1From0(toDelete).allDeleted());
 		assertEquals(0, getMessages1From0().size());
-		// a second time nothing happens
+
 		assertTrue(deleteMessages1From0(toDelete).allDeleted());
 		assertGroupCount(messageTracker0, g1From0.getId(), 0, 0);
 
-		// 1 can still not delete the messages, as last one has not been ACKed
 		assertFalse(deleteMessages0From1(toDelete).allDeleted());
 		assertTrue(deleteMessages0From1(toDelete)
 				.hasInvitationSessionInProgress());
 		assertEquals(2, getMessages0From1().size());
 		assertGroupCount(messageTracker1, g0From1.getId(), 2, 1);
 
-		// 0 sends an ACK to their last message
 		ack0To1(1);
 
-		// 1 can now delete all messages, as last one has been ACKed
 		assertTrue(deleteMessages0From1(toDelete).allDeleted());
 		assertEquals(0, getMessages0From1().size());
 		assertGroupCount(messageTracker1, g0From1.getId(), 0, 0);
-		// a second time nothing happens
+
 		assertTrue(deleteMessages0From1(toDelete).allDeleted());
 	}
 
@@ -714,36 +631,29 @@ public class GroupInvitationIntegrationTest
 
 	@Test
 	public void testInvitationAfterReAddingContacts() throws Exception {
-		// sync invitation and response back
+
 		sendInvitation(c0.getClock().currentTimeMillis(), null);
 		sync0To1(1, true);
 		groupInvitationManager1
 				.respondToInvitation(contactId0From1, privateGroup, true);
 		sync1To0(1, true);
 
-		// sync group join messages
-		sync0To1(2, true); // + one invitation protocol join message
+		sync0To1(2, true);
 		sync1To0(1, true);
 
-		// inviting again is not possible
 		assertEquals(SHARING, groupInvitationManager0
 				.getSharingStatus(contact1From0, privateGroup.getId()));
 
-		// contacts remove each other
 		removeAllContacts();
 
-		// group gets dissolved for invitee automatically, but not creator
 		assertFalse(groupManager0.isDissolved(privateGroup.getId()));
 		assertTrue(groupManager1.isDissolved(privateGroup.getId()));
 
-		// contacts re-add each other
 		addDefaultContacts();
 
-		// creator can still not invite again
 		assertEquals(SHARING, groupInvitationManager0
 				.getSharingStatus(contact1From0, privateGroup.getId()));
 
-		// finally invitee can remove group without issues
 		groupManager1.removePrivateGroup(privateGroup.getId());
 	}
 

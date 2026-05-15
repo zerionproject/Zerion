@@ -11,6 +11,5 @@ public interface PasswordStrengthEstimator {
 	float QUITE_STRONG = 0.75f;
 	float STRONG = 1;
 
-	
 	float estimateStrength(char[] password);
 }

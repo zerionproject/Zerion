@@ -11,7 +11,6 @@ import java.util.concurrent.TimeUnit;
 
 import javax.annotation.concurrent.ThreadSafe;
 
-
 @ThreadSafe
 @NotNullByDefault
 class TaskSchedulerImpl implements TaskScheduler {

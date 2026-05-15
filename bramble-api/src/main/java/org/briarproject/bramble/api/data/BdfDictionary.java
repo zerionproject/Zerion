@@ -10,13 +10,11 @@ import java.util.TreeMap;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.NotThreadSafe;
 
-
 @NotThreadSafe
 public final class BdfDictionary extends TreeMap<String, Object> {
 
 	public static final Object NULL_VALUE = new Object();
 
-	
 	public static BdfDictionary of(Entry<String, ?>... entries) {
 		BdfDictionary d = new BdfDictionary();
 		for (Entry<String, ?> e : entries) d.put(e.getKey(), e.getValue());
@@ -73,14 +71,12 @@ public final class BdfDictionary extends TreeMap<String, Object> {
 		return value == null ? defaultValue : value;
 	}
 
-	
 	public Integer getInt(String key) throws FormatException {
 		Integer value = getOptionalInt(key);
 		if (value == null) throw new FormatException();
 		return value;
 	}
 
-	
 	@Nullable
 	public Integer getOptionalInt(String key) throws FormatException {
 		Long value = getOptionalLong(key);
@@ -91,7 +87,6 @@ public final class BdfDictionary extends TreeMap<String, Object> {
 		return value.intValue();
 	}
 
-	
 	public Integer getInt(String key, Integer defaultValue)
 			throws FormatException {
 		Integer value = getOptionalInt(key);

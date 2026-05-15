@@ -10,12 +10,10 @@ import static org.briarproject.bramble.api.crypto.CryptoConstants.KEY_TYPE_SIGNA
 import static org.briarproject.bramble.api.identity.AuthorConstants.MAX_AUTHOR_NAME_LENGTH;
 import static org.briarproject.bramble.util.StringUtils.toUtf8;
 
-
 @Immutable
 @NotNullByDefault
 public class Author implements Nameable {
 
-	
 	public static final int FORMAT_VERSION = 1;
 
 	private final AuthorId id;
@@ -36,23 +34,19 @@ public class Author implements Nameable {
 		this.publicKey = publicKey;
 	}
 
-	
 	public AuthorId getId() {
 		return id;
 	}
 
-	
 	public int getFormatVersion() {
 		return formatVersion;
 	}
 
-	
 	@Override
 	public String getName() {
 		return name;
 	}
 
-	
 	public PublicKey getPublicKey() {
 		return publicKey;
 	}

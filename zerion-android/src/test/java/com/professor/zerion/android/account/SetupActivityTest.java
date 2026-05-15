@@ -35,20 +35,17 @@ public class SetupActivityTest {
 	public void testPasswordMatchUI() {
 		moveToSetPasswordFragment();
 
-		// error shown when passwords don't match, button is disabled
 		onView(withId(R.id.password_entry)).perform(typeText("123456"));
 		onView(withId(R.id.password_confirm)).perform(typeText("654321"));
 		onView(withText(R.string.passwords_do_not_match))
 				.check(matches(isDisplayed()));
 		onView(withId(R.id.next)).check(matches(not(isEnabled())));
 
-		// confirming correct password, removes error, enables button
 		onView(withId(R.id.password_confirm)).perform(clearText());
 		onView(withId(R.id.password_confirm)).perform(replaceText("123456"));
 		onView(withText(R.string.passwords_do_not_match)).check(doesNotExist());
 		onView(withId(R.id.next)).check(matches(isEnabled()));
 
-		// clicking the button shows progress bar, no doze because SDK_INT==21
 		onView(withId(R.id.next)).perform(scrollTo());
 		onView(withId(R.id.next)).perform(click());
 		onView(withId(R.id.progress)).check(matches(isDisplayed()));

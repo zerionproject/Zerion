@@ -9,7 +9,6 @@ import java.util.Collection;
 
 import javax.annotation.concurrent.Immutable;
 
-
 @Immutable
 @NotNullByDefault
 public class MessagesAckedEvent extends Event {

@@ -7,7 +7,6 @@ import javax.annotation.concurrent.Immutable;
 
 import static org.briarproject.bramble.api.transport.TransportConstants.REORDERING_WINDOW_SIZE;
 
-
 @Immutable
 @NotNullByDefault
 public class IncomingKeys {

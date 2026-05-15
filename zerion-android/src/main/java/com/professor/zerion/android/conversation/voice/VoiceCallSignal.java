@@ -14,7 +14,7 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 @NotNullByDefault
 public class VoiceCallSignal {
-	// Protocol version for wire format negotiation
+
 	private static final int PROTOCOL_VERSION = 1;
 	private static final String SIGNAL_PREFIX = "\u0000ZSIG\u0001\u0000";
 
@@ -57,7 +57,7 @@ public class VoiceCallSignal {
 	private static final Pattern UUID_PATTERN = Pattern.compile(
 			"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$");
 	private static final Pattern BASE64_PATTERN = Pattern.compile(
-			"^[A-Za-z0-9+/=]{32,256}$"); // Min 32, max 256 chars
+			"^[A-Za-z0-9+/=]{32,256}$");
 	private static final Pattern ONION_PATTERN = Pattern.compile(
 			"^[a-z2-7]{56}\\.onion$");
 	private final SignalType type;
@@ -98,7 +98,6 @@ public class VoiceCallSignal {
 	@Nullable public String getReason() { return reason; }
 	@Nullable public String getEphemeralSecret() { return ephemeralSecret; }
 
-	
 	public static VoiceCallSignal createOffer(String callId, String voiceCallKey) {
 		validateCallId(callId);
 		validateVoiceCallKey(voiceCallKey);
@@ -106,9 +105,6 @@ public class VoiceCallSignal {
 				System.currentTimeMillis(), voiceCallKey, null, null, null);
 	}
 
-	/**
-	 * Create offer with ephemeral secret for forward secrecy.
-	 */
 	public static VoiceCallSignal createOffer(String callId, String voiceCallKey,
 			String ephemeralSecret) {
 		validateCallId(callId);
@@ -118,7 +114,6 @@ public class VoiceCallSignal {
 				ephemeralSecret);
 	}
 
-
 	public static VoiceCallSignal createAnswer(String callId, String onionAddress, int onionPort) {
 		validateCallId(callId);
 		validateOnionAddress(onionAddress);
@@ -127,9 +122,6 @@ public class VoiceCallSignal {
 				System.currentTimeMillis(), null, onionAddress, onionPort, null);
 	}
 
-	/**
-	 * Create answer with ephemeral secret for forward secrecy.
-	 */
 	public static VoiceCallSignal createAnswer(String callId, String onionAddress,
 			int onionPort, String ephemeralSecret) {
 		validateCallId(callId);
@@ -140,7 +132,6 @@ public class VoiceCallSignal {
 				ephemeralSecret);
 	}
 
-	
 	public static VoiceCallSignal createReject(String callId, @Nullable String reason) {
 		validateCallId(callId);
 		if (reason != null && reason.length() > MAX_REASON_LENGTH) {
@@ -150,7 +141,6 @@ public class VoiceCallSignal {
 				System.currentTimeMillis(), null, null, null, reason);
 	}
 
-	
 	public static VoiceCallSignal createEnd(String callId, @Nullable String reason) {
 		validateCallId(callId);
 		if (reason != null && reason.length() > MAX_REASON_LENGTH) {
@@ -160,21 +150,18 @@ public class VoiceCallSignal {
 				System.currentTimeMillis(), null, null, null, reason);
 	}
 
-	
 	public String toWireFormat(byte[] hmacKey) {
 		String jsonStr = toCanonicalJson();
 		String hmac = computeHmac(jsonStr, hmacKey);
 		return WIRE_PREFIX + jsonStr + ":" + hmac;
 	}
 
-	
 	public String toWireFormat() {
-		// Always use callId for HMAC — never voiceCallKey from payload
+
 		byte[] hmacKey = callId.getBytes(StandardCharsets.UTF_8);
 		return toWireFormat(hmacKey);
 	}
 
-	
 	private String toCanonicalJson() {
 		StringBuilder json = new StringBuilder();
 		json.append("{");
@@ -202,7 +189,6 @@ public class VoiceCallSignal {
 		return json.toString();
 	}
 
-	
 	public static boolean isSignal(String message) {
 		if (message == null) {
 			return false;
@@ -214,7 +200,6 @@ public class VoiceCallSignal {
 		return message.startsWith(WIRE_PREFIX);
 	}
 
-	
 	@Nullable
 	public static VoiceCallSignal fromWireFormat(String wireMessage, byte[] hmacKey) {
 		if (!isSignal(wireMessage)) {
@@ -241,11 +226,6 @@ public class VoiceCallSignal {
 		}
 	}
 
-	
-	/**
-	 * Parses a wire-format signal using callId-based HMAC verification only.
-	 * For ongoing calls where voiceCallKey is known, use fromWireFormat(msg, key).
-	 */
 	@Nullable
 	public static VoiceCallSignal fromWireFormat(String wireMessage) {
 		if (!isSignal(wireMessage)) {
@@ -266,7 +246,7 @@ public class VoiceCallSignal {
 			if (callId == null) {
 				return null;
 			}
-			// Use callId only — never the untrusted "k" field from the payload
+
 			byte[] hmacKey = callId.getBytes(StandardCharsets.UTF_8);
 			String expectedHmac = computeHmac(jsonStr, hmacKey);
 			if (!constantTimeEquals(expectedHmac, receivedHmac)) {
@@ -279,7 +259,6 @@ public class VoiceCallSignal {
 		}
 	}
 
-	
 	@Nullable
 	private static VoiceCallSignal parseJson(String json) {
 		try {
@@ -289,7 +268,7 @@ public class VoiceCallSignal {
 
 			Integer version = extractJsonInt(json, "v");
 			if (version != null && version > PROTOCOL_VERSION) {
-				return null; // Reject signals from unsupported future versions
+				return null;
 			}
 
 			String typeStr = extractJsonString(json, "t");
@@ -444,7 +423,6 @@ public class VoiceCallSignal {
 		return port > 0 && port <= 65535;
 	}
 
-	
 	private static String computeHmac(String data, byte[] key) {
 		try {
 			Mac mac = Mac.getInstance(HMAC_ALGORITHM);
@@ -461,7 +439,6 @@ public class VoiceCallSignal {
 		}
 	}
 
-	
 	private static boolean constantTimeEquals(String a, String b) {
 		if (a == null || b == null) {
 			return false;
@@ -483,7 +460,6 @@ public class VoiceCallSignal {
 		return result == 0;
 	}
 
-	
 	private static String escapeJson(String s) {
 		StringBuilder sb = new StringBuilder(s.length() + 16);
 		for (int i = 0; i < s.length(); i++) {
@@ -507,7 +483,6 @@ public class VoiceCallSignal {
 		return sb.toString();
 	}
 
-	
 	private static String unescapeJson(String s) {
 		StringBuilder sb = new StringBuilder(s.length());
 		for (int i = 0; i < s.length(); i++) {

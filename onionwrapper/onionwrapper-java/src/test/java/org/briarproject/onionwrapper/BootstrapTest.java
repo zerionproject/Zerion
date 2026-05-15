@@ -66,7 +66,6 @@ public class BootstrapTest extends BaseTest {
 			throw new AssertionError("Running on unsupported OS");
 		}
 
-		// Bootstrap twice with the same wrapper to test wrapper reuse
 		testBootstrapping(tor);
 		testBootstrapping(tor);
 	}
@@ -80,7 +79,7 @@ public class BootstrapTest extends BaseTest {
 			long start = System.currentTimeMillis();
 			while (System.currentTimeMillis() - start < TIMEOUT) {
 				if (tor.getTorState() == CONNECTED) break;
-				//noinspection BusyWait
+
 				Thread.sleep(500);
 			}
 			connected = tor.getTorState() == CONNECTED;

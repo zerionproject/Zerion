@@ -36,16 +36,13 @@ interface MessageEncoder {
 
 	void setAvailableToAnswer(BdfDictionary meta, boolean available);
 
-	
 	Message encodeRequestMessage(GroupId contactGroupId, long timestamp,
 			@Nullable MessageId previousMessageId, Author author,
 			@Nullable String text);
 
-	
 	Message encodeRequestMessage(GroupId contactGroupId, long timestamp,
 			@Nullable MessageId previousMessageId, Author author,
 			@Nullable String text, long autoDeleteTimer);
-
 
 	Message encodeAcceptMessage(GroupId contactGroupId, long timestamp,
 			@Nullable MessageId previousMessageId, SessionId sessionId,
@@ -53,18 +50,15 @@ interface MessageEncoder {
 			Map<TransportId, TransportProperties> transportProperties,
 			@Nullable byte[] mlDsaPubKey);
 
-
 	Message encodeAcceptMessage(GroupId contactGroupId, long timestamp,
 			@Nullable MessageId previousMessageId, SessionId sessionId,
 			PublicKey ephemeralPublicKey, long acceptTimestamp,
 			Map<TransportId, TransportProperties> transportProperties,
 			long autoDeleteTimer, @Nullable byte[] mlDsaPubKey);
 
-	
 	Message encodeDeclineMessage(GroupId contactGroupId, long timestamp,
 			@Nullable MessageId previousMessageId, SessionId sessionId);
 
-	
 	Message encodeDeclineMessage(GroupId contactGroupId, long timestamp,
 			@Nullable MessageId previousMessageId, SessionId sessionId,
 			long autoDeleteTimer);

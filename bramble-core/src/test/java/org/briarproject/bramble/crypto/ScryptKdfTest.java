@@ -57,11 +57,11 @@ public class ScryptKdfTest extends BrambleTestCase {
 	@Test
 	public void testCalibration() throws Exception {
 		Clock clock = new ArrayClock(
-				0, 50, // Duration for cost 256
-				0, 100, // Duration for cost 512
-				0, 200, // Duration for cost 1024
-				0, 400, // Duration for cost 2048
-				0, 800 // Duration for cost 4096
+				0, 50,
+				0, 100,
+				0, 200,
+				0, 400,
+				0, 800
 		);
 		PasswordBasedKdf kdf = new ScryptKdf(clock);
 		assertEquals(4096, kdf.chooseCostParameter());
@@ -70,7 +70,7 @@ public class ScryptKdfTest extends BrambleTestCase {
 	@Test
 	public void testCalibrationChoosesMinCost() throws Exception {
 		Clock clock = new ArrayClock(
-				0, 2000 // Duration for cost 256 is already too high
+				0, 2000
 		);
 		PasswordBasedKdf kdf = new ScryptKdf(clock);
 		assertEquals(256, kdf.chooseCostParameter());

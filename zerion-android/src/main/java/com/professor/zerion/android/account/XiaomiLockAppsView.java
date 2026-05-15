@@ -8,7 +8,6 @@ import android.widget.Toast;
 import com.professor.zerion.R;
 import org.briarproject.nullsafety.NotNullByDefault;
 
-
 import javax.annotation.Nullable;
 
 import androidx.annotation.StringRes;
@@ -21,7 +20,6 @@ import static org.briarproject.android.dontkillmelib.XiaomiUtils.xiaomiLockAppsN
 @UiThread
 @NotNullByDefault
 class XiaomiLockAppsView extends PowerView {
-
 
 	public XiaomiLockAppsView(Context context) {
 		this(context, null);

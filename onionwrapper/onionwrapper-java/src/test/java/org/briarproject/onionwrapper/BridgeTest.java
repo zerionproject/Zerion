@@ -60,12 +60,12 @@ public class BridgeTest extends BaseTest {
 
 	@Parameters
 	public static Iterable<Params> data() {
-		// Share stats among all the test instances
+
 		Stats stats = new Stats();
 		CircumventionProvider provider = new CircumventionProviderImpl();
 		List<Params> states = new ArrayList<>();
 		for (int i = 0; i < ATTEMPTS_PER_BRIDGE; i++) {
-			// Test all the unique bridge lines
+
 			Set<String> bridges = new HashSet<>();
 			for (BridgeType type : BridgeType.values()) {
 				for (String bridge : provider.getBridges(type, "ZZ")) {
@@ -144,7 +144,7 @@ public class BridgeTest extends BaseTest {
 			long timeout = params.bridgeType == MEEK ? MEEK_TIMEOUT : TIMEOUT;
 			while (System.currentTimeMillis() - start < timeout) {
 				if (tor.getTorState() == CONNECTED) break;
-				//noinspection BusyWait
+
 				Thread.sleep(500);
 			}
 			if (tor.getTorState() == CONNECTED) {

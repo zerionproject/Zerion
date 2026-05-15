@@ -97,42 +97,42 @@ public class ValidationManagerImplTest extends BrambleMockTestCase {
 		expectGetMessagesToValidate(messageId, messageId1);
 
 		context.checking(new DbExpectations() {{
-			// Load the first raw message and group
+
 			oneOf(db).transactionWithResult(with(true), withDbCallable(txn));
 			oneOf(db).getMessage(txn, messageId);
 			will(returnValue(message));
 			oneOf(db).getGroup(txn, groupId);
 			will(returnValue(group));
-			// Validate the first message: valid
+
 			oneOf(validator).validateMessage(message, group);
 			will(returnValue(validResult));
-			// Store the validation result for the first message
+
 			oneOf(db).transaction(with(false), withDbRunnable(txn1));
 			oneOf(db).mergeMessageMetadata(txn1, messageId, metadata);
-			// Deliver the first message
+
 			oneOf(hook).incomingMessage(txn1, message, metadata);
 			will(returnValue(ACCEPT_DO_NOT_SHARE));
 			oneOf(db).setMessageState(txn1, messageId, DELIVERED);
-			// Get any pending dependents
+
 			oneOf(db).getMessageDependents(txn1, messageId);
 			will(returnValue(emptyMap()));
-			// Load the second raw message and group
+
 			oneOf(db).transactionWithResult(with(true), withDbCallable(txn2));
 			oneOf(db).getMessage(txn2, messageId1);
 			will(returnValue(message1));
 			oneOf(db).getGroup(txn2, groupId);
 			will(returnValue(group));
-			// Validate the second message: invalid
+
 			oneOf(validator).validateMessage(message1, group);
 			will(throwException(new InvalidMessageException()));
-			// Store the validation result for the second message
+
 			oneOf(db).transaction(with(false), withDbRunnable(txn3));
 			oneOf(db).getMessageState(txn3, messageId1);
 			will(returnValue(UNKNOWN));
 			oneOf(db).setMessageState(txn3, messageId1, INVALID);
 			oneOf(db).deleteMessage(txn3, messageId1);
 			oneOf(db).deleteMessageMetadata(txn3, messageId1);
-			// Recursively invalidate any dependents
+
 			oneOf(db).getMessageDependents(txn3, messageId1);
 			will(returnValue(emptyMap()));
 		}});
@@ -152,44 +152,44 @@ public class ValidationManagerImplTest extends BrambleMockTestCase {
 		expectGetPendingMessages(messageId);
 
 		context.checking(new DbExpectations() {{
-			// Check whether the message is ready to deliver
+
 			oneOf(db).transaction(with(false), withDbRunnable(txn));
 			oneOf(db).getMessageState(txn, messageId);
 			will(returnValue(PENDING));
 			oneOf(db).getMessageDependencies(txn, messageId);
 			will(returnValue(singletonMap(messageId1, DELIVERED)));
-			// Get the message and its metadata to deliver
+
 			oneOf(db).getMessage(txn, messageId);
 			will(returnValue(message));
 			oneOf(db).getGroup(txn, groupId);
 			will(returnValue(group));
 			oneOf(db).getMessageMetadataForValidator(txn, messageId);
 			will(returnValue(new Metadata()));
-			// Deliver the message
+
 			oneOf(hook).incomingMessage(txn, message, metadata);
 			will(returnValue(ACCEPT_DO_NOT_SHARE));
 			oneOf(db).setMessageState(txn, messageId, DELIVERED);
-			// Get any pending dependents
+
 			oneOf(db).getMessageDependents(txn, messageId);
 			will(returnValue(singletonMap(messageId2, PENDING)));
-			// Check whether the dependent is ready to deliver
+
 			oneOf(db).transaction(with(false), withDbRunnable(txn1));
 			oneOf(db).getMessageState(txn1, messageId2);
 			will(returnValue(PENDING));
 			oneOf(db).getMessageDependencies(txn1, messageId2);
 			will(returnValue(singletonMap(messageId1, DELIVERED)));
-			// Get the dependent and its metadata to deliver
+
 			oneOf(db).getMessage(txn1, messageId2);
 			will(returnValue(message2));
 			oneOf(db).getGroup(txn1, groupId);
 			will(returnValue(group));
 			oneOf(db).getMessageMetadataForValidator(txn1, messageId2);
 			will(returnValue(metadata));
-			// Deliver the dependent
+
 			oneOf(hook).incomingMessage(txn1, message2, metadata);
 			will(returnValue(ACCEPT_DO_NOT_SHARE));
 			oneOf(db).setMessageState(txn1, messageId2, DELIVERED);
-			// Get any pending dependents
+
 			oneOf(db).getMessageDependents(txn1, messageId2);
 			will(returnValue(emptyMap()));
 		}});
@@ -209,12 +209,12 @@ public class ValidationManagerImplTest extends BrambleMockTestCase {
 		expectGetMessagesToShare(messageId);
 
 		context.checking(new DbExpectations() {{
-			// Share message and get dependencies
+
 			oneOf(db).transaction(with(false), withDbRunnable(txn));
 			oneOf(db).setMessageShared(txn, messageId);
 			oneOf(db).getMessageDependencies(txn, messageId);
 			will(returnValue(singletonMap(messageId2, DELIVERED)));
-			// Share dependency
+
 			oneOf(db).transaction(with(false), withDbRunnable(txn1));
 			oneOf(db).setMessageShared(txn1, messageId2);
 			oneOf(db).getMessageDependencies(txn1, messageId2);
@@ -231,30 +231,30 @@ public class ValidationManagerImplTest extends BrambleMockTestCase {
 		Transaction txn2 = new Transaction(null, false);
 
 		context.checking(new DbExpectations() {{
-			// Load the group
+
 			oneOf(db).transactionWithResult(with(true), withDbCallable(txn));
 			oneOf(db).getGroup(txn, groupId);
 			will(returnValue(group));
-			// Validate the message: valid
+
 			oneOf(validator).validateMessage(message, group);
 			will(returnValue(validResultWithDependencies));
-			// Store the validation result
+
 			oneOf(db).transaction(with(false), withDbRunnable(txn1));
 			oneOf(db).addMessageDependencies(txn1, message,
 					validResultWithDependencies.getDependencies());
 			oneOf(db).getMessageDependencies(txn1, messageId);
 			will(returnValue(singletonMap(messageId1, DELIVERED)));
 			oneOf(db).mergeMessageMetadata(txn1, messageId, metadata);
-			// Deliver the message
+
 			oneOf(hook).incomingMessage(txn1, message, metadata);
 			will(returnValue(ACCEPT_SHARE));
 			oneOf(db).setMessageState(txn1, messageId, DELIVERED);
-			// Get any pending dependents
+
 			oneOf(db).getMessageDependents(txn1, messageId);
 			will(returnValue(emptyMap()));
-			// Share message
+
 			oneOf(db).setMessageShared(txn1, messageId);
-			// Share dependencies
+
 			oneOf(db).transaction(with(false), withDbRunnable(txn2));
 			oneOf(db).setMessageShared(txn2, messageId1);
 			oneOf(db).getMessageDependencies(txn2, messageId1);
@@ -274,27 +274,27 @@ public class ValidationManagerImplTest extends BrambleMockTestCase {
 		expectGetMessagesToValidate(messageId, messageId1);
 
 		context.checking(new DbExpectations() {{
-			// Load the first raw message - *gasp* it's gone!
+
 			oneOf(db).transactionWithResult(with(true), withDbCallable(txn));
 			oneOf(db).getMessage(txn, messageId);
 			will(throwException(new NoSuchMessageException()));
-			// Load the second raw message and group
+
 			oneOf(db).transactionWithResult(with(true), withDbCallable(txn1));
 			oneOf(db).getMessage(txn1, messageId1);
 			will(returnValue(message1));
 			oneOf(db).getGroup(txn1, groupId);
 			will(returnValue(group));
-			// Validate the second message: invalid
+
 			oneOf(validator).validateMessage(message1, group);
 			will(throwException(new InvalidMessageException()));
-			// Invalidate the second message
+
 			oneOf(db).transaction(with(false), withDbRunnable(txn2));
 			oneOf(db).getMessageState(txn2, messageId1);
 			will(returnValue(UNKNOWN));
 			oneOf(db).setMessageState(txn2, messageId1, INVALID);
 			oneOf(db).deleteMessage(txn2, messageId1);
 			oneOf(db).deleteMessageMetadata(txn2, messageId1);
-			// Recursively invalidate dependents
+
 			oneOf(db).getMessageDependents(txn2, messageId1);
 			will(returnValue(emptyMap()));
 		}});
@@ -315,30 +315,30 @@ public class ValidationManagerImplTest extends BrambleMockTestCase {
 		expectGetMessagesToValidate(messageId, messageId1);
 
 		context.checking(new DbExpectations() {{
-			// Load the first raw message
+
 			oneOf(db).transactionWithResult(with(true), withDbCallable(txn));
 			oneOf(db).getMessage(txn, messageId);
 			will(returnValue(message));
-			// Load the group - *gasp* it's gone!
+
 			oneOf(db).getGroup(txn, groupId);
 			will(throwException(new NoSuchGroupException()));
-			// Load the second raw message and group
+
 			oneOf(db).transactionWithResult(with(true), withDbCallable(txn1));
 			oneOf(db).getMessage(txn1, messageId1);
 			will(returnValue(message1));
 			oneOf(db).getGroup(txn1, groupId);
 			will(returnValue(group));
-			// Validate the second message: invalid
+
 			oneOf(validator).validateMessage(message1, group);
 			will(throwException(new InvalidMessageException()));
-			// Store the validation result for the second message
+
 			oneOf(db).transaction(with(false), withDbRunnable(txn2));
 			oneOf(db).getMessageState(txn2, messageId1);
 			will(returnValue(UNKNOWN));
 			oneOf(db).setMessageState(txn2, messageId1, INVALID);
 			oneOf(db).deleteMessage(txn2, messageId1);
 			oneOf(db).deleteMessageMetadata(txn2, messageId1);
-			// Recursively invalidate dependents
+
 			oneOf(db).getMessageDependents(txn2, messageId1);
 			will(returnValue(emptyMap()));
 		}});
@@ -355,21 +355,21 @@ public class ValidationManagerImplTest extends BrambleMockTestCase {
 		Transaction txn1 = new Transaction(null, false);
 
 		context.checking(new DbExpectations() {{
-			// Load the group
+
 			oneOf(db).transactionWithResult(with(true), withDbCallable(txn));
 			oneOf(db).getGroup(txn, groupId);
 			will(returnValue(group));
-			// Validate the message: valid
+
 			oneOf(validator).validateMessage(message, group);
 			will(returnValue(validResult));
-			// Store the validation result
+
 			oneOf(db).transaction(with(false), withDbRunnable(txn1));
 			oneOf(db).mergeMessageMetadata(txn1, messageId, metadata);
-			// Deliver the message
+
 			oneOf(hook).incomingMessage(txn1, message, metadata);
 			will(returnValue(ACCEPT_DO_NOT_SHARE));
 			oneOf(db).setMessageState(txn1, messageId, DELIVERED);
-			// Get any pending dependents
+
 			oneOf(db).getMessageDependents(txn1, messageId);
 			will(returnValue(emptyMap()));
 		}});
@@ -389,14 +389,14 @@ public class ValidationManagerImplTest extends BrambleMockTestCase {
 		Transaction txn1 = new Transaction(null, false);
 
 		context.checking(new DbExpectations() {{
-			// Load the group
+
 			oneOf(db).transactionWithResult(with(true), withDbCallable(txn));
 			oneOf(db).getGroup(txn, groupId);
 			will(returnValue(group));
-			// Validate the message: valid
+
 			oneOf(validator).validateMessage(message, group);
 			will(returnValue(validResultWithDependencies));
-			// Store the validation result
+
 			oneOf(db).transaction(with(false), withDbRunnable(txn1));
 			oneOf(db).addMessageDependencies(txn1, message,
 					validResultWithDependencies.getDependencies());
@@ -416,25 +416,25 @@ public class ValidationManagerImplTest extends BrambleMockTestCase {
 		Transaction txn1 = new Transaction(null, false);
 
 		context.checking(new DbExpectations() {{
-			// Load the group
+
 			oneOf(db).transactionWithResult(with(true), withDbCallable(txn));
 			oneOf(db).getGroup(txn, groupId);
 			will(returnValue(group));
-			// Validate the message: valid
+
 			oneOf(validator).validateMessage(message, group);
 			will(returnValue(validResultWithDependencies));
-			// Store the validation result
+
 			oneOf(db).transaction(with(false), withDbRunnable(txn1));
 			oneOf(db).addMessageDependencies(txn1, message,
 					validResultWithDependencies.getDependencies());
 			oneOf(db).getMessageDependencies(txn1, messageId);
 			will(returnValue(singletonMap(messageId1, DELIVERED)));
 			oneOf(db).mergeMessageMetadata(txn1, messageId, metadata);
-			// Deliver the message
+
 			oneOf(hook).incomingMessage(txn1, message, metadata);
 			will(returnValue(ACCEPT_DO_NOT_SHARE));
 			oneOf(db).setMessageState(txn1, messageId, DELIVERED);
-			// Get any pending dependents
+
 			oneOf(db).getMessageDependents(txn1, messageId);
 			will(returnValue(emptyMap()));
 		}});
@@ -450,30 +450,30 @@ public class ValidationManagerImplTest extends BrambleMockTestCase {
 		Transaction txn2 = new Transaction(null, false);
 
 		context.checking(new DbExpectations() {{
-			// Load the group
+
 			oneOf(db).transactionWithResult(with(true), withDbCallable(txn));
 			oneOf(db).getGroup(txn, groupId);
 			will(returnValue(group));
-			// Validate the message: valid
+
 			oneOf(validator).validateMessage(message, group);
 			will(returnValue(validResultWithDependencies));
-			// Store the validation result
+
 			oneOf(db).transaction(with(false), withDbRunnable(txn1));
 			oneOf(db).addMessageDependencies(txn1, message,
 					validResultWithDependencies.getDependencies());
-			// Check for invalid dependencies
+
 			oneOf(db).getMessageDependencies(txn1, messageId);
 			will(returnValue(singletonMap(messageId1, INVALID)));
-			// Invalidate message
+
 			oneOf(db).getMessageState(txn1, messageId);
 			will(returnValue(UNKNOWN));
 			oneOf(db).setMessageState(txn1, messageId, INVALID);
 			oneOf(db).deleteMessage(txn1, messageId);
 			oneOf(db).deleteMessageMetadata(txn1, messageId);
-			// Recursively invalidate dependents
+
 			oneOf(db).getMessageDependents(txn1, messageId);
 			will(returnValue(singletonMap(messageId2, UNKNOWN)));
-			// Invalidate dependent in a new transaction
+
 			oneOf(db).transaction(with(false), withDbRunnable(txn2));
 			oneOf(db).getMessageState(txn2, messageId2);
 			will(returnValue(UNKNOWN));
@@ -503,65 +503,65 @@ public class ValidationManagerImplTest extends BrambleMockTestCase {
 		Transaction txn6 = new Transaction(null, false);
 
 		context.checking(new DbExpectations() {{
-			// Load the group
+
 			oneOf(db).transactionWithResult(with(true), withDbCallable(txn));
 			oneOf(db).getGroup(txn, groupId);
 			will(returnValue(group));
-			// Validate the message: invalid
+
 			oneOf(validator).validateMessage(message, group);
 			will(throwException(new InvalidMessageException()));
-			// Invalidate the message
+
 			oneOf(db).transaction(with(false), withDbRunnable(txn1));
 			oneOf(db).getMessageState(txn1, messageId);
 			will(returnValue(UNKNOWN));
 			oneOf(db).setMessageState(txn1, messageId, INVALID);
 			oneOf(db).deleteMessage(txn1, messageId);
 			oneOf(db).deleteMessageMetadata(txn1, messageId);
-			// The message has two dependents: 1 and 2
+
 			oneOf(db).getMessageDependents(txn1, messageId);
 			will(returnValue(twoDependents));
-			// Invalidate message 1
+
 			oneOf(db).transaction(with(false), withDbRunnable(txn2));
 			oneOf(db).getMessageState(txn2, messageId1);
 			will(returnValue(PENDING));
 			oneOf(db).setMessageState(txn2, messageId1, INVALID);
 			oneOf(db).deleteMessage(txn2, messageId1);
 			oneOf(db).deleteMessageMetadata(txn2, messageId1);
-			// Message 1 has one dependent: 3
+
 			oneOf(db).getMessageDependents(txn2, messageId1);
 			will(returnValue(singletonMap(messageId3, PENDING)));
-			// Invalidate message 2
+
 			oneOf(db).transaction(with(false), withDbRunnable(txn3));
 			oneOf(db).getMessageState(txn3, messageId2);
 			will(returnValue(PENDING));
 			oneOf(db).setMessageState(txn3, messageId2, INVALID);
 			oneOf(db).deleteMessage(txn3, messageId2);
 			oneOf(db).deleteMessageMetadata(txn3, messageId2);
-			// Message 2 has one dependent: 3 (same dependent as 1)
+
 			oneOf(db).getMessageDependents(txn3, messageId2);
 			will(returnValue(singletonMap(messageId3, PENDING)));
-			// Invalidate message 3 (via 1)
+
 			oneOf(db).transaction(with(false), withDbRunnable(txn4));
 			oneOf(db).getMessageState(txn4, messageId3);
 			will(returnValue(PENDING));
 			oneOf(db).setMessageState(txn4, messageId3, INVALID);
 			oneOf(db).deleteMessage(txn4, messageId3);
 			oneOf(db).deleteMessageMetadata(txn4, messageId3);
-			// Message 3 has one dependent: 4
+
 			oneOf(db).getMessageDependents(txn4, messageId3);
 			will(returnValue(singletonMap(messageId4, PENDING)));
-			// Invalidate message 3 (again, via 2)
+
 			oneOf(db).transaction(with(false), withDbRunnable(txn5));
 			oneOf(db).getMessageState(txn5, messageId3);
-			will(returnValue(INVALID)); // Already invalidated
-			// Invalidate message 4 (via 1 and 3)
+			will(returnValue(INVALID));
+
 			oneOf(db).transaction(with(false), withDbRunnable(txn6));
 			oneOf(db).getMessageState(txn6, messageId4);
 			will(returnValue(PENDING));
 			oneOf(db).setMessageState(txn6, messageId4, INVALID);
 			oneOf(db).deleteMessage(txn6, messageId4);
 			oneOf(db).deleteMessageMetadata(txn6, messageId4);
-			// Message 4 has no dependents
+
 			oneOf(db).getMessageDependents(txn6, messageId4);
 			will(returnValue(emptyMap()));
 		}});
@@ -590,105 +590,105 @@ public class ValidationManagerImplTest extends BrambleMockTestCase {
 		Transaction txn6 = new Transaction(null, false);
 
 		context.checking(new DbExpectations() {{
-			// Load the group
+
 			oneOf(db).transactionWithResult(with(true), withDbCallable(txn));
 			oneOf(db).getGroup(txn, groupId);
 			will(returnValue(group));
-			// Validate the message: valid
+
 			oneOf(validator).validateMessage(message, group);
 			will(returnValue(validResult));
-			// Store the validation result
+
 			oneOf(db).transaction(with(false), withDbRunnable(txn1));
 			oneOf(db).mergeMessageMetadata(txn1, messageId, metadata);
-			// Deliver the message
+
 			oneOf(hook).incomingMessage(txn1, message, metadata);
 			will(returnValue(ACCEPT_DO_NOT_SHARE));
 			oneOf(db).setMessageState(txn1, messageId, DELIVERED);
-			// The message has two pending dependents: 1 and 2
+
 			oneOf(db).getMessageDependents(txn1, messageId);
 			will(returnValue(twoDependents));
-			// Check whether message 1 is ready to be delivered
+
 			oneOf(db).transaction(with(false), withDbRunnable(txn2));
 			oneOf(db).getMessageState(txn2, messageId1);
 			will(returnValue(PENDING));
 			oneOf(db).getMessageDependencies(txn2, messageId1);
 			will(returnValue(singletonMap(messageId, DELIVERED)));
-			// Get message 1 and its metadata
+
 			oneOf(db).getMessage(txn2, messageId1);
 			will(returnValue(message1));
 			oneOf(db).getGroup(txn2, groupId);
 			will(returnValue(group));
 			oneOf(db).getMessageMetadataForValidator(txn2, messageId1);
 			will(returnValue(metadata));
-			// Deliver message 1
+
 			oneOf(hook).incomingMessage(txn2, message1, metadata);
 			will(returnValue(ACCEPT_DO_NOT_SHARE));
 			oneOf(db).setMessageState(txn2, messageId1, DELIVERED);
-			// Message 1 has one pending dependent: 3
+
 			oneOf(db).getMessageDependents(txn2, messageId1);
 			will(returnValue(singletonMap(messageId3, PENDING)));
-			// Check whether message 2 is ready to be delivered
+
 			oneOf(db).transaction(with(false), withDbRunnable(txn3));
 			oneOf(db).getMessageState(txn3, messageId2);
 			will(returnValue(PENDING));
 			oneOf(db).getMessageDependencies(txn3, messageId2);
 			will(returnValue(singletonMap(messageId, DELIVERED)));
-			// Get message 2 and its metadata
+
 			oneOf(db).getMessage(txn3, messageId2);
 			will(returnValue(message2));
 			oneOf(db).getGroup(txn3, groupId);
 			will(returnValue(group));
 			oneOf(db).getMessageMetadataForValidator(txn3, messageId2);
 			will(returnValue(metadata));
-			// Deliver message 2
+
 			oneOf(hook).incomingMessage(txn3, message2, metadata);
 			will(returnValue(ACCEPT_DO_NOT_SHARE));
 			oneOf(db).setMessageState(txn3, messageId2, DELIVERED);
-			// Message 2 has one pending dependent: 3 (same dependent as 1)
+
 			oneOf(db).getMessageDependents(txn3, messageId2);
 			will(returnValue(singletonMap(messageId3, PENDING)));
-			// Check whether message 3 is ready to be delivered (via 1)
+
 			oneOf(db).transaction(with(false), withDbRunnable(txn4));
 			oneOf(db).getMessageState(txn4, messageId3);
 			will(returnValue(PENDING));
 			oneOf(db).getMessageDependencies(txn4, messageId3);
 			will(returnValue(twoDependencies));
-			// Get message 3 and its metadata
+
 			oneOf(db).getMessage(txn4, messageId3);
 			will(returnValue(message3));
 			oneOf(db).getGroup(txn4, groupId);
 			will(returnValue(group));
 			oneOf(db).getMessageMetadataForValidator(txn4, messageId3);
 			will(returnValue(metadata));
-			// Deliver message 3
+
 			oneOf(hook).incomingMessage(txn4, message3, metadata);
 			will(returnValue(ACCEPT_DO_NOT_SHARE));
 			oneOf(db).setMessageState(txn4, messageId3, DELIVERED);
-			// Message 3 has one pending dependent: 4
+
 			oneOf(db).getMessageDependents(txn4, messageId3);
 			will(returnValue(singletonMap(messageId4, PENDING)));
-			// Check whether message 3 is ready to be delivered (again, via 2)
+
 			oneOf(db).transaction(with(false), withDbRunnable(txn5));
 			oneOf(db).getMessageState(txn5, messageId3);
-			will(returnValue(DELIVERED)); // Already delivered
-			// Check whether message 4 is ready to be delivered (via 1 and 3)
+			will(returnValue(DELIVERED));
+
 			oneOf(db).transaction(with(false), withDbRunnable(txn6));
 			oneOf(db).getMessageState(txn6, messageId4);
 			will(returnValue(PENDING));
 			oneOf(db).getMessageDependencies(txn6, messageId4);
 			will(returnValue(singletonMap(messageId3, DELIVERED)));
-			// Get message 4 and its metadata
+
 			oneOf(db).getMessage(txn6, messageId4);
 			will(returnValue(message4));
 			oneOf(db).getGroup(txn6, groupId);
 			will(returnValue(group));
 			oneOf(db).getMessageMetadataForValidator(txn6, messageId4);
 			will(returnValue(metadata));
-			// Deliver message 4
+
 			oneOf(hook).incomingMessage(txn6, message4, metadata);
 			will(returnValue(ACCEPT_DO_NOT_SHARE));
 			oneOf(db).setMessageState(txn6, messageId4, DELIVERED);
-			// Message 4 has no pending dependents
+
 			oneOf(db).getMessageDependents(txn6, messageId4);
 			will(returnValue(emptyMap()));
 		}});
@@ -706,24 +706,24 @@ public class ValidationManagerImplTest extends BrambleMockTestCase {
 		Transaction txn2 = new Transaction(null, false);
 
 		context.checking(new DbExpectations() {{
-			// Load the group
+
 			oneOf(db).transactionWithResult(with(true), withDbCallable(txn));
 			oneOf(db).getGroup(txn, groupId);
 			will(returnValue(group));
-			// Validate the message: valid
+
 			oneOf(validator).validateMessage(message, group);
 			will(returnValue(validResult));
-			// Store the validation result
+
 			oneOf(db).transaction(with(false), withDbRunnable(txn1));
 			oneOf(db).mergeMessageMetadata(txn1, messageId, metadata);
-			// Deliver the message
+
 			oneOf(hook).incomingMessage(txn1, message, metadata);
 			will(returnValue(ACCEPT_DO_NOT_SHARE));
 			oneOf(db).setMessageState(txn1, messageId, DELIVERED);
-			// Get any pending dependents
+
 			oneOf(db).getMessageDependents(txn1, messageId);
 			will(returnValue(singletonMap(messageId1, PENDING)));
-			// Check whether the pending dependent is ready to be delivered
+
 			oneOf(db).transaction(with(false), withDbRunnable(txn2));
 			oneOf(db).getMessageState(txn2, messageId1);
 			will(returnValue(PENDING));

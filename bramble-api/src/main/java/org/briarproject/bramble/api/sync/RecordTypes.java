@@ -1,6 +1,5 @@
 package org.briarproject.bramble.api.sync;
 
-
 public interface RecordTypes {
 
 	byte ACK = 0;

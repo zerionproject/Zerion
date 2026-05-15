@@ -7,7 +7,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
-
 @Immutable
 @NotNullByDefault
 public class TransportKeys {
@@ -19,13 +18,11 @@ public class TransportKeys {
 	private final SecretKey rootKey;
 	private final boolean alice;
 
-	
 	public TransportKeys(TransportId transportId, IncomingKeys inPrev,
 			IncomingKeys inCurr, IncomingKeys inNext, OutgoingKeys outCurr) {
 		this(transportId, inPrev, inCurr, inNext, outCurr, null, false);
 	}
 
-	
 	public TransportKeys(TransportId transportId, IncomingKeys inPrev,
 			IncomingKeys inCurr, IncomingKeys inNext, OutgoingKeys outCurr,
 			@Nullable SecretKey rootKey, boolean alice) {
@@ -68,18 +65,15 @@ public class TransportKeys {
 		return outCurr.getTimePeriod();
 	}
 
-	
 	public boolean isHandshakeMode() {
 		return rootKey != null;
 	}
 
-	
 	public SecretKey getRootKey() {
 		if (rootKey == null) throw new UnsupportedOperationException();
 		return rootKey;
 	}
 
-	
 	public boolean isAlice() {
 		if (rootKey == null) throw new UnsupportedOperationException();
 		return alice;

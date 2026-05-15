@@ -33,8 +33,6 @@ public class CreatorProtocolEngineTest extends AbstractProtocolEngineTest {
 				inviteTimestamp, state);
 	}
 
-	// onInviteAction
-
 	@Test
 	public void testOnInviteActionFromStart() throws Exception {
 		CreatorSession session =
@@ -111,14 +109,10 @@ public class CreatorProtocolEngineTest extends AbstractProtocolEngineTest {
 				inviteTimestamp, signature, NO_AUTO_DELETE_TIMER);
 	}
 
-	// onJoinAction
-
 	@Test(expected = UnsupportedOperationException.class)
 	public void testOnJoinActionFails() {
 		engine.onJoinAction(txn, getDefaultSession(START));
 	}
-
-	// onLeaveAction
 
 	@Test
 	public void testOnLeaveActionFromStart() throws Exception {
@@ -185,8 +179,6 @@ public class CreatorProtocolEngineTest extends AbstractProtocolEngineTest {
 		expectSendLeaveMessage(false);
 	}
 
-	// onMemberAddedAction
-
 	@Test
 	public void testOnMemberAddedAction() {
 		CreatorSession session = getDefaultSession(START);
@@ -207,8 +199,6 @@ public class CreatorProtocolEngineTest extends AbstractProtocolEngineTest {
 		session = getDefaultSession(ERROR);
 		assertEquals(session, engine.onMemberAddedAction(txn, session));
 	}
-
-	// onInviteMessage
 
 	@Test
 	public void testOnInviteMessageInAnyStateWhenSubscribed() throws Exception {
@@ -240,8 +230,6 @@ public class CreatorProtocolEngineTest extends AbstractProtocolEngineTest {
 				engine.onInviteMessage(txn, session, inviteMessage);
 		assertSessionAborted(session, newSession);
 	}
-
-	// onJoinMessage
 
 	@Test
 	public void testOnJoinMessageFromStart() throws Exception {
@@ -335,8 +323,6 @@ public class CreatorProtocolEngineTest extends AbstractProtocolEngineTest {
 		assertEquals(session, engine.onJoinMessage(txn, session, joinMessage));
 	}
 
-	// onLeaveMessage
-
 	@Test
 	public void testOnLeaveMessageFromStart() throws Exception {
 		LeaveMessage leaveMessage =
@@ -424,8 +410,6 @@ public class CreatorProtocolEngineTest extends AbstractProtocolEngineTest {
 				engine.onLeaveMessage(txn, session, leaveMessage));
 	}
 
-	// onAbortMessage
-
 	@Test
 	public void testOnAbortMessageWhenNotSubscribed() throws Exception {
 		CreatorSession session = getDefaultSession(START);
@@ -446,8 +430,6 @@ public class CreatorProtocolEngineTest extends AbstractProtocolEngineTest {
 				engine.onAbortMessage(txn, session, abortMessage);
 		assertSessionAborted(session, newSession);
 	}
-
-	// helper methods
 
 	private void expectAbortWhenSubscribedToGroup() throws Exception {
 		expectIsSubscribedPrivateGroup();

@@ -1,50 +1,49 @@
 package com.professor.zerion.android.grouptr;
 
-import android.content.res.ColorStateList;
-import android.graphics.Color;
+import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.InputType;
-import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.EditText;
-import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-
+import com.google.android.material.appbar.MaterialToolbar;
+import com.google.android.material.button.MaterialButton;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
 
+import org.briarproject.bramble.api.FormatException;
 import org.briarproject.bramble.api.contact.Contact;
 import org.briarproject.bramble.api.contact.ContactManager;
 import org.briarproject.bramble.api.db.DbException;
 import org.briarproject.bramble.api.identity.IdentityManager;
 import org.briarproject.bramble.api.identity.LocalAuthor;
 import org.briarproject.bramble.api.lifecycle.IoExecutor;
+import org.briarproject.bramble.util.StringUtils;
 import org.briarproject.briar.api.grouptr.GroupTrManager;
 import org.briarproject.briar.api.grouptr.GroupTrMember;
 import org.briarproject.briar.api.grouptr.GroupTrState;
 import org.briarproject.briar.api.grouptr.MemberRole;
-import org.briarproject.bramble.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Executor;
 
 import javax.inject.Inject;
 
 public class GroupTrAdminActivity extends ZerionActivity {
+
+	public static final String EXTRA_GROUP_ID = "groupTrId";
 
 	@Inject
 	GroupTrManager groupTrManager;
@@ -56,7 +55,20 @@ public class GroupTrAdminActivity extends ZerionActivity {
 	@IoExecutor
 	Executor ioExecutor;
 
-	private LinearLayout root;
+	private byte[] groupId;
+	@Nullable
+	private byte[] localPub;
+
+	private TextView headerAvatar;
+	private TextView headerName;
+	private TextView headerSubtitle;
+	private TextView membersHeader;
+	private LinearLayout membersContainer;
+	private LinearLayout dangerContainer;
+	private View actionAddMember;
+	private View actionTtl;
+	private TextView actionTtlText;
+	private MaterialButton openChatButton;
 
 	@Override
 	public void injectActivity(ActivityComponent component) {
@@ -66,169 +78,265 @@ public class GroupTrAdminActivity extends ZerionActivity {
 	@Override
 	public void onCreate(@Nullable Bundle state) {
 		super.onCreate(state);
-		FrameLayout container = new FrameLayout(this);
-		ScrollView scroll = new ScrollView(this);
-		root = new LinearLayout(this);
-		root.setOrientation(LinearLayout.VERTICAL);
-		root.setPadding(32, 32, 32, 200);
-		scroll.addView(root, new ScrollView.LayoutParams(
-				ScrollView.LayoutParams.MATCH_PARENT,
-				ScrollView.LayoutParams.WRAP_CONTENT));
-		container.addView(scroll, new FrameLayout.LayoutParams(
-				FrameLayout.LayoutParams.MATCH_PARENT,
-				FrameLayout.LayoutParams.MATCH_PARENT));
-		FloatingActionButton fab = new FloatingActionButton(this);
-		fab.setImageResource(android.R.drawable.ic_input_add);
-		fab.setContentDescription(getString(R.string.grouptr_create));
-		fab.setOnClickListener(v -> showCreateDialog());
-		FrameLayout.LayoutParams fabLp = new FrameLayout.LayoutParams(
-				FrameLayout.LayoutParams.WRAP_CONTENT,
-				FrameLayout.LayoutParams.WRAP_CONTENT);
-		fabLp.gravity = Gravity.BOTTOM | Gravity.END;
-		fabLp.bottomMargin = 48;
-		fabLp.rightMargin = 48;
-		container.addView(fab, fabLp);
-		setContentView(container);
-		setTitle(R.string.grouptr_title);
+		String hex = getIntent().getStringExtra(EXTRA_GROUP_ID);
+		if (hex == null) {
+			finish();
+			return;
+		}
+		try {
+			groupId = StringUtils.fromHexString(hex);
+		} catch (FormatException ex) {
+			finish();
+			return;
+		}
+
+		setContentView(R.layout.activity_grouptr_admin);
+
+		MaterialToolbar toolbar = findViewById(R.id.toolbar);
+		toolbar.setNavigationOnClickListener(v -> finish());
+
+		headerAvatar = findViewById(R.id.headerAvatar);
+		headerName = findViewById(R.id.headerName);
+		headerSubtitle = findViewById(R.id.headerSubtitle);
+		membersHeader = findViewById(R.id.membersHeader);
+		membersContainer = findViewById(R.id.membersContainer);
+		dangerContainer = findViewById(R.id.dangerContainer);
+		actionAddMember = findViewById(R.id.actionAddMember);
+		actionTtl = findViewById(R.id.actionTtl);
+		actionTtlText = findViewById(R.id.actionTtlText);
+		openChatButton = findViewById(R.id.openChatButton);
+
+		openChatButton.setOnClickListener(v -> startActivity(
+				GroupTrConversationActivity.intent(this, groupId)));
+		actionTtl.setOnClickListener(v -> showTtlDialog());
+
+		render();
+	}
+
+	@Override
+	public void onResume() {
+		super.onResume();
 		render();
 	}
 
 	private void render() {
-		root.removeAllViews();
 		ioExecutor.execute(() -> {
 			try {
-				Collection<GroupTrState> groups = groupTrManager.getGroups();
 				LocalAuthor la = identityManager.getLocalAuthor();
-				byte[] localPub = la.getPublicKey().getEncoded();
-				runOnUiThread(() -> renderGroups(groups, localPub));
+				localPub = la.getPublicKey().getEncoded();
+				GroupTrState s = groupTrManager.getGroup(groupId);
+				runOnUiThread(() -> {
+					if (s == null) {
+						finish();
+						return;
+					}
+					bind(s);
+				});
 			} catch (DbException ex) {
 				runOnUiThread(() -> toast(R.string.grouptr_error_load));
 			}
 		});
 	}
 
-	private void renderGroups(Collection<GroupTrState> groups,
-			byte[] localPub) {
-		if (groups.isEmpty()) {
-			TextView empty = new TextView(this);
-			empty.setText(R.string.grouptr_empty);
-			empty.setPadding(0, 24, 0, 0);
-			root.addView(empty);
-			return;
+	private void bind(GroupTrState s) {
+		String name = s.getName().isEmpty()
+				? getString(R.string.grouptr_unnamed_group) : s.getName();
+		headerName.setText(name);
+		headerAvatar.setText(name.isEmpty() ? "?"
+				: name.substring(0, 1).toUpperCase());
+		int memberCount = s.getMembers().size();
+		String subtitle = getResources().getQuantityString(
+				R.plurals.grouptr_member_count, memberCount, memberCount);
+		if (s.isDissolved()) {
+			subtitle = subtitle + " · "
+					+ getString(R.string.grouptr_dissolved_suffix);
+		} else {
+			subtitle = subtitle + " · "
+					+ getString(R.string.grouptr_subtitle_e2ee);
 		}
-		for (GroupTrState s : groups) {
-			root.addView(buildGroupSection(s, localPub));
+		headerSubtitle.setText(subtitle);
+
+		membersHeader.setText(getString(
+				R.string.grouptr_admin_members_count, memberCount));
+
+		boolean isCreator =
+				localPub != null && Arrays.equals(localPub, s.getCreatorPubKey());
+		boolean dissolved = s.isDissolved();
+
+		bindMembers(s, isCreator, dissolved);
+		bindActions(s, isCreator, dissolved);
+		bindDanger(s, isCreator, dissolved);
+		bindDetails(s);
+	}
+
+	private void bindMembers(GroupTrState s, boolean isCreator,
+			boolean dissolved) {
+		membersContainer.removeAllViews();
+		LayoutInflater inf = LayoutInflater.from(this);
+		List<GroupTrMember> members = s.getMembers();
+		for (int i = 0; i < members.size(); i++) {
+			GroupTrMember m = members.get(i);
+			View row = inf.inflate(R.layout.list_item_grouptr_admin_member,
+					membersContainer, false);
+			TextView avatar = row.findViewById(R.id.memberAvatar);
+			TextView nameView = row.findViewById(R.id.memberName);
+			TextView roleView = row.findViewById(R.id.memberRole);
+			MaterialButton menu = row.findViewById(R.id.memberMenuButton);
+
+			String mName = m.getName().isEmpty() ? "?" : m.getName();
+			boolean self = localPub != null
+					&& Arrays.equals(m.getPubKey(), localPub);
+			boolean memberIsCreator = Arrays.equals(m.getPubKey(),
+					s.getCreatorPubKey());
+
+			avatar.setText(mName.substring(0, 1).toUpperCase());
+			nameView.setText(self ? mName + " ("
+					+ getString(R.string.grouptr_member_role_you) + ")"
+					: mName);
+
+			String role = null;
+			if (memberIsCreator) {
+				role = getString(R.string.grouptr_member_role_creator);
+			} else if (m.getRole() == MemberRole.ADMIN) {
+				role = getString(R.string.grouptr_member_role_admin);
+			}
+			if (role != null) {
+				roleView.setText(role);
+				roleView.setVisibility(View.VISIBLE);
+			} else {
+				roleView.setVisibility(View.GONE);
+			}
+
+			boolean canManage = isCreator && !memberIsCreator && !self
+					&& !dissolved;
+			if (canManage) {
+				menu.setVisibility(View.VISIBLE);
+				final GroupTrMember target = m;
+				menu.setOnClickListener(v -> showMemberMenu(s, target));
+			} else {
+				menu.setVisibility(View.GONE);
+			}
+
+			membersContainer.addView(row);
+
+			if (i < members.size() - 1) {
+				View divider = new View(this);
+				divider.setBackgroundColor(0x1AFFFFFF);
+				LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+						LinearLayout.LayoutParams.MATCH_PARENT,
+						(int) (0.5f * getResources()
+								.getDisplayMetrics().density));
+				lp.leftMargin = (int) (70 * getResources()
+						.getDisplayMetrics().density);
+				divider.setLayoutParams(lp);
+				membersContainer.addView(divider);
+			}
 		}
 	}
 
-	private View buildGroupSection(GroupTrState s, byte[] localPub) {
-		LinearLayout section = new LinearLayout(this);
-		section.setOrientation(LinearLayout.VERTICAL);
-		section.setPadding(0, 24, 0, 24);
-		TextView title = new TextView(this);
-		title.setText(s.getName() + (s.isDissolved()
-				? " " + getString(R.string.grouptr_dissolved_suffix) : ""));
-		title.setTextSize(18);
-		section.addView(title);
-		if (!s.isDissolved()) {
-			Button open = new Button(this);
-			open.setText(R.string.grouptr_open);
-			open.setOnClickListener(v -> startActivity(
-					GroupTrConversationActivity.intent(this,
-							s.getGroupId())));
-			section.addView(open);
+	private void bindActions(GroupTrState s, boolean isCreator,
+			boolean dissolved) {
+		if (dissolved) {
+			actionAddMember.setVisibility(View.GONE);
+			actionTtl.setVisibility(View.GONE);
+			return;
 		}
-		TextView meta = new TextView(this);
-		meta.setText(getString(R.string.grouptr_meta,
-				s.getEpoch(), s.getMembers().size()));
-		section.addView(meta);
-		boolean isCreator = Arrays.equals(localPub, s.getCreatorPubKey());
-		boolean isAdmin = false;
-		for (GroupTrMember m : s.getMembers()) {
-			if (Arrays.equals(m.getPubKey(), localPub)
-					&& m.getRole() == MemberRole.ADMIN) {
-				isAdmin = true;
-				break;
-			}
-		}
-		boolean canManage = isCreator || isAdmin;
-		for (GroupTrMember m : s.getMembers()) {
-			LinearLayout row = new LinearLayout(this);
-			row.setOrientation(LinearLayout.HORIZONTAL);
-			TextView name = new TextView(this);
-			boolean self = Arrays.equals(m.getPubKey(), localPub);
-			boolean creator = Arrays.equals(m.getPubKey(),
-					s.getCreatorPubKey());
-			String label = m.getName();
-			if (creator) label += " " + getString(R.string.grouptr_creator_tag);
-			else if (m.getRole() == MemberRole.ADMIN) {
-				label += " " + getString(R.string.grouptr_admin_tag);
-			}
-			if (self) label += " " + getString(R.string.grouptr_you_tag);
-			name.setText(label);
-			LinearLayout.LayoutParams nameLp = new LinearLayout.LayoutParams(
-					0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
-			row.addView(name, nameLp);
-			if (canManage && !creator && !self) {
-				if (isCreator) {
-					if (m.getRole() == MemberRole.ADMIN) {
-						Button dem = new Button(this);
-						dem.setText(R.string.grouptr_demote);
-						dem.setOnClickListener(v -> demote(s, m));
-						row.addView(dem);
-					} else {
-						Button pro = new Button(this);
-						pro.setText(R.string.grouptr_promote);
-						pro.setOnClickListener(v -> promote(s, m));
-						row.addView(pro);
-					}
-				}
-				if (isCreator || m.getRole() != MemberRole.ADMIN) {
-					Button rm = new Button(this);
-					rm.setText(R.string.grouptr_remove);
-					rm.setOnClickListener(v -> confirmRemove(s, m));
-					row.addView(rm);
-				}
-			}
-			section.addView(row);
-		}
-		if (!s.isDissolved()) {
-			LinearLayout actions = new LinearLayout(this);
-			actions.setOrientation(LinearLayout.HORIZONTAL);
-			if (canManage) {
-				Button addBtn = new Button(this);
-				addBtn.setText(R.string.grouptr_add_member);
-				addBtn.setOnClickListener(v -> showAddMemberDialog(s));
-				actions.addView(addBtn);
-			}
-			if (isCreator) {
-				Button diss = new Button(this);
-				diss.setText(R.string.grouptr_dissolve);
-				diss.setOnClickListener(v -> confirmDissolve(s));
-				actions.addView(diss);
-			} else if (isMember(s, localPub)) {
-				Button leave = new Button(this);
-				leave.setText(R.string.grouptr_leave);
-				leave.setOnClickListener(v -> confirmLeave(s));
-				actions.addView(leave);
-			}
-			section.addView(actions);
+		actionAddMember.setVisibility(isCreator ? View.VISIBLE : View.GONE);
+		actionAddMember.setOnClickListener(v -> showAddMemberDialog(s));
+		actionTtl.setVisibility(isCreator ? View.VISIBLE : View.GONE);
+	}
 
-			if (isMember(s, localPub)) {
-				Button stealth = new Button(this);
-				stealth.setText(R.string.grouptr_stealth_name_set);
-				stealth.setOnClickListener(v -> showStealthDialog(s));
-				section.addView(stealth);
-			}
+	private void bindDanger(GroupTrState s, boolean isCreator,
+			boolean dissolved) {
+		dangerContainer.removeAllViews();
+		if (dissolved) {
+			TextView msg = new TextView(this);
+			msg.setText(R.string.grouptr_detail_status_dissolved);
+			msg.setTextColor(getResources().getColor(
+					R.color.zerion_red_500_new));
+			msg.setTextSize(14);
+			int p = (int) (20 * getResources().getDisplayMetrics().density);
+			msg.setPadding(p, p / 2, p, p / 2);
+			dangerContainer.addView(msg);
+			return;
 		}
-		return section;
+		android.util.TypedValue tv = new android.util.TypedValue();
+		getTheme().resolveAttribute(android.R.attr.selectableItemBackground,
+				tv, true);
+		int rippleRes = tv.resourceId;
+		LayoutInflater inf = LayoutInflater.from(this);
+		if (isCreator) {
+			View row = inf.inflate(R.layout.list_item_grouptr_admin_member,
+					dangerContainer, false);
+			row.findViewById(R.id.memberAvatar).setVisibility(View.GONE);
+			row.findViewById(R.id.memberMenuButton).setVisibility(View.GONE);
+			TextView label = row.findViewById(R.id.memberName);
+			label.setText(R.string.grouptr_dissolve);
+			label.setTextColor(getResources().getColor(
+					R.color.zerion_red_500_new));
+			row.findViewById(R.id.memberRole).setVisibility(View.GONE);
+			if (rippleRes != 0) row.setBackgroundResource(rippleRes);
+			row.setOnClickListener(v -> confirmDissolve(s));
+			dangerContainer.addView(row);
+		} else {
+			View row = inf.inflate(R.layout.list_item_grouptr_admin_member,
+					dangerContainer, false);
+			row.findViewById(R.id.memberAvatar).setVisibility(View.GONE);
+			row.findViewById(R.id.memberMenuButton).setVisibility(View.GONE);
+			TextView label = row.findViewById(R.id.memberName);
+			label.setText(R.string.grouptr_leave);
+			label.setTextColor(getResources().getColor(
+					R.color.zerion_red_500_new));
+			row.findViewById(R.id.memberRole).setVisibility(View.GONE);
+			if (rippleRes != 0) row.setBackgroundResource(rippleRes);
+			row.setOnClickListener(v -> confirmLeave(s));
+			dangerContainer.addView(row);
+		}
+	}
+
+	private void bindDetails(GroupTrState s) {
+		if (actionTtlText != null) {
+			actionTtlText.setText(formatTtl(s.getDefaultAutoDeleteTimerMs()));
+		}
+	}
+
+	private String formatTtl(long ms) {
+		if (ms <= 0L) return getString(R.string.grouptr_ttl_off_label);
+		if (ms == 5L * 60_000L) return getString(R.string.grouptr_ttl_5min);
+		if (ms == 60L * 60_000L) return getString(R.string.grouptr_ttl_1hr);
+		if (ms == 24L * 60L * 60_000L) return getString(R.string.grouptr_ttl_1day);
+		if (ms == 7L * 24L * 60L * 60_000L)
+			return getString(R.string.grouptr_ttl_7days);
+		if (ms == 30L * 24L * 60L * 60_000L)
+			return getString(R.string.grouptr_ttl_30days);
+		return getString(R.string.grouptr_ttl_off_label);
+	}
+
+	private void showMemberMenu(GroupTrState s, GroupTrMember m) {
+		boolean isAdmin = m.getRole() == MemberRole.ADMIN;
+		String roleAction = isAdmin
+				? getString(R.string.grouptr_member_action_demote)
+				: getString(R.string.grouptr_member_action_promote);
+		String removeAction =
+				getString(R.string.grouptr_member_action_remove);
+		new AlertDialog.Builder(this)
+				.setTitle(m.getName())
+				.setItems(new String[]{roleAction, removeAction},
+						(d, which) -> {
+							if (which == 0) {
+								if (isAdmin) demote(s, m);
+								else promote(s, m);
+							} else if (which == 1) {
+								confirmRemove(s, m);
+							}
+						})
+				.show();
 	}
 
 	private void promote(GroupTrState s, GroupTrMember m) {
 		ioExecutor.execute(() -> {
 			try {
-				groupTrManager.promoteToAdmin(s.getGroupId(),
-						m.getPubKey());
+				groupTrManager.promoteToAdmin(s.getGroupId(), m.getPubKey());
 				runOnUiThread(this::render);
 			} catch (DbException ex) {
 				runOnUiThread(() -> toast(R.string.grouptr_error_save));
@@ -239,96 +347,21 @@ public class GroupTrAdminActivity extends ZerionActivity {
 	private void demote(GroupTrState s, GroupTrMember m) {
 		ioExecutor.execute(() -> {
 			try {
-				groupTrManager.demoteToMember(s.getGroupId(),
-						m.getPubKey());
+				groupTrManager.demoteToMember(s.getGroupId(), m.getPubKey());
 				runOnUiThread(this::render);
 			} catch (DbException ex) {
 				runOnUiThread(() -> toast(R.string.grouptr_error_save));
 			}
 		});
-	}
-
-	private void showStealthDialog(GroupTrState s) {
-		final EditText editor = new EditText(this);
-		editor.setInputType(android.text.InputType.TYPE_CLASS_TEXT);
-		ioExecutor.execute(() -> {
-			try {
-				String current = groupTrManager.getStealthName(
-						s.getGroupId());
-				runOnUiThread(() -> {
-					if (current != null) editor.setText(current);
-					new androidx.appcompat.app.AlertDialog.Builder(this)
-							.setTitle(R.string.grouptr_stealth_name_set)
-							.setMessage(R.string.grouptr_stealth_name_msg)
-							.setView(editor)
-							.setPositiveButton(android.R.string.ok,
-									(d, w) -> {
-										String v = editor.getText()
-												.toString().trim();
-										persistStealth(s,
-												v.isEmpty() ? null : v);
-									})
-							.setNeutralButton(
-									R.string.grouptr_stealth_clear,
-									(d, w) -> persistStealth(s, null))
-							.setNegativeButton(android.R.string.cancel,
-									null)
-							.show();
-				});
-			} catch (DbException ex) {
-				runOnUiThread(() -> toast(R.string.grouptr_error_load));
-			}
-		});
-	}
-
-	private void persistStealth(GroupTrState s, @Nullable String alias) {
-		ioExecutor.execute(() -> {
-			try {
-				groupTrManager.setStealthName(s.getGroupId(), alias);
-				runOnUiThread(this::render);
-			} catch (DbException ex) {
-				runOnUiThread(() -> toast(R.string.grouptr_error_save));
-			}
-		});
-	}
-
-	private boolean isMember(GroupTrState s, byte[] pub) {
-		for (GroupTrMember m : s.getMembers()) {
-			if (Arrays.equals(m.getPubKey(), pub)) return true;
-		}
-		return false;
-	}
-
-	private void showCreateDialog() {
-		final EditText input = new EditText(this);
-		input.setInputType(InputType.TYPE_CLASS_TEXT);
-		new AlertDialog.Builder(this)
-				.setTitle(R.string.grouptr_create)
-				.setView(input)
-				.setPositiveButton(android.R.string.ok, (d, w) -> {
-					String name = input.getText().toString().trim();
-					if (name.isEmpty()) return;
-					ioExecutor.execute(() -> {
-						try {
-							groupTrManager.createGroup(name);
-							runOnUiThread(this::render);
-						} catch (DbException ex) {
-							runOnUiThread(() ->
-									toast(R.string.grouptr_error_create));
-						}
-					});
-				})
-				.setNegativeButton(android.R.string.cancel, null)
-				.show();
 	}
 
 	private void showAddMemberDialog(GroupTrState s) {
 		ioExecutor.execute(() -> {
 			try {
-				List<Contact> contacts =
+				List<Contact> all =
 						new ArrayList<>(contactManager.getContacts());
 				List<Contact> candidates = new ArrayList<>();
-				for (Contact c : contacts) {
+				for (Contact c : all) {
 					byte[] p = c.getAuthor().getPublicKey().getEncoded();
 					if (!isMember(s, p)) candidates.add(c);
 				}
@@ -339,8 +372,7 @@ public class GroupTrAdminActivity extends ZerionActivity {
 		});
 	}
 
-	private void showCandidatePicker(GroupTrState s,
-			List<Contact> candidates) {
+	private void showCandidatePicker(GroupTrState s, List<Contact> candidates) {
 		if (candidates.isEmpty()) {
 			toast(R.string.grouptr_no_candidates);
 			return;
@@ -353,17 +385,55 @@ public class GroupTrAdminActivity extends ZerionActivity {
 				.setTitle(R.string.grouptr_add_member)
 				.setItems(names, (d, which) -> {
 					Contact picked = candidates.get(which);
-					byte[] pub =
-							picked.getAuthor().getPublicKey().getEncoded();
+					org.briarproject.bramble.api.contact.ContactId pickedId =
+							picked.getId();
+					byte[] pub = picked.getAuthor().getPublicKey()
+							.getEncoded();
 					String name = picked.getAuthor().getName();
 					ioExecutor.execute(() -> {
 						try {
-							groupTrManager.addMember(s.getGroupId(),
-									pub, name);
-							runOnUiThread(this::render);
+							groupTrManager.inviteContactToGroup(
+									s.getGroupId(), pickedId, pub, name);
+							runOnUiThread(() -> {
+								toast(R.string.grouptr_invite_sent);
+								render();
+							});
 						} catch (DbException ex) {
 							runOnUiThread(() ->
 									toast(R.string.grouptr_error_add));
+						}
+					});
+				})
+				.show();
+	}
+
+	private void showTtlDialog() {
+		final String[] labels = {
+				getString(R.string.grouptr_ttl_off),
+				getString(R.string.grouptr_ttl_5min),
+				getString(R.string.grouptr_ttl_1hr),
+				getString(R.string.grouptr_ttl_1day),
+				getString(R.string.grouptr_ttl_7days),
+				getString(R.string.grouptr_ttl_30days),
+		};
+		final long[] values = {
+				0L, 5L * 60 * 1000, 60L * 60 * 1000,
+				24L * 60 * 60 * 1000, 7L * 24 * 60 * 60 * 1000,
+				30L * 24L * 60 * 60 * 1000
+		};
+		new AlertDialog.Builder(this)
+				.setTitle(R.string.grouptr_default_ttl_set)
+				.setItems(labels, (d, which) -> {
+					long v = values[which];
+					ioExecutor.execute(() -> {
+						try {
+							groupTrManager.setGroupAutoDeleteTimer(
+									groupId, v);
+							runOnUiThread(() -> toast(
+									R.string.grouptr_default_ttl_saved));
+						} catch (DbException ex) {
+							runOnUiThread(() -> toast(
+									R.string.grouptr_error_save));
 						}
 					});
 				})
@@ -415,7 +485,7 @@ public class GroupTrAdminActivity extends ZerionActivity {
 					ioExecutor.execute(() -> {
 						try {
 							groupTrManager.leaveGroup(s.getGroupId());
-							runOnUiThread(this::render);
+							runOnUiThread(this::finish);
 						} catch (DbException ex) {
 							runOnUiThread(() ->
 									toast(R.string.grouptr_error_leave));
@@ -426,12 +496,20 @@ public class GroupTrAdminActivity extends ZerionActivity {
 				.show();
 	}
 
+	private boolean isMember(GroupTrState s, byte[] pub) {
+		for (GroupTrMember m : s.getMembers()) {
+			if (Arrays.equals(m.getPubKey(), pub)) return true;
+		}
+		return false;
+	}
+
 	private void toast(int res) {
 		Toast.makeText(this, res, Toast.LENGTH_SHORT).show();
 	}
 
-	@SuppressWarnings("unused")
-	private static String hex(byte[] b) {
-		return StringUtils.toHexString(b);
+	public static Intent intent(Context ctx, byte[] gid) {
+		Intent i = new Intent(ctx, GroupTrAdminActivity.class);
+		i.putExtra(EXTRA_GROUP_ID, StringUtils.toHexString(gid));
+		return i;
 	}
 }

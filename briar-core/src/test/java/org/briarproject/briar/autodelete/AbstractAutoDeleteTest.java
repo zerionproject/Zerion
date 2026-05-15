@@ -60,8 +60,6 @@ public abstract class AbstractAutoDeleteTest extends
 				.build();
 		BriarIntegrationTestComponent.Helper.injectEagerSingletons(c2);
 
-		// Use different times to avoid creating identical messages that are
-		// treated as redundant copies of the same message (#1907)
 		try {
 			c0.getTimeTravel().setCurrentTimeMillis(startTime);
 			c1.getTimeTravel().setCurrentTimeMillis(startTime + 1);
@@ -75,7 +73,7 @@ public abstract class AbstractAutoDeleteTest extends
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
-		// Run the initial cleanup task that was scheduled at startup
+
 		c0.getTimeTravel().addCurrentTimeMillis(BATCH_DELAY_MS);
 		c1.getTimeTravel().addCurrentTimeMillis(BATCH_DELAY_MS);
 		c2.getTimeTravel().addCurrentTimeMillis(BATCH_DELAY_MS);
@@ -91,7 +89,7 @@ public abstract class AbstractAutoDeleteTest extends
 				conversationClient.getMessageHeaders(txn, contactId)));
 	}
 
-	@SuppressWarnings({"UseCompareMethod", "Java8ListSort"}) // Animal Sniffer
+	@SuppressWarnings({"UseCompareMethod", "Java8ListSort"})
 	protected List<ConversationMessageHeader> sortHeaders(
 			Collection<ConversationMessageHeader> in) {
 		List<ConversationMessageHeader> out = new ArrayList<>(in);

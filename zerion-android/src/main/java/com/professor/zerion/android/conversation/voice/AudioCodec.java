@@ -2,7 +2,6 @@ package com.professor.zerion.android.conversation.voice;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
-
 @NotNullByDefault
 public class AudioCodec {
 	private static final short[] MULAW_DECODE_TABLE = new short[256];
@@ -13,7 +12,6 @@ public class AudioCodec {
 		}
 	}
 
-	
 	public static byte[] muLawToPcm(byte[] muLawData) {
 		byte[] pcmData = new byte[muLawData.length * 2];
 
@@ -26,7 +24,6 @@ public class AudioCodec {
 		return pcmData;
 	}
 
-	
 	public static byte[] pcmToMuLaw(byte[] pcmData) {
 		int numSamples = pcmData.length / 2;
 		byte[] muLawData = new byte[numSamples];
@@ -39,7 +36,6 @@ public class AudioCodec {
 		return muLawData;
 	}
 
-	
 	private static byte linearToMuLaw(short sample) {
 		final int MULAW_MAX = 0x1FFF;
 		final int MULAW_BIAS = 33;
@@ -56,7 +52,6 @@ public class AudioCodec {
 		return (byte) ~(sign | (exponent << 4) | mantissa);
 	}
 
-	
 	private static short muLawToLinearSample(byte muLawByte) {
 		int muLaw = ~muLawByte & 0xFF;
 

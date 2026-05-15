@@ -127,7 +127,6 @@ class AndroidNetworkManager implements NetworkManager, Service {
 		}
 	}
 
-	
 	@TargetApi(23)
 	private boolean isActiveNetworkIpv6Only() {
 		try {
@@ -151,7 +150,6 @@ class AndroidNetworkManager implements NetworkManager, Service {
 		}
 	}
 
-	
 	private boolean areAllAvailableNetworksIpv6Only() {
 		try {
 			Enumeration<NetworkInterface> interfaces = getNetworkInterfaces();

@@ -206,8 +206,7 @@ public class KeyAgreementTransportTest extends BrambleMockTestCase {
 
 	private void expectReadRecord(Record record) throws Exception {
 		context.checking(new Expectations() {{
-			// Test that the `accept` predicate passed to the reader would
-			// accept the expected record
+
 			oneOf(recordReader).readRecord(with(new PredicateMatcher<>(
 							RecordPredicate.class, rp -> rp.test(record))),
 					with(any(RecordPredicate.class)));

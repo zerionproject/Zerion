@@ -24,10 +24,6 @@ import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Map;
 
-/**
- * Minimal JDBC ResultSet wrapping an Android Cursor.
- * Only implements the methods used by JdbcDatabase.
- */
 class SqlCipherResultSet implements ResultSet {
 
 	private final Cursor cursor;
@@ -107,8 +103,6 @@ class SqlCipherResultSet implements ResultSet {
 		cursor.close();
 	}
 
-	// --- Column name variants (delegate to index) ---
-
 	@Override
 	public int getInt(String columnLabel) throws SQLException {
 		return getInt(cursor.getColumnIndexOrThrow(columnLabel) + 1);
@@ -133,8 +127,6 @@ class SqlCipherResultSet implements ResultSet {
 	public boolean getBoolean(String columnLabel) throws SQLException {
 		return getBoolean(cursor.getColumnIndexOrThrow(columnLabel) + 1);
 	}
-
-	// --- Unimplemented methods ---
 
 	@Override public byte getByte(int i) throws SQLException { throw new UnsupportedOperationException(); }
 	@Override public short getShort(int i) throws SQLException { throw new UnsupportedOperationException(); }

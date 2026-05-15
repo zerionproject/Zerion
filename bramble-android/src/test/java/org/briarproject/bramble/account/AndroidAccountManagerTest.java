@@ -72,17 +72,17 @@ public class AndroidAccountManagerTest extends BrambleMockTestCase {
 	@Test
 	public void testDeleteAccountClearsSharedPrefsAndDeletesFiles()
 			throws Exception {
-		// Directories 'code_cache', 'lib' and 'shared_prefs' should be spared
+
 		File codeCacheDir = new File(testDir, "code_cache");
 		File codeCacheFile = new File(codeCacheDir, "file");
 		File libDir = new File(testDir, "lib");
 		File libFile = new File(libDir, "file");
 		File sharedPrefsDir = new File(testDir, "shared_prefs");
 		File sharedPrefsFile = new File(sharedPrefsDir, "file");
-		// Directory 'cache' should be emptied
+
 		File cacheDir = new File(testDir, "cache");
 		File cacheFile = new File(cacheDir, "file");
-		// Other directories should be deleted
+
 		File potatoDir = new File(testDir, ".potato");
 		File potatoFile = new File(potatoDir, "file");
 		File filesDir = new File(testDir, "filesDir");

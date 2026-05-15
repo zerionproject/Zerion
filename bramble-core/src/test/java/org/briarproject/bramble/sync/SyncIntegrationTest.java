@@ -79,17 +79,17 @@ public class SyncIntegrationTest extends BrambleTestCase {
 
 		contactId = getContactId();
 		transportId = getTransportId();
-		// Create the transport keys
+
 		tagKey = getSecretKey();
 		headerKey = getSecretKey();
 		streamNumber = 123;
-		// Create a group
+
 		ClientId clientId = getClientId();
 		int majorVersion = 1234567890;
 		byte[] descriptor = new byte[MAX_GROUP_DESCRIPTOR_LENGTH];
 		Group group = groupFactory.createGroup(clientId, majorVersion,
 				descriptor);
-		// Add two messages to the group
+
 		long timestamp = System.currentTimeMillis();
 		byte[] body = "Hello world".getBytes("UTF-8");
 		message = messageFactory.createMessage(group.getId(), timestamp, body);
@@ -122,18 +122,16 @@ public class SyncIntegrationTest extends BrambleTestCase {
 	}
 
 	private void read(byte[] connectionData) throws Exception {
-		// Calculate the expected tag
+
 		byte[] expectedTag = new byte[TAG_LENGTH];
 		transportCrypto.encodeTag(expectedTag, tagKey, PROTOCOL_VERSION,
 				streamNumber);
 
-		// Read the tag
 		InputStream in = new ByteArrayInputStream(connectionData);
 		byte[] tag = new byte[TAG_LENGTH];
 		assertEquals(TAG_LENGTH, in.read(tag, 0, TAG_LENGTH));
 		assertArrayEquals(expectedTag, tag);
 
-		// Create the readers
 		StreamContext ctx = new StreamContext(contactId, null, transportId,
 				tagKey, headerKey, streamNumber, false);
 		InputStream streamReader = streamReaderFactory.createStreamReader(in,
@@ -141,12 +139,10 @@ public class SyncIntegrationTest extends BrambleTestCase {
 		SyncRecordReader recordReader = recordReaderFactory.createRecordReader(
 				streamReader);
 
-		// Read the ack
 		assertTrue(recordReader.hasAck());
 		Ack a = recordReader.readAck();
 		assertEquals(messageIds, a.getMessageIds());
 
-		// Read the messages
 		assertTrue(recordReader.hasMessage());
 		Message m = recordReader.readMessage();
 		checkMessageEquality(message, m);
@@ -155,12 +151,10 @@ public class SyncIntegrationTest extends BrambleTestCase {
 		checkMessageEquality(message1, m);
 		assertFalse(recordReader.hasMessage());
 
-		// Read the offer
 		assertTrue(recordReader.hasOffer());
 		Offer o = recordReader.readOffer();
 		assertEquals(messageIds, o.getMessageIds());
 
-		// Read the request
 		assertTrue(recordReader.hasRequest());
 		Request req = recordReader.readRequest();
 		assertEquals(messageIds, req.getMessageIds());

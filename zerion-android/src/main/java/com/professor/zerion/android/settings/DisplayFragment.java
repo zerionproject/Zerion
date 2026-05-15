@@ -89,7 +89,6 @@ public class DisplayFragment extends Fragment {
 	public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
 		super.onViewCreated(view, savedInstanceState);
 
-
 		languageCard = view.findViewById(R.id.language_card);
 		languageValue = view.findViewById(R.id.language_value);
 		themeCard = view.findViewById(R.id.theme_card);
@@ -279,7 +278,6 @@ public class DisplayFragment extends Fragment {
 
 		FragmentActivity activity = requireActivity();
 		UiUtils.setTheme(activity, newTheme);
-
 
 		Intent intent = new Intent(getActivity(), ENTRY_ACTIVITY);
 		intent.setFlags(FLAG_ACTIVITY_CLEAR_TASK | FLAG_ACTIVITY_NEW_TASK);

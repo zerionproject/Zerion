@@ -30,20 +30,20 @@ public class UnixSecureRandomProviderTest extends BrambleTestCase {
 	@Test
 	public void testGetProviderWritesToRandomDeviceOnFirstCall()
 			throws Exception {
-		// Redirect the provider's output to a file
+
 		File urandom = new File(testDir, "urandom");
 		if (urandom.exists()) assertTrue(urandom.delete());
 		assertTrue(urandom.createNewFile());
 		assertEquals(0, urandom.length());
 		UnixSecureRandomProvider p = new UnixSecureRandomProvider(urandom);
-		// Getting a provider should write entropy to the file
+
 		Provider provider = p.getProvider();
 		assertNotNull(provider);
 		assertEquals("UnixPRNG", provider.getName());
-		// There should be at least 16 bytes from the clock, 8 from the runtime
+
 		long length = urandom.length();
 		assertTrue(length >= 24);
-		// Getting another provider should not write to the file again
+
 		provider = p.getProvider();
 		assertNotNull(provider);
 		assertEquals("UnixPRNG", provider.getName());

@@ -17,7 +17,6 @@ import javax.annotation.concurrent.NotThreadSafe;
 import static org.briarproject.bramble.api.record.Record.MAX_RECORD_PAYLOAD_BYTES_CLASSICAL;
 import static org.briarproject.bramble.api.record.Record.RECORD_HEADER_BYTES_CLASSICAL;
 
-
 @NotThreadSafe
 @NotNullByDefault
 class ClassicalRecordReaderImpl implements RecordReader {

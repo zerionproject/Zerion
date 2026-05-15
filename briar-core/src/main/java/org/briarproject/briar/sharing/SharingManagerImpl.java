@@ -157,7 +157,6 @@ abstract class SharingManagerImpl<S extends Shareable>
 		return ACCEPT_DO_NOT_SHARE;
 	}
 
-	
 	void preShareGroup(Transaction txn, Contact c, Group g)
 			throws DbException, FormatException {
 		GroupId contactGroupId = getContactGroup(c).getId();
@@ -541,7 +540,7 @@ abstract class SharingManagerImpl<S extends Shareable>
 
 	@FunctionalInterface
 	private interface MessageDeletionChecker {
-		
+
 		boolean causesProblem(MessageId messageId);
 	}
 

@@ -9,7 +9,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 @NotNullByDefault
 class NetworkUsageMetricsImpl implements NetworkUsageMetrics, Service {
 
-
 	private volatile long startTime, rxBytes, txBytes;
 
 	@Override

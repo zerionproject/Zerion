@@ -18,8 +18,6 @@ interface ConversationListener {
 
 	void openRequestedShareable(ConversationRequestItem item);
 
-	void onGroupTrInvitationOpen(ConversationGroupTrInvitationItem item);
-
 	void onAttachmentClicked(View view, ConversationMessageItem messageItem,
 			AttachmentItem attachmentItem);
 

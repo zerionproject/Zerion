@@ -31,7 +31,6 @@ import static java.util.Collections.singletonList;
 @NotNullByDefault
 class AndroidKeyStrengthener implements KeyStrengthener {
 
-
 	private static final String KEY_STORE_TYPE = "AndroidKeyStore";
 	private static final String PROVIDER_NAME = "AndroidKeyStore";
 	private static final String KEY_ALIAS = "db";

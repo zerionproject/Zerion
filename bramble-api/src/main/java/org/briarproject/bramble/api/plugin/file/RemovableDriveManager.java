@@ -10,23 +10,17 @@ import javax.annotation.Nullable;
 @NotNullByDefault
 public interface RemovableDriveManager {
 
-	
 	@Nullable
 	RemovableDriveTask getCurrentReaderTask();
 
-	
 	@Nullable
 	RemovableDriveTask getCurrentWriterTask();
 
-	
 	RemovableDriveTask startReaderTask(TransportProperties p);
 
-	
 	RemovableDriveTask startWriterTask(ContactId c, TransportProperties p);
 
-	
 	boolean isTransportSupportedByContact(ContactId c) throws DbException;
 
-	
 	boolean isWriterTaskNeeded(ContactId c) throws DbException;
 }

@@ -20,7 +20,6 @@ import javax.inject.Inject;
 import static org.briarproject.bramble.db.JdbcUtils.tryToClose;
 import static org.briarproject.bramble.util.IoUtils.isNonEmptyDirectory;
 
-
 @NotNullByDefault
 class HyperSqlDatabase extends JdbcDatabase {
 	private static final String HASH_TYPE = "BINARY(32)";

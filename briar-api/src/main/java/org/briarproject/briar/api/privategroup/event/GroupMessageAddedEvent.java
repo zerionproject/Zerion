@@ -7,10 +7,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.Immutable;
 
-/**
- * An event that is broadcast when a private group message was added
- * to the database.
- */
 @Immutable
 @NotNullByDefault
 public class GroupMessageAddedEvent extends Event {

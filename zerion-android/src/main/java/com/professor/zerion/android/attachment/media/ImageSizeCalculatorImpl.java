@@ -21,7 +21,6 @@ import static androidx.exifinterface.media.ExifInterface.TAG_ORIENTATION;
 @NotNullByDefault
 class ImageSizeCalculatorImpl implements ImageSizeCalculator {
 
-
 	private static final int READ_LIMIT = 1024 * 8192;
 
 	private final ImageHelper imageHelper;

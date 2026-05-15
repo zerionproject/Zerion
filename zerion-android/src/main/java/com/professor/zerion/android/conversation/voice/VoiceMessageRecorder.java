@@ -187,7 +187,6 @@ public class VoiceMessageRecorder {
 		}
 	}
 
-	
 	private void compressAndEncrypt(EncryptedChunkCallback callback, int durationMs) {
 		try {
 			byte[] pcmData = accumulatedPcm.toByteArray();
@@ -251,7 +250,6 @@ public class VoiceMessageRecorder {
 		}
 	}
 
-	
 	private byte[] pcmToMuLaw(byte[] pcmData) {
 		int numSamples = pcmData.length / 2;
 		byte[] muLawData = new byte[numSamples];
@@ -264,7 +262,6 @@ public class VoiceMessageRecorder {
 		return muLawData;
 	}
 
-	
 	private byte linearToMuLaw(short sample) {
 		final int MULAW_MAX = 0x1FFF;
 		final int MULAW_BIAS = 33;
@@ -515,13 +512,6 @@ public class VoiceMessageRecorder {
 				Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED;
 	}
 
-	/**
-	 * Generates a cryptographically random AES-256 wrap key.
-	 * The wrap key is sent alongside the encrypted voice message through
-	 * the Bramble transport layer, which is already end-to-end encrypted.
-	 * This ensures the wrap key is protected by the transport secret,
-	 * not derived from the public groupId.
-	 */
 	private javax.crypto.SecretKey deriveWrapKey(byte[] groupId) throws Exception {
 		byte[] keyMaterial = new byte[32];
 		java.security.SecureRandom.getInstanceStrong().nextBytes(keyMaterial);

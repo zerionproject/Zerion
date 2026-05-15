@@ -61,31 +61,27 @@ public class LanTcpPluginTest extends BrambleTestCase {
 
 	@Test
 	public void testAreAddressesInSameNetwork() {
-		// Local and remote in 10.0.0.0/8
+
 		assertTrue(areAddressesInSameNetwork(makeAddress(10, 0, 0, 0),
 				makeAddress(10, 255, 255, 255), 8));
 		assertFalse(areAddressesInSameNetwork(makeAddress(10, 0, 0, 0),
 				makeAddress(10, 255, 255, 255), 9));
 
-		// Local and remote in 172.16.0.0/12
 		assertTrue(areAddressesInSameNetwork(makeAddress(172, 16, 0, 0),
 				makeAddress(172, 31, 255, 255), 12));
 		assertFalse(areAddressesInSameNetwork(makeAddress(172, 16, 0, 0),
 				makeAddress(172, 31, 255, 255), 13));
 
-		// Local and remote in 192.168.0.0/16
 		assertTrue(areAddressesInSameNetwork(makeAddress(192, 168, 0, 0),
 				makeAddress(192, 168, 255, 255), 16));
 		assertFalse(areAddressesInSameNetwork(makeAddress(192, 168, 0, 0),
 				makeAddress(192, 168, 255, 255), 17));
 
-		// Local and remote in 169.254.0.0/16
 		assertTrue(areAddressesInSameNetwork(makeAddress(169, 254, 0, 0),
 				makeAddress(169, 254, 255, 255), 16));
 		assertFalse(areAddressesInSameNetwork(makeAddress(169, 254, 0, 0),
 				makeAddress(169, 254, 255, 255), 17));
 
-		// Local in 10.0.0.0/8, remote in a different network
 		assertFalse(areAddressesInSameNetwork(makeAddress(10, 0, 0, 0),
 				makeAddress(172, 31, 255, 255), 8));
 		assertFalse(areAddressesInSameNetwork(makeAddress(10, 0, 0, 0),
@@ -93,7 +89,6 @@ public class LanTcpPluginTest extends BrambleTestCase {
 		assertFalse(areAddressesInSameNetwork(makeAddress(10, 0, 0, 0),
 				makeAddress(169, 254, 255, 255), 8));
 
-		// Local in 172.16.0.0/12, remote in a different network
 		assertFalse(areAddressesInSameNetwork(makeAddress(172, 16, 0, 0),
 				makeAddress(10, 255, 255, 255), 12));
 		assertFalse(areAddressesInSameNetwork(makeAddress(172, 16, 0, 0),
@@ -101,7 +96,6 @@ public class LanTcpPluginTest extends BrambleTestCase {
 		assertFalse(areAddressesInSameNetwork(makeAddress(172, 16, 0, 0),
 				makeAddress(169, 254, 255, 255), 12));
 
-		// Local in 192.168.0.0/16, remote in a different network
 		assertFalse(areAddressesInSameNetwork(makeAddress(192, 168, 0, 0),
 				makeAddress(10, 255, 255, 255), 16));
 		assertFalse(areAddressesInSameNetwork(makeAddress(192, 168, 0, 0),
@@ -109,7 +103,6 @@ public class LanTcpPluginTest extends BrambleTestCase {
 		assertFalse(areAddressesInSameNetwork(makeAddress(192, 168, 0, 0),
 				makeAddress(169, 254, 255, 255), 16));
 
-		// Local in 169.254.0.0/16, remote in a different network
 		assertFalse(areAddressesInSameNetwork(makeAddress(169, 254, 0, 0),
 				makeAddress(10, 255, 255, 255), 16));
 		assertFalse(areAddressesInSameNetwork(makeAddress(169, 254, 0, 0),
@@ -128,7 +121,7 @@ public class LanTcpPluginTest extends BrambleTestCase {
 	public void testIncomingConnection() throws Exception {
 		assumeTrue(systemHasLocalIpv4Address());
 		plugin.start();
-		// The plugin should have bound a socket and stored the port number
+
 		assertTrue(callback.propertiesLatch.await(5, SECONDS));
 		String ipPorts = callback.local.get("ipPorts");
 		assertNotNull(ipPorts);
@@ -143,13 +136,13 @@ public class LanTcpPluginTest extends BrambleTestCase {
 		assertTrue(addr.isLinkLocalAddress() || addr.isSiteLocalAddress());
 		int port = Integer.parseInt(portString);
 		assertTrue(port > 0 && port < 65536);
-		// The plugin should be listening on the port
+
 		InetSocketAddress socketAddr = new InetSocketAddress(addr, port);
 		Socket s = new Socket();
 		s.connect(socketAddr, 100);
 		assertTrue(callback.connectionsLatch.await(5, SECONDS));
 		s.close();
-		// Stop the plugin
+
 		plugin.stop();
 	}
 
@@ -157,7 +150,7 @@ public class LanTcpPluginTest extends BrambleTestCase {
 	public void testOutgoingConnection() throws Exception {
 		assumeTrue(systemHasLocalIpv4Address());
 		plugin.start();
-		// The plugin should have bound a socket and stored the port number
+
 		assertTrue(callback.propertiesLatch.await(5, SECONDS));
 		assertTrue(callback.propertiesLatch.await(5, SECONDS));
 		String ipPorts = callback.local.get("ipPorts");
@@ -167,7 +160,7 @@ public class LanTcpPluginTest extends BrambleTestCase {
 		split = split[0].split(":");
 		assertEquals(2, split.length);
 		String addrString = split[0];
-		// Listen on the same interface as the plugin
+
 		ServerSocket ss = new ServerSocket();
 		ss.bind(new InetSocketAddress(addrString, 0), 10);
 		int port = ss.getLocalPort();
@@ -181,15 +174,15 @@ public class LanTcpPluginTest extends BrambleTestCase {
 				error.set(true);
 			}
 		}).start();
-		// Connect to the port
+
 		TransportProperties p = new TransportProperties();
 		p.put("ipPorts", addrString + ":" + port);
 		DuplexTransportConnection d = plugin.createConnection(p);
 		assertNotNull(d);
-		// Check that the connection was accepted
+
 		assertTrue(latch.await(5, SECONDS));
 		assertFalse(error.get());
-		// Clean up
+
 		d.getReader().dispose(false, true);
 		d.getWriter().dispose(false);
 		ss.close();
@@ -214,7 +207,7 @@ public class LanTcpPluginTest extends BrambleTestCase {
 				error.set(true);
 			}
 		}).start();
-		// The plugin should have bound a socket and stored the port number
+
 		BdfList descriptor = kal.getDescriptor();
 		assertEquals(3, descriptor.size());
 		assertEquals(TRANSPORT_ID_LAN, descriptor.getInt(0).intValue());
@@ -225,14 +218,14 @@ public class LanTcpPluginTest extends BrambleTestCase {
 		assertTrue(addr.isLinkLocalAddress() || addr.isSiteLocalAddress());
 		int port = descriptor.getInt(2);
 		assertTrue(port > 0 && port < 65536);
-		// The plugin should be listening on the port
+
 		InetSocketAddress socketAddr = new InetSocketAddress(addr, port);
 		Socket s = new Socket();
 		s.connect(socketAddr, 100);
-		// Check that the connection was accepted
+
 		assertTrue(latch.await(5, SECONDS));
 		assertFalse(error.get());
-		// Clean up
+
 		s.close();
 		kal.close();
 		plugin.stop();
@@ -242,7 +235,7 @@ public class LanTcpPluginTest extends BrambleTestCase {
 	public void testOutgoingKeyAgreementConnection() throws Exception {
 		assumeTrue(systemHasLocalIpv4Address());
 		plugin.start();
-		// The plugin should have bound a socket and stored the port number
+
 		assertTrue(callback.propertiesLatch.await(5, SECONDS));
 		String ipPorts = callback.local.get("ipPorts");
 		assertNotNull(ipPorts);
@@ -251,7 +244,7 @@ public class LanTcpPluginTest extends BrambleTestCase {
 		split = split[0].split(":");
 		assertEquals(2, split.length);
 		String addrString = split[0];
-		// Listen on the same interface as the plugin
+
 		ServerSocket ss = new ServerSocket();
 		ss.bind(new InetSocketAddress(addrString, 0), 10);
 		CountDownLatch latch = new CountDownLatch(1);
@@ -264,21 +257,21 @@ public class LanTcpPluginTest extends BrambleTestCase {
 				error.set(true);
 			}
 		}).start();
-		// Tell the plugin about the port
+
 		BdfList descriptor = new BdfList();
 		descriptor.add(TRANSPORT_ID_LAN);
 		InetSocketAddress local =
 				(InetSocketAddress) ss.getLocalSocketAddress();
 		descriptor.add(local.getAddress().getAddress());
 		descriptor.add(local.getPort());
-		// Connect to the port
+
 		DuplexTransportConnection d = plugin.createKeyAgreementConnection(
 				new byte[COMMIT_LENGTH], descriptor);
 		assertNotNull(d);
-		// Check that the connection was accepted
+
 		assertTrue(latch.await(5, SECONDS));
 		assertFalse(error.get());
-		// Clean up
+
 		d.getReader().dispose(false, true);
 		d.getWriter().dispose(false);
 		ss.close();
@@ -299,8 +292,6 @@ public class LanTcpPluginTest extends BrambleTestCase {
 	@NotNullByDefault
 	private static class Callback implements PluginCallback {
 
-		// Properties will be stored twice: the preferred port at startup,
-		// and the IP:port when the server socket is bound
 		private final CountDownLatch propertiesLatch = new CountDownLatch(2);
 		private final CountDownLatch connectionsLatch = new CountDownLatch(1);
 		private final TransportProperties local = new TransportProperties();

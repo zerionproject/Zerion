@@ -162,10 +162,10 @@ public class ClientVersioningManagerImplTest extends BrambleMockTestCase {
 
 		context.checking(new DbExpectations() {{
 			oneOf(db).transaction(with(false), withDbRunnable(txn));
-			// No client versions have been stored yet
+
 			oneOf(db).getMessageIds(txn, localGroup.getId());
 			will(returnValue(emptyList()));
-			// Store the client versions
+
 			oneOf(clock).currentTimeMillis();
 			will(returnValue(now));
 			oneOf(clientHelper).createMessage(localGroup.getId(), now,
@@ -173,20 +173,20 @@ public class ClientVersioningManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(localVersions));
 			oneOf(db).addLocalMessage(txn, localVersions, new Metadata(),
 					false, false);
-			// Inform contacts that client versions have changed
+
 			oneOf(db).getContacts(txn);
 			will(returnValue(singletonList(contact)));
 			oneOf(contactGroupFactory).createContactGroup(CLIENT_ID,
 					MAJOR_VERSION, contact);
 			will(returnValue(contactGroup));
-			// Find the latest local and remote updates (no remote update)
+
 			oneOf(clientHelper).getMessageMetadataAsDictionary(txn,
 					contactGroup.getId());
 			will(returnValue(singletonMap(localUpdateId, localUpdateMeta)));
-			// Load the latest local update
+
 			oneOf(clientHelper).getMessageAsList(txn, localUpdateId);
 			will(returnValue(localUpdateBody));
-			// Latest local update is up-to-date, no visibilities have changed
+
 		}});
 
 		ClientVersioningManagerImpl c = createInstance();
@@ -203,12 +203,12 @@ public class ClientVersioningManagerImplTest extends BrambleMockTestCase {
 
 		context.checking(new DbExpectations() {{
 			oneOf(db).transaction(with(false), withDbRunnable(txn));
-			// Load the old client versions
+
 			oneOf(db).getMessageIds(txn, localGroup.getId());
 			will(returnValue(singletonList(localVersionsId)));
 			oneOf(clientHelper).getMessageAsList(txn, localVersionsId);
 			will(returnValue(localVersionsBody));
-			// Client versions are up-to-date
+
 		}});
 
 		ClientVersioningManagerImpl c = createInstance();
@@ -219,16 +219,16 @@ public class ClientVersioningManagerImplTest extends BrambleMockTestCase {
 	@Test
 	public void testStoresClientVersionsAtSubsequentStartupIfChanged()
 			throws Exception {
-		// The client had minor version 234 in the old client versions
+
 		BdfList oldLocalVersionsBody =
 				BdfList.of(BdfList.of(clientId.getString(), 123, 234));
-		// The client has minor version 345 in the new client versions
+
 		BdfList newLocalVersionsBody =
 				BdfList.of(BdfList.of(clientId.getString(), 123, 345));
-		// The client had minor version 234 in the old local update
+
 		BdfList oldLocalUpdateBody = BdfList.of(BdfList.of(
 				BdfList.of(clientId.getString(), 123, 234, false)), 1L);
-		// The client has minor version 345 in the new local update
+
 		BdfList newLocalUpdateBody = BdfList.of(BdfList.of(
 				BdfList.of(clientId.getString(), 123, 345, false)), 2L);
 
@@ -245,14 +245,14 @@ public class ClientVersioningManagerImplTest extends BrambleMockTestCase {
 
 		context.checking(new DbExpectations() {{
 			oneOf(db).transaction(with(false), withDbRunnable(txn));
-			// Load the old client versions
+
 			oneOf(db).getMessageIds(txn, localGroup.getId());
 			will(returnValue(singletonList(oldLocalVersionsId)));
 			oneOf(clientHelper).getMessageAsList(txn, oldLocalVersionsId);
 			will(returnValue(oldLocalVersionsBody));
-			// Delete the old client versions
+
 			oneOf(db).removeMessage(txn, oldLocalVersionsId);
-			// Store the new client versions
+
 			oneOf(clock).currentTimeMillis();
 			will(returnValue(now));
 			oneOf(clientHelper).createMessage(localGroup.getId(), now,
@@ -260,24 +260,24 @@ public class ClientVersioningManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(newLocalVersions));
 			oneOf(db).addLocalMessage(txn, newLocalVersions, new Metadata(),
 					false, false);
-			// Inform contacts that client versions have changed
+
 			oneOf(db).getContacts(txn);
 			will(returnValue(singletonList(contact)));
 			oneOf(contactGroupFactory).createContactGroup(CLIENT_ID,
 					MAJOR_VERSION, contact);
 			will(returnValue(contactGroup));
-			// Find the latest local and remote updates (no remote update)
+
 			oneOf(clientHelper).getMessageMetadataAsDictionary(txn,
 					contactGroup.getId());
 			will(returnValue(singletonMap(oldLocalUpdateId,
 					oldLocalUpdateMeta)));
-			// Load the latest local update
+
 			oneOf(clientHelper).getMessageAsList(txn, oldLocalUpdateId);
 			will(returnValue(oldLocalUpdateBody));
-			// Delete the latest local update
+
 			oneOf(db).deleteMessage(txn, oldLocalUpdateId);
 			oneOf(db).deleteMessageMetadata(txn, oldLocalUpdateId);
-			// Store the new local update
+
 			oneOf(clock).currentTimeMillis();
 			will(returnValue(now));
 			oneOf(clientHelper).createMessage(contactGroup.getId(), now,
@@ -285,7 +285,7 @@ public class ClientVersioningManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(newLocalUpdate));
 			oneOf(clientHelper).addLocalMessage(txn, newLocalUpdate,
 					newLocalUpdateMeta, true, false);
-			// No visibilities have changed
+
 		}});
 
 		ClientVersioningManagerImpl c = createInstance();
@@ -307,17 +307,17 @@ public class ClientVersioningManagerImplTest extends BrambleMockTestCase {
 
 	private void testActivatesNewClientAtStartup(boolean remoteActive,
 			Visibility visibility) throws Exception {
-		// The client was missing from the old client versions
+
 		BdfList oldLocalVersionsBody = new BdfList();
-		// The client is included in the new client versions
+
 		BdfList newLocalVersionsBody =
 				BdfList.of(BdfList.of(clientId.getString(), 123, 234));
-		// The client was missing from the old local update
+
 		BdfList oldLocalUpdateBody = BdfList.of(new BdfList(), 1L);
-		// The client was included in the old remote update
+
 		BdfList oldRemoteUpdateBody = BdfList.of(BdfList.of(
 				BdfList.of(clientId.getString(), 123, 345, remoteActive)), 1L);
-		// The client is active in the new local update
+
 		BdfList newLocalUpdateBody = BdfList.of(BdfList.of(
 				BdfList.of(clientId.getString(), 123, 234, true)), 2L);
 
@@ -341,14 +341,14 @@ public class ClientVersioningManagerImplTest extends BrambleMockTestCase {
 
 		context.checking(new DbExpectations() {{
 			oneOf(db).transaction(with(false), withDbRunnable(txn));
-			// Load the old client versions
+
 			oneOf(db).getMessageIds(txn, localGroup.getId());
 			will(returnValue(singletonList(oldLocalVersionsId)));
 			oneOf(clientHelper).getMessageAsList(txn, oldLocalVersionsId);
 			will(returnValue(oldLocalVersionsBody));
-			// Delete the old client versions
+
 			oneOf(db).removeMessage(txn, oldLocalVersionsId);
-			// Store the new client versions
+
 			oneOf(clock).currentTimeMillis();
 			will(returnValue(now));
 			oneOf(clientHelper).createMessage(localGroup.getId(), now,
@@ -356,26 +356,26 @@ public class ClientVersioningManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(newLocalVersions));
 			oneOf(db).addLocalMessage(txn, newLocalVersions, new Metadata(),
 					false, false);
-			// Inform contacts that client versions have changed
+
 			oneOf(db).getContacts(txn);
 			will(returnValue(singletonList(contact)));
 			oneOf(contactGroupFactory).createContactGroup(CLIENT_ID,
 					MAJOR_VERSION, contact);
 			will(returnValue(contactGroup));
-			// Find the latest local and remote updates
+
 			oneOf(clientHelper).getMessageMetadataAsDictionary(txn,
 					contactGroup.getId());
 			will(returnValue(messageMetadata));
-			// Load the latest local update
+
 			oneOf(clientHelper).getMessageAsList(txn, oldLocalUpdateId);
 			will(returnValue(oldLocalUpdateBody));
-			// Load the latest remote update
+
 			oneOf(clientHelper).getMessageAsList(txn, oldRemoteUpdateId);
 			will(returnValue(oldRemoteUpdateBody));
-			// Delete the latest local update
+
 			oneOf(db).deleteMessage(txn, oldLocalUpdateId);
 			oneOf(db).deleteMessageMetadata(txn, oldLocalUpdateId);
-			// Store the new local update
+
 			oneOf(clock).currentTimeMillis();
 			will(returnValue(now));
 			oneOf(clientHelper).createMessage(contactGroup.getId(), now,
@@ -383,7 +383,7 @@ public class ClientVersioningManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(newLocalUpdate));
 			oneOf(clientHelper).addLocalMessage(txn, newLocalUpdate,
 					newLocalUpdateMeta, true, false);
-			// The client's visibility has changed
+
 			oneOf(hook).onClientVisibilityChanging(txn, contact, visibility);
 		}});
 
@@ -411,11 +411,11 @@ public class ClientVersioningManagerImplTest extends BrambleMockTestCase {
 		context.checking(new Expectations() {{
 			oneOf(clientHelper).toList(newRemoteUpdate);
 			will(returnValue(newRemoteUpdateBody));
-			// Find the latest local and remote updates
+
 			oneOf(clientHelper).getMessageMetadataAsDictionary(txn,
 					contactGroup.getId());
 			will(returnValue(messageMetadata));
-			// Delete the new remote update, which is obsolete
+
 			oneOf(db).deleteMessage(txn, newRemoteUpdate.getId());
 			oneOf(db).deleteMessageMetadata(txn, newRemoteUpdate.getId());
 		}});
@@ -447,23 +447,23 @@ public class ClientVersioningManagerImplTest extends BrambleMockTestCase {
 		context.checking(new Expectations() {{
 			oneOf(clientHelper).toList(newRemoteUpdate);
 			will(returnValue(newRemoteUpdateBody));
-			// Find the latest local and remote updates
+
 			oneOf(clientHelper).getMessageMetadataAsDictionary(txn,
 					contactGroup.getId());
 			will(returnValue(messageMetadata));
-			// Load the latest local update
+
 			oneOf(clientHelper).getMessageAsList(txn, oldLocalUpdateId);
 			will(returnValue(oldLocalUpdateBody));
-			// Load the latest remote update
+
 			oneOf(clientHelper).getMessageAsList(txn, oldRemoteUpdateId);
 			will(returnValue(oldRemoteUpdateBody));
-			// Delete the old remote update
+
 			oneOf(db).deleteMessage(txn, oldRemoteUpdateId);
 			oneOf(db).deleteMessageMetadata(txn, oldRemoteUpdateId);
-			// Get contact ID
+
 			oneOf(clientHelper).getContactId(txn, contactGroup.getId());
 			will(returnValue(contact.getId()));
-			// No states or visibilities have changed
+
 		}});
 
 		ClientVersioningManagerImpl c = createInstance();
@@ -485,18 +485,18 @@ public class ClientVersioningManagerImplTest extends BrambleMockTestCase {
 		context.checking(new Expectations() {{
 			oneOf(clientHelper).toList(newRemoteUpdate);
 			will(returnValue(newRemoteUpdateBody));
-			// Find the latest local and remote updates (no remote update)
+
 			oneOf(clientHelper).getMessageMetadataAsDictionary(txn,
 					contactGroup.getId());
 			will(returnValue(singletonMap(oldLocalUpdateId,
 					oldLocalUpdateMeta)));
-			// Load the latest local update
+
 			oneOf(clientHelper).getMessageAsList(txn, oldLocalUpdateId);
 			will(returnValue(oldLocalUpdateBody));
-			// Get contact ID
+
 			oneOf(clientHelper).getContactId(txn, contactGroup.getId());
 			will(returnValue(contact.getId()));
-			// No states or visibilities have changed
+
 		}});
 
 		ClientVersioningManagerImpl c = createInstance();
@@ -519,15 +519,15 @@ public class ClientVersioningManagerImplTest extends BrambleMockTestCase {
 
 	private void testActivatesClientOnIncomingMessage(boolean remoteActive,
 			Visibility visibility) throws Exception {
-		// The client was missing from the old remote update
+
 		BdfList oldRemoteUpdateBody = BdfList.of(new BdfList(), 1L);
-		// The client was inactive in the old local update
+
 		BdfList oldLocalUpdateBody = BdfList.of(BdfList.of(
 				BdfList.of(clientId.getString(), 123, 234, false)), 1L);
-		// The client is included in the new remote update
+
 		BdfList newRemoteUpdateBody = BdfList.of(BdfList.of(
 				BdfList.of(clientId.getString(), 123, 234, remoteActive)), 2L);
-		// The client is active in the new local update
+
 		BdfList newLocalUpdateBody = BdfList.of(BdfList.of(
 				BdfList.of(clientId.getString(), 123, 234, true)), 2L);
 
@@ -551,23 +551,23 @@ public class ClientVersioningManagerImplTest extends BrambleMockTestCase {
 		context.checking(new Expectations() {{
 			oneOf(clientHelper).toList(newRemoteUpdate);
 			will(returnValue(newRemoteUpdateBody));
-			// Find the latest local and remote updates
+
 			oneOf(clientHelper).getMessageMetadataAsDictionary(txn,
 					contactGroup.getId());
 			will(returnValue(messageMetadata));
-			// Load the latest local update
+
 			oneOf(clientHelper).getMessageAsList(txn, oldLocalUpdateId);
 			will(returnValue(oldLocalUpdateBody));
-			// Load the latest remote update
+
 			oneOf(clientHelper).getMessageAsList(txn, oldRemoteUpdateId);
 			will(returnValue(oldRemoteUpdateBody));
-			// Delete the old remote update
+
 			oneOf(db).deleteMessage(txn, oldRemoteUpdateId);
 			oneOf(db).deleteMessageMetadata(txn, oldRemoteUpdateId);
-			// Delete the old local update
+
 			oneOf(db).deleteMessage(txn, oldLocalUpdateId);
 			oneOf(db).deleteMessageMetadata(txn, oldLocalUpdateId);
-			// Store the new local update
+
 			oneOf(clock).currentTimeMillis();
 			will(returnValue(now));
 			oneOf(clientHelper).createMessage(contactGroup.getId(), now,
@@ -575,7 +575,7 @@ public class ClientVersioningManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(newLocalUpdate));
 			oneOf(clientHelper).addLocalMessage(txn, newLocalUpdate,
 					newLocalUpdateMeta, true, false);
-			// The client's visibility has changed
+
 			oneOf(clientHelper).getContactId(txn, contactGroup.getId());
 			will(returnValue(contact.getId()));
 			oneOf(db).getContact(txn, contact.getId());
@@ -591,14 +591,14 @@ public class ClientVersioningManagerImplTest extends BrambleMockTestCase {
 
 	@Test
 	public void testDeactivatesClientOnIncomingMessage() throws Exception {
-		// The client was active in the old local and remote updates
+
 		BdfList oldLocalUpdateBody = BdfList.of(BdfList.of(
 				BdfList.of(clientId.getString(), 123, 234, true)), 1L);
 		BdfList oldRemoteUpdateBody = BdfList.of(BdfList.of(
 				BdfList.of(clientId.getString(), 123, 234, true)), 1L);
-		// The client is missing from the new remote update
+
 		BdfList newRemoteUpdateBody = BdfList.of(new BdfList(), 2L);
-		// The client is inactive in the new local update
+
 		BdfList newLocalUpdateBody = BdfList.of(BdfList.of(
 				BdfList.of(clientId.getString(), 123, 234, false)), 2L);
 
@@ -622,23 +622,23 @@ public class ClientVersioningManagerImplTest extends BrambleMockTestCase {
 		context.checking(new Expectations() {{
 			oneOf(clientHelper).toList(newRemoteUpdate);
 			will(returnValue(newRemoteUpdateBody));
-			// Find the latest local and remote updates
+
 			oneOf(clientHelper).getMessageMetadataAsDictionary(txn,
 					contactGroup.getId());
 			will(returnValue(messageMetadata));
-			// Load the latest local update
+
 			oneOf(clientHelper).getMessageAsList(txn, oldLocalUpdateId);
 			will(returnValue(oldLocalUpdateBody));
-			// Load the latest remote update
+
 			oneOf(clientHelper).getMessageAsList(txn, oldRemoteUpdateId);
 			will(returnValue(oldRemoteUpdateBody));
-			// Delete the old remote update
+
 			oneOf(db).deleteMessage(txn, oldRemoteUpdateId);
 			oneOf(db).deleteMessageMetadata(txn, oldRemoteUpdateId);
-			// Delete the old local update
+
 			oneOf(db).deleteMessage(txn, oldLocalUpdateId);
 			oneOf(db).deleteMessageMetadata(txn, oldLocalUpdateId);
-			// Store the new local update
+
 			oneOf(clock).currentTimeMillis();
 			will(returnValue(now));
 			oneOf(clientHelper).createMessage(contactGroup.getId(), now,
@@ -646,7 +646,7 @@ public class ClientVersioningManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(newLocalUpdate));
 			oneOf(clientHelper).addLocalMessage(txn, newLocalUpdate,
 					newLocalUpdateMeta, true, false);
-			// The client's visibility has changed
+
 			oneOf(clientHelper).getContactId(txn, contactGroup.getId());
 			will(returnValue(contact.getId()));
 			oneOf(db).getContact(txn, contact.getId());
@@ -721,7 +721,7 @@ public class ClientVersioningManagerImplTest extends BrambleMockTestCase {
 		Map<MessageId, BdfDictionary> messageMetadata = new HashMap<>();
 		messageMetadata.put(localUpdateId, localUpdateMeta);
 		messageMetadata.put(remoteUpdateId, remoteUpdateMeta);
-		// The client is supported remotely but not locally
+
 		BdfList localUpdateBody = BdfList.of(new BdfList(), 1L);
 		BdfList remoteUpdateBody = BdfList.of(BdfList.of(
 				BdfList.of(clientId.getString(), 123, 234, false)), 1L);
@@ -756,7 +756,7 @@ public class ClientVersioningManagerImplTest extends BrambleMockTestCase {
 		Map<MessageId, BdfDictionary> messageMetadata = new HashMap<>();
 		messageMetadata.put(localUpdateId, localUpdateMeta);
 		messageMetadata.put(remoteUpdateId, remoteUpdateMeta);
-		// The client is supported locally but not remotely
+
 		BdfList localUpdateBody = BdfList.of(BdfList.of(
 				BdfList.of(clientId.getString(), 123, 234, false)), 1L);
 		BdfList remoteUpdateBody = BdfList.of(new BdfList(), 1L);
@@ -790,7 +790,7 @@ public class ClientVersioningManagerImplTest extends BrambleMockTestCase {
 		Map<MessageId, BdfDictionary> messageMetadata = new HashMap<>();
 		messageMetadata.put(localUpdateId, localUpdateMeta);
 		messageMetadata.put(remoteUpdateId, remoteUpdateMeta);
-		// The client is supported locally and remotely but not active
+
 		BdfList localUpdateBody = BdfList.of(BdfList.of(
 				BdfList.of(clientId.getString(), 123, 234, false)), 1L);
 		BdfList remoteUpdateBody = BdfList.of(BdfList.of(
@@ -825,7 +825,7 @@ public class ClientVersioningManagerImplTest extends BrambleMockTestCase {
 		Map<MessageId, BdfDictionary> messageMetadata = new HashMap<>();
 		messageMetadata.put(localUpdateId, localUpdateMeta);
 		messageMetadata.put(remoteUpdateId, remoteUpdateMeta);
-		// The client is supported locally and remotely and active
+
 		BdfList localUpdateBody = BdfList.of(BdfList.of(
 				BdfList.of(clientId.getString(), 123, 234, true)), 1L);
 		BdfList remoteUpdateBody = BdfList.of(BdfList.of(
@@ -890,7 +890,7 @@ public class ClientVersioningManagerImplTest extends BrambleMockTestCase {
 		Map<MessageId, BdfDictionary> messageMetadata = new HashMap<>();
 		messageMetadata.put(localUpdateId, localUpdateMeta);
 		messageMetadata.put(remoteUpdateId, remoteUpdateMeta);
-		// The client is not supported remotely
+
 		BdfList remoteUpdateBody = BdfList.of(new BdfList(), 1L);
 
 		expectGetContactGroup(true);
@@ -921,7 +921,7 @@ public class ClientVersioningManagerImplTest extends BrambleMockTestCase {
 		Map<MessageId, BdfDictionary> messageMetadata = new HashMap<>();
 		messageMetadata.put(localUpdateId, localUpdateMeta);
 		messageMetadata.put(remoteUpdateId, remoteUpdateMeta);
-		// The client is supported remotely but not active
+
 		BdfList remoteUpdateBody = BdfList.of(BdfList.of(
 				BdfList.of(clientId.getString(), 123, 234, false)), 1L);
 
@@ -953,7 +953,7 @@ public class ClientVersioningManagerImplTest extends BrambleMockTestCase {
 		Map<MessageId, BdfDictionary> messageMetadata = new HashMap<>();
 		messageMetadata.put(localUpdateId, localUpdateMeta);
 		messageMetadata.put(remoteUpdateId, remoteUpdateMeta);
-		// The client is supported remotely and active
+
 		BdfList remoteUpdateBody = BdfList.of(BdfList.of(
 				BdfList.of(clientId.getString(), 123, 234, true)), 1L);
 

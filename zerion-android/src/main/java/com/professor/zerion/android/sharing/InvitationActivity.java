@@ -31,7 +31,6 @@ public abstract class InvitationActivity<I extends InvitationItem>
 		extends ZerionActivity
 		implements InvitationListener, InvitationClickListener<I> {
 
-
 	private InvitationAdapter<I, ?> adapter;
 	private ZerionRecyclerView list;
 

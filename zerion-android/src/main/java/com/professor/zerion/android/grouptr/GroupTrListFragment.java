@@ -27,6 +27,7 @@ import org.briarproject.briar.api.grouptr.GroupTrManager;
 import org.briarproject.briar.api.grouptr.GroupTrState;
 import org.briarproject.briar.api.messaging.event.GroupMembershipChangedEvent;
 import org.briarproject.briar.api.messaging.event.GroupEpochCommitEvent;
+import org.briarproject.briar.api.messaging.event.GroupTrLocalStateChangedEvent;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
@@ -132,7 +133,8 @@ public class GroupTrListFragment extends BaseFragment
 	@Override
 	public void eventOccurred(Event e) {
 		if (e instanceof GroupMembershipChangedEvent
-				|| e instanceof GroupEpochCommitEvent) {
+				|| e instanceof GroupEpochCommitEvent
+				|| e instanceof GroupTrLocalStateChangedEvent) {
 			requireActivity().runOnUiThread(() -> {
 				if (e instanceof GroupMembershipChangedEvent) {
 					GroupMembershipChangedEvent ev =
@@ -176,44 +178,41 @@ public class GroupTrListFragment extends BaseFragment
 	}
 
 	private View buildRow(GroupTrState s) {
-		LinearLayout row = new LinearLayout(requireContext());
-		row.setOrientation(LinearLayout.VERTICAL);
-		row.setPadding(dp(20), dp(16), dp(20), dp(16));
-		row.setBackgroundResource(
-				android.R.drawable.list_selector_background);
-		row.setClickable(true);
-		row.setFocusable(true);
+		View row = LayoutInflater.from(requireContext()).inflate(
+				R.layout.list_item_grouptr_group, listContainer, false);
+		String name = s.getName().isEmpty()
+				? getString(R.string.grouptr_unnamed_group)
+				: s.getName();
+		TextView avatar = row.findViewById(R.id.avatarView);
+		TextView nameView = row.findViewById(R.id.nameView);
+		TextView subtitle = row.findViewById(R.id.subtitleView);
+
+		avatar.setText(name.substring(0, 1).toUpperCase());
+		nameView.setText(name);
+
+		int memberCount = s.getMembers().size();
+		String sub = getResources().getQuantityString(
+				R.plurals.grouptr_member_count, memberCount, memberCount);
+		if (s.isDissolved()) {
+			sub = sub + " · "
+					+ getString(R.string.grouptr_dissolved_suffix);
+		}
+		subtitle.setText(sub);
+
 		row.setOnClickListener(v ->
 				startActivity(GroupTrConversationActivity.intent(
 						requireContext(), s.getGroupId())));
-
-		TextView name = new TextView(requireContext());
-		name.setText(s.getName().isEmpty()
-				? getString(R.string.grouptr_unnamed_group)
-				: s.getName());
-		name.setTextSize(17);
-		name.setTypeface(name.getTypeface(),
-				android.graphics.Typeface.BOLD);
-		row.addView(name);
-
-		TextView meta = new TextView(requireContext());
-		int memberCount = s.getMembers().size();
-		String metaText = getResources().getQuantityString(
-				R.plurals.grouptr_member_count, memberCount, memberCount);
-		if (s.isDissolved()) {
-			metaText = metaText + " · "
-					+ getString(R.string.grouptr_dissolved_suffix);
-		}
-		meta.setText(metaText);
-		meta.setTextSize(13);
-		meta.setAlpha(0.7f);
-		meta.setPadding(0, dp(4), 0, 0);
-		row.addView(meta);
+		row.setOnLongClickListener(v -> {
+			showDeleteDialog(s);
+			return true;
+		});
 
 		View divider = new View(requireContext());
-		divider.setBackgroundColor(0x22FFFFFF);
+		divider.setBackgroundColor(0x14FFFFFF);
 		LinearLayout.LayoutParams dlp = new LinearLayout.LayoutParams(
-				LinearLayout.LayoutParams.MATCH_PARENT, 1);
+				LinearLayout.LayoutParams.MATCH_PARENT,
+				(int) (0.5f * getResources().getDisplayMetrics().density));
+		dlp.leftMargin = dp(82);
 		divider.setLayoutParams(dlp);
 
 		LinearLayout wrapper = new LinearLayout(requireContext());
@@ -226,6 +225,40 @@ public class GroupTrListFragment extends BaseFragment
 	private int dp(int value) {
 		return (int) (value
 				* getResources().getDisplayMetrics().density);
+	}
+
+	private void showDeleteDialog(GroupTrState s) {
+		String name = s.getName().isEmpty()
+				? getString(R.string.grouptr_unnamed_group) : s.getName();
+		int msgRes = s.isDissolved()
+				? R.string.grouptr_remove_local_dissolved_msg
+				: R.string.grouptr_remove_local_active_msg;
+		new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+				.setTitle(getString(
+						R.string.grouptr_remove_local_title, name))
+				.setMessage(msgRes)
+				.setPositiveButton(R.string.grouptr_remove_local_confirm,
+						(d, w) -> removeLocal(s.getGroupId()))
+				.setNegativeButton(android.R.string.cancel, null)
+				.show();
+	}
+
+	private void removeLocal(byte[] gid) {
+		ioExecutor.execute(() -> {
+			try {
+				groupTrManager.removeFromDevice(gid);
+				if (isAdded()) {
+					requireActivity().runOnUiThread(this::loadGroups);
+				}
+			} catch (DbException ex) {
+				if (isAdded()) {
+					requireActivity().runOnUiThread(() -> android.widget.Toast
+							.makeText(requireContext(),
+									R.string.grouptr_error_save,
+									android.widget.Toast.LENGTH_SHORT).show());
+				}
+			}
+		});
 	}
 
 	@Override

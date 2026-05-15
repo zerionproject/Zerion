@@ -8,7 +8,6 @@ import javax.annotation.concurrent.Immutable;
 import static org.briarproject.bramble.api.crypto.CryptoConstants.KEY_TYPE_SIGNATURE;
 import static org.briarproject.bramble.api.crypto.CryptoConstants.MAX_SIGNATURE_PUBLIC_KEY_BYTES;
 
-
 @Immutable
 @NotNullByDefault
 public class SignaturePublicKey extends Bytes implements PublicKey {

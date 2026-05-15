@@ -98,25 +98,25 @@ public class ByteUtilsTest extends BrambleTestCase {
 			ByteUtils.writeUint16(0, new byte[1], 0);
 			fail();
 		} catch (IllegalArgumentException expected) {
-			// Expected
+
 		}
 		try {
 			ByteUtils.writeUint16(0, new byte[2], 1);
 			fail();
 		} catch (IllegalArgumentException expected) {
-			// Expected
+
 		}
 		try {
 			ByteUtils.writeUint16(-1, new byte[2], 0);
 			fail();
 		} catch (IllegalArgumentException expected) {
-			// Expected
+
 		}
 		try {
 			ByteUtils.writeUint16(MAX_16_BIT_UNSIGNED + 1, new byte[2], 0);
 			fail();
 		} catch (IllegalArgumentException expected) {
-			// Expected
+
 		}
 	}
 
@@ -139,25 +139,25 @@ public class ByteUtilsTest extends BrambleTestCase {
 			ByteUtils.writeUint32(0, new byte[3], 0);
 			fail();
 		} catch (IllegalArgumentException expected) {
-			// Expected
+
 		}
 		try {
 			ByteUtils.writeUint32(0, new byte[4], 1);
 			fail();
 		} catch (IllegalArgumentException expected) {
-			// Expected
+
 		}
 		try {
 			ByteUtils.writeUint32(-1, new byte[4], 0);
 			fail();
 		} catch (IllegalArgumentException expected) {
-			// Expected
+
 		}
 		try {
 			ByteUtils.writeUint32(MAX_32_BIT_UNSIGNED + 1, new byte[4], 0);
 			fail();
 		} catch (IllegalArgumentException expected) {
-			// Expected
+
 		}
 	}
 
@@ -178,19 +178,19 @@ public class ByteUtilsTest extends BrambleTestCase {
 			ByteUtils.writeUint64(0, new byte[7], 0);
 			fail();
 		} catch (IllegalArgumentException expected) {
-			// Expected
+
 		}
 		try {
 			ByteUtils.writeUint64(0, new byte[8], 1);
 			fail();
 		} catch (IllegalArgumentException expected) {
-			// Expected
+
 		}
 		try {
 			ByteUtils.writeUint64(-1, new byte[8], 0);
 			fail();
 		} catch (IllegalArgumentException expected) {
-			// Expected
+
 		}
 	}
 

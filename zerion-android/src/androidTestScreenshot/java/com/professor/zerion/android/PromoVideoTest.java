@@ -50,8 +50,6 @@ import static org.junit.Assert.assertTrue;
 @RunWith(AndroidJUnit4.class)
 public class PromoVideoTest extends ScreenshotTest {
 
-	// we can leave isFilming to false (to speed up CI)
-	// and only set it to true when doing recordings
 	private static final boolean isFilming = false;
 
 	private static final int DELAY_SMALL = isFilming ? 4_000 : 0;
@@ -76,26 +74,17 @@ public class PromoVideoTest extends ScreenshotTest {
 	@Test
 	public void createAccountAddContact() throws Throwable {
 		if (isFilming) {
-			// Using this breaks emulator CI tests for some reason.
-			// Only use it for filming for now until we have time to debug this.
+
 			overlayView = OverlayView.attach(getApplicationContext());
 		}
 
-		// Splash screen shows logo
 		onView(withId(R.id.logoView))
 				.perform(waitUntilMatches(isDisplayed()));
 
-		// It takes a long time for SetupActivity to start after the splash,
-		// (because it is shown longer for videos), so increase timeout.
 		if (!isFilming) waitFor(SetupActivity.class, 30_000);
-
-		// Note: We use waiting code only when not filming,
-		//       to make the test reliable for CI. Otherwise, we used fixed
-		//       delays to deterministically align with subtitles.
 
 		sleep(DELAY_LONG);
 
-		// Enter username
 		onView(withText(R.string.setup_title))
 				.perform(waitUntilMatches(isDisplayed()));
 		sleep(DELAY_SMALL);
@@ -110,7 +99,6 @@ public class PromoVideoTest extends ScreenshotTest {
 
 		sleep(DELAY_MEDIUM);
 
-		// Enter password
 		doClick(withId(R.id.password_entry), 1000);
 		onView(withId(R.id.password_entry))
 				.check(matches(isDisplayed()))
@@ -122,12 +110,11 @@ public class PromoVideoTest extends ScreenshotTest {
 				.perform(replaceText(PASSWORD));
 
 		sleep(DELAY_SMALL);
-		// click next or create account
+
 		doClick(withId(R.id.next));
 
 		sleep(DELAY_SMALL);
 
-		// White-list Doze if needed
 		if (needsDozeWhitelisting(getApplicationContext())) {
 			doClick(withText(R.string.dnkm_doze_button));
 			UiDevice device = UiDevice.getInstance(getInstrumentation());
@@ -143,21 +130,17 @@ public class PromoVideoTest extends ScreenshotTest {
 
 		sleep(DELAY_SMALL);
 
-		// wait for contact list to be shown
 		if (!isFilming) waitFor(NavDrawerActivity.class);
 
-		// clicking the FAB doesn't work, so we click its inner FAB as well
 		onView(withId(R.id.speedDial))
 				.check(matches(isDisplayed()))
 				.perform(click());
-		doClick(withId(R.id.fab_main)); // this is inside R.id.speedDial
+		doClick(withId(R.id.fab_main));
 		sleep(DELAY_MEDIUM);
 
-		// click adding contact at a distance menu item
 		doClick(withText(R.string.add_contact_remotely_title));
 		sleep(DELAY_LONG);
 
-		// enter briar:// link
 		String link =
 				"briar://ab54fpik6sjyetzjhlwto2fv7tspibx2uhpdnei4tdidkvjpbphvy";
 		doClick(withId(R.id.pasteButton));
@@ -169,7 +152,6 @@ public class PromoVideoTest extends ScreenshotTest {
 		doClick(withId(R.id.addButton));
 		sleep(DELAY_MEDIUM);
 
-		// enter contact alias
 		String contactName = getApplicationContext()
 				.getString(R.string.screenshot_bob);
 		doClick(withId(R.id.contactNameInput), 1000);
@@ -180,24 +162,21 @@ public class PromoVideoTest extends ScreenshotTest {
 		closeKeyboard(withId(R.id.contactNameInput));
 		sleep(DELAY_SMALL);
 
-		// add pending contact
 		onView(withId(R.id.addButton)).perform(scrollTo());
 		doClick(withId(R.id.addButton));
 		sleep(DELAY_LONG);
 
-		// wait for pending contact list activity to be shown
 		if (!isFilming) {
 			waitFor(PendingContactListActivity.class);
 			waitFor(allOf(withText(R.string.pending_contact_requests),
 					isDisplayed()));
 		}
 
-		// remove pending contact
 		for (Pair<PendingContact, PendingContactState> p : contactManager
 				.getPendingContacts()) {
 			contactManager.removePendingContact(p.getFirst().getId());
 		}
-		// add contact and make them appear online
+
 		Contact bob = testDataCreator.addContact(contactName, false, true);
 		sleep(DELAY_SMALL);
 		connectionRegistry.registerIncomingConnection(bob.getId(), ID, () -> {
@@ -205,7 +184,6 @@ public class PromoVideoTest extends ScreenshotTest {
 
 		sleep(DELAY_LONG);
 
-		// wait for contact list to be shown
 		if (!isFilming) {
 			waitFor(NavDrawerActivity.class);
 			waitFor(allOf(withText(R.string.contact_list_button),
@@ -213,12 +191,10 @@ public class PromoVideoTest extends ScreenshotTest {
 			waitFor(allOf(withId(R.id.recyclerView), isDisplayed()));
 		}
 
-		// click on new contact
 		doItemClick(withId(R.id.recyclerView), 0);
 
 		sleep(DELAY_MEDIUM);
 
-		// bring up keyboard
 		doClick(withId(R.id.input_text), DELAY_SMALL);
 
 		String msg1 = getApplicationContext()
@@ -233,14 +209,12 @@ public class PromoVideoTest extends ScreenshotTest {
 
 		sleep(DELAY_SMALL);
 
-		// send emoji
 		doClick(withId(R.id.emoji_toggle), DELAY_SMALL);
 		onView(withId(R.id.input_text))
 				.perform(replaceText("\uD83D\uDE0E"));
 		sleep(DELAY_SMALL);
 		doClick(withId(R.id.compositeSendButton));
 
-		// close keyboard
 		closeKeyboard(withId(R.id.compositeSendButton));
 
 		sleep(DELAY_LONG);

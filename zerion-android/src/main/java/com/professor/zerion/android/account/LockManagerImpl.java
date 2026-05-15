@@ -48,7 +48,6 @@ import static com.professor.zerion.android.util.UiUtils.hasScreenLock;
 @ParametersNotNullByDefault
 public class LockManagerImpl implements LockManager, Service, EventListener {
 
-
 	private final Context appContext;
 	private final SettingsManager settingsManager;
 	private final AndroidNotificationManager notificationManager;
@@ -138,11 +137,7 @@ public class LockManagerImpl implements LockManager, Service, EventListener {
 	@UiThread
 	@Override
 	public void checkIfLockable() {
-		// Constructor uses postValue(false), which is async. If
-		// NavDrawerActivity.onStart fires before that post is dispatched
-		// (race on cold start), getValue() returns null and unboxing
-		// crashes the app. Treat absent value as "not yet known" → null
-		// → false, then setValue establishes the correct state.
+
 		Boolean current = lockable.getValue();
 		boolean oldValue = current != null && current;
 		boolean newValue = hasScreenLock(appContext) && lockableSetting;
@@ -184,7 +179,7 @@ public class LockManagerImpl implements LockManager, Service, EventListener {
 			try {
 				applySettings(settingsManager.getSettings(SETTINGS_NAMESPACE));
 			} catch (DbException e) {
-				
+
 			}
 		});
 	}

@@ -23,12 +23,12 @@ public class StreamReaderWriterIntegrationTest extends BrambleTestCase {
 
 	@Test
 	public void testWriteAndRead() throws Exception {
-		// Generate a random tag
+
 		byte[] tag = TestUtils.getRandomBytes(TAG_LENGTH);
-		// Generate two frames with random payloads
+
 		byte[] payload1 = TestUtils.getRandomBytes(123);
 		byte[] payload2 = TestUtils.getRandomBytes(321);
-		// Write the tag and the frames
+
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		StreamEncrypter encrypter = new TestStreamEncrypter(out, tag);
 		OutputStream streamWriter = new StreamWriterImpl(encrypter);
@@ -41,12 +41,12 @@ public class StreamReaderWriterIntegrationTest extends BrambleTestCase {
 				+ FRAME_HEADER_LENGTH  + payload1.length + MAC_LENGTH
 				+ FRAME_HEADER_LENGTH  + payload2.length + MAC_LENGTH,
 				output.length);
-		// Read the tag back
+
 		ByteArrayInputStream in = new ByteArrayInputStream(output);
 		byte[] recoveredTag = new byte[tag.length];
 		read(in, recoveredTag);
 		assertArrayEquals(tag, recoveredTag);
-		// Read the frames back
+
 		StreamDecrypter decrypter = new TestStreamDecrypter(in);
 		InputStream streamReader = new StreamReaderImpl(decrypter);
 		byte[] recoveredPayload1 = new byte[payload1.length];

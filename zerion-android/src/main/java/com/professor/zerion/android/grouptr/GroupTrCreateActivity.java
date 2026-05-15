@@ -39,6 +39,7 @@ public class GroupTrCreateActivity extends ZerionActivity {
 	Executor ioExecutor;
 
 	private TextInputEditText nameInput;
+	private TextInputEditText nicknameInput;
 	private TextView disappearingValue;
 	private MaterialSwitch screenshotSwitch;
 	private MaterialButton createButton;
@@ -58,6 +59,7 @@ public class GroupTrCreateActivity extends ZerionActivity {
 		toolbar.setNavigationOnClickListener(v -> finish());
 
 		nameInput = findViewById(R.id.groupNameInput);
+		nicknameInput = findViewById(R.id.nicknameInput);
 		disappearingValue = findViewById(R.id.disappearingValue);
 		screenshotSwitch = findViewById(R.id.screenshotSwitch);
 		createButton = findViewById(R.id.createButton);
@@ -111,6 +113,8 @@ public class GroupTrCreateActivity extends ZerionActivity {
 		String name = nameInput.getText() == null ? "" :
 				nameInput.getText().toString().trim();
 		if (name.isEmpty()) return;
+		String nickname = nicknameInput.getText() == null ? "" :
+				nicknameInput.getText().toString().trim();
 		createButton.setEnabled(false);
 		boolean screenshotBlock = screenshotSwitch.isChecked();
 		long ttl = ttlSeconds;
@@ -118,10 +122,17 @@ public class GroupTrCreateActivity extends ZerionActivity {
 			try {
 				GroupTrState s = groupTrManager.createGroup(name);
 				byte[] gid = s.getGroupId();
+				if (!nickname.isEmpty()) {
+					groupTrManager.setStealthName(gid, nickname);
+				}
+				if (ttl > 0L) {
+					groupTrManager.setGroupAutoDeleteTimer(gid,
+							ttl * 1000L);
+				}
+				if (screenshotBlock) {
+					groupTrManager.setLocalScreenshotBlocked(gid, true);
+				}
 				runOnUiThread(() -> {
-					GroupTrLocalPrefs.saveScreenshotBlocked(this, gid,
-							screenshotBlock);
-					GroupTrLocalPrefs.saveDisappearingTtl(this, gid, ttl);
 					Intent i = GroupTrInviteMembersActivity.intent(this, gid);
 					startActivity(i);
 					finish();

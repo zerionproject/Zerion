@@ -4,7 +4,6 @@ import static org.briarproject.bramble.api.sync.SyncConstants.MAX_TRANSPORT_LATE
 
 class ExponentialBackoff {
 
-	
 	static long calculateExpiry(long now, long maxLatency, int txCount) {
 		if (now < 0) throw new IllegalArgumentException();
 		if (maxLatency <= 0 || maxLatency > MAX_TRANSPORT_LATENCY) {

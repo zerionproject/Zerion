@@ -61,11 +61,7 @@ import static org.briarproject.bramble.util.StringUtils.getRandomString;
 
 public class TestUtils {
 
-	/**
-	 * Maximum message body length for tests. Smaller than production limit
-	 * to ensure HSQLDB compatibility and fast test execution.
-	 */
-	public static final int MAX_TEST_MESSAGE_BODY_LENGTH = 64 * 1024; // 64 KB
+	public static final int MAX_TEST_MESSAGE_BODY_LENGTH = 64 * 1024;
 
 	private static final AtomicInteger nextTestDir =
 			new AtomicInteger((int) (Math.random() * 1000 * 1000));
@@ -80,7 +76,7 @@ public class TestUtils {
 
 	public static void deleteTestDirectory(File testDir) {
 		IoUtils.deleteFileOrDir(testDir);
-		testDir.getParentFile().delete(); // Delete if empty
+		testDir.getParentFile().delete();
 	}
 
 	public static byte[] getRandomBytes(int length) {
@@ -230,7 +226,7 @@ public class TestUtils {
 	public static void writeBytes(File file, byte[] bytes)
 			throws IOException {
 		FileOutputStream outputStream = new FileOutputStream(file);
-		//noinspection TryFinallyCanBeTryWithResources
+
 		try {
 			outputStream.write(bytes);
 		} finally {

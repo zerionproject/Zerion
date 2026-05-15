@@ -143,11 +143,6 @@ public class TorStatusMonitor {
         }
     }
 
-    /**
-     * Tests Tor connectivity by performing a SOCKS5 handshake with the local
-     * Tor SOCKS port. This verifies Tor is accepting connections without
-     * making any external network requests that could leak DNS or IP.
-     */
     private boolean testTorConnection() {
         java.net.Socket socket = null;
         try {
@@ -155,12 +150,12 @@ public class TorStatusMonitor {
             socket.connect(new InetSocketAddress("127.0.0.1", torSocksPort), 2000);
             java.io.OutputStream out = socket.getOutputStream();
             java.io.InputStream in = socket.getInputStream();
-            // SOCKS5 greeting: version 5, 1 auth method, no auth
+
             out.write(new byte[]{0x05, 0x01, 0x00});
             out.flush();
             byte[] response = new byte[2];
             int read = in.read(response);
-            // Valid SOCKS5 response: version 5, accepted no-auth
+
             return read == 2 && response[0] == 0x05 && response[1] == 0x00;
         } catch (Exception e) {
             return false;
@@ -172,26 +167,25 @@ public class TorStatusMonitor {
     }
 
     private boolean isTorProcessRunning() {
-        // Check if Tor is running via SOCKS port probe
+
         return isTorSocksActive();
     }
 
     private int getBootstrapProgress() {
-        // Return cached value once fully bootstrapped
+
         if (cachedBootstrapProgress >= 100) return 100;
 
         try {
             File torLog = new File(context.getFilesDir(), "tor/tor.log");
             if (!torLog.exists()) return 0;
 
-            // Tail-read: only read the last 4KB of the file
             int maxProgress = 0;
             try (RandomAccessFile raf = new RandomAccessFile(torLog, "r")) {
                 long length = raf.length();
                 long tailSize = 4096;
                 if (length > tailSize) {
                     raf.seek(length - tailSize);
-                    raf.readLine(); // skip partial first line
+                    raf.readLine();
                 }
                 String line;
                 while ((line = raf.readLine()) != null) {
@@ -362,8 +356,7 @@ public class TorStatusMonitor {
     }
 
     private String getCurrentExitIp() {
-        // Never make external requests to discover exit IP.
-        // Tor exit IPs are hidden by design — exposing them is a privacy risk.
+
         return "Hidden";
     }
 
@@ -476,7 +469,6 @@ public class TorStatusMonitor {
         }
     }
 
-    
     public static class BandwidthUpdate {
         public final long downloadSpeed;
         public final long uploadSpeed;

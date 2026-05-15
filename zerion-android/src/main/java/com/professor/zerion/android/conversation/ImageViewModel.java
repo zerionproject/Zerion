@@ -51,7 +51,6 @@ import static org.briarproject.bramble.util.IoUtils.copyAndClose;
 @NotNullByDefault
 public class ImageViewModel extends DbViewModel implements EventListener {
 
-
 	private final AttachmentReader attachmentReader;
 	private final EventBus eventBus;
 	@IoExecutor

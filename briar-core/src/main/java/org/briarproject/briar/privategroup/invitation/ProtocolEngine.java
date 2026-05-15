@@ -16,7 +16,6 @@ interface ProtocolEngine<S extends Session<?>> {
 
 	S onJoinAction(Transaction txn, S session) throws DbException;
 
-	
 	S onLeaveAction(Transaction txn, S session, boolean isAutoDecline)
 			throws DbException;
 

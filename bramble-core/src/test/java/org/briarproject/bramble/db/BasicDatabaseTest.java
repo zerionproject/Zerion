@@ -53,27 +53,27 @@ public abstract class BasicDatabaseTest extends BrambleTestCase {
 	public void testInsertUpdateAndDelete() throws Exception {
 		Connection connection = openConnection(db, false);
 		try {
-			// Create the table
+
 			createTable(connection);
-			// Generate an ID and two names
+
 			byte[] id = TestUtils.getRandomId();
 			String oldName = StringUtils.getRandomString(50);
 			String newName = StringUtils.getRandomString(50);
-			// Insert the ID and old name into the table
+
 			insertRow(connection, id, oldName);
-			// Check that the old name can be retrieved using the ID
+
 			assertTrue(rowExists(connection, id));
 			assertEquals(oldName, getName(connection, id));
-			// Update the name
+
 			updateRow(connection, id, newName);
-			// Check that the new name can be retrieved using the ID
+
 			assertTrue(rowExists(connection, id));
 			assertEquals(newName, getName(connection, id));
-			// Delete the row from the table
+
 			assertTrue(deleteRow(connection, id));
-			// Check that the row no longer exists
+
 			assertFalse(rowExists(connection, id));
-			// Deleting the row again should have no effect
+
 			assertFalse(deleteRow(connection, id));
 		} finally {
 			connection.close();
@@ -85,9 +85,9 @@ public abstract class BasicDatabaseTest extends BrambleTestCase {
 	public void testBatchInsertUpdateAndDelete() throws Exception {
 		Connection connection = openConnection(db, false);
 		try {
-			// Create the table
+
 			createTable(connection);
-			// Generate some IDs and two sets of names
+
 			byte[][] ids = new byte[BATCH_SIZE][];
 			String[] oldNames = new String[BATCH_SIZE];
 			String[] newNames = new String[BATCH_SIZE];
@@ -96,23 +96,23 @@ public abstract class BasicDatabaseTest extends BrambleTestCase {
 				oldNames[i] = StringUtils.getRandomString(50);
 				newNames[i] = StringUtils.getRandomString(50);
 			}
-			// Insert the IDs and old names into the table as a batch
+
 			insertBatch(connection, ids, oldNames);
-			// Update the names as a batch
+
 			updateBatch(connection, ids, newNames);
-			// Check that the new names can be retrieved using the IDs
+
 			for (int i = 0; i < BATCH_SIZE; i++) {
 				assertTrue(rowExists(connection, ids[i]));
 				assertEquals(newNames[i], getName(connection, ids[i]));
 			}
-			// Delete the rows as a batch
+
 			boolean[] deleted = deleteBatch(connection, ids);
-			// Check that the rows no longer exist
+
 			for (int i = 0; i < BATCH_SIZE; i++) {
 				assertTrue(deleted[i]);
 				assertFalse(rowExists(connection, ids[i]));
 			}
-			// Deleting the rows again should have no effect
+
 			deleted = deleteBatch(connection, ids);
 			for (int i = 0; i < BATCH_SIZE; i++) assertFalse(deleted[i]);
 		} finally {
@@ -143,19 +143,19 @@ public abstract class BasicDatabaseTest extends BrambleTestCase {
 		};
 		Connection connection = openConnection(db, false);
 		try {
-			// Create the table
+
 			createTable(connection);
-			// Insert the rows
+
 			insertRow(connection, first, "first");
 			insertRow(connection, second, "second");
 			insertRow(connection, third, "third");
 			insertRow(connection, null, "null");
-			// Check the ordering of the < operator: null is not comparable
+
 			assertNull(getPredecessor(connection, first));
 			assertEquals("first", getPredecessor(connection, second));
 			assertEquals("second", getPredecessor(connection, third));
 			assertNull(getPredecessor(connection, null));
-			// Check the ordering of ORDER BY: nulls come first
+
 			List<String> names = getNames(connection);
 			assertEquals(4, names.size());
 			assertEquals("null", names.get(0));

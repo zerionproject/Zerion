@@ -18,7 +18,7 @@ class BaseTest {
 	protected volatile Throwable exceptionInBackgroundThread = null;
 
 	BaseTest() {
-		// Ensure exceptions thrown on worker threads cause tests to fail
+
 		Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
 			LOG.log(WARNING, "Caught unhandled exception", throwable);
 			exceptionInBackgroundThread = throwable;

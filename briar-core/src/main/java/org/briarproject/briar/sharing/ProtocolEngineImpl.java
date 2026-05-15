@@ -653,7 +653,6 @@ abstract class ProtocolEngineImpl<S extends Shareable>
 		return !dependency.equals(expected);
 	}
 
-	
 	private long getTimestampForVisibleMessage(Transaction txn, Session s)
 			throws DbException {
 		ContactId c = clientHelper.getContactId(txn, s.getContactGroupId());
@@ -662,12 +661,10 @@ abstract class ProtocolEngineImpl<S extends Shareable>
 		return max(conversationTimestamp, getSessionTimestamp(s) + 1);
 	}
 
-	
 	private long getTimestampForInvisibleMessage(Session s) {
 		return max(clock.currentTimeMillis(), getSessionTimestamp(s) + 1);
 	}
 
-	
 	private long getSessionTimestamp(Session s) {
 		return max(s.getLocalTimestamp(), s.getInviteTimestamp());
 	}

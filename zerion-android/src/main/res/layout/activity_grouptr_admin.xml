@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="@drawable/bg_zerion_gradient"
+	android:fitsSystemWindows="true"
+	android:orientation="vertical">
+
+	<com.google.android.material.appbar.AppBarLayout
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:background="@drawable/bg_toolbar_gradient">
+
+		<com.google.android.material.appbar.MaterialToolbar
+			android:id="@+id/toolbar"
+			style="@style/Zerion.Toolbar"
+			android:layout_width="match_parent"
+			android:layout_height="?attr/actionBarSize"
+			app:navigationIcon="@drawable/ic_arrow_back"
+			app:navigationIconTint="@android:color/white"
+			app:title="@string/grouptr_group_settings"
+			app:titleTextColor="@android:color/white" />
+
+	</com.google.android.material.appbar.AppBarLayout>
+
+	<ScrollView
+		android:layout_width="match_parent"
+		android:layout_height="match_parent">
+
+		<LinearLayout
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:orientation="vertical"
+			android:paddingBottom="32dp">
+
+			<LinearLayout
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:background="@android:color/transparent"
+				android:gravity="center"
+				android:orientation="vertical"
+				android:padding="24dp">
+
+				<TextView
+					android:id="@+id/headerAvatar"
+					android:layout_width="96dp"
+					android:layout_height="96dp"
+					android:background="@drawable/badge_circle_cyan"
+					android:gravity="center"
+					android:textColor="@android:color/white"
+					android:textSize="34sp"
+					android:textStyle="bold"
+					tools:text="F" />
+
+				<TextView
+					android:id="@+id/headerName"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:layout_marginTop="16dp"
+					android:ellipsize="end"
+					android:gravity="center"
+					android:maxLines="2"
+					android:textColor="@android:color/white"
+					android:textSize="22sp"
+					android:textStyle="bold"
+					tools:text="Family" />
+
+				<TextView
+					android:id="@+id/headerSubtitle"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:layout_marginTop="6dp"
+					android:ellipsize="end"
+					android:gravity="center"
+					android:maxLines="1"
+					android:textColor="?android:attr/textColorSecondary"
+					android:textSize="13sp"
+					tools:text="4 members · End-to-end encrypted" />
+
+			</LinearLayout>
+
+			<LinearLayout
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:layout_marginStart="16dp"
+				android:layout_marginEnd="16dp"
+				android:background="@drawable/bg_contact_card"
+				android:orientation="vertical"
+				android:padding="8dp">
+
+				<TextView
+					android:id="@+id/membersHeader"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:padding="16dp"
+					android:textColor="@android:color/white"
+					android:textSize="16sp"
+					android:textStyle="bold"
+					tools:text="Members (4)" />
+
+				<LinearLayout
+					android:id="@+id/membersContainer"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:orientation="vertical"
+					android:paddingBottom="4dp" />
+
+			</LinearLayout>
+
+			<LinearLayout
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:layout_marginStart="16dp"
+				android:layout_marginEnd="16dp"
+				android:layout_marginTop="16dp"
+				android:background="@drawable/bg_contact_card"
+				android:orientation="vertical"
+				android:padding="8dp">
+
+				<TextView
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:padding="16dp"
+					android:text="@string/grouptr_admin_section_group_settings"
+					android:textColor="@android:color/white"
+					android:textSize="16sp"
+					android:textStyle="bold" />
+
+				<LinearLayout
+					android:id="@+id/actionAddMember"
+					style="@style/GroupTrAdminActionRow">
+
+					<ImageView
+						style="@style/GroupTrAdminActionIcon"
+						android:src="@drawable/ic_person_add"
+						android:contentDescription="@null"
+						app:tint="@color/zerion_primary_accent" />
+
+					<TextView
+						style="@style/GroupTrAdminActionText"
+						android:text="@string/grouptr_add_member" />
+
+				</LinearLayout>
+
+				<LinearLayout
+					android:id="@+id/actionStealth"
+					style="@style/GroupTrAdminActionRow"
+					android:visibility="gone">
+
+					<ImageView
+						style="@style/GroupTrAdminActionIcon"
+						android:src="@drawable/ic_lock"
+						android:contentDescription="@null"
+						app:tint="@color/zerion_primary_accent" />
+
+					<TextView
+						style="@style/GroupTrAdminActionText"
+						android:text="@string/grouptr_stealth_name_set" />
+
+				</LinearLayout>
+
+				<LinearLayout
+					android:id="@+id/actionTtl"
+					style="@style/GroupTrAdminActionRow">
+
+					<ImageView
+						style="@style/GroupTrAdminActionIcon"
+						android:src="@drawable/ic_timer"
+						android:contentDescription="@null"
+						app:tint="@color/zerion_primary_accent" />
+
+					<LinearLayout
+						android:layout_width="0dp"
+						android:layout_height="wrap_content"
+						android:layout_weight="1"
+						android:orientation="vertical">
+
+						<TextView
+							android:layout_width="wrap_content"
+							android:layout_height="wrap_content"
+							android:text="@string/grouptr_default_ttl_set"
+							android:textColor="@android:color/white"
+							android:textSize="16sp" />
+
+						<TextView
+							android:id="@+id/actionTtlText"
+							android:layout_width="wrap_content"
+							android:layout_height="wrap_content"
+							android:layout_marginTop="2dp"
+							android:textColor="?android:attr/textColorSecondary"
+							android:textSize="12sp"
+							tools:text="Off" />
+
+					</LinearLayout>
+
+				</LinearLayout>
+
+			</LinearLayout>
+
+			<LinearLayout
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:layout_marginStart="16dp"
+				android:layout_marginEnd="16dp"
+				android:layout_marginTop="16dp"
+				android:background="@drawable/bg_contact_card"
+				android:orientation="vertical"
+				android:padding="8dp">
+
+				<TextView
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:padding="16dp"
+					android:text="@string/grouptr_admin_section_danger"
+					android:textColor="@color/zerion_red_500_new"
+					android:textSize="16sp"
+					android:textStyle="bold" />
+
+				<LinearLayout
+					android:id="@+id/dangerContainer"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:orientation="vertical"
+					android:paddingBottom="4dp" />
+
+			</LinearLayout>
+
+			<com.google.android.material.button.MaterialButton
+				android:id="@+id/openChatButton"
+				style="@style/Widget.Material3.Button"
+				android:layout_width="match_parent"
+				android:layout_height="48dp"
+				android:layout_marginStart="16dp"
+				android:layout_marginEnd="16dp"
+				android:layout_marginTop="24dp"
+				android:insetTop="0dp"
+				android:insetBottom="0dp"
+				android:text="@string/grouptr_open_chat"
+				android:textColor="@android:color/white"
+				android:textSize="15sp"
+				android:textStyle="bold"
+				app:backgroundTint="@color/zerion_primary_accent"
+				app:cornerRadius="24dp"
+				app:icon="@drawable/ic_chat"
+				app:iconGravity="textStart"
+				app:iconPadding="8dp"
+				app:iconTint="@android:color/white" />
+
+		</LinearLayout>
+
+	</ScrollView>
+
+</LinearLayout>

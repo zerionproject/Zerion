@@ -20,7 +20,7 @@ public abstract class BrambleTestCase {
 	protected volatile Throwable exceptionInBackgroundThread = null;
 
 	public BrambleTestCase() {
-		// Ensure exceptions thrown on worker threads cause tests to fail
+
 		UncaughtExceptionHandler fail = (thread, throwable) -> {
 			LOG.log(WARNING, "Caught unhandled exception", throwable);
 			exceptionInBackgroundThread = throwable;

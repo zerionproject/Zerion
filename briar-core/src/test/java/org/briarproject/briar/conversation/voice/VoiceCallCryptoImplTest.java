@@ -8,13 +8,6 @@ import java.util.Arrays;
 
 import static org.junit.Assert.*;
 
-/**
- * Unit tests for VoiceCallCryptoImpl
- * <p>
- * Note: These tests focus on the encode/decode functionality which doesn't
- * require a CryptoComponent. Full integration tests with real CryptoComponent
- * can be found in the integration test suite.
- */
 public class VoiceCallCryptoImplTest {
 
 	@Test
@@ -31,7 +24,7 @@ public class VoiceCallCryptoImplTest {
 
 		assertNotNull(encoded);
 		assertTrue(encoded.length() > 0);
-		// Hex encoding of 32 bytes = 64 hex characters
+
 		assertEquals(64, encoded.length());
 		assertTrue(encoded.matches("[0-9A-Fa-f]+"));
 
@@ -84,7 +77,6 @@ public class VoiceCallCryptoImplTest {
 	public void testDecodeValidHex() {
 		VoiceCallCryptoImpl crypto = new VoiceCallCryptoImpl(null);
 
-		// Known hex string (32 bytes of sequential values 0-31)
 		String knownEncoded =
 				"000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f";
 
@@ -132,13 +124,6 @@ public class VoiceCallCryptoImplTest {
 		assertEquals(encoded1, encoded2);
 	}
 
-	// ---- Fix 1 regression tests: multi-frame encrypt/decrypt ----
-
-	/**
-	 * Verifies that the same key can encrypt 100 frames and each one
-	 * round-trips correctly through decrypt. Before the clone() fix,
-	 * the key was zeroed after frame #1, breaking all subsequent frames.
-	 */
 	@Test
 	public void testMultiFrameEncryptDecryptRoundTrip() {
 		VoiceCallCryptoImpl crypto = new VoiceCallCryptoImpl(null);
@@ -155,31 +140,21 @@ public class VoiceCallCryptoImplTest {
 					plaintext, decrypted);
 		}
 
-		// Key must remain intact after all 100 frames
 		assertArrayEquals("Key was mutated during encrypt/decrypt",
 				originalKeyBytes, key.getBytes());
 	}
 
-	/**
-	 * Regression: after frame #1 the old code used an all-zero key.
-	 * This test encrypts frame #2 with the real key and with an all-zero
-	 * key, and asserts they differ. If clone() is missing, they'd match.
-	 */
 	@Test
 	public void testFrame2DoesNotMatchZeroKeyEncryption() {
 		VoiceCallCryptoImpl crypto = new VoiceCallCryptoImpl(null);
 		SecretKey realKey = makeTestKey();
 
-		// Encrypt frame 1 (consumes key if clone is missing)
 		byte[] frame1 = makeFrame(160, (byte) 0xAA);
 		crypto.encryptAudioFrame(frame1, realKey);
 
-		// Encrypt frame 2 with the real key
 		byte[] frame2 = makeFrame(160, (byte) 0xBB);
 		byte[] ciphertextReal = crypto.encryptAudioFrame(frame2, realKey);
 
-		// Verify the real key decrypts its own ciphertext and an all-zero
-		// key (what old code would use after frame #1) does NOT
 		SecretKey zeroKey = new SecretKey(new byte[32]);
 		byte[] decryptedReal = crypto.decryptAudioFrame(ciphertextReal,
 				realKey);
@@ -189,14 +164,10 @@ public class VoiceCallCryptoImplTest {
 			crypto.decryptAudioFrame(ciphertextReal, zeroKey);
 			fail("Zero key should not decrypt real-key ciphertext");
 		} catch (RuntimeException expected) {
-			// GCM tag mismatch — correct behavior
+
 		}
 	}
 
-	/**
-	 * Verifies the counter-based encrypt overload also preserves the key
-	 * across multiple frames.
-	 */
 	@Test
 	public void testMultiFrameCounterBasedEncrypt() {
 		VoiceCallCryptoImpl crypto = new VoiceCallCryptoImpl(null);
@@ -217,10 +188,6 @@ public class VoiceCallCryptoImplTest {
 				originalKeyBytes, key.getBytes());
 	}
 
-	/**
-	 * Counter-based encrypt uses the key bytes in nonce derivation.
-	 * Verify that nonce differs per counter (no nonce reuse).
-	 */
 	@Test
 	public void testCounterBasedNonceUniqueness() {
 		VoiceCallCryptoImpl crypto = new VoiceCallCryptoImpl(null);
@@ -230,15 +197,10 @@ public class VoiceCallCryptoImplTest {
 		byte[] ct0 = crypto.encryptAudioFrame(plaintext, key, 0);
 		byte[] ct1 = crypto.encryptAudioFrame(plaintext, key, 1);
 
-		// Same key + same plaintext but different counters => different
-		// ciphertext (nonce differs)
 		assertFalse("Nonce reuse: counter 0 vs 1 produced same ciphertext",
 				Arrays.equals(ct0, ct1));
 	}
 
-	/**
-	 * Property test: random plaintext sizes and keys all round-trip.
-	 */
 	@Test
 	public void testRandomFramesRoundTrip() {
 		VoiceCallCryptoImpl crypto = new VoiceCallCryptoImpl(null);
@@ -261,11 +223,6 @@ public class VoiceCallCryptoImplTest {
 		}
 	}
 
-	/**
-	 * Verifies cross-decryption: Alice encrypts with txKey, Bob decrypts
-	 * with the same key (simulating alice.txKey == bob.rxKey).
-	 * Both must survive 50 frames without key corruption.
-	 */
 	@Test
 	public void testAliceBobMultiFrameSymmetry() {
 		VoiceCallCryptoImpl crypto = new VoiceCallCryptoImpl(null);
@@ -287,12 +244,9 @@ public class VoiceCallCryptoImplTest {
 					plaintext, decrypted);
 		}
 
-		// Both keys must remain intact
 		assertArrayEquals(aliceKeyBytes, aliceTx.getBytes());
 		assertArrayEquals(bobKeyBytes, bobRx.getBytes());
 	}
-
-	// ---- helpers ----
 
 	private static SecretKey makeTestKey() {
 		byte[] keyBytes = new byte[32];

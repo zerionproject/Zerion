@@ -257,7 +257,7 @@ class CountryCodes {
 		Country from = COUNTRY_MAP.get(callerIso);
 		Country to = COUNTRY_MAP.get(calleeIso);
 		if (from == null || to == null) return null;
-		// Strip any prefixes and country codes from the number
+
 		String plusCountryCode = "+" + to.countryCode;
 		String iddCountryCode = to.idd + to.countryCode;
 		if (number.startsWith(plusCountryCode))
@@ -266,8 +266,8 @@ class CountryCodes {
 			number = number.substring(iddCountryCode.length());
 		else if (number.startsWith(to.ndd))
 			number = number.substring(to.ndd.length());
-		if (from == to) return from.ndd + number; // National
-		return from.idd + to.countryCode + number; // International
+		if (from == to) return from.ndd + number;
+		return from.idd + to.countryCode + number;
 	}
 
 	private static class Country {

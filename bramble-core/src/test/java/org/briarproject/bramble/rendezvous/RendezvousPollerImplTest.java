@@ -113,13 +113,12 @@ public class RendezvousPollerImplTest extends BrambleMockTestCase {
 		long afterExpiry = beforeExpiry + POLLING_INTERVAL_MS;
 		AtomicReference<Runnable> capturePollTask;
 
-		// Start the service
 		context.checking(new DbExpectations() {{
-			// Load the pending contacts
+
 			oneOf(db).transaction(with(true), withDbRunnable(txn));
 			oneOf(db).getPendingContacts(txn);
 			will(returnValue(singletonList(pendingContact)));
-			// The pending contact has not expired
+
 			oneOf(clock).currentTimeMillis();
 			will(returnValue(beforeExpiry));
 			oneOf(eventBus).broadcast(with(new PredicateMatcher<>(
@@ -133,7 +132,6 @@ public class RendezvousPollerImplTest extends BrambleMockTestCase {
 		rendezvousPoller.startService();
 		context.assertIsSatisfied();
 
-		// Run the poll task - pending contact expires, polling is cancelled
 		expectPendingContactExpires(afterExpiry);
 		expectCancelPolling();
 
@@ -145,13 +143,12 @@ public class RendezvousPollerImplTest extends BrambleMockTestCase {
 		Transaction txn = new Transaction(null, true);
 		long atExpiry = pendingContact.getTimestamp() + RENDEZVOUS_TIMEOUT_MS;
 
-		// Start the service
 		context.checking(new DbExpectations() {{
-			// Load the pending contacts
+
 			oneOf(db).transaction(with(true), withDbRunnable(txn));
 			oneOf(db).getPendingContacts(txn);
 			will(returnValue(singletonList(pendingContact)));
-			// The pending contact has already expired
+
 			oneOf(clock).currentTimeMillis();
 			will(returnValue(atExpiry));
 			oneOf(eventBus).broadcast(with(new PredicateMatcher<>(
@@ -167,26 +164,22 @@ public class RendezvousPollerImplTest extends BrambleMockTestCase {
 			throws Exception {
 		long beforeExpiry = pendingContact.getTimestamp();
 
-		// Start the service
 		expectStartupWithNoPendingContacts();
 
 		rendezvousPoller.startService();
 		context.assertIsSatisfied();
 
-		// Activate the transport - no endpoints should be created yet
 		expectGetPlugin();
 
 		rendezvousPoller.eventOccurred(new TransportActiveEvent(transportId));
 		context.assertIsSatisfied();
 
-		// Add the pending contact - endpoint should be created and polled,
-		// polling should be scheduled
 		expectAddPendingContact(beforeExpiry, WAITING_FOR_CONNECTION);
 		expectDeriveRendezvousKey();
 		expectCreateEndpoint();
 
 		context.checking(new Expectations() {{
-			// Poll newly added pending contact
+
 			oneOf(rendezvousEndpoint).getRemoteTransportProperties();
 			will(returnValue(transportProperties));
 			oneOf(clock).currentTimeMillis();
@@ -203,8 +196,6 @@ public class RendezvousPollerImplTest extends BrambleMockTestCase {
 				new PendingContactAddedEvent(pendingContact));
 		context.assertIsSatisfied();
 
-		// Remove the pending contact - endpoint should be closed,
-		// polling should be cancelled
 		expectCloseEndpoint();
 		expectCancelPolling();
 
@@ -212,7 +203,6 @@ public class RendezvousPollerImplTest extends BrambleMockTestCase {
 				new PendingContactRemovedEvent(pendingContact.getId()));
 		context.assertIsSatisfied();
 
-		// Deactivate the transport - endpoint is already closed
 		rendezvousPoller.eventOccurred(new TransportInactiveEvent(transportId));
 	}
 
@@ -224,26 +214,22 @@ public class RendezvousPollerImplTest extends BrambleMockTestCase {
 		long afterExpiry = beforeExpiry + POLLING_INTERVAL_MS;
 		AtomicReference<Runnable> capturePollTask;
 
-		// Start the service
 		expectStartupWithNoPendingContacts();
 
 		rendezvousPoller.startService();
 		context.assertIsSatisfied();
 
-		// Activate the transport - no endpoints should be created yet
 		expectGetPlugin();
 
 		rendezvousPoller.eventOccurred(new TransportActiveEvent(transportId));
 		context.assertIsSatisfied();
 
-		// Add the pending contact - endpoint should be created and polled,
-		// polling should be scheduled
 		expectAddPendingContact(beforeExpiry, WAITING_FOR_CONNECTION);
 		expectDeriveRendezvousKey();
 		expectCreateEndpoint();
 
 		context.checking(new Expectations() {{
-			// Poll newly added pending contact
+
 			oneOf(rendezvousEndpoint).getRemoteTransportProperties();
 			will(returnValue(transportProperties));
 			oneOf(clock).currentTimeMillis();
@@ -260,8 +246,6 @@ public class RendezvousPollerImplTest extends BrambleMockTestCase {
 				new PendingContactAddedEvent(pendingContact));
 		context.assertIsSatisfied();
 
-		// Run the poll task - pending contact expires, endpoint is closed,
-		// polling is cancelled
 		expectPendingContactExpires(afterExpiry);
 		expectCloseEndpoint();
 		expectCancelPolling();
@@ -269,12 +253,10 @@ public class RendezvousPollerImplTest extends BrambleMockTestCase {
 		capturePollTask.get().run();
 		context.assertIsSatisfied();
 
-		// Remove the pending contact - endpoint is already closed
 		rendezvousPoller.eventOccurred(
 				new PendingContactRemovedEvent(pendingContact.getId()));
 		context.assertIsSatisfied();
 
-		// Deactivate the transport - endpoint is already closed
 		rendezvousPoller.eventOccurred(new TransportInactiveEvent(transportId));
 	}
 
@@ -283,13 +265,11 @@ public class RendezvousPollerImplTest extends BrambleMockTestCase {
 			throws Exception {
 		long beforeExpiry = pendingContact.getTimestamp();
 
-		// Start the service
 		expectStartupWithNoPendingContacts();
 
 		rendezvousPoller.startService();
 		context.assertIsSatisfied();
 
-		// Add the pending contact - no endpoints should be created yet
 		expectAddPendingContact(beforeExpiry, OFFLINE);
 		expectDeriveRendezvousKey();
 		expectSchedulePolling();
@@ -298,7 +278,6 @@ public class RendezvousPollerImplTest extends BrambleMockTestCase {
 				new PendingContactAddedEvent(pendingContact));
 		context.assertIsSatisfied();
 
-		// Activate the transport - endpoint should be created
 		expectGetPlugin();
 		expectCreateEndpoint();
 		expectStateChangedEvent(WAITING_FOR_CONNECTION);
@@ -306,14 +285,12 @@ public class RendezvousPollerImplTest extends BrambleMockTestCase {
 		rendezvousPoller.eventOccurred(new TransportActiveEvent(transportId));
 		context.assertIsSatisfied();
 
-		// Deactivate the transport - endpoint should be closed
 		expectCloseEndpoint();
 		expectStateChangedEvent(OFFLINE);
 
 		rendezvousPoller.eventOccurred(new TransportInactiveEvent(transportId));
 		context.assertIsSatisfied();
 
-		// Remove the pending contact - endpoint is already closed
 		expectCancelPolling();
 
 		rendezvousPoller.eventOccurred(
@@ -324,20 +301,17 @@ public class RendezvousPollerImplTest extends BrambleMockTestCase {
 	public void testRendezvousConnectionEvents() throws Exception {
 		long beforeExpiry = pendingContact.getTimestamp();
 
-		// Start the service
 		expectStartupWithPendingContact(beforeExpiry);
 
 		rendezvousPoller.startService();
 		context.assertIsSatisfied();
 
-		// Connection is opened - event should be broadcast
 		expectStateChangedEvent(ADDING_CONTACT);
 
 		rendezvousPoller.eventOccurred(
 				new RendezvousConnectionOpenedEvent(pendingContact.getId()));
 		context.assertIsSatisfied();
 
-		// Connection fails - event should be broadcast
 		expectStateChangedEvent(WAITING_FOR_CONNECTION);
 
 		rendezvousPoller.eventOccurred(new RendezvousConnectionClosedEvent(
@@ -350,26 +324,22 @@ public class RendezvousPollerImplTest extends BrambleMockTestCase {
 				+ RENDEZVOUS_TIMEOUT_MS - 1000;
 		long afterExpiry = beforeExpiry + POLLING_INTERVAL_MS;
 
-		// Start the service, capturing the poll task
 		AtomicReference<Runnable> capturePollTask =
 				expectStartupWithPendingContact(beforeExpiry);
 
 		rendezvousPoller.startService();
 		context.assertIsSatisfied();
 
-		// Run the poll task - pending contact expires, polling is cancelled
 		expectPendingContactExpires(afterExpiry);
 		expectCancelPolling();
 
 		capturePollTask.get().run();
 		context.assertIsSatisfied();
 
-		// Connection is opened - no event should be broadcast
 		rendezvousPoller.eventOccurred(
 				new RendezvousConnectionOpenedEvent(pendingContact.getId()));
 		context.assertIsSatisfied();
 
-		// Connection fails - no event should be broadcast
 		rendezvousPoller.eventOccurred(new RendezvousConnectionClosedEvent(
 				pendingContact.getId(), false));
 	}
@@ -381,28 +351,24 @@ public class RendezvousPollerImplTest extends BrambleMockTestCase {
 				+ RENDEZVOUS_TIMEOUT_MS - 1000;
 		long afterExpiry = beforeExpiry + POLLING_INTERVAL_MS;
 
-		// Start the service, capturing the poll task
 		AtomicReference<Runnable> capturePollTask =
 				expectStartupWithPendingContact(beforeExpiry);
 
 		rendezvousPoller.startService();
 		context.assertIsSatisfied();
 
-		// Connection is opened - event should be broadcast
 		expectStateChangedEvent(ADDING_CONTACT);
 
 		rendezvousPoller.eventOccurred(
 				new RendezvousConnectionOpenedEvent(pendingContact.getId()));
 		context.assertIsSatisfied();
 
-		// Run the poll task - pending contact expires, polling is cancelled
 		expectPendingContactExpires(afterExpiry);
 		expectCancelPolling();
 
 		capturePollTask.get().run();
 		context.assertIsSatisfied();
 
-		// Connection fails - no event should be broadcast
 		rendezvousPoller.eventOccurred(new RendezvousConnectionClosedEvent(
 				pendingContact.getId(), false));
 	}
@@ -414,28 +380,24 @@ public class RendezvousPollerImplTest extends BrambleMockTestCase {
 				+ RENDEZVOUS_TIMEOUT_MS - 1000;
 		long afterExpiry = beforeExpiry + POLLING_INTERVAL_MS;
 
-		// Start the service, capturing the poll task
 		AtomicReference<Runnable> capturePollTask =
 				expectStartupWithPendingContact(beforeExpiry);
 
 		rendezvousPoller.startService();
 		context.assertIsSatisfied();
 
-		// Connection is opened - event should be broadcast
 		expectStateChangedEvent(ADDING_CONTACT);
 
 		rendezvousPoller.eventOccurred(
 				new RendezvousConnectionOpenedEvent(pendingContact.getId()));
 		context.assertIsSatisfied();
 
-		// Run the poll task - pending contact expires, polling is cancelled
 		expectPendingContactExpires(afterExpiry);
 		expectCancelPolling();
 
 		capturePollTask.get().run();
 		context.assertIsSatisfied();
 
-		// Pending contact is removed - no event should be broadcast
 		rendezvousPoller.eventOccurred(
 				new PendingContactRemovedEvent(pendingContact.getId()));
 	}
@@ -445,27 +407,23 @@ public class RendezvousPollerImplTest extends BrambleMockTestCase {
 			throws Exception {
 		long beforeExpiry = pendingContact.getTimestamp();
 
-		// Start the service
 		expectStartupWithPendingContact(beforeExpiry);
 
 		rendezvousPoller.startService();
 		context.assertIsSatisfied();
 
-		// Connection is opened - event should be broadcast
 		expectStateChangedEvent(ADDING_CONTACT);
 
 		rendezvousPoller.eventOccurred(
 				new RendezvousConnectionOpenedEvent(pendingContact.getId()));
 		context.assertIsSatisfied();
 
-		// Pending contact is removed - no event should be broadcast
 		expectCancelPolling();
 
 		rendezvousPoller.eventOccurred(
 				new PendingContactRemovedEvent(pendingContact.getId()));
 		context.assertIsSatisfied();
 
-		// Connection fails - no event should be broadcast
 		rendezvousPoller.eventOccurred(new RendezvousConnectionClosedEvent(
 				pendingContact.getId(), false));
 	}
@@ -494,7 +452,7 @@ public class RendezvousPollerImplTest extends BrambleMockTestCase {
 		Transaction txn = new Transaction(null, true);
 
 		context.checking(new DbExpectations() {{
-			// Load the pending contacts
+
 			oneOf(db).transaction(with(true), withDbRunnable(txn));
 			oneOf(db).getPendingContacts(txn);
 			will(returnValue(emptyList()));
@@ -556,11 +514,11 @@ public class RendezvousPollerImplTest extends BrambleMockTestCase {
 		Transaction txn = new Transaction(null, true);
 
 		context.checking(new DbExpectations() {{
-			// Load the pending contacts
+
 			oneOf(db).transaction(with(true), withDbRunnable(txn));
 			oneOf(db).getPendingContacts(txn);
 			will(returnValue(singletonList(pendingContact)));
-			// The pending contact has not expired
+
 			oneOf(clock).currentTimeMillis();
 			will(returnValue(now));
 			oneOf(eventBus).broadcast(with(new PredicateMatcher<>(

@@ -1,6 +1,5 @@
 package com.professor.zerion.android.attachment;
 
-
 public class ChunkedAttachmentsNotSupportedException extends Exception {
 
 	private final String contentType;

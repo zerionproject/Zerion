@@ -111,10 +111,7 @@ class AttachmentRetrieverImpl implements AttachmentRetriever {
 		List<String> supported = asList(getSupportedImageContentTypes());
 		for (AttachmentHeader h : headers) {
 			String contentType = h.getContentType();
-			// Strip MIME parameters (e.g. "; profile=sticker") before
-			// dispatching to type-family checks. The full contentType
-			// stays on the AttachmentHeader so AttachmentItem.isSticker
-			// can still inspect it for the renderer.
+
 			String baseType = com.professor.zerion.android.sticker
 					.StickerUtils.baseMime(contentType);
 			if (SUPPORTED_AUDIO_TYPES.contains(baseType)) {
@@ -220,8 +217,7 @@ class AttachmentRetrieverImpl implements AttachmentRetriever {
 		AttachmentItem item;
 		AttachmentHeader h = a.getHeader();
 		String contentType = h.getContentType();
-		// Strip ";profile=sticker" and other MIME parameters before
-		// handing the type to format-aware decoders that don't grok them.
+
 		String baseType = com.professor.zerion.android.sticker
 				.StickerUtils.baseMime(contentType);
 
@@ -265,9 +261,7 @@ class AttachmentRetrieverImpl implements AttachmentRetriever {
 		String extension =
 				imageHelper.getExtensionFromMimeType(size.getMimeType());
 		boolean hasError = extension == null || size.hasError();
-		// Compare base MIME types: the wire contentType may carry
-		// "; profile=sticker" while size.getMimeType() comes from
-		// BitmapFactory which only reports canonical "image/png".
+
 		String wireBase = com.professor.zerion.android.sticker
 				.StickerUtils.baseMime(h.getContentType());
 		if (!wireBase.equals(size.getMimeType())) {

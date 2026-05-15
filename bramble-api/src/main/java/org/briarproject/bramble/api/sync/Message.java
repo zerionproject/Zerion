@@ -11,7 +11,6 @@ import static org.briarproject.bramble.api.sync.SyncConstants.MESSAGE_HEADER_LEN
 @NotNullByDefault
 public class Message {
 
-	
 	public static final int FORMAT_VERSION = 1;
 
 	private final MessageId id;
@@ -29,27 +28,22 @@ public class Message {
 		this.body = body;
 	}
 
-	
 	public MessageId getId() {
 		return id;
 	}
 
-	
 	public GroupId getGroupId() {
 		return groupId;
 	}
 
-	
 	public long getTimestamp() {
 		return timestamp;
 	}
 
-	
 	public int getRawLength() {
 		return MESSAGE_HEADER_LENGTH + body.length;
 	}
 
-	
 	public byte[] getBody() {
 		return body;
 	}

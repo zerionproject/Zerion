@@ -8,7 +8,6 @@ import java.util.concurrent.Executor;
 import dagger.Module;
 import dagger.Provides;
 
-
 @Module
 public class DefaultWakefulIoExecutorModule {
 

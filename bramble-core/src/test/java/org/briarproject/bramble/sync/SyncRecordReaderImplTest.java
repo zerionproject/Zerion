@@ -78,8 +78,7 @@ public class SyncRecordReaderImplTest extends BrambleMockTestCase {
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testIllegalArgumentIfMessageExceedsRecordPayload() throws Exception {
-		// Creating a Record with payload exceeding MAX_RECORD_PAYLOAD_BYTES
-		// throws IllegalArgumentException in the Record constructor
+
 		createMessage(MESSAGE_HEADER_LENGTH + MAX_MESSAGE_BODY_LENGTH + 1);
 	}
 
@@ -211,8 +210,7 @@ public class SyncRecordReaderImplTest extends BrambleMockTestCase {
 
 	private void expectReadRecord(Record record) throws Exception {
 		context.checking(new Expectations() {{
-			// Test that the `accept` predicate passed to the reader would
-			// accept the expected record
+
 			oneOf(recordReader).readRecord(with(new PredicateMatcher<>(
 							RecordPredicate.class, rp -> rp.test(record))),
 					with(any(RecordPredicate.class)));

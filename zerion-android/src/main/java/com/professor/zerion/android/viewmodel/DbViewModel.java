@@ -31,11 +31,9 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.recyclerview.widget.RecyclerView;
 
-
 @Immutable
 @NotNullByDefault
 public abstract class DbViewModel extends AndroidViewModel {
-
 
 	@DatabaseExecutor
 	private final Executor dbExecutor;

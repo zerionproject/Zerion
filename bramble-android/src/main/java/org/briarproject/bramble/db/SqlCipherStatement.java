@@ -11,10 +11,6 @@ import java.sql.SQLException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
 
-/**
- * Minimal JDBC Statement wrapping SQLCipher's SQLiteDatabase.
- * Implements the methods used by JdbcDatabase.
- */
 class SqlCipherStatement implements Statement {
 
 	private final SQLiteDatabase db;

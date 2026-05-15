@@ -253,8 +253,6 @@ public class ContactManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(singletonList(pendingContact)));
 		}});
 
-		// No events have happened for this pending contact, so the state
-		// should be WAITING_FOR_CONNECTION
 		Collection<Pair<PendingContact, PendingContactState>> pairs =
 				contactManager.getPendingContacts();
 		assertEquals(1, pairs.size());

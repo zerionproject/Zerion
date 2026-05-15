@@ -37,28 +37,28 @@ public class ExponentialBackoffTest extends BrambleTestCase {
 
 	@Test
 	public void testTransmissionCountOverflow() {
-		long maxLatency = MAX_TRANSPORT_LATENCY; // RTT will not overflow
+		long maxLatency = MAX_TRANSPORT_LATENCY;
 		long expiry = ExponentialBackoff.calculateExpiry(0, maxLatency, 0);
-		assertEquals(MAX_TRANSPORT_LATENCY * 2L, expiry); // No overflow
+		assertEquals(MAX_TRANSPORT_LATENCY * 2L, expiry);
 		expiry = ExponentialBackoff.calculateExpiry(0, maxLatency, 27);
-		assertEquals(MAX_TRANSPORT_LATENCY * (2L << 27), expiry); // No overflow
+		assertEquals(MAX_TRANSPORT_LATENCY * (2L << 27), expiry);
 		expiry = ExponentialBackoff.calculateExpiry(0, maxLatency, 28);
-		assertEquals(Long.MAX_VALUE, expiry); // Overflow caught
+		assertEquals(Long.MAX_VALUE, expiry);
 		expiry = ExponentialBackoff.calculateExpiry(0, maxLatency, 29);
-		assertEquals(Long.MAX_VALUE, expiry); // Overflow caught
+		assertEquals(Long.MAX_VALUE, expiry);
 	}
 
 	@Test
 	public void testCurrentTimeOverflow() {
-		long maxLatency = MAX_TRANSPORT_LATENCY; // RTT will not overflow
+		long maxLatency = MAX_TRANSPORT_LATENCY;
 		long now = Long.MAX_VALUE - (MAX_TRANSPORT_LATENCY * (2L << 27));
 		long expiry = ExponentialBackoff.calculateExpiry(now, maxLatency, 0);
-		assertEquals(now + MAX_TRANSPORT_LATENCY * 2L, expiry); // No overflow
+		assertEquals(now + MAX_TRANSPORT_LATENCY * 2L, expiry);
 		expiry = ExponentialBackoff.calculateExpiry(now - 1, maxLatency, 27);
-		assertEquals(Long.MAX_VALUE - 1, expiry); // No overflow
+		assertEquals(Long.MAX_VALUE - 1, expiry);
 		expiry = ExponentialBackoff.calculateExpiry(now, maxLatency, 27);
-		assertEquals(Long.MAX_VALUE, expiry); // No overflow
+		assertEquals(Long.MAX_VALUE, expiry);
 		expiry = ExponentialBackoff.calculateExpiry(now + 1, maxLatency, 27);
-		assertEquals(Long.MAX_VALUE, expiry); // Overflow caught
+		assertEquals(Long.MAX_VALUE, expiry);
 	}
 }

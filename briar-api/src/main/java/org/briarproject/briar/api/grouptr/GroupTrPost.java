@@ -15,10 +15,18 @@ public class GroupTrPost {
 	private final long timestamp;
 	private final long epoch;
 	private final boolean local;
+	private final long autoDeleteTimerMs;
 
 	public GroupTrPost(byte[] groupId, byte[] senderPubKey,
 			String senderName, byte[] body, long timestamp, long epoch,
 			boolean local) {
+		this(groupId, senderPubKey, senderName, body, timestamp, epoch,
+				local, 0L);
+	}
+
+	public GroupTrPost(byte[] groupId, byte[] senderPubKey,
+			String senderName, byte[] body, long timestamp, long epoch,
+			boolean local, long autoDeleteTimerMs) {
 		this.groupId = groupId;
 		this.senderPubKey = senderPubKey;
 		this.senderName = senderName;
@@ -26,6 +34,11 @@ public class GroupTrPost {
 		this.timestamp = timestamp;
 		this.epoch = epoch;
 		this.local = local;
+		this.autoDeleteTimerMs = autoDeleteTimerMs;
+	}
+
+	public long getAutoDeleteTimerMs() {
+		return autoDeleteTimerMs;
 	}
 
 	public byte[] getGroupId() {

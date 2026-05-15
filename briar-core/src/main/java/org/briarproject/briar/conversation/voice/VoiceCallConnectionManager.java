@@ -8,15 +8,13 @@ import java.io.IOException;
 
 import javax.annotation.Nullable;
 
-
 @NotNullByDefault
 public interface VoiceCallConnectionManager {
 
-	
 	class EndpointInfo {
-		
+
 		public final String onionAddress;
-		
+
 		public final int port;
 
 		public EndpointInfo(String onionAddress, int port) {
@@ -25,19 +23,15 @@ public interface VoiceCallConnectionManager {
 		}
 	}
 
-	
 	EndpointInfo createIncomingEndpoint(String callId, SecretKey voiceCallKey,
 			boolean alice, VoiceCallConnectionHandler connectionHandler)
 			throws IOException;
 
-	
 	@Nullable
 	DuplexTransportConnection connectToRemote(String callId, String remoteOnion,
 			SecretKey voiceCallKey, boolean alice) throws IOException;
 
-	
 	void closeEndpoint(String callId);
 
-	
 	void shutdown();
 }

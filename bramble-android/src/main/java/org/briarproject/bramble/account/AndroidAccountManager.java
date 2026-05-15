@@ -150,7 +150,7 @@ public class AndroidAccountManager extends AccountManagerImpl
 				resetGlobalLockout();
 			}
 		} catch (IOException | NumberFormatException e) {
-			//noinspection ResultOfMethodCallIgnored
+
 			lockoutFile.delete();
 		}
 	}
@@ -187,7 +187,7 @@ public class AndroidAccountManager extends AccountManagerImpl
 	private void resetGlobalLockout() {
 		File lockoutFile = profileManager.getLockoutFile();
 		if (lockoutFile.exists()) {
-			//noinspection ResultOfMethodCallIgnored
+
 			lockoutFile.delete();
 		}
 	}
@@ -216,15 +216,6 @@ public class AndroidAccountManager extends AccountManagerImpl
 		profileManager.writeDisplayName(id, fallbackName);
 	}
 
-	/**
-	 * Creates a new profile directory, generates a fresh database key,
-	 * encrypts it with the supplied password, and writes the encrypted key
-	 * plus a "pending identity name" marker so that on first sign-in to this
-	 * profile the identity is materialised with the given display name.
-	 *
-	 * Returns the new profile ID on success, or null on failure. Does NOT
-	 * change the active profile or sign out the current session.
-	 */
 	@Nullable
 	public String scheduleProfileCreation(String displayName, char[] password) {
 		synchronized (stateChangeLock) {
@@ -285,16 +276,11 @@ public class AndroidAccountManager extends AccountManagerImpl
 		File marker = new File(profileManager.getKeyDir(profileId),
 				"pending_identity_name");
 		if (marker.exists()) {
-			//noinspection ResultOfMethodCallIgnored
+
 			marker.delete();
 		}
 	}
 
-	/**
-	 * Securely wipes the currently-active profile's data directory and
-	 * removes its db.key. Does NOT stop services or clear in-memory state;
-	 * callers should sign out + exit after this returns.
-	 */
 	public void deleteActiveProfile() {
 		synchronized (stateChangeLock) {
 			String id = profileManager.getActiveProfileId();

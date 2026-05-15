@@ -49,21 +49,21 @@ public class ImageCompressorTest
 
 	@Test
 	public void testCompressAnimatedGif1() throws Exception {
-		// TODO: Remove this assumption when we support large messages
+
 		assumeTrue(SDK_INT >= 24);
 		testCompress("animated.gif", "image/gif");
 	}
 
 	@Test
 	public void testCompressAnimatedGif2() throws Exception {
-		// TODO: Remove this assumption when we support large messages
+
 		assumeTrue(SDK_INT >= 24);
 		testCompress("animated2.gif", "image/gif");
 	}
 
 	@Test
 	public void testCompressVeryLargeGif() throws Exception {
-		// TODO: Remove this assumption when we support large messages
+
 		assumeTrue(SDK_INT >= 24);
 		testCompress("error_large.gif", "image/gif");
 	}

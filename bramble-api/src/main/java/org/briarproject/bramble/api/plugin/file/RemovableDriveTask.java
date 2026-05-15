@@ -7,13 +7,10 @@ import org.briarproject.nullsafety.NotNullByDefault;
 @NotNullByDefault
 public interface RemovableDriveTask extends Runnable {
 
-	
 	TransportProperties getTransportProperties();
 
-	
 	void addObserver(Consumer<State> observer);
 
-	
 	void removeObserver(Consumer<State> observer);
 
 	class State {
@@ -28,12 +25,10 @@ public interface RemovableDriveTask extends Runnable {
 			this.success = success;
 		}
 
-		
 		public long getDone() {
 			return done;
 		}
 
-		
 		public long getTotal() {
 			return total;
 		}

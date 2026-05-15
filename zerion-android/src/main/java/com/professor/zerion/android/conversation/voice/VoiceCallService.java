@@ -1,6 +1,5 @@
 package com.professor.zerion.android.conversation.voice;
 
-
 import android.Manifest;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -216,7 +215,6 @@ public class VoiceCallService extends Service implements EventListener {
 	private byte[] localEphemeralSecret;
 	private byte[] remoteEphemeralSecret;
 
-	// Video call state
 	private volatile boolean isVideoCall = false;
 	private volatile boolean videoEnabled = false;
 	private volatile boolean videoRequested = false;
@@ -387,14 +385,12 @@ public class VoiceCallService extends Service implements EventListener {
 					voiceCallKey = voiceCallCrypto.generateVoiceCallKey();
 				}
 
-	
 				localEphemeralSecret = voiceCallCrypto.generateEphemeralSecret();
 
 				sendCallOffer();
 
 				callState = CallState.RINGING;
 				updateCallActivity();
-
 
 				scheduleCallSetupTimeout(90_000);
 
@@ -413,7 +409,7 @@ public class VoiceCallService extends Service implements EventListener {
 
 		executorService.execute(() -> {
 			try {
-	
+
 				localEphemeralSecret = voiceCallCrypto.generateEphemeralSecret();
 
 				createHiddenService();
@@ -513,7 +509,7 @@ public class VoiceCallService extends Service implements EventListener {
 				@Override
 				public void handleConnection(DuplexTransportConnection conn) {
 					if (callState == CallState.CONNECTED && videoRequested) {
-						// Second connection on existing endpoint = video
+
 						videoTorConnection = conn;
 						deriveVideoEncryptionKeys();
 						startVideoStreamingOnConnection();
@@ -555,7 +551,6 @@ public class VoiceCallService extends Service implements EventListener {
 			throw new IOException(errorMessage, e);
 		}
 	}
-
 
 	private static final java.util.regex.Pattern ONION_V3_PATTERN =
 			java.util.regex.Pattern.compile("^[a-z2-7]{56}(\\.onion)?$");
@@ -1272,7 +1267,6 @@ public class VoiceCallService extends Service implements EventListener {
 		}
 	}
 
-	
 	private void zeroizeKeyMaterial() {
 		if (voiceCallKey != null) {
 			voiceCallKey.clear();
@@ -1356,7 +1350,6 @@ public class VoiceCallService extends Service implements EventListener {
 				}
 			}
 
-
 			if (audioSocket != null) {
 				try {
 					audioSocket.close();
@@ -1367,8 +1360,6 @@ public class VoiceCallService extends Service implements EventListener {
 				}
 			}
 
-			// torConnection is closed by connectionManager.closeEndpoint()
-			// — do NOT close it here to avoid double-close race with Tor
 			torConnection = null;
 
 			if (serverSocket != null && !serverSocket.isClosed()) {
@@ -1727,8 +1718,6 @@ public class VoiceCallService extends Service implements EventListener {
 
 		stopAudioStreaming();
 
-		// Only close endpoints if endCall() hasn't already done it.
-		// Rapid hidden service removal destabilizes the Tor daemon.
 		if (!endpointsClosed && callId != null && connectionManager != null) {
 			endpointsClosed = true;
 			try {
@@ -1757,7 +1746,6 @@ public class VoiceCallService extends Service implements EventListener {
 			Thread.currentThread().interrupt();
 		}
 	}
-
 
 	@Override
 	public void eventOccurred(Event e) {
@@ -1913,8 +1901,6 @@ public class VoiceCallService extends Service implements EventListener {
 		}
 	}
 
-	// ---- Video call methods ----
-
 	private void handleVideoOffer(VoiceSignalHeader header) {
 		String payload = header.getPayload();
 		if (payload == null || callState != CallState.CONNECTED) return;
@@ -1929,13 +1915,10 @@ public class VoiceCallService extends Service implements EventListener {
 	private void handleVideoAccept(VoiceSignalHeader header) {
 		if (callState != CallState.CONNECTED) return;
 
-		// The voice call CALLER initiates the video TCP connection
-		// to the RECEIVER's existing voice hidden service.
 		if (!isIncoming && lastRemoteOnion != null) {
 			connectVideoToRemote(lastRemoteOnion);
 		}
-		// If we are the receiver, the caller will connect to our
-		// existing voice hidden service — the handler routes it to video
+
 	}
 
 	private void connectVideoToRemote(String remoteOnion) {
@@ -1970,29 +1953,20 @@ public class VoiceCallService extends Service implements EventListener {
 		});
 	}
 
-	/**
-	 * If this is a video call (isVideoCall), automatically set up video
-	 * after audio connects. The caller connects to the receiver's existing
-	 * hidden service for the video TCP stream. The receiver's handler
-	 * routes the second connection to video.
-	 */
 	private void autoStartVideoIfNeeded() {
 		if (!isVideoCall || videoEnabled || videoRequested) return;
 		videoRequested = true;
 		updateNotification();
 
 		if (!isIncoming && lastRemoteOnion != null) {
-			// CALLER: connect to receiver's hidden service for video.
-			// Brief delay so audio handshake settles first.
+
 			mainHandler.postDelayed(() -> {
 				if (callState == CallState.CONNECTED && !videoEnabled) {
 					connectVideoToRemote(lastRemoteOnion);
 				}
 			}, 1500);
 		}
-		// RECEIVER: the handler in createHiddenService() already routes
-		// the caller's second connection to video (callState == CONNECTED
-		// && videoRequested).
+
 	}
 
 	public void requestVideoUpgrade() {
@@ -2007,8 +1981,6 @@ public class VoiceCallService extends Service implements EventListener {
 		videoRequested = true;
 		updateNotification();
 
-		// No new rendezvous endpoint needed — reuse voice hidden service.
-		// Send VIDEO_OFFER so the peer knows we want video.
 		sendVoiceSignal(VoiceSignalType.VIDEO_OFFER, "REQUEST");
 	}
 
@@ -2016,17 +1988,12 @@ public class VoiceCallService extends Service implements EventListener {
 		if (callState != CallState.CONNECTED) return;
 		videoRequested = true;
 
-		// Send VIDEO_ACCEPT so the caller side knows to connect.
-		// The voice call CALLER always initiates the video TCP connection
-		// to the RECEIVER's existing hidden service.
 		sendVoiceSignal(VoiceSignalType.VIDEO_ACCEPT, "ACCEPT");
 
-		// If WE are the voice call caller, WE connect to the peer
 		if (!isIncoming && lastRemoteOnion != null) {
 			connectVideoToRemote(lastRemoteOnion);
 		}
-		// If we are the receiver, the caller will connect to our
-		// existing voice hidden service — the handler routes it to video
+
 	}
 
 	public void rejectVideoOffer() {
@@ -2039,7 +2006,6 @@ public class VoiceCallService extends Service implements EventListener {
 		videoEnabled = false;
 		updateNotification();
 
-		// Pause camera+encoder but keep Tor connection and decoder alive
 		if (videoStreamManager != null) {
 			videoStreamManager.pauseSending();
 		}
@@ -2054,13 +2020,13 @@ public class VoiceCallService extends Service implements EventListener {
 	public void resumeVideo() {
 		if (videoEnabled || callState != CallState.CONNECTED) return;
 		if (videoStreamManager == null || !videoStreamManager.isRunning()) {
-			// Stream was fully torn down — need new connection
+
 			requestVideoUpgrade();
 			return;
 		}
 
 		try {
-			// Set preview surface before restarting camera
+
 			if (callActivity != null) {
 				Surface preview = callActivity.getLocalVideoSurface();
 				if (preview != null) {
@@ -2156,7 +2122,6 @@ public class VoiceCallService extends Service implements EventListener {
 					videoKeys.txKey.getBytes(),
 					videoKeys.rxKey.getBytes());
 
-			// Set local preview surface before starting camera
 			if (callActivity != null) {
 				Surface preview = callActivity.getLocalVideoSurface();
 				if (preview != null) {
@@ -2214,8 +2179,7 @@ public class VoiceCallService extends Service implements EventListener {
 			} catch (Exception ignored) {}
 			videoCameraManager = null;
 		}
-		// videoTorConnection is closed by connectionManager.closeEndpoint()
-		// — do NOT close it here to avoid double-close race with Tor
+
 		videoTorConnection = null;
 		try {
 			zeroizeVideoKeys();

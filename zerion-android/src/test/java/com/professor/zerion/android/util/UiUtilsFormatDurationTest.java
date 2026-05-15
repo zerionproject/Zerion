@@ -49,7 +49,7 @@ public class UiUtilsFormatDurationTest extends BrambleMockTestCase {
 
 	@Test
 	public void test10Seconds() {
-		// capped to 1min
+
 		expectMinuteString(1);
 		formatDuration(ctx, SECONDS.toMillis(10));
 	}

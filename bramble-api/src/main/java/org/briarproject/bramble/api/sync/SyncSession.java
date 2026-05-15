@@ -4,9 +4,7 @@ import java.io.IOException;
 
 public interface SyncSession {
 
-	
 	void run() throws IOException;
 
-	
 	void interrupt();
 }

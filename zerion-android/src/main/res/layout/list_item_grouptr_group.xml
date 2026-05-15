@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content"
+	android:background="?attr/selectableItemBackground"
+	android:clickable="true"
+	android:focusable="true"
+	android:paddingStart="16dp"
+	android:paddingEnd="16dp"
+	android:paddingTop="12dp"
+	android:paddingBottom="12dp">
+
+	<TextView
+		android:id="@+id/avatarView"
+		android:layout_width="52dp"
+		android:layout_height="52dp"
+		android:background="@drawable/badge_circle_cyan"
+		android:gravity="center"
+		android:textColor="@android:color/white"
+		android:textSize="20sp"
+		android:textStyle="bold"
+		app:layout_constraintBottom_toBottomOf="parent"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toTopOf="parent"
+		tools:text="F" />
+
+	<TextView
+		android:id="@+id/nameView"
+		android:layout_width="0dp"
+		android:layout_height="wrap_content"
+		android:layout_marginStart="14dp"
+		android:layout_marginEnd="8dp"
+		android:ellipsize="end"
+		android:maxLines="1"
+		android:textColor="@color/zerion_text_primary"
+		android:textSize="16sp"
+		android:textStyle="bold"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintStart_toEndOf="@+id/avatarView"
+		app:layout_constraintTop_toTopOf="@+id/avatarView"
+		tools:text="Family" />
+
+	<TextView
+		android:id="@+id/subtitleView"
+		android:layout_width="0dp"
+		android:layout_height="wrap_content"
+		android:layout_marginStart="14dp"
+		android:layout_marginTop="4dp"
+		android:layout_marginEnd="8dp"
+		android:ellipsize="end"
+		android:maxLines="1"
+		android:textColor="@color/zerion_text_secondary"
+		android:textSize="13sp"
+		app:layout_constraintBottom_toBottomOf="@+id/avatarView"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintStart_toEndOf="@+id/avatarView"
+		app:layout_constraintTop_toBottomOf="@+id/nameView"
+		tools:text="4 members" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -9,7 +9,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
-
 @Immutable
 @NotNullByDefault
 public class MessageAddedEvent extends Event {
@@ -23,17 +22,14 @@ public class MessageAddedEvent extends Event {
 		this.contactId = contactId;
 	}
 
-	
 	public Message getMessage() {
 		return message;
 	}
 
-	
 	public GroupId getGroupId() {
 		return message.getGroupId();
 	}
 
-	
 	@Nullable
 	public ContactId getContactId() {
 		return contactId;

@@ -7,6 +7,7 @@ import com.professor.zerion.R;
 import com.professor.zerion.android.attachment.AttachmentItem;
 import org.briarproject.briar.api.conversation.ConversationMessageVisitor;
 import org.briarproject.briar.api.grouptr.GroupTrInvitationHeader;
+import org.briarproject.briar.api.grouptr.GroupTrManager;
 import org.briarproject.briar.api.introduction.IntroductionRequest;
 import org.briarproject.briar.api.introduction.IntroductionResponse;
 import org.briarproject.briar.api.messaging.PrivateMessageHeader;
@@ -38,19 +39,28 @@ class ConversationVisitor implements
 	private final LiveData<String> contactName;
 	@Nullable
 	private final ConversationViewModel viewModel;
+	@Nullable
+	private final GroupTrManager groupTrManager;
 	private volatile boolean lazyAttachmentMode = false;
 
 	ConversationVisitor(Context ctx, TextCache textCache,
 			AttachmentCache attachmentCache, LiveData<String> contactName,
 			@Nullable ConversationViewModel viewModel) {
+		this(ctx, textCache, attachmentCache, contactName, viewModel, null);
+	}
+
+	ConversationVisitor(Context ctx, TextCache textCache,
+			AttachmentCache attachmentCache, LiveData<String> contactName,
+			@Nullable ConversationViewModel viewModel,
+			@Nullable GroupTrManager groupTrManager) {
 		this.ctx = ctx;
 		this.textCache = textCache;
 		this.attachmentCache = attachmentCache;
 		this.contactName = contactName;
 		this.viewModel = viewModel;
+		this.groupTrManager = groupTrManager;
 	}
 
-	
 	void setLazyAttachmentMode(boolean lazy) {
 		this.lazyAttachmentMode = lazy;
 	}
@@ -111,8 +121,6 @@ class ConversationVisitor implements
 			}
 		}
 
-		// Check local reply context first (sender side),
-		// then check header's replyToId (receiver side)
 		if (viewModel != null) {
 			org.briarproject.bramble.api.Pair<MessageId, String> replyContext =
 					viewModel.getReplyContext(h.getId());
@@ -280,6 +288,18 @@ class ConversationVisitor implements
 	public ConversationItem visitGroupTrInvitation(
 			GroupTrInvitationHeader h) {
 		String groupName = h.getGroupName();
+		if (h.isLocal()) {
+			String text = groupName.isEmpty()
+					? ctx.getString(
+							R.string.groups_invitations_invitation_sent,
+							getContactNameOrDefault(), "")
+					: ctx.getString(
+							R.string.groups_invitations_invitation_sent,
+							getContactNameOrDefault(), groupName);
+			return new ConversationNoticeItem(
+					R.layout.list_item_conversation_notice_out, text,
+					contactName, h);
+		}
 		String text;
 		if (groupName.isEmpty()) {
 			text = ctx.getString(R.string.grouptr_invitation_received_no_name,
@@ -288,9 +308,9 @@ class ConversationVisitor implements
 			text = ctx.getString(R.string.grouptr_invitation_received,
 					getContactNameOrDefault(), groupName);
 		}
-		return new ConversationGroupTrInvitationItem(
-				R.layout.list_item_conversation_notice_in, text,
-				contactName, h);
+		return new ConversationRequestItem(
+				R.layout.list_item_conversation_request, text, contactName,
+				h, h.getGroupTrGroupId().getBytes(), false);
 	}
 
 	@Nullable

@@ -61,7 +61,6 @@ public abstract class BrambleIntegrationTest<C extends BrambleIntegrationTestCom
 
 	protected final static int TIMEOUT = 15000;
 
-	// objects accessed from background threads need to be volatile
 	private volatile Waiter validationWaiter;
 	private volatile Waiter deliveryWaiter;
 	private volatile Waiter ackWaiter;
@@ -78,7 +77,6 @@ public abstract class BrambleIntegrationTest<C extends BrambleIntegrationTestCom
 	public void setUp() throws Exception {
 		assertTrue(testDir.mkdirs());
 
-		// initialize waiters fresh for each test
 		validationWaiter = new Waiter();
 		deliveryWaiter = new Waiter();
 		ackWaiter = new Waiter();
@@ -152,7 +150,6 @@ public abstract class BrambleIntegrationTest<C extends BrambleIntegrationTestCom
 		}
 	}
 
-
 	protected void syncMessage(BrambleIntegrationTestComponent fromComponent,
 			BrambleIntegrationTestComponent toComponent, ContactId toId,
 			TransportId transportId, int num, boolean valid) throws Exception {
@@ -179,19 +176,17 @@ public abstract class BrambleIntegrationTest<C extends BrambleIntegrationTestCom
 			BrambleIntegrationTestComponent toComponent, ContactId toId,
 			TransportId transportId, int numNew, int numDupes,
 			int numPendingOrInvalid, int numDelivered) throws Exception {
-		// Debug output
+
 		String from =
 				fromComponent.getIdentityManager().getLocalAuthor().getName();
 		String to = toComponent.getIdentityManager().getLocalAuthor().getName();
 		LOG.info("TEST: Sending " + (numNew + numDupes) + " message(s) from "
 				+ from + " to " + to);
 
-		// Listen for messages being sent
 		waitForEvents(fromComponent);
 		SendListener sendListener = new SendListener();
 		fromComponent.getEventBus().addListener(sendListener);
 
-		// Write the messages to a transport stream
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		TestTransportConnectionWriter writer =
 				new TestTransportConnectionWriter(out, false);
@@ -199,13 +194,11 @@ public abstract class BrambleIntegrationTest<C extends BrambleIntegrationTestCom
 				transportId, writer);
 		writer.getDisposedLatch().await(TIMEOUT, MILLISECONDS);
 
-		// Check that the expected number of messages were sent
 		waitForEvents(fromComponent);
 		fromComponent.getEventBus().removeListener(sendListener);
 		assertEquals("Messages sent", numNew + numDupes,
 				sendListener.sent.size());
 
-		// Read the messages from the transport stream
 		ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
 		TestTransportConnectionReader reader =
 				new TestTransportConnectionReader(in);
@@ -255,7 +248,7 @@ public abstract class BrambleIntegrationTest<C extends BrambleIntegrationTestCom
 	protected void sendAcks(BrambleIntegrationTestComponent fromComponent,
 			BrambleIntegrationTestComponent toComponent, ContactId toId,
 			int num) throws Exception {
-		// Debug output
+
 		String from =
 				fromComponent.getIdentityManager().getLocalAuthor().getName();
 		String to = toComponent.getIdentityManager().getLocalAuthor().getName();
@@ -263,12 +256,10 @@ public abstract class BrambleIntegrationTest<C extends BrambleIntegrationTestCom
 
 		expectAck = true;
 
-		// Listen for messages being sent (none should be sent)
 		waitForEvents(fromComponent);
 		SendListener sendListener = new SendListener();
 		fromComponent.getEventBus().addListener(sendListener);
 
-		// start outgoing connection
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		TestTransportConnectionWriter writer =
 				new TestTransportConnectionWriter(out, false);
@@ -276,12 +267,10 @@ public abstract class BrambleIntegrationTest<C extends BrambleIntegrationTestCom
 				SIMPLEX_TRANSPORT_ID, writer);
 		writer.getDisposedLatch().await(TIMEOUT, MILLISECONDS);
 
-		// Check that no messages were sent
 		waitForEvents(fromComponent);
 		fromComponent.getEventBus().removeListener(sendListener);
 		assertEquals("Messages sent", 0, sendListener.sent.size());
 
-		// handle incoming connection
 		ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
 		TestTransportConnectionReader reader =
 				new TestTransportConnectionReader(in);
@@ -302,10 +291,6 @@ public abstract class BrambleIntegrationTest<C extends BrambleIntegrationTestCom
 		}
 	}
 
-	/**
-	 * Broadcasts a marker event and waits for it to be delivered, which
-	 * indicates that all previously broadcast events have been delivered.
-	 */
 	public static void waitForEvents(BrambleIntegrationTestComponent component)
 			throws Exception {
 		CountDownLatch latch = new CountDownLatch(1);

@@ -30,7 +30,6 @@ class ConversationMessageItem extends ConversationItem {
 		this.attachmentsLoaded = !attachments.isEmpty() || h.getAttachmentHeaders().isEmpty();
 	}
 
-	
 	ConversationMessageItem(@LayoutRes int layoutRes, PrivateMessageHeader h,
 			LiveData<String> contactName) {
 		super(layoutRes, h, contactName);
@@ -43,18 +42,15 @@ class ConversationMessageItem extends ConversationItem {
 		return attachments;
 	}
 
-	
 	boolean needsAttachmentLoading() {
 		return !attachmentsLoaded && header != null && !header.getAttachmentHeaders().isEmpty();
 	}
 
-	
 	@Nullable
 	PrivateMessageHeader getHeader() {
 		return header;
 	}
 
-	
 	@UiThread
 	void setAttachments(List<AttachmentItem> attachments) {
 		this.attachments = attachments;

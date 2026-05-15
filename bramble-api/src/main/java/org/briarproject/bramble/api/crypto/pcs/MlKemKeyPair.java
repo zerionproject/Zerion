@@ -52,7 +52,6 @@ public class MlKemKeyPair {
 		return ekVector;
 	}
 
-	
 	public static MlKemKeyPair fromComponents(byte[] ekSeed, byte[] ekVector,
 			byte[] decapsulationKey) {
 		byte[] encapsulationKey = new byte[MLKEM_ENCAPSULATION_KEY_SIZE];

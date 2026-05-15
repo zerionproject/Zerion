@@ -31,7 +31,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
 
-
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
 public class DonationDialogFragment extends DialogFragment {

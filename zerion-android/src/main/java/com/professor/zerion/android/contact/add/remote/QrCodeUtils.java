@@ -26,27 +26,10 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
-/**
- * QR code encode + decode via ZXing core. No Google Play Services, no
- * ML Kit, no Firebase, no clearnet phone-home — pure on-device pixel
- * crunching against a self-contained Java library.
- *
- * <p>Encoding (existing): {@link #generateQrCode(String)} / {@link
- * #generateQrCode(String, int)} produce a black-on-white {@link Bitmap}
- * suitable for display.
- *
- * <p>Decoding (new): {@link #decodeQrFromYuv(byte[], int, int, int, int,
- * int)} reads a QR payload out of a single CameraX YUV frame's
- * luminance plane. Designed to be called repeatedly from a
- * {@code CameraX ImageAnalysis} analyzer until it returns non-null.
- */
 public class QrCodeUtils {
 
 	private static final int QR_SIZE = 512;
 
-	// QRCodeReader is stateless under the hood (just a thin façade over
-	// PURE_BARCODE / TRY_HARDER decode paths) but the docs note that
-	// reusing instances is fine. One per analyzer thread is plenty.
 	private static final ThreadLocal<QRCodeReader> READER =
 			ThreadLocal.withInitial(QRCodeReader::new);
 
@@ -54,10 +37,7 @@ public class QrCodeUtils {
 
 	static {
 		DECODE_HINTS = new EnumMap<>(DecodeHintType.class);
-		// PURE_BARCODE skips orientation/quiet-zone search heuristics —
-		// faster on screen-captured QRs but flakier on camera frames.
-		// Leave it OFF and use TRY_HARDER instead so we tolerate motion
-		// blur, partial occlusion, and angled scans the way ML Kit did.
+
 		DECODE_HINTS.put(DecodeHintType.TRY_HARDER, Boolean.TRUE);
 	}
 
@@ -97,39 +77,11 @@ public class QrCodeUtils {
 		}
 	}
 
-	/**
-	 * Decode a QR payload from a single YUV_420_888 frame.
-	 *
-	 * <p>CameraX delivers an {@code ImageProxy} whose {@code Image} has
-	 * three planes — Y, U, V. Only the Y (luminance) plane matters for
-	 * grayscale barcode decoding, which is all we need.
-	 *
-	 * @param yPlane         raw Y-plane bytes copied out of {@code
-	 *                       imageProxy.getImage().getPlanes()[0]
-	 *                       .getBuffer()}, with row stride already
-	 *                       collapsed to {@code width} (no padding).
-	 * @param width          frame width in pixels.
-	 * @param height         frame height in pixels.
-	 * @param left           crop window left, 0 for full frame.
-	 * @param top            crop window top, 0 for full frame.
-	 * @param rotationDegrees CameraX-supplied rotation in degrees
-	 *                       (typically 0, 90, 180, 270). Applied via
-	 *                       {@link LuminanceSource#rotateCounterClockwise()}
-	 *                       so the QR appears upright to the decoder.
-	 * @return the decoded text, or {@code null} if the frame contains
-	 *         no recognisable QR. Either is normal — the caller should
-	 *         keep feeding frames until it gets a hit.
-	 */
 	@Nullable
 	public static String decodeQrFromYuv(byte[] yPlane, int width, int height,
 			int left, int top, int rotationDegrees) {
 		if (yPlane == null || width <= 0 || height <= 0) return null;
 
-		// PlanarYUVLuminanceSource does NOT override rotateCounterClockwise
-		// (ZXing's base impl throws UnsupportedOperationException for it),
-		// so we rotate the Y plane bytes ourselves before constructing
-		// the source. CameraX rotationDegrees is the clockwise rotation
-		// needed to make the frame upright.
 		int normalised = ((rotationDegrees % 360) + 360) % 360;
 		byte[] rotated;
 		int sourceWidth;
@@ -151,8 +103,7 @@ public class QrCodeUtils {
 			sourceWidth = height;
 			sourceHeight = width;
 		} else {
-			// Non-orthogonal rotation (rare, e.g. 45° from a tilted
-			// device). Skip — QR codes need axis-aligned scanning.
+
 			return null;
 		}
 

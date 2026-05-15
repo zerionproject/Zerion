@@ -1,5 +1,6 @@
 package org.briarproject.briar.api.grouptr;
 
+import org.briarproject.bramble.api.contact.ContactId;
 import org.briarproject.bramble.api.db.DbException;
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -24,6 +25,15 @@ public interface GroupTrManager {
 	long getEpoch(byte[] groupId) throws DbException;
 
 	boolean isDissolved(byte[] groupId) throws DbException;
+
+	void inviteContactToGroup(byte[] grouptrGroupId, ContactId contactId,
+			byte[] contactPubKey, String contactName) throws DbException;
+
+	void acceptInvite(byte[] grouptrGroupId) throws DbException;
+
+	void declineInvite(byte[] grouptrGroupId) throws DbException;
+
+	void removeFromDevice(byte[] groupId) throws DbException;
 
 	void sendGroupPost(byte[] groupId, byte[] body, long autoDeleteTimerMs)
 			throws DbException;
@@ -52,6 +62,11 @@ public interface GroupTrManager {
 	String getStealthName(byte[] groupId) throws DbException;
 
 	void setStealthName(byte[] groupId, @Nullable String alias)
+			throws DbException;
+
+	boolean isLocalScreenshotBlocked(byte[] groupId) throws DbException;
+
+	void setLocalScreenshotBlocked(byte[] groupId, boolean blocked)
 			throws DbException;
 
 	java.util.List<GroupTrPost> getRecentPosts(byte[] groupId);

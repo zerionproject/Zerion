@@ -207,7 +207,6 @@ public class VaultListFragment extends BaseFragment {
 		});
 	}
 
-
 	private static final int REQUEST_IMAGE_PICK = 1001;
 	private static final int REQUEST_DOCUMENT_PICK = 1002;
 

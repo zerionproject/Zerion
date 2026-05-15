@@ -20,12 +20,10 @@ import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MAX_TOTAL_SKI
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.SKIP_CLOCK_REWIND_THRESHOLD_MS;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.SKIP_PRUNE_INTERVAL_MS;
 
-
 @ThreadSafe
 @NotNullByDefault
 public class InMemorySkippedKeyStore implements SkippedKeyStore {
 
-	
 	private static class SkippedKeyEntry {
 		final SecretKey messageKey;
 		final long timestamp;
@@ -36,7 +34,6 @@ public class InMemorySkippedKeyStore implements SkippedKeyStore {
 		}
 	}
 
-	
 	private static class SkippedKeyId {
 		final Bytes chainId;
 		final int messageNumber;
@@ -214,7 +211,6 @@ public class InMemorySkippedKeyStore implements SkippedKeyStore {
 		keysPerChain.remove(chainIdBytes);
 	}
 
-	
 	@GuardedBy("this")
 	private void evictOldestKey(Bytes chainIdBytes) {
 		SkippedKeyId oldestId = null;
@@ -236,7 +232,6 @@ public class InMemorySkippedKeyStore implements SkippedKeyStore {
 		}
 	}
 
-	
 	public synchronized int getTotalSkippedKeyCount() {
 		return skippedKeys.size();
 	}

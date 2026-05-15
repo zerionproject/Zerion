@@ -8,11 +8,6 @@ import android.view.View;
 
 import java.util.Random;
 
-/**
- * A particle field animation inspired by geometric network visualizations.
- * Floating particles drift across the screen with connecting lines between
- * nearby particles, creating a modern dark-tech aesthetic.
- */
 public class ParticleFieldView extends View {
 
 	private static final int COLOR_TURQUOISE = 0xFF00E1FF;
@@ -35,12 +30,12 @@ public class ParticleFieldView extends View {
 	private final Paint linePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 	private final Random random = new Random();
 
-	private float[] px, py;     // positions
-	private float[] vx, vy;     // velocities
-	private float[] radii;      // particle sizes
-	private float[] alphas;     // particle opacities
-	private int[] colors;       // particle colors
-	private float[] wobblePhase; // sine wobble offset per particle
+	private float[] px, py;
+	private float[] vx, vy;
+	private float[] radii;
+	private float[] alphas;
+	private int[] colors;
+	private float[] wobblePhase;
 
 	private int viewWidth, viewHeight;
 	private volatile boolean isRunning = false;
@@ -112,29 +107,26 @@ public class ParticleFieldView extends View {
 		long now = System.nanoTime();
 		float dt = lastFrameTime == 0 ? 16f : (now - lastFrameTime) / 1_000_000f;
 		lastFrameTime = now;
-		// Clamp delta to avoid jumps when resuming from background
+
 		dt = Math.min(dt, 50f);
 
 		canvas.drawColor(COLOR_BACKGROUND);
 
 		int count = px.length;
 
-		// Update positions
 		for (int i = 0; i < count; i++) {
-			// Subtle sine wobble
+
 			float wobble = (float) Math.sin(wobblePhase[i]) * 0.05f;
 			px[i] += (vx[i] + wobble) * dt;
 			py[i] += (vy[i] + wobble * 0.7f) * dt;
 			wobblePhase[i] += 0.002f * dt;
 
-			// Wrap around edges with margin
 			if (px[i] < -20) px[i] = viewWidth + 20;
 			if (px[i] > viewWidth + 20) px[i] = -20;
 			if (py[i] < -20) py[i] = viewHeight + 20;
 			if (py[i] > viewHeight + 20) py[i] = -20;
 		}
 
-		// Draw connection lines between nearby particles
 		float connDistSq = CONNECTION_DISTANCE * CONNECTION_DISTANCE;
 		for (int i = 0; i < count; i++) {
 			for (int j = i + 1; j < count; j++) {
@@ -144,7 +136,7 @@ public class ParticleFieldView extends View {
 				if (distSq < connDistSq) {
 					float dist = (float) Math.sqrt(distSq);
 					float lineAlpha = (1f - dist / CONNECTION_DISTANCE) * LINE_MAX_ALPHA;
-					// Use the average color of both particles
+
 					int color = colors[i];
 					linePaint.setColor(color);
 					linePaint.setAlpha((int) (lineAlpha * 255));
@@ -153,13 +145,11 @@ public class ParticleFieldView extends View {
 			}
 		}
 
-		// Draw particles
 		for (int i = 0; i < count; i++) {
 			particlePaint.setColor(colors[i]);
 			particlePaint.setAlpha((int) (alphas[i] * 255));
 			canvas.drawCircle(px[i], py[i], radii[i], particlePaint);
 
-			// Draw a soft glow for brighter particles
 			if (alphas[i] > 0.6f) {
 				particlePaint.setAlpha((int) (alphas[i] * 40));
 				canvas.drawCircle(px[i], py[i], radii[i] * 3f, particlePaint);

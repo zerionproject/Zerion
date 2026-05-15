@@ -75,7 +75,6 @@ public class GroupListViewModelTest extends BrambleMockTestCase {
 
 	private final GroupListViewModel viewModel;
 
-
 	private final Group g1 = getGroup(CLIENT_ID, MAJOR_VERSION);
 	private final Group g2 = getGroup(CLIENT_ID, MAJOR_VERSION);
 	private final PrivateGroup privateGroup1 =
@@ -143,23 +142,21 @@ public class GroupListViewModelTest extends BrambleMockTestCase {
 
 		viewModel.loadGroups();
 
-		// unpack updated live data
 		LiveResult<List<GroupItem>> result =
 				getOrAwaitValue(viewModel.getGroupItems());
 		assertFalse(result.hasError());
 		List<GroupItem> liveList = result.getResultOrNull();
 		assertNotNull(liveList);
-		// list is sorted by last message timestamp
+
 		assertEquals(Arrays.asList(item2, item1), liveList);
 
-		// group 1 gets dissolved by creator
 		Event dissolvedEvent = new GroupDissolvedEvent(privateGroup1.getId());
 		viewModel.eventOccurred(dissolvedEvent);
 		result = getOrAwaitValue(viewModel.getGroupItems());
 		liveList = result.getResultOrNull();
 		assertNotNull(liveList);
 		assertEquals(2, liveList.size());
-		// assert that list update includes dissolved group item
+
 		for (GroupItem item : liveList) {
 			if (item.getId().equals(privateGroup1.getId())) {
 				assertTrue(item.isDissolved());

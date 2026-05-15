@@ -30,19 +30,14 @@ import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
 import java.util.concurrent.Executor;
 
-/**
- * Bottom-sheet sticker picker. Two tabs:
- *   "Standard"   — 36 curated emojis, sent as plain text.
- *   "My Stickers" — user-imported PNGs, sent as image/png; profile=sticker.
- */
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
 public class StickerPickerDialog extends BottomSheetDialogFragment {
 
 	public interface StickerPickerListener {
-		/** Standard pack tap: send as plain text. */
+
 		void onStickerEmojiPicked(String emoji);
-		/** Custom sticker tap: ship as image/png; profile=sticker. */
+
 		void onCustomStickerPicked(byte[] pngBytes);
 	}
 
@@ -83,9 +78,7 @@ public class StickerPickerDialog extends BottomSheetDialogFragment {
 			throw new RuntimeException(context
 					+ " must implement StickerPickerDialog.StickerPickerListener");
 		}
-		// Pull the IO executor straight off the application component;
-		// avoids needing a separate Dagger inject() entry just for the
-		// dialog's import/load/delete tasks.
+
 		ZerionApplication app =
 				(ZerionApplication) context.getApplicationContext();
 		ioExecutor = app.getApplicationComponent().ioExecutor();
@@ -153,7 +146,6 @@ public class StickerPickerDialog extends BottomSheetDialogFragment {
 								.ImageOnly.INSTANCE)
 						.build()));
 
-		// Default tab = Standard
 		recycler.setAdapter(standardAdapter);
 		refreshTabStyles();
 

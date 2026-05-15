@@ -179,7 +179,6 @@ public class VoiceMessageHandler {
 
 		byte[] voiceData = processVoiceMessage(voiceFile);
 
-
 		voiceFile.delete();
 
 	}

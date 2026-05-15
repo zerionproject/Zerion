@@ -78,7 +78,6 @@ import static org.junit.Assert.assertTrue;
 public class IntroductionIntegrationTest
 		extends BriarIntegrationTest<IntroductionIntegrationTestComponent> {
 
-	// objects accessed from background threads need to be volatile
 	private volatile IntroductionManager introductionManager0;
 	private volatile IntroductionManager introductionManager1;
 	private volatile IntroductionManager introductionManager2;
@@ -106,7 +105,6 @@ public class IntroductionIntegrationTest
 		g1 = introductionManager0.getContactGroup(contact1From0);
 		g2 = introductionManager0.getContactGroup(contact2From0);
 
-		// initialize waiter fresh for each test
 		eventWaiter = new Waiter();
 
 		addTransportProperties();
@@ -140,18 +138,15 @@ public class IntroductionIntegrationTest
 	public void testIntroductionSession() throws Exception {
 		addListeners(true, true);
 
-		// make introduction
 		Contact introducee1 = contact1From0;
 		Contact introducee2 = contact2From0;
 		introductionManager0.makeIntroduction(introducee1, introducee2, "Hi!");
 
-		// check that messages are tracked properly
 		Group g1 = introductionManager0.getContactGroup(introducee1);
 		Group g2 = introductionManager0.getContactGroup(introducee2);
 		assertGroupCount(messageTracker0, g1.getId(), 1, 0);
 		assertGroupCount(messageTracker0, g2.getId(), 1, 0);
 
-		// check that request message states are correct
 		Collection<ConversationMessageHeader> messages = getMessages1From0();
 		assertEquals(1, messages.size());
 		assertMessageState(messages.iterator().next(), true, false, false);
@@ -159,7 +154,6 @@ public class IntroductionIntegrationTest
 		assertEquals(1, messages.size());
 		assertMessageState(messages.iterator().next(), true, false, false);
 
-		// sync first REQUEST message
 		sync0To1(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 		assertTrue(listener1.requestReceived);
@@ -167,7 +161,6 @@ public class IntroductionIntegrationTest
 				listener1.getRequest().getName());
 		assertGroupCount(messageTracker1, g1.getId(), 2, 1);
 
-		// check that accept message state is correct
 		messages = getMessages0From1();
 		assertEquals(2, messages.size());
 		for (ConversationMessageHeader h : messages) {
@@ -176,7 +169,6 @@ public class IntroductionIntegrationTest
 			}
 		}
 
-		// sync second REQUEST message
 		sync0To2(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 		assertTrue(listener2.requestReceived);
@@ -184,7 +176,6 @@ public class IntroductionIntegrationTest
 				listener2.getRequest().getName());
 		assertGroupCount(messageTracker2, g2.getId(), 2, 1);
 
-		// sync first ACCEPT message
 		sync1To0(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 		assertTrue(listener0.response1Received);
@@ -193,7 +184,6 @@ public class IntroductionIntegrationTest
 		assertGroupCount(messageTracker0, g1.getId(), 2, 1);
 		assertTrue(listener0.getResponse().canSucceed());
 
-		// sync second ACCEPT message
 		sync2To0(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 		assertTrue(listener0.response2Received);
@@ -202,34 +192,27 @@ public class IntroductionIntegrationTest
 		assertGroupCount(messageTracker0, g2.getId(), 2, 1);
 		assertTrue(listener0.getResponse().canSucceed());
 
-		// sync forwarded ACCEPT messages to introducees
 		sync0To1(1, true);
 		sync0To2(1, true);
 
-		// sync first AUTH and its forward
 		sync1To0(1, true);
 		sync0To2(1, true);
 
-		// assert that introducee2 did add the transport keys
 		IntroduceeSession session2 = getIntroduceeSession(c2);
 		assertNotNull(session2.getTransportKeys());
 		assertFalse(session2.getTransportKeys().isEmpty());
 
-		// sync second AUTH and its forward as well as the following ACTIVATE
 		sync2To0(2, true);
 		sync0To1(2, true);
 
-		// assert that introducee1 really purged the key material
 		IntroduceeSession session1 = getIntroduceeSession(c1);
 		assertNull(session1.getMasterKey());
 		assertNull(session1.getLocal().ephemeralPrivateKey);
 		assertNull(session1.getTransportKeys());
 
-		// sync second ACTIVATE and its forward
 		sync1To0(1, true);
 		sync0To2(1, true);
 
-		// wait for introduction to succeed
 		eventWaiter.await(TIMEOUT, 2);
 		assertTrue(listener1.succeeded);
 		assertTrue(listener2.succeeded);
@@ -239,7 +222,6 @@ public class IntroductionIntegrationTest
 		assertTrue(contactManager2
 				.contactExists(author1.getId(), author2.getId()));
 
-		// make sure that introduced contacts are not verified
 		for (Contact c : contactManager1.getContacts()) {
 			if (c.getAuthor().equals(author2)) {
 				assertFalse(c.isVerified());
@@ -262,59 +244,47 @@ public class IntroductionIntegrationTest
 	public void testIntroductionSessionWithAutoDelete() throws Exception {
 		addListeners(true, true);
 
-		// 0 and 1 set an auto-delete timer for their conversation
 		setAutoDeleteTimer(c0, contactId1From0, MIN_AUTO_DELETE_TIMER_MS);
 		setAutoDeleteTimer(c1, contactId0From1, MIN_AUTO_DELETE_TIMER_MS);
 
-		// Make introduction
 		introductionManager0
 				.makeIntroduction(contact1From0, contact2From0, "Hi!");
 
-		// Sync first REQUEST message
 		sync0To1(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 
-		// Sync second REQUEST message
 		sync0To2(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 
-		// Sync first ACCEPT message
 		sync1To0(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 
-		// Sync second ACCEPT message
 		sync2To0(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 
-		// Sync forwarded ACCEPT messages to introducees
 		sync0To1(1, true);
 		sync0To2(1, true);
 
-		// Sync first AUTH and its forward
 		sync1To0(1, true);
 		sync0To2(1, true);
 
-		// Sync second AUTH and its forward as well as the following ACTIVATE
 		sync2To0(2, true);
 		sync0To1(2, true);
 
-		// Sync second ACTIVATE and its forward
 		sync1To0(1, true);
 		sync0To2(1, true);
 
-		// Wait for introduction to succeed
 		eventWaiter.await(TIMEOUT, 2);
 		assertTrue(listener1.succeeded);
 		assertTrue(listener2.succeeded);
 
-		// All visible messages between 0 and 1 should have auto-delete timers
 		for (ConversationMessageHeader h : getMessages1From0()) {
 			assertEquals(MIN_AUTO_DELETE_TIMER_MS, h.getAutoDeleteTimer());
 		}
 		for (ConversationMessageHeader h : getMessages0From1()) {
 			assertEquals(MIN_AUTO_DELETE_TIMER_MS, h.getAutoDeleteTimer());
 		}
-		// No visible messages between 0 and 2 should have auto-delete timers
+
 		for (ConversationMessageHeader h : getMessages2From0()) {
 			assertEquals(NO_AUTO_DELETE_TIMER, h.getAutoDeleteTimer());
 		}
@@ -327,30 +297,24 @@ public class IntroductionIntegrationTest
 	public void testIntroductionSessionFirstDecline() throws Exception {
 		addListeners(false, true);
 
-		// make introduction
 		Contact introducee1 = contact1From0;
 		Contact introducee2 = contact2From0;
 		introductionManager0.makeIntroduction(introducee1, introducee2, null);
 
-		// sync request messages
 		sync0To1(1, true);
 		sync0To2(1, true);
 
-		// wait for requests to arrive
 		eventWaiter.await(TIMEOUT, 2);
 		assertTrue(listener1.requestReceived);
 		assertTrue(listener2.requestReceived);
 
-		// assert that introducee is in correct state
 		IntroduceeSession introduceeSession = getIntroduceeSession(c1);
 		assertEquals(LOCAL_DECLINED, introduceeSession.getState());
 
-		// sync first response
 		sync1To0(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 		assertTrue(listener0.response1Received);
 
-		// assert that introducer is in correct state
 		boolean alice = c0.getIntroductionCrypto()
 				.isAlice(introducee1.getAuthor().getId(),
 						introducee2.getAuthor().getId());
@@ -358,24 +322,19 @@ public class IntroductionIntegrationTest
 		assertEquals(alice ? A_DECLINED : B_DECLINED,
 				introducerSession.getState());
 
-		// assert that the name on the decline event is correct
 		assertEquals(introducee2.getAuthor().getName(),
 				listener0.getResponse().getIntroducedAuthor().getName());
 		assertFalse(listener0.getResponse().canSucceed());
 
-		// sync second response
 		sync2To0(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 		assertTrue(listener0.response2Received);
 
-		// assert that introducer now moved to START state
 		introducerSession = getIntroducerSession();
 		assertEquals(START, introducerSession.getState());
 
-		// sync first forwarded response
 		sync0To2(1, true);
 
-		// assert that the name on the decline event is correct
 		eventWaiter.await(TIMEOUT, 1);
 		assertEquals(introducee1.getAuthor().getName(),
 				listener2.getResponse().getIntroducedAuthor().getName());
@@ -400,7 +359,7 @@ public class IntroductionIntegrationTest
 		messages = getMessages0From1();
 		assertEquals(2, messages.size());
 		assertGroupCount(messageTracker1, g1.getId(), 2, 1);
-		// introducee2 should also have the decline response of introducee1
+
 		messages = getMessages0From2();
 		assertEquals(3, messages.size());
 		assertGroupCount(messageTracker2, g2.getId(), 3, 2);
@@ -414,34 +373,27 @@ public class IntroductionIntegrationTest
 	public void testIntroductionSessionSecondDecline() throws Exception {
 		addListeners(true, false);
 
-		// make introduction
 		introductionManager0
 				.makeIntroduction(contact1From0, contact2From0, null);
 
-		// sync request messages
 		sync0To1(1, true);
 		sync0To2(1, true);
 
-		// wait for requests to arrive
 		eventWaiter.await(TIMEOUT, 2);
 		assertTrue(listener1.requestReceived);
 		assertTrue(listener2.requestReceived);
 
-		// sync first response
 		sync1To0(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 		assertTrue(listener0.response1Received);
 
-		// sync second response
 		sync2To0(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 		assertTrue(listener0.response2Received);
 
-		// sync both forwarded response
 		sync0To2(1, true);
 		sync0To1(1, true);
 
-		// assert that the name on the decline event is correct
 		eventWaiter.await(TIMEOUT, 1);
 		assertEquals(contact2From0.getAuthor().getName(),
 				listener1.getResponse().getIntroducedAuthor().getName());
@@ -469,24 +421,19 @@ public class IntroductionIntegrationTest
 	public void testNewIntroductionAfterDecline() throws Exception {
 		addListeners(false, true);
 
-		// make introduction
 		introductionManager0
 				.makeIntroduction(contact1From0, contact2From0, null);
 
-		// sync request messages
 		sync0To1(1, true);
 		sync0To2(1, true);
 		eventWaiter.await(TIMEOUT, 2);
 
-		// sync first response
 		sync1To0(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 
-		// sync second response
 		sync2To0(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 
-		// sync both forwarded response
 		sync0To2(1, true);
 		sync0To1(1, true);
 		eventWaiter.await(TIMEOUT, 1);
@@ -498,7 +445,6 @@ public class IntroductionIntegrationTest
 		introductionManager0
 				.makeIntroduction(contact1From0, contact2From0, null);
 
-		// sync request messages
 		sync0To1(1, true);
 		sync0To2(1, true);
 		eventWaiter.await(TIMEOUT, 2);
@@ -512,42 +458,32 @@ public class IntroductionIntegrationTest
 	public void testResponseAndAuthInOneSync() throws Exception {
 		addListeners(true, true);
 
-		// make introduction
 		introductionManager0
 				.makeIntroduction(contact1From0, contact2From0, "Hi!");
 
-		// sync first request message
 		sync0To1(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 		assertTrue(listener1.requestReceived);
 
-		// sync first response
 		sync1To0(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 		assertTrue(listener0.response1Received);
 
-		// don't let 2 answer the request right away
-		// to have the response arrive first
 		listener2.answerRequests = false;
 
-		// sync second request message and first response
 		sync0To2(2, true);
 		eventWaiter.await(TIMEOUT, 1);
 		assertTrue(listener2.requestReceived);
 
-		// answer request manually
 		introductionManager2.respondToIntroduction(contactId0From2,
 				listener2.sessionId, true);
 
-		// sync second response and AUTH
 		sync2To0(2, true);
 		eventWaiter.await(TIMEOUT, 1);
 		assertTrue(listener0.response2Received);
 
-		// Forward AUTH and response
 		sync0To1(2, true);
 
-		// Second AUTH and ACTIVATE and forward them
 		sync1To0(2, true);
 		sync0To2(2, true);
 
@@ -562,36 +498,26 @@ public class IntroductionIntegrationTest
 		assertFalse(listener2.aborted);
 	}
 
-	/**
-	 * When an introducee declines an introduction, the other introducee needs
-	 * to respond before returning to the START state, otherwise a subsequent
-	 * attempt at introducing the same contacts will fail.
-	 */
 	@Test
 	public void testIntroductionSessionManualDecline() throws Exception {
 		addListeners(false, true);
 		listener2.answerRequests = false;
 
-		// make introduction
 		Contact introducee1 = contact1From0;
 		Contact introducee2 = contact2From0;
 		introductionManager0
 				.makeIntroduction(introducee1, introducee2, null);
 
-		// sync request messages
 		sync0To1(1, true);
 		sync0To2(1, true);
 
-		// assert that introducee1 is in correct state
 		IntroduceeSession introduceeSession = getIntroduceeSession(c1);
 		assertEquals(LOCAL_DECLINED, introduceeSession.getState());
 
-		// sync first response
 		sync1To0(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 		assertTrue(listener0.response1Received);
 
-		// assert that introducer is in correct state
 		boolean alice = c0.getIntroductionCrypto()
 				.isAlice(introducee1.getAuthor().getId(),
 						introducee2.getAuthor().getId());
@@ -599,48 +525,37 @@ public class IntroductionIntegrationTest
 		assertEquals(alice ? A_DECLINED : B_DECLINED,
 				introducerSession.getState());
 
-		// assert that introducee2 is in correct state
 		introduceeSession = getIntroduceeSession(c2);
 		assertEquals(AWAIT_RESPONSES, introduceeSession.getState());
 
-		// forward first DECLINE
 		sync0To2(1, true);
 
-		// assert that the name on the decline event is correct
 		eventWaiter.await(TIMEOUT, 1);
 		assertEquals(introducee1.getAuthor().getName(),
 				listener2.getResponse().getIntroducedAuthor().getName());
 
-		// assert that introducee2 is in correct state
 		introduceeSession = getIntroduceeSession(c2);
 		assertEquals(IntroduceeState.REMOTE_DECLINED,
 				introduceeSession.getState());
 
-		// answer request manually
 		introductionManager2.respondToIntroduction(contactId0From2,
 				listener2.sessionId, false);
 
-		// now introducee2 should have returned to the START state
 		introduceeSession = getIntroduceeSession(c2);
 		assertEquals(IntroduceeState.START, introduceeSession.getState());
 
-		// sync second response
 		sync2To0(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 		assertTrue(listener0.response2Received);
 
-		// assert that introducer now moved to START state
 		introducerSession = getIntroducerSession();
 		assertEquals(START, introducerSession.getState());
 
-		// introducee1 is still waiting for second response
 		introduceeSession = getIntroduceeSession(c1);
 		assertEquals(LOCAL_DECLINED, introduceeSession.getState());
 
-		// forward second response
 		sync0To1(1, true);
 
-		// introducee1 can finally move to the START
 		introduceeSession = getIntroduceeSession(c1);
 		assertEquals(IntroduceeState.START, introduceeSession.getState());
 
@@ -664,20 +579,15 @@ public class IntroductionIntegrationTest
 	public void testIntroductionToSameContact() throws Exception {
 		addListeners(true, false);
 
-		// make introduction
 		introductionManager0
 				.makeIntroduction(contact1From0, contact1From0, null);
 
-		// sync request messages
 		sync0To1(1, false);
 
-		// we should not get any event, because the request will be discarded
 		assertFalse(listener1.requestReceived);
 
-		// make really sure we don't have that request
 		assertTrue(getMessages0From1().isEmpty());
 
-		// The message was invalid, so no abort message was sent
 		assertFalse(listener0.aborted);
 		assertFalse(listener1.aborted);
 		assertFalse(listener2.aborted);
@@ -685,42 +595,35 @@ public class IntroductionIntegrationTest
 
 	@Test(expected = ProtocolStateException.class)
 	public void testDoubleIntroduction() throws Exception {
-		// we can make an introduction
+
 		assertTrue(introductionManager0
 				.canIntroduce(contact1From0, contact2From0));
 
-		// make the introduction
 		introductionManager0
 				.makeIntroduction(contact1From0, contact2From0, null);
 
-		// no more introduction allowed while the existing one is in progress
 		assertFalse(introductionManager0
 				.canIntroduce(contact1From0, contact2From0));
 
-		// try it anyway and fail
 		introductionManager0
 				.makeIntroduction(contact1From0, contact2From0, null);
 	}
 
 	@Test
 	public void testIntroductionToExistingContact() throws Exception {
-		// let contact1 and contact2 add each other already
+
 		addContacts1And2(true);
 		assertNotNull(contactId2From1);
 		assertNotNull(contactId1From2);
 
-		// both will still accept the introduction
 		addListeners(true, true);
 
-		// make the introduction
 		introductionManager0
 				.makeIntroduction(contact1From0, contact2From0, null);
 
-		// sync REQUEST messages
 		sync0To1(1, true);
 		sync0To2(1, true);
 
-		// assert that introducees get notified about the existing contact
 		IntroductionRequest ir1 = getIntroductionRequest(db1,
 				introductionManager1, contactId0From1);
 		assertTrue(ir1.isContact());
@@ -728,27 +631,21 @@ public class IntroductionIntegrationTest
 				introductionManager2, contactId0From2);
 		assertTrue(ir2.isContact());
 
-		// sync ACCEPT messages back to introducer
 		sync1To0(1, true);
 		sync2To0(1, true);
 
-		// sync forwarded ACCEPT messages to introducees
 		sync0To1(1, true);
 		sync0To2(1, true);
 
-		// sync first AUTH and its forward
 		sync1To0(1, true);
 		sync0To2(1, true);
 
-		// sync second AUTH and its forward as well as the following ACTIVATE
 		sync2To0(2, true);
 		sync0To1(2, true);
 
-		// sync second ACTIVATE and its forward
 		sync1To0(1, true);
 		sync0To2(1, true);
 
-		// assert that no session was aborted and no success event was broadcast
 		assertFalse(listener1.succeeded);
 		assertFalse(listener2.succeeded);
 		assertFalse(listener0.aborted);
@@ -758,78 +655,58 @@ public class IntroductionIntegrationTest
 
 	@Test
 	public void testIntroductionToRemovedContact() throws Exception {
-		// let contact1 and contact2 add each other
+
 		addContacts1And2(true);
 		assertNotNull(contactId2From1);
 		assertNotNull(contactId1From2);
 
-		// only introducee1 removes introducee2
 		contactManager1.removeContact(contactId2From1);
 
-		// both will accept the introduction
 		addListeners(true, true);
 
-		// make the introduction
 		introductionManager0
 				.makeIntroduction(contact1From0, contact2From0, null);
 
-		// sync REQUEST messages
 		sync0To1(1, true);
 		sync0To2(1, true);
 
-		// sync ACCEPT messages back to introducer
 		sync1To0(1, true);
 		sync2To0(1, true);
 
-		// sync forwarded ACCEPT messages to introducees
 		sync0To1(1, true);
 		sync0To2(1, true);
 
-		// sync first AUTH and its forward
 		sync1To0(1, true);
 		sync0To2(1, true);
 
-		// sync second AUTH and its forward as well as the following ACTIVATE
 		sync2To0(2, true);
 		sync0To1(2, true);
 
-		// sync second ACTIVATE and its forward
 		sync1To0(1, true);
 		sync0To2(1, true);
 
-		// Introduction only succeeded for introducee1
 		assertTrue(listener1.succeeded);
 		assertFalse(listener2.succeeded);
 
-		// assert that no session was aborted
 		assertFalse(listener0.aborted);
 		assertFalse(listener1.aborted);
 		assertFalse(listener2.aborted);
 	}
 
-	/**
-	 * One introducee illegally sends two ACCEPT messages in a row.
-	 * The introducer should notice this and ABORT the session.
-	 */
 	@Test
 	public void testDoubleAccept() throws Exception {
 		addListeners(true, true);
 
-		// make the introduction
 		introductionManager0
 				.makeIntroduction(contact1From0, contact2From0, null);
 
-		// sync REQUEST to introducee1
 		sync0To1(1, true);
 
-		// save ACCEPT from introducee1
 		AcceptMessage m = (AcceptMessage) getMessageFor(c1.getClientHelper(),
 				contact0From1, ACCEPT);
 
-		// sync ACCEPT back to introducer
 		sync1To0(1, true);
 
-		// fake a second ACCEPT message from introducee1
 		Message msg = c1.getMessageEncoder()
 				.encodeAcceptMessage(m.getGroupId(), m.getTimestamp() + 1,
 						m.getMessageId(), m.getSessionId(),
@@ -837,119 +714,86 @@ public class IntroductionIntegrationTest
 						m.getTransportProperties());
 		c1.getClientHelper().addLocalMessage(msg, new BdfDictionary(), true);
 
-		// sync fake ACCEPT back to introducer
 		sync1To0(1, true);
 
 		assertTrue(listener0.aborted);
 	}
 
-	/**
-	 * One introducee sends an ACCEPT and then another DECLINE message.
-	 * The introducer should notice this and ABORT the session.
-	 */
 	@Test
 	public void testAcceptAndDecline() throws Exception {
 		addListeners(true, true);
 
-		// make the introduction
 		introductionManager0
 				.makeIntroduction(contact1From0, contact2From0, null);
 
-		// sync REQUEST to introducee1
 		sync0To1(1, true);
 
-		// save ACCEPT from introducee1
 		AcceptMessage m = (AcceptMessage) getMessageFor(c1.getClientHelper(),
 				contact0From1, ACCEPT);
 
-		// sync ACCEPT back to introducer
 		sync1To0(1, true);
 
-		// fake a second DECLINE message also from introducee1
 		Message msg = c1.getMessageEncoder()
 				.encodeDeclineMessage(m.getGroupId(), m.getTimestamp() + 1,
 						m.getMessageId(), m.getSessionId());
 		c1.getClientHelper().addLocalMessage(msg, new BdfDictionary(), true);
 
-		// sync fake DECLINE back to introducer
 		sync1To0(1, true);
 
 		assertTrue(listener0.aborted);
 	}
 
-	/**
-	 * One introducee sends an DECLINE and then another DECLINE message.
-	 * The introducer should notice this and ABORT the session.
-	 */
 	@Test
 	public void testDoubleDecline() throws Exception {
 		addListeners(false, true);
 
-		// make the introduction
 		introductionManager0
 				.makeIntroduction(contact1From0, contact2From0, null);
 
-		// sync REQUEST to introducee1
 		sync0To1(1, true);
 
-		// save DECLINE from introducee1
 		DeclineMessage m = (DeclineMessage) getMessageFor(c1.getClientHelper(),
 				contact0From1, DECLINE);
 
-		// sync DECLINE back to introducer
 		sync1To0(1, true);
 
-		// fake a second DECLINE message also from introducee1
 		Message msg = c1.getMessageEncoder()
 				.encodeDeclineMessage(m.getGroupId(), m.getTimestamp() + 1,
 						m.getMessageId(), m.getSessionId());
 		c1.getClientHelper().addLocalMessage(msg, new BdfDictionary(), true);
 
-		// sync fake DECLINE back to introducer
 		sync1To0(1, true);
 
 		assertTrue(listener0.aborted);
 	}
 
-	/**
-	 * One introducee sends two AUTH messages.
-	 * The introducer should notice this and ABORT the session.
-	 */
 	@Test
 	public void testDoubleAuth() throws Exception {
 		addListeners(true, true);
 
-		// make the introduction
 		introductionManager0
 				.makeIntroduction(contact1From0, contact2From0, null);
 
-		// sync REQUEST messages
 		sync0To1(1, true);
 		sync0To2(1, true);
 
-		// sync ACCEPT messages
 		sync1To0(1, true);
 		sync2To0(1, true);
 
-		// sync forwarded ACCEPT messages to introducees
 		sync0To1(1, true);
 		sync0To2(1, true);
 
-		// save AUTH from introducee1
 		AuthMessage m = (AuthMessage) getMessageFor(c1.getClientHelper(),
 				contact0From1, AUTH);
 
-		// sync first AUTH message
 		sync1To0(1, true);
 
-		// fake a second AUTH message also from introducee1
 		Message msg = c1.getMessageEncoder()
 				.encodeAuthMessage(m.getGroupId(), m.getTimestamp() + 1,
 						m.getMessageId(), m.getSessionId(), m.getMac(),
 						m.getSignature());
 		c1.getClientHelper().addLocalMessage(msg, new BdfDictionary(), true);
 
-		// sync second AUTH message
 		sync1To0(1, true);
 
 		assertTrue(listener0.aborted);
@@ -959,26 +803,20 @@ public class IntroductionIntegrationTest
 	public void testIntroducerRemovedCleanup() throws Exception {
 		addListeners(true, true);
 
-		// make introduction
 		introductionManager0
 				.makeIntroduction(contact1From0, contact2From0, "Hi!");
 
-		// sync first request message
 		sync0To1(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 		assertTrue(listener1.requestReceived);
 
-		// get local group for introducee1
 		Group group1 = getLocalGroup();
 
-		// check that we have one session state
 		assertEquals(1, c1.getClientHelper()
 				.getMessageMetadataAsDictionary(group1.getId()).size());
 
-		// introducee1 removes introducer
 		contactManager1.removeContact(contactId0From1);
 
-		// make sure local state got deleted
 		assertEquals(0, c1.getClientHelper()
 				.getMessageMetadataAsDictionary(group1.getId()).size());
 	}
@@ -986,59 +824,45 @@ public class IntroductionIntegrationTest
 	@Test
 	public void testIntroduceesRemovedCleanup() throws Exception {
 		addListeners(true, true);
-		// The second introducee shouldn't respond to the introduction
-		// otherwise there would be a race between the response to the REQUEST
-		// and the delivery of the ABORT
+
 		listener2.answerRequests = false;
 
-		// make introduction
 		introductionManager0
 				.makeIntroduction(contact1From0, contact2From0, "Hi!");
 
-		// sync first request message
 		sync0To1(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 		assertTrue(listener1.requestReceived);
 
-		// get local group for introducer
 		Group group0 = getLocalGroup();
 
-		// check that we have one session state
 		assertEquals(1, c0.getClientHelper()
 				.getMessageMetadataAsDictionary(group0.getId()).size());
 
-		// introducer removes introducee1
 		contactManager0.removeContact(contactId1From0);
 
-		// make sure local state is still there
 		assertEquals(1, c0.getClientHelper()
 				.getMessageMetadataAsDictionary(group0.getId()).size());
 
-		// ensure introducer has aborted the session
-		eventWaiter.await(TIMEOUT, 1);  // wait for AbortEvent
+		eventWaiter.await(TIMEOUT, 1);
 		assertTrue(listener0.aborted);
 
-		// sync REQUEST and ABORT message
 		sync0To2(2, true);
 
-		// ensure introducee2 has aborted the session as well
 		assertTrue(listener2.aborted);
 
-		// introducer removes other introducee
 		contactManager0.removeContact(contactId2From0);
 
-		// make sure local state is gone now
 		assertEquals(0, c0.getClientHelper()
 				.getMessageMetadataAsDictionary(group0.getId()).size());
 	}
 
 	@Test
 	public void testIntroductionAfterReAddingContacts() throws Exception {
-		// make introduction
+
 		introductionManager0
 				.makeIntroduction(contact1From0, contact2From0, null);
 
-		// 0 and 1 remove and re-add each other
 		contactManager0.removeContact(contactId1From0);
 		contactManager1.removeContact(contactId0From1);
 		SecretKey rootKey0_1 = getSecretKey();
@@ -1051,29 +875,22 @@ public class IntroductionIntegrationTest
 				true);
 		contact0From1 = contactManager1.getContact(contactId0From1);
 
-		// Sync initial client versioning updates, mailbox updates, and
-		// transport properties
 		sync0To1(1, true);
 		sync1To0(1, true);
 		sync0To1(3, true);
 		sync1To0(2, true);
 		ack0To1(2);
 
-		// a new introduction should be possible
 		assertTrue(introductionManager0
 				.canIntroduce(contact1From0, contact2From0));
 
-		// listen to events, so we don't miss new request
 		addListeners(true, true);
 
-		// make new introduction
 		introductionManager0
 				.makeIntroduction(contact1From0, contact2From0, null);
 
-		// introduction should sync and not be INVALID or PENDING
 		sync0To1(1, true);
 
-		// assert that new request was received
 		eventWaiter.await(TIMEOUT, 1);
 		assertTrue(listener1.requestReceived);
 	}
@@ -1081,28 +898,22 @@ public class IntroductionIntegrationTest
 	private void testModifiedResponse(StateVisitor visitor) throws Exception {
 		addListeners(true, true);
 
-		// make introduction
 		introductionManager0
 				.makeIntroduction(contact1From0, contact2From0, "Hi!");
 
-		// sync request messages
 		sync0To1(1, true);
 		sync0To2(1, true);
 		eventWaiter.await(TIMEOUT, 2);
 
-		// sync first response
 		sync1To0(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 
-		// get response to be forwarded
 		AcceptMessage message =
 				(AcceptMessage) getMessageFor(c0.getClientHelper(),
 						contact2From0, ACCEPT);
 
-		// allow visitor to modify response
 		AcceptMessage m = visitor.visit(message);
 
-		// replace original response with modified one
 		db0.transaction(false, txn -> {
 			db0.removeMessage(txn, message.getMessageId());
 			Message msg = c0.getMessageEncoder()
@@ -1125,33 +936,25 @@ public class IntroductionIntegrationTest
 					session.getValue());
 		});
 
-		// sync second response
 		sync2To0(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 
-		// sync forwarded responses to introducees
 		sync0To1(1, true);
 		sync0To2(1, true);
 
-		// sync first AUTH and forward it
 		sync1To0(1, true);
 		sync0To2(1, true);
 
-		// introducee2 should have detected the fake now
 		assertFalse(listener0.aborted);
 		assertFalse(listener1.aborted);
 		assertTrue(listener2.aborted);
 
-		// sync introducee2's ack and following abort
 		sync2To0(2, true);
 
-		// ensure introducer got the abort
 		assertTrue(listener0.aborted);
 
-		// sync abort messages to introducees
 		sync0To1(2, true);
 
-		// ensure everybody got the abort now
 		assertTrue(listener0.aborted);
 		assertTrue(listener1.aborted);
 		assertTrue(listener2.aborted);
@@ -1195,148 +998,122 @@ public class IntroductionIntegrationTest
 			throws Exception {
 		addListeners(true, true);
 
-		// make introduction
 		introductionManager0
 				.makeIntroduction(contact1From0, contact2From0, "Hi!");
 
-		// sync first REQUEST message
 		sync0To1(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 
-		// introducer can not yet remove messages
 		assertFalse(deleteAllMessages1From0().allDeleted());
 		assertTrue(
 				deleteAllMessages1From0().hasIntroductionSessionInProgress());
-		// introducee1 can not yet remove messages
+
 		assertFalse(deleteAllMessages0From1().allDeleted());
 		assertTrue(
 				deleteAllMessages0From1().hasIntroductionSessionInProgress());
 
-		// sync second REQUEST message
 		sync0To2(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 
-		// introducer can not yet remove messages
 		assertFalse(deleteAllMessages2From0().allDeleted());
 		assertTrue(
 				deleteAllMessages2From0().hasIntroductionSessionInProgress());
-		// introducee2 can not yet remove messages
+
 		assertFalse(deleteAllMessages0From2().allDeleted());
 		assertTrue(
 				deleteAllMessages0From2().hasIntroductionSessionInProgress());
 
-		// sync first ACCEPT message
 		sync1To0(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 
-		// introducer can not yet remove messages
 		assertFalse(deleteAllMessages1From0().allDeleted());
 		assertTrue(
 				deleteAllMessages1From0().hasIntroductionSessionInProgress());
 
-		// sync second ACCEPT message
 		sync2To0(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 
-		// introducer can not yet remove messages
 		assertFalse(deleteAllMessages2From0().allDeleted());
 		assertTrue(
 				deleteAllMessages2From0().hasIntroductionSessionInProgress());
 
-		// sync forwarded ACCEPT messages to introducees
 		sync0To1(1, true);
 		sync0To2(1, true);
 
-		// introducee1 can not yet remove messages
 		assertFalse(deleteAllMessages0From1().allDeleted());
 		assertTrue(
 				deleteAllMessages0From1().hasIntroductionSessionInProgress());
-		// introducee2 can not yet remove messages
+
 		assertFalse(deleteAllMessages0From2().allDeleted());
 		assertTrue(
 				deleteAllMessages0From2().hasIntroductionSessionInProgress());
 
-		// sync first AUTH and its forward
 		sync1To0(1, true);
 		sync0To2(1, true);
 
-		// introducer can not yet remove messages
 		assertFalse(deleteAllMessages1From0().allDeleted());
 		assertTrue(
 				deleteAllMessages1From0().hasIntroductionSessionInProgress());
 		assertFalse(deleteAllMessages2From0().allDeleted());
 		assertTrue(
 				deleteAllMessages2From0().hasIntroductionSessionInProgress());
-		// introducee2 can not yet remove messages
+
 		assertFalse(deleteAllMessages0From2().allDeleted());
 		assertTrue(
 				deleteAllMessages0From2().hasIntroductionSessionInProgress());
 
-		// sync second AUTH and its forward as well as the following ACTIVATE
 		sync2To0(2, true);
 		sync0To1(2, true);
 
-		// introducer can not yet remove messages
 		assertFalse(deleteAllMessages1From0().allDeleted());
 		assertTrue(
 				deleteAllMessages1From0().hasIntroductionSessionInProgress());
 		assertFalse(deleteAllMessages2From0().allDeleted());
 		assertTrue(
 				deleteAllMessages2From0().hasIntroductionSessionInProgress());
-		// introducee1 can not yet remove messages
+
 		assertFalse(deleteAllMessages0From1().allDeleted());
 		assertTrue(
 				deleteAllMessages0From1().hasIntroductionSessionInProgress());
 
-		// sync second ACTIVATE and its forward
 		sync1To0(1, true);
 		sync0To2(1, true);
 
-		// wait for introduction to succeed
 		eventWaiter.await(TIMEOUT, 2);
 		assertTrue(listener1.succeeded);
 		assertTrue(listener2.succeeded);
 
-		// check that introducer messages are tracked properly
 		assertGroupCount(messageTracker0, g1.getId(), 2, 1);
 
-		// introducer can now remove messages
 		assertTrue(deleteAllMessages1From0().allDeleted());
 		assertEquals(0, getMessages1From0().size());
-		// a second time returns true
+
 		assertTrue(deleteAllMessages1From0().allDeleted());
 		assertGroupCount(messageTracker0, g1.getId(), 0, 0);
 
-		// introducee1 can not yet remove messages, because last not ACKed
 		DeletionResult result = deleteAllMessages0From1();
 		assertFalse(result.allDeleted());
 		assertTrue(result.hasIntroductionSessionInProgress());
 		assertEquals(2, getMessages0From1().size());
 
-		// check that introducee1 messages are tracked properly
 		assertGroupCount(messageTracker1, g1.getId(), 2, 1);
 
-		// ACK last message
 		ack0To1(1);
 
-		// introducee1 can now remove messages
 		assertTrue(deleteAllMessages0From1().allDeleted());
 		assertEquals(0, getMessages0From1().size());
-		// a second time returns true
+
 		assertTrue(deleteAllMessages0From1().allDeleted());
 		assertGroupCount(messageTracker1, g1.getId(), 0, 0);
 
-		// check that introducee2 messages are tracked properly
 		assertGroupCount(messageTracker2, g2.getId(), 2, 1);
 
-		// introducee2 can remove messages (last message was incoming)
 		assertTrue(deleteAllMessages0From2().allDeleted());
 		assertEquals(0, getMessages0From2().size());
-		// a second time returns true
+
 		assertTrue(deleteAllMessages0From2().allDeleted());
 		assertGroupCount(messageTracker2, g2.getId(), 0, 0);
 
-		// a new introduction is still possible
 		assertTrue(introductionManager0
 				.canIntroduce(contact1From0, contact2From0));
 		introductionManager0
@@ -1344,18 +1121,15 @@ public class IntroductionIntegrationTest
 		sync0To1(1, true);
 		sync0To2(1, true);
 
-		// sync responses
 		sync1To0(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 		sync2To0(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 
-		// no one should have aborted until now
 		assertFalse(listener0.aborted);
 		assertFalse(listener1.aborted);
 		assertFalse(listener2.aborted);
 
-		// nobody can delete anything again
 		result = deleteAllMessages1From0();
 		assertFalse(result.allDeleted());
 		assertTrue(result.hasIntroductionSessionInProgress());
@@ -1369,7 +1143,6 @@ public class IntroductionIntegrationTest
 		assertFalse(result.allDeleted());
 		assertTrue(result.hasIntroductionSessionInProgress());
 
-		// group counts get counted up again correctly
 		assertGroupCount(messageTracker0, g1.getId(), 2, 1);
 		assertGroupCount(messageTracker1, g1.getId(), 2, 1);
 		assertGroupCount(messageTracker2, g2.getId(), 2, 1);
@@ -1379,71 +1152,57 @@ public class IntroductionIntegrationTest
 	public void testDeletingAllMessagesWhenDeclining() throws Exception {
 		addListeners(false, false);
 
-		// make introduction
 		introductionManager0
 				.makeIntroduction(contact1From0, contact2From0, "Hi!");
 
-		// sync REQUEST messages
 		sync0To1(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 		sync0To2(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 
-		// sync first DECLINE message
 		sync1To0(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 
-		// introducer can not yet remove messages
 		assertFalse(deleteAllMessages1From0().allDeleted());
-		// introducee1 can not yet remove messages
+
 		assertFalse(deleteAllMessages0From1().allDeleted());
 
-		// sync second DECLINE message
 		sync2To0(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 
-		// introducer can not yet remove messages
 		assertFalse(deleteAllMessages2From0().allDeleted());
-		// introducee2 can not yet remove messages
+
 		assertFalse(deleteAllMessages0From2().allDeleted());
 
-		// forward first DECLINE message
 		sync0To2(1, true);
 
-		// introducee2 can now remove messages
 		assertTrue(deleteAllMessages0From2().allDeleted());
 		assertEquals(0, getMessages0From2().size());
-		// a second time nothing happens
+
 		assertTrue(deleteAllMessages0From2().allDeleted());
 
-		// forward second DECLINE message
 		sync0To1(1, true);
 
-		// introducee1 can now remove messages
 		assertTrue(deleteAllMessages0From1().allDeleted());
 		assertEquals(0, getMessages0From1().size());
-		// a second time nothing happens
+
 		assertTrue(deleteAllMessages0From1().allDeleted());
 
-		// introducer can not yet remove messages
 		assertFalse(deleteAllMessages1From0().allDeleted());
 		assertFalse(deleteAllMessages2From0().allDeleted());
 
-		// introducer can remove messages after getting ACK from introducee1
 		ack1To0(1);
 		assertTrue(deleteAllMessages1From0().allDeleted());
 		assertEquals(0, getMessages1From0().size());
-		// a second time nothing happens
+
 		assertTrue(deleteAllMessages1From0().allDeleted());
 
-		// introducer can remove messages after getting ACK from introducee2
 		ack2To0(1);
 		assertTrue(deleteAllMessages2From0().allDeleted());
 		assertEquals(0, getMessages2From0().size());
-		// a second time nothing happens
+
 		assertTrue(deleteAllMessages2From0().allDeleted());
 
-		// a new introduction is still possible
 		assertTrue(introductionManager0
 				.canIntroduce(contact1From0, contact2From0));
 		introductionManager0
@@ -1451,18 +1210,15 @@ public class IntroductionIntegrationTest
 		sync0To1(1, true);
 		sync0To2(1, true);
 
-		// sync responses
 		sync1To0(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 		sync2To0(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 
-		// no one should have aborted until now
 		assertFalse(listener0.aborted);
 		assertFalse(listener1.aborted);
 		assertFalse(listener2.aborted);
 
-		// nobody can delete anything again
 		assertFalse(deleteAllMessages1From0().allDeleted());
 		assertFalse(deleteAllMessages2From0().allDeleted());
 		assertFalse(deleteAllMessages0From1().allDeleted());
@@ -1473,34 +1229,28 @@ public class IntroductionIntegrationTest
 	public void testDeletingOneSideOfSession() throws Exception {
 		addListeners(false, false);
 
-		// make introduction
 		introductionManager0
 				.makeIntroduction(contact1From0, contact2From0, "Hi!");
 
-		// sync REQUEST messages
 		sync0To1(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 		sync0To2(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 
-		// sync DECLINE messages
 		sync1To0(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 		sync2To0(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 
-		// forward DECLINE messages
 		sync0To2(1, true);
 		sync0To1(1, true);
 
-		// introducer can remove messages after getting ACK from introducee1
 		ack1To0(1);
 		assertTrue(deleteAllMessages1From0().allDeleted());
 		assertEquals(0, getMessages1From0().size());
-		// a second time nothing happens
+
 		assertTrue(deleteAllMessages1From0().allDeleted());
 
-		// a new introduction is still possible
 		assertTrue(introductionManager0
 				.canIntroduce(contact1From0, contact2From0));
 		introductionManager0
@@ -1508,28 +1258,23 @@ public class IntroductionIntegrationTest
 		sync0To1(1, true);
 		sync0To2(1, true);
 
-		// sync and forward DECLINE messages
 		sync1To0(1, true);
 		sync2To0(1, true);
 		sync0To2(1, true);
 		sync0To1(1, true);
 
-		// introducer can remove messages after getting ACK from introducee1
 		ack1To0(1);
 		assertTrue(deleteAllMessages1From0().allDeleted());
 		assertEquals(0, getMessages1From0().size());
 		assertTrue(deleteAllMessages1From0()
-				.allDeleted());  // a second time nothing happens
+				.allDeleted());
 
-		// introducer can remove messages after getting ACK from introducee2
-		// if this succeeds, we still had the session object after delete above
 		ack2To0(1);
 		assertTrue(deleteAllMessages2From0().allDeleted());
 		assertEquals(0, getMessages2From0().size());
 		assertTrue(deleteAllMessages2From0()
-				.allDeleted());  // a second time nothing happens
+				.allDeleted());
 
-		// no one should have aborted
 		assertFalse(listener0.aborted);
 		assertFalse(listener1.aborted);
 		assertFalse(listener2.aborted);
@@ -1539,11 +1284,9 @@ public class IntroductionIntegrationTest
 	public void testDeletingSomeMessages() throws Exception {
 		addListeners(false, false);
 
-		// make introduction
 		introductionManager0
 				.makeIntroduction(contact1From0, contact2From0, "Hi!");
 
-		// deleting the introduction for introducee1 will fail
 		Collection<ConversationMessageHeader> m1From0 = getMessages1From0();
 		assertEquals(1, m1From0.size());
 		MessageId messageId1 = m1From0.iterator().next().getId();
@@ -1553,7 +1296,6 @@ public class IntroductionIntegrationTest
 		assertTrue(deleteMessages1From0(toDelete1)
 				.hasIntroductionSessionInProgress());
 
-		// deleting the introduction for introducee2 will fail as well
 		Collection<ConversationMessageHeader> m2From0 = getMessages2From0();
 		assertEquals(1, m2From0.size());
 		MessageId messageId2 = m2From0.iterator().next().getId();
@@ -1563,13 +1305,11 @@ public class IntroductionIntegrationTest
 		assertTrue(deleteMessages2From0(toDelete2)
 				.hasIntroductionSessionInProgress());
 
-		// sync REQUEST messages
 		sync0To1(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 		sync0To2(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 
-		// deleting introduction fails, because responses did not arrive
 		assertFalse(deleteMessages0From1(toDelete1).allDeleted());
 		assertTrue(deleteMessages0From1(toDelete1)
 				.hasIntroductionSessionInProgress());
@@ -1577,7 +1317,6 @@ public class IntroductionIntegrationTest
 		assertTrue(deleteMessages0From2(toDelete2)
 				.hasIntroductionSessionInProgress());
 
-		// remember response of introducee1 for future deletion
 		Collection<ConversationMessageHeader> m0From1 = getMessages0From1();
 		assertEquals(2, m0From1.size());
 		MessageId response1 = null;
@@ -1586,7 +1325,6 @@ public class IntroductionIntegrationTest
 		}
 		assertNotNull(response1);
 
-		// remember response of introducee2 for future deletion
 		Collection<ConversationMessageHeader> m0From2 = getMessages0From2();
 		assertEquals(2, m0From2.size());
 		MessageId response2 = null;
@@ -1595,27 +1333,21 @@ public class IntroductionIntegrationTest
 		}
 		assertNotNull(response2);
 
-		// sync first DECLINE message
 		sync1To0(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 
-		// introducer can not yet remove messages
 		assertFalse(deleteMessages1From0(toDelete1).allDeleted());
-		// introducee1 can not yet remove messages
+
 		assertFalse(deleteMessages0From1(toDelete1).allDeleted());
 
-		// sync second DECLINE message
 		sync2To0(1, true);
 		eventWaiter.await(TIMEOUT, 1);
 
-		// check group counts
 		assertGroupCount(messageTracker0, g1.getId(), 2, 1);
 		assertGroupCount(messageTracker0, g2.getId(), 2, 1);
 		assertGroupCount(messageTracker1, g1.getId(), 2, 1);
 		assertGroupCount(messageTracker2, g2.getId(), 2, 1);
 
-		// introducer can now remove messages with both introducees,
-		// if the responses are also selected
 		Set<MessageId> toDelete1From0 = new HashSet<>(toDelete1);
 		toDelete1From0.add(response1);
 		DeletionResult result = deleteMessages1From0(toDelete1From0);
@@ -1626,44 +1358,33 @@ public class IntroductionIntegrationTest
 		assertGroupCount(messageTracker0, g1.getId(), 0, 0);
 		assertGroupCount(messageTracker0, g2.getId(), 0, 0);
 
-		// introducee2 can not yet remove messages, missing the other response
 		assertFalse(deleteMessages0From1(toDelete1).allDeleted());
 
-		// forward first DECLINE message
 		sync0To2(1, true);
 
-		// deleting introduction fails for introducee 2,
-		// because response is not yet selected for deletion
 		assertFalse(deleteMessages0From2(toDelete2).allDeleted());
 		assertTrue(deleteMessages0From2(toDelete2)
 				.hasNotAllIntroductionSelected());
 
-		// add response to be deleted as well
 		toDelete2.add(response2);
 
-		// introducee2 can now remove messages
 		assertTrue(deleteMessages0From2(toDelete2).allDeleted());
 		assertEquals(0, getMessages0From2().size());
-		// a second time nothing happens
+
 		assertTrue(deleteMessages0From2(toDelete2).allDeleted());
 		assertGroupCount(messageTracker2, g2.getId(), 0, 0);
 
-		// forward second DECLINE message
 		sync0To1(1, true);
 
-		// deleting introduction fails for introducee 1,
-		// because response is not yet selected for deletion
 		assertFalse(deleteMessages0From1(toDelete1).allDeleted());
 		assertTrue(deleteMessages0From1(toDelete1)
 				.hasNotAllIntroductionSelected());
 
-		// add response to be deleted as well
 		toDelete1.add(response1);
 
-		// introducee1 can now also remove messages
 		assertTrue(deleteMessages0From1(toDelete1).allDeleted());
 		assertEquals(0, getMessages0From1().size());
-		// a second time nothing happens
+
 		assertTrue(deleteMessages0From1(toDelete1).allDeleted());
 		assertGroupCount(messageTracker1, g1.getId(), 0, 0);
 	}
@@ -1786,7 +1507,7 @@ public class IntroductionIntegrationTest
 	}
 
 	private void addListeners(boolean accept1, boolean accept2) {
-		// listen to events
+
 		listener0 = new IntroducerListener();
 		c0.getEventBus().addListener(listener0);
 		listener1 = new IntroduceeListener(1, accept1);
@@ -1852,7 +1573,7 @@ public class IntroductionIntegrationTest
 					eventWaiter.resume();
 				}
 			} else if (e instanceof IntroductionResponseReceivedEvent) {
-				// only broadcast for DECLINE messages in introducee role
+
 				latestEvent = e;
 				eventWaiter.resume();
 			} else if (e instanceof ContactAddedEvent) {

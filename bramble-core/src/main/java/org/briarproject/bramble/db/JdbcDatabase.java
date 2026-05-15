@@ -91,7 +91,6 @@ abstract class JdbcDatabase implements Database<Connection> {
 
 	static final int CODE_SCHEMA_VERSION = 63;
 
-	
 	private static final int MAX_CONNECTION_POOL_SIZE = 1;
 	private static final int OFFSET_PREV = -1;
 	private static final int OFFSET_CURR = 0;
@@ -189,7 +188,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 					+ " cleanupTimerDuration BIGINT,"
 					+ " cleanupDeadline BIGINT,"
 					+ " length INT NOT NULL,"
-					+ " raw BLOB," // Null if message has been deleted
+					+ " raw BLOB,"
 					+ " PRIMARY KEY (messageId),"
 					+ " FOREIGN KEY (groupId)"
 					+ " REFERENCES groups (groupId)"
@@ -198,8 +197,8 @@ abstract class JdbcDatabase implements Database<Connection> {
 	private static final String CREATE_MESSAGE_METADATA =
 			"CREATE TABLE messageMetadata"
 					+ " (messageId _HASH NOT NULL,"
-					+ " groupId _HASH NOT NULL," // Denormalised
-					+ " state INT NOT NULL," // Denormalised
+					+ " groupId _HASH NOT NULL,"
+					+ " state INT NOT NULL,"
 					+ " metaKey _STRING NOT NULL,"
 					+ " value _BINARY NOT NULL,"
 					+ " PRIMARY KEY (messageId, metaKey),"
@@ -214,8 +213,8 @@ abstract class JdbcDatabase implements Database<Connection> {
 			"CREATE TABLE messageDependencies"
 					+ " (groupId _HASH NOT NULL,"
 					+ " messageId _HASH NOT NULL,"
-					+ " dependencyId _HASH NOT NULL," // Not a foreign key
-					+ " messageState INT NOT NULL," // Denormalised
+					+ " dependencyId _HASH NOT NULL,"
+					+ " messageState INT NOT NULL,"
 					+ " dependencyState INT,"
 					+ " FOREIGN KEY (groupId)"
 					+ " REFERENCES groups (groupId)"
@@ -226,7 +225,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 
 	private static final String CREATE_OFFERS =
 			"CREATE TABLE offers"
-					+ " (messageId _HASH NOT NULL," // Not a foreign key
+					+ " (messageId _HASH NOT NULL,"
 					+ " contactId INT NOT NULL,"
 					+ " PRIMARY KEY (messageId, contactId),"
 					+ " FOREIGN KEY (contactId)"
@@ -237,19 +236,19 @@ abstract class JdbcDatabase implements Database<Connection> {
 			"CREATE TABLE statuses"
 					+ " (messageId _HASH NOT NULL,"
 					+ " contactId INT NOT NULL,"
-					+ " groupId _HASH NOT NULL," // Denormalised
-					+ " timestamp BIGINT NOT NULL," // Denormalised
-					+ " length INT NOT NULL," // Denormalised
-					+ " state INT NOT NULL," // Denormalised
-					+ " groupShared BOOLEAN NOT NULL," // Denormalised
-					+ " messageShared BOOLEAN NOT NULL," // Denormalised
-					+ " deleted BOOLEAN NOT NULL," // Denormalised
+					+ " groupId _HASH NOT NULL,"
+					+ " timestamp BIGINT NOT NULL,"
+					+ " length INT NOT NULL,"
+					+ " state INT NOT NULL,"
+					+ " groupShared BOOLEAN NOT NULL,"
+					+ " messageShared BOOLEAN NOT NULL,"
+					+ " deleted BOOLEAN NOT NULL,"
 					+ " ack BOOLEAN NOT NULL,"
 					+ " seen BOOLEAN NOT NULL,"
 					+ " requested BOOLEAN NOT NULL,"
 					+ " expiry BIGINT NOT NULL,"
 					+ " txCount INT NOT NULL,"
-					+ " maxLatency BIGINT," // Null if latency was reset
+					+ " maxLatency BIGINT,"
 					+ " PRIMARY KEY (messageId, contactId),"
 					+ " FOREIGN KEY (messageId)"
 					+ " REFERENCES messages (messageId)"
@@ -281,14 +280,14 @@ abstract class JdbcDatabase implements Database<Connection> {
 					+ " (transportId _STRING NOT NULL,"
 					+ " keySetId _COUNTER,"
 					+ " timePeriod BIGINT NOT NULL,"
-					+ " contactId INT," // Null if contact is pending
-					+ " pendingContactId _HASH," // Null if not pending
+					+ " contactId INT,"
+					+ " pendingContactId _HASH,"
 					+ " tagKey _SECRET NOT NULL,"
 					+ " headerKey _SECRET NOT NULL,"
 					+ " stream BIGINT NOT NULL,"
 					+ " active BOOLEAN NOT NULL,"
-					+ " rootKey _SECRET," // Null for rotation keys
-					+ " alice BOOLEAN," // Null for rotation keys
+					+ " rootKey _SECRET,"
+					+ " alice BOOLEAN,"
 					+ " PRIMARY KEY (transportId, keySetId),"
 					+ " FOREIGN KEY (transportId)"
 					+ " REFERENCES transports (transportId)"
@@ -321,7 +320,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 	private static final String CREATE_PCS_SESSION_STATE =
 			"CREATE TABLE pcsSessionState"
 					+ " (contactId INT NOT NULL,"
-					+ " direction SMALLINT NOT NULL," // 0=send, 1=receive
+					+ " direction SMALLINT NOT NULL,"
 					+ " chainKey _SECRET NOT NULL,"
 					+ " messageNumber INT NOT NULL,"
 					+ " previousChainLength INT NOT NULL,"
@@ -329,7 +328,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 					+ " rootKey _SECRET,"
 					+ " dhPrivateKey _SECRET,"
 					+ " dhPublicKey _BINARY,"
-					+ " dhRemotePublicKey _BINARY," // Null until received
+					+ " dhRemotePublicKey _BINARY,"
 					+ " mode3Enabled BOOLEAN DEFAULT FALSE NOT NULL,"
 					+ " pqEpoch BIGINT DEFAULT 0 NOT NULL,"
 					+ " PRIMARY KEY (contactId, direction),"
@@ -340,7 +339,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 	private static final String CREATE_PCS_SKIPPED_KEYS =
 			"CREATE TABLE pcsSkippedKeys"
 					+ " (contactId INT NOT NULL,"
-					+ " direction SMALLINT NOT NULL," // 0=send, 1=receive
+					+ " direction SMALLINT NOT NULL,"
 					+ " messageNumber INT NOT NULL,"
 					+ " messageKey _SECRET NOT NULL,"
 					+ " timestamp BIGINT NOT NULL,"
@@ -373,7 +372,6 @@ abstract class JdbcDatabase implements Database<Connection> {
 					+ " REFERENCES contacts (contactId)"
 					+ " ON DELETE CASCADE)";
 
-	// Sender Keys Group PCS tables
 	private static final String CREATE_GROUP_SENDER_KEYS =
 			"CREATE TABLE groupSenderKeys"
 					+ " (groupId _HASH NOT NULL,"
@@ -526,7 +524,6 @@ abstract class JdbcDatabase implements Database<Connection> {
 		return wasDirtyOnInitialisation;
 	}
 
-	
 	private boolean migrateSchema(Connection txn, Settings s,
 			@Nullable MigrationListener listener) throws DbException {
 		int dataSchemaVersion = s.getInt(SCHEMA_VERSION_KEY, -1);
@@ -1171,8 +1168,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		try {
-			// SQLCipher/SQLite: INTEGER in a composite PK does not
-			// auto-increment, so we must calculate the next keySetId
+
 			String sql = "SELECT COALESCE(MAX(keySetId), 0) + 1"
 					+ " FROM outgoingKeys";
 			ps = txn.prepareStatement(sql);
@@ -3387,8 +3383,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 	public void removeMessage(Connection txn, MessageId m) throws DbException {
 		PreparedStatement ps = null;
 		try {
-			// CASCADE is not enforced (PRAGMA foreign_keys OFF),
-			// so explicitly delete from child tables first.
+
 			String sql = "DELETE FROM offers WHERE messageId = ?";
 			ps = txn.prepareStatement(sql);
 			ps.setBytes(1, m.getBytes());
@@ -3432,11 +3427,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 			throws DbException {
 		PreparedStatement ps = null;
 		try {
-			// CASCADE is not enforced (PRAGMA foreign_keys OFF),
-			// so explicitly delete from all child tables first.
 
-			// Remove orphan-prone offers referencing messages in this group.
-			// The offers table uses messageId (not a FK) so won't cascade.
 			String sql = "DELETE FROM offers WHERE messageId IN"
 					+ " (SELECT messageId FROM messages WHERE groupId = ?)";
 			ps = txn.prepareStatement(sql);
@@ -3539,8 +3530,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 	public void removeTemporaryMessages(Connection txn) throws DbException {
 		Statement s = null;
 		try {
-			// CASCADE is not enforced (PRAGMA foreign_keys OFF),
-			// so explicitly delete from child tables first.
+
 			String sql = "DELETE FROM offers WHERE messageId IN"
 					+ " (SELECT messageId FROM messages WHERE temporary = TRUE)";
 			s = txn.createStatement();

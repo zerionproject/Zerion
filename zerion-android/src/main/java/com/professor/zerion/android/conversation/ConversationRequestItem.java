@@ -3,6 +3,7 @@ package com.professor.zerion.android.conversation;
 import org.briarproject.bramble.api.sync.GroupId;
 import org.briarproject.briar.api.client.SessionId;
 import org.briarproject.briar.api.conversation.ConversationRequest;
+import org.briarproject.briar.api.grouptr.GroupTrInvitationHeader;
 import org.briarproject.briar.api.sharing.InvitationRequest;
 import org.briarproject.briar.api.sharing.Shareable;
 import org.briarproject.nullsafety.NotNullByDefault;
@@ -17,13 +18,16 @@ import androidx.lifecycle.LiveData;
 @NotNullByDefault
 class ConversationRequestItem extends ConversationNoticeItem {
 
-	enum RequestType {INTRODUCTION, FORUM, BLOG, GROUP}
+	enum RequestType {INTRODUCTION, FORUM, BLOG, GROUP, GROUPTR}
 
 	@Nullable
 	private final GroupId requestedGroupId;
 	private final RequestType requestType;
+	@Nullable
 	private final SessionId sessionId;
 	private final boolean canBeOpened;
+	@Nullable
+	private final byte[] grouptrGid;
 	private boolean answered;
 
 	ConversationRequestItem(@LayoutRes int layoutRes, String text,
@@ -33,6 +37,7 @@ class ConversationRequestItem extends ConversationNoticeItem {
 		this.requestType = type;
 		this.sessionId = r.getSessionId();
 		this.answered = r.wasAnswered();
+		this.grouptrGid = null;
 		if (r instanceof InvitationRequest) {
 			this.requestedGroupId = ((Shareable) r.getNameable()).getId();
 			this.canBeOpened = ((InvitationRequest<?>) r).canBeOpened();
@@ -42,10 +47,23 @@ class ConversationRequestItem extends ConversationNoticeItem {
 		}
 	}
 
+	ConversationRequestItem(@LayoutRes int layoutRes, String text,
+			LiveData<String> contactName, GroupTrInvitationHeader h,
+			byte[] grouptrGid, boolean answered) {
+		super(layoutRes, text, contactName, h);
+		this.requestType = RequestType.GROUPTR;
+		this.sessionId = null;
+		this.requestedGroupId = null;
+		this.canBeOpened = answered;
+		this.grouptrGid = grouptrGid;
+		this.answered = answered;
+	}
+
 	RequestType getRequestType() {
 		return requestType;
 	}
 
+	@Nullable
 	SessionId getSessionId() {
 		return sessionId;
 	}
@@ -53,6 +71,11 @@ class ConversationRequestItem extends ConversationNoticeItem {
 	@Nullable
 	GroupId getRequestedGroupId() {
 		return requestedGroupId;
+	}
+
+	@Nullable
+	byte[] getGrouptrGid() {
+		return grouptrGid;
 	}
 
 	boolean wasAnswered() {

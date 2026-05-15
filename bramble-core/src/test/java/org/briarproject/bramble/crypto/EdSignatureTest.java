@@ -15,8 +15,6 @@ import static org.junit.Assert.assertTrue;
 
 public class EdSignatureTest extends SignatureTest {
 
-	// Test vectors from RFC 8032: secret key, public key, message, signature
-	// https://tools.ietf.org/html/rfc8032#section-7.1
 	private static final String[][] TEST_VECTORS = {{
 			"9d61b19deffd5a60ba844af492ec2cc4" +
 					"4449c5697b326919703bac031cae7f60",

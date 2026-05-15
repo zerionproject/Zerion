@@ -1,6 +1,5 @@
 package com.professor.zerion.android.account;
 
-
 import android.content.Context;
 import android.util.AttributeSet;
 

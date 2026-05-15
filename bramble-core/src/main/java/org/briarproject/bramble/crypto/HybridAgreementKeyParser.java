@@ -12,7 +12,6 @@ import java.security.GeneralSecurityException;
 import static org.briarproject.bramble.api.crypto.PostQuantumConstants.HYBRID_AGREEMENT_PRIVATE_KEY_BYTES;
 import static org.briarproject.bramble.api.crypto.PostQuantumConstants.HYBRID_AGREEMENT_PUBLIC_KEY_BYTES;
 
-
 @NotNullByDefault
 class HybridAgreementKeyParser implements KeyParser {
 

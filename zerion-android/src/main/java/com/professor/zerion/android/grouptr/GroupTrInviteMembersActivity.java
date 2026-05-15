@@ -243,20 +243,28 @@ public class GroupTrInviteMembersActivity extends ZerionActivity {
 		final List<Contact> snapshot = new ArrayList<>(selected);
 		ioExecutor.execute(() -> {
 			int ok = 0;
-			int fail = 0;
+			final StringBuilder failures = new StringBuilder();
 			for (Contact c : snapshot) {
 				try {
 					byte[] pk = c.getAuthor().getPublicKey().getEncoded();
-					groupTrManager.addMember(groupId, pk, nameFor(c));
+					groupTrManager.inviteContactToGroup(groupId, c.getId(),
+							pk, nameFor(c));
 					ok++;
 				} catch (Exception e) {
-					fail++;
+					if (failures.length() > 0) failures.append(", ");
+					failures.append(nameFor(c)).append(": ")
+							.append(e.getClass().getSimpleName());
+					String msg = e.getMessage();
+					if (msg != null && !msg.isEmpty()) {
+						failures.append(" (").append(msg).append(")");
+					}
 				}
 			}
 			final int okFinal = ok;
-			final int failFinal = fail;
+			final boolean hasFailures = failures.length() > 0;
+			final String failureSummary = failures.toString();
 			runOnUiThread(() -> {
-				if (failFinal == 0) {
+				if (!hasFailures) {
 					Toast.makeText(this,
 							getResources().getQuantityString(
 									R.plurals.grouptr_invite_sent,
@@ -267,8 +275,11 @@ public class GroupTrInviteMembersActivity extends ZerionActivity {
 					startActivity(i);
 					finish();
 				} else {
-					Toast.makeText(this, R.string.grouptr_invite_partial,
-							Toast.LENGTH_LONG).show();
+					new androidx.appcompat.app.AlertDialog.Builder(this)
+							.setTitle(R.string.grouptr_invite_partial)
+							.setMessage(failureSummary)
+							.setPositiveButton(android.R.string.ok, null)
+							.show();
 					confirmFab.setEnabled(true);
 				}
 			});

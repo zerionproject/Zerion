@@ -7,7 +7,6 @@ import java.lang.ref.WeakReference;
 import javax.annotation.concurrent.GuardedBy;
 import javax.inject.Provider;
 
-
 @NotNullByDefault
 public abstract class WeakSingletonProvider<T> implements Provider<T> {
 

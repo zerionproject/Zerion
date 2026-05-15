@@ -9,12 +9,10 @@ import static org.briarproject.bramble.api.crypto.PostQuantumConstants.HYBRID_SI
 import static org.briarproject.bramble.api.crypto.PostQuantumConstants.KEY_TYPE_HYBRID_SIGNATURE;
 import static org.briarproject.bramble.api.crypto.PostQuantumConstants.ML_DSA_65_PUBLIC_KEY_BYTES;
 
-
 @Immutable
 @NotNullByDefault
 public class HybridSignaturePublicKey extends Bytes implements PublicKey {
 
-	
 	public HybridSignaturePublicKey(byte[] encoded) {
 		super(encoded);
 		if (encoded.length != HYBRID_SIGNATURE_PUBLIC_KEY_BYTES) {
@@ -24,7 +22,6 @@ public class HybridSignaturePublicKey extends Bytes implements PublicKey {
 		}
 	}
 
-	
 	public HybridSignaturePublicKey(byte[] ed25519PublicKey, byte[] mlDsaPublicKey) {
 		super(combineKeys(ed25519PublicKey, mlDsaPublicKey));
 	}
@@ -55,21 +52,18 @@ public class HybridSignaturePublicKey extends Bytes implements PublicKey {
 		return getBytes();
 	}
 
-	
 	public byte[] getEd25519PublicKey() {
 		byte[] ed25519 = new byte[32];
 		System.arraycopy(getBytes(), 0, ed25519, 0, 32);
 		return ed25519;
 	}
 
-	
 	public byte[] getMlDsaPublicKey() {
 		byte[] mlDsa = new byte[ML_DSA_65_PUBLIC_KEY_BYTES];
 		System.arraycopy(getBytes(), 32, mlDsa, 0, ML_DSA_65_PUBLIC_KEY_BYTES);
 		return mlDsa;
 	}
 
-	
 	public SignaturePublicKey getEd25519Component() {
 		return new SignaturePublicKey(getEd25519PublicKey());
 	}

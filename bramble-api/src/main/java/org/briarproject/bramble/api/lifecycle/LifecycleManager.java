@@ -10,11 +10,9 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.concurrent.ExecutorService;
 
-
 @NotNullByDefault
 public interface LifecycleManager {
 
-	
 	enum StartResult {
 		ALREADY_RUNNING,
 		CLOCK_ERROR,
@@ -25,7 +23,6 @@ public interface LifecycleManager {
 		SUCCESS
 	}
 
-	
 	enum LifecycleState {
 
 		CREATED,
@@ -42,37 +39,28 @@ public interface LifecycleManager {
 		}
 	}
 
-	
 	void registerOpenDatabaseHook(OpenDatabaseHook hook);
 
-	
 	void registerService(Service s);
 
-	
 	void registerForShutdown(ExecutorService e);
 
-	
 	@Wakeful
 	StartResult startServices(SecretKey dbKey);
 
-	
 	@Wakeful
 	void stopServices();
 
-	
 	void waitForDatabase() throws InterruptedException;
 
-	
 	void waitForStartup() throws InterruptedException;
 
-	
 	void waitForShutdown() throws InterruptedException;
 
-	
 	LifecycleState getLifecycleState();
 
 	interface OpenDatabaseHook {
-		
+
 		@Wakeful
 		void onDatabaseOpened(Transaction txn) throws DbException;
 	}

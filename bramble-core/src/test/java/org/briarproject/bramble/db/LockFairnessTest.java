@@ -16,24 +16,24 @@ public class LockFairnessTest extends BrambleTestCase {
 
 	@Test
 	public void testReadersCanShareTheLock() throws Exception {
-		// Use a fair lock
+
 		ReentrantReadWriteLock lock = new ReentrantReadWriteLock(true);
 		CountDownLatch firstReaderHasLock = new CountDownLatch(1);
 		CountDownLatch firstReaderHasFinished = new CountDownLatch(1);
 		CountDownLatch secondReaderHasLock = new CountDownLatch(1);
 		CountDownLatch secondReaderHasFinished = new CountDownLatch(1);
-		// First reader
+
 		Thread first = new Thread(() -> {
 			try {
-				// Acquire the lock
+
 				lock.readLock().lock();
 				try {
-					// Allow the second reader to acquire the lock
+
 					firstReaderHasLock.countDown();
-					// Wait for the second reader to acquire the lock
+
 					assertTrue(secondReaderHasLock.await(10, SECONDS));
 				} finally {
-					// Release the lock
+
 					lock.readLock().unlock();
 				}
 			} catch (InterruptedException e) {
@@ -42,18 +42,18 @@ public class LockFairnessTest extends BrambleTestCase {
 			firstReaderHasFinished.countDown();
 		});
 		first.start();
-		// Second reader
+
 		Thread second = new Thread(() -> {
 			try {
-				// Wait for the first reader to acquire the lock
+
 				assertTrue(firstReaderHasLock.await(10, SECONDS));
-				// Acquire the lock
+
 				lock.readLock().lock();
 				try {
-					// Allow the first reader to release the lock
+
 					secondReaderHasLock.countDown();
 				} finally {
-					// Release the lock
+
 					lock.readLock().unlock();
 				}
 			} catch (InterruptedException e) {
@@ -62,14 +62,14 @@ public class LockFairnessTest extends BrambleTestCase {
 			secondReaderHasFinished.countDown();
 		});
 		second.start();
-		// Wait for both readers to finish
+
 		assertTrue(firstReaderHasFinished.await(10, SECONDS));
 		assertTrue(secondReaderHasFinished.await(10, SECONDS));
 	}
 
 	@Test
 	public void testWritersDoNotStarve() throws Exception {
-		// Use a fair lock
+
 		ReentrantReadWriteLock lock = new ReentrantReadWriteLock(true);
 		CountDownLatch firstReaderHasLock = new CountDownLatch(1);
 		CountDownLatch firstReaderHasFinished = new CountDownLatch(1);
@@ -77,21 +77,21 @@ public class LockFairnessTest extends BrambleTestCase {
 		CountDownLatch writerHasFinished = new CountDownLatch(1);
 		AtomicBoolean secondReaderHasHeldLock = new AtomicBoolean(false);
 		AtomicBoolean writerHasHeldLock = new AtomicBoolean(false);
-		// First reader
+
 		Thread first = new Thread(() -> {
 			try {
-				// Acquire the lock
+
 				lock.readLock().lock();
 				try {
-					// Allow the other threads to acquire the lock
+
 					firstReaderHasLock.countDown();
-					// Wait for both other threads to wait for the lock
+
 					while (lock.getQueueLength() < 2) Thread.sleep(10);
-					// No other thread should have acquired the lock
+
 					assertFalse(secondReaderHasHeldLock.get());
 					assertFalse(writerHasHeldLock.get());
 				} finally {
-					// Release the lock
+
 					lock.readLock().unlock();
 				}
 			} catch (InterruptedException e) {
@@ -100,16 +100,16 @@ public class LockFairnessTest extends BrambleTestCase {
 			firstReaderHasFinished.countDown();
 		});
 		first.start();
-		// Writer
+
 		Thread writer = new Thread(() -> {
 			try {
-				// Wait for the first reader to acquire the lock
+
 				assertTrue(firstReaderHasLock.await(10, SECONDS));
-				// Acquire the lock
+
 				lock.writeLock().lock();
 				try {
 					writerHasHeldLock.set(true);
-					// The second reader should not overtake the writer
+
 					assertFalse(secondReaderHasHeldLock.get());
 				} finally {
 					lock.writeLock().unlock();
@@ -120,18 +120,18 @@ public class LockFairnessTest extends BrambleTestCase {
 			writerHasFinished.countDown();
 		});
 		writer.start();
-		// Second reader
+
 		Thread second = new Thread(() -> {
 			try {
-				// Wait for the first reader to acquire the lock
+
 				assertTrue(firstReaderHasLock.await(10, SECONDS));
-				// Wait for the writer to wait for the lock
+
 				while (lock.getQueueLength() < 1) Thread.sleep(10);
-				// Acquire the lock
+
 				lock.readLock().lock();
 				try {
 					secondReaderHasHeldLock.set(true);
-					// The second reader should not overtake the writer
+
 					assertTrue(writerHasHeldLock.get());
 				} finally {
 					lock.readLock().unlock();
@@ -142,7 +142,7 @@ public class LockFairnessTest extends BrambleTestCase {
 			secondReaderHasFinished.countDown();
 		});
 		second.start();
-		// Wait for all the threads to finish
+
 		assertTrue(firstReaderHasFinished.await(10, SECONDS));
 		assertTrue(secondReaderHasFinished.await(10, SECONDS));
 		assertTrue(writerHasFinished.await(10, SECONDS));

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content"
+	android:layout_marginTop="2dp"
+	android:layout_marginBottom="2dp"
+	android:gravity="end"
+	android:orientation="vertical">
+
+	<androidx.constraintlayout.widget.ConstraintLayout
+		android:id="@+id/mediaBubble"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_marginStart="48dp"
+		android:background="@drawable/msg_out"
+		android:elevation="@dimen/message_bubble_elevation"
+		android:padding="3dp">
+
+		<ImageView
+			android:id="@+id/videoThumb"
+			android:layout_width="240dp"
+			android:layout_height="180dp"
+			android:adjustViewBounds="true"
+			android:background="#000000"
+			android:contentDescription="@string/grouptr_video"
+			android:scaleType="centerCrop"
+			app:layout_constraintStart_toStartOf="parent"
+			app:layout_constraintTop_toTopOf="parent" />
+
+		<View
+			android:id="@+id/playCircleBg"
+			android:layout_width="56dp"
+			android:layout_height="56dp"
+			android:background="@drawable/bg_video_play_circle"
+			app:layout_constraintBottom_toBottomOf="@+id/videoThumb"
+			app:layout_constraintEnd_toEndOf="@+id/videoThumb"
+			app:layout_constraintStart_toStartOf="@+id/videoThumb"
+			app:layout_constraintTop_toTopOf="@+id/videoThumb" />
+
+		<androidx.appcompat.widget.AppCompatImageView
+			android:id="@+id/videoPlayIcon"
+			android:layout_width="32dp"
+			android:layout_height="32dp"
+			android:contentDescription="@string/voice_message"
+			android:scaleType="center"
+			app:layout_constraintBottom_toBottomOf="@+id/playCircleBg"
+			app:layout_constraintEnd_toEndOf="@+id/playCircleBg"
+			app:layout_constraintStart_toStartOf="@+id/playCircleBg"
+			app:layout_constraintTop_toTopOf="@+id/playCircleBg"
+			app:srcCompat="@drawable/ic_play_arrow_24dp"
+			app:tint="@android:color/white" />
+
+		<TextView
+			android:id="@+id/videoDuration"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_marginStart="6dp"
+			android:layout_marginTop="6dp"
+			android:background="#66000000"
+			android:paddingHorizontal="6dp"
+			android:paddingVertical="2dp"
+			android:textColor="#FFFFFF"
+			android:textSize="11sp"
+			app:layout_constraintStart_toStartOf="@+id/videoThumb"
+			app:layout_constraintTop_toTopOf="@+id/videoThumb"
+			tools:text="0:08" />
+
+		<TextView
+			android:id="@+id/videoTime"
+			style="@style/TextMessage.Timestamp"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_marginEnd="6dp"
+			android:layout_marginBottom="4dp"
+			android:background="#66000000"
+			android:paddingHorizontal="6dp"
+			android:paddingVertical="2dp"
+			android:textColor="#FFFFFF"
+			app:layout_constraintBottom_toBottomOf="@+id/videoThumb"
+			app:layout_constraintEnd_toEndOf="@+id/videoThumb"
+			tools:text="13:37" />
+
+	</androidx.constraintlayout.widget.ConstraintLayout>
+
+</LinearLayout>

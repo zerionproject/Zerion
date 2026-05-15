@@ -52,30 +52,13 @@ import static org.junit.Assert.assertTrue;
 
 public abstract class DatabasePerformanceTest extends BrambleTestCase {
 
-	/**
-	 * How many contacts to simulate.
-	 */
 	private static final int CONTACTS = 20;
 
-	/**
-	 * How many clients to simulate. Briar has nine: transport properties,
-	 * introductions, messaging, forums, forum sharing, blogs,
-	 * blog sharing, private groups, and private group sharing.
-	 */
 	private static final int CLIENTS = 10;
 	private static final int CLIENT_ID_LENGTH = 50;
 
-	/**
-	 * How many groups to simulate for each contact. Briar has seven:
-	 * transport properties, introductions, messaging, forum sharing, blog
-	 * sharing, private group sharing, and the contact's blog.
-	 */
 	private static final int GROUPS_PER_CONTACT = 10;
 
-	/**
-	 * How many local groups to simulate. Briar has three: transport
-	 * properties, introductions and RSS feeds.
-	 */
 	private static final int LOCAL_GROUPS = 5;
 
 	private static final int MESSAGES_PER_GROUP = 20;
@@ -85,18 +68,10 @@ public abstract class DatabasePerformanceTest extends BrambleTestCase {
 	private static final int METADATA_VALUE_LENGTH = 100;
 	private static final int OFFERED_MESSAGES_PER_CONTACT = 100;
 
-	/**
-	 * How many benchmark iterations to run in each block.
-	 */
 	private static final int ITERATIONS_PER_BLOCK = 10;
 
-	/**
-	 * How many blocks must be similar before we conclude a steady state has
-	 * been reached.
-	 */
 	private static final int STEADY_STATE_BLOCKS = 5;
 
-	// All our transports use a maximum latency of 30 seconds
 	private static final int MAX_LATENCY = 30 * 1000;
 
 	private static final int BATCH_CAPACITY =
@@ -121,7 +96,7 @@ public abstract class DatabasePerformanceTest extends BrambleTestCase {
 			BenchmarkTask<Database<Connection>> task) throws Exception;
 
 	DatabasePerformanceTest() {
-		// Disable logging
+
 		Logger.getLogger("").setLevel(OFF);
 	}
 
@@ -655,9 +630,7 @@ public abstract class DatabasePerformanceTest extends BrambleTestCase {
 		while (steadyBlocks < STEADY_STATE_BLOCKS) {
 			List<Double> prev = durations;
 			durations = measureBlock(db, task);
-			// Compare to the previous block with a large P value, which
-			// decreases our chance of getting an inconclusive result, making
-			// this a conservative test for steady state
+
 			if (UTest.test(prev, durations, Z_CRITICAL_0_1) == INCONCLUSIVE)
 				steadyBlocks++;
 			else steadyBlocks = 1;

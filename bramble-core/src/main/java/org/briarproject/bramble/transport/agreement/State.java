@@ -9,13 +9,10 @@ import javax.annotation.concurrent.Immutable;
 @NotNullByDefault
 enum State {
 
-	
 	AWAIT_KEY(0),
 
-	
 	AWAIT_ACTIVATE(1),
 
-	
 	ACTIVATED(2);
 
 	private final int value;

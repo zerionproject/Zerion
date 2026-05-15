@@ -43,8 +43,7 @@ public abstract class AbstractImageSizeCalculatorTest {
 	}
 
 	static AssetManager getAssetManager() {
-		// pm.getResourcesForApplication(packageName).getAssets() did not work
-		//noinspection deprecation
+
 		return getContext().getAssets();
 	}
 

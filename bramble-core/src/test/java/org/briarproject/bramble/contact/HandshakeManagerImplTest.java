@@ -110,7 +110,7 @@ public class HandshakeManagerImplTest extends BrambleMockTestCase {
 		expectPrepareForHandshake(alice);
 		expectSendMinorVersion();
 		expectSendKey();
-		// Remote peer sends minor version, so use new key derivation
+
 		expectReceiveMinorVersion();
 		expectReceiveKey();
 		expectDeriveMasterKey_0_1(alice);
@@ -144,7 +144,7 @@ public class HandshakeManagerImplTest extends BrambleMockTestCase {
 		expectPrepareForHandshake(alice);
 		expectSendMinorVersion();
 		expectSendKey();
-		// Remote peer does not send minor version, so use old key derivation
+
 		expectReceiveKey();
 		expectDeriveMasterKey_0_0(alice);
 		expectDeriveProof(alice);
@@ -203,7 +203,7 @@ public class HandshakeManagerImplTest extends BrambleMockTestCase {
 			oneOf(transportCrypto).isAlice(theirStaticPublicKey,
 					ourStaticKeyPair);
 			will(returnValue(alice));
-			// Classical handshake uses classical record format (true)
+
 			oneOf(recordReaderFactory).createRecordReader(in, true);
 			will(returnValue(recordReader));
 			oneOf(streamWriter).getOutputStream();
@@ -312,8 +312,7 @@ public class HandshakeManagerImplTest extends BrambleMockTestCase {
 
 	private void expectReadRecord(Record record) throws Exception {
 		context.checking(new Expectations() {{
-			// Test that the `accept` predicate passed to the reader would
-			// accept the expected record
+
 			oneOf(recordReader).readRecord(with(new PredicateMatcher<>(
 							RecordPredicate.class, rp -> rp.test(record))),
 					with(any(RecordPredicate.class)));

@@ -39,7 +39,6 @@ import static com.professor.zerion.android.settings.SettingsFragment.SETTINGS_NA
 @NotNullByDefault
 public class NavDrawerViewModel extends DbViewModel {
 
-
 	private static final String EXPIRY_DATE_WARNING = "expiryDateWarning";
 	private static final String SHOW_TRANSPORTS_ONBOARDING =
 			"showTransportsOnboarding";

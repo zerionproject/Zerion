@@ -33,10 +33,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-/**
- * This class tests how PrivateGroupManager and GroupInvitationManager
- * play together.
- */
 public class PrivateGroupIntegrationTest
 		extends BriarIntegrationTest<BriarIntegrationTestComponent> {
 
@@ -95,7 +91,6 @@ public class PrivateGroupIntegrationTest
 		sendInvitation(contactId1From0, c0.getClock().currentTimeMillis(),
 				"Hi!");
 
-		// our group has only one member (ourselves)
 		Collection<GroupMember> members = groupManager0.getMembers(groupId0);
 		assertEquals(1, members.size());
 		assertEquals(author0, members.iterator().next().getAuthor());
@@ -107,11 +102,9 @@ public class PrivateGroupIntegrationTest
 				.respondToInvitation(contactId0From1, privateGroup0, true);
 		sync1To0(1, true);
 
-		// sync group join messages
-		sync0To1(2, true); // + one invitation protocol join message
+		sync0To1(2, true);
 		sync1To0(1, true);
 
-		// now the group has two members
 		members = groupManager0.getMembers(groupId0);
 		assertEquals(2, members.size());
 		for (GroupMember m : members) {
@@ -135,7 +128,7 @@ public class PrivateGroupIntegrationTest
 
 	@Test
 	public void testRevealContacts() throws Exception {
-		// invite two contacts
+
 		sendInvitation(contactId1From0, c0.getClock().currentTimeMillis(),
 				"Hi 1!");
 		sendInvitation(contactId2From0, c0.getClock().currentTimeMillis(),
@@ -143,7 +136,6 @@ public class PrivateGroupIntegrationTest
 		sync0To1(1, true);
 		sync0To2(1, true);
 
-		// accept both invitations
 		groupInvitationManager1
 				.respondToInvitation(contactId0From1, privateGroup0, true);
 		groupInvitationManager2
@@ -151,42 +143,35 @@ public class PrivateGroupIntegrationTest
 		sync1To0(1, true);
 		sync2To0(1, true);
 
-		// sync group join messages
-		sync0To1(2, true); // + one invitation protocol join message
+		sync0To1(2, true);
 		assertEquals(2, groupManager1.getMembers(groupId0).size());
 		sync1To0(1, true);
 		assertEquals(2, groupManager0.getMembers(groupId0).size());
-		sync0To2(3, true); // 2 join messages and 1 invite join message
+		sync0To2(3, true);
 		assertEquals(3, groupManager2.getMembers(groupId0).size());
 		sync2To0(1, true);
 		assertEquals(3, groupManager0.getMembers(groupId0).size());
 		sync0To1(1, true);
 		assertEquals(3, groupManager1.getMembers(groupId0).size());
 
-		// 1 and 2 add each other as contacts
 		addContacts1And2();
 
-		// their relationship is still invisible
 		assertEquals(INVISIBLE,
 				getGroupMember(groupManager1, author2.getId()).getVisibility());
 		assertEquals(INVISIBLE,
 				getGroupMember(groupManager2, author1.getId()).getVisibility());
 
-		// 1 reveals the contact relationship to 2
 		assertNotNull(contactId2From1);
 		groupInvitationManager1.revealRelationship(contactId2From1, groupId0);
-		sync1To2(1, true); // 1 sends an invitation protocol join message
-		// 2 sends an invitation protocol join message and three private group
-		// protocol join messages, which 1 has already seen
+		sync1To2(1, true);
+
 		syncMessage(c2, c1, contactId1From2, 1, 3, 0, 1);
 
-		// their relationship is now revealed
 		assertEquals(REVEALED_BY_US,
 				getGroupMember(groupManager1, author2.getId()).getVisibility());
 		assertEquals(REVEALED_BY_CONTACT,
 				getGroupMember(groupManager2, author1.getId()).getVisibility());
 
-		// 2 sends a message to the group
 		long time = c2.getClock().currentTimeMillis();
 		String text = "This is a test message!";
 		MessageId previousMsgId = groupManager2.getPreviousMsgId(groupId0);
@@ -195,12 +180,10 @@ public class PrivateGroupIntegrationTest
 						previousMsgId);
 		groupManager2.addLocalMessage(msg);
 
-		// 1 has only the three join messages in the group
 		Collection<GroupMessageHeader> headers =
 				groupManager1.getHeaders(groupId0);
 		assertEquals(3, headers.size());
 
-		// message should sync to 1 without creator (0) being involved
 		sync2To1(1, true);
 		headers = groupManager1.getHeaders(groupId0);
 		assertEquals(4, headers.size());
@@ -214,7 +197,6 @@ public class PrivateGroupIntegrationTest
 		}
 		assertTrue(foundPost);
 
-		// message should sync from 1 to 0 without 2 being involved
 		sync1To0(1, true);
 		headers = groupManager0.getHeaders(groupId0);
 		assertEquals(4, headers.size());

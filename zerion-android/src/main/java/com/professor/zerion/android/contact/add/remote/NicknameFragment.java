@@ -116,7 +116,7 @@ public class NicknameFragment extends BaseFragment {
 			return null;
 		}
 		String name = text.toString().trim();
-		// Strip Unicode control characters and homoglyph attack vectors
+
 		name = stripControlCharacters(name);
 		if (name.isEmpty()) {
 			contactNameLayout.setError(getString(R.string.nickname_missing));
@@ -132,8 +132,6 @@ public class NicknameFragment extends BaseFragment {
 		return name;
 	}
 
-	// Remove Unicode control characters, zero-width chars, and
-	// bidirectional override characters that enable homoglyph attacks
 	private static String stripControlCharacters(String input) {
 		StringBuilder sb = new StringBuilder(input.length());
 		for (int i = 0; i < input.length(); i++) {

@@ -3,7 +3,6 @@ package org.briarproject.bramble.api.db;
 import org.briarproject.bramble.api.identity.Author;
 import org.briarproject.bramble.api.identity.AuthorId;
 
-
 public class ContactExistsException extends DbException {
 
 	private final AuthorId local;

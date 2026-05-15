@@ -2,7 +2,6 @@ package org.briarproject.bramble.api.db;
 
 import org.briarproject.bramble.api.contact.PendingContact;
 
-
 public class PendingContactExistsException extends DbException {
 
 	private final PendingContact pendingContact;

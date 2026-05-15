@@ -915,9 +915,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 			displayRotation = getWindowManager()
 					.getDefaultDisplay().getRotation() * 90;
 		}
-		// Front camera: sensor is physically mirrored, so add 180° to compensate after
-		// the horizontal mirror flip that applyVideoTransform() applies.
-		// Back camera: standard subtraction formula.
+
 		final int rotation = isFront
 				? (sensorOrientation + displayRotation + 180) % 360
 				: (sensorOrientation - displayRotation + 360) % 360;

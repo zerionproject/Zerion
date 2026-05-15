@@ -82,7 +82,6 @@ public class LinkExchangeFragment extends BaseFragment {
 		linkInputLayout = v.findViewById(R.id.linkInputLayout);
 		linkInput = v.findViewById(R.id.linkInput);
 
-		// Pre-fill if a link was passed in via share intent
 		if (viewModel.getRemoteHandshakeLink() != null) {
 			linkInput.setText(viewModel.getRemoteHandshakeLink());
 		}

@@ -85,6 +85,28 @@
 
 			</com.google.android.material.textfield.TextInputLayout>
 
+			<com.google.android.material.textfield.TextInputLayout
+				android:id="@+id/nicknameLayout"
+				style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:layout_marginHorizontal="20dp"
+				android:layout_marginTop="12dp"
+				android:hint="@string/grouptr_create_nickname_hint"
+				app:boxStrokeColor="@color/zerion_primary_accent"
+				app:hintTextColor="@color/zerion_primary_accent">
+
+				<com.google.android.material.textfield.TextInputEditText
+					android:id="@+id/nicknameInput"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:inputType="textPersonName"
+					android:maxLines="1"
+					android:singleLine="true"
+					android:textColor="@color/zerion_text_primary" />
+
+			</com.google.android.material.textfield.TextInputLayout>
+
 			<TextView
 				android:layout_width="match_parent"
 				android:layout_height="wrap_content"

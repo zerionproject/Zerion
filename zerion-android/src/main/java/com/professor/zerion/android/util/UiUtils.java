@@ -106,7 +106,6 @@ import static com.professor.zerion.android.TestingConstants.EXPIRY_DATE;
 @ParametersNotNullByDefault
 public class UiUtils {
 
-
 	public static final long MIN_DATE_RESOLUTION = MINUTE_IN_MILLIS;
 	public static final int TEASER_LENGTH = 320;
 	public static final float GREY_OUT = 0.5f;
@@ -479,13 +478,13 @@ public class UiUtils {
 			contentLauncher.launch(contentType);
 			return;
 		} catch (ActivityNotFoundException e) {
-			
+
 		}
 		try {
 			docLauncher.launch(new String[] {contentType});
 			return;
 		} catch (ActivityNotFoundException e) {
-			
+
 		}
 		Toast.makeText(ctx, R.string.error_start_activity, LENGTH_LONG).show();
 	}

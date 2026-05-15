@@ -15,7 +15,6 @@ interface MessagingConstants {
 	String MSG_KEY_TOTAL_SIZE = "totalSize";
 	String MSG_KEY_ROOT_HASH = "rootHash";
 
-	
 	String MSG_KEY_TARGET_MESSAGE_ID = "targetMessageId";
 	String MSG_KEY_REACTION_EMOJI = "reactionEmoji";
 	String MSG_KEY_IS_TYPING = "isTyping";
@@ -42,6 +41,11 @@ interface MessagingConstants {
 	String MSG_KEY_GROUP_TARGET_PUBKEY = "groupTargetPubKey";
 	String MSG_KEY_GROUP_NEW_ROLE = "groupNewRole";
 	String MSG_KEY_GROUP_MEMBER_LIST = "groupMemberList";
+
+	String MSG_KEY_GTR_INVITE_NAME = "gtrInviteName";
+	String MSG_KEY_GTR_INVITE_SALT = "gtrInviteSalt";
+	String MSG_KEY_GTR_INVITE_CREATOR_NAME = "gtrInviteCreatorName";
+	String MSG_KEY_GTR_INVITE_CREATOR_PUB = "gtrInviteCreatorPub";
 
 	String SIGNING_LABEL_GROUP_MEMBER_LIST_SNAPSHOT =
 			"org.briarproject.zerion/GROUP_MEMBER_LIST_SNAPSHOT";

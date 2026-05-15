@@ -10,7 +10,6 @@ import javax.annotation.concurrent.NotThreadSafe;
 
 import static java.util.Collections.emptyList;
 
-
 @NotThreadSafe
 public class Transaction {
 
@@ -25,39 +24,32 @@ public class Transaction {
 		this.readOnly = readOnly;
 	}
 
-	
 	public Object unbox() {
 		return txn;
 	}
 
-	
 	public boolean isReadOnly() {
 		return readOnly;
 	}
 
-	
 	public void attach(Event e) {
 		if (actions == null) actions = new ArrayList<>();
 		actions.add(new EventAction(e));
 	}
 
-	
 	public void attach(Runnable r) {
 		if (actions == null) actions = new ArrayList<>();
 		actions.add(new TaskAction(r));
 	}
 
-	
 	public List<CommitAction> getActions() {
 		return actions == null ? emptyList() : actions;
 	}
 
-	
 	public boolean isCommitted() {
 		return committed;
 	}
 
-	
 	public void setCommitted() {
 		if (committed) throw new IllegalStateException();
 		committed = true;

@@ -9,25 +9,12 @@ import java.text.BreakIterator;
 
 import androidx.annotation.Nullable;
 
-/**
- * Sticker-related predicates and constants.
- *
- * Wire compatibility with iOS commit 3311da4:
- *   - Emoji stickers travel as plain text (one grapheme cluster containing
- *     an emoji). Receivers without the feature still render them as normal
- *     text — just smaller.
- *   - Image stickers travel as a regular inline-image attachment whose
- *     contentType carries the parameter ";profile=sticker" (e.g.
- *     "image/png; profile=sticker"). Receivers without the feature show
- *     them as a regular small photo.
- */
 @NotNullByDefault
 public final class StickerUtils {
 
 	public static final String STICKER_PNG_MIME =
 			"image/png; profile=sticker";
 
-	/** Curated standard emoji pack (UI parity with iOS). */
 	public static final String[] STANDARD_PACK = {
 			"🎉", "🎊", "🥳",
 			"🎂", "🎁", "🎈",
@@ -46,15 +33,6 @@ public final class StickerUtils {
 	private StickerUtils() {
 	}
 
-	/**
-	 * True iff the trimmed text is exactly one grapheme cluster that
-	 * Unicode considers an emoji.
-	 *
-	 * Mirrors the iOS predicate at StickerPack.swift:isSingleEmojiSticker.
-	 * Accepts default-emoji-presentation cluster (e.g. 🎉, single code
-	 * point with EMOJI_PRESENTATION) AND the explicit-presentation
-	 * sequence (text-default emoji + U+FE0F, e.g. ❤️ ☀️).
-	 */
 	public static boolean isSingleEmojiSticker(@Nullable String s) {
 		if (s == null) return false;
 		String trimmed = s.trim();
@@ -83,10 +61,6 @@ public final class StickerUtils {
 		return hasEmojiPresentation || (hasEmoji && hasVS16);
 	}
 
-	/**
-	 * True iff the contentType string carries an iOS-shipped sticker
-	 * profile marker. Case-insensitive on the parameters portion.
-	 */
 	public static boolean isStickerContentType(@Nullable String contentType) {
 		if (contentType == null) return false;
 		String lower = contentType.toLowerCase();
@@ -94,16 +68,6 @@ public final class StickerUtils {
 				|| lower.contains("zerion-sticker");
 	}
 
-	/**
-	 * Strip MIME parameters from a contentType string, returning the
-	 * canonical "type/subtype" portion. Used everywhere we need to feed
-	 * a contentType to a decoder/dispatcher that only understands
-	 * canonical MIME types (e.g. AndroidUtils.getSupportedImageContentTypes).
-	 *
-	 * "image/png; profile=sticker" → "image/png"
-	 * "image/jpeg"                 → "image/jpeg"
-	 * null / empty                 → ""
-	 */
 	public static String baseMime(@Nullable String contentType) {
 		if (contentType == null) return "";
 		int semi = contentType.indexOf(';');

@@ -101,7 +101,6 @@ public class SetPasswordFragment extends SetupFragment {
 		return v;
 	}
 
-	
 	private void setupKeyboardInsetsHandling(View rootView) {
 		View scrollContent = rootView.findViewById(R.id.scroll_content);
 		if (scrollContent == null) return;
@@ -221,7 +220,7 @@ public class SetPasswordFragment extends SetupFragment {
 			viewModel.setPassword(sanitizedChars);
 		} finally {
 			Arrays.fill(passwordChars, '\0');
-			// Don't zero sanitizedChars here — ViewModel now owns it
+
 		}
 	}
 

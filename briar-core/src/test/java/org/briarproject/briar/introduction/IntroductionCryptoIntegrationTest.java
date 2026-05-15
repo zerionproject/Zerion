@@ -108,7 +108,6 @@ public class IntroductionCryptoIntegrationTest extends BrambleTestCase {
 		byte[] aliceMac = crypto.authMac(aliceMacKey, introducer.getId(),
 				alice.getId(), local, remote);
 
-		// verify from Bob's perspective
 		crypto.verifyAuthMac(aliceMac, aliceMacKey, introducer.getId(),
 				bob.getId(), remote, alice.getId(), local);
 	}
@@ -125,7 +124,6 @@ public class IntroductionCryptoIntegrationTest extends BrambleTestCase {
 		byte[] bobMac = crypto.authMac(bobMacKey, introducer.getId(),
 				bob.getId(), local, remote);
 
-		// verify from Alice's perspective
 		crypto.verifyAuthMac(bobMac, bobMacKey, introducer.getId(),
 				alice.getId(), remote, bob.getId(), local);
 	}

@@ -29,7 +29,7 @@ public class MacTest extends BrambleTestCase {
 
 	@Test
 	public void testIdenticalKeysAndInputsProduceIdenticalMacs() {
-		// Calculate the MAC twice - the results should be identical
+
 		byte[] mac = crypto.mac(label1, key1, input1, input2, input3);
 		byte[] mac1 = crypto.mac(label1, key1, input1, input2, input3);
 		assertArrayEquals(mac, mac1);
@@ -38,11 +38,11 @@ public class MacTest extends BrambleTestCase {
 
 	@Test
 	public void testDifferentLabelsProduceDifferentMacs() {
-		// Calculate the MAC with each label - the results should be different
+
 		byte[] mac = crypto.mac(label1, key1, input1, input2, input3);
 		byte[] mac1 = crypto.mac(label2, key1, input1, input2, input3);
 		assertFalse(Arrays.equals(mac, mac1));
-		// Each MAC should fail to verify with the other MAC's label
+
 		assertFalse(crypto.verifyMac(mac, label2, key1, input1, input2,
 				input3));
 		assertFalse(crypto.verifyMac(mac1, label1, key2, input1, input2,
@@ -51,11 +51,11 @@ public class MacTest extends BrambleTestCase {
 
 	@Test
 	public void testDifferentKeysProduceDifferentMacs() {
-		// Calculate the MAC with each key - the results should be different
+
 		byte[] mac = crypto.mac(label1, key1, input1, input2, input3);
 		byte[] mac1 = crypto.mac(label1, key2, input1, input2, input3);
 		assertFalse(Arrays.equals(mac, mac1));
-		// Each MAC should fail to verify with the other MAC's key
+
 		assertFalse(crypto.verifyMac(mac, label1, key2, input1, input2,
 				input3));
 		assertFalse(crypto.verifyMac(mac1, label2, key1, input1, input2,
@@ -64,12 +64,11 @@ public class MacTest extends BrambleTestCase {
 
 	@Test
 	public void testDifferentInputsProduceDifferentMacs() {
-		// Calculate the MAC with the inputs in different orders - the results
-		// should be different
+
 		byte[] mac = crypto.mac(label1, key1, input1, input2, input3);
 		byte[] mac1 = crypto.mac(label1, key1, input3, input2, input1);
 		assertFalse(Arrays.equals(mac, mac1));
-		// Each MAC should fail to verify with the other MAC's inputs
+
 		assertFalse(crypto.verifyMac(mac, label1, key2, input3, input2,
 				input1));
 		assertFalse(crypto.verifyMac(mac1, label1, key1, input1, input2,

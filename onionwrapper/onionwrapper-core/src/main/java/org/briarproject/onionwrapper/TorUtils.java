@@ -23,7 +23,7 @@ class TorUtils {
 	static final Charset UTF_8 = Charset.forName("UTF-8");
 
 	static String scrubOnion(String onion) {
-		// Keep first three characters of onion address
+
 		return onion.substring(0, 3) + "[scrubbed]";
 	}
 

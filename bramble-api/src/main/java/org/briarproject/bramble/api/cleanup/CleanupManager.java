@@ -9,14 +9,11 @@ import org.briarproject.bramble.api.sync.ClientId;
 import org.briarproject.bramble.api.sync.MessageId;
 import org.briarproject.nullsafety.NotNullByDefault;
 
-
 @NotNullByDefault
 public interface CleanupManager {
 
-	
 	long BATCH_DELAY_MS = 1000;
 
-	
 	void registerCleanupHook(ClientId c, int majorVersion,
 			CleanupHook hook);
 }

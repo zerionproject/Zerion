@@ -19,7 +19,6 @@ import static android.content.Intent.ACTION_MY_PACKAGE_REPLACED;
 import static com.professor.zerion.android.settings.NotificationsFragment.PREF_NOTIFY_SIGN_IN;
 import static com.professor.zerion.android.api.AndroidNotificationManager.ACTION_DISMISS_REMINDER;
 
-
 public class SignInReminderReceiver extends BroadcastReceiver {
 	@Inject
 	Provider<AccountManager> accountManagerProvider;

@@ -82,7 +82,6 @@ public class PrivateGroupManagerIntegrationTest
 	public void testSendingMessage() throws Exception {
 		addGroup();
 
-		// create and add test message
 		long time = c0.getClock().currentTimeMillis();
 		String text = "This is a test message!";
 		MessageId previousMsgId =
@@ -94,10 +93,8 @@ public class PrivateGroupManagerIntegrationTest
 		assertEquals(msg.getMessage().getId(),
 				groupManager0.getPreviousMsgId(groupId0));
 
-		// sync test message
 		sync0To1(1, true);
 
-		// assert that message arrived as expected
 		Collection<GroupMessageHeader> headers =
 				groupManager1.getHeaders(groupId0);
 		assertEquals(3, headers.size());
@@ -123,41 +120,32 @@ public class PrivateGroupManagerIntegrationTest
 	public void testMessageWithWrongPreviousMsgId() throws Exception {
 		addGroup();
 
-		// create and add test message with no previousMsgId
 		GroupMessage msg = groupMessageFactory.createGroupMessage(groupId0,
 				c0.getClock().currentTimeMillis(), null, author0, "test", null);
 		groupManager0.addLocalMessage(msg);
 
-		// sync test message
 		sync0To1(1, false);
 
-		// assert that message did not arrive
 		assertEquals(2, groupManager1.getHeaders(groupId0).size());
 
-		// create and add test message with random previousMsgId
 		MessageId previousMsgId = new MessageId(getRandomId());
 		msg = groupMessageFactory.createGroupMessage(groupId0,
 				c0.getClock().currentTimeMillis(), null, author0, "test",
 				previousMsgId);
 		groupManager0.addLocalMessage(msg);
 
-		// sync test message
 		sync0To1(1, false);
 
-		// assert that message did not arrive
 		assertEquals(2, groupManager1.getHeaders(groupId0).size());
 
-		// create and add test message with wrong previousMsgId
 		previousMsgId = groupManager1.getPreviousMsgId(groupId0);
 		msg = groupMessageFactory.createGroupMessage(groupId0,
 				c0.getClock().currentTimeMillis(), null, author0, "test",
 				previousMsgId);
 		groupManager0.addLocalMessage(msg);
 
-		// sync test message
 		sync0To1(1, false);
 
-		// assert that message did not arrive
 		assertEquals(2, groupManager1.getHeaders(groupId0).size());
 	}
 
@@ -165,7 +153,6 @@ public class PrivateGroupManagerIntegrationTest
 	public void testMessageWithWrongParentMsgId() throws Exception {
 		addGroup();
 
-		// create and add test message with random parentMsgId
 		MessageId parentMsgId = new MessageId(getRandomId());
 		MessageId previousMsgId = groupManager0.getPreviousMsgId(groupId0);
 		GroupMessage msg = groupMessageFactory.createGroupMessage(groupId0,
@@ -173,23 +160,18 @@ public class PrivateGroupManagerIntegrationTest
 				previousMsgId);
 		groupManager0.addLocalMessage(msg);
 
-		// sync test message
 		sync0To1(1, false);
 
-		// assert that message did not arrive
 		assertEquals(2, groupManager1.getHeaders(groupId0).size());
 
-		// create and add test message with wrong parentMsgId
 		parentMsgId = previousMsgId;
 		msg = groupMessageFactory.createGroupMessage(groupId0,
 				c0.getClock().currentTimeMillis(), parentMsgId, author0, "test",
 				previousMsgId);
 		groupManager0.addLocalMessage(msg);
 
-		// sync test message
 		sync0To1(1, false);
 
-		// assert that message did not arrive
 		assertEquals(2, groupManager1.getHeaders(groupId0).size());
 	}
 
@@ -197,47 +179,39 @@ public class PrivateGroupManagerIntegrationTest
 	public void testMessageWithWrongTimestamp() throws Exception {
 		addGroup();
 
-		// create and add test message with wrong timestamp
 		MessageId previousMsgId = groupManager0.getPreviousMsgId(groupId0);
 		GroupMessage msg = groupMessageFactory
 				.createGroupMessage(groupId0, 42, null, author0, "test",
 						previousMsgId);
 		groupManager0.addLocalMessage(msg);
 
-		// sync test message
 		sync0To1(1, false);
 
-		// assert that message did not arrive
 		assertEquals(2, groupManager1.getHeaders(groupId0).size());
 
-		// create and add test message with good timestamp
 		long time = c0.getClock().currentTimeMillis();
 		msg = groupMessageFactory
 				.createGroupMessage(groupId0, time, null, author0, "test",
 						previousMsgId);
 		groupManager0.addLocalMessage(msg);
 
-		// sync test message
 		sync0To1(1, true);
 		assertEquals(3, groupManager1.getHeaders(groupId0).size());
 
-		// create and add test message with same timestamp as previous message
 		previousMsgId = msg.getMessage().getId();
 		msg = groupMessageFactory
 				.createGroupMessage(groupId0, time, previousMsgId, author0,
 						"test2", previousMsgId);
 		groupManager0.addLocalMessage(msg);
 
-		// sync test message
 		sync0To1(1, false);
 
-		// assert that message did not arrive
 		assertEquals(3, groupManager1.getHeaders(groupId0).size());
 	}
 
 	@Test
 	public void testWrongJoinMessages1() throws Exception {
-		// author0 joins privateGroup0 with wrong join message
+
 		long joinTime = c0.getClock().currentTimeMillis();
 		GroupMessage joinMsg0 = groupMessageFactory
 				.createJoinMessage(privateGroup0.getId(), joinTime, author0,
@@ -246,11 +220,9 @@ public class PrivateGroupManagerIntegrationTest
 		assertEquals(joinMsg0.getMessage().getId(),
 				groupManager0.getPreviousMsgId(groupId0));
 
-		// share the group with 1
 		db0.transaction(false, txn -> db0.setGroupVisibility(txn,
 				contactId1From0, privateGroup0.getId(), SHARED));
 
-		// author1 joins privateGroup0 with wrong timestamp
 		joinTime = c1.getClock().currentTimeMillis();
 		long inviteTime = joinTime;
 		Contact c1 = contactManager0.getContact(contactId1From0);
@@ -264,25 +236,21 @@ public class PrivateGroupManagerIntegrationTest
 		assertEquals(joinMsg1.getMessage().getId(),
 				groupManager1.getPreviousMsgId(groupId0));
 
-		// share the group with 0
 		db1.transaction(false, txn -> db1.setGroupVisibility(txn,
 				contactId0From1, privateGroup0.getId(), SHARED));
 
-		// sync join messages
 		sync0To1(1, false);
 
-		// assert that 0 never joined the group from 1's perspective
 		assertEquals(1, groupManager1.getHeaders(groupId0).size());
 
 		sync1To0(1, false);
 
-		// assert that 1 never joined the group from 0's perspective
 		assertEquals(1, groupManager0.getHeaders(groupId0).size());
 	}
 
 	@Test
 	public void testWrongJoinMessages2() throws Exception {
-		// author0 joins privateGroup0 with wrong member's join message
+
 		long joinTime = c0.getClock().currentTimeMillis();
 		long inviteTime = joinTime - 1;
 		BdfList toSign = groupInvitationFactory
@@ -290,7 +258,7 @@ public class PrivateGroupManagerIntegrationTest
 						privateGroup0.getId(), inviteTime);
 		byte[] creatorSignature = clientHelper
 				.sign(SIGNING_LABEL_INVITE, toSign, author0.getPrivateKey());
-		// join message should not include invite time and creator's signature
+
 		GroupMessage joinMsg0 = groupMessageFactory
 				.createJoinMessage(privateGroup0.getId(), joinTime, author0,
 						inviteTime, creatorSignature);
@@ -298,14 +266,12 @@ public class PrivateGroupManagerIntegrationTest
 		assertEquals(joinMsg0.getMessage().getId(),
 				groupManager0.getPreviousMsgId(groupId0));
 
-		// share the group with 1
 		db0.transaction(false, txn -> db0.setGroupVisibility(txn,
 				contactId1From0, privateGroup0.getId(), SHARED));
 
-		// author1 joins privateGroup0 with wrong signature in join message
 		joinTime = c1.getClock().currentTimeMillis();
 		inviteTime = joinTime - 1;
-		// signature uses joiner's key, not creator's key
+
 		Contact c1 = contactManager0.getContact(contactId1From0);
 		creatorSignature = groupInvitationFactory
 				.signInvitation(c1, privateGroup0.getId(), inviteTime,
@@ -317,19 +283,15 @@ public class PrivateGroupManagerIntegrationTest
 		assertEquals(joinMsg1.getMessage().getId(),
 				groupManager1.getPreviousMsgId(groupId0));
 
-		// share the group with 0
 		db1.transaction(false, txn -> db1.setGroupVisibility(txn,
 				contactId0From1, privateGroup0.getId(), SHARED));
 
-		// sync join messages
 		sync0To1(1, false);
 
-		// assert that 0 never joined the group from 1's perspective
 		assertEquals(1, groupManager1.getHeaders(groupId0).size());
 
 		sync1To0(1, false);
 
-		// assert that 1 never joined the group from 0's perspective
 		assertEquals(1, groupManager0.getHeaders(groupId0).size());
 	}
 
@@ -360,11 +322,9 @@ public class PrivateGroupManagerIntegrationTest
 	public void testRevealingRelationships() throws Exception {
 		addGroup();
 
-		// share the group with 2
 		db0.transaction(false, txn -> db0.setGroupVisibility(txn,
 				contactId2From0, privateGroup0.getId(), SHARED));
 
-		// author2 joins privateGroup0
 		long joinTime = c2.getClock().currentTimeMillis();
 		long inviteTime = joinTime - 1;
 		Contact c2 = contactManager0.getContact(contactId2From0);
@@ -376,17 +336,15 @@ public class PrivateGroupManagerIntegrationTest
 						inviteTime, creatorSignature);
 		db2.transaction(false, txn -> {
 			groupManager2.addPrivateGroup(txn, privateGroup0, joinMsg2, false);
-			// share the group with 0
+
 			db2.setGroupVisibility(txn,
 					contactId0From2, privateGroup0.getId(), SHARED);
 		});
 
-		// sync join messages
 		sync2To0(1, true);
 		sync0To2(2, true);
 		sync0To1(1, true);
 
-		// check that everybody sees everybody else as joined
 		Collection<GroupMember> members0 = groupManager0.getMembers(groupId0);
 		assertEquals(3, members0.size());
 		Collection<GroupMember> members1 = groupManager1.getMembers(groupId0);
@@ -394,10 +352,8 @@ public class PrivateGroupManagerIntegrationTest
 		Collection<GroupMember> members2 = groupManager2.getMembers(groupId0);
 		assertEquals(3, members2.size());
 
-		// 1 and 2 add each other
 		addContacts1And2();
 
-		// assert that contact relationship is not revealed initially
 		for (GroupMember m : members1) {
 			if (m.getAuthor().equals(author2)) {
 				assertEquals(INVISIBLE, m.getVisibility());
@@ -409,13 +365,11 @@ public class PrivateGroupManagerIntegrationTest
 			}
 		}
 
-		// reveal contact relationship
 		db1.transaction(false, txn -> groupManager1.relationshipRevealed(txn,
 				groupId0, author2.getId(), false));
 		db2.transaction(false, txn -> groupManager2.relationshipRevealed(txn,
 				groupId0, author1.getId(), true));
 
-		// assert that contact relationship is now revealed properly
 		members1 = groupManager1.getMembers(groupId0);
 		for (GroupMember m : members1) {
 			if (m.getAuthor().equals(author2)) {
@@ -434,19 +388,16 @@ public class PrivateGroupManagerIntegrationTest
 	public void testDissolveGroup() throws Exception {
 		addGroup();
 
-		// group is not dissolved initially
 		assertFalse(groupManager1.isDissolved(groupId0));
 
-		// creator dissolves group
 		db1.transaction(false, txn ->
 				groupManager1.markGroupDissolved(txn, groupId0));
 
-		// group is dissolved now
 		assertTrue(groupManager1.isDissolved(groupId0));
 	}
 
 	private void addGroup() throws Exception {
-		// author0 joins privateGroup0
+
 		long joinTime = c0.getClock().currentTimeMillis();
 		GroupMessage joinMsg0 = groupMessageFactory
 				.createJoinMessage(privateGroup0.getId(), joinTime, author0);
@@ -454,11 +405,9 @@ public class PrivateGroupManagerIntegrationTest
 		assertEquals(joinMsg0.getMessage().getId(),
 				groupManager0.getPreviousMsgId(groupId0));
 
-		// share the group with 1
 		db0.transaction(false, txn -> db0.setGroupVisibility(txn,
 				contactId1From0, privateGroup0.getId(), SHARED));
 
-		// author1 joins privateGroup0
 		joinTime = c1.getClock().currentTimeMillis();
 		long inviteTime = joinTime - 1;
 		Contact c1 = contactManager0.getContact(contactId1From0);
@@ -470,13 +419,11 @@ public class PrivateGroupManagerIntegrationTest
 						inviteTime, creatorSignature);
 		groupManager1.addPrivateGroup(privateGroup0, joinMsg1, false);
 
-		// share the group with 0
 		db1.transaction(false, txn -> db1.setGroupVisibility(txn,
 				contactId0From1, privateGroup0.getId(), SHARED));
 		assertEquals(joinMsg1.getMessage().getId(),
 				groupManager1.getPreviousMsgId(groupId0));
 
-		// sync join messages
 		sync0To1(1, true);
 		sync1To0(1, true);
 	}

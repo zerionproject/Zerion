@@ -87,13 +87,12 @@ public class MessagingManagerIntegrationTest
 
 	@Test
 	public void testSimpleConversation() throws Exception {
-		// conversation starts out empty
+
 		Collection<ConversationMessageHeader> messages0 = getMessages(c0);
 		Collection<ConversationMessageHeader> messages1 = getMessages(c1);
 		assertEquals(0, messages0.size());
 		assertEquals(0, messages1.size());
 
-		// message is sent/displayed properly
 		String text = getRandomString(42);
 		sendMessage(c0, c1, text);
 		messages0 = getMessages(c0);
@@ -115,7 +114,6 @@ public class MessagingManagerIntegrationTest
 		assertGroupCounts(c0, 1, 0);
 		assertGroupCounts(c1, 1, 1);
 
-		// same for reply
 		String text2 = getRandomString(42);
 		sendMessage(c1, c0, text2);
 		messages0 = getMessages(c0);
@@ -128,11 +126,10 @@ public class MessagingManagerIntegrationTest
 
 	@Test
 	public void testAttachments() throws Exception {
-		// send message with attachment
+
 		AttachmentHeader h = addAttachment(c0);
 		sendMessage(c0, c1, null, singletonList(h));
 
-		// message with attachment is sent/displayed properly
 		Collection<ConversationMessageHeader> messages0 = getMessages(c0);
 		Collection<ConversationMessageHeader> messages1 = getMessages(c1);
 		assertEquals(1, messages0.size());
@@ -155,11 +152,10 @@ public class MessagingManagerIntegrationTest
 
 	@Test
 	public void testAutoDeleteTimer() throws Exception {
-		// send message with auto-delete timer
+
 		sendMessage(c0, c1, getRandomString(123), emptyList(),
 				MIN_AUTO_DELETE_TIMER_MS);
 
-		// message with timer is sent/displayed properly
 		Collection<ConversationMessageHeader> messages0 = getMessages(c0);
 		Collection<ConversationMessageHeader> messages1 = getMessages(c1);
 		assertEquals(1, messages0.size());
@@ -182,7 +178,7 @@ public class MessagingManagerIntegrationTest
 
 	@Test
 	public void testDeleteAll() throws Exception {
-		// send 3 messages (1 with attachment)
+
 		sendMessage(c0, c1, getRandomString(42));
 		sendMessage(c0, c1, getRandomString(23));
 		sendMessage(c0, c1, null, singletonList(addAttachment(c0)));
@@ -191,7 +187,6 @@ public class MessagingManagerIntegrationTest
 		assertGroupCounts(c0, 3, 0);
 		assertGroupCounts(c1, 3, 3);
 
-		// delete all messages on both sides (deletes all, because returns true)
 		assertTrue(db0.transactionWithResult(false,
 				txn -> messagingManager0.deleteAllMessages(txn, contactId))
 				.allDeleted());
@@ -199,7 +194,6 @@ public class MessagingManagerIntegrationTest
 				txn -> messagingManager1.deleteAllMessages(txn, contactId))
 				.allDeleted());
 
-		// all messages are gone
 		assertEquals(0, getMessages(c0).size());
 		assertEquals(0, getMessages(c1).size());
 		assertGroupCounts(c0, 0, 0);
@@ -208,7 +202,7 @@ public class MessagingManagerIntegrationTest
 
 	@Test
 	public void testDeleteSubset() throws Exception {
-		// send 3 message (1 with attachment)
+
 		PrivateMessage m0 = sendMessage(c0, c1, getRandomString(42));
 		PrivateMessage m1 = sendMessage(c0, c1, getRandomString(23));
 		PrivateMessage m2 =
@@ -216,7 +210,6 @@ public class MessagingManagerIntegrationTest
 		assertGroupCounts(c0, 3, 0);
 		assertGroupCounts(c1, 3, 3);
 
-		// delete 2 messages on both sides (deletes all, because returns true)
 		Set<MessageId> toDelete = new HashSet<>();
 		toDelete.add(m1.getMessage().getId());
 		toDelete.add(m2.getMessage().getId());
@@ -227,7 +220,6 @@ public class MessagingManagerIntegrationTest
 				messagingManager1.deleteMessages(txn, contactId, toDelete))
 				.allDeleted());
 
-		// all messages except 1 are gone
 		assertEquals(1, getMessages(c0).size());
 		assertEquals(1, getMessages(c1).size());
 		assertEquals(m0.getMessage().getId(),
@@ -237,7 +229,6 @@ public class MessagingManagerIntegrationTest
 		assertGroupCounts(c0, 1, 0);
 		assertGroupCounts(c1, 1, 1);
 
-		// remove also last message
 		toDelete.clear();
 		toDelete.add(m0.getMessage().getId());
 		assertTrue(db0.transactionWithResult(false, txn ->
@@ -249,18 +240,16 @@ public class MessagingManagerIntegrationTest
 
 	@Test
 	public void testDeleteLegacySubset() throws Exception {
-		// send legacy message
+
 		GroupId g = c0.getMessagingManager().getConversationId(contactId);
 		PrivateMessage m0 = messageFactory.createLegacyPrivateMessage(g,
 				c0.getClock().currentTimeMillis(), getRandomString(42));
 		c0.getMessagingManager().addLocalMessage(m0);
 		syncMessage(c0, c1, contactId, 1, true);
 
-		// message arrived on both sides
 		assertEquals(1, getMessages(c0).size());
 		assertEquals(1, getMessages(c1).size());
 
-		// delete message on both sides (deletes all, because returns true)
 		Set<MessageId> toDelete = new HashSet<>();
 		toDelete.add(m0.getMessage().getId());
 		assertTrue(c0.getConversationManager()
@@ -268,22 +257,19 @@ public class MessagingManagerIntegrationTest
 		assertTrue(c1.getConversationManager()
 				.deleteMessages(contactId, toDelete).allDeleted());
 
-		// message was deleted
 		assertEquals(0, getMessages(c0).size());
 		assertEquals(0, getMessages(c1).size());
 	}
 
 	@Test
 	public void testDeleteAttachment() throws Exception {
-		// send one message with attachment
+
 		AttachmentHeader h = addAttachment(c0);
 		sendMessage(c0, c1, getRandomString(42), singletonList(h));
 
-		// attachment exists on both devices
 		db0.transaction(true, txn -> db0.getMessage(txn, h.getMessageId()));
 		db1.transaction(true, txn -> db1.getMessage(txn, h.getMessageId()));
 
-		// delete message on both sides (deletes all, because returns true)
 		assertTrue(db0.transactionWithResult(false,
 				txn -> messagingManager0.deleteAllMessages(txn, contactId))
 				.allDeleted());
@@ -291,18 +277,17 @@ public class MessagingManagerIntegrationTest
 				txn -> messagingManager1.deleteAllMessages(txn, contactId))
 				.allDeleted());
 
-		// attachment was deleted on both devices
 		try {
 			db0.transaction(true, txn -> db0.getMessage(txn, h.getMessageId()));
 			fail();
 		} catch (MessageDeletedException e) {
-			// expected
+
 		}
 		try {
 			db1.transaction(true, txn -> db1.getMessage(txn, h.getMessageId()));
 			fail();
 		} catch (MessageDeletedException e) {
-			// expected
+
 		}
 	}
 
@@ -369,6 +354,5 @@ public class MessagingManagerIntegrationTest
 		GroupId g = c.getMessagingManager().getConversationId(contactId);
 		assertGroupCount(c.getMessageTracker(), g, msgCount, unreadCount);
 	}
-
 
 }

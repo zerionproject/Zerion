@@ -15,12 +15,10 @@ import javax.annotation.concurrent.NotThreadSafe;
 
 import static org.briarproject.bramble.api.transport.TransportConstants.MAC_LENGTH;
 
-
 @NotThreadSafe
 @NotNullByDefault
 class XSalsa20Poly1305AuthenticatedCipher implements AuthenticatedCipher {
 
-	
 	private static final int SUBKEY_LENGTH = 32;
 
 	private final XSalsa20Engine xSalsa20Engine;

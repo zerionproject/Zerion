@@ -62,10 +62,6 @@ public class IntroductionValidatorTest extends ValidatorTestCase {
 	private final byte[] mac = getRandomBytes(MAC_BYTES);
 	private final byte[] signature = getRandomBytes(MAX_SIGNATURE_BYTES);
 
-	//
-	// Introduction REQUEST
-	//
-
 	@Test
 	public void testAcceptsRequest() throws Exception {
 		BdfList body = BdfList.of(REQUEST.getValue(), previousMsgId.getBytes(),
@@ -185,10 +181,6 @@ public class IntroductionValidatorTest extends ValidatorTestCase {
 		expectParseAuthor(authorList, author);
 		validator.validateMessage(message, group, body);
 	}
-
-	//
-	// Introduction ACCEPT
-	//
 
 	@Test
 	public void testAcceptsAccept() throws Exception {
@@ -328,10 +320,6 @@ public class IntroductionValidatorTest extends ValidatorTestCase {
 		validator.validateMessage(message, group, body);
 	}
 
-	//
-	// Introduction DECLINE
-	//
-
 	@Test
 	public void testAcceptsDecline() throws Exception {
 		BdfList body = BdfList.of(DECLINE.getValue(), sessionId.getBytes(),
@@ -420,10 +408,6 @@ public class IntroductionValidatorTest extends ValidatorTestCase {
 		validator.validateMessage(message, group, body);
 	}
 
-	//
-	// Introduction AUTH
-	//
-
 	@Test
 	public void testAcceptsAuth() throws Exception {
 		BdfList body = BdfList.of(AUTH.getValue(), sessionId.getBytes(),
@@ -509,10 +493,6 @@ public class IntroductionValidatorTest extends ValidatorTestCase {
 		validator.validateMessage(message, group, body);
 	}
 
-	//
-	// Introduction ACTIVATE
-	//
-
 	@Test
 	public void testAcceptsActivate() throws Exception {
 		BdfList body = BdfList.of(ACTIVATE.getValue(), sessionId.getBytes(),
@@ -567,10 +547,6 @@ public class IntroductionValidatorTest extends ValidatorTestCase {
 		validator.validateMessage(message, group, body);
 	}
 
-	//
-	// Introduction ABORT
-	//
-
 	@Test
 	public void testAcceptsAbort() throws Exception {
 		BdfList body = BdfList.of(ABORT.getValue(), sessionId.getBytes(),
@@ -608,10 +584,6 @@ public class IntroductionValidatorTest extends ValidatorTestCase {
 		BdfList body = BdfList.of(ABORT.getValue(), sessionId.getBytes(), 1);
 		validator.validateMessage(message, group, body);
 	}
-
-	//
-	// Introduction Helper Methods
-	//
 
 	private void expectParsePublicKey() throws Exception {
 		context.checking(new Expectations() {{

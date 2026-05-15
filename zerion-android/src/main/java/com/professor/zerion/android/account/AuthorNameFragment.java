@@ -62,7 +62,6 @@ public class AuthorNameFragment extends SetupFragment {
 		return v;
 	}
 
-	
 	private void setupKeyboardInsetsHandling(View rootView) {
 		View scrollContent = rootView.findViewById(R.id.scroll_content);
 		if (scrollContent == null) return;

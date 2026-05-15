@@ -79,21 +79,21 @@ public class ChangePasswordActivityTest {
 
 	@Test
 	public void testPasswordMatchUI() {
-		// Password mismatch
+
 		newPassword.setText("really.safe.password");
 		newPasswordConfirmation.setText("really.safe.pass");
 		assertFalse(changePasswordButton.isEnabled());
 		assertEquals(passwordConfirmationWrapper.getError(),
 				changePasswordActivity
 						.getString(R.string.passwords_do_not_match));
-		// Button enabled
+
 		newPassword.setText("really.safe.pass");
 		newPasswordConfirmation.setText("really.safe.pass");
-		// Confirm that the password mismatch error message is not visible
+
 		assertNotEquals(passwordConfirmationWrapper.getError(),
 				changePasswordActivity
 						.getString(R.string.passwords_do_not_match));
-		// Nick has not been set, expect the button to be disabled
+
 		assertFalse(changePasswordButton.isEnabled());
 	}
 
@@ -111,7 +111,7 @@ public class ChangePasswordActivityTest {
 		changePasswordButton.performClick();
 		verify(viewModel, times(1)).changePassword(
 				any(char[].class), any(char[].class));
-		// Return the result
+
 		result.postEvent(SUCCESS);
 		shadowOf(getMainLooper()).idle();
 		assertTrue(changePasswordActivity.isFinishing());

@@ -35,9 +35,9 @@ public abstract class SingleDatabasePerformanceTest
 		populateDatabase(db);
 		db.close();
 		db = openDatabase();
-		// Measure the first iteration
+
 		long firstDuration = measureOne(db, task);
-		// Measure blocks of iterations until we reach a steady state
+
 		SteadyStateResult result = measureSteadyState(db, task);
 		db.close();
 		writeResult(name, result.blocks, firstDuration, result.durations);

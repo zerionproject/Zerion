@@ -23,9 +23,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-/**
- * Unit tests for the PCS symmetric ratchet implementation.
- */
 public class PcsRatchetImplTest {
 
 	private CryptoComponent crypto;
@@ -35,7 +32,7 @@ public class PcsRatchetImplTest {
 
 	@Before
 	public void setUp() throws Exception {
-		// Use reflection to instantiate CryptoComponentImpl since it's package-private
+
 		Class<?> cryptoImplClass = Class.forName(
 				"org.briarproject.bramble.crypto.CryptoComponentImpl");
 		Constructor<?> constructor = cryptoImplClass.getDeclaredConstructor(
@@ -70,7 +67,6 @@ public class PcsRatchetImplTest {
 	public void testDerivePcsRootKeyProducesDeterministicResult() {
 		SecretKey contactRootKey = getSecretKey();
 
-		// Derive PCS root key twice - should be identical
 		SecretKey pcsRoot1 = ratchet.derivePcsRootKey(contactRootKey);
 		SecretKey pcsRoot2 = ratchet.derivePcsRootKey(contactRootKey);
 
@@ -97,12 +93,10 @@ public class PcsRatchetImplTest {
 		assertNotNull(result.getNewChainKey());
 		assertNotNull(result.getMessageKey());
 
-		// New chain key and message key should be different
 		assertFalse(Arrays.equals(
 				result.getNewChainKey().getBytes(),
 				result.getMessageKey().getBytes()));
 
-		// New chain key should be different from input
 		assertFalse(Arrays.equals(
 				chainKey.getBytes(),
 				result.getNewChainKey().getBytes()));
@@ -149,7 +143,6 @@ public class PcsRatchetImplTest {
 		AdvanceResult result2 = ratchet.advanceSendChain(result1.getNewState());
 		AdvanceResult result3 = ratchet.advanceSendChain(result2.getNewState());
 
-		// All message keys should be unique
 		assertFalse(Arrays.equals(
 				result1.getMessageKey().getBytes(),
 				result2.getMessageKey().getBytes()));
@@ -165,7 +158,6 @@ public class PcsRatchetImplTest {
 	public void testAdvanceReceiveChainMatchesSendChain() throws PcsException {
 		SecretKey rootKey = getSecretKey();
 
-		// Sender advances chain
 		PcsSessionState sendState = ratchet.initializeMode2AsInitiator(rootKey);
 		AdvanceResult sendResult = ratchet.advanceSendChain(sendState);
 		SecretKey sentMessageKey = sendResult.getMessageKey();
@@ -176,7 +168,6 @@ public class PcsRatchetImplTest {
 				recvState, sentMessageNumber, skippedKeyStore);
 		SecretKey receivedMessageKey = recvResult.getMessageKey();
 
-		// Message keys should match
 		assertArrayEquals(sentMessageKey.getBytes(), receivedMessageKey.getBytes());
 	}
 
@@ -185,11 +176,9 @@ public class PcsRatchetImplTest {
 		SecretKey rootKey = getSecretKey();
 		PcsSessionState state = ratchet.initializeMode2AsInitiator(rootKey);
 
-		// Advance to message 5, skipping 0-4
 		AdvanceResult result = ratchet.advanceReceiveChain(
 				state, 5, skippedKeyStore);
 
-		// State should be at message 6 (next expected)
 		assertEquals(6, result.getNewState().getMessageNumber());
 	}
 
@@ -197,15 +186,13 @@ public class PcsRatchetImplTest {
 	public void testAdvanceReceiveChainRejectsMessageInPast() {
 		SecretKey rootKey = getSecretKey();
 
-		// Advance state to message 5
 		PcsSessionState state = new PcsSessionState(rootKey, 5, 0, null, null);
 
-		// Try to process message 3 (in the past)
 		try {
 			ratchet.advanceReceiveChain(state, 3, skippedKeyStore);
 			fail("Expected PcsException for message in past");
 		} catch (PcsException e) {
-			// Expected
+
 			assertTrue(e.getMessage().contains("in the past"));
 		}
 	}
@@ -215,12 +202,11 @@ public class PcsRatchetImplTest {
 		SecretKey rootKey = getSecretKey();
 		PcsSessionState state = ratchet.initializeMode2AsInitiator(rootKey);
 
-		// Try to advance past MAX_SKIP
 		try {
 			ratchet.advanceReceiveChain(state, MAX_SKIP + 1, skippedKeyStore);
 			fail("Expected PcsException for message too far ahead");
 		} catch (PcsException e) {
-			// Expected
+
 			assertTrue(e.getMessage().contains("too far ahead"));
 		}
 	}
@@ -229,11 +215,9 @@ public class PcsRatchetImplTest {
 	public void testSendReceiveMultipleMessages() throws PcsException {
 		SecretKey rootKey = getSecretKey();
 
-		// Both sides start with same root key
 		PcsSessionState aliceSend = ratchet.initializeMode2AsInitiator(rootKey);
 		PcsSessionState bobRecv = ratchet.initializeMode2AsInitiator(rootKey);
 
-		// Alice sends messages 0, 1, 2
 		SecretKey[] aliceKeys = new SecretKey[3];
 		for (int i = 0; i < 3; i++) {
 			AdvanceResult result = ratchet.advanceSendChain(aliceSend);
@@ -241,7 +225,6 @@ public class PcsRatchetImplTest {
 			aliceSend = result.getNewState();
 		}
 
-		// Bob receives messages 0, 1, 2 in order
 		for (int i = 0; i < 3; i++) {
 			AdvanceResult result = ratchet.advanceReceiveChain(
 					bobRecv, i, skippedKeyStore);

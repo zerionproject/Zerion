@@ -12,7 +12,6 @@ import dagger.Provides;
 
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 
-
 @Module
 public class DefaultEventExecutorModule {
 

@@ -13,9 +13,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Unit tests for ML-DSA-65 implementation.
- */
 public class MlDsa65Test extends BrambleTestCase {
 
 	private final SecureRandom secureRandom = new TestSecureRandomProvider()
@@ -52,14 +49,11 @@ public class MlDsa65Test extends BrambleTestCase {
 		System.out.println("ML-DSA-65 Signature length: " + signature.length);
 		System.out.println("Expected signature length: " + ML_DSA_65_SIGNATURE_BYTES);
 
-		// Print comparison for debugging
 		System.out.println("Signature length matches: " + (signature.length == ML_DSA_65_SIGNATURE_BYTES));
 
-		// Verify works regardless of size check
 		boolean valid = mlDsa65.verify(keyPair.getPublicKey(), message, signature);
 		assertTrue("Signature should be valid", valid);
 
-		// Now check the size matches
 		assertEquals("Signature length should match constant",
 				ML_DSA_65_SIGNATURE_BYTES, signature.length);
 	}

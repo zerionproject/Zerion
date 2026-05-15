@@ -761,7 +761,6 @@ public class ConversationViewModel extends DbViewModel
 		}
 	}
 
-	
 	@UiThread
 	LiveData<AttachmentResult> storeVoiceAttachment(android.net.Uri audioUri) {
 		java.util.Collection<android.net.Uri> uris = java.util.Collections.singleton(audioUri);
@@ -772,7 +771,6 @@ public class ConversationViewModel extends DbViewModel
 		return attachmentCreator.storeAttachments(messagingGroupId, uris, format);
 	}
 
-	
 	@UiThread
 	LiveData<SendState> sendVoiceAttachment(long expectedTimer) {
 		java.util.List<AttachmentHeader> headers = attachmentCreator.getAttachmentHeadersForSending();
@@ -784,13 +782,11 @@ public class ConversationViewModel extends DbViewModel
 		return sendMessage(null, headers, expectedTimer, null);
 	}
 
-	
 	@UiThread
 	void cancelVoiceAttachment() {
 		attachmentCreator.cancel();
 	}
 
-	
 	void loadMessageHeaders() {
 		if (contactId == null) return;
 		messagesLoading.setValue(true);
@@ -812,7 +808,6 @@ public class ConversationViewModel extends DbViewModel
 		});
 	}
 
-	
 	void loadMessageText(MessageId messageId) {
 		runOnDbThread(() -> {
 			try {
@@ -827,7 +822,6 @@ public class ConversationViewModel extends DbViewModel
 		});
 	}
 
-	
 	void deleteMessages(Collection<MessageId> messageIds) {
 		if (contactId == null || messageIds.isEmpty()) return;
 		final ContactId c = contactId;
@@ -841,7 +835,6 @@ public class ConversationViewModel extends DbViewModel
 		});
 	}
 
-	
 	void clearChat() {
 		if (contactId == null) return;
 		final ContactId c = contactId;
@@ -859,7 +852,6 @@ public class ConversationViewModel extends DbViewModel
 		});
 	}
 
-	
 	void removeContact() {
 		if (contactId == null) return;
 		final ContactId c = contactId;
@@ -873,7 +865,6 @@ public class ConversationViewModel extends DbViewModel
 		});
 	}
 
-	
 	void markMessages(Collection<MessageId> messageIds, boolean sent, boolean seen) {
 		messagesMarked.postEvent(new MarkMessagesEvent(messageIds, sent, seen));
 	}
@@ -1012,7 +1003,6 @@ public class ConversationViewModel extends DbViewModel
 		return clientVersionUpdated;
 	}
 
-	
 	void checkConnectionStatus(org.briarproject.bramble.api.connection.ConnectionRegistry registry) {
 		if (contactId != null) {
 			contactConnected.postValue(registry.isConnected(contactId));

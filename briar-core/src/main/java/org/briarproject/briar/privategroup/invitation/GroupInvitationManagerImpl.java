@@ -730,7 +730,7 @@ class GroupInvitationManagerImpl extends ConversationClientImpl
 
 	@FunctionalInterface
 	private interface MessageDeletionChecker {
-		
+
 		boolean causesProblem(MessageId messageId);
 	}
 

@@ -65,23 +65,18 @@ abstract class TcpPlugin implements DuplexPlugin, EventListener {
 	protected final AtomicBoolean used = new AtomicBoolean(false);
 	protected final PluginState state = new PluginState();
 
-	
 	protected abstract List<InetSocketAddress> getLocalSocketAddresses(
 			boolean ipv4);
 
-	
 	protected abstract void setLocalSocketAddress(InetSocketAddress a,
 			boolean ipv4);
 
-	
 	protected abstract List<InetSocketAddress> getRemoteSocketAddresses(
 			TransportProperties p, boolean ipv4);
 
-	
 	protected abstract boolean isConnectable(InterfaceAddress local,
 			InetSocketAddress remote);
 
-	
 	protected abstract boolean isEnabledByDefault();
 
 	TcpPlugin(Executor ioExecutor,

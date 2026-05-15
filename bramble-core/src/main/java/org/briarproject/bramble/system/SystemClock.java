@@ -2,7 +2,6 @@ package org.briarproject.bramble.system;
 
 import org.briarproject.bramble.api.system.Clock;
 
-
 public class SystemClock implements Clock {
 
 	@Override

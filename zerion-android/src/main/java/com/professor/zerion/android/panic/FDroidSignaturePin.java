@@ -79,5 +79,4 @@ public final class FDroidSignaturePin extends ApkSignaturePin {
 						-71, -115, -67, 23, 66, -21, 56, 51, -91, 109}};
 	}
 
-
 }

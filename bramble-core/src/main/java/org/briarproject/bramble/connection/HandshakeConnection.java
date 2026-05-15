@@ -34,7 +34,6 @@ abstract class HandshakeConnection extends Connection {
 
 	final boolean classical;
 
-	// 2 minutes: generous for Tor latency, prevents indefinite blocking
 	private static final long HANDSHAKE_TIMEOUT_MS = 120_000;
 	private final AtomicBoolean handshakeComplete = new AtomicBoolean(false);
 
@@ -68,7 +67,7 @@ abstract class HandshakeConnection extends Connection {
 			StreamContext ctx =
 					keyManager.getStreamContext(pendingContactId, transportId);
 			if (ctx != null) return ctx;
-			// Keys may not be loaded yet — wait briefly and retry once
+
 			try {
 				Thread.sleep(2000);
 			} catch (InterruptedException e) {
@@ -85,11 +84,6 @@ abstract class HandshakeConnection extends Connection {
 		disposeOnError(writer);
 	}
 
-	/**
-	 * Starts a watchdog thread that closes the connection if the handshake
-	 * does not complete within HANDSHAKE_TIMEOUT_MS. Call
-	 * {@link #cancelTimeout()} when handshake succeeds.
-	 */
 	void startTimeout() {
 		Thread watchdog = new Thread(() -> {
 			try {

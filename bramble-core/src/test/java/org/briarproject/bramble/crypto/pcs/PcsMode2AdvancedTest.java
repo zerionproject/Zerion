@@ -25,13 +25,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-/**
- * Advanced tests for PCS Mode 2 covering edge cases:
- * - Mode 1 to Mode 2 upgrade path
- * - Out-of-order message handling in Mode 2
- * - Skipped key storage and retrieval
- * - Chain ID uniqueness with DH ratchet
- */
 public class PcsMode2AdvancedTest {
 
 	private CryptoComponent crypto;
@@ -40,7 +33,7 @@ public class PcsMode2AdvancedTest {
 
 	@Before
 	public void setUp() throws Exception {
-		// Use reflection to instantiate CryptoComponentImpl (package-private)
+
 		Class<?> cryptoImplClass = Class.forName(
 				"org.briarproject.bramble.crypto.CryptoComponentImpl");
 		Constructor<?> constructor = cryptoImplClass.getDeclaredConstructor(
@@ -71,21 +64,16 @@ public class PcsMode2AdvancedTest {
 		return new SecretKey(keyBytes);
 	}
 
-	// ==================== Out-of-Order Message Tests ====================
-
 	@Test
 	public void testMode2OutOfOrderMessageRecovery() throws Exception {
 		SecretKey rootKey = generateKey();
 
-		// Alice initializes as initiator
 		PcsSessionState aliceState = ratchet.initializeMode2AsInitiator(rootKey);
 		PublicKey aliceInitialKey = aliceState.getDhState().getDhPublicKey();
 
-		// Bob initializes as responder
 		PcsSessionState bobState = ratchet.initializeMode2AsResponder(
 				rootKey, aliceInitialKey);
 
-		// Alice sends messages 0, 1, 2, 3, 4
 		SecretKey[] aliceKeys = new SecretKey[5];
 		PcsSessionState aliceSendState = aliceState;
 		for (int i = 0; i < 5; i++) {
@@ -94,17 +82,13 @@ public class PcsMode2AdvancedTest {
 			aliceSendState = result.getNewState();
 		}
 
-		// Bob receives message 3 first (skipping 0, 1, 2)
 		AdvanceResult recv3 = ratchet.advanceReceiveChain(
 				bobState, 3, skippedKeyStore);
 		assertArrayEquals(aliceKeys[3].getBytes(), recv3.getMessageKey().getBytes());
 		bobState = recv3.getNewState();
 
-		// Bob should be at message 4 now
 		assertEquals(4, bobState.getMessageNumber());
 
-		// Verify skipped keys were stored by using InMemorySkippedKeyStore's total count
-		// The chain ID is computed internally by the ratchet using a hash of chain key
 		InMemorySkippedKeyStore inMemStore = (InMemorySkippedKeyStore) skippedKeyStore;
 		assertEquals("Should have 3 skipped keys stored (messages 0, 1, 2)",
 				3, inMemStore.getTotalSkippedKeyCount());
@@ -112,7 +96,7 @@ public class PcsMode2AdvancedTest {
 
 	@Test
 	public void testMode2SkippedKeyExpiration() throws Exception {
-		// Use a custom clock that we can control
+
 		final long[] currentTime = {1000000L};
 		Clock controllableClock = new Clock() {
 			@Override
@@ -130,22 +114,17 @@ public class PcsMode2AdvancedTest {
 		SecretKey rootKey = generateKey();
 		PcsSessionState state = ratchet.initializeMode2AsInitiator(rootKey);
 
-		// Advance past message 5, storing skipped keys
 		AdvanceResult result = customRatchet.advanceReceiveChain(
 				state, 5, skippedKeyStore);
 		state = result.getNewState();
 
-		// Verify skipped keys 0-4 were stored using total count
 		InMemorySkippedKeyStore inMemStore = (InMemorySkippedKeyStore) skippedKeyStore;
 		assertEquals("Should have 5 skipped keys stored", 5,
 				inMemStore.getTotalSkippedKeyCount());
 
-		// Advance time past the MAX_SKIP_AGE_MS and prune
-		// MAX_SKIP_AGE_MS is 7 days = 7 * 24 * 60 * 60 * 1000L
-		currentTime[0] += 7 * 24 * 60 * 60 * 1000L + 1; // 7 days + 1 ms
+		currentTime[0] += 7 * 24 * 60 * 60 * 1000L + 1;
 		int pruned = skippedKeyStore.pruneExpiredKeys(currentTime[0]);
 
-		// All 5 keys should be expired and pruned
 		assertEquals("All 5 keys should be pruned", 5, pruned);
 		assertEquals("No skipped keys should remain", 0,
 				inMemStore.getTotalSkippedKeyCount());
@@ -156,7 +135,6 @@ public class PcsMode2AdvancedTest {
 		SecretKey rootKey = generateKey();
 		PcsSessionState state = ratchet.initializeMode2AsInitiator(rootKey);
 
-		// Try to skip more than MAX_SKIP
 		try {
 			ratchet.advanceReceiveChain(state, MAX_SKIP + 1, skippedKeyStore);
 			fail("Should throw PcsException for exceeding MAX_SKIP");
@@ -164,20 +142,16 @@ public class PcsMode2AdvancedTest {
 			assertTrue(e.getMessage().contains("too far ahead"));
 		}
 
-		// MAX_SKIP should be allowed
 		AdvanceResult result = ratchet.advanceReceiveChain(
 				state, MAX_SKIP, skippedKeyStore);
 		assertNotNull(result);
 		assertEquals(MAX_SKIP + 1, result.getNewState().getMessageNumber());
 	}
 
-	// ==================== Chain ID Uniqueness Tests ====================
-
 	@Test
 	public void testChainIdChangesWithDhRatchet() throws Exception {
 		SecretKey rootKey = generateKey();
 
-		// Initialize Alice and Bob
 		PcsSessionState aliceState = ratchet.initializeMode2AsInitiator(rootKey);
 		PublicKey aliceInitialKey = aliceState.getDhState().getDhPublicKey();
 
@@ -185,10 +159,8 @@ public class PcsMode2AdvancedTest {
 				rootKey, aliceInitialKey);
 		PublicKey bobInitialKey = bobState.getDhState().getDhPublicKey();
 
-		// Get initial chain ID (based on initial keys)
 		byte[] chainId1 = createChainId(aliceInitialKey);
 
-		// Perform DH ratchet on Alice's side
 		DhRatchetResult aliceRecv = ratchet.performReceiveDhRatchet(
 				aliceState, bobInitialKey);
 		aliceState = aliceRecv.getNewState();
@@ -197,7 +169,6 @@ public class PcsMode2AdvancedTest {
 		aliceState = aliceSend.getNewState();
 		PublicKey aliceNewKey = aliceSend.getDhPublicKey();
 
-		// Chain ID should be different after DH ratchet
 		byte[] chainId2 = createChainId(aliceNewKey);
 		assertFalse("Chain IDs should differ after DH ratchet",
 				Arrays.equals(chainId1, chainId2));
@@ -207,7 +178,6 @@ public class PcsMode2AdvancedTest {
 	public void testBidirectionalDhRatchetSynchronization() throws Exception {
 		SecretKey rootKey = generateKey();
 
-		// Initialize both parties
 		PcsSessionState aliceState = ratchet.initializeMode2AsInitiator(rootKey);
 		PublicKey aliceKey1 = aliceState.getDhState().getDhPublicKey();
 
@@ -215,50 +185,40 @@ public class PcsMode2AdvancedTest {
 				rootKey, aliceKey1);
 		PublicKey bobKey1 = bobState.getDhState().getDhPublicKey();
 
-		// Round 1: Alice receives Bob's key, performs DH ratchet
 		DhRatchetResult aliceRecv1 = ratchet.performReceiveDhRatchet(
 				aliceState, bobKey1);
 		aliceState = aliceRecv1.getNewState();
 
-		// Alice sends (generates new key)
 		DhRatchetResult aliceSend1 = ratchet.performSendDhRatchet(aliceState);
 		aliceState = aliceSend1.getNewState();
 		PublicKey aliceKey2 = aliceSend1.getDhPublicKey();
 
-		// Round 2: Bob receives Alice's new key
 		DhRatchetResult bobRecv1 = ratchet.performReceiveDhRatchet(
 				bobState, aliceKey2);
 		bobState = bobRecv1.getNewState();
 
-		// Bob sends (generates new key)
 		DhRatchetResult bobSend1 = ratchet.performSendDhRatchet(bobState);
 		bobState = bobSend1.getNewState();
 		PublicKey bobKey2 = bobSend1.getDhPublicKey();
 
-		// Round 3: Alice receives Bob's new key
 		DhRatchetResult aliceRecv2 = ratchet.performReceiveDhRatchet(
 				aliceState, bobKey2);
 		aliceState = aliceRecv2.getNewState();
 
-		// Verify both parties have evolved their keys
 		assertFalse("Alice's key should have changed",
 				Arrays.equals(aliceKey1.getEncoded(), aliceKey2.getEncoded()));
 		assertFalse("Bob's key should have changed",
 				Arrays.equals(bobKey1.getEncoded(), bobKey2.getEncoded()));
 
-		// Verify both states are still valid Mode 2 states
 		assertTrue("Alice state should still be Mode 2", aliceState.isMode2());
 		assertTrue("Bob state should still be Mode 2", bobState.isMode2());
 
-		// Verify both have valid chain keys for further message derivation
 		assertNotNull("Alice should have chain key", aliceState.getChainKey());
 		assertNotNull("Bob should have chain key", bobState.getChainKey());
 
-		// Verify DH state is maintained
 		assertNotNull("Alice should have DH state", aliceState.getDhState());
 		assertNotNull("Bob should have DH state", bobState.getDhState());
 
-		// Verify both can still advance their chains (no exceptions)
 		AdvanceResult aliceMsg = ratchet.advanceSendChain(aliceState);
 		assertNotNull("Alice should derive message key", aliceMsg.getMessageKey());
 
@@ -266,16 +226,9 @@ public class PcsMode2AdvancedTest {
 		assertNotNull("Bob should derive message key", bobMsg.getMessageKey());
 	}
 
-	// ==================== Helper Methods ====================
-
-	/**
-	 * Creates a test chain ID based on DH public key.
-	 * Used for testing that chain IDs differ when keys change.
-	 * Note: This is a simplified version; real chain IDs also include chain key.
-	 */
 	private byte[] createChainId(PublicKey dhKey) {
 		if (dhKey == null) {
-			return new byte[32]; // Empty chain ID for Mode 1 testing
+			return new byte[32];
 		}
 		return crypto.hash("test/chain_id", dhKey.getEncoded());
 	}

@@ -21,7 +21,6 @@ public abstract class ApkSignaturePin {
 		return signatures;
 	}
 
-	
 	public String getFingerprint(String algorithm) {
 		try {
 			MessageDigest md = MessageDigest.getInstance(algorithm);
@@ -30,27 +29,23 @@ public abstract class ApkSignaturePin {
 			md.reset();
 			return String.format("%0" + (hashBytes.length << 1) + "x", bi);
 		} catch (NoSuchAlgorithmException e) {
-			// silently fail — no logging in production
+
 		}
 		return null;
 	}
 
-	
 	public String getMD5Fingerprint() {
 		return getFingerprint("MD5");
 	}
 
-	
 	public String getSHA1Fingerprint() {
 		return getFingerprint("SHA1");
 	}
 
-	
 	public String getSHA256Fingerprint() {
 		return getFingerprint("SHA-256");
 	}
 
-	
 	public boolean doFingerprintsMatchCertificates() {
 		if (fingerprints == null || certificates == null)
 			return false;

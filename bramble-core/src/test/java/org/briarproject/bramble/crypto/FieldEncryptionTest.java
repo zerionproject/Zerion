@@ -35,7 +35,7 @@ public class FieldEncryptionTest {
 	public void roundTripsEmpty() throws GeneralSecurityException {
 		SecretKey key = randomKey();
 		byte[] sealed = FieldEncryption.encrypt(key, new byte[0]);
-		// 12-byte nonce + 0 ciphertext + 16-byte tag = 28 bytes
+
 		assertEquals(28, sealed.length);
 		assertArrayEquals(new byte[0], FieldEncryption.decrypt(key, sealed));
 	}
@@ -55,13 +55,13 @@ public class FieldEncryptionTest {
 	public void rejectsTamperedCiphertext() throws GeneralSecurityException {
 		SecretKey key = randomKey();
 		byte[] sealed = FieldEncryption.encrypt(key, "data".getBytes());
-		// Flip a byte in the ciphertext region (after the 12-byte nonce).
+
 		sealed[15] ^= 0x01;
 		try {
 			FieldEncryption.decrypt(key, sealed);
 			fail("decrypt must reject tampered ciphertext");
 		} catch (GeneralSecurityException expected) {
-			// pass
+
 		}
 	}
 
@@ -74,19 +74,19 @@ public class FieldEncryptionTest {
 			FieldEncryption.decrypt(key2, sealed);
 			fail("decrypt under a different key must fail tag check");
 		} catch (GeneralSecurityException expected) {
-			// pass
+
 		}
 	}
 
 	@Test
 	public void rejectsTooShort() {
 		SecretKey key = randomKey();
-		// Less than 12 + 16 = 28 bytes of overhead.
+
 		try {
 			FieldEncryption.decrypt(key, new byte[16]);
 			fail("decrypt must reject input shorter than nonce + tag");
 		} catch (GeneralSecurityException expected) {
-			// pass
+
 		}
 	}
 
@@ -96,7 +96,7 @@ public class FieldEncryptionTest {
 		byte[] plaintext = new byte[100];
 		random.nextBytes(plaintext);
 		byte[] sealed = FieldEncryption.encrypt(key, plaintext);
-		// Combined format: 12-byte nonce + 100-byte ciphertext + 16-byte tag.
+
 		assertEquals(12 + 100 + 16, sealed.length);
 	}
 }

@@ -9,7 +9,6 @@ import javax.annotation.concurrent.Immutable;
 
 import static org.briarproject.nullsafety.NullSafety.requireExactlyOneNull;
 
-
 @Immutable
 @NotNullByDefault
 public class TransportKeySet {

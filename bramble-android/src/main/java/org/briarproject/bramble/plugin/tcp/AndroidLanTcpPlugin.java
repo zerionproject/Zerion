@@ -47,7 +47,7 @@ import static org.briarproject.nullsafety.NullSafety.requireNonNull;
 
 @NotNullByDefault
 class AndroidLanTcpPlugin extends LanTcpPlugin {
-	
+
 	private static final Pattern AP_INTERFACE_NAME =
 			Pattern.compile("^(wlan|ap|p2p)[-0-9]");
 
@@ -107,7 +107,6 @@ class AndroidLanTcpPlugin extends LanTcpPlugin {
 		return getIpv6AddressForInterface(wifi.getFirst());
 	}
 
-	
 	@Nullable
 	private Pair<InetAddress, Boolean> getWifiIpv4Address() {
 		if (wifiManager == null) return null;
@@ -127,7 +126,6 @@ class AndroidLanTcpPlugin extends LanTcpPlugin {
 		return null;
 	}
 
-	
 	private boolean isPossibleWifiApInterface(InterfaceAddress ifAddr) {
 		if (ifAddr.getNetworkPrefixLength() != 24) return false;
 		byte[] ip = ifAddr.getAddress().getAddress();
@@ -136,7 +134,6 @@ class AndroidLanTcpPlugin extends LanTcpPlugin {
 				&& ip[1] == (byte) 168;
 	}
 
-	
 	@Nullable
 	private InetAddress getWifiClientIpv6Address() {
 		try {
@@ -159,7 +156,6 @@ class AndroidLanTcpPlugin extends LanTcpPlugin {
 		return null;
 	}
 
-	
 	@Nullable
 	private InetAddress getIpv6AddressForInterface(InetAddress ipv4) {
 		try {
@@ -227,7 +223,6 @@ class AndroidLanTcpPlugin extends LanTcpPlugin {
 		});
 	}
 
-	
 	@Nullable
 	private Pair<InetAddress, Boolean> getPreferredWifiAddress() {
 		Pair<InetAddress, Boolean> wifi = getWifiIpv4Address();

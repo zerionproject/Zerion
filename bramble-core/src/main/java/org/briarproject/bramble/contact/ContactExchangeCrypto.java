@@ -8,13 +8,10 @@ import org.briarproject.nullsafety.NotNullByDefault;
 @NotNullByDefault
 interface ContactExchangeCrypto {
 
-	
 	SecretKey deriveHeaderKey(SecretKey masterKey, boolean alice);
 
-	
 	byte[] sign(PrivateKey privateKey, SecretKey masterKey, boolean alice);
 
-	
 	boolean verify(PublicKey publicKey, SecretKey masterKey, boolean alice,
 			byte[] signature);
 }

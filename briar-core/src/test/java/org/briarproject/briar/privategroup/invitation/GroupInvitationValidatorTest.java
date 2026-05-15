@@ -64,8 +64,6 @@ public class GroupInvitationValidatorTest extends ValidatorTestCase {
 			new GroupInvitationValidator(clientHelper, metadataEncoder,
 					clock, privateGroupFactory, messageEncoder);
 
-	// INVITE Message
-
 	@Test(expected = FormatException.class)
 	public void testRejectsTooShortInviteMessage() throws Exception {
 		BdfList body = BdfList.of(INVITE.getValue(), creatorList, groupName,
@@ -326,8 +324,6 @@ public class GroupInvitationValidatorTest extends ValidatorTestCase {
 		}});
 	}
 
-	// JOIN Message
-
 	@Test(expected = FormatException.class)
 	public void testRejectsTooShortJoinMessage() throws Exception {
 		BdfList body = BdfList.of(JOIN.getValue(), privateGroup.getId());
@@ -448,8 +444,6 @@ public class GroupInvitationValidatorTest extends ValidatorTestCase {
 		assertEquals(metadata, messageContext.getDictionary());
 	}
 
-	// LEAVE message
-
 	@Test(expected = FormatException.class)
 	public void testRejectsTooShortLeaveMessage() throws Exception {
 		BdfList body = BdfList.of(LEAVE.getValue(), privateGroup.getId());
@@ -569,8 +563,6 @@ public class GroupInvitationValidatorTest extends ValidatorTestCase {
 				messageContext.getDependencies());
 		assertEquals(metadata, messageContext.getDictionary());
 	}
-
-	// ABORT message
 
 	@Test(expected = FormatException.class)
 	public void testRejectsTooShortAbortMessage() throws Exception {

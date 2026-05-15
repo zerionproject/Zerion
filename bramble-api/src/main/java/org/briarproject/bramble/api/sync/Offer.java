@@ -6,7 +6,6 @@ import java.util.Collection;
 
 import javax.annotation.concurrent.Immutable;
 
-
 @Immutable
 @NotNullByDefault
 public class Offer {
@@ -17,7 +16,6 @@ public class Offer {
 		this.offered = offered;
 	}
 
-	
 	public Collection<MessageId> getMessageIds() {
 		return offered;
 	}

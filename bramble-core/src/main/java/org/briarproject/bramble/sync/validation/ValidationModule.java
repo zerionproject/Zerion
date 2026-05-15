@@ -22,7 +22,6 @@ public class ValidationModule {
 		ValidationManager validationManager;
 	}
 
-	
 	private static final int MAX_CONCURRENT_VALIDATION_TASKS =
 			Math.max(1, Runtime.getRuntime().availableProcessors() - 1);
 

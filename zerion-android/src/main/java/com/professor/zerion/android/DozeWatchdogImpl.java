@@ -22,7 +22,6 @@ import static org.briarproject.bramble.util.AndroidUtils.registerReceiver;
 
 class DozeWatchdogImpl implements DozeWatchdog, Service {
 
-
 	private final Context appContext;
 	private final AtomicBoolean dozed = new AtomicBoolean(false);
 	private final BroadcastReceiver receiver = new DozeBroadcastReceiver();

@@ -32,7 +32,6 @@ public class StreamContext {
 	@Nullable
 	private final PqRatchetState pqRatchetState;
 
-	
 	public StreamContext(@Nullable ContactId contactId,
 			@Nullable PendingContactId pendingContactId,
 			TransportId transportId, SecretKey tagKey, SecretKey headerKey,
@@ -41,7 +40,6 @@ public class StreamContext {
 				streamNumber, handshakeMode, false, false, null, null);
 	}
 
-	
 	public StreamContext(@Nullable ContactId contactId,
 			@Nullable PendingContactId pendingContactId,
 			TransportId transportId, SecretKey tagKey, SecretKey headerKey,
@@ -50,7 +48,6 @@ public class StreamContext {
 				streamNumber, handshakeMode, classical, false, null, null);
 	}
 
-	
 	public StreamContext(@Nullable ContactId contactId,
 			@Nullable PendingContactId pendingContactId,
 			TransportId transportId, SecretKey tagKey, SecretKey headerKey,
@@ -60,7 +57,6 @@ public class StreamContext {
 				streamNumber, handshakeMode, classical, pcsEnabled, pcsState, null);
 	}
 
-	
 	public StreamContext(@Nullable ContactId contactId,
 			@Nullable PendingContactId pendingContactId,
 			TransportId transportId, SecretKey tagKey, SecretKey headerKey,
@@ -115,23 +111,19 @@ public class StreamContext {
 		return handshakeMode;
 	}
 
-	
 	public boolean isClassical() {
 		return classical;
 	}
 
-	
 	public boolean isPcsEnabled() {
 		return pcsEnabled;
 	}
 
-	
 	@Nullable
 	public PcsSessionState getPcsState() {
 		return pcsState;
 	}
 
-	
 	@Nullable
 	public PqRatchetState getPqRatchetState() {
 		return pqRatchetState;

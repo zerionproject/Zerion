@@ -18,7 +18,6 @@ import static org.briarproject.bramble.api.keyagreement.KeyAgreementConstants.MA
 import static org.briarproject.bramble.api.keyagreement.KeyAgreementConstants.PROTOCOL_VERSION;
 import static org.briarproject.bramble.api.keyagreement.KeyAgreementConstants.SHARED_SECRET_LABEL;
 
-
 @NotNullByDefault
 class KeyAgreementProtocol {
 
@@ -54,7 +53,6 @@ class KeyAgreementProtocol {
 		this.alice = alice;
 	}
 
-	
 	SecretKey perform() throws AbortException, IOException {
 		try {
 			PublicKey theirPublicKey;
@@ -75,7 +73,7 @@ class KeyAgreementProtocol {
 				sendConfirm(s, theirPublicKey);
 			}
 			SecretKey masterKey = crypto.deriveKey(MASTER_KEY_LABEL, s);
-			// Zero shared secret after derivation
+
 			java.util.Arrays.fill(s.getBytes(), (byte) 0);
 			return masterKey;
 		} catch (AbortException e) {
@@ -95,7 +93,7 @@ class KeyAgreementProtocol {
 		try {
 			PublicKey publicKey = keyParser.parsePublicKey(publicKeyBytes);
 			byte[] expected = keyAgreementCrypto.deriveKeyCommitment(publicKey);
-			// Constant-time comparison
+
 			if (!MessageDigest.isEqual(expected, theirPayload.getCommitment()))
 				throw new AbortException();
 			return publicKey;
@@ -139,7 +137,7 @@ class KeyAgreementProtocol {
 				payloadEncoder.encode(ourPayload),
 				theirPublicKey, ourKeyPair,
 				alice, !alice);
-		// Constant-time comparison
+
 		if (!MessageDigest.isEqual(expected, confirm))
 			throw new AbortException();
 	}

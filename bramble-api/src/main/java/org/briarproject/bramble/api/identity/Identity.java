@@ -10,7 +10,6 @@ import javax.annotation.concurrent.Immutable;
 import static org.briarproject.bramble.api.crypto.CryptoConstants.KEY_TYPE_AGREEMENT;
 import static org.briarproject.bramble.api.crypto.PostQuantumConstants.KEY_TYPE_HYBRID_AGREEMENT;
 
-
 @Immutable
 @NotNullByDefault
 public class Identity {
@@ -31,14 +30,12 @@ public class Identity {
 
 	private final long created;
 
-
 	public Identity(LocalAuthor localAuthor,
 			@Nullable PublicKey handshakePublicKey,
 			@Nullable PrivateKey handshakePrivateKey, long created) {
 		this(localAuthor, handshakePublicKey, handshakePrivateKey,
 				null, null, null, null, created);
 	}
-
 
 	public Identity(LocalAuthor localAuthor,
 			@Nullable PublicKey handshakePublicKey,
@@ -50,7 +47,6 @@ public class Identity {
 				hybridHandshakePublicKey, hybridHandshakePrivateKey,
 				null, null, created);
 	}
-
 
 	public Identity(LocalAuthor localAuthor,
 			@Nullable PublicKey handshakePublicKey,
@@ -100,72 +96,59 @@ public class Identity {
 		this.created = created;
 	}
 
-	
 	public AuthorId getId() {
 		return localAuthor.getId();
 	}
 
-	
 	public LocalAuthor getLocalAuthor() {
 		return localAuthor;
 	}
 
-	
 	public boolean hasHandshakeKeyPair() {
 		return handshakePublicKey != null && handshakePrivateKey != null;
 	}
 
-	
 	@Nullable
 	public PublicKey getHandshakePublicKey() {
 		return handshakePublicKey;
 	}
 
-	
 	@Nullable
 	public PrivateKey getHandshakePrivateKey() {
 		return handshakePrivateKey;
 	}
 
-	
 	public long getTimeCreated() {
 		return created;
 	}
 
-	
 	public boolean hasHybridHandshakeKeyPair() {
 		return hybridHandshakePublicKey != null &&
 				hybridHandshakePrivateKey != null;
 	}
 
-	
 	@Nullable
 	public PublicKey getHybridHandshakePublicKey() {
 		return hybridHandshakePublicKey;
 	}
 
-	
 	@Nullable
 	public PrivateKey getHybridHandshakePrivateKey() {
 		return hybridHandshakePrivateKey;
 	}
 
-	
 	public boolean supportsPostQuantum() {
 		return hasHybridHandshakeKeyPair();
 	}
-
 
 	public boolean hasMlDsaSigKeyPair() {
 		return mlDsaPublicKey != null && mlDsaPrivateKey != null;
 	}
 
-
 	@Nullable
 	public byte[] getMlDsaSigPublicKey() {
 		return mlDsaPublicKey;
 	}
-
 
 	@Nullable
 	public byte[] getMlDsaSigPrivateKey() {

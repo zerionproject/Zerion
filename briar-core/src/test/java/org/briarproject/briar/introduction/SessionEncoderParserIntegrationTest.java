@@ -187,7 +187,6 @@ public class SessionEncoderParserIntegrationTest extends BrambleTestCase {
 		assertEquals(lastRemoteMessageId, s1.getLastRemoteMessageId());
 		assertEquals(s1.getLastRemoteMessageId(), s2.getLastRemoteMessageId());
 
-		// check local
 		assertTrue(s1.getLocal().alice);
 		assertEquals(s1.getLocal().alice, s2.getLocal().alice);
 		assertEquals(lastLocalMessageId, s1.getLocal().lastMessageId);
@@ -220,7 +219,6 @@ public class SessionEncoderParserIntegrationTest extends BrambleTestCase {
 		assertArrayEquals(localMacKey, s1.getLocal().macKey);
 		assertArrayEquals(s1.getLocal().macKey, s2.getLocal().macKey);
 
-		// check remote
 		assertFalse(s1.getRemote().alice);
 		assertEquals(s1.getRemote().alice, s2.getRemote().alice);
 		assertEquals(author2, s1.getRemote().author);
@@ -265,7 +263,6 @@ public class SessionEncoderParserIntegrationTest extends BrambleTestCase {
 		assertNull(s1.getTransportKeys());
 		assertEquals(s1.getTransportKeys(), s2.getTransportKeys());
 
-		// check local
 		assertNull(s1.getLocal().lastMessageId);
 		assertEquals(s1.getLocal().lastMessageId, s2.getLocal().lastMessageId);
 		assertNull(s1.getLocal().ephemeralPublicKey);
@@ -280,7 +277,6 @@ public class SessionEncoderParserIntegrationTest extends BrambleTestCase {
 		assertNull(s1.getLocal().macKey);
 		assertEquals(s1.getLocal().macKey, s2.getLocal().macKey);
 
-		// check remote
 		assertNull(s1.getRemote().lastMessageId);
 		assertEquals(s1.getRemote().lastMessageId,
 				s2.getRemote().lastMessageId);

@@ -116,8 +116,6 @@ public class TorStatusFragment extends BaseFragment {
 				pending -> updateRotationCard(
 						viewModel.getRotationPhase().getValue(), pending));
 
-		// Refresh once on entry so the card reflects current state even
-		// if no event has fired since the last navigation.
 		viewModel.refreshTorState();
 	}
 

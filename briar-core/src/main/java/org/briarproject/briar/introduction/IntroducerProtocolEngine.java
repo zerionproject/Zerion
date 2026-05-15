@@ -40,7 +40,6 @@ import static org.briarproject.briar.introduction.IntroducerState.A_DECLINED;
 import static org.briarproject.briar.introduction.IntroducerState.B_DECLINED;
 import static org.briarproject.briar.introduction.IntroducerState.START;
 
-
 @Immutable
 @NotNullByDefault
 class IntroducerProtocolEngine
@@ -553,7 +552,6 @@ class IntroducerProtocolEngine
 		return isInvalidDependency(expected, dependency);
 	}
 
-	
 	private long getTimestampForVisibleMessage(Transaction txn,
 			IntroducerSession s, PeerSession p) throws DbException {
 		long conversationTimestamp =
@@ -561,13 +559,11 @@ class IntroducerProtocolEngine
 		return max(conversationTimestamp, getSessionTimestamp(s, p) + 1);
 	}
 
-	
 	private long getTimestampForInvisibleMessage(IntroducerSession s,
 			PeerSession p) {
 		return max(clock.currentTimeMillis(), getSessionTimestamp(s, p) + 1);
 	}
 
-	
 	private long getSessionTimestamp(IntroducerSession s, PeerSession p) {
 		return max(p.getLocalTimestamp(), s.getRequestTimestamp());
 	}

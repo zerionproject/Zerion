@@ -9,7 +9,6 @@ import java.util.Collection;
 
 import javax.annotation.concurrent.Immutable;
 
-
 @Immutable
 @NotNullByDefault
 public class GroupVisibilityUpdatedEvent extends Event {
@@ -27,7 +26,6 @@ public class GroupVisibilityUpdatedEvent extends Event {
 		return visibility;
 	}
 
-	
 	public Collection<ContactId> getAffectedContacts() {
 		return affected;
 	}

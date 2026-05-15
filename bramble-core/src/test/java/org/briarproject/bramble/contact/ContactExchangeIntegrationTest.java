@@ -59,7 +59,7 @@ public class ContactExchangeIntegrationTest extends BrambleTestCase {
 	@Before
 	public void setUp() throws Exception {
 		assertTrue(testDir.mkdirs());
-		// Create the devices
+
 		alice = DaggerContactExchangeIntegrationTestComponent.builder()
 				.testDatabaseConfigModule(
 						new TestDatabaseConfigModule(aliceDir)).build();
@@ -70,22 +70,22 @@ public class ContactExchangeIntegrationTest extends BrambleTestCase {
 				.build();
 		BrambleCoreIntegrationTestEagerSingletons.Helper
 				.injectEagerSingletons(bob);
-		// Set up the devices and get the identities
+
 		aliceIdentity = setUp(alice, "Alice");
 		bobIdentity = setUp(bob, "Bob");
 	}
 
 	private Identity setUp(ContactExchangeIntegrationTestComponent device,
 			String name) throws Exception {
-		// Add an identity for the user
+
 		IdentityManager identityManager = device.getIdentityManager();
 		Identity identity = identityManager.createIdentity(name);
 		identityManager.registerIdentity(identity);
-		// Start the lifecycle manager
+
 		LifecycleManager lifecycleManager = device.getLifecycleManager();
 		lifecycleManager.startServices(getSecretKey());
 		lifecycleManager.waitForStartup();
-		// Check the initial conditions
+
 		ContactManager contactManager = device.getContactManager();
 		assertEquals(0, contactManager.getPendingContacts().size());
 		assertEquals(0, contactManager.getContacts().size());
@@ -180,7 +180,7 @@ public class ContactExchangeIntegrationTest extends BrambleTestCase {
 		alice.getEventBus().addListener(e -> {
 			if (e instanceof ContactAddedEvent) aliceFinished.countDown();
 		});
-		// Use classical=true for test (Briar-compatible format)
+
 		alice.getConnectionManager().manageOutgoingConnection(
 				bobFromAlice.getId(), DUPLEX_TRANSPORT_ID, aliceConnection, true);
 		bob.getEventBus().addListener(e -> {
@@ -190,7 +190,7 @@ public class ContactExchangeIntegrationTest extends BrambleTestCase {
 				aliceFromBob.getId(), DUPLEX_TRANSPORT_ID, bobConnection, true);
 		assertTrue(aliceFinished.await(TIMEOUT, MILLISECONDS));
 		assertTrue(bobFinished.await(TIMEOUT, MILLISECONDS));
-		// After successful handshake, contacts are auto-verified (QR verification removed)
+
 		assertContacts(true, true);
 		assertNoPendingContacts();
 	}
@@ -200,7 +200,7 @@ public class ContactExchangeIntegrationTest extends BrambleTestCase {
 			ContactExchangeIntegrationTestComponent remote) throws Exception {
 		EventWaiter waiter = new EventWaiter();
 		local.getEventBus().addListener(waiter);
-		// Use BRIAR contact type for classical key exchange (backward compatible)
+
 		String link = remote.getContactManager().getHandshakeLink(ContactType.BRIAR);
 		String alias = remote.getIdentityManager().getLocalAuthor().getName();
 		PendingContact pendingContact =
@@ -265,7 +265,7 @@ public class ContactExchangeIntegrationTest extends BrambleTestCase {
 
 	private void tearDown(ContactExchangeIntegrationTestComponent device)
 			throws Exception {
-		// Stop the lifecycle manager
+
 		LifecycleManager lifecycleManager = device.getLifecycleManager();
 		lifecycleManager.stopServices();
 		lifecycleManager.waitForShutdown();

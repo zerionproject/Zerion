@@ -47,7 +47,7 @@ public class SetupDataTest extends ScreenshotTest {
 
 	@Test
 	public void createAccount() throws Exception {
-		// Enter username
+
 		onView(withText(R.string.setup_title))
 				.check(matches(isDisplayed()));
 		onView(withId(R.id.nickname_entry))
@@ -62,7 +62,6 @@ public class SetupDataTest extends ScreenshotTest {
 				.check(matches(isDisplayed()))
 				.perform(click());
 
-		// Enter password
 		onView(withId(R.id.password_entry))
 				.check(matches(isDisplayed()))
 				.perform(typeText(PASSWORD));
@@ -73,7 +72,6 @@ public class SetupDataTest extends ScreenshotTest {
 				.check(matches(allOf(isDisplayed(), isEnabled())))
 				.perform(click());
 
-		// White-list Doze if needed
 		if (needsDozeWhitelisting(getApplicationContext())) {
 			onView(withText(R.string.dnkm_doze_button))
 					.check(matches(isDisplayed()))
@@ -106,8 +104,6 @@ public class SetupDataTest extends ScreenshotTest {
 		Context ctx = getApplicationContext();
 		String bobName = ctx.getString(R.string.screenshot_bob);
 		Contact bob = testDataCreator.addContact(bobName, false, true);
-
-		// TODO add messages
 
 		connectionRegistry.registerIncomingConnection(bob.getId(), ID, () -> {
 		});

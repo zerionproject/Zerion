@@ -7,7 +7,6 @@ import javax.annotation.concurrent.Immutable;
 
 import static org.briarproject.bramble.api.crypto.CryptoConstants.KEY_TYPE_AGREEMENT;
 
-
 @Immutable
 @NotNullByDefault
 public class AgreementPrivateKey extends Bytes implements PrivateKey {

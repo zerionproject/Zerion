@@ -5,12 +5,9 @@ import static org.briarproject.bramble.api.crypto.CryptoConstants.MAX_SIGNATURE_
 
 public interface AuthorConstants {
 
-	
 	int MAX_AUTHOR_NAME_LENGTH = 50;
 
-	
 	int MAX_PUBLIC_KEY_LENGTH = MAX_SIGNATURE_PUBLIC_KEY_BYTES;
 
-	
 	int MAX_SIGNATURE_LENGTH = MAX_SIGNATURE_BYTES;
 }

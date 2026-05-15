@@ -71,8 +71,6 @@ public class OpusDecoder {
 		return head;
 	}
 
-	// Maximum decoded PCM frame size (20ms at 48kHz mono 16-bit = 1920 bytes)
-	// Allow 4x margin for multi-frame decoding
 	private static final int MAX_DECODED_FRAME_SIZE = 1920 * 4;
 
 	public byte[] decode(byte[] opusData) {
@@ -100,7 +98,7 @@ public class OpusDecoder {
 				if (outputBufferIndex >= 0) {
 					ByteBuffer outputBuffer = decoder.getOutputBuffer(outputBufferIndex);
 					if (outputBuffer != null && bufferInfo.size > 0) {
-						// Reject oversized decoded output
+
 						if (totalSize + bufferInfo.size > MAX_DECODED_FRAME_SIZE) {
 							decoder.releaseOutputBuffer(outputBufferIndex, false);
 							break;

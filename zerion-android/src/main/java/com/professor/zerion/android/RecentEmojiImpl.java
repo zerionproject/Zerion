@@ -29,7 +29,6 @@ import static com.professor.zerion.android.settings.SettingsFragment.SETTINGS_NA
 @ParametersNotNullByDefault
 class RecentEmojiImpl implements RecentEmoji, OpenDatabaseHook {
 
-
 	private static final String EMOJI_LRU_PREFERENCE = "pref_emoji_recent2";
 	private static final int EMOJI_LRU_SIZE = 50;
 
@@ -96,7 +95,7 @@ class RecentEmojiImpl implements RecentEmoji, OpenDatabaseHook {
 			try {
 				settingsManager.mergeSettings(settings, SETTINGS_NAMESPACE);
 			} catch (DbException e) {
-				
+
 			}
 		});
 	}

@@ -20,9 +20,6 @@ import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 import static androidx.test.internal.runner.junit4.statement.UiThreadStatement.runOnUiThread;
 import static org.junit.Assert.assertTrue;
 
-/**
- * A full-screen overlay used to make taps visible in instrumentation tests.
- */
 public class OverlayView extends View {
 
 	public static OverlayView attach(Context ctx) throws Throwable {

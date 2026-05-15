@@ -5,12 +5,10 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.Immutable;
 
-
 @Immutable
 @NotNullByDefault
 public class ClientId implements Comparable<ClientId> {
 
-	
 	public static int MAX_CLIENT_ID_LENGTH = 100;
 
 	private final String id;

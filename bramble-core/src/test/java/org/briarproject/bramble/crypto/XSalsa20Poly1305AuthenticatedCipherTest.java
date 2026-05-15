@@ -14,8 +14,6 @@ import static org.junit.Assert.assertEquals;
 
 public class XSalsa20Poly1305AuthenticatedCipherTest extends BrambleTestCase {
 
-	// Test vectors from the NaCl paper
-	// http://cr.yp.to/highspeed/naclcrypto-20090310.pdf
 	private final byte[] TEST_KEY = StringUtils.fromHexString(
 			"1b27556473e985d462cd51197a9a46c76009549eac6474f206c4ee0844f68389");
 	private final byte[] TEST_IV = StringUtils.fromHexString(
@@ -48,7 +46,7 @@ public class XSalsa20Poly1305AuthenticatedCipherTest extends BrambleTestCase {
 					"e355a5");
 
 	public XSalsa20Poly1305AuthenticatedCipherTest() throws FormatException {
-		// required for throws declaration
+
 	}
 
 	@Test

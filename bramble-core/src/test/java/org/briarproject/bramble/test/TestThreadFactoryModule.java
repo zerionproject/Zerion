@@ -30,10 +30,6 @@ public class TestThreadFactoryModule {
 		return new TestThreadFactory(prefix);
 	}
 
-	/**
-	 * This class is mostly copied from
-	 * {@link Executors#defaultThreadFactory()} only adds a given prefix.
-	 */
 	static class TestThreadFactory implements ThreadFactory {
 		private static final AtomicInteger poolNumber = new AtomicInteger(1);
 		private final ThreadGroup group;

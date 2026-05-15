@@ -94,7 +94,7 @@ class NotificationsManager {
 			try {
 				settingsManager.mergeSettings(s, SETTINGS_NAMESPACE);
 			} catch (DbException e) {
-				
+
 			}
 		});
 	}

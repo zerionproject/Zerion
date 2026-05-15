@@ -7,9 +7,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.Immutable;
 
-/**
- * An event that is broadcast when a new avatar is received.
- */
 @Immutable
 @NotNullByDefault
 public class AvatarUpdatedEvent extends Event {

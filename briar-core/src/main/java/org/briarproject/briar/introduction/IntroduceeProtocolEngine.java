@@ -455,7 +455,6 @@ class IntroduceeProtocolEngine
 		return isInvalidDependency(s.getLastRemoteMessageId(), dependency);
 	}
 
-	
 	private long getTimestampForVisibleMessage(Transaction txn,
 			IntroduceeSession s) throws DbException {
 		long conversationTimestamp =
@@ -463,12 +462,10 @@ class IntroduceeProtocolEngine
 		return max(conversationTimestamp, getSessionTimestamp(s) + 1);
 	}
 
-	
 	private long getTimestampForInvisibleMessage(IntroduceeSession s) {
 		return max(clock.currentTimeMillis(), getSessionTimestamp(s) + 1);
 	}
 
-	
 	private long getSessionTimestamp(IntroduceeSession s) {
 		return max(s.getLocalTimestamp(), s.getRequestTimestamp());
 	}

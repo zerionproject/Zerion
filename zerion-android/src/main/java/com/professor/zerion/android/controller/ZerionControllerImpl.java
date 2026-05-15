@@ -33,7 +33,6 @@ import static com.professor.zerion.android.settings.SettingsFragment.SETTINGS_NA
 @NotNullByDefault
 public class ZerionControllerImpl implements ZerionController {
 
-
 	public static final String DOZE_ASK_AGAIN = "dozeAskAgain";
 
 	private final ZerionServiceConnection serviceConnection;
@@ -117,7 +116,7 @@ public class ZerionControllerImpl implements ZerionController {
 				boolean ask = settings.getBoolean(DOZE_ASK_AGAIN, true);
 				handler.onResult(ask);
 			} catch (DbException e) {
-				
+
 			}
 		});
 	}
@@ -130,7 +129,7 @@ public class ZerionControllerImpl implements ZerionController {
 				settings.putBoolean(DOZE_ASK_AGAIN, false);
 				settingsManager.mergeSettings(settings, SETTINGS_NAMESPACE);
 			} catch (DbException e) {
-				
+
 			}
 		});
 	}

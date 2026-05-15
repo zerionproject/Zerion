@@ -72,7 +72,6 @@ public class NotificationsFragment extends Fragment {
 	private SettingsViewModel viewModel;
 	private NotificationsManager nm;
 
-
 	private SwitchMaterial notifySignInSwitch;
 	private SwitchMaterial notifyPrivateMessagesSwitch;
 	private SwitchMaterial notifyGroupMessagesSwitch;
@@ -106,7 +105,6 @@ public class NotificationsFragment extends Fragment {
 	public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
 		super.onViewCreated(view, savedInstanceState);
 
-
 		notifySignInSwitch = view.findViewById(R.id.notify_sign_in_switch);
 		notifyPrivateMessagesSwitch = view.findViewById(R.id.notify_private_messages_switch);
 		notifyGroupMessagesSwitch = view.findViewById(R.id.notify_group_messages_switch);
@@ -120,13 +118,11 @@ public class NotificationsFragment extends Fragment {
 		notifyVoiceCallsCard = view.findViewById(R.id.notify_voice_calls_card);
 		notifyVibrationCard = view.findViewById(R.id.notify_vibration_card);
 
-
 		if (SDK_INT < NOTIFICATION_CHANNEL_API) {
 			setupPreAndroidONotifications();
 		} else {
 			setupAndroidOAndLaterNotifications();
 		}
-
 
 		setupSignInNotifications();
 		setupQuickReply();
@@ -201,7 +197,6 @@ public class NotificationsFragment extends Fragment {
 				}
 			});
 		});
-
 
 		nm.getNotifySound().observe(getViewLifecycleOwner(), enabled -> {
 			String text;

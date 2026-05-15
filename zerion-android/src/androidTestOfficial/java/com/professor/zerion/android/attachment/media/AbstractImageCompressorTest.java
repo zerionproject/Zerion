@@ -32,8 +32,7 @@ public abstract class AbstractImageCompressorTest {
 	}
 
 	static AssetManager getAssetManager() {
-		// pm.getResourcesForApplication(packageName).getAssets() did not work
-		//noinspection deprecation
+
 		return getContext().getAssets();
 	}
 

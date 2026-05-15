@@ -202,7 +202,6 @@ class IdentityManagerImpl implements IdentityManager, OpenDatabaseHook {
 		return getCachedIdentity(txn).supportsPostQuantum();
 	}
 
-	
 	private Identity getCachedIdentity(Transaction txn) throws DbException {
 		Identity cached = cachedIdentity;
 		if (cached == null)
@@ -221,8 +220,6 @@ class IdentityManagerImpl implements IdentityManager, OpenDatabaseHook {
 		PublicKey hybridPub = i.getHybridHandshakePublicKey();
 		PrivateKey hybridPriv = i.getHybridHandshakePrivateKey();
 
-		// Detect corruption: one half of a key pair present without
-		// the other indicates database corruption, not migration
 		if ((classicalPub == null) != (classicalPriv == null)) {
 			throw new DbException();
 		}

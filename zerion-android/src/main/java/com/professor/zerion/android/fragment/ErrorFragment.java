@@ -12,7 +12,6 @@ import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
 import androidx.annotation.Nullable;
 
-
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
 public class ErrorFragment extends BaseFragment {

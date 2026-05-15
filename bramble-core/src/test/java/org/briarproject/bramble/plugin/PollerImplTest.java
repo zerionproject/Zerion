@@ -66,7 +66,7 @@ public class PollerImplTest extends BrambleMockTestCase {
 	private final PollerImpl poller;
 
 	public PollerImplTest() {
-		// Use a fake SecureRandom that returns all zeroes
+
 		SecureRandom random = new NeitherSecureNorRandom();
 		Executor wakefulIoExecutor = new ImmediateExecutor();
 		poller = new PollerImpl(ioExecutor, wakefulIoExecutor, scheduler,
@@ -76,7 +76,7 @@ public class PollerImplTest extends BrambleMockTestCase {
 
 	@Test
 	public void testConnectOnContactAdded() throws Exception {
-		// Two simplex plugins: one supports polling, the other doesn't
+
 		SimplexPlugin simplexPlugin = context.mock(SimplexPlugin.class);
 		SimplexPlugin simplexPlugin1 =
 				context.mock(SimplexPlugin.class, "simplexPlugin1");
@@ -86,7 +86,6 @@ public class PollerImplTest extends BrambleMockTestCase {
 		TransportConnectionWriter simplexWriter =
 				context.mock(TransportConnectionWriter.class);
 
-		// Two duplex plugins: one supports polling, the other doesn't
 		DuplexPlugin duplexPlugin = context.mock(DuplexPlugin.class);
 		TransportId duplexId = getTransportId();
 		DuplexPlugin duplexPlugin1 =
@@ -97,52 +96,52 @@ public class PollerImplTest extends BrambleMockTestCase {
 				context.mock(DuplexTransportConnection.class);
 
 		context.checking(new Expectations() {{
-			// Get the simplex plugins
+
 			oneOf(pluginManager).getSimplexPlugins();
 			will(returnValue(simplexPlugins));
-			// The first plugin doesn't support polling
+
 			oneOf(simplexPlugin).shouldPoll();
 			will(returnValue(false));
-			// The second plugin supports polling
+
 			oneOf(simplexPlugin1).shouldPoll();
 			will(returnValue(true));
-			// Check whether the contact is already connected
+
 			oneOf(simplexPlugin1).getId();
 			will(returnValue(simplexId1));
 			oneOf(connectionRegistry).isConnected(contactId, simplexId1);
 			will(returnValue(false));
-			// Get the transport properties
+
 			oneOf(transportPropertyManager).getRemoteProperties(contactId,
 					simplexId1);
 			will(returnValue(properties));
-			// Connect to the contact
+
 			oneOf(simplexPlugin1).createWriter(properties);
 			will(returnValue(simplexWriter));
-			// Pass the connection to the connection manager
+
 			oneOf(connectionManager).manageOutgoingConnection(contactId,
 					simplexId1, simplexWriter);
-			// Get the duplex plugins
+
 			oneOf(pluginManager).getDuplexPlugins();
 			will(returnValue(duplexPlugins));
-			// The duplex plugin supports polling
+
 			oneOf(duplexPlugin).shouldPoll();
 			will(returnValue(true));
-			// Check whether the contact is already connected
+
 			oneOf(duplexPlugin).getId();
 			will(returnValue(duplexId));
 			oneOf(connectionRegistry).isConnected(contactId, duplexId);
 			will(returnValue(false));
-			// Get the transport properties
+
 			oneOf(transportPropertyManager).getRemoteProperties(contactId,
 					duplexId);
 			will(returnValue(properties));
-			// Connect to the contact
+
 			oneOf(duplexPlugin).createConnection(properties);
 			will(returnValue(duplexConnection));
-			// Pass the connection to the connection manager
+
 			oneOf(connectionManager).manageOutgoingConnection(contactId,
 					duplexId, duplexConnection);
-			// The second plugin doesn't support polling
+
 			oneOf(duplexPlugin1).shouldPoll();
 			will(returnValue(false));
 		}});
@@ -217,13 +216,13 @@ public class PollerImplTest extends BrambleMockTestCase {
 		context.checking(new Expectations() {{
 			allowing(plugin).getId();
 			will(returnValue(transportId));
-			// Get the plugin
+
 			oneOf(pluginManager).getPlugin(transportId);
 			will(returnValue(plugin));
-			// The plugin supports polling
+
 			oneOf(plugin).shouldPoll();
 			will(returnValue(true));
-			// Schedule the next poll
+
 			oneOf(plugin).getPollingInterval();
 			will(returnValue(pollingInterval));
 			oneOf(clock).currentTimeMillis();
@@ -245,14 +244,13 @@ public class PollerImplTest extends BrambleMockTestCase {
 		context.checking(new Expectations() {{
 			allowing(plugin).getId();
 			will(returnValue(transportId));
-			// First event
-			// Get the plugin
+
 			oneOf(pluginManager).getPlugin(transportId);
 			will(returnValue(plugin));
-			// The plugin supports polling
+
 			oneOf(plugin).shouldPoll();
 			will(returnValue(true));
-			// Schedule the next poll
+
 			oneOf(plugin).getPollingInterval();
 			will(returnValue(pollingInterval));
 			oneOf(clock).currentTimeMillis();
@@ -261,14 +259,13 @@ public class PollerImplTest extends BrambleMockTestCase {
 					with(ioExecutor), with((long) pollingInterval),
 					with(MILLISECONDS));
 			will(returnValue(cancellable));
-			// Second event
-			// Get the plugin
+
 			oneOf(pluginManager).getPlugin(transportId);
 			will(returnValue(plugin));
-			// The plugin supports polling
+
 			oneOf(plugin).shouldPoll();
 			will(returnValue(true));
-			// Don't replace the previously scheduled task, due earlier
+
 			oneOf(plugin).getPollingInterval();
 			will(returnValue(pollingInterval));
 			oneOf(clock).currentTimeMillis();
@@ -288,14 +285,13 @@ public class PollerImplTest extends BrambleMockTestCase {
 		context.checking(new Expectations() {{
 			allowing(plugin).getId();
 			will(returnValue(transportId));
-			// First event
-			// Get the plugin
+
 			oneOf(pluginManager).getPlugin(transportId);
 			will(returnValue(plugin));
-			// The plugin supports polling
+
 			oneOf(plugin).shouldPoll();
 			will(returnValue(true));
-			// Schedule the next poll
+
 			oneOf(plugin).getPollingInterval();
 			will(returnValue(pollingInterval));
 			oneOf(clock).currentTimeMillis();
@@ -304,14 +300,13 @@ public class PollerImplTest extends BrambleMockTestCase {
 					with(ioExecutor), with((long) pollingInterval),
 					with(MILLISECONDS));
 			will(returnValue(cancellable));
-			// Second event
-			// Get the plugin
+
 			oneOf(pluginManager).getPlugin(transportId);
 			will(returnValue(plugin));
-			// The plugin supports polling
+
 			oneOf(plugin).shouldPoll();
 			will(returnValue(true));
-			// Replace the previously scheduled task, due later
+
 			oneOf(plugin).getPollingInterval();
 			will(returnValue(pollingInterval - 2));
 			oneOf(clock).currentTimeMillis();
@@ -335,20 +330,20 @@ public class PollerImplTest extends BrambleMockTestCase {
 		context.checking(new Expectations() {{
 			allowing(plugin).getId();
 			will(returnValue(transportId));
-			// Get the plugin
+
 			oneOf(pluginManager).getPlugin(transportId);
 			will(returnValue(plugin));
-			// The plugin supports polling
+
 			oneOf(plugin).shouldPoll();
 			will(returnValue(true));
-			// Schedule a polling task immediately
+
 			oneOf(clock).currentTimeMillis();
 			will(returnValue(now));
 			oneOf(scheduler).schedule(with(any(Runnable.class)),
 					with(ioExecutor), with(0L), with(MILLISECONDS));
 			will(returnValue(cancellable));
 			will(new RunAction());
-			// Running the polling task schedules the next polling task
+
 			oneOf(plugin).getPollingInterval();
 			will(returnValue(pollingInterval));
 			oneOf(clock).currentTimeMillis();
@@ -357,12 +352,12 @@ public class PollerImplTest extends BrambleMockTestCase {
 					with(ioExecutor), with(0L),
 					with(MILLISECONDS));
 			will(returnValue(cancellable));
-			// Get the transport properties and connected contacts
+
 			oneOf(transportPropertyManager).getRemoteProperties(transportId);
 			will(returnValue(singletonMap(contactId, properties)));
 			oneOf(connectionRegistry).getConnectedOrBetterContacts(transportId);
 			will(returnValue(emptyList()));
-			// Poll the plugin
+
 			oneOf(plugin).poll(with(collectionOf(
 					pairOf(equal(properties), any(ConnectionHandler.class)))));
 		}});
@@ -377,20 +372,20 @@ public class PollerImplTest extends BrambleMockTestCase {
 		context.checking(new Expectations() {{
 			allowing(plugin).getId();
 			will(returnValue(transportId));
-			// Get the plugin
+
 			oneOf(pluginManager).getPlugin(transportId);
 			will(returnValue(plugin));
-			// The plugin supports polling
+
 			oneOf(plugin).shouldPoll();
 			will(returnValue(true));
-			// Schedule a polling task immediately
+
 			oneOf(clock).currentTimeMillis();
 			will(returnValue(now));
 			oneOf(scheduler).schedule(with(any(Runnable.class)),
 					with(ioExecutor), with(0L), with(MILLISECONDS));
 			will(returnValue(cancellable));
 			will(new RunAction());
-			// Running the polling task schedules the next polling task
+
 			oneOf(plugin).getPollingInterval();
 			will(returnValue(pollingInterval));
 			oneOf(clock).currentTimeMillis();
@@ -399,12 +394,12 @@ public class PollerImplTest extends BrambleMockTestCase {
 					with(ioExecutor), with(0L),
 					with(MILLISECONDS));
 			will(returnValue(cancellable));
-			// Get the transport properties and connected contacts
+
 			oneOf(transportPropertyManager).getRemoteProperties(transportId);
 			will(returnValue(singletonMap(contactId, properties)));
 			oneOf(connectionRegistry).getConnectedOrBetterContacts(transportId);
 			will(returnValue(singletonList(contactId)));
-			// All contacts are connected, so don't poll the plugin
+
 		}});
 
 		poller.eventOccurred(new TransportActiveEvent(transportId));
@@ -417,19 +412,19 @@ public class PollerImplTest extends BrambleMockTestCase {
 		context.checking(new Expectations() {{
 			allowing(plugin).getId();
 			will(returnValue(transportId));
-			// Get the plugin
+
 			oneOf(pluginManager).getPlugin(transportId);
 			will(returnValue(plugin));
-			// The plugin supports polling
+
 			oneOf(plugin).shouldPoll();
 			will(returnValue(true));
-			// Schedule a polling task immediately
+
 			oneOf(clock).currentTimeMillis();
 			will(returnValue(now));
 			oneOf(scheduler).schedule(with(any(Runnable.class)),
 					with(ioExecutor), with(0L), with(MILLISECONDS));
 			will(returnValue(cancellable));
-			// The plugin is deactivated before the task runs - cancel the task
+
 			oneOf(cancellable).cancel();
 		}});
 
@@ -439,13 +434,13 @@ public class PollerImplTest extends BrambleMockTestCase {
 
 	private void expectReschedule(Plugin plugin) {
 		context.checking(new Expectations() {{
-			// Get the plugin
+
 			oneOf(pluginManager).getPlugin(transportId);
 			will(returnValue(plugin));
-			// The plugin supports polling
+
 			oneOf(plugin).shouldPoll();
 			will(returnValue(true));
-			// Schedule the next poll
+
 			oneOf(plugin).getPollingInterval();
 			will(returnValue(pollingInterval));
 			oneOf(clock).currentTimeMillis();
@@ -460,23 +455,23 @@ public class PollerImplTest extends BrambleMockTestCase {
 	private void expectReconnect(DuplexPlugin plugin,
 			DuplexTransportConnection duplexConnection) throws Exception {
 		context.checking(new Expectations() {{
-			// Get the plugin
+
 			oneOf(pluginManager).getPlugin(transportId);
 			will(returnValue(plugin));
-			// The plugin supports polling
+
 			oneOf(plugin).shouldPoll();
 			will(returnValue(true));
-			// Check whether the contact is already connected
+
 			oneOf(connectionRegistry).isConnected(contactId, transportId);
 			will(returnValue(false));
-			// Get the transport properties
+
 			oneOf(transportPropertyManager).getRemoteProperties(contactId,
 					transportId);
 			will(returnValue(properties));
-			// Connect to the contact
+
 			oneOf(plugin).createConnection(properties);
 			will(returnValue(duplexConnection));
-			// Pass the connection to the connection manager
+
 			oneOf(connectionManager).manageOutgoingConnection(contactId,
 					transportId, duplexConnection);
 		}});

@@ -23,7 +23,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
-
 public class UnixSecureRandomSpiTest extends BrambleTestCase {
 
 	private static final File RANDOM_DEVICE = new File("/dev/urandom");
@@ -50,14 +49,14 @@ public class UnixSecureRandomSpiTest extends BrambleTestCase {
 
 	@Test
 	public void testEngineSetSeedWritesToRandomDevice() throws Exception {
-		// Redirect the engine's output to a file
+
 		File urandom = new File(testDir, "urandom");
 		if (urandom.exists()) assertTrue(urandom.delete());
 		assertTrue(urandom.createNewFile());
 		assertEquals(0, urandom.length());
-		// Generate a seed
+
 		byte[] seed = TestUtils.getRandomBytes(SEED_BYTES);
-		// Check that the engine writes the seed to the file
+
 		UnixSecureRandomSpi engine = new UnixSecureRandomSpi(RANDOM_DEVICE,
 				urandom);
 		engine.engineSetSeed(seed);
@@ -71,9 +70,9 @@ public class UnixSecureRandomSpiTest extends BrambleTestCase {
 
 	@Test
 	public void testEngineNextBytesReadsFromRandomDevice() throws Exception {
-		// Generate some entropy
+
 		byte[] entropy = TestUtils.getRandomBytes(SEED_BYTES);
-		// Write the entropy to a file
+
 		File urandom = new File(testDir, "urandom");
 		if (urandom.exists()) assertTrue(urandom.delete());
 		FileOutputStream out = new FileOutputStream(urandom);
@@ -82,7 +81,7 @@ public class UnixSecureRandomSpiTest extends BrambleTestCase {
 		out.close();
 		assertTrue(urandom.exists());
 		assertEquals(SEED_BYTES, urandom.length());
-		// Check that the engine reads from the file
+
 		UnixSecureRandomSpi engine = new UnixSecureRandomSpi(urandom,
 				RANDOM_DEVICE);
 		byte[] b = new byte[SEED_BYTES];
@@ -92,9 +91,9 @@ public class UnixSecureRandomSpiTest extends BrambleTestCase {
 
 	@Test
 	public void testEngineGenerateSeedReadsFromRandomDevice() throws Exception {
-		// Generate some entropy
+
 		byte[] entropy = TestUtils.getRandomBytes(SEED_BYTES);
-		// Write the entropy to a file
+
 		File urandom = new File(testDir, "urandom");
 		if (urandom.exists()) assertTrue(urandom.delete());
 		FileOutputStream out = new FileOutputStream(urandom);
@@ -103,7 +102,7 @@ public class UnixSecureRandomSpiTest extends BrambleTestCase {
 		out.close();
 		assertTrue(urandom.exists());
 		assertEquals(SEED_BYTES, urandom.length());
-		// Check that the engine reads from the file
+
 		UnixSecureRandomSpi engine = new UnixSecureRandomSpi(urandom,
 				RANDOM_DEVICE);
 		byte[] b = engine.engineGenerateSeed(SEED_BYTES);

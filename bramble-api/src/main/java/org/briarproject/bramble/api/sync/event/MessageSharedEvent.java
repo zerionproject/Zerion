@@ -11,7 +11,6 @@ import java.util.Map;
 
 import javax.annotation.concurrent.Immutable;
 
-
 @Immutable
 @NotNullByDefault
 public class MessageSharedEvent extends Event {
@@ -35,7 +34,6 @@ public class MessageSharedEvent extends Event {
 		return groupId;
 	}
 
-	
 	public Map<ContactId, Boolean> getGroupVisibility() {
 		return groupVisibility;
 	}

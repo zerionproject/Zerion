@@ -60,31 +60,31 @@ public class RemovableDriveIntegrationTest extends BrambleTestCase {
 
 	@Test
 	public void testWriteAndRead() throws Exception {
-		// Create the identities
+
 		Identity aliceIdentity =
 				alice.getIdentityManager().createIdentity("Alice");
 		Identity bobIdentity = bob.getIdentityManager().createIdentity("Bob");
-		// Set up the devices and get the contact IDs
+
 		ContactId bobId = setUp(alice, aliceIdentity,
 				bobIdentity.getLocalAuthor(), true);
 		ContactId aliceId = setUp(bob, bobIdentity,
 				aliceIdentity.getLocalAuthor(), false);
-		// Sync Alice's client versions and transport properties
+
 		read(bob, write(alice, bobId), 2);
-		// Sync Bob's client versions and transport properties
+
 		read(alice, write(bob, aliceId), 2);
 	}
 
 	private ContactId setUp(RemovableDriveIntegrationTestComponent device,
 			Identity local, Author remote, boolean alice) throws Exception {
-		// Add an identity for the user
+
 		IdentityManager identityManager = device.getIdentityManager();
 		identityManager.registerIdentity(local);
-		// Start the lifecycle manager
+
 		LifecycleManager lifecycleManager = device.getLifecycleManager();
 		lifecycleManager.startServices(getSecretKey());
 		lifecycleManager.waitForStartup();
-		// Add the other user as a contact
+
 		ContactManager contactManager = device.getContactManager();
 		return contactManager.addContact(remote, local.getId(), rootKey,
 				timestamp, alice, true, true);
@@ -93,11 +93,11 @@ public class RemovableDriveIntegrationTest extends BrambleTestCase {
 	@SuppressWarnings("SameParameterValue")
 	private void read(RemovableDriveIntegrationTestComponent device,
 			File file, int deliveries) throws Exception {
-		// Listen for message deliveries
+
 		MessageDeliveryListener listener =
 				new MessageDeliveryListener(deliveries);
 		device.getEventBus().addListener(listener);
-		// Read the incoming stream
+
 		TransportProperties p = new TransportProperties();
 		p.put(PROP_PATH, file.getAbsolutePath());
 		RemovableDriveTask reader =
@@ -106,17 +106,17 @@ public class RemovableDriveIntegrationTest extends BrambleTestCase {
 		reader.addObserver(state -> {
 			if (state.isFinished()) disposedLatch.countDown();
 		});
-		// Wait for the messages to be delivered
+
 		assertTrue(listener.delivered.await(TIMEOUT_MS, MILLISECONDS));
-		// Clean up the listener
+
 		device.getEventBus().removeListener(listener);
-		// Wait for the reader to be disposed
+
 		disposedLatch.await(TIMEOUT_MS, MILLISECONDS);
 	}
 
 	private File write(RemovableDriveIntegrationTestComponent device,
 			ContactId contactId) throws Exception {
-		// Write the outgoing stream to a file
+
 		File file = File.createTempFile("sync", ".tmp", testDir);
 		TransportProperties p = new TransportProperties();
 		p.put(PROP_PATH, file.getAbsolutePath());
@@ -126,15 +126,15 @@ public class RemovableDriveIntegrationTest extends BrambleTestCase {
 		writer.addObserver(state -> {
 			if (state.isFinished()) disposedLatch.countDown();
 		});
-		// Wait for the writer to be disposed
+
 		disposedLatch.await(TIMEOUT_MS, MILLISECONDS);
-		// Return the file containing the stream
+
 		return file;
 	}
 
 	private void tearDown(RemovableDriveIntegrationTestComponent device)
 			throws Exception {
-		// Stop the lifecycle manager
+
 		LifecycleManager lifecycleManager = device.getLifecycleManager();
 		lifecycleManager.stopServices();
 		lifecycleManager.waitForShutdown();
@@ -142,7 +142,7 @@ public class RemovableDriveIntegrationTest extends BrambleTestCase {
 
 	@After
 	public void tearDown() throws Exception {
-		// Tear down the devices
+
 		tearDown(alice);
 		tearDown(bob);
 		deleteTestDirectory(testDir);

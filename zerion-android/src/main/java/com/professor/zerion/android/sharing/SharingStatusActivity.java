@@ -47,7 +47,6 @@ abstract class SharingStatusActivity extends ZerionActivity
 	@Inject
 	EventBus eventBus;
 
-
 	private GroupId groupId;
 	private ZerionRecyclerView list;
 	private SharingStatusAdapter adapter;

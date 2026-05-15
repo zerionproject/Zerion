@@ -14,7 +14,6 @@ import javax.inject.Inject;
 @NotNullByDefault
 public class DbControllerImpl implements DbController {
 
-
 	protected final Executor dbExecutor;
 	private final LifecycleManager lifecycleManager;
 
