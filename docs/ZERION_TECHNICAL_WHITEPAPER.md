@@ -6,10 +6,13 @@ Zerion is an end-to-end encrypted, peer-to-peer secure messaging application for
 
 **Post-Quantum Security**: Zerion implements **full hybrid post-quantum cryptography** using NIST-standardized algorithms (ML-KEM-768 + X25519 for key exchange, ML-DSA-65 + Ed25519 for signatures), providing defense-in-depth protection against both current and future quantum computing threats.
 
+**Current release**: v1.6.2 (May 15, 2026). For an at-a-glance summary of everything shipped since v2.1 of this whitepaper (December 2025), see [§0 Updates since v2.1](#0-updates-since-v21).
+
 ---
 
 ## TABLE OF CONTENTS
 
+0. [Updates since v2.1](#0-updates-since-v21)
 1. [Onboarding & Account Setup](#1-onboarding--account-setup)
 2. [Messaging Architecture](#2-messaging-architecture)
 3. [Tor Integration](#3-tor-integration)
@@ -25,6 +28,57 @@ Zerion is an end-to-end encrypted, peer-to-peer secure messaging application for
 13. [Architecture Diagrams](#13-architecture-diagrams)
 14. [File Path Reference](#14-file-path-reference)
 15. [Conclusion](#15-conclusion)
+
+---
+
+## 0. UPDATES SINCE v2.1
+
+This section summarizes every protocol- or security-relevant change shipped between whitepaper v2.1 (December 16, 2025) and v3.0 (May 15, 2026). The rest of the document remains structurally correct; this section is the authoritative diff. Detailed designs live in the companion documents listed under each item.
+
+### v1.5 (May 1, 2026) — B.3 pairing & B.4 onion rotation
+
+- **B.3 — Hybrid post-quantum pairing.** The contact-add handshake now performs ML-KEM-768 alongside the existing X25519 KEM and binds the resulting hybrid shared secret to the peer's hybrid identity (Ed25519 + ML-DSA-65). See [docs/wire/B3_RECORD_PLACEMENT.md](wire/B3_RECORD_PLACEMENT.md) and [docs/wire/F2_INTRODUCTION_HYBRID_SIG.md](wire/F2_INTRODUCTION_HYBRID_SIG.md). Downgrade defense: once a contact is paired with the hybrid protocol, a re-pair attempt offering only the classical protocol is rejected.
+- **B.4 — Onion rotation.** Tor v3 onion addresses now rotate every 5–14 days (uniform-randomized per rotation) to defeat long-term linkability of an account to a single onion. The onion-management API lives in the upstream `onionwrapper` fork — see [docs/wire/B4_ONIONWRAPPER_API.md](wire/B4_ONIONWRAPPER_API.md).
+
+### v1.6.0 (May 11, 2026) — Mode 3 PQ rotation completes; group records hybrid-signed
+
+- **PCS Mode 3 actually completes end-to-end.** Phase 4d (January 2026) shipped Mode 3 framing on the wire (the `0x2000` stream-header flag, the per-frame PCS header with `FLAG_PQ_ENABLED`, the chunk codec, the state machine) but three latent bugs prevented any post-quantum epoch from completing in production:
+  1. The responder's stream-decrypter had no chunk-type dispatch — peer `EK_SEED` chunks were silently absorbed in `PQ_READY` instead of transitioning into `PQ_RECEIVING_EK_VEC`.
+  2. The responder cloned its ML-KEM-768 ciphertext and immediately wiped the resulting shared secret, then tried to recover the secret at derive-time by re-encapsulating. Bouncy Castle's ML-KEM generator is randomized per call, so re-encapsulation produced a different ciphertext and the equality check failed.
+  3. `StreamEncrypterFactoryImpl` and `StreamDecrypterFactoryImpl` passed `null` for their state callbacks. Every Mode 2 DH advance and every Mode 3 PQ-epoch completion was computed in memory and discarded on stream close.
+
+  v1.6.0 fixes all three, plus adds cross-direction PQ mixing (one epoch now PQ-protects *both* directions atomically, not just the side that supplied the ciphertext), a self-heal path on database load that resets transient states to `PQ_READY` so a peer crash mid-epoch recovers on the next cycle, and a pubkey-comparison tiebreak for simultaneous-start races. ML-KEM-768 is now actually mixed into the root key every 25 messages or 24 hours, both directions, persisted across reconnects. See [PCS_DESIGN.md §v1.6 amendment](PCS_DESIGN.md).
+- **Hybrid identity signatures on every group record.** `GROUP_POST`, `GROUP_MEMBER_ADDED` / `REMOVED` / `LEFT`, `GROUP_DISSOLVED`, `GROUP_EPOCH_COMMIT`, `GROUP_MEMBER_ROLE_CHANGED`, `GROUP_MEMBER_LIST_SNAPSHOT` now carry an Ed25519 + ML-DSA-65 hybrid signature (3,373 bytes: 64 bytes Ed25519 + 3,309 bytes ML-DSA-65). The local identity carries a new ML-DSA-65 keypair alongside the existing Ed25519 keypair; the AuthorId (derived from the Ed25519 public key) is unchanged. See [GROUP_TRIPLE_RATCHET_PQ_DESIGN.md](GROUP_TRIPLE_RATCHET_PQ_DESIGN.md).
+- **`CONTACT_INFO` 6-slot extension.** Slot[5] carries the peer's ML-DSA-65 public key (1,952 bytes). Persisted on the `contacts` row. Lookup is cached by Ed25519-hex key with `ContactAddedEvent` / `ContactRemovedEvent` invalidation. New pairings exchange the ML-DSA half at handshake time; existing contacts paired before v1.6.0 fall back to Ed25519-prefix verification (no regression vs. v1.5) until both sides re-add.
+- **Vault — real Argon2id.** The vault password KDF was internally PBKDF2-HMAC-SHA256 in earlier releases (the class was called `Argon2`, with an acknowledged "placeholder pending future migration" comment). v1.6.0 routes the vault through the same Bouncy Castle `Argon2BytesGenerator` (`ARGON2_id` mode, 256 MB memory, 3 iterations) used by the database KDF. Existing vaults remain readable via an algorithm flag in the vault header; the export bundle format is bumped to v2. Changing the vault password migrates a legacy vault to Argon2id on the next save.
+- **Database schema v62 → v63.** Three nullable columns added: two on `localAuthors` (`mlDsaPublicKey`, `mlDsaPrivateKey`) and one on `contacts` (`mlDsaPublicKey`). Lazy-backfill: the first time an existing account opens on v1.6.0, the identity manager generates an ML-DSA-65 keypair if one isn't present and persists it. No existing data is migrated or invalidated.
+- **v1.6.0 audit findings patched before tag.** Critical: GROUP_POST hybrid signature was only verified at the Ed25519-prefix level by the validator and never re-verified at the manager layer; fixed by carrying `recordSig` in `GroupPostReceivedEvent` and re-verifying in `cachePost`. High: TOCTOU race in cross-direction PQ mixing closed via single-transaction `PcsStateManager.mixPqSecretInto*Root`. Medium: GROUP_MEMBER_LEFT same pattern as GROUP_POST, now verified at manager layer; ML-KEM shared secret zeroed immediately after clone in `deriveEpochSecret`.
+
+### v1.6.1 (May 13, 2026) — Whole-app security audit + GroupTr hardening
+
+- Whole-app security audit fixes (vault, biometric, settings, password setup, deletion paths, lock-screen exposure).
+- GroupTr security hardening: epoch monotonicity, creator-only writes on `MEMBER_ADDED` / `MEMBER_REMOVED` / `MEMBER_ROLE_CHANGED`, cleanup of pending invite-state on accept / decline.
+- `addMember` now sends to the target peer; receive auto-applies when target is self.
+
+### v1.6.2 (May 15, 2026) — Native group invites, Tor-only transport, at-rest hardening
+
+- **Native GroupTr invite protocol.** The legacy `org.briarproject.briar.privategroup.invitation` client is removed from the shipped APK. Group invitations now use three native message types on the existing 1:1 channel between sender and recipient: `OFFER` (msgType 42), `ACCEPT` (43), `DECLINE` (44). The invite payload is a signed BDF dictionary carried inside the same Triple Ratchet envelope every other 1:1 message uses. One protocol now covers create, invite, join, role change, kick, leave, and dissolve. Wire format: [docs/wire/GROUPTR_WIRE_PROTOCOL.md](wire/GROUPTR_WIRE_PROTOCOL.md).
+- **Kick reliability.** Fixed an invitee-side epoch desync that silently dropped `MEMBER_REMOVED` records when the strict `toEpoch == localEpoch + 1` check failed because `applyMemberAdded` had short-circuited without bumping the local epoch. `applyMemberAdded` now updates the epoch unconditionally; the `MEMBER_REMOVED` check is relaxed from strict-successor to monotonic. When the local user is removed, the group is purged from the local device atomically with applying the change. Same logic on `leaveGroup` / `dissolveGroup`.
+- **Tor-only transport (final).** The last non-Tor transport code paths are removed: the Bluetooth plugin (assets, manifest entries, factory class), the Wi-Fi LAN TCP plugin (discovery code, `ACCESS_WIFI_STATE` permission, factory class), the removable-drive sync feature subtree, and the dev-reporting / crash-batching subsystem. The plugin registry has exactly one entry: Tor v3 onion. Manifest no longer requests `BLUETOOTH*` or `ACCESS_WIFI_STATE`.
+- **All `SharedPreferences` keystore-encrypted.** Every `SharedPreferences` read and write across the app is routed through `EncryptedSharedPreferences` with a master key generated and held in the Android Keystore (hardware-backed where available, non-exportable, device-bound). The only exception is a small early-init store for the launcher theme and language — values needed before the application context is available — documented in the codebase.
+- **Hybrid signatures extended.** The Ed25519 + ML-DSA-65 hybrid signing path introduced in v1.6.0 for group records is now applied to the private-group and private-group invitation contexts that still carried Ed25519-only signatures, closing the last legacy signing path.
+- **Downgrade-lock token reconstruction.** v1.6.0's implementation reconstructed the downgrade-lock token from the wrong field set during a carry-forward re-pair, which would invalidate the lock on a clean re-pair. v1.6.2 reconstructs from the canonical input; the lock survives every re-pair on both sides.
+- **Supply chain.** `junit-bom-5.11.4` is now pinned by SHA-256 in `gradle/verification-metadata.xml`. Gradle dependency locking is enabled across all production modules.
+
+### Discontinued / removed
+
+- **Legacy private-group invitation carrier** (`org.briarproject.briar.privategroup.invitation`) — removed in v1.6.2.
+- **Bluetooth transport plugin** — removed in v1.6.2.
+- **Wi-Fi LAN TCP transport plugin** — removed in v1.6.2.
+- **Removable-drive sync feature** — removed in v1.6.2.
+- **Dev-reporting / crash-batching subsystem** — removed in v1.6.2.
+
+These removals are intentional and final; Zerion's threat model treats every additional transport as additional metadata surface and every additional reporting channel as a phone-home vector.
 
 ---
 
@@ -2509,14 +2563,16 @@ Zerion provides military-grade security through:
 ---
 
 **Document Information**:
-- **Version**: 2.1
-- **Date**: December 16, 2025
+- **Version**: 3.0
+- **Date**: May 15, 2026
 - **Status**: Production
 - **Classification**: Public Technical Documentation
-- **Author**: Zerion Development Team
+- **Author**: Zerion Project
 - **Contact**: https://github.com/zerionproject/Zerion
+- **Corresponds to app release**: v1.6.2 (versionCode 10602)
 
 **Document History**:
+- **v3.0 (2026-05-15)**: **Mode 3 PQ rotation, hybrid group signatures, native group invites, Tor-only transport.** Adds §0 "Updates since v2.1" covering everything shipped between Dec 2025 and May 2026: B.3 hybrid pairing and B.4 onion rotation (v1.5.0), PCS Mode 3 end-to-end completion + hybrid Ed25519+ML-DSA-65 signatures on every group record + real Argon2id vault KDF (v1.6.0), whole-app audit + GroupTr hardening (v1.6.1), native group-invite protocol replacing the legacy `privategroup.invitation` carrier + Tor-only transport (Bluetooth / Wi-Fi LAN / removable-drive / dev-reporting removed) + all `SharedPreferences` keystore-encrypted + extended hybrid signing + downgrade-lock token fix (v1.6.2). See §0 for the authoritative diff.
 - v2.1 (2025-12-16): **Version Negotiation & Security Hardening** - Added Briar compatibility via explicit contact type selection, downgrade attack prevention, contact security level tracking (postQuantum flag), UI security indicator in Chat Settings
 - v2.0 (2025-11-26): **Full hybrid post-quantum cryptography** - Phase 2 complete with ML-KEM-768 + X25519 key exchange and ML-DSA-65 + Ed25519 signatures (NIST FIPS 203/204)
 - v1.4 (2025-11-26): Post-quantum Phase 1 - Argon2id KDF migration, BLAKE2b-384 hash option, automatic Scrypt→Argon2id migration
@@ -2527,6 +2583,6 @@ Zerion provides military-grade security through:
 
 ---
 
-*This whitepaper is based on the Zerion codebase. For the most current information, please refer to the source code repository and official documentation.*
+*This whitepaper is based on the Zerion codebase as of v1.6.2 (May 2026). For the most current information, please refer to the source code repository and the per-document amendments under [docs/](.).*
 
 **End of Document**

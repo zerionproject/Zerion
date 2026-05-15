@@ -1,14 +1,30 @@
 # Group Triple Ratchet (Post-Quantum) Technical Design
 
-**Version:** 0.2
-**Date:** 2026-05-12
-**Status:** SHIPPED on Android dev (v1.6) — pending cross-platform alignment with iOS
+**Version:** 0.3
+**Date:** 2026-05-15
+**Status:** SHIPPED on Android (v1.6.2) — pending cross-platform alignment with iOS
 **Author:** Zerion Project
 
 **Related documents**
 - [PCS_DESIGN.md](PCS_DESIGN.md) — pairwise PCS specification (Mode 1/2/3)
 - [TRIPLE_RATCHET_DESIGN.md](TRIPLE_RATCHET_DESIGN.md) — post-quantum ratchet specification
-- [GROUP_PCS_SENDER_KEYS_DESIGN.md](GROUP_PCS_SENDER_KEYS_DESIGN.md) — superseded Sender Keys design
+- [RATCHET_MODES.md](RATCHET_MODES.md) — layered Mode 1 / 2 / 3 explainer
+- [wire/GROUPTR_WIRE_PROTOCOL.md](wire/GROUPTR_WIRE_PROTOCOL.md) — wire-level message catalog (including the native v1.6.2 invite protocol)
+
+> **v1.6.2 amendment.** The legacy private-group invitation carrier
+> (`org.briarproject.briar.privategroup.invitation`) is removed from the
+> shipped APK. Invitations now ride three native message types on the
+> existing 1:1 channel between sender and recipient: `OFFER` (42),
+> `ACCEPT` (43), `DECLINE` (44). The invitation payload is a signed BDF
+> dictionary carried inside the same Triple Ratchet envelope every other
+> 1:1 message uses. Wire format: see [wire/GROUPTR_WIRE_PROTOCOL.md](wire/GROUPTR_WIRE_PROTOCOL.md).
+> Hybrid Ed25519 + ML-DSA-65 signing was extended to cover these new
+> types and to the remaining `privategroup` paths that still carried
+> Ed25519-only signatures in v1.6.0. v1.6.2 also fixes an invitee-side
+> epoch desync that silently dropped `MEMBER_REMOVED` records when
+> `applyMemberAdded` had short-circuited without bumping the local epoch:
+> the apply path now bumps regardless of membership state, and the
+> remove-check is relaxed from strict-successor to monotonic.
 
 > **v1.6 amendment.** This design originally specified pure-Ed25519
 > signatures on group records. v1.6 raised every group-record signature

@@ -438,44 +438,49 @@ For journalists, activists, whistleblowers, and privacy-conscious individuals, Z
 
 ---
 
-**Last Updated:** 2025-11-26
-**Version:** 1.3 - Dedicated voice signaling protocol, speakerphone toggle, screenshot protection
+**Last Updated:** 2026-05-15
+**Version:** 1.6 — post-quantum signalling envelope, full video pipeline, current as of v1.6.2
 **License:** CC BY-SA 4.0
 
 ---
 
-## Implementation Status (v1.3)
+## Implementation Status (v1.6.2)
 
-### ✅ Fully Implemented
-- P2P voice calling over Tor hidden services
-- End-to-end encryption with AES-256-GCM
-- Voice call key generation and exchange
-- Tor rendezvous connection establishment
-- Stream synchronization (SYNC/READY markers)
-- **Opus codec compression** (16 kbps VOIP mode with FEC/PLC)
-- CRC32 integrity checking
-- Jitter buffer for smooth playback
-- Heartbeat mechanism for circuit keepalive
-- Microphone permission handling
-- Audio routing to earpiece (USAGE_VOICE_COMMUNICATION)
-- Mute function
-- **Speakerphone toggle** with volume boost (configurable 2.0x gain)
-- Call event UI (Signal/Molly style bubbles)
-- **Network quality indicators** (latency, packet loss, signal strength, codec/bitrate)
-- Comprehensive debug logging and metrics tracking
-- **Dedicated voice signaling protocol** (VOICE_SIGNAL message type)
-  - CALL_OFFER, CALL_ANSWER, CALL_REJECT, CALL_END, ICE_CANDIDATE, CALL_BUSY signals
-  - Complete separation from text messaging channel
-  - Signals never appear in conversation UI
-- **Screenshot protection** during active calls (FLAG_SECURE)
-- **Incoming call improvements** - proper signal routing via VoiceSignalReceivedEvent
+### Voice calls — shipped
 
-### 🔄 In Progress
+- P2P voice calling over Tor v3 hidden services
+- End-to-end encryption with AES-256-GCM (per-frame authenticated, counter-based nonces)
+- Per-call symmetric key (256-bit, fresh per call), delivered through the dedicated `VOICE_SIGNAL` message type
+- Signalling key delivery rides the Mode 3 Triple Ratchet (ML-KEM-768 + X25519) — call keys travel inside a post-quantum-encrypted envelope as of v1.6.0
+- Opus codec at 32 kbps (VoIP mode with FEC/PLC), CRC32 integrity check, jitter buffer
+- Heartbeat for Tor circuit keepalive
+- Stream sync (SYNC / READY markers)
+- Audio routing to earpiece (`USAGE_VOICE_COMMUNICATION`), speakerphone toggle with optional gain
+- Mute, in-call UI bubbles, network-quality readouts (latency, packet loss, codec, bitrate)
+- `VOICE_SIGNAL` channel — `CALL_OFFER` / `CALL_ANSWER` / `CALL_REJECT` / `CALL_END` / `ICE_CANDIDATE` / `CALL_BUSY` — fully separated from text messaging, never rendered in conversation UI
+- `FLAG_SECURE` on active call activity (screenshot/recording prevention)
+- `VoiceSignalReceivedEvent` routing for incoming-call handling
+
+### Video calls — shipped (v1.0.4+)
+
+- H.264 Baseline Profile, 320x240 @ 15 fps (low-latency) / 640x480 @ 24 fps (where bandwidth allows)
+- AES-256-GCM frame encryption with deterministic padding to defeat frame-size analysis
+- Per-frame rotation metadata (correct portrait orientation across camera switches)
+- Camera switch with async callback for correct transform
+- Auto-speaker on video start, mute / speaker active-state indicators
+- AES-GCM authentication failure detection (treated as stream integrity failure)
+- Clean encoder drain on hang-up (EOS flag), decoder consecutive-failure tracking
+- `FLAG_SECURE` on the video call activity
+
+### v1.6 changes affecting voice / video
+
+- The signalling channel that delivers call keys is the Mode 3 PCS Triple Ratchet, which actually completes ML-KEM-768 epochs end-to-end as of v1.6.0 (Phase 4d shipped framing only; three latent bugs prevented PQ rotation from completing). Once the underlying ratchet rotates, the envelope carrying call keys gets the same post-quantum upgrade automatically. See [PCS_DESIGN.md §v1.6 amendment](PCS_DESIGN.md).
+- Bluetooth audio routing logic is unaffected by the v1.6.2 removal of the Bluetooth *transport* plugin. The transport plugin governed BLE / Bluetooth-LE pairing between devices and was unrelated to A2DP / HFP audio output, which routes through the standard Android `AudioManager`.
+
+### Planned
+
 - Call history persistence
 - Adaptive bitrate based on network conditions
-
-### 📋 Planned
-- Video calling
 - Group voice calls
-- Connection padding for traffic analysis resistance
+- Connection padding for traffic-analysis resistance
 - Enhanced network diagnostics with graphs

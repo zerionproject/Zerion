@@ -84,7 +84,7 @@ Any attempt to reconnect with weaker security is automatically blocked.
 
 **[Google Play](https://play.google.com/store/apps/details?id=com.professor.zerion)** — Get it on the Play Store
 
-**[Download APK](https://github.com/zerionproject/Zerion/releases/latest)** — v1.2.0 (direct from GitHub)
+**[Download APK](https://github.com/zerionproject/Zerion/releases/latest)** — v1.6.2 (direct from GitHub)
 
 **F-Droid:** [fdroid.zerion.chat](https://fdroid.zerion.chat/fdroid/repo)
 ```
@@ -95,7 +95,30 @@ Repo fingerprint: D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6888F704
 
 ## Changelog
 
-**v1.2.0 (Latest):**
+**v1.6.2 (Latest, May 2026):**
+- Native group-invite protocol replaces the legacy carrier (`OFFER`/`ACCEPT`/`DECLINE` on the 1:1 channel)
+- Kick reliability fix: invitee epoch desync that silently dropped `MEMBER_REMOVED` is closed; removed users are purged from the local device atomically
+- Tor-only transport — Bluetooth, Wi-Fi LAN, removable-drive sync, and dev-reporting subsystems removed
+- All `SharedPreferences` routed through Android Keystore-backed `EncryptedSharedPreferences`
+- Hybrid Ed25519 + ML-DSA-65 signatures extended to private-group and invitation contexts
+- Carry-forward downgrade-lock token reconstruction fix
+- Vault, biometric, and lock-screen audit findings patched
+- Supply-chain: `junit-bom-5.11.4` pinned by SHA-256 in dependency-verification metadata
+
+**v1.6.0 (May 2026):**
+- PCS Mode 3 post-quantum ratchet now completes end-to-end (responder dispatch, shared-secret persistence, state callbacks); ML-KEM-768 mixed into the root key every 25 messages or 24 hours, both directions
+- Hybrid Ed25519 + ML-DSA-65 signatures on every group record (3,373 bytes)
+- Vault password KDF migrated from PBKDF2 placeholder to real Argon2id
+- DB schema v62 → v63 (nullable ML-DSA columns, lazy-backfill on first login)
+- Critical/high/medium audit findings patched before tag
+
+**v1.5.0 (May 2026):**
+- B.3 hybrid pairing: ML-KEM-768 + X25519 contact handshake with downgrade defense
+- B.4 onion rotation: Tor v3 onion address rotates every 5–14 days to defeat long-term linkability
+- Hybrid identity proofs at first pair (Ed25519 + ML-DSA-65)
+- Per-direction PQ epoch infrastructure (groundwork for the v1.6.0 completion fix)
+
+**v1.2.0:**
 - Security hardening: video call camera deadlock fixed, password handling uses char[] throughout
 - Registration Lock: protect your account with PIN or password (PBKDF2-SHA256)
 - App icon changer: disguise as Calculator, Notes, or Weather
@@ -158,8 +181,12 @@ Repo fingerprint: D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6888F704
 ## Documentation
 
 - [Technical Whitepaper](docs/ZERION_TECHNICAL_WHITEPAPER.md) — Complete architecture & crypto design
+- [Security Overview](docs/SECURITY_OVERVIEW.md) — Per-version security status and audit notes
 - [PCS Design](docs/PCS_DESIGN.md) — Post-Compromise Security (Triple Ratchet) specification
+- [Ratchet Modes](docs/RATCHET_MODES.md) — Mode 1 / 2 / 3 layered explainer
 - [Triple Ratchet Design](docs/TRIPLE_RATCHET_DESIGN.md) — Mode 3 ML-KEM-768 ratchet specification
+- [Group Triple Ratchet (PQ)](docs/GROUP_TRIPLE_RATCHET_PQ_DESIGN.md) — Hybrid-signed group records
+- [GroupTr Wire Protocol](docs/wire/GROUPTR_WIRE_PROTOCOL.md) — Native group-invite + membership messages
 - [P2P Voice & Video Calls](docs/P2P_Voice_Calls_Documentation.md) — Voice and video calling specification
 
 ---

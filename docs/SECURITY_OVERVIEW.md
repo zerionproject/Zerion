@@ -1,7 +1,7 @@
 # Zerion Security Overview
 
-**Version:** 1.1.0
-**Last reviewed:** May 2026 (v1.6)
+**Version:** 1.2.0
+**Last reviewed:** May 2026 (v1.6.2)
 
 ---
 
@@ -9,9 +9,20 @@
 
 Zerion is a peer-to-peer encrypted messenger for Android with voice calls over Tor. All traffic routes exclusively through the Tor network. There are no central servers, no metadata collection, and no logging in production builds.
 
-A comprehensive security audit covering 10 domains (cryptography, network, voice calls, Android platform, authentication, database, input validation, dependencies, logging, memory safety) was completed and all actionable findings have been resolved. An additional internal audit was run during the v1.6 development cycle focused on the PCS Mode 3 rewrite and the hybrid-signing migration; four findings (one critical, one high, two medium) were caught and patched before tag — see the v1.6 audit notes below.
+A comprehensive security audit covering 10 domains (cryptography, network, voice calls, Android platform, authentication, database, input validation, dependencies, logging, memory safety) was completed and all actionable findings have been resolved. Additional internal audits were run during the v1.6 cycle: the PCS Mode 3 rewrite and the hybrid-signing migration produced four findings (one critical, one high, two medium) caught and patched before the v1.6.0 tag; a follow-up audit during the v1.6.2 cycle covered password setup, settings, vault, biometric, deletion paths, and lock-screen exposure — see the version notes below.
 
-## v1.6 status (May 2026)
+## v1.6.2 status (May 2026)
+
+- **Native GroupTr invite protocol.** The legacy private-group invitation client (`org.briarproject.briar.privategroup.invitation`) is removed from the shipped APK. Group invitations now ride three native message types (`OFFER` 42 / `ACCEPT` 43 / `DECLINE` 44) on the existing 1:1 channel between sender and recipient. The invitation payload is a signed BDF dictionary carried inside the same Triple Ratchet envelope every other 1:1 message uses. One protocol now covers create, invite, join, role change, kick, leave, and dissolve.
+- **Kick reliability.** Fixed an invitee-side epoch desync that silently dropped `MEMBER_REMOVED` records when the strict `toEpoch == localEpoch + 1` check failed because `applyMemberAdded` had short-circuited without bumping the local epoch. `applyMemberAdded` now updates the epoch even when the target is already a member; the `MEMBER_REMOVED` check is relaxed from strict-successor to monotonic. When the local user is removed, the group is purged atomically with applying the change. Same logic on `leaveGroup` and `dissolveGroup`.
+- **Tor-only transport (final).** The last non-Tor transport code paths are removed: the Bluetooth plugin (assets, manifest entries, factory), the Wi-Fi LAN TCP plugin (discovery code, `ACCESS_WIFI_STATE` permission, factory), the removable-drive sync feature, and the dev-reporting/crash-batching subsystem. The plugin registry has exactly one entry: Tor v3 onion.
+- **All `SharedPreferences` keystore-encrypted.** Every `SharedPreferences` read/write across the app is now routed through `EncryptedSharedPreferences` with a master key generated and held in the Android Keystore (hardware-backed where available, non-exportable, device-bound). The only exception is a small early-init store for the launcher theme and language — values needed before the application context is available — documented in the codebase.
+- **Hybrid signatures extended.** The hybrid Ed25519 + ML-DSA-65 signing path introduced in v1.6.0 for group records is now applied to the private-group and private-group invitation contexts that still carried Ed25519-only signatures, closing the last legacy signing path.
+- **Downgrade-lock token reconstruction.** Fixed a carry-forward bug in v1.6.0's downgrade-lock implementation where the token was reconstructed from the wrong field set during re-pair, allowing the lock to invalidate on a clean re-pair. Reconstruction is now canonical; the lock survives every re-pair on both sides.
+- **v1.6.2 audit findings (patched before tag):** `sanitizePasswordChars` on the password-setup screen was zeroing the sanitized buffer in a `finally` block before the async Argon2 KDF completed, producing locked-out accounts on the next login — reverted, with ownership of the sanitized buffer transferred to `SetupViewModel.createAccount` which zeroes after the KDF returns. Vault/biometric/lock-screen exposure paths hardened: ephemeral file wipe on delete paths, widened notification-visibility flags (`VISIBILITY_SECRET`), zero-on-derive of handshake ephemeral private keys, supply-chain pin for `junit-bom-5.11.4` in dependency-verification metadata.
+- **Diagnostic-logging policy enforced at build time.** Temporary `[grouptr][KICK]` traces added during kick-flow diagnosis are stripped before tag. The `enforceNoLogs` Gradle task fails the build on any `Logger`, `android.util.Log`, `LOG.*`, `System.err`, `System.out`, `printStackTrace`, or `Timber` reference in the production source tree.
+
+## v1.6.0 status (May 2026)
 
 - **PCS Mode 3 post-quantum ratchet** now actually completes epochs end-to-end. Phase 4d (January 2026) shipped Mode 3 framing on the wire but three latent bugs prevented any PQ epoch from completing: responder chunk-type dispatch missing, responder shared secret wiped before use, factory state callbacks `null` in production. All three fixed in v1.6, plus cross-direction PQ mixing per epoch (one epoch now PQ-protects both directions, was one-direction-only in Phase 4d), self-heal on crash + stuck-state recovery, pubkey-comparison tiebreak on simultaneous epoch starts. ML-KEM-768 shared secret is now mixed into the root key every 25 messages or 24 hours, both directions, persisted across reconnects.
 - **Hybrid identity signatures on group records.** Every group record (GROUP_POST, MEMBER_ADDED/REMOVED/LEFT, DISSOLVED, EPOCH_COMMIT, ROLE_CHANGED, MEMBER_LIST_SNAPSHOT) now carries a hybrid Ed25519 + ML-DSA-65 signature (3,373 bytes). CONTACT_INFO bumped to 6-slot to carry the peer's ML-DSA-65 public key. Database schema migration v62 → v63 adds nullable ML-DSA columns on `localAuthors` and `contacts`; existing accounts lazy-backfill an ML-DSA-65 keypair on first sign-in. AuthorId stays stable.
@@ -100,4 +111,6 @@ All critical and high-severity dependency issues resolved:
 - [P2P Voice Calls](P2P_Voice_Calls_Documentation.md)
 - [Triple Ratchet Design](TRIPLE_RATCHET_DESIGN.md)
 - [Post-Compromise Security](PCS_DESIGN.md)
-- [Group PCS Sender Keys](GROUP_PCS_SENDER_KEYS_DESIGN.md)
+- [Group Triple Ratchet (PQ) Design](GROUP_TRIPLE_RATCHET_PQ_DESIGN.md)
+- [Ratchet Modes](RATCHET_MODES.md)
+- [GroupTr Wire Protocol](wire/GROUPTR_WIRE_PROTOCOL.md)
