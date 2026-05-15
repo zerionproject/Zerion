@@ -366,7 +366,6 @@
   
   <string name="read_more">повече</string>
 
-  
   <string name="change_profile_picture">Докоснете за смяна на профилната снимка</string>
   <string name="dialog_confirm_profile_picture_title">Смяна на профилна снимка</string>
   <string name="dialog_confirm_profile_picture_remark">Само вашите контакти виждат това изображение</string>
@@ -601,25 +600,6 @@
   <string name="lock_unlock_password">Използване на парола</string>
   <string name="lock_is_locked">Zerion е заключен</string>
   <string name="lock_tap_to_unlock">Докоснете за отключване</string>
-
-  <string name="removable_drive_menu_title">Свързване чрез преносим диск</string>
-  <string name="removable_drive_title_send">Изпращане на сведения</string>
-  <string name="removable_drive_title_receive">Получаване на сведения</string>
-  <string name="removable_drive_send_intro">Докоснете бутона по-долу, за да бъде създаден файл, който ще съдържа шифрованите съобщения. Можете да изберете къде да бъде запазен този файл.\n\nАко желаете да го запазите на преносим диск го включете сега.</string>
-  <string name="removable_drive_send_no_data">В момента няма съобщения, чакащи за изпращане до този контакт.</string>
-  <string name="removable_drive_send_not_supported">Контактът използва по-ранно издание на Zerion или устройство, което не поддържа тази възможност.</string>
-  <string name="removable_drive_send_button">Избиране на файл</string>
-  <string name="removable_drive_ongoing">Изчакайте текущата задача да завърши</string>
-  <string name="removable_drive_receive_intro">Докоснете бутона по-долу, за да изберете файла, който вашия контакт ви е изпратил.\n\nАко файлът се намира на преносим диск го включете сега.</string>
-  <string name="removable_drive_receive_button">Избиране на файл</string>
-  <string name="removable_drive_success_send_title">Успешно изнасяне</string>
-  <string name="removable_drive_success_send_text">Информацията е изнесена успешно. От сега имате 28 дена, за да предадете файла на вашия контакт.\n\nАко той се намира на преносим диск, използвайте известието в лентата за състоянието, за да освободите диска преди да го изключите.</string>
-  <string name="removable_drive_success_receive_title">Успешно внасяне</string>
-  <string name="removable_drive_success_receive_text">Всички шифровани съобщения от файла са получени.</string>
-  <string name="removable_drive_error_send_title">Грешка при изнасяне</string>
-  <string name="removable_drive_error_send_text">Информацията не може да бъде записана във файла.\n\nАко използвате преносим диск се уверете, че е включен правилно и опитайте отново.\n\nАко грешката продължава да се проявява изпратете обратна връзка до екипа на Zerion, за да ги уведомите за проблема.</string>
-  <string name="removable_drive_error_receive_title">Грешка при внасяне</string>
-  <string name="removable_drive_error_receive_text">Избраният файл не съдържа нищо, което Zerion разпознава.\n\nУверете се, че сте избрали правилния файл.\n\nАко вашият контакт го е създал преди повече от 28 дена Zerion няма да го разпознае.</string>
 
   <string name="screenshot_alice">Ани</string>
   

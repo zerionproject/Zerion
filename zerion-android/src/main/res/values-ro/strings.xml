@@ -378,7 +378,6 @@
   
   <string name="read_more">citiți mai multe</string>
 
-  
   <string name="change_profile_picture">Atingeți pentru a schimba poza dvs. de profil</string>
   <string name="dialog_confirm_profile_picture_title">Modificați poza de profil</string>
   <string name="dialog_confirm_profile_picture_remark">Doar contactele dvs. pot vedea această poză</string>
@@ -619,25 +618,6 @@
   <string name="lock_unlock_password">Utilizați parolă</string>
   <string name="lock_is_locked">Aplicația Zerion este blocată</string>
   <string name="lock_tap_to_unlock">Atingeți pentru deblocare</string>
-
-  <string name="removable_drive_menu_title">Conectarea cu o unitate amovibilă</string>
-  <string name="removable_drive_title_send">Trimitere date</string>
-  <string name="removable_drive_title_receive">Primire date</string>
-  <string name="removable_drive_send_intro">Atingeți butonul de mai jos pentru a crea un fișier nou cu mesajele criptate. Puteți alege unde să fie salvat fișierul.\n\nDacă doriți să salvați fișierul pe o unitate amovibilă, introduceți unitatea acum.</string>
-  <string name="removable_drive_send_no_data">În prezent, nu sunt mesaje în așteptare de a fi trimise la acest contact.</string>
-  <string name="removable_drive_send_not_supported">Acest contact utilizează o versiune Zerion veche sau un dispozitiv vechi care nu acceptă această funcție.</string>
-  <string name="removable_drive_send_button">Alegeți fișierul de exportat</string>
-  <string name="removable_drive_ongoing">Așteptați finalizarea sarcinii în curs</string>
-  <string name="removable_drive_receive_intro">Atingeți butonul de mai jos pentru a alege fișierul pe care l-a trimis contactul dvs.\n\nDacă fișierul se află pe o unitate amovibilă, introduceți unitatea acum.</string>
-  <string name="removable_drive_receive_button">Alegeți fișierul de importat</string>
-  <string name="removable_drive_success_send_title">Exportare reușită</string>
-  <string name="removable_drive_success_send_text">Datele au fost exportate cu succes. Acum aveți la dispoziție 28 de zile pentru a transporta fișierul la contactul dvs.\n\nDacă fișierul este pe o unitate amovibilă, utilizați notificarea din bara de stare pentru a ejecta unitatea înainte de a o deconecta.</string>
-  <string name="removable_drive_success_receive_title">Importare reușită</string>
-  <string name="removable_drive_success_receive_text">Toate mesajele criptate din acest fișier au fost primite.</string>
-  <string name="removable_drive_error_send_title">Eroare la exportarea datelor</string>
-  <string name="removable_drive_error_send_text">A apărut o eroare la scrierea datelor în fișier.\n\nDacă utilizați o unitate amovibilă, asigurați-vă că este introdusă corect și încercați din nou.\n\nDacă eroarea persistă, trimiteți feedback pentru a informa echipa Zerion despre problemă.</string>
-  <string name="removable_drive_error_receive_title">Eroare la importarea datelor</string>
-  <string name="removable_drive_error_receive_text">Fișierul selectat nu conține nimic care să poată fi recunoscut de Zerion.\n\nVerificați dacă ați ales fișierul corect.\n\nDacă persoana de contact a creat fișierul în urmă cu peste 28 de zile, Zerion nu îl va putea recunoaște.</string>
 
   <string name="screenshot_alice">Dana</string>
   

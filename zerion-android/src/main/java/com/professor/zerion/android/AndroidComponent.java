@@ -29,7 +29,6 @@ import org.briarproject.bramble.api.plugin.PluginManager;
 import org.briarproject.bramble.api.settings.SettingsManager;
 import org.briarproject.bramble.api.system.AndroidExecutor;
 import org.briarproject.bramble.api.system.Clock;
-import org.briarproject.bramble.plugin.file.RemovableDriveModule;
 import org.briarproject.bramble.system.ClockModule;
 import org.briarproject.briar.BriarCoreEagerSingletons;
 import org.briarproject.briar.BriarCoreModule;
@@ -37,9 +36,6 @@ import com.professor.zerion.android.attachment.AttachmentModule;
 import com.professor.zerion.android.attachment.media.MediaModule;
 import com.professor.zerion.android.conversation.glide.ZerionModelLoader;
 import com.professor.zerion.android.login.SignInReminderReceiver;
-import com.professor.zerion.android.removabledrive.ChooserFragment;
-import com.professor.zerion.android.removabledrive.ReceiveFragment;
-import com.professor.zerion.android.removabledrive.SendFragment;
 import com.professor.zerion.android.navdrawer.TorStatusFragment;
 import com.professor.zerion.android.settings.ConnectionsFragment;
 import com.professor.zerion.android.settings.NotificationsFragment;
@@ -85,8 +81,7 @@ import dagger.Component;
 		AppModule.class,
 		AttachmentModule.class,
 		ClockModule.class,
-		MediaModule.class,
-		RemovableDriveModule.class
+		MediaModule.class
 })
 public interface AndroidComponent
 		extends BrambleCoreEagerSingletons, BrambleAndroidEagerSingletons,
@@ -228,11 +223,6 @@ public interface AndroidComponent
 
 	void inject(NotificationsFragment notificationsFragment);
 
-	void inject(ChooserFragment chooserFragment);
-
-	void inject(SendFragment sendFragment);
-
-	void inject(ReceiveFragment receiveFragment);
 	void inject(TorStatusFragment torStatusFragment);
 
 	void inject(com.professor.zerion.android.panic.PanicPreferencesFragment panicPreferencesFragment);

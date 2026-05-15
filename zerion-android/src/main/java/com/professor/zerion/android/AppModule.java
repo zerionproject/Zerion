@@ -16,7 +16,6 @@ import org.briarproject.bramble.api.crypto.CryptoComponent;
 import org.briarproject.bramble.api.crypto.KeyStrengthener;
 import org.briarproject.bramble.api.crypto.PublicKey;
 import org.briarproject.bramble.api.db.DatabaseConfig;
-import org.briarproject.bramble.api.reporting.DevConfig;
 import org.briarproject.bramble.api.event.EventBus;
 import org.briarproject.bramble.api.lifecycle.LifecycleManager;
 import org.briarproject.bramble.api.plugin.PluginConfig;
@@ -26,7 +25,6 @@ import org.briarproject.bramble.api.plugin.TorSocksPort;
 import org.briarproject.bramble.api.plugin.TransportId;
 import org.briarproject.bramble.api.plugin.duplex.DuplexPluginFactory;
 import org.briarproject.bramble.api.plugin.simplex.SimplexPluginFactory;
-import org.briarproject.bramble.plugin.file.AndroidRemovableDrivePluginFactory;
 import org.briarproject.bramble.plugin.tor.AndroidTorPluginFactory;
 import org.briarproject.bramble.util.AndroidUtils;
 import org.briarproject.bramble.util.StringUtils;
@@ -37,7 +35,6 @@ import com.professor.zerion.android.contact.ContactListModule;
 import com.professor.zerion.android.introduction.IntroductionModule;
 import com.professor.zerion.android.login.LoginModule;
 import com.professor.zerion.android.navdrawer.NavDrawerModule;
-import com.professor.zerion.android.removabledrive.TransferDataModule;
 import org.briarproject.bramble.account.AndroidAccountManager;
 import org.briarproject.bramble.account.ProfileManager;
 import org.briarproject.bramble.api.account.AccountManager;
@@ -93,7 +90,6 @@ import static com.professor.zerion.android.TestingConstants.IS_DEBUG_BUILD;
 		ContactListModule.class,
 		IntroductionModule.class,
 		SharingModule.class,
-		TransferDataModule.class,
 })
 public class AppModule {
 
@@ -308,7 +304,7 @@ public class AppModule {
 	@Provides
 	@Singleton
 	PluginConfig providePluginConfig(AndroidTorPluginFactory tor,
-			AndroidRemovableDrivePluginFactory drive, FeatureFlags featureFlags) {
+			FeatureFlags featureFlags) {
 		@NotNullByDefault
 		PluginConfig pluginConfig = new PluginConfig() {
 
@@ -319,9 +315,7 @@ public class AppModule {
 
 			@Override
 			public Collection<SimplexPluginFactory> getSimplexFactories() {
-				List<SimplexPluginFactory> simplex = new ArrayList<>();
-				simplex.add(drive);
-				return simplex;
+				return Collections.emptyList();
 			}
 
 			@Override
@@ -494,43 +488,4 @@ public class AppModule {
 		};
 	}
 
-	@Provides
-	@Singleton
-	DevConfig provideDevConfig(Application app, CryptoComponent crypto) {
-		StrictMode.ThreadPolicy oldPolicy = StrictMode.allowThreadDiskReads();
-		final File reportDir;
-		try {
-			StrictMode.allowThreadDiskWrites();
-			reportDir = app.getApplicationContext().getDir("reports", MODE_PRIVATE);
-		} finally {
-			StrictMode.setThreadPolicy(oldPolicy);
-		}
-		@NotNullByDefault
-		DevConfig devConfig = new DevConfig() {
-			@Override
-			public PublicKey getDevPublicKey() {
-				try {
-					return crypto.getSignatureKeyParser().parsePublicKey(new byte[32]);
-				} catch (Exception e) {
-					throw new RuntimeException("Failed to create dev public key", e);
-				}
-			}
-
-			@Override
-			public String getDevOnionAddress() {
-				return "";
-			}
-
-			@Override
-			public File getReportDir() {
-				return reportDir;
-			}
-
-			@Override
-			public File getLogcatFile() {
-				return new File(reportDir, "logcat.txt");
-			}
-		};
-		return devConfig;
-	}
 }

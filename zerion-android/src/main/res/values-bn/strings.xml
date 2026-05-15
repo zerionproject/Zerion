@@ -368,7 +368,6 @@
   
   <string name="read_more">আরো পড়ুন</string>
 
-  
   <string name="change_profile_picture">আপনার প্রোফাইলের ছবি পরিবর্তন করতে ট্যাপ করুন</string>
   <string name="dialog_confirm_profile_picture_title">প্রোফাইলের ছবি পরিবর্তন করুন</string>
   <string name="dialog_confirm_profile_picture_remark">এই ছবি কেবল আপনার কন্টাক্টরা দেখতে পারবে</string>
@@ -618,25 +617,6 @@
   <string name="lock_tap_to_unlock">আনলক করতে ট্যাপ করুন</string>
   
   <string name="transports_help_text">Zerion ইন্টারনেট, ওয়াই-ফাই বা ব্লুটুথের মাধ্যমে আপনার কন্টাক্টদের সঙ্গে সংযোগ স্থাপন করতে পারে।\n\nসকল ইন্টারনেট সংযোগ গোপনীয়তার জন্য টর নেটওয়ার্কের মাধ্যমে পরিচালিত হয়। \n\nএকজন কন্টাক্টের সঙ্গে একাধিক উপায়ে সংযোগ স্থাপন করা সম্ভব হলে, Zerion সেগুলো একসঙ্গে ব্যবহার করবে।</string>
-  
-  <string name="removable_drive_menu_title">রিমুভেবল ড্রাইভের মাধ্যমে সংযোগ করুন</string>
-  <string name="removable_drive_title_send">ডাটা পাঠান</string>
-  <string name="removable_drive_title_receive">ডাটা গ্রহণ করুন</string>
-  <string name="removable_drive_send_intro">নিচের বোতামে ট্যাপ করুন একটি নতুন ফাইল তৈরি করতে যেখানে এনক্রিপ্ট করা বার্তাগুলি থাকবে। আপনি ফাইলটি কোথায় সংরক্ষণ করবেন তা নির্বাচন করতে পারবেন।\n\nযদি আপনি ফাইলটি একটি রিমুভেবল ড্রাইভে সংরক্ষণ করতে চান, সেটি এখন প্রবেশ করান।</string>
-  <string name="removable_drive_send_no_data">বর্তমানে এই কন্টাক্টের জন্য পাঠানোর মত কোনো বার্তা নেই।</string>
-  <string name="removable_drive_send_not_supported">এই কন্টাক্ট একটি পুরোনো ভার্সনের Zerion অথবা একটি পুরোনো ডিভাইস ব্যবহার করছেন যা এই ফিচারটি সমর্থন করে না।</string>
-  <string name="removable_drive_send_button">এক্সপোর্ট করার জন্য ফাইল নির্বাচন করুন</string>
-  <string name="removable_drive_ongoing">চলমান কাজ শেষ হওয়া অব্দি অপেক্ষা করুন</string>
-  <string name="removable_drive_receive_intro">আপনার কন্টাক্ট যে ফাইলটি আপনাকে পাঠিয়েছে তা নির্বাচন করতে নীচের বোতামে ট্যাপ করুন। \n\nযদি ফাইলটি একটি রিমুভেবল ড্রাইভে থাকে, তাহলে এখন ড্রাইভটি সংযুক্ত করুন।</string>
-  <string name="removable_drive_receive_button">ইমপোর্ট করার জন্য ফাইল নির্বাচন করুন</string>
-  <string name="removable_drive_success_send_title">এক্সপোর্ট সফল হয়েছে</string>
-  <string name="removable_drive_success_send_text">ডেটা সফলভাবে এক্সপোর্ট করা হয়েছে। এখন আপনার কাছে ২৮ দিন সময় রয়েছে ফাইলটি আপনার কন্টাক্টের নিকট পাঠাতে।\n\nযদি ফাইলটি একটি রিমুভেবল ড্রাইভে থাকে, তবে এটি আনপ্লাগ করার আগে স্ট্যাটাস বার থেকে ড্রাইভটি ইজেক্ট করার জন্য নোটিফিকেশন ব্যবহার করুন।</string>
-  <string name="removable_drive_success_receive_title">ইমপোর্ট সফল হয়েছে</string>
-  <string name="removable_drive_success_receive_text">এই ফাইলে থাকা সমস্ত এনক্রিপ্টেড বার্তা গ্রহণ করা হয়েছে।</string>
-  <string name="removable_drive_error_send_title">ডাটা এক্সপোর্ট করতে সমস্যা হয়েছে</string>
-  <string name="removable_drive_error_send_text">ফাইলে ডেটা লেখার সময় একটি সমস্যা হয়েছে।\n\nযদি আপনি একটি রিমুভেবল ড্রাইভ ব্যবহার করেন, নিশ্চিত করুন যে এটি সঠিকভাবে লাগানো হয়েছে এবং আবার চেষ্টা করুন। \n\nযদি ত্রুটি অব্যাহত থাকে, দয়া করে Zerion টিমকে সমস্যাটি জানাতে প্রতিক্রিয়া পাঠান।</string>
-  <string name="removable_drive_error_receive_title">ডাটা ইমপোর্ট করতে সমস্যা হয়েছে</string>
-  <string name="removable_drive_error_receive_text">নির্বাচিত ফাইলটি Zerion চিহ্নিত করতে পারছে না।\n\nদয়া করে নিশ্চিত করুন যে আপনি সঠিক ফাইলটি নির্বাচন করেছেন।\n\nযদি আপনার যোগাযোগকারী ব্যক্তি ২৮ দিনের বেশি আগে ফাইলটি তৈরি করে থাকেন, তবে Zerion তা চিহ্নিত করতে পারবে না।</string>
 
   <string name="screenshot_alice">আরশি</string>
   

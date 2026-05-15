@@ -598,11 +598,6 @@ Vigyázat: Ez végleg törli az identitásait, kapcsolatait és üzeneteit</stri
   <string name="lock_is_locked">A Zerion zárolt</string>
   <string name="lock_tap_to_unlock">Koppintson a zárolás feloldásához</string>
 
-  <string name="removable_drive_menu_title">Csatlakozás eltávolítható adathordozón keresztül</string>
-  <string name="removable_drive_receive_button">Válassza ki az importálandó fájlt:</string>
-  <string name="removable_drive_success_send_title">Sikeres exportálás</string>
-  <string name="removable_drive_success_receive_title">Sikeres importálás</string>
-
   <string name="screenshot_alice">Alíz</string>
   
   <string name="screenshot_bob">Bob</string>

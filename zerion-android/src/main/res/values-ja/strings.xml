@@ -352,7 +352,6 @@
   
   <string name="read_more">続きを読む</string>
 
-  
   <string name="change_profile_picture">タップしてプロフィールの画像を変更</string>
   <string name="dialog_confirm_profile_picture_title">プロフィールの画像を変更</string>
   <string name="dialog_confirm_profile_picture_remark">連絡先のみがこの画像を閲覧可能</string>
@@ -593,25 +592,6 @@
   <string name="lock_unlock_password">パスワードを使用</string>
   <string name="lock_is_locked">Zerionはロックされています</string>
   <string name="lock_tap_to_unlock">タップしてロック解除</string>
-
-  <string name="removable_drive_menu_title">リムーバブルドライブ経由で接続する</string>
-  <string name="removable_drive_title_send">データ送信</string>
-  <string name="removable_drive_title_receive">データ受信</string>
-  <string name="removable_drive_send_intro">暗号化されたメッセージを含む新規ファイルを作成するには、下のボタンをタップしてください。ファイルの保存先を選択できます。\n\nリムーバブルドライブ上にファイルを保存したければ、ドライブを今挿れてください。</string>
-  <string name="removable_drive_send_no_data">現在、この連絡先に送信待ちのメッセージはありません。</string>
-  <string name="removable_drive_send_not_supported">この連絡先はZerionの古いバージョン、またはこの機能をサポートしない古い端末を使用中です。</string>
-  <string name="removable_drive_send_button">エクスポート用ファイルを選択してください</string>
-  <string name="removable_drive_ongoing">継続中の作業が完了するのをお待ちください</string>
-  <string name="removable_drive_receive_intro">連絡先があなたに送信したファイルを選択するため、以下のボタンをタップしてください。\n\nそのファイルがリムーバルドライブ上にある場合、そのドライブを今挿入してください。</string>
-  <string name="removable_drive_receive_button">インポート用ファイルを選択してください</string>
-  <string name="removable_drive_success_send_title">エクスポート成功</string>
-  <string name="removable_drive_success_send_text">データのエクスポートが成功しました。28日以内に連絡先へファイルを転送することができます。\n\nファイルがリムーバブルドライブ上にある場合、それを着脱する前に、ステータスバー内の通知を使用してイジェクトしてください。</string>
-  <string name="removable_drive_success_receive_title">インポート成功</string>
-  <string name="removable_drive_success_receive_text">全ての暗号化されたメッセージは、受信しているこのファイル内に含まれました。</string>
-  <string name="removable_drive_error_send_title">データエクスポートでエラー</string>
-  <string name="removable_drive_error_send_text">ファイルへデータを書き込み中にエラーが発生しました。\n\nリムーバブルドライブを使用している場合、適切に挿入されていることを確かにして、再度お試しください。\n\nエラーが持続する場合、経験している問題について、Zerionチームにフィードバックを送信してください。</string>
-  <string name="removable_drive_error_receive_title">データインポート中にエラー</string>
-  <string name="removable_drive_error_receive_text">選択されたファイルは、Zerionが正しく認識するものが含まれていません。\n\n正しいファイルが選択されていることを確認してください。\n\n連絡先が28日より前にファイルを作成した場合、Zerionは正しく認識することができません。</string>
 
   <string name="screenshot_alice">アリス</string>
   

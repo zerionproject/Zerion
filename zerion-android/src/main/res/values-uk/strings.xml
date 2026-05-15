@@ -385,7 +385,6 @@
   
   <string name="read_more">дізнатися більше</string>
 
-  
   <string name="change_profile_picture">Торкніться, щоб змінити зображення профілю</string>
   <string name="dialog_confirm_profile_picture_title">Змінити зображення профілю</string>
   <string name="dialog_confirm_profile_picture_remark">Лише ваші контакти можуть бачити це зображення</string>
@@ -626,25 +625,6 @@
   <string name="lock_unlock_password">Використовуйте пароль</string>
   <string name="lock_is_locked">Zerion заблоковано</string>
   <string name="lock_tap_to_unlock">Натисніть, щоб розблокувати</string>
-
-  <string name="removable_drive_menu_title">З\'єднатися через флешку</string>
-  <string name="removable_drive_title_send">Надіслати дані</string>
-  <string name="removable_drive_title_receive">Отримати дані</string>
-  <string name="removable_drive_send_intro">Торкніться кнопки внизу, щоб створити файл із зашифрованими повідомленнями. Ви зможете обрати, куди зберегти файл.\n\nЯкщо бажаєте зберегти файл на флешку, під\'єднайте її зараз.</string>
-  <string name="removable_drive_send_no_data">Жодне повідомлення не очікує на надсилання цьому контактові.</string>
-  <string name="removable_drive_send_not_supported">Контакт використовує стару версію Zerion чи старий пристрій, що не підтримує цієї можливості.</string>
-  <string name="removable_drive_send_button">Оберіть файл експорту</string>
-  <string name="removable_drive_ongoing">Дочекайтесь завершення поточного завдання</string>
-  <string name="removable_drive_receive_intro">Торкніться кнопки внизу, щоб обрати файл, надісланий вам контактом.\n\nЯкщо файл на флешці, під\'єднайте її зараз.</string>
-  <string name="removable_drive_receive_button">Оберіть файл імпорту</string>
-  <string name="removable_drive_success_send_title">Експорт успішний</string>
-  <string name="removable_drive_success_send_text">Дані успішно експортовано. Маєте 28 днів, щоб передати файл контактові.\n\nЯкщо файл на флешці, перед від\'єднанням вимкніть її за допомогою сповіщення в рядку стану.</string>
-  <string name="removable_drive_success_receive_title">Імпорт успішний</string>
-  <string name="removable_drive_success_receive_text">Усі зашифровані повідомлення з цього файлу отримано.</string>
-  <string name="removable_drive_error_send_title">Помилка експортування даних</string>
-  <string name="removable_drive_error_send_text">Запис даних до файлу зазнав збою.\nЯкщо використовуєте флешку, переконайтесь, що її правильно під\'єднано, й повторіть спробу.\n\nЯкщо збій повторюється, будь ласка, надішліть відгук, щоб команда Zerion дізналася про проблему.</string>
-  <string name="removable_drive_error_receive_title">Помилка імпортування даних</string>
-  <string name="removable_drive_error_receive_text">Обраний файл не містив нічого зрозумілого Zerion.\n\nБудь ласка, перевірте, що обрали правильний файл.\n\nЯкщо файл було створено контактом понад 28 днів тому, Zerion не зможе його розпізнати.</string>
 
   <string name="screenshot_alice">Аліса</string>
   

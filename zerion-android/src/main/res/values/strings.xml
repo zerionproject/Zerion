@@ -909,7 +909,6 @@
 
 	<string name="read_more">read more</string>
 
-
 	<!-- RSS Feeds -->
 
 	<!-- Settings Profile Picture -->
@@ -1289,28 +1288,6 @@
 	<string name="transports_help_text">Zerion connects to your contacts via the Internet.\n\nAll connections go through the Tor network for privacy.</string>
 
 	<!-- Transfer Data via Removable Drives -->
-
-	<string name="removable_drive_menu_title">Connect via Removable Drive</string>
-	<string name="removable_drive_intro">If you can\'t connect to your contact via the Internet, Zerion can also transfer messages on a removable drive such as a USB stick or an SD card.</string>
-	<string name="removable_drive_explanation">If you can\'t connect to your contact via the Internet, Zerion can also transfer messages on a removable drive such as a USB stick or an SD card.\n\nWhen you use the \"Send Data\" button, any data that\'s waiting to be sent to the contact will be written to the removable drive. This includes private messages, attachments and private groups.\n\nEverything will be encrypted before it is written to the removable drive.\n\nWhen your contact receives the removable drive, they can use the \"Receive Data\" button to import the messages into Zerion.</string>
-	<string name="removable_drive_title_send">Send data</string>
-	<string name="removable_drive_title_receive">Receive data</string>
-	<string name="removable_drive_send_intro">Tap the button below to create a new file containing the encrypted messages. You can choose where the file will be saved.\n\nIf you want to save the file on a removable drive, insert the drive now.</string>
-	<string name="removable_drive_send_no_data">There are currently no messages waiting to be sent to this contact.</string>
-	<string name="removable_drive_send_not_supported">This contact is using an old version of Zerion or an old device which does not support this feature.</string>
-	<string name="removable_drive_send_button">Choose file for export</string>
-	<string name="removable_drive_ongoing">Please wait for ongoing task to complete</string>
-	<string name="removable_drive_receive_intro">Tap the button below to choose the file that your contact sent you.\n\nIf the file is on a removable drive, insert the drive now.</string>
-	<string name="removable_drive_receive_button">Choose file for import</string>
-	<string name="removable_drive_success_send_title">Export successful</string>
-	<string name="removable_drive_success_send_text">Data exported successfully. You now have 28 days to transport the file to your contact.\n\nIf the file is on a removable drive, use the notification in the status bar to eject the drive before unplugging it.</string>
-	<string name="removable_drive_success_receive_title">Import successful</string>
-	<string name="removable_drive_success_receive_text">All encrypted messages contained in this file have been received.</string>
-	<string name="removable_drive_error_send_title">Error exporting data</string>
-	<string name="removable_drive_error_send_text">There was an error writing data to the file.\n\nIf you are using a removable drive, ensure that it is properly inserted and try again.\n\nIf the error persists, please send feedback to let the Zerion team know about the issue.</string>
-	<string name="removable_drive_error_receive_title">Error importing data</string>
-	<string name="removable_drive_error_receive_text">The selected file did not contain anything that Zerion could recognize.\n\nPlease check that you chose the right file.\n\nIf your contact created the file more than 28 days ago, Zerion will not be able to recognize it.</string>
-
 
 	<!-- Screenshots -->
 

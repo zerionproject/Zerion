@@ -365,7 +365,6 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
   
   <string name="read_more">llegeix-ne més</string>
 
-  
   <string name="change_profile_picture">Feu un toc per modificar la foto del vostre perfil</string>
   <string name="dialog_confirm_profile_picture_title">Modifica la foto de perfil</string>
   <string name="dialog_confirm_profile_picture_remark">Només veuran la foto els vostres contactes</string>
@@ -604,25 +603,6 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
   <string name="lock_unlock_password">Usa la contrasenya</string>
   <string name="lock_is_locked">Zerion està bloquejat</string>
   <string name="lock_tap_to_unlock">Toqueu per desbloquejar-lo</string>
-
-  <string name="removable_drive_menu_title">Connecta mitjançant una unitat extraïble</string>
-  <string name="removable_drive_title_send">Envia dades</string>
-  <string name="removable_drive_title_receive">Rebre dades</string>
-  <string name="removable_drive_send_intro">Toqueu el botó següent per crear un fitxer nou que contingui els missatges xifrats. Podeu triar on es desarà el fitxer.\n\nSi voleu desar el fitxer en una unitat extraïble, inseriu la unitat ara.</string>
-  <string name="removable_drive_send_no_data">Actualment no hi ha cap missatge esperant per ser enviat a aquest contacte.</string>
-  <string name="removable_drive_send_not_supported">Aquest contacte utilitza una versió antiga del Zerion o un dispositiu antic que no admet aquesta funció.</string>
-  <string name="removable_drive_send_button">Trieu el fitxer per exportar</string>
-  <string name="removable_drive_ongoing">Espereu que es completi la tasca en curs</string>
-  <string name="removable_drive_receive_intro">Toqueu el botó següent per triar el fitxer que t\'ha enviat el vostre contacte.\n\nSi el fitxer es troba en una unitat extraïble, inseriu-la ara.</string>
-  <string name="removable_drive_receive_button">Trieu el fitxer per importar</string>
-  <string name="removable_drive_success_send_title">Exportació correcta</string>
-  <string name="removable_drive_success_send_text">Les dades s\'han exportat correctament. Ara teniu 28 dies per transportar el fitxer al vostre contacte.\n\nSi el fitxer es troba en una unitat extraïble, feu servir la notificació de la barra d\'estat per expulsar la unitat abans de desconnectar-la.</string>
-  <string name="removable_drive_success_receive_title">Importació correcta</string>
-  <string name="removable_drive_success_receive_text">S\'han rebut tots els missatges xifrats continguts en aquest fitxer.</string>
-  <string name="removable_drive_error_send_title">S\'ha produït un error en exportar les dades</string>
-  <string name="removable_drive_error_send_text">S\'ha produït un error escrivint dades al fitxer.\n\nSi utilitzeu una unitat extraïble, assegureu-vos que estigui inserida correctament i torneu-ho a provar.\n\nSi l\'error persisteix, envieu comentaris per informar l\'equip del Zerion sobre el assumpte.</string>
-  <string name="removable_drive_error_receive_title">S\'ha produït un error en importar les dades</string>
-  <string name="removable_drive_error_receive_text">El fitxer seleccionat no contenia res que el Zerion pogués reconèixer.\n\nComproveu que heu triat el fitxer correcte.\n\nSi el vostre contacte va crear el fitxer fa més de 28 dies, el Zerion no el podrà reconèixer.</string>
 
   <string name="screenshot_alice">Alba</string>
   

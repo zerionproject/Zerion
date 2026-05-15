@@ -85,8 +85,7 @@
   <string name="tor_plugin_status_disabled_country_blocked">Zerion 被配置为在这个国家不使用互联网</string>
   
   <string name="transport_lan_long">同一 Wi-Fi 网络</string>
-  
-  
+
   <string name="reminder_notification_title">已登出 Zerion</string>
   <string name="reminder_notification_text">轻按以重新登录。</string>
   <string name="reminder_notification_channel_title">Zerion 登录提醒</string>
@@ -358,8 +357,7 @@
   <string name="nobody">没有人</string>
   
   <string name="read_more">阅读全文</string>
-  
-  
+
   
   <string name="change_profile_picture">轻按以更改你的个人资料图片</string>
   <string name="dialog_confirm_profile_picture_title">更改个人资料图片</string>
@@ -607,28 +605,7 @@
   <string name="lock_tap_to_unlock">轻按以解锁</string>
   
   <string name="transports_help_text">Zerion 可以通过互联网、Wi-Fi 或蓝牙来连接到您的联系人。\n\n为了保护隐私，本应用会通过 Tor 网络进行所有的互联网连接。\n\n如果一个联系人可以通过多种方法联系到，Zerion 会并行地使用它们。</string>
-  
-  <string name="removable_drive_menu_title">通过可移动驱动器连接</string>
-  <string name="removable_drive_intro">如果你无法通过互联网、Wi-Fi 或蓝牙连接到你的联系人，Zerion 还可以通过U 盘或 SD 卡等可移动驱动器传输信息。</string>
-  <string name="removable_drive_explanation">如果你无法通过互联网、Wi-Fi 或蓝牙连接到你的联系人，Zerion 还可以通过U 盘或 SD 卡等可移动驱动器传输信息。\n\n当您使用“发送数据”按钮时，任何等待发送到联系人的数据将被写入可移动驱动器。这包括私人消息、附件、博客、论坛和私人群组。\n\n在写入移动驱动器之前，所有内容都将被加密。\n\n当您的联系人收到可移动驱动器时，他们可以使用“接收数据”按钮将消息导入 Zerion。</string>
-  <string name="removable_drive_title_send">发送数据</string>
-  <string name="removable_drive_title_receive">接收数据</string>
-  <string name="removable_drive_send_intro">轻按下面的按钮创建一个包含加密消息的新文件。您可以选择将文件保存在哪里。\n\n如果您想将文件保存在可移动驱动器上，请立即插入驱动器。</string>
-  <string name="removable_drive_send_no_data">目前没有等待发送到此联系人的消息。</string>
-  <string name="removable_drive_send_not_supported">此联系人正在使用旧版本的 Zerion 或不支持此功能的旧设备。</string>
-  <string name="removable_drive_send_button">选择要导出的文件 </string>
-  <string name="removable_drive_ongoing">请等待正在进行的任务完成 </string>
-  <string name="removable_drive_receive_intro">轻按下面的按钮选择您的联系人发送给您的文件。\n\n如果文件在可移动驱动器上，现在插入驱动器。</string>
-  <string name="removable_drive_receive_button">选择导入文件</string>
-  <string name="removable_drive_success_send_title">成功导出</string>
-  <string name="removable_drive_success_send_text">数据导出成功。你现在有28天的时间把文件传送给你的联系人。\n\n如果文件在可移动驱动器上，请使用状态栏中的通知弹出驱动器，然后再拔下驱动器。</string>
-  <string name="removable_drive_success_receive_title">成功导入</string>
-  <string name="removable_drive_success_receive_text">此文件中包含的所有加密消息都已收到。</string>
-  <string name="removable_drive_error_send_title">导出数据时出错</string>
-  <string name="removable_drive_error_send_text">向文件写入数据时出错。\n\n如果您使用的是可移动驱动器，请确保它已正确插入并重试。\n\n如果错误仍然存在，请发送反馈，让Zerion团队知道这个问题。</string>
-  <string name="removable_drive_error_receive_title">导入数据时出错</string>
-  <string name="removable_drive_error_receive_text">所选文件不包含任何Zerion可以识别的内容。\n\n请检查您选择的文件是否正确。\n\n如果你的联系人在大于28天前创建了这个文件，Zerion 将无法识别它。</string>
-  
+
   
   <string name="screenshot_alice">韩梅梅</string>
   
@@ -642,7 +619,6 @@
   
   <string name="screenshot_message_3">没问题，希望你喜欢它 😀</string>
 
-	
 	<string name="vault_unlock_button">解锁</string>
 	<string name="vault_password_mismatch">密码不匹配</string>
 	<string name="vault_password_too_short">密码必须至少8个字符</string>
@@ -666,19 +642,16 @@
 	<string name="vault_enable_biometric">启用生物识别解锁</string>
 	<string name="vault_auto_lock_timeout">自动锁定超时</string>
 
-	
 	<string name="security_threat_detected">检测到安全威胁。请检查您的设备是否有恶意软件。</string>
 	<string name="pref_screenshot_protection_title">屏幕截图保护</string>
 	<string name="pref_screenshot_protection_summary">防止敏感内容的屏幕截图和录屏</string>
 	<string name="security_warning_title">安全警告</string>
 
-	
 	<string name="tor_status_title">Tor 网络状态</string>
 	<string name="tor_status_connected">已连接到 Tor 网络</string>
 	<string name="tor_status_disconnected">已从 Tor 网络断开</string>
 	<string name="tor_status_connecting">正在连接到 Tor 网络…</string>
 
-	
 	<string name="voice_call">语音通话</string>
 
 </resources>

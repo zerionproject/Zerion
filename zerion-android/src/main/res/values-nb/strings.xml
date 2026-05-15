@@ -83,8 +83,7 @@
   <string name="tor_plugin_status_disabled_country_blocked">Zerion er satt opp til ikke a bruke Internettet i dette landet</string>
   
   <string name="transport_lan_long">Samme Wi-Fi-nettverk</string>
-  
-  
+
   <string name="reminder_notification_title">Logget ut av Zerion</string>
   <string name="reminder_notification_text">Trykk for å logge inn igjen.</string>
   <string name="reminder_notification_channel_title">Zerion påloggings påminnelse</string>
@@ -361,8 +360,7 @@
   <string name="nobody">Ingen</string>
   
   <string name="read_more">les mer</string>
-  
-  
+
   
   <string name="change_profile_picture">Trykk for å endre ditt profilbilde</string>
   <string name="dialog_confirm_profile_picture_title">Bytte profilbilde</string>
@@ -605,28 +603,7 @@
   <string name="lock_tap_to_unlock">Trykke for å låse opp</string>
   
   <string name="transports_help_text">Zerion kan koble til dine kontakter via Internettet, Wi-Fi eller Blåtann.\n\nAlle internettilkoblinger går via Tor-nettverket for personvernets skyld.\n\nDersom en kontakt kan nås via mer enn en metode, så bruker Zerion disse parallelt.</string>
-  
-  <string name="removable_drive_menu_title">Koble til via fjernbar lagringsenhet</string>
-  <string name="removable_drive_intro">Om du ikke kan koble til kontaktene dine via Internettet, Wi-Fi eller Blåtann, så kan Zerion også overføre meldinger på en fjernbar lagringsenhet slik som en USB-minnepenn eller et SD-kort.</string>
-  <string name="removable_drive_explanation">Dersom du ikke kan koble til dine kontakter via Internettet, Wi-Fi eller Blåtann, så kan Zerion også overføre meldinger på en fjernbar lagringsenhet slik som en USB-minnepenn eller et SD-kort.\n\nNår du bruker \"Send data\"-knappen, så vil all data som venter på å bli sendt til kontakten din bli lagret på den fjernbare lagringsenheten. Dette inkluderer private meldinger, filvedlegg, blogger, forumer og private grupper.\n\nAlt vil bli kryptert før det lagres på den fjernabare lagringsenheten.\n\nNår kontakten din mottar den fjernbare lagringsenheten, så kan de bruke \"Motta data\"-knappen for å importere meldingene inn i Zerion.</string>
-  <string name="removable_drive_title_send">Sende data</string>
-  <string name="removable_drive_title_receive">Motta data</string>
-  <string name="removable_drive_send_intro">Trykk på knappen under for å lage en fil som inneholder de krypterte meldingene. Du kan velge hvor filen skal lagres.\n\nDersom du ønsker å lagre filen på en fjernbar lagringsenhet, koble til lagringsenheten nå.</string>
-  <string name="removable_drive_send_no_data">Det er for tiden ingen meldinger som venter på å bli sendt til denne kontakten.</string>
-  <string name="removable_drive_send_not_supported">Denne kontakten bruker en gammel versjon av Zerion eller en gammel enhet som ikke støtter denne funksjonaliteten.</string>
-  <string name="removable_drive_send_button">Velge fil for eksport</string>
-  <string name="removable_drive_ongoing">Vennligst vent på at den pågående oppgaven skal fullføres</string>
-  <string name="removable_drive_receive_intro">Trykk på knappen under for å velge filen som kontakten sendte deg.\n\nDersom filen er på en fjernbar lagringsenhet, koble til lagringsenheten nå.</string>
-  <string name="removable_drive_receive_button">Velge fil for import</string>
-  <string name="removable_drive_success_send_title">Eksport vellykket</string>
-  <string name="removable_drive_success_send_text">Dataeksportering vellykket. Du har nå 28 dager på å transportere filen til din kontakt.\n\nDersom filen er på en fjernbar lagringsenhet, bruke varslingen i statuslinjen for å koble fra lagringsenheten før du drar den ut.</string>
-  <string name="removable_drive_success_receive_title">Import vellykket</string>
-  <string name="removable_drive_success_receive_text">Alle krypterte meldinger som var i filen har blitt mottatt.</string>
-  <string name="removable_drive_error_send_title">Feil oppsto under dataeksport</string>
-  <string name="removable_drive_error_send_text">Det oppsto en feil under skriving av data til filen.\n\nDersom du bruker en fjernbar lagringsenhet, sørge for at den er koblet ordentlig til og prøv på nytt.\n\nDersom problemet fortsetter, vennligst send tilbakemelding og la Zerion-team\'et vite om dette problemet.</string>
-  <string name="removable_drive_error_receive_title">Feil oppsto under dataimport</string>
-  <string name="removable_drive_error_receive_text">Den valgte filen inneholdt ikke noe som Zerion kunne gjenkjenne.\n\nVennligst sjekk at du valgte den riktige filen.\n\nDersom kontakten din laget filen for mer enn 28 dager siden, så vil ikke Zerion kunne gjenkjenne den.</string>
-  
+
   
   <string name="screenshot_alice">Aline</string>
   

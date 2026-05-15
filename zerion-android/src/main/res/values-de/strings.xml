@@ -370,7 +370,6 @@
   
   <string name="read_more">weiterlesen</string>
 
-  
   <string name="change_profile_picture">Tippe, um dein Profilbild zu ändern</string>
   <string name="dialog_confirm_profile_picture_title">Profilbild ändern</string>
   <string name="dialog_confirm_profile_picture_remark">Nur deine Kontakte können dieses Bild sehen</string>
@@ -611,25 +610,6 @@
   <string name="lock_unlock_password">Passwort benutzen</string>
   <string name="lock_is_locked">Zerion ist gesperrt</string>
   <string name="lock_tap_to_unlock">Zum Entsperren antippen</string>
-
-  <string name="removable_drive_menu_title">Über Wechseldatenträger verbinden</string>
-  <string name="removable_drive_title_send">Daten senden</string>
-  <string name="removable_drive_title_receive">Daten empfangen</string>
-  <string name="removable_drive_send_intro">Tippe auf die Schaltfläche unten, um eine neue Datei mit den verschlüsselten Nachrichten zu erstellen. Du kannst wählen, wo die Datei gespeichert werden soll.\n\nWenn du die Datei auf einem Wechsellaufwerk speichern möchtest, lege das Laufwerk jetzt ein.</string>
-  <string name="removable_drive_send_no_data">Es gibt derzeit keine Nachrichten, die an diesen Kontakt gesendet werden sollen.</string>
-  <string name="removable_drive_send_not_supported">Dieser Kontakt verwendet eine alte Version von Zerion oder ein altes Gerät, das diese Funktion nicht unterstützt.</string>
-  <string name="removable_drive_send_button">Datei für den Export wählen</string>
-  <string name="removable_drive_ongoing">Warte bitte auf den Abschluss der laufenden Aufgabe</string>
-  <string name="removable_drive_receive_intro">Tippe auf die Schaltfläche unten, um die Datei auszuwählen, die dir dein Kontakt geschickt hat.\n\nWenn sich die Datei auf einem Wechsellaufwerk befindet, lege das Laufwerk jetzt ein.</string>
-  <string name="removable_drive_receive_button">Datei für den Import wählen</string>
-  <string name="removable_drive_success_send_title">Export erfolgreich</string>
-  <string name="removable_drive_success_send_text">Die Daten wurden erfolgreich exportiert. Du hast nun 28 Tage Zeit, um die Datei zu deinem Kontakt zu transportieren.\n\nWenn sich die Datei auf einem Wechsellaufwerk befindet, verwende die Benachrichtigung in der Statusleiste, um das Laufwerk auszuwerfen, bevor du es aussteckst.</string>
-  <string name="removable_drive_success_receive_title">Import erfolgreich</string>
-  <string name="removable_drive_success_receive_text">Alle verschlüsselten Nachrichten, die in dieser Datei enthalten sind, wurden empfangen.</string>
-  <string name="removable_drive_error_send_title">Fehler beim Datenexport</string>
-  <string name="removable_drive_error_send_text">Es ist ein Fehler beim Schreiben von Daten in die Datei aufgetreten.\n\nWenn du ein Wechsellaufwerk verwendest, vergewissere dich, dass es richtig eingelegt ist, und versuche es noch einmal.\n\nWenn der Fehler weiterhin besteht, sende bitte eine Rückmeldung, um das Zerion-Team über das Problem zu informieren.</string>
-  <string name="removable_drive_error_receive_title">Fehler beim Datenimport</string>
-  <string name="removable_drive_error_receive_text">Die ausgewählte Datei enthält nichts, was Zerion erkennen konnte.\n\nBitte überprüfe, ob du die richtige Datei ausgewählt hast. Wenn dein Kontakt die Datei vor mehr als 28 Tagen erstellt hat, kann Zerion sie nicht mehr erkennen.</string>
 
   <string name="screenshot_alice">Alice</string>
   

@@ -84,8 +84,7 @@
   <string name="tor_plugin_status_disabled_country_blocked">ဤနိုင်ငံတွင် အင်တာနက်အသုံးမပြုရန် Zerion ကို ချိန်ညှိထားသည်</string>
   
   <string name="transport_lan_long">တူညီသော ဝိုင်ဖိုင်ကွန်ရက်</string>
-  
-  
+
   <string name="reminder_notification_title">Zerion မှ အကောင့်ထွက်ထားသည်</string>
   <string name="reminder_notification_text">အကောင့်ပြန်ဝင်ရန် နှိပ်ပါ။</string>
   <string name="reminder_notification_channel_title">Zerion အကောင့်ဝင်ရန် သတိပေးချက်</string>
@@ -358,8 +357,7 @@
   <string name="nobody">မည်သူမျှ</string>
   
   <string name="read_more">ထပ်မံဖတ်ရှုမည်</string>
-  
-  
+
   
   <string name="change_profile_picture">နှိပ်၍ သင့် ပရိုဖိုင်းပုံ ပြောင်းလဲပါ</string>
   <string name="dialog_confirm_profile_picture_title">ပရိုဖိုင်းပုံ ပြောင်းလဲမည်</string>
@@ -606,28 +604,7 @@
   <string name="lock_tap_to_unlock">နှိပ်၍ သော့ဖွင့်မယ်</string>
   
   <string name="transports_help_text">Zerion သည် သင့်အဆက်အသွယ်များကို အင်တာနက်၊ ဝိုင်ဖိုင်၊ သို့မဟုတ် ဘလူးတုသ် မှတစ်ဆင့် ချိတ်ဆက်နိုင်ပါသည်။ \n\n အင်တာနက်ချိတ်ဆက်မှုအားလုံးသည် လုံခြုံရေးအတွက် Tor ကွန်ယက်မှတစ်ဆင့် ဖြတ်သန်းပါသည်။ \n\n အဆက်အသွယ်တစ်ဦးကို နည်းမျိုးစုံနှင့် ဆက်သွယ်နိုင်ခဲ့လျှင် Zerion သည် နည်းမျိုးစုံအား တစ်ပြိုင်နက်တည်း အသုံးပြုနေပါသည်။</string>
-  
-  <string name="removable_drive_menu_title">ဖယ်ရှားနိုင်သော Drive မှတစ်ဆင့် ချိတ်ဆက်ပါ</string>
-  <string name="removable_drive_intro">အင်တာနက်၊ ဝိုင်ဖိုင်သို့မဟုတ် ဘလူးတုသ်မှ တဆင့် သင့်အဆက်အသွယ်ကို မချိတ်ဆက်နိုင်ပါက၊ Zerion သည် USB stick သို့မဟုတ် SD ကတ်ကဲ့သို့ ဖြုတ်တပ်နိုင်သော drive ပေါ်တွင် မက်ဆေ့ချ်များကို လွှဲပြောင်းနိုင်သည်။</string>
-  <string name="removable_drive_explanation">အင်တာနက်၊ ဝိုင်ဖိုင်သို့မဟုတ် ဘလူးတုသ်မှတစ်ဆင့် သင့်အဆက်အသွယ်ထံသို့ ချိတ်ဆက်၍မရပါက၊ Zerion သည် USB stick သို့မဟုတ် SD ကတ်ကဲ့သို့ ဖြုတ်တပ်နိုင်သော drive ပေါ်တွင် မက်ဆေ့ချ်များကို လွှဲပြောင်းနိုင်သည်။ \n\nသင် \"ဒေတာပေးပို့ရန်\" ခလုတ်ကို အသုံးပြုသည့်အခါ၊ အဆက်အသွယ်ထံ ပေးပို့ရန် စောင့်ဆိုင်းနေသည့် မည်သည့်ဒေတာကို ဖယ်ရှားနိုင်သော drive သို့ စာရေးပါမည်။ ၎င်းတွင် ကိုယ်ရေးကိုယ်တာမက်ဆေ့ချ်များ၊ ပူးတွဲပါဖိုင်များ၊ ဘလော့ဂ်များ၊ ဖိုရမ်များနှင့် သီးသန့်အုပ်စုများ ပါဝင်သည်။ \n\nဖယ်ရှားနိုင်သော drive သို့ မရေးထားမီ အရာအားလုံးကို ကုဒ်ဝှက်ထားပါမည်။ \n\nသင်၏အဆက်အသွယ်သည် ဖြုတ်တပ်နိုင်သော drive ကို လက်ခံရရှိသည့်အခါ ၎င်းတို့သည် \"ဒေတာလက်ခံရယူရန်\" ခလုတ်ကို အသုံးပြုနိုင်ပါသည်။ မက်ဆေ့ချ်များကို Zerion သို့တင်သွင်းရန်။</string>
-  <string name="removable_drive_title_send">အချက်အလက် ပို့ရန်</string>
-  <string name="removable_drive_title_receive">အချက်အလက် ရယူမည်</string>
-  <string name="removable_drive_send_intro">ကုဒ်ဝှက်ထားသော မက်ဆေ့ချ်များပါရှိသော ဖိုင်အသစ်တစ်ခုကို ဖန်တီးရန် အောက်ပါခလုတ်ကို တို့ပါ။ ဖိုင်သိမ်းမည့်နေရာကို သင်ရွေးချယ်နိုင်ပါသည်။ \n\nဖယ်ရှားနိုင်သော drive တွင် ဖိုင်ကိုသိမ်းဆည်းလိုပါက၊ ယခု drive ကို ထည့်သွင်းပါ။</string>
-  <string name="removable_drive_send_no_data">လောလောဆယ်တွင် ဤအဆက်အသွယ်ထံ ပေးပို့ရန် စောင့်ဆိုင်းနေသည့် မက်ဆေ့ချ်များ မရှိပါ။</string>
-  <string name="removable_drive_send_not_supported">ဤအဆက်အသွယ်သည် Zerion ဗားရှင်းဟောင်း သို့မဟုတ် ဤအင်္ဂါရပ်ကို မပံ့ပိုးသည့် စက်ဟောင်းကို အသုံးပြုနေသည်။</string>
-  <string name="removable_drive_send_button">ထုတ်ယူရန် ဖိုင်ကို ရွေးရန်</string>
-  <string name="removable_drive_ongoing">ကျေးဇူးပြု၍ လုပ်နေသောအလုပ် ပြီးအောင် စောင့်ပါ</string>
-  <string name="removable_drive_receive_intro">သင့်ထံ ဆက်သွယ်ပေးပို့သော ဖိုင်ကို ရွေးချယ်ရန် အောက်ဖော်ပြပါ ခလုတ်ကို တို့ထိပါ။ \n\nဖိုင်သည် ဖယ်ရှားနိုင်သော ဒရိုက်ဗ်ပေါ်တွင် ရှိနေပါက၊ ဒရိုက်ကို ယခု ထည့်သွင်းပါ။</string>
-  <string name="removable_drive_receive_button">တင်သွင်းရန်အတွက် ဖိုင်ကို ရွေးရန်</string>
-  <string name="removable_drive_success_send_title">တင်ပို့မှု အောင်မြင်သည်</string>
-  <string name="removable_drive_success_send_text">ဒေတာကို အောင်မြင်စွာ ထုတ်ယူပြီးပါပြီ။ ဖိုင်ကို သင့်အဆက်အသွယ်ထံ ပို့ဆောင်ရန် ယခု ၂၈ ရက်အချိန်ရှိသည်။\n\n ဖိုင်သည် ဖြုတ်တပ်နိုင်သော drive တွင်ရှိနေပါက၊ ပလပ်မဖြုတ်မီ drive ကို ထုတ်ပစ်ရန် status bar ရှိ သတိပေးချက်ကို အသုံးပြုပါ။</string>
-  <string name="removable_drive_success_receive_title">တင်သွင်းမှု အောင်မြင်သည်</string>
-  <string name="removable_drive_success_receive_text">ဤဖိုင်တွင်ပါဝင်သည့် လျှို့ဝှက်ကုဒ်ပြောင်း မက်ဆေ့ချ်အားလုံးကို လက်ခံရရှိပါပြီ။</string>
-  <string name="removable_drive_error_send_title">ဒေတာကို ထုတ်ယူရာတွင် အမှားအယွင်းရှိသည်</string>
-  <string name="removable_drive_error_send_text">ဖိုင်သို့ ဒေတာရေးရာတွင် အမှားအယွင်း တစ်ခုရှိခဲ့သည်။ \n\n ဖယ်ရှားနိုင်သော drive ကိုအသုံးပြုနေပါက ၎င်းကို မှန်ကန်စွာ ထည့်သွင်းထားကြောင်း သေချာစေရန်နှင့် ထပ်စမ်းကြည့်ပါ။ \n\n အမှား ဆက်လက်ရှိနေပါက Zerion အဖွဲ့အား အသိပေးရန်အတွက် အကြံပြုချက်ပေးပို့ပါ။ </string>
-  <string name="removable_drive_error_receive_title">ဒေတာတင်သွင်းရာတွင် အမှားအယွင်း ရှိသည်</string>
-  <string name="removable_drive_error_receive_text">ရွေးချယ်ထားသောဖိုင်တွင် Zerion မှတ်မိနိုင်သည့် မည်သည့်အရာမှ မပါဝင်ပါ။ \n\nမှန်ကန်သောဖိုင်ကို သင်ရွေးချယ်ထားကြောင်း စစ်ဆေးပါ။ \n\n သင်၏အဆက်အသွယ်သည် လွန်ခဲ့သည့် ၂၈ ရက်ကျော်က အဆိုပါဖိုင်ကို ဖန်တီးခဲ့ပါက၊ Zerion သည် ၎င်းကို မှတ်မိနိုင်မည်မဟုတ်ပေ။</string>
-  
+
   
   <string name="screenshot_alice">Alice</string>
   

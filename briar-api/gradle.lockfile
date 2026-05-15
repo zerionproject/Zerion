@@ -1,0 +1,16 @@
+# This is a Gradle generated file for dependency locking.
+# Manual edits can break the build and are not advised.
+# This file is expected to be part of source control.
+com.fasterxml.jackson.core:jackson-annotations:2.15.3=runtimeClasspath,testRuntimeClasspath
+com.fasterxml.jackson:jackson-bom:2.15.3=runtimeClasspath,testRuntimeClasspath
+com.google.code.findbugs:jsr305:3.0.2=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+com.google.dagger:dagger:2.51.1=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+javax.inject:javax.inject:1=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+junit:junit:4.13.2=testCompileClasspath,testRuntimeClasspath
+org.briarproject:null-safety:0.1=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+org.codehaus.mojo.signature:java16:1.1=signature
+org.codehaus.mojo:animal-sniffer-annotations:1.24=animalsniffer
+org.codehaus.mojo:animal-sniffer:1.24=animalsniffer
+org.hamcrest:hamcrest-core:1.3=testCompileClasspath,testRuntimeClasspath
+org.ow2.asm:asm:9.7=animalsniffer
+empty=annotationProcessor,testAnnotationProcessor

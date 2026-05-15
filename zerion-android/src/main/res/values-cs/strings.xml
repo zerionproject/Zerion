@@ -388,7 +388,6 @@
   
   <string name="read_more">Číst dál</string>
 
-  
   <string name="change_profile_picture">Klepněte pro změnu svého profilového obrázku</string>
   <string name="dialog_confirm_profile_picture_title">Změnit profilový obrázek</string>
   <string name="dialog_confirm_profile_picture_remark">Pouze vaše kontakty uvidí tento obrázek</string>
@@ -629,25 +628,6 @@
   <string name="lock_unlock_password">Použít heslo</string>
   <string name="lock_is_locked">Zerion je zamčen</string>
   <string name="lock_tap_to_unlock">Klepněte pro odemčení</string>
-
-  <string name="removable_drive_menu_title">Připojit se přes vyměnitelný disk</string>
-  <string name="removable_drive_title_send">Poslat data</string>
-  <string name="removable_drive_title_receive">Přijmout data</string>
-  <string name="removable_drive_send_intro">Klepněte na tlačítko níže pro vytvoření nového souboru obsahujícího šifrované zprávy. Můžete si zvolit kam bude soubor uložen.\n\nPokud chcete uložit soubor na vyměnitelný disk, tak ho nyní připojte.</string>
-  <string name="removable_drive_send_no_data">Nyní zde nejsou žádné zprávy čekající na odeslání tomuto kontaktu.</string>
-  <string name="removable_drive_send_not_supported">Tento kontakt používá starou verzi Zerion a nebo staré zařízení, které nepodporuje tuto funkci.</string>
-  <string name="removable_drive_send_button">Vyberte soubor k exportu</string>
-  <string name="removable_drive_ongoing">Prosím čekejte až bude probíhající úloha dokončena</string>
-  <string name="removable_drive_receive_intro">Klepněte na tlačítko níže pro výběr souboru, který vám zaslal kontakt.\n\nPokud je soubor na vyměnitelném disku, tak disk nyní připojte.</string>
-  <string name="removable_drive_receive_button">Vyberte soubor k importu</string>
-  <string name="removable_drive_success_send_title">Export úspěšný</string>
-  <string name="removable_drive_success_send_text">Data byla úspěšně exportována. Nyní máte 28 dnů na přenos souboru vašemu kontaktu.\n\nPokud je soubor na vyměnitelném disku, použijte oznamovací oblast ve stavovém řádku pro bezpečné odebrání disku před odpojením.</string>
-  <string name="removable_drive_success_receive_title">Import byl úspěšný</string>
-  <string name="removable_drive_success_receive_text">Všechny šifrované zprávy obsažené v tomto souboru byly přijaty.</string>
-  <string name="removable_drive_error_send_title">Chyba při exportu dat</string>
-  <string name="removable_drive_error_send_text">Došlo k chybě při zápisu dat do souboru.\n\nPokud používáte vyměnitelný disk, ujistěte se že je správně vložen a akci opakujte.\n\nPokud chyba přetrvává, prosím informujte o problému Zerion team odesláním zpětné vazby.</string>
-  <string name="removable_drive_error_receive_title">Chyba importu dat</string>
-  <string name="removable_drive_error_receive_text">Vybraný soubor neobsahoval nic co by Zerion rozpoznal.\n\nProsím zkontrolujte, že jste vybrali správný soubor.\n\nPokud váš kontakt vytvořil soubor před více než 28 dny, Zerion ho nebude moci rozpoznat.</string>
 
   <string name="screenshot_alice">Alice</string>
   

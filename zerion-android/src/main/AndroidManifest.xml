@@ -340,15 +340,6 @@
 			android:theme="@style/ZerionTheme.NoActionBar" />
 
 
-		<activity
-			android:name="com.professor.zerion.android.removabledrive.RemovableDriveActivity"
-			android:exported="false"
-			android:label="@string/removable_drive_menu_title"
-			android:parentActivityName="com.professor.zerion.android.conversation.ConversationActivity">
-			<meta-data
-				android:name="android.support.PARENT_ACTIVITY"
-				android:value="com.professor.zerion.android.conversation.ConversationActivity" />
-		</activity>
 
 		<activity
 			android:name=".android.contact.add.remote.PendingContactListActivity"

@@ -362,20 +362,6 @@ public class UiUtils {
 		return fm.hasEnrolledFingerprints() && fm.isHardwareDetected();
 	}
 
-	public static void triggerFeedback(Context ctx) {
-		triggerFeedback(ctx, null);
-	}
-
-	public static void triggerFeedback(Context ctx,
-			@Nullable String initialComment) {
-	}
-
-	public static void startDevReportActivity(Context ctx,
-			Class<? extends FragmentActivity> activity, @Nullable Throwable t,
-			@Nullable Long appStartTime, @Nullable byte[] logKey,
-			@Nullable String initialComment) {
-	}
-
 	public static boolean enterPressed(int actionId,
 			@Nullable KeyEvent keyEvent) {
 		return actionId == IME_NULL &&

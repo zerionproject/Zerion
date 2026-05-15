@@ -84,8 +84,7 @@
   <string name="tor_plugin_status_disabled_country_blocked">Zerion 被設置為無法在這個國家使用網際網路</string>
   
   <string name="transport_lan_long">同一個 Wi-Fi 網路</string>
-  
-  
+
   <string name="reminder_notification_title">已登出 Zerion</string>
   <string name="reminder_notification_text">輕按以重新登錄。</string>
   <string name="reminder_notification_channel_title">Zerion 登錄提醒</string>
@@ -356,8 +355,7 @@
   <string name="nobody">沒有人</string>
   
   <string name="read_more">閱讀全文</string>
-  
-  
+
   
   <string name="change_profile_picture">輕觸更改使用者圖像</string>
   <string name="dialog_confirm_profile_picture_title">更改使用者圖像</string>
@@ -604,28 +602,7 @@
   <string name="lock_tap_to_unlock">輕按以解鎖</string>
   
   <string name="transports_help_text"> Zerion 可透過網際網路、Wi-Fi 或藍牙來建立聯繫 \n\n 為隱私保護，Zerion 在網際網路上都是透過 Tor 網路 \n\n 若聯絡人能使用多種連線方式，則 Zerion 會併行利用</string>
-  
-  <string name="removable_drive_menu_title">透過移動硬碟連線</string>
-  <string name="removable_drive_intro">若無法連上網際網路、也不能使用 Wi-Fi 或藍牙，Zerion 還可以透過移動裝置如 USB 或 SD 卡來傳輸訊息。</string>
-  <string name="removable_drive_explanation">若無法透過網際網路、藍牙或Wi-Fi 聯繫聯絡人，Zerion 還可以利用 隨身碟 或 SD 記憶卡來傳輸訊息 \n\n 若按下\"發送資料\" 鍵，原本待發送給聯絡人的資料將會寫入到隨身碟中，其包括私人訊息、附件、部落格、論壇與私人小組等 \n\n 這些資料都會予以加密再寫入移動式儲存器 \n\n 若您的聯絡人拿到這個隨身碟，他們可利用\"接收資料\"按鍵把資料滙入 Zerion . </string>
-  <string name="removable_drive_title_send">發送資料</string>
-  <string name="removable_drive_title_receive">接收資料</string>
-  <string name="removable_drive_send_intro">輕敲下方按鍵即可建立一個涵蓋加密訊息的新檔案，並決定它要存放的位置\n\n 若要將新檔案存到隨身碟，現在即請接入。</string>
-  <string name="removable_drive_send_no_data">目前沒有待送出的訊息給這名聯絡人</string>
-  <string name="removable_drive_send_not_supported">這名聯絡人使用舊版本 Zerion 或過舊的設備故無法使用此功能</string>
-  <string name="removable_drive_send_button">選取滙出之檔案</string>
-  <string name="removable_drive_ongoing">請靜候進行中的任務完成</string>
-  <string name="removable_drive_receive_intro">輕點下方來選擇聯絡人發送的檔案 \n\n 若檔案是在移動式硬碟，請接入</string>
-  <string name="removable_drive_receive_button">選取滙出之檔案</string>
-  <string name="removable_drive_success_send_title">成功滙出</string>
-  <string name="removable_drive_success_send_text">成功滙出資料，您有 28 天的時間可將此份檔案傳給您的聯絡人\n\n 若檔案存在可移式設備，利用狀態列的通知來退出它</string>
-  <string name="removable_drive_success_receive_title">成功滙入</string>
-  <string name="removable_drive_success_receive_text">已收到檔案中全部加密的訊息</string>
-  <string name="removable_drive_error_send_title">滙出資料出錯</string>
-  <string name="removable_drive_error_send_text">檔案無法寫入資料 \n\n 如是使用隨身碟，請檢查是否完整接入。若此問題持續無法解決，請向 Zerion 團隊反應此問題</string>
-  <string name="removable_drive_error_receive_title">滙入資料出錯</string>
-  <string name="removable_drive_error_receive_text">Zerion 無法辨識所選取的檔案 \n\n 請確認是否為正確檔案 \n\n 若選取的檔案是28 天之前所創建的，則 Zerion 就無法辨識了。</string>
-  
+
   
   <string name="screenshot_alice">愛麗詩</string>
   

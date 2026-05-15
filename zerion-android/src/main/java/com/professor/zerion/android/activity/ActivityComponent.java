@@ -34,7 +34,6 @@ import com.professor.zerion.android.navdrawer.NavDrawerActivity;
 import com.professor.zerion.android.navdrawer.TransportsActivity;
 import com.professor.zerion.android.panic.PanicPreferencesActivity;
 import com.professor.zerion.android.panic.PanicResponderActivity;
-import com.professor.zerion.android.removabledrive.RemovableDriveActivity;
 import com.professor.zerion.android.settings.ConfirmAvatarDialogFragment;
 import com.professor.zerion.android.settings.SettingsActivity;
 import com.professor.zerion.android.settings.SettingsFragment;
@@ -94,8 +93,6 @@ public interface ActivityComponent {
 	void inject(AddContactActivity activity);
 
 	void inject(PendingContactListActivity activity);
-
-	void inject(RemovableDriveActivity activity);
 
 	void inject(SetupFragment fragment);
 

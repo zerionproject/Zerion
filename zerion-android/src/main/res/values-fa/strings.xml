@@ -80,8 +80,7 @@
   <string name="tor_plugin_status_disabled_country_blocked">Zerion طوری پیکربندی شده تا از اینترنت در این کشور استفاده نکند</string>
   
   <string name="transport_lan_long">همان شبکه وای-فای</string>
-  
-  
+
   <string name="reminder_notification_title">از Zerion (برایر) خارج شد</string>
   <string name="reminder_notification_text">برای وارد شدن دوباره ضربه بزنید.</string>
   <string name="reminder_notification_channel_title">یادآور ورود Zerion (برایر)</string>
@@ -360,9 +359,7 @@
   <string name="read_more">بیشتر بخوانید</string>
 
   
-  
 
-  
   <string name="change_profile_picture">برای تغییر تصویر نمایه خود اینجا را لمس کنید.</string>
   <string name="dialog_confirm_profile_picture_title">تغییر تصویر نمایه</string>
   <string name="dialog_confirm_profile_picture_remark">تنها مخاطبین شما می‌توانند این تصویر را مشاهده کنند.</string>
@@ -603,28 +600,7 @@
   <string name="lock_tap_to_unlock">برای آنلاک کردن کلیک کنید</string>
   
   <string name="transports_help_text">Zerion (برایر) می‌تواند از طریق اینترنت، Wi-Fi و یا بلوتوث به مخاطبین شما متصل گردد.\n\nارتباط با اینترنت از طریق شبکه‌ی تور صورت می‌پذیرد.\n\nاگر دسترسی به مخاطب شما از روش‌های مختلفی ممکن باشد، Zerion (برایر) به صورت موازی از آن‌ها استفاده خواهد کرد.</string>
-  
-  <string name="removable_drive_menu_title">اتصال ار طریق حافظه قابل جابجایی</string>
-  <string name="removable_drive_intro">اگر از طریق اینترنت، Wi-Fi و یا بلوتوث قادر به ارتباط با مخاطب خود نیستید، Zerion قادر به جابجایی پیام‌ها از طریق درایو قابل جابجایی مانند حافظه قلش و یا کارت SD است.</string>
-  <string name="removable_drive_explanation">اگر از طریق اینترنت، Wi-Fi و یا بلوتوث قادر به ارتباط با مخاطب خود نیستید، Zerion قادر به جابجایی پیام‌ها از طریق درایو قابل جابجایی مانند حافظه قلش و یا کارت SD است.\n\nهنگامی که از گزینه «ارسال داده» استفاده می‌کنید، هر داده‌ای که منتظر ارسال به مخاطب شماست، بر روی حافظه قابل جابجایی ذخیره خواهد شد. این داده‌ها شامل پیام‌ها، ضمائم، بلاگ‌ها، تالار‌ها و گروه‌های خصوصی است.\n\nهمه داده‌ها قبل از ذخیره در حافظه قابل جابجایی، رمزگذاری خواهند شد.\n\nهنگامی که مخاطب شما حافظه قابل جابجایی را دریافت می‌کند، می‌تواند با استفاده از دکمه «دریافت داده» تمامی پیام‌ها را به Zerion وارد کند.</string>
-  <string name="removable_drive_title_send">ارسال داده</string>
-  <string name="removable_drive_title_receive">دریافت داده</string>
-  <string name="removable_drive_send_intro">دکمه زیر را برای ایجاد فایل جدید حاوی پیام‌های رمزگذاری شده بفشارید. شما می‌توانید محل ذخیره فایل را تعیین کنید.\n\n اگر تمایل به ذخیره فایل بر روی حافظه قابل جابجایی دارید، آن را الآن متصل کنید.</string>
-  <string name="removable_drive_send_no_data">در حال حاظر هیچ پیامی در انتظار ارسال به مخاطب نیست.</string>
-  <string name="removable_drive_send_not_supported">این مخاطب از نسخه قدیمی Zerion و یا از دستگاه قدیمی که این قابلیت را پشتیبانی نمی‌کند، استفاده می‌کند.</string>
-  <string name="removable_drive_send_button">فایل را برای گرفتن خروجی انتخاب کنید</string>
-  <string name="removable_drive_ongoing">لطفا تا تکمیل کار فعلی منتظر بمانید</string>
-  <string name="removable_drive_receive_intro">برای انتخاب فایلی که مخاطب شما ارسال کرده است، دکمه زیر را بفشارید.\n\nاگر فایل بر روی حافظه قابل جابجایی است، آن را الآن متصل کنید.</string>
-  <string name="removable_drive_receive_button">فایل را برای وارد کردن انتخاب کنید</string>
-  <string name="removable_drive_success_send_title">خروجی با موفقیت گرفته شد</string>
-  <string name="removable_drive_success_send_text">از داده‌ها با موفقیت خروجی گرفته شد. شما الآن ۲۸ روز تا انتقال فایل به مخاطب خود فرصت دارید.\n\nاگر فایل بر روی حافظه قابل جابجایی است، از پیام در نوار اعلانات برای خارج کردن آن استفاده کنید.</string>
-  <string name="removable_drive_success_receive_title">درون برد موفق بود</string>
-  <string name="removable_drive_success_receive_text">تمامی پیام‌های رمزگذاری‌شده در این فایل دریافت شدند.</string>
-  <string name="removable_drive_error_send_title">خطا حین گرفتن خروجی از داده</string>
-  <string name="removable_drive_error_send_text">خطایی هنگام نوشتن داده‌ها در فایل رخ داد.\n\nاگر از حافظه قابل جابجایی استفاده می‌کنید، از اتصال صحیح آن مطمئن شوید.\n\nاگر خطا ادامه یافت، لطفا بازخورد خود را برای اطلاع تیم Zerion از مشکل، به ما ارسال کنید.</string>
-  <string name="removable_drive_error_receive_title">خطا حین وارد کردن داده</string>
-  <string name="removable_drive_error_receive_text">فایل انتخاب شده چیز قابل شناسایی توسط Zerion نداشت.\n\nلطفا از انتخاب فایل صحبح مطمئن شوید.\n\nاگر مخاطب شما فایل را بیش از ۲۸ روز قبل ساخته است، Zerion قادر به شناسایی آن نخواهد بود.</string>
-  
+
   
   <string name="screenshot_alice">آلیس</string>
   

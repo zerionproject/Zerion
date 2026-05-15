@@ -1,0 +1,30 @@
+# This is a Gradle generated file for dependency locking.
+# Manual edits can break the build and are not advised.
+# This file is expected to be part of source control.
+cglib:cglib:3.2.8=testRuntimeClasspath
+com.fasterxml.jackson.core:jackson-annotations:2.15.3=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+com.fasterxml.jackson:jackson-bom:2.15.3=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+com.google.code.findbugs:annotations:3.0.1=testCompileClasspath,testRuntimeClasspath
+com.google.code.findbugs:jsr305:3.0.2=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+com.google.dagger:dagger:2.51.1=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+javax.inject:javax.inject:1=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+junit:junit:4.13.2=testCompileClasspath,testRuntimeClasspath
+net.bytebuddy:byte-buddy:1.9.12=testRuntimeClasspath
+net.jcip:jcip-annotations:1.0=testCompileClasspath,testRuntimeClasspath
+org.apache-extras.beanshell:bsh:2.0b6=testCompileClasspath,testRuntimeClasspath
+org.briarproject:null-safety:0.1=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+org.codehaus.mojo.signature:java16:1.1=signature
+org.codehaus.mojo:animal-sniffer-annotations:1.24=animalsniffer
+org.codehaus.mojo:animal-sniffer:1.24=animalsniffer
+org.hamcrest:hamcrest-core:2.1=testCompileClasspath,testRuntimeClasspath
+org.hamcrest:hamcrest-library:2.1=testCompileClasspath,testRuntimeClasspath
+org.hamcrest:hamcrest:2.1=testCompileClasspath,testRuntimeClasspath
+org.jmock:jmock-imposters:2.12.0=testRuntimeClasspath
+org.jmock:jmock-junit4:2.12.0=testCompileClasspath,testRuntimeClasspath
+org.jmock:jmock-legacy:2.12.0=testRuntimeClasspath
+org.jmock:jmock-testjar:2.12.0=testCompileClasspath,testRuntimeClasspath
+org.jmock:jmock:2.12.0=testCompileClasspath,testRuntimeClasspath
+org.objenesis:objenesis:3.0.1=testRuntimeClasspath
+org.ow2.asm:asm:7.1=testCompileClasspath,testRuntimeClasspath
+org.ow2.asm:asm:9.7=animalsniffer
+empty=annotationProcessor,testAnnotationProcessor,testCompile,testOutput

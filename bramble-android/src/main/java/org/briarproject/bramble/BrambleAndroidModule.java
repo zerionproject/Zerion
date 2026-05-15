@@ -4,7 +4,6 @@ import org.briarproject.bramble.battery.AndroidBatteryModule;
 import org.briarproject.bramble.io.DnsModule;
 import org.briarproject.bramble.network.AndroidNetworkModule;
 import org.briarproject.bramble.plugin.tor.CircumventionModule;
-import org.briarproject.bramble.reporting.ReportingModule;
 import org.briarproject.bramble.socks.SocksModule;
 import org.briarproject.bramble.system.AndroidSystemModule;
 import org.briarproject.bramble.system.AndroidTaskSchedulerModule;
@@ -24,7 +23,6 @@ import dagger.Module;
 		DefaultThreadFactoryModule.class,
 		CircumventionModule.class,
 		DnsModule.class,
-		ReportingModule.class,
 		SocksModule.class
 })
 public class BrambleAndroidModule {

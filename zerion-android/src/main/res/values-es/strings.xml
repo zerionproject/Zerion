@@ -380,7 +380,6 @@
   
   <string name="read_more">leer más</string>
 
-  
   <string name="change_profile_picture">Pulsar para cambiar la imagen de tu perfil</string>
   <string name="dialog_confirm_profile_picture_title">Cambiar imagen de perfil</string>
   <string name="dialog_confirm_profile_picture_remark">Solo tus contactos pueden ver esta imagen</string>
@@ -621,25 +620,6 @@
   <string name="lock_unlock_password">Usa la contraseña</string>
   <string name="lock_is_locked">Zerion está bloqueado</string>
   <string name="lock_tap_to_unlock">Golpear para desbloquear</string>
-
-  <string name="removable_drive_menu_title">Conectar a través de Discos Removibles</string>
-  <string name="removable_drive_title_send">Enviar Datos</string>
-  <string name="removable_drive_title_receive">Recibir Datos</string>
-  <string name="removable_drive_send_intro">Pulsa el botón de abajo para crear un nuevo archivo conteniendo los mensajes cifrados. Puedes elegir dónde será guardado el archivo.\n\nSi quieres guardarlo en un disco removible, insértalo ahora.</string>
-  <string name="removable_drive_send_no_data">Actualmente no hay mensajes esperando ser enviados a este contacto.</string>
-  <string name="removable_drive_send_not_supported">Este contacto está usando una versión vieja de Zerion, o un dispositivo viejo que no soporta esta característica.</string>
-  <string name="removable_drive_send_button">Selecciona el archivo a exportar</string>
-  <string name="removable_drive_ongoing">Por favor espera hasta que la tarea en curso se complete</string>
-  <string name="removable_drive_receive_intro">Pulsa el botón de abajo para elegir el archivo que envió tu contacto.\n\nSi el archivo está en un disco removible, insértalo ahora.</string>
-  <string name="removable_drive_receive_button">Selecciona el archivo a importar</string>
-  <string name="removable_drive_success_send_title">Exportado con éxito</string>
-  <string name="removable_drive_success_send_text">Datos exportados exitosamente. Ahora tienes 28 días para transportar el archivo hasta tu contacto.\n\nSi el archivo está en un disco removible, usa la notificación en la barra de estado para expulsar el disco antes de desconectarlo.</string>
-  <string name="removable_drive_success_receive_title">Importado con éxito</string>
-  <string name="removable_drive_success_receive_text">Todos los mensajes cifrados contenidos en este archivo han sido recibidos.</string>
-  <string name="removable_drive_error_send_title">Error al exportar datos</string>
-  <string name="removable_drive_error_send_text">Hubo un error escribiendo los datos al archivo.\n\nSi estás usando un disco removible, asegúrate de que esté apropiadamente insertado e inténtalo de nuevo.\n\nSi el error persiste, por favor envía tus comentarios para que el equipo de Zerion conozca acerca de esta dificultad.</string>
-  <string name="removable_drive_error_receive_title">Error al importar datos</string>
-  <string name="removable_drive_error_receive_text">El archivo seleccionado no contenía nada que Zerion pudiera reconocer.\n\nPor favor comprueba que hayas elegido el archivo correcto.\n\nSi tu contacto creó el archivo más de 28 días atrás, Zerion no será capaz de reconocerlo.</string>
 
   <string name="screenshot_alice">Alicia</string>
   

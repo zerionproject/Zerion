@@ -369,7 +369,6 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   
   <string name="read_more">lexoni më tepër</string>
 
-  
   <string name="change_profile_picture">Që të ndryshoni foton e profilit tuaj, prekeni</string>
   <string name="dialog_confirm_profile_picture_title">Ndryshoni foto profili</string>
   <string name="dialog_confirm_profile_picture_remark">Këtë foto mund ta shohin vetëm kontaktet tuaja</string>
@@ -609,25 +608,6 @@ Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
   <string name="lock_unlock_password">Përdor Fjalëkalim</string>
   <string name="lock_is_locked">Zerion-i është i kyçur</string>
   <string name="lock_tap_to_unlock">Prekeni që të shkyçet</string>
-
-  <string name="removable_drive_menu_title">Lidhu përmes Disku të Heqshëm</string>
-  <string name="removable_drive_title_send">Dërgoni të dhëna</string>
-  <string name="removable_drive_title_receive">Merrni të dhëna</string>
-  <string name="removable_drive_send_intro">Prekni butonin më poshtë që të krijoni një kartelë të re që përmban mesazhe të fshehtëzuar. Mund të zgjidhni ku të ruhen kartelat.\n\nNëse doni të ruhet kartela në një disk të heqshëm, futeni diskun tani.</string>
-  <string name="removable_drive_send_no_data">Aktualisht s’ka mesazhe në pritje për t’u dërguar te ky kontakt.</string>
-  <string name="removable_drive_send_not_supported">Ky kontakt po përdor një version të dikurshëm të Zerion-it, ose një pajisje të vjetër, që nuk mbulon këtë veçori.</string>
-  <string name="removable_drive_send_button">Zgjidhni kartelë për eksport</string>
-  <string name="removable_drive_ongoing">Ju lutemi, pritni të plotësohet puna që është duke u kryer</string>
-  <string name="removable_drive_receive_intro">Prekni butonin më poshtë që të zgjidhni kartelën që ju ka dërguar kontakti juaj.\n\nNëse kartela gjendet në një disk të heqshëm, futeni diskun tani.</string>
-  <string name="removable_drive_receive_button">Zgjidhni kartelë për import</string>
-  <string name="removable_drive_success_send_title">Eksportim i suksesshëm</string>
-  <string name="removable_drive_success_send_text">Të dhënat u eksportuan me sukses. Tani keni 28 ditë për të shpërngulur kartelën te kontakti juaj.\n\nNëse kartela gjendet në një disk të heqshëm, përdorni njoftimin te shtylla e gjendjes për të bërë shkëputjen e diskut, përpara se ta hiqni.</string>
-  <string name="removable_drive_success_receive_title">Importim i suksesshëm</string>
-  <string name="removable_drive_success_receive_text">Janë marrë krejt mesazhet e fshehtëzuar që përmbante kjo kartelë.</string>
-  <string name="removable_drive_error_send_title">Gabim në eksportim të dhënash</string>
-  <string name="removable_drive_error_send_text">Pati një gabim gjatë shkrimit të të dhënave te kartela.\n\nNëse po përdorni një disk të heqshëm, sigurohuni se është futur si duhet dhe riprovoni.\n\nNëse gabimi vazhdon, ju lutemi, dërgoni një njoftim për t’ia bërë problemin të ditur ekipit të Zerion-it.</string>
-  <string name="removable_drive_error_receive_title">Gabim në importim të dhënash</string>
-  <string name="removable_drive_error_receive_text">Kartela e përzgjedhur nuk përmbante ndonjë gjë të kuptueshme nga Zerion-i.\n\nJu lutemi, kontrolloni se keni zgjedhur kartelën e duhur.\n\nNëse kontakti e krijoi kartelën më herët se 28 ditë më parë, Zerion-i s’do të jetë në gjendje ta hapë.</string>
 
   <string name="screenshot_alice">Mira</string>
   
