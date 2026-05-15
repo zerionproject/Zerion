@@ -213,7 +213,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		nc.setShowBadge(false);
 		nc.enableVibration(true);
 		nc.setLockscreenVisibility(
-				android.app.Notification.VISIBILITY_PUBLIC);
+				android.app.Notification.VISIBILITY_SECRET);
 		notificationManager.createNotificationChannel(nc);
 	}
 
@@ -226,7 +226,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 						.setContentText(appContext.getString(bodyResId))
 						.setGroup("rotation")
 						.setCategory(NotificationCompat.CATEGORY_STATUS)
-						.setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+						.setVisibility(NotificationCompat.VISIBILITY_SECRET)
 						.setAutoCancel(true);
 		int id = (int) (java.util.UUID.randomUUID().getMostSignificantBits()
 				& 0x7fffffff);

@@ -9,6 +9,7 @@ import org.briarproject.bramble.api.crypto.PrivateKey;
 import org.briarproject.bramble.api.crypto.PublicKey;
 import org.briarproject.bramble.api.crypto.SignaturePublicKey;
 import org.briarproject.bramble.api.data.BdfDictionary;
+import org.briarproject.bramble.api.data.BdfEntry;
 import org.briarproject.bramble.api.data.BdfList;
 import org.briarproject.bramble.api.db.DatabaseComponent;
 import org.briarproject.bramble.api.db.DbException;
@@ -22,6 +23,7 @@ import org.briarproject.bramble.api.lifecycle.LifecycleManager.OpenDatabaseHook;
 import org.briarproject.bramble.api.settings.Settings;
 import org.briarproject.bramble.api.settings.SettingsManager;
 import org.briarproject.bramble.api.sync.Message;
+import org.briarproject.bramble.api.sync.MessageId;
 import org.briarproject.bramble.api.system.Clock;
 import org.briarproject.bramble.util.ByteUtils;
 import org.briarproject.briar.api.grouptr.GroupTrAuthException;
@@ -1164,17 +1166,81 @@ class GroupTrManagerImpl
 
 	@Override
 	public void removeFromDevice(byte[] groupId) throws DbException {
-		Settings tombstone = new Settings();
-		tombstone.putBoolean(S_REMOVED, true);
-		settingsManager.mergeSettings(tombstone, nsOf(groupId));
-		removeFromIndex(groupId);
 		String hex = toHexString(groupId);
+		String stateNs = nsOf(groupId);
+		String localNs = SETTINGS_NS_LOCAL_PREFIX + hex;
+		Settings stateBlank = blankCopy(
+				settingsManager.getSettings(stateNs));
+		stateBlank.putBoolean(S_REMOVED, true);
+		settingsManager.mergeSettings(stateBlank, stateNs);
+		Settings localBlank = blankCopy(
+				settingsManager.getSettings(localNs));
+		if (!localBlank.isEmpty()) {
+			settingsManager.mergeSettings(localBlank, localNs);
+		}
+		clearInvitePendingFor(groupId);
+		removeFromIndex(groupId);
 		postCache.remove(hex);
 		futureBuffer.remove(hex);
+		mlDsaPubKeyCache.clear();
+		try {
+			db.transaction(false, txn -> {
+				BdfDictionary query = BdfDictionary.of(
+						new BdfEntry("groupId", groupId));
+				for (Contact c : contactManager.getContacts(txn)) {
+					try {
+						org.briarproject.bramble.api.sync.GroupId contactGid =
+								messagingManager.getContactGroup(c).getId();
+						Collection<MessageId> msgs = clientHelper
+								.getMessageIds(txn, contactGid, query);
+						for (MessageId m : msgs) {
+							try {
+								db.removeMessage(txn, m);
+							} catch (org.briarproject.bramble.api.db
+									.NoSuchMessageException ignored) {
+							}
+						}
+					} catch (FormatException ignored) {
+					}
+				}
+			});
+		} catch (DbException ignored) {
+		}
 		eventBus.broadcast(new org.briarproject.briar.api.messaging.event
 				.GroupTrLocalStateChangedEvent(groupId,
 				org.briarproject.briar.api.messaging.event
 						.GroupTrLocalStateChangedEvent.Kind.REMOVED));
+	}
+
+	private static Settings blankCopy(Settings original) {
+		Settings blank = new Settings();
+		for (String key : original.keySet()) {
+			blank.put(key, "");
+		}
+		return blank;
+	}
+
+	private void clearInvitePendingFor(byte[] groupId) throws DbException {
+		String hex = toHexString(groupId);
+		Settings sent = settingsManager.getSettings(SETTINGS_NS_INVITES_SENT);
+		Settings sentBlank = new Settings();
+		for (String key : sent.keySet()) {
+			if (key.startsWith(hex + ":") || key.equals(hex)) {
+				sentBlank.put(key, "");
+			}
+		}
+		if (!sentBlank.isEmpty()) {
+			settingsManager.mergeSettings(sentBlank,
+					SETTINGS_NS_INVITES_SENT);
+		}
+		Settings offers = settingsManager.getSettings(
+				SETTINGS_NS_OFFERS_PENDING);
+		if (offers.get(hex) != null) {
+			Settings offersBlank = new Settings();
+			offersBlank.put(hex, "");
+			settingsManager.mergeSettings(offersBlank,
+					SETTINGS_NS_OFFERS_PENDING);
+		}
 	}
 
 	private byte[] deriveGroupId(String creatorName, byte[] creatorPubKey,

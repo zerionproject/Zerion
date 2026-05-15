@@ -87,8 +87,29 @@ public class GroupTrVoicePlayer {
 			player = null;
 		}
 		if (tempFile != null) {
+			secureWipe(tempFile);
 			if (!tempFile.delete()) tempFile.deleteOnExit();
 			tempFile = null;
+		}
+	}
+
+	private static void secureWipe(java.io.File f) {
+		try {
+			if (!f.exists()) return;
+			long len = f.length();
+			if (len <= 0) return;
+			try (java.io.RandomAccessFile raf =
+					new java.io.RandomAccessFile(f, "rws")) {
+				byte[] zeros = new byte[(int) Math.min(len, 8192)];
+				long written = 0;
+				while (written < len) {
+					int chunk = (int) Math.min(zeros.length, len - written);
+					raf.write(zeros, 0, chunk);
+					written += chunk;
+				}
+				raf.getFD().sync();
+			}
+		} catch (java.io.IOException ignored) {
 		}
 	}
 }
