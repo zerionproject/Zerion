@@ -213,17 +213,11 @@ public class SetPasswordFragment extends SetupFragment {
 
 	private void setPassword() {
 		char[] passwordChars = getPasswordChars(passwordEntry);
-		char[] sanitizedChars = null;
-
 		try {
-			sanitizedChars = sanitizePasswordChars(passwordChars);
+			char[] sanitizedChars = sanitizePasswordChars(passwordChars);
 			viewModel.setPassword(sanitizedChars);
 		} finally {
 			Arrays.fill(passwordChars, '\0');
-			if (sanitizedChars != null
-					&& sanitizedChars != passwordChars) {
-				Arrays.fill(sanitizedChars, '\0');
-			}
 		}
 	}
 
