@@ -196,6 +196,13 @@ class GroupTrManagerImpl
 				}
 			}
 		}
+		System.err.println("[grouptr][KICK] cachePost senderIsMember="
+				+ senderIsMember
+				+ " sender=" + toHexString(senderPub).substring(0, 12)
+				+ " creator=" + toHexString(s.getCreatorPubKey()).substring(0, 12)
+				+ " membersAtRecv=" + s.getMembers().size()
+				+ " s.epoch=" + s.getEpoch()
+				+ " postEpoch=" + postEpoch);
 		if (!senderIsMember) return;
 		GroupTrPost p = new GroupTrPost(e.getGroupId(),
 				senderPub, e.getSenderName(),
@@ -789,12 +796,23 @@ class GroupTrManagerImpl
 	}
 
 	private void handleMembershipEvent(GroupMembershipChangedEvent e) {
+		System.err.println("[grouptr][KICK] handleMembershipEvent kind="
+				+ e.getKind() + " gid="
+				+ toHexString(e.getGroupId()).substring(0, 12)
+				+ " target=" + (e.getTargetPubKey() == null ? "null"
+						: toHexString(e.getTargetPubKey()).substring(0, 12))
+				+ " toEpoch=" + e.getToEpoch()
+				+ " contactId=" + e.getContactId().getInt());
 		try {
 			GroupTrState s = getGroup(e.getGroupId());
 			if (s == null) {
+				System.err.println("[grouptr][KICK] handleMembership: no local state for gid, DROP");
 				return;
 			}
-			if (s.isDissolved()) return;
+			if (s.isDissolved()) {
+				System.err.println("[grouptr][KICK] handleMembership: state dissolved, DROP");
+				return;
+			}
 			byte[] sig = e.getRecordSig();
 			byte[] signedInput = e.getSignedInput();
 			byte[] senderPubKey = lookupSenderPubKey(e.getContactId());
@@ -808,14 +826,34 @@ class GroupTrManagerImpl
 					applyMemberAdded(s, e);
 					break;
 				case MEMBER_REMOVED:
+					System.err.println("[grouptr][KICK] MEMBER_REMOVED"
+							+ " s.epoch=" + s.getEpoch()
+							+ " e.toEpoch=" + e.getToEpoch()
+							+ " target=" + (e.getTargetPubKey() == null
+							? "null" : toHexString(e.getTargetPubKey()).substring(0, 12))
+							+ " creator=" + toHexString(s.getCreatorPubKey()).substring(0, 12)
+							+ " sender=" + (senderPubKey == null ? "null"
+							: toHexString(senderPubKey).substring(0, 12)));
 					if (Arrays.equals(e.getTargetPubKey(),
-							s.getCreatorPubKey())) return;
-					if (e.getToEpoch() != s.getEpoch() + 1) return;
+							s.getCreatorPubKey())) {
+						System.err.println("[grouptr][KICK] DROP target==creator");
+						return;
+					}
+					if (e.getToEpoch() != s.getEpoch() + 1) {
+						System.err.println("[grouptr][KICK] DROP toEpoch != s.epoch+1");
+						return;
+					}
 					if (senderPubKey == null
 							|| !Arrays.equals(senderPubKey,
-									s.getCreatorPubKey())) return;
-					if (!verify(sig, SIGNING_LABEL_GROUP_MEMBERSHIP,
-							signedInput, senderPubKey)) return;
+									s.getCreatorPubKey())) {
+						System.err.println("[grouptr][KICK] DROP sender != creator");
+						return;
+					}
+					boolean memRemovedSigOk = verify(sig,
+							SIGNING_LABEL_GROUP_MEMBERSHIP,
+							signedInput, senderPubKey);
+					System.err.println("[grouptr][KICK] sigVerify=" + memRemovedSigOk);
+					if (!memRemovedSigOk) return;
 					applyMemberRemoved(s, e);
 					break;
 				case MEMBER_LEFT:
@@ -956,17 +994,31 @@ class GroupTrManagerImpl
 			GroupMembershipChangedEvent e)
 			throws DbException, FormatException {
 		byte[] pk = e.getTargetPubKey();
-		if (pk == null) return;
-		if (e.getToEpoch() <= s.getEpoch()) return;
+		if (pk == null) {
+			System.err.println("[grouptr][KICK] applyMemberRemoved DROP: pk null");
+			return;
+		}
+		if (e.getToEpoch() <= s.getEpoch()) {
+			System.err.println("[grouptr][KICK] applyMemberRemoved DROP: toEpoch "
+					+ e.getToEpoch() + " <= s.epoch " + s.getEpoch());
+			return;
+		}
 		LocalAuthor la = db.transactionWithResult(true,
 				identityManager::getLocalAuthor);
 		byte[] localPub = la.getPublicKey().getEncoded();
+		System.err.println("[grouptr][KICK] applyMemberRemoved selfCheck"
+				+ " pk=" + toHexString(pk).substring(0, 12)
+				+ " localPub=" + toHexString(localPub).substring(0, 12)
+				+ " match=" + Arrays.equals(pk, localPub));
 		if (Arrays.equals(pk, localPub)) {
+			System.err.println("[grouptr][KICK] SELF-KICK PATH -> removeFromDevice");
 			String groupName = s.getName();
 			byte[] groupId = s.getGroupId();
 			try {
 				removeFromDevice(groupId);
-			} catch (DbException ignored) {
+				System.err.println("[grouptr][KICK] removeFromDevice OK");
+			} catch (DbException ex) {
+				System.err.println("[grouptr][KICK] removeFromDevice FAILED " + ex);
 			}
 			eventBus.broadcast(new org.briarproject.briar.api.messaging.event
 					.GroupTrSelfRemovedEvent(groupId, groupName,
@@ -1443,6 +1495,9 @@ class GroupTrManagerImpl
 	@Override
 	public void removeMember(byte[] groupId, byte[] removedPubKey)
 			throws DbException {
+		System.err.println("[grouptr][KICK] removeMember ENTRY gid="
+				+ toHexString(groupId).substring(0, 12)
+				+ " removed=" + toHexString(removedPubKey).substring(0, 12));
 		GroupTrState s = requireWritable(groupId);
 		requireLocalIsCreator(s);
 		if (Arrays.equals(removedPubKey, s.getCreatorPubKey())) {
@@ -1455,6 +1510,9 @@ class GroupTrManagerImpl
 		long timestamp = clock.currentTimeMillis();
 		int fromEpoch = (int) s.getEpoch();
 		int toEpoch = fromEpoch + 1;
+		System.err.println("[grouptr][KICK] removeMember signing: fromEpoch="
+				+ fromEpoch + " toEpoch=" + toEpoch
+				+ " membersBeforeKick=" + s.getMembers().size());
 		byte[] signedRemoved = removedSignedInput(groupId, removedPubKey,
 				fromEpoch, toEpoch, timestamp);
 		byte[] sigRemoved = signOrThrow(SIGNING_LABEL_GROUP_MEMBERSHIP,
@@ -1470,10 +1528,15 @@ class GroupTrManagerImpl
 		BdfList commitBody = BdfList.of(37L, groupId, (long) fromEpoch,
 				(long) toEpoch, pqSeed, sigCommit);
 		db.transaction(false, txn -> {
+			System.err.println("[grouptr][KICK] removeMember dispatching " +
+					"MEMBER_REMOVED to all members (incl. target)");
 			fanOut(txn, s, removedBody, timestamp, null);
+			System.err.println("[grouptr][KICK] removeMember dispatching " +
+					"EPOCH_COMMIT (skip target)");
 			fanOut(txn, s, commitBody, timestamp, removedPubKey);
 		});
 		applyLocalRemove(s, removedPubKey, toEpoch);
+		System.err.println("[grouptr][KICK] removeMember DONE on sender");
 	}
 
 	@Override
@@ -1582,12 +1645,32 @@ class GroupTrManagerImpl
 			throws DbException {
 		LocalAuthor la = identityManager.getLocalAuthor(txn);
 		byte[] localPub = la.getPublicKey().getEncoded();
+		long bodyType = -1L;
+		try {
+			if (body.size() > 0) bodyType = body.getLong(0);
+		} catch (FormatException ignored) {
+		}
+		System.err.println("[grouptr][KICK] fanOut bodyType=" + bodyType
+				+ " members=" + s.getMembers().size()
+				+ " skipPub=" + (skipPubKey == null ? "null"
+						: toHexString(skipPubKey).substring(0, 12)));
 		for (GroupTrMember m : s.getMembers()) {
 			if (Arrays.equals(m.getPubKey(), localPub)) continue;
 			if (skipPubKey != null
-					&& Arrays.equals(m.getPubKey(), skipPubKey)) continue;
+					&& Arrays.equals(m.getPubKey(), skipPubKey)) {
+				System.err.println("[grouptr][KICK] fanOut SKIP "
+						+ toHexString(m.getPubKey()).substring(0, 12));
+				continue;
+			}
 			Contact c = findContactByPubKey(txn, m.getPubKey());
-			if (c == null) continue;
+			if (c == null) {
+				System.err.println("[grouptr][KICK] fanOut NO_CONTACT for "
+						+ toHexString(m.getPubKey()).substring(0, 12));
+				continue;
+			}
+			System.err.println("[grouptr][KICK] fanOut dispatch -> "
+					+ toHexString(m.getPubKey()).substring(0, 12)
+					+ " contactId=" + c.getId().getInt());
 			dispatchToContact(txn, c, timestamp, body);
 		}
 	}
