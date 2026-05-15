@@ -51,6 +51,12 @@ public class VaultPasswordsFragment extends BaseFragment {
 	private LinearLayout emptyState;
 	private FloatingActionButton fabAdd;
 	private VaultPasswordsAdapter adapter;
+	@Nullable
+	private androidx.appcompat.app.AlertDialog passwordDialog;
+	private final android.os.Handler clipboardClearHandler =
+			new android.os.Handler(android.os.Looper.getMainLooper());
+	@Nullable
+	private Runnable pendingClipboardClear;
 
 	public static VaultPasswordsFragment newInstance() {
 		return new VaultPasswordsFragment();
@@ -173,15 +179,19 @@ public class VaultPasswordsFragment extends BaseFragment {
 			});
 		}
 
-		androidx.appcompat.app.AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
+		if (passwordDialog != null && passwordDialog.isShowing()) {
+			passwordDialog.dismiss();
+		}
+		passwordDialog = new MaterialAlertDialogBuilder(requireContext())
 				.setTitle(entry.title)
 				.setView(dialogView)
 				.setPositiveButton("Close", null)
+				.setOnDismissListener(d -> passwordDialog = null)
 				.create();
-		dialog.getWindow().setFlags(
+		passwordDialog.getWindow().setFlags(
 				android.view.WindowManager.LayoutParams.FLAG_SECURE,
 				android.view.WindowManager.LayoutParams.FLAG_SECURE);
-		dialog.show();
+		passwordDialog.show();
 	}
 
 	private void showPasswordOptions(com.professor.zerion.android.vault.model.VaultItem item) {
@@ -322,7 +332,11 @@ public class VaultPasswordsFragment extends BaseFragment {
 		int clipboardTimeoutSeconds = securePrefs.getInt("clipboard_timeout", 30);
 		long clipboardTimeoutMs = clipboardTimeoutSeconds * 1000L;
 
-		new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+		if (pendingClipboardClear != null) {
+			clipboardClearHandler.removeCallbacks(pendingClipboardClear);
+		}
+		pendingClipboardClear = () -> {
+			pendingClipboardClear = null;
 			try {
 				if (!isAdded() || getContext() == null) {
 					return;
@@ -344,7 +358,9 @@ public class VaultPasswordsFragment extends BaseFragment {
 				}
 			} catch (Exception e) {
 			}
-		}, clipboardTimeoutMs);
+		};
+		clipboardClearHandler.postDelayed(pendingClipboardClear,
+				clipboardTimeoutMs);
 	}
 
 	private static String maskPassword(String s) {
@@ -410,6 +426,19 @@ public class VaultPasswordsFragment extends BaseFragment {
 		});
 
 		viewModel.loadVaultItems();
+	}
+
+	@Override
+	public void onDestroyView() {
+		super.onDestroyView();
+		if (passwordDialog != null && passwordDialog.isShowing()) {
+			passwordDialog.dismiss();
+		}
+		passwordDialog = null;
+		if (pendingClipboardClear != null) {
+			clipboardClearHandler.removeCallbacks(pendingClipboardClear);
+			pendingClipboardClear = null;
+		}
 	}
 
 	@Override

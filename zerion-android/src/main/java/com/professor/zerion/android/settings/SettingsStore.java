@@ -1,5 +1,12 @@
 package com.professor.zerion.android.settings;
 
+import android.app.Application;
+import android.os.Handler;
+import android.os.Looper;
+import android.widget.Toast;
+
+import com.professor.zerion.R;
+
 import org.briarproject.bramble.api.db.DbException;
 import org.briarproject.bramble.api.settings.Settings;
 import org.briarproject.bramble.api.settings.SettingsManager;
@@ -13,13 +20,17 @@ import androidx.preference.PreferenceDataStore;
 @NotNullByDefault
 class SettingsStore extends PreferenceDataStore {
 
+	private final Application app;
 	private final SettingsManager settingsManager;
 	private final Executor dbExecutor;
 	private final String namespace;
+	private final Handler main = new Handler(Looper.getMainLooper());
 
-	SettingsStore(SettingsManager settingsManager,
+	SettingsStore(Application app,
+			SettingsManager settingsManager,
 			Executor dbExecutor,
 			String namespace) {
+		this.app = app;
 		this.settingsManager = settingsManager;
 		this.dbExecutor = dbExecutor;
 		this.namespace = namespace;
@@ -51,7 +62,9 @@ class SettingsStore extends PreferenceDataStore {
 			try {
 				settingsManager.mergeSettings(s, namespace);
 			} catch (DbException e) {
-
+				main.post(() -> Toast.makeText(app,
+						R.string.settings_save_failed,
+						Toast.LENGTH_SHORT).show());
 			}
 		});
 	}

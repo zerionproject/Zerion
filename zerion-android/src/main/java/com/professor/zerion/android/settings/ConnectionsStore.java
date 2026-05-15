@@ -1,5 +1,7 @@
 package com.professor.zerion.android.settings;
 
+import android.app.Application;
+
 import org.briarproject.bramble.api.settings.SettingsManager;
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -20,10 +22,11 @@ import static com.professor.zerion.android.settings.ConnectionsFragment.PREF_KEY
 class ConnectionsStore extends SettingsStore {
 
 	ConnectionsStore(
+			Application app,
 			SettingsManager settingsManager,
 			Executor dbExecutor,
 			String namespace) {
-		super(settingsManager, dbExecutor, namespace);
+		super(app, settingsManager, dbExecutor, namespace);
 	}
 
 	@Override

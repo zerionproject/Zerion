@@ -215,8 +215,9 @@ public class UnlockActivity extends BaseActivity {
 
 			@Override
 			public void onAuthenticationFailed() {
-				mainHandler.postDelayed(() -> {
-				}, BRUTE_FORCE_DELAY_MS);
+				android.widget.Toast.makeText(UnlockActivity.this,
+						R.string.lock_unlock_biometric_failed,
+						android.widget.Toast.LENGTH_SHORT).show();
 			}
 		};
 

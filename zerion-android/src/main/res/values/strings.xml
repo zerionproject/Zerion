@@ -501,6 +501,7 @@
 	<string name="grouptr_error_leave">Could not leave group.</string>
 	<string name="grouptr_error_send">Could not send message.</string>
 	<string name="grouptr_error_save">Could not save setting.</string>
+	<string name="settings_save_failed">Could not save setting.</string>
 	<string name="grouptr_open">Open</string>
 	<string name="grouptr_input_hint">Message</string>
 	<string name="grouptr_msg_you">You</string>
@@ -1281,6 +1282,7 @@
 	<string name="lock_unlock_verbose">Enter your device PIN, pattern or password to unlock Zerion</string>
 	<string name="lock_unlock_fingerprint_description">Touch your fingerprint sensor with the registered finger to continue</string>
 	<string name="lock_unlock_password">Use Password</string>
+	<string name="lock_unlock_biometric_failed">Biometric not recognized. Try again.</string>
 	<string name="lock_is_locked">Zerion is locked</string>
 	<string name="lock_tap_to_unlock">Tap to unlock</string>
 

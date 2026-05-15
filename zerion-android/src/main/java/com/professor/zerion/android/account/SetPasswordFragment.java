@@ -220,7 +220,10 @@ public class SetPasswordFragment extends SetupFragment {
 			viewModel.setPassword(sanitizedChars);
 		} finally {
 			Arrays.fill(passwordChars, '\0');
-
+			if (sanitizedChars != null
+					&& sanitizedChars != passwordChars) {
+				Arrays.fill(sanitizedChars, '\0');
+			}
 		}
 	}
 

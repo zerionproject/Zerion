@@ -279,7 +279,7 @@ public class DisplayFragment extends Fragment {
 	private void onThemeChanged(String newTheme) {
 		EarlyPrefs.get(requireContext()).edit()
 				.putString(PREF_THEME, newTheme)
-				.apply();
+				.commit();
 
 		FragmentActivity activity = requireActivity();
 		UiUtils.setTheme(activity, newTheme);

@@ -1,5 +1,7 @@
 package com.professor.zerion.android.settings;
 
+import android.app.Application;
+
 import org.briarproject.bramble.api.plugin.TorConstants;
 import org.briarproject.bramble.api.settings.Settings;
 import org.briarproject.bramble.api.settings.SettingsManager;
@@ -35,9 +37,10 @@ class ConnectionsManager {
 	private final MutableLiveData<String> orbotHost = new MutableLiveData<>();
 	private final MutableLiveData<Integer> orbotPort = new MutableLiveData<>();
 
-	ConnectionsManager(SettingsManager settingsManager,
+	ConnectionsManager(Application app, SettingsManager settingsManager,
 			Executor dbExecutor) {
-		torStore = new ConnectionsStore(settingsManager, dbExecutor, TOR_NAMESPACE);
+		torStore = new ConnectionsStore(app, settingsManager, dbExecutor,
+				TOR_NAMESPACE);
 	}
 
 	void updateTorSettings(Settings settings) {

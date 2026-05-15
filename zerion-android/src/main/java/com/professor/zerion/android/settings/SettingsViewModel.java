@@ -104,12 +104,13 @@ class SettingsViewModel extends DbViewModel implements EventListener {
 		this.authorManager = authorManager;
 		this.ioExecutor = ioExecutor;
 		this.featureFlags = featureFlags;
-		settingsStore = new SettingsStore(settingsManager, dbExecutor,
-				SETTINGS_NAMESPACE);
+		settingsStore = new SettingsStore(getApplication(), settingsManager,
+				dbExecutor, SETTINGS_NAMESPACE);
 		torSummaryProvider = new TorSummaryProvider(getApplication(),
 				locationUtils, circumventionProvider);
 		connectionsManager =
-				new ConnectionsManager(settingsManager, dbExecutor);
+				new ConnectionsManager(getApplication(), settingsManager,
+						dbExecutor);
 		notificationsManager = new NotificationsManager(getApplication(),
 				settingsManager, dbExecutor);
 
