@@ -14,6 +14,7 @@ import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.professor.zerion.R;
 import com.professor.zerion.android.AppModule;
+import com.professor.zerion.android.EarlyPrefs;
 import com.professor.zerion.android.Localizer;
 import com.professor.zerion.android.util.UiUtils;
 
@@ -119,10 +120,12 @@ public class DisplayFragment extends Fragment {
 	}
 
 	private void loadCurrentSettings() {
-		currentLanguage = uiPrefs.getString(PREF_LANGUAGE, "default");
+		SharedPreferences earlyPrefs = EarlyPrefs.get(requireContext());
+		currentLanguage = earlyPrefs.getString(PREF_LANGUAGE, "default");
 		updateLanguageDisplay();
 
-		currentTheme = uiPrefs.getString(PREF_THEME, getString(R.string.pref_theme_dark_value));
+		currentTheme = earlyPrefs.getString(PREF_THEME,
+				getString(R.string.pref_theme_dark_value));
 		updateThemeDisplay();
 
 		SharedPreferences securePrefs = getAndroidComponent(requireContext())
@@ -232,10 +235,12 @@ public class DisplayFragment extends Fragment {
 				.setTitle(R.string.pref_language_title)
 				.setMessage(R.string.pref_language_changed)
 				.setPositiveButton(android.R.string.ok, (d, i) -> {
-					uiPrefs.edit()
+					SharedPreferences earlyPrefs =
+							EarlyPrefs.get(requireContext());
+					earlyPrefs.edit()
 							.putString(PREF_LANGUAGE, newLanguage)
 							.commit();
-					Localizer.forceReinitialize(uiPrefs);
+					Localizer.forceReinitialize(earlyPrefs);
 					Intent intent = new Intent(getContext(), ENTRY_ACTIVITY);
 					intent.setFlags(FLAG_ACTIVITY_CLEAR_TASK | FLAG_ACTIVITY_NEW_TASK);
 					requireActivity().startActivity(intent);
@@ -272,7 +277,7 @@ public class DisplayFragment extends Fragment {
 	}
 
 	private void onThemeChanged(String newTheme) {
-		uiPrefs.edit()
+		EarlyPrefs.get(requireContext()).edit()
 				.putString(PREF_THEME, newTheme)
 				.apply();
 
