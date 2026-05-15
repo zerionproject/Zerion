@@ -481,13 +481,24 @@ class GroupTrManagerImpl
 	public void acceptInvite(byte[] grouptrGroupId) throws DbException {
 		PendingInviteReceived pi = loadInviteReceived(grouptrGroupId);
 		if (pi == null) return;
-		if (getGroup(grouptrGroupId) != null) {
-			removeInviteReceived(grouptrGroupId);
-			return;
-		}
 		LocalAuthor la = db.transactionWithResult(true,
 				identityManager::getLocalAuthor);
 		byte[] localPub = la.getPublicKey().getEncoded();
+		GroupTrState existing = getGroup(grouptrGroupId);
+		if (existing != null) {
+			boolean amCurrentMember = false;
+			for (GroupTrMember m : existing.getMembers()) {
+				if (Arrays.equals(m.getPubKey(), localPub)) {
+					amCurrentMember = true;
+					break;
+				}
+			}
+			if (amCurrentMember) {
+				removeInviteReceived(grouptrGroupId);
+				return;
+			}
+			removeFromDevice(grouptrGroupId);
+		}
 		long ts = clock.currentTimeMillis();
 		byte[] signed = offerSignedInput(grouptrGroupId, localPub,
 				pi.creatorPubKey, ts);
@@ -821,6 +832,7 @@ class GroupTrManagerImpl
 					s.setDissolved(true);
 					s.setEpoch(e.getEpoch());
 					persist(s);
+					removeFromDevice(s.getGroupId());
 					break;
 				case ROLE_CHANGED:
 					if (!verify(sig, SIGNING_LABEL_GROUP_MEMBERSHIP,
@@ -1486,6 +1498,7 @@ class GroupTrManagerImpl
 		db.transaction(false, txn -> fanOut(txn, s, body, timestamp,
 				localPub));
 		applyLocalLeave(s, localPub, newEpoch);
+		removeFromDevice(groupId);
 	}
 
 	@Override
@@ -1511,6 +1524,7 @@ class GroupTrManagerImpl
 		} catch (FormatException ex) {
 			throw new DbException(ex);
 		}
+		removeFromDevice(groupId);
 	}
 
 	private GroupTrState requireWritable(byte[] groupId) throws DbException {
