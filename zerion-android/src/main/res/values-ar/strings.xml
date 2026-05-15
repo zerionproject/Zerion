@@ -90,8 +90,7 @@
   <string name="tor_plugin_status_disabled_country_blocked">ضُبط براير على عدم استخدام الإنترنت في هذا البلد</string>
   
   <string name="transport_lan_long">نفس شبكة الWi-Fi </string>
-  
-  
+
   <string name="reminder_notification_title">تم تسجيل الخروج من Zerion (براير)</string>
   <string name="reminder_notification_text">الرجاء اللمس لإعادة الدخول</string>
   <string name="reminder_notification_channel_title">التذكير بتسجيل الدخول إلى Zerion (براير)</string>
@@ -409,8 +408,7 @@
   <string name="nobody">لا أحد</string>
   
   <string name="read_more">قراءة المزيد</string>
-  
-  
+
   
   <string name="change_profile_picture">انقر لتغيير صورة ملفك الشخصي</string>
   <string name="dialog_confirm_profile_picture_title">تغيير الصورة الشخصية</string>
@@ -659,7 +657,6 @@
   <string name="transports_help_text">يمكن ل Zerion التواصل مع جهات الاتصال عن طريق الانترنت, شكبة ال Wi-Fi أو البلوتوث.n\n\كل وسائل الاتصال عن طريق الانترنت تمر عبر شبكة تور من أجل الخصوصية.n\n\إذا كان من الممكن الوصول إلى شبكة إتصال بعدة طرق فإن Zerion سوف يستعملهم جميعاً بالتوازي.</string>
   
   <string name="removable_drive_menu_title">قم بالتوصيل عبر محرك أقراص قابل للإزالة</string>
-  <string name="removable_drive_intro">إذا لم تتمكن من الاتصال بجهة اتصالك عبر الإنترنت أو Wi-Fi أو Bluetooth، فيمكن لـبراير أيضًا نقل الرسائل على محرك أقراص قابل للإزالة مثل محرك أقراص USB أو بطاقة SD.</string>
   <string name="removable_drive_explanation">إذا لم تتمكن من الاتصال بجهة اتصالك عبر الإنترنت أو Wi-Fi أو البلوتوث، فيمكن لـبراير أيضًا نقل الرسائل على محرك أقراص قابل للإزالة مثل محرك أقراص USB أو بطاقة SD.\n\nعند استخدام الزر \"إرسال البيانات\" ، سيتم كتابة أي بيانات تنتظر إرسالها إلى جهة الاتصال على محرك الأقراص القابل للإزالة. يتضمن ذلك الرسائل الخاصة والمرفقات والمدونات والمنتديات والمجموعات الخاصة.\n\nسيتم تعمية كل شيء قبل كتابته على محرك الأقراص القابل للإزالة.\n\nعندما تتلقى جهة اتصالك محرك الأقراص القابل للإزالة، يمكنهم استخدام الزر \"استلام البيانات\" لاستيراد الرسائل إلى براير.</string>
   <string name="removable_drive_title_send">إرسال البيانات</string>
   <string name="removable_drive_title_receive">استلام البيانات</string>
@@ -678,8 +675,7 @@
   <string name="removable_drive_error_send_text">حدث خطأ أثناء كتابة البيانات إلى الملف.\n\nإذا كنت تستخدم محرك أقراص قابل للإزالة، فتأكد من إدخاله بشكل صحيح وحاول مرة أخرى.\n\nإذا استمر الخطأ، فيُرجى إرسال ملاحظات لإعلام فريق براير بشأن المشكلة.</string>
   <string name="removable_drive_error_receive_title">حدث خطأ أثناء استيراد البيانات</string>
   <string name="removable_drive_error_receive_text">الملف المحدد لا يحتوي على أي شيء يمكن أن يتعرف عليه براير.\n\nيُرجى التحقق من أنك اخترت الملف الصحيح.\n\nإذا قامت جهة اتصالك بإنشاء الملف منذ أكثر من 28 يومًا، فلن يتمكن براير من التعرف عليه.</string>
-  
-  
+
   <string name="screenshot_alice">آليس</string>
   
   <string name="screenshot_bob">بوب</string>
@@ -692,7 +688,6 @@
   
   <string name="screenshot_message_3">أهلاً وسهلاً، أتمنى أن يعجبك 😀</string>
 
-	
 	<string name="vault_unlock_button">فتح القفل</string>
 	<string name="vault_password_mismatch">كلمات المرور غير متطابقة</string>
 	<string name="vault_password_too_short">يجب أن تكون كلمة المرور 8 أحرف على الأقل</string>
@@ -716,19 +711,16 @@
 	<string name="vault_enable_biometric">تمكين فتح القفل البيومتري</string>
 	<string name="vault_auto_lock_timeout">مهلة القفل التلقائي</string>
 
-	
 	<string name="security_threat_detected">تم اكتشاف تهديد أمني. يُرجى فحص جهازك بحثًا عن برامج ضارة.</string>
 	<string name="pref_screenshot_protection_title">حماية لقطة الشاشة</string>
 	<string name="pref_screenshot_protection_summary">منع لقطات الشاشة وتسجيلات الشاشة للمحتوى الحساس</string>
 	<string name="security_warning_title">تحذير أمني</string>
 
-	
 	<string name="tor_status_title">حالة شبكة Tor</string>
 	<string name="tor_status_connected">متصل بشبكة Tor</string>
 	<string name="tor_status_disconnected">غير متصل بشبكة Tor</string>
 	<string name="tor_status_connecting">جارٍ الاتصال بشبكة Tor…</string>
 
-	
 	<string name="voice_call">مكالمة صوتية</string>
 
 </resources>

@@ -56,7 +56,6 @@
   <!--Blog Sharing-->
   <!--RSS Feeds-->
   <!--Settings Network-->
-  <string name="bluetooth_setting_disabled">Hanya ketika menambah kenalan</string>
   <!--Settings Security and Panic-->
   <!--Settings Notifications-->
   <string name="notify_private_messages_setting">Papar notifikasi untuk mesej peribadi</string>

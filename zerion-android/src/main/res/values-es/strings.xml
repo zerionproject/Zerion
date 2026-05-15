@@ -87,8 +87,7 @@
   <string name="tor_plugin_status_disabled_country_blocked">Zerion está configurado para no usar Internet en este país</string>
   
   <string name="transport_lan_long">Misma red Wi-Fi</string>
-  
-  
+
   <string name="reminder_notification_title">Sesión de Zerion cerrada</string>
   <string name="reminder_notification_text">Golpear para reiniciar sesión.</string>
   <string name="reminder_notification_channel_title">Recordatorio de inicio de sesión de Zerion</string>
@@ -380,8 +379,7 @@
   <string name="nobody">Nadie</string>
   
   <string name="read_more">leer más</string>
-  
-  
+
   
   <string name="change_profile_picture">Pulsar para cambiar la imagen de tu perfil</string>
   <string name="dialog_confirm_profile_picture_title">Cambiar imagen de perfil</string>
@@ -613,13 +611,9 @@
   <string name="permission_camera_request_body">Para escanear el código QR, Zerion necesita acceso a la cámara.</string>
   <string name="permission_location_title">Permiso de ubicación</string>
   <string name="permission_nearby_devices_title">Permiso de dispositivos cercanos</string>
-  <string name="permission_location_request_body">Para descubrir dispositivos Bluetooth, Zerion necesita permiso para acceder tu ubicación.\n\nZerion no la almacena o la comparte con nadie.</string>
   <string name="permission_camera_location_title">Cámara y ubicación</string>
-  <string name="permission_camera_location_request_body">Para escanear el código QR, Zerion necesita acceso a la cámara.\n\nPara descubrir dispositivos Bluetooth, Zerion necesita permiso para acceder tu ubicación.\n\nZerion no la almacena o la comparte con nadie.</string>
   <string name="permission_camera_denied_body">Has denegado el acceso a la cámara, pero para añadir contactos se requiere el uso de la cámara.\n\nPor favor considera la posibilidad de conceder el acceso.</string>
-  <string name="permission_location_denied_body">Has denegado el acceso a tu ubicación, pero Zerion necesita este permiso para descubrir dispositivos Bluetooth.\n\nPor favor considera la posibilidad de conceder el acceso.</string>
   <string name="permission_location_setting_title">Configuración de ubicación</string>
-  <string name="permission_location_setting_body">La configuración de ubicación de tu dispositivo debe estar activada para encontrar otros dispositivos vía Bluetooth. Por favor, habilita ubicación para continuar. Puedes deshabilitarla nuevamente con posterioridad.</string>
   <string name="permission_location_setting_button">Activar ubicación</string>
   <string name="lock_unlock">Desbloquear Zerion</string>
   <string name="lock_unlock_verbose">Entrar el NPI de tu dispositivo, patrón o contraseña para desbloquear Zerion</string>
@@ -627,12 +621,8 @@
   <string name="lock_unlock_password">Usa la contraseña</string>
   <string name="lock_is_locked">Zerion está bloqueado</string>
   <string name="lock_tap_to_unlock">Golpear para desbloquear</string>
-  
-  <string name="transports_help_text">Zerion puede conectar a tus contactos vía Internet, Wi-Fi o Bluetooth.\n\nTodas las conexiones a Internet van a través de la red Tor por privacidad.\n\nSi un contacto puede ser alcanzado por múltiples métodos, Zerion los usa en paralelo.</string>
-  
+
   <string name="removable_drive_menu_title">Conectar a través de Discos Removibles</string>
-  <string name="removable_drive_intro">Si no puedes conectarte con tu contacto vía Internet, Wi-Fi o Bluetooth, Zerion también puede transferir mensajes en un disco removible, tal como una memoria USB o tarjeta SD.</string>
-  <string name="removable_drive_explanation">Si no puedes conectarte con tu contacto vía Internet, Wi-Fi o Bluetooth, Zerion también puede transferir mensajes en un disco removible, tal como una memoria USB o tarjeta SD.\n\nCuando usas el botón \"Enviar Datos\", cualesquiera datos que estén esperando ser enviados al contacto serán escritos al disco removible. Esto incluye mensajes privados, adjuntos, blogs, foros y grupos privados.\n\nTodo será cifrado antes de que sea escrito al disco removible.\n\nCuando tu contacto reciba el disco removible, puede usar el botón \"Recibir Datos\" para importar los mensajes dentro de Zerion.</string>
   <string name="removable_drive_title_send">Enviar Datos</string>
   <string name="removable_drive_title_receive">Recibir Datos</string>
   <string name="removable_drive_send_intro">Pulsa el botón de abajo para crear un nuevo archivo conteniendo los mensajes cifrados. Puedes elegir dónde será guardado el archivo.\n\nSi quieres guardarlo en un disco removible, insértalo ahora.</string>
@@ -650,8 +640,7 @@
   <string name="removable_drive_error_send_text">Hubo un error escribiendo los datos al archivo.\n\nSi estás usando un disco removible, asegúrate de que esté apropiadamente insertado e inténtalo de nuevo.\n\nSi el error persiste, por favor envía tus comentarios para que el equipo de Zerion conozca acerca de esta dificultad.</string>
   <string name="removable_drive_error_receive_title">Error al importar datos</string>
   <string name="removable_drive_error_receive_text">El archivo seleccionado no contenía nada que Zerion pudiera reconocer.\n\nPor favor comprueba que hayas elegido el archivo correcto.\n\nSi tu contacto creó el archivo más de 28 días atrás, Zerion no será capaz de reconocerlo.</string>
-  
-  
+
   <string name="screenshot_alice">Alicia</string>
   
   <string name="screenshot_bob">Roberto</string>
@@ -664,7 +653,6 @@
   
   <string name="screenshot_message_3">Sin problema, espero que te guste 😀</string>
 
-	
 	<string name="vault_unlock_button">Desbloquear</string>
 	<string name="vault_password_mismatch">Las contraseñas no coinciden</string>
 	<string name="vault_password_too_short">La contraseña debe tener al menos 8 caracteres</string>
@@ -688,22 +676,18 @@
 	<string name="vault_enable_biometric">Activar desbloqueo biométrico</string>
 	<string name="vault_auto_lock_timeout">Tiempo de bloqueo automático</string>
 
-	
 	<string name="security_threat_detected">Amenaza de seguridad detectada. Por favor, revise su dispositivo en busca de software malicioso.</string>
 	<string name="pref_screenshot_protection_title">Protección de capturas de pantalla</string>
 	<string name="pref_screenshot_protection_summary">Prevenir capturas de pantalla y grabaciones de contenido sensible</string>
 	<string name="security_warning_title">Advertencia de seguridad</string>
 
-	
 	<string name="tor_status_title">Estado de la red Tor</string>
 	<string name="tor_status_connected">Conectado a la red Tor</string>
 	<string name="tor_status_disconnected">Desconectado de la red Tor</string>
 	<string name="tor_status_connecting">Conectando a la red Tor…</string>
 
-	
 	<string name="voice_call">Llamada de voz</string>
 
-	
 	<string name="security_level_post_quantum">Seguridad Post-Cuántica</string>
 	<string name="security_level_post_quantum_short">PQ</string>
 	<string name="security_level_classical">Seguridad Clásica</string>
@@ -711,14 +695,12 @@
 	<string name="security_level_post_quantum_description">Este contacto usa criptografía híbrida post-cuántica (X25519 + ML-KEM-768), que proporciona protección contra futuros ataques de computadoras cuánticas.</string>
 	<string name="security_level_classical_description">Este contacto usa criptografía clásica. Actualiza ambas apps a Zerion para seguridad post-cuántica.</string>
 
-	
 	<string name="login_account_locked">Cuenta bloqueada por demasiados intentos fallidos. Por favor espera %1$d minutos y %2$d segundos.</string>
 	<string name="login_final_warning">ADVERTENCIA: Después de 3 intentos fallidos más, todos los datos serán eliminados permanentemente por seguridad.</string>
 	<string name="login_attempts_remaining">Contraseña inválida. Quedan %d intentos antes del bloqueo.</string>
 	<string name="login_data_wiped_title">Protección de Seguridad Activada</string>
 	<string name="login_data_wiped_message">Todos los datos han sido eliminados permanentemente debido a repetidos intentos fallidos de inicio de sesión. Esta es una función de seguridad para proteger tus datos.</string>
 
-	
 	<string name="wipe_password_title">Contraseña de Borrado</string>
 	<string name="wipe_password_summary">Establece una contraseña que borre inmediatamente todos los datos al ingresarla</string>
 	<string name="wipe_password_summary_enabled">La contraseña de borrado está activa</string>
@@ -742,14 +724,12 @@
 	<string name="set">Establecer</string>
 	<string name="remove">Eliminar</string>
 
-	
 	<string name="zerion_call">Llamada Zerion</string>
 	<string name="call_connecting">Conectando…</string>
 	<string name="mute">Silenciar</string>
 	<string name="speaker">Altavoz</string>
 	<string name="end_call">Finalizar llamada</string>
 
-	
 	<string name="contact_type_selection_title">Elegir Tipo de Conexión</string>
 	<string name="contact_type_selection_subtitle">Selecciona cómo quieres conectarte con tu contacto</string>
 	<string name="contact_type_zerion_title">Zerion</string>

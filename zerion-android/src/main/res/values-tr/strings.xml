@@ -86,8 +86,7 @@
   <string name="tor_plugin_status_disabled_country_blocked">Zerion bu ülkede İnternet kullanmayacak şekilde yapılandırılmış</string>
   
   <string name="transport_lan_long">Aynı Wi-Fi ağı</string>
-  
-  
+
   <string name="reminder_notification_title">Zerion oturumu kapatıldı</string>
   <string name="reminder_notification_text">Yeniden oturum açmak için dokunun.</string>
   <string name="reminder_notification_channel_title">Zerion oturum açma anımsatıcısı</string>
@@ -368,8 +367,7 @@
   <string name="nobody">Hiç kimse</string>
   
   <string name="read_more">diğerlerini oku</string>
-  
-  
+
   
   <string name="change_profile_picture">Profil görselinizi değiştirmek için dokunun</string>
   <string name="dialog_confirm_profile_picture_title">Profil görselinizi değiştirin</string>
@@ -601,13 +599,9 @@
   <string name="permission_camera_request_body">Zerion kare kodu tarayabilmek için kameraya erişme iznine gerek duyuyor.</string>
   <string name="permission_location_title">Konuma erişme izni</string>
   <string name="permission_nearby_devices_title">Yakındaki aygıtlara erişme izni</string>
-  <string name="permission_location_request_body">Zerion Bluetooth aygıtlarını bulabilmek için konumunuza erişme iznine gerek duyuyor.\n\nZerion konum bilginizi kaydetmez ve kimseyle paylaşmaz.</string>
   <string name="permission_camera_location_title">Kamera ve konuma erişme izni</string>
-  <string name="permission_camera_location_request_body">Zerion kare kodu tarayabilmek için kameraya erişme iznine gerek duyuyor.\n\nZerion Bluetooth aygıtlarını bulabilmek için konumunuza erişme iznine gerek duyuyor.\n\nZerion konum bilginizi kaydetmez ve kimseyle paylaşmaz.</string>
   <string name="permission_camera_denied_body">Kameraya erişme izni vermemişsiniz. Ancak Zerion kişileri ekleyebilmek için kameraya erişme iznine gerek duyuyor.\n\nLütfen kameraya erişme izni vermeyi değerlendirin.</string>
-  <string name="permission_location_denied_body">Konumunuza erişme izni vermemişsiniz. Ancak Zerion Bluetooth aygıtlarını bulabilmek için konum bilginize erişme iznine gerek duyuyor.\n\nLütfen konumunuza erişme izni vermeyi değerlendirin.</string>
   <string name="permission_location_setting_title">Konum ayarı</string>
-  <string name="permission_location_setting_body">Bluetooth ile diğer aygıtları bulabilmek için aygıtınızın konum ayarının açık olması gerekiyor. İlerlemek için lütfen konum ayarını açın. Daha sonra yeniden kapatabilirsiniz. </string>
   <string name="permission_location_setting_button">Konumu aç</string>
   <string name="lock_unlock">Zerion kilidini aç</string>
   <string name="lock_unlock_verbose">Zerion kilidini açmak için aygıtınızın PIN kodunu ya da parolasını yazın ya da desenini çizin</string>
@@ -615,12 +609,8 @@
   <string name="lock_unlock_password">Parolayı kullan</string>
   <string name="lock_is_locked">Zerion kilitli</string>
   <string name="lock_tap_to_unlock">Kilidi açmak için dokunun</string>
-  
-  <string name="transports_help_text">Zerion kişilerinizle İnternet, Wi-Fi veya Bluetooth üzerinden bağlantı kurabilir.\n\nTüm İnternet bağlantıları gizliliğinizi korumak için Tor ağı üzerinden yapılır.\n\nBir kişiye birden fazla yöntemle erişilebiliyorsa, Zerion bu yöntemleri paralel olarak kullanır.</string>
-  
+
   <string name="removable_drive_menu_title">Çıkarılabilir sürücü ile bağlan</string>
-  <string name="removable_drive_intro">İnternet, Wi-Fi veya Bluetooth ile bağlantı kuramıyorsanız, Zerion iletileri USB bellek veya SD kart gibi bir çıkarılabilir bir sürücüyle de aktarabilir.</string>
-  <string name="removable_drive_explanation">İnternet, Wi-Fi veya Bluetooth ile bağlantı kuramıyorsanız, Zerion iletileri USB bellek veya SD kart gibi çıkarılabilir bir sürücüyle de aktarabilir.\n\n\"Verileri gönder\" düğmesini kullandığınızda, kişilere gönderilmeyi bekleyen veriler çıkarılabilir sürücüye yazılır. Bu verilerde, özel iletiler, ek dosyalar, günlükler, forumlar ve özel gruplar bulunur.\n\nÇıkarılabilir sürücüye kaydedilmeden önce her şey şifrelenir.\n\nKişiler çıkarılabilir sürücüyü aldığında, \"Verileri al\" düğmesini kullanarak iletileri Zerion üzerine aktarabilir.</string>
   <string name="removable_drive_title_send">Verileri gönder</string>
   <string name="removable_drive_title_receive">Verileri al</string>
   <string name="removable_drive_send_intro">Şifrelenmiş iletilerin bulunduğu yeni bir dosya oluşturmak için aşağıdaki düğmeye dokunun. Dosyanın kaydedileceği yeri seçebilirsiniz.\n\nÇıkarılabilir bir sürücü kullanmak istiyorsanız, sürücüyü şimdi takın.</string>
@@ -638,8 +628,7 @@
   <string name="removable_drive_error_send_text">Veriler dosyaya yazılırken bir sorun çıktı.\n\nÇıkarılabilir bir sürücü kullanıyorsanız, doğru şekilde takıldığından emin olun ve yeniden deneyin.\n\nSorun sürerse, bu sorunu Zerion ekibine bildirin.</string>
   <string name="removable_drive_error_receive_title">Veriler içe aktarılırken sorun çıktı</string>
   <string name="removable_drive_error_receive_text">Seçilmiş olan dosyada Zerion tarafından tanınabilecek bir şey bulunamadı.\n\nLütfen doğru dosyayı seçtiğinizden emin olun.\n\nKişiniz dosyayı 28 günden önce oluşturduysa, Zerion onu tanıyamayabilir.</string>
-  
-  
+
   <string name="screenshot_alice">Alice</string>
   
   <string name="screenshot_bob">Bob</string>
@@ -652,7 +641,6 @@
   
   <string name="screenshot_message_3">Sorun değil, umarım beğenirsin 😀</string>
 
-	
 	<string name="vault_unlock_button">Kilidi aç</string>
 	<string name="vault_password_mismatch">Şifreler eşleşmiyor</string>
 	<string name="vault_password_too_short">Şifre en az 8 karakter olmalıdır</string>
@@ -676,19 +664,16 @@
 	<string name="vault_enable_biometric">Biyometrik kilidi açmayı etkinleştir</string>
 	<string name="vault_auto_lock_timeout">Otomatik kilitleme süresi</string>
 
-	
 	<string name="security_threat_detected">Güvenlik tehdidi tespit edildi. Lütfen cihazınızda kötü amaçlı yazılım olup olmadığını kontrol edin.</string>
 	<string name="pref_screenshot_protection_title">Ekran görüntüsü koruması</string>
 	<string name="pref_screenshot_protection_summary">Hassas içeriğin ekran görüntülerini ve ekran kayıtlarını önle</string>
 	<string name="security_warning_title">Güvenlik uyarısı</string>
 
-	
 	<string name="tor_status_title">Tor ağ durumu</string>
 	<string name="tor_status_connected">Tor ağına bağlandı</string>
 	<string name="tor_status_disconnected">Tor ağından bağlantı kesildi</string>
 	<string name="tor_status_connecting">Tor ağına bağlanılıyor…</string>
 
-	
 	<string name="voice_call">Sesli arama</string>
 
 </resources>

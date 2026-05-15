@@ -64,8 +64,7 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   <string name="sign_out_button">Se desconnectar</string>
   
   <string name="transport_tor">Internet</string>
-  
-  
+
   
   <string name="reminder_notification_title">Desconnectat de Zerion</string>
   <string name="reminder_notification_text">Tocatz per vos desconnectar</string>
@@ -301,8 +300,7 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   <string name="nobody">Degun</string>
   
   <string name="read_more">Legir la seguida</string>
-  
-  
+
   
   
   <string name="pref_language_title">Lenga &amp; region</string>
@@ -375,8 +373,7 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   <string name="notify_sound_setting_disabled">Cap</string>
   <string name="choose_ringtone_title">Causir la sonariá</string>
   <string name="cannot_load_ringtone">Cargament impossible de las sonariás</string>
-  
-  
+
   <string name="send_feedback">Enviar vòstres comentaris</string>
   
   <string name="link_warning_title">Avertiment de ligam</string>
@@ -408,11 +405,7 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   <string name="permission_camera_title">Permission de la camèra</string>
   <string name="permission_camera_request_body">Per numerizar lo còdi QR cal que Zerion aja l’accès a la camèra.</string>
   <string name="permission_location_title">Autorizacion de localizacion</string>
-  <string name="permission_location_request_body">Per trobar de periferics Bluetooth, Zerion deu aver l’autorizacion 
-d’accedir a vòstra posicion.\n\n Zerion garda pas vòstra posicion e la 
-parteja pas amb degun.</string>
   <string name="permission_camera_location_title">Camèra e localizacion</string>
-  <string name="permission_camera_location_request_body">Per numerizar un còdi QR, Zerion deu accedir a la camèra.\n\nPer trobar de periferics Bluetooth, Zerion deu aver l’autorizacion d’accedir a vòstra posicion.\n\n Zerion garda pas vòstra posicion e la parteja pas amb degun.</string>
   <string name="permission_camera_denied_body">Avètz regetat l’accès a la camèra, mas per ajustar de contacte cal utilizar la camèra.\n\n Mercés de li donar l’accès</string>
   
   <string name="lock_unlock">Desverrolhar Zerion</string>
@@ -421,8 +414,7 @@ parteja pas amb degun.</string>
   <string name="lock_unlock_password">Utilizar lo senhal</string>
   <string name="lock_is_locked">Zerion es verrolhat</string>
   <string name="lock_tap_to_unlock">Tocatz per desverrolhar</string>
-  
-  
+
   
   <string name="screenshot_alice">Alicia</string>
   

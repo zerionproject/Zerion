@@ -87,8 +87,7 @@
   <string name="tor_plugin_status_disabled_country_blocked">O Zerion está configurado para não usar a Internet neste país</string>
   
   <string name="transport_lan_long">Mesma rede Wi-Fi</string>
-  
-  
+
   <string name="reminder_notification_title">Terminaste a sessão do Zerion</string>
   <string name="reminder_notification_text">Toca para voltar a iniciar a sessão.</string>
   <string name="reminder_notification_channel_title">Lembrete de iniciar sessão do Zerion</string>
@@ -380,8 +379,7 @@
   <string name="nobody">Ninguém</string>
   
   <string name="read_more">ler mais</string>
-  
-  
+
   
   <string name="change_profile_picture">Toca para mudar a tua fotografia do perfil</string>
   <string name="dialog_confirm_profile_picture_title">Mudar fotografia do perfil</string>
@@ -613,13 +611,9 @@ O teu contacto também pode alterar esta configuração para ambos.</string>
   <string name="permission_camera_request_body">Para digitalizar o código QR, o Zerion precisa de ter acesso à câmara.</string>
   <string name="permission_location_title">Permissão de localização</string>
   <string name="permission_nearby_devices_title">Permissão de dispositivos próximos</string>
-  <string name="permission_location_request_body">Para descobrir dispositivos Bluetooth, o Zerion precisa de permissão para aceder à tua localização.\n\nO Zerion não armazena a tua localização nem a partilha com ninguém.</string>
   <string name="permission_camera_location_title">Câmara e localização</string>
-  <string name="permission_camera_location_request_body">Para digitalizar o código QR, o Zerion precisa de acesso à câmara.\n\nPara descobrir dispositivos Bluetooth, o Zerion precisa de permissão para aceder à tua localização.\n\nO Zerion não armazena a tua localização nem a partilha com ninguém.</string>
   <string name="permission_camera_denied_body">O acesso à câmara foi negado, mas para adicionar contactos é necessário utilizar a câmara.\n\nConsidera conceder o acesso.</string>
-  <string name="permission_location_denied_body">Negaste o acesso à tua localização, mas o Zerion precisa desta permissão para descobrir dispositivos Bluetooth.\n\nConsidera conceder o acesso.</string>
   <string name="permission_location_setting_title">Configuração de localização</string>
-  <string name="permission_location_setting_body">A configuração de localização do teu dispositivo tem de estar ativada para encontrar outros dispositivos através de Bluetooth. Ativa a localização para continuar. Podes voltar a desativá-la mais tarde.</string>
   <string name="permission_location_setting_button">Ativar localização</string>
   <string name="lock_unlock">Desbloquear o Zerion</string>
   <string name="lock_unlock_verbose">Introduz o PIN, o padrão ou a palavra-passe do teu dispositivo para desbloquear o Zerion</string>
@@ -627,12 +621,8 @@ O teu contacto também pode alterar esta configuração para ambos.</string>
   <string name="lock_unlock_password">Utilizar palavra-passe</string>
   <string name="lock_is_locked">O Zerion está bloqueado</string>
   <string name="lock_tap_to_unlock">Toca para desbloquear</string>
-  
-  <string name="transports_help_text">O Zerion pode conectar-se aos teus contactos através da Internet, Wi-Fi ou Bluetooth.\n\nTodas as conexões à Internet passam pela rede Tor para maior privacidade.\n\nSe um contacto puder ser contactado por vários métodos, o Zerion utiliza-os em paralelo.</string>
-  
+
   <string name="removable_drive_menu_title">Conectar via unidade removível</string>
-  <string name="removable_drive_intro">Se não conseguires conectar-te ao teu contacto através da Internet, Wi-Fi ou Bluetooth, o Zerion também pode transferir mensagens para uma unidade amovível, como uma pen USB ou um cartão SD.</string>
-  <string name="removable_drive_explanation">Se não conseguires conectar-te ao teu contacto através da Internet, Wi-Fi ou Bluetooth, o Zerion também pode transferir mensagens para uma unidade amovível, como uma pen USB ou um cartão SD.\n\nQuando utilizares o botão \"Enviar dados\", todos os dados que estão à espera de ser enviados para o contacto serão gravados na unidade amovível. Isto inclui mensagens privadas, anexos, blogues, fóruns e grupos privados.\n\nTudo será encriptado antes de ser gravado na unidade amovível.\n\nQuando o teu contacto receber a unidade amovível, pode utilizar o botão \"Receber dados\" para importar as mensagens para o Zerion.</string>
   <string name="removable_drive_title_send">Enviar dados</string>
   <string name="removable_drive_title_receive">Receber dados</string>
   <string name="removable_drive_send_intro">Toca no botão abaixo para criar um novo ficheiro com as mensagens encriptadas. Podes escolher onde o ficheiro será guardado.\n\nSe pretenderes guardar o ficheiro numa unidade amovível, insere a unidade agora.</string>
@@ -650,8 +640,7 @@ O teu contacto também pode alterar esta configuração para ambos.</string>
   <string name="removable_drive_error_send_text">Ocorreu um erro ao gravar os dados no ficheiro.\n\nSe estiveres a utilizar uma unidade amovível, certifica-te que está corretamente inserida e tenta novamente.\n\nSe o erro persistir, envia um comentário para informar a equipa do Zerion sobre o problema.</string>
   <string name="removable_drive_error_receive_title">Erro ao importar dados</string>
   <string name="removable_drive_error_receive_text">O ficheiro selecionado não continha nada que o Zerion pudesse reconhecer.\n\nVerifica se escolheste o ficheiro correto.\n\nSe o teu contacto criou o ficheiro há mais de 28 dias, o Zerion não o poderá reconhecer.</string>
-  
-  
+
   <string name="screenshot_alice">Alice</string>
   
   <string name="screenshot_bob">Bernardo</string>
@@ -664,16 +653,13 @@ O teu contacto também pode alterar esta configuração para ambos.</string>
   
   <string name="screenshot_message_3">Não há problema, espero que gostes 😀</string>
 
-	
 	<string name="tor_status_title">Estado da Rede Tor</string>
 	<string name="tor_status_connected">Ligado à rede Tor</string>
 	<string name="tor_status_disconnected">Desligado da rede Tor</string>
 	<string name="tor_status_connecting">A ligar à rede Tor…</string>
 
-	
 	<string name="voice_call">Chamada de voz</string>
 
-	
 	<string name="security_level_post_quantum">Segurança Pós-Quântica</string>
 	<string name="security_level_post_quantum_short">PQ</string>
 	<string name="security_level_classical">Segurança Clássica</string>
@@ -681,14 +667,12 @@ O teu contacto também pode alterar esta configuração para ambos.</string>
 	<string name="security_level_post_quantum_description">Este contacto usa criptografia híbrida pós-quântica (X25519 + ML-KEM-768), que oferece proteção contra futuros ataques de computadores quânticos.</string>
 	<string name="security_level_classical_description">Este contacto usa criptografia clássica. Atualiza ambas as apps para Zerion para segurança pós-quântica.</string>
 
-	
 	<string name="login_account_locked">Conta bloqueada devido a demasiadas tentativas falhadas. Por favor aguarda %1$d minutos e %2$d segundos.</string>
 	<string name="login_final_warning">AVISO: Após mais 3 tentativas falhadas, todos os dados serão permanentemente eliminados por segurança.</string>
 	<string name="login_attempts_remaining">Palavra-passe inválida. %d tentativas restantes antes do bloqueio.</string>
 	<string name="login_data_wiped_title">Proteção de Segurança Ativada</string>
 	<string name="login_data_wiped_message">Todos os dados foram permanentemente eliminados devido a repetidas tentativas de login falhadas. Esta é uma função de segurança para proteger os teus dados.</string>
 
-	
 	<string name="wipe_password_title">Palavra-passe de Limpeza</string>
 	<string name="wipe_password_summary">Define uma palavra-passe que apague imediatamente todos os dados quando introduzida</string>
 	<string name="wipe_password_summary_enabled">A palavra-passe de limpeza está ativa</string>
@@ -712,14 +696,12 @@ O teu contacto também pode alterar esta configuração para ambos.</string>
 	<string name="set">Definir</string>
 	<string name="remove">Remover</string>
 
-	
 	<string name="zerion_call">Chamada Zerion</string>
 	<string name="call_connecting">A ligar…</string>
 	<string name="mute">Silenciar</string>
 	<string name="speaker">Altifalante</string>
 	<string name="end_call">Terminar chamada</string>
 
-	
 	<string name="contact_type_selection_title">Escolher Tipo de Ligação</string>
 	<string name="contact_type_selection_subtitle">Seleciona como queres ligar-te ao teu contacto</string>
 	<string name="contact_type_zerion_title">Zerion</string>

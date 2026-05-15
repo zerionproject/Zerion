@@ -82,8 +82,7 @@
   <string name="tor_plugin_status_disabled_country_blocked">A Zerion úgy van beállítva, hogy ne használjon Internetet ebben az országban</string>
   
   <string name="transport_lan_long">Azonos Wi-Fi hálózat</string>
-  
-  
+
   <string name="reminder_notification_title">Kilépve a Zerion-ból</string>
   <string name="reminder_notification_text">Koppints az újra belépéshez.</string>
   <string name="reminder_notification_channel_title">Zerion Belépési emlékeztető</string>
@@ -292,18 +291,7 @@ Kérjük frissítsen a legutolsó verzióra és próbálja újra.</string>
   <string name="introduction_response_accepted_received">%1$s elfogadta a bemutatkozást %2$s számára.</string>
   <string name="introduction_response_declined_received">%1$s elutasította a bemutatkozást %2$s számára.</string>
   <string name="introduction_response_declined_received_by_introducee">%1$s alapján %2$s elutasította a bemutatkozást.</string>
-  
-  <string name="menu_item_connect_via_bluetooth">Csatlakozás bluetooth-on keresztül</string>
-  <string name="connect_via_bluetooth_title">Csatlakozás bluetooth-on keresztül</string>
-  <string name="connect_via_bluetooth_intro">Ha a Bluetooth-kapcsolatok nem működnek automatikusan, ezt a képernyőt használhatja a manuális csatlakozáshoz. A kapcsolathoz a közelben kell lennie. Önnek és ismerősének egyszerre kell megnyomnia a „Start” gombot.</string>
-  <string name="connect_via_bluetooth_already_discovering">Már próbál csatlakozni Bluetooth-on keresztül. Kérjük, próbálja újra rövidesen.</string>
-  <string name="connect_via_bluetooth_no_location_permission">Nem folytatható hely engedélyek nélkül</string>
-  <string name="connect_via_bluetooth_no_bluetooth_permission">Nem folytatható a közeli eszközök engedélye nélkül</string>
-  <string name="connect_via_bluetooth_start">Csatlakozás Bluetooth-on...</string>
-  <string name="connect_via_bluetooth_success">Sikeres csatlakozás Bluetooth-on.</string>
-  <string name="connect_via_bluetooth_error">Nem sikerült csatlakozni Bluetooth-on.</string>
-  <string name="connect_via_bluetooth_error_not_supported">Az eszköz nem támogatja a Bluetooth-t.</string>
-  
+
   <string name="groups_list_empty">Nincs megjeleníthető csoport</string>
   <string name="groups_list_empty_action">Koppintson a + ikonra csoport létrehozásához, vagy kérje meg kapcsolatait, hogy osszanak meg csoportokat Önnel</string>
   <string name="groups_created_by">Létrehozta %s</string>
@@ -378,8 +366,7 @@ Kérjük frissítsen a legutolsó verzióra és próbálja újra.</string>
   <string name="read_more">olvasson tovább</string>
 
 A bejegyzések törlődni fognak az eszközödről, de a többi ember eszközéről nem .
-  
-  
+
 \n\nA bejegyzések törlődni fognak az Ön eszközéről, de nem a többi ember eszközéről.\n\nKapcsolatai, akivel megosztotta ezt a feed-et, lehet nem kapnak többé frissítést.</string>
   
   <string name="change_profile_picture">Koppintson a profilképe cseréjéhez</string>
@@ -600,13 +587,9 @@ Vigyázat: Ez végleg törli az identitásait, kapcsolatait és üzeneteit</stri
   <string name="permission_camera_request_body">A QR kód olvasáshoz a Zerion-nak szüksége van kamera hozzáférésre.</string>
   <string name="permission_location_title">Hely engedélyek</string>
   <string name="permission_nearby_devices_title">Közeli eszközök engedélye</string>
-  <string name="permission_location_request_body">A Bluetooth eszközök észleléséhez a Zerion-nak szükségve van a lokációhoz hozzáférésre.\n\nA Zerion nem tárolja lokációját vagy ossza meg bárkivel.</string>
   <string name="permission_camera_location_title">Kamera és lokáció</string>
-  <string name="permission_camera_location_request_body">A QR kód beszkenneléséhez a Zerion-nak szüksége van a Kamerához hozzáférésre.\n\nA Bluetooth eszközök észleléséhez a Zerion-nak szükségve van a lokációhoz hozzáférésre.\n\nA Zerion nem tárolja lokációját vagy ossza meg bárkivel.</string>
   <string name="permission_camera_denied_body">Megtiltotta hozzáférést a kamerához, de a kapcsolatok hozzáadásához szükséges a kamera.\n\nKérjük gondolja meg a jog megadását.</string>
-  <string name="permission_location_denied_body">Megtiltotta hozzáférést a helyhez, azonban a Zerion-nak szüksége van erre, hogy detektálja a Bluetooth eszközöket.\n\nKérjük gondolja meg a jog megadását.</string>
   <string name="permission_location_setting_title">Hely beállítás</string>
-  <string name="permission_location_setting_body">Az eszköze hely beállításai be kell kapcsolva legyenek, hogy megtaláljon más eszközöket Bluetooth-on. Kérjük engedélyezze a folytatáshoz. Utána újra letilthatja.</string>
   <string name="permission_location_setting_button">Hely engedélyezése</string>
   <string name="lock_unlock">Zerion feloldása</string>
   <string name="lock_unlock_verbose">Adja meg az eszköz PIN-t, jelszó mintát vagy jelszót a Zerion feloldásához</string>
@@ -614,15 +597,12 @@ Vigyázat: Ez végleg törli az identitásait, kapcsolatait és üzeneteit</stri
   <string name="lock_unlock_password">Jelszó használata</string>
   <string name="lock_is_locked">A Zerion zárolt</string>
   <string name="lock_tap_to_unlock">Koppintson a zárolás feloldásához</string>
-  
-  <string name="transports_help_text">A Zerion Interneten, Wi-Fi-n vagy Bluetooth-on keresztül csatlakozhat kapcsolataihoz.\n\nAz összes internetkapcsolat a Tor hálózaton megy keresztül megy az adatvédelem érdekében.\n\nHa egy kapcsolatot több módszerrel is el lehet érni, Zerion párhuzamosan használja azokat.</string>
-  
+
   <string name="removable_drive_menu_title">Csatlakozás eltávolítható adathordozón keresztül</string>
   <string name="removable_drive_receive_button">Válassza ki az importálandó fájlt:</string>
   <string name="removable_drive_success_send_title">Sikeres exportálás</string>
   <string name="removable_drive_success_receive_title">Sikeres importálás</string>
-  
-  
+
   <string name="screenshot_alice">Alíz</string>
   
   <string name="screenshot_bob">Bob</string>

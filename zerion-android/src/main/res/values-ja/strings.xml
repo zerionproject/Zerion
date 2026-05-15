@@ -79,8 +79,7 @@
   <string name="tor_plugin_status_disabled_country_blocked">Zerionはこの国でインターネットを使用しないように設定されています</string>
   
   <string name="transport_lan_long">同じWi-Fiネットワーク</string>
-  
-  
+
   <string name="reminder_notification_title">Zerionからサインアウト</string>
   <string name="reminder_notification_text">タップして再ログインします。</string>
   <string name="reminder_notification_channel_title">Zerionサインインリマインダー</string>
@@ -352,8 +351,7 @@
   <string name="nobody">誰もいません</string>
   
   <string name="read_more">続きを読む</string>
-  
-  
+
   
   <string name="change_profile_picture">タップしてプロフィールの画像を変更</string>
   <string name="dialog_confirm_profile_picture_title">プロフィールの画像を変更</string>
@@ -585,13 +583,9 @@
   <string name="permission_camera_request_body">QRコードを読み取るには、Zerionはカメラにアクセスする必要があります。</string>
   <string name="permission_location_title">位置情報の権限</string>
   <string name="permission_nearby_devices_title">付近の端末の権限</string>
-  <string name="permission_location_request_body">Bluetooth端末を検出するには、Zerionがあなたの位置情報へアクセスする権限を必要とします。\n\nZerionはあなたの場所を保存したり、誰とも共有したりしません。</string>
   <string name="permission_camera_location_title">カメラと位置情報</string>
-  <string name="permission_camera_location_request_body">QRコードを読み取るには、Zerionはカメラにアクセスする権限を必要とします。\n\nBluetooth端末を検出するには、Zerionは現在地情報にアクセスする許可が必要です。\n\nZerionは現在地を保存したり、誰とも共有したりしません。</string>
   <string name="permission_camera_denied_body">あなたはカメラにアクセスすることを拒否しましたが、連絡先を追加するには、カメラを使用する必要があります。\n\nアクセス権を付与することを考慮願います。</string>
-  <string name="permission_location_denied_body">あなたは位置情報にアクセスすることを拒否しましたが、ZerionはBluetooth端末を発見するのに、この権限が必要です。\n\nアクセス権を付与することを考慮願います。</string>
   <string name="permission_location_setting_title">位置情報設定</string>
-  <string name="permission_location_setting_body">端末の位置情報設定は、Bluetoothを介して他の端末を見つけるために、オンにする必要があります。続けるには位置情報を有効にしてください。その後、位置情報を無効にできます。</string>
   <string name="permission_location_setting_button">位置情報を有効化</string>
   <string name="lock_unlock">Zerionのロックを解除</string>
   <string name="lock_unlock_verbose">Zerionのロックを解除するには、端末のPIN、パターン、またはパスワードを入力してください</string>
@@ -599,12 +593,8 @@
   <string name="lock_unlock_password">パスワードを使用</string>
   <string name="lock_is_locked">Zerionはロックされています</string>
   <string name="lock_tap_to_unlock">タップしてロック解除</string>
-  
-  <string name="transports_help_text">Zerionは、インターネット、Wi-Fi、Bluetoothを介して連絡先に接続することができます。\n\n全てのインターネット接続は、プライバシー保護のためにTorネットワークを経由します。\n\n複数の方法で連絡が取れる場合、Zerionはそれらを並行して使用します。</string>
-  
+
   <string name="removable_drive_menu_title">リムーバブルドライブ経由で接続する</string>
-  <string name="removable_drive_intro">インターネット、Wi-FiまたはBluetooth経由であなたの連絡先と接続できない場合、Zerionは例えばUSBメモリーまたはSDカードのような、リムーバルドライブ上でメッセージを転送することもできます。</string>
-  <string name="removable_drive_explanation">インターネット、Wi-FiまたはBluetooth経由であなたの連絡先と接続できない場合、Zerionは例えばUSBメモリーまたはSDカードのような、リムーバルドライブ上でメッセージを転送することもできます。\n\n「データ送信」ボタンを使用したとき、連絡先への送信を待っているデータは、リムーバブルドライブに書き込まれます。これは非公開メッセージ、添付、ブログ、フォーラムと非公開グループを含みます。\n\n連絡先はリムーバルドライブを受け取ったときに、Zerion内にメッセージをインポートするため、「データ受信」ボタンを使用できます。</string>
   <string name="removable_drive_title_send">データ送信</string>
   <string name="removable_drive_title_receive">データ受信</string>
   <string name="removable_drive_send_intro">暗号化されたメッセージを含む新規ファイルを作成するには、下のボタンをタップしてください。ファイルの保存先を選択できます。\n\nリムーバブルドライブ上にファイルを保存したければ、ドライブを今挿れてください。</string>
@@ -622,8 +612,7 @@
   <string name="removable_drive_error_send_text">ファイルへデータを書き込み中にエラーが発生しました。\n\nリムーバブルドライブを使用している場合、適切に挿入されていることを確かにして、再度お試しください。\n\nエラーが持続する場合、経験している問題について、Zerionチームにフィードバックを送信してください。</string>
   <string name="removable_drive_error_receive_title">データインポート中にエラー</string>
   <string name="removable_drive_error_receive_text">選択されたファイルは、Zerionが正しく認識するものが含まれていません。\n\n正しいファイルが選択されていることを確認してください。\n\n連絡先が28日より前にファイルを作成した場合、Zerionは正しく認識することができません。</string>
-  
-  
+
   <string name="screenshot_alice">アリス</string>
   
   <string name="screenshot_bob">ボブ</string>
@@ -636,7 +625,6 @@
   
   <string name="screenshot_message_3">どういたしまして！気に入ってくれるといいな😀</string>
 
-	
 	<string name="vault_unlock_button">ロック解除</string>
 	<string name="vault_password_mismatch">パスワードが一致しません</string>
 	<string name="vault_password_too_short">パスワードは8文字以上である必要があります</string>
@@ -660,19 +648,16 @@
 	<string name="vault_enable_biometric">生体認証ロック解除を有効化</string>
 	<string name="vault_auto_lock_timeout">自動ロックタイムアウト</string>
 
-	
 	<string name="security_threat_detected">セキュリティ脅威が検出されました。デバイスに悪意のあるソフトウェアがないか確認してください。</string>
 	<string name="pref_screenshot_protection_title">スクリーンショット保護</string>
 	<string name="pref_screenshot_protection_summary">機密コンテンツのスクリーンショットと画面録画を防止</string>
 	<string name="security_warning_title">セキュリティ警告</string>
 
-	
 	<string name="tor_status_title">Torネットワークステータス</string>
 	<string name="tor_status_connected">Torネットワークに接続されています</string>
 	<string name="tor_status_disconnected">Torネットワークから切断されています</string>
 	<string name="tor_status_connecting">Torネットワークに接続中…</string>
 
-	
 	<string name="voice_call">音声通話</string>
 
 </resources>

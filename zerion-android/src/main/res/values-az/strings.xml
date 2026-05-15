@@ -59,8 +59,6 @@
   <string name="sign_out_button">Çıxış</string>
   <!--Transports: Tor-->
   <string name="transport_tor">Internet</string>
-  <!--Transports: Wi-Fi-->
-  <!--Transports: Bluetooth-->
   <!--Notifications-->
   <string name="reminder_notification_title">Zerion-dan çıxdı</string>
   <string name="reminder_notification_text">Daxil olmağınız üçün toxunun.</string>

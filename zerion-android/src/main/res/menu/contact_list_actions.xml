@@ -3,8 +3,6 @@
 	xmlns:android="http://schemas.android.com/apk/res/android"
 	xmlns:app="http://schemas.android.com/apk/res-auto">
 
-	<!-- "Add contact nearby" removed - Bluetooth/WiFi disabled -->
-
 	<item
 		android:id="@+id/action_add_contact_remotely"
 		android:icon="@drawable/ic_link_menu"

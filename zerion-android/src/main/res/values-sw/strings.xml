@@ -83,8 +83,7 @@ Umepoteza nenosiri.</string>
   <string name="tor_plugin_status_disabled_country_blocked">Zerion imeundwa kutotumia mtandao kwenye nchi hii</string>
   
   <string name="transport_lan_long">mtandao sawa wa Wi_Fi</string>
-  
-  
+
   <string name="reminder_notification_title">Toka Zerion</string>
   <string name="reminder_notification_text">bonyeza Kuingia tena .</string>
   <string name="reminder_notification_channel_title">Zerion ingia kwenye kumbukumbu </string>
@@ -309,8 +308,7 @@ Umepoteza nenosiri.</string>
   <string name="nobody">Hakuna mtu </string>
   
   <string name="read_more">Soma zaidi </string>
-  
-  
+
   
   
   <string name="pref_language_title">Lugha &amp;mkoa</string>
@@ -427,9 +425,7 @@ Umepoteza nenosiri.</string>
   <string name="permission_camera_title">Ruhusa ya Kamera</string>
   <string name="permission_camera_request_body">Ili kuchanganua nambari ya QR, Zerion inahitaji ufikiaji wa kamera.</string>
   <string name="permission_location_title">Ruhusa ya eneo</string>
-  <string name="permission_location_request_body">ilikugundua vifaa vya Bluetooth, Zerion inahitaji idhini ya kufikia eneo lako. \n\ nZerion hahifadhi eneo lako au kushiriki na mtu yeyote.</string>
   <string name="permission_camera_location_title">Kamera na Eneo</string>
-  <string name="permission_camera_location_request_body">Ili kuchanganua nambari ya QR, Zerion inahitaji ufikiaji wa kamera. \n\nKugundua vifaa vya Bluetooth, Zerion inahitaji idhini ya kufikia eneo lako. \n\nZerion hahifadhi eneo lako au kushiriki na mtu yeyote.</string>
   <string name="permission_camera_denied_body">Umekataa ufikiaji wa kamera, lakini kuongeza anwani kunahitaji kutumia kamera. \n\nTafadhali fikiria kutoa idhini ya kufikia.</string>
   
   <string name="lock_unlock">Fungua Zerion</string>
@@ -438,9 +434,7 @@ Umepoteza nenosiri.</string>
   <string name="lock_unlock_password">Tumia Nywila</string>
   <string name="lock_is_locked">Zerion imefungwa </string>
   <string name="lock_tap_to_unlock">Bonyeza kufungua</string>
-  
-  <string name="transports_help_text">Zerion inaweza kuungana na anwani zako kupitia mtandao, Wi-Fi au Bluetooth. \n\n Muunganisho wote wa mtandao hupitia mtandao wa Tor kwa faragha. \n\n Ikiwa anwani inaweza kufikiwa kwa njia nyingi, Zerion huitumia kwa usawa.</string>
-  
+
   
   <string name="screenshot_alice">Alice</string>
   

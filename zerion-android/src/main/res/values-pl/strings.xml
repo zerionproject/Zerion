@@ -84,8 +84,7 @@
   <string name="tor_plugin_status_disabled_country_blocked">Zerion został skonfigurowany tak, aby nie łączył się z Internetem w tym kraju</string>
   
   <string name="transport_lan_long">Ta sama sieć Wi-Fi</string>
-  
-  
+
   <string name="reminder_notification_title">Wylogowano z Zerion</string>
   <string name="reminder_notification_text">Dotknij, aby zalogować się ponownie</string>
   <string name="reminder_notification_channel_title">Przypomnienie o zalogowaniu do Zerion</string>
@@ -384,8 +383,7 @@
   <string name="nobody">Nikt</string>
   
   <string name="read_more">czytaj więcej</string>
-  
-  
+
   
   <string name="change_profile_picture">Kliknij, aby zmienić swoje zdjęcie profilowe</string>
   <string name="dialog_confirm_profile_picture_title">Zmień zdjęcie profilowe</string>
@@ -616,13 +614,9 @@ Brak dostępu do aparatu. Spróbuj ponownie, może po ponownym uruchomieniu urz�
   <string name="permission_camera_request_body">Aby zeskanować kod QR, Zerion potrzebuje dostępu do aparatu.</string>
   <string name="permission_location_title">Zezwolenie na lokalizację </string>
   <string name="permission_nearby_devices_title">Pozwolenie do urządzeń w pobliżu</string>
-  <string name="permission_location_request_body">Aby odkryć urządzenia Bluetooth, Zerion potrzebuje zezwolenia na dostęp do twojej lokalizacji.\n\nZerion nie przechowuje twojej lokalizacji ani nie udostępnia jej nikomu.</string>
   <string name="permission_camera_location_title">Kamera i lokalizacja</string>
-  <string name="permission_camera_location_request_body">Aby zeskanować kod QR, Zerion potrzebuje dostępu do kamery.\n\nAby odkryć urządzenia Bluetooth, Zerion potrzebuje zezwolenia na dostęp do Twojej lokalizacji.\n\nZerion nie przechowuje Twojej lokalizacji ani nie udostępnia jej nikomu.</string>
   <string name="permission_camera_denied_body">Odmówiłeś dostępu do aparatu, lecz dodawanie kontaktów wymaga jego użycia.\n\nProszę rozważyć udzielenie dostępu do aparatu</string>
-  <string name="permission_location_denied_body">Zabroniłeś dostępu do Twojej lokalizacji, ale Zerion potrzebuje tego uprawnienia do wykrywania urządzeń Bluetooth.\n\nRozważ przyznanie  tego dostępu.</string>
   <string name="permission_location_setting_title">Ustawienia lokalizacji</string>
-  <string name="permission_location_setting_body">Ustawienie lokalizacji urządzenia musi być włączone, aby można było znaleźć inne urządzenia przez Bluetooth. Włącz lokalizację, aby kontynuować. Później możesz ją ponownie wyłączyć.</string>
   <string name="permission_location_setting_button">Włącz lokalizację</string>
   <string name="lock_unlock">Odblokuj Zerion</string>
   <string name="lock_unlock_verbose">Wprowadź PIN swojego urządzenia, wzór lub hasło aby odblokować Zerion</string>
@@ -630,12 +624,8 @@ Brak dostępu do aparatu. Spróbuj ponownie, może po ponownym uruchomieniu urz�
   <string name="lock_unlock_password">Użyj hasła</string>
   <string name="lock_is_locked">Zerion jest zablokowany</string>
   <string name="lock_tap_to_unlock">Dotknij by odblokować</string>
-  
-  <string name="transports_help_text">Zerion może łączyć się z Twoimi kontaktami przez Internet, Wi-Fi lub Bluetooth.\n\nWszystkie połączenia internetowe przechodzą przez sieć Tor w celu zachowania prywatności.\n\nJeśli z kontaktem można się połączyć na wiele sposobów, Zerion używa ich równolegle. </string>
-  
+
   <string name="removable_drive_menu_title">Połącz przez Dysk Przenośny</string>
-  <string name="removable_drive_intro">Jeśli nie możesz połączyć się ze swoim kontaktem przez Internet, Wi-Fi lub Bluetooth, Zerion może również przesyłać wiadomości na dysk wymienny, taki jak pamięć USB lub karta SD.</string>
-  <string name="removable_drive_explanation">Jeśli nie możesz połączyć się z kontaktem przez Internet, Wi-Fi lub Bluetooth, Zerion może również przesyłać wiadomości na dysk wymienny, taki jak pamięć USB lub karta SD.\n\nGdy użyjesz przycisku „Wyślij dane” wszelkie dane oczekujące na wysłanie do kontaktu zostaną zapisane na dysku wymiennym. Obejmuje to prywatne wiadomości, załączniki, blogi, fora i prywatne grupy.\n\nWszystko zostanie zaszyfrowane przed zapisaniem na dysku wymiennym.\n\nGdy Twój kontakt otrzyma dysk wymienny, może użyć przycisku „Odbierz dane” aby zaimportować wiadomości do Zerion.</string>
   <string name="removable_drive_title_send">Wyślij dane</string>
   <string name="removable_drive_title_receive">Odbierz dane</string>
   <string name="removable_drive_send_intro">Dotknij przycisku poniżej, aby utworzyć nowy plik zawierający zaszyfrowane wiadomości. Możesz wybrać, gdzie plik zostanie zapisany.\n\nJeśli chcesz zapisać plik na dysku wymiennym, włóż dysk teraz.</string>
@@ -653,8 +643,7 @@ Brak dostępu do aparatu. Spróbuj ponownie, może po ponownym uruchomieniu urz�
   <string name="removable_drive_error_send_text">Wystąpił błąd podczas zapisywania danych do pliku.\n\nJeżeli używasz dysku wymiennego, upewnij się, że jest on prawidłowo włożony i spróbuj ponownie.\n\nJeśli błąd będzie się powtarzał, prześlij opinię, aby powiadomić zespół Zerion o problemie.</string>
   <string name="removable_drive_error_receive_title">Błąd podczas importowania danych</string>
   <string name="removable_drive_error_receive_text">Wybrany plik nie zawierał niczego, co Zerion mógłby rozpoznać.\n\nSprawdź, czy wybrałeś właściwy plik.\n\nJeśli Twój kontakt utworzył plik ponad 28 dni temu, Zerion nie będzie mógł go rozpoznać.</string>
-  
-  
+
   <string name="screenshot_alice">Alicja</string>
   
   <string name="screenshot_bob">Janusz</string>

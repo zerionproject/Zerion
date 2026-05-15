@@ -88,8 +88,7 @@
   <string name="tor_plugin_status_disabled_country_blocked">Zerion je nastavený tak, aby v tejto krajine nepoužíval internet</string>
   
   <string name="transport_lan_long">Rovnaká sieť Wi-Fi</string>
-  
-  
+
   <string name="reminder_notification_title">Odhlásený z aplikácie Zerion</string>
   <string name="reminder_notification_text">Ťuknutím sa prihláste späť.</string>
   <string name="reminder_notification_channel_title">Pripomienka prihlásenia do aplikácie Zerion</string>
@@ -388,8 +387,7 @@
   <string name="nobody">Nikto</string>
   
   <string name="read_more">čítať viac</string>
-  
-  
+
   
   <string name="change_profile_picture">Ťuknutím zmeníte svoj profilový obrázok</string>
   <string name="dialog_confirm_profile_picture_title">Zmeniť profilový obrázok</string>
@@ -622,13 +620,9 @@
   <string name="permission_camera_request_body">Na naskenovanie QR kódu potrebuje Zerion prístup ku kamere.</string>
   <string name="permission_location_title">Povolenie na určenie polohy</string>
   <string name="permission_nearby_devices_title">Povolenie pre blízke zariadenia</string>
-  <string name="permission_location_request_body">Na zistenie zariadení Bluetooth potrebuje Zerion povolenie na prístup k vašej polohe.\n\nZerion neukladá vašu polohu ani ju s nikým nezdieľa.</string>
   <string name="permission_camera_location_title">Kamera a poloha</string>
-  <string name="permission_camera_location_request_body">Na skenovanie QR kódu potrebuje Zerion prístup ku kamere.\n\nNa zistenie zariadení Bluetooth potrebuje Zerion povolenie na prístup k vašej polohe.\n\nZerion neukladá vašu polohu ani ju s nikým nezdieľa.</string>
   <string name="permission_camera_denied_body">Odmietli ste prístup k fotoaparátu, ale pridávanie kontaktov vyžaduje používanie fotoaparátu.\n\nProsím, zvážte udelenie prístupu.</string>
-  <string name="permission_location_denied_body">Odmietli ste prístup k vašej polohe, ale Zerion potrebuje toto povolenie na zistenie zariadení Bluetooth.\n\nProsím, zvážte udelenie prístupu.</string>
   <string name="permission_location_setting_title">Nastavenie polohy</string>
-  <string name="permission_location_setting_body">Nastavenie polohy vášho zariadenia musí byť zapnuté, aby ste mohli nájsť iné zariadenia prostredníctvom Bluetooth. Ak chcete pokračovať, povoľte určovanie polohy. Neskôr ho môžete opäť vypnúť.</string>
   <string name="permission_location_setting_button">Zapnúť polohu</string>
   <string name="lock_unlock">Odomknúť Zerion</string>
   <string name="lock_unlock_verbose">Na odomknutie zariadenia Zerion zadajte PIN, vzor alebo heslo.</string>
@@ -636,12 +630,8 @@
   <string name="lock_unlock_password">Použiť heslo</string>
   <string name="lock_is_locked">Zerion je zamknutý</string>
   <string name="lock_tap_to_unlock">Ťuknutím odomknite</string>
-  
-  <string name="transports_help_text">Zerion sa môže pripojiť ku kontaktom cez internet, Wi-Fi alebo Bluetooth.\n\nVšetky internetové pripojenia prechádzajú cez sieť Tor kvôli ochrane súkromia.\n\nAk sa kontakt dá dosiahnuť viacerými spôsobmi, Zerion ich bude používať paralelne.</string>
-  
+
   <string name="removable_drive_menu_title">Pripojiť cez vymeniteľný disk</string>
-  <string name="removable_drive_intro">Ak sa nemôžete pripojiť ku kontaktu cez internet, Wi-Fi alebo Bluetooth, Zerion dokáže prenášať správy aj na vymeniteľnom disku, ako je USB kľúč alebo SD karta.</string>
-  <string name="removable_drive_explanation">Ak sa nemôžete pripojiť ku kontaktu cez internet, Wi-Fi alebo Bluetooth, Zerion dokáže prenášať správy aj na vymeniteľnom disku, ako je napríklad USB kľúč alebo SD karta.\n\nPri použití tlačidla \"Odoslať údaje\" sa všetky údaje, ktoré čakajú na odoslanie kontaktu, zapíšu na vymeniteľný disk. Patria sem súkromné správy, prílohy, blogy, fóra a súkromné skupiny.\n\nVšetko bude zašifrované pred zápisom na vymeniteľný disk.\n\nKeď váš kontakt dostane vymeniteľný disk, môže použiť tlačidlo \"Prijať údaje\" na import správ do aplikácie Zerion.</string>
   <string name="removable_drive_title_send">Odoslať údaje</string>
   <string name="removable_drive_title_receive">Prijať údaje</string>
   <string name="removable_drive_send_intro">Ťuknutím na tlačidlo nižšie vytvoríte nový súbor obsahujúci zašifrované správy. Môžete si vybrať, kam sa súbor uloží.\n\nAk chcete súbor uložiť na vymeniteľný disk, vložte ho teraz.</string>
@@ -659,8 +649,7 @@
   <string name="removable_drive_error_send_text">Došlo k chybe pri zápise údajov do súboru.\n\nAk používate vymeniteľný disk, uistite sa, že je správne vložený a skúste to znova.\n\nAk chyba pretrváva, pošlite spätnú väzbu a informujte o probléme tím Zerion.</string>
   <string name="removable_drive_error_receive_title">Chyba pri importovaní údajov</string>
   <string name="removable_drive_error_receive_text">Vybraný súbor neobsahoval nič, čo by Zerion mohol rozpoznať.\n\nProsím, skontrolujte, či ste vybrali správny súbor.\n\nAk váš kontakt vytvoril súbor pred viac ako 28 dňami, Zerion ho nebude môcť rozpoznať.</string>
-  
-  
+
   <string name="screenshot_alice">Alica</string>
   
   <string name="screenshot_bob">Robo</string>

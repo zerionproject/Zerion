@@ -84,8 +84,7 @@
   <string name="tor_plugin_status_disabled_country_blocked">Zerion е настроен да не използва интернет в тази държава</string>
   
   <string name="transport_lan_long">Същата безжична мрежа</string>
-  
-  
+
   <string name="reminder_notification_title">Отписани сте от Zerion</string>
   <string name="reminder_notification_text">За да влезете, докоснете</string>
   <string name="reminder_notification_channel_title">Напомняне за вход в Zerion</string>
@@ -366,8 +365,7 @@
   <string name="nobody">Никого</string>
   
   <string name="read_more">повече</string>
-  
-  
+
   
   <string name="change_profile_picture">Докоснете за смяна на профилната снимка</string>
   <string name="dialog_confirm_profile_picture_title">Смяна на профилна снимка</string>
@@ -593,13 +591,9 @@
   <string name="permission_camera_request_body">За да сканира кода за QR, Zerion трябва да използва камерата.</string>
   <string name="permission_location_title">Разрешение за местоположение</string>
   <string name="permission_nearby_devices_title">Разрешение за устройства наблизо</string>
-  <string name="permission_location_request_body">За да открива устройства чрез Bluetooth, Zerion се нуждае от разрешение за достъп до местоположението.\n\nZerion не го пази и не го споделя с никого.</string>
   <string name="permission_camera_location_title">Камера и местоположение</string>
-  <string name="permission_camera_location_request_body">За да сканира кода за QR, Zerion трябва да използва камерата.\n\nЗа да открива устройства чрез Bluetooth, Zerion трябва да има достъп до местоположението.\n\nZerion не го пази и не го споделя с никого.</string>
   <string name="permission_camera_denied_body">Отказахте достъп до камерата, но достъп е необходим за добавяне на контакти.\n\nОбмислете дали да не дадете разрешение.</string>
-  <string name="permission_location_denied_body">Отказахте достъп до местоположението, но достъп е необходим за откриване на устройства чрез Bluetooth.\n\nОбмислете дали да не дадете разрешение.</string>
   <string name="permission_location_setting_title">Настройки на местоположението</string>
-  <string name="permission_location_setting_body">За да бъдат откривани устройства чрез Bluetooth местоположението на устройството ви трябва да е включено. За да продължите включете местоположението. След това можете да го изключите.</string>
   <string name="permission_location_setting_button">Включване на местеположение</string>
   <string name="lock_unlock">Отключете Zerion</string>
   <string name="lock_unlock_verbose">Въведете своя PIN, фигура или парола</string>
@@ -607,12 +601,8 @@
   <string name="lock_unlock_password">Използване на парола</string>
   <string name="lock_is_locked">Zerion е заключен</string>
   <string name="lock_tap_to_unlock">Докоснете за отключване</string>
-  
-  <string name="transports_help_text">Zerion може да се свърже с контактите ви през интернет, Wi-Fi или Bluetooth.\n\nЗа повече поверителност цялата връзка към интернет се пренасочва през мрежата на Tor.\n\nАко даден контакт може да бъде достъпен чрез няколко метода Zerion ги използва успоредно.</string>
-  
+
   <string name="removable_drive_menu_title">Свързване чрез преносим диск</string>
-  <string name="removable_drive_intro">Ако не можете да се свържете с контакта си чрез интернет, безжична мрежа или Bluetooth, Zerion може да прехвърли съобщенията и на преносим диск, например памет на USB или SD карта.</string>
-  <string name="removable_drive_explanation">Ако не можете да се свържете с контакта си чрез интернет, безжична мрежа или Bluetooth, Zerion може да прехвърли съобщенията и на преносим диск, например памет на USB или SD карта.\n\nКогато използвате бутона „Изпращане на сведения“, всичко, коeто чака да бъде изпратено на контакта, ще бъде записано на преносимия диск. Това включва лични съобщения, прикачени файлове, блогове, форуми и частни групи.\n\nПреди да бъде записано на преносимия диск, всичко ще бъде шифровано.\n\nКогато контактът ви получи сменяемото устройство, за да внесе съобщенията в Zerion, той може да използва бутона „Получаване на сведения“.</string>
   <string name="removable_drive_title_send">Изпращане на сведения</string>
   <string name="removable_drive_title_receive">Получаване на сведения</string>
   <string name="removable_drive_send_intro">Докоснете бутона по-долу, за да бъде създаден файл, който ще съдържа шифрованите съобщения. Можете да изберете къде да бъде запазен този файл.\n\nАко желаете да го запазите на преносим диск го включете сега.</string>
@@ -630,8 +620,7 @@
   <string name="removable_drive_error_send_text">Информацията не може да бъде записана във файла.\n\nАко използвате преносим диск се уверете, че е включен правилно и опитайте отново.\n\nАко грешката продължава да се проявява изпратете обратна връзка до екипа на Zerion, за да ги уведомите за проблема.</string>
   <string name="removable_drive_error_receive_title">Грешка при внасяне</string>
   <string name="removable_drive_error_receive_text">Избраният файл не съдържа нищо, което Zerion разпознава.\n\nУверете се, че сте избрали правилния файл.\n\nАко вашият контакт го е създал преди повече от 28 дена Zerion няма да го разпознае.</string>
-  
-  
+
   <string name="screenshot_alice">Ани</string>
   
   <string name="screenshot_bob">Боби</string>

@@ -62,8 +62,7 @@
   <string name="sign_out_button">Amaitu saioa</string>
   
   <string name="transport_tor">Internet</string>
-  
-  
+
   
   <string name="reminder_notification_title">Zerion saioa amaituta</string>
   <string name="reminder_notification_text">Sakatu saioa berriro hasteko.</string>
@@ -304,8 +303,7 @@
   <string name="nobody">Inor ez</string>
   
   <string name="read_more">irakurri gehiago</string>
-  
-  
+
   
   
   <string name="pref_language_title">Hizkuntza eta eskualdea</string>
@@ -412,9 +410,7 @@
   <string name="permission_camera_title">Kamera erabiltzeko baimena</string>
   <string name="permission_camera_request_body">QR kodea eskaneatzeko Zerion-ek kamera atzitu behar du.</string>
   <string name="permission_location_title">Kokapen baimena</string>
-  <string name="permission_location_request_body">Bluetooth gailuak aurkitzeko, Zerion aplikazioak zure kokapena atzitzeko baimena behar du.\n\n Zerion-ek ez du zure kokapena gordetzen ezta inorekin partekatzen.</string>
   <string name="permission_camera_location_title">Kamera eta kokapena</string>
-  <string name="permission_camera_location_request_body">QR kodea eskaneatzeko, Zerion aplikazioak zure kamera atzitzeko baimena behar du.\n\nBluetooth gailuak aurkitzeko, Zerion aplikazioak zure kokapena atzitzeko baimena behar du.\n\n Zerion-ek ez du zure kokapena gordetzen ezta inorekin partekatzen.</string>
   <string name="permission_camera_denied_body">Kamera atzitzeko baimena ukatu duzu, baina kontaktuak gehitzeko kamera erabili behar da.\n\nMesedez baimendu kamera atzitzea.</string>
   
   <string name="lock_unlock">Desblokeatu Zerion</string>
@@ -423,8 +419,7 @@
   <string name="lock_unlock_password">Erabili pasahitza</string>
   <string name="lock_is_locked">Zerion blokeatuta dago</string>
   <string name="lock_tap_to_unlock">Sakatu desblokeatzeko</string>
-  
-  
+
   
   <string name="screenshot_alice">Arantza</string>
   

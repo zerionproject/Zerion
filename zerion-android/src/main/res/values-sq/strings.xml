@@ -87,8 +87,7 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   <string name="tor_plugin_status_disabled_country_blocked">Zerion-i është formësuar të mos përdorë Internet në këtë vend</string>
   
   <string name="transport_lan_long">Po atë rrjet Wi-Fi</string>
-  
-  
+
   <string name="reminder_notification_title">U dol nga Zerion-i</string>
   <string name="reminder_notification_text">Prekeni që të ribëhet hyrja.</string>
   <string name="reminder_notification_channel_title">Kujtues Hyrjeje Zerion</string>
@@ -369,8 +368,7 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   <string name="nobody">Askush</string>
   
   <string name="read_more">lexoni më tepër</string>
-  
-  
+
   
   <string name="change_profile_picture">Që të ndryshoni foton e profilit tuaj, prekeni</string>
   <string name="dialog_confirm_profile_picture_title">Ndryshoni foto profili</string>
@@ -601,13 +599,9 @@ Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
   <string name="permission_camera_request_body">Që të skanojë kodin QR, Zerion-i lypset të hyjë te kamera.</string>
   <string name="permission_location_title">Leje vendi</string>
   <string name="permission_nearby_devices_title">Leje pajisjesh atypari</string>
-  <string name="permission_location_request_body">Që të pikasë pajisje Bluetooth, Zerion-i lyp leje të njohë vendin tuaj.\n\nZerion-i nuk e depoziton vendin tuaj, as e ndan me dikë.</string>
   <string name="permission_camera_location_title">Kamera dhe vend</string>
-  <string name="permission_camera_location_request_body">Që të skanojë kodin QR, Zerion-it i duhet të përdorë kamerën.\n\nQë të pikasë pajisje Bluetooth, Zerion-i lyp leje të njohë vendin tuaj.\n\nZerion-i nuk e depoziton vendin tuaj, as e ndan me dikë.</string>
   <string name="permission_camera_denied_body">Keni mohuar hyrjen në kamera, por shtimi i kontakteve lyp përdorimin e kamerës.\n\nJu lutemi, shihni mundësinë e akordimit të hyrjes.</string>
-  <string name="permission_location_denied_body">Keni mohuar hyrje te vendndodhja juaj, por Zerion-i ka nevojë për këtë leje, që të mund të zbulojë pajisje Bluetooth.\n\nJu lutemi, shihni mundësinë e akordimit të hyrjes.</string>
   <string name="permission_location_setting_title">Rregullime vendndodhjeje</string>
-  <string name="permission_location_setting_body">Që të gjenden pajisje të tjera përmes Bluetooth-i, rregullimi për vendndodhjen e pajisjes tuaj duhet të jetë i aktivizuar. Ju lutemi, që të vazhdohet, aktivizoni vendndodhjen. Më pas, mund ta çaktivizoni prapë.</string>
   <string name="permission_location_setting_button">Aktivizoni vendndodhje</string>
   <string name="lock_unlock">Shkyçe Zerion-in</string>
   <string name="lock_unlock_verbose">Që të shkyçet Zerion-i, jepni PIN-in, rregullsinë ose fjalëkalimin e pajisjes tuaj</string>
@@ -615,15 +609,8 @@ Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
   <string name="lock_unlock_password">Përdor Fjalëkalim</string>
   <string name="lock_is_locked">Zerion-i është i kyçur</string>
   <string name="lock_tap_to_unlock">Prekeni që të shkyçet</string>
-  
-  <string name="transports_help_text">Zerion-i mund të lidhet me kontaktet tuaja përmes Interneti, Wi-Fi ose Bluetooth-i.\n\n
-Për privatësi, krejt lidhjet Internet kalojnë përmes rrjetit Tor.\n\n
-Nëse me një kontakt mund të bëhet lidhja përmes metodash të shumta,\n\n
-Zerion-i i përdor ato paralelisht.</string>
-  
+
   <string name="removable_drive_menu_title">Lidhu përmes Disku të Heqshëm</string>
-  <string name="removable_drive_intro">Nëse s’lidheni dot me kontaktin tuaj përmes Interneti, Wi-Fi apo Bluetooth-i, Zerion-i mund të shpërngulë mesazhe edhe përmes disqesh të heqshëm, bie fjala një diskth USB, ose një kartë SD.</string>
-  <string name="removable_drive_explanation">Nëse s’lidheni dot me kontaktin tuaj përmes Interneti, Wi-Fi apo Bluetooth-i, Zerion-i mund të shpërngulë mesazhe edhe përmes disqesh të heqshëm, bie fjala një diskth USB, ose një kartë SD.\n\nKur përdorni butonin “Dërgo të Dhëna”, çfarëdo të dhënash që po presin të dërgohen te kontakti, do të shkruhen te disku i heqshëm. Kjo përfshin mesazhe privates, bashkëngjitje, blogje, forume dhe grupe private.\n\nPara se të shkruhet te disku i heqshëm, gjithçka do të fshehtëzohet.\n\nKur kontakti juaj merr diskun e heqshëm, ai mund të përdorë butonin “Merr të Dhëna” që të importoni mesazhet në Zerion.</string>
   <string name="removable_drive_title_send">Dërgoni të dhëna</string>
   <string name="removable_drive_title_receive">Merrni të dhëna</string>
   <string name="removable_drive_send_intro">Prekni butonin më poshtë që të krijoni një kartelë të re që përmban mesazhe të fshehtëzuar. Mund të zgjidhni ku të ruhen kartelat.\n\nNëse doni të ruhet kartela në një disk të heqshëm, futeni diskun tani.</string>
@@ -641,8 +628,7 @@ Zerion-i i përdor ato paralelisht.</string>
   <string name="removable_drive_error_send_text">Pati një gabim gjatë shkrimit të të dhënave te kartela.\n\nNëse po përdorni një disk të heqshëm, sigurohuni se është futur si duhet dhe riprovoni.\n\nNëse gabimi vazhdon, ju lutemi, dërgoni një njoftim për t’ia bërë problemin të ditur ekipit të Zerion-it.</string>
   <string name="removable_drive_error_receive_title">Gabim në importim të dhënash</string>
   <string name="removable_drive_error_receive_text">Kartela e përzgjedhur nuk përmbante ndonjë gjë të kuptueshme nga Zerion-i.\n\nJu lutemi, kontrolloni se keni zgjedhur kartelën e duhur.\n\nNëse kontakti e krijoi kartelën më herët se 28 ditë më parë, Zerion-i s’do të jetë në gjendje ta hapë.</string>
-  
-  
+
   <string name="screenshot_alice">Mira</string>
   
   <string name="screenshot_bob">Beni</string>

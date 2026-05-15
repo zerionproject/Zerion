@@ -53,8 +53,6 @@
   <string name="sign_out_button">Odjava</string>
   <!--Transports: Tor-->
   <string name="transport_tor">Internet</string>
-  <!--Transports: Wi-Fi-->
-  <!--Transports: Bluetooth-->
   <!--Notifications-->
   <string name="reminder_notification_title">Odjavljeni ste iz Zeriona</string>
   <string name="reminder_notification_text">Dotaknite da se prijavite nazad.</string>
@@ -369,9 +367,7 @@
   <string name="permission_camera_title">Dozvole kamere</string>
   <string name="permission_camera_request_body">Da bi skenirao QR kod, Zerionu je potreban pristup kameri.</string>
   <string name="permission_location_title">Dozvole lokacije</string>
-  <string name="permission_location_request_body">Da bi otkrio Bluetooth uređaj, Brair treba douzvolu za pristup vašoj lokaciji.\n\nZerion neće snimati vašu lokaciju ili je dijeliti sa bilo kime.</string>
   <string name="permission_camera_location_title">Kamera i locationkacija</string>
-  <string name="permission_camera_location_request_body">Da bi skenirao QR kod, Zerion treba pristup vašoj kameri.\n\nDa bi otkrio Bluetooth uređaj, Brair treba douzvolu za pristup vašoj lokaciji.\n\nZerion neće snimati vašu lokaciju ili je dijeliti sa bilo kime.</string>
   <string name="permission_camera_denied_body">Uskratili ste pristup kameri, ali dodavanje kontakata zahtijeva pristup kameri.\n\nMolim vas da uzmete u obzir odobravanja pristupa.</string>
   <!--App Locking-->
   <string name="lock_unlock">Otključaj Zerion</string>

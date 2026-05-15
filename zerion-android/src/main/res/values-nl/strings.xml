@@ -70,8 +70,7 @@
   <string name="tor_plugin_status_disabled_country_blocked">Zerion is geconfigureerd om internet niet te gebruiken in dit land</string>
   
   <string name="transport_lan_long">Hetzelfde wifinetwerk</string>
-  
-  
+
   <string name="reminder_notification_title">Uitgelogd van Zerion</string>
   <string name="reminder_notification_text">Tik om opnieuw in te loggen.</string>
   <string name="reminder_notification_channel_title">Zerion inlogherinnering</string>
@@ -127,8 +126,7 @@
   <string name="image_attach_error_invalid_mime_type">Bestandsformaat wordt niet ondersteund: %s</string>
   <string name="set_contact_alias">Verander naam van contact</string>
   <string name="set_contact_alias_hint">Contactnaam</string>
-  
-  
+
   
   
   <string name="delete_all_messages">Verwijder alle berichten</string>
@@ -218,8 +216,7 @@
   <string name="duplicate_link_dialog_title">Duplicate link</string>
   <string name="duplicate_link_dialog_text_1">Je hebt al een wachtend contact met deze link: %s</string>
   <string name="duplicate_link_dialog_text_1_contact">Je hebt al een contact met deze link: %s</string>
-  
-  
+
   <string name="same_person_button">Zelfde persoon</string>
   
   <string name="different_person_button">Ander persoon</string>
@@ -317,8 +314,7 @@
   <string name="nobody">Niemand</string>
   
   <string name="read_more">lees meer</string>
-  
-  
+
   
   <string name="change_profile_picture">Tik om je profielfoto te wijzigen</string>
   <string name="dialog_confirm_profile_picture_title">Wijzig profielfoto</string>
@@ -453,11 +449,8 @@
   <string name="permission_camera_title">Cameratoestemming</string>
   <string name="permission_camera_request_body">Om de QR-code te scannen moet Zerion toegang hebben tot de camera.</string>
   <string name="permission_location_title">Toegang tot locatie</string>
-  <string name="permission_location_request_body">Om bluetoothapparaten te ontdekken heeft Zerion toestemming nodig tot je locatie.\n\nZerion slaat je locatie niet op en deelt het met niemand.</string>
   <string name="permission_camera_location_title">Camera en locatie</string>
-  <string name="permission_camera_location_request_body">Om de QR-code in te scannen heeft Zerion toegang nodig tot de camera.\n\nOm bluetoothapparaten te ontdekken heeft Zerion toestemming nodig tot je locatie.\n\nZerion slaat je locatie niet op en deelt het met niemand.</string>
   <string name="permission_camera_denied_body">Je hebt toegang tot de camera niet vrijgegeven, terwijl het toevoegen van contacten de camera nodig heeft.\n\nOverweeg alsjeblieft toegang vrij te geven.</string>
-  <string name="permission_location_denied_body">Je hebt geen toegang tot je locatie gegeven, maar Zerion heeft deze rechten nodig om apparaten via bluetooth te vinden.\n\nOverweeg a.u.b. deze rechten te geven.</string>
   
   <string name="lock_unlock">Ontgrendel Zerion</string>
   <string name="lock_unlock_verbose">Voer je apparaat PIN, patroon of wachtwoord in om Zerion te ontgrendelen</string>
@@ -465,12 +458,9 @@
   <string name="lock_unlock_password">Gebruik Wachtwoord</string>
   <string name="lock_is_locked">Zerion is vergrendeld</string>
   <string name="lock_tap_to_unlock">Tik om te ontgrendelen</string>
-  
-  <string name="transports_help_text">Zerion kan met je contacten verbinden via het internet, wifi of bluetooth.\n\nAlle internetverbindingen gaan voor privacy door het Tornetwerk.\n\nAls een contact via meerdere methoden te bereiken is, zal Zerion die parallel gebruiken.</string>
-  
+
   <string name="removable_drive_success_receive_title">Importeren geslaagd</string>
-  
-  
+
   <string name="screenshot_alice">Veerle</string>
   
   <string name="screenshot_bob">Soem</string>
@@ -483,7 +473,6 @@
   
   <string name="screenshot_message_3">Geen probleem, ik hoop dat je het handig vindt! 😀</string>
 
-	
 	<string name="vault_unlock_button">Ontgrendelen</string>
 	<string name="vault_password_mismatch">Wachtwoorden komen niet overeen</string>
 	<string name="vault_password_too_short">Wachtwoord moet minimaal 8 tekens bevatten</string>
@@ -507,27 +496,22 @@
 	<string name="vault_enable_biometric">Biometrisch ontgrendelen inschakelen</string>
 	<string name="vault_auto_lock_timeout">Automatische vergrendelingstijd</string>
 
-	
 	<string name="security_threat_detected">Beveiligingsdreiging gedetecteerd. Controleer uw apparaat op schadelijke software.</string>
 	<string name="pref_screenshot_protection_title">Schermafbeeldingbescherming</string>
 	<string name="pref_screenshot_protection_summary">Voorkom schermafbeeldingen en schermopnames van gevoelige inhoud</string>
 	<string name="security_warning_title">Beveiligingswaarschuwing</string>
 
-	
 	<string name="tor_status_title">Tor-netwerkstatus</string>
 	<string name="tor_status_connected">Verbonden met Tor-netwerk</string>
 	<string name="tor_status_disconnected">Verbroken van Tor-netwerk</string>
 	<string name="tor_status_connecting">Verbinding maken met Tor-netwerk…</string>
 
-	
 	<string name="voice_call">Spraakoproep</string>
 
-	
 	<string name="menu_item_disappearing_messages">Verdwijnende berichten</string>
 	<string name="disappearing_messages_setting_description">Berichten verdwijnen automatisch na de geselecteerde tijd</string>
 	<string name="off">Uit</string>
 
-	
 	<string name="security_level_post_quantum">Post-Quantum Beveiliging</string>
 	<string name="security_level_post_quantum_short">PQ</string>
 	<string name="security_level_classical">Klassieke Beveiliging</string>
@@ -535,14 +519,12 @@
 	<string name="security_level_post_quantum_description">Dit contact gebruikt hybride post-quantum cryptografie (X25519 + ML-KEM-768), wat bescherming biedt tegen toekomstige kwantumcomputeraanvallen.</string>
 	<string name="security_level_classical_description">Dit contact gebruikt klassieke cryptografie. Upgrade beide apps naar Zerion voor post-quantum beveiliging.</string>
 
-	
 	<string name="login_account_locked">Account vergrendeld vanwege te veel mislukte pogingen. Wacht alstublieft %1$d minuten en %2$d seconden.</string>
 	<string name="login_final_warning">WAARSCHUWING: Na nog 3 mislukte pogingen worden alle gegevens permanent verwijderd voor de veiligheid.</string>
 	<string name="login_attempts_remaining">Ongeldig wachtwoord. Nog %d pogingen over voordat account wordt vergrendeld.</string>
 	<string name="login_data_wiped_title">Beveiligingsprotectie Geactiveerd</string>
 	<string name="login_data_wiped_message">Alle gegevens zijn permanent verwijderd vanwege herhaalde mislukte inlogpogingen. Dit is een beveiligingsfunctie om uw gegevens te beschermen.</string>
 
-	
 	<string name="wipe_password_title">Wiswachtwoord</string>
 	<string name="wipe_password_summary">Stel een wachtwoord in dat alle gegevens onmiddellijk wist bij invoer</string>
 	<string name="wipe_password_summary_enabled">Wiswachtwoord is actief</string>
@@ -566,14 +548,12 @@
 	<string name="set">Instellen</string>
 	<string name="remove">Verwijderen</string>
 
-	
 	<string name="zerion_call">Zerion-oproep</string>
 	<string name="call_connecting">Verbinden…</string>
 	<string name="mute">Dempen</string>
 	<string name="speaker">Luidspreker</string>
 	<string name="end_call">Oproep beëindigen</string>
 
-	
 	<string name="contact_type_selection_title">Kies Verbindingstype</string>
 	<string name="contact_type_selection_subtitle">Selecteer hoe u met uw contact wilt verbinden</string>
 	<string name="contact_type_zerion_title">Zerion</string>

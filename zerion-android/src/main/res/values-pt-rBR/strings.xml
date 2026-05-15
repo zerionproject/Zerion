@@ -87,8 +87,7 @@
   <string name="tor_plugin_status_disabled_country_blocked">Zerion está configurado para não usar a Internet neste país</string>
   
   <string name="transport_lan_long">Mesma rede Wi-Fi</string>
-  
-  
+
   <string name="reminder_notification_title">Saiu do Zerion</string>
   <string name="reminder_notification_text">Toque para fazer login novamente.</string>
   <string name="reminder_notification_channel_title">Lembrete de Login do Zerion</string>
@@ -380,8 +379,7 @@
   <string name="nobody">Ninguém</string>
   
   <string name="read_more">leia mais</string>
-  
-  
+
   
   <string name="change_profile_picture">Toque para mudar sua foto de perfil</string>
   <string name="dialog_confirm_profile_picture_title">Mudar foto de perfil</string>
@@ -613,13 +611,9 @@
   <string name="permission_camera_request_body">O Zerion precisa acessar a câmera para pode escanear o código QR.</string>
   <string name="permission_location_title">Permissão para localização</string>
   <string name="permission_nearby_devices_title">Permissão de dispositivos próximos</string>
-  <string name="permission_location_request_body">Para encontrar dispositivos Bluetooth, o Zerion precisa de permissão para acessar sua localização.\n\nZerion não armazena sua localização nem a compartilha com ninguém.</string>
   <string name="permission_camera_location_title">Câmera e localização</string>
-  <string name="permission_camera_location_request_body">Para escanear o código QR, o Zerion precisa de acesso à câmera.\n\nPara encontrar dispositivos Bluetooth, o Zerion precisa de permissão para acessar a localização.\n\nZerion não armazena sua localização nem a compartilha com ninguém.</string>
   <string name="permission_camera_denied_body">Você negou acesso à câmera, mas para adicionar contatos você precisa da câmera.\n\nPor favor, pense em liberar o acesso a ela.</string>
-  <string name="permission_location_denied_body">Você desabilitou o acesso à sua localização, no entanto o Zerion precisa da permissão para saber se há dispositivos Bluetooth.\n\nPor favor, considere liberar o acesso.</string>
   <string name="permission_location_setting_title">Configuração de localização</string>
-  <string name="permission_location_setting_body">A opção de localização de seu dispositivo deve estar ativada para achar outros dispositivos via Bluetooth. Por favor, ative a localização para continuar. Você pode desativá-la em seguida.</string>
   <string name="permission_location_setting_button">Ativar localização</string>
   <string name="lock_unlock">Desbloquear o Zerion</string>
   <string name="lock_unlock_verbose">Insira o PIN, padrão ou senha do seu dispositivo para desbloquear o Zerion</string>
@@ -627,12 +621,8 @@
   <string name="lock_unlock_password">Usar senha</string>
   <string name="lock_is_locked">Zerion está bloqueado</string>
   <string name="lock_tap_to_unlock">Toque para desbloquear</string>
-  
-  <string name="transports_help_text">Zerion pode se conectar aos seus contatos via Internet, Wi-Fi ou Bluetooth.\n\nTodas as conexões com a Internet acontecem pela rede Tor, por privacidade.\n\nSe um contato pode ser alcançado de várias formas, o Zerion as utilizará em paralelo.</string>
-  
+
   <string name="removable_drive_menu_title">Conectar via Unidade Removível</string>
-  <string name="removable_drive_intro">Se você não pode se conectar ao seu contato via Internet, Wi-Fi ou Bluetooth, o Zerion tambem pode transferir mensagens em uma unidade removível como um pendrive USB ou cartão SD.</string>
-  <string name="removable_drive_explanation">Se você não pode se conectar ao seu contato via Internet, Wi-Fi ou Bluetooth, o Zerion tambem pode transferir mensagens em uma unidade removível como um pendrive USB ou cartão SD.\n\nQuando você usar o botão \"Enviar Dados\", qualquer dado que esteja aguardando envio ao seu contato será gravado na unidade removível. Isso inclui mensagens privadas, anexos, blogs, fóruns e grupos privados.\n\nTudo será criptografado antes de ser gravado na unidade removível.\n\nQuando seu contato receber a unidade removível, poderá usar o botão \"Receber Dados\" para importar as mensagens ao Zerion.</string>
   <string name="removable_drive_title_send">Enviar dados</string>
   <string name="removable_drive_title_receive">Receber dados</string>
   <string name="removable_drive_send_intro">Toque no botão abaixo para criar um novo arquivo contendo as mensagens criptografadas. Você pode escolher onde o arquivo será salvo.\n\nSe você quer salvar o arquivo numa unidade removível, insira a unidade agora.</string>
@@ -650,8 +640,7 @@
   <string name="removable_drive_error_send_text">Houve um erro ao gravar dados no arquivo. \n\nSe você está usando uma unidade removível, garanta que está propriamente inserida e tente de novo.\n\nSe o erro persistir, por favor envie feedback para que a equipe do Zerion saiba do problema.</string>
   <string name="removable_drive_error_receive_title">Erro ao importar dados</string>
   <string name="removable_drive_error_receive_text">O arquivo selecionado não contém nada que o Zerion possa reconhecer. \n\nPor favor, cheque que você selecionou o arquivo correto.\n\nSe seu contato criou o arquivo há mais de 28 dias, o Zerion não será capaz de reconhecê-lo.</string>
-  
-  
+
   <string name="screenshot_alice">Alice</string>
   
   <string name="screenshot_bob">Bob</string>
@@ -664,7 +653,6 @@
   
   <string name="screenshot_message_3">Sem problema, espero que goste 😀</string>
 
-	
 	<string name="vault_unlock_button">Desbloquear</string>
 	<string name="vault_password_mismatch">As senhas não correspondem</string>
 	<string name="vault_password_too_short">A senha deve ter pelo menos 8 caracteres</string>
@@ -688,22 +676,18 @@
 	<string name="vault_enable_biometric">Ativar desbloqueio biométrico</string>
 	<string name="vault_auto_lock_timeout">Tempo de bloqueio automático</string>
 
-	
 	<string name="security_threat_detected">Ameaça de segurança detectada. Verifique se há software malicioso em seu dispositivo.</string>
 	<string name="pref_screenshot_protection_title">Proteção contra capturas de tela</string>
 	<string name="pref_screenshot_protection_summary">Impedir capturas de tela e gravações de conteúdo sensível</string>
 	<string name="security_warning_title">Aviso de segurança</string>
 
-	
 	<string name="tor_status_title">Status da rede Tor</string>
 	<string name="tor_status_connected">Conectado à rede Tor</string>
 	<string name="tor_status_disconnected">Desconectado da rede Tor</string>
 	<string name="tor_status_connecting">Conectando à rede Tor…</string>
 
-	
 	<string name="voice_call">Chamada de voz</string>
 
-	
 	<string name="security_level_post_quantum">Segurança Pós-Quântica</string>
 	<string name="security_level_post_quantum_short">PQ</string>
 	<string name="security_level_classical">Segurança Clássica</string>
@@ -711,14 +695,12 @@
 	<string name="security_level_post_quantum_description">Este contato usa criptografia híbrida pós-quântica (X25519 + ML-KEM-768), que oferece proteção contra futuros ataques de computadores quânticos.</string>
 	<string name="security_level_classical_description">Este contato usa criptografia clássica. Atualize ambos os apps para Zerion para segurança pós-quântica.</string>
 
-	
 	<string name="login_account_locked">Conta bloqueada devido a muitas tentativas falhas. Por favor aguarde %1$d minutos e %2$d segundos.</string>
 	<string name="login_final_warning">AVISO: Após mais 3 tentativas falhas, todos os dados serão permanentemente excluídos por segurança.</string>
 	<string name="login_attempts_remaining">Senha inválida. %d tentativas restantes antes do bloqueio.</string>
 	<string name="login_data_wiped_title">Proteção de Segurança Ativada</string>
 	<string name="login_data_wiped_message">Todos os dados foram permanentemente excluídos devido a repetidas tentativas de login falhas. Esta é uma função de segurança para proteger seus dados.</string>
 
-	
 	<string name="wipe_password_title">Senha de Limpeza</string>
 	<string name="wipe_password_summary">Defina uma senha que apague imediatamente todos os dados quando digitada</string>
 	<string name="wipe_password_summary_enabled">A senha de limpeza está ativa</string>
@@ -742,14 +724,12 @@
 	<string name="set">Definir</string>
 	<string name="remove">Remover</string>
 
-	
 	<string name="zerion_call">Chamada Zerion</string>
 	<string name="call_connecting">Conectando…</string>
 	<string name="mute">Silenciar</string>
 	<string name="speaker">Alto-falante</string>
 	<string name="end_call">Encerrar chamada</string>
 
-	
 	<string name="contact_type_selection_title">Escolher Tipo de Conexão</string>
 	<string name="contact_type_selection_subtitle">Selecione como você quer se conectar com seu contato</string>
 	<string name="contact_type_zerion_title">Zerion</string>

@@ -70,8 +70,7 @@
   <string name="tor_plugin_status_disabled_country_blocked">Zerion está configurada para non usar internet neste país</string>
   
   <string name="transport_lan_long">Mesma rede Wi-Fi</string>
-  
-  
+
   <string name="reminder_notification_title">Desconectaches de Zerion</string>
   <string name="reminder_notification_text">Toca para volver a conectar</string>
   <string name="reminder_notification_channel_title">Recordatorio para conectar a Zerion</string>
@@ -242,8 +241,7 @@
   <string name="duplicate_link_dialog_title">Duplicar Ligazón</string>
   <string name="duplicate_link_dialog_text_1">Xa tes un contacto pendente con esta ligazón: %s</string>
   <string name="duplicate_link_dialog_text_1_contact">Xa tes un contacto con esta ligazón: %s</string>
-  
-  
+
   <string name="same_person_button">Mesma Persoa</string>
   
   <string name="different_person_button">Diferente Persoa</string>
@@ -343,8 +341,7 @@
   <string name="nobody">Ninguén</string>
   
   <string name="read_more">ler mais</string>
-  
-  
+
   
   <string name="change_profile_picture">Toca para cambiar a túa imaxe de perfil</string>
   <string name="dialog_confirm_profile_picture_title">Mudar imaxe de perfil</string>
@@ -494,13 +491,9 @@
   <string name="permission_camera_title">Permiso da cámara</string>
   <string name="permission_camera_request_body">Para escanear códigos QR, Zerion precisa acceso a cámara.</string>
   <string name="permission_location_title">Permiso de localización</string>
-  <string name="permission_location_request_body">Para descubrir dispositivos Bluetooth, Zerion precisa permiso para acceder a túa localización.\n\nZerion non garda a túa localización nin a comparte con ninguén.</string>
   <string name="permission_camera_location_title">Cámara e localización</string>
-  <string name="permission_camera_location_request_body">Para escanear o código QR, Zerion precisa acceso a cámara.\n\nPara descubrir dispositivos Bluetooth, Zerion precisa permiso a túa localización.\n\nZerion non garda a túa localización nin a comparte con ninguén.</string>
   <string name="permission_camera_denied_body">Denegaches o permiso de acceso a cámara, pero é necesario para engadir contactos.\n\nPor favor, considera conceder o permiso.</string>
-  <string name="permission_location_denied_body">Denegache o acceso á localización, mais Zerion precisa este permiso para descubrir dispositivos Bluetooth.\n\nConsidera conceder o permiso.</string>
   <string name="permission_location_setting_title">Axuste da localización</string>
-  <string name="permission_location_setting_body">O axuste de localización do teu dispositivo ten que activarse para atopar outros dispositivos vía Bluetooth. Activa este axuste para continuar. Podes desactivala tras finalizar.</string>
   <string name="permission_location_setting_button">Activar localización</string>
   
   <string name="lock_unlock">Desbloquear Zerion</string>
@@ -509,13 +502,10 @@
   <string name="lock_unlock_password">Utilizar contrasinal</string>
   <string name="lock_is_locked">Zerion está bloqueada</string>
   <string name="lock_tap_to_unlock">Toca para desbloquear</string>
-  
-  <string name="transports_help_text">Zerion pode conectar cos teus contactos a través de Internet, Wi-Fi ou Bluetooth.\n\nTodas as conexións a internet pasan a través da rede Tor para máis privacidade.\n\nSe un contacto é accesible de múltiples xeitos, Zerion usaráos en paralelo.</string>
-  
+
   <string name="removable_drive_menu_title">Conectar vía Disco Extraíble</string>
   <string name="removable_drive_success_receive_title">Importación exitosa</string>
-  
-  
+
   <string name="screenshot_alice">Alice</string>
   
   <string name="screenshot_bob">Bob</string>

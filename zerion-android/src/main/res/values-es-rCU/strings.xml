@@ -86,8 +86,7 @@ Por favor, instala Zerion en un dispositivo más nuevo.</string>
   <string name="tor_plugin_status_disabled_country_blocked">Zerion está configurado para no usar Internet en este país</string>
   
   <string name="transport_lan_long">Misma red Wi-Fi</string>
-  
-  
+
   <string name="reminder_notification_title">Sesión de Zerion cerrada</string>
   <string name="reminder_notification_text">Pulsa para reiniciar sesión.</string>
   <string name="reminder_notification_channel_title">Recordatorio de inicio de sesión de Zerion</string>
@@ -374,9 +373,7 @@ Por favor, instala Zerion en un dispositivo más nuevo.</string>
   <string name="read_more">leer más</string>
 
   
-  
 
-  
   <string name="change_profile_picture">Pulsar para cambiar la imagen de tu perfil</string>
   <string name="dialog_confirm_profile_picture_title">Cambiar imagen de perfil</string>
   <string name="dialog_confirm_profile_picture_remark">Solo tus contactos pueden ver esta imagen</string>
@@ -583,7 +580,6 @@ Por favor, instala Zerion en un dispositivo más nuevo.</string>
   <string name="permission_nearby_devices_title">Permiso para dispositivos cercanos</string>
   <string name="permission_camera_location_title">Cámara y ubicación</string>
   <string name="permission_location_setting_title">Herramientas de localización</string>
-  <string name="permission_location_setting_body">La configuración de ubicación de tu dispositivo debe estar activada para encontrar otros dispositivos vía Bluetooth. Por favor, habilita la ubicación para continuar. Luego puedes desactivarla nuevamente.</string>
   <string name="permission_location_setting_button">Habilitar ubicación</string>
   <string name="lock_unlock">Desbloquear Zerion</string>
   <string name="lock_unlock_verbose">Ingresa el PIN, patrón o contraseña de tu dispositivo para desbloquear Zerion</string>
@@ -591,10 +587,8 @@ Por favor, instala Zerion en un dispositivo más nuevo.</string>
   <string name="lock_unlock_password">Usar contraseña</string>
   <string name="lock_is_locked">Zerion está bloqueado</string>
   <string name="lock_tap_to_unlock">Toca para desbloquear</string>
-  
-  
+
   <string name="removable_drive_menu_title">Conectar a través de Disco Removible</string>
-  <string name="removable_drive_intro">Si no puedes conectarte con tu contacto a través de Internet, Wi-Fi o Bluetooth, Zerion también puedes transferir mensajes en una unidad extraíble, como una memoria USB o una tarjeta SD.</string>
   <string name="removable_drive_title_send">Enviar datos</string>
   <string name="removable_drive_title_receive">Recibir datos</string>
   <string name="removable_drive_send_no_data">Actualmente no hay mensajes en espera de ser enviados a este contacto.</string>
@@ -607,8 +601,7 @@ Por favor, instala Zerion en un dispositivo más nuevo.</string>
   <string name="removable_drive_success_receive_text">Se han recibido todos los mensajes cifrados contenidos en este archivo.</string>
   <string name="removable_drive_error_send_title">Error al exportar datos</string>
   <string name="removable_drive_error_receive_title">Error al importar datos</string>
-  
-  
+
   <string name="screenshot_alice">Alicia</string>
   
   <string name="screenshot_bob">Pedro</string>

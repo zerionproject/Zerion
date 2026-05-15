@@ -78,8 +78,7 @@
   <string name="tor_plugin_status_disabled_country_blocked">Zerion er sett upp til að nota ekki internetið í þessu landi</string>
   
   <string name="transport_lan_long">Sama þráðlausa Wi-Fi netkerfið</string>
-  
-  
+
   <string name="reminder_notification_title">Skráð út úr Zerion</string>
   <string name="reminder_notification_text">Ýttu til að skrá þig aftur inn.</string>
   <string name="reminder_notification_channel_title">Áminning um innskráningu í Zerion</string>
@@ -256,8 +255,7 @@
   <string name="different_person_button">Annar einstaklingur</string>
   <string name="duplicate_link_dialog_text_3">%1$s og %2$s sendu þér sama tengilinn.\n\nAnnar þeirra gæti verið að reyna að finna út hverjir tengiliðirnir þínir eru.\n\nEkki segja þeim að þú hafir fengið sama tengil frá einhverjum öðrum.</string>
   <string name="pending_contact_updated_toast">Tengiliður í bið uppfærður</string>
-  
-  
+
   <string name="introduction_onboarding_title">Kynntu tengiliðina þína</string>
   <string name="introduction_menu_item">Útbúa kynningu</string>
   <string name="introduction_activity_title">Veldu tengilið</string>
@@ -351,8 +349,7 @@
   <string name="nobody">Enginn</string>
   
   <string name="read_more">lesa meira</string>
-  
-  
+
   
   <string name="change_profile_picture">Ýttu til að skipta um auðkennismyndina þína</string>
   <string name="dialog_confirm_profile_picture_title">Skipta um auðkennismynd</string>
@@ -471,8 +468,7 @@
   
   <string name="about_title">Um hugbúnaðinn</string>
   <string name="links">Hlekkir</string>
-  
-  
+
   <string name="disappearing_messages_title">Sjálfeyðandi skilaboð</string>
   <string name="disappearing_messages_explanation_long">Ef kveikt er á þessari stillingu munu ný
 		skilaboð í þessu samtali hverfa sjálfkrafa eftir 7\u00A0daga.
@@ -535,13 +531,9 @@
   <string name="permission_camera_title">Heimildir á myndavél</string>
   <string name="permission_camera_request_body">Til að skanna QR-kóðann þarf Zerion heimild til að nota myndavélina.</string>
   <string name="permission_location_title">Heimild fyrir staðsetningu</string>
-  <string name="permission_location_request_body">Til að finna Bluetooth-tæki, þarf Zerion heimild til að nota staðsetningu þína.\n\nZerion geymir ekki staðsetningar eða deilir þeim með neinum.</string>
   <string name="permission_camera_location_title">Myndavél og staðsetning</string>
-  <string name="permission_camera_location_request_body">Til að skanna QR-kóðann, þarf Zerion aðgang að myndavélinni.\n\nTil að finna Bluetooth-tæki, þarf Zerion heimild til að nota staðsetningu þína.\n\nZerion geymir ekki staðsetningar eða deilir þeim með neinum.</string>
   <string name="permission_camera_denied_body">Þú hefur hafnað aðgangi að myndavélinni, en það að bæta við tengiliðum krefst notkun hennar.\n\nÍhugaðu að veita þennan aðgang.</string>
-  <string name="permission_location_denied_body">Þú hefur hafnað aðgangi að staðsetningu, en Zerion þarf þessa heimild til að geta fundið Bluetooth-tæki.\n\nÍhugaðu að veita þennan aðgang.</string>
   <string name="permission_location_setting_title">Stilling staðsetningar</string>
-  <string name="permission_location_setting_body">Kveikt þarf að vera á staðsetningu tækisins þíns til að geta fundið önnur tæki með Bluetooth. Virkjaðu staðsetningu til að halda áfram. Þú getur svo gert hana óvirka aftur á eftir.</string>
   <string name="permission_location_setting_button">Virkja staðsetningu</string>
   
   <string name="lock_unlock">Aflæsa Zerion</string>
@@ -550,12 +542,8 @@
   <string name="lock_unlock_password">Nota lykilorð</string>
   <string name="lock_is_locked">Zerion er læst</string>
   <string name="lock_tap_to_unlock">Ýttu til að aflæsa</string>
-  
-  <string name="transports_help_text">Zerion getur tengst við tengiliðina þína í gegnum internet, Wi-Fi eða Bluetooth.\n\nAllar internettengingar fara í gegnum Tor-netkerfið til að gæta gagnaleyndar.\n\nEf hægt er að nálgast tengilið með mörgum leiðum, notar Zerion þær samhliða.</string>
-  
+
   <string name="removable_drive_menu_title">Tengjast í gegnum útskiptanlegt drif</string>
-  <string name="removable_drive_intro">Ef þú nærð ekki að tengjast tengiliðnum þínum í gegnum internet, Wi-Fi eða Bluetooth, getur Zerion einnig flutt skilaboð á útskiptanleg drif á borð við USB-minnislykil eða SD-minniskort.</string>
-  <string name="removable_drive_explanation">Ef þú nærð ekki að tengjast tengiliðnum þínum í gegnum internet, Wi-Fi eða Bluetooth, getur Zerion einnig flutt skilaboð á útskiptanleg drif á borð við USB-minnislykil eða SD-minniskort.\n\nÞegar þú sérð hnappinn \"Senda gögn\", verða öll gögn sem bíða eftir að verða send til tengiliðarins skrifuð á útskiptanlega drifið. Þar má telja einkaskilaboð, viðhengi, blogg, spjallsvæði og einkahópar.\n\nAlltsaman verður dulritað áður en það er skrifað á útskiptanlega drifið.\n\nÞegar tengiliðurinn fær svo útskiptanlega drifið í hendurnar, getur hann notað hnappinn \"Taka við gögnum\" til að flytja öll skilaboðin inn í Zerion.</string>
   <string name="removable_drive_title_send">Senda gögn</string>
   <string name="removable_drive_title_receive">Taka við gögnum</string>
   <string name="removable_drive_send_intro">Ýttu á hnappinn hér fyrir neðan til að útbúa nýja skrá sem inniheldur dulrituðu skilaboðin. Þú getur valið hvar skráin verður vistuð.\n\nEf þú ætlar að vista skrána á útskiptanlegt drif, skaltu setja það í samband núna.</string>
@@ -573,8 +561,7 @@
   <string name="removable_drive_error_send_text">Villa kom upp við að skrifa gögn í skrána.\n\nEf þú ert að nota útskiptanlegt drif, gakkti þá úr skugga um að það sé rétt tengt og prófaðu svo aftur.\n\nEf villan heldur áfram að birtast, skaltu endilega senda Zerion-teyminu línu og láta þau vita af vandamálinu.</string>
   <string name="removable_drive_error_receive_title">Villa í innflutningi gagna</string>
   <string name="removable_drive_error_receive_text">Valda skráin innihélt ekkert sem Zerion gat lagt kennsl á.\n\nVertu viss um að þú hafir valið rétta skrá.\n\nEf tengiliðurinn þinn útbjó skrána fyrir meira en 28 dögum síðan, mun Zerion ekki geta þekkt hana.</string>
-  
-  
+
   <string name="screenshot_alice">Lísa</string>
   
   <string name="screenshot_bob">Bjössi</string>

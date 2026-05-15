@@ -88,8 +88,7 @@
   <string name="tor_plugin_status_disabled_country_blocked">Zerion yra sukonfigūruota taip, kad šioje šalyje nesinaudotų internetu</string>
   
   <string name="transport_lan_long">Tas pats belaidis (Wi-Fi) tinklas</string>
-  
-  
+
   <string name="reminder_notification_title">Atsijungta iš Zerion</string>
   <string name="reminder_notification_text">Bakstelėkite, norėdami prisijungti atgal.</string>
   <string name="reminder_notification_channel_title">Zerion prisijungimo priminimas</string>
@@ -388,8 +387,7 @@
   <string name="nobody">Niekas</string>
   
   <string name="read_more">skaityti daugiau</string>
-  
-  
+
   
   <string name="change_profile_picture">Bakstelėkite norėdami pasikeisti profilio paveikslą</string>
   <string name="dialog_confirm_profile_picture_title">Keisti profilio paveikslą</string>
@@ -621,13 +619,9 @@
   <string name="permission_camera_request_body">Norint nuskenuoti QR kodą, Zerion reikia prieigos prie kameros.</string>
   <string name="permission_location_title">Įrenginio vietovės leidimas</string>
   <string name="permission_nearby_devices_title">Įrenginių netoliese leidimas</string>
-  <string name="permission_location_request_body">Tam, kad galėtų atrasti Bluetooth įrenginius, Zerion reikia gauti prieigą prie jūsų įrenginio vietovės.\n\nZerion nesaugo jūsų įrenginio vietovės ir su niekuo jos nebendrina.</string>
   <string name="permission_camera_location_title">Kamera ir įrenginio vietovė</string>
-  <string name="permission_camera_location_request_body">Tam, kad galėtų nuskenuoti QR kodą, Zerion reikia gauti prieigą prie jūsų kameros.\n\nTam, kad galėtų atrasti Bluetooth įrenginius, Zerion reikia gauti prieigą prie jūsų įrenginio vietovės.\n\nZerion nesaugo jūsų įrenginio vietovės ir su niekuo jos nebendrina.</string>
   <string name="permission_camera_denied_body">Jūs uždraudėte prieigą prie kameros, tačiau norint pridėti adresatus, reikia naudoti kamerą.\n\nApsvarstykite galimybę sutekti prieigą prie kameros.</string>
-  <string name="permission_location_denied_body">Jūs uždraudėte prieigą prie įrenginio vietovės, tačiau norint atrasti Bluetooth įrenginius, Zerion reikia šio leidimo.\n\nApsvarstykite galimybę sutekti prieigą prie įrenginio vietovės.</string>
   <string name="permission_location_setting_title">Įrenginio vietovės nustatymas</string>
-  <string name="permission_location_setting_body">Norint rasti kitus įrenginius per Bluetooth, privalo būti įjungtas jūsų įrenginio vietovės nustatymas. Norėdami tęsti, įjunkite įrenginio vietovę. Po to, galėsite ir vėl ją išjungti.</string>
   <string name="permission_location_setting_button">Įjungti įrenginio vietovę</string>
   <string name="lock_unlock">Atrakinti Zerion</string>
   <string name="lock_unlock_verbose">Norėdami atrakinti Zerion, įveskite savo įrenginio PIN, šabloną ar slaptažodį</string>
@@ -635,12 +629,8 @@
   <string name="lock_unlock_password">Naudoti slaptažodį</string>
   <string name="lock_is_locked">Zerion užrakinta</string>
   <string name="lock_tap_to_unlock">Bakstelėkite, norėdami atrakinti</string>
-  
-  <string name="transports_help_text">Zerion gali jungtis prie jūsų adresatų per internetą, belaidį (Wi-Fi) tinklą ar Bluetooth ryšį.\n\nPrivatumo sumetimais, visi ryšiai jungiasi per Tor tinklą.\n\nJei adresatas gali būti pasiekiamas keliais būdais, tuomet Zerion naudoja juos lygiagrečiai.</string>
-  
+
   <string name="removable_drive_menu_title">Prisijungti per keičiamąjį diską</string>
-  <string name="removable_drive_intro">Jei negalite prisijungti prie savo adresato per internetą, belaidį (Wi-Fi) ar Bluetooth, Zerion taip pat gali perkelti žinutes į keičiamąjį diską, pavyzdžiui, USB atmintuką ar SD kortelę.</string>
-  <string name="removable_drive_explanation">Jei negalite prisijungti prie savo adresato per internetą, belaidį (Wi-Fi) ar Bluetooth, Zerion taip pat gali perkelti žinutes į keičiamąjį diską, pavyzdžiui, USB atmintuką ar SD kortelę.\n\nKai naudojate mygtuką „Siųsti duomenis“, bet kokie duomenys, laukiantys, kad būtų išsiųsti adresatui, bus įrašyti į keičiamąjį diską. Į juos įeina privačios žinutės, priedai, tinklaraščiai, forumai ir privačios grupės.\n\nVisa tai, prieš įrašant į keičiamąjį diską, bus užšifruota.\n\nJūsų adresatas, gavęs keičiamąjį diską, galės naudoti mygtuką „Gauti duomenis“, kad importuotų žinutes į Zerion.</string>
   <string name="removable_drive_title_send">Siųsti duomenis</string>
   <string name="removable_drive_title_receive">Gauti duomenis</string>
   <string name="removable_drive_send_intro">Bakstelėkite mygtuką žemiau, kad sukurtumėte naują failą su šifruotomis žinutėmis. Galite pasirinkti, kur failą įrašyti.\n\nJei norite įrašyti failą į keičiamąjį diską, tuomet įdėkite diską dabar.</string>
@@ -658,8 +648,7 @@
   <string name="removable_drive_error_send_text">Įvyko klaida rašant duomenis į failą.\n\nJei naudojate keičiamąjį diską, įsitikinkite, jog jis yra tinkamai įkištas ir bandykite dar kartą.\n\nJei klaida išlieka, atsiųskite atsiliepimą, kad praneštumėte Zerion komandai apie šią klaidą.</string>
   <string name="removable_drive_error_receive_title">Klaida importuojant duomenis</string>
   <string name="removable_drive_error_receive_text">Pasirinktame faile nebuvo nieko tokio, ką Zerion galėtų atpažinti.\n\nĮsitikinkite, kad pasirinkote teisingą failą.\n\nJeigu jūsų adresatas sukūrė failą daugiau kaip prieš 28 dienas, tuomet Zerion negalės jo atpažinti.</string>
-  
-  
+
   <string name="screenshot_alice">Jurgita</string>
   
   <string name="screenshot_bob">Mindaugas</string>

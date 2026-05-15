@@ -131,8 +131,7 @@
   <string name="step_1">1</string>
   
   <string name="step_2">2</string>
-  
-  
+
   
   
   <string name="introduction_onboarding_title">Esittele yhteyshenkilösi</string>
@@ -228,8 +227,7 @@
   <string name="nobody">Ei kukaan</string>
   
   <string name="read_more">lue lisää</string>
-  
-  
+
   
   <string name="pref_language_title">Kieli &amp; alue</string>
   <string name="pref_language_changed">Tämä asetus otetaan käyttöön kun uudelleenkäynnistät Zerionin. Kirjaudu ulos ja käynnistä Zerion uudelleen.</string>
@@ -242,8 +240,6 @@
   <string name="pref_theme_system">Järjestelmäoletus</string>
   
   <string name="network_settings_title">Verkot</string>
-  <string name="bluetooth_setting_enabled">Silloin kun yhteyshenkilöt ovat lähellä</string>
-  <string name="bluetooth_setting_disabled">Vain kun yhteyshenkilöitä lisätään</string>
   <string name="tor_network_setting">Yhdistä verkon kautta (Tor)</string>
   <string name="tor_network_setting_automatic">Automaattinen sijainnin perusteella</string>
   <string name="tor_network_setting_without_bridges">Käytä Tor:ia ilman siltoja</string>
@@ -346,11 +342,9 @@
   <string name="lock_unlock_password">Käytä salasanaa</string>
   <string name="lock_is_locked">Zerion on lukittu</string>
   <string name="lock_tap_to_unlock">Napauta avataksesi lukitus</string>
+
   
-  
-  
-  
-  
+
   
   
 </resources>

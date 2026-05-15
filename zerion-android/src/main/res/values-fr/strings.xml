@@ -87,8 +87,7 @@
   <string name="tor_plugin_status_disabled_country_blocked">Zerion est configuré pour ne pas utiliser Internet dans ce pays</string>
   
   <string name="transport_lan_long">Même réseau wifi</string>
-  
-  
+
   <string name="reminder_notification_title">Déconnecté de Zerion</string>
   <string name="reminder_notification_text">Touchez pour vous reconnecter</string>
   <string name="reminder_notification_channel_title">Rappel de connexion à Zerion</string>
@@ -378,8 +377,7 @@
   <string name="nobody">Personne</string>
   
   <string name="read_more">en lire davantage</string>
-  
-  
+
   
   <string name="change_profile_picture">Touchez pour changer votre photo de profil</string>
   <string name="dialog_confirm_profile_picture_title">Changer la photo de profil</string>
@@ -609,13 +607,9 @@ copies des messages que vous envoyez.
   <string name="permission_camera_request_body">Afin de balayer le code QR, Zerion doit accéder à l’appareil photo.</string>
   <string name="permission_location_title">Autorisation d’accès à la position</string>
   <string name="permission_nearby_devices_title">Autorisation des appareils à proximité</string>
-  <string name="permission_location_request_body">Afin de découvrir des périphériques Bluetooth, Zerion doit accéder à votre position.\n\nZerion n’enregistre pas votre position et ne la partage avec personne.</string>
   <string name="permission_camera_location_title">Appareil photo et position</string>
-  <string name="permission_camera_location_request_body">Afin de balayer le code QR, Zerion doit accéder à l’appareil photo.\n\nPour découvrir es appareils Bluetooth, Zerion doit accéder à votre position.\n\nZerion n’enregistre pas votre position et ne la partage avec personne.</string>
   <string name="permission_camera_denied_body">Vous avez refusé l’accès à l’appareil photo, mais l’ajout de contacts exige de l’utiliser.\n\nEnvisagez d’y accorder l’accès.</string>
-  <string name="permission_location_denied_body">Vous avez refusé l’accès à votre position géographique, mais Zerion en a besoin pour découvrir les appareils Bluetooth.\n\nEnvisagez d’y accorder l’accès.</string>
   <string name="permission_location_setting_title">Paramètre de localisation</string>
-  <string name="permission_location_setting_body">Afin de trouver d’autres appareils par Bluetooth, le paramètre Position de votre appareil doit être activé. Activez-le afin de poursuivre. Vous pourrez le désactiver ultérieurement.</string>
   <string name="permission_location_setting_button">Activer la position</string>
   <string name="lock_unlock">Déverrouiller Zerion</string>
   <string name="lock_unlock_verbose">Saisissez le NIP, le schéma ou le mot de passe de votre appareil pour déverrouiller Zerion</string>
@@ -623,12 +617,8 @@ copies des messages que vous envoyez.
   <string name="lock_unlock_password">Utiliser un mot de passe</string>
   <string name="lock_is_locked">Zerion est verrouillée</string>
   <string name="lock_tap_to_unlock">Toucher pour déverrouiller</string>
-  
-  <string name="transports_help_text">Zerion peut se connecter à vos contacts par Internet, wifi ou Bluetooth.\n\nToutes les connections Internet passent par le réseau Tor afin de protéger les données.\n\nSi un contact peut être joint par plusieurs moyens, Zerion les utilisera simultanément.</string>
-  
+
   <string name="removable_drive_menu_title">Se connecter par un lecteur amovible</string>
-  <string name="removable_drive_intro">Si vous n’arrivez pas à vous connecter à votre contact par Internet, wifi ou Bluetooth, Zerion peut aussi transférer des messages sur un disque amovible tel qu’une clé USB ou une carte SD.</string>
-  <string name="removable_drive_explanation">Si vous n’arrivez pas à vous connecter à votre contact par Internet, wifi ou Bluetooth, Zerion peut aussi transférer des messages sur un disque amovible tel qu’une clé USB ou une carte SD.\n\nSi vous utilisez le bouton « Envoyer les données », les données en attente d’envoi au contact sont écrites sur le disque amovible. Cela comprend les messages privés, les fichiers joints, les blogues, les forums et les groupes privés.\n\nTout sera chiffré avant d’être écrit sur le disque amovible.\n\nAprès avoir reçu le disque amovible, votre contact utilise le bouton « Recevoir des données » pour importer les messages dans son Zerion.</string>
   <string name="removable_drive_title_send">Envoyer les données</string>
   <string name="removable_drive_title_receive">Recevoir des données</string>
   <string name="removable_drive_send_intro">Touchez le bouton ci-dessous pour créer un nouveau fichier comprenant les messages chiffrés. Vous pouvez choisir la destination d’enregistrement.\n\nSi vous voulez enregistrer le fichier sur un lecteur amovible, insérez le lecteur.</string>
@@ -646,8 +636,7 @@ copies des messages que vous envoyez.
   <string name="removable_drive_error_send_text">Une erreur est survenue lors de l’écriture des données dans le fichier.\n\nSi vous utilisez un disque amovible, assurez-vous qu’il est correctement inséré et réessayez. Si l’erreur persiste, envoyer une rétroaction pour informer l’équipe Zerion du problème.</string>
   <string name="removable_drive_error_receive_title">Erreur d’importation des données</string>
   <string name="removable_drive_error_receive_text">Le fichier choisi ne comprenait rien que Zerion puisse reconnaitre.\n\nAssurez-vous d’avoir choisi le bon fichier.\n\nSi votre contact a créé le fichier il y a plus de 28 jours, Zerion ne pourra pas le reconnaitre.</string>
-  
-  
+
   <string name="screenshot_alice">Laurence</string>
   
   <string name="screenshot_bob">Olivier</string>

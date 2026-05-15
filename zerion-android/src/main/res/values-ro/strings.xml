@@ -87,8 +87,7 @@
   <string name="tor_plugin_status_disabled_country_blocked">Aplicația Zerion este configurată să nu folosească internetul în această țară</string>
   
   <string name="transport_lan_long">Aceeași rețea Wi-Fi</string>
-  
-  
+
   <string name="reminder_notification_title">V-ați deconectat din Zerion</string>
   <string name="reminder_notification_text">Atingeți pentru a vă reconecta.</string>
   <string name="reminder_notification_channel_title">Memento de conectare la Zerion</string>
@@ -378,8 +377,7 @@
   <string name="nobody">Nimeni</string>
   
   <string name="read_more">citiți mai multe</string>
-  
-  
+
   
   <string name="change_profile_picture">Atingeți pentru a schimba poza dvs. de profil</string>
   <string name="dialog_confirm_profile_picture_title">Modificați poza de profil</string>
@@ -611,13 +609,9 @@
   <string name="permission_camera_request_body">Pentru a scana codul QR, Zerion are nevoie de acces la cameră.</string>
   <string name="permission_location_title">Acces la locație</string>
   <string name="permission_nearby_devices_title">Permisiunea dispozitivelor apropiate</string>
-  <string name="permission_location_request_body">Pentru a putea descoperi dispozitive Bluetooth, Zerion are nevoie de permisiunea de a accesa locația dvs.\n\nZerion nu stochează locația dvs. și nici nu o partajează cu nimeni.  </string>
   <string name="permission_camera_location_title">Cameră foto și locație</string>
-  <string name="permission_camera_location_request_body">Pentru a scana codul QR, Zerion are nevoie de acces la camera foto.\n\nPentru a putea descoperi dispozitive Bluetooth, Zerion are nevoie de permisiunea de acces la locația dvs.\n\nZerion nu stochează locația dvs. și nici nu o partajează cu nimeni.</string>
   <string name="permission_camera_denied_body">Ați refuzat accesul la camera foto, dar folosirea acesteia este obligatorie pentru a adăuga contacte.\n\nVă rugăm să luați în considerare acordarea accesului.</string>
-  <string name="permission_location_denied_body">Ați refuzat accesul la locație, dar Zerion are nevoie de această permisiune pentru a descoperi dispozitive Bluetooth.\n\nVă rugăm să luați în considerare acordarea accesului.</string>
   <string name="permission_location_setting_title">Setări privind locația</string>
-  <string name="permission_location_setting_body">Funcția de locație a dispozitivului dvs. trebuie să fie activată pentru a găsi alte dispozitive prin Bluetooth. Activați locația pentru a continua. Puteți să o dezactivați din nou ulterior.</string>
   <string name="permission_location_setting_button">Activați locația</string>
   <string name="lock_unlock">Deblocarea Zerion</string>
   <string name="lock_unlock_verbose">Introduceți codul PIN, modelul sau parola pentru a debloca aplicația Zerion</string>
@@ -625,12 +619,8 @@
   <string name="lock_unlock_password">Utilizați parolă</string>
   <string name="lock_is_locked">Aplicația Zerion este blocată</string>
   <string name="lock_tap_to_unlock">Atingeți pentru deblocare</string>
-  
-  <string name="transports_help_text">Zerion se poate conecta la contactele dvs. prin Internet, Wi-Fi sau Bluetooth.\n\nToate conexiunile la internet trec prin rețeaua Tor din motive de confidențialitate.\n\nDacă un contact poate fi accesat prin mai multe metode, Zerion le va folosi simultan.</string>
-  
+
   <string name="removable_drive_menu_title">Conectarea cu o unitate amovibilă</string>
-  <string name="removable_drive_intro">Dacă nu vă puteți conecta la persoana de contact prin internet, Wi-Fi sau Bluetooth, Zerion oferă și opțiunea de a transfera mesaje pe o unitate amovibilă, cum ar fi un stick USB sau un card SD.</string>
-  <string name="removable_drive_explanation">Dacă nu vă puteți conecta la persoana de contact prin internet, Wi-Fi sau Bluetooth, Zerion oferă și opțiunea de a transfera mesaje pe o unitate amovibilă, cum ar fi un stick USB sau un card SD.\n\nCând folosiți butonul „Trimitere date”, datele care așteaptă să fie trimise contactului vor fi scrise pe unitatea amovibilă. Aceastea includ mesajele private, fișierele atașate, blogurile, forumurile și grupurile private.\n\nToate vor fi criptate înainte de a fi scrise pe unitatea amovibilă.\n\nCând persoana de contact primește unitatea amovibilă, poate folosi butonul „Primire date\" pentru a importa mesajele în Zerion.</string>
   <string name="removable_drive_title_send">Trimitere date</string>
   <string name="removable_drive_title_receive">Primire date</string>
   <string name="removable_drive_send_intro">Atingeți butonul de mai jos pentru a crea un fișier nou cu mesajele criptate. Puteți alege unde să fie salvat fișierul.\n\nDacă doriți să salvați fișierul pe o unitate amovibilă, introduceți unitatea acum.</string>
@@ -648,8 +638,7 @@
   <string name="removable_drive_error_send_text">A apărut o eroare la scrierea datelor în fișier.\n\nDacă utilizați o unitate amovibilă, asigurați-vă că este introdusă corect și încercați din nou.\n\nDacă eroarea persistă, trimiteți feedback pentru a informa echipa Zerion despre problemă.</string>
   <string name="removable_drive_error_receive_title">Eroare la importarea datelor</string>
   <string name="removable_drive_error_receive_text">Fișierul selectat nu conține nimic care să poată fi recunoscut de Zerion.\n\nVerificați dacă ați ales fișierul corect.\n\nDacă persoana de contact a creat fișierul în urmă cu peste 28 de zile, Zerion nu îl va putea recunoaște.</string>
-  
-  
+
   <string name="screenshot_alice">Dana</string>
   
   <string name="screenshot_bob">Andrei</string>

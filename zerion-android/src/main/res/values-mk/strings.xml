@@ -75,8 +75,7 @@
   <string name="tor_plugin_status_disabled_country_blocked">Zerion е конфигуриран да не користи Интернет во оваа држава</string>
   
   <string name="transport_lan_long">Иста Wi-Fi мрежа </string>
-  
-  
+
   <string name="reminder_notification_title">Одјави се од Zerion</string>
   <string name="reminder_notification_text">Допрете за да се најавите.</string>
   <string name="reminder_notification_channel_title">Zerion потсетување за најавување</string>
@@ -316,8 +315,7 @@
   <string name="nobody">Никој</string>
   
   <string name="read_more">прочитај повеќе</string>
-  
-  
+
   
   
   <string name="pref_language_title">Јазик &amp; регион</string>
@@ -433,11 +431,8 @@
   <string name="permission_camera_title">Дозвола за камера</string>
   <string name="permission_camera_request_body">За да скенирате QR код, на Zerion му треба пристап до камерата.</string>
   <string name="permission_location_title">Дозвола за локација</string>
-  <string name="permission_location_request_body">За да открие Bluetooth уреди, на Zerion му е потребна дозвола за пристап до вашата локација.\n\nZerion не ја зачувува вашата локација или не ја споделува со никого.</string>
   <string name="permission_camera_location_title">Камера и локација</string>
-  <string name="permission_camera_location_request_body">За да го скенира QR кодот, на Zerion му е потребен пристап до камерата.\n\nЗа да открие Bluetooth уреди, на Zerion му е потребна дозвола за вашата локација.\n\nZerion не ја зачувува вашата локација или не ја споделува со никого.</string>
   <string name="permission_camera_denied_body">Го одбивте пристапот до камерата, но за додавање на контакти потребно е користење на камерата.\n\nВе молиме  размислете за давање пристап.</string>
-  <string name="permission_location_denied_body">Го одбивте пристапот до вашата локација, но на Zerion му е потребна оваа дозвола за да ги открие Bluetooth уредите.\n\nВе молиме размислете за давање пристап.</string>
   
   <string name="lock_unlock">Отклучи го Zerion</string>
   <string name="lock_unlock_verbose">Внесете го ПИН-от, шемата или лозинката на твојот уред за да го отклучите Zerion. </string>
@@ -445,9 +440,7 @@
   <string name="lock_unlock_password">Користете лозинка</string>
   <string name="lock_is_locked">Zerion е заклучен</string>
   <string name="lock_tap_to_unlock">Допрете за отклучување</string>
-  
-  <string name="transports_help_text">Zerion може да се поврзе со вашите контакти преку Интернет, Wi-Fi или Bluetooth.\n\nСите Интернет поврзувања одат преку Tor Мрежата поради приватност.\n\nАко контактот може да биде достапен преку повеќе начини, Zerion ќе ги користи паралелно. </string>
-  
+
   
   <string name="screenshot_alice">Жарко</string>
   

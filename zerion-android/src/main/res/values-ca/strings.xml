@@ -82,8 +82,7 @@
   <string name="tor_plugin_status_disabled_country_blocked">Zerion està configurat per a no emprar Internet en aquest país</string>
   
   <string name="transport_lan_long">La mateixa xarxa WiFi</string>
-  
-  
+
   <string name="reminder_notification_title">Heu sortit de Zerion</string>
   <string name="reminder_notification_text">Toqueu per a reiniciar la sessió.</string>
   <string name="reminder_notification_channel_title">Recordatori d\'inici de sessió de Zerion</string>
@@ -365,8 +364,7 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
   <string name="nobody">Ningú</string>
   
   <string name="read_more">llegeix-ne més</string>
-  
-  
+
   
   <string name="change_profile_picture">Feu un toc per modificar la foto del vostre perfil</string>
   <string name="dialog_confirm_profile_picture_title">Modifica la foto de perfil</string>
@@ -596,13 +594,9 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
   <string name="permission_camera_request_body">Per escanejar el codi QR, Zerion necessita accedir a la càmera.</string>
   <string name="permission_location_title">Permís d\'accés a la posició</string>
   <string name="permission_nearby_devices_title">Permís de dispositius propers</string>
-  <string name="permission_location_request_body">Per a descobrir dispositius Bluetooth, Zerion necessita accedir a la vostra posició.\n\nZerion no guarda la vostra posició ni la comparteix amb ningú.</string>
   <string name="permission_camera_location_title">Permís d\'accés a la càmera i a la posició</string>
-  <string name="permission_camera_location_request_body">Per escanejar el codi QR, Zerion necessita accedir a la càmera.\n\nPer trobar dispositius Bluetooth, Zerion necessita accedir a la vostra posició.\n\nZerion no guarda la vostra posició ni la comparteix amb ningú.</string>
   <string name="permission_camera_denied_body">Heu denegat l\'accés a la càmera però per afegir contactes cal utilitzar la càmera.\n\nRecomanem que permeteu l\'accés a la càmera.</string>
-  <string name="permission_location_denied_body">Heu denegat l\'accés a la vostra ubicació, però el Zerion necessita aquest permís per descobrir dispositius Bluetooth.\n\nPenseu en concedir l\'accés.</string>
   <string name="permission_location_setting_title">Configuració d\'ubicació</string>
-  <string name="permission_location_setting_body">La configuració d\'ubicació del dispositiu ha d\'estar activada per trobar altres dispositius mitjançant Bluetooth. Activeu la ubicació per continuar. Podeu tornar a desactivar-lo després.</string>
   <string name="permission_location_setting_button">Activa la ubicació</string>
   <string name="lock_unlock">Desbloqueja Zerion</string>
   <string name="lock_unlock_verbose">Introduïu el PIN, el patró o la contrasenya del vostre dispositiu per desbloquejar Zerion</string>
@@ -610,12 +604,8 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
   <string name="lock_unlock_password">Usa la contrasenya</string>
   <string name="lock_is_locked">Zerion està bloquejat</string>
   <string name="lock_tap_to_unlock">Toqueu per desbloquejar-lo</string>
-  
-  <string name="transports_help_text">Zerion pot contactar els vostres contactes via Internet, WiFi o Bluetooth.\n\nTotes les connexions d\'Internet van via la xarxa Tor per privacitat.\n\nSi es pot arribar a un contacte per diversos mètodes, Zerion els usa tots simultàniament.</string>
-  
+
   <string name="removable_drive_menu_title">Connecta mitjançant una unitat extraïble</string>
-  <string name="removable_drive_intro">Si no us podeu connectar al vostre contacte a través d\'Internet, Wi-Fi o Bluetooth, el Zerion també pot transferir missatges en una unitat extraïble, com ara un llapis USB o una targeta SD.</string>
-  <string name="removable_drive_explanation">Si no podeu connectar-vos al vostre contacte a través d\'Internet, Wi-Fi o Bluetooth, el Zerion també pot transferir missatges en una unitat extraïble, com ara un llapis USB o una targeta SD.\n\nQuan feu servir el botó «Envia dades», qualsevol dada que estigui esperant per ser enviada al contacte s\'escriurà a la unitat extraïble. Això inclou missatges privats, fitxers adjunts, blogs, fòrums i grups privats.\n\nTot es xifrarà abans que s\'escrigui a la unitat extraïble.\n\nQuan el vostre contacte rebi la unitat extraïble, pot utilitzar el botó «Rebre dades» per importar els missatges al Zerion.</string>
   <string name="removable_drive_title_send">Envia dades</string>
   <string name="removable_drive_title_receive">Rebre dades</string>
   <string name="removable_drive_send_intro">Toqueu el botó següent per crear un fitxer nou que contingui els missatges xifrats. Podeu triar on es desarà el fitxer.\n\nSi voleu desar el fitxer en una unitat extraïble, inseriu la unitat ara.</string>
@@ -633,8 +623,7 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
   <string name="removable_drive_error_send_text">S\'ha produït un error escrivint dades al fitxer.\n\nSi utilitzeu una unitat extraïble, assegureu-vos que estigui inserida correctament i torneu-ho a provar.\n\nSi l\'error persisteix, envieu comentaris per informar l\'equip del Zerion sobre el assumpte.</string>
   <string name="removable_drive_error_receive_title">S\'ha produït un error en importar les dades</string>
   <string name="removable_drive_error_receive_text">El fitxer seleccionat no contenia res que el Zerion pogués reconèixer.\n\nComproveu que heu triat el fitxer correcte.\n\nSi el vostre contacte va crear el fitxer fa més de 28 dies, el Zerion no el podrà reconèixer.</string>
-  
-  
+
   <string name="screenshot_alice">Alba</string>
   
   <string name="screenshot_bob">Pere</string>

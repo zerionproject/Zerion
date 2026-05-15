@@ -86,8 +86,7 @@
   <string name="tor_plugin_status_disabled_country_blocked">Zerion এই দেশে ইন্টারনেট ব্যবহার না করার জন্য কনফিগার করা হয়েছে</string>
   
   <string name="transport_lan_long">একই Wi-Fi নেটওয়ার্ক</string>
-  
-  
+
   <string name="reminder_notification_title">Zerion থেকে সাইন আউট করুন</string>
   <string name="reminder_notification_text">আবার সাইন ইন করতে আলতো চাপুন।</string>
   <string name="reminder_notification_channel_title">Zerion সাইন ইন অনুস্মারক</string>
@@ -368,8 +367,7 @@
   <string name="nobody">কেউ না</string>
   
   <string name="read_more">আরো পড়ুন</string>
-  
-  
+
   
   <string name="change_profile_picture">আপনার প্রোফাইলের ছবি পরিবর্তন করতে ট্যাপ করুন</string>
   <string name="dialog_confirm_profile_picture_title">প্রোফাইলের ছবি পরিবর্তন করুন</string>
@@ -622,8 +620,6 @@
   <string name="transports_help_text">Zerion ইন্টারনেট, ওয়াই-ফাই বা ব্লুটুথের মাধ্যমে আপনার কন্টাক্টদের সঙ্গে সংযোগ স্থাপন করতে পারে।\n\nসকল ইন্টারনেট সংযোগ গোপনীয়তার জন্য টর নেটওয়ার্কের মাধ্যমে পরিচালিত হয়। \n\nএকজন কন্টাক্টের সঙ্গে একাধিক উপায়ে সংযোগ স্থাপন করা সম্ভব হলে, Zerion সেগুলো একসঙ্গে ব্যবহার করবে।</string>
   
   <string name="removable_drive_menu_title">রিমুভেবল ড্রাইভের মাধ্যমে সংযোগ করুন</string>
-  <string name="removable_drive_intro">যদি আপনি ইন্টারনেট, Wi-Fi বা Bluetooth এর মাধ্যমে আপনার কন্টাক্টের সাথে সংযোগ করতে না পারেন, তাহলে Zerion একটি রিমুভেবল ড্রাইভ যেমন পেনড্রাইভ বা মেমোরি কার্ডের মাধ্যমে বার্তা ট্রান্সফার করতে পারে।</string>
-  <string name="removable_drive_explanation">যদি আপনি ইন্টারনেট, Wi-Fi বা Bluetooth এর মাধ্যমে আপনার কন্টাক্টের সাথে সংযোগ করতে না পারেন, তাহলে Zerion একটি রিমুভেবল ড্রাইভ যেমন পেনড্রাইভ বা মেমোরি কার্ডের মাধ্যমে বার্তা ট্রান্সফার করতে পারে।\n\nযখন আপনি \"ডাটা পাঠান\" বোতামটি ব্যবহার করবেন, তখন কন্টাক্টের কাছে পাঠানোর জন্য যদি কোন কোনো ডাটা থাকে তবে তা রিমুভেবল ড্রাইভে কপি করা হবে। এর মধ্যে ব্যক্তিগত বার্তা, অ্যাটাচমেন্ট, ব্লগ, ফোরাম এবং ব্যক্তিগত গ্রুপ অন্তর্ভুক্ত থাকবে।\n\nএগুলো রিমুভেবল ড্রাইভে কপি হওয়ার আগে এনক্রিপ্ট করা হবে।\n\nযখন আপনার কন্টাক্ট রিমুভেবল ড্রাইভটি পাবে, তারা \"ডাটা গ্রহণ করুন\" বোতামটি ব্যবহার করে Zerion-এ বার্তাগুলি ইমপোর্ট করতে পারবে।</string>
   <string name="removable_drive_title_send">ডাটা পাঠান</string>
   <string name="removable_drive_title_receive">ডাটা গ্রহণ করুন</string>
   <string name="removable_drive_send_intro">নিচের বোতামে ট্যাপ করুন একটি নতুন ফাইল তৈরি করতে যেখানে এনক্রিপ্ট করা বার্তাগুলি থাকবে। আপনি ফাইলটি কোথায় সংরক্ষণ করবেন তা নির্বাচন করতে পারবেন।\n\nযদি আপনি ফাইলটি একটি রিমুভেবল ড্রাইভে সংরক্ষণ করতে চান, সেটি এখন প্রবেশ করান।</string>
@@ -641,8 +637,7 @@
   <string name="removable_drive_error_send_text">ফাইলে ডেটা লেখার সময় একটি সমস্যা হয়েছে।\n\nযদি আপনি একটি রিমুভেবল ড্রাইভ ব্যবহার করেন, নিশ্চিত করুন যে এটি সঠিকভাবে লাগানো হয়েছে এবং আবার চেষ্টা করুন। \n\nযদি ত্রুটি অব্যাহত থাকে, দয়া করে Zerion টিমকে সমস্যাটি জানাতে প্রতিক্রিয়া পাঠান।</string>
   <string name="removable_drive_error_receive_title">ডাটা ইমপোর্ট করতে সমস্যা হয়েছে</string>
   <string name="removable_drive_error_receive_text">নির্বাচিত ফাইলটি Zerion চিহ্নিত করতে পারছে না।\n\nদয়া করে নিশ্চিত করুন যে আপনি সঠিক ফাইলটি নির্বাচন করেছেন।\n\nযদি আপনার যোগাযোগকারী ব্যক্তি ২৮ দিনের বেশি আগে ফাইলটি তৈরি করে থাকেন, তবে Zerion তা চিহ্নিত করতে পারবে না।</string>
-  
-  
+
   <string name="screenshot_alice">আরশি</string>
   
   <string name="screenshot_bob">আরিবা</string>

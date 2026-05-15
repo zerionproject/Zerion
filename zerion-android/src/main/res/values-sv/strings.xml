@@ -83,8 +83,7 @@ Vänlige installera Zerion på en nyare enhet.</string>
   <string name="tor_plugin_status_disabled_country_blocked">Zerion är konfigurerat att inte använda internet i detta landet</string>
   
   <string name="transport_lan_long">Samma Wi-Fi-nätverk</string>
-  
-  
+
   <string name="reminder_notification_title">Utloggad från Zerion</string>
   <string name="reminder_notification_text">Tryck för att logga in igen.</string>
   <string name="reminder_notification_channel_title">Inloggningspåminnelse från Zerion</string>
@@ -364,8 +363,7 @@ Vänlige installera Zerion på en nyare enhet.</string>
   <string name="nobody">Ingen</string>
   
   <string name="read_more">läs mer</string>
-  
-  
+
   
   <string name="change_profile_picture">Tryck för att ändra din profilbild</string>
   <string name="dialog_confirm_profile_picture_title">Ändra profilbild</string>
@@ -591,13 +589,9 @@ Vänlige installera Zerion på en nyare enhet.</string>
   <string name="permission_camera_title">Kameraåtkomst</string>
   <string name="permission_camera_request_body">För att skanna QR-koden så behöver Zerion ha tillgång till kameran.</string>
   <string name="permission_location_title">Platsåtkomst</string>
-  <string name="permission_location_request_body">För att upptäcka Bluetooth-enheter så behöver Zerion ha tillgång till din fysiska plats.\n\nZerion lagrar inte din plats och delar den inte med någon.</string>
   <string name="permission_camera_location_title">Kamera- och platsåtkomst</string>
-  <string name="permission_camera_location_request_body">För att skanna QR-koden så behöver Zerion ha tillgång till kameran.\n\nFör att upptäcka Bluetooth-enheter så behöver Zerion ha tillgång till din fysiska plats.\n\nZerion lagrar inte din plats och delar den inte med någon.</string>
   <string name="permission_camera_denied_body">Du har avvisat åtkomst till kameran, men den behövs för att kontakter ska kunna läggas till.\n\nVänligen överväg att godkänna åtkomst.</string>
-  <string name="permission_location_denied_body">Du har nekat åtkomst till din plats, men Zerion behöver detta tillstånd för att upptäcka Bluetooth-enheter.\n\nVänligen överväg att ge åtkomst.</string>
   <string name="permission_location_setting_title">Platsinställningar</string>
-  <string name="permission_location_setting_body">Din enhets platsinställning måste vara påslagen för att hitta andra enheter via Bluetooth. Aktivera plats för att fortsätta. Du kan inaktivera den igen efteråt.</string>
   <string name="permission_location_setting_button">Aktivera plats</string>
   
   <string name="lock_unlock">Lås upp Zerion</string>
@@ -606,12 +600,8 @@ Vänlige installera Zerion på en nyare enhet.</string>
   <string name="lock_unlock_password">Använd lösenord</string>
   <string name="lock_is_locked">Zerion är låst</string>
   <string name="lock_tap_to_unlock">Tryck för att låsa upp</string>
-  
-  <string name="transports_help_text">Zerion kan ansluta till dina kontakter via internet, Wi-Fi eller Bluetooth.\n\nAlla internetanslutningar går via Tor-nätverket av integritetsskäl.\n\nOm en kontakt kan nås via flera metoder kommer Zerion att använda dem parallellt.</string>
-  
+
   <string name="removable_drive_menu_title">Anslut via borttagbar enhet</string>
-  <string name="removable_drive_intro">Om du inte kan ansluta till din kontakt internet, Wi-Fi eller Bluetooth, så kan Zerion också överföra meddelanden via en borttagbar enhet så som en USB-sticka eller ett SD-kort.</string>
-  <string name="removable_drive_explanation">Om du inte kan ansluta till din kontakter via internet, Wi-Fi eller Bluetooth så kan Zerion också överföra meddelanden via en borttagbar enhet så som en USB-stick eller ett SD-kort.\n\nNär du använder knappen ”Skicka data” kommer all data som väntar på att skickas till kontakter att skrivas på den borttagbara enheten. Detta inkluderar privata meddelanden, bifogade filer, bloggar, forum och privata grupper.\n\nAllting kommer att krypteras innan det skrivs på den borttagbara enheten.\n\nNär din kontakt erhåller den borttagbara enheten kan de använda knappen ”Ta emot data” för att importera meddelandena i Zerion.</string>
   <string name="removable_drive_title_send">Skicka data</string>
   <string name="removable_drive_title_receive">Ta emot data</string>
   <string name="removable_drive_send_intro">Tryck på knappen nedan för att skapa en ny fil som innehåller de krypterade meddelandena. Du kan välja var filen ska sparas.\n\nOm du vill spara filen på en borttagbar enhet, anslut enheten nu.</string>
@@ -629,8 +619,7 @@ Vänlige installera Zerion på en nyare enhet.</string>
   <string name="removable_drive_error_send_text">Ett fel uppstod vid skrivning av data till filen.\n\nOm du använder en borttagbar enhet, säkerställ att den anslutits korrekt och prova igen.\n\nOm felet kvarstår, vänligen skicka återkoppling så att Zerion-gruppen får vetskap om problemet.</string>
   <string name="removable_drive_error_receive_title">Fel vid import av data</string>
   <string name="removable_drive_error_receive_text">Den valda filen innehöll inte någo som Zerion kunde känna igen.\n\nKontrollera att du valt rätt fil.\n\nOm din kontakt skapade filen för mer än 28 dagar sedan kommer Zerion inte att kunna känna igen den.</string>
-  
-  
+
   <string name="screenshot_alice">Alice</string>
   
   <string name="screenshot_bob">Bob</string>
