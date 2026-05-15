@@ -13,7 +13,6 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.fragment.BaseFragment;
@@ -101,19 +100,6 @@ public class GroupTrListFragment extends BaseFragment
 		emptyLp.gravity = Gravity.CENTER_HORIZONTAL | Gravity.TOP;
 		emptyLp.topMargin = dp(96);
 		root.addView(emptyView, emptyLp);
-
-		FloatingActionButton fab = new FloatingActionButton(requireContext());
-		fab.setImageResource(android.R.drawable.ic_input_add);
-		fab.setContentDescription(getString(R.string.grouptr_create));
-		fab.setOnClickListener(v -> startActivity(
-				GroupTrCreateActivity.intent(requireContext())));
-		FrameLayout.LayoutParams fabLp = new FrameLayout.LayoutParams(
-				FrameLayout.LayoutParams.WRAP_CONTENT,
-				FrameLayout.LayoutParams.WRAP_CONTENT);
-		fabLp.gravity = Gravity.BOTTOM | Gravity.END;
-		fabLp.bottomMargin = dp(24);
-		fabLp.rightMargin = dp(24);
-		root.addView(fab, fabLp);
 
 		return root;
 	}

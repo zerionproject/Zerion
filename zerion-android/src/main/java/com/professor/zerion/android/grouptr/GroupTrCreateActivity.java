@@ -17,7 +17,6 @@ import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
 
-import org.briarproject.bramble.api.db.DbException;
 import org.briarproject.bramble.api.lifecycle.IoExecutor;
 import org.briarproject.briar.api.grouptr.GroupTrManager;
 import org.briarproject.briar.api.grouptr.GroupTrState;
@@ -65,6 +64,7 @@ public class GroupTrCreateActivity extends ZerionActivity {
 		createButton = findViewById(R.id.createButton);
 		LinearLayout disappearingRow = findViewById(R.id.disappearingRow);
 
+		createButton.setEnabled(false);
 		nameInput.addTextChangedListener(new TextWatcher() {
 			@Override
 			public void beforeTextChanged(CharSequence s, int start, int count,
@@ -137,7 +137,7 @@ public class GroupTrCreateActivity extends ZerionActivity {
 					startActivity(i);
 					finish();
 				});
-			} catch (DbException ex) {
+			} catch (Throwable t) {
 				runOnUiThread(() -> {
 					Toast.makeText(this, R.string.grouptr_error_create,
 							Toast.LENGTH_SHORT).show();
