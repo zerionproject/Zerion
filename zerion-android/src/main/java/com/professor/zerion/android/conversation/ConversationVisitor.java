@@ -308,6 +308,11 @@ class ConversationVisitor implements
 			text = ctx.getString(R.string.grouptr_invitation_received,
 					getContactNameOrDefault(), groupName);
 		}
+		if (h.isRead()) {
+			return new ConversationNoticeItem(
+					R.layout.list_item_conversation_notice_in, text,
+					contactName, h);
+		}
 		return new ConversationRequestItem(
 				R.layout.list_item_conversation_request, text, contactName,
 				h, h.getGroupTrGroupId().getBytes(), false);

@@ -179,6 +179,9 @@ public class ConversationActivity extends ZerionActivity
 	MessagingManager messagingManager;
 
 	@Inject
+	org.briarproject.briar.api.conversation.ConversationManager conversationManager;
+
+	@Inject
 	@com.professor.zerion.android.AppModule.UiPrefs
 	android.content.SharedPreferences uiPrefs;
 
@@ -2065,6 +2068,8 @@ public class ConversationActivity extends ZerionActivity
 		SessionId sessionId = item.getSessionId();
 		ConversationRequestItem.RequestType type = item.getRequestType();
 		final byte[] grouptrGid = item.getGrouptrGid();
+		final GroupId messageGroupId = item.getGroupId();
+		final MessageId messageId = item.getId();
 
 		dbExecutor.execute(() -> {
 			try {
@@ -2074,6 +2079,11 @@ public class ConversationActivity extends ZerionActivity
 						groupTrManager.acceptInvite(grouptrGid);
 					} else {
 						groupTrManager.declineInvite(grouptrGid);
+					}
+					try {
+						conversationManager.setReadFlag(messageGroupId,
+								messageId, true);
+					} catch (DbException ignored) {
 					}
 				} else if (type == ConversationRequestItem.RequestType.INTRODUCTION) {
 					if (sessionId == null) return;

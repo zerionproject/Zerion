@@ -1294,6 +1294,17 @@ class GroupTrManagerImpl
 		LocalAuthor la = db.transactionWithResult(true,
 				identityManager::getLocalAuthor);
 		byte[] localPub = la.getPublicKey().getEncoded();
+		boolean isMember = false;
+		for (GroupTrMember m : s.getMembers()) {
+			if (Arrays.equals(m.getPubKey(), localPub)) {
+				isMember = true;
+				break;
+			}
+		}
+		if (!isMember) {
+			throw new GroupTrAuthException(
+					GroupTrAuthException.Reason.NOT_A_MEMBER);
+		}
 		PrivateKey signingKey = la.getPrivateKey();
 		long timestamp = clock.currentTimeMillis();
 		int epoch = (int) s.getEpoch();
