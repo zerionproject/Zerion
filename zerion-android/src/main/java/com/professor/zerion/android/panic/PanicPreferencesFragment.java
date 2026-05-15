@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
-import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
 
@@ -17,11 +16,13 @@ import com.professor.zerion.android.AppModule;
 import com.professor.zerion.android.ZerionApplication;
 
 import java.util.ArrayList;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 import androidx.preference.ListPreference;
+import androidx.preference.PreferenceDataStore;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceManager;
 import androidx.preference.SwitchPreferenceCompat;
@@ -29,12 +30,9 @@ import info.guardianproject.panic.PanicResponder;
 
 import static android.app.Activity.RESULT_CANCELED;
 import static android.app.Activity.RESULT_OK;
-import static android.content.Intent.ACTION_VIEW;
-import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static info.guardianproject.panic.Panic.PACKAGE_NAME_NONE;
 
-public class PanicPreferencesFragment extends PreferenceFragmentCompat
-		implements SharedPreferences.OnSharedPreferenceChangeListener {
+public class PanicPreferencesFragment extends PreferenceFragmentCompat {
 
 	public static final String KEY_LOCK = "pref_key_lock";
 	public static final String KEY_PANIC_APP = "pref_key_panic_app";
@@ -51,10 +49,11 @@ public class PanicPreferencesFragment extends PreferenceFragmentCompat
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		ZerionApplication app = (ZerionApplication) requireActivity().getApplication();
+		ZerionApplication app =
+				(ZerionApplication) requireActivity().getApplication();
 		app.getApplicationComponent().inject(this);
 		PreferenceManager prefManager = getPreferenceManager();
-		prefManager.setSharedPreferencesName("ui_prefs");
+		prefManager.setPreferenceDataStore(new EncryptedDataStore(uiPrefs));
 	}
 
 	@Override
@@ -69,6 +68,17 @@ public class PanicPreferencesFragment extends PreferenceFragmentCompat
 		lockPref = findPreference(KEY_LOCK);
 		panicAppPref = findPreference(KEY_PANIC_APP);
 		purgePref = findPreference(KEY_PURGE);
+
+		lockPref.setOnPreferenceChangeListener((pref, newValue) -> {
+			boolean v = (Boolean) newValue;
+			if (!v && purgePref != null) purgePref.setChecked(false);
+			return true;
+		});
+		purgePref.setOnPreferenceChangeListener((pref, newValue) -> {
+			boolean v = (Boolean) newValue;
+			if (v && lockPref != null) lockPref.setChecked(true);
+			return true;
+		});
 
 		if (PanicResponder.checkForDisconnectIntent(activity)) {
 			activity.finish();
@@ -137,30 +147,8 @@ public class PanicPreferencesFragment extends PreferenceFragmentCompat
 	@Override
 	public void onStart() {
 		super.onStart();
-		getPreferenceScreen().getSharedPreferences()
-				.registerOnSharedPreferenceChangeListener(this);
 		updatePreferences();
 		showPanicApp(PanicResponder.getTriggerPackageName(requireActivity()));
-	}
-
-	@Override
-	public void onStop() {
-		super.onStop();
-		getPreferenceScreen().getSharedPreferences()
-				.unregisterOnSharedPreferenceChangeListener(this);
-	}
-
-	@Override
-	public void onSharedPreferenceChanged(SharedPreferences sharedPreferences,
-			String key) {
-		if (key.equals(KEY_PURGE) &&
-				sharedPreferences.getBoolean(KEY_PURGE, false)) {
-			lockPref.setChecked(true);
-		}
-		if (key.equals(KEY_LOCK) &&
-				!sharedPreferences.getBoolean(KEY_LOCK, true)) {
-			purgePref.setChecked(false);
-		}
 	}
 
 	private void showPanicApp(String triggerPackageName) {
@@ -237,6 +225,77 @@ public class PanicPreferencesFragment extends PreferenceFragmentCompat
 			return componentName.getPackageName();
 		}
 		return null;
+	}
+
+	private static final class EncryptedDataStore extends PreferenceDataStore {
+		private final SharedPreferences prefs;
+
+		EncryptedDataStore(SharedPreferences prefs) {
+			this.prefs = prefs;
+		}
+
+		@Override
+		public void putString(String key, @Nullable String value) {
+			prefs.edit().putString(key, value).apply();
+		}
+
+		@Override
+		public void putStringSet(String key, @Nullable Set<String> values) {
+			prefs.edit().putStringSet(key, values).apply();
+		}
+
+		@Override
+		public void putInt(String key, int value) {
+			prefs.edit().putInt(key, value).apply();
+		}
+
+		@Override
+		public void putLong(String key, long value) {
+			prefs.edit().putLong(key, value).apply();
+		}
+
+		@Override
+		public void putFloat(String key, float value) {
+			prefs.edit().putFloat(key, value).apply();
+		}
+
+		@Override
+		public void putBoolean(String key, boolean value) {
+			prefs.edit().putBoolean(key, value).apply();
+		}
+
+		@Nullable
+		@Override
+		public String getString(String key, @Nullable String defValue) {
+			return prefs.getString(key, defValue);
+		}
+
+		@Nullable
+		@Override
+		public Set<String> getStringSet(String key,
+				@Nullable Set<String> defValues) {
+			return prefs.getStringSet(key, defValues);
+		}
+
+		@Override
+		public int getInt(String key, int defValue) {
+			return prefs.getInt(key, defValue);
+		}
+
+		@Override
+		public long getLong(String key, long defValue) {
+			return prefs.getLong(key, defValue);
+		}
+
+		@Override
+		public float getFloat(String key, float defValue) {
+			return prefs.getFloat(key, defValue);
+		}
+
+		@Override
+		public boolean getBoolean(String key, boolean defValue) {
+			return prefs.getBoolean(key, defValue);
+		}
 	}
 
 }
