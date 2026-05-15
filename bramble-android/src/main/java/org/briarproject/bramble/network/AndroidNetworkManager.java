@@ -11,8 +11,6 @@ import android.net.LinkAddress;
 import android.net.LinkProperties;
 import android.net.Network;
 import android.net.NetworkInfo;
-import android.net.wifi.WifiInfo;
-import android.net.wifi.WifiManager;
 
 import org.briarproject.bramble.api.Cancellable;
 import org.briarproject.bramble.api.event.EventBus;
@@ -38,26 +36,20 @@ import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 import static android.content.Context.CONNECTIVITY_SERVICE;
-import static android.content.Context.WIFI_SERVICE;
 import static android.content.Intent.ACTION_SCREEN_OFF;
 import static android.content.Intent.ACTION_SCREEN_ON;
 import static android.net.ConnectivityManager.CONNECTIVITY_ACTION;
-import static android.net.ConnectivityManager.TYPE_WIFI;
-import static android.net.wifi.p2p.WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION;
 import static android.os.Build.VERSION.SDK_INT;
 import static android.os.PowerManager.ACTION_DEVICE_IDLE_MODE_CHANGED;
 import static java.net.NetworkInterface.getNetworkInterfaces;
 import static java.util.Collections.list;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.briarproject.bramble.util.AndroidUtils.registerReceiver;
 import static org.briarproject.nullsafety.NullSafety.requireNonNull;
 
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
 class AndroidNetworkManager implements NetworkManager, Service {
-	private static final String WIFI_AP_STATE_CHANGED_ACTION =
-			"android.net.wifi.WIFI_AP_STATE_CHANGED";
 
 	private final TaskScheduler scheduler;
 	private final EventBus eventBus;
@@ -89,8 +81,6 @@ class AndroidNetworkManager implements NetworkManager, Service {
 		filter.addAction(CONNECTIVITY_ACTION);
 		filter.addAction(ACTION_SCREEN_ON);
 		filter.addAction(ACTION_SCREEN_OFF);
-		filter.addAction(WIFI_AP_STATE_CHANGED_ACTION);
-		filter.addAction(WIFI_P2P_THIS_DEVICE_CHANGED_ACTION);
 		if (SDK_INT >= 23) filter.addAction(ACTION_DEVICE_IDLE_MODE_CHANGED);
 		registerReceiver(app, networkStateReceiver, filter);
 	}
@@ -106,24 +96,14 @@ class AndroidNetworkManager implements NetworkManager, Service {
 		try {
 			NetworkInfo net = connectivityManager.getActiveNetworkInfo();
 			boolean connected = net != null && net.isConnected();
-			boolean wifi = false, ipv6Only = false;
+			boolean ipv6Only = false;
 			if (connected) {
-				wifi = net.getType() == TYPE_WIFI;
 				if (SDK_INT >= 23) ipv6Only = isActiveNetworkIpv6Only();
 				else ipv6Only = areAllAvailableNetworksIpv6Only();
 			}
-			return new NetworkStatus(connected, wifi, ipv6Only);
+			return new NetworkStatus(connected, false, ipv6Only);
 		} catch (SecurityException e) {
-			boolean connected = true, wifi = false, ipv6Only = true;
-			WifiManager wm = (WifiManager) app.getSystemService(WIFI_SERVICE);
-			if (wm != null) {
-				WifiInfo info = wm.getConnectionInfo();
-				if (info != null && info.getIpAddress() != 0) {
-					wifi = true;
-					ipv6Only = false;
-				}
-			}
-			return new NetworkStatus(connected, wifi, ipv6Only);
+			return new NetworkStatus(true, false, true);
 		}
 	}
 
@@ -191,8 +171,6 @@ class AndroidNetworkManager implements NetworkManager, Service {
 			updateConnectionStatus();
 			if (isSleepOrDozeEvent(action)) {
 				scheduleConnectionStatusUpdate(1, MINUTES);
-			} else if (isApEvent(action)) {
-				scheduleConnectionStatusUpdate(5, SECONDS);
 			}
 		}
 
@@ -202,11 +180,6 @@ class AndroidNetworkManager implements NetworkManager, Service {
 			boolean isDoze = SDK_INT >= 23 &&
 					ACTION_DEVICE_IDLE_MODE_CHANGED.equals(action);
 			return isSleep || isDoze;
-		}
-
-		private boolean isApEvent(@Nullable String action) {
-			return WIFI_AP_STATE_CHANGED_ACTION.equals(action) ||
-					WIFI_P2P_THIS_DEVICE_CHANGED_ACTION.equals(action);
 		}
 	}
 }
