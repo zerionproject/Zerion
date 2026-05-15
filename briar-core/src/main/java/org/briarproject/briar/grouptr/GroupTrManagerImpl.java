@@ -956,6 +956,21 @@ class GroupTrManagerImpl
 		byte[] pk = e.getTargetPubKey();
 		if (pk == null) return;
 		if (e.getToEpoch() <= s.getEpoch()) return;
+		LocalAuthor la = db.transactionWithResult(true,
+				identityManager::getLocalAuthor);
+		byte[] localPub = la.getPublicKey().getEncoded();
+		if (Arrays.equals(pk, localPub)) {
+			String groupName = s.getName();
+			byte[] groupId = s.getGroupId();
+			try {
+				removeFromDevice(groupId);
+			} catch (DbException ignored) {
+			}
+			eventBus.broadcast(new org.briarproject.briar.api.messaging.event
+					.GroupTrSelfRemovedEvent(groupId, groupName,
+					e.getContactId()));
+			return;
+		}
 		List<GroupTrMember> next = new ArrayList<>(s.getMembers().size());
 		for (GroupTrMember m : s.getMembers()) {
 			if (!Arrays.equals(m.getPubKey(), pk)) next.add(m);
@@ -1442,7 +1457,7 @@ class GroupTrManagerImpl
 		BdfList commitBody = BdfList.of(37L, groupId, (long) fromEpoch,
 				(long) toEpoch, pqSeed, sigCommit);
 		db.transaction(false, txn -> {
-			fanOut(txn, s, removedBody, timestamp, removedPubKey);
+			fanOut(txn, s, removedBody, timestamp, null);
 			fanOut(txn, s, commitBody, timestamp, removedPubKey);
 		});
 		applyLocalRemove(s, removedPubKey, toEpoch);

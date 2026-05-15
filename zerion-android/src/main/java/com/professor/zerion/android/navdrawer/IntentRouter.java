@@ -21,7 +21,9 @@ class IntentRouter {
 		if (i.getData() != null && i.getData().toString().length() > MAX_URI_LENGTH) {
 			return;
 		}
-		if (ACTION_VIEW.equals(action) && "zerion".equals(i.getScheme())) {
+		if (ACTION_VIEW.equals(action) && "zerion".equals(i.getScheme())
+				&& i.getData() != null
+				&& LINK_REGEX.matcher(i.getData().toString()).find()) {
 			redirectSanitized(ctx, i, AddContactActivity.class);
 		}
 		else if (ACTION_SEND.equals(action) &&

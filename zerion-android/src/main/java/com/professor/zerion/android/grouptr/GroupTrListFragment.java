@@ -28,6 +28,7 @@ import org.briarproject.briar.api.grouptr.GroupTrState;
 import org.briarproject.briar.api.messaging.event.GroupMembershipChangedEvent;
 import org.briarproject.briar.api.messaging.event.GroupEpochCommitEvent;
 import org.briarproject.briar.api.messaging.event.GroupTrLocalStateChangedEvent;
+import org.briarproject.briar.api.messaging.event.GroupTrSelfRemovedEvent;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
@@ -134,7 +135,8 @@ public class GroupTrListFragment extends BaseFragment
 	public void eventOccurred(Event e) {
 		if (e instanceof GroupMembershipChangedEvent
 				|| e instanceof GroupEpochCommitEvent
-				|| e instanceof GroupTrLocalStateChangedEvent) {
+				|| e instanceof GroupTrLocalStateChangedEvent
+				|| e instanceof GroupTrSelfRemovedEvent) {
 			requireActivity().runOnUiThread(() -> {
 				if (e instanceof GroupMembershipChangedEvent) {
 					GroupMembershipChangedEvent ev =
@@ -145,6 +147,16 @@ public class GroupTrListFragment extends BaseFragment
 								R.string.grouptr_invite_received_toast,
 								Toast.LENGTH_LONG).show();
 					}
+				} else if (e instanceof GroupTrSelfRemovedEvent) {
+					GroupTrSelfRemovedEvent ev =
+							(GroupTrSelfRemovedEvent) e;
+					String name = ev.getGroupName().isEmpty()
+							? getString(R.string.grouptr_unnamed_group)
+							: ev.getGroupName();
+					Toast.makeText(requireContext(),
+							getString(R.string.grouptr_removed_by_admin,
+									name),
+							Toast.LENGTH_LONG).show();
 				}
 				loadGroups();
 			});
