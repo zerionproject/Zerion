@@ -101,4 +101,33 @@ public interface PcsConstants {
 
 	int PCS_MODE3_HEADER_MAX_SIZE = PCS_MODE3_HEADER_MIN_SIZE +
 			PQ_CHUNK_HEADER_SIZE + PQ_CHUNK_SIZE;
+
+	boolean MODE3_FULL_ENABLED = false;
+
+	int MODE3_FULL_STREAM_FLAG = 0x1000;
+
+	byte PQ_CHUNK_TYPE_PK_ADVERTISE = 0x10;
+
+	byte PQ_CHUNK_TYPE_KEM_CT = 0x11;
+
+	int MODE3_FULL_PK_ADVERTISE_SIZE = MLKEM_ENCAPSULATION_KEY_SIZE;
+
+	int MODE3_FULL_KEM_CT_SIZE = MLKEM_CIPHERTEXT_SIZE;
+
+	int MODE3_FULL_RECV_SK_LRU_SIZE = 3;
+
+	String MODE3_FULL_CK_DH_LABEL =
+			"org.briarproject.zerion/MODE3FULL_CK_DH";
+
+	String MODE3_FULL_CK_PQ_LABEL =
+			"org.briarproject.zerion/MODE3FULL_CK_PQ";
+
+	String MODE3_FULL_MK_LABEL =
+			"org.briarproject.zerion/MODE3FULL_MK";
+
+	String MODE3_FULL_PQ_ABSORB_LABEL =
+			"org.briarproject.zerion/MODE3FULL_PQ_ABSORB";
+
+	String MODE3_FULL_INIT_SPLIT_LABEL =
+			"org.briarproject.zerion/MODE3FULL_INIT_SPLIT";
 }
