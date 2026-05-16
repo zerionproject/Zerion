@@ -17,7 +17,6 @@ import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_FULL_RE
 @NotNullByDefault
 public class Mode3FullState {
 
-	private final SecretKey ckDh;
 	private final SecretKey ckPq;
 	@Nullable
 	private final byte[] theirActivePqPk;
@@ -25,7 +24,7 @@ public class Mode3FullState {
 	private final Deque<MlKemKeyPair> recentKeyPairs;
 	private final long messageCounter;
 
-	public Mode3FullState(SecretKey ckDh, SecretKey ckPq,
+	public Mode3FullState(SecretKey ckPq,
 			@Nullable byte[] theirActivePqPk,
 			MlKemKeyPair ourActiveKeyPair,
 			Deque<MlKemKeyPair> recentKeyPairs, long messageCounter) {
@@ -33,16 +32,11 @@ public class Mode3FullState {
 				theirActivePqPk.length != MLKEM_ENCAPSULATION_KEY_SIZE) {
 			throw new IllegalArgumentException();
 		}
-		this.ckDh = ckDh;
 		this.ckPq = ckPq;
 		this.theirActivePqPk = theirActivePqPk;
 		this.ourActiveKeyPair = ourActiveKeyPair;
 		this.recentKeyPairs = recentKeyPairs;
 		this.messageCounter = messageCounter;
-	}
-
-	public SecretKey getCkDh() {
-		return ckDh;
 	}
 
 	public SecretKey getCkPq() {
@@ -66,7 +60,7 @@ public class Mode3FullState {
 		return messageCounter;
 	}
 
-	public Mode3FullState withSendAdvance(SecretKey newCkDh, SecretKey newCkPq,
+	public Mode3FullState withSendAdvance(SecretKey newCkPq,
 			MlKemKeyPair newOurKp) {
 		Deque<MlKemKeyPair> newRecent = new ArrayDeque<>(recentKeyPairs);
 		newRecent.addFirst(ourActiveKeyPair);
@@ -76,17 +70,17 @@ public class Mode3FullState {
 				zeroize(evicted);
 			}
 		}
-		return new Mode3FullState(newCkDh, newCkPq, theirActivePqPk, newOurKp,
+		return new Mode3FullState(newCkPq, theirActivePqPk, newOurKp,
 				newRecent, messageCounter + 1);
 	}
 
-	public Mode3FullState withRecvAdvance(SecretKey newCkDh, SecretKey newCkPq,
+	public Mode3FullState withRecvAdvance(SecretKey newCkPq,
 			byte[] theirNewPk) {
 		if (theirNewPk.length != MLKEM_ENCAPSULATION_KEY_SIZE) {
 			throw new IllegalArgumentException();
 		}
-		return new Mode3FullState(newCkDh, newCkPq, theirNewPk,
-				ourActiveKeyPair, recentKeyPairs, messageCounter + 1);
+		return new Mode3FullState(newCkPq, theirNewPk, ourActiveKeyPair,
+				recentKeyPairs, messageCounter + 1);
 	}
 
 	private static void zeroize(MlKemKeyPair kp) {

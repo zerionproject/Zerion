@@ -8,29 +8,28 @@ public interface Mode3FullRatchet {
 
 	Mode3FullState createInitialState(SecretKey rootKey);
 
-	SendChainResult advanceSendChain(Mode3FullState state);
+	PqSendResult pqEncapsulateSend(Mode3FullState state);
 
-	RecvChainResult advanceRecvChain(Mode3FullState state,
-			byte[] ciphertext, byte[] theirNewPqPk) throws PcsException;
+	PqRecvResult pqDecapsulateRecv(Mode3FullState state, byte[] ciphertext,
+			byte[] theirNewPqPk) throws PcsException;
+
+	SecretKey deriveHybridMessageKey(SecretKey classicalMessageKey,
+			SecretKey ckPq);
 
 	@NotNullByDefault
-	final class SendChainResult {
+	final class PqSendResult {
 
-		private final SecretKey messageKey;
 		private final byte[] pkAdvertise;
 		private final byte[] ciphertext;
+		private final SecretKey newCkPq;
 		private final Mode3FullState newState;
 
-		public SendChainResult(SecretKey messageKey, byte[] pkAdvertise,
-				byte[] ciphertext, Mode3FullState newState) {
-			this.messageKey = messageKey;
+		public PqSendResult(byte[] pkAdvertise, byte[] ciphertext,
+				SecretKey newCkPq, Mode3FullState newState) {
 			this.pkAdvertise = pkAdvertise;
 			this.ciphertext = ciphertext;
+			this.newCkPq = newCkPq;
 			this.newState = newState;
-		}
-
-		public SecretKey getMessageKey() {
-			return messageKey;
 		}
 
 		public byte[] getPkAdvertise() {
@@ -41,24 +40,28 @@ public interface Mode3FullRatchet {
 			return ciphertext;
 		}
 
+		public SecretKey getNewCkPq() {
+			return newCkPq;
+		}
+
 		public Mode3FullState getNewState() {
 			return newState;
 		}
 	}
 
 	@NotNullByDefault
-	final class RecvChainResult {
+	final class PqRecvResult {
 
-		private final SecretKey messageKey;
+		private final SecretKey newCkPq;
 		private final Mode3FullState newState;
 
-		public RecvChainResult(SecretKey messageKey, Mode3FullState newState) {
-			this.messageKey = messageKey;
+		public PqRecvResult(SecretKey newCkPq, Mode3FullState newState) {
+			this.newCkPq = newCkPq;
 			this.newState = newState;
 		}
 
-		public SecretKey getMessageKey() {
-			return messageKey;
+		public SecretKey getNewCkPq() {
+			return newCkPq;
 		}
 
 		public Mode3FullState getNewState() {

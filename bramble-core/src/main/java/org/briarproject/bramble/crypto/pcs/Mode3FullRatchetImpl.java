@@ -19,7 +19,6 @@ import javax.inject.Inject;
 
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MLKEM_CIPHERTEXT_SIZE;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MLKEM_ENCAPSULATION_KEY_SIZE;
-import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_FULL_CK_DH_LABEL;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_FULL_INIT_SPLIT_LABEL;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_FULL_MK_LABEL;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_FULL_PQ_ABSORB_LABEL;
@@ -28,7 +27,6 @@ import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_FULL_RE
 @NotNullByDefault
 class Mode3FullRatchetImpl implements Mode3FullRatchet {
 
-	private static final byte CK_DH_INPUT = 0x01;
 	private static final byte CK_PQ_INPUT = 0x02;
 
 	private final CryptoComponent crypto;
@@ -42,17 +40,15 @@ class Mode3FullRatchetImpl implements Mode3FullRatchet {
 
 	@Override
 	public Mode3FullState createInitialState(SecretKey rootKey) {
-		SecretKey ckDh = crypto.deriveKey(MODE3_FULL_INIT_SPLIT_LABEL,
-				rootKey, new byte[]{CK_DH_INPUT});
 		SecretKey ckPq = crypto.deriveKey(MODE3_FULL_INIT_SPLIT_LABEL,
 				rootKey, new byte[]{CK_PQ_INPUT});
 		MlKemKeyPair initialKp = mlKemProvider.generateKeyPair();
-		return new Mode3FullState(ckDh, ckPq, null, initialKp,
+		return new Mode3FullState(ckPq, null, initialKp,
 				new ArrayDeque<>(MODE3_FULL_RECV_SK_LRU_SIZE), 0);
 	}
 
 	@Override
-	public SendChainResult advanceSendChain(Mode3FullState state) {
+	public PqSendResult pqEncapsulateSend(Mode3FullState state) {
 		byte[] theirPk = state.getTheirActivePqPk();
 		byte[] ct;
 		byte[] sharedSecret;
@@ -67,22 +63,18 @@ class Mode3FullRatchetImpl implements Mode3FullRatchet {
 		}
 
 		SecretKey newCkPq = absorbPq(state.getCkPq(), sharedSecret);
-		SecretKey newCkDh = advanceCkDh(state.getCkDh());
-		SecretKey messageKey = deriveMessageKey(newCkDh, newCkPq);
-
 		if (sharedSecret != null) Arrays.fill(sharedSecret, (byte) 0);
 
 		MlKemKeyPair nextKp = mlKemProvider.generateKeyPair();
 		byte[] pkAdvertise = nextKp.getEncapsulationKey();
 
-		Mode3FullState newState = state.withSendAdvance(newCkDh, newCkPq,
-				nextKp);
+		Mode3FullState newState = state.withSendAdvance(newCkPq, nextKp);
 
-		return new SendChainResult(messageKey, pkAdvertise, ct, newState);
+		return new PqSendResult(pkAdvertise, ct, newCkPq, newState);
 	}
 
 	@Override
-	public RecvChainResult advanceRecvChain(Mode3FullState state,
+	public PqRecvResult pqDecapsulateRecv(Mode3FullState state,
 			byte[] ciphertext, byte[] theirNewPqPk) throws PcsException {
 		if (ciphertext.length != MLKEM_CIPHERTEXT_SIZE) {
 			throw new PcsException("Mode 3-Full CT length mismatch");
@@ -101,15 +93,18 @@ class Mode3FullRatchetImpl implements Mode3FullRatchet {
 		}
 
 		SecretKey newCkPq = absorbPq(state.getCkPq(), sharedSecret);
-		SecretKey newCkDh = advanceCkDh(state.getCkDh());
-		SecretKey messageKey = deriveMessageKey(newCkDh, newCkPq);
-
 		if (sharedSecret != null) Arrays.fill(sharedSecret, (byte) 0);
 
-		Mode3FullState newState = state.withRecvAdvance(newCkDh, newCkPq,
-				theirNewPqPk);
+		Mode3FullState newState = state.withRecvAdvance(newCkPq, theirNewPqPk);
 
-		return new RecvChainResult(messageKey, newState);
+		return new PqRecvResult(newCkPq, newState);
+	}
+
+	@Override
+	public SecretKey deriveHybridMessageKey(SecretKey classicalMessageKey,
+			SecretKey ckPq) {
+		return crypto.deriveKey(MODE3_FULL_MK_LABEL,
+				classicalMessageKey, ckPq.getBytes());
 	}
 
 	@Nullable
@@ -133,11 +128,6 @@ class Mode3FullRatchetImpl implements Mode3FullRatchet {
 		return null;
 	}
 
-	private SecretKey advanceCkDh(SecretKey ckDh) {
-		return crypto.deriveKey(MODE3_FULL_CK_DH_LABEL, ckDh,
-				new byte[]{CK_DH_INPUT});
-	}
-
 	private SecretKey absorbPq(SecretKey ckPq, @Nullable byte[] sharedSecret) {
 		if (sharedSecret == null) {
 			return crypto.deriveKey(MODE3_FULL_PQ_ABSORB_LABEL, ckPq,
@@ -145,10 +135,6 @@ class Mode3FullRatchetImpl implements Mode3FullRatchet {
 		}
 		return crypto.deriveKey(MODE3_FULL_PQ_ABSORB_LABEL, ckPq,
 				sharedSecret);
-	}
-
-	private SecretKey deriveMessageKey(SecretKey ckDh, SecretKey ckPq) {
-		return crypto.deriveKey(MODE3_FULL_MK_LABEL, ckDh, ckPq.getBytes());
 	}
 
 	private boolean isZeroSentinel(byte[] ct) {
