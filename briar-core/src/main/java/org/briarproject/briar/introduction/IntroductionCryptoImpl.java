@@ -9,6 +9,9 @@ import org.briarproject.bramble.api.crypto.KeyPair;
 import org.briarproject.bramble.api.crypto.PrivateKey;
 import org.briarproject.bramble.api.crypto.PublicKey;
 import org.briarproject.bramble.api.crypto.SecretKey;
+import org.briarproject.bramble.api.crypto.pcs.MlKemEncapsulation;
+import org.briarproject.bramble.api.crypto.pcs.MlKemKeyPair;
+import org.briarproject.bramble.api.crypto.pcs.MlKemProvider;
 import org.briarproject.bramble.api.data.BdfList;
 import org.briarproject.bramble.api.identity.Author;
 import org.briarproject.bramble.api.identity.AuthorId;
@@ -32,6 +35,7 @@ import static org.briarproject.briar.api.introduction.IntroductionConstants.LABE
 import static org.briarproject.briar.api.introduction.IntroductionConstants.LABEL_AUTH_SIGN;
 import static org.briarproject.briar.api.introduction.IntroductionConstants.LABEL_BOB_MAC_KEY;
 import static org.briarproject.briar.api.introduction.IntroductionConstants.LABEL_MASTER_KEY;
+import static org.briarproject.briar.api.introduction.IntroductionConstants.LABEL_PRE_MASTER_KEY;
 import static org.briarproject.briar.api.introduction.IntroductionConstants.LABEL_SESSION_ID;
 import static org.briarproject.briar.api.introduction.IntroductionManager.MAJOR_VERSION;
 import static org.briarproject.briar.introduction.IntroduceeSession.Local;
@@ -42,13 +46,16 @@ class IntroductionCryptoImpl implements IntroductionCrypto {
 
 	private final CryptoComponent crypto;
 	private final ClientHelper clientHelper;
+	private final MlKemProvider mlKemProvider;
 
 	@Inject
 	IntroductionCryptoImpl(
 			CryptoComponent crypto,
-			ClientHelper clientHelper) {
+			ClientHelper clientHelper,
+			MlKemProvider mlKemProvider) {
 		this.crypto = crypto;
 		this.clientHelper = clientHelper;
+		this.mlKemProvider = mlKemProvider;
 	}
 
 	@Override
@@ -98,6 +105,47 @@ class IntroductionCryptoImpl implements IntroductionCrypto {
 				alice ? publicKey.getEncoded() : remotePublicKey.getEncoded(),
 				alice ? remotePublicKey.getEncoded() : publicKey.getEncoded()
 		);
+	}
+
+	@Override
+	public byte[][] generateMlKemEphemeralKeyPair() {
+		MlKemKeyPair kp = mlKemProvider.generateKeyPair();
+		return new byte[][] {
+				kp.getDecapsulationKey(),
+				kp.getEncapsulationKey()
+		};
+	}
+
+	@Override
+	public byte[][] encapsulateMlKem(byte[] peerMlKemPub) {
+		MlKemEncapsulation enc = mlKemProvider.encapsulate(peerMlKemPub);
+		byte[] ct = enc.getCiphertext();
+		byte[] ss = enc.getSharedSecret().clone();
+		java.util.Arrays.fill(enc.getSharedSecret(), (byte) 0);
+		return new byte[][] {ct, ss};
+	}
+
+	@Override
+	public byte[] decapsulateMlKem(byte[] localMlKemPriv, byte[] ciphertext) {
+		return mlKemProvider.decapsulate(localMlKemPriv, ciphertext);
+	}
+
+	@Override
+	@SuppressWarnings("ConstantConditions")
+	public SecretKey derivePreMasterKey(IntroduceeSession s, byte[] kemSecret)
+			throws GeneralSecurityException {
+		SecretKey dhMasterKey = deriveMasterKey(s);
+		return crypto.deriveKey(LABEL_PRE_MASTER_KEY, dhMasterKey, kemSecret);
+	}
+
+	@Override
+	@SuppressWarnings("ConstantConditions")
+	public SecretKey deriveFinalMasterKey(IntroduceeSession s,
+			byte[] aliceKemSecret, byte[] bobKemSecret)
+			throws GeneralSecurityException {
+		SecretKey dhMasterKey = deriveMasterKey(s);
+		return crypto.deriveKey(LABEL_MASTER_KEY, dhMasterKey,
+				aliceKemSecret, bobKemSecret);
 	}
 
 	@Override
