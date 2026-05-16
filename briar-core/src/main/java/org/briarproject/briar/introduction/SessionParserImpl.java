@@ -48,6 +48,7 @@ import static org.briarproject.briar.introduction.IntroductionConstants.SESSION_
 import static org.briarproject.briar.introduction.IntroductionConstants.SESSION_KEY_ML_DSA_PUB_KEY;
 import static org.briarproject.briar.introduction.IntroductionConstants.SESSION_KEY_ML_KEM_EPHEMERAL_PRIVATE_KEY;
 import static org.briarproject.briar.introduction.IntroductionConstants.SESSION_KEY_ML_KEM_EPHEMERAL_PUBLIC_KEY;
+import static org.briarproject.briar.introduction.IntroductionConstants.SESSION_KEY_OWN_KEM_SECRET;
 import static org.briarproject.briar.introduction.IntroductionConstants.SESSION_KEY_REMOTE;
 import static org.briarproject.briar.introduction.IntroductionConstants.SESSION_KEY_REMOTE_AUTHOR;
 import static org.briarproject.briar.introduction.IntroductionConstants.SESSION_KEY_REQUEST_TIMESTAMP;
@@ -143,9 +144,11 @@ class SessionParserImpl implements SessionParser {
 				SESSION_KEY_ML_KEM_EPHEMERAL_PUBLIC_KEY);
 		byte[] mlKemPriv = d.getOptionalRaw(
 				SESSION_KEY_ML_KEM_EPHEMERAL_PRIVATE_KEY);
+		byte[] ownKemSecret = d.getOptionalRaw(SESSION_KEY_OWN_KEM_SECRET);
 		return new Local(alice, lastLocalMessageId, localTimestamp,
 				ephemeralPublicKey, ephemeralPrivateKey, transportProperties,
-				acceptTimestamp, macKey, mlDsaPubKey, mlKemPub, mlKemPriv);
+				acceptTimestamp, macKey, mlDsaPubKey, mlKemPub, mlKemPriv,
+				ownKemSecret);
 	}
 
 	private Remote parseRemote(BdfDictionary d) throws FormatException {

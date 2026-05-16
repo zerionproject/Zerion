@@ -47,6 +47,7 @@ import javax.inject.Inject;
 
 import static java.lang.Math.max;
 import static org.briarproject.bramble.api.system.Clock.MIN_REASONABLE_TIME_MS;
+import static org.briarproject.briar.api.introduction.IntroductionConstants.INTRODUCTION_HYBRID_KEM_ENABLED;
 import static org.briarproject.briar.introduction.IntroduceeState.AWAIT_AUTH;
 import static org.briarproject.briar.introduction.IntroduceeState.AWAIT_RESPONSES;
 import static org.briarproject.briar.introduction.IntroduceeState.LOCAL_ACCEPTED;
@@ -270,26 +271,36 @@ class IntroduceeProtocolEngine
 		KeyPair keyPair = crypto.generateAgreementKeyPair();
 		PublicKey publicKey = keyPair.getPublic();
 		PrivateKey privateKey = keyPair.getPrivate();
+		byte[] mlKemPub = null;
+		byte[] mlKemPriv = null;
+		if (INTRODUCTION_HYBRID_KEM_ENABLED) {
+			byte[][] mlKemKp = crypto.generateMlKemEphemeralKeyPair();
+			mlKemPriv = mlKemKp[0];
+			mlKemPub = mlKemKp[1];
+		}
 		Map<TransportId, TransportProperties> transportProperties =
 				transportPropertyManager.getLocalProperties(txn);
 		long localTimestamp = getTimestampForVisibleMessage(txn, s);
 		byte[] localMlDsaPubKey =
 				identityManager.getLocalMlDsaSigPublicKey(txn);
 		Message sent = sendAcceptMessage(txn, s, localTimestamp, publicKey,
-				localTimestamp, transportProperties, true, localMlDsaPubKey);
+				localTimestamp, transportProperties, true, localMlDsaPubKey,
+				mlKemPub);
 		conversationManager.trackOutgoingMessage(txn, sent);
 		switch (s.getState()) {
 			case AWAIT_RESPONSES:
 				return IntroduceeSession.addLocalAccept(s, LOCAL_ACCEPTED, sent,
 						publicKey, privateKey, localTimestamp,
-						transportProperties, localMlDsaPubKey);
+						transportProperties, localMlDsaPubKey, mlKemPub,
+						mlKemPriv);
 			case REMOTE_DECLINED:
 				return IntroduceeSession.clear(s, START, sent.getId(),
 						localTimestamp, s.getLastRemoteMessageId());
 			case REMOTE_ACCEPTED:
 				return onLocalAuth(txn, IntroduceeSession.addLocalAccept(s,
 						AWAIT_AUTH, sent, publicKey, privateKey, localTimestamp,
-						transportProperties, localMlDsaPubKey));
+						transportProperties, localMlDsaPubKey, mlKemPub,
+						mlKemPriv));
 			default:
 				throw new AssertionError();
 		}
@@ -358,8 +369,21 @@ class IntroduceeProtocolEngine
 		byte[] mac;
 		byte[] signature;
 		SecretKey masterKey, aliceMacKey, bobMacKey;
+		byte[] kemCiphertext = null;
+		byte[] ownKemSecret = null;
+		boolean hybrid = INTRODUCTION_HYBRID_KEM_ENABLED
+				&& s.getRemote().mlKemEphemeralPublicKey != null
+				&& s.getLocal().mlKemEphemeralPrivateKey != null;
 		try {
-			masterKey = crypto.deriveMasterKey(s);
+			if (hybrid) {
+				byte[][] encap = crypto.encapsulateMlKem(
+						s.getRemote().mlKemEphemeralPublicKey);
+				kemCiphertext = encap[0];
+				ownKemSecret = encap[1];
+				masterKey = crypto.derivePreMasterKey(s, ownKemSecret);
+			} else {
+				masterKey = crypto.deriveMasterKey(s);
+			}
 			aliceMacKey = crypto.deriveMacKey(masterKey, true);
 			bobMacKey = crypto.deriveMacKey(masterKey, false);
 			SecretKey ourMacKey = s.getLocal().alice ? aliceMacKey : bobMacKey;
@@ -374,9 +398,10 @@ class IntroduceeProtocolEngine
 		}
 		if (s.getState() != AWAIT_AUTH) throw new AssertionError();
 		long localTimestamp = getTimestampForInvisibleMessage(s);
-		Message sent = sendAuthMessage(txn, s, localTimestamp, mac, signature);
+		Message sent = sendAuthMessage(txn, s, localTimestamp, mac, signature,
+				kemCiphertext);
 		return IntroduceeSession.addLocalAuth(s, AWAIT_AUTH, sent, masterKey,
-				aliceMacKey, bobMacKey);
+				aliceMacKey, bobMacKey, ownKemSecret);
 	}
 
 	private IntroduceeSession onRemoteAuth(Transaction txn,
@@ -385,9 +410,33 @@ class IntroduceeProtocolEngine
 			return abort(txn, s, m.getMessageId());
 
 		LocalAuthor localAuthor = identityManager.getLocalAuthor(txn);
+		boolean hybrid = INTRODUCTION_HYBRID_KEM_ENABLED
+				&& m.getKemCiphertext() != null
+				&& s.getLocal().mlKemEphemeralPrivateKey != null
+				&& s.getLocal().ownKemSecret != null;
 		try {
-			crypto.verifyAuthMac(m.getMac(), s, localAuthor.getId());
-			crypto.verifySignature(m.getSignature(), s);
+			if (hybrid) {
+				byte[] peerKemSecret = crypto.decapsulateMlKem(
+						s.getLocal().mlKemEphemeralPrivateKey,
+						m.getKemCiphertext());
+				SecretKey peerPreMaster = crypto.derivePreMasterKey(s,
+						peerKemSecret);
+				SecretKey peerMacKey = crypto.deriveMacKey(peerPreMaster,
+						!s.getLocal().alice);
+				crypto.verifyAuthMacWithKey(m.getMac(), s, localAuthor.getId(),
+						peerMacKey);
+				crypto.verifySignatureWithKey(m.getSignature(), s, peerMacKey);
+				byte[] ownSs = s.getLocal().ownKemSecret;
+				byte[] aliceSs = s.getLocal().alice ? ownSs : peerKemSecret;
+				byte[] bobSs = s.getLocal().alice ? peerKemSecret : ownSs;
+				SecretKey finalMaster = crypto.deriveFinalMasterKey(s,
+						aliceSs, bobSs);
+				java.util.Arrays.fill(peerKemSecret, (byte) 0);
+				s = IntroduceeSession.withMasterKey(s, finalMaster.getBytes());
+			} else {
+				crypto.verifyAuthMac(m.getMac(), s, localAuthor.getId());
+				crypto.verifySignature(m.getSignature(), s);
+			}
 		} catch (GeneralSecurityException e) {
 			return abort(txn, s, m.getMessageId());
 		}

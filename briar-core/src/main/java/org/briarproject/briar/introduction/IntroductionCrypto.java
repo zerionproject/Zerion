@@ -74,6 +74,15 @@ interface IntroductionCrypto {
 	void verifyAuthMac(byte[] mac, IntroduceeSession s, AuthorId localAuthorId)
 			throws GeneralSecurityException;
 
+	/**
+	 * v1.7 Phase 5b — verify peer's AUTH MAC using an explicit MAC key
+	 * (derived from peer's pre-master in hybrid KEM introductions). The
+	 * session's stored remote MAC key is ignored.
+	 */
+	void verifyAuthMacWithKey(byte[] mac, IntroduceeSession s,
+			AuthorId localAuthorId, SecretKey peerMacKey)
+			throws GeneralSecurityException;
+
 	byte[] sign(SecretKey macKey, PrivateKey privateKey,
 			@Nullable byte[] localMlDsaPriv,
 			@Nullable byte[] remoteMlDsaPub)
@@ -81,6 +90,15 @@ interface IntroductionCrypto {
 
 	void verifySignature(byte[] signature, IntroduceeSession s)
 			throws GeneralSecurityException;
+
+	/**
+	 * v1.7 Phase 5b — verify peer's hybrid signature using an explicit
+	 * MAC key for the signature nonce derivation. Used during hybrid KEM
+	 * AUTH-receive when the session's stored remote MAC key was derived
+	 * from our pre-master, not peer's.
+	 */
+	void verifySignatureWithKey(byte[] signature, IntroduceeSession s,
+			SecretKey peerMacKey) throws GeneralSecurityException;
 
 	byte[] activateMac(IntroduceeSession s);
 

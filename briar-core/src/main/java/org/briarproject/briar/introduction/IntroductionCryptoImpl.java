@@ -184,6 +184,16 @@ class IntroductionCryptoImpl implements IntroductionCrypto {
 				s.getRemote().author.getId(), s.getRemote());
 	}
 
+	@Override
+	@SuppressWarnings("ConstantConditions")
+	public void verifyAuthMacWithKey(byte[] mac, IntroduceeSession s,
+			AuthorId localAuthorId, SecretKey peerMacKey)
+			throws GeneralSecurityException {
+		verifyAuthMac(mac, peerMacKey, s.getIntroducer().getId(),
+				localAuthorId, s.getLocal(),
+				s.getRemote().author.getId(), s.getRemote());
+	}
+
 	void verifyAuthMac(byte[] mac, SecretKey macKey, AuthorId introducerId,
 			AuthorId localAuthorId, Common local, AuthorId remoteAuthorId,
 			Common remote) throws GeneralSecurityException {
@@ -247,6 +257,14 @@ class IntroductionCryptoImpl implements IntroductionCrypto {
 		SecretKey macKey = new SecretKey(s.getRemote().macKey);
 		verifySignature(macKey, s.getRemote().author.getPublicKey(), signature,
 				s.getRemote().mlDsaPubKey);
+	}
+
+	@Override
+	@SuppressWarnings("ConstantConditions")
+	public void verifySignatureWithKey(byte[] signature, IntroduceeSession s,
+			SecretKey peerMacKey) throws GeneralSecurityException {
+		verifySignature(peerMacKey, s.getRemote().author.getPublicKey(),
+				signature, s.getRemote().mlDsaPubKey);
 	}
 
 	void verifySignature(SecretKey macKey, PublicKey ed25519PublicKey,

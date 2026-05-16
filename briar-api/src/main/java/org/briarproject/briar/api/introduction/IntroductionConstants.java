@@ -47,7 +47,7 @@ public interface IntroductionConstants {
 	 * <p>
 	 * iOS-parity coordination required before flipping in a release.
 	 */
-	boolean INTRODUCTION_HYBRID_KEM_ENABLED = false;
+	boolean INTRODUCTION_HYBRID_KEM_ENABLED = true;
 
 	String LABEL_PRE_MASTER_KEY =
 			"org.briarproject.briar.introduction/PRE_MASTER_KEY";

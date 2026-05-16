@@ -44,4 +44,6 @@ interface IntroductionConstants {
 	String SESSION_KEY_ML_KEM_EPHEMERAL_PRIVATE_KEY =
 			"mlKemEphemeralPrivateKey";
 
+	String SESSION_KEY_OWN_KEM_SECRET = "ownKemSecret";
+
 }

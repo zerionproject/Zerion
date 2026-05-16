@@ -40,6 +40,7 @@ import static org.briarproject.briar.introduction.IntroductionConstants.SESSION_
 import static org.briarproject.briar.introduction.IntroductionConstants.SESSION_KEY_ML_DSA_PUB_KEY;
 import static org.briarproject.briar.introduction.IntroductionConstants.SESSION_KEY_ML_KEM_EPHEMERAL_PRIVATE_KEY;
 import static org.briarproject.briar.introduction.IntroductionConstants.SESSION_KEY_ML_KEM_EPHEMERAL_PUBLIC_KEY;
+import static org.briarproject.briar.introduction.IntroductionConstants.SESSION_KEY_OWN_KEM_SECRET;
 import static org.briarproject.briar.introduction.IntroductionConstants.SESSION_KEY_REMOTE;
 import static org.briarproject.briar.introduction.IntroductionConstants.SESSION_KEY_REMOTE_AUTHOR;
 import static org.briarproject.briar.introduction.IntroductionConstants.SESSION_KEY_REQUEST_TIMESTAMP;
@@ -131,6 +132,7 @@ class SessionEncoderImpl implements SessionEncoder {
 				s.ephemeralPrivateKey);
 		putNullable(d, SESSION_KEY_ML_KEM_EPHEMERAL_PRIVATE_KEY,
 				s.mlKemEphemeralPrivateKey);
+		putNullable(d, SESSION_KEY_OWN_KEM_SECRET, s.ownKemSecret);
 		return d;
 	}
 

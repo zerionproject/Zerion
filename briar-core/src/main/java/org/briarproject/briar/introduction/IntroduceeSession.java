@@ -77,10 +77,24 @@ class IntroduceeSession extends Session<IntroduceeState>
 			long acceptTimestamp,
 			Map<TransportId, TransportProperties> transportProperties,
 			@Nullable byte[] localMlDsaPubKey) {
+		return addLocalAccept(s, state, acceptMessage, ephemeralPublicKey,
+				ephemeralPrivateKey, acceptTimestamp, transportProperties,
+				localMlDsaPubKey, null, null);
+	}
+
+	static IntroduceeSession addLocalAccept(IntroduceeSession s,
+			IntroduceeState state, Message acceptMessage,
+			PublicKey ephemeralPublicKey, PrivateKey ephemeralPrivateKey,
+			long acceptTimestamp,
+			Map<TransportId, TransportProperties> transportProperties,
+			@Nullable byte[] localMlDsaPubKey,
+			@Nullable byte[] mlKemEphemeralPublicKey,
+			@Nullable byte[] mlKemEphemeralPrivateKey) {
 		Local local = new Local(s.local.alice, acceptMessage.getId(),
 				acceptMessage.getTimestamp(), ephemeralPublicKey,
 				ephemeralPrivateKey, transportProperties, acceptTimestamp,
-				null, localMlDsaPubKey);
+				null, localMlDsaPubKey, mlKemEphemeralPublicKey,
+				mlKemEphemeralPrivateKey);
 		return new IntroduceeSession(s.getSessionId(), state,
 				s.getRequestTimestamp(), s.contactGroupId, s.introducer, local,
 				s.remote, s.masterKey, s.transportKeys);
@@ -92,7 +106,7 @@ class IntroduceeSession extends Session<IntroduceeState>
 				new Remote(s.remote.alice, s.remote.author, m.getMessageId(),
 						m.getEphemeralPublicKey(), m.getTransportProperties(),
 						m.getAcceptTimestamp(), s.remote.macKey,
-						m.getMlDsaPubKey());
+						m.getMlDsaPubKey(), m.getMlKemEphemeralPublicKey());
 		return new IntroduceeSession(s.getSessionId(), state,
 				s.getRequestTimestamp(), s.contactGroupId, s.introducer,
 				s.local, remote, s.masterKey, s.transportKeys);
@@ -101,19 +115,35 @@ class IntroduceeSession extends Session<IntroduceeState>
 	static IntroduceeSession addLocalAuth(IntroduceeSession s,
 			IntroduceeState state, Message m, SecretKey masterKey,
 			SecretKey aliceMacKey, SecretKey bobMacKey) {
+		return addLocalAuth(s, state, m, masterKey, aliceMacKey, bobMacKey,
+				null);
+	}
+
+	static IntroduceeSession addLocalAuth(IntroduceeSession s,
+			IntroduceeState state, Message m, SecretKey masterKey,
+			SecretKey aliceMacKey, SecretKey bobMacKey,
+			@Nullable byte[] ownKemSecret) {
 		Local local = new Local(s.local.alice, m.getId(), m.getTimestamp(),
 				s.local.ephemeralPublicKey, s.local.ephemeralPrivateKey,
 				s.local.transportProperties, s.local.acceptTimestamp,
 				s.local.alice ? aliceMacKey.getBytes() : bobMacKey.getBytes(),
-				s.local.mlDsaPubKey);
+				s.local.mlDsaPubKey, s.local.mlKemEphemeralPublicKey,
+				s.local.mlKemEphemeralPrivateKey, ownKemSecret);
 		Remote remote = new Remote(s.remote.alice, s.remote.author,
 				s.remote.lastMessageId, s.remote.ephemeralPublicKey,
 				s.remote.transportProperties, s.remote.acceptTimestamp,
 				s.remote.alice ? aliceMacKey.getBytes() : bobMacKey.getBytes(),
-				s.remote.mlDsaPubKey);
+				s.remote.mlDsaPubKey, s.remote.mlKemEphemeralPublicKey);
 		return new IntroduceeSession(s.getSessionId(), state,
 				s.getRequestTimestamp(), s.contactGroupId, s.introducer, local,
 				remote, masterKey.getBytes(), s.transportKeys);
+	}
+
+	static IntroduceeSession withMasterKey(IntroduceeSession s,
+			byte[] masterKey) {
+		return new IntroduceeSession(s.getSessionId(), s.getState(),
+				s.getRequestTimestamp(), s.contactGroupId, s.introducer,
+				s.local, s.remote, masterKey, s.transportKeys);
 	}
 
 	static IntroduceeSession awaitActivate(IntroduceeSession s, AuthMessage m,
@@ -227,6 +257,8 @@ class IntroduceeSession extends Session<IntroduceeState>
 		final PrivateKey ephemeralPrivateKey;
 		@Nullable
 		final byte[] mlKemEphemeralPrivateKey;
+		@Nullable
+		final byte[] ownKemSecret;
 
 		Local(boolean alice, @Nullable MessageId lastMessageId,
 				long lastMessageTimestamp,
@@ -238,7 +270,7 @@ class IntroduceeSession extends Session<IntroduceeState>
 			this(alice, lastMessageId, lastMessageTimestamp,
 					ephemeralPublicKey, ephemeralPrivateKey,
 					transportProperties, acceptTimestamp, macKey, mlDsaPubKey,
-					null, null);
+					null, null, null);
 		}
 
 		Local(boolean alice, @Nullable MessageId lastMessageId,
@@ -250,19 +282,36 @@ class IntroduceeSession extends Session<IntroduceeState>
 				@Nullable byte[] mlDsaPubKey,
 				@Nullable byte[] mlKemEphemeralPublicKey,
 				@Nullable byte[] mlKemEphemeralPrivateKey) {
+			this(alice, lastMessageId, lastMessageTimestamp,
+					ephemeralPublicKey, ephemeralPrivateKey,
+					transportProperties, acceptTimestamp, macKey, mlDsaPubKey,
+					mlKemEphemeralPublicKey, mlKemEphemeralPrivateKey, null);
+		}
+
+		Local(boolean alice, @Nullable MessageId lastMessageId,
+				long lastMessageTimestamp,
+				@Nullable PublicKey ephemeralPublicKey,
+				@Nullable PrivateKey ephemeralPrivateKey, @Nullable
+				Map<TransportId, TransportProperties> transportProperties,
+				long acceptTimestamp, @Nullable byte[] macKey,
+				@Nullable byte[] mlDsaPubKey,
+				@Nullable byte[] mlKemEphemeralPublicKey,
+				@Nullable byte[] mlKemEphemeralPrivateKey,
+				@Nullable byte[] ownKemSecret) {
 			super(alice, lastMessageId, ephemeralPublicKey, transportProperties,
 					acceptTimestamp, macKey, mlDsaPubKey,
 					mlKemEphemeralPublicKey);
 			this.lastMessageTimestamp = lastMessageTimestamp;
 			this.ephemeralPrivateKey = ephemeralPrivateKey;
 			this.mlKemEphemeralPrivateKey = mlKemEphemeralPrivateKey;
+			this.ownKemSecret = ownKemSecret;
 		}
 
 		private static Local clear(Local s,
 				@Nullable MessageId lastMessageId, long lastMessageTimestamp) {
 			return new Local(s.alice, lastMessageId, lastMessageTimestamp,
 					null, null, s.transportProperties, s.acceptTimestamp,
-					s.macKey, s.mlDsaPubKey, null, null);
+					s.macKey, s.mlDsaPubKey, null, null, null);
 		}
 	}
 
