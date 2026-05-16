@@ -89,7 +89,7 @@ import static org.briarproject.bramble.db.JdbcUtils.tryToClose;
 @NotNullByDefault
 abstract class JdbcDatabase implements Database<Connection> {
 
-	static final int CODE_SCHEMA_VERSION = 63;
+	static final int CODE_SCHEMA_VERSION = 64;
 
 	private static final int MAX_CONNECTION_POOL_SIZE = 1;
 	private static final int OFFSET_PREV = -1;
@@ -132,7 +132,6 @@ abstract class JdbcDatabase implements Database<Connection> {
 					+ " verified BOOLEAN NOT NULL,"
 					+ " postQuantum BOOLEAN DEFAULT FALSE NOT NULL,"
 					+ " pcsEnabled BOOLEAN DEFAULT FALSE NOT NULL,"
-					+ " mode3Capable BOOLEAN DEFAULT FALSE NOT NULL,"
 					+ " mlDsaSigPublicKey _BINARY,"
 					+ " syncVersions _BINARY DEFAULT '00' NOT NULL,"
 					+ " PRIMARY KEY (contactId),"
@@ -571,7 +570,8 @@ abstract class JdbcDatabase implements Database<Connection> {
 				new Migration59_60(),
 				new Migration60_61(dbTypes),
 				new Migration61_62(),
-				new Migration62_63()
+				new Migration62_63(),
+				new Migration63_64()
 		);
 	}
 
@@ -776,7 +776,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 			@Nullable PublicKey handshake, boolean verified, boolean postQuantum)
 			throws DbException {
 		return addContact(txn, remote, local, handshake, verified, postQuantum,
-				false, false);
+				false, true);
 	}
 
 	@Override
@@ -784,7 +784,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 			@Nullable PublicKey handshake, boolean verified, boolean postQuantum,
 			boolean pcsEnabled) throws DbException {
 		return addContact(txn, remote, local, handshake, verified, postQuantum,
-				pcsEnabled, false);
+				pcsEnabled, true);
 	}
 
 	@Override
@@ -800,14 +800,16 @@ abstract class JdbcDatabase implements Database<Connection> {
 			@Nullable PublicKey handshake, boolean verified, boolean postQuantum,
 			boolean pcsEnabled, boolean mode3Capable,
 			@Nullable byte[] mlDsaSigPublicKey) throws DbException {
+		// mode3Capable parameter is retained for API compatibility but is no
+		// longer persisted; v1.7+ contacts are always Mode 3 capable.
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		try {
 			String sql = "INSERT INTO contacts"
 					+ " (authorId, formatVersion, name, publicKey,"
 					+ " localAuthorId, handshakePublicKey, verified, postQuantum,"
-					+ " pcsEnabled, mode3Capable, mlDsaSigPublicKey)"
-					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+					+ " pcsEnabled, mlDsaSigPublicKey)"
+					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 			ps = txn.prepareStatement(sql);
 			ps.setBytes(1, remote.getId().getBytes());
 			ps.setInt(2, remote.getFormatVersion());
@@ -819,9 +821,8 @@ abstract class JdbcDatabase implements Database<Connection> {
 			ps.setBoolean(7, verified);
 			ps.setBoolean(8, postQuantum);
 			ps.setBoolean(9, pcsEnabled);
-			ps.setBoolean(10, mode3Capable);
-			if (mlDsaSigPublicKey == null) ps.setNull(11, BINARY);
-			else ps.setBytes(11, mlDsaSigPublicKey);
+			if (mlDsaSigPublicKey == null) ps.setNull(10, BINARY);
+			else ps.setBytes(10, mlDsaSigPublicKey);
 			int affected = ps.executeUpdate();
 			if (affected != 1) throw new DbStateException();
 			ps.close();
@@ -1589,8 +1590,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 		try {
 			String sql = "SELECT authorId, formatVersion, name, alias,"
 					+ " publicKey, handshakePublicKey, localAuthorId, verified,"
-					+ " postQuantum, pcsEnabled, mode3Capable,"
-					+ " mlDsaSigPublicKey"
+					+ " postQuantum, pcsEnabled, mlDsaSigPublicKey"
 					+ " FROM contacts"
 					+ " WHERE contactId = ?";
 			ps = txn.prepareStatement(sql);
@@ -1607,8 +1607,8 @@ abstract class JdbcDatabase implements Database<Connection> {
 			boolean verified = rs.getBoolean(8);
 			boolean postQuantum = rs.getBoolean(9);
 			boolean pcsEnabled = rs.getBoolean(10);
-			boolean mode3Capable = rs.getBoolean(11);
-			byte[] mlDsaSigPublicKey = rs.getBytes(12);
+			boolean mode3Capable = true;
+			byte[] mlDsaSigPublicKey = rs.getBytes(11);
 			rs.close();
 			ps.close();
 			Author author =
@@ -1632,8 +1632,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 		try {
 			String sql = "SELECT contactId, authorId, formatVersion, name,"
 					+ " alias, publicKey, handshakePublicKey, localAuthorId,"
-					+ " verified, postQuantum, pcsEnabled, mode3Capable,"
-					+ " mlDsaSigPublicKey"
+					+ " verified, postQuantum, pcsEnabled, mlDsaSigPublicKey"
 					+ " FROM contacts";
 			s = txn.createStatement();
 			rs = s.executeQuery(sql);
@@ -1650,8 +1649,8 @@ abstract class JdbcDatabase implements Database<Connection> {
 				boolean verified = rs.getBoolean(9);
 				boolean postQuantum = rs.getBoolean(10);
 				boolean pcsEnabled = rs.getBoolean(11);
-				boolean mode3Capable = rs.getBoolean(12);
-				byte[] mlDsaSigPublicKey = rs.getBytes(13);
+				boolean mode3Capable = true;
+				byte[] mlDsaSigPublicKey = rs.getBytes(12);
 				Author author =
 						new Author(authorId, formatVersion, name, publicKey);
 				PublicKey handshakePublicKey = handshakePub == null ?
@@ -1701,8 +1700,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 		try {
 			String sql = "SELECT contactId, formatVersion, name, alias,"
 					+ " publicKey, handshakePublicKey, localAuthorId, verified,"
-					+ " postQuantum, pcsEnabled, mode3Capable,"
-					+ " mlDsaSigPublicKey"
+					+ " postQuantum, pcsEnabled, mlDsaSigPublicKey"
 					+ " FROM contacts"
 					+ " WHERE authorId = ?";
 			ps = txn.prepareStatement(sql);
@@ -1720,8 +1718,8 @@ abstract class JdbcDatabase implements Database<Connection> {
 				boolean verified = rs.getBoolean(8);
 				boolean postQuantum = rs.getBoolean(9);
 				boolean pcsEnabled = rs.getBoolean(10);
-				boolean mode3Capable = rs.getBoolean(11);
-				byte[] mlDsaSigPublicKey = rs.getBytes(12);
+				boolean mode3Capable = true;
+				byte[] mlDsaSigPublicKey = rs.getBytes(11);
 				Author author =
 						new Author(remote, formatVersion, name, publicKey);
 				PublicKey handshakePublicKey = handshakePub == null ?
@@ -1749,7 +1747,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 		try {
 			String sql = "SELECT contactId, authorId, formatVersion, name,"
 					+ " alias, publicKey, verified, postQuantum, pcsEnabled,"
-					+ " mode3Capable, mlDsaSigPublicKey"
+					+ " mlDsaSigPublicKey"
 					+ " FROM contacts"
 					+ " WHERE handshakePublicKey = ? AND localAuthorId = ?";
 			ps = txn.prepareStatement(sql);
@@ -1770,8 +1768,8 @@ abstract class JdbcDatabase implements Database<Connection> {
 			boolean verified = rs.getBoolean(7);
 			boolean postQuantum = rs.getBoolean(8);
 			boolean pcsEnabled = rs.getBoolean(9);
-			boolean mode3Capable = rs.getBoolean(10);
-			byte[] mlDsaSigPublicKey = rs.getBytes(11);
+			boolean mode3Capable = true;
+			byte[] mlDsaSigPublicKey = rs.getBytes(10);
 			if (rs.next()) throw new DbStateException();
 			rs.close();
 			ps.close();
