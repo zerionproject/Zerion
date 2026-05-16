@@ -4,7 +4,6 @@ import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
 
-import org.bouncycastle.crypto.CryptoException;
 import org.bouncycastle.crypto.Digest;
 import org.bouncycastle.crypto.digests.Blake2bDigest;
 import org.bouncycastle.crypto.digests.SHA3Digest;
@@ -71,7 +70,6 @@ class CryptoComponentImpl implements CryptoComponent {
 	private final Curve25519 curve25519;
 	private final KeyPairGenerator signatureKeyPairGenerator;
 	private final KeyParser agreementKeyParser, signatureKeyParser;
-	private final MessageEncrypter messageEncrypter;
 	private final HybridKeyAgreement hybridKeyAgreement;
 	private final HybridSignature hybridSignature;
 	private final KeyParser hybridAgreementKeyParser;
@@ -93,7 +91,6 @@ class CryptoComponentImpl implements CryptoComponent {
 				secureRandom);
 		agreementKeyParser = new AgreementKeyParser();
 		signatureKeyParser = new SignatureKeyParser();
-		messageEncrypter = new MessageEncrypter(secureRandom);
 
 		hybridKeyAgreement = new HybridKeyAgreement(secureRandom);
 		hybridSignature = new HybridSignature(secureRandom);
@@ -183,11 +180,6 @@ class CryptoComponentImpl implements CryptoComponent {
 	@Override
 	public KeyParser getSignatureKeyParser() {
 		return signatureKeyParser;
-	}
-
-	@Override
-	public KeyParser getMessageKeyParser() {
-		return messageEncrypter.getKeyParser();
 	}
 
 	@Override
@@ -463,15 +455,6 @@ class CryptoComponentImpl implements CryptoComponent {
 		byte fv = ciphertext[0];
 		return fv == PBKDF_FORMAT_SCRYPT
 				|| fv == PBKDF_FORMAT_SCRYPT_STRENGTHENED;
-	}
-
-	@Override
-	public byte[] encryptToKey(PublicKey publicKey, byte[] plaintext) {
-		try {
-			return messageEncrypter.encrypt(publicKey, plaintext);
-		} catch (CryptoException e) {
-			throw new RuntimeException(e);
-		}
 	}
 
 	@Override
