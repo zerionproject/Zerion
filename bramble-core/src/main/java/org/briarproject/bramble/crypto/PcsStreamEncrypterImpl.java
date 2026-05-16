@@ -210,9 +210,10 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 			if (m3fState == null) {
 				throw new IOException("Mode 3-Full state missing");
 			}
-			mode3FullSend = mode3FullRatchet.pqEncapsulateSend(m3fState);
+			SecretKey ckPqOld = m3fState.getCkPq();
 			messageKey = mode3FullRatchet.deriveHybridMessageKey(messageKey,
-					mode3FullSend.getNewCkPq());
+					ckPqOld);
+			mode3FullSend = mode3FullRatchet.pqEncapsulateSend(m3fState);
 			sendState = sendState.withMode3FullState(mode3FullSend.getNewState());
 		}
 
