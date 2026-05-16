@@ -179,14 +179,17 @@ class IntroductionCryptoImpl implements IntroductionCrypto {
 			@Nullable byte[] localMlDsaPriv,
 			@Nullable byte[] remoteMlDsaPub)
 			throws GeneralSecurityException {
-		byte[] nonce = getNonce(macKey);
-		if (localMlDsaPriv != null && remoteMlDsaPub != null) {
-			HybridSignaturePrivateKey hybridKey =
-					new HybridSignaturePrivateKey(privateKey.getEncoded(),
-							localMlDsaPriv);
-			return crypto.hybridSign(LABEL_AUTH_SIGN, nonce, hybridKey);
+		if (localMlDsaPriv == null || remoteMlDsaPub == null) {
+			throw new GeneralSecurityException(
+					"Introduction requires hybrid (Ed25519 + ML-DSA-65) " +
+							"signature in v1.7+; peer is on a pre-v1.6 " +
+							"build without ML-DSA");
 		}
-		return crypto.sign(LABEL_AUTH_SIGN, nonce, privateKey);
+		byte[] nonce = getNonce(macKey);
+		HybridSignaturePrivateKey hybridKey =
+				new HybridSignaturePrivateKey(privateKey.getEncoded(),
+						localMlDsaPriv);
+		return crypto.hybridSign(LABEL_AUTH_SIGN, nonce, hybridKey);
 	}
 
 	@Override
@@ -201,24 +204,20 @@ class IntroductionCryptoImpl implements IntroductionCrypto {
 	void verifySignature(SecretKey macKey, PublicKey ed25519PublicKey,
 			byte[] signature, @Nullable byte[] remoteMlDsaPubKey)
 			throws GeneralSecurityException {
-		byte[] nonce = getNonce(macKey);
-		if (remoteMlDsaPubKey != null) {
-			if (signature.length != HYBRID_SIGNATURE_BYTES) {
-				throw new GeneralSecurityException();
-			}
-			HybridSignaturePublicKey hybridPub = new HybridSignaturePublicKey(
-					ed25519PublicKey.getEncoded(), remoteMlDsaPubKey);
-			if (!crypto.verifyHybridSignature(signature, LABEL_AUTH_SIGN,
-					nonce, hybridPub)) {
-				throw new GeneralSecurityException();
-			}
-			return;
+		if (remoteMlDsaPubKey == null) {
+			throw new GeneralSecurityException(
+					"Introduction requires hybrid (Ed25519 + ML-DSA-65) " +
+							"signature in v1.7+; peer is on a pre-v1.6 " +
+							"build without ML-DSA");
 		}
-		if (signature.length != 64) {
+		if (signature.length != HYBRID_SIGNATURE_BYTES) {
 			throw new GeneralSecurityException();
 		}
-		if (!crypto.verifySignature(signature, LABEL_AUTH_SIGN, nonce,
-				ed25519PublicKey)) {
+		byte[] nonce = getNonce(macKey);
+		HybridSignaturePublicKey hybridPub = new HybridSignaturePublicKey(
+				ed25519PublicKey.getEncoded(), remoteMlDsaPubKey);
+		if (!crypto.verifyHybridSignature(signature, LABEL_AUTH_SIGN,
+				nonce, hybridPub)) {
 			throw new GeneralSecurityException();
 		}
 	}
