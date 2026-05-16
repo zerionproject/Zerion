@@ -51,8 +51,6 @@ public interface PcsConstants {
 
 	byte FLAG_PQ_CHUNK = 0x08;
 
-	boolean MODE3_ENABLED = true;
-
 	int MLKEM_ENCAPSULATION_KEY_SIZE = 1184;
 
 	int MLKEM_DECAPSULATION_KEY_SIZE = 2400;

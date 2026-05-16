@@ -4,7 +4,6 @@ import org.briarproject.bramble.api.crypto.PublicKey;
 import org.briarproject.bramble.api.crypto.SecretKey;
 import org.briarproject.bramble.api.crypto.StreamEncrypter;
 import org.briarproject.bramble.api.crypto.pcs.Mode3FullRatchet;
-import org.briarproject.bramble.api.crypto.pcs.Mode3FullRatchet.PqSendResult;
 import org.briarproject.bramble.api.crypto.pcs.Mode3FullState;
 import org.briarproject.bramble.api.crypto.pcs.PcsException;
 import org.briarproject.bramble.api.crypto.pcs.PcsRatchet;
@@ -29,7 +28,6 @@ import javax.annotation.concurrent.NotThreadSafe;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.DH_PUBLIC_KEY_SIZE;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.FLAG_DH_RATCHET;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.FLAG_PCS_ENABLED;
-import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_ENABLED;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_FULL_ENABLED;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_FULL_FRAME_OVERHEAD;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_FULL_STREAM_FLAG;
@@ -166,8 +164,8 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 		PqChunk pqChunk = null;
 		boolean useMode3Full = MODE3_FULL_ENABLED && sendState.isMode3Full() &&
 				mode3FullRatchet != null;
-		boolean useMode3 = !useMode3Full && MODE3_ENABLED &&
-				sendState.isMode3() && pqRatchet != null && pqState != null;
+		boolean useMode3 = !useMode3Full && sendState.isMode3()
+				&& pqRatchet != null && pqState != null;
 
 		int pcsHeaderSize;
 		if (useMode3Full) {
@@ -333,7 +331,7 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 	private void writeStreamHeader() throws IOException {
 		byte[] streamHeaderPlaintext = new byte[STREAM_HEADER_PLAINTEXT_LENGTH];
 		int version = PROTOCOL_VERSION | 0x8000 | 0x4000;
-		if (MODE3_ENABLED && sendState.isMode3()) {
+		if (sendState.isMode3()) {
 			version |= 0x2000;
 		}
 		if (MODE3_FULL_ENABLED && sendState.isMode3Full()
@@ -368,7 +366,7 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 		if (MODE3_FULL_ENABLED && sendState.isMode3Full()
 				&& mode3FullRatchet != null) {
 			pcsHeaderSize = headerCodec.getMode3FullHeaderSize();
-		} else if (MODE3_ENABLED && sendState.isMode3()) {
+		} else if (sendState.isMode3()) {
 			pcsHeaderSize = PCS_MODE3_HEADER_MAX_SIZE;
 		} else {
 			pcsHeaderSize = PCS_HEADER_MAX_SIZE;
@@ -397,6 +395,6 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 	}
 
 	public boolean isMode3() {
-		return MODE3_ENABLED && sendState.isMode3();
+		return sendState.isMode3();
 	}
 }

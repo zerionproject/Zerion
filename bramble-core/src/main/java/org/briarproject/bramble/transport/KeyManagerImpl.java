@@ -39,7 +39,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
-import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_ENABLED;
 import static org.briarproject.bramble.api.sync.SyncConstants.MAX_TRANSPORT_LATENCY;
 
 @ThreadSafe
@@ -339,7 +338,7 @@ class KeyManagerImpl implements KeyManager, Service, EventListener {
 	private StreamContext enrichWithPcsState(Transaction txn,
 			StreamContext baseCtx, ContactId contactId, boolean mode3Capable)
 			throws DbException {
-		if (!MODE3_ENABLED || !mode3Capable) {
+		if (!mode3Capable) {
 			return baseCtx;
 		}
 		if (!pcsStateManager.hasState(txn, contactId)) {
@@ -371,7 +370,7 @@ class KeyManagerImpl implements KeyManager, Service, EventListener {
 	private StreamContext enrichWithPcsReceiveState(Transaction txn,
 			StreamContext baseCtx, ContactId contactId, boolean mode3Capable)
 			throws DbException {
-		if (!MODE3_ENABLED || !mode3Capable) {
+		if (!mode3Capable) {
 			return baseCtx;
 		}
 		if (!pcsStateManager.hasState(txn, contactId)) {

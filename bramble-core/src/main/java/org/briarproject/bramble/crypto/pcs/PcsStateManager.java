@@ -22,7 +22,6 @@ import java.security.GeneralSecurityException;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
-import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_ENABLED;
 import static org.briarproject.bramble.api.db.DatabaseComponent.PCS_DIRECTION_RECEIVE;
 import static org.briarproject.bramble.api.db.DatabaseComponent.PCS_DIRECTION_SEND;
 
@@ -243,7 +242,6 @@ public class PcsStateManager {
 
 	@Nullable
 	public PqRatchetState loadPqState(ContactId contactId) {
-		if (!MODE3_ENABLED) return null;
 		try {
 			return db.transactionWithNullableResult(true, txn ->
 					loadPqState(txn, contactId));
@@ -255,14 +253,12 @@ public class PcsStateManager {
 	@Nullable
 	public PqRatchetState loadPqState(Transaction txn, ContactId contactId)
 			throws DbException {
-		if (!MODE3_ENABLED) return null;
 		Object[] result = db.getPqRatchetState(txn, contactId);
 		if (result == null) return null;
 		return parsePqState(result);
 	}
 
 	public void savePqState(ContactId contactId, PqRatchetState state) {
-		if (!MODE3_ENABLED) return;
 		try {
 			db.transaction(false, txn -> savePqState(txn, contactId, state));
 		} catch (DbException e) {
@@ -271,8 +267,6 @@ public class PcsStateManager {
 
 	public void savePqState(Transaction txn, ContactId contactId,
 			PqRatchetState state) throws DbException {
-		if (!MODE3_ENABLED) return;
-
 		MlKemKeyPair ourKeyPair = state.getOurKeyPair();
 		byte[] ourEkSeed = ourKeyPair != null ? ourKeyPair.getEkSeed() : null;
 		byte[] ourEkVector = ourKeyPair != null ? ourKeyPair.getEkVector() : null;
@@ -296,7 +290,6 @@ public class PcsStateManager {
 	}
 
 	public boolean hasPqState(ContactId contactId) {
-		if (!MODE3_ENABLED) return false;
 		try {
 			return db.transactionWithResult(true, txn ->
 					db.containsPqRatchetState(txn, contactId));
@@ -306,7 +299,6 @@ public class PcsStateManager {
 	}
 
 	public void removePqState(ContactId contactId) {
-		if (!MODE3_ENABLED) return;
 		try {
 			db.transaction(false, txn ->
 					db.removePqRatchetState(txn, contactId));

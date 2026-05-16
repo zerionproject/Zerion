@@ -14,14 +14,11 @@ import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.FLAG_PCS_ENAB
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.FLAG_PQ_CHUNK;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.FLAG_PQ_ENABLED;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MESSAGE_NUMBER_SIZE;
-import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_ENABLED;
-import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_FULL_CHUNK_HEADER_SIZE;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_FULL_FRAME_OVERHEAD;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_FULL_KEM_CT_SIZE;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_FULL_PK_ADVERTISE_SIZE;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PCS_HEADER_MAX_SIZE;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PCS_HEADER_MIN_SIZE;
-import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PCS_MODE3_HEADER_MAX_SIZE;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PCS_MODE3_HEADER_MIN_SIZE;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PCS_PROTOCOL_VERSION;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PQ_CHUNK_HEADER_SIZE;
@@ -133,9 +130,6 @@ public class PcsHeaderCodec {
 
 	public byte[] encodeMode3Header(int messageNumber, int previousChainLength,
 			byte[] dhPublicKey, long pqEpoch, @Nullable PqChunk pqChunk) {
-		if (!MODE3_ENABLED) {
-			throw new IllegalStateException("Mode 3 not enabled");
-		}
 		if (dhPublicKey.length != DH_PUBLIC_KEY_SIZE) {
 			throw new IllegalArgumentException("Invalid DH key size");
 		}
@@ -213,9 +207,6 @@ public class PcsHeaderCodec {
 		PqChunk pqChunk = null;
 
 		if ((flags & FLAG_PQ_ENABLED) != 0) {
-			if (!MODE3_ENABLED) {
-				throw new PcsException("Mode 3 not enabled");
-			}
 			if (data.length < offset + PQ_EPOCH_SIZE) {
 				throw new PcsException("PQ header too short");
 			}
@@ -253,9 +244,6 @@ public class PcsHeaderCodec {
 	}
 
 	public int getMode3HeaderSize(@Nullable PqChunk pqChunk) {
-		if (!MODE3_ENABLED) {
-			throw new IllegalStateException("Mode 3 not enabled");
-		}
 		if (pqChunk == null) {
 			return PCS_MODE3_HEADER_MIN_SIZE;
 		}

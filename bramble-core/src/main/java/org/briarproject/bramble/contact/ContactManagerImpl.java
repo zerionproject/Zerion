@@ -44,7 +44,6 @@ import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
 
 import static org.briarproject.bramble.api.contact.PendingContactState.WAITING_FOR_CONNECTION;
-import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_ENABLED;
 import static org.briarproject.bramble.api.identity.AuthorConstants.MAX_AUTHOR_NAME_LENGTH;
 import static org.briarproject.bramble.util.StringUtils.toUtf8;
 
@@ -387,7 +386,7 @@ class ContactManagerImpl implements ContactManager, EventListener {
 
 	private void initializePcsState(Transaction txn, ContactId contactId,
 			SecretKey rootKey, boolean mode3Capable) throws DbException {
-		if (!mode3Capable || !MODE3_ENABLED) {
+		if (!mode3Capable) {
 			return;
 		}
 		KeyPair dhKeyPair = crypto.generateAgreementKeyPair();

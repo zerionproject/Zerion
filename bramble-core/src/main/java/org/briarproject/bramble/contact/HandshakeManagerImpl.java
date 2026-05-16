@@ -45,7 +45,6 @@ import static org.briarproject.bramble.contact.HandshakeConstants.PROTOCOL_MAJOR
 import static org.briarproject.bramble.contact.HandshakeConstants.PROTOCOL_MINOR_VERSION;
 import static org.briarproject.bramble.api.Bytes.compare;
 import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.HYBRID_COMMITMENT_LABEL;
-import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_ENABLED;
 import static org.briarproject.bramble.contact.HandshakeRecordTypes.RECORD_TYPE_EPHEMERAL_PUBLIC_KEY;
 import static org.briarproject.bramble.contact.HandshakeRecordTypes.RECORD_TYPE_HYBRID_STATIC_KEY;
 import static org.briarproject.bramble.contact.HandshakeRecordTypes.RECORD_TYPE_KEM_CIPHERTEXT;
@@ -278,14 +277,9 @@ class HandshakeManagerImpl implements HandshakeManager {
 			theirProof = receiveProof(recordReader);
 			sendProof(recordWriter, ourProof);
 		}
-		boolean mode3Capable = false;
-		if (MODE3_ENABLED) {
-			sendMode3Capability(recordWriter);
-		}
+		sendMode3Capability(recordWriter);
 		out.sendEndOfStream();
-		if (MODE3_ENABLED) {
-			mode3Capable = receiveMode3Capability(recordReader);
-		}
+		boolean mode3Capable = receiveMode3Capability(recordReader);
 		recordReader.readRecord(r -> false, IGNORE);
 		if (!handshakeCrypto.verifyOwnership(masterKey, !alice, theirProof)) {
 			throw new FormatException();

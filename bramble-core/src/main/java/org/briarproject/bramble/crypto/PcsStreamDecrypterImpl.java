@@ -33,7 +33,6 @@ import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.NotThreadSafe;
 
-import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_ENABLED;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_FULL_ENABLED;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_FULL_FRAME_OVERHEAD;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_FULL_STREAM_FLAG;
@@ -350,7 +349,7 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 			throw new FormatException();
 		}
 
-		if (MODE3_ENABLED && pcsHeader.isPqEnabled() && pqRatchet != null &&
+		if (pcsHeader.isPqEnabled() && pqRatchet != null &&
 				pqState != null) {
 			PqChunk chunk = pcsHeader.getPqChunk();
 			if (chunk != null) {
@@ -436,7 +435,7 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 		int receivedProtocolVersion = ByteUtils.readUint16(streamHeaderPlaintext, 0);
 		pcsEnabled = (receivedProtocolVersion & 0x8000) != 0;
 		mode2Enabled = (receivedProtocolVersion & 0x4000) != 0;
-		mode3Enabled = MODE3_ENABLED && (receivedProtocolVersion & 0x2000) != 0;
+		mode3Enabled = (receivedProtocolVersion & 0x2000) != 0;
 		mode3FullEnabled = MODE3_FULL_ENABLED &&
 				(receivedProtocolVersion & MODE3_FULL_STREAM_FLAG) != 0;
 		int baseVersion = receivedProtocolVersion & 0x0FFF;
@@ -467,7 +466,7 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 		}
 		pcsEnabled = true;
 		mode2Enabled = recvState != null && recvState.isMode2();
-		mode3Enabled = MODE3_ENABLED && recvState != null && recvState.isMode3();
+		mode3Enabled = recvState != null && recvState.isMode3();
 		mode3FullEnabled = MODE3_FULL_ENABLED && recvState != null
 				&& recvState.isMode3Full();
 		streamHeaderRead = true;
