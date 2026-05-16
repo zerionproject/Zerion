@@ -46,6 +46,8 @@ import static org.briarproject.briar.introduction.IntroductionConstants.SESSION_
 import static org.briarproject.briar.introduction.IntroductionConstants.SESSION_KEY_MAC_KEY;
 import static org.briarproject.briar.introduction.IntroductionConstants.SESSION_KEY_MASTER_KEY;
 import static org.briarproject.briar.introduction.IntroductionConstants.SESSION_KEY_ML_DSA_PUB_KEY;
+import static org.briarproject.briar.introduction.IntroductionConstants.SESSION_KEY_ML_KEM_EPHEMERAL_PRIVATE_KEY;
+import static org.briarproject.briar.introduction.IntroductionConstants.SESSION_KEY_ML_KEM_EPHEMERAL_PUBLIC_KEY;
 import static org.briarproject.briar.introduction.IntroductionConstants.SESSION_KEY_REMOTE;
 import static org.briarproject.briar.introduction.IntroductionConstants.SESSION_KEY_REMOTE_AUTHOR;
 import static org.briarproject.briar.introduction.IntroductionConstants.SESSION_KEY_REQUEST_TIMESTAMP;
@@ -137,9 +139,13 @@ class SessionParserImpl implements SessionParser {
 		long acceptTimestamp = d.getLong(SESSION_KEY_ACCEPT_TIMESTAMP);
 		byte[] macKey = d.getOptionalRaw(SESSION_KEY_MAC_KEY);
 		byte[] mlDsaPubKey = d.getOptionalRaw(SESSION_KEY_ML_DSA_PUB_KEY);
+		byte[] mlKemPub = d.getOptionalRaw(
+				SESSION_KEY_ML_KEM_EPHEMERAL_PUBLIC_KEY);
+		byte[] mlKemPriv = d.getOptionalRaw(
+				SESSION_KEY_ML_KEM_EPHEMERAL_PRIVATE_KEY);
 		return new Local(alice, lastLocalMessageId, localTimestamp,
 				ephemeralPublicKey, ephemeralPrivateKey, transportProperties,
-				acceptTimestamp, macKey, mlDsaPubKey);
+				acceptTimestamp, macKey, mlDsaPubKey, mlKemPub, mlKemPriv);
 	}
 
 	private Remote parseRemote(BdfDictionary d) throws FormatException {
@@ -156,9 +162,11 @@ class SessionParserImpl implements SessionParser {
 		long acceptTimestamp = d.getLong(SESSION_KEY_ACCEPT_TIMESTAMP);
 		byte[] macKey = d.getOptionalRaw(SESSION_KEY_MAC_KEY);
 		byte[] mlDsaPubKey = d.getOptionalRaw(SESSION_KEY_ML_DSA_PUB_KEY);
+		byte[] mlKemPub = d.getOptionalRaw(
+				SESSION_KEY_ML_KEM_EPHEMERAL_PUBLIC_KEY);
 		return new Remote(alice, remoteAuthor, lastRemoteMessageId,
 				ephemeralPublicKey, transportProperties, acceptTimestamp,
-				macKey, mlDsaPubKey);
+				macKey, mlDsaPubKey, mlKemPub);
 	}
 
 	private int getState(BdfDictionary d) throws FormatException {

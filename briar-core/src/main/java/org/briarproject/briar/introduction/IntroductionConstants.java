@@ -38,4 +38,10 @@ interface IntroductionConstants {
 
 	String SESSION_KEY_ML_DSA_PUB_KEY = "mlDsaPubKey";
 
+	String SESSION_KEY_ML_KEM_EPHEMERAL_PUBLIC_KEY =
+			"mlKemEphemeralPublicKey";
+
+	String SESSION_KEY_ML_KEM_EPHEMERAL_PRIVATE_KEY =
+			"mlKemEphemeralPrivateKey";
+
 }
