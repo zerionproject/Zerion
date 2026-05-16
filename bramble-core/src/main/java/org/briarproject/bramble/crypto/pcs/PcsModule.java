@@ -1,6 +1,7 @@
 package org.briarproject.bramble.crypto.pcs;
 
 import org.briarproject.bramble.api.crypto.pcs.MlKemProvider;
+import org.briarproject.bramble.api.crypto.pcs.Mode3FullRatchet;
 import org.briarproject.bramble.api.crypto.pcs.PcsRatchet;
 import org.briarproject.bramble.api.crypto.pcs.PqRatchet;
 import org.briarproject.bramble.api.crypto.pcs.SkippedKeyStore;
@@ -39,6 +40,12 @@ public class PcsModule {
 	@Singleton
 	PqRatchet providePqRatchet(PqRatchetImpl pqRatchet) {
 		return pqRatchet;
+	}
+
+	@Provides
+	@Singleton
+	Mode3FullRatchet provideMode3FullRatchet(Mode3FullRatchetImpl ratchet) {
+		return ratchet;
 	}
 
 	@Provides
