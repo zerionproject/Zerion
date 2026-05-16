@@ -26,6 +26,8 @@ import static org.briarproject.bramble.api.identity.AuthorConstants.MAX_PUBLIC_K
 import static org.briarproject.bramble.util.ValidationUtils.checkLength;
 import static org.briarproject.bramble.util.ValidationUtils.checkSize;
 import static org.briarproject.briar.api.autodelete.AutoDeleteConstants.NO_AUTO_DELETE_TIMER;
+import static org.briarproject.briar.api.introduction.IntroductionConstants.INTRODUCTION_KEM_CIPHERTEXT_BYTES;
+import static org.briarproject.briar.api.introduction.IntroductionConstants.INTRODUCTION_ML_KEM_PUBLIC_KEY_BYTES;
 import static org.briarproject.briar.api.introduction.IntroductionConstants.MAX_INTRODUCTION_TEXT_LENGTH;
 import static org.briarproject.briar.introduction.MessageType.ACCEPT;
 import static org.briarproject.briar.introduction.MessageType.ACTIVATE;
@@ -98,7 +100,7 @@ class IntroductionValidator extends BdfMessageValidator {
 
 	private BdfMessageContext validateAcceptMessage(Message m, BdfList body)
 			throws FormatException {
-		checkSize(body, 6, 8);
+		checkSize(body, 6, 9);
 
 		byte[] sessionIdBytes = body.getRaw(1);
 		checkLength(sessionIdBytes, UniqueId.LENGTH);
@@ -122,10 +124,17 @@ class IntroductionValidator extends BdfMessageValidator {
 		if (body.size() >= 7) {
 			timer = validateAutoDeleteTimer(body.getOptionalLong(6));
 		}
-		if (body.size() == 8) {
+		if (body.size() >= 8) {
 			byte[] mlDsaPubKey = body.getOptionalRaw(7);
 			if (mlDsaPubKey != null) {
 				checkLength(mlDsaPubKey, ML_DSA_65_PUBLIC_KEY_BYTES);
+			}
+		}
+		if (body.size() == 9) {
+			byte[] mlKemEphemeralPublicKey = body.getOptionalRaw(8);
+			if (mlKemEphemeralPublicKey != null) {
+				checkLength(mlKemEphemeralPublicKey,
+						INTRODUCTION_ML_KEM_PUBLIC_KEY_BYTES);
 			}
 		}
 
@@ -168,7 +177,7 @@ class IntroductionValidator extends BdfMessageValidator {
 
 	private BdfMessageContext validateAuthMessage(Message m, BdfList body)
 			throws FormatException {
-		checkSize(body, 5);
+		checkSize(body, 5, 6);
 
 		byte[] sessionIdBytes = body.getRaw(1);
 		checkLength(sessionIdBytes, UniqueId.LENGTH);
@@ -182,6 +191,13 @@ class IntroductionValidator extends BdfMessageValidator {
 		byte[] signature = body.getRaw(4);
 		checkLength(signature, 1, Math.max(MAX_SIGNATURE_BYTES,
 				HYBRID_SIGNATURE_BYTES));
+
+		if (body.size() == 6) {
+			byte[] kemCiphertext = body.getOptionalRaw(5);
+			if (kemCiphertext != null) {
+				checkLength(kemCiphertext, INTRODUCTION_KEM_CIPHERTEXT_BYTES);
+			}
+		}
 
 		SessionId sessionId = new SessionId(sessionIdBytes);
 		BdfDictionary meta = messageEncoder.encodeMetadata(AUTH, sessionId,

@@ -102,15 +102,21 @@ class MessageParserImpl implements MessageParser {
 				.parseAndValidateTransportPropertiesMap(body.getDictionary(5));
 		long timer = NO_AUTO_DELETE_TIMER;
 		byte[] mlDsaPubKey = null;
+		byte[] mlKemEphemeralPublicKey = null;
 		if (body.size() == 7) {
 			timer = body.getLong(6, NO_AUTO_DELETE_TIMER);
 		} else if (body.size() == 8) {
 			timer = body.getLong(6, NO_AUTO_DELETE_TIMER);
 			mlDsaPubKey = body.getOptionalRaw(7);
+		} else if (body.size() == 9) {
+			timer = body.getLong(6, NO_AUTO_DELETE_TIMER);
+			mlDsaPubKey = body.getOptionalRaw(7);
+			mlKemEphemeralPublicKey = body.getOptionalRaw(8);
 		}
 		return new AcceptMessage(m.getId(), m.getGroupId(), m.getTimestamp(),
 				previousMessageId, sessionId, ephemeralPublicKey,
-				acceptTimestamp, transportProperties, timer, mlDsaPubKey);
+				acceptTimestamp, transportProperties, timer, mlDsaPubKey,
+				mlKemEphemeralPublicKey);
 	}
 
 	@Override
