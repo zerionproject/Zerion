@@ -349,8 +349,8 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 			throw new FormatException();
 		}
 
-		if (pcsHeader.isPqEnabled() && pqRatchet != null &&
-				pqState != null) {
+		if (pcsHeader != null && pcsHeader.isPqEnabled() && pqRatchet != null
+				&& pqState != null) {
 			PqChunk chunk = pcsHeader.getPqChunk();
 			if (chunk != null) {
 				pqState = pqRatchet.processChunkReceived(pqState, chunk);

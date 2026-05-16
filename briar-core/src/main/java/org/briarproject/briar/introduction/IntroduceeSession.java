@@ -309,6 +309,12 @@ class IntroduceeSession extends Session<IntroduceeState>
 
 		private static Local clear(Local s,
 				@Nullable MessageId lastMessageId, long lastMessageTimestamp) {
+			if (s.mlKemEphemeralPrivateKey != null) {
+				java.util.Arrays.fill(s.mlKemEphemeralPrivateKey, (byte) 0);
+			}
+			if (s.ownKemSecret != null) {
+				java.util.Arrays.fill(s.ownKemSecret, (byte) 0);
+			}
 			return new Local(s.alice, lastMessageId, lastMessageTimestamp,
 					null, null, s.transportProperties, s.acceptTimestamp,
 					s.macKey, s.mlDsaPubKey, null, null, null);
