@@ -134,8 +134,12 @@ class MessageParserImpl implements MessageParser {
 		MessageId previousMessageId = new MessageId(previousMsgBytes);
 		byte[] mac = body.getRaw(3);
 		byte[] signature = body.getRaw(4);
+		byte[] kemCiphertext = null;
+		if (body.size() == 6) {
+			kemCiphertext = body.getOptionalRaw(5);
+		}
 		return new AuthMessage(m.getId(), m.getGroupId(), m.getTimestamp(),
-				previousMessageId, sessionId, mac, signature);
+				previousMessageId, sessionId, mac, signature, kemCiphertext);
 	}
 
 	@Override

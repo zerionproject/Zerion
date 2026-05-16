@@ -67,6 +67,10 @@ interface MessageEncoder {
 			@Nullable MessageId previousMessageId, SessionId sessionId,
 			byte[] mac, byte[] signature);
 
+	Message encodeAuthMessage(GroupId contactGroupId, long timestamp,
+			@Nullable MessageId previousMessageId, SessionId sessionId,
+			byte[] mac, byte[] signature, @Nullable byte[] kemCiphertext);
+
 	Message encodeActivateMessage(GroupId contactGroupId, long timestamp,
 			@Nullable MessageId previousMessageId, SessionId sessionId,
 			byte[] mac);

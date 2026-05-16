@@ -230,13 +230,33 @@ class MessageEncoderImpl implements MessageEncoder {
 	public Message encodeAuthMessage(GroupId contactGroupId, long timestamp,
 			@Nullable MessageId previousMessageId, SessionId sessionId,
 			byte[] mac, byte[] signature) {
-		BdfList body = BdfList.of(
-				AUTH.getValue(),
-				sessionId,
-				previousMessageId,
-				mac,
-				signature
-		);
+		return encodeAuthMessage(contactGroupId, timestamp, previousMessageId,
+				sessionId, mac, signature, null);
+	}
+
+	@Override
+	public Message encodeAuthMessage(GroupId contactGroupId, long timestamp,
+			@Nullable MessageId previousMessageId, SessionId sessionId,
+			byte[] mac, byte[] signature, @Nullable byte[] kemCiphertext) {
+		BdfList body;
+		if (kemCiphertext == null) {
+			body = BdfList.of(
+					AUTH.getValue(),
+					sessionId,
+					previousMessageId,
+					mac,
+					signature
+			);
+		} else {
+			body = BdfList.of(
+					AUTH.getValue(),
+					sessionId,
+					previousMessageId,
+					mac,
+					signature,
+					kemCiphertext
+			);
+		}
 		return createMessage(contactGroupId, timestamp, body);
 	}
 
