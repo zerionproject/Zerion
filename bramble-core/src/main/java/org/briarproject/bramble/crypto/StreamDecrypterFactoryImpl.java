@@ -4,6 +4,7 @@ import org.briarproject.bramble.api.contact.ContactId;
 import org.briarproject.bramble.api.crypto.SecretKey;
 import org.briarproject.bramble.api.crypto.StreamDecrypter;
 import org.briarproject.bramble.api.crypto.StreamDecrypterFactory;
+import org.briarproject.bramble.api.crypto.pcs.Mode3FullRatchet;
 import org.briarproject.bramble.api.crypto.pcs.PcsRatchet;
 import org.briarproject.bramble.api.crypto.pcs.PcsSessionState;
 import org.briarproject.bramble.api.crypto.pcs.PqRatchet;
@@ -30,17 +31,20 @@ class StreamDecrypterFactoryImpl implements StreamDecrypterFactory {
 	private final PqRatchet pqRatchet;
 	private final SkippedKeyStore skippedKeyStore;
 	private final PcsStateManager pcsStateManager;
+	private final Mode3FullRatchet mode3FullRatchet;
 
 	@Inject
 	StreamDecrypterFactoryImpl(Provider<AuthenticatedCipher> cipherProvider,
 			PcsRatchet pcsRatchet, PqRatchet pqRatchet,
 			SkippedKeyStore skippedKeyStore,
-			PcsStateManager pcsStateManager) {
+			PcsStateManager pcsStateManager,
+			Mode3FullRatchet mode3FullRatchet) {
 		this.cipherProvider = cipherProvider;
 		this.pcsRatchet = pcsRatchet;
 		this.pqRatchet = pqRatchet;
 		this.skippedKeyStore = skippedKeyStore;
 		this.pcsStateManager = pcsStateManager;
+		this.mode3FullRatchet = mode3FullRatchet;
 	}
 
 	@Override
@@ -76,7 +80,8 @@ class StreamDecrypterFactoryImpl implements StreamDecrypterFactory {
 			return new PcsStreamDecrypterImpl(in, cipher, pcsRatchet,
 					skippedKeyStore, chainId, ctx.getStreamNumber(),
 					ctx.getHeaderKey(), pcsState, recvStateCallback, null,
-					pqRatchet, pqState, pqCallback, pqCrossMix);
+					pqRatchet, pqState, pqCallback, pqCrossMix,
+					mode3FullRatchet);
 		}
 
 		return new PcsStreamDecrypterImpl(in, cipher, pcsRatchet,

@@ -89,7 +89,7 @@ public class ContactManagerImplTest extends BrambleMockTestCase {
 		alice = new Random().nextBoolean();
 
 		contactManager = new ContactManagerImpl(db, keyManager, identityManager,
-				pendingContactFactory, crypto, pcsStateManager);
+				pendingContactFactory, crypto, pcsStateManager, null);
 	}
 
 	@Test

@@ -6,6 +6,7 @@ import org.briarproject.bramble.api.crypto.SecretKey;
 import org.briarproject.bramble.api.crypto.StreamEncrypter;
 import org.briarproject.bramble.api.crypto.StreamEncrypterFactory;
 import org.briarproject.bramble.api.crypto.TransportCrypto;
+import org.briarproject.bramble.api.crypto.pcs.Mode3FullRatchet;
 import org.briarproject.bramble.api.crypto.pcs.PcsRatchet;
 import org.briarproject.bramble.api.crypto.pcs.PcsSessionState;
 import org.briarproject.bramble.api.crypto.pcs.PqRatchet;
@@ -35,6 +36,7 @@ class StreamEncrypterFactoryImpl implements StreamEncrypterFactory {
 	private final PcsRatchet pcsRatchet;
 	private final PqRatchet pqRatchet;
 	private final PcsStateManager pcsStateManager;
+	private final Mode3FullRatchet mode3FullRatchet;
 
 	@Inject
 	StreamEncrypterFactoryImpl(CryptoComponent crypto,
@@ -42,13 +44,15 @@ class StreamEncrypterFactoryImpl implements StreamEncrypterFactory {
 			Provider<AuthenticatedCipher> cipherProvider,
 			PcsRatchet pcsRatchet,
 			PqRatchet pqRatchet,
-			PcsStateManager pcsStateManager) {
+			PcsStateManager pcsStateManager,
+			Mode3FullRatchet mode3FullRatchet) {
 		this.crypto = crypto;
 		this.transportCrypto = transportCrypto;
 		this.cipherProvider = cipherProvider;
 		this.pcsRatchet = pcsRatchet;
 		this.pqRatchet = pqRatchet;
 		this.pcsStateManager = pcsStateManager;
+		this.mode3FullRatchet = mode3FullRatchet;
 	}
 
 	@Override
@@ -93,7 +97,7 @@ class StreamEncrypterFactoryImpl implements StreamEncrypterFactory {
 			return new PcsStreamEncrypterImpl(out, cipher, pcsRatchet,
 					streamNumber, tag, streamHeaderNonce, ctx.getHeaderKey(),
 					pcsState, sendStateCallback, pqRatchet, pqState,
-					pqCallback, pqCrossMix);
+					pqCallback, pqCrossMix, mode3FullRatchet);
 		}
 
 		return new PcsStreamEncrypterImpl(out, cipher, pcsRatchet,

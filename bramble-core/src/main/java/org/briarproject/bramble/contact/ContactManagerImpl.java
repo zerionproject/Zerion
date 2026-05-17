@@ -15,6 +15,8 @@ import org.briarproject.bramble.api.crypto.KeyPair;
 import org.briarproject.bramble.api.crypto.PublicKey;
 import org.briarproject.bramble.api.crypto.SecretKey;
 import org.briarproject.bramble.api.crypto.pcs.DhRatchetState;
+import org.briarproject.bramble.api.crypto.pcs.Mode3FullRatchet;
+import org.briarproject.bramble.api.crypto.pcs.Mode3FullState;
 import org.briarproject.bramble.api.crypto.pcs.PcsSessionState;
 import org.briarproject.bramble.api.crypto.pcs.PqRatchetState;
 import org.briarproject.bramble.crypto.pcs.PcsStateManager;
@@ -44,6 +46,7 @@ import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
 
 import static org.briarproject.bramble.api.contact.PendingContactState.WAITING_FOR_CONNECTION;
+import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_FULL_ENABLED;
 import static org.briarproject.bramble.api.identity.AuthorConstants.MAX_AUTHOR_NAME_LENGTH;
 import static org.briarproject.bramble.util.StringUtils.toUtf8;
 
@@ -57,6 +60,7 @@ class ContactManagerImpl implements ContactManager, EventListener {
 	private final PendingContactFactory pendingContactFactory;
 	private final CryptoComponent crypto;
 	private final PcsStateManager pcsStateManager;
+	private final Mode3FullRatchet mode3FullRatchet;
 
 	private final List<ContactHook> hooks = new CopyOnWriteArrayList<>();
 	private final Map<PendingContactId, PendingContactState> states =
@@ -68,13 +72,15 @@ class ContactManagerImpl implements ContactManager, EventListener {
 			IdentityManager identityManager,
 			PendingContactFactory pendingContactFactory,
 			CryptoComponent crypto,
-			PcsStateManager pcsStateManager) {
+			PcsStateManager pcsStateManager,
+			Mode3FullRatchet mode3FullRatchet) {
 		this.db = db;
 		this.keyManager = keyManager;
 		this.identityManager = identityManager;
 		this.pendingContactFactory = pendingContactFactory;
 		this.crypto = crypto;
 		this.pcsStateManager = pcsStateManager;
+		this.mode3FullRatchet = mode3FullRatchet;
 	}
 
 	@Override
@@ -391,10 +397,23 @@ class ContactManagerImpl implements ContactManager, EventListener {
 		}
 		KeyPair dhKeyPair = crypto.generateAgreementKeyPair();
 		DhRatchetState dhState = new DhRatchetState(dhKeyPair, null);
-		PcsSessionState sendState = PcsSessionState.createInitialMode3(
-				rootKey, rootKey, dhState);
-		PcsSessionState receiveState = PcsSessionState.createInitialMode3(
-				rootKey, rootKey, dhState);
+		PcsSessionState sendState;
+		PcsSessionState receiveState;
+		if (MODE3_FULL_ENABLED) {
+			Mode3FullState sendMode3Full =
+					mode3FullRatchet.createInitialState(rootKey);
+			Mode3FullState recvMode3Full =
+					mode3FullRatchet.createInitialState(rootKey);
+			sendState = PcsSessionState.createInitialMode3Full(
+					rootKey, rootKey, dhState, sendMode3Full);
+			receiveState = PcsSessionState.createInitialMode3Full(
+					rootKey, rootKey, dhState, recvMode3Full);
+		} else {
+			sendState = PcsSessionState.createInitialMode3(
+					rootKey, rootKey, dhState);
+			receiveState = PcsSessionState.createInitialMode3(
+					rootKey, rootKey, dhState);
+		}
 		pcsStateManager.initializeMode2State(txn, contactId, sendState,
 				receiveState);
 		PqRatchetState pqState = PqRatchetState.createReady(
