@@ -75,6 +75,15 @@ class CryptoComponentImpl implements CryptoComponent {
 	private final KeyParser hybridAgreementKeyParser;
 	private final KeyParser hybridSignatureKeyParser;
 
+	CryptoComponentImpl(SecureRandomProvider secureRandomProvider,
+			PasswordBasedKdf passwordBasedKdf) {
+		this(secureRandomProvider,
+				passwordBasedKdf instanceof ScryptKdf ?
+						(ScryptKdf) passwordBasedKdf : null,
+				passwordBasedKdf instanceof Argon2idKdf ?
+						(Argon2idKdf) passwordBasedKdf : null);
+	}
+
 	@Inject
 	CryptoComponentImpl(SecureRandomProvider secureRandomProvider,
 			ScryptKdf scryptKdf, Argon2idKdf argon2idKdf) {
