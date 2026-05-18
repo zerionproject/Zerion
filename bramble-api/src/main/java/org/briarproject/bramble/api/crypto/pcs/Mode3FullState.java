@@ -3,9 +3,11 @@ package org.briarproject.bramble.api.crypto.pcs;
 import org.briarproject.bramble.api.crypto.SecretKey;
 import org.briarproject.nullsafety.NotNullByDefault;
 
-import java.util.ArrayDeque;
 import java.util.Arrays;
-import java.util.Deque;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
@@ -21,13 +23,13 @@ public class Mode3FullState {
 	@Nullable
 	private final byte[] theirActivePqPk;
 	private final MlKemKeyPair ourActiveKeyPair;
-	private final Deque<MlKemKeyPair> recentKeyPairs;
+	private final Map<KpId, MlKemKeyPair> recentKeyPairs;
 	private final long messageCounter;
 
 	public Mode3FullState(SecretKey ckPq,
 			@Nullable byte[] theirActivePqPk,
 			MlKemKeyPair ourActiveKeyPair,
-			Deque<MlKemKeyPair> recentKeyPairs, long messageCounter) {
+			Map<KpId, MlKemKeyPair> recentKeyPairs, long messageCounter) {
 		if (theirActivePqPk != null &&
 				theirActivePqPk.length != MLKEM_ENCAPSULATION_KEY_SIZE) {
 			throw new IllegalArgumentException();
@@ -35,7 +37,8 @@ public class Mode3FullState {
 		this.ckPq = ckPq;
 		this.theirActivePqPk = theirActivePqPk;
 		this.ourActiveKeyPair = ourActiveKeyPair;
-		this.recentKeyPairs = recentKeyPairs;
+		this.recentKeyPairs = Collections.unmodifiableMap(
+				new LinkedHashMap<>(recentKeyPairs));
 		this.messageCounter = messageCounter;
 	}
 
@@ -52,7 +55,7 @@ public class Mode3FullState {
 		return ourActiveKeyPair;
 	}
 
-	public Deque<MlKemKeyPair> getRecentKeyPairs() {
+	public Map<KpId, MlKemKeyPair> getRecentKeyPairs() {
 		return recentKeyPairs;
 	}
 
@@ -60,18 +63,34 @@ public class Mode3FullState {
 		return messageCounter;
 	}
 
+	@Nullable
+	public MlKemKeyPair findKeypairById(KpId kpId) {
+		KpId currentId = KpId.of(ourActiveKeyPair.getEncapsulationKey());
+		if (currentId.equals(kpId)) return ourActiveKeyPair;
+		return recentKeyPairs.get(kpId);
+	}
+
 	public Mode3FullState withSendAdvance(SecretKey newCkPq,
 			MlKemKeyPair newOurKp) {
-		Deque<MlKemKeyPair> newRecent = new ArrayDeque<>(recentKeyPairs);
-		newRecent.addFirst(ourActiveKeyPair);
+		LinkedHashMap<KpId, MlKemKeyPair> newRecent =
+				new LinkedHashMap<>(recentKeyPairs);
+		KpId oldId = KpId.of(ourActiveKeyPair.getEncapsulationKey());
+		newRecent.remove(oldId);
+		newRecent.put(oldId, ourActiveKeyPair);
 		while (newRecent.size() > MODE3_FULL_RECV_SK_LRU_SIZE) {
-			MlKemKeyPair evicted = newRecent.pollLast();
-			if (evicted != null) {
-				zeroize(evicted);
-			}
+			Iterator<Map.Entry<KpId, MlKemKeyPair>> it =
+					newRecent.entrySet().iterator();
+			Map.Entry<KpId, MlKemKeyPair> evicted = it.next();
+			it.remove();
+			zeroize(evicted.getValue());
 		}
 		return new Mode3FullState(newCkPq, theirActivePqPk, newOurKp,
 				newRecent, messageCounter + 1);
+	}
+
+	public Mode3FullState withSendAdvanceNoRotate(SecretKey newCkPq) {
+		return new Mode3FullState(newCkPq, theirActivePqPk, ourActiveKeyPair,
+				recentKeyPairs, messageCounter + 1);
 	}
 
 	public Mode3FullState withRecvAdvance(SecretKey newCkPq,

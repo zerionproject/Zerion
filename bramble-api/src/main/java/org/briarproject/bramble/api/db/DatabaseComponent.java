@@ -382,7 +382,8 @@ public interface DatabaseComponent extends TransactionManager {
 			SecretKey chainKey, int messageNumber, int previousChainLength,
 			@Nullable SecretKey rootKey, @Nullable PrivateKey dhPrivateKey,
 			@Nullable PublicKey dhPublicKey, @Nullable PublicKey dhRemotePublicKey,
-			boolean mode2Enabled) throws DbException;
+			boolean mode2Enabled,
+			@Nullable byte[] mode3FullStateBlob) throws DbException;
 
 	@Nullable
 	Object[] getPcsMode2SessionState(Transaction txn, ContactId c, int direction)

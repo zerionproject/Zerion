@@ -7,6 +7,7 @@ import org.briarproject.bramble.api.contact.PendingContactId;
 import org.briarproject.bramble.api.crypto.CryptoComponent;
 import org.briarproject.bramble.api.crypto.KeyParser;
 import org.briarproject.bramble.api.crypto.PublicKey;
+import org.briarproject.bramble.api.identity.ReservedNames;
 import org.briarproject.bramble.api.system.Clock;
 import org.briarproject.bramble.util.Base32;
 import org.briarproject.nullsafety.NotNullByDefault;
@@ -44,6 +45,9 @@ class PendingContactFactoryImpl implements PendingContactFactory {
 	@Override
 	public PendingContact createPendingContact(String link, String alias)
 			throws FormatException {
+		if (ReservedNames.isReserved(alias)) {
+			throw new IllegalArgumentException("reserved name");
+		}
 		ParsedLink parsed = parseHandshakeLink(link);
 		PublicKey keyOrCommitment = parsed.publicKeyOrCommitment;
 		int version = parsed.version;

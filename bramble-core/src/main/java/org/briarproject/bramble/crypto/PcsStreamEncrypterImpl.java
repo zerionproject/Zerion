@@ -73,6 +73,10 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 	private final Consumer<SecretKey> pqCrossMixCallback;
 	@Nullable
 	private final Mode3FullRatchet mode3FullRatchet;
+	@Nullable
+	private final java.util.function.Supplier<
+			org.briarproject.bramble.api.crypto.pcs.Mode3FullState>
+			mode3FullStateRefresher;
 	private final PcsHeaderCodec headerCodec;
 
 	private PcsSessionState sendState;
@@ -88,7 +92,7 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 			@Nullable Consumer<PcsSessionState> stateCallback) {
 		this(out, cipher, ratchet, streamNumber, tag, streamHeaderNonce,
 				streamHeaderKey, initialState, stateCallback, null, null,
-				null, null, null);
+				null, null, null, null);
 	}
 
 	PcsStreamEncrypterImpl(OutputStream out, AuthenticatedCipher cipher,
@@ -101,7 +105,7 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 			@Nullable Consumer<PqRatchetState> pqStateCallback) {
 		this(out, cipher, ratchet, streamNumber, tag, streamHeaderNonce,
 				streamHeaderKey, initialState, stateCallback, pqRatchet,
-				initialPqState, pqStateCallback, null, null);
+				initialPqState, pqStateCallback, null, null, null);
 	}
 
 	PcsStreamEncrypterImpl(OutputStream out, AuthenticatedCipher cipher,
@@ -115,7 +119,8 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 			@Nullable Consumer<SecretKey> pqCrossMixCallback) {
 		this(out, cipher, ratchet, streamNumber, tag, streamHeaderNonce,
 				streamHeaderKey, initialState, stateCallback, pqRatchet,
-				initialPqState, pqStateCallback, pqCrossMixCallback, null);
+				initialPqState, pqStateCallback, pqCrossMixCallback, null,
+				null);
 	}
 
 	PcsStreamEncrypterImpl(OutputStream out, AuthenticatedCipher cipher,
@@ -127,7 +132,10 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 			@Nullable PqRatchetState initialPqState,
 			@Nullable Consumer<PqRatchetState> pqStateCallback,
 			@Nullable Consumer<SecretKey> pqCrossMixCallback,
-			@Nullable Mode3FullRatchet mode3FullRatchet) {
+			@Nullable Mode3FullRatchet mode3FullRatchet,
+			@Nullable java.util.function.Supplier<
+					org.briarproject.bramble.api.crypto.pcs.Mode3FullState>
+					mode3FullStateRefresher) {
 		this.out = out;
 		this.cipher = cipher;
 		this.ratchet = ratchet;
@@ -142,6 +150,7 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 		this.pqStateCallback = pqStateCallback;
 		this.pqCrossMixCallback = pqCrossMixCallback;
 		this.mode3FullRatchet = mode3FullRatchet;
+		this.mode3FullStateRefresher = mode3FullStateRefresher;
 		this.headerCodec = new PcsHeaderCodec();
 		int mode3FullHeaderSize = PCS_MODE3_HEADER_MIN_SIZE +
 				MODE3_FULL_FRAME_OVERHEAD;
@@ -208,6 +217,25 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 			if (m3fState == null) {
 				throw new IOException("Mode 3-Full state missing");
 			}
+			if (mode3FullStateRefresher != null) {
+				Mode3FullState fresh = mode3FullStateRefresher.get();
+				if (fresh != null) {
+					byte[] freshPk = fresh.getTheirActivePqPk();
+					byte[] currentPk = m3fState.getTheirActivePqPk();
+					boolean peerPkLearned = currentPk == null && freshPk != null;
+					boolean peerPkChanged = currentPk != null && freshPk != null
+							&& !java.util.Arrays.equals(currentPk, freshPk);
+					if (peerPkLearned || peerPkChanged) {
+						m3fState = new Mode3FullState(
+								m3fState.getCkPq(),
+								freshPk,
+								m3fState.getOurActiveKeyPair(),
+								m3fState.getRecentKeyPairs(),
+								m3fState.getMessageCounter());
+						sendState = sendState.withMode3FullState(m3fState);
+					}
+				}
+			}
 			SecretKey ckPqOld = m3fState.getCkPq();
 			messageKey = mode3FullRatchet.deriveHybridMessageKey(messageKey,
 					ckPqOld);
@@ -230,10 +258,16 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 		}
 
 		if (useMode3Full && dhPublicKey != null && mode3FullSend != null) {
+			org.briarproject.bramble.api.crypto.pcs.KpId kpIdUsed =
+					mode3FullSend.getKpIdUsed();
+			byte[] kpIdBytes = kpIdUsed != null ? kpIdUsed.getBytes()
+					: new byte[org.briarproject.bramble.api.crypto.pcs
+							.PcsConstants.MODE3_FULL_KP_ID_SIZE];
 			byte[] header = headerCodec.encodeMode3FullHeader(messageNumber,
 					prevChainLength, dhPublicKey.getEncoded(),
 					mode3FullSend.getPkAdvertise(),
-					mode3FullSend.getCiphertext());
+					mode3FullSend.getCiphertext(),
+					kpIdBytes);
 			System.arraycopy(header, 0, framePlaintext, 0, header.length);
 		} else if (useMode3 && dhPublicKey != null) {
 			byte[] header = headerCodec.encodeMode3Header(messageNumber,

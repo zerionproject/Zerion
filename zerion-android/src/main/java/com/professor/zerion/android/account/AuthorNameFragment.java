@@ -23,6 +23,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import static org.briarproject.bramble.api.identity.AuthorConstants.MAX_AUTHOR_NAME_LENGTH;
+import org.briarproject.bramble.api.identity.ReservedNames;
 import static org.briarproject.bramble.util.StringUtils.toUtf8;
 import static com.professor.zerion.android.util.UiUtils.hideViewOnSmallScreen;
 import static com.professor.zerion.android.util.UiUtils.setError;
@@ -103,16 +104,19 @@ public class AuthorNameFragment extends SetupFragment {
 		boolean hasInvalidChars = !sanitized.equals(authorName.toString().trim());
 		int authorNameLength = toUtf8(sanitized).length;
 		boolean tooLong = authorNameLength > MAX_AUTHOR_NAME_LENGTH;
+		boolean reserved = ReservedNames.isReserved(sanitized);
 
 		if (hasInvalidChars) {
 			setError(authorNameWrapper, getString(R.string.name_invalid_characters), true);
 		} else if (tooLong) {
 			setError(authorNameWrapper, getString(R.string.name_too_long), true);
+		} else if (reserved) {
+			setError(authorNameWrapper, getString(R.string.name_reserved), true);
 		} else {
 			setError(authorNameWrapper, "", false);
 		}
 
-		boolean enabled = authorNameLength > 0 && !tooLong && !hasInvalidChars;
+		boolean enabled = authorNameLength > 0 && !tooLong && !hasInvalidChars && !reserved;
 		authorNameInput.setOnEditorActionListener(enabled ? this : null);
 		nextButton.setEnabled(enabled);
 	}
@@ -125,8 +129,10 @@ public class AuthorNameFragment extends SetupFragment {
 			int authorNameLength = toUtf8(sanitized).length;
 			boolean hasInvalidChars = !sanitized.equals(text.toString().trim());
 			boolean tooLong = authorNameLength > MAX_AUTHOR_NAME_LENGTH;
+			boolean reserved = ReservedNames.isReserved(sanitized);
 
-			if (authorNameLength > 0 && !tooLong && !hasInvalidChars) {
+			if (authorNameLength > 0 && !tooLong && !hasInvalidChars
+					&& !reserved) {
 				viewModel.setAuthorName(sanitized);
 			}
 		}

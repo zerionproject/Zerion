@@ -89,7 +89,7 @@ import static org.briarproject.bramble.db.JdbcUtils.tryToClose;
 @NotNullByDefault
 abstract class JdbcDatabase implements Database<Connection> {
 
-	static final int CODE_SCHEMA_VERSION = 64;
+	static final int CODE_SCHEMA_VERSION = 65;
 
 	private static final int MAX_CONNECTION_POOL_SIZE = 1;
 	private static final int OFFSET_PREV = -1;
@@ -330,6 +330,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 					+ " dhRemotePublicKey _BINARY,"
 					+ " mode3Enabled BOOLEAN DEFAULT FALSE NOT NULL,"
 					+ " pqEpoch BIGINT DEFAULT 0 NOT NULL,"
+					+ " mode3FullStateBlob _BINARY,"
 					+ " PRIMARY KEY (contactId, direction),"
 					+ " FOREIGN KEY (contactId)"
 					+ " REFERENCES contacts (contactId)"
@@ -571,7 +572,8 @@ abstract class JdbcDatabase implements Database<Connection> {
 				new Migration60_61(dbTypes),
 				new Migration61_62(),
 				new Migration62_63(),
-				new Migration63_64()
+				new Migration63_64(),
+				new Migration64_65(dbTypes)
 		);
 	}
 
@@ -4361,7 +4363,8 @@ abstract class JdbcDatabase implements Database<Connection> {
 			SecretKey chainKey, int messageNumber, int previousChainLength,
 			@Nullable SecretKey rootKey, @Nullable PrivateKey dhPrivateKey,
 			@Nullable PublicKey dhPublicKey, @Nullable PublicKey dhRemotePublicKey,
-			boolean mode2Enabled) throws DbException {
+			boolean mode2Enabled,
+			@Nullable byte[] mode3FullStateBlob) throws DbException {
 		PreparedStatement ps = null;
 		try {
 			String sql = "DELETE FROM pcsSessionState"
@@ -4374,8 +4377,9 @@ abstract class JdbcDatabase implements Database<Connection> {
 			sql = "INSERT INTO pcsSessionState"
 					+ " (contactId, direction, chainKey, messageNumber,"
 					+ " previousChainLength, mode2Enabled, rootKey,"
-					+ " dhPrivateKey, dhPublicKey, dhRemotePublicKey)"
-					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+					+ " dhPrivateKey, dhPublicKey, dhRemotePublicKey,"
+					+ " mode3FullStateBlob)"
+					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 			ps = txn.prepareStatement(sql);
 			ps.setInt(1, c.getInt());
 			ps.setInt(2, direction);
@@ -4387,6 +4391,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 			ps.setBytes(8, dhPrivateKey != null ? dhPrivateKey.getEncoded() : null);
 			ps.setBytes(9, dhPublicKey != null ? dhPublicKey.getEncoded() : null);
 			ps.setBytes(10, dhRemotePublicKey != null ? dhRemotePublicKey.getEncoded() : null);
+			ps.setBytes(11, mode3FullStateBlob);
 			int affected = ps.executeUpdate();
 			if (affected != 1) throw new DbStateException();
 			ps.close();
@@ -4404,7 +4409,8 @@ abstract class JdbcDatabase implements Database<Connection> {
 		ResultSet rs = null;
 		try {
 			String sql = "SELECT chainKey, messageNumber, previousChainLength,"
-					+ " rootKey, dhPrivateKey, dhPublicKey, dhRemotePublicKey, mode2Enabled"
+					+ " rootKey, dhPrivateKey, dhPublicKey, dhRemotePublicKey,"
+					+ " mode2Enabled, mode3FullStateBlob"
 					+ " FROM pcsSessionState"
 					+ " WHERE contactId = ? AND direction = ?";
 			ps = txn.prepareStatement(sql);
@@ -4424,12 +4430,13 @@ abstract class JdbcDatabase implements Database<Connection> {
 			byte[] dhPublicKeyBytes = rs.getBytes(6);
 			byte[] dhRemotePublicKeyBytes = rs.getBytes(7);
 			boolean mode2Enabled = rs.getBoolean(8);
+			byte[] mode3FullStateBlob = rs.getBytes(9);
 			rs.close();
 			ps.close();
 			return new Object[]{
 					chainKeyBytes, messageNumber, previousChainLength,
 					rootKeyBytes, dhPrivateKeyBytes, dhPublicKeyBytes,
-					dhRemotePublicKeyBytes, mode2Enabled
+					dhRemotePublicKeyBytes, mode2Enabled, mode3FullStateBlob
 			};
 		} catch (SQLException e) {
 			tryToClose(rs);

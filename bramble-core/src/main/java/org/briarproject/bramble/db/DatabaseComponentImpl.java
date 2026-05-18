@@ -1486,7 +1486,8 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 			int direction, SecretKey chainKey, int messageNumber,
 			int previousChainLength, @Nullable SecretKey rootKey,
 			@Nullable PrivateKey dhPrivateKey, @Nullable PublicKey dhPublicKey,
-			@Nullable PublicKey dhRemotePublicKey, boolean mode2Enabled)
+			@Nullable PublicKey dhRemotePublicKey, boolean mode2Enabled,
+			@Nullable byte[] mode3FullStateBlob)
 			throws DbException {
 		if (transaction.isReadOnly()) throw new IllegalArgumentException();
 		T txn = unbox(transaction);
@@ -1494,7 +1495,7 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 			throw new NoSuchContactException();
 		db.setPcsMode2SessionState(txn, c, direction, chainKey, messageNumber,
 				previousChainLength, rootKey, dhPrivateKey, dhPublicKey,
-				dhRemotePublicKey, mode2Enabled);
+				dhRemotePublicKey, mode2Enabled, mode3FullStateBlob);
 	}
 
 	@Override

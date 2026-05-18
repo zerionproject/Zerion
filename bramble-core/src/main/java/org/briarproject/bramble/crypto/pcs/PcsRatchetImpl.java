@@ -105,7 +105,10 @@ public class PcsRatchetImpl implements PcsRatchet {
 				messageNumber + 1,
 				state.getPreviousChainLength(),
 				state.getRootKey(),
-				state.getDhState()
+				state.getDhState(),
+				state.isMode3(),
+				state.getPqEpoch(),
+				state.getMode3FullState()
 		);
 
 		return new AdvanceResult(finalKdf.getMessageKey(), newState);
@@ -205,7 +208,10 @@ public class PcsRatchetImpl implements PcsRatchet {
 				0,
 				state.getMessageNumber(),
 				kdfResult2.getNewRootKey(),
-				newDhState
+				newDhState,
+				state.isMode3(),
+				state.getPqEpoch(),
+				state.getMode3FullState()
 		);
 
 		return new DhRatchetResult(newState, newKeyPair.getPublic());

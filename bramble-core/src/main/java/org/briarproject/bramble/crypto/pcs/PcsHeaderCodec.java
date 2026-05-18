@@ -23,7 +23,9 @@ import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PCS_MODE3_HEA
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PCS_PROTOCOL_VERSION;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PQ_CHUNK_HEADER_SIZE;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PQ_CHUNK_SIZE;
+import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_FULL_KP_ID_SIZE;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PQ_CHUNK_TYPE_KEM_CT;
+import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PQ_CHUNK_TYPE_KP_ID;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PQ_CHUNK_TYPE_PK_ADVERTISE;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PQ_EPOCH_SIZE;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PREVIOUS_CHAIN_LENGTH_SIZE;
@@ -259,14 +261,17 @@ public class PcsHeaderCodec {
 		private final byte[] dhPublicKey;
 		private final byte[] pkAdvertise;
 		private final byte[] kemCiphertext;
+		private final byte[] kpId;
 
 		public Mode3FullHeader(int messageNumber, int previousChainLength,
-				byte[] dhPublicKey, byte[] pkAdvertise, byte[] kemCiphertext) {
+				byte[] dhPublicKey, byte[] pkAdvertise, byte[] kemCiphertext,
+				byte[] kpId) {
 			this.messageNumber = messageNumber;
 			this.previousChainLength = previousChainLength;
 			this.dhPublicKey = dhPublicKey;
 			this.pkAdvertise = pkAdvertise;
 			this.kemCiphertext = kemCiphertext;
+			this.kpId = kpId;
 		}
 
 		public int getMessageNumber() {
@@ -288,11 +293,15 @@ public class PcsHeaderCodec {
 		public byte[] getKemCiphertext() {
 			return kemCiphertext;
 		}
+
+		public byte[] getKpId() {
+			return kpId;
+		}
 	}
 
 	public byte[] encodeMode3FullHeader(int messageNumber,
 			int previousChainLength, byte[] dhPublicKey, byte[] pkAdvertise,
-			byte[] kemCiphertext) {
+			byte[] kemCiphertext, byte[] kpId) {
 		if (dhPublicKey.length != DH_PUBLIC_KEY_SIZE) {
 			throw new IllegalArgumentException("Invalid DH key size");
 		}
@@ -303,6 +312,10 @@ public class PcsHeaderCodec {
 		if (kemCiphertext.length != MODE3_FULL_KEM_CT_SIZE) {
 			throw new IllegalArgumentException(
 					"Invalid Mode 3-Full ciphertext size");
+		}
+		if (kpId.length != MODE3_FULL_KP_ID_SIZE) {
+			throw new IllegalArgumentException(
+					"Invalid Mode 3-Full kpId size");
 		}
 
 		int headerSize = PCS_MODE3_HEADER_MIN_SIZE + MODE3_FULL_FRAME_OVERHEAD;
@@ -339,6 +352,13 @@ public class PcsHeaderCodec {
 		offset += 2;
 		System.arraycopy(kemCiphertext, 0, header, offset,
 				MODE3_FULL_KEM_CT_SIZE);
+		offset += MODE3_FULL_KEM_CT_SIZE;
+
+		header[offset++] = PQ_CHUNK_TYPE_KP_ID;
+		header[offset++] = 0;
+		writeUint16(MODE3_FULL_KP_ID_SIZE, header, offset);
+		offset += 2;
+		System.arraycopy(kpId, 0, header, offset, MODE3_FULL_KP_ID_SIZE);
 
 		return header;
 	}
@@ -400,9 +420,21 @@ public class PcsHeaderCodec {
 		byte[] kemCiphertext = new byte[MODE3_FULL_KEM_CT_SIZE];
 		System.arraycopy(data, offset, kemCiphertext, 0,
 				MODE3_FULL_KEM_CT_SIZE);
+		offset += MODE3_FULL_KEM_CT_SIZE;
+
+		byte type3 = data[offset++];
+		offset++; // index byte (unused)
+		int len3 = readUint16(data, offset);
+		offset += 2;
+		if (type3 != PQ_CHUNK_TYPE_KP_ID
+				|| len3 != MODE3_FULL_KP_ID_SIZE) {
+			throw new PcsException("Malformed KP_ID chunk");
+		}
+		byte[] kpId = new byte[MODE3_FULL_KP_ID_SIZE];
+		System.arraycopy(data, offset, kpId, 0, MODE3_FULL_KP_ID_SIZE);
 
 		return new Mode3FullHeader(messageNumber, previousChainLength,
-				dhPublicKey, pkAdvertise, kemCiphertext);
+				dhPublicKey, pkAdvertise, kemCiphertext, kpId);
 	}
 
 	public int getMode3FullHeaderSize() {

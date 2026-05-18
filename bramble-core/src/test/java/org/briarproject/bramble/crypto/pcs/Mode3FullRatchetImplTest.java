@@ -13,8 +13,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.lang.reflect.Constructor;
-import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MLKEM_CIPHERTEXT_SIZE;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MLKEM_ENCAPSULATION_KEY_SIZE;
@@ -102,7 +102,8 @@ public class Mode3FullRatchetImplTest {
 		System.arraycopy(tmp.getEncapsulationKey(), 0, peerPk, 0,
 				MLKEM_ENCAPSULATION_KEY_SIZE);
 
-		PqRecvResult result = ratchet.pqDecapsulateRecv(rState, zeroCt, peerPk);
+		PqRecvResult result = ratchet.pqDecapsulateRecv(rState, null,
+				zeroCt, peerPk);
 
 		// CK_pq advanced; peer's PK stored for next encap from us.
 		assertFalse(Arrays.equals(rState.getCkPq().getBytes(),
@@ -128,9 +129,10 @@ public class Mode3FullRatchetImplTest {
 
 		// Bob's state has bobKp as his active.
 		Mode3FullState bobState = new Mode3FullState(aliceState.getCkPq(),
-				null, bobKp, new ArrayDeque<>(MODE3_FULL_RECV_SK_LRU_SIZE), 0);
+				null, bobKp, new LinkedHashMap<>(), 0);
 
 		PqRecvResult bobRecv = ratchet.pqDecapsulateRecv(bobState,
+				aliceSend.getKpIdUsed(),
 				aliceSend.getCiphertext(), aliceSend.getPkAdvertise());
 
 		// After absorbing the same KEM secret into the same CK_pq, both
@@ -151,11 +153,11 @@ public class Mode3FullRatchetImplTest {
 		Mode3FullState aliceState = new Mode3FullState(
 				ratchet.createInitialState(root).getCkPq(),
 				bobKp.getEncapsulationKey(), aliceKp,
-				new ArrayDeque<>(MODE3_FULL_RECV_SK_LRU_SIZE), 0);
+				new LinkedHashMap<>(), 0);
 		Mode3FullState bobState = new Mode3FullState(
 				ratchet.createInitialState(root).getCkPq(),
 				aliceKp.getEncapsulationKey(), bobKp,
-				new ArrayDeque<>(MODE3_FULL_RECV_SK_LRU_SIZE), 0);
+				new LinkedHashMap<>(), 0);
 
 		SecretKey classicalMk = randomKey();
 
@@ -166,6 +168,7 @@ public class Mode3FullRatchetImplTest {
 
 		// Bob receives Alice's message.
 		PqRecvResult bobRecv = ratchet.pqDecapsulateRecv(bobState,
+				aliceSend.getKpIdUsed(),
 				aliceSend.getCiphertext(), aliceSend.getPkAdvertise());
 		SecretKey bobMk = ratchet.deriveHybridMessageKey(classicalMk,
 				bobState.getCkPq()); // OLD ckPq
@@ -205,7 +208,7 @@ public class Mode3FullRatchetImplTest {
 		Mode3FullState state = ratchet.createInitialState(root);
 		byte[] wrongCt = new byte[10];
 		byte[] peerPk = new byte[MLKEM_ENCAPSULATION_KEY_SIZE];
-		ratchet.pqDecapsulateRecv(state, wrongCt, peerPk);
+		ratchet.pqDecapsulateRecv(state, null, wrongCt, peerPk);
 	}
 
 	@Test(expected = PcsException.class)
@@ -214,13 +217,16 @@ public class Mode3FullRatchetImplTest {
 		Mode3FullState state = ratchet.createInitialState(root);
 		byte[] ct = new byte[MLKEM_CIPHERTEXT_SIZE];
 		byte[] wrongPk = new byte[10];
-		ratchet.pqDecapsulateRecv(state, ct, wrongPk);
+		ratchet.pqDecapsulateRecv(state, null, ct, wrongPk);
 	}
 
 	@Test
 	public void testSenderAdvanceRotatesActiveKeyPair() {
 		SecretKey root = randomKey();
 		Mode3FullState state = ratchet.createInitialState(root);
+		MlKemKeyPair peer = mlKemProvider.generateKeyPair();
+		state = state.withRecvAdvance(state.getCkPq(),
+				peer.getEncapsulationKey());
 		MlKemKeyPair before = state.getOurActiveKeyPair();
 
 		PqSendResult result = ratchet.pqEncapsulateSend(state);
@@ -236,6 +242,9 @@ public class Mode3FullRatchetImplTest {
 	public void testLruEvictsBeyondConfiguredSize() {
 		SecretKey root = randomKey();
 		Mode3FullState state = ratchet.createInitialState(root);
+		MlKemKeyPair peer = mlKemProvider.generateKeyPair();
+		state = state.withRecvAdvance(state.getCkPq(),
+				peer.getEncapsulationKey());
 
 		// Advance LRU_SIZE+2 times.
 		for (int i = 0; i < MODE3_FULL_RECV_SK_LRU_SIZE + 2; i++) {

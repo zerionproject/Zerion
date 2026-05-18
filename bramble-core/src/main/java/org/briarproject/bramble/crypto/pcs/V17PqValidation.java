@@ -1,6 +1,7 @@
 package org.briarproject.bramble.crypto.pcs;
 
 import org.briarproject.bramble.api.crypto.SecretKey;
+import org.briarproject.bramble.api.crypto.pcs.KpId;
 import org.briarproject.bramble.api.crypto.pcs.MlKemEncapsulation;
 import org.briarproject.bramble.api.crypto.pcs.MlKemKeyPair;
 import org.briarproject.bramble.api.crypto.pcs.MlKemProvider;
@@ -10,13 +11,12 @@ import org.briarproject.bramble.api.crypto.pcs.Mode3FullState;
 import org.briarproject.bramble.api.crypto.pcs.PcsException;
 
 import java.security.SecureRandom;
-import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MLKEM_CIPHERTEXT_SIZE;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MLKEM_ENCAPSULATION_KEY_SIZE;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MLKEM_SHARED_SECRET_SIZE;
-import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_FULL_RECV_SK_LRU_SIZE;
 
 /**
  * Standalone validation harness for v1.7 post-quantum crypto. Runs the
@@ -95,17 +95,18 @@ public class V17PqValidation {
 		// Full bidirectional round-trip: Alice's encap → Bob's decap.
 		MlKemKeyPair aliceKp = provider.generateKeyPair();
 		MlKemKeyPair bobKp = provider.generateKeyPair();
-		ArrayDeque<MlKemKeyPair> emptyLru = new ArrayDeque<>(MODE3_FULL_RECV_SK_LRU_SIZE);
 		Mode3FullState aliceState = new Mode3FullState(aliceInit.getCkPq(),
-				bobKp.getEncapsulationKey(), aliceKp, emptyLru, 0);
+				bobKp.getEncapsulationKey(), aliceKp,
+				new LinkedHashMap<>(), 0);
 		Mode3FullState bobState = new Mode3FullState(aliceInit.getCkPq(),
 				aliceKp.getEncapsulationKey(), bobKp,
-				new ArrayDeque<>(MODE3_FULL_RECV_SK_LRU_SIZE), 0);
+				new LinkedHashMap<>(), 0);
 
 		PqSendResult aliceSend = ratchet.pqEncapsulateSend(aliceState);
 		PqRecvResult bobRecv;
 		try {
-			bobRecv = ratchet.pqDecapsulateRecv(bobState,
+			KpId kpUsed = aliceSend.getKpIdUsed();
+			bobRecv = ratchet.pqDecapsulateRecv(bobState, kpUsed,
 					aliceSend.getCiphertext(), aliceSend.getPkAdvertise());
 		} catch (PcsException e) {
 			bobRecv = null;
@@ -135,12 +136,17 @@ public class V17PqValidation {
 						divergentMk.getBytes()));
 
 		// Sender-side LRU eviction: after LRU_SIZE+2 sends, only LRU_SIZE retained.
-		Mode3FullState lruState = aliceInit;
-		for (int i = 0; i < MODE3_FULL_RECV_SK_LRU_SIZE + 2; i++) {
+		Mode3FullState lruState = aliceInit
+				.withRecvAdvance(aliceInit.getCkPq(),
+						bobKp.getEncapsulationKey());
+		int lruCap =
+				org.briarproject.bramble.api.crypto.pcs.PcsConstants
+						.MODE3_FULL_RECV_SK_LRU_SIZE;
+		for (int i = 0; i < lruCap + 2; i++) {
 			lruState = ratchet.pqEncapsulateSend(lruState).getNewState();
 		}
 		check("Mode3Full: LRU caps at configured size",
-				lruState.getRecentKeyPairs().size() == MODE3_FULL_RECV_SK_LRU_SIZE);
+				lruState.getRecentKeyPairs().size() == lruCap);
 
 		// === Wire-format chunk validation ===
 		// PcsHeaderCodec round-trip for Mode 3-Full frame.
@@ -151,8 +157,10 @@ public class V17PqValidation {
 		rng.nextBytes(pkAdvertise);
 		byte[] kemCt = new byte[1088];
 		rng.nextBytes(kemCt);
+		byte[] kpIdBytes = new byte[KpId.SIZE];
+		rng.nextBytes(kpIdBytes);
 		byte[] frame = codec.encodeMode3FullHeader(42, 7, dhPub, pkAdvertise,
-				kemCt);
+				kemCt, kpIdBytes);
 		check("Mode3Full codec: encoded frame size matches getMode3FullHeaderSize",
 				frame.length == codec.getMode3FullHeaderSize());
 
@@ -167,6 +175,8 @@ public class V17PqValidation {
 				Arrays.equals(pkAdvertise, decoded.getPkAdvertise()));
 		check("Mode3Full codec: kemCiphertext round-trip",
 				Arrays.equals(kemCt, decoded.getKemCiphertext()));
+		check("Mode3Full codec: kpId round-trip",
+				Arrays.equals(kpIdBytes, decoded.getKpId()));
 
 		// Tampered chunk header: type byte flip should fail decode.
 		byte[] tamperedFrame = frame.clone();

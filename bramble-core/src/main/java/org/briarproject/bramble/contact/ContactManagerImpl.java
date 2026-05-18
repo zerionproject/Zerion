@@ -30,6 +30,7 @@ import org.briarproject.bramble.api.event.EventListener;
 import org.briarproject.bramble.api.identity.Author;
 import org.briarproject.bramble.api.identity.AuthorId;
 import org.briarproject.bramble.api.identity.IdentityManager;
+import org.briarproject.bramble.api.identity.ReservedNames;
 import org.briarproject.bramble.api.transport.KeyManager;
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -40,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.logging.Logger;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
@@ -53,6 +55,9 @@ import static org.briarproject.bramble.util.StringUtils.toUtf8;
 @ThreadSafe
 @NotNullByDefault
 class ContactManagerImpl implements ContactManager, EventListener {
+
+	private static final Logger LOG =
+			Logger.getLogger(ContactManagerImpl.class.getName());
 
 	private final DatabaseComponent db;
 	private final KeyManager keyManager;
@@ -109,6 +114,7 @@ class ContactManagerImpl implements ContactManager, EventListener {
 			SecretKey rootKey, long timestamp, boolean alice, boolean verified,
 			boolean active, boolean mode3Capable,
 			@Nullable byte[] peerMlDsaSigPublicKey) throws DbException {
+		requireNotReserved(remote);
 		ContactId c = db.addContact(txn, remote, local, null, verified, false,
 				false, mode3Capable, peerMlDsaSigPublicKey);
 		keyManager.addRotationKeys(txn, c, rootKey, timestamp, alice, active);
@@ -143,6 +149,7 @@ class ContactManagerImpl implements ContactManager, EventListener {
 			boolean mode3Capable,
 			@Nullable byte[] peerMlDsaSigPublicKey)
 			throws DbException, GeneralSecurityException {
+		requireNotReserved(remote);
 		PendingContact pendingContact = db.getPendingContact(txn, p);
 		boolean postQuantum = pendingContact.isPostQuantum();
 		checkForSecurityDowngrade(txn, remote.getId(), postQuantum);
@@ -163,6 +170,12 @@ class ContactManagerImpl implements ContactManager, EventListener {
 		return c;
 	}
 
+	private void requireNotReserved(Author remote) {
+		if (ReservedNames.isReserved(remote.getName())) {
+			throw new IllegalArgumentException("reserved name");
+		}
+	}
+
 	private void checkForSecurityDowngrade(Transaction txn, AuthorId remoteId,
 			boolean newIsPostQuantum) throws DbException {
 		Collection<Contact> existingContacts =
@@ -177,6 +190,7 @@ class ContactManagerImpl implements ContactManager, EventListener {
 	@Override
 	public ContactId addContact(Transaction txn, Author remote, AuthorId local,
 			boolean verified) throws DbException {
+		requireNotReserved(remote);
 		ContactId c = db.addContact(txn, remote, local, null, verified);
 		Contact contact = db.getContact(txn, c);
 		for (ContactHook hook : hooks) hook.addingContact(txn, contact);
@@ -350,6 +364,8 @@ class ContactManagerImpl implements ContactManager, EventListener {
 			int aliasLength = toUtf8(alias).length;
 			if (aliasLength == 0 || aliasLength > MAX_AUTHOR_NAME_LENGTH)
 				throw new IllegalArgumentException();
+			if (ReservedNames.isReserved(alias))
+				throw new IllegalArgumentException("reserved name");
 		}
 		db.setContactAlias(txn, c, alias);
 	}
@@ -400,14 +416,15 @@ class ContactManagerImpl implements ContactManager, EventListener {
 		PcsSessionState sendState;
 		PcsSessionState receiveState;
 		if (MODE3_FULL_ENABLED) {
-			Mode3FullState sendMode3Full =
-					mode3FullRatchet.createInitialState(rootKey);
-			Mode3FullState recvMode3Full =
+			LOG.warning("[ZER-PQ-DEBUG] ContactManager — initializing" +
+					" Mode 3-Full PCS for new contact (per-message ML-KEM-768" +
+					" ratchet active from frame 1)");
+			Mode3FullState sharedMode3Full =
 					mode3FullRatchet.createInitialState(rootKey);
 			sendState = PcsSessionState.createInitialMode3Full(
-					rootKey, rootKey, dhState, sendMode3Full);
+					rootKey, rootKey, dhState, sharedMode3Full);
 			receiveState = PcsSessionState.createInitialMode3Full(
-					rootKey, rootKey, dhState, recvMode3Full);
+					rootKey, rootKey, dhState, sharedMode3Full);
 		} else {
 			sendState = PcsSessionState.createInitialMode3(
 					rootKey, rootKey, dhState);

@@ -388,7 +388,8 @@ interface Database<T> {
 			SecretKey chainKey, int messageNumber, int previousChainLength,
 			@Nullable SecretKey rootKey, @Nullable PrivateKey dhPrivateKey,
 			@Nullable PublicKey dhPublicKey, @Nullable PublicKey dhRemotePublicKey,
-			boolean mode2Enabled) throws DbException;
+			boolean mode2Enabled,
+			@Nullable byte[] mode3FullStateBlob) throws DbException;
 
 	@Nullable
 	Object[] getPcsMode2SessionState(T txn, ContactId c, int direction)

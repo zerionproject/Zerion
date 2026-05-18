@@ -66,6 +66,7 @@ class StreamDecrypterFactoryImpl implements StreamDecrypterFactory {
 		byte[] chainId = DatabaseSkippedKeyStore.createChainId(contactId, false);
 
 		PqRatchetState pqState = ctx.getPqRatchetState();
+		boolean isMode3Full = pcsState.isMode3Full();
 		boolean isMode3 = pcsState.isMode3() && pqState != null;
 
 		final ContactId cid = contactId;
@@ -75,13 +76,17 @@ class StreamDecrypterFactoryImpl implements StreamDecrypterFactory {
 				s -> pcsStateManager.savePqState(cid, s);
 		Consumer<SecretKey> pqCrossMix = pqSecret -> pcsStateManager
 				.mixPqSecretIntoSendRoot(cid, pqSecret, pqRatchet);
+		java.util.function.Supplier<
+				org.briarproject.bramble.api.crypto.pcs.Mode3FullState>
+				mode3FullRefresher =
+				() -> pcsStateManager.loadSharedMode3FullState(cid);
 
-		if (isMode3) {
+		if (isMode3Full || isMode3) {
 			return new PcsStreamDecrypterImpl(in, cipher, pcsRatchet,
 					skippedKeyStore, chainId, ctx.getStreamNumber(),
 					ctx.getHeaderKey(), pcsState, recvStateCallback, null,
 					pqRatchet, pqState, pqCallback, pqCrossMix,
-					mode3FullRatchet);
+					mode3FullRatchet, mode3FullRefresher);
 		}
 
 		return new PcsStreamDecrypterImpl(in, cipher, pcsRatchet,

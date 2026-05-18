@@ -10,8 +10,8 @@ public interface Mode3FullRatchet {
 
 	PqSendResult pqEncapsulateSend(Mode3FullState state);
 
-	PqRecvResult pqDecapsulateRecv(Mode3FullState state, byte[] ciphertext,
-			byte[] theirNewPqPk) throws PcsException;
+	PqRecvResult pqDecapsulateRecv(Mode3FullState state, KpId kpId,
+			byte[] ciphertext, byte[] theirNewPqPk) throws PcsException;
 
 	SecretKey deriveHybridMessageKey(SecretKey classicalMessageKey,
 			SecretKey ckPq);
@@ -21,13 +21,17 @@ public interface Mode3FullRatchet {
 
 		private final byte[] pkAdvertise;
 		private final byte[] ciphertext;
+		@javax.annotation.Nullable
+		private final KpId kpIdUsed;
 		private final SecretKey newCkPq;
 		private final Mode3FullState newState;
 
 		public PqSendResult(byte[] pkAdvertise, byte[] ciphertext,
+				@javax.annotation.Nullable KpId kpIdUsed,
 				SecretKey newCkPq, Mode3FullState newState) {
 			this.pkAdvertise = pkAdvertise;
 			this.ciphertext = ciphertext;
+			this.kpIdUsed = kpIdUsed;
 			this.newCkPq = newCkPq;
 			this.newState = newState;
 		}
@@ -38,6 +42,11 @@ public interface Mode3FullRatchet {
 
 		public byte[] getCiphertext() {
 			return ciphertext;
+		}
+
+		@javax.annotation.Nullable
+		public KpId getKpIdUsed() {
+			return kpIdUsed;
 		}
 
 		public SecretKey getNewCkPq() {

@@ -9,6 +9,7 @@ import org.briarproject.bramble.api.crypto.PublicKey;
 import org.briarproject.bramble.api.crypto.SecretKey;
 import org.briarproject.bramble.api.crypto.pcs.DhRatchetState;
 import org.briarproject.bramble.api.crypto.pcs.MlKemKeyPair;
+import org.briarproject.bramble.api.crypto.pcs.Mode3FullState;
 import org.briarproject.bramble.api.crypto.pcs.PcsSessionState;
 import org.briarproject.bramble.api.crypto.pcs.PqEpochState;
 import org.briarproject.bramble.api.crypto.pcs.PqRatchet;
@@ -40,6 +41,22 @@ public class PcsStateManager {
 	@Nullable
 	public PcsSessionState loadSendState(ContactId contactId) {
 		return loadState(contactId, PCS_DIRECTION_SEND);
+	}
+
+	@Nullable
+	public Mode3FullState loadSharedMode3FullState(ContactId contactId) {
+		try {
+			return db.transactionWithNullableResult(true, txn -> {
+				Object[] row = db.getPcsMode2SessionState(txn, contactId,
+						PCS_DIRECTION_SEND);
+				if (row == null) return null;
+				byte[] blob = (byte[]) row[8];
+				if (blob == null) return null;
+				return Mode3FullStateCodec.decode(blob);
+			});
+		} catch (DbException e) {
+			return null;
+		}
 	}
 
 	@Nullable
@@ -178,6 +195,7 @@ public class PcsStateManager {
 		byte[] dhPublicKeyBytes = (byte[]) result[5];
 		byte[] dhRemotePublicKeyBytes = (byte[]) result[6];
 		boolean mode2Enabled = (Boolean) result[7];
+		byte[] mode3FullStateBlob = (byte[]) result[8];
 
 		SecretKey chainKey = new SecretKey(chainKeyBytes);
 
@@ -203,8 +221,13 @@ public class PcsStateManager {
 			}
 		}
 
+		Mode3FullState mode3FullState = null;
+		if (mode3FullStateBlob != null) {
+			mode3FullState = Mode3FullStateCodec.decode(mode3FullStateBlob);
+		}
+
 		return new PcsSessionState(chainKey, messageNumber, previousChainLength,
-				rootKey, dhState);
+				rootKey, dhState, mode3FullState != null, 0, mode3FullState);
 	}
 
 	private void saveState(ContactId contactId, int direction,
@@ -234,10 +257,66 @@ public class PcsStateManager {
 			dhRemotePublicKey = dhState.getDhRemotePublicKey();
 		}
 
+		Mode3FullState mode3FullState = state.getMode3FullState();
+		byte[] mode3FullStateBlob = mode3FullState != null
+				? Mode3FullStateCodec.encode(mode3FullState)
+				: null;
+
 		db.setPcsMode2SessionState(txn, contactId, direction,
 				state.getChainKey(), state.getMessageNumber(),
 				state.getPreviousChainLength(), state.getRootKey(),
-				dhPrivateKey, dhPublicKey, dhRemotePublicKey, state.isMode2());
+				dhPrivateKey, dhPublicKey, dhRemotePublicKey, state.isMode2(),
+				mode3FullStateBlob);
+
+		if (mode3FullState != null) {
+			propagateSharedMode3FullFields(txn, contactId, direction,
+					mode3FullState);
+		}
+	}
+
+	private void propagateSharedMode3FullFields(Transaction txn,
+			ContactId contactId, int direction, Mode3FullState source)
+			throws DbException {
+		int otherDirection = direction == PCS_DIRECTION_SEND
+				? PCS_DIRECTION_RECEIVE : PCS_DIRECTION_SEND;
+		Object[] otherRow = db.getPcsMode2SessionState(txn, contactId,
+				otherDirection);
+		if (otherRow == null) return;
+		byte[] otherBlob = (byte[]) otherRow[8];
+		if (otherBlob == null) return;
+		Mode3FullState otherState = Mode3FullStateCodec.decode(otherBlob);
+		if (otherState == null) return;
+		Mode3FullState merged = new Mode3FullState(
+				otherState.getCkPq(),
+				source.getTheirActivePqPk(),
+				source.getOurActiveKeyPair(),
+				source.getRecentKeyPairs(),
+				otherState.getMessageCounter()
+		);
+		byte[] mergedBlob = Mode3FullStateCodec.encode(merged);
+		PcsSessionState rebuilt = parseMode2State(replaceBlob(otherRow,
+				mergedBlob));
+		if (rebuilt == null) return;
+		DhRatchetState dhState = rebuilt.getDhState();
+		PrivateKey dhPrivateKey = null;
+		PublicKey dhPublicKey = null;
+		PublicKey dhRemotePublicKey = null;
+		if (dhState != null) {
+			dhPrivateKey = dhState.getDhKeyPair().getPrivate();
+			dhPublicKey = dhState.getDhPublicKey();
+			dhRemotePublicKey = dhState.getDhRemotePublicKey();
+		}
+		db.setPcsMode2SessionState(txn, contactId, otherDirection,
+				rebuilt.getChainKey(), rebuilt.getMessageNumber(),
+				rebuilt.getPreviousChainLength(), rebuilt.getRootKey(),
+				dhPrivateKey, dhPublicKey, dhRemotePublicKey,
+				rebuilt.isMode2(), mergedBlob);
+	}
+
+	private Object[] replaceBlob(Object[] row, byte[] newBlob) {
+		Object[] copy = row.clone();
+		copy[8] = newBlob;
+		return copy;
 	}
 
 	@Nullable

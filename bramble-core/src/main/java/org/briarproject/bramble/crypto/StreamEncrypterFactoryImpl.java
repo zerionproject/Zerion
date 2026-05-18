@@ -78,6 +78,7 @@ class StreamEncrypterFactoryImpl implements StreamEncrypterFactory {
 		}
 
 		PqRatchetState pqState = ctx.getPqRatchetState();
+		boolean isMode3Full = pcsState.isMode3Full();
 		boolean isMode3 = pcsState.isMode3() && pqState != null;
 
 		ContactId contactId = ctx.getContactId();
@@ -92,12 +93,17 @@ class StreamEncrypterFactoryImpl implements StreamEncrypterFactory {
 				: pqSecret -> pcsStateManager
 						.mixPqSecretIntoReceiveRoot(contactId, pqSecret,
 								pqRatchet);
+		java.util.function.Supplier<
+				org.briarproject.bramble.api.crypto.pcs.Mode3FullState>
+				mode3FullRefresher = contactId == null ? null
+				: () -> pcsStateManager.loadSharedMode3FullState(contactId);
 
-		if (isMode3) {
+		if (isMode3Full || isMode3) {
 			return new PcsStreamEncrypterImpl(out, cipher, pcsRatchet,
 					streamNumber, tag, streamHeaderNonce, ctx.getHeaderKey(),
 					pcsState, sendStateCallback, pqRatchet, pqState,
-					pqCallback, pqCrossMix, mode3FullRatchet);
+					pqCallback, pqCrossMix, mode3FullRatchet,
+					mode3FullRefresher);
 		}
 
 		return new PcsStreamEncrypterImpl(out, cipher, pcsRatchet,
