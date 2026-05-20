@@ -25,6 +25,7 @@ import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PCS_DH_RATCHE
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PCS_DH_SECRET_LABEL;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PCS_MESSAGE_KEY_LABEL;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PCS_ROOT_KDF_LABEL;
+import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.PCS_STREAM_CHAIN_LABEL;
 
 @Immutable
 @NotNullByDefault
@@ -42,6 +43,21 @@ public class PcsRatchetImpl implements PcsRatchet {
 	@Override
 	public SecretKey derivePcsRootKey(SecretKey contactRootKey) {
 		return crypto.deriveKey(PCS_ROOT_KDF_LABEL, contactRootKey);
+	}
+
+	@Override
+	public SecretKey deriveStreamInitialChainKey(SecretKey rootKey,
+			long streamNumber) {
+		byte[] streamBytes = new byte[8];
+		streamBytes[0] = (byte) (streamNumber >> 56);
+		streamBytes[1] = (byte) (streamNumber >> 48);
+		streamBytes[2] = (byte) (streamNumber >> 40);
+		streamBytes[3] = (byte) (streamNumber >> 32);
+		streamBytes[4] = (byte) (streamNumber >> 24);
+		streamBytes[5] = (byte) (streamNumber >> 16);
+		streamBytes[6] = (byte) (streamNumber >> 8);
+		streamBytes[7] = (byte) streamNumber;
+		return crypto.deriveKey(PCS_STREAM_CHAIN_LABEL, rootKey, streamBytes);
 	}
 
 	@Override
@@ -105,7 +121,10 @@ public class PcsRatchetImpl implements PcsRatchet {
 				messageNumber + 1,
 				state.getPreviousChainLength(),
 				state.getRootKey(),
-				state.getDhState()
+				state.getDhState(),
+				state.isMode3(),
+				state.getPqEpoch(),
+				state.getMode3FullState()
 		);
 
 		return new AdvanceResult(finalKdf.getMessageKey(), newState);
@@ -205,7 +224,10 @@ public class PcsRatchetImpl implements PcsRatchet {
 				0,
 				state.getMessageNumber(),
 				kdfResult2.getNewRootKey(),
-				newDhState
+				newDhState,
+				state.isMode3(),
+				state.getPqEpoch(),
+				state.getMode3FullState()
 		);
 
 		return new DhRatchetResult(newState, newKeyPair.getPublic());

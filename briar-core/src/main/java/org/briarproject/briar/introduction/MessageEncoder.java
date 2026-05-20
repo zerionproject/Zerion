@@ -56,6 +56,13 @@ interface MessageEncoder {
 			Map<TransportId, TransportProperties> transportProperties,
 			long autoDeleteTimer, @Nullable byte[] mlDsaPubKey);
 
+	Message encodeAcceptMessage(GroupId contactGroupId, long timestamp,
+			@Nullable MessageId previousMessageId, SessionId sessionId,
+			PublicKey ephemeralPublicKey, long acceptTimestamp,
+			Map<TransportId, TransportProperties> transportProperties,
+			long autoDeleteTimer, @Nullable byte[] mlDsaPubKey,
+			@Nullable byte[] mlKemEphemeralPublicKey);
+
 	Message encodeDeclineMessage(GroupId contactGroupId, long timestamp,
 			@Nullable MessageId previousMessageId, SessionId sessionId);
 
@@ -66,6 +73,10 @@ interface MessageEncoder {
 	Message encodeAuthMessage(GroupId contactGroupId, long timestamp,
 			@Nullable MessageId previousMessageId, SessionId sessionId,
 			byte[] mac, byte[] signature);
+
+	Message encodeAuthMessage(GroupId contactGroupId, long timestamp,
+			@Nullable MessageId previousMessageId, SessionId sessionId,
+			byte[] mac, byte[] signature, @Nullable byte[] kemCiphertext);
 
 	Message encodeActivateMessage(GroupId contactGroupId, long timestamp,
 			@Nullable MessageId previousMessageId, SessionId sessionId,

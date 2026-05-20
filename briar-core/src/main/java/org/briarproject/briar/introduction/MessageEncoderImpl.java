@@ -145,29 +145,9 @@ class MessageEncoderImpl implements MessageEncoder {
 			PublicKey ephemeralPublicKey, long acceptTimestamp,
 			Map<TransportId, TransportProperties> transportProperties,
 			@Nullable byte[] mlDsaPubKey) {
-		BdfList body;
-		if (mlDsaPubKey == null) {
-			body = BdfList.of(
-					ACCEPT.getValue(),
-					sessionId,
-					previousMessageId,
-					ephemeralPublicKey.getEncoded(),
-					acceptTimestamp,
-					clientHelper.toDictionary(transportProperties)
-			);
-		} else {
-			body = BdfList.of(
-					ACCEPT.getValue(),
-					sessionId,
-					previousMessageId,
-					ephemeralPublicKey.getEncoded(),
-					acceptTimestamp,
-					clientHelper.toDictionary(transportProperties),
-					null,
-					mlDsaPubKey
-			);
-		}
-		return createMessage(contactGroupId, timestamp, body);
+		return encodeAcceptMessage(contactGroupId, timestamp, previousMessageId,
+				sessionId, ephemeralPublicKey, acceptTimestamp,
+				transportProperties, NO_AUTO_DELETE_TIMER, mlDsaPubKey, null);
 	}
 
 	@Override
@@ -176,8 +156,43 @@ class MessageEncoderImpl implements MessageEncoder {
 			PublicKey ephemeralPublicKey, long acceptTimestamp,
 			Map<TransportId, TransportProperties> transportProperties,
 			long autoDeleteTimer, @Nullable byte[] mlDsaPubKey) {
+		return encodeAcceptMessage(contactGroupId, timestamp, previousMessageId,
+				sessionId, ephemeralPublicKey, acceptTimestamp,
+				transportProperties, autoDeleteTimer, mlDsaPubKey, null);
+	}
+
+	@Override
+	public Message encodeAcceptMessage(GroupId contactGroupId, long timestamp,
+			@Nullable MessageId previousMessageId, SessionId sessionId,
+			PublicKey ephemeralPublicKey, long acceptTimestamp,
+			Map<TransportId, TransportProperties> transportProperties,
+			long autoDeleteTimer, @Nullable byte[] mlDsaPubKey,
+			@Nullable byte[] mlKemEphemeralPublicKey) {
 		BdfList body;
-		if (mlDsaPubKey == null) {
+		if (mlKemEphemeralPublicKey != null) {
+			body = BdfList.of(
+					ACCEPT.getValue(),
+					sessionId,
+					previousMessageId,
+					ephemeralPublicKey.getEncoded(),
+					acceptTimestamp,
+					clientHelper.toDictionary(transportProperties),
+					encodeTimer(autoDeleteTimer),
+					mlDsaPubKey,
+					mlKemEphemeralPublicKey
+			);
+		} else if (mlDsaPubKey != null) {
+			body = BdfList.of(
+					ACCEPT.getValue(),
+					sessionId,
+					previousMessageId,
+					ephemeralPublicKey.getEncoded(),
+					acceptTimestamp,
+					clientHelper.toDictionary(transportProperties),
+					encodeTimer(autoDeleteTimer),
+					mlDsaPubKey
+			);
+		} else if (autoDeleteTimer != NO_AUTO_DELETE_TIMER) {
 			body = BdfList.of(
 					ACCEPT.getValue(),
 					sessionId,
@@ -194,9 +209,7 @@ class MessageEncoderImpl implements MessageEncoder {
 					previousMessageId,
 					ephemeralPublicKey.getEncoded(),
 					acceptTimestamp,
-					clientHelper.toDictionary(transportProperties),
-					encodeTimer(autoDeleteTimer),
-					mlDsaPubKey
+					clientHelper.toDictionary(transportProperties)
 			);
 		}
 		return createMessage(contactGroupId, timestamp, body);
@@ -230,13 +243,33 @@ class MessageEncoderImpl implements MessageEncoder {
 	public Message encodeAuthMessage(GroupId contactGroupId, long timestamp,
 			@Nullable MessageId previousMessageId, SessionId sessionId,
 			byte[] mac, byte[] signature) {
-		BdfList body = BdfList.of(
-				AUTH.getValue(),
-				sessionId,
-				previousMessageId,
-				mac,
-				signature
-		);
+		return encodeAuthMessage(contactGroupId, timestamp, previousMessageId,
+				sessionId, mac, signature, null);
+	}
+
+	@Override
+	public Message encodeAuthMessage(GroupId contactGroupId, long timestamp,
+			@Nullable MessageId previousMessageId, SessionId sessionId,
+			byte[] mac, byte[] signature, @Nullable byte[] kemCiphertext) {
+		BdfList body;
+		if (kemCiphertext == null) {
+			body = BdfList.of(
+					AUTH.getValue(),
+					sessionId,
+					previousMessageId,
+					mac,
+					signature
+			);
+		} else {
+			body = BdfList.of(
+					AUTH.getValue(),
+					sessionId,
+					previousMessageId,
+					mac,
+					signature,
+					kemCiphertext
+			);
+		}
 		return createMessage(contactGroupId, timestamp, body);
 	}
 

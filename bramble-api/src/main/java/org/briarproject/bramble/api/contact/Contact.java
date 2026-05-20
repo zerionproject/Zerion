@@ -25,7 +25,6 @@ public class Contact {
 	private final boolean verified;
 	private final boolean postQuantum;
 	private final boolean pcsEnabled;
-	private final boolean mode3Capable;
 	@Nullable
 	private final byte[] mlDsaSigPublicKey;
 
@@ -33,35 +32,27 @@ public class Contact {
 			@Nullable String alias, @Nullable PublicKey handshakePublicKey,
 			boolean verified) {
 		this(id, author, localAuthorId, alias, handshakePublicKey, verified,
-				false, false, false, null);
+				false, false, null);
 	}
 
 	public Contact(ContactId id, Author author, AuthorId localAuthorId,
 			@Nullable String alias, @Nullable PublicKey handshakePublicKey,
 			boolean verified, boolean postQuantum) {
 		this(id, author, localAuthorId, alias, handshakePublicKey, verified,
-				postQuantum, false, false, null);
+				postQuantum, false, null);
 	}
 
 	public Contact(ContactId id, Author author, AuthorId localAuthorId,
 			@Nullable String alias, @Nullable PublicKey handshakePublicKey,
 			boolean verified, boolean postQuantum, boolean pcsEnabled) {
 		this(id, author, localAuthorId, alias, handshakePublicKey, verified,
-				postQuantum, pcsEnabled, false, null);
+				postQuantum, pcsEnabled, null);
 	}
 
 	public Contact(ContactId id, Author author, AuthorId localAuthorId,
 			@Nullable String alias, @Nullable PublicKey handshakePublicKey,
 			boolean verified, boolean postQuantum, boolean pcsEnabled,
-			boolean mode3Capable) {
-		this(id, author, localAuthorId, alias, handshakePublicKey, verified,
-				postQuantum, pcsEnabled, mode3Capable, null);
-	}
-
-	public Contact(ContactId id, Author author, AuthorId localAuthorId,
-			@Nullable String alias, @Nullable PublicKey handshakePublicKey,
-			boolean verified, boolean postQuantum, boolean pcsEnabled,
-			boolean mode3Capable, @Nullable byte[] mlDsaSigPublicKey) {
+			@Nullable byte[] mlDsaSigPublicKey) {
 		if (alias != null) {
 			int aliasLength = toUtf8(alias).length;
 			if (aliasLength == 0 || aliasLength > MAX_AUTHOR_NAME_LENGTH)
@@ -75,7 +66,6 @@ public class Contact {
 		this.verified = verified;
 		this.postQuantum = postQuantum;
 		this.pcsEnabled = pcsEnabled;
-		this.mode3Capable = mode3Capable;
 		this.mlDsaSigPublicKey = mlDsaSigPublicKey;
 	}
 
@@ -118,7 +108,7 @@ public class Contact {
 	}
 
 	public boolean isMode3Capable() {
-		return mode3Capable;
+		return true;
 	}
 
 	@Nullable

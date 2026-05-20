@@ -15,6 +15,8 @@ import org.briarproject.bramble.api.crypto.KeyPair;
 import org.briarproject.bramble.api.crypto.PublicKey;
 import org.briarproject.bramble.api.crypto.SecretKey;
 import org.briarproject.bramble.api.crypto.pcs.DhRatchetState;
+import org.briarproject.bramble.api.crypto.pcs.Mode3FullRatchet;
+import org.briarproject.bramble.api.crypto.pcs.Mode3FullState;
 import org.briarproject.bramble.api.crypto.pcs.PcsSessionState;
 import org.briarproject.bramble.api.crypto.pcs.PqRatchetState;
 import org.briarproject.bramble.crypto.pcs.PcsStateManager;
@@ -28,6 +30,7 @@ import org.briarproject.bramble.api.event.EventListener;
 import org.briarproject.bramble.api.identity.Author;
 import org.briarproject.bramble.api.identity.AuthorId;
 import org.briarproject.bramble.api.identity.IdentityManager;
+import org.briarproject.bramble.api.identity.ReservedNames;
 import org.briarproject.bramble.api.transport.KeyManager;
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -44,7 +47,7 @@ import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
 
 import static org.briarproject.bramble.api.contact.PendingContactState.WAITING_FOR_CONNECTION;
-import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_ENABLED;
+import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_FULL_ENABLED;
 import static org.briarproject.bramble.api.identity.AuthorConstants.MAX_AUTHOR_NAME_LENGTH;
 import static org.briarproject.bramble.util.StringUtils.toUtf8;
 
@@ -58,6 +61,7 @@ class ContactManagerImpl implements ContactManager, EventListener {
 	private final PendingContactFactory pendingContactFactory;
 	private final CryptoComponent crypto;
 	private final PcsStateManager pcsStateManager;
+	private final Mode3FullRatchet mode3FullRatchet;
 
 	private final List<ContactHook> hooks = new CopyOnWriteArrayList<>();
 	private final Map<PendingContactId, PendingContactState> states =
@@ -69,13 +73,15 @@ class ContactManagerImpl implements ContactManager, EventListener {
 			IdentityManager identityManager,
 			PendingContactFactory pendingContactFactory,
 			CryptoComponent crypto,
-			PcsStateManager pcsStateManager) {
+			PcsStateManager pcsStateManager,
+			Mode3FullRatchet mode3FullRatchet) {
 		this.db = db;
 		this.keyManager = keyManager;
 		this.identityManager = identityManager;
 		this.pendingContactFactory = pendingContactFactory;
 		this.crypto = crypto;
 		this.pcsStateManager = pcsStateManager;
+		this.mode3FullRatchet = mode3FullRatchet;
 	}
 
 	@Override
@@ -88,26 +94,19 @@ class ContactManagerImpl implements ContactManager, EventListener {
 			SecretKey rootKey, long timestamp, boolean alice, boolean verified,
 			boolean active) throws DbException {
 		return addContact(txn, remote, local, rootKey, timestamp, alice,
-				verified, active, false);
+				verified, active, (byte[]) null);
 	}
 
 	@Override
 	public ContactId addContact(Transaction txn, Author remote, AuthorId local,
 			SecretKey rootKey, long timestamp, boolean alice, boolean verified,
-			boolean active, boolean mode3Capable) throws DbException {
-		return addContact(txn, remote, local, rootKey, timestamp, alice,
-				verified, active, mode3Capable, null);
-	}
-
-	@Override
-	public ContactId addContact(Transaction txn, Author remote, AuthorId local,
-			SecretKey rootKey, long timestamp, boolean alice, boolean verified,
-			boolean active, boolean mode3Capable,
+			boolean active,
 			@Nullable byte[] peerMlDsaSigPublicKey) throws DbException {
+		requireNotReserved(remote);
 		ContactId c = db.addContact(txn, remote, local, null, verified, false,
-				false, mode3Capable, peerMlDsaSigPublicKey);
+				false, peerMlDsaSigPublicKey);
 		keyManager.addRotationKeys(txn, c, rootKey, timestamp, alice, active);
-		initializePcsState(txn, c, rootKey, mode3Capable);
+		initializePcsState(txn, c, rootKey);
 		Contact contact = db.getContact(txn, c);
 		for (ContactHook hook : hooks) hook.addingContact(txn, contact);
 		return c;
@@ -119,25 +118,16 @@ class ContactManagerImpl implements ContactManager, EventListener {
 			boolean alice, boolean verified, boolean active)
 			throws DbException, GeneralSecurityException {
 		return addContact(txn, p, remote, local, rootKey, timestamp, alice,
-				verified, active, false);
-	}
-
-	@Override
-	public ContactId addContact(Transaction txn, PendingContactId p,
-			Author remote, AuthorId local, SecretKey rootKey, long timestamp,
-			boolean alice, boolean verified, boolean active, boolean mode3Capable)
-			throws DbException, GeneralSecurityException {
-		return addContact(txn, p, remote, local, rootKey, timestamp, alice,
-				verified, active, mode3Capable, null);
+				verified, active, (byte[]) null);
 	}
 
 	@Override
 	public ContactId addContact(Transaction txn, PendingContactId p,
 			Author remote, AuthorId local, SecretKey rootKey, long timestamp,
 			boolean alice, boolean verified, boolean active,
-			boolean mode3Capable,
 			@Nullable byte[] peerMlDsaSigPublicKey)
 			throws DbException, GeneralSecurityException {
+		requireNotReserved(remote);
 		PendingContact pendingContact = db.getPendingContact(txn, p);
 		boolean postQuantum = pendingContact.isPostQuantum();
 		checkForSecurityDowngrade(txn, remote.getId(), postQuantum);
@@ -145,17 +135,23 @@ class ContactManagerImpl implements ContactManager, EventListener {
 		states.remove(p);
 		PublicKey theirPublicKey = pendingContact.getPublicKey();
 		ContactId c = db.addContact(txn, remote, local, theirPublicKey,
-				verified, postQuantum, false, mode3Capable,
+				verified, postQuantum, false,
 				peerMlDsaSigPublicKey);
 		String alias = pendingContact.getAlias();
 		if (!alias.equals(remote.getName())) db.setContactAlias(txn, c, alias);
 		KeyPair ourKeyPair = identityManager.getHandshakeKeys(txn);
 		keyManager.addContact(txn, c, theirPublicKey, ourKeyPair);
 		keyManager.addRotationKeys(txn, c, rootKey, timestamp, alice, active);
-		initializePcsState(txn, c, rootKey, mode3Capable);
+		initializePcsState(txn, c, rootKey);
 		Contact contact = db.getContact(txn, c);
 		for (ContactHook hook : hooks) hook.addingContact(txn, contact);
 		return c;
+	}
+
+	private void requireNotReserved(Author remote) {
+		if (ReservedNames.isReserved(remote.getName())) {
+			throw new IllegalArgumentException("reserved name");
+		}
 	}
 
 	private void checkForSecurityDowngrade(Transaction txn, AuthorId remoteId,
@@ -172,6 +168,7 @@ class ContactManagerImpl implements ContactManager, EventListener {
 	@Override
 	public ContactId addContact(Transaction txn, Author remote, AuthorId local,
 			boolean verified) throws DbException {
+		requireNotReserved(remote);
 		ContactId c = db.addContact(txn, remote, local, null, verified);
 		Contact contact = db.getContact(txn, c);
 		for (ContactHook hook : hooks) hook.addingContact(txn, contact);
@@ -345,6 +342,8 @@ class ContactManagerImpl implements ContactManager, EventListener {
 			int aliasLength = toUtf8(alias).length;
 			if (aliasLength == 0 || aliasLength > MAX_AUTHOR_NAME_LENGTH)
 				throw new IllegalArgumentException();
+			if (ReservedNames.isReserved(alias))
+				throw new IllegalArgumentException("reserved name");
 		}
 		db.setContactAlias(txn, c, alias);
 	}
@@ -386,16 +385,24 @@ class ContactManagerImpl implements ContactManager, EventListener {
 	}
 
 	private void initializePcsState(Transaction txn, ContactId contactId,
-			SecretKey rootKey, boolean mode3Capable) throws DbException {
-		if (!mode3Capable || !MODE3_ENABLED) {
-			return;
-		}
+			SecretKey rootKey) throws DbException {
 		KeyPair dhKeyPair = crypto.generateAgreementKeyPair();
 		DhRatchetState dhState = new DhRatchetState(dhKeyPair, null);
-		PcsSessionState sendState = PcsSessionState.createInitialMode3(
-				rootKey, rootKey, dhState);
-		PcsSessionState receiveState = PcsSessionState.createInitialMode3(
-				rootKey, rootKey, dhState);
+		PcsSessionState sendState;
+		PcsSessionState receiveState;
+		if (MODE3_FULL_ENABLED) {
+			Mode3FullState sharedMode3Full =
+					mode3FullRatchet.createInitialState();
+			sendState = PcsSessionState.createInitialMode3Full(
+					rootKey, rootKey, dhState, sharedMode3Full);
+			receiveState = PcsSessionState.createInitialMode3Full(
+					rootKey, rootKey, dhState, sharedMode3Full);
+		} else {
+			sendState = PcsSessionState.createInitialMode3(
+					rootKey, rootKey, dhState);
+			receiveState = PcsSessionState.createInitialMode3(
+					rootKey, rootKey, dhState);
+		}
 		pcsStateManager.initializeMode2State(txn, contactId, sendState,
 				receiveState);
 		PqRatchetState pqState = PqRatchetState.createReady(

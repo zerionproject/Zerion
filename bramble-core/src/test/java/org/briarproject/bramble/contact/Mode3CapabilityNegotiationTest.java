@@ -154,10 +154,7 @@ public class Mode3CapabilityNegotiationTest extends BrambleMockTestCase {
 
 	@Test
 	public void testMode3NegotiationWhenFlagOn() {
-
-		org.junit.Assume.assumeTrue("MODE3_ENABLED must be true for this test",
-				org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_ENABLED);
-
+		// Mode 3 is unconditionally enabled in v1.7+.
 	}
 
 	@Test

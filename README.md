@@ -10,7 +10,7 @@ Zerion is a secure messaging app and encrypted vault designed for people who nee
 
 Unlike traditional messengers, Zerion uses no servers, no accounts, no phone numbers, and no cloud services. All communication flows directly between devices using the Tor network, protecting users from surveillance, metadata collection, and IP exposure.
 
-With hybrid post-quantum cryptography, post-compromise security (Triple Ratchet with ML-KEM-768), hardware-backed vault protection, and advanced anti-forensics features, Zerion provides strong security even against sophisticated adversaries.
+With hybrid post-quantum cryptography on **every message** (Mode 3-Full: per-frame ML-KEM-768 encapsulation mixed into the body AEAD key), post-compromise security via the Triple Ratchet, hardware-backed vault protection, and advanced anti-forensics features, Zerion provides strong security even against sophisticated adversaries — including "harvest now, decrypt later" attacks by future quantum adversaries.
 
 ---
 
@@ -18,11 +18,12 @@ With hybrid post-quantum cryptography, post-compromise security (Triple Ratchet 
 
 - **Truly anonymous** — No phone number, email, or registration
 - **End-to-end encrypted** messaging, groups, voice notes, P2P voice and video calls
-- **Post-Compromise Security** — Triple Ratchet (X25519 DH + ML-KEM-768 PQ) for per-message key evolution
+- **Per-message post-quantum hybrid ratchet (Mode 3-Full)** — Every frame in both directions carries a fresh ML-KEM-768 encapsulation against the peer's current ML-KEM public key; the shared secret is mixed into the body AEAD key on every frame
+- **Post-Compromise Security** — Triple Ratchet (X25519 DH + per-message ML-KEM-768 PQ) for per-message key evolution
 - **Tor-only networking** — Your IP address is never exposed to contacts
 - **Direct peer-to-peer architecture** — No central servers
 - **Encrypted Vault** for passwords, documents, media, and notes
-- **Post-quantum hardened** — Hybrid ML-KEM-768 + X25519, ML-DSA-65 + Ed25519
+- **Post-quantum hardened end-to-end** — Hybrid ML-KEM-768 + X25519 at handshake, introductions, and on every transport frame; ML-DSA-65 + Ed25519 on every signed record
 - **Zerion-only** — Purpose-built for Zerion-to-Zerion communication with maximum security
 - **Downgrade attack protection** — PQ contacts stay PQ-secure forever
 - **Anti-forensics protection** against mobile extraction tools
@@ -48,8 +49,9 @@ Zerion implements a Triple Ratchet protocol for post-compromise security:
 - **Per-message keys**: Every message uses a unique encryption key derived from the current chain state
 
 **Ratchet Modes:**
-- **Mode 2 (Double Ratchet)**: X25519 DH ratchet for forward secrecy and post-compromise security.
-- **Mode 3 (Triple Ratchet)**: Active for Zerion↔Zerion contacts. Adds ML-KEM-768 post-quantum ratchet on top of Mode 2 for quantum-resistant post-compromise security.
+- **Mode 2 (Double Ratchet)**: X25519 DH ratchet for forward secrecy and classical post-compromise security.
+- **Mode 3 (Triple Ratchet, per-epoch PQ)**: Adds ML-KEM-768 post-quantum ratchet every 25 messages or 24 hours. Retained as a fallback path.
+- **Mode 3-Full (Triple Ratchet, per-message PQ — current default since v1.7)**: Every single frame in both directions carries a fresh ML-KEM-768 encapsulation. The per-stream chain key, the per-message body AEAD key, and the underlying X25519 ratchet all combine into a hybrid that requires breaking both X25519 and ML-KEM-768 — on every frame, not just at epoch boundaries.
 
 ### P2P Voice & Video Calls
 

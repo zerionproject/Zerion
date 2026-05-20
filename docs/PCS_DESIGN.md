@@ -1,15 +1,134 @@
 # Zerion Post-Compromise Security (PCS) Technical Design
 
-**Version:** 1.4
-**Date:** 2026-05-12
-**Status:** IMPLEMENTED — Phase 5 (v1.6) closes the on-the-wire gaps that
-prevented Mode 3 PQ rotation from completing in Phase 4d
+**Version:** 1.5
+**Date:** 2026-05-20
+**Status:** IMPLEMENTED — v1.7 ships Mode 3-Full per-message ML-KEM-768
+hybrid ratchet with a per-stream chain key as the default on new 1:1
+contacts
 **Author:** Zerion Project
 
 **Related Documents:**
 - [TRIPLE_RATCHET_DESIGN.md](TRIPLE_RATCHET_DESIGN.md) - Mode 3 (Post-Quantum Ratchet) specification
-- [RATCHET_MODES.md](RATCHET_MODES.md) - Layered mode 1/2/3 explainer
+- [RATCHET_MODES.md](RATCHET_MODES.md) - Layered mode 1/2/3/3-Full explainer
 - [THREAT_MODEL.md](THREAT_MODEL.md) - Explicit threat model and weakness documentation
+
+---
+
+## v1.7 amendment — Mode 3-Full per-message ratchet + per-stream chain key
+
+v1.7 (May 2026) ships Mode 3-Full as the default for new 1:1 contacts.
+The structural changes vs the v1.6 per-epoch Mode 3 design:
+
+### Per-stream chain key
+
+Each transport stream derives its own initial chain key from the
+contact's root key plus the stream number:
+
+```
+streamChainKey_0  =  HKDF(rootKey, "PCS_STREAM_CHAIN", streamNumber_8B)
+```
+
+Both peers derive the identical `streamChainKey_0` for a given
+`(rootKey, streamNumber)` pair. Within the stream, the chain key
+advances locally per frame:
+
+```
+messageKey_i           =  KDF(streamChainKey_i, MESSAGE_KEY_INPUT)
+streamChainKey_{i+1}   =  KDF(streamChainKey_i, CHAIN_KEY_INPUT)
+```
+
+The chain key is **never persisted** across streams or across an
+encrypter instance's lifetime. The persisted `sendState.chainKey` /
+`recvState.chainKey` in the database remain at their initial values
+(set at contact-add time or post-DH-ratchet) and serve only as the
+seed for per-stream derivation. Parallel transport streams open by
+Briar to the same contact each get an independent chain key, eliminating
+the cross-stream desync that previously required global serialization.
+
+### Per-message ML-KEM-768 encapsulation
+
+Every outbound frame in Mode 3-Full carries a fresh ML-KEM-768
+encapsulation against the peer's currently advertised ML-KEM public
+key (`theirActivePqPk`):
+
+```
+ct, kem_ss   =  ML-KEM-Encaps(theirActivePqPk)
+bodyKey_i    =  HKDF(classicalMessageKey_i, kem_ss)
+```
+
+The frame-header AEAD key remains `classicalMessageKey_i` (derived from
+the stream chain key) so the header can be decrypted independently of
+the ML-KEM decapsulation. The body AEAD key is the hybrid, mixing both
+the symmetric chain entropy and the per-frame ML-KEM shared secret.
+
+The sender rotates its own ML-KEM keypair on every successful
+encapsulation. The freshly generated public key rides in the next frame
+as `pkAdvertise`, and a 16-byte `kpId` (truncated SHA-256 of the
+encapsulation key) identifies which keypair the peer encapsulated
+against. Recent sender keypairs are retained in a per-contact LRU
+(cap 64) so ciphertexts against slightly stale public keys still
+decapsulate cleanly.
+
+If the sender does not yet know the peer's ML-KEM public key (very
+first outbound frame to a new contact), it emits a **zero-CT sentinel**
+frame: the ML-KEM ciphertext field is all zeros, no rotation happens,
+the body key is `classicalMessageKey_i` (no hybrid mix), and the
+sender's own `pkAdvertise` still rides in the frame so the receiver
+can populate its `theirActivePqPk` and reply with a real
+encapsulation. After the first frame in each direction, every
+subsequent frame is fully hybrid.
+
+### Lock-free transport I/O
+
+The per-contact `ReentrantLock` (acquired via `PcsStateManager.
+getContactLock(contactId)`, which is now a `@Singleton` Dagger binding
+so every consumer gets the same lock object) protects in-memory
+`Mode3FullState` mutation only:
+
+- ML-KEM keypair rotation
+- Recent keypair LRU updates
+- Field-merge propagation of `theirActivePqPk` from RECV row to SEND row
+
+Blocking I/O calls (`writeTag`, `writeStreamHeader`, `out.write`,
+`in.read`) all run **outside** the lock. A slow Tor circuit on the
+send direction never starves the receive direction of the same
+contact, and a quiet receive direction does not block outbound sends.
+
+### Field ownership in Mode3FullState
+
+`Mode3FullState` carries four fields per direction row in the database:
+
+- `theirActivePqPk` — RECV direction owns it; updated only when a peer
+  frame is decapsulated and its `pkAdvertise` extracted
+- `ourActiveKeyPair` — SEND direction owns it; rotated by encapsulation
+- `recentKeyPairs` — SEND direction owns it; LRU of recently-rotated
+  sender keypairs
+- `messageCounter` — per-direction local counter, not synced
+
+`PcsStateManager.saveMode2State` field-merges incoming writes: when
+SEND saves, the RECV-owned `theirActivePqPk` from the current row is
+preserved; when RECV saves, the SEND-owned `ourActiveKeyPair` and
+`recentKeyPairs` are preserved. `propagateSharedMode3FullFields` then
+copies the just-saved owned fields into the other-direction row,
+preserving that row's other-direction-owned fields. The whole
+read-merge-write-propagate sequence runs inside one database
+transaction.
+
+### Why the old per-epoch Mode 3 path remains in the codebase
+
+Mode 3 (per-epoch PQ rotation) is retained as a fallback for legacy
+contacts that haven't been bootstrapped into Mode 3-Full and for the
+cross-platform interop window with iOS clients that haven't yet shipped
+Mode 3-Full. The receive path can decode both formats; the send path
+selects Mode 3-Full when `sendState.isMode3Full() == true` and the
+`MODE3_FULL_ENABLED` build gate is on (which it is in v1.7).
+
+### Symmetric AEAD: still XSalsa20-Poly1305
+
+The frame and body AEAD remains XSalsa20-Poly1305 with a 24-byte nonce
+and 16-byte Poly1305 MAC. The Bramble transport framing was built around
+those parameters and the PQ defense lives in the per-message ML-KEM
+encapsulation, not in the symmetric primitive.
 
 ---
 

@@ -1129,9 +1129,6 @@ public class ConversationActivity extends ZerionActivity
 		} else if (itemId == R.id.action_clear_chat) {
 			askToClearChat();
 			return true;
-		} else if (itemId == R.id.action_block_user) {
-			askToBlockContact();
-			return true;
 		} else if (itemId == R.id.action_social_remove_person) {
 			askToRemoveContact();
 			return true;
@@ -1767,31 +1764,20 @@ public class ConversationActivity extends ZerionActivity
 
 	private void askToClearChat() {
 		new MaterialAlertDialogBuilder(this)
-				.setTitle("Clear Chat")
-				.setMessage("Delete all messages in this conversation?")
-				.setPositiveButton("Clear", (dialog, which) -> viewModel.clearChat())
-				.setNegativeButton(android.R.string.cancel, null)
-				.show();
-	}
-
-	private void askToBlockContact() {
-		new MaterialAlertDialogBuilder(this)
-				.setTitle("Block Contact")
-				.setMessage("Block this contact? They will not be able to send you messages.")
-				.setPositiveButton("Block", (dialog, which) -> {
-					finish();
-				})
+				.setTitle(R.string.clear_chat_dialog_title)
+				.setMessage(R.string.clear_chat_dialog_message)
+				.setPositiveButton(R.string.clear_chat,
+						(dialog, which) -> viewModel.clearChat())
 				.setNegativeButton(android.R.string.cancel, null)
 				.show();
 	}
 
 	private void askToRemoveContact() {
 		new MaterialAlertDialogBuilder(this)
-				.setTitle("Remove Contact")
-				.setMessage("Remove this contact? All messages will be deleted.")
-				.setPositiveButton("Remove", (dialog, which) -> {
-					viewModel.removeContact();
-				})
+				.setTitle(R.string.dialog_title_delete_contact)
+				.setMessage(R.string.dialog_message_delete_contact)
+				.setPositiveButton(R.string.delete_contact,
+						(dialog, which) -> viewModel.removeContact())
 				.setNegativeButton(android.R.string.cancel, null)
 				.show();
 	}

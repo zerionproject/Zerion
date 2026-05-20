@@ -111,7 +111,7 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 	public Contact exchangeContacts(DuplexTransportConnection conn,
 			SecretKey masterKey, boolean alice,
 			boolean verified) throws IOException, DbException {
-		return exchange(null, conn, masterKey, alice, verified, false, false,
+		return exchange(null, conn, masterKey, alice, verified, false,
 				null, null, null, null);
 	}
 
@@ -119,37 +119,27 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 	public Contact exchangeContacts(PendingContactId p,
 			DuplexTransportConnection conn, SecretKey masterKey, boolean alice,
 			boolean verified, boolean classical) throws IOException, DbException {
-		return exchange(p, conn, masterKey, alice, verified, classical, false,
+		return exchange(p, conn, masterKey, alice, verified, classical,
 				null, null, null, null);
 	}
 
 	@Override
 	public Contact exchangeContacts(PendingContactId p,
 			DuplexTransportConnection conn, SecretKey masterKey, boolean alice,
-			boolean verified, boolean classical, boolean mode3Capable)
-			throws IOException, DbException {
-		return exchange(p, conn, masterKey, alice, verified, classical,
-				mode3Capable, null, null, null, null);
-	}
-
-	@Override
-	public Contact exchangeContacts(PendingContactId p,
-			DuplexTransportConnection conn, SecretKey masterKey, boolean alice,
-			boolean verified, boolean classical, boolean mode3Capable,
+			boolean verified, boolean classical,
 			@Nullable byte[] ourStaticHybridPub,
 			@Nullable byte[] theirStaticHybridPub,
 			@Nullable byte[] ourEphX25519,
 			@Nullable byte[] theirEphX25519)
 			throws IOException, DbException {
 		return exchange(p, conn, masterKey, alice, verified, classical,
-				mode3Capable,
 				ourStaticHybridPub, theirStaticHybridPub,
 				ourEphX25519, theirEphX25519);
 	}
 
 	private Contact exchange(@Nullable PendingContactId p,
 			DuplexTransportConnection conn, SecretKey masterKey, boolean alice,
-			boolean verified, boolean classical, boolean mode3Capable,
+			boolean verified, boolean classical,
 			@Nullable byte[] ourStaticHybridPub,
 			@Nullable byte[] theirStaticHybridPub,
 			@Nullable byte[] ourEphX25519,
@@ -229,7 +219,7 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 		}
 		Contact contact = addContact(p, remoteInfo.author, localAuthor,
 				masterKey, timestamp, alice, verified, remoteInfo.properties,
-				mode3Capable, remoteInfo.b3ProofSig != null,
+				remoteInfo.b3ProofSig != null,
 				remoteInfo.mlDsaSigPubKey);
 
 		return contact;
@@ -298,7 +288,7 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			Author remoteAuthor, LocalAuthor localAuthor, SecretKey masterKey,
 			long timestamp, boolean alice, boolean verified,
 			Map<TransportId, TransportProperties> remoteProperties,
-			boolean mode3Capable, boolean b3SlotPresent,
+			boolean b3SlotPresent,
 			@Nullable byte[] peerMlDsaSigPubKey)
 			throws DbException, FormatException {
 		Transaction txn = db.startTransaction(false);
@@ -307,11 +297,11 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			if (pendingContactId == null) {
 				contactId = contactManager.addContact(txn, remoteAuthor,
 						localAuthor.getId(), masterKey, timestamp, alice,
-						verified, true, mode3Capable, peerMlDsaSigPubKey);
+						verified, true, peerMlDsaSigPubKey);
 			} else {
 				contactId = contactManager.addContact(txn, pendingContactId,
 						remoteAuthor, localAuthor.getId(), masterKey,
-						timestamp, alice, verified, true, mode3Capable,
+						timestamp, alice, verified, true,
 						peerMlDsaSigPubKey);
 			}
 			transportPropertyManager.addRemoteProperties(txn, contactId,

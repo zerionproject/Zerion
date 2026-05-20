@@ -157,6 +157,7 @@
 	<string name="confirm_password">Confirm your password</string>
 	<string name="name_too_long">Name is too long</string>
 	<string name="name_invalid_characters">Name contains invalid characters</string>
+	<string name="name_reserved">This name is reserved — please choose another</string>
 	<string name="password_too_weak">Password is too weak</string>
 	<string name="password_quite_strong">Password is okay</string>
 	<string name="password_strong">Password is strong</string>
@@ -1177,6 +1178,7 @@
 	<!-- About -->
 	<string name="about_title">About</string>
 	<string name="zerion_version">Zerion version: %s</string>
+	<string name="zerion_url_copied_open_in_tor_browser">Link copied. Open it in Tor Browser to keep your IP private.</string>
 	<string name="tor_version">Tor version: %s</string>
 	<string name="links">Links</string>
 	<string name="zerion_website">\u2022 <a href="https://zerion.chat">Website</a></string>
@@ -1331,6 +1333,23 @@
 	<string name="vault_wipe_title">Wipe Vault</string>
 	<string name="vault_wipe_message">This will permanently delete all vault data. Are you absolutely sure?</string>
 	<string name="vault_wipe_confirm">Yes, delete everything</string>
+	<string name="vault_wipe_confirm_keyword" translatable="false">DELETE</string>
+	<string name="vault_wipe_confirm_title">Final Confirmation</string>
+	<string name="vault_wipe_confirm_message">Type \'%1$s\' to confirm vault wipe:</string>
+	<string name="vault_wipe_confirm_hint">Type %1$s</string>
+	<string name="vault_wipe_confirm_action">Wipe</string>
+	<string name="vault_wipe_confirm_mismatch">Confirmation text does not match</string>
+	<string name="vault_name" translatable="false">zVault</string>
+	<string name="call_action_mute">Mute microphone</string>
+	<string name="call_action_unmute">Unmute microphone</string>
+	<string name="call_action_speaker_on">Turn speaker on</string>
+	<string name="call_action_speaker_off">Turn speaker off</string>
+	<string name="call_action_video_on">Turn camera on</string>
+	<string name="call_action_video_off">Turn camera off</string>
+	<string name="call_action_switch_camera">Switch camera</string>
+	<string name="call_action_end">End call</string>
+	<string name="call_action_accept">Answer call</string>
+	<string name="call_action_decline">Decline call</string>
 	<string name="vault_rate_limit">Too many failed attempts. Please wait %d seconds.</string>
 	<string name="vault_change_password">Change Password</string>
 	<string name="vault_enable_biometric">Enable Biometric Unlock</string>

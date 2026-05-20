@@ -25,8 +25,6 @@ public interface CryptoComponent {
 
 	KeyParser getSignatureKeyParser();
 
-	KeyParser getMessageKeyParser();
-
 	KeyPair generateHybridAgreementKeyPair();
 
 	KeyParser getHybridAgreementKeyParser();
@@ -93,8 +91,6 @@ public interface CryptoComponent {
 	boolean isEncryptedWithStrengthenedKey(byte[] ciphertext);
 
 	boolean isEncryptedWithLegacyKdf(byte[] ciphertext);
-
-	byte[] encryptToKey(PublicKey publicKey, byte[] plaintext);
 
 	String asciiArmour(byte[] b, int lineLength);
 

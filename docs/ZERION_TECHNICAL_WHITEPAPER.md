@@ -4,9 +4,9 @@
 
 Zerion is an end-to-end encrypted, peer-to-peer secure messaging application for Android that provides anonymity through Tor integration and includes a built-in encrypted vault for secure file storage. Built on the Bramble protocol (originally developed by the Briar Project), Zerion independently expanded it with voice calls over Tor, encrypted vault storage, and post-quantum cryptography. The application emphasizes privacy, security, and metadata protection.
 
-**Post-Quantum Security**: Zerion implements **full hybrid post-quantum cryptography** using NIST-standardized algorithms (ML-KEM-768 + X25519 for key exchange, ML-DSA-65 + Ed25519 for signatures), providing defense-in-depth protection against both current and future quantum computing threats.
+**Post-Quantum Security**: Zerion implements **full hybrid post-quantum cryptography on every message** using NIST-standardized algorithms (ML-KEM-768 + X25519 for key exchange and the per-message transport ratchet, ML-DSA-65 + Ed25519 for signatures), providing defense-in-depth protection against both current and future quantum computing threats — including "harvest now, decrypt later" attacks. Since v1.7, every transport frame in both directions carries a fresh ML-KEM-768 encapsulation; the encapsulated shared secret is mixed into the per-frame body AEAD key via HKDF, producing a hybrid key that is secure as long as either X25519 or ML-KEM-768 is secure.
 
-**Current release**: v1.6.2 (May 15, 2026). For an at-a-glance summary of everything shipped since v2.1 of this whitepaper (December 2025), see [§0 Updates since v2.1](#0-updates-since-v21).
+**Current release**: v1.7 (May 2026). For an at-a-glance summary of everything shipped since v2.1 of this whitepaper (December 2025), see [§0 Updates since v2.1](#0-updates-since-v21).
 
 ---
 
@@ -79,6 +79,51 @@ This section summarizes every protocol- or security-relevant change shipped betw
 - **Dev-reporting / crash-batching subsystem** — removed in v1.6.2.
 
 These removals are intentional and final; Zerion's threat model treats every additional transport as additional metadata surface and every additional reporting channel as a phone-home vector.
+
+### v1.7 (May 2026) — Per-message ML-KEM-768 hybrid ratchet (Mode 3-Full) shipped
+
+- **Mode 3-Full is the default on new 1:1 contacts.** Every transport
+  frame in both directions carries a fresh ML-KEM-768 encapsulation
+  against the peer's currently advertised ML-KEM public key. The
+  encapsulated shared secret is mixed into the per-frame body AEAD key
+  via `bodyKey = HKDF(classicalMessageKey, ml_kem_shared_secret)`.
+  Sender rotates its own ML-KEM keypair on every successful
+  encapsulation and advertises the freshly generated public key in the
+  same frame; recent sender keypairs are retained in a per-contact LRU
+  (cap 64) so peer ciphertexts against slightly stale public keys still
+  decapsulate cleanly. A 16-byte `kpId` (truncated SHA-256 of the
+  encapsulation key) in the frame header identifies which keypair the
+  peer encapsulated against.
+- **Per-stream chain key.** Each transport stream derives its own
+  initial chain key from `HKDF(rootKey, "PCS_STREAM_CHAIN",
+  streamNumber_8B)` and advances it locally per frame within the
+  stream. The chain key is never persisted across streams. This
+  eliminates the parallel-stream desync that constrained the prior
+  shared-chainKey design and lets Briar transport open multiple
+  concurrent streams to the same contact without contention.
+- **Lock-free transport I/O.** The per-contact lock (now bound as a
+  `@Singleton` in the Dagger graph so all consumers share one
+  instance) protects in-memory `Mode3FullState` mutation only. Blocking
+  Tor I/O calls (`writeTag`, `writeStreamHeader`, `out.write`,
+  `in.read`) run outside the lock so a slow Tor circuit on one
+  direction never starves the other direction of the same contact.
+- **Key zeroing on the ML-KEM hot path.** ML-KEM shared secrets are
+  zeroed immediately after the body AEAD key derives from them, on
+  both the encapsulation and decapsulation sides.
+- **Pre-commit cryptographic audit.** The v1.7 cycle ran a focused
+  audit on the per-message PQ ratchet covering key/nonce uniqueness,
+  key zeroing, state machine integrity, error-path information leaks,
+  and ML-KEM keypair LRU eviction. Findings before tag: zero ML-KEM
+  shared secrets after derivation (H3), narrow the bare PQ-epoch
+  exception catch (H6), defer chain-key advancement until all
+  per-frame MACs verify (H1), remove the dev-only validation harness
+  (L2), KpId defensive copy of bytes (M1) — all patched before tag.
+  Detailed design and audit results live in
+  [PCS_DESIGN.md §v1.7 amendment](PCS_DESIGN.md).
+- **Symmetric AEAD unchanged.** Transport AEAD remains XSalsa20-Poly1305
+  (24-byte nonce, 16-byte Poly1305 MAC). The Bramble transport framing
+  is built around those parameters; PQ defense lives in the per-message
+  ML-KEM encapsulation, not in the symmetric primitive.
 
 ---
 

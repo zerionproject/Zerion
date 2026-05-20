@@ -79,7 +79,7 @@ public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFr
 					actionBar.setTitle(R.string.vault_select_document);
 				}
 			} else {
-				actionBar.setTitle("Zvault");
+				actionBar.setTitle(R.string.vault_name);
 			}
 		}
 

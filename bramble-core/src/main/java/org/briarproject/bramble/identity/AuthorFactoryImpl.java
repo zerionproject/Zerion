@@ -8,6 +8,7 @@ import org.briarproject.bramble.api.identity.Author;
 import org.briarproject.bramble.api.identity.AuthorFactory;
 import org.briarproject.bramble.api.identity.AuthorId;
 import org.briarproject.bramble.api.identity.LocalAuthor;
+import org.briarproject.bramble.api.identity.ReservedNames;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.Immutable;
@@ -44,6 +45,9 @@ class AuthorFactoryImpl implements AuthorFactory {
 
 	@Override
 	public LocalAuthor createLocalAuthor(String name) {
+		if (ReservedNames.isReserved(name)) {
+			throw new IllegalArgumentException("reserved name");
+		}
 		KeyPair signatureKeyPair = crypto.generateSignatureKeyPair();
 		PublicKey publicKey = signatureKeyPair.getPublic();
 		PrivateKey privateKey = signatureKeyPair.getPrivate();

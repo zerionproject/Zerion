@@ -241,22 +241,13 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 			AuthorId local, @Nullable PublicKey handshake, boolean verified,
 			boolean postQuantum, boolean pcsEnabled) throws DbException {
 		return addContact(transaction, remote, local, handshake, verified,
-				postQuantum, pcsEnabled, false);
+				postQuantum, pcsEnabled, (byte[]) null);
 	}
 
 	@Override
 	public ContactId addContact(Transaction transaction, Author remote,
 			AuthorId local, @Nullable PublicKey handshake, boolean verified,
-			boolean postQuantum, boolean pcsEnabled, boolean mode3Capable)
-			throws DbException {
-		return addContact(transaction, remote, local, handshake, verified,
-				postQuantum, pcsEnabled, mode3Capable, null);
-	}
-
-	@Override
-	public ContactId addContact(Transaction transaction, Author remote,
-			AuthorId local, @Nullable PublicKey handshake, boolean verified,
-			boolean postQuantum, boolean pcsEnabled, boolean mode3Capable,
+			boolean postQuantum, boolean pcsEnabled,
 			@Nullable byte[] mlDsaSigPublicKey)
 			throws DbException {
 		if (transaction.isReadOnly()) throw new IllegalArgumentException();
@@ -268,7 +259,7 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		if (db.containsContact(txn, remote.getId(), local))
 			throw new ContactExistsException(local, remote);
 		ContactId c = db.addContact(txn, remote, local, handshake, verified,
-				postQuantum, pcsEnabled, mode3Capable, mlDsaSigPublicKey);
+				postQuantum, pcsEnabled, mlDsaSigPublicKey);
 		transaction.attach(new ContactAddedEvent(c, verified));
 		return c;
 	}
@@ -1486,7 +1477,8 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 			int direction, SecretKey chainKey, int messageNumber,
 			int previousChainLength, @Nullable SecretKey rootKey,
 			@Nullable PrivateKey dhPrivateKey, @Nullable PublicKey dhPublicKey,
-			@Nullable PublicKey dhRemotePublicKey, boolean mode2Enabled)
+			@Nullable PublicKey dhRemotePublicKey, boolean mode2Enabled,
+			@Nullable byte[] mode3FullStateBlob)
 			throws DbException {
 		if (transaction.isReadOnly()) throw new IllegalArgumentException();
 		T txn = unbox(transaction);
@@ -1494,7 +1486,7 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 			throw new NoSuchContactException();
 		db.setPcsMode2SessionState(txn, c, direction, chainKey, messageNumber,
 				previousChainLength, rootKey, dhPrivateKey, dhPublicKey,
-				dhRemotePublicKey, mode2Enabled);
+				dhRemotePublicKey, mode2Enabled, mode3FullStateBlob);
 	}
 
 	@Override

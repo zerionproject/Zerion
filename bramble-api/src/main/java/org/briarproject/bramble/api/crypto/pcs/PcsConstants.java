@@ -18,6 +18,8 @@ public interface PcsConstants {
 
 	String PCS_CHAIN_KEY_LABEL = "org.briarproject.zerion/PCS_CHAIN_KEY";
 
+	String PCS_STREAM_CHAIN_LABEL = "org.briarproject.zerion/PCS_STREAM_CHAIN";
+
 	String PCS_MESSAGE_KEY_LABEL = "org.briarproject.zerion/PCS_MESSAGE_KEY";
 
 	String PCS_DH_RATCHET_LABEL = "org.briarproject.zerion/PCS_DH_RATCHET";
@@ -50,8 +52,6 @@ public interface PcsConstants {
 	byte FLAG_PQ_ENABLED = 0x04;
 
 	byte FLAG_PQ_CHUNK = 0x08;
-
-	boolean MODE3_ENABLED = true;
 
 	int MLKEM_ENCAPSULATION_KEY_SIZE = 1184;
 
@@ -101,4 +101,45 @@ public interface PcsConstants {
 
 	int PCS_MODE3_HEADER_MAX_SIZE = PCS_MODE3_HEADER_MIN_SIZE +
 			PQ_CHUNK_HEADER_SIZE + PQ_CHUNK_SIZE;
+
+	boolean MODE3_FULL_ENABLED = true;
+
+	int MODE3_FULL_STREAM_FLAG = 0x1000;
+
+	byte PQ_CHUNK_TYPE_PK_ADVERTISE = 0x10;
+
+	byte PQ_CHUNK_TYPE_KEM_CT = 0x11;
+
+	byte PQ_CHUNK_TYPE_KP_ID = 0x12;
+
+	int MODE3_FULL_PK_ADVERTISE_SIZE = MLKEM_ENCAPSULATION_KEY_SIZE;
+
+	int MODE3_FULL_KEM_CT_SIZE = MLKEM_CIPHERTEXT_SIZE;
+
+	int MODE3_FULL_KP_ID_SIZE = 16;
+
+	int MODE3_FULL_RECV_SK_LRU_SIZE = 64;
+
+	String MODE3_FULL_CK_DH_LABEL =
+			"org.briarproject.zerion/MODE3FULL_CK_DH";
+
+	String MODE3_FULL_CK_PQ_LABEL =
+			"org.briarproject.zerion/MODE3FULL_CK_PQ";
+
+	String MODE3_FULL_MK_LABEL =
+			"org.briarproject.zerion/MODE3FULL_MK";
+
+	String MODE3_FULL_PQ_ABSORB_LABEL =
+			"org.briarproject.zerion/MODE3FULL_PQ_ABSORB";
+
+	String MODE3_FULL_INIT_SPLIT_LABEL =
+			"org.briarproject.zerion/MODE3FULL_INIT_SPLIT";
+
+	byte FLAG_MODE3_FULL_FRAME = 0x10;
+
+	int MODE3_FULL_CHUNK_HEADER_SIZE = 4;
+
+	int MODE3_FULL_FRAME_OVERHEAD = MODE3_FULL_CHUNK_HEADER_SIZE * 3 +
+			MODE3_FULL_PK_ADVERTISE_SIZE + MODE3_FULL_KEM_CT_SIZE +
+			MODE3_FULL_KP_ID_SIZE;
 }

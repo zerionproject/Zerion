@@ -9,6 +9,9 @@ import org.briarproject.bramble.api.crypto.KeyPair;
 import org.briarproject.bramble.api.crypto.PrivateKey;
 import org.briarproject.bramble.api.crypto.PublicKey;
 import org.briarproject.bramble.api.crypto.SecretKey;
+import org.briarproject.bramble.api.crypto.pcs.MlKemEncapsulation;
+import org.briarproject.bramble.api.crypto.pcs.MlKemKeyPair;
+import org.briarproject.bramble.api.crypto.pcs.MlKemProvider;
 import org.briarproject.bramble.api.data.BdfList;
 import org.briarproject.bramble.api.identity.Author;
 import org.briarproject.bramble.api.identity.AuthorId;
@@ -32,6 +35,7 @@ import static org.briarproject.briar.api.introduction.IntroductionConstants.LABE
 import static org.briarproject.briar.api.introduction.IntroductionConstants.LABEL_AUTH_SIGN;
 import static org.briarproject.briar.api.introduction.IntroductionConstants.LABEL_BOB_MAC_KEY;
 import static org.briarproject.briar.api.introduction.IntroductionConstants.LABEL_MASTER_KEY;
+import static org.briarproject.briar.api.introduction.IntroductionConstants.LABEL_PRE_MASTER_KEY;
 import static org.briarproject.briar.api.introduction.IntroductionConstants.LABEL_SESSION_ID;
 import static org.briarproject.briar.api.introduction.IntroductionManager.MAJOR_VERSION;
 import static org.briarproject.briar.introduction.IntroduceeSession.Local;
@@ -42,13 +46,16 @@ class IntroductionCryptoImpl implements IntroductionCrypto {
 
 	private final CryptoComponent crypto;
 	private final ClientHelper clientHelper;
+	private final MlKemProvider mlKemProvider;
 
 	@Inject
 	IntroductionCryptoImpl(
 			CryptoComponent crypto,
-			ClientHelper clientHelper) {
+			ClientHelper clientHelper,
+			MlKemProvider mlKemProvider) {
 		this.crypto = crypto;
 		this.clientHelper = clientHelper;
+		this.mlKemProvider = mlKemProvider;
 	}
 
 	@Override
@@ -101,6 +108,47 @@ class IntroductionCryptoImpl implements IntroductionCrypto {
 	}
 
 	@Override
+	public byte[][] generateMlKemEphemeralKeyPair() {
+		MlKemKeyPair kp = mlKemProvider.generateKeyPair();
+		return new byte[][] {
+				kp.getDecapsulationKey(),
+				kp.getEncapsulationKey()
+		};
+	}
+
+	@Override
+	public byte[][] encapsulateMlKem(byte[] peerMlKemPub) {
+		MlKemEncapsulation enc = mlKemProvider.encapsulate(peerMlKemPub);
+		byte[] ct = enc.getCiphertext();
+		byte[] ss = enc.getSharedSecret().clone();
+		java.util.Arrays.fill(enc.getSharedSecret(), (byte) 0);
+		return new byte[][] {ct, ss};
+	}
+
+	@Override
+	public byte[] decapsulateMlKem(byte[] localMlKemPriv, byte[] ciphertext) {
+		return mlKemProvider.decapsulate(localMlKemPriv, ciphertext);
+	}
+
+	@Override
+	@SuppressWarnings("ConstantConditions")
+	public SecretKey derivePreMasterKey(IntroduceeSession s, byte[] kemSecret)
+			throws GeneralSecurityException {
+		SecretKey dhMasterKey = deriveMasterKey(s);
+		return crypto.deriveKey(LABEL_PRE_MASTER_KEY, dhMasterKey, kemSecret);
+	}
+
+	@Override
+	@SuppressWarnings("ConstantConditions")
+	public SecretKey deriveFinalMasterKey(IntroduceeSession s,
+			byte[] aliceKemSecret, byte[] bobKemSecret)
+			throws GeneralSecurityException {
+		SecretKey dhMasterKey = deriveMasterKey(s);
+		return crypto.deriveKey(LABEL_MASTER_KEY, dhMasterKey,
+				aliceKemSecret, bobKemSecret);
+	}
+
+	@Override
 	public SecretKey deriveMacKey(SecretKey masterKey, boolean alice) {
 		return crypto.deriveKey(
 				alice ? LABEL_ALICE_MAC_KEY : LABEL_BOB_MAC_KEY,
@@ -133,6 +181,16 @@ class IntroductionCryptoImpl implements IntroductionCrypto {
 			AuthorId localAuthorId) throws GeneralSecurityException {
 		verifyAuthMac(mac, new SecretKey(s.getRemote().macKey),
 				s.getIntroducer().getId(), localAuthorId, s.getLocal(),
+				s.getRemote().author.getId(), s.getRemote());
+	}
+
+	@Override
+	@SuppressWarnings("ConstantConditions")
+	public void verifyAuthMacWithKey(byte[] mac, IntroduceeSession s,
+			AuthorId localAuthorId, SecretKey peerMacKey)
+			throws GeneralSecurityException {
+		verifyAuthMac(mac, peerMacKey, s.getIntroducer().getId(),
+				localAuthorId, s.getLocal(),
 				s.getRemote().author.getId(), s.getRemote());
 	}
 
@@ -179,14 +237,17 @@ class IntroductionCryptoImpl implements IntroductionCrypto {
 			@Nullable byte[] localMlDsaPriv,
 			@Nullable byte[] remoteMlDsaPub)
 			throws GeneralSecurityException {
-		byte[] nonce = getNonce(macKey);
-		if (localMlDsaPriv != null && remoteMlDsaPub != null) {
-			HybridSignaturePrivateKey hybridKey =
-					new HybridSignaturePrivateKey(privateKey.getEncoded(),
-							localMlDsaPriv);
-			return crypto.hybridSign(LABEL_AUTH_SIGN, nonce, hybridKey);
+		if (localMlDsaPriv == null || remoteMlDsaPub == null) {
+			throw new GeneralSecurityException(
+					"Introduction requires hybrid (Ed25519 + ML-DSA-65) " +
+							"signature in v1.7+; peer is on a pre-v1.6 " +
+							"build without ML-DSA");
 		}
-		return crypto.sign(LABEL_AUTH_SIGN, nonce, privateKey);
+		byte[] nonce = getNonce(macKey);
+		HybridSignaturePrivateKey hybridKey =
+				new HybridSignaturePrivateKey(privateKey.getEncoded(),
+						localMlDsaPriv);
+		return crypto.hybridSign(LABEL_AUTH_SIGN, nonce, hybridKey);
 	}
 
 	@Override
@@ -198,27 +259,31 @@ class IntroductionCryptoImpl implements IntroductionCrypto {
 				s.getRemote().mlDsaPubKey);
 	}
 
+	@Override
+	@SuppressWarnings("ConstantConditions")
+	public void verifySignatureWithKey(byte[] signature, IntroduceeSession s,
+			SecretKey peerMacKey) throws GeneralSecurityException {
+		verifySignature(peerMacKey, s.getRemote().author.getPublicKey(),
+				signature, s.getRemote().mlDsaPubKey);
+	}
+
 	void verifySignature(SecretKey macKey, PublicKey ed25519PublicKey,
 			byte[] signature, @Nullable byte[] remoteMlDsaPubKey)
 			throws GeneralSecurityException {
-		byte[] nonce = getNonce(macKey);
-		if (remoteMlDsaPubKey != null) {
-			if (signature.length != HYBRID_SIGNATURE_BYTES) {
-				throw new GeneralSecurityException();
-			}
-			HybridSignaturePublicKey hybridPub = new HybridSignaturePublicKey(
-					ed25519PublicKey.getEncoded(), remoteMlDsaPubKey);
-			if (!crypto.verifyHybridSignature(signature, LABEL_AUTH_SIGN,
-					nonce, hybridPub)) {
-				throw new GeneralSecurityException();
-			}
-			return;
+		if (remoteMlDsaPubKey == null) {
+			throw new GeneralSecurityException(
+					"Introduction requires hybrid (Ed25519 + ML-DSA-65) " +
+							"signature in v1.7+; peer is on a pre-v1.6 " +
+							"build without ML-DSA");
 		}
-		if (signature.length != 64) {
+		if (signature.length != HYBRID_SIGNATURE_BYTES) {
 			throw new GeneralSecurityException();
 		}
-		if (!crypto.verifySignature(signature, LABEL_AUTH_SIGN, nonce,
-				ed25519PublicKey)) {
+		byte[] nonce = getNonce(macKey);
+		HybridSignaturePublicKey hybridPub = new HybridSignaturePublicKey(
+				ed25519PublicKey.getEncoded(), remoteMlDsaPubKey);
+		if (!crypto.verifyHybridSignature(signature, LABEL_AUTH_SIGN,
+				nonce, hybridPub)) {
 			throw new GeneralSecurityException();
 		}
 	}

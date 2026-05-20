@@ -286,12 +286,23 @@ public class SetPasswordFragment extends SetupFragment {
 	}
 
 	private void clearPasswordFields() {
-		if (passwordEntry != null && passwordEntry.getText() != null) {
-			passwordEntry.getText().clear();
+		overwriteAndClear(passwordEntry);
+		overwriteAndClear(passwordConfirmation);
+	}
+
+	private static void overwriteAndClear(@Nullable
+			android.widget.EditText edit) {
+		if (edit == null) return;
+		android.text.Editable e = edit.getText();
+		if (e == null) return;
+		int n = e.length();
+		if (n > 0) {
+			char[] fill = new char[n];
+			java.util.Arrays.fill(fill, '\0');
+			e.replace(0, n, new String(fill));
+			java.util.Arrays.fill(fill, '\0');
 		}
-		if (passwordConfirmation != null && passwordConfirmation.getText() != null) {
-			passwordConfirmation.getText().clear();
-		}
+		e.clear();
 	}
 
 	@Override

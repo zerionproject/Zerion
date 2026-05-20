@@ -67,11 +67,7 @@ interface Database<T> {
 
 	ContactId addContact(T txn, Author remote, AuthorId local,
 			@Nullable PublicKey handshake, boolean verified, boolean postQuantum,
-			boolean pcsEnabled, boolean mode3Capable) throws DbException;
-
-	ContactId addContact(T txn, Author remote, AuthorId local,
-			@Nullable PublicKey handshake, boolean verified, boolean postQuantum,
-			boolean pcsEnabled, boolean mode3Capable,
+			boolean pcsEnabled,
 			@Nullable byte[] mlDsaSigPublicKey) throws DbException;
 
 	void addGroup(T txn, Group g) throws DbException;
@@ -388,7 +384,8 @@ interface Database<T> {
 			SecretKey chainKey, int messageNumber, int previousChainLength,
 			@Nullable SecretKey rootKey, @Nullable PrivateKey dhPrivateKey,
 			@Nullable PublicKey dhPublicKey, @Nullable PublicKey dhRemotePublicKey,
-			boolean mode2Enabled) throws DbException;
+			boolean mode2Enabled,
+			@Nullable byte[] mode3FullStateBlob) throws DbException;
 
 	@Nullable
 	Object[] getPcsMode2SessionState(T txn, ContactId c, int direction)

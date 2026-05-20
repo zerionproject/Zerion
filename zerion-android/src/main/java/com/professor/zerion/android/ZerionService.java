@@ -134,6 +134,12 @@ public class ZerionService extends Service {
 				wakeLockManager.executeWakefully(() -> {
 					StartResult result = lifecycleManager.startServices(dbKey);
 					if (result == SUCCESS) {
+						if (accountManager instanceof
+								org.briarproject.bramble.account.AndroidAccountManager) {
+							((org.briarproject.bramble.account
+									.AndroidAccountManager) accountManager)
+									.confirmAccountStarted();
+						}
 						started = true;
 					} else if (result == ALREADY_RUNNING) {
 						shutdownFromBackground();

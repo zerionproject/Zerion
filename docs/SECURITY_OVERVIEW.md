@@ -1,7 +1,7 @@
 # Zerion Security Overview
 
-**Version:** 1.2.0
-**Last reviewed:** May 2026 (v1.6.2)
+**Version:** 1.3.0
+**Last reviewed:** May 2026 (v1.7)
 
 ---
 
@@ -10,6 +10,42 @@
 Zerion is a peer-to-peer encrypted messenger for Android with voice calls over Tor. All traffic routes exclusively through the Tor network. There are no central servers, no metadata collection, and no logging in production builds.
 
 A comprehensive security audit covering 10 domains (cryptography, network, voice calls, Android platform, authentication, database, input validation, dependencies, logging, memory safety) was completed and all actionable findings have been resolved. Additional internal audits were run during the v1.6 cycle: the PCS Mode 3 rewrite and the hybrid-signing migration produced four findings (one critical, one high, two medium) caught and patched before the v1.6.0 tag; a follow-up audit during the v1.6.2 cycle covered password setup, settings, vault, biometric, deletion paths, and lock-screen exposure — see the version notes below.
+
+## v1.7 status (May 2026)
+
+- **Per-message post-quantum hybrid ratchet (Mode 3-Full) is the default
+  on new 1:1 contacts.** Every transport frame carries a fresh ML-KEM-768
+  encapsulation against the peer's currently advertised ML-KEM public
+  key; the encapsulated shared secret is mixed into the per-frame body
+  AEAD key via `HKDF(classicalMessageKey, ml_kem_shared_secret)`. The
+  per-frame frame-header AEAD key remains the classical symmetric chain
+  derivation. Sender rotates its ML-KEM keypair on every successful
+  encapsulation; recent sender keypairs are retained in a per-contact
+  LRU (cap 64) so peer ciphertexts against slightly stale public keys
+  still decapsulate.
+- **Per-stream chain key.** Each transport stream derives its own
+  initial chain key from `HKDF(rootKey, PCS_STREAM_CHAIN,
+  streamNumber_8B)` and advances it locally per frame; the chain key
+  is never persisted across streams. This eliminates the parallel-stream
+  desync that affected the prior shared-chainKey design and lets Briar
+  transport open multiple parallel streams to the same contact without
+  contention.
+- **Lock-free transport I/O.** The per-contact lock protects in-memory
+  Mode3FullState mutation only; the actual Tor I/O calls
+  (`writeTag`, `writeStreamHeader`, `out.write`, `in.read`) run outside
+  the lock so a slow Tor circuit on one direction never starves the
+  other direction of the same contact.
+- **Key zeroing on the ML-KEM hot path.** ML-KEM shared secrets are
+  zeroed immediately after the body AEAD key derives from them, in both
+  the encapsulation and decapsulation paths.
+- **Pre-commit cryptographic audit.** The v1.7 cycle ran a focused audit
+  on the per-message PQ ratchet covering key/nonce uniqueness, key
+  zeroing, state machine integrity, error-path information leaks, and
+  ML-KEM keypair LRU eviction. Findings before tag: H3 (zero ML-KEM
+  shared secrets), H6 (narrow PQ-epoch catch), H1 (defer chain-key
+  advancement until all per-frame MACs verify), L2 (remove dev-only
+  validation harness), M1 (KpId defensive copy of bytes) — all patched
+  before tag.
 
 ## v1.6.2 status (May 2026)
 
@@ -35,12 +71,15 @@ A comprehensive security audit covering 10 domains (cryptography, network, voice
 
 | Layer | Algorithm | Details |
 |---|---|---|
-| Transport | XSalsa20-Poly1305 | Bramble transport encryption with proper nonce construction |
-| Messages | AES-256-GCM | End-to-end encrypted via Bramble sync protocol |
+| Transport AEAD | XSalsa20-Poly1305 | Per-frame authenticated encryption, 24-byte nonce |
+| Per-message PQ ratchet | ML-KEM-768 (Mode 3-Full) | Fresh encapsulation against peer ML-KEM pubkey on every frame; shared secret mixed into body AEAD key via `HKDF(classicalMessageKey, ml_kem_shared_secret)`; sender rotates keypair per successful encapsulation |
+| Chain key | Per-stream HKDF | Derived from `HKDF(rootKey, PCS_STREAM_CHAIN, streamNumber_8B)`, advanced locally per frame within the stream |
+| Classical ratchet | X25519 Double Ratchet | Underlies Mode 3-Full; provides classical post-compromise security |
 | Voice frames | AES-256-GCM | Per-frame authenticated encryption with counter-based nonces |
 | Voice key wrap | AES-256 CTR | IES implementation (migrated from CBC to CTR) |
-| Key exchange | X25519 + ML-KEM-768 | Hybrid post-quantum key exchange |
-| Signatures | Ed25519 + ML-DSA-65 | Hybrid post-quantum signatures |
+| Contact handshake | X25519 + ML-KEM-768 | Hybrid post-quantum key exchange (B.4) |
+| Introductions | X25519 + ML-KEM-768 | Hybrid PQ KEM at introduction time (Phase 5b) |
+| Signatures | Ed25519 + ML-DSA-65 | Hybrid post-quantum signatures (B.3) |
 | Database | H2 with AES cipher | Local database encrypted at rest |
 | Vault | Argon2id + AES-256-GCM | Encrypted file storage with memory-hard KDF |
 | KDF (passwords) | Argon2id / scrypt | Password-based key derivation |
@@ -91,10 +130,16 @@ A comprehensive security audit covering 10 domains (cryptography, network, voice
 
 ## Logging Policy
 
-- No logging in production builds
-- No Logger, no android.util.Log, no System.out/err in production code
-- Debug logging gated by BuildConfig.DEBUG compile-time constant
-- Crash reports exclude message content and contact identifiers
+- No logging in production builds — period
+- No `Logger`, no `android.util.Log`, no `System.out`/`err`, no
+  `printStackTrace`, no `Timber`, no `LOG.*` anywhere in the production
+  source tree
+- The `java.util.logging` root logger is silenced at process start
+  before any code can attach a handler
+- The `enforceNoLogs` Gradle task fails the build on any logging
+  reference in the production tree, blocking the regression at CI level
+- Crash reports are disabled — the dev-reporting subsystem was removed
+  in v1.6.2
 
 ## Dependencies
 

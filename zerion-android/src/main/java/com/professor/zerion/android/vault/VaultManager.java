@@ -108,7 +108,8 @@ public class VaultManager {
 		byte[] combined = crypto.xor(passwordKey, randomSecret);
 		this.vaultMasterKey = crypto.hkdfSha256(combined, "vault master", 32);
 
-		byte[] passwordVerificationMac = crypto.computePasswordVerificationMac(this.vaultMasterKey);
+		byte[] passwordVerificationMac =
+				crypto.computePasswordVerificationMac(this.vaultMasterKey);
 
 		SecureMemory.shredAll(passwordKey, randomSecret, combined);
 
@@ -127,7 +128,6 @@ public class VaultManager {
 		this.currentHeader = header;
 		this.isUnlocked = true;
 		updateActivity();
-
 	}
 
 	public synchronized boolean unlockVault(char[] password) throws Exception {
@@ -147,6 +147,7 @@ public class VaultManager {
 					waitSeconds + " seconds");
 		}
 
+		long unlockStartRealtime = android.os.SystemClock.elapsedRealtime();
 		try {
 			if (currentHeader == null) {
 				loadVaultHeader();
@@ -157,15 +158,11 @@ public class VaultManager {
 			byte[] randomSecret = keystore.unwrapSecret(
 					currentHeader.wrappedKeystoreBlob, keystoreKey);
 
-			int algo = currentHeader.usesArgon2id()
-					? Argon2.ALGO_ARGON2ID
-					: Argon2.ALGO_PBKDF2;
 			Argon2.Argon2Params params = new Argon2.Argon2Params(
 					currentHeader.kdfMemoryKb,
 					currentHeader.kdfIterations,
 					currentHeader.kdfParallelism,
-					32,
-					algo
+					32
 			);
 			byte[] passwordKey = argon2.deriveKey(password, currentHeader.salt, params);
 
@@ -292,11 +289,23 @@ public class VaultManager {
 			failedAttempts++;
 			long backoffMs = INITIAL_BACKOFF_MS * (2L * failedAttempts - 1L);
 			backoffUntil = System.currentTimeMillis() + backoffMs;
-
-			if (failedAttempts >= MAX_FAILED_ATTEMPTS) {
-			}
-
 			return false;
+		} finally {
+			enforceUnlockTimeFloor(unlockStartRealtime);
+		}
+	}
+
+	private static final long UNLOCK_TIME_FLOOR_MS = 1500L;
+
+	private static void enforceUnlockTimeFloor(long startRealtime) {
+		long elapsed = android.os.SystemClock.elapsedRealtime() - startRealtime;
+		long sleep = UNLOCK_TIME_FLOOR_MS - elapsed;
+		if (sleep > 0) {
+			try {
+				Thread.sleep(sleep);
+			} catch (InterruptedException ignored) {
+				Thread.currentThread().interrupt();
+			}
 		}
 	}
 
@@ -352,7 +361,7 @@ public class VaultManager {
 		return addItemInternal(type, name, content, extraPassword);
 	}
 
-	private VaultItem addItemInternal(VaultItem.ItemType type, String name, byte[] content,
+	private synchronized VaultItem addItemInternal(VaultItem.ItemType type, String name, byte[] content,
 			char[] extraPassword) throws Exception {
 		requireUnlocked();
 
@@ -439,7 +448,7 @@ public class VaultManager {
 		}
 	}
 
-	public byte[] getItemContent(String itemId) throws Exception {
+	public synchronized byte[] getItemContent(String itemId) throws Exception {
 		requireUnlocked();
 
 		String itemDir = ITEMS_DIR + "/" + itemId;
@@ -525,7 +534,7 @@ public class VaultManager {
 		return getItemContent(itemId);
 	}
 
-	public byte[] getItemContentWithPassword(String itemId, char[] extraPassword) throws Exception {
+	public synchronized byte[] getItemContentWithPassword(String itemId, char[] extraPassword) throws Exception {
 		requireUnlocked();
 
 		if (extraPassword == null || extraPassword.length == 0) {
@@ -661,8 +670,36 @@ public class VaultManager {
 		currentHeader = null;
 	}
 
+	private synchronized boolean verifyPassword(char[] candidate)
+			throws Exception {
+		if (currentHeader == null) loadVaultHeader();
+		if (currentHeader.passwordVerificationMac == null
+				|| currentHeader.passwordVerificationMac.length == 0) {
+			return false;
+		}
+		SecretKey keystoreKey = keystore.getOrCreateVaultKey();
+		byte[] randomSecret = keystore.unwrapSecret(
+				currentHeader.wrappedKeystoreBlob, keystoreKey);
+		Argon2.Argon2Params params = new Argon2.Argon2Params(
+				currentHeader.kdfMemoryKb,
+				currentHeader.kdfIterations,
+				currentHeader.kdfParallelism,
+				32);
+		byte[] passwordKey = argon2.deriveKey(candidate, currentHeader.salt,
+				params);
+		byte[] combined = crypto.xor(passwordKey, randomSecret);
+		byte[] derivedKey = crypto.hkdfSha256(combined, "vault master", 32);
+		boolean ok = crypto.verifyPasswordMac(derivedKey,
+				currentHeader.passwordVerificationMac);
+		java.util.Arrays.fill(derivedKey, (byte) 0);
+		java.util.Arrays.fill(passwordKey, (byte) 0);
+		java.util.Arrays.fill(randomSecret, (byte) 0);
+		java.util.Arrays.fill(combined, (byte) 0);
+		return ok;
+	}
+
 	public void changePassword(char[] oldPassword, char[] newPassword) throws Exception {
-		if (!unlockVault(oldPassword)) {
+		if (!verifyPassword(oldPassword)) {
 			throw new SecurityException("Invalid current password");
 		}
 
@@ -867,10 +904,7 @@ public class VaultManager {
 	}
 
 	private Argon2.Argon2Params extraPasswordParams() {
-		int algo = (currentHeader != null && !currentHeader.usesArgon2id())
-				? Argon2.ALGO_PBKDF2
-				: Argon2.ALGO_ARGON2ID;
-		return Argon2.Argon2Params.getDefault().withAlgorithm(algo);
+		return Argon2.Argon2Params.getDefault();
 	}
 
 	public byte[] exportVault(char[] exportPassword) throws Exception {
@@ -888,6 +922,9 @@ public class VaultManager {
 		dos.write(exportSalt);
 
 		Argon2.Argon2Params params = getArgon2Params();
+		dos.writeInt(params.memoryKb);
+		dos.writeInt(params.iterations);
+		dos.writeInt(params.parallelism);
 		byte[] exportKey = argon2.deriveKey(exportPassword, exportSalt, params);
 
 		List<VaultItem> items = listItems();
@@ -926,8 +963,10 @@ public class VaultManager {
 		java.io.DataInputStream dis = new java.io.DataInputStream(bais);
 
 		int exportFormatVersion = dis.readInt();
-		if (exportFormatVersion != 1 && exportFormatVersion != 2) {
-			throw new IOException("Unsupported export version: " + exportFormatVersion);
+		if (exportFormatVersion != 2) {
+			throw new IOException(
+					"Unsupported export version: " + exportFormatVersion +
+							" (re-export with current Zerion version)");
 		}
 
 		int vaultCryptoVersion = dis.readInt();
@@ -935,11 +974,14 @@ public class VaultManager {
 		byte[] exportSalt = new byte[32];
 		dis.readFully(exportSalt);
 
-		int importAlgo = (exportFormatVersion >= 2)
-				? Argon2.ALGO_ARGON2ID
-				: Argon2.ALGO_PBKDF2;
-		Argon2.Argon2Params params =
-				getArgon2Params().withAlgorithm(importAlgo);
+		int memoryKb = dis.readInt();
+		int iterations = dis.readInt();
+		int parallelism = dis.readInt();
+		if (memoryKb < 1024 || iterations < 1 || parallelism < 1) {
+			throw new IOException("Invalid Argon2 params in export header");
+		}
+		Argon2.Argon2Params params = new Argon2.Argon2Params(memoryKb,
+				iterations, parallelism, 32);
 		byte[] exportKey = argon2.deriveKey(exportPassword, exportSalt, params);
 
 		int itemCount = dis.readInt();

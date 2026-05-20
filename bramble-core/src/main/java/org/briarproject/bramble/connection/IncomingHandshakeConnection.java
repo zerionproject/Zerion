@@ -72,7 +72,7 @@ class IncomingHandshakeConnection extends HandshakeConnection
 					handshakeManager.handshake(pendingContactId, in, out);
 			contactExchangeManager.exchangeContacts(pendingContactId,
 					connection, result.getMasterKey(), result.isAlice(), true,
-					classical, result.isMode3Capable(),
+					classical,
 					result.getOurStaticHybridPub(),
 					result.getTheirStaticHybridPub(),
 					result.getOurEphX25519(),

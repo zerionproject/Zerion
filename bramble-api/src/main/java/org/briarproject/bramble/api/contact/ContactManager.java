@@ -30,11 +30,7 @@ public interface ContactManager {
 
 	ContactId addContact(Transaction txn, Author remote, AuthorId local,
 			SecretKey rootKey, long timestamp, boolean alice, boolean verified,
-			boolean active, boolean mode3Capable) throws DbException;
-
-	ContactId addContact(Transaction txn, Author remote, AuthorId local,
-			SecretKey rootKey, long timestamp, boolean alice, boolean verified,
-			boolean active, boolean mode3Capable,
+			boolean active,
 			@javax.annotation.Nullable byte[] peerMlDsaSigPublicKey)
 			throws DbException;
 
@@ -45,12 +41,7 @@ public interface ContactManager {
 
 	ContactId addContact(Transaction txn, PendingContactId p, Author remote,
 			AuthorId local, SecretKey rootKey, long timestamp, boolean alice,
-			boolean verified, boolean active, boolean mode3Capable)
-			throws DbException, GeneralSecurityException;
-
-	ContactId addContact(Transaction txn, PendingContactId p, Author remote,
-			AuthorId local, SecretKey rootKey, long timestamp, boolean alice,
-			boolean verified, boolean active, boolean mode3Capable,
+			boolean verified, boolean active,
 			@javax.annotation.Nullable byte[] peerMlDsaSigPublicKey)
 			throws DbException, GeneralSecurityException;
 

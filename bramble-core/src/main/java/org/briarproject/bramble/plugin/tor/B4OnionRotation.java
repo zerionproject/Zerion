@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
@@ -91,8 +90,16 @@ public class B4OnionRotation {
 	private static final String B4_ALICE_PROMOTING_SENTINEL_KEY =
 			"alice_rotation_promoting";
 
-	private static final Logger B4_LOG =
-			Logger.getLogger(B4OnionRotation.class.getName());
+	private static final String B4_ALICE_NEXT_ROTATION_DAYS_KEY =
+			"alice_rotation_next_interval_days";
+
+	private final java.security.SecureRandom rotationRng =
+			new java.security.SecureRandom();
+
+	private long drawNextRotationDays() {
+		int range = (int) (ROTATION_MAX_DAYS - ROTATION_MIN_DAYS + 1);
+		return ROTATION_MIN_DAYS + rotationRng.nextInt(range);
+	}
 
 	private final Object rotationLock = new Object();
 
@@ -129,8 +136,6 @@ public class B4OnionRotation {
 	public void evaluateTrigger() throws DbException {
 		if (!B4_ROTATION_ENABLED) return;
 		if (adapter == null) {
-			if (B4_DEBUG_LOG) B4_LOG.info(
-					"[B4] evaluateTrigger: skipped (Tor not yet bound)");
 			return;
 		}
 		synchronized (rotationLock) {
@@ -162,24 +167,29 @@ public class B4OnionRotation {
 				long days = DAYS.convert(now - last,
 						java.util.concurrent.TimeUnit.MILLISECONDS);
 				daysHolder[0] = days;
-				if (days >= ROTATION_MAX_DAYS) return true;
-				return days >= ROTATION_MIN_DAYS && hasActiveContacts(txn);
-			});
-			if (B4_DEBUG_LOG) {
-				if (firstRunHolder[0]) {
-					B4_LOG.info(
-							"[B4] evaluateTrigger: first-run baseline "
-									+ "— last_rotation_time set to now, "
-									+ "skipping this trigger");
+				long targetDays;
+				String targetRaw = loadEncryptedString(txn,
+						B4_ALICE_NEXT_ROTATION_DAYS_KEY);
+				if (targetRaw == null) {
+					targetDays = drawNextRotationDays();
+					Settings tgt = new Settings();
+					tgt.put(B4_ALICE_NEXT_ROTATION_DAYS_KEY,
+							sealString(String.valueOf(targetDays)));
+					settingsManager.mergeSettings(txn, tgt,
+							B4_SETTINGS_NAMESPACE);
 				} else {
-					B4_LOG.info(String.format(
-							"[B4] evaluateTrigger: phase=%s days_since=%d "
-									+ "min=%d max=%d -> rotate=%s",
-							phaseHolder[0], daysHolder[0],
-							ROTATION_MIN_DAYS, ROTATION_MAX_DAYS,
-							shouldRotate));
+					try {
+						targetDays = Long.parseLong(targetRaw);
+					} catch (NumberFormatException e) {
+						targetDays = drawNextRotationDays();
+					}
+					if (targetDays < ROTATION_MIN_DAYS
+							|| targetDays > ROTATION_MAX_DAYS) {
+						targetDays = drawNextRotationDays();
+					}
 				}
-			}
+				return days >= targetDays;
+			});
 			if (shouldRotate) executeRotation(now);
 		}
 	}
@@ -187,19 +197,13 @@ public class B4OnionRotation {
 	public void forceRotate() throws DbException {
 		if (!B4_ROTATION_ENABLED) return;
 		if (adapter == null) {
-			if (B4_DEBUG_LOG) B4_LOG.info(
-					"[B4] forceRotate: skipped (Tor not yet bound)");
 			return;
 		}
-		if (B4_DEBUG_LOG) B4_LOG.info("[B4] forceRotate: invoked");
 		synchronized (rotationLock) {
 			long now = clock.currentTimeMillis();
 			boolean shouldRotate = db.transactionWithResult(true, txn ->
 					loadPhase(txn) == RotationPhase.IDLE);
 			if (B4_DEBUG_LOG && !shouldRotate) {
-				B4_LOG.info(
-						"[B4] forceRotate: phase != IDLE, "
-								+ "rotation already in progress, skipping");
 			}
 			if (shouldRotate) executeRotation(now);
 		}
@@ -209,23 +213,11 @@ public class B4OnionRotation {
 			String pendingOnion, long announcedAtMs) throws DbException {
 		if (!B4_ROTATION_ENABLED) return;
 		if (!isValidV3Onion(pendingOnion)) {
-			if (B4_DEBUG_LOG) {
-				B4_LOG.info(String.format(
-						"[B4] onAnnounceReceived: rejected invalid "
-								+ "onion3_next from contact=%d",
-						from.getInt()));
-			}
 			return;
 		}
 		String existingPending = loadEncryptedString(txn,
 				B4_CONTACT_ONION3_PENDING_KEY_PREFIX + from.getInt());
 		if (pendingOnion.equals(existingPending)) {
-			if (B4_DEBUG_LOG) {
-				B4_LOG.info(String.format(
-						"[B4] onAnnounceReceived: dedupe — already have "
-								+ "pending=%s for contact=%d, skipping",
-						pendingOnion, from.getInt()));
-			}
 			return;
 		}
 		if (existingPending != null) {
@@ -237,26 +229,11 @@ public class B4OnionRotation {
 					long lastMs = Long.parseLong(lastRaw);
 					long now = clock.currentTimeMillis();
 					if (now - lastMs < B4_ANNOUNCE_RATE_LIMIT_MS) {
-						if (B4_DEBUG_LOG) {
-							B4_LOG.warning(String.format(
-									"[B4] onAnnounceReceived: rate-limit "
-											+ "from contact=%d — %dms since "
-											+ "last announce < %dms threshold, "
-											+ "ignoring new pending=%s",
-									from.getInt(), now - lastMs,
-									B4_ANNOUNCE_RATE_LIMIT_MS, pendingOnion));
-						}
 						return;
 					}
 				} catch (NumberFormatException ignored) {
 				}
 			}
-		}
-		if (B4_DEBUG_LOG) {
-			B4_LOG.info(String.format(
-					"[B4] onAnnounceReceived: from contact=%d "
-							+ "pending=%s.onion announced_at=%d",
-					from.getInt(), pendingOnion, announcedAtMs));
 		}
 		Settings update = new Settings();
 		update.put(B4_CONTACT_ONION3_PENDING_KEY_PREFIX + from.getInt(),
@@ -290,12 +267,6 @@ public class B4OnionRotation {
 			update.put(B4_CONTACT_PENDING_DIAL_SUCCEEDED_KEY_PREFIX
 					+ cid.getInt(), sealString("1"));
 			settingsManager.mergeSettings(txn, update, B4_SETTINGS_NAMESPACE);
-			if (B4_DEBUG_LOG) {
-				B4_LOG.info(String.format(
-						"[B4] onSuccessfulConnect: contact=%d migrated to "
-								+ "pending=%s, failure counter reset",
-						cid.getInt(), dialedOnion));
-			}
 		});
 	}
 
@@ -315,13 +286,6 @@ public class B4OnionRotation {
 		clear.put(B4_CONTACT_PENDING_DIAL_SUCCEEDED_KEY_PREFIX
 				+ cid.getInt(), "");
 		settingsManager.mergeSettings(txn, clear, B4_SETTINGS_NAMESPACE);
-		if (B4_DEBUG_LOG) {
-			B4_LOG.info(String.format(
-					"[B4] onPeerRotationComplete: contact=%d cleared "
-							+ "pending state — peer published new onion3=%s "
-							+ "matching our pending, rotation finalised",
-					cid.getInt(), newCurrentOnion));
-		}
 	}
 
 	public void onPendingDialFailed(ContactId cid) throws DbException {
@@ -334,12 +298,6 @@ public class B4OnionRotation {
 							+ cid.getInt(),
 					sealString(String.valueOf(next)));
 			settingsManager.mergeSettings(txn, update, B4_SETTINGS_NAMESPACE);
-			if (B4_DEBUG_LOG) {
-				B4_LOG.info(String.format(
-						"[B4] onPendingDialFailed: contact=%d failures=%d/%d",
-						cid.getInt(), next,
-						B4_PENDING_DIAL_FAILURE_THRESHOLD));
-			}
 		});
 	}
 
@@ -358,12 +316,6 @@ public class B4OnionRotation {
 	public void onInboundConnectionOnNewOnion(ContactId cid)
 			throws DbException {
 		if (!B4_ROTATION_ENABLED) return;
-		if (B4_DEBUG_LOG) {
-			B4_LOG.info(String.format(
-					"[B4] onInboundConnectionOnNewOnion: contact=%d "
-							+ "MIGRATED",
-					cid.getInt()));
-		}
 		boolean shouldComplete;
 		synchronized (rotationLock) {
 			shouldComplete = db.transactionWithResult(false, txn -> {
@@ -372,9 +324,6 @@ public class B4OnionRotation {
 				return shouldRetireOldOnion(txn);
 			});
 			if (B4_DEBUG_LOG && shouldComplete) {
-				B4_LOG.info(
-						"[B4] onInboundConnectionOnNewOnion: all peers "
-								+ "MIGRATED, retiring old onion");
 			}
 			if (shouldComplete) executePromotion();
 		}
@@ -395,10 +344,6 @@ public class B4OnionRotation {
 			});
 		}
 		if (B4_DEBUG_LOG && transitioned[0]) {
-			B4_LOG.info(String.format(
-					"[B4] onPeerSyncSessionEstablished: contact=%d "
-							+ "CURRENT -> PRE_ANNOUNCED",
-					cid.getInt()));
 		}
 	}
 
@@ -445,13 +390,6 @@ public class B4OnionRotation {
 		if (!B4_ROTATION_ENABLED) return null;
 		int failures = loadPendingDialFailures(txn, cid);
 		if (failures >= B4_PENDING_DIAL_FAILURE_THRESHOLD) {
-			if (B4_DEBUG_LOG) {
-				B4_LOG.info(String.format(
-						"[B4] getPendingOnionForContact: contact=%d "
-								+ "failures=%d >= %d, suppressing pending",
-						cid.getInt(), failures,
-						B4_PENDING_DIAL_FAILURE_THRESHOLD));
-			}
 			return null;
 		}
 		return loadEncryptedString(txn,
@@ -492,17 +430,7 @@ public class B4OnionRotation {
 			RotationPhase phase = db.transactionWithResult(true,
 					this::loadPhase);
 			if (phase != RotationPhase.ANNOUNCING) {
-				if (B4_DEBUG_LOG) {
-					B4_LOG.info(String.format(
-							"[B4] forceCompleteRotation: ignored — phase=%s",
-							phase));
-				}
 				return false;
-			}
-			if (B4_DEBUG_LOG) {
-				B4_LOG.info(
-						"[B4] forceCompleteRotation: user-triggered "
-								+ "promotion, retiring old onion now");
 			}
 			executePromotion();
 			return true;
@@ -513,27 +441,16 @@ public class B4OnionRotation {
 		B4TorAdapter ad = adapter;
 		if (ad == null) return;
 
-		if (B4_DEBUG_LOG) B4_LOG.info(
-				"[B4] executeRotation: requesting Tor ADD_ONION...");
 		HiddenServiceProperties hsProps;
 		try {
 			hsProps = ad.publishHiddenService(null);
 		} catch (IOException e) {
-			if (B4_DEBUG_LOG) B4_LOG.info(
-					"[B4] executeRotation: Tor ADD_ONION failed: "
-							+ e.getMessage());
 			throw new DbException(e);
 		}
 
 		String newOnion = hsProps.onion;
 		String newPrivKey = hsProps.privKey;
 		List<ContactId> contactIds = new ArrayList<>();
-		if (B4_DEBUG_LOG) {
-			B4_LOG.info(String.format(
-					"[B4] executeRotation: minted new onion=%s.onion "
-							+ "(privKey buffered, not logged)",
-					newOnion));
-		}
 
 		db.transaction(false, txn -> {
 			Settings update = new Settings();
@@ -557,13 +474,6 @@ public class B4OnionRotation {
 		props.put(WIRE_KEY_ONION3_ANNOUNCED_AT_MS, String.valueOf(now));
 		props.put(WIRE_KEY_ONION3_PUBLISH_NONCE, "0");
 		ad.mergeTorLocalProperties(props);
-		if (B4_DEBUG_LOG) {
-			B4_LOG.info(String.format(
-					"[B4] executeRotation: announce broadcast wave 0 "
-							+ "(tor.onion3_next=%s.onion ts=%d), "
-							+ "phase=ANNOUNCING peers_reset=%d",
-					newOnion, now, contactIds.size()));
-		}
 		scheduleRebroadcasts(now);
 	}
 
@@ -629,19 +539,11 @@ public class B4OnionRotation {
 		TransportProperties props = new TransportProperties();
 		props.put(WIRE_KEY_ONION3_PUBLISH_NONCE, String.valueOf(waveIndex));
 		ad.mergeTorLocalProperties(props);
-		if (B4_DEBUG_LOG) {
-			B4_LOG.info(String.format(
-					"[B4] re-broadcast wave %d at T+%ds "
-							+ "(non-migrated peers=%s, version-bumped via "
-							+ "publish_nonce=%d)",
-					waveIndex, delaySeconds, state[2], waveIndex));
-		}
 	}
 
 	private void executePromotion() throws DbException {
 		B4TorAdapter ad = adapter;
 		if (ad == null) return;
-		if (B4_DEBUG_LOG) B4_LOG.info("[B4] executePromotion: starting");
 
 		final String[] state = new String[3];
 		db.transaction(false, txn -> {
@@ -659,23 +561,11 @@ public class B4OnionRotation {
 		String newOnion = state[1];
 		String newPrivKey = state[2];
 
-		if (B4_DEBUG_LOG) {
-			B4_LOG.info(String.format(
-					"[B4] executePromotion: old=%s.onion -> new=%s.onion",
-					oldOnion == null ? "<none>" : oldOnion,
-					newOnion == null ? "<none>" : newOnion));
-		}
 
 		if (oldOnion != null) {
 			try {
 				ad.removeHiddenService(oldOnion);
-				if (B4_DEBUG_LOG) B4_LOG.info(
-						"[B4] executePromotion: DEL_ONION sent for old "
-								+ "onion");
 			} catch (IOException e) {
-				if (B4_DEBUG_LOG) B4_LOG.info(
-						"[B4] executePromotion: DEL_ONION failed: "
-								+ e.getMessage());
 				throw new DbException(e);
 			}
 		}
@@ -704,6 +594,8 @@ public class B4OnionRotation {
 			update.put(B4_ALICE_ROTATION_PHASE_KEY,
 					sealString(RotationPhase.IDLE.name()));
 			update.put(B4_ALICE_PROMOTING_SENTINEL_KEY, "");
+			update.put(B4_ALICE_NEXT_ROTATION_DAYS_KEY,
+					sealString(String.valueOf(drawNextRotationDays())));
 			settingsManager.mergeSettings(txn, update, B4_SETTINGS_NAMESPACE);
 			Collection<Contact> contacts = db.getContacts(txn);
 			for (Contact c : contacts) {
@@ -711,8 +603,6 @@ public class B4OnionRotation {
 			}
 			txn.attach(new B4OwnRotationCompletedEvent());
 		});
-		if (B4_DEBUG_LOG) B4_LOG.info(
-				"[B4] executePromotion: complete, phase=IDLE");
 	}
 
 	private boolean shouldRetireOldOnion(Transaction txn) throws DbException {

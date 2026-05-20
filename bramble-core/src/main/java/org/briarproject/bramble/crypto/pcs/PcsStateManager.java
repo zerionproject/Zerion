@@ -9,6 +9,7 @@ import org.briarproject.bramble.api.crypto.PublicKey;
 import org.briarproject.bramble.api.crypto.SecretKey;
 import org.briarproject.bramble.api.crypto.pcs.DhRatchetState;
 import org.briarproject.bramble.api.crypto.pcs.MlKemKeyPair;
+import org.briarproject.bramble.api.crypto.pcs.Mode3FullState;
 import org.briarproject.bramble.api.crypto.pcs.PcsSessionState;
 import org.briarproject.bramble.api.crypto.pcs.PqEpochState;
 import org.briarproject.bramble.api.crypto.pcs.PqRatchet;
@@ -19,18 +20,26 @@ import org.briarproject.bramble.api.db.Transaction;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.security.GeneralSecurityException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
-import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_ENABLED;
+import javax.inject.Singleton;
 import static org.briarproject.bramble.api.db.DatabaseComponent.PCS_DIRECTION_RECEIVE;
 import static org.briarproject.bramble.api.db.DatabaseComponent.PCS_DIRECTION_SEND;
 
 @ThreadSafe
+@Singleton
 @NotNullByDefault
 public class PcsStateManager {
 	private final DatabaseComponent db;
 	private final CryptoComponent crypto;
+	private final ConcurrentMap<Integer, ReentrantLock> contactLocks =
+			new ConcurrentHashMap<>();
 
 	@Inject
 	public PcsStateManager(DatabaseComponent db, CryptoComponent crypto) {
@@ -38,9 +47,34 @@ public class PcsStateManager {
 		this.crypto = crypto;
 	}
 
+	public Lock getContactLock(ContactId contactId) {
+		return contactLocks.computeIfAbsent(contactId.getInt(),
+				k -> new ReentrantLock());
+	}
+
+	public Lock getDirectionLock(ContactId contactId, int direction) {
+		return getContactLock(contactId);
+	}
+
 	@Nullable
 	public PcsSessionState loadSendState(ContactId contactId) {
 		return loadState(contactId, PCS_DIRECTION_SEND);
+	}
+
+	@Nullable
+	public Mode3FullState loadSharedMode3FullState(ContactId contactId) {
+		try {
+			return db.transactionWithNullableResult(true, txn -> {
+				Object[] row = db.getPcsMode2SessionState(txn, contactId,
+						PCS_DIRECTION_SEND);
+				if (row == null) return null;
+				byte[] blob = (byte[]) row[8];
+				if (blob == null) return null;
+				return Mode3FullStateCodec.decode(blob);
+			});
+		} catch (DbException e) {
+			return null;
+		}
 	}
 
 	@Nullable
@@ -127,6 +161,7 @@ public class PcsStateManager {
 					db.removePcsState(txn, contactId));
 		} catch (DbException e) {
 		}
+		contactLocks.remove(contactId.getInt());
 	}
 
 	@Nullable
@@ -179,6 +214,7 @@ public class PcsStateManager {
 		byte[] dhPublicKeyBytes = (byte[]) result[5];
 		byte[] dhRemotePublicKeyBytes = (byte[]) result[6];
 		boolean mode2Enabled = (Boolean) result[7];
+		byte[] mode3FullStateBlob = (byte[]) result[8];
 
 		SecretKey chainKey = new SecretKey(chainKeyBytes);
 
@@ -204,8 +240,13 @@ public class PcsStateManager {
 			}
 		}
 
+		Mode3FullState mode3FullState = null;
+		if (mode3FullStateBlob != null) {
+			mode3FullState = Mode3FullStateCodec.decode(mode3FullStateBlob);
+		}
+
 		return new PcsSessionState(chainKey, messageNumber, previousChainLength,
-				rootKey, dhState);
+				rootKey, dhState, mode3FullState != null, 0, mode3FullState);
 	}
 
 	private void saveState(ContactId contactId, int direction,
@@ -235,15 +276,110 @@ public class PcsStateManager {
 			dhRemotePublicKey = dhState.getDhRemotePublicKey();
 		}
 
+		Mode3FullState mode3FullState = state.getMode3FullState();
+		Mode3FullState merged = mode3FullState;
+		if (mode3FullState != null) {
+			Object[] currentRow = db.getPcsMode2SessionState(txn, contactId,
+					direction);
+			Mode3FullState currentBlob = null;
+			if (currentRow != null) {
+				byte[] curBytes = (byte[]) currentRow[8];
+				if (curBytes != null) {
+					currentBlob = Mode3FullStateCodec.decode(curBytes);
+				}
+			}
+			if (currentBlob != null) {
+				if (direction == PCS_DIRECTION_SEND) {
+					merged = new Mode3FullState(
+							currentBlob.getTheirActivePqPk(),
+							mode3FullState.getOurActiveKeyPair(),
+							mode3FullState.getRecentKeyPairs(),
+							mode3FullState.getMessageCounter());
+				} else {
+					merged = new Mode3FullState(
+							mode3FullState.getTheirActivePqPk(),
+							currentBlob.getOurActiveKeyPair(),
+							currentBlob.getRecentKeyPairs(),
+							mode3FullState.getMessageCounter());
+				}
+			}
+		}
+		byte[] mode3FullStateBlob = merged != null
+				? Mode3FullStateCodec.encode(merged)
+				: null;
+
 		db.setPcsMode2SessionState(txn, contactId, direction,
 				state.getChainKey(), state.getMessageNumber(),
 				state.getPreviousChainLength(), state.getRootKey(),
-				dhPrivateKey, dhPublicKey, dhRemotePublicKey, state.isMode2());
+				dhPrivateKey, dhPublicKey, dhRemotePublicKey, state.isMode2(),
+				mode3FullStateBlob);
+
+		if (merged != null) {
+			propagateSharedMode3FullFields(txn, contactId, direction, merged);
+		}
+	}
+
+	private void propagateSharedMode3FullFields(Transaction txn,
+			ContactId contactId, int direction, Mode3FullState source)
+			throws DbException {
+		int otherDirection = direction == PCS_DIRECTION_SEND
+				? PCS_DIRECTION_RECEIVE : PCS_DIRECTION_SEND;
+		Object[] otherRow = db.getPcsMode2SessionState(txn, contactId,
+				otherDirection);
+		if (otherRow == null) return;
+		byte[] otherBlob = (byte[]) otherRow[8];
+		if (otherBlob == null) return;
+		Mode3FullState otherState = Mode3FullStateCodec.decode(otherBlob);
+		if (otherState == null) return;
+		Mode3FullState merged;
+		if (direction == PCS_DIRECTION_SEND) {
+			merged = new Mode3FullState(
+					otherState.getTheirActivePqPk(),
+					source.getOurActiveKeyPair(),
+					source.getRecentKeyPairs(),
+					otherState.getMessageCounter());
+		} else {
+			merged = new Mode3FullState(
+					source.getTheirActivePqPk(),
+					otherState.getOurActiveKeyPair(),
+					otherState.getRecentKeyPairs(),
+					otherState.getMessageCounter());
+		}
+		byte[] mergedBlob = Mode3FullStateCodec.encode(merged);
+		byte[] chainKeyBytes = (byte[]) otherRow[0];
+		int otherMsgNum = (Integer) otherRow[1];
+		int otherPrev = (Integer) otherRow[2];
+		byte[] rootKeyBytes = (byte[]) otherRow[3];
+		byte[] otherDhPriv = (byte[]) otherRow[4];
+		byte[] otherDhPub = (byte[]) otherRow[5];
+		byte[] otherDhRemote = (byte[]) otherRow[6];
+		boolean otherMode2 = (Boolean) otherRow[7];
+		SecretKey otherChainKey = new SecretKey(chainKeyBytes);
+		SecretKey otherRootKey = rootKeyBytes != null
+				? new SecretKey(rootKeyBytes) : null;
+		PrivateKey otherDhPrivKey = null;
+		PublicKey otherDhPubKey = null;
+		PublicKey otherDhRemoteKey = null;
+		if (otherDhPriv != null && otherDhPub != null) {
+			try {
+				KeyParser kp = crypto.getAgreementKeyParser();
+				otherDhPrivKey = kp.parsePrivateKey(otherDhPriv);
+				otherDhPubKey = kp.parsePublicKey(otherDhPub);
+				if (otherDhRemote != null) {
+					otherDhRemoteKey = kp.parsePublicKey(otherDhRemote);
+				}
+			} catch (GeneralSecurityException e) {
+				return;
+			}
+		}
+		db.setPcsMode2SessionState(txn, contactId, otherDirection,
+				otherChainKey, otherMsgNum, otherPrev, otherRootKey,
+				otherDhPrivKey, otherDhPubKey, otherDhRemoteKey,
+				otherMode2, mergedBlob);
 	}
 
 	@Nullable
 	public PqRatchetState loadPqState(ContactId contactId) {
-		if (!MODE3_ENABLED) return null;
 		try {
 			return db.transactionWithNullableResult(true, txn ->
 					loadPqState(txn, contactId));
@@ -255,14 +391,12 @@ public class PcsStateManager {
 	@Nullable
 	public PqRatchetState loadPqState(Transaction txn, ContactId contactId)
 			throws DbException {
-		if (!MODE3_ENABLED) return null;
 		Object[] result = db.getPqRatchetState(txn, contactId);
 		if (result == null) return null;
 		return parsePqState(result);
 	}
 
 	public void savePqState(ContactId contactId, PqRatchetState state) {
-		if (!MODE3_ENABLED) return;
 		try {
 			db.transaction(false, txn -> savePqState(txn, contactId, state));
 		} catch (DbException e) {
@@ -271,8 +405,6 @@ public class PcsStateManager {
 
 	public void savePqState(Transaction txn, ContactId contactId,
 			PqRatchetState state) throws DbException {
-		if (!MODE3_ENABLED) return;
-
 		MlKemKeyPair ourKeyPair = state.getOurKeyPair();
 		byte[] ourEkSeed = ourKeyPair != null ? ourKeyPair.getEkSeed() : null;
 		byte[] ourEkVector = ourKeyPair != null ? ourKeyPair.getEkVector() : null;
@@ -296,7 +428,6 @@ public class PcsStateManager {
 	}
 
 	public boolean hasPqState(ContactId contactId) {
-		if (!MODE3_ENABLED) return false;
 		try {
 			return db.transactionWithResult(true, txn ->
 					db.containsPqRatchetState(txn, contactId));
@@ -306,7 +437,6 @@ public class PcsStateManager {
 	}
 
 	public void removePqState(ContactId contactId) {
-		if (!MODE3_ENABLED) return;
 		try {
 			db.transaction(false, txn ->
 					db.removePqRatchetState(txn, contactId));

@@ -76,7 +76,19 @@ public class AndroidAccountManager extends AccountManagerImpl
 				throw new DecryptionException(INVALID_CIPHERTEXT);
 			}
 			String previousActive = profileManager.getActiveProfileId();
-			for (String id : profiles) {
+			String hint = profileManager.readLastActiveProfileId();
+			List<String> order = new java.util.ArrayList<>(profiles.size());
+			if (hint != null && profiles.contains(hint)) {
+				order.add(hint);
+				for (String id : profiles) {
+					if (!id.equals(hint)) order.add(id);
+				}
+			} else {
+				order.addAll(profiles);
+			}
+			int decryptCount = 0;
+			String decryptedId = null;
+			for (String id : order) {
 				profileManager.setActiveProfileId(id);
 				String hex = loadEncryptedDatabaseKey();
 				if (hex == null) continue;
@@ -87,6 +99,12 @@ public class AndroidAccountManager extends AccountManagerImpl
 					byte[] plaintext = crypto.decryptWithPassword(ciphertext,
 							password, strengthener);
 					SecretKey key = new SecretKey(plaintext);
+					if (decryptCount > 0) {
+						key.clear();
+						profileManager.setActiveProfileId(previousActive);
+						recordGlobalFailedAttempt();
+						throw new DecryptionException(INVALID_CIPHERTEXT);
+					}
 					boolean needsStrengthenerUpgrade = strengthener != null
 							&& !crypto.isEncryptedWithStrengthenedKey(
 									ciphertext);
@@ -97,12 +115,18 @@ public class AndroidAccountManager extends AccountManagerImpl
 					}
 					materializePendingIdentityIfPresent(id);
 					setDatabaseKey(key);
-					resetGlobalLockout();
-					return;
+					decryptedId = id;
+					decryptCount++;
 				} catch (DecryptionException ignored) {
 				} catch (org.briarproject.bramble.api.FormatException
 						ignored) {
 				}
+			}
+			if (decryptCount == 1 && decryptedId != null) {
+				profileManager.setActiveProfileId(decryptedId);
+				profileManager.writeLastActiveProfileId(decryptedId);
+				resetGlobalLockout();
+				return;
 			}
 			profileManager.setActiveProfileId(previousActive);
 			recordGlobalFailedAttempt();
@@ -113,11 +137,21 @@ public class AndroidAccountManager extends AccountManagerImpl
 	@GuardedBy("stateChangeLock")
 	private void materializePendingIdentityIfPresent(String profileId) {
 		String name = readPendingIdentityName(profileId);
-		if (name == null) return;
+		if (name == null) name = profileManager.readDisplayName(profileId);
+		if (name == null) {
+			name = "Profile-" + (profileId.length() >= 8
+					? profileId.substring(0, 8) : profileId);
+		}
 		org.briarproject.bramble.api.identity.Identity identity =
 				identityManager.createIdentity(name);
 		identityManager.registerIdentity(identity);
-		clearPendingIdentityName(profileId);
+	}
+
+	public void confirmAccountStarted() {
+		synchronized (stateChangeLock) {
+			String id = profileManager.getActiveProfileId();
+			profileManager.deleteMetaFile(id, "pending_identity_name");
+		}
 	}
 
 	@GuardedBy("stateChangeLock")
@@ -235,8 +269,12 @@ public class AndroidAccountManager extends AccountManagerImpl
 					profileManager.secureWipeProfile(newId);
 					return null;
 				}
-				writePendingIdentityName(newId, displayName);
-				profileManager.writeDisplayName(newId, displayName);
+				if (!writePendingIdentityName(newId, displayName)
+						|| !profileManager.writeDisplayName(newId,
+								displayName)) {
+					profileManager.secureWipeProfile(newId);
+					return null;
+				}
 				freshKey.clear();
 				return newId;
 			} catch (Exception e) {
@@ -248,37 +286,24 @@ public class AndroidAccountManager extends AccountManagerImpl
 		}
 	}
 
-	private void writePendingIdentityName(String profileId, String name) {
-		File marker = new File(profileManager.getKeyDir(profileId),
-				"pending_identity_name");
-		try (java.io.FileOutputStream out =
-				new java.io.FileOutputStream(marker)) {
-			out.write(name.getBytes(UTF_8));
-			out.flush();
-		} catch (IOException ignored) {
+	private boolean writePendingIdentityName(String profileId, String name) {
+		try {
+			profileManager.writeEncryptedMetaFile(profileId,
+					"pending_identity_name", name);
+			return true;
+		} catch (IOException e) {
+			return false;
 		}
 	}
 
 	@Nullable
 	public String readPendingIdentityName(String profileId) {
-		File marker = new File(profileManager.getKeyDir(profileId),
+		return profileManager.readEncryptedMetaFile(profileId,
 				"pending_identity_name");
-		if (!marker.exists()) return null;
-		try (BufferedReader reader = new BufferedReader(
-				new InputStreamReader(new FileInputStream(marker), UTF_8))) {
-			return reader.readLine();
-		} catch (IOException e) {
-			return null;
-		}
 	}
 
 	public void clearPendingIdentityName(String profileId) {
-		File marker = new File(profileManager.getKeyDir(profileId),
-				"pending_identity_name");
-		if (marker.exists()) {
-
-			marker.delete();
-		}
+		profileManager.deleteMetaFile(profileId, "pending_identity_name");
 	}
 
 	public void deleteActiveProfile() {
@@ -338,8 +363,15 @@ public class AndroidAccountManager extends AccountManagerImpl
 			if (ks.containsAlias("zerion_sticker_aes_v1")) {
 				ks.deleteEntry("zerion_sticker_aes_v1");
 			}
+			if (ks.containsAlias("db")) {
+				ks.deleteEntry("db");
+			}
+			if (ks.containsAlias("_androidx_security_master_key_")) {
+				ks.deleteEntry("_androidx_security_master_key_");
+			}
 		} catch (Exception ignored) {
 		}
+		profileManager.deleteProfileMetadataKey();
 	}
 
 	private File getDataDir() {

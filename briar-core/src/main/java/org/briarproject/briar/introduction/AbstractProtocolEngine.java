@@ -123,26 +123,29 @@ abstract class AbstractProtocolEngine<S extends Session<?>>
 			PublicKey ephemeralPublicKey, long acceptTimestamp,
 			Map<TransportId, TransportProperties> transportProperties,
 			boolean visible, @Nullable byte[] mlDsaPubKey) throws DbException {
+		return sendAcceptMessage(txn, s, timestamp, ephemeralPublicKey,
+				acceptTimestamp, transportProperties, visible, mlDsaPubKey,
+				null);
+	}
+
+	Message sendAcceptMessage(Transaction txn, PeerSession s, long timestamp,
+			PublicKey ephemeralPublicKey, long acceptTimestamp,
+			Map<TransportId, TransportProperties> transportProperties,
+			boolean visible, @Nullable byte[] mlDsaPubKey,
+			@Nullable byte[] mlKemEphemeralPublicKey) throws DbException {
 		Message m;
 		ContactId c = clientHelper.getContactId(txn, s.getContactGroupId());
+		long timer = NO_AUTO_DELETE_TIMER;
 		if (contactSupportsAutoDeletion(txn, c)) {
-			long timer = autoDeleteManager.getAutoDeleteTimer(txn, c,
-					timestamp);
-			m = messageEncoder.encodeAcceptMessage(s.getContactGroupId(),
-					timestamp, s.getLastLocalMessageId(), s.getSessionId(),
-					ephemeralPublicKey, acceptTimestamp, transportProperties,
-					timer, mlDsaPubKey);
-			sendMessage(txn, ACCEPT, s.getSessionId(), m, visible, timer);
-			if (timer != NO_AUTO_DELETE_TIMER) {
-				db.setCleanupTimerDuration(txn, m.getId(), timer);
-			}
-		} else {
-			m = messageEncoder.encodeAcceptMessage(s.getContactGroupId(),
-					timestamp, s.getLastLocalMessageId(), s.getSessionId(),
-					ephemeralPublicKey, acceptTimestamp, transportProperties,
-					mlDsaPubKey);
-			sendMessage(txn, ACCEPT, s.getSessionId(), m, visible,
-					NO_AUTO_DELETE_TIMER);
+			timer = autoDeleteManager.getAutoDeleteTimer(txn, c, timestamp);
+		}
+		m = messageEncoder.encodeAcceptMessage(s.getContactGroupId(),
+				timestamp, s.getLastLocalMessageId(), s.getSessionId(),
+				ephemeralPublicKey, acceptTimestamp, transportProperties,
+				timer, mlDsaPubKey, mlKemEphemeralPublicKey);
+		sendMessage(txn, ACCEPT, s.getSessionId(), m, visible, timer);
+		if (timer != NO_AUTO_DELETE_TIMER) {
+			db.setCleanupTimerDuration(txn, m.getId(), timer);
 		}
 		return m;
 	}
@@ -186,10 +189,16 @@ abstract class AbstractProtocolEngine<S extends Session<?>>
 
 	Message sendAuthMessage(Transaction txn, PeerSession s, long timestamp,
 			byte[] mac, byte[] signature) throws DbException {
+		return sendAuthMessage(txn, s, timestamp, mac, signature, null);
+	}
+
+	Message sendAuthMessage(Transaction txn, PeerSession s, long timestamp,
+			byte[] mac, byte[] signature,
+			@Nullable byte[] kemCiphertext) throws DbException {
 		Message m = messageEncoder
 				.encodeAuthMessage(s.getContactGroupId(), timestamp,
 						s.getLastLocalMessageId(), s.getSessionId(), mac,
-						signature);
+						signature, kemCiphertext);
 		sendMessage(txn, AUTH, s.getSessionId(), m, false,
 				NO_AUTO_DELETE_TIMER);
 		return m;

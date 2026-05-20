@@ -6,6 +6,7 @@ import org.briarproject.bramble.api.crypto.SecretKey;
 import org.briarproject.bramble.api.crypto.StreamEncrypter;
 import org.briarproject.bramble.api.crypto.StreamEncrypterFactory;
 import org.briarproject.bramble.api.crypto.TransportCrypto;
+import org.briarproject.bramble.api.crypto.pcs.Mode3FullRatchet;
 import org.briarproject.bramble.api.crypto.pcs.PcsRatchet;
 import org.briarproject.bramble.api.crypto.pcs.PcsSessionState;
 import org.briarproject.bramble.api.crypto.pcs.PqRatchet;
@@ -35,6 +36,7 @@ class StreamEncrypterFactoryImpl implements StreamEncrypterFactory {
 	private final PcsRatchet pcsRatchet;
 	private final PqRatchet pqRatchet;
 	private final PcsStateManager pcsStateManager;
+	private final Mode3FullRatchet mode3FullRatchet;
 
 	@Inject
 	StreamEncrypterFactoryImpl(CryptoComponent crypto,
@@ -42,13 +44,15 @@ class StreamEncrypterFactoryImpl implements StreamEncrypterFactory {
 			Provider<AuthenticatedCipher> cipherProvider,
 			PcsRatchet pcsRatchet,
 			PqRatchet pqRatchet,
-			PcsStateManager pcsStateManager) {
+			PcsStateManager pcsStateManager,
+			Mode3FullRatchet mode3FullRatchet) {
 		this.crypto = crypto;
 		this.transportCrypto = transportCrypto;
 		this.cipherProvider = cipherProvider;
 		this.pcsRatchet = pcsRatchet;
 		this.pqRatchet = pqRatchet;
 		this.pcsStateManager = pcsStateManager;
+		this.mode3FullRatchet = mode3FullRatchet;
 	}
 
 	@Override
@@ -74,6 +78,7 @@ class StreamEncrypterFactoryImpl implements StreamEncrypterFactory {
 		}
 
 		PqRatchetState pqState = ctx.getPqRatchetState();
+		boolean isMode3Full = pcsState.isMode3Full();
 		boolean isMode3 = pcsState.isMode3() && pqState != null;
 
 		ContactId contactId = ctx.getContactId();
@@ -88,12 +93,25 @@ class StreamEncrypterFactoryImpl implements StreamEncrypterFactory {
 				: pqSecret -> pcsStateManager
 						.mixPqSecretIntoReceiveRoot(contactId, pqSecret,
 								pqRatchet);
+		java.util.function.Supplier<
+				org.briarproject.bramble.api.crypto.pcs.Mode3FullState>
+				mode3FullRefresher = contactId == null ? null
+				: () -> pcsStateManager.loadSharedMode3FullState(contactId);
+		java.util.function.Supplier<PcsSessionState>
+				sessionStateRefresher = contactId == null ? null
+				: () -> pcsStateManager.loadSendState(contactId);
+		java.util.concurrent.locks.Lock directionLock = contactId == null
+				? null
+				: pcsStateManager.getDirectionLock(contactId,
+						org.briarproject.bramble.api.db.DatabaseComponent
+								.PCS_DIRECTION_SEND);
 
-		if (isMode3) {
+		if (isMode3Full || isMode3) {
 			return new PcsStreamEncrypterImpl(out, cipher, pcsRatchet,
 					streamNumber, tag, streamHeaderNonce, ctx.getHeaderKey(),
 					pcsState, sendStateCallback, pqRatchet, pqState,
-					pqCallback, pqCrossMix);
+					pqCallback, pqCrossMix, mode3FullRatchet,
+					mode3FullRefresher, sessionStateRefresher, directionLock);
 		}
 
 		return new PcsStreamEncrypterImpl(out, cipher, pcsRatchet,

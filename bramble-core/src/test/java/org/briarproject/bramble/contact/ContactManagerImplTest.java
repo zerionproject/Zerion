@@ -89,7 +89,7 @@ public class ContactManagerImplTest extends BrambleMockTestCase {
 		alice = new Random().nextBoolean();
 
 		contactManager = new ContactManagerImpl(db, keyManager, identityManager,
-				pendingContactFactory, crypto, pcsStateManager);
+				pendingContactFactory, crypto, pcsStateManager, null);
 	}
 
 	@Test
@@ -98,7 +98,7 @@ public class ContactManagerImplTest extends BrambleMockTestCase {
 
 		context.checking(new DbExpectations() {{
 			oneOf(db).transactionWithResult(with(false), withDbCallable(txn));
-			oneOf(db).addContact(txn, remote, local, null, verified, false, false, false);
+			oneOf(db).addContact(txn, remote, local, null, verified, false, false, (byte[]) null);
 			will(returnValue(contactId));
 			oneOf(keyManager).addRotationKeys(txn, contactId, rootKey,
 					timestamp, alice, active);

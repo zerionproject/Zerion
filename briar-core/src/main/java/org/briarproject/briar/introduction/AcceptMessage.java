@@ -23,13 +23,16 @@ class AcceptMessage extends AbstractIntroductionMessage {
 	private final Map<TransportId, TransportProperties> transportProperties;
 	@Nullable
 	private final byte[] mlDsaPubKey;
+	@Nullable
+	private final byte[] mlKemEphemeralPublicKey;
 
 	protected AcceptMessage(MessageId messageId, GroupId groupId,
 			long timestamp, @Nullable MessageId previousMessageId,
 			SessionId sessionId, PublicKey ephemeralPublicKey,
 			long acceptTimestamp,
 			Map<TransportId, TransportProperties> transportProperties,
-			long autoDeleteTimer, @Nullable byte[] mlDsaPubKey) {
+			long autoDeleteTimer, @Nullable byte[] mlDsaPubKey,
+			@Nullable byte[] mlKemEphemeralPublicKey) {
 		super(messageId, groupId, timestamp, previousMessageId,
 				autoDeleteTimer);
 		this.sessionId = sessionId;
@@ -37,6 +40,18 @@ class AcceptMessage extends AbstractIntroductionMessage {
 		this.acceptTimestamp = acceptTimestamp;
 		this.transportProperties = transportProperties;
 		this.mlDsaPubKey = mlDsaPubKey;
+		this.mlKemEphemeralPublicKey = mlKemEphemeralPublicKey;
+	}
+
+	protected AcceptMessage(MessageId messageId, GroupId groupId,
+			long timestamp, @Nullable MessageId previousMessageId,
+			SessionId sessionId, PublicKey ephemeralPublicKey,
+			long acceptTimestamp,
+			Map<TransportId, TransportProperties> transportProperties,
+			long autoDeleteTimer, @Nullable byte[] mlDsaPubKey) {
+		this(messageId, groupId, timestamp, previousMessageId, sessionId,
+				ephemeralPublicKey, acceptTimestamp, transportProperties,
+				autoDeleteTimer, mlDsaPubKey, null);
 	}
 
 	protected AcceptMessage(MessageId messageId, GroupId groupId,
@@ -47,7 +62,7 @@ class AcceptMessage extends AbstractIntroductionMessage {
 			long autoDeleteTimer) {
 		this(messageId, groupId, timestamp, previousMessageId, sessionId,
 				ephemeralPublicKey, acceptTimestamp, transportProperties,
-				autoDeleteTimer, null);
+				autoDeleteTimer, null, null);
 	}
 
 	public SessionId getSessionId() {
@@ -69,6 +84,11 @@ class AcceptMessage extends AbstractIntroductionMessage {
 	@Nullable
 	public byte[] getMlDsaPubKey() {
 		return mlDsaPubKey;
+	}
+
+	@Nullable
+	public byte[] getMlKemEphemeralPublicKey() {
+		return mlKemEphemeralPublicKey;
 	}
 
 }

@@ -61,11 +61,7 @@ public interface DatabaseComponent extends TransactionManager {
 
 	ContactId addContact(Transaction txn, Author remote, AuthorId local,
 			@Nullable PublicKey handshake, boolean verified, boolean postQuantum,
-			boolean pcsEnabled, boolean mode3Capable) throws DbException;
-
-	ContactId addContact(Transaction txn, Author remote, AuthorId local,
-			@Nullable PublicKey handshake, boolean verified, boolean postQuantum,
-			boolean pcsEnabled, boolean mode3Capable,
+			boolean pcsEnabled,
 			@Nullable byte[] mlDsaSigPublicKey) throws DbException;
 
 	void addGroup(Transaction txn, Group g) throws DbException;
@@ -382,7 +378,8 @@ public interface DatabaseComponent extends TransactionManager {
 			SecretKey chainKey, int messageNumber, int previousChainLength,
 			@Nullable SecretKey rootKey, @Nullable PrivateKey dhPrivateKey,
 			@Nullable PublicKey dhPublicKey, @Nullable PublicKey dhRemotePublicKey,
-			boolean mode2Enabled) throws DbException;
+			boolean mode2Enabled,
+			@Nullable byte[] mode3FullStateBlob) throws DbException;
 
 	@Nullable
 	Object[] getPcsMode2SessionState(Transaction txn, ContactId c, int direction)
