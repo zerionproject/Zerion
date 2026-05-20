@@ -10,7 +10,6 @@ import org.briarproject.bramble.api.crypto.pcs.Mode3FullRatchet.PqRecvResult;
 import org.briarproject.bramble.api.crypto.pcs.Mode3FullState;
 import org.briarproject.bramble.api.crypto.pcs.PcsException;
 import org.briarproject.bramble.api.crypto.pcs.PcsRatchet;
-import org.briarproject.bramble.api.crypto.pcs.PcsRatchet.AdvanceResult;
 import org.briarproject.bramble.api.crypto.pcs.PcsRatchet.DhRatchetResult;
 import org.briarproject.bramble.api.crypto.pcs.PcsSessionState;
 import org.briarproject.bramble.api.crypto.pcs.PqChunk;
@@ -29,7 +28,6 @@ import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
 import java.util.function.Consumer;
-import java.util.logging.Logger;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.NotThreadSafe;
@@ -57,9 +55,6 @@ import static org.briarproject.bramble.util.ByteUtils.INT_64_BYTES;
 @NotNullByDefault
 class PcsStreamDecrypterImpl implements StreamDecrypter {
 
-	private static final Logger LOG =
-			Logger.getLogger(PcsStreamDecrypterImpl.class.getName());
-
 	private final InputStream in;
 	private final AuthenticatedCipher cipher;
 	private final PcsRatchet ratchet;
@@ -68,7 +63,6 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 	private final long streamNumber;
 	private final SecretKey streamHeaderKey;
 	private final byte[] frameNonce, frameHeader, frameCiphertext;
-	private final byte[] pcsHeaderBuffer;
 	@Nullable
 	private final Consumer<PcsSessionState> stateCallback;
 	@Nullable
@@ -82,9 +76,13 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 	@Nullable
 	private final Mode3FullRatchet mode3FullRatchet;
 	@Nullable
-	private final java.util.function.Supplier<
-			org.briarproject.bramble.api.crypto.pcs.Mode3FullState>
+	private final java.util.function.Supplier<Mode3FullState>
 			mode3FullStateRefresher;
+	@Nullable
+	private final java.util.function.Supplier<PcsSessionState>
+			sessionStateRefresher;
+	@Nullable
+	private final java.util.concurrent.locks.Lock directionLock;
 	private final PcsHeaderCodec headerCodec;
 
 	@Nullable
@@ -92,6 +90,9 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 	@Nullable
 	private PqRatchetState pqState;
 	private long frameNumber;
+	@Nullable
+	private SecretKey streamChainKey;
+	private int streamMessageNumber;
 	private boolean finalFrame;
 	private boolean pcsEnabled;
 	private boolean mode2Enabled;
@@ -108,7 +109,7 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 			@Nullable Consumer<PcsSessionState> stateCallback) {
 		this(in, cipher, ratchet, skippedKeyStore, chainId, streamNumber,
 				streamHeaderKey, initialState, stateCallback, null,
-				null, null, null, null, null, null);
+				null, null, null, null, null, null, null, null);
 	}
 
 	PcsStreamDecrypterImpl(InputStream in, AuthenticatedCipher cipher,
@@ -119,7 +120,7 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 			@Nullable KeyParser keyParser) {
 		this(in, cipher, ratchet, skippedKeyStore, chainId, streamNumber,
 				streamHeaderKey, initialState, stateCallback, keyParser,
-				null, null, null, null, null, null);
+				null, null, null, null, null, null, null, null);
 	}
 
 	PcsStreamDecrypterImpl(InputStream in, AuthenticatedCipher cipher,
@@ -133,7 +134,8 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 			@Nullable Consumer<PqRatchetState> pqStateCallback) {
 		this(in, cipher, ratchet, skippedKeyStore, chainId, streamNumber,
 				streamHeaderKey, initialState, stateCallback, keyParser,
-				pqRatchet, initialPqState, pqStateCallback, null, null, null);
+				pqRatchet, initialPqState, pqStateCallback, null, null, null,
+				null, null);
 	}
 
 	PcsStreamDecrypterImpl(InputStream in, AuthenticatedCipher cipher,
@@ -149,24 +151,7 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 		this(in, cipher, ratchet, skippedKeyStore, chainId, streamNumber,
 				streamHeaderKey, initialState, stateCallback, keyParser,
 				pqRatchet, initialPqState, pqStateCallback, pqCrossMixCallback,
-				null, null);
-	}
-
-	PcsStreamDecrypterImpl(InputStream in, AuthenticatedCipher cipher,
-			PcsRatchet ratchet, SkippedKeyStore skippedKeyStore,
-			byte[] chainId, long streamNumber, SecretKey streamHeaderKey,
-			@Nullable PcsSessionState initialState,
-			@Nullable Consumer<PcsSessionState> stateCallback,
-			@Nullable KeyParser keyParser,
-			@Nullable PqRatchet pqRatchet,
-			@Nullable PqRatchetState initialPqState,
-			@Nullable Consumer<PqRatchetState> pqStateCallback,
-			@Nullable Consumer<SecretKey> pqCrossMixCallback,
-			@Nullable Mode3FullRatchet mode3FullRatchet) {
-		this(in, cipher, ratchet, skippedKeyStore, chainId, streamNumber,
-				streamHeaderKey, initialState, stateCallback, keyParser,
-				pqRatchet, initialPqState, pqStateCallback, pqCrossMixCallback,
-				mode3FullRatchet, null);
+				null, null, null, null);
 	}
 
 	PcsStreamDecrypterImpl(InputStream in, AuthenticatedCipher cipher,
@@ -180,9 +165,30 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 			@Nullable Consumer<PqRatchetState> pqStateCallback,
 			@Nullable Consumer<SecretKey> pqCrossMixCallback,
 			@Nullable Mode3FullRatchet mode3FullRatchet,
-			@Nullable java.util.function.Supplier<
-					org.briarproject.bramble.api.crypto.pcs.Mode3FullState>
+			@Nullable java.util.function.Supplier<Mode3FullState>
 					mode3FullStateRefresher) {
+		this(in, cipher, ratchet, skippedKeyStore, chainId, streamNumber,
+				streamHeaderKey, initialState, stateCallback, keyParser,
+				pqRatchet, initialPqState, pqStateCallback, pqCrossMixCallback,
+				mode3FullRatchet, mode3FullStateRefresher, null, null);
+	}
+
+	PcsStreamDecrypterImpl(InputStream in, AuthenticatedCipher cipher,
+			PcsRatchet ratchet, SkippedKeyStore skippedKeyStore,
+			byte[] chainId, long streamNumber, SecretKey streamHeaderKey,
+			@Nullable PcsSessionState initialState,
+			@Nullable Consumer<PcsSessionState> stateCallback,
+			@Nullable KeyParser keyParser,
+			@Nullable PqRatchet pqRatchet,
+			@Nullable PqRatchetState initialPqState,
+			@Nullable Consumer<PqRatchetState> pqStateCallback,
+			@Nullable Consumer<SecretKey> pqCrossMixCallback,
+			@Nullable Mode3FullRatchet mode3FullRatchet,
+			@Nullable java.util.function.Supplier<Mode3FullState>
+					mode3FullStateRefresher,
+			@Nullable java.util.function.Supplier<PcsSessionState>
+					sessionStateRefresher,
+			@Nullable java.util.concurrent.locks.Lock directionLock) {
 		this.in = in;
 		this.cipher = cipher;
 		this.ratchet = ratchet;
@@ -199,6 +205,8 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 		this.pqCrossMixCallback = pqCrossMixCallback;
 		this.mode3FullRatchet = mode3FullRatchet;
 		this.mode3FullStateRefresher = mode3FullStateRefresher;
+		this.sessionStateRefresher = sessionStateRefresher;
+		this.directionLock = directionLock;
 		this.headerCodec = new PcsHeaderCodec();
 		int mode3FullHeaderSize = PCS_MODE3_HEADER_MIN_SIZE +
 				MODE3_FULL_FRAME_OVERHEAD;
@@ -206,7 +214,6 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 		frameNonce = new byte[FRAME_NONCE_LENGTH];
 		frameHeader = new byte[FRAME_HEADER_PLAINTEXT_LENGTH];
 		frameCiphertext = new byte[MAX_FRAME_LENGTH + maxHeader + MAC_LENGTH];
-		pcsHeaderBuffer = new byte[maxHeader];
 		frameNumber = 0;
 		finalFrame = false;
 		pcsEnabled = false;
@@ -215,17 +222,33 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 		mode3FullEnabled = false;
 		streamHeaderRead = false;
 		lastReceivedDhKey = null;
+		if (initialState != null) {
+			SecretKey rootKey = initialState.getRootKey();
+			if (rootKey == null) rootKey = initialState.getChainKey();
+			this.streamChainKey = ratchet.deriveStreamInitialChainKey(rootKey,
+					streamNumber);
+		} else {
+			this.streamChainKey = null;
+		}
+		this.streamMessageNumber = 0;
 	}
 
 	@Override
 	public int readFrame(byte[] payload) throws IOException {
-		LOG.warning("[ZER-PQ-DEBUG] readFrame entry: streamHeaderRead=" +
-				streamHeaderRead + " recvStateNull=" + (recvState == null) +
-				" frameNumber=" + frameNumber);
 		if (payload.length < MAX_PAYLOAD_LENGTH)
 			throw new IllegalArgumentException();
 		if (finalFrame) return -1;
 		if (frameNumber < 0) throw new IOException();
+		return readFrameLocked(payload);
+	}
+
+	private int readFrameLocked(byte[] payload) throws IOException {
+		if (sessionStateRefresher != null) {
+			PcsSessionState fresh = sessionStateRefresher.get();
+			if (fresh != null) {
+				recvState = fresh;
+			}
+		}
 		if (!streamHeaderRead) {
 			if (recvState == null) {
 				readStreamHeader();
@@ -245,35 +268,33 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 			offset += read;
 		}
 
-		int expectedMsgNum = recvState.getMessageNumber();
 		boolean useMode3Full = MODE3_FULL_ENABLED && mode3FullEnabled
 				&& recvState.isMode3Full() && mode3FullRatchet != null;
+		SecretKey classicalMK;
+		SecretKey nextStreamChainKey;
 		try {
-			AdvanceResult advanceResult = ratchet.advanceReceiveChain(
-					recvState, expectedMsgNum, skippedKeyStore);
-			SecretKey classicalMK = advanceResult.getMessageKey();
-			if (useMode3Full) {
-				Mode3FullState m3fState = recvState.getMode3FullState();
-				if (m3fState == null) throw new FormatException();
-				messageKey = mode3FullRatchet.deriveHybridMessageKey(
-						classicalMK, m3fState.getCkPq());
-			} else {
-				messageKey = classicalMK;
+			if (streamChainKey == null) {
+				SecretKey rootKey = recvState.getRootKey();
+				if (rootKey == null) rootKey = recvState.getChainKey();
+				streamChainKey = ratchet.deriveStreamInitialChainKey(rootKey,
+						streamNumber);
 			}
-			messageNumber = expectedMsgNum;
+			PcsRatchet.KdfCkResult streamKdf = ratchet.kdfCk(streamChainKey);
+			classicalMK = streamKdf.getMessageKey();
+			nextStreamChainKey = streamKdf.getNewChainKey();
+			messageNumber = streamMessageNumber;
 
-			FrameEncoder.encodeNonce(frameNonce, frameNumber, true);
-			cipher.init(false, messageKey, frameNonce);
+			if (useMode3Full) {
+				FrameEncoder.encodeNonceM3F(frameNonce, frameNumber, 0);
+			} else {
+				FrameEncoder.encodeNonce(frameNonce, frameNumber, true);
+			}
+			cipher.init(false, classicalMK, frameNonce);
 			int decrypted = cipher.process(frameCiphertext, 0,
 					FRAME_HEADER_LENGTH, frameHeader, 0);
 			if (decrypted != FRAME_HEADER_PLAINTEXT_LENGTH)
 				throw new RuntimeException();
-
-			recvState = advanceResult.getNewState();
-		} catch (GeneralSecurityException | PcsException e) {
-			LOG.warning("[ZER-PQ-DEBUG] FAIL: frame-header decrypt — useMode3Full=" +
-					useMode3Full + " err=" + e.getClass().getSimpleName() +
-					" msg=" + e.getMessage());
+		} catch (GeneralSecurityException e) {
 			throw new FormatException();
 		}
 
@@ -282,38 +303,129 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 		int paddingLength = FrameEncoder.getPaddingLength(frameHeader);
 
 		if (totalPayloadLength < PCS_HEADER_MAX_SIZE) {
-			LOG.warning("[ZER-PQ-DEBUG] FAIL: totalPayloadLength " +
-					totalPayloadLength + " < PCS_HEADER_MAX_SIZE " +
-					PCS_HEADER_MAX_SIZE);
 			throw new FormatException();
 		}
-		if (totalPayloadLength + paddingLength > MAX_PAYLOAD_LENGTH + PCS_MODE3_HEADER_MAX_SIZE) {
-			LOG.warning("[ZER-PQ-DEBUG] FAIL: total " +
-					(totalPayloadLength + paddingLength) +
-					" > limit " + (MAX_PAYLOAD_LENGTH + PCS_MODE3_HEADER_MAX_SIZE));
+		int maxAllowedTotal = useMode3Full
+				? MAX_PAYLOAD_LENGTH + PCS_MODE3_HEADER_MIN_SIZE +
+						org.briarproject.bramble.api.crypto.pcs.PcsConstants
+								.MODE3_FULL_FRAME_OVERHEAD
+				: MAX_PAYLOAD_LENGTH + PCS_MODE3_HEADER_MAX_SIZE;
+		if (totalPayloadLength + paddingLength > maxAllowedTotal) {
 			throw new FormatException();
 		}
 
-		int frameLength = FRAME_HEADER_LENGTH + totalPayloadLength + paddingLength + MAC_LENGTH;
-		while (offset < frameLength) {
-			int read = in.read(frameCiphertext, offset, frameLength - offset);
-			if (read == -1) throw new EOFException();
-			offset += read;
-		}
+		byte[] decryptedPayload;
+		messageKey = classicalMK;
+		if (useMode3Full) {
+			int pcsHdrSz = headerCodec.getMode3FullHeaderSize();
+			if (totalPayloadLength < pcsHdrSz) {
+				throw new FormatException();
+			}
+			int actualPayloadLength = totalPayloadLength - pcsHdrSz;
+			int needBytes = FRAME_HEADER_LENGTH + pcsHdrSz + MAC_LENGTH
+					+ actualPayloadLength + paddingLength + MAC_LENGTH;
+			while (offset < needBytes) {
+				int read = in.read(frameCiphertext, offset,
+						needBytes - offset);
+				if (read == -1) throw new EOFException();
+				offset += read;
+			}
 
-		byte[] decryptedPayload = new byte[totalPayloadLength + paddingLength];
-		FrameEncoder.encodeNonce(frameNonce, frameNumber, false);
-		try {
-			cipher.init(false, messageKey, frameNonce);
-			int decrypted = cipher.process(frameCiphertext, FRAME_HEADER_LENGTH,
-					totalPayloadLength + paddingLength + MAC_LENGTH,
-					decryptedPayload, 0);
-			if (decrypted != totalPayloadLength + paddingLength)
-				throw new RuntimeException();
-		} catch (GeneralSecurityException e) {
-			LOG.warning("[ZER-PQ-DEBUG] FAIL: payload decrypt — " +
-					e.getClass().getSimpleName() + " useMode3Full=" + useMode3Full);
-			throw new FormatException();
+			decryptedPayload = new byte[totalPayloadLength + paddingLength];
+			FrameEncoder.encodeNonceM3F(frameNonce, frameNumber, 1);
+			try {
+				cipher.init(false, classicalMK, frameNonce);
+				int decrypted = cipher.process(frameCiphertext,
+						FRAME_HEADER_LENGTH, pcsHdrSz + MAC_LENGTH,
+						decryptedPayload, 0);
+				if (decrypted != pcsHdrSz)
+					throw new RuntimeException();
+			} catch (GeneralSecurityException e) {
+				throw new FormatException();
+			}
+
+			Mode3FullHeader m3fHeaderEarly;
+			try {
+				m3fHeaderEarly = headerCodec.decodeMode3Full(decryptedPayload);
+			} catch (PcsException e) {
+				throw new FormatException();
+			}
+			byte[] kpIdBytes = m3fHeaderEarly.getKpId();
+			org.briarproject.bramble.api.crypto.pcs.KpId kpId = null;
+			for (byte b : kpIdBytes) {
+				if (b != 0) {
+					kpId = new org.briarproject.bramble.api.crypto.pcs.KpId(
+							kpIdBytes);
+					break;
+				}
+			}
+			byte[] sharedSecret = null;
+			Mode3FullState m3fState = recvState.getMode3FullState();
+			if (m3fState != null && mode3FullStateRefresher != null) {
+				Mode3FullState fresh = mode3FullStateRefresher.get();
+				if (fresh != null) {
+					m3fState = new Mode3FullState(
+							m3fState.getTheirActivePqPk(),
+							fresh.getOurActiveKeyPair(),
+							fresh.getRecentKeyPairs(),
+							m3fState.getMessageCounter());
+					recvState = recvState.withMode3FullState(m3fState);
+				}
+			}
+			if (m3fState != null && mode3FullRatchet != null) {
+				try {
+					PqRecvResult pqResult =
+							mode3FullRatchet.pqDecapsulateRecv(m3fState, kpId,
+									m3fHeaderEarly.getKemCiphertext(),
+									m3fHeaderEarly.getPkAdvertise());
+					sharedSecret = pqResult.getSharedSecret();
+					recvState = recvState.withMode3FullState(
+							pqResult.getNewState());
+				} catch (PcsException e) {
+					throw new FormatException();
+				}
+			}
+			if (sharedSecret != null) {
+				messageKey = mode3FullRatchet.deriveHybridMessageKey(
+						classicalMK, sharedSecret);
+				java.util.Arrays.fill(sharedSecret, (byte) 0);
+			}
+
+			FrameEncoder.encodeNonceM3F(frameNonce, frameNumber, 2);
+			int bodyOffset = FRAME_HEADER_LENGTH + pcsHdrSz + MAC_LENGTH;
+			try {
+				cipher.init(false, messageKey, frameNonce);
+				int decrypted = cipher.process(frameCiphertext, bodyOffset,
+						actualPayloadLength + paddingLength + MAC_LENGTH,
+						decryptedPayload, pcsHdrSz);
+				if (decrypted != actualPayloadLength + paddingLength)
+					throw new RuntimeException();
+			} catch (GeneralSecurityException e) {
+				throw new FormatException();
+			}
+		} else {
+			int frameLength = FRAME_HEADER_LENGTH + totalPayloadLength
+					+ paddingLength + MAC_LENGTH;
+			while (offset < frameLength) {
+				int read = in.read(frameCiphertext, offset,
+						frameLength - offset);
+				if (read == -1) throw new EOFException();
+				offset += read;
+			}
+
+			decryptedPayload = new byte[totalPayloadLength + paddingLength];
+			FrameEncoder.encodeNonce(frameNonce, frameNumber, false);
+			try {
+				cipher.init(false, classicalMK, frameNonce);
+				int decrypted = cipher.process(frameCiphertext,
+						FRAME_HEADER_LENGTH,
+						totalPayloadLength + paddingLength + MAC_LENGTH,
+						decryptedPayload, 0);
+				if (decrypted != totalPayloadLength + paddingLength)
+					throw new RuntimeException();
+			} catch (GeneralSecurityException e) {
+				throw new FormatException();
+			}
 		}
 
 		PcsHeader pcsHeader = null;
@@ -323,13 +435,8 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 		boolean hasDhRatchet = false;
 		try {
 			if (useMode3Full) {
-				LOG.warning("[ZER-PQ-DEBUG] decoding Mode3Full header" +
-						" (payloadBytes=" + decryptedPayload.length + ")");
 				m3fHeader = headerCodec.decodeMode3Full(decryptedPayload);
 				if (m3fHeader.getMessageNumber() != messageNumber) {
-					LOG.warning("[ZER-PQ-DEBUG] FAIL: m3f msgNum " +
-							m3fHeader.getMessageNumber() + " != expected " +
-							messageNumber);
 					throw new FormatException();
 				}
 				pcsHeaderSize = headerCodec.getMode3FullHeaderSize();
@@ -353,14 +460,10 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 				}
 			}
 		} catch (PcsException e) {
-			LOG.warning("[ZER-PQ-DEBUG] FAIL: header decode PcsException — " +
-					e.getMessage());
 			throw new FormatException();
 		}
 
 		if (totalPayloadLength < pcsHeaderSize) {
-			LOG.warning("[ZER-PQ-DEBUG] FAIL: totalPayload " +
-					totalPayloadLength + " < pcsHeaderSize " + pcsHeaderSize);
 			throw new FormatException();
 		}
 
@@ -382,43 +485,6 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 					} catch (GeneralSecurityException | PcsException e) {
 						throw new FormatException();
 					}
-				}
-			}
-		}
-		if (useMode3Full && m3fHeader != null && recvState != null
-				&& mode3FullRatchet != null) {
-			Mode3FullState m3fState = recvState.getMode3FullState();
-			if (m3fState != null && mode3FullStateRefresher != null) {
-				Mode3FullState fresh = mode3FullStateRefresher.get();
-				if (fresh != null) {
-					m3fState = new Mode3FullState(
-							m3fState.getCkPq(),
-							m3fState.getTheirActivePqPk(),
-							fresh.getOurActiveKeyPair(),
-							fresh.getRecentKeyPairs(),
-							m3fState.getMessageCounter());
-					recvState = recvState.withMode3FullState(m3fState);
-				}
-			}
-			if (m3fState != null) {
-				try {
-					byte[] kpIdBytes = m3fHeader.getKpId();
-					org.briarproject.bramble.api.crypto.pcs.KpId kpId = null;
-					for (byte b : kpIdBytes) {
-						if (b != 0) {
-							kpId = new org.briarproject.bramble.api.crypto.pcs.KpId(kpIdBytes);
-							break;
-						}
-					}
-					PqRecvResult pqResult = mode3FullRatchet.pqDecapsulateRecv(
-							m3fState, kpId, m3fHeader.getKemCiphertext(),
-							m3fHeader.getPkAdvertise());
-					recvState = recvState.withMode3FullState(
-							pqResult.getNewState());
-				} catch (PcsException e) {
-					LOG.warning("[ZER-PQ-DEBUG] FAIL: pqDecapsulateRecv — "
-							+ e.getMessage());
-					throw new FormatException();
 				}
 			}
 		}
@@ -446,8 +512,8 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 					}
 					pqState = pqRatchet.completeEpoch(pqState,
 							System.currentTimeMillis());
-				} catch (Exception e) {
-					pqState = pqRatchet.initialize(System.currentTimeMillis());
+				} catch (PcsException e) {
+					throw new IOException("PQ epoch completion failed", e);
 				}
 			}
 			if (pqStateCallback != null) {
@@ -465,6 +531,8 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 
 		java.util.Arrays.fill(decryptedPayload, (byte) 0);
 
+		streamChainKey = nextStreamChainKey;
+		streamMessageNumber++;
 		frameNumber++;
 
 		if (stateCallback != null) {
@@ -508,8 +576,6 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 			if (decrypted != STREAM_HEADER_PLAINTEXT_LENGTH)
 				throw new RuntimeException();
 		} catch (GeneralSecurityException e) {
-			LOG.warning("[ZER-PQ-DEBUG] FAIL: stream-header decrypt — " +
-					e.getClass().getSimpleName());
 			throw new FormatException();
 		}
 		int receivedProtocolVersion = ByteUtils.readUint16(streamHeaderPlaintext, 0);
@@ -519,25 +585,14 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 		mode3FullEnabled = MODE3_FULL_ENABLED &&
 				(receivedProtocolVersion & MODE3_FULL_STREAM_FLAG) != 0;
 		int baseVersion = receivedProtocolVersion & 0x0FFF;
-		LOG.warning("[ZER-PQ-DEBUG] stream-header parsed: version=0x" +
-				Integer.toHexString(receivedProtocolVersion) +
-				" pcs=" + pcsEnabled + " m2=" + mode2Enabled +
-				" m3=" + mode3Enabled + " m3Full=" + mode3FullEnabled +
-				" base=" + baseVersion);
 		if (baseVersion != PROTOCOL_VERSION) {
-			LOG.warning("[ZER-PQ-DEBUG] FAIL: baseVersion " + baseVersion +
-					" != PROTOCOL_VERSION " + PROTOCOL_VERSION);
 			throw new FormatException();
 		}
 		if (!pcsEnabled || !mode2Enabled) {
-			LOG.warning("[ZER-PQ-DEBUG] FAIL: pcsEnabled=" + pcsEnabled +
-					" mode2Enabled=" + mode2Enabled);
 			throw new FormatException();
 		}
 		long receivedStreamNumber = ByteUtils.readUint64(streamHeaderPlaintext, INT_16_BYTES);
 		if (receivedStreamNumber != streamNumber) {
-			LOG.warning("[ZER-PQ-DEBUG] FAIL: streamNumber " +
-					receivedStreamNumber + " != expected " + streamNumber);
 			throw new FormatException();
 		}
 		byte[] chainKeyBytes = new byte[SecretKey.LENGTH];

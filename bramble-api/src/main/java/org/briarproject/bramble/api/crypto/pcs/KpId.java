@@ -20,8 +20,8 @@ public final class KpId {
 
 	public KpId(byte[] bytes) {
 		if (bytes.length != SIZE) throw new IllegalArgumentException();
-		this.bytes = bytes;
-		this.hash = Arrays.hashCode(bytes);
+		this.bytes = bytes.clone();
+		this.hash = Arrays.hashCode(this.bytes);
 	}
 
 	public static KpId of(byte[] encapsulationKey) {
@@ -37,7 +37,7 @@ public final class KpId {
 	}
 
 	public byte[] getBytes() {
-		return bytes;
+		return bytes.clone();
 	}
 
 	public ByteBuffer asByteBuffer() {

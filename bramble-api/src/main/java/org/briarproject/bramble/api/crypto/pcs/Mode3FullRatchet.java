@@ -3,10 +3,12 @@ package org.briarproject.bramble.api.crypto.pcs;
 import org.briarproject.bramble.api.crypto.SecretKey;
 import org.briarproject.nullsafety.NotNullByDefault;
 
+import javax.annotation.Nullable;
+
 @NotNullByDefault
 public interface Mode3FullRatchet {
 
-	Mode3FullState createInitialState(SecretKey rootKey);
+	Mode3FullState createInitialState();
 
 	PqSendResult pqEncapsulateSend(Mode3FullState state);
 
@@ -14,25 +16,26 @@ public interface Mode3FullRatchet {
 			byte[] ciphertext, byte[] theirNewPqPk) throws PcsException;
 
 	SecretKey deriveHybridMessageKey(SecretKey classicalMessageKey,
-			SecretKey ckPq);
+			byte[] sharedSecret);
 
 	@NotNullByDefault
 	final class PqSendResult {
 
 		private final byte[] pkAdvertise;
 		private final byte[] ciphertext;
-		@javax.annotation.Nullable
+		@Nullable
 		private final KpId kpIdUsed;
-		private final SecretKey newCkPq;
+		@Nullable
+		private final byte[] sharedSecret;
 		private final Mode3FullState newState;
 
 		public PqSendResult(byte[] pkAdvertise, byte[] ciphertext,
-				@javax.annotation.Nullable KpId kpIdUsed,
-				SecretKey newCkPq, Mode3FullState newState) {
+				@Nullable KpId kpIdUsed, @Nullable byte[] sharedSecret,
+				Mode3FullState newState) {
 			this.pkAdvertise = pkAdvertise;
 			this.ciphertext = ciphertext;
 			this.kpIdUsed = kpIdUsed;
-			this.newCkPq = newCkPq;
+			this.sharedSecret = sharedSecret;
 			this.newState = newState;
 		}
 
@@ -44,13 +47,14 @@ public interface Mode3FullRatchet {
 			return ciphertext;
 		}
 
-		@javax.annotation.Nullable
+		@Nullable
 		public KpId getKpIdUsed() {
 			return kpIdUsed;
 		}
 
-		public SecretKey getNewCkPq() {
-			return newCkPq;
+		@Nullable
+		public byte[] getSharedSecret() {
+			return sharedSecret;
 		}
 
 		public Mode3FullState getNewState() {
@@ -61,16 +65,19 @@ public interface Mode3FullRatchet {
 	@NotNullByDefault
 	final class PqRecvResult {
 
-		private final SecretKey newCkPq;
+		@Nullable
+		private final byte[] sharedSecret;
 		private final Mode3FullState newState;
 
-		public PqRecvResult(SecretKey newCkPq, Mode3FullState newState) {
-			this.newCkPq = newCkPq;
+		public PqRecvResult(@Nullable byte[] sharedSecret,
+				Mode3FullState newState) {
+			this.sharedSecret = sharedSecret;
 			this.newState = newState;
 		}
 
-		public SecretKey getNewCkPq() {
-			return newCkPq;
+		@Nullable
+		public byte[] getSharedSecret() {
+			return sharedSecret;
 		}
 
 		public Mode3FullState getNewState() {

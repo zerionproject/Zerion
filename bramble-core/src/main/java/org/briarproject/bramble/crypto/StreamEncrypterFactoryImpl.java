@@ -97,13 +97,21 @@ class StreamEncrypterFactoryImpl implements StreamEncrypterFactory {
 				org.briarproject.bramble.api.crypto.pcs.Mode3FullState>
 				mode3FullRefresher = contactId == null ? null
 				: () -> pcsStateManager.loadSharedMode3FullState(contactId);
+		java.util.function.Supplier<PcsSessionState>
+				sessionStateRefresher = contactId == null ? null
+				: () -> pcsStateManager.loadSendState(contactId);
+		java.util.concurrent.locks.Lock directionLock = contactId == null
+				? null
+				: pcsStateManager.getDirectionLock(contactId,
+						org.briarproject.bramble.api.db.DatabaseComponent
+								.PCS_DIRECTION_SEND);
 
 		if (isMode3Full || isMode3) {
 			return new PcsStreamEncrypterImpl(out, cipher, pcsRatchet,
 					streamNumber, tag, streamHeaderNonce, ctx.getHeaderKey(),
 					pcsState, sendStateCallback, pqRatchet, pqState,
 					pqCallback, pqCrossMix, mode3FullRatchet,
-					mode3FullRefresher);
+					mode3FullRefresher, sessionStateRefresher, directionLock);
 		}
 
 		return new PcsStreamEncrypterImpl(out, cipher, pcsRatchet,

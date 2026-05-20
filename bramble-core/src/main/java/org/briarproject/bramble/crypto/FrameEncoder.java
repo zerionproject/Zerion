@@ -21,6 +21,18 @@ class FrameEncoder {
 		for (int i = INT_64_BYTES; i < FRAME_NONCE_LENGTH; i++) dest[i] = 0;
 	}
 
+	static void encodeNonceM3F(byte[] dest, long frameNumber, int segment) {
+		if (dest.length < FRAME_NONCE_LENGTH)
+			throw new IllegalArgumentException();
+		if (frameNumber < 0) throw new IllegalArgumentException();
+		if (segment < 0 || segment > 2)
+			throw new IllegalArgumentException();
+		ByteUtils.writeUint64(frameNumber, dest, 0);
+		dest[INT_64_BYTES] = (byte) 0x80;
+		dest[INT_64_BYTES + 1] = (byte) segment;
+		for (int i = INT_64_BYTES + 2; i < FRAME_NONCE_LENGTH; i++) dest[i] = 0;
+	}
+
 	static void encodeHeader(byte[] dest, boolean finalFrame,
 			int payloadLength, int paddingLength) {
 		if (dest.length < FRAME_HEADER_PLAINTEXT_LENGTH)

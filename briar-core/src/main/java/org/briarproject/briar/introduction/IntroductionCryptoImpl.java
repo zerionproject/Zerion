@@ -21,7 +21,6 @@ import org.briarproject.briar.introduction.IntroduceeSession.Remote;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.security.GeneralSecurityException;
-import java.util.logging.Logger;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
@@ -44,9 +43,6 @@ import static org.briarproject.briar.introduction.IntroduceeSession.Local;
 @Immutable
 @NotNullByDefault
 class IntroductionCryptoImpl implements IntroductionCrypto {
-
-	private static final Logger LOG =
-			Logger.getLogger(IntroductionCryptoImpl.class.getName());
 
 	private final CryptoComponent crypto;
 	private final ClientHelper clientHelper;
@@ -114,10 +110,6 @@ class IntroductionCryptoImpl implements IntroductionCrypto {
 	@Override
 	public byte[][] generateMlKemEphemeralKeyPair() {
 		MlKemKeyPair kp = mlKemProvider.generateKeyPair();
-		LOG.warning("[ZER-PQ-DEBUG] " +"Introduction — fresh ML-KEM-768" +
-				" ephemeral KP generated (pub=" +
-				kp.getEncapsulationKey().length + " B, priv=" +
-				kp.getDecapsulationKey().length + " B)");
 		return new byte[][] {
 				kp.getDecapsulationKey(),
 				kp.getEncapsulationKey()
@@ -130,19 +122,12 @@ class IntroductionCryptoImpl implements IntroductionCrypto {
 		byte[] ct = enc.getCiphertext();
 		byte[] ss = enc.getSharedSecret().clone();
 		java.util.Arrays.fill(enc.getSharedSecret(), (byte) 0);
-		LOG.warning("[ZER-PQ-DEBUG] " +"Introduction ENCAP — ML-KEM-768 to" +
-				" peer hybrid pub (CT=" + ct.length + " B, ss=" + ss.length +
-				" B); sending CT in AUTH");
 		return new byte[][] {ct, ss};
 	}
 
 	@Override
 	public byte[] decapsulateMlKem(byte[] localMlKemPriv, byte[] ciphertext) {
-		byte[] ss = mlKemProvider.decapsulate(localMlKemPriv, ciphertext);
-		LOG.warning("[ZER-PQ-DEBUG] " +"Introduction DECAP — peer's" +
-				" ML-KEM-768 CT decapsulated (ss=" + ss.length + " B);" +
-				" deriving peer pre-master + final master");
-		return ss;
+		return mlKemProvider.decapsulate(localMlKemPriv, ciphertext);
 	}
 
 	@Override
@@ -150,9 +135,6 @@ class IntroductionCryptoImpl implements IntroductionCrypto {
 	public SecretKey derivePreMasterKey(IntroduceeSession s, byte[] kemSecret)
 			throws GeneralSecurityException {
 		SecretKey dhMasterKey = deriveMasterKey(s);
-		LOG.warning("[ZER-PQ-DEBUG] " +"Introduction PRE-MASTER — combining" +
-				" X25519 DH output with ML-KEM-768 ss (kemSecret=" +
-				kemSecret.length + " B); hybrid pre-master key derived");
 		return crypto.deriveKey(LABEL_PRE_MASTER_KEY, dhMasterKey, kemSecret);
 	}
 
@@ -162,11 +144,6 @@ class IntroductionCryptoImpl implements IntroductionCrypto {
 			byte[] aliceKemSecret, byte[] bobKemSecret)
 			throws GeneralSecurityException {
 		SecretKey dhMasterKey = deriveMasterKey(s);
-		LOG.warning("[ZER-PQ-DEBUG] " +"Introduction FINAL-MASTER —" +
-				" symmetric combine of X25519 DH + BOTH ML-KEM-768 secrets" +
-				" (aliceSs=" + aliceKemSecret.length + " B, bobSs=" +
-				bobKemSecret.length + " B); contact rotation key seeded from" +
-				" full hybrid master");
 		return crypto.deriveKey(LABEL_MASTER_KEY, dhMasterKey,
 				aliceKemSecret, bobKemSecret);
 	}

@@ -1,6 +1,5 @@
 package org.briarproject.bramble.crypto.pcs;
 
-import org.briarproject.bramble.api.crypto.SecretKey;
 import org.briarproject.bramble.api.crypto.pcs.KpId;
 import org.briarproject.bramble.api.crypto.pcs.MlKemKeyPair;
 import org.briarproject.bramble.api.crypto.pcs.Mode3FullState;
@@ -22,7 +21,7 @@ import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_FULL_RE
 @NotNullByDefault
 final class Mode3FullStateCodec {
 
-	private static final byte VERSION = 0x02;
+	private static final byte VERSION = 0x03;
 	private static final byte FLAG_PRESENT = 0x01;
 	private static final byte FLAG_ABSENT = 0x00;
 
@@ -31,7 +30,6 @@ final class Mode3FullStateCodec {
 	static byte[] encode(Mode3FullState state) {
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		out.write(VERSION);
-		out.write(state.getCkPq().getBytes(), 0, SecretKey.LENGTH);
 		byte[] theirPk = state.getTheirActivePqPk();
 		if (theirPk == null) {
 			out.write(FLAG_ABSENT);
@@ -64,9 +62,6 @@ final class Mode3FullStateCodec {
 			ByteBuffer buf = ByteBuffer.wrap(blob);
 			byte version = buf.get();
 			if (version != VERSION) return null;
-			byte[] ckPqBytes = new byte[SecretKey.LENGTH];
-			buf.get(ckPqBytes);
-			SecretKey ckPq = new SecretKey(ckPqBytes);
 			byte flag = buf.get();
 			byte[] theirPk = null;
 			if (flag == FLAG_PRESENT) {
@@ -88,7 +83,7 @@ final class Mode3FullStateCodec {
 				recent.put(kpId, kp);
 			}
 			long counter = buf.getLong();
-			return new Mode3FullState(ckPq, theirPk, ourKp, recent, counter);
+			return new Mode3FullState(theirPk, ourKp, recent, counter);
 		} catch (RuntimeException e) {
 			return null;
 		}

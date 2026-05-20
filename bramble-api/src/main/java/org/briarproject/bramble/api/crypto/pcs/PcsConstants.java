@@ -18,6 +18,8 @@ public interface PcsConstants {
 
 	String PCS_CHAIN_KEY_LABEL = "org.briarproject.zerion/PCS_CHAIN_KEY";
 
+	String PCS_STREAM_CHAIN_LABEL = "org.briarproject.zerion/PCS_STREAM_CHAIN";
+
 	String PCS_MESSAGE_KEY_LABEL = "org.briarproject.zerion/PCS_MESSAGE_KEY";
 
 	String PCS_DH_RATCHET_LABEL = "org.briarproject.zerion/PCS_DH_RATCHET";

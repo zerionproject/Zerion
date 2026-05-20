@@ -7,7 +7,6 @@ import org.briarproject.bramble.api.crypto.pcs.Mode3FullRatchet;
 import org.briarproject.bramble.api.crypto.pcs.Mode3FullState;
 import org.briarproject.bramble.api.crypto.pcs.PcsException;
 import org.briarproject.bramble.api.crypto.pcs.PcsRatchet;
-import org.briarproject.bramble.api.crypto.pcs.PcsRatchet.AdvanceResult;
 import org.briarproject.bramble.api.crypto.pcs.PcsRatchet.DhRatchetResult;
 import org.briarproject.bramble.api.crypto.pcs.PcsSessionState;
 import org.briarproject.bramble.api.crypto.pcs.PqChunk;
@@ -74,9 +73,13 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 	@Nullable
 	private final Mode3FullRatchet mode3FullRatchet;
 	@Nullable
-	private final java.util.function.Supplier<
-			org.briarproject.bramble.api.crypto.pcs.Mode3FullState>
+	private final java.util.function.Supplier<Mode3FullState>
 			mode3FullStateRefresher;
+	@Nullable
+	private final java.util.function.Supplier<PcsSessionState>
+			sessionStateRefresher;
+	@Nullable
+	private final java.util.concurrent.locks.Lock directionLock;
 	private final PcsHeaderCodec headerCodec;
 
 	private PcsSessionState sendState;
@@ -84,6 +87,8 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 	private PqRatchetState pqState;
 	private long frameNumber;
 	private boolean writeTag, writeStreamHeader;
+	private SecretKey streamChainKey;
+	private int streamMessageNumber;
 
 	PcsStreamEncrypterImpl(OutputStream out, AuthenticatedCipher cipher,
 			PcsRatchet ratchet, long streamNumber, @Nullable byte[] tag,
@@ -92,7 +97,7 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 			@Nullable Consumer<PcsSessionState> stateCallback) {
 		this(out, cipher, ratchet, streamNumber, tag, streamHeaderNonce,
 				streamHeaderKey, initialState, stateCallback, null, null,
-				null, null, null, null);
+				null, null, null, null, null, null);
 	}
 
 	PcsStreamEncrypterImpl(OutputStream out, AuthenticatedCipher cipher,
@@ -105,7 +110,8 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 			@Nullable Consumer<PqRatchetState> pqStateCallback) {
 		this(out, cipher, ratchet, streamNumber, tag, streamHeaderNonce,
 				streamHeaderKey, initialState, stateCallback, pqRatchet,
-				initialPqState, pqStateCallback, null, null, null);
+				initialPqState, pqStateCallback, null, null, null, null,
+				null);
 	}
 
 	PcsStreamEncrypterImpl(OutputStream out, AuthenticatedCipher cipher,
@@ -120,7 +126,7 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 		this(out, cipher, ratchet, streamNumber, tag, streamHeaderNonce,
 				streamHeaderKey, initialState, stateCallback, pqRatchet,
 				initialPqState, pqStateCallback, pqCrossMixCallback, null,
-				null);
+				null, null, null);
 	}
 
 	PcsStreamEncrypterImpl(OutputStream out, AuthenticatedCipher cipher,
@@ -133,9 +139,29 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 			@Nullable Consumer<PqRatchetState> pqStateCallback,
 			@Nullable Consumer<SecretKey> pqCrossMixCallback,
 			@Nullable Mode3FullRatchet mode3FullRatchet,
-			@Nullable java.util.function.Supplier<
-					org.briarproject.bramble.api.crypto.pcs.Mode3FullState>
+			@Nullable java.util.function.Supplier<Mode3FullState>
 					mode3FullStateRefresher) {
+		this(out, cipher, ratchet, streamNumber, tag, streamHeaderNonce,
+				streamHeaderKey, initialState, stateCallback, pqRatchet,
+				initialPqState, pqStateCallback, pqCrossMixCallback,
+				mode3FullRatchet, mode3FullStateRefresher, null, null);
+	}
+
+	PcsStreamEncrypterImpl(OutputStream out, AuthenticatedCipher cipher,
+			PcsRatchet ratchet, long streamNumber, @Nullable byte[] tag,
+			byte[] streamHeaderNonce, SecretKey streamHeaderKey,
+			PcsSessionState initialState,
+			@Nullable Consumer<PcsSessionState> stateCallback,
+			@Nullable PqRatchet pqRatchet,
+			@Nullable PqRatchetState initialPqState,
+			@Nullable Consumer<PqRatchetState> pqStateCallback,
+			@Nullable Consumer<SecretKey> pqCrossMixCallback,
+			@Nullable Mode3FullRatchet mode3FullRatchet,
+			@Nullable java.util.function.Supplier<Mode3FullState>
+					mode3FullStateRefresher,
+			@Nullable java.util.function.Supplier<PcsSessionState>
+					sessionStateRefresher,
+			@Nullable java.util.concurrent.locks.Lock directionLock) {
 		this.out = out;
 		this.cipher = cipher;
 		this.ratchet = ratchet;
@@ -151,6 +177,8 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 		this.pqCrossMixCallback = pqCrossMixCallback;
 		this.mode3FullRatchet = mode3FullRatchet;
 		this.mode3FullStateRefresher = mode3FullStateRefresher;
+		this.sessionStateRefresher = sessionStateRefresher;
+		this.directionLock = directionLock;
 		this.headerCodec = new PcsHeaderCodec();
 		int mode3FullHeaderSize = PCS_MODE3_HEADER_MIN_SIZE +
 				MODE3_FULL_FRAME_OVERHEAD;
@@ -162,6 +190,11 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 		frameNumber = 0;
 		writeTag = (tag != null);
 		writeStreamHeader = true;
+		SecretKey rootKey = initialState.getRootKey();
+		if (rootKey == null) rootKey = initialState.getChainKey();
+		this.streamChainKey = ratchet.deriveStreamInitialChainKey(rootKey,
+				streamNumber);
+		this.streamMessageNumber = 0;
 	}
 
 	@Override
@@ -169,87 +202,150 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 			int paddingLength, boolean finalFrame) throws IOException {
 		if (payloadLength < 0 || paddingLength < 0)
 			throw new IllegalArgumentException();
-
-		PqChunk pqChunk = null;
-		boolean useMode3Full = MODE3_FULL_ENABLED && sendState.isMode3Full() &&
-				mode3FullRatchet != null;
-		boolean useMode3 = !useMode3Full && sendState.isMode3()
-				&& pqRatchet != null && pqState != null;
-
-		int pcsHeaderSize;
-		if (useMode3Full) {
-			pcsHeaderSize = headerCodec.getMode3FullHeaderSize();
-		} else if (useMode3) {
-			pqChunk = pqRatchet.getNextChunkToSend(pqState);
-			pcsHeaderSize = headerCodec.getMode3HeaderSize(pqChunk);
-		} else {
-			pcsHeaderSize = PCS_HEADER_MAX_SIZE;
-		}
-
-		int effectiveMaxPayload = MAX_PAYLOAD_LENGTH - pcsHeaderSize;
-		if (payloadLength + paddingLength > effectiveMaxPayload)
-			throw new IllegalArgumentException();
 		if (frameNumber < 0) throw new IOException();
+
+		SecretKey classicalMessageKey;
+		SecretKey bodyMessageKey;
+		int messageNumber;
+		int prevChainLength;
+		PublicKey dhPublicKey = null;
+		Mode3FullRatchet.PqSendResult mode3FullSend = null;
+		boolean useMode3Full;
+		boolean useMode3;
+		int pcsHeaderSize;
+		long pqEpoch;
+		PqChunk pqChunk = null;
+
 		if (writeTag) writeTag();
 		if (writeStreamHeader) writeStreamHeader();
 
-		PublicKey dhPublicKey = null;
-		if (sendState.isMode2()) {
-			try {
-				DhRatchetResult dhResult = ratchet.performSendDhRatchet(sendState);
-				sendState = dhResult.getNewState();
-				dhPublicKey = dhResult.getDhPublicKey();
-			} catch (GeneralSecurityException | PcsException e) {
-				throw new IOException("DH ratchet failed", e);
-			}
-		}
-
-		AdvanceResult advanceResult = ratchet.advanceSendChain(sendState);
-		SecretKey messageKey = advanceResult.getMessageKey();
-		int messageNumber = sendState.getMessageNumber();
-		int prevChainLength = sendState.getPreviousChainLength();
-
-		sendState = advanceResult.getNewState();
-
-		Mode3FullRatchet.PqSendResult mode3FullSend = null;
-		if (useMode3Full) {
-			Mode3FullState m3fState = sendState.getMode3FullState();
-			if (m3fState == null) {
-				throw new IOException("Mode 3-Full state missing");
-			}
-			if (mode3FullStateRefresher != null) {
-				Mode3FullState fresh = mode3FullStateRefresher.get();
+		if (directionLock != null) directionLock.lock();
+		try {
+			if (sessionStateRefresher != null) {
+				PcsSessionState fresh = sessionStateRefresher.get();
 				if (fresh != null) {
-					byte[] freshPk = fresh.getTheirActivePqPk();
-					byte[] currentPk = m3fState.getTheirActivePqPk();
-					boolean peerPkLearned = currentPk == null && freshPk != null;
-					boolean peerPkChanged = currentPk != null && freshPk != null
-							&& !java.util.Arrays.equals(currentPk, freshPk);
-					if (peerPkLearned || peerPkChanged) {
+					sendState = fresh;
+				}
+			}
+
+			useMode3Full = MODE3_FULL_ENABLED && sendState.isMode3Full() &&
+					mode3FullRatchet != null;
+			useMode3 = !useMode3Full && sendState.isMode3()
+					&& pqRatchet != null && pqState != null;
+
+			if (useMode3Full) {
+				pcsHeaderSize = headerCodec.getMode3FullHeaderSize();
+			} else if (useMode3) {
+				pqChunk = pqRatchet.getNextChunkToSend(pqState);
+				pcsHeaderSize = headerCodec.getMode3HeaderSize(pqChunk);
+			} else {
+				pcsHeaderSize = PCS_HEADER_MAX_SIZE;
+			}
+
+			int effectiveMaxPayload = MAX_PAYLOAD_LENGTH - pcsHeaderSize;
+			if (payloadLength + paddingLength > effectiveMaxPayload)
+				throw new IllegalArgumentException();
+
+			if (sendState.isMode2()) {
+				try {
+					DhRatchetResult dhResult = ratchet
+							.performSendDhRatchet(sendState);
+					sendState = dhResult.getNewState();
+					dhPublicKey = dhResult.getDhPublicKey();
+				} catch (GeneralSecurityException | PcsException e) {
+					throw new IOException("DH ratchet failed", e);
+				}
+			}
+
+			PcsRatchet.KdfCkResult streamKdf = ratchet.kdfCk(streamChainKey);
+			SecretKey messageKey = streamKdf.getMessageKey();
+			streamChainKey = streamKdf.getNewChainKey();
+			messageNumber = streamMessageNumber;
+			streamMessageNumber++;
+			prevChainLength = 0;
+
+			classicalMessageKey = messageKey;
+			bodyMessageKey = messageKey;
+			if (useMode3Full) {
+				Mode3FullState m3fState = sendState.getMode3FullState();
+				if (m3fState == null) {
+					throw new IOException("Mode 3-Full state missing");
+				}
+				if (mode3FullStateRefresher != null) {
+					Mode3FullState fresh = mode3FullStateRefresher.get();
+					if (fresh != null) {
 						m3fState = new Mode3FullState(
-								m3fState.getCkPq(),
-								freshPk,
-								m3fState.getOurActiveKeyPair(),
-								m3fState.getRecentKeyPairs(),
+								fresh.getTheirActivePqPk(),
+								fresh.getOurActiveKeyPair(),
+								fresh.getRecentKeyPairs(),
 								m3fState.getMessageCounter());
 						sendState = sendState.withMode3FullState(m3fState);
 					}
 				}
+				mode3FullSend = mode3FullRatchet.pqEncapsulateSend(m3fState);
+				sendState = sendState.withMode3FullState(
+						mode3FullSend.getNewState());
+				byte[] ss = mode3FullSend.getSharedSecret();
+				if (ss != null) {
+					bodyMessageKey = mode3FullRatchet.deriveHybridMessageKey(
+							classicalMessageKey, ss);
+					java.util.Arrays.fill(ss, (byte) 0);
+				}
 			}
-			SecretKey ckPqOld = m3fState.getCkPq();
-			messageKey = mode3FullRatchet.deriveHybridMessageKey(messageKey,
-					ckPqOld);
-			mode3FullSend = mode3FullRatchet.pqEncapsulateSend(m3fState);
-			sendState = sendState.withMode3FullState(mode3FullSend.getNewState());
+
+			pqEpoch = sendState.getPqEpoch();
+
+			if (useMode3 && pqRatchet != null && pqState != null) {
+				if (pqChunk != null) {
+					pqState = pqRatchet.processChunkSent(pqState);
+				}
+				pqState = pqRatchet.incrementMessageCount(pqState);
+				if (pqRatchet.shouldStartNewEpoch(pqState,
+						System.currentTimeMillis())) {
+					pqState = pqRatchet.startEpochAsInitiator(pqState);
+				}
+				if (pqRatchet.isEpochComplete(pqState) &&
+						sendState.getRootKey() != null) {
+					try {
+						SecretKey pqSecret = pqRatchet
+								.deriveEpochSecret(pqState);
+						SecretKey newRootKey = pqRatchet
+								.mixPqSecretIntoRootKey(
+										sendState.getRootKey(), pqSecret);
+						sendState = sendState.afterPqRatchet(newRootKey,
+								pqState.getCurrentEpoch());
+						if (pqCrossMixCallback != null) {
+							pqCrossMixCallback.accept(pqSecret);
+						}
+						pqState = pqRatchet.completeEpoch(pqState,
+								System.currentTimeMillis());
+					} catch (PcsException e) {
+						throw new IOException("PQ epoch completion failed", e);
+					}
+				}
+				if (pqStateCallback != null) {
+					pqStateCallback.accept(pqState);
+				}
+			}
+
+			if (stateCallback != null) {
+				stateCallback.accept(sendState);
+			}
+		} finally {
+			if (directionLock != null) directionLock.unlock();
 		}
 
 		int totalPayloadLength = payloadLength + pcsHeaderSize;
 		FrameEncoder.encodeHeader(frameHeader, finalFrame, totalPayloadLength,
 				paddingLength);
 
-		FrameEncoder.encodeNonce(frameNonce, frameNumber, true);
+		if (useMode3Full) {
+			FrameEncoder.encodeNonceM3F(frameNonce, frameNumber, 0);
+		} else {
+			FrameEncoder.encodeNonce(frameNonce, frameNumber, true);
+		}
 		try {
-			cipher.init(true, messageKey, frameNonce);
+			cipher.init(true, classicalMessageKey, frameNonce);
 			int encrypted = cipher.process(frameHeader, 0,
 					FRAME_HEADER_PLAINTEXT_LENGTH, frameCiphertext, 0);
 			if (encrypted != FRAME_HEADER_LENGTH) throw new RuntimeException();
@@ -272,68 +368,64 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 		} else if (useMode3 && dhPublicKey != null) {
 			byte[] header = headerCodec.encodeMode3Header(messageNumber,
 					prevChainLength, dhPublicKey.getEncoded(),
-					sendState.getPqEpoch(), pqChunk);
+					pqEpoch, pqChunk);
 			System.arraycopy(header, 0, framePlaintext, 0, header.length);
 		} else {
 			encodePcsHeader(framePlaintext, messageNumber, prevChainLength,
 					dhPublicKey);
 		}
 
-		System.arraycopy(payload, 0, framePlaintext, pcsHeaderSize, payloadLength);
+		System.arraycopy(payload, 0, framePlaintext, pcsHeaderSize,
+				payloadLength);
 
 		for (int i = 0; i < paddingLength; i++)
 			framePlaintext[pcsHeaderSize + payloadLength + i] = 0;
 
-		FrameEncoder.encodeNonce(frameNonce, frameNumber, false);
-		try {
-			cipher.init(true, messageKey, frameNonce);
-			int encrypted = cipher.process(framePlaintext, 0,
-					totalPayloadLength + paddingLength, frameCiphertext,
-					FRAME_HEADER_LENGTH);
-			if (encrypted != totalPayloadLength + paddingLength + MAC_LENGTH)
-				throw new RuntimeException();
-		} catch (GeneralSecurityException badCipher) {
-			throw new RuntimeException(badCipher);
+		int outOffset;
+		if (useMode3Full) {
+			FrameEncoder.encodeNonceM3F(frameNonce, frameNumber, 1);
+			try {
+				cipher.init(true, classicalMessageKey, frameNonce);
+				int encrypted = cipher.process(framePlaintext, 0,
+						pcsHeaderSize, frameCiphertext, FRAME_HEADER_LENGTH);
+				if (encrypted != pcsHeaderSize + MAC_LENGTH)
+					throw new RuntimeException();
+			} catch (GeneralSecurityException badCipher) {
+				throw new RuntimeException(badCipher);
+			}
+			outOffset = FRAME_HEADER_LENGTH + pcsHeaderSize + MAC_LENGTH;
+
+			FrameEncoder.encodeNonceM3F(frameNonce, frameNumber, 2);
+			try {
+				cipher.init(true, bodyMessageKey, frameNonce);
+				int encrypted = cipher.process(framePlaintext, pcsHeaderSize,
+						payloadLength + paddingLength, frameCiphertext,
+						outOffset);
+				if (encrypted != payloadLength + paddingLength + MAC_LENGTH)
+					throw new RuntimeException();
+			} catch (GeneralSecurityException badCipher) {
+				throw new RuntimeException(badCipher);
+			}
+			outOffset += payloadLength + paddingLength + MAC_LENGTH;
+		} else {
+			FrameEncoder.encodeNonce(frameNonce, frameNumber, false);
+			try {
+				cipher.init(true, classicalMessageKey, frameNonce);
+				int encrypted = cipher.process(framePlaintext, 0,
+						totalPayloadLength + paddingLength, frameCiphertext,
+						FRAME_HEADER_LENGTH);
+				if (encrypted != totalPayloadLength + paddingLength
+						+ MAC_LENGTH)
+					throw new RuntimeException();
+			} catch (GeneralSecurityException badCipher) {
+				throw new RuntimeException(badCipher);
+			}
+			outOffset = FRAME_HEADER_LENGTH + totalPayloadLength
+					+ paddingLength + MAC_LENGTH;
 		}
 
-		out.write(frameCiphertext, 0, FRAME_HEADER_LENGTH + totalPayloadLength
-				+ paddingLength + MAC_LENGTH);
+		out.write(frameCiphertext, 0, outOffset);
 		frameNumber++;
-
-		if (useMode3 && pqRatchet != null && pqState != null) {
-			if (pqChunk != null) {
-				pqState = pqRatchet.processChunkSent(pqState);
-			}
-			pqState = pqRatchet.incrementMessageCount(pqState);
-			if (pqRatchet.shouldStartNewEpoch(pqState,
-					System.currentTimeMillis())) {
-				pqState = pqRatchet.startEpochAsInitiator(pqState);
-			}
-			if (pqRatchet.isEpochComplete(pqState) &&
-					sendState.getRootKey() != null) {
-				try {
-					SecretKey pqSecret = pqRatchet.deriveEpochSecret(pqState);
-					SecretKey newRootKey = pqRatchet.mixPqSecretIntoRootKey(
-							sendState.getRootKey(), pqSecret);
-					sendState = sendState.afterPqRatchet(newRootKey,
-							pqState.getCurrentEpoch());
-					if (pqCrossMixCallback != null) {
-						pqCrossMixCallback.accept(pqSecret);
-					}
-					pqState = pqRatchet.completeEpoch(pqState,
-							System.currentTimeMillis());
-				} catch (Exception e) {
-					pqState = pqRatchet.initialize(System.currentTimeMillis());
-				}
-			}
-			if (pqStateCallback != null) {
-				pqStateCallback.accept(pqState);
-			}
-		}
-
-		if (stateCallback != null) {
-			stateCallback.accept(sendState);
-		}
 	}
 
 	private void encodePcsHeader(byte[] dest, int messageNumber,

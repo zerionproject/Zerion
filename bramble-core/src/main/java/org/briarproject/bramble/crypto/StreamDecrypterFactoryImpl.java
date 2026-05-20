@@ -80,13 +80,21 @@ class StreamDecrypterFactoryImpl implements StreamDecrypterFactory {
 				org.briarproject.bramble.api.crypto.pcs.Mode3FullState>
 				mode3FullRefresher =
 				() -> pcsStateManager.loadSharedMode3FullState(cid);
+		java.util.function.Supplier<PcsSessionState>
+				sessionStateRefresher =
+				() -> pcsStateManager.loadReceiveState(cid);
+		java.util.concurrent.locks.Lock directionLock =
+				pcsStateManager.getDirectionLock(cid,
+						org.briarproject.bramble.api.db.DatabaseComponent
+								.PCS_DIRECTION_RECEIVE);
 
 		if (isMode3Full || isMode3) {
 			return new PcsStreamDecrypterImpl(in, cipher, pcsRatchet,
 					skippedKeyStore, chainId, ctx.getStreamNumber(),
 					ctx.getHeaderKey(), pcsState, recvStateCallback, null,
 					pqRatchet, pqState, pqCallback, pqCrossMix,
-					mode3FullRatchet, mode3FullRefresher);
+					mode3FullRatchet, mode3FullRefresher,
+					sessionStateRefresher, directionLock);
 		}
 
 		return new PcsStreamDecrypterImpl(in, cipher, pcsRatchet,

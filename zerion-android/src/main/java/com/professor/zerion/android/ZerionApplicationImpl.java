@@ -32,12 +32,9 @@ public class ZerionApplicationImpl extends Application
 		implements ZerionApplication {
 
 	static {
-		// TEMPORARY v1.7 PQ debug validation — JUL silencer disabled so
-		// [ZER-PQ-DEBUG] traces in bramble-core / briar-core reach logcat.
-		// Restore the reset()+OFF block before tagging the release.
-		//java.util.logging.LogManager.getLogManager().reset();
-		//java.util.logging.Logger.getLogger("")
-		//		.setLevel(java.util.logging.Level.OFF);
+		java.util.logging.LogManager.getLogManager().reset();
+		java.util.logging.Logger.getLogger("")
+				.setLevel(java.util.logging.Level.OFF);
 	}
 
 	private AndroidComponent applicationComponent;

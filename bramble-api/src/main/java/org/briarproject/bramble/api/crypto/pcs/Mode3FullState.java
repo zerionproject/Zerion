@@ -1,6 +1,5 @@
 package org.briarproject.bramble.api.crypto.pcs;
 
-import org.briarproject.bramble.api.crypto.SecretKey;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.Arrays;
@@ -19,31 +18,24 @@ import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_FULL_RE
 @NotNullByDefault
 public class Mode3FullState {
 
-	private final SecretKey ckPq;
 	@Nullable
 	private final byte[] theirActivePqPk;
 	private final MlKemKeyPair ourActiveKeyPair;
 	private final Map<KpId, MlKemKeyPair> recentKeyPairs;
 	private final long messageCounter;
 
-	public Mode3FullState(SecretKey ckPq,
-			@Nullable byte[] theirActivePqPk,
+	public Mode3FullState(@Nullable byte[] theirActivePqPk,
 			MlKemKeyPair ourActiveKeyPair,
 			Map<KpId, MlKemKeyPair> recentKeyPairs, long messageCounter) {
 		if (theirActivePqPk != null &&
 				theirActivePqPk.length != MLKEM_ENCAPSULATION_KEY_SIZE) {
 			throw new IllegalArgumentException();
 		}
-		this.ckPq = ckPq;
 		this.theirActivePqPk = theirActivePqPk;
 		this.ourActiveKeyPair = ourActiveKeyPair;
 		this.recentKeyPairs = Collections.unmodifiableMap(
 				new LinkedHashMap<>(recentKeyPairs));
 		this.messageCounter = messageCounter;
-	}
-
-	public SecretKey getCkPq() {
-		return ckPq;
 	}
 
 	@Nullable
@@ -70,8 +62,7 @@ public class Mode3FullState {
 		return recentKeyPairs.get(kpId);
 	}
 
-	public Mode3FullState withSendAdvance(SecretKey newCkPq,
-			MlKemKeyPair newOurKp) {
+	public Mode3FullState withSendAdvance(MlKemKeyPair newOurKp) {
 		LinkedHashMap<KpId, MlKemKeyPair> newRecent =
 				new LinkedHashMap<>(recentKeyPairs);
 		KpId oldId = KpId.of(ourActiveKeyPair.getEncapsulationKey());
@@ -84,21 +75,20 @@ public class Mode3FullState {
 			it.remove();
 			zeroize(evicted.getValue());
 		}
-		return new Mode3FullState(newCkPq, theirActivePqPk, newOurKp,
-				newRecent, messageCounter + 1);
+		return new Mode3FullState(theirActivePqPk, newOurKp, newRecent,
+				messageCounter + 1);
 	}
 
-	public Mode3FullState withSendAdvanceNoRotate(SecretKey newCkPq) {
-		return new Mode3FullState(newCkPq, theirActivePqPk, ourActiveKeyPair,
+	public Mode3FullState withSendAdvanceNoRotate() {
+		return new Mode3FullState(theirActivePqPk, ourActiveKeyPair,
 				recentKeyPairs, messageCounter + 1);
 	}
 
-	public Mode3FullState withRecvAdvance(SecretKey newCkPq,
-			byte[] theirNewPk) {
+	public Mode3FullState withRecvAdvance(byte[] theirNewPk) {
 		if (theirNewPk.length != MLKEM_ENCAPSULATION_KEY_SIZE) {
 			throw new IllegalArgumentException();
 		}
-		return new Mode3FullState(newCkPq, theirNewPk, ourActiveKeyPair,
+		return new Mode3FullState(theirNewPk, ourActiveKeyPair,
 				recentKeyPairs, messageCounter + 1);
 	}
 

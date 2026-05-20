@@ -1,6 +1,5 @@
 package org.briarproject.bramble.crypto.pcs;
 
-import org.briarproject.bramble.api.crypto.SecretKey;
 import org.briarproject.bramble.api.crypto.pcs.KpId;
 import org.briarproject.bramble.api.crypto.pcs.MlKemKeyPair;
 import org.briarproject.bramble.api.crypto.pcs.Mode3FullState;
@@ -109,7 +108,6 @@ public class Mode3FullStateCodecTest {
 
 	private Mode3FullState makeState(boolean withPeerPk, int lruEntries,
 			long counter) {
-		SecretKey ckPq = new SecretKey(randomBytes(SecretKey.LENGTH));
 		byte[] theirPk = withPeerPk
 				? randomBytes(MLKEM_ENCAPSULATION_KEY_SIZE)
 				: null;
@@ -119,7 +117,7 @@ public class Mode3FullStateCodecTest {
 			MlKemKeyPair kp = makeKeyPair();
 			recent.put(KpId.of(kp.getEncapsulationKey()), kp);
 		}
-		return new Mode3FullState(ckPq, theirPk, ourKp, recent, counter);
+		return new Mode3FullState(theirPk, ourKp, recent, counter);
 	}
 
 	private MlKemKeyPair makeKeyPair() {
@@ -136,7 +134,6 @@ public class Mode3FullStateCodecTest {
 	}
 
 	private void assertSame(Mode3FullState a, Mode3FullState b) {
-		assertArrayEquals(a.getCkPq().getBytes(), b.getCkPq().getBytes());
 		assertArrayEquals(a.getTheirActivePqPk(), b.getTheirActivePqPk());
 		assertSame(a.getOurActiveKeyPair(), b.getOurActiveKeyPair());
 		assertEquals(a.getRecentKeyPairs().size(),

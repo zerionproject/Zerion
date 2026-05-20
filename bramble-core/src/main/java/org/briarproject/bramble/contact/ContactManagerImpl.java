@@ -41,7 +41,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.logging.Logger;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
@@ -55,9 +54,6 @@ import static org.briarproject.bramble.util.StringUtils.toUtf8;
 @ThreadSafe
 @NotNullByDefault
 class ContactManagerImpl implements ContactManager, EventListener {
-
-	private static final Logger LOG =
-			Logger.getLogger(ContactManagerImpl.class.getName());
 
 	private final DatabaseComponent db;
 	private final KeyManager keyManager;
@@ -416,11 +412,8 @@ class ContactManagerImpl implements ContactManager, EventListener {
 		PcsSessionState sendState;
 		PcsSessionState receiveState;
 		if (MODE3_FULL_ENABLED) {
-			LOG.warning("[ZER-PQ-DEBUG] ContactManager — initializing" +
-					" Mode 3-Full PCS for new contact (per-message ML-KEM-768" +
-					" ratchet active from frame 1)");
 			Mode3FullState sharedMode3Full =
-					mode3FullRatchet.createInitialState(rootKey);
+					mode3FullRatchet.createInitialState();
 			sendState = PcsSessionState.createInitialMode3Full(
 					rootKey, rootKey, dhState, sharedMode3Full);
 			receiveState = PcsSessionState.createInitialMode3Full(

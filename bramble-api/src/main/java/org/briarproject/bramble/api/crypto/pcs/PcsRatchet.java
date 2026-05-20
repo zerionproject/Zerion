@@ -32,6 +32,8 @@ public interface PcsRatchet {
 
 	KdfCkResult kdfCk(SecretKey chainKey);
 
+	SecretKey deriveStreamInitialChainKey(SecretKey rootKey, long streamNumber);
+
 	AdvanceResult advanceSendChain(PcsSessionState state);
 
 	AdvanceResult advanceReceiveChain(PcsSessionState state, int messageNumber,

@@ -20,22 +20,40 @@ import org.briarproject.bramble.api.db.Transaction;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.security.GeneralSecurityException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import static org.briarproject.bramble.api.db.DatabaseComponent.PCS_DIRECTION_RECEIVE;
 import static org.briarproject.bramble.api.db.DatabaseComponent.PCS_DIRECTION_SEND;
 
 @ThreadSafe
+@Singleton
 @NotNullByDefault
 public class PcsStateManager {
 	private final DatabaseComponent db;
 	private final CryptoComponent crypto;
+	private final ConcurrentMap<Integer, ReentrantLock> contactLocks =
+			new ConcurrentHashMap<>();
 
 	@Inject
 	public PcsStateManager(DatabaseComponent db, CryptoComponent crypto) {
 		this.db = db;
 		this.crypto = crypto;
+	}
+
+	public Lock getContactLock(ContactId contactId) {
+		return contactLocks.computeIfAbsent(contactId.getInt(),
+				k -> new ReentrantLock());
+	}
+
+	public Lock getDirectionLock(ContactId contactId, int direction) {
+		return getContactLock(contactId);
 	}
 
 	@Nullable
@@ -258,8 +276,35 @@ public class PcsStateManager {
 		}
 
 		Mode3FullState mode3FullState = state.getMode3FullState();
-		byte[] mode3FullStateBlob = mode3FullState != null
-				? Mode3FullStateCodec.encode(mode3FullState)
+		Mode3FullState merged = mode3FullState;
+		if (mode3FullState != null) {
+			Object[] currentRow = db.getPcsMode2SessionState(txn, contactId,
+					direction);
+			Mode3FullState currentBlob = null;
+			if (currentRow != null) {
+				byte[] curBytes = (byte[]) currentRow[8];
+				if (curBytes != null) {
+					currentBlob = Mode3FullStateCodec.decode(curBytes);
+				}
+			}
+			if (currentBlob != null) {
+				if (direction == PCS_DIRECTION_SEND) {
+					merged = new Mode3FullState(
+							currentBlob.getTheirActivePqPk(),
+							mode3FullState.getOurActiveKeyPair(),
+							mode3FullState.getRecentKeyPairs(),
+							mode3FullState.getMessageCounter());
+				} else {
+					merged = new Mode3FullState(
+							mode3FullState.getTheirActivePqPk(),
+							currentBlob.getOurActiveKeyPair(),
+							currentBlob.getRecentKeyPairs(),
+							mode3FullState.getMessageCounter());
+				}
+			}
+		}
+		byte[] mode3FullStateBlob = merged != null
+				? Mode3FullStateCodec.encode(merged)
 				: null;
 
 		db.setPcsMode2SessionState(txn, contactId, direction,
@@ -268,9 +313,8 @@ public class PcsStateManager {
 				dhPrivateKey, dhPublicKey, dhRemotePublicKey, state.isMode2(),
 				mode3FullStateBlob);
 
-		if (mode3FullState != null) {
-			propagateSharedMode3FullFields(txn, contactId, direction,
-					mode3FullState);
+		if (merged != null) {
+			propagateSharedMode3FullFields(txn, contactId, direction, merged);
 		}
 	}
 
@@ -286,37 +330,51 @@ public class PcsStateManager {
 		if (otherBlob == null) return;
 		Mode3FullState otherState = Mode3FullStateCodec.decode(otherBlob);
 		if (otherState == null) return;
-		Mode3FullState merged = new Mode3FullState(
-				otherState.getCkPq(),
-				source.getTheirActivePqPk(),
-				source.getOurActiveKeyPair(),
-				source.getRecentKeyPairs(),
-				otherState.getMessageCounter()
-		);
+		Mode3FullState merged;
+		if (direction == PCS_DIRECTION_SEND) {
+			merged = new Mode3FullState(
+					otherState.getTheirActivePqPk(),
+					source.getOurActiveKeyPair(),
+					source.getRecentKeyPairs(),
+					otherState.getMessageCounter());
+		} else {
+			merged = new Mode3FullState(
+					source.getTheirActivePqPk(),
+					otherState.getOurActiveKeyPair(),
+					otherState.getRecentKeyPairs(),
+					otherState.getMessageCounter());
+		}
 		byte[] mergedBlob = Mode3FullStateCodec.encode(merged);
-		PcsSessionState rebuilt = parseMode2State(replaceBlob(otherRow,
-				mergedBlob));
-		if (rebuilt == null) return;
-		DhRatchetState dhState = rebuilt.getDhState();
-		PrivateKey dhPrivateKey = null;
-		PublicKey dhPublicKey = null;
-		PublicKey dhRemotePublicKey = null;
-		if (dhState != null) {
-			dhPrivateKey = dhState.getDhKeyPair().getPrivate();
-			dhPublicKey = dhState.getDhPublicKey();
-			dhRemotePublicKey = dhState.getDhRemotePublicKey();
+		byte[] chainKeyBytes = (byte[]) otherRow[0];
+		int otherMsgNum = (Integer) otherRow[1];
+		int otherPrev = (Integer) otherRow[2];
+		byte[] rootKeyBytes = (byte[]) otherRow[3];
+		byte[] otherDhPriv = (byte[]) otherRow[4];
+		byte[] otherDhPub = (byte[]) otherRow[5];
+		byte[] otherDhRemote = (byte[]) otherRow[6];
+		boolean otherMode2 = (Boolean) otherRow[7];
+		SecretKey otherChainKey = new SecretKey(chainKeyBytes);
+		SecretKey otherRootKey = rootKeyBytes != null
+				? new SecretKey(rootKeyBytes) : null;
+		PrivateKey otherDhPrivKey = null;
+		PublicKey otherDhPubKey = null;
+		PublicKey otherDhRemoteKey = null;
+		if (otherDhPriv != null && otherDhPub != null) {
+			try {
+				KeyParser kp = crypto.getAgreementKeyParser();
+				otherDhPrivKey = kp.parsePrivateKey(otherDhPriv);
+				otherDhPubKey = kp.parsePublicKey(otherDhPub);
+				if (otherDhRemote != null) {
+					otherDhRemoteKey = kp.parsePublicKey(otherDhRemote);
+				}
+			} catch (GeneralSecurityException e) {
+				return;
+			}
 		}
 		db.setPcsMode2SessionState(txn, contactId, otherDirection,
-				rebuilt.getChainKey(), rebuilt.getMessageNumber(),
-				rebuilt.getPreviousChainLength(), rebuilt.getRootKey(),
-				dhPrivateKey, dhPublicKey, dhRemotePublicKey,
-				rebuilt.isMode2(), mergedBlob);
-	}
-
-	private Object[] replaceBlob(Object[] row, byte[] newBlob) {
-		Object[] copy = row.clone();
-		copy[8] = newBlob;
-		return copy;
+				otherChainKey, otherMsgNum, otherPrev, otherRootKey,
+				otherDhPrivKey, otherDhPubKey, otherDhRemoteKey,
+				otherMode2, mergedBlob);
 	}
 
 	@Nullable
