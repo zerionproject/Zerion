@@ -247,6 +247,8 @@ public class SecureFileIO {
 		}
 
 		if (!file.delete()) {
+			throw new IOException("Failed to delete file after overwrite: "
+					+ file.getName());
 		}
 
 		syncDirectory();

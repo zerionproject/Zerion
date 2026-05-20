@@ -61,10 +61,6 @@ public class VaultHeader {
 		);
 	}
 
-	public boolean usesArgon2id() {
-		return (featureFlags & FEATURE_FLAG_KDF_ARGON2ID) != 0;
-	}
-
 	public byte[] toBytes() {
 		int totalSize = 4 +
 				4 +
@@ -143,6 +139,12 @@ public class VaultHeader {
 		long createdTimestamp = buffer.remaining() >= 8 ? buffer.getLong() : System.currentTimeMillis();
 		long modifiedTimestamp = buffer.remaining() >= 8 ? buffer.getLong() : System.currentTimeMillis();
 		int featureFlags = buffer.remaining() >= 4 ? buffer.getInt() : 0;
+
+		if (version >= 1 &&
+				(featureFlags & FEATURE_FLAG_KDF_ARGON2ID) == 0) {
+			throw new IllegalArgumentException(
+					"Vault header missing required Argon2id flag");
+		}
 
 		return new VaultHeader(
 				version, salt, kdfMemoryKb, kdfIterations, kdfParallelism,

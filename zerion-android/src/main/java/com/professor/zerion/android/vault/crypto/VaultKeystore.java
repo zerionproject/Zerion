@@ -94,7 +94,7 @@ public class VaultKeystore {
 		}
 
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-			builder.setInvalidatedByBiometricEnrollment(false);
+			builder.setInvalidatedByBiometricEnrollment(true);
 		}
 
 		keyGenerator.init(builder.build());

@@ -32,6 +32,27 @@ import androidx.recyclerview.widget.RecyclerView;
 @ParametersNotNullByDefault
 public class VaultDocumentsFragment extends BaseFragment {
 
+	@Override
+	public void onStop() {
+		super.onStop();
+		try {
+			Activity a = getActivity();
+			if (a == null) return;
+			java.io.File cacheDir =
+					new java.io.File(a.getCacheDir(), "zenc_share");
+			if (!cacheDir.exists()) return;
+			java.io.File[] children = cacheDir.listFiles();
+			if (children == null) return;
+			for (java.io.File f : children) {
+				try {
+					f.delete();
+				} catch (Exception ignored) {
+				}
+			}
+		} catch (Exception ignored) {
+		}
+	}
+
 	private static final int REQUEST_FILE_PICK = 1003;
 
 	@Inject
@@ -347,8 +368,18 @@ public class VaultDocumentsFragment extends BaseFragment {
 			if (!cacheDir.exists()) {
 				cacheDir.mkdirs();
 			}
+			java.io.File[] stale = cacheDir.listFiles();
+			if (stale != null) {
+				for (java.io.File f : stale) {
+					try {
+						f.delete();
+					} catch (Exception ignored) {
+					}
+				}
+			}
 
 			java.io.File zencFile = new java.io.File(cacheDir, filename);
+			zencFile.deleteOnExit();
 			java.io.FileOutputStream fos = new java.io.FileOutputStream(zencFile);
 			fos.write(zencData);
 			fos.close();

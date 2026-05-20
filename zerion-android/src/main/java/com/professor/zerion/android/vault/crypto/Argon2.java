@@ -11,9 +11,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Arrays;
 
-import javax.crypto.SecretKeyFactory;
-import javax.crypto.spec.PBEKeySpec;
-
 @NotNullByDefault
 public class Argon2 {
 
@@ -26,17 +23,11 @@ public class Argon2 {
 	public static final int LOW_MEMORY_KB = 128 * 1024;
 	public static final int LOW_ITERATIONS = 2;
 
-	public static final int ALGO_PBKDF2 = 0;
-	public static final int ALGO_ARGON2ID = 1;
-
 	private final SecureRandom secureRandom = new SecureRandom();
 
 	public byte[] deriveKey(char[] password, byte[] salt, Argon2Params params) {
 		try {
-			if (params.algorithm == ALGO_ARGON2ID) {
-				return deriveKeyArgon2id(password, salt, params);
-			}
-			return deriveKeyPBKDF2(password, salt, params);
+			return deriveKeyArgon2id(password, salt, params);
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to derive key", e);
 		}
@@ -64,28 +55,6 @@ public class Argon2 {
 		} finally {
 			Arrays.fill(passwordBytes, (byte) 0);
 			Arrays.fill(byteBuffer.array(), (byte) 0);
-		}
-	}
-
-	private byte[] deriveKeyPBKDF2(char[] password, byte[] salt, Argon2Params params)
-			throws Exception {
-
-		int iterations = Math.max(200000, params.iterations * 50000);
-
-		PBEKeySpec spec = new PBEKeySpec(
-				password,
-				salt,
-				iterations,
-				params.hashLength * 8
-		);
-
-		try {
-			SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
-			byte[] hash = factory.generateSecret(spec).getEncoded();
-
-			return hash;
-		} finally {
-			spec.clearPassword();
 		}
 	}
 
@@ -127,25 +96,13 @@ public class Argon2 {
 		public final int iterations;
 		public final int parallelism;
 		public final int hashLength;
-		public final int algorithm;
 
 		public Argon2Params(int memoryKb, int iterations, int parallelism,
 				int hashLength) {
-			this(memoryKb, iterations, parallelism, hashLength, ALGO_ARGON2ID);
-		}
-
-		public Argon2Params(int memoryKb, int iterations, int parallelism,
-				int hashLength, int algorithm) {
 			this.memoryKb = memoryKb;
 			this.iterations = iterations;
 			this.parallelism = parallelism;
 			this.hashLength = hashLength;
-			this.algorithm = algorithm;
-		}
-
-		public Argon2Params withAlgorithm(int newAlgorithm) {
-			return new Argon2Params(memoryKb, iterations, parallelism,
-					hashLength, newAlgorithm);
 		}
 
 		public static Argon2Params getDefault() {
@@ -153,8 +110,7 @@ public class Argon2 {
 					DEFAULT_MEMORY_KB,
 					DEFAULT_ITERATIONS,
 					DEFAULT_PARALLELISM,
-					DEFAULT_HASH_LENGTH,
-					ALGO_ARGON2ID
+					DEFAULT_HASH_LENGTH
 			);
 		}
 
@@ -163,8 +119,7 @@ public class Argon2 {
 					LOW_MEMORY_KB,
 					LOW_ITERATIONS,
 					DEFAULT_PARALLELISM,
-					DEFAULT_HASH_LENGTH,
-					ALGO_ARGON2ID
+					DEFAULT_HASH_LENGTH
 			);
 		}
 
@@ -183,8 +138,7 @@ public class Argon2 {
 					buffer.getInt(),
 					buffer.getInt(),
 					buffer.getInt(),
-					buffer.getInt(),
-					ALGO_ARGON2ID
+					buffer.getInt()
 			);
 		}
 	}

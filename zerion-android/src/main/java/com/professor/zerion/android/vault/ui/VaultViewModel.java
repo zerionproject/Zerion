@@ -114,11 +114,15 @@ public class VaultViewModel extends AndroidViewModel {
 
 	public void createVault(char[] password, char[] confirmPassword) {
 		if (!Arrays.equals(password, confirmPassword)) {
+			Arrays.fill(password, '\0');
+			Arrays.fill(confirmPassword, '\0');
 			errorMessage.postValue("Passwords do not match");
 			return;
 		}
 
 		if (password.length < 8) {
+			Arrays.fill(password, '\0');
+			Arrays.fill(confirmPassword, '\0');
 			errorMessage.postValue("Password must be at least 8 characters");
 			return;
 		}
@@ -465,14 +469,17 @@ public class VaultViewModel extends AndroidViewModel {
 		isLoading.postValue(true);
 
 		dbExecutor.execute(() -> {
+			char[] passwordChars = password.toCharArray();
 			try {
-				byte[] salt = new byte[16];
+				byte[] salt = new byte[32];
 				new java.security.SecureRandom().nextBytes(salt);
 
-				javax.crypto.SecretKeyFactory factory = javax.crypto.SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
-				javax.crypto.spec.PBEKeySpec spec = new javax.crypto.spec.PBEKeySpec(
-					password.toCharArray(), salt, 200000, 256);
-				byte[] passwordKey = factory.generateSecret(spec).getEncoded();
+				com.professor.zerion.android.vault.crypto.Argon2 argon2 =
+						new com.professor.zerion.android.vault.crypto.Argon2();
+				com.professor.zerion.android.vault.crypto.Argon2.Argon2Params params =
+						com.professor.zerion.android.vault.crypto.Argon2
+								.Argon2Params.getDefault();
+				byte[] passwordKey = argon2.deriveKey(passwordChars, salt, params);
 
 				javax.crypto.Cipher cipher = javax.crypto.Cipher.getInstance("AES/GCM/NoPadding");
 				javax.crypto.spec.SecretKeySpec keySpec = new javax.crypto.spec.SecretKeySpec(passwordKey, "AES");
@@ -482,10 +489,11 @@ public class VaultViewModel extends AndroidViewModel {
 				byte[] iv = cipher.getIV();
 				byte[] encryptedContent = cipher.doFinal(contentBytes);
 
-				byte[] combined = new byte[salt.length + iv.length + encryptedContent.length];
-				System.arraycopy(salt, 0, combined, 0, salt.length);
-				System.arraycopy(iv, 0, combined, salt.length, iv.length);
-				System.arraycopy(encryptedContent, 0, combined, salt.length + iv.length, encryptedContent.length);
+				byte[] combined = new byte[1 + salt.length + iv.length + encryptedContent.length];
+				combined[0] = 0x02;
+				System.arraycopy(salt, 0, combined, 1, salt.length);
+				System.arraycopy(iv, 0, combined, 1 + salt.length, iv.length);
+				System.arraycopy(encryptedContent, 0, combined, 1 + salt.length + iv.length, encryptedContent.length);
 
 				if (existingNoteId != null) {
 					vaultManager.deleteItem(existingNoteId);
@@ -501,11 +509,11 @@ public class VaultViewModel extends AndroidViewModel {
 				Arrays.fill(passwordKey, (byte) 0);
 				Arrays.fill(encryptedContent, (byte) 0);
 				Arrays.fill(salt, (byte) 0);
-				spec.clearPassword();
 
 			} catch (Exception e) {
 				errorMessage.postValue("Failed to save note");
 			} finally {
+				Arrays.fill(passwordChars, '\0');
 				isLoading.postValue(false);
 			}
 		});
@@ -575,21 +583,45 @@ public class VaultViewModel extends AndroidViewModel {
 		}
 
 		dbExecutor.execute(() -> {
+			char[] passwordChars = password.toCharArray();
 			try {
 				byte[] encryptedData = vaultManager.getItemContent(noteId);
 
-				byte[] salt = new byte[16];
+				byte[] salt;
 				byte[] iv = new byte[12];
-				byte[] encryptedContent = new byte[encryptedData.length - 28];
-
-				System.arraycopy(encryptedData, 0, salt, 0, 16);
-				System.arraycopy(encryptedData, 16, iv, 0, 12);
-				System.arraycopy(encryptedData, 28, encryptedContent, 0, encryptedContent.length);
-
-				javax.crypto.SecretKeyFactory factory = javax.crypto.SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
-				javax.crypto.spec.PBEKeySpec spec = new javax.crypto.spec.PBEKeySpec(
-					password.toCharArray(), salt, 200000, 256);
-				byte[] passwordKey = factory.generateSecret(spec).getEncoded();
+				byte[] encryptedContent;
+				byte[] passwordKey;
+				boolean isV2 = encryptedData.length > 0
+						&& encryptedData[0] == 0x02;
+				if (isV2) {
+					salt = new byte[32];
+					encryptedContent = new byte[encryptedData.length - 1 - 32 - 12];
+					System.arraycopy(encryptedData, 1, salt, 0, 32);
+					System.arraycopy(encryptedData, 33, iv, 0, 12);
+					System.arraycopy(encryptedData, 45, encryptedContent, 0,
+							encryptedContent.length);
+					com.professor.zerion.android.vault.crypto.Argon2 argon2 =
+							new com.professor.zerion.android.vault.crypto.Argon2();
+					com.professor.zerion.android.vault.crypto.Argon2.Argon2Params params =
+							com.professor.zerion.android.vault.crypto.Argon2
+									.Argon2Params.getDefault();
+					passwordKey = argon2.deriveKey(passwordChars, salt, params);
+				} else {
+					salt = new byte[16];
+					encryptedContent = new byte[encryptedData.length - 28];
+					System.arraycopy(encryptedData, 0, salt, 0, 16);
+					System.arraycopy(encryptedData, 16, iv, 0, 12);
+					System.arraycopy(encryptedData, 28, encryptedContent, 0,
+							encryptedContent.length);
+					javax.crypto.SecretKeyFactory factory =
+							javax.crypto.SecretKeyFactory.getInstance(
+									"PBKDF2WithHmacSHA256");
+					javax.crypto.spec.PBEKeySpec spec =
+							new javax.crypto.spec.PBEKeySpec(
+									passwordChars, salt, 200000, 256);
+					passwordKey = factory.generateSecret(spec).getEncoded();
+					spec.clearPassword();
+				}
 
 				javax.crypto.Cipher cipher = javax.crypto.Cipher.getInstance("AES/GCM/NoPadding");
 				javax.crypto.spec.SecretKeySpec keySpec = new javax.crypto.spec.SecretKeySpec(passwordKey, "AES");
@@ -604,7 +636,6 @@ public class VaultViewModel extends AndroidViewModel {
 				Arrays.fill(passwordKey, (byte) 0);
 				Arrays.fill(decryptedContent, (byte) 0);
 				Arrays.fill(salt, (byte) 0);
-				spec.clearPassword();
 
 			} catch (javax.crypto.BadPaddingException e) {
 				content.postValue(null);
@@ -614,6 +645,8 @@ public class VaultViewModel extends AndroidViewModel {
 			} catch (Exception e) {
 				content.postValue(null);
 				errorMessage.postValue("Failed to decrypt note");
+			} finally {
+				Arrays.fill(passwordChars, '\0');
 			}
 		});
 

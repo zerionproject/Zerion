@@ -1,9 +1,10 @@
 package com.professor.zerion.android.vault.utils;
 
+import com.professor.zerion.android.vault.crypto.Argon2;
+
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
@@ -17,11 +18,13 @@ import javax.crypto.spec.SecretKeySpec;
 @NotNullByDefault
 public class EncryptedFileExporter {
 
-	private static final byte[] MAGIC_HEADER = "ZENC1\0".getBytes(StandardCharsets.US_ASCII);
+	private static final byte[] MAGIC_HEADER_V1 = "ZENC1\0".getBytes(StandardCharsets.US_ASCII);
+	private static final byte[] MAGIC_HEADER_V2 = "ZENC2\0".getBytes(StandardCharsets.US_ASCII);
 	private static final int SALT_LENGTH = 32;
 	private static final int NONCE_LENGTH = 12;
-	private static final int PBKDF2_ITERATIONS = 100000;
-	private static final int KEY_LENGTH = 256;
+	private static final int LEGACY_PBKDF2_ITERATIONS = 100000;
+	private static final int KEY_LENGTH_BITS = 256;
+	private static final int KEY_LENGTH_BYTES = 32;
 	private static final int GCM_TAG_LENGTH = 128;
 
 	public static byte[] exportEncrypted(String filename, byte[] content, char[] password)
@@ -47,7 +50,9 @@ public class EncryptedFileExporter {
 			salt = new byte[SALT_LENGTH];
 			random.nextBytes(salt);
 
-			key = deriveKey(password, salt);
+			Argon2.Argon2Params params = Argon2.Argon2Params.getDefault();
+			Argon2 argon2 = new Argon2();
+			key = argon2.deriveKey(password, salt, params);
 
 			filenameBytes = filename.getBytes(StandardCharsets.UTF_8);
 			filenameNonce = new byte[NONCE_LENGTH];
@@ -60,7 +65,13 @@ public class EncryptedFileExporter {
 
 			ByteArrayOutputStream output = new ByteArrayOutputStream();
 
-			output.write(MAGIC_HEADER);
+			output.write(MAGIC_HEADER_V2);
+
+			ByteBuffer paramBuf = ByteBuffer.allocate(12);
+			paramBuf.putInt(params.memoryKb);
+			paramBuf.putInt(params.iterations);
+			paramBuf.putInt(params.parallelism);
+			output.write(paramBuf.array());
 
 			ByteBuffer lengthBuffer = ByteBuffer.allocate(4);
 			lengthBuffer.putInt(encryptedFilename.length);
@@ -104,10 +115,25 @@ public class EncryptedFileExporter {
 		byte[] filenameBytes = null;
 
 		try {
-			byte[] magic = new byte[MAGIC_HEADER.length];
+			byte[] magic = new byte[MAGIC_HEADER_V2.length];
 			buffer.get(magic);
-			if (!java.util.Arrays.equals(magic, MAGIC_HEADER)) {
+			boolean isV2 = java.util.Arrays.equals(magic, MAGIC_HEADER_V2);
+			boolean isV1 = java.util.Arrays.equals(magic, MAGIC_HEADER_V1);
+			if (!isV1 && !isV2) {
 				throw new IllegalArgumentException("Invalid .zenc file format");
+			}
+
+			int memoryKb = 0;
+			int iterations = 0;
+			int parallelism = 0;
+			if (isV2) {
+				memoryKb = buffer.getInt();
+				iterations = buffer.getInt();
+				parallelism = buffer.getInt();
+				if (memoryKb < 1024 || iterations < 1 || parallelism < 1) {
+					throw new IllegalArgumentException(
+							"Invalid Argon2 parameters in .zenc header");
+				}
 			}
 
 			int filenameLength = buffer.getInt();
@@ -128,7 +154,14 @@ public class EncryptedFileExporter {
 			byte[] encryptedContent = new byte[buffer.remaining()];
 			buffer.get(encryptedContent);
 
-			key = deriveKey(password, salt);
+			if (isV2) {
+				Argon2 argon2 = new Argon2();
+				Argon2.Argon2Params params = new Argon2.Argon2Params(
+						memoryKb, iterations, parallelism, KEY_LENGTH_BYTES);
+				key = argon2.deriveKey(password, salt, params);
+			} else {
+				key = deriveKeyLegacyPbkdf2(password, salt);
+			}
 
 			filenameBytes = decryptAesGcm(encryptedFilename, key, filenameNonce);
 			String filename = new String(filenameBytes, StandardCharsets.UTF_8);
@@ -147,9 +180,10 @@ public class EncryptedFileExporter {
 		}
 	}
 
-	private static byte[] deriveKey(char[] password, byte[] salt) throws Exception {
+	private static byte[] deriveKeyLegacyPbkdf2(char[] password, byte[] salt) throws Exception {
 		SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
-		PBEKeySpec spec = new PBEKeySpec(password, salt, PBKDF2_ITERATIONS, KEY_LENGTH);
+		PBEKeySpec spec = new PBEKeySpec(password, salt,
+				LEGACY_PBKDF2_ITERATIONS, KEY_LENGTH_BITS);
 		byte[] key = factory.generateSecret(spec).getEncoded();
 		spec.clearPassword();
 		return key;
