@@ -86,7 +86,7 @@ Any attempt to reconnect with weaker security is automatically blocked.
 
 **[Google Play](https://play.google.com/store/apps/details?id=com.professor.zerion)** — Get it on the Play Store
 
-**[Download APK](https://github.com/zerionproject/Zerion/releases/latest)** — v1.6.2 (direct from GitHub)
+**[Download APK](https://github.com/zerionproject/Zerion/releases/latest)** — v1.7.0 (direct from GitHub)
 
 **F-Droid:** [fdroid.zerion.chat](https://fdroid.zerion.chat/fdroid/repo)
 ```
@@ -97,7 +97,17 @@ Repo fingerprint: D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6888F704
 
 ## Changelog
 
-**v1.6.2 (Latest, May 2026):**
+**v1.7.0 (Latest, May 2026):**
+- **Headline:** Mode 3-Full per-message hybrid ratchet is now the default. Every frame in both directions carries a fresh ML-KEM-768 encapsulation; the decapsulated secret is mixed into the body AEAD key on every message. A single compromised key cannot decrypt any other message in the conversation, past or future.
+- Group chat unread counter — Groups list now shows an unread badge per group (1, 2, 3, …, 99+); clears on open
+- Multi-profile end-to-end polish: profile create, sign-in, switch and recovery paths reliable across the full lifecycle; profiles with missing display names heal automatically on next login
+- Internationalisation: vault confirmation keywords and dialog strings route through string resources; case-insensitive confirmation match
+- Accessibility: voice call control buttons (mute, speaker, video, switch camera, end, accept, decline) labelled for screen readers
+- Streamlined the per-chat actions menu so every item maps to a real, user-visible behaviour
+- Build-time zero-logging guarantee: a Gradle gate fails the build if any production source file references a logger, `Timber`, `android.util.Log`, or `System.err`/`System.out`
+- Wire-compatible with 1.6.x peers (Mode 2 fallback when the peer is older); no vault or DB schema changes; signing key unchanged
+
+**v1.6.2 (May 2026):**
 - Native group-invite protocol replaces the legacy carrier (`OFFER`/`ACCEPT`/`DECLINE` on the 1:1 channel)
 - Kick reliability fix: invitee epoch desync that silently dropped `MEMBER_REMOVED` is closed; removed users are purged from the local device atomically
 - Tor-only transport — Bluetooth, Wi-Fi LAN, removable-drive sync, and dev-reporting subsystems removed
@@ -190,6 +200,36 @@ Repo fingerprint: D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6888F704
 - [Group Triple Ratchet (PQ)](docs/GROUP_TRIPLE_RATCHET_PQ_DESIGN.md) — Hybrid-signed group records
 - [GroupTr Wire Protocol](docs/wire/GROUPTR_WIRE_PROTOCOL.md) — Native group-invite + membership messages
 - [P2P Voice & Video Calls](docs/P2P_Voice_Calls_Documentation.md) — Voice and video calling specification
+
+---
+
+## Support Zerion
+
+Zerion has no investors, no ads, no subscription, and no telemetry. The project is funded entirely by donations from people who value private communication. If Zerion is useful to you, please consider supporting development:
+
+**Bitcoin (BTC)**
+```
+bc1qkjgzqmgrgtq3wh2qhrtmsg50cfrlcsssn5u97y
+```
+
+**Bitcoin Lightning**
+```
+Zerion@cake.cash
+```
+
+**Monero (XMR)**
+```
+83yVsTFT8tt8m9UBQ5KUP9hKHcNASFRvN3ewzUraTFb2TXq1BkeCvUucUusTA1dmgsJjWKGLt3s9AMF5bp15Qh1P9fNY4bF
+```
+
+**Ethereum / USDT (ERC-20)**
+```
+0xE80e802736d759847918EcBD90457E6aAa5Cca45
+```
+
+Donations fund security audits, infrastructure (F-Droid repo, onion-rotation testing, signing keys), and continued development of new privacy features. Thank you.
+
+More details and copy-to-clipboard buttons: [zerion.chat/donate.html](https://zerion.chat/donate.html)
 
 ---
 
