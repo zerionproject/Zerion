@@ -1,9 +1,20 @@
-# Zerion ratchet modes 1 / 2 / 3 — what each layer does
+# Zerion ratchet modes 1 / 2 / 3 / 3-Full — what each layer does
 
-**Version:** 1.1
-**Date:** 2026-05-12
-**Status:** ACTIVE — describes the v1.6 shipped 1:1 message ratchet
+**Version:** 1.2
+**Date:** 2026-05-20
+**Status:** ACTIVE — describes the v1.7 shipped 1:1 message ratchet
 **Author:** Zerion Project
+
+> **v1.7 amendment.** Mode 3-Full ships as the default on new contacts.
+> Every frame in both directions carries a fresh ML-KEM-768
+> encapsulation against the peer's current ML-KEM public key; the
+> shared secret is mixed into the per-frame body key via
+> `HKDF(classicalMessageKey, ml_kem_shared_secret)`. The chain key is
+> now per-stream (derived from `HKDF(rootKey, PCS_STREAM_CHAIN,
+> streamNumber)` and advanced locally within the stream), so parallel
+> Briar transport streams no longer share a single ratchet position.
+> The previous per-epoch PQ rotation (Mode 3) becomes a fallback for
+> mode-disabled paths only.
 
 > **v1.6 amendment.** Phase 4d (January 2026) shipped Mode 3 framing on
 > the wire (`0x2000` stream-header flag, per-frame PCS header, PQ
@@ -34,11 +45,19 @@ Mode 1                        symmetric chain-key ratchet
 Mode 2  =  Mode 1  +          X25519 DH ratchet
                               │   post-compromise security (PCS)
                               ▼
-Mode 3  =  Mode 2  +          ML-KEM-768 PQ ratchet
-                                  hybrid post-quantum PCS
+Mode 3  =  Mode 2  +          ML-KEM-768 PQ ratchet (per epoch)
+                              │   hybrid post-quantum PCS
+                              ▼
+Mode 3-Full  =  Mode 2  +     ML-KEM-768 PQ encap per frame
+                                  per-message hybrid PQ
+                                  (current default)
 ```
 
-Mode 3 is built on top of Mode 2; Mode 2 is built on top of Mode 1. You cannot remove the lower layers without breaking the higher one.
+Mode 3-Full is built on top of Mode 2; Mode 2 is built on top of Mode 1.
+You cannot remove the lower layers without breaking the higher one.
+Mode 3 (per-epoch PQ rotation) remains as a fallback path; Mode 3-Full
+replaces it as the default by encapsulating ML-KEM-768 on **every**
+frame instead of every 25 frames.
 
 ---
 
@@ -92,7 +111,37 @@ The encapsulated PQ shared secret is large (1088 bytes for ML-KEM-768 ciphertext
 
 **Hybrid quantum-resistant PCS:** even against a future quantum attacker who can break the X25519 DH agreements (Mode 2's contribution) retroactively, the ML-KEM contribution to the root key remains secure. A quantum adversary cannot derive subsequent message keys without breaking ML-KEM-768 itself.
 
-Mode 3 = Mode 2 + PQ-PCS. This is Zerion's strongest 1:1 protection and the default for new contacts.
+Mode 3 = Mode 2 + per-epoch PQ-PCS. Retained as a fallback path.
+
+### Mode 3-Full — per-message ML-KEM-768 hybrid (current default)
+
+On top of Mode 2, **every single frame** carries a fresh ML-KEM-768
+encapsulation against the peer's currently advertised ML-KEM public
+key. The chain key is per-stream (each transport stream derives its
+own initial chain key from `HKDF(rootKey, PCS_STREAM_CHAIN,
+streamNumber_8B)` and advances locally per frame within the stream),
+and the per-frame body AEAD key is the hybrid:
+
+```
+classicalMK    =  KDF(streamChainKey_i, MESSAGE_KEY_INPUT)
+ct, kem_ss     =  ML-KEM-Encaps(peer's currently advertised ML-KEM pubkey)
+bodyKey_i      =  HKDF(classicalMK, kem_ss)
+streamChainKey_{i+1}  =  KDF(streamChainKey_i, CHAIN_KEY_INPUT)
+```
+
+Each frame also advertises the sender's freshly rotated ML-KEM public
+key, so subsequent peer-to-sender frames encapsulate against the
+newest key. Recent sender keypairs are retained in a per-contact LRU
+(cap 64) so the peer's CTs against slightly stale public keys still
+decapsulate cleanly. The frame header carries a 16-byte `kpId`
+(truncated SHA-256 of the encapsulation key) to disambiguate.
+
+**Per-message hybrid quantum-resistant PCS:** every body key includes
+fresh ML-KEM entropy. A quantum adversary who breaks past X25519 DH
+agreements still cannot derive any future body key without
+also breaking ML-KEM-768 — on a per-frame basis, not per-epoch.
+
+Mode 3-Full is the active default on new Zerion 1:1 contacts since v1.7.
 
 ---
 
@@ -101,26 +150,43 @@ Mode 3 = Mode 2 + PQ-PCS. This is Zerion's strongest 1:1 protection and the defa
 | Removed layer | Effect |
 |---|---|
 | Mode 1 only | Impossible. The symmetric chain is the only thing that derives per-message AEAD keys. Removing it means no message encryption at all. |
-| Mode 2 only | Removing the DH ratchet drops continuous PCS. Mode 3's PQ epochs still rotate the root key every 25 messages, but PCS recovery would only happen on epoch boundaries instead of on every chain start. A compromise at message 12 of an epoch stays effective until message 25. |
-| Mode 3 only | Drops hybrid PQ. Reverts to Signal-classic security. Acceptable today; vulnerable to "harvest now decrypt later" once a cryptographic quantum computer exists. |
+| Mode 2 only | Removing the DH ratchet drops continuous classical PCS. Mode 3-Full's per-message PQ rotation still rotates the body key every frame, so post-compromise recovery happens every frame against quantum adversaries; classical PCS recovery would be lost. |
+| Mode 3 only | No-op when Mode 3-Full is active. Mode 3 is retained as a fallback for legacy code paths. |
+| Mode 3-Full only | Drops per-message hybrid PQ. Falls back to Mode 3 per-epoch PQ. Acceptable as a feature gate; not the v1.7 default. |
 | Modes 1+2 | See "Mode 1 only" — impossible. |
-| Modes 2+3 | Drops both PCS and hybrid PQ. Reverts to Briar's original Mode 1 (forward-secret per-message symmetric chain, no recovery from key compromise). |
+| Modes 2+3+3-Full | Drops both classical PCS and hybrid PQ. Reverts to Briar's original Mode 1 (forward-secret per-message symmetric chain, no recovery from key compromise). |
 
-**Practical conclusion:** all three layers are kept. Mode 3 is the active default on new Zerion contacts; the lower layers run as Mode 3's foundation.
+**Practical conclusion:** all layers are kept. Mode 3-Full is the active
+default on new Zerion contacts since v1.7; Mode 3 remains as a fallback
+path; Mode 1 + Mode 2 run as the foundation.
 
 ---
 
 ## What ships today
 
-### Android — Mode 3 active from message zero
+### Android — Mode 3-Full active from message zero (v1.7)
 
-New 1:1 contacts initialize directly into Mode 3 via `PcsSessionState.createInitialMode3` ([`ContactManagerImpl.java:375-378`](../bramble-core/src/main/java/org/briarproject/bramble/contact/ContactManagerImpl.java)). Every outbound frame is Mode-3 framed (stream-header bit `0x2000` set). PQ epochs trigger on the threshold via [`PcsStreamEncrypterImpl.java:204-226`](../bramble-core/src/main/java/org/briarproject/bramble/crypto/pcs/PcsStreamEncrypterImpl.java).
+New 1:1 contacts initialize directly into Mode 3-Full via
+`PcsSessionState.createInitialMode3Full` in `ContactManagerImpl`. Every
+outbound frame is Mode 3-Full framed (stream-header carries the
+Mode 3-Full flag bit) and includes a fresh ML-KEM-768 encapsulation
+against the peer's currently advertised public key. Each transport
+stream derives its own initial chain key from `HKDF(rootKey,
+PCS_STREAM_CHAIN, streamNumber_8B)` and advances it locally; the
+chain key is never persisted across streams.
 
-### iOS — Mode 3 partially dormant (action item for iOS team)
+### iOS — needs Mode 3-Full catch-up (action item for iOS team)
 
-iOS initializes new contacts in Mode 2 and **never calls `upgradeToMode3()`** on the outbound path. iOS can DECRYPT incoming Mode-3 frames from Android via the `handlePqEpoch` receive path, but never INITIATES a Mode-3 transition itself.
-
-Effect on cross-platform channels: Android → iOS direction is Mode 3 (hybrid PQ). iOS → Android direction is Mode 2 only (no PQ contribution). Until iOS lands the bootstrap fix described in `docs-internal/IOS_MODE3_GAP.md` (sent to iOS team separately), one direction of every cross-platform 1:1 chat is **not** hybrid-PQ on the ongoing ratchet. Initial B.3 handshake (master key derivation) is still hybrid PQ on both sides — only the ongoing PCS ratchet is asymmetric.
+iOS currently initializes new contacts in Mode 2 (no PQ) and decapsulates
+Mode-3 (per-epoch) frames from Android via the legacy receive path. iOS
+does not yet emit Mode 3-Full frames. Effect on cross-platform channels:
+Android → iOS uses Mode 3-Full on the wire; iOS → Android uses Mode 2.
+Until iOS lands Mode 3-Full per the parity spec in
+[`docs-internal/V1_7_IOS_PARITY_SPEC.md`](../docs-internal/V1_7_IOS_PARITY_SPEC.md),
+the iOS → Android direction is not per-message PQ on the ongoing
+ratchet. The initial contact handshake (B.4) and identity layer (B.3)
+are hybrid PQ on both sides — only the ongoing transport ratchet is
+asymmetric.
 
 ---
 
@@ -128,12 +194,13 @@ Effect on cross-platform channels: Android → iOS direction is Mode 3 (hybrid P
 
 Group posts ride on the existing 1:1 channels. Whichever mode each 1:1 channel is in determines what protection the group post gets on that hop:
 
-- **Android sends to Android:** Mode 3 hybrid PQ on both halves of every pair → full protection.
-- **Android sends to iOS:** Mode 3 on the wire; iOS decrypts via `handlePqEpoch` path.
+- **Android sends to Android:** Mode 3-Full per-message hybrid PQ on both halves of every pair → full protection.
+- **Android sends to iOS:** Mode 3-Full on the wire; iOS decrypts via legacy Mode 3 receive path.
 - **iOS sends to Android:** Mode 2 only → no PQ protection on this leg.
 - **iOS sends to iOS:** Mode 2 only on both halves.
 
-Once iOS lands the Mode-3 initialisation fix, all group hops become Mode 3 across both platforms.
+Once iOS lands the Mode 3-Full initialisation fix, all group hops become
+Mode 3-Full across both platforms.
 
 ---
 
