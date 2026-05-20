@@ -122,6 +122,7 @@ class IdentityManagerImpl implements IdentityManager, OpenDatabaseHook {
 			byte[] mlDsaPriv = requireNonNull(cached.getMlDsaSigPrivateKey());
 			db.setMlDsaSigKeyPair(txn, cached.getId(), mlDsaPub, mlDsaPriv);
 		}
+		cachedIdentity = null;
 	}
 
 	@Override

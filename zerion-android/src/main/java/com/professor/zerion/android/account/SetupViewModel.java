@@ -80,6 +80,9 @@ class SetupViewModel extends AndroidViewModel {
 
 	void setPassword(char[] password) {
 		if (authorName == null) throw new IllegalStateException();
+		if (this.password != null) {
+			java.util.Arrays.fill(this.password, '\0');
+		}
 		this.password = password;
 		if (needToShowDozeFragment()) {
 			state.setEvent(DOZE);

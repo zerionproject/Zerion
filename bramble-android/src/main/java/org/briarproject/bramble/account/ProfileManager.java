@@ -27,6 +27,8 @@ public class ProfileManager {
 
 	private final Object lock = new Object();
 	private final File filesDir;
+	private final ProfileMetadataCrypto metadataCrypto =
+			new ProfileMetadataCrypto();
 
 	@GuardedBy("lock")
 	private String activeProfileId = DEFAULT_PROFILE_ID;
@@ -124,16 +126,33 @@ public class ProfileManager {
 		return new File(filesDir, "login.lockout");
 	}
 
+	private File getLastActiveProfileFile() {
+		return new File(filesDir, "last_active_profile");
+	}
+
+	@javax.annotation.Nullable
+	public String readLastActiveProfileId() {
+		File f = getLastActiveProfileFile();
+		if (!f.exists()) return null;
+		return metadataCrypto.readEncrypted(f);
+	}
+
+	public void writeLastActiveProfileId(String profileId) {
+		try {
+			metadataCrypto.writeEncrypted(getLastActiveProfileFile(),
+					profileId);
+		} catch (java.io.IOException ignored) {
+		}
+	}
+
 	public File getDisplayNameFile(String profileId) {
 		return new File(getKeyDir(profileId), "display_name");
 	}
 
 	public void writeDisplayName(String profileId, String name) {
 		File f = getDisplayNameFile(profileId);
-		try (java.io.FileOutputStream out =
-				new java.io.FileOutputStream(f)) {
-			out.write(name.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-			out.flush();
+		try {
+			metadataCrypto.writeEncrypted(f, name);
 		} catch (java.io.IOException ignored) {
 		}
 	}
@@ -142,6 +161,44 @@ public class ProfileManager {
 	public String readDisplayName(String profileId) {
 		File f = getDisplayNameFile(profileId);
 		if (!f.exists()) return null;
+		String decrypted = metadataCrypto.readEncrypted(f);
+		if (decrypted != null) return decrypted.isEmpty() ? null : decrypted;
+		String migrated = migratePlaintextDisplayName(f, profileId);
+		return migrated == null || migrated.isEmpty() ? null : migrated;
+	}
+
+	public void writeEncryptedMetaFile(String profileId, String fileName,
+			String value) throws java.io.IOException {
+		File f = new File(getKeyDir(profileId), fileName);
+		metadataCrypto.writeEncrypted(f, value);
+	}
+
+	@javax.annotation.Nullable
+	public String readEncryptedMetaFile(String profileId, String fileName) {
+		File f = new File(getKeyDir(profileId), fileName);
+		if (!f.exists()) return null;
+		String decrypted = metadataCrypto.readEncrypted(f);
+		if (decrypted != null) return decrypted;
+		String legacy = readLegacyPlaintext(f);
+		if (legacy == null) return null;
+		try {
+			metadataCrypto.writeEncrypted(f, legacy);
+		} catch (java.io.IOException ignored) {
+		}
+		return legacy;
+	}
+
+	public void deleteMetaFile(String profileId, String fileName) {
+		File f = new File(getKeyDir(profileId), fileName);
+		if (f.exists()) f.delete();
+	}
+
+	void deleteProfileMetadataKey() {
+		metadataCrypto.deleteKey();
+	}
+
+	@javax.annotation.Nullable
+	private String readLegacyPlaintext(File f) {
 		try (java.io.BufferedReader r = new java.io.BufferedReader(
 				new java.io.InputStreamReader(new java.io.FileInputStream(f),
 						java.nio.charset.StandardCharsets.UTF_8))) {
@@ -150,6 +207,21 @@ public class ProfileManager {
 		} catch (java.io.IOException e) {
 			return null;
 		}
+	}
+
+	@javax.annotation.Nullable
+	private String migratePlaintextDisplayName(File f, String profileId) {
+		String legacy;
+		try (java.io.BufferedReader r = new java.io.BufferedReader(
+				new java.io.InputStreamReader(new java.io.FileInputStream(f),
+						java.nio.charset.StandardCharsets.UTF_8))) {
+			legacy = r.readLine();
+		} catch (java.io.IOException e) {
+			return null;
+		}
+		if (legacy == null || legacy.isEmpty()) return null;
+		writeDisplayName(profileId, legacy);
+		return legacy;
 	}
 
 	public String generateProfileId() {

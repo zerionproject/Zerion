@@ -138,9 +138,8 @@ public class AppModule {
 
 		private static void initializeInternal(Application app) {
 			try {
-				MasterKey masterKey = new MasterKey.Builder(app.getApplicationContext())
-						.setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-						.build();
+				MasterKey masterKey = buildHardenedMasterKey(
+						app.getApplicationContext());
 
 				securePrefs = EncryptedSharedPreferences.create(
 						app.getApplicationContext(),
@@ -160,6 +159,23 @@ public class AppModule {
 			} catch (Exception e) {
 				throw new RuntimeException("EncryptedSharedPreferences init failed", e);
 			}
+		}
+
+		private static MasterKey buildHardenedMasterKey(android.content.Context ctx)
+				throws java.security.GeneralSecurityException, java.io.IOException {
+			if (android.os.Build.VERSION.SDK_INT >= 28) {
+				try {
+					return new MasterKey.Builder(ctx)
+							.setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+							.setRequestStrongBoxBacked(true)
+							.build();
+				} catch (android.security.keystore.StrongBoxUnavailableException ignored) {
+				} catch (java.security.GeneralSecurityException ignored) {
+				}
+			}
+			return new MasterKey.Builder(ctx)
+					.setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+					.build();
 		}
 
 		static SharedPreferences getSecurePrefs() {

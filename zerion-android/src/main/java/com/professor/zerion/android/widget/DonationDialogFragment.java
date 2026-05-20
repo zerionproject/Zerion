@@ -116,26 +116,8 @@ public class DonationDialogFragment extends DialogFragment {
 	}
 
 	private void showBrowserWarning() {
-		Context ctx = requireContext();
-		new MaterialAlertDialogBuilder(ctx, R.style.ZerionDialogTheme)
-				.setTitle(R.string.donation_browser_warning_title)
-				.setMessage(R.string.donation_browser_warning_message)
-				.setNegativeButton(android.R.string.cancel, null)
-				.setPositiveButton(R.string.donation_browser_warning_open,
-						(d, which) -> {
-							openInBrowser();
-							dismiss();
-						})
-				.show();
-	}
-
-	private void openInBrowser() {
-		Context ctx = requireContext();
-		Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(DONATION_URL));
-		try {
-			startActivity(intent);
-		} catch (Exception ignored) {
-		}
+		copyDonationUrl();
+		dismiss();
 	}
 
 	public String getUniqueTag() {

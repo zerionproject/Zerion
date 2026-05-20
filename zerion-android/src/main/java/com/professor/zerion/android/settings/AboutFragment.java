@@ -1,12 +1,14 @@
 package com.professor.zerion.android.settings;
 
-import android.content.Intent;
-import android.net.Uri;
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.professor.zerion.BuildConfig;
 import com.professor.zerion.R;
@@ -16,9 +18,6 @@ import org.briarproject.nullsafety.ParametersNotNullByDefault;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-
-import static android.content.Intent.ACTION_VIEW;
-import static com.professor.zerion.android.util.UiUtils.tryToStartActivity;
 
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
@@ -55,24 +54,23 @@ public class AboutFragment extends Fragment {
 		zerionSourceCode = requireActivity().findViewById(R.id.zerion_source_code);
 		zerionPrivacyPolicy =
 				requireActivity().findViewById(R.id.zerion_privacy_policy);
-		zerionWebsite.setOnClickListener(v -> {
-			String url = "https://zerion.chat";
-			goToUrl(url);
-		});
-		zerionSourceCode.setOnClickListener(v -> {
-			String url = "https://github.com/zerionproject";
-			goToUrl(url);
-		});
-		zerionPrivacyPolicy.setOnClickListener(v -> {
-			String url = "https://zerion.chat/privacy-policy.html";
-			goToUrl(url);
-		});
+		zerionWebsite.setOnClickListener(v ->
+				copyUrlToClipboard("https://zerion.chat"));
+		zerionSourceCode.setOnClickListener(v ->
+				copyUrlToClipboard("https://github.com/zerionproject"));
+		zerionPrivacyPolicy.setOnClickListener(v ->
+				copyUrlToClipboard("https://zerion.chat/privacy-policy.html"));
 	}
 
-	private void goToUrl(String url) {
-		Intent i = new Intent(ACTION_VIEW);
-		i.setData(Uri.parse(url));
-		tryToStartActivity(requireActivity(), i);
+	private void copyUrlToClipboard(String url) {
+		ClipboardManager cm = (ClipboardManager)
+				requireActivity().getSystemService(Context.CLIPBOARD_SERVICE);
+		if (cm == null) return;
+		ClipData clip = ClipData.newPlainText("Zerion URL", url);
+		cm.setPrimaryClip(clip);
+		Toast.makeText(requireActivity(),
+				R.string.zerion_url_copied_open_in_tor_browser,
+				Toast.LENGTH_LONG).show();
 	}
 
 }
