@@ -258,7 +258,7 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 		}
 		if (recvState == null) throw new IllegalStateException();
 
-		SecretKey messageKey;
+		SecretKey messageKey = null;
 		int messageNumber;
 
 		int offset = 0;
@@ -270,7 +270,7 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 
 		boolean useMode3Full = MODE3_FULL_ENABLED && mode3FullEnabled
 				&& recvState.isMode3Full() && mode3FullRatchet != null;
-		SecretKey classicalMK;
+		SecretKey classicalMK = null;
 		SecretKey nextStreamChainKey;
 		try {
 			if (streamChainKey == null) {
@@ -314,7 +314,8 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 			throw new FormatException();
 		}
 
-		byte[] decryptedPayload;
+		byte[] decryptedPayload = null;
+		try {
 		messageKey = classicalMK;
 		if (useMode3Full) {
 			int pcsHdrSz = headerCodec.getMode3FullHeaderSize();
@@ -529,8 +530,6 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 				throw new FormatException();
 		}
 
-		java.util.Arrays.fill(decryptedPayload, (byte) 0);
-
 		streamChainKey = nextStreamChainKey;
 		streamMessageNumber++;
 		frameNumber++;
@@ -540,6 +539,18 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 		}
 
 		return actualPayloadLength;
+		} finally {
+			if (decryptedPayload != null) {
+				java.util.Arrays.fill(decryptedPayload, (byte) 0);
+			}
+			if (classicalMK != null) classicalMK.clear();
+			if (messageKey != null && messageKey != classicalMK) {
+				messageKey.clear();
+			}
+			java.util.Arrays.fill(frameCiphertext, (byte) 0);
+			java.util.Arrays.fill(frameHeader, (byte) 0);
+			java.util.Arrays.fill(frameNonce, (byte) 0);
+		}
 	}
 
 	@Nullable

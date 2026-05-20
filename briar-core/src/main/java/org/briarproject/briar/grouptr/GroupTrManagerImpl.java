@@ -1201,28 +1201,37 @@ class GroupTrManagerImpl
 		postCache.remove(hex);
 		futureBuffer.remove(hex);
 		mlDsaPubKeyCache.clear();
-		try {
-			db.transaction(false, txn -> {
-				BdfDictionary query = new BdfDictionary();
-				query.put("groupId", groupId);
-				for (Contact c : contactManager.getContacts(txn)) {
-					try {
-						org.briarproject.bramble.api.sync.GroupId contactGid =
-								messagingManager.getContactGroup(c).getId();
-						Collection<MessageId> msgs = clientHelper
-								.getMessageIds(txn, contactGid, query);
-						for (MessageId m : msgs) {
-							try {
-								db.removeMessage(txn, m);
-							} catch (org.briarproject.bramble.api.db
-									.NoSuchMessageException ignored) {
+		DbException sweepFailure = null;
+		for (int attempt = 0; attempt < 3; attempt++) {
+			try {
+				db.transaction(false, txn -> {
+					BdfDictionary query = new BdfDictionary();
+					query.put("groupId", groupId);
+					for (Contact c : contactManager.getContacts(txn)) {
+						try {
+							org.briarproject.bramble.api.sync.GroupId contactGid =
+									messagingManager.getContactGroup(c).getId();
+							Collection<MessageId> msgs = clientHelper
+									.getMessageIds(txn, contactGid, query);
+							for (MessageId m : msgs) {
+								try {
+									db.removeMessage(txn, m);
+								} catch (org.briarproject.bramble.api.db
+										.NoSuchMessageException ignored) {
+								}
 							}
+						} catch (FormatException ignored) {
 						}
-					} catch (FormatException ignored) {
 					}
-				}
-			});
-		} catch (DbException ignored) {
+				});
+				sweepFailure = null;
+				break;
+			} catch (DbException e) {
+				sweepFailure = e;
+			}
+		}
+		if (sweepFailure != null) {
+			throw sweepFailure;
 		}
 		eventBus.broadcast(new org.briarproject.briar.api.messaging.event
 				.GroupTrLocalStateChangedEvent(groupId,

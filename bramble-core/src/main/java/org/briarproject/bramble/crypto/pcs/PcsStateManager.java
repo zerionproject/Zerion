@@ -161,6 +161,7 @@ public class PcsStateManager {
 					db.removePcsState(txn, contactId));
 		} catch (DbException e) {
 		}
+		contactLocks.remove(contactId.getInt());
 	}
 
 	@Nullable

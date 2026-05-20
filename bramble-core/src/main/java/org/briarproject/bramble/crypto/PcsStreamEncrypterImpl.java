@@ -89,6 +89,8 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 	private boolean writeTag, writeStreamHeader;
 	private SecretKey streamChainKey;
 	private int streamMessageNumber;
+	@Nullable
+	private Boolean streamUseMode3FullLocked;
 
 	PcsStreamEncrypterImpl(OutputStream out, AuthenticatedCipher cipher,
 			PcsRatchet ratchet, long streamNumber, @Nullable byte[] tag,
@@ -228,8 +230,13 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 				}
 			}
 
-			useMode3Full = MODE3_FULL_ENABLED && sendState.isMode3Full() &&
-					mode3FullRatchet != null;
+			if (streamUseMode3FullLocked != null) {
+				useMode3Full = streamUseMode3FullLocked;
+			} else {
+				useMode3Full = MODE3_FULL_ENABLED && sendState.isMode3Full() &&
+						mode3FullRatchet != null;
+				streamUseMode3FullLocked = useMode3Full;
+			}
 			useMode3 = !useMode3Full && sendState.isMode3()
 					&& pqRatchet != null && pqState != null;
 

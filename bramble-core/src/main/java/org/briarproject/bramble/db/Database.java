@@ -67,11 +67,7 @@ interface Database<T> {
 
 	ContactId addContact(T txn, Author remote, AuthorId local,
 			@Nullable PublicKey handshake, boolean verified, boolean postQuantum,
-			boolean pcsEnabled, boolean mode3Capable) throws DbException;
-
-	ContactId addContact(T txn, Author remote, AuthorId local,
-			@Nullable PublicKey handshake, boolean verified, boolean postQuantum,
-			boolean pcsEnabled, boolean mode3Capable,
+			boolean pcsEnabled,
 			@Nullable byte[] mlDsaSigPublicKey) throws DbException;
 
 	void addGroup(T txn, Group g) throws DbException;

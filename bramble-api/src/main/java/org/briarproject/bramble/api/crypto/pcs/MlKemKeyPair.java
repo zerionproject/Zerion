@@ -30,10 +30,10 @@ public class MlKemKeyPair {
 			throw new IllegalArgumentException();
 		if (ekVector.length != MLKEM_EK_VECTOR_SIZE)
 			throw new IllegalArgumentException();
-		this.encapsulationKey = encapsulationKey;
-		this.decapsulationKey = decapsulationKey;
-		this.ekSeed = ekSeed;
-		this.ekVector = ekVector;
+		this.encapsulationKey = encapsulationKey.clone();
+		this.decapsulationKey = decapsulationKey.clone();
+		this.ekSeed = ekSeed.clone();
+		this.ekVector = ekVector.clone();
 	}
 
 	public byte[] getEncapsulationKey() {

@@ -24,12 +24,7 @@ public interface ContactExchangeManager {
 
 	Contact exchangeContacts(PendingContactId p, DuplexTransportConnection conn,
 			SecretKey masterKey, boolean alice, boolean verified,
-			boolean classical, boolean mode3Capable)
-			throws IOException, DbException;
-
-	Contact exchangeContacts(PendingContactId p, DuplexTransportConnection conn,
-			SecretKey masterKey, boolean alice, boolean verified,
-			boolean classical, boolean mode3Capable,
+			boolean classical,
 			@Nullable byte[] ourStaticHybridPub,
 			@Nullable byte[] theirStaticHybridPub,
 			@Nullable byte[] ourEphX25519,

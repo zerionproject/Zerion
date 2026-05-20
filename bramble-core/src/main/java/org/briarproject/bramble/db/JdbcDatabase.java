@@ -770,7 +770,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 	public ContactId addContact(Connection txn, Author remote, AuthorId local,
 			@Nullable PublicKey handshake, boolean verified)
 			throws DbException {
-		return addContact(txn, remote, local, handshake, verified, false, false, false);
+		return addContact(txn, remote, local, handshake, verified, false, false);
 	}
 
 	@Override
@@ -778,7 +778,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 			@Nullable PublicKey handshake, boolean verified, boolean postQuantum)
 			throws DbException {
 		return addContact(txn, remote, local, handshake, verified, postQuantum,
-				false, true);
+				false);
 	}
 
 	@Override
@@ -786,24 +786,14 @@ abstract class JdbcDatabase implements Database<Connection> {
 			@Nullable PublicKey handshake, boolean verified, boolean postQuantum,
 			boolean pcsEnabled) throws DbException {
 		return addContact(txn, remote, local, handshake, verified, postQuantum,
-				pcsEnabled, true);
+				pcsEnabled, (byte[]) null);
 	}
 
 	@Override
 	public ContactId addContact(Connection txn, Author remote, AuthorId local,
 			@Nullable PublicKey handshake, boolean verified, boolean postQuantum,
-			boolean pcsEnabled, boolean mode3Capable) throws DbException {
-		return addContact(txn, remote, local, handshake, verified, postQuantum,
-				pcsEnabled, mode3Capable, null);
-	}
-
-	@Override
-	public ContactId addContact(Connection txn, Author remote, AuthorId local,
-			@Nullable PublicKey handshake, boolean verified, boolean postQuantum,
-			boolean pcsEnabled, boolean mode3Capable,
+			boolean pcsEnabled,
 			@Nullable byte[] mlDsaSigPublicKey) throws DbException {
-		// mode3Capable parameter is retained for API compatibility but is no
-		// longer persisted; v1.7+ contacts are always Mode 3 capable.
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		try {
@@ -1609,7 +1599,6 @@ abstract class JdbcDatabase implements Database<Connection> {
 			boolean verified = rs.getBoolean(8);
 			boolean postQuantum = rs.getBoolean(9);
 			boolean pcsEnabled = rs.getBoolean(10);
-			boolean mode3Capable = true;
 			byte[] mlDsaSigPublicKey = rs.getBytes(11);
 			rs.close();
 			ps.close();
@@ -1619,7 +1608,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 					null : new AgreementPublicKey(handshakePub);
 			return new Contact(c, author, localAuthorId, alias,
 					handshakePublicKey, verified, postQuantum, pcsEnabled,
-					mode3Capable, mlDsaSigPublicKey);
+					mlDsaSigPublicKey);
 		} catch (SQLException e) {
 			tryToClose(rs);
 			tryToClose(ps);
@@ -1651,7 +1640,6 @@ abstract class JdbcDatabase implements Database<Connection> {
 				boolean verified = rs.getBoolean(9);
 				boolean postQuantum = rs.getBoolean(10);
 				boolean pcsEnabled = rs.getBoolean(11);
-				boolean mode3Capable = true;
 				byte[] mlDsaSigPublicKey = rs.getBytes(12);
 				Author author =
 						new Author(authorId, formatVersion, name, publicKey);
@@ -1659,7 +1647,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 						null : new AgreementPublicKey(handshakePub);
 				contacts.add(new Contact(contactId, author, localAuthorId,
 						alias, handshakePublicKey, verified, postQuantum,
-						pcsEnabled, mode3Capable, mlDsaSigPublicKey));
+						pcsEnabled, mlDsaSigPublicKey));
 			}
 			rs.close();
 			s.close();
@@ -1720,7 +1708,6 @@ abstract class JdbcDatabase implements Database<Connection> {
 				boolean verified = rs.getBoolean(8);
 				boolean postQuantum = rs.getBoolean(9);
 				boolean pcsEnabled = rs.getBoolean(10);
-				boolean mode3Capable = true;
 				byte[] mlDsaSigPublicKey = rs.getBytes(11);
 				Author author =
 						new Author(remote, formatVersion, name, publicKey);
@@ -1728,7 +1715,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 						null : new AgreementPublicKey(handshakePub);
 				contacts.add(new Contact(contactId, author, localAuthorId,
 						alias, handshakePublicKey, verified, postQuantum,
-						pcsEnabled, mode3Capable, mlDsaSigPublicKey));
+						pcsEnabled, mlDsaSigPublicKey));
 			}
 			rs.close();
 			ps.close();
@@ -1770,7 +1757,6 @@ abstract class JdbcDatabase implements Database<Connection> {
 			boolean verified = rs.getBoolean(7);
 			boolean postQuantum = rs.getBoolean(8);
 			boolean pcsEnabled = rs.getBoolean(9);
-			boolean mode3Capable = true;
 			byte[] mlDsaSigPublicKey = rs.getBytes(10);
 			if (rs.next()) throw new DbStateException();
 			rs.close();
@@ -1779,7 +1765,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 					new Author(authorId, formatVersion, name, publicKey);
 			return new Contact(contactId, author, localAuthorId, alias,
 					handshakePublicKey, verified, postQuantum, pcsEnabled,
-					mode3Capable, mlDsaSigPublicKey);
+					mlDsaSigPublicKey);
 		} catch (SQLException e) {
 			tryToClose(rs);
 			tryToClose(ps);

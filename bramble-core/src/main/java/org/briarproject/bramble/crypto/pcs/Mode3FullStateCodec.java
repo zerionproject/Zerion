@@ -83,6 +83,7 @@ final class Mode3FullStateCodec {
 				recent.put(kpId, kp);
 			}
 			long counter = buf.getLong();
+			if (buf.hasRemaining()) return null;
 			return new Mode3FullState(theirPk, ourKp, recent, counter);
 		} catch (RuntimeException e) {
 			return null;

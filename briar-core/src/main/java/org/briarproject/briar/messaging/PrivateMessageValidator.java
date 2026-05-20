@@ -645,11 +645,13 @@ class PrivateMessageValidator implements MessageValidator {
 		byte[] grouptrGroupId = body.getRaw(1);
 		checkLength(grouptrGroupId, 32);
 		String groupName = body.getString(2);
-		checkLength(groupName, 0, 256);
+		checkLength(groupName, 0, 100);
 		byte[] salt = body.getRaw(3);
 		checkLength(salt, 32);
 		String creatorName = body.getString(4);
-		checkLength(creatorName, 1, 256);
+		checkLength(creatorName, 1,
+				org.briarproject.bramble.api.identity.AuthorConstants
+						.MAX_AUTHOR_NAME_LENGTH);
 		byte[] creatorPubKey = body.getRaw(5);
 		checkLength(creatorPubKey, 32);
 		long timestamp = body.getLong(6);
@@ -825,7 +827,7 @@ class PrivateMessageValidator implements MessageValidator {
 		if (epoch < 0L || epoch > 0xFFFFFFFFL) throw new FormatException();
 		long timestamp = body.getLong(3);
 		BdfList memberList = body.getList(4);
-		checkSize(memberList, 0, 1000);
+		checkSize(memberList, 0, 256);
 		byte[] memberCanonical =
 				new byte[memberList.size() * (32 + 1 + 4)];
 		int off = 0;

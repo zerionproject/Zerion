@@ -94,27 +94,19 @@ class ContactManagerImpl implements ContactManager, EventListener {
 			SecretKey rootKey, long timestamp, boolean alice, boolean verified,
 			boolean active) throws DbException {
 		return addContact(txn, remote, local, rootKey, timestamp, alice,
-				verified, active, false);
+				verified, active, (byte[]) null);
 	}
 
 	@Override
 	public ContactId addContact(Transaction txn, Author remote, AuthorId local,
 			SecretKey rootKey, long timestamp, boolean alice, boolean verified,
-			boolean active, boolean mode3Capable) throws DbException {
-		return addContact(txn, remote, local, rootKey, timestamp, alice,
-				verified, active, mode3Capable, null);
-	}
-
-	@Override
-	public ContactId addContact(Transaction txn, Author remote, AuthorId local,
-			SecretKey rootKey, long timestamp, boolean alice, boolean verified,
-			boolean active, boolean mode3Capable,
+			boolean active,
 			@Nullable byte[] peerMlDsaSigPublicKey) throws DbException {
 		requireNotReserved(remote);
 		ContactId c = db.addContact(txn, remote, local, null, verified, false,
-				false, mode3Capable, peerMlDsaSigPublicKey);
+				false, peerMlDsaSigPublicKey);
 		keyManager.addRotationKeys(txn, c, rootKey, timestamp, alice, active);
-		initializePcsState(txn, c, rootKey, mode3Capable);
+		initializePcsState(txn, c, rootKey);
 		Contact contact = db.getContact(txn, c);
 		for (ContactHook hook : hooks) hook.addingContact(txn, contact);
 		return c;
@@ -126,23 +118,13 @@ class ContactManagerImpl implements ContactManager, EventListener {
 			boolean alice, boolean verified, boolean active)
 			throws DbException, GeneralSecurityException {
 		return addContact(txn, p, remote, local, rootKey, timestamp, alice,
-				verified, active, false);
-	}
-
-	@Override
-	public ContactId addContact(Transaction txn, PendingContactId p,
-			Author remote, AuthorId local, SecretKey rootKey, long timestamp,
-			boolean alice, boolean verified, boolean active, boolean mode3Capable)
-			throws DbException, GeneralSecurityException {
-		return addContact(txn, p, remote, local, rootKey, timestamp, alice,
-				verified, active, mode3Capable, null);
+				verified, active, (byte[]) null);
 	}
 
 	@Override
 	public ContactId addContact(Transaction txn, PendingContactId p,
 			Author remote, AuthorId local, SecretKey rootKey, long timestamp,
 			boolean alice, boolean verified, boolean active,
-			boolean mode3Capable,
 			@Nullable byte[] peerMlDsaSigPublicKey)
 			throws DbException, GeneralSecurityException {
 		requireNotReserved(remote);
@@ -153,14 +135,14 @@ class ContactManagerImpl implements ContactManager, EventListener {
 		states.remove(p);
 		PublicKey theirPublicKey = pendingContact.getPublicKey();
 		ContactId c = db.addContact(txn, remote, local, theirPublicKey,
-				verified, postQuantum, false, mode3Capable,
+				verified, postQuantum, false,
 				peerMlDsaSigPublicKey);
 		String alias = pendingContact.getAlias();
 		if (!alias.equals(remote.getName())) db.setContactAlias(txn, c, alias);
 		KeyPair ourKeyPair = identityManager.getHandshakeKeys(txn);
 		keyManager.addContact(txn, c, theirPublicKey, ourKeyPair);
 		keyManager.addRotationKeys(txn, c, rootKey, timestamp, alice, active);
-		initializePcsState(txn, c, rootKey, mode3Capable);
+		initializePcsState(txn, c, rootKey);
 		Contact contact = db.getContact(txn, c);
 		for (ContactHook hook : hooks) hook.addingContact(txn, contact);
 		return c;
@@ -403,10 +385,7 @@ class ContactManagerImpl implements ContactManager, EventListener {
 	}
 
 	private void initializePcsState(Transaction txn, ContactId contactId,
-			SecretKey rootKey, boolean mode3Capable) throws DbException {
-		if (!mode3Capable) {
-			return;
-		}
+			SecretKey rootKey) throws DbException {
 		KeyPair dhKeyPair = crypto.generateAgreementKeyPair();
 		DhRatchetState dhState = new DhRatchetState(dhKeyPair, null);
 		PcsSessionState sendState;
