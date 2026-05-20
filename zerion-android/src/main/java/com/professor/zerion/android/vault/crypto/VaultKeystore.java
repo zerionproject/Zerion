@@ -93,10 +93,6 @@ public class VaultKeystore {
 			builder.setIsStrongBoxBacked(true);
 		}
 
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-			builder.setInvalidatedByBiometricEnrollment(true);
-		}
-
 		keyGenerator.init(builder.build());
 		SecretKey key = keyGenerator.generateKey();
 

@@ -2,7 +2,6 @@ package org.briarproject.bramble.account;
 
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
-import android.security.keystore.StrongBoxUnavailableException;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -44,6 +43,22 @@ final class ProfileMetadataCrypto {
 		if (entry instanceof KeyStore.SecretKeyEntry) {
 			return ((KeyStore.SecretKeyEntry) entry).getSecretKey();
 		}
+		GeneralSecurityException lastError = null;
+		for (boolean strongBox : new boolean[]{true, false}) {
+			for (boolean unlocked : new boolean[]{true, false}) {
+				try {
+					return tryGenerateKey(strongBox, unlocked);
+				} catch (GeneralSecurityException e) {
+					lastError = e;
+				}
+			}
+		}
+		throw lastError != null ? lastError
+				: new GeneralSecurityException("Key generation failed");
+	}
+
+	private SecretKey tryGenerateKey(boolean strongBox, boolean unlocked)
+			throws GeneralSecurityException {
 		KeyGenerator gen = KeyGenerator.getInstance(
 				KeyProperties.KEY_ALGORITHM_AES, KEYSTORE_PROVIDER);
 		KeyGenParameterSpec.Builder spec = new KeyGenParameterSpec.Builder(
@@ -53,13 +68,13 @@ final class ProfileMetadataCrypto {
 				.setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
 				.setKeySize(256)
 				.setRandomizedEncryptionRequired(true);
-		if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-			spec.setUnlockedDeviceRequired(true);
-			try {
-				gen.init(spec.setIsStrongBoxBacked(true).build());
-				return gen.generateKey();
-			} catch (StrongBoxUnavailableException ignored) {
-			}
+		if (android.os.Build.VERSION.SDK_INT
+				>= android.os.Build.VERSION_CODES.P) {
+			if (strongBox) spec.setIsStrongBoxBacked(true);
+			if (unlocked) spec.setUnlockedDeviceRequired(true);
+		} else if (strongBox || unlocked) {
+			throw new GeneralSecurityException(
+					"Hardware-backed flags not supported pre-API 28");
 		}
 		gen.init(spec.build());
 		return gen.generateKey();
