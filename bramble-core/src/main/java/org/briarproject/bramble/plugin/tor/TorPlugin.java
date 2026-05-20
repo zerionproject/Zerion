@@ -270,11 +270,6 @@ class TorPlugin implements DuplexPlugin, EventListener,
 		}
 		b4OnionRotation.bindAdapter(this);
 		if (org.briarproject.bramble.api.plugin.B4Constants.B4_DEBUG_LOG) {
-			java.util.logging.Logger.getLogger(TorPlugin.class.getName())
-					.info(String.format(
-							"[B4] TorPlugin: B.4 adapter bound, "
-									+ "localPort=%d",
-							localPort));
 		}
 		try {
 			b4OnionRotation.resumeIfPromotionInterrupted();
@@ -303,12 +298,6 @@ class TorPlugin implements DuplexPlugin, EventListener,
 		b4OnionToServerSocket.put(hsProps.onion, b4Ss);
 		ioExecutor.execute(() -> acceptB4NewOnionConnections(b4Ss));
 		if (org.briarproject.bramble.api.plugin.B4Constants.B4_DEBUG_LOG) {
-			java.util.logging.Logger.getLogger(TorPlugin.class.getName())
-					.info(String.format(
-							"[B4] TorPlugin: bound new onion=%s.onion on "
-									+ "localPort=%d (separate ServerSocket "
-									+ "for migration detection)",
-							hsProps.onion, b4Port));
 		}
 		return hsProps;
 	}
@@ -319,11 +308,6 @@ class TorPlugin implements DuplexPlugin, EventListener,
 		ServerSocket ss = b4OnionToServerSocket.remove(onion);
 		if (ss != null) tryToClose(ss);
 		if (org.briarproject.bramble.api.plugin.B4Constants.B4_DEBUG_LOG) {
-			java.util.logging.Logger.getLogger(TorPlugin.class.getName())
-					.info(String.format(
-							"[B4] TorPlugin: removed onion=%s.onion + closed "
-									+ "its ServerSocket",
-							onion));
 		}
 	}
 
@@ -340,10 +324,6 @@ class TorPlugin implements DuplexPlugin, EventListener,
 					System.currentTimeMillis(),
 					new java.util.HashSet<>(currentlyConnectedContacts)));
 			if (org.briarproject.bramble.api.plugin.B4Constants.B4_DEBUG_LOG) {
-				java.util.logging.Logger.getLogger(TorPlugin.class.getName())
-						.info("[B4] TorPlugin: accepted inbound on new-"
-								+ "onion port (awaiting ContactConnectedEvent "
-								+ "correlation)");
 			}
 			callback.handleConnection(new TorTransportConnection(this, s));
 		}
@@ -510,9 +490,6 @@ class TorPlugin implements DuplexPlugin, EventListener,
 				}
 			}
 			if (org.briarproject.bramble.api.plugin.B4Constants.B4_DEBUG_LOG) {
-				java.util.logging.Logger.getLogger(TorPlugin.class.getName())
-						.info("[B4] TorPlugin: pending onion dial failed, "
-								+ "falling back to previous onion");
 			}
 			return dialOnion(fallback);
 		}

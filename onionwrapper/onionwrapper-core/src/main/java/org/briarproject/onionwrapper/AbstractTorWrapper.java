@@ -269,7 +269,8 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 		append(strb, "DataDirectory", dataDirectory.getAbsolutePath());
 		append(strb, "DisableNetwork", 1);
 		append(strb, "SafeSocks", 1);
-		append(strb, "SocksPort", torSocksPort);
+		strb.append("SocksPort ").append(torSocksPort)
+				.append(" IsolateDestAddr IsolateClientAddr\n");
 		strb.append("GeoIPFile\n");
 		strb.append("GeoIPv6File\n");
 		append(strb, "ConnectionPadding", 0);
