@@ -26,8 +26,13 @@ import org.briarproject.briar.api.grouptr.GroupTrManager;
 import org.briarproject.briar.api.grouptr.GroupTrState;
 import org.briarproject.briar.api.messaging.event.GroupMembershipChangedEvent;
 import org.briarproject.briar.api.messaging.event.GroupEpochCommitEvent;
+import org.briarproject.briar.api.messaging.event.GroupPostReceivedEvent;
 import org.briarproject.briar.api.messaging.event.GroupTrLocalStateChangedEvent;
 import org.briarproject.briar.api.messaging.event.GroupTrSelfRemovedEvent;
+
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
@@ -122,7 +127,8 @@ public class GroupTrListFragment extends BaseFragment
 		if (e instanceof GroupMembershipChangedEvent
 				|| e instanceof GroupEpochCommitEvent
 				|| e instanceof GroupTrLocalStateChangedEvent
-				|| e instanceof GroupTrSelfRemovedEvent) {
+				|| e instanceof GroupTrSelfRemovedEvent
+				|| e instanceof GroupPostReceivedEvent) {
 			requireActivity().runOnUiThread(() -> {
 				if (e instanceof GroupMembershipChangedEvent) {
 					GroupMembershipChangedEvent ev =
@@ -152,18 +158,26 @@ public class GroupTrListFragment extends BaseFragment
 	private void loadGroups() {
 		ioExecutor.execute(() -> {
 			List<GroupTrState> groups;
+			Map<String, Integer> unread = new HashMap<>();
 			try {
 				Collection<GroupTrState> c = groupTrManager.getGroups();
 				groups = new ArrayList<>(c);
+				for (GroupTrState s : groups) {
+					unread.put(hex(s.getGroupId()),
+							groupTrManager.getUnreadCount(s.getGroupId()));
+				}
 			} catch (DbException ex) {
 				groups = Collections.emptyList();
 			}
 			List<GroupTrState> finalGroups = groups;
-			requireActivity().runOnUiThread(() -> renderGroups(finalGroups));
+			Map<String, Integer> finalUnread = unread;
+			requireActivity().runOnUiThread(
+					() -> renderGroups(finalGroups, finalUnread));
 		});
 	}
 
-	private void renderGroups(List<GroupTrState> groups) {
+	private void renderGroups(List<GroupTrState> groups,
+			Map<String, Integer> unread) {
 		listContainer.removeAllViews();
 		if (groups.isEmpty()) {
 			emptyView.setVisibility(View.VISIBLE);
@@ -171,11 +185,19 @@ public class GroupTrListFragment extends BaseFragment
 		}
 		emptyView.setVisibility(View.GONE);
 		for (GroupTrState s : groups) {
-			listContainer.addView(buildRow(s));
+			int count = unread.containsKey(hex(s.getGroupId()))
+					? unread.get(hex(s.getGroupId())) : 0;
+			listContainer.addView(buildRow(s, count));
 		}
 	}
 
-	private View buildRow(GroupTrState s) {
+	private static String hex(byte[] b) {
+		StringBuilder sb = new StringBuilder(b.length * 2);
+		for (byte x : b) sb.append(String.format(Locale.US, "%02x", x));
+		return sb.toString();
+	}
+
+	private View buildRow(GroupTrState s, int unreadCount) {
 		View row = LayoutInflater.from(requireContext()).inflate(
 				R.layout.list_item_grouptr_group, listContainer, false);
 		String name = s.getName().isEmpty()
@@ -184,9 +206,18 @@ public class GroupTrListFragment extends BaseFragment
 		TextView avatar = row.findViewById(R.id.avatarView);
 		TextView nameView = row.findViewById(R.id.nameView);
 		TextView subtitle = row.findViewById(R.id.subtitleView);
+		TextView unreadView = row.findViewById(R.id.unreadCountView);
 
 		avatar.setText(name.substring(0, 1).toUpperCase());
 		nameView.setText(name);
+
+		if (unreadCount > 0) {
+			unreadView.setText(unreadCount > 99
+					? "99+" : String.valueOf(unreadCount));
+			unreadView.setVisibility(View.VISIBLE);
+		} else {
+			unreadView.setVisibility(View.GONE);
+		}
 
 		int memberCount = s.getMembers().size();
 		String sub = getResources().getQuantityString(

@@ -88,19 +88,21 @@ public class SecureFileIO {
 	}
 
 	private void ensureInitialized() {
-		if (!initialized) {
-			synchronized (this) {
-				if (!initialized) {
-					initializeVaultDirectory();
-					initialized = true;
-				}
-			}
+		synchronized (this) {
+			initializeVaultDirectory();
+			initialized = true;
 		}
 	}
 
 	private void initializeVaultDirectory() {
+		if (vaultDir.exists() && !vaultDir.isDirectory()) {
+			throw new RuntimeException(
+					"vault path exists but is not a directory: "
+							+ vaultDir.getAbsolutePath());
+		}
 		if (!vaultDir.exists()) {
-			if (!vaultDir.mkdirs()) {
+			boolean created = vaultDir.mkdirs();
+			if (!created && !vaultDir.exists()) {
 				throw new RuntimeException("Failed to create vault directory");
 			}
 		}

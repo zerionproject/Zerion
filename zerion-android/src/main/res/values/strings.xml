@@ -1333,6 +1333,23 @@
 	<string name="vault_wipe_title">Wipe Vault</string>
 	<string name="vault_wipe_message">This will permanently delete all vault data. Are you absolutely sure?</string>
 	<string name="vault_wipe_confirm">Yes, delete everything</string>
+	<string name="vault_wipe_confirm_keyword" translatable="false">DELETE</string>
+	<string name="vault_wipe_confirm_title">Final Confirmation</string>
+	<string name="vault_wipe_confirm_message">Type \'%1$s\' to confirm vault wipe:</string>
+	<string name="vault_wipe_confirm_hint">Type %1$s</string>
+	<string name="vault_wipe_confirm_action">Wipe</string>
+	<string name="vault_wipe_confirm_mismatch">Confirmation text does not match</string>
+	<string name="vault_name" translatable="false">zVault</string>
+	<string name="call_action_mute">Mute microphone</string>
+	<string name="call_action_unmute">Unmute microphone</string>
+	<string name="call_action_speaker_on">Turn speaker on</string>
+	<string name="call_action_speaker_off">Turn speaker off</string>
+	<string name="call_action_video_on">Turn camera on</string>
+	<string name="call_action_video_off">Turn camera off</string>
+	<string name="call_action_switch_camera">Switch camera</string>
+	<string name="call_action_end">End call</string>
+	<string name="call_action_accept">Answer call</string>
+	<string name="call_action_decline">Decline call</string>
 	<string name="vault_rate_limit">Too many failed attempts. Please wait %d seconds.</string>
 	<string name="vault_change_password">Change Password</string>
 	<string name="vault_enable_biometric">Enable Biometric Unlock</string>

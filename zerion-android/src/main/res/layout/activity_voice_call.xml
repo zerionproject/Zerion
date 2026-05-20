@@ -201,6 +201,7 @@
                 android:layout_width="72dp"
                 android:layout_height="72dp"
                 android:src="@drawable/ic_call_end_white"
+                android:contentDescription="@string/call_action_decline"
                 android:backgroundTint="@color/zerion_destructive"
                 app:fabCustomSize="72dp"
                 app:maxImageSize="32dp"
@@ -234,6 +235,7 @@
                 android:layout_width="72dp"
                 android:layout_height="72dp"
                 android:src="@drawable/ic_phone_white"
+                android:contentDescription="@string/call_action_accept"
                 android:backgroundTint="@color/zerion_success"
                 app:fabCustomSize="72dp"
                 app:maxImageSize="32dp"
@@ -287,6 +289,7 @@
                     android:layout_width="60dp"
                     android:layout_height="60dp"
                     android:src="@drawable/ic_mic_white"
+                    android:contentDescription="@string/call_action_mute"
                     android:background="@drawable/bg_call_control_button"
                     android:padding="16dp"
                     android:scaleType="centerInside" />
@@ -315,6 +318,7 @@
                     android:layout_width="60dp"
                     android:layout_height="60dp"
                     android:src="@drawable/ic_volume_down_white"
+                    android:contentDescription="@string/call_action_speaker_on"
                     android:background="@drawable/bg_call_control_button"
                     android:padding="16dp"
                     android:scaleType="centerInside" />
@@ -344,6 +348,7 @@
                     android:layout_width="60dp"
                     android:layout_height="60dp"
                     android:src="@drawable/ic_videocam"
+                    android:contentDescription="@string/call_action_video_on"
                     android:background="@drawable/bg_call_control_button"
                     android:padding="16dp"
                     android:scaleType="centerInside" />
@@ -371,6 +376,7 @@
 
                 <ImageButton
                     android:id="@+id/switch_camera_button"
+                    android:contentDescription="@string/call_action_switch_camera"
                     android:layout_width="60dp"
                     android:layout_height="60dp"
                     android:src="@drawable/ic_switch_camera"
@@ -400,6 +406,7 @@
 
             <com.google.android.material.floatingactionbutton.FloatingActionButton
                 android:id="@+id/end_call_button"
+                android:contentDescription="@string/call_action_end"
                 android:layout_width="72dp"
                 android:layout_height="72dp"
                 android:src="@drawable/ic_call_end_white"

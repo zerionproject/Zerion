@@ -330,24 +330,29 @@ public class VaultSettingsFragment extends BaseFragment {
 	}
 
 	private void showWipeConfirmationDialog() {
+		String keyword = getString(R.string.vault_wipe_confirm_keyword);
 		TextInputEditText confirmInput = new TextInputEditText(requireContext());
-		confirmInput.setHint("Type DELETE");
+		confirmInput.setHint(getString(
+				R.string.vault_wipe_confirm_hint, keyword));
 		IncognitoInputHelper.configureForVault(confirmInput);
 
 		new MaterialAlertDialogBuilder(requireContext())
-				.setTitle("Final Confirmation")
-				.setMessage("Type 'DELETE' to confirm vault wipe:")
+				.setTitle(R.string.vault_wipe_confirm_title)
+				.setMessage(getString(
+						R.string.vault_wipe_confirm_message, keyword))
 				.setView(confirmInput)
-				.setPositiveButton("Wipe", (dialog, which) -> {
-					String typed = confirmInput.getText() != null ?
-						confirmInput.getText().toString() : "";
-					if (typed.equals("DELETE")) {
+				.setPositiveButton(R.string.vault_wipe_confirm_action,
+						(dialog, which) -> {
+					String typed = confirmInput.getText() != null
+							? confirmInput.getText().toString().trim() : "";
+					if (typed.equalsIgnoreCase(keyword)) {
 						wipeVault();
 					} else {
-						showToast("Confirmation text does not match");
+						showToast(getString(
+								R.string.vault_wipe_confirm_mismatch));
 					}
 				})
-				.setNegativeButton("Cancel", null)
+				.setNegativeButton(android.R.string.cancel, null)
 				.show();
 	}
 

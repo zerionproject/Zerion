@@ -39,29 +39,18 @@ class AndroidKeyStrengthener implements KeyStrengthener {
 	private final List<AlgorithmParameterSpec> specs;
 
 	AndroidKeyStrengthener() {
+		KeyGenParameterSpec noStrongBox =
+				new KeyGenParameterSpec.Builder(KEY_ALIAS, PURPOSE_SIGN)
+						.setKeySize(KEY_BITS)
+						.build();
 		if (SDK_INT >= 28) {
-			KeyGenParameterSpec strongBoxUnlocked =
+			KeyGenParameterSpec strongBox =
 					new KeyGenParameterSpec.Builder(KEY_ALIAS, PURPOSE_SIGN)
 							.setIsStrongBoxBacked(true)
-							.setUnlockedDeviceRequired(true)
 							.setKeySize(KEY_BITS)
 							.build();
-			KeyGenParameterSpec noStrongBoxUnlocked =
-					new KeyGenParameterSpec.Builder(KEY_ALIAS, PURPOSE_SIGN)
-							.setUnlockedDeviceRequired(true)
-							.setKeySize(KEY_BITS)
-							.build();
-			KeyGenParameterSpec noStrongBoxFallback =
-					new KeyGenParameterSpec.Builder(KEY_ALIAS, PURPOSE_SIGN)
-							.setKeySize(KEY_BITS)
-							.build();
-			specs = asList(strongBoxUnlocked, noStrongBoxUnlocked,
-					noStrongBoxFallback);
+			specs = asList(strongBox, noStrongBox);
 		} else {
-			KeyGenParameterSpec noStrongBox =
-					new KeyGenParameterSpec.Builder(KEY_ALIAS, PURPOSE_SIGN)
-							.setKeySize(KEY_BITS)
-							.build();
 			specs = singletonList(noStrongBox);
 		}
 	}

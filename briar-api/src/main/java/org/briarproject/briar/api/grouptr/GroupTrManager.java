@@ -70,4 +70,8 @@ public interface GroupTrManager {
 			throws DbException;
 
 	java.util.List<GroupTrPost> getRecentPosts(byte[] groupId);
+
+	int getUnreadCount(byte[] groupId);
+
+	void markGroupRead(byte[] groupId);
 }

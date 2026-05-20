@@ -149,11 +149,13 @@ public class ProfileManager {
 		return new File(getKeyDir(profileId), "display_name");
 	}
 
-	public void writeDisplayName(String profileId, String name) {
+	public boolean writeDisplayName(String profileId, String name) {
 		File f = getDisplayNameFile(profileId);
 		try {
 			metadataCrypto.writeEncrypted(f, name);
-		} catch (java.io.IOException ignored) {
+			return f.exists() && f.length() > 0;
+		} catch (java.io.IOException e) {
+			return false;
 		}
 	}
 

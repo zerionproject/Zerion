@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.security.KeyStoreException;
 import java.security.SecureRandom;
 
 import javax.annotation.Nullable;
@@ -24,7 +25,9 @@ import javax.crypto.spec.GCMParameterSpec;
 final class ProfileMetadataCrypto {
 
 	private static final String KEYSTORE_PROVIDER = "AndroidKeyStore";
-	private static final String KEY_ALIAS = "zerion_profile_metadata_v1";
+	private static final String KEY_ALIAS = "zerion_profile_metadata_v2";
+	private static final String LEGACY_KEY_ALIAS =
+			"zerion_profile_metadata_v1";
 	private static final String TRANSFORMATION =
 			KeyProperties.KEY_ALGORITHM_AES + "/"
 					+ KeyProperties.BLOCK_MODE_GCM + "/"
@@ -39,25 +42,32 @@ final class ProfileMetadataCrypto {
 			IOException {
 		KeyStore ks = KeyStore.getInstance(KEYSTORE_PROVIDER);
 		ks.load(null);
+		if (ks.containsAlias(LEGACY_KEY_ALIAS)) {
+			try {
+				ks.deleteEntry(LEGACY_KEY_ALIAS);
+			} catch (KeyStoreException ignored) {
+			}
+		}
 		KeyStore.Entry entry = ks.getEntry(KEY_ALIAS, null);
 		if (entry instanceof KeyStore.SecretKeyEntry) {
 			return ((KeyStore.SecretKeyEntry) entry).getSecretKey();
 		}
-		GeneralSecurityException lastError = null;
+		Exception lastError = null;
 		for (boolean strongBox : new boolean[]{true, false}) {
-			for (boolean unlocked : new boolean[]{true, false}) {
-				try {
-					return tryGenerateKey(strongBox, unlocked);
-				} catch (GeneralSecurityException e) {
-					lastError = e;
-				}
+			try {
+				return tryGenerateKey(strongBox);
+			} catch (GeneralSecurityException | RuntimeException e) {
+				lastError = e;
 			}
 		}
-		throw lastError != null ? lastError
-				: new GeneralSecurityException("Key generation failed");
+		if (lastError instanceof GeneralSecurityException) {
+			throw (GeneralSecurityException) lastError;
+		}
+		throw new GeneralSecurityException("Key generation failed",
+				lastError);
 	}
 
-	private SecretKey tryGenerateKey(boolean strongBox, boolean unlocked)
+	private SecretKey tryGenerateKey(boolean strongBox)
 			throws GeneralSecurityException {
 		KeyGenerator gen = KeyGenerator.getInstance(
 				KeyProperties.KEY_ALGORITHM_AES, KEYSTORE_PROVIDER);
@@ -71,10 +81,9 @@ final class ProfileMetadataCrypto {
 		if (android.os.Build.VERSION.SDK_INT
 				>= android.os.Build.VERSION_CODES.P) {
 			if (strongBox) spec.setIsStrongBoxBacked(true);
-			if (unlocked) spec.setUnlockedDeviceRequired(true);
-		} else if (strongBox || unlocked) {
+		} else if (strongBox) {
 			throw new GeneralSecurityException(
-					"Hardware-backed flags not supported pre-API 28");
+					"StrongBox not supported pre-API 28");
 		}
 		gen.init(spec.build());
 		return gen.generateKey();

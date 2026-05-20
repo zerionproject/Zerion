@@ -14,7 +14,7 @@
 	<item
 		android:id="@+id/action_voice_call"
 		android:icon="@drawable/ic_phone"
-		android:title="Voice Call"
+		android:title="@string/voice_call"
 		app:showAsAction="ifRoom" />
 
 	<!-- Video Call Action -->
@@ -42,11 +42,6 @@
 	<item
 		android:id="@+id/action_clear_chat"
 		android:title="@string/clear_chat"
-		app:showAsAction="never" />
-
-	<item
-		android:id="@+id/action_block_user"
-		android:title="@string/block_user"
 		app:showAsAction="never" />
 
 	<item

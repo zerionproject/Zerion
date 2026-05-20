@@ -123,6 +123,7 @@ public class AndroidAccountManager extends AccountManagerImpl
 				}
 			}
 			if (decryptCount == 1 && decryptedId != null) {
+				profileManager.setActiveProfileId(decryptedId);
 				profileManager.writeLastActiveProfileId(decryptedId);
 				resetGlobalLockout();
 				return;
@@ -136,11 +137,21 @@ public class AndroidAccountManager extends AccountManagerImpl
 	@GuardedBy("stateChangeLock")
 	private void materializePendingIdentityIfPresent(String profileId) {
 		String name = readPendingIdentityName(profileId);
-		if (name == null) return;
+		if (name == null) name = profileManager.readDisplayName(profileId);
+		if (name == null) {
+			name = "Profile-" + (profileId.length() >= 8
+					? profileId.substring(0, 8) : profileId);
+		}
 		org.briarproject.bramble.api.identity.Identity identity =
 				identityManager.createIdentity(name);
 		identityManager.registerIdentity(identity);
-		clearPendingIdentityName(profileId);
+	}
+
+	public void confirmAccountStarted() {
+		synchronized (stateChangeLock) {
+			String id = profileManager.getActiveProfileId();
+			profileManager.deleteMetaFile(id, "pending_identity_name");
+		}
 	}
 
 	@GuardedBy("stateChangeLock")
@@ -258,8 +269,12 @@ public class AndroidAccountManager extends AccountManagerImpl
 					profileManager.secureWipeProfile(newId);
 					return null;
 				}
-				writePendingIdentityName(newId, displayName);
-				profileManager.writeDisplayName(newId, displayName);
+				if (!writePendingIdentityName(newId, displayName)
+						|| !profileManager.writeDisplayName(newId,
+								displayName)) {
+					profileManager.secureWipeProfile(newId);
+					return null;
+				}
 				freshKey.clear();
 				return newId;
 			} catch (Exception e) {
@@ -271,11 +286,13 @@ public class AndroidAccountManager extends AccountManagerImpl
 		}
 	}
 
-	private void writePendingIdentityName(String profileId, String name) {
+	private boolean writePendingIdentityName(String profileId, String name) {
 		try {
 			profileManager.writeEncryptedMetaFile(profileId,
 					"pending_identity_name", name);
-		} catch (IOException ignored) {
+			return true;
+		} catch (IOException e) {
+			return false;
 		}
 	}
 

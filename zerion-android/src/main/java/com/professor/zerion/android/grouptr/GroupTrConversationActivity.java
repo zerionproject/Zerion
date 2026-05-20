@@ -292,6 +292,7 @@ public class GroupTrConversationActivity extends ZerionActivity
 		if (groupId != null) {
 			notificationManager.blockGroupTrNotification(groupId);
 			notificationManager.clearGroupTrPostNotification(groupId);
+			groupTrManager.markGroupRead(groupId);
 		}
 	}
 

@@ -108,7 +108,8 @@ public class VaultManager {
 		byte[] combined = crypto.xor(passwordKey, randomSecret);
 		this.vaultMasterKey = crypto.hkdfSha256(combined, "vault master", 32);
 
-		byte[] passwordVerificationMac = crypto.computePasswordVerificationMac(this.vaultMasterKey);
+		byte[] passwordVerificationMac =
+				crypto.computePasswordVerificationMac(this.vaultMasterKey);
 
 		SecureMemory.shredAll(passwordKey, randomSecret, combined);
 
@@ -127,7 +128,6 @@ public class VaultManager {
 		this.currentHeader = header;
 		this.isUnlocked = true;
 		updateActivity();
-
 	}
 
 	public synchronized boolean unlockVault(char[] password) throws Exception {
