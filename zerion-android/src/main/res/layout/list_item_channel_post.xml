@@ -46,6 +46,23 @@
 				android:textSize="12sp"
 				tools:text="May 21, 2026 · 14:00 UTC" />
 
+			<TextView
+				android:id="@+id/channelPostSignerBadge"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:layout_marginStart="8dp"
+				android:paddingStart="6dp"
+				android:paddingEnd="6dp"
+				android:paddingTop="1dp"
+				android:paddingBottom="1dp"
+				android:background="@drawable/bg_unread_pill"
+				android:textColor="@android:color/white"
+				android:textSize="10sp"
+				android:textStyle="bold"
+				android:visibility="gone"
+				tools:text="EDITOR"
+				tools:visibility="visible" />
+
 			<View
 				android:layout_width="0dp"
 				android:layout_height="0dp"
@@ -60,6 +77,18 @@
 				tools:text="#42" />
 
 		</LinearLayout>
+
+		<TextView
+			android:id="@+id/channelPostTtlLabel"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_marginTop="6dp"
+			android:textColor="@color/zerion_text_secondary"
+			android:textSize="11sp"
+			android:textStyle="italic"
+			android:visibility="gone"
+			tools:text="Disappears in 1 hour"
+			tools:visibility="visible" />
 
 	</LinearLayout>
 

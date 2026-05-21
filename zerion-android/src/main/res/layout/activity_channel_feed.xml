@@ -47,6 +47,58 @@
 		tools:text="@string/channels_feed_empty_subscriber"
 		tools:visibility="visible" />
 
+	<com.google.android.material.chip.ChipGroup
+		android:id="@+id/channelTtlChipGroup"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:paddingStart="16dp"
+		android:paddingEnd="16dp"
+		android:paddingTop="6dp"
+		android:paddingBottom="2dp"
+		android:visibility="gone"
+		app:singleSelection="true"
+		app:selectionRequired="true"
+		app:layout_constraintBottom_toTopOf="@+id/channelComposeBar"
+		tools:visibility="visible">
+
+		<com.google.android.material.chip.Chip
+			android:id="@+id/channelTtlChipOff"
+			style="@style/Widget.MaterialComponents.Chip.Choice"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:checked="true"
+			android:text="@string/channels_ttl_off" />
+
+		<com.google.android.material.chip.Chip
+			android:id="@+id/channelTtlChipHour"
+			style="@style/Widget.MaterialComponents.Chip.Choice"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="@string/channels_ttl_one_hour" />
+
+		<com.google.android.material.chip.Chip
+			android:id="@+id/channelTtlChipDay"
+			style="@style/Widget.MaterialComponents.Chip.Choice"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="@string/channels_ttl_one_day" />
+
+		<com.google.android.material.chip.Chip
+			android:id="@+id/channelTtlChipWeek"
+			style="@style/Widget.MaterialComponents.Chip.Choice"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="@string/channels_ttl_one_week" />
+
+		<com.google.android.material.chip.Chip
+			android:id="@+id/channelTtlChipMonth"
+			style="@style/Widget.MaterialComponents.Chip.Choice"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="@string/channels_ttl_thirty_days" />
+
+	</com.google.android.material.chip.ChipGroup>
+
 	<LinearLayout
 		android:id="@+id/channelComposeBar"
 		android:layout_width="match_parent"

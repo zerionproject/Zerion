@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="@color/window_background"
+	android:fitsSystemWindows="true">
+
+	<androidx.appcompat.widget.Toolbar
+		android:id="@+id/delegationsToolbar"
+		android:layout_width="match_parent"
+		android:layout_height="?attr/actionBarSize"
+		android:background="@color/window_background"
+		app:layout_constraintTop_toTopOf="parent"
+		app:title="@string/channels_delegations_title"
+		app:titleTextColor="@color/zerion_text_primary" />
+
+	<androidx.recyclerview.widget.RecyclerView
+		android:id="@+id/delegationsRecycler"
+		android:layout_width="match_parent"
+		android:layout_height="0dp"
+		android:clipToPadding="false"
+		android:paddingTop="6dp"
+		android:paddingBottom="80dp"
+		app:layout_constraintBottom_toBottomOf="parent"
+		app:layout_constraintTop_toBottomOf="@+id/delegationsToolbar" />
+
+	<TextView
+		android:id="@+id/delegationsEmptyView"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:gravity="center"
+		android:paddingStart="32dp"
+		android:paddingEnd="32dp"
+		android:paddingTop="64dp"
+		android:textColor="@color/zerion_text_secondary"
+		android:textSize="15sp"
+		android:text="@string/channels_delegations_empty"
+		android:visibility="gone"
+		app:layout_constraintTop_toBottomOf="@+id/delegationsToolbar"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintEnd_toEndOf="parent"
+		tools:visibility="visible" />
+
+	<com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+		android:id="@+id/delegationsAddFab"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_marginEnd="16dp"
+		android:layout_marginBottom="16dp"
+		android:text="@string/channels_delegations_add"
+		app:icon="@android:drawable/ic_input_add"
+		app:layout_constraintBottom_toBottomOf="parent"
+		app:layout_constraintEnd_toEndOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

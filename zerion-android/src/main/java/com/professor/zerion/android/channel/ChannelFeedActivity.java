@@ -19,6 +19,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.chip.ChipGroup;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
@@ -73,6 +74,7 @@ public class ChannelFeedActivity extends ZerionActivity
 	private LinearLayout composeBar;
 	private EditText composeInput;
 	private MaterialButton composeSendButton;
+	private ChipGroup ttlChipGroup;
 	private PostAdapter adapter;
 	private boolean weArePublisher = false;
 
@@ -96,6 +98,7 @@ public class ChannelFeedActivity extends ZerionActivity
 		composeBar = findViewById(R.id.channelComposeBar);
 		composeInput = findViewById(R.id.channelComposeInput);
 		composeSendButton = findViewById(R.id.channelComposeSendButton);
+		ttlChipGroup = findViewById(R.id.channelTtlChipGroup);
 
 		setSupportActionBar(toolbar);
 		if (getSupportActionBar() != null) {
@@ -183,6 +186,17 @@ public class ChannelFeedActivity extends ZerionActivity
 		}
 
 		composeBar.setVisibility(weArePublisher ? View.VISIBLE : View.GONE);
+		ttlChipGroup.setVisibility(weArePublisher
+				? View.VISIBLE : View.GONE);
+	}
+
+	private long readSelectedTtlSeconds() {
+		int id = ttlChipGroup.getCheckedChipId();
+		if (id == R.id.channelTtlChipHour) return 60L * 60L;
+		if (id == R.id.channelTtlChipDay) return 24L * 60L * 60L;
+		if (id == R.id.channelTtlChipWeek) return 7L * 24L * 60L * 60L;
+		if (id == R.id.channelTtlChipMonth) return 30L * 24L * 60L * 60L;
+		return 0L;
 	}
 
 	private void markRead() {
@@ -204,9 +218,10 @@ public class ChannelFeedActivity extends ZerionActivity
 			return;
 		}
 		composeInput.setText("");
+		long ttlSeconds = readSelectedTtlSeconds();
 		ioExecutor.execute(() -> {
 			try {
-				channelManager.publishPost(channelId, body, 0L);
+				channelManager.publishPost(channelId, body, ttlSeconds);
 				runOnUiThread(this::loadChannel);
 			} catch (DbException ex) {
 				runOnUiThread(() -> Toast.makeText(this,
@@ -252,12 +267,17 @@ public class ChannelFeedActivity extends ZerionActivity
 		private final TextView body;
 		private final TextView timestamp;
 		private final TextView seq;
+		private final TextView signerBadge;
+		private final TextView ttlLabel;
 
 		PostViewHolder(@NonNull View itemView) {
 			super(itemView);
 			body = itemView.findViewById(R.id.channelPostBodyView);
 			timestamp = itemView.findViewById(R.id.channelPostTimestampView);
 			seq = itemView.findViewById(R.id.channelPostSeqView);
+			signerBadge =
+					itemView.findViewById(R.id.channelPostSignerBadge);
+			ttlLabel = itemView.findViewById(R.id.channelPostTtlLabel);
 		}
 
 		void bind(ChannelPost p) {
@@ -267,6 +287,46 @@ public class ChannelFeedActivity extends ZerionActivity
 					System.currentTimeMillis(),
 					DateUtils.MINUTE_IN_MILLIS));
 			seq.setText(String.format(Locale.US, "#%d", p.getSeqNum()));
+
+			if (p.signedByDelegate()) {
+				signerBadge.setText(itemView.getContext()
+						.getString(R.string.channels_post_signer_editor)
+						.toUpperCase(Locale.ROOT));
+				signerBadge.setVisibility(View.VISIBLE);
+			} else {
+				signerBadge.setVisibility(View.GONE);
+			}
+
+			if (p.isEphemeral()) {
+				long expiresAt = p.getTimestampHourMs() + p.getTtlMs();
+				long remaining = expiresAt - System.currentTimeMillis();
+				if (remaining > 0) {
+					ttlLabel.setText(itemView.getContext().getString(
+							R.string.channels_ttl_post_label,
+							formatRemaining(itemView.getContext(),
+									remaining)));
+					ttlLabel.setVisibility(View.VISIBLE);
+				} else {
+					ttlLabel.setVisibility(View.GONE);
+				}
+			} else {
+				ttlLabel.setVisibility(View.GONE);
+			}
+		}
+
+		private static String formatRemaining(android.content.Context ctx,
+				long remainingMs) {
+			long hours = remainingMs / (60L * 60L * 1000L);
+			if (hours <= 1L) {
+				return ctx.getString(R.string.channels_ttl_one_hour);
+			}
+			if (hours <= 24L) {
+				return ctx.getString(R.string.channels_ttl_one_day);
+			}
+			if (hours <= 24L * 7L) {
+				return ctx.getString(R.string.channels_ttl_one_week);
+			}
+			return ctx.getString(R.string.channels_ttl_thirty_days);
 		}
 	}
 }

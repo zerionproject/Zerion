@@ -370,6 +370,13 @@ public class ChannelListFragment extends BaseFragment
 		labels.add(getString(R.string.channels_action_share_invite));
 		actions.add(() -> shareInvite(s));
 
+		if (s.weArePublisher()) {
+			labels.add(getString(R.string.channels_delegations_title));
+			actions.add(() -> startActivity(
+					ChannelDelegationsActivity.intent(
+							requireContext(), s.getChannelId())));
+		}
+
 		if (s.weArePublisher() && !s.isPublicChannel()) {
 			labels.add(getString(R.string.channels_action_rotate_capability));
 			actions.add(() -> confirmRotate(s));

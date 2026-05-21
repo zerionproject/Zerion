@@ -274,6 +274,26 @@
 	<string name="channels_leave_confirm_message">All locally cached posts for this channel will be removed from your device.</string>
 	<string name="channels_leave_confirm_action">Leave</string>
 	<string name="channels_publisher_offline_note">Subscribers will receive your posts when their app reaches your channel\'s onion. Keep Zerion running for best delivery.</string>
+	<string name="channels_ttl_label">Expire</string>
+	<string name="channels_ttl_off">Off</string>
+	<string name="channels_ttl_one_hour">1 hour</string>
+	<string name="channels_ttl_one_day">1 day</string>
+	<string name="channels_ttl_one_week">1 week</string>
+	<string name="channels_ttl_thirty_days">30 days</string>
+	<string name="channels_ttl_post_label">Disappears in %1$s on subscribers\' devices</string>
+	<string name="channels_post_signer_owner">Owner</string>
+	<string name="channels_post_signer_editor">Editor</string>
+	<string name="channels_delegations_title">Manage editors</string>
+	<string name="channels_delegations_empty">No editors yet. Add one to let another Zerion identity post to this channel.</string>
+	<string name="channels_delegations_add">Add editor</string>
+	<string name="channels_delegations_revoke">Revoke</string>
+	<string name="channels_delegations_paste_pubkey">Paste editor\'s hybrid public key (base32)</string>
+	<string name="channels_delegations_validity_label">Valid until</string>
+	<string name="channels_delegations_validity_unbounded">No expiry</string>
+	<string name="channels_delegations_added">Editor added.</string>
+	<string name="channels_delegations_revoked">Editor revoked. New posts from this editor will be rejected by subscribers.</string>
+	<string name="channels_delegations_error_full">This channel already has the maximum number of editors (8).</string>
+	<string name="channels_delegations_error_key">That doesn\'t look like a valid editor public key.</string>
 	<string name="vault_button">zVault</string>
 	<!-- This is part of the main menu. The app will be locked when this is tapped. -->
 	<string name="lock_button">Lock App</string>

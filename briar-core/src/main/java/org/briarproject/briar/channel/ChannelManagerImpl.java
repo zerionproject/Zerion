@@ -9,8 +9,11 @@ import org.briarproject.bramble.api.db.Transaction;
 import org.briarproject.bramble.api.event.Event;
 import org.briarproject.bramble.api.event.EventBus;
 import org.briarproject.bramble.api.event.EventListener;
+import org.briarproject.bramble.api.lifecycle.IoExecutor;
 import org.briarproject.bramble.api.lifecycle.LifecycleManager.OpenDatabaseHook;
+import org.briarproject.bramble.api.plugin.event.B4OwnRotationCompletedEvent;
 import org.briarproject.bramble.api.system.Clock;
+import org.briarproject.bramble.api.system.TaskScheduler;
 import org.briarproject.briar.api.channel.ChannelConstants;
 import org.briarproject.briar.api.channel.ChannelDelegationCert;
 import org.briarproject.briar.api.channel.ChannelInviteLink;
@@ -52,6 +55,8 @@ class ChannelManagerImpl
 	private final ChannelPostValidator validator;
 	private final ChannelPullProtocol pullProtocol;
 	private final ChannelTransport transport;
+	private final TaskScheduler taskScheduler;
+	private final java.util.concurrent.Executor ioExecutor;
 	private final SecureRandom random;
 	private final java.util.Map<String, ChannelTransport.ChannelServer>
 			boundServers =
@@ -65,7 +70,9 @@ class ChannelManagerImpl
 			ChannelContentKey contentKey,
 			ChannelPostValidator validator,
 			ChannelPullProtocol pullProtocol,
-			ChannelTransport transport) {
+			ChannelTransport transport,
+			TaskScheduler taskScheduler,
+			@IoExecutor java.util.concurrent.Executor ioExecutor) {
 		this.crypto = crypto;
 		this.eventBus = eventBus;
 		this.clock = clock;
@@ -77,16 +84,65 @@ class ChannelManagerImpl
 		this.validator = validator;
 		this.pullProtocol = pullProtocol;
 		this.transport = transport;
+		this.taskScheduler = taskScheduler;
+		this.ioExecutor = ioExecutor;
 		this.random = new SecureRandom();
 	}
 
 	@Override
 	public void onDatabaseOpened(Transaction txn) throws DbException {
 		eventBus.addListener(this);
+		taskScheduler.scheduleWithFixedDelay(this::runDailyPurgeSafely,
+				ioExecutor, 5L, 24L * 60L * 60L,
+				java.util.concurrent.TimeUnit.MINUTES);
+	}
+
+	private void runDailyPurgeSafely() {
+		try {
+			purgeExpiredPosts();
+		} catch (DbException ignored) {
+		}
 	}
 
 	@Override
 	public void eventOccurred(Event e) {
+		if (e instanceof B4OwnRotationCompletedEvent) {
+			ioExecutor.execute(this::rebindAllPublisherServers);
+		}
+	}
+
+	private void rebindAllPublisherServers() {
+		try {
+			for (ChannelState s : store.listChannels()) {
+				if (!s.weArePublisher()) continue;
+				ChannelTransport.ChannelServer previous =
+						boundServers.remove(ChannelStore.hex(
+								s.getChannelId()));
+				if (previous != null) previous.close();
+				String newOnion = bindPublisherServer(s.getChannelId());
+				if (newOnion == null || newOnion.isEmpty()) continue;
+				ChannelState rotated = withRotatedOnion(s, newOnion);
+				store.putChannel(rotated);
+				fireEvent(s.getChannelId(),
+						ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+			}
+		} catch (DbException ignored) {
+		}
+	}
+
+	private ChannelState withRotatedOnion(ChannelState s, String onion) {
+		return new ChannelState(s.getChannelId(), s.getSalt(),
+				s.getPublisherEd25519PubKey(),
+				s.getPublisherMlDsaPubKey(), s.getName(),
+				s.getDescription(), s.getAvatarHash(),
+				s.getCreatedAtHourMs(), s.isPublicChannel(),
+				s.getJoinCapability(), onion,
+				s.getManifestSeq() + 1L, true,
+				s.getHighestKnownPostSeq(),
+				s.getContentKeyHash(), s.getContentKey(),
+				s.getActiveDelegations(),
+				s.getRevokedDelegationSeqs(),
+				s.getNextDelegationSeq());
 	}
 
 	@Override
