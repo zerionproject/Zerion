@@ -104,7 +104,6 @@ public class NavDrawerActivity extends ZerionActivity implements
 	private TextView tabContacts;
 	private TextView tabGroupChats;
 	private TextView tabChannels;
-	private TextView tabVault;
 	private FloatingActionButton fabCompose;
 
 	private int currentTab = TAB_CONTACTS;
@@ -157,7 +156,6 @@ public class NavDrawerActivity extends ZerionActivity implements
 		tabContacts = findViewById(R.id.tabContacts);
 		tabGroupChats = findViewById(R.id.tabGroupChats);
 		tabChannels = findViewById(R.id.tabChannels);
-		tabVault = findViewById(R.id.tabVault);
 		fabCompose = findViewById(R.id.fabCompose);
 
 		View bottomNav = findViewById(R.id.bottomNavigation);
@@ -175,7 +173,7 @@ public class NavDrawerActivity extends ZerionActivity implements
 					textSizeSp);
 			tabGroupChats.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP,
 					textSizeSp);
-			tabVault.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP,
+			tabChannels.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP,
 					textSizeSp);
 		}
 	}
@@ -183,7 +181,7 @@ public class NavDrawerActivity extends ZerionActivity implements
 	private void setupClickListeners() {
 		profileIcon.setOnClickListener(v -> {
 			com.professor.zerion.android.util.Haptics.tap(v);
-			openSettings();
+			showProfileSheet();
 		});
 		searchButton.setOnClickListener(v -> {
 			com.professor.zerion.android.util.Haptics.tap(v);
@@ -205,10 +203,6 @@ public class NavDrawerActivity extends ZerionActivity implements
 		tabChannels.setOnClickListener(v -> {
 			com.professor.zerion.android.util.Haptics.tap(v);
 			onTabClicked(TAB_CHANNELS);
-		});
-		tabVault.setOnClickListener(v -> {
-			com.professor.zerion.android.util.Haptics.tap(v);
-			onTabClicked(TAB_VAULT);
 		});
 
 		fabCompose.setOnClickListener(v -> {
@@ -287,11 +281,6 @@ public class NavDrawerActivity extends ZerionActivity implements
 				0xFFFFFFFF : 0x80FFFFFF);
 		tabChannels.setTypeface(null, currentTab == TAB_CHANNELS ?
 				Typeface.BOLD : Typeface.NORMAL);
-
-		tabVault.setTextColor(currentTab == TAB_VAULT ?
-				0xFFFFFFFF : 0x80FFFFFF);
-		tabVault.setTypeface(null, currentTab == TAB_VAULT ?
-				Typeface.BOLD : Typeface.NORMAL);
 	}
 
 	private void openSettings() {
@@ -324,6 +313,44 @@ public class NavDrawerActivity extends ZerionActivity implements
 				.setCustomAnimations(R.anim.fade_in, R.anim.fade_out)
 				.replace(R.id.fragmentContainer, fragment, TorStatusFragment.TAG)
 				.commit();
+	}
+
+	private static final int PROFILE_MENU_VAULT = 101;
+	private static final int PROFILE_MENU_SETTINGS = 102;
+	private static final int PROFILE_MENU_LOCK = 103;
+	private static final int PROFILE_MENU_SIGN_OUT = 104;
+
+	private void showProfileSheet() {
+		PopupMenu popup = new PopupMenu(this, profileIcon);
+		popup.getMenu().add(0, PROFILE_MENU_VAULT, 0,
+				R.string.vault_button);
+		popup.getMenu().add(0, PROFILE_MENU_SETTINGS, 1,
+				R.string.settings_button);
+		if (lockManager.isLockable().getValue() != null
+				&& lockManager.isLockable().getValue()) {
+			popup.getMenu().add(0, PROFILE_MENU_LOCK, 2,
+					R.string.lock_button);
+		}
+		popup.getMenu().add(0, PROFILE_MENU_SIGN_OUT, 3,
+				R.string.sign_out_button);
+		popup.setOnMenuItemClickListener(item -> {
+			int id = item.getItemId();
+			if (id == PROFILE_MENU_VAULT) {
+				switchTab(TAB_VAULT);
+				return true;
+			} else if (id == PROFILE_MENU_SETTINGS) {
+				openSettings();
+				return true;
+			} else if (id == PROFILE_MENU_LOCK) {
+				lockApp();
+				return true;
+			} else if (id == PROFILE_MENU_SIGN_OUT) {
+				signOut();
+				return true;
+			}
+			return false;
+		});
+		popup.show();
 	}
 
 	private void showOverflowMenu() {
