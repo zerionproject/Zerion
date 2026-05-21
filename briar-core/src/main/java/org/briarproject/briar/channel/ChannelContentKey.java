@@ -1,0 +1,134 @@
+package org.briarproject.briar.channel;
+
+import org.briarproject.bramble.api.crypto.CryptoComponent;
+import org.briarproject.bramble.api.crypto.SecretKey;
+import org.briarproject.briar.api.channel.ChannelConstants;
+import org.briarproject.nullsafety.NotNullByDefault;
+
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
+import java.security.SecureRandom;
+import java.util.Arrays;
+
+import javax.crypto.Cipher;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+import javax.inject.Inject;
+
+@NotNullByDefault
+class ChannelContentKey {
+
+	private static final String AES_GCM = "AES/GCM/NoPadding";
+	private static final int GCM_IV_BYTES = 12;
+	private static final int GCM_TAG_BITS = 128;
+	private static final String DERIVE_LABEL_WRAP =
+			"org.briarproject.zerion/CHANNEL_CONTENT_KEY_WRAP";
+	private static final String DERIVE_LABEL_BODY_NONCE =
+			"org.briarproject.zerion/CHANNEL_BODY_NONCE";
+
+	private final CryptoComponent crypto;
+	private final SecureRandom random;
+
+	@Inject
+	ChannelContentKey(CryptoComponent crypto) {
+		this.crypto = crypto;
+		this.random = new SecureRandom();
+	}
+
+	byte[] generateContentKey() {
+		byte[] k = new byte[ChannelConstants.CONTENT_KEY_BYTES];
+		random.nextBytes(k);
+		return k;
+	}
+
+	byte[] hashContentKey(byte[] contentKey) {
+		return crypto.hash(
+				"org.briarproject.zerion/CHANNEL_CONTENT_KEY_HASH",
+				contentKey);
+	}
+
+	byte[] wrapContentKey(byte[] capability, byte[] channelId,
+			byte[] contentKey) throws GeneralSecurityException {
+		SecretKey wrapKey = deriveWrapKey(capability, channelId);
+		byte[] iv = new byte[GCM_IV_BYTES];
+		random.nextBytes(iv);
+		Cipher cipher = Cipher.getInstance(AES_GCM);
+		cipher.init(Cipher.ENCRYPT_MODE,
+				new SecretKeySpec(wrapKey.getBytes(), "AES"),
+				new GCMParameterSpec(GCM_TAG_BITS, iv));
+		byte[] ct = cipher.doFinal(contentKey);
+		ByteBuffer envelope =
+				ByteBuffer.allocate(iv.length + ct.length);
+		envelope.put(iv);
+		envelope.put(ct);
+		return envelope.array();
+	}
+
+	byte[] unwrapContentKey(byte[] capability, byte[] channelId,
+			byte[] envelope) throws GeneralSecurityException {
+		if (envelope.length < GCM_IV_BYTES + 16) {
+			throw new GeneralSecurityException("Envelope too short");
+		}
+		byte[] iv = Arrays.copyOfRange(envelope, 0, GCM_IV_BYTES);
+		byte[] ct = Arrays.copyOfRange(envelope, GCM_IV_BYTES,
+				envelope.length);
+		SecretKey wrapKey = deriveWrapKey(capability, channelId);
+		Cipher cipher = Cipher.getInstance(AES_GCM);
+		cipher.init(Cipher.DECRYPT_MODE,
+				new SecretKeySpec(wrapKey.getBytes(), "AES"),
+				new GCMParameterSpec(GCM_TAG_BITS, iv));
+		return cipher.doFinal(ct);
+	}
+
+	byte[] encryptBody(byte[] contentKey, byte[] channelId,
+			long seqNum, String plaintextBody)
+			throws GeneralSecurityException {
+		byte[] nonce = bodyNonce(channelId, seqNum);
+		byte[] aad = bodyAad(channelId, seqNum);
+		Cipher cipher = Cipher.getInstance(AES_GCM);
+		cipher.init(Cipher.ENCRYPT_MODE,
+				new SecretKeySpec(contentKey, "AES"),
+				new GCMParameterSpec(GCM_TAG_BITS, nonce));
+		cipher.updateAAD(aad);
+		return cipher.doFinal(
+				plaintextBody.getBytes(StandardCharsets.UTF_8));
+	}
+
+	String decryptBody(byte[] contentKey, byte[] channelId,
+			long seqNum, byte[] ciphertextBody)
+			throws GeneralSecurityException {
+		byte[] nonce = bodyNonce(channelId, seqNum);
+		byte[] aad = bodyAad(channelId, seqNum);
+		Cipher cipher = Cipher.getInstance(AES_GCM);
+		cipher.init(Cipher.DECRYPT_MODE,
+				new SecretKeySpec(contentKey, "AES"),
+				new GCMParameterSpec(GCM_TAG_BITS, nonce));
+		cipher.updateAAD(aad);
+		byte[] plain = cipher.doFinal(ciphertextBody);
+		return new String(plain, StandardCharsets.UTF_8);
+	}
+
+	private SecretKey deriveWrapKey(byte[] capability, byte[] channelId) {
+		SecretKey capabilityKey = new SecretKey(capability);
+		byte[] info = ChannelConstants.CONTENT_KEY_WRAP_INFO
+				.getBytes(StandardCharsets.US_ASCII);
+		return crypto.deriveKey(DERIVE_LABEL_WRAP,
+				capabilityKey, channelId, info);
+	}
+
+	private byte[] bodyNonce(byte[] channelId, long seqNum) {
+		ByteBuffer buf = ByteBuffer.allocate(8);
+		buf.putLong(seqNum);
+		byte[] derived = crypto.hash(DERIVE_LABEL_BODY_NONCE,
+				channelId, buf.array());
+		return Arrays.copyOfRange(derived, 0, GCM_IV_BYTES);
+	}
+
+	private byte[] bodyAad(byte[] channelId, long seqNum) {
+		ByteBuffer buf = ByteBuffer.allocate(channelId.length + 8);
+		buf.put(channelId);
+		buf.putLong(seqNum);
+		return buf.array();
+	}
+}

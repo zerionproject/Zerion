@@ -46,13 +46,17 @@ class ChannelManagerImpl
 	private final ChannelSignatures signatures;
 	private final ChannelChainVerifier chainVerifier;
 	private final ChannelStore store;
+	private final ChannelContentKey contentKey;
+	private final ChannelPostValidator validator;
 	private final SecureRandom random;
 
 	@Inject
 	ChannelManagerImpl(CryptoComponent crypto, EventBus eventBus,
 			Clock clock, ChannelCodec codec,
 			ChannelSignatures signatures,
-			ChannelChainVerifier chainVerifier, ChannelStore store) {
+			ChannelChainVerifier chainVerifier, ChannelStore store,
+			ChannelContentKey contentKey,
+			ChannelPostValidator validator) {
 		this.crypto = crypto;
 		this.eventBus = eventBus;
 		this.clock = clock;
@@ -60,6 +64,8 @@ class ChannelManagerImpl
 		this.signatures = signatures;
 		this.chainVerifier = chainVerifier;
 		this.store = store;
+		this.contentKey = contentKey;
+		this.validator = validator;
 		this.random = new SecureRandom();
 	}
 
@@ -90,6 +96,10 @@ class ChannelManagerImpl
 						hybridPub.getEncoded(), salt);
 		byte[] capability = publicChannel ? null
 				: freshBytes(ChannelConstants.JOIN_CAPABILITY_BYTES);
+		byte[] kContent = publicChannel ? null
+				: contentKey.generateContentKey();
+		byte[] kContentHash = kContent == null ? null
+				: contentKey.hashContentKey(kContent);
 		long nowHourMs =
 				clock.currentTimeMillis() / HOUR_MS * HOUR_MS;
 		String onion = readLocalOnion();
@@ -106,7 +116,11 @@ class ChannelManagerImpl
 		ChannelState state = new ChannelState(channelId, salt,
 				ed25519Pub, mlDsaPub, name, description, null,
 				nowHourMs, publicChannel, capability, onion,
-				manifestSeq, true, -1L);
+				manifestSeq, true, -1L,
+				kContentHash, kContent,
+				java.util.Collections.<org.briarproject.briar.api.channel
+						.ChannelDelegationCert>emptyList(),
+				java.util.Collections.<Long>emptyList(), 0L);
 		store.putChannel(state);
 		store.putPublisherPrivKey(channelId, hybridPriv.getEncoded());
 		store.writePosts(channelId, Collections.emptyList());
@@ -204,8 +218,23 @@ class ChannelManagerImpl
 		List<ChannelPost.ChannelAttachment> noAttachments =
 				Collections.emptyList();
 		byte[] attHash = codec.attachmentsHash(noAttachments);
+
+		String wireBody = body;
+		if (!s.isPublicChannel()) {
+			byte[] kContent = s.getContentKey();
+			if (kContent == null) throw new DbException();
+			try {
+				byte[] ct = contentKey.encryptBody(kContent, channelId,
+						nextSeq, body);
+				wireBody = new String(ct,
+						java.nio.charset.StandardCharsets.ISO_8859_1);
+			} catch (GeneralSecurityException ex) {
+				throw new DbException(ex);
+			}
+		}
+
 		byte[] signedInput = codec.postSignedInput(channelId, nextSeq,
-				prevHash, nowHourMs, body, attHash, ttlMs);
+				prevHash, nowHourMs, wireBody, attHash, ttlMs);
 		byte[] sig;
 		try {
 			sig = signatures.signPost(signedInput, hybridPriv);
@@ -279,13 +308,20 @@ class ChannelManagerImpl
 		if (s.isPublicChannel()) throw new DbException();
 		byte[] newCap = freshBytes(
 				ChannelConstants.JOIN_CAPABILITY_BYTES);
+		byte[] newContentKey = contentKey.generateContentKey();
+		byte[] newContentKeyHash =
+				contentKey.hashContentKey(newContentKey);
 		ChannelState updated = new ChannelState(s.getChannelId(),
 				s.getSalt(), s.getPublisherEd25519PubKey(),
 				s.getPublisherMlDsaPubKey(), s.getName(),
 				s.getDescription(), s.getAvatarHash(),
 				s.getCreatedAtHourMs(), s.isPublicChannel(),
 				newCap, s.getCurrentOnion(), s.getManifestSeq() + 1L,
-				true, s.getHighestKnownPostSeq());
+				true, s.getHighestKnownPostSeq(),
+				newContentKeyHash, newContentKey,
+				s.getActiveDelegations(),
+				s.getRevokedDelegationSeqs(),
+				s.getNextDelegationSeq());
 		store.putChannel(updated);
 		fireEvent(channelId,
 				ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
@@ -419,6 +455,28 @@ class ChannelManagerImpl
 			fireEvent(s.getChannelId(),
 					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
 		}
+	}
+
+	void acceptIncomingPost(byte[] channelId, ChannelPost incoming)
+			throws DbException {
+		ChannelState s = store.getChannel(channelId);
+		if (s == null) throw new DbException();
+		List<ChannelPost> existing = store.getPosts(channelId);
+		ChannelPost previous = existing.isEmpty() ? null
+				: existing.get(existing.size() - 1);
+		ChannelPostValidator.Result vr =
+				validator.validate(s, incoming, previous);
+		if (vr != ChannelPostValidator.Result.OK) {
+			throw new DbException();
+		}
+		store.appendPost(channelId, incoming);
+		ChannelState updated = withSeq(s, incoming.getSeqNum());
+		store.putChannel(updated);
+		store.setUnread(channelId, store.getUnread(channelId) + 1);
+		eventBus.broadcast(new ChannelPostReceivedEvent(channelId,
+				incoming.getSeqNum()));
+		fireEvent(channelId,
+				ChannelStateChangedEvent.Kind.UNREAD_COUNT_CHANGED);
 	}
 
 	private void fireEvent(byte[] channelId,
