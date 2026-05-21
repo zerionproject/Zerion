@@ -42,6 +42,9 @@ public class ChannelInviteHandlerActivity extends ZerionActivity {
 	@Override
 	public void onCreate(@Nullable Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		getWindow().setFlags(
+				android.view.WindowManager.LayoutParams.FLAG_SECURE,
+				android.view.WindowManager.LayoutParams.FLAG_SECURE);
 		Uri data = getIntent() == null ? null : getIntent().getData();
 		if (data == null) {
 			finish();

@@ -112,17 +112,23 @@ class ChannelManagerImpl
 	}
 
 	private void refreshAllSubscriptionsSafely() {
+		Collection<ChannelState> all;
 		try {
-			for (ChannelState s : store.listChannels()) {
-				if (s.weArePublisher()) continue;
-				if (s.getCurrentOnion() == null
-						|| s.getCurrentOnion().isEmpty()) continue;
+			all = store.listChannels();
+		} catch (DbException ignored) {
+			return;
+		}
+		for (ChannelState s : all) {
+			if (s.weArePublisher()) continue;
+			if (s.getCurrentOnion() == null
+					|| s.getCurrentOnion().isEmpty()) continue;
+			byte[] channelId = s.getChannelId();
+			ioExecutor.execute(() -> {
 				try {
-					pullAndApply(s.getChannelId(), false);
+					pullAndApply(channelId, false);
 				} catch (DbException ignored) {
 				}
-			}
-		} catch (DbException ignored) {
+			});
 		}
 	}
 

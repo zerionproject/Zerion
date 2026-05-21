@@ -70,6 +70,9 @@ public class ChannelDelegationsActivity extends ZerionActivity {
 	@Override
 	public void onCreate(@Nullable Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		getWindow().setFlags(
+				android.view.WindowManager.LayoutParams.FLAG_SECURE,
+				android.view.WindowManager.LayoutParams.FLAG_SECURE);
 		setContentView(R.layout.activity_channel_delegations);
 
 		byte[] cid = getIntent().getByteArrayExtra(EXTRA_CHANNEL_ID);

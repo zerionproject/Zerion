@@ -19,7 +19,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.chip.ChipGroup;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
@@ -74,7 +73,8 @@ public class ChannelFeedActivity extends ZerionActivity
 	private LinearLayout composeBar;
 	private EditText composeInput;
 	private MaterialButton composeSendButton;
-	private ChipGroup ttlChipGroup;
+	private android.widget.ImageButton ttlButton;
+	private long selectedTtlSeconds = 0L;
 	private LinearLayout pinnedBanner;
 	private TextView pinnedBannerText;
 	private android.widget.ImageButton pinnedBannerClose;
@@ -90,6 +90,9 @@ public class ChannelFeedActivity extends ZerionActivity
 	@Override
 	public void onCreate(@Nullable Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		getWindow().setFlags(
+				android.view.WindowManager.LayoutParams.FLAG_SECURE,
+				android.view.WindowManager.LayoutParams.FLAG_SECURE);
 		setContentView(R.layout.activity_channel_feed);
 
 		Intent i = getIntent();
@@ -102,7 +105,8 @@ public class ChannelFeedActivity extends ZerionActivity
 		composeBar = findViewById(R.id.channelComposeBar);
 		composeInput = findViewById(R.id.channelComposeInput);
 		composeSendButton = findViewById(R.id.channelComposeSendButton);
-		ttlChipGroup = findViewById(R.id.channelTtlChipGroup);
+		ttlButton = findViewById(R.id.channelComposeTtlButton);
+		ttlButton.setOnClickListener(v -> showTtlPicker());
 		pinnedBanner = findViewById(R.id.channelPinnedBanner);
 		pinnedBannerText = findViewById(R.id.channelPinnedBannerText);
 		pinnedBannerClose = findViewById(R.id.channelPinnedBannerClose);
@@ -227,8 +231,6 @@ public class ChannelFeedActivity extends ZerionActivity
 		}
 
 		composeBar.setVisibility(weArePublisher ? View.VISIBLE : View.GONE);
-		ttlChipGroup.setVisibility(weArePublisher
-				? View.VISIBLE : View.GONE);
 
 		currentPinnedSeq = state.getPinnedPostSeq();
 		bindPinnedBanner(state, posts);
@@ -317,12 +319,40 @@ public class ChannelFeedActivity extends ZerionActivity
 	}
 
 	private long readSelectedTtlSeconds() {
-		int id = ttlChipGroup.getCheckedChipId();
-		if (id == R.id.channelTtlChipHour) return 60L * 60L;
-		if (id == R.id.channelTtlChipDay) return 24L * 60L * 60L;
-		if (id == R.id.channelTtlChipWeek) return 7L * 24L * 60L * 60L;
-		if (id == R.id.channelTtlChipMonth) return 30L * 24L * 60L * 60L;
-		return 0L;
+		return selectedTtlSeconds;
+	}
+
+	private void showTtlPicker() {
+		android.widget.PopupMenu popup = new android.widget.PopupMenu(this,
+				ttlButton);
+		popup.getMenu().add(0, 0, 0, R.string.channels_ttl_off);
+		popup.getMenu().add(0, 1, 1, R.string.channels_ttl_one_hour);
+		popup.getMenu().add(0, 2, 2, R.string.channels_ttl_one_day);
+		popup.getMenu().add(0, 3, 3, R.string.channels_ttl_one_week);
+		popup.getMenu().add(0, 4, 4, R.string.channels_ttl_thirty_days);
+		popup.setOnMenuItemClickListener(item -> {
+			switch (item.getItemId()) {
+				case 0: selectedTtlSeconds = 0L; break;
+				case 1: selectedTtlSeconds = 60L * 60L; break;
+				case 2: selectedTtlSeconds = 24L * 60L * 60L; break;
+				case 3: selectedTtlSeconds = 7L * 24L * 60L * 60L; break;
+				case 4: selectedTtlSeconds = 30L * 24L * 60L * 60L; break;
+				default: return false;
+			}
+			updateTtlButtonTint();
+			return true;
+		});
+		popup.show();
+	}
+
+	private void updateTtlButtonTint() {
+		int color = selectedTtlSeconds > 0L
+				? androidx.core.content.ContextCompat.getColor(this,
+						R.color.zerion_primary_accent)
+				: androidx.core.content.ContextCompat.getColor(this,
+						R.color.zerion_text_secondary);
+		androidx.core.widget.ImageViewCompat.setImageTintList(ttlButton,
+				android.content.res.ColorStateList.valueOf(color));
 	}
 
 	private void markRead() {
