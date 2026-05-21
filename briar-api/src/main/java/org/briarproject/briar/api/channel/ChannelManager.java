@@ -60,4 +60,8 @@ public interface ChannelManager {
 			byte[] channelId) throws DbException;
 
 	void purgeExpiredPosts() throws DbException;
+
+	void bootstrapChannel(byte[] channelId) throws DbException;
+
+	void refreshChannel(byte[] channelId) throws DbException;
 }

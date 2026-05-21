@@ -17,10 +17,12 @@ import org.briarproject.briar.api.channel.ChannelInviteLink;
 import org.briarproject.briar.api.channel.ChannelManager;
 import org.briarproject.briar.api.channel.ChannelPost;
 import org.briarproject.briar.api.channel.ChannelState;
+import org.briarproject.briar.api.channel.ChannelTransport;
 import org.briarproject.briar.api.channel.event.ChannelPostReceivedEvent;
 import org.briarproject.briar.api.channel.event.ChannelStateChangedEvent;
 import org.briarproject.nullsafety.NotNullByDefault;
 
+import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -48,7 +50,12 @@ class ChannelManagerImpl
 	private final ChannelStore store;
 	private final ChannelContentKey contentKey;
 	private final ChannelPostValidator validator;
+	private final ChannelPullProtocol pullProtocol;
+	private final ChannelTransport transport;
 	private final SecureRandom random;
+	private final java.util.Map<String, ChannelTransport.ChannelServer>
+			boundServers =
+					new java.util.concurrent.ConcurrentHashMap<>();
 
 	@Inject
 	ChannelManagerImpl(CryptoComponent crypto, EventBus eventBus,
@@ -56,7 +63,9 @@ class ChannelManagerImpl
 			ChannelSignatures signatures,
 			ChannelChainVerifier chainVerifier, ChannelStore store,
 			ChannelContentKey contentKey,
-			ChannelPostValidator validator) {
+			ChannelPostValidator validator,
+			ChannelPullProtocol pullProtocol,
+			ChannelTransport transport) {
 		this.crypto = crypto;
 		this.eventBus = eventBus;
 		this.clock = clock;
@@ -66,6 +75,8 @@ class ChannelManagerImpl
 		this.store = store;
 		this.contentKey = contentKey;
 		this.validator = validator;
+		this.pullProtocol = pullProtocol;
+		this.transport = transport;
 		this.random = new SecureRandom();
 	}
 
@@ -124,10 +135,210 @@ class ChannelManagerImpl
 		store.putChannel(state);
 		store.putPublisherPrivKey(channelId, hybridPriv.getEncoded());
 		store.writePosts(channelId, Collections.emptyList());
+		String boundOnion = bindPublisherServer(channelId);
+		if (boundOnion != null && !boundOnion.isEmpty()) {
+			ChannelState withOnion = withOnion(state, boundOnion);
+			store.putChannel(withOnion);
+			state = withOnion;
+		}
 		fireEvent(channelId,
 				ChannelStateChangedEvent.Kind.CREATED);
 		clearReturned(manifestSig);
 		return state;
+	}
+
+	@Nullable
+	private String bindPublisherServer(byte[] channelId) {
+		try {
+			ChannelTransport.ChannelServer server =
+					transport.bindServer(channelId,
+							requestBytes -> handlePublisherRequest(
+									channelId, requestBytes));
+			boundServers.put(ChannelStore.hex(channelId), server);
+			return server.getOnionAddress();
+		} catch (IOException e) {
+			return null;
+		}
+	}
+
+	private byte[] handlePublisherRequest(byte[] channelId,
+			byte[] requestBytes) {
+		try {
+			ChannelPullCodec.PullRequest req = pullCodec()
+					.decodePullRequest(requestBytes);
+			ChannelState s = store.getChannel(channelId);
+			if (s == null) return new byte[0];
+			java.util.List<ChannelPost> all =
+					store.getPosts(channelId);
+			java.util.List<ChannelPost> toSend =
+					new java.util.ArrayList<>();
+			for (ChannelPost p : all) {
+				if (p.getSeqNum() > req.sinceSeqNum) toSend.add(p);
+			}
+			byte[] envelope = null;
+			if (!s.isPublicChannel() && req.hmacResponse != null
+					&& req.nonce != null
+					&& s.getJoinCapability() != null
+					&& s.getContentKey() != null) {
+				if (verifyChallenge(s.getJoinCapability(),
+						req.nonce, channelId, req.hmacResponse)) {
+					try {
+						envelope = contentKey.wrapContentKey(
+								s.getJoinCapability(), channelId,
+								s.getContentKey());
+					} catch (GeneralSecurityException ignored) {
+						envelope = null;
+					}
+				}
+			}
+			java.util.List<ChannelPost> wirePosts =
+					convertToWirePosts(s, toSend);
+			byte[] manifestSig = signLatestManifest(s);
+			return pullProtocol.buildResponseAsPublisher(s,
+					s.getPublisherEd25519PubKey(),
+					s.getPublisherMlDsaPubKey(), manifestSig,
+					wirePosts, envelope,
+					java.util.Collections.<String>emptyList());
+		} catch (IOException | DbException e) {
+			return new byte[0];
+		}
+	}
+
+	private java.util.List<ChannelPost> convertToWirePosts(
+			ChannelState s, java.util.List<ChannelPost> stored) {
+		if (s.isPublicChannel()) return stored;
+		byte[] kContent = s.getContentKey();
+		if (kContent == null) return stored;
+		java.util.List<ChannelPost> out =
+				new java.util.ArrayList<>(stored.size());
+		for (ChannelPost p : stored) {
+			try {
+				byte[] ct = contentKey.encryptBody(kContent,
+						p.getChannelId(), p.getSeqNum(), p.getBody());
+				String wireBody = new String(ct,
+						java.nio.charset.StandardCharsets.ISO_8859_1);
+				out.add(new ChannelPost(p.getChannelId(),
+						p.getSeqNum(), p.getPrevHash(),
+						p.getTimestampHourMs(), wireBody,
+						p.getAttachments(), p.getTtlMs(),
+						p.getSignature(), p.isRead(),
+						p.getDelegateSignerEd25519PubKey(),
+						p.getDelegateSignerMlDsaPubKey()));
+			} catch (GeneralSecurityException e) {
+				return stored;
+			}
+		}
+		return out;
+	}
+
+	private byte[] signLatestManifest(ChannelState s) {
+		byte[] signedInput = codec.manifestSignedInput(s.getChannelId(),
+				s.getSalt(), s.getPublisherEd25519PubKey(),
+				s.getPublisherMlDsaPubKey(), s.getName(),
+				s.getDescription(), s.getAvatarHash(),
+				s.getCreatedAtHourMs(), s.isPublicChannel(),
+				s.getJoinCapability(), s.getCurrentOnion(),
+				s.getManifestSeq());
+		try {
+			byte[] privEncoded = store.getPublisherPrivKey(
+					s.getChannelId());
+			if (privEncoded == null) return new byte[0];
+			HybridSignaturePrivateKey priv =
+					new HybridSignaturePrivateKey(privEncoded);
+			return signatures.signManifest(signedInput, priv);
+		} catch (DbException | GeneralSecurityException e) {
+			return new byte[0];
+		}
+	}
+
+	private boolean verifyChallenge(byte[] capability, byte[] nonce,
+			byte[] channelId, byte[] response) {
+		return hmacChallenge().verify(capability, nonce, channelId,
+				response);
+	}
+
+	@Override
+	public void bootstrapChannel(byte[] channelId) throws DbException {
+		pullAndApply(channelId, true);
+	}
+
+	@Override
+	public void refreshChannel(byte[] channelId) throws DbException {
+		pullAndApply(channelId, false);
+	}
+
+	private void pullAndApply(byte[] channelId, boolean isBootstrap)
+			throws DbException {
+		ChannelState s = store.getChannel(channelId);
+		if (s == null) throw new DbException();
+		if (s.weArePublisher()) return;
+		byte[] requestBytes;
+		try {
+			if (isBootstrap || s.getJoinCapability() == null) {
+				requestBytes = pullProtocol.buildBootstrapRequest(
+						channelId);
+			} else {
+				byte[] nonce = hmacChallenge().freshNonce();
+				requestBytes = pullProtocol.buildAuthenticatedRequest(
+						channelId, s.getHighestKnownPostSeq(),
+						s.getJoinCapability(), nonce);
+			}
+		} catch (IOException e) {
+			throw new DbException(e);
+		}
+		byte[] responseBytes;
+		try {
+			responseBytes = transport.requestFromOnion(
+					s.getCurrentOnion(), requestBytes);
+		} catch (IOException e) {
+			throw new DbException(e);
+		}
+		java.util.List<ChannelPost> existing =
+				store.getPosts(channelId);
+		ChannelPullProtocol.ProcessResult r =
+				pullProtocol.processSubscriberResponse(responseBytes,
+						s, existing, s.getJoinCapability());
+		if (!r.ok || r.mergedState == null) {
+			throw new DbException();
+		}
+		store.putChannel(r.mergedState);
+		for (ChannelPost p : r.acceptedPosts) {
+			acceptIncomingPost(channelId, p);
+		}
+	}
+
+	private ChannelPullCodec pullCodec() {
+		return pullCodecInstance != null
+				? pullCodecInstance : (pullCodecInstance =
+				new ChannelPullCodec(readerFactory, writerFactory));
+	}
+
+	private ChannelHmacChallenge hmacChallenge() {
+		return hmacChallengeInstance != null
+				? hmacChallengeInstance
+				: (hmacChallengeInstance =
+				new ChannelHmacChallenge(crypto));
+	}
+
+	@Inject org.briarproject.bramble.api.data.BdfReaderFactory
+			readerFactory;
+	@Inject org.briarproject.bramble.api.data.BdfWriterFactory
+			writerFactory;
+	private volatile ChannelPullCodec pullCodecInstance;
+	private volatile ChannelHmacChallenge hmacChallengeInstance;
+
+	private ChannelState withOnion(ChannelState s, String onion) {
+		return new ChannelState(s.getChannelId(), s.getSalt(),
+				s.getPublisherEd25519PubKey(),
+				s.getPublisherMlDsaPubKey(), s.getName(),
+				s.getDescription(), s.getAvatarHash(),
+				s.getCreatedAtHourMs(), s.isPublicChannel(),
+				s.getJoinCapability(), onion, s.getManifestSeq(),
+				s.weArePublisher(), s.getHighestKnownPostSeq(),
+				s.getContentKeyHash(), s.getContentKey(),
+				s.getActiveDelegations(),
+				s.getRevokedDelegationSeqs(),
+				s.getNextDelegationSeq());
 	}
 
 	@Nullable

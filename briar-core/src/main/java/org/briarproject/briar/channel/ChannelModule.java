@@ -2,6 +2,7 @@ package org.briarproject.briar.channel;
 
 import org.briarproject.bramble.api.lifecycle.LifecycleManager;
 import org.briarproject.briar.api.channel.ChannelManager;
+import org.briarproject.briar.api.channel.ChannelTransport;
 
 import javax.inject.Singleton;
 
@@ -22,5 +23,12 @@ public class ChannelModule {
 			ChannelManagerImpl manager) {
 		lifecycleManager.registerOpenDatabaseHook(manager);
 		return manager;
+	}
+
+	@Provides
+	@Singleton
+	ChannelTransport provideChannelTransport(
+			InProcessChannelTransport impl) {
+		return impl;
 	}
 }
