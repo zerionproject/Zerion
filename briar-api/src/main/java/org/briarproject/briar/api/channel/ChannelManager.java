@@ -82,4 +82,10 @@ public interface ChannelManager {
 	@Nullable
 	byte[] decryptAttachmentThumbnail(byte[] channelId, long postSeqNum,
 			byte[] blobHash) throws DbException;
+
+	void reactToPost(byte[] channelId, long postSeqNum, String emoji)
+			throws DbException;
+
+	List<ChannelReaction> getReactions(byte[] channelId, long postSeqNum)
+			throws DbException;
 }

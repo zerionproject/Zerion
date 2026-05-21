@@ -69,6 +69,14 @@ public final class ChannelConstants {
 			"ZERION_CHANNEL_GET_ATTACHMENT_V1";
 	public static final String WIRE_TYPE_ATTACHMENT_BLOB =
 			"ZERION_CHANNEL_ATTACHMENT_BLOB_V1";
+	public static final String WIRE_TYPE_POST_REACTION =
+			"ZERION_CHANNEL_POST_REACTION_V1";
+	public static final String WIRE_TYPE_REACTION_ACK =
+			"ZERION_CHANNEL_REACTION_ACK_V1";
+	public static final String SIGNING_LABEL_REACTION =
+			"org.briarproject.zerion/CHANNEL_REACTION";
+	public static final int MAX_REACTION_EMOJI_BYTES = 32;
+	public static final int MAX_REACTIONS_PER_POST = 256;
 
 	public static final long TTL_OFF = 0L;
 	public static final long TTL_ONE_HOUR_MS = 60L * 60L * 1000L;

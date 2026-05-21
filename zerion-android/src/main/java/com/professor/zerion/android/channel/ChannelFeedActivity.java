@@ -137,7 +137,8 @@ public class ChannelFeedActivity extends ZerionActivity
 						post.getSeqNum() == currentPinnedSeq),
 				(post, att, thumb, spinner) ->
 						handleAttachmentTap(post, att, thumb, spinner),
-				(post, att) -> decryptThumbnailSafely(post, att));
+				(post, att) -> decryptThumbnailSafely(post, att),
+				post -> getReactionsSafely(post));
 		recycler.setLayoutManager(new LinearLayoutManager(this));
 		recycler.setAdapter(adapter);
 
@@ -326,6 +327,8 @@ public class ChannelFeedActivity extends ZerionActivity
 				actions.add(() -> handlePin(post.getSeqNum()));
 			}
 		}
+		labels.add(getString(R.string.channels_action_react));
+		actions.add(() -> showReactionPicker(post));
 		labels.add(getString(R.string.channels_action_copy_text));
 		actions.add(() -> copyPostText(post));
 		if (weArePublisher) {
@@ -337,6 +340,32 @@ public class ChannelFeedActivity extends ZerionActivity
 				.setItems(labels.toArray(new CharSequence[0]),
 						(d, which) -> actions.get(which).run())
 				.show();
+	}
+
+	private static final String[] REACTION_EMOJIS = {
+			"👍", "❤️", "😂",
+			"😮", "😢", "🔥"};
+
+	private void showReactionPicker(ChannelPost post) {
+		new com.google.android.material.dialog.MaterialAlertDialogBuilder(
+				this)
+				.setItems(REACTION_EMOJIS, (d, which) ->
+						sendReaction(post, REACTION_EMOJIS[which]))
+				.show();
+	}
+
+	private void sendReaction(ChannelPost post, String emoji) {
+		ioExecutor.execute(() -> {
+			try {
+				channelManager.reactToPost(channelId, post.getSeqNum(),
+						emoji);
+				runOnUiThread(this::loadChannel);
+			} catch (DbException ignored) {
+				runOnUiThread(() -> Toast.makeText(this,
+						R.string.channels_react_failed,
+						Toast.LENGTH_SHORT).show());
+			}
+		});
 	}
 
 	private void confirmDelete(ChannelPost post) {
@@ -477,6 +506,16 @@ public class ChannelFeedActivity extends ZerionActivity
 					post.getSeqNum(), att.getBlobHash());
 		} catch (DbException ignored) {
 			return null;
+		}
+	}
+
+	private java.util.List<org.briarproject.briar.api.channel
+			.ChannelReaction> getReactionsSafely(ChannelPost post) {
+		try {
+			return channelManager.getReactions(channelId,
+					post.getSeqNum());
+		} catch (DbException ignored) {
+			return java.util.Collections.emptyList();
 		}
 	}
 
@@ -716,17 +755,25 @@ public class ChannelFeedActivity extends ZerionActivity
 					ChannelPost.ChannelAttachment attachment);
 		}
 
+		interface OnReactionsNeeded {
+			java.util.List<org.briarproject.briar.api.channel
+					.ChannelReaction> getReactions(ChannelPost post);
+		}
+
 		private List<ChannelPost> posts = new ArrayList<>();
 		private final OnPostLongPress longPressListener;
 		private final OnAttachmentTap attachmentTapListener;
 		private final OnThumbnailNeeded thumbnailDecoder;
+		private final OnReactionsNeeded reactionsProvider;
 
 		PostAdapter(OnPostLongPress longPressListener,
 				OnAttachmentTap attachmentTapListener,
-				OnThumbnailNeeded thumbnailDecoder) {
+				OnThumbnailNeeded thumbnailDecoder,
+				OnReactionsNeeded reactionsProvider) {
 			this.longPressListener = longPressListener;
 			this.attachmentTapListener = attachmentTapListener;
 			this.thumbnailDecoder = thumbnailDecoder;
+			this.reactionsProvider = reactionsProvider;
 		}
 
 		void setPosts(List<ChannelPost> p) {
@@ -747,7 +794,8 @@ public class ChannelFeedActivity extends ZerionActivity
 		public void onBindViewHolder(@NonNull PostViewHolder holder,
 				int position) {
 			ChannelPost p = posts.get(position);
-			holder.bind(p, attachmentTapListener, thumbnailDecoder);
+			holder.bind(p, attachmentTapListener, thumbnailDecoder,
+					reactionsProvider);
 			holder.itemView.setOnLongClickListener(v -> {
 				longPressListener.onPostLongPress(p);
 				return true;
@@ -767,6 +815,7 @@ public class ChannelFeedActivity extends ZerionActivity
 		private final TextView signerBadge;
 		private final TextView ttlLabel;
 		private final LinearLayout attachments;
+		private final TextView reactionsView;
 
 		PostViewHolder(@NonNull View itemView) {
 			super(itemView);
@@ -777,15 +826,19 @@ public class ChannelFeedActivity extends ZerionActivity
 			ttlLabel = itemView.findViewById(R.id.channelPostTtlLabel);
 			attachments = itemView.findViewById(
 					R.id.channelPostAttachments);
+			reactionsView = itemView.findViewById(
+					R.id.channelPostReactionsView);
 		}
 
 		void bind(ChannelPost p,
 				PostAdapter.OnAttachmentTap attachmentTapListener,
-				PostAdapter.OnThumbnailNeeded thumbnailDecoder) {
+				PostAdapter.OnThumbnailNeeded thumbnailDecoder,
+				PostAdapter.OnReactionsNeeded reactionsProvider) {
 			body.setText(p.getBody());
 			body.setVisibility(p.getBody().trim().isEmpty()
 					? View.GONE : View.VISIBLE);
 			bindAttachments(p, attachmentTapListener, thumbnailDecoder);
+			bindReactions(p, reactionsProvider);
 			timestamp.setText(
 					com.professor.zerion.android.util.UiUtils.formatDate(
 							itemView.getContext(),
@@ -863,6 +916,33 @@ public class ChannelFeedActivity extends ZerionActivity
 						p, att, thumb, spinner));
 				attachments.addView(row);
 			}
+		}
+
+		private void bindReactions(ChannelPost p,
+				PostAdapter.OnReactionsNeeded provider) {
+			java.util.List<org.briarproject.briar.api.channel
+					.ChannelReaction> all = provider.getReactions(p);
+			if (all.isEmpty()) {
+				reactionsView.setVisibility(View.GONE);
+				return;
+			}
+			java.util.LinkedHashMap<String, Integer> counts =
+					new java.util.LinkedHashMap<>();
+			for (org.briarproject.briar.api.channel.ChannelReaction r
+					: all) {
+				Integer prev = counts.get(r.getEmoji());
+				counts.put(r.getEmoji(),
+						(prev == null ? 0 : prev) + 1);
+			}
+			StringBuilder sb = new StringBuilder();
+			for (java.util.Map.Entry<String, Integer> entry
+					: counts.entrySet()) {
+				if (sb.length() > 0) sb.append("   ");
+				sb.append(entry.getKey()).append(" ")
+						.append(entry.getValue());
+			}
+			reactionsView.setText(sb.toString());
+			reactionsView.setVisibility(View.VISIBLE);
 		}
 
 		private static String formatRemaining(android.content.Context ctx,

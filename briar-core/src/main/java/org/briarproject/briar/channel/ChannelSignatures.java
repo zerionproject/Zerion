@@ -77,4 +77,23 @@ class ChannelSignatures {
 			return false;
 		}
 	}
+
+	@CryptoExecutor
+	byte[] signReaction(byte[] signedInput, PrivateKey hybridPrivateKey)
+			throws GeneralSecurityException {
+		return crypto.hybridSign(
+				ChannelConstants.SIGNING_LABEL_REACTION,
+				signedInput, hybridPrivateKey);
+	}
+
+	boolean verifyReaction(byte[] signature, byte[] signedInput,
+			PublicKey hybridPublicKey) {
+		try {
+			return crypto.verifyHybridSignature(signature,
+					ChannelConstants.SIGNING_LABEL_REACTION,
+					signedInput, hybridPublicKey);
+		} catch (GeneralSecurityException e) {
+			return false;
+		}
+	}
 }

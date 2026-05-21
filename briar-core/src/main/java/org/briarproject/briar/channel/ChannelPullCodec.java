@@ -62,7 +62,9 @@ class ChannelPullCodec {
 	byte[] encodePullResponse(BdfDictionary manifest,
 			List<ChannelPost> newPosts,
 			@Nullable byte[] contentKeyEnvelope,
-			List<String> neighbourHints) throws IOException {
+			List<String> neighbourHints,
+			List<org.briarproject.briar.api.channel.ChannelReaction>
+					reactions) throws IOException {
 		BdfDictionary d = new BdfDictionary();
 		d.put("type", ChannelConstants.WIRE_TYPE_PULL_RESPONSE);
 		d.put("manifest", manifest);
@@ -77,6 +79,18 @@ class ChannelPullCodec {
 		BdfList hintList = new BdfList();
 		for (String h : neighbourHints) hintList.add(h);
 		d.put("neighbourHints", hintList);
+		BdfList reactionList = new BdfList();
+		for (org.briarproject.briar.api.channel.ChannelReaction r
+				: reactions) {
+			BdfDictionary rd = new BdfDictionary();
+			rd.put("seq", r.getPostSeqNum());
+			rd.put("emoji", r.getEmoji());
+			rd.put("ed", r.getSignerEd25519PubKey());
+			rd.put("ml", r.getSignerMlDsaPubKey());
+			rd.put("ts", r.getTimestampHourMs());
+			reactionList.add(rd);
+		}
+		d.put("reactions", reactionList);
 		return writeDict(d);
 	}
 
@@ -100,7 +114,22 @@ class ChannelPullCodec {
 		for (Object o : hintList) {
 			if (o instanceof String) hints.add((String) o);
 		}
-		return new PullResponse(manifest, posts, envelope, hints);
+		List<org.briarproject.briar.api.channel.ChannelReaction>
+				reactions = new ArrayList<>();
+		BdfList reactionList = d.getList("reactions", new BdfList());
+		for (Object o : reactionList) {
+			if (!(o instanceof BdfDictionary)) continue;
+			BdfDictionary rd = (BdfDictionary) o;
+			reactions.add(
+					new org.briarproject.briar.api.channel.ChannelReaction(
+							rd.getLong("seq"),
+							rd.getString("emoji"),
+							rd.getRaw("ed"),
+							rd.getRaw("ml"),
+							rd.getLong("ts")));
+		}
+		return new PullResponse(manifest, posts, envelope, hints,
+				reactions);
 	}
 
 	BdfDictionary encodeManifest(byte[] channelId, byte[] salt,
@@ -213,6 +242,67 @@ class ChannelPullCodec {
 		return d;
 	}
 
+	byte[] encodeReactionRequest(byte[] channelId, long postSeqNum,
+			String emoji, long timestampHourMs,
+			byte[] signerEd25519, byte[] signerMlDsa, byte[] signature)
+			throws IOException {
+		BdfDictionary d = new BdfDictionary();
+		d.put("type", ChannelConstants.WIRE_TYPE_POST_REACTION);
+		d.put("channelId", channelId);
+		d.put("seq", postSeqNum);
+		d.put("emoji", emoji);
+		d.put("ts", timestampHourMs);
+		d.put("ed", signerEd25519);
+		d.put("ml", signerMlDsa);
+		d.put("sig", signature);
+		return writeDict(d);
+	}
+
+	ReactionRequest decodeReactionRequest(byte[] data) throws IOException {
+		BdfDictionary d = readDict(data);
+		String type = d.getString("type");
+		if (!ChannelConstants.WIRE_TYPE_POST_REACTION.equals(type)) {
+			throw new FormatException();
+		}
+		return new ReactionRequest(d.getRaw("channelId"),
+				d.getLong("seq"),
+				d.getString("emoji"),
+				d.getLong("ts"),
+				d.getRaw("ed"),
+				d.getRaw("ml"),
+				d.getRaw("sig"));
+	}
+
+	byte[] encodeReactionAck(boolean ok) throws IOException {
+		BdfDictionary d = new BdfDictionary();
+		d.put("type", ChannelConstants.WIRE_TYPE_REACTION_ACK);
+		d.put("ok", ok);
+		return writeDict(d);
+	}
+
+	@NotNullByDefault
+	static final class ReactionRequest {
+		final byte[] channelId;
+		final long postSeqNum;
+		final String emoji;
+		final long timestampHourMs;
+		final byte[] signerEd25519;
+		final byte[] signerMlDsa;
+		final byte[] signature;
+
+		ReactionRequest(byte[] channelId, long postSeqNum, String emoji,
+				long timestampHourMs, byte[] signerEd25519,
+				byte[] signerMlDsa, byte[] signature) {
+			this.channelId = channelId;
+			this.postSeqNum = postSeqNum;
+			this.emoji = emoji;
+			this.timestampHourMs = timestampHourMs;
+			this.signerEd25519 = signerEd25519;
+			this.signerMlDsa = signerMlDsa;
+			this.signature = signature;
+		}
+	}
+
 	byte[] encodeAttachmentRequest(byte[] channelId, byte[] blobHash)
 			throws IOException {
 		BdfDictionary d = new BdfDictionary();
@@ -323,14 +413,19 @@ class ChannelPullCodec {
 		@Nullable
 		final byte[] contentKeyEnvelope;
 		final List<String> neighbourHints;
+		final List<org.briarproject.briar.api.channel.ChannelReaction>
+				reactions;
 
 		PullResponse(BdfDictionary manifest, List<ChannelPost> newPosts,
 				@Nullable byte[] contentKeyEnvelope,
-				List<String> neighbourHints) {
+				List<String> neighbourHints,
+				List<org.briarproject.briar.api.channel.ChannelReaction>
+						reactions) {
 			this.manifest = manifest;
 			this.newPosts = newPosts;
 			this.contentKeyEnvelope = contentKeyEnvelope;
 			this.neighbourHints = neighbourHints;
+			this.reactions = reactions;
 		}
 	}
 }

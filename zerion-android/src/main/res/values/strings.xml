@@ -247,14 +247,14 @@
 	<string name="channels_action_mirror_on">Mirror for my contacts</string>
 	<string name="channels_action_mirror_off">Stop mirroring</string>
 	<string name="channels_row_active">Active</string>
-	<string name="channels_row_public">Public channel</string>
+	<string name="channels_row_public">Open channel</string>
 	<string name="channels_row_closed">Closed channel</string>
 	<string name="channels_row_publisher_self">You are the publisher</string>
 	<string name="channels_create_title">Create a channel</string>
 	<string name="channels_create_name_hint">Channel name</string>
 	<string name="channels_create_description_hint">Description</string>
-	<string name="channels_create_public_label">Public channel</string>
-	<string name="channels_create_closed_label">Closed channel (invite link contains a capability key)</string>
+	<string name="channels_create_public_label">Open channel (anyone with the link can read)</string>
+	<string name="channels_create_closed_label">Closed channel (link contains a capability key, posts are encrypted)</string>
 	<string name="channels_create_action">Create</string>
 	<string name="channels_create_error_name">A channel needs a name.</string>
 	<string name="channels_join_title">Join a channel</string>
@@ -285,6 +285,10 @@
 	<string name="channels_post_signer_editor">Editor</string>
 	<string name="channels_delegations_title">Manage editors</string>
 	<string name="channels_delegations_empty">No editors yet. Add one to let another Zerion identity post to this channel.</string>
+	<string name="channels_delegations_role_owner">Owner</string>
+	<string name="channels_delegations_role_editor">Editor</string>
+	<string name="channels_delegations_role_you">You</string>
+	<string name="channels_delegations_help">You can add editors to help post in this channel. Long-press an editor to revoke them. Only the owner can post, pin, delete, or add other editors.</string>
 	<string name="channels_delegations_add">Add editor</string>
 	<string name="channels_delegations_revoke">Revoke</string>
 	<string name="channels_delegations_paste_pubkey">Paste editor\'s hybrid public key (base32)</string>
@@ -321,6 +325,8 @@
 	<string name="channels_attach_download_failed">Could not download attachment</string>
 	<string name="channels_attach_open_failed">No app available to open this file</string>
 	<string name="channels_attach_too_many">Too many attachments (max 8)</string>
+	<string name="channels_action_react">React</string>
+	<string name="channels_react_failed">Could not send reaction</string>
 	<string name="vault_button">zVault</string>
 	<!-- This is part of the main menu. The app will be locked when this is tapped. -->
 	<string name="lock_button">Lock App</string>

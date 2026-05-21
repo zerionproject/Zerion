@@ -52,6 +52,29 @@
 			app:layout_constraintTop_toBottomOf="@+id/channelPostBodyView"
 			tools:visibility="visible" />
 
+		<TextView
+			android:id="@+id/channelPostReactionsView"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_marginLeft="@dimen/message_bubble_padding_sides_inner"
+			android:layout_marginTop="4dp"
+			android:layout_marginRight="@dimen/message_bubble_padding_sides_inner"
+			android:background="@drawable/reaction_background"
+			android:paddingStart="6dp"
+			android:paddingEnd="6dp"
+			android:paddingTop="2dp"
+			android:paddingBottom="2dp"
+			android:textColor="?android:attr/textColorPrimary"
+			android:textSize="13sp"
+			android:visibility="gone"
+			app:layout_constrainedWidth="true"
+			app:layout_constraintEnd_toEndOf="parent"
+			app:layout_constraintHorizontal_bias="0.0"
+			app:layout_constraintStart_toStartOf="parent"
+			app:layout_constraintTop_toBottomOf="@+id/channelPostAttachments"
+			tools:text="👍 3   ❤️ 1"
+			tools:visibility="visible" />
+
 		<LinearLayout
 			android:id="@+id/channelPostStatusRow"
 			android:layout_width="wrap_content"
@@ -65,7 +88,7 @@
 			app:layout_constraintEnd_toEndOf="parent"
 			app:layout_constraintHorizontal_bias="1.0"
 			app:layout_constraintStart_toStartOf="parent"
-			app:layout_constraintTop_toBottomOf="@+id/channelPostAttachments">
+			app:layout_constraintTop_toBottomOf="@+id/channelPostReactionsView">
 
 			<TextView
 				android:id="@+id/channelPostSignerBadge"

@@ -17,7 +17,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.professor.zerion.R;
@@ -97,9 +96,11 @@ public class ChannelDelegationsActivity extends ZerionActivity {
 		recycler.setLayoutManager(new LinearLayoutManager(this));
 		recycler.setAdapter(adapter);
 
-		ExtendedFloatingActionButton addFab =
-				findViewById(R.id.delegationsAddFab);
-		addFab.setOnClickListener(v -> showAddDialog());
+		View addRow = findViewById(R.id.delegationsAddRow);
+		addRow.setOnClickListener(v -> showAddDialog());
+
+		TextView ownerName = findViewById(R.id.delegationsOwnerName);
+		ownerName.setText(R.string.channels_delegations_role_you);
 	}
 
 	@Override
@@ -122,14 +123,11 @@ public class ChannelDelegationsActivity extends ZerionActivity {
 	}
 
 	private void render(List<ChannelDelegationCert> certs) {
-		if (certs.isEmpty()) {
-			recycler.setVisibility(View.GONE);
-			emptyView.setVisibility(View.VISIBLE);
-		} else {
-			recycler.setVisibility(View.VISIBLE);
-			emptyView.setVisibility(View.GONE);
-			adapter.setItems(certs);
-		}
+		adapter.setItems(certs);
+		recycler.setVisibility(certs.isEmpty()
+				? View.GONE : View.VISIBLE);
+		emptyView.setVisibility(certs.isEmpty()
+				? View.VISIBLE : View.GONE);
 	}
 
 	private void showAddDialog() {

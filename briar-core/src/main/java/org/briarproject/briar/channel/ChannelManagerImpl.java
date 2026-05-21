@@ -9,6 +9,8 @@ import org.briarproject.bramble.api.db.Transaction;
 import org.briarproject.bramble.api.event.Event;
 import org.briarproject.bramble.api.event.EventBus;
 import org.briarproject.bramble.api.event.EventListener;
+import org.briarproject.bramble.api.identity.IdentityManager;
+import org.briarproject.bramble.api.identity.LocalAuthor;
 import org.briarproject.bramble.api.lifecycle.IoExecutor;
 import org.briarproject.bramble.api.lifecycle.LifecycleManager.OpenDatabaseHook;
 import org.briarproject.bramble.api.plugin.event.B4OwnRotationCompletedEvent;
@@ -56,6 +58,8 @@ class ChannelManagerImpl
 	private final ChannelPullProtocol pullProtocol;
 	private final ChannelTransport transport;
 	private final ChannelBlobStore blobStore;
+	private final ChannelReactionStore reactionStore;
+	private final IdentityManager identityManager;
 	private final TaskScheduler taskScheduler;
 	private final java.util.concurrent.Executor ioExecutor;
 	private final SecureRandom random;
@@ -82,6 +86,8 @@ class ChannelManagerImpl
 			ChannelPullProtocol pullProtocol,
 			ChannelTransport transport,
 			ChannelBlobStore blobStore,
+			ChannelReactionStore reactionStore,
+			IdentityManager identityManager,
 			TaskScheduler taskScheduler,
 			@IoExecutor java.util.concurrent.Executor ioExecutor) {
 		this.crypto = crypto;
@@ -96,6 +102,8 @@ class ChannelManagerImpl
 		this.pullProtocol = pullProtocol;
 		this.transport = transport;
 		this.blobStore = blobStore;
+		this.reactionStore = reactionStore;
+		this.identityManager = identityManager;
 		this.taskScheduler = taskScheduler;
 		this.ioExecutor = ioExecutor;
 		this.random = new SecureRandom();
@@ -316,6 +324,9 @@ class ChannelManagerImpl
 		if (ChannelConstants.WIRE_TYPE_GET_ATTACHMENT.equals(wireType)) {
 			return handleAttachmentFetch(channelId, requestBytes);
 		}
+		if (ChannelConstants.WIRE_TYPE_POST_REACTION.equals(wireType)) {
+			return handleReactionRequest(channelId, requestBytes);
+		}
 		try {
 			ChannelPullCodec.PullRequest req = pullCodec()
 					.decodePullRequest(requestBytes);
@@ -347,11 +358,15 @@ class ChannelManagerImpl
 			java.util.List<ChannelPost> wirePosts =
 					convertToWirePosts(s, toSend);
 			byte[] manifestSig = signLatestManifest(s);
+			java.util.List<org.briarproject.briar.api.channel
+					.ChannelReaction> reactions =
+					reactionStore.getReactions(channelId);
 			return pullProtocol.buildResponseAsPublisher(s,
 					s.getPublisherEd25519PubKey(),
 					s.getPublisherMlDsaPubKey(), manifestSig,
 					wirePosts, envelope,
-					java.util.Collections.<String>emptyList());
+					java.util.Collections.<String>emptyList(),
+					reactions);
 		} catch (IOException | DbException e) {
 			return new byte[0];
 		}
@@ -457,6 +472,19 @@ class ChannelManagerImpl
 		for (ChannelPost p : r.acceptedPosts) {
 			acceptIncomingPost(channelId, p);
 		}
+		applyIncomingReactions(channelId, r.reactions);
+	}
+
+	private void applyIncomingReactions(byte[] channelId,
+			java.util.List<org.briarproject.briar.api.channel
+					.ChannelReaction> incoming) throws DbException {
+		if (incoming.isEmpty()) return;
+		for (org.briarproject.briar.api.channel.ChannelReaction r
+				: incoming) {
+			reactionStore.putReaction(channelId, r);
+		}
+		fireEvent(channelId,
+				ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
 	}
 
 	private ChannelPullCodec pullCodec() {
@@ -510,6 +538,7 @@ class ChannelManagerImpl
 	public void deleteChannel(byte[] channelId) throws DbException {
 		store.removeChannel(channelId);
 		blobStore.removeAllForChannel(channelId);
+		reactionStore.removeAll(channelId);
 		fireEvent(channelId, ChannelStateChangedEvent.Kind.LEFT);
 	}
 
@@ -578,6 +607,7 @@ class ChannelManagerImpl
 	public void leaveChannel(byte[] channelId) throws DbException {
 		store.removeChannel(channelId);
 		blobStore.removeAllForChannel(channelId);
+		reactionStore.removeAll(channelId);
 		fireEvent(channelId, ChannelStateChangedEvent.Kind.LEFT);
 	}
 
@@ -1116,6 +1146,124 @@ class ChannelManagerImpl
 	}
 
 	@Override
+	public void reactToPost(byte[] channelId, long postSeqNum,
+			String emoji) throws DbException {
+		if (emoji.isEmpty() || emoji.getBytes(
+				java.nio.charset.StandardCharsets.UTF_8).length
+				> ChannelConstants.MAX_REACTION_EMOJI_BYTES) {
+			throw new DbException();
+		}
+		ChannelState s = store.getChannel(channelId);
+		if (s == null) throw new DbException();
+		LocalAuthor me = identityManager.getLocalAuthor();
+		byte[] hybridPubEncoded = me.getPublicKey().getEncoded();
+		byte[] signerEd = new byte[32];
+		byte[] signerMl = new byte[hybridPubEncoded.length - 32];
+		System.arraycopy(hybridPubEncoded, 0, signerEd, 0, 32);
+		System.arraycopy(hybridPubEncoded, 32, signerMl, 0,
+				signerMl.length);
+		long ts = clock.currentTimeMillis() / HOUR_MS * HOUR_MS;
+		byte[] signedInput = codec.reactionSignedInput(channelId,
+				postSeqNum, emoji, ts);
+		byte[] sig;
+		try {
+			sig = signatures.signReaction(signedInput, me.getPrivateKey());
+		} catch (GeneralSecurityException ex) {
+			throw new DbException(ex);
+		}
+		boolean amPublisher = s.weArePublisher();
+		if (amPublisher) {
+			reactionStore.putReaction(channelId,
+					new org.briarproject.briar.api.channel
+							.ChannelReaction(postSeqNum, emoji,
+									signerEd, signerMl, ts));
+			fireEvent(channelId,
+					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+			return;
+		}
+		try {
+			byte[] reqBytes = pullCodec().encodeReactionRequest(
+					channelId, postSeqNum, emoji, ts, signerEd,
+					signerMl, sig);
+			transport.requestFromOnion(s.getCurrentOnion(), reqBytes);
+			reactionStore.putReaction(channelId,
+					new org.briarproject.briar.api.channel
+							.ChannelReaction(postSeqNum, emoji,
+									signerEd, signerMl, ts));
+			fireEvent(channelId,
+					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+		} catch (IOException ex) {
+			throw new DbException(ex);
+		}
+	}
+
+	@Override
+	public java.util.List<org.briarproject.briar.api.channel
+			.ChannelReaction> getReactions(byte[] channelId,
+					long postSeqNum) throws DbException {
+		java.util.List<org.briarproject.briar.api.channel
+				.ChannelReaction> all =
+				reactionStore.getReactions(channelId);
+		java.util.List<org.briarproject.briar.api.channel
+				.ChannelReaction> out = new ArrayList<>();
+		for (org.briarproject.briar.api.channel.ChannelReaction r : all) {
+			if (r.getPostSeqNum() == postSeqNum) out.add(r);
+		}
+		return out;
+	}
+
+	private byte[] handleReactionRequest(byte[] channelId,
+			byte[] requestBytes) {
+		try {
+			ChannelPullCodec.ReactionRequest req = pullCodec()
+					.decodeReactionRequest(requestBytes);
+			if (!java.util.Arrays.equals(req.channelId, channelId)) {
+				return safeAck(false);
+			}
+			if (req.emoji.isEmpty()
+					|| req.emoji.getBytes(
+							java.nio.charset.StandardCharsets.UTF_8).length
+					> ChannelConstants.MAX_REACTION_EMOJI_BYTES) {
+				return safeAck(false);
+			}
+			byte[] signedInput = codec.reactionSignedInput(channelId,
+					req.postSeqNum, req.emoji, req.timestampHourMs);
+			org.briarproject.bramble.api.crypto.HybridSignaturePublicKey
+					pub = new org.briarproject.bramble.api.crypto
+					.HybridSignaturePublicKey(req.signerEd25519,
+							req.signerMlDsa);
+			if (!signatures.verifyReaction(req.signature, signedInput,
+					pub)) {
+				return safeAck(false);
+			}
+			java.util.List<org.briarproject.briar.api.channel
+					.ChannelReaction> existing =
+					reactionStore.getReactions(channelId);
+			if (existing.size()
+					>= ChannelConstants.MAX_REACTIONS_PER_POST
+					* 16) {
+				return safeAck(false);
+			}
+			reactionStore.putReaction(channelId,
+					new org.briarproject.briar.api.channel
+							.ChannelReaction(req.postSeqNum, req.emoji,
+									req.signerEd25519, req.signerMlDsa,
+									req.timestampHourMs));
+			return safeAck(true);
+		} catch (IOException | DbException ex) {
+			return safeAck(false);
+		}
+	}
+
+	private byte[] safeAck(boolean ok) {
+		try {
+			return pullCodec().encodeReactionAck(ok);
+		} catch (IOException ex) {
+			return new byte[0];
+		}
+	}
+
+	@Override
 	@Nullable
 	public byte[] decryptAttachmentThumbnail(byte[] channelId,
 			long postSeqNum, byte[] blobHash) throws DbException {
@@ -1195,12 +1343,15 @@ class ChannelManagerImpl
 						new java.util.ArrayList<>();
 				java.util.List<byte[]> expiredBlobHashes =
 						new java.util.ArrayList<>();
+				java.util.List<Long> expiredSeqs =
+						new java.util.ArrayList<>();
 				boolean changed = false;
 				for (ChannelPost p : store.getPosts(channelId)) {
 					if (p.getTtlMs() > 0
 							&& now > p.getTimestampHourMs()
 							+ p.getTtlMs()) {
 						changed = true;
+						expiredSeqs.add(p.getSeqNum());
 						for (ChannelPost.ChannelAttachment a
 								: p.getAttachments()) {
 							expiredBlobHashes.add(a.getBlobHash());
@@ -1212,6 +1363,9 @@ class ChannelManagerImpl
 				if (changed) store.writePosts(channelId, kept);
 				for (byte[] h : expiredBlobHashes) {
 					blobStore.removeBlob(channelId, h);
+				}
+				for (Long seq : expiredSeqs) {
+					reactionStore.removeForPost(channelId, seq);
 				}
 			} finally {
 				lock.unlock();
