@@ -2,6 +2,7 @@ package org.briarproject.briar;
 
 import org.briarproject.briar.autodelete.AutoDeleteModule;
 import org.briarproject.briar.avatar.AvatarModule;
+import org.briarproject.briar.channel.ChannelModule;
 import org.briarproject.briar.conversation.ConversationModule;
 import org.briarproject.briar.grouptr.GroupTrModule;
 import org.briarproject.briar.identity.IdentityModule;
@@ -16,6 +17,8 @@ public interface BriarCoreEagerSingletons {
 	void inject(AutoDeleteModule.EagerSingletons init);
 
 	void inject(AvatarModule.EagerSingletons init);
+
+	void inject(ChannelModule.EagerSingletons init);
 
 	void inject(ConversationModule.EagerSingletons init);
 
@@ -38,6 +41,7 @@ public interface BriarCoreEagerSingletons {
 		public static void injectEagerSingletons(BriarCoreEagerSingletons c) {
 			c.inject(new AutoDeleteModule.EagerSingletons());
 			c.inject(new AvatarModule.EagerSingletons());
+			c.inject(new ChannelModule.EagerSingletons());
 			c.inject(new ConversationModule.EagerSingletons());
 			c.inject(new GroupInvitationModule.EagerSingletons());
 			c.inject(new GroupTrModule.EagerSingletons());

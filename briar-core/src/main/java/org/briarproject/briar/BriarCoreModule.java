@@ -3,6 +3,7 @@ package org.briarproject.briar;
 import org.briarproject.briar.attachment.AttachmentModule;
 import org.briarproject.briar.autodelete.AutoDeleteModule;
 import org.briarproject.briar.avatar.AvatarModule;
+import org.briarproject.briar.channel.ChannelModule;
 import org.briarproject.briar.client.BriarClientModule;
 import org.briarproject.briar.conversation.ConversationModule;
 import org.briarproject.briar.conversation.voice.VoiceCallModule;
@@ -22,6 +23,7 @@ import dagger.Module;
 		AutoDeleteModule.class,
 		AvatarModule.class,
 		BriarClientModule.class,
+		ChannelModule.class,
 		ConversationModule.class,
 		GroupInvitationModule.class,
 		GroupTrModule.class,
