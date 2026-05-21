@@ -151,6 +151,11 @@ class ChannelPullProtocol {
 					local.getPublisherEd25519PubKey())) {
 				return null;
 			}
+			byte[] localMlDsa = local.getPublisherMlDsaPubKey();
+			if (localMlDsa != null && localMlDsa.length > 0
+					&& !java.util.Arrays.equals(wirePubMl, localMlDsa)) {
+				return null;
+			}
 			byte[] wireSig = manifest.getRaw("signature");
 			byte[] wireSalt = manifest.getRaw("salt");
 			byte[] wireAvatar = manifest.getOptionalRaw("avatarHash");

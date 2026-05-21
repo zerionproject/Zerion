@@ -4,10 +4,13 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.IOException;
 
+import javax.annotation.Nullable;
+
 @NotNullByDefault
 public interface ChannelTransport {
 
 	ChannelServer bindServer(byte[] channelId,
+			@Nullable String onionPrivateKey,
 			ChannelRequestHandler handler) throws IOException;
 
 	byte[] requestFromOnion(String onion, byte[] requestBytes)
@@ -17,6 +20,9 @@ public interface ChannelTransport {
 	interface ChannelServer {
 
 		String getOnionAddress();
+
+		@Nullable
+		String getOnionPrivateKey();
 
 		void close();
 	}

@@ -61,6 +61,15 @@ class ChannelManagerImpl
 	private final java.util.Map<String, ChannelTransport.ChannelServer>
 			boundServers =
 					new java.util.concurrent.ConcurrentHashMap<>();
+	private final java.util.Map<String,
+			java.util.concurrent.locks.ReentrantLock> channelLocks =
+					new java.util.concurrent.ConcurrentHashMap<>();
+
+	private java.util.concurrent.locks.ReentrantLock lockFor(
+			byte[] channelId) {
+		return channelLocks.computeIfAbsent(ChannelStore.hex(channelId),
+				k -> new java.util.concurrent.locks.ReentrantLock());
+	}
 
 	@Inject
 	ChannelManagerImpl(CryptoComponent crypto, EventBus eventBus,
@@ -161,7 +170,8 @@ class ChannelManagerImpl
 				s.getContentKeyHash(), s.getContentKey(),
 				s.getActiveDelegations(),
 				s.getRevokedDelegationSeqs(),
-				s.getNextDelegationSeq());
+				s.getNextDelegationSeq(),
+				s.getOnionPrivateKey());
 	}
 
 	@Override
@@ -225,15 +235,45 @@ class ChannelManagerImpl
 	@Nullable
 	private String bindPublisherServer(byte[] channelId) {
 		try {
+			ChannelState existing = store.getChannel(channelId);
+			String existingPriv = existing == null ? null
+					: existing.getOnionPrivateKey();
 			ChannelTransport.ChannelServer server =
-					transport.bindServer(channelId,
+					transport.bindServer(channelId, existingPriv,
 							requestBytes -> handlePublisherRequest(
 									channelId, requestBytes));
 			boundServers.put(ChannelStore.hex(channelId), server);
+			String returnedPriv = server.getOnionPrivateKey();
+			if (returnedPriv != null && (existingPriv == null
+					|| !returnedPriv.equals(existingPriv))) {
+				if (existing != null) {
+					ChannelState withPriv = withOnionPrivateKey(
+							existing, returnedPriv);
+					store.putChannel(withPriv);
+				}
+			}
 			return server.getOnionAddress();
 		} catch (IOException e) {
 			return null;
+		} catch (DbException e) {
+			return null;
 		}
+	}
+
+	private ChannelState withOnionPrivateKey(ChannelState s,
+			String privKey) {
+		return new ChannelState(s.getChannelId(), s.getSalt(),
+				s.getPublisherEd25519PubKey(),
+				s.getPublisherMlDsaPubKey(), s.getName(),
+				s.getDescription(), s.getAvatarHash(),
+				s.getCreatedAtHourMs(), s.isPublicChannel(),
+				s.getJoinCapability(), s.getCurrentOnion(),
+				s.getManifestSeq(), s.weArePublisher(),
+				s.getHighestKnownPostSeq(),
+				s.getContentKeyHash(), s.getContentKey(),
+				s.getActiveDelegations(),
+				s.getRevokedDelegationSeqs(),
+				s.getNextDelegationSeq(), privKey);
 	}
 
 	private byte[] handlePublisherRequest(byte[] channelId,
@@ -413,7 +453,8 @@ class ChannelManagerImpl
 				s.getContentKeyHash(), s.getContentKey(),
 				s.getActiveDelegations(),
 				s.getRevokedDelegationSeqs(),
-				s.getNextDelegationSeq());
+				s.getNextDelegationSeq(),
+				s.getOnionPrivateKey());
 	}
 
 	@Nullable
@@ -484,6 +525,17 @@ class ChannelManagerImpl
 	@Override
 	public void publishPost(byte[] channelId, String body, long ttlSeconds)
 			throws DbException {
+		java.util.concurrent.locks.ReentrantLock lock = lockFor(channelId);
+		lock.lock();
+		try {
+			publishPostLocked(channelId, body, ttlSeconds);
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	private void publishPostLocked(byte[] channelId, String body,
+			long ttlSeconds) throws DbException {
 		ChannelState s = store.getChannel(channelId);
 		if (s == null) throw new DbException();
 		if (!s.weArePublisher()) throw new DbException();
@@ -695,17 +747,27 @@ class ChannelManagerImpl
 	public void purgeExpiredPosts() throws DbException {
 		long now = clock.currentTimeMillis();
 		for (ChannelState s : store.listChannels()) {
-			java.util.List<ChannelPost> kept = new java.util.ArrayList<>();
-			boolean changed = false;
-			for (ChannelPost p : store.getPosts(s.getChannelId())) {
-				if (p.getTtlMs() > 0
-						&& now > p.getTimestampHourMs() + p.getTtlMs()) {
-					changed = true;
-					continue;
+			byte[] channelId = s.getChannelId();
+			java.util.concurrent.locks.ReentrantLock lock =
+					lockFor(channelId);
+			lock.lock();
+			try {
+				java.util.List<ChannelPost> kept =
+						new java.util.ArrayList<>();
+				boolean changed = false;
+				for (ChannelPost p : store.getPosts(channelId)) {
+					if (p.getTtlMs() > 0
+							&& now > p.getTimestampHourMs()
+							+ p.getTtlMs()) {
+						changed = true;
+						continue;
+					}
+					kept.add(p);
 				}
-				kept.add(p);
+				if (changed) store.writePosts(channelId, kept);
+			} finally {
+				lock.unlock();
 			}
-			if (changed) store.writePosts(s.getChannelId(), kept);
 		}
 	}
 
@@ -721,7 +783,7 @@ class ChannelManagerImpl
 				s.getManifestSeq() + 1L, s.weArePublisher(),
 				s.getHighestKnownPostSeq(),
 				s.getContentKeyHash(), s.getContentKey(),
-				active, revoked, nextSeq);
+				active, revoked, nextSeq, s.getOnionPrivateKey());
 	}
 
 	@Override
@@ -736,7 +798,12 @@ class ChannelManagerImpl
 					s.getCreatedAtHourMs(), s.isPublicChannel(),
 					s.getJoinCapability(), newOnionAddress,
 					s.getManifestSeq() + 1L, true,
-					s.getHighestKnownPostSeq());
+					s.getHighestKnownPostSeq(),
+					s.getContentKeyHash(), s.getContentKey(),
+					s.getActiveDelegations(),
+					s.getRevokedDelegationSeqs(),
+					s.getNextDelegationSeq(),
+					s.getOnionPrivateKey());
 			store.putChannel(updated);
 			fireEvent(s.getChannelId(),
 					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
@@ -745,6 +812,17 @@ class ChannelManagerImpl
 
 	void acceptIncomingPost(byte[] channelId, ChannelPost incoming)
 			throws DbException {
+		java.util.concurrent.locks.ReentrantLock lock = lockFor(channelId);
+		lock.lock();
+		try {
+			acceptIncomingPostLocked(channelId, incoming);
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	private void acceptIncomingPostLocked(byte[] channelId,
+			ChannelPost incoming) throws DbException {
 		ChannelState s = store.getChannel(channelId);
 		if (s == null) throw new DbException();
 		List<ChannelPost> existing = store.getPosts(channelId);
@@ -804,7 +882,12 @@ class ChannelManagerImpl
 				s.getDescription(), s.getAvatarHash(),
 				s.getCreatedAtHourMs(), s.isPublicChannel(),
 				s.getJoinCapability(), s.getCurrentOnion(),
-				s.getManifestSeq(), s.weArePublisher(), newHighSeq);
+				s.getManifestSeq(), s.weArePublisher(), newHighSeq,
+				s.getContentKeyHash(), s.getContentKey(),
+				s.getActiveDelegations(),
+				s.getRevokedDelegationSeqs(),
+				s.getNextDelegationSeq(),
+				s.getOnionPrivateKey());
 	}
 
 	private void clearReturned(byte[] b) {

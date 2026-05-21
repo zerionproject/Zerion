@@ -42,17 +42,27 @@ public class TorChannelTransport implements ChannelTransport {
 
 	@Override
 	public ChannelServer bindServer(byte[] channelId,
+			@javax.annotation.Nullable String onionPrivateKey,
 			ChannelRequestHandler handler) throws IOException {
 		ServerSocket ss = new ServerSocket();
 		ss.bind(new InetSocketAddress("127.0.0.1", 0));
 		int localPort = ss.getLocalPort();
-		String onion = onionPublisher.publish(localPort);
+		OnionPublisher.OnionHandle handle =
+				onionPublisher.publish(localPort, onionPrivateKey);
+		String onion = handle.getOnion();
+		String returnedPrivKey = handle.getPrivateKey();
 		boundSockets.put(onion, ss);
 		ioExecutor.execute(() -> acceptLoop(ss, handler));
 		return new ChannelServer() {
 			@Override
 			public String getOnionAddress() {
 				return onion;
+			}
+
+			@javax.annotation.Nullable
+			@Override
+			public String getOnionPrivateKey() {
+				return returnedPrivKey;
 			}
 
 			@Override

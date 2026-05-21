@@ -303,10 +303,13 @@ class TorPlugin implements DuplexPlugin, EventListener,
 	}
 
 	@Override
-	public String publishChannelOnion(int localPort) throws IOException {
+	public ChannelOnionAdapter.ChannelOnionHandle publishChannelOnion(
+			int localPort, @Nullable String privateKey)
+			throws IOException {
 		HiddenServiceProperties hsProps =
-				tor.publishHiddenService(localPort, 80, null);
-		return hsProps.onion;
+				tor.publishHiddenService(localPort, 80, privateKey);
+		return new ChannelOnionAdapter.ChannelOnionHandle(hsProps.onion,
+				hsProps.privKey);
 	}
 
 	@Override

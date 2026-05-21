@@ -267,6 +267,9 @@ class ChannelStore {
 		for (Long seq : s.getRevokedDelegationSeqs()) revokedList.add(seq);
 		d.put("revokedDelegationSeqs", revokedList);
 		d.put("nextDelegationSeq", s.getNextDelegationSeq());
+		if (s.getOnionPrivateKey() != null) {
+			d.put("onionPrivateKey", s.getOnionPrivateKey());
+		}
 		return d;
 	}
 
@@ -311,7 +314,8 @@ class ChannelStore {
 				d.getOptionalRaw("contentKey"),
 				active,
 				revoked,
-				d.getLong("nextDelegationSeq", 0L));
+				d.getLong("nextDelegationSeq", 0L),
+				d.getOptionalString("onionPrivateKey"));
 	}
 
 	private BdfDictionary postToDict(ChannelPost p) {

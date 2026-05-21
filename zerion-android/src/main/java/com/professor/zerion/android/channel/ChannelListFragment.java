@@ -375,6 +375,9 @@ public class ChannelListFragment extends BaseFragment
 		labels.add(getString(R.string.channels_action_share_invite));
 		actions.add(() -> shareInvite(s));
 
+		labels.add(getString(R.string.channels_action_send_to_contact));
+		actions.add(() -> shareInviteViaSystemSheet(s));
+
 		if (s.weArePublisher()) {
 			labels.add(getString(R.string.channels_delegations_title));
 			actions.add(() -> startActivity(
@@ -417,6 +420,29 @@ public class ChannelListFragment extends BaseFragment
 		Toast.makeText(requireContext(),
 				R.string.channels_invite_copied,
 				Toast.LENGTH_SHORT).show();
+	}
+
+	private void shareInviteViaSystemSheet(ChannelState s) {
+		ioExecutor.execute(() -> {
+			try {
+				String link = channelManager.exportInviteLink(
+						s.getChannelId());
+				if (!isAdded()) return;
+				requireActivity().runOnUiThread(() -> {
+					String body = getString(
+							R.string.channels_share_message_prefix) + link;
+					android.content.Intent send =
+							new android.content.Intent(
+									android.content.Intent.ACTION_SEND);
+					send.setType("text/plain");
+					send.putExtra(android.content.Intent.EXTRA_TEXT, body);
+					startActivity(android.content.Intent.createChooser(send,
+							getString(
+									R.string.channels_share_chooser_title)));
+				});
+			} catch (DbException ignored) {
+			}
+		});
 	}
 
 	private void confirmRotate(ChannelState s) {

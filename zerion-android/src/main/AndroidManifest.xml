@@ -77,6 +77,32 @@
 			</intent-filter>
 		</service>
 
+		<activity
+			android:name="com.professor.zerion.android.channel.ChannelInviteHandlerActivity"
+			android:exported="true"
+			android:launchMode="singleTask"
+			android:noHistory="true"
+			android:theme="@style/ZerionTheme">
+			<intent-filter android:autoVerify="false">
+				<action android:name="android.intent.action.VIEW" />
+				<category android:name="android.intent.category.DEFAULT" />
+				<category android:name="android.intent.category.BROWSABLE" />
+				<data
+					android:scheme="zerion"
+					android:host="channel" />
+			</intent-filter>
+		</activity>
+
+		<activity
+			android:name="com.professor.zerion.android.channel.ChannelFeedActivity"
+			android:exported="false"
+			android:theme="@style/ZerionTheme" />
+
+		<activity
+			android:name="com.professor.zerion.android.channel.ChannelDelegationsActivity"
+			android:exported="false"
+			android:theme="@style/ZerionTheme" />
+
 		<service
 			android:name="com.professor.zerion.android.NotificationCleanupService"
 			android:exported="false" />

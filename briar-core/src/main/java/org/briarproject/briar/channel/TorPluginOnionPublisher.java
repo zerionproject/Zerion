@@ -8,6 +8,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.IOException;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -23,8 +24,11 @@ class TorPluginOnionPublisher implements OnionPublisher {
 	}
 
 	@Override
-	public String publish(int localPort) throws IOException {
-		return adapter().publishChannelOnion(localPort);
+	public OnionHandle publish(int localPort,
+			@Nullable String privateKey) throws IOException {
+		ChannelOnionAdapter.ChannelOnionHandle h =
+				adapter().publishChannelOnion(localPort, privateKey);
+		return new OnionHandle(h.getOnion(), h.getPrivateKey());
 	}
 
 	@Override

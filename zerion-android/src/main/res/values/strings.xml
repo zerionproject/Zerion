@@ -294,6 +294,9 @@
 	<string name="channels_delegations_revoked">Editor revoked. New posts from this editor will be rejected by subscribers.</string>
 	<string name="channels_delegations_error_full">This channel already has the maximum number of editors (8).</string>
 	<string name="channels_delegations_error_key">That doesn\'t look like a valid editor public key.</string>
+	<string name="channels_action_send_to_contact">Send to a contact…</string>
+	<string name="channels_share_chooser_title">Share channel via</string>
+	<string name="channels_share_message_prefix">Join my Zerion channel:\n</string>
 	<string name="vault_button">zVault</string>
 	<!-- This is part of the main menu. The app will be locked when this is tapped. -->
 	<string name="lock_button">Lock App</string>
