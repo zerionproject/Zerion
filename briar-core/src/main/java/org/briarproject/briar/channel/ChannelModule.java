@@ -27,8 +27,15 @@ public class ChannelModule {
 
 	@Provides
 	@Singleton
+	OnionPublisher provideOnionPublisher(
+			TorPluginOnionPublisher impl) {
+		return impl;
+	}
+
+	@Provides
+	@Singleton
 	ChannelTransport provideChannelTransport(
-			InProcessChannelTransport impl) {
+			TorChannelTransport impl) {
 		return impl;
 	}
 }

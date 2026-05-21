@@ -80,7 +80,7 @@ import static org.briarproject.onionwrapper.CircumventionProvider.BridgeType.SNO
 
 @InterfaceNotNullByDefault
 class TorPlugin implements DuplexPlugin, EventListener,
-		B4OnionRotation.B4TorAdapter {
+		B4OnionRotation.B4TorAdapter, ChannelOnionAdapter {
 	private static final Pattern ONION_V3 = Pattern.compile("[a-z2-7]{56}");
 
 	protected final Executor ioExecutor;
@@ -300,6 +300,18 @@ class TorPlugin implements DuplexPlugin, EventListener,
 		if (org.briarproject.bramble.api.plugin.B4Constants.B4_DEBUG_LOG) {
 		}
 		return hsProps;
+	}
+
+	@Override
+	public String publishChannelOnion(int localPort) throws IOException {
+		HiddenServiceProperties hsProps =
+				tor.publishHiddenService(localPort, 80, null);
+		return hsProps.onion;
+	}
+
+	@Override
+	public void removeChannelOnion(String onion) throws IOException {
+		tor.removeHiddenService(onion);
 	}
 
 	@Override
