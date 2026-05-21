@@ -2,6 +2,7 @@ package org.briarproject.briar.channel;
 
 import org.briarproject.bramble.api.crypto.CryptoComponent;
 import org.briarproject.briar.api.channel.ChannelConstants;
+import org.briarproject.briar.api.channel.ChannelDelegationCert;
 import org.briarproject.briar.api.channel.ChannelInviteLink;
 import org.briarproject.briar.api.channel.ChannelPost;
 import org.briarproject.nullsafety.NotNullByDefault;
@@ -9,6 +10,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Locale;
 
 import javax.annotation.Nullable;
@@ -38,40 +40,94 @@ class ChannelCodec {
 			String name, String description,
 			@Nullable byte[] avatarHash, long createdAtHourMs,
 			boolean publicChannel, @Nullable byte[] joinCapability,
-			String currentOnion, long manifestSeq) {
+			String currentOnion, long manifestSeq,
+			@Nullable byte[] contentKeyHash,
+			List<ChannelDelegationCert> activeDelegations,
+			List<Long> revokedDelegationSeqs) {
 		byte[] nameHash = crypto.hash(LABEL_MANIFEST_NAME,
 				name.getBytes(StandardCharsets.UTF_8));
 		byte[] descHash = crypto.hash(LABEL_MANIFEST_DESC,
 				description.getBytes(StandardCharsets.UTF_8));
+		byte avatarPresent = (byte) (avatarHash != null ? 1 : 0);
 		byte[] avatar = avatarHash != null ? avatarHash
 				: new byte[ChannelConstants.PREV_HASH_BYTES];
+		byte capabilityPresent = (byte) (joinCapability != null ? 1 : 0);
 		byte[] capability = joinCapability != null ? joinCapability
 				: new byte[ChannelConstants.JOIN_CAPABILITY_BYTES];
 		byte[] onionBytes = currentOnion.toLowerCase(Locale.ROOT)
 				.getBytes(StandardCharsets.US_ASCII);
+		byte contentKeyHashPresent = (byte) (contentKeyHash != null ? 1 : 0);
+		byte[] contentKeyHashBytes = contentKeyHash != null
+				? contentKeyHash
+				: new byte[ChannelConstants.CONTENT_KEY_HASH_BYTES];
+		byte[] delegationsHash = delegationsCanonicalHash(activeDelegations);
+		byte[] revokedHash = revokedCanonicalHash(revokedDelegationSeqs);
 
 		ByteBuffer buf = ByteBuffer.allocate(
 				channelId.length + salt.length
 						+ publisherEd25519Pub.length
 						+ publisherMlDsaPub.length
 						+ nameHash.length + descHash.length
-						+ avatar.length + 8 + 1
-						+ capability.length
-						+ 4 + onionBytes.length + 8);
+						+ 1 + avatar.length + 8 + 1
+						+ 1 + capability.length
+						+ 4 + onionBytes.length + 8
+						+ 1 + contentKeyHashBytes.length
+						+ delegationsHash.length
+						+ revokedHash.length);
 		buf.put(channelId);
 		buf.put(salt);
 		buf.put(publisherEd25519Pub);
 		buf.put(publisherMlDsaPub);
 		buf.put(nameHash);
 		buf.put(descHash);
+		buf.put(avatarPresent);
 		buf.put(avatar);
 		buf.putLong(createdAtHourMs);
 		buf.put((byte) (publicChannel ? 1 : 0));
+		buf.put(capabilityPresent);
 		buf.put(capability);
 		buf.putInt(onionBytes.length);
 		buf.put(onionBytes);
 		buf.putLong(manifestSeq);
+		buf.put(contentKeyHashPresent);
+		buf.put(contentKeyHashBytes);
+		buf.put(delegationsHash);
+		buf.put(revokedHash);
 		return buf.array();
+	}
+
+	private byte[] delegationsCanonicalHash(
+			List<ChannelDelegationCert> active) {
+		ByteArrayOutputStream sink = new ByteArrayOutputStream();
+		ByteBuffer countBuf = ByteBuffer.allocate(4);
+		countBuf.putInt(active.size());
+		sink.write(countBuf.array(), 0, 4);
+		for (ChannelDelegationCert c : active) {
+			sink.write(c.getDelegateeEd25519PubKey(), 0,
+					c.getDelegateeEd25519PubKey().length);
+			sink.write(c.getDelegateeMlDsaPubKey(), 0,
+					c.getDelegateeMlDsaPubKey().length);
+			ByteBuffer numBuf = ByteBuffer.allocate(24);
+			numBuf.putLong(c.getValidFromHourMs());
+			numBuf.putLong(c.getValidUntilHourMs());
+			numBuf.putLong(c.getDelegationSeq());
+			sink.write(numBuf.array(), 0, 24);
+			sink.write(c.getSignature(), 0, c.getSignature().length);
+		}
+		return crypto.hash(
+				"org.briarproject.zerion/CHANNEL_MANIFEST_DELEGATIONS",
+				sink.toByteArray());
+	}
+
+	private byte[] revokedCanonicalHash(List<Long> revoked) {
+		ByteBuffer buf = ByteBuffer.allocate(4 + revoked.size() * 8);
+		buf.putInt(revoked.size());
+		for (Long seq : revoked) {
+			buf.putLong(seq == null ? 0L : seq);
+		}
+		return crypto.hash(
+				"org.briarproject.zerion/CHANNEL_MANIFEST_REVOKED",
+				buf.array());
 	}
 
 	byte[] postSignedInput(byte[] channelId, long seqNum,
@@ -142,41 +198,77 @@ class ChannelCodec {
 	}
 
 	String formatInviteLink(byte[] channelId,
-			byte[] publisherEd25519Pub, boolean publicChannel,
-			@Nullable byte[] joinCapability) {
-		String url = ChannelConstants.INVITE_LINK_SCHEME + "://"
-				+ ChannelConstants.INVITE_LINK_HOST + "/"
-				+ Base32Util.encode(channelId) + "/"
-				+ Base32Util.encode(publisherEd25519Pub);
+			byte[] publisherEd25519Pub,
+			@Nullable byte[] publisherMlDsaPub,
+			boolean publicChannel,
+			@Nullable byte[] joinCapability,
+			@Nullable String onionAddress) {
+		StringBuilder url = new StringBuilder();
+		url.append(ChannelConstants.INVITE_LINK_SCHEME).append("://")
+				.append(ChannelConstants.INVITE_LINK_HOST).append("/")
+				.append(Base32Util.encode(channelId)).append("/")
+				.append(Base32Util.encode(publisherEd25519Pub));
+		boolean first = true;
 		if (!publicChannel && joinCapability != null) {
-			url += "?" + ChannelConstants.INVITE_LINK_CAPABILITY_PARAM
-					+ "=" + Base32Util.encode(joinCapability);
+			url.append(first ? '?' : '&').append(
+					ChannelConstants.INVITE_LINK_CAPABILITY_PARAM)
+					.append('=').append(Base32Util.encode(joinCapability));
+			first = false;
 		}
-		return url;
+		if (onionAddress != null && !onionAddress.isEmpty()) {
+			url.append(first ? '?' : '&').append(
+					ChannelConstants.INVITE_LINK_ONION_PARAM)
+					.append('=').append(onionAddress.toLowerCase(
+							Locale.ROOT));
+			first = false;
+		}
+		if (publisherMlDsaPub != null && publisherMlDsaPub.length > 0) {
+			url.append(first ? '?' : '&').append(
+					ChannelConstants.INVITE_LINK_MLDSA_PARAM)
+					.append('=').append(Base32Util.encode(publisherMlDsaPub));
+		}
+		return url.toString();
 	}
 
 	@Nullable
 	ChannelInviteLink parseInviteLink(String url) {
 		if (url == null) return null;
+		if (url.length() > ChannelConstants.INVITE_LINK_MAX_LENGTH) {
+			return null;
+		}
 		String prefix = ChannelConstants.INVITE_LINK_SCHEME + "://"
 				+ ChannelConstants.INVITE_LINK_HOST + "/";
 		if (!url.startsWith(prefix)) return null;
 		String rest = url.substring(prefix.length());
 		String capEncoded = null;
+		String onionParam = null;
+		String mlDsaEncoded = null;
 		int q = rest.indexOf('?');
 		if (q >= 0) {
 			String query = rest.substring(q + 1);
 			rest = rest.substring(0, q);
-			String pref = ChannelConstants.INVITE_LINK_CAPABILITY_PARAM
-					+ "=";
-			if (query.startsWith(pref)) {
-				capEncoded = query.substring(pref.length());
+			for (String kv : query.split("&")) {
+				int eq = kv.indexOf('=');
+				if (eq <= 0) continue;
+				String k = kv.substring(0, eq);
+				String v = kv.substring(eq + 1);
+				if (k.equals(
+						ChannelConstants.INVITE_LINK_CAPABILITY_PARAM)) {
+					capEncoded = v;
+				} else if (k.equals(
+						ChannelConstants.INVITE_LINK_ONION_PARAM)) {
+					onionParam = v;
+				} else if (k.equals(
+						ChannelConstants.INVITE_LINK_MLDSA_PARAM)) {
+					mlDsaEncoded = v;
+				}
 			}
 		}
 		int slash = rest.indexOf('/');
 		if (slash < 0) return null;
 		String idEncoded = rest.substring(0, slash);
 		String pubEncoded = rest.substring(slash + 1);
+		if (pubEncoded.indexOf('/') >= 0) return null;
 		try {
 			byte[] channelId = Base32Util.decode(idEncoded);
 			byte[] publisherEd = Base32Util.decode(pubEncoded);
@@ -193,8 +285,18 @@ class ChannelCodec {
 					return null;
 				}
 			}
-			return new ChannelInviteLink(channelId, publisherEd,
-					isPublic, capability);
+			byte[] mlDsa = null;
+			if (mlDsaEncoded != null) {
+				mlDsa = Base32Util.decode(mlDsaEncoded);
+				if (mlDsa.length == 0) return null;
+			}
+			String onion = null;
+			if (onionParam != null && !onionParam.isEmpty()) {
+				if (onionParam.length() > 80) return null;
+				onion = onionParam.toLowerCase(Locale.ROOT);
+			}
+			return new ChannelInviteLink(channelId, publisherEd, mlDsa,
+					isPublic, capability, onion);
 		} catch (IllegalArgumentException e) {
 			return null;
 		}

@@ -95,8 +95,6 @@ class ChannelPullProtocol {
 						"content key envelope unwrap failed");
 			}
 		}
-		byte[] effectiveContentKey = envContentKey != null
-				? envContentKey : localState.getContentKey();
 
 		ChannelState mergedState = mergeManifestIntoLocal(localState,
 				resp.manifest, envContentKey);
@@ -108,33 +106,15 @@ class ChannelPullProtocol {
 		ChannelPost prev = existingPosts.isEmpty() ? null
 				: existingPosts.get(existingPosts.size() - 1);
 		for (ChannelPost incoming : resp.newPosts) {
-			ChannelPost decrypted = incoming;
-			if (!mergedState.isPublicChannel()
-					&& effectiveContentKey != null) {
-				try {
-					String plain = contentKey.decryptBody(
-							effectiveContentKey,
-							incoming.getChannelId(),
-							incoming.getSeqNum(),
-							incoming.getBody().getBytes(
-									java.nio.charset.StandardCharsets
-											.ISO_8859_1));
-					decrypted = withDecryptedBody(incoming, plain);
-				} catch (GeneralSecurityException e) {
-					return ProcessResult.failure(
-							"post body decrypt failed at seq "
-									+ incoming.getSeqNum());
-				}
-			}
 			ChannelPostValidator.Result vr = validator.validate(
-					mergedState, decrypted, prev);
+					mergedState, incoming, prev);
 			if (vr != ChannelPostValidator.Result.OK) {
 				return ProcessResult.failure(
-						"post seq " + decrypted.getSeqNum()
+						"post seq " + incoming.getSeqNum()
 								+ " rejected: " + vr.name());
 			}
-			accepted.add(decrypted);
-			prev = decrypted;
+			accepted.add(incoming);
+			prev = incoming;
 		}
 
 		return ProcessResult.success(mergedState, accepted,
@@ -166,18 +146,10 @@ class ChannelPullProtocol {
 			boolean wirePublic = manifest.getBoolean("publicChannel");
 			String wireOnion = manifest.getString("currentOnion");
 			long incomingSeq = manifest.getLong("manifestSeq");
-			byte[] signedInput = codec.manifestSignedInput(
-					local.getChannelId(), wireSalt, wirePubEd, wirePubMl,
-					wireName, wireDesc, wireAvatar, wireCreatedAt,
-					wirePublic, wireCap, wireOnion, incomingSeq);
-			org.briarproject.bramble.api.crypto.HybridSignaturePublicKey
-					pub = new org.briarproject.bramble.api.crypto
-					.HybridSignaturePublicKey(wirePubEd, wirePubMl);
-			if (!signatures.verifyManifest(wireSig, signedInput, pub)) {
+			byte[] wireChannelId = manifest.getRaw("channelId");
+			if (!java.util.Arrays.equals(wireChannelId,
+					local.getChannelId())) {
 				return null;
-			}
-			if (incomingSeq < local.getManifestSeq()) {
-				return local;
 			}
 			List<ChannelDelegationCert> active = new ArrayList<>();
 			for (Object o : manifest.getList("activeDelegations",
@@ -200,6 +172,20 @@ class ChannelPullProtocol {
 			}
 			byte[] contentKeyHash =
 					manifest.getOptionalRaw("contentKeyHash");
+			byte[] signedInput = codec.manifestSignedInput(
+					local.getChannelId(), wireSalt, wirePubEd, wirePubMl,
+					wireName, wireDesc, wireAvatar, wireCreatedAt,
+					wirePublic, wireCap, wireOnion, incomingSeq,
+					contentKeyHash, active, revoked);
+			org.briarproject.bramble.api.crypto.HybridSignaturePublicKey
+					pub = new org.briarproject.bramble.api.crypto
+					.HybridSignaturePublicKey(wirePubEd, wirePubMl);
+			if (!signatures.verifyManifest(wireSig, signedInput, pub)) {
+				return null;
+			}
+			if (incomingSeq < local.getManifestSeq()) {
+				return local;
+			}
 			byte[] joinCap = manifest.getOptionalRaw("joinCapability");
 			return new ChannelState(local.getChannelId(),
 					manifest.getRaw("salt"),
@@ -225,17 +211,6 @@ class ChannelPullProtocol {
 		} catch (FormatException e) {
 			return null;
 		}
-	}
-
-	private ChannelPost withDecryptedBody(ChannelPost wireForm,
-			String plainBody) {
-		return new ChannelPost(wireForm.getChannelId(),
-				wireForm.getSeqNum(), wireForm.getPrevHash(),
-				wireForm.getTimestampHourMs(), plainBody,
-				wireForm.getAttachments(), wireForm.getTtlMs(),
-				wireForm.getSignature(), false,
-				wireForm.getDelegateSignerEd25519PubKey(),
-				wireForm.getDelegateSignerMlDsaPubKey());
 	}
 
 	@NotNullByDefault

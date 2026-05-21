@@ -198,11 +198,14 @@ class ChannelManagerImpl
 				: contentKey.hashContentKey(kContent);
 		long nowHourMs =
 				clock.currentTimeMillis() / HOUR_MS * HOUR_MS;
-		String onion = readLocalOnion();
+		String onion = "";
 		long manifestSeq = 0L;
 		byte[] signedInput = codec.manifestSignedInput(channelId, salt,
 				ed25519Pub, mlDsaPub, name, description, null,
-				nowHourMs, publicChannel, capability, onion, manifestSeq);
+				nowHourMs, publicChannel, capability, onion, manifestSeq,
+				kContentHash,
+				Collections.<ChannelDelegationCert>emptyList(),
+				Collections.<Long>emptyList());
 		byte[] manifestSig;
 		try {
 			manifestSig = signatures.signManifest(signedInput, hybridPriv);
@@ -321,29 +324,7 @@ class ChannelManagerImpl
 
 	private java.util.List<ChannelPost> convertToWirePosts(
 			ChannelState s, java.util.List<ChannelPost> stored) {
-		if (s.isPublicChannel()) return stored;
-		byte[] kContent = s.getContentKey();
-		if (kContent == null) return stored;
-		java.util.List<ChannelPost> out =
-				new java.util.ArrayList<>(stored.size());
-		for (ChannelPost p : stored) {
-			try {
-				byte[] ct = contentKey.encryptBody(kContent,
-						p.getChannelId(), p.getSeqNum(), p.getBody());
-				String wireBody = new String(ct,
-						java.nio.charset.StandardCharsets.ISO_8859_1);
-				out.add(new ChannelPost(p.getChannelId(),
-						p.getSeqNum(), p.getPrevHash(),
-						p.getTimestampHourMs(), wireBody,
-						p.getAttachments(), p.getTtlMs(),
-						p.getSignature(), p.isRead(),
-						p.getDelegateSignerEd25519PubKey(),
-						p.getDelegateSignerMlDsaPubKey()));
-			} catch (GeneralSecurityException e) {
-				return stored;
-			}
-		}
-		return out;
+		return stored;
 	}
 
 	private byte[] signLatestManifest(ChannelState s) {
@@ -353,7 +334,10 @@ class ChannelManagerImpl
 				s.getDescription(), s.getAvatarHash(),
 				s.getCreatedAtHourMs(), s.isPublicChannel(),
 				s.getJoinCapability(), s.getCurrentOnion(),
-				s.getManifestSeq());
+				s.getManifestSeq(),
+				s.getContentKeyHash(),
+				s.getActiveDelegations(),
+				s.getRevokedDelegationSeqs());
 		try {
 			byte[] privEncoded = store.getPublisherPrivKey(
 					s.getChannelId());
@@ -479,8 +463,11 @@ class ChannelManagerImpl
 		ChannelState s = store.getChannel(channelId);
 		if (s == null) throw new DbException();
 		return codec.formatInviteLink(s.getChannelId(),
-				s.getPublisherEd25519PubKey(), s.isPublicChannel(),
-				s.getJoinCapability());
+				s.getPublisherEd25519PubKey(),
+				s.getPublisherMlDsaPubKey(),
+				s.isPublicChannel(),
+				s.getJoinCapability(),
+				s.getCurrentOnion());
 	}
 
 	@Nullable
@@ -492,20 +479,36 @@ class ChannelManagerImpl
 	@Override
 	public ChannelState joinChannel(ChannelInviteLink link)
 			throws DbException {
+		java.util.concurrent.locks.ReentrantLock lock =
+				lockFor(link.getChannelId());
+		lock.lock();
+		try {
+			return joinChannelLocked(link);
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	private ChannelState joinChannelLocked(ChannelInviteLink link)
+			throws DbException {
 		ChannelState existing = store.getChannel(link.getChannelId());
 		if (existing != null) return existing;
+		byte[] mlDsaPub = link.getPublisherMlDsaPubKey();
+		if (mlDsaPub == null) mlDsaPub = new byte[0];
+		String onion = link.getOnionAddress();
+		if (onion == null) onion = "";
 		ChannelState provisional = new ChannelState(
 				link.getChannelId(),
 				new byte[ChannelConstants.CHANNEL_SALT_BYTES],
 				link.getPublisherEd25519PubKey(),
-				new byte[0],
+				mlDsaPub,
 				"",
 				"",
 				null,
 				clock.currentTimeMillis() / HOUR_MS * HOUR_MS,
 				link.isPublicChannel(),
 				link.getJoinCapability(),
-				"",
+				onion,
 				0L,
 				false,
 				-1L);
@@ -564,8 +567,8 @@ class ChannelManagerImpl
 			try {
 				byte[] ct = contentKey.encryptBody(kContent, channelId,
 						nextSeq, body);
-				wireBody = new String(ct,
-						java.nio.charset.StandardCharsets.ISO_8859_1);
+				wireBody = java.util.Base64.getEncoder()
+						.withoutPadding().encodeToString(ct);
 			} catch (GeneralSecurityException ex) {
 				throw new DbException(ex);
 			}
@@ -580,7 +583,7 @@ class ChannelManagerImpl
 			throw new DbException(ex);
 		}
 		ChannelPost post = new ChannelPost(channelId, nextSeq, prevHash,
-				nowHourMs, body, noAttachments, ttlMs, sig, true);
+				nowHourMs, wireBody, noAttachments, ttlMs, sig, true);
 		store.appendPost(channelId, post);
 		ChannelState updated = withSeq(s, nextSeq);
 		store.putChannel(updated);
@@ -590,12 +593,38 @@ class ChannelManagerImpl
 	@Override
 	public List<ChannelPost> getRecentPosts(byte[] channelId, long limit)
 			throws DbException {
+		ChannelState s = store.getChannel(channelId);
 		List<ChannelPost> all = store.getPosts(channelId);
-		if (all.size() <= limit) {
-			return new ArrayList<>(all);
+		List<ChannelPost> window = all.size() <= limit ? all
+				: all.subList((int) (all.size() - limit), all.size());
+		List<ChannelPost> out = new ArrayList<>(window.size());
+		byte[] kContent = s == null ? null : s.getContentKey();
+		boolean encrypted = s != null && !s.isPublicChannel()
+				&& kContent != null;
+		for (ChannelPost p : window) {
+			if (!encrypted) {
+				out.add(p);
+				continue;
+			}
+			out.add(decryptForDisplay(p, kContent));
 		}
-		return new ArrayList<>(
-				all.subList((int) (all.size() - limit), all.size()));
+		return out;
+	}
+
+	private ChannelPost decryptForDisplay(ChannelPost p,
+			byte[] kContent) {
+		try {
+			byte[] ct = java.util.Base64.getDecoder().decode(p.getBody());
+			String plain = contentKey.decryptBody(kContent,
+					p.getChannelId(), p.getSeqNum(), ct);
+			return new ChannelPost(p.getChannelId(), p.getSeqNum(),
+					p.getPrevHash(), p.getTimestampHourMs(), plain,
+					p.getAttachments(), p.getTtlMs(), p.getSignature(),
+					p.isRead(), p.getDelegateSignerEd25519PubKey(),
+					p.getDelegateSignerMlDsaPubKey());
+		} catch (GeneralSecurityException | IllegalArgumentException ex) {
+			return p;
+		}
 	}
 
 	@Override
@@ -640,6 +669,17 @@ class ChannelManagerImpl
 
 	@Override
 	public void rotateJoinCapability(byte[] channelId) throws DbException {
+		java.util.concurrent.locks.ReentrantLock lock = lockFor(channelId);
+		lock.lock();
+		try {
+			rotateJoinCapabilityLocked(channelId);
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	private void rotateJoinCapabilityLocked(byte[] channelId)
+			throws DbException {
 		ChannelState s = store.getChannel(channelId);
 		if (s == null) throw new DbException();
 		if (!s.weArePublisher()) throw new DbException();
@@ -659,7 +699,8 @@ class ChannelManagerImpl
 				newContentKeyHash, newContentKey,
 				s.getActiveDelegations(),
 				s.getRevokedDelegationSeqs(),
-				s.getNextDelegationSeq());
+				s.getNextDelegationSeq(),
+				s.getOnionPrivateKey());
 		store.putChannel(updated);
 		fireEvent(channelId,
 				ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
@@ -667,6 +708,20 @@ class ChannelManagerImpl
 
 	@Override
 	public ChannelDelegationCert delegatePublisher(byte[] channelId,
+			byte[] delegateeEd25519PubKey, byte[] delegateeMlDsaPubKey,
+			long validUntilHourMs) throws DbException {
+		java.util.concurrent.locks.ReentrantLock lock = lockFor(channelId);
+		lock.lock();
+		try {
+			return delegatePublisherLocked(channelId,
+					delegateeEd25519PubKey, delegateeMlDsaPubKey,
+					validUntilHourMs);
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	private ChannelDelegationCert delegatePublisherLocked(byte[] channelId,
 			byte[] delegateeEd25519PubKey, byte[] delegateeMlDsaPubKey,
 			long validUntilHourMs) throws DbException {
 		ChannelState s = store.getChannel(channelId);
@@ -710,6 +765,17 @@ class ChannelManagerImpl
 	@Override
 	public void revokeDelegation(byte[] channelId, long delegationSeq)
 			throws DbException {
+		java.util.concurrent.locks.ReentrantLock lock = lockFor(channelId);
+		lock.lock();
+		try {
+			revokeDelegationLocked(channelId, delegationSeq);
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	private void revokeDelegationLocked(byte[] channelId,
+			long delegationSeq) throws DbException {
 		ChannelState s = store.getChannel(channelId);
 		if (s == null) throw new DbException();
 		if (!s.weArePublisher()) throw new DbException();
@@ -869,10 +935,6 @@ class ChannelManagerImpl
 		byte[] b = new byte[len];
 		random.nextBytes(b);
 		return b;
-	}
-
-	private String readLocalOnion() {
-		return "";
 	}
 
 	private ChannelState withSeq(ChannelState s, long newHighSeq) {

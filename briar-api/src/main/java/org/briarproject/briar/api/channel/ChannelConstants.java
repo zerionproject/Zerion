@@ -35,6 +35,9 @@ public final class ChannelConstants {
 	public static final String INVITE_LINK_SCHEME = "zerion";
 	public static final String INVITE_LINK_HOST = "channel";
 	public static final String INVITE_LINK_CAPABILITY_PARAM = "k";
+	public static final String INVITE_LINK_ONION_PARAM = "o";
+	public static final String INVITE_LINK_MLDSA_PARAM = "m";
+	public static final int INVITE_LINK_MAX_LENGTH = 4096;
 
 	public static final String SETTINGS_NAMESPACE_UNREAD =
 			"channel-unread";
