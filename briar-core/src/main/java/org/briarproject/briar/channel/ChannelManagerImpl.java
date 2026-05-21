@@ -1020,10 +1020,21 @@ class ChannelManagerImpl
 			} else {
 				wrappedKey = perAttKey;
 			}
+			byte[] thumbWire = null;
+			byte[] thumbPlain = spec.getPlaintextThumbnail();
+			if (thumbPlain != null) {
+				try {
+					thumbWire = contentKey.encryptBlob(perAttKey,
+							channelId, "image/jpeg",
+							thumbPlain.length, thumbPlain);
+				} catch (GeneralSecurityException ignored) {
+					thumbWire = null;
+				}
+			}
 			wireAttachments.add(new ChannelPost.ChannelAttachment(
 					blobHash, spec.getPlaintextBytes().length,
 					spec.getMimeType(), wrappedKey,
-					spec.getCaptionUtf8()));
+					spec.getCaptionUtf8(), thumbWire));
 			blobsToStore.put(
 					java.util.Base64.getEncoder().withoutPadding()
 							.encodeToString(blobHash),
@@ -1102,6 +1113,48 @@ class ChannelManagerImpl
 		}
 		return new org.briarproject.briar.api.channel.AttachmentBlob(
 				plaintext, target.getMimeType());
+	}
+
+	@Override
+	@Nullable
+	public byte[] decryptAttachmentThumbnail(byte[] channelId,
+			long postSeqNum, byte[] blobHash) throws DbException {
+		ChannelState s = store.getChannel(channelId);
+		if (s == null) throw new DbException();
+		ChannelPost.ChannelAttachment target = null;
+		for (ChannelPost p : store.getPosts(channelId)) {
+			if (p.getSeqNum() != postSeqNum) continue;
+			for (ChannelPost.ChannelAttachment a : p.getAttachments()) {
+				if (java.util.Arrays.equals(a.getBlobHash(), blobHash)) {
+					target = a;
+					break;
+				}
+			}
+			break;
+		}
+		if (target == null) return null;
+		byte[] thumbCt = target.getThumbnail();
+		if (thumbCt == null) return null;
+		boolean closed = !s.isPublicChannel();
+		byte[] perAttKey;
+		if (closed) {
+			byte[] kContent = s.getContentKey();
+			if (kContent == null) return null;
+			try {
+				perAttKey = contentKey.unwrapContentKey(kContent,
+						channelId, target.getPerAttachmentKey());
+			} catch (GeneralSecurityException ex) {
+				return null;
+			}
+		} else {
+			perAttKey = target.getPerAttachmentKey();
+		}
+		try {
+			return contentKey.decryptBlob(perAttKey, channelId,
+					"image/jpeg", thumbCt.length - 28, thumbCt);
+		} catch (GeneralSecurityException ex) {
+			return null;
+		}
 	}
 
 	private void setPinnedPostSeqLocked(byte[] channelId, long seqNum)

@@ -340,6 +340,9 @@ class ChannelStore {
 			if (a.getCaptionUtf8() != null) {
 				ad.put("caption", a.getCaptionUtf8());
 			}
+			if (a.getThumbnail() != null) {
+				ad.put("thumb", a.getThumbnail());
+			}
 			atts.add(ad);
 		}
 		d.put("attachments", atts);
@@ -366,7 +369,8 @@ class ChannelStore {
 					ad.getLong("size"),
 					ad.getString("mime"),
 					ad.getRaw("key"),
-					ad.getOptionalString("caption")));
+					ad.getOptionalString("caption"),
+					ad.getOptionalRaw("thumb")));
 		}
 		return new ChannelPost(channelId,
 				d.getLong("seqNum"),

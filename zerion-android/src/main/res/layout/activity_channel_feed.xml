@@ -175,6 +175,16 @@
 			android:text="@string/channels_compose_send"
 			android:textColor="@color/zerion_primary_accent" />
 
+		<ProgressBar
+			android:id="@+id/channelComposeProgress"
+			style="?android:attr/progressBarStyleSmall"
+			android:layout_width="24dp"
+			android:layout_height="24dp"
+			android:layout_marginStart="4dp"
+			android:indeterminate="true"
+			android:visibility="gone"
+			tools:visibility="gone" />
+
 	</LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

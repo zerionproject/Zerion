@@ -78,4 +78,8 @@ public interface ChannelManager {
 	@Nullable
 	AttachmentBlob fetchAttachment(byte[] channelId, long postSeqNum,
 			byte[] blobHash) throws DbException, java.io.IOException;
+
+	@Nullable
+	byte[] decryptAttachmentThumbnail(byte[] channelId, long postSeqNum,
+			byte[] blobHash) throws DbException;
 }

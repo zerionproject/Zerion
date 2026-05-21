@@ -114,15 +114,26 @@ public class ChannelPost {
 		private final byte[] perAttachmentKey;
 		@Nullable
 		private final String captionUtf8;
+		@Nullable
+		private final byte[] thumbnail;
 
 		public ChannelAttachment(byte[] blobHash, long sizeBytes,
 				String mimeType, byte[] perAttachmentKey,
 				@Nullable String captionUtf8) {
+			this(blobHash, sizeBytes, mimeType, perAttachmentKey,
+					captionUtf8, null);
+		}
+
+		public ChannelAttachment(byte[] blobHash, long sizeBytes,
+				String mimeType, byte[] perAttachmentKey,
+				@Nullable String captionUtf8,
+				@Nullable byte[] thumbnail) {
 			this.blobHash = blobHash;
 			this.sizeBytes = sizeBytes;
 			this.mimeType = mimeType;
 			this.perAttachmentKey = perAttachmentKey;
 			this.captionUtf8 = captionUtf8;
+			this.thumbnail = thumbnail;
 		}
 
 		public byte[] getBlobHash() {
@@ -144,6 +155,11 @@ public class ChannelPost {
 		@Nullable
 		public String getCaptionUtf8() {
 			return captionUtf8;
+		}
+
+		@Nullable
+		public byte[] getThumbnail() {
+			return thumbnail;
 		}
 	}
 }

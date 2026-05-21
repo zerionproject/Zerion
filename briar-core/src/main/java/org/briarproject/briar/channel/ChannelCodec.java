@@ -177,6 +177,11 @@ class ChannelCodec {
 			byte[] mimeBytes = a.getMimeType()
 					.getBytes(StandardCharsets.US_ASCII);
 			sink.write(mimeBytes, 0, mimeBytes.length);
+			byte[] thumb = a.getThumbnail();
+			sink.write(thumb == null ? 0 : 1);
+			if (thumb != null) {
+				sink.write(thumb, 0, thumb.length);
+			}
 		}
 		return crypto.hash(LABEL_POST_ATTACHMENTS, sink.toByteArray());
 	}

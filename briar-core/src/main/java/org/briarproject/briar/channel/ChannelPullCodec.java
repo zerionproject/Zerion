@@ -166,6 +166,9 @@ class ChannelPullCodec {
 			ad.put("size", a.getSizeBytes());
 			ad.put("mime", a.getMimeType());
 			ad.put("key", a.getPerAttachmentKey());
+			if (a.getThumbnail() != null) {
+				ad.put("thumb", a.getThumbnail());
+			}
 			atts.add(ad);
 		}
 		d.put("attachments", atts);
@@ -181,7 +184,8 @@ class ChannelPullCodec {
 			BdfDictionary ad = (BdfDictionary) o;
 			atts.add(new ChannelPost.ChannelAttachment(
 					ad.getRaw("hash"), ad.getLong("size"),
-					ad.getString("mime"), ad.getRaw("key"), null));
+					ad.getString("mime"), ad.getRaw("key"), null,
+					ad.getOptionalRaw("thumb")));
 		}
 		return new ChannelPost(channelId,
 				d.getLong("seqNum"),

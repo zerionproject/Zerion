@@ -78,6 +78,7 @@ public class ChannelFeedActivity extends ZerionActivity
 	private MaterialButton composeSendButton;
 	private android.widget.ImageButton ttlButton;
 	private android.widget.ImageButton attachButton;
+	private android.widget.ProgressBar composeProgress;
 	private long selectedTtlSeconds = 0L;
 	private androidx.activity.result.ActivityResultLauncher<String[]>
 			attachmentPicker;
@@ -114,10 +115,11 @@ public class ChannelFeedActivity extends ZerionActivity
 		ttlButton = findViewById(R.id.channelComposeTtlButton);
 		ttlButton.setOnClickListener(v -> showTtlPicker());
 		attachButton = findViewById(R.id.channelComposeAttachButton);
+		composeProgress = findViewById(R.id.channelComposeProgress);
 		attachmentPicker = registerForActivityResult(
 				new androidx.activity.result.contract.ActivityResultContracts
-						.OpenDocument(),
-				this::handleAttachmentPicked);
+						.OpenMultipleDocuments(),
+				this::handleAttachmentsPicked);
 		attachButton.setOnClickListener(v -> attachmentPicker.launch(
 				new String[]{"*/*"}));
 		pinnedBanner = findViewById(R.id.channelPinnedBanner);
@@ -133,8 +135,9 @@ public class ChannelFeedActivity extends ZerionActivity
 		adapter = new PostAdapter(
 				post -> showPostMenu(post,
 						post.getSeqNum() == currentPinnedSeq),
-				(post, att, thumb) -> handleAttachmentTap(post, att,
-						thumb));
+				(post, att, thumb, spinner) ->
+						handleAttachmentTap(post, att, thumb, spinner),
+				(post, att) -> decryptThumbnailSafely(post, att));
 		recycler.setLayoutManager(new LinearLayoutManager(this));
 		recycler.setAdapter(adapter);
 
@@ -441,9 +444,9 @@ public class ChannelFeedActivity extends ZerionActivity
 
 	private void handleAttachmentTap(ChannelPost post,
 			ChannelPost.ChannelAttachment att,
-			android.widget.ImageView thumbView) {
-		Toast.makeText(this, R.string.channels_attach_downloading,
-				Toast.LENGTH_SHORT).show();
+			android.widget.ImageView thumbView,
+			android.widget.ProgressBar spinner) {
+		spinner.setVisibility(View.VISIBLE);
 		ioExecutor.execute(() -> {
 			AttachmentBlob blob;
 			try {
@@ -452,16 +455,29 @@ public class ChannelFeedActivity extends ZerionActivity
 			} catch (DbException | java.io.IOException ex) {
 				blob = null;
 			}
-			if (blob == null) {
-				runOnUiThread(() -> Toast.makeText(this,
-						R.string.channels_attach_download_failed,
-						Toast.LENGTH_LONG).show());
-				return;
-			}
 			AttachmentBlob finalBlob = blob;
-			runOnUiThread(() -> presentAttachment(att, finalBlob,
-					thumbView));
+			runOnUiThread(() -> {
+				spinner.setVisibility(View.GONE);
+				if (finalBlob == null) {
+					Toast.makeText(this,
+							R.string.channels_attach_download_failed,
+							Toast.LENGTH_LONG).show();
+					return;
+				}
+				presentAttachment(att, finalBlob, thumbView);
+			});
 		});
+	}
+
+	@Nullable
+	private byte[] decryptThumbnailSafely(ChannelPost post,
+			ChannelPost.ChannelAttachment att) {
+		try {
+			return channelManager.decryptAttachmentThumbnail(channelId,
+					post.getSeqNum(), att.getBlobHash());
+		} catch (DbException ignored) {
+			return null;
+		}
 	}
 
 	private void presentAttachment(ChannelPost.ChannelAttachment att,
@@ -544,64 +560,140 @@ public class ChannelFeedActivity extends ZerionActivity
 		return sb.toString();
 	}
 
-	private void handleAttachmentPicked(@Nullable android.net.Uri uri) {
-		if (uri == null) return;
-		String mime = getContentResolver().getType(uri);
-		if (mime == null) mime = "application/octet-stream";
+	private void handleAttachmentsPicked(
+			@Nullable java.util.List<android.net.Uri> uris) {
+		if (uris == null || uris.isEmpty()) return;
+		if (uris.size() > ChannelConstants.MAX_ATTACHMENTS_PER_POST) {
+			Toast.makeText(this,
+					R.string.channels_attach_too_many,
+					Toast.LENGTH_LONG).show();
+			return;
+		}
 		String body = composeInput.getText() == null
 				? "" : composeInput.getText().toString().trim();
 		String composedBody = body.isEmpty() ? " " : body;
 		long ttlSeconds = readSelectedTtlSeconds();
-		String finalMime = mime;
-		Toast.makeText(this, R.string.channels_attach_uploading,
-				Toast.LENGTH_SHORT).show();
+		java.util.List<android.net.Uri> snapshot =
+				new java.util.ArrayList<>(uris);
+		setComposeBusy(true);
 		ioExecutor.execute(() -> {
-			byte[] bytes;
-			try (java.io.InputStream in =
-						getContentResolver().openInputStream(uri)) {
-				if (in == null) {
-					runOnUiThread(() -> Toast.makeText(this,
-							R.string.channels_attach_read_failed,
-							Toast.LENGTH_LONG).show());
-					return;
-				}
-				java.io.ByteArrayOutputStream buf =
-						new java.io.ByteArrayOutputStream();
-				byte[] chunk = new byte[8192];
-				int read;
-				while ((read = in.read(chunk)) > 0) {
-					buf.write(chunk, 0, read);
-					if (buf.size()
-							> ChannelConstants.MAX_ATTACHMENT_BYTES) {
-						runOnUiThread(() -> Toast.makeText(this,
-								R.string.channels_attach_too_large,
-								Toast.LENGTH_LONG).show());
+			java.util.List<AttachmentSpec> specs =
+					new java.util.ArrayList<>(snapshot.size());
+			for (android.net.Uri uri : snapshot) {
+				String mime = getContentResolver().getType(uri);
+				if (mime == null) mime = "application/octet-stream";
+				byte[] bytes;
+				try (java.io.InputStream in =
+							getContentResolver().openInputStream(uri)) {
+					if (in == null) {
+						runOnUiThread(() -> {
+							setComposeBusy(false);
+							Toast.makeText(this,
+									R.string.channels_attach_read_failed,
+									Toast.LENGTH_LONG).show();
+						});
 						return;
 					}
+					java.io.ByteArrayOutputStream buf =
+							new java.io.ByteArrayOutputStream();
+					byte[] chunk = new byte[8192];
+					int read;
+					while ((read = in.read(chunk)) > 0) {
+						buf.write(chunk, 0, read);
+						if (buf.size()
+								> ChannelConstants.MAX_ATTACHMENT_BYTES) {
+							runOnUiThread(() -> {
+								setComposeBusy(false);
+								Toast.makeText(this,
+										R.string.channels_attach_too_large,
+										Toast.LENGTH_LONG).show();
+							});
+							return;
+						}
+					}
+					bytes = buf.toByteArray();
+				} catch (java.io.IOException ex) {
+					runOnUiThread(() -> {
+						setComposeBusy(false);
+						Toast.makeText(this,
+								R.string.channels_attach_read_failed,
+								Toast.LENGTH_LONG).show();
+					});
+					return;
 				}
-				bytes = buf.toByteArray();
-			} catch (java.io.IOException ex) {
-				runOnUiThread(() -> Toast.makeText(this,
-						R.string.channels_attach_read_failed,
-						Toast.LENGTH_LONG).show());
-				return;
+				byte[] thumb = null;
+				if (mime.startsWith("video/")) {
+					thumb = extractVideoThumbnail(uri);
+				}
+				specs.add(new AttachmentSpec(mime, bytes, null, thumb));
 			}
-			AttachmentSpec spec = new AttachmentSpec(finalMime, bytes,
-					null);
 			try {
 				channelManager.publishPostWithAttachments(channelId,
-						composedBody, ttlSeconds,
-						java.util.Collections.singletonList(spec));
+						composedBody, ttlSeconds, specs);
 				runOnUiThread(() -> {
+					setComposeBusy(false);
 					composeInput.setText("");
 					loadChannel();
 				});
 			} catch (DbException ex) {
-				runOnUiThread(() -> Toast.makeText(this,
-						R.string.channels_attach_send_failed,
-						Toast.LENGTH_LONG).show());
+				runOnUiThread(() -> {
+					setComposeBusy(false);
+					Toast.makeText(this,
+							R.string.channels_attach_send_failed,
+							Toast.LENGTH_LONG).show();
+				});
 			}
 		});
+	}
+
+	@Nullable
+	private byte[] extractVideoThumbnail(android.net.Uri uri) {
+		android.media.MediaMetadataRetriever mmr =
+				new android.media.MediaMetadataRetriever();
+		try {
+			mmr.setDataSource(this, uri);
+			android.graphics.Bitmap frame = mmr.getFrameAtTime(
+					1_000_000L,
+					android.media.MediaMetadataRetriever
+							.OPTION_CLOSEST_SYNC);
+			if (frame == null) return null;
+			android.graphics.Bitmap scaled = scaleForThumbnail(frame);
+			java.io.ByteArrayOutputStream out =
+					new java.io.ByteArrayOutputStream();
+			scaled.compress(
+					android.graphics.Bitmap.CompressFormat.JPEG, 70,
+					out);
+			if (scaled != frame) scaled.recycle();
+			frame.recycle();
+			return out.toByteArray();
+		} catch (RuntimeException ex) {
+			return null;
+		} finally {
+			try {
+				mmr.release();
+			} catch (java.io.IOException ignored) {
+			}
+		}
+	}
+
+	private static android.graphics.Bitmap scaleForThumbnail(
+			android.graphics.Bitmap src) {
+		int maxDim = 320;
+		int w = src.getWidth();
+		int h = src.getHeight();
+		if (w <= maxDim && h <= maxDim) return src;
+		float scale = (float) maxDim / Math.max(w, h);
+		int newW = Math.round(w * scale);
+		int newH = Math.round(h * scale);
+		return android.graphics.Bitmap.createScaledBitmap(src, newW,
+				newH, true);
+	}
+
+	private void setComposeBusy(boolean busy) {
+		composeProgress.setVisibility(busy ? View.VISIBLE : View.GONE);
+		composeSendButton.setEnabled(!busy);
+		attachButton.setEnabled(!busy);
+		composeInput.setEnabled(!busy);
 	}
 
 	private static class PostAdapter
@@ -614,17 +706,27 @@ public class ChannelFeedActivity extends ZerionActivity
 		interface OnAttachmentTap {
 			void onAttachmentTap(ChannelPost post,
 					ChannelPost.ChannelAttachment attachment,
-					android.widget.ImageView thumbView);
+					android.widget.ImageView thumbView,
+					android.widget.ProgressBar spinner);
+		}
+
+		interface OnThumbnailNeeded {
+			@Nullable
+			byte[] decryptThumbnail(ChannelPost post,
+					ChannelPost.ChannelAttachment attachment);
 		}
 
 		private List<ChannelPost> posts = new ArrayList<>();
 		private final OnPostLongPress longPressListener;
 		private final OnAttachmentTap attachmentTapListener;
+		private final OnThumbnailNeeded thumbnailDecoder;
 
 		PostAdapter(OnPostLongPress longPressListener,
-				OnAttachmentTap attachmentTapListener) {
+				OnAttachmentTap attachmentTapListener,
+				OnThumbnailNeeded thumbnailDecoder) {
 			this.longPressListener = longPressListener;
 			this.attachmentTapListener = attachmentTapListener;
+			this.thumbnailDecoder = thumbnailDecoder;
 		}
 
 		void setPosts(List<ChannelPost> p) {
@@ -645,7 +747,7 @@ public class ChannelFeedActivity extends ZerionActivity
 		public void onBindViewHolder(@NonNull PostViewHolder holder,
 				int position) {
 			ChannelPost p = posts.get(position);
-			holder.bind(p, attachmentTapListener);
+			holder.bind(p, attachmentTapListener, thumbnailDecoder);
 			holder.itemView.setOnLongClickListener(v -> {
 				longPressListener.onPostLongPress(p);
 				return true;
@@ -678,11 +780,12 @@ public class ChannelFeedActivity extends ZerionActivity
 		}
 
 		void bind(ChannelPost p,
-				PostAdapter.OnAttachmentTap attachmentTapListener) {
+				PostAdapter.OnAttachmentTap attachmentTapListener,
+				PostAdapter.OnThumbnailNeeded thumbnailDecoder) {
 			body.setText(p.getBody());
 			body.setVisibility(p.getBody().trim().isEmpty()
 					? View.GONE : View.VISIBLE);
-			bindAttachments(p, attachmentTapListener);
+			bindAttachments(p, attachmentTapListener, thumbnailDecoder);
 			timestamp.setText(
 					com.professor.zerion.android.util.UiUtils.formatDate(
 							itemView.getContext(),
@@ -713,7 +816,8 @@ public class ChannelFeedActivity extends ZerionActivity
 		}
 
 		private void bindAttachments(ChannelPost p,
-				PostAdapter.OnAttachmentTap listener) {
+				PostAdapter.OnAttachmentTap listener,
+				PostAdapter.OnThumbnailNeeded thumbnailDecoder) {
 			attachments.removeAllViews();
 			if (p.getAttachments().isEmpty()) {
 				attachments.setVisibility(View.GONE);
@@ -732,13 +836,31 @@ public class ChannelFeedActivity extends ZerionActivity
 						R.id.channelAttachmentSize);
 				android.widget.ImageView thumb = row.findViewById(
 						R.id.channelAttachmentThumb);
+				android.widget.ProgressBar spinner = row.findViewById(
+						R.id.channelAttachmentProgress);
 				mime.setText(att.getMimeType());
 				size.setText(android.text.format.Formatter
 						.formatShortFileSize(itemView.getContext(),
 								att.getSizeBytes()));
 				thumb.setVisibility(View.GONE);
+				spinner.setVisibility(View.GONE);
+				if (att.getThumbnail() != null
+						&& att.getMimeType().startsWith("video/")) {
+					byte[] decrypted = thumbnailDecoder
+							.decryptThumbnail(p, att);
+					if (decrypted != null) {
+						android.graphics.Bitmap bmp =
+								com.professor.zerion.android.util
+										.SafeImageDecoder.decode(
+												decrypted, 1280);
+						if (bmp != null) {
+							thumb.setImageBitmap(bmp);
+							thumb.setVisibility(View.VISIBLE);
+						}
+					}
+				}
 				row.setOnClickListener(v -> listener.onAttachmentTap(
-						p, att, thumb));
+						p, att, thumb, spinner));
 				attachments.addView(row);
 			}
 		}
