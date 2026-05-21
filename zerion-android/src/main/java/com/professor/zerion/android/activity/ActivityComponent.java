@@ -104,6 +104,10 @@ public interface ActivityComponent {
 
 	void inject(com.professor.zerion.android.grouptr.GroupTrListFragment fragment);
 
+	void inject(com.professor.zerion.android.channel.ChannelListFragment fragment);
+
+	void inject(com.professor.zerion.android.channel.ChannelFeedActivity activity);
+
 	void inject(AddContactChooserFragment fragment);
 
 	void inject(QrExchangeFragment fragment);

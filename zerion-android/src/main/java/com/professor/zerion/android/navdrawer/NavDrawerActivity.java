@@ -72,7 +72,8 @@ public class NavDrawerActivity extends ZerionActivity implements
 
 	private static final int TAB_CONTACTS = 0;
 	private static final int TAB_GROUPS = 1;
-	private static final int TAB_VAULT = 2;
+	private static final int TAB_CHANNELS = 2;
+	private static final int TAB_VAULT = 3;
 
 	private NavDrawerViewModel navDrawerViewModel;
 	private boolean isShowingNetworkStatus = false;
@@ -102,6 +103,7 @@ public class NavDrawerActivity extends ZerionActivity implements
 	private ImageButton menuButton;
 	private TextView tabContacts;
 	private TextView tabGroupChats;
+	private TextView tabChannels;
 	private TextView tabVault;
 	private FloatingActionButton fabCompose;
 
@@ -154,6 +156,7 @@ public class NavDrawerActivity extends ZerionActivity implements
 		menuButton = findViewById(R.id.menuButton);
 		tabContacts = findViewById(R.id.tabContacts);
 		tabGroupChats = findViewById(R.id.tabGroupChats);
+		tabChannels = findViewById(R.id.tabChannels);
 		tabVault = findViewById(R.id.tabVault);
 		fabCompose = findViewById(R.id.fabCompose);
 
@@ -199,6 +202,10 @@ public class NavDrawerActivity extends ZerionActivity implements
 			com.professor.zerion.android.util.Haptics.tap(v);
 			onTabClicked(TAB_GROUPS);
 		});
+		tabChannels.setOnClickListener(v -> {
+			com.professor.zerion.android.util.Haptics.tap(v);
+			onTabClicked(TAB_CHANNELS);
+		});
 		tabVault.setOnClickListener(v -> {
 			com.professor.zerion.android.util.Haptics.tap(v);
 			onTabClicked(TAB_VAULT);
@@ -240,6 +247,11 @@ public class NavDrawerActivity extends ZerionActivity implements
 				toolbarTitle.setText(R.string.groups_button);
 				fragment = GroupTrListFragment.newInstance();
 				break;
+			case TAB_CHANNELS:
+				toolbarTitle.setText(R.string.channels_button);
+				fragment = com.professor.zerion.android.channel
+						.ChannelListFragment.newInstance();
+				break;
 			case TAB_VAULT:
 				toolbarTitle.setText(R.string.vault_button);
 				fragment = VaultDashboardFragment.newInstance();
@@ -269,6 +281,11 @@ public class NavDrawerActivity extends ZerionActivity implements
 		tabGroupChats.setTextColor(currentTab == TAB_GROUPS ?
 				0xFFFFFFFF : 0x80FFFFFF);
 		tabGroupChats.setTypeface(null, currentTab == TAB_GROUPS ?
+				Typeface.BOLD : Typeface.NORMAL);
+
+		tabChannels.setTextColor(currentTab == TAB_CHANNELS ?
+				0xFFFFFFFF : 0x80FFFFFF);
+		tabChannels.setTypeface(null, currentTab == TAB_CHANNELS ?
 				Typeface.BOLD : Typeface.NORMAL);
 
 		tabVault.setTextColor(currentTab == TAB_VAULT ?

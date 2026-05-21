@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content"
+	android:orientation="vertical"
+	android:padding="20dp">
+
+	<com.google.android.material.textfield.TextInputLayout
+		android:id="@+id/channelCreateNameLayout"
+		style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:hint="@string/channels_create_name_hint">
+
+		<com.google.android.material.textfield.TextInputEditText
+			android:id="@+id/channelCreateNameInput"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:inputType="textCapWords"
+			android:maxLength="64"
+			android:importantForAutofill="no" />
+
+	</com.google.android.material.textfield.TextInputLayout>
+
+	<com.google.android.material.textfield.TextInputLayout
+		android:id="@+id/channelCreateDescriptionLayout"
+		style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:layout_marginTop="14dp"
+		android:hint="@string/channels_create_description_hint">
+
+		<com.google.android.material.textfield.TextInputEditText
+			android:id="@+id/channelCreateDescriptionInput"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:inputType="textMultiLine|textCapSentences"
+			android:maxLength="1024"
+			android:maxLines="3"
+			android:importantForAutofill="no" />
+
+	</com.google.android.material.textfield.TextInputLayout>
+
+	<RadioGroup
+		android:id="@+id/channelCreateVisibilityGroup"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:layout_marginTop="20dp"
+		android:orientation="vertical">
+
+		<RadioButton
+			android:id="@+id/channelCreatePublicRadio"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:checked="true"
+			android:text="@string/channels_create_public_label"
+			android:textColor="@color/zerion_text_primary" />
+
+		<RadioButton
+			android:id="@+id/channelCreateClosedRadio"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:layout_marginTop="6dp"
+			android:text="@string/channels_create_closed_label"
+			android:textColor="@color/zerion_text_primary" />
+
+	</RadioGroup>
+
+</LinearLayout>

@@ -1,22 +1,28 @@
 package org.briarproject.briar.channel;
 
 import org.briarproject.bramble.api.crypto.CryptoComponent;
-import org.briarproject.bramble.api.db.DatabaseComponent;
+import org.briarproject.bramble.api.crypto.HybridSignaturePrivateKey;
+import org.briarproject.bramble.api.crypto.HybridSignaturePublicKey;
+import org.briarproject.bramble.api.crypto.KeyPair;
 import org.briarproject.bramble.api.db.DbException;
 import org.briarproject.bramble.api.db.Transaction;
 import org.briarproject.bramble.api.event.Event;
 import org.briarproject.bramble.api.event.EventBus;
 import org.briarproject.bramble.api.event.EventListener;
-import org.briarproject.bramble.api.identity.IdentityManager;
 import org.briarproject.bramble.api.lifecycle.LifecycleManager.OpenDatabaseHook;
-import org.briarproject.bramble.api.settings.SettingsManager;
 import org.briarproject.bramble.api.system.Clock;
+import org.briarproject.briar.api.channel.ChannelConstants;
 import org.briarproject.briar.api.channel.ChannelInviteLink;
 import org.briarproject.briar.api.channel.ChannelManager;
 import org.briarproject.briar.api.channel.ChannelPost;
 import org.briarproject.briar.api.channel.ChannelState;
+import org.briarproject.briar.api.channel.event.ChannelPostReceivedEvent;
+import org.briarproject.briar.api.channel.event.ChannelStateChangedEvent;
 import org.briarproject.nullsafety.NotNullByDefault;
 
+import java.security.GeneralSecurityException;
+import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -30,26 +36,30 @@ import javax.inject.Inject;
 class ChannelManagerImpl
 		implements ChannelManager, EventListener, OpenDatabaseHook {
 
-	static final String PHASE_NOT_IMPLEMENTED =
-			"Channels Phase 1 scaffolding only — runtime not yet wired";
+	private static final long HOUR_MS = 60L * 60L * 1000L;
 
-	private final DatabaseComponent db;
 	private final CryptoComponent crypto;
-	private final IdentityManager identityManager;
-	private final SettingsManager settingsManager;
 	private final EventBus eventBus;
 	private final Clock clock;
+	private final ChannelCodec codec;
+	private final ChannelSignatures signatures;
+	private final ChannelChainVerifier chainVerifier;
+	private final ChannelStore store;
+	private final SecureRandom random;
 
 	@Inject
-	ChannelManagerImpl(DatabaseComponent db, CryptoComponent crypto,
-			IdentityManager identityManager,
-			SettingsManager settingsManager, EventBus eventBus, Clock clock) {
-		this.db = db;
+	ChannelManagerImpl(CryptoComponent crypto, EventBus eventBus,
+			Clock clock, ChannelCodec codec,
+			ChannelSignatures signatures,
+			ChannelChainVerifier chainVerifier, ChannelStore store) {
 		this.crypto = crypto;
-		this.identityManager = identityManager;
-		this.settingsManager = settingsManager;
 		this.eventBus = eventBus;
 		this.clock = clock;
+		this.codec = codec;
+		this.signatures = signatures;
+		this.chainVerifier = chainVerifier;
+		this.store = store;
+		this.random = new SecureRandom();
 	}
 
 	@Override
@@ -64,85 +74,284 @@ class ChannelManagerImpl
 	@Override
 	public ChannelState createChannel(String name, String description,
 			boolean publicChannel) throws DbException {
-		throw new UnsupportedOperationException(PHASE_NOT_IMPLEMENTED);
+		validateNameAndDescription(name, description);
+		KeyPair sigKeys = crypto.generateHybridSignatureKeyPair();
+		HybridSignaturePublicKey hybridPub =
+				(HybridSignaturePublicKey) sigKeys.getPublic();
+		HybridSignaturePrivateKey hybridPriv =
+				(HybridSignaturePrivateKey) sigKeys.getPrivate();
+		byte[] ed25519Pub = hybridPub.getEd25519PublicKey();
+		byte[] mlDsaPub = hybridPub.getMlDsaPublicKey();
+		byte[] salt = new byte[ChannelConstants.CHANNEL_SALT_BYTES];
+		random.nextBytes(salt);
+		byte[] channelId =
+				crypto.hash("org.briarproject.zerion/CHANNEL_ID",
+						hybridPub.getEncoded(), salt);
+		byte[] capability = publicChannel ? null
+				: freshBytes(ChannelConstants.JOIN_CAPABILITY_BYTES);
+		long nowHourMs =
+				clock.currentTimeMillis() / HOUR_MS * HOUR_MS;
+		String onion = readLocalOnion();
+		long manifestSeq = 0L;
+		byte[] signedInput = codec.manifestSignedInput(channelId, salt,
+				ed25519Pub, mlDsaPub, name, description, null,
+				nowHourMs, publicChannel, capability, onion, manifestSeq);
+		byte[] manifestSig;
+		try {
+			manifestSig = signatures.signManifest(signedInput, hybridPriv);
+		} catch (GeneralSecurityException ex) {
+			throw new DbException(ex);
+		}
+		ChannelState state = new ChannelState(channelId, salt,
+				ed25519Pub, mlDsaPub, name, description, null,
+				nowHourMs, publicChannel, capability, onion,
+				manifestSeq, true, -1L);
+		store.putChannel(state);
+		store.putPublisherPrivKey(channelId, hybridPriv.getEncoded());
+		store.writePosts(channelId, Collections.emptyList());
+		fireEvent(channelId,
+				ChannelStateChangedEvent.Kind.CREATED);
+		clearReturned(manifestSig);
+		return state;
 	}
 
 	@Nullable
 	@Override
 	public ChannelState getChannel(byte[] channelId) throws DbException {
-		return null;
+		return store.getChannel(channelId);
 	}
 
 	@Override
 	public Collection<ChannelState> getChannels() throws DbException {
-		return Collections.emptyList();
+		return store.listChannels();
 	}
 
 	@Override
 	public void deleteChannel(byte[] channelId) throws DbException {
-		throw new UnsupportedOperationException(PHASE_NOT_IMPLEMENTED);
+		store.removeChannel(channelId);
+		fireEvent(channelId, ChannelStateChangedEvent.Kind.LEFT);
 	}
 
 	@Override
 	public String exportInviteLink(byte[] channelId) throws DbException {
-		throw new UnsupportedOperationException(PHASE_NOT_IMPLEMENTED);
+		ChannelState s = store.getChannel(channelId);
+		if (s == null) throw new DbException();
+		return codec.formatInviteLink(s.getChannelId(),
+				s.getPublisherEd25519PubKey(), s.isPublicChannel(),
+				s.getJoinCapability());
 	}
 
 	@Nullable
 	@Override
 	public ChannelInviteLink parseInviteLink(String url) {
-		return null;
+		return codec.parseInviteLink(url);
 	}
 
 	@Override
 	public ChannelState joinChannel(ChannelInviteLink link)
 			throws DbException {
-		throw new UnsupportedOperationException(PHASE_NOT_IMPLEMENTED);
+		ChannelState existing = store.getChannel(link.getChannelId());
+		if (existing != null) return existing;
+		ChannelState provisional = new ChannelState(
+				link.getChannelId(),
+				new byte[ChannelConstants.CHANNEL_SALT_BYTES],
+				link.getPublisherEd25519PubKey(),
+				new byte[0],
+				"",
+				"",
+				null,
+				clock.currentTimeMillis() / HOUR_MS * HOUR_MS,
+				link.isPublicChannel(),
+				link.getJoinCapability(),
+				"",
+				0L,
+				false,
+				-1L);
+		store.putChannel(provisional);
+		store.writePosts(link.getChannelId(), Collections.emptyList());
+		fireEvent(link.getChannelId(),
+				ChannelStateChangedEvent.Kind.JOINED);
+		return provisional;
 	}
 
 	@Override
 	public void leaveChannel(byte[] channelId) throws DbException {
-		throw new UnsupportedOperationException(PHASE_NOT_IMPLEMENTED);
+		store.removeChannel(channelId);
+		fireEvent(channelId, ChannelStateChangedEvent.Kind.LEFT);
 	}
 
 	@Override
 	public void publishPost(byte[] channelId, String body, long ttlSeconds)
 			throws DbException {
-		throw new UnsupportedOperationException(PHASE_NOT_IMPLEMENTED);
+		ChannelState s = store.getChannel(channelId);
+		if (s == null) throw new DbException();
+		if (!s.weArePublisher()) throw new DbException();
+		validatePostBody(body);
+		byte[] privEncoded = store.getPublisherPrivKey(channelId);
+		if (privEncoded == null) throw new DbException();
+		HybridSignaturePrivateKey hybridPriv =
+				new HybridSignaturePrivateKey(privEncoded);
+		List<ChannelPost> existing = store.getPosts(channelId);
+		long nextSeq = existing.isEmpty() ? 0L
+				: existing.get(existing.size() - 1).getSeqNum() + 1L;
+		byte[] prevHash = existing.isEmpty()
+				? new byte[ChannelConstants.PREV_HASH_BYTES]
+				: chainVerifier.hashOf(existing.get(existing.size() - 1));
+		long nowHourMs =
+				clock.currentTimeMillis() / HOUR_MS * HOUR_MS;
+		long ttlMs = Math.max(0L, ttlSeconds) * 1000L;
+		List<ChannelPost.ChannelAttachment> noAttachments =
+				Collections.emptyList();
+		byte[] attHash = codec.attachmentsHash(noAttachments);
+		byte[] signedInput = codec.postSignedInput(channelId, nextSeq,
+				prevHash, nowHourMs, body, attHash, ttlMs);
+		byte[] sig;
+		try {
+			sig = signatures.signPost(signedInput, hybridPriv);
+		} catch (GeneralSecurityException ex) {
+			throw new DbException(ex);
+		}
+		ChannelPost post = new ChannelPost(channelId, nextSeq, prevHash,
+				nowHourMs, body, noAttachments, ttlMs, sig, true);
+		store.appendPost(channelId, post);
+		ChannelState updated = withSeq(s, nextSeq);
+		store.putChannel(updated);
+		eventBus.broadcast(new ChannelPostReceivedEvent(channelId, nextSeq));
 	}
 
 	@Override
 	public List<ChannelPost> getRecentPosts(byte[] channelId, long limit)
 			throws DbException {
-		return Collections.emptyList();
+		List<ChannelPost> all = store.getPosts(channelId);
+		if (all.size() <= limit) {
+			return new ArrayList<>(all);
+		}
+		return new ArrayList<>(
+				all.subList((int) (all.size() - limit), all.size()));
 	}
 
 	@Override
 	public int getUnreadCount(byte[] channelId) throws DbException {
-		return 0;
+		return store.getUnread(channelId);
 	}
 
 	@Override
 	public void markChannelRead(byte[] channelId) throws DbException {
+		if (store.getUnread(channelId) == 0) return;
+		store.setUnread(channelId, 0);
+		List<ChannelPost> posts = store.getPosts(channelId);
+		boolean changed = false;
+		for (int i = 0; i < posts.size(); i++) {
+			ChannelPost p = posts.get(i);
+			if (!p.isRead()) {
+				posts.set(i, new ChannelPost(p.getChannelId(),
+						p.getSeqNum(), p.getPrevHash(),
+						p.getTimestampHourMs(), p.getBody(),
+						p.getAttachments(), p.getTtlMs(),
+						p.getSignature(), true));
+				changed = true;
+			}
+		}
+		if (changed) store.writePosts(channelId, posts);
+		fireEvent(channelId,
+				ChannelStateChangedEvent.Kind.UNREAD_COUNT_CHANGED);
 	}
 
 	@Override
 	public boolean isMirrorOptedIn(byte[] channelId) throws DbException {
-		return false;
+		return store.isMirrorOptedIn(channelId);
 	}
 
 	@Override
 	public void setMirrorOptedIn(byte[] channelId, boolean mirror)
 			throws DbException {
-		throw new UnsupportedOperationException(PHASE_NOT_IMPLEMENTED);
+		store.setMirrorOptedIn(channelId, mirror);
+		fireEvent(channelId,
+				ChannelStateChangedEvent.Kind.MIRROR_OPT_IN_TOGGLED);
 	}
 
 	@Override
 	public void rotateJoinCapability(byte[] channelId) throws DbException {
-		throw new UnsupportedOperationException(PHASE_NOT_IMPLEMENTED);
+		ChannelState s = store.getChannel(channelId);
+		if (s == null) throw new DbException();
+		if (!s.weArePublisher()) throw new DbException();
+		if (s.isPublicChannel()) throw new DbException();
+		byte[] newCap = freshBytes(
+				ChannelConstants.JOIN_CAPABILITY_BYTES);
+		ChannelState updated = new ChannelState(s.getChannelId(),
+				s.getSalt(), s.getPublisherEd25519PubKey(),
+				s.getPublisherMlDsaPubKey(), s.getName(),
+				s.getDescription(), s.getAvatarHash(),
+				s.getCreatedAtHourMs(), s.isPublicChannel(),
+				newCap, s.getCurrentOnion(), s.getManifestSeq() + 1L,
+				true, s.getHighestKnownPostSeq());
+		store.putChannel(updated);
+		fireEvent(channelId,
+				ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
 	}
 
 	@Override
 	public void onOnionRotated(String newOnionAddress) throws DbException {
+		Collection<ChannelState> mine = store.listChannels();
+		for (ChannelState s : mine) {
+			if (!s.weArePublisher()) continue;
+			ChannelState updated = new ChannelState(s.getChannelId(),
+					s.getSalt(), s.getPublisherEd25519PubKey(),
+					s.getPublisherMlDsaPubKey(), s.getName(),
+					s.getDescription(), s.getAvatarHash(),
+					s.getCreatedAtHourMs(), s.isPublicChannel(),
+					s.getJoinCapability(), newOnionAddress,
+					s.getManifestSeq() + 1L, true,
+					s.getHighestKnownPostSeq());
+			store.putChannel(updated);
+			fireEvent(s.getChannelId(),
+					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+		}
+	}
+
+	private void fireEvent(byte[] channelId,
+			ChannelStateChangedEvent.Kind kind) {
+		eventBus.broadcast(new ChannelStateChangedEvent(channelId, kind));
+	}
+
+	private void validateNameAndDescription(String name,
+			String description) throws DbException {
+		if (name.isEmpty()
+				|| name.length() > ChannelConstants.MAX_CHANNEL_NAME_CHARS
+				|| description.length()
+				> ChannelConstants.MAX_CHANNEL_DESCRIPTION_CHARS) {
+			throw new DbException();
+		}
+	}
+
+	private void validatePostBody(String body) throws DbException {
+		if (body.isEmpty()
+				|| body.length() > ChannelConstants.MAX_POST_BODY_CHARS) {
+			throw new DbException();
+		}
+	}
+
+	private byte[] freshBytes(int len) {
+		byte[] b = new byte[len];
+		random.nextBytes(b);
+		return b;
+	}
+
+	private String readLocalOnion() {
+		return "";
+	}
+
+	private ChannelState withSeq(ChannelState s, long newHighSeq) {
+		return new ChannelState(s.getChannelId(), s.getSalt(),
+				s.getPublisherEd25519PubKey(),
+				s.getPublisherMlDsaPubKey(), s.getName(),
+				s.getDescription(), s.getAvatarHash(),
+				s.getCreatedAtHourMs(), s.isPublicChannel(),
+				s.getJoinCapability(), s.getCurrentOnion(),
+				s.getManifestSeq(), s.weArePublisher(), newHighSeq);
+	}
+
+	private void clearReturned(byte[] b) {
+		java.util.Arrays.fill(b, (byte) 0);
 	}
 }

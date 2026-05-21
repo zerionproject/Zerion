@@ -13,6 +13,10 @@
 			android:icon="@drawable/ic_group"
 			android:title="@string/groups_button" />
 		<item
+			android:id="@+id/nav_btn_channels"
+			android:icon="@drawable/ic_channels"
+			android:title="@string/channels_button" />
+		<item
 			android:id="@+id/nav_btn_vault"
 			android:icon="@drawable/ic_vault"
 			android:title="@string/vault_button" />

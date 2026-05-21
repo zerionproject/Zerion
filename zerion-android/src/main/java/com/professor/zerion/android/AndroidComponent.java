@@ -131,6 +131,8 @@ public interface AndroidComponent
 
 	GroupTrManager groupTrManager();
 
+	org.briarproject.briar.api.channel.ChannelManager channelManager();
+
 	GroupInvitationFactory groupInvitationFactory();
 
 	GroupInvitationManager groupInvitationManager();

@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="@color/window_background"
+	android:fitsSystemWindows="true">
+
+	<androidx.appcompat.widget.Toolbar
+		android:id="@+id/channelFeedToolbar"
+		android:layout_width="match_parent"
+		android:layout_height="?attr/actionBarSize"
+		android:background="@color/window_background"
+		app:layout_constraintTop_toTopOf="parent"
+		app:titleTextColor="@color/zerion_text_primary"
+		app:subtitleTextColor="@color/zerion_text_secondary"
+		tools:title="Civil Society Watch"
+		tools:subtitle="Public channel" />
+
+	<androidx.recyclerview.widget.RecyclerView
+		android:id="@+id/channelFeedRecycler"
+		android:layout_width="match_parent"
+		android:layout_height="0dp"
+		android:clipToPadding="false"
+		android:paddingTop="6dp"
+		android:paddingBottom="12dp"
+		android:scrollbars="none"
+		app:layout_constraintBottom_toTopOf="@+id/channelComposeBar"
+		app:layout_constraintTop_toBottomOf="@+id/channelFeedToolbar" />
+
+	<TextView
+		android:id="@+id/channelFeedEmptyView"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:gravity="center"
+		android:paddingStart="32dp"
+		android:paddingEnd="32dp"
+		android:paddingTop="64dp"
+		android:textColor="@color/zerion_text_secondary"
+		android:textSize="16sp"
+		android:visibility="gone"
+		app:layout_constraintTop_toBottomOf="@+id/channelFeedToolbar"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintEnd_toEndOf="parent"
+		tools:text="@string/channels_feed_empty_subscriber"
+		tools:visibility="visible" />
+
+	<LinearLayout
+		android:id="@+id/channelComposeBar"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:orientation="horizontal"
+		android:paddingStart="16dp"
+		android:paddingEnd="12dp"
+		android:paddingTop="10dp"
+		android:paddingBottom="14dp"
+		android:gravity="center_vertical"
+		android:background="@color/window_background"
+		android:visibility="gone"
+		app:layout_constraintBottom_toBottomOf="parent"
+		tools:visibility="visible">
+
+		<EditText
+			android:id="@+id/channelComposeInput"
+			android:layout_width="0dp"
+			android:layout_height="wrap_content"
+			android:layout_weight="1"
+			android:background="@drawable/bg_input_bar"
+			android:hint="@string/channels_compose_hint"
+			android:inputType="textMultiLine|textCapSentences"
+			android:maxLength="4096"
+			android:maxLines="4"
+			android:minHeight="44dp"
+			android:paddingStart="14dp"
+			android:paddingEnd="14dp"
+			android:paddingTop="10dp"
+			android:paddingBottom="10dp"
+			android:textColor="@color/zerion_text_primary"
+			android:textColorHint="@color/zerion_text_secondary"
+			android:textSize="15sp"
+			android:importantForAutofill="no" />
+
+		<com.google.android.material.button.MaterialButton
+			android:id="@+id/channelComposeSendButton"
+			style="@style/Widget.MaterialComponents.Button.TextButton"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_marginStart="8dp"
+			android:minWidth="0dp"
+			android:text="@string/channels_compose_send"
+			android:textColor="@color/zerion_primary_accent" />
+
+	</LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

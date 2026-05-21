@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content"
+	android:layout_marginStart="16dp"
+	android:layout_marginEnd="16dp"
+	android:layout_marginTop="6dp"
+	android:layout_marginBottom="6dp"
+	app:cardBackgroundColor="@color/zerion_card_bg"
+	app:cardCornerRadius="14dp"
+	app:cardElevation="0dp">
+
+	<LinearLayout
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:orientation="vertical"
+		android:paddingStart="16dp"
+		android:paddingEnd="16dp"
+		android:paddingTop="14dp"
+		android:paddingBottom="14dp">
+
+		<TextView
+			android:id="@+id/channelPostBodyView"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:textColor="@color/zerion_text_primary"
+			android:textSize="15sp"
+			android:lineSpacingMultiplier="1.25"
+			tools:text="Today's notes: the new disclosure rules drop on Friday, here's what to watch in the filings." />
+
+		<LinearLayout
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:orientation="horizontal"
+			android:layout_marginTop="10dp"
+			android:gravity="center_vertical">
+
+			<TextView
+				android:id="@+id/channelPostTimestampView"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:textColor="@color/zerion_text_secondary"
+				android:textSize="12sp"
+				tools:text="May 21, 2026 · 14:00 UTC" />
+
+			<View
+				android:layout_width="0dp"
+				android:layout_height="0dp"
+				android:layout_weight="1" />
+
+			<TextView
+				android:id="@+id/channelPostSeqView"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:textColor="@color/zerion_text_secondary"
+				android:textSize="12sp"
+				tools:text="#42" />
+
+		</LinearLayout>
+
+	</LinearLayout>
+
+</androidx.cardview.widget.CardView>
