@@ -125,7 +125,10 @@ public class ChannelFeedActivity extends ZerionActivity
 		composeSendButton.setOnClickListener(v -> handleSend());
 	}
 
-	private static final long FOREGROUND_REFRESH_INTERVAL_MS = 10_000L;
+	private static final long FOREGROUND_REFRESH_ACTIVE_MS = 3_500L;
+	private static final long FOREGROUND_REFRESH_IDLE_MS = 12_000L;
+	private static final int ACTIVE_ROUNDS_AFTER_HIT = 4;
+	private int activeRoundsRemaining = 0;
 	@Nullable
 	private android.os.Handler refreshHandler;
 	private final Runnable refreshTick = new Runnable() {
@@ -133,8 +136,13 @@ public class ChannelFeedActivity extends ZerionActivity
 		public void run() {
 			refreshFromPublisherSafely();
 			if (refreshHandler != null) {
-				refreshHandler.postDelayed(this,
-						FOREGROUND_REFRESH_INTERVAL_MS);
+				long delay = activeRoundsRemaining > 0
+						? FOREGROUND_REFRESH_ACTIVE_MS
+						: FOREGROUND_REFRESH_IDLE_MS;
+				if (activeRoundsRemaining > 0) {
+					activeRoundsRemaining--;
+				}
+				refreshHandler.postDelayed(this, delay);
 			}
 		}
 	};
@@ -149,7 +157,7 @@ public class ChannelFeedActivity extends ZerionActivity
 		refreshHandler = new android.os.Handler(
 				android.os.Looper.getMainLooper());
 		refreshHandler.postDelayed(refreshTick,
-				FOREGROUND_REFRESH_INTERVAL_MS);
+				FOREGROUND_REFRESH_ACTIVE_MS);
 	}
 
 	private void refreshFromPublisherSafely() {
@@ -177,6 +185,7 @@ public class ChannelFeedActivity extends ZerionActivity
 		if (e instanceof ChannelPostReceivedEvent) {
 			ChannelPostReceivedEvent ev = (ChannelPostReceivedEvent) e;
 			if (Arrays.equals(ev.getChannelId(), channelId)) {
+				activeRoundsRemaining = ACTIVE_ROUNDS_AFTER_HIT;
 				runOnUiThread(this::loadChannel);
 			}
 		} else if (e instanceof ChannelStateChangedEvent) {
@@ -300,11 +309,38 @@ public class ChannelFeedActivity extends ZerionActivity
 		}
 		labels.add(getString(R.string.channels_action_copy_text));
 		actions.add(() -> copyPostText(post));
+		if (weArePublisher) {
+			labels.add(getString(R.string.channels_action_delete));
+			actions.add(() -> confirmDelete(post));
+		}
 		new com.google.android.material.dialog.MaterialAlertDialogBuilder(
 				this)
 				.setItems(labels.toArray(new CharSequence[0]),
 						(d, which) -> actions.get(which).run())
 				.show();
+	}
+
+	private void confirmDelete(ChannelPost post) {
+		new com.google.android.material.dialog.MaterialAlertDialogBuilder(
+				this)
+				.setMessage(R.string.channels_post_delete_confirm)
+				.setPositiveButton(R.string.channels_action_delete,
+						(d, w) -> handleDelete(post))
+				.setNegativeButton(android.R.string.cancel, null)
+				.show();
+	}
+
+	private void handleDelete(ChannelPost post) {
+		ioExecutor.execute(() -> {
+			try {
+				channelManager.deletePost(channelId, post.getSeqNum());
+				runOnUiThread(this::loadChannel);
+			} catch (DbException ignored) {
+				runOnUiThread(() -> Toast.makeText(this,
+						R.string.channels_post_delete_failed,
+						Toast.LENGTH_SHORT).show());
+			}
+		});
 	}
 
 	private void copyPostText(ChannelPost post) {

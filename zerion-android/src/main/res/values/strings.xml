@@ -307,6 +307,11 @@
 	<string name="channels_post_copied">Post copied</string>
 	<string name="channels_ttl_picker_cd">Disappearing posts timer</string>
 	<string name="channels_ttl_picker_title">Disappearing posts</string>
+	<string name="channels_delegations_paste_key">Paste public key…</string>
+	<string name="channels_action_delete">Delete</string>
+	<string name="channels_post_deleted">[deleted]</string>
+	<string name="channels_post_delete_confirm">Delete this post?</string>
+	<string name="channels_post_delete_failed">Could not delete post</string>
 	<string name="vault_button">zVault</string>
 	<!-- This is part of the main menu. The app will be locked when this is tapped. -->
 	<string name="lock_button">Lock App</string>

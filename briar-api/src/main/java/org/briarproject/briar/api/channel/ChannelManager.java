@@ -68,4 +68,6 @@ public interface ChannelManager {
 	void pinPost(byte[] channelId, long seqNum) throws DbException;
 
 	void unpinPost(byte[] channelId) throws DbException;
+
+	void deletePost(byte[] channelId, long seqNum) throws DbException;
 }

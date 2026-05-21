@@ -106,7 +106,7 @@ class ChannelManagerImpl
 				java.util.concurrent.TimeUnit.MINUTES);
 		taskScheduler.scheduleWithFixedDelay(
 				this::refreshAllSubscriptionsSafely,
-				ioExecutor, 15L, 60L,
+				ioExecutor, 15L, 30L,
 				java.util.concurrent.TimeUnit.SECONDS);
 		ioExecutor.execute(this::rebindOwnedChannelsOnStartup);
 	}
@@ -625,20 +625,63 @@ class ChannelManagerImpl
 			throws DbException {
 		ChannelState s = store.getChannel(channelId);
 		List<ChannelPost> all = store.getPosts(channelId);
-		List<ChannelPost> window = all.size() <= limit ? all
-				: all.subList((int) (all.size() - limit), all.size());
-		List<ChannelPost> out = new ArrayList<>(window.size());
 		byte[] kContent = s == null ? null : s.getContentKey();
 		boolean encrypted = s != null && !s.isPublicChannel()
 				&& kContent != null;
-		for (ChannelPost p : window) {
-			if (!encrypted) {
-				out.add(p);
+
+		String channelIdHex = ChannelStore.hex(channelId);
+		java.util.Set<Long> deletedSeqs = new java.util.HashSet<>();
+		List<ChannelPost> decoded = new ArrayList<>(all.size());
+		for (ChannelPost p : all) {
+			ChannelPost view = encrypted ? decryptForDisplay(p, kContent)
+					: p;
+			decoded.add(view);
+			Long target = parseTombstoneTarget(view.getBody(),
+					channelIdHex);
+			if (target != null) deletedSeqs.add(target);
+		}
+
+		List<ChannelPost> visible = new ArrayList<>(decoded.size());
+		for (ChannelPost p : decoded) {
+			if (parseTombstoneTarget(p.getBody(), channelIdHex) != null) {
 				continue;
 			}
-			out.add(decryptForDisplay(p, kContent));
+			if (deletedSeqs.contains(p.getSeqNum())) {
+				visible.add(withDeletedMarker(p));
+			} else {
+				visible.add(p);
+			}
 		}
-		return out;
+		if (visible.size() <= limit) {
+			return visible;
+		}
+		return new ArrayList<>(visible.subList(
+				(int) (visible.size() - limit), visible.size()));
+	}
+
+	@Nullable
+	private Long parseTombstoneTarget(String body, String channelIdHex) {
+		String prefix = ChannelConstants.TOMBSTONE_PREFIX
+				+ channelIdHex + ":";
+		if (!body.startsWith(prefix)) return null;
+		String rest = body.substring(prefix.length());
+		int colon = rest.indexOf(':');
+		if (colon <= 0) return null;
+		try {
+			return Long.parseLong(rest.substring(0, colon));
+		} catch (NumberFormatException e) {
+			return null;
+		}
+	}
+
+	private ChannelPost withDeletedMarker(ChannelPost p) {
+		return new ChannelPost(p.getChannelId(), p.getSeqNum(),
+				p.getPrevHash(), p.getTimestampHourMs(),
+				"—deleted—",
+				Collections.<ChannelPost.ChannelAttachment>emptyList(),
+				p.getTtlMs(), p.getSignature(), p.isRead(),
+				p.getDelegateSignerEd25519PubKey(),
+				p.getDelegateSignerMlDsaPubKey());
 	}
 
 	private ChannelPost decryptForDisplay(ChannelPost p,
@@ -858,6 +901,28 @@ class ChannelManagerImpl
 		try {
 			setPinnedPostSeqLocked(channelId,
 					ChannelState.NO_PINNED_POST);
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	@Override
+	public void deletePost(byte[] channelId, long seqNum)
+			throws DbException {
+		java.util.concurrent.locks.ReentrantLock lock = lockFor(channelId);
+		lock.lock();
+		try {
+			ChannelState s = store.getChannel(channelId);
+			if (s == null) throw new DbException();
+			if (!s.weArePublisher()) throw new DbException();
+			String body = ChannelConstants.TOMBSTONE_PREFIX
+					+ ChannelStore.hex(channelId) + ":" + seqNum + ":D";
+			boolean autoUnpin = s.getPinnedPostSeq() == seqNum;
+			publishPostLocked(channelId, body, 0L);
+			if (autoUnpin) {
+				setPinnedPostSeqLocked(channelId,
+						ChannelState.NO_PINNED_POST);
+			}
 		} finally {
 			lock.unlock();
 		}

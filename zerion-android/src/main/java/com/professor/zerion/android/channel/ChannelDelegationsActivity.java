@@ -24,6 +24,10 @@ import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
 
+import org.briarproject.bramble.api.contact.Contact;
+import org.briarproject.bramble.api.contact.ContactManager;
+import org.briarproject.bramble.api.crypto.HybridSignaturePublicKey;
+import org.briarproject.bramble.api.crypto.PublicKey;
 import org.briarproject.bramble.api.db.DbException;
 import org.briarproject.bramble.api.lifecycle.IoExecutor;
 import org.briarproject.briar.api.channel.ChannelDelegationCert;
@@ -53,6 +57,8 @@ public class ChannelDelegationsActivity extends ZerionActivity {
 
 	@Inject
 	ChannelManager channelManager;
+	@Inject
+	ContactManager contactManager;
 	@Inject
 	@IoExecutor
 	Executor ioExecutor;
@@ -127,6 +133,72 @@ public class ChannelDelegationsActivity extends ZerionActivity {
 	}
 
 	private void showAddDialog() {
+		ioExecutor.execute(() -> {
+			List<Contact> contacts;
+			try {
+				contacts = new ArrayList<>(contactManager.getContacts());
+			} catch (DbException ex) {
+				contacts = new ArrayList<>();
+			}
+			List<Contact> usable = new ArrayList<>();
+			for (Contact c : contacts) {
+				PublicKey pk = c.getAuthor().getPublicKey();
+				if (pk instanceof HybridSignaturePublicKey) usable.add(c);
+			}
+			List<Contact> finalContacts = usable;
+			runOnUiThread(() -> showAddPicker(finalContacts));
+		});
+	}
+
+	private void showAddPicker(List<Contact> contacts) {
+		CharSequence[] labels = new CharSequence[contacts.size() + 1];
+		for (int i = 0; i < contacts.size(); i++) {
+			labels[i] = contacts.get(i).getAuthor().getName();
+		}
+		labels[contacts.size()] = getString(
+				R.string.channels_delegations_paste_key);
+		new MaterialAlertDialogBuilder(this)
+				.setTitle(R.string.channels_delegations_add)
+				.setItems(labels, (d, which) -> {
+					if (which == contacts.size()) {
+						showPasteKeyDialog();
+					} else {
+						addContactAsEditor(contacts.get(which));
+					}
+				})
+				.show();
+	}
+
+	private void addContactAsEditor(Contact contact) {
+		PublicKey pk = contact.getAuthor().getPublicKey();
+		if (!(pk instanceof HybridSignaturePublicKey)) {
+			Toast.makeText(this,
+					R.string.channels_delegations_error_key,
+					Toast.LENGTH_LONG).show();
+			return;
+		}
+		HybridSignaturePublicKey hybrid = (HybridSignaturePublicKey) pk;
+		byte[] ed25519 = hybrid.getEd25519PublicKey();
+		byte[] mlDsa = hybrid.getMlDsaPublicKey();
+		ioExecutor.execute(() -> {
+			try {
+				channelManager.delegatePublisher(channelId, ed25519,
+						mlDsa, 0L);
+				runOnUiThread(() -> {
+					Toast.makeText(this,
+							R.string.channels_delegations_added,
+							Toast.LENGTH_SHORT).show();
+					refresh();
+				});
+			} catch (DbException ex) {
+				runOnUiThread(() -> Toast.makeText(this,
+						R.string.channels_delegations_error_full,
+						Toast.LENGTH_LONG).show());
+			}
+		});
+	}
+
+	private void showPasteKeyDialog() {
 		View dialogView = LayoutInflater.from(this).inflate(
 				R.layout.dialog_add_delegation, null);
 		TextInputEditText pubKeyInput = dialogView.findViewById(
