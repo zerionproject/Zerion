@@ -28,6 +28,9 @@ import org.briarproject.bramble.api.event.Event;
 import org.briarproject.bramble.api.event.EventBus;
 import org.briarproject.bramble.api.event.EventListener;
 import org.briarproject.bramble.api.lifecycle.IoExecutor;
+import org.briarproject.briar.api.channel.AttachmentBlob;
+import org.briarproject.briar.api.channel.AttachmentSpec;
+import org.briarproject.briar.api.channel.ChannelConstants;
 import org.briarproject.briar.api.channel.ChannelManager;
 import org.briarproject.briar.api.channel.ChannelPost;
 import org.briarproject.briar.api.channel.ChannelState;
@@ -74,7 +77,10 @@ public class ChannelFeedActivity extends ZerionActivity
 	private EditText composeInput;
 	private MaterialButton composeSendButton;
 	private android.widget.ImageButton ttlButton;
+	private android.widget.ImageButton attachButton;
 	private long selectedTtlSeconds = 0L;
+	private androidx.activity.result.ActivityResultLauncher<String[]>
+			attachmentPicker;
 	private LinearLayout pinnedBanner;
 	private TextView pinnedBannerText;
 	private android.widget.ImageButton pinnedBannerClose;
@@ -107,6 +113,13 @@ public class ChannelFeedActivity extends ZerionActivity
 		composeSendButton = findViewById(R.id.channelComposeSendButton);
 		ttlButton = findViewById(R.id.channelComposeTtlButton);
 		ttlButton.setOnClickListener(v -> showTtlPicker());
+		attachButton = findViewById(R.id.channelComposeAttachButton);
+		attachmentPicker = registerForActivityResult(
+				new androidx.activity.result.contract.ActivityResultContracts
+						.OpenDocument(),
+				this::handleAttachmentPicked);
+		attachButton.setOnClickListener(v -> attachmentPicker.launch(
+				new String[]{"*/*"}));
 		pinnedBanner = findViewById(R.id.channelPinnedBanner);
 		pinnedBannerText = findViewById(R.id.channelPinnedBannerText);
 		pinnedBannerClose = findViewById(R.id.channelPinnedBannerClose);
@@ -117,8 +130,11 @@ public class ChannelFeedActivity extends ZerionActivity
 		}
 		toolbar.setNavigationOnClickListener(v -> finish());
 
-		adapter = new PostAdapter(post -> showPostMenu(post,
-				post.getSeqNum() == currentPinnedSeq));
+		adapter = new PostAdapter(
+				post -> showPostMenu(post,
+						post.getSeqNum() == currentPinnedSeq),
+				(post, att, thumb) -> handleAttachmentTap(post, att,
+						thumb));
 		recycler.setLayoutManager(new LinearLayoutManager(this));
 		recycler.setAdapter(adapter);
 
@@ -423,6 +439,171 @@ public class ChannelFeedActivity extends ZerionActivity
 		});
 	}
 
+	private void handleAttachmentTap(ChannelPost post,
+			ChannelPost.ChannelAttachment att,
+			android.widget.ImageView thumbView) {
+		Toast.makeText(this, R.string.channels_attach_downloading,
+				Toast.LENGTH_SHORT).show();
+		ioExecutor.execute(() -> {
+			AttachmentBlob blob;
+			try {
+				blob = channelManager.fetchAttachment(channelId,
+						post.getSeqNum(), att.getBlobHash());
+			} catch (DbException | java.io.IOException ex) {
+				blob = null;
+			}
+			if (blob == null) {
+				runOnUiThread(() -> Toast.makeText(this,
+						R.string.channels_attach_download_failed,
+						Toast.LENGTH_LONG).show());
+				return;
+			}
+			AttachmentBlob finalBlob = blob;
+			runOnUiThread(() -> presentAttachment(att, finalBlob,
+					thumbView));
+		});
+	}
+
+	private void presentAttachment(ChannelPost.ChannelAttachment att,
+			AttachmentBlob blob, android.widget.ImageView thumbView) {
+		String mime = blob.getMimeType();
+		if (mime.startsWith("image/")) {
+			android.graphics.Bitmap bmp = com.professor.zerion.android
+					.util.SafeImageDecoder.decode(blob.getPlaintextBytes(),
+							1280);
+			if (bmp != null) {
+				thumbView.setImageBitmap(bmp);
+				thumbView.setVisibility(View.VISIBLE);
+				return;
+			}
+		}
+		java.io.File outFile;
+		try {
+			java.io.File dir = new java.io.File(getCacheDir(),
+					"channel_attach_view");
+			if (!dir.exists()) dir.mkdirs();
+			String safeName = sanitizeFileName(
+					guessFileName(att, blob.getMimeType()));
+			outFile = new java.io.File(dir, safeName);
+			try (java.io.FileOutputStream fos =
+						new java.io.FileOutputStream(outFile)) {
+				fos.write(blob.getPlaintextBytes());
+			}
+		} catch (java.io.IOException ex) {
+			Toast.makeText(this,
+					R.string.channels_attach_open_failed,
+					Toast.LENGTH_LONG).show();
+			return;
+		}
+		try {
+			android.net.Uri shareUri =
+					androidx.core.content.FileProvider.getUriForFile(this,
+							getPackageName() + ".fileprovider", outFile);
+			Intent view = new Intent(Intent.ACTION_VIEW);
+			view.setDataAndType(shareUri, blob.getMimeType());
+			view.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+			startActivity(view);
+		} catch (android.content.ActivityNotFoundException ex) {
+			Toast.makeText(this,
+					R.string.channels_attach_open_failed,
+					Toast.LENGTH_LONG).show();
+		}
+	}
+
+	private static String guessFileName(
+			ChannelPost.ChannelAttachment att, String mime) {
+		String ext = guessExtension(mime);
+		String hashHex = bytesToHex(att.getBlobHash());
+		return "att_" + hashHex.substring(0, Math.min(16, hashHex.length()))
+				+ ext;
+	}
+
+	private static String guessExtension(String mime) {
+		String ext = android.webkit.MimeTypeMap.getSingleton()
+				.getExtensionFromMimeType(mime);
+		return ext == null ? ".bin" : "." + ext;
+	}
+
+	private static String sanitizeFileName(String name) {
+		StringBuilder sb = new StringBuilder(name.length());
+		for (int i = 0; i < name.length(); i++) {
+			char c = name.charAt(i);
+			if (Character.isLetterOrDigit(c) || c == '.' || c == '_'
+					|| c == '-') {
+				sb.append(c);
+			} else {
+				sb.append('_');
+			}
+		}
+		return sb.toString();
+	}
+
+	private static String bytesToHex(byte[] b) {
+		StringBuilder sb = new StringBuilder(b.length * 2);
+		for (byte x : b) sb.append(String.format(Locale.US, "%02x", x));
+		return sb.toString();
+	}
+
+	private void handleAttachmentPicked(@Nullable android.net.Uri uri) {
+		if (uri == null) return;
+		String mime = getContentResolver().getType(uri);
+		if (mime == null) mime = "application/octet-stream";
+		String body = composeInput.getText() == null
+				? "" : composeInput.getText().toString().trim();
+		String composedBody = body.isEmpty() ? " " : body;
+		long ttlSeconds = readSelectedTtlSeconds();
+		String finalMime = mime;
+		Toast.makeText(this, R.string.channels_attach_uploading,
+				Toast.LENGTH_SHORT).show();
+		ioExecutor.execute(() -> {
+			byte[] bytes;
+			try (java.io.InputStream in =
+						getContentResolver().openInputStream(uri)) {
+				if (in == null) {
+					runOnUiThread(() -> Toast.makeText(this,
+							R.string.channels_attach_read_failed,
+							Toast.LENGTH_LONG).show());
+					return;
+				}
+				java.io.ByteArrayOutputStream buf =
+						new java.io.ByteArrayOutputStream();
+				byte[] chunk = new byte[8192];
+				int read;
+				while ((read = in.read(chunk)) > 0) {
+					buf.write(chunk, 0, read);
+					if (buf.size()
+							> ChannelConstants.MAX_ATTACHMENT_BYTES) {
+						runOnUiThread(() -> Toast.makeText(this,
+								R.string.channels_attach_too_large,
+								Toast.LENGTH_LONG).show());
+						return;
+					}
+				}
+				bytes = buf.toByteArray();
+			} catch (java.io.IOException ex) {
+				runOnUiThread(() -> Toast.makeText(this,
+						R.string.channels_attach_read_failed,
+						Toast.LENGTH_LONG).show());
+				return;
+			}
+			AttachmentSpec spec = new AttachmentSpec(finalMime, bytes,
+					null);
+			try {
+				channelManager.publishPostWithAttachments(channelId,
+						composedBody, ttlSeconds,
+						java.util.Collections.singletonList(spec));
+				runOnUiThread(() -> {
+					composeInput.setText("");
+					loadChannel();
+				});
+			} catch (DbException ex) {
+				runOnUiThread(() -> Toast.makeText(this,
+						R.string.channels_attach_send_failed,
+						Toast.LENGTH_LONG).show());
+			}
+		});
+	}
+
 	private static class PostAdapter
 			extends RecyclerView.Adapter<PostViewHolder> {
 
@@ -430,11 +611,20 @@ public class ChannelFeedActivity extends ZerionActivity
 			void onPostLongPress(ChannelPost post);
 		}
 
+		interface OnAttachmentTap {
+			void onAttachmentTap(ChannelPost post,
+					ChannelPost.ChannelAttachment attachment,
+					android.widget.ImageView thumbView);
+		}
+
 		private List<ChannelPost> posts = new ArrayList<>();
 		private final OnPostLongPress longPressListener;
+		private final OnAttachmentTap attachmentTapListener;
 
-		PostAdapter(OnPostLongPress longPressListener) {
+		PostAdapter(OnPostLongPress longPressListener,
+				OnAttachmentTap attachmentTapListener) {
 			this.longPressListener = longPressListener;
+			this.attachmentTapListener = attachmentTapListener;
 		}
 
 		void setPosts(List<ChannelPost> p) {
@@ -455,7 +645,7 @@ public class ChannelFeedActivity extends ZerionActivity
 		public void onBindViewHolder(@NonNull PostViewHolder holder,
 				int position) {
 			ChannelPost p = posts.get(position);
-			holder.bind(p);
+			holder.bind(p, attachmentTapListener);
 			holder.itemView.setOnLongClickListener(v -> {
 				longPressListener.onPostLongPress(p);
 				return true;
@@ -474,6 +664,7 @@ public class ChannelFeedActivity extends ZerionActivity
 		private final TextView timestamp;
 		private final TextView signerBadge;
 		private final TextView ttlLabel;
+		private final LinearLayout attachments;
 
 		PostViewHolder(@NonNull View itemView) {
 			super(itemView);
@@ -482,10 +673,16 @@ public class ChannelFeedActivity extends ZerionActivity
 			signerBadge =
 					itemView.findViewById(R.id.channelPostSignerBadge);
 			ttlLabel = itemView.findViewById(R.id.channelPostTtlLabel);
+			attachments = itemView.findViewById(
+					R.id.channelPostAttachments);
 		}
 
-		void bind(ChannelPost p) {
+		void bind(ChannelPost p,
+				PostAdapter.OnAttachmentTap attachmentTapListener) {
 			body.setText(p.getBody());
+			body.setVisibility(p.getBody().trim().isEmpty()
+					? View.GONE : View.VISIBLE);
+			bindAttachments(p, attachmentTapListener);
 			timestamp.setText(
 					com.professor.zerion.android.util.UiUtils.formatDate(
 							itemView.getContext(),
@@ -512,6 +709,37 @@ public class ChannelFeedActivity extends ZerionActivity
 				}
 			} else {
 				ttlLabel.setVisibility(View.GONE);
+			}
+		}
+
+		private void bindAttachments(ChannelPost p,
+				PostAdapter.OnAttachmentTap listener) {
+			attachments.removeAllViews();
+			if (p.getAttachments().isEmpty()) {
+				attachments.setVisibility(View.GONE);
+				return;
+			}
+			attachments.setVisibility(View.VISIBLE);
+			LayoutInflater inflater = LayoutInflater.from(
+					itemView.getContext());
+			for (ChannelPost.ChannelAttachment att : p.getAttachments()) {
+				View row = inflater.inflate(
+						R.layout.list_item_channel_attachment,
+						attachments, false);
+				TextView mime = row.findViewById(
+						R.id.channelAttachmentMime);
+				TextView size = row.findViewById(
+						R.id.channelAttachmentSize);
+				android.widget.ImageView thumb = row.findViewById(
+						R.id.channelAttachmentThumb);
+				mime.setText(att.getMimeType());
+				size.setText(android.text.format.Formatter
+						.formatShortFileSize(itemView.getContext(),
+								att.getSizeBytes()));
+				thumb.setVisibility(View.GONE);
+				row.setOnClickListener(v -> listener.onAttachmentTap(
+						p, att, thumb));
+				attachments.addView(row);
 			}
 		}
 

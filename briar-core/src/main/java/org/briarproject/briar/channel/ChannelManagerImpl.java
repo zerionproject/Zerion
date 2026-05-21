@@ -55,6 +55,7 @@ class ChannelManagerImpl
 	private final ChannelPostValidator validator;
 	private final ChannelPullProtocol pullProtocol;
 	private final ChannelTransport transport;
+	private final ChannelBlobStore blobStore;
 	private final TaskScheduler taskScheduler;
 	private final java.util.concurrent.Executor ioExecutor;
 	private final SecureRandom random;
@@ -80,6 +81,7 @@ class ChannelManagerImpl
 			ChannelPostValidator validator,
 			ChannelPullProtocol pullProtocol,
 			ChannelTransport transport,
+			ChannelBlobStore blobStore,
 			TaskScheduler taskScheduler,
 			@IoExecutor java.util.concurrent.Executor ioExecutor) {
 		this.crypto = crypto;
@@ -93,6 +95,7 @@ class ChannelManagerImpl
 		this.validator = validator;
 		this.pullProtocol = pullProtocol;
 		this.transport = transport;
+		this.blobStore = blobStore;
 		this.taskScheduler = taskScheduler;
 		this.ioExecutor = ioExecutor;
 		this.random = new SecureRandom();
@@ -309,6 +312,10 @@ class ChannelManagerImpl
 
 	private byte[] handlePublisherRequest(byte[] channelId,
 			byte[] requestBytes) {
+		String wireType = pullCodec().peekType(requestBytes);
+		if (ChannelConstants.WIRE_TYPE_GET_ATTACHMENT.equals(wireType)) {
+			return handleAttachmentFetch(channelId, requestBytes);
+		}
 		try {
 			ChannelPullCodec.PullRequest req = pullCodec()
 					.decodePullRequest(requestBytes);
@@ -353,6 +360,23 @@ class ChannelManagerImpl
 	private java.util.List<ChannelPost> convertToWirePosts(
 			ChannelState s, java.util.List<ChannelPost> stored) {
 		return stored;
+	}
+
+	private byte[] handleAttachmentFetch(byte[] channelId,
+			byte[] requestBytes) {
+		try {
+			ChannelPullCodec.AttachmentRequest req = pullCodec()
+					.decodeAttachmentRequest(requestBytes);
+			if (!java.util.Arrays.equals(req.channelId, channelId)) {
+				return new byte[0];
+			}
+			byte[] blob = blobStore.get(channelId, req.blobHash);
+			byte[] payload = blob == null ? new byte[0] : blob;
+			return pullCodec().encodeAttachmentResponse(req.blobHash,
+					payload);
+		} catch (IOException e) {
+			return new byte[0];
+		}
 	}
 
 	private byte[] signLatestManifest(ChannelState s) {
@@ -485,6 +509,7 @@ class ChannelManagerImpl
 	@Override
 	public void deleteChannel(byte[] channelId) throws DbException {
 		store.removeChannel(channelId);
+		blobStore.removeAllForChannel(channelId);
 		fireEvent(channelId, ChannelStateChangedEvent.Kind.LEFT);
 	}
 
@@ -552,6 +577,7 @@ class ChannelManagerImpl
 	@Override
 	public void leaveChannel(byte[] channelId) throws DbException {
 		store.removeChannel(channelId);
+		blobStore.removeAllForChannel(channelId);
 		fireEvent(channelId, ChannelStateChangedEvent.Kind.LEFT);
 	}
 
@@ -569,6 +595,16 @@ class ChannelManagerImpl
 
 	private void publishPostLocked(byte[] channelId, String body,
 			long ttlSeconds) throws DbException {
+		publishPostLocked(channelId, body, ttlSeconds,
+				Collections.<ChannelPost.ChannelAttachment>emptyList(),
+				Collections.<String, byte[]>emptyMap());
+	}
+
+	private void publishPostLocked(byte[] channelId, String body,
+			long ttlSeconds,
+			List<ChannelPost.ChannelAttachment> attachments,
+			java.util.Map<String, byte[]> blobsToStore)
+			throws DbException {
 		ChannelState s = store.getChannel(channelId);
 		if (s == null) throw new DbException();
 		if (!s.weArePublisher()) throw new DbException();
@@ -586,9 +622,7 @@ class ChannelManagerImpl
 		long nowHourMs =
 				clock.currentTimeMillis() / HOUR_MS * HOUR_MS;
 		long ttlMs = Math.max(0L, ttlSeconds) * 1000L;
-		List<ChannelPost.ChannelAttachment> noAttachments =
-				Collections.emptyList();
-		byte[] attHash = codec.attachmentsHash(noAttachments);
+		byte[] attHash = codec.attachmentsHash(attachments);
 
 		String wireBody = body;
 		if (!s.isPublicChannel()) {
@@ -613,8 +647,17 @@ class ChannelManagerImpl
 			throw new DbException(ex);
 		}
 		ChannelPost post = new ChannelPost(channelId, nextSeq, prevHash,
-				nowHourMs, wireBody, noAttachments, ttlMs, sig, true);
+				nowHourMs, wireBody, attachments, ttlMs, sig, true);
 		store.appendPost(channelId, post);
+		for (java.util.Map.Entry<String, byte[]> entry
+				: blobsToStore.entrySet()) {
+			try {
+				blobStore.put(channelId,
+						java.util.Base64.getDecoder().decode(entry.getKey()),
+						entry.getValue());
+			} catch (IOException ignored) {
+			}
+		}
 		ChannelState updated = withSeq(s, nextSeq);
 		store.putChannel(updated);
 		eventBus.broadcast(new ChannelPostReceivedEvent(channelId, nextSeq));
@@ -928,6 +971,139 @@ class ChannelManagerImpl
 		}
 	}
 
+	@Override
+	public void publishPostWithAttachments(byte[] channelId, String body,
+			long ttlSeconds,
+			java.util.List<org.briarproject.briar.api.channel
+					.AttachmentSpec> attachments) throws DbException {
+		if (attachments.size()
+				> ChannelConstants.MAX_ATTACHMENTS_PER_POST) {
+			throw new DbException();
+		}
+		java.util.List<ChannelPost.ChannelAttachment> wireAttachments =
+				new ArrayList<>(attachments.size());
+		java.util.Map<String, byte[]> blobsToStore =
+				new java.util.LinkedHashMap<>();
+		ChannelState s = store.getChannel(channelId);
+		if (s == null) throw new DbException();
+		if (!s.weArePublisher()) throw new DbException();
+		boolean closed = !s.isPublicChannel();
+		byte[] kContent = s.getContentKey();
+		if (closed && kContent == null) throw new DbException();
+		for (org.briarproject.briar.api.channel.AttachmentSpec spec
+				: attachments) {
+			if (spec.getPlaintextBytes().length
+					> ChannelConstants.MAX_ATTACHMENT_BYTES) {
+				throw new DbException();
+			}
+			byte[] perAttKey = contentKey.generateAttachmentKey();
+			byte[] encryptedBlob;
+			try {
+				encryptedBlob = contentKey.encryptBlob(perAttKey,
+						channelId, spec.getMimeType(),
+						spec.getPlaintextBytes().length,
+						spec.getPlaintextBytes());
+			} catch (GeneralSecurityException ex) {
+				throw new DbException(ex);
+			}
+			byte[] blobHash = crypto.hash(
+					"org.briarproject.zerion/CHANNEL_ATTACHMENT_BLOB",
+					encryptedBlob);
+			byte[] wrappedKey;
+			if (closed) {
+				try {
+					wrappedKey = contentKey.wrapContentKey(kContent,
+							channelId, perAttKey);
+				} catch (GeneralSecurityException ex) {
+					throw new DbException(ex);
+				}
+			} else {
+				wrappedKey = perAttKey;
+			}
+			wireAttachments.add(new ChannelPost.ChannelAttachment(
+					blobHash, spec.getPlaintextBytes().length,
+					spec.getMimeType(), wrappedKey,
+					spec.getCaptionUtf8()));
+			blobsToStore.put(
+					java.util.Base64.getEncoder().withoutPadding()
+							.encodeToString(blobHash),
+					encryptedBlob);
+		}
+		java.util.concurrent.locks.ReentrantLock lock = lockFor(channelId);
+		lock.lock();
+		try {
+			publishPostLocked(channelId, body, ttlSeconds,
+					wireAttachments, blobsToStore);
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	@Override
+	@Nullable
+	public org.briarproject.briar.api.channel.AttachmentBlob
+			fetchAttachment(byte[] channelId, long postSeqNum,
+					byte[] blobHash)
+					throws DbException, IOException {
+		ChannelState s = store.getChannel(channelId);
+		if (s == null) throw new DbException();
+		ChannelPost.ChannelAttachment target = null;
+		for (ChannelPost p : store.getPosts(channelId)) {
+			if (p.getSeqNum() != postSeqNum) continue;
+			for (ChannelPost.ChannelAttachment a : p.getAttachments()) {
+				if (java.util.Arrays.equals(a.getBlobHash(), blobHash)) {
+					target = a;
+					break;
+				}
+			}
+			break;
+		}
+		if (target == null) return null;
+		byte[] cachedBlob = blobStore.get(channelId, blobHash);
+		boolean closed = !s.isPublicChannel();
+		byte[] perAttKey;
+		if (closed) {
+			byte[] kContent = s.getContentKey();
+			if (kContent == null) return null;
+			try {
+				perAttKey = contentKey.unwrapContentKey(kContent,
+						channelId, target.getPerAttachmentKey());
+			} catch (GeneralSecurityException ex) {
+				return null;
+			}
+		} else {
+			perAttKey = target.getPerAttachmentKey();
+		}
+		byte[] blob = cachedBlob;
+		if (blob == null) {
+			byte[] reqBytes = pullCodec().encodeAttachmentRequest(
+					channelId, blobHash);
+			byte[] respBytes = transport.requestFromOnion(
+					s.getCurrentOnion(), reqBytes);
+			ChannelPullCodec.AttachmentResponse resp =
+					pullCodec().decodeAttachmentResponse(respBytes);
+			if (resp.blob.length == 0) return null;
+			if (!java.util.Arrays.equals(resp.blobHash, blobHash)) {
+				return null;
+			}
+			byte[] derived = crypto.hash(
+					"org.briarproject.zerion/CHANNEL_ATTACHMENT_BLOB",
+					resp.blob);
+			if (!java.util.Arrays.equals(derived, blobHash)) return null;
+			blob = resp.blob;
+			blobStore.put(channelId, blobHash, blob);
+		}
+		byte[] plaintext;
+		try {
+			plaintext = contentKey.decryptBlob(perAttKey, channelId,
+					target.getMimeType(), target.getSizeBytes(), blob);
+		} catch (GeneralSecurityException ex) {
+			return null;
+		}
+		return new org.briarproject.briar.api.channel.AttachmentBlob(
+				plaintext, target.getMimeType());
+	}
+
 	private void setPinnedPostSeqLocked(byte[] channelId, long seqNum)
 			throws DbException {
 		ChannelState s = store.getChannel(channelId);
@@ -964,17 +1140,26 @@ class ChannelManagerImpl
 			try {
 				java.util.List<ChannelPost> kept =
 						new java.util.ArrayList<>();
+				java.util.List<byte[]> expiredBlobHashes =
+						new java.util.ArrayList<>();
 				boolean changed = false;
 				for (ChannelPost p : store.getPosts(channelId)) {
 					if (p.getTtlMs() > 0
 							&& now > p.getTimestampHourMs()
 							+ p.getTtlMs()) {
 						changed = true;
+						for (ChannelPost.ChannelAttachment a
+								: p.getAttachments()) {
+							expiredBlobHashes.add(a.getBlobHash());
+						}
 						continue;
 					}
 					kept.add(p);
 				}
 				if (changed) store.writePosts(channelId, kept);
+				for (byte[] h : expiredBlobHashes) {
+					blobStore.removeBlob(channelId, h);
+				}
 			} finally {
 				lock.unlock();
 			}

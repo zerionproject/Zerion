@@ -65,6 +65,10 @@ public final class ChannelConstants {
 
 	public static final String WIRE_TYPE_DELEGATION =
 			"ZERION_CHANNEL_DELEGATION_V1";
+	public static final String WIRE_TYPE_GET_ATTACHMENT =
+			"ZERION_CHANNEL_GET_ATTACHMENT_V1";
+	public static final String WIRE_TYPE_ATTACHMENT_BLOB =
+			"ZERION_CHANNEL_ATTACHMENT_BLOB_V1";
 
 	public static final long TTL_OFF = 0L;
 	public static final long TTL_ONE_HOUR_MS = 60L * 60L * 1000L;

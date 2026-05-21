@@ -20,10 +20,10 @@ import javax.net.SocketFactory;
 public class TorChannelTransport implements ChannelTransport {
 
 	private static final int CONNECT_TIMEOUT_MS = 60_000;
-	private static final int READ_TIMEOUT_MS = 30_000;
+	private static final int READ_TIMEOUT_MS = 120_000;
 	private static final int REMOTE_PORT = 80;
 	private static final int MAX_REQUEST_BYTES = 256 * 1024;
-	private static final int MAX_RESPONSE_BYTES = 4 * 1024 * 1024;
+	private static final int MAX_RESPONSE_BYTES = 64 * 1024 * 1024;
 
 	private final OnionPublisher onionPublisher;
 	private final SocketFactory torSocketFactory;

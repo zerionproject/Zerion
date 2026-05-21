@@ -109,6 +109,58 @@ class ChannelContentKey {
 		return new String(plain, StandardCharsets.UTF_8);
 	}
 
+	byte[] generateAttachmentKey() {
+		byte[] k = new byte[ChannelConstants.CONTENT_KEY_BYTES];
+		random.nextBytes(k);
+		return k;
+	}
+
+	byte[] encryptBlob(byte[] perAttKey, byte[] channelId, String mime,
+			long sizeBytes, byte[] plaintext)
+			throws GeneralSecurityException {
+		byte[] nonce = new byte[GCM_IV_BYTES];
+		random.nextBytes(nonce);
+		byte[] aad = blobAad(channelId, mime, sizeBytes);
+		Cipher cipher = Cipher.getInstance(AES_GCM);
+		cipher.init(Cipher.ENCRYPT_MODE,
+				new SecretKeySpec(perAttKey, "AES"),
+				new GCMParameterSpec(GCM_TAG_BITS, nonce));
+		cipher.updateAAD(aad);
+		byte[] ct = cipher.doFinal(plaintext);
+		ByteBuffer out = ByteBuffer.allocate(nonce.length + ct.length);
+		out.put(nonce);
+		out.put(ct);
+		return out.array();
+	}
+
+	byte[] decryptBlob(byte[] perAttKey, byte[] channelId, String mime,
+			long sizeBytes, byte[] blob)
+			throws GeneralSecurityException {
+		if (blob.length < GCM_IV_BYTES + 16) {
+			throw new GeneralSecurityException("Blob too short");
+		}
+		byte[] nonce = Arrays.copyOfRange(blob, 0, GCM_IV_BYTES);
+		byte[] ct = Arrays.copyOfRange(blob, GCM_IV_BYTES, blob.length);
+		byte[] aad = blobAad(channelId, mime, sizeBytes);
+		Cipher cipher = Cipher.getInstance(AES_GCM);
+		cipher.init(Cipher.DECRYPT_MODE,
+				new SecretKeySpec(perAttKey, "AES"),
+				new GCMParameterSpec(GCM_TAG_BITS, nonce));
+		cipher.updateAAD(aad);
+		return cipher.doFinal(ct);
+	}
+
+	private byte[] blobAad(byte[] channelId, String mime, long sizeBytes) {
+		byte[] mimeBytes = mime.getBytes(StandardCharsets.UTF_8);
+		ByteBuffer buf = ByteBuffer.allocate(
+				channelId.length + 4 + mimeBytes.length + 8);
+		buf.put(channelId);
+		buf.putInt(mimeBytes.length);
+		buf.put(mimeBytes);
+		buf.putLong(sizeBytes);
+		return buf.array();
+	}
+
 	private SecretKey deriveWrapKey(byte[] capability, byte[] channelId) {
 		SecretKey capabilityKey = new SecretKey(capability);
 		byte[] info = ChannelConstants.CONTENT_KEY_WRAP_INFO

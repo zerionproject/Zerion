@@ -70,4 +70,12 @@ public interface ChannelManager {
 	void unpinPost(byte[] channelId) throws DbException;
 
 	void deletePost(byte[] channelId, long seqNum) throws DbException;
+
+	void publishPostWithAttachments(byte[] channelId, String body,
+			long ttlSeconds, List<AttachmentSpec> attachments)
+			throws DbException;
+
+	@Nullable
+	AttachmentBlob fetchAttachment(byte[] channelId, long postSeqNum,
+			byte[] blobHash) throws DbException, java.io.IOException;
 }

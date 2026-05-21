@@ -15,4 +15,7 @@
 	<files-path
 		name="camera"
 		path="camera/" />
+	<cache-path
+		name="channel_attach_view"
+		path="channel_attach_view/" />
 </paths>

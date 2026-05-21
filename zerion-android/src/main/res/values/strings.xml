@@ -312,6 +312,14 @@
 	<string name="channels_post_deleted">[deleted]</string>
 	<string name="channels_post_delete_confirm">Delete this post?</string>
 	<string name="channels_post_delete_failed">Could not delete post</string>
+	<string name="channels_attach_cd">Attach file</string>
+	<string name="channels_attach_too_large">File too large (max 50 MB)</string>
+	<string name="channels_attach_read_failed">Could not read file</string>
+	<string name="channels_attach_uploading">Sending attachment…</string>
+	<string name="channels_attach_send_failed">Could not send attachment</string>
+	<string name="channels_attach_downloading">Downloading…</string>
+	<string name="channels_attach_download_failed">Could not download attachment</string>
+	<string name="channels_attach_open_failed">No app available to open this file</string>
 	<string name="vault_button">zVault</string>
 	<!-- This is part of the main menu. The app will be locked when this is tapped. -->
 	<string name="lock_button">Lock App</string>

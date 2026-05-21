@@ -31,12 +31,26 @@
 			android:textColor="?android:attr/textColorPrimary"
 			android:textColorLink="@color/zerion_text_link"
 			app:layout_constrainedWidth="true"
-			app:layout_constraintBottom_toTopOf="@+id/channelPostStatusRow"
 			app:layout_constraintEnd_toEndOf="parent"
 			app:layout_constraintHorizontal_bias="0.0"
 			app:layout_constraintStart_toStartOf="parent"
 			app:layout_constraintTop_toTopOf="parent"
 			tools:text="Today's notes: the new disclosure rules drop on Friday, here's what to watch in the filings." />
+
+		<LinearLayout
+			android:id="@+id/channelPostAttachments"
+			android:layout_width="240dp"
+			android:layout_height="wrap_content"
+			android:layout_marginLeft="@dimen/message_bubble_padding_sides_inner"
+			android:layout_marginTop="6dp"
+			android:layout_marginRight="@dimen/message_bubble_padding_sides_inner"
+			android:orientation="vertical"
+			android:visibility="gone"
+			app:layout_constraintEnd_toEndOf="parent"
+			app:layout_constraintHorizontal_bias="0.0"
+			app:layout_constraintStart_toStartOf="parent"
+			app:layout_constraintTop_toBottomOf="@+id/channelPostBodyView"
+			tools:visibility="visible" />
 
 		<LinearLayout
 			android:id="@+id/channelPostStatusRow"
@@ -51,7 +65,7 @@
 			app:layout_constraintEnd_toEndOf="parent"
 			app:layout_constraintHorizontal_bias="1.0"
 			app:layout_constraintStart_toStartOf="parent"
-			app:layout_constraintTop_toBottomOf="@+id/channelPostBodyView">
+			app:layout_constraintTop_toBottomOf="@+id/channelPostAttachments">
 
 			<TextView
 				android:id="@+id/channelPostSignerBadge"

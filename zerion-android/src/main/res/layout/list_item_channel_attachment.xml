@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content"
+	android:layout_marginBottom="4dp"
+	android:orientation="vertical"
+	android:background="?attr/selectableItemBackground"
+	android:clickable="true"
+	android:focusable="true"
+	android:padding="6dp">
+
+	<LinearLayout
+		android:id="@+id/channelAttachmentRow"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:gravity="center_vertical"
+		android:orientation="horizontal">
+
+		<ImageView
+			android:id="@+id/channelAttachmentIcon"
+			android:layout_width="32dp"
+			android:layout_height="32dp"
+			android:layout_marginEnd="8dp"
+			android:contentDescription="@string/channels_attach_cd"
+			android:padding="4dp"
+			android:src="@drawable/ic_file"
+			app:tint="?android:attr/textColorSecondary" />
+
+		<LinearLayout
+			android:layout_width="0dp"
+			android:layout_height="wrap_content"
+			android:layout_weight="1"
+			android:orientation="vertical">
+
+			<TextView
+				android:id="@+id/channelAttachmentMime"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:ellipsize="end"
+				android:maxLines="1"
+				android:textColor="?android:attr/textColorPrimary"
+				android:textSize="13sp"
+				tools:text="image/jpeg" />
+
+			<TextView
+				android:id="@+id/channelAttachmentSize"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:textColor="?android:attr/textColorSecondary"
+				android:textSize="11sp"
+				tools:text="1.2 MB" />
+
+		</LinearLayout>
+
+	</LinearLayout>
+
+	<ImageView
+		android:id="@+id/channelAttachmentThumb"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:layout_marginTop="6dp"
+		android:adjustViewBounds="true"
+		android:contentDescription="@string/channels_attach_cd"
+		android:maxHeight="320dp"
+		android:scaleType="fitStart"
+		android:visibility="gone"
+		tools:visibility="gone" />
+
+</LinearLayout>

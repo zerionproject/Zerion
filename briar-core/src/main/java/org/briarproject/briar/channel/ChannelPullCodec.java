@@ -209,6 +209,77 @@ class ChannelPullCodec {
 		return d;
 	}
 
+	byte[] encodeAttachmentRequest(byte[] channelId, byte[] blobHash)
+			throws IOException {
+		BdfDictionary d = new BdfDictionary();
+		d.put("type", ChannelConstants.WIRE_TYPE_GET_ATTACHMENT);
+		d.put("channelId", channelId);
+		d.put("blobHash", blobHash);
+		return writeDict(d);
+	}
+
+	AttachmentRequest decodeAttachmentRequest(byte[] data)
+			throws IOException {
+		BdfDictionary d = readDict(data);
+		String type = d.getString("type");
+		if (!ChannelConstants.WIRE_TYPE_GET_ATTACHMENT.equals(type)) {
+			throw new FormatException();
+		}
+		return new AttachmentRequest(d.getRaw("channelId"),
+				d.getRaw("blobHash"));
+	}
+
+	byte[] encodeAttachmentResponse(byte[] blobHash, byte[] blob)
+			throws IOException {
+		BdfDictionary d = new BdfDictionary();
+		d.put("type", ChannelConstants.WIRE_TYPE_ATTACHMENT_BLOB);
+		d.put("blobHash", blobHash);
+		d.put("blob", blob);
+		return writeDict(d);
+	}
+
+	AttachmentResponse decodeAttachmentResponse(byte[] data)
+			throws IOException {
+		BdfDictionary d = readDict(data);
+		String type = d.getString("type");
+		if (!ChannelConstants.WIRE_TYPE_ATTACHMENT_BLOB.equals(type)) {
+			throw new FormatException();
+		}
+		return new AttachmentResponse(d.getRaw("blobHash"),
+				d.getRaw("blob"));
+	}
+
+	@NotNullByDefault
+	static final class AttachmentRequest {
+		final byte[] channelId;
+		final byte[] blobHash;
+
+		AttachmentRequest(byte[] channelId, byte[] blobHash) {
+			this.channelId = channelId;
+			this.blobHash = blobHash;
+		}
+	}
+
+	@NotNullByDefault
+	static final class AttachmentResponse {
+		final byte[] blobHash;
+		final byte[] blob;
+
+		AttachmentResponse(byte[] blobHash, byte[] blob) {
+			this.blobHash = blobHash;
+			this.blob = blob;
+		}
+	}
+
+	String peekType(byte[] data) {
+		try {
+			BdfDictionary d = readDict(data);
+			return d.getString("type");
+		} catch (IOException e) {
+			return "";
+		}
+	}
+
 	private byte[] writeDict(BdfDictionary d) throws IOException {
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		BdfWriter w = writerFactory.createWriter(out);
