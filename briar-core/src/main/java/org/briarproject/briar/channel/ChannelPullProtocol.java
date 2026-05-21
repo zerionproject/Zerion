@@ -1,6 +1,8 @@
 package org.briarproject.briar.channel;
 
 import org.briarproject.bramble.api.FormatException;
+import org.briarproject.bramble.api.crypto.CryptoComponent;
+import org.briarproject.bramble.api.crypto.HybridSignaturePublicKey;
 import org.briarproject.bramble.api.data.BdfDictionary;
 import org.briarproject.briar.api.channel.ChannelDelegationCert;
 import org.briarproject.briar.api.channel.ChannelPost;
@@ -25,19 +27,22 @@ class ChannelPullProtocol {
 	private final ChannelContentKey contentKey;
 	private final ChannelPostValidator validator;
 	private final ChannelSignatures signatures;
+	private final CryptoComponent crypto;
 
 	@Inject
 	ChannelPullProtocol(ChannelCodec codec, ChannelPullCodec pullCodec,
 			ChannelHmacChallenge hmacChallenge,
 			ChannelContentKey contentKey,
 			ChannelPostValidator validator,
-			ChannelSignatures signatures) {
+			ChannelSignatures signatures,
+			CryptoComponent crypto) {
 		this.codec = codec;
 		this.pullCodec = pullCodec;
 		this.hmacChallenge = hmacChallenge;
 		this.contentKey = contentKey;
 		this.validator = validator;
 		this.signatures = signatures;
+		this.crypto = crypto;
 	}
 
 	byte[] buildBootstrapRequest(byte[] channelId) throws IOException {
@@ -148,6 +153,15 @@ class ChannelPullProtocol {
 			long incomingSeq = manifest.getLong("manifestSeq");
 			byte[] wireChannelId = manifest.getRaw("channelId");
 			if (!java.util.Arrays.equals(wireChannelId,
+					local.getChannelId())) {
+				return null;
+			}
+			byte[] derivedChannelId = crypto.hash(
+					"org.briarproject.zerion/CHANNEL_ID",
+					new HybridSignaturePublicKey(wirePubEd, wirePubMl)
+							.getEncoded(),
+					wireSalt);
+			if (!java.util.Arrays.equals(derivedChannelId,
 					local.getChannelId())) {
 				return null;
 			}

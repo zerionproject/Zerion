@@ -220,12 +220,6 @@ class ChannelCodec {
 					ChannelConstants.INVITE_LINK_ONION_PARAM)
 					.append('=').append(onionAddress.toLowerCase(
 							Locale.ROOT));
-			first = false;
-		}
-		if (publisherMlDsaPub != null && publisherMlDsaPub.length > 0) {
-			url.append(first ? '?' : '&').append(
-					ChannelConstants.INVITE_LINK_MLDSA_PARAM)
-					.append('=').append(Base32Util.encode(publisherMlDsaPub));
 		}
 		return url.toString();
 	}
@@ -242,7 +236,6 @@ class ChannelCodec {
 		String rest = url.substring(prefix.length());
 		String capEncoded = null;
 		String onionParam = null;
-		String mlDsaEncoded = null;
 		int q = rest.indexOf('?');
 		if (q >= 0) {
 			String query = rest.substring(q + 1);
@@ -258,9 +251,6 @@ class ChannelCodec {
 				} else if (k.equals(
 						ChannelConstants.INVITE_LINK_ONION_PARAM)) {
 					onionParam = v;
-				} else if (k.equals(
-						ChannelConstants.INVITE_LINK_MLDSA_PARAM)) {
-					mlDsaEncoded = v;
 				}
 			}
 		}
@@ -285,17 +275,12 @@ class ChannelCodec {
 					return null;
 				}
 			}
-			byte[] mlDsa = null;
-			if (mlDsaEncoded != null) {
-				mlDsa = Base32Util.decode(mlDsaEncoded);
-				if (mlDsa.length == 0) return null;
-			}
 			String onion = null;
 			if (onionParam != null && !onionParam.isEmpty()) {
 				if (onionParam.length() > 80) return null;
 				onion = onionParam.toLowerCase(Locale.ROOT);
 			}
-			return new ChannelInviteLink(channelId, publisherEd, mlDsa,
+			return new ChannelInviteLink(channelId, publisherEd, null,
 					isPublic, capability, onion);
 		} catch (IllegalArgumentException e) {
 			return null;
