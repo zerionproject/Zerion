@@ -113,6 +113,20 @@ public class ChannelFeedActivity extends ZerionActivity
 		composeSendButton.setOnClickListener(v -> handleSend());
 	}
 
+	private static final long FOREGROUND_REFRESH_INTERVAL_MS = 10_000L;
+	@Nullable
+	private android.os.Handler refreshHandler;
+	private final Runnable refreshTick = new Runnable() {
+		@Override
+		public void run() {
+			refreshFromPublisherSafely();
+			if (refreshHandler != null) {
+				refreshHandler.postDelayed(this,
+						FOREGROUND_REFRESH_INTERVAL_MS);
+			}
+		}
+	};
+
 	@Override
 	public void onStart() {
 		super.onStart();
@@ -120,6 +134,10 @@ public class ChannelFeedActivity extends ZerionActivity
 		loadChannel();
 		markRead();
 		refreshFromPublisherSafely();
+		refreshHandler = new android.os.Handler(
+				android.os.Looper.getMainLooper());
+		refreshHandler.postDelayed(refreshTick,
+				FOREGROUND_REFRESH_INTERVAL_MS);
 	}
 
 	private void refreshFromPublisherSafely() {
@@ -136,6 +154,10 @@ public class ChannelFeedActivity extends ZerionActivity
 	public void onStop() {
 		super.onStop();
 		eventBus.removeListener(this);
+		if (refreshHandler != null) {
+			refreshHandler.removeCallbacks(refreshTick);
+			refreshHandler = null;
+		}
 	}
 
 	@Override
