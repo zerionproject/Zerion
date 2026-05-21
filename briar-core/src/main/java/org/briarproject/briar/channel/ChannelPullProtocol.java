@@ -24,17 +24,20 @@ class ChannelPullProtocol {
 	private final ChannelHmacChallenge hmacChallenge;
 	private final ChannelContentKey contentKey;
 	private final ChannelPostValidator validator;
+	private final ChannelSignatures signatures;
 
 	@Inject
 	ChannelPullProtocol(ChannelCodec codec, ChannelPullCodec pullCodec,
 			ChannelHmacChallenge hmacChallenge,
 			ChannelContentKey contentKey,
-			ChannelPostValidator validator) {
+			ChannelPostValidator validator,
+			ChannelSignatures signatures) {
 		this.codec = codec;
 		this.pullCodec = pullCodec;
 		this.hmacChallenge = hmacChallenge;
 		this.contentKey = contentKey;
 		this.validator = validator;
+		this.signatures = signatures;
 	}
 
 	byte[] buildBootstrapRequest(byte[] channelId) throws IOException {
@@ -142,7 +145,32 @@ class ChannelPullProtocol {
 	private ChannelState mergeManifestIntoLocal(ChannelState local,
 			BdfDictionary manifest, @Nullable byte[] freshContentKey) {
 		try {
+			byte[] wirePubEd = manifest.getRaw("publisherEd25519");
+			byte[] wirePubMl = manifest.getRaw("publisherMlDsa");
+			if (!java.util.Arrays.equals(wirePubEd,
+					local.getPublisherEd25519PubKey())) {
+				return null;
+			}
+			byte[] wireSig = manifest.getRaw("signature");
+			byte[] wireSalt = manifest.getRaw("salt");
+			byte[] wireAvatar = manifest.getOptionalRaw("avatarHash");
+			byte[] wireCap = manifest.getOptionalRaw("joinCapability");
+			String wireName = manifest.getString("name");
+			String wireDesc = manifest.getString("description");
+			long wireCreatedAt = manifest.getLong("createdAtHourMs");
+			boolean wirePublic = manifest.getBoolean("publicChannel");
+			String wireOnion = manifest.getString("currentOnion");
 			long incomingSeq = manifest.getLong("manifestSeq");
+			byte[] signedInput = codec.manifestSignedInput(
+					local.getChannelId(), wireSalt, wirePubEd, wirePubMl,
+					wireName, wireDesc, wireAvatar, wireCreatedAt,
+					wirePublic, wireCap, wireOnion, incomingSeq);
+			org.briarproject.bramble.api.crypto.HybridSignaturePublicKey
+					pub = new org.briarproject.bramble.api.crypto
+					.HybridSignaturePublicKey(wirePubEd, wirePubMl);
+			if (!signatures.verifyManifest(wireSig, signedInput, pub)) {
+				return null;
+			}
 			if (incomingSeq < local.getManifestSeq()) {
 				return local;
 			}

@@ -95,6 +95,25 @@ class ChannelManagerImpl
 		taskScheduler.scheduleWithFixedDelay(this::runDailyPurgeSafely,
 				ioExecutor, 5L, 24L * 60L * 60L,
 				java.util.concurrent.TimeUnit.MINUTES);
+		ioExecutor.execute(this::rebindOwnedChannelsOnStartup);
+	}
+
+	private void rebindOwnedChannelsOnStartup() {
+		try {
+			for (ChannelState s : store.listChannels()) {
+				if (!s.weArePublisher()) continue;
+				if (boundServers.containsKey(
+						ChannelStore.hex(s.getChannelId()))) continue;
+				String onion = bindPublisherServer(s.getChannelId());
+				if (onion == null || onion.isEmpty()) continue;
+				if (onion.equals(s.getCurrentOnion())) continue;
+				ChannelState updated = withRotatedOnion(s, onion);
+				store.putChannel(updated);
+				fireEvent(s.getChannelId(),
+						ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+			}
+		} catch (DbException ignored) {
+		}
 	}
 
 	private void runDailyPurgeSafely() {

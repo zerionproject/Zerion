@@ -351,6 +351,11 @@ public class ChannelListFragment extends BaseFragment
 					return;
 				}
 				channelManager.joinChannel(link);
+				try {
+					channelManager.bootstrapChannel(
+							link.getChannelId());
+				} catch (DbException bootstrapFailure) {
+				}
 				if (!isAdded()) return;
 				requireActivity().runOnUiThread(this::loadChannels);
 			} catch (DbException ex) {

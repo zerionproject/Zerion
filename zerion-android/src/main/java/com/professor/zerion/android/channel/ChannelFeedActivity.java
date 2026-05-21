@@ -119,6 +119,17 @@ public class ChannelFeedActivity extends ZerionActivity
 		eventBus.addListener(this);
 		loadChannel();
 		markRead();
+		refreshFromPublisherSafely();
+	}
+
+	private void refreshFromPublisherSafely() {
+		ioExecutor.execute(() -> {
+			try {
+				channelManager.refreshChannel(channelId);
+				runOnUiThread(this::loadChannel);
+			} catch (DbException ignored) {
+			}
+		});
 	}
 
 	@Override
