@@ -12,6 +12,7 @@ import org.briarproject.bramble.api.event.EventListener;
 import org.briarproject.bramble.api.lifecycle.LifecycleManager.OpenDatabaseHook;
 import org.briarproject.bramble.api.system.Clock;
 import org.briarproject.briar.api.channel.ChannelConstants;
+import org.briarproject.briar.api.channel.ChannelDelegationCert;
 import org.briarproject.briar.api.channel.ChannelInviteLink;
 import org.briarproject.briar.api.channel.ChannelManager;
 import org.briarproject.briar.api.channel.ChannelPost;
@@ -288,6 +289,117 @@ class ChannelManagerImpl
 		store.putChannel(updated);
 		fireEvent(channelId,
 				ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+	}
+
+	@Override
+	public ChannelDelegationCert delegatePublisher(byte[] channelId,
+			byte[] delegateeEd25519PubKey, byte[] delegateeMlDsaPubKey,
+			long validUntilHourMs) throws DbException {
+		ChannelState s = store.getChannel(channelId);
+		if (s == null) throw new DbException();
+		if (!s.weArePublisher()) throw new DbException();
+		if (s.getActiveDelegations().size()
+				>= ChannelConstants.MAX_ACTIVE_DELEGATIONS_PER_CHANNEL) {
+			throw new DbException();
+		}
+		long validFrom = clock.currentTimeMillis() / HOUR_MS * HOUR_MS;
+		long seq = s.getNextDelegationSeq();
+		byte[] signedInput = codec.delegationSignedInput(channelId,
+				delegateeEd25519PubKey, delegateeMlDsaPubKey,
+				validFrom, validUntilHourMs, seq);
+		byte[] privEncoded = store.getPublisherPrivKey(channelId);
+		if (privEncoded == null) throw new DbException();
+		org.briarproject.bramble.api.crypto.HybridSignaturePrivateKey
+				hybridPriv = new org.briarproject.bramble.api.crypto
+				.HybridSignaturePrivateKey(privEncoded);
+		byte[] sig;
+		try {
+			sig = signatures.signDelegation(signedInput, hybridPriv);
+		} catch (java.security.GeneralSecurityException ex) {
+			throw new DbException(ex);
+		}
+		ChannelDelegationCert cert = new ChannelDelegationCert(channelId,
+				delegateeEd25519PubKey, delegateeMlDsaPubKey,
+				validFrom, validUntilHourMs, seq, sig);
+		java.util.List<ChannelDelegationCert> next =
+				new java.util.ArrayList<>(s.getActiveDelegations());
+		next.add(cert);
+		ChannelState updated = withDelegations(s, next,
+				s.getRevokedDelegationSeqs(), seq + 1L);
+		store.putChannel(updated);
+		fireEvent(channelId,
+				org.briarproject.briar.api.channel.event
+						.ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+		return cert;
+	}
+
+	@Override
+	public void revokeDelegation(byte[] channelId, long delegationSeq)
+			throws DbException {
+		ChannelState s = store.getChannel(channelId);
+		if (s == null) throw new DbException();
+		if (!s.weArePublisher()) throw new DbException();
+		java.util.List<ChannelDelegationCert> remaining =
+				new java.util.ArrayList<>();
+		boolean removed = false;
+		for (ChannelDelegationCert c : s.getActiveDelegations()) {
+			if (c.getDelegationSeq() == delegationSeq) {
+				removed = true;
+				continue;
+			}
+			remaining.add(c);
+		}
+		if (!removed) return;
+		java.util.List<Long> revoked =
+				new java.util.ArrayList<>(s.getRevokedDelegationSeqs());
+		revoked.add(delegationSeq);
+		ChannelState updated = withDelegations(s, remaining, revoked,
+				s.getNextDelegationSeq());
+		store.putChannel(updated);
+		fireEvent(channelId,
+				org.briarproject.briar.api.channel.event
+						.ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+	}
+
+	@Override
+	public java.util.List<ChannelDelegationCert> listActiveDelegations(
+			byte[] channelId) throws DbException {
+		ChannelState s = store.getChannel(channelId);
+		if (s == null) return java.util.Collections.emptyList();
+		return s.getActiveDelegations();
+	}
+
+	@Override
+	public void purgeExpiredPosts() throws DbException {
+		long now = clock.currentTimeMillis();
+		for (ChannelState s : store.listChannels()) {
+			java.util.List<ChannelPost> kept = new java.util.ArrayList<>();
+			boolean changed = false;
+			for (ChannelPost p : store.getPosts(s.getChannelId())) {
+				if (p.getTtlMs() > 0
+						&& now > p.getTimestampHourMs() + p.getTtlMs()) {
+					changed = true;
+					continue;
+				}
+				kept.add(p);
+			}
+			if (changed) store.writePosts(s.getChannelId(), kept);
+		}
+	}
+
+	private ChannelState withDelegations(ChannelState s,
+			java.util.List<ChannelDelegationCert> active,
+			java.util.List<Long> revoked, long nextSeq) {
+		return new ChannelState(s.getChannelId(), s.getSalt(),
+				s.getPublisherEd25519PubKey(),
+				s.getPublisherMlDsaPubKey(), s.getName(),
+				s.getDescription(), s.getAvatarHash(),
+				s.getCreatedAtHourMs(), s.isPublicChannel(),
+				s.getJoinCapability(), s.getCurrentOnion(),
+				s.getManifestSeq() + 1L, s.weArePublisher(),
+				s.getHighestKnownPostSeq(),
+				s.getContentKeyHash(), s.getContentKey(),
+				active, revoked, nextSeq);
 	}
 
 	@Override

@@ -19,11 +19,25 @@ public class ChannelPost {
 	private final long ttlMs;
 	private final byte[] signature;
 	private final boolean read;
+	@Nullable
+	private final byte[] delegateSignerEd25519PubKey;
+	@Nullable
+	private final byte[] delegateSignerMlDsaPubKey;
 
 	public ChannelPost(byte[] channelId, long seqNum, byte[] prevHash,
 			long timestampHourMs, String body,
 			List<ChannelAttachment> attachments, long ttlMs,
 			byte[] signature, boolean read) {
+		this(channelId, seqNum, prevHash, timestampHourMs, body,
+				attachments, ttlMs, signature, read, null, null);
+	}
+
+	public ChannelPost(byte[] channelId, long seqNum, byte[] prevHash,
+			long timestampHourMs, String body,
+			List<ChannelAttachment> attachments, long ttlMs,
+			byte[] signature, boolean read,
+			@Nullable byte[] delegateSignerEd25519PubKey,
+			@Nullable byte[] delegateSignerMlDsaPubKey) {
 		this.channelId = channelId;
 		this.seqNum = seqNum;
 		this.prevHash = prevHash;
@@ -33,6 +47,8 @@ public class ChannelPost {
 		this.ttlMs = ttlMs;
 		this.signature = signature;
 		this.read = read;
+		this.delegateSignerEd25519PubKey = delegateSignerEd25519PubKey;
+		this.delegateSignerMlDsaPubKey = delegateSignerMlDsaPubKey;
 	}
 
 	public byte[] getChannelId() {
@@ -73,6 +89,20 @@ public class ChannelPost {
 
 	public boolean isEphemeral() {
 		return ttlMs > 0;
+	}
+
+	@Nullable
+	public byte[] getDelegateSignerEd25519PubKey() {
+		return delegateSignerEd25519PubKey;
+	}
+
+	@Nullable
+	public byte[] getDelegateSignerMlDsaPubKey() {
+		return delegateSignerMlDsaPubKey;
+	}
+
+	public boolean signedByDelegate() {
+		return delegateSignerEd25519PubKey != null;
 	}
 
 	@NotNullByDefault

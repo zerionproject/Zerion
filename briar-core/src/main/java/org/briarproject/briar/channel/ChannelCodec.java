@@ -92,6 +92,22 @@ class ChannelCodec {
 		return buf.array();
 	}
 
+	byte[] delegationSignedInput(byte[] channelId,
+			byte[] delegateeEd25519PubKey, byte[] delegateeMlDsaPubKey,
+			long validFromHourMs, long validUntilHourMs,
+			long delegationSeq) {
+		ByteBuffer buf = ByteBuffer.allocate(channelId.length
+				+ delegateeEd25519PubKey.length
+				+ delegateeMlDsaPubKey.length + 8 + 8 + 8);
+		buf.put(channelId);
+		buf.put(delegateeEd25519PubKey);
+		buf.put(delegateeMlDsaPubKey);
+		buf.putLong(validFromHourMs);
+		buf.putLong(validUntilHourMs);
+		buf.putLong(delegationSeq);
+		return buf.array();
+	}
+
 	byte[] attachmentsHash(java.util.List<ChannelPost.ChannelAttachment> as) {
 		ByteArrayOutputStream sink = new ByteArrayOutputStream();
 		for (ChannelPost.ChannelAttachment a : as) {

@@ -48,4 +48,16 @@ public interface ChannelManager {
 	void rotateJoinCapability(byte[] channelId) throws DbException;
 
 	void onOnionRotated(String newOnionAddress) throws DbException;
+
+	ChannelDelegationCert delegatePublisher(byte[] channelId,
+			byte[] delegateeEd25519PubKey, byte[] delegateeMlDsaPubKey,
+			long validUntilHourMs) throws DbException;
+
+	void revokeDelegation(byte[] channelId, long delegationSeq)
+			throws DbException;
+
+	java.util.List<ChannelDelegationCert> listActiveDelegations(
+			byte[] channelId) throws DbException;
+
+	void purgeExpiredPosts() throws DbException;
 }

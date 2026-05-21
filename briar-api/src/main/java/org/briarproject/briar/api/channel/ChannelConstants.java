@@ -47,7 +47,25 @@ public final class ChannelConstants {
 			"org.briarproject.zerion/CHANNEL_MANIFEST";
 	public static final String SIGNING_LABEL_POST =
 			"org.briarproject.zerion/CHANNEL_POST";
+	public static final String SIGNING_LABEL_DELEGATION =
+			"org.briarproject.zerion/CHANNEL_DELEGATION";
 
 	public static final long BOOTSTRAP_HMAC_NONCE_BYTES = 16L;
 	public static final long PULL_BATCH_MAX_POSTS = 100L;
+
+	public static final int CONTENT_KEY_BYTES = 32;
+	public static final int CONTENT_KEY_HASH_BYTES = 32;
+	public static final String CONTENT_KEY_WRAP_INFO =
+			"ZERION_CHANNEL_CONTENT_KEY_WRAP";
+
+	public static final int MAX_ACTIVE_DELEGATIONS_PER_CHANNEL = 8;
+
+	public static final String WIRE_TYPE_DELEGATION =
+			"ZERION_CHANNEL_DELEGATION_V1";
+
+	public static final long TTL_OFF = 0L;
+	public static final long TTL_ONE_HOUR_MS = 60L * 60L * 1000L;
+	public static final long TTL_ONE_DAY_MS = 24L * TTL_ONE_HOUR_MS;
+	public static final long TTL_ONE_WEEK_MS = 7L * TTL_ONE_DAY_MS;
+	public static final long TTL_THIRTY_DAYS_MS = 30L * TTL_ONE_DAY_MS;
 }

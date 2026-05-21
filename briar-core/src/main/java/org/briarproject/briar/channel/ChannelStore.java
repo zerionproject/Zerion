@@ -10,6 +10,7 @@ import org.briarproject.bramble.api.data.BdfWriterFactory;
 import org.briarproject.bramble.api.db.DbException;
 import org.briarproject.bramble.api.settings.Settings;
 import org.briarproject.bramble.api.settings.SettingsManager;
+import org.briarproject.briar.api.channel.ChannelDelegationCert;
 import org.briarproject.briar.api.channel.ChannelPost;
 import org.briarproject.briar.api.channel.ChannelState;
 import org.briarproject.nullsafety.NotNullByDefault;
@@ -243,10 +244,54 @@ class ChannelStore {
 		d.put("manifestSeq", s.getManifestSeq());
 		d.put("weArePublisher", s.weArePublisher());
 		d.put("highestKnownPostSeq", s.getHighestKnownPostSeq());
+		if (s.getContentKeyHash() != null) {
+			d.put("contentKeyHash", s.getContentKeyHash());
+		}
+		if (s.getContentKey() != null) {
+			d.put("contentKey", s.getContentKey());
+		}
+		BdfList delegList = new BdfList();
+		for (ChannelDelegationCert c : s.getActiveDelegations()) {
+			BdfDictionary cd = new BdfDictionary();
+			cd.put("channelId", c.getChannelId());
+			cd.put("delegateeEd25519", c.getDelegateeEd25519PubKey());
+			cd.put("delegateeMlDsa", c.getDelegateeMlDsaPubKey());
+			cd.put("validFromHourMs", c.getValidFromHourMs());
+			cd.put("validUntilHourMs", c.getValidUntilHourMs());
+			cd.put("delegationSeq", c.getDelegationSeq());
+			cd.put("signature", c.getSignature());
+			delegList.add(cd);
+		}
+		d.put("activeDelegations", delegList);
+		BdfList revokedList = new BdfList();
+		for (Long seq : s.getRevokedDelegationSeqs()) revokedList.add(seq);
+		d.put("revokedDelegationSeqs", revokedList);
+		d.put("nextDelegationSeq", s.getNextDelegationSeq());
 		return d;
 	}
 
 	private ChannelState dictToState(BdfDictionary d) throws FormatException {
+		List<ChannelDelegationCert> active = new ArrayList<>();
+		BdfList rawActive = d.getList("activeDelegations",
+				new BdfList());
+		for (Object o : rawActive) {
+			if (!(o instanceof BdfDictionary)) continue;
+			BdfDictionary cd = (BdfDictionary) o;
+			active.add(new ChannelDelegationCert(
+					cd.getRaw("channelId"),
+					cd.getRaw("delegateeEd25519"),
+					cd.getRaw("delegateeMlDsa"),
+					cd.getLong("validFromHourMs"),
+					cd.getLong("validUntilHourMs"),
+					cd.getLong("delegationSeq"),
+					cd.getRaw("signature")));
+		}
+		List<Long> revoked = new ArrayList<>();
+		BdfList rawRevoked = d.getList("revokedDelegationSeqs",
+				new BdfList());
+		for (Object o : rawRevoked) {
+			if (o instanceof Long) revoked.add((Long) o);
+		}
 		return new ChannelState(
 				d.getRaw("channelId"),
 				d.getRaw("salt"),
@@ -261,7 +306,12 @@ class ChannelStore {
 				d.getString("currentOnion"),
 				d.getLong("manifestSeq"),
 				d.getBoolean("weArePublisher"),
-				d.getLong("highestKnownPostSeq"));
+				d.getLong("highestKnownPostSeq"),
+				d.getOptionalRaw("contentKeyHash"),
+				d.getOptionalRaw("contentKey"),
+				active,
+				revoked,
+				d.getLong("nextDelegationSeq", 0L));
 	}
 
 	private BdfDictionary postToDict(ChannelPost p) {
@@ -286,6 +336,14 @@ class ChannelStore {
 			atts.add(ad);
 		}
 		d.put("attachments", atts);
+		if (p.getDelegateSignerEd25519PubKey() != null) {
+			d.put("delegateSignerEd25519",
+					p.getDelegateSignerEd25519PubKey());
+		}
+		if (p.getDelegateSignerMlDsaPubKey() != null) {
+			d.put("delegateSignerMlDsa",
+					p.getDelegateSignerMlDsaPubKey());
+		}
 		return d;
 	}
 
@@ -311,7 +369,9 @@ class ChannelStore {
 				atts,
 				d.getLong("ttlMs"),
 				d.getRaw("signature"),
-				d.getBoolean("read"));
+				d.getBoolean("read"),
+				d.getOptionalRaw("delegateSignerEd25519"),
+				d.getOptionalRaw("delegateSignerMlDsa"));
 	}
 
 	private byte[] dictToBytes(BdfDictionary d) {

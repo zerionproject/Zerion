@@ -37,6 +37,25 @@ class ChannelSignatures {
 				signedInput, hybridPrivateKey);
 	}
 
+	@CryptoExecutor
+	byte[] signDelegation(byte[] signedInput, PrivateKey hybridPrivateKey)
+			throws GeneralSecurityException {
+		return crypto.hybridSign(
+				ChannelConstants.SIGNING_LABEL_DELEGATION,
+				signedInput, hybridPrivateKey);
+	}
+
+	boolean verifyDelegation(byte[] signature, byte[] signedInput,
+			PublicKey hybridPublicKey) {
+		try {
+			return crypto.verifyHybridSignature(signature,
+					ChannelConstants.SIGNING_LABEL_DELEGATION,
+					signedInput, hybridPublicKey);
+		} catch (GeneralSecurityException e) {
+			return false;
+		}
+	}
+
 	boolean verifyManifest(byte[] signature, byte[] signedInput,
 			PublicKey hybridPublicKey) {
 		try {

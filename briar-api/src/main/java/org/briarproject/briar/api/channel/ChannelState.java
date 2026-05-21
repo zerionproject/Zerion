@@ -2,6 +2,9 @@ package org.briarproject.briar.api.channel;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
+import java.util.Collections;
+import java.util.List;
+
 import javax.annotation.Nullable;
 
 @NotNullByDefault
@@ -23,6 +26,13 @@ public class ChannelState {
 	private final long manifestSeq;
 	private final boolean weArePublisher;
 	private final long highestKnownPostSeq;
+	@Nullable
+	private final byte[] contentKeyHash;
+	@Nullable
+	private final byte[] contentKey;
+	private final List<ChannelDelegationCert> activeDelegations;
+	private final List<Long> revokedDelegationSeqs;
+	private final long nextDelegationSeq;
 
 	public ChannelState(byte[] channelId, byte[] salt,
 			byte[] publisherEd25519PubKey, byte[] publisherMlDsaPubKey,
@@ -31,6 +41,26 @@ public class ChannelState {
 			@Nullable byte[] joinCapability, String currentOnion,
 			long manifestSeq, boolean weArePublisher,
 			long highestKnownPostSeq) {
+		this(channelId, salt, publisherEd25519PubKey, publisherMlDsaPubKey,
+				name, description, avatarHash, createdAtHourMs,
+				publicChannel, joinCapability, currentOnion, manifestSeq,
+				weArePublisher, highestKnownPostSeq, null, null,
+				Collections.<ChannelDelegationCert>emptyList(),
+				Collections.<Long>emptyList(), 0L);
+	}
+
+	public ChannelState(byte[] channelId, byte[] salt,
+			byte[] publisherEd25519PubKey, byte[] publisherMlDsaPubKey,
+			String name, String description, @Nullable byte[] avatarHash,
+			long createdAtHourMs, boolean publicChannel,
+			@Nullable byte[] joinCapability, String currentOnion,
+			long manifestSeq, boolean weArePublisher,
+			long highestKnownPostSeq,
+			@Nullable byte[] contentKeyHash,
+			@Nullable byte[] contentKey,
+			List<ChannelDelegationCert> activeDelegations,
+			List<Long> revokedDelegationSeqs,
+			long nextDelegationSeq) {
 		this.channelId = channelId;
 		this.salt = salt;
 		this.publisherEd25519PubKey = publisherEd25519PubKey;
@@ -45,6 +75,13 @@ public class ChannelState {
 		this.manifestSeq = manifestSeq;
 		this.weArePublisher = weArePublisher;
 		this.highestKnownPostSeq = highestKnownPostSeq;
+		this.contentKeyHash = contentKeyHash;
+		this.contentKey = contentKey;
+		this.activeDelegations =
+				Collections.unmodifiableList(activeDelegations);
+		this.revokedDelegationSeqs =
+				Collections.unmodifiableList(revokedDelegationSeqs);
+		this.nextDelegationSeq = nextDelegationSeq;
 	}
 
 	public byte[] getChannelId() {
@@ -103,5 +140,27 @@ public class ChannelState {
 
 	public long getHighestKnownPostSeq() {
 		return highestKnownPostSeq;
+	}
+
+	@Nullable
+	public byte[] getContentKeyHash() {
+		return contentKeyHash;
+	}
+
+	@Nullable
+	public byte[] getContentKey() {
+		return contentKey;
+	}
+
+	public List<ChannelDelegationCert> getActiveDelegations() {
+		return activeDelegations;
+	}
+
+	public List<Long> getRevokedDelegationSeqs() {
+		return revokedDelegationSeqs;
+	}
+
+	public long getNextDelegationSeq() {
+		return nextDelegationSeq;
 	}
 }
