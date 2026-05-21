@@ -367,7 +367,36 @@ public class NavDrawerActivity extends ZerionActivity implements
 			startActivity(intent);
 		} else if (currentTab == TAB_GROUPS) {
 			startActivity(GroupTrCreateActivity.intent(this));
+		} else if (currentTab == TAB_CHANNELS) {
+			showChannelsFabMenu();
 		}
+	}
+
+	private void showChannelsFabMenu() {
+		PopupMenu popup = new PopupMenu(this, fabCompose);
+		popup.getMenu().add(0, 1, 0, R.string.channels_action_create);
+		popup.getMenu().add(0, 2, 1, R.string.channels_action_join);
+		popup.setOnMenuItemClickListener(item -> {
+			androidx.fragment.app.Fragment current =
+					getSupportFragmentManager().findFragmentById(
+							R.id.fragmentContainer);
+			if (!(current instanceof
+					com.professor.zerion.android.channel.ChannelListFragment)) {
+				return false;
+			}
+			com.professor.zerion.android.channel.ChannelListFragment f =
+					(com.professor.zerion.android.channel.ChannelListFragment)
+							current;
+			if (item.getItemId() == 1) {
+				f.showCreateDialog();
+				return true;
+			} else if (item.getItemId() == 2) {
+				f.showJoinDialog();
+				return true;
+			}
+			return false;
+		});
+		popup.show();
 	}
 
 	private void lockApp() {
@@ -500,8 +529,10 @@ public class NavDrawerActivity extends ZerionActivity implements
 	private void updateFabVisibilityForFragment(BaseFragment f) {
 		boolean isMainContacts = f instanceof ContactListFragment;
 		boolean isMainGroups = f instanceof GroupTrListFragment;
+		boolean isMainChannels = f instanceof
+				com.professor.zerion.android.channel.ChannelListFragment;
 
-		if (isMainContacts || isMainGroups) {
+		if (isMainContacts || isMainGroups || isMainChannels) {
 			fabCompose.setVisibility(VISIBLE);
 		} else {
 			fabCompose.setVisibility(GONE);

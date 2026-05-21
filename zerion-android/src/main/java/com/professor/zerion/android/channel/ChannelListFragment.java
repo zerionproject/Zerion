@@ -171,7 +171,6 @@ public class ChannelListFragment extends BaseFragment
 				listContainer.addView(buildRow(s, count));
 			}
 		}
-		listContainer.addView(buildActionsCluster());
 	}
 
 	private static String hex(byte[] b) {
@@ -234,33 +233,7 @@ public class ChannelListFragment extends BaseFragment
 		return wrapper;
 	}
 
-	private View buildActionsCluster() {
-		LinearLayout cluster = new LinearLayout(requireContext());
-		cluster.setOrientation(LinearLayout.VERTICAL);
-		cluster.setPadding(dp(16), dp(16), dp(16), dp(16));
-
-		TextView create = new TextView(requireContext());
-		create.setText(R.string.channels_action_create);
-		create.setTextColor(getResources()
-				.getColor(R.color.zerion_primary_accent));
-		create.setTextSize(15);
-		create.setPadding(0, dp(12), 0, dp(12));
-		create.setOnClickListener(v -> showCreateDialog());
-		cluster.addView(create);
-
-		TextView join = new TextView(requireContext());
-		join.setText(R.string.channels_action_join);
-		join.setTextColor(getResources()
-				.getColor(R.color.zerion_primary_accent));
-		join.setTextSize(15);
-		join.setPadding(0, dp(12), 0, dp(12));
-		join.setOnClickListener(v -> showJoinDialog());
-		cluster.addView(join);
-
-		return cluster;
-	}
-
-	private void showCreateDialog() {
+	public void showCreateDialog() {
 		View view = LayoutInflater.from(requireContext()).inflate(
 				R.layout.dialog_create_channel, null);
 		TextInputEditText nameInput =
@@ -312,7 +285,7 @@ public class ChannelListFragment extends BaseFragment
 		});
 	}
 
-	private void showJoinDialog() {
+	public void showJoinDialog() {
 		View view = LayoutInflater.from(requireContext()).inflate(
 				R.layout.dialog_join_channel, null);
 		TextInputEditText linkInput =

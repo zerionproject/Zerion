@@ -299,7 +299,6 @@ public class ChannelFeedActivity extends ZerionActivity
 
 		private final TextView body;
 		private final TextView timestamp;
-		private final TextView seq;
 		private final TextView signerBadge;
 		private final TextView ttlLabel;
 
@@ -307,7 +306,6 @@ public class ChannelFeedActivity extends ZerionActivity
 			super(itemView);
 			body = itemView.findViewById(R.id.channelPostBodyView);
 			timestamp = itemView.findViewById(R.id.channelPostTimestampView);
-			seq = itemView.findViewById(R.id.channelPostSeqView);
 			signerBadge =
 					itemView.findViewById(R.id.channelPostSignerBadge);
 			ttlLabel = itemView.findViewById(R.id.channelPostTtlLabel);
@@ -315,11 +313,10 @@ public class ChannelFeedActivity extends ZerionActivity
 
 		void bind(ChannelPost p) {
 			body.setText(p.getBody());
-			timestamp.setText(DateUtils.getRelativeTimeSpanString(
-					p.getTimestampHourMs(),
-					System.currentTimeMillis(),
-					DateUtils.MINUTE_IN_MILLIS));
-			seq.setText(String.format(Locale.US, "#%d", p.getSeqNum()));
+			timestamp.setText(
+					com.professor.zerion.android.util.UiUtils.formatDate(
+							itemView.getContext(),
+							p.getTimestampHourMs()));
 
 			if (p.signedByDelegate()) {
 				signerBadge.setText(itemView.getContext()
@@ -334,10 +331,8 @@ public class ChannelFeedActivity extends ZerionActivity
 				long expiresAt = p.getTimestampHourMs() + p.getTtlMs();
 				long remaining = expiresAt - System.currentTimeMillis();
 				if (remaining > 0) {
-					ttlLabel.setText(itemView.getContext().getString(
-							R.string.channels_ttl_post_label,
-							formatRemaining(itemView.getContext(),
-									remaining)));
+					ttlLabel.setText(formatRemaining(itemView.getContext(),
+							remaining));
 					ttlLabel.setVisibility(View.VISIBLE);
 				} else {
 					ttlLabel.setVisibility(View.GONE);
