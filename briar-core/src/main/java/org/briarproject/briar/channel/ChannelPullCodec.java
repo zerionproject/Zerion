@@ -111,7 +111,8 @@ class ChannelPullCodec {
 			String currentOnion, long manifestSeq,
 			@Nullable byte[] contentKeyHash,
 			List<ChannelDelegationCert> activeDelegations,
-			List<Long> revokedDelegationSeqs, byte[] signature) {
+			List<Long> revokedDelegationSeqs,
+			long pinnedPostSeq, byte[] signature) {
 		BdfDictionary d = new BdfDictionary();
 		d.put("type", ChannelConstants.WIRE_TYPE_MANIFEST);
 		d.put("channelId", channelId);
@@ -137,6 +138,7 @@ class ChannelPullCodec {
 		BdfList revList = new BdfList();
 		for (Long seq : revokedDelegationSeqs) revList.add(seq);
 		d.put("revokedDelegationSeqs", revList);
+		d.put("pinnedPostSeq", pinnedPostSeq);
 		d.put("signature", signature);
 		return d;
 	}

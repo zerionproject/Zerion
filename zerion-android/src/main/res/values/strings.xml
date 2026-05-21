@@ -300,6 +300,11 @@
 	<string name="channels_invite_inline_join">Join channel</string>
 	<string name="channels_invite_inline_copy">Copy link</string>
 	<string name="channels_invite_inline_copied">Invite link copied</string>
+	<string name="channels_action_pin">Pin to channel</string>
+	<string name="channels_action_unpin">Unpin</string>
+	<string name="channels_action_copy_text">Copy text</string>
+	<string name="channels_pinned_label">PINNED</string>
+	<string name="channels_post_copied">Post copied</string>
 	<string name="vault_button">zVault</string>
 	<!-- This is part of the main menu. The app will be locked when this is tapped. -->
 	<string name="lock_button">Lock App</string>

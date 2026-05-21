@@ -75,8 +75,12 @@ public class ChannelFeedActivity extends ZerionActivity
 	private EditText composeInput;
 	private MaterialButton composeSendButton;
 	private ChipGroup ttlChipGroup;
+	private LinearLayout pinnedBanner;
+	private TextView pinnedBannerText;
+	private android.widget.ImageButton pinnedBannerClose;
 	private PostAdapter adapter;
 	private boolean weArePublisher = false;
+	private long currentPinnedSeq = ChannelState.NO_PINNED_POST;
 
 	@Override
 	public void injectActivity(ActivityComponent component) {
@@ -99,6 +103,9 @@ public class ChannelFeedActivity extends ZerionActivity
 		composeInput = findViewById(R.id.channelComposeInput);
 		composeSendButton = findViewById(R.id.channelComposeSendButton);
 		ttlChipGroup = findViewById(R.id.channelTtlChipGroup);
+		pinnedBanner = findViewById(R.id.channelPinnedBanner);
+		pinnedBannerText = findViewById(R.id.channelPinnedBannerText);
+		pinnedBannerClose = findViewById(R.id.channelPinnedBannerClose);
 
 		setSupportActionBar(toolbar);
 		if (getSupportActionBar() != null) {
@@ -106,7 +113,8 @@ public class ChannelFeedActivity extends ZerionActivity
 		}
 		toolbar.setNavigationOnClickListener(v -> finish());
 
-		adapter = new PostAdapter();
+		adapter = new PostAdapter(post -> showPostMenu(post,
+				post.getSeqNum() == currentPinnedSeq));
 		recycler.setLayoutManager(new LinearLayoutManager(this));
 		recycler.setAdapter(adapter);
 
@@ -221,6 +229,91 @@ public class ChannelFeedActivity extends ZerionActivity
 		composeBar.setVisibility(weArePublisher ? View.VISIBLE : View.GONE);
 		ttlChipGroup.setVisibility(weArePublisher
 				? View.VISIBLE : View.GONE);
+
+		currentPinnedSeq = state.getPinnedPostSeq();
+		bindPinnedBanner(state, posts);
+	}
+
+	private void bindPinnedBanner(ChannelState state,
+			List<ChannelPost> posts) {
+		long pinned = state.getPinnedPostSeq();
+		if (pinned < 0L) {
+			pinnedBanner.setVisibility(View.GONE);
+			return;
+		}
+		ChannelPost target = null;
+		int targetIndex = -1;
+		for (int i = 0; i < posts.size(); i++) {
+			if (posts.get(i).getSeqNum() == pinned) {
+				target = posts.get(i);
+				targetIndex = i;
+				break;
+			}
+		}
+		if (target == null) {
+			pinnedBanner.setVisibility(View.GONE);
+			return;
+		}
+		pinnedBanner.setVisibility(View.VISIBLE);
+		pinnedBannerText.setText(target.getBody());
+		final int idx = targetIndex;
+		pinnedBanner.setOnClickListener(v ->
+				recycler.smoothScrollToPosition(idx));
+		pinnedBannerClose.setVisibility(
+				weArePublisher ? View.VISIBLE : View.GONE);
+		pinnedBannerClose.setOnClickListener(v -> handleUnpin());
+	}
+
+	private void handlePin(long seqNum) {
+		ioExecutor.execute(() -> {
+			try {
+				channelManager.pinPost(channelId, seqNum);
+				runOnUiThread(this::loadChannel);
+			} catch (DbException ignored) {
+			}
+		});
+	}
+
+	private void handleUnpin() {
+		ioExecutor.execute(() -> {
+			try {
+				channelManager.unpinPost(channelId);
+				runOnUiThread(this::loadChannel);
+			} catch (DbException ignored) {
+			}
+		});
+	}
+
+	private void showPostMenu(ChannelPost post, boolean isPinned) {
+		java.util.List<CharSequence> labels = new java.util.ArrayList<>();
+		java.util.List<Runnable> actions = new java.util.ArrayList<>();
+		if (weArePublisher) {
+			if (isPinned) {
+				labels.add(getString(R.string.channels_action_unpin));
+				actions.add(this::handleUnpin);
+			} else {
+				labels.add(getString(R.string.channels_action_pin));
+				actions.add(() -> handlePin(post.getSeqNum()));
+			}
+		}
+		labels.add(getString(R.string.channels_action_copy_text));
+		actions.add(() -> copyPostText(post));
+		new com.google.android.material.dialog.MaterialAlertDialogBuilder(
+				this)
+				.setItems(labels.toArray(new CharSequence[0]),
+						(d, which) -> actions.get(which).run())
+				.show();
+	}
+
+	private void copyPostText(ChannelPost post) {
+		android.content.ClipboardManager cm =
+				(android.content.ClipboardManager) getSystemService(
+						android.content.Context.CLIPBOARD_SERVICE);
+		if (cm == null) return;
+		cm.setPrimaryClip(android.content.ClipData.newPlainText(
+				"zerion-channel-post", post.getBody()));
+		Toast.makeText(this, R.string.channels_post_copied,
+				Toast.LENGTH_SHORT).show();
 	}
 
 	private long readSelectedTtlSeconds() {
@@ -267,7 +360,16 @@ public class ChannelFeedActivity extends ZerionActivity
 	private static class PostAdapter
 			extends RecyclerView.Adapter<PostViewHolder> {
 
+		interface OnPostLongPress {
+			void onPostLongPress(ChannelPost post);
+		}
+
 		private List<ChannelPost> posts = new ArrayList<>();
+		private final OnPostLongPress longPressListener;
+
+		PostAdapter(OnPostLongPress longPressListener) {
+			this.longPressListener = longPressListener;
+		}
 
 		void setPosts(List<ChannelPost> p) {
 			this.posts = p;
@@ -286,7 +388,12 @@ public class ChannelFeedActivity extends ZerionActivity
 		@Override
 		public void onBindViewHolder(@NonNull PostViewHolder holder,
 				int position) {
-			holder.bind(posts.get(position));
+			ChannelPost p = posts.get(position);
+			holder.bind(p);
+			holder.itemView.setOnLongClickListener(v -> {
+				longPressListener.onPostLongPress(p);
+				return true;
+			});
 		}
 
 		@Override

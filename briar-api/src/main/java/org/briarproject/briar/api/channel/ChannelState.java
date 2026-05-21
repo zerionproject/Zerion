@@ -35,6 +35,9 @@ public class ChannelState {
 	private final long nextDelegationSeq;
 	@Nullable
 	private final String onionPrivateKey;
+	private final long pinnedPostSeq;
+
+	public static final long NO_PINNED_POST = -1L;
 
 	public ChannelState(byte[] channelId, byte[] salt,
 			byte[] publisherEd25519PubKey, byte[] publisherMlDsaPubKey,
@@ -48,7 +51,7 @@ public class ChannelState {
 				publicChannel, joinCapability, currentOnion, manifestSeq,
 				weArePublisher, highestKnownPostSeq, null, null,
 				Collections.<ChannelDelegationCert>emptyList(),
-				Collections.<Long>emptyList(), 0L, null);
+				Collections.<Long>emptyList(), 0L, null, NO_PINNED_POST);
 	}
 
 	public ChannelState(byte[] channelId, byte[] salt,
@@ -68,7 +71,7 @@ public class ChannelState {
 				publicChannel, joinCapability, currentOnion, manifestSeq,
 				weArePublisher, highestKnownPostSeq, contentKeyHash,
 				contentKey, activeDelegations, revokedDelegationSeqs,
-				nextDelegationSeq, null);
+				nextDelegationSeq, null, NO_PINNED_POST);
 	}
 
 	public ChannelState(byte[] channelId, byte[] salt,
@@ -84,6 +87,28 @@ public class ChannelState {
 			List<Long> revokedDelegationSeqs,
 			long nextDelegationSeq,
 			@Nullable String onionPrivateKey) {
+		this(channelId, salt, publisherEd25519PubKey, publisherMlDsaPubKey,
+				name, description, avatarHash, createdAtHourMs,
+				publicChannel, joinCapability, currentOnion, manifestSeq,
+				weArePublisher, highestKnownPostSeq, contentKeyHash,
+				contentKey, activeDelegations, revokedDelegationSeqs,
+				nextDelegationSeq, onionPrivateKey, NO_PINNED_POST);
+	}
+
+	public ChannelState(byte[] channelId, byte[] salt,
+			byte[] publisherEd25519PubKey, byte[] publisherMlDsaPubKey,
+			String name, String description, @Nullable byte[] avatarHash,
+			long createdAtHourMs, boolean publicChannel,
+			@Nullable byte[] joinCapability, String currentOnion,
+			long manifestSeq, boolean weArePublisher,
+			long highestKnownPostSeq,
+			@Nullable byte[] contentKeyHash,
+			@Nullable byte[] contentKey,
+			List<ChannelDelegationCert> activeDelegations,
+			List<Long> revokedDelegationSeqs,
+			long nextDelegationSeq,
+			@Nullable String onionPrivateKey,
+			long pinnedPostSeq) {
 		this.channelId = channelId;
 		this.salt = salt;
 		this.publisherEd25519PubKey = publisherEd25519PubKey;
@@ -106,6 +131,11 @@ public class ChannelState {
 				Collections.unmodifiableList(revokedDelegationSeqs);
 		this.nextDelegationSeq = nextDelegationSeq;
 		this.onionPrivateKey = onionPrivateKey;
+		this.pinnedPostSeq = pinnedPostSeq;
+	}
+
+	public long getPinnedPostSeq() {
+		return pinnedPostSeq;
 	}
 
 	@Nullable

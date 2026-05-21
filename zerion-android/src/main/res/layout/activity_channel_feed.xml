@@ -19,6 +19,69 @@
 		tools:title="Civil Society Watch"
 		tools:subtitle="Public channel" />
 
+	<LinearLayout
+		android:id="@+id/channelPinnedBanner"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:background="?attr/selectableItemBackground"
+		android:clickable="true"
+		android:focusable="true"
+		android:gravity="center_vertical"
+		android:orientation="horizontal"
+		android:paddingStart="16dp"
+		android:paddingEnd="8dp"
+		android:paddingTop="10dp"
+		android:paddingBottom="10dp"
+		android:visibility="gone"
+		app:layout_constraintTop_toBottomOf="@+id/channelFeedToolbar"
+		tools:visibility="visible">
+
+		<View
+			android:layout_width="3dp"
+			android:layout_height="32dp"
+			android:layout_marginEnd="10dp"
+			android:background="@color/zerion_primary_accent" />
+
+		<LinearLayout
+			android:layout_width="0dp"
+			android:layout_height="wrap_content"
+			android:layout_weight="1"
+			android:orientation="vertical">
+
+			<TextView
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:text="@string/channels_pinned_label"
+				android:textColor="@color/zerion_primary_accent"
+				android:textSize="11sp"
+				android:textStyle="bold" />
+
+			<TextView
+				android:id="@+id/channelPinnedBannerText"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:ellipsize="end"
+				android:maxLines="1"
+				android:textColor="@color/zerion_text_primary"
+				android:textSize="14sp"
+				tools:text="Today's notes: the new disclosure rules drop on Friday." />
+
+		</LinearLayout>
+
+		<ImageButton
+			android:id="@+id/channelPinnedBannerClose"
+			android:layout_width="40dp"
+			android:layout_height="40dp"
+			android:background="?attr/selectableItemBackgroundBorderless"
+			android:contentDescription="@string/channels_action_unpin"
+			android:padding="10dp"
+			android:src="@drawable/ic_close"
+			android:visibility="gone"
+			app:tint="@color/zerion_text_secondary"
+			tools:visibility="visible" />
+
+	</LinearLayout>
+
 	<androidx.recyclerview.widget.RecyclerView
 		android:id="@+id/channelFeedRecycler"
 		android:layout_width="match_parent"
@@ -28,7 +91,7 @@
 		android:paddingBottom="12dp"
 		android:scrollbars="none"
 		app:layout_constraintBottom_toTopOf="@+id/channelComposeBar"
-		app:layout_constraintTop_toBottomOf="@+id/channelFeedToolbar" />
+		app:layout_constraintTop_toBottomOf="@+id/channelPinnedBanner" />
 
 	<TextView
 		android:id="@+id/channelFeedEmptyView"

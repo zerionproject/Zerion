@@ -270,6 +270,7 @@ class ChannelStore {
 		if (s.getOnionPrivateKey() != null) {
 			d.put("onionPrivateKey", s.getOnionPrivateKey());
 		}
+		d.put("pinnedPostSeq", s.getPinnedPostSeq());
 		return d;
 	}
 
@@ -315,7 +316,9 @@ class ChannelStore {
 				active,
 				revoked,
 				d.getLong("nextDelegationSeq", 0L),
-				d.getOptionalString("onionPrivateKey"));
+				d.getOptionalString("onionPrivateKey"),
+				d.getLong("pinnedPostSeq",
+						ChannelState.NO_PINNED_POST));
 	}
 
 	private BdfDictionary postToDict(ChannelPost p) {

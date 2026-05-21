@@ -43,7 +43,8 @@ class ChannelCodec {
 			String currentOnion, long manifestSeq,
 			@Nullable byte[] contentKeyHash,
 			List<ChannelDelegationCert> activeDelegations,
-			List<Long> revokedDelegationSeqs) {
+			List<Long> revokedDelegationSeqs,
+			long pinnedPostSeq) {
 		byte[] nameHash = crypto.hash(LABEL_MANIFEST_NAME,
 				name.getBytes(StandardCharsets.UTF_8));
 		byte[] descHash = crypto.hash(LABEL_MANIFEST_DESC,
@@ -73,7 +74,8 @@ class ChannelCodec {
 						+ 4 + onionBytes.length + 8
 						+ 1 + contentKeyHashBytes.length
 						+ delegationsHash.length
-						+ revokedHash.length);
+						+ revokedHash.length
+						+ 8);
 		buf.put(channelId);
 		buf.put(salt);
 		buf.put(publisherEd25519Pub);
@@ -93,6 +95,7 @@ class ChannelCodec {
 		buf.put(contentKeyHashBytes);
 		buf.put(delegationsHash);
 		buf.put(revokedHash);
+		buf.putLong(pinnedPostSeq);
 		return buf.array();
 	}
 
