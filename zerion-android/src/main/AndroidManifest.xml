@@ -96,12 +96,12 @@
 		<activity
 			android:name="com.professor.zerion.android.channel.ChannelFeedActivity"
 			android:exported="false"
-			android:theme="@style/ZerionTheme" />
+			android:theme="@style/ZerionTheme.NoActionBar" />
 
 		<activity
 			android:name="com.professor.zerion.android.channel.ChannelDelegationsActivity"
 			android:exported="false"
-			android:theme="@style/ZerionTheme" />
+			android:theme="@style/ZerionTheme.NoActionBar" />
 
 		<service
 			android:name="com.professor.zerion.android.NotificationCleanupService"
