@@ -119,9 +119,13 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 			if (item.getText().startsWith("[VOICE:")) {
 				text.setText("");
 			} else {
-				text.setText(trim(item.getText()));
-				Linkify.addLinks(text, Linkify.WEB_URLS);
-				makeLinksClickable(text, listener::onLinkClick);
+				String body = trim(item.getText());
+				if (!com.professor.zerion.android.channel
+						.ChannelInviteSpanUtil.apply(text, body)) {
+					text.setText(body);
+					Linkify.addLinks(text, Linkify.WEB_URLS);
+					makeLinksClickable(text, listener::onLinkClick);
+				}
 			}
 		}
 

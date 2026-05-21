@@ -525,7 +525,10 @@ public class GroupTrConversationActivity extends ZerionActivity
 		}
 		TextView body = row.findViewById(R.id.postText);
 		TextView time = row.findViewById(R.id.postTime);
-		body.setText(parsed.text);
+		if (!com.professor.zerion.android.channel.ChannelInviteSpanUtil
+				.apply(body, parsed.text)) {
+			body.setText(parsed.text);
+		}
 		time.setText(tsFmt.format(new Date(p.getTimestamp())));
 		postsContainer.addView(row);
 	}
