@@ -681,6 +681,41 @@ class ChannelPullCodec {
 		}
 	}
 
+	byte[] encodeTombstone(byte[] channelId, long timestampHourMs,
+			byte[] hybridSig) throws IOException {
+		BdfDictionary d = new BdfDictionary();
+		d.put("type", ChannelConstants.WIRE_TYPE_CHANNEL_TOMBSTONE);
+		d.put("channelId", channelId);
+		d.put("ts", timestampHourMs);
+		d.put("sig", hybridSig);
+		return writeDict(d);
+	}
+
+	Tombstone decodeTombstone(byte[] data) throws IOException {
+		BdfDictionary d = readDict(data);
+		String type = d.getString("type");
+		if (!ChannelConstants.WIRE_TYPE_CHANNEL_TOMBSTONE.equals(type)) {
+			throw new FormatException();
+		}
+		return new Tombstone(d.getRaw("channelId"),
+				d.getLong("ts"),
+				d.getRaw("sig"));
+	}
+
+	@NotNullByDefault
+	static final class Tombstone {
+		final byte[] channelId;
+		final long timestampHourMs;
+		final byte[] hybridSig;
+
+		Tombstone(byte[] channelId, long timestampHourMs,
+				byte[] hybridSig) {
+			this.channelId = channelId;
+			this.timestampHourMs = timestampHourMs;
+			this.hybridSig = hybridSig;
+		}
+	}
+
 	private byte[] writeDict(BdfDictionary d) throws IOException {
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		BdfWriter w = writerFactory.createWriter(out);

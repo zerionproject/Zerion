@@ -66,6 +66,7 @@ class ChannelManagerImpl
 	private final ChannelCommentStore commentStore;
 	private final ChannelApplicationStore applicationStore;
 	private final ChannelMyApplicationsStore myApplicationsStore;
+	private final ChannelTombstoneStore tombstoneStore;
 	private final IdentityManager identityManager;
 	private final TaskScheduler taskScheduler;
 	private final java.util.concurrent.Executor ioExecutor;
@@ -98,6 +99,7 @@ class ChannelManagerImpl
 			ChannelCommentStore commentStore,
 			ChannelApplicationStore applicationStore,
 			ChannelMyApplicationsStore myApplicationsStore,
+			ChannelTombstoneStore tombstoneStore,
 			IdentityManager identityManager,
 			TaskScheduler taskScheduler,
 			@IoExecutor java.util.concurrent.Executor ioExecutor) {
@@ -118,6 +120,7 @@ class ChannelManagerImpl
 		this.commentStore = commentStore;
 		this.applicationStore = applicationStore;
 		this.myApplicationsStore = myApplicationsStore;
+		this.tombstoneStore = tombstoneStore;
 		this.identityManager = identityManager;
 		this.taskScheduler = taskScheduler;
 		this.ioExecutor = ioExecutor;
@@ -347,6 +350,11 @@ class ChannelManagerImpl
 
 	private byte[] handlePublisherRequest(byte[] channelId,
 			byte[] requestBytes) {
+		try {
+			byte[] tombstone = tombstoneStore.get(channelId);
+			if (tombstone != null) return tombstone;
+		} catch (DbException ignored) {
+		}
 		String wireType = pullCodec().peekType(requestBytes);
 		if (ChannelConstants.WIRE_TYPE_GET_ATTACHMENT.equals(wireType)) {
 			return handleAttachmentFetch(channelId, requestBytes);
@@ -506,6 +514,12 @@ class ChannelManagerImpl
 		} catch (IOException e) {
 			throw new DbException(e);
 		}
+		if (ChannelConstants.WIRE_TYPE_CHANNEL_TOMBSTONE.equals(
+				pullCodec().peekType(responseBytes))) {
+			if (applyTombstoneIfValid(s, responseBytes)) {
+				return;
+			}
+		}
 		java.util.List<ChannelPost> existing =
 				store.getPosts(channelId);
 		ChannelPullProtocol.ProcessResult r =
@@ -532,6 +546,29 @@ class ChannelManagerImpl
 		}
 		fireEvent(channelId,
 				ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+	}
+
+	private boolean applyTombstoneIfValid(ChannelState s,
+			byte[] tombstoneBytes) throws DbException {
+		ChannelPullCodec.Tombstone tomb;
+		try {
+			tomb = pullCodec().decodeTombstone(tombstoneBytes);
+		} catch (IOException e) {
+			return false;
+		}
+		if (!java.util.Arrays.equals(tomb.channelId, s.getChannelId())) {
+			return false;
+		}
+		byte[] signedInput = codec.tombstoneSignedInput(
+				s.getChannelId(), tomb.timestampHourMs);
+		HybridSignaturePublicKey pub = new HybridSignaturePublicKey(
+				s.getPublisherEd25519PubKey(),
+				s.getPublisherMlDsaPubKey());
+		if (!signatures.verifyTombstone(tomb.hybridSig, signedInput, pub)) {
+			return false;
+		}
+		removeChannelLocally(s.getChannelId());
+		return true;
 	}
 
 	private void applyIncomingReactions(byte[] channelId,
@@ -596,6 +633,14 @@ class ChannelManagerImpl
 
 	@Override
 	public void deleteChannel(byte[] channelId) throws DbException {
+		ChannelState s = store.getChannel(channelId);
+		if (s != null && s.weArePublisher()) {
+			publishTombstone(s);
+		}
+		removeChannelLocally(channelId);
+	}
+
+	private void removeChannelLocally(byte[] channelId) throws DbException {
 		store.removeChannel(channelId);
 		blobStore.removeAllForChannel(channelId);
 		reactionStore.removeAll(channelId);
@@ -604,6 +649,30 @@ class ChannelManagerImpl
 		applicationStore.removeAll(channelId);
 		myApplicationsStore.remove(channelId);
 		fireEvent(channelId, ChannelStateChangedEvent.Kind.LEFT);
+	}
+
+	private void publishTombstone(ChannelState s) throws DbException {
+		long ts = clock.currentTimeMillis();
+		byte[] signedInput = codec.tombstoneSignedInput(
+				s.getChannelId(), ts);
+		byte[] privEncoded = store.getPublisherPrivKey(s.getChannelId());
+		if (privEncoded == null) return;
+		byte[] hybridSig;
+		try {
+			HybridSignaturePrivateKey priv =
+					new HybridSignaturePrivateKey(privEncoded);
+			hybridSig = signatures.signTombstone(signedInput, priv);
+		} catch (GeneralSecurityException e) {
+			return;
+		}
+		byte[] tombstoneBytes;
+		try {
+			tombstoneBytes = pullCodec().encodeTombstone(
+					s.getChannelId(), ts, hybridSig);
+		} catch (IOException e) {
+			return;
+		}
+		tombstoneStore.put(s.getChannelId(), tombstoneBytes);
 	}
 
 	@Override
@@ -678,14 +747,7 @@ class ChannelManagerImpl
 
 	@Override
 	public void leaveChannel(byte[] channelId) throws DbException {
-		store.removeChannel(channelId);
-		blobStore.removeAllForChannel(channelId);
-		reactionStore.removeAll(channelId);
-		subscriberStore.removeAll(channelId);
-		commentStore.removeAll(channelId);
-		applicationStore.removeAll(channelId);
-		myApplicationsStore.remove(channelId);
-		fireEvent(channelId, ChannelStateChangedEvent.Kind.LEFT);
+		deleteChannel(channelId);
 	}
 
 	@Override

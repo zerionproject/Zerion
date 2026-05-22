@@ -110,6 +110,13 @@ public final class ChannelConstants {
 	public static final int MAX_PENDING_APPLICATIONS = 256;
 	public static final String INVITE_LINK_APPROVAL_PARAM = "p";
 
+	public static final String WIRE_TYPE_CHANNEL_TOMBSTONE =
+			"ZERION_CHANNEL_TOMBSTONE_V1";
+	public static final String SIGNING_LABEL_CHANNEL_TOMBSTONE =
+			"org.briarproject.zerion/CHANNEL_TOMBSTONE";
+	public static final String SETTINGS_NAMESPACE_TOMBSTONES =
+			"zerion-channels-tombstones";
+
 	public static final long TTL_OFF = 0L;
 	public static final long TTL_ONE_HOUR_MS = 60L * 60L * 1000L;
 	public static final long TTL_ONE_DAY_MS = 24L * TTL_ONE_HOUR_MS;

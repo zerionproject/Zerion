@@ -273,6 +273,10 @@
 	<string name="channels_leave_confirm_title">Leave channel?</string>
 	<string name="channels_leave_confirm_message">All locally cached posts for this channel will be removed from your device.</string>
 	<string name="channels_leave_confirm_action">Leave</string>
+	<string name="channels_delete_confirm_title">Delete channel?</string>
+	<string name="channels_delete_confirm_message">This permanently deletes the channel for everyone. Subscribers will lose all posts the next time they connect. There is no undo.</string>
+	<string name="channels_delete_confirm_action">Delete for everyone</string>
+	<string name="channels_action_delete_channel">Delete channel</string>
 	<string name="channels_publisher_offline_note">Subscribers will receive your posts when their app reaches your channel\'s onion. Keep Zerion running for best delivery.</string>
 	<string name="channels_ttl_label">Expire</string>
 	<string name="channels_ttl_off">Off</string>

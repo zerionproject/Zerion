@@ -433,8 +433,13 @@ public class ChannelListFragment extends BaseFragment
 			actions.add(() -> showAnnounceDialog(s));
 		}
 
-		labels.add(getString(R.string.channels_action_leave));
-		actions.add(() -> confirmLeave(s));
+		if (s.weArePublisher()) {
+			labels.add(getString(R.string.channels_action_delete_channel));
+			actions.add(() -> confirmDelete(s));
+		} else {
+			labels.add(getString(R.string.channels_action_leave));
+			actions.add(() -> confirmLeave(s));
+		}
 
 		new MaterialAlertDialogBuilder(requireContext())
 				.setTitle(s.getName())
@@ -552,6 +557,16 @@ public class ChannelListFragment extends BaseFragment
 				.setTitle(R.string.channels_leave_confirm_title)
 				.setMessage(R.string.channels_leave_confirm_message)
 				.setPositiveButton(R.string.channels_leave_confirm_action,
+						(d, w) -> doLeave(s))
+				.setNegativeButton(android.R.string.cancel, null)
+				.show();
+	}
+
+	private void confirmDelete(ChannelState s) {
+		new MaterialAlertDialogBuilder(requireContext())
+				.setTitle(R.string.channels_delete_confirm_title)
+				.setMessage(R.string.channels_delete_confirm_message)
+				.setPositiveButton(R.string.channels_delete_confirm_action,
 						(d, w) -> doLeave(s))
 				.setNegativeButton(android.R.string.cancel, null)
 				.show();

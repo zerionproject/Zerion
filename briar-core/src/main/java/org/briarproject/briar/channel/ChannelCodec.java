@@ -175,6 +175,13 @@ class ChannelCodec {
 		return buf.array();
 	}
 
+	byte[] tombstoneSignedInput(byte[] channelId, long timestampHourMs) {
+		ByteBuffer buf = ByteBuffer.allocate(channelId.length + 8);
+		buf.put(channelId);
+		buf.putLong(timestampHourMs);
+		return buf.array();
+	}
+
 	byte[] commentSignedInput(byte[] channelId, long parentPostSeqNum,
 			long commentId, String body, String authorName,
 			long timestampHourMs) {

@@ -173,4 +173,23 @@ class ChannelSignatures {
 			return false;
 		}
 	}
+
+	@CryptoExecutor
+	byte[] signTombstone(byte[] signedInput, PrivateKey hybridPrivateKey)
+			throws GeneralSecurityException {
+		return crypto.hybridSign(
+				ChannelConstants.SIGNING_LABEL_CHANNEL_TOMBSTONE,
+				signedInput, hybridPrivateKey);
+	}
+
+	boolean verifyTombstone(byte[] signature, byte[] signedInput,
+			PublicKey hybridPublicKey) {
+		try {
+			return crypto.verifyHybridSignature(signature,
+					ChannelConstants.SIGNING_LABEL_CHANNEL_TOMBSTONE,
+					signedInput, hybridPublicKey);
+		} catch (GeneralSecurityException e) {
+			return false;
+		}
+	}
 }
