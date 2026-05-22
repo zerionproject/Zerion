@@ -96,4 +96,23 @@ class ChannelSignatures {
 			return false;
 		}
 	}
+
+	@CryptoExecutor
+	byte[] signAnnounce(byte[] signedInput, PrivateKey hybridPrivateKey)
+			throws GeneralSecurityException {
+		return crypto.hybridSign(
+				ChannelConstants.SIGNING_LABEL_ANNOUNCE,
+				signedInput, hybridPrivateKey);
+	}
+
+	boolean verifyAnnounce(byte[] signature, byte[] signedInput,
+			PublicKey hybridPublicKey) {
+		try {
+			return crypto.verifyHybridSignature(signature,
+					ChannelConstants.SIGNING_LABEL_ANNOUNCE,
+					signedInput, hybridPublicKey);
+		} catch (GeneralSecurityException e) {
+			return false;
+		}
+	}
 }

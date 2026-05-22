@@ -356,11 +356,20 @@ public class ChannelListFragment extends BaseFragment
 			actions.add(() -> startActivity(
 					ChannelDelegationsActivity.intent(
 							requireContext(), s.getChannelId())));
+			labels.add(getString(R.string.channels_subscribers_title));
+			actions.add(() -> startActivity(
+					ChannelSubscribersActivity.intent(
+							requireContext(), s.getChannelId())));
 		}
 
 		if (s.weArePublisher() && !s.isPublicChannel()) {
 			labels.add(getString(R.string.channels_action_rotate_capability));
 			actions.add(() -> confirmRotate(s));
+		}
+
+		if (!s.weArePublisher()) {
+			labels.add(getString(R.string.channels_announce_action));
+			actions.add(() -> showAnnounceDialog(s));
 		}
 
 		labels.add(getString(R.string.channels_action_leave));
@@ -371,6 +380,44 @@ public class ChannelListFragment extends BaseFragment
 				.setItems(labels.toArray(new CharSequence[0]),
 						(d, which) -> actions.get(which).run())
 				.show();
+	}
+
+	private void showAnnounceDialog(ChannelState s) {
+		View view = LayoutInflater.from(requireContext()).inflate(
+				R.layout.dialog_announce_channel, null);
+		TextInputEditText nameInput =
+				view.findViewById(R.id.channelAnnounceNameInput);
+		new MaterialAlertDialogBuilder(requireContext())
+				.setTitle(R.string.channels_announce_title)
+				.setMessage(R.string.channels_announce_message)
+				.setView(view)
+				.setPositiveButton(R.string.channels_announce_action,
+						(d, w) -> handleAnnounce(s, nameInput))
+				.setNegativeButton(R.string.channels_announce_skip, null)
+				.show();
+	}
+
+	private void handleAnnounce(ChannelState s,
+			TextInputEditText nameInput) {
+		String name = nameInput.getText() == null
+				? "" : nameInput.getText().toString().trim();
+		if (name.isEmpty()) {
+			Toast.makeText(requireContext(),
+					R.string.channels_announce_failed,
+					Toast.LENGTH_SHORT).show();
+			return;
+		}
+		ioExecutor.execute(() -> {
+			try {
+				channelManager.announceMyself(s.getChannelId(), name);
+			} catch (DbException ignored) {
+				if (!isAdded()) return;
+				requireActivity().runOnUiThread(() ->
+						Toast.makeText(requireContext(),
+								R.string.channels_announce_failed,
+								Toast.LENGTH_LONG).show());
+			}
+		});
 	}
 
 	private void shareInvite(ChannelState s) {

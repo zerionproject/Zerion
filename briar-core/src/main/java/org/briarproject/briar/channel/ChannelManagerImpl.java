@@ -22,6 +22,7 @@ import org.briarproject.briar.api.channel.ChannelInviteLink;
 import org.briarproject.briar.api.channel.ChannelManager;
 import org.briarproject.briar.api.channel.ChannelPost;
 import org.briarproject.briar.api.channel.ChannelState;
+import org.briarproject.briar.api.channel.ChannelSubscriber;
 import org.briarproject.briar.api.channel.ChannelTransport;
 import org.briarproject.briar.api.channel.event.ChannelPostReceivedEvent;
 import org.briarproject.briar.api.channel.event.ChannelStateChangedEvent;
@@ -59,6 +60,7 @@ class ChannelManagerImpl
 	private final ChannelTransport transport;
 	private final ChannelBlobStore blobStore;
 	private final ChannelReactionStore reactionStore;
+	private final ChannelSubscriberStore subscriberStore;
 	private final IdentityManager identityManager;
 	private final TaskScheduler taskScheduler;
 	private final java.util.concurrent.Executor ioExecutor;
@@ -87,6 +89,7 @@ class ChannelManagerImpl
 			ChannelTransport transport,
 			ChannelBlobStore blobStore,
 			ChannelReactionStore reactionStore,
+			ChannelSubscriberStore subscriberStore,
 			IdentityManager identityManager,
 			TaskScheduler taskScheduler,
 			@IoExecutor java.util.concurrent.Executor ioExecutor) {
@@ -103,6 +106,7 @@ class ChannelManagerImpl
 		this.transport = transport;
 		this.blobStore = blobStore;
 		this.reactionStore = reactionStore;
+		this.subscriberStore = subscriberStore;
 		this.identityManager = identityManager;
 		this.taskScheduler = taskScheduler;
 		this.ioExecutor = ioExecutor;
@@ -327,6 +331,9 @@ class ChannelManagerImpl
 		if (ChannelConstants.WIRE_TYPE_POST_REACTION.equals(wireType)) {
 			return handleReactionRequest(channelId, requestBytes);
 		}
+		if (ChannelConstants.WIRE_TYPE_ANNOUNCE.equals(wireType)) {
+			return handleAnnounceRequest(channelId, requestBytes);
+		}
 		try {
 			ChannelPullCodec.PullRequest req = pullCodec()
 					.decodePullRequest(requestBytes);
@@ -539,6 +546,7 @@ class ChannelManagerImpl
 		store.removeChannel(channelId);
 		blobStore.removeAllForChannel(channelId);
 		reactionStore.removeAll(channelId);
+		subscriberStore.removeAll(channelId);
 		fireEvent(channelId, ChannelStateChangedEvent.Kind.LEFT);
 	}
 
@@ -608,6 +616,7 @@ class ChannelManagerImpl
 		store.removeChannel(channelId);
 		blobStore.removeAllForChannel(channelId);
 		reactionStore.removeAll(channelId);
+		subscriberStore.removeAll(channelId);
 		fireEvent(channelId, ChannelStateChangedEvent.Kind.LEFT);
 	}
 
@@ -1143,6 +1152,125 @@ class ChannelManagerImpl
 		}
 		return new org.briarproject.briar.api.channel.AttachmentBlob(
 				plaintext, target.getMimeType());
+	}
+
+	@Override
+	public void announceMyself(byte[] channelId, String displayName)
+			throws DbException {
+		String trimmed = displayName.trim();
+		if (trimmed.isEmpty()
+				|| trimmed.getBytes(
+						java.nio.charset.StandardCharsets.UTF_8).length
+						> ChannelConstants.MAX_DISPLAY_NAME_BYTES) {
+			throw new DbException();
+		}
+		ChannelState s = store.getChannel(channelId);
+		if (s == null) throw new DbException();
+		LocalAuthor me = identityManager.getLocalAuthor();
+		byte[] hybridPubEncoded = me.getPublicKey().getEncoded();
+		byte[] signerEd = new byte[32];
+		byte[] signerMl = new byte[hybridPubEncoded.length - 32];
+		System.arraycopy(hybridPubEncoded, 0, signerEd, 0, 32);
+		System.arraycopy(hybridPubEncoded, 32, signerMl, 0,
+				signerMl.length);
+		long ts = clock.currentTimeMillis() / HOUR_MS * HOUR_MS;
+		byte[] signedInput = codec.announceSignedInput(channelId,
+				trimmed, ts);
+		byte[] sig;
+		try {
+			sig = signatures.signAnnounce(signedInput, me.getPrivateKey());
+		} catch (GeneralSecurityException ex) {
+			throw new DbException(ex);
+		}
+		ChannelSubscriber row = new ChannelSubscriber(trimmed, signerEd,
+				signerMl, ts, false);
+		if (s.weArePublisher()) {
+			subscriberStore.putSubscriber(channelId, row);
+			fireEvent(channelId,
+					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+			return;
+		}
+		try {
+			byte[] reqBytes = pullCodec().encodeAnnounceRequest(
+					channelId, trimmed, ts, signerEd, signerMl, sig);
+			transport.requestFromOnion(s.getCurrentOnion(), reqBytes);
+			subscriberStore.putSubscriber(channelId, row);
+			fireEvent(channelId,
+					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+		} catch (IOException ex) {
+			throw new DbException(ex);
+		}
+	}
+
+	@Override
+	public java.util.List<ChannelSubscriber> getAnnouncedSubscribers(
+			byte[] channelId) throws DbException {
+		return subscriberStore.getSubscribers(channelId);
+	}
+
+	@Override
+	public void banSubscriber(byte[] channelId, byte[] ed25519PubKey)
+			throws DbException {
+		ChannelState s = store.getChannel(channelId);
+		if (s == null) throw new DbException();
+		if (!s.weArePublisher()) throw new DbException();
+		subscriberStore.setBanned(channelId, ed25519PubKey, true);
+		if (!s.isPublicChannel()) {
+			rotateJoinCapability(channelId);
+		}
+		fireEvent(channelId,
+				ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+	}
+
+	private byte[] handleAnnounceRequest(byte[] channelId,
+			byte[] requestBytes) {
+		try {
+			ChannelPullCodec.AnnounceRequest req = pullCodec()
+					.decodeAnnounceRequest(requestBytes);
+			if (!java.util.Arrays.equals(req.channelId, channelId)) {
+				return safeAnnounceAck(false);
+			}
+			if (req.displayName.isEmpty()
+					|| req.displayName.getBytes(
+							java.nio.charset.StandardCharsets.UTF_8).length
+					> ChannelConstants.MAX_DISPLAY_NAME_BYTES) {
+				return safeAnnounceAck(false);
+			}
+			byte[] signedInput = codec.announceSignedInput(channelId,
+					req.displayName, req.timestampHourMs);
+			org.briarproject.bramble.api.crypto.HybridSignaturePublicKey
+					pub = new org.briarproject.bramble.api.crypto
+					.HybridSignaturePublicKey(req.signerEd25519,
+							req.signerMlDsa);
+			if (!signatures.verifyAnnounce(req.signature, signedInput,
+					pub)) {
+				return safeAnnounceAck(false);
+			}
+			if (subscriberStore.isBanned(channelId, req.signerEd25519)) {
+				return safeAnnounceAck(false);
+			}
+			java.util.List<ChannelSubscriber> existing =
+					subscriberStore.getSubscribers(channelId);
+			if (existing.size()
+					>= ChannelConstants.MAX_ANNOUNCED_SUBSCRIBERS) {
+				return safeAnnounceAck(false);
+			}
+			subscriberStore.putSubscriber(channelId,
+					new ChannelSubscriber(req.displayName,
+							req.signerEd25519, req.signerMlDsa,
+							req.timestampHourMs, false));
+			return safeAnnounceAck(true);
+		} catch (IOException | DbException ex) {
+			return safeAnnounceAck(false);
+		}
+	}
+
+	private byte[] safeAnnounceAck(boolean ok) {
+		try {
+			return pullCodec().encodeAnnounceAck(ok);
+		} catch (IOException ex) {
+			return new byte[0];
+		}
 	}
 
 	@Override

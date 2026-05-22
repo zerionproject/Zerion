@@ -151,6 +151,18 @@ class ChannelCodec {
 		return buf.array();
 	}
 
+	byte[] announceSignedInput(byte[] channelId, String displayName,
+			long timestampHourMs) {
+		byte[] nameBytes = displayName.getBytes(StandardCharsets.UTF_8);
+		ByteBuffer buf = ByteBuffer.allocate(channelId.length
+				+ 4 + nameBytes.length + 8);
+		buf.put(channelId);
+		buf.putInt(nameBytes.length);
+		buf.put(nameBytes);
+		buf.putLong(timestampHourMs);
+		return buf.array();
+	}
+
 	byte[] reactionSignedInput(byte[] channelId, long postSeqNum,
 			String emoji, long timestampHourMs) {
 		byte[] emojiBytes = emoji.getBytes(StandardCharsets.UTF_8);

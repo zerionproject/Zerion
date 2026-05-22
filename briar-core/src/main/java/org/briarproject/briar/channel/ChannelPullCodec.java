@@ -242,6 +242,62 @@ class ChannelPullCodec {
 		return d;
 	}
 
+	byte[] encodeAnnounceRequest(byte[] channelId, String displayName,
+			long timestampHourMs, byte[] signerEd, byte[] signerMl,
+			byte[] signature) throws IOException {
+		BdfDictionary d = new BdfDictionary();
+		d.put("type", ChannelConstants.WIRE_TYPE_ANNOUNCE);
+		d.put("channelId", channelId);
+		d.put("name", displayName);
+		d.put("ts", timestampHourMs);
+		d.put("ed", signerEd);
+		d.put("ml", signerMl);
+		d.put("sig", signature);
+		return writeDict(d);
+	}
+
+	AnnounceRequest decodeAnnounceRequest(byte[] data) throws IOException {
+		BdfDictionary d = readDict(data);
+		String type = d.getString("type");
+		if (!ChannelConstants.WIRE_TYPE_ANNOUNCE.equals(type)) {
+			throw new FormatException();
+		}
+		return new AnnounceRequest(d.getRaw("channelId"),
+				d.getString("name"),
+				d.getLong("ts"),
+				d.getRaw("ed"),
+				d.getRaw("ml"),
+				d.getRaw("sig"));
+	}
+
+	byte[] encodeAnnounceAck(boolean ok) throws IOException {
+		BdfDictionary d = new BdfDictionary();
+		d.put("type", ChannelConstants.WIRE_TYPE_ANNOUNCE_ACK);
+		d.put("ok", ok);
+		return writeDict(d);
+	}
+
+	@NotNullByDefault
+	static final class AnnounceRequest {
+		final byte[] channelId;
+		final String displayName;
+		final long timestampHourMs;
+		final byte[] signerEd25519;
+		final byte[] signerMlDsa;
+		final byte[] signature;
+
+		AnnounceRequest(byte[] channelId, String displayName,
+				long timestampHourMs, byte[] signerEd25519,
+				byte[] signerMlDsa, byte[] signature) {
+			this.channelId = channelId;
+			this.displayName = displayName;
+			this.timestampHourMs = timestampHourMs;
+			this.signerEd25519 = signerEd25519;
+			this.signerMlDsa = signerMlDsa;
+			this.signature = signature;
+		}
+	}
+
 	byte[] encodeReactionRequest(byte[] channelId, long postSeqNum,
 			String emoji, long timestampHourMs,
 			byte[] signerEd25519, byte[] signerMlDsa, byte[] signature)

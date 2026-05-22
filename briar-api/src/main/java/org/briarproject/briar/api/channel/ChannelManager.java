@@ -88,4 +88,13 @@ public interface ChannelManager {
 
 	List<ChannelReaction> getReactions(byte[] channelId, long postSeqNum)
 			throws DbException;
+
+	void announceMyself(byte[] channelId, String displayName)
+			throws DbException;
+
+	List<ChannelSubscriber> getAnnouncedSubscribers(byte[] channelId)
+			throws DbException;
+
+	void banSubscriber(byte[] channelId, byte[] ed25519PubKey)
+			throws DbException;
 }

@@ -77,6 +77,14 @@ public final class ChannelConstants {
 			"org.briarproject.zerion/CHANNEL_REACTION";
 	public static final int MAX_REACTION_EMOJI_BYTES = 32;
 	public static final int MAX_REACTIONS_PER_POST = 256;
+	public static final String WIRE_TYPE_ANNOUNCE =
+			"ZERION_CHANNEL_ANNOUNCE_V1";
+	public static final String WIRE_TYPE_ANNOUNCE_ACK =
+			"ZERION_CHANNEL_ANNOUNCE_ACK_V1";
+	public static final String SIGNING_LABEL_ANNOUNCE =
+			"org.briarproject.zerion/CHANNEL_ANNOUNCE";
+	public static final int MAX_DISPLAY_NAME_BYTES = 64;
+	public static final int MAX_ANNOUNCED_SUBSCRIBERS = 4096;
 
 	public static final long TTL_OFF = 0L;
 	public static final long TTL_ONE_HOUR_MS = 60L * 60L * 1000L;

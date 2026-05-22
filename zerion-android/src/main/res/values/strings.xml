@@ -327,6 +327,18 @@
 	<string name="channels_attach_too_many">Too many attachments (max 8)</string>
 	<string name="channels_action_react">React</string>
 	<string name="channels_react_failed">Could not send reaction</string>
+	<string name="channels_announce_title">Announce yourself?</string>
+	<string name="channels_announce_message">The channel owner will see your chosen display name and your public key. You can stay anonymous instead — only the owner ever sees announced subscribers.</string>
+	<string name="channels_announce_name_hint">Display name</string>
+	<string name="channels_announce_action">Announce</string>
+	<string name="channels_announce_skip">Stay anonymous</string>
+	<string name="channels_announce_failed">Could not announce</string>
+	<string name="channels_subscribers_title">Subscribers</string>
+	<string name="channels_subscribers_empty">No subscribers have announced themselves yet.</string>
+	<string name="channels_subscribers_count">%1$d announced</string>
+	<string name="channels_subscribers_ban">Ban subscriber</string>
+	<string name="channels_subscribers_ban_confirm">Ban this subscriber? This will rotate the join capability for closed channels — every other subscriber will need a new invite link.</string>
+	<string name="channels_subscribers_banned_label">Banned</string>
 	<string name="vault_button">zVault</string>
 	<!-- This is part of the main menu. The app will be locked when this is tapped. -->
 	<string name="lock_button">Lock App</string>
