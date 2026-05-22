@@ -28,6 +28,7 @@ import org.briarproject.bramble.api.event.Event;
 import org.briarproject.bramble.api.event.EventBus;
 import org.briarproject.bramble.api.event.EventListener;
 import org.briarproject.bramble.api.lifecycle.IoExecutor;
+import org.briarproject.briar.api.channel.ApplicationStatus;
 import org.briarproject.briar.api.channel.AttachmentBlob;
 import org.briarproject.briar.api.channel.AttachmentSpec;
 import org.briarproject.briar.api.channel.ChannelConstants;
@@ -85,6 +86,7 @@ public class ChannelFeedActivity extends ZerionActivity
 	private LinearLayout pinnedBanner;
 	private TextView pinnedBannerText;
 	private android.widget.ImageButton pinnedBannerClose;
+	private TextView approvalBanner;
 	private PostAdapter adapter;
 	private boolean weArePublisher = false;
 	private long currentPinnedSeq = ChannelState.NO_PINNED_POST;
@@ -125,6 +127,7 @@ public class ChannelFeedActivity extends ZerionActivity
 		pinnedBanner = findViewById(R.id.channelPinnedBanner);
 		pinnedBannerText = findViewById(R.id.channelPinnedBannerText);
 		pinnedBannerClose = findViewById(R.id.channelPinnedBannerClose);
+		approvalBanner = findViewById(R.id.channelApprovalBanner);
 
 		setSupportActionBar(toolbar);
 		if (getSupportActionBar() != null) {
@@ -220,22 +223,29 @@ public class ChannelFeedActivity extends ZerionActivity
 		ioExecutor.execute(() -> {
 			ChannelState state;
 			List<ChannelPost> posts;
+			ApplicationStatus appStatus = ApplicationStatus.NOT_APPLIED;
 			try {
 				state = channelManager.getChannel(channelId);
 				posts = state == null ? new ArrayList<>()
 						: channelManager.getRecentPosts(channelId, 500L);
+				if (state != null && !state.weArePublisher()
+						&& state.requiresApproval()) {
+					appStatus = channelManager.getMyApplicationStatus(
+							channelId);
+				}
 			} catch (DbException ex) {
 				state = null;
 				posts = new ArrayList<>();
 			}
 			ChannelState finalState = state;
 			List<ChannelPost> finalPosts = posts;
-			runOnUiThread(() -> render(finalState, finalPosts));
+			ApplicationStatus finalStatus = appStatus;
+			runOnUiThread(() -> render(finalState, finalPosts, finalStatus));
 		});
 	}
 
 	private void render(@Nullable ChannelState state,
-			List<ChannelPost> posts) {
+			List<ChannelPost> posts, ApplicationStatus appStatus) {
 		if (state == null) {
 			finish();
 			return;
@@ -245,6 +255,7 @@ public class ChannelFeedActivity extends ZerionActivity
 		toolbar.setSubtitle(state.isPublicChannel()
 				? getString(R.string.channels_row_public)
 				: getString(R.string.channels_row_closed));
+		bindApprovalBanner(state, appStatus);
 
 		if (posts.isEmpty()) {
 			recycler.setVisibility(View.GONE);
@@ -293,6 +304,25 @@ public class ChannelFeedActivity extends ZerionActivity
 		pinnedBannerClose.setVisibility(
 				weArePublisher ? View.VISIBLE : View.GONE);
 		pinnedBannerClose.setOnClickListener(v -> handleUnpin());
+	}
+
+	private void bindApprovalBanner(ChannelState state,
+			ApplicationStatus appStatus) {
+		if (state.weArePublisher() || !state.requiresApproval()) {
+			approvalBanner.setVisibility(View.GONE);
+			return;
+		}
+		if (appStatus == ApplicationStatus.PENDING) {
+			approvalBanner.setText(
+					R.string.channels_approval_pending_banner);
+			approvalBanner.setVisibility(View.VISIBLE);
+		} else if (appStatus == ApplicationStatus.DENIED) {
+			approvalBanner.setText(
+					R.string.channels_approval_denied_banner);
+			approvalBanner.setVisibility(View.VISIBLE);
+		} else {
+			approvalBanner.setVisibility(View.GONE);
+		}
 	}
 
 	private void handlePin(long seqNum) {

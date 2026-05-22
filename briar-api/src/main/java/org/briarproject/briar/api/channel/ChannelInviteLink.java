@@ -16,6 +16,7 @@ public final class ChannelInviteLink {
 	private final byte[] joinCapability;
 	@Nullable
 	private final String onionAddress;
+	private final boolean requiresApproval;
 
 	public ChannelInviteLink(byte[] channelId,
 			byte[] publisherEd25519PubKey,
@@ -23,12 +24,28 @@ public final class ChannelInviteLink {
 			boolean publicChannel,
 			@Nullable byte[] joinCapability,
 			@Nullable String onionAddress) {
+		this(channelId, publisherEd25519PubKey, publisherMlDsaPubKey,
+				publicChannel, joinCapability, onionAddress, false);
+	}
+
+	public ChannelInviteLink(byte[] channelId,
+			byte[] publisherEd25519PubKey,
+			@Nullable byte[] publisherMlDsaPubKey,
+			boolean publicChannel,
+			@Nullable byte[] joinCapability,
+			@Nullable String onionAddress,
+			boolean requiresApproval) {
 		this.channelId = channelId;
 		this.publisherEd25519PubKey = publisherEd25519PubKey;
 		this.publisherMlDsaPubKey = publisherMlDsaPubKey;
 		this.publicChannel = publicChannel;
 		this.joinCapability = joinCapability;
 		this.onionAddress = onionAddress;
+		this.requiresApproval = requiresApproval;
+	}
+
+	public boolean requiresApproval() {
+		return requiresApproval;
 	}
 
 	public byte[] getChannelId() {

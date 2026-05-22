@@ -347,6 +347,20 @@
 	<string name="channels_comments_failed">Could not send comment</string>
 	<string name="channels_comments_count">%1$d comments</string>
 	<string name="channels_comments_count_one">1 comment</string>
+	<string name="channels_create_require_approval">Require my approval before subscribers can read posts</string>
+	<string name="channels_apply_title">Apply to join</string>
+	<string name="channels_apply_message">The channel owner must approve your application before you can read posts. The owner will see your display name and your public key.</string>
+	<string name="channels_apply_action">Apply</string>
+	<string name="channels_apply_failed">Could not send application</string>
+	<string name="channels_approval_pending_banner">Waiting for the owner to approve your application…</string>
+	<string name="channels_approval_denied_banner">Your application was denied.</string>
+	<string name="channels_pending_title">Pending applications</string>
+	<string name="channels_pending_empty">No pending applications.</string>
+	<string name="channels_pending_count">%1$d pending</string>
+	<string name="channels_pending_approve">Approve</string>
+	<string name="channels_pending_deny">Deny</string>
+	<string name="channels_pending_approved">Approved</string>
+	<string name="channels_pending_denied">Denied</string>
 	<string name="vault_button">zVault</string>
 	<!-- This is part of the main menu. The app will be locked when this is tapped. -->
 	<string name="lock_button">Lock App</string>

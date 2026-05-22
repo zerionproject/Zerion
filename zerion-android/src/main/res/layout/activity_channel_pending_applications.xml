@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="@color/window_background"
+	android:fitsSystemWindows="true">
+
+	<androidx.appcompat.widget.Toolbar
+		android:id="@+id/pendingApplicationsToolbar"
+		android:layout_width="match_parent"
+		android:layout_height="?attr/actionBarSize"
+		android:background="@color/window_background"
+		app:layout_constraintTop_toTopOf="parent"
+		app:title="@string/channels_pending_title"
+		app:titleTextColor="@color/zerion_text_primary" />
+
+	<androidx.recyclerview.widget.RecyclerView
+		android:id="@+id/pendingApplicationsRecycler"
+		android:layout_width="match_parent"
+		android:layout_height="0dp"
+		android:paddingTop="6dp"
+		android:paddingBottom="24dp"
+		app:layout_constraintBottom_toBottomOf="parent"
+		app:layout_constraintTop_toBottomOf="@+id/pendingApplicationsToolbar" />
+
+	<TextView
+		android:id="@+id/pendingApplicationsEmptyView"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:gravity="center"
+		android:paddingStart="32dp"
+		android:paddingEnd="32dp"
+		android:paddingTop="64dp"
+		android:text="@string/channels_pending_empty"
+		android:textColor="@color/zerion_text_secondary"
+		android:textSize="14sp"
+		android:visibility="gone"
+		app:layout_constraintTop_toBottomOf="@+id/pendingApplicationsToolbar" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

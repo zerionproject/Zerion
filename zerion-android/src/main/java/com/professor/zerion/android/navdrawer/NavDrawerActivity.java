@@ -101,6 +101,7 @@ public class NavDrawerActivity extends ZerionActivity implements
 	private TextView toolbarTitle;
 	private ImageButton searchButton;
 	private ImageButton menuButton;
+	private ImageButton vaultShortcutButton;
 	private TextView tabContacts;
 	private TextView tabGroupChats;
 	private TextView tabChannels;
@@ -153,6 +154,7 @@ public class NavDrawerActivity extends ZerionActivity implements
 		toolbarTitle = findViewById(R.id.toolbarTitle);
 		searchButton = findViewById(R.id.searchButton);
 		menuButton = findViewById(R.id.menuButton);
+		vaultShortcutButton = findViewById(R.id.vaultShortcutButton);
 		tabContacts = findViewById(R.id.tabContacts);
 		tabGroupChats = findViewById(R.id.tabGroupChats);
 		tabChannels = findViewById(R.id.tabChannels);
@@ -190,6 +192,10 @@ public class NavDrawerActivity extends ZerionActivity implements
 		menuButton.setOnClickListener(v -> {
 			com.professor.zerion.android.util.Haptics.tap(v);
 			showOverflowMenu();
+		});
+		vaultShortcutButton.setOnClickListener(v -> {
+			com.professor.zerion.android.util.Haptics.tap(v);
+			switchTab(TAB_VAULT);
 		});
 
 		tabContacts.setOnClickListener(v -> {
@@ -315,30 +321,24 @@ public class NavDrawerActivity extends ZerionActivity implements
 				.commit();
 	}
 
-	private static final int PROFILE_MENU_VAULT = 101;
 	private static final int PROFILE_MENU_SETTINGS = 102;
 	private static final int PROFILE_MENU_LOCK = 103;
 	private static final int PROFILE_MENU_SIGN_OUT = 104;
 
 	private void showProfileSheet() {
 		PopupMenu popup = new PopupMenu(this, profileIcon);
-		popup.getMenu().add(0, PROFILE_MENU_VAULT, 0,
-				R.string.vault_button);
-		popup.getMenu().add(0, PROFILE_MENU_SETTINGS, 1,
+		popup.getMenu().add(0, PROFILE_MENU_SETTINGS, 0,
 				R.string.settings_button);
 		if (lockManager.isLockable().getValue() != null
 				&& lockManager.isLockable().getValue()) {
-			popup.getMenu().add(0, PROFILE_MENU_LOCK, 2,
+			popup.getMenu().add(0, PROFILE_MENU_LOCK, 1,
 					R.string.lock_button);
 		}
-		popup.getMenu().add(0, PROFILE_MENU_SIGN_OUT, 3,
+		popup.getMenu().add(0, PROFILE_MENU_SIGN_OUT, 2,
 				R.string.sign_out_button);
 		popup.setOnMenuItemClickListener(item -> {
 			int id = item.getItemId();
-			if (id == PROFILE_MENU_VAULT) {
-				switchTab(TAB_VAULT);
-				return true;
-			} else if (id == PROFILE_MENU_SETTINGS) {
+			if (id == PROFILE_MENU_SETTINGS) {
 				openSettings();
 				return true;
 			} else if (id == PROFILE_MENU_LOCK) {

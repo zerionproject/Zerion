@@ -134,4 +134,43 @@ class ChannelSignatures {
 			return false;
 		}
 	}
+
+	@CryptoExecutor
+	byte[] signApplication(byte[] signedInput, PrivateKey hybridPrivateKey)
+			throws GeneralSecurityException {
+		return crypto.hybridSign(
+				ChannelConstants.SIGNING_LABEL_APPLICATION,
+				signedInput, hybridPrivateKey);
+	}
+
+	boolean verifyApplication(byte[] signature, byte[] signedInput,
+			PublicKey hybridPublicKey) {
+		try {
+			return crypto.verifyHybridSignature(signature,
+					ChannelConstants.SIGNING_LABEL_APPLICATION,
+					signedInput, hybridPublicKey);
+		} catch (GeneralSecurityException e) {
+			return false;
+		}
+	}
+
+	@CryptoExecutor
+	byte[] signCheckApproval(byte[] signedInput,
+			PrivateKey hybridPrivateKey)
+			throws GeneralSecurityException {
+		return crypto.hybridSign(
+				ChannelConstants.SIGNING_LABEL_CHECK_APPROVAL,
+				signedInput, hybridPrivateKey);
+	}
+
+	boolean verifyCheckApproval(byte[] signature, byte[] signedInput,
+			PublicKey hybridPublicKey) {
+		try {
+			return crypto.verifyHybridSignature(signature,
+					ChannelConstants.SIGNING_LABEL_CHECK_APPROVAL,
+					signedInput, hybridPublicKey);
+		} catch (GeneralSecurityException e) {
+			return false;
+		}
+	}
 }

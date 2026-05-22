@@ -44,7 +44,7 @@ class ChannelCodec {
 			@Nullable byte[] contentKeyHash,
 			List<ChannelDelegationCert> activeDelegations,
 			List<Long> revokedDelegationSeqs,
-			long pinnedPostSeq) {
+			long pinnedPostSeq, boolean requiresApproval) {
 		byte[] nameHash = crypto.hash(LABEL_MANIFEST_NAME,
 				name.getBytes(StandardCharsets.UTF_8));
 		byte[] descHash = crypto.hash(LABEL_MANIFEST_DESC,
@@ -75,7 +75,7 @@ class ChannelCodec {
 						+ 1 + contentKeyHashBytes.length
 						+ delegationsHash.length
 						+ revokedHash.length
-						+ 8);
+						+ 8 + 1);
 		buf.put(channelId);
 		buf.put(salt);
 		buf.put(publisherEd25519Pub);
@@ -96,6 +96,7 @@ class ChannelCodec {
 		buf.put(delegationsHash);
 		buf.put(revokedHash);
 		buf.putLong(pinnedPostSeq);
+		buf.put((byte) (requiresApproval ? 1 : 0));
 		return buf.array();
 	}
 
@@ -148,6 +149,29 @@ class ChannelCodec {
 		buf.put(bodyHash);
 		buf.put(attachmentsHash);
 		buf.putLong(ttlMs);
+		return buf.array();
+	}
+
+	byte[] applicationSignedInput(byte[] channelId, String displayName,
+			long timestampHourMs, byte[] ephemeralAgreementPub) {
+		byte[] nameBytes = displayName.getBytes(StandardCharsets.UTF_8);
+		ByteBuffer buf = ByteBuffer.allocate(channelId.length
+				+ 4 + nameBytes.length + 8
+				+ 4 + ephemeralAgreementPub.length);
+		buf.put(channelId);
+		buf.putInt(nameBytes.length);
+		buf.put(nameBytes);
+		buf.putLong(timestampHourMs);
+		buf.putInt(ephemeralAgreementPub.length);
+		buf.put(ephemeralAgreementPub);
+		return buf.array();
+	}
+
+	byte[] checkApprovalSignedInput(byte[] channelId,
+			long timestampHourMs) {
+		ByteBuffer buf = ByteBuffer.allocate(channelId.length + 8);
+		buf.put(channelId);
+		buf.putLong(timestampHourMs);
 		return buf.array();
 	}
 
@@ -253,14 +277,16 @@ class ChannelCodec {
 			@Nullable byte[] publisherMlDsaPub,
 			boolean publicChannel,
 			@Nullable byte[] joinCapability,
-			@Nullable String onionAddress) {
+			@Nullable String onionAddress,
+			boolean requiresApproval) {
 		StringBuilder url = new StringBuilder();
 		url.append(ChannelConstants.INVITE_LINK_SCHEME).append("://")
 				.append(ChannelConstants.INVITE_LINK_HOST).append("/")
 				.append(Base32Util.encode(channelId)).append("/")
 				.append(Base32Util.encode(publisherEd25519Pub));
 		boolean first = true;
-		if (!publicChannel && joinCapability != null) {
+		if (!publicChannel && joinCapability != null
+				&& !requiresApproval) {
 			url.append(first ? '?' : '&').append(
 					ChannelConstants.INVITE_LINK_CAPABILITY_PARAM)
 					.append('=').append(Base32Util.encode(joinCapability));
@@ -271,6 +297,12 @@ class ChannelCodec {
 					ChannelConstants.INVITE_LINK_ONION_PARAM)
 					.append('=').append(onionAddress.toLowerCase(
 							Locale.ROOT));
+			first = false;
+		}
+		if (requiresApproval) {
+			url.append(first ? '?' : '&').append(
+					ChannelConstants.INVITE_LINK_APPROVAL_PARAM)
+					.append("=1");
 		}
 		return url.toString();
 	}
@@ -287,6 +319,7 @@ class ChannelCodec {
 		String rest = url.substring(prefix.length());
 		String capEncoded = null;
 		String onionParam = null;
+		boolean approvalFlag = false;
 		int q = rest.indexOf('?');
 		if (q >= 0) {
 			String query = rest.substring(q + 1);
@@ -302,6 +335,9 @@ class ChannelCodec {
 				} else if (k.equals(
 						ChannelConstants.INVITE_LINK_ONION_PARAM)) {
 					onionParam = v;
+				} else if (k.equals(
+						ChannelConstants.INVITE_LINK_APPROVAL_PARAM)) {
+					approvalFlag = "1".equals(v);
 				}
 			}
 		}
@@ -332,7 +368,7 @@ class ChannelCodec {
 				onion = onionParam.toLowerCase(Locale.ROOT);
 			}
 			return new ChannelInviteLink(channelId, publisherEd, null,
-					isPublic, capability, onion);
+					isPublic, capability, onion, approvalFlag);
 		} catch (IllegalArgumentException e) {
 			return null;
 		}

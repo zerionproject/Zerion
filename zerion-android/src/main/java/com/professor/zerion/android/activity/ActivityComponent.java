@@ -112,6 +112,8 @@ public interface ActivityComponent {
 
 	void inject(com.professor.zerion.android.channel.ChannelSubscribersActivity activity);
 
+	void inject(com.professor.zerion.android.channel.ChannelPendingApplicationsActivity activity);
+
 	void inject(com.professor.zerion.android.channel.ChannelCommentsActivity activity);
 
 	void inject(com.professor.zerion.android.channel.ChannelInviteHandlerActivity activity);

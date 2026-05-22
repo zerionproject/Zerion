@@ -82,6 +82,23 @@
 
 	</LinearLayout>
 
+	<TextView
+		android:id="@+id/channelApprovalBanner"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:background="@color/zerion_primary_accent"
+		android:gravity="center_vertical"
+		android:paddingStart="16dp"
+		android:paddingEnd="16dp"
+		android:paddingTop="10dp"
+		android:paddingBottom="10dp"
+		android:textColor="@android:color/white"
+		android:textSize="13sp"
+		android:visibility="gone"
+		app:layout_constraintTop_toBottomOf="@+id/channelPinnedBanner"
+		tools:text="@string/channels_approval_pending_banner"
+		tools:visibility="visible" />
+
 	<androidx.recyclerview.widget.RecyclerView
 		android:id="@+id/channelFeedRecycler"
 		android:layout_width="match_parent"
@@ -91,7 +108,7 @@
 		android:paddingBottom="12dp"
 		android:scrollbars="none"
 		app:layout_constraintBottom_toTopOf="@+id/channelComposeBar"
-		app:layout_constraintTop_toBottomOf="@+id/channelPinnedBanner" />
+		app:layout_constraintTop_toBottomOf="@+id/channelApprovalBanner" />
 
 	<TextView
 		android:id="@+id/channelFeedEmptyView"

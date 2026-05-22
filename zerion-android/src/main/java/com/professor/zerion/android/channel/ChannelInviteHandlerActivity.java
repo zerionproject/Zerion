@@ -3,11 +3,14 @@ package com.professor.zerion.android.channel;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.textfield.TextInputEditText;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
@@ -59,16 +62,66 @@ public class ChannelInviteHandlerActivity extends ZerionActivity {
 			finish();
 			return;
 		}
+		if (link.requiresApproval()) {
+			showApplyDialog(link);
+		} else {
+			new MaterialAlertDialogBuilder(this)
+					.setTitle(R.string.channels_join_title)
+					.setMessage(data.toString())
+					.setPositiveButton(R.string.channels_join_action,
+							(d, w) -> handleJoin(link))
+					.setNegativeButton(android.R.string.cancel,
+							(d, w) -> finish())
+					.setOnDismissListener(d -> {
+					})
+					.show();
+		}
+	}
+
+	private void showApplyDialog(ChannelInviteLink link) {
+		View view = LayoutInflater.from(this).inflate(
+				R.layout.dialog_apply_to_join, null);
+		TextInputEditText nameInput =
+				view.findViewById(R.id.channelApplyNameInput);
 		new MaterialAlertDialogBuilder(this)
-				.setTitle(R.string.channels_join_title)
-				.setMessage(data.toString())
-				.setPositiveButton(R.string.channels_join_action,
-						(d, w) -> handleJoin(link))
+				.setTitle(R.string.channels_apply_title)
+				.setView(view)
+				.setPositiveButton(R.string.channels_apply_action,
+						(d, w) -> handleApply(link, nameInput))
 				.setNegativeButton(android.R.string.cancel,
 						(d, w) -> finish())
-				.setOnDismissListener(d -> {
-				})
 				.show();
+	}
+
+	private void handleApply(ChannelInviteLink link,
+			TextInputEditText nameInput) {
+		String name = nameInput.getText() == null
+				? "" : nameInput.getText().toString().trim();
+		if (name.isEmpty()) {
+			Toast.makeText(this,
+					R.string.channels_create_error_name,
+					Toast.LENGTH_SHORT).show();
+			finish();
+			return;
+		}
+		ioExecutor.execute(() -> {
+			try {
+				ChannelState s = channelManager.getChannel(
+						link.getChannelId());
+				if (s == null) {
+					channelManager.joinChannel(link);
+				}
+				channelManager.applyToJoin(link.getChannelId(), name);
+				runOnUiThread(this::openChannel);
+			} catch (DbException ex) {
+				runOnUiThread(() -> {
+					Toast.makeText(this,
+							R.string.channels_apply_failed,
+							Toast.LENGTH_LONG).show();
+					finish();
+				});
+			}
+		});
 	}
 
 	private void handleJoin(ChannelInviteLink link) {

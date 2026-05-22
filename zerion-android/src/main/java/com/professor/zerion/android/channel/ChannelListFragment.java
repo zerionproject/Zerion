@@ -16,6 +16,7 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 
+import com.google.android.material.checkbox.MaterialCheckBox;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
@@ -242,18 +243,22 @@ public class ChannelListFragment extends BaseFragment
 				view.findViewById(R.id.channelCreateDescriptionInput);
 		android.widget.RadioGroup group = view.findViewById(
 				R.id.channelCreateVisibilityGroup);
+		MaterialCheckBox approvalCheckbox = view.findViewById(
+				R.id.channelCreateRequireApprovalCheckbox);
 
 		new MaterialAlertDialogBuilder(requireContext())
 				.setTitle(R.string.channels_create_title)
 				.setView(view)
 				.setPositiveButton(R.string.channels_create_action,
-						(d, w) -> handleCreate(nameInput, descInput, group))
+						(d, w) -> handleCreate(nameInput, descInput, group,
+								approvalCheckbox))
 				.setNegativeButton(android.R.string.cancel, null)
 				.show();
 	}
 
 	private void handleCreate(TextInputEditText nameInput,
-			TextInputEditText descInput, android.widget.RadioGroup group) {
+			TextInputEditText descInput, android.widget.RadioGroup group,
+			MaterialCheckBox approvalCheckbox) {
 		String name = nameInput.getText() == null
 				? "" : nameInput.getText().toString().trim();
 		String desc = descInput.getText() == null
@@ -266,10 +271,12 @@ public class ChannelListFragment extends BaseFragment
 		}
 		boolean publicChannel = group.getCheckedRadioButtonId()
 				== R.id.channelCreatePublicRadio;
+		boolean requiresApproval = !publicChannel
+				&& approvalCheckbox.isChecked();
 		ioExecutor.execute(() -> {
 			try {
 				ChannelState created = channelManager.createChannel(
-						name, desc, publicChannel);
+						name, desc, publicChannel, requiresApproval);
 				if (!isAdded()) return;
 				requireActivity().runOnUiThread(() -> {
 					loadChannels();
@@ -310,6 +317,10 @@ public class ChannelListFragment extends BaseFragment
 					Toast.LENGTH_LONG).show();
 			return;
 		}
+		if (link.requiresApproval()) {
+			showApplyDialog(link);
+			return;
+		}
 		ioExecutor.execute(() -> {
 			try {
 				ChannelState s = channelManager.getChannel(
@@ -341,6 +352,50 @@ public class ChannelListFragment extends BaseFragment
 		});
 	}
 
+	private void showApplyDialog(ChannelInviteLink link) {
+		View view = LayoutInflater.from(requireContext()).inflate(
+				R.layout.dialog_apply_to_join, null);
+		TextInputEditText nameInput =
+				view.findViewById(R.id.channelApplyNameInput);
+		new MaterialAlertDialogBuilder(requireContext())
+				.setTitle(R.string.channels_apply_title)
+				.setView(view)
+				.setPositiveButton(R.string.channels_apply_action,
+						(d, w) -> handleApply(link, nameInput))
+				.setNegativeButton(android.R.string.cancel, null)
+				.show();
+	}
+
+	private void handleApply(ChannelInviteLink link,
+			TextInputEditText nameInput) {
+		String name = nameInput.getText() == null
+				? "" : nameInput.getText().toString().trim();
+		if (name.isEmpty()) {
+			Toast.makeText(requireContext(),
+					R.string.channels_create_error_name,
+					Toast.LENGTH_SHORT).show();
+			return;
+		}
+		ioExecutor.execute(() -> {
+			try {
+				ChannelState existing = channelManager.getChannel(
+						link.getChannelId());
+				if (existing == null) {
+					channelManager.joinChannel(link);
+				}
+				channelManager.applyToJoin(link.getChannelId(), name);
+				if (!isAdded()) return;
+				requireActivity().runOnUiThread(this::loadChannels);
+			} catch (DbException ex) {
+				if (!isAdded()) return;
+				requireActivity().runOnUiThread(() ->
+						Toast.makeText(requireContext(),
+								R.string.channels_apply_failed,
+								Toast.LENGTH_SHORT).show());
+			}
+		});
+	}
+
 	private void showChannelMenu(ChannelState s) {
 		List<CharSequence> labels = new ArrayList<>();
 		List<Runnable> actions = new ArrayList<>();
@@ -360,6 +415,12 @@ public class ChannelListFragment extends BaseFragment
 			actions.add(() -> startActivity(
 					ChannelSubscribersActivity.intent(
 							requireContext(), s.getChannelId())));
+			if (s.requiresApproval()) {
+				labels.add(getString(R.string.channels_pending_title));
+				actions.add(() -> startActivity(
+						ChannelPendingApplicationsActivity.intent(
+								requireContext(), s.getChannelId())));
+			}
 		}
 
 		if (s.weArePublisher() && !s.isPublicChannel()) {

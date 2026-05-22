@@ -77,7 +77,8 @@ class ChannelPullProtocol {
 				state.getManifestSeq(), state.getContentKeyHash(),
 				state.getActiveDelegations(),
 				state.getRevokedDelegationSeqs(),
-				state.getPinnedPostSeq(), manifestSignature);
+				state.getPinnedPostSeq(), state.requiresApproval(),
+				manifestSignature);
 		return pullCodec.encodePullResponse(manifestDict, postsToSend,
 				contentKeyEnvelope, neighbourHints, reactions,
 				comments);
@@ -194,11 +195,14 @@ class ChannelPullProtocol {
 					manifest.getOptionalRaw("contentKeyHash");
 			long wirePinnedPostSeq = manifest.getLong("pinnedPostSeq",
 					ChannelState.NO_PINNED_POST);
+			boolean wireRequiresApproval = manifest.getBoolean(
+					"requiresApproval", false);
 			byte[] signedInput = codec.manifestSignedInput(
 					local.getChannelId(), wireSalt, wirePubEd, wirePubMl,
 					wireName, wireDesc, wireAvatar, wireCreatedAt,
 					wirePublic, wireCap, wireOnion, incomingSeq,
-					contentKeyHash, active, revoked, wirePinnedPostSeq);
+					contentKeyHash, active, revoked, wirePinnedPostSeq,
+					wireRequiresApproval);
 			org.briarproject.bramble.api.crypto.HybridSignaturePublicKey
 					pub = new org.briarproject.bramble.api.crypto
 					.HybridSignaturePublicKey(wirePubEd, wirePubMl);
@@ -231,7 +235,8 @@ class ChannelPullProtocol {
 					revoked,
 					local.getNextDelegationSeq(),
 					local.getOnionPrivateKey(),
-					wirePinnedPostSeq);
+					wirePinnedPostSeq,
+					wireRequiresApproval);
 		} catch (FormatException e) {
 			return null;
 		}

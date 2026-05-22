@@ -103,4 +103,29 @@ public interface ChannelManager {
 
 	List<ChannelComment> getComments(byte[] channelId, long parentPostSeqNum)
 			throws DbException;
+
+	ChannelState createChannel(String name, String description,
+			boolean publicChannel, boolean requiresApproval)
+			throws DbException;
+
+	void setRequiresApproval(byte[] channelId, boolean required)
+			throws DbException;
+
+	void applyToJoin(byte[] channelId, String displayName)
+			throws DbException;
+
+	List<ChannelApplication> listPendingApplications(byte[] channelId)
+			throws DbException;
+
+	List<ChannelApplication> listAllApplications(byte[] channelId)
+			throws DbException;
+
+	void approveApplication(byte[] channelId, byte[] applicantEd25519)
+			throws DbException;
+
+	void denyApplication(byte[] channelId, byte[] applicantEd25519)
+			throws DbException;
+
+	ApplicationStatus getMyApplicationStatus(byte[] channelId)
+			throws DbException;
 }

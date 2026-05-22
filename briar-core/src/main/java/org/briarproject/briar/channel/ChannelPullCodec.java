@@ -173,7 +173,8 @@ class ChannelPullCodec {
 			@Nullable byte[] contentKeyHash,
 			List<ChannelDelegationCert> activeDelegations,
 			List<Long> revokedDelegationSeqs,
-			long pinnedPostSeq, byte[] signature) {
+			long pinnedPostSeq, boolean requiresApproval,
+			byte[] signature) {
 		BdfDictionary d = new BdfDictionary();
 		d.put("type", ChannelConstants.WIRE_TYPE_MANIFEST);
 		d.put("channelId", channelId);
@@ -200,6 +201,7 @@ class ChannelPullCodec {
 		for (Long seq : revokedDelegationSeqs) revList.add(seq);
 		d.put("revokedDelegationSeqs", revList);
 		d.put("pinnedPostSeq", pinnedPostSeq);
+		d.put("requiresApproval", requiresApproval);
 		d.put("signature", signature);
 		return d;
 	}
@@ -458,6 +460,153 @@ class ChannelPullCodec {
 			this.signerEd25519 = signerEd25519;
 			this.signerMlDsa = signerMlDsa;
 			this.signature = signature;
+		}
+	}
+
+	byte[] encodeApplyRequest(byte[] channelId, String displayName,
+			long timestampHourMs, byte[] signerEd, byte[] signerMl,
+			byte[] ephemeralAgreementPub, byte[] signature)
+			throws IOException {
+		BdfDictionary d = new BdfDictionary();
+		d.put("type", ChannelConstants.WIRE_TYPE_APPLY_TO_JOIN);
+		d.put("channelId", channelId);
+		d.put("name", displayName);
+		d.put("ts", timestampHourMs);
+		d.put("ed", signerEd);
+		d.put("ml", signerMl);
+		d.put("eph", ephemeralAgreementPub);
+		d.put("sig", signature);
+		return writeDict(d);
+	}
+
+	ApplyRequest decodeApplyRequest(byte[] data) throws IOException {
+		BdfDictionary d = readDict(data);
+		String type = d.getString("type");
+		if (!ChannelConstants.WIRE_TYPE_APPLY_TO_JOIN.equals(type)) {
+			throw new FormatException();
+		}
+		return new ApplyRequest(d.getRaw("channelId"),
+				d.getString("name"),
+				d.getLong("ts"),
+				d.getRaw("ed"),
+				d.getRaw("ml"),
+				d.getRaw("eph"),
+				d.getRaw("sig"));
+	}
+
+	byte[] encodeApplyAck(boolean ok) throws IOException {
+		BdfDictionary d = new BdfDictionary();
+		d.put("type", ChannelConstants.WIRE_TYPE_APPLY_ACK);
+		d.put("ok", ok);
+		return writeDict(d);
+	}
+
+	byte[] encodeCheckApprovalRequest(byte[] channelId,
+			long timestampHourMs, byte[] signerEd, byte[] signerMl,
+			byte[] signature) throws IOException {
+		BdfDictionary d = new BdfDictionary();
+		d.put("type", ChannelConstants.WIRE_TYPE_CHECK_APPROVAL);
+		d.put("channelId", channelId);
+		d.put("ts", timestampHourMs);
+		d.put("ed", signerEd);
+		d.put("ml", signerMl);
+		d.put("sig", signature);
+		return writeDict(d);
+	}
+
+	CheckApprovalRequest decodeCheckApprovalRequest(byte[] data)
+			throws IOException {
+		BdfDictionary d = readDict(data);
+		String type = d.getString("type");
+		if (!ChannelConstants.WIRE_TYPE_CHECK_APPROVAL.equals(type)) {
+			throw new FormatException();
+		}
+		return new CheckApprovalRequest(d.getRaw("channelId"),
+				d.getLong("ts"),
+				d.getRaw("ed"),
+				d.getRaw("ml"),
+				d.getRaw("sig"));
+	}
+
+	byte[] encodeApprovalResponse(String status,
+			@Nullable byte[] kemCt, @Nullable byte[] envelope)
+			throws IOException {
+		BdfDictionary d = new BdfDictionary();
+		d.put("type", ChannelConstants.WIRE_TYPE_APPROVAL_RESPONSE);
+		d.put("status", status);
+		if (kemCt != null) d.put("kemCt", kemCt);
+		if (envelope != null) d.put("envelope", envelope);
+		return writeDict(d);
+	}
+
+	ApprovalResponse decodeApprovalResponse(byte[] data)
+			throws IOException {
+		BdfDictionary d = readDict(data);
+		String type = d.getString("type");
+		if (!ChannelConstants.WIRE_TYPE_APPROVAL_RESPONSE.equals(type)) {
+			throw new FormatException();
+		}
+		return new ApprovalResponse(d.getString("status"),
+				d.getOptionalRaw("kemCt"),
+				d.getOptionalRaw("envelope"));
+	}
+
+	@NotNullByDefault
+	static final class ApplyRequest {
+		final byte[] channelId;
+		final String displayName;
+		final long timestampHourMs;
+		final byte[] signerEd25519;
+		final byte[] signerMlDsa;
+		final byte[] ephemeralAgreementPub;
+		final byte[] signature;
+
+		ApplyRequest(byte[] channelId, String displayName,
+				long timestampHourMs, byte[] signerEd25519,
+				byte[] signerMlDsa, byte[] ephemeralAgreementPub,
+				byte[] signature) {
+			this.channelId = channelId;
+			this.displayName = displayName;
+			this.timestampHourMs = timestampHourMs;
+			this.signerEd25519 = signerEd25519;
+			this.signerMlDsa = signerMlDsa;
+			this.ephemeralAgreementPub = ephemeralAgreementPub;
+			this.signature = signature;
+		}
+	}
+
+	@NotNullByDefault
+	static final class CheckApprovalRequest {
+		final byte[] channelId;
+		final long timestampHourMs;
+		final byte[] signerEd25519;
+		final byte[] signerMlDsa;
+		final byte[] signature;
+
+		CheckApprovalRequest(byte[] channelId, long timestampHourMs,
+				byte[] signerEd25519, byte[] signerMlDsa,
+				byte[] signature) {
+			this.channelId = channelId;
+			this.timestampHourMs = timestampHourMs;
+			this.signerEd25519 = signerEd25519;
+			this.signerMlDsa = signerMlDsa;
+			this.signature = signature;
+		}
+	}
+
+	@NotNullByDefault
+	static final class ApprovalResponse {
+		final String status;
+		@Nullable
+		final byte[] kemCt;
+		@Nullable
+		final byte[] envelope;
+
+		ApprovalResponse(String status, @Nullable byte[] kemCt,
+				@Nullable byte[] envelope) {
+			this.status = status;
+			this.kemCt = kemCt;
+			this.envelope = envelope;
 		}
 	}
 
