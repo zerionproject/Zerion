@@ -104,6 +104,8 @@ public class ChannelFeedActivity extends ZerionActivity
 				android.view.WindowManager.LayoutParams.FLAG_SECURE);
 		setContentView(R.layout.activity_channel_feed);
 
+		wipeAttachmentStagingDir();
+
 		Intent i = getIntent();
 		byte[] cid = i.getByteArrayExtra(EXTRA_CHANNEL_ID);
 		if (cid != null) channelId = cid;
@@ -139,9 +141,7 @@ public class ChannelFeedActivity extends ZerionActivity
 				post -> showPostMenu(post,
 						post.getSeqNum() == currentPinnedSeq),
 				(post, att, thumb, spinner) ->
-						handleAttachmentTap(post, att, thumb, spinner),
-				(post, att) -> decryptThumbnailSafely(post, att),
-				post -> getReactionsSafely(post));
+						handleAttachmentTap(post, att, thumb, spinner));
 		recycler.setLayoutManager(new LinearLayoutManager(this));
 		recycler.setAdapter(adapter);
 
@@ -201,6 +201,7 @@ public class ChannelFeedActivity extends ZerionActivity
 			refreshHandler.removeCallbacks(refreshTick);
 			refreshHandler = null;
 		}
+		wipeAttachmentStagingDir();
 	}
 
 	@Override
@@ -237,15 +238,57 @@ public class ChannelFeedActivity extends ZerionActivity
 				state = null;
 				posts = new ArrayList<>();
 			}
+			java.util.Map<String, byte[]> thumbnails = new java.util.HashMap<>();
+			java.util.Map<Long, java.util.List<org.briarproject.briar.api
+					.channel.ChannelReaction>> reactions =
+					new java.util.HashMap<>();
+			if (state != null) {
+				for (ChannelPost p : posts) {
+					try {
+						reactions.put(p.getSeqNum(),
+								channelManager.getReactions(channelId,
+										p.getSeqNum()));
+					} catch (DbException ignored) {
+					}
+					for (ChannelPost.ChannelAttachment att
+							: p.getAttachments()) {
+						if (att.getThumbnail() == null) continue;
+						try {
+							byte[] dec = channelManager
+									.decryptAttachmentThumbnail(
+											channelId, p.getSeqNum(),
+											att.getBlobHash());
+							if (dec != null) {
+								thumbnails.put(thumbnailKey(p.getSeqNum(),
+										att.getBlobHash()), dec);
+							}
+						} catch (DbException ignored) {
+						}
+					}
+				}
+			}
 			ChannelState finalState = state;
 			List<ChannelPost> finalPosts = posts;
 			ApplicationStatus finalStatus = appStatus;
-			runOnUiThread(() -> render(finalState, finalPosts, finalStatus));
+			runOnUiThread(() -> render(finalState, finalPosts, finalStatus,
+					thumbnails, reactions));
 		});
 	}
 
+	private static String thumbnailKey(long seqNum, byte[] blobHash) {
+		StringBuilder sb = new StringBuilder();
+		sb.append(seqNum).append('|');
+		for (byte b : blobHash) {
+			sb.append(String.format(java.util.Locale.US, "%02x", b));
+		}
+		return sb.toString();
+	}
+
 	private void render(@Nullable ChannelState state,
-			List<ChannelPost> posts, ApplicationStatus appStatus) {
+			List<ChannelPost> posts, ApplicationStatus appStatus,
+			java.util.Map<String, byte[]> thumbnails,
+			java.util.Map<Long, java.util.List<org.briarproject.briar.api
+					.channel.ChannelReaction>> reactions) {
 		if (state == null) {
 			finish();
 			return;
@@ -266,7 +309,7 @@ public class ChannelFeedActivity extends ZerionActivity
 		} else {
 			recycler.setVisibility(View.VISIBLE);
 			emptyView.setVisibility(View.GONE);
-			adapter.setPosts(posts);
+			adapter.setPosts(posts, thumbnails, reactions);
 			recycler.scrollToPosition(posts.size() - 1);
 		}
 
@@ -433,8 +476,20 @@ public class ChannelFeedActivity extends ZerionActivity
 				(android.content.ClipboardManager) getSystemService(
 						android.content.Context.CLIPBOARD_SERVICE);
 		if (cm == null) return;
-		cm.setPrimaryClip(android.content.ClipData.newPlainText(
-				"zerion-channel-post", post.getBody()));
+		android.content.ClipData clip =
+				android.content.ClipData.newPlainText(
+						"zerion-channel-post", post.getBody());
+		if (android.os.Build.VERSION.SDK_INT
+				>= android.os.Build.VERSION_CODES.TIRAMISU) {
+			android.os.PersistableBundle extras =
+					new android.os.PersistableBundle();
+			extras.putBoolean(
+					android.content.ClipDescription
+							.EXTRA_IS_SENSITIVE,
+					true);
+			clip.getDescription().setExtras(extras);
+		}
+		cm.setPrimaryClip(clip);
 		Toast.makeText(this, R.string.channels_post_copied,
 				Toast.LENGTH_SHORT).show();
 	}
@@ -535,27 +590,6 @@ public class ChannelFeedActivity extends ZerionActivity
 		});
 	}
 
-	@Nullable
-	private byte[] decryptThumbnailSafely(ChannelPost post,
-			ChannelPost.ChannelAttachment att) {
-		try {
-			return channelManager.decryptAttachmentThumbnail(channelId,
-					post.getSeqNum(), att.getBlobHash());
-		} catch (DbException ignored) {
-			return null;
-		}
-	}
-
-	private java.util.List<org.briarproject.briar.api.channel
-			.ChannelReaction> getReactionsSafely(ChannelPost post) {
-		try {
-			return channelManager.getReactions(channelId,
-					post.getSeqNum());
-		} catch (DbException ignored) {
-			return java.util.Collections.emptyList();
-		}
-	}
-
 	private void presentAttachment(ChannelPost.ChannelAttachment att,
 			AttachmentBlob blob, android.widget.ImageView thumbView) {
 		String mime = blob.getMimeType();
@@ -571,8 +605,7 @@ public class ChannelFeedActivity extends ZerionActivity
 		}
 		java.io.File outFile;
 		try {
-			java.io.File dir = new java.io.File(getCacheDir(),
-					"channel_attach_view");
+			java.io.File dir = attachmentStagingDir();
 			if (!dir.exists()) dir.mkdirs();
 			String safeName = sanitizeFileName(
 					guessFileName(att, blob.getMimeType()));
@@ -599,6 +632,39 @@ public class ChannelFeedActivity extends ZerionActivity
 			Toast.makeText(this,
 					R.string.channels_attach_open_failed,
 					Toast.LENGTH_LONG).show();
+		}
+	}
+
+	private java.io.File attachmentStagingDir() {
+		return new java.io.File(getNoBackupFilesDir(),
+				"channel_attach_view");
+	}
+
+	private void wipeAttachmentStagingDir() {
+		java.io.File dir = attachmentStagingDir();
+		java.io.File[] kids = dir.listFiles();
+		if (kids == null) return;
+		for (java.io.File f : kids) {
+			try {
+				long len = f.length();
+				if (len > 0) {
+					try (java.io.RandomAccessFile raf =
+								new java.io.RandomAccessFile(f, "rw")) {
+						byte[] zeros = new byte[(int) Math.min(len,
+								64L * 1024L)];
+						long remaining = len;
+						raf.seek(0);
+						while (remaining > 0) {
+							int n = (int) Math.min(zeros.length, remaining);
+							raf.write(zeros, 0, n);
+							remaining -= n;
+						}
+						raf.getFD().sync();
+					}
+				}
+			} catch (java.io.IOException ignored) {
+			}
+			f.delete();
 		}
 	}
 
@@ -786,35 +852,28 @@ public class ChannelFeedActivity extends ZerionActivity
 					android.widget.ProgressBar spinner);
 		}
 
-		interface OnThumbnailNeeded {
-			@Nullable
-			byte[] decryptThumbnail(ChannelPost post,
-					ChannelPost.ChannelAttachment attachment);
-		}
-
-		interface OnReactionsNeeded {
-			java.util.List<org.briarproject.briar.api.channel
-					.ChannelReaction> getReactions(ChannelPost post);
-		}
-
 		private List<ChannelPost> posts = new ArrayList<>();
+		private java.util.Map<String, byte[]> thumbnails =
+				java.util.Collections.emptyMap();
+		private java.util.Map<Long, java.util.List<org.briarproject.briar
+				.api.channel.ChannelReaction>> reactions =
+				java.util.Collections.emptyMap();
 		private final OnPostLongPress longPressListener;
 		private final OnAttachmentTap attachmentTapListener;
-		private final OnThumbnailNeeded thumbnailDecoder;
-		private final OnReactionsNeeded reactionsProvider;
 
 		PostAdapter(OnPostLongPress longPressListener,
-				OnAttachmentTap attachmentTapListener,
-				OnThumbnailNeeded thumbnailDecoder,
-				OnReactionsNeeded reactionsProvider) {
+				OnAttachmentTap attachmentTapListener) {
 			this.longPressListener = longPressListener;
 			this.attachmentTapListener = attachmentTapListener;
-			this.thumbnailDecoder = thumbnailDecoder;
-			this.reactionsProvider = reactionsProvider;
 		}
 
-		void setPosts(List<ChannelPost> p) {
+		void setPosts(List<ChannelPost> p,
+				java.util.Map<String, byte[]> thumbnails,
+				java.util.Map<Long, java.util.List<org.briarproject.briar
+						.api.channel.ChannelReaction>> reactions) {
 			this.posts = p;
+			this.thumbnails = thumbnails;
+			this.reactions = reactions;
 			notifyDataSetChanged();
 		}
 
@@ -831,8 +890,7 @@ public class ChannelFeedActivity extends ZerionActivity
 		public void onBindViewHolder(@NonNull PostViewHolder holder,
 				int position) {
 			ChannelPost p = posts.get(position);
-			holder.bind(p, attachmentTapListener, thumbnailDecoder,
-					reactionsProvider);
+			holder.bind(p, attachmentTapListener, thumbnails, reactions);
 			holder.itemView.setOnLongClickListener(v -> {
 				longPressListener.onPostLongPress(p);
 				return true;
@@ -869,13 +927,14 @@ public class ChannelFeedActivity extends ZerionActivity
 
 		void bind(ChannelPost p,
 				PostAdapter.OnAttachmentTap attachmentTapListener,
-				PostAdapter.OnThumbnailNeeded thumbnailDecoder,
-				PostAdapter.OnReactionsNeeded reactionsProvider) {
+				java.util.Map<String, byte[]> thumbnails,
+				java.util.Map<Long, java.util.List<org.briarproject.briar
+						.api.channel.ChannelReaction>> reactions) {
 			body.setText(p.getBody());
 			body.setVisibility(p.getBody().trim().isEmpty()
 					? View.GONE : View.VISIBLE);
-			bindAttachments(p, attachmentTapListener, thumbnailDecoder);
-			bindReactions(p, reactionsProvider);
+			bindAttachments(p, attachmentTapListener, thumbnails);
+			bindReactions(p, reactions);
 			timestamp.setText(
 					com.professor.zerion.android.util.UiUtils.formatDate(
 							itemView.getContext(),
@@ -907,7 +966,7 @@ public class ChannelFeedActivity extends ZerionActivity
 
 		private void bindAttachments(ChannelPost p,
 				PostAdapter.OnAttachmentTap listener,
-				PostAdapter.OnThumbnailNeeded thumbnailDecoder) {
+				java.util.Map<String, byte[]> thumbnails) {
 			attachments.removeAllViews();
 			if (p.getAttachments().isEmpty()) {
 				attachments.setVisibility(View.GONE);
@@ -936,8 +995,9 @@ public class ChannelFeedActivity extends ZerionActivity
 				spinner.setVisibility(View.GONE);
 				if (att.getThumbnail() != null
 						&& att.getMimeType().startsWith("video/")) {
-					byte[] decrypted = thumbnailDecoder
-							.decryptThumbnail(p, att);
+					byte[] decrypted = thumbnails.get(
+							ChannelFeedActivity.thumbnailKey(
+									p.getSeqNum(), att.getBlobHash()));
 					if (decrypted != null) {
 						android.graphics.Bitmap bmp =
 								com.professor.zerion.android.util
@@ -956,10 +1016,11 @@ public class ChannelFeedActivity extends ZerionActivity
 		}
 
 		private void bindReactions(ChannelPost p,
-				PostAdapter.OnReactionsNeeded provider) {
+				java.util.Map<Long, java.util.List<org.briarproject.briar
+						.api.channel.ChannelReaction>> reactions) {
 			java.util.List<org.briarproject.briar.api.channel
-					.ChannelReaction> all = provider.getReactions(p);
-			if (all.isEmpty()) {
+					.ChannelReaction> all = reactions.get(p.getSeqNum());
+			if (all == null || all.isEmpty()) {
 				reactionsView.setVisibility(View.GONE);
 				return;
 			}

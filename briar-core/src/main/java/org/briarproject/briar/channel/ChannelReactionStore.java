@@ -52,12 +52,14 @@ class ChannelReactionStore {
 			for (Object o : list) {
 				if (!(o instanceof BdfDictionary)) continue;
 				BdfDictionary d = (BdfDictionary) o;
+				byte[] sig = d.getOptionalRaw("sig");
 				out.add(new ChannelReaction(
 						d.getLong("seq"),
 						d.getString("emoji"),
 						d.getRaw("ed"),
 						d.getRaw("ml"),
-						d.getLong("ts")));
+						d.getLong("ts"),
+						sig == null ? new byte[0] : sig));
 			}
 			return out;
 		} catch (IOException e) {
@@ -108,6 +110,8 @@ class ChannelReactionStore {
 			d.put("ed", r.getSignerEd25519PubKey());
 			d.put("ml", r.getSignerMlDsaPubKey());
 			d.put("ts", r.getTimestampHourMs());
+			byte[] sig = r.getSignature();
+			if (sig != null && sig.length > 0) d.put("sig", sig);
 			list.add(d);
 		}
 		Settings out = new Settings();

@@ -42,7 +42,7 @@ class ChannelPostValidator {
 	Result validate(ChannelState state, ChannelPost post,
 			ChannelPost previousOrNull) {
 		if (post.getBody().length()
-				> ChannelConstants.MAX_POST_BODY_CHARS * 8) {
+				> ChannelConstants.MAX_POST_BODY_CHARS) {
 			return Result.BODY_TOO_LARGE;
 		}
 		if (previousOrNull == null) {

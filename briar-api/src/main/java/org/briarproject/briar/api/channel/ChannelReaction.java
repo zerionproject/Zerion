@@ -10,15 +10,28 @@ public final class ChannelReaction {
 	private final byte[] signerEd25519PubKey;
 	private final byte[] signerMlDsaPubKey;
 	private final long timestampHourMs;
+	private final byte[] signature;
 
 	public ChannelReaction(long postSeqNum, String emoji,
 			byte[] signerEd25519PubKey, byte[] signerMlDsaPubKey,
 			long timestampHourMs) {
+		this(postSeqNum, emoji, signerEd25519PubKey, signerMlDsaPubKey,
+				timestampHourMs, new byte[0]);
+	}
+
+	public ChannelReaction(long postSeqNum, String emoji,
+			byte[] signerEd25519PubKey, byte[] signerMlDsaPubKey,
+			long timestampHourMs, byte[] signature) {
 		this.postSeqNum = postSeqNum;
 		this.emoji = emoji;
 		this.signerEd25519PubKey = signerEd25519PubKey;
 		this.signerMlDsaPubKey = signerMlDsaPubKey;
 		this.timestampHourMs = timestampHourMs;
+		this.signature = signature;
+	}
+
+	public byte[] getSignature() {
+		return signature;
 	}
 
 	public long getPostSeqNum() {

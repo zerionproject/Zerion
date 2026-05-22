@@ -120,6 +120,9 @@ public class NavDrawerActivity extends ZerionActivity implements
 	@Override
 	public void onCreate(@Nullable Bundle state) {
 		super.onCreate(state);
+		getWindow().setFlags(
+				android.view.WindowManager.LayoutParams.FLAG_SECURE,
+				android.view.WindowManager.LayoutParams.FLAG_SECURE);
 		exitIfStartupFailed(getIntent());
 		setContentView(R.layout.activity_nav_drawer);
 

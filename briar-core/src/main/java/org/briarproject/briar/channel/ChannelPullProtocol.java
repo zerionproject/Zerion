@@ -209,8 +209,14 @@ class ChannelPullProtocol {
 			if (!signatures.verifyManifest(wireSig, signedInput, pub)) {
 				return null;
 			}
-			if (incomingSeq < local.getManifestSeq()) {
+			if (incomingSeq <= local.getManifestSeq()) {
 				return local;
+			}
+			if (wirePinnedPostSeq != ChannelState.NO_PINNED_POST
+					&& (wirePinnedPostSeq < 0
+							|| wirePinnedPostSeq
+									> local.getHighestKnownPostSeq())) {
+				return null;
 			}
 			byte[] joinCap = manifest.getOptionalRaw("joinCapability");
 			return new ChannelState(local.getChannelId(),

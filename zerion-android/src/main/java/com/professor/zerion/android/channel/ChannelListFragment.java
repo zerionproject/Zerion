@@ -502,10 +502,25 @@ public class ChannelListFragment extends BaseFragment
 	private void copyAndToast(String link) {
 		ClipboardManager cm = (ClipboardManager) requireContext()
 				.getSystemService(Context.CLIPBOARD_SERVICE);
-		cm.setPrimaryClip(ClipData.newPlainText("zerion-channel", link));
+		ClipData clip = ClipData.newPlainText("zerion-channel", link);
+		markSensitive(clip);
+		cm.setPrimaryClip(clip);
 		Toast.makeText(requireContext(),
 				R.string.channels_invite_copied,
 				Toast.LENGTH_SHORT).show();
+	}
+
+	private static void markSensitive(ClipData clip) {
+		if (android.os.Build.VERSION.SDK_INT
+				>= android.os.Build.VERSION_CODES.TIRAMISU) {
+			android.os.PersistableBundle extras =
+					new android.os.PersistableBundle();
+			extras.putBoolean(
+					android.content.ClipDescription
+							.EXTRA_IS_SENSITIVE,
+					true);
+			clip.getDescription().setExtras(extras);
+		}
 	}
 
 	private void shareInviteViaSystemSheet(ChannelState s) {

@@ -361,7 +361,7 @@ class ChannelCodec {
 			}
 			if (publisherEd.length != 32) return null;
 			byte[] capability = null;
-			boolean isPublic = capEncoded == null;
+			boolean isPublic = capEncoded == null && !approvalFlag;
 			if (capEncoded != null) {
 				capability = Base32Util.decode(capEncoded);
 				if (capability.length

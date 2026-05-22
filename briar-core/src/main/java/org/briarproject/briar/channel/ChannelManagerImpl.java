@@ -77,6 +77,10 @@ class ChannelManagerImpl
 	private final java.util.Map<String,
 			java.util.concurrent.locks.ReentrantLock> channelLocks =
 					new java.util.concurrent.ConcurrentHashMap<>();
+	private final java.util.Map<String, Long> lastApprovalPollMs =
+			new java.util.concurrent.ConcurrentHashMap<>();
+	private static final long APPROVAL_POLL_MIN_INTERVAL_MS =
+			5L * 60L * 1000L;
 
 	private java.util.concurrent.locks.ReentrantLock lockFor(
 			byte[] channelId) {
@@ -516,9 +520,8 @@ class ChannelManagerImpl
 		}
 		if (ChannelConstants.WIRE_TYPE_CHANNEL_TOMBSTONE.equals(
 				pullCodec().peekType(responseBytes))) {
-			if (applyTombstoneIfValid(s, responseBytes)) {
-				return;
-			}
+			applyTombstoneIfValid(s, responseBytes);
+			return;
 		}
 		java.util.List<ChannelPost> existing =
 				store.getPosts(channelId);
@@ -540,12 +543,32 @@ class ChannelManagerImpl
 			java.util.List<org.briarproject.briar.api.channel
 					.ChannelComment> incoming) throws DbException {
 		if (incoming.isEmpty()) return;
+		boolean accepted = false;
 		for (org.briarproject.briar.api.channel.ChannelComment c
 				: incoming) {
+			byte[] sig = c.getSignature();
+			if (sig == null || sig.length == 0) continue;
+			byte[] signedInput = codec.commentSignedInput(channelId,
+					c.getParentPostSeqNum(), c.getCommentId(),
+					c.getBody(), c.getAuthorDisplayName(),
+					c.getTimestampHourMs());
+			HybridSignaturePublicKey pub = new HybridSignaturePublicKey(
+					c.getAuthorEd25519PubKey(),
+					c.getAuthorMlDsaPubKey());
+			if (!signatures.verifyComment(sig, signedInput, pub)) {
+				continue;
+			}
+			if (subscriberStore.isBanned(channelId,
+					c.getAuthorEd25519PubKey())) {
+				continue;
+			}
 			commentStore.putComment(channelId, c);
+			accepted = true;
 		}
-		fireEvent(channelId,
-				ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+		if (accepted) {
+			fireEvent(channelId,
+					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+		}
 	}
 
 	private boolean applyTombstoneIfValid(ChannelState s,
@@ -575,12 +598,31 @@ class ChannelManagerImpl
 			java.util.List<org.briarproject.briar.api.channel
 					.ChannelReaction> incoming) throws DbException {
 		if (incoming.isEmpty()) return;
+		boolean accepted = false;
 		for (org.briarproject.briar.api.channel.ChannelReaction r
 				: incoming) {
+			byte[] sig = r.getSignature();
+			if (sig == null || sig.length == 0) continue;
+			byte[] signedInput = codec.reactionSignedInput(channelId,
+					r.getPostSeqNum(), r.getEmoji(),
+					r.getTimestampHourMs());
+			HybridSignaturePublicKey pub = new HybridSignaturePublicKey(
+					r.getSignerEd25519PubKey(),
+					r.getSignerMlDsaPubKey());
+			if (!signatures.verifyReaction(sig, signedInput, pub)) {
+				continue;
+			}
+			if (subscriberStore.isBanned(channelId,
+					r.getSignerEd25519PubKey())) {
+				continue;
+			}
 			reactionStore.putReaction(channelId, r);
+			accepted = true;
 		}
-		fireEvent(channelId,
-				ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+		if (accepted) {
+			fireEvent(channelId,
+					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+		}
 	}
 
 	private ChannelPullCodec pullCodec() {
@@ -652,7 +694,7 @@ class ChannelManagerImpl
 	}
 
 	private void publishTombstone(ChannelState s) throws DbException {
-		long ts = clock.currentTimeMillis();
+		long ts = clock.currentTimeMillis() / HOUR_MS * HOUR_MS;
 		byte[] signedInput = codec.tombstoneSignedInput(
 				s.getChannelId(), ts);
 		byte[] privEncoded = store.getPublisherPrivKey(s.getChannelId());
@@ -930,7 +972,9 @@ class ChannelManagerImpl
 						p.getSeqNum(), p.getPrevHash(),
 						p.getTimestampHourMs(), p.getBody(),
 						p.getAttachments(), p.getTtlMs(),
-						p.getSignature(), true));
+						p.getSignature(), true,
+						p.getDelegateSignerEd25519PubKey(),
+						p.getDelegateSignerMlDsaPubKey()));
 				changed = true;
 			}
 		}
@@ -1318,7 +1362,7 @@ class ChannelManagerImpl
 		org.briarproject.briar.api.channel.ChannelComment row =
 				new org.briarproject.briar.api.channel.ChannelComment(
 						parentPostSeqNum, commentId, trimmed, authorName,
-						signerEd, signerMl, ts);
+						signerEd, signerMl, ts, sig);
 		if (s.weArePublisher()) {
 			commentStore.putComment(channelId, row);
 			fireEvent(channelId,
@@ -1403,7 +1447,7 @@ class ChannelManagerImpl
 							req.parentPostSeqNum, req.commentId,
 							req.body, req.authorName,
 							req.signerEd25519, req.signerMlDsa,
-							req.timestampHourMs));
+							req.timestampHourMs, req.signature));
 			return safeCommentAck(true);
 		} catch (IOException | DbException ex) {
 			return safeCommentAck(false);
@@ -1462,42 +1506,53 @@ class ChannelManagerImpl
 						> ChannelConstants.MAX_DISPLAY_NAME_BYTES) {
 			throw new DbException();
 		}
-		ChannelState s = store.getChannel(channelId);
-		if (s == null) throw new DbException();
-		if (s.weArePublisher()) throw new DbException();
-		KeyPair ephKp = crypto.generateHybridAgreementKeyPair();
-		byte[] ephPub = ephKp.getPublic().getEncoded();
-		byte[] ephPriv = ephKp.getPrivate().getEncoded();
-		LocalAuthor me = identityManager.getLocalAuthor();
-		byte[] hybridPubEncoded = me.getPublicKey().getEncoded();
-		byte[] signerEd = new byte[32];
-		byte[] signerMl = new byte[hybridPubEncoded.length - 32];
-		System.arraycopy(hybridPubEncoded, 0, signerEd, 0, 32);
-		System.arraycopy(hybridPubEncoded, 32, signerMl, 0,
-				signerMl.length);
-		long ts = clock.currentTimeMillis() / HOUR_MS * HOUR_MS;
-		byte[] signedInput = codec.applicationSignedInput(channelId,
-				trimmed, ts, ephPub);
-		byte[] sig;
+		java.util.concurrent.locks.ReentrantLock lock = lockFor(channelId);
+		lock.lock();
 		try {
-			sig = signatures.signApplication(signedInput,
-					me.getPrivateKey());
-		} catch (GeneralSecurityException ex) {
-			throw new DbException(ex);
+			ChannelState s = store.getChannel(channelId);
+			if (s == null) throw new DbException();
+			if (s.weArePublisher()) throw new DbException();
+			ChannelMyApplicationsStore.MyApplication existing =
+					myApplicationsStore.get(channelId);
+			if (existing != null
+					&& existing.status == ApplicationStatus.PENDING) {
+				return;
+			}
+			KeyPair ephKp = crypto.generateHybridAgreementKeyPair();
+			byte[] ephPub = ephKp.getPublic().getEncoded();
+			byte[] ephPriv = ephKp.getPrivate().getEncoded();
+			LocalAuthor me = identityManager.getLocalAuthor();
+			byte[] hybridPubEncoded = me.getPublicKey().getEncoded();
+			byte[] signerEd = new byte[32];
+			byte[] signerMl = new byte[hybridPubEncoded.length - 32];
+			System.arraycopy(hybridPubEncoded, 0, signerEd, 0, 32);
+			System.arraycopy(hybridPubEncoded, 32, signerMl, 0,
+					signerMl.length);
+			long ts = clock.currentTimeMillis() / HOUR_MS * HOUR_MS;
+			byte[] signedInput = codec.applicationSignedInput(channelId,
+					trimmed, ts, ephPub);
+			byte[] sig;
+			try {
+				sig = signatures.signApplication(signedInput,
+						me.getPrivateKey());
+			} catch (GeneralSecurityException ex) {
+				throw new DbException(ex);
+			}
+			myApplicationsStore.put(channelId,
+					new ChannelMyApplicationsStore.MyApplication(
+							trimmed, ephPriv, ephPub, ts,
+							ApplicationStatus.PENDING));
+			try {
+				byte[] reqBytes = pullCodec().encodeApplyRequest(channelId,
+						trimmed, ts, signerEd, signerMl, ephPub, sig);
+				transport.requestFromOnion(s.getCurrentOnion(), reqBytes);
+			} catch (IOException ignored) {
+			}
+			fireEvent(channelId,
+					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+		} finally {
+			lock.unlock();
 		}
-		try {
-			byte[] reqBytes = pullCodec().encodeApplyRequest(channelId,
-					trimmed, ts, signerEd, signerMl, ephPub, sig);
-			transport.requestFromOnion(s.getCurrentOnion(), reqBytes);
-		} catch (IOException ex) {
-			throw new DbException(ex);
-		}
-		myApplicationsStore.put(channelId,
-				new ChannelMyApplicationsStore.MyApplication(
-						trimmed, ephPriv, ephPub, ts,
-						ApplicationStatus.PENDING));
-		fireEvent(channelId,
-				ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
 	}
 
 	@Override
@@ -1550,14 +1605,17 @@ class ChannelManagerImpl
 			} catch (GeneralSecurityException ex) {
 				throw new DbException(ex);
 			}
+			byte[] sharedSecretCopy = encap.getSharedSecret();
 			byte[] envelope;
 			try {
 				envelope = wrapApprovalCapability(channelId,
-						encap.getSharedSecret(), capability);
+						sharedSecretCopy, capability);
 			} catch (GeneralSecurityException ex) {
+				java.util.Arrays.fill(sharedSecretCopy, (byte) 0);
 				encap.clearSecret();
 				throw new DbException(ex);
 			}
+			java.util.Arrays.fill(sharedSecretCopy, (byte) 0);
 			encap.clearSecret();
 			applicationStore.putApplication(channelId,
 					new ChannelApplication(app.getDisplayName(),
@@ -1617,20 +1675,24 @@ class ChannelManagerImpl
 						new org.briarproject.bramble.api.crypto.SecretKey(
 								sharedSecret),
 						channelId);
-		byte[] nonce = new byte[12];
-		random.nextBytes(nonce);
-		javax.crypto.Cipher cipher = javax.crypto.Cipher.getInstance(
-				"AES/GCM/NoPadding");
-		cipher.init(javax.crypto.Cipher.ENCRYPT_MODE,
-				new javax.crypto.spec.SecretKeySpec(wrap.getBytes(),
-						"AES"),
-				new javax.crypto.spec.GCMParameterSpec(128, nonce));
-		byte[] ct = cipher.doFinal(capability);
-		java.nio.ByteBuffer out = java.nio.ByteBuffer.allocate(
-				nonce.length + ct.length);
-		out.put(nonce);
-		out.put(ct);
-		return out.array();
+		byte[] wrapBytes = wrap.getBytes();
+		try {
+			byte[] nonce = new byte[12];
+			random.nextBytes(nonce);
+			javax.crypto.Cipher cipher = javax.crypto.Cipher.getInstance(
+					"AES/GCM/NoPadding");
+			cipher.init(javax.crypto.Cipher.ENCRYPT_MODE,
+					new javax.crypto.spec.SecretKeySpec(wrapBytes, "AES"),
+					new javax.crypto.spec.GCMParameterSpec(128, nonce));
+			byte[] ct = cipher.doFinal(capability);
+			java.nio.ByteBuffer out = java.nio.ByteBuffer.allocate(
+					nonce.length + ct.length);
+			out.put(nonce);
+			out.put(ct);
+			return out.array();
+		} finally {
+			java.util.Arrays.fill(wrapBytes, (byte) 0);
+		}
 	}
 
 	private byte[] unwrapApprovalCapability(byte[] channelId,
@@ -1644,16 +1706,20 @@ class ChannelManagerImpl
 						new org.briarproject.bramble.api.crypto.SecretKey(
 								sharedSecret),
 						channelId);
-		byte[] nonce = java.util.Arrays.copyOfRange(envelope, 0, 12);
-		byte[] ct = java.util.Arrays.copyOfRange(envelope, 12,
-				envelope.length);
-		javax.crypto.Cipher cipher = javax.crypto.Cipher.getInstance(
-				"AES/GCM/NoPadding");
-		cipher.init(javax.crypto.Cipher.DECRYPT_MODE,
-				new javax.crypto.spec.SecretKeySpec(wrap.getBytes(),
-						"AES"),
-				new javax.crypto.spec.GCMParameterSpec(128, nonce));
-		return cipher.doFinal(ct);
+		byte[] wrapBytes = wrap.getBytes();
+		try {
+			byte[] nonce = java.util.Arrays.copyOfRange(envelope, 0, 12);
+			byte[] ct = java.util.Arrays.copyOfRange(envelope, 12,
+					envelope.length);
+			javax.crypto.Cipher cipher = javax.crypto.Cipher.getInstance(
+					"AES/GCM/NoPadding");
+			cipher.init(javax.crypto.Cipher.DECRYPT_MODE,
+					new javax.crypto.spec.SecretKeySpec(wrapBytes, "AES"),
+					new javax.crypto.spec.GCMParameterSpec(128, nonce));
+			return cipher.doFinal(ct);
+		} finally {
+			java.util.Arrays.fill(wrapBytes, (byte) 0);
+		}
 	}
 
 	private byte[] handleApplyRequest(byte[] channelId,
@@ -1778,6 +1844,14 @@ class ChannelManagerImpl
 		if (my == null) return;
 		if (my.status != ApplicationStatus.PENDING) return;
 		if (my.ephemeralAgreementPriv == null) return;
+		String key = ChannelStore.hex(channelId);
+		long now = clock.currentTimeMillis();
+		Long last = lastApprovalPollMs.get(key);
+		if (last != null
+				&& now - last < APPROVAL_POLL_MIN_INTERVAL_MS) {
+			return;
+		}
+		lastApprovalPollMs.put(key, now);
 		try {
 			ChannelState s = store.getChannel(channelId);
 			if (s == null) return;
@@ -1860,10 +1934,15 @@ class ChannelManagerImpl
 			capability = unwrapApprovalCapability(channelId, sharedSecret,
 					envelope);
 		} catch (GeneralSecurityException ex) {
+			java.util.Arrays.fill(sharedSecret, (byte) 0);
 			return;
 		}
+		java.util.Arrays.fill(sharedSecret, (byte) 0);
 		ChannelState s = store.getChannel(channelId);
-		if (s == null) return;
+		if (s == null) {
+			java.util.Arrays.fill(capability, (byte) 0);
+			return;
+		}
 		ChannelState updated = new ChannelState(s.getChannelId(),
 				s.getSalt(), s.getPublisherEd25519PubKey(),
 				s.getPublisherMlDsaPubKey(), s.getName(),
@@ -1880,6 +1959,7 @@ class ChannelManagerImpl
 				s.getPinnedPostSeq(),
 				s.requiresApproval());
 		store.putChannel(updated);
+		java.util.Arrays.fill(ephPriv, (byte) 0);
 		myApplicationsStore.put(channelId,
 				new ChannelMyApplicationsStore.MyApplication(
 						my.displayName, null,
@@ -2040,7 +2120,7 @@ class ChannelManagerImpl
 			reactionStore.putReaction(channelId,
 					new org.briarproject.briar.api.channel
 							.ChannelReaction(postSeqNum, emoji,
-									signerEd, signerMl, ts));
+									signerEd, signerMl, ts, sig));
 			fireEvent(channelId,
 					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
 			return;
@@ -2053,7 +2133,7 @@ class ChannelManagerImpl
 			reactionStore.putReaction(channelId,
 					new org.briarproject.briar.api.channel
 							.ChannelReaction(postSeqNum, emoji,
-									signerEd, signerMl, ts));
+									signerEd, signerMl, ts, sig));
 			fireEvent(channelId,
 					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
 		} catch (IOException ex) {
@@ -2100,19 +2180,26 @@ class ChannelManagerImpl
 					pub)) {
 				return safeAck(false);
 			}
+			if (subscriberStore.isBanned(channelId, req.signerEd25519)) {
+				return safeAck(false);
+			}
 			java.util.List<org.briarproject.briar.api.channel
 					.ChannelReaction> existing =
 					reactionStore.getReactions(channelId);
-			if (existing.size()
-					>= ChannelConstants.MAX_REACTIONS_PER_POST
-					* 16) {
+			int perPost = 0;
+			for (org.briarproject.briar.api.channel.ChannelReaction r
+					: existing) {
+				if (r.getPostSeqNum() == req.postSeqNum) perPost++;
+			}
+			if (perPost >= ChannelConstants.MAX_REACTIONS_PER_POST) {
 				return safeAck(false);
 			}
 			reactionStore.putReaction(channelId,
 					new org.briarproject.briar.api.channel
 							.ChannelReaction(req.postSeqNum, req.emoji,
 									req.signerEd25519, req.signerMlDsa,
-									req.timestampHourMs));
+									req.timestampHourMs,
+									req.signature));
 			return safeAck(true);
 		} catch (IOException | DbException ex) {
 			return safeAck(false);

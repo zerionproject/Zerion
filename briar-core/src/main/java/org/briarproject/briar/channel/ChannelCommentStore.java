@@ -51,6 +51,7 @@ class ChannelCommentStore {
 			for (Object o : list) {
 				if (!(o instanceof BdfDictionary)) continue;
 				BdfDictionary d = (BdfDictionary) o;
+				byte[] sig = d.getOptionalRaw("sig");
 				out.add(new ChannelComment(
 						d.getLong("seq"),
 						d.getLong("id"),
@@ -58,7 +59,8 @@ class ChannelCommentStore {
 						d.getString("name"),
 						d.getRaw("ed"),
 						d.getRaw("ml"),
-						d.getLong("ts")));
+						d.getLong("ts"),
+						sig == null ? new byte[0] : sig));
 			}
 			return out;
 		} catch (IOException e) {
@@ -104,6 +106,8 @@ class ChannelCommentStore {
 			d.put("ed", c.getAuthorEd25519PubKey());
 			d.put("ml", c.getAuthorMlDsaPubKey());
 			d.put("ts", c.getTimestampHourMs());
+			byte[] sig = c.getSignature();
+			if (sig != null && sig.length > 0) d.put("sig", sig);
 			list.add(d);
 		}
 		Settings out = new Settings();

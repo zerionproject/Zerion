@@ -100,6 +100,15 @@ public final class ChannelInviteSpanUtil {
 		if (cm == null) return;
 		ClipData clip = ClipData.newPlainText("zerion-channel-invite",
 				link);
+		if (android.os.Build.VERSION.SDK_INT
+				>= android.os.Build.VERSION_CODES.TIRAMISU) {
+			android.os.PersistableBundle extras =
+					new android.os.PersistableBundle();
+			extras.putBoolean(
+					android.content.ClipDescription.EXTRA_IS_SENSITIVE,
+					true);
+			clip.getDescription().setExtras(extras);
+		}
 		cm.setPrimaryClip(clip);
 		Toast.makeText(ctx, R.string.channels_invite_inline_copied,
 				Toast.LENGTH_SHORT).show();

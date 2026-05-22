@@ -90,6 +90,8 @@ class ChannelPullCodec {
 			rd.put("ed", r.getSignerEd25519PubKey());
 			rd.put("ml", r.getSignerMlDsaPubKey());
 			rd.put("ts", r.getTimestampHourMs());
+			byte[] rSig = r.getSignature();
+			if (rSig != null && rSig.length > 0) rd.put("sig", rSig);
 			reactionList.add(rd);
 		}
 		d.put("reactions", reactionList);
@@ -104,6 +106,8 @@ class ChannelPullCodec {
 			cd.put("ed", c.getAuthorEd25519PubKey());
 			cd.put("ml", c.getAuthorMlDsaPubKey());
 			cd.put("ts", c.getTimestampHourMs());
+			byte[] cSig = c.getSignature();
+			if (cSig != null && cSig.length > 0) cd.put("sig", cSig);
 			commentList.add(cd);
 		}
 		d.put("comments", commentList);
@@ -136,13 +140,15 @@ class ChannelPullCodec {
 		for (Object o : reactionList) {
 			if (!(o instanceof BdfDictionary)) continue;
 			BdfDictionary rd = (BdfDictionary) o;
+			byte[] rSig = rd.getOptionalRaw("sig");
 			reactions.add(
 					new org.briarproject.briar.api.channel.ChannelReaction(
 							rd.getLong("seq"),
 							rd.getString("emoji"),
 							rd.getRaw("ed"),
 							rd.getRaw("ml"),
-							rd.getLong("ts")));
+							rd.getLong("ts"),
+							rSig == null ? new byte[0] : rSig));
 		}
 		List<org.briarproject.briar.api.channel.ChannelComment>
 				comments = new ArrayList<>();
@@ -150,6 +156,7 @@ class ChannelPullCodec {
 		for (Object o : commentList) {
 			if (!(o instanceof BdfDictionary)) continue;
 			BdfDictionary cd = (BdfDictionary) o;
+			byte[] cSig = cd.getOptionalRaw("sig");
 			comments.add(
 					new org.briarproject.briar.api.channel.ChannelComment(
 							cd.getLong("seq"),
@@ -158,7 +165,8 @@ class ChannelPullCodec {
 							cd.getString("name"),
 							cd.getRaw("ed"),
 							cd.getRaw("ml"),
-							cd.getLong("ts")));
+							cd.getLong("ts"),
+							cSig == null ? new byte[0] : cSig));
 		}
 		return new PullResponse(manifest, posts, envelope, hints,
 				reactions, comments);

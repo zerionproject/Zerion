@@ -51,18 +51,23 @@ class ChannelContentKey {
 	byte[] wrapContentKey(byte[] capability, byte[] channelId,
 			byte[] contentKey) throws GeneralSecurityException {
 		SecretKey wrapKey = deriveWrapKey(capability, channelId);
-		byte[] iv = new byte[GCM_IV_BYTES];
-		random.nextBytes(iv);
-		Cipher cipher = Cipher.getInstance(AES_GCM);
-		cipher.init(Cipher.ENCRYPT_MODE,
-				new SecretKeySpec(wrapKey.getBytes(), "AES"),
-				new GCMParameterSpec(GCM_TAG_BITS, iv));
-		byte[] ct = cipher.doFinal(contentKey);
-		ByteBuffer envelope =
-				ByteBuffer.allocate(iv.length + ct.length);
-		envelope.put(iv);
-		envelope.put(ct);
-		return envelope.array();
+		byte[] wrapBytes = wrapKey.getBytes();
+		try {
+			byte[] iv = new byte[GCM_IV_BYTES];
+			random.nextBytes(iv);
+			Cipher cipher = Cipher.getInstance(AES_GCM);
+			SecretKeySpec spec = new SecretKeySpec(wrapBytes, "AES");
+			cipher.init(Cipher.ENCRYPT_MODE, spec,
+					new GCMParameterSpec(GCM_TAG_BITS, iv));
+			byte[] ct = cipher.doFinal(contentKey);
+			ByteBuffer envelope =
+					ByteBuffer.allocate(iv.length + ct.length);
+			envelope.put(iv);
+			envelope.put(ct);
+			return envelope.array();
+		} finally {
+			Arrays.fill(wrapBytes, (byte) 0);
+		}
 	}
 
 	byte[] unwrapContentKey(byte[] capability, byte[] channelId,
@@ -74,11 +79,16 @@ class ChannelContentKey {
 		byte[] ct = Arrays.copyOfRange(envelope, GCM_IV_BYTES,
 				envelope.length);
 		SecretKey wrapKey = deriveWrapKey(capability, channelId);
-		Cipher cipher = Cipher.getInstance(AES_GCM);
-		cipher.init(Cipher.DECRYPT_MODE,
-				new SecretKeySpec(wrapKey.getBytes(), "AES"),
-				new GCMParameterSpec(GCM_TAG_BITS, iv));
-		return cipher.doFinal(ct);
+		byte[] wrapBytes = wrapKey.getBytes();
+		try {
+			Cipher cipher = Cipher.getInstance(AES_GCM);
+			cipher.init(Cipher.DECRYPT_MODE,
+					new SecretKeySpec(wrapBytes, "AES"),
+					new GCMParameterSpec(GCM_TAG_BITS, iv));
+			return cipher.doFinal(ct);
+		} finally {
+			Arrays.fill(wrapBytes, (byte) 0);
+		}
 	}
 
 	byte[] encryptBody(byte[] contentKey, byte[] channelId,
