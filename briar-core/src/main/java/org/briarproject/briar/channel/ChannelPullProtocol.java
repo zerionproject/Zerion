@@ -65,7 +65,9 @@ class ChannelPullProtocol {
 			@Nullable byte[] contentKeyEnvelope,
 			List<String> neighbourHints,
 			List<org.briarproject.briar.api.channel.ChannelReaction>
-					reactions) throws IOException {
+					reactions,
+			List<org.briarproject.briar.api.channel.ChannelComment>
+					comments) throws IOException {
 		BdfDictionary manifestDict = pullCodec.encodeManifest(
 				state.getChannelId(), state.getSalt(),
 				publisherEd25519, publisherMlDsa, state.getName(),
@@ -77,7 +79,8 @@ class ChannelPullProtocol {
 				state.getRevokedDelegationSeqs(),
 				state.getPinnedPostSeq(), manifestSignature);
 		return pullCodec.encodePullResponse(manifestDict, postsToSend,
-				contentKeyEnvelope, neighbourHints, reactions);
+				contentKeyEnvelope, neighbourHints, reactions,
+				comments);
 	}
 
 	ProcessResult processSubscriberResponse(byte[] responseBytes,
@@ -126,7 +129,7 @@ class ChannelPullProtocol {
 		}
 
 		return ProcessResult.success(mergedState, accepted,
-				resp.neighbourHints, resp.reactions);
+				resp.neighbourHints, resp.reactions, resp.comments);
 	}
 
 	@Nullable
@@ -243,6 +246,8 @@ class ChannelPullProtocol {
 		final List<String> neighbourHints;
 		final List<org.briarproject.briar.api.channel.ChannelReaction>
 				reactions;
+		final List<org.briarproject.briar.api.channel.ChannelComment>
+				comments;
 		final String error;
 
 		private ProcessResult(boolean ok,
@@ -251,12 +256,15 @@ class ChannelPullProtocol {
 				List<String> neighbourHints,
 				List<org.briarproject.briar.api.channel.ChannelReaction>
 						reactions,
+				List<org.briarproject.briar.api.channel.ChannelComment>
+						comments,
 				String error) {
 			this.ok = ok;
 			this.mergedState = mergedState;
 			this.acceptedPosts = acceptedPosts;
 			this.neighbourHints = neighbourHints;
 			this.reactions = reactions;
+			this.comments = comments;
 			this.error = error;
 		}
 
@@ -264,9 +272,11 @@ class ChannelPullProtocol {
 				List<ChannelPost> acceptedPosts,
 				List<String> neighbourHints,
 				List<org.briarproject.briar.api.channel.ChannelReaction>
-						reactions) {
+						reactions,
+				List<org.briarproject.briar.api.channel.ChannelComment>
+						comments) {
 			return new ProcessResult(true, mergedState, acceptedPosts,
-					neighbourHints, reactions, "");
+					neighbourHints, reactions, comments, "");
 		}
 
 		static ProcessResult failure(String error) {
@@ -275,6 +285,8 @@ class ChannelPullProtocol {
 					Collections.<String>emptyList(),
 					Collections.<org.briarproject.briar.api.channel
 							.ChannelReaction>emptyList(),
+					Collections.<org.briarproject.briar.api.channel
+							.ChannelComment>emptyList(),
 					error);
 		}
 	}

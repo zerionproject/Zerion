@@ -97,4 +97,10 @@ public interface ChannelManager {
 
 	void banSubscriber(byte[] channelId, byte[] ed25519PubKey)
 			throws DbException;
+
+	void postComment(byte[] channelId, long parentPostSeqNum, String body)
+			throws DbException;
+
+	List<ChannelComment> getComments(byte[] channelId, long parentPostSeqNum)
+			throws DbException;
 }

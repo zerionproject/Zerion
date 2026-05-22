@@ -327,6 +327,8 @@ public class ChannelFeedActivity extends ZerionActivity
 				actions.add(() -> handlePin(post.getSeqNum()));
 			}
 		}
+		labels.add(getString(R.string.channels_action_comments));
+		actions.add(() -> openComments(post));
 		labels.add(getString(R.string.channels_action_react));
 		actions.add(() -> showReactionPicker(post));
 		labels.add(getString(R.string.channels_action_copy_text));
@@ -340,6 +342,11 @@ public class ChannelFeedActivity extends ZerionActivity
 				.setItems(labels.toArray(new CharSequence[0]),
 						(d, which) -> actions.get(which).run())
 				.show();
+	}
+
+	private void openComments(ChannelPost post) {
+		startActivity(ChannelCommentsActivity.intent(this, channelId,
+				post.getSeqNum()));
 	}
 
 	private static final String[] REACTION_EMOJIS = {

@@ -151,6 +151,24 @@ class ChannelCodec {
 		return buf.array();
 	}
 
+	byte[] commentSignedInput(byte[] channelId, long parentPostSeqNum,
+			long commentId, String body, String authorName,
+			long timestampHourMs) {
+		byte[] bodyBytes = body.getBytes(StandardCharsets.UTF_8);
+		byte[] nameBytes = authorName.getBytes(StandardCharsets.UTF_8);
+		ByteBuffer buf = ByteBuffer.allocate(channelId.length + 8 + 8
+				+ 4 + bodyBytes.length + 4 + nameBytes.length + 8);
+		buf.put(channelId);
+		buf.putLong(parentPostSeqNum);
+		buf.putLong(commentId);
+		buf.putInt(bodyBytes.length);
+		buf.put(bodyBytes);
+		buf.putInt(nameBytes.length);
+		buf.put(nameBytes);
+		buf.putLong(timestampHourMs);
+		return buf.array();
+	}
+
 	byte[] announceSignedInput(byte[] channelId, String displayName,
 			long timestampHourMs) {
 		byte[] nameBytes = displayName.getBytes(StandardCharsets.UTF_8);

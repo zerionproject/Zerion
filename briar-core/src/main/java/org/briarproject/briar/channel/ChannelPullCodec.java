@@ -64,7 +64,9 @@ class ChannelPullCodec {
 			@Nullable byte[] contentKeyEnvelope,
 			List<String> neighbourHints,
 			List<org.briarproject.briar.api.channel.ChannelReaction>
-					reactions) throws IOException {
+					reactions,
+			List<org.briarproject.briar.api.channel.ChannelComment>
+					comments) throws IOException {
 		BdfDictionary d = new BdfDictionary();
 		d.put("type", ChannelConstants.WIRE_TYPE_PULL_RESPONSE);
 		d.put("manifest", manifest);
@@ -91,6 +93,20 @@ class ChannelPullCodec {
 			reactionList.add(rd);
 		}
 		d.put("reactions", reactionList);
+		BdfList commentList = new BdfList();
+		for (org.briarproject.briar.api.channel.ChannelComment c
+				: comments) {
+			BdfDictionary cd = new BdfDictionary();
+			cd.put("seq", c.getParentPostSeqNum());
+			cd.put("id", c.getCommentId());
+			cd.put("body", c.getBody());
+			cd.put("name", c.getAuthorDisplayName());
+			cd.put("ed", c.getAuthorEd25519PubKey());
+			cd.put("ml", c.getAuthorMlDsaPubKey());
+			cd.put("ts", c.getTimestampHourMs());
+			commentList.add(cd);
+		}
+		d.put("comments", commentList);
 		return writeDict(d);
 	}
 
@@ -128,8 +144,24 @@ class ChannelPullCodec {
 							rd.getRaw("ml"),
 							rd.getLong("ts")));
 		}
+		List<org.briarproject.briar.api.channel.ChannelComment>
+				comments = new ArrayList<>();
+		BdfList commentList = d.getList("comments", new BdfList());
+		for (Object o : commentList) {
+			if (!(o instanceof BdfDictionary)) continue;
+			BdfDictionary cd = (BdfDictionary) o;
+			comments.add(
+					new org.briarproject.briar.api.channel.ChannelComment(
+							cd.getLong("seq"),
+							cd.getLong("id"),
+							cd.getString("body"),
+							cd.getString("name"),
+							cd.getRaw("ed"),
+							cd.getRaw("ml"),
+							cd.getLong("ts")));
+		}
 		return new PullResponse(manifest, posts, envelope, hints,
-				reactions);
+				reactions, comments);
 	}
 
 	BdfDictionary encodeManifest(byte[] channelId, byte[] salt,
@@ -240,6 +272,76 @@ class ChannelPullCodec {
 		d.put("delegationSeq", c.getDelegationSeq());
 		d.put("signature", c.getSignature());
 		return d;
+	}
+
+	byte[] encodeCommentRequest(byte[] channelId, long parentPostSeqNum,
+			long commentId, String body, String authorName,
+			long timestampHourMs, byte[] signerEd, byte[] signerMl,
+			byte[] signature) throws IOException {
+		BdfDictionary d = new BdfDictionary();
+		d.put("type", ChannelConstants.WIRE_TYPE_POST_COMMENT);
+		d.put("channelId", channelId);
+		d.put("seq", parentPostSeqNum);
+		d.put("id", commentId);
+		d.put("body", body);
+		d.put("name", authorName);
+		d.put("ts", timestampHourMs);
+		d.put("ed", signerEd);
+		d.put("ml", signerMl);
+		d.put("sig", signature);
+		return writeDict(d);
+	}
+
+	CommentRequest decodeCommentRequest(byte[] data) throws IOException {
+		BdfDictionary d = readDict(data);
+		String type = d.getString("type");
+		if (!ChannelConstants.WIRE_TYPE_POST_COMMENT.equals(type)) {
+			throw new FormatException();
+		}
+		return new CommentRequest(d.getRaw("channelId"),
+				d.getLong("seq"),
+				d.getLong("id"),
+				d.getString("body"),
+				d.getString("name"),
+				d.getLong("ts"),
+				d.getRaw("ed"),
+				d.getRaw("ml"),
+				d.getRaw("sig"));
+	}
+
+	byte[] encodeCommentAck(boolean ok) throws IOException {
+		BdfDictionary d = new BdfDictionary();
+		d.put("type", ChannelConstants.WIRE_TYPE_COMMENT_ACK);
+		d.put("ok", ok);
+		return writeDict(d);
+	}
+
+	@NotNullByDefault
+	static final class CommentRequest {
+		final byte[] channelId;
+		final long parentPostSeqNum;
+		final long commentId;
+		final String body;
+		final String authorName;
+		final long timestampHourMs;
+		final byte[] signerEd25519;
+		final byte[] signerMlDsa;
+		final byte[] signature;
+
+		CommentRequest(byte[] channelId, long parentPostSeqNum,
+				long commentId, String body, String authorName,
+				long timestampHourMs, byte[] signerEd25519,
+				byte[] signerMlDsa, byte[] signature) {
+			this.channelId = channelId;
+			this.parentPostSeqNum = parentPostSeqNum;
+			this.commentId = commentId;
+			this.body = body;
+			this.authorName = authorName;
+			this.timestampHourMs = timestampHourMs;
+			this.signerEd25519 = signerEd25519;
+			this.signerMlDsa = signerMlDsa;
+			this.signature = signature;
+		}
 	}
 
 	byte[] encodeAnnounceRequest(byte[] channelId, String displayName,
@@ -471,17 +573,22 @@ class ChannelPullCodec {
 		final List<String> neighbourHints;
 		final List<org.briarproject.briar.api.channel.ChannelReaction>
 				reactions;
+		final List<org.briarproject.briar.api.channel.ChannelComment>
+				comments;
 
 		PullResponse(BdfDictionary manifest, List<ChannelPost> newPosts,
 				@Nullable byte[] contentKeyEnvelope,
 				List<String> neighbourHints,
 				List<org.briarproject.briar.api.channel.ChannelReaction>
-						reactions) {
+						reactions,
+				List<org.briarproject.briar.api.channel.ChannelComment>
+						comments) {
 			this.manifest = manifest;
 			this.newPosts = newPosts;
 			this.contentKeyEnvelope = contentKeyEnvelope;
 			this.neighbourHints = neighbourHints;
 			this.reactions = reactions;
+			this.comments = comments;
 		}
 	}
 }

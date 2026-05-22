@@ -36,6 +36,7 @@ public class ChannelState {
 	@Nullable
 	private final String onionPrivateKey;
 	private final long pinnedPostSeq;
+	private final boolean requiresApproval;
 
 	public static final long NO_PINNED_POST = -1L;
 
@@ -51,7 +52,8 @@ public class ChannelState {
 				publicChannel, joinCapability, currentOnion, manifestSeq,
 				weArePublisher, highestKnownPostSeq, null, null,
 				Collections.<ChannelDelegationCert>emptyList(),
-				Collections.<Long>emptyList(), 0L, null, NO_PINNED_POST);
+				Collections.<Long>emptyList(), 0L, null, NO_PINNED_POST,
+				false);
 	}
 
 	public ChannelState(byte[] channelId, byte[] salt,
@@ -71,7 +73,7 @@ public class ChannelState {
 				publicChannel, joinCapability, currentOnion, manifestSeq,
 				weArePublisher, highestKnownPostSeq, contentKeyHash,
 				contentKey, activeDelegations, revokedDelegationSeqs,
-				nextDelegationSeq, null, NO_PINNED_POST);
+				nextDelegationSeq, null, NO_PINNED_POST, false);
 	}
 
 	public ChannelState(byte[] channelId, byte[] salt,
@@ -92,7 +94,8 @@ public class ChannelState {
 				publicChannel, joinCapability, currentOnion, manifestSeq,
 				weArePublisher, highestKnownPostSeq, contentKeyHash,
 				contentKey, activeDelegations, revokedDelegationSeqs,
-				nextDelegationSeq, onionPrivateKey, NO_PINNED_POST);
+				nextDelegationSeq, onionPrivateKey, NO_PINNED_POST,
+				false);
 	}
 
 	public ChannelState(byte[] channelId, byte[] salt,
@@ -109,6 +112,29 @@ public class ChannelState {
 			long nextDelegationSeq,
 			@Nullable String onionPrivateKey,
 			long pinnedPostSeq) {
+		this(channelId, salt, publisherEd25519PubKey, publisherMlDsaPubKey,
+				name, description, avatarHash, createdAtHourMs,
+				publicChannel, joinCapability, currentOnion, manifestSeq,
+				weArePublisher, highestKnownPostSeq, contentKeyHash,
+				contentKey, activeDelegations, revokedDelegationSeqs,
+				nextDelegationSeq, onionPrivateKey, pinnedPostSeq, false);
+	}
+
+	public ChannelState(byte[] channelId, byte[] salt,
+			byte[] publisherEd25519PubKey, byte[] publisherMlDsaPubKey,
+			String name, String description, @Nullable byte[] avatarHash,
+			long createdAtHourMs, boolean publicChannel,
+			@Nullable byte[] joinCapability, String currentOnion,
+			long manifestSeq, boolean weArePublisher,
+			long highestKnownPostSeq,
+			@Nullable byte[] contentKeyHash,
+			@Nullable byte[] contentKey,
+			List<ChannelDelegationCert> activeDelegations,
+			List<Long> revokedDelegationSeqs,
+			long nextDelegationSeq,
+			@Nullable String onionPrivateKey,
+			long pinnedPostSeq,
+			boolean requiresApproval) {
 		this.channelId = channelId;
 		this.salt = salt;
 		this.publisherEd25519PubKey = publisherEd25519PubKey;
@@ -132,10 +158,15 @@ public class ChannelState {
 		this.nextDelegationSeq = nextDelegationSeq;
 		this.onionPrivateKey = onionPrivateKey;
 		this.pinnedPostSeq = pinnedPostSeq;
+		this.requiresApproval = requiresApproval;
 	}
 
 	public long getPinnedPostSeq() {
 		return pinnedPostSeq;
+	}
+
+	public boolean requiresApproval() {
+		return requiresApproval;
 	}
 
 	@Nullable

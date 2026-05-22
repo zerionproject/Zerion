@@ -85,6 +85,30 @@ public final class ChannelConstants {
 			"org.briarproject.zerion/CHANNEL_ANNOUNCE";
 	public static final int MAX_DISPLAY_NAME_BYTES = 64;
 	public static final int MAX_ANNOUNCED_SUBSCRIBERS = 4096;
+	public static final String WIRE_TYPE_POST_COMMENT =
+			"ZERION_CHANNEL_POST_COMMENT_V1";
+	public static final String WIRE_TYPE_COMMENT_ACK =
+			"ZERION_CHANNEL_COMMENT_ACK_V1";
+	public static final String SIGNING_LABEL_COMMENT =
+			"org.briarproject.zerion/CHANNEL_COMMENT";
+	public static final int MAX_COMMENT_BODY_CHARS = 1024;
+	public static final int MAX_COMMENTS_PER_CHANNEL = 4096;
+	public static final String WIRE_TYPE_APPLY_TO_JOIN =
+			"ZERION_CHANNEL_APPLY_TO_JOIN_V1";
+	public static final String WIRE_TYPE_APPLY_ACK =
+			"ZERION_CHANNEL_APPLY_ACK_V1";
+	public static final String WIRE_TYPE_CHECK_APPROVAL =
+			"ZERION_CHANNEL_CHECK_APPROVAL_V1";
+	public static final String WIRE_TYPE_APPROVAL_RESPONSE =
+			"ZERION_CHANNEL_APPROVAL_RESPONSE_V1";
+	public static final String SIGNING_LABEL_APPLICATION =
+			"org.briarproject.zerion/CHANNEL_APPLICATION";
+	public static final String SIGNING_LABEL_CHECK_APPROVAL =
+			"org.briarproject.zerion/CHANNEL_CHECK_APPROVAL";
+	public static final String APPROVAL_WRAP_LABEL =
+			"org.briarproject.zerion/CHANNEL_APPROVAL_WRAP";
+	public static final int MAX_PENDING_APPLICATIONS = 256;
+	public static final String INVITE_LINK_APPROVAL_PARAM = "p";
 
 	public static final long TTL_OFF = 0L;
 	public static final long TTL_ONE_HOUR_MS = 60L * 60L * 1000L;

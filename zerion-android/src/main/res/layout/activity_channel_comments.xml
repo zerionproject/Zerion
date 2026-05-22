@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="@color/window_background"
+	android:fitsSystemWindows="true">
+
+	<androidx.appcompat.widget.Toolbar
+		android:id="@+id/commentsToolbar"
+		android:layout_width="match_parent"
+		android:layout_height="?attr/actionBarSize"
+		android:background="@color/window_background"
+		app:layout_constraintTop_toTopOf="parent"
+		app:title="@string/channels_comments_title"
+		app:titleTextColor="@color/zerion_text_primary" />
+
+	<androidx.recyclerview.widget.RecyclerView
+		android:id="@+id/commentsRecycler"
+		android:layout_width="match_parent"
+		android:layout_height="0dp"
+		android:paddingTop="6dp"
+		android:paddingBottom="12dp"
+		app:layout_constraintBottom_toTopOf="@+id/commentsComposeBar"
+		app:layout_constraintTop_toBottomOf="@+id/commentsToolbar" />
+
+	<TextView
+		android:id="@+id/commentsEmptyView"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:gravity="center"
+		android:paddingStart="32dp"
+		android:paddingEnd="32dp"
+		android:paddingTop="64dp"
+		android:text="@string/channels_comments_empty"
+		android:textColor="@color/zerion_text_secondary"
+		android:textSize="14sp"
+		android:visibility="gone"
+		app:layout_constraintTop_toBottomOf="@+id/commentsToolbar" />
+
+	<LinearLayout
+		android:id="@+id/commentsComposeBar"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:background="@color/window_background"
+		android:gravity="center_vertical"
+		android:orientation="horizontal"
+		android:paddingStart="16dp"
+		android:paddingEnd="12dp"
+		android:paddingTop="10dp"
+		android:paddingBottom="14dp"
+		app:layout_constraintBottom_toBottomOf="parent">
+
+		<EditText
+			android:id="@+id/commentsComposeInput"
+			android:layout_width="0dp"
+			android:layout_height="wrap_content"
+			android:layout_weight="1"
+			android:background="@drawable/bg_input_bar"
+			android:hint="@string/channels_comments_hint"
+			android:inputType="textMultiLine|textCapSentences"
+			android:maxLength="1024"
+			android:maxLines="4"
+			android:minHeight="44dp"
+			android:paddingStart="14dp"
+			android:paddingEnd="14dp"
+			android:paddingTop="10dp"
+			android:paddingBottom="10dp"
+			android:textColor="@color/zerion_text_primary"
+			android:textColorHint="@color/zerion_text_secondary"
+			android:textSize="15sp"
+			android:importantForAutofill="no" />
+
+		<com.google.android.material.button.MaterialButton
+			android:id="@+id/commentsComposeSendButton"
+			style="@style/Widget.MaterialComponents.Button.TextButton"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_marginStart="8dp"
+			android:minWidth="0dp"
+			android:text="@string/channels_comments_send"
+			android:textColor="@color/zerion_primary_accent" />
+
+	</LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

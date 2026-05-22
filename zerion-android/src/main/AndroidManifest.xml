@@ -108,6 +108,12 @@
 			android:exported="false"
 			android:theme="@style/ZerionTheme.NoActionBar" />
 
+		<activity
+			android:name="com.professor.zerion.android.channel.ChannelCommentsActivity"
+			android:exported="false"
+			android:theme="@style/ZerionTheme.NoActionBar"
+			android:windowSoftInputMode="adjustResize" />
+
 		<service
 			android:name="com.professor.zerion.android.NotificationCleanupService"
 			android:exported="false" />

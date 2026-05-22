@@ -339,6 +339,14 @@
 	<string name="channels_subscribers_ban">Ban subscriber</string>
 	<string name="channels_subscribers_ban_confirm">Ban this subscriber? This will rotate the join capability for closed channels — every other subscriber will need a new invite link.</string>
 	<string name="channels_subscribers_banned_label">Banned</string>
+	<string name="channels_action_comments">Comments</string>
+	<string name="channels_comments_title">Comments</string>
+	<string name="channels_comments_empty">No comments yet. Be the first to reply.</string>
+	<string name="channels_comments_hint">Write a comment…</string>
+	<string name="channels_comments_send">Send</string>
+	<string name="channels_comments_failed">Could not send comment</string>
+	<string name="channels_comments_count">%1$d comments</string>
+	<string name="channels_comments_count_one">1 comment</string>
 	<string name="vault_button">zVault</string>
 	<!-- This is part of the main menu. The app will be locked when this is tapped. -->
 	<string name="lock_button">Lock App</string>

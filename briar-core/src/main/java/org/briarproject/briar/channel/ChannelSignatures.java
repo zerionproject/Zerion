@@ -115,4 +115,23 @@ class ChannelSignatures {
 			return false;
 		}
 	}
+
+	@CryptoExecutor
+	byte[] signComment(byte[] signedInput, PrivateKey hybridPrivateKey)
+			throws GeneralSecurityException {
+		return crypto.hybridSign(
+				ChannelConstants.SIGNING_LABEL_COMMENT,
+				signedInput, hybridPrivateKey);
+	}
+
+	boolean verifyComment(byte[] signature, byte[] signedInput,
+			PublicKey hybridPublicKey) {
+		try {
+			return crypto.verifyHybridSignature(signature,
+					ChannelConstants.SIGNING_LABEL_COMMENT,
+					signedInput, hybridPublicKey);
+		} catch (GeneralSecurityException e) {
+			return false;
+		}
+	}
 }

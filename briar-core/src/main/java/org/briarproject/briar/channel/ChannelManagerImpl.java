@@ -61,6 +61,7 @@ class ChannelManagerImpl
 	private final ChannelBlobStore blobStore;
 	private final ChannelReactionStore reactionStore;
 	private final ChannelSubscriberStore subscriberStore;
+	private final ChannelCommentStore commentStore;
 	private final IdentityManager identityManager;
 	private final TaskScheduler taskScheduler;
 	private final java.util.concurrent.Executor ioExecutor;
@@ -90,6 +91,7 @@ class ChannelManagerImpl
 			ChannelBlobStore blobStore,
 			ChannelReactionStore reactionStore,
 			ChannelSubscriberStore subscriberStore,
+			ChannelCommentStore commentStore,
 			IdentityManager identityManager,
 			TaskScheduler taskScheduler,
 			@IoExecutor java.util.concurrent.Executor ioExecutor) {
@@ -107,6 +109,7 @@ class ChannelManagerImpl
 		this.blobStore = blobStore;
 		this.reactionStore = reactionStore;
 		this.subscriberStore = subscriberStore;
+		this.commentStore = commentStore;
 		this.identityManager = identityManager;
 		this.taskScheduler = taskScheduler;
 		this.ioExecutor = ioExecutor;
@@ -334,6 +337,9 @@ class ChannelManagerImpl
 		if (ChannelConstants.WIRE_TYPE_ANNOUNCE.equals(wireType)) {
 			return handleAnnounceRequest(channelId, requestBytes);
 		}
+		if (ChannelConstants.WIRE_TYPE_POST_COMMENT.equals(wireType)) {
+			return handleCommentRequest(channelId, requestBytes);
+		}
 		try {
 			ChannelPullCodec.PullRequest req = pullCodec()
 					.decodePullRequest(requestBytes);
@@ -368,12 +374,15 @@ class ChannelManagerImpl
 			java.util.List<org.briarproject.briar.api.channel
 					.ChannelReaction> reactions =
 					reactionStore.getReactions(channelId);
+			java.util.List<org.briarproject.briar.api.channel
+					.ChannelComment> comments =
+					commentStore.getComments(channelId);
 			return pullProtocol.buildResponseAsPublisher(s,
 					s.getPublisherEd25519PubKey(),
 					s.getPublisherMlDsaPubKey(), manifestSig,
 					wirePosts, envelope,
 					java.util.Collections.<String>emptyList(),
-					reactions);
+					reactions, comments);
 		} catch (IOException | DbException e) {
 			return new byte[0];
 		}
@@ -480,6 +489,19 @@ class ChannelManagerImpl
 			acceptIncomingPost(channelId, p);
 		}
 		applyIncomingReactions(channelId, r.reactions);
+		applyIncomingComments(channelId, r.comments);
+	}
+
+	private void applyIncomingComments(byte[] channelId,
+			java.util.List<org.briarproject.briar.api.channel
+					.ChannelComment> incoming) throws DbException {
+		if (incoming.isEmpty()) return;
+		for (org.briarproject.briar.api.channel.ChannelComment c
+				: incoming) {
+			commentStore.putComment(channelId, c);
+		}
+		fireEvent(channelId,
+				ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
 	}
 
 	private void applyIncomingReactions(byte[] channelId,
@@ -547,6 +569,7 @@ class ChannelManagerImpl
 		blobStore.removeAllForChannel(channelId);
 		reactionStore.removeAll(channelId);
 		subscriberStore.removeAll(channelId);
+		commentStore.removeAll(channelId);
 		fireEvent(channelId, ChannelStateChangedEvent.Kind.LEFT);
 	}
 
@@ -617,6 +640,7 @@ class ChannelManagerImpl
 		blobStore.removeAllForChannel(channelId);
 		reactionStore.removeAll(channelId);
 		subscriberStore.removeAll(channelId);
+		commentStore.removeAll(channelId);
 		fireEvent(channelId, ChannelStateChangedEvent.Kind.LEFT);
 	}
 
@@ -1155,6 +1179,139 @@ class ChannelManagerImpl
 	}
 
 	@Override
+	public void postComment(byte[] channelId, long parentPostSeqNum,
+			String body) throws DbException {
+		String trimmed = body.trim();
+		if (trimmed.isEmpty()
+				|| trimmed.length()
+						> ChannelConstants.MAX_COMMENT_BODY_CHARS) {
+			throw new DbException();
+		}
+		ChannelState s = store.getChannel(channelId);
+		if (s == null) throw new DbException();
+		LocalAuthor me = identityManager.getLocalAuthor();
+		byte[] hybridPubEncoded = me.getPublicKey().getEncoded();
+		byte[] signerEd = new byte[32];
+		byte[] signerMl = new byte[hybridPubEncoded.length - 32];
+		System.arraycopy(hybridPubEncoded, 0, signerEd, 0, 32);
+		System.arraycopy(hybridPubEncoded, 32, signerMl, 0,
+				signerMl.length);
+		long ts = clock.currentTimeMillis() / HOUR_MS * HOUR_MS;
+		String authorName = pickAuthorName(channelId, signerEd, me);
+		long commentId = random.nextLong();
+		byte[] signedInput = codec.commentSignedInput(channelId,
+				parentPostSeqNum, commentId, trimmed, authorName, ts);
+		byte[] sig;
+		try {
+			sig = signatures.signComment(signedInput,
+					me.getPrivateKey());
+		} catch (GeneralSecurityException ex) {
+			throw new DbException(ex);
+		}
+		org.briarproject.briar.api.channel.ChannelComment row =
+				new org.briarproject.briar.api.channel.ChannelComment(
+						parentPostSeqNum, commentId, trimmed, authorName,
+						signerEd, signerMl, ts);
+		if (s.weArePublisher()) {
+			commentStore.putComment(channelId, row);
+			fireEvent(channelId,
+					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+			return;
+		}
+		try {
+			byte[] reqBytes = pullCodec().encodeCommentRequest(
+					channelId, parentPostSeqNum, commentId, trimmed,
+					authorName, ts, signerEd, signerMl, sig);
+			transport.requestFromOnion(s.getCurrentOnion(), reqBytes);
+			commentStore.putComment(channelId, row);
+			fireEvent(channelId,
+					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+		} catch (IOException ex) {
+			throw new DbException(ex);
+		}
+	}
+
+	private String pickAuthorName(byte[] channelId, byte[] signerEd,
+			LocalAuthor me) throws DbException {
+		for (ChannelSubscriber sub
+				: subscriberStore.getSubscribers(channelId)) {
+			if (java.util.Arrays.equals(sub.getEd25519PubKey(), signerEd)) {
+				return sub.getDisplayName();
+			}
+		}
+		return me.getName();
+	}
+
+	@Override
+	public java.util.List<org.briarproject.briar.api.channel
+			.ChannelComment> getComments(byte[] channelId,
+					long parentPostSeqNum) throws DbException {
+		java.util.List<org.briarproject.briar.api.channel
+				.ChannelComment> all =
+				commentStore.getComments(channelId);
+		java.util.List<org.briarproject.briar.api.channel
+				.ChannelComment> out = new ArrayList<>();
+		for (org.briarproject.briar.api.channel.ChannelComment c : all) {
+			if (c.getParentPostSeqNum() == parentPostSeqNum) out.add(c);
+		}
+		return out;
+	}
+
+	private byte[] handleCommentRequest(byte[] channelId,
+			byte[] requestBytes) {
+		try {
+			ChannelPullCodec.CommentRequest req = pullCodec()
+					.decodeCommentRequest(requestBytes);
+			if (!java.util.Arrays.equals(req.channelId, channelId)) {
+				return safeCommentAck(false);
+			}
+			if (req.body.isEmpty()
+					|| req.body.length()
+							> ChannelConstants.MAX_COMMENT_BODY_CHARS) {
+				return safeCommentAck(false);
+			}
+			byte[] signedInput = codec.commentSignedInput(channelId,
+					req.parentPostSeqNum, req.commentId, req.body,
+					req.authorName, req.timestampHourMs);
+			org.briarproject.bramble.api.crypto.HybridSignaturePublicKey
+					pub = new org.briarproject.bramble.api.crypto
+					.HybridSignaturePublicKey(req.signerEd25519,
+							req.signerMlDsa);
+			if (!signatures.verifyComment(req.signature, signedInput,
+					pub)) {
+				return safeCommentAck(false);
+			}
+			if (subscriberStore.isBanned(channelId, req.signerEd25519)) {
+				return safeCommentAck(false);
+			}
+			java.util.List<org.briarproject.briar.api.channel
+					.ChannelComment> existing =
+					commentStore.getComments(channelId);
+			if (existing.size()
+					>= ChannelConstants.MAX_COMMENTS_PER_CHANNEL) {
+				return safeCommentAck(false);
+			}
+			commentStore.putComment(channelId,
+					new org.briarproject.briar.api.channel.ChannelComment(
+							req.parentPostSeqNum, req.commentId,
+							req.body, req.authorName,
+							req.signerEd25519, req.signerMlDsa,
+							req.timestampHourMs));
+			return safeCommentAck(true);
+		} catch (IOException | DbException ex) {
+			return safeCommentAck(false);
+		}
+	}
+
+	private byte[] safeCommentAck(boolean ok) {
+		try {
+			return pullCodec().encodeCommentAck(ok);
+		} catch (IOException ex) {
+			return new byte[0];
+		}
+	}
+
+	@Override
 	public void announceMyself(byte[] channelId, String displayName)
 			throws DbException {
 		String trimmed = displayName.trim();
@@ -1494,6 +1651,7 @@ class ChannelManagerImpl
 				}
 				for (Long seq : expiredSeqs) {
 					reactionStore.removeForPost(channelId, seq);
+					commentStore.removeForParent(channelId, seq);
 				}
 			} finally {
 				lock.unlock();
