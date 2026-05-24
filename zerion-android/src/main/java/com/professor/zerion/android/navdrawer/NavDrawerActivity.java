@@ -186,7 +186,7 @@ public class NavDrawerActivity extends ZerionActivity implements
 	private void setupClickListeners() {
 		profileIcon.setOnClickListener(v -> {
 			com.professor.zerion.android.util.Haptics.tap(v);
-			showProfileSheet();
+			openSettings();
 		});
 		searchButton.setOnClickListener(v -> {
 			com.professor.zerion.android.util.Haptics.tap(v);
@@ -322,38 +322,6 @@ public class NavDrawerActivity extends ZerionActivity implements
 				.setCustomAnimations(R.anim.fade_in, R.anim.fade_out)
 				.replace(R.id.fragmentContainer, fragment, TorStatusFragment.TAG)
 				.commit();
-	}
-
-	private static final int PROFILE_MENU_SETTINGS = 102;
-	private static final int PROFILE_MENU_LOCK = 103;
-	private static final int PROFILE_MENU_SIGN_OUT = 104;
-
-	private void showProfileSheet() {
-		PopupMenu popup = new PopupMenu(this, profileIcon);
-		popup.getMenu().add(0, PROFILE_MENU_SETTINGS, 0,
-				R.string.settings_button);
-		if (lockManager.isLockable().getValue() != null
-				&& lockManager.isLockable().getValue()) {
-			popup.getMenu().add(0, PROFILE_MENU_LOCK, 1,
-					R.string.lock_button);
-		}
-		popup.getMenu().add(0, PROFILE_MENU_SIGN_OUT, 2,
-				R.string.sign_out_button);
-		popup.setOnMenuItemClickListener(item -> {
-			int id = item.getItemId();
-			if (id == PROFILE_MENU_SETTINGS) {
-				openSettings();
-				return true;
-			} else if (id == PROFILE_MENU_LOCK) {
-				lockApp();
-				return true;
-			} else if (id == PROFILE_MENU_SIGN_OUT) {
-				signOut();
-				return true;
-			}
-			return false;
-		});
-		popup.show();
 	}
 
 	private void showOverflowMenu() {
