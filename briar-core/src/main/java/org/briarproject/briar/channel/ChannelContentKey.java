@@ -22,6 +22,19 @@ class ChannelContentKey {
 	private static final String AES_GCM = "AES/GCM/NoPadding";
 	private static final int GCM_IV_BYTES = 12;
 	private static final int GCM_TAG_BITS = 128;
+
+	private static void zeroSecretKeySpec(SecretKeySpec spec) {
+		try {
+			java.lang.reflect.Field f =
+					SecretKeySpec.class.getDeclaredField("key");
+			f.setAccessible(true);
+			Object v = f.get(spec);
+			if (v instanceof byte[]) {
+				Arrays.fill((byte[]) v, (byte) 0);
+			}
+		} catch (ReflectiveOperationException ignored) {
+		}
+	}
 	private static final String DERIVE_LABEL_WRAP =
 			"org.briarproject.zerion/CHANNEL_CONTENT_KEY_WRAP";
 	private static final String DERIVE_LABEL_BODY_NONCE =
@@ -52,11 +65,11 @@ class ChannelContentKey {
 			byte[] contentKey) throws GeneralSecurityException {
 		SecretKey wrapKey = deriveWrapKey(capability, channelId);
 		byte[] wrapBytes = wrapKey.getBytes();
+		SecretKeySpec spec = new SecretKeySpec(wrapBytes, "AES");
 		try {
 			byte[] iv = new byte[GCM_IV_BYTES];
 			random.nextBytes(iv);
 			Cipher cipher = Cipher.getInstance(AES_GCM);
-			SecretKeySpec spec = new SecretKeySpec(wrapBytes, "AES");
 			cipher.init(Cipher.ENCRYPT_MODE, spec,
 					new GCMParameterSpec(GCM_TAG_BITS, iv));
 			byte[] ct = cipher.doFinal(contentKey);
@@ -67,6 +80,7 @@ class ChannelContentKey {
 			return envelope.array();
 		} finally {
 			Arrays.fill(wrapBytes, (byte) 0);
+			zeroSecretKeySpec(spec);
 		}
 	}
 
@@ -80,14 +94,15 @@ class ChannelContentKey {
 				envelope.length);
 		SecretKey wrapKey = deriveWrapKey(capability, channelId);
 		byte[] wrapBytes = wrapKey.getBytes();
+		SecretKeySpec spec = new SecretKeySpec(wrapBytes, "AES");
 		try {
 			Cipher cipher = Cipher.getInstance(AES_GCM);
-			cipher.init(Cipher.DECRYPT_MODE,
-					new SecretKeySpec(wrapBytes, "AES"),
+			cipher.init(Cipher.DECRYPT_MODE, spec,
 					new GCMParameterSpec(GCM_TAG_BITS, iv));
 			return cipher.doFinal(ct);
 		} finally {
 			Arrays.fill(wrapBytes, (byte) 0);
+			zeroSecretKeySpec(spec);
 		}
 	}
 
@@ -96,13 +111,17 @@ class ChannelContentKey {
 			throws GeneralSecurityException {
 		byte[] nonce = bodyNonce(channelId, seqNum);
 		byte[] aad = bodyAad(channelId, seqNum);
-		Cipher cipher = Cipher.getInstance(AES_GCM);
-		cipher.init(Cipher.ENCRYPT_MODE,
-				new SecretKeySpec(contentKey, "AES"),
-				new GCMParameterSpec(GCM_TAG_BITS, nonce));
-		cipher.updateAAD(aad);
-		return cipher.doFinal(
-				plaintextBody.getBytes(StandardCharsets.UTF_8));
+		SecretKeySpec spec = new SecretKeySpec(contentKey, "AES");
+		try {
+			Cipher cipher = Cipher.getInstance(AES_GCM);
+			cipher.init(Cipher.ENCRYPT_MODE, spec,
+					new GCMParameterSpec(GCM_TAG_BITS, nonce));
+			cipher.updateAAD(aad);
+			return cipher.doFinal(
+					plaintextBody.getBytes(StandardCharsets.UTF_8));
+		} finally {
+			zeroSecretKeySpec(spec);
+		}
 	}
 
 	String decryptBody(byte[] contentKey, byte[] channelId,
@@ -110,13 +129,17 @@ class ChannelContentKey {
 			throws GeneralSecurityException {
 		byte[] nonce = bodyNonce(channelId, seqNum);
 		byte[] aad = bodyAad(channelId, seqNum);
-		Cipher cipher = Cipher.getInstance(AES_GCM);
-		cipher.init(Cipher.DECRYPT_MODE,
-				new SecretKeySpec(contentKey, "AES"),
-				new GCMParameterSpec(GCM_TAG_BITS, nonce));
-		cipher.updateAAD(aad);
-		byte[] plain = cipher.doFinal(ciphertextBody);
-		return new String(plain, StandardCharsets.UTF_8);
+		SecretKeySpec spec = new SecretKeySpec(contentKey, "AES");
+		try {
+			Cipher cipher = Cipher.getInstance(AES_GCM);
+			cipher.init(Cipher.DECRYPT_MODE, spec,
+					new GCMParameterSpec(GCM_TAG_BITS, nonce));
+			cipher.updateAAD(aad);
+			byte[] plain = cipher.doFinal(ciphertextBody);
+			return new String(plain, StandardCharsets.UTF_8);
+		} finally {
+			zeroSecretKeySpec(spec);
+		}
 	}
 
 	byte[] generateAttachmentKey() {
@@ -131,16 +154,20 @@ class ChannelContentKey {
 		byte[] nonce = new byte[GCM_IV_BYTES];
 		random.nextBytes(nonce);
 		byte[] aad = blobAad(channelId, mime, sizeBytes);
-		Cipher cipher = Cipher.getInstance(AES_GCM);
-		cipher.init(Cipher.ENCRYPT_MODE,
-				new SecretKeySpec(perAttKey, "AES"),
-				new GCMParameterSpec(GCM_TAG_BITS, nonce));
-		cipher.updateAAD(aad);
-		byte[] ct = cipher.doFinal(plaintext);
-		ByteBuffer out = ByteBuffer.allocate(nonce.length + ct.length);
-		out.put(nonce);
-		out.put(ct);
-		return out.array();
+		SecretKeySpec spec = new SecretKeySpec(perAttKey, "AES");
+		try {
+			Cipher cipher = Cipher.getInstance(AES_GCM);
+			cipher.init(Cipher.ENCRYPT_MODE, spec,
+					new GCMParameterSpec(GCM_TAG_BITS, nonce));
+			cipher.updateAAD(aad);
+			byte[] ct = cipher.doFinal(plaintext);
+			ByteBuffer out = ByteBuffer.allocate(nonce.length + ct.length);
+			out.put(nonce);
+			out.put(ct);
+			return out.array();
+		} finally {
+			zeroSecretKeySpec(spec);
+		}
 	}
 
 	byte[] decryptBlob(byte[] perAttKey, byte[] channelId, String mime,
@@ -152,12 +179,16 @@ class ChannelContentKey {
 		byte[] nonce = Arrays.copyOfRange(blob, 0, GCM_IV_BYTES);
 		byte[] ct = Arrays.copyOfRange(blob, GCM_IV_BYTES, blob.length);
 		byte[] aad = blobAad(channelId, mime, sizeBytes);
-		Cipher cipher = Cipher.getInstance(AES_GCM);
-		cipher.init(Cipher.DECRYPT_MODE,
-				new SecretKeySpec(perAttKey, "AES"),
-				new GCMParameterSpec(GCM_TAG_BITS, nonce));
-		cipher.updateAAD(aad);
-		return cipher.doFinal(ct);
+		SecretKeySpec spec = new SecretKeySpec(perAttKey, "AES");
+		try {
+			Cipher cipher = Cipher.getInstance(AES_GCM);
+			cipher.init(Cipher.DECRYPT_MODE, spec,
+					new GCMParameterSpec(GCM_TAG_BITS, nonce));
+			cipher.updateAAD(aad);
+			return cipher.doFinal(ct);
+		} finally {
+			zeroSecretKeySpec(spec);
+		}
 	}
 
 	private byte[] blobAad(byte[] channelId, String mime, long sizeBytes) {

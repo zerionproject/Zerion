@@ -67,6 +67,7 @@ class ChannelManagerImpl
 	private final ChannelApplicationStore applicationStore;
 	private final ChannelMyApplicationsStore myApplicationsStore;
 	private final ChannelTombstoneStore tombstoneStore;
+	private final ChannelPostTombstoneStore postTombstoneStore;
 	private final IdentityManager identityManager;
 	private final TaskScheduler taskScheduler;
 	private final java.util.concurrent.Executor ioExecutor;
@@ -104,6 +105,7 @@ class ChannelManagerImpl
 			ChannelApplicationStore applicationStore,
 			ChannelMyApplicationsStore myApplicationsStore,
 			ChannelTombstoneStore tombstoneStore,
+			ChannelPostTombstoneStore postTombstoneStore,
 			IdentityManager identityManager,
 			TaskScheduler taskScheduler,
 			@IoExecutor java.util.concurrent.Executor ioExecutor) {
@@ -125,6 +127,7 @@ class ChannelManagerImpl
 		this.applicationStore = applicationStore;
 		this.myApplicationsStore = myApplicationsStore;
 		this.tombstoneStore = tombstoneStore;
+		this.postTombstoneStore = postTombstoneStore;
 		this.identityManager = identityManager;
 		this.taskScheduler = taskScheduler;
 		this.ioExecutor = ioExecutor;
@@ -690,6 +693,7 @@ class ChannelManagerImpl
 		commentStore.removeAll(channelId);
 		applicationStore.removeAll(channelId);
 		myApplicationsStore.remove(channelId);
+		postTombstoneStore.removeAll(channelId);
 		fireEvent(channelId, ChannelStateChangedEvent.Kind.LEFT);
 	}
 
@@ -884,7 +888,8 @@ class ChannelManagerImpl
 				&& kContent != null;
 
 		String channelIdHex = ChannelStore.hex(channelId);
-		java.util.Set<Long> deletedSeqs = new java.util.HashSet<>();
+		java.util.Set<Long> deletedSeqs = new java.util.HashSet<>(
+				postTombstoneStore.get(channelId));
 		List<ChannelPost> decoded = new ArrayList<>(all.size());
 		for (ChannelPost p : all) {
 			ChannelPost view = encrypted ? decryptForDisplay(p, kContent)
@@ -892,7 +897,12 @@ class ChannelManagerImpl
 			decoded.add(view);
 			Long target = parseTombstoneTarget(view.getBody(),
 					channelIdHex);
-			if (target != null) deletedSeqs.add(target);
+			if (target != null && deletedSeqs.add(target)) {
+				try {
+					postTombstoneStore.add(channelId, target);
+				} catch (DbException ignored) {
+				}
+			}
 		}
 
 		List<ChannelPost> visible = new ArrayList<>(decoded.size());
@@ -1175,6 +1185,7 @@ class ChannelManagerImpl
 			String body = ChannelConstants.TOMBSTONE_PREFIX
 					+ ChannelStore.hex(channelId) + ":" + seqNum + ":D";
 			boolean autoUnpin = s.getPinnedPostSeq() == seqNum;
+			postTombstoneStore.add(channelId, seqNum);
 			publishPostLocked(channelId, body, 0L);
 			if (autoUnpin) {
 				setPinnedPostSeqLocked(channelId,
