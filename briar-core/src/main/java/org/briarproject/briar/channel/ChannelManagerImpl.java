@@ -82,7 +82,7 @@ class ChannelManagerImpl
 	private final java.util.Map<String, Long> lastApprovalPollMs =
 			new java.util.concurrent.ConcurrentHashMap<>();
 	private static final long APPROVAL_POLL_MIN_INTERVAL_MS =
-			5L * 60L * 1000L;
+			30L * 1000L;
 
 	private java.util.concurrent.locks.ReentrantLock lockFor(
 			byte[] channelId) {
@@ -1893,7 +1893,6 @@ class ChannelManagerImpl
 		}
 		if (my == null) return;
 		if (my.status != ApplicationStatus.PENDING) return;
-		if (my.ephemeralAgreementPriv == null) return;
 		String key = ChannelStore.hex(channelId);
 		long now = clock.currentTimeMillis();
 		Long last = lastApprovalPollMs.get(key);
@@ -1953,61 +1952,74 @@ class ChannelManagerImpl
 			ChannelMyApplicationsStore.MyApplication my, byte[] kemCt,
 			byte[] envelope) throws DbException {
 		byte[] ephPriv = my.ephemeralAgreementPriv;
-		if (ephPriv == null) return;
-		org.briarproject.bramble.api.crypto.KeyParser parser =
-				crypto.getHybridAgreementKeyParser();
-		org.briarproject.bramble.api.crypto.PrivateKey privKey;
-		org.briarproject.bramble.api.crypto.PublicKey pubKey;
-		try {
-			privKey = parser.parsePrivateKey(ephPriv);
-			pubKey = parser.parsePublicKey(my.ephemeralAgreementPub);
-		} catch (GeneralSecurityException ex) {
-			return;
-		}
-		org.briarproject.bramble.api.crypto.KeyPair kp =
-				new org.briarproject.bramble.api.crypto.KeyPair(pubKey,
-						privKey);
-		byte[] sharedSecret;
-		try {
-			org.briarproject.bramble.api.crypto.SecretKey ss =
-					crypto.deriveHybridSharedSecretAsResponder(
-							ChannelConstants.APPROVAL_WRAP_LABEL,
-							pubKey, kp, kemCt);
-			sharedSecret = ss.getBytes();
-		} catch (GeneralSecurityException ex) {
-			return;
-		}
-		byte[] capability;
-		try {
-			capability = unwrapApprovalCapability(channelId, sharedSecret,
-					envelope);
-		} catch (GeneralSecurityException ex) {
+		if (ephPriv != null) {
+			org.briarproject.bramble.api.crypto.KeyParser parser =
+					crypto.getHybridAgreementKeyParser();
+			org.briarproject.bramble.api.crypto.PrivateKey privKey;
+			org.briarproject.bramble.api.crypto.PublicKey pubKey;
+			try {
+				privKey = parser.parsePrivateKey(ephPriv);
+				pubKey = parser.parsePublicKey(my.ephemeralAgreementPub);
+			} catch (GeneralSecurityException ex) {
+				markApprovedStatusOnly(channelId, my);
+				return;
+			}
+			org.briarproject.bramble.api.crypto.KeyPair kp =
+					new org.briarproject.bramble.api.crypto.KeyPair(pubKey,
+							privKey);
+			byte[] sharedSecret;
+			try {
+				org.briarproject.bramble.api.crypto.SecretKey ss =
+						crypto.deriveHybridSharedSecretAsResponder(
+								ChannelConstants.APPROVAL_WRAP_LABEL,
+								pubKey, kp, kemCt);
+				sharedSecret = ss.getBytes();
+			} catch (GeneralSecurityException ex) {
+				return;
+			}
+			byte[] capability;
+			try {
+				capability = unwrapApprovalCapability(channelId,
+						sharedSecret, envelope);
+			} catch (GeneralSecurityException ex) {
+				java.util.Arrays.fill(sharedSecret, (byte) 0);
+				return;
+			}
 			java.util.Arrays.fill(sharedSecret, (byte) 0);
+			ChannelState s = store.getChannel(channelId);
+			if (s == null) {
+				java.util.Arrays.fill(capability, (byte) 0);
+				return;
+			}
+			ChannelState updated = new ChannelState(s.getChannelId(),
+					s.getSalt(), s.getPublisherEd25519PubKey(),
+					s.getPublisherMlDsaPubKey(), s.getName(),
+					s.getDescription(), s.getAvatarHash(),
+					s.getCreatedAtHourMs(), s.isPublicChannel(),
+					capability, s.getCurrentOnion(),
+					s.getManifestSeq(), s.weArePublisher(),
+					s.getHighestKnownPostSeq(),
+					s.getContentKeyHash(), s.getContentKey(),
+					s.getActiveDelegations(),
+					s.getRevokedDelegationSeqs(),
+					s.getNextDelegationSeq(),
+					s.getOnionPrivateKey(),
+					s.getPinnedPostSeq(),
+					s.requiresApproval());
+			store.putChannel(updated);
+			java.util.Arrays.fill(ephPriv, (byte) 0);
+		}
+		markApprovedStatusOnly(channelId, my);
+	}
+
+	private void markApprovedStatusOnly(byte[] channelId,
+			ChannelMyApplicationsStore.MyApplication my)
+			throws DbException {
+		if (my.status == ApplicationStatus.APPROVED) {
+			fireEvent(channelId,
+					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
 			return;
 		}
-		java.util.Arrays.fill(sharedSecret, (byte) 0);
-		ChannelState s = store.getChannel(channelId);
-		if (s == null) {
-			java.util.Arrays.fill(capability, (byte) 0);
-			return;
-		}
-		ChannelState updated = new ChannelState(s.getChannelId(),
-				s.getSalt(), s.getPublisherEd25519PubKey(),
-				s.getPublisherMlDsaPubKey(), s.getName(),
-				s.getDescription(), s.getAvatarHash(),
-				s.getCreatedAtHourMs(), s.isPublicChannel(),
-				capability, s.getCurrentOnion(),
-				s.getManifestSeq(), s.weArePublisher(),
-				s.getHighestKnownPostSeq(),
-				s.getContentKeyHash(), s.getContentKey(),
-				s.getActiveDelegations(),
-				s.getRevokedDelegationSeqs(),
-				s.getNextDelegationSeq(),
-				s.getOnionPrivateKey(),
-				s.getPinnedPostSeq(),
-				s.requiresApproval());
-		store.putChannel(updated);
-		java.util.Arrays.fill(ephPriv, (byte) 0);
 		myApplicationsStore.put(channelId,
 				new ChannelMyApplicationsStore.MyApplication(
 						my.displayName, null,
