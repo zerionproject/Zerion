@@ -104,15 +104,15 @@ public class ChannelInviteHandlerActivity extends ZerionActivity {
 			finish();
 			return;
 		}
+		byte[] cid = link.getChannelId();
 		ioExecutor.execute(() -> {
 			try {
-				ChannelState s = channelManager.getChannel(
-						link.getChannelId());
+				ChannelState s = channelManager.getChannel(cid);
 				if (s == null) {
 					channelManager.joinChannel(link);
 				}
-				channelManager.applyToJoin(link.getChannelId(), name);
-				runOnUiThread(this::openChannel);
+				channelManager.applyToJoin(cid, name);
+				runOnUiThread(() -> openChannel(cid));
 			} catch (DbException ex) {
 				runOnUiThread(() -> {
 					Toast.makeText(this,
@@ -125,19 +125,18 @@ public class ChannelInviteHandlerActivity extends ZerionActivity {
 	}
 
 	private void handleJoin(ChannelInviteLink link) {
+		byte[] cid = link.getChannelId();
 		ioExecutor.execute(() -> {
 			try {
-				ChannelState s = channelManager.getChannel(
-						link.getChannelId());
+				ChannelState s = channelManager.getChannel(cid);
 				if (s == null) {
 					channelManager.joinChannel(link);
 					try {
-						channelManager.bootstrapChannel(
-								link.getChannelId());
+						channelManager.bootstrapChannel(cid);
 					} catch (DbException ignored) {
 					}
 				}
-				runOnUiThread(this::openChannel);
+				runOnUiThread(() -> openChannel(cid));
 			} catch (DbException ex) {
 				runOnUiThread(() -> {
 					Toast.makeText(this,
@@ -149,18 +148,8 @@ public class ChannelInviteHandlerActivity extends ZerionActivity {
 		});
 	}
 
-	private void openChannel() {
-		Uri data = getIntent().getData();
-		if (data == null) {
-			finish();
-			return;
-		}
-		ChannelInviteLink link =
-				channelManager.parseInviteLink(data.toString());
-		if (link != null) {
-			startActivity(ChannelFeedActivity.intent(this,
-					link.getChannelId()));
-		}
+	private void openChannel(byte[] channelId) {
+		startActivity(ChannelFeedActivity.intent(this, channelId));
 		finish();
 	}
 }

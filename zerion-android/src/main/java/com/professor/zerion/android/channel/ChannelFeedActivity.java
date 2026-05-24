@@ -1045,17 +1045,14 @@ public class ChannelFeedActivity extends ZerionActivity
 
 		private static String formatRemaining(android.content.Context ctx,
 				long remainingMs) {
-			long hours = remainingMs / (60L * 60L * 1000L);
-			if (hours <= 1L) {
-				return ctx.getString(R.string.channels_ttl_one_hour);
-			}
-			if (hours <= 24L) {
-				return ctx.getString(R.string.channels_ttl_one_day);
-			}
-			if (hours <= 24L * 7L) {
-				return ctx.getString(R.string.channels_ttl_one_week);
-			}
-			return ctx.getString(R.string.channels_ttl_thirty_days);
+			long now = System.currentTimeMillis();
+			CharSequence rel =
+					android.text.format.DateUtils.getRelativeTimeSpanString(
+							now + remainingMs, now,
+							android.text.format.DateUtils.MINUTE_IN_MILLIS,
+							android.text.format.DateUtils
+									.FORMAT_ABBREV_RELATIVE);
+			return rel.toString();
 		}
 	}
 }
