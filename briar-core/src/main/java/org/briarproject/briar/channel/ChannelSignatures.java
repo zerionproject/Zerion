@@ -2,6 +2,8 @@ package org.briarproject.briar.channel;
 
 import org.briarproject.bramble.api.crypto.CryptoComponent;
 import org.briarproject.bramble.api.crypto.CryptoExecutor;
+import org.briarproject.bramble.api.crypto.HybridSignaturePrivateKey;
+import org.briarproject.bramble.api.crypto.HybridSignaturePublicKey;
 import org.briarproject.bramble.api.crypto.PrivateKey;
 import org.briarproject.bramble.api.crypto.PublicKey;
 import org.briarproject.briar.api.channel.ChannelConstants;
@@ -9,6 +11,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.security.GeneralSecurityException;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 @NotNullByDefault
@@ -188,6 +191,106 @@ class ChannelSignatures {
 			return crypto.verifyHybridSignature(signature,
 					ChannelConstants.SIGNING_LABEL_CHANNEL_TOMBSTONE,
 					signedInput, hybridPublicKey);
+		} catch (GeneralSecurityException e) {
+			return false;
+		}
+	}
+
+	@CryptoExecutor
+	byte[] signUserApplication(byte[] signedInput,
+			PrivateKey ed25519PrivateKey, @Nullable byte[] mlDsaPriv)
+			throws GeneralSecurityException {
+		return signUser(ChannelConstants.SIGNING_LABEL_APPLICATION,
+				signedInput, ed25519PrivateKey, mlDsaPriv);
+	}
+
+	boolean verifyUserApplication(byte[] signature, byte[] signedInput,
+			PublicKey ed25519PublicKey, @Nullable byte[] mlDsaPub) {
+		return verifyUser(ChannelConstants.SIGNING_LABEL_APPLICATION,
+				signature, signedInput, ed25519PublicKey, mlDsaPub);
+	}
+
+	@CryptoExecutor
+	byte[] signUserCheckApproval(byte[] signedInput,
+			PrivateKey ed25519PrivateKey, @Nullable byte[] mlDsaPriv)
+			throws GeneralSecurityException {
+		return signUser(ChannelConstants.SIGNING_LABEL_CHECK_APPROVAL,
+				signedInput, ed25519PrivateKey, mlDsaPriv);
+	}
+
+	boolean verifyUserCheckApproval(byte[] signature, byte[] signedInput,
+			PublicKey ed25519PublicKey, @Nullable byte[] mlDsaPub) {
+		return verifyUser(ChannelConstants.SIGNING_LABEL_CHECK_APPROVAL,
+				signature, signedInput, ed25519PublicKey, mlDsaPub);
+	}
+
+	@CryptoExecutor
+	byte[] signUserReaction(byte[] signedInput,
+			PrivateKey ed25519PrivateKey, @Nullable byte[] mlDsaPriv)
+			throws GeneralSecurityException {
+		return signUser(ChannelConstants.SIGNING_LABEL_REACTION,
+				signedInput, ed25519PrivateKey, mlDsaPriv);
+	}
+
+	boolean verifyUserReaction(byte[] signature, byte[] signedInput,
+			PublicKey ed25519PublicKey, @Nullable byte[] mlDsaPub) {
+		return verifyUser(ChannelConstants.SIGNING_LABEL_REACTION,
+				signature, signedInput, ed25519PublicKey, mlDsaPub);
+	}
+
+	@CryptoExecutor
+	byte[] signUserComment(byte[] signedInput,
+			PrivateKey ed25519PrivateKey, @Nullable byte[] mlDsaPriv)
+			throws GeneralSecurityException {
+		return signUser(ChannelConstants.SIGNING_LABEL_COMMENT,
+				signedInput, ed25519PrivateKey, mlDsaPriv);
+	}
+
+	boolean verifyUserComment(byte[] signature, byte[] signedInput,
+			PublicKey ed25519PublicKey, @Nullable byte[] mlDsaPub) {
+		return verifyUser(ChannelConstants.SIGNING_LABEL_COMMENT,
+				signature, signedInput, ed25519PublicKey, mlDsaPub);
+	}
+
+	@CryptoExecutor
+	byte[] signUserAnnounce(byte[] signedInput,
+			PrivateKey ed25519PrivateKey, @Nullable byte[] mlDsaPriv)
+			throws GeneralSecurityException {
+		return signUser(ChannelConstants.SIGNING_LABEL_ANNOUNCE,
+				signedInput, ed25519PrivateKey, mlDsaPriv);
+	}
+
+	boolean verifyUserAnnounce(byte[] signature, byte[] signedInput,
+			PublicKey ed25519PublicKey, @Nullable byte[] mlDsaPub) {
+		return verifyUser(ChannelConstants.SIGNING_LABEL_ANNOUNCE,
+				signature, signedInput, ed25519PublicKey, mlDsaPub);
+	}
+
+	private byte[] signUser(String label, byte[] signedInput,
+			PrivateKey ed25519PrivateKey, @Nullable byte[] mlDsaPriv)
+			throws GeneralSecurityException {
+		if (mlDsaPriv != null && mlDsaPriv.length > 0) {
+			HybridSignaturePrivateKey hybrid =
+					new HybridSignaturePrivateKey(
+							ed25519PrivateKey.getEncoded(), mlDsaPriv);
+			return crypto.hybridSign(label, signedInput, hybrid);
+		}
+		return crypto.sign(label, signedInput, ed25519PrivateKey);
+	}
+
+	private boolean verifyUser(String label, byte[] signature,
+			byte[] signedInput, PublicKey ed25519PublicKey,
+			@Nullable byte[] mlDsaPub) {
+		try {
+			if (mlDsaPub != null && mlDsaPub.length > 0) {
+				HybridSignaturePublicKey hybrid =
+						new HybridSignaturePublicKey(
+								ed25519PublicKey.getEncoded(), mlDsaPub);
+				return crypto.verifyHybridSignature(signature, label,
+						signedInput, hybrid);
+			}
+			return crypto.verifySignature(signature, label,
+					signedInput, ed25519PublicKey);
 		} catch (GeneralSecurityException e) {
 			return false;
 		}

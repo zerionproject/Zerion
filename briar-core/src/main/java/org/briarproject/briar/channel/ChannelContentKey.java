@@ -24,16 +24,6 @@ class ChannelContentKey {
 	private static final int GCM_TAG_BITS = 128;
 
 	private static void zeroSecretKeySpec(SecretKeySpec spec) {
-		try {
-			java.lang.reflect.Field f =
-					SecretKeySpec.class.getDeclaredField("key");
-			f.setAccessible(true);
-			Object v = f.get(spec);
-			if (v instanceof byte[]) {
-				Arrays.fill((byte[]) v, (byte) 0);
-			}
-		} catch (ReflectiveOperationException ignored) {
-		}
 	}
 	private static final String DERIVE_LABEL_WRAP =
 			"org.briarproject.zerion/CHANNEL_CONTENT_KEY_WRAP";

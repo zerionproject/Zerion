@@ -555,10 +555,15 @@ class ChannelManagerImpl
 					c.getParentPostSeqNum(), c.getCommentId(),
 					c.getBody(), c.getAuthorDisplayName(),
 					c.getTimestampHourMs());
-			HybridSignaturePublicKey pub = new HybridSignaturePublicKey(
-					c.getAuthorEd25519PubKey(),
-					c.getAuthorMlDsaPubKey());
-			if (!signatures.verifyComment(sig, signedInput, pub)) {
+			org.briarproject.bramble.api.crypto.PublicKey edPub;
+			try {
+				edPub = crypto.getSignatureKeyParser()
+						.parsePublicKey(c.getAuthorEd25519PubKey());
+			} catch (GeneralSecurityException ex) {
+				continue;
+			}
+			if (!signatures.verifyUserComment(sig, signedInput, edPub,
+					c.getAuthorMlDsaPubKey())) {
 				continue;
 			}
 			if (subscriberStore.isBanned(channelId,
@@ -609,10 +614,15 @@ class ChannelManagerImpl
 			byte[] signedInput = codec.reactionSignedInput(channelId,
 					r.getPostSeqNum(), r.getEmoji(),
 					r.getTimestampHourMs());
-			HybridSignaturePublicKey pub = new HybridSignaturePublicKey(
-					r.getSignerEd25519PubKey(),
-					r.getSignerMlDsaPubKey());
-			if (!signatures.verifyReaction(sig, signedInput, pub)) {
+			org.briarproject.bramble.api.crypto.PublicKey edPub;
+			try {
+				edPub = crypto.getSignatureKeyParser()
+						.parsePublicKey(r.getSignerEd25519PubKey());
+			} catch (GeneralSecurityException ex) {
+				continue;
+			}
+			if (!signatures.verifyUserReaction(sig, signedInput, edPub,
+					r.getSignerMlDsaPubKey())) {
 				continue;
 			}
 			if (subscriberStore.isBanned(channelId,
@@ -773,7 +783,7 @@ class ChannelManagerImpl
 				link.isPublicChannel(),
 				link.getJoinCapability(),
 				onion,
-				0L,
+				-1L,
 				false,
 				-1L,
 				null,
@@ -1352,12 +1362,10 @@ class ChannelManagerImpl
 		ChannelState s = store.getChannel(channelId);
 		if (s == null) throw new DbException();
 		LocalAuthor me = identityManager.getLocalAuthor();
-		byte[] hybridPubEncoded = me.getPublicKey().getEncoded();
-		byte[] signerEd = new byte[32];
-		byte[] signerMl = new byte[hybridPubEncoded.length - 32];
-		System.arraycopy(hybridPubEncoded, 0, signerEd, 0, 32);
-		System.arraycopy(hybridPubEncoded, 32, signerMl, 0,
-				signerMl.length);
+		byte[] signerEd = me.getPublicKey().getEncoded();
+		byte[] mlDsaPub = identityManager.getLocalMlDsaSigPublicKey();
+		byte[] signerMl = mlDsaPub == null ? new byte[0] : mlDsaPub;
+		byte[] mlDsaPriv = identityManager.getLocalMlDsaSigPrivateKey();
 		long ts = clock.currentTimeMillis() / HOUR_MS * HOUR_MS;
 		String authorName = pickAuthorName(channelId, signerEd, me);
 		long commentId = random.nextLong();
@@ -1365,8 +1373,8 @@ class ChannelManagerImpl
 				parentPostSeqNum, commentId, trimmed, authorName, ts);
 		byte[] sig;
 		try {
-			sig = signatures.signComment(signedInput,
-					me.getPrivateKey());
+			sig = signatures.signUserComment(signedInput,
+					me.getPrivateKey(), mlDsaPriv);
 		} catch (GeneralSecurityException ex) {
 			throw new DbException(ex);
 		}
@@ -1435,12 +1443,15 @@ class ChannelManagerImpl
 			byte[] signedInput = codec.commentSignedInput(channelId,
 					req.parentPostSeqNum, req.commentId, req.body,
 					req.authorName, req.timestampHourMs);
-			org.briarproject.bramble.api.crypto.HybridSignaturePublicKey
-					pub = new org.briarproject.bramble.api.crypto
-					.HybridSignaturePublicKey(req.signerEd25519,
-							req.signerMlDsa);
-			if (!signatures.verifyComment(req.signature, signedInput,
-					pub)) {
+			org.briarproject.bramble.api.crypto.PublicKey edPub;
+			try {
+				edPub = crypto.getSignatureKeyParser()
+						.parsePublicKey(req.signerEd25519);
+			} catch (GeneralSecurityException ex) {
+				return safeCommentAck(false);
+			}
+			if (!signatures.verifyUserComment(req.signature, signedInput,
+					edPub, req.signerMlDsa)) {
 				return safeCommentAck(false);
 			}
 			if (subscriberStore.isBanned(channelId, req.signerEd25519)) {
@@ -1533,19 +1544,18 @@ class ChannelManagerImpl
 			byte[] ephPub = ephKp.getPublic().getEncoded();
 			byte[] ephPriv = ephKp.getPrivate().getEncoded();
 			LocalAuthor me = identityManager.getLocalAuthor();
-			byte[] hybridPubEncoded = me.getPublicKey().getEncoded();
-			byte[] signerEd = new byte[32];
-			byte[] signerMl = new byte[hybridPubEncoded.length - 32];
-			System.arraycopy(hybridPubEncoded, 0, signerEd, 0, 32);
-			System.arraycopy(hybridPubEncoded, 32, signerMl, 0,
-					signerMl.length);
+			byte[] signerEd = me.getPublicKey().getEncoded();
+			byte[] mlDsaPub = identityManager.getLocalMlDsaSigPublicKey();
+			byte[] signerMl = mlDsaPub == null ? new byte[0] : mlDsaPub;
+			byte[] mlDsaPriv =
+					identityManager.getLocalMlDsaSigPrivateKey();
 			long ts = clock.currentTimeMillis() / HOUR_MS * HOUR_MS;
 			byte[] signedInput = codec.applicationSignedInput(channelId,
 					trimmed, ts, ephPub);
 			byte[] sig;
 			try {
-				sig = signatures.signApplication(signedInput,
-						me.getPrivateKey());
+				sig = signatures.signUserApplication(signedInput,
+						me.getPrivateKey(), mlDsaPriv);
 			} catch (GeneralSecurityException ex) {
 				throw new DbException(ex);
 			}
@@ -1750,12 +1760,15 @@ class ChannelManagerImpl
 			byte[] signedInput = codec.applicationSignedInput(channelId,
 					req.displayName, req.timestampHourMs,
 					req.ephemeralAgreementPub);
-			org.briarproject.bramble.api.crypto.HybridSignaturePublicKey
-					pub = new org.briarproject.bramble.api.crypto
-					.HybridSignaturePublicKey(req.signerEd25519,
-							req.signerMlDsa);
-			if (!signatures.verifyApplication(req.signature, signedInput,
-					pub)) {
+			org.briarproject.bramble.api.crypto.PublicKey edPub;
+			try {
+				edPub = crypto.getSignatureKeyParser()
+						.parsePublicKey(req.signerEd25519);
+			} catch (GeneralSecurityException ex) {
+				return safeApplyAck(false);
+			}
+			if (!signatures.verifyUserApplication(req.signature, signedInput,
+					edPub, req.signerMlDsa)) {
 				return safeApplyAck(false);
 			}
 			java.util.List<ChannelApplication> existing =
@@ -1807,12 +1820,15 @@ class ChannelManagerImpl
 			}
 			byte[] signedInput = codec.checkApprovalSignedInput(channelId,
 					req.timestampHourMs);
-			org.briarproject.bramble.api.crypto.HybridSignaturePublicKey
-					pub = new org.briarproject.bramble.api.crypto
-					.HybridSignaturePublicKey(req.signerEd25519,
-							req.signerMlDsa);
-			if (!signatures.verifyCheckApproval(req.signature, signedInput,
-					pub)) {
+			org.briarproject.bramble.api.crypto.PublicKey edPub;
+			try {
+				edPub = crypto.getSignatureKeyParser()
+						.parsePublicKey(req.signerEd25519);
+			} catch (GeneralSecurityException ex) {
+				return safeApprovalResponse("DENIED", null, null);
+			}
+			if (!signatures.verifyUserCheckApproval(req.signature,
+					signedInput, edPub, req.signerMlDsa)) {
 				return safeApprovalResponse("DENIED", null, null);
 			}
 			ChannelApplication app = applicationStore.findByApplicant(
@@ -1867,20 +1883,18 @@ class ChannelManagerImpl
 			ChannelState s = store.getChannel(channelId);
 			if (s == null) return;
 			LocalAuthor me = identityManager.getLocalAuthor();
-			byte[] hybridPubEncoded = me.getPublicKey().getEncoded();
-			byte[] signerEd = new byte[32];
-			byte[] signerMl =
-					new byte[hybridPubEncoded.length - 32];
-			System.arraycopy(hybridPubEncoded, 0, signerEd, 0, 32);
-			System.arraycopy(hybridPubEncoded, 32, signerMl, 0,
-					signerMl.length);
+			byte[] signerEd = me.getPublicKey().getEncoded();
+			byte[] mlDsaPub = identityManager.getLocalMlDsaSigPublicKey();
+			byte[] signerMl = mlDsaPub == null ? new byte[0] : mlDsaPub;
+			byte[] mlDsaPriv =
+					identityManager.getLocalMlDsaSigPrivateKey();
 			long ts = clock.currentTimeMillis() / HOUR_MS * HOUR_MS;
 			byte[] signedInput =
 					codec.checkApprovalSignedInput(channelId, ts);
 			byte[] sig;
 			try {
-				sig = signatures.signCheckApproval(signedInput,
-						me.getPrivateKey());
+				sig = signatures.signUserCheckApproval(signedInput,
+						me.getPrivateKey(), mlDsaPriv);
 			} catch (GeneralSecurityException ex) {
 				return;
 			}
@@ -1994,18 +2008,17 @@ class ChannelManagerImpl
 		ChannelState s = store.getChannel(channelId);
 		if (s == null) throw new DbException();
 		LocalAuthor me = identityManager.getLocalAuthor();
-		byte[] hybridPubEncoded = me.getPublicKey().getEncoded();
-		byte[] signerEd = new byte[32];
-		byte[] signerMl = new byte[hybridPubEncoded.length - 32];
-		System.arraycopy(hybridPubEncoded, 0, signerEd, 0, 32);
-		System.arraycopy(hybridPubEncoded, 32, signerMl, 0,
-				signerMl.length);
+		byte[] signerEd = me.getPublicKey().getEncoded();
+		byte[] mlDsaPub = identityManager.getLocalMlDsaSigPublicKey();
+		byte[] signerMl = mlDsaPub == null ? new byte[0] : mlDsaPub;
+		byte[] mlDsaPriv = identityManager.getLocalMlDsaSigPrivateKey();
 		long ts = clock.currentTimeMillis() / HOUR_MS * HOUR_MS;
 		byte[] signedInput = codec.announceSignedInput(channelId,
 				trimmed, ts);
 		byte[] sig;
 		try {
-			sig = signatures.signAnnounce(signedInput, me.getPrivateKey());
+			sig = signatures.signUserAnnounce(signedInput,
+					me.getPrivateKey(), mlDsaPriv);
 		} catch (GeneralSecurityException ex) {
 			throw new DbException(ex);
 		}
@@ -2065,12 +2078,15 @@ class ChannelManagerImpl
 			}
 			byte[] signedInput = codec.announceSignedInput(channelId,
 					req.displayName, req.timestampHourMs);
-			org.briarproject.bramble.api.crypto.HybridSignaturePublicKey
-					pub = new org.briarproject.bramble.api.crypto
-					.HybridSignaturePublicKey(req.signerEd25519,
-							req.signerMlDsa);
-			if (!signatures.verifyAnnounce(req.signature, signedInput,
-					pub)) {
+			org.briarproject.bramble.api.crypto.PublicKey edPub;
+			try {
+				edPub = crypto.getSignatureKeyParser()
+						.parsePublicKey(req.signerEd25519);
+			} catch (GeneralSecurityException ex) {
+				return safeAnnounceAck(false);
+			}
+			if (!signatures.verifyUserAnnounce(req.signature, signedInput,
+					edPub, req.signerMlDsa)) {
 				return safeAnnounceAck(false);
 			}
 			if (subscriberStore.isBanned(channelId, req.signerEd25519)) {
@@ -2111,18 +2127,17 @@ class ChannelManagerImpl
 		ChannelState s = store.getChannel(channelId);
 		if (s == null) throw new DbException();
 		LocalAuthor me = identityManager.getLocalAuthor();
-		byte[] hybridPubEncoded = me.getPublicKey().getEncoded();
-		byte[] signerEd = new byte[32];
-		byte[] signerMl = new byte[hybridPubEncoded.length - 32];
-		System.arraycopy(hybridPubEncoded, 0, signerEd, 0, 32);
-		System.arraycopy(hybridPubEncoded, 32, signerMl, 0,
-				signerMl.length);
+		byte[] signerEd = me.getPublicKey().getEncoded();
+		byte[] mlDsaPub = identityManager.getLocalMlDsaSigPublicKey();
+		byte[] signerMl = mlDsaPub == null ? new byte[0] : mlDsaPub;
+		byte[] mlDsaPriv = identityManager.getLocalMlDsaSigPrivateKey();
 		long ts = clock.currentTimeMillis() / HOUR_MS * HOUR_MS;
 		byte[] signedInput = codec.reactionSignedInput(channelId,
 				postSeqNum, emoji, ts);
 		byte[] sig;
 		try {
-			sig = signatures.signReaction(signedInput, me.getPrivateKey());
+			sig = signatures.signUserReaction(signedInput,
+					me.getPrivateKey(), mlDsaPriv);
 		} catch (GeneralSecurityException ex) {
 			throw new DbException(ex);
 		}
@@ -2183,12 +2198,15 @@ class ChannelManagerImpl
 			}
 			byte[] signedInput = codec.reactionSignedInput(channelId,
 					req.postSeqNum, req.emoji, req.timestampHourMs);
-			org.briarproject.bramble.api.crypto.HybridSignaturePublicKey
-					pub = new org.briarproject.bramble.api.crypto
-					.HybridSignaturePublicKey(req.signerEd25519,
-							req.signerMlDsa);
-			if (!signatures.verifyReaction(req.signature, signedInput,
-					pub)) {
+			org.briarproject.bramble.api.crypto.PublicKey edPub;
+			try {
+				edPub = crypto.getSignatureKeyParser()
+						.parsePublicKey(req.signerEd25519);
+			} catch (GeneralSecurityException ex) {
+				return safeAck(false);
+			}
+			if (!signatures.verifyUserReaction(req.signature, signedInput,
+					edPub, req.signerMlDsa)) {
 				return safeAck(false);
 			}
 			if (subscriberStore.isBanned(channelId, req.signerEd25519)) {

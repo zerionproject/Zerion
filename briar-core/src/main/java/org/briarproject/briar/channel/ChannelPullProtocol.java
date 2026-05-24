@@ -212,12 +212,6 @@ class ChannelPullProtocol {
 			if (incomingSeq <= local.getManifestSeq()) {
 				return local;
 			}
-			if (wirePinnedPostSeq != ChannelState.NO_PINNED_POST
-					&& (wirePinnedPostSeq < 0
-							|| wirePinnedPostSeq
-									> local.getHighestKnownPostSeq())) {
-				return null;
-			}
 			byte[] joinCap = manifest.getOptionalRaw("joinCapability");
 			return new ChannelState(local.getChannelId(),
 					manifest.getRaw("salt"),
