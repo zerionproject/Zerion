@@ -87,7 +87,8 @@ public final class ChannelInviteSpanUtil {
 
 	private static void launchInvite(Context ctx, String link) {
 		try {
-			Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(link));
+			Intent i = new Intent(ctx, ChannelInviteHandlerActivity.class);
+			i.setData(Uri.parse(link));
 			i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 			ctx.startActivity(i);
 		} catch (RuntimeException ignored) {
