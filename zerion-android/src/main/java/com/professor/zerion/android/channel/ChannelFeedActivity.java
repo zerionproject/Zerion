@@ -267,6 +267,12 @@ public class ChannelFeedActivity extends ZerionActivity
 					}
 				}
 			}
+			if (state != null && !posts.isEmpty()) {
+				try {
+					channelManager.markChannelRead(channelId);
+				} catch (DbException ignored) {
+				}
+			}
 			ChannelState finalState = state;
 			List<ChannelPost> finalPosts = posts;
 			ApplicationStatus finalStatus = appStatus;
