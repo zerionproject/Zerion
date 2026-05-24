@@ -21,7 +21,7 @@ class ChannelCodec {
 
 	private static final java.util.regex.Pattern ONION_V3 =
 			java.util.regex.Pattern.compile(
-					"^[a-z2-7]{56}\\.onion$");
+					"^[a-z2-7]{56}(\\.onion)?$");
 
 	private static final String LABEL_MANIFEST_NAME =
 			"org.briarproject.zerion/CHANNEL_MANIFEST_NAME";
