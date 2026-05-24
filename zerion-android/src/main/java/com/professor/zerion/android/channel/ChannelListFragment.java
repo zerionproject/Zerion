@@ -140,36 +140,80 @@ public class ChannelListFragment extends BaseFragment
 		ioExecutor.execute(() -> {
 			List<ChannelState> channels;
 			Map<String, Integer> unread = new HashMap<>();
+			Map<String, String> latestPreview = new HashMap<>();
+			Map<String, Long> latestTs = new HashMap<>();
 			try {
 				Collection<ChannelState> c = channelManager.getChannels();
 				channels = new ArrayList<>(c);
 				for (ChannelState s : channels) {
-					unread.put(hex(s.getChannelId()),
+					String idHex = hex(s.getChannelId());
+					unread.put(idHex,
 							channelManager.getUnreadCount(s.getChannelId()));
+					try {
+						List<org.briarproject.briar.api.channel.ChannelPost>
+								recent = channelManager.getRecentPosts(
+										s.getChannelId(), 1L);
+						if (!recent.isEmpty()) {
+							org.briarproject.briar.api.channel.ChannelPost
+									p = recent.get(recent.size() - 1);
+							latestPreview.put(idHex, summarisePost(p));
+							latestTs.put(idHex, p.getTimestampHourMs());
+						}
+					} catch (DbException ignored) {
+					}
 				}
 			} catch (DbException ex) {
 				channels = Collections.emptyList();
 			}
 			List<ChannelState> finalChannels = channels;
 			Map<String, Integer> finalUnread = unread;
+			Map<String, String> finalPreview = latestPreview;
+			Map<String, Long> finalTs = latestTs;
 			if (isAdded()) {
 				requireActivity().runOnUiThread(
-						() -> render(finalChannels, finalUnread));
+						() -> render(finalChannels, finalUnread,
+								finalPreview, finalTs));
 			}
 		});
 	}
 
+	private String summarisePost(
+			org.briarproject.briar.api.channel.ChannelPost p) {
+		String body = p.getBody() == null ? "" : p.getBody().trim();
+		boolean hasAttachments = !p.getAttachments().isEmpty();
+		if (body.isEmpty() && hasAttachments) {
+			int count = p.getAttachments().size();
+			return getResources().getQuantityString(
+					R.plurals.channels_row_attachment_only, count, count);
+		}
+		String oneLine = body.replace('\n', ' ').replace('\r', ' ');
+		int max = 80;
+		if (oneLine.length() > max) {
+			oneLine = oneLine.substring(0, max) + "…";
+		}
+		if (hasAttachments) {
+			oneLine = "📎 " + oneLine;
+		}
+		return oneLine;
+	}
+
 	private void render(List<ChannelState> channels,
-			Map<String, Integer> unread) {
+			Map<String, Integer> unread,
+			Map<String, String> latestPreview,
+			Map<String, Long> latestTs) {
 		listContainer.removeAllViews();
 		if (channels.isEmpty()) {
 			emptyView.setVisibility(View.VISIBLE);
 		} else {
 			emptyView.setVisibility(View.GONE);
 			for (ChannelState s : channels) {
-				int count = unread.containsKey(hex(s.getChannelId()))
-						? unread.get(hex(s.getChannelId())) : 0;
-				listContainer.addView(buildRow(s, count));
+				String idHex = hex(s.getChannelId());
+				int count = unread.containsKey(idHex)
+						? unread.get(idHex) : 0;
+				String preview = latestPreview.get(idHex);
+				Long ts = latestTs.get(idHex);
+				listContainer.addView(
+						buildRow(s, count, preview, ts));
 			}
 		}
 	}
@@ -180,7 +224,8 @@ public class ChannelListFragment extends BaseFragment
 		return sb.toString();
 	}
 
-	private View buildRow(ChannelState s, int unreadCount) {
+	private View buildRow(ChannelState s, int unreadCount,
+			@Nullable String latestPreview, @Nullable Long latestTs) {
 		View row = LayoutInflater.from(requireContext()).inflate(
 				R.layout.list_item_channel, listContainer, false);
 		String name = s.getName().isEmpty()
@@ -192,15 +237,31 @@ public class ChannelListFragment extends BaseFragment
 		TextView unreadView = row.findViewById(R.id.channelUnreadCountView);
 
 		avatar.setText(name.substring(0, 1).toUpperCase(Locale.ROOT));
-		nameView.setText(name);
+		if (latestTs != null) {
+			CharSequence rel = android.text.format.DateUtils
+					.getRelativeTimeSpanString(latestTs,
+							System.currentTimeMillis(),
+							android.text.format.DateUtils.MINUTE_IN_MILLIS,
+							android.text.format.DateUtils
+									.FORMAT_ABBREV_RELATIVE);
+			nameView.setText(name + "  "
+					+ "• " + rel.toString());
+		} else {
+			nameView.setText(name);
+		}
 
-		String visibility = s.isPublicChannel()
-				? getString(R.string.channels_row_public)
-				: getString(R.string.channels_row_closed);
-		String sub = s.weArePublisher()
-				? visibility + " · "
-						+ getString(R.string.channels_row_publisher_self)
-				: visibility;
+		String sub;
+		if (latestPreview != null && !latestPreview.isEmpty()) {
+			sub = latestPreview;
+		} else {
+			String visibility = s.isPublicChannel()
+					? getString(R.string.channels_row_public)
+					: getString(R.string.channels_row_closed);
+			sub = s.weArePublisher()
+					? visibility + " · "
+							+ getString(R.string.channels_row_publisher_self)
+					: visibility;
+		}
 		subtitle.setText(sub);
 
 		if (unreadCount > 0) {

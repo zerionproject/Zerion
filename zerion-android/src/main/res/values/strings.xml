@@ -250,6 +250,10 @@
 	<string name="channels_row_public">Open channel</string>
 	<string name="channels_row_closed">Closed channel</string>
 	<string name="channels_row_publisher_self">You are the publisher</string>
+	<plurals name="channels_row_attachment_only">
+		<item quantity="one">📎 1 attachment</item>
+		<item quantity="other">📎 %d attachments</item>
+	</plurals>
 	<string name="channels_create_title">Create a channel</string>
 	<string name="channels_create_name_hint">Channel name</string>
 	<string name="channels_create_description_hint">Description</string>
