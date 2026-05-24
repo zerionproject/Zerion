@@ -122,19 +122,48 @@ public class ChannelSubscribersActivity extends ZerionActivity {
 
 	private void confirmBan(ChannelSubscriber sub) {
 		if (sub.isBanned()) return;
+		android.widget.LinearLayout container =
+				new android.widget.LinearLayout(this);
+		container.setOrientation(android.widget.LinearLayout.VERTICAL);
+		int pad = (int) (16f * getResources().getDisplayMetrics().density);
+		container.setPadding(pad, 0, pad, 0);
+		android.widget.TextView message = new android.widget.TextView(this);
+		message.setText(R.string.channels_subscribers_ban_confirm);
+		message.setTextColor(getResources()
+				.getColor(R.color.zerion_text_primary, getTheme()));
+		container.addView(message);
+		com.google.android.material.checkbox.MaterialCheckBox rotateBox =
+				new com.google.android.material.checkbox.MaterialCheckBox(
+						this);
+		rotateBox.setText(R.string.channels_subscribers_ban_rotate);
+		rotateBox.setChecked(true);
+		android.widget.LinearLayout.LayoutParams lp =
+				new android.widget.LinearLayout.LayoutParams(
+						android.widget.LinearLayout.LayoutParams
+								.MATCH_PARENT,
+						android.widget.LinearLayout.LayoutParams
+								.WRAP_CONTENT);
+		lp.topMargin = pad;
+		container.addView(rotateBox, lp);
 		new MaterialAlertDialogBuilder(this)
-				.setMessage(R.string.channels_subscribers_ban_confirm)
+				.setView(container)
 				.setPositiveButton(R.string.channels_subscribers_ban,
-						(d, w) -> doBan(sub))
+						(d, w) -> doBan(sub, rotateBox.isChecked()))
 				.setNegativeButton(android.R.string.cancel, null)
 				.show();
 	}
 
-	private void doBan(ChannelSubscriber sub) {
+	private void doBan(ChannelSubscriber sub, boolean alsoRotate) {
 		ioExecutor.execute(() -> {
 			try {
 				channelManager.banSubscriber(channelId,
 						sub.getEd25519PubKey());
+				if (alsoRotate) {
+					try {
+						channelManager.rotateJoinCapability(channelId);
+					} catch (DbException ignored) {
+					}
+				}
 				runOnUiThread(this::refresh);
 			} catch (DbException ignored) {
 				runOnUiThread(() -> Toast.makeText(this,

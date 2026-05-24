@@ -341,7 +341,8 @@
 	<string name="channels_subscribers_empty">No subscribers have announced themselves yet.</string>
 	<string name="channels_subscribers_count">%1$d announced</string>
 	<string name="channels_subscribers_ban">Ban subscriber</string>
-	<string name="channels_subscribers_ban_confirm">Ban this subscriber? This will rotate the join capability for closed channels — every other subscriber will need a new invite link.</string>
+	<string name="channels_subscribers_ban_confirm">Ban this subscriber? Their posts, reactions and comments will be refused.</string>
+	<string name="channels_subscribers_ban_rotate">Also rotate the invite link (kicks unannounced lurkers too; remaining subscribers will need a fresh invite)</string>
 	<string name="channels_subscribers_banned_label">Banned</string>
 	<string name="channels_action_comments">Comments</string>
 	<string name="channels_comments_title">Comments</string>
