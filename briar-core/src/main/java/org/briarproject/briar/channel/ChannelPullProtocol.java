@@ -108,10 +108,20 @@ class ChannelPullProtocol {
 			}
 		}
 
-		ChannelState mergedState = mergeManifestIntoLocal(localState,
+		ChannelState workingState = localState;
+		if (envContentKey != null
+				&& localState.getContentKey() == null) {
+			workingState = withContentKey(localState, envContentKey);
+		}
+
+		ChannelState mergedState = mergeManifestIntoLocal(workingState,
 				resp.manifest, envContentKey);
 		if (mergedState == null) {
 			return ProcessResult.failure("manifest merge rejected");
+		}
+		if (mergedState == workingState
+				&& workingState != localState) {
+			mergedState = workingState;
 		}
 
 		List<ChannelPost> accepted = new ArrayList<>();
@@ -134,6 +144,26 @@ class ChannelPullProtocol {
 	}
 
 	@Nullable
+	private ChannelState withContentKey(ChannelState s,
+			byte[] freshContentKey) {
+		return new ChannelState(s.getChannelId(), s.getSalt(),
+				s.getPublisherEd25519PubKey(),
+				s.getPublisherMlDsaPubKey(), s.getName(),
+				s.getDescription(), s.getAvatarHash(),
+				s.getCreatedAtHourMs(), s.isPublicChannel(),
+				s.getJoinCapability(), s.getCurrentOnion(),
+				s.getManifestSeq(), s.weArePublisher(),
+				s.getHighestKnownPostSeq(),
+				s.getContentKeyHash(),
+				freshContentKey,
+				s.getActiveDelegations(),
+				s.getRevokedDelegationSeqs(),
+				s.getNextDelegationSeq(),
+				s.getOnionPrivateKey(),
+				s.getPinnedPostSeq(),
+				s.requiresApproval());
+	}
+
 	private ChannelState mergeManifestIntoLocal(ChannelState local,
 			BdfDictionary manifest, @Nullable byte[] freshContentKey) {
 		try {

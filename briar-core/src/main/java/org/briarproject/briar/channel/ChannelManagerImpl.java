@@ -68,6 +68,7 @@ class ChannelManagerImpl
 	private final ChannelMyApplicationsStore myApplicationsStore;
 	private final ChannelTombstoneStore tombstoneStore;
 	private final ChannelPostTombstoneStore postTombstoneStore;
+	private final ChannelSelfAnnounceStore selfAnnounceStore;
 	private final IdentityManager identityManager;
 	private final TaskScheduler taskScheduler;
 	private final java.util.concurrent.Executor ioExecutor;
@@ -106,6 +107,7 @@ class ChannelManagerImpl
 			ChannelMyApplicationsStore myApplicationsStore,
 			ChannelTombstoneStore tombstoneStore,
 			ChannelPostTombstoneStore postTombstoneStore,
+			ChannelSelfAnnounceStore selfAnnounceStore,
 			IdentityManager identityManager,
 			TaskScheduler taskScheduler,
 			@IoExecutor java.util.concurrent.Executor ioExecutor) {
@@ -128,6 +130,7 @@ class ChannelManagerImpl
 		this.myApplicationsStore = myApplicationsStore;
 		this.tombstoneStore = tombstoneStore;
 		this.postTombstoneStore = postTombstoneStore;
+		this.selfAnnounceStore = selfAnnounceStore;
 		this.identityManager = identityManager;
 		this.taskScheduler = taskScheduler;
 		this.ioExecutor = ioExecutor;
@@ -540,6 +543,25 @@ class ChannelManagerImpl
 		}
 		applyIncomingReactions(channelId, r.reactions);
 		applyIncomingComments(channelId, r.comments);
+		tryAutoAnnounceIfNeeded(channelId, r.mergedState);
+	}
+
+	private void tryAutoAnnounceIfNeeded(byte[] channelId,
+			ChannelState s) {
+		if (s.weArePublisher()) return;
+		try {
+			if (selfAnnounceStore.hasAnnounced(channelId)) return;
+		} catch (DbException ignored) {
+			return;
+		}
+		try {
+			LocalAuthor me = identityManager.getLocalAuthor();
+			String name = me.getName();
+			if (name == null || name.trim().isEmpty()) return;
+			announceMyself(channelId, name);
+			selfAnnounceStore.markAnnounced(channelId);
+		} catch (DbException ignored) {
+		}
 	}
 
 	private void applyIncomingComments(byte[] channelId,
@@ -704,6 +726,7 @@ class ChannelManagerImpl
 		applicationStore.removeAll(channelId);
 		myApplicationsStore.remove(channelId);
 		postTombstoneStore.removeAll(channelId);
+		selfAnnounceStore.remove(channelId);
 		fireEvent(channelId, ChannelStateChangedEvent.Kind.LEFT);
 	}
 
