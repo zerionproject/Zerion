@@ -341,4 +341,28 @@
 		<item name="android:layout_marginTop">2dp</item>
 	</style>
 
+	<style name="DecoyCalcKey" parent="@android:style/Widget.Button">
+		<item name="android:textSize">26sp</item>
+		<item name="android:textColor">#ffffff</item>
+		<item name="android:background">#333333</item>
+		<item name="android:minHeight">64dp</item>
+		<item name="android:fontFamily">sans-serif-light</item>
+	</style>
+
+	<style name="DecoyCalcKeyOp" parent="DecoyCalcKey">
+		<item name="android:background">#4a4a4a</item>
+		<item name="android:textColor">#ff9500</item>
+	</style>
+
+	<style name="DecoyCalcKeyAccent" parent="DecoyCalcKey">
+		<item name="android:background">#3a3a3a</item>
+		<item name="android:textColor">#bbbbbb</item>
+		<item name="android:textSize">20sp</item>
+	</style>
+
+	<style name="DecoyCalcKeyEquals" parent="DecoyCalcKey">
+		<item name="android:background">#ff9500</item>
+		<item name="android:textColor">#ffffff</item>
+	</style>
+
 </resources>

@@ -686,9 +686,7 @@ class TorPlugin implements DuplexPlugin, EventListener,
 									.getSuitableBridgeTypes(country);
 						}
 					}
-					if (wifi && charging) {
-						enableConnectionPadding = true;
-					}
+					enableConnectionPadding = true;
 				}
 			}
 

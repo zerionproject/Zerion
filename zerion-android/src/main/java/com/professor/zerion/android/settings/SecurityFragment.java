@@ -69,6 +69,9 @@ public class SecurityFragment extends Fragment {
 	private TextView registrationLockSummary;
 	private View wipePasswordCard;
 	private TextView wipePasswordSummary;
+	private SwitchMaterial decoySwitch;
+	private View decoySetCodeCard;
+	private TextView decoySetCodeSummary;
 
 	private String[] timeoutEntries;
 	private String[] timeoutValues;
@@ -109,6 +112,10 @@ public class SecurityFragment extends Fragment {
 		registrationLockSummary = view.findViewById(R.id.reg_lock_summary);
 		wipePasswordCard = view.findViewById(R.id.wipe_password_card);
 		wipePasswordSummary = view.findViewById(R.id.wipe_password_summary);
+		decoySwitch = view.findViewById(R.id.decoy_switch);
+		decoySetCodeCard = view.findViewById(R.id.decoy_set_code_card);
+		decoySetCodeSummary = view.findViewById(R.id.decoy_set_code_summary);
+		setupDecoyControls();
 
 		timeoutEntries = getResources().getStringArray(R.array.pref_key_lock_timeout_entries);
 		timeoutValues = getResources().getStringArray(R.array.pref_key_lock_timeout_values);
@@ -283,6 +290,96 @@ public class SecurityFragment extends Fragment {
 		} else {
 			wipePasswordSummary.setText(R.string.wipe_password_summary_disabled);
 		}
+	}
+
+	private void setupDecoyControls() {
+		boolean enabled = com.professor.zerion.android.decoy.DecoyConfig
+				.isEnabled(requireContext());
+		decoySwitch.setChecked(enabled);
+		decoySwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+			if (!buttonView.isPressed()) return;
+			if (isChecked
+					&& !com.professor.zerion.android.decoy.DecoyConfig
+							.hasUnlockCode(requireContext())) {
+				decoySwitch.setChecked(false);
+				Toast.makeText(requireContext(),
+						R.string.decoy_set_code_required,
+						Toast.LENGTH_LONG).show();
+				return;
+			}
+			com.professor.zerion.android.decoy.DecoyConfig
+					.setEnabled(requireContext(), isChecked);
+		});
+		decoySetCodeCard.setOnClickListener(v -> showDecoySetCodeDialog());
+		updateDecoyCodeSummary();
+	}
+
+	private void updateDecoyCodeSummary() {
+		boolean has = com.professor.zerion.android.decoy.DecoyConfig
+				.hasUnlockCode(requireContext());
+		decoySetCodeSummary.setText(has
+				? R.string.decoy_set_code_summary_set
+				: R.string.decoy_set_code_summary_unset);
+	}
+
+	private void showDecoySetCodeDialog() {
+		View dialogView = getLayoutInflater().inflate(
+				R.layout.dialog_password, null);
+		TextInputLayout codeLayout1 = dialogView.findViewById(
+				R.id.password_layout_1);
+		TextInputLayout codeLayout2 = dialogView.findViewById(
+				R.id.password_layout_2);
+		TextInputEditText codeInput1 = dialogView.findViewById(
+				R.id.password_input_1);
+		TextInputEditText codeInput2 = dialogView.findViewById(
+				R.id.password_input_2);
+		TextView warningText = dialogView.findViewById(R.id.warning_text);
+		codeLayout1.setHint(getString(R.string.decoy_set_code_hint));
+		codeLayout2.setHint(getString(R.string.decoy_set_code_confirm_hint));
+		codeInput1.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+		codeInput2.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+		warningText.setText(R.string.decoy_set_code_warning);
+		new MaterialAlertDialogBuilder(requireContext())
+				.setTitle(R.string.decoy_set_code_title)
+				.setView(dialogView)
+				.setPositiveButton(R.string.decoy_set_code_save,
+						(d, w) -> {
+							char[] a = readChars(codeInput1);
+							char[] b = readChars(codeInput2);
+							try {
+								if (a.length == 0) {
+									Toast.makeText(requireContext(),
+											R.string.decoy_set_code_empty,
+											Toast.LENGTH_SHORT).show();
+									return;
+								}
+								if (!java.util.Arrays.equals(a, b)) {
+									Toast.makeText(requireContext(),
+											R.string.decoy_set_code_mismatch,
+											Toast.LENGTH_SHORT).show();
+									return;
+								}
+								com.professor.zerion.android.decoy.DecoyConfig
+										.setUnlockCode(requireContext(), a);
+								updateDecoyCodeSummary();
+								Toast.makeText(requireContext(),
+										R.string.decoy_set_code_saved,
+										Toast.LENGTH_SHORT).show();
+							} finally {
+								java.util.Arrays.fill(a, '\0');
+								java.util.Arrays.fill(b, '\0');
+							}
+						})
+				.setNegativeButton(android.R.string.cancel, null)
+				.show();
+	}
+
+	private static char[] readChars(TextInputEditText input) {
+		android.text.Editable e = input.getText();
+		if (e == null) return new char[0];
+		char[] out = new char[e.length()];
+		e.getChars(0, e.length(), out, 0);
+		return out;
 	}
 
 	private void showWipePasswordSetDialog() {

@@ -1521,6 +1521,21 @@
 	<string name="login_data_wiped_title">Security Protection Activated</string>
 	<string name="login_data_wiped_message">All data has been permanently deleted due to repeated failed login attempts. This is a security feature to protect your data.</string>
 
+	<!-- Decoy launcher strings -->
+	<string name="decoy_title">Decoy launcher</string>
+	<string name="decoy_summary">Show a working calculator when the app opens. Enter your unlock sequence to reveal Zerion.</string>
+	<string name="decoy_set_code_title">Set unlock sequence</string>
+	<string name="decoy_set_code_summary_set">An unlock sequence is set</string>
+	<string name="decoy_set_code_summary_unset">No unlock sequence set yet</string>
+	<string name="decoy_set_code_required">Set an unlock sequence first</string>
+	<string name="decoy_set_code_hint">Unlock sequence</string>
+	<string name="decoy_set_code_confirm_hint">Confirm sequence</string>
+	<string name="decoy_set_code_warning">Type the same digits in the calculator and press equals to open Zerion. Without this sequence you cannot get back in.</string>
+	<string name="decoy_set_code_save">Save</string>
+	<string name="decoy_set_code_empty">Sequence cannot be empty</string>
+	<string name="decoy_set_code_mismatch">Sequences do not match</string>
+	<string name="decoy_set_code_saved">Unlock sequence saved</string>
+
 	<!-- Wipe Password strings -->
 	<string name="wipe_password_title">Wipe Password</string>
 	<string name="wipe_password_summary">Set a password that immediately wipes all data when entered</string>

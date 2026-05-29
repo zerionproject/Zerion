@@ -48,6 +48,26 @@ public class SplashScreenActivity extends BaseActivity {
 	public void onCreate(@Nullable Bundle state) {
 		super.onCreate(state);
 
+		boolean decoyPassed = getIntent() != null
+				&& getIntent().getBooleanExtra(
+						com.professor.zerion.android.decoy
+								.DecoyCalculatorActivity.EXTRA_DECOY_PASSED,
+						false);
+		if (!decoyPassed
+				&& com.professor.zerion.android.decoy.DecoyConfig
+						.isEnabled(this)
+				&& com.professor.zerion.android.decoy.DecoyConfig
+						.hasUnlockCode(this)) {
+			android.content.Intent i = new android.content.Intent(this,
+					com.professor.zerion.android.decoy
+							.DecoyCalculatorActivity.class);
+			i.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+					| android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK);
+			startActivity(i);
+			finish();
+			return;
+		}
+
 		getWindow().setFlags(
 				WindowManager.LayoutParams.FLAG_SECURE,
 				WindowManager.LayoutParams.FLAG_SECURE

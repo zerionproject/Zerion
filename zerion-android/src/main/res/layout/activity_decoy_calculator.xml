@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="#1a1a1a"
+	android:orientation="vertical"
+	android:padding="16dp">
+
+	<TextView
+		android:id="@+id/decoyDisplay"
+		android:layout_width="match_parent"
+		android:layout_height="0dp"
+		android:layout_weight="1"
+		android:background="#262626"
+		android:gravity="end|bottom"
+		android:padding="20dp"
+		android:singleLine="false"
+		android:text="0"
+		android:textColor="#ffffff"
+		android:textSize="56sp"
+		android:fontFamily="sans-serif-light" />
+
+	<GridLayout
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:layout_marginTop="12dp"
+		android:columnCount="4"
+		android:rowCount="5"
+		android:useDefaultMargins="true">
+
+		<Button android:id="@+id/btnClear" android:text="C"
+			style="@style/DecoyCalcKeyAccent"
+			android:layout_columnWeight="1" android:layout_rowWeight="1" />
+		<Button android:id="@+id/btnDel" android:text="DEL"
+			style="@style/DecoyCalcKeyAccent"
+			android:layout_columnWeight="1" android:layout_rowWeight="1" />
+		<Button android:id="@+id/btnPercent" android:text="%"
+			style="@style/DecoyCalcKeyOp"
+			android:layout_columnWeight="1" android:layout_rowWeight="1" />
+		<Button android:id="@+id/btnDiv" android:text="÷"
+			style="@style/DecoyCalcKeyOp"
+			android:layout_columnWeight="1" android:layout_rowWeight="1" />
+
+		<Button android:id="@+id/btn7" android:text="7"
+			style="@style/DecoyCalcKey"
+			android:layout_columnWeight="1" android:layout_rowWeight="1" />
+		<Button android:id="@+id/btn8" android:text="8"
+			style="@style/DecoyCalcKey"
+			android:layout_columnWeight="1" android:layout_rowWeight="1" />
+		<Button android:id="@+id/btn9" android:text="9"
+			style="@style/DecoyCalcKey"
+			android:layout_columnWeight="1" android:layout_rowWeight="1" />
+		<Button android:id="@+id/btnMul" android:text="×"
+			style="@style/DecoyCalcKeyOp"
+			android:layout_columnWeight="1" android:layout_rowWeight="1" />
+
+		<Button android:id="@+id/btn4" android:text="4"
+			style="@style/DecoyCalcKey"
+			android:layout_columnWeight="1" android:layout_rowWeight="1" />
+		<Button android:id="@+id/btn5" android:text="5"
+			style="@style/DecoyCalcKey"
+			android:layout_columnWeight="1" android:layout_rowWeight="1" />
+		<Button android:id="@+id/btn6" android:text="6"
+			style="@style/DecoyCalcKey"
+			android:layout_columnWeight="1" android:layout_rowWeight="1" />
+		<Button android:id="@+id/btnSub" android:text="−"
+			style="@style/DecoyCalcKeyOp"
+			android:layout_columnWeight="1" android:layout_rowWeight="1" />
+
+		<Button android:id="@+id/btn1" android:text="1"
+			style="@style/DecoyCalcKey"
+			android:layout_columnWeight="1" android:layout_rowWeight="1" />
+		<Button android:id="@+id/btn2" android:text="2"
+			style="@style/DecoyCalcKey"
+			android:layout_columnWeight="1" android:layout_rowWeight="1" />
+		<Button android:id="@+id/btn3" android:text="3"
+			style="@style/DecoyCalcKey"
+			android:layout_columnWeight="1" android:layout_rowWeight="1" />
+		<Button android:id="@+id/btnAdd" android:text="+"
+			style="@style/DecoyCalcKeyOp"
+			android:layout_columnWeight="1" android:layout_rowWeight="1" />
+
+		<Button android:id="@+id/btn0" android:text="0"
+			style="@style/DecoyCalcKey"
+			android:layout_columnWeight="1" android:layout_columnSpan="2"
+			android:layout_rowWeight="1" />
+		<Button android:id="@+id/btnDot" android:text="."
+			style="@style/DecoyCalcKey"
+			android:layout_columnWeight="1" android:layout_rowWeight="1" />
+		<Button android:id="@+id/btnEq" android:text="="
+			style="@style/DecoyCalcKeyEquals"
+			android:layout_columnWeight="1" android:layout_rowWeight="1" />
+
+	</GridLayout>
+
+</LinearLayout>
