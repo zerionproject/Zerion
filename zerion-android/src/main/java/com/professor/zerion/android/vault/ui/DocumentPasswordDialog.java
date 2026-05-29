@@ -115,19 +115,27 @@ public class DocumentPasswordDialog extends DialogFragment {
 				.setTitle(title)
 				.setView(view)
 				.setPositiveButton("OK", (dialog, which) -> {
-					String password = passwordInput.getText().toString();
-					String confirmPassword = confirmMode
-							? confirmPasswordInput.getText().toString()
+					char[] password = readChars(passwordInput);
+					char[] confirmPassword = confirmMode
+							? readChars(confirmPasswordInput)
 							: password;
 
-					if (!allowEmpty && password.isEmpty()) {
+					if (!allowEmpty && password.length == 0) {
+						java.util.Arrays.fill(password, '\0');
+						if (confirmMode) {
+							java.util.Arrays.fill(confirmPassword, '\0');
+						}
 						if (callback != null) {
 							callback.onPasswordCancelled();
 						}
 						return;
 					}
 
-					if (confirmMode && !password.equals(confirmPassword)) {
+					if (confirmMode
+							&& !java.util.Arrays.equals(password,
+									confirmPassword)) {
+						java.util.Arrays.fill(password, '\0');
+						java.util.Arrays.fill(confirmPassword, '\0');
 						passwordInput.setError("Passwords do not match");
 						confirmPasswordInput.setError("Passwords do not match");
 						DocumentPasswordDialog newDialog = confirmMode
@@ -138,13 +146,14 @@ public class DocumentPasswordDialog extends DialogFragment {
 						return;
 					}
 
-					char[] passwordChars = null;
-					if (!password.isEmpty()) {
-						passwordChars = password.toCharArray();
-					}
+					char[] passwordChars = password.length == 0 ? null
+							: password;
 
 					if (callback != null) {
 						callback.onPasswordEntered(passwordChars);
+					}
+					if (confirmMode) {
+						java.util.Arrays.fill(confirmPassword, '\0');
 					}
 
 					passwordInput.setText("");
@@ -165,6 +174,14 @@ public class DocumentPasswordDialog extends DialogFragment {
 		}
 
 		return builder.create();
+	}
+
+	private static char[] readChars(android.widget.EditText input) {
+		android.text.Editable e = input.getText();
+		if (e == null) return new char[0];
+		char[] out = new char[e.length()];
+		e.getChars(0, e.length(), out, 0);
+		return out;
 	}
 
 	@Override

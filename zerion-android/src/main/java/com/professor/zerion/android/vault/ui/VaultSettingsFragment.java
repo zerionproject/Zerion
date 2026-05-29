@@ -265,25 +265,36 @@ public class VaultSettingsFragment extends BaseFragment {
 				.setMessage("Enter a password to encrypt your vault backup")
 				.setView(dialogView)
 				.setPositiveButton("Export", (dialog, which) -> {
-					String password = passwordInput.getText() != null ?
-							passwordInput.getText().toString() : "";
-					String confirm = confirmInput.getText() != null ?
-							confirmInput.getText().toString() : "";
+					char[] password = readVaultChars(passwordInput);
+					char[] confirm = readVaultChars(confirmInput);
 
-					if (password.isEmpty()) {
+					if (password.length == 0) {
+						java.util.Arrays.fill(confirm, '\0');
 						showToast("Password cannot be empty");
 						return;
 					}
 
-					if (!password.equals(confirm)) {
+					if (!java.util.Arrays.equals(password, confirm)) {
+						java.util.Arrays.fill(password, '\0');
+						java.util.Arrays.fill(confirm, '\0');
 						showToast("Passwords do not match");
 						return;
 					}
 
-					exportVault(password.toCharArray());
+					java.util.Arrays.fill(confirm, '\0');
+					exportVault(password);
 				})
 				.setNegativeButton("Cancel", null)
 				.show();
+	}
+
+	private static char[] readVaultChars(
+			com.google.android.material.textfield.TextInputEditText input) {
+		android.text.Editable e = input.getText();
+		if (e == null) return new char[0];
+		char[] out = new char[e.length()];
+		e.getChars(0, e.length(), out, 0);
+		return out;
 	}
 
 	private void exportVault(char[] exportPassword) {
