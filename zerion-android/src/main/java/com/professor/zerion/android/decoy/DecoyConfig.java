@@ -4,15 +4,15 @@ import android.content.Context;
 import android.content.SharedPreferences;
 
 import com.professor.zerion.android.AppModule;
+import com.professor.zerion.android.vault.crypto.Argon2;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
-import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Base64;
+
 
 @NotNullByDefault
 public final class DecoyConfig {
@@ -21,8 +21,11 @@ public final class DecoyConfig {
 	private static final String PREF_HASH = "pref_decoy_hash";
 	private static final String PREF_SALT = "pref_decoy_salt";
 
-	private static final int HASH_ITERATIONS = 120_000;
-	private static final int SALT_BYTES = 16;
+	private static final int SALT_BYTES = 32;
+	private static final int HASH_BYTES = 32;
+	private static final int ARGON2_MEMORY_KB = 64 * 1024;
+	private static final int ARGON2_ITERATIONS = 3;
+	private static final int ARGON2_PARALLELISM = 1;
 
 	private DecoyConfig() {
 	}
@@ -82,33 +85,10 @@ public final class DecoyConfig {
 	}
 
 	private static byte[] derive(char[] code, byte[] salt) {
-		byte[] codeBytes = toBytes(code);
-		try {
-			MessageDigest md = MessageDigest.getInstance("SHA-256");
-			md.update(salt);
-			md.update(codeBytes);
-			byte[] current = md.digest();
-			for (int i = 1; i < HASH_ITERATIONS; i++) {
-				md.reset();
-				md.update(salt);
-				md.update(current);
-				current = md.digest();
-			}
-			return current;
-		} catch (NoSuchAlgorithmException e) {
-			throw new AssertionError(e);
-		} finally {
-			Arrays.fill(codeBytes, (byte) 0);
-		}
-	}
-
-	private static byte[] toBytes(char[] code) {
-		java.nio.CharBuffer cb = java.nio.CharBuffer.wrap(code);
-		java.nio.ByteBuffer bb =
-				StandardCharsets.UTF_8.encode(cb);
-		byte[] out = new byte[bb.remaining()];
-		bb.get(out);
-		return out;
+		Argon2.Argon2Params params = new Argon2.Argon2Params(
+				ARGON2_MEMORY_KB, ARGON2_ITERATIONS,
+				ARGON2_PARALLELISM, HASH_BYTES);
+		return new Argon2().deriveKey(code, salt, params);
 	}
 
 	private static String b64(byte[] data) {

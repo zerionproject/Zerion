@@ -62,7 +62,7 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 			(RECORD_HEADER_BYTES + MAX_MESSAGE_LENGTH) * 2;
 
 	private static final long COVER_INTERVAL_MS = 4_000L;
-	private static final int COVER_PAYLOAD_BYTES = 256;
+	private static final int SLOT_BYTES = 1024;
 	private static final long MIN_PEER_IDLE_TIME_MS = COVER_INTERVAL_MS * 2L;
 
 	private final DatabaseComponent db;
@@ -124,7 +124,7 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 			generateRequest();
 			long now = clock.currentTimeMillis();
 			long nextFlush = now;
-			boolean realDataBuffered = true;
+			long slotStartBytes = recordWriter.getBytesWritten();
 			try {
 				while (!interrupted) {
 					now = clock.currentTimeMillis();
@@ -141,11 +141,16 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 							generateOffer();
 						}
 						if (now >= nextFlush) {
-							if (!realDataBuffered) {
-								recordWriter.writeCover(COVER_PAYLOAD_BYTES);
+							long written = recordWriter.getBytesWritten()
+									- slotStartBytes;
+							long room = SLOT_BYTES - written
+									- RECORD_HEADER_BYTES;
+							if (room > 0) {
+								recordWriter.writeCover((int) Math.min(
+										room, Integer.MAX_VALUE));
 							}
 							recordWriter.flush();
-							realDataBuffered = false;
+							slotStartBytes = recordWriter.getBytesWritten();
 							nextFlush = now + COVER_INTERVAL_MS;
 						}
 					} else if (task == CLOSE) {
@@ -153,7 +158,6 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 					} else if (task == NEXT_SEND_TIME_DECREASED) {
 					} else {
 						task.run();
-						realDataBuffered = true;
 					}
 				}
 				streamWriter.sendEndOfStream();
