@@ -93,6 +93,7 @@ public final class ChannelConstants {
 			"org.briarproject.zerion/CHANNEL_COMMENT";
 	public static final int MAX_COMMENT_BODY_CHARS = 1024;
 	public static final int MAX_COMMENTS_PER_CHANNEL = 4096;
+	public static final int MAX_COMMENTS_PER_AUTHOR = 256;
 	public static final String WIRE_TYPE_APPLY_TO_JOIN =
 			"ZERION_CHANNEL_APPLY_TO_JOIN_V1";
 	public static final String WIRE_TYPE_APPLY_ACK =

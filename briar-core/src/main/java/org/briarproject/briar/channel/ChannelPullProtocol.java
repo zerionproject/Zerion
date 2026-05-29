@@ -106,6 +106,19 @@ class ChannelPullProtocol {
 				return ProcessResult.failure(
 						"content key envelope unwrap failed");
 			}
+			byte[] manifestKeyHash;
+			try {
+				manifestKeyHash =
+						resp.manifest.getOptionalRaw("contentKeyHash");
+			} catch (org.briarproject.bramble.api.FormatException e) {
+				return ProcessResult.failure("manifest malformed");
+			}
+			if (manifestKeyHash != null && !java.util.Arrays.equals(
+					manifestKeyHash,
+					contentKey.hashContentKey(envContentKey))) {
+				return ProcessResult.failure(
+						"content key hash mismatch");
+			}
 		}
 
 		ChannelState workingState = localState;

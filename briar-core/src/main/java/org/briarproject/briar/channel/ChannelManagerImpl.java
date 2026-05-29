@@ -370,16 +370,40 @@ class ChannelManagerImpl
 			return handleAttachmentFetch(channelId, requestBytes);
 		}
 		if (ChannelConstants.WIRE_TYPE_POST_REACTION.equals(wireType)) {
-			return handleReactionRequest(channelId, requestBytes);
+			java.util.concurrent.locks.ReentrantLock l = lockFor(channelId);
+			l.lock();
+			try {
+				return handleReactionRequest(channelId, requestBytes);
+			} finally {
+				l.unlock();
+			}
 		}
 		if (ChannelConstants.WIRE_TYPE_ANNOUNCE.equals(wireType)) {
-			return handleAnnounceRequest(channelId, requestBytes);
+			java.util.concurrent.locks.ReentrantLock l = lockFor(channelId);
+			l.lock();
+			try {
+				return handleAnnounceRequest(channelId, requestBytes);
+			} finally {
+				l.unlock();
+			}
 		}
 		if (ChannelConstants.WIRE_TYPE_POST_COMMENT.equals(wireType)) {
-			return handleCommentRequest(channelId, requestBytes);
+			java.util.concurrent.locks.ReentrantLock l = lockFor(channelId);
+			l.lock();
+			try {
+				return handleCommentRequest(channelId, requestBytes);
+			} finally {
+				l.unlock();
+			}
 		}
 		if (ChannelConstants.WIRE_TYPE_APPLY_TO_JOIN.equals(wireType)) {
-			return handleApplyRequest(channelId, requestBytes);
+			java.util.concurrent.locks.ReentrantLock l = lockFor(channelId);
+			l.lock();
+			try {
+				return handleApplyRequest(channelId, requestBytes);
+			} finally {
+				l.unlock();
+			}
 		}
 		if (ChannelConstants.WIRE_TYPE_CHECK_APPROVAL.equals(wireType)) {
 			return handleCheckApprovalRequest(channelId, requestBytes);
@@ -524,26 +548,38 @@ class ChannelManagerImpl
 		} catch (IOException e) {
 			throw new DbException(e);
 		}
-		if (ChannelConstants.WIRE_TYPE_CHANNEL_TOMBSTONE.equals(
-				pullCodec().peekType(responseBytes))) {
-			applyTombstoneIfValid(s, responseBytes);
-			return;
+		boolean isTombstone =
+				ChannelConstants.WIRE_TYPE_CHANNEL_TOMBSTONE.equals(
+						pullCodec().peekType(responseBytes));
+		ChannelState mergedState;
+		java.util.concurrent.locks.ReentrantLock lock = lockFor(channelId);
+		lock.lock();
+		try {
+			ChannelState cur = store.getChannel(channelId);
+			if (cur == null) throw new DbException();
+			if (isTombstone) {
+				applyTombstoneIfValid(cur, responseBytes);
+				return;
+			}
+			java.util.List<ChannelPost> existing =
+					store.getPosts(channelId);
+			ChannelPullProtocol.ProcessResult r =
+					pullProtocol.processSubscriberResponse(responseBytes,
+							cur, existing, cur.getJoinCapability());
+			if (!r.ok || r.mergedState == null) {
+				throw new DbException();
+			}
+			store.putChannel(r.mergedState);
+			for (ChannelPost p : r.acceptedPosts) {
+				acceptIncomingPost(channelId, p);
+			}
+			applyIncomingReactions(channelId, r.reactions);
+			applyIncomingComments(channelId, r.comments);
+			mergedState = r.mergedState;
+		} finally {
+			lock.unlock();
 		}
-		java.util.List<ChannelPost> existing =
-				store.getPosts(channelId);
-		ChannelPullProtocol.ProcessResult r =
-				pullProtocol.processSubscriberResponse(responseBytes,
-						s, existing, s.getJoinCapability());
-		if (!r.ok || r.mergedState == null) {
-			throw new DbException();
-		}
-		store.putChannel(r.mergedState);
-		for (ChannelPost p : r.acceptedPosts) {
-			acceptIncomingPost(channelId, p);
-		}
-		applyIncomingReactions(channelId, r.reactions);
-		applyIncomingComments(channelId, r.comments);
-		tryAutoAnnounceIfNeeded(channelId, r.mergedState);
+		tryAutoAnnounceIfNeeded(channelId, mergedState);
 	}
 
 	private void tryAutoAnnounceIfNeeded(byte[] channelId,
@@ -1487,6 +1523,17 @@ class ChannelManagerImpl
 					>= ChannelConstants.MAX_COMMENTS_PER_CHANNEL) {
 				return safeCommentAck(false);
 			}
+			int byAuthor = 0;
+			for (org.briarproject.briar.api.channel.ChannelComment c
+					: existing) {
+				if (java.util.Arrays.equals(c.getAuthorEd25519PubKey(),
+						req.signerEd25519)) {
+					byAuthor++;
+				}
+			}
+			if (byAuthor >= ChannelConstants.MAX_COMMENTS_PER_AUTHOR) {
+				return safeCommentAck(false);
+			}
 			commentStore.putComment(channelId,
 					new org.briarproject.briar.api.channel.ChannelComment(
 							req.parentPostSeqNum, req.commentId,
@@ -2090,9 +2137,6 @@ class ChannelManagerImpl
 		if (s == null) throw new DbException();
 		if (!s.weArePublisher()) throw new DbException();
 		subscriberStore.setBanned(channelId, ed25519PubKey, true);
-		if (!s.isPublicChannel()) {
-			rotateJoinCapability(channelId);
-		}
 		fireEvent(channelId,
 				ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
 	}

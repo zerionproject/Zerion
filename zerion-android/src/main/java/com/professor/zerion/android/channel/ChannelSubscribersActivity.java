@@ -57,6 +57,7 @@ public class ChannelSubscribersActivity extends ZerionActivity {
 	private RecyclerView recycler;
 	private TextView emptyView;
 	private SubscribersAdapter adapter;
+	private volatile boolean channelIsClosed = false;
 
 	@Override
 	public void injectActivity(ActivityComponent component) {
@@ -99,6 +100,9 @@ public class ChannelSubscribersActivity extends ZerionActivity {
 			List<ChannelSubscriber> subs;
 			try {
 				subs = channelManager.getAnnouncedSubscribers(channelId);
+				org.briarproject.briar.api.channel.ChannelState s =
+						channelManager.getChannel(channelId);
+				channelIsClosed = s != null && !s.isPublicChannel();
 			} catch (DbException ex) {
 				subs = new ArrayList<>();
 			}
@@ -132,23 +136,29 @@ public class ChannelSubscribersActivity extends ZerionActivity {
 		message.setTextColor(getResources()
 				.getColor(R.color.zerion_text_primary, getTheme()));
 		container.addView(message);
-		com.google.android.material.checkbox.MaterialCheckBox rotateBox =
-				new com.google.android.material.checkbox.MaterialCheckBox(
-						this);
-		rotateBox.setText(R.string.channels_subscribers_ban_rotate);
-		rotateBox.setChecked(true);
-		android.widget.LinearLayout.LayoutParams lp =
-				new android.widget.LinearLayout.LayoutParams(
-						android.widget.LinearLayout.LayoutParams
-								.MATCH_PARENT,
-						android.widget.LinearLayout.LayoutParams
-								.WRAP_CONTENT);
-		lp.topMargin = pad;
-		container.addView(rotateBox, lp);
+		final com.google.android.material.checkbox.MaterialCheckBox rotateBox;
+		if (channelIsClosed) {
+			rotateBox =
+					new com.google.android.material.checkbox.MaterialCheckBox(
+							this);
+			rotateBox.setText(R.string.channels_subscribers_ban_rotate);
+			rotateBox.setChecked(true);
+			android.widget.LinearLayout.LayoutParams lp =
+					new android.widget.LinearLayout.LayoutParams(
+							android.widget.LinearLayout.LayoutParams
+									.MATCH_PARENT,
+							android.widget.LinearLayout.LayoutParams
+									.WRAP_CONTENT);
+			lp.topMargin = pad;
+			container.addView(rotateBox, lp);
+		} else {
+			rotateBox = null;
+		}
 		new MaterialAlertDialogBuilder(this)
 				.setView(container)
 				.setPositiveButton(R.string.channels_subscribers_ban,
-						(d, w) -> doBan(sub, rotateBox.isChecked()))
+						(d, w) -> doBan(sub,
+								rotateBox != null && rotateBox.isChecked()))
 				.setNegativeButton(android.R.string.cancel, null)
 				.show();
 	}

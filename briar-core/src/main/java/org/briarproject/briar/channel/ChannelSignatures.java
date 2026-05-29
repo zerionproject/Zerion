@@ -281,16 +281,15 @@ class ChannelSignatures {
 	private boolean verifyUser(String label, byte[] signature,
 			byte[] signedInput, PublicKey ed25519PublicKey,
 			@Nullable byte[] mlDsaPub) {
+		if (mlDsaPub == null || mlDsaPub.length == 0) {
+			return false;
+		}
 		try {
-			if (mlDsaPub != null && mlDsaPub.length > 0) {
-				HybridSignaturePublicKey hybrid =
-						new HybridSignaturePublicKey(
-								ed25519PublicKey.getEncoded(), mlDsaPub);
-				return crypto.verifyHybridSignature(signature, label,
-						signedInput, hybrid);
-			}
-			return crypto.verifySignature(signature, label,
-					signedInput, ed25519PublicKey);
+			HybridSignaturePublicKey hybrid =
+					new HybridSignaturePublicKey(
+							ed25519PublicKey.getEncoded(), mlDsaPub);
+			return crypto.verifyHybridSignature(signature, label,
+					signedInput, hybrid);
 		} catch (GeneralSecurityException e) {
 			return false;
 		}
