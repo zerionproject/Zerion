@@ -63,6 +63,7 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 
 	private static final long COVER_INTERVAL_MS = 4_000L;
 	private static final int COVER_PAYLOAD_BYTES = 256;
+	private static final long MIN_PEER_IDLE_TIME_MS = COVER_INTERVAL_MS * 2L;
 
 	private final DatabaseComponent db;
 	private final Executor dbExecutor;
@@ -91,6 +92,12 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 			TransportId transportId, long maxLatency, int maxIdleTime,
 			StreamWriter streamWriter, SyncRecordWriter recordWriter,
 			@Nullable Priority priority) {
+		if (maxIdleTime > 0 && maxIdleTime < MIN_PEER_IDLE_TIME_MS) {
+			throw new IllegalArgumentException(
+					"maxIdleTime " + maxIdleTime
+							+ "ms below MIN_PEER_IDLE_TIME_MS "
+							+ MIN_PEER_IDLE_TIME_MS + "ms");
+		}
 		this.db = db;
 		this.dbExecutor = dbExecutor;
 		this.eventBus = eventBus;

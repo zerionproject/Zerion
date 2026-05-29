@@ -163,7 +163,12 @@ class PollerImpl implements Poller, EventListener {
 
 	private int jitter(int base) {
 		if (base <= 0) return 0;
-		return base / 2 + random.nextInt(base);
+		double u = random.nextDouble();
+		if (u <= 0d) u = 1e-12;
+		long draw = Math.round(-base * Math.log(1d - u));
+		long cap = (long) base * 3L;
+		long bounded = Math.min(cap, Math.max(0L, draw));
+		return (int) bounded;
 	}
 
 	private void pollNow(TransportId t) {
