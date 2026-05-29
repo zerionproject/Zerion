@@ -158,15 +158,20 @@ class PollerImpl implements Poller, EventListener {
 	private void reschedule(TransportId t) {
 		Plugin p = pluginManager.getPlugin(t);
 		if (p != null && p.shouldPoll())
-			schedule(p, p.getPollingInterval(), false);
+			schedule(p, jitter(p.getPollingInterval()));
+	}
+
+	private int jitter(int base) {
+		if (base <= 0) return 0;
+		return base / 2 + random.nextInt(base);
 	}
 
 	private void pollNow(TransportId t) {
 		Plugin p = pluginManager.getPlugin(t);
-		if (p != null && p.shouldPoll()) schedule(p, 0, true);
+		if (p != null && p.shouldPoll()) schedule(p, 0);
 	}
 
-	private void schedule(Plugin p, int delay, boolean randomiseNext) {
+	private void schedule(Plugin p, int delay) {
 		long due = clock.currentTimeMillis() + delay;
 		TransportId t = p.getId();
 		lock.lock();
@@ -174,7 +179,7 @@ class PollerImpl implements Poller, EventListener {
 			ScheduledPollTask scheduled = tasks.get(t);
 			if (scheduled == null || due < scheduled.task.due) {
 				if (scheduled != null) scheduled.cancellable.cancel();
-				PollTask task = new PollTask(p, due, randomiseNext);
+				PollTask task = new PollTask(p, due);
 				Cancellable cancellable = scheduler.schedule(task, ioExecutor,
 						delay, MILLISECONDS);
 				tasks.put(t, new ScheduledPollTask(task, cancellable));
@@ -229,12 +234,10 @@ class PollerImpl implements Poller, EventListener {
 
 		private final Plugin plugin;
 		private final long due;
-		private final boolean randomiseNext;
 
-		private PollTask(Plugin plugin, long due, boolean randomiseNext) {
+		private PollTask(Plugin plugin, long due) {
 			this.plugin = plugin;
 			this.due = due;
-			this.randomiseNext = randomiseNext;
 		}
 
 		@Override
@@ -251,9 +254,8 @@ class PollerImpl implements Poller, EventListener {
 			} finally {
 				lock.unlock();
 			}
-			int delay = plugin.getPollingInterval();
-			if (randomiseNext) delay = (int) (delay * random.nextDouble());
-			schedule(plugin, delay, false);
+			int delay = jitter(plugin.getPollingInterval());
+			schedule(plugin, delay);
 			poll(plugin);
 		}
 	}

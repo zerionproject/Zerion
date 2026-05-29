@@ -104,6 +104,12 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 		writerTasks = new LinkedBlockingQueue<>();
 	}
 
+	private static long jitter(long base) {
+		if (base <= 0) return 0;
+		return base / 2 + java.util.concurrent.ThreadLocalRandom.current()
+				.nextLong(base);
+	}
+
 	@IoExecutor
 	@Override
 	public void run() throws IOException {
@@ -116,7 +122,7 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 			generateOffer();
 			generateRequest();
 			long now = clock.currentTimeMillis();
-			long nextKeepalive = now + maxIdleTime;
+			long nextKeepalive = now + jitter(maxIdleTime);
 			boolean dataToFlush = true;
 			try {
 				while (!interrupted) {
@@ -127,7 +133,7 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 					if (wait > 0 && dataToFlush && writerTasks.isEmpty()) {
 						recordWriter.flush();
 						dataToFlush = false;
-						nextKeepalive = now + maxIdleTime;
+						nextKeepalive = now + jitter(maxIdleTime);
 					}
 					ThrowingRunnable<IOException> task = writerTasks.poll(wait,
 							MILLISECONDS);
@@ -141,7 +147,7 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 						if (now >= nextKeepalive) {
 							recordWriter.flush();
 							dataToFlush = false;
-							nextKeepalive = now + maxIdleTime;
+							nextKeepalive = now + jitter(maxIdleTime);
 						}
 					} else if (task == CLOSE) {
 						break;
