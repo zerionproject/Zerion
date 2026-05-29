@@ -9,4 +9,5 @@ public interface RecordTypes {
 	byte VERSIONS = 4;
 	byte PRIORITY = 5;
 	byte COVER = 6;
+	byte MESSAGE_FRAGMENT = 7;
 }

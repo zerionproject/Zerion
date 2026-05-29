@@ -460,16 +460,17 @@ public class VaultViewModel extends AndroidViewModel {
 		});
 	}
 
-	public void saveNoteWithPassword(String title, String content, String password,
+	public void saveNoteWithPassword(String title, String content, char[] password,
 			@Nullable String existingNoteId) {
 		if (!vaultManager.isUnlocked()) {
 			errorMessage.postValue("Please unlock your vault first");
+			java.util.Arrays.fill(password, '\0');
 			return;
 		}
 		isLoading.postValue(true);
 
 		dbExecutor.execute(() -> {
-			char[] passwordChars = password.toCharArray();
+			char[] passwordChars = password;
 			try {
 				byte[] salt = new byte[32];
 				new java.security.SecureRandom().nextBytes(salt);
@@ -574,16 +575,17 @@ public class VaultViewModel extends AndroidViewModel {
 		return content;
 	}
 
-	public LiveData<String> loadPasswordProtectedNote(String noteId, String password) {
+	public LiveData<String> loadPasswordProtectedNote(String noteId, char[] password) {
 		MutableLiveData<String> content = new MutableLiveData<>();
 
 		if (!vaultManager.isUnlocked()) {
 			errorMessage.postValue("Please unlock your vault first");
+			java.util.Arrays.fill(password, '\0');
 			return content;
 		}
 
 		dbExecutor.execute(() -> {
-			char[] passwordChars = password.toCharArray();
+			char[] passwordChars = password;
 			try {
 				byte[] encryptedData = vaultManager.getItemContent(noteId);
 

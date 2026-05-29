@@ -38,6 +38,11 @@ public class VaultSettingsFragment extends BaseFragment {
 
 	private VaultViewModel viewModel;
 
+	@Nullable
+	private char[] pendingExportPassword;
+	private androidx.activity.result.ActivityResultLauncher<
+			android.content.Intent> exportLauncher;
+
 	private View changePasswordCard;
 	private View autolockCard;
 	private SwitchMaterial biometricSwitch;
@@ -91,6 +96,35 @@ public class VaultSettingsFragment extends BaseFragment {
 	}
 
 	@Override
+	public void onCreate(@Nullable Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		exportLauncher = registerForActivityResult(
+				new androidx.activity.result.contract.ActivityResultContracts
+						.StartActivityForResult(),
+				this::onExportLocationPicked);
+		java.io.File legacy = new java.io.File(
+				requireContext().getFilesDir(), "vault_backup.vbk");
+		if (legacy.exists()) {
+			try (java.io.RandomAccessFile raf =
+						new java.io.RandomAccessFile(legacy, "rw")) {
+				long len = raf.length();
+				byte[] zeros = new byte[(int) Math.min(len,
+						64L * 1024L)];
+				raf.seek(0);
+				long remaining = len;
+				while (remaining > 0) {
+					int n = (int) Math.min(zeros.length, remaining);
+					raf.write(zeros, 0, n);
+					remaining -= n;
+				}
+				raf.getFD().sync();
+			} catch (java.io.IOException ignored) {
+			}
+			legacy.delete();
+		}
+	}
+
+	@Override
 	public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
 		super.onViewCreated(view, savedInstanceState);
 
@@ -100,6 +134,55 @@ public class VaultSettingsFragment extends BaseFragment {
 		setupClickListeners();
 		observeViewModel();
 		loadSettings();
+	}
+
+	private void onExportLocationPicked(
+			androidx.activity.result.ActivityResult result) {
+		char[] pwd = pendingExportPassword;
+		pendingExportPassword = null;
+		if (result.getResultCode() != android.app.Activity.RESULT_OK
+				|| result.getData() == null
+				|| result.getData().getData() == null) {
+			if (pwd != null) java.util.Arrays.fill(pwd, '\0');
+			return;
+		}
+		if (pwd == null) return;
+		android.net.Uri dest = result.getData().getData();
+		exportToUri(pwd, dest);
+	}
+
+	private void exportToUri(char[] password, android.net.Uri dest) {
+		viewModel.exportVault(password,
+				new VaultViewModel.ExportCallback() {
+					@Override
+					public void onExportSuccess(byte[] exportData) {
+						try (java.io.OutputStream os =
+									requireContext().getContentResolver()
+											.openOutputStream(dest)) {
+							if (os == null) {
+								showOnUiThread("Failed to open destination");
+								return;
+							}
+							os.write(exportData);
+							os.flush();
+							showOnUiThread("Vault backup saved");
+						} catch (Exception e) {
+							showOnUiThread("Failed to save backup");
+						} finally {
+							java.util.Arrays.fill(exportData, (byte) 0);
+						}
+					}
+
+					@Override
+					public void onExportError(String error) {
+						showOnUiThread("Export failed");
+					}
+				});
+	}
+
+	private void showOnUiThread(String msg) {
+		if (getActivity() == null) return;
+		requireActivity().runOnUiThread(() -> showToast(msg));
 	}
 
 	private void setupClickListeners() {
@@ -281,7 +364,7 @@ public class VaultSettingsFragment extends BaseFragment {
 					}
 
 					java.util.Arrays.fill(confirm, '\0');
-					exportVault(password);
+					launchExportPicker(password);
 				})
 				.setNegativeButton("Cancel", null)
 				.show();
@@ -296,36 +379,27 @@ public class VaultSettingsFragment extends BaseFragment {
 		return out;
 	}
 
-	private void exportVault(char[] exportPassword) {
-		viewModel.exportVault(exportPassword, new VaultViewModel.ExportCallback() {
-			@Override
-			public void onExportSuccess(byte[] exportData) {
-				try {
-					String fileName = "vault_backup.vbk";
-					java.io.File exportFile = new java.io.File(requireContext().getFilesDir(), fileName);
-					java.io.FileOutputStream fos = new java.io.FileOutputStream(exportFile);
-					fos.write(exportData);
-					fos.close();
-
-					java.util.Arrays.fill(exportData, (byte) 0);
-
-					requireActivity().runOnUiThread(() -> {
-						showToast("Vault exported securely");
-					});
-				} catch (Exception e) {
-					requireActivity().runOnUiThread(() -> {
-						showToast("Failed to save export file");
-					});
-				}
-			}
-
-			@Override
-			public void onExportError(String error) {
-				requireActivity().runOnUiThread(() -> {
-					showToast("Export failed");
-				});
-			}
-		});
+	private void launchExportPicker(char[] exportPassword) {
+		if (pendingExportPassword != null) {
+			java.util.Arrays.fill(pendingExportPassword, '\0');
+		}
+		pendingExportPassword = exportPassword;
+		android.content.Intent intent = new android.content.Intent(
+				android.content.Intent.ACTION_CREATE_DOCUMENT);
+		intent.addCategory(android.content.Intent.CATEGORY_OPENABLE);
+		intent.setType("application/octet-stream");
+		intent.putExtra(android.content.Intent.EXTRA_TITLE,
+				"vault_backup.vbk");
+		if (getActivity() instanceof VaultActivity) {
+			((VaultActivity) getActivity()).setExpectingChildResult();
+		}
+		try {
+			exportLauncher.launch(intent);
+		} catch (Exception e) {
+			java.util.Arrays.fill(pendingExportPassword, '\0');
+			pendingExportPassword = null;
+			showToast("No file picker available");
+		}
 	}
 
 	private void showWipeVaultDialog() {

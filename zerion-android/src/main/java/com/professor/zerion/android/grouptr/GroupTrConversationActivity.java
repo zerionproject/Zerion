@@ -417,7 +417,7 @@ public class GroupTrConversationActivity extends ZerionActivity
 			row = inf.inflate(R.layout.list_item_grouptr_image_in,
 					postsContainer, false);
 			TextView sender = row.findViewById(R.id.senderName);
-			sender.setText(p.getSenderName());
+			sender.setText(decorateName(p));
 		}
 		ImageView img = row.findViewById(R.id.imageView);
 		TextView time = row.findViewById(R.id.imageTime);
@@ -442,7 +442,7 @@ public class GroupTrConversationActivity extends ZerionActivity
 			row = inf.inflate(R.layout.list_item_grouptr_video_in,
 					postsContainer, false);
 			TextView sender = row.findViewById(R.id.senderName);
-			sender.setText(p.getSenderName());
+			sender.setText(decorateName(p));
 		}
 		ImageView thumb = row.findViewById(R.id.videoThumb);
 		TextView duration = row.findViewById(R.id.videoDuration);
@@ -521,7 +521,7 @@ public class GroupTrConversationActivity extends ZerionActivity
 			row = inf.inflate(R.layout.list_item_grouptr_post_in,
 					postsContainer, false);
 			TextView sender = row.findViewById(R.id.senderName);
-			sender.setText(p.getSenderName());
+			sender.setText(decorateName(p));
 		}
 		TextView body = row.findViewById(R.id.postText);
 		TextView time = row.findViewById(R.id.postTime);
@@ -543,7 +543,7 @@ public class GroupTrConversationActivity extends ZerionActivity
 			row = inf.inflate(R.layout.list_item_grouptr_voice_in,
 					postsContainer, false);
 			TextView sender = row.findViewById(R.id.senderName);
-			sender.setText(p.getSenderName());
+			sender.setText(decorateName(p));
 		}
 		TextView dur = row.findViewById(R.id.voiceDuration);
 		TextView time = row.findViewById(R.id.voiceTime);
@@ -910,6 +910,31 @@ public class GroupTrConversationActivity extends ZerionActivity
 
 	private void toast(int res) {
 		Toast.makeText(this, res, Toast.LENGTH_SHORT).show();
+	}
+
+	private static String decorateName(
+			org.briarproject.briar.api.grouptr.GroupTrPost p) {
+		String name = p.getSenderName();
+		String suffix = shortKeyId(p.getSenderPubKey());
+		return name == null || name.isEmpty()
+				? "· " + suffix
+				: name + " · " + suffix;
+	}
+
+	private static String shortKeyId(byte[] pubKey) {
+		try {
+			java.security.MessageDigest md =
+					java.security.MessageDigest.getInstance("SHA-256");
+			byte[] h = md.digest(pubKey);
+			StringBuilder sb = new StringBuilder(8);
+			for (int i = 0; i < 4; i++) {
+				sb.append(String.format(java.util.Locale.US,
+						"%02x", h[i]));
+			}
+			return sb.toString();
+		} catch (java.security.NoSuchAlgorithmException e) {
+			return "????????";
+		}
 	}
 
 	public static Intent intent(android.content.Context ctx, byte[] gid) {

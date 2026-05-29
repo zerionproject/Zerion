@@ -24,8 +24,10 @@ import java.util.List;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.NotThreadSafe;
 
+import static org.briarproject.bramble.api.UniqueId.LENGTH;
 import static org.briarproject.bramble.api.sync.RecordTypes.ACK;
 import static org.briarproject.bramble.api.sync.RecordTypes.MESSAGE;
+import static org.briarproject.bramble.api.sync.RecordTypes.MESSAGE_FRAGMENT;
 import static org.briarproject.bramble.api.sync.RecordTypes.OFFER;
 import static org.briarproject.bramble.api.sync.RecordTypes.PRIORITY;
 import static org.briarproject.bramble.api.sync.RecordTypes.REQUEST;
@@ -48,8 +50,12 @@ class SyncRecordReaderImpl implements SyncRecordReader {
 
 	private static boolean isKnownRecordType(byte type) {
 		return type == ACK || type == MESSAGE || type == OFFER ||
-				type == REQUEST || type == VERSIONS || type == PRIORITY;
+				type == REQUEST || type == VERSIONS || type == PRIORITY
+				|| type == MESSAGE_FRAGMENT;
 	}
+
+	private static final int FRAGMENT_HEADER_LEN = LENGTH + 4;
+	private static final int MAX_REASSEMBLY_IN_FLIGHT = 32;
 
 	private final MessageFactory messageFactory;
 	private final RecordReader reader;
@@ -57,6 +63,19 @@ class SyncRecordReaderImpl implements SyncRecordReader {
 	@Nullable
 	private Record nextRecord = null;
 	private boolean eof = false;
+	private final java.util.LinkedHashMap<MessageId, FragmentBuffer>
+			reassembly = new java.util.LinkedHashMap<>();
+
+	private static final class FragmentBuffer {
+		final byte[][] chunks;
+		final int total;
+		int received;
+
+		FragmentBuffer(int total) {
+			this.chunks = new byte[total][];
+			this.total = total;
+		}
+	}
 
 	SyncRecordReaderImpl(MessageFactory messageFactory, RecordReader reader) {
 		this.messageFactory = messageFactory;
@@ -72,9 +91,74 @@ class SyncRecordReaderImpl implements SyncRecordReader {
 	public boolean eof() throws IOException {
 		if (nextRecord != null) return false;
 		if (eof) return true;
-		nextRecord = reader.readRecord(ACCEPT, IGNORE);
-		if (nextRecord == null) eof = true;
-		return eof;
+		while (true) {
+			Record r = reader.readRecord(ACCEPT, IGNORE);
+			if (r == null) {
+				eof = true;
+				return true;
+			}
+			if (r.getRecordType() == MESSAGE_FRAGMENT) {
+				Record reassembled = consumeFragment(r);
+				if (reassembled == null) continue;
+				nextRecord = reassembled;
+				return false;
+			}
+			nextRecord = r;
+			return false;
+		}
+	}
+
+	@Nullable
+	private Record consumeFragment(Record r) throws FormatException {
+		byte[] p = r.getPayload();
+		if (p.length < FRAGMENT_HEADER_LEN) throw new FormatException();
+		byte[] idBytes = new byte[LENGTH];
+		System.arraycopy(p, 0, idBytes, 0, LENGTH);
+		MessageId id = new MessageId(idBytes);
+		int idx = ((p[LENGTH] & 0xFF) << 8) | (p[LENGTH + 1] & 0xFF);
+		int total = ((p[LENGTH + 2] & 0xFF) << 8)
+				| (p[LENGTH + 3] & 0xFF);
+		if (total == 0 || idx >= total) throw new FormatException();
+		int chunkLen = p.length - FRAGMENT_HEADER_LEN;
+		if ((long) total * chunkLen > MAX_MESSAGE_LENGTH + chunkLen) {
+			throw new FormatException();
+		}
+		FragmentBuffer fb = reassembly.get(id);
+		if (fb == null) {
+			if (reassembly.size() >= MAX_REASSEMBLY_IN_FLIGHT) {
+				java.util.Iterator<java.util.Map.Entry<MessageId,
+						FragmentBuffer>> it =
+						reassembly.entrySet().iterator();
+				if (it.hasNext()) {
+					it.next();
+					it.remove();
+				}
+			}
+			fb = new FragmentBuffer(total);
+			reassembly.put(id, fb);
+		} else if (fb.total != total) {
+			throw new FormatException();
+		}
+		if (fb.chunks[idx] != null) return null;
+		byte[] chunk = new byte[chunkLen];
+		System.arraycopy(p, FRAGMENT_HEADER_LEN, chunk, 0, chunkLen);
+		fb.chunks[idx] = chunk;
+		fb.received++;
+		if (fb.received < fb.total) return null;
+		int totalLen = 0;
+		for (byte[] c : fb.chunks) totalLen += c.length;
+		if (totalLen > MAX_MESSAGE_LENGTH) {
+			reassembly.remove(id);
+			throw new FormatException();
+		}
+		byte[] full = new byte[totalLen];
+		int off = 0;
+		for (byte[] c : fb.chunks) {
+			System.arraycopy(c, 0, full, off, c.length);
+			off += c.length;
+		}
+		reassembly.remove(id);
+		return new Record(PROTOCOL_VERSION, MESSAGE, full);
 	}
 
 	@Override

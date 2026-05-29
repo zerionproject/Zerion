@@ -21,11 +21,13 @@ import javax.annotation.concurrent.NotThreadSafe;
 import static org.briarproject.bramble.api.sync.RecordTypes.ACK;
 import static org.briarproject.bramble.api.sync.RecordTypes.COVER;
 import static org.briarproject.bramble.api.sync.RecordTypes.MESSAGE;
+import static org.briarproject.bramble.api.sync.RecordTypes.MESSAGE_FRAGMENT;
 import static org.briarproject.bramble.api.sync.RecordTypes.OFFER;
 import static org.briarproject.bramble.api.sync.RecordTypes.PRIORITY;
 import static org.briarproject.bramble.api.sync.RecordTypes.REQUEST;
 import static org.briarproject.bramble.api.sync.RecordTypes.VERSIONS;
 import static org.briarproject.bramble.api.sync.SyncConstants.PROTOCOL_VERSION;
+import static org.briarproject.bramble.api.UniqueId.LENGTH;
 
 @NotThreadSafe
 @NotNullByDefault
@@ -52,10 +54,35 @@ class SyncRecordWriterImpl implements SyncRecordWriter {
 		writeRecord(ACK);
 	}
 
+	private static final int FRAGMENT_HEADER_LEN = LENGTH + 4;
+	private static final int FRAGMENT_THRESHOLD_BYTES = 900;
+	private static final int FRAGMENT_PAYLOAD_BYTES = 768;
+
 	@Override
 	public void writeMessage(Message m) throws IOException {
 		byte[] raw = messageFactory.getRawMessage(m);
-		writer.writeRecord(new Record(PROTOCOL_VERSION, MESSAGE, raw));
+		if (raw.length <= FRAGMENT_THRESHOLD_BYTES) {
+			writer.writeRecord(new Record(PROTOCOL_VERSION, MESSAGE, raw));
+			return;
+		}
+		byte[] id = m.getId().getBytes();
+		int total = (raw.length + FRAGMENT_PAYLOAD_BYTES - 1)
+				/ FRAGMENT_PAYLOAD_BYTES;
+		if (total > 0xFFFF) throw new IOException("message too large");
+		for (int i = 0; i < total; i++) {
+			int start = i * FRAGMENT_PAYLOAD_BYTES;
+			int end = Math.min(start + FRAGMENT_PAYLOAD_BYTES, raw.length);
+			int chunkLen = end - start;
+			byte[] fp = new byte[FRAGMENT_HEADER_LEN + chunkLen];
+			System.arraycopy(id, 0, fp, 0, LENGTH);
+			fp[LENGTH] = (byte) ((i >> 8) & 0xFF);
+			fp[LENGTH + 1] = (byte) (i & 0xFF);
+			fp[LENGTH + 2] = (byte) ((total >> 8) & 0xFF);
+			fp[LENGTH + 3] = (byte) (total & 0xFF);
+			System.arraycopy(raw, start, fp, FRAGMENT_HEADER_LEN, chunkLen);
+			writer.writeRecord(
+					new Record(PROTOCOL_VERSION, MESSAGE_FRAGMENT, fp));
+		}
 	}
 
 	@Override

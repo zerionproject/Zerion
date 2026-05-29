@@ -600,11 +600,12 @@ class GroupTrManagerImpl
 			byte[] creatorPubKey, String creatorName, String groupName,
 			byte[] salt, long timestamp, LocalAuthor la) throws DbException {
 		byte[] localPub = la.getPublicKey().getEncoded();
+		byte[] localMlDsa = identityManager.getLocalMlDsaSigPublicKey();
 		List<GroupTrMember> members = new ArrayList<>(2);
 		members.add(new GroupTrMember(creatorPubKey, creatorName,
 				timestamp, 0L, MemberRole.CREATOR));
 		members.add(new GroupTrMember(localPub, la.getName(), timestamp,
-				0L));
+				0L, MemberRole.MEMBER, localMlDsa));
 		GroupTrState s = new GroupTrState(grouptrGroupId, groupName, salt,
 				creatorPubKey, creatorName, timestamp, 0L, false, members);
 		try {
@@ -1118,6 +1119,15 @@ class GroupTrManagerImpl
 		if (cached != null) {
 			return cached == NEGATIVE_CACHE_SENTINEL ? null : cached;
 		}
+		byte[] fromMember = lookupMemberMlDsaPubKey(ed25519PubKey);
+		if (fromMember != null) {
+			byte[] existing = mlDsaPubKeyCache.putIfAbsent(key, fromMember);
+			if (existing != null
+					&& existing != NEGATIVE_CACHE_SENTINEL) {
+				return existing;
+			}
+			return fromMember;
+		}
 		LocalAuthor la = db.transactionWithResult(true,
 				identityManager::getLocalAuthor);
 		if (Arrays.equals(la.getPublicKey().getEncoded(), ed25519PubKey)) {
@@ -1146,6 +1156,20 @@ class GroupTrManagerImpl
 		return result;
 	}
 
+	@javax.annotation.Nullable
+	private byte[] lookupMemberMlDsaPubKey(byte[] ed25519PubKey)
+			throws DbException {
+		for (GroupTrState g : getGroups()) {
+			for (GroupTrMember m : g.getMembers()) {
+				if (Arrays.equals(m.getPubKey(), ed25519PubKey)) {
+					byte[] ml = m.getMlDsaPubKey();
+					if (ml != null) return ml;
+				}
+			}
+		}
+		return null;
+	}
+
 	private void persist(GroupTrState s)
 			throws DbException, FormatException {
 		Settings out = new Settings();
@@ -1166,6 +1190,8 @@ class GroupTrManagerImpl
 			ml.add(m.getJoinedAt());
 			ml.add(m.getJoinedAtEpoch());
 			ml.add((long) m.getRole().getInt());
+			byte[] mldsa = m.getMlDsaPubKey();
+			if (mldsa != null) ml.add(mldsa);
 			list.add(ml);
 		}
 		out.put(S_MEMBERS, toHexString(clientHelper.toByteArray(list)));
@@ -1200,8 +1226,9 @@ class GroupTrManagerImpl
 			MemberRole effective = Arrays.equals(pk,
 					fromHexString(creatorPubHex))
 					? MemberRole.CREATOR : r;
+			byte[] mldsa = ml.size() >= 6 ? ml.getOptionalRaw(5) : null;
 			members.add(new GroupTrMember(pk, ml.getString(1),
-					ml.getLong(2), ml.getLong(3), effective));
+					ml.getLong(2), ml.getLong(3), effective, mldsa));
 		}
 		return new GroupTrState(groupId, name, salt, creatorPub,
 				creatorName, created, epoch, dissolved, members,

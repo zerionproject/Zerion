@@ -59,7 +59,8 @@ public class SecureNoteFragment extends BaseFragment {
 	private FrameLayout progressOverlay;
 
 	private boolean hasChanges = false;
-	private String notePassword = null;
+	@Nullable
+	private char[] notePassword = null;
 	private boolean isSaving = false;
 	private boolean isLoading = false;
 	private boolean contentLoaded = false;
@@ -186,6 +187,9 @@ public class SecureNoteFragment extends BaseFragment {
 			notePasswordLayout.setVisibility(isChecked ? View.VISIBLE : View.GONE);
 			if (!isChecked) {
 				notePasswordInput.setText("");
+				if (notePassword != null) {
+					java.util.Arrays.fill(notePassword, '\0');
+				}
 				notePassword = null;
 			}
 		});
@@ -293,8 +297,8 @@ public class SecureNoteFragment extends BaseFragment {
 				.setMessage("This note is password protected.")
 				.setView(passwordInput)
 				.setPositiveButton("Unlock", (dialog, which) -> {
-					String password = passwordInput.getText().toString();
-					if (!password.isEmpty()) {
+					char[] password = readChars(passwordInput);
+					if (password.length > 0) {
 						progressOverlay.setVisibility(View.VISIBLE);
 
 						UiUtils.observeOnce(viewModel.loadPasswordProtectedNote(noteId, password),
@@ -340,15 +344,18 @@ public class SecureNoteFragment extends BaseFragment {
 		}
 
 		if (lockNoteSwitch.isChecked()) {
-			String password = notePasswordInput.getText() != null ?
-					notePasswordInput.getText().toString() : "";
-			if (password.isEmpty()) {
+			char[] password = readChars(notePasswordInput);
+			if (password.length == 0) {
 				notePasswordLayout.setError("Password cannot be empty");
 				return;
 			}
-			if (password.length() < 4) {
+			if (password.length < 4) {
+				java.util.Arrays.fill(password, '\0');
 				notePasswordLayout.setError("Password must be at least 4 characters");
 				return;
+			}
+			if (notePassword != null) {
+				java.util.Arrays.fill(notePassword, '\0');
 			}
 			notePassword = password;
 		}
@@ -526,5 +533,13 @@ public class SecureNoteFragment extends BaseFragment {
 	@Override
 	public String getUniqueTag() {
 		return "SecureNoteFragment";
+	}
+
+	private static char[] readChars(android.widget.EditText input) {
+		android.text.Editable e = input.getText();
+		if (e == null) return new char[0];
+		char[] out = new char[e.length()];
+		e.getChars(0, e.length(), out, 0);
+		return out;
 	}
 }
