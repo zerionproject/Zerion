@@ -197,12 +197,8 @@ class SqlCipherDatabase extends JdbcDatabase {
 								dbFile.getAbsolutePath(), hexKey,
 								null, null, null);
 				db.execSQL("PRAGMA cipher_memory_security = ON");
-				Cursor sd = db.rawQuery(
-						"PRAGMA secure_delete = ON", null);
-				sd.close();
-				Cursor bc = db.rawQuery(
-						"PRAGMA busy_timeout = " + BUSY_TIMEOUT_MS, null);
-				bc.close();
+				db.execSQL("PRAGMA secure_delete = ON");
+				db.execSQL("PRAGMA busy_timeout = " + BUSY_TIMEOUT_MS);
 				return new SqlCipherConnection(db);
 			} catch (android.database.sqlite.SQLiteDatabaseLockedException e) {
 				if (db != null) {

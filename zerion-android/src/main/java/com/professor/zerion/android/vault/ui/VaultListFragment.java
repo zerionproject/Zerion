@@ -210,10 +210,17 @@ public class VaultListFragment extends BaseFragment {
 	private static final int REQUEST_IMAGE_PICK = 1001;
 	private static final int REQUEST_DOCUMENT_PICK = 1002;
 
+	private void expectChildResult() {
+		if (getActivity() instanceof VaultActivity) {
+			((VaultActivity) getActivity()).setExpectingChildResult();
+		}
+	}
+
 	private void openImagePicker() {
 		android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_PICK);
 		intent.setType("image/*");
 		intent.addCategory(android.content.Intent.CATEGORY_OPENABLE);
+		expectChildResult();
 		startActivityForResult(intent, REQUEST_IMAGE_PICK);
 	}
 
@@ -221,6 +228,7 @@ public class VaultListFragment extends BaseFragment {
 		android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_OPEN_DOCUMENT);
 		intent.setType("*/*");
 		intent.addCategory(android.content.Intent.CATEGORY_OPENABLE);
+		expectChildResult();
 		startActivityForResult(intent, REQUEST_DOCUMENT_PICK);
 	}
 

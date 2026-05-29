@@ -477,14 +477,6 @@ class TorPlugin implements DuplexPlugin, EventListener,
 				try {
 					b4OnionRotation.onSuccessfulConnect(b4Cid, onion3);
 				} catch (org.briarproject.bramble.api.db.DbException e) {
-					if (org.briarproject.bramble.api.plugin.B4Constants
-							.B4_DEBUG_LOG) {
-						java.util.logging.Logger
-								.getLogger(TorPlugin.class.getName())
-								.warning(
-										"[B4] TorPlugin: onSuccessfulConnect "
-												+ "failed: " + e.getMessage());
-					}
 				}
 			}
 			return conn;
@@ -494,17 +486,7 @@ class TorPlugin implements DuplexPlugin, EventListener,
 				try {
 					b4OnionRotation.onPendingDialFailed(b4Cid);
 				} catch (org.briarproject.bramble.api.db.DbException e) {
-					if (org.briarproject.bramble.api.plugin.B4Constants
-							.B4_DEBUG_LOG) {
-						java.util.logging.Logger
-								.getLogger(TorPlugin.class.getName())
-								.warning(
-										"[B4] TorPlugin: onPendingDialFailed "
-												+ "failed: " + e.getMessage());
-					}
 				}
-			}
-			if (org.briarproject.bramble.api.plugin.B4Constants.B4_DEBUG_LOG) {
 			}
 			return dialOnion(fallback);
 		}

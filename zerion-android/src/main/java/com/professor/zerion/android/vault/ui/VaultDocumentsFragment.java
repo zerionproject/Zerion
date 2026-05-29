@@ -399,6 +399,7 @@ public class VaultDocumentsFragment extends BaseFragment {
 
 			a.runOnUiThread(() -> {
 				if (isAdded()) {
+					expectChildResult();
 					startActivity(android.content.Intent.createChooser(shareIntent, "Share Encrypted File"));
 					Toast.makeText(a,
 							"Sharing encrypted file. Remember to share the password separately!",
@@ -517,10 +518,17 @@ public class VaultDocumentsFragment extends BaseFragment {
 				"application/zip"
 		});
 
+		expectChildResult();
 		startActivityForResult(
 				Intent.createChooser(intent, "Select Document"),
 				REQUEST_FILE_PICK
 		);
+	}
+
+	private void expectChildResult() {
+		if (getActivity() instanceof VaultActivity) {
+			((VaultActivity) getActivity()).setExpectingChildResult();
+		}
 	}
 
 	@Override

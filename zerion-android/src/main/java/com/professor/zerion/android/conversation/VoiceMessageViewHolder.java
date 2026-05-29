@@ -143,7 +143,8 @@ public class VoiceMessageViewHolder {
 
 	private void prepareMediaPlayer(InputStream audioStream, String extension) {
 		try {
-			java.io.File tempFile = java.io.File.createTempFile("voice", extension);
+			java.io.File tempFile = java.io.File.createTempFile("voice",
+					extension, playPauseButton.getContext().getCacheDir());
 			currentTempFile = tempFile;
 
 			java.io.FileOutputStream fos = new java.io.FileOutputStream(tempFile);

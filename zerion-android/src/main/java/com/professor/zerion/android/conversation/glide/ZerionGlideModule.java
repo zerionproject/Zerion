@@ -32,6 +32,7 @@ public final class ZerionGlideModule extends AppGlideModule {
 	@Override
 	public void applyOptions(Context context, GlideBuilder builder) {
 		builder.setLogLevel(WARN);
+		builder.setDiskCache(() -> null);
 	}
 
 	@Override

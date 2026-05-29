@@ -126,16 +126,23 @@ public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFr
 
 	}
 
+	private boolean expectingChildResult = false;
+
+	public void setExpectingChildResult() {
+		expectingChildResult = true;
+	}
+
 	@Override
 	public void onResume() {
 		super.onResume();
+		expectingChildResult = false;
 		viewModel.refreshVaultState();
 	}
 
 	@Override
-	protected void onPause() {
-		super.onPause();
-		if (isFinishing()) {
+	protected void onStop() {
+		super.onStop();
+		if (!expectingChildResult) {
 			viewModel.lockIfUnlocked();
 		}
 	}

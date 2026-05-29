@@ -278,9 +278,16 @@ public class VaultGalleryFragment extends BaseFragment {
 		}
 	}
 
+	private void expectChildResult() {
+		if (getActivity() instanceof VaultActivity) {
+			((VaultActivity) getActivity()).setExpectingChildResult();
+		}
+	}
+
 	private void captureImage() {
 		Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 		if (intent.resolveActivity(requireActivity().getPackageManager()) != null) {
+			expectChildResult();
 			startActivityForResult(intent, REQUEST_IMAGE_CAPTURE);
 		}
 	}
@@ -288,6 +295,7 @@ public class VaultGalleryFragment extends BaseFragment {
 	private void pickImageFromGallery() {
 		Intent intent = new Intent(Intent.ACTION_PICK,
 				MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+		expectChildResult();
 		startActivityForResult(intent, REQUEST_IMAGE_PICK);
 	}
 
