@@ -19,6 +19,7 @@ import java.io.IOException;
 import javax.annotation.concurrent.NotThreadSafe;
 
 import static org.briarproject.bramble.api.sync.RecordTypes.ACK;
+import static org.briarproject.bramble.api.sync.RecordTypes.COVER;
 import static org.briarproject.bramble.api.sync.RecordTypes.MESSAGE;
 import static org.briarproject.bramble.api.sync.RecordTypes.OFFER;
 import static org.briarproject.bramble.api.sync.RecordTypes.PRIORITY;
@@ -79,6 +80,14 @@ class SyncRecordWriterImpl implements SyncRecordWriter {
 	public void writePriority(Priority p) throws IOException {
 		writer.writeRecord(
 				new Record(PROTOCOL_VERSION, PRIORITY, p.getNonce()));
+	}
+
+	@Override
+	public void writeCover(int paddingBytes) throws IOException {
+		if (paddingBytes < 0) paddingBytes = 0;
+		byte[] padding = new byte[paddingBytes];
+		java.util.concurrent.ThreadLocalRandom.current().nextBytes(padding);
+		writer.writeRecord(new Record(PROTOCOL_VERSION, COVER, padding));
 	}
 
 	@Override

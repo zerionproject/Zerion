@@ -12,13 +12,11 @@ import org.briarproject.bramble.api.lifecycle.IoExecutor;
 import org.briarproject.bramble.api.lifecycle.event.LifecycleEvent;
 import org.briarproject.bramble.api.plugin.TransportId;
 import org.briarproject.bramble.api.plugin.event.TransportInactiveEvent;
-import org.briarproject.bramble.api.record.Record;
 import org.briarproject.bramble.api.sync.Ack;
 import org.briarproject.bramble.api.sync.Message;
 import org.briarproject.bramble.api.sync.Offer;
 import org.briarproject.bramble.api.sync.Priority;
 import org.briarproject.bramble.api.sync.Request;
-import org.briarproject.bramble.api.sync.SyncConstants;
 import org.briarproject.bramble.api.sync.SyncRecordWriter;
 import org.briarproject.bramble.api.sync.SyncSession;
 import org.briarproject.bramble.api.sync.Versions;
@@ -63,13 +61,16 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 	private static final int BATCH_CAPACITY =
 			(RECORD_HEADER_BYTES + MAX_MESSAGE_LENGTH) * 2;
 
+	private static final long COVER_INTERVAL_MS = 4_000L;
+	private static final int COVER_PAYLOAD_BYTES = 256;
+
 	private final DatabaseComponent db;
 	private final Executor dbExecutor;
 	private final EventBus eventBus;
 	private final Clock clock;
 	private final ContactId contactId;
 	private final TransportId transportId;
-	private final long maxLatency, maxIdleTime;
+	private final long maxLatency;
 	private final StreamWriter streamWriter;
 	private final SyncRecordWriter recordWriter;
 	@Nullable
@@ -97,17 +98,10 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 		this.contactId = contactId;
 		this.transportId = transportId;
 		this.maxLatency = maxLatency;
-		this.maxIdleTime = maxIdleTime;
 		this.streamWriter = streamWriter;
 		this.recordWriter = recordWriter;
 		this.priority = priority;
 		writerTasks = new LinkedBlockingQueue<>();
-	}
-
-	private static long jitter(long base) {
-		if (base <= 0) return 0;
-		return base / 2 + java.util.concurrent.ThreadLocalRandom.current()
-				.nextLong(base);
 	}
 
 	@IoExecutor
@@ -122,19 +116,14 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 			generateOffer();
 			generateRequest();
 			long now = clock.currentTimeMillis();
-			long nextKeepalive = now + jitter(maxIdleTime);
-			boolean dataToFlush = true;
+			long nextFlush = now;
+			boolean realDataBuffered = true;
 			try {
 				while (!interrupted) {
 					now = clock.currentTimeMillis();
-					long keepaliveWait = Math.max(0, nextKeepalive - now);
+					long flushWait = Math.max(0, nextFlush - now);
 					long sendWait = Math.max(0, nextSendTime.get() - now);
-					long wait = Math.min(keepaliveWait, sendWait);
-					if (wait > 0 && dataToFlush && writerTasks.isEmpty()) {
-						recordWriter.flush();
-						dataToFlush = false;
-						nextKeepalive = now + jitter(maxIdleTime);
-					}
+					long wait = Math.min(flushWait, sendWait);
 					ThrowingRunnable<IOException> task = writerTasks.poll(wait,
 							MILLISECONDS);
 					if (task == null) {
@@ -144,17 +133,20 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 							generateBatch();
 							generateOffer();
 						}
-						if (now >= nextKeepalive) {
+						if (now >= nextFlush) {
+							if (!realDataBuffered) {
+								recordWriter.writeCover(COVER_PAYLOAD_BYTES);
+							}
 							recordWriter.flush();
-							dataToFlush = false;
-							nextKeepalive = now + jitter(maxIdleTime);
+							realDataBuffered = false;
+							nextFlush = now + COVER_INTERVAL_MS;
 						}
 					} else if (task == CLOSE) {
 						break;
 					} else if (task == NEXT_SEND_TIME_DECREASED) {
 					} else {
 						task.run();
-						dataToFlush = true;
+						realDataBuffered = true;
 					}
 				}
 				streamWriter.sendEndOfStream();

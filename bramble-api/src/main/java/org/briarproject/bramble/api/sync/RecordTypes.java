@@ -8,4 +8,5 @@ public interface RecordTypes {
 	byte REQUEST = 3;
 	byte VERSIONS = 4;
 	byte PRIORITY = 5;
+	byte COVER = 6;
 }
