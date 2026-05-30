@@ -196,15 +196,9 @@ class SqlCipherDatabase extends JdbcDatabase {
 				db = SQLiteDatabase.openOrCreateDatabase(
 								dbFile.getAbsolutePath(), hexKey,
 								null, null, null);
-				db.execSQL("PRAGMA cipher_memory_security = ON");
-				db.execSQL("PRAGMA secure_delete = ON");
-				Cursor bt = db.rawQuery(
-						"PRAGMA busy_timeout = " + BUSY_TIMEOUT_MS, null);
-				try {
-					bt.moveToFirst();
-				} finally {
-					bt.close();
-				}
+				runPragma(db, "PRAGMA cipher_memory_security = ON");
+				runPragma(db, "PRAGMA secure_delete = ON");
+				runPragma(db, "PRAGMA busy_timeout = " + BUSY_TIMEOUT_MS);
 				return new SqlCipherConnection(db);
 			} catch (android.database.sqlite.SQLiteDatabaseLockedException e) {
 				if (db != null) {
@@ -236,6 +230,11 @@ class SqlCipherDatabase extends JdbcDatabase {
 	protected void compactAndClose() throws DbException {
 		needsCompaction = true;
 		closeAllConnections();
+	}
+
+	private static void runPragma(SQLiteDatabase db, String sql) {
+		Cursor c = db.rawQuery(sql, null);
+		try { c.moveToFirst(); } finally { c.close(); }
 	}
 
 }
