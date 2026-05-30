@@ -55,13 +55,7 @@ class AndroidKeyStrengthener implements KeyStrengthener {
 							.setIsStrongBoxBacked(true)
 							.setKeySize(KEY_BITS)
 							.build();
-			KeyGenParameterSpec unlockedRequired =
-					new KeyGenParameterSpec.Builder(KEY_ALIAS, PURPOSE_SIGN)
-							.setUnlockedDeviceRequired(true)
-							.setKeySize(KEY_BITS)
-							.build();
-			specs = asList(strongBoxUnlockedRequired, strongBox,
-					unlockedRequired, noStrongBox);
+			specs = asList(strongBoxUnlockedRequired, strongBox, noStrongBox);
 		} else {
 			specs = singletonList(noStrongBox);
 		}
