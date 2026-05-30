@@ -221,3 +221,35 @@
 # These are loaded via reflection
 -keep class net.i2p.crypto.eddsa.** { *; }
 -keep class org.whispersystems.curve25519.** { *; }
+
+# ============================================================================
+# LOGGING SWEEP — strip all logging from release APK
+# ============================================================================
+# java.util.logging.Logger calls in vendored upstream code (onionwrapper-*)
+# and android.util.Log calls anywhere become no-ops at compile time. R8 then
+# removes the call sites and any string literals constructed only for the
+# arguments. Combined with the runtime LogManager reset in
+# ZerionApplicationImpl, this provides defence in depth — strings cannot be
+# recovered from a decompiled release APK.
+-assumenosideeffects class java.util.logging.Logger {
+    public void info(...);
+    public void warning(...);
+    public void severe(...);
+    public void fine(...);
+    public void finer(...);
+    public void finest(...);
+    public void config(...);
+    public void log(...);
+    public void logp(...);
+    public void entering(...);
+    public void exiting(...);
+    public void throwing(...);
+}
+-assumenosideeffects class android.util.Log {
+    public static *** d(...);
+    public static *** v(...);
+    public static *** i(...);
+    public static *** w(...);
+    public static *** e(...);
+    public static *** wtf(...);
+}

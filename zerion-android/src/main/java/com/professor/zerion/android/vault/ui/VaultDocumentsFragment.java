@@ -368,18 +368,9 @@ public class VaultDocumentsFragment extends BaseFragment {
 			if (!cacheDir.exists()) {
 				cacheDir.mkdirs();
 			}
-			java.io.File[] stale = cacheDir.listFiles();
-			if (stale != null) {
-				for (java.io.File f : stale) {
-					try {
-						f.delete();
-					} catch (Exception ignored) {
-					}
-				}
-			}
+			shredZencShareCache(cacheDir);
 
 			java.io.File zencFile = new java.io.File(cacheDir, filename);
-			zencFile.deleteOnExit();
 			java.io.FileOutputStream fos = new java.io.FileOutputStream(zencFile);
 			fos.write(zencData);
 			fos.close();
@@ -528,6 +519,50 @@ public class VaultDocumentsFragment extends BaseFragment {
 	private void expectChildResult() {
 		if (getActivity() instanceof VaultActivity) {
 			((VaultActivity) getActivity()).setExpectingChildResult();
+		}
+	}
+
+	private static void shredZencShareCache(java.io.File cacheDir) {
+		java.io.File[] stale = cacheDir.listFiles();
+		if (stale == null) return;
+		java.security.SecureRandom rng = new java.security.SecureRandom();
+		for (java.io.File f : stale) {
+			try {
+				long len = f.length();
+				if (len > 0) {
+					byte[] noise = new byte[(int) Math.min(len, 1 << 20)];
+					try (java.io.FileOutputStream fos =
+							new java.io.FileOutputStream(f, false)) {
+						long written = 0;
+						while (written < len) {
+							int chunk = (int) Math.min(noise.length,
+									len - written);
+							rng.nextBytes(noise);
+							fos.write(noise, 0, chunk);
+							written += chunk;
+						}
+						fos.getFD().sync();
+					}
+					java.util.Arrays.fill(noise, (byte) 0);
+				}
+				f.delete();
+			} catch (Exception ignored) {
+				try { f.delete(); } catch (Exception ignored2) {}
+			}
+		}
+	}
+
+	@Override
+	public void onResume() {
+		super.onResume();
+		try {
+			android.content.Context ctx = getContext();
+			if (ctx != null) {
+				java.io.File cacheDir = new java.io.File(ctx.getCacheDir(),
+						"zenc_share");
+				if (cacheDir.exists()) shredZencShareCache(cacheDir);
+			}
+		} catch (Exception ignored) {
 		}
 	}
 

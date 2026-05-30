@@ -366,9 +366,39 @@ public class MetadataStripper {
 	}
 
 	private byte[] stripOfficeMetadata(byte[] officeData) {
-		throw new UnsupportedOperationException(
-				"Office document metadata stripping is not supported. " +
-				"Office documents are stored as-is in the vault.");
+		if (officeData.length < 4 || officeData[0] != 'P' || officeData[1]
+				!= 'K') {
+			return officeData;
+		}
+		try (java.io.ByteArrayInputStream bin =
+					new java.io.ByteArrayInputStream(officeData);
+				java.util.zip.ZipInputStream zin =
+						new java.util.zip.ZipInputStream(bin);
+				java.io.ByteArrayOutputStream bout =
+						new java.io.ByteArrayOutputStream(officeData.length);
+				java.util.zip.ZipOutputStream zout =
+						new java.util.zip.ZipOutputStream(bout)) {
+			byte[] buf = new byte[8192];
+			java.util.zip.ZipEntry e;
+			while ((e = zin.getNextEntry()) != null) {
+				String n = e.getName();
+				if (n.startsWith("docProps/") || n.endsWith("/core.xml")
+						|| n.endsWith("/app.xml")
+						|| n.endsWith("/custom.xml")) {
+					continue;
+				}
+				java.util.zip.ZipEntry out =
+						new java.util.zip.ZipEntry(n);
+				zout.putNextEntry(out);
+				int read;
+				while ((read = zin.read(buf)) > 0) zout.write(buf, 0, read);
+				zout.closeEntry();
+			}
+			zout.finish();
+			return bout.toByteArray();
+		} catch (Exception ex) {
+			return officeData;
+		}
 	}
 
 	private boolean isDocument(String mimeType) {

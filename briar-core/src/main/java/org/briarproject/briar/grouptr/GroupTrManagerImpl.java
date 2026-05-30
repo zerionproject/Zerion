@@ -518,8 +518,9 @@ class GroupTrManagerImpl
 			}
 		}
 		long timestamp = clock.currentTimeMillis();
-		byte[] signed = offerSignedInput(grouptrGroupId, creatorPub,
-				contactPubKey, timestamp);
+		byte[] signed = offerSignedInputBound(grouptrGroupId, creatorPub,
+				contactPubKey, timestamp, s.getName(), s.getSalt(),
+				s.getCreatorName());
 		byte[] sig = signOrThrow(SIGNING_LABEL_GROUPTR_INVITE_OFFER,
 				signed, la.getPrivateKey());
 		BdfList body = BdfList.of(
@@ -630,6 +631,28 @@ class GroupTrManagerImpl
 			out[96 + i] = (byte) (ts >>> ((7 - i) * 8));
 		}
 		return out;
+	}
+
+	private static byte[] offerSignedInputBound(byte[] grouptrGid,
+			byte[] creatorPub, byte[] contactPub, long ts, String groupName,
+			byte[] salt, String creatorName) {
+		byte[] gn = groupName.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+		byte[] cn = creatorName.getBytes(
+				java.nio.charset.StandardCharsets.UTF_8);
+		int len = 32 + 32 + 32 + 8 + 4 + gn.length + 4 + salt.length + 4
+				+ cn.length;
+		java.nio.ByteBuffer buf = java.nio.ByteBuffer.allocate(len);
+		buf.put(grouptrGid);
+		buf.put(creatorPub);
+		buf.put(contactPub);
+		buf.putLong(ts);
+		buf.putInt(gn.length);
+		buf.put(gn);
+		buf.putInt(salt.length);
+		buf.put(salt);
+		buf.putInt(cn.length);
+		buf.put(cn);
+		return buf.array();
 	}
 
 	private void persistInviteSent(Transaction txn, byte[] grouptrGroupId,
@@ -761,15 +784,16 @@ class GroupTrManagerImpl
 			LocalAuthor la = db.transactionWithResult(true,
 					identityManager::getLocalAuthor);
 			byte[] localPub = la.getPublicKey().getEncoded();
-			byte[] signed = offerSignedInput(grouptrGid, creatorPub,
-					localPub, ev.getInviteTimestamp());
+			byte[] derived = deriveGroupId(ev.getCreatorName(), creatorPub,
+					ev.getGroupName(), ev.getSalt());
+			if (!Arrays.equals(derived, grouptrGid)) return;
+			byte[] signed = offerSignedInputBound(grouptrGid, creatorPub,
+					localPub, ev.getInviteTimestamp(), ev.getGroupName(),
+					ev.getSalt(), ev.getCreatorName());
 			if (!verify(ev.getRecordSig(),
 					SIGNING_LABEL_GROUPTR_INVITE_OFFER, signed, creatorPub)) {
 				return;
 			}
-			byte[] derived = deriveGroupId(ev.getCreatorName(), creatorPub,
-					ev.getGroupName(), ev.getSalt());
-			if (!Arrays.equals(derived, grouptrGid)) return;
 			persistInviteReceived(grouptrGid, ev.getGroupName(),
 					ev.getSalt(), ev.getCreatorName(), creatorPub,
 					ev.getContactId(), ev.getInviteTimestamp());

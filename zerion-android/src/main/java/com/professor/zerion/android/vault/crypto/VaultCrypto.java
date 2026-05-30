@@ -92,13 +92,14 @@ public class VaultCrypto {
 		return cipher.doFinal(encryptedData.ciphertext);
 	}
 
-	public byte[] hkdfSha256(byte[] inputKeyMaterial, String info, int outputLength) {
+	public byte[] hkdfSha256(byte[] inputKeyMaterial, byte[] salt, String info,
+			int outputLength) {
 		try {
-
-			byte[] salt = new byte[32];
-
+			byte[] effectiveSalt = salt == null || salt.length == 0
+					? new byte[32]
+					: salt;
 			Mac extractMac = Mac.getInstance("HmacSHA256");
-			extractMac.init(new SecretKeySpec(salt, "HmacSHA256"));
+			extractMac.init(new SecretKeySpec(effectiveSalt, "HmacSHA256"));
 			byte[] prk = extractMac.doFinal(inputKeyMaterial);
 
 			byte[] infoBytes = info.getBytes(java.nio.charset.StandardCharsets.UTF_8);
@@ -229,7 +230,8 @@ public class VaultCrypto {
 				byte[] chunk = Arrays.copyOfRange(data, start, end);
 
 				String info = "chunk_" + i;
-				byte[] chunkKey = crypto.hkdfSha256(masterKey, info, KEY_LENGTH);
+				byte[] chunkKey = crypto.hkdfSha256(masterKey, null, info,
+						KEY_LENGTH);
 
 				chunks[i] = crypto.encrypt(chunk, chunkKey, associatedData);
 
@@ -244,7 +246,8 @@ public class VaultCrypto {
 
 			for (int i = 0; i < chunkedData.chunks.length; i++) {
 				String info = "chunk_" + i;
-				byte[] chunkKey = crypto.hkdfSha256(masterKey, info, KEY_LENGTH);
+				byte[] chunkKey = crypto.hkdfSha256(masterKey, null, info,
+						KEY_LENGTH);
 
 				byte[] chunk = crypto.decrypt(chunkedData.chunks[i], chunkKey, associatedData);
 				result.put(chunk);

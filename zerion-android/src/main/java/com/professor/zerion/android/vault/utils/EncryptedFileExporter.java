@@ -10,20 +10,15 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 
 import javax.crypto.Cipher;
-import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.GCMParameterSpec;
-import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
 @NotNullByDefault
 public class EncryptedFileExporter {
 
-	private static final byte[] MAGIC_HEADER_V1 = "ZENC1\0".getBytes(StandardCharsets.US_ASCII);
 	private static final byte[] MAGIC_HEADER_V2 = "ZENC2\0".getBytes(StandardCharsets.US_ASCII);
 	private static final int SALT_LENGTH = 32;
 	private static final int NONCE_LENGTH = 12;
-	private static final int LEGACY_PBKDF2_ITERATIONS = 100000;
-	private static final int KEY_LENGTH_BITS = 256;
 	private static final int KEY_LENGTH_BYTES = 32;
 	private static final int GCM_TAG_LENGTH = 128;
 
@@ -117,23 +112,16 @@ public class EncryptedFileExporter {
 		try {
 			byte[] magic = new byte[MAGIC_HEADER_V2.length];
 			buffer.get(magic);
-			boolean isV2 = java.util.Arrays.equals(magic, MAGIC_HEADER_V2);
-			boolean isV1 = java.util.Arrays.equals(magic, MAGIC_HEADER_V1);
-			if (!isV1 && !isV2) {
+			if (!java.util.Arrays.equals(magic, MAGIC_HEADER_V2)) {
 				throw new IllegalArgumentException("Invalid .zenc file format");
 			}
 
-			int memoryKb = 0;
-			int iterations = 0;
-			int parallelism = 0;
-			if (isV2) {
-				memoryKb = buffer.getInt();
-				iterations = buffer.getInt();
-				parallelism = buffer.getInt();
-				if (memoryKb < 1024 || iterations < 1 || parallelism < 1) {
-					throw new IllegalArgumentException(
-							"Invalid Argon2 parameters in .zenc header");
-				}
+			int memoryKb = buffer.getInt();
+			int iterations = buffer.getInt();
+			int parallelism = buffer.getInt();
+			if (memoryKb < 1024 || iterations < 1 || parallelism < 1) {
+				throw new IllegalArgumentException(
+						"Invalid Argon2 parameters in .zenc header");
 			}
 
 			int filenameLength = buffer.getInt();
@@ -154,14 +142,10 @@ public class EncryptedFileExporter {
 			byte[] encryptedContent = new byte[buffer.remaining()];
 			buffer.get(encryptedContent);
 
-			if (isV2) {
-				Argon2 argon2 = new Argon2();
-				Argon2.Argon2Params params = new Argon2.Argon2Params(
-						memoryKb, iterations, parallelism, KEY_LENGTH_BYTES);
-				key = argon2.deriveKey(password, salt, params);
-			} else {
-				key = deriveKeyLegacyPbkdf2(password, salt);
-			}
+			Argon2 argon2 = new Argon2();
+			Argon2.Argon2Params params = new Argon2.Argon2Params(
+					memoryKb, iterations, parallelism, KEY_LENGTH_BYTES);
+			key = argon2.deriveKey(password, salt, params);
 
 			filenameBytes = decryptAesGcm(encryptedFilename, key, filenameNonce);
 			String filename = new String(filenameBytes, StandardCharsets.UTF_8);
@@ -178,15 +162,6 @@ public class EncryptedFileExporter {
 			if (filenameBytes != null) SecureMemory.shred(filenameBytes);
 			if (password != null) java.util.Arrays.fill(password, '\0');
 		}
-	}
-
-	private static byte[] deriveKeyLegacyPbkdf2(char[] password, byte[] salt) throws Exception {
-		SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
-		PBEKeySpec spec = new PBEKeySpec(password, salt,
-				LEGACY_PBKDF2_ITERATIONS, KEY_LENGTH_BITS);
-		byte[] key = factory.generateSecret(spec).getEncoded();
-		spec.clearPassword();
-		return key;
 	}
 
 	private static byte[] encryptAesGcm(byte[] plaintext, byte[] key, byte[] nonce)

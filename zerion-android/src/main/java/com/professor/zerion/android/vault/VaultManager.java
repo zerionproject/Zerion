@@ -90,7 +90,7 @@ public class VaultManager {
 		return fileIO.exists(HEADER_FILE);
 	}
 
-	public void createVault(char[] password) throws Exception {
+	public synchronized void createVault(char[] password) throws Exception {
 		if (vaultExists()) {
 			throw new IllegalStateException("Vault already exists");
 		}
@@ -106,7 +106,8 @@ public class VaultManager {
 		byte[] passwordKey = argon2.deriveKey(password, salt, params);
 
 		byte[] combined = crypto.xor(passwordKey, randomSecret);
-		this.vaultMasterKey = crypto.hkdfSha256(combined, "vault master", 32);
+		this.vaultMasterKey = crypto.hkdfSha256(combined, salt, "vault master",
+				32);
 
 		byte[] passwordVerificationMac =
 				crypto.computePasswordVerificationMac(this.vaultMasterKey);
@@ -135,20 +136,20 @@ public class VaultManager {
 			throw new IllegalStateException("No vault exists");
 		}
 
-		long now = System.currentTimeMillis();
-		if (backoffUntil > 0 && now - backoffUntil > BACKOFF_RESET_MS) {
-			failedAttempts = 0;
-			backoffUntil = 0;
-		}
-
-		if (now < backoffUntil) {
-			long waitSeconds = (backoffUntil - now) / 1000;
-			throw new SecurityException("Too many failed attempts. Wait " +
-					waitSeconds + " seconds");
-		}
-
 		long unlockStartRealtime = android.os.SystemClock.elapsedRealtime();
 		try {
+			long now = System.currentTimeMillis();
+			if (backoffUntil > 0 && now - backoffUntil > BACKOFF_RESET_MS) {
+				failedAttempts = 0;
+				backoffUntil = 0;
+			}
+
+			if (now < backoffUntil) {
+				long waitSeconds = (backoffUntil - now) / 1000;
+				throw new SecurityException(
+						"Too many failed attempts. Wait " + waitSeconds
+								+ " seconds");
+			}
 			if (currentHeader == null) {
 				loadVaultHeader();
 			}
@@ -167,7 +168,8 @@ public class VaultManager {
 			byte[] passwordKey = argon2.deriveKey(password, currentHeader.salt, params);
 
 			byte[] combined = crypto.xor(passwordKey, randomSecret);
-			byte[] derivedKey = crypto.hkdfSha256(combined, "vault master", 32);
+			byte[] derivedKey = crypto.hkdfSha256(combined,
+					currentHeader.salt, "vault master", 32);
 
 			if (currentHeader.passwordVerificationMac != null &&
 					currentHeader.passwordVerificationMac.length > 0) {
@@ -285,6 +287,8 @@ public class VaultManager {
 
 			return true;
 
+		} catch (SecurityException e) {
+			throw e;
 		} catch (Exception e) {
 			failedAttempts++;
 			long backoffMs = INITIAL_BACKOFF_MS * (2L * failedAttempts - 1L);
@@ -688,7 +692,8 @@ public class VaultManager {
 		byte[] passwordKey = argon2.deriveKey(candidate, currentHeader.salt,
 				params);
 		byte[] combined = crypto.xor(passwordKey, randomSecret);
-		byte[] derivedKey = crypto.hkdfSha256(combined, "vault master", 32);
+		byte[] derivedKey = crypto.hkdfSha256(combined, currentHeader.salt,
+				"vault master", 32);
 		boolean ok = crypto.verifyPasswordMac(derivedKey,
 				currentHeader.passwordVerificationMac);
 		java.util.Arrays.fill(derivedKey, (byte) 0);
@@ -698,7 +703,8 @@ public class VaultManager {
 		return ok;
 	}
 
-	public void changePassword(char[] oldPassword, char[] newPassword) throws Exception {
+	public synchronized void changePassword(char[] oldPassword,
+			char[] newPassword) throws Exception {
 		if (!verifyPassword(oldPassword)) {
 			throw new SecurityException("Invalid current password");
 		}
@@ -712,7 +718,8 @@ public class VaultManager {
 				currentHeader.wrappedKeystoreBlob, keystoreKey);
 
 		byte[] combined = crypto.xor(newPasswordKey, randomSecret);
-		byte[] newMasterKey = crypto.hkdfSha256(combined, "vault master", 32);
+		byte[] newMasterKey = crypto.hkdfSha256(combined, newSalt,
+				"vault master", 32);
 
 		byte[] newPasswordVerificationMac = crypto.computePasswordVerificationMac(newMasterKey);
 
