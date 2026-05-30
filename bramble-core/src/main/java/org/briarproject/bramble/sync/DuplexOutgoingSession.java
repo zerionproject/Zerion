@@ -61,9 +61,12 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 	private static final int BATCH_CAPACITY =
 			(RECORD_HEADER_BYTES + MAX_MESSAGE_LENGTH) * 2;
 
-	private static final long COVER_INTERVAL_MS = 4_000L;
-	private static final int SLOT_BYTES = 1024;
-	private static final long MIN_PEER_IDLE_TIME_MS = COVER_INTERVAL_MS * 2L;
+	private static final long COVER_INTERVAL_MS_BASE = 4_000L;
+	private static final long COVER_INTERVAL_MS_JITTER = 500L;
+	private static final int SLOT_BYTES_BASE = 1024;
+	private static final int SLOT_BYTES_JITTER = 128;
+	private static final long MIN_PEER_IDLE_TIME_MS =
+			(COVER_INTERVAL_MS_BASE + COVER_INTERVAL_MS_JITTER) * 2L;
 
 	private final DatabaseComponent db;
 	private final Executor dbExecutor;
@@ -72,6 +75,8 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 	private final ContactId contactId;
 	private final TransportId transportId;
 	private final long maxLatency;
+	private final long coverIntervalMs;
+	private final int slotBytes;
 	private final StreamWriter streamWriter;
 	private final SyncRecordWriter recordWriter;
 	@Nullable
@@ -108,6 +113,14 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 		this.streamWriter = streamWriter;
 		this.recordWriter = recordWriter;
 		this.priority = priority;
+		java.util.concurrent.ThreadLocalRandom rng =
+				java.util.concurrent.ThreadLocalRandom.current();
+		this.coverIntervalMs = COVER_INTERVAL_MS_BASE
+				+ rng.nextLong(-COVER_INTERVAL_MS_JITTER,
+						COVER_INTERVAL_MS_JITTER + 1);
+		this.slotBytes = SLOT_BYTES_BASE
+				+ rng.nextInt(-SLOT_BYTES_JITTER,
+						SLOT_BYTES_JITTER + 1);
 		writerTasks = new LinkedBlockingQueue<>();
 	}
 
@@ -125,14 +138,24 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 			long now = clock.currentTimeMillis();
 			long nextFlush = now;
 			long slotStartBytes = recordWriter.getBytesWritten();
+			boolean slotOverCap = false;
 			try {
 				while (!interrupted) {
 					now = clock.currentTimeMillis();
 					long flushWait = Math.max(0, nextFlush - now);
 					long sendWait = Math.max(0, nextSendTime.get() - now);
 					long wait = Math.min(flushWait, sendWait);
-					ThrowingRunnable<IOException> task = writerTasks.poll(wait,
-							MILLISECONDS);
+					ThrowingRunnable<IOException> task;
+					if (slotOverCap) {
+						task = writerTasks.peek() == CLOSE
+								? writerTasks.poll(0, MILLISECONDS)
+								: null;
+						if (task == null && wait > 0) {
+							Thread.sleep(wait);
+						}
+					} else {
+						task = writerTasks.poll(wait, MILLISECONDS);
+					}
 					if (task == null) {
 						now = clock.currentTimeMillis();
 						if (now >= nextSendTime.get()) {
@@ -143,7 +166,7 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 						if (now >= nextFlush) {
 							long written = recordWriter.getBytesWritten()
 									- slotStartBytes;
-							long room = SLOT_BYTES - written
+							long room = slotBytes - written
 									- RECORD_HEADER_BYTES;
 							if (room > 0) {
 								recordWriter.writeCover((int) Math.min(
@@ -151,13 +174,19 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 							}
 							recordWriter.flush();
 							slotStartBytes = recordWriter.getBytesWritten();
-							nextFlush = now + COVER_INTERVAL_MS;
+							nextFlush = now + coverIntervalMs;
+							slotOverCap = false;
 						}
 					} else if (task == CLOSE) {
 						break;
 					} else if (task == NEXT_SEND_TIME_DECREASED) {
 					} else {
 						task.run();
+						long written = recordWriter.getBytesWritten()
+								- slotStartBytes;
+						if (written >= slotBytes) {
+							slotOverCap = true;
+						}
 					}
 				}
 				streamWriter.sendEndOfStream();
