@@ -273,7 +273,8 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 				.append(" IsolateDestAddr IsolateClientAddr\n");
 		strb.append("GeoIPFile\n");
 		strb.append("GeoIPv6File\n");
-		append(strb, "ConnectionPadding", 0);
+		append(strb, "ConnectionPadding", 1);
+		append(strb, "ReducedConnectionPadding", 0);
 		String lyrebirdPath = getLyrebirdExecutableFile().getAbsolutePath();
 		append(strb, "ClientTransportPlugin obfs4 exec", lyrebirdPath);
 		append(strb, "ClientTransportPlugin meek_lite exec", lyrebirdPath);

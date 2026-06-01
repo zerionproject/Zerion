@@ -365,11 +365,14 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 			if (m3fState != null && mode3FullStateRefresher != null) {
 				Mode3FullState fresh = mode3FullStateRefresher.get();
 				if (fresh != null) {
+					long mergedCounter = Math.max(
+							fresh.getMessageCounter(),
+							m3fState.getMessageCounter());
 					m3fState = new Mode3FullState(
 							m3fState.getTheirActivePqPk(),
 							fresh.getOurActiveKeyPair(),
 							fresh.getRecentKeyPairs(),
-							m3fState.getMessageCounter());
+							mergedCounter);
 					recvState = recvState.withMode3FullState(m3fState);
 				}
 			}

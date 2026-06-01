@@ -1,18 +1,15 @@
 package org.briarproject.bramble.contact;
 import org.briarproject.bramble.api.FormatException;
-import org.briarproject.bramble.api.Pair;
 import org.briarproject.bramble.api.contact.ContactManager;
 import org.briarproject.bramble.api.contact.HandshakeManager;
 import org.briarproject.bramble.api.contact.PendingContact;
 import org.briarproject.bramble.api.contact.PendingContactId;
-import org.briarproject.bramble.api.crypto.AgreementPublicKey;
 import org.briarproject.bramble.api.crypto.CryptoComponent;
 import org.briarproject.bramble.api.crypto.HybridAgreementPublicKey;
 import org.briarproject.bramble.api.crypto.HybridEncapsulationResult;
 import org.briarproject.bramble.api.crypto.KeyPair;
 import org.briarproject.bramble.api.crypto.PublicKey;
 import org.briarproject.bramble.api.crypto.SecretKey;
-import org.briarproject.bramble.api.crypto.TransportCrypto;
 import org.briarproject.bramble.api.db.DbException;
 import org.briarproject.bramble.api.db.TransactionManager;
 import org.briarproject.bramble.api.identity.IdentityManager;
@@ -37,7 +34,6 @@ import javax.inject.Inject;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static org.briarproject.bramble.api.crypto.CryptoConstants.MAX_AGREEMENT_PUBLIC_KEY_BYTES;
 import static org.briarproject.bramble.api.crypto.PostQuantumConstants.HYBRID_AGREEMENT_PUBLIC_KEY_BYTES;
 import static org.briarproject.bramble.api.crypto.PostQuantumConstants.ML_KEM_768_CIPHERTEXT_BYTES;
 import static org.briarproject.bramble.contact.HandshakeConstants.PROOF_BYTES;
@@ -72,7 +68,6 @@ class HandshakeManagerImpl implements HandshakeManager {
 	private final TransactionManager db;
 	private final IdentityManager identityManager;
 	private final ContactManager contactManager;
-	private final TransportCrypto transportCrypto;
 	private final HandshakeCrypto handshakeCrypto;
 	private final CryptoComponent crypto;
 	private final PendingContactFactory pendingContactFactory;
@@ -83,7 +78,6 @@ class HandshakeManagerImpl implements HandshakeManager {
 	HandshakeManagerImpl(TransactionManager db,
 			IdentityManager identityManager,
 			ContactManager contactManager,
-			TransportCrypto transportCrypto,
 			HandshakeCrypto handshakeCrypto,
 			CryptoComponent crypto,
 			PendingContactFactory pendingContactFactory,
@@ -92,7 +86,6 @@ class HandshakeManagerImpl implements HandshakeManager {
 		this.db = db;
 		this.identityManager = identityManager;
 		this.contactManager = contactManager;
-		this.transportCrypto = transportCrypto;
 		this.handshakeCrypto = handshakeCrypto;
 		this.crypto = crypto;
 		this.pendingContactFactory = pendingContactFactory;
@@ -128,66 +121,14 @@ class HandshakeManagerImpl implements HandshakeManager {
 
 		if (isHybrid) {
 			return performHybridHandshake(ctx, in, out);
-		} else {
-			if (ctx.pendingContact.isPostQuantum()) {
-				throw new IOException(
-						"Post-quantum handshake requested but hybrid keys unavailable");
-			}
-			return performClassicalHandshake(ctx, in, out);
 		}
-	}
-
-	private HandshakeResult performClassicalHandshake(HandshakeContext ctx,
-			InputStream in, StreamWriter out) throws IOException {
-		PublicKey theirStaticPublicKey = ctx.pendingContact.getPublicKey();
-		KeyPair ourStaticKeyPair = ctx.keyPair;
-		boolean alice = transportCrypto.isAlice(theirStaticPublicKey,
-				ourStaticKeyPair);
-		RecordReader recordReader = recordReaderFactory.createRecordReader(in, true);
-		RecordWriter recordWriter = recordWriterFactory
-				.createRecordWriter(out.getOutputStream(), true);
-		KeyPair ourEphemeralKeyPair =
-				handshakeCrypto.generateEphemeralKeyPair();
-		Pair<Byte, PublicKey> theirMinorVersionAndKey;
-		if (alice) {
-			sendMinorVersion(recordWriter);
-			sendPublicKey(recordWriter, ourEphemeralKeyPair.getPublic());
-			theirMinorVersionAndKey = receiveMinorVersionAndKey(recordReader);
-		} else {
-			theirMinorVersionAndKey = receiveMinorVersionAndKey(recordReader);
-			sendMinorVersion(recordWriter);
-			sendPublicKey(recordWriter, ourEphemeralKeyPair.getPublic());
+		if (ctx.pendingContact.isPostQuantum()) {
+			throw new IOException(
+					"Post-quantum handshake requested but hybrid keys unavailable");
 		}
-		byte theirMinorVersion = theirMinorVersionAndKey.getFirst();
-		PublicKey theirEphemeralPublicKey = theirMinorVersionAndKey.getSecond();
-		SecretKey masterKey;
-		try {
-			if (theirMinorVersion > 0) {
-				masterKey = handshakeCrypto.deriveMasterKey_0_1(
-						theirStaticPublicKey, theirEphemeralPublicKey,
-						ourStaticKeyPair, ourEphemeralKeyPair, alice);
-			} else {
-				masterKey = handshakeCrypto.deriveMasterKey_0_0(
-						theirStaticPublicKey, theirEphemeralPublicKey,
-						ourStaticKeyPair, ourEphemeralKeyPair, alice);
-			}
-		} catch (GeneralSecurityException e) {
-			throw new FormatException();
-		}
-		byte[] ourProof = handshakeCrypto.proveOwnership(masterKey, alice);
-		byte[] theirProof;
-		if (alice) {
-			sendProof(recordWriter, ourProof);
-			theirProof = receiveProof(recordReader);
-		} else {
-			theirProof = receiveProof(recordReader);
-			sendProof(recordWriter, ourProof);
-		}
-		out.sendEndOfStream();
-		recordReader.readRecord(r -> false, IGNORE);
-		if (!handshakeCrypto.verifyOwnership(masterKey, !alice, theirProof))
-			throw new FormatException();
-		return new HandshakeResult(masterKey, alice);
+		throw new IOException(
+				"Refusing classical-only handshake — peer must advertise "
+						+ "post-quantum capability");
 	}
 
 	private HandshakeResult performHybridHandshake(HandshakeContext ctx,
@@ -346,42 +287,6 @@ class HandshakeManagerImpl implements HandshakeManager {
 		checkLength(ciphertext, ML_KEM_768_CIPHERTEXT_BYTES,
 				ML_KEM_768_CIPHERTEXT_BYTES);
 		return ciphertext;
-	}
-
-	private void sendPublicKey(RecordWriter w, PublicKey k) throws IOException {
-		w.writeRecord(new Record(PROTOCOL_MAJOR_VERSION,
-				RECORD_TYPE_EPHEMERAL_PUBLIC_KEY, k.getEncoded()));
-		w.flush();
-	}
-
-	private Pair<Byte, PublicKey> receiveMinorVersionAndKey(RecordReader r)
-			throws IOException {
-		byte theirMinorVersion;
-		PublicKey theirEphemeralPublicKey;
-		Record first = readRecord(r, asList(RECORD_TYPE_MINOR_VERSION,
-				RECORD_TYPE_EPHEMERAL_PUBLIC_KEY));
-		if (first.getRecordType() == RECORD_TYPE_MINOR_VERSION) {
-			byte[] payload = first.getPayload();
-			checkLength(payload, 1);
-			theirMinorVersion = payload[0];
-			if (theirMinorVersion == 0) throw new FormatException();
-			Record second = readRecord(r,
-					singletonList(RECORD_TYPE_EPHEMERAL_PUBLIC_KEY));
-			theirEphemeralPublicKey = parsePublicKey(second);
-		} else {
-			theirMinorVersion = 0;
-			theirEphemeralPublicKey = parsePublicKey(first);
-		}
-		return new Pair<>(theirMinorVersion, theirEphemeralPublicKey);
-	}
-
-	private PublicKey parsePublicKey(Record rec) throws IOException {
-		if (rec.getRecordType() != RECORD_TYPE_EPHEMERAL_PUBLIC_KEY) {
-			throw new AssertionError();
-		}
-		byte[] key = rec.getPayload();
-		checkLength(key, 1, MAX_AGREEMENT_PUBLIC_KEY_BYTES);
-		return new AgreementPublicKey(key);
 	}
 
 	private void sendProof(RecordWriter w, byte[] proof) throws IOException {

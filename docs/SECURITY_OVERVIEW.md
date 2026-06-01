@@ -148,7 +148,7 @@ All critical and high-severity dependency issues resolved:
 - Jackson-databind updated to 2.15.3
 - NanoHTTPD removed (unused, had known CVE)
 - Keystore passwords moved to environment variables
-- Tor binary from official Tor Project with hash verification
+- Tor binary from official Tor Project, bundled inside the APK as a native library and covered by Android's APK signature check at install time (no over-the-air binary downloads, no runtime fetch)
 
 ## Additional Documentation
 

@@ -269,13 +269,15 @@ class ChannelSignatures {
 	private byte[] signUser(String label, byte[] signedInput,
 			PrivateKey ed25519PrivateKey, @Nullable byte[] mlDsaPriv)
 			throws GeneralSecurityException {
-		if (mlDsaPriv != null && mlDsaPriv.length > 0) {
-			HybridSignaturePrivateKey hybrid =
-					new HybridSignaturePrivateKey(
-							ed25519PrivateKey.getEncoded(), mlDsaPriv);
-			return crypto.hybridSign(label, signedInput, hybrid);
+		if (mlDsaPriv == null || mlDsaPriv.length == 0) {
+			throw new GeneralSecurityException(
+					"Local ML-DSA private key missing — refusing "
+							+ "classical-only channel user signature");
 		}
-		return crypto.sign(label, signedInput, ed25519PrivateKey);
+		HybridSignaturePrivateKey hybrid =
+				new HybridSignaturePrivateKey(
+						ed25519PrivateKey.getEncoded(), mlDsaPriv);
+		return crypto.hybridSign(label, signedInput, hybrid);
 	}
 
 	private boolean verifyUser(String label, byte[] signature,

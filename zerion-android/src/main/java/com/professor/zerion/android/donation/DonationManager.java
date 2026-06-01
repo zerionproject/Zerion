@@ -21,6 +21,7 @@ public class DonationManager {
 	private static final String PREF_NEXT_CHECK_DAY = "donation_next_check_day";
 	private static final long MIN_DAYS_BETWEEN_PROMPTS = 90;
 	private static final float DAILY_SHOW_PROBABILITY = 0.05f;
+	private static final int MAX_LIFETIME_PROMPTS = 5;
 
 	private final SharedPreferences prefs;
 	private final Random random;
@@ -38,6 +39,12 @@ public class DonationManager {
 		int currentDay = (int) TimeUnit.MILLISECONDS.toDays(now);
 		if (currentDay == cachedCheckDay) {
 			return cachedResult;
+		}
+		if (prefs.getInt(PREF_DONATION_PROMPT_COUNT, 0)
+				>= MAX_LIFETIME_PROMPTS) {
+			cachedCheckDay = currentDay;
+			cachedResult = false;
+			return false;
 		}
 		long lastPrompt = prefs.getLong(PREF_LAST_DONATION_PROMPT, 0);
 		int nextCheckDay = prefs.getInt(PREF_NEXT_CHECK_DAY, 0);

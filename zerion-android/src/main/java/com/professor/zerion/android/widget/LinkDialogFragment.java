@@ -66,22 +66,10 @@ public class LinkDialogFragment extends DialogFragment {
 		urlView.setText(url);
 
 		Context ctx = requireContext();
-		Intent i = new Intent(ACTION_VIEW, Uri.parse(url));
-		PackageManager packageManager = ctx.getPackageManager();
-		List<?> activities =
-				packageManager.queryIntentActivities(i, MATCH_DEFAULT_ONLY);
-		boolean choice = activities.size() > 1;
-		Intent intent = choice ? Intent.createChooser(i,
-				getString(R.string.link_warning_open_link)) : i;
 
 		Button openButton = v.findViewById(R.id.openButton);
 		openButton.setOnClickListener(v1 -> {
-			if (intent.resolveActivity(packageManager) != null) {
-				startActivity(intent);
-			} else {
-				Toast.makeText(ctx, R.string.error_start_activity, LENGTH_SHORT)
-						.show();
-			}
+			com.professor.zerion.android.util.BrowserGuard.openUrl(ctx, url);
 			android.app.Dialog d = getDialog();
 			if (d != null) d.dismiss();
 		});

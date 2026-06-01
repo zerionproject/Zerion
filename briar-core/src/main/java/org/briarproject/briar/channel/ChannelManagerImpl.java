@@ -1844,16 +1844,22 @@ class ChannelManagerImpl
 			java.util.List<ChannelApplication> existing =
 					applicationStore.getApplications(channelId);
 			int pendingCount = 0;
+			boolean replacingDenied = false;
 			for (ChannelApplication a : existing) {
 				if (a.getStatus() == ChannelApplication.Status.PENDING) {
 					pendingCount++;
 				}
 				if (java.util.Arrays.equals(a.getApplicantEd25519(),
 						req.signerEd25519)) {
+					if (a.getStatus()
+							== ChannelApplication.Status.DENIED) {
+						replacingDenied = true;
+						break;
+					}
 					return safeApplyAck(true);
 				}
 			}
-			if (pendingCount
+			if (!replacingDenied && pendingCount
 					>= ChannelConstants.MAX_PENDING_APPLICATIONS) {
 				return safeApplyAck(false);
 			}

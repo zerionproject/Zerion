@@ -281,11 +281,14 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 				if (mode3FullStateRefresher != null) {
 					Mode3FullState fresh = mode3FullStateRefresher.get();
 					if (fresh != null) {
+						long mergedCounter = Math.max(
+								fresh.getMessageCounter(),
+								m3fState.getMessageCounter());
 						m3fState = new Mode3FullState(
 								fresh.getTheirActivePqPk(),
 								fresh.getOurActiveKeyPair(),
 								fresh.getRecentKeyPairs(),
-								m3fState.getMessageCounter());
+								mergedCounter);
 						sendState = sendState.withMode3FullState(m3fState);
 					}
 				}

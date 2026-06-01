@@ -116,7 +116,11 @@ public class DonationDialogFragment extends DialogFragment {
 	}
 
 	private void showBrowserWarning() {
-		copyDonationUrl();
+		android.content.Context ctx = getContext();
+		if (ctx != null) {
+			com.professor.zerion.android.util.BrowserGuard.openUrl(ctx,
+					DONATION_URL);
+		}
 		dismiss();
 	}
 

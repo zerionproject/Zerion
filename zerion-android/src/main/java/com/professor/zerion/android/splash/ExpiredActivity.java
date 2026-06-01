@@ -55,8 +55,6 @@ public class ExpiredActivity extends AppCompatActivity
 	@Override
 	public void onClick(View v) {
 		String url = getString(R.string.expired_redirect_url);
-		Uri uri = Uri.parse(url);
-		startActivity(new Intent(ACTION_VIEW, uri));
-		finish();
+		com.professor.zerion.android.util.BrowserGuard.openUrl(this, url);
 	}
 }

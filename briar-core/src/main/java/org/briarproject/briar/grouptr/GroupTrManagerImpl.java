@@ -6,8 +6,6 @@ import org.briarproject.bramble.api.contact.Contact;
 import org.briarproject.bramble.api.contact.ContactManager;
 import org.briarproject.bramble.api.crypto.CryptoComponent;
 import org.briarproject.bramble.api.crypto.PrivateKey;
-import org.briarproject.bramble.api.crypto.PublicKey;
-import org.briarproject.bramble.api.crypto.SignaturePublicKey;
 import org.briarproject.bramble.api.data.BdfDictionary;
 import org.briarproject.bramble.api.data.BdfList;
 import org.briarproject.bramble.api.db.DatabaseComponent;
@@ -512,6 +510,9 @@ class GroupTrManagerImpl
 			throw new GroupTrAuthException(
 					GroupTrAuthException.Reason.NOT_CREATOR);
 		}
+		if (Arrays.equals(creatorPub, contactPubKey)) {
+			return;
+		}
 		for (GroupTrMember m : s.getMembers()) {
 			if (Arrays.equals(m.getPubKey(), contactPubKey)) {
 				return;
@@ -558,8 +559,8 @@ class GroupTrManagerImpl
 			removeFromDevice(grouptrGroupId);
 		}
 		long ts = clock.currentTimeMillis();
-		byte[] signed = offerSignedInput(grouptrGroupId, localPub,
-				pi.creatorPubKey, ts);
+		byte[] signed = offerSignedInputBound(grouptrGroupId, localPub,
+				pi.creatorPubKey, ts, pi.groupName, pi.salt, pi.creatorName);
 		byte[] sig = signOrThrow(SIGNING_LABEL_GROUPTR_INVITE_ACCEPT,
 				signed, la.getPrivateKey());
 		BdfList body = BdfList.of(
@@ -583,8 +584,8 @@ class GroupTrManagerImpl
 				identityManager::getLocalAuthor);
 		byte[] localPub = la.getPublicKey().getEncoded();
 		long ts = clock.currentTimeMillis();
-		byte[] signed = offerSignedInput(grouptrGroupId, localPub,
-				pi.creatorPubKey, ts);
+		byte[] signed = offerSignedInputBound(grouptrGroupId, localPub,
+				pi.creatorPubKey, ts, pi.groupName, pi.salt, pi.creatorName);
 		byte[] sig = signOrThrow(SIGNING_LABEL_GROUPTR_INVITE_DECLINE,
 				signed, la.getPrivateKey());
 		BdfList body = BdfList.of(
@@ -619,18 +620,6 @@ class GroupTrManagerImpl
 				.GroupTrLocalStateChangedEvent(grouptrGroupId,
 				org.briarproject.briar.api.messaging.event
 						.GroupTrLocalStateChangedEvent.Kind.CREATED));
-	}
-
-	private static byte[] offerSignedInput(byte[] grouptrGid, byte[] aPub,
-			byte[] bPub, long ts) {
-		byte[] out = new byte[32 + 32 + 32 + 8];
-		System.arraycopy(grouptrGid, 0, out, 0, 32);
-		System.arraycopy(aPub, 0, out, 32, 32);
-		System.arraycopy(bPub, 0, out, 64, 32);
-		for (int i = 0; i < 8; i++) {
-			out[96 + i] = (byte) (ts >>> ((7 - i) * 8));
-		}
-		return out;
 	}
 
 	private static byte[] offerSignedInputBound(byte[] grouptrGid,
@@ -781,6 +770,16 @@ class GroupTrManagerImpl
 			byte[] senderPub = lookupSenderPubKey(ev.getContactId());
 			if (senderPub == null
 					|| !Arrays.equals(senderPub, creatorPub)) return;
+			GroupTrState existing = getGroup(grouptrGid);
+			if (existing != null && !existing.isDissolved()) {
+				LocalAuthor laCheck = db.transactionWithResult(true,
+						identityManager::getLocalAuthor);
+				byte[] selfPub = laCheck.getPublicKey().getEncoded();
+				for (GroupTrMember m : existing.getMembers()) {
+					if (Arrays.equals(m.getPubKey(), selfPub)) return;
+				}
+			}
+			if (loadInviteReceived(grouptrGid) != null) return;
 			LocalAuthor la = db.transactionWithResult(true,
 					identityManager::getLocalAuthor);
 			byte[] localPub = la.getPublicKey().getEncoded();
@@ -818,8 +817,9 @@ class GroupTrManagerImpl
 			return;
 		}
 		if (s == null) return;
-		byte[] signed = offerSignedInput(grouptrGid, responderPub,
-				s.getCreatorPubKey(), ev.getInviteTimestamp());
+		byte[] signed = offerSignedInputBound(grouptrGid, responderPub,
+				s.getCreatorPubKey(), ev.getInviteTimestamp(),
+				s.getName(), s.getSalt(), s.getCreatorName());
 		String label = ev.getKind() ==
 				org.briarproject.briar.api.messaging.event
 						.GroupTrInviteResponseReceivedEvent.Kind.ACCEPT
@@ -966,13 +966,15 @@ class GroupTrManagerImpl
 		try {
 			GroupTrState s = getGroup(e.getGroupId());
 			if (s == null || s.isDissolved()) return;
-			if (e.getEpoch() < s.getEpoch()) return;
+			if (e.getEpoch() <= s.getEpoch()) return;
 			if (!verify(e.getRecordSig(),
 					"org.briarproject.zerion/GROUP_MEMBER_LIST_SNAPSHOT",
 					e.getSignedInput(), s.getCreatorPubKey())) return;
 			byte[] mc = e.getMemberCanonical();
 			if (mc.length % 37 != 0) return;
 			int n = mc.length / 37;
+			if (n > org.briarproject.briar.grouptr.GroupTrConstants
+					.MAX_GROUP_MEMBERS) return;
 			List<GroupTrMember> reconciled = new ArrayList<>(n);
 			List<GroupTrMember> prev = s.getMembers();
 			for (int i = 0; i < n; i++) {
@@ -989,20 +991,23 @@ class GroupTrManagerImpl
 						: MemberRole.valueOf(roleInt);
 				String name = "";
 				long joinedAt = 0L;
+				byte[] mlDsaPub = null;
 				for (GroupTrMember pm : prev) {
 					if (Arrays.equals(pm.getPubKey(), pk)) {
 						name = pm.getName();
 						joinedAt = pm.getJoinedAt();
+						mlDsaPub = pm.getMlDsaPubKey();
 						break;
 					}
 				}
+				if (mlDsaPub == null) {
+					mlDsaPub = lookupPeerMlDsaPubKey(pk);
+				}
 				reconciled.add(new GroupTrMember(pk, name, joinedAt,
-						joinedAtEpoch, r));
+						joinedAtEpoch, r, mlDsaPub));
 			}
 			s.setMembers(reconciled);
-			if (e.getEpoch() > s.getEpoch()) {
-				s.setEpoch(e.getEpoch());
-			}
+			s.setEpoch(e.getEpoch());
 			persist(s);
 			drainFutureBuffer(s.getGroupId(), s.getEpoch());
 		} catch (DbException | FormatException ex) {
@@ -1093,20 +1098,16 @@ class GroupTrManagerImpl
 		if (signed.length == 0) return false;
 		try {
 			byte[] peerMlDsaPub = lookupPeerMlDsaPubKey(pubKeyBytes);
-			if (peerMlDsaPub != null) {
-				if (sig.length != org.briarproject.bramble.api.crypto
-						.PostQuantumConstants.HYBRID_SIGNATURE_BYTES) {
-					return false;
-				}
-				org.briarproject.bramble.api.crypto.HybridSignaturePublicKey
-						hybridPub = new org.briarproject.bramble.api.crypto
-						.HybridSignaturePublicKey(pubKeyBytes, peerMlDsaPub);
-				return crypto.verifyHybridSignature(sig, label, signed,
-						hybridPub);
+			if (peerMlDsaPub == null) return false;
+			if (sig.length != org.briarproject.bramble.api.crypto
+					.PostQuantumConstants.HYBRID_SIGNATURE_BYTES) {
+				return false;
 			}
-			if (sig.length != 64) return false;
-			PublicKey p = new SignaturePublicKey(pubKeyBytes);
-			return crypto.verifySignature(sig, label, signed, p);
+			org.briarproject.bramble.api.crypto.HybridSignaturePublicKey
+					hybridPub = new org.briarproject.bramble.api.crypto
+					.HybridSignaturePublicKey(pubKeyBytes, peerMlDsaPub);
+			return crypto.verifyHybridSignature(sig, label, signed,
+					hybridPub);
 		} catch (GeneralSecurityException ex) {
 			return false;
 		} catch (DbException ex) {
@@ -1672,14 +1673,16 @@ class GroupTrManagerImpl
 			PrivateKey key) throws DbException {
 		try {
 			byte[] mlDsaPriv = identityManager.getLocalMlDsaSigPrivateKey();
-			if (mlDsaPriv != null) {
-				org.briarproject.bramble.api.crypto.HybridSignaturePrivateKey
-						hybridKey = new org.briarproject.bramble.api.crypto
-						.HybridSignaturePrivateKey(key.getEncoded(),
-						mlDsaPriv);
-				return crypto.hybridSign(label, signed, hybridKey);
+			if (mlDsaPriv == null) {
+				throw new DbException(new GeneralSecurityException(
+						"Local ML-DSA private key missing — "
+								+ "refusing classical-only signature"));
 			}
-			return crypto.sign(label, signed, key);
+			org.briarproject.bramble.api.crypto.HybridSignaturePrivateKey
+					hybridKey = new org.briarproject.bramble.api.crypto
+					.HybridSignaturePrivateKey(key.getEncoded(),
+					mlDsaPriv);
+			return crypto.hybridSign(label, signed, hybridKey);
 		} catch (GeneralSecurityException ex) {
 			throw new DbException(ex);
 		}
