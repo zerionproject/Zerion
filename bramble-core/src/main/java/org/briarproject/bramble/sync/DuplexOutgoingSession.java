@@ -62,11 +62,16 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 			(RECORD_HEADER_BYTES + MAX_MESSAGE_LENGTH) * 2;
 
 	private static final long COVER_INTERVAL_MS_BASE = 4_000L;
-	private static final long COVER_INTERVAL_MS_JITTER = 500L;
-	private static final int SLOT_BYTES_BASE = 1024;
-	private static final int SLOT_BYTES_JITTER = 128;
+	private static final long COVER_INTERVAL_MS_JITTER_MEAN = 500L;
+	private static final long COVER_INTERVAL_MS_CAP =
+			COVER_INTERVAL_MS_BASE * 3L;
+	private static final int SLOT_BYTES_BASE = 2048;
+	private static final int SLOT_BYTES_JITTER = 256;
 	private static final long MIN_PEER_IDLE_TIME_MS =
-			(COVER_INTERVAL_MS_BASE + COVER_INTERVAL_MS_JITTER) * 2L;
+			COVER_INTERVAL_MS_CAP * 2L;
+	private static final double SYNTHETIC_OFFER_PROB = 0.08;
+	private static final int SYNTHETIC_OFFER_BYTES =
+			32 + RECORD_HEADER_BYTES;
 
 	private final DatabaseComponent db;
 	private final Executor dbExecutor;
@@ -115,13 +120,33 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 		this.priority = priority;
 		java.util.concurrent.ThreadLocalRandom rng =
 				java.util.concurrent.ThreadLocalRandom.current();
-		this.coverIntervalMs = COVER_INTERVAL_MS_BASE
-				+ rng.nextLong(-COVER_INTERVAL_MS_JITTER,
-						COVER_INTERVAL_MS_JITTER + 1);
+		this.coverIntervalMs = drawCoverInterval(rng);
 		this.slotBytes = SLOT_BYTES_BASE
 				+ rng.nextInt(-SLOT_BYTES_JITTER,
 						SLOT_BYTES_JITTER + 1);
 		writerTasks = new LinkedBlockingQueue<>();
+	}
+
+	private static long drawCoverInterval(
+			java.util.concurrent.ThreadLocalRandom rng) {
+		double u = rng.nextDouble();
+		if (u <= 0d) u = 1e-12;
+		long expDraw = Math.round(
+				-COVER_INTERVAL_MS_JITTER_MEAN * Math.log(1d - u));
+		long bounded = Math.min(COVER_INTERVAL_MS_CAP - COVER_INTERVAL_MS_BASE,
+				Math.max(0L, expDraw));
+		return COVER_INTERVAL_MS_BASE + bounded;
+	}
+
+	private static org.briarproject.bramble.api.sync.Offer
+	buildSyntheticOffer() {
+		byte[] randomId = new byte[
+				org.briarproject.bramble.api.UniqueId.LENGTH];
+		java.util.concurrent.ThreadLocalRandom.current().nextBytes(randomId);
+		return new org.briarproject.bramble.api.sync.Offer(
+				java.util.Collections.singletonList(
+						new org.briarproject.bramble.api.sync.MessageId(
+								randomId)));
 	}
 
 	@IoExecutor
@@ -168,6 +193,17 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 									- slotStartBytes;
 							long room = slotBytes - written
 									- RECORD_HEADER_BYTES;
+							if (room >= SYNTHETIC_OFFER_BYTES
+									&& java.util.concurrent.ThreadLocalRandom
+									.current().nextDouble()
+									< SYNTHETIC_OFFER_PROB) {
+								recordWriter.writeOffer(
+										buildSyntheticOffer());
+								written = recordWriter.getBytesWritten()
+										- slotStartBytes;
+								room = slotBytes - written
+										- RECORD_HEADER_BYTES;
+							}
 							if (room > 0) {
 								recordWriter.writeCover((int) Math.min(
 										room, Integer.MAX_VALUE));

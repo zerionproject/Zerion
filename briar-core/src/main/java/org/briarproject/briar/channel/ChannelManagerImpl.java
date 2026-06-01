@@ -207,16 +207,26 @@ class ChannelManagerImpl
 		try {
 			for (ChannelState s : store.listChannels()) {
 				if (!s.weArePublisher()) continue;
-				ChannelTransport.ChannelServer previous =
-						boundServers.remove(ChannelStore.hex(
-								s.getChannelId()));
-				if (previous != null) previous.close();
-				String newOnion = bindPublisherServer(s.getChannelId());
-				if (newOnion == null || newOnion.isEmpty()) continue;
-				ChannelState rotated = withRotatedOnion(s, newOnion);
-				store.putChannel(rotated);
-				fireEvent(s.getChannelId(),
-						ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+				java.util.concurrent.locks.ReentrantLock lock =
+						lockFor(s.getChannelId());
+				lock.lock();
+				try {
+					ChannelState fresh = store.getChannel(s.getChannelId());
+					if (fresh == null || !fresh.weArePublisher()) continue;
+					ChannelTransport.ChannelServer previous =
+							boundServers.remove(ChannelStore.hex(
+									fresh.getChannelId()));
+					if (previous != null) previous.close();
+					String newOnion = bindPublisherServer(
+							fresh.getChannelId());
+					if (newOnion == null || newOnion.isEmpty()) continue;
+					ChannelState rotated = withRotatedOnion(fresh, newOnion);
+					store.putChannel(rotated);
+					fireEvent(fresh.getChannelId(),
+							ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+				} finally {
+					lock.unlock();
+				}
 			}
 		} catch (DbException ignored) {
 		}
@@ -1716,6 +1726,8 @@ class ChannelManagerImpl
 							ChannelApplication.Status.APPROVED,
 							encap.getCiphertext(), envelope));
 			fireEvent(channelId,
+					ChannelStateChangedEvent.Kind.APPLICANT_APPROVED);
+			fireEvent(channelId,
 					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
 		} finally {
 			lock.unlock();
@@ -1742,6 +1754,8 @@ class ChannelManagerImpl
 							app.getAppliedAtHourMs(),
 							ChannelApplication.Status.DENIED,
 							null, null));
+			fireEvent(channelId,
+					ChannelStateChangedEvent.Kind.APPLICANT_DENIED);
 			fireEvent(channelId,
 					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
 		} finally {

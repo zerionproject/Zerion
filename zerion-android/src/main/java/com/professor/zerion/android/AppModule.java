@@ -215,6 +215,37 @@ public class AppModule {
 		void init() {
 			SecurePrefsHolder.initialize(application);
 			preferencesMigration.migrateVaultSettingsIfNeeded();
+			pinTorBinary(application);
+		}
+
+		private static void pinTorBinary(Application app) {
+			try {
+				android.content.SharedPreferences prefs =
+						SecurePrefsHolder.getSecurePrefs();
+				if (prefs == null) return;
+				int versionCode;
+				try {
+					versionCode = app.getPackageManager().getPackageInfo(
+							app.getPackageName(), 0).versionCode;
+				} catch (android.content.pm.PackageManager
+						.NameNotFoundException e) {
+					return;
+				}
+				String nativeLibDir = app.getApplicationInfo().nativeLibraryDir;
+				if (nativeLibDir == null) return;
+				java.io.File dir = new java.io.File(nativeLibDir);
+				java.io.File[] files = dir.listFiles();
+				if (files == null) return;
+				for (java.io.File f : files) {
+					String n = f.getName();
+					if (n.startsWith("libtor") || n.startsWith("liblyrebird")) {
+						com.professor.zerion.android.security
+								.TorBinaryIntegrity.verifyOrPin(prefs, f,
+								versionCode);
+					}
+				}
+			} catch (RuntimeException ignored) {
+			}
 		}
 	}
 

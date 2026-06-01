@@ -143,27 +143,38 @@ class VoiceCallCryptoImpl implements VoiceCallCrypto {
 		byte[] bobEphemeral = alice ? remoteEphemeral : localEphemeral;
 
 		byte[] combined = new byte[aliceEphemeral.length + bobEphemeral.length];
-		System.arraycopy(aliceEphemeral, 0, combined, 0, aliceEphemeral.length);
-		System.arraycopy(bobEphemeral, 0, combined, aliceEphemeral.length,
-				bobEphemeral.length);
+		byte[] aliceKeyBytes = null;
+		byte[] bobKeyBytes = null;
+		try {
+			System.arraycopy(aliceEphemeral, 0, combined, 0,
+					aliceEphemeral.length);
+			System.arraycopy(bobEphemeral, 0, combined,
+					aliceEphemeral.length, bobEphemeral.length);
 
-		SecretKey ephemeralSourceKey = crypto.deriveKey(
-				AUDIO_KEY_LABEL + "/EPHEMERAL",
-				voiceCallKey,
-				combined
-		);
-		java.util.Arrays.fill(combined, (byte) 0);
+			SecretKey ephemeralSourceKey = crypto.deriveKey(
+					AUDIO_KEY_LABEL + "/EPHEMERAL",
+					voiceCallKey,
+					combined
+			);
 
-		KeyMaterialSource audioKeyMaterial =
-				new VoiceCallKeyMaterialSource(ephemeralSourceKey);
-		byte[] aliceKeyBytes = audioKeyMaterial.getKeyMaterial(AES_KEY_BYTES);
-		byte[] bobKeyBytes = audioKeyMaterial.getKeyMaterial(AES_KEY_BYTES);
-		SecretKey txKey = new SecretKey(alice ? aliceKeyBytes : bobKeyBytes);
-		SecretKey rxKey = new SecretKey(alice ? bobKeyBytes : aliceKeyBytes);
-		java.util.Arrays.fill(aliceKeyBytes, (byte) 0);
-		java.util.Arrays.fill(bobKeyBytes, (byte) 0);
-
-		return new AudioKeys(txKey, rxKey);
+			KeyMaterialSource audioKeyMaterial =
+					new VoiceCallKeyMaterialSource(ephemeralSourceKey);
+			aliceKeyBytes = audioKeyMaterial.getKeyMaterial(AES_KEY_BYTES);
+			bobKeyBytes = audioKeyMaterial.getKeyMaterial(AES_KEY_BYTES);
+			SecretKey txKey = new SecretKey(
+					alice ? aliceKeyBytes : bobKeyBytes);
+			SecretKey rxKey = new SecretKey(
+					alice ? bobKeyBytes : aliceKeyBytes);
+			return new AudioKeys(txKey, rxKey);
+		} finally {
+			java.util.Arrays.fill(combined, (byte) 0);
+			if (aliceKeyBytes != null) {
+				java.util.Arrays.fill(aliceKeyBytes, (byte) 0);
+			}
+			if (bobKeyBytes != null) {
+				java.util.Arrays.fill(bobKeyBytes, (byte) 0);
+			}
+		}
 	}
 
 	@Override

@@ -15,7 +15,9 @@ public class ChannelStateChangedEvent extends Event {
 		LEFT,
 		MANIFEST_UPDATED,
 		MIRROR_OPT_IN_TOGGLED,
-		UNREAD_COUNT_CHANGED
+		UNREAD_COUNT_CHANGED,
+		APPLICANT_APPROVED,
+		APPLICANT_DENIED
 	}
 
 	private final byte[] channelId;

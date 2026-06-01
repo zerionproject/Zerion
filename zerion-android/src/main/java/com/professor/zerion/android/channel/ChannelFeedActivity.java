@@ -215,6 +215,12 @@ public class ChannelFeedActivity extends ZerionActivity
 		} else if (e instanceof ChannelStateChangedEvent) {
 			ChannelStateChangedEvent ev = (ChannelStateChangedEvent) e;
 			if (Arrays.equals(ev.getChannelId(), channelId)) {
+				if (ev.getKind()
+						== ChannelStateChangedEvent.Kind.APPLICANT_APPROVED) {
+					runOnUiThread(() -> Toast.makeText(this,
+							R.string.channels_applicant_approved_notice,
+							Toast.LENGTH_SHORT).show());
+				}
 				runOnUiThread(this::loadChannel);
 			}
 		}

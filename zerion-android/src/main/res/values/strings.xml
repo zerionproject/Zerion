@@ -198,8 +198,8 @@
 	<string name="try_again">Wrong password, try again</string>
 	<string name="dialog_title_cannot_check_password">Cannot Check Password</string>
 	<string name="dialog_message_cannot_check_password">Zerion cannot check your password. Please try rebooting your device to solve this problem.</string>
-	<string name="sign_in_title">Sign into zerion</string>
-	<string name="sign_in_button">Sign In</string>
+	<string name="sign_in_title">Sign in to Zerion</string>
+	<string name="sign_in_button">Sign in</string>
 	<string name="forgotten_password">Forgot your password?</string>
 	<string name="dialog_title_lost_password">Lost Password</string>
 	<string name="dialog_message_lost_password">Your Zerion account is stored encrypted on your device, not in the cloud, so we can\'t reset your password. Would you like to delete your account and start again?\n\nCaution: Your identities, contacts and messages will be permanently lost.</string>
@@ -337,6 +337,7 @@
 	<string name="channels_attach_downloading">Downloading…</string>
 	<string name="channels_attach_download_failed">Could not download attachment</string>
 	<string name="channels_attach_open_failed">No app available to open this file</string>
+	<string name="channels_applicant_approved_notice">New subscriber joined</string>
 	<string name="channels_attach_too_many">Too many attachments (max 8)</string>
 	<string name="channels_action_react">React</string>
 	<string name="channels_react_failed">Could not send reaction</string>

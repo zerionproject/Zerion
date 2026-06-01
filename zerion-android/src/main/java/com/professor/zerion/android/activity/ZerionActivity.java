@@ -155,7 +155,7 @@ public abstract class ZerionActivity extends BaseActivity {
 		b.setOnDismissListener(dialog -> {
 			CheckBox checkBox =
 					((AlertDialog) dialog).findViewById(R.id.checkbox);
-			if (checkBox.isChecked())
+			if (checkBox != null && checkBox.isChecked())
 				briarController.doNotAskAgainForDozeWhiteListing();
 		});
 		b.show();

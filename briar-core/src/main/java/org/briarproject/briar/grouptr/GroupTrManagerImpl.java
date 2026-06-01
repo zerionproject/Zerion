@@ -109,6 +109,15 @@ class GroupTrManagerImpl
 			new java.util.concurrent.ConcurrentHashMap<>();
 	private static final byte[] NEGATIVE_CACHE_SENTINEL = new byte[0];
 
+	private final java.util.Map<String,
+			java.util.concurrent.locks.ReentrantLock> groupLocks =
+			new java.util.concurrent.ConcurrentHashMap<>();
+
+	private java.util.concurrent.locks.ReentrantLock lockFor(byte[] gid) {
+		return groupLocks.computeIfAbsent(toHexString(gid),
+				k -> new java.util.concurrent.locks.ReentrantLock());
+	}
+
 	@Inject
 	GroupTrManagerImpl(DatabaseComponent db,
 			SettingsManager settingsManager, ClientHelper clientHelper,
@@ -130,6 +139,46 @@ class GroupTrManagerImpl
 	@Override
 	public void onDatabaseOpened(Transaction txn) throws DbException {
 		eventBus.addListener(this);
+		purgeExpiredPosts();
+	}
+
+	private void purgeExpiredPosts() {
+		long now = clock.currentTimeMillis();
+		for (java.util.Map.Entry<String,
+				java.util.ArrayDeque<GroupTrPost>> e
+				: postCache.entrySet()) {
+			java.util.ArrayDeque<GroupTrPost> q = e.getValue();
+			synchronized (q) {
+				java.util.Iterator<GroupTrPost> it = q.iterator();
+				while (it.hasNext()) {
+					GroupTrPost p = it.next();
+					long ttl = p.getAutoDeleteTimerMs();
+					if (ttl > 0 && p.getTimestamp() + ttl <= now) {
+						it.remove();
+					}
+				}
+			}
+		}
+		for (java.util.Map.Entry<String,
+				java.util.TreeMap<Long, java.util.List<GroupTrPost>>> e
+				: futureBuffer.entrySet()) {
+			java.util.TreeMap<Long, java.util.List<GroupTrPost>> tm =
+					e.getValue();
+			synchronized (tm) {
+				java.util.Iterator<java.util.Map.Entry<Long,
+						java.util.List<GroupTrPost>>> entries =
+						tm.entrySet().iterator();
+				while (entries.hasNext()) {
+					java.util.List<GroupTrPost> list =
+							entries.next().getValue();
+					list.removeIf(p -> {
+						long ttl = p.getAutoDeleteTimerMs();
+						return ttl > 0 && p.getTimestamp() + ttl <= now;
+					});
+					if (list.isEmpty()) entries.remove();
+				}
+			}
+		}
 	}
 
 	@Override
@@ -963,6 +1012,9 @@ class GroupTrManagerImpl
 	}
 
 	private void handleMemberListSnapshot(GroupMemberListSnapshotEvent e) {
+		java.util.concurrent.locks.ReentrantLock lock =
+				lockFor(e.getGroupId());
+		lock.lock();
 		try {
 			GroupTrState s = getGroup(e.getGroupId());
 			if (s == null || s.isDissolved()) return;
@@ -1012,6 +1064,8 @@ class GroupTrManagerImpl
 			drainFutureBuffer(s.getGroupId(), s.getEpoch());
 		} catch (DbException | FormatException ex) {
 
+		} finally {
+			lock.unlock();
 		}
 	}
 
@@ -1264,14 +1318,16 @@ class GroupTrManagerImpl
 		Settings index = settingsManager.getSettings(SETTINGS_NS_INDEX);
 		String existing = index.get(S_GROUP_IDS);
 		String hex = toHexString(groupId);
-		if (existing == null || existing.isEmpty()) {
-			index.put(S_GROUP_IDS, hex);
-		} else if (!existing.contains(hex)) {
-			index.put(S_GROUP_IDS, existing + "," + hex);
-		} else {
-			return;
+		java.util.TreeSet<String> ids = new java.util.TreeSet<>();
+		if (existing != null && !existing.isEmpty()) {
+			for (String p : existing.split(",")) {
+				if (!p.isEmpty()) ids.add(p);
+			}
 		}
-		settingsManager.mergeSettings(index, SETTINGS_NS_INDEX);
+		if (!ids.add(hex)) return;
+		Settings out = new Settings();
+		out.put(S_GROUP_IDS, String.join(",", ids));
+		settingsManager.mergeSettings(out, SETTINGS_NS_INDEX);
 	}
 
 	private void removeFromIndex(byte[] groupId) throws DbException {
@@ -1279,15 +1335,13 @@ class GroupTrManagerImpl
 		String existing = index.get(S_GROUP_IDS);
 		if (existing == null || existing.isEmpty()) return;
 		String hex = toHexString(groupId);
-		String[] parts = existing.split(",");
-		StringBuilder sb = new StringBuilder();
-		for (String p : parts) {
+		java.util.TreeSet<String> ids = new java.util.TreeSet<>();
+		for (String p : existing.split(",")) {
 			if (p.isEmpty() || p.equals(hex)) continue;
-			if (sb.length() > 0) sb.append(',');
-			sb.append(p);
+			ids.add(p);
 		}
 		Settings out = new Settings();
-		out.put(S_GROUP_IDS, sb.toString());
+		out.put(S_GROUP_IDS, String.join(",", ids));
 		settingsManager.mergeSettings(out, SETTINGS_NS_INDEX);
 	}
 
@@ -1350,7 +1404,7 @@ class GroupTrManagerImpl
 
 	private static Settings blankCopy(Settings original) {
 		Settings blank = new Settings();
-		for (String key : original.keySet()) {
+		for (String key : new java.util.ArrayList<>(original.keySet())) {
 			blank.put(key, "");
 		}
 		return blank;
@@ -1360,7 +1414,7 @@ class GroupTrManagerImpl
 		String hex = toHexString(groupId);
 		Settings sent = settingsManager.getSettings(SETTINGS_NS_INVITES_SENT);
 		Settings sentBlank = new Settings();
-		for (String key : sent.keySet()) {
+		for (String key : new java.util.ArrayList<>(sent.keySet())) {
 			if (key.startsWith(hex + ":") || key.equals(hex)) {
 				sentBlank.put(key, "");
 			}
