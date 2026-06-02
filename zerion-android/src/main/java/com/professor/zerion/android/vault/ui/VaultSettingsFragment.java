@@ -268,10 +268,10 @@ public class VaultSettingsFragment extends BaseFragment {
 		}
 
 		if (newPass.length == 0) {
-			newLayout.setError("Enter new password");
+			newLayout.setError(getString(R.string.vault_enter_new_password));
 			valid = false;
 		} else if (newPass.length < 8) {
-			newLayout.setError("Password must be at least 8 characters");
+			newLayout.setError(getString(R.string.password_min_8_chars));
 			valid = false;
 		}
 

@@ -15,7 +15,7 @@
 		android:gravity="end|bottom"
 		android:padding="20dp"
 		android:singleLine="false"
-		android:text="0"
+		android:text="@string/decoy_calc_initial_value"
 		android:textColor="#ffffff"
 		android:textSize="56sp"
 		android:fontFamily="sans-serif-light" />
@@ -28,10 +28,10 @@
 		android:rowCount="5"
 		android:useDefaultMargins="true">
 
-		<Button android:id="@+id/btnClear" android:text="C"
+		<Button android:id="@+id/btnClear" android:text="@string/decoy_calc_clear"
 			style="@style/DecoyCalcKeyAccent"
 			android:layout_columnWeight="1" android:layout_rowWeight="1" />
-		<Button android:id="@+id/btnDel" android:text="DEL"
+		<Button android:id="@+id/btnDel" android:text="@string/decoy_calc_delete"
 			style="@style/DecoyCalcKeyAccent"
 			android:layout_columnWeight="1" android:layout_rowWeight="1" />
 		<Button android:id="@+id/btnPercent" android:text="%"

@@ -92,7 +92,8 @@ public class VaultSetupFragment extends BaseFragment {
 		int confirmPasswordLength = confirmPasswordInput.getPasswordLength();
 
 		if (passwordLength > 0 && passwordLength < 8) {
-			passwordLayout.setError("Password must be at least 8 characters");
+			passwordLayout.setError(
+					getString(R.string.password_min_8_chars));
 		} else {
 			passwordLayout.setError(null);
 		}
@@ -136,7 +137,8 @@ public class VaultSetupFragment extends BaseFragment {
 
 		try {
 			if (password.length < 8) {
-				passwordLayout.setError("Password must be at least 8 characters");
+				passwordLayout.setError(
+						getString(R.string.password_min_8_chars));
 				return;
 			}
 

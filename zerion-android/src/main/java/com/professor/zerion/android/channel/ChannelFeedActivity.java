@@ -208,7 +208,7 @@ public class ChannelFeedActivity extends ZerionActivity
 		ioExecutor.execute(() -> {
 			try {
 				channelManager.refreshChannel(channelId);
-				runOnUiThread(this::loadChannel);
+				runOnUiThreadUnlessDestroyed(this::loadChannel);
 			} catch (DbException ignored) {
 			}
 		});
@@ -231,18 +231,18 @@ public class ChannelFeedActivity extends ZerionActivity
 			ChannelPostReceivedEvent ev = (ChannelPostReceivedEvent) e;
 			if (Arrays.equals(ev.getChannelId(), channelId)) {
 				activeRoundsRemaining = ACTIVE_ROUNDS_AFTER_HIT;
-				runOnUiThread(this::loadChannel);
+				runOnUiThreadUnlessDestroyed(this::loadChannel);
 			}
 		} else if (e instanceof ChannelStateChangedEvent) {
 			ChannelStateChangedEvent ev = (ChannelStateChangedEvent) e;
 			if (Arrays.equals(ev.getChannelId(), channelId)) {
 				if (ev.getKind()
 						== ChannelStateChangedEvent.Kind.APPLICANT_APPROVED) {
-					runOnUiThread(() -> Toast.makeText(this,
+					runOnUiThreadUnlessDestroyed(() -> Toast.makeText(this,
 							R.string.channels_applicant_approved_notice,
 							Toast.LENGTH_SHORT).show());
 				}
-				runOnUiThread(this::loadChannel);
+				runOnUiThreadUnlessDestroyed(this::loadChannel);
 			}
 		}
 	}
@@ -318,7 +318,7 @@ public class ChannelFeedActivity extends ZerionActivity
 			List<ChannelPost> finalPosts = posts;
 			ApplicationStatus finalStatus = appStatus;
 			boolean finalDiscussionsEnabled = discussionsEnabled;
-			runOnUiThread(() -> render(finalState, finalPosts, finalStatus,
+			runOnUiThreadUnlessDestroyed(() -> render(finalState, finalPosts, finalStatus,
 					thumbnails, reactions, commentCounts,
 					finalDiscussionsEnabled));
 		});
@@ -425,7 +425,7 @@ public class ChannelFeedActivity extends ZerionActivity
 		ioExecutor.execute(() -> {
 			try {
 				channelManager.pinPost(channelId, seqNum);
-				runOnUiThread(this::loadChannel);
+				runOnUiThreadUnlessDestroyed(this::loadChannel);
 			} catch (DbException ignored) {
 			}
 		});
@@ -435,7 +435,7 @@ public class ChannelFeedActivity extends ZerionActivity
 		ioExecutor.execute(() -> {
 			try {
 				channelManager.unpinPost(channelId);
-				runOnUiThread(this::loadChannel);
+				runOnUiThreadUnlessDestroyed(this::loadChannel);
 			} catch (DbException ignored) {
 			}
 		});
@@ -498,9 +498,9 @@ public class ChannelFeedActivity extends ZerionActivity
 			try {
 				channelManager.reactToPost(channelId, post.getSeqNum(),
 						emoji);
-				runOnUiThread(this::loadChannel);
+				runOnUiThreadUnlessDestroyed(this::loadChannel);
 			} catch (DbException ignored) {
-				runOnUiThread(() -> Toast.makeText(this,
+				runOnUiThreadUnlessDestroyed(() -> Toast.makeText(this,
 						R.string.channels_react_failed,
 						Toast.LENGTH_SHORT).show());
 			}
@@ -521,9 +521,9 @@ public class ChannelFeedActivity extends ZerionActivity
 		ioExecutor.execute(() -> {
 			try {
 				channelManager.deletePost(channelId, post.getSeqNum());
-				runOnUiThread(this::loadChannel);
+				runOnUiThreadUnlessDestroyed(this::loadChannel);
 			} catch (DbException ignored) {
-				runOnUiThread(() -> Toast.makeText(this,
+				runOnUiThreadUnlessDestroyed(() -> Toast.makeText(this,
 						R.string.channels_post_delete_failed,
 						Toast.LENGTH_SHORT).show());
 			}
@@ -597,9 +597,9 @@ public class ChannelFeedActivity extends ZerionActivity
 		ioExecutor.execute(() -> {
 			try {
 				channelManager.publishPost(channelId, body, ttlSeconds);
-				runOnUiThread(this::loadChannel);
+				runOnUiThreadUnlessDestroyed(this::loadChannel);
 			} catch (DbException ex) {
-				runOnUiThread(() -> Toast.makeText(this,
+				runOnUiThreadUnlessDestroyed(() -> Toast.makeText(this,
 						R.string.channels_compose_error_empty,
 						Toast.LENGTH_SHORT).show());
 			}
@@ -620,7 +620,7 @@ public class ChannelFeedActivity extends ZerionActivity
 				blob = null;
 			}
 			AttachmentBlob finalBlob = blob;
-			runOnUiThread(() -> {
+			runOnUiThreadUnlessDestroyed(() -> {
 				spinner.setVisibility(View.GONE);
 				if (finalBlob == null) {
 					Toast.makeText(this,
@@ -771,7 +771,7 @@ public class ChannelFeedActivity extends ZerionActivity
 				try (java.io.InputStream in =
 							getContentResolver().openInputStream(uri)) {
 					if (in == null) {
-						runOnUiThread(() -> {
+						runOnUiThreadUnlessDestroyed(() -> {
 							setComposeBusy(false);
 							Toast.makeText(this,
 									R.string.channels_attach_read_failed,
@@ -787,7 +787,7 @@ public class ChannelFeedActivity extends ZerionActivity
 						buf.write(chunk, 0, read);
 						if (buf.size()
 								> ChannelConstants.MAX_ATTACHMENT_BYTES) {
-							runOnUiThread(() -> {
+							runOnUiThreadUnlessDestroyed(() -> {
 								setComposeBusy(false);
 								Toast.makeText(this,
 										R.string.channels_attach_too_large,
@@ -798,7 +798,7 @@ public class ChannelFeedActivity extends ZerionActivity
 					}
 					bytes = buf.toByteArray();
 				} catch (java.io.IOException ex) {
-					runOnUiThread(() -> {
+					runOnUiThreadUnlessDestroyed(() -> {
 						setComposeBusy(false);
 						Toast.makeText(this,
 								R.string.channels_attach_read_failed,
@@ -815,13 +815,13 @@ public class ChannelFeedActivity extends ZerionActivity
 			try {
 				channelManager.publishPostWithAttachments(channelId,
 						composedBody, ttlSeconds, specs);
-				runOnUiThread(() -> {
+				runOnUiThreadUnlessDestroyed(() -> {
 					setComposeBusy(false);
 					composeInput.setText("");
 					loadChannel();
 				});
 			} catch (DbException ex) {
-				runOnUiThread(() -> {
+				runOnUiThreadUnlessDestroyed(() -> {
 					setComposeBusy(false);
 					Toast.makeText(this,
 							R.string.channels_attach_send_failed,
@@ -918,7 +918,7 @@ public class ChannelFeedActivity extends ZerionActivity
 		ioExecutor.execute(() -> {
 			try {
 				channelManager.setDiscussionsEnabled(channelId, target);
-				runOnUiThread(() -> {
+				runOnUiThreadUnlessDestroyed(() -> {
 					discussionsEnabledCached = target;
 					Toast.makeText(this,
 							target

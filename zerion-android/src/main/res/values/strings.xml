@@ -6,7 +6,7 @@
 
 	<!-- Donation Dialog -->
 	<string name="donation_title">Do you like the app?</string>
-	<string name="donation_subtitle">Your support helps us keep Zerion free, private, and secure for everyone. Every contribution makes a difference.</string>
+	<string name="donation_subtitle">Donations keep Zerion free, private, and independent.</string>
 	<string name="donation_button_donate">Support Zerion</string>
 	<string name="donation_button_later">Maybe Later</string>
 	<string name="donation_url_label">Donation link</string>
@@ -111,7 +111,7 @@
 	<string name="vault_setup_subtitle">Create a secure password to protect your vault</string>
 	<string name="vault_unlock_subtitle">Enter your password to unlock</string>
 	<string name="vault_doc_preview_unavailable_title">Preview Not Available</string>
-	<string name="vault_doc_preview_unavailable_message">This document type cannot be viewed inside the secure vault.\n\nYou may only store it, not open it.</string>
+	<string name="vault_doc_preview_unavailable_message">This file type can\'t be opened inside the vault. You can still store it here.</string>
 	<string name="vault_doc_previous">Previous</string>
 	<string name="vault_doc_next">Next</string>
 	<string name="vault_doc_page_indicator">Page %1$d of %2$d</string>
@@ -152,7 +152,7 @@
 	<string name="setup_name_explanation">Your nickname will be shown next to any content you post. You can\'t change it after creating your account.</string>
 	<string name="setup_next">Next</string>
 	<string name="setup_password_intro">Choose a Password</string>
-	<string name="setup_password_explanation">Your Zerion account is stored encrypted on your device, not in the cloud. If you forget your password or uninstall Zerion, there\'s no way to recover your account.\n\nChoose a long password that\'s hard to guess, such as four random words, or ten random letters, numbers and symbols.</string>
+	<string name="setup_password_explanation">Your account stays on this device. There\'s no cloud and no recovery — if you forget your password or uninstall Zerion, the account is gone.\n\nPick something long and hard to guess. Four random words works, so does ten random letters, numbers, and symbols.</string>
 	<string name="dnkm_doze_title">Background Connections</string>
 	<string name="dnkm_doze_intro">To receive messages, Zerion needs to stay connected in the background.</string>
 	<string name="dnkm_doze_explanation">To receive messages, Zerion needs to stay connected in the background. Please disable battery optimizations so Zerion can stay connected.</string>
@@ -1354,17 +1354,12 @@
 
 	<!-- Conversation Settings -->
 	<string name="disappearing_messages_title">Disappearing messages</string>
-	<string name="disappearing_messages_explanation_long">Turning on this setting will make new
-		messages in this conversation automatically disappear after 7\u00A0days.
-		\n\nThe countdown for the sender\'s copy of the message starts after it has been delivered.
-		The countdown starts for the recipient after they have read the message.
-		\n\nMessages that will disappear are marked with a bomb icon.
-		\n\nKeep in mind that recipients can still make copies of the messages you send.
-		\n\nIf you change this setting, it will apply to your new messages immediately and to your
-		contact\'s messages once they receive your next message.
-		Your contact can also change this setting for the both of you.</string>
+	<string name="disappearing_messages_explanation_long">New messages disappear after 7\u00A0days.
+		\n\nThe sender\'s countdown starts when the message is delivered. The recipient\'s starts when they read it. Messages on the timer show a bomb icon.
+		\n\nRecipients can still copy what you send.
+		\n\nEither of you can change this setting \u2014 your changes apply to your new messages right away, and to your contact\'s once they receive your next message.</string>
 	<string name="learn_more">Learn more</string>
-	<string name="disappearing_messages_summary">Make future messages in this conversation automatically disappear after 7\u00A0days.</string>
+	<string name="disappearing_messages_summary">New messages disappear after 7\u00A0days.</string>
 	<string name="disappearing_messages_setting_description">Messages will automatically disappear after the selected time</string>
 	<string name="off">Off</string>
 
@@ -1398,6 +1393,11 @@
 	<string name="please_send_report">Please help us build a better Zerion by sending us a crash report.</string>
 	<string name="report_is_encrypted">The report is encrypted before it\'s sent.</string>
 	<string name="pending_contact_remove_action">Remove request</string>
+	<string name="decoy_calc_clear">C</string>
+	<string name="decoy_calc_delete">DEL</string>
+	<string name="decoy_calc_initial_value">0</string>
+	<string name="password_min_8_chars">Password must be at least 8 characters</string>
+	<string name="vault_enter_new_password">Enter new password</string>
 	<string name="feedback_title">Feedback</string>
 	<string name="describe_crash">Describe what happened (optional)</string>
 	<string name="enter_feedback">Enter your feedback</string>
@@ -1612,7 +1612,7 @@
 	<string name="contact_type_selection_subtitle">Select how you want to connect with your contact</string>
 	<string name="contact_type_zerion_title">Zerion</string>
 	<string name="contact_type_zerion_badge">Post-Quantum Security</string>
-	<string name="contact_type_zerion_description">Connect with other Zerion users using hybrid post-quantum cryptography. Provides protection against future quantum computer attacks.</string>
+	<string name="contact_type_zerion_description">Connect with another Zerion user. Quantum-resistant encryption end to end.</string>
 	<string name="contact_type_classic_title">Classic Mode</string>
 	<string name="contact_type_classic_badge">Classical Security</string>
 	<string name="contact_type_classic_description">Connect using classical cryptography. Use this option for backward compatibility with contacts on older versions.</string>

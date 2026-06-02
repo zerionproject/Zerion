@@ -149,7 +149,7 @@ public class ChannelCommentsActivity extends ZerionActivity
 		if (e instanceof ChannelStateChangedEvent) {
 			ChannelStateChangedEvent ev = (ChannelStateChangedEvent) e;
 			if (Arrays.equals(ev.getChannelId(), channelId)) {
-				runOnUiThread(this::refresh);
+				runOnUiThreadUnlessDestroyed(this::refresh);
 			}
 		}
 	}
@@ -174,7 +174,7 @@ public class ChannelCommentsActivity extends ZerionActivity
 							b.getTimestampHourMs()));
 			List<ChannelComment> finalComments = comments;
 			final boolean finalEnabled = enabled;
-			runOnUiThread(() -> {
+			runOnUiThreadUnlessDestroyed(() -> {
 				render(finalComments);
 				bindComposerEnabled(finalEnabled);
 			});
@@ -206,9 +206,9 @@ public class ChannelCommentsActivity extends ZerionActivity
 		ioExecutor.execute(() -> {
 			try {
 				channelManager.postComment(channelId, parentSeq, body);
-				runOnUiThread(this::refresh);
+				runOnUiThreadUnlessDestroyed(this::refresh);
 			} catch (DbException ignored) {
-				runOnUiThread(() -> Toast.makeText(this,
+				runOnUiThreadUnlessDestroyed(() -> Toast.makeText(this,
 						R.string.channels_comments_failed,
 						Toast.LENGTH_SHORT).show());
 			}

@@ -2,6 +2,7 @@ package com.professor.zerion.android.vault.ui;
 
 import android.app.Application;
 
+import com.professor.zerion.R;
 import com.professor.zerion.android.vault.VaultManager;
 import com.professor.zerion.android.vault.model.PasswordEntry;
 import com.professor.zerion.android.vault.model.VaultItem;
@@ -116,14 +117,17 @@ public class VaultViewModel extends AndroidViewModel {
 		if (!Arrays.equals(password, confirmPassword)) {
 			Arrays.fill(password, '\0');
 			Arrays.fill(confirmPassword, '\0');
-			errorMessage.postValue("Passwords do not match");
+			errorMessage.postValue(
+					getApplication().getString(
+							R.string.vault_password_mismatch));
 			return;
 		}
 
 		if (password.length < 8) {
 			Arrays.fill(password, '\0');
 			Arrays.fill(confirmPassword, '\0');
-			errorMessage.postValue("Password must be at least 8 characters");
+			errorMessage.postValue(
+					getApplication().getString(R.string.password_min_8_chars));
 			return;
 		}
 

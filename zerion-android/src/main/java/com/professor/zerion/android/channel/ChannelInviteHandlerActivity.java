@@ -116,12 +116,12 @@ public class ChannelInviteHandlerActivity extends ZerionActivity {
 					channelManager.bootstrapChannel(cid);
 				} catch (DbException ignored) {
 				}
-				runOnUiThread(() -> {
+				runOnUiThreadUnlessDestroyed(() -> {
 					progress.dismiss();
 					openChannel(cid);
 				});
 			} catch (DbException ex) {
-				runOnUiThread(() -> {
+				runOnUiThreadUnlessDestroyed(() -> {
 					progress.dismiss();
 					Toast.makeText(this,
 							R.string.channels_apply_failed,
@@ -153,12 +153,12 @@ public class ChannelInviteHandlerActivity extends ZerionActivity {
 					} catch (DbException ignored) {
 					}
 				}
-				runOnUiThread(() -> {
+				runOnUiThreadUnlessDestroyed(() -> {
 					progress.dismiss();
 					openChannel(cid);
 				});
 			} catch (DbException ex) {
-				runOnUiThread(() -> {
+				runOnUiThreadUnlessDestroyed(() -> {
 					progress.dismiss();
 					Toast.makeText(this,
 							R.string.channels_join_error_link,
