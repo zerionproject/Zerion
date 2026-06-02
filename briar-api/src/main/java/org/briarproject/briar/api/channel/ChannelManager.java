@@ -104,6 +104,11 @@ public interface ChannelManager {
 	List<ChannelComment> getComments(byte[] channelId, long parentPostSeqNum)
 			throws DbException;
 
+	boolean areDiscussionsEnabled(byte[] channelId) throws DbException;
+
+	void setDiscussionsEnabled(byte[] channelId, boolean enabled)
+			throws DbException;
+
 	ChannelState createChannel(String name, String description,
 			boolean publicChannel, boolean requiresApproval)
 			throws DbException;

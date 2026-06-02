@@ -89,7 +89,9 @@ public class ChannelFeedActivity extends ZerionActivity
 	private TextView approvalBanner;
 	private PostAdapter adapter;
 	private boolean weArePublisher = false;
+	private boolean discussionsEnabledCached = true;
 	private long currentPinnedSeq = ChannelState.NO_PINNED_POST;
+	private static final int MENU_ITEM_DISCUSSIONS = 7341;
 
 	@Override
 	public void injectActivity(ActivityComponent component) {
@@ -141,11 +143,30 @@ public class ChannelFeedActivity extends ZerionActivity
 				post -> showPostMenu(post,
 						post.getSeqNum() == currentPinnedSeq),
 				(post, att, thumb, spinner) ->
-						handleAttachmentTap(post, att, thumb, spinner));
+						handleAttachmentTap(post, att, thumb, spinner),
+				this::openComments);
 		recycler.setLayoutManager(new LinearLayoutManager(this));
 		recycler.setAdapter(adapter);
 
 		composeSendButton.setOnClickListener(v -> handleSend());
+		composeInput.setOnKeyListener((v, keyCode, event) -> {
+			if (keyCode == android.view.KeyEvent.KEYCODE_ENTER
+					&& event.getAction() == android.view.KeyEvent.ACTION_DOWN
+					&& !event.isShiftPressed()) {
+				handleSend();
+				return true;
+			}
+			return false;
+		});
+		composeInput.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_SEND
+				| android.view.inputmethod.EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+		composeInput.setOnEditorActionListener((v, actionId, event) -> {
+			if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEND) {
+				handleSend();
+				return true;
+			}
+			return false;
+		});
 	}
 
 	private static final long FOREGROUND_REFRESH_ACTIVE_MS = 3_500L;
@@ -248,12 +269,26 @@ public class ChannelFeedActivity extends ZerionActivity
 			java.util.Map<Long, java.util.List<org.briarproject.briar.api
 					.channel.ChannelReaction>> reactions =
 					new java.util.HashMap<>();
+			java.util.Map<Long, Integer> commentCounts =
+					new java.util.HashMap<>();
+			boolean discussionsEnabled = true;
 			if (state != null) {
+				try {
+					discussionsEnabled =
+							channelManager.areDiscussionsEnabled(channelId);
+				} catch (DbException ignored) {
+				}
 				for (ChannelPost p : posts) {
 					try {
 						reactions.put(p.getSeqNum(),
 								channelManager.getReactions(channelId,
 										p.getSeqNum()));
+					} catch (DbException ignored) {
+					}
+					try {
+						commentCounts.put(p.getSeqNum(),
+								channelManager.getComments(channelId,
+										p.getSeqNum()).size());
 					} catch (DbException ignored) {
 					}
 					for (ChannelPost.ChannelAttachment att
@@ -282,8 +317,10 @@ public class ChannelFeedActivity extends ZerionActivity
 			ChannelState finalState = state;
 			List<ChannelPost> finalPosts = posts;
 			ApplicationStatus finalStatus = appStatus;
+			boolean finalDiscussionsEnabled = discussionsEnabled;
 			runOnUiThread(() -> render(finalState, finalPosts, finalStatus,
-					thumbnails, reactions));
+					thumbnails, reactions, commentCounts,
+					finalDiscussionsEnabled));
 		});
 	}
 
@@ -300,7 +337,10 @@ public class ChannelFeedActivity extends ZerionActivity
 			List<ChannelPost> posts, ApplicationStatus appStatus,
 			java.util.Map<String, byte[]> thumbnails,
 			java.util.Map<Long, java.util.List<org.briarproject.briar.api
-					.channel.ChannelReaction>> reactions) {
+					.channel.ChannelReaction>> reactions,
+			java.util.Map<Long, Integer> commentCounts,
+			boolean discussionsEnabled) {
+		this.discussionsEnabledCached = discussionsEnabled;
 		if (state == null) {
 			finish();
 			return;
@@ -321,7 +361,8 @@ public class ChannelFeedActivity extends ZerionActivity
 		} else {
 			recycler.setVisibility(View.VISIBLE);
 			emptyView.setVisibility(View.GONE);
-			adapter.setPosts(posts, thumbnails, reactions);
+			adapter.setPosts(posts, thumbnails, reactions,
+					commentCounts, discussionsEnabled);
 			recycler.scrollToPosition(posts.size() - 1);
 		}
 
@@ -430,6 +471,12 @@ public class ChannelFeedActivity extends ZerionActivity
 	}
 
 	private void openComments(ChannelPost post) {
+		if (!discussionsEnabledCached && !weArePublisher) {
+			Toast.makeText(this,
+					R.string.channels_comments_disabled_notice,
+					Toast.LENGTH_SHORT).show();
+			return;
+		}
 		startActivity(ChannelCommentsActivity.intent(this, channelId,
 				post.getSeqNum()));
 	}
@@ -850,6 +897,58 @@ public class ChannelFeedActivity extends ZerionActivity
 		composeInput.setEnabled(!busy);
 	}
 
+	@Override
+	public boolean onCreateOptionsMenu(android.view.Menu menu) {
+		menu.add(0, MENU_ITEM_DISCUSSIONS, 0,
+				discussionsEnabledCached
+						? R.string.channels_discussions_menu_disable
+						: R.string.channels_discussions_menu_enable)
+				.setShowAsAction(
+						android.view.MenuItem.SHOW_AS_ACTION_NEVER);
+		return super.onCreateOptionsMenu(menu);
+	}
+
+	@Override
+	public boolean onPrepareOptionsMenu(android.view.Menu menu) {
+		android.view.MenuItem item = menu.findItem(MENU_ITEM_DISCUSSIONS);
+		if (item != null) {
+			item.setVisible(weArePublisher);
+			item.setTitle(discussionsEnabledCached
+					? R.string.channels_discussions_menu_disable
+					: R.string.channels_discussions_menu_enable);
+		}
+		return super.onPrepareOptionsMenu(menu);
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(android.view.MenuItem item) {
+		if (item.getItemId() == MENU_ITEM_DISCUSSIONS) {
+			toggleDiscussionsEnabled();
+			return true;
+		}
+		return super.onOptionsItemSelected(item);
+	}
+
+	private void toggleDiscussionsEnabled() {
+		final boolean target = !discussionsEnabledCached;
+		ioExecutor.execute(() -> {
+			try {
+				channelManager.setDiscussionsEnabled(channelId, target);
+				runOnUiThread(() -> {
+					discussionsEnabledCached = target;
+					Toast.makeText(this,
+							target
+									? R.string.channels_discussions_enabled_toast
+									: R.string.channels_discussions_disabled_toast,
+							Toast.LENGTH_SHORT).show();
+					invalidateOptionsMenu();
+					loadChannel();
+				});
+			} catch (DbException ignored) {
+			}
+		});
+	}
+
 	private static class PostAdapter
 			extends RecyclerView.Adapter<PostViewHolder> {
 
@@ -864,28 +963,42 @@ public class ChannelFeedActivity extends ZerionActivity
 					android.widget.ProgressBar spinner);
 		}
 
+		interface OnCommentTap {
+			void onCommentTap(ChannelPost post);
+		}
+
 		private List<ChannelPost> posts = new ArrayList<>();
 		private java.util.Map<String, byte[]> thumbnails =
 				java.util.Collections.emptyMap();
 		private java.util.Map<Long, java.util.List<org.briarproject.briar
 				.api.channel.ChannelReaction>> reactions =
 				java.util.Collections.emptyMap();
+		private java.util.Map<Long, Integer> commentCounts =
+				java.util.Collections.emptyMap();
+		private boolean discussionsEnabled = true;
 		private final OnPostLongPress longPressListener;
 		private final OnAttachmentTap attachmentTapListener;
+		private final OnCommentTap commentTapListener;
 
 		PostAdapter(OnPostLongPress longPressListener,
-				OnAttachmentTap attachmentTapListener) {
+				OnAttachmentTap attachmentTapListener,
+				OnCommentTap commentTapListener) {
 			this.longPressListener = longPressListener;
 			this.attachmentTapListener = attachmentTapListener;
+			this.commentTapListener = commentTapListener;
 		}
 
 		void setPosts(List<ChannelPost> p,
 				java.util.Map<String, byte[]> thumbnails,
 				java.util.Map<Long, java.util.List<org.briarproject.briar
-						.api.channel.ChannelReaction>> reactions) {
+						.api.channel.ChannelReaction>> reactions,
+				java.util.Map<Long, Integer> commentCounts,
+				boolean discussionsEnabled) {
 			this.posts = p;
 			this.thumbnails = thumbnails;
 			this.reactions = reactions;
+			this.commentCounts = commentCounts;
+			this.discussionsEnabled = discussionsEnabled;
 			notifyDataSetChanged();
 		}
 
@@ -902,7 +1015,10 @@ public class ChannelFeedActivity extends ZerionActivity
 		public void onBindViewHolder(@NonNull PostViewHolder holder,
 				int position) {
 			ChannelPost p = posts.get(position);
-			holder.bind(p, attachmentTapListener, thumbnails, reactions);
+			int count = commentCounts.containsKey(p.getSeqNum())
+					? commentCounts.get(p.getSeqNum()) : 0;
+			holder.bind(p, attachmentTapListener, thumbnails, reactions,
+					count, discussionsEnabled, commentTapListener);
 			holder.itemView.setOnLongClickListener(v -> {
 				longPressListener.onPostLongPress(p);
 				return true;
@@ -921,6 +1037,7 @@ public class ChannelFeedActivity extends ZerionActivity
 		private final TextView timestamp;
 		private final TextView signerBadge;
 		private final TextView ttlLabel;
+		private final TextView commentBadge;
 		private final LinearLayout attachments;
 		private final TextView reactionsView;
 
@@ -931,6 +1048,8 @@ public class ChannelFeedActivity extends ZerionActivity
 			signerBadge =
 					itemView.findViewById(R.id.channelPostSignerBadge);
 			ttlLabel = itemView.findViewById(R.id.channelPostTtlLabel);
+			commentBadge =
+					itemView.findViewById(R.id.channelPostCommentBadge);
 			attachments = itemView.findViewById(
 					R.id.channelPostAttachments);
 			reactionsView = itemView.findViewById(
@@ -941,7 +1060,22 @@ public class ChannelFeedActivity extends ZerionActivity
 				PostAdapter.OnAttachmentTap attachmentTapListener,
 				java.util.Map<String, byte[]> thumbnails,
 				java.util.Map<Long, java.util.List<org.briarproject.briar
-						.api.channel.ChannelReaction>> reactions) {
+						.api.channel.ChannelReaction>> reactions,
+				int commentCount, boolean discussionsEnabled,
+				PostAdapter.OnCommentTap commentTapListener) {
+			if (discussionsEnabled) {
+				commentBadge.setVisibility(View.VISIBLE);
+				String label = commentCount > 0
+						? "💬 " + commentCount
+						: "💬 " + itemView.getContext()
+								.getString(R.string.channels_comments_action);
+				commentBadge.setText(label);
+				commentBadge.setOnClickListener(v ->
+						commentTapListener.onCommentTap(p));
+			} else {
+				commentBadge.setVisibility(View.GONE);
+				commentBadge.setOnClickListener(null);
+			}
 			body.setText(p.getBody());
 			body.setVisibility(p.getBody().trim().isEmpty()
 					? View.GONE : View.VISIBLE);

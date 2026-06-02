@@ -64,6 +64,7 @@ class ChannelManagerImpl
 	private final ChannelReactionStore reactionStore;
 	private final ChannelSubscriberStore subscriberStore;
 	private final ChannelCommentStore commentStore;
+	private final ChannelDiscussionStore discussionStore;
 	private final ChannelApplicationStore applicationStore;
 	private final ChannelMyApplicationsStore myApplicationsStore;
 	private final ChannelTombstoneStore tombstoneStore;
@@ -103,6 +104,7 @@ class ChannelManagerImpl
 			ChannelReactionStore reactionStore,
 			ChannelSubscriberStore subscriberStore,
 			ChannelCommentStore commentStore,
+			ChannelDiscussionStore discussionStore,
 			ChannelApplicationStore applicationStore,
 			ChannelMyApplicationsStore myApplicationsStore,
 			ChannelTombstoneStore tombstoneStore,
@@ -126,6 +128,7 @@ class ChannelManagerImpl
 		this.reactionStore = reactionStore;
 		this.subscriberStore = subscriberStore;
 		this.commentStore = commentStore;
+		this.discussionStore = discussionStore;
 		this.applicationStore = applicationStore;
 		this.myApplicationsStore = myApplicationsStore;
 		this.tombstoneStore = tombstoneStore;
@@ -1435,6 +1438,7 @@ class ChannelManagerImpl
 		}
 		ChannelState s = store.getChannel(channelId);
 		if (s == null) throw new DbException();
+		if (!discussionStore.isEnabled(channelId)) throw new DbException();
 		LocalAuthor me = identityManager.getLocalAuthor();
 		byte[] signerEd = me.getPublicKey().getEncoded();
 		byte[] mlDsaPub = identityManager.getLocalMlDsaSigPublicKey();
@@ -1501,12 +1505,38 @@ class ChannelManagerImpl
 		return out;
 	}
 
+	@Override
+	public boolean areDiscussionsEnabled(byte[] channelId)
+			throws DbException {
+		return discussionStore.isEnabled(channelId);
+	}
+
+	@Override
+	public void setDiscussionsEnabled(byte[] channelId, boolean enabled)
+			throws DbException {
+		java.util.concurrent.locks.ReentrantLock lock = lockFor(channelId);
+		lock.lock();
+		try {
+			ChannelState s = store.getChannel(channelId);
+			if (s == null) throw new DbException();
+			if (!s.weArePublisher()) throw new DbException();
+			discussionStore.setEnabled(channelId, enabled);
+			fireEvent(channelId,
+					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+		} finally {
+			lock.unlock();
+		}
+	}
+
 	private byte[] handleCommentRequest(byte[] channelId,
 			byte[] requestBytes) {
 		try {
 			ChannelPullCodec.CommentRequest req = pullCodec()
 					.decodeCommentRequest(requestBytes);
 			if (!java.util.Arrays.equals(req.channelId, channelId)) {
+				return safeCommentAck(false);
+			}
+			if (!discussionStore.isEnabled(channelId)) {
 				return safeCommentAck(false);
 			}
 			if (req.body.isEmpty()

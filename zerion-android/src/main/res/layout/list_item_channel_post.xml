@@ -120,6 +120,23 @@
 				tools:visibility="visible" />
 
 			<TextView
+				android:id="@+id/channelPostCommentBadge"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:layout_marginEnd="6dp"
+				android:background="?attr/selectableItemBackground"
+				android:paddingStart="6dp"
+				android:paddingEnd="6dp"
+				android:paddingTop="2dp"
+				android:paddingBottom="2dp"
+				android:textColor="@color/zerion_primary_accent"
+				android:textSize="12sp"
+				android:textStyle="bold"
+				android:visibility="gone"
+				tools:text="💬 3"
+				tools:visibility="visible" />
+
+			<TextView
 				android:id="@+id/channelPostTimestampView"
 				style="@style/TextMessage.Timestamp"
 				android:layout_width="wrap_content"

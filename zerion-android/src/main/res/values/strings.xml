@@ -361,6 +361,13 @@
 	<string name="channels_comments_hint">Write a comment…</string>
 	<string name="channels_comments_send">Send</string>
 	<string name="channels_comments_failed">Could not send comment</string>
+	<string name="channels_comments_action">Discuss</string>
+	<string name="channels_comments_disabled_notice">The channel owner has disabled discussions.</string>
+	<string name="channels_comments_disabled_compose">Discussions are disabled for this channel.</string>
+	<string name="channels_discussions_menu_enable">Allow discussions</string>
+	<string name="channels_discussions_menu_disable">Disable discussions</string>
+	<string name="channels_discussions_enabled_toast">Discussions are now allowed.</string>
+	<string name="channels_discussions_disabled_toast">Discussions disabled. Subscribers can no longer post comments.</string>
 	<string name="channels_comments_count">%1$d comments</string>
 	<string name="channels_comments_count_one">1 comment</string>
 	<string name="channels_create_require_approval">Require my approval before subscribers can read posts</string>

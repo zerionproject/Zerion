@@ -19,8 +19,10 @@ public class DonationManager {
 	private static final String PREF_LAST_DONATION_PROMPT = "donation_last_prompt";
 	private static final String PREF_DONATION_PROMPT_COUNT = "donation_prompt_count";
 	private static final String PREF_NEXT_CHECK_DAY = "donation_next_check_day";
+	private static final String PREF_FIRST_LAUNCH_DAY = "donation_first_launch_day";
 	private static final long MIN_DAYS_BETWEEN_PROMPTS = 90;
-	private static final float DAILY_SHOW_PROBABILITY = 0.05f;
+	private static final long INSTALL_GRACE_DAYS = 14;
+	private static final float DAILY_SHOW_PROBABILITY = 0.02f;
 	private static final int MAX_LIFETIME_PROMPTS = 5;
 
 	private final SharedPreferences prefs;
@@ -40,6 +42,16 @@ public class DonationManager {
 		if (currentDay == cachedCheckDay) {
 			return cachedResult;
 		}
+		int firstLaunchDay = prefs.getInt(PREF_FIRST_LAUNCH_DAY, -1);
+		if (firstLaunchDay < 0) {
+			prefs.edit().putInt(PREF_FIRST_LAUNCH_DAY, currentDay).apply();
+			firstLaunchDay = currentDay;
+		}
+		if (currentDay - firstLaunchDay < INSTALL_GRACE_DAYS) {
+			cachedCheckDay = currentDay;
+			cachedResult = false;
+			return false;
+		}
 		if (prefs.getInt(PREF_DONATION_PROMPT_COUNT, 0)
 				>= MAX_LIFETIME_PROMPTS) {
 			cachedCheckDay = currentDay;
@@ -53,11 +65,14 @@ public class DonationManager {
 			cachedResult = false;
 			return false;
 		}
-		long daysSinceLastPrompt = TimeUnit.MILLISECONDS.toDays(now - lastPrompt);
-		if (daysSinceLastPrompt < MIN_DAYS_BETWEEN_PROMPTS) {
-			cachedCheckDay = currentDay;
-			cachedResult = false;
-			return false;
+		if (lastPrompt > 0) {
+			long daysSinceLastPrompt =
+					TimeUnit.MILLISECONDS.toDays(now - lastPrompt);
+			if (daysSinceLastPrompt < MIN_DAYS_BETWEEN_PROMPTS) {
+				cachedCheckDay = currentDay;
+				cachedResult = false;
+				return false;
+			}
 		}
 		boolean shouldShow = random.nextFloat() < DAILY_SHOW_PROBABILITY;
 

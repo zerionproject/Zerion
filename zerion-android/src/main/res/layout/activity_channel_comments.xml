@@ -39,6 +39,19 @@
 		android:visibility="gone"
 		app:layout_constraintTop_toBottomOf="@+id/commentsToolbar" />
 
+	<TextView
+		android:id="@+id/commentsDisabledNotice"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:background="@color/window_background"
+		android:gravity="center"
+		android:padding="14dp"
+		android:text="@string/channels_comments_disabled_compose"
+		android:textColor="@color/zerion_text_secondary"
+		android:textSize="13sp"
+		android:visibility="gone"
+		app:layout_constraintBottom_toBottomOf="parent" />
+
 	<LinearLayout
 		android:id="@+id/commentsComposeBar"
 		android:layout_width="match_parent"

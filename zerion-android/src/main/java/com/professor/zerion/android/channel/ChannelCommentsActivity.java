@@ -72,6 +72,8 @@ public class ChannelCommentsActivity extends ZerionActivity
 	private TextView emptyView;
 	private EditText composeInput;
 	private MaterialButton sendButton;
+	private View composeBar;
+	private TextView disabledNotice;
 	private CommentsAdapter adapter;
 
 	@Override
@@ -102,10 +104,31 @@ public class ChannelCommentsActivity extends ZerionActivity
 		emptyView = findViewById(R.id.commentsEmptyView);
 		composeInput = findViewById(R.id.commentsComposeInput);
 		sendButton = findViewById(R.id.commentsComposeSendButton);
+		composeBar = findViewById(R.id.commentsComposeBar);
+		disabledNotice = findViewById(R.id.commentsDisabledNotice);
 		adapter = new CommentsAdapter();
 		recycler.setLayoutManager(new LinearLayoutManager(this));
 		recycler.setAdapter(adapter);
 		sendButton.setOnClickListener(v -> handleSend());
+		composeInput.setOnKeyListener((v, keyCode, event) -> {
+			if (keyCode == android.view.KeyEvent.KEYCODE_ENTER
+					&& event.getAction() == android.view.KeyEvent.ACTION_DOWN
+					&& !event.isShiftPressed()) {
+				handleSend();
+				return true;
+			}
+			return false;
+		});
+		composeInput.setImeOptions(
+				android.view.inputmethod.EditorInfo.IME_ACTION_SEND);
+		composeInput.setOnEditorActionListener((v, actionId, ev) -> {
+			if (actionId
+					== android.view.inputmethod.EditorInfo.IME_ACTION_SEND) {
+				handleSend();
+				return true;
+			}
+			return false;
+		});
 	}
 
 	@Override
@@ -134,18 +157,33 @@ public class ChannelCommentsActivity extends ZerionActivity
 	private void refresh() {
 		ioExecutor.execute(() -> {
 			List<ChannelComment> comments;
+			boolean enabled = true;
 			try {
 				comments = channelManager.getComments(channelId,
 						parentSeq);
 			} catch (DbException ex) {
 				comments = Collections.emptyList();
 			}
+			try {
+				enabled =
+						channelManager.areDiscussionsEnabled(channelId);
+			} catch (DbException ignored) {
+			}
 			Collections.sort(comments, (a, b) ->
 					Long.compare(a.getTimestampHourMs(),
 							b.getTimestampHourMs()));
 			List<ChannelComment> finalComments = comments;
-			runOnUiThread(() -> render(finalComments));
+			final boolean finalEnabled = enabled;
+			runOnUiThread(() -> {
+				render(finalComments);
+				bindComposerEnabled(finalEnabled);
+			});
 		});
+	}
+
+	private void bindComposerEnabled(boolean enabled) {
+		composeBar.setVisibility(enabled ? View.VISIBLE : View.GONE);
+		disabledNotice.setVisibility(enabled ? View.GONE : View.VISIBLE);
 	}
 
 	private void render(List<ChannelComment> comments) {
