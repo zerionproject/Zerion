@@ -104,6 +104,7 @@ public class ChannelInviteHandlerActivity extends ZerionActivity {
 			return;
 		}
 		byte[] cid = link.getChannelId();
+		android.app.ProgressDialog progress = showInlineProgress();
 		ioExecutor.execute(() -> {
 			try {
 				ChannelState s = channelManager.getChannel(cid);
@@ -111,9 +112,17 @@ public class ChannelInviteHandlerActivity extends ZerionActivity {
 					channelManager.joinChannel(link);
 				}
 				channelManager.applyToJoin(cid, name);
-				runOnUiThread(() -> openChannel(cid));
+				try {
+					channelManager.bootstrapChannel(cid);
+				} catch (DbException ignored) {
+				}
+				runOnUiThread(() -> {
+					progress.dismiss();
+					openChannel(cid);
+				});
 			} catch (DbException ex) {
 				runOnUiThread(() -> {
+					progress.dismiss();
 					Toast.makeText(this,
 							R.string.channels_apply_failed,
 							Toast.LENGTH_LONG).show();
@@ -123,8 +132,17 @@ public class ChannelInviteHandlerActivity extends ZerionActivity {
 		});
 	}
 
+	private android.app.ProgressDialog showInlineProgress() {
+		android.app.ProgressDialog d = new android.app.ProgressDialog(this);
+		d.setMessage(getString(R.string.channels_apply_progress));
+		d.setCancelable(false);
+		d.show();
+		return d;
+	}
+
 	private void handleJoin(ChannelInviteLink link) {
 		byte[] cid = link.getChannelId();
+		android.app.ProgressDialog progress = showInlineProgress();
 		ioExecutor.execute(() -> {
 			try {
 				ChannelState s = channelManager.getChannel(cid);
@@ -135,9 +153,13 @@ public class ChannelInviteHandlerActivity extends ZerionActivity {
 					} catch (DbException ignored) {
 					}
 				}
-				runOnUiThread(() -> openChannel(cid));
+				runOnUiThread(() -> {
+					progress.dismiss();
+					openChannel(cid);
+				});
 			} catch (DbException ex) {
 				runOnUiThread(() -> {
+					progress.dismiss();
 					Toast.makeText(this,
 							R.string.channels_join_error_link,
 							Toast.LENGTH_LONG).show();

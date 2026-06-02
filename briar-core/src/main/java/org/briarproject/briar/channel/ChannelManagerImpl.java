@@ -145,7 +145,7 @@ class ChannelManagerImpl
 				java.util.concurrent.TimeUnit.MINUTES);
 		taskScheduler.scheduleWithFixedDelay(
 				this::refreshAllSubscriptionsSafely,
-				ioExecutor, 15L, 30L,
+				ioExecutor, 3L, 5L,
 				java.util.concurrent.TimeUnit.SECONDS);
 		ioExecutor.execute(this::rebindOwnedChannelsOnStartup);
 	}

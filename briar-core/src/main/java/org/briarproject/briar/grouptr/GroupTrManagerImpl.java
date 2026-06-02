@@ -113,6 +113,8 @@ class GroupTrManagerImpl
 			java.util.concurrent.locks.ReentrantLock> groupLocks =
 			new java.util.concurrent.ConcurrentHashMap<>();
 
+	private final Object indexLock = new Object();
+
 	private java.util.concurrent.locks.ReentrantLock lockFor(byte[] gid) {
 		return groupLocks.computeIfAbsent(toHexString(gid),
 				k -> new java.util.concurrent.locks.ReentrantLock());
@@ -652,9 +654,10 @@ class GroupTrManagerImpl
 			byte[] salt, long timestamp, LocalAuthor la) throws DbException {
 		byte[] localPub = la.getPublicKey().getEncoded();
 		byte[] localMlDsa = identityManager.getLocalMlDsaSigPublicKey();
+		byte[] creatorMlDsa = lookupPeerMlDsaPubKey(creatorPubKey);
 		List<GroupTrMember> members = new ArrayList<>(2);
 		members.add(new GroupTrMember(creatorPubKey, creatorName,
-				timestamp, 0L, MemberRole.CREATOR));
+				timestamp, 0L, MemberRole.CREATOR, creatorMlDsa));
 		members.add(new GroupTrMember(localPub, la.getName(), timestamp,
 				0L, MemberRole.MEMBER, localMlDsa));
 		GroupTrState s = new GroupTrState(grouptrGroupId, groupName, salt,
@@ -1315,34 +1318,38 @@ class GroupTrManagerImpl
 	}
 
 	private void addToIndex(byte[] groupId) throws DbException {
-		Settings index = settingsManager.getSettings(SETTINGS_NS_INDEX);
-		String existing = index.get(S_GROUP_IDS);
-		String hex = toHexString(groupId);
-		java.util.TreeSet<String> ids = new java.util.TreeSet<>();
-		if (existing != null && !existing.isEmpty()) {
-			for (String p : existing.split(",")) {
-				if (!p.isEmpty()) ids.add(p);
+		synchronized (indexLock) {
+			Settings index = settingsManager.getSettings(SETTINGS_NS_INDEX);
+			String existing = index.get(S_GROUP_IDS);
+			String hex = toHexString(groupId);
+			java.util.TreeSet<String> ids = new java.util.TreeSet<>();
+			if (existing != null && !existing.isEmpty()) {
+				for (String p : existing.split(",")) {
+					if (!p.isEmpty()) ids.add(p);
+				}
 			}
+			if (!ids.add(hex)) return;
+			Settings out = new Settings();
+			out.put(S_GROUP_IDS, String.join(",", ids));
+			settingsManager.mergeSettings(out, SETTINGS_NS_INDEX);
 		}
-		if (!ids.add(hex)) return;
-		Settings out = new Settings();
-		out.put(S_GROUP_IDS, String.join(",", ids));
-		settingsManager.mergeSettings(out, SETTINGS_NS_INDEX);
 	}
 
 	private void removeFromIndex(byte[] groupId) throws DbException {
-		Settings index = settingsManager.getSettings(SETTINGS_NS_INDEX);
-		String existing = index.get(S_GROUP_IDS);
-		if (existing == null || existing.isEmpty()) return;
-		String hex = toHexString(groupId);
-		java.util.TreeSet<String> ids = new java.util.TreeSet<>();
-		for (String p : existing.split(",")) {
-			if (p.isEmpty() || p.equals(hex)) continue;
-			ids.add(p);
+		synchronized (indexLock) {
+			Settings index = settingsManager.getSettings(SETTINGS_NS_INDEX);
+			String existing = index.get(S_GROUP_IDS);
+			if (existing == null || existing.isEmpty()) return;
+			String hex = toHexString(groupId);
+			java.util.TreeSet<String> ids = new java.util.TreeSet<>();
+			for (String p : existing.split(",")) {
+				if (p.isEmpty() || p.equals(hex)) continue;
+				ids.add(p);
+			}
+			Settings out = new Settings();
+			out.put(S_GROUP_IDS, String.join(",", ids));
+			settingsManager.mergeSettings(out, SETTINGS_NS_INDEX);
 		}
-		Settings out = new Settings();
-		out.put(S_GROUP_IDS, String.join(",", ids));
-		settingsManager.mergeSettings(out, SETTINGS_NS_INDEX);
 	}
 
 	@Override

@@ -338,6 +338,7 @@
 	<string name="channels_attach_download_failed">Could not download attachment</string>
 	<string name="channels_attach_open_failed">No app available to open this file</string>
 	<string name="channels_applicant_approved_notice">New subscriber joined</string>
+	<string name="channels_apply_progress">Connecting to the channel…</string>
 	<string name="channels_attach_too_many">Too many attachments (max 8)</string>
 	<string name="channels_action_react">React</string>
 	<string name="channels_react_failed">Could not send reaction</string>
