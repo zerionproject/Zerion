@@ -277,6 +277,41 @@
 		<LinearLayout style="@style/Zerion.Settings.Group">
 
 			<LinearLayout
+				android:id="@+id/hardened_mode_card"
+				style="@style/Zerion.Settings.Row.Clickable">
+
+				<ImageView
+					style="@style/Zerion.Settings.Row.Icon"
+					android:src="@drawable/ic_lock"
+					android:importantForAccessibility="no" />
+
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:orientation="vertical">
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Title"
+						android:text="@string/hardened_mode_title" />
+
+					<TextView
+						android:id="@+id/hardened_mode_summary"
+						style="@style/Zerion.Settings.Row.Summary"
+						tools:text="0 of 3 enabled" />
+
+				</LinearLayout>
+
+				<ImageView
+					android:layout_width="20dp"
+					android:layout_height="20dp"
+					android:src="@drawable/ic_chevron_right"
+					app:tint="@color/zerion_text_secondary"
+					android:importantForAccessibility="no" />
+
+			</LinearLayout>
+
+			<LinearLayout
 				android:id="@+id/registration_lock_card"
 				style="@style/Zerion.Settings.Row.Clickable">
 

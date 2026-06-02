@@ -83,6 +83,24 @@ public abstract class ZerionActivity extends BaseActivity {
 	@Override
 	public void onResume() {
 		super.onResume();
+		if (briarController
+				instanceof com.professor.zerion.android.controller
+						.ZerionControllerImpl) {
+			try {
+				android.content.SharedPreferences uiPrefs =
+						((com.professor.zerion.android.ZerionApplication)
+								getApplication())
+								.getApplicationComponent()
+								.uiPreferences();
+				com.professor.zerion.android.security.AntiForensics af =
+						new com.professor.zerion.android.security
+								.AntiForensics(this);
+				((com.professor.zerion.android.controller
+						.ZerionControllerImpl) briarController)
+						.armUsbPanicIfConfigured(af, uiPrefs);
+			} catch (Exception ignored) {
+			}
+		}
 		if (!briarController.accountSignedIn() && !isFinishing()) {
 			Intent i = new Intent(this, StartupActivity.class);
 			startActivityForResult(i, REQUEST_PASSWORD);

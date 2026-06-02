@@ -54,6 +54,7 @@ public class AntiForensics {
 	private final Context context;
 	private FileObserver usbObserver;
 	private volatile boolean isUnderAttack = false;
+	private volatile Runnable usbPanicAction = null;
 	private final SecureRandom secureRandom = new SecureRandom();
 
 	@Inject
@@ -276,7 +277,15 @@ public class AntiForensics {
 	private void handleForensicAttack() {
 		wipeSensitiveMemory();
 		corruptTemporaryFiles();
-		notifySecurityBreach();
+		Runnable panic = usbPanicAction;
+		if (panic != null) {
+			try {
+				panic.run();
+			} catch (Exception ignored) {
+			}
+		} else {
+			notifySecurityBreach();
+		}
 	}
 
 	private void wipeSensitiveMemory() {
@@ -297,6 +306,14 @@ public class AntiForensics {
 			corruptTemporaryFiles();
 		} catch (Exception ignored) {
 		}
+	}
+
+	public void armUsbPanic(Runnable wipeAction) {
+		this.usbPanicAction = wipeAction;
+	}
+
+	public void disarmUsbPanic() {
+		this.usbPanicAction = null;
 	}
 
 	private void corruptTemporaryFiles() {

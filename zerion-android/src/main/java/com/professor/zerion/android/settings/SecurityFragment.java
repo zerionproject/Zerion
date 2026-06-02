@@ -199,8 +199,116 @@ public class SecurityFragment extends Fragment {
 			}
 		});
 
+		View hardenedCard = view.findViewById(R.id.hardened_mode_card);
+		if (hardenedCard != null) {
+			hardenedCard.setOnClickListener(v -> showHardenedModeDialog());
+			TextView hardenedSummary =
+					view.findViewById(R.id.hardened_mode_summary);
+			if (hardenedSummary != null) {
+				hardenedSummary.setText(buildHardenedSummary());
+			}
+		}
+
 		observeSettings();
 		updateWipePasswordSummary();
+	}
+
+	private String buildHardenedSummary() {
+		int count = 0;
+		if (uiPrefs.getBoolean(com.professor.zerion.android.security
+				.HardenedModeEvaluator.PREF_HARDENED_BOOT, false)) count++;
+		if (uiPrefs.getBoolean(com.professor.zerion.android.security
+				.HardenedModeEvaluator.PREF_HARDENED_TAMPER, false)) count++;
+		if (uiPrefs.getBoolean(com.professor.zerion.android.security
+				.HardenedModeEvaluator.PREF_HARDENED_USB_PANIC, false)) {
+			count++;
+		}
+		return getString(R.string.hardened_mode_summary_format, count);
+	}
+
+	private void showHardenedModeDialog() {
+		String[] labels = {
+				getString(R.string.hardened_mode_strict_boot_label),
+				getString(R.string.hardened_mode_tamper_label),
+				getString(R.string.hardened_mode_usb_panic_label)
+		};
+		boolean[] checked = {
+				uiPrefs.getBoolean(com.professor.zerion.android.security
+						.HardenedModeEvaluator.PREF_HARDENED_BOOT, false),
+				uiPrefs.getBoolean(com.professor.zerion.android.security
+						.HardenedModeEvaluator.PREF_HARDENED_TAMPER, false),
+				uiPrefs.getBoolean(com.professor.zerion.android.security
+						.HardenedModeEvaluator.PREF_HARDENED_USB_PANIC,
+						false)
+		};
+		new MaterialAlertDialogBuilder(requireContext())
+				.setTitle(R.string.hardened_mode_dialog_title)
+				.setMultiChoiceItems(labels, checked,
+						(d, which, isChecked) -> checked[which] = isChecked)
+				.setPositiveButton(android.R.string.ok, (d, w) ->
+						confirmHardenedSelections(checked))
+				.setNegativeButton(android.R.string.cancel, null)
+				.show();
+	}
+
+	private void confirmHardenedSelections(boolean[] checked) {
+		boolean enablingDestructive = checked[2]
+				&& !uiPrefs.getBoolean(com.professor.zerion.android.security
+						.HardenedModeEvaluator.PREF_HARDENED_USB_PANIC,
+						false);
+		if (enablingDestructive) {
+			new MaterialAlertDialogBuilder(requireContext())
+					.setTitle(R.string.hardened_mode_usb_confirm_title)
+					.setMessage(R.string.hardened_mode_usb_confirm_message)
+					.setPositiveButton(
+							R.string.hardened_mode_usb_confirm_action,
+							(d, w) -> showUsbPanicScopeDialog(checked))
+					.setNegativeButton(android.R.string.cancel, null)
+					.show();
+			return;
+		}
+		applyHardenedSelections(checked, false);
+	}
+
+	private void showUsbPanicScopeDialog(boolean[] checked) {
+		String[] scope = {
+				getString(R.string.hardened_mode_usb_scope_signout),
+				getString(R.string.hardened_mode_usb_scope_wipe)
+		};
+		new MaterialAlertDialogBuilder(requireContext())
+				.setTitle(R.string.hardened_mode_usb_scope_title)
+				.setSingleChoiceItems(scope, 0, null)
+				.setPositiveButton(android.R.string.ok, (d, w) -> {
+					int sel = ((androidx.appcompat.app.AlertDialog) d)
+							.getListView().getCheckedItemPosition();
+					applyHardenedSelections(checked, sel == 1);
+				})
+				.setNegativeButton(android.R.string.cancel, null)
+				.show();
+	}
+
+	private void applyHardenedSelections(boolean[] checked,
+			boolean usbPanicWipes) {
+		uiPrefs.edit()
+				.putBoolean(com.professor.zerion.android.security
+						.HardenedModeEvaluator.PREF_HARDENED_BOOT,
+						checked[0])
+				.putBoolean(com.professor.zerion.android.security
+						.HardenedModeEvaluator.PREF_HARDENED_TAMPER,
+						checked[1])
+				.putBoolean(com.professor.zerion.android.security
+						.HardenedModeEvaluator.PREF_HARDENED_USB_PANIC,
+						checked[2])
+				.putBoolean(com.professor.zerion.android.security
+						.HardenedModeEvaluator
+						.PREF_HARDENED_USB_PANIC_WIPE,
+						usbPanicWipes)
+				.apply();
+		TextView hardenedSummary = requireView()
+				.findViewById(R.id.hardened_mode_summary);
+		if (hardenedSummary != null) {
+			hardenedSummary.setText(buildHardenedSummary());
+		}
 	}
 
 	private void setupAppLockSwitch() {

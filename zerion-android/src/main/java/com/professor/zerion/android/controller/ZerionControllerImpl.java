@@ -158,6 +158,21 @@ public class ZerionControllerImpl implements ZerionController {
 		}, "SignOut");
 	}
 
+	public void armUsbPanicIfConfigured(
+			com.professor.zerion.android.security.AntiForensics
+					antiForensics,
+			android.content.SharedPreferences uiPrefs) {
+		if (!com.professor.zerion.android.security
+				.HardenedModeEvaluator.usbPanicArmed(uiPrefs)) {
+			antiForensics.disarmUsbPanic();
+			return;
+		}
+		boolean alsoWipe = com.professor.zerion.android.security
+				.HardenedModeEvaluator.usbPanicWipesAccount(uiPrefs);
+		antiForensics.armUsbPanic(() ->
+				signOut(result -> {}, alsoWipe));
+	}
+
 	@Override
 	public void deleteAccount() {
 		fullAccountWipe();

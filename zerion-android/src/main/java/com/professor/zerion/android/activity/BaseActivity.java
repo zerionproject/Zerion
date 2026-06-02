@@ -42,6 +42,8 @@ import androidx.fragment.app.FragmentManager;
 import static android.os.Build.VERSION.SDK_INT;
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 import static android.view.WindowManager.LayoutParams.FLAG_SECURE;
+
+import android.content.Intent;
 import static androidx.lifecycle.Lifecycle.State.STARTED;
 import static java.util.Collections.emptyList;
 import static com.professor.zerion.android.TestingConstants.PREVENT_SCREENSHOTS;
@@ -91,6 +93,28 @@ public abstract class BaseActivity extends AppCompatActivity
 		String theme = uiPrefs.getString(PREF_THEME, "");
 		if (isAmoledTheme(theme, this)) {
 			getTheme().applyStyle(R.style.AmoledOverlay, true);
+		}
+
+		int hardenedResult =
+				com.professor.zerion.android.security
+						.HardenedModeEvaluator.evaluate(uiPrefs);
+		if (hardenedResult != com.professor.zerion.android.security
+				.SecureBootGuard.RESULT_OK
+				&& !(this instanceof com.professor.zerion.android.security
+						.HardenedBlockActivity)) {
+			super.onCreate(state);
+			Intent blockIntent = new Intent(this,
+					com.professor.zerion.android.security
+							.HardenedBlockActivity.class);
+			blockIntent.putExtra(
+					com.professor.zerion.android.security
+							.HardenedBlockActivity.EXTRA_RESULT_CODE,
+					hardenedResult);
+			blockIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+					| Intent.FLAG_ACTIVITY_CLEAR_TASK);
+			startActivity(blockIntent);
+			finish();
+			return;
 		}
 
 		super.onCreate(state);

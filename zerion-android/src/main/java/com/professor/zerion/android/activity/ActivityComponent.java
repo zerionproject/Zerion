@@ -54,6 +54,9 @@ public interface ActivityComponent {
 
 	void inject(SplashScreenActivity activity);
 
+	void inject(com.professor.zerion.android.security
+			.HardenedBlockActivity activity);
+
 	void inject(StartupActivity activity);
 
 	void inject(SetupActivity activity);
