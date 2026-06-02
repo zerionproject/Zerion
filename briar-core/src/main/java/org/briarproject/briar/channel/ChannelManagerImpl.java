@@ -84,6 +84,11 @@ class ChannelManagerImpl
 			new java.util.concurrent.ConcurrentHashMap<>();
 	private static final long APPROVAL_POLL_MIN_INTERVAL_MS =
 			30L * 1000L;
+	private static final long PULL_NONCE_TTL_MS = 5L * 60L * 1000L;
+	private static final int PULL_NONCE_MAX_PER_CHANNEL = 4096;
+	private final java.util.Map<String,
+			java.util.LinkedHashMap<String, Long>> seenPullNonces =
+					new java.util.concurrent.ConcurrentHashMap<>();
 
 	private java.util.concurrent.locks.ReentrantLock lockFor(
 			byte[] channelId) {
@@ -429,6 +434,21 @@ class ChannelManagerImpl
 					.decodePullRequest(requestBytes);
 			ChannelState s = store.getChannel(channelId);
 			if (s == null) return new byte[0];
+			boolean challengePresent = req.hmacResponse != null
+					&& req.nonce != null;
+			boolean challengeOk = false;
+			if (challengePresent && s.getJoinCapability() != null) {
+				if (!recordFreshNonce(channelId, req.nonce)) {
+					return new byte[0];
+				}
+				challengeOk = verifyChallenge(s.getJoinCapability(),
+						req.nonce, channelId, req.hmacResponse);
+				if (!challengeOk) return new byte[0];
+			}
+			if (!s.isPublicChannel() && s.getJoinCapability() != null
+					&& !challengeOk) {
+				return new byte[0];
+			}
 			java.util.List<ChannelPost> all =
 					store.getPosts(channelId);
 			java.util.List<ChannelPost> toSend =
@@ -437,19 +457,13 @@ class ChannelManagerImpl
 				if (p.getSeqNum() > req.sinceSeqNum) toSend.add(p);
 			}
 			byte[] envelope = null;
-			if (!s.isPublicChannel() && req.hmacResponse != null
-					&& req.nonce != null
-					&& s.getJoinCapability() != null
-					&& s.getContentKey() != null) {
-				if (verifyChallenge(s.getJoinCapability(),
-						req.nonce, channelId, req.hmacResponse)) {
-					try {
-						envelope = contentKey.wrapContentKey(
-								s.getJoinCapability(), channelId,
-								s.getContentKey());
-					} catch (GeneralSecurityException ignored) {
-						envelope = null;
-					}
+			if (challengeOk && s.getContentKey() != null) {
+				try {
+					envelope = contentKey.wrapContentKey(
+							s.getJoinCapability(), channelId,
+							s.getContentKey());
+				} catch (GeneralSecurityException ignored) {
+					envelope = null;
 				}
 			}
 			java.util.List<ChannelPost> wirePosts =
@@ -519,6 +533,41 @@ class ChannelManagerImpl
 		} catch (DbException | GeneralSecurityException e) {
 			return new byte[0];
 		}
+	}
+
+	private boolean recordFreshNonce(byte[] channelId, byte[] nonce) {
+		if (nonce == null || nonce.length == 0) return false;
+		String key = ChannelStore.hex(channelId);
+		java.util.LinkedHashMap<String, Long> ring =
+				seenPullNonces.computeIfAbsent(key,
+						k -> new java.util.LinkedHashMap<>());
+		String nonceHex = ChannelStore.hex(nonce);
+		long now = clock.currentTimeMillis();
+		synchronized (ring) {
+			java.util.Iterator<java.util.Map.Entry<String, Long>> it =
+					ring.entrySet().iterator();
+			while (it.hasNext()) {
+				java.util.Map.Entry<String, Long> e = it.next();
+				if (now - e.getValue() > PULL_NONCE_TTL_MS) {
+					it.remove();
+				} else {
+					break;
+				}
+			}
+			if (ring.containsKey(nonceHex)) return false;
+			ring.put(nonceHex, now);
+			while (ring.size() > PULL_NONCE_MAX_PER_CHANNEL) {
+				java.util.Iterator<java.util.Map.Entry<String, Long>>
+						it2 = ring.entrySet().iterator();
+				if (it2.hasNext()) {
+					it2.next();
+					it2.remove();
+				} else {
+					break;
+				}
+			}
+		}
+		return true;
 	}
 
 	private boolean verifyChallenge(byte[] capability, byte[] nonce,

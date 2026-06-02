@@ -146,6 +146,12 @@ public class ZerionControllerImpl implements ZerionController {
 				service.waitForShutdown();
 			} catch (InterruptedException e) {
 			} finally {
+				try {
+					new com.professor.zerion.android.security
+							.AntiForensics(activity)
+							.wipeCachesOnLogout();
+				} catch (Exception ignored) {
+				}
 				if (deleteAccount) fullAccountWipe();
 			}
 			handler.onResult(null);

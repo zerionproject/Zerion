@@ -292,6 +292,13 @@ public class AntiForensics {
 		}
 	}
 
+	public void wipeCachesOnLogout() {
+		try {
+			corruptTemporaryFiles();
+		} catch (Exception ignored) {
+		}
+	}
+
 	private void corruptTemporaryFiles() {
 		try {
 			File tempDir = context.getCacheDir();

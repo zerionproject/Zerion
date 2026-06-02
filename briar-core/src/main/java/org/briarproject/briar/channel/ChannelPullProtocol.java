@@ -68,12 +68,14 @@ class ChannelPullProtocol {
 					reactions,
 			List<org.briarproject.briar.api.channel.ChannelComment>
 					comments) throws IOException {
+		byte[] wireJoinCapability = state.isPublicChannel()
+				? state.getJoinCapability() : null;
 		BdfDictionary manifestDict = pullCodec.encodeManifest(
 				state.getChannelId(), state.getSalt(),
 				publisherEd25519, publisherMlDsa, state.getName(),
 				state.getDescription(), state.getAvatarHash(),
 				state.getCreatedAtHourMs(), state.isPublicChannel(),
-				state.getJoinCapability(), state.getCurrentOnion(),
+				wireJoinCapability, state.getCurrentOnion(),
 				state.getManifestSeq(), state.getContentKeyHash(),
 				state.getActiveDelegations(),
 				state.getRevokedDelegationSeqs(),
@@ -194,7 +196,9 @@ class ChannelPullProtocol {
 			byte[] wireSig = manifest.getRaw("signature");
 			byte[] wireSalt = manifest.getRaw("salt");
 			byte[] wireAvatar = manifest.getOptionalRaw("avatarHash");
-			byte[] wireCap = manifest.getOptionalRaw("joinCapability");
+			byte[] wireCapRaw = manifest.getOptionalRaw("joinCapability");
+			byte[] wireCap = wireCapRaw != null
+					? wireCapRaw : local.getJoinCapability();
 			String wireName = manifest.getString("name");
 			String wireDesc = manifest.getString("description");
 			long wireCreatedAt = manifest.getLong("createdAtHourMs");
@@ -255,7 +259,9 @@ class ChannelPullProtocol {
 			if (incomingSeq <= local.getManifestSeq()) {
 				return local;
 			}
-			byte[] joinCap = manifest.getOptionalRaw("joinCapability");
+			byte[] joinCapRaw = manifest.getOptionalRaw("joinCapability");
+			byte[] joinCap = joinCapRaw != null
+					? joinCapRaw : local.getJoinCapability();
 			return new ChannelState(local.getChannelId(),
 					manifest.getRaw("salt"),
 					manifest.getRaw("publisherEd25519"),

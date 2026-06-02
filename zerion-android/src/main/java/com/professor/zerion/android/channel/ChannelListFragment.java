@@ -560,11 +560,8 @@ public class ChannelListFragment extends BaseFragment
 	}
 
 	private void copyAndToast(String link) {
-		ClipboardManager cm = (ClipboardManager) requireContext()
-				.getSystemService(Context.CLIPBOARD_SERVICE);
-		ClipData clip = ClipData.newPlainText("zerion-channel", link);
-		markSensitive(clip);
-		cm.setPrimaryClip(clip);
+		com.professor.zerion.android.util.SecureClipboard.copy(
+				requireContext(), "zerion-channel", link);
 		Toast.makeText(requireContext(),
 				R.string.channels_invite_copied,
 				Toast.LENGTH_SHORT).show();

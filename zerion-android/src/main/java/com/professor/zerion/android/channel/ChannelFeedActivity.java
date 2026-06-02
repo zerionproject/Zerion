@@ -531,24 +531,8 @@ public class ChannelFeedActivity extends ZerionActivity
 	}
 
 	private void copyPostText(ChannelPost post) {
-		android.content.ClipboardManager cm =
-				(android.content.ClipboardManager) getSystemService(
-						android.content.Context.CLIPBOARD_SERVICE);
-		if (cm == null) return;
-		android.content.ClipData clip =
-				android.content.ClipData.newPlainText(
-						"zerion-channel-post", post.getBody());
-		if (android.os.Build.VERSION.SDK_INT
-				>= android.os.Build.VERSION_CODES.TIRAMISU) {
-			android.os.PersistableBundle extras =
-					new android.os.PersistableBundle();
-			extras.putBoolean(
-					android.content.ClipDescription
-							.EXTRA_IS_SENSITIVE,
-					true);
-			clip.getDescription().setExtras(extras);
-		}
-		cm.setPrimaryClip(clip);
+		com.professor.zerion.android.util.SecureClipboard.copy(this,
+				"zerion-channel-post", post.getBody());
 		Toast.makeText(this, R.string.channels_post_copied,
 				Toast.LENGTH_SHORT).show();
 	}
