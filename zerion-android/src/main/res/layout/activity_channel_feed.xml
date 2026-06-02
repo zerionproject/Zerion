@@ -169,7 +169,7 @@
 			android:layout_weight="1"
 			android:background="@drawable/bg_input_bar"
 			android:hint="@string/channels_compose_hint"
-			android:inputType="textMultiLine|textCapSentences"
+			android:inputType="textMultiLine|textCapSentences|textNoSuggestions"
 			android:maxLength="4096"
 			android:maxLines="4"
 			android:minHeight="44dp"
