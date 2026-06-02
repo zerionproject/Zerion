@@ -114,8 +114,9 @@ public class PendingContactListActivity extends ZerionActivity
 				getString(R.string.dialog_title_remove_pending_contact));
 		builder.setMessage(
 				getString(R.string.dialog_message_remove_pending_contact));
-		builder.setNegativeButton(R.string.groups_remove, removeListener);
-		builder.setPositiveButton(R.string.cancel, null);
+		builder.setNegativeButton(R.string.cancel, null);
+		builder.setPositiveButton(
+				R.string.pending_contact_remove_action, removeListener);
 		builder.setOnDismissListener(dialog -> adapter.notifyDataSetChanged());
 		builder.show();
 	}

@@ -82,7 +82,7 @@
 	<string name="vault_documents_empty_subtitle">Tap + to add secure documents</string>
 	<string name="vault_onboarding_create_password">Create password</string>
 	<string name="vault_onboarding_step_create">Create</string>
-	<string name="vault_onboarding_features">AES-256-GCM · Hardware keystore · Auto-lock</string>
+	<string name="vault_onboarding_features">Encrypted · Password protected · Locks when idle</string>
 	<string name="vault_onboarding_password_hint">Password</string>
 	<string name="vault_onboarding_password_helper">At least 8 characters</string>
 	<string name="vault_onboarding_confirm_password_hint">Confirm Password</string>
@@ -262,8 +262,8 @@
 	<string name="channels_create_title">Create a channel</string>
 	<string name="channels_create_name_hint">Channel name</string>
 	<string name="channels_create_description_hint">Description</string>
-	<string name="channels_create_public_label">Open channel (anyone with the link can read)</string>
-	<string name="channels_create_closed_label">Closed channel (link contains a capability key, posts are encrypted)</string>
+	<string name="channels_create_public_label">Public — anyone with the link can join</string>
+	<string name="channels_create_closed_label">Private — only people you share the link with can join</string>
 	<string name="channels_create_action">Create</string>
 	<string name="channels_create_error_name">A channel needs a name.</string>
 	<string name="channels_join_title">Join a channel</string>
@@ -368,27 +368,27 @@
 	<string name="channels_discussions_menu_disable">Disable discussions</string>
 	<string name="channels_discussions_enabled_toast">Discussions are now allowed.</string>
 	<string name="channels_discussions_disabled_toast">Discussions disabled. Subscribers can no longer post comments.</string>
-	<string name="hardened_mode_title">Hardened Mode (Advanced)</string>
-	<string name="hardened_mode_summary_format">%1$d of 3 protections enabled</string>
-	<string name="hardened_mode_dialog_title">Hardened Mode protections</string>
-	<string name="hardened_mode_strict_boot_label">Strict boot verification — refuse to start if bootloader is unlocked or verified boot is not GREEN</string>
-	<string name="hardened_mode_tamper_label">Tamper detection — refuse to start if root, Magisk, Frida, Xposed, or a debugger is detected</string>
-	<string name="hardened_mode_usb_panic_label">USB panic — sign out (and optionally wipe) when ADB/MTP is enabled while Zerion is running</string>
+	<string name="hardened_mode_title">Hardened mode</string>
+	<string name="hardened_mode_summary_format">%1$d of 3 on</string>
+	<string name="hardened_mode_dialog_title">Hardened mode</string>
+	<string name="hardened_mode_strict_boot_label">Refuse to start on tampered devices (unlocked bootloader or modified system)</string>
+	<string name="hardened_mode_tamper_label">Refuse to start when a debugger, root, or hooking framework is detected</string>
+	<string name="hardened_mode_usb_panic_label">Sign out (or wipe) when a USB cable enables ADB or file transfer</string>
 	<string name="hardened_mode_usb_confirm_title">Enable USB panic?</string>
-	<string name="hardened_mode_usb_confirm_message">When ADB, MTP, or PTP is enabled while Zerion is running, Zerion will sign you out (and optionally wipe your account). Choose the scope on the next screen. This is a destructive defense — enable only if you understand the trade-off.</string>
+	<string name="hardened_mode_usb_confirm_message">If anyone plugs Zerion into a computer with ADB or file transfer enabled, you\'ll be signed out automatically. You can choose to also wipe your account on the next screen.</string>
 	<string name="hardened_mode_usb_confirm_action">Continue</string>
-	<string name="hardened_mode_usb_scope_title">USB panic scope</string>
-	<string name="hardened_mode_usb_scope_signout">Sign out only (locks account; data preserved)</string>
-	<string name="hardened_mode_usb_scope_wipe">Sign out and WIPE account (irreversible)</string>
-	<string name="hardened_block_title">Zerion cannot start</string>
-	<string name="hardened_block_disable_action">Disable Hardened Mode</string>
+	<string name="hardened_mode_usb_scope_title">What should happen?</string>
+	<string name="hardened_mode_usb_scope_signout">Sign me out (keeps my account)</string>
+	<string name="hardened_mode_usb_scope_wipe">Wipe everything (can\'t be undone)</string>
+	<string name="hardened_block_title">Zerion won\'t start here</string>
+	<string name="hardened_block_disable_action">Turn off hardened mode</string>
 	<string name="hardened_block_quit_action">Quit</string>
-	<string name="hardened_block_disable_title">Disable Hardened Mode?</string>
-	<string name="hardened_block_disable_message">Turning Hardened Mode off will let Zerion launch on this device. The risk you were protecting against is still present.</string>
-	<string name="hardened_block_disable_confirm">Disable</string>
+	<string name="hardened_block_disable_title">Turn off hardened mode?</string>
+	<string name="hardened_block_disable_message">Zerion will start on this device. The reason it refused is still there — only turn this off if you understand the risk.</string>
+	<string name="hardened_block_disable_confirm">Turn off</string>
 	<string name="channels_comments_count">%1$d comments</string>
 	<string name="channels_comments_count_one">1 comment</string>
-	<string name="channels_create_require_approval">Require my approval before subscribers can read posts</string>
+	<string name="channels_create_require_approval">Review new subscribers before they can read</string>
 	<string name="channels_apply_title">Apply to join</string>
 	<string name="channels_apply_message">The channel owner must approve your application before you can read posts. The owner will see your display name and your public key.</string>
 	<string name="channels_apply_action">Apply</string>
@@ -503,7 +503,7 @@
 	<string name="vault_settings">Vault Settings</string>
 	<string name="vault_settings_title">zVault Settings</string>
 	<string name="vault_onboarding_title">zVault</string>
-	<string name="vault_onboarding_subtitle">Military-grade encrypted storage</string>
+	<string name="vault_onboarding_subtitle">A private vault on your device</string>
 	<string name="vault_dashboard_title">zVault</string>
 	<string name="vault_recent_items">Recent Items</string>
 	<string name="vault_empty_state">Your vault is empty</string>
@@ -1271,8 +1271,8 @@
 	<!-- Mailbox -->
 	<string name="mailbox_settings_title">Mailbox</string>
 	<string name="mailbox_setup_title">Mailbox setup</string>
-	<string name="mailbox_setup_intro">A Mailbox enables your contacts to send you messages while you are offline. The Mailbox will receive your messages and store them until you come online.\n
-		\nYou can install the Zerion Mailbox app on a spare device. Keep it connected to power and Wi-Fi so it\'s always online.</string>
+	<string name="mailbox_setup_intro">A Mailbox keeps you reachable while you\'re offline. It holds your incoming messages and delivers them the next time you open Zerion.\n
+		\nSet it up on a spare device kept on power and Wi-Fi.</string>
 	<string name="mailbox_setup_download">First, install the Mailbox app on another device by searching for \"Zerion Mailbox\" on Google Play or wherever you downloaded Zerion.\n
 		\nThen link your Mailbox with Zerion.</string>
 	<string name="mailbox_setup_download_link">Share Download Link</string>
@@ -1396,7 +1396,8 @@
 	<string name="zerion_crashed">Sorry, Zerion has crashed</string>
 	<string name="not_your_fault">This is not your fault.</string>
 	<string name="please_send_report">Please help us build a better Zerion by sending us a crash report.</string>
-	<string name="report_is_encrypted">We promise that the report is encrypted and sent securely.</string>
+	<string name="report_is_encrypted">The report is encrypted before it\'s sent.</string>
+	<string name="pending_contact_remove_action">Remove request</string>
 	<string name="feedback_title">Feedback</string>
 	<string name="describe_crash">Describe what happened (optional)</string>
 	<string name="enter_feedback">Enter your feedback</string>
@@ -1538,9 +1539,9 @@
 	<string name="security_level_post_quantum_short">PQ</string>
 	<string name="security_level_classical">Classical Security</string>
 	<string name="security_level_classical_short">Classic</string>
-	<string name="security_level_post_quantum_description">This contact uses hybrid post-quantum cryptography (X25519 + ML-KEM-768) for encryption and hybrid signatures (Ed25519 + ML-DSA-65) for authenticity. Full protection against future quantum computer attacks.</string>
-	<string name="security_level_legacy_auth_description">This contact has post-quantum encryption but legacy (Ed25519) signatures. Their messages are confidential against quantum attackers, but authorship is only classically authenticated. Re-add this contact after both apps upgrade for full hybrid authentication.</string>
-	<string name="security_level_classical_description">This contact uses classical cryptography. Upgrade both apps to Zerion for post-quantum security.</string>
+	<string name="security_level_post_quantum_description">Quantum-resistant encryption and signatures. Safe against today\'s attackers and against future quantum computers.</string>
+	<string name="security_level_legacy_auth_description">Quantum-resistant encryption, but signatures still use the older standard. Re-add this contact once you\'ve both updated to get full protection.</string>
+	<string name="security_level_classical_description">Classical encryption only. Both sides need to upgrade to Zerion for quantum-resistant protection.</string>
 
 	<!-- Voice Call strings -->
 	<string name="voice_call">Voice call</string>

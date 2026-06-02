@@ -107,7 +107,7 @@
 					android:id="@+id/toggle_monospace"
 					style="@style/Zerion.Button.Text"
 					android:layout_width="wrap_content"
-					android:layout_height="36dp"
+					android:layout_height="48dp"
 					android:text="@string/text_editor_monospace"
 					android:textSize="12sp"
 					android:minWidth="0dp"
