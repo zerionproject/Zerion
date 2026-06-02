@@ -152,8 +152,26 @@ public class LinkExchangeFragment extends BaseFragment {
 
 	@Override
 	public void onDestroyView() {
-		super.onDestroyView();
 		clipboardHandler.removeCallbacksAndMessages(null);
+		View v = getView();
+		if (v != null) {
+			TextView linkView = v.findViewById(R.id.linkView);
+			if (linkView != null) linkView.setText("");
+			if (linkInput != null) linkInput.setText("");
+			Button copyButton = v.findViewById(R.id.copyButton);
+			if (copyButton != null) copyButton.setOnClickListener(null);
+			Button shareButton = v.findViewById(R.id.shareButton);
+			if (shareButton != null) shareButton.setOnClickListener(null);
+			Button addButton = v.findViewById(R.id.addButton);
+			if (addButton != null) addButton.setOnClickListener(null);
+			Button pasteButton = v.findViewById(R.id.pasteButton);
+			if (pasteButton != null) pasteButton.setOnClickListener(null);
+		}
+		clipboard = null;
+		linkInput = null;
+		linkInputLayout = null;
+		super.onDestroyView();
+		System.gc();
 	}
 
 	@Nullable

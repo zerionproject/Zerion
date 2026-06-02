@@ -228,10 +228,23 @@ public class QrExchangeFragment extends BaseFragment {
 
 	@Override
 	public void onDestroyView() {
-		super.onDestroyView();
 		if (cameraExecutor != null) {
 			cameraExecutor.shutdown();
+			cameraExecutor = null;
 		}
+		if (qrCodeImage != null) {
+			qrCodeImage.setImageBitmap(null);
+			qrCodeImage = null;
+		}
+		if (statusText != null) statusText.setText("");
+		if (qrHintText != null) qrHintText.setText("");
+		if (continueButton != null) continueButton.setOnClickListener(null);
+		previewView = null;
+		statusText = null;
+		qrHintText = null;
+		continueButton = null;
+		super.onDestroyView();
+		System.gc();
 	}
 
 }

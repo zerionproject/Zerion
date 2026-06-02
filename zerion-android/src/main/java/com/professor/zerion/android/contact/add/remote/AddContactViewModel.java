@@ -119,9 +119,11 @@ public class AddContactViewModel extends DbViewModel {
 
 	void addContact(String nickname) {
 		if (remoteHandshakeLink == null) throw new IllegalStateException();
+		final String linkSnapshot = remoteHandshakeLink;
+		remoteHandshakeLink = null;
 		runOnDbThread(() -> {
 			try {
-				contactManager.addPendingContact(remoteHandshakeLink, nickname);
+				contactManager.addPendingContact(linkSnapshot, nickname);
 				addContactResult.postValue(new LiveResult<>(true));
 			} catch (UnsupportedVersionException e) {
 				addContactResult.postValue(new LiveResult<>(e));
@@ -130,6 +132,14 @@ public class AddContactViewModel extends DbViewModel {
 				addContactResult.postValue(new LiveResult<>(e));
 			}
 		});
+	}
+
+	@Override
+	protected void onCleared() {
+		super.onCleared();
+		remoteHandshakeLink = null;
+		handshakeLink.setValue(null);
+		System.gc();
 	}
 
 	LiveData<LiveResult<Boolean>> getAddContactResult() {
