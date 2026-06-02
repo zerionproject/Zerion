@@ -418,6 +418,9 @@ class ChannelManagerImpl
 		if (ChannelConstants.WIRE_TYPE_CHECK_APPROVAL.equals(wireType)) {
 			return handleCheckApprovalRequest(channelId, requestBytes);
 		}
+		java.util.concurrent.locks.ReentrantLock pullLock =
+				lockFor(channelId);
+		pullLock.lock();
 		try {
 			ChannelPullCodec.PullRequest req = pullCodec()
 					.decodePullRequest(requestBytes);
@@ -463,6 +466,8 @@ class ChannelManagerImpl
 					reactions, comments);
 		} catch (IOException | DbException e) {
 			return new byte[0];
+		} finally {
+			pullLock.unlock();
 		}
 	}
 

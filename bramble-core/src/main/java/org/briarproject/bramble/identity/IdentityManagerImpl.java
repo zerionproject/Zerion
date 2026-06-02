@@ -250,6 +250,7 @@ class IdentityManagerImpl implements IdentityManager, OpenDatabaseHook {
 		return new Identity(i.getLocalAuthor(),
 				classicalPub, classicalPriv,
 				hybridPub, hybridPriv,
+				i.getMlDsaSigPublicKey(), i.getMlDsaSigPrivateKey(),
 				i.getTimeCreated());
 	}
 }
