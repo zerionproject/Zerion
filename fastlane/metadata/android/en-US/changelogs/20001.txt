@@ -1,0 +1,5 @@
+Build cleanup. PhotoView library moved from a vendored binary to source code, no functional change.
+
+Required to support distribution on F-Droid's main repository while keeping the same signing key across Play Store, fdroid.zerion.chat, and F-Droid main — so users can switch between channels without reinstalling.
+
+Full notes: https://github.com/zerionproject/Zerion/releases/tag/v2.0.1
