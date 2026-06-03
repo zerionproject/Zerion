@@ -1,0 +1,7 @@
+Zerion 2.0 adds channels — a publisher-to-subscriber broadcast layer with optional Telegram-style discussion threads. Public or private, owner-approved subscribers, editor delegations.
+
+Also new: opt-in Hardened mode that refuses to start on tampered devices, under a debugger, or when ADB is enabled over USB.
+
+Plus: cache wipe on sign-out, 60-second clipboard auto-clear, Enter sends in the channel composers, plain-language copy throughout.
+
+Full notes: https://github.com/zerionproject/Zerion/releases/tag/v2.0.0

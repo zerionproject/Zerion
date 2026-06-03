@@ -1,0 +1,68 @@
+Zerion is a private messenger. It runs over Tor, so your IP address is hidden from the people you message and from the network. There's no phone number, no email, no account on a server. Your messages live encrypted on your device.
+
+Everything is end-to-end encrypted with hybrid post-quantum cryptography — both today's standard algorithms and the new NIST quantum-resistant ones. If quantum computers arrive sooner than expected, your old conversations stay safe.
+
+
+WHAT YOU CAN DO
+
+• One-to-one chats with end-to-end encryption
+• Group chats up to a few dozen people
+• Voice calls over Tor
+• Send photos, videos, voice notes, and documents
+• Disappearing messages
+• A built-in vault for passwords, notes, and private files
+• Channels — a publisher-to-subscriber broadcast layer with optional discussion threads
+
+
+CHANNELS
+
+Channels are a one-to-many space. One person writes, many people read.
+
+• Public channels: anyone with the invite link can subscribe
+• Private channels: subscribers ask to join, the owner approves
+• Discussion threads: owners decide whether subscribers can reply under each post
+• Editor delegations: let trusted people post without sharing your identity key
+• Pinned posts, reactions, attachments
+• No subscriber-to-subscriber metadata leaks — subscribers don't see each other
+
+
+HARDENED MODE (OPT-IN)
+
+Three independent protections under Security settings, all off by default:
+
+• Refuse to start on tampered devices (unlocked bootloader, modified system)
+• Refuse to start when a debugger, root, or hooking framework is detected
+• Sign out automatically (or wipe) if ADB or file transfer is enabled over USB
+
+
+PRIVACY AND SECURITY
+
+• Tor-only transport — no Wi-Fi, Bluetooth, or LAN exposure
+• No phone number, no email, no central server
+• No telemetry, no analytics, no crash reporting
+• No logging of any kind — verified at build time
+• Encrypted at rest with SQLCipher and a password-derived key
+• Screenshots blocked inside the app
+• Notifications never show message previews
+• Open source on GitHub, GPL v3, audited per release
+
+
+WHO IT'S FOR
+
+People who want to talk to other people without a third party in the middle. Journalists and their sources, activists, lawyers and their clients, people in countries that block secure messengers. Anyone who doesn't want to hand a phone number to a tech company every time they install a messenger.
+
+
+WHAT IT WON'T DO
+
+• It won't message people who aren't on Zerion
+• It won't work without an internet connection (Tor needs one)
+• It won't restore your account if you forget the password — there is no recovery, and that's the point
+
+
+LEARN MORE
+
+• Website: https://zerion.chat
+• Source: https://github.com/zerionproject/Zerion
+
+
+Built on the Bramble protocol. GPL v3.
