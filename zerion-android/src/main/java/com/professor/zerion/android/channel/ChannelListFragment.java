@@ -381,35 +381,53 @@ public class ChannelListFragment extends BaseFragment
 			showApplyDialog(link);
 			return;
 		}
+		android.app.ProgressDialog progress = showJoinProgress();
+		final byte[] cid = link.getChannelId();
 		ioExecutor.execute(() -> {
 			try {
-				ChannelState s = channelManager.getChannel(
-						link.getChannelId());
+				ChannelState s = channelManager.getChannel(cid);
 				if (s != null) {
 					if (isAdded()) {
-						requireActivity().runOnUiThread(() ->
-								Toast.makeText(requireContext(),
-										R.string.channels_join_already_subscribed,
-										Toast.LENGTH_SHORT).show());
+						requireActivity().runOnUiThread(() -> {
+							progress.dismiss();
+							Toast.makeText(requireContext(),
+									R.string.channels_join_already_subscribed,
+									Toast.LENGTH_SHORT).show();
+						});
 					}
 					return;
 				}
 				channelManager.joinChannel(link);
-				try {
-					channelManager.bootstrapChannel(
-							link.getChannelId());
-				} catch (DbException bootstrapFailure) {
-				}
+				ioExecutor.execute(() -> {
+					try {
+						channelManager.bootstrapChannel(cid);
+					} catch (DbException ignored) {
+					}
+				});
 				if (!isAdded()) return;
-				requireActivity().runOnUiThread(this::loadChannels);
+				requireActivity().runOnUiThread(() -> {
+					progress.dismiss();
+					loadChannels();
+				});
 			} catch (DbException ex) {
 				if (!isAdded()) return;
-				requireActivity().runOnUiThread(() ->
-						Toast.makeText(requireContext(),
-								R.string.channels_join_error_link,
-								Toast.LENGTH_SHORT).show());
+				requireActivity().runOnUiThread(() -> {
+					progress.dismiss();
+					Toast.makeText(requireContext(),
+							R.string.channels_join_error_link,
+							Toast.LENGTH_SHORT).show();
+				});
 			}
 		});
+	}
+
+	private android.app.ProgressDialog showJoinProgress() {
+		android.app.ProgressDialog d =
+				new android.app.ProgressDialog(requireContext());
+		d.setMessage(getString(R.string.channels_apply_progress));
+		d.setCancelable(false);
+		d.show();
+		return d;
 	}
 
 	private void showApplyDialog(ChannelInviteLink link) {
@@ -436,22 +454,34 @@ public class ChannelListFragment extends BaseFragment
 					Toast.LENGTH_SHORT).show();
 			return;
 		}
+		android.app.ProgressDialog progress = showJoinProgress();
+		final byte[] cid = link.getChannelId();
 		ioExecutor.execute(() -> {
 			try {
-				ChannelState existing = channelManager.getChannel(
-						link.getChannelId());
+				ChannelState existing = channelManager.getChannel(cid);
 				if (existing == null) {
 					channelManager.joinChannel(link);
 				}
-				channelManager.applyToJoin(link.getChannelId(), name);
+				channelManager.applyToJoin(cid, name);
+				ioExecutor.execute(() -> {
+					try {
+						channelManager.bootstrapChannel(cid);
+					} catch (DbException ignored) {
+					}
+				});
 				if (!isAdded()) return;
-				requireActivity().runOnUiThread(this::loadChannels);
+				requireActivity().runOnUiThread(() -> {
+					progress.dismiss();
+					loadChannels();
+				});
 			} catch (DbException ex) {
 				if (!isAdded()) return;
-				requireActivity().runOnUiThread(() ->
-						Toast.makeText(requireContext(),
-								R.string.channels_apply_failed,
-								Toast.LENGTH_SHORT).show());
+				requireActivity().runOnUiThread(() -> {
+					progress.dismiss();
+					Toast.makeText(requireContext(),
+							R.string.channels_apply_failed,
+							Toast.LENGTH_SHORT).show();
+				});
 			}
 		});
 	}
