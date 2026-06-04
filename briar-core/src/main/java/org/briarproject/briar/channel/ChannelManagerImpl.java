@@ -2237,12 +2237,18 @@ class ChannelManagerImpl
 	@Override
 	public void banSubscriber(byte[] channelId, byte[] ed25519PubKey)
 			throws DbException {
-		ChannelState s = store.getChannel(channelId);
-		if (s == null) throw new DbException();
-		if (!s.weArePublisher()) throw new DbException();
-		subscriberStore.setBanned(channelId, ed25519PubKey, true);
-		fireEvent(channelId,
-				ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+		java.util.concurrent.locks.ReentrantLock lock = lockFor(channelId);
+		lock.lock();
+		try {
+			ChannelState s = store.getChannel(channelId);
+			if (s == null) throw new DbException();
+			if (!s.weArePublisher()) throw new DbException();
+			subscriberStore.setBanned(channelId, ed25519PubKey, true);
+			fireEvent(channelId,
+					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+		} finally {
+			lock.unlock();
+		}
 	}
 
 	private byte[] handleAnnounceRequest(byte[] channelId,
