@@ -29,6 +29,9 @@ SUITES = [
     "tests.test_account_key_wipe_on_shutdown",
     "tests.test_uri_scheme_allowlist",
     "tests.test_voice_call_state_machine",
+    "tests.test_channel_list_fragment_progress",
+    "tests.test_remaining_wipe_gaps",
+    "tests.test_foreground_notification",
     "tests.test_no_logging_invariants",
 ]
 
