@@ -448,8 +448,9 @@
 	<string name="reminder_notification_text">Tap to sign back in.</string>
 	<string name="reminder_notification_channel_title">Zerion Sign-in Reminder</string>
 	<string name="reminder_notification_dismiss">Dismiss</string>
-	<string name="ongoing_notification_title">Signed into Zerion</string>
-	<string name="ongoing_notification_text">Touch to open Zerion.</string>
+	<string name="ongoing_notification_title">Zerion is running</string>
+	<string name="ongoing_notification_text">Touch to open. Exit closes Tor and wipes session secrets.</string>
+	<string name="ongoing_notification_exit_action">Exit</string>
 	<plurals name="private_message_notification_text">
 		<item quantity="one">New private message.</item>
 		<item quantity="other">%d new private messages.</item>

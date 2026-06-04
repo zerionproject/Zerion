@@ -92,6 +92,7 @@ import static androidx.core.app.NotificationCompat.CATEGORY_SOCIAL;
 import static androidx.core.app.NotificationCompat.PRIORITY_HIGH;
 import static androidx.core.app.NotificationCompat.PRIORITY_LOW;
 import static androidx.core.app.NotificationCompat.PRIORITY_MIN;
+import static androidx.core.app.NotificationCompat.VISIBILITY_PRIVATE;
 import static androidx.core.app.NotificationCompat.VISIBILITY_SECRET;
 import static androidx.core.content.ContextCompat.getColor;
 import static org.briarproject.bramble.util.AndroidUtils.getImmutableFlags;
@@ -336,11 +337,22 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		b.setContentText(appContext.getText(text));
 		b.setWhen(0);
 		b.setOngoing(true);
-		Intent i = new Intent(appContext, SplashScreenActivity.class);
-		b.setContentIntent(getActivity(appContext, 0, i, getImmutableFlags(0)));
+		Intent openIntent = new Intent(appContext, SplashScreenActivity.class);
+		b.setContentIntent(getActivity(appContext, 0, openIntent, getImmutableFlags(0)));
+
+		Intent exitIntent = new Intent(appContext,
+				com.professor.zerion.android.ZerionService.class);
+		exitIntent.setAction(
+				com.professor.zerion.android.ZerionService.ACTION_EXIT);
+		PendingIntent exitPending = PendingIntent.getService(appContext, 1,
+				exitIntent, getImmutableFlags(0));
+		b.addAction(0,
+				appContext.getString(R.string.ongoing_notification_exit_action),
+				exitPending);
+
 		b.setCategory(CATEGORY_SERVICE);
-		b.setVisibility(VISIBILITY_SECRET);
-		b.setPriority(PRIORITY_MIN);
+		b.setVisibility(VISIBILITY_PRIVATE);
+		b.setPriority(PRIORITY_LOW);
 		return b.build();
 	}
 

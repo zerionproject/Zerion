@@ -46,7 +46,6 @@ import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_NO_ANIMATION;
 import static android.os.Build.VERSION.SDK_INT;
 import static android.os.Process.myPid;
-import static androidx.core.app.NotificationCompat.VISIBILITY_SECRET;
 import static org.briarproject.bramble.api.lifecycle.LifecycleManager.StartResult.ALREADY_RUNNING;
 import static org.briarproject.bramble.api.lifecycle.LifecycleManager.StartResult.SUCCESS;
 import static org.briarproject.bramble.util.AndroidUtils.isUiThread;
@@ -93,6 +92,9 @@ public class ZerionService extends Service {
 	private volatile boolean started = false;
 	private volatile long glideCacheCleared = 0;
 
+	public static final String ACTION_EXIT =
+			"com.professor.zerion.android.EXIT";
+
 	@Override
 	public void onCreate() {
 		super.onCreate();
@@ -120,7 +122,8 @@ public class ZerionService extends Service {
 							ONGOING_CHANNEL_ID,
 							getString(R.string.ongoing_notification_title),
 							IMPORTANCE_LOW);
-					ongoingChannel.setLockscreenVisibility(VISIBILITY_SECRET);
+					ongoingChannel.setLockscreenVisibility(
+							android.app.Notification.VISIBILITY_PRIVATE);
 					ongoingChannel.setShowBadge(false);
 					ongoingChannel.enableVibration(false);
 					ongoingChannel.setSound(null, null);
@@ -182,10 +185,15 @@ public class ZerionService extends Service {
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
-		if (intent != null && ACTION_LOCK.equals(intent.getAction())) {
-			int pid = intent.getIntExtra(EXTRA_PID, -1);
-			if (pid == myPid()) {
-				lockManager.setLocked(true);
+		if (intent != null) {
+			String action = intent.getAction();
+			if (ACTION_LOCK.equals(action)) {
+				int pid = intent.getIntExtra(EXTRA_PID, -1);
+				if (pid == myPid()) {
+					lockManager.setLocked(true);
+				}
+			} else if (ACTION_EXIT.equals(action)) {
+				shutdown(true);
 			}
 		}
 		return START_NOT_STICKY;
