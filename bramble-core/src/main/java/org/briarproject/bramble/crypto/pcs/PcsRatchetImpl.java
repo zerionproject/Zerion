@@ -177,7 +177,12 @@ public class PcsRatchetImpl implements PcsRatchet {
 		}
 
 		byte[] dhOutput = computeDh(dhState.getDhKeyPair(), dhState.getDhRemotePublicKey());
-		KdfRkResult kdfResult = kdfRk(rootKey, dhOutput);
+		KdfRkResult kdfResult;
+		try {
+			kdfResult = kdfRk(rootKey, dhOutput);
+		} finally {
+			java.util.Arrays.fill(dhOutput, (byte) 0);
+		}
 		KeyPair newKeyPair = generateDhKeyPair();
 		DhRatchetState newDhState = dhState.withNewKeyPair(newKeyPair);
 
@@ -210,12 +215,22 @@ public class PcsRatchetImpl implements PcsRatchet {
 		}
 
 		byte[] dhOutput1 = computeDh(dhState.getDhKeyPair(), theirNewPublicKey);
-		KdfRkResult kdfResult1 = kdfRk(rootKey, dhOutput1);
+		KdfRkResult kdfResult1;
+		try {
+			kdfResult1 = kdfRk(rootKey, dhOutput1);
+		} finally {
+			java.util.Arrays.fill(dhOutput1, (byte) 0);
+		}
 
 		KeyPair newKeyPair = generateDhKeyPair();
 
 		byte[] dhOutput2 = computeDh(newKeyPair, theirNewPublicKey);
-		KdfRkResult kdfResult2 = kdfRk(kdfResult1.getNewRootKey(), dhOutput2);
+		KdfRkResult kdfResult2;
+		try {
+			kdfResult2 = kdfRk(kdfResult1.getNewRootKey(), dhOutput2);
+		} finally {
+			java.util.Arrays.fill(dhOutput2, (byte) 0);
+		}
 
 		DhRatchetState newDhState = new DhRatchetState(newKeyPair, theirNewPublicKey);
 
@@ -255,7 +270,13 @@ public class PcsRatchetImpl implements PcsRatchet {
 				theirPublicKey,
 				ourKeyPair
 		);
-		return sharedSecret.getBytes();
+		try {
+			byte[] inner = sharedSecret.getBytes();
+			byte[] copy = inner.clone();
+			return copy;
+		} finally {
+			sharedSecret.clear();
+		}
 	}
 
 	private byte[] createChainId(PcsSessionState state) {
