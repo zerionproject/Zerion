@@ -914,7 +914,24 @@ public class ChannelFeedActivity extends ZerionActivity
 	}
 
 	private void toggleDiscussionsEnabled() {
+		if (!weArePublisher) return;
 		final boolean target = !discussionsEnabledCached;
+		int title = target
+				? R.string.channels_discussions_confirm_enable_title
+				: R.string.channels_discussions_confirm_disable_title;
+		int message = target
+				? R.string.channels_discussions_confirm_enable_message
+				: R.string.channels_discussions_confirm_disable_message;
+		new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+				.setTitle(title)
+				.setMessage(message)
+				.setPositiveButton(android.R.string.ok,
+						(d, w) -> applyDiscussionsEnabled(target))
+				.setNegativeButton(android.R.string.cancel, null)
+				.show();
+	}
+
+	private void applyDiscussionsEnabled(boolean target) {
 		ioExecutor.execute(() -> {
 			try {
 				channelManager.setDiscussionsEnabled(channelId, target);
@@ -928,7 +945,12 @@ public class ChannelFeedActivity extends ZerionActivity
 					invalidateOptionsMenu();
 					loadChannel();
 				});
-			} catch (DbException ignored) {
+			} catch (DbException ex) {
+				runOnUiThreadUnlessDestroyed(() -> {
+					Toast.makeText(this,
+							R.string.channels_discussions_toggle_failed_toast,
+							Toast.LENGTH_LONG).show();
+				});
 			}
 		});
 	}

@@ -368,6 +368,11 @@
 	<string name="channels_discussions_menu_disable">Disable discussions</string>
 	<string name="channels_discussions_enabled_toast">Discussions are now allowed.</string>
 	<string name="channels_discussions_disabled_toast">Discussions disabled. Subscribers can no longer post comments.</string>
+	<string name="channels_discussions_confirm_enable_title">Allow discussions?</string>
+	<string name="channels_discussions_confirm_enable_message">Subscribers will be able to post comments under your posts. You can disable this again at any time.</string>
+	<string name="channels_discussions_confirm_disable_title">Disable discussions?</string>
+	<string name="channels_discussions_confirm_disable_message">Existing comments remain visible. New comment attempts will be rejected until you re-enable.</string>
+	<string name="channels_discussions_toggle_failed_toast">Could not change the discussion setting. Try again.</string>
 	<string name="hardened_mode_title">Hardened mode</string>
 	<string name="hardened_mode_summary_format">%1$d of 3 on</string>
 	<string name="hardened_mode_dialog_title">Hardened mode</string>
