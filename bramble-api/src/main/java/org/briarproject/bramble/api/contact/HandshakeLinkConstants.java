@@ -27,7 +27,7 @@ public interface HandshakeLinkConstants {
 	int RAW_LINK_BYTES = RAW_LINK_BYTES_HYBRID;
 
 	Pattern LINK_REGEX =
-			Pattern.compile("(?:(?:zerion|briar)://)?([a-z2-7]{" + BASE32_LINK_BYTES + "})(?:\\?.*)?");
+			Pattern.compile("^zerion://([a-z2-7]{" + BASE32_LINK_BYTES + "})(?:\\?.*)?$");
 
 	String ID_LABEL = "org.briarproject.bramble/HANDSHAKE_KEY_ID";
 

@@ -102,7 +102,7 @@ class PendingContactFactoryImpl implements PendingContactFactory {
 
 	private ParsedLink parseHandshakeLink(String link) throws FormatException {
 		Matcher matcher = LINK_REGEX.matcher(link);
-		if (!matcher.find()) throw new FormatException();
+		if (!matcher.matches()) throw new FormatException();
 		link = matcher.group(1);
 		byte[] raw = Base32.decode(link, false);
 
