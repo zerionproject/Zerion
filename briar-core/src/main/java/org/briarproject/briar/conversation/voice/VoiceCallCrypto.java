@@ -48,6 +48,11 @@ public interface VoiceCallCrypto {
 			this.txKey = txKey;
 			this.rxKey = rxKey;
 		}
+
+		public void destroy() {
+			if (txKey != null) txKey.clear();
+			if (rxKey != null) rxKey.clear();
+		}
 	}
 
 	class VideoKeys {
@@ -57,6 +62,11 @@ public interface VoiceCallCrypto {
 		public VideoKeys(SecretKey txKey, SecretKey rxKey) {
 			this.txKey = txKey;
 			this.rxKey = rxKey;
+		}
+
+		public void destroy() {
+			if (txKey != null) txKey.clear();
+			if (rxKey != null) rxKey.clear();
 		}
 	}
 }

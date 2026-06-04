@@ -444,6 +444,7 @@ public class VoiceCallService extends Service implements EventListener {
 
 	public void endCall() {
 		cancelCallSetupTimeout();
+		cancelVideoSetupTimeout();
 		synchronized (streamLock) {
 			if (callState == CallState.DISCONNECTED) {
 				return;
@@ -1951,7 +1952,64 @@ public class VoiceCallService extends Service implements EventListener {
 
 	}
 
+	private volatile Runnable videoSetupTimeoutRunnable;
+
+	private void scheduleVideoSetupTimeout(long timeoutMs) {
+		cancelVideoSetupTimeout();
+		videoSetupTimeoutRunnable = () -> {
+			if (videoRequested && !videoEnabled) {
+				handleVideoSetupFailure();
+			}
+		};
+		mainHandler.postDelayed(videoSetupTimeoutRunnable, timeoutMs);
+	}
+
+	private void cancelVideoSetupTimeout() {
+		if (videoSetupTimeoutRunnable != null) {
+			mainHandler.removeCallbacks(videoSetupTimeoutRunnable);
+			videoSetupTimeoutRunnable = null;
+		}
+	}
+
+	private void handleVideoSetupFailure() {
+		videoRequested = false;
+		videoEnabled = false;
+		executorService.execute(() -> {
+			try {
+				if (callId != null) {
+					connectionManager.closeEndpoint(callId + "-video");
+				}
+			} catch (Exception ignored) {
+			}
+			synchronized (torConnectionLock) {
+				if (videoTorConnection != null) {
+					try {
+						videoTorConnection.getReader().dispose(true, true);
+					} catch (Exception ignored) {
+					}
+					try {
+						videoTorConnection.getWriter().dispose(true, true);
+					} catch (Exception ignored) {
+					}
+					videoTorConnection = null;
+				}
+			}
+			if (videoKeys != null) {
+				videoKeys.destroy();
+				videoKeys = null;
+			}
+		});
+		mainHandler.post(() -> {
+			VoiceCallActivity bound = callActivity;
+			if (bound != null) {
+				bound.showVideoError("Video link unavailable");
+			}
+			updateNotification();
+		});
+	}
+
 	private void connectVideoToRemote(String remoteOnion) {
+		scheduleVideoSetupTimeout(25_000);
 		executorService.execute(() -> {
 			try {
 				videoTorConnection = connectionManager.connectToRemote(
@@ -1959,26 +2017,17 @@ public class VoiceCallService extends Service implements EventListener {
 						voiceCallKey, !isIncoming);
 
 				if (videoTorConnection == null) {
-					mainHandler.post(() -> {
-						if (callActivity != null) {
-							callActivity.showVideoError(
-									"Video connection failed: null connection");
-						}
-					});
+					handleVideoSetupFailure();
 					return;
 				}
 
 				deriveVideoEncryptionKeys();
 				startVideoStreamingOnConnection();
+				cancelVideoSetupTimeout();
 				videoEnabled = true;
 				updateNotification();
 			} catch (Exception e) {
-				mainHandler.post(() -> {
-					if (callActivity != null) {
-						callActivity.showVideoError(
-								"Video connection failed: " + e.getMessage());
-					}
-				});
+				handleVideoSetupFailure();
 			}
 		});
 	}
