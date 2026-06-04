@@ -41,6 +41,7 @@ public class TextSendController implements TextInputListener {
 	private boolean ready = true;
 	private long currentTimer = NO_AUTO_DELETE_TIMER;
 	protected long expectedTimer = NO_AUTO_DELETE_TIMER;
+	private boolean timerChangeAutoAccepted = false;
 
 	private final CharSequence defaultHint;
 	private final boolean allowEmptyText;
@@ -76,19 +77,29 @@ public class TextSendController implements TextInputListener {
 	protected void onSendStateChanged(SendState sendState) {
 		if (sendState == SENT) {
 			textInput.clearText();
+			timerChangeAutoAccepted = false;
 		} else if (sendState == UNEXPECTED_TIMER) {
-			boolean enabled = expectedTimer == NO_AUTO_DELETE_TIMER;
-			showTimerChangedDialog(enabled);
+			if (!timerChangeAutoAccepted) {
+				timerChangeAutoAccepted = true;
+				expectedTimer = currentTimer;
+				onSendEvent();
+			} else {
+				boolean enabled = expectedTimer == NO_AUTO_DELETE_TIMER;
+				showTimerChangedDialog(enabled);
+				timerChangeAutoAccepted = false;
+			}
 		} else if (sendState == ERROR) {
 			com.professor.zerion.android.util.Haptics.error(
 					compositeSendButton);
 			Toast.makeText(textInput.getContext(), R.string.message_error,
 					LENGTH_LONG).show();
+			timerChangeAutoAccepted = false;
 		}
 	}
 
 	protected void onStartingMessage() {
 		expectedTimer = currentTimer;
+		timerChangeAutoAccepted = false;
 	}
 
 	public void setReady(boolean ready) {
