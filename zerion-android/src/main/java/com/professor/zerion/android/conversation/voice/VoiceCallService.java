@@ -1157,7 +1157,7 @@ public class VoiceCallService extends Service implements EventListener {
 					} catch (Exception ignored) {
 					}
 					try {
-						torConnection.getWriter().dispose(true, true);
+						torConnection.getWriter().dispose(true);
 					} catch (Exception ignored) {
 					}
 					torConnection = null;
@@ -1988,7 +1988,7 @@ public class VoiceCallService extends Service implements EventListener {
 					} catch (Exception ignored) {
 					}
 					try {
-						videoTorConnection.getWriter().dispose(true, true);
+						videoTorConnection.getWriter().dispose(true);
 					} catch (Exception ignored) {
 					}
 					videoTorConnection = null;
