@@ -813,12 +813,21 @@ class GroupTrManagerImpl
 		}
 	}
 
+	private static final long INVITE_OFFER_MAX_AGE_MS =
+			7L * 24L * 60L * 60L * 1000L;
+	private static final long INVITE_OFFER_FUTURE_SKEW_MS =
+			5L * 60L * 1000L;
+
 	private void handleGrouptrInviteOffer(
 			org.briarproject.briar.api.messaging.event
 					.GroupTrInviteOfferReceivedEvent ev) {
 		byte[] grouptrGid = ev.getGrouptrGroupId();
 		byte[] creatorPub = ev.getCreatorPubKey();
 		try {
+			long now = clock.currentTimeMillis();
+			long inviteTs = ev.getInviteTimestamp();
+			if (inviteTs > now + INVITE_OFFER_FUTURE_SKEW_MS) return;
+			if (now - inviteTs > INVITE_OFFER_MAX_AGE_MS) return;
 			byte[] senderPub = lookupSenderPubKey(ev.getContactId());
 			if (senderPub == null
 					|| !Arrays.equals(senderPub, creatorPub)) return;
