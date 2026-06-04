@@ -27,6 +27,7 @@ SUITES = [
     "tests.test_channel_join_bootstrap_async",
     "tests.test_tor_tcp_nodelay",
     "tests.test_account_key_wipe_on_shutdown",
+    "tests.test_uri_scheme_allowlist",
     "tests.test_no_logging_invariants",
 ]
 
