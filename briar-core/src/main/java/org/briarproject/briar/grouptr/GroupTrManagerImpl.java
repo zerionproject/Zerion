@@ -923,6 +923,16 @@ class GroupTrManagerImpl
 	}
 
 	private void handleMembershipEvent(GroupMembershipChangedEvent e) {
+		java.util.concurrent.locks.ReentrantLock lock = lockFor(e.getGroupId());
+		lock.lock();
+		try {
+			handleMembershipEventLocked(e);
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	private void handleMembershipEventLocked(GroupMembershipChangedEvent e) {
 		try {
 			GroupTrState s = getGroup(e.getGroupId());
 			if (s == null) return;
@@ -1623,88 +1633,106 @@ class GroupTrManagerImpl
 	@Override
 	public void removeMember(byte[] groupId, byte[] removedPubKey)
 			throws DbException {
-		GroupTrState s = requireWritable(groupId);
-		requireLocalIsCreator(s);
-		if (Arrays.equals(removedPubKey, s.getCreatorPubKey())) {
-			throw new GroupTrAuthException(
-					GroupTrAuthException.Reason.CANNOT_REMOVE_CREATOR);
+		java.util.concurrent.locks.ReentrantLock lock = lockFor(groupId);
+		lock.lock();
+		try {
+			GroupTrState s = requireWritable(groupId);
+			requireLocalIsCreator(s);
+			if (Arrays.equals(removedPubKey, s.getCreatorPubKey())) {
+				throw new GroupTrAuthException(
+						GroupTrAuthException.Reason.CANNOT_REMOVE_CREATOR);
+			}
+			LocalAuthor la = db.transactionWithResult(true,
+					identityManager::getLocalAuthor);
+			PrivateKey signingKey = la.getPrivateKey();
+			long timestamp = clock.currentTimeMillis();
+			int fromEpoch = (int) s.getEpoch();
+			int toEpoch = fromEpoch + 1;
+			byte[] signedRemoved = removedSignedInput(groupId, removedPubKey,
+					fromEpoch, toEpoch, timestamp);
+			byte[] sigRemoved = signOrThrow(SIGNING_LABEL_GROUP_MEMBERSHIP,
+					signedRemoved, signingKey);
+			BdfList removedBody = BdfList.of(34L, groupId, removedPubKey,
+					(long) fromEpoch, (long) toEpoch, timestamp, sigRemoved);
+			byte[] pqSeed = new byte[32];
+			random.nextBytes(pqSeed);
+			byte[] signedCommit = epochCommitSignedInput(groupId, fromEpoch,
+					toEpoch, pqSeed, timestamp);
+			byte[] sigCommit = signOrThrow(SIGNING_LABEL_GROUP_EPOCH_COMMIT,
+					signedCommit, signingKey);
+			BdfList commitBody = BdfList.of(37L, groupId, (long) fromEpoch,
+					(long) toEpoch, pqSeed, sigCommit);
+			db.transaction(false, txn -> {
+				fanOut(txn, s, removedBody, timestamp, null);
+				fanOut(txn, s, commitBody, timestamp, removedPubKey);
+			});
+			applyLocalRemove(s, removedPubKey, toEpoch);
+		} finally {
+			lock.unlock();
 		}
-		LocalAuthor la = db.transactionWithResult(true,
-				identityManager::getLocalAuthor);
-		PrivateKey signingKey = la.getPrivateKey();
-		long timestamp = clock.currentTimeMillis();
-		int fromEpoch = (int) s.getEpoch();
-		int toEpoch = fromEpoch + 1;
-		byte[] signedRemoved = removedSignedInput(groupId, removedPubKey,
-				fromEpoch, toEpoch, timestamp);
-		byte[] sigRemoved = signOrThrow(SIGNING_LABEL_GROUP_MEMBERSHIP,
-				signedRemoved, signingKey);
-		BdfList removedBody = BdfList.of(34L, groupId, removedPubKey,
-				(long) fromEpoch, (long) toEpoch, timestamp, sigRemoved);
-		byte[] pqSeed = new byte[32];
-		random.nextBytes(pqSeed);
-		byte[] signedCommit = epochCommitSignedInput(groupId, fromEpoch,
-				toEpoch, pqSeed, timestamp);
-		byte[] sigCommit = signOrThrow(SIGNING_LABEL_GROUP_EPOCH_COMMIT,
-				signedCommit, signingKey);
-		BdfList commitBody = BdfList.of(37L, groupId, (long) fromEpoch,
-				(long) toEpoch, pqSeed, sigCommit);
-		db.transaction(false, txn -> {
-			fanOut(txn, s, removedBody, timestamp, null);
-			fanOut(txn, s, commitBody, timestamp, removedPubKey);
-		});
-		applyLocalRemove(s, removedPubKey, toEpoch);
 	}
 
 	@Override
 	public void leaveGroup(byte[] groupId) throws DbException {
-		GroupTrState s = requireWritable(groupId);
-		LocalAuthor la = db.transactionWithResult(true,
-				identityManager::getLocalAuthor);
-		byte[] localPub = la.getPublicKey().getEncoded();
-		if (Arrays.equals(localPub, s.getCreatorPubKey())) {
-			throw new GroupTrAuthException(
-					GroupTrAuthException.Reason.CANNOT_LEAVE_AS_CREATOR);
+		java.util.concurrent.locks.ReentrantLock lock = lockFor(groupId);
+		lock.lock();
+		try {
+			GroupTrState s = requireWritable(groupId);
+			LocalAuthor la = db.transactionWithResult(true,
+					identityManager::getLocalAuthor);
+			byte[] localPub = la.getPublicKey().getEncoded();
+			if (Arrays.equals(localPub, s.getCreatorPubKey())) {
+				throw new GroupTrAuthException(
+						GroupTrAuthException.Reason.CANNOT_LEAVE_AS_CREATOR);
+			}
+			PrivateKey signingKey = la.getPrivateKey();
+			long timestamp = clock.currentTimeMillis();
+			int newEpoch = (int) s.getEpoch() + 1;
+			byte[] signed = membershipSignedInput(groupId, localPub, newEpoch,
+					timestamp, (byte) 0x03);
+			byte[] sig = signOrThrow(SIGNING_LABEL_GROUP_MEMBERSHIP, signed,
+					signingKey);
+			BdfList body = BdfList.of(35L, groupId, localPub,
+					(long) newEpoch, timestamp, sig);
+			db.transaction(false, txn -> fanOut(txn, s, body, timestamp,
+					localPub));
+			applyLocalLeave(s, localPub, newEpoch);
+			removeFromDevice(groupId);
+		} finally {
+			lock.unlock();
 		}
-		PrivateKey signingKey = la.getPrivateKey();
-		long timestamp = clock.currentTimeMillis();
-		int newEpoch = (int) s.getEpoch() + 1;
-		byte[] signed = membershipSignedInput(groupId, localPub, newEpoch,
-				timestamp, (byte) 0x03);
-		byte[] sig = signOrThrow(SIGNING_LABEL_GROUP_MEMBERSHIP, signed,
-				signingKey);
-		BdfList body = BdfList.of(35L, groupId, localPub,
-				(long) newEpoch, timestamp, sig);
-		db.transaction(false, txn -> fanOut(txn, s, body, timestamp,
-				localPub));
-		applyLocalLeave(s, localPub, newEpoch);
-		removeFromDevice(groupId);
 	}
 
 	@Override
 	public void dissolveGroup(byte[] groupId) throws DbException {
-		GroupTrState s = requireWritable(groupId);
-		requireLocalIsCreator(s);
-		LocalAuthor la = db.transactionWithResult(true,
-				identityManager::getLocalAuthor);
-		PrivateKey signingKey = la.getPrivateKey();
-		long timestamp = clock.currentTimeMillis();
-		int newEpoch = (int) s.getEpoch() + 1;
-		byte[] signed = dissolveSignedInput(groupId, newEpoch, timestamp);
-		byte[] sig = signOrThrow(SIGNING_LABEL_GROUP_MEMBERSHIP, signed,
-				signingKey);
-		BdfList body = BdfList.of(36L, groupId, (long) newEpoch,
-				timestamp, sig);
-		db.transaction(false, txn -> fanOut(txn, s, body, timestamp,
-				null));
-		s.setDissolved(true);
-		s.setEpoch(newEpoch);
+		java.util.concurrent.locks.ReentrantLock lock = lockFor(groupId);
+		lock.lock();
 		try {
-			persist(s);
-		} catch (FormatException ex) {
-			throw new DbException(ex);
+			GroupTrState s = requireWritable(groupId);
+			requireLocalIsCreator(s);
+			LocalAuthor la = db.transactionWithResult(true,
+					identityManager::getLocalAuthor);
+			PrivateKey signingKey = la.getPrivateKey();
+			long timestamp = clock.currentTimeMillis();
+			int newEpoch = (int) s.getEpoch() + 1;
+			byte[] signed = dissolveSignedInput(groupId, newEpoch, timestamp);
+			byte[] sig = signOrThrow(SIGNING_LABEL_GROUP_MEMBERSHIP, signed,
+					signingKey);
+			BdfList body = BdfList.of(36L, groupId, (long) newEpoch,
+					timestamp, sig);
+			db.transaction(false, txn -> fanOut(txn, s, body, timestamp,
+					null));
+			s.setDissolved(true);
+			s.setEpoch(newEpoch);
+			try {
+				persist(s);
+			} catch (FormatException ex) {
+				throw new DbException(ex);
+			}
+			removeFromDevice(groupId);
+		} finally {
+			lock.unlock();
 		}
-		removeFromDevice(groupId);
 	}
 
 	private GroupTrState requireWritable(byte[] groupId) throws DbException {
@@ -1928,37 +1956,43 @@ class GroupTrManagerImpl
 
 	private void changeRole(byte[] groupId, byte[] targetPubKey,
 			MemberRole newRole) throws DbException {
-		GroupTrState s = requireWritable(groupId);
-		requireLocalIsCreator(s);
-		if (Arrays.equals(targetPubKey, s.getCreatorPubKey())) {
-			throw new GroupTrAuthException(
-					GroupTrAuthException.Reason.NOT_CREATOR);
-		}
-		boolean isMember = false;
-		for (GroupTrMember m : s.getMembers()) {
-			if (Arrays.equals(m.getPubKey(), targetPubKey)) {
-				isMember = true;
-				break;
+		java.util.concurrent.locks.ReentrantLock lock = lockFor(groupId);
+		lock.lock();
+		try {
+			GroupTrState s = requireWritable(groupId);
+			requireLocalIsCreator(s);
+			if (Arrays.equals(targetPubKey, s.getCreatorPubKey())) {
+				throw new GroupTrAuthException(
+						GroupTrAuthException.Reason.NOT_CREATOR);
 			}
+			boolean isMember = false;
+			for (GroupTrMember m : s.getMembers()) {
+				if (Arrays.equals(m.getPubKey(), targetPubKey)) {
+					isMember = true;
+					break;
+				}
+			}
+			if (!isMember) {
+				throw new GroupTrAuthException(
+						GroupTrAuthException.Reason.CONTACT_NOT_FOUND);
+			}
+			LocalAuthor la = db.transactionWithResult(true,
+					identityManager::getLocalAuthor);
+			PrivateKey signingKey = la.getPrivateKey();
+			long timestamp = clock.currentTimeMillis();
+			int newEpoch = (int) s.getEpoch() + 1;
+			byte[] signed = roleChangedSignedInput(groupId, targetPubKey,
+					newRole.getInt(), newEpoch, timestamp);
+			byte[] sig = signOrThrow(SIGNING_LABEL_GROUP_MEMBERSHIP, signed,
+					signingKey);
+			BdfList body = BdfList.of(38L, groupId, targetPubKey,
+					(long) newRole.getInt(), (long) newEpoch, timestamp, sig);
+			db.transaction(false, txn -> fanOut(txn, s, body, timestamp,
+					null));
+			applyLocalRoleChange(s, targetPubKey, newRole, newEpoch);
+		} finally {
+			lock.unlock();
 		}
-		if (!isMember) {
-			throw new GroupTrAuthException(
-					GroupTrAuthException.Reason.CONTACT_NOT_FOUND);
-		}
-		LocalAuthor la = db.transactionWithResult(true,
-				identityManager::getLocalAuthor);
-		PrivateKey signingKey = la.getPrivateKey();
-		long timestamp = clock.currentTimeMillis();
-		int newEpoch = (int) s.getEpoch() + 1;
-		byte[] signed = roleChangedSignedInput(groupId, targetPubKey,
-				newRole.getInt(), newEpoch, timestamp);
-		byte[] sig = signOrThrow(SIGNING_LABEL_GROUP_MEMBERSHIP, signed,
-				signingKey);
-		BdfList body = BdfList.of(38L, groupId, targetPubKey,
-				(long) newRole.getInt(), (long) newEpoch, timestamp, sig);
-		db.transaction(false, txn -> fanOut(txn, s, body, timestamp,
-				null));
-		applyLocalRoleChange(s, targetPubKey, newRole, newEpoch);
 	}
 
 	private void applyLocalRoleChange(GroupTrState s, byte[] target,
