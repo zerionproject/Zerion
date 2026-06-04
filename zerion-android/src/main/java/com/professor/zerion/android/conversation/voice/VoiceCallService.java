@@ -392,7 +392,7 @@ public class VoiceCallService extends Service implements EventListener {
 				callState = CallState.RINGING;
 				updateCallActivity();
 
-				scheduleCallSetupTimeout(90_000);
+				scheduleCallSetupTimeout(35_000);
 
 			} catch (Exception e) {
 				callState = CallState.FAILED;
@@ -416,7 +416,7 @@ public class VoiceCallService extends Service implements EventListener {
 
 				sendCallAnswer();
 
-				scheduleCallSetupTimeout(120_000);
+				scheduleCallSetupTimeout(45_000);
 
 			} catch (Exception e) {
 				callState = CallState.FAILED;
@@ -1128,14 +1128,52 @@ public class VoiceCallService extends Service implements EventListener {
 		callSetupTimeoutRunnable = () -> {
 			if (callState == CallState.RINGING ||
 					callState == CallState.CONNECTING) {
-				callState = CallState.FAILED;
-				updateCallActivity();
-				if (callActivity != null) {
-					callActivity.onCallFailed("Connection timeout");
-				}
+				handleSetupFailure("Connection timeout");
 			}
 		};
 		mainHandler.postDelayed(callSetupTimeoutRunnable, timeoutMs);
+	}
+
+	private void handleSetupFailure(String reason) {
+		if (callState == CallState.DISCONNECTED ||
+				callState == CallState.CONNECTED) {
+			return;
+		}
+		callState = CallState.FAILED;
+		executorService.execute(() -> {
+			try {
+				if (!endpointsClosed && callId != null) {
+					endpointsClosed = true;
+					connectionManager.closeEndpoint(callId);
+					connectionManager.closeEndpoint(callId + "-video");
+				}
+			} catch (Exception ignored) {
+			}
+			synchronized (torConnectionLock) {
+				if (torConnection != null) {
+					try {
+						torConnection.getReader().dispose(true, true);
+					} catch (Exception ignored) {
+					}
+					try {
+						torConnection.getWriter().dispose(true, true);
+					} catch (Exception ignored) {
+					}
+					torConnection = null;
+				}
+			}
+			synchronized (streamLock) {
+				if (isRecording) {
+					isRecording = false;
+				}
+			}
+		});
+		mainHandler.post(() -> {
+			VoiceCallActivity bound = callActivity;
+			if (bound != null) {
+				bound.onCallFailed(reason);
+			}
+		});
 	}
 
 	private void cancelCallSetupTimeout() {
@@ -1555,19 +1593,11 @@ public class VoiceCallService extends Service implements EventListener {
 	}
 
 	private void updateCallActivity() {
+		final CallState snapshot = callState;
 		mainHandler.post(() -> {
-			if (callActivity != null) {
-				switch (callState) {
-					case CONNECTED:
-						callActivity.onCallConnected();
-						break;
-					case DISCONNECTED:
-						callActivity.onCallDisconnected();
-						break;
-					case FAILED:
-						callActivity.onCallFailed("Connection failed");
-						break;
-				}
+			VoiceCallActivity bound = callActivity;
+			if (bound != null) {
+				bound.onCallStateChanged(snapshot);
 			}
 		});
 	}

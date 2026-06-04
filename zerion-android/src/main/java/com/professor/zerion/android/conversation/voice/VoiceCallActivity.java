@@ -448,6 +448,35 @@ public class VoiceCallActivity extends AppCompatActivity {
 		}
 	}
 
+	public void onCallStateChanged(VoiceCallService.CallState state) {
+		runOnUiThread(() -> {
+			switch (state) {
+				case CONNECTING:
+					callStatusText.setText("Connecting via Tor...");
+					break;
+				case RINGING:
+					callStatusText.setText("Ringing...");
+					if (!isIncoming) {
+						stopDialTone();
+						stopRingtone();
+						playRingtone();
+					}
+					break;
+				case CONNECTED:
+					onCallConnected();
+					break;
+				case DISCONNECTED:
+					onCallDisconnected();
+					break;
+				case FAILED:
+					onCallFailed("Connection failed");
+					break;
+				default:
+					break;
+			}
+		});
+	}
+
 	public void onCallConnected() {
 		runOnUiThread(() -> {
 			stopRingtone();
