@@ -28,6 +28,7 @@ SUITES = [
     "tests.test_tor_tcp_nodelay",
     "tests.test_account_key_wipe_on_shutdown",
     "tests.test_uri_scheme_allowlist",
+    "tests.test_voice_call_state_machine",
     "tests.test_no_logging_invariants",
 ]
 
