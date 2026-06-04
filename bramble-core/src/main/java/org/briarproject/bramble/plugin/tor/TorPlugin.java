@@ -332,6 +332,10 @@ class TorPlugin implements DuplexPlugin, EventListener,
 			try {
 				s = ss.accept();
 				s.setSoTimeout(socketTimeout);
+				try {
+					s.setTcpNoDelay(true);
+				} catch (java.net.SocketException ignored) {
+				}
 			} catch (IOException e) {
 				return;
 			}
@@ -362,6 +366,10 @@ class TorPlugin implements DuplexPlugin, EventListener,
 			try {
 				s = ss.accept();
 				s.setSoTimeout(socketTimeout);
+				try {
+					s.setTcpNoDelay(true);
+				} catch (java.net.SocketException ignored) {
+				}
 			} catch (IOException e) {
 				state.clearServerSocket(ss);
 				return;
@@ -500,6 +508,10 @@ class TorPlugin implements DuplexPlugin, EventListener,
 		try {
 			s = torSocketFactory.createSocket(onion + ".onion", 80);
 			s.setSoTimeout(socketTimeout);
+			try {
+				s.setTcpNoDelay(true);
+			} catch (java.net.SocketException ignored) {
+			}
 			return new TorTransportConnection(this, s);
 		} catch (IOException e) {
 			tryToClose(s);
@@ -549,6 +561,10 @@ class TorPlugin implements DuplexPlugin, EventListener,
 				try {
 					while (true) {
 						Socket s = ss.accept();
+						try {
+							s.setTcpNoDelay(true);
+						} catch (java.net.SocketException ignored) {
+						}
 						incoming.handleConnection(
 								new TorTransportConnection(this, s));
 					}
