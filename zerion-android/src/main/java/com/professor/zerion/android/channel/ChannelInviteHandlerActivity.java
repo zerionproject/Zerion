@@ -112,10 +112,12 @@ public class ChannelInviteHandlerActivity extends ZerionActivity {
 					channelManager.joinChannel(link);
 				}
 				channelManager.applyToJoin(cid, name);
-				try {
-					channelManager.bootstrapChannel(cid);
-				} catch (DbException ignored) {
-				}
+				ioExecutor.execute(() -> {
+					try {
+						channelManager.bootstrapChannel(cid);
+					} catch (DbException ignored) {
+					}
+				});
 				runOnUiThreadUnlessDestroyed(() -> {
 					progress.dismiss();
 					openChannel(cid);
@@ -148,10 +150,12 @@ public class ChannelInviteHandlerActivity extends ZerionActivity {
 				ChannelState s = channelManager.getChannel(cid);
 				if (s == null) {
 					channelManager.joinChannel(link);
-					try {
-						channelManager.bootstrapChannel(cid);
-					} catch (DbException ignored) {
-					}
+					ioExecutor.execute(() -> {
+						try {
+							channelManager.bootstrapChannel(cid);
+						} catch (DbException ignored) {
+						}
+					});
 				}
 				runOnUiThreadUnlessDestroyed(() -> {
 					progress.dismiss();
