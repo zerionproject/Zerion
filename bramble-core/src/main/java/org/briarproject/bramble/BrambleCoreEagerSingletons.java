@@ -1,5 +1,6 @@
 package org.briarproject.bramble;
 
+import org.briarproject.bramble.account.AccountModule;
 import org.briarproject.bramble.cleanup.CleanupModule;
 import org.briarproject.bramble.contact.ContactModule;
 import org.briarproject.bramble.crypto.CryptoExecutorModule;
@@ -15,6 +16,8 @@ import org.briarproject.bramble.transport.agreement.TransportKeyAgreementModule;
 import org.briarproject.bramble.versioning.VersioningModule;
 
 public interface BrambleCoreEagerSingletons {
+
+	void inject(AccountModule.EagerSingletons init);
 
 	void inject(CleanupModule.EagerSingletons init);
 
@@ -45,6 +48,7 @@ public interface BrambleCoreEagerSingletons {
 	class Helper {
 
 		public static void injectEagerSingletons(BrambleCoreEagerSingletons c) {
+			c.inject(new AccountModule.EagerSingletons());
 			c.inject(new CleanupModule.EagerSingletons());
 			c.inject(new ContactModule.EagerSingletons());
 			c.inject(new CryptoExecutorModule.EagerSingletons());

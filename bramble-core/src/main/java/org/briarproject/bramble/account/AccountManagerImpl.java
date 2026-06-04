@@ -9,6 +9,8 @@ import org.briarproject.bramble.api.crypto.SecretKey;
 import org.briarproject.bramble.api.db.DatabaseConfig;
 import org.briarproject.bramble.api.identity.Identity;
 import org.briarproject.bramble.api.identity.IdentityManager;
+import org.briarproject.bramble.api.lifecycle.Service;
+import org.briarproject.bramble.api.lifecycle.ServiceException;
 import org.briarproject.bramble.util.IoUtils;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
@@ -29,7 +31,7 @@ import static org.briarproject.bramble.util.StringUtils.toHexString;
 
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
-class AccountManagerImpl implements AccountManager {
+class AccountManagerImpl implements AccountManager, Service {
 	private static final String DB_KEY_FILENAME = "db.key";
 	private static final String DB_KEY_BACKUP_FILENAME = "db.key.bak";
 	private static final String LOCKOUT_FILENAME = "login.lockout";
@@ -66,6 +68,20 @@ class AccountManagerImpl implements AccountManager {
 	protected File lockoutFile() {
 		return new File(databaseConfig.getDatabaseKeyDirectory(),
 				LOCKOUT_FILENAME);
+	}
+
+	@Override
+	public void startService() throws ServiceException {
+	}
+
+	@Override
+	public void stopService() throws ServiceException {
+		synchronized (stateChangeLock) {
+			if (databaseKey != null) {
+				databaseKey.clear();
+				databaseKey = null;
+			}
+		}
 	}
 
 	@Override
