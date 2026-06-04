@@ -57,3 +57,9 @@ scripts/run-security-audit.*
 # Generated Tor binaries (extracted from dependencies during build)
 bramble-android/src/main/jniLibs/
 docs-internal/
+
+# Local-only validator / testing harness — keep off the public repo
+scripts/android_validators/
+scripts/protocol_validators/
+scripts/*_validators/
+
