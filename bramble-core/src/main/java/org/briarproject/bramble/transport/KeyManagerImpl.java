@@ -107,6 +107,7 @@ class KeyManagerImpl implements KeyManager, Service, EventListener {
 
 	@Override
 	public void stopService() {
+		managers.clear();
 	}
 
 	@Override

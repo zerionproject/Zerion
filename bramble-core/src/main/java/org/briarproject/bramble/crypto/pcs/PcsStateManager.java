@@ -17,6 +17,9 @@ import org.briarproject.bramble.api.crypto.pcs.PqRatchetState;
 import org.briarproject.bramble.api.db.DatabaseComponent;
 import org.briarproject.bramble.api.db.DbException;
 import org.briarproject.bramble.api.db.Transaction;
+import org.briarproject.bramble.api.lifecycle.LifecycleManager;
+import org.briarproject.bramble.api.lifecycle.Service;
+import org.briarproject.bramble.api.lifecycle.ServiceException;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.security.GeneralSecurityException;
@@ -35,16 +38,27 @@ import static org.briarproject.bramble.api.db.DatabaseComponent.PCS_DIRECTION_SE
 @ThreadSafe
 @Singleton
 @NotNullByDefault
-public class PcsStateManager {
+public class PcsStateManager implements Service {
 	private final DatabaseComponent db;
 	private final CryptoComponent crypto;
 	private final ConcurrentMap<Integer, ReentrantLock> contactLocks =
 			new ConcurrentHashMap<>();
 
 	@Inject
-	public PcsStateManager(DatabaseComponent db, CryptoComponent crypto) {
+	public PcsStateManager(DatabaseComponent db, CryptoComponent crypto,
+			LifecycleManager lifecycleManager) {
 		this.db = db;
 		this.crypto = crypto;
+		lifecycleManager.registerService(this);
+	}
+
+	@Override
+	public void startService() throws ServiceException {
+	}
+
+	@Override
+	public void stopService() throws ServiceException {
+		contactLocks.clear();
 	}
 
 	public Lock getContactLock(ContactId contactId) {

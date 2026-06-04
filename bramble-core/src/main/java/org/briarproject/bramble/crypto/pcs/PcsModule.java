@@ -6,6 +6,7 @@ import org.briarproject.bramble.api.crypto.pcs.PcsRatchet;
 import org.briarproject.bramble.api.crypto.pcs.PqRatchet;
 import org.briarproject.bramble.api.crypto.pcs.SkippedKeyStore;
 
+import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import dagger.Module;
@@ -13,6 +14,11 @@ import dagger.Provides;
 
 @Module
 public class PcsModule {
+
+	public static class EagerSingletons {
+		@Inject
+		PcsStateManager pcsStateManager;
+	}
 
 	@Provides
 	PcsRatchet providePcsRatchet(PcsRatchetImpl pcsRatchet) {

@@ -4,6 +4,7 @@ import org.briarproject.bramble.account.AccountModule;
 import org.briarproject.bramble.cleanup.CleanupModule;
 import org.briarproject.bramble.contact.ContactModule;
 import org.briarproject.bramble.crypto.CryptoExecutorModule;
+import org.briarproject.bramble.crypto.pcs.PcsModule;
 import org.briarproject.bramble.db.DatabaseExecutorModule;
 import org.briarproject.bramble.identity.IdentityModule;
 import org.briarproject.bramble.lifecycle.LifecycleModule;
@@ -31,6 +32,8 @@ public interface BrambleCoreEagerSingletons {
 
 	void inject(LifecycleModule.EagerSingletons init);
 
+	void inject(PcsModule.EagerSingletons init);
+
 	void inject(PluginModule.EagerSingletons init);
 
 	void inject(PropertiesModule.EagerSingletons init);
@@ -55,6 +58,7 @@ public interface BrambleCoreEagerSingletons {
 			c.inject(new DatabaseExecutorModule.EagerSingletons());
 			c.inject(new IdentityModule.EagerSingletons());
 			c.inject(new LifecycleModule.EagerSingletons());
+			c.inject(new PcsModule.EagerSingletons());
 			c.inject(new RendezvousModule.EagerSingletons());
 			c.inject(new PluginModule.EagerSingletons());
 			c.inject(new PropertiesModule.EagerSingletons());
