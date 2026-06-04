@@ -15,103 +15,112 @@
         android:textColor="@android:color/white"
         android:paddingBottom="16dp" />
 
-    <RadioGroup
-        android:id="@+id/disappearing_messages_radio_group"
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="false"
+        android:scrollbars="vertical">
 
-        <RadioButton
-            android:id="@+id/timer_30_seconds"
+        <RadioGroup
+            android:id="@+id/disappearing_messages_radio_group"
             android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:text="@string/dialog_disappearing_30_seconds"
-            android:textColor="@android:color/white"
-            android:textSize="16sp"
-            android:buttonTint="@color/zerion_primary_accent" />
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
-        <RadioButton
-            android:id="@+id/timer_5_minutes"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:text="@string/dialog_disappearing_5_minutes"
-            android:textColor="@android:color/white"
-            android:textSize="16sp"
-            android:buttonTint="@color/zerion_primary_accent" />
+            <RadioButton
+                android:id="@+id/timer_30_seconds"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="@string/dialog_disappearing_30_seconds"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                android:buttonTint="@color/zerion_primary_accent" />
 
-        <RadioButton
-            android:id="@+id/timer_30_minutes"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:text="@string/dialog_disappearing_30_minutes"
-            android:textColor="@android:color/white"
-            android:textSize="16sp"
-            android:buttonTint="@color/zerion_primary_accent" />
+            <RadioButton
+                android:id="@+id/timer_5_minutes"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="@string/dialog_disappearing_5_minutes"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                android:buttonTint="@color/zerion_primary_accent" />
 
-        <RadioButton
-            android:id="@+id/timer_1_hour"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:text="@string/dialog_disappearing_1_hour"
-            android:textColor="@android:color/white"
-            android:textSize="16sp"
-            android:buttonTint="@color/zerion_primary_accent" />
+            <RadioButton
+                android:id="@+id/timer_30_minutes"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="@string/dialog_disappearing_30_minutes"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                android:buttonTint="@color/zerion_primary_accent" />
 
-        <RadioButton
-            android:id="@+id/timer_8_hours"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:text="@string/dialog_disappearing_8_hours"
-            android:textColor="@android:color/white"
-            android:textSize="16sp"
-            android:buttonTint="@color/zerion_primary_accent" />
+            <RadioButton
+                android:id="@+id/timer_1_hour"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="@string/dialog_disappearing_1_hour"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                android:buttonTint="@color/zerion_primary_accent" />
 
-        <RadioButton
-            android:id="@+id/timer_12_hours"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:text="@string/dialog_disappearing_12_hours"
-            android:textColor="@android:color/white"
-            android:textSize="16sp"
-            android:buttonTint="@color/zerion_primary_accent" />
+            <RadioButton
+                android:id="@+id/timer_8_hours"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="@string/dialog_disappearing_8_hours"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                android:buttonTint="@color/zerion_primary_accent" />
 
-        <RadioButton
-            android:id="@+id/timer_24_hours"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:text="@string/dialog_disappearing_24_hours"
-            android:textColor="@android:color/white"
-            android:textSize="16sp"
-            android:buttonTint="@color/zerion_primary_accent" />
+            <RadioButton
+                android:id="@+id/timer_12_hours"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="@string/dialog_disappearing_12_hours"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                android:buttonTint="@color/zerion_primary_accent" />
 
-        <RadioButton
-            android:id="@+id/timer_1_week"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:text="@string/dialog_disappearing_1_week"
-            android:textColor="@android:color/white"
-            android:textSize="16sp"
-            android:buttonTint="@color/zerion_primary_accent" />
+            <RadioButton
+                android:id="@+id/timer_24_hours"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="@string/dialog_disappearing_24_hours"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                android:buttonTint="@color/zerion_primary_accent" />
 
-        <RadioButton
-            android:id="@+id/timer_4_weeks"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:text="@string/dialog_disappearing_4_weeks"
-            android:textColor="@android:color/white"
-            android:textSize="16sp"
-            android:buttonTint="@color/zerion_primary_accent" />
+            <RadioButton
+                android:id="@+id/timer_1_week"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="@string/dialog_disappearing_1_week"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                android:buttonTint="@color/zerion_primary_accent" />
 
-        <RadioButton
-            android:id="@+id/timer_off"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:text="@string/dialog_disappearing_off"
-            android:textColor="@android:color/white"
-            android:textSize="16sp"
-            android:buttonTint="@color/zerion_primary_accent"
-            android:checked="true" />
+            <RadioButton
+                android:id="@+id/timer_4_weeks"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="@string/dialog_disappearing_4_weeks"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                android:buttonTint="@color/zerion_primary_accent" />
 
-    </RadioGroup>
+            <RadioButton
+                android:id="@+id/timer_off"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="@string/dialog_disappearing_off"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                android:buttonTint="@color/zerion_primary_accent"
+                android:checked="true" />
+
+        </RadioGroup>
+
+    </ScrollView>
 
 </LinearLayout>
