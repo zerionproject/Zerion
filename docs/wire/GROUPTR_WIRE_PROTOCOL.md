@@ -179,6 +179,34 @@ BdfList.of(
 
 Max 1000 members per snapshot.
 
+### When to send a snapshot
+
+A creator MUST fan out a fresh `GROUP_MEMBER_LIST_SNAPSHOT` (msgType 41)
+in two cases:
+
+1. **Manual repair** — admin invokes `sendMemberListSnapshot(groupId)`
+   explicitly to recover members whose local state has diverged from
+   the creator's.
+2. **Immediately after a successful `addMember` driven by an invite
+   ACCEPT response** (2026-06-09 update). On the creator's device,
+   when handling an inbound `GROUPTR_INVITE_ACCEPT` (msgType 43):
+   - Call `addMember(groupId, responderPubKey, responderName)` first.
+   - On success, immediately call `sendMemberListSnapshot(groupId)`.
+
+The second case closes the stale-invite-resync gap: the invitee
+materialised local state from the invite's embedded timestamp, which
+may be days older than the current group epoch if the group churned
+between invite-send and invite-accept. Receiving the snapshot
+immediately reconciles the invitee's local state to the creator's
+current view, instead of waiting for incremental membership records
+to arrive over subsequent epochs.
+
+iOS clients receiving the snapshot apply it the same way as any other
+msgType 41: verify the snapshot signature, replace the local member
+list with the snapshot's, advance the local epoch to the snapshot's
+epoch. No new logic required on iOS for this case — only the trigger
+on the sender side is new.
+
 ## Signed-input format (byte-exact)
 
 Each record carries a signature over a deterministic byte string. **iOS must produce the exact same bytes** or Android rejects on `crypto.verifySignature`.
@@ -321,7 +349,7 @@ Concrete checklist:
 
 - msgType 32 (`GROUP_POST`) — separate spec, see `GROUP_TRIPLE_RATCHET_PQ_DESIGN.md`.
 - Forward secrecy / post-compromise security ratcheting inside the group — that's a property of how the per-message keys are derived from the PCS root, also in the PQ design doc.
-- Recovery from missing membership records — partially covered by msgType 41 snapshot but not fully (no spec for triggering a snapshot send).
+- Recovery from missing membership records — covered by msgType 41 snapshot and the "When to send a snapshot" section above (2026-06-09 update).
 
 ## Quick interop sanity test for iOS team
 

@@ -895,6 +895,10 @@ class GroupTrManagerImpl
 				.GroupTrInviteResponseReceivedEvent.Kind.ACCEPT) {
 			try {
 				addMember(grouptrGid, pis.contactPubKey, pis.contactName);
+				try {
+					sendMemberListSnapshot(grouptrGid);
+				} catch (DbException ex) {
+				}
 			} catch (DbException ex) {
 			}
 		}
