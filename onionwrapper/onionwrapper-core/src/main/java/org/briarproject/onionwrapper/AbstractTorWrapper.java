@@ -304,18 +304,17 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 		ioExecutor.execute(() -> {
 			boolean started = false;
 
-			Scanner stdout = new Scanner(torProcess.getInputStream());
+			try (Scanner stdout = new Scanner(torProcess.getInputStream())) {
+				if (stdout.hasNextLine()) LOG.info(stdout.nextLine());
 
-			if (stdout.hasNextLine()) LOG.info(stdout.nextLine());
-
-			while (stdout.hasNextLine()) {
-				String line = stdout.nextLine();
-				if (!started && line.contains("Opened Control listener")) {
-					success.add(true);
-					started = true;
+				while (stdout.hasNextLine()) {
+					String line = stdout.nextLine();
+					if (!started && line.contains("Opened Control listener")) {
+						success.add(true);
+						started = true;
+					}
 				}
 			}
-			stdout.close();
 
 			if (!started) success.add(false);
 
