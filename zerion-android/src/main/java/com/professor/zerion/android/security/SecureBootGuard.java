@@ -217,16 +217,18 @@ public final class SecureBootGuard {
 			return out == null ? null : out.toString();
 		} catch (Throwable ignored) {
 		}
+		Process p = null;
 		try {
-			Process p = new ProcessBuilder("/system/bin/getprop", key)
+			p = new ProcessBuilder("/system/bin/getprop", key)
 					.redirectErrorStream(true).start();
 			try (BufferedReader br = new BufferedReader(new InputStreamReader(
 					p.getInputStream(), StandardCharsets.UTF_8))) {
 				String line = br.readLine();
-				p.destroyForcibly();
 				return line == null ? null : line.trim();
 			}
 		} catch (Exception ignored) {
+		} finally {
+			if (p != null) p.destroyForcibly();
 		}
 		return null;
 	}
