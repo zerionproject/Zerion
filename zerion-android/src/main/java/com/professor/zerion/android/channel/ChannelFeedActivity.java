@@ -53,7 +53,7 @@ import javax.inject.Inject;
 public class ChannelFeedActivity extends ZerionActivity
 		implements EventListener {
 
-	private static final String EXTRA_CHANNEL_ID =
+	public static final String EXTRA_CHANNEL_ID =
 			"com.professor.zerion.android.channel.CHANNEL_ID";
 
 	public static Intent intent(Context ctx, byte[] channelId) {

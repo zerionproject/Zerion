@@ -22,6 +22,7 @@ import androidx.lifecycle.MutableLiveData;
 
 import static android.widget.Toast.LENGTH_SHORT;
 import static com.professor.zerion.android.settings.SettingsFragment.SETTINGS_NAMESPACE;
+import static com.professor.zerion.android.api.AndroidNotificationManager.PREF_NOTIFY_CHANNEL;
 import static com.professor.zerion.android.api.AndroidNotificationManager.PREF_NOTIFY_GROUP;
 import static com.professor.zerion.android.api.AndroidNotificationManager.PREF_NOTIFY_PRIVATE;
 import static com.professor.zerion.android.api.AndroidNotificationManager.PREF_NOTIFY_RINGTONE_NAME;
@@ -40,6 +41,8 @@ class NotificationsManager {
 	private final MutableLiveData<Boolean> notifyPrivateMessages =
 			new MutableLiveData<>();
 	private final MutableLiveData<Boolean> notifyGroupMessages =
+			new MutableLiveData<>();
+	private final MutableLiveData<Boolean> notifyChannelPosts =
 			new MutableLiveData<>();
 	private final MutableLiveData<Boolean> notifyVibration =
 			new MutableLiveData<>();
@@ -61,6 +64,8 @@ class NotificationsManager {
 				PREF_NOTIFY_PRIVATE, true));
 		notifyGroupMessages.postValue(settings.getBoolean(
 				PREF_NOTIFY_GROUP, true));
+		notifyChannelPosts.postValue(settings.getBoolean(
+				PREF_NOTIFY_CHANNEL, true));
 		notifyVibration.postValue(settings.getBoolean(
 				PREF_NOTIFY_VIBRATION, true));
 		ringtoneName = settings.get(PREF_NOTIFY_RINGTONE_NAME);
@@ -105,6 +110,10 @@ class NotificationsManager {
 
 	LiveData<Boolean> getNotifyGroupMessages() {
 		return notifyGroupMessages;
+	}
+
+	LiveData<Boolean> getNotifyChannelPosts() {
+		return notifyChannelPosts;
 	}
 
 	LiveData<Boolean> getNotifyVibration() {

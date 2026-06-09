@@ -17,6 +17,7 @@ public interface AndroidNotificationManager {
 
     String PREF_NOTIFY_GROUP = "pref_key_notify_group";
     String PREF_NOTIFY_PRIVATE = "pref_key_notify_private";
+    String PREF_NOTIFY_CHANNEL = "pref_key_notify_channel";
     String PREF_NOTIFY_VOICE_CALLS = "pref_key_notify_voice_calls";
     String PREF_NOTIFY_RINGTONE_NAME = "pref_key_notify_ringtone_name";
     String PREF_NOTIFY_RINGTONE_URI = "pref_key_notify_ringtone_uri";
@@ -27,17 +28,22 @@ public interface AndroidNotificationManager {
     void showPrivateMessageNotification(ContactId c);
     void showGroupMessageNotification(GroupId g);
     void showGroupTrPostNotification(byte[] groupTrId);
+    void showChannelPostNotification(byte[] channelId);
+    void showChannelCommentNotification(byte[] channelId);
     void clearContactNotification(ContactId c);
     void clearGroupMessageNotification(GroupId g);
     void clearGroupTrPostNotification(byte[] groupTrId);
+    void clearChannelNotification(byte[] channelId);
     void clearAllContactNotifications();
     void clearAllGroupMessageNotifications();
     void clearAllContactAddedNotifications();
     void blockNotification(GroupId g);
     void blockGroupTrNotification(byte[] groupTrId);
+    void blockChannelNotification(byte[] channelId);
     void blockContactNotification(ContactId c);
     void unblockNotification(GroupId g);
     void unblockGroupTrNotification(byte[] groupTrId);
+    void unblockChannelNotification(byte[] channelId);
     void unblockContactNotification(ContactId c);
     void blockAllGroupMessageNotifications();
     void unblockAllGroupMessageNotifications();

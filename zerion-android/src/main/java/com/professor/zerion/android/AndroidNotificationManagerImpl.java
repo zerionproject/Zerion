@@ -43,6 +43,8 @@ import org.briarproject.briar.api.messaging.VoiceSignal;
 import org.briarproject.briar.api.messaging.VoiceSignalFactory;
 import org.briarproject.briar.api.messaging.VoiceSignalHeader;
 import org.briarproject.briar.api.messaging.VoiceSignalType;
+import org.briarproject.briar.api.channel.event.ChannelCommentReceivedEvent;
+import org.briarproject.briar.api.channel.event.ChannelPostReceivedEvent;
 import org.briarproject.briar.api.messaging.event.GroupPostReceivedEvent;
 import org.briarproject.briar.api.messaging.event.PrivateMessageReceivedEvent;
 import org.briarproject.briar.api.messaging.event.VoiceSignalReceivedEvent;
@@ -117,6 +119,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	private static final int REMINDER_NOTIFICATION_ID = 6;
 	static final int CONTACT_NOTIFICATION_ID_BASE = 1000;
 	static final int GROUP_TR_NOTIFICATION_ID_BASE = 5000;
+	static final int CHANNEL_NOTIFICATION_ID_BASE = 9000;
 
 	private final SettingsManager settingsManager;
 	private final AndroidExecutor androidExecutor;
@@ -135,6 +138,8 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	private final Multiset<GroupId> groupCounts = new Multiset<>();
 	private final Multiset<String> groupTrCounts = new Multiset<>();
 	private final Set<Integer> activeGroupTrNotificationIds = new HashSet<>();
+	private final Multiset<String> channelCounts = new Multiset<>();
+	private final Set<Integer> activeChannelNotificationIds = new HashSet<>();
 	private int contactAddedTotal = 0;
 	private int nextRequestId = 0;
 	@Nullable
@@ -143,6 +148,8 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	private GroupId blockedGroup = null;
 	@Nullable
 	private String blockedGroupTr = null;
+	@Nullable
+	private String blockedChannel = null;
 	private boolean blockSignInReminder = false;
 	private boolean blockGroups = false;
 	private long lastSound = 0;
@@ -298,6 +305,12 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		} else if (e instanceof GroupPostReceivedEvent) {
 			GroupPostReceivedEvent g = (GroupPostReceivedEvent) e;
 			showGroupTrPostNotification(g.getGroupId());
+		} else if (e instanceof ChannelPostReceivedEvent) {
+			ChannelPostReceivedEvent c = (ChannelPostReceivedEvent) e;
+			if (!c.isLocal()) showChannelPostNotification(c.getChannelId());
+		} else if (e instanceof ChannelCommentReceivedEvent) {
+			ChannelCommentReceivedEvent c = (ChannelCommentReceivedEvent) e;
+			showChannelCommentNotification(c.getChannelId());
 		} else if (e instanceof ContactAddedEvent) {
 			ContactAddedEvent c = (ContactAddedEvent) e;
 			if (!c.isVerified()) showContactAddedNotification();
@@ -623,6 +636,100 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		androidExecutor.runOnUiThread(() -> {
 			String hex = StringUtils.toHexString(groupTrId);
 			if (hex.equals(blockedGroupTr)) blockedGroupTr = null;
+		});
+	}
+
+	@Override
+	public void showChannelPostNotification(byte[] channelId) {
+		androidExecutor.runOnUiThread(() -> {
+			String hex = StringUtils.toHexString(channelId);
+			if (hex.equals(blockedChannel)) return;
+			if (!settings.getBoolean(PREF_NOTIFY_CHANNEL, true)) return;
+			channelCounts.add(hex);
+			postChannelNotification(channelId, hex, true);
+		});
+	}
+
+	@Override
+	public void showChannelCommentNotification(byte[] channelId) {
+		androidExecutor.runOnUiThread(() -> {
+			String hex = StringUtils.toHexString(channelId);
+			if (hex.equals(blockedChannel)) return;
+			if (!settings.getBoolean(PREF_NOTIFY_CHANNEL, true)) return;
+			channelCounts.add(hex);
+			postChannelNotification(channelId, hex, true);
+		});
+	}
+
+	@Override
+	public void clearChannelNotification(byte[] channelId) {
+		androidExecutor.runOnUiThread(() -> {
+			String hex = StringUtils.toHexString(channelId);
+			if (channelCounts.removeAll(hex) > 0) {
+				int id = channelNotificationId(hex);
+				notificationManager.cancel(id);
+				activeChannelNotificationIds.remove(id);
+			}
+		});
+	}
+
+	@UiThread
+	private void clearAllChannelNotifications() {
+		channelCounts.clear();
+		for (int id : activeChannelNotificationIds) {
+			notificationManager.cancel(id);
+		}
+		activeChannelNotificationIds.clear();
+	}
+
+	private static int channelNotificationId(String hex) {
+		return CHANNEL_NOTIFICATION_ID_BASE
+				+ (hex.hashCode() & 0x0FFFFFFF);
+	}
+
+	@UiThread
+	private void postChannelNotification(byte[] channelId, String hex,
+			boolean mayAlertAgain) {
+		int count = channelCounts.getCount(hex);
+		if (count == 0) return;
+		ZerionNotificationBuilder b =
+				new ZerionNotificationBuilder(appContext, GROUP_CHANNEL_ID);
+		b.setSmallIcon(R.drawable.logo);
+		b.setColorRes(R.color.zerion_primary);
+		b.setContentTitle(appContext.getText(R.string.app_name));
+		b.setContentText(appContext.getResources().getQuantityString(
+				R.plurals.channel_post_notification_text, count, count));
+		b.setNumber(count);
+		b.setNotificationCategory(CATEGORY_SOCIAL);
+		if (mayAlertAgain) setAlertProperties(b);
+		Intent i = new Intent(appContext,
+				com.professor.zerion.android.channel.ChannelFeedActivity.class);
+		i.putExtra(com.professor.zerion.android.channel.ChannelFeedActivity
+				.EXTRA_CHANNEL_ID, channelId);
+		i.setData(Uri.parse("zerion://channel/" + hex));
+		i.setFlags(FLAG_ACTIVITY_CLEAR_TOP);
+		TaskStackBuilder t = TaskStackBuilder.create(appContext);
+		t.addParentStack(
+				com.professor.zerion.android.channel.ChannelFeedActivity.class);
+		t.addNextIntent(i);
+		b.setContentIntent(t.getPendingIntent(nextRequestId++,
+				getImmutableFlags(0)));
+		int id = channelNotificationId(hex);
+		activeChannelNotificationIds.add(id);
+		notificationManager.notify(id, b.build());
+	}
+
+	@Override
+	public void blockChannelNotification(byte[] channelId) {
+		androidExecutor.runOnUiThread(() ->
+				blockedChannel = StringUtils.toHexString(channelId));
+	}
+
+	@Override
+	public void unblockChannelNotification(byte[] channelId) {
+		androidExecutor.runOnUiThread(() -> {
+			String hex = StringUtils.toHexString(channelId);
+			if (hex.equals(blockedChannel)) blockedChannel = null;
 		});
 	}
 

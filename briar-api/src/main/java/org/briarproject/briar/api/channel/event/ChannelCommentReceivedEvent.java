@@ -7,28 +7,22 @@ import javax.annotation.concurrent.Immutable;
 
 @Immutable
 @NotNullByDefault
-public class ChannelPostReceivedEvent extends Event {
+public class ChannelCommentReceivedEvent extends Event {
 
 	private final byte[] channelId;
-	private final long seqNum;
-	private final boolean isLocal;
+	private final long parentPostSeqNum;
 
-	public ChannelPostReceivedEvent(byte[] channelId, long seqNum,
-			boolean isLocal) {
+	public ChannelCommentReceivedEvent(byte[] channelId,
+			long parentPostSeqNum) {
 		this.channelId = channelId;
-		this.seqNum = seqNum;
-		this.isLocal = isLocal;
+		this.parentPostSeqNum = parentPostSeqNum;
 	}
 
 	public byte[] getChannelId() {
 		return channelId;
 	}
 
-	public long getSeqNum() {
-		return seqNum;
-	}
-
-	public boolean isLocal() {
-		return isLocal;
+	public long getParentPostSeqNum() {
+		return parentPostSeqNum;
 	}
 }

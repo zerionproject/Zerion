@@ -26,6 +26,7 @@ import org.briarproject.briar.api.channel.ChannelPost;
 import org.briarproject.briar.api.channel.ChannelState;
 import org.briarproject.briar.api.channel.ChannelSubscriber;
 import org.briarproject.briar.api.channel.ChannelTransport;
+import org.briarproject.briar.api.channel.event.ChannelCommentReceivedEvent;
 import org.briarproject.briar.api.channel.event.ChannelPostReceivedEvent;
 import org.briarproject.briar.api.channel.event.ChannelStateChangedEvent;
 import org.briarproject.nullsafety.NotNullByDefault;
@@ -696,6 +697,8 @@ class ChannelManagerImpl
 				continue;
 			}
 			commentStore.putComment(channelId, c);
+			eventBus.broadcast(new ChannelCommentReceivedEvent(channelId,
+					c.getParentPostSeqNum()));
 			accepted = true;
 		}
 		if (accepted) {
@@ -1011,7 +1014,8 @@ class ChannelManagerImpl
 		}
 		ChannelState updated = withSeq(s, nextSeq);
 		store.putChannel(updated);
-		eventBus.broadcast(new ChannelPostReceivedEvent(channelId, nextSeq));
+		eventBus.broadcast(new ChannelPostReceivedEvent(channelId, nextSeq,
+				true));
 	}
 
 	@Override
@@ -1634,6 +1638,8 @@ class ChannelManagerImpl
 							req.body, req.authorName,
 							req.signerEd25519, req.signerMlDsa,
 							req.timestampHourMs, req.signature));
+			eventBus.broadcast(new ChannelCommentReceivedEvent(channelId,
+					req.parentPostSeqNum));
 			return safeCommentAck(true);
 		} catch (IOException | DbException ex) {
 			return safeCommentAck(false);
@@ -2615,7 +2621,7 @@ class ChannelManagerImpl
 		store.putChannel(updated);
 		store.setUnread(channelId, store.getUnread(channelId) + 1);
 		eventBus.broadcast(new ChannelPostReceivedEvent(channelId,
-				incoming.getSeqNum()));
+				incoming.getSeqNum(), false));
 		fireEvent(channelId,
 				ChannelStateChangedEvent.Kind.UNREAD_COUNT_CHANGED);
 	}

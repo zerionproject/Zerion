@@ -33,6 +33,16 @@
 	<SwitchPreferenceCompat
 		android:defaultValue="true"
 		android:enabled="true"
+		android:key="notifyChannelPosts"
+		android:persistent="false"
+		android:summary="@string/notify_channel_posts_setting_summary"
+		android:title="@string/notify_channel_posts_setting_title"
+		app:iconSpaceReserved="false"
+		app:singleLineTitle="false" />
+
+	<SwitchPreferenceCompat
+		android:defaultValue="true"
+		android:enabled="true"
 		android:key="notifyVibration"
 		android:persistent="false"
 		android:title="@string/notify_vibration_setting"

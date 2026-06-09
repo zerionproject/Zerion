@@ -460,6 +460,10 @@
 		<item quantity="one">New private message.</item>
 		<item quantity="other">%d new private messages.</item>
 	</plurals>
+	<plurals name="channel_post_notification_text">
+		<item quantity="one">New channel activity</item>
+		<item quantity="other">%d new channel updates</item>
+	</plurals>
 	<plurals name="group_message_notification_text">
 		<item quantity="one">New group message.</item>
 		<item quantity="other">%d new group messages.</item>
@@ -1263,6 +1267,9 @@
 	<string name="notify_group_messages_setting_title">Group messages</string>
 	<string name="notify_group_messages_setting_summary">Show alerts for group messages</string>
 	<string name="notify_group_messages_setting_summary_26">Configure alerts for group messages</string>
+	<string name="notify_channel_posts_setting_title">Channels</string>
+	<string name="notify_channel_posts_setting_summary">Show alerts for new channel posts and comments</string>
+	<string name="notify_channel_posts_setting_summary_26">Configure alerts for new channel posts and comments</string>
 	<string name="notify_voice_calls_setting_title">Voice calls</string>
 	<string name="notify_voice_calls_setting_summary">Show alerts for incoming voice calls</string>
 	<string name="notify_voice_calls_setting_summary_26">Configure alerts for incoming voice calls</string>

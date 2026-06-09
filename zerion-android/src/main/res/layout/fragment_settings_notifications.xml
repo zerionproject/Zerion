@@ -118,6 +118,39 @@
 			</LinearLayout>
 
 			<LinearLayout
+				android:id="@+id/notify_channel_posts_card"
+				style="@style/Zerion.Settings.Row.Clickable">
+
+				<ImageView
+					style="@style/Zerion.Settings.Row.Icon"
+					android:src="@drawable/ic_group"
+					android:importantForAccessibility="no" />
+
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:orientation="vertical">
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Title"
+						android:text="@string/notify_channel_posts_setting_title" />
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Summary"
+						android:text="@string/notify_channel_posts_setting_summary" />
+
+				</LinearLayout>
+
+				<com.google.android.material.switchmaterial.SwitchMaterial
+					android:id="@+id/notify_channel_posts_switch"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:checked="true" />
+
+			</LinearLayout>
+
+			<LinearLayout
 				android:id="@+id/notify_voice_calls_card"
 				style="@style/Zerion.Settings.Row.Clickable">
 

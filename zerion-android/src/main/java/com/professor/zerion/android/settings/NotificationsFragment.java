@@ -49,6 +49,7 @@ import static com.professor.zerion.android.AppModule.getAndroidComponent;
 import static com.professor.zerion.android.activity.RequestCodes.REQUEST_RINGTONE;
 import static com.professor.zerion.android.api.AndroidNotificationManager.CONTACT_CHANNEL_ID;
 import static com.professor.zerion.android.api.AndroidNotificationManager.GROUP_CHANNEL_ID;
+import static com.professor.zerion.android.api.AndroidNotificationManager.PREF_NOTIFY_CHANNEL;
 import static com.professor.zerion.android.api.AndroidNotificationManager.PREF_NOTIFY_GROUP;
 import static com.professor.zerion.android.api.AndroidNotificationManager.PREF_NOTIFY_PRIVATE;
 import static com.professor.zerion.android.api.AndroidNotificationManager.PREF_NOTIFY_VOICE_CALLS;
@@ -75,6 +76,7 @@ public class NotificationsFragment extends Fragment {
 	private SwitchMaterial notifySignInSwitch;
 	private SwitchMaterial notifyPrivateMessagesSwitch;
 	private SwitchMaterial notifyGroupMessagesSwitch;
+	private SwitchMaterial notifyChannelPostsSwitch;
 	private SwitchMaterial notifyVoiceCallsSwitch;
 	private SwitchMaterial notifyVibrationSwitch;
 	private SwitchMaterial notifyQuickReplySwitch;
@@ -82,6 +84,7 @@ public class NotificationsFragment extends Fragment {
 	private TextView notifySoundValue;
 	private View notifyPrivateMessagesCard;
 	private View notifyGroupMessagesCard;
+	private View notifyChannelPostsCard;
 	private View notifyVoiceCallsCard;
 	private View notifyVibrationCard;
 
@@ -108,6 +111,7 @@ public class NotificationsFragment extends Fragment {
 		notifySignInSwitch = view.findViewById(R.id.notify_sign_in_switch);
 		notifyPrivateMessagesSwitch = view.findViewById(R.id.notify_private_messages_switch);
 		notifyGroupMessagesSwitch = view.findViewById(R.id.notify_group_messages_switch);
+		notifyChannelPostsSwitch = view.findViewById(R.id.notify_channel_posts_switch);
 		notifyVoiceCallsSwitch = view.findViewById(R.id.notify_voice_calls_switch);
 		notifyVibrationSwitch = view.findViewById(R.id.notify_vibration_switch);
 		notifyQuickReplySwitch = view.findViewById(R.id.notify_quick_reply_switch);
@@ -115,6 +119,7 @@ public class NotificationsFragment extends Fragment {
 		notifySoundValue = view.findViewById(R.id.notify_sound_value);
 		notifyPrivateMessagesCard = view.findViewById(R.id.notify_private_messages_card);
 		notifyGroupMessagesCard = view.findViewById(R.id.notify_group_messages_card);
+		notifyChannelPostsCard = view.findViewById(R.id.notify_channel_posts_card);
 		notifyVoiceCallsCard = view.findViewById(R.id.notify_voice_calls_card);
 		notifyVibrationCard = view.findViewById(R.id.notify_vibration_card);
 
@@ -174,6 +179,17 @@ public class NotificationsFragment extends Fragment {
 			notifyGroupMessagesSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
 				if (buttonView.isPressed()) {
 					viewModel.settingsStore.putBoolean(PREF_NOTIFY_GROUP, isChecked);
+				}
+			});
+		});
+
+		nm.getNotifyChannelPosts().observe(getViewLifecycleOwner(), enabled -> {
+			notifyChannelPostsSwitch.setOnCheckedChangeListener(null);
+			notifyChannelPostsSwitch.setChecked(enabled);
+			notifyChannelPostsSwitch.setEnabled(true);
+			notifyChannelPostsSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+				if (buttonView.isPressed()) {
+					viewModel.settingsStore.putBoolean(PREF_NOTIFY_CHANNEL, isChecked);
 				}
 			});
 		});
