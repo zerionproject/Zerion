@@ -1480,73 +1480,79 @@ class GroupTrManagerImpl
 	@Override
 	public void sendGroupPost(byte[] groupId, byte[] body,
 			long autoDeleteTimerMs) throws DbException {
-		GroupTrState s = getGroup(groupId);
-		if (s == null) {
-			throw new GroupTrAuthException(
-					GroupTrAuthException.Reason.GROUP_NOT_FOUND);
-		}
-		if (s.isDissolved()) {
-			throw new GroupTrAuthException(
-					GroupTrAuthException.Reason.GROUP_DISSOLVED);
-		}
-		long effectiveTtl = autoDeleteTimerMs > 0
-				? autoDeleteTimerMs
-				: s.getDefaultAutoDeleteTimerMs();
-		LocalAuthor la = db.transactionWithResult(true,
-				identityManager::getLocalAuthor);
-		byte[] localPub = la.getPublicKey().getEncoded();
-		boolean isMember = false;
-		for (GroupTrMember m : s.getMembers()) {
-			if (Arrays.equals(m.getPubKey(), localPub)) {
-				isMember = true;
-				break;
+		java.util.concurrent.locks.ReentrantLock lock = lockFor(groupId);
+		lock.lock();
+		try {
+			GroupTrState s = getGroup(groupId);
+			if (s == null) {
+				throw new GroupTrAuthException(
+						GroupTrAuthException.Reason.GROUP_NOT_FOUND);
 			}
-		}
-		if (!isMember) {
-			throw new GroupTrAuthException(
-					GroupTrAuthException.Reason.NOT_A_MEMBER);
-		}
-		PrivateKey signingKey = la.getPrivateKey();
-		long timestamp = clock.currentTimeMillis();
-		int epoch = (int) s.getEpoch();
-		String alias = getStealthName(groupId);
-		String senderName = alias != null ? alias : la.getName();
-		byte[] nameHash = crypto.hash(
-				"org.briarproject.zerion/GROUP_POST_NAME",
-				senderName.getBytes(
-						java.nio.charset.StandardCharsets.UTF_8));
-		byte[] ctHash = crypto.hash(
-				"org.briarproject.zerion/GROUP_POST_CT", body);
-		byte[] signed = new byte[32 + 4 + 32 + nameHash.length
-				+ ctHash.length];
-		System.arraycopy(groupId, 0, signed, 0, 32);
-		for (int i = 0; i < 4; i++) {
-			signed[32 + i] = (byte) (epoch >>> ((3 - i) * 8));
-		}
-		System.arraycopy(localPub, 0, signed, 36, 32);
-		System.arraycopy(nameHash, 0, signed, 68, nameHash.length);
-		System.arraycopy(ctHash, 0, signed, 68 + nameHash.length,
-				ctHash.length);
-		byte[] sig = signOrThrow(
-				"org.briarproject.zerion/GROUP_POST",
-				signed, signingKey);
-		final String finalSenderName = senderName;
-		db.transaction(false, txn -> {
+			if (s.isDissolved()) {
+				throw new GroupTrAuthException(
+						GroupTrAuthException.Reason.GROUP_DISSOLVED);
+			}
+			long effectiveTtl = autoDeleteTimerMs > 0
+					? autoDeleteTimerMs
+					: s.getDefaultAutoDeleteTimerMs();
+			LocalAuthor la = db.transactionWithResult(true,
+					identityManager::getLocalAuthor);
+			byte[] localPub = la.getPublicKey().getEncoded();
+			boolean isMember = false;
 			for (GroupTrMember m : s.getMembers()) {
-				if (Arrays.equals(m.getPubKey(), localPub)) continue;
-				Contact c = findContactByPubKey(txn, m.getPubKey());
-				if (c == null) continue;
-				BdfList msgBody = effectiveTtl > 0
-						? BdfList.of(32L, groupId, (long) epoch,
-								localPub, finalSenderName, body, sig,
-								effectiveTtl)
-						: BdfList.of(32L, groupId, (long) epoch,
-								localPub, finalSenderName, body, sig);
-				dispatchToContact(txn, c, timestamp, msgBody);
+				if (Arrays.equals(m.getPubKey(), localPub)) {
+					isMember = true;
+					break;
+				}
 			}
-		});
-		cacheLocalPost(groupId, localPub, finalSenderName, body,
-				timestamp, epoch, effectiveTtl);
+			if (!isMember) {
+				throw new GroupTrAuthException(
+						GroupTrAuthException.Reason.NOT_A_MEMBER);
+			}
+			PrivateKey signingKey = la.getPrivateKey();
+			long timestamp = clock.currentTimeMillis();
+			int epoch = (int) s.getEpoch();
+			String alias = getStealthName(groupId);
+			String senderName = alias != null ? alias : la.getName();
+			byte[] nameHash = crypto.hash(
+					"org.briarproject.zerion/GROUP_POST_NAME",
+					senderName.getBytes(
+							java.nio.charset.StandardCharsets.UTF_8));
+			byte[] ctHash = crypto.hash(
+					"org.briarproject.zerion/GROUP_POST_CT", body);
+			byte[] signed = new byte[32 + 4 + 32 + nameHash.length
+					+ ctHash.length];
+			System.arraycopy(groupId, 0, signed, 0, 32);
+			for (int i = 0; i < 4; i++) {
+				signed[32 + i] = (byte) (epoch >>> ((3 - i) * 8));
+			}
+			System.arraycopy(localPub, 0, signed, 36, 32);
+			System.arraycopy(nameHash, 0, signed, 68, nameHash.length);
+			System.arraycopy(ctHash, 0, signed, 68 + nameHash.length,
+					ctHash.length);
+			byte[] sig = signOrThrow(
+					"org.briarproject.zerion/GROUP_POST",
+					signed, signingKey);
+			final String finalSenderName = senderName;
+			db.transaction(false, txn -> {
+				for (GroupTrMember m : s.getMembers()) {
+					if (Arrays.equals(m.getPubKey(), localPub)) continue;
+					Contact c = findContactByPubKey(txn, m.getPubKey());
+					if (c == null) continue;
+					BdfList msgBody = effectiveTtl > 0
+							? BdfList.of(32L, groupId, (long) epoch,
+									localPub, finalSenderName, body, sig,
+									effectiveTtl)
+							: BdfList.of(32L, groupId, (long) epoch,
+									localPub, finalSenderName, body, sig);
+					dispatchToContact(txn, c, timestamp, msgBody);
+				}
+			});
+			cacheLocalPost(groupId, localPub, finalSenderName, body,
+					timestamp, epoch, effectiveTtl);
+		} finally {
+			lock.unlock();
+		}
 	}
 
 	@Override
@@ -1599,26 +1605,32 @@ class GroupTrManagerImpl
 	@Override
 	public void addMember(byte[] groupId, byte[] addedPubKey,
 			String addedName) throws DbException {
-		GroupTrState s = requireWritable(groupId);
-		requireLocalIsCreator(s);
-		if (s.getEpoch() >= Integer.MAX_VALUE - 1) {
-			throw new GroupTrAuthException(
-					GroupTrAuthException.Reason.EPOCH_OVERFLOW);
+		java.util.concurrent.locks.ReentrantLock lock = lockFor(groupId);
+		lock.lock();
+		try {
+			GroupTrState s = requireWritable(groupId);
+			requireLocalIsCreator(s);
+			if (s.getEpoch() >= Integer.MAX_VALUE - 1) {
+				throw new GroupTrAuthException(
+						GroupTrAuthException.Reason.EPOCH_OVERFLOW);
+			}
+			LocalAuthor la = db.transactionWithResult(true,
+					identityManager::getLocalAuthor);
+			PrivateKey signingKey = la.getPrivateKey();
+			long timestamp = clock.currentTimeMillis();
+			int newEpoch = (int) s.getEpoch() + 1;
+			byte[] signed = membershipSignedInput(groupId, addedPubKey,
+					newEpoch, timestamp, (byte) 0x01);
+			byte[] sig = signOrThrow(SIGNING_LABEL_GROUP_MEMBERSHIP, signed,
+					signingKey);
+			BdfList body = BdfList.of(33L, groupId, addedPubKey, addedName,
+					(long) newEpoch, timestamp, sig);
+			db.transaction(false, txn ->
+					fanOutToAllPlusTarget(txn, s, body, timestamp, addedPubKey));
+			applyLocalAdd(s, addedPubKey, addedName, timestamp, newEpoch);
+		} finally {
+			lock.unlock();
 		}
-		LocalAuthor la = db.transactionWithResult(true,
-				identityManager::getLocalAuthor);
-		PrivateKey signingKey = la.getPrivateKey();
-		long timestamp = clock.currentTimeMillis();
-		int newEpoch = (int) s.getEpoch() + 1;
-		byte[] signed = membershipSignedInput(groupId, addedPubKey,
-				newEpoch, timestamp, (byte) 0x01);
-		byte[] sig = signOrThrow(SIGNING_LABEL_GROUP_MEMBERSHIP, signed,
-				signingKey);
-		BdfList body = BdfList.of(33L, groupId, addedPubKey, addedName,
-				(long) newEpoch, timestamp, sig);
-		db.transaction(false, txn ->
-				fanOutToAllPlusTarget(txn, s, body, timestamp, addedPubKey));
-		applyLocalAdd(s, addedPubKey, addedName, timestamp, newEpoch);
 	}
 
 	private void fanOutToAllPlusTarget(Transaction txn, GroupTrState s,
