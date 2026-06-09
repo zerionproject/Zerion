@@ -25,7 +25,7 @@ import javax.annotation.Nullable;
 import androidx.annotation.DimenRes;
 import androidx.annotation.UiThread;
 import androidx.constraintlayout.widget.ConstraintLayout;
-import de.hdodenhof.circleimageview.CircleImageView;
+import com.google.android.material.imageview.ShapeableImageView;
 import im.delight.android.identicons.IdenticonDrawable;
 
 import static android.content.Context.LAYOUT_INFLATER_SERVICE;
@@ -47,7 +47,7 @@ public class AuthorView extends ConstraintLayout {
 	public static final int RSS_FEED = 4;
 	public static final int RSS_FEED_REBLOGGED = 5;
 
-	private final CircleImageView avatar;
+	private final ShapeableImageView avatar;
 	private final ImageView avatarIcon;
 	private final TextView authorName;
 	private final Typeface authorNameTypeface;

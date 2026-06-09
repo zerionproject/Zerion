@@ -111,7 +111,7 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
-import de.hdodenhof.circleimageview.CircleImageView;
+import com.google.android.material.imageview.ShapeableImageView;
 
 import static android.view.Gravity.RIGHT;
 import static androidx.core.app.ActivityOptionsCompat.makeSceneTransitionAnimation;
@@ -202,7 +202,7 @@ public class ConversationActivity extends ZerionActivity
 	private ConversationVisitor visitor;
 	private ConversationAdapter adapter;
 	private Toolbar toolbar;
-	private CircleImageView toolbarAvatar;
+	private ShapeableImageView toolbarAvatar;
 	private ImageView toolbarStatus;
 	private TextView toolbarTitle;
 	private TextView toolbarSubtitle;
@@ -1610,7 +1610,7 @@ public class ConversationActivity extends ZerionActivity
 		ImageView fullScreenAvatar = dialog.findViewById(R.id.fullscreen_avatar);
 		ImageView closeButton = dialog.findViewById(R.id.close_button);
 
-		setAvatar((de.hdodenhof.circleimageview.CircleImageView) fullScreenAvatar, contactItem);
+		setAvatar((com.google.android.material.imageview.ShapeableImageView) fullScreenAvatar, contactItem);
 
 		closeButton.setOnClickListener(v -> dialog.dismiss());
 

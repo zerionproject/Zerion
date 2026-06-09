@@ -28,7 +28,7 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModelProvider;
-import de.hdodenhof.circleimageview.CircleImageView;
+import com.google.android.material.imageview.ShapeableImageView;
 
 import static android.app.Activity.RESULT_OK;
 import static android.view.View.GONE;
@@ -141,7 +141,7 @@ public class IntroductionMessageFragment extends BaseFragment
 	private static class ViewHolder {
 
 		private final ProgressBar progressBar;
-		private final CircleImageView avatar1, avatar2;
+		private final ShapeableImageView avatar1, avatar2;
 		private final TextView contactName1, contactName2;
 		private final TextView notPossible;
 		private final TextInputView message;

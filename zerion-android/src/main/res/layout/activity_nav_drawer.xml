@@ -38,7 +38,9 @@
 			app:layout_constraintStart_toStartOf="parent"
 			app:layout_constraintTop_toTopOf="parent">
 
-			<de.hdodenhof.circleimageview.CircleImageView
+			<com.google.android.material.imageview.ShapeableImageView
+
+				app:shapeAppearanceOverlay="@style/ShapeAppearance.Zerion.Circle"
 				android:id="@+id/profileAvatar"
 				android:layout_width="match_parent"
 				android:layout_height="match_parent"

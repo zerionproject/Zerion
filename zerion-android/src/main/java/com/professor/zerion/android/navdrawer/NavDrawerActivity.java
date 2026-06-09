@@ -33,7 +33,7 @@ import com.professor.zerion.android.vault.VaultManager;
 import com.professor.zerion.android.vault.ui.VaultDashboardFragment;
 import com.professor.zerion.android.view.AuthorView;
 import com.professor.zerion.android.widget.DonationDialogFragment;
-import de.hdodenhof.circleimageview.CircleImageView;
+import com.google.android.material.imageview.ShapeableImageView;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
@@ -95,7 +95,7 @@ public class NavDrawerActivity extends ZerionActivity implements
 	java.util.concurrent.Executor ioExecutor;
 
 	private MaterialCardView profileIcon;
-	private CircleImageView profileAvatar;
+	private ShapeableImageView profileAvatar;
 	private TextView toolbarTitle;
 	private ImageButton searchButton;
 	private ImageButton menuButton;

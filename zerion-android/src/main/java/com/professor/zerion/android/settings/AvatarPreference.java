@@ -11,7 +11,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import androidx.annotation.Nullable;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceViewHolder;
-import de.hdodenhof.circleimageview.CircleImageView;
+import com.google.android.material.imageview.ShapeableImageView;
 
 import static com.professor.zerion.android.view.AuthorView.setAvatar;
 
@@ -32,7 +32,7 @@ public class AvatarPreference extends Preference {
 		View v = holder.itemView;
 		if (info != null) {
 			TextView textViewUserName = v.findViewById(R.id.username);
-			CircleImageView imageViewAvatar = v.findViewById(R.id.avatarImage);
+			ShapeableImageView imageViewAvatar = v.findViewById(R.id.avatarImage);
 			textViewUserName.setText(info.getLocalAuthor().getName());
 			setAvatar(imageViewAvatar, info.getLocalAuthor().getId(),
 					info.getAuthorInfo());

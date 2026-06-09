@@ -14,7 +14,7 @@
 		android:layout_height="wrap_content"
 		app:layout_scrollFlags="scroll">
 
-		<de.hdodenhof.circleimageview.CircleImageView
+		<com.google.android.material.imageview.ShapeableImageView
 			android:id="@+id/avatarImage"
 			style="@style/ZerionAvatar"
 			android:layout_width="@dimen/listitem_picture_size"

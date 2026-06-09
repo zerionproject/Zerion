@@ -31,7 +31,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
-import de.hdodenhof.circleimageview.CircleImageView;
+import com.google.android.material.imageview.ShapeableImageView;
 
 import static com.professor.zerion.android.AppModule.getAndroidComponent;
 import static com.professor.zerion.android.TestingConstants.IS_DEBUG_BUILD;
@@ -49,7 +49,7 @@ public class SettingsFragment extends Fragment {
 	private SettingsViewModel viewModel;
 
 	private View avatarCard;
-	private CircleImageView avatarImage;
+	private ShapeableImageView avatarImage;
 	private TextView usernameText;
 	private View displayCard;
 	private View networkCard;

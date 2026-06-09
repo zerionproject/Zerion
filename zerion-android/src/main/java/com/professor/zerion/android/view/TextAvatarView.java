@@ -16,13 +16,13 @@ import javax.annotation.Nullable;
 
 import androidx.annotation.UiThread;
 import androidx.appcompat.widget.AppCompatTextView;
-import de.hdodenhof.circleimageview.CircleImageView;
+import com.google.android.material.imageview.ShapeableImageView;
 
 @UiThread
 public class TextAvatarView extends FrameLayout {
 
 	private final AppCompatTextView character;
-	private final CircleImageView background;
+	private final ShapeableImageView background;
 	private final TextView badge;
 
 	public TextAvatarView(Context context, @Nullable AttributeSet attrs) {

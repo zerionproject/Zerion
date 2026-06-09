@@ -7,7 +7,7 @@
 	android:paddingTop="@dimen/margin_medium"
 	android:paddingBottom="@dimen/margin_medium">
 
-	<de.hdodenhof.circleimageview.CircleImageView
+	<com.google.android.material.imageview.ShapeableImageView
 		android:id="@+id/avatarView"
 		style="@style/ZerionAvatar"
 		android:layout_width="@dimen/listitem_picture_size_small"

@@ -7,7 +7,7 @@
 	android:orientation="vertical"
 	android:paddingHorizontal="?dialogPreferredPadding">
 
-	<de.hdodenhof.circleimageview.CircleImageView
+	<com.google.android.material.imageview.ShapeableImageView
 		android:id="@+id/image"
 		style="@style/ZerionAvatar"
 		android:layout_width="@dimen/listitem_picture_size"

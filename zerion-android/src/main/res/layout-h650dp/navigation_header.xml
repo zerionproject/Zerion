@@ -15,12 +15,12 @@
         android:gravity="center_vertical">
 
         <!-- User Avatar -->
-        <de.hdodenhof.circleimageview.CircleImageView
+        <com.google.android.material.imageview.ShapeableImageView
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.Zerion.Circle"
             android:id="@+id/user_avatar"
             android:layout_width="64dp"
             android:layout_height="64dp"
-            android:src="@drawable/ic_person"
-            app:civ_border_width="0dp" />
+            android:src="@drawable/ic_person" />
 
         <!-- User Info -->
         <LinearLayout

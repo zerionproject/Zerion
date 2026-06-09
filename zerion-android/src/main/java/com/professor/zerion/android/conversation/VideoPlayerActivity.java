@@ -9,11 +9,12 @@ import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.google.android.exoplayer2.ExoPlayer;
-import com.google.android.exoplayer2.MediaItem;
-import com.google.android.exoplayer2.PlaybackException;
-import com.google.android.exoplayer2.Player;
-import com.google.android.exoplayer2.ui.PlayerView;
+import androidx.media3.common.MediaItem;
+import androidx.media3.common.PlaybackException;
+import androidx.media3.common.Player;
+import androidx.media3.common.util.UnstableApi;
+import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.ui.PlayerView;
 
 import org.briarproject.bramble.api.db.DatabaseExecutor;
 import org.briarproject.briar.api.attachment.Attachment;
@@ -39,6 +40,7 @@ import androidx.annotation.Nullable;
 
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
+@UnstableApi
 public class VideoPlayerActivity extends ZerionActivity {
 
 	static final String ATTACHMENT = "attachment";

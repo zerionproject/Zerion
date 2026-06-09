@@ -7,7 +7,7 @@
 	android:layout_height="wrap_content"
 	android:background="?attr/selectableItemBackground">
 
-	<de.hdodenhof.circleimageview.CircleImageView
+	<com.google.android.material.imageview.ShapeableImageView
 		android:id="@+id/avatarView"
 		style="@style/ZerionAvatar"
 		android:layout_width="@dimen/listitem_selectable_picture_size"

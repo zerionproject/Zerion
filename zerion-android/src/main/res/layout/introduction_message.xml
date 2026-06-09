@@ -10,7 +10,7 @@
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content">
 
-		<de.hdodenhof.circleimageview.CircleImageView
+		<com.google.android.material.imageview.ShapeableImageView
 			android:id="@+id/avatarContact1"
 			style="@style/ZerionAvatar"
 			android:layout_width="42dp"
@@ -51,7 +51,7 @@
 			app:tint="?attr/colorControlNormal"
 			tools:ignore="ContentDescription" />
 
-		<de.hdodenhof.circleimageview.CircleImageView
+		<com.google.android.material.imageview.ShapeableImageView
 			android:id="@+id/avatarContact2"
 			style="@style/ZerionAvatar"
 			android:layout_width="42dp"

@@ -8,7 +8,9 @@
     android:clickable="true"
     android:focusable="true">
 
-    <de.hdodenhof.circleimageview.CircleImageView
+    <com.google.android.material.imageview.ShapeableImageView
+
+    	app:shapeAppearanceOverlay="@style/ShapeAppearance.Zerion.Circle"
         android:id="@+id/fullscreen_avatar"
         android:layout_width="300dp"
         android:layout_height="300dp"

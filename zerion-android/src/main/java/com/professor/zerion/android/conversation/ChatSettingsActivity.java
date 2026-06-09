@@ -301,7 +301,7 @@ public class ChatSettingsActivity extends ZerionActivity {
 		ImageView fullScreenAvatar = dialog.findViewById(R.id.fullscreen_avatar);
 		ImageView closeButton = dialog.findViewById(R.id.close_button);
 
-		setAvatar((de.hdodenhof.circleimageview.CircleImageView) fullScreenAvatar, contactItem);
+		setAvatar((com.google.android.material.imageview.ShapeableImageView) fullScreenAvatar, contactItem);
 
 		closeButton.setOnClickListener(v -> dialog.dismiss());
 
