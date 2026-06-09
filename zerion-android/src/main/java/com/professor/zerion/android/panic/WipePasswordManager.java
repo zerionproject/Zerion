@@ -6,8 +6,8 @@ import android.os.Looper;
 import android.os.SystemClock;
 import android.util.Base64;
 
-import androidx.security.crypto.EncryptedSharedPreferences;
-import androidx.security.crypto.MasterKey;
+import com.professor.zerion.android.security.AndroidXPrefsMigration;
+import com.professor.zerion.android.security.ZerionEncryptedPrefs;
 
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
@@ -53,32 +53,18 @@ public class WipePasswordManager {
 	private static volatile WipePasswordManager instance;
 
 	private WipePasswordManager(Context context) throws SecurityException {
-		SharedPreferences prefs = null;
-		boolean secureStorage = false;
-
+		Context appCtx = context.getApplicationContext();
+		ZerionEncryptedPrefs prefs;
 		try {
-			MasterKey masterKey = new MasterKey.Builder(context.getApplicationContext())
-					.setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-					.build();
-
-			prefs = EncryptedSharedPreferences.create(
-					context.getApplicationContext(),
-					ENCRYPTED_PREFS_NAME,
-					masterKey,
-					EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-					EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-			);
-			secureStorage = true;
-		} catch (GeneralSecurityException | IOException e) {
+			prefs = ZerionEncryptedPrefs.create(appCtx, ENCRYPTED_PREFS_NAME);
+		} catch (RuntimeException e) {
 			throw new SecurityException("", e);
 		}
-
+		AndroidXPrefsMigration.migrateIfNeeded(appCtx, ENCRYPTED_PREFS_NAME,
+				prefs);
 		this.securePrefs = prefs;
-		this.secureStorageAvailable = secureStorage;
-
-		if (secureStorage) {
-			checkAndMigrateLegacyStorage(context);
-		}
+		this.secureStorageAvailable = true;
+		checkAndMigrateLegacyStorage(context);
 	}
 
 	@Nullable
@@ -99,19 +85,10 @@ public class WipePasswordManager {
 
 	public static boolean isSecureStorageAvailable(Context context) {
 		try {
-			MasterKey masterKey = new MasterKey.Builder(context.getApplicationContext())
-					.setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-					.build();
-
-			EncryptedSharedPreferences.create(
-					context.getApplicationContext(),
-					ENCRYPTED_PREFS_NAME + "_test",
-					masterKey,
-					EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-					EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-			);
+			ZerionEncryptedPrefs.create(context.getApplicationContext(),
+					ENCRYPTED_PREFS_NAME + "_test");
 			return true;
-		} catch (GeneralSecurityException | IOException e) {
+		} catch (RuntimeException e) {
 			return false;
 		}
 	}

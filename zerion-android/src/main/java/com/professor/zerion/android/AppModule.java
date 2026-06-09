@@ -5,8 +5,8 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.StrictMode;
 
-import androidx.security.crypto.EncryptedSharedPreferences;
-import androidx.security.crypto.MasterKey;
+import com.professor.zerion.android.security.AndroidXPrefsMigration;
+import com.professor.zerion.android.security.ZerionEncryptedPrefs;
 
 import com.vanniktech.emoji.RecentEmoji;
 
@@ -137,45 +137,15 @@ public class AppModule {
 		}
 
 		private static void initializeInternal(Application app) {
-			try {
-				MasterKey masterKey = buildHardenedMasterKey(
-						app.getApplicationContext());
-
-				securePrefs = EncryptedSharedPreferences.create(
-						app.getApplicationContext(),
-						"secure_prefs",
-						masterKey,
-						EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-						EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-				);
-
-				uiPrefs = EncryptedSharedPreferences.create(
-						app.getApplicationContext(),
-						"ui_prefs",
-						masterKey,
-						EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-						EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-				);
-			} catch (Exception e) {
-				throw new RuntimeException("EncryptedSharedPreferences init failed", e);
-			}
-		}
-
-		private static MasterKey buildHardenedMasterKey(android.content.Context ctx)
-				throws java.security.GeneralSecurityException, java.io.IOException {
-			if (android.os.Build.VERSION.SDK_INT >= 28) {
-				try {
-					return new MasterKey.Builder(ctx)
-							.setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-							.setRequestStrongBoxBacked(true)
-							.build();
-				} catch (android.security.keystore.StrongBoxUnavailableException ignored) {
-				} catch (java.security.GeneralSecurityException ignored) {
-				}
-			}
-			return new MasterKey.Builder(ctx)
-					.setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-					.build();
+			Context ctx = app.getApplicationContext();
+			ZerionEncryptedPrefs secure =
+					ZerionEncryptedPrefs.create(ctx, "secure_prefs");
+			ZerionEncryptedPrefs ui =
+					ZerionEncryptedPrefs.create(ctx, "ui_prefs");
+			AndroidXPrefsMigration.migrateIfNeeded(ctx, "secure_prefs", secure);
+			AndroidXPrefsMigration.migrateIfNeeded(ctx, "ui_prefs", ui);
+			securePrefs = secure;
+			uiPrefs = ui;
 		}
 
 		static SharedPreferences getSecurePrefs() {
