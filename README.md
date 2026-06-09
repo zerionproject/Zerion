@@ -203,6 +203,28 @@ Repo fingerprint: D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6888F704
 
 ---
 
+## Development & Auditing
+
+Transparency on how Zerion is built.
+
+**Large language models are used in two specific areas during Zerion's development:**
+
+- **Security audits and bug detection.** Pre-release codebase reviews, static-analysis sweeps, lock-leak detection, race-condition hunts, dependency CVE checks, and adversarial reviews of new code paths. The LLM proposes findings; every finding is independently verified against the source by a human reviewer before any commit lands. Findings that turn out to be wrong are discarded, not committed.
+- **Tooling and routine work.** Validator scripts that pin invariants into static checks, release-note drafting, documentation, mechanical refactors. Minimal, scoped use.
+
+**LLMs are NOT used to author:**
+
+- Cryptographic primitives (ML-KEM-768, ML-DSA-65, X25519, AES-256-GCM, HKDF, Argon2id, BLAKE2b, the IES engine)
+- Key management or session-state mutation logic
+- Wire-protocol framing, AEAD nonce derivation, or ratchet state machines
+- Anything that changes the on-wire bytes
+
+All security-critical code is human-authored and human-reviewed. The LLM is a tool for catching mistakes the human might miss; it is not a substitute for the human's judgment, and it does not have commit authority. Every commit, every change, every rationale is in this public git history.
+
+Full statement: [zerion.chat/blog/llm-use-in-zerion.html](https://zerion.chat/blog/llm-use-in-zerion.html)
+
+---
+
 ## Support Zerion
 
 Zerion has no investors, no ads, no subscription, and no telemetry. The project is funded entirely by donations from people who value private communication. If Zerion is useful to you, please consider supporting development:
