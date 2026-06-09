@@ -193,7 +193,7 @@ public class ZerionService extends Service {
 					lockManager.setLocked(true);
 				}
 			} else if (ACTION_EXIT.equals(action)) {
-				shutdown(true);
+				shutdownFromBackground();
 			}
 		}
 		return START_NOT_STICKY;
