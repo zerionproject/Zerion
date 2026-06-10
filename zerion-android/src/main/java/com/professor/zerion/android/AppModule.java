@@ -207,6 +207,9 @@ public class AppModule {
 								versionCode);
 					}
 				}
+			} catch (com.professor.zerion.android.security
+					.TorBinaryIntegrity.IntegrityException tampered) {
+				throw tampered;
 			} catch (RuntimeException ignored) {
 			}
 		}

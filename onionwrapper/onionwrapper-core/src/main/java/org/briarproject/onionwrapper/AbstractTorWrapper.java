@@ -22,6 +22,7 @@ import java.util.Scanner;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -394,7 +395,10 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 			controlSocket = null;
 			try {
 				if (torProcess != null) {
-					torProcess.waitFor();
+					if (!torProcess.waitFor(10, TimeUnit.SECONDS)) {
+						torProcess.destroyForcibly();
+						torProcess.waitFor(5, TimeUnit.SECONDS);
+					}
 				}
 			} finally {
 				torProcess = null;

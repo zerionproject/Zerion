@@ -1,7 +1,6 @@
 include ':bramble-api'
 include ':bramble-core'
 include ':bramble-android'
-include ':bramble-java'
 include ':briar-api'
 include ':briar-core'
 include ':zerion-android'

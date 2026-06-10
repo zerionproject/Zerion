@@ -85,15 +85,6 @@ public final class BruteForceProtection {
 		}
 	}
 
-	public synchronized int getFailedAttempts() {
-		long now = System.currentTimeMillis();
-		if (lastFailedWallClock > 0 &&
-				now - lastFailedWallClock > ATTEMPT_WINDOW_MS) {
-			return 0;
-		}
-		return failedAttempts;
-	}
-
 	public synchronized void clear() {
 		failedAttempts = 0;
 		lastFailedWallClock = 0;
@@ -180,10 +171,6 @@ public final class BruteForceProtection {
 
 		public int getRemainingMinutes() {
 			return (int) (remainingMs / 60000);
-		}
-
-		public int getRemainingSeconds() {
-			return (int) ((remainingMs % 60000) / 1000);
 		}
 	}
 }

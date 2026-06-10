@@ -98,15 +98,4 @@ public class DonationManager {
 				.apply();
 	}
 
-	public int getPromptCount() {
-		return prefs.getInt(PREF_DONATION_PROMPT_COUNT, 0);
-	}
-
-	public void resetForTesting() {
-		prefs.edit()
-				.remove(PREF_LAST_DONATION_PROMPT)
-				.remove(PREF_DONATION_PROMPT_COUNT)
-				.remove(PREF_NEXT_CHECK_DAY)
-				.apply();
-	}
 }
