@@ -123,6 +123,7 @@
          <trusted-key id="8461EFA0E74ABAE010DE66994EB27DB2A3B88B8B">
             <trusting group="androidx.fragment"/>
             <trusting group="androidx.lifecycle"/>
+            <trusting group="androidx.media"/>
             <trusting group="androidx.sqlite"/>
             <trusting group="androidx.tracing"/>
          </trusted-key>

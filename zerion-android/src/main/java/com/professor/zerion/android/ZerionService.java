@@ -91,6 +91,7 @@ public class ZerionService extends Service {
 
 	private volatile boolean started = false;
 	private volatile long glideCacheCleared = 0;
+	private final AtomicBoolean exitInProgress = new AtomicBoolean(false);
 
 	public static final String ACTION_EXIT =
 			"com.professor.zerion.android.EXIT";
@@ -193,7 +194,9 @@ public class ZerionService extends Service {
 					lockManager.setLocked(true);
 				}
 			} else if (ACTION_EXIT.equals(action)) {
-				shutdownFromBackground();
+				if (exitInProgress.compareAndSet(false, true)) {
+					shutdownFromBackground();
+				}
 			}
 		}
 		return START_NOT_STICKY;

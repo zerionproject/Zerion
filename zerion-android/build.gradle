@@ -78,7 +78,6 @@ android {
         versionCode 20002
         versionName "2.0.2"
         applicationId "com.professor.zerion"
-        buildConfigField "String", "VERSION_LABEL", "\"1.6.2\""
         buildConfigField "String", "TorVersion", "\"$tor_version\""
 
         buildConfigField "boolean", "B3_PROOF_ENABLED", "true"
