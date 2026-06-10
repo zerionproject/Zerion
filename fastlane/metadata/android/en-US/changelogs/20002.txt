@@ -1,0 +1,13 @@
+v2.0.2 — quality, reliability, and platform hygiene
+
+ONE-TIME SETTINGS RESET ON UPGRADE: at-rest encrypted preferences moved to an in-tree implementation that replaces the deprecated AndroidX security library. Theme, notification toggles, security toggles, font size, and the Wipe Password are reset to defaults. Conversations, channels, groups, contacts, vault, and unread state are unaffected. Re-enable Wipe Password and your other preferences after first launch.
+
+Channels now fire system notifications when a new post arrives for subscribers and when a new comment arrives for owners. A new Channels toggle in Settings -> Notifications lets you mute the alerts globally; per-channel mute is also available.
+
+Group chats are more resilient under concurrent admin actions. Adding a member while another admin is removing one, or sending a message during a membership change, no longer produces a split member list. Invitees see the current member list immediately on acceptance, even if the group churned between invite send and accept.
+
+Tapping Exit on the foreground notification now reliably opens cleanly on the next launch instead of needing several retries on some Android versions.
+
+Several internal libraries refreshed for ongoing maintenance.
+
+Full notes: https://github.com/zerionproject/Zerion/releases/tag/v2.0.2

@@ -6,7 +6,6 @@ import android.os.Looper;
 import android.os.SystemClock;
 import android.util.Base64;
 
-import com.professor.zerion.android.security.AndroidXPrefsMigration;
 import com.professor.zerion.android.security.ZerionEncryptedPrefs;
 
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
@@ -54,15 +53,12 @@ public class WipePasswordManager {
 
 	private WipePasswordManager(Context context) throws SecurityException {
 		Context appCtx = context.getApplicationContext();
-		ZerionEncryptedPrefs prefs;
 		try {
-			prefs = ZerionEncryptedPrefs.create(appCtx, ENCRYPTED_PREFS_NAME);
+			this.securePrefs = ZerionEncryptedPrefs.create(appCtx,
+					ENCRYPTED_PREFS_NAME);
 		} catch (RuntimeException e) {
 			throw new SecurityException("", e);
 		}
-		AndroidXPrefsMigration.migrateIfNeeded(appCtx, ENCRYPTED_PREFS_NAME,
-				prefs);
-		this.securePrefs = prefs;
 		this.secureStorageAvailable = true;
 		checkAndMigrateLegacyStorage(context);
 	}

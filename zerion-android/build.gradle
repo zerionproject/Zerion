@@ -75,8 +75,8 @@ android {
     defaultConfig {
         minSdkVersion 29
         targetSdkVersion 35
-        versionCode 20001
-        versionName "2.0.1"
+        versionCode 20002
+        versionName "2.0.2"
         applicationId "com.professor.zerion"
         buildConfigField "String", "VERSION_LABEL", "\"1.6.2\""
         buildConfigField "String", "TorVersion", "\"$tor_version\""
@@ -205,7 +205,6 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'com.google.android.material:material:1.12.0'
     implementation 'androidx.recyclerview:recyclerview-selection:1.1.0'
-    implementation 'androidx.security:security-crypto:1.1.0'
     implementation 'androidx.biometric:biometric:1.1.0'
 
     // force kotlin standard lib to latest version to prevent jetifier issues

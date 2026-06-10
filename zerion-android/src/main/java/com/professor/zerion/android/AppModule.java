@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.StrictMode;
 
-import com.professor.zerion.android.security.AndroidXPrefsMigration;
 import com.professor.zerion.android.security.ZerionEncryptedPrefs;
 
 import com.vanniktech.emoji.RecentEmoji;
@@ -138,14 +137,8 @@ public class AppModule {
 
 		private static void initializeInternal(Application app) {
 			Context ctx = app.getApplicationContext();
-			ZerionEncryptedPrefs secure =
-					ZerionEncryptedPrefs.create(ctx, "secure_prefs");
-			ZerionEncryptedPrefs ui =
-					ZerionEncryptedPrefs.create(ctx, "ui_prefs");
-			AndroidXPrefsMigration.migrateIfNeeded(ctx, "secure_prefs", secure);
-			AndroidXPrefsMigration.migrateIfNeeded(ctx, "ui_prefs", ui);
-			securePrefs = secure;
-			uiPrefs = ui;
+			securePrefs = ZerionEncryptedPrefs.create(ctx, "secure_prefs");
+			uiPrefs = ZerionEncryptedPrefs.create(ctx, "ui_prefs");
 		}
 
 		static SharedPreferences getSecurePrefs() {
