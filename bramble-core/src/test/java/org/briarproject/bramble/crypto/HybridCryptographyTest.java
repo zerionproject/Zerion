@@ -356,4 +356,71 @@ public class HybridCryptographyTest extends BrambleMockTestCase {
 
 		bobEncap.clearSecret();
 	}
+
+	@Test
+	public void testHybridFsKeyAgreementRoundTrip()
+			throws GeneralSecurityException {
+		KeyPair aliceStatic = crypto.generateHybridAgreementKeyPair();
+		KeyPair bobStatic = crypto.generateHybridAgreementKeyPair();
+		KeyPair aliceEph = crypto.generateHybridAgreementKeyPair();
+		KeyPair bobEph = crypto.generateHybridAgreementKeyPair();
+
+		HybridEncapsulationResult enc =
+				crypto.hybridEncapsulate(bobEph.getPublic());
+		byte[][] inputs = {
+				aliceStatic.getPublic().getEncoded(),
+				bobStatic.getPublic().getEncoded(),
+				aliceEph.getPublic().getEncoded(),
+				bobEph.getPublic().getEncoded(),
+				enc.getCiphertext(),
+				new byte[] {2},
+				new byte[] {2}
+		};
+
+		SecretKey aliceSecret = crypto.deriveHybridSharedSecretFsAsResponder(
+				TEST_LABEL,
+				bobStatic.getPublic(), bobEph.getPublic(),
+				aliceStatic, aliceEph,
+				enc.getSharedSecret(), inputs);
+
+		SecretKey bobSecret = crypto.deriveHybridSharedSecretFs(
+				TEST_LABEL,
+				aliceStatic.getPublic(), aliceEph.getPublic(),
+				bobStatic, bobEph,
+				enc.getCiphertext(), inputs);
+
+		assertArrayEquals(
+				"FS handshake initiator and responder must derive the same key",
+				aliceSecret.getBytes(), bobSecret.getBytes());
+		enc.clearSecret();
+	}
+
+	@Test
+	public void testHybridFsKeyDependsOnEphemeralKeys()
+			throws GeneralSecurityException {
+		KeyPair aliceStatic = crypto.generateHybridAgreementKeyPair();
+		KeyPair bobStatic = crypto.generateHybridAgreementKeyPair();
+		KeyPair aliceEph = crypto.generateHybridAgreementKeyPair();
+		KeyPair bobEph1 = crypto.generateHybridAgreementKeyPair();
+		KeyPair bobEph2 = crypto.generateHybridAgreementKeyPair();
+
+		HybridEncapsulationResult enc1 =
+				crypto.hybridEncapsulate(bobEph1.getPublic());
+		SecretKey key1 = crypto.deriveHybridSharedSecretFsAsResponder(
+				TEST_LABEL, bobStatic.getPublic(), bobEph1.getPublic(),
+				aliceStatic, aliceEph, enc1.getSharedSecret(),
+				enc1.getCiphertext());
+
+		HybridEncapsulationResult enc2 =
+				crypto.hybridEncapsulate(bobEph2.getPublic());
+		SecretKey key2 = crypto.deriveHybridSharedSecretFsAsResponder(
+				TEST_LABEL, bobStatic.getPublic(), bobEph2.getPublic(),
+				aliceStatic, aliceEph, enc2.getSharedSecret(),
+				enc2.getCiphertext());
+
+		assertFalse("Changing ephemeral keys must change the derived key",
+				Arrays.equals(key1.getBytes(), key2.getBytes()));
+		enc1.clearSecret();
+		enc2.clearSecret();
+	}
 }

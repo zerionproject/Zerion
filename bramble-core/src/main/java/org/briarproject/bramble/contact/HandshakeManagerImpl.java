@@ -39,6 +39,7 @@ import static org.briarproject.bramble.api.crypto.PostQuantumConstants.ML_KEM_76
 import static org.briarproject.bramble.contact.HandshakeConstants.PROOF_BYTES;
 import static org.briarproject.bramble.contact.HandshakeConstants.PROTOCOL_MAJOR_VERSION;
 import static org.briarproject.bramble.contact.HandshakeConstants.PROTOCOL_MINOR_VERSION;
+import static org.briarproject.bramble.contact.HandshakeConstants.FS_MINOR_VERSION;
 import static org.briarproject.bramble.api.Bytes.compare;
 import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.HYBRID_COMMITMENT_LABEL;
 import static org.briarproject.bramble.contact.HandshakeRecordTypes.RECORD_TYPE_EPHEMERAL_PUBLIC_KEY;
@@ -162,22 +163,31 @@ class HandshakeManagerImpl implements HandshakeManager {
 				handshakeCrypto.generateHybridEphemeralKeyPair();
 
 		PublicKey theirHybridEphemeralKey;
+		int theirMinorVersion;
 		if (alice) {
 			sendMinorVersion(recordWriter);
 			sendHybridStaticKey(recordWriter, ourHybridEphemeralKeyPair.getPublic());
-			theirHybridEphemeralKey = receiveHybridEphemeralKey(recordReader);
+			EphemeralExchange ex = receiveHybridEphemeral(recordReader);
+			theirHybridEphemeralKey = ex.key;
+			theirMinorVersion = ex.minorVersion;
 		} else {
-			theirHybridEphemeralKey = receiveHybridEphemeralKey(recordReader);
+			EphemeralExchange ex = receiveHybridEphemeral(recordReader);
+			theirHybridEphemeralKey = ex.key;
+			theirMinorVersion = ex.minorVersion;
 			sendMinorVersion(recordWriter);
 			sendHybridStaticKey(recordWriter, ourHybridEphemeralKeyPair.getPublic());
 		}
+
+		boolean useFs = theirMinorVersion >= FS_MINOR_VERSION;
 
 		byte[] kemCiphertext;
 		byte[] kemSecret;
 		try {
 			if (alice) {
+				PublicKey kemTarget = useFs
+						? theirHybridEphemeralKey : theirHybridStaticKey;
 				HybridEncapsulationResult encResult =
-						handshakeCrypto.hybridEncapsulate(theirHybridStaticKey);
+						handshakeCrypto.hybridEncapsulate(kemTarget);
 				kemCiphertext = encResult.getCiphertext();
 				kemSecret = encResult.getSharedSecret();
 				sendKemCiphertext(recordWriter, kemCiphertext);
@@ -191,10 +201,18 @@ class HandshakeManagerImpl implements HandshakeManager {
 
 		SecretKey masterKey;
 		try {
-			masterKey = handshakeCrypto.deriveHybridMasterKey(
-					theirHybridStaticKey, theirHybridEphemeralKey,
-					ourHybridStaticKeyPair, ourHybridEphemeralKeyPair,
-					kemCiphertext, kemSecret, alice);
+			if (useFs) {
+				masterKey = handshakeCrypto.deriveHybridMasterKeyFs(
+						theirHybridStaticKey, theirHybridEphemeralKey,
+						ourHybridStaticKeyPair, ourHybridEphemeralKeyPair,
+						kemCiphertext, kemSecret, alice,
+						PROTOCOL_MINOR_VERSION, (byte) theirMinorVersion);
+			} else {
+				masterKey = handshakeCrypto.deriveHybridMasterKey(
+						theirHybridStaticKey, theirHybridEphemeralKey,
+						ourHybridStaticKeyPair, ourHybridEphemeralKeyPair,
+						kemCiphertext, kemSecret, alice);
+			}
 		} catch (GeneralSecurityException e) {
 			throw new FormatException();
 		} finally {
@@ -255,23 +273,27 @@ class HandshakeManagerImpl implements HandshakeManager {
 		return new HybridAgreementPublicKey(key);
 	}
 
-	private PublicKey receiveHybridEphemeralKey(RecordReader r)
+	private EphemeralExchange receiveHybridEphemeral(RecordReader r)
 			throws IOException {
 		Record first = readRecord(r, asList(RECORD_TYPE_MINOR_VERSION,
 				RECORD_TYPE_HYBRID_STATIC_KEY));
+		int minorVersion = -1;
+		Record keyRecord;
 		if (first.getRecordType() == RECORD_TYPE_MINOR_VERSION) {
-			Record second = readRecord(r,
+			byte[] mv = first.getPayload();
+			if (mv != null && mv.length == 1) {
+				minorVersion = mv[0] & 0xFF;
+			}
+			keyRecord = readRecord(r,
 					singletonList(RECORD_TYPE_HYBRID_STATIC_KEY));
-			byte[] key = second.getPayload();
-			checkLength(key, HYBRID_AGREEMENT_PUBLIC_KEY_BYTES,
-					HYBRID_AGREEMENT_PUBLIC_KEY_BYTES);
-			return new HybridAgreementPublicKey(key);
 		} else {
-			byte[] key = first.getPayload();
-			checkLength(key, HYBRID_AGREEMENT_PUBLIC_KEY_BYTES,
-					HYBRID_AGREEMENT_PUBLIC_KEY_BYTES);
-			return new HybridAgreementPublicKey(key);
+			keyRecord = first;
 		}
+		byte[] key = keyRecord.getPayload();
+		checkLength(key, HYBRID_AGREEMENT_PUBLIC_KEY_BYTES,
+				HYBRID_AGREEMENT_PUBLIC_KEY_BYTES);
+		return new EphemeralExchange(new HybridAgreementPublicKey(key),
+				minorVersion);
 	}
 
 	private void sendKemCiphertext(RecordWriter w, byte[] ciphertext)
@@ -337,6 +359,16 @@ class HandshakeManagerImpl implements HandshakeManager {
 		Record rec = r.readRecord(accept, IGNORE);
 		if (rec == null) throw new EOFException();
 		return rec;
+	}
+
+	private static class EphemeralExchange {
+		final PublicKey key;
+		final int minorVersion;
+
+		EphemeralExchange(PublicKey key, int minorVersion) {
+			this.key = key;
+			this.minorVersion = minorVersion;
+		}
 	}
 
 	private static class HandshakeContext {

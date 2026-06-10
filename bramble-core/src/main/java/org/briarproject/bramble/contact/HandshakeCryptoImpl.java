@@ -17,6 +17,7 @@ import static org.briarproject.bramble.contact.HandshakeConstants.BOB_PROOF_LABE
 import static org.briarproject.bramble.contact.HandshakeConstants.MASTER_KEY_LABEL_0_0;
 import static org.briarproject.bramble.contact.HandshakeConstants.MASTER_KEY_LABEL_0_1;
 import static org.briarproject.bramble.contact.HandshakeConstants.MASTER_KEY_LABEL_HYBRID;
+import static org.briarproject.bramble.contact.HandshakeConstants.MASTER_KEY_LABEL_HYBRID_FS;
 
 @Immutable
 @NotNullByDefault
@@ -116,6 +117,40 @@ class HandshakeCryptoImpl implements HandshakeCrypto {
 					ourStaticKeyPair,
 					kemCiphertext,
 					inputs);
+		}
+	}
+
+	@Override
+	public SecretKey deriveHybridMasterKeyFs(PublicKey theirStaticPublicKey,
+			PublicKey theirEphemeralPublicKey, KeyPair ourStaticKeyPair,
+			KeyPair ourEphemeralKeyPair, byte[] kemCiphertext,
+			byte[] kemSecret, boolean alice, byte ourMinor, byte theirMinor)
+			throws GeneralSecurityException {
+		byte[] theirStatic = theirStaticPublicKey.getEncoded();
+		byte[] theirEphemeral = theirEphemeralPublicKey.getEncoded();
+		byte[] ourStatic = ourStaticKeyPair.getPublic().getEncoded();
+		byte[] ourEphemeral = ourEphemeralKeyPair.getPublic().getEncoded();
+		byte[][] inputs = {
+				alice ? ourStatic : theirStatic,
+				alice ? theirStatic : ourStatic,
+				alice ? ourEphemeral : theirEphemeral,
+				alice ? theirEphemeral : ourEphemeral,
+				kemCiphertext,
+				new byte[] {alice ? ourMinor : theirMinor},
+				new byte[] {alice ? theirMinor : ourMinor}
+		};
+		if (alice) {
+			return crypto.deriveHybridSharedSecretFsAsResponder(
+					MASTER_KEY_LABEL_HYBRID_FS,
+					theirStaticPublicKey, theirEphemeralPublicKey,
+					ourStaticKeyPair, ourEphemeralKeyPair,
+					kemSecret, inputs);
+		} else {
+			return crypto.deriveHybridSharedSecretFs(
+					MASTER_KEY_LABEL_HYBRID_FS,
+					theirStaticPublicKey, theirEphemeralPublicKey,
+					ourStaticKeyPair, ourEphemeralKeyPair,
+					kemCiphertext, inputs);
 		}
 	}
 

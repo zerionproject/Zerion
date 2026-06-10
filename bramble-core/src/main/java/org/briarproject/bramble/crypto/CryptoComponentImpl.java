@@ -604,6 +604,45 @@ class CryptoComponentImpl implements CryptoComponent {
 		return secret;
 	}
 
+	private void requireHybridAgreementKey(PublicKey key) {
+		if (!key.getKeyType().equals(KEY_TYPE_HYBRID_AGREEMENT)) {
+			throw new IllegalArgumentException(
+					"Expected hybrid agreement key, got: " + key.getKeyType());
+		}
+	}
+
+	@Override
+	public SecretKey deriveHybridSharedSecretFs(String label,
+			PublicKey theirStaticPublicKey, PublicKey theirEphemeralPublicKey,
+			KeyPair ourStaticKeyPair, KeyPair ourEphemeralKeyPair,
+			byte[] kemCiphertext, byte[]... inputs)
+			throws GeneralSecurityException {
+		requireHybridAgreementKey(theirStaticPublicKey);
+		requireHybridAgreementKey(theirEphemeralPublicKey);
+		requireHybridAgreementKey(ourStaticKeyPair.getPublic());
+		requireHybridAgreementKey(ourEphemeralKeyPair.getPublic());
+		return hybridKeyAgreement.deriveSharedSecretFs(label,
+				(HybridAgreementPublicKey) theirStaticPublicKey,
+				(HybridAgreementPublicKey) theirEphemeralPublicKey,
+				ourStaticKeyPair, ourEphemeralKeyPair, kemCiphertext, inputs);
+	}
+
+	@Override
+	public SecretKey deriveHybridSharedSecretFsAsResponder(String label,
+			PublicKey theirStaticPublicKey, PublicKey theirEphemeralPublicKey,
+			KeyPair ourStaticKeyPair, KeyPair ourEphemeralKeyPair,
+			byte[] kemSecret, byte[]... inputs)
+			throws GeneralSecurityException {
+		requireHybridAgreementKey(theirStaticPublicKey);
+		requireHybridAgreementKey(theirEphemeralPublicKey);
+		requireHybridAgreementKey(ourStaticKeyPair.getPublic());
+		requireHybridAgreementKey(ourEphemeralKeyPair.getPublic());
+		return hybridKeyAgreement.deriveSharedSecretFsAsResponder(label,
+				(HybridAgreementPublicKey) theirStaticPublicKey,
+				(HybridAgreementPublicKey) theirEphemeralPublicKey,
+				ourStaticKeyPair, ourEphemeralKeyPair, kemSecret, inputs);
+	}
+
 	private byte[] createLabeledMessage(String label, byte[] message) {
 		byte[] labelBytes = StringUtils.toUtf8(label);
 		byte[] result = new byte[INT_32_BYTES + labelBytes.length + INT_32_BYTES + message.length];

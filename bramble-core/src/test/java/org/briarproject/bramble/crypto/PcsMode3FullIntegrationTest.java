@@ -319,12 +319,26 @@ public class PcsMode3FullIntegrationTest {
 		assertTrue(pcsStateManagerClass.isAnnotationPresent(
 				javax.inject.Singleton.class));
 
+		Class<?> lifecycleManagerClass = Class.forName(
+				"org.briarproject.bramble.api.lifecycle.LifecycleManager");
+		Object lifecycleManager = java.lang.reflect.Proxy.newProxyInstance(
+				lifecycleManagerClass.getClassLoader(),
+				new Class[] {lifecycleManagerClass},
+				(proxy, method, methodArgs) -> {
+					Class<?> rt = method.getReturnType();
+					if (rt == boolean.class) return false;
+					if (rt == int.class) return 0;
+					if (rt == long.class) return 0L;
+					return null;
+				});
+
 		java.lang.reflect.Constructor<?> ctor =
 				pcsStateManagerClass.getDeclaredConstructor(
 						org.briarproject.bramble.api.db.DatabaseComponent.class,
-						CryptoComponent.class);
+						CryptoComponent.class,
+						lifecycleManagerClass);
 		ctor.setAccessible(true);
-		Object stateManager = ctor.newInstance(null, crypto);
+		Object stateManager = ctor.newInstance(null, crypto, lifecycleManager);
 		java.lang.reflect.Method getContactLock =
 				pcsStateManagerClass.getMethod("getContactLock",
 						ContactId.class);

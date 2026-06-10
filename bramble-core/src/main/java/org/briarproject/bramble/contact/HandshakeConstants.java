@@ -6,7 +6,9 @@ interface HandshakeConstants {
 
 	byte PROTOCOL_MAJOR_VERSION = 0;
 
-	byte PROTOCOL_MINOR_VERSION = 1;
+	byte PROTOCOL_MINOR_VERSION = 2;
+
+	byte FS_MINOR_VERSION = 2;
 
 	@Deprecated
 	String MASTER_KEY_LABEL_0_0 =
@@ -17,6 +19,9 @@ interface HandshakeConstants {
 
 	String MASTER_KEY_LABEL_HYBRID =
 			"org.briarproject.bramble.handshake/HYBRID_MASTER_KEY_V1";
+
+	String MASTER_KEY_LABEL_HYBRID_FS =
+			"org.briarproject.bramble.handshake/HYBRID_MASTER_KEY_FS_V2";
 
 	String ALICE_PROOF_LABEL = "org.briarproject.bramble.handshake/ALICE_PROOF";
 

@@ -112,6 +112,79 @@ class HybridKeyAgreement {
 		return sharedSecret;
 	}
 
+	SecretKey deriveSharedSecretFsAsResponder(String label,
+			HybridAgreementPublicKey theirStaticPublicKey,
+			HybridAgreementPublicKey theirEphemeralPublicKey,
+			KeyPair ourStaticKeyPair,
+			KeyPair ourEphemeralKeyPair,
+			byte[] kemSecret,
+			byte[]... inputs) throws GeneralSecurityException {
+
+		HybridAgreementPrivateKey ourStaticPrivate =
+				(HybridAgreementPrivateKey) ourStaticKeyPair.getPrivate();
+		HybridAgreementPrivateKey ourEphemeralPrivate =
+				(HybridAgreementPrivateKey) ourEphemeralKeyPair.getPrivate();
+		byte[] staticSecret = curve25519.calculateAgreement(
+				theirStaticPublicKey.getX25519PublicKey(),
+				ourStaticPrivate.getX25519PrivateKey());
+		if (isAllZeros(staticSecret)) {
+			throw new GeneralSecurityException(
+					"Invalid static X25519 shared secret");
+		}
+		byte[] ephemeralSecret = curve25519.calculateAgreement(
+				theirEphemeralPublicKey.getX25519PublicKey(),
+				ourEphemeralPrivate.getX25519PrivateKey());
+		if (isAllZeros(ephemeralSecret)) {
+			throw new GeneralSecurityException(
+					"Invalid ephemeral X25519 shared secret");
+		}
+		SecretKey sharedSecret = combineSecretsFs(label, staticSecret,
+				ephemeralSecret, kemSecret,
+				theirStaticPublicKey.getEncoded(),
+				ourStaticKeyPair.getPublic().getEncoded(), inputs);
+		Arrays.fill(staticSecret, (byte) 0);
+		Arrays.fill(ephemeralSecret, (byte) 0);
+		return sharedSecret;
+	}
+
+	SecretKey deriveSharedSecretFs(String label,
+			HybridAgreementPublicKey theirStaticPublicKey,
+			HybridAgreementPublicKey theirEphemeralPublicKey,
+			KeyPair ourStaticKeyPair,
+			KeyPair ourEphemeralKeyPair,
+			byte[] kemCiphertext,
+			byte[]... inputs) throws GeneralSecurityException {
+
+		HybridAgreementPrivateKey ourStaticPrivate =
+				(HybridAgreementPrivateKey) ourStaticKeyPair.getPrivate();
+		HybridAgreementPrivateKey ourEphemeralPrivate =
+				(HybridAgreementPrivateKey) ourEphemeralKeyPair.getPrivate();
+		byte[] staticSecret = curve25519.calculateAgreement(
+				theirStaticPublicKey.getX25519PublicKey(),
+				ourStaticPrivate.getX25519PrivateKey());
+		if (isAllZeros(staticSecret)) {
+			throw new GeneralSecurityException(
+					"Invalid static X25519 shared secret");
+		}
+		byte[] ephemeralSecret = curve25519.calculateAgreement(
+				theirEphemeralPublicKey.getX25519PublicKey(),
+				ourEphemeralPrivate.getX25519PrivateKey());
+		if (isAllZeros(ephemeralSecret)) {
+			throw new GeneralSecurityException(
+					"Invalid ephemeral X25519 shared secret");
+		}
+		byte[] kemSecret = mlKem768.decapsulate(
+				ourEphemeralPrivate.getMlKemPrivateKey(), kemCiphertext);
+		SecretKey sharedSecret = combineSecretsFs(label, staticSecret,
+				ephemeralSecret, kemSecret,
+				theirStaticPublicKey.getEncoded(),
+				ourStaticKeyPair.getPublic().getEncoded(), inputs);
+		Arrays.fill(staticSecret, (byte) 0);
+		Arrays.fill(ephemeralSecret, (byte) 0);
+		Arrays.fill(kemSecret, (byte) 0);
+		return sharedSecret;
+	}
+
 	private SecretKey combineSecrets(String label,
 			byte[] x25519Secret,
 			byte[] kemSecret,
@@ -143,6 +216,54 @@ class HybridKeyAgreement {
 		digest.update(length, 0, length.length);
 		digest.update(firstKey, 0, firstKey.length);
 
+		ByteUtils.writeUint32(secondKey.length, length, 0);
+		digest.update(length, 0, length.length);
+		digest.update(secondKey, 0, secondKey.length);
+		for (byte[] input : additionalInputs) {
+			ByteUtils.writeUint32(input.length, length, 0);
+			digest.update(length, 0, length.length);
+			digest.update(input, 0, input.length);
+		}
+		byte[] output = new byte[SecretKey.LENGTH];
+		digest.doFinal(output, 0);
+
+		return new SecretKey(output);
+	}
+
+	private SecretKey combineSecretsFs(String label,
+			byte[] staticX25519Secret,
+			byte[] ephemeralX25519Secret,
+			byte[] kemSecret,
+			byte[] theirStaticPublicKey,
+			byte[] ourStaticPublicKey,
+			byte[]... additionalInputs) {
+		Blake2bDigest digest = new Blake2bDigest(256);
+		byte[] labelBytes = StringUtils.toUtf8(
+				HYBRID_SHARED_SECRET_LABEL + "/" + label);
+		byte[] length = new byte[INT_32_BYTES];
+		ByteUtils.writeUint32(labelBytes.length, length, 0);
+		digest.update(length, 0, length.length);
+		digest.update(labelBytes, 0, labelBytes.length);
+		ByteUtils.writeUint32(staticX25519Secret.length, length, 0);
+		digest.update(length, 0, length.length);
+		digest.update(staticX25519Secret, 0, staticX25519Secret.length);
+		ByteUtils.writeUint32(ephemeralX25519Secret.length, length, 0);
+		digest.update(length, 0, length.length);
+		digest.update(ephemeralX25519Secret, 0, ephemeralX25519Secret.length);
+		ByteUtils.writeUint32(kemSecret.length, length, 0);
+		digest.update(length, 0, length.length);
+		digest.update(kemSecret, 0, kemSecret.length);
+		byte[] firstKey, secondKey;
+		if (compareBytes(ourStaticPublicKey, theirStaticPublicKey) < 0) {
+			firstKey = ourStaticPublicKey;
+			secondKey = theirStaticPublicKey;
+		} else {
+			firstKey = theirStaticPublicKey;
+			secondKey = ourStaticPublicKey;
+		}
+		ByteUtils.writeUint32(firstKey.length, length, 0);
+		digest.update(length, 0, length.length);
+		digest.update(firstKey, 0, firstKey.length);
 		ByteUtils.writeUint32(secondKey.length, length, 0);
 		digest.update(length, 0, length.length);
 		digest.update(secondKey, 0, secondKey.length);

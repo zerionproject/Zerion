@@ -50,6 +50,18 @@ public interface CryptoComponent {
 			PublicKey theirPublicKey, KeyPair ourKeyPair, byte[] kemSecret,
 			byte[]... inputs) throws GeneralSecurityException;
 
+	SecretKey deriveHybridSharedSecretFs(String label,
+			PublicKey theirStaticPublicKey, PublicKey theirEphemeralPublicKey,
+			KeyPair ourStaticKeyPair, KeyPair ourEphemeralKeyPair,
+			byte[] kemCiphertext, byte[]... inputs)
+			throws GeneralSecurityException;
+
+	SecretKey deriveHybridSharedSecretFsAsResponder(String label,
+			PublicKey theirStaticPublicKey, PublicKey theirEphemeralPublicKey,
+			KeyPair ourStaticKeyPair, KeyPair ourEphemeralKeyPair,
+			byte[] kemSecret, byte[]... inputs)
+			throws GeneralSecurityException;
+
 	SecretKey deriveKey(String label, SecretKey k, byte[]... inputs);
 
 	SecretKey deriveSharedSecret(String label, PublicKey theirPublicKey,

@@ -199,6 +199,13 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			throw new FormatException();
 		}
 
+		boolean hybridExchange = B3_PROOF_ENABLED
+				&& theirStaticHybridPub != null
+				&& ourEphX25519 != null
+				&& theirEphX25519 != null;
+		if (hybridExchange && remoteInfo.b3ProofSig == null) {
+			throw new FormatException();
+		}
 		if (remoteInfo.b3ProofSig != null) {
 			if (theirStaticHybridPub == null
 					|| ourEphX25519 == null
