@@ -74,7 +74,8 @@
             android:src="@drawable/ic_person_white_48dp"
             android:background="@drawable/bg_avatar_circle_large"
             android:padding="32dp"
-            android:scaleType="centerInside" />
+            android:scaleType="centerInside"
+            android:importantForAccessibility="no" />
 
     </FrameLayout>
 
@@ -142,6 +143,7 @@
             android:layout_width="20dp"
             android:layout_height="20dp"
             android:src="@drawable/ic_signal_3"
+            android:importantForAccessibility="no"
             app:tint="@color/zerion_lime_500" />
 
         <TextView

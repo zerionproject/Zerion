@@ -32,7 +32,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import static java.util.concurrent.TimeUnit.DAYS;
-import static org.briarproject.bramble.api.plugin.B4Constants.B4_DEBUG_LOG;
 import static org.briarproject.bramble.api.plugin.B4Constants.B4_ALICE_LAST_ROTATION_TIME_MS_KEY;
 import static org.briarproject.bramble.api.plugin.B4Constants.B4_ALICE_ONION3_ANNOUNCED_AT_MS_KEY;
 import static org.briarproject.bramble.api.plugin.B4Constants.B4_ALICE_ONION3_CURRENT_KEY;
@@ -203,8 +202,6 @@ public class B4OnionRotation {
 			long now = clock.currentTimeMillis();
 			boolean shouldRotate = db.transactionWithResult(true, txn ->
 					loadPhase(txn) == RotationPhase.IDLE);
-			if (B4_DEBUG_LOG && !shouldRotate) {
-			}
 			if (shouldRotate) executeRotation(now);
 		}
 	}
@@ -323,8 +320,6 @@ public class B4OnionRotation {
 				setPeerState(txn, cid, PeerRotationState.MIGRATED);
 				return shouldRetireOldOnion(txn);
 			});
-			if (B4_DEBUG_LOG && shouldComplete) {
-			}
 			if (shouldComplete) executePromotion();
 		}
 	}
@@ -342,8 +337,6 @@ public class B4OnionRotation {
 					transitioned[0] = true;
 				}
 			});
-		}
-		if (B4_DEBUG_LOG && transitioned[0]) {
 		}
 	}
 
@@ -453,14 +446,20 @@ public class B4OnionRotation {
 		List<ContactId> contactIds = new ArrayList<>();
 
 		db.transaction(false, txn -> {
+			Settings keyOnly = new Settings();
+			keyOnly.put(B4_ALICE_ONION3_NEXT_KEY, sealString(newOnion));
+			keyOnly.put(B4_ALICE_ONION3_NEXT_PRIVKEY_KEY,
+					sealString(newPrivKey));
+			settingsManager.mergeSettings(txn, keyOnly,
+					B4_SETTINGS_NAMESPACE);
+		});
+
+		db.transaction(false, txn -> {
 			Settings update = new Settings();
 			update.put(B4_ALICE_ROTATION_PHASE_KEY,
 					sealString(RotationPhase.ANNOUNCING.name()));
 			update.put(B4_ALICE_ONION3_ANNOUNCED_AT_MS_KEY,
 					sealString(String.valueOf(now)));
-			update.put(B4_ALICE_ONION3_NEXT_KEY, sealString(newOnion));
-			update.put(B4_ALICE_ONION3_NEXT_PRIVKEY_KEY,
-					sealString(newPrivKey));
 			settingsManager.mergeSettings(txn, update, B4_SETTINGS_NAMESPACE);
 			Collection<Contact> contacts = db.getContacts(txn);
 			for (Contact c : contacts) {

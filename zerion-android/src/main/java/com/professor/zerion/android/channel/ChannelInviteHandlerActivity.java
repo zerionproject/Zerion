@@ -14,6 +14,7 @@ import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
 
+import org.briarproject.bramble.api.account.AccountManager;
 import org.briarproject.bramble.api.db.DbException;
 import org.briarproject.bramble.api.lifecycle.IoExecutor;
 import org.briarproject.briar.api.channel.ChannelInviteLink;
@@ -35,6 +36,8 @@ public class ChannelInviteHandlerActivity extends ZerionActivity {
 	@Inject
 	@IoExecutor
 	Executor ioExecutor;
+	@Inject
+	AccountManager accountManager;
 
 	@Override
 	public void injectActivity(ActivityComponent component) {
@@ -47,6 +50,10 @@ public class ChannelInviteHandlerActivity extends ZerionActivity {
 		getWindow().setFlags(
 				android.view.WindowManager.LayoutParams.FLAG_SECURE,
 				android.view.WindowManager.LayoutParams.FLAG_SECURE);
+		if (accountManager.getDatabaseKey() == null) {
+			finish();
+			return;
+		}
 		Uri data = getIntent() == null ? null : getIntent().getData();
 		if (data == null) {
 			finish();

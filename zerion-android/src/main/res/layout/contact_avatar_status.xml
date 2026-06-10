@@ -12,6 +12,7 @@
 		android:layout_width="38dp"
 		android:layout_height="38dp"
 		android:layout_gravity="center"
+		android:importantForAccessibility="no"
 		tools:src="@mipmap/ic_launcher_round" />
 
 	<ImageView

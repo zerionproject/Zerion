@@ -27,6 +27,7 @@
 				android:layout_width="32dp"
 				android:layout_height="32dp"
 				android:src="@drawable/transport_tor"
+				android:importantForAccessibility="no"
 				app:tint="@color/zerion_primary_accent" />
 
 			<LinearLayout

@@ -75,15 +75,42 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 		if (cached != null) return cached;
 		try {
 			SecretKey k = getOrCreateKey();
-			SharedPreferences backing = ctx.getApplicationContext()
-					.getSharedPreferences(fileName + "_v2",
-							Context.MODE_PRIVATE);
+			Context app = ctx.getApplicationContext();
+			SharedPreferences backing = app.getSharedPreferences(
+					fileName + "_v2", Context.MODE_PRIVATE);
 			ZerionEncryptedPrefs prefs = new ZerionEncryptedPrefs(backing, k);
 			INSTANCES.put(fileName, prefs);
+			deleteLegacyAndroidXFile(app, fileName);
 			return prefs;
 		} catch (GeneralSecurityException e) {
 			throw new RuntimeException(
 					"ZerionEncryptedPrefs.create failed", e);
+		}
+	}
+
+	private static void deleteLegacyAndroidXFile(Context app, String name) {
+		try {
+			SharedPreferences legacy = app.getSharedPreferences(name,
+					Context.MODE_PRIVATE);
+			if (legacy.getAll().isEmpty()) {
+				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+					app.deleteSharedPreferences(name);
+				}
+				return;
+			}
+			legacy.edit().clear().commit();
+			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+				app.deleteSharedPreferences(name);
+			}
+		} catch (Throwable ignored) {
+		}
+		try {
+			KeyStore ks = KeyStore.getInstance(ANDROID_KEYSTORE);
+			ks.load(null);
+			if (ks.containsAlias("_androidx_security_master_key_")) {
+				ks.deleteEntry("_androidx_security_master_key_");
+			}
+		} catch (Throwable ignored) {
 		}
 	}
 

@@ -123,7 +123,7 @@
 
 				<ImageView
 					style="@style/Zerion.Settings.Row.Icon"
-					android:src="@drawable/ic_group"
+					android:src="@drawable/ic_channels"
 					android:importantForAccessibility="no" />
 
 				<LinearLayout

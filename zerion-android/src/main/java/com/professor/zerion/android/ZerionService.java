@@ -91,7 +91,10 @@ public class ZerionService extends Service {
 
 	private volatile boolean started = false;
 	private volatile long glideCacheCleared = 0;
-	private final AtomicBoolean exitInProgress = new AtomicBoolean(false);
+	private static final AtomicBoolean exitInProgress = new AtomicBoolean(false);
+	private static final java.util.concurrent.atomic.AtomicReference<Thread>
+			pendingKillWatchdog =
+			new java.util.concurrent.atomic.AtomicReference<>(null);
 
 	public static final String ACTION_EXIT =
 			"com.professor.zerion.android.EXIT";
@@ -102,6 +105,10 @@ public class ZerionService extends Service {
 
 		app = (ZerionApplication) getApplication();
 		app.getApplicationComponent().inject(this);
+
+		Thread previousWatchdog = pendingKillWatchdog.getAndSet(null);
+		if (previousWatchdog != null) previousWatchdog.interrupt();
+		exitInProgress.set(false);
 
 		if (created.getAndSet(true)) {
 			stopSelf();
@@ -274,6 +281,11 @@ public class ZerionService extends Service {
 
 	private void shutdownFromBackground() {
 		wakeLockManager.runWakefully(() -> {
+				try {
+					if (!started) lifecycleManager.waitForStartup();
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
 				shutdown(true);
 				hideUi();
 				wakeLockManager.executeWakefully(() -> {
@@ -295,10 +307,14 @@ public class ZerionService extends Service {
 						} catch (InterruptedException e) {
 							return;
 						}
+						if (pendingKillWatchdog.get() != Thread.currentThread()) {
+							return;
+						}
 						android.os.Process.killProcess(android.os.Process.myPid());
 					});
 					killWatchdog.setDaemon(true);
 					killWatchdog.setName("ShutdownWatchdog");
+					pendingKillWatchdog.set(killWatchdog);
 					killWatchdog.start();
 				}, "BackgroundShutdown");
 		}, "BackgroundShutdown");

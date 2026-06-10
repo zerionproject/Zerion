@@ -335,7 +335,7 @@ public class WipePasswordManager {
 							.remove("wipe_password_hash")
 							.remove("wipe_password_salt")
 							.remove("wipe_password_enabled")
-							.apply();
+							.commit();
 				}
 			}
 		} catch (Exception e) {

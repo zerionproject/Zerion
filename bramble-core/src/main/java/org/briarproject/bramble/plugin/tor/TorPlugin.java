@@ -269,8 +269,6 @@ class TorPlugin implements DuplexPlugin, EventListener,
 			callback.mergeSettings(s);
 		}
 		b4OnionRotation.bindAdapter(this);
-		if (org.briarproject.bramble.api.plugin.B4Constants.B4_DEBUG_LOG) {
-		}
 		try {
 			b4OnionRotation.resumeIfPromotionInterrupted();
 		} catch (org.briarproject.bramble.api.db.DbException e) {
@@ -297,8 +295,6 @@ class TorPlugin implements DuplexPlugin, EventListener,
 		}
 		b4OnionToServerSocket.put(hsProps.onion, b4Ss);
 		ioExecutor.execute(() -> acceptB4NewOnionConnections(b4Ss));
-		if (org.briarproject.bramble.api.plugin.B4Constants.B4_DEBUG_LOG) {
-		}
 		return hsProps;
 	}
 
@@ -322,8 +318,6 @@ class TorPlugin implements DuplexPlugin, EventListener,
 		tor.removeHiddenService(onion);
 		ServerSocket ss = b4OnionToServerSocket.remove(onion);
 		if (ss != null) tryToClose(ss);
-		if (org.briarproject.bramble.api.plugin.B4Constants.B4_DEBUG_LOG) {
-		}
 	}
 
 	private void acceptB4NewOnionConnections(ServerSocket ss) {
@@ -342,8 +336,6 @@ class TorPlugin implements DuplexPlugin, EventListener,
 			recentB4Accepts.add(new B4AcceptRecord(
 					System.currentTimeMillis(),
 					new java.util.HashSet<>(currentlyConnectedContacts)));
-			if (org.briarproject.bramble.api.plugin.B4Constants.B4_DEBUG_LOG) {
-			}
 			callback.handleConnection(new TorTransportConnection(this, s));
 		}
 	}
@@ -561,6 +553,7 @@ class TorPlugin implements DuplexPlugin, EventListener,
 				try {
 					while (true) {
 						Socket s = ss.accept();
+						s.setSoTimeout(socketTimeout);
 						try {
 							s.setTcpNoDelay(true);
 						} catch (java.net.SocketException ignored) {

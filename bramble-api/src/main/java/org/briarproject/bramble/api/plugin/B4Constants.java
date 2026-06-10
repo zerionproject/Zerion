@@ -4,8 +4,6 @@ public interface B4Constants {
 
 	boolean B4_ROTATION_ENABLED = true;
 
-	boolean B4_DEBUG_LOG = false;
-
 	int ROTATION_MIN_DAYS = 5;
 
 	int ROTATION_TARGET_DAYS = 7;

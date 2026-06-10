@@ -71,13 +71,6 @@ public class VoiceCallSignal {
 
 	private VoiceCallSignal(SignalType type, String callId, long timestamp,
 			@Nullable String voiceCallKey, @Nullable String onionAddress,
-			@Nullable Integer onionPort, @Nullable String reason) {
-		this(type, callId, timestamp, voiceCallKey, onionAddress, onionPort,
-				reason, null);
-	}
-
-	private VoiceCallSignal(SignalType type, String callId, long timestamp,
-			@Nullable String voiceCallKey, @Nullable String onionAddress,
 			@Nullable Integer onionPort, @Nullable String reason,
 			@Nullable String ephemeralSecret) {
 		this.type = type;
@@ -97,97 +90,6 @@ public class VoiceCallSignal {
 	@Nullable public Integer getOnionPort() { return onionPort; }
 	@Nullable public String getReason() { return reason; }
 	@Nullable public String getEphemeralSecret() { return ephemeralSecret; }
-
-	public static VoiceCallSignal createOffer(String callId, String voiceCallKey) {
-		validateCallId(callId);
-		validateVoiceCallKey(voiceCallKey);
-		return new VoiceCallSignal(SignalType.CALL_OFFER, callId,
-				System.currentTimeMillis(), voiceCallKey, null, null, null);
-	}
-
-	public static VoiceCallSignal createOffer(String callId, String voiceCallKey,
-			String ephemeralSecret) {
-		validateCallId(callId);
-		validateVoiceCallKey(voiceCallKey);
-		return new VoiceCallSignal(SignalType.CALL_OFFER, callId,
-				System.currentTimeMillis(), voiceCallKey, null, null, null,
-				ephemeralSecret);
-	}
-
-	public static VoiceCallSignal createAnswer(String callId, String onionAddress, int onionPort) {
-		validateCallId(callId);
-		validateOnionAddress(onionAddress);
-		validatePort(onionPort);
-		return new VoiceCallSignal(SignalType.CALL_ANSWER, callId,
-				System.currentTimeMillis(), null, onionAddress, onionPort, null);
-	}
-
-	public static VoiceCallSignal createAnswer(String callId, String onionAddress,
-			int onionPort, String ephemeralSecret) {
-		validateCallId(callId);
-		validateOnionAddress(onionAddress);
-		validatePort(onionPort);
-		return new VoiceCallSignal(SignalType.CALL_ANSWER, callId,
-				System.currentTimeMillis(), null, onionAddress, onionPort, null,
-				ephemeralSecret);
-	}
-
-	public static VoiceCallSignal createReject(String callId, @Nullable String reason) {
-		validateCallId(callId);
-		if (reason != null && reason.length() > MAX_REASON_LENGTH) {
-			reason = reason.substring(0, MAX_REASON_LENGTH);
-		}
-		return new VoiceCallSignal(SignalType.CALL_REJECT, callId,
-				System.currentTimeMillis(), null, null, null, reason);
-	}
-
-	public static VoiceCallSignal createEnd(String callId, @Nullable String reason) {
-		validateCallId(callId);
-		if (reason != null && reason.length() > MAX_REASON_LENGTH) {
-			reason = reason.substring(0, MAX_REASON_LENGTH);
-		}
-		return new VoiceCallSignal(SignalType.CALL_END, callId,
-				System.currentTimeMillis(), null, null, null, reason);
-	}
-
-	public String toWireFormat(byte[] hmacKey) {
-		String jsonStr = toCanonicalJson();
-		String hmac = computeHmac(jsonStr, hmacKey);
-		return WIRE_PREFIX + jsonStr + ":" + hmac;
-	}
-
-	public String toWireFormat() {
-
-		byte[] hmacKey = callId.getBytes(StandardCharsets.UTF_8);
-		return toWireFormat(hmacKey);
-	}
-
-	private String toCanonicalJson() {
-		StringBuilder json = new StringBuilder();
-		json.append("{");
-		json.append("\"v\":").append(PROTOCOL_VERSION).append(",");
-		json.append("\"c\":\"").append(escapeJson(callId)).append("\",");
-		json.append("\"t\":\"").append(type.getWireValue()).append("\",");
-		json.append("\"ts\":").append(timestamp);
-		if (voiceCallKey != null) {
-			json.append(",\"k\":\"").append(escapeJson(voiceCallKey)).append("\"");
-		}
-		if (onionAddress != null) {
-			json.append(",\"o\":\"").append(escapeJson(onionAddress)).append("\"");
-		}
-		if (onionPort != null) {
-			json.append(",\"p\":").append(onionPort);
-		}
-		if (reason != null) {
-			json.append(",\"r\":\"").append(escapeJson(reason)).append("\"");
-		}
-		if (ephemeralSecret != null) {
-			json.append(",\"e\":\"").append(escapeJson(ephemeralSecret)).append("\"");
-		}
-
-		json.append("}");
-		return json.toString();
-	}
 
 	public static boolean isSignal(String message) {
 		if (message == null) {

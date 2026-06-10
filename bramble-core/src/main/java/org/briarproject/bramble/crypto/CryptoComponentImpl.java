@@ -206,9 +206,14 @@ class CryptoComponentImpl implements CryptoComponent {
 		byte[][] hashInputs = new byte[inputs.length + 1][];
 		hashInputs[0] = performRawKeyAgreement(ourPrivateKey, theirPublicKey);
 		arraycopy(inputs, 0, hashInputs, 1, inputs.length);
-		byte[] hash = hash(label, hashInputs);
-		if (hash.length != SecretKey.LENGTH) throw new IllegalStateException();
-		return new SecretKey(hash);
+		try {
+			byte[] hash = hash(label, hashInputs);
+			if (hash.length != SecretKey.LENGTH)
+				throw new IllegalStateException();
+			return new SecretKey(hash);
+		} finally {
+			java.util.Arrays.fill(hashInputs[0], (byte) 0);
+		}
 	}
 
 	@Override
@@ -234,9 +239,16 @@ class CryptoComponentImpl implements CryptoComponent {
 					theirEphemeralPublicKey);
 		}
 		arraycopy(inputs, 0, hashInputs, 3, inputs.length);
-		byte[] hash = hash(label, hashInputs);
-		if (hash.length != SecretKey.LENGTH) throw new IllegalStateException();
-		return new SecretKey(hash);
+		try {
+			byte[] hash = hash(label, hashInputs);
+			if (hash.length != SecretKey.LENGTH)
+				throw new IllegalStateException();
+			return new SecretKey(hash);
+		} finally {
+			java.util.Arrays.fill(hashInputs[0], (byte) 0);
+			java.util.Arrays.fill(hashInputs[1], (byte) 0);
+			java.util.Arrays.fill(hashInputs[2], (byte) 0);
+		}
 	}
 
 	@Override
@@ -261,9 +273,16 @@ class CryptoComponentImpl implements CryptoComponent {
 					theirEphemeralPublicKey);
 		}
 		arraycopy(inputs, 0, hashInputs, 3, inputs.length);
-		byte[] hash = hash(label, hashInputs);
-		if (hash.length != SecretKey.LENGTH) throw new IllegalStateException();
-		return new SecretKey(hash);
+		try {
+			byte[] hash = hash(label, hashInputs);
+			if (hash.length != SecretKey.LENGTH)
+				throw new IllegalStateException();
+			return new SecretKey(hash);
+		} finally {
+			java.util.Arrays.fill(hashInputs[0], (byte) 0);
+			java.util.Arrays.fill(hashInputs[1], (byte) 0);
+			java.util.Arrays.fill(hashInputs[2], (byte) 0);
+		}
 	}
 
 	@Override
