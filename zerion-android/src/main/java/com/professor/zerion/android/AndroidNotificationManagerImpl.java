@@ -118,9 +118,10 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	private static final int SIGN_IN_NOTIFICATION_ID = 5;
 	private static final int REMINDER_NOTIFICATION_ID = 6;
 	static final int CONTACT_NOTIFICATION_ID_BASE = 1000;
-	static final int GROUP_TR_NOTIFICATION_ID_BASE = 5000;
-	static final int CHANNEL_NOTIFICATION_ID_BASE = 9000;
-	static final int CHANNEL_COMMENT_NOTIFICATION_ID_BASE = 11000;
+	static final int GROUP_TR_NOTIFICATION_ID_BASE = 0x10000;
+	static final int CHANNEL_NOTIFICATION_ID_BASE = 0x20000;
+	static final int CHANNEL_COMMENT_NOTIFICATION_ID_BASE = 0x30000;
+	private static final int NOTIFICATION_ID_HASH_MASK = 0xFFFF;
 
 	private final SettingsManager settingsManager;
 	private final AndroidExecutor androidExecutor;
@@ -600,7 +601,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 
 	private static int groupTrNotificationId(String hex) {
 		return GROUP_TR_NOTIFICATION_ID_BASE
-				+ (hex.hashCode() & 0x0FFFFFFF);
+				+ (hex.hashCode() & NOTIFICATION_ID_HASH_MASK);
 	}
 
 	@UiThread
@@ -672,7 +673,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 
 	private static int channelCommentNotificationId(String key) {
 		return CHANNEL_COMMENT_NOTIFICATION_ID_BASE
-				+ (key.hashCode() & 0x0FFFFFFF);
+				+ (key.hashCode() & NOTIFICATION_ID_HASH_MASK);
 	}
 
 	@UiThread
@@ -686,7 +687,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		b.setColorRes(R.color.zerion_primary);
 		b.setContentTitle(appContext.getText(R.string.app_name));
 		b.setContentText(appContext.getResources().getQuantityString(
-				R.plurals.channel_post_notification_text, count, count));
+				R.plurals.channel_comment_notification_text, count, count));
 		b.setNumber(count);
 		b.setNotificationCategory(CATEGORY_SOCIAL);
 		setAlertProperties(b);
@@ -746,7 +747,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 
 	private static int channelNotificationId(String hex) {
 		return CHANNEL_NOTIFICATION_ID_BASE
-				+ (hex.hashCode() & 0x0FFFFFFF);
+				+ (hex.hashCode() & NOTIFICATION_ID_HASH_MASK);
 	}
 
 	@UiThread

@@ -263,6 +263,7 @@
 	<string name="channels_create_closed_label">Private — only people you share the link with can join</string>
 	<string name="channels_create_action">Create</string>
 	<string name="channels_create_error_name">A channel needs a name.</string>
+	<string name="channels_create_failed">Couldn\'t create the channel. Please try again.</string>
 	<string name="channels_join_title">Join a channel</string>
 	<string name="channels_join_link_hint">Paste channel invite link</string>
 	<string name="channels_join_action">Join</string>
@@ -458,8 +459,12 @@
 		<item quantity="other">%d new private messages.</item>
 	</plurals>
 	<plurals name="channel_post_notification_text">
-		<item quantity="one">New channel activity</item>
-		<item quantity="other">%d new channel updates</item>
+		<item quantity="one">New channel post</item>
+		<item quantity="other">%d new channel posts</item>
+	</plurals>
+	<plurals name="channel_comment_notification_text">
+		<item quantity="one">New comment on your post</item>
+		<item quantity="other">%d new comments on your post</item>
 	</plurals>
 	<plurals name="group_message_notification_text">
 		<item quantity="one">New group message.</item>
@@ -1268,7 +1273,9 @@
 	<string name="notify_channel_posts_setting_summary">Show alerts for new channel posts and comments</string>
 	<string name="notify_channel_posts_setting_summary_26">Configure alerts for new channel posts and comments</string>
 	<string name="post_update_notice_title">Reconfigure after update</string>
-	<string name="post_update_notice_message">This security update changed how Zerion stores your settings at rest. Your chats, contacts, channels, groups, and vault are intact, but some preferences were reset and need to be set again: decoy mode, the panic password, notification and security toggles, theme, and language. Open Settings to reconfigure them.</string>
+	<string name="post_update_notice_message">This security update changed how Zerion stores your settings at rest. Your chats, contacts, channels, groups, and vault are intact, but some preferences were reset and need to be set again: decoy mode, the wipe password, notification and security toggles, theme, and language. Open Settings to reconfigure them.</string>
+	<string name="post_update_notice_open_settings">Open Settings</string>
+	<string name="nav_profile_content_description">Your profile and account</string>
 	<string name="notify_voice_calls_setting_title">Voice calls</string>
 	<string name="notify_voice_calls_setting_summary">Show alerts for incoming voice calls</string>
 	<string name="notify_voice_calls_setting_summary_26">Configure alerts for incoming voice calls</string>

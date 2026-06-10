@@ -346,8 +346,8 @@ public class ChannelListFragment extends BaseFragment
 				if (!isAdded()) return;
 				requireActivity().runOnUiThread(() ->
 						Toast.makeText(requireContext(),
-								R.string.channels_create_error_name,
-								Toast.LENGTH_SHORT).show());
+								R.string.channels_create_failed,
+								Toast.LENGTH_LONG).show());
 			}
 		});
 	}

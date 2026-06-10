@@ -96,7 +96,12 @@
 		<activity
 			android:name="com.professor.zerion.android.channel.ChannelFeedActivity"
 			android:exported="false"
-			android:theme="@style/ZerionTheme.NoActionBar" />
+			android:parentActivityName="com.professor.zerion.android.navdrawer.NavDrawerActivity"
+			android:theme="@style/ZerionTheme.NoActionBar">
+			<meta-data
+				android:name="android.support.PARENT_ACTIVITY"
+				android:value="com.professor.zerion.android.navdrawer.NavDrawerActivity" />
+		</activity>
 
 		<activity
 			android:name="com.professor.zerion.android.channel.ChannelDelegationsActivity"
@@ -116,8 +121,13 @@
 		<activity
 			android:name="com.professor.zerion.android.channel.ChannelCommentsActivity"
 			android:exported="false"
+			android:parentActivityName="com.professor.zerion.android.channel.ChannelFeedActivity"
 			android:theme="@style/ZerionTheme.NoActionBar"
-			android:windowSoftInputMode="adjustResize" />
+			android:windowSoftInputMode="adjustResize">
+			<meta-data
+				android:name="android.support.PARENT_ACTIVITY"
+				android:value="com.professor.zerion.android.channel.ChannelFeedActivity" />
+		</activity>
 
 		<service
 			android:name="com.professor.zerion.android.NotificationCleanupService"

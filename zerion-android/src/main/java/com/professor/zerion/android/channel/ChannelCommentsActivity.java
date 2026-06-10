@@ -65,6 +65,9 @@ public class ChannelCommentsActivity extends ZerionActivity
 	@Inject
 	@IoExecutor
 	Executor ioExecutor;
+	@Inject
+	com.professor.zerion.android.api.AndroidNotificationManager
+			notificationManager;
 
 	private byte[] channelId = new byte[0];
 	private long parentSeq = 0L;
@@ -135,6 +138,9 @@ public class ChannelCommentsActivity extends ZerionActivity
 	public void onStart() {
 		super.onStart();
 		eventBus.addListener(this);
+		if (channelId.length > 0) {
+			notificationManager.clearChannelNotification(channelId);
+		}
 		refresh();
 	}
 

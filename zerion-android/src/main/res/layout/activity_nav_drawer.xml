@@ -30,6 +30,7 @@
 			android:layout_marginStart="12dp"
 			android:clickable="true"
 			android:focusable="true"
+			android:contentDescription="@string/nav_profile_content_description"
 			android:foreground="?attr/selectableItemBackgroundBorderless"
 			app:cardCornerRadius="20dp"
 			app:cardElevation="0dp"
@@ -45,6 +46,7 @@
 				android:layout_width="match_parent"
 				android:layout_height="match_parent"
 				android:src="@drawable/ic_person"
+				android:importantForAccessibility="no"
 				android:scaleType="centerCrop" />
 
 		</com.google.android.material.card.MaterialCardView>

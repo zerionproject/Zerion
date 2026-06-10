@@ -168,13 +168,22 @@ public class NavDrawerActivity extends ZerionActivity implements
 			new MaterialAlertDialogBuilder(this)
 					.setTitle(R.string.post_update_notice_title)
 					.setMessage(R.string.post_update_notice_message)
-					.setPositiveButton(R.string.got_it, (d, w) -> {
-					})
-					.setOnDismissListener(d -> uiPrefs.edit().putBoolean(
-							AppModule.PREF_POST_UPDATE_NOTICE_PENDING, false)
-							.apply())
+					.setCancelable(false)
+					.setPositiveButton(
+							R.string.post_update_notice_open_settings,
+							(d, w) -> {
+								clearPostUpdateNotice();
+								openSettings();
+							})
+					.setNegativeButton(R.string.got_it,
+							(d, w) -> clearPostUpdateNotice())
 					.show();
 		}, 900);
+	}
+
+	private void clearPostUpdateNotice() {
+		uiPrefs.edit().putBoolean(
+				AppModule.PREF_POST_UPDATE_NOTICE_PENDING, false).apply();
 	}
 
 	private void initializeViews() {

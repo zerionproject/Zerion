@@ -111,7 +111,7 @@ public class AuthorView extends ConstraintLayout {
 			Glide.with(v)
 					.load(info.getAvatarHeader())
 					.diskCacheStrategy(DiskCacheStrategy.NONE)
-					.skipMemoryCache(true)
+					.centerCrop()
 					.signature(new ObjectKey(info.getAvatarHeader().getMessageId().getBytes()))
 					.error(identicon)
 					.into(v)

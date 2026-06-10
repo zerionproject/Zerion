@@ -34,7 +34,7 @@ import javax.crypto.spec.GCMParameterSpec;
 public final class ZerionEncryptedPrefs implements SharedPreferences {
 
 	private static final String ANDROID_KEYSTORE = "AndroidKeyStore";
-	private static final String KEY_ALIAS = "zerion_prefs_master_v1";
+	private static final String KEY_ALIAS = "zerion_prefs_master_v2";
 	private static final String BOOT_KEY_ALIAS = "zerion_boot_prefs_master_v1";
 	private static final String KEYNAME_HMAC_ALIAS =
 			"zerion_prefs_keyname_hmac_v1";
@@ -153,31 +153,6 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 				.setBlockModes(KeyProperties.BLOCK_MODE_GCM)
 				.setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
 				.setKeySize(256);
-		if (Build.VERSION.SDK_INT >= 28 && !bootReadable) {
-			builder.setUnlockedDeviceRequired(true);
-			try {
-				KeyGenParameterSpec strongBoxSpec =
-						new KeyGenParameterSpec.Builder(alias,
-								KeyProperties.PURPOSE_ENCRYPT
-										| KeyProperties.PURPOSE_DECRYPT)
-								.setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-								.setEncryptionPaddings(
-										KeyProperties.ENCRYPTION_PADDING_NONE)
-								.setKeySize(256)
-								.setUnlockedDeviceRequired(true)
-								.setIsStrongBoxBacked(true)
-								.build();
-				gen.init(strongBoxSpec);
-				return gen.generateKey();
-			} catch (
-					android.security.keystore.StrongBoxUnavailableException
-					ignored) {
-			} catch (java.security.InvalidAlgorithmParameterException
-					ignored) {
-			}
-			gen = KeyGenerator.getInstance(
-					KeyProperties.KEY_ALGORITHM_AES, ANDROID_KEYSTORE);
-		}
 		gen.init(builder.build());
 		return gen.generateKey();
 	}
