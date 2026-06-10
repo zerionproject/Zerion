@@ -311,7 +311,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 				com.professor.zerion.android.AppModule.getUiPrefs();
 		boolean videoEnabled = prefs != null && prefs.getBoolean(
 				com.professor.zerion.android.settings.SecurityFragment
-						.PREF_VIDEO_CALLS_ENABLED, false);
+						.PREF_VIDEO_CALLS_ENABLED, true);
 
 		if (videoButton != null) {
 			if (videoEnabled) {

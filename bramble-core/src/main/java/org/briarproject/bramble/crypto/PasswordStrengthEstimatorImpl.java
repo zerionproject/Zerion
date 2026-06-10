@@ -11,11 +11,14 @@ import javax.annotation.concurrent.Immutable;
 @NotNullByDefault
 class PasswordStrengthEstimatorImpl implements PasswordStrengthEstimator {
 	private static final int STRONG_UNIQUE_CHARS = 12;
+	private static final int STRONG_LENGTH = 16;
 
 	@Override
 	public float estimateStrength(char[] password) {
 		HashSet<Character> unique = new HashSet<>();
 		for (char c : password) unique.add(c);
-		return Math.min(1, (float) unique.size() / STRONG_UNIQUE_CHARS);
+		float uniqueScore = (float) unique.size() / STRONG_UNIQUE_CHARS;
+		float lengthScore = (float) password.length / STRONG_LENGTH;
+		return Math.min(1, Math.max(uniqueScore, lengthScore));
 	}
 }

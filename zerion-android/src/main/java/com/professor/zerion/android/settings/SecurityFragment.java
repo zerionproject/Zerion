@@ -143,7 +143,7 @@ public class SecurityFragment extends Fragment {
 		voiceCallsSwitch = view.findViewById(R.id.voice_calls_switch);
 		if (voiceCallsSwitch != null) {
 			boolean voiceEnabled = uiPrefs.getBoolean(
-					PREF_VOICE_CALLS_ENABLED, false);
+					PREF_VOICE_CALLS_ENABLED, true);
 			voiceCallsSwitch.setChecked(voiceEnabled);
 			voiceCallsSwitch.setOnCheckedChangeListener(
 					(buttonView, isChecked) -> {
@@ -163,7 +163,7 @@ public class SecurityFragment extends Fragment {
 		videoCallsSwitch = view.findViewById(R.id.video_calls_switch);
 		if (videoCallsSwitch != null) {
 			boolean videoEnabled = uiPrefs.getBoolean(
-					PREF_VIDEO_CALLS_ENABLED, false);
+					PREF_VIDEO_CALLS_ENABLED, true);
 			videoCallsSwitch.setChecked(videoEnabled);
 			videoCallsSwitch.setOnCheckedChangeListener(
 					(buttonView, isChecked) -> {
