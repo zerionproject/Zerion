@@ -12,6 +12,7 @@ public interface AndroidNotificationManager {
     String ACTION_DISMISS_REMINDER = "com.professor.zerion.android.DISMISS_REMINDER";
     String CONTACT_CHANNEL_ID = "CONTACT_CHANNEL_ID";
     String GROUP_CHANNEL_ID = "GROUP_CHANNEL_ID";
+    String CHANNEL_CHANNEL_ID = "CHANNEL_CHANNEL_ID";
     String REMINDER_CHANNEL_ID = "REMINDER_CHANNEL_ID";
     String ROTATION_CHANNEL_ID = "ROTATION_CHANNEL_ID";
 

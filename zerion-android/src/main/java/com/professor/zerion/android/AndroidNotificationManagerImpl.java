@@ -188,6 +188,8 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 						R.string.contact_list_button);
 				createNotificationChannel(GROUP_CHANNEL_ID,
 						R.string.groups_button);
+				createNotificationChannel(CHANNEL_CHANNEL_ID,
+						R.string.notify_channel_posts_setting_title);
 				createRotationNotificationChannel();
 				return null;
 			};
@@ -693,7 +695,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		int count = channelCounts.getCount(hex);
 		if (count == 0) return;
 		ZerionNotificationBuilder b =
-				new ZerionNotificationBuilder(appContext, GROUP_CHANNEL_ID);
+				new ZerionNotificationBuilder(appContext, CHANNEL_CHANNEL_ID);
 		b.setSmallIcon(R.drawable.logo);
 		b.setColorRes(R.color.zerion_primary);
 		b.setContentTitle(appContext.getText(R.string.app_name));

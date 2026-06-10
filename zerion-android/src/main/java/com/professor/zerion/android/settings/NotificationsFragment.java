@@ -47,6 +47,7 @@ import static java.util.Objects.requireNonNull;
 import static org.briarproject.bramble.util.StringUtils.isNullOrEmpty;
 import static com.professor.zerion.android.AppModule.getAndroidComponent;
 import static com.professor.zerion.android.activity.RequestCodes.REQUEST_RINGTONE;
+import static com.professor.zerion.android.api.AndroidNotificationManager.CHANNEL_CHANNEL_ID;
 import static com.professor.zerion.android.api.AndroidNotificationManager.CONTACT_CHANNEL_ID;
 import static com.professor.zerion.android.api.AndroidNotificationManager.GROUP_CHANNEL_ID;
 import static com.professor.zerion.android.api.AndroidNotificationManager.PREF_NOTIFY_CHANNEL;
@@ -243,6 +244,10 @@ public class NotificationsFragment extends Fragment {
 		notifyGroupMessagesSwitch.setChecked(true);
 		notifyGroupMessagesCard.setOnClickListener(v ->
 				openChannelSettings(GROUP_CHANNEL_ID));
+		notifyChannelPostsSwitch.setClickable(false);
+		notifyChannelPostsSwitch.setChecked(true);
+		notifyChannelPostsCard.setOnClickListener(v ->
+				openChannelSettings(CHANNEL_CHANNEL_ID));
 		notifyVoiceCallsSwitch.setClickable(false);
 		notifyVoiceCallsSwitch.setChecked(true);
 		notifyVoiceCallsCard.setOnClickListener(v ->

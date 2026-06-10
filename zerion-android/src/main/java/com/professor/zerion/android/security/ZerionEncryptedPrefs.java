@@ -138,10 +138,11 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 		return gen.generateKey();
 	}
 
-	private String encrypt(byte type, byte[] payload) {
+	private String encrypt(String prefKey, byte type, byte[] payload) {
 		try {
 			Cipher c = Cipher.getInstance(TRANSFORM);
 			c.init(Cipher.ENCRYPT_MODE, key);
+			c.updateAAD(prefKey.getBytes(StandardCharsets.UTF_8));
 			byte[] iv = c.getIV();
 			byte[] plaintext = new byte[1 + payload.length];
 			plaintext[0] = type;
@@ -158,7 +159,8 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 	}
 
 	@Nullable
-	private byte[] decryptExpect(@Nullable String b64, byte expectedType) {
+	private byte[] decryptExpect(String prefKey, @Nullable String b64,
+			byte expectedType) {
 		if (b64 == null) return null;
 		byte[] combined;
 		try {
@@ -174,6 +176,7 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 			Cipher c = Cipher.getInstance(TRANSFORM);
 			c.init(Cipher.DECRYPT_MODE, key,
 					new GCMParameterSpec(GCM_TAG_BITS, iv));
+			c.updateAAD(prefKey.getBytes(StandardCharsets.UTF_8));
 			byte[] plain = c.doFinal(ct);
 			if (plain.length < 1 || plain[0] != expectedType) {
 				Arrays.fill(plain, (byte) 0);
@@ -209,6 +212,7 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 				Cipher c = Cipher.getInstance(TRANSFORM);
 				c.init(Cipher.DECRYPT_MODE, key,
 						new GCMParameterSpec(GCM_TAG_BITS, iv));
+				c.updateAAD(e.getKey().getBytes(StandardCharsets.UTF_8));
 				byte[] plain = c.doFinal(ct);
 				if (plain.length < 1) continue;
 				byte type = plain[0];
@@ -249,7 +253,7 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 	@Nullable
 	@Override
 	public String getString(String key, @Nullable String defValue) {
-		byte[] payload = decryptExpect(delegate.getString(key, null),
+		byte[] payload = decryptExpect(key, delegate.getString(key, null),
 				TYPE_STRING);
 		if (payload == null) return defValue;
 		return new String(payload, StandardCharsets.UTF_8);
@@ -258,7 +262,7 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 	@Nullable
 	@Override
 	public Set<String> getStringSet(String key, @Nullable Set<String> def) {
-		byte[] payload = decryptExpect(delegate.getString(key, null),
+		byte[] payload = decryptExpect(key, delegate.getString(key, null),
 				TYPE_STRING_SET);
 		if (payload == null) return def;
 		return decodeStringSet(payload);
@@ -266,7 +270,7 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 
 	@Override
 	public int getInt(String key, int defValue) {
-		byte[] payload = decryptExpect(delegate.getString(key, null),
+		byte[] payload = decryptExpect(key, delegate.getString(key, null),
 				TYPE_INT);
 		if (payload == null || payload.length != 4) return defValue;
 		return readInt(payload, 0);
@@ -274,7 +278,7 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 
 	@Override
 	public long getLong(String key, long defValue) {
-		byte[] payload = decryptExpect(delegate.getString(key, null),
+		byte[] payload = decryptExpect(key, delegate.getString(key, null),
 				TYPE_LONG);
 		if (payload == null || payload.length != 8) return defValue;
 		return readLong(payload, 0);
@@ -282,7 +286,7 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 
 	@Override
 	public float getFloat(String key, float defValue) {
-		byte[] payload = decryptExpect(delegate.getString(key, null),
+		byte[] payload = decryptExpect(key, delegate.getString(key, null),
 				TYPE_FLOAT);
 		if (payload == null || payload.length != 4) return defValue;
 		return Float.intBitsToFloat(readInt(payload, 0));
@@ -290,7 +294,7 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 
 	@Override
 	public boolean getBoolean(String key, boolean defValue) {
-		byte[] payload = decryptExpect(delegate.getString(key, null),
+		byte[] payload = decryptExpect(key, delegate.getString(key, null),
 				TYPE_BOOLEAN);
 		if (payload == null || payload.length != 1) return defValue;
 		return payload[0] != 0;
@@ -326,7 +330,7 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 			if (value == null) {
 				inner.remove(key);
 			} else {
-				inner.putString(key, encrypt(TYPE_STRING,
+				inner.putString(key, encrypt(key, TYPE_STRING,
 						value.getBytes(StandardCharsets.UTF_8)));
 			}
 			return this;
@@ -337,7 +341,7 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 			if (values == null) {
 				inner.remove(key);
 			} else {
-				inner.putString(key, encrypt(TYPE_STRING_SET,
+				inner.putString(key, encrypt(key, TYPE_STRING_SET,
 						encodeStringSet(values)));
 			}
 			return this;
@@ -347,7 +351,7 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 		public Editor putInt(String key, int value) {
 			byte[] buf = new byte[4];
 			writeInt(value, buf, 0);
-			inner.putString(key, encrypt(TYPE_INT, buf));
+			inner.putString(key, encrypt(key, TYPE_INT, buf));
 			return this;
 		}
 
@@ -355,7 +359,7 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 		public Editor putLong(String key, long value) {
 			byte[] buf = new byte[8];
 			writeLong(value, buf, 0);
-			inner.putString(key, encrypt(TYPE_LONG, buf));
+			inner.putString(key, encrypt(key, TYPE_LONG, buf));
 			return this;
 		}
 
@@ -363,13 +367,13 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 		public Editor putFloat(String key, float value) {
 			byte[] buf = new byte[4];
 			writeInt(Float.floatToRawIntBits(value), buf, 0);
-			inner.putString(key, encrypt(TYPE_FLOAT, buf));
+			inner.putString(key, encrypt(key, TYPE_FLOAT, buf));
 			return this;
 		}
 
 		@Override
 		public Editor putBoolean(String key, boolean value) {
-			inner.putString(key, encrypt(TYPE_BOOLEAN,
+			inner.putString(key, encrypt(key, TYPE_BOOLEAN,
 					new byte[]{(byte) (value ? 1 : 0)}));
 			return this;
 		}
