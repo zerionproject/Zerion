@@ -20,6 +20,10 @@ public final class AccountWipeCleanup {
 
 	private static final String KS_ALIAS_ZERION_PREFS_MASTER =
 			"zerion_prefs_master_v1";
+	private static final String KS_ALIAS_ZERION_PREFS_KEYNAME_HMAC =
+			"zerion_prefs_keyname_hmac_v1";
+	private static final String KS_ALIAS_ZERION_BOOT_PREFS_MASTER =
+			"zerion_boot_prefs_master_v1";
 	private static final String KS_ALIAS_ANDROIDX_MASTER =
 			"_androidx_security_master_key_";
 	private static final String KS_ALIAS_VAULT_MASTER =
@@ -44,6 +48,8 @@ public final class AccountWipeCleanup {
 		clearAndDeletePrefs(app, app.getPackageName() + PREFS_EARLY_SUFFIX);
 
 		deleteKeyStoreEntry(KS_ALIAS_ZERION_PREFS_MASTER);
+		deleteKeyStoreEntry(KS_ALIAS_ZERION_PREFS_KEYNAME_HMAC);
+		deleteKeyStoreEntry(KS_ALIAS_ZERION_BOOT_PREFS_MASTER);
 		deleteKeyStoreEntry(KS_ALIAS_ANDROIDX_MASTER);
 		deleteKeyStoreEntry(KS_ALIAS_VAULT_MASTER);
 		deleteKeyStoreEntry(KS_ALIAS_VAULT_BIOMETRIC);

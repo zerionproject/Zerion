@@ -222,10 +222,6 @@ public class PhotoView extends AppCompatImageView {
         attacher.setOnViewTapListener(listener);
     }
 
-    public void setOnViewDragListener(OnViewDragListener listener) {
-        attacher.setOnViewDragListener(listener);
-    }
-
     public void setScale(float scale) {
         attacher.setScale(scale);
     }
@@ -248,9 +244,5 @@ public class PhotoView extends AppCompatImageView {
 
     public void setOnScaleChangeListener(OnScaleChangedListener onScaleChangedListener) {
         attacher.setOnScaleChangeListener(onScaleChangedListener);
-    }
-
-    public void setOnSingleFlingListener(OnSingleFlingListener onSingleFlingListener) {
-        attacher.setOnSingleFlingListener(onSingleFlingListener);
     }
 }

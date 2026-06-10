@@ -30,7 +30,7 @@ public interface AndroidNotificationManager {
     void showGroupMessageNotification(GroupId g);
     void showGroupTrPostNotification(byte[] groupTrId);
     void showChannelPostNotification(byte[] channelId);
-    void showChannelCommentNotification(byte[] channelId);
+    void showChannelCommentNotification(byte[] channelId, long parentPostSeqNum);
     void clearContactNotification(ContactId c);
     void clearGroupMessageNotification(GroupId g);
     void clearGroupTrPostNotification(byte[] groupTrId);

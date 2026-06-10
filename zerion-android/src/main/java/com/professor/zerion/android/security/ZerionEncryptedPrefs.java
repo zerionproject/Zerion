@@ -17,7 +17,6 @@ import java.security.KeyStore;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -26,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
+import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 
@@ -35,7 +35,11 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 
 	private static final String ANDROID_KEYSTORE = "AndroidKeyStore";
 	private static final String KEY_ALIAS = "zerion_prefs_master_v1";
+	private static final String BOOT_KEY_ALIAS = "zerion_boot_prefs_master_v1";
+	private static final String KEYNAME_HMAC_ALIAS =
+			"zerion_prefs_keyname_hmac_v1";
 	private static final String TRANSFORM = "AES/GCM/NoPadding";
+	private static final String HMAC_ALGO = "HmacSHA256";
 	private static final int GCM_IV_BYTES = 12;
 	private static final int GCM_TAG_BITS = 128;
 	private static final int GCM_TAG_BYTES = GCM_TAG_BITS / 8;
@@ -52,14 +56,17 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 
 	private final SharedPreferences delegate;
 	private final SecretKey key;
+	private final SecretKey hmacKey;
 	private final Set<OnSharedPreferenceChangeListener> listeners =
 			Collections.newSetFromMap(new ConcurrentHashMap<>());
 	private final SharedPreferences.OnSharedPreferenceChangeListener
 			delegateListener;
 
-	private ZerionEncryptedPrefs(SharedPreferences delegate, SecretKey key) {
+	private ZerionEncryptedPrefs(SharedPreferences delegate, SecretKey key,
+			SecretKey hmacKey) {
 		this.delegate = delegate;
 		this.key = key;
+		this.hmacKey = hmacKey;
 		this.delegateListener = (prefs, changedKey) -> {
 			for (OnSharedPreferenceChangeListener l : listeners) {
 				l.onSharedPreferenceChanged(ZerionEncryptedPrefs.this,
@@ -71,14 +78,27 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 
 	public static synchronized ZerionEncryptedPrefs create(Context ctx,
 			String fileName) {
+		return create(ctx, fileName, false);
+	}
+
+	public static synchronized ZerionEncryptedPrefs createBootReadable(
+			Context ctx, String fileName) {
+		return create(ctx, fileName, true);
+	}
+
+	private static synchronized ZerionEncryptedPrefs create(Context ctx,
+			String fileName, boolean bootReadable) {
 		ZerionEncryptedPrefs cached = INSTANCES.get(fileName);
 		if (cached != null) return cached;
 		try {
-			SecretKey k = getOrCreateKey();
+			SecretKey k = getOrCreateKey(bootReadable);
+			SecretKey hk = getOrCreateHmacKey();
 			Context app = ctx.getApplicationContext();
+			if (app == null) app = ctx;
 			SharedPreferences backing = app.getSharedPreferences(
 					fileName + "_v2", Context.MODE_PRIVATE);
-			ZerionEncryptedPrefs prefs = new ZerionEncryptedPrefs(backing, k);
+			ZerionEncryptedPrefs prefs =
+					new ZerionEncryptedPrefs(backing, k, hk);
 			INSTANCES.put(fileName, prefs);
 			deleteLegacyAndroidXFile(app, fileName);
 			return prefs;
@@ -92,13 +112,9 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 		try {
 			SharedPreferences legacy = app.getSharedPreferences(name,
 					Context.MODE_PRIVATE);
-			if (legacy.getAll().isEmpty()) {
-				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-					app.deleteSharedPreferences(name);
-				}
-				return;
+			if (!legacy.getAll().isEmpty()) {
+				legacy.edit().clear().commit();
 			}
-			legacy.edit().clear().commit();
 			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
 				app.deleteSharedPreferences(name);
 			}
@@ -114,16 +130,17 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 		}
 	}
 
-	private static SecretKey getOrCreateKey()
+	private static SecretKey getOrCreateKey(boolean bootReadable)
 			throws GeneralSecurityException {
+		String alias = bootReadable ? BOOT_KEY_ALIAS : KEY_ALIAS;
 		KeyStore ks = KeyStore.getInstance(ANDROID_KEYSTORE);
 		try {
 			ks.load(null);
 		} catch (java.io.IOException e) {
 			throw new GeneralSecurityException(e);
 		}
-		if (ks.containsAlias(KEY_ALIAS)) {
-			Key existing = ks.getKey(KEY_ALIAS, null);
+		if (ks.containsAlias(alias)) {
+			Key existing = ks.getKey(alias, null);
 			if (existing instanceof SecretKey) {
 				return (SecretKey) existing;
 			}
@@ -131,16 +148,16 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 		KeyGenerator gen = KeyGenerator.getInstance(
 				KeyProperties.KEY_ALGORITHM_AES, ANDROID_KEYSTORE);
 		KeyGenParameterSpec.Builder builder = new KeyGenParameterSpec.Builder(
-				KEY_ALIAS,
+				alias,
 				KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
 				.setBlockModes(KeyProperties.BLOCK_MODE_GCM)
 				.setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
 				.setKeySize(256);
-		if (Build.VERSION.SDK_INT >= 28) {
+		if (Build.VERSION.SDK_INT >= 28 && !bootReadable) {
 			builder.setUnlockedDeviceRequired(true);
 			try {
 				KeyGenParameterSpec strongBoxSpec =
-						new KeyGenParameterSpec.Builder(KEY_ALIAS,
+						new KeyGenParameterSpec.Builder(alias,
 								KeyProperties.PURPOSE_ENCRYPT
 										| KeyProperties.PURPOSE_DECRYPT)
 								.setBlockModes(KeyProperties.BLOCK_MODE_GCM)
@@ -165,15 +182,56 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 		return gen.generateKey();
 	}
 
-	private String encrypt(String prefKey, byte type, byte[] payload) {
+	private static SecretKey getOrCreateHmacKey()
+			throws GeneralSecurityException {
+		KeyStore ks = KeyStore.getInstance(ANDROID_KEYSTORE);
+		try {
+			ks.load(null);
+		} catch (java.io.IOException e) {
+			throw new GeneralSecurityException(e);
+		}
+		if (ks.containsAlias(KEYNAME_HMAC_ALIAS)) {
+			Key existing = ks.getKey(KEYNAME_HMAC_ALIAS, null);
+			if (existing instanceof SecretKey) {
+				return (SecretKey) existing;
+			}
+		}
+		KeyGenerator gen = KeyGenerator.getInstance(
+				KeyProperties.KEY_ALGORITHM_HMAC_SHA256, ANDROID_KEYSTORE);
+		gen.init(new KeyGenParameterSpec.Builder(KEYNAME_HMAC_ALIAS,
+				KeyProperties.PURPOSE_SIGN).build());
+		return gen.generateKey();
+	}
+
+	private String backingKey(String prefKey) {
+		try {
+			Mac mac = Mac.getInstance(HMAC_ALGO);
+			mac.init(hmacKey);
+			byte[] digest = mac.doFinal(
+					prefKey.getBytes(StandardCharsets.UTF_8));
+			return Base64.encodeToString(digest,
+					Base64.NO_WRAP | Base64.NO_PADDING | Base64.URL_SAFE);
+		} catch (GeneralSecurityException e) {
+			throw new RuntimeException("keyname hmac failed", e);
+		}
+	}
+
+	private String encrypt(String backing, String prefKey, byte type,
+			byte[] payload) {
 		try {
 			Cipher c = Cipher.getInstance(TRANSFORM);
 			c.init(Cipher.ENCRYPT_MODE, key);
-			c.updateAAD(prefKey.getBytes(StandardCharsets.UTF_8));
+			c.updateAAD(backing.getBytes(StandardCharsets.UTF_8));
 			byte[] iv = c.getIV();
-			byte[] plaintext = new byte[1 + payload.length];
+			byte[] keyBytes = prefKey.getBytes(StandardCharsets.UTF_8);
+			byte[] plaintext = new byte[1 + 2 + keyBytes.length
+					+ payload.length];
 			plaintext[0] = type;
-			System.arraycopy(payload, 0, plaintext, 1, payload.length);
+			plaintext[1] = (byte) (keyBytes.length >>> 8);
+			plaintext[2] = (byte) keyBytes.length;
+			System.arraycopy(keyBytes, 0, plaintext, 3, keyBytes.length);
+			System.arraycopy(payload, 0, plaintext, 3 + keyBytes.length,
+					payload.length);
 			byte[] ct = c.doFinal(plaintext);
 			byte[] combined = new byte[iv.length + ct.length];
 			System.arraycopy(iv, 0, combined, 0, iv.length);
@@ -186,16 +244,24 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 	}
 
 	@Nullable
-	private byte[] decryptExpect(String prefKey, @Nullable String b64,
-			byte expectedType) {
+	private byte[] decryptExpect(String prefKey, byte expectedType) {
+		String backing = backingKey(prefKey);
+		String b64 = delegate.getString(backing, null);
 		if (b64 == null) return null;
+		Decoded d = decodeBlob(backing, b64);
+		if (d == null || d.type != expectedType) return null;
+		return d.value;
+	}
+
+	@Nullable
+	private Decoded decodeBlob(String backing, String b64) {
 		byte[] combined;
 		try {
 			combined = Base64.decode(b64, Base64.NO_WRAP);
 		} catch (IllegalArgumentException e) {
 			return null;
 		}
-		if (combined.length < GCM_IV_BYTES + GCM_TAG_BYTES + 1) return null;
+		if (combined.length < GCM_IV_BYTES + GCM_TAG_BYTES + 3) return null;
 		try {
 			byte[] iv = Arrays.copyOfRange(combined, 0, GCM_IV_BYTES);
 			byte[] ct = Arrays.copyOfRange(combined, GCM_IV_BYTES,
@@ -203,18 +269,37 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 			Cipher c = Cipher.getInstance(TRANSFORM);
 			c.init(Cipher.DECRYPT_MODE, key,
 					new GCMParameterSpec(GCM_TAG_BITS, iv));
-			c.updateAAD(prefKey.getBytes(StandardCharsets.UTF_8));
+			c.updateAAD(backing.getBytes(StandardCharsets.UTF_8));
 			byte[] plain = c.doFinal(ct);
-			if (plain.length < 1 || plain[0] != expectedType) {
+			if (plain.length < 3) {
 				Arrays.fill(plain, (byte) 0);
 				return null;
 			}
-			byte[] payload = new byte[plain.length - 1];
-			System.arraycopy(plain, 1, payload, 0, payload.length);
+			byte type = plain[0];
+			int keyLen = ((plain[1] & 0xFF) << 8) | (plain[2] & 0xFF);
+			if (3 + keyLen > plain.length) {
+				Arrays.fill(plain, (byte) 0);
+				return null;
+			}
+			String prefKey = new String(plain, 3, keyLen,
+					StandardCharsets.UTF_8);
+			byte[] value = Arrays.copyOfRange(plain, 3 + keyLen, plain.length);
 			Arrays.fill(plain, (byte) 0);
-			return payload;
+			return new Decoded(type, prefKey, value);
 		} catch (GeneralSecurityException e) {
 			return null;
+		}
+	}
+
+	private static final class Decoded {
+		final byte type;
+		final String prefKey;
+		final byte[] value;
+
+		Decoded(byte type, String prefKey, byte[] value) {
+			this.type = type;
+			this.prefKey = prefKey;
+			this.value = value;
 		}
 	}
 
@@ -224,32 +309,10 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 		Map<String, Object> out = new HashMap<>();
 		for (Map.Entry<String, ?> e : raw.entrySet()) {
 			if (!(e.getValue() instanceof String)) continue;
-			String enc = (String) e.getValue();
-			byte[] combined;
-			try {
-				combined = Base64.decode(enc, Base64.NO_WRAP);
-			} catch (IllegalArgumentException ex) {
-				continue;
-			}
-			if (combined.length < GCM_IV_BYTES + GCM_TAG_BYTES + 1) continue;
-			try {
-				byte[] iv = Arrays.copyOfRange(combined, 0, GCM_IV_BYTES);
-				byte[] ct = Arrays.copyOfRange(combined, GCM_IV_BYTES,
-						combined.length);
-				Cipher c = Cipher.getInstance(TRANSFORM);
-				c.init(Cipher.DECRYPT_MODE, key,
-						new GCMParameterSpec(GCM_TAG_BITS, iv));
-				c.updateAAD(e.getKey().getBytes(StandardCharsets.UTF_8));
-				byte[] plain = c.doFinal(ct);
-				if (plain.length < 1) continue;
-				byte type = plain[0];
-				byte[] body = new byte[plain.length - 1];
-				System.arraycopy(plain, 1, body, 0, body.length);
-				Arrays.fill(plain, (byte) 0);
-				Object v = decodeTyped(type, body);
-				if (v != null) out.put(e.getKey(), v);
-			} catch (GeneralSecurityException ex) {
-			}
+			Decoded d = decodeBlob(e.getKey(), (String) e.getValue());
+			if (d == null) continue;
+			Object v = decodeTyped(d.type, d.value);
+			if (v != null) out.put(d.prefKey, v);
 		}
 		return out;
 	}
@@ -280,8 +343,7 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 	@Nullable
 	@Override
 	public String getString(String key, @Nullable String defValue) {
-		byte[] payload = decryptExpect(key, delegate.getString(key, null),
-				TYPE_STRING);
+		byte[] payload = decryptExpect(key, TYPE_STRING);
 		if (payload == null) return defValue;
 		return new String(payload, StandardCharsets.UTF_8);
 	}
@@ -289,47 +351,42 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 	@Nullable
 	@Override
 	public Set<String> getStringSet(String key, @Nullable Set<String> def) {
-		byte[] payload = decryptExpect(key, delegate.getString(key, null),
-				TYPE_STRING_SET);
+		byte[] payload = decryptExpect(key, TYPE_STRING_SET);
 		if (payload == null) return def;
 		return decodeStringSet(payload);
 	}
 
 	@Override
 	public int getInt(String key, int defValue) {
-		byte[] payload = decryptExpect(key, delegate.getString(key, null),
-				TYPE_INT);
+		byte[] payload = decryptExpect(key, TYPE_INT);
 		if (payload == null || payload.length != 4) return defValue;
 		return readInt(payload, 0);
 	}
 
 	@Override
 	public long getLong(String key, long defValue) {
-		byte[] payload = decryptExpect(key, delegate.getString(key, null),
-				TYPE_LONG);
+		byte[] payload = decryptExpect(key, TYPE_LONG);
 		if (payload == null || payload.length != 8) return defValue;
 		return readLong(payload, 0);
 	}
 
 	@Override
 	public float getFloat(String key, float defValue) {
-		byte[] payload = decryptExpect(key, delegate.getString(key, null),
-				TYPE_FLOAT);
+		byte[] payload = decryptExpect(key, TYPE_FLOAT);
 		if (payload == null || payload.length != 4) return defValue;
 		return Float.intBitsToFloat(readInt(payload, 0));
 	}
 
 	@Override
 	public boolean getBoolean(String key, boolean defValue) {
-		byte[] payload = decryptExpect(key, delegate.getString(key, null),
-				TYPE_BOOLEAN);
+		byte[] payload = decryptExpect(key, TYPE_BOOLEAN);
 		if (payload == null || payload.length != 1) return defValue;
 		return payload[0] != 0;
 	}
 
 	@Override
 	public boolean contains(String key) {
-		return delegate.contains(key);
+		return delegate.contains(backingKey(key));
 	}
 
 	@Override
@@ -354,10 +411,11 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 
 		@Override
 		public Editor putString(String key, @Nullable String value) {
+			String backing = backingKey(key);
 			if (value == null) {
-				inner.remove(key);
+				inner.remove(backing);
 			} else {
-				inner.putString(key, encrypt(key, TYPE_STRING,
+				inner.putString(backing, encrypt(backing, key, TYPE_STRING,
 						value.getBytes(StandardCharsets.UTF_8)));
 			}
 			return this;
@@ -365,49 +423,54 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 
 		@Override
 		public Editor putStringSet(String key, @Nullable Set<String> values) {
+			String backing = backingKey(key);
 			if (values == null) {
-				inner.remove(key);
+				inner.remove(backing);
 			} else {
-				inner.putString(key, encrypt(key, TYPE_STRING_SET,
-						encodeStringSet(values)));
+				inner.putString(backing, encrypt(backing, key,
+						TYPE_STRING_SET, encodeStringSet(values)));
 			}
 			return this;
 		}
 
 		@Override
 		public Editor putInt(String key, int value) {
+			String backing = backingKey(key);
 			byte[] buf = new byte[4];
 			writeInt(value, buf, 0);
-			inner.putString(key, encrypt(key, TYPE_INT, buf));
+			inner.putString(backing, encrypt(backing, key, TYPE_INT, buf));
 			return this;
 		}
 
 		@Override
 		public Editor putLong(String key, long value) {
+			String backing = backingKey(key);
 			byte[] buf = new byte[8];
 			writeLong(value, buf, 0);
-			inner.putString(key, encrypt(key, TYPE_LONG, buf));
+			inner.putString(backing, encrypt(backing, key, TYPE_LONG, buf));
 			return this;
 		}
 
 		@Override
 		public Editor putFloat(String key, float value) {
+			String backing = backingKey(key);
 			byte[] buf = new byte[4];
 			writeInt(Float.floatToRawIntBits(value), buf, 0);
-			inner.putString(key, encrypt(key, TYPE_FLOAT, buf));
+			inner.putString(backing, encrypt(backing, key, TYPE_FLOAT, buf));
 			return this;
 		}
 
 		@Override
 		public Editor putBoolean(String key, boolean value) {
-			inner.putString(key, encrypt(key, TYPE_BOOLEAN,
+			String backing = backingKey(key);
+			inner.putString(backing, encrypt(backing, key, TYPE_BOOLEAN,
 					new byte[]{(byte) (value ? 1 : 0)}));
 			return this;
 		}
 
 		@Override
 		public Editor remove(String key) {
-			inner.remove(key);
+			inner.remove(backingKey(key));
 			return this;
 		}
 

@@ -120,6 +120,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	static final int CONTACT_NOTIFICATION_ID_BASE = 1000;
 	static final int GROUP_TR_NOTIFICATION_ID_BASE = 5000;
 	static final int CHANNEL_NOTIFICATION_ID_BASE = 9000;
+	static final int CHANNEL_COMMENT_NOTIFICATION_ID_BASE = 11000;
 
 	private final SettingsManager settingsManager;
 	private final AndroidExecutor androidExecutor;
@@ -140,6 +141,9 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	private final Set<Integer> activeGroupTrNotificationIds = new HashSet<>();
 	private final Multiset<String> channelCounts = new Multiset<>();
 	private final Set<Integer> activeChannelNotificationIds = new HashSet<>();
+	private final Multiset<String> channelCommentCounts = new Multiset<>();
+	private final Set<Integer> activeChannelCommentNotificationIds =
+			new HashSet<>();
 	private int contactAddedTotal = 0;
 	private int nextRequestId = 0;
 	@Nullable
@@ -312,7 +316,8 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 			if (!c.isLocal()) showChannelPostNotification(c.getChannelId());
 		} else if (e instanceof ChannelCommentReceivedEvent) {
 			ChannelCommentReceivedEvent c = (ChannelCommentReceivedEvent) e;
-			showChannelCommentNotification(c.getChannelId());
+			showChannelCommentNotification(c.getChannelId(),
+					c.getParentPostSeqNum());
 		} else if (e instanceof ContactAddedEvent) {
 			ContactAddedEvent c = (ContactAddedEvent) e;
 			if (!c.isVerified()) showContactAddedNotification();
@@ -653,14 +658,53 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	}
 
 	@Override
-	public void showChannelCommentNotification(byte[] channelId) {
+	public void showChannelCommentNotification(byte[] channelId,
+			long parentPostSeqNum) {
 		androidExecutor.runOnUiThread(() -> {
 			String hex = StringUtils.toHexString(channelId);
 			if (hex.equals(blockedChannel)) return;
 			if (!settings.getBoolean(PREF_NOTIFY_CHANNEL, true)) return;
-			channelCounts.add(hex);
-			postChannelNotification(channelId, hex, true);
+			String key = hex + ":" + parentPostSeqNum;
+			channelCommentCounts.add(key);
+			postChannelCommentNotification(channelId, parentPostSeqNum, key);
 		});
+	}
+
+	private static int channelCommentNotificationId(String key) {
+		return CHANNEL_COMMENT_NOTIFICATION_ID_BASE
+				+ (key.hashCode() & 0x0FFFFFFF);
+	}
+
+	@UiThread
+	private void postChannelCommentNotification(byte[] channelId,
+			long parentPostSeqNum, String key) {
+		int count = channelCommentCounts.getCount(key);
+		if (count == 0) return;
+		ZerionNotificationBuilder b =
+				new ZerionNotificationBuilder(appContext, CHANNEL_CHANNEL_ID);
+		b.setSmallIcon(R.drawable.logo);
+		b.setColorRes(R.color.zerion_primary);
+		b.setContentTitle(appContext.getText(R.string.app_name));
+		b.setContentText(appContext.getResources().getQuantityString(
+				R.plurals.channel_post_notification_text, count, count));
+		b.setNumber(count);
+		b.setNotificationCategory(CATEGORY_SOCIAL);
+		setAlertProperties(b);
+		Intent i = com.professor.zerion.android.channel.ChannelCommentsActivity
+				.intent(appContext, channelId, parentPostSeqNum);
+		i.setData(Uri.parse("zerion://channel/" + StringUtils.toHexString(
+				channelId) + "/comments/" + parentPostSeqNum));
+		i.setFlags(FLAG_ACTIVITY_CLEAR_TOP);
+		TaskStackBuilder t = TaskStackBuilder.create(appContext);
+		t.addParentStack(
+				com.professor.zerion.android.channel.ChannelCommentsActivity
+						.class);
+		t.addNextIntent(i);
+		b.setContentIntent(t.getPendingIntent(nextRequestId++,
+				getImmutableFlags(0)));
+		int id = channelCommentNotificationId(key);
+		activeChannelCommentNotificationIds.add(id);
+		notificationManager.notify(id, b.build());
 	}
 
 	@Override
@@ -672,6 +716,17 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 				notificationManager.cancel(id);
 				activeChannelNotificationIds.remove(id);
 			}
+			String prefix = hex + ":";
+			java.util.List<String> toClear = new java.util.ArrayList<>();
+			for (String key : channelCommentCounts.keySet()) {
+				if (key.startsWith(prefix)) toClear.add(key);
+			}
+			for (String key : toClear) {
+				int id = channelCommentNotificationId(key);
+				notificationManager.cancel(id);
+				activeChannelCommentNotificationIds.remove(id);
+				channelCommentCounts.removeAll(key);
+			}
 		});
 	}
 
@@ -682,6 +737,11 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 			notificationManager.cancel(id);
 		}
 		activeChannelNotificationIds.clear();
+		channelCommentCounts.clear();
+		for (int id : activeChannelCommentNotificationIds) {
+			notificationManager.cancel(id);
+		}
+		activeChannelCommentNotificationIds.clear();
 	}
 
 	private static int channelNotificationId(String hex) {

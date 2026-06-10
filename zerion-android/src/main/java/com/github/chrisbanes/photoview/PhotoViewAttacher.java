@@ -84,8 +84,6 @@ public class PhotoViewAttacher implements View.OnTouchListener,
     private View.OnClickListener mOnClickListener;
     private OnLongClickListener mLongClickListener;
     private OnScaleChangedListener mScaleChangeListener;
-    private OnSingleFlingListener mSingleFlingListener;
-    private OnViewDragListener mOnViewDragListener;
 
     private FlingRunnable mCurrentFlingRunnable;
     private int mHorizontalScrollEdge = HORIZONTAL_EDGE_BOTH;
@@ -100,9 +98,6 @@ public class PhotoViewAttacher implements View.OnTouchListener,
         public void onDrag(float dx, float dy) {
             if (mScaleDragDetector.isScaling()) {
                 return; // Do not drag if we are already scaling
-            }
-            if (mOnViewDragListener != null) {
-                mOnViewDragListener.onDrag(dx, dy);
             }
             mSuppMatrix.postTranslate(dx, dy);
             checkAndDisplayMatrix();
@@ -177,16 +172,6 @@ public class PhotoViewAttacher implements View.OnTouchListener,
             @Override
             public boolean onFling(MotionEvent e1, MotionEvent e2,
                 float velocityX, float velocityY) {
-                if (mSingleFlingListener != null) {
-                    if (getScale() > DEFAULT_MIN_SCALE) {
-                        return false;
-                    }
-                    if (e1.getPointerCount() > SINGLE_TOUCH
-                        || e2.getPointerCount() > SINGLE_TOUCH) {
-                        return false;
-                    }
-                    return mSingleFlingListener.onFling(e1, e2, velocityX, velocityY);
-                }
                 return false;
             }
         });
@@ -254,10 +239,6 @@ public class PhotoViewAttacher implements View.OnTouchListener,
 
     public void setOnScaleChangeListener(OnScaleChangedListener onScaleChangeListener) {
         this.mScaleChangeListener = onScaleChangeListener;
-    }
-
-    public void setOnSingleFlingListener(OnSingleFlingListener onSingleFlingListener) {
-        this.mSingleFlingListener = onSingleFlingListener;
     }
 
     @Deprecated
@@ -432,10 +413,6 @@ public class PhotoViewAttacher implements View.OnTouchListener,
 
     public void setOnViewTapListener(OnViewTapListener listener) {
         mViewTapListener = listener;
-    }
-
-    public void setOnViewDragListener(OnViewDragListener listener) {
-        mOnViewDragListener = listener;
     }
 
     public void setScale(float scale) {
