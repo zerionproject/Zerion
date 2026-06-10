@@ -20,14 +20,19 @@ class OutItemViewHolder {
 
 	void bind(ConversationItem item) {
 		int res;
+		int desc;
 		if (item.isSeen()) {
 			res = R.drawable.message_delivered;
+			desc = R.string.message_status_delivered;
 		} else if (item.isSent()) {
 			res = R.drawable.message_sent;
+			desc = R.string.message_status_sent;
 		} else {
 			res = R.drawable.message_stored;
+			desc = R.string.message_status_pending;
 		}
 		status.setImageResource(res);
+		status.setContentDescription(status.getContext().getString(desc));
 	}
 
 }

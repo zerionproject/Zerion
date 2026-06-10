@@ -134,6 +134,10 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 
 		boolean showBomb = item.getAutoDeleteTimer() != NO_AUTO_DELETE_TIMER;
 		bomb.setVisibility(showBomb ? VISIBLE : GONE);
+		if (showBomb) {
+			bomb.setContentDescription(bomb.getContext()
+					.getString(R.string.message_auto_delete_indicator));
+		}
 
 		layout.setOnLongClickListener(v -> {
 			listener.onMessageLongClick(item);

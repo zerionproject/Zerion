@@ -110,7 +110,7 @@ public class AllMediaActivity extends ZerionActivity {
 
 		tabLayout = findViewById(R.id.tab_layout);
 		tabLayout.addTab(tabLayout.newTab().setText(R.string.all));
-		tabLayout.addTab(tabLayout.newTab().setText(R.string.images));
+		tabLayout.addTab(tabLayout.newTab().setText(R.string.media));
 		tabLayout.addTab(tabLayout.newTab().setText(R.string.documents));
 
 		tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
@@ -220,7 +220,7 @@ public class AllMediaActivity extends ZerionActivity {
 				emptyText.setText(R.string.no_media);
 				break;
 			case TAB_IMAGES:
-				emptyText.setText(R.string.no_images);
+				emptyText.setText(R.string.no_media);
 				break;
 			case TAB_DOCUMENTS:
 				emptyText.setText(R.string.no_documents);

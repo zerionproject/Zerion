@@ -788,6 +788,10 @@
 	<string name="all">All</string>
 	<string name="images">Images</string>
 	<string name="documents">Documents</string>
+	<string name="message_status_pending">Message pending</string>
+	<string name="message_status_sent">Message sent</string>
+	<string name="message_status_delivered">Message delivered</string>
+	<string name="message_auto_delete_indicator">Disappearing message</string>
 	<string name="document">Document</string>
 	<string name="image">Image</string>
 	<string name="contact">Contact</string>
