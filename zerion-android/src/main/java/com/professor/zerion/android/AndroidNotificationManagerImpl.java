@@ -681,31 +681,42 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 			long parentPostSeqNum, String key) {
 		int count = channelCommentCounts.getCount(key);
 		if (count == 0) return;
+		CharSequence text = appContext.getResources().getQuantityString(
+				R.plurals.channel_comment_notification_text, count, count);
+		Intent i = com.professor.zerion.android.channel.ChannelCommentsActivity
+				.intent(appContext, channelId, parentPostSeqNum);
+		i.setData(Uri.parse("zerion://channel/" + StringUtils.toHexString(
+				channelId) + "/comments/" + parentPostSeqNum));
+		postChannelStyleNotification(count, text, i,
+				com.professor.zerion.android.channel.ChannelCommentsActivity
+						.class,
+				channelCommentNotificationId(key),
+				activeChannelCommentNotificationIds, true);
+	}
+
+	@UiThread
+	private void postChannelStyleNotification(int count,
+			CharSequence contentText, Intent contentIntent,
+			Class<?> targetActivity, int notifId, Set<Integer> activeIds,
+			boolean mayAlertAgain) {
+		if (count == 0) return;
 		ZerionNotificationBuilder b =
 				new ZerionNotificationBuilder(appContext, CHANNEL_CHANNEL_ID);
 		b.setSmallIcon(R.drawable.logo);
 		b.setColorRes(R.color.zerion_primary);
 		b.setContentTitle(appContext.getText(R.string.app_name));
-		b.setContentText(appContext.getResources().getQuantityString(
-				R.plurals.channel_comment_notification_text, count, count));
+		b.setContentText(contentText);
 		b.setNumber(count);
 		b.setNotificationCategory(CATEGORY_SOCIAL);
-		setAlertProperties(b);
-		Intent i = com.professor.zerion.android.channel.ChannelCommentsActivity
-				.intent(appContext, channelId, parentPostSeqNum);
-		i.setData(Uri.parse("zerion://channel/" + StringUtils.toHexString(
-				channelId) + "/comments/" + parentPostSeqNum));
-		i.setFlags(FLAG_ACTIVITY_CLEAR_TOP);
+		if (mayAlertAgain) setAlertProperties(b);
+		contentIntent.setFlags(FLAG_ACTIVITY_CLEAR_TOP);
 		TaskStackBuilder t = TaskStackBuilder.create(appContext);
-		t.addParentStack(
-				com.professor.zerion.android.channel.ChannelCommentsActivity
-						.class);
-		t.addNextIntent(i);
+		t.addParentStack(targetActivity);
+		t.addNextIntent(contentIntent);
 		b.setContentIntent(t.getPendingIntent(nextRequestId++,
 				getImmutableFlags(0)));
-		int id = channelCommentNotificationId(key);
-		activeChannelCommentNotificationIds.add(id);
-		notificationManager.notify(id, b.build());
+		activeIds.add(notifId);
+		notificationManager.notify(notifId, b.build());
 	}
 
 	@Override
@@ -755,31 +766,17 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 			boolean mayAlertAgain) {
 		int count = channelCounts.getCount(hex);
 		if (count == 0) return;
-		ZerionNotificationBuilder b =
-				new ZerionNotificationBuilder(appContext, CHANNEL_CHANNEL_ID);
-		b.setSmallIcon(R.drawable.logo);
-		b.setColorRes(R.color.zerion_primary);
-		b.setContentTitle(appContext.getText(R.string.app_name));
-		b.setContentText(appContext.getResources().getQuantityString(
-				R.plurals.channel_post_notification_text, count, count));
-		b.setNumber(count);
-		b.setNotificationCategory(CATEGORY_SOCIAL);
-		if (mayAlertAgain) setAlertProperties(b);
+		CharSequence text = appContext.getResources().getQuantityString(
+				R.plurals.channel_post_notification_text, count, count);
 		Intent i = new Intent(appContext,
 				com.professor.zerion.android.channel.ChannelFeedActivity.class);
 		i.putExtra(com.professor.zerion.android.channel.ChannelFeedActivity
 				.EXTRA_CHANNEL_ID, channelId);
 		i.setData(Uri.parse("zerion://channel/" + hex));
-		i.setFlags(FLAG_ACTIVITY_CLEAR_TOP);
-		TaskStackBuilder t = TaskStackBuilder.create(appContext);
-		t.addParentStack(
-				com.professor.zerion.android.channel.ChannelFeedActivity.class);
-		t.addNextIntent(i);
-		b.setContentIntent(t.getPendingIntent(nextRequestId++,
-				getImmutableFlags(0)));
-		int id = channelNotificationId(hex);
-		activeChannelNotificationIds.add(id);
-		notificationManager.notify(id, b.build());
+		postChannelStyleNotification(count, text, i,
+				com.professor.zerion.android.channel.ChannelFeedActivity.class,
+				channelNotificationId(hex), activeChannelNotificationIds,
+				mayAlertAgain);
 	}
 
 	@Override

@@ -2,6 +2,7 @@ package com.professor.zerion.android.conversation;
 
 import android.graphics.Bitmap;
 import android.media.MediaMetadataRetriever;
+import android.util.LruCache;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -45,6 +46,14 @@ class ImageViewHolder extends ViewHolder {
 
 	private static final int MAX_THUMBNAIL_RETRY_ATTEMPTS = 5;
 	private static final long THUMBNAIL_RETRY_DELAY_MS = 300;
+
+	private static final LruCache<MessageId, Bitmap> VIDEO_THUMB_CACHE =
+			new LruCache<MessageId, Bitmap>(12 * 1024 * 1024) {
+				@Override
+				protected int sizeOf(MessageId key, Bitmap value) {
+					return value.getByteCount();
+				}
+			};
 
 	protected final ImageView imageView;
 	@Nullable
@@ -175,9 +184,30 @@ class ImageViewHolder extends ViewHolder {
 		loadVideoThumbnailWithRetry(a, r, 0);
 	}
 
+	private void renderVideoThumbnail(Bitmap thumbnail, Radii r) {
+		imageView.post(() -> {
+			Transformation<Bitmap> transformation =
+					new ZerionImageTransformation(r);
+			Glide.with(imageView)
+					.load(thumbnail)
+					.diskCacheStrategy(NONE)
+					.error(ERROR_RES)
+					.transform(transformation)
+					.transition(withCrossFade())
+					.into(imageView);
+		});
+	}
+
 	private void loadVideoThumbnailWithRetry(AttachmentItem a, Radii r,
 			int attemptNumber) {
 		if (dbExecutor == null || attachmentReader == null) return;
+
+		final MessageId thumbKey = a.getHeader().getMessageId();
+		Bitmap cached = VIDEO_THUMB_CACHE.get(thumbKey);
+		if (cached != null) {
+			renderVideoThumbnail(cached, r);
+			return;
+		}
 
 		dbExecutor.execute(() -> {
 			try {
@@ -208,18 +238,8 @@ class ImageViewHolder extends ViewHolder {
 				tempFile.delete();
 
 				if (thumbnail != null) {
-					final Bitmap finalThumbnail = thumbnail;
-					imageView.post(() -> {
-						Transformation<Bitmap> transformation =
-								new ZerionImageTransformation(r);
-						Glide.with(imageView)
-								.load(finalThumbnail)
-								.diskCacheStrategy(NONE)
-								.error(ERROR_RES)
-								.transform(transformation)
-								.transition(withCrossFade())
-								.into(imageView);
-					});
+					VIDEO_THUMB_CACHE.put(thumbKey, thumbnail);
+					renderVideoThumbnail(thumbnail, r);
 				} else {
 					imageView.post(() -> {
 						imageView.setImageResource(R.drawable.ic_video);

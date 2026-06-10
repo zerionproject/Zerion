@@ -67,7 +67,7 @@ public class ChannelListFragment extends BaseFragment
 	Executor ioExecutor;
 
 	private LinearLayout listContainer;
-	private TextView emptyView;
+	private View emptyView;
 
 	@Override
 	public void injectFragment(ActivityComponent component) {
@@ -97,13 +97,33 @@ public class ChannelListFragment extends BaseFragment
 				FrameLayout.LayoutParams.MATCH_PARENT,
 				FrameLayout.LayoutParams.MATCH_PARENT));
 
-		emptyView = new TextView(requireContext());
-		emptyView.setText(R.string.channels_list_empty);
-		emptyView.setTextSize(15);
-		emptyView.setTextColor(getResources()
+		LinearLayout emptyContainer = new LinearLayout(requireContext());
+		emptyContainer.setOrientation(LinearLayout.VERTICAL);
+		emptyContainer.setGravity(Gravity.CENTER_HORIZONTAL);
+		emptyContainer.setPadding(dp(32), dp(64), dp(32), dp(32));
+
+		android.widget.ImageView emptyIcon =
+				new android.widget.ImageView(requireContext());
+		emptyIcon.setImageResource(R.drawable.ic_channels);
+		emptyIcon.setColorFilter(getResources()
 				.getColor(R.color.zerion_text_secondary));
-		emptyView.setGravity(Gravity.CENTER);
-		emptyView.setPadding(dp(32), dp(64), dp(32), dp(32));
+		emptyIcon.setAlpha(0.5f);
+		LinearLayout.LayoutParams iconLp = new LinearLayout.LayoutParams(
+				dp(64), dp(64));
+		iconLp.bottomMargin = dp(16);
+		emptyContainer.addView(emptyIcon, iconLp);
+
+		TextView emptyText = new TextView(requireContext());
+		emptyText.setText(R.string.channels_list_empty);
+		emptyText.setTextSize(15);
+		emptyText.setTextColor(getResources()
+				.getColor(R.color.zerion_text_secondary));
+		emptyText.setGravity(Gravity.CENTER);
+		emptyContainer.addView(emptyText, new LinearLayout.LayoutParams(
+				LinearLayout.LayoutParams.WRAP_CONTENT,
+				LinearLayout.LayoutParams.WRAP_CONTENT));
+
+		emptyView = emptyContainer;
 		FrameLayout.LayoutParams emptyLp = new FrameLayout.LayoutParams(
 				FrameLayout.LayoutParams.MATCH_PARENT,
 				FrameLayout.LayoutParams.WRAP_CONTENT);
@@ -113,6 +133,13 @@ public class ChannelListFragment extends BaseFragment
 
 		return root;
 	}
+
+	private static final long RELOAD_DEBOUNCE_MS = 250L;
+	private final android.os.Handler reloadHandler =
+			new android.os.Handler(android.os.Looper.getMainLooper());
+	private final Runnable reloadTask = () -> {
+		if (isAdded()) loadChannels();
+	};
 
 	@Override
 	public void onStart() {
@@ -125,13 +152,15 @@ public class ChannelListFragment extends BaseFragment
 	public void onStop() {
 		super.onStop();
 		eventBus.removeListener(this);
+		reloadHandler.removeCallbacks(reloadTask);
 	}
 
 	@Override
 	public void eventOccurred(Event e) {
 		if (e instanceof ChannelStateChangedEvent
 				|| e instanceof ChannelPostReceivedEvent) {
-			if (isAdded()) requireActivity().runOnUiThread(this::loadChannels);
+			reloadHandler.removeCallbacks(reloadTask);
+			reloadHandler.postDelayed(reloadTask, RELOAD_DEBOUNCE_MS);
 		}
 	}
 

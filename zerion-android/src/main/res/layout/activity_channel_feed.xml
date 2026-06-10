@@ -128,6 +128,17 @@
 		tools:text="@string/channels_feed_empty_subscriber"
 		tools:visibility="visible" />
 
+	<ProgressBar
+		android:id="@+id/channelFeedProgress"
+		android:layout_width="40dp"
+		android:layout_height="40dp"
+		android:indeterminate="true"
+		android:visibility="gone"
+		app:layout_constraintTop_toBottomOf="@+id/channelApprovalBanner"
+		app:layout_constraintBottom_toTopOf="@+id/channelComposeBar"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintEnd_toEndOf="parent" />
+
 	<LinearLayout
 		android:id="@+id/channelComposeBar"
 		android:layout_width="match_parent"

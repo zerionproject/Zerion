@@ -77,6 +77,8 @@ public class ChannelFeedActivity extends ZerionActivity
 	private Toolbar toolbar;
 	private RecyclerView recycler;
 	private TextView emptyView;
+	private android.widget.ProgressBar feedProgress;
+	private boolean firstPublisherRefreshDone = false;
 	private LinearLayout composeBar;
 	private EditText composeInput;
 	private MaterialButton composeSendButton;
@@ -118,6 +120,8 @@ public class ChannelFeedActivity extends ZerionActivity
 		toolbar = findViewById(R.id.channelFeedToolbar);
 		recycler = findViewById(R.id.channelFeedRecycler);
 		emptyView = findViewById(R.id.channelFeedEmptyView);
+		feedProgress = findViewById(R.id.channelFeedProgress);
+		feedProgress.setVisibility(View.VISIBLE);
 		composeBar = findViewById(R.id.channelComposeBar);
 		composeInput = findViewById(R.id.channelComposeInput);
 		composeSendButton = findViewById(R.id.channelComposeSendButton);
@@ -214,8 +218,12 @@ public class ChannelFeedActivity extends ZerionActivity
 		ioExecutor.execute(() -> {
 			try {
 				channelManager.refreshChannel(channelId);
-				runOnUiThreadUnlessDestroyed(this::loadChannel);
 			} catch (DbException ignored) {
+			} finally {
+				runOnUiThreadUnlessDestroyed(() -> {
+					firstPublisherRefreshDone = true;
+					loadChannel();
+				});
 			}
 		});
 	}
@@ -360,11 +368,18 @@ public class ChannelFeedActivity extends ZerionActivity
 
 		if (posts.isEmpty()) {
 			recycler.setVisibility(View.GONE);
-			emptyView.setVisibility(View.VISIBLE);
-			emptyView.setText(weArePublisher
-					? R.string.channels_feed_empty_publisher
-					: R.string.channels_feed_empty_subscriber);
+			if (firstPublisherRefreshDone) {
+				feedProgress.setVisibility(View.GONE);
+				emptyView.setVisibility(View.VISIBLE);
+				emptyView.setText(weArePublisher
+						? R.string.channels_feed_empty_publisher
+						: R.string.channels_feed_empty_subscriber);
+			} else {
+				feedProgress.setVisibility(View.VISIBLE);
+				emptyView.setVisibility(View.GONE);
+			}
 		} else {
+			feedProgress.setVisibility(View.GONE);
 			recycler.setVisibility(View.VISIBLE);
 			emptyView.setVisibility(View.GONE);
 			adapter.setPosts(posts, thumbnails, reactions,
