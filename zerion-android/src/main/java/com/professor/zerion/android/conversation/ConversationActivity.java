@@ -1079,10 +1079,10 @@ public class ConversationActivity extends ZerionActivity
 
 		boolean voiceEnabled = uiPrefs.getBoolean(
 				com.professor.zerion.android.settings.SecurityFragment
-						.PREF_VOICE_CALLS_ENABLED, true);
+						.PREF_VOICE_CALLS_ENABLED, false);
 		boolean videoEnabled = uiPrefs.getBoolean(
 				com.professor.zerion.android.settings.SecurityFragment
-						.PREF_VIDEO_CALLS_ENABLED, true);
+						.PREF_VIDEO_CALLS_ENABLED, false);
 		MenuItem voiceCallItem = menu.findItem(R.id.action_voice_call);
 		MenuItem videoCallItem = menu.findItem(R.id.action_video_call);
 		if (voiceCallItem != null) voiceCallItem.setVisible(voiceEnabled);
@@ -1100,7 +1100,7 @@ public class ConversationActivity extends ZerionActivity
 		} else if (itemId == R.id.action_voice_call) {
 			if (!uiPrefs.getBoolean(
 					com.professor.zerion.android.settings.SecurityFragment
-							.PREF_VOICE_CALLS_ENABLED, true)) {
+							.PREF_VOICE_CALLS_ENABLED, false)) {
 				return true;
 			}
 			startVoiceCall();
@@ -1108,7 +1108,7 @@ public class ConversationActivity extends ZerionActivity
 		} else if (itemId == R.id.action_video_call) {
 			if (!uiPrefs.getBoolean(
 					com.professor.zerion.android.settings.SecurityFragment
-							.PREF_VIDEO_CALLS_ENABLED, true)) {
+							.PREF_VIDEO_CALLS_ENABLED, false)) {
 				return true;
 			}
 			startVideoCall();

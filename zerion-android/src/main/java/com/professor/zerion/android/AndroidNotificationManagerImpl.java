@@ -1008,10 +1008,10 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 
 				boolean voiceEnabled = uiPrefs.getBoolean(
 						com.professor.zerion.android.settings.SecurityFragment
-								.PREF_VOICE_CALLS_ENABLED, true);
+								.PREF_VOICE_CALLS_ENABLED, false);
 				boolean videoEnabled = uiPrefs.getBoolean(
 						com.professor.zerion.android.settings.SecurityFragment
-								.PREF_VIDEO_CALLS_ENABLED, true);
+								.PREF_VIDEO_CALLS_ENABLED, false);
 
 				if (!voiceEnabled || (isVideoCall && !videoEnabled)) {
 					String reason = (isVideoCall && !videoEnabled && voiceEnabled)
