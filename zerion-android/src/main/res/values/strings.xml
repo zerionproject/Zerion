@@ -1267,6 +1267,8 @@
 	<string name="notify_channel_posts_setting_title">Channels</string>
 	<string name="notify_channel_posts_setting_summary">Show alerts for new channel posts and comments</string>
 	<string name="notify_channel_posts_setting_summary_26">Configure alerts for new channel posts and comments</string>
+	<string name="post_update_notice_title">Reconfigure after update</string>
+	<string name="post_update_notice_message">This security update changed how Zerion stores your settings at rest. Your chats, contacts, channels, groups, and vault are intact, but some preferences were reset and need to be set again: decoy mode, the panic password, notification and security toggles, theme, and language. Open Settings to reconfigure them.</string>
 	<string name="notify_voice_calls_setting_title">Voice calls</string>
 	<string name="notify_voice_calls_setting_summary">Show alerts for incoming voice calls</string>
 	<string name="notify_voice_calls_setting_summary_26">Configure alerts for incoming voice calls</string>

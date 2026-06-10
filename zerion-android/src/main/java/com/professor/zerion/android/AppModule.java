@@ -100,6 +100,9 @@ public class AppModule {
 	@Retention(RUNTIME)
 	public @interface UiPrefs {}
 
+	public static final String PREF_POST_UPDATE_NOTICE_PENDING =
+			"post_update_notice_v20002_pending";
+
 	public static SharedPreferences getUiPrefs() {
 		return SecurePrefsHolder.getUiPrefs();
 	}
@@ -137,8 +140,26 @@ public class AppModule {
 
 		private static void initializeInternal(Application app) {
 			Context ctx = app.getApplicationContext();
+			boolean upgradedFromAndroidX = androidXMasterKeyExists();
 			securePrefs = ZerionEncryptedPrefs.create(ctx, "secure_prefs");
 			uiPrefs = ZerionEncryptedPrefs.create(ctx, "ui_prefs");
+			if (upgradedFromAndroidX
+					&& !uiPrefs.contains(PREF_POST_UPDATE_NOTICE_PENDING)) {
+				uiPrefs.edit()
+						.putBoolean(PREF_POST_UPDATE_NOTICE_PENDING, true)
+						.apply();
+			}
+		}
+
+		private static boolean androidXMasterKeyExists() {
+			try {
+				java.security.KeyStore ks = java.security.KeyStore
+						.getInstance("AndroidKeyStore");
+				ks.load(null);
+				return ks.containsAlias("_androidx_security_master_key_");
+			} catch (Throwable ignored) {
+				return false;
+			}
 		}
 
 		static SharedPreferences getSecurePrefs() {

@@ -14,7 +14,9 @@ import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import org.briarproject.bramble.api.lifecycle.LifecycleManager;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.professor.zerion.R;
+import com.professor.zerion.android.AppModule;
 import com.professor.zerion.android.ZerionApplication;
 import com.professor.zerion.android.StartupFailureActivity;
 import com.professor.zerion.android.activity.ActivityComponent;
@@ -91,6 +93,10 @@ public class NavDrawerActivity extends ZerionActivity implements
 	DonationManager donationManager;
 
 	@Inject
+	@AppModule.UiPrefs
+	android.content.SharedPreferences uiPrefs;
+
+	@Inject
 	@org.briarproject.bramble.api.lifecycle.IoExecutor
 	java.util.concurrent.Executor ioExecutor;
 
@@ -147,6 +153,28 @@ public class NavDrawerActivity extends ZerionActivity implements
 		if (state == null) {
 			onNewIntent(getIntent());
 		}
+		maybeShowPostUpdateNotice();
+	}
+
+	private void maybeShowPostUpdateNotice() {
+		if (!uiPrefs.getBoolean(
+				AppModule.PREF_POST_UPDATE_NOTICE_PENDING, false)) {
+			return;
+		}
+		getWindow().getDecorView().postDelayed(() -> {
+			if (isFinishing() || isDestroyed()) return;
+			if (!getLifecycle().getCurrentState().isAtLeast(
+					androidx.lifecycle.Lifecycle.State.RESUMED)) return;
+			new MaterialAlertDialogBuilder(this)
+					.setTitle(R.string.post_update_notice_title)
+					.setMessage(R.string.post_update_notice_message)
+					.setPositiveButton(R.string.got_it, (d, w) -> {
+					})
+					.setOnDismissListener(d -> uiPrefs.edit().putBoolean(
+							AppModule.PREF_POST_UPDATE_NOTICE_PENDING, false)
+							.apply())
+					.show();
+		}, 900);
 	}
 
 	private void initializeViews() {

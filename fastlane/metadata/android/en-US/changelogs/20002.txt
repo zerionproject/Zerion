@@ -1,6 +1,6 @@
 v2.0.2 — quality, reliability, and platform hygiene
 
-ONE-TIME SETTINGS RESET ON UPGRADE: at-rest encrypted preferences moved to an in-tree implementation that replaces the deprecated AndroidX security library. Theme, notification toggles, security toggles, font size, and the Wipe Password are reset to defaults. Conversations, channels, groups, contacts, vault, and unread state are unaffected. Re-enable Wipe Password and your other preferences after first launch.
+ONE-TIME SETTINGS RESET ON UPGRADE: at-rest encrypted preferences moved to an in-tree implementation that replaces the deprecated AndroidX security library. Decoy mode, the panic/wipe password, notification and security toggles, theme, and language are reset to defaults. Conversations, channels, groups, contacts, vault, and unread state are unaffected. After updating you will see a one-time in-app notice reminding you to reconfigure these in Settings.
 
 Channels now fire system notifications when a new post arrives for subscribers and when a new comment arrives for owners. A new Channels toggle in Settings -> Notifications lets you mute the alerts globally; per-channel mute is also available.
 
