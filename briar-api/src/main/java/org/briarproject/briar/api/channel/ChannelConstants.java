@@ -125,4 +125,6 @@ public final class ChannelConstants {
 	public static final long TTL_THIRTY_DAYS_MS = 30L * TTL_ONE_DAY_MS;
 
 	public static final String TOMBSTONE_PREFIX = "ZRN_TOMBSTONE:";
+
+	public static final boolean DISCUSSIONS_IN_MANIFEST = false;
 }

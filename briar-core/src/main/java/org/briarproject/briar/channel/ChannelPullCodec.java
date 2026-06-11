@@ -182,7 +182,7 @@ class ChannelPullCodec {
 			List<ChannelDelegationCert> activeDelegations,
 			List<Long> revokedDelegationSeqs,
 			long pinnedPostSeq, boolean requiresApproval,
-			byte[] signature) {
+			boolean discussionsEnabled, byte[] signature) {
 		BdfDictionary d = new BdfDictionary();
 		d.put("type", ChannelConstants.WIRE_TYPE_MANIFEST);
 		d.put("channelId", channelId);
@@ -210,6 +210,9 @@ class ChannelPullCodec {
 		d.put("revokedDelegationSeqs", revList);
 		d.put("pinnedPostSeq", pinnedPostSeq);
 		d.put("requiresApproval", requiresApproval);
+		if (ChannelConstants.DISCUSSIONS_IN_MANIFEST) {
+			d.put("discussionsEnabled", discussionsEnabled);
+		}
 		d.put("signature", signature);
 		return d;
 	}
@@ -324,6 +327,15 @@ class ChannelPullCodec {
 		d.put("type", ChannelConstants.WIRE_TYPE_COMMENT_ACK);
 		d.put("ok", ok);
 		return writeDict(d);
+	}
+
+	boolean decodeCommentAck(byte[] data) throws IOException {
+		BdfDictionary d = readDict(data);
+		String type = d.getString("type");
+		if (!ChannelConstants.WIRE_TYPE_COMMENT_ACK.equals(type)) {
+			throw new FormatException();
+		}
+		return d.getBoolean("ok", false);
 	}
 
 	@NotNullByDefault
@@ -446,6 +458,15 @@ class ChannelPullCodec {
 		d.put("type", ChannelConstants.WIRE_TYPE_REACTION_ACK);
 		d.put("ok", ok);
 		return writeDict(d);
+	}
+
+	boolean decodeReactionAck(byte[] data) throws IOException {
+		BdfDictionary d = readDict(data);
+		String type = d.getString("type");
+		if (!ChannelConstants.WIRE_TYPE_REACTION_ACK.equals(type)) {
+			throw new FormatException();
+		}
+		return d.getBoolean("ok", false);
 	}
 
 	@NotNullByDefault

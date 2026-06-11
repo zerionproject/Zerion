@@ -68,16 +68,18 @@ class ChannelCommentStore {
 		}
 	}
 
-	void putComment(byte[] channelId, ChannelComment c) throws DbException {
+	boolean putComment(byte[] channelId, ChannelComment c)
+			throws DbException {
 		List<ChannelComment> existing = getComments(channelId);
 		for (ChannelComment ex : existing) {
-			if (ex.getCommentId() == c.getCommentId()) return;
+			if (ex.getCommentId() == c.getCommentId()) return false;
 		}
-		if (existing.size() >= 4096) return;
+		if (existing.size() >= 4096) return false;
 		List<ChannelComment> out = new ArrayList<>(existing.size() + 1);
 		out.addAll(existing);
 		out.add(c);
 		write(channelId, out);
+		return true;
 	}
 
 	void removeForParent(byte[] channelId, long parentSeqNum)

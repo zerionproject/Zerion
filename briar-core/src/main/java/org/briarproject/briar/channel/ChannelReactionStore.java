@@ -67,23 +67,34 @@ class ChannelReactionStore {
 		}
 	}
 
-	void putReaction(byte[] channelId, ChannelReaction reaction)
+	boolean putReaction(byte[] channelId, ChannelReaction reaction)
 			throws DbException {
 		List<ChannelReaction> existing = getReactions(channelId);
 		List<ChannelReaction> out = new ArrayList<>(existing.size() + 1);
 		boolean replaced = false;
+		boolean changed = false;
 		for (ChannelReaction r : existing) {
 			if (r.getPostSeqNum() == reaction.getPostSeqNum()
 					&& Arrays.equals(r.getSignerEd25519PubKey(),
 							reaction.getSignerEd25519PubKey())) {
 				out.add(reaction);
 				replaced = true;
+				if (!r.getEmoji().equals(reaction.getEmoji())
+						|| r.getTimestampHourMs()
+								!= reaction.getTimestampHourMs()) {
+					changed = true;
+				}
 			} else {
 				out.add(r);
 			}
 		}
-		if (!replaced) out.add(reaction);
+		if (!replaced) {
+			out.add(reaction);
+			changed = true;
+		}
+		if (!changed) return false;
 		write(channelId, out);
+		return true;
 	}
 
 	void removeForPost(byte[] channelId, long postSeqNum)

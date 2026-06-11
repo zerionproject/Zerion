@@ -48,7 +48,8 @@ class ChannelCodec {
 			@Nullable byte[] contentKeyHash,
 			List<ChannelDelegationCert> activeDelegations,
 			List<Long> revokedDelegationSeqs,
-			long pinnedPostSeq, boolean requiresApproval) {
+			long pinnedPostSeq, boolean requiresApproval,
+			boolean discussionsEnabled) {
 		byte[] nameHash = crypto.hash(LABEL_MANIFEST_NAME,
 				name.getBytes(StandardCharsets.UTF_8));
 		byte[] descHash = crypto.hash(LABEL_MANIFEST_DESC,
@@ -79,7 +80,9 @@ class ChannelCodec {
 						+ 1 + contentKeyHashBytes.length
 						+ delegationsHash.length
 						+ revokedHash.length
-						+ 8 + 1);
+						+ 8 + 1
+						+ (ChannelConstants.DISCUSSIONS_IN_MANIFEST
+								? 1 : 0));
 		buf.put(channelId);
 		buf.put(salt);
 		buf.put(publisherEd25519Pub);
@@ -101,6 +104,9 @@ class ChannelCodec {
 		buf.put(revokedHash);
 		buf.putLong(pinnedPostSeq);
 		buf.put((byte) (requiresApproval ? 1 : 0));
+		if (ChannelConstants.DISCUSSIONS_IN_MANIFEST) {
+			buf.put((byte) (discussionsEnabled ? 1 : 0));
+		}
 		return buf.array();
 	}
 

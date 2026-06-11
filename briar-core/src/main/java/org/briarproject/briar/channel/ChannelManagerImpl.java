@@ -13,7 +13,9 @@ import org.briarproject.bramble.api.identity.IdentityManager;
 import org.briarproject.bramble.api.identity.LocalAuthor;
 import org.briarproject.bramble.api.lifecycle.IoExecutor;
 import org.briarproject.bramble.api.lifecycle.LifecycleManager.OpenDatabaseHook;
+import org.briarproject.bramble.api.plugin.TorConstants;
 import org.briarproject.bramble.api.plugin.event.B4OwnRotationCompletedEvent;
+import org.briarproject.bramble.api.plugin.event.TransportActiveEvent;
 import org.briarproject.bramble.api.system.Clock;
 import org.briarproject.bramble.api.system.TaskScheduler;
 import org.briarproject.briar.api.channel.ChannelConstants;
@@ -78,6 +80,8 @@ class ChannelManagerImpl
 	private final java.util.Map<String, ChannelTransport.ChannelServer>
 			boundServers =
 					new java.util.concurrent.ConcurrentHashMap<>();
+	private final java.util.Set<String> inFlightPulls =
+			java.util.concurrent.ConcurrentHashMap.newKeySet();
 	private final java.util.Map<String,
 			java.util.concurrent.locks.ReentrantLock> channelLocks =
 					new java.util.concurrent.ConcurrentHashMap<>();
@@ -171,12 +175,20 @@ class ChannelManagerImpl
 			if (s.getCurrentOnion() == null
 					|| s.getCurrentOnion().isEmpty()) continue;
 			byte[] channelId = s.getChannelId();
-			ioExecutor.execute(() -> {
-				try {
-					pullAndApply(channelId, false);
-				} catch (DbException ignored) {
-				}
-			});
+			String pullKey = ChannelStore.hex(channelId);
+			if (!inFlightPulls.add(pullKey)) continue;
+			try {
+				ioExecutor.execute(() -> {
+					try {
+						pullAndApply(channelId, false);
+					} catch (DbException ignored) {
+					} finally {
+						inFlightPulls.remove(pullKey);
+					}
+				});
+			} catch (java.util.concurrent.RejectedExecutionException re) {
+				inFlightPulls.remove(pullKey);
+			}
 		}
 	}
 
@@ -209,6 +221,12 @@ class ChannelManagerImpl
 	public void eventOccurred(Event e) {
 		if (e instanceof B4OwnRotationCompletedEvent) {
 			ioExecutor.execute(this::rebindAllPublisherServers);
+		} else if (e instanceof TransportActiveEvent) {
+			TransportActiveEvent t = (TransportActiveEvent) e;
+			if (TorConstants.ID.equals(t.getTransportId())) {
+				ioExecutor.execute(
+						this::rebindAllPublisherServersForRecovery);
+			}
 		}
 	}
 
@@ -233,6 +251,29 @@ class ChannelManagerImpl
 					store.putChannel(rotated);
 					fireEvent(fresh.getChannelId(),
 							ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+				} finally {
+					lock.unlock();
+				}
+			}
+		} catch (DbException ignored) {
+		}
+	}
+
+	private void rebindAllPublisherServersForRecovery() {
+		try {
+			for (ChannelState s : store.listChannels()) {
+				if (!s.weArePublisher()) continue;
+				java.util.concurrent.locks.ReentrantLock lock =
+						lockFor(s.getChannelId());
+				lock.lock();
+				try {
+					ChannelState fresh = store.getChannel(s.getChannelId());
+					if (fresh == null || !fresh.weArePublisher()) continue;
+					ChannelTransport.ChannelServer previous =
+							boundServers.remove(ChannelStore.hex(
+									fresh.getChannelId()));
+					if (previous != null) previous.close();
+					bindPublisherServer(fresh.getChannelId());
 				} finally {
 					lock.unlock();
 				}
@@ -300,7 +341,7 @@ class ChannelManagerImpl
 				Collections.<ChannelDelegationCert>emptyList(),
 				Collections.<Long>emptyList(),
 				ChannelState.NO_PINNED_POST,
-				approvalFlag);
+				approvalFlag, discussionStore.isEnabled(channelId));
 		byte[] manifestSig;
 		try {
 			manifestSig = signatures.signManifest(signedInput, hybridPriv);
@@ -469,7 +510,8 @@ class ChannelManagerImpl
 			}
 			java.util.List<ChannelPost> wirePosts =
 					convertToWirePosts(s, toSend);
-			byte[] manifestSig = signLatestManifest(s);
+			boolean discussions = discussionStore.isEnabled(channelId);
+			byte[] manifestSig = signLatestManifest(s, discussions);
 			java.util.List<org.briarproject.briar.api.channel
 					.ChannelReaction> reactions =
 					reactionStore.getReactions(channelId);
@@ -479,7 +521,7 @@ class ChannelManagerImpl
 			return pullProtocol.buildResponseAsPublisher(s,
 					s.getPublisherEd25519PubKey(),
 					s.getPublisherMlDsaPubKey(), manifestSig,
-					wirePosts, envelope,
+					discussions, wirePosts, envelope,
 					java.util.Collections.<String>emptyList(),
 					reactions, comments);
 		} catch (IOException | DbException e) {
@@ -511,7 +553,8 @@ class ChannelManagerImpl
 		}
 	}
 
-	private byte[] signLatestManifest(ChannelState s) {
+	private byte[] signLatestManifest(ChannelState s,
+			boolean discussionsEnabled) {
 		byte[] signedInput = codec.manifestSignedInput(s.getChannelId(),
 				s.getSalt(), s.getPublisherEd25519PubKey(),
 				s.getPublisherMlDsaPubKey(), s.getName(),
@@ -523,7 +566,7 @@ class ChannelManagerImpl
 				s.getActiveDelegations(),
 				s.getRevokedDelegationSeqs(),
 				s.getPinnedPostSeq(),
-				s.requiresApproval());
+				s.requiresApproval(), discussionsEnabled);
 		try {
 			byte[] privEncoded = store.getPublisherPrivKey(
 					s.getChannelId());
@@ -643,6 +686,10 @@ class ChannelManagerImpl
 			}
 			applyIncomingReactions(channelId, r.reactions);
 			applyIncomingComments(channelId, r.comments);
+			if (ChannelConstants.DISCUSSIONS_IN_MANIFEST) {
+				discussionStore.setEnabled(channelId,
+						r.discussionsEnabled);
+			}
 			mergedState = r.mergedState;
 		} finally {
 			lock.unlock();
@@ -696,7 +743,9 @@ class ChannelManagerImpl
 					c.getAuthorEd25519PubKey())) {
 				continue;
 			}
-			commentStore.putComment(channelId, c);
+			if (!commentStore.putComment(channelId, c)) {
+				continue;
+			}
 			eventBus.broadcast(new ChannelCommentReceivedEvent(channelId,
 					c.getParentPostSeqNum()));
 			accepted = true;
@@ -757,8 +806,9 @@ class ChannelManagerImpl
 					r.getSignerEd25519PubKey())) {
 				continue;
 			}
-			reactionStore.putReaction(channelId, r);
-			accepted = true;
+			if (reactionStore.putReaction(channelId, r)) {
+				accepted = true;
+			}
 		}
 		if (accepted) {
 			fireEvent(channelId,
@@ -1523,7 +1573,11 @@ class ChannelManagerImpl
 			byte[] reqBytes = pullCodec().encodeCommentRequest(
 					channelId, parentPostSeqNum, commentId, trimmed,
 					authorName, ts, signerEd, signerMl, sig);
-			transport.requestFromOnion(s.getCurrentOnion(), reqBytes);
+			byte[] ack = transport.requestFromOnion(
+					s.getCurrentOnion(), reqBytes);
+			if (!pullCodec().decodeCommentAck(ack)) {
+				throw new DbException();
+			}
 			commentStore.putComment(channelId, row);
 			fireEvent(channelId,
 					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
@@ -1574,6 +1628,9 @@ class ChannelManagerImpl
 			if (s == null) throw new DbException();
 			if (!s.weArePublisher()) throw new DbException();
 			discussionStore.setEnabled(channelId, enabled);
+			if (ChannelConstants.DISCUSSIONS_IN_MANIFEST) {
+				store.putChannel(bumpManifestSeq(s));
+			}
 			fireEvent(channelId,
 					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
 		} finally {
@@ -2350,7 +2407,11 @@ class ChannelManagerImpl
 			byte[] reqBytes = pullCodec().encodeReactionRequest(
 					channelId, postSeqNum, emoji, ts, signerEd,
 					signerMl, sig);
-			transport.requestFromOnion(s.getCurrentOnion(), reqBytes);
+			byte[] ack = transport.requestFromOnion(
+					s.getCurrentOnion(), reqBytes);
+			if (!pullCodec().decodeReactionAck(ack)) {
+				throw new DbException();
+			}
 			reactionStore.putReaction(channelId,
 					new org.briarproject.briar.api.channel
 							.ChannelReaction(postSeqNum, emoji,
@@ -2666,6 +2727,23 @@ class ChannelManagerImpl
 		byte[] b = new byte[len];
 		random.nextBytes(b);
 		return b;
+	}
+
+	private ChannelState bumpManifestSeq(ChannelState s) {
+		return new ChannelState(s.getChannelId(), s.getSalt(),
+				s.getPublisherEd25519PubKey(),
+				s.getPublisherMlDsaPubKey(), s.getName(),
+				s.getDescription(), s.getAvatarHash(),
+				s.getCreatedAtHourMs(), s.isPublicChannel(),
+				s.getJoinCapability(), s.getCurrentOnion(),
+				s.getManifestSeq() + 1L, s.weArePublisher(),
+				s.getHighestKnownPostSeq(),
+				s.getContentKeyHash(), s.getContentKey(),
+				s.getActiveDelegations(),
+				s.getRevokedDelegationSeqs(),
+				s.getNextDelegationSeq(), s.getOnionPrivateKey(),
+				s.getPinnedPostSeq(),
+				s.requiresApproval());
 	}
 
 	private ChannelState withSeq(ChannelState s, long newHighSeq) {

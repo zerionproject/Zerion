@@ -60,7 +60,7 @@ class ChannelPullProtocol {
 
 	byte[] buildResponseAsPublisher(ChannelState state,
 			byte[] publisherEd25519, byte[] publisherMlDsa,
-			byte[] manifestSignature,
+			byte[] manifestSignature, boolean discussionsEnabled,
 			List<ChannelPost> postsToSend,
 			@Nullable byte[] contentKeyEnvelope,
 			List<String> neighbourHints,
@@ -80,7 +80,7 @@ class ChannelPullProtocol {
 				state.getActiveDelegations(),
 				state.getRevokedDelegationSeqs(),
 				state.getPinnedPostSeq(), state.requiresApproval(),
-				manifestSignature);
+				discussionsEnabled, manifestSignature);
 		return pullCodec.encodePullResponse(manifestDict, postsToSend,
 				contentKeyEnvelope, neighbourHints, reactions,
 				comments);
@@ -142,20 +142,30 @@ class ChannelPullProtocol {
 		List<ChannelPost> accepted = new ArrayList<>();
 		ChannelPost prev = existingPosts.isEmpty() ? null
 				: existingPosts.get(existingPosts.size() - 1);
+		long lastKnownSeq = prev == null ? -1L : prev.getSeqNum();
 		for (ChannelPost incoming : resp.newPosts) {
+			if (incoming.getSeqNum() <= lastKnownSeq) {
+				continue;
+			}
 			ChannelPostValidator.Result vr = validator.validate(
 					mergedState, incoming, prev);
 			if (vr != ChannelPostValidator.Result.OK) {
-				return ProcessResult.failure(
-						"post seq " + incoming.getSeqNum()
-								+ " rejected: " + vr.name());
+				break;
 			}
 			accepted.add(incoming);
 			prev = incoming;
 		}
 
+		boolean wireDiscussions;
+		try {
+			wireDiscussions = resp.manifest.getBoolean(
+					"discussionsEnabled", true);
+		} catch (FormatException e) {
+			wireDiscussions = true;
+		}
 		return ProcessResult.success(mergedState, accepted,
-				resp.neighbourHints, resp.reactions, resp.comments);
+				resp.neighbourHints, resp.reactions, resp.comments,
+				wireDiscussions);
 	}
 
 	@Nullable
@@ -244,12 +254,14 @@ class ChannelPullProtocol {
 					ChannelState.NO_PINNED_POST);
 			boolean wireRequiresApproval = manifest.getBoolean(
 					"requiresApproval", false);
+			boolean wireDiscussionsEnabled = manifest.getBoolean(
+					"discussionsEnabled", true);
 			byte[] signedInput = codec.manifestSignedInput(
 					local.getChannelId(), wireSalt, wirePubEd, wirePubMl,
 					wireName, wireDesc, wireAvatar, wireCreatedAt,
 					wirePublic, wireCap, wireOnion, incomingSeq,
 					contentKeyHash, active, revoked, wirePinnedPostSeq,
-					wireRequiresApproval);
+					wireRequiresApproval, wireDiscussionsEnabled);
 			org.briarproject.bramble.api.crypto.HybridSignaturePublicKey
 					pub = new org.briarproject.bramble.api.crypto
 					.HybridSignaturePublicKey(wirePubEd, wirePubMl);
@@ -302,6 +314,7 @@ class ChannelPullProtocol {
 				reactions;
 		final List<org.briarproject.briar.api.channel.ChannelComment>
 				comments;
+		final boolean discussionsEnabled;
 		final String error;
 
 		private ProcessResult(boolean ok,
@@ -312,6 +325,7 @@ class ChannelPullProtocol {
 						reactions,
 				List<org.briarproject.briar.api.channel.ChannelComment>
 						comments,
+				boolean discussionsEnabled,
 				String error) {
 			this.ok = ok;
 			this.mergedState = mergedState;
@@ -319,6 +333,7 @@ class ChannelPullProtocol {
 			this.neighbourHints = neighbourHints;
 			this.reactions = reactions;
 			this.comments = comments;
+			this.discussionsEnabled = discussionsEnabled;
 			this.error = error;
 		}
 
@@ -328,9 +343,11 @@ class ChannelPullProtocol {
 				List<org.briarproject.briar.api.channel.ChannelReaction>
 						reactions,
 				List<org.briarproject.briar.api.channel.ChannelComment>
-						comments) {
+						comments,
+				boolean discussionsEnabled) {
 			return new ProcessResult(true, mergedState, acceptedPosts,
-					neighbourHints, reactions, comments, "");
+					neighbourHints, reactions, comments,
+					discussionsEnabled, "");
 		}
 
 		static ProcessResult failure(String error) {
@@ -341,7 +358,7 @@ class ChannelPullProtocol {
 							.ChannelReaction>emptyList(),
 					Collections.<org.briarproject.briar.api.channel
 							.ChannelComment>emptyList(),
-					error);
+					true, error);
 		}
 	}
 }
