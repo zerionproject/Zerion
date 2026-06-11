@@ -54,7 +54,7 @@ public class PendingContactFactoryImplTest extends BrambleMockTestCase {
 
 	@Test
 	public void testRejectsLinkWithUnknownFormatVersion() throws Exception {
-		String link = encodeLink(FORMAT_VERSION + 1);
+		String link = "zerion://" + encodeLink(FORMAT_VERSION + 1);
 		try {
 			pendingContactFactory.createPendingContact(link, alias);
 			fail();
@@ -72,17 +72,19 @@ public class PendingContactFactoryImplTest extends BrambleMockTestCase {
 			will(throwException(new GeneralSecurityException()));
 		}});
 
+		pendingContactFactory.createPendingContact(
+				"zerion://" + encodeLink(), alias);
+	}
+
+	@Test(expected = FormatException.class)
+	public void testRejectsLinkWithoutPrefix() throws Exception {
 		pendingContactFactory.createPendingContact(encodeLink(), alias);
 	}
 
-	@Test
-	public void testAcceptsValidLinkWithoutPrefix() throws Exception {
-		testAcceptsValidLink(encodeLink());
-	}
-
-	@Test
-	public void testAcceptsValidLinkWithBriarPrefix() throws Exception {
-		testAcceptsValidLink("briar://" + encodeLink());
+	@Test(expected = FormatException.class)
+	public void testRejectsLinkWithBriarPrefix() throws Exception {
+		pendingContactFactory.createPendingContact(
+				"briar://" + encodeLink(), alias);
 	}
 
 	@Test
@@ -91,28 +93,20 @@ public class PendingContactFactoryImplTest extends BrambleMockTestCase {
 	}
 
 	@Test
-	public void testAcceptsValidLinkWithQueryParams() throws Exception {
-		testAcceptsValidLink("briar://" + encodeLink() + "?foo=bar");
-	}
-
-	@Test
 	public void testAcceptsValidLinkWithZerionPrefixAndQueryParams() throws Exception {
 		testAcceptsValidLink("zerion://" + encodeLink() + "?foo=bar&baz=qux");
 	}
 
-	@Test
-	public void testAcceptsValidLinkWithRubbish() throws Exception {
-		testAcceptsValidLink("before " + encodeLink() + " after");
+	@Test(expected = FormatException.class)
+	public void testRejectsLinkWithRubbish() throws Exception {
+		pendingContactFactory.createPendingContact(
+				"before " + encodeLink() + " after", alias);
 	}
 
-	@Test
-	public void testAcceptsValidLinkWithBriarPrefixAndRubbish() throws Exception {
-		testAcceptsValidLink("before briar://" + encodeLink() + " after");
-	}
-
-	@Test
-	public void testAcceptsValidLinkWithZerionPrefixAndRubbish() throws Exception {
-		testAcceptsValidLink("before zerion://" + encodeLink() + " after");
+	@Test(expected = FormatException.class)
+	public void testRejectsLinkWithZerionPrefixAndRubbish() throws Exception {
+		pendingContactFactory.createPendingContact(
+				"before zerion://" + encodeLink() + " after", alias);
 	}
 
 	private void testAcceptsValidLink(String link) throws Exception {

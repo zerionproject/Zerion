@@ -130,8 +130,8 @@
 	<color name="zerion_amoled_msg_out">#1A2332</color>
 
 	<!-- Primary Brand Colors - Balanced and professional -->
-	<color name="zerion_primary_accent">#3B82F6</color> <!-- Professional blue accent -->
-	<color name="zerion_secondary_accent">#2563EB</color> <!-- Deeper blue complement -->
+	<color name="zerion_primary_accent">#26B7F0</color> <!-- Zerion cyan accent -->
+	<color name="zerion_secondary_accent">#1A92C4</color> <!-- Deeper cyan complement -->
 
 	<!-- Text Hierarchy -->
 	<color name="zerion_text_primary">#FFFFFF</color> <!-- Primary text -->
@@ -143,8 +143,8 @@
 	<color name="zerion_divider">#2D2E36</color> <!-- Subtle dividers -->
 
 	<!-- Message Bubbles - Professional and easy on eyes -->
-	<color name="zerion_message_sent">#2563EB</color> <!-- Sent messages - professional blue -->
-	<color name="zerion_message_sent_pressed">#1D4ED8</color> <!-- Sent pressed -->
+	<color name="zerion_message_sent">#1A92C4</color> <!-- Sent messages - cyan -->
+	<color name="zerion_message_sent_pressed">#15749C</color> <!-- Sent pressed -->
 	<color name="zerion_message_received">#27282F</color> <!-- Received messages - subtle dark -->
 	<color name="zerion_message_received_pressed">#32343C</color> <!-- Received pressed -->
 
@@ -162,7 +162,7 @@
 	<color name="zerion_purple">#8B5CF6</color> <!-- Purple accent for UI interactions -->
 
 	<!-- Chat Bubble Color Options -->
-	<color name="bubble_blue">#2563EB</color>
+	<color name="bubble_blue">#1A92C4</color>
 	<color name="bubble_purple">#7C3AED</color>
 	<color name="bubble_green">#059669</color>
 	<color name="bubble_orange">#D97706</color>

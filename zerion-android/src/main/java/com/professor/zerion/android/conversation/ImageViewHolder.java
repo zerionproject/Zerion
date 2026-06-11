@@ -210,11 +210,13 @@ class ImageViewHolder extends ViewHolder {
 		}
 
 		dbExecutor.execute(() -> {
+			File tempFile = null;
+			MediaMetadataRetriever retriever = null;
 			try {
 				Attachment attachment = attachmentReader.getAttachment(a.getHeader());
 				InputStream is = attachment.getStream();
 
-				File tempFile = File.createTempFile("video_thumb_", ".tmp",
+				tempFile = File.createTempFile("video_thumb_", ".tmp",
 						imageView.getContext().getCacheDir());
 				tempFile.deleteOnExit();
 
@@ -227,15 +229,13 @@ class ImageViewHolder extends ViewHolder {
 				fos.close();
 				is.close();
 
-				MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+				retriever = new MediaMetadataRetriever();
 				retriever.setDataSource(tempFile.getAbsolutePath());
 				Bitmap thumbnail = retriever.getFrameAtTime(0,
 						MediaMetadataRetriever.OPTION_CLOSEST_SYNC);
 				if (thumbnail == null) {
 					thumbnail = retriever.getFrameAtTime();
 				}
-				retriever.release();
-				tempFile.delete();
 
 				if (thumbnail != null) {
 					VIDEO_THUMB_CACHE.put(thumbKey, thumbnail);
@@ -266,6 +266,16 @@ class ImageViewHolder extends ViewHolder {
 					imageView.setImageResource(R.drawable.ic_video);
 					imageView.setScaleType(FIT_CENTER);
 				});
+			} finally {
+				if (retriever != null) {
+					try {
+						retriever.release();
+					} catch (Exception ignored) {
+					}
+				}
+				if (tempFile != null) {
+					tempFile.delete();
+				}
 			}
 		});
 	}

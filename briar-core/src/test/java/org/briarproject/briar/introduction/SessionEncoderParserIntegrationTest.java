@@ -320,10 +320,10 @@ public class SessionEncoderParserIntegrationTest extends BrambleTestCase {
 	private IntroduceeSession getIntroduceeSession() {
 		Local local = new Local(true, lastLocalMessageId, localTimestamp,
 				ephemeralPublicKey, ephemeralPrivateKey, transportProperties,
-				acceptTimestamp, localMacKey);
+				acceptTimestamp, localMacKey, null);
 		Remote remote = new Remote(false, author2, lastRemoteMessageId,
 				remoteEphemeralPublicKey, remoteTransportProperties,
-				remoteAcceptTimestamp, remoteMacKey);
+				remoteAcceptTimestamp, remoteMacKey, null);
 		return new IntroduceeSession(sessionId, LOCAL_ACCEPTED,
 				requestTimestamp, groupId1, author1, local, remote,
 				masterKey, transportKeys);

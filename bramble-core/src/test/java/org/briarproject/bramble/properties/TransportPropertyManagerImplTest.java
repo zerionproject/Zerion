@@ -19,6 +19,8 @@ import org.briarproject.bramble.api.sync.GroupId;
 import org.briarproject.bramble.api.sync.Message;
 import org.briarproject.bramble.api.sync.MessageId;
 import org.briarproject.bramble.api.system.Clock;
+import org.briarproject.bramble.api.account.AccountManager;
+import org.briarproject.bramble.api.settings.SettingsManager;
 import org.briarproject.bramble.api.versioning.ClientVersioningManager;
 import org.briarproject.bramble.plugin.tor.B4OnionRotation;
 import org.briarproject.bramble.test.BrambleMockTestCase;
@@ -31,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
@@ -62,8 +65,12 @@ public class TransportPropertyManagerImplTest extends BrambleMockTestCase {
 	private final ContactGroupFactory contactGroupFactory =
 			context.mock(ContactGroupFactory.class);
 	private final Clock clock = context.mock(Clock.class);
+	private final SettingsManager settingsManager =
+			context.mock(SettingsManager.class);
+	private final AccountManager accountManager =
+			context.mock(AccountManager.class);
 	private final B4OnionRotation b4OnionRotation =
-			context.mock(B4OnionRotation.class);
+			new B4OnionRotation(db, settingsManager, accountManager, clock);
 
 	private final Group localGroup = getGroup(CLIENT_ID, MAJOR_VERSION);
 	private final BdfDictionary fooPropertiesDict, barPropertiesDict;
@@ -117,11 +124,10 @@ public class TransportPropertyManagerImplTest extends BrambleMockTestCase {
 					MAJOR_VERSION, contact);
 			will(returnValue(contactGroup));
 			oneOf(db).addGroup(txn, contactGroup);
-			oneOf(clientVersioningManager).getClientVisibility(txn,
-					contact.getId(), CLIENT_ID, MAJOR_VERSION);
-			will(returnValue(SHARED));
 			oneOf(db).setGroupVisibility(txn, contact.getId(),
 					contactGroup.getId(), SHARED);
+			oneOf(clientHelper).setContactId(txn, contactGroup.getId(),
+					contact.getId());
 		}});
 
 		expectGetLocalProperties(txn);
@@ -142,6 +148,8 @@ public class TransportPropertyManagerImplTest extends BrambleMockTestCase {
 		context.checking(new Expectations() {{
 			oneOf(db).containsGroup(txn, localGroup.getId());
 			will(returnValue(true));
+			oneOf(db).getContacts(txn);
+			will(returnValue(emptyList()));
 		}});
 
 		TransportPropertyManagerImpl t = createInstance();
@@ -160,11 +168,10 @@ public class TransportPropertyManagerImplTest extends BrambleMockTestCase {
 					MAJOR_VERSION, contact);
 			will(returnValue(contactGroup));
 			oneOf(db).addGroup(txn, contactGroup);
-			oneOf(clientVersioningManager).getClientVisibility(txn,
-					contact.getId(), CLIENT_ID, MAJOR_VERSION);
-			will(returnValue(SHARED));
 			oneOf(db).setGroupVisibility(txn, contact.getId(),
 					contactGroup.getId(), SHARED);
+			oneOf(clientHelper).setContactId(txn, contactGroup.getId(),
+					contact.getId());
 		}});
 
 		expectGetLocalProperties(txn);

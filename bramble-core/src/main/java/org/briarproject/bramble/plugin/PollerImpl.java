@@ -25,6 +25,8 @@ import org.briarproject.bramble.api.plugin.event.TransportInactiveEvent;
 import org.briarproject.bramble.api.plugin.simplex.SimplexPlugin;
 import org.briarproject.bramble.api.properties.TransportProperties;
 import org.briarproject.bramble.api.properties.TransportPropertyManager;
+import org.briarproject.bramble.api.sync.event.MessageSharedEvent;
+import org.briarproject.bramble.api.sync.event.MessageToAckEvent;
 import org.briarproject.bramble.api.system.Clock;
 import org.briarproject.bramble.api.system.TaskScheduler;
 import org.briarproject.bramble.api.system.Wakeful;
@@ -48,6 +50,9 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 @ThreadSafe
 @NotNullByDefault
 class PollerImpl implements Poller, EventListener {
+
+	private static final long DATA_CONNECT_DEBOUNCE_MS = 3000;
+
 	private final Executor ioExecutor, wakefulIoExecutor;
 	private final TaskScheduler scheduler;
 	private final ConnectionManager connectionManager;
@@ -59,6 +64,8 @@ class PollerImpl implements Poller, EventListener {
 	private final Lock lock;
 	@GuardedBy("lock")
 	private final Map<TransportId, ScheduledPollTask> tasks;
+	@GuardedBy("lock")
+	private final Map<ContactId, Long> lastDataConnect = new HashMap<>();
 
 	@Inject
 	PollerImpl(@IoExecutor Executor ioExecutor,
@@ -107,7 +114,29 @@ class PollerImpl implements Poller, EventListener {
 		} else if (e instanceof TransportInactiveEvent) {
 			TransportInactiveEvent t = (TransportInactiveEvent) e;
 			cancel(t.getTransportId());
+		} else if (e instanceof MessageSharedEvent) {
+			MessageSharedEvent m = (MessageSharedEvent) e;
+			for (Entry<ContactId, Boolean> v :
+					m.getGroupVisibility().entrySet()) {
+				if (Boolean.TRUE.equals(v.getValue()))
+					connectToContactOnData(v.getKey());
+			}
+		} else if (e instanceof MessageToAckEvent) {
+			connectToContactOnData(((MessageToAckEvent) e).getContactId());
 		}
+	}
+
+	private void connectToContactOnData(ContactId c) {
+		long now = clock.currentTimeMillis();
+		lock.lock();
+		try {
+			Long last = lastDataConnect.get(c);
+			if (last != null && now - last < DATA_CONNECT_DEBOUNCE_MS) return;
+			lastDataConnect.put(c, now);
+		} finally {
+			lock.unlock();
+		}
+		connectToContact(c);
 	}
 
 	private void connectToContact(ContactId c) {

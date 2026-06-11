@@ -131,7 +131,7 @@ public class ZerionService extends Service {
 							getString(R.string.ongoing_notification_title),
 							IMPORTANCE_LOW);
 					ongoingChannel.setLockscreenVisibility(
-							android.app.Notification.VISIBILITY_PRIVATE);
+							android.app.Notification.VISIBILITY_SECRET);
 					ongoingChannel.setShowBadge(false);
 					ongoingChannel.enableVibration(false);
 					ongoingChannel.setSound(null, null);

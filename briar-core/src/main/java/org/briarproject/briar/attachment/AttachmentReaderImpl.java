@@ -83,7 +83,7 @@ public class AttachmentReaderImpl implements AttachmentReader {
 				return readLegacyAttachment(h, message, meta);
 			}
 		} catch (FormatException e) {
-			throw new DbException(e);
+			throw new NoSuchMessageException();
 		}
 	}
 

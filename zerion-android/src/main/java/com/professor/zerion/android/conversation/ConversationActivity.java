@@ -1,12 +1,10 @@
 package com.professor.zerion.android.conversation;
 
 import android.annotation.SuppressLint;
-import android.content.BroadcastReceiver;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
@@ -110,7 +108,6 @@ import androidx.recyclerview.selection.StorageStrategy;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import com.google.android.material.imageview.ShapeableImageView;
 
 import static android.view.Gravity.RIGHT;
@@ -227,16 +224,6 @@ public class ConversationActivity extends ZerionActivity
 
 	private volatile ContactId contactId;
 	private volatile boolean contactVerified = false;
-
-	private BroadcastReceiver voiceCallCleanupReceiver = new BroadcastReceiver() {
-		@Override
-		public void onReceive(Context context, Intent intent) {
-			String callId = intent.getStringExtra("call_id");
-			if (callId != null) {
-				viewModel.cleanupVoiceCallMessages(callId);
-			}
-		}
-	};
 
 	@Override
 	public void injectActivity(ActivityComponent component) {
@@ -993,8 +980,6 @@ public class ConversationActivity extends ZerionActivity
 		notificationManager.clearContactNotification(contactId);
 		displayContactOnlineStatus();
 		list.startPeriodicUpdate();
-		IntentFilter filter = new IntentFilter("com.professor.zerion.CLEANUP_VOICE_CALL");
-		LocalBroadcastManager.getInstance(this).registerReceiver(voiceCallCleanupReceiver, filter);
 		loadMessages();
 		invalidateOptionsMenu();
 	}
@@ -1012,11 +997,6 @@ public class ConversationActivity extends ZerionActivity
 
 		notificationManager.unblockContactNotification(contactId);
 		list.stopPeriodicUpdate();
-		try {
-			LocalBroadcastManager.getInstance(this).unregisterReceiver(voiceCallCleanupReceiver);
-		} catch (IllegalArgumentException e) {
-			handleSecurityException(e);
-		}
 	}
 
 	@Override

@@ -274,6 +274,7 @@
 	<string name="channels_compose_hint">Write to your subscribers…</string>
 	<string name="channels_compose_send">Publish</string>
 	<string name="channels_compose_error_empty">Type something before publishing.</string>
+	<string name="channels_compose_error_publish">Couldn\'t publish your post. Please try again.</string>
 	<string name="channels_invite_copied">Invite link copied</string>
 	<string name="channels_invite_rotate_confirm_title">Rotate invite link?</string>
 	<string name="channels_invite_rotate_confirm_message">Anyone who already has the old link will not be able to join again. Existing subscribers continue to receive posts.</string>

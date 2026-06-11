@@ -1,6 +1,7 @@
 package org.briarproject.briar.messaging;
 
 import org.briarproject.bramble.api.UniqueId;
+import org.briarproject.bramble.api.crypto.CryptoComponent;
 import org.briarproject.bramble.api.data.BdfDictionary;
 import org.briarproject.bramble.api.data.BdfEntry;
 import org.briarproject.bramble.api.data.BdfList;
@@ -53,6 +54,7 @@ public class PrivateMessageValidatorTest extends BrambleMockTestCase {
 	private final MetadataEncoder metadataEncoder =
 			context.mock(MetadataEncoder.class);
 	private final Clock clock = context.mock(Clock.class);
+	private final CryptoComponent crypto = context.mock(CryptoComponent.class);
 	private final BdfReader reader = context.mock(BdfReader.class);
 
 	private final Group group = getGroup(getClientId(), 123);
@@ -96,7 +98,7 @@ public class PrivateMessageValidatorTest extends BrambleMockTestCase {
 
 	private final PrivateMessageValidator validator =
 			new PrivateMessageValidator(bdfReaderFactory, metadataEncoder,
-					clock);
+					clock, crypto);
 
 	@Test(expected = InvalidMessageException.class)
 	public void testRejectsFarFutureTimestamp() throws Exception {
@@ -567,7 +569,9 @@ public class PrivateMessageValidatorTest extends BrambleMockTestCase {
 
 	private void expectParseList(BdfList body) throws Exception {
 		context.checking(new Expectations() {{
-			oneOf(bdfReaderFactory).createReader(with(any(InputStream.class)));
+			oneOf(bdfReaderFactory).createReader(with(any(InputStream.class)),
+					with(any(int.class)), with(any(int.class)),
+					with(any(boolean.class)));
 			will(returnValue(reader));
 			oneOf(reader).readList();
 			will(returnValue(body));

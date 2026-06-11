@@ -252,10 +252,11 @@ public class IntroduceeProtocolEngineTest extends BrambleMockTestCase {
 		IntroduceeSession.Local local = new IntroduceeSession.Local(alice,
 				lastLocalMessageId, localAcceptTimestamp, localPublicKey,
 				localPrivateKey, emptyMap(), localAcceptTimestamp,
-				localMacKey.getBytes());
+				localMacKey.getBytes(), null);
 		IntroduceeSession.Remote remote = new IntroduceeSession.Remote(!alice,
 				remoteIntroducee, lastRemoteMessageId, remotePublicKey,
-				emptyMap(), remoteAcceptTimestamp, remoteMacKey.getBytes());
+				emptyMap(), remoteAcceptTimestamp, remoteMacKey.getBytes(),
+				null);
 		return new IntroduceeSession(sessionId,
 				AWAIT_AUTH, requestTimestamp, contactGroupId, introducer,
 				local, remote, masterKey.getBytes(), emptyMap());

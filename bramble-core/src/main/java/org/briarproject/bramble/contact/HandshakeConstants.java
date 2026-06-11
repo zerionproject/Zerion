@@ -10,13 +10,6 @@ interface HandshakeConstants {
 
 	byte FS_MINOR_VERSION = 2;
 
-	@Deprecated
-	String MASTER_KEY_LABEL_0_0 =
-			"org.briarproject.bramble.handshake/MASTER_KEY";
-
-	String MASTER_KEY_LABEL_0_1 =
-			"org.briarproject.bramble.handshake/MASTER_KEY_0_1";
-
 	String MASTER_KEY_LABEL_HYBRID =
 			"org.briarproject.bramble.handshake/HYBRID_MASTER_KEY_V1";
 

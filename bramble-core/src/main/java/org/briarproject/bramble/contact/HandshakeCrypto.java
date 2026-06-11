@@ -15,17 +15,6 @@ interface HandshakeCrypto {
 
 	KeyPair generateHybridEphemeralKeyPair();
 
-	@Deprecated
-	SecretKey deriveMasterKey_0_0(PublicKey theirStaticPublicKey,
-			PublicKey theirEphemeralPublicKey, KeyPair ourStaticKeyPair,
-			KeyPair ourEphemeralKeyPair, boolean alice)
-			throws GeneralSecurityException;
-
-	SecretKey deriveMasterKey_0_1(PublicKey theirStaticPublicKey,
-			PublicKey theirEphemeralPublicKey, KeyPair ourStaticKeyPair,
-			KeyPair ourEphemeralKeyPair, boolean alice)
-			throws GeneralSecurityException;
-
 	HybridEncapsulationResult hybridEncapsulate(PublicKey theirPublicKey)
 			throws GeneralSecurityException;
 

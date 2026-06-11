@@ -240,7 +240,9 @@ class HandshakeManagerImpl implements HandshakeManager {
 		out.sendEndOfStream();
 		boolean mode3Capable = receiveMode3Capability(recordReader);
 		recordReader.readRecord(r -> false, IGNORE);
-		if (!handshakeCrypto.verifyOwnership(masterKey, !alice, theirProof)) {
+		boolean ownershipOk =
+				handshakeCrypto.verifyOwnership(masterKey, !alice, theirProof);
+		if (!ownershipOk) {
 			throw new FormatException();
 		}
 

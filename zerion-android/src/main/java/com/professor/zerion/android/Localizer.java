@@ -86,9 +86,4 @@ public class Localizer {
 			}
 		}
 	}
-
-	@Deprecated
-	public Context setLocale(Context context) {
-		return applyLocaleToContext(context);
-	}
 }

@@ -89,6 +89,9 @@ public interface ChannelManager {
 	List<ChannelReaction> getReactions(byte[] channelId, long postSeqNum)
 			throws DbException;
 
+	List<ChannelReaction> getAllReactions(byte[] channelId)
+			throws DbException;
+
 	void announceMyself(byte[] channelId, String displayName)
 			throws DbException;
 
@@ -102,6 +105,9 @@ public interface ChannelManager {
 			throws DbException;
 
 	List<ChannelComment> getComments(byte[] channelId, long parentPostSeqNum)
+			throws DbException;
+
+	List<ChannelComment> getAllComments(byte[] channelId)
 			throws DbException;
 
 	boolean areDiscussionsEnabled(byte[] channelId) throws DbException;

@@ -315,7 +315,6 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 		}
 
 		byte[] decryptedPayload = null;
-		boolean locked = false;
 		try {
 		messageKey = classicalMK;
 		if (useMode3Full) {
@@ -331,11 +330,6 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 						needBytes - offset);
 				if (read == -1) throw new EOFException();
 				offset += read;
-			}
-
-			if (directionLock != null) {
-				directionLock.lock();
-				locked = true;
 			}
 
 			decryptedPayload = new byte[totalPayloadLength + paddingLength];
@@ -421,11 +415,6 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 						frameLength - offset);
 				if (read == -1) throw new EOFException();
 				offset += read;
-			}
-
-			if (directionLock != null) {
-				directionLock.lock();
-				locked = true;
 			}
 
 			decryptedPayload = new byte[totalPayloadLength + paddingLength];
@@ -567,7 +556,6 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 			java.util.Arrays.fill(frameCiphertext, (byte) 0);
 			java.util.Arrays.fill(frameHeader, (byte) 0);
 			java.util.Arrays.fill(frameNonce, (byte) 0);
-			if (locked && directionLock != null) directionLock.unlock();
 		}
 	}
 

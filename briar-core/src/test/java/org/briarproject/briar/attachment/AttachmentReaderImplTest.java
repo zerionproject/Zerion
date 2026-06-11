@@ -13,6 +13,7 @@ import org.briarproject.bramble.test.BrambleMockTestCase;
 import org.briarproject.bramble.test.DbExpectations;
 import org.briarproject.briar.api.attachment.Attachment;
 import org.briarproject.briar.api.attachment.AttachmentHeader;
+import org.briarproject.briar.api.attachment.AttachmentNotYetAvailableException;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -57,7 +58,7 @@ public class AttachmentReaderImplTest extends BrambleMockTestCase {
 		attachmentReader.getAttachment(wrongGroup);
 	}
 
-	@Test(expected = NoSuchMessageException.class)
+	@Test(expected = AttachmentNotYetAvailableException.class)
 	public void testMissingContentType() throws Exception {
 		BdfDictionary meta = new BdfDictionary();
 

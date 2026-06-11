@@ -91,7 +91,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 
 	static final int CODE_SCHEMA_VERSION = 65;
 
-	private static final int MAX_CONNECTION_POOL_SIZE = 1;
+	private static final int MAX_CONNECTION_POOL_SIZE = 8;
 	private static final int OFFSET_PREV = -1;
 	private static final int OFFSET_CURR = 0;
 	private static final int OFFSET_NEXT = 1;

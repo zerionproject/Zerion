@@ -228,7 +228,7 @@ public class PollerImplTest extends BrambleMockTestCase {
 			oneOf(clock).currentTimeMillis();
 			will(returnValue(now));
 			oneOf(scheduler).schedule(with(any(Runnable.class)),
-					with(ioExecutor), with((long) pollingInterval),
+					with(ioExecutor), with(0L),
 					with(MILLISECONDS));
 			will(returnValue(cancellable));
 		}});
@@ -256,7 +256,7 @@ public class PollerImplTest extends BrambleMockTestCase {
 			oneOf(clock).currentTimeMillis();
 			will(returnValue(now));
 			oneOf(scheduler).schedule(with(any(Runnable.class)),
-					with(ioExecutor), with((long) pollingInterval),
+					with(ioExecutor), with(0L),
 					with(MILLISECONDS));
 			will(returnValue(cancellable));
 
@@ -297,7 +297,7 @@ public class PollerImplTest extends BrambleMockTestCase {
 			oneOf(clock).currentTimeMillis();
 			will(returnValue(now));
 			oneOf(scheduler).schedule(with(any(Runnable.class)),
-					with(ioExecutor), with((long) pollingInterval),
+					with(ioExecutor), with(0L),
 					with(MILLISECONDS));
 			will(returnValue(cancellable));
 
@@ -308,12 +308,12 @@ public class PollerImplTest extends BrambleMockTestCase {
 			will(returnValue(true));
 
 			oneOf(plugin).getPollingInterval();
-			will(returnValue(pollingInterval - 2));
+			will(returnValue(pollingInterval));
 			oneOf(clock).currentTimeMillis();
-			will(returnValue(now + 1));
+			will(returnValue(now - 1));
 			oneOf(cancellable).cancel();
 			oneOf(scheduler).schedule(with(any(Runnable.class)),
-					with(ioExecutor), with((long) pollingInterval - 2),
+					with(ioExecutor), with(0L),
 					with(MILLISECONDS));
 		}});
 
@@ -446,7 +446,7 @@ public class PollerImplTest extends BrambleMockTestCase {
 			oneOf(clock).currentTimeMillis();
 			will(returnValue(now));
 			oneOf(scheduler).schedule(with(any(Runnable.class)),
-					with(ioExecutor), with((long) pollingInterval),
+					with(ioExecutor), with(0L),
 					with(MILLISECONDS));
 			will(returnValue(cancellable));
 		}});

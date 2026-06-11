@@ -110,7 +110,8 @@ public class RendezvousPollerImplTest extends BrambleMockTestCase {
 		Transaction txn = new Transaction(null, true);
 		long beforeExpiry = pendingContact.getTimestamp()
 				+ RENDEZVOUS_TIMEOUT_MS - 1000;
-		long afterExpiry = beforeExpiry + POLLING_INTERVAL_MS;
+		long afterExpiry =
+				beforeExpiry + RENDEZVOUS_TIMEOUT_MS + POLLING_INTERVAL_MS;
 		AtomicReference<Runnable> capturePollTask;
 
 		context.checking(new DbExpectations() {{
@@ -139,9 +140,11 @@ public class RendezvousPollerImplTest extends BrambleMockTestCase {
 	}
 
 	@Test
-	public void testExpiresPendingContactAtStartup() throws Exception {
+	public void testReanchorsExpiryForOldPendingContactAtStartup()
+			throws Exception {
 		Transaction txn = new Transaction(null, true);
-		long atExpiry = pendingContact.getTimestamp() + RENDEZVOUS_TIMEOUT_MS;
+		long pastOriginalExpiry =
+				pendingContact.getTimestamp() + RENDEZVOUS_TIMEOUT_MS;
 
 		context.checking(new DbExpectations() {{
 
@@ -150,11 +153,14 @@ public class RendezvousPollerImplTest extends BrambleMockTestCase {
 			will(returnValue(singletonList(pendingContact)));
 
 			oneOf(clock).currentTimeMillis();
-			will(returnValue(atExpiry));
+			will(returnValue(pastOriginalExpiry));
 			oneOf(eventBus).broadcast(with(new PredicateMatcher<>(
 					PendingContactStateChangedEvent.class, e ->
-					e.getPendingContactState() == FAILED)));
+					e.getPendingContactState() == OFFLINE)));
 		}});
+
+		expectDeriveRendezvousKey();
+		expectSchedulePolling();
 
 		rendezvousPoller.startService();
 	}
@@ -211,7 +217,8 @@ public class RendezvousPollerImplTest extends BrambleMockTestCase {
 			throws Exception {
 		long beforeExpiry = pendingContact.getTimestamp()
 				+ RENDEZVOUS_TIMEOUT_MS - 1000;
-		long afterExpiry = beforeExpiry + POLLING_INTERVAL_MS;
+		long afterExpiry =
+				beforeExpiry + RENDEZVOUS_TIMEOUT_MS + POLLING_INTERVAL_MS;
 		AtomicReference<Runnable> capturePollTask;
 
 		expectStartupWithNoPendingContacts();
@@ -322,7 +329,8 @@ public class RendezvousPollerImplTest extends BrambleMockTestCase {
 	public void testPendingContactExpiresBeforeConnection() throws Exception {
 		long beforeExpiry = pendingContact.getTimestamp()
 				+ RENDEZVOUS_TIMEOUT_MS - 1000;
-		long afterExpiry = beforeExpiry + POLLING_INTERVAL_MS;
+		long afterExpiry =
+				beforeExpiry + RENDEZVOUS_TIMEOUT_MS + POLLING_INTERVAL_MS;
 
 		AtomicReference<Runnable> capturePollTask =
 				expectStartupWithPendingContact(beforeExpiry);
@@ -349,7 +357,8 @@ public class RendezvousPollerImplTest extends BrambleMockTestCase {
 			throws Exception {
 		long beforeExpiry = pendingContact.getTimestamp()
 				+ RENDEZVOUS_TIMEOUT_MS - 1000;
-		long afterExpiry = beforeExpiry + POLLING_INTERVAL_MS;
+		long afterExpiry =
+				beforeExpiry + RENDEZVOUS_TIMEOUT_MS + POLLING_INTERVAL_MS;
 
 		AtomicReference<Runnable> capturePollTask =
 				expectStartupWithPendingContact(beforeExpiry);
@@ -378,7 +387,8 @@ public class RendezvousPollerImplTest extends BrambleMockTestCase {
 			throws Exception {
 		long beforeExpiry = pendingContact.getTimestamp()
 				+ RENDEZVOUS_TIMEOUT_MS - 1000;
-		long afterExpiry = beforeExpiry + POLLING_INTERVAL_MS;
+		long afterExpiry =
+				beforeExpiry + RENDEZVOUS_TIMEOUT_MS + POLLING_INTERVAL_MS;
 
 		AtomicReference<Runnable> capturePollTask =
 				expectStartupWithPendingContact(beforeExpiry);

@@ -5,6 +5,7 @@ import org.briarproject.bramble.api.client.ClientHelper;
 import org.briarproject.bramble.api.client.ContactGroupFactory;
 import org.briarproject.bramble.api.contact.Contact;
 import org.briarproject.bramble.api.contact.ContactId;
+import org.briarproject.bramble.api.crypto.CryptoComponent;
 import org.briarproject.bramble.api.data.BdfDictionary;
 import org.briarproject.bramble.api.data.BdfEntry;
 import org.briarproject.bramble.api.data.BdfList;
@@ -15,6 +16,7 @@ import org.briarproject.bramble.api.db.Metadata;
 import org.briarproject.bramble.api.db.Transaction;
 import org.briarproject.bramble.api.identity.Author;
 import org.briarproject.bramble.api.identity.AuthorId;
+import org.briarproject.bramble.api.identity.IdentityManager;
 import org.briarproject.bramble.api.sync.Group;
 import org.briarproject.bramble.api.sync.GroupId;
 import org.briarproject.bramble.api.sync.Message;
@@ -94,6 +96,9 @@ public class GroupInvitationManagerImplTest extends BrambleMockTestCase {
 			context.mock(SessionEncoder.class);
 	private final ProtocolEngineFactory engineFactory =
 			context.mock(ProtocolEngineFactory.class);
+	private final CryptoComponent crypto = context.mock(CryptoComponent.class);
+	private final IdentityManager identityManager =
+			context.mock(IdentityManager.class);
 
 	private final CreatorProtocolEngine creatorEngine;
 	private final InviteeProtocolEngine inviteeEngine;
@@ -117,7 +122,7 @@ public class GroupInvitationManagerImplTest extends BrambleMockTestCase {
 			getRandomString(5), getAuthor(), getRandomBytes(32));
 	private final BdfDictionary meta = BdfDictionary.of(new BdfEntry("m", "e"));
 	private final Message message = getMessage(contactGroup.getId());
-	private final BdfList body = BdfList.of("body");
+	private final BdfList body = BdfList.of(JOIN.getValue());
 	private final SessionId sessionId =
 			new SessionId(privateGroup.getId().getBytes());
 	private final Message storageMessage = getMessage(contactGroup.getId());
@@ -154,7 +159,7 @@ public class GroupInvitationManagerImplTest extends BrambleMockTestCase {
 				clientHelper, clientVersioningManager, metadataParser,
 				messageTracker, contactGroupFactory, privateGroupFactory,
 				privateGroupManager, messageParser, sessionParser,
-				sessionEncoder, engineFactory);
+				sessionEncoder, engineFactory, crypto, identityManager);
 	}
 
 	@Test

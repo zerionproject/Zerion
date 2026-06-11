@@ -48,6 +48,7 @@ import org.briarproject.briar.api.autodelete.event.ConversationMessagesDeletedEv
 import org.briarproject.briar.api.avatar.event.AvatarUpdatedEvent;
 import org.briarproject.briar.api.conversation.ConversationManager;
 import org.briarproject.briar.api.conversation.ConversationMessageHeader;
+import org.briarproject.briar.api.conversation.DeletionResult;
 import org.briarproject.briar.api.identity.AuthorInfo;
 import org.briarproject.briar.api.identity.AuthorManager;
 import org.briarproject.briar.api.messaging.MessagingManager;
@@ -825,10 +826,15 @@ public class ConversationViewModel extends DbViewModel
 	void deleteMessages(Collection<MessageId> messageIds) {
 		if (contactId == null || messageIds.isEmpty()) return;
 		final ContactId c = contactId;
-		messagesDeleted.postEvent(messageIds);
 		runOnDbThread(() -> {
 			try {
-				conversationManager.deleteMessages(c, messageIds);
+				DeletionResult result =
+						conversationManager.deleteMessages(c, messageIds);
+				if (result.allDeleted()) {
+					messagesDeleted.postEvent(messageIds);
+				} else {
+					loadMessageHeaders();
+				}
 			} catch (DbException e) {
 				handleException(e);
 			}
@@ -895,9 +901,6 @@ public class ConversationViewModel extends DbViewModel
 
 	LiveEvent<MarkMessagesEvent> getMessagesMarked() {
 		return messagesMarked;
-	}
-
-	void cleanupVoiceCallMessages(String callId) {
 	}
 
 	void setAutoDeleteTimerEnabled(boolean enabled) {

@@ -117,6 +117,7 @@ class SetupViewModel extends AndroidViewModel {
 				}
 			} finally {
 				java.util.Arrays.fill(pw, '\0');
+				isCreatingAccount.postValue(false);
 			}
 		});
 		password = null;

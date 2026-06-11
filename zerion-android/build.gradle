@@ -119,6 +119,9 @@ android {
             shrinkResources true
             minifyEnabled true
             crunchPngs false
+            ndk {
+                abiFilters 'arm64-v8a', 'armeabi-v7a'
+            }
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
             // Only use signing config for non-F-Droid builds (F-Droid signs with their own key)
             if (!isFdroidBuild) {

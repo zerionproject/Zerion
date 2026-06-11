@@ -135,6 +135,8 @@ public class AccountManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(key.getBytes()));
 			oneOf(crypto).isEncryptedWithStrengthenedKey(encryptedKey);
 			will(returnValue(true));
+			oneOf(crypto).isEncryptedWithLegacyKdf(encryptedKey);
+			will(returnValue(false));
 		}});
 
 		storeDatabaseKey(keyFile, encryptedKeyHex);
@@ -160,6 +162,8 @@ public class AccountManagerImplTest extends BrambleMockTestCase {
 					keyStrengthener);
 			will(returnValue(key.getBytes()));
 			oneOf(crypto).isEncryptedWithStrengthenedKey(encryptedKey);
+			will(returnValue(false));
+			oneOf(crypto).isEncryptedWithLegacyKdf(encryptedKey);
 			will(returnValue(false));
 			oneOf(crypto).encryptWithPassword(key.getBytes(), password,
 					keyStrengthener);
@@ -325,6 +329,8 @@ public class AccountManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(key.getBytes()));
 			oneOf(crypto).isEncryptedWithStrengthenedKey(encryptedKey);
 			will(returnValue(true));
+			oneOf(crypto).isEncryptedWithLegacyKdf(encryptedKey);
+			will(returnValue(false));
 			oneOf(crypto).encryptWithPassword(key.getBytes(), newPassword,
 					keyStrengthener);
 			will(returnValue(newEncryptedKey));

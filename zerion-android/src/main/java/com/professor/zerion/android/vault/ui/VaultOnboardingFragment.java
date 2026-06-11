@@ -175,6 +175,7 @@ public class VaultOnboardingFragment extends BaseFragment {
 		char[] password = passwordInput.getPasswordChars();
 		char[] confirmPassword = confirmPasswordInput.getPasswordChars();
 
+		boolean submitted = false;
 		try {
 			if (password.length == 0) {
 				passwordLayout.setError("Password cannot be empty");
@@ -195,8 +196,13 @@ public class VaultOnboardingFragment extends BaseFragment {
 			createVaultButton.setText("Creating Vault...");
 
 			viewModel.createVault(password, confirmPassword);
+			submitted = true;
 
 		} finally {
+			if (!submitted) {
+				java.util.Arrays.fill(password, '\0');
+				java.util.Arrays.fill(confirmPassword, '\0');
+			}
 			passwordInput.clearPassword();
 			confirmPasswordInput.clearPassword();
 		}

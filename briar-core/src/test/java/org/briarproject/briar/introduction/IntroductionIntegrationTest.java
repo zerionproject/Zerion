@@ -711,7 +711,7 @@ public class IntroductionIntegrationTest
 				.encodeAcceptMessage(m.getGroupId(), m.getTimestamp() + 1,
 						m.getMessageId(), m.getSessionId(),
 						m.getEphemeralPublicKey(), m.getAcceptTimestamp(),
-						m.getTransportProperties());
+						m.getTransportProperties(), m.getMlDsaPubKey());
 		c1.getClientHelper().addLocalMessage(msg, new BdfDictionary(), true);
 
 		sync1To0(1, true);
@@ -920,7 +920,7 @@ public class IntroductionIntegrationTest
 					.encodeAcceptMessage(m.getGroupId(), m.getTimestamp(),
 							m.getPreviousMessageId(), m.getSessionId(),
 							m.getEphemeralPublicKey(), m.getAcceptTimestamp(),
-							m.getTransportProperties());
+							m.getTransportProperties(), m.getMlDsaPubKey());
 			c0.getClientHelper().addLocalMessage(txn, msg, new BdfDictionary(),
 					true, false);
 			Group group0 = getLocalGroup();

@@ -369,12 +369,6 @@ public class VoiceCallActivity extends AppCompatActivity {
 			} catch (Exception e) {
 			}
 		}
-		if (callId != null) {
-			Intent cleanupIntent = new Intent("com.professor.zerion.CLEANUP_VOICE_CALL");
-			cleanupIntent.putExtra("call_id", callId);
-			androidx.localbroadcastmanager.content.LocalBroadcastManager
-					.getInstance(this).sendBroadcast(cleanupIntent);
-		}
 		finish();
 	}
 

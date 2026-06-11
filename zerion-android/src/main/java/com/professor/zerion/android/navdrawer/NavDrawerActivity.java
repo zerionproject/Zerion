@@ -315,16 +315,19 @@ public class NavDrawerActivity extends ZerionActivity implements
 				0xFFFFFFFF : 0x80FFFFFF);
 		tabContacts.setTypeface(null, currentTab == TAB_CONTACTS ?
 				Typeface.BOLD : Typeface.NORMAL);
+		tabContacts.setSelected(currentTab == TAB_CONTACTS);
 
 		tabGroupChats.setTextColor(currentTab == TAB_GROUPS ?
 				0xFFFFFFFF : 0x80FFFFFF);
 		tabGroupChats.setTypeface(null, currentTab == TAB_GROUPS ?
 				Typeface.BOLD : Typeface.NORMAL);
+		tabGroupChats.setSelected(currentTab == TAB_GROUPS);
 
 		tabChannels.setTextColor(currentTab == TAB_CHANNELS ?
 				0xFFFFFFFF : 0x80FFFFFF);
 		tabChannels.setTypeface(null, currentTab == TAB_CHANNELS ?
 				Typeface.BOLD : Typeface.NORMAL);
+		tabChannels.setSelected(currentTab == TAB_CHANNELS);
 	}
 
 	private void openSettings() {

@@ -8,6 +8,10 @@ import org.briarproject.bramble.api.contact.PendingContactState;
 import org.briarproject.bramble.api.crypto.CryptoComponent;
 import org.briarproject.bramble.api.crypto.KeyPair;
 import org.briarproject.bramble.api.crypto.SecretKey;
+import org.briarproject.bramble.api.crypto.pcs.Mode3FullRatchet;
+import org.briarproject.bramble.api.crypto.pcs.Mode3FullState;
+import org.briarproject.bramble.api.crypto.pcs.PcsSessionState;
+import org.briarproject.bramble.api.crypto.pcs.PqRatchetState;
 import org.briarproject.bramble.crypto.pcs.PcsStateManager;
 import org.briarproject.bramble.api.db.DatabaseComponent;
 import org.briarproject.bramble.api.db.NoSuchContactException;
@@ -52,6 +56,7 @@ public class ContactManagerImplTest extends BrambleMockTestCase {
 	private PendingContactFactory pendingContactFactory;
 	private CryptoComponent crypto;
 	private PcsStateManager pcsStateManager;
+	private Mode3FullRatchet mode3FullRatchet;
 
 	private Author remote;
 	private LocalAuthor localAuthor;
@@ -76,6 +81,7 @@ public class ContactManagerImplTest extends BrambleMockTestCase {
 		pendingContactFactory = context.mock(PendingContactFactory.class);
 		crypto = context.mock(CryptoComponent.class);
 		pcsStateManager = context.mock(PcsStateManager.class);
+		mode3FullRatchet = context.mock(Mode3FullRatchet.class);
 
 		remote = getAuthor();
 		localAuthor = getLocalAuthor();
@@ -89,12 +95,14 @@ public class ContactManagerImplTest extends BrambleMockTestCase {
 		alice = new Random().nextBoolean();
 
 		contactManager = new ContactManagerImpl(db, keyManager, identityManager,
-				pendingContactFactory, crypto, pcsStateManager, null);
+				pendingContactFactory, crypto, pcsStateManager,
+				mode3FullRatchet);
 	}
 
 	@Test
 	public void testAddContact() throws Exception {
 		Transaction txn = new Transaction(null, false);
+		Mode3FullState mode3FullState = context.mock(Mode3FullState.class);
 
 		context.checking(new DbExpectations() {{
 			oneOf(db).transactionWithResult(with(false), withDbCallable(txn));
@@ -102,6 +110,15 @@ public class ContactManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(contactId));
 			oneOf(keyManager).addRotationKeys(txn, contactId, rootKey,
 					timestamp, alice, active);
+			oneOf(crypto).generateAgreementKeyPair();
+			will(returnValue(handshakeKeyPair));
+			oneOf(mode3FullRatchet).createInitialState();
+			will(returnValue(mode3FullState));
+			oneOf(pcsStateManager).initializeMode2State(with(txn),
+					with(contactId), with(any(PcsSessionState.class)),
+					with(any(PcsSessionState.class)));
+			oneOf(pcsStateManager).savePqState(with(txn), with(contactId),
+					with(any(PqRatchetState.class)));
 			oneOf(db).getContact(txn, contactId);
 			will(returnValue(contact));
 		}});

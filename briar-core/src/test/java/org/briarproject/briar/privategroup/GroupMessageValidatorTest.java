@@ -2,7 +2,6 @@ package org.briarproject.briar.privategroup;
 
 import org.briarproject.bramble.api.FormatException;
 import org.briarproject.bramble.api.client.BdfMessageContext;
-import org.briarproject.bramble.api.crypto.CryptoComponent;
 import org.briarproject.bramble.api.data.BdfDictionary;
 import org.briarproject.bramble.api.data.BdfList;
 import org.briarproject.bramble.api.identity.Author;
@@ -21,6 +20,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
+import static org.briarproject.bramble.api.crypto.PostQuantumConstants.HYBRID_SIGNATURE_BYTES;
 import static org.briarproject.bramble.api.identity.AuthorConstants.MAX_SIGNATURE_LENGTH;
 import static org.briarproject.bramble.test.TestUtils.getAuthor;
 import static org.briarproject.bramble.test.TestUtils.getRandomBytes;
@@ -52,8 +52,6 @@ public class GroupMessageValidatorTest extends ValidatorTestCase {
 			context.mock(PrivateGroupFactory.class);
 	private final GroupInvitationFactory groupInvitationFactory =
 			context.mock(GroupInvitationFactory.class);
-	private final CryptoComponent crypto =
-			context.mock(CryptoComponent.class);
 
 	private final Author member = getAuthor();
 	private final BdfList memberList = BdfList.of(
@@ -83,7 +81,7 @@ public class GroupMessageValidatorTest extends ValidatorTestCase {
 
 	private final GroupMessageValidator validator =
 			new GroupMessageValidator(privateGroupFactory, clientHelper,
-					metadataEncoder, clock, groupInvitationFactory, crypto);
+					metadataEncoder, clock, groupInvitationFactory);
 
 	@Test(expected = FormatException.class)
 	public void testRejectsTooShortJoinMessage() throws Exception {
@@ -141,7 +139,7 @@ public class GroupMessageValidatorTest extends ValidatorTestCase {
 			throws Exception {
 		expectParseAuthor(creatorList, creator);
 		BdfList body = BdfList.of(JOIN.getInt(), creatorList, invite,
-				getRandomBytes(MAX_SIGNATURE_LENGTH + 1));
+				getRandomBytes(HYBRID_SIGNATURE_BYTES + 1));
 		validator.validateMessage(message, group, body);
 	}
 
@@ -274,7 +272,7 @@ public class GroupMessageValidatorTest extends ValidatorTestCase {
 	public void testRejectsMemberJoinWithTooLongCreatorSignature()
 			throws Exception {
 		BdfList invalidInvite = BdfList.of(inviteTimestamp,
-				getRandomBytes(MAX_SIGNATURE_LENGTH + 1));
+				getRandomBytes(HYBRID_SIGNATURE_BYTES + 1));
 		expectParseAuthor(memberList, member);
 		expectParsePrivateGroup();
 		BdfList body = BdfList.of(JOIN.getInt(), memberList, invalidInvite,
@@ -327,7 +325,7 @@ public class GroupMessageValidatorTest extends ValidatorTestCase {
 			throws Exception {
 		expectParseAuthor(memberList, member);
 		BdfList body = BdfList.of(JOIN.getInt(), memberList, invite,
-				getRandomBytes(MAX_SIGNATURE_LENGTH + 1));
+				getRandomBytes(HYBRID_SIGNATURE_BYTES + 1));
 		validator.validateMessage(message, group, body);
 	}
 
@@ -568,7 +566,7 @@ public class GroupMessageValidatorTest extends ValidatorTestCase {
 	public void testRejectsPostWithTooLongSignature() throws Exception {
 		BdfList body = BdfList.of(POST.getInt(), memberList, parentId,
 				previousMsgId, text,
-				getRandomBytes(MAX_SIGNATURE_LENGTH + 1));
+				getRandomBytes(HYBRID_SIGNATURE_BYTES + 1));
 		expectParseAuthor(memberList, member);
 		validator.validateMessage(message, group, body);
 	}

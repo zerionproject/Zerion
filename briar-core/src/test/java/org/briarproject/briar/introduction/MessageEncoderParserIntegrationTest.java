@@ -207,7 +207,7 @@ public class MessageEncoderParserIntegrationTest extends BrambleTestCase {
 		Message m = messageEncoder
 				.encodeAcceptMessage(groupId, timestamp, previousMsgId,
 						sessionId, ephemeralPublicKey, acceptTimestamp,
-						transportProperties);
+						transportProperties, null);
 		validator.validateMessage(m, group, clientHelper.toList(m));
 		AcceptMessage am =
 				messageParser.parseAcceptMessage(m, clientHelper.toList(m));
@@ -232,7 +232,8 @@ public class MessageEncoderParserIntegrationTest extends BrambleTestCase {
 		long acceptTimestamp = 1337L;
 		Message m = messageEncoder.encodeAcceptMessage(groupId, timestamp,
 				previousMsgId, sessionId, ephemeralPublicKey,
-				acceptTimestamp, transportProperties, MAX_AUTO_DELETE_TIMER_MS);
+				acceptTimestamp, transportProperties, MAX_AUTO_DELETE_TIMER_MS,
+				null);
 		validator.validateMessage(m, group, clientHelper.toList(m));
 		AcceptMessage am =
 				messageParser.parseAcceptMessage(m, clientHelper.toList(m));
@@ -257,7 +258,8 @@ public class MessageEncoderParserIntegrationTest extends BrambleTestCase {
 		long acceptTimestamp = 1337L;
 		Message m = messageEncoder.encodeAcceptMessage(groupId, timestamp,
 				previousMsgId, sessionId, ephemeralPublicKey,
-				acceptTimestamp, transportProperties, NO_AUTO_DELETE_TIMER);
+				acceptTimestamp, transportProperties, NO_AUTO_DELETE_TIMER,
+				null);
 		validator.validateMessage(m, group, clientHelper.toList(m));
 		AcceptMessage am =
 				messageParser.parseAcceptMessage(m, clientHelper.toList(m));

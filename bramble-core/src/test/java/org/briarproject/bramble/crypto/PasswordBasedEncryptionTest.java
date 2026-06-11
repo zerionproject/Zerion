@@ -25,7 +25,8 @@ public class PasswordBasedEncryptionTest extends BrambleMockTestCase {
 
 	private final CryptoComponentImpl crypto =
 			new CryptoComponentImpl(new TestSecureRandomProvider(),
-					new ScryptKdf(new SystemClock()));
+					new ScryptKdf(new SystemClock()),
+					new Argon2idKdf(new SystemClock()));
 
 	@Test
 	public void testEncryptionAndDecryption() throws Exception {

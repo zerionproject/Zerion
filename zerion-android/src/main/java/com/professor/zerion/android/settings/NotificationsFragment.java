@@ -53,6 +53,7 @@ import static com.professor.zerion.android.api.AndroidNotificationManager.GROUP_
 import static com.professor.zerion.android.api.AndroidNotificationManager.PREF_NOTIFY_CHANNEL;
 import static com.professor.zerion.android.api.AndroidNotificationManager.PREF_NOTIFY_GROUP;
 import static com.professor.zerion.android.api.AndroidNotificationManager.PREF_NOTIFY_PRIVATE;
+import static com.professor.zerion.android.api.AndroidNotificationManager.PREF_NOTIFY_VIBRATION;
 import static com.professor.zerion.android.api.AndroidNotificationManager.PREF_NOTIFY_VOICE_CALLS;
 
 @MethodsNotNullByDefault
@@ -200,7 +201,9 @@ public class NotificationsFragment extends Fragment {
 		notifyVoiceCallsSwitch.setEnabled(true);
 		notifyVoiceCallsSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
 			if (buttonView.isPressed()) {
-				viewModel.settingsStore.putBoolean(PREF_NOTIFY_VOICE_CALLS, isChecked);
+				uiPrefs.edit()
+						.putBoolean(PREF_NOTIFY_VOICE_CALLS, isChecked)
+						.apply();
 			}
 		});
 
@@ -210,7 +213,7 @@ public class NotificationsFragment extends Fragment {
 			notifyVibrationSwitch.setEnabled(true);
 			notifyVibrationSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
 				if (buttonView.isPressed()) {
-					viewModel.settingsStore.putBoolean("notifyVibration", isChecked);
+					viewModel.settingsStore.putBoolean(PREF_NOTIFY_VIBRATION, isChecked);
 				}
 			});
 		});

@@ -2,8 +2,11 @@ package org.briarproject.briar.introduction;
 
 import org.briarproject.bramble.api.client.ClientHelper;
 import org.briarproject.bramble.api.crypto.CryptoComponent;
+import org.briarproject.bramble.api.crypto.HybridSignaturePrivateKey;
+import org.briarproject.bramble.api.crypto.HybridSignaturePublicKey;
 import org.briarproject.bramble.api.crypto.KeyPair;
 import org.briarproject.bramble.api.crypto.SecretKey;
+import org.briarproject.bramble.api.crypto.pcs.MlKemProvider;
 import org.briarproject.bramble.api.identity.Author;
 import org.briarproject.bramble.api.identity.AuthorFactory;
 import org.briarproject.bramble.api.identity.LocalAuthor;
@@ -37,6 +40,8 @@ public class IntroductionCryptoIntegrationTest extends BrambleTestCase {
 	AuthorFactory authorFactory;
 	@Inject
 	CryptoComponent cryptoComponent;
+	@Inject
+	MlKemProvider mlKemProvider;
 
 	private final IntroductionCryptoImpl crypto;
 
@@ -57,7 +62,8 @@ public class IntroductionCryptoIntegrationTest extends BrambleTestCase {
 		IntroductionIntegrationTestComponent.Helper
 				.injectEagerSingletons(component);
 		component.inject(this);
-		crypto = new IntroductionCryptoImpl(cryptoComponent, clientHelper);
+		crypto = new IntroductionCryptoImpl(cryptoComponent, clientHelper,
+				mlKemProvider);
 
 		introducer = getRealAuthor(authorFactory);
 		LocalAuthor introducee1 = getRealLocalAuthor(authorFactory);
@@ -102,9 +108,9 @@ public class IntroductionCryptoIntegrationTest extends BrambleTestCase {
 		SecretKey aliceMacKey = crypto.deriveMacKey(masterKey, true);
 		Local local = new Local(true, null, -1, aliceEphemeral.getPublic(),
 				aliceEphemeral.getPrivate(), aliceTransport,
-				aliceAcceptTimestamp, aliceMacKey.getBytes());
+				aliceAcceptTimestamp, aliceMacKey.getBytes(), null);
 		Remote remote = new Remote(false, bob, null, bobEphemeral.getPublic(),
-				bobTransport, bobAcceptTimestamp, null);
+				bobTransport, bobAcceptTimestamp, null, null);
 		byte[] aliceMac = crypto.authMac(aliceMacKey, introducer.getId(),
 				alice.getId(), local, remote);
 
@@ -117,10 +123,10 @@ public class IntroductionCryptoIntegrationTest extends BrambleTestCase {
 		SecretKey bobMacKey = crypto.deriveMacKey(masterKey, false);
 		Local local = new Local(false, null, -1, bobEphemeral.getPublic(),
 				bobEphemeral.getPrivate(), bobTransport,
-				bobAcceptTimestamp, bobMacKey.getBytes());
+				bobAcceptTimestamp, bobMacKey.getBytes(), null);
 		Remote remote = new Remote(true, alice, null,
 				aliceEphemeral.getPublic(), aliceTransport,
-				aliceAcceptTimestamp, null);
+				aliceAcceptTimestamp, null, null);
 		byte[] bobMac = crypto.authMac(bobMacKey, introducer.getId(),
 				bob.getId(), local, remote);
 
@@ -131,8 +137,17 @@ public class IntroductionCryptoIntegrationTest extends BrambleTestCase {
 	@Test
 	public void testSign() throws Exception {
 		SecretKey macKey = crypto.deriveMacKey(masterKey, true);
-		byte[] signature = crypto.sign(macKey, alice.getPrivateKey());
-		crypto.verifySignature(macKey, alice.getPublicKey(), signature);
+		KeyPair hybridKeyPair = cryptoComponent.generateHybridSignatureKeyPair();
+		HybridSignaturePrivateKey hybridPrivate =
+				(HybridSignaturePrivateKey) hybridKeyPair.getPrivate();
+		HybridSignaturePublicKey hybridPublic =
+				(HybridSignaturePublicKey) hybridKeyPair.getPublic();
+		byte[] mlDsaPriv = hybridPrivate.getMlDsaPrivateKey();
+		byte[] mlDsaPub = hybridPublic.getMlDsaPublicKey();
+		byte[] signature =
+				crypto.sign(macKey, alice.getPrivateKey(), mlDsaPriv, mlDsaPub);
+		crypto.verifySignature(macKey, alice.getPublicKey(), signature,
+				mlDsaPub);
 	}
 
 	@Test

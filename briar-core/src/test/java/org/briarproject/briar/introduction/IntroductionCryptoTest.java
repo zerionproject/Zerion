@@ -2,6 +2,7 @@ package org.briarproject.briar.introduction;
 
 import org.briarproject.bramble.api.client.ClientHelper;
 import org.briarproject.bramble.api.crypto.CryptoComponent;
+import org.briarproject.bramble.api.crypto.pcs.MlKemProvider;
 import org.briarproject.bramble.api.identity.Author;
 import org.briarproject.bramble.test.BrambleMockTestCase;
 import org.briarproject.briar.api.client.SessionId;
@@ -18,9 +19,12 @@ public class IntroductionCryptoTest extends BrambleMockTestCase {
 	private final CryptoComponent cryptoComponent =
 			context.mock(CryptoComponent.class);
 	private final ClientHelper clientHelper = context.mock(ClientHelper.class);
+	private final MlKemProvider mlKemProvider =
+			context.mock(MlKemProvider.class);
 
 	private final IntroductionCrypto crypto =
-			new IntroductionCryptoImpl(cryptoComponent, clientHelper);
+			new IntroductionCryptoImpl(cryptoComponent, clientHelper,
+					mlKemProvider);
 
 	private final Author introducer = getAuthor();
 	private final Author alice = getAuthor(), bob = getAuthor();

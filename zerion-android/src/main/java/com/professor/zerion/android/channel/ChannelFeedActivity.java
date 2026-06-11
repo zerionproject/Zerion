@@ -32,8 +32,10 @@ import org.briarproject.briar.api.channel.ApplicationStatus;
 import org.briarproject.briar.api.channel.AttachmentBlob;
 import org.briarproject.briar.api.channel.AttachmentSpec;
 import org.briarproject.briar.api.channel.ChannelConstants;
+import org.briarproject.briar.api.channel.ChannelComment;
 import org.briarproject.briar.api.channel.ChannelManager;
 import org.briarproject.briar.api.channel.ChannelPost;
+import org.briarproject.briar.api.channel.ChannelReaction;
 import org.briarproject.briar.api.channel.ChannelState;
 import org.briarproject.briar.api.channel.event.ChannelPostReceivedEvent;
 import org.briarproject.briar.api.channel.event.ChannelStateChangedEvent;
@@ -292,19 +294,33 @@ public class ChannelFeedActivity extends ZerionActivity
 							channelManager.areDiscussionsEnabled(channelId);
 				} catch (DbException ignored) {
 				}
+				java.util.Map<Long, java.util.List<ChannelReaction>>
+						reactionsBySeq = new java.util.HashMap<>();
+				java.util.Map<Long, Integer> commentCountsBySeq =
+						new java.util.HashMap<>();
+				try {
+					for (ChannelReaction rx :
+							channelManager.getAllReactions(channelId)) {
+						reactionsBySeq.computeIfAbsent(rx.getPostSeqNum(),
+								k -> new java.util.ArrayList<>()).add(rx);
+					}
+				} catch (DbException ignored) {
+				}
+				try {
+					for (ChannelComment cm :
+							channelManager.getAllComments(channelId)) {
+						commentCountsBySeq.merge(cm.getParentPostSeqNum(),
+								1, Integer::sum);
+					}
+				} catch (DbException ignored) {
+				}
 				for (ChannelPost p : posts) {
-					try {
-						reactions.put(p.getSeqNum(),
-								channelManager.getReactions(channelId,
-										p.getSeqNum()));
-					} catch (DbException ignored) {
-					}
-					try {
-						commentCounts.put(p.getSeqNum(),
-								channelManager.getComments(channelId,
-										p.getSeqNum()).size());
-					} catch (DbException ignored) {
-					}
+					java.util.List<ChannelReaction> rl =
+							reactionsBySeq.get(p.getSeqNum());
+					reactions.put(p.getSeqNum(),
+							rl != null ? rl : new java.util.ArrayList<>());
+					Integer cc = commentCountsBySeq.get(p.getSeqNum());
+					commentCounts.put(p.getSeqNum(), cc != null ? cc : 0);
 					for (ChannelPost.ChannelAttachment att
 							: p.getAttachments()) {
 						if (att.getThumbnail() == null) continue;
@@ -620,9 +636,12 @@ public class ChannelFeedActivity extends ZerionActivity
 				channelManager.publishPost(channelId, body, ttlSeconds);
 				runOnUiThreadUnlessDestroyed(this::loadChannel);
 			} catch (DbException ex) {
-				runOnUiThreadUnlessDestroyed(() -> Toast.makeText(this,
-						R.string.channels_compose_error_empty,
-						Toast.LENGTH_SHORT).show());
+				runOnUiThreadUnlessDestroyed(() -> {
+					composeInput.setText(body);
+					Toast.makeText(this,
+							R.string.channels_compose_error_publish,
+							Toast.LENGTH_SHORT).show();
+				});
 			}
 		});
 	}

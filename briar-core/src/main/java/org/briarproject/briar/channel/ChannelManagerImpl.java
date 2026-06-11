@@ -2377,6 +2377,20 @@ class ChannelManagerImpl
 		return out;
 	}
 
+	@Override
+	public java.util.List<org.briarproject.briar.api.channel
+			.ChannelReaction> getAllReactions(byte[] channelId)
+			throws DbException {
+		return reactionStore.getReactions(channelId);
+	}
+
+	@Override
+	public java.util.List<org.briarproject.briar.api.channel
+			.ChannelComment> getAllComments(byte[] channelId)
+			throws DbException {
+		return commentStore.getComments(channelId);
+	}
+
 	private byte[] handleReactionRequest(byte[] channelId,
 			byte[] requestBytes) {
 		try {

@@ -13,6 +13,7 @@ import org.briarproject.nullsafety.ParametersNotNullByDefault;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.Key;
+import java.security.KeyStoreException;
 import java.security.KeyStore;
 import java.util.Arrays;
 import java.util.Collections;
@@ -55,18 +56,21 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 			new ConcurrentHashMap<>();
 
 	private final SharedPreferences delegate;
-	private final SecretKey key;
-	private final SecretKey hmacKey;
+	private volatile SecretKey key;
+	private volatile SecretKey hmacKey;
+	private final boolean bootReadable;
+	private final Object keyLock = new Object();
 	private final Set<OnSharedPreferenceChangeListener> listeners =
 			Collections.newSetFromMap(new ConcurrentHashMap<>());
 	private final SharedPreferences.OnSharedPreferenceChangeListener
 			delegateListener;
 
 	private ZerionEncryptedPrefs(SharedPreferences delegate, SecretKey key,
-			SecretKey hmacKey) {
+			SecretKey hmacKey, boolean bootReadable) {
 		this.delegate = delegate;
 		this.key = key;
 		this.hmacKey = hmacKey;
+		this.bootReadable = bootReadable;
 		this.delegateListener = (prefs, changedKey) -> {
 			for (OnSharedPreferenceChangeListener l : listeners) {
 				l.onSharedPreferenceChanged(ZerionEncryptedPrefs.this,
@@ -98,7 +102,7 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 			SharedPreferences backing = app.getSharedPreferences(
 					fileName + "_v2", Context.MODE_PRIVATE);
 			ZerionEncryptedPrefs prefs =
-					new ZerionEncryptedPrefs(backing, k, hk);
+					new ZerionEncryptedPrefs(backing, k, hk, bootReadable);
 			INSTANCES.put(fileName, prefs);
 			deleteLegacyAndroidXFile(app, fileName);
 			return prefs;
@@ -142,7 +146,17 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 		if (ks.containsAlias(alias)) {
 			Key existing = ks.getKey(alias, null);
 			if (existing instanceof SecretKey) {
-				return (SecretKey) existing;
+				try {
+					Cipher probe = Cipher.getInstance(TRANSFORM);
+					probe.init(Cipher.ENCRYPT_MODE, (SecretKey) existing);
+					probe.doFinal(new byte[] {0});
+					return (SecretKey) existing;
+				} catch (GeneralSecurityException invalidated) {
+					try {
+						ks.deleteEntry(alias);
+					} catch (KeyStoreException ignored) {
+					}
+				}
 			}
 		}
 		KeyGenerator gen = KeyGenerator.getInstance(
@@ -168,7 +182,17 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 		if (ks.containsAlias(KEYNAME_HMAC_ALIAS)) {
 			Key existing = ks.getKey(KEYNAME_HMAC_ALIAS, null);
 			if (existing instanceof SecretKey) {
-				return (SecretKey) existing;
+				try {
+					Mac probe = Mac.getInstance(HMAC_ALGO);
+					probe.init((SecretKey) existing);
+					probe.doFinal(new byte[] {0});
+					return (SecretKey) existing;
+				} catch (GeneralSecurityException invalidated) {
+					try {
+						ks.deleteEntry(KEYNAME_HMAC_ALIAS);
+					} catch (KeyStoreException ignored) {
+					}
+				}
 			}
 		}
 		KeyGenerator gen = KeyGenerator.getInstance(
@@ -179,23 +203,50 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 	}
 
 	private String backingKey(String prefKey) {
+		byte[] digest = hmacMac().doFinal(
+				prefKey.getBytes(StandardCharsets.UTF_8));
+		return Base64.encodeToString(digest,
+				Base64.NO_WRAP | Base64.NO_PADDING | Base64.URL_SAFE);
+	}
+
+	private Mac hmacMac() {
 		try {
 			Mac mac = Mac.getInstance(HMAC_ALGO);
 			mac.init(hmacKey);
-			byte[] digest = mac.doFinal(
-					prefKey.getBytes(StandardCharsets.UTF_8));
-			return Base64.encodeToString(digest,
-					Base64.NO_WRAP | Base64.NO_PADDING | Base64.URL_SAFE);
-		} catch (GeneralSecurityException e) {
-			throw new RuntimeException("keyname hmac failed", e);
+			return mac;
+		} catch (GeneralSecurityException invalidated) {
+			synchronized (keyLock) {
+				try {
+					hmacKey = getOrCreateHmacKey();
+					Mac mac = Mac.getInstance(HMAC_ALGO);
+					mac.init(hmacKey);
+					return mac;
+				} catch (GeneralSecurityException e) {
+					throw new RuntimeException("keyname hmac failed", e);
+				}
+			}
+		}
+	}
+
+	private Cipher encryptCipher() throws GeneralSecurityException {
+		try {
+			Cipher c = Cipher.getInstance(TRANSFORM);
+			c.init(Cipher.ENCRYPT_MODE, key);
+			return c;
+		} catch (GeneralSecurityException invalidated) {
+			synchronized (keyLock) {
+				key = getOrCreateKey(bootReadable);
+				Cipher c = Cipher.getInstance(TRANSFORM);
+				c.init(Cipher.ENCRYPT_MODE, key);
+				return c;
+			}
 		}
 	}
 
 	private String encrypt(String backing, String prefKey, byte type,
 			byte[] payload) {
 		try {
-			Cipher c = Cipher.getInstance(TRANSFORM);
-			c.init(Cipher.ENCRYPT_MODE, key);
+			Cipher c = encryptCipher();
 			c.updateAAD(backing.getBytes(StandardCharsets.UTF_8));
 			byte[] iv = c.getIV();
 			byte[] keyBytes = prefKey.getBytes(StandardCharsets.UTF_8);

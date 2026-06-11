@@ -71,8 +71,6 @@ import java.net.SocketException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.security.SecureRandom;
 import java.util.Arrays;
@@ -173,8 +171,6 @@ public class VoiceCallService extends Service implements EventListener {
 	private final Object jbLock = new Object();
 	private volatile boolean playoutStarted = false;
 
-	private Socket audioSocket;
-	private ServerSocket serverSocket;
 	private DuplexTransportConnection torConnection;
 	private String onionAddress;
 	private int onionPort;
@@ -739,11 +735,6 @@ public class VoiceCallService extends Service implements EventListener {
 						outputStream = conn.getWriter().getOutputStream();
 						break;
 					}
-					Socket sock = audioSocket;
-					if (sock != null) {
-						outputStream = sock.getOutputStream();
-						break;
-					}
 					try {
 						Thread.sleep(100);
 					} catch (InterruptedException e) {
@@ -770,7 +761,7 @@ public class VoiceCallService extends Service implements EventListener {
 					throw new IOException("AudioRecord not initialized");
 				}
 
-				while (!isShuttingDown && isRecording && (torConnection != null || (audioSocket != null && audioSocket.isConnected()))) {
+				while (!isShuttingDown && isRecording && (torConnection != null)) {
 					int read = recorder.read(readBuffer, readOffset, frameSize - readOffset);
 
 					if (read > 0) {
@@ -848,11 +839,6 @@ public class VoiceCallService extends Service implements EventListener {
 						inputStream = conn.getReader().getInputStream();
 						break;
 					}
-					Socket sock = audioSocket;
-					if (sock != null) {
-						inputStream = sock.getInputStream();
-						break;
-					}
 					try {
 						Thread.sleep(100);
 					} catch (InterruptedException e) {
@@ -883,7 +869,7 @@ public class VoiceCallService extends Service implements EventListener {
 				long lastReceiveTime = System.currentTimeMillis();
 				final int READ_TIMEOUT_MS = 30000;
 
-				while (!isShuttingDown && isRecording && (torConnection != null || (audioSocket != null && audioSocket.isConnected()))) {
+				while (!isShuttingDown && isRecording && (torConnection != null)) {
 					try {
 						if (System.currentTimeMillis() - lastReceiveTime > READ_TIMEOUT_MS) {
 							break;
@@ -1052,7 +1038,7 @@ public class VoiceCallService extends Service implements EventListener {
 	private void startHeartbeat() {
 		executorService.execute(() -> {
 			try {
-				while (!isShuttingDown && isRecording && (torConnection != null || (audioSocket != null && audioSocket.isConnected()))) {
+				while (!isShuttingDown && isRecording && (torConnection != null)) {
 					Thread.sleep(30000);
 
 					if (torConnection != null) {
@@ -1064,10 +1050,6 @@ public class VoiceCallService extends Service implements EventListener {
 							dataOut.flush();
 						} catch (IOException e) {
 						}
-					} else if (audioSocket != null && audioSocket.isConnected()) {
-						DataOutputStream dataOut = new DataOutputStream(audioSocket.getOutputStream());
-						dataOut.writeInt(AUDIO_HEARTBEAT_MARKER);
-						dataOut.flush();
 					}
 				}
 			} catch (Exception e) {
@@ -1296,13 +1278,6 @@ public class VoiceCallService extends Service implements EventListener {
 				}
 				torConnection = null;
 			}
-			if (audioSocket != null) {
-				try {
-					audioSocket.close();
-				} catch (Exception e) {
-				}
-				audioSocket = null;
-			}
 		}
 	}
 
@@ -1389,27 +1364,9 @@ public class VoiceCallService extends Service implements EventListener {
 				}
 			}
 
-			if (audioSocket != null) {
-				try {
-					audioSocket.close();
-				} catch (IOException e) {
-				} catch (Exception e) {
-				} finally {
-					audioSocket = null;
-				}
-			}
 
 			torConnection = null;
 
-			if (serverSocket != null && !serverSocket.isClosed()) {
-				try {
-					serverSocket.close();
-				} catch (IOException e) {
-				} catch (Exception e) {
-				} finally {
-					serverSocket = null;
-				}
-			}
 		}
 	}
 

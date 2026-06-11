@@ -241,6 +241,8 @@ public class KeyManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(contact));
 			oneOf(transportKeyManager).getStreamContext(txn, contactId, true);
 			will(returnValue(contactStreamContext));
+			oneOf(pcsStateManager).hasState(txn, contactId);
+			will(returnValue(false));
 		}});
 
 		assertEquals(contactStreamContext,
@@ -284,6 +286,9 @@ public class KeyManagerImplTest extends BrambleMockTestCase {
 
 			oneOf(transportKeyManager).getStreamContext(txn, tag, true);
 			will(returnValue(contactStreamContext));
+
+			oneOf(pcsStateManager).hasState(txn, contactId);
+			will(returnValue(false));
 		}});
 
 		assertEquals(contactStreamContext,

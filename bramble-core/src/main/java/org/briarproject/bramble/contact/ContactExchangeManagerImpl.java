@@ -194,8 +194,9 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 		streamWriter.sendEndOfStream();
 		recordReader.readRecord(r -> false, IGNORE);
 		PublicKey remotePublicKey = remoteInfo.author.getPublicKey();
-		if (!contactExchangeCrypto.verify(remotePublicKey,
-				masterKey, !alice, remoteInfo.signature)) {
+		boolean sigOk = contactExchangeCrypto.verify(remotePublicKey,
+				masterKey, !alice, remoteInfo.signature);
+		if (!sigOk) {
 			throw new FormatException();
 		}
 

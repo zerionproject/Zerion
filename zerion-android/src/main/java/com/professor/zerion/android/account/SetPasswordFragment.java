@@ -94,6 +94,13 @@ public class SetPasswordFragment extends SetupFragment {
 						progressBar.setVisibility(VISIBLE);
 						passwordEntry.setFocusable(false);
 						passwordConfirmation.setFocusable(false);
+					} else {
+						nextButton.setVisibility(VISIBLE);
+						progressBar.setVisibility(INVISIBLE);
+						passwordEntry.setFocusable(true);
+						passwordEntry.setFocusableInTouchMode(true);
+						passwordConfirmation.setFocusable(true);
+						passwordConfirmation.setFocusableInTouchMode(true);
 					}
 				});
 		setupKeyboardInsetsHandling(v);
