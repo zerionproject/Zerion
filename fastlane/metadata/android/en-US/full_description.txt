@@ -1,29 +1,32 @@
-Zerion is a private messenger. It runs over Tor, so your IP address is hidden from the people you message and from the network. There's no phone number, no email, no account on a server. Your messages live encrypted on your device.
+Zerion is a private messenger. It runs over Tor, so your IP address stays hidden from the people you talk to and from the network itself. There's no phone number, no email, and no account on anyone's server. Your data lives encrypted on your own device — nowhere else.
 
-Everything is end-to-end encrypted with hybrid post-quantum cryptography — both today's standard algorithms and the new NIST quantum-resistant ones. If quantum computers arrive sooner than expected, your old conversations stay safe.
+Everything is end-to-end encrypted with hybrid post-quantum cryptography: today's proven algorithms together with the new NIST quantum-resistant ones. Keys move forward with every message, so a key uncovered today cannot open yesterday's conversations. If large quantum computers arrive sooner than expected, what you sent in the past stays protected.
 
 
 WHAT YOU CAN DO
 
-• One-to-one chats with end-to-end encryption
+• One-to-one chats, end-to-end encrypted
 • Group chats up to a few dozen people
-• Voice calls over Tor
+• Voice and video calls over Tor (opt-in, off by default)
 • Send photos, videos, voice notes, and documents
 • Disappearing messages
+• Stickers
+• Introduce two of your contacts to each other, securely
 • A built-in vault for passwords, notes, and private files
-• Channels — a publisher-to-subscriber broadcast layer with optional discussion threads
+• Channels — a one-to-many broadcast layer with optional discussion threads
+• Translated into more than 35 languages
 
 
 CHANNELS
 
-Channels are a one-to-many space. One person writes, many people read.
+One person writes, many people read.
 
 • Public channels: anyone with the invite link can subscribe
-• Private channels: subscribers ask to join, the owner approves
-• Discussion threads: owners decide whether subscribers can reply under each post
+• Private channels: people ask to join and the owner approves
+• Discussion threads: the owner decides, per channel, whether subscribers can reply
+• Reactions, pinned posts, and attachments
 • Editor delegations: let trusted people post without sharing your identity key
-• Pinned posts, reactions, attachments
-• No subscriber-to-subscriber metadata leaks — subscribers don't see each other
+• Subscribers never see one another — no member list leaks between them
 
 
 HARDENED MODE (OPT-IN)
@@ -32,7 +35,7 @@ Three independent protections under Security settings, all off by default:
 
 • Refuse to start on tampered devices (unlocked bootloader, modified system)
 • Refuse to start when a debugger, root, or hooking framework is detected
-• Sign out automatically (or wipe) if ADB or file transfer is enabled over USB
+• Sign out automatically — or wipe — if USB debugging or file transfer is switched on
 
 
 PRIVACY AND SECURITY
@@ -41,10 +44,24 @@ PRIVACY AND SECURITY
 • No phone number, no email, no central server
 • No telemetry, no analytics, no crash reporting
 • No logging of any kind — verified at build time
-• Encrypted at rest with SQLCipher and a password-derived key
+• Encrypted at rest with SQLCipher and a key derived from your password
 • Screenshots blocked inside the app
-• Notifications never show message previews
-• Open source on GitHub, GPL v3, audited per release
+• Notifications never reveal message contents
+• Fully open source, GPL v3, security-reviewed before each release
+
+
+UNDER THE HOOD
+
+• Hybrid post-quantum key exchange (X25519 + ML-KEM-768)
+• Hybrid signatures (Ed25519 + ML-DSA)
+• Forward-secret message ratcheting
+• Calls encrypted with AES-256-GCM; storage with SQLCipher (AES-256)
+
+
+SUPPORT THE PROJECT
+
+Zerion is free and open source — no ads, no trackers, no investors. If you'd like to help keep it independent, you can donate:
+https://zerion.chat/donate.html
 
 
 WHO IT'S FOR
@@ -64,5 +81,4 @@ LEARN MORE
 • Website: https://zerion.chat
 • Source: https://github.com/zerionproject/Zerion
 
-
-Built on the Bramble protocol. GPL v3.
+GPL v3.

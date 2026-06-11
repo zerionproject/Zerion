@@ -86,11 +86,11 @@ Any attempt to reconnect with weaker security is automatically blocked.
 
 **[Google Play](https://play.google.com/store/apps/details?id=com.professor.zerion)** — Get it on the Play Store
 
-**[Download APK](https://github.com/zerionproject/Zerion/releases/latest)** — v1.7.0 (direct from GitHub)
+**[Download APK](https://github.com/zerionproject/Zerion/releases/latest)** — latest release (direct from GitHub)
 
-**F-Droid:** [fdroid.zerion.chat](https://fdroid.zerion.chat/fdroid/repo)
+**[F-Droid](https://f-droid.org/packages/com.professor.zerion/)** — Get it on F-Droid
 ```
-Repo fingerprint: D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6888F704C8
+APK signing fingerprint: D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6888F704C8
 ```
 
 ---
