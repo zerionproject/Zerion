@@ -39,12 +39,16 @@ android {
             useLegacyPackaging = true
             keepDebugSymbols += ['**/*.so']
         }
+        // Always strip the embedded VCS info so the release APK stays byte-reproducible
+        // regardless of which commit it was built from (removes F-Droid repro commit-fragility).
+        resources {
+            excludes += ["META-INF/version-control-info.textproto"]
+        }
         if (isFdroidBuild) {
             resources {
                 excludes += [
                     "assets/dexopt/baseline.prof",
-                    "assets/dexopt/baseline.profm",
-                    "META-INF/version-control-info.textproto"
+                    "assets/dexopt/baseline.profm"
                 ]
             }
         }
