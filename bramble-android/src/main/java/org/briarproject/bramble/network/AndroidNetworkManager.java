@@ -168,7 +168,7 @@ class AndroidNetworkManager implements NetworkManager, Service {
 		@Override
 		public void onReceive(Context ctx, Intent i) {
 			String action = i.getAction();
-			updateConnectionStatus();
+			eventExecutor.execute(() -> updateConnectionStatus());
 			if (isSleepOrDozeEvent(action)) {
 				scheduleConnectionStatusUpdate(1, MINUTES);
 			}
