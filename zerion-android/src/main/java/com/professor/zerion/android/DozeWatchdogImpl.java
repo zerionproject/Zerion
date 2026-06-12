@@ -58,13 +58,20 @@ class DozeWatchdogImpl implements DozeWatchdog, Service {
 		public void onReceive(Context context, Intent intent) {
 			if (SDK_INT < 23) return;
 			String action = intent.getAction();
-			PowerManager pm =
-					(PowerManager) appContext.getSystemService(POWER_SERVICE);
-			if (ACTION_DEVICE_IDLE_MODE_CHANGED.equals(action)) {
-				if (pm.isDeviceIdleMode()) dozed.set(true);
-			} else if (SDK_INT >= 33) {
-				onReceive33(action, pm);
-			}
+			PendingResult result = goAsync();
+			new Thread(() -> {
+				try {
+					PowerManager pm = (PowerManager)
+							appContext.getSystemService(POWER_SERVICE);
+					if (ACTION_DEVICE_IDLE_MODE_CHANGED.equals(action)) {
+						if (pm.isDeviceIdleMode()) dozed.set(true);
+					} else if (SDK_INT >= 33) {
+						onReceive33(action, pm);
+					}
+				} finally {
+					result.finish();
+				}
+			}).start();
 		}
 
 		@RequiresApi(33)
