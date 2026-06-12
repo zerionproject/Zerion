@@ -20,6 +20,25 @@ actually runs on the wire, both directions per epoch
 
 ---
 
+> **v1.7 amendment — Mode 3-Full is now the default (READ THIS FIRST).**
+> This document describes per-epoch Mode 3 (one ML-KEM-768 rotation every
+> 25 messages or 24 hours). As of v1.7 (May 2026), that per-epoch path is
+> **no longer the default** — it is a **fallback**. The default on new 1:1
+> contacts is **Mode 3-Full**: a fresh ML-KEM-768 encapsulation on
+> **every outbound frame**, with the per-frame shared secret mixed into
+> the body AEAD key. Per-epoch Mode 3 is retained only for legacy/
+> mode-disabled paths and the cross-platform interop window. Wherever
+> this document says Mode 3 is "ACTIVE" or describes the 25-message /
+> 24-hour epoch as the live behaviour, read that as the fallback path —
+> the live default is per-message ML-KEM-768. The authoritative
+> description of Mode 3-Full lives in
+> [PCS_DESIGN.md §v1.7 amendment](PCS_DESIGN.md) and
+> [RATCHET_MODES.md](RATCHET_MODES.md). The current database schema
+> version is **65** (this document's references to v58 are a stale
+> snapshot).
+
+---
+
 ## Table of Contents
 
 1. [Executive Summary](#1-executive-summary)
@@ -44,26 +63,29 @@ actually runs on the wire, both directions per epoch
 
 Zerion implements the full Triple Ratchet protocol:
 - **Mode 1**: Symmetric Ratchet (per-message forward secrecy) - Briar compatibility
-- **Mode 2**: Full Double Ratchet (X25519 DH + Symmetric, 1-RTT PCS recovery)
-- **Mode 3**: Triple Ratchet (ML-KEM-768 PQ + X25519 DH + Symmetric) - **ACTIVE**
+- **Mode 2**: Full Double Ratchet (X25519 DH + Symmetric, 1-RTT PCS recovery) - **FALLBACK**
+- **Mode 3**: Triple Ratchet (per-epoch ML-KEM-768 PQ + X25519 DH + Symmetric) - **FALLBACK** (per-epoch rotation, every 25 messages or 24 hours)
+- **Mode 3-Full**: per-message ML-KEM-768 encapsulation mixed into the body AEAD key (X25519 DH + Symmetric + per-frame PQ) - **DEFAULT since v1.7**
 - **PQ Handshake**: ML-KEM-768 + X25519 hybrid initial key agreement
 
-This exceeds Signal's current security baseline with post-quantum protection for ongoing ratchet.
+This exceeds Signal's current security baseline with per-message post-quantum protection for the ongoing ratchet. The remainder of this document specifies the per-epoch Mode 3 mechanism, which is now the fallback path; the per-message Mode 3-Full default is specified in [PCS_DESIGN.md §v1.7 amendment](PCS_DESIGN.md) and [RATCHET_MODES.md](RATCHET_MODES.md).
 
 ### Gap Analysis (RESOLVED)
 
 **Previously Missing**: Post-quantum protection for the ongoing ratchet.
 
-**Threat Addressed**: "Harvest now, decrypt later" - With Mode 3 active, ML-KEM-768 PQ ratchet provides quantum-resistant protection for ongoing message keys.
+**Threat Addressed**: "Harvest now, decrypt later" - With the post-quantum ratchet active, ML-KEM-768 provides quantum-resistant protection for ongoing message keys. Under the Mode 3-Full default this protection refreshes on every frame; under the per-epoch Mode 3 fallback it refreshes every 25 messages or 24 hours.
 
 ### Implemented Solution
 
-**Mode 3: Triple Ratchet** - Sparse Post-Quantum Ratchet (SPQR) using ML-KEM-768, braided into the existing Double Ratchet. Active for all Zerion-to-Zerion communications.
+**Mode 3-Full (default since v1.7)** - per-message ML-KEM-768 encapsulation mixed into the body AEAD key, on every outbound frame to Zerion 1:1 contacts.
+
+**Mode 3 (fallback)** - Sparse Post-Quantum Ratchet (SPQR) using ML-KEM-768, braided into the existing Double Ratchet at per-epoch boundaries (every 25 messages or 24 hours). Retained for legacy/mode-disabled paths and the cross-platform interop window. The mechanism specified in the rest of this document is this per-epoch fallback.
 
 ### Design Principles
 
 1. **Hybrid security**: Require breaking BOTH X25519 AND ML-KEM
-2. **Sparse ratcheting**: PQ exchanges occur periodically, not per-message
+2. **Per-message PQ by default**: Under the Mode 3-Full default, a fresh ML-KEM-768 encapsulation is mixed into every frame's body key. The **sparse/per-epoch** variant described in the rest of this document (PQ exchanges every 25 messages or 24 hours, not per-message) is now the fallback path for legacy/mode-disabled contacts and the iOS interop window.
 3. **Tor-optimized**: Minimize bandwidth overhead for Tor transport
 4. **Backward compatible**: Mode 2 contacts continue working
 5. **Feature-flagged**: Gradual rollout with explicit capability negotiation
@@ -753,9 +775,15 @@ bramble-core/src/main/java/org/briarproject/bramble/crypto/
   PcsStreamDecrypterImpl.java  # Add PQ chunk reception
 
 bramble-core/src/main/java/org/briarproject/bramble/db/
-  JdbcDatabase.java          # Schema v58 with PQ tables
+  JdbcDatabase.java          # Schema v58 with PQ tables (schema has since advanced; current is v65)
   Migration57_58.java        # PQ state migration
 ```
+
+> **Schema note:** v58 was the schema version when the per-epoch PQ
+> tables landed. The database schema has advanced since; the current
+> version is **65**. Treat the v58 references in this section as a
+> historical snapshot of the PQ-table migration, not the live schema
+> version.
 
 ### 11.2 Database Schema Additions
 

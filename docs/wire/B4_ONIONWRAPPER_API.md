@@ -1,6 +1,21 @@
 # B.4 onionwrapper concurrent-services API
 
-**Status:** design note for the upstream onionwrapper fork (Phase 3 of the B.4 plan). Not implemented in the Briar `org.briarproject:onionwrapper-core:0.1.4` library; needs to be added before Android-side B.4 (Phase 4) can land.
+> **IMPLEMENTED — B.4 onion rotation shipped v1.5.0; the concurrent-services
+> API described here now exists in the Zerion onionwrapper fork.** This was
+> originally a forward-looking design note for the fork; it is retained as the
+> as-built reference. The future-tense "once the PR lands / once the fork is
+> published" passages below describe work that is now done — see the inline
+> "DONE" annotations.
+>
+> **Operational rotation cadence:** the Tor v3 onion address rotates every
+> **5–14 days**. During the `announcing` phase the old `onion_current` and the
+> new `onion_next` run concurrently (the reason this API exists); once peers
+> have migrated, `onion_current` is retired.
+
+**Status:** IMPLEMENTED in v1.5.0 via the Zerion onionwrapper fork. (Originally a
+design note for Phase 3 of the B.4 plan, ahead of the Briar
+`org.briarproject:onionwrapper-core:0.1.4` library, which did not expose the
+concurrent-services API.)
 
 **Sibling docs:**
 - iOS-mirrored full plan: `Zerion Ios/docs/wire/B4_PLAN.md`
@@ -18,7 +33,7 @@ The Tor protocol itself (`ADD_ONION` / `DEL_ONION`) supports multiple concurrent
 
 ## 2 — Where the PR goes
 
-Upstream Briar at `org.briarproject:onionwrapper-core` (and the Android variant `:onionwrapper-android`). Per project decision, Zerion is forking this library into the Zerion org rather than waiting on a Briar upstream review cycle. Once the fork is published (Maven Central or JitPack), update [bramble-core/build.gradle:12](../../bramble-core/build.gradle#L12) and [bramble-android/build.gradle:61](../../bramble-android/build.gradle#L61) coordinates to point at the fork.
+Upstream Briar at `org.briarproject:onionwrapper-core` (and the Android variant `:onionwrapper-android`). Per project decision, Zerion forked this library into the Zerion org rather than waiting on a Briar upstream review cycle. **DONE:** the fork is published and the `bramble-core` / `bramble-android` build coordinates already point at it (originally [bramble-core/build.gradle:12](../../bramble-core/build.gradle#L12) and [bramble-android/build.gradle:61](../../bramble-android/build.gradle#L61)).
 
 Today's call sites in this tree:
 - [TorPlugin.java:231](../../bramble-core/src/main/java/org/briarproject/bramble/plugin/tor/TorPlugin.java#L231) — `tor.publishHiddenService(port, port, privKey)`
@@ -100,11 +115,14 @@ Descriptor publication: `ADD_ONION` returns immediately, but the v3 onion isn't 
 
 ---
 
-## 6 — Verifying against the upstream once the PR lands
+## 6 — Verifying against the fork — DONE (shipped v1.5.0)
 
-1. Bump `onionwrapper_version` in [build.gradle:38](../../build.gradle#L38) to the fork's first concurrent-services release.
-2. Smoke test in `TorPluginTest`: `addHiddenService(k1, 9001)`, `addHiddenService(k2, 9002)`, dial both from a second Tor process, both succeed, `removeHiddenService(o1)`, dial `o2` continues to work, dial `o1` fails.
-3. Phase 4 implementation can then proceed — no further wrapper changes needed for B.4.
+This verification was completed; the concurrent-services API shipped in v1.5.0.
+Retained for history:
+
+1. ~~Bump `onionwrapper_version` in [build.gradle:38](../../build.gradle#L38) to the fork's first concurrent-services release.~~ Done — coordinates point at the Zerion fork.
+2. ~~Smoke test in `TorPluginTest`: `addHiddenService(k1, 9001)`, `addHiddenService(k2, 9002)`, dial both from a second Tor process, both succeed, `removeHiddenService(o1)`, dial `o2` continues to work, dial `o1` fails.~~ Done.
+3. ~~Phase 4 implementation can then proceed — no further wrapper changes needed for B.4.~~ Done — B.4 onion rotation is live (5–14 day cadence).
 
 ---
 

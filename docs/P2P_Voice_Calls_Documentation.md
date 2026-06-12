@@ -50,8 +50,8 @@ Once connected:
 - Audio is captured from the device microphone (16kHz, 16-bit mono PCM)
 - **Opus codec compression**: PCM audio is compressed using Opus codec (VOIP mode)
   - 20ms frames (320 samples @ 16kHz = 640 bytes PCM)
-  - Compressed to ~40 bytes per frame at 16 kbps bitrate
-  - **16x compression ratio** (256 kbps PCM → 16 kbps Opus)
+  - Compressed at 24 kbps bitrate
+  - **~10x compression ratio** (256 kbps PCM → 24 kbps Opus)
   - Forward Error Correction (FEC) enabled for packet loss resilience
   - Packet Loss Concealment (PLC) synthesizes audio for lost frames
 - Encrypted with the shared **voice call key** using AES-256-GCM with unique IV per frame
@@ -288,12 +288,12 @@ Traditional VoIP:              Zerion:
 - **Format**: 16-bit mono PCM (internal)
 - **Codec**: Opus VOIP mode (pure Java implementation via Concentus)
   - 20ms frame duration (320 samples)
-  - 16 kbps bitrate with variable bitrate (VBR)
+  - 24 kbps bitrate with variable bitrate (VBR)
   - Forward Error Correction (FEC) enabled
   - Packet Loss Concealment (PLC) for lost/corrupted frames
-- **Compression Ratio**: 16x (640 bytes PCM → ~40 bytes Opus)
+- **Compression Ratio**: ~10x (256 kbps PCM → 24 kbps Opus)
 - **Quality**: Clear voice communication, optimized for speech
-- **Bandwidth**: ~16 kbps + ~10% encryption/overhead = ~18 kbps (down from 270 kbps)
+- **Bandwidth**: ~24 kbps + ~10% encryption/overhead = ~26 kbps (down from 256 kbps)
 
 ### Connection Reliability
 - **Retry Logic**: Exponential backoff (6 attempts, ~31s window)
@@ -322,7 +322,7 @@ Traditional VoIP:              Zerion:
 - Android 5.0+ (API 21+)
 - **RECORD_AUDIO** permission (requested at runtime)
 - **Foreground service** permission (microphone type)
-- ~20 kbps upload/download bandwidth (with Opus codec)
+- ~24 kbps upload/download bandwidth (with Opus codec)
 - Battery usage higher than regular calls (Tor overhead)
 - **Audio Routing**: Automatic earpiece routing with speakerphone toggle support
 - **Network Quality Monitoring**: Real-time latency, packet loss, and signal strength indicators
@@ -338,16 +338,13 @@ Traditional VoIP:              Zerion:
 ## Future Enhancements
 
 ### Planned Features
-- **Adaptive Bitrate**: Dynamic adjustment based on network conditions (8-24 kbps)
-- **Video Calling**: P2P video over Tor with same privacy guarantees
 - **Group Calls**: Multi-party encrypted voice conferencing
 - **Connection Padding**: Traffic analysis resistance
 - **Onion Routing v4**: When Tor upgrades hidden service protocol
-- **Call History UI**: Signal/Molly-style call event bubbles in conversation view
+- **Call History UI**: Call event bubbles in conversation view
 - **Enhanced Network Diagnostics**: Detailed connection quality graphs and history
 
 ### Research Areas
-- **Noise Protocol**: Post-quantum resistant key exchange
 - **QUIC over Tor**: Reduced latency and better reliability
 - **Acoustic Fingerprinting Resistance**: Prevent voice identification
 - **Forward Secrecy**: Rotate voice call keys during long calls
@@ -387,7 +384,7 @@ Traditional VoIP:              Zerion:
 │                                                                 │
 │  ┌──────────────┐      ┌─────────────┐      ┌──────────────┐  │
 │  │ Microphone   │─────→│ Opus Encoder│─────→│ AES-256-GCM  │  │
-│  │ (48kHz PCM)  │      │ (24kbps)    │      │ Encryption   │  │
+│  │ (16kHz PCM)  │      │ (24kbps)    │      │ Encryption   │  │
 │  └──────────────┘      └─────────────┘      └───────┬──────┘  │
 │                                                      │         │
 │                                              ┌───────▼──────┐  │
@@ -416,7 +413,7 @@ Traditional VoIP:              Zerion:
 │                                                         │         │
 │  ┌──────────────┐      ┌─────────────┐      ┌─────────▼──────┐  │
 │  │ Speaker      │◄─────│ Opus Decoder│◄─────│ AES-256-GCM    │  │
-│  │ (48kHz PCM)  │      │             │      │ Decryption     │  │
+│  │ (16kHz PCM)  │      │             │      │ Decryption     │  │
 │  └──────────────┘      └─────────────┘      └────────────────┘  │
 │                                                                  │
 └──────────────────────────────────────────────────────────────────┘
@@ -438,21 +435,21 @@ For journalists, activists, whistleblowers, and privacy-conscious individuals, Z
 
 ---
 
-**Last Updated:** 2026-05-15
-**Version:** 1.6 — post-quantum signalling envelope, full video pipeline, current as of v1.6.2
+**Last Updated:** 2026-06-12
+**Version:** 2.0.2 — post-quantum signalling envelope (Mode 3-Full), full video pipeline, current as of v2.0.2
 **License:** CC BY-SA 4.0
 
 ---
 
-## Implementation Status (v1.6.2)
+## Implementation Status (v2.0.2)
 
 ### Voice calls — shipped
 
 - P2P voice calling over Tor v3 hidden services
 - End-to-end encryption with AES-256-GCM (per-frame authenticated, counter-based nonces)
 - Per-call symmetric key (256-bit, fresh per call), delivered through the dedicated `VOICE_SIGNAL` message type
-- Signalling key delivery rides the Mode 3 Triple Ratchet (ML-KEM-768 + X25519) — call keys travel inside a post-quantum-encrypted envelope as of v1.6.0
-- Opus codec at 32 kbps (VoIP mode with FEC/PLC), CRC32 integrity check, jitter buffer
+- Signalling key delivery rides Mode 3-Full, the per-message ML-KEM-768 + X25519 hybrid ratchet that is the default since v1.7 — call keys travel inside a post-quantum-encrypted envelope, with a fresh ML-KEM-768 encapsulation on every frame
+- Opus codec at 24 kbps (VoIP mode with FEC/PLC), CRC32 integrity check, jitter buffer
 - Heartbeat for Tor circuit keepalive
 - Stream sync (SYNC / READY markers)
 - Audio routing to earpiece (`USAGE_VOICE_COMMUNICATION`), speakerphone toggle with optional gain
@@ -461,9 +458,10 @@ For journalists, activists, whistleblowers, and privacy-conscious individuals, Z
 - `FLAG_SECURE` on active call activity (screenshot/recording prevention)
 - `VoiceSignalReceivedEvent` routing for incoming-call handling
 
-### Video calls — shipped (v1.0.4+)
+### Video calls — shipped
 
-- H.264 Baseline Profile, 320x240 @ 15 fps (low-latency) / 640x480 @ 24 fps (where bandwidth allows)
+- H.264 Main Profile Level 3.1, 640x480 @ 24 fps / 600 kbps (primary mode)
+- Adaptive quality controller steps frame rate and bitrate down under load: 15 fps / 250 kbps → 10 fps / 150 kbps → 5 fps / 80 kbps → video off, recovering when conditions improve
 - AES-256-GCM frame encryption with deterministic padding to defeat frame-size analysis
 - Per-frame rotation metadata (correct portrait orientation across camera switches)
 - Camera switch with async callback for correct transform
@@ -472,9 +470,9 @@ For journalists, activists, whistleblowers, and privacy-conscious individuals, Z
 - Clean encoder drain on hang-up (EOS flag), decoder consecutive-failure tracking
 - `FLAG_SECURE` on the video call activity
 
-### v1.6 changes affecting voice / video
+### Changes affecting voice / video
 
-- The signalling channel that delivers call keys is the Mode 3 PCS Triple Ratchet, which actually completes ML-KEM-768 epochs end-to-end as of v1.6.0 (Phase 4d shipped framing only; three latent bugs prevented PQ rotation from completing). Once the underlying ratchet rotates, the envelope carrying call keys gets the same post-quantum upgrade automatically. See [PCS_DESIGN.md §v1.6 amendment](PCS_DESIGN.md).
+- The signalling channel that delivers call keys is Mode 3-Full, the per-message PCS ratchet that is the default since v1.7. Rather than rotating ML-KEM-768 once per epoch, it performs a fresh ML-KEM-768 encapsulation on every frame, so the envelope carrying call keys is post-quantum-protected on a per-message basis. See [PCS_DESIGN.md](PCS_DESIGN.md).
 - Bluetooth audio routing logic is unaffected by the v1.6.2 removal of the Bluetooth *transport* plugin. The transport plugin governed BLE / Bluetooth-LE pairing between devices and was unrelated to A2DP / HFP audio output, which routes through the standard Android `AudioManager`.
 
 ### Planned

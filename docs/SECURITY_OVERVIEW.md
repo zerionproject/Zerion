@@ -1,15 +1,45 @@
 # Zerion Security Overview
 
-**Version:** 1.3.0
-**Last reviewed:** May 2026 (v1.7)
+**Version:** 2.0.2
+**Last reviewed:** June 2026 (v2.0.2)
 
 ---
 
 ## Summary
 
-Zerion is a peer-to-peer encrypted messenger for Android with voice calls over Tor. All traffic routes exclusively through the Tor network. There are no central servers, no metadata collection, and no logging in production builds.
+Zerion is a peer-to-peer encrypted messenger for Android with voice and video calls over Tor. All traffic routes exclusively through the Tor network. There are no central servers, no metadata collection, and no logging in production builds.
 
 A comprehensive security audit covering 10 domains (cryptography, network, voice calls, Android platform, authentication, database, input validation, dependencies, logging, memory safety) was completed and all actionable findings have been resolved. Additional internal audits were run during the v1.6 cycle: the PCS Mode 3 rewrite and the hybrid-signing migration produced four findings (one critical, one high, two medium) caught and patched before the v1.6.0 tag; a follow-up audit during the v1.6.2 cycle covered password setup, settings, vault, biometric, deletion paths, and lock-screen exposure — see the version notes below.
+
+## v2.0 / v2.0.2 status (June 2026)
+
+- **Channels (broadcast publishing).** Channels are a publisher → subscriber
+  broadcast surface. A channel is public or private; private channels are
+  closed — the owner gates which contacts may subscribe, and subscribers
+  never see one another (the subscriber list is non-disclosed to the
+  membership). Every channel record — posts, owner-gated discussion-thread
+  comments, reactions — carries a hybrid Ed25519 + ML-DSA-65 signature, so
+  authorship and integrity are post-quantum-bound. Owners may delegate a
+  bounded set of editors who can publish on the channel's behalf; editor
+  delegations are themselves hybrid-signed records. v2.0.2 added in-app
+  system notifications for new posts and new comments.
+- **Hardened mode (opt-in, v2.0).** When enabled, Zerion refuses to start on
+  a device that fails integrity checks: detected tamper/root/hook frameworks,
+  an attached debugger, or USB debugging / file-transfer (MTP) left enabled.
+  This is an anti-forensics posture aimed at physical-extraction tooling
+  (Cellebrite, GrayKey and similar): the app declines to run in the exact
+  environments those tools require.
+- **Anti-forensics / extraction-tool resistance.** On sign-out the app wipes
+  its caches so no plaintext working state survives a locked session. The
+  clipboard auto-clears 60 seconds after any sensitive copy, limiting what a
+  later extraction can recover.
+- **In-tree EncryptedSharedPreferences (v2.0.2).** The deprecated AndroidX
+  `security-crypto` library was removed and replaced with an in-tree
+  EncryptedSharedPreferences implementation. Behaviour is unchanged from the
+  caller's perspective — every preference read/write is still keystore-backed
+  (master key in the Android Keystore, hardware-backed where available) — but
+  the encryption layer is now maintained in the Zerion source tree rather than
+  pinned to an unmaintained dependency.
 
 ## v1.7 status (May 2026)
 
@@ -76,13 +106,14 @@ A comprehensive security audit covering 10 domains (cryptography, network, voice
 | Chain key | Per-stream HKDF | Derived from `HKDF(rootKey, PCS_STREAM_CHAIN, streamNumber_8B)`, advanced locally per frame within the stream |
 | Classical ratchet | X25519 Double Ratchet | Underlies Mode 3-Full; provides classical post-compromise security |
 | Voice frames | AES-256-GCM | Per-frame authenticated encryption with counter-based nonces |
+| Video frames | AES-256-GCM | Per-frame authenticated encryption; frames padded to a fixed size to defeat frame-size analysis |
 | Voice key wrap | AES-256 CTR | IES implementation (migrated from CBC to CTR) |
 | Contact handshake | X25519 + ML-KEM-768 | Hybrid post-quantum key exchange (B.4) |
 | Introductions | X25519 + ML-KEM-768 | Hybrid PQ KEM at introduction time (Phase 5b) |
 | Signatures | Ed25519 + ML-DSA-65 | Hybrid post-quantum signatures (B.3) |
-| Database | H2 with AES cipher | Local database encrypted at rest |
+| Database | SQLCipher (AES-256-CBC per page + per-page HMAC) | Local database encrypted at rest (schema version 65) |
 | Vault | Argon2id + AES-256-GCM | Encrypted file storage with memory-hard KDF |
-| KDF (passwords) | Argon2id / scrypt | Password-based key derivation |
+| KDF (passwords) | Argon2id (active) | Password-based key derivation; scrypt is legacy only (read and auto-migrated to Argon2id, never used for new accounts) |
 
 ## Voice Call Security
 
@@ -93,6 +124,15 @@ A comprehensive security audit covering 10 domains (cryptography, network, voice
 - Keys passed via in-memory holder (never via Android Intent extras)
 - Counter-based nonces with 1000-gap advance on reconnection
 - All key material zeroed on call end (keys, jitter buffer, contact name)
+
+## Video Call Security
+
+- Peer-to-peer video over the same Tor connection as voice (no servers)
+- H.264 Main Profile Level 3.1, 640x480 at 24 fps
+- AES-256-GCM per-frame authenticated encryption (same per-call key derivation as voice)
+- Frames padded to a fixed size to defeat frame-size traffic analysis
+- Adaptive controller steps quality down under load (15 fps / 250 kbps → 10 fps / 150 kbps → 5 fps / 80 kbps → off)
+- `FLAG_SECURE` on the video call activity (screenshot/recording prevention)
 
 ## Network
 
@@ -144,7 +184,7 @@ A comprehensive security audit covering 10 domains (cryptography, network, voice
 ## Dependencies
 
 All critical and high-severity dependency issues resolved:
-- H2 Database updated to 2.2.224
+- Local database is SQLCipher (AES-256-CBC per page + per-page HMAC); H2 is not used as the storage engine
 - Jackson-databind updated to 2.15.3
 - NanoHTTPD removed (unused, had known CVE)
 - Keystore passwords moved to environment variables

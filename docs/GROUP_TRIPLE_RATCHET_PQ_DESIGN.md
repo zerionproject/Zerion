@@ -148,7 +148,7 @@ MLS (RFC 9420) is the obvious "correct" answer for groups — tree-based ratchet
 
 4. **Group sizes are small.** O(N) per send is fine when N ≤ 100. The asymptotic benefit of MLS only shows past ~200 members, which we do not target.
 
-We MAY migrate to MLS later (≥ v2.0, 12+ months out) once hybrid-PQ MLS is standardised and a JVM-grade implementation exists. The pairwise design proposed here lives behind a wire-versioned record so the swap is cleanly possible.
+We MAY migrate to MLS in a future release once hybrid-PQ MLS is standardised and a JVM-grade implementation exists. (The original "≥ v2.0, 12+ months out" estimate has been overtaken by events — v2.0.2 has shipped and still runs the pairwise design; MLS adoption remains gated on a standardised hybrid-PQ MLS plus an audited JVM implementation, neither of which exists yet.) The pairwise design proposed here lives behind a wire-versioned record so the swap is cleanly possible.
 
 ---
 
@@ -421,7 +421,7 @@ Creator signs `GROUP_DISSOLVED`. All members on receipt mark group dissolved, at
 |---|---|---|
 | Per-message Forward Secrecy | Yes | Symmetric chain-key ratchet on each 1:1 pair (Mode 1) |
 | Per-message Post-Compromise Security | Yes | X25519 DH ratchet on each 1:1 pair (Mode 2), one step per chain start |
-| Hybrid Post-Quantum FS+PCS | Yes | ML-KEM-768 ratchet on each 1:1 pair (Mode 3), seed-refreshed every 25 messages OR 24 h |
+| Hybrid Post-Quantum FS+PCS | Yes | Per-message ML-KEM-768 encapsulation on each 1:1 pair (Mode 3-Full, default since v1.7); falls back to per-epoch refresh (every 25 messages OR 24 h) on Mode-3-only paths |
 | Cryptographic removal | Yes | Forced DH ratchet step in every surviving pair atomically with REMOVED record |
 | Sender authentication | Yes | Per-post Ed25519 sig + per-1:1-message ratchet MAC |
 | Replay protection | Yes | Frame counters in each 1:1 ratchet + epoch gate in §6.3 |
@@ -460,9 +460,11 @@ Each pairwise record traverses one Tor circuit (same as today's 1:1 messages). S
 
 ### 10.3 Battery and CPU
 
-Per send: N − 1 ML-KEM encapsulations on the sender side every ~25 messages (PQ ratchet step frequency). ML-KEM-768 encap is ~50 µs on modern ARM; 100 members × 1 encap every 25 messages ≈ negligible.
+Under the Mode 3-Full default (per-message ML-KEM on the underlying 1:1 pair), each group post costs N − 1 ML-KEM-768 encapsulations on the sender side — one per recipient pair, on every post — since the underlying pairwise ratchet encapsulates per frame. ML-KEM-768 encap is ~50 µs on modern ARM, so even a 100-member group is ~5 ms of encap per post — negligible relative to Tor circuit latency.
 
-Receive side: 1 ML-KEM decap per ratchet step per pair. Same order.
+Receive side: 1 ML-KEM decap per inbound frame per pair. Same order.
+
+On the per-epoch Mode 3 fallback (mode-disabled paths), the encap/decap cost drops to once per epoch (every ~25 messages or 24 h) per pair instead of per frame.
 
 ### 10.4 Group-size ceiling
 

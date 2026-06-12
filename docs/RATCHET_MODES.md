@@ -175,18 +175,21 @@ stream derives its own initial chain key from `HKDF(rootKey,
 PCS_STREAM_CHAIN, streamNumber_8B)` and advances it locally; the
 chain key is never persisted across streams.
 
-### iOS — needs Mode 3-Full catch-up (action item for iOS team)
+### iOS — parity tracked separately
 
-iOS currently initializes new contacts in Mode 2 (no PQ) and decapsulates
-Mode-3 (per-epoch) frames from Android via the legacy receive path. iOS
-does not yet emit Mode 3-Full frames. Effect on cross-platform channels:
-Android → iOS uses Mode 3-Full on the wire; iOS → Android uses Mode 2.
-Until iOS lands Mode 3-Full per the parity spec in
-[`docs-internal/V1_7_IOS_PARITY_SPEC.md`](../docs-internal/V1_7_IOS_PARITY_SPEC.md),
-the iOS → Android direction is not per-message PQ on the ongoing
-ratchet. The initial contact handshake (B.4) and identity layer (B.3)
-are hybrid PQ on both sides — only the ongoing transport ratchet is
-asymmetric.
+iOS parity for the Mode 3-Full per-message path is tracked separately
+against the wire spec in
+[`docs-internal/V1_7_IOS_PARITY_SPEC.md`](../docs-internal/V1_7_IOS_PARITY_SPEC.md);
+this document does not assert a specific iOS rollout state. The receive
+path on both platforms can decode the per-epoch Mode 3 format, so a peer
+that has not yet enabled Mode 3-Full interoperates over the per-epoch
+fallback. On any cross-platform channel where one side has not enabled
+Mode 3-Full, that direction's ongoing transport ratchet runs at the
+fallback level rather than per-message PQ; the direction in which both
+sides have Mode 3-Full enabled runs per-message PQ. The initial contact
+handshake (B.4) and identity layer (B.3) are hybrid PQ on both sides —
+only the ongoing transport ratchet's PQ granularity depends on each
+side's Mode 3-Full state.
 
 ---
 
@@ -194,13 +197,15 @@ asymmetric.
 
 Group posts ride on the existing 1:1 channels. Whichever mode each 1:1 channel is in determines what protection the group post gets on that hop:
 
-- **Android sends to Android:** Mode 3-Full per-message hybrid PQ on both halves of every pair → full protection.
-- **Android sends to iOS:** Mode 3-Full on the wire; iOS decrypts via legacy Mode 3 receive path.
-- **iOS sends to Android:** Mode 2 only → no PQ protection on this leg.
-- **iOS sends to iOS:** Mode 2 only on both halves.
+- **Both peers on Mode 3-Full:** per-message hybrid PQ on both halves of
+  the pair → full protection on that hop.
+- **One peer not yet on Mode 3-Full:** that direction falls back to the
+  per-epoch Mode 3 (or Mode 2) receive path; the per-epoch fallback still
+  carries hybrid PQ at epoch granularity.
 
-Once iOS lands the Mode 3-Full initialisation fix, all group hops become
-Mode 3-Full across both platforms.
+As each platform's Mode 3-Full rollout completes (iOS parity tracked per
+[`docs-internal/V1_7_IOS_PARITY_SPEC.md`](../docs-internal/V1_7_IOS_PARITY_SPEC.md)),
+all group hops converge on Mode 3-Full across both platforms.
 
 ---
 
@@ -212,8 +217,11 @@ Mode 3-Full across both platforms.
 | Mode-3 stream-header flag | `bramble-core/src/main/java/org/briarproject/bramble/crypto/pcs/PcsStreamEncrypterImpl.java:266-268` |
 | PQ epoch trigger | `bramble-core/src/main/java/org/briarproject/bramble/crypto/pcs/PcsStreamEncrypterImpl.java:204-226` |
 | PQ epoch thresholds | `bramble-api/src/main/java/org/briarproject/bramble/api/crypto/pcs/PcsConstants.java:110-113` (`PQ_EPOCH_MESSAGE_THRESHOLD = 25`, `PQ_EPOCH_TIME_THRESHOLD_MS = 24h`) |
-| `MODE3_ENABLED` flag | `bramble-api/src/main/java/org/briarproject/bramble/api/crypto/pcs/PcsConstants.java:71` |
-| Receive PQ chunks | `bramble-core/src/main/java/org/briarproject/bramble/crypto/pcs/PcsStreamDecrypterImpl.java:261-284` |
+| `MODE3_ENABLED` flag (per-epoch fallback) | `bramble-api/src/main/java/org/briarproject/bramble/api/crypto/pcs/PcsConstants.java:71` |
+| `MODE3_FULL_ENABLED` flag (per-message default) | `bramble-api/src/main/java/org/briarproject/bramble/api/crypto/pcs/PcsConstants.java` |
+| Mode 3-Full per-message ML-KEM encapsulation path | `bramble-core/src/main/java/org/briarproject/bramble/crypto/pcs/PcsStreamEncrypterImpl.java` |
+| Mode 3-Full initialization (`createInitialMode3Full`) | `bramble-api/src/main/java/org/briarproject/bramble/api/crypto/pcs/PcsSessionState.java` |
+| Receive PQ chunks (per-epoch fallback) | `bramble-core/src/main/java/org/briarproject/bramble/crypto/pcs/PcsStreamDecrypterImpl.java:261-284` |
 
 ## References (design docs)
 

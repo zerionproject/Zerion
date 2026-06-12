@@ -228,7 +228,11 @@ This document specifies the Post-Compromise Security (PCS) implementation for Ze
 
 ### Non-Goals
 
-- Group messaging PCS: Separate design required
+- Group messaging PCS: out of scope for *this* document. Group PCS has
+  since shipped — group posts ride the pairwise Triple Ratchet over each
+  member's 1:1 channel, inheriting the same FS + PCS + hybrid-PQ
+  guarantees. See
+  [GROUP_TRIPLE_RATCHET_PQ_DESIGN.md](GROUP_TRIPLE_RATCHET_PQ_DESIGN.md).
 
 ### Completed Goals (Phase 4d)
 
@@ -377,6 +381,28 @@ Zerion PCS implements a **Symmetric-Key Ratchet** with optional **DH Ratchet** e
 - Symmetric ratchet + per-message DH ratchet
 - Maximum PCS: recovery within 1 round-trip
 - Higher bandwidth (32-byte DH public key per message)
+- Now a fallback; no post-quantum protection on the ongoing ratchet
+
+**Mode 3: Triple Ratchet — per-epoch PQ (Phase 3, fallback)**
+- Mode 2 + ML-KEM-768 post-quantum ratchet mixed into the root key at
+  epoch boundaries (every 25 messages OR 24 hours, whichever fires first)
+- Hybrid post-quantum PCS at per-epoch granularity
+- Retained as a fallback for legacy/mode-disabled contacts and the
+  cross-platform interop window with iOS clients that have not yet
+  shipped Mode 3-Full
+- Full key-schedule specification in [TRIPLE_RATCHET_DESIGN.md](TRIPLE_RATCHET_DESIGN.md)
+
+**Mode 3-Full: per-message PQ (default since v1.7)**
+- Mode 2 + a fresh ML-KEM-768 encapsulation on **every** outbound frame,
+  with the per-frame shared secret mixed into the body AEAD key via
+  `HKDF(classicalMessageKey, ml_kem_shared_secret)`
+- Per-message hybrid post-quantum PCS — quantum recovery every frame,
+  not every epoch
+- Per-stream chain key (`HKDF(rootKey, PCS_STREAM_CHAIN, streamNumber)`)
+  advanced locally within the stream
+- The **default** on new Zerion 1:1 contacts; see the
+  [§v1.7 amendment](#v17-amendment--mode-3-full-per-message-ratchet--per-stream-chain-key)
+  above for the full structural description
 
 ### 4.3 Protocol Version
 
@@ -980,10 +1006,10 @@ SecretKey deriveMessageKey(SecretKey chainKey) {
 | Per-message keys | Yes | Yes | Yes |
 | DH Ratchet | Mode 2 | Yes | Yes |
 | PQ Handshake | ML-KEM-768 | ML-KEM-768 | ML-KEM |
-| PQ Ratchet | Mode 3 (Active) | Triple Ratchet | Periodic |
+| PQ Ratchet | Mode 3-Full (active default) | Triple Ratchet | Periodic |
 | Auth | Deniable | Deniable | Non-deniable |
 
-Mode 3 (Triple Ratchet) is implemented and active. See [TRIPLE_RATCHET_DESIGN.md](TRIPLE_RATCHET_DESIGN.md).
+Mode 3-Full (per-message ML-KEM-768) is the active default since v1.7; per-epoch Mode 3 (Triple Ratchet) is retained as a fallback. See [TRIPLE_RATCHET_DESIGN.md](TRIPLE_RATCHET_DESIGN.md) and the [§v1.7 amendment](#v17-amendment--mode-3-full-per-message-ratchet--per-stream-chain-key).
 
 ---
 

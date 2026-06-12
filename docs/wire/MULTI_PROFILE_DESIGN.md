@@ -1,6 +1,6 @@
-# Multi-Profile — Android v1.6 design + iOS parity handoff
+# Multi-Profile — Android design + iOS parity handoff (shipped; current as of v2.0.x)
 
-iOS parity for the SimpleX-style multi-profile feature shipped on Android in commits `ebf1c01` (phase 1), `2c043c1` (phase 2), `46475b7` (phases 3–5).
+iOS parity for the SimpleX-style multi-profile feature shipped on Android (originally landed for v1.6; shipped and current as of v2.0.x) in commits `ebf1c01` (phase 1), `2c043c1` (phase 2), `46475b7` (phases 3–5).
 
 ## Design choices (decided with user, must match on iOS)
 

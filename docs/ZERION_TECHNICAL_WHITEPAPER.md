@@ -6,7 +6,7 @@ Zerion is an end-to-end encrypted, peer-to-peer secure messaging application for
 
 **Post-Quantum Security**: Zerion implements **full hybrid post-quantum cryptography on every message** using NIST-standardized algorithms (ML-KEM-768 + X25519 for key exchange and the per-message transport ratchet, ML-DSA-65 + Ed25519 for signatures), providing defense-in-depth protection against both current and future quantum computing threats — including "harvest now, decrypt later" attacks. Since v1.7, every transport frame in both directions carries a fresh ML-KEM-768 encapsulation; the encapsulated shared secret is mixed into the per-frame body AEAD key via HKDF, producing a hybrid key that is secure as long as either X25519 or ML-KEM-768 is secure.
 
-**Current release**: v2.0 (June 2026). For an at-a-glance summary of everything shipped since v2.1 of this whitepaper (December 2025), see [§0 Updates since v2.1](#0-updates-since-v21).
+**Current release**: v2.0.2 (versionCode 20002, June 2026). For an at-a-glance summary of everything shipped since v2.1 of this whitepaper (December 2025), see [§0 Updates since v2.1](#0-updates-since-v21).
 
 ---
 
@@ -33,7 +33,7 @@ Zerion is an end-to-end encrypted, peer-to-peer secure messaging application for
 
 ## 0. UPDATES SINCE v2.1
 
-This section summarizes every protocol- or security-relevant change shipped between whitepaper v2.1 (December 16, 2025) and v3.0 (May 15, 2026). The rest of the document remains structurally correct; this section is the authoritative diff. Detailed designs live in the companion documents listed under each item.
+This section summarizes every protocol- or security-relevant change shipped between whitepaper v2.1 (December 16, 2025) and the current document version (June 2026, app release v2.0.2 / versionCode 20002). The rest of the document remains structurally correct; this section is the authoritative diff. Detailed designs live in the companion documents listed under each item.
 
 ### v1.5 (May 1, 2026) — B.3 pairing & B.4 onion rotation
 
@@ -141,6 +141,11 @@ These removals are intentional and final; Zerion's threat model treats every add
   - **60-second clipboard auto-clear.** A new `SecureClipboard.copy` helper unifies every Zerion clipboard write: sets `EXTRA_IS_SENSITIVE` on Android 13+ (suppresses keyboard preview, strips from clipboard history) and schedules a 60-second auto-clear that replaces the entry with a zero-width space only if the clipboard still holds the same text. Channel feed copy-post, channel-invite copy, and inline-invite copy all route through it. Closes the pre-Android-13 gap where copied invite links and post bodies persisted in clipboard history until reboot.
   - **No keyboard predictive-dictionary leak.** `textNoSuggestions` is now set on every Zerion message-class input — 1:1 composer, group composer, channel publish composer, channel comments composer, and channel-create description — so soft keyboards (Gboard, SwiftKey) cannot build a personal dictionary from typed message bodies.
 - **Recap of forensic defenses against logical / file-system / physical / cloud extraction tools** (Cellebrite UFED, GrayKey, Magnet AXIOM, MSAB XRY): everything sensitive is encrypted-at-rest (SQLCipher database with `cipher_memory_security=ON` and `secure_delete=ON`; `EncryptedSharedPreferences` for both UI and secure prefs; `MetadataStripper` strips JPEG EXIF and video metadata before any attachment is sent; `FLAG_SECURE` applied via `BaseActivity.applyScreenshotProtection` on every Zerion activity covering screenshots, screen recording, recents thumbnail, and casting; `VISIBILITY_SECRET` on every notification channel; `allowBackup=false` with `backup_rules.xml` and `data_extraction_rules.xml` excluding everything recursively; ProGuard/R8 minification on release). The single remaining gap categories — system-level usage-stats timeline and cache-file mtime/atime — are unfixable from inside any unprivileged Android app.
+
+### v2.0.2 (June 2026, versionCode 20002) — Channel notifications, in-tree EncryptedSharedPreferences
+
+- **Channel post / comment system notifications.** Subscribers now receive system notifications for new channel posts, and publishers for new discussion-thread comments, surfaced through the same `VISIBILITY_SECRET` notification path as 1:1 and group messages (no message body in the lock-screen preview). Notifications are generated locally from pull results — no push channel and no third party is involved.
+- **In-tree `EncryptedSharedPreferences` implementation.** The deprecated AndroidX `security-crypto` library (Google deprecated it in April 2025) is removed from the dependency set and replaced by an in-tree `EncryptedSharedPreferences` implementation that wraps the same Android Keystore master-key model (hardware-backed where available, non-exportable, device-bound). Behaviour and at-rest format are unchanged for callers; the app no longer ships a deprecated, unmaintained crypto dependency. This closes the migration item that earlier revisions tracked as a future v2.x maintenance task.
 
 ---
 
@@ -938,10 +943,9 @@ The rotation period is calculated as: `MAX_LATENCY + MAX_CLOCK_DIFFERENCE`
 | Transport | MAX_LATENCY | Clock Tolerance | Rotation Period | Source |
 |-----------|-------------|-----------------|-----------------|--------|
 | Tor | 30 seconds | 24 hours | ~24 hours | `TorPluginFactory.java:42` |
-| Bluetooth | 30 seconds | 24 hours | ~24 hours | `AndroidBluetoothPluginFactory.java:33` |
-| LAN TCP | 30 seconds | 24 hours | ~24 hours | `AndroidLanTcpPluginFactory.java:27` |
-| WAN TCP | 30 seconds | 24 hours | ~24 hours | `DesktopWanTcpPluginFactory.java` |
-| Removable Drive | 28 days | 24 hours | ~29 days | `RemovableDrivePluginFactory.java:20` |
+
+Tor v3 onion is the sole transport (Bluetooth, LAN TCP, WAN TCP, and
+removable-drive plugins were removed in v1.6.2 — see [§0](#v162-may-15-2026--native-group-invites-tor-only-transport-at-rest-hardening)).
 
 **Constants Reference**:
 - `MAX_CLOCK_DIFFERENCE = 24 hours` (`TransportConstants.java:69`)
@@ -1041,13 +1045,18 @@ PCS is negotiated during handshake and persisted per-contact:
 
 ### 5.8 Security Properties
 
-| Property | Mode 1 | Mode 2 | Mode 3 |
-|----------|--------|--------|--------|
-| Forward Secrecy | ✅ | ✅ | ✅ |
-| Post-Compromise Recovery | Time-based (~24h for Tor) | 1 round-trip | 1 round-trip |
-| Quantum Resistance | ✅ (via handshake) | ✅ (via handshake) | ✅ (per-epoch ML-KEM) |
-| Out-of-order tolerance | ✅ | ✅ | ✅ |
-| PQ Forward Secrecy | ❌ | ❌ | ✅ |
+Mode 3-Full (per-message ML-KEM-768 mixed into the body AEAD key) is the
+**default** for Zerion↔Zerion contacts since v1.7. Mode 2 (per-message DH)
+and the earlier per-epoch Mode 3 (PQ rotation every 25 messages / 24h) remain
+as fallbacks for compatibility; Mode 1 is symmetric-only.
+
+| Property | Mode 1 | Mode 2 | Mode 3 (fallback, per-epoch) | Mode 3-Full (default, per-message) |
+|----------|--------|--------|------------------------------|------------------------------------|
+| Forward Secrecy | ✅ | ✅ | ✅ | ✅ |
+| Post-Compromise Recovery | Time-based (~24h for Tor) | 1 round-trip | 1 round-trip | 1 round-trip |
+| Quantum Resistance | ✅ (via handshake) | ✅ (via handshake) | ✅ (per-epoch ML-KEM, 25 msg / 24h) | ✅ (per-message ML-KEM, every frame) |
+| Out-of-order tolerance | ✅ | ✅ | ✅ | ✅ |
+| PQ Forward Secrecy | ❌ | ❌ | ✅ | ✅ (per frame) |
 
 ### 5.9 Implementation Status
 
@@ -1057,10 +1066,15 @@ PCS is negotiated during handshake and persisted per-contact:
 | Phase 4a | **Complete** | Mode 2 Double Ratchet with DH |
 | Phase 4b | **Complete** | Mode 3 infrastructure (ML-KEM-768, chunking) |
 | Phase 4c | **Complete** | Mode 3 capability negotiation |
-| Phase 4d | **Complete** | Mode 3 Triple Ratchet activation |
+| Phase 4d | **Complete** | Mode 3 Triple Ratchet activation (per-epoch) |
+| v1.7 | **Complete** | Mode 3-Full per-message ML-KEM-768 (default) |
 
-**Mode 3 Active**: Zerion↔Zerion contacts automatically use Triple Ratchet.
-Zerion↔Briar contacts continue using Mode 1/2 for compatibility.
+**Mode 3-Full is the default**: since v1.7, Zerion↔Zerion contacts default
+to the per-message ML-KEM-768 hybrid ratchet (a fresh encapsulation mixed
+into every transport frame's body AEAD key — see §5.3). The earlier
+per-epoch Mode 3 (PQ rotation every 25 messages / 24 hours) and Mode 2
+remain as fallbacks. Zerion↔Briar contacts continue using Mode 1/2 for
+compatibility.
 
 For complete technical specification, see `docs/PCS_DESIGN.md`.
 
@@ -1429,7 +1443,7 @@ Zerion provides **end-to-end encrypted peer-to-peer voice calling** over Tor, of
 - End-to-end encrypted audio using AES-256-GCM
 - Direct P2P connection over Tor hidden services
 - **Dedicated VOICE_SIGNAL message type** (separate from text messages)
-- **Opus codec compression** (16 kbps VOIP mode with FEC/PLC)
+- **Opus codec compression** (24 kbps VOIP mode with FEC/PLC)
 - Automatic audio processing (echo cancellation, noise suppression, automatic gain control)
 - Call state management and connection monitoring
 - Network quality metrics and adaptive handling
@@ -1466,8 +1480,8 @@ Zerion provides **end-to-end encrypted peer-to-peer voice calling** over Tor, of
 - **Channels**: Mono (1 channel)
 - **Frame Size**: 320 samples per frame (20ms frames)
 - **Codec**: Opus VOIP mode via Concentus (pure Java implementation)
-- **Bitrate**: ~16 kbps with Variable Bitrate (VBR)
-- **Compression Ratio**: 16x (640 bytes PCM → ~40 bytes Opus)
+- **Bitrate**: ~24 kbps with Variable Bitrate (VBR)
+- **Compression Ratio**: ~10x (640 bytes PCM → ~60 bytes Opus)
 
 **Audio Source**: `MediaRecorder.AudioSource.VOICE_COMMUNICATION`
 - Automatically enables Acoustic Echo Cancellation (AEC)
@@ -1479,7 +1493,7 @@ Zerion provides **end-to-end encrypted peer-to-peer voice calling** over Tor, of
 **Why Opus Codec (via Concentus)?**
 
 Zerion uses the Opus codec implemented via the Concentus pure Java library:
-1. **Bandwidth Efficiency**: 16 kbps vs 256 kbps PCM (16x compression)
+1. **Bandwidth Efficiency**: 24 kbps vs 256 kbps PCM (~10x compression)
 2. **Forward Error Correction (FEC)**: Resilience against packet loss
 3. **Packet Loss Concealment (PLC)**: Synthesizes audio for lost frames
 4. **Pure Java**: No native library dependencies, cross-platform compatible
@@ -1519,20 +1533,20 @@ Raw PCM Audio (320 samples, 640 bytes)
             ↓
 [Opus Encoder] (Concentus pure Java)
             ↓
-Compressed Opus Frame (~40 bytes)
+Compressed Opus Frame (~60 bytes)
             ↓
 [AES-256-GCM Encryption]
     ├── Key: Derived outgoing/incoming key
     ├── IV/Nonce: Random 12 bytes per frame
     └── Auth Tag: 16 bytes GCM tag
             ↓
-Encrypted Frame (~40 bytes + 12 IV + 16 tag = ~68 bytes)
+Encrypted Frame (~60 bytes + 12 IV + 16 tag = ~88 bytes)
             ↓
 [Transmit over Tor Hidden Service]
             ↓
 [AES-256-GCM Decryption on Receiver]
             ↓
-Compressed Opus Frame (~40 bytes)
+Compressed Opus Frame (~60 bytes)
             ↓
 [Opus Decoder] (with PLC for lost frames)
             ↓
@@ -1592,7 +1606,7 @@ Microphone Input
       ↓
 [Frame Buffering] (320 samples, 20ms frames)
       ↓
-[Opus Encoder] (Concentus - 16 kbps VOIP mode)
+[Opus Encoder] (Concentus - 24 kbps VOIP mode)
       ↓
 [CRC32 Integrity Check]
       ↓
@@ -1711,11 +1725,11 @@ Speaker/Earpiece Output
 ### 8.10 Performance Characteristics
 
 **Audio Quality**:
-- **Bitrate**: ~16 kbps (Opus VOIP mode)
+- **Bitrate**: ~24 kbps (Opus VOIP mode)
 - **Latency**: ~100-200ms end-to-end (including Tor routing)
 - **Jitter**: <50ms with stable connection (200-350ms jitter buffer)
 - **Packet Loss Tolerance**: Excellent - Opus FEC + PLC handles up to 20% loss
-- **Compression Ratio**: 16x (640 bytes PCM → ~40 bytes Opus)
+- **Compression Ratio**: ~10x (640 bytes PCM → ~60 bytes Opus)
 
 **Bandwidth Requirements**:
 - **Upload**: ~18 kbps (outgoing audio with encryption overhead)
@@ -1783,6 +1797,47 @@ CALL_BUSY (5)     - Callee is in another call
 - Signals are parsed by `PrivateMessageValidator`
 - Delivered via `VoiceSignalReceivedEvent` to `VoiceCallService`
 - Complete isolation from text messaging flow
+
+### 8.13 Video Calling
+
+Zerion also provides **end-to-end encrypted peer-to-peer video calling** over Tor, layered on the same signaling, key-exchange, and P2P-over-onion transport as voice calls. Video calls add an encrypted camera stream alongside the encrypted Opus audio stream; both streams travel inside the same per-call AES-256-GCM-secured channel.
+
+**Video Format**:
+- **Codec**: H.264 (AVC), **Main Profile, Level 3.1**
+- **Resolution**: 640x480
+- **Frame Rate**: 24 fps (nominal)
+- **Bitrate**: ~600 kbps (nominal)
+- **Color**: standard YUV 4:2:0 camera capture
+
+**Video Frame Encryption**:
+- **Algorithm**: AES-256-GCM, per-frame, using the same per-call key material as the audio stream (HKDF-derived outgoing/incoming keys).
+- **Per-frame nonce**: unique random 12-byte IV per frame; 16-byte GCM auth tag.
+- **Frame padding**: each encrypted video frame is padded to a bucketed length before transmission so that the on-the-wire frame size does not leak the precise compressed-frame size (defeats frame-size traffic analysis of scene complexity / motion).
+
+**Adaptive bitrate and frame-rate controller**:
+
+The video sender continuously monitors connection quality (packet loss, jitter, round-trip latency over the Tor circuit) and steps the encoder down through a fixed ladder when the link cannot sustain the current tier, then recovers upward when conditions improve:
+
+```
+640x480 @ 24 fps / 600 kbps   (default)
+        ↓ degrade
+640x480 @ 15 fps / 250 kbps
+        ↓ degrade
+640x480 @ 10 fps / 150 kbps
+        ↓ degrade
+640x480 @  5 fps /  80 kbps
+        ↓ degrade
+   video off (audio-only fallback)
+```
+
+There is no separate low-resolution capture mode — every tier captures and encodes at 640x480; the controller modulates frame rate and bitrate only.
+
+**Call controls**:
+- **Camera switch**: toggle between front and rear cameras mid-call without tearing down the call or renegotiating keys.
+- **Video pause/resume**: the local user can suspend the outgoing camera stream (audio continues) and resume it later within the same call.
+- **Mute/speaker controls**: shared with the voice-call UI.
+
+**Security & transport properties**: identical to voice calls — direct P2P over Tor hidden services (no STUN/TURN, no relays, no IP exposure), per-call forward secrecy (keys generated per call, destroyed at call end), FLAG_SECURE screenshot protection during the call, and no recording or telemetry. The audio half of a video call remains Opus 24 kbps as described in §8.3.
 
 ---
 
@@ -2013,7 +2068,7 @@ Attachment File
 ### 10.2 Voice Messages
 
 **Technical Details**:
-- **Codec**: Opus (high quality, low bitency)
+- **Codec**: Opus (high quality, low latency)
 - **Recording**: Up to 5 minutes
 - **Storage**: Encrypted like other attachments
 - **UI**: Waveform visualization, playback controls
@@ -2099,7 +2154,7 @@ collected or transmitted.
 - Keyboard navigation
 
 **Localization**:
-- Multiple languages supported
+- 35+ languages supported
 - RTL layout support
 - Culturally appropriate content
 
@@ -2202,11 +2257,6 @@ On signIn(password):
 - **Signatures**: Hybrid ML-DSA-65 + Ed25519 (NIST Level 3)
 - **Defense-in-Depth**: Both classical AND PQ algorithms must be broken
 - **Per-message PQ ratchet (v1.7+)**: Every transport frame carries fresh ML-KEM-768 encapsulation — see §5.3 Mode 3-Full.
-
-**Quantum Computer Protection** ✅:
-- **Key Exchange**: Hybrid ML-KEM-768 + X25519 (NIST Level 3)
-- **Signatures**: Hybrid ML-DSA-65 + Ed25519 (NIST Level 3)
-- **Defense-in-Depth**: Both classical AND PQ algorithms must be broken
 
 ### 11.2 Cryptographic Security
 
@@ -2391,7 +2441,7 @@ When any strict-boot or tamper check trips, `BaseActivity` short-circuits before
 - **PCS Mode**: 1 / 2 / 3-Full (per-frame ML-KEM-768, v1.7+)
 - **GroupTr wire**: msgTypes 32-38, 41-44 (see §12.4.1)
 - **Channel wire**: pull / response / attachment / apply / comment / reaction families (see §2.5.14)
-- **Database Schema**: v63 (lazily backfilled at first sign-in on upgrade from ≤ v62)
+- **Database Schema**: v65 (current; lazily backfilled at first sign-in on upgrade from earlier versions)
 
 ### 12.4.1 Application Message Type Numbers
 
@@ -2464,7 +2514,7 @@ Channel wire types live on a separate carrier (publisher's onion) and are not ms
 ┌───────────────────────▼─────────────────────────────────┐
 │            Zerion Application Layer                     │
 │  - Private Messaging   - Group Chat (GroupTr)           │
-│  - Channels (pub/sub)  - Voice Calls (Opus/AES-GCM)     │
+│  - Channels (pub/sub)  - Voice & Video Calls            │
 │  - Vault Manager       - Contact Manager                │
 │  - Hardened Mode       - AntiForensics                  │
 └───────────────────────┬─────────────────────────────────┘
@@ -2672,7 +2722,7 @@ bramble-core/src/main/java/org/briarproject/bramble/plugin/tor/
 bramble-core/src/main/java/org/briarproject/bramble/db/
 ├── DatabaseComponentImpl.java
 ├── DatabaseModule.java
-├── H2Database.java
+├── SqlCipherDatabase.java
 └── Migration.java
 ```
 
@@ -2705,8 +2755,8 @@ zerion-android/src/main/java/com/professor/zerion/android/vault/
 briar-android/src/main/java/com/professor/zerion/android/conversation/voice/
 ├── VoiceCallService.java          # Core P2P voice call service
 ├── VoiceCallActivity.java         # Voice call UI
-├── OpusEncoder.java               # Opus audio encoder (disabled)
-├── OpusDecoder.java               # Opus audio decoder (disabled)
+├── OpusEncoder.java               # Opus audio encoder
+├── OpusDecoder.java               # Opus audio decoder
 └── VoiceCallCrypto.java          # Audio encryption/decryption
 ```
 
@@ -2865,7 +2915,7 @@ Zerion provides military-grade security through:
 
 **P2P Voice Calling**:
 - End-to-end encrypted voice calls over Tor
-- Opus codec (16 kbps VOIP mode via Concentus)
+- Opus codec (24 kbps VOIP mode via Concentus)
 - Automatic echo cancellation, noise suppression, AGC
 - No third-party STUN/TURN servers
 - Forward secrecy with per-call keys
@@ -2886,7 +2936,8 @@ Zerion provides military-grade security through:
 - No analytics
 - No logging of any kind (JUL silenced in static block; no `android.util.Log`, no Timber, no `System.out/err`)
 - Tor-only transport (Bluetooth, LAN TCP, removable-drive, dev-reporting all removed)
-- Open source (auditable)
+- Open source (auditable), licensed under the **GNU General Public License v3 (GPLv3)**
+- Localized in **35+ languages** with full RTL layout support
 
 ### 15.3 Use Cases
 
@@ -3038,7 +3089,7 @@ Zerion provides military-grade security through:
 - Tor Expert Bundle (anonymity) — `tor-android 0.4.8.22`, `lyrebird-android 0.6.2`, `onionwrapper 0.1.4`
 - **SQLCipher for Android `net.zetetic:sqlcipher-android 4.13.0`** (encrypted database)
 - Concentus (pure-Java Opus codec for voice calls)
-- AndroidX `security-crypto 1.1.0` (EncryptedSharedPreferences — Google deprecated this in April 2025; migration to direct Android Keystore is tracked as a v2.x maintenance item)
+- In-tree `EncryptedSharedPreferences` implementation over the Android Keystore master key (replaced the deprecated AndroidX `security-crypto 1.1.0` library in v2.0.2 — DONE; the deprecated dependency is no longer shipped)
 
 **Dependency verification**: `gradle/verification-metadata.xml` pins SHA-256 + SHA-512 per artifact with `<verify-signatures>true</verify-signatures>`. New dependencies require a signature check against the publisher's PGP key before the hash entry is added.
 
@@ -3056,7 +3107,7 @@ Zerion provides military-grade security through:
 - **Classification**: Public Technical Documentation
 - **Author**: Zerion Project
 - **Contact**: https://github.com/zerionproject/Zerion
-- **Corresponds to app release**: v2.0
+- **Corresponds to app release**: v2.0.2 (versionCode 20002)
 
 **Document History**:
 - **v3.2 (2026-06-02)**: **Channels, Hardened Mode, forensic-defense tightening.** Adds full §2.5 Channels section (publisher → subscriber broadcast over a per-publisher Tor onion, hybrid-signed posts, closed-channel HMAC manifest gate, replay-resistant pull challenge, editor delegations, discussion threads, subscriber approvals, attachments, onion rotation, tombstones). Adds §11.4 Hardened Mode (strict boot verification, tamper detection, USB panic) and §11.5 Forensic-Defense Posture table mapping defenses against Cellebrite / GrayKey / Magnet AXIOM / MSAB XRY tiers. Corrects §9.1 (database is SQLCipher, not H2/HyperSQL — prior revisions had this wrong). Updates §5.3 to v1.7 per-message ML-KEM (was pre-v1.7 25-message epoch). Updates §11.1 threat-model table to include forensic-tool and tamper categories; moves "device compromise" from out-of-scope to partial-mitigation via Hardened Mode. Updates §12.4 protocol versions (schema v63, PCS Mode 3-Full). Updates §12.5 network parameters with channel-specific cadences. Updates §13.1 architecture diagram (Tor-only transport, no Bluetooth / LAN-TCP / removable-drive). Adds new §14 file-path subsections for channels, Hardened Mode, and forensic-defense helpers. Adds §0 v2.0 entry.
@@ -3071,6 +3122,6 @@ Zerion provides military-grade security through:
 
 ---
 
-*This whitepaper is based on the Zerion codebase as of v2.0 (June 2026). For the most current information, please refer to the source code repository and the per-document amendments under [docs/](.).*
+*This whitepaper is based on the Zerion codebase as of v2.0.2 (versionCode 20002, June 2026). For the most current information, please refer to the source code repository and the per-document amendments under [docs/](.).*
 
 **End of Document**

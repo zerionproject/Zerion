@@ -1,7 +1,15 @@
 # B.3 record-placement decision (shared, iOS ↔ Android)
 
-**Status:** agreed, both teams. To be implemented behind `B3_PROOF_ENABLED`
-(BuildConfig boolean on Android, `static let` constant on iOS), default `false`.
+> **SHIPPED in v1.5.0; `B3_PROOF_ENABLED` permanently on. Historical design
+> record.** B.3 hybrid pairing shipped in v1.5.0; the proof-at-slot[4] layout
+> below is the production wire format. The feature gate is no longer a toggle —
+> it is permanently enabled. The future-tense rollout/flip steps in §5 and the
+> open follow-ups in §8 are retained for history and are marked completed or
+> superseded inline.
+
+**Status:** SHIPPED in v1.5.0. Originally agreed by both teams and implemented
+behind `B3_PROOF_ENABLED` (BuildConfig boolean on Android, `static let`
+constant on iOS), which is now permanently on.
 **Replaces:** the fictional 4-slot `[majorVersion, minorVersion, signingPubKey,
 pqPubKey]` layout drafted in `B3_B4_SPEC_v1.5.0.md` §1 ("Wire — BDF slot in
 contact-info record"). That layout never existed on either platform.
@@ -203,8 +211,11 @@ fn onContactInfoReceived(record: BdfList, peerMinorVersion: int):
 **`reject()` behaviour:** zero the buffered state, tear down the encrypted
 channel, **do not** write any keychain / keystore entries, **do not** enter
 pending-contact state, surface a non-actionable user-facing error
-("contact verification failed"). Log for telemetry (`B3: proof failed
-cid=<n> reason=<missing|malformed|verify_failed|state_expired>`).
+("contact verification failed"). Silently reject — **emit NO log** of any
+kind (no logger, no telemetry, no `android.util.Log`, no `System.err`), per
+the project's absolute no-logging policy. The rejection reason
+(`missing | malformed | verify_failed | state_expired`) MUST NOT be written
+anywhere; it exists only as control flow.
 
 ### On 60-second timeout (no `CONTACT_INFO` arrives)
 
@@ -215,7 +226,7 @@ absorbed.
 
 ## 5. Versioning + rollout
 
-| Component                  | v1.4 (today) | v1.5 (this spec) |
+| Component                  | v1.4 (pre-B.3) | v1.5.0 (shipped) |
 |----------------------------|--------------|------------------|
 | `messaging` clientId       | `org.briarproject.briar.messaging` | (unchanged) |
 | `messaging.majorVersion`   | 0            | 0 (unchanged)    |
@@ -242,18 +253,18 @@ Behaviour symmetric; both sides' BDF readers use end-marker termination
   `CONTACT_INFO` with computed B.3 proof at slot[4]. On receive, enforce
   the receiver state machine above.
 
-### When to flip
+### When to flip — COMPLETED (shipped v1.5.0)
 
-After both platforms have implemented + tested:
+This sequence was executed; `B3_PROOF_ENABLED = true` shipped in both v1.5.0
+release builds and is now permanently on. Retained for history:
 
-1. Joint debug build with `B3_PROOF_ENABLED = true` on both sides.
-2. Real iOS↔Android contact-add over Tor, captured on-wire.
-3. Confirm B.3 proof is present, verifies, contact-add succeeds.
-4. Confirm 1.4 ↔ 1.5 cross-version still succeeds (legacy fall-through).
-5. Ship `B3_PROOF_ENABLED = true` in both v1.5.0 release builds.
-6. After ≥95% of installs are on 1.5 (target: v1.6 release window),
-   raise `messaging.minorVersion` floor to 5 and remove legacy
-   4-slot acceptance. (Tracked separately, not in this spec.)
+1. ~~Joint debug build with `B3_PROOF_ENABLED = true` on both sides.~~ Done.
+2. ~~Real iOS↔Android contact-add over Tor, captured on-wire.~~ Done.
+3. ~~Confirm B.3 proof is present, verifies, contact-add succeeds.~~ Done.
+4. ~~Confirm 1.4 ↔ 1.5 cross-version still succeeds (legacy fall-through).~~ Done.
+5. ~~Ship `B3_PROOF_ENABLED = true` in both v1.5.0 release builds.~~ Done.
+6. Raising the `messaging.minorVersion` floor to 5 and removing legacy
+   4-slot acceptance remains tracked separately (see §8).
 
 ---
 
@@ -329,15 +340,17 @@ What this **doesn't** fix:
 
 ---
 
-## 8. Open follow-ups (out of scope for v1.5.0)
+## 8. Open follow-ups (status as of v2.0.x)
 
 - **Field-level encryption on transport properties** (Android) — see
-  `B3_B4_SPEC_v1.5.0.md` Q2 / file-level audit findings. Tracked as
-  v1.5.1.
-- **Onion concurrent hidden services for B.4** — onionwrapper PR needed.
-  Tracked separately.
+  `B3_B4_SPEC_v1.5.0.md` Q2 / file-level audit findings.
+- ~~**Onion concurrent hidden services for B.4** — onionwrapper PR needed.~~
+  **DONE — shipped in v1.5.0.** B.4 onion rotation is live; the concurrent
+  hidden-services API exists in the Zerion onionwrapper fork. Mode 3-Full
+  per-message also shipped (default since v1.7), superseding the open PCS
+  notes here.
 - **`messaging.minorVersion` floor bump to 5 and legacy 4-slot removal**
-  — v1.6, after ≥95% adoption.
+  — still tracked; gated on adoption.
 - **Rotating the long-term Ed25519 key** — out of scope; would break
   the safety-number / fingerprint UI.
 

@@ -23,6 +23,7 @@ With hybrid post-quantum cryptography on **every message** (Mode 3-Full: per-fra
 - **Tor-only networking** — Your IP address is never exposed to contacts
 - **Direct peer-to-peer architecture** — No central servers
 - **Encrypted Vault** for passwords, documents, media, and notes
+- **Channels** — one-to-many broadcast (public or private) with optional discussion threads, reactions, and editor delegations
 - **Post-quantum hardened end-to-end** — Hybrid ML-KEM-768 + X25519 at handshake, introductions, and on every transport frame; ML-DSA-65 + Ed25519 on every signed record
 - **Zerion-only** — Purpose-built for Zerion-to-Zerion communication with maximum security
 - **Downgrade attack protection** — PQ contacts stay PQ-secure forever
@@ -39,6 +40,7 @@ With hybrid post-quantum cryptography on **every message** (Mode 3-Full: per-fra
 
 Private one-to-one chats and groups with end-to-end encryption using XSalsa20-Poly1305 (256-bit keys).
 Disappearing messages and metadata removal ensure conversations remain confidential.
+Photos, videos, voice notes, documents, and stickers; securely introduce two of your contacts to each other; translated into 35+ languages.
 
 ### Post-Compromise Security (PCS)
 
@@ -58,10 +60,21 @@ Zerion implements a Triple Ratchet protocol for post-compromise security:
 Real peer-to-peer encrypted voice and video calls routed exclusively through Tor hidden services.
 No STUN, no TURN, no VoIP servers — just private communication between devices.
 
-- **Voice calls**: Opus codec at 32kbps, AES-256-GCM encrypted, ~100-200ms latency
-- **Video calls**: H.264 at 320x240 15fps, AES-256-GCM encrypted with padded frames
+- **Voice calls**: Opus codec at 24 kbps (16 kHz mono), AES-256-GCM encrypted
+- **Video calls**: H.264 Main Profile (Level 3.1) at 640×480, AES-256-GCM encrypted with padded frames; adaptive frame rate and bitrate that step down under poor network conditions
 - Camera switching, video pause/resume, and correct portrait orientation
 - All frame metadata encrypted inside the payload — zero plaintext metadata on wire
+
+### Channels
+
+A one-to-many broadcast layer — one person writes, many people read — over the same Tor pull-mesh as everything else. There is no central server holding posts or the subscriber list.
+
+- **Public channels**: anyone with the invite link can subscribe
+- **Private channels**: subscribers request to join and the owner approves
+- **Discussion threads**: the owner decides, per channel, whether subscribers can reply under a post
+- **Reactions, pinned posts, and attachments**
+- **Editor delegations**: let trusted people post without sharing your identity key
+- **No subscriber-to-subscriber metadata**: subscribers never see one another
 
 ### Secure Vault
 
@@ -73,7 +86,7 @@ Uses Argon2id, AES-256-GCM, and StrongBox/Keystore integration for strong protec
 All Zerion contacts use full post-quantum security:
 - **ML-KEM-768 + X25519** hybrid key encapsulation for quantum-resistant key exchange
 - **ML-DSA-65 + Ed25519** hybrid signatures for quantum-resistant authentication
-- **PCS Mode 3 (Triple Ratchet)** for per-message key evolution with quantum-resistant post-compromise security
+- **PCS Mode 3-Full (Triple Ratchet, per-message ML-KEM-768)** for per-message key evolution with quantum-resistant post-compromise security
 
 ### Downgrade Attack Protection
 
@@ -97,7 +110,21 @@ APK signing fingerprint: D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6
 
 ## Changelog
 
-**v1.7.0 (Latest, May 2026):**
+**v2.0.2 (Latest, June 2026):**
+- Channels now raise system notifications for new posts (subscribers) and new comments (owners), with a global Channels toggle and per-channel mute
+- Group chats are resilient under concurrent admin actions — adding a member while another is removed, or messaging during a membership change, no longer splits the member list; invitees see the current roster immediately on accept
+- At-rest encrypted preferences moved to an in-tree implementation, replacing the deprecated AndroidX `security-crypto` library (one-time settings reset on upgrade; conversations, channels, groups, contacts, and vault are unaffected)
+- Exit from the foreground notification now reliably reopens cleanly on next launch
+
+**v2.0.1 (June 2026):**
+- Build hygiene for F-Droid main-repo distribution: the PhotoView library moved from a vendored binary to source, keeping a single signing key across Play Store, GitHub, and F-Droid so users can switch channels without reinstalling
+
+**v2.0.0 (June 2026):**
+- **Channels** — a publisher-to-subscriber broadcast layer with optional discussion threads; public or private, owner-approved subscribers, reactions, pinned posts, attachments, and editor delegations (post without sharing your identity key); subscribers never see one another
+- **Hardened mode (opt-in)** — refuse to start on tampered devices, under a debugger/root/hooking framework, or when USB debugging/file transfer is enabled
+- Cache wipe on sign-out, 60-second clipboard auto-clear, plain-language copy throughout
+
+**v1.7.0 (May 2026):**
 - **Headline:** Mode 3-Full per-message hybrid ratchet is now the default. Every frame in both directions carries a fresh ML-KEM-768 encapsulation; the decapsulated secret is mixed into the body AEAD key on every message. A single compromised key cannot decrypt any other message in the conversation, past or future.
 - Group chat unread counter — Groups list now shows an unread badge per group (1, 2, 3, …, 99+); clears on open
 - Multi-profile end-to-end polish: profile create, sign-in, switch and recovery paths reliable across the full lifecycle; profiles with missing display names heal automatically on next login
@@ -200,6 +227,7 @@ APK signing fingerprint: D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6
 - [Group Triple Ratchet (PQ)](docs/GROUP_TRIPLE_RATCHET_PQ_DESIGN.md) — Hybrid-signed group records
 - [GroupTr Wire Protocol](docs/wire/GROUPTR_WIRE_PROTOCOL.md) — Native group-invite + membership messages
 - [P2P Voice & Video Calls](docs/P2P_Voice_Calls_Documentation.md) — Voice and video calling specification
+- [Channels Wire Protocol](docs/wire/CHANNELS_WIRE_PROTOCOL.md) — Publisher-to-subscriber broadcast pull protocol
 
 ---
 

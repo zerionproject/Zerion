@@ -15,6 +15,7 @@ bin/
 gen/
 out/
 /release/
+**/output-metadata.json
 
 # Gradle files
 .gradle/

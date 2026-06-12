@@ -1,6 +1,15 @@
 # F-2: Introduction Protocol — Hybrid Ed25519 + ML-DSA-65 Signatures
 
-iOS-side parity for Zerion v1.6 introduction protocol. Android implementation: commit `11f0e95` (dev + master).
+> **Shipped; current as of v2.0.x.** The hybrid Ed25519 + ML-DSA-65 introduction
+> signatures described here are the production wire format. The algorithm and
+> all size constants below are current. The v1.5 legacy-peer interop rows are
+> retained for history (annotated *historical*) and describe behaviour against
+> pre-hybrid peers. The open downgrade-fallback question in §3 / §9 remains
+> open — not yet tightened.
+
+iOS-side parity for the Zerion introduction protocol (originally landed for
+v1.6; shipped and current as of v2.0.x). Android implementation: commit
+`11f0e95` (dev + master).
 
 ## TL;DR
 The Briar introduction protocol's `AuthMessage` signs the AUTH nonce with the introducee's Ed25519 author key. We now optionally sign with a **hybrid Ed25519 + ML-DSA-65** key. Each side advertises its ML-DSA-65 public key in the **AcceptMessage** (new optional slot). When both sides advertise a key, AuthMessage carries a 3373-byte hybrid signature; otherwise it stays at 64-byte Ed25519. The receiver length-dispatches.
@@ -121,14 +130,17 @@ If the introducer is on v1.5 and doesn't know about slot 7, BdfList parsing shou
 
 ## 6. Backward-compat matrix
 
-Four combinations, all must work:
+Four combinations. The v1.5 rows are *historical* — they describe interop with
+pre-hybrid (v1.5) peers; on a current all-v2.0.x fleet the hybrid row is the
+live path, but the legacy fallbacks remain in the code for any lingering legacy
+peer:
 
 | Sender | Receiver | Accept slot 7? | Auth sig | Verify path |
 |---|---|---|---|---|
-| v1.5 | v1.5 | absent both ways | 64 B Ed25519 | Ed25519-only |
-| v1.5 | v1.6 | sender absent | 64 B Ed25519 | length=64 → Ed25519-only fallback |
-| v1.6 | v1.5 | receiver absent → sender sees `remoteMlDsaPub == nil` → 64 B | 64 B Ed25519 | Ed25519-only |
-| v1.6 | v1.6 | present both ways | 3373 B hybrid | hybrid verify |
+| v1.5 | v1.5 *(historical)* | absent both ways | 64 B Ed25519 | Ed25519-only |
+| v1.5 | v1.6 *(historical)* | sender absent | 64 B Ed25519 | length=64 → Ed25519-only fallback |
+| v1.6 | v1.5 *(historical)* | receiver absent → sender sees `remoteMlDsaPub == nil` → 64 B | 64 B Ed25519 | Ed25519-only |
+| v1.6 | v1.6 *(current — live path on v2.0.x)* | present both ways | 3373 B hybrid | hybrid verify |
 
 A v1.6 sender NEVER ships a 3373-byte sig to a peer that didn't advertise an ML-DSA pubkey. This keeps a v1.5 receiver's validator (which caps signature at 64) from rejecting the AuthMessage.
 
