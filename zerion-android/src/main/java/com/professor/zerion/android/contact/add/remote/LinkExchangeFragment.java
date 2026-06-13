@@ -114,17 +114,12 @@ public class LinkExchangeFragment extends BaseFragment {
 		linkView.setText(link);
 
 		Button copyButton = v.findViewById(R.id.copyButton);
-		ClipData clip = ClipData.newPlainText(
-				getString(R.string.link_clip_label), link);
 		copyButton.setOnClickListener(view -> {
-			clipboard.setPrimaryClip(clip);
+			com.professor.zerion.android.util.SecureClipboard.copy(
+					requireContext(),
+					getString(R.string.link_clip_label), link);
 			Toast.makeText(getContext(), R.string.link_copied_toast,
 					LENGTH_SHORT).show();
-			clipboardHandler.removeCallbacksAndMessages(null);
-			clipboardHandler.postDelayed(() -> {
-				ClipData empty = ClipData.newPlainText("", "");
-				clipboard.setPrimaryClip(empty);
-			}, CLIPBOARD_CLEAR_DELAY_MS);
 		});
 		copyButton.setEnabled(true);
 

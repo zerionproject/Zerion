@@ -242,8 +242,10 @@ class VideoCameraManager {
 				readyCallback.onCameraReady(sensorOrientation,
 						useFrontCamera);
 			}
-		} catch (CameraAccessException e) {
-			if (errorCallback != null) {
+		} catch (Exception e) {
+			if (includePreview) {
+				startPreview(session, camera, encoderSurface, false);
+			} else if (errorCallback != null) {
 				errorCallback.onCameraError("Camera preview failed");
 			}
 		}

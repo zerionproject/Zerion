@@ -43,10 +43,13 @@ class ContactListViewModel extends ContactsViewModel {
 			ConversationManager conversationManager,
 			ConnectionRegistry connectionRegistry, EventBus eventBus,
 			AndroidNotificationManager notificationManager,
-			PinnedContactManager pinnedContactManager) {
+			PinnedContactManager pinnedContactManager,
+			org.briarproject.briar.api.autodelete.AutoDeleteManager
+					autoDeleteManager) {
 		super(application, dbExecutor, lifecycleManager, db, androidExecutor,
 				contactManager, authorManager, conversationManager,
-				connectionRegistry, eventBus, pinnedContactManager);
+				connectionRegistry, eventBus, pinnedContactManager,
+				autoDeleteManager);
 		this.notificationManager = notificationManager;
 	}
 

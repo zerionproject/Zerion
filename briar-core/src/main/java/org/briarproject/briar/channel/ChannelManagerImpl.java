@@ -94,6 +94,12 @@ class ChannelManagerImpl
 	private final java.util.Map<String,
 			java.util.LinkedHashMap<String, Long>> seenPullNonces =
 					new java.util.concurrent.ConcurrentHashMap<>();
+	private static final long PULL_MIN_INTERVAL_MS = 5_000L;
+	private static final long PULL_MAX_INTERVAL_MS = 60_000L;
+	private static final long PULL_ACTIVE_WINDOW_MS = 120_000L;
+	private static final long PULL_BACKOFF_STEP_MS = 5_000L;
+	private volatile long lastChannelActivityMs = 0L;
+	private volatile long currentPullIntervalMs = PULL_MIN_INTERVAL_MS;
 
 	private java.util.concurrent.locks.ReentrantLock lockFor(
 			byte[] channelId) {
@@ -156,10 +162,7 @@ class ChannelManagerImpl
 		taskScheduler.scheduleWithFixedDelay(this::runDailyPurgeSafely,
 				ioExecutor, 5L, 24L * 60L * 60L,
 				java.util.concurrent.TimeUnit.MINUTES);
-		taskScheduler.scheduleWithFixedDelay(
-				this::refreshAllSubscriptionsSafely,
-				ioExecutor, 3L, 5L,
-				java.util.concurrent.TimeUnit.SECONDS);
+		scheduleNextRefresh(3_000L);
 		ioExecutor.execute(this::rebindOwnedChannelsOnStartup);
 	}
 
@@ -192,6 +195,29 @@ class ChannelManagerImpl
 		}
 	}
 
+	private void scheduleNextRefresh(long delayMs) {
+		try {
+			taskScheduler.schedule(this::refreshAndReschedule, ioExecutor,
+					delayMs, java.util.concurrent.TimeUnit.MILLISECONDS);
+		} catch (java.util.concurrent.RejectedExecutionException ignored) {
+		}
+	}
+
+	private void refreshAndReschedule() {
+		try {
+			refreshAllSubscriptionsSafely();
+		} finally {
+			long idle = clock.currentTimeMillis() - lastChannelActivityMs;
+			if (idle < PULL_ACTIVE_WINDOW_MS) {
+				currentPullIntervalMs = PULL_MIN_INTERVAL_MS;
+			} else {
+				currentPullIntervalMs = Math.min(PULL_MAX_INTERVAL_MS,
+						currentPullIntervalMs + PULL_BACKOFF_STEP_MS);
+			}
+			scheduleNextRefresh(currentPullIntervalMs);
+		}
+	}
+
 	private void rebindOwnedChannelsOnStartup() {
 		try {
 			for (ChannelState s : store.listChannels()) {
@@ -219,14 +245,17 @@ class ChannelManagerImpl
 
 	@Override
 	public void eventOccurred(Event e) {
-		if (e instanceof B4OwnRotationCompletedEvent) {
-			ioExecutor.execute(this::rebindAllPublisherServers);
-		} else if (e instanceof TransportActiveEvent) {
-			TransportActiveEvent t = (TransportActiveEvent) e;
-			if (TorConstants.ID.equals(t.getTransportId())) {
-				ioExecutor.execute(
-						this::rebindAllPublisherServersForRecovery);
+		try {
+			if (e instanceof B4OwnRotationCompletedEvent) {
+				ioExecutor.execute(this::rebindAllPublisherServers);
+			} else if (e instanceof TransportActiveEvent) {
+				TransportActiveEvent t = (TransportActiveEvent) e;
+				if (TorConstants.ID.equals(t.getTransportId())) {
+					ioExecutor.execute(
+							this::rebindAllPublisherServersForRecovery);
+				}
 			}
+		} catch (java.util.concurrent.RejectedExecutionException ignored) {
 		}
 	}
 
@@ -690,6 +719,10 @@ class ChannelManagerImpl
 				discussionStore.setEnabled(channelId,
 						r.discussionsEnabled);
 			}
+			if (!r.acceptedPosts.isEmpty() || !r.reactions.isEmpty()
+					|| !r.comments.isEmpty()) {
+				lastChannelActivityMs = clock.currentTimeMillis();
+			}
 			mergedState = r.mergedState;
 		} finally {
 			lock.unlock();
@@ -874,6 +907,10 @@ class ChannelManagerImpl
 	}
 
 	private void removeChannelLocally(byte[] channelId) throws DbException {
+		String key = ChannelStore.hex(channelId);
+		seenPullNonces.remove(key);
+		lastApprovalPollMs.remove(key);
+		inFlightPulls.remove(key);
 		store.removeChannel(channelId);
 		blobStore.removeAllForChannel(channelId);
 		reactionStore.removeAll(channelId);

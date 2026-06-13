@@ -26,6 +26,7 @@ import org.briarproject.bramble.util.ByteUtils;
 import org.briarproject.briar.api.grouptr.GroupTrAuthException;
 import org.briarproject.briar.api.grouptr.GroupTrManager;
 import org.briarproject.briar.api.grouptr.GroupTrMember;
+import org.briarproject.briar.api.grouptr.GroupTrPendingInvite;
 import org.briarproject.briar.api.grouptr.GroupTrPost;
 import org.briarproject.briar.api.grouptr.GroupTrState;
 import org.briarproject.briar.api.grouptr.MemberRole;
@@ -45,6 +46,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
@@ -102,6 +104,7 @@ class GroupTrManagerImpl
 			java.util.TreeMap<Long, java.util.List<GroupTrPost>>>
 			futureBuffer = new java.util.concurrent.ConcurrentHashMap<>();
 	private static final int MAX_CACHED_POSTS_PER_GROUP = 200;
+	private static final long MAX_CACHED_BYTES_PER_GROUP = 24L * 1024L * 1024L;
 	private static final int EPOCH_BUFFER_TOLERANCE = 5;
 	private static final int MAX_BUFFERED_POSTS_PER_GROUP = 500;
 
@@ -273,9 +276,7 @@ class GroupTrManagerImpl
 				key, k -> new java.util.ArrayDeque<>());
 		synchronized (q) {
 			q.addLast(p);
-			while (q.size() > MAX_CACHED_POSTS_PER_GROUP) {
-				q.pollFirst();
-			}
+			capCache(q);
 		}
 	}
 
@@ -337,8 +338,21 @@ class GroupTrManagerImpl
 		synchronized (q) {
 			q.addLast(new GroupTrPost(groupId, senderPub, senderName,
 					body, timestamp, epoch, true, autoDeleteTimerMs));
-			while (q.size() > MAX_CACHED_POSTS_PER_GROUP) {
-				q.pollFirst();
+			capCache(q);
+		}
+	}
+
+	private static void capCache(java.util.ArrayDeque<GroupTrPost> q) {
+		long bytes = 0;
+		for (GroupTrPost p : q) {
+			byte[] b = p.getBody();
+			if (b != null) bytes += b.length;
+		}
+		while (q.size() > 1 && (q.size() > MAX_CACHED_POSTS_PER_GROUP
+				|| bytes > MAX_CACHED_BYTES_PER_GROUP)) {
+			GroupTrPost removed = q.pollFirst();
+			if (removed != null && removed.getBody() != null) {
+				bytes -= removed.getBody().length;
 			}
 		}
 	}
@@ -781,6 +795,30 @@ class GroupTrManagerImpl
 		Settings out = new Settings();
 		out.put(toHexString(grouptrGroupId), "");
 		settingsManager.mergeSettings(out, SETTINGS_NS_OFFERS_PENDING);
+	}
+
+	@Override
+	public Collection<GroupTrPendingInvite> getPendingInvites()
+			throws DbException {
+		Settings s = settingsManager.getSettings(SETTINGS_NS_OFFERS_PENDING);
+		List<GroupTrPendingInvite> result = new ArrayList<>();
+		for (Map.Entry<String, String> e : s.entrySet()) {
+			String key = e.getKey();
+			String value = e.getValue();
+			if (value == null || value.isEmpty()) continue;
+			try {
+				BdfList list = clientHelper.toList(fromHexString(value));
+				if (list.size() < 6) continue;
+				String groupName = list.getString(0);
+				String creatorName = list.getString(2);
+				long inviteTs = list.getLong(5);
+				result.add(new GroupTrPendingInvite(fromHexString(key),
+						groupName, creatorName, inviteTs));
+			} catch (FormatException ex) {
+				continue;
+			}
+		}
+		return result;
 	}
 
 	private static final class PendingInviteSent {

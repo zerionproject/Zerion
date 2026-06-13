@@ -97,6 +97,7 @@ import com.professor.zerion.android.ZerionApplication;
 public class VoiceCallService extends Service implements EventListener {
 
 	private static final String CHANNEL_ID = "voice_call_channel";
+	private static final String CHANNEL_ID_ONGOING = "voice_call_ongoing_channel";
 	private static final int NOTIFICATION_ID = 1001;
 
 	private static final int SAMPLE_RATE = 16000;
@@ -120,6 +121,8 @@ public class VoiceCallService extends Service implements EventListener {
 
 	private static final int AUDIO_HEARTBEAT_MARKER = -2;
 
+	private static final int AUDIO_BYE_MARKER = -3;
+
 	public enum CallState {
 		IDLE,
 		CONNECTING,
@@ -133,6 +136,7 @@ public class VoiceCallService extends Service implements EventListener {
 	private final Handler mainHandler = new Handler(Looper.getMainLooper());
 	private final Object streamLock = new Object();
 	private final Object torConnectionLock = new Object();
+	private final Object mediaWriteLock = new Object();
 	private volatile boolean isShuttingDown = false;
 	private volatile boolean endpointsClosed = false;
 	private ExecutorService executorService = Executors.newCachedThreadPool();
@@ -216,7 +220,6 @@ public class VoiceCallService extends Service implements EventListener {
 	private volatile boolean videoRequested = false;
 	private VoiceCallCrypto.VideoKeys videoKeys;
 	private VideoStreamManager videoStreamManager;
-	private VideoCameraManager videoCameraManager;
 	private DuplexTransportConnection videoTorConnection;
 
 	public class LocalBinder extends Binder {
@@ -451,6 +454,11 @@ public class VoiceCallService extends Service implements EventListener {
 		isShuttingDown = true;
 
 		executorService.execute(() -> {
+			try {
+				sendMediaBye();
+			} catch (Exception e) {
+			}
+
 			try {
 				sendCallEnd();
 			} catch (Exception e) {
@@ -721,7 +729,7 @@ public class VoiceCallService extends Service implements EventListener {
 			if (USE_OPUS_CODEC && opusEncoder != null) {
 				frameSize = (SAMPLE_RATE / 1000) * OPUS_FRAME_DURATION_MS * 2;
 			} else {
-				frameSize = BUFFER_SIZE * 4;
+				frameSize = (SAMPLE_RATE / 1000) * OPUS_FRAME_DURATION_MS * 2;
 			}
 
 			byte[] readBuffer = new byte[frameSize];
@@ -806,12 +814,14 @@ public class VoiceCallService extends Service implements EventListener {
 							crc32.update(encryptedAudio, 0, encryptedAudio.length);
 							long checksum = crc32.getValue();
 
-							dataOut.writeInt(encryptedAudio.length);
-							dataOut.writeLong(sendSequenceNumber.getAndIncrement());
-							dataOut.writeLong(0L);
-							dataOut.writeLong(checksum);
-							dataOut.write(encryptedAudio);
-							dataOut.flush();
+							synchronized (mediaWriteLock) {
+								dataOut.writeInt(encryptedAudio.length);
+								dataOut.writeLong(sendSequenceNumber.getAndIncrement());
+								dataOut.writeLong(0L);
+								dataOut.writeLong(checksum);
+								dataOut.write(encryptedAudio);
+								dataOut.flush();
+							}
 
 							totalBytesSent += encryptedAudio.length + 28;
 							totalFramesSent++;
@@ -857,6 +867,9 @@ public class VoiceCallService extends Service implements EventListener {
 				try {
 					int syncMarker = dataIn.readInt();
 				} catch (IOException e) {
+					if (!isShuttingDown) {
+						handleConnectionError();
+					}
 					return;
 				}
 
@@ -872,6 +885,9 @@ public class VoiceCallService extends Service implements EventListener {
 				while (!isShuttingDown && isRecording && (torConnection != null)) {
 					try {
 						if (System.currentTimeMillis() - lastReceiveTime > READ_TIMEOUT_MS) {
+							if (!isShuttingDown && callState == CallState.CONNECTED) {
+								handleConnectionError();
+							}
 							break;
 						}
 
@@ -883,6 +899,9 @@ public class VoiceCallService extends Service implements EventListener {
 						} else if (encFrameSize == AUDIO_HEARTBEAT_MARKER) {
 							lastReceiveTime = System.currentTimeMillis();
 							continue;
+						} else if (encFrameSize == AUDIO_BYE_MARKER) {
+							mainHandler.post(() -> endCall());
+							return;
 						} else if (encFrameSize < 0) {
 							continue;
 						}
@@ -980,10 +999,16 @@ public class VoiceCallService extends Service implements EventListener {
 						}
 
 					} catch (IOException e) {
+						if (!isShuttingDown && callState == CallState.CONNECTED) {
+							handleConnectionError();
+						}
 						break;
 					}
 				}
 			} catch (EOFException | SocketException e) {
+				if (!isShuttingDown && callState == CallState.CONNECTED) {
+					handleConnectionError();
+				}
 			} catch (IOException e) {
 				if (callState == CallState.CONNECTED) {
 					handleConnectionError();
@@ -1039,15 +1064,17 @@ public class VoiceCallService extends Service implements EventListener {
 		executorService.execute(() -> {
 			try {
 				while (!isShuttingDown && isRecording && (torConnection != null)) {
-					Thread.sleep(30000);
+					Thread.sleep(10000);
 
 					if (torConnection != null) {
 						try {
-							DataOutputStream dataOut = new DataOutputStream(
-									torConnection.getWriter().getOutputStream());
+							synchronized (mediaWriteLock) {
+								DataOutputStream dataOut = new DataOutputStream(
+										torConnection.getWriter().getOutputStream());
 
-							dataOut.writeInt(AUDIO_HEARTBEAT_MARKER);
-							dataOut.flush();
+								dataOut.writeInt(AUDIO_HEARTBEAT_MARKER);
+								dataOut.flush();
+							}
 						} catch (IOException e) {
 						}
 					}
@@ -1268,6 +1295,50 @@ public class VoiceCallService extends Service implements EventListener {
 		}
 	}
 
+	private void releaseAudioDevices() {
+		releaseAudioProcessing();
+		synchronized (streamLock) {
+			if (audioRecord != null) {
+				try {
+					if (audioRecord.getRecordingState()
+							== AudioRecord.RECORDSTATE_RECORDING) {
+						audioRecord.stop();
+					}
+					audioRecord.release();
+				} catch (Exception ignored) {
+				} finally {
+					audioRecord = null;
+				}
+			}
+			if (audioTrack != null) {
+				try {
+					if (audioTrack.getPlayState()
+							== AudioTrack.PLAYSTATE_PLAYING) {
+						audioTrack.stop();
+					}
+					audioTrack.release();
+				} catch (Exception ignored) {
+				} finally {
+					audioTrack = null;
+				}
+			}
+			if (opusEncoder != null) {
+				try {
+					opusEncoder.release();
+				} catch (Exception ignored) {
+				}
+				opusEncoder = null;
+			}
+			if (opusDecoder != null) {
+				try {
+					opusDecoder.release();
+				} catch (Exception ignored) {
+				}
+				opusDecoder = null;
+			}
+		}
+	}
+
 	private void cleanupStreamsForReconnect() {
 		synchronized (streamLock) {
 			if (torConnection != null) {
@@ -1279,6 +1350,7 @@ public class VoiceCallService extends Service implements EventListener {
 				torConnection = null;
 			}
 		}
+		releaseAudioDevices();
 	}
 
 	private void zeroizeKeyMaterial() {
@@ -1401,6 +1473,23 @@ public class VoiceCallService extends Service implements EventListener {
 		}
 		sendVoiceSignalWithDuration(VoiceSignalType.CALL_END, null, durationMs);
 	}
+
+	private void sendMediaBye() {
+		DuplexTransportConnection conn = torConnection;
+		if (conn == null) {
+			return;
+		}
+		try {
+			synchronized (mediaWriteLock) {
+				DataOutputStream dataOut = new DataOutputStream(
+						conn.getWriter().getOutputStream());
+				dataOut.writeInt(AUDIO_BYE_MARKER);
+				dataOut.flush();
+			}
+		} catch (IOException e) {
+		}
+	}
+
 	private void sendVoiceSignal(VoiceSignalType signalType, String payload) {
 		sendVoiceSignalWithDuration(signalType, payload, null);
 	}
@@ -1580,18 +1669,28 @@ public class VoiceCallService extends Service implements EventListener {
 	public void setSpeakerphoneOn(boolean speakerOn) {
 		this.isSpeakerOn = speakerOn;
 		if (audioManager == null) return;
+		if (audioManager.getMode() != AudioManager.MODE_IN_COMMUNICATION) {
+			audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
+		}
 		if (android.os.Build.VERSION.SDK_INT >= 31) {
 			if (speakerOn) {
+				android.media.AudioDeviceInfo speaker = null;
 				for (android.media.AudioDeviceInfo device :
 						audioManager.getAvailableCommunicationDevices()) {
 					if (device.getType() ==
 							android.media.AudioDeviceInfo.TYPE_BUILTIN_SPEAKER) {
-						audioManager.setCommunicationDevice(device);
+						speaker = device;
 						break;
 					}
 				}
+				boolean ok = speaker != null
+						&& audioManager.setCommunicationDevice(speaker);
+				if (!ok) {
+					audioManager.setSpeakerphoneOn(true);
+				}
 			} else {
 				audioManager.clearCommunicationDevice();
+				audioManager.setSpeakerphoneOn(false);
 			}
 		} else {
 			audioManager.setSpeakerphoneOn(speakerOn);
@@ -1625,21 +1724,23 @@ public class VoiceCallService extends Service implements EventListener {
 		PendingIntent pendingIntent = PendingIntent.getActivity(this, 0,
 				intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
-		String title = isIncoming && callState == CallState.RINGING ?
-				"Incoming call" : "Ongoing call";
+		boolean ringingIncoming = isIncoming && callState == CallState.RINGING;
+		String title = ringingIncoming ? "Incoming call" : "Ongoing call";
 		String text = videoEnabled || videoRequested || isVideoCall ?
 				"Secure video call" : "Secure voice call";
 
-		NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
+		NotificationCompat.Builder builder = new NotificationCompat.Builder(this,
+				ringingIncoming ? CHANNEL_ID : CHANNEL_ID_ONGOING)
 				.setContentTitle(title)
 				.setContentText(text)
 				.setSmallIcon(R.drawable.ic_phone_white)
-				.setPriority(NotificationCompat.PRIORITY_MAX)
+				.setPriority(ringingIncoming ? NotificationCompat.PRIORITY_MAX
+						: NotificationCompat.PRIORITY_LOW)
 				.setCategory(NotificationCompat.CATEGORY_CALL)
 				.setOngoing(true)
 				.setAutoCancel(false)
 				.setContentIntent(pendingIntent);
-		if (isIncoming && callState == CallState.RINGING) {
+		if (ringingIncoming) {
 			builder.setFullScreenIntent(pendingIntent, true);
 			Intent acceptIntent = new Intent(this, VoiceCallService.class);
 			acceptIntent.setAction("ACTION_ACCEPT_CALL");
@@ -1659,20 +1760,29 @@ public class VoiceCallService extends Service implements EventListener {
 
 	private void createNotificationChannel() {
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-			NotificationChannel channel = new NotificationChannel(
-					CHANNEL_ID,
-					"Voice Calls",
-					NotificationManager.IMPORTANCE_HIGH);
-			channel.setDescription("Notifications for incoming and ongoing voice calls");
-			channel.enableLights(true);
-			channel.enableVibration(true);
-			channel.setVibrationPattern(new long[]{0, 1000, 500, 1000});
-			channel.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
-
 			NotificationManager manager = getSystemService(NotificationManager.class);
-			if (manager != null) {
-				manager.createNotificationChannel(channel);
-			}
+			if (manager == null) return;
+
+			NotificationChannel incoming = new NotificationChannel(
+					CHANNEL_ID,
+					"Incoming Calls",
+					NotificationManager.IMPORTANCE_HIGH);
+			incoming.setDescription("Ringing alerts for incoming voice calls");
+			incoming.enableLights(true);
+			incoming.enableVibration(true);
+			incoming.setVibrationPattern(new long[]{0, 1000, 500, 1000});
+			incoming.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
+			manager.createNotificationChannel(incoming);
+
+			NotificationChannel ongoing = new NotificationChannel(
+					CHANNEL_ID_ONGOING,
+					"Ongoing Calls",
+					NotificationManager.IMPORTANCE_LOW);
+			ongoing.setDescription("Status of a voice call in progress");
+			ongoing.enableLights(false);
+			ongoing.enableVibration(false);
+			ongoing.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
+			manager.createNotificationChannel(ongoing);
 		}
 	}
 
@@ -2209,13 +2319,6 @@ public class VoiceCallService extends Service implements EventListener {
 			} catch (Exception ignored) {}
 			videoStreamManager = null;
 		}
-		if (videoCameraManager != null) {
-			try {
-				videoCameraManager.stop();
-			} catch (Exception ignored) {}
-			videoCameraManager = null;
-		}
-
 		videoTorConnection = null;
 		try {
 			zeroizeVideoKeys();
@@ -2238,6 +2341,10 @@ public class VoiceCallService extends Service implements EventListener {
 
 	public boolean isVideoEnabled() {
 		return videoEnabled;
+	}
+
+	public boolean isReconnecting() {
+		return isReconnecting;
 	}
 
 	public boolean isVideoRequested() {

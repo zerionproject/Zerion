@@ -51,6 +51,7 @@ public class VaultSettingsFragment extends BaseFragment {
 	private SwitchMaterial clipboardSwitch;
 	private SwitchMaterial hideContentSwitch;
 	private TextView clipboardTimeoutValue;
+	private View clipboardCard;
 
 	private View exportCard;
 	private View wipeVaultCard;
@@ -84,6 +85,7 @@ public class VaultSettingsFragment extends BaseFragment {
 		clipboardSwitch = view.findViewById(R.id.clipboard_switch);
 		hideContentSwitch = view.findViewById(R.id.hide_content_switch);
 		clipboardTimeoutValue = view.findViewById(R.id.clipboard_timeout_value);
+		clipboardCard = view.findViewById(R.id.clipboard_card);
 
 		exportCard = view.findViewById(R.id.export_card);
 		wipeVaultCard = view.findViewById(R.id.wipe_vault_card);
@@ -189,6 +191,8 @@ public class VaultSettingsFragment extends BaseFragment {
 		changePasswordCard.setOnClickListener(v -> showChangePasswordDialog());
 
 		autolockCard.setOnClickListener(v -> showAutolockDialog());
+
+		clipboardCard.setOnClickListener(v -> showClipboardTimeoutDialog());
 
 		biometricSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
 			if (isChecked) {
@@ -317,6 +321,30 @@ public class VaultSettingsFragment extends BaseFragment {
 					currentAutolockTimeout = values[which];
 					autolockValue.setText(options[which]);
 					saveSetting("autolock_timeout", currentAutolockTimeout);
+					dialog.dismiss();
+				})
+				.show();
+	}
+
+	private void showClipboardTimeoutDialog() {
+		String[] options = {"15 seconds", "30 seconds", "60 seconds",
+				"2 minutes"};
+		int[] values = {15, 30, 60, 120};
+
+		int selectedIndex = 1;
+		for (int i = 0; i < values.length; i++) {
+			if (values[i] == currentClipboardTimeout) {
+				selectedIndex = i;
+				break;
+			}
+		}
+
+		new MaterialAlertDialogBuilder(requireContext())
+				.setTitle("Clipboard Clear Timeout")
+				.setSingleChoiceItems(options, selectedIndex, (dialog, which) -> {
+					currentClipboardTimeout = values[which];
+					updateClipboardTimeoutDisplay();
+					saveSetting("clipboard_timeout", currentClipboardTimeout);
 					dialog.dismiss();
 				})
 				.show();

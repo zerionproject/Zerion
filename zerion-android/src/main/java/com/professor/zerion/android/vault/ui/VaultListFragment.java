@@ -1,18 +1,24 @@
 package com.professor.zerion.android.vault.ui;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.TextView;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import com.professor.zerion.R;
+import com.professor.zerion.android.AppModule;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.fragment.BaseFragment;
 import com.professor.zerion.android.vault.model.VaultItem;
+import com.professor.zerion.android.vault.util.VaultSearch;
 
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
@@ -38,11 +44,20 @@ public class VaultListFragment extends BaseFragment {
 	@Inject
 	ViewModelProvider.Factory viewModelFactory;
 
+	@Inject
+	@AppModule.SecurePrefs
+	SharedPreferences securePrefs;
+
 	private VaultViewModel viewModel;
 	private RecyclerView recyclerView;
 	private VaultAdapter adapter;
 	private View emptyView;
 	private FloatingActionButton fab;
+	private EditText vaultSearchInput;
+	private TextView vaultSortButton;
+	private final List<VaultItem> allItems = new ArrayList<>();
+	private String searchQuery = "";
+	private int sortMode;
 
 	private long lastClickTime = 0;
 	private static final long CLICK_DEBOUNCE_TIME = 500;
@@ -66,6 +81,8 @@ public class VaultListFragment extends BaseFragment {
 		recyclerView = view.findViewById(R.id.vault_list);
 		emptyView = view.findViewById(R.id.vault_empty_text);
 		fab = view.findViewById(R.id.vault_fab);
+		vaultSearchInput = view.findViewById(R.id.vault_search_input);
+		vaultSortButton = view.findViewById(R.id.vault_sort_button);
 
 		recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
 		recyclerView.addItemDecoration(new DividerItemDecoration(
@@ -84,11 +101,49 @@ public class VaultListFragment extends BaseFragment {
 		viewModel = new ViewModelProvider(requireActivity(), viewModelFactory)
 				.get(VaultViewModel.class);
 
+		sortMode = securePrefs.getInt("vault_sort_mode", VaultSearch.SORT_NAME);
+
 		setupFab();
 		setupAdapter();
+		setupSearchAndSort();
 		observeViewModel();
 
 		viewModel.loadVaultItems();
+	}
+
+	private void setupSearchAndSort() {
+		vaultSearchInput.addTextChangedListener(new TextWatcher() {
+			@Override
+			public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+			}
+
+			@Override
+			public void onTextChanged(CharSequence s, int start, int before, int count) {
+			}
+
+			@Override
+			public void afterTextChanged(Editable s) {
+				searchQuery = s.toString();
+				applyFilterAndSort();
+			}
+		});
+
+		vaultSortButton.setOnClickListener(v -> {
+			sortMode = sortMode == VaultSearch.SORT_NAME
+					? VaultSearch.SORT_RECENT : VaultSearch.SORT_NAME;
+			securePrefs.edit().putInt("vault_sort_mode", sortMode).apply();
+			applyFilterAndSort();
+		});
+	}
+
+	private void applyFilterAndSort() {
+		List<VaultItem> shown = VaultSearch.filterSort(allItems, searchQuery, sortMode);
+		boolean isEmpty = shown.isEmpty();
+		recyclerView.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
+		emptyView.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
+		adapter.setItems(shown);
+		vaultSortButton.setText(sortMode == VaultSearch.SORT_RECENT
+				? R.string.vault_sort_recent : R.string.vault_sort_name);
 	}
 
 	private void setupFab() {
@@ -193,14 +248,9 @@ public class VaultListFragment extends BaseFragment {
 				}
 			}
 
-			if (noteItems.isEmpty()) {
-				recyclerView.setVisibility(View.GONE);
-				emptyView.setVisibility(View.VISIBLE);
-			} else {
-				recyclerView.setVisibility(View.VISIBLE);
-				emptyView.setVisibility(View.GONE);
-				adapter.setItems(noteItems);
-			}
+			allItems.clear();
+			allItems.addAll(noteItems);
+			applyFilterAndSort();
 		});
 	}
 

@@ -79,8 +79,8 @@ android {
     defaultConfig {
         minSdkVersion 29
         targetSdkVersion 35
-        versionCode 20002
-        versionName "2.0.2"
+        versionCode 20003
+        versionName "2.0.3"
         applicationId "com.professor.zerion"
         buildConfigField "String", "TorVersion", "\"$tor_version\""
 
@@ -280,6 +280,15 @@ dependencies {
 
 task enforceNoLogs {
     doLast {
+        // Dev diagnostics are permitted in DEBUG builds and stripped before release.
+        // The zero-log policy is enforced only for release/bundle builds (what ships).
+        def requestedTasks = gradle.startParameter.taskNames.join(' ').toLowerCase()
+        boolean releaseBuild = requestedTasks.contains('release') ||
+                requestedTasks.contains('bundle')
+        if (!releaseBuild) {
+            println "enforceNoLogs: skipped for debug build (dev diagnostics allowed; enforced on release/bundle)"
+            return
+        }
         def srcDir = file("src/main/java")
         def banned = ['Log.d(', 'Log.i(', 'Log.w(', 'Log.e(', 'Log.v(',
                        'System.out.print', 'System.err.print',

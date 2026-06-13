@@ -52,10 +52,13 @@ class IntroductionViewModel extends ContactsViewModel {
 			ConversationManager conversationManager,
 			ConnectionRegistry connectionRegistry, EventBus eventBus,
 			IntroductionManager introductionManager,
-			PinnedContactManager pinnedContactManager) {
+			PinnedContactManager pinnedContactManager,
+			org.briarproject.briar.api.autodelete.AutoDeleteManager
+					autoDeleteManager) {
 		super(application, dbExecutor, lifecycleManager, db, androidExecutor,
 				contactManager, authorManager, conversationManager,
-				connectionRegistry, eventBus, pinnedContactManager);
+				connectionRegistry, eventBus, pinnedContactManager,
+				autoDeleteManager);
 		this.contactManager = contactManager;
 		this.authorManager = authorManager;
 		this.introductionManager = introductionManager;

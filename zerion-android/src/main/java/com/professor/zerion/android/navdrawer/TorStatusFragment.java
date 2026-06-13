@@ -135,12 +135,8 @@ public class TorStatusFragment extends BaseFragment {
 		Context ctx = requireContext();
 		String onion = onionAddressValue.getText().toString();
 		if (onion.isEmpty()) return;
-		ClipboardManager cm = (ClipboardManager)
-				ctx.getSystemService(Context.CLIPBOARD_SERVICE);
-		if (cm == null) return;
-		ClipData clip = ClipData.newPlainText(
+		com.professor.zerion.android.util.SecureClipboard.copy(ctx,
 				ctx.getString(R.string.tor_onion_share_label), onion);
-		cm.setPrimaryClip(clip);
 		Toast.makeText(ctx, R.string.tor_onion_copied, Toast.LENGTH_SHORT).show();
 	}
 

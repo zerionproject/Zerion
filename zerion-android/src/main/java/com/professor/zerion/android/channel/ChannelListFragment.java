@@ -198,7 +198,7 @@ public class ChannelListFragment extends BaseFragment
 			Map<String, String> finalPreview = latestPreview;
 			Map<String, Long> finalTs = latestTs;
 			if (isAdded()) {
-				requireActivity().runOnUiThread(
+				runOnUiThreadUnlessDestroyed(
 						() -> render(finalChannels, finalUnread,
 								finalPreview, finalTs));
 			}
@@ -367,13 +367,13 @@ public class ChannelListFragment extends BaseFragment
 				ChannelState created = channelManager.createChannel(
 						name, desc, publicChannel, requiresApproval);
 				if (!isAdded()) return;
-				requireActivity().runOnUiThread(() -> {
+				runOnUiThreadUnlessDestroyed(() -> {
 					loadChannels();
 					shareInvite(created);
 				});
 			} catch (DbException ex) {
 				if (!isAdded()) return;
-				requireActivity().runOnUiThread(() ->
+				runOnUiThreadUnlessDestroyed(() ->
 						Toast.makeText(requireContext(),
 								R.string.channels_create_failed,
 								Toast.LENGTH_LONG).show());
@@ -417,7 +417,7 @@ public class ChannelListFragment extends BaseFragment
 				ChannelState s = channelManager.getChannel(cid);
 				if (s != null) {
 					if (isAdded()) {
-						requireActivity().runOnUiThread(() -> {
+						runOnUiThreadUnlessDestroyed(() -> {
 							progress.dismiss();
 							Toast.makeText(requireContext(),
 									R.string.channels_join_already_subscribed,
@@ -434,13 +434,13 @@ public class ChannelListFragment extends BaseFragment
 					}
 				});
 				if (!isAdded()) return;
-				requireActivity().runOnUiThread(() -> {
+				runOnUiThreadUnlessDestroyed(() -> {
 					progress.dismiss();
 					loadChannels();
 				});
 			} catch (DbException ex) {
 				if (!isAdded()) return;
-				requireActivity().runOnUiThread(() -> {
+				runOnUiThreadUnlessDestroyed(() -> {
 					progress.dismiss();
 					Toast.makeText(requireContext(),
 							R.string.channels_join_error_link,
@@ -499,13 +499,13 @@ public class ChannelListFragment extends BaseFragment
 					}
 				});
 				if (!isAdded()) return;
-				requireActivity().runOnUiThread(() -> {
+				runOnUiThreadUnlessDestroyed(() -> {
 					progress.dismiss();
 					loadChannels();
 				});
 			} catch (DbException ex) {
 				if (!isAdded()) return;
-				requireActivity().runOnUiThread(() -> {
+				runOnUiThreadUnlessDestroyed(() -> {
 					progress.dismiss();
 					Toast.makeText(requireContext(),
 							R.string.channels_apply_failed,
@@ -597,7 +597,7 @@ public class ChannelListFragment extends BaseFragment
 				channelManager.announceMyself(s.getChannelId(), name);
 			} catch (DbException ignored) {
 				if (!isAdded()) return;
-				requireActivity().runOnUiThread(() ->
+				runOnUiThreadUnlessDestroyed(() ->
 						Toast.makeText(requireContext(),
 								R.string.channels_announce_failed,
 								Toast.LENGTH_LONG).show());
@@ -611,7 +611,7 @@ public class ChannelListFragment extends BaseFragment
 				String link = channelManager.exportInviteLink(
 						s.getChannelId());
 				if (!isAdded()) return;
-				requireActivity().runOnUiThread(() ->
+				runOnUiThreadUnlessDestroyed(() ->
 						copyAndToast(link));
 			} catch (DbException ignored) {
 			}
@@ -645,7 +645,7 @@ public class ChannelListFragment extends BaseFragment
 				String link = channelManager.exportInviteLink(
 						s.getChannelId());
 				if (!isAdded()) return;
-				requireActivity().runOnUiThread(() -> {
+				runOnUiThreadUnlessDestroyed(() -> {
 					String body = getString(
 							R.string.channels_share_message_prefix) + link;
 					android.content.Intent send =
@@ -677,7 +677,7 @@ public class ChannelListFragment extends BaseFragment
 			try {
 				channelManager.rotateJoinCapability(s.getChannelId());
 				if (!isAdded()) return;
-				requireActivity().runOnUiThread(() -> shareInvite(s));
+				runOnUiThreadUnlessDestroyed(() -> shareInvite(s));
 			} catch (DbException ignored) {
 			}
 		});
@@ -708,7 +708,7 @@ public class ChannelListFragment extends BaseFragment
 			try {
 				channelManager.leaveChannel(s.getChannelId());
 				if (!isAdded()) return;
-				requireActivity().runOnUiThread(this::loadChannels);
+				runOnUiThreadUnlessDestroyed(this::loadChannels);
 			} catch (DbException ignored) {
 			}
 		});

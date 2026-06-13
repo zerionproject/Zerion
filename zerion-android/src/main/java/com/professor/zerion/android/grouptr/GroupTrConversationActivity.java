@@ -313,6 +313,47 @@ public class GroupTrConversationActivity extends ZerionActivity
 	}
 
 	@Override
+	public void onResume() {
+		super.onResume();
+		wipeGroupTrViewCache();
+	}
+
+	@Override
+	public void onDestroy() {
+		main.removeCallbacksAndMessages(null);
+		wipeGroupTrViewCache();
+		super.onDestroy();
+	}
+
+	private void wipeGroupTrViewCache() {
+		java.io.File dir = new java.io.File(getCacheDir(), "grouptr_view");
+		java.io.File[] kids = dir.listFiles();
+		if (kids == null) return;
+		for (java.io.File f : kids) {
+			try {
+				long len = f.length();
+				if (len > 0) {
+					try (java.io.RandomAccessFile raf =
+								new java.io.RandomAccessFile(f, "rw")) {
+						byte[] zeros = new byte[(int) Math.min(len,
+								64L * 1024L)];
+						long remaining = len;
+						raf.seek(0);
+						while (remaining > 0) {
+							int n = (int) Math.min(zeros.length, remaining);
+							raf.write(zeros, 0, n);
+							remaining -= n;
+						}
+						raf.getFD().sync();
+					}
+				}
+			} catch (java.io.IOException ignored) {
+			}
+			f.delete();
+		}
+	}
+
+	@Override
 	public void eventOccurred(Event e) {
 		if (!(e instanceof GroupPostReceivedEvent)) return;
 		GroupPostReceivedEvent ev = (GroupPostReceivedEvent) e;
@@ -421,8 +462,8 @@ public class GroupTrConversationActivity extends ZerionActivity
 		}
 		ImageView img = row.findViewById(R.id.imageView);
 		TextView time = row.findViewById(R.id.imageTime);
-		Bitmap bmp = BitmapFactory.decodeByteArray(
-				parsed.payload, 0, parsed.payload.length);
+		Bitmap bmp = com.professor.zerion.android.util.SafeImageDecoder
+				.decode(parsed.payload, 1024);
 		if (bmp != null) img.setImageBitmap(bmp);
 		time.setText(tsFmt.format(new Date(p.getTimestamp())));
 		final byte[] imageBytes = parsed.payload;

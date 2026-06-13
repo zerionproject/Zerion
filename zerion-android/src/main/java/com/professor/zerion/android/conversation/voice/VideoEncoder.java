@@ -17,8 +17,8 @@ class VideoEncoder {
 
 	static final int WIDTH = 640;
 	static final int HEIGHT = 480;
-	static final int FRAME_RATE = 24;
-	static final int BIT_RATE = 600_000;
+	static final int FRAME_RATE = 15;
+	static final int BIT_RATE = 200_000;
 	static final int I_FRAME_INTERVAL = 3;
 
 	@Nullable
@@ -39,6 +39,9 @@ class VideoEncoder {
 	}
 
 	Surface start() throws IOException {
+		if (encoder != null) {
+			stop();
+		}
 		MediaFormat format = MediaFormat.createVideoFormat(
 				MediaFormat.MIMETYPE_VIDEO_AVC, WIDTH, HEIGHT);
 		format.setInteger(MediaFormat.KEY_COLOR_FORMAT,
@@ -48,6 +51,8 @@ class VideoEncoder {
 		format.setInteger(MediaFormat.KEY_FRAME_RATE, FRAME_RATE);
 		format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL,
 				I_FRAME_INTERVAL);
+		format.setInteger(
+				MediaFormat.KEY_PREPEND_HEADER_TO_SYNC_FRAMES, 1);
 		format.setInteger(MediaFormat.KEY_PROFILE,
 				MediaCodecInfo.CodecProfileLevel
 						.AVCProfileMain);

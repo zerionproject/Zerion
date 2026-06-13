@@ -2,24 +2,34 @@ package com.professor.zerion.android.vault.ui;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import com.professor.zerion.R;
+import com.professor.zerion.android.AppModule;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.fragment.BaseFragment;
 import com.professor.zerion.android.vault.model.VaultItem;
 import com.professor.zerion.android.vault.ui.adapters.VaultDocumentsAdapter;
+import com.professor.zerion.android.vault.util.VaultSearch;
 
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -58,11 +68,20 @@ public class VaultDocumentsFragment extends BaseFragment {
 	@Inject
 	ViewModelProvider.Factory viewModelFactory;
 
+	@Inject
+	@AppModule.SecurePrefs
+	SharedPreferences securePrefs;
+
 	private VaultViewModel viewModel;
 	private RecyclerView documentsList;
 	private LinearLayout emptyState;
 	private FloatingActionButton fabAdd;
 	private VaultDocumentsAdapter adapter;
+	private EditText vaultSearchInput;
+	private TextView vaultSortButton;
+	private final List<VaultItem> allItems = new ArrayList<>();
+	private String searchQuery = "";
+	private int sortMode;
 	private boolean isPickerMode = false;
 
 	public static VaultDocumentsFragment newInstance() {
@@ -87,6 +106,8 @@ public class VaultDocumentsFragment extends BaseFragment {
 		documentsList = view.findViewById(R.id.documents_list);
 		emptyState = view.findViewById(R.id.empty_state);
 		fabAdd = view.findViewById(R.id.fab_add);
+		vaultSearchInput = view.findViewById(R.id.vault_search_input);
+		vaultSortButton = view.findViewById(R.id.vault_sort_button);
 
 		return view;
 	}
@@ -98,9 +119,49 @@ public class VaultDocumentsFragment extends BaseFragment {
 		viewModel = new ViewModelProvider(requireActivity(), viewModelFactory)
 				.get(VaultViewModel.class);
 
+		sortMode = securePrefs.getInt("vault_sort_mode", VaultSearch.SORT_NAME);
+
 		setupDocumentsList();
+		setupSearchAndSort();
 		setupClickListeners();
 		observeViewModel();
+	}
+
+	private void setupSearchAndSort() {
+		vaultSearchInput.addTextChangedListener(new TextWatcher() {
+			@Override
+			public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+			}
+
+			@Override
+			public void onTextChanged(CharSequence s, int start, int before, int count) {
+			}
+
+			@Override
+			public void afterTextChanged(Editable s) {
+				searchQuery = s.toString();
+				applyFilterAndSort();
+			}
+		});
+
+		vaultSortButton.setOnClickListener(v -> {
+			sortMode = sortMode == VaultSearch.SORT_NAME
+					? VaultSearch.SORT_RECENT : VaultSearch.SORT_NAME;
+			securePrefs.edit().putInt("vault_sort_mode", sortMode).apply();
+			applyFilterAndSort();
+		});
+	}
+
+	private void applyFilterAndSort() {
+		List<VaultItem> shown = VaultSearch.filterSort(allItems, searchQuery, sortMode);
+		boolean isEmpty = shown.isEmpty();
+		emptyState.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
+		documentsList.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
+		if (adapter != null) {
+			adapter.setItems(shown);
+		}
+		vaultSortButton.setText(sortMode == VaultSearch.SORT_RECENT
+				? R.string.vault_sort_recent : R.string.vault_sort_name);
 	}
 
 	private void setupDocumentsList() {
@@ -663,26 +724,18 @@ public class VaultDocumentsFragment extends BaseFragment {
 	private void observeViewModel() {
 		viewModel.getVaultItems().observe(getViewLifecycleOwner(), items -> {
 			if (items != null) {
-				java.util.List<VaultItem> docItems = new java.util.ArrayList<>();
+				List<VaultItem> docItems = new ArrayList<>();
 				for (VaultItem item : items) {
 					if (item.type == VaultItem.ItemType.DOCUMENT) {
 						docItems.add(item);
 					}
 				}
 
-				updateDocumentsList(docItems);
-
-				boolean isEmpty = docItems.isEmpty();
-				emptyState.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
-				documentsList.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
+				allItems.clear();
+				allItems.addAll(docItems);
+				applyFilterAndSort();
 			}
 		});
-	}
-
-	private void updateDocumentsList(java.util.List<VaultItem> docItems) {
-		if (adapter != null) {
-			adapter.setItems(docItems);
-		}
 	}
 
 	@Override

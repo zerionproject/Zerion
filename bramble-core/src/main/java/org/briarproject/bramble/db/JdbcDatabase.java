@@ -89,7 +89,7 @@ import static org.briarproject.bramble.db.JdbcUtils.tryToClose;
 @NotNullByDefault
 abstract class JdbcDatabase implements Database<Connection> {
 
-	static final int CODE_SCHEMA_VERSION = 65;
+	static final int CODE_SCHEMA_VERSION = 66;
 
 	private static final int MAX_CONNECTION_POOL_SIZE = 8;
 	private static final int OFFSET_PREV = -1;
@@ -450,6 +450,9 @@ abstract class JdbcDatabase implements Database<Connection> {
 	private static final String INDEX_MESSAGES_BY_CLEANUP_DEADLINE =
 			"CREATE INDEX IF NOT EXISTS messagesByCleanupDeadline"
 					+ " ON messages (cleanupDeadline)";
+	private static final String INDEX_MESSAGES_BY_TEMPORARY =
+			"CREATE INDEX IF NOT EXISTS messagesByTemporary"
+					+ " ON messages (temporary)";
 	private final MessageFactory messageFactory;
 	private final Clock clock;
 	private final DatabaseTypes dbTypes;
@@ -573,7 +576,8 @@ abstract class JdbcDatabase implements Database<Connection> {
 				new Migration61_62(),
 				new Migration62_63(),
 				new Migration63_64(),
-				new Migration64_65(dbTypes)
+				new Migration64_65(dbTypes),
+				new Migration65_66()
 		);
 	}
 
@@ -645,6 +649,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 			s.executeUpdate(INDEX_STATUSES_BY_CONTACT_ID_TIMESTAMP);
 			s.executeUpdate(INDEX_STATUSES_BY_CONTACT_ID_TX_COUNT_TIMESTAMP);
 			s.executeUpdate(INDEX_MESSAGES_BY_CLEANUP_DEADLINE);
+			s.executeUpdate(INDEX_MESSAGES_BY_TEMPORARY);
 			s.executeUpdate(INDEX_PCS_SKIPPED_KEYS_BY_TIMESTAMP);
 			s.executeUpdate(INDEX_PCS_SKIPPED_KEYS_BY_CHAIN_ID);
 			s.executeUpdate(INDEX_GROUP_KEY_HISTORY_BY_EXPIRY);

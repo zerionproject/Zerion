@@ -22,6 +22,7 @@ import org.briarproject.bramble.api.plugin.event.ContactDisconnectedEvent;
 import org.briarproject.bramble.api.system.AndroidExecutor;
 import com.professor.zerion.android.viewmodel.DbViewModel;
 import com.professor.zerion.android.viewmodel.LiveResult;
+import org.briarproject.briar.api.autodelete.AutoDeleteManager;
 import org.briarproject.briar.api.avatar.event.AvatarUpdatedEvent;
 import org.briarproject.briar.api.client.MessageTracker;
 import org.briarproject.briar.api.autodelete.event.ConversationMessagesDeletedEvent;
@@ -57,6 +58,7 @@ public class ContactsViewModel extends DbViewModel implements EventListener {
 	private final ConnectionRegistry connectionRegistry;
 	private final EventBus eventBus;
 	protected final PinnedContactManager pinnedContactManager;
+	private final AutoDeleteManager autoDeleteManager;
 
 	private final MutableLiveData<LiveResult<List<ContactListItem>>>
 			contactListItems = new MutableLiveData<>();
@@ -75,7 +77,8 @@ public class ContactsViewModel extends DbViewModel implements EventListener {
 			AuthorManager authorManager,
 			ConversationManager conversationManager,
 			ConnectionRegistry connectionRegistry, EventBus eventBus,
-			PinnedContactManager pinnedContactManager) {
+			PinnedContactManager pinnedContactManager,
+			AutoDeleteManager autoDeleteManager) {
 		super(application, dbExecutor, lifecycleManager, db, androidExecutor);
 		this.contactManager = contactManager;
 		this.authorManager = authorManager;
@@ -84,6 +87,7 @@ public class ContactsViewModel extends DbViewModel implements EventListener {
 		this.eventBus = eventBus;
 		this.eventBus.addListener(this);
 		this.pinnedContactManager = pinnedContactManager;
+		this.autoDeleteManager = autoDeleteManager;
 	}
 
 	@Override
@@ -128,6 +132,7 @@ public class ContactsViewModel extends DbViewModel implements EventListener {
 	@Override
 	public void eventOccurred(Event e) {
 		if (e instanceof ContactAddedEvent) {
+			applyDefaultTimer(((ContactAddedEvent) e).getContactId());
 			loadContacts();
 		} else if (e instanceof ContactConnectedEvent) {
 			ContactId cid = ((ContactConnectedEvent) e).getContactId();
@@ -157,6 +162,16 @@ public class ContactsViewModel extends DbViewModel implements EventListener {
 					(ConversationMessagesDeletedEvent) e;
 			reloadGroupCount(d.getContactId());
 		}
+	}
+
+	private void applyDefaultTimer(ContactId contactId) {
+		long timer = com.professor.zerion.android.AppModule.getUiPrefs()
+				.getLong("default_disappearing_timer", -1L);
+		if (timer <= 0) return;
+		runOnDbThread(false, txn ->
+						autoDeleteManager.setAutoDeleteTimer(txn, contactId,
+								timer),
+				this::handleException);
 	}
 
 	private void reloadGroupCount(ContactId contactId) {

@@ -16,6 +16,8 @@ public interface GroupTrManager {
 
 	Collection<GroupTrState> getGroups() throws DbException;
 
+	Collection<GroupTrPendingInvite> getPendingInvites() throws DbException;
+
 	GroupTrState createGroup(String name) throws DbException;
 
 	boolean isCreator(byte[] groupId, byte[] pubKey) throws DbException;

@@ -37,6 +37,10 @@ public class VaultGalleryAdapter extends RecyclerView.Adapter<VaultGalleryAdapte
 				}
 			};
 
+	public static void clearThumbnailCache() {
+		thumbnailCache.evictAll();
+	}
+
 	public interface OnImageClickListener {
 		void onImageClick(VaultItem item);
 		void onImageLongClick(VaultItem item);
@@ -93,10 +97,7 @@ public class VaultGalleryAdapter extends RecyclerView.Adapter<VaultGalleryAdapte
 		}
 
 		void bind(VaultItem item) {
-			if (currentBitmap != null && !currentBitmap.isRecycled()) {
-				currentBitmap.recycle();
-				currentBitmap = null;
-			}
+			currentBitmap = null;
 
 			final String expectedItemId = item.id;
 

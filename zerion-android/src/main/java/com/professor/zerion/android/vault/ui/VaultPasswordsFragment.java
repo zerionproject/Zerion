@@ -8,6 +8,9 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -21,12 +24,16 @@ import com.professor.zerion.R;
 import com.professor.zerion.android.AppModule;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.fragment.BaseFragment;
+import com.professor.zerion.android.vault.model.VaultItem;
 import com.professor.zerion.android.vault.ui.adapters.VaultPasswordsAdapter;
+import com.professor.zerion.android.vault.util.VaultSearch;
 
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
 import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -51,6 +58,11 @@ public class VaultPasswordsFragment extends BaseFragment {
 	private LinearLayout emptyState;
 	private FloatingActionButton fabAdd;
 	private VaultPasswordsAdapter adapter;
+	private EditText vaultSearchInput;
+	private TextView vaultSortButton;
+	private final List<VaultItem> allItems = new ArrayList<>();
+	private String searchQuery = "";
+	private int sortMode;
 	@Nullable
 	private androidx.appcompat.app.AlertDialog passwordDialog;
 	private final android.os.Handler clipboardClearHandler =
@@ -76,6 +88,8 @@ public class VaultPasswordsFragment extends BaseFragment {
 		passwordsList = view.findViewById(R.id.passwords_list);
 		emptyState = view.findViewById(R.id.empty_state);
 		fabAdd = view.findViewById(R.id.fab_add);
+		vaultSearchInput = view.findViewById(R.id.vault_search_input);
+		vaultSortButton = view.findViewById(R.id.vault_sort_button);
 
 		return view;
 	}
@@ -87,9 +101,49 @@ public class VaultPasswordsFragment extends BaseFragment {
 		viewModel = new ViewModelProvider(requireActivity(), viewModelFactory)
 				.get(VaultViewModel.class);
 
+		sortMode = securePrefs.getInt("vault_sort_mode", VaultSearch.SORT_NAME);
+
 		setupPasswordsList();
+		setupSearchAndSort();
 		setupClickListeners();
 		observeViewModel();
+	}
+
+	private void setupSearchAndSort() {
+		vaultSearchInput.addTextChangedListener(new TextWatcher() {
+			@Override
+			public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+			}
+
+			@Override
+			public void onTextChanged(CharSequence s, int start, int before, int count) {
+			}
+
+			@Override
+			public void afterTextChanged(Editable s) {
+				searchQuery = s.toString();
+				applyFilterAndSort();
+			}
+		});
+
+		vaultSortButton.setOnClickListener(v -> {
+			sortMode = sortMode == VaultSearch.SORT_NAME
+					? VaultSearch.SORT_RECENT : VaultSearch.SORT_NAME;
+			securePrefs.edit().putInt("vault_sort_mode", sortMode).apply();
+			applyFilterAndSort();
+		});
+	}
+
+	private void applyFilterAndSort() {
+		List<VaultItem> shown = VaultSearch.filterSort(allItems, searchQuery, sortMode);
+		boolean isEmpty = shown.isEmpty();
+		emptyState.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
+		passwordsList.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
+		if (adapter != null) {
+			adapter.setItems(shown);
+		}
+		vaultSortButton.setText(sortMode == VaultSearch.SORT_RECENT
+				? R.string.vault_sort_recent : R.string.vault_sort_name);
 	}
 
 	private void setupPasswordsList() {
@@ -407,21 +461,16 @@ public class VaultPasswordsFragment extends BaseFragment {
 	private void observeViewModel() {
 		viewModel.getVaultItems().observe(getViewLifecycleOwner(), items -> {
 			if (items != null) {
-				java.util.List<com.professor.zerion.android.vault.model.VaultItem> passwordItems =
-						new java.util.ArrayList<>();
-				for (com.professor.zerion.android.vault.model.VaultItem item : items) {
-					if (item.type == com.professor.zerion.android.vault.model.VaultItem.ItemType.PASSWORD) {
+				List<VaultItem> passwordItems = new ArrayList<>();
+				for (VaultItem item : items) {
+					if (item.type == VaultItem.ItemType.PASSWORD) {
 						passwordItems.add(item);
 					}
 				}
 
-				boolean isEmpty = passwordItems.isEmpty();
-				emptyState.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
-				passwordsList.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
-
-				if (adapter != null) {
-					adapter.setItems(passwordItems);
-				}
+				allItems.clear();
+				allItems.addAll(passwordItems);
+				applyFilterAndSort();
 			}
 		});
 

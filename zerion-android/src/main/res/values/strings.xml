@@ -77,6 +77,9 @@
 	<string name="vault_passwords_empty_subtitle">Tap + to add secure passwords</string>
 	<string name="vault_documents_empty_title">No documents</string>
 	<string name="vault_documents_empty_subtitle">Tap + to add secure documents</string>
+	<string name="vault_search_hint">Search</string>
+	<string name="vault_sort_name">Sort: A–Z</string>
+	<string name="vault_sort_recent">Sort: Recent</string>
 	<string name="vault_onboarding_create_password">Create password</string>
 	<string name="vault_onboarding_step_create">Create</string>
 	<string name="vault_onboarding_features">Encrypted · Password protected · Locks when idle</string>
@@ -365,6 +368,7 @@
 	<string name="channels_comments_disabled_compose">Discussions are disabled for this channel.</string>
 	<string name="channels_discussions_menu_enable">Allow discussions</string>
 	<string name="channels_discussions_menu_disable">Disable discussions</string>
+	<string name="channels_mute_notifications">Mute notifications</string>
 	<string name="channels_discussions_enabled_toast">Discussions are now allowed.</string>
 	<string name="channels_discussions_disabled_toast">Discussions disabled. Subscribers can no longer post comments.</string>
 	<string name="channels_discussions_confirm_enable_title">Allow discussions?</string>
@@ -579,9 +583,12 @@
 	<string name="pref_calls_section_title">CALLS</string>
 	<string name="pref_voice_calls_title">Voice calls</string>
 	<string name="pref_voice_calls_summary">Allow voice calls to and from your contacts</string>
-	<string name="pref_video_calls_title">Video calls</string>
-	<string name="pref_video_calls_summary">Allow video calls to and from your contacts</string>
-	<string name="pref_calls_footer">Off by default. Turn on to expose call buttons in chats and accept incoming calls. Otherwise callers will see a \"calls disabled\" notice.</string>
+	<string name="pref_video_calls_title">Video calls (Beta)</string>
+	<string name="pref_video_calls_summary">Allow video calls to and from your contacts. Audio quality may drop during video calls.</string>
+	<string name="video_calls_beta_warning_title">Video calls (Beta)</string>
+	<string name="video_calls_beta_warning_message">Video calling is in Beta. Audio quality may drop during video calls. Voice-only calls are not affected.</string>
+	<string name="video_calls_beta_enable">Enable</string>
+	<string name="pref_calls_footer">Voice calls are on by default. Turn off to hide call buttons and decline incoming calls — callers then see a \"calls disabled\" notice. Video calls (Beta) stay off until you enable them.</string>
 	<string name="call_rejected_peer_disabled_calls">%s has calls disabled</string>
 	<string name="call_rejected_peer_disabled_calls_hint">Ask them to enable calls in Settings → Security</string>
 	<string name="call_rejected_peer_disabled_video">%s has video calls disabled</string>
@@ -699,6 +706,9 @@
 	<string name="grouptr_group_name_hint">Group name</string>
 	<string name="grouptr_invite_received_toast">You were added to a new group</string>
 	<string name="grouptr_removed_by_admin">You were removed from \"%1$s\"</string>
+	<string name="grouptr_pending_invite_title">%1$s — invited by %2$s</string>
+	<string name="grouptr_pending_accept">Accept</string>
+	<string name="grouptr_pending_decline">Decline</string>
 	<string name="grouptr_invitation_received">%1$s added you to the group \"%2$s\". Tap to open.</string>
 	<string name="grouptr_invitation_received_no_name">%1$s added you to a group. Tap to open.</string>
 	<string name="grouptr_create_title">New group</string>
@@ -1229,6 +1239,7 @@
 	<string name="pref_lock_summary">Use the device\'s screen lock to protect Zerion while signed in</string>
 	<string name="pref_lock_disabled_summary">To use this feature, set up a screen lock for your device</string>
 	<string name="pref_lock_timeout_title">App lock inactivity timeout</string>
+	<string name="pref_default_disappearing_title">Default disappearing timer</string>
 	<!-- The %s placeholder is replaced with the following time spans, e.g. 5 Minutes, 1 Hour -->
 	<string name="pref_lock_timeout_summary">When not using Zerion, automatically lock it after %s</string>
 	<!-- Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s" -->

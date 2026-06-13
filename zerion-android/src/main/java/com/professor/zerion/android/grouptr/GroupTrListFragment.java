@@ -23,6 +23,7 @@ import org.briarproject.bramble.api.event.EventBus;
 import org.briarproject.bramble.api.event.EventListener;
 import org.briarproject.bramble.api.lifecycle.IoExecutor;
 import org.briarproject.briar.api.grouptr.GroupTrManager;
+import org.briarproject.briar.api.grouptr.GroupTrPendingInvite;
 import org.briarproject.briar.api.grouptr.GroupTrState;
 import org.briarproject.briar.api.messaging.event.GroupMembershipChangedEvent;
 import org.briarproject.briar.api.messaging.event.GroupEpochCommitEvent;
@@ -129,7 +130,7 @@ public class GroupTrListFragment extends BaseFragment
 				|| e instanceof GroupTrLocalStateChangedEvent
 				|| e instanceof GroupTrSelfRemovedEvent
 				|| e instanceof GroupPostReceivedEvent) {
-			requireActivity().runOnUiThread(() -> {
+			runOnUiThreadUnlessDestroyed(() -> {
 				if (e instanceof GroupMembershipChangedEvent) {
 					GroupMembershipChangedEvent ev =
 							(GroupMembershipChangedEvent) e;
@@ -158,6 +159,7 @@ public class GroupTrListFragment extends BaseFragment
 	private void loadGroups() {
 		ioExecutor.execute(() -> {
 			List<GroupTrState> groups;
+			Collection<GroupTrPendingInvite> pending;
 			Map<String, Integer> unread = new HashMap<>();
 			try {
 				Collection<GroupTrState> c = groupTrManager.getGroups();
@@ -166,24 +168,32 @@ public class GroupTrListFragment extends BaseFragment
 					unread.put(hex(s.getGroupId()),
 							groupTrManager.getUnreadCount(s.getGroupId()));
 				}
+				pending = groupTrManager.getPendingInvites();
 			} catch (DbException ex) {
 				groups = Collections.emptyList();
+				pending = Collections.emptyList();
 			}
 			List<GroupTrState> finalGroups = groups;
+			Collection<GroupTrPendingInvite> finalPending = pending;
 			Map<String, Integer> finalUnread = unread;
-			requireActivity().runOnUiThread(
-					() -> renderGroups(finalGroups, finalUnread));
+			runOnUiThreadUnlessDestroyed(
+					() -> renderGroups(finalGroups, finalUnread,
+							finalPending));
 		});
 	}
 
 	private void renderGroups(List<GroupTrState> groups,
-			Map<String, Integer> unread) {
+			Map<String, Integer> unread,
+			Collection<GroupTrPendingInvite> pending) {
 		listContainer.removeAllViews();
-		if (groups.isEmpty()) {
+		if (groups.isEmpty() && pending.isEmpty()) {
 			emptyView.setVisibility(View.VISIBLE);
 			return;
 		}
 		emptyView.setVisibility(View.GONE);
+		for (GroupTrPendingInvite p : pending) {
+			listContainer.addView(buildPendingRow(p));
+		}
 		for (GroupTrState s : groups) {
 			int count = unread.containsKey(hex(s.getGroupId()))
 					? unread.get(hex(s.getGroupId())) : 0;
@@ -251,6 +261,60 @@ public class GroupTrListFragment extends BaseFragment
 		return wrapper;
 	}
 
+	private View buildPendingRow(GroupTrPendingInvite p) {
+		LinearLayout container = new LinearLayout(requireContext());
+		container.setOrientation(LinearLayout.VERTICAL);
+		container.setPadding(dp(16), dp(12), dp(16), dp(12));
+
+		String name = p.getGroupName().isEmpty()
+				? getString(R.string.grouptr_unnamed_group)
+				: p.getGroupName();
+		TextView title = new TextView(requireContext());
+		title.setText(getString(R.string.grouptr_pending_invite_title,
+				name, p.getCreatorName()));
+		title.setTextSize(16);
+		container.addView(title);
+
+		LinearLayout buttons = new LinearLayout(requireContext());
+		buttons.setOrientation(LinearLayout.HORIZONTAL);
+		LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(
+				LinearLayout.LayoutParams.MATCH_PARENT,
+				LinearLayout.LayoutParams.WRAP_CONTENT);
+		blp.topMargin = dp(8);
+		buttons.setLayoutParams(blp);
+
+		android.widget.Button accept =
+				new android.widget.Button(requireContext());
+		accept.setText(R.string.grouptr_pending_accept);
+		accept.setOnClickListener(v ->
+				respondToInvite(p.getGroupId(), true));
+		buttons.addView(accept);
+
+		android.widget.Button decline =
+				new android.widget.Button(requireContext());
+		decline.setText(R.string.grouptr_pending_decline);
+		decline.setOnClickListener(v ->
+				respondToInvite(p.getGroupId(), false));
+		buttons.addView(decline);
+
+		container.addView(buttons);
+		return container;
+	}
+
+	private void respondToInvite(byte[] groupId, boolean accept) {
+		ioExecutor.execute(() -> {
+			try {
+				if (accept) {
+					groupTrManager.acceptInvite(groupId);
+				} else {
+					groupTrManager.declineInvite(groupId);
+				}
+			} catch (DbException ex) {
+			}
+			runOnUiThreadUnlessDestroyed(this::loadGroups);
+		});
+	}
+
 	private int dp(int value) {
 		return (int) (value
 				* getResources().getDisplayMetrics().density);
@@ -277,11 +341,11 @@ public class GroupTrListFragment extends BaseFragment
 			try {
 				groupTrManager.removeFromDevice(gid);
 				if (isAdded()) {
-					requireActivity().runOnUiThread(this::loadGroups);
+					runOnUiThreadUnlessDestroyed(this::loadGroups);
 				}
 			} catch (DbException ex) {
 				if (isAdded()) {
-					requireActivity().runOnUiThread(() -> android.widget.Toast
+					runOnUiThreadUnlessDestroyed(() -> android.widget.Toast
 							.makeText(requireContext(),
 									R.string.grouptr_error_save,
 									android.widget.Toast.LENGTH_SHORT).show());

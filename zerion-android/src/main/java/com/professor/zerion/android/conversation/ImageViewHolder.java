@@ -39,7 +39,7 @@ import static com.professor.zerion.android.attachment.AttachmentItem.State.AVAIL
 import static com.professor.zerion.android.attachment.AttachmentItem.State.ERROR;
 
 @NotNullByDefault
-class ImageViewHolder extends ViewHolder {
+public class ImageViewHolder extends ViewHolder {
 
 	@DrawableRes
 	private static final int ERROR_RES = R.drawable.ic_image_broken;
@@ -54,6 +54,10 @@ class ImageViewHolder extends ViewHolder {
 					return value.getByteCount();
 				}
 			};
+
+	public static void clearVideoThumbCache() {
+		VIDEO_THUMB_CACHE.evictAll();
+	}
 
 	protected final ImageView imageView;
 	@Nullable

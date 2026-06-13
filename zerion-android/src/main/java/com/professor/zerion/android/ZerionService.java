@@ -231,12 +231,17 @@ public class ZerionService extends Service {
 	public void onLowMemory() {
 		super.onLowMemory();
 		maybeClearGlideCache();
+		clearBitmapThumbnailCaches();
 		if (app.isRunningInBackground()) hideUi();
 	}
 
 	@Override
 	public void onTrimMemory(int level) {
 		super.onTrimMemory(level);
+
+		if (level >= TRIM_MEMORY_RUNNING_LOW) {
+			clearBitmapThumbnailCaches();
+		}
 
 		if (level == TRIM_MEMORY_UI_HIDDEN) {
 		} else if (level == TRIM_MEMORY_BACKGROUND) {
@@ -249,6 +254,15 @@ public class ZerionService extends Service {
 			maybeClearGlideCache();
 			if (app.isRunningInBackground()) hideUi();
 		}
+	}
+
+	private void clearBitmapThumbnailCaches() {
+		com.professor.zerion.android.vault.ui.adapters.VaultGalleryAdapter
+				.clearThumbnailCache();
+		com.professor.zerion.android.conversation.ImageViewHolder
+				.clearVideoThumbCache();
+		com.professor.zerion.android.channel.ChannelFeedActivity
+				.clearFeedThumbCache();
 	}
 
 	private void maybeClearGlideCache() {

@@ -20,6 +20,9 @@ class VideoDecoder {
 	private int decodeFailures = 0;
 
 	void start(Surface outputSurface) throws IOException {
+		if (decoder != null) {
+			stop();
+		}
 		MediaFormat format = MediaFormat.createVideoFormat(
 				MediaFormat.MIMETYPE_VIDEO_AVC,
 				VideoEncoder.WIDTH, VideoEncoder.HEIGHT);

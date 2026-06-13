@@ -393,6 +393,8 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		if (c.equals(blockedContact)) return;
 		contactCounts.add(c);
 		if (!settings.getBoolean(PREF_NOTIFY_PRIVATE, true)) return;
+		if (com.professor.zerion.android.conversation.ChatSettingsActivity
+				.isContactMuted(appContext, c)) return;
 		postContactNotification(c, true);
 	}
 
@@ -652,6 +654,8 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 			String hex = StringUtils.toHexString(channelId);
 			if (hex.equals(blockedChannel)) return;
 			if (!settings.getBoolean(PREF_NOTIFY_CHANNEL, true)) return;
+			if (com.professor.zerion.android.channel.ChannelFeedActivity
+					.isChannelMuted(appContext, channelId)) return;
 			channelCounts.add(hex);
 			postChannelNotification(channelId, hex, true);
 		});
@@ -664,6 +668,8 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 			String hex = StringUtils.toHexString(channelId);
 			if (hex.equals(blockedChannel)) return;
 			if (!settings.getBoolean(PREF_NOTIFY_CHANNEL, true)) return;
+			if (com.professor.zerion.android.channel.ChannelFeedActivity
+					.isChannelMuted(appContext, channelId)) return;
 			String key = hex + ":" + parentPostSeqNum;
 			channelCommentCounts.add(key);
 			postChannelCommentNotification(channelId, parentPostSeqNum, key);
@@ -1007,7 +1013,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 
 				boolean voiceEnabled = uiPrefs.getBoolean(
 						com.professor.zerion.android.settings.SecurityFragment
-								.PREF_VOICE_CALLS_ENABLED, false);
+								.PREF_VOICE_CALLS_ENABLED, true);
 				boolean videoEnabled = uiPrefs.getBoolean(
 						com.professor.zerion.android.settings.SecurityFragment
 								.PREF_VIDEO_CALLS_ENABLED, false);

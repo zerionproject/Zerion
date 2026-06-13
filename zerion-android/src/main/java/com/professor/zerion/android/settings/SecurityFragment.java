@@ -64,6 +64,8 @@ public class SecurityFragment extends Fragment {
 	private SwitchMaterial videoCallsSwitch;
 	private View lockTimeoutCard;
 	private TextView lockTimeoutValue;
+	private View defaultTimerCard;
+	private TextView defaultTimerValue;
 	private View changePasswordCard;
 	private View registrationLockCard;
 	private TextView registrationLockSummary;
@@ -107,6 +109,8 @@ public class SecurityFragment extends Fragment {
 		screenshotProtectionSwitch = view.findViewById(R.id.screenshot_protection_switch);
 		lockTimeoutCard = view.findViewById(R.id.lock_timeout_card);
 		lockTimeoutValue = view.findViewById(R.id.lock_timeout_value);
+		defaultTimerCard = view.findViewById(R.id.default_timer_card);
+		defaultTimerValue = view.findViewById(R.id.default_timer_value);
 		changePasswordCard = view.findViewById(R.id.change_password_card);
 		registrationLockCard = view.findViewById(R.id.registration_lock_card);
 		registrationLockSummary = view.findViewById(R.id.reg_lock_summary);
@@ -131,6 +135,9 @@ public class SecurityFragment extends Fragment {
 
 		lockTimeoutCard.setOnClickListener(v -> showTimeoutDialog());
 
+		defaultTimerCard.setOnClickListener(v -> showDefaultTimerDialog());
+		updateDefaultTimerDisplay();
+
 		typingIndicatorsSwitch = view.findViewById(R.id.typing_indicators_switch);
 		boolean typingEnabled = uiPrefs.getBoolean(PREF_TYPING_INDICATORS, true);
 		typingIndicatorsSwitch.setChecked(typingEnabled);
@@ -143,7 +150,7 @@ public class SecurityFragment extends Fragment {
 		voiceCallsSwitch = view.findViewById(R.id.voice_calls_switch);
 		if (voiceCallsSwitch != null) {
 			boolean voiceEnabled = uiPrefs.getBoolean(
-					PREF_VOICE_CALLS_ENABLED, false);
+					PREF_VOICE_CALLS_ENABLED, true);
 			voiceCallsSwitch.setChecked(voiceEnabled);
 			voiceCallsSwitch.setOnCheckedChangeListener(
 					(buttonView, isChecked) -> {
@@ -168,13 +175,11 @@ public class SecurityFragment extends Fragment {
 			videoCallsSwitch.setOnCheckedChangeListener(
 					(buttonView, isChecked) -> {
 				if (buttonView.isPressed()) {
-					uiPrefs.edit().putBoolean(PREF_VIDEO_CALLS_ENABLED,
-							isChecked).apply();
-					if (isChecked && voiceCallsSwitch != null
-							&& !voiceCallsSwitch.isChecked()) {
-						voiceCallsSwitch.setChecked(true);
-						uiPrefs.edit().putBoolean(PREF_VOICE_CALLS_ENABLED,
-								true).apply();
+					if (isChecked) {
+						showVideoCallsBetaDialog();
+					} else {
+						uiPrefs.edit().putBoolean(PREF_VIDEO_CALLS_ENABLED,
+								false).apply();
 					}
 				}
 			});
@@ -224,6 +229,30 @@ public class SecurityFragment extends Fragment {
 			count++;
 		}
 		return getString(R.string.hardened_mode_summary_format, count);
+	}
+
+	private void showVideoCallsBetaDialog() {
+		new MaterialAlertDialogBuilder(requireContext())
+				.setTitle(R.string.video_calls_beta_warning_title)
+				.setMessage(R.string.video_calls_beta_warning_message)
+				.setCancelable(false)
+				.setPositiveButton(R.string.video_calls_beta_enable,
+						(dialog, which) -> {
+					uiPrefs.edit().putBoolean(PREF_VIDEO_CALLS_ENABLED,
+							true).apply();
+					if (voiceCallsSwitch != null
+							&& !voiceCallsSwitch.isChecked()) {
+						voiceCallsSwitch.setChecked(true);
+						uiPrefs.edit().putBoolean(PREF_VOICE_CALLS_ENABLED,
+								true).apply();
+					}
+				})
+				.setNegativeButton(R.string.cancel, (dialog, which) -> {
+					if (videoCallsSwitch != null) {
+						videoCallsSwitch.setChecked(false);
+					}
+				})
+				.show();
 	}
 
 	private void showHardenedModeDialog() {
@@ -379,6 +408,49 @@ public class SecurityFragment extends Fragment {
 					String newValue = timeoutValues[which];
 					viewModel.settingsStore.putString(PREF_SCREEN_LOCK_TIMEOUT, newValue);
 					updateTimeoutDisplay(newValue);
+					dialog.dismiss();
+				})
+				.setNegativeButton(R.string.cancel, null)
+				.show();
+	}
+
+	private static final long[] DEFAULT_TIMER_VALUES =
+			{-1L, 86400000L, 604800000L, 2419200000L};
+
+	private void updateDefaultTimerDisplay() {
+		long value = uiPrefs.getLong("default_disappearing_timer", -1L);
+		String text = "Off";
+		if (value > 0) {
+			for (int i = 1; i < DEFAULT_TIMER_VALUES.length; i++) {
+				if (DEFAULT_TIMER_VALUES[i] == value) {
+					text = new String[]{"Off", "1 day", "1 week",
+							"4 weeks"}[i];
+					break;
+				}
+			}
+		}
+		defaultTimerValue.setText(text);
+	}
+
+	private void showDefaultTimerDialog() {
+		String[] entries = {"Off", "1 day", "1 week", "4 weeks"};
+		long stored = uiPrefs.getLong("default_disappearing_timer", -1L);
+		int selectedIndex = 0;
+		for (int i = 0; i < DEFAULT_TIMER_VALUES.length; i++) {
+			if (DEFAULT_TIMER_VALUES[i] == stored) {
+				selectedIndex = i;
+				break;
+			}
+		}
+
+		new MaterialAlertDialogBuilder(requireContext())
+				.setTitle(R.string.pref_default_disappearing_title)
+				.setSingleChoiceItems(entries, selectedIndex,
+						(dialog, which) -> {
+					long value = DEFAULT_TIMER_VALUES[which];
+					uiPrefs.edit().putLong("default_disappearing_timer",
+							value).apply();
+					updateDefaultTimerDisplay();
 					dialog.dismiss();
 				})
 				.setNegativeButton(R.string.cancel, null)

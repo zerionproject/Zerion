@@ -981,6 +981,12 @@ public class ConversationActivity extends ZerionActivity
 		displayContactOnlineStatus();
 		list.startPeriodicUpdate();
 		loadMessages();
+		voiceCallsEnabled = uiPrefs.getBoolean(
+				com.professor.zerion.android.settings.SecurityFragment
+						.PREF_VOICE_CALLS_ENABLED, true);
+		videoCallsEnabled = uiPrefs.getBoolean(
+				com.professor.zerion.android.settings.SecurityFragment
+						.PREF_VIDEO_CALLS_ENABLED, false);
 		invalidateOptionsMenu();
 	}
 
@@ -1018,7 +1024,39 @@ public class ConversationActivity extends ZerionActivity
 	protected void onDestroy() {
 		super.onDestroy();
 		typingManager.destroy();
+		shredCameraDir();
 	}
+
+	private void shredCameraDir() {
+		java.io.File dir = new java.io.File(getFilesDir(), "camera");
+		java.io.File[] kids = dir.listFiles();
+		if (kids == null) return;
+		for (java.io.File f : kids) {
+			try {
+				long len = f.length();
+				if (len > 0) {
+					try (java.io.RandomAccessFile raf =
+								new java.io.RandomAccessFile(f, "rw")) {
+						byte[] zeros = new byte[(int) Math.min(len,
+								64L * 1024L)];
+						long remaining = len;
+						raf.seek(0);
+						while (remaining > 0) {
+							int n = (int) Math.min(zeros.length, remaining);
+							raf.write(zeros, 0, n);
+							remaining -= n;
+						}
+						raf.getFD().sync();
+					}
+				}
+			} catch (java.io.IOException ignored) {
+			}
+			f.delete();
+		}
+	}
+
+	private boolean voiceCallsEnabled = true;
+	private boolean videoCallsEnabled = false;
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
@@ -1057,12 +1095,8 @@ public class ConversationActivity extends ZerionActivity
 			});
 		}
 
-		boolean voiceEnabled = uiPrefs.getBoolean(
-				com.professor.zerion.android.settings.SecurityFragment
-						.PREF_VOICE_CALLS_ENABLED, false);
-		boolean videoEnabled = uiPrefs.getBoolean(
-				com.professor.zerion.android.settings.SecurityFragment
-						.PREF_VIDEO_CALLS_ENABLED, false);
+		boolean voiceEnabled = voiceCallsEnabled;
+		boolean videoEnabled = videoCallsEnabled;
 		MenuItem voiceCallItem = menu.findItem(R.id.action_voice_call);
 		MenuItem videoCallItem = menu.findItem(R.id.action_video_call);
 		if (voiceCallItem != null) voiceCallItem.setVisible(voiceEnabled);
@@ -1080,7 +1114,7 @@ public class ConversationActivity extends ZerionActivity
 		} else if (itemId == R.id.action_voice_call) {
 			if (!uiPrefs.getBoolean(
 					com.professor.zerion.android.settings.SecurityFragment
-							.PREF_VOICE_CALLS_ENABLED, false)) {
+							.PREF_VOICE_CALLS_ENABLED, true)) {
 				return true;
 			}
 			startVoiceCall();
@@ -1778,28 +1812,10 @@ public class ConversationActivity extends ZerionActivity
 			}
 		}
 		if (sb.length() > 0) {
-			ClipboardManager clipboard = (ClipboardManager)
-					getSystemService(Context.CLIPBOARD_SERVICE);
-			if (clipboard != null) {
-				final String copiedText = sb.toString();
-				clipboard.setPrimaryClip(
-						ClipData.newPlainText("message", copiedText));
-				Snackbar.make(list, R.string.copied_to_clipboard,
-						Snackbar.LENGTH_SHORT).show();
-				new android.os.Handler(android.os.Looper.getMainLooper())
-						.postDelayed(() -> {
-							ClipData current = clipboard.getPrimaryClip();
-							if (current != null && current.getItemCount() > 0) {
-								CharSequence currentText =
-										current.getItemAt(0).getText();
-								if (copiedText.contentEquals(
-										currentText != null ? currentText : "")) {
-									clipboard.setPrimaryClip(
-											ClipData.newPlainText("", ""));
-								}
-							}
-						}, 60_000L);
-			}
+			com.professor.zerion.android.util.SecureClipboard.copy(this,
+					"message", sb.toString());
+			Snackbar.make(list, R.string.copied_to_clipboard,
+					Snackbar.LENGTH_SHORT).show();
 		}
 		if (actionMode != null) actionMode.finish();
 	}

@@ -446,14 +446,19 @@ public class VoiceCallActivity extends AppCompatActivity {
 		runOnUiThread(() -> {
 			switch (state) {
 				case CONNECTING:
-					callStatusText.setText("Connecting via Tor...");
+					if (voiceCallService != null
+							&& voiceCallService.isReconnecting()) {
+						callStatusText.setText("Reconnecting...");
+					} else {
+						callStatusText.setText("Connecting via Tor...");
+					}
 					break;
 				case RINGING:
 					callStatusText.setText("Ringing...");
 					if (!isIncoming) {
-						stopDialTone();
 						stopRingtone();
-						playRingtone();
+						stopDialTone();
+						playDialTone();
 					}
 					break;
 				case CONNECTED:
@@ -554,14 +559,19 @@ public class VoiceCallActivity extends AppCompatActivity {
 			VoiceCallService.CallState state = voiceCallService.getCallState();
 			switch (state) {
 				case CONNECTING:
-					callStatusText.setText("Connecting via Tor...");
+					if (voiceCallService != null
+							&& voiceCallService.isReconnecting()) {
+						callStatusText.setText("Reconnecting...");
+					} else {
+						callStatusText.setText("Connecting via Tor...");
+					}
 					break;
 				case RINGING:
 					callStatusText.setText("Ringing...");
 					if (!isIncoming) {
-						stopDialTone();
 						stopRingtone();
-						playRingtone();
+						stopDialTone();
+						playDialTone();
 					}
 					break;
 				case CONNECTED:
@@ -939,11 +949,9 @@ public class VoiceCallActivity extends AppCompatActivity {
 					.getDefaultDisplay().getRotation() * 90;
 		}
 
-		final int rotation = isFront
-				? (sensorOrientation + displayRotation + 180) % 360
-				: (sensorOrientation - displayRotation + 360) % 360;
+		final int rotation = (sensorOrientation - displayRotation + 360) % 360;
 		localVideoSurface.post(() ->
-				applyVideoTransform(localVideoSurface, rotation, isFront));
+				applyVideoTransform(localVideoSurface, rotation, false));
 	}
 
 	public void onVideoRejected() {

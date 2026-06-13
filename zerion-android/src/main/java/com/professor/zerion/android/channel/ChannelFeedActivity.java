@@ -99,6 +99,7 @@ public class ChannelFeedActivity extends ZerionActivity
 	private boolean discussionsEnabledCached = true;
 	private long currentPinnedSeq = ChannelState.NO_PINNED_POST;
 	private static final int MENU_ITEM_DISCUSSIONS = 7341;
+	private static final int MENU_ITEM_MUTE = 7342;
 
 	@Override
 	public void injectActivity(ActivityComponent component) {
@@ -176,6 +177,12 @@ public class ChannelFeedActivity extends ZerionActivity
 			}
 			return false;
 		});
+		if (channelId.length > 0) {
+			String draft = com.professor.zerion.android.AppModule
+					.getAndroidComponent(this).securePreferences()
+					.getString(draftKey(), "");
+			if (!draft.isEmpty()) composeInput.setText(draft);
+		}
 	}
 
 	private static final long FOREGROUND_REFRESH_ACTIVE_MS = 3_500L;
@@ -239,6 +246,16 @@ public class ChannelFeedActivity extends ZerionActivity
 			refreshHandler = null;
 		}
 		wipeAttachmentStagingDir();
+		if (composeInput != null && channelId.length > 0) {
+			String draft = composeInput.getText().toString();
+			android.content.SharedPreferences sp = com.professor.zerion.android
+					.AppModule.getAndroidComponent(this).securePreferences();
+			if (draft.trim().isEmpty()) {
+				sp.edit().remove(draftKey()).apply();
+			} else {
+				sp.edit().putString(draftKey(), draft).apply();
+			}
+		}
 	}
 
 	@Override
@@ -634,6 +651,7 @@ public class ChannelFeedActivity extends ZerionActivity
 		ioExecutor.execute(() -> {
 			try {
 				channelManager.publishPost(channelId, body, ttlSeconds);
+				clearDraft();
 				runOnUiThreadUnlessDestroyed(this::loadChannel);
 			} catch (DbException ex) {
 				runOnUiThreadUnlessDestroyed(() -> {
@@ -673,13 +691,32 @@ public class ChannelFeedActivity extends ZerionActivity
 		});
 	}
 
+	private static final android.util.LruCache<String, android.graphics.Bitmap>
+			FEED_THUMB_CACHE = new android.util.LruCache<String,
+					android.graphics.Bitmap>(
+							(int) (Runtime.getRuntime().maxMemory() / 8)) {
+				@Override
+				protected int sizeOf(String key,
+						android.graphics.Bitmap value) {
+					return value.getByteCount();
+				}
+			};
+
+	public static void clearFeedThumbCache() {
+		FEED_THUMB_CACHE.evictAll();
+	}
+
 	private void presentAttachment(ChannelPost.ChannelAttachment att,
 			AttachmentBlob blob, android.widget.ImageView thumbView) {
 		String mime = blob.getMimeType();
 		if (mime.startsWith("image/")) {
-			android.graphics.Bitmap bmp = com.professor.zerion.android
-					.util.SafeImageDecoder.decode(blob.getPlaintextBytes(),
-							1280);
+			String ck = bytesToHex(att.getBlobHash());
+			android.graphics.Bitmap bmp = FEED_THUMB_CACHE.get(ck);
+			if (bmp == null || bmp.isRecycled()) {
+				bmp = com.professor.zerion.android.util.SafeImageDecoder
+						.decode(blob.getPlaintextBytes(), 1280);
+				if (bmp != null) FEED_THUMB_CACHE.put(ck, bmp);
+			}
 			if (bmp != null) {
 				thumbView.setImageBitmap(bmp);
 				thumbView.setVisibility(View.VISIBLE);
@@ -921,6 +958,28 @@ public class ChannelFeedActivity extends ZerionActivity
 		composeInput.setEnabled(!busy);
 	}
 
+	public static boolean isChannelMuted(android.content.Context context,
+			byte[] channelId) {
+		return com.professor.zerion.android.AppModule
+				.getAndroidComponent(context).securePreferences()
+				.getBoolean(muteKey(channelId), false);
+	}
+
+	private static String muteKey(byte[] channelId) {
+		return "mute_channel_" + org.briarproject.bramble.util.StringUtils
+				.toHexString(channelId);
+	}
+
+	private String draftKey() {
+		return "channel_draft_" + org.briarproject.bramble.util.StringUtils
+				.toHexString(channelId);
+	}
+
+	private void clearDraft() {
+		com.professor.zerion.android.AppModule.getAndroidComponent(this)
+				.securePreferences().edit().remove(draftKey()).apply();
+	}
+
 	@Override
 	public boolean onCreateOptionsMenu(android.view.Menu menu) {
 		menu.add(0, MENU_ITEM_DISCUSSIONS, 0,
@@ -929,6 +988,10 @@ public class ChannelFeedActivity extends ZerionActivity
 						: R.string.channels_discussions_menu_enable)
 				.setShowAsAction(
 						android.view.MenuItem.SHOW_AS_ACTION_NEVER);
+		android.view.MenuItem mute = menu.add(0, MENU_ITEM_MUTE, 1,
+				R.string.channels_mute_notifications);
+		mute.setCheckable(true);
+		mute.setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
 		return super.onCreateOptionsMenu(menu);
 	}
 
@@ -941,6 +1004,10 @@ public class ChannelFeedActivity extends ZerionActivity
 					? R.string.channels_discussions_menu_disable
 					: R.string.channels_discussions_menu_enable);
 		}
+		android.view.MenuItem muteItem = menu.findItem(MENU_ITEM_MUTE);
+		if (muteItem != null) {
+			muteItem.setChecked(isChannelMuted(this, channelId));
+		}
 		return super.onPrepareOptionsMenu(menu);
 	}
 
@@ -948,6 +1015,14 @@ public class ChannelFeedActivity extends ZerionActivity
 	public boolean onOptionsItemSelected(android.view.MenuItem item) {
 		if (item.getItemId() == MENU_ITEM_DISCUSSIONS) {
 			toggleDiscussionsEnabled();
+			return true;
+		}
+		if (item.getItemId() == MENU_ITEM_MUTE) {
+			boolean muted = !isChannelMuted(this, channelId);
+			com.professor.zerion.android.AppModule.getAndroidComponent(this)
+					.securePreferences().edit()
+					.putBoolean(muteKey(channelId), muted).apply();
+			item.setChecked(muted);
 			return true;
 		}
 		return super.onOptionsItemSelected(item);

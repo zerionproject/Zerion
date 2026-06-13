@@ -5,6 +5,13 @@ allprojects {
 		mavenCentral()
 		google()
 	}
+	plugins.withType(JavaBasePlugin) {
+		java {
+			toolchain {
+				languageVersion = JavaLanguageVersion.of(21)
+			}
+		}
+	}
 	afterEvaluate {
 		tasks.withType(Test) {
 			outputs.upToDateWhen { System.getenv("OPTIONAL_TESTS") == null }

@@ -136,12 +136,8 @@ public class ChatSettingsActivity extends ZerionActivity {
 			identityCard.setVisibility(View.VISIBLE);
 			copySafetyNumberButton.setOnClickListener(v -> {
 				com.professor.zerion.android.util.Haptics.tap(v);
-				android.content.ClipboardManager cm =
-						(android.content.ClipboardManager)
-								getSystemService(CLIPBOARD_SERVICE);
-				if (cm == null) return;
-				cm.setPrimaryClip(android.content.ClipData.newPlainText(
-						getString(R.string.identity_section_title), safety));
+				com.professor.zerion.android.util.SecureClipboard.copy(this,
+						getString(R.string.identity_section_title), safety);
 				android.widget.Toast.makeText(this,
 						R.string.identity_copied,
 						android.widget.Toast.LENGTH_SHORT).show();
