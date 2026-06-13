@@ -1,4 +1,4 @@
-Zerion is a private messenger. It runs over Tor, so your IP address stays hidden from the people you talk to and from the network itself. There's no phone number, no email, and no account on anyone's server. Your data lives encrypted on your own device — nowhere else.
+Zerion is a private messenger. It runs over Tor, so your IP address stays hidden from the people you talk to and from the network itself. There's no phone number, no email, and no account on anyone's server. Your data lives encrypted on your own device, nowhere else.
 
 Everything is end-to-end encrypted with hybrid post-quantum cryptography: today's proven algorithms together with the new NIST quantum-resistant ones. Keys move forward with every message, so a key uncovered today cannot open yesterday's conversations. If large quantum computers arrive sooner than expected, what you sent in the past stays protected.
 
@@ -7,13 +7,13 @@ WHAT YOU CAN DO
 
 • One-to-one chats, end-to-end encrypted
 • Group chats up to a few dozen people
-• Voice and video calls over Tor (opt-in, off by default)
+• Voice calls over Tor, on by default, plus opt-in beta video calling
 • Send photos, videos, voice notes, and documents
-• Disappearing messages
+• Disappearing messages, with an optional default timer for new chats
 • Stickers
 • Introduce two of your contacts to each other, securely
-• A built-in vault for passwords, notes, and private files
-• Channels — a one-to-many broadcast layer with optional discussion threads
+• A built-in vault for passwords, notes, and private files, with search and sort
+• Channels, a one-to-many broadcast layer with optional discussion threads
 • Translated into more than 35 languages
 
 
@@ -26,7 +26,8 @@ One person writes, many people read.
 • Discussion threads: the owner decides, per channel, whether subscribers can reply
 • Reactions, pinned posts, and attachments
 • Editor delegations: let trusted people post without sharing your identity key
-• Subscribers never see one another — no member list leaks between them
+• Mute notifications for any channel
+• Subscribers never see one another, so no member list leaks between them
 
 
 HARDENED MODE (OPT-IN)
@@ -35,18 +36,19 @@ Three independent protections under Security settings, all off by default:
 
 • Refuse to start on tampered devices (unlocked bootloader, modified system)
 • Refuse to start when a debugger, root, or hooking framework is detected
-• Sign out automatically — or wipe — if USB debugging or file transfer is switched on
+• Sign out automatically, or wipe, if USB debugging or file transfer is switched on
 
 
 PRIVACY AND SECURITY
 
-• Tor-only transport — no Wi-Fi, Bluetooth, or LAN exposure
+• Tor-only transport. No Wi-Fi, Bluetooth, or LAN exposure
 • No phone number, no email, no central server
 • No telemetry, no analytics, no crash reporting
-• No logging of any kind — verified at build time
+• No logging of any kind, verified at build time
 • Encrypted at rest with SQLCipher and a key derived from your password
 • Screenshots blocked inside the app
 • Notifications never reveal message contents
+• The clipboard auto-clears after you copy something sensitive
 • Fully open source, GPL v3, security-reviewed before each release
 
 
@@ -60,7 +62,7 @@ UNDER THE HOOD
 
 SUPPORT THE PROJECT
 
-Zerion is free and open source — no ads, no trackers, no investors. If you'd like to help keep it independent, you can donate:
+Zerion is free and open source, with no ads, no trackers, and no investors. If you'd like to help keep it independent, you can donate:
 https://zerion.chat/donate.html
 
 
@@ -73,7 +75,7 @@ WHAT IT WON'T DO
 
 • It won't message people who aren't on Zerion
 • It won't work without an internet connection (Tor needs one)
-• It won't restore your account if you forget the password — there is no recovery, and that's the point
+• It won't restore your account if you forget the password. There is no recovery, and that's the point
 
 
 LEARN MORE

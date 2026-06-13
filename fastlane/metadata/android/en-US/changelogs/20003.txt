@@ -1,0 +1,19 @@
+v2.0.3: calls fixed, video beta, and a lighter app
+
+Voice calls now work reliably in both directions. An audio framing bug that could make one side sound robotic, or leave a call one-way, is fixed. Calls are now on by default. You can still turn them off in Settings, under Security.
+
+Video calling is available as an opt-in beta. When you enable it, a short notice explains that audio quality can drop on a slow Tor circuit while video is running.
+
+Calls now show a clear Reconnecting status and recover on their own after a brief drop.
+
+New in this release:
+• Mute notifications for any channel
+• Search and sort your vault
+• Channel post drafts are saved while you write and cleared when you publish
+• Set a default disappearing-messages timer for new conversations
+• See and accept or decline pending group invites
+• Choose how long the clipboard waits before it auto-clears
+
+Under the hood, channel syncing uses less battery, memory use is lower, the app starts faster, and several crashes are fixed. There is no protocol change and no database upgrade. Your chats, groups, channels, and vault open exactly as before.
+
+Full notes: https://github.com/zerionproject/Zerion/releases/tag/v2.0.3
