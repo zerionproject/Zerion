@@ -52,14 +52,13 @@ public final class StickerStorage {
 		if (count() >= MAX_STICKERS) {
 			throw new IOException("sticker cap reached: " + MAX_STICKERS);
 		}
-		byte[] nonce = new byte[GCM_NONCE_BYTES];
-		random.nextBytes(nonce);
+		byte[] nonce;
 		byte[] ciphertext;
 		try {
 			SecretKey key = StickerKeystore.getOrCreate();
 			Cipher cipher = Cipher.getInstance(AES_GCM);
-			cipher.init(Cipher.ENCRYPT_MODE, key,
-					new GCMParameterSpec(GCM_TAG_BITS, nonce));
+			cipher.init(Cipher.ENCRYPT_MODE, key);
+			nonce = cipher.getIV();
 			ciphertext = cipher.doFinal(pngBytes);
 		} catch (Exception e) {
 			throw new IOException("encrypt failed", e);

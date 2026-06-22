@@ -233,7 +233,17 @@ public class ProfilesFragment extends Fragment {
 						toast(R.string.profiles_created_success);
 						refreshProfileCount();
 					} else {
-						toast(R.string.profiles_create_failed);
+						String reason =
+								accountManager.getLastProfileCreationError();
+						if (com.professor.zerion.BuildConfig.DEBUG
+								&& reason != null && !reason.isEmpty()) {
+							Toast.makeText(requireContext(),
+									getString(R.string.profiles_create_failed)
+											+ "\n" + reason,
+									Toast.LENGTH_LONG).show();
+						} else {
+							toast(R.string.profiles_create_failed);
+						}
 					}
 				});
 			});

@@ -42,6 +42,9 @@ public class AndroidAccountManager extends AccountManagerImpl
 	private final SharedPreferences prefs;
 	private final ProfileManager profileManager;
 
+	@Nullable
+	private volatile String lastProfileCreationError;
+
 	@Inject
 	AndroidAccountManager(DatabaseConfig databaseConfig,
 			CryptoComponent crypto, IdentityManager identityManager,
@@ -253,8 +256,12 @@ public class AndroidAccountManager extends AccountManagerImpl
 	@Nullable
 	public String scheduleProfileCreation(String displayName, char[] password) {
 		synchronized (stateChangeLock) {
+			lastProfileCreationError = null;
 			String newId = profileManager.generateProfileId();
-			if (!profileManager.createProfileDir(newId)) return null;
+			if (!profileManager.createProfileDir(newId)) {
+				lastProfileCreationError = "createProfileDir failed";
+				return null;
+			}
 			String previousActive = profileManager.getActiveProfileId();
 			try {
 				profileManager.setActiveProfileId(newId);
@@ -266,24 +273,33 @@ public class AndroidAccountManager extends AccountManagerImpl
 						org.briarproject.bramble.util.StringUtils.toHexString(
 								ciphertext));
 				if (!ok) {
+					lastProfileCreationError = "storeEncryptedDatabaseKey failed";
 					profileManager.secureWipeProfile(newId);
 					return null;
 				}
 				if (!writePendingIdentityName(newId, displayName)
 						|| !profileManager.writeDisplayName(newId,
 								displayName)) {
+					lastProfileCreationError = "profile metadata write failed";
 					profileManager.secureWipeProfile(newId);
 					return null;
 				}
 				freshKey.clear();
 				return newId;
 			} catch (Exception e) {
+				lastProfileCreationError = e.getClass().getSimpleName()
+						+ (e.getMessage() != null ? ": " + e.getMessage() : "");
 				profileManager.secureWipeProfile(newId);
 				return null;
 			} finally {
 				profileManager.setActiveProfileId(previousActive);
 			}
 		}
+	}
+
+	@Nullable
+	public String getLastProfileCreationError() {
+		return lastProfileCreationError;
 	}
 
 	private boolean writePendingIdentityName(String profileId, String name) {

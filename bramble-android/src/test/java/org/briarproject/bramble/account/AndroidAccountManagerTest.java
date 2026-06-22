@@ -32,6 +32,7 @@ public class AndroidAccountManagerTest extends BrambleMockTestCase {
 	private final CryptoComponent crypto = context.mock(CryptoComponent.class);
 	private final IdentityManager identityManager =
 			context.mock(IdentityManager.class);
+	private final ProfileManager profileManager;
 	private final SharedPreferences.Editor
 			editor = context.mock(SharedPreferences.Editor.class);
 	private final Application app;
@@ -46,6 +47,7 @@ public class AndroidAccountManagerTest extends BrambleMockTestCase {
 	public AndroidAccountManagerTest() {
 		context.setImposteriser(ByteBuddyClassImposteriser.INSTANCE);
 		app = context.mock(Application.class);
+		profileManager = context.mock(ProfileManager.class);
 		applicationInfo = new ApplicationInfo();
 		applicationInfo.dataDir = testDir.getAbsolutePath();
 	}
@@ -61,7 +63,7 @@ public class AndroidAccountManagerTest extends BrambleMockTestCase {
 			will(returnValue(app));
 		}});
 		accountManager = new AndroidAccountManager(databaseConfig, crypto,
-				identityManager, prefs, app) {
+				identityManager, prefs, app, profileManager) {
 			@Override
 			SharedPreferences getDefaultSharedPreferences() {
 				return defaultPrefs;
@@ -119,6 +121,7 @@ public class AndroidAccountManagerTest extends BrambleMockTestCase {
 			oneOf(app).getExternalMediaDirs();
 			will(returnValue(
 					new File[] {externalMediaDir1, externalMediaDir2}));
+			oneOf(profileManager).deleteProfileMetadataKey();
 		}});
 
 		assertTrue(dbDir.mkdirs());

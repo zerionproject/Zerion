@@ -13,7 +13,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
-import java.security.SecureRandom;
 
 import javax.annotation.Nullable;
 import javax.crypto.Cipher;
@@ -34,8 +33,6 @@ final class ProfileMetadataCrypto {
 					+ KeyProperties.ENCRYPTION_PADDING_NONE;
 	private static final int GCM_TAG_BITS = 128;
 	private static final int GCM_IV_BYTES = 12;
-
-	private final SecureRandom rng = new SecureRandom();
 
 	@Nullable
 	private SecretKey loadOrCreateKey() throws GeneralSecurityException,
@@ -97,14 +94,13 @@ final class ProfileMetadataCrypto {
 			throw new IOException("metadata key unavailable", e);
 		}
 		if (key == null) throw new IOException("metadata key unavailable");
-		byte[] iv = new byte[GCM_IV_BYTES];
-		rng.nextBytes(iv);
 		byte[] plaintext = value.getBytes(StandardCharsets.UTF_8);
+		byte[] iv;
 		byte[] ciphertext;
 		try {
 			Cipher cipher = Cipher.getInstance(TRANSFORMATION);
-			cipher.init(Cipher.ENCRYPT_MODE, key,
-					new GCMParameterSpec(GCM_TAG_BITS, iv));
+			cipher.init(Cipher.ENCRYPT_MODE, key);
+			iv = cipher.getIV();
 			ciphertext = cipher.doFinal(plaintext);
 		} catch (GeneralSecurityException e) {
 			java.util.Arrays.fill(plaintext, (byte) 0);
