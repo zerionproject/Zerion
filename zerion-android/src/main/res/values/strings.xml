@@ -1208,6 +1208,8 @@
 	<string name="backup_import_warning">Enter the backup passphrase, then set a new password to protect this account on this device.</string>
 	<string name="backup_export_in_progress">Creating backup</string>
 	<string name="backup_export_success">Backup saved</string>
+	<string name="backup_export_success_title">Backup saved</string>
+	<string name="backup_export_warning_after">Your backup is saved. It holds your entire account and is protected only by your passphrase. Keep it somewhere safe, and delete the file once you have moved your account to the other phone.</string>
 	<string name="backup_export_failed">Could not create the backup</string>
 	<string name="backup_import_in_progress">Importing account</string>
 	<string name="backup_import_success">Account imported</string>

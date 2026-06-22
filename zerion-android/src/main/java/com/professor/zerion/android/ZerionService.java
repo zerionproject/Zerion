@@ -99,6 +99,12 @@ public class ZerionService extends Service {
 	public static final String ACTION_EXIT =
 			"com.professor.zerion.android.EXIT";
 
+	public static void cancelPendingExit() {
+		Thread previousWatchdog = pendingKillWatchdog.getAndSet(null);
+		if (previousWatchdog != null) previousWatchdog.interrupt();
+		exitInProgress.set(false);
+	}
+
 	@Override
 	public void onCreate() {
 		super.onCreate();
@@ -106,9 +112,7 @@ public class ZerionService extends Service {
 		app = (ZerionApplication) getApplication();
 		app.getApplicationComponent().inject(this);
 
-		Thread previousWatchdog = pendingKillWatchdog.getAndSet(null);
-		if (previousWatchdog != null) previousWatchdog.interrupt();
-		exitInProgress.set(false);
+		cancelPendingExit();
 
 		if (created.getAndSet(true)) {
 			stopSelf();

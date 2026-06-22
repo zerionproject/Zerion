@@ -48,6 +48,7 @@ public class StartupActivity extends BaseActivity implements
 	@Override
 	public void onCreate(@Nullable Bundle state) {
 		super.onCreate(state);
+		com.professor.zerion.android.ZerionService.cancelPendingExit();
 		getWindow().addFlags(
 				android.view.WindowManager.LayoutParams.FLAG_SECURE);
 		overridePendingTransition(R.anim.fade_in, R.anim.fade_out);

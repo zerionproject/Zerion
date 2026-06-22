@@ -203,9 +203,27 @@ public class BackupFragment extends Fragment {
 				if (data != null) Arrays.fill(data, (byte) 0);
 				Arrays.fill(passphrase, '\0');
 			}
-			toast(ok ? R.string.backup_export_success
-					: R.string.backup_export_failed);
+			boolean success = ok;
+			mainHandler.post(() -> onExportFinished(success));
 		});
+	}
+
+	private void onExportFinished(boolean success) {
+		if (!isAdded()) {
+			toast(success ? R.string.backup_export_success
+					: R.string.backup_export_failed);
+			return;
+		}
+		if (success) {
+			new MaterialAlertDialogBuilder(requireContext())
+					.setTitle(R.string.backup_export_success_title)
+					.setMessage(R.string.backup_export_warning_after)
+					.setCancelable(false)
+					.setPositiveButton(R.string.ok, null)
+					.show();
+		} else {
+			toast(R.string.backup_export_failed);
+		}
 	}
 
 	private void runImport(Uri src, char[] passphrase, char[] newPassword) {

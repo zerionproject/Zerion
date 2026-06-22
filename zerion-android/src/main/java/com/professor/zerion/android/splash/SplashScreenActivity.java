@@ -48,6 +48,8 @@ public class SplashScreenActivity extends BaseActivity {
 	public void onCreate(@Nullable Bundle state) {
 		super.onCreate(state);
 
+		com.professor.zerion.android.ZerionService.cancelPendingExit();
+
 		boolean decoyPassed = getIntent() != null
 				&& getIntent().getBooleanExtra(
 						com.professor.zerion.android.decoy
