@@ -232,7 +232,7 @@ public class TransferReceiveFragment extends Fragment implements Callback {
 				&& getArguments().getBoolean("firstRun", false);
 		if (success && firstRun) {
 			Intent i = new Intent(requireContext(),
-					com.professor.zerion.android.login.StartupActivity.class);
+					com.professor.zerion.android.navdrawer.NavDrawerActivity.class);
 			i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
 					| Intent.FLAG_ACTIVITY_CLEAR_TASK
 					| Intent.FLAG_ACTIVITY_CLEAR_TOP);

@@ -20,7 +20,6 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.professor.zerion.R;
 import com.professor.zerion.android.backup.AccountBackupManager;
 import com.professor.zerion.android.backup.BackupException;
-import com.professor.zerion.android.login.StartupActivity;
 import com.professor.zerion.android.settings.TransferReceiveFragment;
 import com.professor.zerion.android.util.ActivityLaunchers.OpenDocumentAdvanced;
 
@@ -194,7 +193,8 @@ public class WelcomeFragment extends Fragment {
 	}
 
 	private void goToSignIn() {
-		Intent i = new Intent(requireContext(), StartupActivity.class);
+		Intent i = new Intent(requireContext(),
+				com.professor.zerion.android.navdrawer.NavDrawerActivity.class);
 		i.addFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TASK
 				| FLAG_ACTIVITY_CLEAR_TOP);
 		startActivity(i);

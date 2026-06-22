@@ -133,16 +133,26 @@ public class QrScannerActivity extends AppCompatActivity {
 		ByteBuffer buf = y.getBuffer();
 		int width = proxy.getWidth();
 		int height = proxy.getHeight();
+		if (width <= 0 || height <= 0) return null;
 		int rowStride = y.getRowStride();
+		int pixelStride = y.getPixelStride();
+		if (rowStride <= 0) rowStride = width;
+		if (pixelStride <= 0) pixelStride = 1;
 
 		byte[] out = new byte[width * height];
-		if (rowStride == width) {
-			buf.get(out, 0, width * height);
-		} else {
-			byte[] row = new byte[rowStride];
-			for (int r = 0; r < height; r++) {
-				buf.get(row, 0, rowStride);
-				System.arraycopy(row, 0, out, r * width, width);
+		byte[] row = new byte[rowStride];
+		for (int r = 0; r < height; r++) {
+			int toRead = Math.min(rowStride, buf.remaining());
+			if (toRead <= 0) break;
+			buf.get(row, 0, toRead);
+			if (pixelStride == 1) {
+				System.arraycopy(row, 0, out, r * width,
+						Math.min(width, toRead));
+			} else {
+				int outPos = r * width;
+				for (int c = 0; c < width && c * pixelStride < toRead; c++) {
+					out[outPos + c] = row[c * pixelStride];
+				}
 			}
 		}
 		return out;
