@@ -1,73 +1,143 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
 	xmlns:app="http://schemas.android.com/apk/res-auto"
 	android:layout_width="match_parent"
 	android:layout_height="match_parent"
-	android:padding="16dp">
+	android:background="@drawable/bg_zerion_gradient">
 
-	<TextView
-		android:id="@+id/zerion_version"
+	<LinearLayout
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
-		android:text="@string/zerion_version"
-		android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
-		app:layout_constraintStart_toStartOf="parent"
-		app:layout_constraintTop_toTopOf="parent" />
+		android:orientation="vertical"
+		android:paddingHorizontal="16dp"
+		android:paddingBottom="32dp">
 
-	<TextView
-		android:id="@+id/TorVersion"
-		android:layout_width="match_parent"
-		android:layout_height="wrap_content"
-		android:text="@string/tor_version"
-		android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
-		app:layout_constraintStart_toStartOf="parent"
-		app:layout_constraintTop_toBottomOf="@+id/zerion_version" />
+		<TextView
+			style="@style/Zerion.Settings.SectionHeader"
+			android:text="@string/about_section_app" />
 
-	<TextView
-		android:id="@+id/LinksTitle"
-		android:layout_width="match_parent"
-		android:layout_height="wrap_content"
-		android:layout_marginTop="16dp"
-		android:text="@string/links"
-		android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
-		app:layout_constraintStart_toStartOf="parent"
-		app:layout_constraintTop_toBottomOf="@+id/TorVersion" />
+		<LinearLayout style="@style/Zerion.Settings.Group">
 
-	<TextView
-		android:id="@+id/zerion_website"
-		android:layout_width="match_parent"
-		android:layout_height="wrap_content"
-		android:text="@string/zerion_website"
-		android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
-		app:layout_constraintStart_toStartOf="parent"
-		app:layout_constraintTop_toBottomOf="@+id/LinksTitle" />
+			<LinearLayout style="@style/Zerion.Settings.Row">
 
-	<TextView
-		android:id="@+id/zerion_source_code"
-		android:layout_width="match_parent"
-		android:layout_height="wrap_content"
-		android:text="@string/zerion_source_code"
-		android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
-		app:layout_constraintStart_toStartOf="parent"
-		app:layout_constraintTop_toBottomOf="@+id/zerion_website" />
+				<ImageView
+					style="@style/Zerion.Settings.Row.Icon"
+					android:src="@drawable/ic_info_white"
+					android:importantForAccessibility="no" />
 
-	<TextView
-		android:id="@+id/zerion_privacy_policy"
-		android:layout_width="match_parent"
-		android:layout_height="wrap_content"
-		android:text="@string/zerion_privacy_policy"
-		android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
-		app:layout_constraintStart_toStartOf="parent"
-		app:layout_constraintTop_toBottomOf="@+id/zerion_source_code" />
+				<TextView
+					android:id="@+id/zerion_version"
+					style="@style/Zerion.Settings.Row.Title"
+					android:layout_width="0dp"
+					android:layout_weight="1"
+					android:text="@string/zerion_version" />
 
-	<TextView
-		android:id="@+id/TranslatorThanks"
-		android:layout_width="match_parent"
-		android:layout_height="wrap_content"
-		android:layout_marginTop="16dp"
-		android:text="@string/translator_thanks"
-		android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
-		app:layout_constraintStart_toStartOf="parent"
-		app:layout_constraintTop_toBottomOf="@+id/zerion_privacy_policy" />
+			</LinearLayout>
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+			<LinearLayout style="@style/Zerion.Settings.Row">
+
+				<ImageView
+					style="@style/Zerion.Settings.Row.Icon"
+					android:src="@drawable/ic_shield_lock"
+					android:importantForAccessibility="no" />
+
+				<TextView
+					android:id="@+id/TorVersion"
+					style="@style/Zerion.Settings.Row.Title"
+					android:layout_width="0dp"
+					android:layout_weight="1"
+					android:text="@string/tor_version" />
+
+			</LinearLayout>
+
+		</LinearLayout>
+
+		<TextView
+			style="@style/Zerion.Settings.SectionHeader"
+			android:text="@string/links" />
+
+		<LinearLayout style="@style/Zerion.Settings.Group">
+
+			<LinearLayout
+				android:id="@+id/zerion_website"
+				style="@style/Zerion.Settings.Row.Clickable">
+
+				<ImageView
+					style="@style/Zerion.Settings.Row.Icon"
+					android:src="@drawable/ic_link"
+					android:importantForAccessibility="no" />
+
+				<TextView
+					style="@style/Zerion.Settings.Row.Title"
+					android:layout_width="0dp"
+					android:layout_weight="1"
+					android:text="@string/zerion_website" />
+
+				<ImageView
+					android:layout_width="20dp"
+					android:layout_height="20dp"
+					android:src="@drawable/ic_copy"
+					app:tint="@color/zerion_text_secondary"
+					android:importantForAccessibility="no" />
+
+			</LinearLayout>
+
+			<LinearLayout
+				android:id="@+id/zerion_source_code"
+				style="@style/Zerion.Settings.Row.Clickable">
+
+				<ImageView
+					style="@style/Zerion.Settings.Row.Icon"
+					android:src="@drawable/ic_link"
+					android:importantForAccessibility="no" />
+
+				<TextView
+					style="@style/Zerion.Settings.Row.Title"
+					android:layout_width="0dp"
+					android:layout_weight="1"
+					android:text="@string/zerion_source_code" />
+
+				<ImageView
+					android:layout_width="20dp"
+					android:layout_height="20dp"
+					android:src="@drawable/ic_copy"
+					app:tint="@color/zerion_text_secondary"
+					android:importantForAccessibility="no" />
+
+			</LinearLayout>
+
+			<LinearLayout
+				android:id="@+id/zerion_privacy_policy"
+				style="@style/Zerion.Settings.Row.Clickable">
+
+				<ImageView
+					style="@style/Zerion.Settings.Row.Icon"
+					android:src="@drawable/ic_shield_lock"
+					android:importantForAccessibility="no" />
+
+				<TextView
+					style="@style/Zerion.Settings.Row.Title"
+					android:layout_width="0dp"
+					android:layout_weight="1"
+					android:text="@string/zerion_privacy_policy" />
+
+				<ImageView
+					android:layout_width="20dp"
+					android:layout_height="20dp"
+					android:src="@drawable/ic_copy"
+					app:tint="@color/zerion_text_secondary"
+					android:importantForAccessibility="no" />
+
+			</LinearLayout>
+
+		</LinearLayout>
+
+		<TextView
+			android:id="@+id/TranslatorThanks"
+			style="@style/Zerion.Settings.SectionFooter"
+			android:layout_marginTop="16dp"
+			android:text="@string/translator_thanks" />
+
+	</LinearLayout>
+
+</ScrollView>

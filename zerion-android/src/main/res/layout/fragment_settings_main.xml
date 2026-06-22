@@ -1,814 +1,513 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@android:color/transparent"
-    android:clickable="false"
-    android:focusable="false">
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:clickable="false"
-        android:focusable="false">
-
-        <!-- Compact Avatar Header (if exists) -->
-        <LinearLayout
-            android:id="@+id/avatar_card"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:paddingTop="20dp"
-            android:paddingBottom="20dp"
-            android:gravity="center_vertical"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?attr/selectableItemBackground">
-
-            <com.google.android.material.imageview.ShapeableImageView
-                app:shapeAppearanceOverlay="@style/ShapeAppearance.Zerion.Circle"
-                android:id="@+id/avatar_image"
-                android:layout_width="64dp"
-                android:layout_height="64dp"
-                android:src="@drawable/ic_person" />
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:layout_marginStart="16dp">
-
-                <TextView
-                    android:id="@+id/username_text"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/setup_title"
-                    android:textSize="17sp"
-                    android:textColor="?android:attr/textColorPrimary"
-                    android:maxLines="1"
-                    android:ellipsize="end" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/change_avatar_button"
-                    style="@style/Widget.Material3.Button.TextButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/settings_change_avatar"
-                    android:textColor="?attr/colorPrimary"
-                    android:textSize="14sp"
-                    android:minHeight="0dp"
-                    android:paddingTop="4dp"
-                    android:paddingBottom="4dp"
-                    android:paddingStart="0dp"
-                    android:paddingEnd="8dp" />
-
-            </LinearLayout>
-
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/ic_chevron_right"
-                app:tint="?android:attr/textColorSecondary" />
-
-        </LinearLayout>
-
-        <!-- Thin divider -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="0.5dp"
-            android:background="?android:attr/listDivider"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp" />
-
-        <!-- Profiles -->
-        <LinearLayout
-            android:id="@+id/profiles_card"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:paddingTop="14dp"
-            android:paddingBottom="14dp"
-            android:gravity="center_vertical"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?attr/selectableItemBackground">
-
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/ic_group"
-                app:tint="?android:attr/textColorPrimary"
-                android:layout_marginEnd="16dp" />
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/profiles_settings_title"
-                    android:textSize="16sp"
-                    android:textColor="?android:attr/textColorPrimary" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/profiles_settings_summary"
-                    android:textSize="13sp"
-                    android:textColor="?android:attr/textColorSecondary"
-                    android:layout_marginTop="2dp" />
-
-            </LinearLayout>
-
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/ic_chevron_right"
-                app:tint="?android:attr/textColorSecondary" />
-
-        </LinearLayout>
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="0.5dp"
-            android:background="?android:attr/listDivider"
-            android:layout_marginStart="56dp"
-            android:layout_marginEnd="16dp" />
-
-        <!-- My identity row -->
-        <LinearLayout
-            android:id="@+id/my_identity_card"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:paddingTop="14dp"
-            android:paddingBottom="14dp"
-            android:gravity="center_vertical"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?attr/selectableItemBackground">
-
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/ic_fingerprint"
-                app:tint="?android:attr/textColorPrimary"
-                android:layout_marginEnd="16dp" />
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/settings_my_identity_title"
-                    android:textSize="16sp"
-                    android:textColor="?android:attr/textColorPrimary" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/settings_my_identity_summary"
-                    android:textSize="13sp"
-                    android:textColor="?android:attr/textColorSecondary"
-                    android:layout_marginTop="2dp" />
-
-            </LinearLayout>
-
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/ic_chevron_right"
-                app:tint="?android:attr/textColorSecondary" />
-
-        </LinearLayout>
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="0.5dp"
-            android:background="?android:attr/listDivider"
-            android:layout_marginStart="56dp"
-            android:layout_marginEnd="16dp" />
-
-        <!-- SETTINGS Section -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/settings_section_header"
-            android:textSize="13sp"
-            android:textStyle="bold"
-            android:textColor="?attr/colorPrimary"
-            android:letterSpacing="0.05"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:paddingTop="16dp"
-            android:paddingBottom="8dp" />
-
-        <!-- Display Settings -->
-        <LinearLayout
-            android:id="@+id/display_card"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:paddingTop="14dp"
-            android:paddingBottom="14dp"
-            android:gravity="center_vertical"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?attr/selectableItemBackground">
-
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/ic_settings_brightness"
-                app:tint="?android:attr/textColorPrimary"
-                android:layout_marginEnd="16dp" />
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/display_settings_title"
-                    android:textSize="16sp"
-                    android:textColor="?android:attr/textColorPrimary" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/display_settings_summary"
-                    android:textSize="13sp"
-                    android:textColor="?android:attr/textColorSecondary"
-                    android:layout_marginTop="2dp" />
-
-            </LinearLayout>
-
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/ic_chevron_right"
-                app:tint="?android:attr/textColorSecondary" />
-
-        </LinearLayout>
-
-        <!-- Divider -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="0.5dp"
-            android:background="?android:attr/listDivider"
-            android:layout_marginStart="56dp"
-            android:layout_marginEnd="16dp" />
-
-        <!-- Network Settings -->
-        <LinearLayout
-            android:id="@+id/network_card"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:paddingTop="14dp"
-            android:paddingBottom="14dp"
-            android:gravity="center_vertical"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?attr/selectableItemBackground">
-
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/ic_connect_without_contact"
-                app:tint="?android:attr/textColorPrimary"
-                android:layout_marginEnd="16dp" />
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/network_settings_title"
-                    android:textSize="16sp"
-                    android:textColor="?android:attr/textColorPrimary" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/network_settings_summary"
-                    android:textSize="13sp"
-                    android:textColor="?android:attr/textColorSecondary"
-                    android:layout_marginTop="2dp" />
-
-            </LinearLayout>
-
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/ic_chevron_right"
-                app:tint="?android:attr/textColorSecondary" />
-
-        </LinearLayout>
-
-        <!-- Divider -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="0.5dp"
-            android:background="?android:attr/listDivider"
-            android:layout_marginStart="56dp"
-            android:layout_marginEnd="16dp" />
-
-        <!-- Security Settings -->
-        <LinearLayout
-            android:id="@+id/security_card"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:paddingTop="14dp"
-            android:paddingBottom="14dp"
-            android:gravity="center_vertical"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?attr/selectableItemBackground">
-
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/ic_settings_security"
-                app:tint="?android:attr/textColorPrimary"
-                android:layout_marginEnd="16dp" />
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/security_settings_title"
-                    android:textSize="16sp"
-                    android:textColor="?android:attr/textColorPrimary" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/security_settings_summary"
-                    android:textSize="13sp"
-                    android:textColor="?android:attr/textColorSecondary"
-                    android:layout_marginTop="2dp" />
-
-            </LinearLayout>
-
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/ic_chevron_right"
-                app:tint="?android:attr/textColorSecondary" />
-
-        </LinearLayout>
-
-        <!-- Divider -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="0.5dp"
-            android:background="?android:attr/listDivider"
-            android:layout_marginStart="56dp"
-            android:layout_marginEnd="16dp" />
-
-        <!-- Backup and transfer -->
-        <LinearLayout
-            android:id="@+id/backup_card"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:paddingTop="14dp"
-            android:paddingBottom="14dp"
-            android:gravity="center_vertical"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?attr/selectableItemBackground">
-
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/ic_backup"
-                app:tint="?android:attr/textColorPrimary"
-                android:layout_marginEnd="16dp" />
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/backup_settings_title"
-                    android:textSize="16sp"
-                    android:textColor="?android:attr/textColorPrimary" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/backup_settings_summary"
-                    android:textSize="13sp"
-                    android:textColor="?android:attr/textColorSecondary"
-                    android:layout_marginTop="2dp" />
-
-            </LinearLayout>
-
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/ic_chevron_right"
-                app:tint="?android:attr/textColorSecondary" />
-
-        </LinearLayout>
-
-        <!-- Divider -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="0.5dp"
-            android:background="?android:attr/listDivider"
-            android:layout_marginStart="56dp"
-            android:layout_marginEnd="16dp" />
-
-        <!-- Notification Settings -->
-        <LinearLayout
-            android:id="@+id/notifications_card"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:paddingTop="14dp"
-            android:paddingBottom="14dp"
-            android:gravity="center_vertical"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?attr/selectableItemBackground">
-
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/ic_notifications"
-                app:tint="?android:attr/textColorPrimary"
-                android:layout_marginEnd="16dp" />
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/notification_settings_title"
-                    android:textSize="16sp"
-                    android:textColor="?android:attr/textColorPrimary" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/notification_settings_summary"
-                    android:textSize="13sp"
-                    android:textColor="?android:attr/textColorSecondary"
-                    android:layout_marginTop="2dp" />
-
-            </LinearLayout>
-
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/ic_chevron_right"
-                app:tint="?android:attr/textColorSecondary" />
-
-        </LinearLayout>
-
-        <!-- Section divider (thicker for spacing) -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="8dp"
-            android:background="@android:color/transparent" />
-
-        <!-- DEVELOPER OPTIONS (if enabled) -->
-        <TextView
-            android:id="@+id/dev_section_header"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/settings_developer_section_header"
-            android:textSize="13sp"
-            android:textStyle="bold"
-            android:textColor="?attr/colorPrimary"
-            android:letterSpacing="0.05"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:paddingTop="16dp"
-            android:paddingBottom="8dp"
-            android:visibility="gone" />
-
-        <!-- Test Data -->
-        <LinearLayout
-            android:id="@+id/test_data_card"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:paddingTop="14dp"
-            android:paddingBottom="14dp"
-            android:gravity="center_vertical"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?attr/selectableItemBackground"
-            android:visibility="gone">
-
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/ic_settings"
-                app:tint="?android:attr/textColorPrimary"
-                android:layout_marginEnd="16dp" />
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/settings_create_test_data"
-                android:textSize="16sp"
-                android:textColor="?android:attr/textColorPrimary" />
-
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/ic_chevron_right"
-                app:tint="?android:attr/textColorSecondary" />
-
-        </LinearLayout>
-
-        <!-- Divider for test data -->
-        <View
-            android:id="@+id/test_data_divider"
-            android:layout_width="match_parent"
-            android:layout_height="0.5dp"
-            android:background="?android:attr/listDivider"
-            android:layout_marginStart="56dp"
-            android:layout_marginEnd="16dp"
-            android:visibility="gone" />
-
-        <!-- Crash Button -->
-        <LinearLayout
-            android:id="@+id/crash_card"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:paddingTop="14dp"
-            android:paddingBottom="14dp"
-            android:gravity="center_vertical"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?attr/selectableItemBackground"
-            android:visibility="gone">
-
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/ic_warning"
-                app:tint="?attr/colorError"
-                android:layout_marginEnd="16dp" />
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/settings_crash_debug"
-                android:textSize="16sp"
-                android:textColor="?attr/colorError" />
-
-        </LinearLayout>
-
-        <!-- Section divider (thicker for spacing) -->
-        <View
-            android:id="@+id/dev_section_divider"
-            android:layout_width="match_parent"
-            android:layout_height="8dp"
-            android:background="@android:color/transparent"
-            android:visibility="gone" />
-
-        <!-- Invite Friends -->
-        <LinearLayout
-            android:id="@+id/invite_friends_card"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:paddingTop="14dp"
-            android:paddingBottom="14dp"
-            android:gravity="center_vertical"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?attr/selectableItemBackground">
-
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/ic_share"
-                app:tint="?android:attr/textColorPrimary"
-                android:layout_marginEnd="16dp" />
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/invite_friends_title"
-                    android:textSize="16sp"
-                    android:textColor="?android:attr/textColorPrimary" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/invite_friends_summary"
-                    android:textSize="13sp"
-                    android:textColor="?android:attr/textColorSecondary"
-                    android:layout_marginTop="2dp" />
-
-            </LinearLayout>
-
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/ic_chevron_right"
-                app:tint="?android:attr/textColorSecondary" />
-
-        </LinearLayout>
-
-        <!-- ABOUT Section -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/settings_section_about"
-            android:textSize="13sp"
-            android:textStyle="bold"
-            android:textColor="?attr/colorPrimary"
-            android:letterSpacing="0.05"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:paddingTop="16dp"
-            android:paddingBottom="8dp" />
-
-        <!-- Support Zerion (donation) -->
-        <LinearLayout
-            android:id="@+id/support_card"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:paddingTop="14dp"
-            android:paddingBottom="14dp"
-            android:gravity="center_vertical"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?attr/selectableItemBackground">
-
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/ic_donation_heart_small"
-                app:tint="@color/zerion_primary_accent"
-                android:layout_marginEnd="16dp"
-                android:importantForAccessibility="no" />
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/donation_button_donate"
-                    android:textSize="16sp"
-                    android:textColor="?android:attr/textColorPrimary" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/settings_support_summary"
-                    android:textSize="13sp"
-                    android:textColor="?android:attr/textColorSecondary"
-                    android:layout_marginTop="2dp" />
-
-            </LinearLayout>
-
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/ic_chevron_right"
-                app:tint="?android:attr/textColorSecondary"
-                android:importantForAccessibility="no" />
-
-        </LinearLayout>
-
-        <!-- About -->
-        <LinearLayout
-            android:id="@+id/about_card"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:paddingTop="14dp"
-            android:paddingBottom="14dp"
-            android:gravity="center_vertical"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?attr/selectableItemBackground">
-
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/ic_info_dark"
-                app:tint="?android:attr/textColorPrimary"
-                android:layout_marginEnd="16dp" />
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/about_title"
-                    android:textSize="16sp"
-                    android:textColor="?android:attr/textColorPrimary" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/settings_about_summary"
-                    android:textSize="13sp"
-                    android:textColor="?android:attr/textColorSecondary"
-                    android:layout_marginTop="2dp" />
-
-            </LinearLayout>
-
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/ic_chevron_right"
-                app:tint="?android:attr/textColorSecondary" />
-
-        </LinearLayout>
-
-        <!-- Bottom padding for scrolling comfort -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="16dp"
-            android:background="@android:color/transparent" />
-
-    </LinearLayout>
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="@drawable/bg_zerion_gradient">
+
+	<LinearLayout
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:orientation="vertical"
+		android:paddingHorizontal="16dp"
+		android:paddingBottom="32dp">
+
+		<LinearLayout
+			style="@style/Zerion.Settings.Group"
+			android:layout_marginTop="16dp">
+
+			<LinearLayout
+				android:id="@+id/avatar_card"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:orientation="horizontal"
+				android:gravity="center_vertical"
+				android:paddingHorizontal="16dp"
+				android:paddingVertical="16dp"
+				android:clickable="true"
+				android:focusable="true"
+				android:background="?attr/selectableItemBackground">
+
+				<com.google.android.material.imageview.ShapeableImageView
+					android:id="@+id/avatar_image"
+					app:shapeAppearanceOverlay="@style/ShapeAppearance.Zerion.Circle"
+					android:layout_width="56dp"
+					android:layout_height="56dp"
+					android:src="@drawable/ic_person" />
+
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:orientation="vertical"
+					android:layout_marginStart="16dp">
+
+					<TextView
+						android:id="@+id/username_text"
+						android:layout_width="wrap_content"
+						android:layout_height="wrap_content"
+						android:text="@string/setup_title"
+						android:textSize="17sp"
+						android:textColor="@color/zerion_text_primary"
+						android:maxLines="1"
+						android:ellipsize="end" />
+
+					<com.google.android.material.button.MaterialButton
+						android:id="@+id/change_avatar_button"
+						style="@style/Widget.Material3.Button.TextButton"
+						android:layout_width="wrap_content"
+						android:layout_height="wrap_content"
+						android:text="@string/settings_change_avatar"
+						android:textColor="@color/zerion_primary_accent"
+						android:textSize="14sp"
+						android:minHeight="0dp"
+						android:paddingVertical="4dp"
+						android:paddingStart="0dp"
+						android:paddingEnd="8dp" />
+
+				</LinearLayout>
+
+				<ImageView
+					android:layout_width="20dp"
+					android:layout_height="20dp"
+					android:src="@drawable/ic_chevron_right"
+					app:tint="@color/zerion_text_secondary"
+					android:importantForAccessibility="no" />
+
+			</LinearLayout>
+
+		</LinearLayout>
+
+		<TextView
+			style="@style/Zerion.Settings.SectionHeader"
+			android:text="@string/settings_section_account" />
+
+		<LinearLayout style="@style/Zerion.Settings.Group">
+
+			<LinearLayout
+				android:id="@+id/profiles_card"
+				style="@style/Zerion.Settings.Row.Clickable">
+
+				<ImageView
+					style="@style/Zerion.Settings.Row.Icon"
+					android:src="@drawable/ic_group"
+					android:importantForAccessibility="no" />
+
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:orientation="vertical">
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Title"
+						android:text="@string/profiles_settings_title" />
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Summary"
+						android:text="@string/profiles_settings_summary" />
+
+				</LinearLayout>
+
+				<ImageView
+					android:layout_width="20dp"
+					android:layout_height="20dp"
+					android:src="@drawable/ic_chevron_right"
+					app:tint="@color/zerion_text_secondary"
+					android:importantForAccessibility="no" />
+
+			</LinearLayout>
+
+			<LinearLayout
+				android:id="@+id/my_identity_card"
+				style="@style/Zerion.Settings.Row.Clickable">
+
+				<ImageView
+					style="@style/Zerion.Settings.Row.Icon"
+					android:src="@drawable/ic_fingerprint"
+					android:importantForAccessibility="no" />
+
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:orientation="vertical">
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Title"
+						android:text="@string/settings_my_identity_title" />
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Summary"
+						android:text="@string/settings_my_identity_summary" />
+
+				</LinearLayout>
+
+				<ImageView
+					android:layout_width="20dp"
+					android:layout_height="20dp"
+					android:src="@drawable/ic_chevron_right"
+					app:tint="@color/zerion_text_secondary"
+					android:importantForAccessibility="no" />
+
+			</LinearLayout>
+
+		</LinearLayout>
+
+		<TextView
+			style="@style/Zerion.Settings.SectionHeader"
+			android:text="@string/settings_section_header" />
+
+		<LinearLayout style="@style/Zerion.Settings.Group">
+
+			<LinearLayout
+				android:id="@+id/display_card"
+				style="@style/Zerion.Settings.Row.Clickable">
+
+				<ImageView
+					style="@style/Zerion.Settings.Row.Icon"
+					android:src="@drawable/ic_settings_brightness"
+					android:importantForAccessibility="no" />
+
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:orientation="vertical">
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Title"
+						android:text="@string/display_settings_title" />
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Summary"
+						android:text="@string/display_settings_summary" />
+
+				</LinearLayout>
+
+				<ImageView
+					android:layout_width="20dp"
+					android:layout_height="20dp"
+					android:src="@drawable/ic_chevron_right"
+					app:tint="@color/zerion_text_secondary"
+					android:importantForAccessibility="no" />
+
+			</LinearLayout>
+
+			<LinearLayout
+				android:id="@+id/network_card"
+				style="@style/Zerion.Settings.Row.Clickable">
+
+				<ImageView
+					style="@style/Zerion.Settings.Row.Icon"
+					android:src="@drawable/ic_connect_without_contact"
+					android:importantForAccessibility="no" />
+
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:orientation="vertical">
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Title"
+						android:text="@string/network_settings_title" />
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Summary"
+						android:text="@string/network_settings_summary" />
+
+				</LinearLayout>
+
+				<ImageView
+					android:layout_width="20dp"
+					android:layout_height="20dp"
+					android:src="@drawable/ic_chevron_right"
+					app:tint="@color/zerion_text_secondary"
+					android:importantForAccessibility="no" />
+
+			</LinearLayout>
+
+			<LinearLayout
+				android:id="@+id/security_card"
+				style="@style/Zerion.Settings.Row.Clickable">
+
+				<ImageView
+					style="@style/Zerion.Settings.Row.Icon"
+					android:src="@drawable/ic_settings_security"
+					android:importantForAccessibility="no" />
+
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:orientation="vertical">
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Title"
+						android:text="@string/security_settings_title" />
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Summary"
+						android:text="@string/security_settings_summary" />
+
+				</LinearLayout>
+
+				<ImageView
+					android:layout_width="20dp"
+					android:layout_height="20dp"
+					android:src="@drawable/ic_chevron_right"
+					app:tint="@color/zerion_text_secondary"
+					android:importantForAccessibility="no" />
+
+			</LinearLayout>
+
+			<LinearLayout
+				android:id="@+id/backup_card"
+				style="@style/Zerion.Settings.Row.Clickable">
+
+				<ImageView
+					style="@style/Zerion.Settings.Row.Icon"
+					android:src="@drawable/ic_backup"
+					android:importantForAccessibility="no" />
+
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:orientation="vertical">
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Title"
+						android:text="@string/backup_settings_title" />
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Summary"
+						android:text="@string/backup_settings_summary" />
+
+				</LinearLayout>
+
+				<ImageView
+					android:layout_width="20dp"
+					android:layout_height="20dp"
+					android:src="@drawable/ic_chevron_right"
+					app:tint="@color/zerion_text_secondary"
+					android:importantForAccessibility="no" />
+
+			</LinearLayout>
+
+			<LinearLayout
+				android:id="@+id/notifications_card"
+				style="@style/Zerion.Settings.Row.Clickable">
+
+				<ImageView
+					style="@style/Zerion.Settings.Row.Icon"
+					android:src="@drawable/ic_notifications"
+					android:importantForAccessibility="no" />
+
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:orientation="vertical">
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Title"
+						android:text="@string/notification_settings_title" />
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Summary"
+						android:text="@string/notification_settings_summary" />
+
+				</LinearLayout>
+
+				<ImageView
+					android:layout_width="20dp"
+					android:layout_height="20dp"
+					android:src="@drawable/ic_chevron_right"
+					app:tint="@color/zerion_text_secondary"
+					android:importantForAccessibility="no" />
+
+			</LinearLayout>
+
+		</LinearLayout>
+
+		<TextView
+			android:id="@+id/dev_section_header"
+			style="@style/Zerion.Settings.SectionHeader"
+			android:text="@string/settings_developer_section_header"
+			android:visibility="gone" />
+
+		<LinearLayout
+			android:id="@+id/test_data_card"
+			style="@style/Zerion.Settings.Row.Clickable"
+			android:visibility="gone">
+
+			<ImageView
+				style="@style/Zerion.Settings.Row.Icon"
+				android:src="@drawable/ic_settings"
+				android:importantForAccessibility="no" />
+
+			<TextView
+				style="@style/Zerion.Settings.Row.Title"
+				android:layout_width="0dp"
+				android:layout_weight="1"
+				android:text="@string/settings_create_test_data" />
+
+			<ImageView
+				android:layout_width="20dp"
+				android:layout_height="20dp"
+				android:src="@drawable/ic_chevron_right"
+				app:tint="@color/zerion_text_secondary"
+				android:importantForAccessibility="no" />
+
+		</LinearLayout>
+
+		<View
+			android:id="@+id/test_data_divider"
+			android:layout_width="match_parent"
+			android:layout_height="0.5dp"
+			android:background="@color/zerion_divider"
+			android:visibility="gone" />
+
+		<LinearLayout
+			android:id="@+id/crash_card"
+			style="@style/Zerion.Settings.Row.Clickable"
+			android:visibility="gone">
+
+			<ImageView
+				style="@style/Zerion.Settings.Row.Icon"
+				android:src="@drawable/ic_warning"
+				app:tint="@color/zerion_destructive"
+				android:importantForAccessibility="no" />
+
+			<TextView
+				style="@style/Zerion.Settings.Row.Title"
+				android:layout_width="0dp"
+				android:layout_weight="1"
+				android:textColor="@color/zerion_destructive"
+				android:text="@string/settings_crash_debug" />
+
+		</LinearLayout>
+
+		<View
+			android:id="@+id/dev_section_divider"
+			android:layout_width="match_parent"
+			android:layout_height="8dp"
+			android:background="@android:color/transparent"
+			android:visibility="gone" />
+
+		<TextView
+			style="@style/Zerion.Settings.SectionHeader"
+			android:text="@string/settings_section_about" />
+
+		<LinearLayout style="@style/Zerion.Settings.Group">
+
+			<LinearLayout
+				android:id="@+id/invite_friends_card"
+				style="@style/Zerion.Settings.Row.Clickable">
+
+				<ImageView
+					style="@style/Zerion.Settings.Row.Icon"
+					android:src="@drawable/ic_share"
+					android:importantForAccessibility="no" />
+
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:orientation="vertical">
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Title"
+						android:text="@string/invite_friends_title" />
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Summary"
+						android:text="@string/invite_friends_summary" />
+
+				</LinearLayout>
+
+				<ImageView
+					android:layout_width="20dp"
+					android:layout_height="20dp"
+					android:src="@drawable/ic_chevron_right"
+					app:tint="@color/zerion_text_secondary"
+					android:importantForAccessibility="no" />
+
+			</LinearLayout>
+
+			<LinearLayout
+				android:id="@+id/support_card"
+				style="@style/Zerion.Settings.Row.Clickable">
+
+				<ImageView
+					style="@style/Zerion.Settings.Row.Icon"
+					android:src="@drawable/ic_donation_heart_small"
+					app:tint="@color/zerion_primary_accent"
+					android:importantForAccessibility="no" />
+
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:orientation="vertical">
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Title"
+						android:text="@string/donation_button_donate" />
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Summary"
+						android:text="@string/settings_support_summary" />
+
+				</LinearLayout>
+
+				<ImageView
+					android:layout_width="20dp"
+					android:layout_height="20dp"
+					android:src="@drawable/ic_chevron_right"
+					app:tint="@color/zerion_text_secondary"
+					android:importantForAccessibility="no" />
+
+			</LinearLayout>
+
+			<LinearLayout
+				android:id="@+id/about_card"
+				style="@style/Zerion.Settings.Row.Clickable">
+
+				<ImageView
+					style="@style/Zerion.Settings.Row.Icon"
+					android:src="@drawable/ic_info_white"
+					android:importantForAccessibility="no" />
+
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:orientation="vertical">
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Title"
+						android:text="@string/about_title" />
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Summary"
+						android:text="@string/settings_about_summary" />
+
+				</LinearLayout>
+
+				<ImageView
+					android:layout_width="20dp"
+					android:layout_height="20dp"
+					android:src="@drawable/ic_chevron_right"
+					app:tint="@color/zerion_text_secondary"
+					android:importantForAccessibility="no" />
+
+			</LinearLayout>
+
+		</LinearLayout>
+
+	</LinearLayout>
 
 </ScrollView>

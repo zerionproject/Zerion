@@ -27,9 +27,9 @@ public class AboutFragment extends Fragment {
 
 	private TextView zerionVersion;
 	private TextView torVersion;
-	private TextView zerionWebsite;
-	private TextView zerionSourceCode;
-	private TextView zerionPrivacyPolicy;
+	private View zerionWebsite;
+	private View zerionSourceCode;
+	private View zerionPrivacyPolicy;
 
 	@Nullable
 	@Override

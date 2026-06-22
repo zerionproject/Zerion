@@ -1207,6 +1207,8 @@
 	<string name="backup_export_warning">This file contains your whole account. Anyone who opens it with the passphrase becomes you. Choose a strong passphrase and keep the file somewhere safe.</string>
 	<string name="backup_import_warning">Enter the backup passphrase, then set a new password to protect this account on this device.</string>
 	<string name="backup_export_in_progress">Creating backup</string>
+	<string name="about_section_app">Application</string>
+	<string name="settings_section_account">Account</string>
 	<string name="backup_export_success">Backup saved</string>
 	<string name="backup_export_success_title">Backup saved</string>
 	<string name="backup_export_warning_after">Your backup is saved. It holds your entire account and is protected only by your passphrase. Keep it somewhere safe, and delete the file once you have moved your account to the other phone.</string>
