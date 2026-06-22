@@ -140,11 +140,7 @@ public class AndroidAccountManager extends AccountManagerImpl
 	@GuardedBy("stateChangeLock")
 	private void materializePendingIdentityIfPresent(String profileId) {
 		String name = readPendingIdentityName(profileId);
-		if (name == null) name = profileManager.readDisplayName(profileId);
-		if (name == null) {
-			name = "Profile-" + (profileId.length() >= 8
-					? profileId.substring(0, 8) : profileId);
-		}
+		if (name == null) return;
 		org.briarproject.bramble.api.identity.Identity identity =
 				identityManager.createIdentity(name);
 		identityManager.registerIdentity(identity);
@@ -302,7 +298,10 @@ public class AndroidAccountManager extends AccountManagerImpl
 			byte[] dbBytes, byte[] dbKey) {
 		synchronized (stateChangeLock) {
 			String newId = profileManager.generateProfileId();
-			if (!profileManager.createProfileDir(newId)) return null;
+			if (!profileManager.createProfileDir(newId)) {
+				lastProfileCreationError = "createProfileDir failed";
+				return null;
+			}
 			String previousActive = profileManager.getActiveProfileId();
 			try {
 				profileManager.setActiveProfileId(newId);
@@ -319,15 +318,19 @@ public class AndroidAccountManager extends AccountManagerImpl
 						org.briarproject.bramble.util.StringUtils.toHexString(
 								ciphertext));
 				if (!ok) {
+					lastProfileCreationError = "storeEncryptedDatabaseKey failed";
 					profileManager.secureWipeProfile(newId);
 					return null;
 				}
 				if (!profileManager.writeDisplayName(newId, displayName)) {
+					lastProfileCreationError = "writeDisplayName failed";
 					profileManager.secureWipeProfile(newId);
 					return null;
 				}
 				return newId;
 			} catch (Exception e) {
+				lastProfileCreationError = e.getClass().getSimpleName()
+						+ (e.getMessage() != null ? ": " + e.getMessage() : "");
 				profileManager.secureWipeProfile(newId);
 				return null;
 			} finally {

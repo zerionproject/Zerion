@@ -7,6 +7,7 @@ import org.briarproject.bramble.account.ProfileManager;
 import org.briarproject.bramble.api.crypto.SecretKey;
 import org.briarproject.bramble.api.db.DatabaseComponent;
 import org.briarproject.bramble.api.db.DbException;
+import org.briarproject.bramble.api.identity.IdentityManager;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.File;
@@ -34,16 +35,18 @@ public class AccountBackupManager {
 	private final DatabaseComponent db;
 	private final AndroidAccountManager accountManager;
 	private final ProfileManager profileManager;
+	private final IdentityManager identityManager;
 	private final BackupCrypto backupCrypto = new BackupCrypto();
 
 	@Inject
 	AccountBackupManager(Application app, DatabaseComponent db,
 			AndroidAccountManager accountManager,
-			ProfileManager profileManager) {
+			ProfileManager profileManager, IdentityManager identityManager) {
 		this.app = app;
 		this.db = db;
 		this.accountManager = accountManager;
 		this.profileManager = profileManager;
+		this.identityManager = identityManager;
 	}
 
 	public byte[] exportAccount(char[] passphrase) throws BackupException {
@@ -91,7 +94,9 @@ public class AccountBackupManager {
 			dbBytes = readFile(snapshot);
 			String name = profileManager.readDisplayName(
 					profileManager.getActiveProfileId());
-			if (name == null || name.isEmpty()) name = "Zerion";
+			if (name == null || name.isEmpty()) {
+				name = identityManager.getLocalAuthor().getName();
+			}
 			BackupBundle bundle = new BackupBundle(name, dbKey, dbBytes, null);
 			return bundle.toBytes();
 		} catch (IOException | DbException | SQLException e) {

@@ -37,7 +37,7 @@ public class SignInTestSignIn extends UiTest {
 
 		onView(withId(R.id.edit_password))
 				.check(matches(isDisplayed()))
-				.perform(replaceText(PASSWORD));
+				.perform(replaceText(new String(PASSWORD)));
 		onView(withId(R.id.btn_sign_in))
 				.check(matches(allOf(isDisplayed(), isEnabled())))
 				.perform(click());
