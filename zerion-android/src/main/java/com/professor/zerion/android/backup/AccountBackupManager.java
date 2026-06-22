@@ -123,8 +123,11 @@ public class AccountBackupManager {
 		String target = out.getAbsolutePath().replace("'", "''");
 		db.transaction(true, txn -> {
 			Connection c = (Connection) txn.unbox();
+			c.setAutoCommit(true);
 			try (Statement s = c.createStatement()) {
 				s.execute("VACUUM INTO '" + target + "'");
+			} finally {
+				c.setAutoCommit(false);
 			}
 		});
 		try (RandomAccessFile raf = new RandomAccessFile(out, "rw")) {
