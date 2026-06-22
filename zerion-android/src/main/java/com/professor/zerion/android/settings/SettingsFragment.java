@@ -124,6 +124,10 @@ public class SettingsFragment extends Fragment {
 		displayCard.setOnClickListener(v -> showDisplaySettings());
 		networkCard.setOnClickListener(v -> showNetworkSettings());
 		securityCard.setOnClickListener(v -> showSecuritySettings());
+		View backupCard = view.findViewById(R.id.backup_card);
+		if (backupCard != null) {
+			backupCard.setOnClickListener(v -> showBackupSettings());
+		}
 		if (profilesCard != null) {
 			profilesCard.setOnClickListener(v -> showProfilesSettings());
 		}
@@ -201,6 +205,13 @@ public class SettingsFragment extends Fragment {
 	private void showSecuritySettings() {
 		requireActivity().getSupportFragmentManager().beginTransaction()
 				.replace(R.id.fragmentContainer, new SecurityFragment())
+				.addToBackStack(null)
+				.commit();
+	}
+
+	private void showBackupSettings() {
+		requireActivity().getSupportFragmentManager().beginTransaction()
+				.replace(R.id.fragmentContainer, new BackupFragment())
 				.addToBackStack(null)
 				.commit();
 	}

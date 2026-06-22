@@ -219,6 +219,12 @@ public interface AndroidComponent
 
 	void inject(ConnectionsFragment connectionsFragment);
 
+	void inject(com.professor.zerion.android.settings.BackupFragment backupFragment);
+
+	void inject(com.professor.zerion.android.settings.TransferReceiveFragment transferReceiveFragment);
+
+	void inject(com.professor.zerion.android.settings.TransferSendFragment transferSendFragment);
+
 	void inject(SecurityFragment securityFragment);
 
 	void inject(com.professor.zerion.android.settings.ProfilesFragment profilesFragment);

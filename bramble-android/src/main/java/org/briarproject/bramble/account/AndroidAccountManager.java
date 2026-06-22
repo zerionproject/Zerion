@@ -298,6 +298,45 @@ public class AndroidAccountManager extends AccountManagerImpl
 	}
 
 	@Nullable
+	public String importProfile(String displayName, char[] password,
+			byte[] dbBytes, byte[] dbKey) {
+		synchronized (stateChangeLock) {
+			String newId = profileManager.generateProfileId();
+			if (!profileManager.createProfileDir(newId)) return null;
+			String previousActive = profileManager.getActiveProfileId();
+			try {
+				profileManager.setActiveProfileId(newId);
+				File dbFile = new File(profileManager.getDbDir(newId),
+						"db.sqlite");
+				try (java.io.FileOutputStream out =
+						new java.io.FileOutputStream(dbFile)) {
+					out.write(dbBytes);
+					out.getFD().sync();
+				}
+				byte[] ciphertext = crypto.encryptWithPassword(dbKey, password,
+						databaseConfig.getKeyStrengthener());
+				boolean ok = storeEncryptedDatabaseKey(
+						org.briarproject.bramble.util.StringUtils.toHexString(
+								ciphertext));
+				if (!ok) {
+					profileManager.secureWipeProfile(newId);
+					return null;
+				}
+				if (!profileManager.writeDisplayName(newId, displayName)) {
+					profileManager.secureWipeProfile(newId);
+					return null;
+				}
+				return newId;
+			} catch (Exception e) {
+				profileManager.secureWipeProfile(newId);
+				return null;
+			} finally {
+				profileManager.setActiveProfileId(previousActive);
+			}
+		}
+	}
+
+	@Nullable
 	public String getLastProfileCreationError() {
 		return lastProfileCreationError;
 	}

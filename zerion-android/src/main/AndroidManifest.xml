@@ -407,6 +407,12 @@
 			android:label="@string/scan_qr_button"
 			android:theme="@style/ZerionTheme.NoActionBar" />
 
+		<activity
+			android:name=".android.settings.TransferQrScannerActivity"
+			android:exported="false"
+			android:label="@string/scan_qr_button"
+			android:theme="@style/ZerionTheme.NoActionBar" />
+
 
 
 		<activity

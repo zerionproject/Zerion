@@ -1192,6 +1192,57 @@
 	<string name="tor_custom_bridges_dialog_message">If Tor cannot connect where you are, paste bridge lines here, one per line. They are tried before the built-in bridges. You can get bridges from bridges.torproject.org or the GetBridgesBot on Telegram.</string>
 	<string name="tor_custom_bridges_hint">Paste bridge lines, one per line</string>
 
+	<!-- Backup and transfer -->
+	<string name="backup_settings_title">Backup &amp; transfer</string>
+	<string name="backup_settings_summary">Move your account to another phone</string>
+	<string name="backup_info_message">A backup is an encrypted copy of your whole account: your identity, your contacts and your messages. Use it to move to a new phone.</string>
+	<string name="backup_export_title">Export to file</string>
+	<string name="backup_export_summary">Save an encrypted backup of this account</string>
+	<string name="backup_import_title">Import from file</string>
+	<string name="backup_import_summary">Restore an account from a backup file</string>
+	<string name="backup_password_hint">Backup passphrase</string>
+	<string name="backup_password_confirm_hint">Confirm passphrase</string>
+	<string name="backup_new_password_hint">New password for this device</string>
+	<string name="backup_new_password_confirm_hint">Confirm new password</string>
+	<string name="backup_export_warning">This file contains your whole account. Anyone who opens it with the passphrase becomes you. Choose a strong passphrase and keep the file somewhere safe.</string>
+	<string name="backup_import_warning">Enter the backup passphrase, then set a new password to protect this account on this device.</string>
+	<string name="backup_export_in_progress">Creating backup</string>
+	<string name="backup_export_success">Backup saved</string>
+	<string name="backup_export_failed">Could not create the backup</string>
+	<string name="backup_import_in_progress">Importing account</string>
+	<string name="backup_import_success">Account imported</string>
+	<string name="backup_import_failed">Could not import this backup. Check the passphrase and try again.</string>
+	<string name="backup_import_success_title">Account imported</string>
+	<string name="backup_import_success_message">Sign in with your new device password. If you moved this account from another phone, remove Zerion from that phone so the two do not run the same identity at once.</string>
+
+	<!-- Device transfer (method B) -->
+	<string name="transfer_section_title">Device transfer</string>
+	<string name="backup_transfer_send_title">Send to a new phone</string>
+	<string name="backup_transfer_send_summary">Transfer this account directly over Tor</string>
+	<string name="backup_transfer_receive_title">Receive on this phone</string>
+	<string name="backup_transfer_receive_summary">Receive an account from another phone</string>
+	<string name="transfer_receive_title">Receive an account</string>
+	<string name="transfer_send_title">Send to a new phone</string>
+	<string name="transfer_receive_password_message">Set a password to protect the received account on this phone. You will sign in with it.</string>
+	<string name="transfer_receive_show_qr">Scan this code with the old phone</string>
+	<string name="transfer_sas_title">Check the safety number</string>
+	<string name="transfer_sas_message">Both phones must show the same number:\n\n%1$s\n\nDoes it match on the other phone?</string>
+	<string name="transfer_sas_matches">It matches</string>
+	<string name="transfer_done_title">Done</string>
+	<string name="transfer_failed_title">Transfer failed</string>
+	<string name="transfer_failed_message">The transfer did not complete. Make sure both phones are connected to Tor and try again.</string>
+	<string name="transfer_receive_done_message">Account received. Sign in with the password you just set.</string>
+	<string name="transfer_send_done_message">Account sent. To avoid running the same identity on two phones, remove Zerion from this phone.</string>
+	<string name="transfer_status_publishing">Preparing a one-time address</string>
+	<string name="transfer_status_connecting">Connecting over Tor</string>
+	<string name="transfer_status_authenticating">Connecting securely</string>
+	<string name="transfer_status_transferring">Sending the account</string>
+	<string name="transfer_status_importing">Importing the account</string>
+	<string name="transfer_status_done">Done</string>
+	<string name="transfer_status_working">Working</string>
+	<string name="backup_password_empty">Enter a passphrase</string>
+	<string name="backup_passwords_mismatch">Passwords do not match</string>
+
 	<!-- Orbot Proxy Settings -->
 	<string name="proxy_section_title">PROXY</string>
 	<string name="orbot_proxy_title">Use Orbot proxy</string>

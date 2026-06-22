@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="@drawable/bg_zerion_gradient">
+
+	<LinearLayout
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:orientation="vertical"
+		android:paddingHorizontal="16dp"
+		android:paddingBottom="32dp">
+
+		<TextView
+			style="@style/Zerion.Settings.SectionHeader"
+			android:text="@string/backup_settings_title" />
+
+		<LinearLayout
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:orientation="horizontal"
+			android:gravity="center_vertical"
+			android:background="@drawable/bg_settings_info_card"
+			android:paddingHorizontal="14dp"
+			android:paddingVertical="12dp">
+
+			<ImageView
+				android:layout_width="20dp"
+				android:layout_height="20dp"
+				android:layout_marginEnd="12dp"
+				android:src="@drawable/ic_info_dark"
+				app:tint="@color/zerion_primary_accent"
+				android:importantForAccessibility="no" />
+
+			<TextView
+				android:layout_width="0dp"
+				android:layout_height="wrap_content"
+				android:layout_weight="1"
+				android:text="@string/backup_info_message"
+				android:textSize="13sp"
+				android:textColor="@color/zerion_text_secondary"
+				android:lineSpacingExtra="1dp" />
+
+		</LinearLayout>
+
+		<LinearLayout
+			style="@style/Zerion.Settings.Group"
+			android:layout_marginTop="14dp">
+
+			<LinearLayout
+				android:id="@+id/export_card"
+				style="@style/Zerion.Settings.Row.Clickable">
+
+				<ImageView
+					style="@style/Zerion.Settings.Row.Icon"
+					android:src="@drawable/ic_backup"
+					android:importantForAccessibility="no" />
+
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:orientation="vertical">
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Title"
+						android:text="@string/backup_export_title" />
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Summary"
+						android:text="@string/backup_export_summary" />
+
+				</LinearLayout>
+
+				<ImageView
+					android:layout_width="20dp"
+					android:layout_height="20dp"
+					android:src="@drawable/ic_chevron_right"
+					app:tint="@color/zerion_text_secondary"
+					android:importantForAccessibility="no" />
+
+			</LinearLayout>
+
+			<LinearLayout
+				android:id="@+id/import_card"
+				style="@style/Zerion.Settings.Row.Clickable">
+
+				<ImageView
+					style="@style/Zerion.Settings.Row.Icon"
+					android:src="@drawable/ic_backup"
+					android:importantForAccessibility="no" />
+
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:orientation="vertical">
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Title"
+						android:text="@string/backup_import_title" />
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Summary"
+						android:text="@string/backup_import_summary" />
+
+				</LinearLayout>
+
+				<ImageView
+					android:layout_width="20dp"
+					android:layout_height="20dp"
+					android:src="@drawable/ic_chevron_right"
+					app:tint="@color/zerion_text_secondary"
+					android:importantForAccessibility="no" />
+
+			</LinearLayout>
+
+		</LinearLayout>
+
+		<TextView
+			style="@style/Zerion.Settings.SectionHeader"
+			android:text="@string/transfer_section_title" />
+
+		<LinearLayout
+			style="@style/Zerion.Settings.Group">
+
+			<LinearLayout
+				android:id="@+id/transfer_send_card"
+				style="@style/Zerion.Settings.Row.Clickable">
+
+				<ImageView
+					style="@style/Zerion.Settings.Row.Icon"
+					android:src="@drawable/ic_backup"
+					android:importantForAccessibility="no" />
+
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:orientation="vertical">
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Title"
+						android:text="@string/backup_transfer_send_title" />
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Summary"
+						android:text="@string/backup_transfer_send_summary" />
+
+				</LinearLayout>
+
+				<ImageView
+					android:layout_width="20dp"
+					android:layout_height="20dp"
+					android:src="@drawable/ic_chevron_right"
+					app:tint="@color/zerion_text_secondary"
+					android:importantForAccessibility="no" />
+
+			</LinearLayout>
+
+			<LinearLayout
+				android:id="@+id/transfer_receive_card"
+				style="@style/Zerion.Settings.Row.Clickable">
+
+				<ImageView
+					style="@style/Zerion.Settings.Row.Icon"
+					android:src="@drawable/ic_backup"
+					android:importantForAccessibility="no" />
+
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:orientation="vertical">
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Title"
+						android:text="@string/backup_transfer_receive_title" />
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Summary"
+						android:text="@string/backup_transfer_receive_summary" />
+
+				</LinearLayout>
+
+				<ImageView
+					android:layout_width="20dp"
+					android:layout_height="20dp"
+					android:src="@drawable/ic_chevron_right"
+					app:tint="@color/zerion_text_secondary"
+					android:importantForAccessibility="no" />
+
+			</LinearLayout>
+
+		</LinearLayout>
+
+	</LinearLayout>
+
+</ScrollView>

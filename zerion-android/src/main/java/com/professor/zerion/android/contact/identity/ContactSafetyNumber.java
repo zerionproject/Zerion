@@ -47,9 +47,10 @@ public final class ContactSafetyNumber {
 	}
 
 	public static String forKeys(byte[] localSigningPub, byte[] remoteSigningPub) {
-		if (localSigningPub == null || remoteSigningPub == null) return "";
-		if (localSigningPub.length == 0 || remoteSigningPub.length == 0) {
-			return "";
+		if (localSigningPub == null || remoteSigningPub == null
+				|| localSigningPub.length == 0
+				|| remoteSigningPub.length == 0) {
+			throw new IllegalArgumentException("Empty key");
 		}
 		return format(compute(localSigningPub, remoteSigningPub));
 	}
