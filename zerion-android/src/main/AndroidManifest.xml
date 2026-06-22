@@ -71,7 +71,10 @@
 		<service
 			android:name="com.professor.zerion.android.ZerionService"
 			android:exported="false"
-			android:foregroundServiceType="dataSync">
+			android:foregroundServiceType="dataSync|specialUse">
+			<property
+				android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+				android:value="Always-on encrypted messaging sync over Tor" />
 			<intent-filter>
 				<action android:name="com.professor.zerion.android.ZerionService" />
 			</intent-filter>

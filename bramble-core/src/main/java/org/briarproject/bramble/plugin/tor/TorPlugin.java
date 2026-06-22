@@ -67,6 +67,7 @@ import static org.briarproject.bramble.api.plugin.TorConstants.PREF_TOR_MOBILE;
 import static org.briarproject.bramble.api.plugin.TorConstants.PREF_TOR_NETWORK;
 import static org.briarproject.bramble.api.plugin.TorConstants.PREF_TOR_NETWORK_AUTOMATIC;
 import static org.briarproject.bramble.api.plugin.TorConstants.PREF_TOR_NETWORK_WITH_BRIDGES;
+import static org.briarproject.bramble.api.plugin.TorConstants.PREF_TOR_CUSTOM_BRIDGES;
 import static org.briarproject.bramble.api.plugin.TorConstants.PREF_TOR_ONLY_WHEN_CHARGING;
 import static org.briarproject.bramble.api.plugin.TorConstants.PREF_TOR_PORT;
 import static org.briarproject.bramble.api.plugin.TorConstants.PROP_ONION_V3;
@@ -105,6 +106,19 @@ class TorPlugin implements DuplexPlugin, EventListener,
 
 	private volatile Settings settings = null;
 	private volatile State lastReportedState = null;
+
+	private static final long BRIDGE_FALLBACK_DELAY_MS = 45_000L;
+	private final java.util.concurrent.ScheduledExecutorService bridgeWatchdog =
+			java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
+				Thread t = new Thread(r, "TorBridgeWatchdog");
+				t.setDaemon(true);
+				return t;
+			});
+	private final AtomicBoolean autoBridgesActive = new AtomicBoolean(false);
+	private final Object watchdogLock = new Object();
+	@Nullable
+	@GuardedBy("watchdogLock")
+	private java.util.concurrent.ScheduledFuture<?> watchdogFuture;
 
 	private final java.util.Map<String, ServerSocket>
 			b4OnionToServerSocket =
@@ -170,7 +184,11 @@ class TorPlugin implements DuplexPlugin, EventListener,
 			@Override
 			public void onState(TorState torState) {
 				State s = state.getState(torState);
-				if (s == ACTIVE) backoff.reset();
+				if (s == ACTIVE) {
+					backoff.reset();
+					cancelBridgeWatchdog();
+					autoBridgesActive.set(false);
+				}
 				if (s != lastReportedState) {
 					lastReportedState = s;
 					callback.pluginStateChanged(s);
@@ -371,16 +389,22 @@ class TorPlugin implements DuplexPlugin, EventListener,
 		}
 	}
 
-	private void enableBridges(List<BridgeType> bridgeTypes, String countryCode)
-			throws IOException {
-		if (bridgeTypes.isEmpty()) {
+	private void enableBridges(List<BridgeType> bridgeTypes, String countryCode,
+			@Nullable String customBridges) throws IOException {
+		List<String> bridges = new ArrayList<>();
+		if (customBridges != null && !customBridges.isEmpty()) {
+			for (String line : customBridges.split("\\r?\\n")) {
+				String trimmed = line.trim();
+				if (!trimmed.isEmpty()) bridges.add(trimmed);
+			}
+		}
+		for (BridgeType bridgeType : bridgeTypes) {
+			bridges.addAll(circumventionProvider.getBridges(bridgeType,
+					countryCode));
+		}
+		if (bridges.isEmpty()) {
 			tor.disableBridges();
 		} else {
-			List<String> bridges = new ArrayList<>();
-			for (BridgeType bridgeType : bridgeTypes) {
-				bridges.addAll(circumventionProvider.getBridges(bridgeType,
-						countryCode));
-			}
 			tor.enableBridges(bridges);
 		}
 	}
@@ -396,6 +420,8 @@ class TorPlugin implements DuplexPlugin, EventListener,
 		recentB4Accepts.clear();
 		currentlyConnectedContacts.clear();
 		b4OnionRotation.shutdown();
+		cancelBridgeWatchdog();
+		bridgeWatchdog.shutdownNow();
 		try {
 			tor.stop();
 		} catch (IOException e) {
@@ -667,7 +693,11 @@ class TorPlugin implements DuplexPlugin, EventListener,
 			boolean onlyWhenCharging =
 					settings.getBoolean(PREF_TOR_ONLY_WHEN_CHARGING,
 							DEFAULT_PREF_TOR_ONLY_WHEN_CHARGING);
+			String customBridges = settings.get(PREF_TOR_CUSTOM_BRIDGES);
+			boolean hasCustomBridges = customBridges != null
+					&& !customBridges.trim().isEmpty();
 			boolean automatic = network == PREF_TOR_NETWORK_AUTOMATIC;
+			if (!online || !automatic) autoBridgesActive.set(false);
 
 			int reasonsDisabled = 0;
 			boolean enableNetwork = false, enableConnectionPadding = false;
@@ -686,10 +716,17 @@ class TorPlugin implements DuplexPlugin, EventListener,
 
 				if (reasonsDisabled == 0) {
 					enableNetwork = true;
+					boolean fallbackBridges =
+							automatic && autoBridgesActive.get();
 					if (network == PREF_TOR_NETWORK_WITH_BRIDGES ||
-							(automatic && bridgesByDefault)) {
+							(automatic && bridgesByDefault) ||
+							fallbackBridges || hasCustomBridges) {
 						if (ipv6Only) {
 							bridgeTypes = asList(MEEK, SNOWFLAKE);
+						} else if (fallbackBridges && !bridgesByDefault) {
+							bridgeTypes = asList(BridgeType.DEFAULT_OBFS4,
+									BridgeType.NON_DEFAULT_OBFS4, MEEK,
+									SNOWFLAKE);
 						} else {
 							bridgeTypes = circumventionProvider
 									.getSuitableBridgeTypes(country);
@@ -701,16 +738,60 @@ class TorPlugin implements DuplexPlugin, EventListener,
 
 			state.setReasonsDisabled(reasonsDisabled);
 
+			boolean usingBridges = !bridgeTypes.isEmpty() || hasCustomBridges;
 			try {
 				if (enableNetwork) {
-					enableBridges(bridgeTypes, country);
+					enableBridges(bridgeTypes, country, customBridges);
 					tor.enableConnectionPadding(enableConnectionPadding);
 					tor.enableIpv6(ipv6Only);
 				}
 				tor.enableNetwork(enableNetwork);
 			} catch (IOException e) {
 			}
+			if (enableNetwork && automatic && !usingBridges
+					&& !autoBridgesActive.get()) {
+				scheduleBridgeFallbackCheck();
+			} else {
+				cancelBridgeWatchdog();
+			}
 		});
+	}
+
+	private void scheduleBridgeFallbackCheck() {
+		synchronized (watchdogLock) {
+			if (bridgeWatchdog.isShutdown()) return;
+			if (watchdogFuture != null) watchdogFuture.cancel(false);
+			try {
+				watchdogFuture = bridgeWatchdog.schedule(
+						this::runBridgeFallbackCheck, BRIDGE_FALLBACK_DELAY_MS,
+						java.util.concurrent.TimeUnit.MILLISECONDS);
+			} catch (java.util.concurrent.RejectedExecutionException e) {
+				watchdogFuture = null;
+			}
+		}
+	}
+
+	private void cancelBridgeWatchdog() {
+		synchronized (watchdogLock) {
+			if (watchdogFuture != null) {
+				watchdogFuture.cancel(false);
+				watchdogFuture = null;
+			}
+		}
+	}
+
+	private void runBridgeFallbackCheck() {
+		if (!tor.isTorRunning()) return;
+		if (tor.getTorState() == TorState.CONNECTED) return;
+		if (autoBridgesActive.compareAndSet(false, true)) {
+			if (!tor.isTorRunning()
+					|| tor.getTorState() == TorState.CONNECTED) {
+				autoBridgesActive.set(false);
+				return;
+			}
+			updateConnectionStatus(networkManager.getNetworkStatus(),
+					batteryManager.isCharging());
+		}
 	}
 
 	@ThreadSafe

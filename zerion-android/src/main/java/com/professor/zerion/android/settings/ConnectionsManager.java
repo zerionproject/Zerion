@@ -16,6 +16,7 @@ import static org.briarproject.bramble.api.plugin.Plugin.PREF_PLUGIN_ENABLE;
 import static org.briarproject.bramble.api.plugin.TorConstants.DEFAULT_PREF_TOR_MOBILE;
 import static org.briarproject.bramble.api.plugin.TorConstants.DEFAULT_PREF_TOR_NETWORK;
 import static org.briarproject.bramble.api.plugin.TorConstants.PREF_TOR_MOBILE;
+import static org.briarproject.bramble.api.plugin.TorConstants.PREF_TOR_CUSTOM_BRIDGES;
 import static org.briarproject.bramble.api.plugin.TorConstants.PREF_TOR_NETWORK;
 import static com.professor.zerion.android.settings.ConnectionsFragment.PREF_KEY_ORBOT_ENABLED;
 import static com.professor.zerion.android.settings.ConnectionsFragment.PREF_KEY_ORBOT_HOST;
@@ -36,6 +37,7 @@ class ConnectionsManager {
 	private final MutableLiveData<Boolean> orbotEnabled = new MutableLiveData<>();
 	private final MutableLiveData<String> orbotHost = new MutableLiveData<>();
 	private final MutableLiveData<Integer> orbotPort = new MutableLiveData<>();
+	private final MutableLiveData<String> customBridges = new MutableLiveData<>();
 
 	ConnectionsManager(Application app, SettingsManager settingsManager,
 			Executor dbExecutor) {
@@ -56,6 +58,7 @@ class ConnectionsManager {
 		String host = settings.get(PREF_KEY_ORBOT_HOST);
 		orbotHost.postValue(host != null ? host : DEFAULT_ORBOT_HOST);
 		orbotPort.postValue(settings.getInt(PREF_KEY_ORBOT_PORT, DEFAULT_ORBOT_PORT));
+		customBridges.postValue(settings.get(PREF_TOR_CUSTOM_BRIDGES));
 	}
 
 	LiveData<Boolean> torEnabled() {
@@ -80,6 +83,10 @@ class ConnectionsManager {
 
 	LiveData<Integer> orbotPort() {
 		return orbotPort;
+	}
+
+	LiveData<String> customBridges() {
+		return customBridges;
 	}
 
 }

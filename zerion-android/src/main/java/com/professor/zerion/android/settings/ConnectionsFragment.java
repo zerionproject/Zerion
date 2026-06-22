@@ -35,6 +35,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import static com.professor.zerion.android.AppModule.getAndroidComponent;
 import static org.briarproject.bramble.api.plugin.TorConstants.PREF_TOR_MOBILE;
+import static org.briarproject.bramble.api.plugin.TorConstants.PREF_TOR_CUSTOM_BRIDGES;
 import static org.briarproject.bramble.api.plugin.TorConstants.PREF_TOR_NETWORK;
 
 @MethodsNotNullByDefault
@@ -65,6 +66,8 @@ public class ConnectionsFragment extends Fragment {
 
 	private View torNetworkCard;
 	private TextView torNetworkValue;
+	private View customBridgesCard;
+	private TextView customBridgesValue;
 	private SwitchMaterial orbotProxySwitch;
 	private View orbotSettingsCard;
 	private TextView orbotProxyValue;
@@ -116,6 +119,9 @@ public class ConnectionsFragment extends Fragment {
 		torNetworkEntries = getResources().getStringArray(R.array.tor_network_setting_names);
 		torNetworkValues = getResources().getStringArray(R.array.tor_network_setting_values);
 		torNetworkCard.setOnClickListener(v -> showTorNetworkDialog());
+		customBridgesCard = view.findViewById(R.id.custom_bridges_card);
+		customBridgesValue = view.findViewById(R.id.custom_bridges_value);
+		customBridgesCard.setOnClickListener(v -> showCustomBridgesDialog());
 		orbotProxySwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
 			if (buttonView.isPressed()) {
 				connectionsManager.torStore.putBoolean(PREF_KEY_ORBOT_ENABLED, isChecked);
@@ -153,6 +159,9 @@ public class ConnectionsFragment extends Fragment {
 			orbotPort = port != null ? port : DEFAULT_ORBOT_PORT;
 			updateOrbotProxyDisplay();
 		});
+
+		connectionsManager.customBridges().observe(getViewLifecycleOwner(),
+				this::updateCustomBridgesDisplay);
 	}
 
 	private void updateTorNetworkDisplay(String value) {
@@ -194,6 +203,76 @@ public class ConnectionsFragment extends Fragment {
 				})
 				.setNegativeButton(R.string.cancel, null)
 				.show();
+	}
+
+	private void showCustomBridgesDialog() {
+		Context context = requireContext();
+		LinearLayout layout = new LinearLayout(context);
+		layout.setOrientation(LinearLayout.VERTICAL);
+		int padding = (int) (16 * getResources().getDisplayMetrics().density);
+		layout.setPadding(padding, padding, padding, 0);
+
+		TextView message = new TextView(context);
+		message.setText(R.string.tor_custom_bridges_dialog_message);
+		message.setTextSize(13);
+		layout.addView(message);
+
+		EditText input = new EditText(context);
+		input.setInputType(InputType.TYPE_CLASS_TEXT
+				| InputType.TYPE_TEXT_FLAG_MULTI_LINE
+				| InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+		input.setImeOptions(EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING);
+		input.setPrivateImeOptions("nm");
+		input.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO);
+		input.setHint(R.string.tor_custom_bridges_hint);
+		input.setMinLines(3);
+		input.setGravity(android.view.Gravity.TOP | android.view.Gravity.START);
+		String current = connectionsManager.customBridges().getValue();
+		if (current != null) input.setText(current);
+		LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+				LinearLayout.LayoutParams.MATCH_PARENT,
+				LinearLayout.LayoutParams.WRAP_CONTENT);
+		lp.topMargin = padding;
+		input.setLayoutParams(lp);
+		layout.addView(input);
+
+		new MaterialAlertDialogBuilder(context)
+				.setTitle(R.string.tor_custom_bridges_title)
+				.setView(layout)
+				.setPositiveButton(R.string.ok, (dialog, which) -> {
+					String[] lines =
+							input.getText().toString().split("\\r?\\n");
+					StringBuilder sb = new StringBuilder();
+					for (String line : lines) {
+						String trimmed = line.trim();
+						if (trimmed.isEmpty()) continue;
+						if (sb.length() > 0) sb.append('\n');
+						sb.append(trimmed);
+					}
+					String value = sb.toString();
+					connectionsManager.torStore.putString(
+							PREF_TOR_CUSTOM_BRIDGES, value);
+					updateCustomBridgesDisplay(value);
+				})
+				.setNegativeButton(R.string.cancel, null)
+				.show();
+	}
+
+	private void updateCustomBridgesDisplay(@Nullable String value) {
+		if (customBridgesValue == null) return;
+		int count = 0;
+		if (value != null) {
+			for (String line : value.split("\\r?\\n")) {
+				if (!line.trim().isEmpty()) count++;
+			}
+		}
+		if (count == 0) {
+			customBridgesValue.setText(
+					R.string.tor_custom_bridges_summary_none);
+		} else {
+			customBridgesValue.setText(getResources().getQuantityString(
+					R.plurals.tor_custom_bridges_summary_set, count, count));
+		}
 	}
 
 	private void showOrbotSettingsDialog() {

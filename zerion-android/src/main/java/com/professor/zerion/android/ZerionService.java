@@ -140,7 +140,17 @@ public class ZerionService extends Service {
 				}
 				Notification foregroundNotification =
 						notificationManager.getForegroundNotification();
-				startForeground(ONGOING_NOTIFICATION_ID, foregroundNotification);
+				if (SDK_INT >= 34) {
+					startForeground(ONGOING_NOTIFICATION_ID,
+							foregroundNotification,
+							android.content.pm.ServiceInfo
+									.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+				} else {
+					startForeground(ONGOING_NOTIFICATION_ID,
+							foregroundNotification,
+							android.content.pm.ServiceInfo
+									.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
+				}
 
 				wakeLockManager.executeWakefully(() -> {
 					StartResult result = lifecycleManager.startServices(dbKey);

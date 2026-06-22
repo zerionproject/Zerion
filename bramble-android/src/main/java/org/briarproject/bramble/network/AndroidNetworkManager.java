@@ -97,11 +97,13 @@ class AndroidNetworkManager implements NetworkManager, Service {
 			NetworkInfo net = connectivityManager.getActiveNetworkInfo();
 			boolean connected = net != null && net.isConnected();
 			boolean ipv6Only = false;
+			boolean wifi = false;
 			if (connected) {
 				if (SDK_INT >= 23) ipv6Only = isActiveNetworkIpv6Only();
 				else ipv6Only = areAllAvailableNetworksIpv6Only();
+				wifi = isActiveNetworkWifi();
 			}
-			return new NetworkStatus(connected, false, ipv6Only);
+			return new NetworkStatus(connected, wifi, ipv6Only);
 		} catch (SecurityException e) {
 			return new NetworkStatus(true, false, true);
 		}
@@ -125,6 +127,20 @@ class AndroidNetworkManager implements NetworkManager, Service {
 				if (!addr.isMulticastAddress()) hasIpv6Unicast = true;
 			}
 			return hasIpv6Unicast;
+		} catch (SecurityException e) {
+			return false;
+		}
+	}
+
+	@TargetApi(23)
+	private boolean isActiveNetworkWifi() {
+		try {
+			Network net = connectivityManager.getActiveNetwork();
+			if (net == null) return false;
+			android.net.NetworkCapabilities caps =
+					connectivityManager.getNetworkCapabilities(net);
+			return caps != null && caps.hasTransport(
+					android.net.NetworkCapabilities.TRANSPORT_WIFI);
 		} catch (SecurityException e) {
 			return false;
 		}

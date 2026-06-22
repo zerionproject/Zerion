@@ -18,6 +18,7 @@ public interface TorConstants {
 	String PREF_TOR_PORT = "port";
 	String PREF_TOR_MOBILE = "useMobileData";
 	String PREF_TOR_ONLY_WHEN_CHARGING = "onlyWhenCharging";
+	String PREF_TOR_CUSTOM_BRIDGES = "customBridges";
 	String HS_PRIVATE_KEY_V3 = "onionPrivKey3";
 	int PREF_TOR_NETWORK_AUTOMATIC = 0;
 	int PREF_TOR_NETWORK_WITHOUT_BRIDGES = 1;

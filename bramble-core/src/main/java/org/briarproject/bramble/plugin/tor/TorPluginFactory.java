@@ -33,7 +33,7 @@ abstract class TorPluginFactory implements DuplexPluginFactory {
 	protected static final int MAX_LATENCY = 30 * 1000;
 	protected static final int MAX_IDLE_TIME = 30 * 1000;
 	private static final int MIN_POLLING_INTERVAL = 30 * 1000;
-	private static final int MAX_POLLING_INTERVAL = 60 * 1000;
+	private static final int MAX_POLLING_INTERVAL = 5 * 60 * 1000;
 	private static final double BACKOFF_BASE = 1.2;
 
 	protected final Executor ioExecutor, eventExecutor, wakefulIoExecutor;

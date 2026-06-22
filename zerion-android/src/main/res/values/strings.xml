@@ -1183,6 +1183,14 @@
 	<string name="tor_mobile_data_title">Use mobile data</string>
 	<string name="tor_mobile_data_summary">Allow connections over cellular network</string>
 	<string name="tor_info_message">Zerion uses Tor network exclusively for secure, anonymous communication. All connections are routed through Tor.</string>
+	<string name="tor_custom_bridges_title">Custom bridges</string>
+	<string name="tor_custom_bridges_summary_none">Not set</string>
+	<plurals name="tor_custom_bridges_summary_set">
+		<item quantity="one">%1$d custom bridge</item>
+		<item quantity="other">%1$d custom bridges</item>
+	</plurals>
+	<string name="tor_custom_bridges_dialog_message">If Tor cannot connect where you are, paste bridge lines here, one per line. They are tried before the built-in bridges. You can get bridges from bridges.torproject.org or the GetBridgesBot on Telegram.</string>
+	<string name="tor_custom_bridges_hint">Paste bridge lines, one per line</string>
 
 	<!-- Orbot Proxy Settings -->
 	<string name="proxy_section_title">PROXY</string>
