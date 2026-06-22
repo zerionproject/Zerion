@@ -6,7 +6,7 @@ import android.os.Bundle;
 
 import com.professor.zerion.R;
 import com.professor.zerion.android.ZerionService;
-import com.professor.zerion.android.account.SetupActivity;
+import com.professor.zerion.android.account.WelcomeActivity;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.BaseActivity;
 import com.professor.zerion.android.fragment.BaseFragment.BaseFragmentListener;
@@ -95,7 +95,7 @@ public class StartupActivity extends BaseActivity implements
 	private void onAccountDeleted() {
 		setResult(RESULT_CANCELED);
 		finish();
-		Intent i = new Intent(this, SetupActivity.class);
+		Intent i = new Intent(this, WelcomeActivity.class);
 		i.addFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TOP |
 				FLAG_ACTIVITY_CLEAR_TASK | FLAG_ACTIVITY_TASK_ON_HOME);
 		startActivity(i);

@@ -1243,6 +1243,13 @@
 	<string name="backup_password_empty">Enter a passphrase</string>
 	<string name="backup_passwords_mismatch">Passwords do not match</string>
 
+	<!-- First-run welcome -->
+	<string name="welcome_title">Welcome to Zerion</string>
+	<string name="welcome_subtitle">Create a new account, or bring an existing one over from another phone.</string>
+	<string name="welcome_create">Create new account</string>
+	<string name="welcome_import_file">Import from backup file</string>
+	<string name="welcome_receive">Receive from another phone</string>
+
 	<!-- Orbot Proxy Settings -->
 	<string name="proxy_section_title">PROXY</string>
 	<string name="orbot_proxy_title">Use Orbot proxy</string>

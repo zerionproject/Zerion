@@ -61,6 +61,8 @@ public interface ActivityComponent {
 
 	void inject(SetupActivity activity);
 
+	void inject(com.professor.zerion.android.account.WelcomeActivity activity);
+
 	void inject(NavDrawerActivity activity);
 
 	void inject(PanicResponderActivity activity);

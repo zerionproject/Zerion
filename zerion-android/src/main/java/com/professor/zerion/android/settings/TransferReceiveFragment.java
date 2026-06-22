@@ -61,6 +61,14 @@ public class TransferReceiveFragment extends Fragment implements Callback {
 	@Nullable
 	private ImageView qrImage;
 
+	public static TransferReceiveFragment newInstance(boolean firstRun) {
+		TransferReceiveFragment f = new TransferReceiveFragment();
+		Bundle args = new Bundle();
+		args.putBoolean("firstRun", firstRun);
+		f.setArguments(args);
+		return f;
+	}
+
 	@Override
 	public void onAttach(@NonNull Context context) {
 		super.onAttach(context);
@@ -208,6 +216,19 @@ public class TransferReceiveFragment extends Fragment implements Callback {
 
 	private void finishResult(boolean success) {
 		if (!isAdded()) return;
+		boolean firstRun = getArguments() != null
+				&& getArguments().getBoolean("firstRun", false);
+		if (success && firstRun) {
+			android.content.Intent i = new android.content.Intent(
+					requireContext(),
+					com.professor.zerion.android.login.StartupActivity.class);
+			i.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+					| android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
+					| android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP);
+			startActivity(i);
+			requireActivity().finish();
+			return;
+		}
 		new MaterialAlertDialogBuilder(requireContext())
 				.setTitle(success ? R.string.transfer_done_title
 						: R.string.transfer_failed_title)

@@ -225,6 +225,8 @@ public interface AndroidComponent
 
 	void inject(com.professor.zerion.android.settings.TransferSendFragment transferSendFragment);
 
+	void inject(com.professor.zerion.android.account.WelcomeFragment welcomeFragment);
+
 	void inject(SecurityFragment securityFragment);
 
 	void inject(com.professor.zerion.android.settings.ProfilesFragment profilesFragment);
