@@ -8,8 +8,14 @@
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
 		android:orientation="vertical"
-		android:gravity="center_horizontal"
-		android:padding="24dp">
+		android:gravity="center"
+		android:padding="24dp"
+		android:minHeight="320dp">
+
+		<ProgressBar
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_marginBottom="24dp" />
 
 		<TextView
 			android:id="@+id/transfer_status"
@@ -18,17 +24,7 @@
 			android:gravity="center"
 			android:textSize="15sp"
 			android:textColor="@color/zerion_text_secondary"
-			android:layout_marginBottom="24dp"
 			android:text="@string/transfer_status_working" />
-
-		<ImageView
-			android:id="@+id/transfer_qr"
-			android:layout_width="260dp"
-			android:layout_height="260dp"
-			android:background="#FFFFFFFF"
-			android:padding="8dp"
-			android:scaleType="fitCenter"
-			android:importantForAccessibility="no" />
 
 	</LinearLayout>
 

@@ -89,8 +89,11 @@ public class AccountTransferManager {
 		closeQuietly(currentSocket);
 	}
 
-	public void receive(char[] newPassword, Callback cb)
-			throws TransferException {
+	/**
+	 * Old phone: publish a one-time onion, show its QR, accept the new phone's
+	 * connection, then stream this account.
+	 */
+	public void send(Callback cb) throws TransferException {
 		cb.onStatus(Status.PUBLISHING);
 		KeyPair myKp = crypto.generateAgreementKeyPair();
 		byte[] myPub = myKp.getPublic().getEncoded();
@@ -108,7 +111,7 @@ public class AccountTransferManager {
 			Socket client = ss.accept();
 			currentSocket = client;
 			try {
-				runReceive(client, myKp, myPub, newPassword, cb);
+				runSend(client, myKp, myPub, cb);
 			} finally {
 				closeQuietly(client);
 			}
@@ -127,7 +130,12 @@ public class AccountTransferManager {
 		}
 	}
 
-	public void send(String qrPayload, Callback cb) throws TransferException {
+	/**
+	 * New phone: scan the old phone's QR, dial it over Tor, receive + import
+	 * the account under a new device password.
+	 */
+	public void receive(String qrPayload, char[] newPassword, Callback cb)
+			throws TransferException {
 		String body = qrPayload.startsWith(LINK_PREFIX)
 				? qrPayload.substring(LINK_PREFIX.length()) : qrPayload;
 		int sep = body.indexOf(':');
@@ -146,57 +154,21 @@ public class AccountTransferManager {
 		Socket s = dialWithRetry(onion);
 		currentSocket = s;
 		try {
-			runSend(s, myKp, myPub, theirPub, cb);
+			runReceive(s, myKp, myPub, theirPub, newPassword, cb);
 		} finally {
 			currentSocket = null;
 			closeQuietly(s);
 		}
 	}
 
-	private void runReceive(Socket s, KeyPair myKp, byte[] myPub,
-			char[] newPassword, Callback cb) throws TransferException {
+	private void runSend(Socket s, KeyPair myKp, byte[] myPub, Callback cb)
+			throws TransferException {
 		try {
 			s.setSoTimeout(READ_TIMEOUT_MS);
 			DataInputStream in = new DataInputStream(s.getInputStream());
-			cb.onStatus(Status.AUTHENTICATING);
-			byte[] theirPub = readFrame(in, PUBKEY_LEN, PUBKEY_LEN);
-			SecretKey sessionKey = deriveSession(myKp, myPub, theirPub);
-			try {
-				String sas = ContactSafetyNumber.forKeys(myPub, theirPub);
-				if (!cb.onSasConfirm(sas)) {
-					throw new TransferException(CANCELLED);
-				}
-				int go = in.read();
-				if (go != (GO & 0xFF)) throw new TransferException(CANCELLED);
-				cb.onStatus(Status.IMPORTING);
-				byte[] sealed = readFrame(in, 1, MAX_BUNDLE_BYTES);
-				byte[] bundleBytes = vaultCrypto.decrypt(
-						VaultCrypto.EncryptedData.fromBytes(sealed),
-						sessionKey.getBytes(), AAD);
-				try {
-					backup.provisionFromBundle(bundleBytes, newPassword);
-				} finally {
-					Arrays.fill(bundleBytes, (byte) 0);
-				}
-				cb.onStatus(Status.DONE);
-			} finally {
-				sessionKey.clear();
-			}
-		} catch (TransferException e) {
-			throw e;
-		} catch (BackupException | IOException | RuntimeException e) {
-			throw new TransferException(PROTOCOL);
-		}
-	}
-
-	private void runSend(Socket s, KeyPair myKp, byte[] myPub, byte[] theirPub,
-			Callback cb) throws TransferException {
-		try {
-			s.setSoTimeout(READ_TIMEOUT_MS);
 			DataOutputStream out = new DataOutputStream(s.getOutputStream());
 			cb.onStatus(Status.AUTHENTICATING);
-			writeFrame(out, myPub);
-			out.flush();
+			byte[] theirPub = readFrame(in, PUBKEY_LEN, PUBKEY_LEN);
 			SecretKey sessionKey = deriveSession(myKp, myPub, theirPub);
 			try {
 				String sas = ContactSafetyNumber.forKeys(myPub, theirPub);
@@ -214,6 +186,45 @@ public class AccountTransferManager {
 							sessionKey.getBytes(), AAD).toBytes();
 					writeFrame(out, sealed);
 					out.flush();
+				} finally {
+					Arrays.fill(bundleBytes, (byte) 0);
+				}
+				cb.onStatus(Status.DONE);
+			} finally {
+				sessionKey.clear();
+			}
+		} catch (TransferException e) {
+			throw e;
+		} catch (BackupException | IOException | RuntimeException e) {
+			throw new TransferException(PROTOCOL);
+		}
+	}
+
+	private void runReceive(Socket s, KeyPair myKp, byte[] myPub,
+			byte[] theirPub, char[] newPassword, Callback cb)
+			throws TransferException {
+		try {
+			s.setSoTimeout(READ_TIMEOUT_MS);
+			DataInputStream in = new DataInputStream(s.getInputStream());
+			DataOutputStream out = new DataOutputStream(s.getOutputStream());
+			cb.onStatus(Status.AUTHENTICATING);
+			writeFrame(out, myPub);
+			out.flush();
+			SecretKey sessionKey = deriveSession(myKp, myPub, theirPub);
+			try {
+				String sas = ContactSafetyNumber.forKeys(myPub, theirPub);
+				if (!cb.onSasConfirm(sas)) {
+					throw new TransferException(CANCELLED);
+				}
+				int go = in.read();
+				if (go != (GO & 0xFF)) throw new TransferException(CANCELLED);
+				cb.onStatus(Status.IMPORTING);
+				byte[] sealed = readFrame(in, 1, MAX_BUNDLE_BYTES);
+				byte[] bundleBytes = vaultCrypto.decrypt(
+						VaultCrypto.EncryptedData.fromBytes(sealed),
+						sessionKey.getBytes(), AAD);
+				try {
+					backup.provisionFromBundle(bundleBytes, newPassword);
 				} finally {
 					Arrays.fill(bundleBytes, (byte) 0);
 				}

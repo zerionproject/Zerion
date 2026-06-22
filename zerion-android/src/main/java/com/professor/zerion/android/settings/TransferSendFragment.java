@@ -1,13 +1,14 @@
 package com.professor.zerion.android.settings;
 
 import android.content.Context;
-import android.content.Intent;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -16,6 +17,7 @@ import com.professor.zerion.android.backup.AccountTransferManager;
 import com.professor.zerion.android.backup.AccountTransferManager.Callback;
 import com.professor.zerion.android.backup.AccountTransferManager.Status;
 import com.professor.zerion.android.backup.TransferException;
+import com.professor.zerion.android.contact.add.remote.QrCodeUtils;
 
 import org.briarproject.bramble.api.lifecycle.IoExecutor;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
@@ -28,14 +30,10 @@ import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
 
-import androidx.activity.result.ActivityResult;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
-import static android.app.Activity.RESULT_OK;
 import static com.professor.zerion.android.AppModule.getAndroidComponent;
 
 @MethodsNotNullByDefault
@@ -54,11 +52,9 @@ public class TransferSendFragment extends Fragment implements Callback {
 
 	@Nullable
 	private TextView statusText;
+	@Nullable
+	private ImageView qrImage;
 	private boolean started = false;
-
-	private final ActivityResultLauncher<Intent> scanLauncher =
-			registerForActivityResult(new StartActivityForResult(),
-					this::onScanResult);
 
 	@Override
 	public void onAttach(@NonNull Context context) {
@@ -80,10 +76,10 @@ public class TransferSendFragment extends Fragment implements Callback {
 			@Nullable Bundle savedInstanceState) {
 		super.onViewCreated(view, savedInstanceState);
 		statusText = view.findViewById(R.id.transfer_status);
+		qrImage = view.findViewById(R.id.transfer_qr);
 		if (!started) {
 			started = true;
-			scanLauncher.launch(new Intent(requireContext(),
-					TransferQrScannerActivity.class));
+			start();
 		}
 	}
 
@@ -97,6 +93,7 @@ public class TransferSendFragment extends Fragment implements Callback {
 	public void onDestroyView() {
 		super.onDestroyView();
 		statusText = null;
+		qrImage = null;
 	}
 
 	@Override
@@ -106,23 +103,11 @@ public class TransferSendFragment extends Fragment implements Callback {
 		sasResult.offer(false);
 	}
 
-	private void onScanResult(ActivityResult result) {
-		if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-			String payload = result.getData().getStringExtra(
-					TransferQrScannerActivity.EXTRA_SCANNED_LINK);
-			if (payload != null && !payload.isEmpty()) {
-				start(payload);
-				return;
-			}
-		}
-		back();
-	}
-
-	private void start(String payload) {
+	private void start() {
 		ioExecutor.execute(() -> {
 			boolean ok = false;
 			try {
-				transferManager.send(payload, this);
+				transferManager.send(this);
 				ok = true;
 			} catch (TransferException | RuntimeException e) {
 				ok = false;
@@ -139,6 +124,7 @@ public class TransferSendFragment extends Fragment implements Callback {
 
 	@Override
 	public void onPairingReady(String qrPayload) {
+		mainHandler.post(() -> showQr(qrPayload));
 	}
 
 	@Override
@@ -152,6 +138,13 @@ public class TransferSendFragment extends Fragment implements Callback {
 			Thread.currentThread().interrupt();
 			return false;
 		}
+	}
+
+	private void showQr(String payload) {
+		if (!isAdded() || qrImage == null) return;
+		Bitmap bmp = QrCodeUtils.generateQrCode(payload);
+		if (bmp != null) qrImage.setImageBitmap(bmp);
+		setStatus(getString(R.string.transfer_send_show_qr));
 	}
 
 	private void showSasDialog(String sas) {
@@ -184,8 +177,10 @@ public class TransferSendFragment extends Fragment implements Callback {
 
 	private String statusFor(Status status) {
 		switch (status) {
-			case CONNECTING:
-				return getString(R.string.transfer_status_connecting);
+			case PUBLISHING:
+				return getString(R.string.transfer_status_publishing);
+			case WAITING_FOR_PEER:
+				return getString(R.string.transfer_send_show_qr);
 			case AUTHENTICATING:
 				return getString(R.string.transfer_status_authenticating);
 			case TRANSFERRING:

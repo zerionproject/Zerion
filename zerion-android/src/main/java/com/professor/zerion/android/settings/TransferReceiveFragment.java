@@ -1,7 +1,7 @@
 package com.professor.zerion.android.settings;
 
 import android.content.Context;
-import android.graphics.Bitmap;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -11,7 +11,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -22,7 +21,6 @@ import com.professor.zerion.android.backup.AccountTransferManager;
 import com.professor.zerion.android.backup.AccountTransferManager.Callback;
 import com.professor.zerion.android.backup.AccountTransferManager.Status;
 import com.professor.zerion.android.backup.TransferException;
-import com.professor.zerion.android.contact.add.remote.QrCodeUtils;
 
 import org.briarproject.bramble.api.lifecycle.IoExecutor;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
@@ -36,10 +34,14 @@ import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
 
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import static android.app.Activity.RESULT_OK;
 import static com.professor.zerion.android.AppModule.getAndroidComponent;
 
 @MethodsNotNullByDefault
@@ -58,8 +60,11 @@ public class TransferReceiveFragment extends Fragment implements Callback {
 
 	@Nullable
 	private TextView statusText;
-	@Nullable
-	private ImageView qrImage;
+	private boolean started = false;
+
+	private final ActivityResultLauncher<Intent> scanLauncher =
+			registerForActivityResult(new StartActivityForResult(),
+					this::onScanResult);
 
 	public static TransferReceiveFragment newInstance(boolean firstRun) {
 		TransferReceiveFragment f = new TransferReceiveFragment();
@@ -89,8 +94,11 @@ public class TransferReceiveFragment extends Fragment implements Callback {
 			@Nullable Bundle savedInstanceState) {
 		super.onViewCreated(view, savedInstanceState);
 		statusText = view.findViewById(R.id.transfer_status);
-		qrImage = view.findViewById(R.id.transfer_qr);
-		promptPasswordAndStart();
+		if (!started) {
+			started = true;
+			scanLauncher.launch(new Intent(requireContext(),
+					TransferQrScannerActivity.class));
+		}
 	}
 
 	@Override
@@ -103,7 +111,6 @@ public class TransferReceiveFragment extends Fragment implements Callback {
 	public void onDestroyView() {
 		super.onDestroyView();
 		statusText = null;
-		qrImage = null;
 	}
 
 	@Override
@@ -113,7 +120,19 @@ public class TransferReceiveFragment extends Fragment implements Callback {
 		sasResult.offer(false);
 	}
 
-	private void promptPasswordAndStart() {
+	private void onScanResult(ActivityResult result) {
+		if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+			String payload = result.getData().getStringExtra(
+					TransferQrScannerActivity.EXTRA_SCANNED_LINK);
+			if (payload != null && !payload.isEmpty()) {
+				showPasswordDialog(payload);
+				return;
+			}
+		}
+		back();
+	}
+
+	private void showPasswordDialog(String payload) {
 		Context context = requireContext();
 		LinearLayout layout = new LinearLayout(context);
 		layout.setOrientation(LinearLayout.VERTICAL);
@@ -141,7 +160,7 @@ public class TransferReceiveFragment extends Fragment implements Callback {
 							toast(R.string.backup_passwords_mismatch);
 							back();
 						} else {
-							start(p1.clone());
+							start(payload, p1.clone());
 						}
 					} finally {
 						Arrays.fill(p1, '\0');
@@ -152,11 +171,11 @@ public class TransferReceiveFragment extends Fragment implements Callback {
 				.show();
 	}
 
-	private void start(char[] newPassword) {
+	private void start(String payload, char[] newPassword) {
 		ioExecutor.execute(() -> {
 			boolean ok = false;
 			try {
-				transferManager.receive(newPassword, this);
+				transferManager.receive(payload, newPassword, this);
 				ok = true;
 			} catch (TransferException | RuntimeException e) {
 				ok = false;
@@ -175,7 +194,7 @@ public class TransferReceiveFragment extends Fragment implements Callback {
 
 	@Override
 	public void onPairingReady(String qrPayload) {
-		mainHandler.post(() -> showQr(qrPayload));
+		// receiver dials, it does not publish a pairing code
 	}
 
 	@Override
@@ -189,13 +208,6 @@ public class TransferReceiveFragment extends Fragment implements Callback {
 			Thread.currentThread().interrupt();
 			return false;
 		}
-	}
-
-	private void showQr(String payload) {
-		if (!isAdded() || qrImage == null) return;
-		Bitmap bmp = QrCodeUtils.generateQrCode(payload);
-		if (bmp != null) qrImage.setImageBitmap(bmp);
-		setStatus(getString(R.string.transfer_receive_show_qr));
 	}
 
 	private void showSasDialog(String sas) {
@@ -219,12 +231,11 @@ public class TransferReceiveFragment extends Fragment implements Callback {
 		boolean firstRun = getArguments() != null
 				&& getArguments().getBoolean("firstRun", false);
 		if (success && firstRun) {
-			android.content.Intent i = new android.content.Intent(
-					requireContext(),
+			Intent i = new Intent(requireContext(),
 					com.professor.zerion.android.login.StartupActivity.class);
-			i.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK
-					| android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
-					| android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP);
+			i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+					| Intent.FLAG_ACTIVITY_CLEAR_TASK
+					| Intent.FLAG_ACTIVITY_CLEAR_TOP);
 			startActivity(i);
 			requireActivity().finish();
 			return;
@@ -241,10 +252,8 @@ public class TransferReceiveFragment extends Fragment implements Callback {
 
 	private String statusFor(Status status) {
 		switch (status) {
-			case PUBLISHING:
-				return getString(R.string.transfer_status_publishing);
-			case WAITING_FOR_PEER:
-				return getString(R.string.transfer_receive_show_qr);
+			case CONNECTING:
+				return getString(R.string.transfer_status_connecting);
 			case AUTHENTICATING:
 				return getString(R.string.transfer_status_authenticating);
 			case IMPORTING:

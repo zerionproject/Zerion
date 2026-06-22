@@ -1240,6 +1240,7 @@
 	<string name="transfer_status_importing">Importing the account</string>
 	<string name="transfer_status_done">Done</string>
 	<string name="transfer_status_working">Working</string>
+	<string name="transfer_send_show_qr">Scan this code with the new phone</string>
 	<string name="backup_password_empty">Enter a passphrase</string>
 	<string name="backup_passwords_mismatch">Passwords do not match</string>
 

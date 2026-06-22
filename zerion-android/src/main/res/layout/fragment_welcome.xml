@@ -2,44 +2,55 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
 	android:layout_width="match_parent"
 	android:layout_height="match_parent"
-	android:background="@drawable/bg_zerion_gradient">
+	android:background="@drawable/bg_zerion_gradient"
+	android:fillViewport="true">
 
 	<LinearLayout
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
 		android:orientation="vertical"
 		android:gravity="center_horizontal"
-		android:paddingHorizontal="28dp"
-		android:paddingTop="72dp"
+		android:paddingHorizontal="24dp"
+		android:paddingTop="56dp"
 		android:paddingBottom="32dp">
+
+		<ImageView
+			android:layout_width="84dp"
+			android:layout_height="84dp"
+			android:layout_marginTop="24dp"
+			android:src="@drawable/splash_screen"
+			android:importantForAccessibility="no" />
 
 		<TextView
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
+			android:layout_marginTop="20dp"
 			android:text="@string/welcome_title"
-			android:textSize="24sp"
+			android:textColor="@color/zerion_text_primary"
 			android:textStyle="bold"
-			android:textColor="@color/zerion_text_primary" />
+			android:textSize="24sp"
+			android:gravity="center" />
 
 		<TextView
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
-			android:gravity="center"
-			android:layout_marginTop="10dp"
-			android:layout_marginBottom="40dp"
+			android:layout_marginTop="8dp"
 			android:text="@string/welcome_subtitle"
+			android:textColor="@color/zerion_text_secondary"
 			android:textSize="14sp"
-			android:textColor="@color/zerion_text_secondary" />
+			android:gravity="center" />
 
 		<com.google.android.material.button.MaterialButton
 			android:id="@+id/create_button"
+			style="@style/Zerion.Button.Primary"
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
+			android:layout_marginTop="40dp"
 			android:text="@string/welcome_create" />
 
 		<com.google.android.material.button.MaterialButton
 			android:id="@+id/import_button"
-			style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+			style="@style/Zerion.Button.Outlined"
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
 			android:layout_marginTop="12dp"
@@ -47,7 +58,7 @@
 
 		<com.google.android.material.button.MaterialButton
 			android:id="@+id/receive_button"
-			style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+			style="@style/Zerion.Button.Outlined"
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
 			android:layout_marginTop="12dp"
@@ -57,10 +68,10 @@
 			android:id="@+id/welcome_status"
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
-			android:gravity="center"
 			android:layout_marginTop="24dp"
+			android:textColor="@color/zerion_text_secondary"
 			android:textSize="13sp"
-			android:textColor="@color/zerion_text_secondary" />
+			android:gravity="center" />
 
 	</LinearLayout>
 
