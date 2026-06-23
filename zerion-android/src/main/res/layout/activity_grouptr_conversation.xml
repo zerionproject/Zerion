@@ -181,7 +181,7 @@
 						android:layout_height="wrap_content"
 						android:background="@drawable/text_input_background"
 						android:hint="@string/grouptr_input_hint"
-						android:imeOptions="flagNoPersonalizedLearning"
+						android:imeOptions="flagNoPersonalizedLearning|actionSend"
 						android:importantForAutofill="no"
 						android:inputType="textMultiLine|textCapSentences|textNoSuggestions"
 						android:maxLines="6"

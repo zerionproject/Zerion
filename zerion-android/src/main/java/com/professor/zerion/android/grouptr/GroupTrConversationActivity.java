@@ -195,6 +195,22 @@ public class GroupTrConversationActivity extends ZerionActivity
 				updateSendEnabled();
 			}
 		});
+		input.setOnEditorActionListener((v, actionId, event) -> {
+			if (actionId
+					== android.view.inputmethod.EditorInfo.IME_ACTION_SEND) {
+				onSend();
+				return true;
+			}
+			return false;
+		});
+		input.setOnKeyListener((v, keyCode, event) -> {
+			if (keyCode == android.view.KeyEvent.KEYCODE_ENTER
+					&& event.getAction() == android.view.KeyEvent.ACTION_DOWN) {
+				onSend();
+				return true;
+			}
+			return false;
+		});
 
 		ImageButton attachmentBtn = findViewById(R.id.attachmentButton);
 		attachmentBtn.setOnClickListener(v -> launchMediaPicker());
@@ -395,14 +411,44 @@ public class GroupTrConversationActivity extends ZerionActivity
 		startActivity(GroupTrAdminActivity.intent(this, groupId));
 	}
 
+	private final java.util.List<GroupTrPost> renderedPosts =
+			new java.util.ArrayList<>();
+
 	private void renderPosts(List<GroupTrPost> posts) {
-		postsContainer.removeAllViews();
 		if (posts.isEmpty()) {
+			if (postsContainer.getChildCount() > 0) {
+				postsContainer.removeAllViews();
+			}
+			renderedPosts.clear();
 			emptyState.setVisibility(View.VISIBLE);
 			return;
 		}
+		boolean canAppend = posts.size() >= renderedPosts.size();
+		if (canAppend) {
+			for (int i = 0; i < renderedPosts.size(); i++) {
+				if (!samePost(posts.get(i), renderedPosts.get(i))) {
+					canAppend = false;
+					break;
+				}
+			}
+		}
+		if (!canAppend) {
+			postsContainer.removeAllViews();
+			renderedPosts.clear();
+		}
 		emptyState.setVisibility(View.GONE);
-		for (GroupTrPost p : posts) appendPost(p);
+		for (int i = renderedPosts.size(); i < posts.size(); i++) {
+			appendPost(posts.get(i));
+		}
+		renderedPosts.clear();
+		renderedPosts.addAll(posts);
+	}
+
+	private static boolean samePost(GroupTrPost a, GroupTrPost b) {
+		return a.getEpoch() == b.getEpoch()
+				&& a.getTimestamp() == b.getTimestamp()
+				&& Arrays.equals(a.getSenderPubKey(), b.getSenderPubKey())
+				&& Arrays.equals(a.getBody(), b.getBody());
 	}
 
 	private void appendPost(GroupTrPost p) {
