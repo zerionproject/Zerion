@@ -690,6 +690,7 @@
 	<string name="settings_save_failed">Could not save setting.</string>
 	<string name="grouptr_open">Open</string>
 	<string name="grouptr_input_hint">Message</string>
+	<string name="grouptr_member_key_message">Identity fingerprint\n\n%1$s\n\nThis is derived from this member\'s signing key. If it does not match what you expect, the messages may be coming from a different key.</string>
 	<string name="grouptr_msg_you">You</string>
 	<string name="grouptr_stealth_name_set">Set name in this group</string>
 	<string name="grouptr_stealth_name_msg">A different name visible to other members in this group only. Leave blank to clear.</string>

@@ -504,7 +504,7 @@ public class GroupTrConversationActivity extends ZerionActivity
 			row = inf.inflate(R.layout.list_item_grouptr_image_in,
 					postsContainer, false);
 			TextView sender = row.findViewById(R.id.senderName);
-			sender.setText(decorateName(p));
+			bindSender(sender, p);
 		}
 		ImageView img = row.findViewById(R.id.imageView);
 		TextView time = row.findViewById(R.id.imageTime);
@@ -529,7 +529,7 @@ public class GroupTrConversationActivity extends ZerionActivity
 			row = inf.inflate(R.layout.list_item_grouptr_video_in,
 					postsContainer, false);
 			TextView sender = row.findViewById(R.id.senderName);
-			sender.setText(decorateName(p));
+			bindSender(sender, p);
 		}
 		ImageView thumb = row.findViewById(R.id.videoThumb);
 		TextView duration = row.findViewById(R.id.videoDuration);
@@ -608,7 +608,7 @@ public class GroupTrConversationActivity extends ZerionActivity
 			row = inf.inflate(R.layout.list_item_grouptr_post_in,
 					postsContainer, false);
 			TextView sender = row.findViewById(R.id.senderName);
-			sender.setText(decorateName(p));
+			bindSender(sender, p);
 		}
 		TextView body = row.findViewById(R.id.postText);
 		TextView time = row.findViewById(R.id.postTime);
@@ -630,7 +630,7 @@ public class GroupTrConversationActivity extends ZerionActivity
 			row = inf.inflate(R.layout.list_item_grouptr_voice_in,
 					postsContainer, false);
 			TextView sender = row.findViewById(R.id.senderName);
-			sender.setText(decorateName(p));
+			bindSender(sender, p);
 		}
 		TextView dur = row.findViewById(R.id.voiceDuration);
 		TextView time = row.findViewById(R.id.voiceTime);
@@ -997,6 +997,24 @@ public class GroupTrConversationActivity extends ZerionActivity
 
 	private void toast(int res) {
 		Toast.makeText(this, res, Toast.LENGTH_SHORT).show();
+	}
+
+	private void bindSender(TextView sender,
+			org.briarproject.briar.api.grouptr.GroupTrPost p) {
+		sender.setText(decorateName(p));
+		sender.setOnClickListener(v -> showFingerprintDialog(p));
+	}
+
+	private void showFingerprintDialog(
+			org.briarproject.briar.api.grouptr.GroupTrPost p) {
+		String fp = com.professor.zerion.android.contact.identity
+				.IdentityFingerprint.forSigningPub(p.getSenderPubKey());
+		new com.google.android.material.dialog.MaterialAlertDialogBuilder(
+				this, R.style.ZerionDialogTheme)
+				.setTitle(decorateName(p))
+				.setMessage(getString(R.string.grouptr_member_key_message, fp))
+				.setPositiveButton(android.R.string.ok, null)
+				.show();
 	}
 
 	private static String decorateName(
