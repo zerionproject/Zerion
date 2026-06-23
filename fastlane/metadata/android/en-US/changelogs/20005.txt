@@ -1,0 +1,5 @@
+v2.0.5: backup fix
+
+This release fixes a bug where creating an account backup could fail on many phones, leaving an empty file with no message. The backup now uses a lighter key-derivation setting with more memory headroom, so it works across devices, and it reports a clear error if anything goes wrong. Backups made with earlier 2.0 versions still open normally. There is no protocol change and no database upgrade.
+
+Full notes: https://github.com/zerionproject/Zerion/releases/tag/v2.0.5
