@@ -194,6 +194,14 @@ public class UiUtils {
 		return DateUtils.formatDateTime(ctx, time, flags);
 	}
 
+	public static String formatChannelHour(Context ctx, long hourMs) {
+		int flags = FORMAT_SHOW_TIME | FORMAT_ABBREV_ALL;
+		long diff = System.currentTimeMillis() - hourMs;
+		if (diff >= DAY_IN_MILLIS) flags |= FORMAT_SHOW_DATE;
+		if (diff >= YEAR_IN_MILLIS) flags |= FORMAT_SHOW_YEAR;
+		return DateUtils.formatDateTime(ctx, hourMs, flags);
+	}
+
 	public static String formatDateFull(Context ctx, long time) {
 		return DateUtils.formatDateTime(ctx, time,
 				FORMAT_SHOW_DATE | FORMAT_SHOW_YEAR | FORMAT_ABBREV_ALL);

@@ -1203,7 +1203,7 @@ public class ChannelFeedActivity extends ZerionActivity
 			bindAttachments(p, attachmentTapListener, thumbnails);
 			bindReactions(p, reactions);
 			timestamp.setText(
-					com.professor.zerion.android.util.UiUtils.formatDate(
+					com.professor.zerion.android.util.UiUtils.formatChannelHour(
 							itemView.getContext(),
 							p.getTimestampHourMs()));
 

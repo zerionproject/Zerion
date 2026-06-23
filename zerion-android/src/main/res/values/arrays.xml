@@ -84,6 +84,9 @@
 		<item>@string/pref_lock_timeout_15</item>
 		<item>@string/pref_lock_timeout_30</item>
 		<item>@string/pref_lock_timeout_60</item>
+		<item>@string/pref_lock_timeout_360</item>
+		<item>@string/pref_lock_timeout_720</item>
+		<item>@string/pref_lock_timeout_1440</item>
 	</string-array>
 	<string name="pref_lock_timeout_value_default" translatable="false">5</string>
 	<string name="pref_lock_timeout_value_never" translatable="false">-1</string>
@@ -94,5 +97,8 @@
 		<item>15</item>
 		<item>30</item>
 		<item>60</item>
+		<item>360</item>
+		<item>720</item>
+		<item>1440</item>
 	</string-array>
 </resources>

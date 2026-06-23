@@ -270,7 +270,7 @@ public class ChannelCommentsActivity extends ZerionActivity
 			author.setText(c.getAuthorDisplayName());
 			body.setText(c.getBody());
 			timestamp.setText(com.professor.zerion.android.util
-					.UiUtils.formatDate(itemView.getContext(),
+					.UiUtils.formatChannelHour(itemView.getContext(),
 							c.getTimestampHourMs()));
 		}
 	}
