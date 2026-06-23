@@ -79,8 +79,8 @@ android {
     defaultConfig {
         minSdkVersion 29
         targetSdkVersion 35
-        versionCode 20003
-        versionName "2.0.3"
+        versionCode 20004
+        versionName "2.0.4"
         applicationId "com.professor.zerion"
         buildConfigField "String", "TorVersion", "\"$tor_version\""
 
