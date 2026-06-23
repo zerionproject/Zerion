@@ -108,6 +108,7 @@ class TorPlugin implements DuplexPlugin, EventListener,
 	private volatile State lastReportedState = null;
 
 	private static final long BRIDGE_FALLBACK_DELAY_MS = 45_000L;
+	private static final long BRIDGE_FALLBACK_DELAY_UNKNOWN_MS = 20_000L;
 	private final java.util.concurrent.ScheduledExecutorService bridgeWatchdog =
 			java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
 				Thread t = new Thread(r, "TorBridgeWatchdog");
@@ -750,20 +751,24 @@ class TorPlugin implements DuplexPlugin, EventListener,
 			}
 			if (enableNetwork && automatic && !usingBridges
 					&& !autoBridgesActive.get()) {
-				scheduleBridgeFallbackCheck();
+				boolean unknownCountry = country.isEmpty()
+						|| country.equalsIgnoreCase("ZZ");
+				scheduleBridgeFallbackCheck(unknownCountry
+						? BRIDGE_FALLBACK_DELAY_UNKNOWN_MS
+						: BRIDGE_FALLBACK_DELAY_MS);
 			} else {
 				cancelBridgeWatchdog();
 			}
 		});
 	}
 
-	private void scheduleBridgeFallbackCheck() {
+	private void scheduleBridgeFallbackCheck(long delayMs) {
 		synchronized (watchdogLock) {
 			if (bridgeWatchdog.isShutdown()) return;
 			if (watchdogFuture != null) watchdogFuture.cancel(false);
 			try {
 				watchdogFuture = bridgeWatchdog.schedule(
-						this::runBridgeFallbackCheck, BRIDGE_FALLBACK_DELAY_MS,
+						this::runBridgeFallbackCheck, delayMs,
 						java.util.concurrent.TimeUnit.MILLISECONDS);
 			} catch (java.util.concurrent.RejectedExecutionException e) {
 				watchdogFuture = null;
