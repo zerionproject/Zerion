@@ -338,6 +338,9 @@ public class ZerionService extends Service {
 						if (pendingKillWatchdog.get() != Thread.currentThread()) {
 							return;
 						}
+						if (!exitInProgress.get()) {
+							return;
+						}
 						android.os.Process.killProcess(android.os.Process.myPid());
 					});
 					killWatchdog.setDaemon(true);

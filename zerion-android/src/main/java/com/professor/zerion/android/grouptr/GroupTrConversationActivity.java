@@ -374,10 +374,14 @@ public class GroupTrConversationActivity extends ZerionActivity
 		if (!(e instanceof GroupPostReceivedEvent)) return;
 		GroupPostReceivedEvent ev = (GroupPostReceivedEvent) e;
 		if (!Arrays.equals(ev.getGroupId(), groupId)) return;
-		main.post(() -> appendPost(new GroupTrPost(ev.getGroupId(),
-				ev.getSenderPubKey(), ev.getSenderName(),
-				ev.getCiphertext(), ev.getTimestamp(), ev.getEpoch(),
-				false, ev.getAutoDeleteTimerMs())));
+		main.post(() -> {
+			GroupTrPost p = new GroupTrPost(ev.getGroupId(),
+					ev.getSenderPubKey(), ev.getSenderName(),
+					ev.getCiphertext(), ev.getTimestamp(), ev.getEpoch(),
+					false, ev.getAutoDeleteTimerMs());
+			appendPost(p);
+			renderedPosts.add(p);
+		});
 	}
 
 	@Override

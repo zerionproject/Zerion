@@ -73,6 +73,7 @@ public class AccountTransferManager {
 	private volatile ServerSocket currentServer;
 	@Nullable
 	private volatile Socket currentSocket;
+	private volatile boolean cancelled;
 
 	@Inject
 	AccountTransferManager(CryptoComponent crypto,
@@ -85,6 +86,7 @@ public class AccountTransferManager {
 	}
 
 	public void cancel() {
+		cancelled = true;
 		closeQuietly(currentServer);
 		closeQuietly(currentSocket);
 	}
@@ -94,6 +96,7 @@ public class AccountTransferManager {
 	 * connection, then stream this account.
 	 */
 	public void send(Callback cb) throws TransferException {
+		cancelled = false;
 		cb.onStatus(Status.PUBLISHING);
 		KeyPair myKp = crypto.generateAgreementKeyPair();
 		byte[] myPub = myKp.getPublic().getEncoded();
@@ -136,6 +139,7 @@ public class AccountTransferManager {
 	 */
 	public void receive(String qrPayload, char[] newPassword, Callback cb)
 			throws TransferException {
+		cancelled = false;
 		String body = qrPayload.startsWith(LINK_PREFIX)
 				? qrPayload.substring(LINK_PREFIX.length()) : qrPayload;
 		int sep = body.indexOf(':');
@@ -262,6 +266,7 @@ public class AccountTransferManager {
 	private Socket dialWithRetry(String onion) throws TransferException {
 		long deadline = System.currentTimeMillis() + CONNECT_DEADLINE_MS;
 		while (System.currentTimeMillis() < deadline) {
+			if (cancelled) throw new TransferException(CANCELLED);
 			try {
 				return torSocketFactory.createSocket(onion + ".onion",
 						REMOTE_PORT);

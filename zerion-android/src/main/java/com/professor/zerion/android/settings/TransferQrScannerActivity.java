@@ -39,6 +39,9 @@ public class TransferQrScannerActivity extends AppCompatActivity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		getWindow().setFlags(
+				android.view.WindowManager.LayoutParams.FLAG_SECURE,
+				android.view.WindowManager.LayoutParams.FLAG_SECURE);
 		setContentView(R.layout.activity_qr_scanner);
 
 		previewView = findViewById(R.id.previewView);
@@ -175,6 +178,6 @@ public class TransferQrScannerActivity extends AppCompatActivity {
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
-		cameraExecutor.shutdown();
+		if (cameraExecutor != null) cameraExecutor.shutdown();
 	}
 }

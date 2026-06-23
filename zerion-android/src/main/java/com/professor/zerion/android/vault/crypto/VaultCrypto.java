@@ -198,8 +198,15 @@ public class VaultCrypto {
 		}
 
 		public static EncryptedData fromBytes(byte[] data) {
+			if (data == null || data.length < 4) {
+				throw new IllegalArgumentException("Invalid encrypted data");
+			}
 			ByteBuffer buffer = ByteBuffer.wrap(data);
 			int nonceLength = buffer.getInt();
+			if (nonceLength != GCM_NONCE_LENGTH
+					|| buffer.remaining() < nonceLength) {
+				throw new IllegalArgumentException("Invalid nonce length");
+			}
 			byte[] nonce = new byte[nonceLength];
 			buffer.get(nonce);
 			byte[] ciphertext = new byte[buffer.remaining()];

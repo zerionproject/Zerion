@@ -93,6 +93,8 @@ public class TransferReceiveFragment extends Fragment implements Callback {
 	public void onViewCreated(@NonNull View view,
 			@Nullable Bundle savedInstanceState) {
 		super.onViewCreated(view, savedInstanceState);
+		requireActivity().getWindow().addFlags(
+				android.view.WindowManager.LayoutParams.FLAG_SECURE);
 		statusText = view.findViewById(R.id.transfer_status);
 		if (!started) {
 			started = true;
