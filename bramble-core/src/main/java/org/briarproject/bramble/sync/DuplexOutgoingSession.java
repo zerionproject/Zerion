@@ -61,10 +61,10 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 	private static final int BATCH_CAPACITY =
 			(RECORD_HEADER_BYTES + MAX_MESSAGE_LENGTH) * 2;
 
-	private static final long COVER_INTERVAL_MS_BASE = 2_000L;
-	private static final long COVER_INTERVAL_MS_JITTER_MEAN = 200L;
+	private static final long COVER_INTERVAL_MS_BASE = 1_000L;
+	private static final long COVER_INTERVAL_MS_JITTER_MEAN = 100L;
 	private static final long COVER_INTERVAL_MS_CAP =
-			COVER_INTERVAL_MS_BASE + 800L;
+			COVER_INTERVAL_MS_BASE + 400L;
 	private static final int SLOT_BYTES_BASE = 2048;
 	private static final int SLOT_BYTES_JITTER = 256;
 	private static final long MIN_PEER_IDLE_TIME_MS =
