@@ -1,0 +1,17 @@
+v2.0.4: account backup, faster Tor, and smoother chats
+
+You can now back up your whole account. Export it to an encrypted file, protected by a passphrase, and restore it on a new phone. Or move it straight from one phone to the other over Tor: the old phone shows a code, the new phone scans it, and both sides confirm the safety numbers before anything is sent. You decide whether to include the vault. A backup is only as strong as its passphrase, so choose a good one and delete the file once the move is done.
+
+Connecting over Tor is faster and more reliable where a bridge is needed, including heavily censored networks. If a direct connection stalls, the app now switches to bridges on its own, even when it cannot tell which country you are in, and you can add your own bridges in the network settings. Creating a profile now works on devices with strict keystores too.
+
+New in this release:
+• Messages are delivered noticeably faster
+• Group chats: send with Enter, no more flicker in the message list, and tap a member's name to check their key fingerprint
+• App lock can keep the app running in the background for up to 24 hours
+• Cleaner, more consistent Settings and About screens
+• Channel post and comment times now show correctly
+• Updated the bundled Tor to 0.4.9.9
+
+This release had a full code and security review: no logging, no plaintext left in temporary files, and the backup encryption, screenshot protection, and Tor changes were all verified. There is no protocol change and no database upgrade. Your chats, groups, channels, and vault open exactly as before.
+
+Full notes: https://github.com/zerionproject/Zerion/releases/tag/v2.0.4

@@ -13,6 +13,7 @@ WHAT YOU CAN DO
 • Stickers
 • Introduce two of your contacts to each other, securely
 • A built-in vault for passwords, notes, and private files, with search and sort
+• Back up your account to an encrypted file, or move it to a new phone over Tor
 • Channels, a one-to-many broadcast layer with optional discussion threads
 • Translated into more than 35 languages
 
