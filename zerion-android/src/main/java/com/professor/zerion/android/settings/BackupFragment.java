@@ -197,7 +197,7 @@ public class BackupFragment extends Fragment {
 					os.flush();
 				}
 				ok = true;
-			} catch (BackupException | IOException | RuntimeException e) {
+			} catch (Throwable e) {
 				ok = false;
 			} finally {
 				if (data != null) Arrays.fill(data, (byte) 0);
@@ -240,7 +240,7 @@ public class BackupFragment extends Fragment {
 				}
 				backupManager.importAccount(data, passphrase, newPassword);
 				ok = true;
-			} catch (BackupException | IOException | RuntimeException e) {
+			} catch (Throwable e) {
 				ok = false;
 			} finally {
 				if (data != null) Arrays.fill(data, (byte) 0);

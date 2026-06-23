@@ -61,15 +61,8 @@ public class AccountBackupManager {
 
 	private com.professor.zerion.android.vault.crypto.Argon2.Argon2Params
 			argon2Params() {
-		android.app.ActivityManager am = (android.app.ActivityManager)
-				app.getSystemService(android.content.Context.ACTIVITY_SERVICE);
-		boolean low = am != null
-				&& (am.isLowRamDevice() || am.getMemoryClass() < 256);
-		return low
-				? com.professor.zerion.android.vault.crypto.Argon2.Argon2Params
-						.getLowMemory()
-				: com.professor.zerion.android.vault.crypto.Argon2.Argon2Params
-						.getDefault();
+		return com.professor.zerion.android.vault.crypto.Argon2.Argon2Params
+				.getLowMemory();
 	}
 
 	public void importAccount(byte[] fileBytes, char[] passphrase,
