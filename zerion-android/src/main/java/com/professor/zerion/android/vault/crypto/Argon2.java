@@ -22,6 +22,7 @@ public class Argon2 {
 
 	public static final int LOW_MEMORY_KB = 128 * 1024;
 	public static final int LOW_ITERATIONS = 2;
+	public static final int BACKUP_ITERATIONS = 8;
 
 	private final SecureRandom secureRandom = new SecureRandom();
 
@@ -118,6 +119,15 @@ public class Argon2 {
 			return new Argon2Params(
 					LOW_MEMORY_KB,
 					LOW_ITERATIONS,
+					DEFAULT_PARALLELISM,
+					DEFAULT_HASH_LENGTH
+			);
+		}
+
+		public static Argon2Params getBackupStrong() {
+			return new Argon2Params(
+					LOW_MEMORY_KB,
+					BACKUP_ITERATIONS,
 					DEFAULT_PARALLELISM,
 					DEFAULT_HASH_LENGTH
 			);

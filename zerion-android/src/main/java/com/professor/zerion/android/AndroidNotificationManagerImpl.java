@@ -131,6 +131,12 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	private final ContactManager contactManager;
 	private final org.briarproject.briar.api.conversation.ConversationManager conversationManager;
 	private final SharedPreferences uiPrefs;
+
+	private static final long MIN_CALL_LAUNCH_INTERVAL_MS = 3000L;
+	private final Object callLaunchLock = new Object();
+	private long lastCallLaunchMs = 0L;
+	@Nullable
+	private String lastLaunchedCallId = null;
 	private final VoiceSignalFactory voiceSignalFactory;
 	private final AtomicBoolean used = new AtomicBoolean(false);
 
@@ -971,7 +977,20 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		String[] parts = decoded.split(":");
 		if (parts.length < 2) return;
 		if (!"CALL_OFFER".equals(parts[1])) return;
+		if (!uiPrefs.getBoolean(
+				com.professor.zerion.android.settings.SecurityFragment
+						.PREF_VOICE_CALLS_ENABLED, true)) {
+			return;
+		}
 		String remoteCallId = parts.length > 2 ? parts[2] : null;
+		synchronized (callLaunchLock) {
+			long now = clock.currentTimeMillis();
+			if (remoteCallId != null &&
+					remoteCallId.equals(lastLaunchedCallId)) return;
+			if (now - lastCallLaunchMs < MIN_CALL_LAUNCH_INTERVAL_MS) return;
+			lastCallLaunchMs = now;
+			lastLaunchedCallId = remoteCallId;
+		}
 		ContactId contactId = event.getContactId();
 		try {
 			contactManager.getContact(contactId);

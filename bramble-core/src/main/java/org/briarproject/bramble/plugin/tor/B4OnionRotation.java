@@ -237,7 +237,7 @@ public class B4OnionRotation {
 				sealString(pendingOnion));
 		update.put(B4_CONTACT_ONION3_ANNOUNCED_AT_MS_KEY_PREFIX
 						+ from.getInt(),
-				sealString(String.valueOf(announcedAtMs)));
+				sealString(String.valueOf(clock.currentTimeMillis())));
 		update.put(B4_CONTACT_PENDING_DIAL_FAILURES_KEY_PREFIX
 						+ from.getInt(), "");
 		update.put(B4_CONTACT_PENDING_DIAL_SUCCEEDED_KEY_PREFIX

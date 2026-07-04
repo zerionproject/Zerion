@@ -35,8 +35,11 @@ public class BackupBundle {
 	}
 
 	public byte[] toBytes() {
+		int size = 32 + displayName.length() * 3 + dbKey.length + dbFile.length
+				+ (vault == null ? 0 : vault.length);
+		ZeroingByteArrayOutputStream baos =
+				new ZeroingByteArrayOutputStream(size);
 		try {
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			DataOutputStream out = new DataOutputStream(baos);
 			out.writeInt(BUNDLE_VERSION);
 			out.writeUTF(displayName);
@@ -47,6 +50,19 @@ public class BackupBundle {
 			return baos.toByteArray();
 		} catch (IOException e) {
 			throw new RuntimeException(e);
+		} finally {
+			baos.zeroize();
+		}
+	}
+
+	private static final class ZeroingByteArrayOutputStream
+			extends ByteArrayOutputStream {
+		ZeroingByteArrayOutputStream(int size) {
+			super(size);
+		}
+
+		void zeroize() {
+			Arrays.fill(buf, (byte) 0);
 		}
 	}
 

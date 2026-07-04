@@ -21,7 +21,6 @@ public final class BruteForceProtection {
 	private static final int ATTEMPTS_BEFORE_FIRST_LOCKOUT = 3;
 	private static final int ATTEMPTS_BEFORE_WIPE = 6;
 	private static final long LOCKOUT_DURATION_MS = 5 * 60 * 1000;
-	private static final long ATTEMPT_WINDOW_MS = 30 * 60 * 1000;
 
 	private final SharedPreferences prefs;
 
@@ -32,11 +31,6 @@ public final class BruteForceProtection {
 
 	public synchronized FailureResult recordFailedAttempt() {
 		long now = System.currentTimeMillis();
-
-		if (lastFailedWallClock > 0 &&
-				now - lastFailedWallClock > ATTEMPT_WINDOW_MS) {
-			failedAttempts = 0;
-		}
 
 		failedAttempts++;
 		lastFailedWallClock = now;

@@ -62,7 +62,7 @@ public class AccountBackupManager {
 	private com.professor.zerion.android.vault.crypto.Argon2.Argon2Params
 			argon2Params() {
 		return com.professor.zerion.android.vault.crypto.Argon2.Argon2Params
-				.getLowMemory();
+				.getBackupStrong();
 	}
 
 	public void importAccount(byte[] fileBytes, char[] passphrase,
