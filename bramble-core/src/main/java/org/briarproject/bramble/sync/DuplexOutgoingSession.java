@@ -61,19 +61,14 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 	private static final int BATCH_CAPACITY =
 			(RECORD_HEADER_BYTES + MAX_MESSAGE_LENGTH) * 2;
 
-	private static final long COVER_ACTIVE_INTERVAL_MS_BASE = 500L;
-	private static final long COVER_ACTIVE_INTERVAL_MS_JITTER_MEAN = 50L;
-	private static final long COVER_ACTIVE_INTERVAL_MS_CAP =
-			COVER_ACTIVE_INTERVAL_MS_BASE + 200L;
-	private static final long COVER_IDLE_INTERVAL_MS_BASE = 1_000L;
-	private static final long COVER_IDLE_INTERVAL_MS_JITTER_MEAN = 100L;
-	private static final long COVER_IDLE_INTERVAL_MS_CAP =
-			COVER_IDLE_INTERVAL_MS_BASE + 400L;
-	private static final long COVER_ACTIVE_WINDOW_MS = 10_000L;
+	private static final long COVER_INTERVAL_MS_BASE = 700L;
+	private static final long COVER_INTERVAL_MS_JITTER_MEAN = 70L;
+	private static final long COVER_INTERVAL_MS_CAP =
+			COVER_INTERVAL_MS_BASE + 280L;
 	private static final int SLOT_BYTES_BASE = 2048;
 	private static final int SLOT_BYTES_JITTER = 256;
 	private static final long MIN_PEER_IDLE_TIME_MS =
-			COVER_IDLE_INTERVAL_MS_CAP * 2L;
+			COVER_INTERVAL_MS_CAP * 2L;
 	private static final double SYNTHETIC_OFFER_PROB = 0.08;
 	private static final int SYNTHETIC_OFFER_BYTES =
 			32 + RECORD_HEADER_BYTES;
@@ -85,8 +80,7 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 	private final ContactId contactId;
 	private final TransportId transportId;
 	private final long maxLatency;
-	private final long coverActiveIntervalMs;
-	private final long coverIdleIntervalMs;
+	private final long coverIntervalMs;
 	private final int slotBytes;
 	private final StreamWriter streamWriter;
 	private final SyncRecordWriter recordWriter;
@@ -126,14 +120,10 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 		this.priority = priority;
 		java.util.concurrent.ThreadLocalRandom rng =
 				java.util.concurrent.ThreadLocalRandom.current();
-		this.coverActiveIntervalMs = drawCoverInterval(rng,
-				COVER_ACTIVE_INTERVAL_MS_BASE,
-				COVER_ACTIVE_INTERVAL_MS_JITTER_MEAN,
-				COVER_ACTIVE_INTERVAL_MS_CAP);
-		this.coverIdleIntervalMs = drawCoverInterval(rng,
-				COVER_IDLE_INTERVAL_MS_BASE,
-				COVER_IDLE_INTERVAL_MS_JITTER_MEAN,
-				COVER_IDLE_INTERVAL_MS_CAP);
+		this.coverIntervalMs = drawCoverInterval(rng,
+				COVER_INTERVAL_MS_BASE,
+				COVER_INTERVAL_MS_JITTER_MEAN,
+				COVER_INTERVAL_MS_CAP);
 		this.slotBytes = SLOT_BYTES_BASE
 				+ rng.nextInt(-SLOT_BYTES_JITTER,
 						SLOT_BYTES_JITTER + 1);
@@ -174,7 +164,6 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 			generateRequest();
 			long now = clock.currentTimeMillis();
 			long nextFlush = now;
-			long lastActivityMs = now;
 			long slotStartBytes = recordWriter.getBytesWritten();
 			boolean slotOverCap = false;
 			try {
@@ -223,11 +212,7 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 							}
 							recordWriter.flush();
 							slotStartBytes = recordWriter.getBytesWritten();
-							long interval =
-									now - lastActivityMs < COVER_ACTIVE_WINDOW_MS
-											? coverActiveIntervalMs
-											: coverIdleIntervalMs;
-							nextFlush = now + interval;
+							nextFlush = now + coverIntervalMs;
 							slotOverCap = false;
 						}
 					} else if (task == CLOSE) {
@@ -235,10 +220,6 @@ class DuplexOutgoingSession implements SyncSession, EventListener {
 					} else if (task == NEXT_SEND_TIME_DECREASED) {
 					} else {
 						task.run();
-						long activityNow = clock.currentTimeMillis();
-						lastActivityMs = activityNow;
-						nextFlush = Math.min(nextFlush,
-								activityNow + coverActiveIntervalMs);
 						long written = recordWriter.getBytesWritten()
 								- slotStartBytes;
 						if (written >= slotBytes) {

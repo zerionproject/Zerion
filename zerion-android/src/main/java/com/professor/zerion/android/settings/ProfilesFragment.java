@@ -20,6 +20,7 @@ import com.professor.zerion.R;
 
 import org.briarproject.bramble.account.AndroidAccountManager;
 import org.briarproject.bramble.api.identity.IdentityManager;
+import org.briarproject.bramble.api.identity.ReservedNames;
 import org.briarproject.bramble.api.identity.LocalAuthor;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
@@ -210,6 +211,10 @@ public class ProfilesFragment extends Fragment {
 				pwConfirmInput == null ? "" : pwConfirmInput.getText();
 		if (name.isEmpty()) {
 			toast(R.string.profiles_name_too_short);
+			return;
+		}
+		if (ReservedNames.isReserved(name)) {
+			toast(R.string.name_reserved);
 			return;
 		}
 		char[] pw = charsOf(pwSeq);
