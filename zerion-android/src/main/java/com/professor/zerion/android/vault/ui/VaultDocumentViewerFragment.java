@@ -80,6 +80,7 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 	private Bitmap currentPageBitmap;
 
 	private byte[] documentBytes;
+	private boolean documentLoadStarted = false;
 
 	public static VaultDocumentViewerFragment newInstance(String itemId, String itemName) {
 		VaultDocumentViewerFragment fragment = new VaultDocumentViewerFragment();
@@ -194,8 +195,10 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 	private void checkPasswordProtection() {
 		viewModel.getVaultItems().observe(getViewLifecycleOwner(), items -> {
 			if (items != null) {
+				if (documentLoadStarted) return;
 				for (com.professor.zerion.android.vault.model.VaultItem item : items) {
 					if (item.id.equals(itemId)) {
+						documentLoadStarted = true;
 						if (item.hasExtraPassword) {
 							showPasswordDialog();
 						} else {
@@ -211,6 +214,7 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 	}
 
 	private void showPasswordDialog() {
+		if (!isAdded() || isStateSaved()) return;
 		showLoading(false);
 
 		DocumentPasswordDialog dialog = DocumentPasswordDialog.newUnlockDialog(
@@ -245,6 +249,10 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 		viewModel.loadDocumentWithPassword(itemId, password, new VaultViewModel.DocumentCallback() {
 			@Override
 			public void onLoaded(byte[] content, String mimeType) {
+				if (!canUpdateUi()) {
+					SecureMemory.shred(content);
+					return;
+				}
 				documentBytes = content;
 
 				MimeUtils.MimeType detectedType = MimeUtils.detectMimeType(content, itemName);
@@ -268,6 +276,7 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 
 			@Override
 			public void onError(String error) {
+				if (!canUpdateUi()) return;
 				showLoading(false);
 				if (error.contains("Incorrect password")) {
 					Toast.makeText(requireContext(), "Incorrect password", Toast.LENGTH_SHORT).show();
@@ -283,6 +292,10 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 		viewModel.loadDocumentSecure(itemId, new VaultViewModel.DocumentCallback() {
 			@Override
 			public void onLoaded(byte[] content, String mimeType) {
+				if (!canUpdateUi()) {
+					SecureMemory.shred(content);
+					return;
+				}
 				documentBytes = content;
 
 				MimeUtils.MimeType detectedType = MimeUtils.detectMimeType(content, itemName);
@@ -306,6 +319,7 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 
 			@Override
 			public void onError(String error) {
+				if (!canUpdateUi()) return;
 				showLoading(false);
 				showError("Failed to Load Document", error);
 			}
@@ -536,6 +550,10 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 
 	private void showLoading(boolean show) {
 		loadingOverlay.setVisibility(show ? View.VISIBLE : View.GONE);
+	}
+
+	private boolean canUpdateUi() {
+		return isAdded() && getView() != null;
 	}
 
 	private String formatSize(long bytes) {

@@ -92,6 +92,9 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 		}
 	}
 
+	void onRecycled() {
+	}
+
 	@CallSuper
 	void bind(ConversationItem item, boolean selected) {
 		itemKey = item.getKey();

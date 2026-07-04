@@ -6,12 +6,16 @@ import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.security.SecureRandom;
 import java.util.Arrays;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 @NotNullByDefault
 public class SecureMemory {
 
 	private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 	private static final int SHRED_PASSES = 3;
+	private static final Executor GC_EXECUTOR =
+			Executors.newSingleThreadExecutor();
 
 	public static void shred(byte[] data) {
 		if (data == null || data.length == 0) return;
@@ -129,12 +133,14 @@ public class SecureMemory {
 	}
 
 	public static void forceGarbageCollection() {
-		try {
-			System.gc();
-			System.runFinalization();
-			System.gc();
-		} catch (Exception e) {
-		}
+		GC_EXECUTOR.execute(() -> {
+			try {
+				System.gc();
+				System.runFinalization();
+				System.gc();
+			} catch (Exception e) {
+			}
+		});
 	}
 
 	public static class SecureByteArray implements AutoCloseable {

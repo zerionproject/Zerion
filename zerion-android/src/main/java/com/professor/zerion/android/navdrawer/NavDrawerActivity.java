@@ -67,8 +67,6 @@ public class NavDrawerActivity extends ZerionActivity implements
 			Uri.parse("zerion-content://groups");
 	public static Uri CONTACT_ADDED_URI =
 			Uri.parse("zerion-content://contact-added");
-	public static Uri SIGN_OUT_URI =
-			Uri.parse("zerion-content://sign-out");
 
 	private static final int TAB_CONTACTS = 0;
 	private static final int TAB_GROUPS = 1;
@@ -503,8 +501,6 @@ public class NavDrawerActivity extends ZerionActivity implements
 			switchTab(TAB_CONTACTS);
 		} else if (GROUP_URI.equals(uri)) {
 			switchTab(TAB_GROUPS);
-		} else if (SIGN_OUT_URI.equals(uri)) {
-			signOut(false, false);
 		}
 	}
 

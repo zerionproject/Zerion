@@ -123,4 +123,9 @@ class ConversationSecretNoteViewHolder extends ConversationItemViewHolder {
 		}
 	}
 
+	@Override
+	void onRecycled() {
+		cancelCountdown();
+	}
+
 }

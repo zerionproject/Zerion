@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 import androidx.annotation.DrawableRes;
 import androidx.annotation.Nullable;
@@ -54,6 +55,9 @@ public class ImageViewHolder extends ViewHolder {
 					return value.getByteCount();
 				}
 			};
+
+	private static final Executor THUMBNAIL_DECODE_EXECUTOR =
+			Executors.newSingleThreadExecutor();
 
 	public static void clearVideoThumbCache() {
 		VIDEO_THUMB_CACHE.evictAll();
@@ -215,7 +219,6 @@ public class ImageViewHolder extends ViewHolder {
 
 		dbExecutor.execute(() -> {
 			File tempFile = null;
-			MediaMetadataRetriever retriever = null;
 			try {
 				Attachment attachment = attachmentReader.getAttachment(a.getHeader());
 				InputStream is = attachment.getStream();
@@ -233,54 +236,60 @@ public class ImageViewHolder extends ViewHolder {
 				fos.close();
 				is.close();
 
-				retriever = new MediaMetadataRetriever();
-				retriever.setDataSource(tempFile.getAbsolutePath());
-				Bitmap thumbnail = retriever.getFrameAtTime(0,
-						MediaMetadataRetriever.OPTION_CLOSEST_SYNC);
-				if (thumbnail == null) {
-					thumbnail = retriever.getFrameAtTime();
-				}
-
-				if (thumbnail != null) {
-					VIDEO_THUMB_CACHE.put(thumbKey, thumbnail);
-					renderVideoThumbnail(thumbnail, r);
-				} else {
-					imageView.post(() -> {
-						imageView.setImageResource(R.drawable.ic_video);
-						imageView.setScaleType(FIT_CENTER);
-					});
-				}
+				File decodeFile = tempFile;
+				tempFile = null;
+				THUMBNAIL_DECODE_EXECUTOR.execute(
+						() -> decodeThumbnail(decodeFile, thumbKey, r));
 			} catch (AttachmentNotYetAvailableException e) {
 				if (attemptNumber < MAX_THUMBNAIL_RETRY_ATTEMPTS) {
-					try {
-						Thread.sleep(THUMBNAIL_RETRY_DELAY_MS);
-					} catch (InterruptedException ie) {
-						Thread.currentThread().interrupt();
-						return;
-					}
-					loadVideoThumbnailWithRetry(a, r, attemptNumber + 1);
+					imageView.postDelayed(() -> loadVideoThumbnailWithRetry(
+							a, r, attemptNumber + 1), THUMBNAIL_RETRY_DELAY_MS);
 				} else {
-					imageView.post(() -> {
-						imageView.setImageResource(R.drawable.ic_video);
-						imageView.setScaleType(FIT_CENTER);
-					});
+					showVideoFallback();
 				}
 			} catch (Exception e) {
-				imageView.post(() -> {
-					imageView.setImageResource(R.drawable.ic_video);
-					imageView.setScaleType(FIT_CENTER);
-				});
+				showVideoFallback();
 			} finally {
-				if (retriever != null) {
-					try {
-						retriever.release();
-					} catch (Exception ignored) {
-					}
-				}
 				if (tempFile != null) {
 					tempFile.delete();
 				}
 			}
+		});
+	}
+
+	private void decodeThumbnail(File file, MessageId thumbKey, Radii r) {
+		MediaMetadataRetriever retriever = null;
+		try {
+			retriever = new MediaMetadataRetriever();
+			retriever.setDataSource(file.getAbsolutePath());
+			Bitmap thumbnail = retriever.getFrameAtTime(0,
+					MediaMetadataRetriever.OPTION_CLOSEST_SYNC);
+			if (thumbnail == null) {
+				thumbnail = retriever.getFrameAtTime();
+			}
+			if (thumbnail != null) {
+				VIDEO_THUMB_CACHE.put(thumbKey, thumbnail);
+				renderVideoThumbnail(thumbnail, r);
+			} else {
+				showVideoFallback();
+			}
+		} catch (Exception e) {
+			showVideoFallback();
+		} finally {
+			if (retriever != null) {
+				try {
+					retriever.release();
+				} catch (Exception ignored) {
+				}
+			}
+			file.delete();
+		}
+	}
+
+	private void showVideoFallback() {
+		imageView.post(() -> {
+			imageView.setImageResource(R.drawable.ic_video);
+			imageView.setScaleType(FIT_CENTER);
 		});
 	}
 }

@@ -41,10 +41,11 @@ public class VoiceMessageViewHolder {
 	@Nullable
 	private MediaPlayer mediaPlayer;
 	@Nullable
-	private java.io.File currentTempFile;
+	private volatile java.io.File currentTempFile;
 	private boolean isPlaying = false;
 	private int duration = 0;
 	private int loadingState = STATE_LOADING;
+	private volatile boolean released = false;
 
 	public VoiceMessageViewHolder(View view, AttachmentReader attachmentReader,
 			@DatabaseExecutor Executor dbExecutor) {
@@ -81,6 +82,7 @@ public class VoiceMessageViewHolder {
 	}
 
 	public void bind(AttachmentItem item) {
+		released = false;
 		stop();
 		isPlaying = false;
 		showLoadingState();
@@ -99,6 +101,7 @@ public class VoiceMessageViewHolder {
 
 	public void bindEncryptedVoice(String messageText, org.briarproject.bramble.api.sync.GroupId groupId,
 	                                 org.briarproject.bramble.api.sync.MessageId messageId) {
+		released = false;
 		stop();
 		isPlaying = false;
 		showLoadingState();
@@ -143,6 +146,7 @@ public class VoiceMessageViewHolder {
 	}
 
 	public void bindReceiving() {
+		released = false;
 		stop();
 		isPlaying = false;
 		loadingState = STATE_LOADING;
@@ -154,12 +158,20 @@ public class VoiceMessageViewHolder {
 	}
 
 	public void bindFailed() {
+		released = false;
 		stop();
 		isPlaying = false;
 		showErrorState("Verification failed");
 	}
 
 	private void prepareMediaPlayer(InputStream audioStream, String extension) {
+		if (released) {
+			try {
+				audioStream.close();
+			} catch (IOException ignored) {
+			}
+			return;
+		}
 		try {
 			java.io.File tempFile = java.io.File.createTempFile("voice",
 					extension, playPauseButton.getContext().getCacheDir());
@@ -175,6 +187,10 @@ public class VoiceMessageViewHolder {
 			audioStream.close();
 
 			uiHandler.post(() -> {
+				if (released) {
+					cleanupTempFile();
+					return;
+				}
 				try {
 					mediaPlayer = new MediaPlayer();
 					mediaPlayer.setDataSource(tempFile.getAbsolutePath());
@@ -326,6 +342,8 @@ public class VoiceMessageViewHolder {
 	}
 
 	public void onRecycled() {
+		released = true;
+		uiHandler.removeCallbacksAndMessages(null);
 		stop();
 	}
 }

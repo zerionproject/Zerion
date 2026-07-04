@@ -113,6 +113,14 @@ class ConversationMessageViewHolder extends ConversationItemViewHolder {
 		bindLinkPreview(conversationItem);
 	}
 
+	@Override
+	void onRecycled() {
+		if (voiceHolder != null) {
+			voiceHolder.onRecycled();
+			voiceHolder = null;
+		}
+	}
+
 	private void bindHiddenPart() {
 		if (voiceHolder != null) {
 			voiceHolder.onRecycled();

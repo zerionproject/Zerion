@@ -115,6 +115,12 @@ class ConversationAdapter
 	}
 
 	@Override
+	public void onViewRecycled(ConversationItemViewHolder ui) {
+		ui.onRecycled();
+		super.onViewRecycled(ui);
+	}
+
+	@Override
 	public void onBindViewHolder(ConversationItemViewHolder ui, int position) {
 		ConversationItem item = items.get(position);
 		boolean selected = false;
