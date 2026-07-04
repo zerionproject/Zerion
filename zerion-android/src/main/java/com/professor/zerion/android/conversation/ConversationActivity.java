@@ -212,6 +212,7 @@ public class ConversationActivity extends ZerionActivity
 	private Parcelable layoutManagerState;
 	@Nullable
 	private ActionMode actionMode;
+	private final Set<String> voiceMemoRebuildsRequested = new HashSet<>();
 	@Nullable
 	private com.google.android.material.floatingactionbutton.FloatingActionButton scrollToBottomButton;
 
@@ -391,6 +392,13 @@ public class ConversationActivity extends ZerionActivity
 		viewModel.getMessageTextLoaded().observeEvent(this, pair -> {
 			if (pair != null) {
 				displayMessageText(pair.getFirst(), pair.getSecond());
+			}
+		});
+
+		viewModel.getVoiceMemoRebuilt().observeEvent(this, memoId -> {
+			if (memoId != null) {
+				voiceMemoRebuildsRequested.remove(memoId);
+				refreshVoiceMemoAnchor(memoId);
 			}
 		});
 
@@ -1336,6 +1344,25 @@ public class ConversationActivity extends ZerionActivity
 	private void displayMessageText(MessageId m, String text) {
 		runOnUiThreadUnlessDestroyed(() -> {
 			textCache.put(m, text);
+			com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat.Part part =
+					com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat
+							.parse(text);
+			if (part != null) {
+				viewModel.feedVoicePart(text);
+				voiceMemoRebuildsRequested.remove(part.memoId);
+				if (part.seq > 0) {
+					Pair<Integer, ConversationMessageItem> partItem =
+							adapter.getMessageItem(m);
+					if (partItem != null && !partItem.getSecond().isRead()) {
+						viewModel.markMessageRead(
+								partItem.getSecond().getGroupId(), m);
+						partItem.getSecond().markRead();
+					}
+				}
+				if (viewModel.getReassembledVoiceMessage(part.memoId) != null) {
+					refreshVoiceMemoAnchor(part.memoId);
+				}
+			}
 			if (ConversationSecretNoteItem.isSecretNoteText(text)) {
 				Pair<Integer, ConversationMessageItem> pair =
 						adapter.getMessageItem(m);
@@ -1366,6 +1393,39 @@ public class ConversationActivity extends ZerionActivity
 	private boolean shouldScrollWhenUpdatingMessage() {
 		return getLifecycle().getCurrentState().isAtLeast(STARTED)
 				&& adapter.isScrolledToBottom(layoutManager);
+	}
+
+	@UiThread
+	private void refreshVoiceMemoAnchor(String memoId) {
+		for (int i = 0; i < adapter.getItemCount(); i++) {
+			ConversationItem item = adapter.getItemAt(i);
+			if (!(item instanceof ConversationMessageItem)) continue;
+			String t = ((ConversationMessageItem) item).getText();
+			com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat.Part anchor =
+					com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat
+							.parse(t);
+			if (anchor != null && anchor.seq == 0 &&
+					anchor.memoId.equals(memoId)) {
+				adapter.notifyItemChanged(i);
+				return;
+			}
+		}
+	}
+
+	@Override
+	@Nullable
+	public String getReassembledVoiceMessage(String memoId) {
+		String reassembled = viewModel.getReassembledVoiceMessage(memoId);
+		if (reassembled == null && !viewModel.isVoiceMemoFailed(memoId)
+				&& voiceMemoRebuildsRequested.add(memoId)) {
+			viewModel.rebuildVoiceMemo(memoId);
+		}
+		return reassembled;
+	}
+
+	@Override
+	public boolean isVoiceMemoFailed(String memoId) {
+		return viewModel.isVoiceMemoFailed(memoId);
 	}
 
 	@UiThread

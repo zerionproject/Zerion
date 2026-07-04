@@ -82,6 +82,18 @@ class ConversationMessageViewHolder extends ConversationItemViewHolder {
 		super.bind(conversationItem, selected);
 		ConversationMessageItem item =
 				(ConversationMessageItem) conversationItem;
+
+		boolean formattedPart = com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat
+				.isPart(item.getText());
+		com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat.Part part =
+				com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat
+						.parse(item.getText());
+		if (formattedPart && (part == null || part.seq > 0)) {
+			bindHiddenPart();
+			return;
+		}
+		restoreItemHeight();
+
 		if (item.needsAttachmentLoading()) {
 			listener.loadAttachmentsForItem(item);
 		}
@@ -89,7 +101,7 @@ class ConversationMessageViewHolder extends ConversationItemViewHolder {
 		boolean hasVoiceMessage = hasVoiceMessage(item);
 
 		if (hasVoiceMessage) {
-			bindVoiceMessage(item);
+			bindVoiceMessage(item, part);
 		} else if (item.getAttachments().isEmpty()) {
 			bindTextItem(item);
 		} else {
@@ -101,9 +113,36 @@ class ConversationMessageViewHolder extends ConversationItemViewHolder {
 		bindLinkPreview(conversationItem);
 	}
 
+	private void bindHiddenPart() {
+		if (voiceHolder != null) {
+			voiceHolder.onRecycled();
+			voiceHolder = null;
+		}
+		itemView.setVisibility(GONE);
+		android.view.ViewGroup.LayoutParams lp = itemView.getLayoutParams();
+		if (lp != null) {
+			lp.height = 0;
+			itemView.setLayoutParams(lp);
+		}
+	}
+
+	private void restoreItemHeight() {
+		if (itemView.getVisibility() != VISIBLE) {
+			itemView.setVisibility(VISIBLE);
+		}
+		android.view.ViewGroup.LayoutParams lp = itemView.getLayoutParams();
+		if (lp != null && lp.height == 0) {
+			lp.height = android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
+			itemView.setLayoutParams(lp);
+		}
+	}
+
 	private boolean hasVoiceMessage(ConversationMessageItem item) {
 		String messageText = item.getText();
 		if (messageText != null && com.professor.zerion.android.conversation.voice.VoiceMessageFormat.isVoiceMessage(messageText)) {
+			return true;
+		}
+		if (messageText != null && com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat.isPart(messageText)) {
 			return true;
 		}
 
@@ -119,7 +158,8 @@ class ConversationMessageViewHolder extends ConversationItemViewHolder {
 		return false;
 	}
 
-	private void bindVoiceMessage(ConversationMessageItem item) {
+	private void bindVoiceMessage(ConversationMessageItem item,
+			@Nullable com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat.Part part) {
 		adapter.clear();
 
 		if (voiceHolder != null) {
@@ -130,7 +170,18 @@ class ConversationMessageViewHolder extends ConversationItemViewHolder {
 				attachmentReader, dbExecutor);
 
 		String messageText = item.getText();
-		if (messageText != null && com.professor.zerion.android.conversation.voice.VoiceMessageFormat.isVoiceMessage(messageText)) {
+		if (part != null) {
+			String reassembled =
+					listener.getReassembledVoiceMessage(part.memoId);
+			if (reassembled != null) {
+				voiceHolder.bindEncryptedVoice(reassembled, item.getGroupId(),
+						item.getId());
+			} else if (listener.isVoiceMemoFailed(part.memoId)) {
+				voiceHolder.bindFailed();
+			} else {
+				voiceHolder.bindReceiving();
+			}
+		} else if (messageText != null && com.professor.zerion.android.conversation.voice.VoiceMessageFormat.isVoiceMessage(messageText)) {
 			voiceHolder.bindEncryptedVoice(messageText, item.getGroupId(), item.getId());
 		} else {
 			AttachmentItem voiceAttachment = item.getAttachments().get(0);

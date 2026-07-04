@@ -61,16 +61,7 @@ public class VoiceMessageFormat {
 		String encodedPayload = Base64.encodeToString(payload,
 			Base64.NO_WRAP | Base64.NO_PADDING);
 
-		String messageText = VOICE_PREFIX + durationMs + ":" + encodedPayload + VOICE_SUFFIX;
-		if (messageText.length() > MAX_BASE64_TEXT_SIZE) {
-			throw new IllegalArgumentException(
-				"Voice message text too large: " + messageText.length() +
-				" chars (max " + MAX_BASE64_TEXT_SIZE + " chars). " +
-				"This may cause message truncation or transmission failure."
-			);
-		}
-
-		return messageText;
+		return buildFromBase64(durationMs, encodedPayload);
 	}
 
 	public static boolean isVoiceMessage(@Nullable String messageText) {
@@ -125,5 +116,28 @@ public class VoiceMessageFormat {
 		int minutes = seconds / 60;
 		int remainingSeconds = seconds % 60;
 		return String.format("Voice Message (%d:%02d)", minutes, remainingSeconds);
+	}
+
+	@Nullable
+	public static String getBase64Body(@Nullable String messageText) {
+		if (messageText == null || !isVoiceMessage(messageText)) {
+			return null;
+		}
+		Matcher matcher = VOICE_PATTERN.matcher(messageText);
+		if (!matcher.matches()) {
+			return null;
+		}
+		return matcher.group(2);
+	}
+
+	public static String buildFromBase64(int durationMs, String base64Body) {
+		String messageText =
+			VOICE_PREFIX + durationMs + ":" + base64Body + VOICE_SUFFIX;
+		if (messageText.length() > MAX_BASE64_TEXT_SIZE) {
+			throw new IllegalArgumentException(
+				"Voice message text too large: " + messageText.length() +
+				" chars (max " + MAX_BASE64_TEXT_SIZE + " chars).");
+		}
+		return messageText;
 	}
 }

@@ -108,6 +108,7 @@ public class VoiceMessageViewHolder {
 				com.professor.zerion.android.conversation.voice.VoiceMessageFormat.parse(messageText);
 
 			if (parsed == null) {
+				uiHandler.post(() -> showErrorState("Verification failed"));
 				return;
 			}
 
@@ -139,6 +140,23 @@ public class VoiceMessageViewHolder {
 				uiHandler.post(() -> showErrorState("Verification failed"));
 			}
 		});
+	}
+
+	public void bindReceiving() {
+		stop();
+		isPlaying = false;
+		loadingState = STATE_LOADING;
+		playPauseButton.setEnabled(false);
+		playPauseButton.setIconResource(R.drawable.ic_play_arrow_24dp);
+		progressBar.setProgress(0);
+		progressBar.setEnabled(false);
+		durationText.setText("Receiving...");
+	}
+
+	public void bindFailed() {
+		stop();
+		isPlaying = false;
+		showErrorState("Verification failed");
 	}
 
 	private void prepareMediaPlayer(InputStream audioStream, String extension) {

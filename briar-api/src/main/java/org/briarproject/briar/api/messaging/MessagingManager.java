@@ -26,7 +26,9 @@ public interface MessagingManager extends ConversationClient {
 
 	int MINOR_VERSION =
 			org.briarproject.bramble.api.contact.B3Constants.B3_PROOF_ENABLED
-					? 5 : 4;
+					? 6 : 5;
+
+	int CHUNKED_VOICE_MIN_VERSION = 6;
 
 	void addLocalMessage(PrivateMessage m) throws DbException;
 

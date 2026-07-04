@@ -497,27 +497,117 @@ class TorPlugin implements DuplexPlugin, EventListener,
 		}
 		if (onion3 == null && fallback == null) return null;
 
-		DuplexTransportConnection conn = dialOnion(onion3);
-		if (conn != null) {
-			if (b4Cid != null && onion3 != null
-					&& !onion3.equals(fallback)) {
-				try {
-					b4OnionRotation.onSuccessfulConnect(b4Cid, onion3);
-				} catch (org.briarproject.bramble.api.db.DbException e) {
-				}
+		if (onion3 == null) return dialOnion(fallback);
+		if (fallback == null || fallback.equals(onion3)) {
+			DuplexTransportConnection conn = dialOnion(onion3);
+			if (conn != null && b4Cid != null && !onion3.equals(fallback)) {
+				notifySuccessfulConnect(b4Cid, onion3);
 			}
 			return conn;
 		}
-		if (fallback != null && !fallback.equals(onion3)) {
-			if (b4Cid != null && onion3 != null) {
-				try {
-					b4OnionRotation.onPendingDialFailed(b4Cid);
-				} catch (org.briarproject.bramble.api.db.DbException e) {
+
+		return raceDial(onion3, fallback, b4Cid);
+	}
+
+	private static final int FALLBACK_HEAD_START_MS = 1500;
+
+	private static final long RACE_TIMEOUT_MS =
+			(long) org.briarproject.bramble.api.plugin.TorConstants
+					.CONNECT_TO_PROXY_TIMEOUT
+					+ org.briarproject.bramble.api.plugin.TorConstants
+					.EXTRA_CONNECT_TIMEOUT
+					+ FALLBACK_HEAD_START_MS + 5000L;
+
+	@Nullable
+	private DuplexTransportConnection raceDial(String primary, String fallback,
+			@Nullable org.briarproject.bramble.api.contact.ContactId b4Cid) {
+		java.util.concurrent.CompletableFuture<DuplexTransportConnection>
+				winner = new java.util.concurrent.CompletableFuture<>();
+		java.util.concurrent.atomic.AtomicInteger pending =
+				new java.util.concurrent.atomic.AtomicInteger(2);
+		java.util.concurrent.CountDownLatch primaryDone =
+				new java.util.concurrent.CountDownLatch(1);
+
+		wakefulIoExecutor.execute(() -> {
+			try {
+				DuplexTransportConnection c = dialOnion(primary);
+				if (c != null) {
+					if (b4Cid != null) notifySuccessfulConnect(b4Cid, primary);
+					if (!winner.complete(c)) closeQuietly(c);
+					pending.decrementAndGet();
+				} else {
+					if (b4Cid != null) notifyPendingDialFailed(b4Cid);
+					if (pending.decrementAndGet() == 0) winner.complete(null);
 				}
+			} finally {
+				primaryDone.countDown();
 			}
-			return dialOnion(fallback);
+		});
+
+		wakefulIoExecutor.execute(() -> {
+			try {
+				primaryDone.await(FALLBACK_HEAD_START_MS,
+						java.util.concurrent.TimeUnit.MILLISECONDS);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				if (pending.decrementAndGet() == 0) winner.complete(null);
+				return;
+			}
+			if (winner.isDone()) {
+				pending.decrementAndGet();
+				return;
+			}
+			DuplexTransportConnection c = dialOnion(fallback);
+			if (c != null) {
+				if (!winner.complete(c)) closeQuietly(c);
+				pending.decrementAndGet();
+			} else {
+				if (pending.decrementAndGet() == 0) winner.complete(null);
+			}
+		});
+
+		try {
+			return winner.get(RACE_TIMEOUT_MS,
+					java.util.concurrent.TimeUnit.MILLISECONDS);
+		} catch (java.util.concurrent.TimeoutException
+				| InterruptedException
+				| java.util.concurrent.ExecutionException e) {
+			if (e instanceof InterruptedException) {
+				Thread.currentThread().interrupt();
+			}
+			if (!winner.complete(null)) {
+				DuplexTransportConnection late = winner.getNow(null);
+				if (late != null) closeQuietly(late);
+			}
+			return null;
 		}
-		return null;
+	}
+
+	private void notifySuccessfulConnect(
+			org.briarproject.bramble.api.contact.ContactId cid, String onion) {
+		try {
+			b4OnionRotation.onSuccessfulConnect(cid, onion);
+		} catch (org.briarproject.bramble.api.db.DbException ignored) {
+		}
+	}
+
+	private void notifyPendingDialFailed(
+			org.briarproject.bramble.api.contact.ContactId cid) {
+		try {
+			b4OnionRotation.onPendingDialFailed(cid);
+		} catch (org.briarproject.bramble.api.db.DbException ignored) {
+		}
+	}
+
+	private void closeQuietly(DuplexTransportConnection c) {
+		try {
+			c.getReader().dispose(false, true);
+		} catch (IOException ignored) {
+		}
+		try {
+			c.getWriter().dispose(false);
+		} catch (IOException ignored) {
+		}
 	}
 
 	@Nullable

@@ -129,6 +129,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	private final NotificationManager notificationManager;
 	private final MessagingManager messagingManager;
 	private final ContactManager contactManager;
+	private final org.briarproject.briar.api.conversation.ConversationManager conversationManager;
 	private final SharedPreferences uiPrefs;
 	private final VoiceSignalFactory voiceSignalFactory;
 	private final AtomicBoolean used = new AtomicBoolean(false);
@@ -164,6 +165,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	AndroidNotificationManagerImpl(SettingsManager settingsManager,
 			AndroidExecutor androidExecutor, Application app, Clock clock,
 			MessagingManager messagingManager, ContactManager contactManager,
+			org.briarproject.briar.api.conversation.ConversationManager conversationManager,
 			VoiceSignalFactory voiceSignalFactory,
 			@AppModule.UiPrefs SharedPreferences uiPrefs) {
 		this.settingsManager = settingsManager;
@@ -171,6 +173,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		this.clock = clock;
 		this.messagingManager = messagingManager;
 		this.contactManager = contactManager;
+		this.conversationManager = conversationManager;
 		this.voiceSignalFactory = voiceSignalFactory;
 		this.uiPrefs = uiPrefs;
 		appContext = app.getApplicationContext();
@@ -301,10 +304,10 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 			}
 			if (e instanceof PrivateMessageReceivedEvent) {
 				PrivateMessageReceivedEvent pm = (PrivateMessageReceivedEvent) e;
-				checkForIncomingCall(pm);
+				handlePrivateMessageReceived(pm);
+			} else {
+				showContactNotification(p.getContactId());
 			}
-
-			showContactNotification(p.getContactId());
 		} else if (e instanceof GroupMessageAddedEvent) {
 			GroupMessageAddedEvent g = (GroupMessageAddedEvent) e;
 			if (!g.isLocal()) showGroupMessageNotification(g.getGroupId());
@@ -928,42 +931,63 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		androidExecutor.runOnUiThread((Runnable) () -> blockGroups = false);
 	}
 
-	private void checkForIncomingCall(PrivateMessageReceivedEvent event) {
+	private void handlePrivateMessageReceived(
+			PrivateMessageReceivedEvent event) {
+		ContactId c = event.getContactId();
+		if (!event.getMessageHeader().hasText()) {
+			showContactNotification(c);
+			return;
+		}
 		androidExecutor.runOnBackgroundThread(() -> {
+			String text = null;
 			try {
-				String messageText = messagingManager.getMessageText(
+				text = messagingManager.getMessageText(
 						event.getMessageHeader().getId());
-
-				if (messageText == null || !isVoiceCallSignal(messageText)) {
-					return;
-				}
-				String decoded = decodeVoiceCallSignal(messageText);
-				if (decoded == null) return;
-
-				String[] parts = decoded.split(":");
-				if (parts.length < 2) return;
-
-				String signalType = parts[1];
-				if ("CALL_OFFER".equals(signalType)) {
-					String remoteCallId = parts.length > 2 ? parts[2] : null;
-					String voiceCallKey = parts.length > 3 ? parts[3] : null;
-
-					ContactId contactId = event.getContactId();
-					Contact contact = contactManager.getContact(contactId);
-					androidExecutor.runOnUiThread(() -> {
-						Intent intent = new Intent(appContext,
-								com.professor.zerion.android.conversation.voice.VoiceCallActivity.class);
-						intent.putExtra("contact_id", contactId.getInt());
-						intent.putExtra("is_incoming", true);
-						if (remoteCallId != null) {
-							intent.putExtra("call_id", remoteCallId);
-						}
-						intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-						appContext.startActivity(intent);
-					});
-				}
 			} catch (DbException e) {
 			}
+			if (text != null && isVoiceCallSignal(text)) {
+				launchIncomingCall(event, text);
+			}
+			com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat.Part p =
+					com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat
+							.parse(text);
+			if (p != null && p.seq > 0) {
+				try {
+					conversationManager.setReadFlag(
+							event.getMessageHeader().getGroupId(),
+							event.getMessageHeader().getId(), true);
+				} catch (DbException e) {
+				}
+				return;
+			}
+			androidExecutor.runOnUiThread(() -> showContactNotification(c));
+		});
+	}
+
+	private void launchIncomingCall(PrivateMessageReceivedEvent event,
+			String messageText) {
+		String decoded = decodeVoiceCallSignal(messageText);
+		if (decoded == null) return;
+		String[] parts = decoded.split(":");
+		if (parts.length < 2) return;
+		if (!"CALL_OFFER".equals(parts[1])) return;
+		String remoteCallId = parts.length > 2 ? parts[2] : null;
+		ContactId contactId = event.getContactId();
+		try {
+			contactManager.getContact(contactId);
+		} catch (DbException e) {
+			return;
+		}
+		androidExecutor.runOnUiThread(() -> {
+			Intent intent = new Intent(appContext,
+					com.professor.zerion.android.conversation.voice.VoiceCallActivity.class);
+			intent.putExtra("contact_id", contactId.getInt());
+			intent.putExtra("is_incoming", true);
+			if (remoteCallId != null) {
+				intent.putExtra("call_id", remoteCallId);
+			}
+			intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+			appContext.startActivity(intent);
 		});
 	}
 

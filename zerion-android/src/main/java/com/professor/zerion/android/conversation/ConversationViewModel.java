@@ -109,6 +109,9 @@ public class ConversationViewModel extends DbViewModel
 	private final AttachmentCreator attachmentCreator;
 	private final AutoDeleteManager autoDeleteManager;
 	private final ConversationManager conversationManager;
+	private final com.professor.zerion.android.conversation.voice.VoiceMessageSendManager voiceSendManager;
+	private final com.professor.zerion.android.conversation.voice.VoiceChunkAssembler voiceAssembler;
+	private final org.briarproject.bramble.api.versioning.ClientVersioningManager clientVersioningManager;
 
 	@Nullable
 	private ContactId contactId = null;
@@ -145,6 +148,8 @@ public class ConversationViewModel extends DbViewModel
 	private final MutableLiveEvent<Pair<MessageId, String>> messageTextLoaded =
 			new MutableLiveEvent<>();
 	private final MutableLiveEvent<Boolean> chatCleared = new MutableLiveEvent<>();
+	private final MutableLiveEvent<String> voiceMemoRebuilt =
+			new MutableLiveEvent<>();
 	private final MutableLiveEvent<Collection<MessageId>> messagesDeleted =
 			new MutableLiveEvent<>();
 	private final MutableLiveEvent<MarkMessagesEvent> messagesMarked =
@@ -199,6 +204,9 @@ public class ConversationViewModel extends DbViewModel
 			AttachmentCreator attachmentCreator,
 			AutoDeleteManager autoDeleteManager,
 			ConversationManager conversationManager,
+			com.professor.zerion.android.conversation.voice.VoiceMessageSendManager voiceSendManager,
+			com.professor.zerion.android.conversation.voice.VoiceChunkAssembler voiceAssembler,
+			org.briarproject.bramble.api.versioning.ClientVersioningManager clientVersioningManager,
 			org.briarproject.bramble.api.identity.IdentityManager identityManager) {
 		super(application, dbExecutor, lifecycleManager, db, androidExecutor);
 		this.db = db;
@@ -212,6 +220,9 @@ public class ConversationViewModel extends DbViewModel
 		this.attachmentCreator = attachmentCreator;
 		this.autoDeleteManager = autoDeleteManager;
 		this.conversationManager = conversationManager;
+		this.voiceSendManager = voiceSendManager;
+		this.voiceAssembler = voiceAssembler;
+		this.clientVersioningManager = clientVersioningManager;
 		this.identityManager = identityManager;
 		messagingGroupId = map(contactItem, c ->
 				messagingManager.getContactGroup(c.getContact()).getId());
@@ -226,6 +237,7 @@ public class ConversationViewModel extends DbViewModel
 		offlineDebounceHandler.removeCallbacksAndMessages(null);
 		pendingOfflineCallback = null;
 		zeroizeVoiceRecordingState();
+		voiceAssembler.clear();
 	}
 
 	private void cancelPendingOffline() {
@@ -716,16 +728,41 @@ public class ConversationViewModel extends DbViewModel
 
 			Contact contact = requireNonNull(contactItem.getValue()).getContact();
 			GroupId groupId = messagingManager.getContactGroup(contact).getId();
+			ContactId cId = requireNonNull(contactId);
 
-			long timestamp = db.transactionWithResult(false, txn ->
-				conversationManager.getTimestampForOutgoingMessage(txn, requireNonNull(contactId)));
 			String messageText = com.professor.zerion.android.conversation.voice.VoiceMessageFormat
 				.format(durationMs, payload);
+
+			int peerMinor = db.transactionWithResult(true, txn ->
+				clientVersioningManager.getClientMinorVersion(txn, cId,
+					org.briarproject.briar.api.messaging.MessagingManager.CLIENT_ID, 0));
+			boolean chunk = com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat
+					.shouldChunk(messageText)
+				&& peerMinor >= org.briarproject.briar.api.messaging.MessagingManager.CHUNKED_VOICE_MIN_VERSION;
+
+			final String firstText;
+			final String memoId;
+			final java.util.List<String> laterParts;
+			if (chunk) {
+				memoId = voiceSendManager.newMemoId();
+				java.util.List<String> parts =
+					voiceSendManager.split(messageText, memoId);
+				firstText = parts.get(0);
+				laterParts = new java.util.ArrayList<>(
+					parts.subList(1, parts.size()));
+			} else {
+				memoId = null;
+				firstText = messageText;
+				laterParts = null;
+			}
+
+			long timestamp = db.transactionWithResult(false, txn ->
+				conversationManager.getTimestampForOutgoingMessage(txn, cId));
 
 			PrivateMessage pm;
 			try {
 				pm = privateMessageFactory.createLegacyPrivateMessage(
-					groupId, timestamp, messageText);
+					groupId, timestamp, firstText);
 			} catch (FormatException e) {
 				throw new AssertionError("Failed to create voice message", e);
 			}
@@ -742,6 +779,11 @@ public class ConversationViewModel extends DbViewModel
 
 				txn.attach(() -> addedHeader.postEvent(header));
 			});
+
+			if (chunk && laterParts != null && !laterParts.isEmpty()) {
+				voiceSendManager.register(cId, groupId, memoId, laterParts,
+					pm.getMessage().getId());
+			}
 
 		} catch (DbException e) {
 			handleException(e);
@@ -788,6 +830,42 @@ public class ConversationViewModel extends DbViewModel
 		attachmentCreator.cancel();
 	}
 
+	public void feedVoicePart(@Nullable String text) {
+		voiceAssembler.addPartText(text);
+	}
+
+	@Nullable
+	public String getReassembledVoiceMessage(String memoId) {
+		return voiceAssembler.getReassembled(memoId);
+	}
+
+	public boolean isVoiceMemoFailed(String memoId) {
+		return voiceAssembler.isFailed(memoId);
+	}
+
+	public void rebuildVoiceMemo(String memoId) {
+		if (contactId == null) return;
+		final ContactId c = contactId;
+		runOnDbThread(() -> {
+			try {
+				Map<MessageId, String> texts =
+						messagingManager.getMessageTexts(c);
+				for (String t : texts.values()) {
+					com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat.Part p =
+							com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat
+									.parse(t);
+					if (p != null && p.memoId.equals(memoId)) {
+						voiceAssembler.addPartText(t);
+					}
+				}
+				if (voiceAssembler.getReassembled(memoId) != null) {
+					voiceMemoRebuilt.postEvent(memoId);
+				}
+			} catch (DbException ignored) {
+			}
+		});
+	}
+
 	void loadMessageHeaders() {
 		if (contactId == null) return;
 		messagesLoading.setValue(true);
@@ -797,6 +875,27 @@ public class ConversationViewModel extends DbViewModel
 				Collection<ConversationMessageHeader> headers =
 						conversationManager.getMessageHeaders(c);
 				Map<MessageId, String> texts = messagingManager.getMessageTexts(c);
+				Map<MessageId, GroupId> unread = new java.util.HashMap<>();
+				for (ConversationMessageHeader h : headers) {
+					if (!h.isRead()) unread.put(h.getId(), h.getGroupId());
+				}
+				for (Map.Entry<MessageId, String> e : texts.entrySet()) {
+					String t = e.getValue();
+					voiceAssembler.addPartText(t);
+					GroupId g = unread.get(e.getKey());
+					if (g != null) {
+						com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat.Part p =
+								com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat
+										.parse(t);
+						if (p != null && p.seq > 0) {
+							try {
+								conversationManager.setReadFlag(g, e.getKey(),
+										true);
+							} catch (DbException ignored) {
+							}
+						}
+					}
+				}
 				messageTexts.postValue(texts);
 				messageHeaders.postValue(headers);
 			} catch (NoSuchContactException e) {
@@ -828,10 +927,12 @@ public class ConversationViewModel extends DbViewModel
 		final ContactId c = contactId;
 		runOnDbThread(() -> {
 			try {
+				Collection<MessageId> toDelete =
+						expandVoiceMemoParts(c, messageIds);
 				DeletionResult result =
-						conversationManager.deleteMessages(c, messageIds);
+						conversationManager.deleteMessages(c, toDelete);
 				if (result.allDeleted()) {
-					messagesDeleted.postEvent(messageIds);
+					messagesDeleted.postEvent(toDelete);
 				} else {
 					loadMessageHeaders();
 				}
@@ -839,6 +940,32 @@ public class ConversationViewModel extends DbViewModel
 				handleException(e);
 			}
 		});
+	}
+
+	private Collection<MessageId> expandVoiceMemoParts(ContactId c,
+			Collection<MessageId> messageIds) throws DbException {
+		java.util.Set<String> memoIds = new java.util.HashSet<>();
+		for (MessageId id : messageIds) {
+			com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat.Part p =
+					com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat
+							.parse(messagingManager.getMessageText(id));
+			if (p != null) memoIds.add(p.memoId);
+		}
+		if (memoIds.isEmpty()) return messageIds;
+		for (String memoId : memoIds) {
+			voiceSendManager.cancelMemo(memoId);
+		}
+		Map<MessageId, String> texts = messagingManager.getMessageTexts(c);
+		java.util.Set<MessageId> expanded = new java.util.HashSet<>(messageIds);
+		for (Map.Entry<MessageId, String> e : texts.entrySet()) {
+			com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat.Part p =
+					com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat
+							.parse(e.getValue());
+			if (p != null && memoIds.contains(p.memoId)) {
+				expanded.add(e.getKey());
+			}
+		}
+		return expanded;
 	}
 
 	void clearChat() {
@@ -889,6 +1016,10 @@ public class ConversationViewModel extends DbViewModel
 
 	LiveEvent<Pair<MessageId, String>> getMessageTextLoaded() {
 		return messageTextLoaded;
+	}
+
+	LiveEvent<String> getVoiceMemoRebuilt() {
+		return voiceMemoRebuilt;
 	}
 
 	LiveEvent<Boolean> getChatCleared() {

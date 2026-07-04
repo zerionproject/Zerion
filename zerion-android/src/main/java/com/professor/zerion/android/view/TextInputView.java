@@ -178,7 +178,9 @@ public class TextInputView extends LinearLayout {
 		String rawText = item.getText();
 		if (rawText == null || rawText.isEmpty()) {
 			displayText = getContext().getString(R.string.media);
-		} else if (rawText.startsWith("[VOICE:")) {
+		} else if (rawText.startsWith("[VOICE:")
+				|| com.professor.zerion.android.conversation.voice
+						.VoiceMessageChunkFormat.isPart(rawText)) {
 			displayText = getContext().getString(R.string.voice_message);
 		} else if (com.professor.zerion.android.conversation.voice
 				.VoiceCallSignal.isSignal(rawText)

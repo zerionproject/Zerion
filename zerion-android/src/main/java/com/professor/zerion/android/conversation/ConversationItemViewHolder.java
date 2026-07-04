@@ -116,7 +116,9 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 		}
 
 		if (item.getText() != null) {
-			if (item.getText().startsWith("[VOICE:")) {
+			if (item.getText().startsWith("[VOICE:")
+					|| com.professor.zerion.android.conversation.voice
+							.VoiceMessageChunkFormat.isPart(item.getText())) {
 				text.setText("");
 			} else {
 				String body = trim(item.getText());
