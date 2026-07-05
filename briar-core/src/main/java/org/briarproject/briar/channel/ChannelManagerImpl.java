@@ -272,7 +272,7 @@ class ChannelManagerImpl
 	public void eventOccurred(Event e) {
 		try {
 			if (e instanceof B4OwnRotationCompletedEvent) {
-				ioExecutor.execute(this::rebindAllPublisherServers);
+				ioExecutor.execute(this::ensurePublisherServersBound);
 			} else if (e instanceof TransportActiveEvent) {
 				TransportActiveEvent t = (TransportActiveEvent) e;
 				if (TorConstants.ID.equals(t.getTransportId())) {
@@ -281,35 +281,6 @@ class ChannelManagerImpl
 				}
 			}
 		} catch (java.util.concurrent.RejectedExecutionException ignored) {
-		}
-	}
-
-	private void rebindAllPublisherServers() {
-		try {
-			for (ChannelState s : store.listChannels()) {
-				if (!s.weArePublisher()) continue;
-				java.util.concurrent.locks.ReentrantLock lock =
-						lockFor(s.getChannelId());
-				lock.lock();
-				try {
-					ChannelState fresh = store.getChannel(s.getChannelId());
-					if (fresh == null || !fresh.weArePublisher()) continue;
-					ChannelTransport.ChannelServer previous =
-							boundServers.remove(ChannelStore.hex(
-									fresh.getChannelId()));
-					if (previous != null) previous.close();
-					String newOnion = bindPublisherServer(
-							fresh.getChannelId());
-					if (newOnion == null || newOnion.isEmpty()) continue;
-					ChannelState rotated = withRotatedOnion(fresh, newOnion);
-					store.putChannel(rotated);
-					fireEvent(fresh.getChannelId(),
-							ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
-				} finally {
-					lock.unlock();
-				}
-			}
-		} catch (DbException ignored) {
 		}
 	}
 
