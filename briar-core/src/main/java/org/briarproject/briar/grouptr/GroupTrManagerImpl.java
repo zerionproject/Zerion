@@ -16,6 +16,7 @@ import org.briarproject.bramble.api.event.EventBus;
 import org.briarproject.bramble.api.event.EventListener;
 import org.briarproject.bramble.api.identity.IdentityManager;
 import org.briarproject.bramble.api.identity.LocalAuthor;
+import org.briarproject.bramble.api.lifecycle.IoExecutor;
 import org.briarproject.bramble.api.lifecycle.LifecycleManager.OpenDatabaseHook;
 import org.briarproject.bramble.api.settings.Settings;
 import org.briarproject.bramble.api.settings.SettingsManager;
@@ -47,6 +48,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
@@ -89,6 +91,7 @@ class GroupTrManagerImpl
 		implements GroupTrManager, EventListener, OpenDatabaseHook {
 
 	private final DatabaseComponent db;
+	private final Executor ioExecutor;
 	private final SettingsManager settingsManager;
 	private final ClientHelper clientHelper;
 	private final CryptoComponent crypto;
@@ -124,12 +127,13 @@ class GroupTrManagerImpl
 	}
 
 	@Inject
-	GroupTrManagerImpl(DatabaseComponent db,
+	GroupTrManagerImpl(DatabaseComponent db, @IoExecutor Executor ioExecutor,
 			SettingsManager settingsManager, ClientHelper clientHelper,
 			CryptoComponent crypto, IdentityManager identityManager,
 			ContactManager contactManager, MessagingManager messagingManager,
 			EventBus eventBus, Clock clock) {
 		this.db = db;
+		this.ioExecutor = ioExecutor;
 		this.settingsManager = settingsManager;
 		this.clientHelper = clientHelper;
 		this.crypto = crypto;
@@ -144,8 +148,15 @@ class GroupTrManagerImpl
 	@Override
 	public void onDatabaseOpened(Transaction txn) throws DbException {
 		eventBus.addListener(this);
-		purgeExpiredFromDb(txn);
 		purgeExpiredPosts();
+		ioExecutor.execute(this::purgeExpiredFromDbSafely);
+	}
+
+	private void purgeExpiredFromDbSafely() {
+		try {
+			db.transaction(false, this::purgeExpiredFromDb);
+		} catch (DbException | RuntimeException ex) {
+		}
 	}
 
 	private void purgeExpiredFromDb(Transaction txn) throws DbException {
