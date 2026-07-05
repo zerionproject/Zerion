@@ -755,50 +755,58 @@ public class ChannelFeedActivity extends ZerionActivity
 	private void presentAttachment(ChannelPost.ChannelAttachment att,
 			AttachmentBlob blob, android.widget.ImageView thumbView) {
 		String mime = blob.getMimeType();
-		if (mime.startsWith("image/")) {
-			String ck = bytesToHex(att.getBlobHash());
-			android.graphics.Bitmap bmp = FEED_THUMB_CACHE.get(ck);
-			if (bmp == null || bmp.isRecycled()) {
-				bmp = com.professor.zerion.android.util.SafeImageDecoder
-						.decode(blob.getPlaintextBytes(), 1280);
-				if (bmp != null) FEED_THUMB_CACHE.put(ck, bmp);
+		ioExecutor.execute(() -> {
+			if (mime.startsWith("image/")) {
+				String ck = bytesToHex(att.getBlobHash());
+				android.graphics.Bitmap bmp = FEED_THUMB_CACHE.get(ck);
+				if (bmp == null || bmp.isRecycled()) {
+					bmp = com.professor.zerion.android.util.SafeImageDecoder
+							.decode(blob.getPlaintextBytes(), 1280);
+					if (bmp != null) FEED_THUMB_CACHE.put(ck, bmp);
+				}
+				if (bmp != null) {
+					android.graphics.Bitmap finalBmp = bmp;
+					runOnUiThreadUnlessDestroyed(() -> {
+						thumbView.setImageBitmap(finalBmp);
+						thumbView.setVisibility(View.VISIBLE);
+					});
+					return;
+				}
 			}
-			if (bmp != null) {
-				thumbView.setImageBitmap(bmp);
-				thumbView.setVisibility(View.VISIBLE);
+			java.io.File outFile;
+			try {
+				java.io.File dir = attachmentStagingDir();
+				if (!dir.exists()) dir.mkdirs();
+				String safeName = sanitizeFileName(guessFileName(att, mime));
+				outFile = new java.io.File(dir, safeName);
+				try (java.io.FileOutputStream fos =
+							new java.io.FileOutputStream(outFile)) {
+					fos.write(blob.getPlaintextBytes());
+				}
+			} catch (java.io.IOException ex) {
+				runOnUiThreadUnlessDestroyed(() -> Toast.makeText(this,
+						R.string.channels_attach_open_failed,
+						Toast.LENGTH_LONG).show());
 				return;
 			}
-		}
-		java.io.File outFile;
-		try {
-			java.io.File dir = attachmentStagingDir();
-			if (!dir.exists()) dir.mkdirs();
-			String safeName = sanitizeFileName(
-					guessFileName(att, blob.getMimeType()));
-			outFile = new java.io.File(dir, safeName);
-			try (java.io.FileOutputStream fos =
-						new java.io.FileOutputStream(outFile)) {
-				fos.write(blob.getPlaintextBytes());
-			}
-		} catch (java.io.IOException ex) {
-			Toast.makeText(this,
-					R.string.channels_attach_open_failed,
-					Toast.LENGTH_LONG).show();
-			return;
-		}
-		try {
-			android.net.Uri shareUri =
-					androidx.core.content.FileProvider.getUriForFile(this,
-							getPackageName() + ".fileprovider", outFile);
-			Intent view = new Intent(Intent.ACTION_VIEW);
-			view.setDataAndType(shareUri, blob.getMimeType());
-			view.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-			startActivity(view);
-		} catch (android.content.ActivityNotFoundException ex) {
-			Toast.makeText(this,
-					R.string.channels_attach_open_failed,
-					Toast.LENGTH_LONG).show();
-		}
+			java.io.File finalOut = outFile;
+			runOnUiThreadUnlessDestroyed(() -> {
+				try {
+					android.net.Uri shareUri = androidx.core.content
+							.FileProvider.getUriForFile(this,
+									getPackageName() + ".fileprovider",
+									finalOut);
+					Intent view = new Intent(Intent.ACTION_VIEW);
+					view.setDataAndType(shareUri, mime);
+					view.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+					startActivity(view);
+				} catch (android.content.ActivityNotFoundException ex) {
+					Toast.makeText(this,
+							R.string.channels_attach_open_failed,
+							Toast.LENGTH_LONG).show();
+				}
+			});
+		});
 	}
 
 	private java.io.File attachmentStagingDir() {

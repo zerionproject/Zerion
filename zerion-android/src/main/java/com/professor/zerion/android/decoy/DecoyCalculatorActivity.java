@@ -23,6 +23,14 @@ public class DecoyCalculatorActivity extends Activity {
 	public static final String EXTRA_DECOY_PASSED =
 			"com.professor.zerion.android.decoy.PASSED";
 
+	private static final java.util.concurrent.atomic.AtomicBoolean
+			DECOY_PASSED_TOKEN =
+			new java.util.concurrent.atomic.AtomicBoolean(false);
+
+	public static boolean consumeDecoyPassed() {
+		return DECOY_PASSED_TOKEN.getAndSet(false);
+	}
+
 	private static final char OP_ADD = '+';
 	private static final char OP_SUB = '-';
 	private static final char OP_MUL = '*';
@@ -114,8 +122,8 @@ public class DecoyCalculatorActivity extends Activity {
 		char[] candidate = toChars(rawInput);
 		try {
 			if (DecoyConfig.verify(this, candidate)) {
+				DECOY_PASSED_TOKEN.set(true);
 				Intent i = new Intent(this, SplashScreenActivity.class);
-				i.putExtra(EXTRA_DECOY_PASSED, true);
 				i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
 						| Intent.FLAG_ACTIVITY_CLEAR_TASK);
 				startActivity(i);

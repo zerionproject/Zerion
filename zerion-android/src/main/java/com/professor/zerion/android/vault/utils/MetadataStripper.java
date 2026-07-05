@@ -146,9 +146,31 @@ public class MetadataStripper {
 			return jpegData;
 		} finally {
 			if (tempFile != null) {
-				tempFile.delete();
+				secureDelete(tempFile);
 			}
 		}
+	}
+
+	private static void secureDelete(File f) {
+		if (f == null || !f.isFile()) return;
+		try {
+			long len = f.length();
+			if (len > 0 && len < 512L * 1024 * 1024) {
+				try (java.io.RandomAccessFile raf =
+						new java.io.RandomAccessFile(f, "rw")) {
+					byte[] zeros = new byte[8192];
+					long written = 0;
+					while (written < len) {
+						int chunk = (int) Math.min(zeros.length, len - written);
+						raf.write(zeros, 0, chunk);
+						written += chunk;
+					}
+					raf.getFD().sync();
+				}
+			}
+		} catch (IOException ignored) {
+		}
+		if (!f.delete()) f.deleteOnExit();
 	}
 
 	private byte[] stripVideoMetadata(byte[] videoData) {
@@ -173,8 +195,8 @@ public class MetadataStripper {
 		} catch (IOException e) {
 			return videoData;
 		} finally {
-			if (tempIn != null) tempIn.delete();
-			if (tempOut != null) tempOut.delete();
+			if (tempIn != null) secureDelete(tempIn);
+			if (tempOut != null) secureDelete(tempOut);
 		}
 	}
 
@@ -242,7 +264,7 @@ public class MetadataStripper {
 			return tempOutput;
 
 		} catch (Exception e) {
-			if (tempOutput != null) tempOutput.delete();
+			if (tempOutput != null) secureDelete(tempOutput);
 			throw new IOException("Failed to strip video metadata", e);
 		} finally {
 			if (extractor != null) extractor.release();
@@ -314,7 +336,7 @@ public class MetadataStripper {
 			return tempOutput;
 
 		} catch (Exception e) {
-			if (tempOutput != null) tempOutput.delete();
+			if (tempOutput != null) secureDelete(tempOutput);
 			throw new IOException("Failed to remux video", e);
 		} finally {
 			if (extractor != null) extractor.release();
