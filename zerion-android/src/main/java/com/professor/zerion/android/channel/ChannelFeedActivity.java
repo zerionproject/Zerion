@@ -38,6 +38,7 @@ import org.briarproject.briar.api.channel.ChannelPost;
 import org.briarproject.briar.api.channel.ChannelReaction;
 import org.briarproject.briar.api.channel.ChannelState;
 import org.briarproject.briar.api.channel.event.ChannelPostReceivedEvent;
+import org.briarproject.briar.api.channel.event.ChannelCommentReceivedEvent;
 import org.briarproject.briar.api.channel.event.ChannelStateChangedEvent;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
@@ -116,7 +117,7 @@ public class ChannelFeedActivity extends ZerionActivity
 				android.view.WindowManager.LayoutParams.FLAG_SECURE);
 		setContentView(R.layout.activity_channel_feed);
 
-		wipeAttachmentStagingDir();
+		ioExecutor.execute(this::wipeAttachmentStagingDir);
 
 		Intent i = getIntent();
 		byte[] cid = i.getByteArrayExtra(EXTRA_CHANNEL_ID);
@@ -253,7 +254,7 @@ public class ChannelFeedActivity extends ZerionActivity
 			refreshHandler.removeCallbacks(refreshTick);
 			refreshHandler = null;
 		}
-		wipeAttachmentStagingDir();
+		ioExecutor.execute(this::wipeAttachmentStagingDir);
 		if (composeInput != null && channelId.length > 0) {
 			String draft = composeInput.getText().toString();
 			android.content.SharedPreferences sp = com.professor.zerion.android
@@ -285,6 +286,11 @@ public class ChannelFeedActivity extends ZerionActivity
 							R.string.channels_applicant_approved_notice,
 							Toast.LENGTH_SHORT).show());
 				}
+				runOnUiThreadUnlessDestroyed(this::loadChannel);
+			}
+		} else if (e instanceof ChannelCommentReceivedEvent) {
+			ChannelCommentReceivedEvent ev = (ChannelCommentReceivedEvent) e;
+			if (Arrays.equals(ev.getChannelId(), channelId)) {
 				runOnUiThreadUnlessDestroyed(this::loadChannel);
 			}
 		}

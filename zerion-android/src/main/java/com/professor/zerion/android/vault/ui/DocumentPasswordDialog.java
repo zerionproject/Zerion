@@ -84,8 +84,9 @@ public class DocumentPasswordDialog extends DialogFragment {
 		View view = inflater.inflate(R.layout.dialog_password, null);
 
 		messageText = view.findViewById(R.id.password_message);
-		passwordInput = view.findViewById(R.id.password_input);
-		confirmPasswordInput = view.findViewById(R.id.confirm_password_input);
+		passwordInput = view.findViewById(R.id.password_input_1);
+		confirmPasswordInput = view.findViewById(R.id.password_input_2);
+		View confirmLayout = view.findViewById(R.id.password_layout_2);
 		showPasswordCheckbox = view.findViewById(R.id.show_password_checkbox);
 
 		if (message != null && !message.isEmpty()) {
@@ -96,9 +97,9 @@ public class DocumentPasswordDialog extends DialogFragment {
 		}
 
 		if (confirmMode) {
-			confirmPasswordInput.setVisibility(View.VISIBLE);
+			confirmLayout.setVisibility(View.VISIBLE);
 		} else {
-			confirmPasswordInput.setVisibility(View.GONE);
+			confirmLayout.setVisibility(View.GONE);
 		}
 
 		showPasswordCheckbox.setOnCheckedChangeListener((buttonView, isChecked) -> {

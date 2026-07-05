@@ -37,6 +37,8 @@ public class VaultViewModel extends AndroidViewModel {
 
 	private final VaultManager vaultManager;
 	private final Executor dbExecutor;
+	private static final Executor THUMB_DECODE_EXECUTOR =
+			java.util.concurrent.Executors.newSingleThreadExecutor();
 
 	private final MutableLiveData<VaultState> vaultState = new MutableLiveData<>();
 	private final MutableLiveData<List<VaultItem>> vaultItems = new MutableLiveData<>();
@@ -182,6 +184,8 @@ public class VaultViewModel extends AndroidViewModel {
 		vaultManager.lockVault();
 		vaultState.postValue(VaultState.LOCKED);
 		clearSensitiveMemory();
+		com.professor.zerion.android.vault.ui.adapters.VaultGalleryAdapter
+				.clearThumbnailCache();
 	}
 
 	public void loadVaultItems() {
@@ -768,9 +772,8 @@ public class VaultViewModel extends AndroidViewModel {
 				}
 
 				byte[] finalThumbnail = thumbnail;
-				new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
-					callback.onThumbnailRetrieved(finalThumbnail);
-				});
+				THUMB_DECODE_EXECUTOR.execute(() ->
+						callback.onThumbnailRetrieved(finalThumbnail));
 			} catch (SecurityException e) {
 				new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
 					callback.onError("Vault is locked");

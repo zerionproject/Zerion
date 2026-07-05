@@ -428,7 +428,12 @@ class ChannelManagerImpl
 
 	@Nullable
 	private String bindPublisherServer(byte[] channelId) {
+		java.util.concurrent.locks.ReentrantLock lock = lockFor(channelId);
+		lock.lock();
 		try {
+			String key = ChannelStore.hex(channelId);
+			ChannelTransport.ChannelServer bound = boundServers.get(key);
+			if (bound != null) return bound.getOnionAddress();
 			ChannelState existing = store.getChannel(channelId);
 			String existingPriv = existing == null ? null
 					: existing.getOnionPrivateKey();
@@ -436,7 +441,7 @@ class ChannelManagerImpl
 					transport.bindServer(channelId, existingPriv,
 							requestBytes -> handlePublisherRequest(
 									channelId, requestBytes));
-			boundServers.put(ChannelStore.hex(channelId), server);
+			boundServers.put(key, server);
 			String returnedPriv = server.getOnionPrivateKey();
 			if (returnedPriv != null && (existingPriv == null
 					|| !returnedPriv.equals(existingPriv))) {
@@ -451,6 +456,8 @@ class ChannelManagerImpl
 			return null;
 		} catch (DbException e) {
 			return null;
+		} finally {
+			lock.unlock();
 		}
 	}
 

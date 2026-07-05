@@ -232,11 +232,16 @@ public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFr
 						File[] oldFiles = cacheDir.listFiles();
 						if (oldFiles != null) {
 							for (File f : oldFiles) {
-								f.delete();
+								secureDeleteFile(f);
 							}
 						}
 
-						File tempFile = new File(cacheDir, item.name);
+						String safeName = new File(item.name).getName();
+						if (safeName.isEmpty() || safeName.equals(".")
+								|| safeName.equals("..")) {
+							safeName = "attachment";
+						}
+						File tempFile = new File(cacheDir, safeName);
 						FileOutputStream fos = new FileOutputStream(tempFile);
 						fos.write(content);
 						fos.close();
@@ -274,6 +279,28 @@ public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFr
 						Toast.LENGTH_SHORT).show();
 			}
 		});
+	}
+
+	private static void secureDeleteFile(File f) {
+		if (f == null || !f.isFile()) return;
+		try {
+			long len = f.length();
+			if (len > 0 && len < 512L * 1024 * 1024) {
+				try (java.io.RandomAccessFile raf =
+						new java.io.RandomAccessFile(f, "rw")) {
+					byte[] zeros = new byte[8192];
+					long written = 0;
+					while (written < len) {
+						int chunk = (int) Math.min(zeros.length, len - written);
+						raf.write(zeros, 0, chunk);
+						written += chunk;
+					}
+					raf.getFD().sync();
+				}
+			}
+		} catch (java.io.IOException ignored) {
+		}
+		if (!f.delete()) f.deleteOnExit();
 	}
 
 	private void showSetupFragment() {

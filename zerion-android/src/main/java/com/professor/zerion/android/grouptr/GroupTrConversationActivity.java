@@ -320,7 +320,8 @@ public class GroupTrConversationActivity extends ZerionActivity
 		if (groupId != null) {
 			notificationManager.blockGroupTrNotification(groupId);
 			notificationManager.clearGroupTrPostNotification(groupId);
-			groupTrManager.markGroupRead(groupId);
+			byte[] gid = groupId;
+			ioExecutor.execute(() -> groupTrManager.markGroupRead(gid));
 		}
 	}
 
@@ -343,13 +344,13 @@ public class GroupTrConversationActivity extends ZerionActivity
 	@Override
 	public void onResume() {
 		super.onResume();
-		wipeGroupTrViewCache();
+		ioExecutor.execute(this::wipeGroupTrViewCache);
 	}
 
 	@Override
 	public void onDestroy() {
 		main.removeCallbacksAndMessages(null);
-		wipeGroupTrViewCache();
+		ioExecutor.execute(this::wipeGroupTrViewCache);
 		super.onDestroy();
 	}
 
@@ -638,6 +639,7 @@ public class GroupTrConversationActivity extends ZerionActivity
 			try {
 				String current = groupTrManager.getStealthName(groupId);
 				main.post(() -> {
+					if (isFinishing() || isDestroyed()) return;
 					if (current != null) editor.setText(current);
 					new AlertDialog.Builder(this)
 							.setTitle(R.string.grouptr_stealth_name_set)

@@ -260,6 +260,7 @@ public class ZerionService extends Service {
 
 		if (level == TRIM_MEMORY_UI_HIDDEN) {
 			clearBitmapThumbnailCaches();
+			maybeClearGlideCache();
 		} else if (level == TRIM_MEMORY_BACKGROUND) {
 		} else if (level == TRIM_MEMORY_MODERATE) {
 		} else if (level == TRIM_MEMORY_COMPLETE) {

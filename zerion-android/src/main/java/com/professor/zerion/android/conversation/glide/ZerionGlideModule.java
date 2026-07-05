@@ -14,7 +14,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.InputStream;
 
-import static android.util.Log.WARN;
+import static android.util.Log.ASSERT;
 
 @GlideModule
 @NotNullByDefault
@@ -31,7 +31,7 @@ public final class ZerionGlideModule extends AppGlideModule {
 
 	@Override
 	public void applyOptions(Context context, GlideBuilder builder) {
-		builder.setLogLevel(WARN);
+		builder.setLogLevel(ASSERT);
 		builder.setDiskCache(() -> null);
 	}
 

@@ -37,6 +37,9 @@ import com.professor.zerion.android.vault.utils.SecureMemory;
 public class VaultManager {
 	private static final String HEADER_FILE = "vault.header";
 	private static final String ITEMS_DIR = "items";
+	private static final byte[] EXPORT_META_AAD =
+			"zerion-vault-export-meta".getBytes(
+					java.nio.charset.StandardCharsets.UTF_8);
 	private static final long AUTO_LOCK_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(30);
 
 	private final Context context;
@@ -920,7 +923,7 @@ public class VaultManager {
 		java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
 		java.io.DataOutputStream dos = new java.io.DataOutputStream(baos);
 
-		dos.writeInt(2);
+		dos.writeInt(3);
 
 		dos.writeInt(currentHeader.version);
 
@@ -941,8 +944,11 @@ public class VaultManager {
 			byte[] content = getItemContent(item.id);
 
 			byte[] metadata = item.serializeMetadata();
-			dos.writeInt(metadata.length);
-			dos.write(metadata);
+			byte[] encryptedMetadata = crypto.encrypt(
+					metadata, exportKey, EXPORT_META_AAD).toBytes();
+			SecureMemory.shred(metadata);
+			dos.writeInt(encryptedMetadata.length);
+			dos.write(encryptedMetadata);
 
 			VaultCrypto.EncryptedData encryptedContent = crypto.encrypt(
 					content, exportKey, item.id.getBytes()
@@ -970,11 +976,12 @@ public class VaultManager {
 		java.io.DataInputStream dis = new java.io.DataInputStream(bais);
 
 		int exportFormatVersion = dis.readInt();
-		if (exportFormatVersion != 2) {
+		if (exportFormatVersion != 2 && exportFormatVersion != 3) {
 			throw new IOException(
 					"Unsupported export version: " + exportFormatVersion +
 							" (re-export with current Zerion version)");
 		}
+		boolean encryptedMetadata = exportFormatVersion >= 3;
 
 		int vaultCryptoVersion = dis.readInt();
 
@@ -1005,8 +1012,16 @@ public class VaultManager {
 			if (metadataLen < 0 || metadataLen > MAX_METADATA_SIZE) {
 				throw new IOException("Invalid metadata size: " + metadataLen);
 			}
-			byte[] metadata = new byte[metadataLen];
-			dis.readFully(metadata);
+			byte[] metadataBytes = new byte[metadataLen];
+			dis.readFully(metadataBytes);
+			byte[] metadata;
+			if (encryptedMetadata) {
+				metadata = crypto.decrypt(
+						VaultCrypto.EncryptedData.fromBytes(metadataBytes),
+						exportKey, EXPORT_META_AAD);
+			} else {
+				metadata = metadataBytes;
+			}
 			VaultItem item = VaultItem.deserializeMetadata(metadata);
 
 			if (!replaceExisting && fileIO.exists(ITEMS_DIR + "/" + item.id)) {
@@ -1014,7 +1029,12 @@ public class VaultManager {
 				if (contentLen < 0 || contentLen > MAX_CONTENT_SIZE) {
 					throw new IOException("Invalid content size: " + contentLen);
 				}
-				dis.skip(contentLen);
+				long remaining = contentLen;
+				while (remaining > 0) {
+					long skipped = dis.skip(remaining);
+					if (skipped <= 0) break;
+					remaining -= skipped;
+				}
 				continue;
 			}
 

@@ -373,6 +373,7 @@ public class GroupTrAdminActivity extends ZerionActivity {
 	}
 
 	private void showCandidatePicker(GroupTrState s, List<Contact> candidates) {
+		if (isFinishing() || isDestroyed()) return;
 		if (candidates.isEmpty()) {
 			toast(R.string.grouptr_no_candidates);
 			return;

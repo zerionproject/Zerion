@@ -394,16 +394,24 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 			return;
 		}
 
+		PdfRenderer.Page page = null;
 		try {
 			if (currentPageBitmap != null && !currentPageBitmap.isRecycled()) {
 				currentPageBitmap.recycle();
 				currentPageBitmap = null;
 			}
 
-			PdfRenderer.Page page = pdfRenderer.openPage(pageIndex);
+			page = pdfRenderer.openPage(pageIndex);
 
 			int width = page.getWidth() * 2;
 			int height = page.getHeight() * 2;
+			int maxDim = 2048;
+			if (width > maxDim || height > maxDim) {
+				float scale = Math.min((float) maxDim / width,
+						(float) maxDim / height);
+				width = Math.max(1, Math.round(width * scale));
+				height = Math.max(1, Math.round(height * scale));
+			}
 
 			currentPageBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
 
@@ -416,12 +424,20 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 			pdfPrevButton.setEnabled(pageIndex > 0);
 			pdfNextButton.setEnabled(pageIndex < pdfRenderer.getPageCount() - 1);
 
-			page.close();
-
 			currentPdfPage = pageIndex;
 
-		} catch (Exception e) {
-			Toast.makeText(requireContext(), "Failed to render page", Toast.LENGTH_SHORT).show();
+		} catch (Throwable e) {
+			if (isAdded()) {
+				Toast.makeText(requireContext(), "Failed to render page",
+						Toast.LENGTH_SHORT).show();
+			}
+		} finally {
+			if (page != null) {
+				try {
+					page.close();
+				} catch (Exception ignored) {
+				}
+			}
 		}
 	}
 
