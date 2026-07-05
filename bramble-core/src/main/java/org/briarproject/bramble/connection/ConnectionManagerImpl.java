@@ -6,6 +6,7 @@ import org.briarproject.bramble.api.contact.ContactExchangeManager;
 import org.briarproject.bramble.api.contact.ContactId;
 import org.briarproject.bramble.api.contact.HandshakeManager;
 import org.briarproject.bramble.api.contact.PendingContactId;
+import org.briarproject.bramble.api.event.EventBus;
 import org.briarproject.bramble.api.lifecycle.IoExecutor;
 import org.briarproject.bramble.api.plugin.TransportConnectionReader;
 import org.briarproject.bramble.api.plugin.TransportConnectionWriter;
@@ -39,6 +40,7 @@ class ConnectionManagerImpl implements ConnectionManager {
 	private final ConnectionRegistry connectionRegistry;
 	private final TransportPropertyManager transportPropertyManager;
 	private final SecureRandom secureRandom;
+	private final EventBus eventBus;
 
 	@Inject
 	ConnectionManagerImpl(@IoExecutor Executor ioExecutor,
@@ -49,7 +51,7 @@ class ConnectionManagerImpl implements ConnectionManager {
 			ContactExchangeManager contactExchangeManager,
 			ConnectionRegistry connectionRegistry,
 			TransportPropertyManager transportPropertyManager,
-			SecureRandom secureRandom) {
+			SecureRandom secureRandom, EventBus eventBus) {
 		this.ioExecutor = ioExecutor;
 		this.keyManager = keyManager;
 		this.streamReaderFactory = streamReaderFactory;
@@ -60,6 +62,7 @@ class ConnectionManagerImpl implements ConnectionManager {
 		this.connectionRegistry = connectionRegistry;
 		this.transportPropertyManager = transportPropertyManager;
 		this.secureRandom = secureRandom;
+		this.eventBus = eventBus;
 	}
 
 	@Override
@@ -83,8 +86,8 @@ class ConnectionManagerImpl implements ConnectionManager {
 			DuplexTransportConnection d) {
 		ioExecutor.execute(new IncomingDuplexSyncConnection(keyManager,
 				connectionRegistry, streamReaderFactory, streamWriterFactory,
-				syncSessionFactory, transportPropertyManager, ioExecutor,
-				t, d));
+				syncSessionFactory, transportPropertyManager, eventBus,
+				ioExecutor, t, d));
 	}
 
 	@Override
@@ -118,8 +121,8 @@ class ConnectionManagerImpl implements ConnectionManager {
 			DuplexTransportConnection d) {
 		ioExecutor.execute(new OutgoingDuplexSyncConnection(keyManager,
 				connectionRegistry, streamReaderFactory, streamWriterFactory,
-				syncSessionFactory, transportPropertyManager, ioExecutor,
-				secureRandom, c, t, d));
+				syncSessionFactory, transportPropertyManager, eventBus,
+				ioExecutor, secureRandom, c, t, d));
 	}
 
 	@Override

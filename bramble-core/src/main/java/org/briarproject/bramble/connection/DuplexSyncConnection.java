@@ -3,6 +3,11 @@ package org.briarproject.bramble.connection;
 import org.briarproject.bramble.api.connection.ConnectionRegistry;
 import org.briarproject.bramble.api.connection.InterruptibleConnection;
 import org.briarproject.bramble.api.contact.ContactId;
+import org.briarproject.bramble.api.event.Event;
+import org.briarproject.bramble.api.event.EventBus;
+import org.briarproject.bramble.api.event.EventListener;
+import org.briarproject.bramble.api.plugin.event.TransportInactiveEvent;
+import org.briarproject.bramble.api.sync.event.CloseSyncConnectionsEvent;
 import org.briarproject.bramble.api.plugin.TransportConnectionReader;
 import org.briarproject.bramble.api.plugin.TransportConnectionWriter;
 import org.briarproject.bramble.api.plugin.TransportId;
@@ -29,13 +34,14 @@ import static org.briarproject.nullsafety.NullSafety.requireNonNull;
 
 @NotNullByDefault
 abstract class DuplexSyncConnection extends SyncConnection
-		implements InterruptibleConnection {
+		implements InterruptibleConnection, EventListener {
 
 	final Executor ioExecutor;
 	final TransportId transportId;
 	final TransportConnectionReader reader;
 	final TransportConnectionWriter writer;
 	final TransportProperties remote;
+	private final EventBus eventBus;
 
 	private final Object interruptLock = new Object();
 
@@ -73,16 +79,36 @@ abstract class DuplexSyncConnection extends SyncConnection
 			StreamWriterFactory streamWriterFactory,
 			SyncSessionFactory syncSessionFactory,
 			TransportPropertyManager transportPropertyManager,
-			Executor ioExecutor, TransportId transportId,
+			EventBus eventBus, Executor ioExecutor, TransportId transportId,
 			DuplexTransportConnection connection) {
 		super(keyManager, connectionRegistry, streamReaderFactory,
 				streamWriterFactory, syncSessionFactory,
 				transportPropertyManager);
+		this.eventBus = eventBus;
 		this.ioExecutor = ioExecutor;
 		this.transportId = transportId;
 		reader = connection.getReader();
 		writer = connection.getWriter();
 		remote = connection.getRemoteProperties();
+	}
+
+	void startListeningForClose() {
+		eventBus.addListener(this);
+	}
+
+	void stopListeningForClose() {
+		eventBus.removeListener(this);
+	}
+
+	@Override
+	public void eventOccurred(Event e) {
+		if (e instanceof TransportInactiveEvent) {
+			TransportInactiveEvent t = (TransportInactiveEvent) e;
+			if (t.getTransportId().equals(transportId)) onWriteError();
+		} else if (e instanceof CloseSyncConnectionsEvent) {
+			CloseSyncConnectionsEvent c = (CloseSyncConnectionsEvent) e;
+			if (c.getTransportId().equals(transportId)) onWriteError();
+		}
 	}
 
 	void onReadError(boolean recognised) {

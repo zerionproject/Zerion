@@ -33,11 +33,13 @@ class OutgoingDuplexSyncConnection extends DuplexSyncConnection
 			StreamWriterFactory streamWriterFactory,
 			SyncSessionFactory syncSessionFactory,
 			TransportPropertyManager transportPropertyManager,
+			org.briarproject.bramble.api.event.EventBus eventBus,
 			Executor ioExecutor, SecureRandom secureRandom, ContactId contactId,
 			TransportId transportId, DuplexTransportConnection connection) {
 		super(keyManager, connectionRegistry, streamReaderFactory,
 				streamWriterFactory, syncSessionFactory,
-				transportPropertyManager, ioExecutor, transportId, connection);
+				transportPropertyManager, eventBus, ioExecutor, transportId,
+				connection);
 		this.secureRandom = secureRandom;
 		this.contactId = contactId;
 	}
@@ -87,6 +89,7 @@ class OutgoingDuplexSyncConnection extends DuplexSyncConnection
 		}
 		connectionRegistry.registerOutgoingConnection(contactId, transportId,
 				this, priority);
+		startListeningForClose();
 		try {
 			transportPropertyManager.addRemotePropertiesFromConnection(
 					contactId, transportId, remote);
@@ -100,6 +103,8 @@ class OutgoingDuplexSyncConnection extends DuplexSyncConnection
 			onReadError();
 			connectionRegistry.unregisterConnection(contactId, transportId,
 					this, false, true);
+		} finally {
+			stopListeningForClose();
 		}
 	}
 
