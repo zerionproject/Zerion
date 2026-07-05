@@ -8,6 +8,7 @@ import org.briarproject.bramble.api.contact.HandshakeManager;
 import org.briarproject.bramble.api.contact.PendingContactId;
 import org.briarproject.bramble.api.event.EventBus;
 import org.briarproject.bramble.api.lifecycle.IoExecutor;
+import org.briarproject.bramble.api.system.TaskScheduler;
 import org.briarproject.bramble.api.plugin.TransportConnectionReader;
 import org.briarproject.bramble.api.plugin.TransportConnectionWriter;
 import org.briarproject.bramble.api.plugin.TransportId;
@@ -41,6 +42,7 @@ class ConnectionManagerImpl implements ConnectionManager {
 	private final TransportPropertyManager transportPropertyManager;
 	private final SecureRandom secureRandom;
 	private final EventBus eventBus;
+	private final TaskScheduler scheduler;
 
 	@Inject
 	ConnectionManagerImpl(@IoExecutor Executor ioExecutor,
@@ -51,7 +53,8 @@ class ConnectionManagerImpl implements ConnectionManager {
 			ContactExchangeManager contactExchangeManager,
 			ConnectionRegistry connectionRegistry,
 			TransportPropertyManager transportPropertyManager,
-			SecureRandom secureRandom, EventBus eventBus) {
+			SecureRandom secureRandom, EventBus eventBus,
+			TaskScheduler scheduler) {
 		this.ioExecutor = ioExecutor;
 		this.keyManager = keyManager;
 		this.streamReaderFactory = streamReaderFactory;
@@ -63,6 +66,7 @@ class ConnectionManagerImpl implements ConnectionManager {
 		this.transportPropertyManager = transportPropertyManager;
 		this.secureRandom = secureRandom;
 		this.eventBus = eventBus;
+		this.scheduler = scheduler;
 	}
 
 	@Override
@@ -87,7 +91,7 @@ class ConnectionManagerImpl implements ConnectionManager {
 		ioExecutor.execute(new IncomingDuplexSyncConnection(keyManager,
 				connectionRegistry, streamReaderFactory, streamWriterFactory,
 				syncSessionFactory, transportPropertyManager, eventBus,
-				ioExecutor, t, d));
+				scheduler, ioExecutor, t, d));
 	}
 
 	@Override
@@ -122,7 +126,7 @@ class ConnectionManagerImpl implements ConnectionManager {
 		ioExecutor.execute(new OutgoingDuplexSyncConnection(keyManager,
 				connectionRegistry, streamReaderFactory, streamWriterFactory,
 				syncSessionFactory, transportPropertyManager, eventBus,
-				ioExecutor, secureRandom, c, t, d));
+				scheduler, ioExecutor, secureRandom, c, t, d));
 	}
 
 	@Override

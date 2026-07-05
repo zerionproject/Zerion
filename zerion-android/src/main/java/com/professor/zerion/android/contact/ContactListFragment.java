@@ -50,6 +50,17 @@ public class ContactListFragment extends BaseFragment
 	@Nullable
 	private Snackbar snackbar = null;
 
+	private static final long RECONCILE_INTERVAL_MS = 8_000L;
+	private final android.os.Handler reconcileHandler =
+			new android.os.Handler(android.os.Looper.getMainLooper());
+	private final Runnable reconcileTick = new Runnable() {
+		@Override
+		public void run() {
+			viewModel.reconcileConnectionState();
+			reconcileHandler.postDelayed(this, RECONCILE_INTERVAL_MS);
+		}
+	};
+
 	public static ContactListFragment newInstance() {
 		Bundle args = new Bundle();
 		ContactListFragment fragment = new ContactListFragment();
@@ -142,12 +153,14 @@ public class ContactListFragment extends BaseFragment
 		viewModel.loadContacts();
 		viewModel.checkForPendingContacts();
 		list.startPeriodicUpdate();
+		reconcileHandler.postDelayed(reconcileTick, RECONCILE_INTERVAL_MS);
 	}
 
 	@Override
 	public void onStop() {
 		super.onStop();
 		list.stopPeriodicUpdate();
+		reconcileHandler.removeCallbacks(reconcileTick);
 		dismissSnackBar();
 	}
 

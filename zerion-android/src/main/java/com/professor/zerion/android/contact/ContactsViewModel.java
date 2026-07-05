@@ -208,6 +208,22 @@ public class ContactsViewModel extends DbViewModel implements EventListener {
 	}
 
 	@UiThread
+	public void reconcileConnectionState() {
+		List<ContactListItem> list = getList(contactListItems);
+		if (list == null) return;
+		for (ContactListItem item : list) {
+			ContactId id = item.getContact().getId();
+			boolean actual = connectionRegistry.isConnected(id);
+			if (actual && !item.isConnected()) {
+				cancelPendingOffline(id);
+				updateItem(id, it -> new ContactListItem(it, true), false);
+			} else if (!actual && item.isConnected()) {
+				scheduleOffline(id);
+			}
+		}
+	}
+
+	@UiThread
 	private void updateItem(ContactId c,
 			Function<ContactListItem, ContactListItem> replacer, boolean sort) {
 		List<ContactListItem> list = updateListItems(getList(contactListItems),

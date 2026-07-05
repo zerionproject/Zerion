@@ -1,11 +1,13 @@
 package org.briarproject.bramble.connection;
 
+import org.briarproject.bramble.api.Cancellable;
 import org.briarproject.bramble.api.connection.ConnectionRegistry;
 import org.briarproject.bramble.api.connection.InterruptibleConnection;
 import org.briarproject.bramble.api.contact.ContactId;
 import org.briarproject.bramble.api.event.Event;
 import org.briarproject.bramble.api.event.EventBus;
 import org.briarproject.bramble.api.event.EventListener;
+import org.briarproject.bramble.api.system.TaskScheduler;
 import org.briarproject.bramble.api.plugin.event.TransportInactiveEvent;
 import org.briarproject.bramble.api.sync.event.CloseSyncConnectionsEvent;
 import org.briarproject.bramble.api.plugin.TransportConnectionReader;
@@ -42,6 +44,15 @@ abstract class DuplexSyncConnection extends SyncConnection
 	final TransportConnectionWriter writer;
 	final TransportProperties remote;
 	private final EventBus eventBus;
+	private final TaskScheduler scheduler;
+
+	private static final long MAX_CONNECTION_LIFETIME_MS = 30L * 60L * 1000L;
+
+	private final Object watchdogLock = new Object();
+	@GuardedBy("watchdogLock")
+	@Nullable
+	private Cancellable closeWatchdog = null;
+	private volatile boolean fullyClosed = false;
 
 	private final Object interruptLock = new Object();
 
@@ -59,6 +70,11 @@ abstract class DuplexSyncConnection extends SyncConnection
 			else out = outgoingSession;
 		}
 		if (out != null) out.interrupt();
+		// Fix B: once the outgoing session is interrupted the connection is
+		// being torn down, so the reader must not outlive it indefinitely.
+		// If the peer keeps feeding the reader (e.g. cover traffic) so the
+		// read timeout never fires, force a full close shortly after.
+		armCloseWatchdog(2L * writer.getMaxIdleTime());
 	}
 
 	void setOutgoingSession(SyncSession outgoingSession) {
@@ -79,12 +95,14 @@ abstract class DuplexSyncConnection extends SyncConnection
 			StreamWriterFactory streamWriterFactory,
 			SyncSessionFactory syncSessionFactory,
 			TransportPropertyManager transportPropertyManager,
-			EventBus eventBus, Executor ioExecutor, TransportId transportId,
+			EventBus eventBus, TaskScheduler scheduler, Executor ioExecutor,
+			TransportId transportId,
 			DuplexTransportConnection connection) {
 		super(keyManager, connectionRegistry, streamReaderFactory,
 				streamWriterFactory, syncSessionFactory,
 				transportPropertyManager);
 		this.eventBus = eventBus;
+		this.scheduler = scheduler;
 		this.ioExecutor = ioExecutor;
 		this.transportId = transportId;
 		reader = connection.getReader();
@@ -94,10 +112,39 @@ abstract class DuplexSyncConnection extends SyncConnection
 
 	void startListeningForClose() {
 		eventBus.addListener(this);
+		// Fix D: a connection can never live long enough to become a
+		// permanent zombie. If it is still open after the maximum lifetime,
+		// force a full close so the poller re-dials a fresh connection.
+		armCloseWatchdog(MAX_CONNECTION_LIFETIME_MS);
 	}
 
 	void stopListeningForClose() {
+		fullyClosed = true;
 		eventBus.removeListener(this);
+		cancelCloseWatchdog();
+	}
+
+	private void armCloseWatchdog(long delayMs) {
+		if (fullyClosed) return;
+		Cancellable c = scheduler.schedule(() -> {
+			if (!fullyClosed) onWriteError();
+		}, ioExecutor, delayMs, java.util.concurrent.TimeUnit.MILLISECONDS);
+		Cancellable old;
+		synchronized (watchdogLock) {
+			old = closeWatchdog;
+			closeWatchdog = c;
+		}
+		if (old != null) old.cancel();
+		if (fullyClosed) cancelCloseWatchdog();
+	}
+
+	private void cancelCloseWatchdog() {
+		Cancellable c;
+		synchronized (watchdogLock) {
+			c = closeWatchdog;
+			closeWatchdog = null;
+		}
+		if (c != null) c.cancel();
 	}
 
 	@Override
@@ -112,12 +159,16 @@ abstract class DuplexSyncConnection extends SyncConnection
 	}
 
 	void onReadError(boolean recognised) {
+		fullyClosed = true;
+		cancelCloseWatchdog();
 		disposeOnError(reader, recognised);
 		disposeOnError(writer);
 		interruptOutgoingSession();
 	}
 
 	void onWriteError() {
+		fullyClosed = true;
+		cancelCloseWatchdog();
 		disposeOnError(reader, true);
 		disposeOnError(writer);
 	}

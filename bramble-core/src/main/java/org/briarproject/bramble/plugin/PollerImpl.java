@@ -52,6 +52,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 class PollerImpl implements Poller, EventListener {
 
 	private static final long DATA_CONNECT_DEBOUNCE_MS = 3000;
+	private static final long ACTIVE_REPOLL_DELAY_MS = 5000;
 
 	private final Executor ioExecutor, wakefulIoExecutor;
 	private final TaskScheduler scheduler;
@@ -110,7 +111,13 @@ class PollerImpl implements Poller, EventListener {
 			}
 		} else if (e instanceof TransportActiveEvent) {
 			TransportActiveEvent t = (TransportActiveEvent) e;
-			pollNow(t.getTransportId());
+			TransportId tid = t.getTransportId();
+			pollNow(tid);
+			// A connection force-closed when the transport went inactive may
+			// still be unregistering as the transport comes back; poll once
+			// more shortly after so the freshly-freed contact is re-dialed.
+			scheduler.schedule(() -> pollNow(tid), ioExecutor,
+					ACTIVE_REPOLL_DELAY_MS, MILLISECONDS);
 		} else if (e instanceof TransportInactiveEvent) {
 			TransportInactiveEvent t = (TransportInactiveEvent) e;
 			cancel(t.getTransportId());

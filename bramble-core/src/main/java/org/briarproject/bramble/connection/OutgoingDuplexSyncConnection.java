@@ -34,12 +34,13 @@ class OutgoingDuplexSyncConnection extends DuplexSyncConnection
 			SyncSessionFactory syncSessionFactory,
 			TransportPropertyManager transportPropertyManager,
 			org.briarproject.bramble.api.event.EventBus eventBus,
+			org.briarproject.bramble.api.system.TaskScheduler scheduler,
 			Executor ioExecutor, SecureRandom secureRandom, ContactId contactId,
 			TransportId transportId, DuplexTransportConnection connection) {
 		super(keyManager, connectionRegistry, streamReaderFactory,
 				streamWriterFactory, syncSessionFactory,
-				transportPropertyManager, eventBus, ioExecutor, transportId,
-				connection);
+				transportPropertyManager, eventBus, scheduler, ioExecutor,
+				transportId, connection);
 		this.secureRandom = secureRandom;
 		this.contactId = contactId;
 	}
