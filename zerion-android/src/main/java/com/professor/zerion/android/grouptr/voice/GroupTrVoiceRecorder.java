@@ -22,13 +22,14 @@ public class GroupTrVoiceRecorder {
 
 	private static final int SAMPLE_RATE = 16_000;
 	private static final int BITRATE = 24_000;
-	private static final long MAX_DURATION_MS = 5L * 60L * 1000L;
+	public static final long MAX_DURATION_MS = 5L * 60L * 1000L;
 
 	private final Context context;
 	private MediaRecorder recorder;
 	private File outputFile;
 	private long startedAt;
 	private boolean recording;
+	private volatile boolean maxDurationReached;
 
 	public GroupTrVoiceRecorder(Context context) {
 		this.context = context.getApplicationContext();
@@ -36,6 +37,7 @@ public class GroupTrVoiceRecorder {
 
 	public boolean start() {
 		if (recording) return false;
+		maxDurationReached = false;
 		try {
 			outputFile = File.createTempFile("grouptr_voice_", ".ogg",
 					context.getCacheDir());
@@ -47,6 +49,12 @@ public class GroupTrVoiceRecorder {
 			recorder.setAudioEncodingBitRate(BITRATE);
 			recorder.setAudioChannels(1);
 			recorder.setMaxDuration((int) MAX_DURATION_MS);
+			recorder.setOnInfoListener((mr, what, extra) -> {
+				if (what == MediaRecorder
+						.MEDIA_RECORDER_INFO_MAX_DURATION_REACHED) {
+					maxDurationReached = true;
+				}
+			});
 			recorder.setOutputFile(outputFile.getAbsolutePath());
 			recorder.prepare();
 			recorder.start();
@@ -65,15 +73,19 @@ public class GroupTrVoiceRecorder {
 			listener.onRecordingFailed("not recording");
 			return;
 		}
-		long duration = SystemClock.elapsedRealtime() - startedAt;
+		long duration = Math.min(MAX_DURATION_MS,
+				SystemClock.elapsedRealtime() - startedAt);
 		recording = false;
+		boolean maxed = maxDurationReached;
 		try {
 			recorder.stop();
 		} catch (RuntimeException ex) {
-			releaseInternal();
-			deleteOutputFile();
-			listener.onRecordingFailed("recording too short");
-			return;
+			if (!maxed) {
+				releaseInternal();
+				deleteOutputFile();
+				listener.onRecordingFailed("recording too short");
+				return;
+			}
 		}
 		releaseInternal();
 		byte[] data = readOutputFile();
@@ -102,7 +114,8 @@ public class GroupTrVoiceRecorder {
 
 	public long elapsedMs() {
 		if (!recording) return 0L;
-		return SystemClock.elapsedRealtime() - startedAt;
+		return Math.min(MAX_DURATION_MS,
+				SystemClock.elapsedRealtime() - startedAt);
 	}
 
 	private void releaseInternal() {

@@ -88,6 +88,7 @@ public class GroupTrConversationActivity extends ZerionActivity
 
 	private static final int REQ_RECORD_AUDIO = 4011;
 	private static final long MAX_INLINE_MEDIA_BYTES = 8L * 1024L * 1024L;
+	private static final int MAX_POST_BODY_BYTES = 9_500_000;
 	private static final int MAX_IMAGE_DIM = 1600;
 	private static final int IMAGE_JPEG_QUALITY = 78;
 
@@ -121,6 +122,11 @@ public class GroupTrConversationActivity extends ZerionActivity
 			if (recorder == null || !recorder.isRecording()) return;
 			long ms = recorder.elapsedMs();
 			recordingTimer.setText(formatDuration(ms));
+			if (ms >= com.professor.zerion.android.grouptr.voice
+					.GroupTrVoiceRecorder.MAX_DURATION_MS) {
+				finishVoiceRecording();
+				return;
+			}
 			main.postDelayed(this, 200);
 		}
 	};
@@ -379,6 +385,9 @@ public class GroupTrConversationActivity extends ZerionActivity
 					ev.getSenderPubKey(), ev.getSenderName(),
 					ev.getCiphertext(), ev.getTimestamp(), ev.getEpoch(),
 					false, ev.getAutoDeleteTimerMs());
+			for (GroupTrPost existing : renderedPosts) {
+				if (samePost(existing, p)) return;
+			}
 			boolean pin = isScrolledToBottom();
 			appendPost(p);
 			renderedPosts.add(p);
@@ -506,16 +515,31 @@ public class GroupTrConversationActivity extends ZerionActivity
 		long remaining = ttl - elapsed;
 		if (remaining <= 0L) {
 			postsContainer.removeView(row);
+			removeRenderedPost(p);
+			if (postsContainer.getChildCount() == 0) {
+				emptyState.setVisibility(View.VISIBLE);
+			}
 			return;
 		}
 		main.postDelayed(() -> {
 			if (row.getParent() == postsContainer) {
 				postsContainer.removeView(row);
+				removeRenderedPost(p);
 				if (postsContainer.getChildCount() == 0) {
 					emptyState.setVisibility(View.VISIBLE);
 				}
 			}
 		}, remaining);
+	}
+
+	private void removeRenderedPost(GroupTrPost p) {
+		for (java.util.Iterator<GroupTrPost> it = renderedPosts.iterator();
+				it.hasNext(); ) {
+			if (samePost(it.next(), p)) {
+				it.remove();
+				break;
+			}
+		}
 	}
 
 	private void appendImagePost(LayoutInflater inf, GroupTrPost p,
@@ -952,6 +976,10 @@ public class GroupTrConversationActivity extends ZerionActivity
 	}
 
 	private void sendBodyAsync(byte[] body) {
+		if (body.length > MAX_POST_BODY_BYTES) {
+			main.post(() -> toast(R.string.grouptr_attach_video_too_large));
+			return;
+		}
 		ioExecutor.execute(() -> {
 			try {
 				groupTrManager.sendGroupPost(groupId, body, 0L);

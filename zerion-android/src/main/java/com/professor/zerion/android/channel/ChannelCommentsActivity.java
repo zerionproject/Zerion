@@ -133,6 +133,37 @@ public class ChannelCommentsActivity extends ZerionActivity
 			}
 			return false;
 		});
+		restoreCommentDraft();
+	}
+
+	private String commentDraftKey() {
+		StringBuilder sb = new StringBuilder("channel_comment_draft_");
+		for (byte b : channelId) sb.append(String.format("%02x", b & 0xFF));
+		return sb.append('_').append(parentSeq).toString();
+	}
+
+	private void restoreCommentDraft() {
+		if (channelId.length == 0 || composeInput == null) return;
+		String draft = com.professor.zerion.android.AppModule
+				.getAndroidComponent(this).securePreferences()
+				.getString(commentDraftKey(), null);
+		if (draft != null && !draft.isEmpty()) {
+			composeInput.setText(draft);
+			composeInput.setSelection(draft.length());
+		}
+	}
+
+	private void saveCommentDraft() {
+		if (composeInput == null || channelId.length == 0) return;
+		String draft = composeInput.getText() == null
+				? "" : composeInput.getText().toString();
+		android.content.SharedPreferences sp = com.professor.zerion.android
+				.AppModule.getAndroidComponent(this).securePreferences();
+		if (draft.trim().isEmpty()) {
+			sp.edit().remove(commentDraftKey()).apply();
+		} else {
+			sp.edit().putString(commentDraftKey(), draft).apply();
+		}
 	}
 
 	@Override
@@ -149,6 +180,7 @@ public class ChannelCommentsActivity extends ZerionActivity
 	public void onStop() {
 		super.onStop();
 		eventBus.removeListener(this);
+		saveCommentDraft();
 	}
 
 	@Override

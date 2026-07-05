@@ -613,9 +613,17 @@ public class ChannelListFragment extends BaseFragment
 				if (!isAdded()) return;
 				runOnUiThreadUnlessDestroyed(() ->
 						copyAndToast(link));
-			} catch (DbException ignored) {
+			} catch (DbException e) {
+				runOnUiThreadUnlessDestroyed(this::toastInviteNotReady);
 			}
 		});
+	}
+
+	private void toastInviteNotReady() {
+		if (!isAdded()) return;
+		Toast.makeText(requireContext(),
+				R.string.channels_invite_not_ready,
+				Toast.LENGTH_LONG).show();
 	}
 
 	private void copyAndToast(String link) {
@@ -657,7 +665,8 @@ public class ChannelListFragment extends BaseFragment
 							getString(
 									R.string.channels_share_chooser_title)));
 				});
-			} catch (DbException ignored) {
+			} catch (DbException e) {
+				runOnUiThreadUnlessDestroyed(this::toastInviteNotReady);
 			}
 		});
 	}

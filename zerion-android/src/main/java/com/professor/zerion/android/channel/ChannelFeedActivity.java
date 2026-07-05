@@ -81,6 +81,7 @@ public class ChannelFeedActivity extends ZerionActivity
 	private TextView emptyView;
 	private android.widget.ProgressBar feedProgress;
 	private boolean firstPublisherRefreshDone = false;
+	private boolean reachedPublisherAtLeastOnce = false;
 	private boolean feedRendered = false;
 	private LinearLayout composeBar;
 	private EditText composeInput;
@@ -226,12 +227,18 @@ public class ChannelFeedActivity extends ZerionActivity
 
 	private void refreshFromPublisherSafely() {
 		ioExecutor.execute(() -> {
+			boolean reached = false;
 			try {
 				channelManager.refreshChannel(channelId);
+				reached = true;
 			} catch (DbException ignored) {
 			} finally {
+				boolean finalReached = reached;
 				runOnUiThreadUnlessDestroyed(() -> {
-					firstPublisherRefreshDone = true;
+					if (finalReached) {
+						firstPublisherRefreshDone = true;
+						reachedPublisherAtLeastOnce = true;
+					}
 					loadChannel();
 				});
 			}
@@ -264,8 +271,10 @@ public class ChannelFeedActivity extends ZerionActivity
 		if (e instanceof ChannelPostReceivedEvent) {
 			ChannelPostReceivedEvent ev = (ChannelPostReceivedEvent) e;
 			if (Arrays.equals(ev.getChannelId(), channelId)) {
-				activeRoundsRemaining = ACTIVE_ROUNDS_AFTER_HIT;
-				runOnUiThreadUnlessDestroyed(this::loadChannel);
+				runOnUiThreadUnlessDestroyed(() -> {
+					activeRoundsRemaining = ACTIVE_ROUNDS_AFTER_HIT;
+					loadChannel();
+				});
 			}
 		} else if (e instanceof ChannelStateChangedEvent) {
 			ChannelStateChangedEvent ev = (ChannelStateChangedEvent) e;
@@ -343,10 +352,17 @@ public class ChannelFeedActivity extends ZerionActivity
 							: p.getAttachments()) {
 						if (att.getThumbnail() == null) continue;
 						try {
-							byte[] dec = channelManager
-									.decryptAttachmentThumbnail(
-											channelId, p.getSeqNum(),
-											att.getBlobHash());
+							String bhKey = bytesToHex(att.getBlobHash());
+							byte[] dec = FEED_THUMB_BYTES_CACHE.get(bhKey);
+							if (dec == null) {
+								dec = channelManager
+										.decryptAttachmentThumbnail(
+												channelId, p.getSeqNum(),
+												att.getBlobHash());
+								if (dec != null) {
+									FEED_THUMB_BYTES_CACHE.put(bhKey, dec);
+								}
+							}
 							if (dec != null) {
 								thumbnails.put(thumbnailKey(p.getSeqNum(),
 										att.getBlobHash()), dec);
@@ -402,7 +418,7 @@ public class ChannelFeedActivity extends ZerionActivity
 
 		if (posts.isEmpty()) {
 			recycler.setVisibility(View.GONE);
-			if (firstPublisherRefreshDone) {
+			if (weArePublisher || reachedPublisherAtLeastOnce) {
 				feedProgress.setVisibility(View.GONE);
 				emptyView.setVisibility(View.VISIBLE);
 				emptyView.setText(weArePublisher
@@ -716,8 +732,18 @@ public class ChannelFeedActivity extends ZerionActivity
 				}
 			};
 
+	private static final android.util.LruCache<String, byte[]>
+			FEED_THUMB_BYTES_CACHE = new android.util.LruCache<String, byte[]>(
+					8 * 1024 * 1024) {
+				@Override
+				protected int sizeOf(String key, byte[] value) {
+					return value.length;
+				}
+			};
+
 	public static void clearFeedThumbCache() {
 		FEED_THUMB_CACHE.evictAll();
+		FEED_THUMB_BYTES_CACHE.evictAll();
 	}
 
 	private void presentAttachment(ChannelPost.ChannelAttachment att,

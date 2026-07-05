@@ -213,6 +213,7 @@ public class ZerionService extends Service {
 				int pid = intent.getIntExtra(EXTRA_PID, -1);
 				if (pid == myPid()) {
 					lockManager.setLocked(true);
+					clearBitmapThumbnailCaches();
 				}
 			} else if (ACTION_EXIT.equals(action)) {
 				if (exitInProgress.compareAndSet(false, true)) {
@@ -258,6 +259,7 @@ public class ZerionService extends Service {
 		}
 
 		if (level == TRIM_MEMORY_UI_HIDDEN) {
+			clearBitmapThumbnailCaches();
 		} else if (level == TRIM_MEMORY_BACKGROUND) {
 		} else if (level == TRIM_MEMORY_MODERATE) {
 		} else if (level == TRIM_MEMORY_COMPLETE) {

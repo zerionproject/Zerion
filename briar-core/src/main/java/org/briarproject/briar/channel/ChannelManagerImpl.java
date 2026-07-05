@@ -951,6 +951,18 @@ class ChannelManagerImpl
 	public String exportInviteLink(byte[] channelId) throws DbException {
 		ChannelState s = store.getChannel(channelId);
 		if (s == null) throw new DbException();
+		if (s.weArePublisher() && (s.getCurrentOnion() == null
+				|| s.getCurrentOnion().isEmpty())) {
+			String onion = bindPublisherServer(channelId);
+			if (onion != null && !onion.isEmpty()) {
+				ChannelState updated = withOnion(s, onion);
+				store.putChannel(updated);
+				s = updated;
+			}
+		}
+		if (s.getCurrentOnion() == null || s.getCurrentOnion().isEmpty()) {
+			throw new DbException();
+		}
 		return codec.formatInviteLink(s.getChannelId(),
 				s.getPublisherEd25519PubKey(),
 				s.getPublisherMlDsaPubKey(),

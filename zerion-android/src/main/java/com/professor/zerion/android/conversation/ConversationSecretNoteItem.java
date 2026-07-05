@@ -15,6 +15,9 @@ import androidx.lifecycle.LiveData;
 class ConversationSecretNoteItem extends ConversationItem {
 
 	private static final String PREFIX = "SECRET:";
+	private static final int MIN_COUNTDOWN_SECONDS = 1;
+	private static final int MAX_COUNTDOWN_SECONDS = 43200;
+	private static final int DEFAULT_COUNTDOWN_SECONDS = 10;
 
 	private boolean revealed = false;
 
@@ -41,13 +44,15 @@ class ConversationSecretNoteItem extends ConversationItem {
 			int sep = payload.indexOf(':');
 			if (sep > 0) {
 				try {
-					return Integer.parseInt(payload.substring(0, sep));
+					int seconds = Integer.parseInt(payload.substring(0, sep));
+					return Math.max(MIN_COUNTDOWN_SECONDS,
+							Math.min(MAX_COUNTDOWN_SECONDS, seconds));
 				} catch (NumberFormatException e) {
-					return 10;
+					return DEFAULT_COUNTDOWN_SECONDS;
 				}
 			}
 		}
-		return 10;
+		return DEFAULT_COUNTDOWN_SECONDS;
 	}
 
 	@Nullable

@@ -38,6 +38,10 @@ class ConversationMessageViewHolder extends ConversationItemViewHolder {
 
 	@Nullable
 	private VoiceMessageViewHolder voiceHolder;
+	@Nullable
+	private org.briarproject.bramble.api.sync.MessageId boundVoiceItemId;
+	@Nullable
+	private String boundVoiceStateKey;
 	private final AttachmentReader attachmentReader;
 	private final Executor dbExecutor;
 
@@ -170,30 +174,54 @@ class ConversationMessageViewHolder extends ConversationItemViewHolder {
 			@Nullable com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat.Part part) {
 		adapter.clear();
 
-		if (voiceHolder != null) {
-			voiceHolder.onRecycled();
+		String messageText = item.getText();
+		String reassembled = null;
+		String stateKey;
+		if (part != null) {
+			reassembled = listener.getReassembledVoiceMessage(part.memoId);
+			if (reassembled != null) {
+				stateKey = "ready:" + reassembled.length() + ":"
+						+ reassembled.hashCode();
+			} else if (listener.isVoiceMemoFailed(part.memoId)) {
+				stateKey = "failed";
+			} else {
+				stateKey = "receiving";
+			}
+		} else if (messageText != null && com.professor.zerion.android
+				.conversation.voice.VoiceMessageFormat
+				.isVoiceMessage(messageText)) {
+			stateKey = "msg";
+		} else {
+			stateKey = "att";
 		}
 
-		voiceHolder = new VoiceMessageViewHolder(voiceMessageView,
-				attachmentReader, dbExecutor);
+		boolean sameAsBound = voiceHolder != null
+				&& item.getId().equals(boundVoiceItemId)
+				&& stateKey.equals(boundVoiceStateKey);
 
-		String messageText = item.getText();
-		if (part != null) {
-			String reassembled =
-					listener.getReassembledVoiceMessage(part.memoId);
-			if (reassembled != null) {
-				voiceHolder.bindEncryptedVoice(reassembled, item.getGroupId(),
-						item.getId());
-			} else if (listener.isVoiceMemoFailed(part.memoId)) {
-				voiceHolder.bindFailed();
-			} else {
-				voiceHolder.bindReceiving();
+		if (!sameAsBound) {
+			if (voiceHolder != null) {
+				voiceHolder.onRecycled();
 			}
-		} else if (messageText != null && com.professor.zerion.android.conversation.voice.VoiceMessageFormat.isVoiceMessage(messageText)) {
-			voiceHolder.bindEncryptedVoice(messageText, item.getGroupId(), item.getId());
-		} else {
-			AttachmentItem voiceAttachment = item.getAttachments().get(0);
-			voiceHolder.bind(voiceAttachment);
+			voiceHolder = new VoiceMessageViewHolder(voiceMessageView,
+					attachmentReader, dbExecutor);
+			if (part != null) {
+				if (reassembled != null) {
+					voiceHolder.bindEncryptedVoice(reassembled,
+							item.getGroupId(), item.getId());
+				} else if (stateKey.equals("failed")) {
+					voiceHolder.bindFailed();
+				} else {
+					voiceHolder.bindReceiving();
+				}
+			} else if (stateKey.equals("msg")) {
+				voiceHolder.bindEncryptedVoice(messageText, item.getGroupId(),
+						item.getId());
+			} else {
+				voiceHolder.bind(item.getAttachments().get(0));
+			}
+			boundVoiceItemId = item.getId();
+			boundVoiceStateKey = stateKey;
 		}
 
 		resetStatusLayoutForText();

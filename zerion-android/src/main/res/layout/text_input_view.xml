@@ -29,13 +29,13 @@
 
 		<androidx.appcompat.widget.AppCompatImageButton
 			android:id="@+id/secretNoteButton"
-			android:layout_width="36dp"
-			android:layout_height="36dp"
+			android:layout_width="48dp"
+			android:layout_height="48dp"
 			android:layout_marginEnd="2dp"
 			android:layout_gravity="center_vertical"
 			android:background="?attr/selectableItemBackgroundBorderless"
 			android:contentDescription="@string/secret_note_button_desc"
-			android:padding="6dp"
+			android:padding="12dp"
 			android:scaleType="center"
 			app:srcCompat="@drawable/ic_shield_lock"
 			app:tint="@color/zerion_primary_accent" />
