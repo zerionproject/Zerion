@@ -139,6 +139,23 @@
 		app:layout_constraintStart_toStartOf="parent"
 		app:layout_constraintEnd_toEndOf="parent" />
 
+	<TextView
+		android:id="@+id/channelFeedConnectingText"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:layout_marginTop="20dp"
+		android:gravity="center"
+		android:paddingStart="40dp"
+		android:paddingEnd="40dp"
+		android:textColor="@color/zerion_text_secondary"
+		android:textSize="14sp"
+		android:visibility="gone"
+		app:layout_constraintTop_toBottomOf="@+id/channelFeedProgress"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintEnd_toEndOf="parent"
+		tools:text="@string/channels_feed_connecting"
+		tools:visibility="visible" />
+
 	<LinearLayout
 		android:id="@+id/channelComposeBar"
 		android:layout_width="match_parent"

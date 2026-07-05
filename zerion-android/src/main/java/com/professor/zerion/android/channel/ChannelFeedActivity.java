@@ -81,9 +81,14 @@ public class ChannelFeedActivity extends ZerionActivity
 	private RecyclerView recycler;
 	private TextView emptyView;
 	private android.widget.ProgressBar feedProgress;
+	private TextView connectingText;
 	private boolean firstPublisherRefreshDone = false;
 	private boolean reachedPublisherAtLeastOnce = false;
+	private boolean showSlowConnectingHint = false;
 	private boolean feedRendered = false;
+	private static final long SLOW_CONNECT_HINT_MS = 25_000L;
+	private final android.os.Handler slowConnectHandler =
+			new android.os.Handler(android.os.Looper.getMainLooper());
 	private LinearLayout composeBar;
 	private EditText composeInput;
 	private MaterialButton composeSendButton;
@@ -127,6 +132,7 @@ public class ChannelFeedActivity extends ZerionActivity
 		recycler = findViewById(R.id.channelFeedRecycler);
 		emptyView = findViewById(R.id.channelFeedEmptyView);
 		feedProgress = findViewById(R.id.channelFeedProgress);
+		connectingText = findViewById(R.id.channelFeedConnectingText);
 		feedProgress.setVisibility(View.VISIBLE);
 		composeBar = findViewById(R.id.channelComposeBar);
 		composeInput = findViewById(R.id.channelComposeInput);
@@ -254,6 +260,8 @@ public class ChannelFeedActivity extends ZerionActivity
 			refreshHandler.removeCallbacks(refreshTick);
 			refreshHandler = null;
 		}
+		slowConnectHandler.removeCallbacks(slowConnectRunnable);
+		slowConnectScheduled = false;
 		ioExecutor.execute(this::wipeAttachmentStagingDir);
 		if (composeInput != null && channelId.length > 0) {
 			String draft = composeInput.getText().toString();
@@ -426,6 +434,8 @@ public class ChannelFeedActivity extends ZerionActivity
 			recycler.setVisibility(View.GONE);
 			if (weArePublisher || reachedPublisherAtLeastOnce) {
 				feedProgress.setVisibility(View.GONE);
+				connectingText.setVisibility(View.GONE);
+				cancelSlowConnectHint();
 				emptyView.setVisibility(View.VISIBLE);
 				emptyView.setText(weArePublisher
 						? R.string.channels_feed_empty_publisher
@@ -433,9 +443,16 @@ public class ChannelFeedActivity extends ZerionActivity
 			} else {
 				feedProgress.setVisibility(View.VISIBLE);
 				emptyView.setVisibility(View.GONE);
+				connectingText.setVisibility(View.VISIBLE);
+				connectingText.setText(showSlowConnectingHint
+						? R.string.channels_feed_connecting_slow
+						: R.string.channels_feed_connecting);
+				scheduleSlowConnectHint();
 			}
 		} else {
 			feedProgress.setVisibility(View.GONE);
+			connectingText.setVisibility(View.GONE);
+			cancelSlowConnectHint();
 			recycler.setVisibility(View.VISIBLE);
 			emptyView.setVisibility(View.GONE);
 			boolean pinToBottom = !feedRendered || isFeedAtBottom();
@@ -451,6 +468,30 @@ public class ChannelFeedActivity extends ZerionActivity
 
 		currentPinnedSeq = state.getPinnedPostSeq();
 		bindPinnedBanner(state, posts);
+	}
+
+	private boolean slowConnectScheduled = false;
+
+	private final Runnable slowConnectRunnable = () -> {
+		slowConnectScheduled = false;
+		showSlowConnectingHint = true;
+		if (!isDestroyed()
+				&& connectingText.getVisibility() == View.VISIBLE) {
+			connectingText.setText(R.string.channels_feed_connecting_slow);
+		}
+	};
+
+	private void scheduleSlowConnectHint() {
+		if (slowConnectScheduled || showSlowConnectingHint) return;
+		slowConnectScheduled = true;
+		slowConnectHandler.postDelayed(slowConnectRunnable,
+				SLOW_CONNECT_HINT_MS);
+	}
+
+	private void cancelSlowConnectHint() {
+		slowConnectScheduled = false;
+		showSlowConnectingHint = false;
+		slowConnectHandler.removeCallbacks(slowConnectRunnable);
 	}
 
 	private boolean isFeedAtBottom() {

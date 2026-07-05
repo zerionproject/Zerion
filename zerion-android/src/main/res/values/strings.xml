@@ -274,6 +274,8 @@
 	<string name="channels_join_already_subscribed">You\'re already subscribed to this channel.</string>
 	<string name="channels_feed_empty_publisher">Your channel has no posts yet. Publish your first one.</string>
 	<string name="channels_feed_empty_subscriber">No posts yet. New posts will appear here.</string>
+	<string name="channels_feed_connecting">Connecting to the channel…</string>
+	<string name="channels_feed_connecting_slow">Still connecting. Make sure the person who shared this channel is online — this will update on its own.</string>
 	<string name="channels_compose_hint">Write to your subscribers…</string>
 	<string name="channels_compose_send">Publish</string>
 	<string name="channels_compose_error_empty">Type something before publishing.</string>
