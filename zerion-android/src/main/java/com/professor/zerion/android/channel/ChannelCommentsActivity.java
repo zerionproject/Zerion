@@ -28,6 +28,7 @@ import org.briarproject.bramble.api.event.EventListener;
 import org.briarproject.bramble.api.lifecycle.IoExecutor;
 import org.briarproject.briar.api.channel.ChannelComment;
 import org.briarproject.briar.api.channel.ChannelManager;
+import org.briarproject.briar.api.channel.event.ChannelCommentReceivedEvent;
 import org.briarproject.briar.api.channel.event.ChannelStateChangedEvent;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
@@ -155,6 +156,12 @@ public class ChannelCommentsActivity extends ZerionActivity
 		if (e instanceof ChannelStateChangedEvent) {
 			ChannelStateChangedEvent ev = (ChannelStateChangedEvent) e;
 			if (Arrays.equals(ev.getChannelId(), channelId)) {
+				runOnUiThreadUnlessDestroyed(this::refresh);
+			}
+		} else if (e instanceof ChannelCommentReceivedEvent) {
+			ChannelCommentReceivedEvent ev = (ChannelCommentReceivedEvent) e;
+			if (Arrays.equals(ev.getChannelId(), channelId)
+					&& ev.getParentPostSeqNum() == parentSeq) {
 				runOnUiThreadUnlessDestroyed(this::refresh);
 			}
 		}

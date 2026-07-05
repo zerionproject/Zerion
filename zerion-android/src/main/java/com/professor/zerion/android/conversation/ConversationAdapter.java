@@ -121,6 +121,26 @@ class ConversationAdapter
 	}
 
 	@Override
+	public void onBindViewHolder(ConversationItemViewHolder ui, int position,
+			List<Object> payloads) {
+		if (!payloads.isEmpty()) {
+			boolean timeOnly = true;
+			for (Object p : payloads) {
+				if (p != com.professor.zerion.android.view.ZerionRecyclerView
+						.PAYLOAD_TIME_REFRESH) {
+					timeOnly = false;
+					break;
+				}
+			}
+			if (timeOnly) {
+				ui.bindTimeOnly(items.get(position));
+				return;
+			}
+		}
+		super.onBindViewHolder(ui, position, payloads);
+	}
+
+	@Override
 	public void onBindViewHolder(ConversationItemViewHolder ui, int position) {
 		ConversationItem item = items.get(position);
 		boolean selected = false;

@@ -28,6 +28,8 @@ class ConversationSecretNoteViewHolder extends ConversationItemViewHolder {
 	private final Handler handler = new Handler(Looper.getMainLooper());
 	@Nullable
 	private Runnable pendingStep;
+	@Nullable
+	private MessageId pendingBurnId;
 
 	ConversationSecretNoteViewHolder(View v, ConversationListener listener,
 			boolean isIncoming) {
@@ -41,6 +43,7 @@ class ConversationSecretNoteViewHolder extends ConversationItemViewHolder {
 	@Override
 	void bind(ConversationItem item, boolean selected) {
 		cancelCountdown();
+		burnPending();
 		super.bind(item, selected);
 		layout.setOnLongClickListener(null);
 		layout.setLongClickable(false);
@@ -86,6 +89,8 @@ class ConversationSecretNoteViewHolder extends ConversationItemViewHolder {
 		if (item.isRevealed()) return;
 		item.markRevealed();
 
+		pendingBurnId = item.getId();
+		listener.onSecretNoteRevealed(item.getId());
 		listener.onSecretNoteRevealing(true);
 
 		String content = item.getSecretContent();
@@ -107,7 +112,7 @@ class ConversationSecretNoteViewHolder extends ConversationItemViewHolder {
 			item.clearSecretContent();
 
 			listener.onSecretNoteRevealing(false);
-			listener.onSecretNoteOpened(item.getId());
+			burnPending();
 			return;
 		}
 		secretSubtitle.setText(secretSubtitle.getContext()
@@ -123,9 +128,17 @@ class ConversationSecretNoteViewHolder extends ConversationItemViewHolder {
 		}
 	}
 
+	private void burnPending() {
+		if (pendingBurnId != null) {
+			listener.onSecretNoteOpened(pendingBurnId);
+			pendingBurnId = null;
+		}
+	}
+
 	@Override
 	void onRecycled() {
 		cancelCountdown();
+		burnPending();
 	}
 
 }

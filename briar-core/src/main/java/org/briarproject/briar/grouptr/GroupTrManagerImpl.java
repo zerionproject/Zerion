@@ -144,7 +144,45 @@ class GroupTrManagerImpl
 	@Override
 	public void onDatabaseOpened(Transaction txn) throws DbException {
 		eventBus.addListener(this);
+		purgeExpiredFromDb(txn);
 		purgeExpiredPosts();
+	}
+
+	private void purgeExpiredFromDb(Transaction txn) throws DbException {
+		long now = clock.currentTimeMillis();
+		for (Contact c : contactManager.getContacts(txn)) {
+			org.briarproject.bramble.api.sync.GroupId cg =
+					messagingManager.getContactGroup(c).getId();
+			java.util.Map<org.briarproject.bramble.api.sync.MessageId,
+					org.briarproject.bramble.api.data.BdfDictionary> msgs;
+			try {
+				msgs = clientHelper.getMessageMetadataAsDictionary(txn, cg);
+			} catch (DbException | FormatException ex) {
+				continue;
+			}
+			for (java.util.Map.Entry<
+					org.briarproject.bramble.api.sync.MessageId,
+					org.briarproject.bramble.api.data.BdfDictionary>
+					e : msgs.entrySet()) {
+				org.briarproject.bramble.api.data.BdfDictionary meta =
+						e.getValue();
+				try {
+					Integer mt = meta.getOptionalInt("messageType");
+					if (mt == null || mt != 32) continue;
+					long ttl = meta.getLong("autoDeleteTimer", 0L);
+					if (ttl <= 0L) continue;
+					long ts = meta.getLong("timestamp", 0L);
+					if (ts + ttl <= now) {
+						try {
+							db.removeMessage(txn, e.getKey());
+						} catch (org.briarproject.bramble.api.db
+								.NoSuchMessageException nsm) {
+						}
+					}
+				} catch (FormatException fe) {
+				}
+			}
+		}
 	}
 
 	private void purgeExpiredPosts() {
@@ -470,6 +508,8 @@ class GroupTrManagerImpl
 								"groupCiphertext");
 						long ts = meta.getLong("timestamp",
 								0L);
+						long ttl = meta.getLong("autoDeleteTimer",
+								0L);
 						boolean local = Arrays.equals(senderPub,
 								localPub);
 						if (local) {
@@ -480,7 +520,7 @@ class GroupTrManagerImpl
 										+ (long) ordered.size(),
 								new GroupTrPost(groupId, senderPub,
 										senderName, body, ts, epoch,
-										local));
+										local, ttl));
 					}
 				} catch (FormatException ex) {
 

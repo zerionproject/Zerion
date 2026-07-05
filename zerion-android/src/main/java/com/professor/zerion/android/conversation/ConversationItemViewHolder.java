@@ -95,6 +95,11 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 	void onRecycled() {
 	}
 
+	void bindTimeOnly(ConversationItem item) {
+		setTopNotice(item);
+		time.setText(formatDate(time.getContext(), item.getTime()));
+	}
+
 	@CallSuper
 	void bind(ConversationItem item, boolean selected) {
 		itemKey = item.getKey();

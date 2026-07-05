@@ -81,6 +81,7 @@ public class ChannelFeedActivity extends ZerionActivity
 	private TextView emptyView;
 	private android.widget.ProgressBar feedProgress;
 	private boolean firstPublisherRefreshDone = false;
+	private boolean feedRendered = false;
 	private LinearLayout composeBar;
 	private EditText composeInput;
 	private MaterialButton composeSendButton;
@@ -415,15 +416,28 @@ public class ChannelFeedActivity extends ZerionActivity
 			feedProgress.setVisibility(View.GONE);
 			recycler.setVisibility(View.VISIBLE);
 			emptyView.setVisibility(View.GONE);
+			boolean pinToBottom = !feedRendered || isFeedAtBottom();
 			adapter.setPosts(posts, thumbnails, reactions,
 					commentCounts, discussionsEnabled);
-			recycler.scrollToPosition(posts.size() - 1);
+			if (pinToBottom) {
+				recycler.scrollToPosition(posts.size() - 1);
+			}
+			feedRendered = true;
 		}
 
 		composeBar.setVisibility(weArePublisher ? View.VISIBLE : View.GONE);
 
 		currentPinnedSeq = state.getPinnedPostSeq();
 		bindPinnedBanner(state, posts);
+	}
+
+	private boolean isFeedAtBottom() {
+		RecyclerView.LayoutManager lm = recycler.getLayoutManager();
+		if (!(lm instanceof LinearLayoutManager)) return true;
+		LinearLayoutManager llm = (LinearLayoutManager) lm;
+		int last = llm.findLastVisibleItemPosition();
+		int count = llm.getItemCount();
+		return last == RecyclerView.NO_POSITION || last >= count - 2;
 	}
 
 	private void bindPinnedBanner(ChannelState state,

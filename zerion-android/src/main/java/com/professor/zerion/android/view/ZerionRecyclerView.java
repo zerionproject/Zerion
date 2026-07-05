@@ -229,6 +229,8 @@ public class ZerionRecyclerView extends FrameLayout {
 		return this.recyclerView;
 	}
 
+	public static final Object PAYLOAD_TIME_REFRESH = new Object();
+
 	public void startPeriodicUpdate() {
 		startPeriodicUpdate(MIN_DATE_RESOLUTION);
 	}
@@ -239,7 +241,8 @@ public class ZerionRecyclerView extends FrameLayout {
 		}
 		refresher = () -> {
 			Adapter adapter = recyclerView.getAdapter();
-			adapter.notifyItemRangeChanged(0, adapter.getItemCount());
+			adapter.notifyItemRangeChanged(0, adapter.getItemCount(),
+					PAYLOAD_TIME_REFRESH);
 			handler.postDelayed(refresher, interval);
 		};
 		handler.postDelayed(refresher, interval);

@@ -214,6 +214,8 @@ public class ConversationActivity extends ZerionActivity
 	private ActionMode actionMode;
 	private final Set<String> voiceMemoRebuildsRequested = new HashSet<>();
 	@Nullable
+	private MessageId pendingSecretBurnId;
+	@Nullable
 	private com.google.android.material.floatingactionbutton.FloatingActionButton scrollToBottomButton;
 
 	private TextView typingIndicator;
@@ -1011,6 +1013,12 @@ public class ConversationActivity extends ZerionActivity
 
 		notificationManager.unblockContactNotification(contactId);
 		list.stopPeriodicUpdate();
+
+		if (pendingSecretBurnId != null) {
+			viewModel.deleteMessages(
+					java.util.Collections.singleton(pendingSecretBurnId));
+			pendingSecretBurnId = null;
+		}
 	}
 
 	@Override
@@ -2039,7 +2047,18 @@ public class ConversationActivity extends ZerionActivity
 	}
 
 	@Override
+	public void onSecretNoteRevealed(MessageId messageId) {
+		if (pendingSecretBurnId != null
+				&& !pendingSecretBurnId.equals(messageId)) {
+			viewModel.deleteMessages(
+					java.util.Collections.singleton(pendingSecretBurnId));
+		}
+		pendingSecretBurnId = messageId;
+	}
+
+	@Override
 	public void onSecretNoteOpened(MessageId messageId) {
+		if (messageId.equals(pendingSecretBurnId)) pendingSecretBurnId = null;
 		viewModel.deleteMessages(java.util.Collections.singleton(messageId));
 	}
 

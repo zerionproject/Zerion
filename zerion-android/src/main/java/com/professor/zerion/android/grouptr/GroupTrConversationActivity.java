@@ -379,8 +379,10 @@ public class GroupTrConversationActivity extends ZerionActivity
 					ev.getSenderPubKey(), ev.getSenderName(),
 					ev.getCiphertext(), ev.getTimestamp(), ev.getEpoch(),
 					false, ev.getAutoDeleteTimerMs());
+			boolean pin = isScrolledToBottom();
 			appendPost(p);
 			renderedPosts.add(p);
+			if (pin) scrollToBottom();
 		});
 	}
 
@@ -418,6 +420,8 @@ public class GroupTrConversationActivity extends ZerionActivity
 	private final java.util.List<GroupTrPost> renderedPosts =
 			new java.util.ArrayList<>();
 
+	private boolean groupRendered = false;
+
 	private void renderPosts(List<GroupTrPost> posts) {
 		if (posts.isEmpty()) {
 			if (postsContainer.getChildCount() > 0) {
@@ -427,6 +431,7 @@ public class GroupTrConversationActivity extends ZerionActivity
 			emptyState.setVisibility(View.VISIBLE);
 			return;
 		}
+		boolean pin = !groupRendered || isScrolledToBottom();
 		boolean canAppend = posts.size() >= renderedPosts.size();
 		if (canAppend) {
 			for (int i = 0; i < renderedPosts.size(); i++) {
@@ -446,6 +451,8 @@ public class GroupTrConversationActivity extends ZerionActivity
 		}
 		renderedPosts.clear();
 		renderedPosts.addAll(posts);
+		if (pin) scrollToBottom();
+		groupRendered = true;
 	}
 
 	private static boolean samePost(GroupTrPost a, GroupTrPost b) {
@@ -476,6 +483,19 @@ public class GroupTrConversationActivity extends ZerionActivity
 					postsContainer.getChildCount() - 1);
 			scheduleAutoDelete(added, p);
 		}
+	}
+
+	private boolean isScrolledToBottom() {
+		if (postsScroll.getChildCount() == 0) return true;
+		View content = postsScroll.getChildAt(0);
+		int diff = content.getBottom()
+				- (postsScroll.getHeight() + postsScroll.getScrollY());
+		int threshold = (int) (48
+				* getResources().getDisplayMetrics().density);
+		return diff <= threshold;
+	}
+
+	private void scrollToBottom() {
 		postsScroll.post(() -> postsScroll.fullScroll(View.FOCUS_DOWN));
 	}
 
