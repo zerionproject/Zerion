@@ -115,7 +115,14 @@ abstract class DuplexSyncConnection extends SyncConnection
 		// Fix D: a connection can never live long enough to become a
 		// permanent zombie. If it is still open after the maximum lifetime,
 		// force a full close so the poller re-dials a fresh connection.
-		armCloseWatchdog(MAX_CONNECTION_LIFETIME_MS);
+		// Jitter the lifetime (+/-25%) so the recycle is not a fixed,
+		// cross-install-identical cadence that a peer could fingerprint or
+		// use to read off connection age.
+		long jitter = MAX_CONNECTION_LIFETIME_MS / 4;
+		long lifetime = MAX_CONNECTION_LIFETIME_MS - jitter + (long)
+				(java.util.concurrent.ThreadLocalRandom.current().nextDouble()
+						* 2d * jitter);
+		armCloseWatchdog(lifetime);
 	}
 
 	void stopListeningForClose() {
@@ -151,11 +158,19 @@ abstract class DuplexSyncConnection extends SyncConnection
 	public void eventOccurred(Event e) {
 		if (e instanceof TransportInactiveEvent) {
 			TransportInactiveEvent t = (TransportInactiveEvent) e;
-			if (t.getTransportId().equals(transportId)) onWriteError();
+			if (t.getTransportId().equals(transportId)) forceCloseAsync();
 		} else if (e instanceof CloseSyncConnectionsEvent) {
 			CloseSyncConnectionsEvent c = (CloseSyncConnectionsEvent) e;
-			if (c.getTransportId().equals(transportId)) onWriteError();
+			if (c.getTransportId().equals(transportId)) forceCloseAsync();
 		}
+	}
+
+	private void forceCloseAsync() {
+		// Events are delivered on the event-bus thread, which on Android is
+		// the UI thread; closing the socket there would be main-thread I/O.
+		// Run the close on the IO executor instead.
+		if (fullyClosed) return;
+		ioExecutor.execute(this::onWriteError);
 	}
 
 	void onReadError(boolean recognised) {

@@ -66,6 +66,8 @@ class PollerImpl implements Poller, EventListener {
 	@GuardedBy("lock")
 	private final Map<TransportId, ScheduledPollTask> tasks;
 	@GuardedBy("lock")
+	private final Map<TransportId, Cancellable> repollTasks = new HashMap<>();
+	@GuardedBy("lock")
 	private final Map<ContactId, Long> lastDataConnect = new HashMap<>();
 
 	@Inject
@@ -116,8 +118,10 @@ class PollerImpl implements Poller, EventListener {
 			// A connection force-closed when the transport went inactive may
 			// still be unregistering as the transport comes back; poll once
 			// more shortly after so the freshly-freed contact is re-dialed.
-			scheduler.schedule(() -> pollNow(tid), ioExecutor,
-					ACTIVE_REPOLL_DELAY_MS, MILLISECONDS);
+			// Track it so it is cancelled if the transport goes inactive
+			// again before it fires (otherwise it would restart polling
+			// during the outage).
+			scheduleRepoll(tid);
 		} else if (e instanceof TransportInactiveEvent) {
 			TransportInactiveEvent t = (TransportInactiveEvent) e;
 			cancel(t.getTransportId());
@@ -230,11 +234,26 @@ class PollerImpl implements Poller, EventListener {
 		}
 	}
 
+	private void scheduleRepoll(TransportId t) {
+		Cancellable c = scheduler.schedule(() -> pollNow(t), ioExecutor,
+				ACTIVE_REPOLL_DELAY_MS, MILLISECONDS);
+		Cancellable old;
+		lock.lock();
+		try {
+			old = repollTasks.put(t, c);
+		} finally {
+			lock.unlock();
+		}
+		if (old != null) old.cancel();
+	}
+
 	private void cancel(TransportId t) {
 		lock.lock();
 		try {
 			ScheduledPollTask scheduled = tasks.remove(t);
 			if (scheduled != null) scheduled.cancellable.cancel();
+			Cancellable repoll = repollTasks.remove(t);
+			if (repoll != null) repoll.cancel();
 		} finally {
 			lock.unlock();
 		}

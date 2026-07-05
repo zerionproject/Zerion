@@ -217,7 +217,8 @@ public class ContactsViewModel extends DbViewModel implements EventListener {
 			if (actual && !item.isConnected()) {
 				cancelPendingOffline(id);
 				updateItem(id, it -> new ContactListItem(it, true), false);
-			} else if (!actual && item.isConnected()) {
+			} else if (!actual && item.isConnected()
+					&& !pendingOfflineCallbacks.containsKey(id)) {
 				scheduleOffline(id);
 			}
 		}
