@@ -2035,14 +2035,6 @@ public class ConversationActivity extends ZerionActivity
 		if (revealing) {
 			getWindow().addFlags(
 					android.view.WindowManager.LayoutParams.FLAG_SECURE);
-		} else {
-			boolean userPref = uiPrefs.getBoolean(
-					com.professor.zerion.android.settings.SecurityFragment
-							.PREF_SCREENSHOT_PROTECTION, true);
-			if (!userPref) {
-				getWindow().clearFlags(
-						android.view.WindowManager.LayoutParams.FLAG_SECURE);
-			}
 		}
 	}
 

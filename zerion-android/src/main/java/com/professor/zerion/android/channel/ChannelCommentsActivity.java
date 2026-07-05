@@ -214,9 +214,12 @@ public class ChannelCommentsActivity extends ZerionActivity
 				channelManager.postComment(channelId, parentSeq, body);
 				runOnUiThreadUnlessDestroyed(this::refresh);
 			} catch (DbException ignored) {
-				runOnUiThreadUnlessDestroyed(() -> Toast.makeText(this,
-						R.string.channels_comments_failed,
-						Toast.LENGTH_SHORT).show());
+				runOnUiThreadUnlessDestroyed(() -> {
+					composeInput.setText(body);
+					composeInput.setSelection(body.length());
+					Toast.makeText(this, R.string.channels_comments_failed,
+							Toast.LENGTH_SHORT).show();
+				});
 			}
 		});
 	}
