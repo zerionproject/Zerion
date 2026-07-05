@@ -165,8 +165,54 @@ class ChannelManagerImpl
 		taskScheduler.scheduleWithFixedDelay(this::ensurePublisherServersBound,
 				ioExecutor, 3L, 3L,
 				java.util.concurrent.TimeUnit.MINUTES);
+		taskScheduler.scheduleWithFixedDelay(this::healAllPublisherServers,
+				ioExecutor, 5L, 10L,
+				java.util.concurrent.TimeUnit.MINUTES);
 		scheduleNextRefresh(3_000L);
 		ioExecutor.execute(this::rebindOwnedChannelsOnStartup);
+	}
+
+	private void healAllPublisherServers() {
+		Collection<ChannelState> all;
+		try {
+			all = store.listChannels();
+		} catch (DbException ignored) {
+			return;
+		}
+		for (ChannelState s : all) {
+			if (!s.weArePublisher()) continue;
+			healPublisherServer(s.getChannelId());
+		}
+	}
+
+	private void healPublisherServer(byte[] channelId) {
+		try {
+			ChannelState s = store.getChannel(channelId);
+			if (s == null || !s.weArePublisher()) return;
+		} catch (DbException e) {
+			return;
+		}
+		String key = ChannelStore.hex(channelId);
+		ChannelTransport.ChannelServer bound = boundServers.get(key);
+		if (bound == null) {
+			bindPublisherServer(channelId);
+			return;
+		}
+		if (transport.isReachable(bound.getOnionAddress())) return;
+		java.util.concurrent.locks.ReentrantLock lock = lockFor(channelId);
+		lock.lock();
+		try {
+			ChannelTransport.ChannelServer current = boundServers.remove(key);
+			if (current != null) {
+				try {
+					current.close();
+				} catch (RuntimeException ignored) {
+				}
+			}
+			bindPublisherServer(channelId);
+		} finally {
+			lock.unlock();
+		}
 	}
 
 	private void ensurePublisherServersBound() {
@@ -658,6 +704,14 @@ class ChannelManagerImpl
 	}
 
 	@Override
+	public void refreshChannelReachability(byte[] channelId) {
+		try {
+			ioExecutor.execute(() -> healPublisherServer(channelId));
+		} catch (java.util.concurrent.RejectedExecutionException ignored) {
+		}
+	}
+
+	@Override
 	public void refreshChannel(byte[] channelId) throws DbException {
 		pullAndApply(channelId, false);
 	}
@@ -954,13 +1008,17 @@ class ChannelManagerImpl
 	public String exportInviteLink(byte[] channelId) throws DbException {
 		ChannelState s = store.getChannel(channelId);
 		if (s == null) throw new DbException();
-		if (s.weArePublisher() && (s.getCurrentOnion() == null
-				|| s.getCurrentOnion().isEmpty())) {
-			String onion = bindPublisherServer(channelId);
-			if (onion != null && !onion.isEmpty()) {
-				ChannelState updated = withOnion(s, onion);
-				store.putChannel(updated);
-				s = updated;
+		if (s.weArePublisher()) {
+			if (s.getCurrentOnion() == null
+					|| s.getCurrentOnion().isEmpty()) {
+				String onion = bindPublisherServer(channelId);
+				if (onion != null && !onion.isEmpty()) {
+					ChannelState updated = withOnion(s, onion);
+					store.putChannel(updated);
+					s = updated;
+				}
+			} else {
+				healPublisherServer(channelId);
 			}
 		}
 		if (s.getCurrentOnion() == null || s.getCurrentOnion().isEmpty()) {

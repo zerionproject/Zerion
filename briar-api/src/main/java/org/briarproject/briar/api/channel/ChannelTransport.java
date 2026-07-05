@@ -16,6 +16,8 @@ public interface ChannelTransport {
 	byte[] requestFromOnion(String onion, byte[] requestBytes)
 			throws IOException;
 
+	boolean isReachable(String onion);
+
 	@NotNullByDefault
 	interface ChannelServer {
 

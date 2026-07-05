@@ -77,6 +77,11 @@ class InProcessChannelTransport implements ChannelTransport {
 		return handler.handle(requestBytes);
 	}
 
+	@Override
+	public boolean isReachable(String onion) {
+		return onionToHandler.containsKey(onion);
+	}
+
 	private String synthesiseOnion(byte[] channelId) {
 		long seq = NEXT_ONION_SEQ.incrementAndGet();
 		StringBuilder sb = new StringBuilder("inproc-");

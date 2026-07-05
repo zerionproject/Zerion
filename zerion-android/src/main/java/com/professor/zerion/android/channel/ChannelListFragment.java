@@ -606,6 +606,7 @@ public class ChannelListFragment extends BaseFragment
 	}
 
 	private void shareInvite(ChannelState s) {
+		toastPreparingInvite();
 		ioExecutor.execute(() -> {
 			try {
 				String link = channelManager.exportInviteLink(
@@ -624,6 +625,13 @@ public class ChannelListFragment extends BaseFragment
 		Toast.makeText(requireContext(),
 				R.string.channels_invite_not_ready,
 				Toast.LENGTH_LONG).show();
+	}
+
+	private void toastPreparingInvite() {
+		if (!isAdded()) return;
+		Toast.makeText(requireContext(),
+				R.string.channels_invite_preparing,
+				Toast.LENGTH_SHORT).show();
 	}
 
 	private void copyAndToast(String link) {
@@ -648,6 +656,7 @@ public class ChannelListFragment extends BaseFragment
 	}
 
 	private void shareInviteViaSystemSheet(ChannelState s) {
+		toastPreparingInvite();
 		ioExecutor.execute(() -> {
 			try {
 				String link = channelManager.exportInviteLink(

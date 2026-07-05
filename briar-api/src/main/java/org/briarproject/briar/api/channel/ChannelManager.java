@@ -65,6 +65,8 @@ public interface ChannelManager {
 
 	void refreshChannel(byte[] channelId) throws DbException;
 
+	void refreshChannelReachability(byte[] channelId);
+
 	void pinPost(byte[] channelId, long seqNum) throws DbException;
 
 	void unpinPost(byte[] channelId) throws DbException;

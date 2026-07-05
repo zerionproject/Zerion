@@ -222,6 +222,7 @@ public class ChannelFeedActivity extends ZerionActivity
 		eventBus.addListener(this);
 		if (channelId.length > 0) {
 			notificationManager.clearChannelNotification(channelId);
+			channelManager.refreshChannelReachability(channelId);
 		}
 		loadChannel();
 		markRead();
