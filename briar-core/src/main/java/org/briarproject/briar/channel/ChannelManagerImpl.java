@@ -189,29 +189,28 @@ class ChannelManagerImpl
 		try {
 			ChannelState s = store.getChannel(channelId);
 			if (s == null || !s.weArePublisher()) return;
-		} catch (DbException e) {
-			return;
-		}
-		String key = ChannelStore.hex(channelId);
-		ChannelTransport.ChannelServer bound = boundServers.get(key);
-		if (bound == null) {
-			bindPublisherServer(channelId);
-			return;
-		}
-		if (transport.isReachable(bound.getOnionAddress())) return;
-		java.util.concurrent.locks.ReentrantLock lock = lockFor(channelId);
-		lock.lock();
-		try {
-			ChannelTransport.ChannelServer current = boundServers.remove(key);
-			if (current != null) {
-				try {
-					current.close();
-				} catch (RuntimeException ignored) {
-				}
+			String key = ChannelStore.hex(channelId);
+			ChannelTransport.ChannelServer bound = boundServers.get(key);
+			if (bound == null) {
+				bindPublisherServer(channelId);
+				return;
 			}
-			bindPublisherServer(channelId);
-		} finally {
-			lock.unlock();
+			if (transport.isReachable(bound.getOnionAddress())) return;
+			java.util.concurrent.locks.ReentrantLock lock = lockFor(channelId);
+			lock.lock();
+			try {
+				ChannelTransport.ChannelServer current = boundServers.remove(key);
+				if (current != null) {
+					try {
+						current.close();
+					} catch (Exception ignored) {
+					}
+				}
+				bindPublisherServer(channelId);
+			} finally {
+				lock.unlock();
+			}
+		} catch (Throwable t) {
 		}
 	}
 
@@ -469,9 +468,7 @@ class ChannelManagerImpl
 				}
 			}
 			return server.getOnionAddress();
-		} catch (IOException e) {
-			return null;
-		} catch (DbException e) {
+		} catch (IOException | DbException | RuntimeException e) {
 			return null;
 		} finally {
 			lock.unlock();

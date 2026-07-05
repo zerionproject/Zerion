@@ -21,7 +21,6 @@ public class TorChannelTransport implements ChannelTransport {
 
 	private static final int CONNECT_TIMEOUT_MS = 60_000;
 	private static final int READ_TIMEOUT_MS = 120_000;
-	private static final int REACHABILITY_TIMEOUT_MS = 45_000;
 	private static final int REMOTE_PORT = 80;
 	private static final int MAX_REQUEST_BYTES = 256 * 1024;
 	private static final int MAX_RESPONSE_BYTES = 64 * 1024 * 1024;
@@ -119,17 +118,16 @@ public class TorChannelTransport implements ChannelTransport {
 	public boolean isReachable(String onion) {
 		Socket s = null;
 		try {
-			s = torSocketFactory.createSocket();
-			s.connect(new InetSocketAddress(stripDotOnion(onion)
-					+ ".onion", REMOTE_PORT), REACHABILITY_TIMEOUT_MS);
+			s = torSocketFactory.createSocket(
+					stripDotOnion(onion) + ".onion", REMOTE_PORT);
 			return true;
-		} catch (IOException e) {
+		} catch (Throwable t) {
 			return false;
 		} finally {
 			if (s != null) {
 				try {
 					s.close();
-				} catch (IOException ignored) {
+				} catch (Exception ignored) {
 				}
 			}
 		}
