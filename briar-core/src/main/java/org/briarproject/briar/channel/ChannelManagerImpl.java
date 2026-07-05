@@ -162,8 +162,33 @@ class ChannelManagerImpl
 		taskScheduler.scheduleWithFixedDelay(this::runDailyPurgeSafely,
 				ioExecutor, 5L, 24L * 60L * 60L,
 				java.util.concurrent.TimeUnit.MINUTES);
+		taskScheduler.scheduleWithFixedDelay(this::ensurePublisherServersBound,
+				ioExecutor, 3L, 3L,
+				java.util.concurrent.TimeUnit.MINUTES);
 		scheduleNextRefresh(3_000L);
 		ioExecutor.execute(this::rebindOwnedChannelsOnStartup);
+	}
+
+	private void ensurePublisherServersBound() {
+		try {
+			for (ChannelState s : store.listChannels()) {
+				if (!s.weArePublisher()) continue;
+				String key = ChannelStore.hex(s.getChannelId());
+				if (boundServers.containsKey(key)) continue;
+				java.util.concurrent.locks.ReentrantLock lock =
+						lockFor(s.getChannelId());
+				lock.lock();
+				try {
+					ChannelState fresh = store.getChannel(s.getChannelId());
+					if (fresh == null || !fresh.weArePublisher()) continue;
+					if (boundServers.containsKey(key)) continue;
+					bindPublisherServer(fresh.getChannelId());
+				} finally {
+					lock.unlock();
+				}
+			}
+		} catch (DbException ignored) {
+		}
 	}
 
 	private void refreshAllSubscriptionsSafely() {
