@@ -6,7 +6,6 @@ import org.briarproject.bramble.api.contact.ContactExchangeManager;
 import org.briarproject.bramble.api.contact.ContactId;
 import org.briarproject.bramble.api.contact.HandshakeManager;
 import org.briarproject.bramble.api.contact.PendingContactId;
-import org.briarproject.bramble.api.event.EventBus;
 import org.briarproject.bramble.api.lifecycle.IoExecutor;
 import org.briarproject.bramble.api.system.TaskScheduler;
 import org.briarproject.bramble.api.plugin.TransportConnectionReader;
@@ -41,7 +40,6 @@ class ConnectionManagerImpl implements ConnectionManager {
 	private final ConnectionRegistry connectionRegistry;
 	private final TransportPropertyManager transportPropertyManager;
 	private final SecureRandom secureRandom;
-	private final EventBus eventBus;
 	private final TaskScheduler scheduler;
 
 	@Inject
@@ -53,8 +51,7 @@ class ConnectionManagerImpl implements ConnectionManager {
 			ContactExchangeManager contactExchangeManager,
 			ConnectionRegistry connectionRegistry,
 			TransportPropertyManager transportPropertyManager,
-			SecureRandom secureRandom, EventBus eventBus,
-			TaskScheduler scheduler) {
+			SecureRandom secureRandom, TaskScheduler scheduler) {
 		this.ioExecutor = ioExecutor;
 		this.keyManager = keyManager;
 		this.streamReaderFactory = streamReaderFactory;
@@ -65,7 +62,6 @@ class ConnectionManagerImpl implements ConnectionManager {
 		this.connectionRegistry = connectionRegistry;
 		this.transportPropertyManager = transportPropertyManager;
 		this.secureRandom = secureRandom;
-		this.eventBus = eventBus;
 		this.scheduler = scheduler;
 	}
 
@@ -90,7 +86,7 @@ class ConnectionManagerImpl implements ConnectionManager {
 			DuplexTransportConnection d) {
 		ioExecutor.execute(new IncomingDuplexSyncConnection(keyManager,
 				connectionRegistry, streamReaderFactory, streamWriterFactory,
-				syncSessionFactory, transportPropertyManager, eventBus,
+				syncSessionFactory, transportPropertyManager,
 				scheduler, ioExecutor, t, d));
 	}
 
@@ -125,7 +121,7 @@ class ConnectionManagerImpl implements ConnectionManager {
 			DuplexTransportConnection d) {
 		ioExecutor.execute(new OutgoingDuplexSyncConnection(keyManager,
 				connectionRegistry, streamReaderFactory, streamWriterFactory,
-				syncSessionFactory, transportPropertyManager, eventBus,
+				syncSessionFactory, transportPropertyManager,
 				scheduler, ioExecutor, secureRandom, c, t, d));
 	}
 

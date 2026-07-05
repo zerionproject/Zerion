@@ -4,12 +4,7 @@ import org.briarproject.bramble.api.Cancellable;
 import org.briarproject.bramble.api.connection.ConnectionRegistry;
 import org.briarproject.bramble.api.connection.InterruptibleConnection;
 import org.briarproject.bramble.api.contact.ContactId;
-import org.briarproject.bramble.api.event.Event;
-import org.briarproject.bramble.api.event.EventBus;
-import org.briarproject.bramble.api.event.EventListener;
 import org.briarproject.bramble.api.system.TaskScheduler;
-import org.briarproject.bramble.api.plugin.event.TransportInactiveEvent;
-import org.briarproject.bramble.api.sync.event.CloseSyncConnectionsEvent;
 import org.briarproject.bramble.api.plugin.TransportConnectionReader;
 import org.briarproject.bramble.api.plugin.TransportConnectionWriter;
 import org.briarproject.bramble.api.plugin.TransportId;
@@ -36,14 +31,13 @@ import static org.briarproject.nullsafety.NullSafety.requireNonNull;
 
 @NotNullByDefault
 abstract class DuplexSyncConnection extends SyncConnection
-		implements InterruptibleConnection, EventListener {
+		implements InterruptibleConnection {
 
 	final Executor ioExecutor;
 	final TransportId transportId;
 	final TransportConnectionReader reader;
 	final TransportConnectionWriter writer;
 	final TransportProperties remote;
-	private final EventBus eventBus;
 	private final TaskScheduler scheduler;
 
 	private static final long MAX_CONNECTION_LIFETIME_MS = 30L * 60L * 1000L;
@@ -70,10 +64,6 @@ abstract class DuplexSyncConnection extends SyncConnection
 			else out = outgoingSession;
 		}
 		if (out != null) out.interrupt();
-		// Fix B: once the outgoing session is interrupted the connection is
-		// being torn down, so the reader must not outlive it indefinitely.
-		// If the peer keeps feeding the reader (e.g. cover traffic) so the
-		// read timeout never fires, force a full close shortly after.
 		armCloseWatchdog(2L * writer.getMaxIdleTime());
 	}
 
@@ -95,13 +85,12 @@ abstract class DuplexSyncConnection extends SyncConnection
 			StreamWriterFactory streamWriterFactory,
 			SyncSessionFactory syncSessionFactory,
 			TransportPropertyManager transportPropertyManager,
-			EventBus eventBus, TaskScheduler scheduler, Executor ioExecutor,
+			TaskScheduler scheduler, Executor ioExecutor,
 			TransportId transportId,
 			DuplexTransportConnection connection) {
 		super(keyManager, connectionRegistry, streamReaderFactory,
 				streamWriterFactory, syncSessionFactory,
 				transportPropertyManager);
-		this.eventBus = eventBus;
 		this.scheduler = scheduler;
 		this.ioExecutor = ioExecutor;
 		this.transportId = transportId;
@@ -110,14 +99,7 @@ abstract class DuplexSyncConnection extends SyncConnection
 		remote = connection.getRemoteProperties();
 	}
 
-	void startListeningForClose() {
-		eventBus.addListener(this);
-		// Fix D: a connection can never live long enough to become a
-		// permanent zombie. If it is still open after the maximum lifetime,
-		// force a full close so the poller re-dials a fresh connection.
-		// Jitter the lifetime (+/-25%) so the recycle is not a fixed,
-		// cross-install-identical cadence that a peer could fingerprint or
-		// use to read off connection age.
+	void startCloseWatchdog() {
 		long jitter = MAX_CONNECTION_LIFETIME_MS / 4;
 		long lifetime = MAX_CONNECTION_LIFETIME_MS - jitter + (long)
 				(java.util.concurrent.ThreadLocalRandom.current().nextDouble()
@@ -125,10 +107,14 @@ abstract class DuplexSyncConnection extends SyncConnection
 		armCloseWatchdog(lifetime);
 	}
 
-	void stopListeningForClose() {
+	void stopCloseWatchdog() {
 		fullyClosed = true;
-		eventBus.removeListener(this);
 		cancelCloseWatchdog();
+	}
+
+	@Override
+	public void forceClose() {
+		forceCloseAsync();
 	}
 
 	private void armCloseWatchdog(long delayMs) {
@@ -154,21 +140,7 @@ abstract class DuplexSyncConnection extends SyncConnection
 		if (c != null) c.cancel();
 	}
 
-	@Override
-	public void eventOccurred(Event e) {
-		if (e instanceof TransportInactiveEvent) {
-			TransportInactiveEvent t = (TransportInactiveEvent) e;
-			if (t.getTransportId().equals(transportId)) forceCloseAsync();
-		} else if (e instanceof CloseSyncConnectionsEvent) {
-			CloseSyncConnectionsEvent c = (CloseSyncConnectionsEvent) e;
-			if (c.getTransportId().equals(transportId)) forceCloseAsync();
-		}
-	}
-
 	private void forceCloseAsync() {
-		// Events are delivered on the event-bus thread, which on Android is
-		// the UI thread; closing the socket there would be main-thread I/O.
-		// Run the close on the IO executor instead.
 		if (fullyClosed) return;
 		ioExecutor.execute(this::onWriteError);
 	}

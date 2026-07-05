@@ -115,12 +115,6 @@ class PollerImpl implements Poller, EventListener {
 			TransportActiveEvent t = (TransportActiveEvent) e;
 			TransportId tid = t.getTransportId();
 			pollNow(tid);
-			// A connection force-closed when the transport went inactive may
-			// still be unregistering as the transport comes back; poll once
-			// more shortly after so the freshly-freed contact is re-dialed.
-			// Track it so it is cancelled if the transport goes inactive
-			// again before it fires (otherwise it would restart polling
-			// during the outage).
 			scheduleRepoll(tid);
 		} else if (e instanceof TransportInactiveEvent) {
 			TransportInactiveEvent t = (TransportInactiveEvent) e;

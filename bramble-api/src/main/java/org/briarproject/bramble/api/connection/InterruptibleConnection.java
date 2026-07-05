@@ -6,4 +6,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 public interface InterruptibleConnection {
 
 	void interruptOutgoingSession();
+
+	void forceClose();
 }

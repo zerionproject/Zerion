@@ -5,13 +5,17 @@ import org.briarproject.bramble.api.connection.ConnectionRegistry;
 import org.briarproject.bramble.api.connection.InterruptibleConnection;
 import org.briarproject.bramble.api.contact.ContactId;
 import org.briarproject.bramble.api.contact.PendingContactId;
+import org.briarproject.bramble.api.event.Event;
 import org.briarproject.bramble.api.event.EventBus;
+import org.briarproject.bramble.api.event.EventListener;
 import org.briarproject.bramble.api.plugin.PluginConfig;
 import org.briarproject.bramble.api.plugin.TransportId;
 import org.briarproject.bramble.api.plugin.event.ConnectionClosedEvent;
 import org.briarproject.bramble.api.plugin.event.ConnectionOpenedEvent;
 import org.briarproject.bramble.api.plugin.event.ContactConnectedEvent;
 import org.briarproject.bramble.api.plugin.event.ContactDisconnectedEvent;
+import org.briarproject.bramble.api.plugin.event.TransportInactiveEvent;
+import org.briarproject.bramble.api.sync.event.CloseSyncConnectionsEvent;
 import org.briarproject.bramble.api.rendezvous.event.RendezvousConnectionClosedEvent;
 import org.briarproject.bramble.api.rendezvous.event.RendezvousConnectionOpenedEvent;
 import org.briarproject.bramble.api.sync.Priority;
@@ -34,7 +38,7 @@ import static java.util.Collections.emptyList;
 
 @ThreadSafe
 @NotNullByDefault
-class ConnectionRegistryImpl implements ConnectionRegistry {
+class ConnectionRegistryImpl implements ConnectionRegistry, EventListener {
 
 	private final EventBus eventBus;
 	private final Map<TransportId, List<TransportId>> transportPrefs;
@@ -51,6 +55,28 @@ class ConnectionRegistryImpl implements ConnectionRegistry {
 		transportPrefs = pluginConfig.getTransportPreferences();
 		contactConnections = new HashMap<>();
 		connectedPendingContacts = new HashSet<>();
+		eventBus.addListener(this);
+	}
+
+	@Override
+	public void eventOccurred(Event e) {
+		if (e instanceof TransportInactiveEvent) {
+			closeConnections(((TransportInactiveEvent) e).getTransportId());
+		} else if (e instanceof CloseSyncConnectionsEvent) {
+			closeConnections(((CloseSyncConnectionsEvent) e).getTransportId());
+		}
+	}
+
+	private void closeConnections(TransportId t) {
+		List<InterruptibleConnection> toClose = new ArrayList<>();
+		synchronized (lock) {
+			for (List<ConnectionRecord> recs : contactConnections.values()) {
+				for (ConnectionRecord rec : recs) {
+					if (rec.transportId.equals(t)) toClose.add(rec.conn);
+				}
+			}
+		}
+		for (InterruptibleConnection conn : toClose) conn.forceClose();
 	}
 
 	@Override

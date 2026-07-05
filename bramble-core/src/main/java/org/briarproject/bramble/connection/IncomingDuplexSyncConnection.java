@@ -27,13 +27,12 @@ class IncomingDuplexSyncConnection extends DuplexSyncConnection
 			StreamWriterFactory streamWriterFactory,
 			SyncSessionFactory syncSessionFactory,
 			TransportPropertyManager transportPropertyManager,
-			org.briarproject.bramble.api.event.EventBus eventBus,
 			org.briarproject.bramble.api.system.TaskScheduler scheduler,
 			Executor ioExecutor, TransportId transportId,
 			DuplexTransportConnection connection) {
 		super(keyManager, connectionRegistry, streamReaderFactory,
 				streamWriterFactory, syncSessionFactory,
-				transportPropertyManager, eventBus, scheduler, ioExecutor,
+				transportPropertyManager, scheduler, ioExecutor,
 				transportId, connection);
 	}
 
@@ -55,7 +54,7 @@ class IncomingDuplexSyncConnection extends DuplexSyncConnection
 		}
 		connectionRegistry.registerIncomingConnection(contactId, transportId,
 				this);
-		startListeningForClose();
+		startCloseWatchdog();
 		ioExecutor.execute(() -> runOutgoingSession(contactId));
 		try {
 			transportPropertyManager.addRemotePropertiesFromConnection(
@@ -72,7 +71,7 @@ class IncomingDuplexSyncConnection extends DuplexSyncConnection
 			connectionRegistry.unregisterConnection(contactId, transportId,
 					this, true, true);
 		} finally {
-			stopListeningForClose();
+			stopCloseWatchdog();
 		}
 	}
 
