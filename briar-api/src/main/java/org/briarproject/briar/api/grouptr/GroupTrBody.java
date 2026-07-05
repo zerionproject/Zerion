@@ -89,6 +89,23 @@ public final class GroupTrBody {
 		return out.toByteArray();
 	}
 
+	public static Kind kindOf(byte[] body) {
+		if (body == null || body.length < 3 || body[0] != MAGIC_BYTE
+				|| body[1] != VERSION_1) {
+			return Kind.TEXT;
+		}
+		switch (body[2]) {
+			case TYPE_VOICE:
+				return Kind.VOICE;
+			case TYPE_IMAGE:
+				return Kind.IMAGE;
+			case TYPE_VIDEO:
+				return Kind.VIDEO;
+			default:
+				return Kind.TEXT;
+		}
+	}
+
 	public static Parsed parse(byte[] body) {
 		if (body == null) return text("");
 		if (body.length < 3 || body[0] != MAGIC_BYTE

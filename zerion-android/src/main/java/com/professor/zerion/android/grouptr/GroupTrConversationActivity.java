@@ -14,7 +14,6 @@ import android.os.Looper;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.EditText;
@@ -31,7 +30,6 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.AppCompatImageButton;
 import androidx.core.content.ContextCompat;
-import androidx.core.widget.NestedScrollView;
 
 import com.google.android.material.appbar.MaterialToolbar;
 import com.vanniktech.emoji.EmojiEditText;
@@ -98,8 +96,11 @@ public class GroupTrConversationActivity extends ZerionActivity
 					this::onMediaPicked);
 
 	private byte[] groupId;
-	private LinearLayout postsContainer;
-	private NestedScrollView postsScroll;
+	private androidx.recyclerview.widget.RecyclerView postsRecycler;
+	private androidx.recyclerview.widget.LinearLayoutManager layoutManager;
+	private GroupTrPostAdapter postAdapter;
+	private final java.util.Set<String> autoDeleteScheduled =
+			new java.util.HashSet<>();
 	private TextView emptyState;
 	private TextView titleView;
 	private TextView subtitleView;
@@ -178,8 +179,13 @@ public class GroupTrConversationActivity extends ZerionActivity
 		titleView = findViewById(R.id.groupTitle);
 		subtitleView = findViewById(R.id.groupSubtitle);
 		avatarView = findViewById(R.id.groupAvatar);
-		postsScroll = findViewById(R.id.postsScroll);
-		postsContainer = findViewById(R.id.postsContainer);
+		postsRecycler = findViewById(R.id.postsRecycler);
+		layoutManager = new androidx.recyclerview.widget.LinearLayoutManager(
+				this);
+		layoutManager.setStackFromEnd(true);
+		postsRecycler.setLayoutManager(layoutManager);
+		postAdapter = new GroupTrPostAdapter(new PostCallback());
+		postsRecycler.setAdapter(postAdapter);
 		emptyState = findViewById(R.id.emptyState);
 		input = findViewById(R.id.messageInput);
 		sendButton = findViewById(R.id.sendButton);
@@ -385,12 +391,11 @@ public class GroupTrConversationActivity extends ZerionActivity
 					ev.getSenderPubKey(), ev.getSenderName(),
 					ev.getCiphertext(), ev.getTimestamp(), ev.getEpoch(),
 					false, ev.getAutoDeleteTimerMs());
-			for (GroupTrPost existing : renderedPosts) {
-				if (samePost(existing, p)) return;
-			}
+			if (postAdapter.contains(p)) return;
 			boolean pin = isScrolledToBottom();
-			appendPost(p);
-			renderedPosts.add(p);
+			postAdapter.addPost(p);
+			scheduleAutoDelete(p);
+			emptyState.setVisibility(View.GONE);
 			if (pin) scrollToBottom();
 		});
 	}
@@ -426,172 +431,101 @@ public class GroupTrConversationActivity extends ZerionActivity
 		startActivity(GroupTrAdminActivity.intent(this, groupId));
 	}
 
-	private final java.util.List<GroupTrPost> renderedPosts =
-			new java.util.ArrayList<>();
-
 	private boolean groupRendered = false;
 
 	private void renderPosts(List<GroupTrPost> posts) {
 		if (posts.isEmpty()) {
-			if (postsContainer.getChildCount() > 0) {
-				postsContainer.removeAllViews();
-			}
-			renderedPosts.clear();
+			postAdapter.setPosts(posts);
 			emptyState.setVisibility(View.VISIBLE);
 			return;
 		}
-		boolean pin = !groupRendered || isScrolledToBottom();
-		boolean canAppend = posts.size() >= renderedPosts.size();
-		if (canAppend) {
-			for (int i = 0; i < renderedPosts.size(); i++) {
-				if (!samePost(posts.get(i), renderedPosts.get(i))) {
-					canAppend = false;
-					break;
-				}
-			}
-		}
-		if (!canAppend) {
-			postsContainer.removeAllViews();
-			renderedPosts.clear();
-		}
 		emptyState.setVisibility(View.GONE);
-		for (int i = renderedPosts.size(); i < posts.size(); i++) {
-			appendPost(posts.get(i));
-		}
-		renderedPosts.clear();
-		renderedPosts.addAll(posts);
+		boolean pin = !groupRendered || isScrolledToBottom();
+		postAdapter.setPosts(posts);
+		for (GroupTrPost p : posts) scheduleAutoDelete(p);
 		if (pin) scrollToBottom();
 		groupRendered = true;
 	}
 
-	private static boolean samePost(GroupTrPost a, GroupTrPost b) {
-		return a.getEpoch() == b.getEpoch()
-				&& a.getTimestamp() == b.getTimestamp()
-				&& Arrays.equals(a.getSenderPubKey(), b.getSenderPubKey())
-				&& Arrays.equals(a.getBody(), b.getBody());
-	}
-
-	private void appendPost(GroupTrPost p) {
-		emptyState.setVisibility(View.GONE);
-		boolean mine = localPub != null
-				&& Arrays.equals(p.getSenderPubKey(), localPub);
-		LayoutInflater inf = LayoutInflater.from(this);
-		GroupTrBody.Parsed parsed = GroupTrBody.parse(p.getBody());
-		int childCountBefore = postsContainer.getChildCount();
-		if (parsed.kind == GroupTrBody.Kind.VOICE) {
-			appendVoicePost(inf, p, parsed, mine);
-		} else if (parsed.kind == GroupTrBody.Kind.IMAGE) {
-			appendImagePost(inf, p, parsed, mine);
-		} else if (parsed.kind == GroupTrBody.Kind.VIDEO) {
-			appendVideoPost(inf, p, parsed, mine);
-		} else {
-			appendTextPost(inf, p, parsed, mine);
-		}
-		if (postsContainer.getChildCount() > childCountBefore) {
-			View added = postsContainer.getChildAt(
-					postsContainer.getChildCount() - 1);
-			scheduleAutoDelete(added, p);
-		}
-	}
-
 	private boolean isScrolledToBottom() {
-		if (postsScroll.getChildCount() == 0) return true;
-		View content = postsScroll.getChildAt(0);
-		int diff = content.getBottom()
-				- (postsScroll.getHeight() + postsScroll.getScrollY());
-		int threshold = (int) (48
-				* getResources().getDisplayMetrics().density);
-		return diff <= threshold;
+		if (postAdapter.getItemCount() == 0) return true;
+		return layoutManager.findLastVisibleItemPosition()
+				>= postAdapter.getItemCount() - 1;
 	}
 
 	private void scrollToBottom() {
-		postsScroll.post(() -> postsScroll.fullScroll(View.FOCUS_DOWN));
+		int count = postAdapter.getItemCount();
+		if (count > 0) postsRecycler.scrollToPosition(count - 1);
 	}
 
-	private void scheduleAutoDelete(View row, GroupTrPost p) {
+	private String postKey(GroupTrPost p) {
+		return p.getEpoch() + ":" + p.getTimestamp() + ":"
+				+ Arrays.hashCode(p.getSenderPubKey());
+	}
+
+	private void scheduleAutoDelete(GroupTrPost p) {
 		long ttl = p.getAutoDeleteTimerMs();
 		if (ttl <= 0L) return;
-		long elapsed = System.currentTimeMillis() - p.getTimestamp();
-		long remaining = ttl - elapsed;
+		String key = postKey(p);
+		if (!autoDeleteScheduled.add(key)) return;
+		long remaining = ttl - (System.currentTimeMillis() - p.getTimestamp());
 		if (remaining <= 0L) {
-			postsContainer.removeView(row);
-			removeRenderedPost(p);
-			if (postsContainer.getChildCount() == 0) {
-				emptyState.setVisibility(View.VISIBLE);
-			}
+			expirePost(p, key);
 			return;
 		}
-		main.postDelayed(() -> {
-			if (row.getParent() == postsContainer) {
-				postsContainer.removeView(row);
-				removeRenderedPost(p);
-				if (postsContainer.getChildCount() == 0) {
-					emptyState.setVisibility(View.VISIBLE);
-				}
-			}
-		}, remaining);
+		main.postDelayed(() -> expirePost(p, key), remaining);
 	}
 
-	private void removeRenderedPost(GroupTrPost p) {
-		for (java.util.Iterator<GroupTrPost> it = renderedPosts.iterator();
-				it.hasNext(); ) {
-			if (samePost(it.next(), p)) {
-				it.remove();
-				break;
-			}
+	private void expirePost(GroupTrPost p, String key) {
+		autoDeleteScheduled.remove(key);
+		postAdapter.removePost(p);
+		if (postAdapter.getItemCount() == 0) {
+			emptyState.setVisibility(View.VISIBLE);
 		}
 	}
 
-	private void appendImagePost(LayoutInflater inf, GroupTrPost p,
-			GroupTrBody.Parsed parsed, boolean mine) {
-		View row;
-		if (mine) {
-			row = inf.inflate(R.layout.list_item_grouptr_image_out,
-					postsContainer, false);
-		} else {
-			row = inf.inflate(R.layout.list_item_grouptr_image_in,
-					postsContainer, false);
-			TextView sender = row.findViewById(R.id.senderName);
-			bindSender(sender, p);
+	private class PostCallback implements GroupTrPostAdapter.Callback {
+		@Override
+		public boolean isMine(GroupTrPost p) {
+			return localPub != null
+					&& Arrays.equals(p.getSenderPubKey(), localPub);
 		}
-		ImageView img = row.findViewById(R.id.imageView);
-		TextView time = row.findViewById(R.id.imageTime);
-		Bitmap bmp = com.professor.zerion.android.util.SafeImageDecoder
-				.decode(parsed.payload, 1024);
-		if (bmp != null) img.setImageBitmap(bmp);
-		time.setText(tsFmt.format(new Date(p.getTimestamp())));
-		final byte[] imageBytes = parsed.payload;
-		final String mime = parsed.mime;
-		img.setOnClickListener(v -> openMediaFullscreen(imageBytes, mime,
-				 false, ".jpg"));
-		postsContainer.addView(row);
-	}
 
-	private void appendVideoPost(LayoutInflater inf, GroupTrPost p,
-			GroupTrBody.Parsed parsed, boolean mine) {
-		View row;
-		if (mine) {
-			row = inf.inflate(R.layout.list_item_grouptr_video_out,
-					postsContainer, false);
-		} else {
-			row = inf.inflate(R.layout.list_item_grouptr_video_in,
-					postsContainer, false);
-			TextView sender = row.findViewById(R.id.senderName);
-			bindSender(sender, p);
+		@Override
+		public void bindSender(TextView tv, GroupTrPost p) {
+			GroupTrConversationActivity.this.bindSender(tv, p);
 		}
-		ImageView thumb = row.findViewById(R.id.videoThumb);
-		TextView duration = row.findViewById(R.id.videoDuration);
-		TextView time = row.findViewById(R.id.videoTime);
-		duration.setText(formatDuration(parsed.durationMs));
-		time.setText(tsFmt.format(new Date(p.getTimestamp())));
-		Bitmap thumbBmp = extractVideoThumb(parsed.payload);
-		if (thumbBmp != null) thumb.setImageBitmap(thumbBmp);
-		final byte[] videoBytes = parsed.payload;
-		final String mime = parsed.mime;
-		row.findViewById(R.id.mediaBubble).setOnClickListener(v ->
-				openMediaFullscreen(videoBytes, mime,  true,
-						".mp4"));
-		postsContainer.addView(row);
+
+		@Override
+		public void onImageClick(byte[] bytes, @Nullable String mime) {
+			openMediaFullscreen(bytes, mime, false, ".jpg");
+		}
+
+		@Override
+		public void onVideoClick(byte[] bytes, @Nullable String mime) {
+			openMediaFullscreen(bytes, mime, true, ".mp4");
+		}
+
+		@Override
+		public void onVoiceClick(AppCompatImageButton btn, byte[] audio) {
+			playVoice(btn, audio);
+		}
+
+		@Override
+		@Nullable
+		public Bitmap videoThumb(byte[] videoBytes) {
+			return extractVideoThumb(videoBytes);
+		}
+
+		@Override
+		public String formatTime(long ts) {
+			return tsFmt.format(new Date(ts));
+		}
+
+		@Override
+		public String formatDuration(long ms) {
+			return GroupTrConversationActivity.this.formatDuration(ms);
+		}
 	}
 
 	@Nullable
@@ -644,51 +578,6 @@ public class GroupTrConversationActivity extends ZerionActivity
 		} catch (IOException | RuntimeException ex) {
 			toast(R.string.grouptr_attach_read_failed);
 		}
-	}
-
-	private void appendTextPost(LayoutInflater inf, GroupTrPost p,
-			GroupTrBody.Parsed parsed, boolean mine) {
-		View row;
-		if (mine) {
-			row = inf.inflate(R.layout.list_item_grouptr_post_out,
-					postsContainer, false);
-		} else {
-			row = inf.inflate(R.layout.list_item_grouptr_post_in,
-					postsContainer, false);
-			TextView sender = row.findViewById(R.id.senderName);
-			bindSender(sender, p);
-		}
-		TextView body = row.findViewById(R.id.postText);
-		TextView time = row.findViewById(R.id.postTime);
-		if (!com.professor.zerion.android.channel.ChannelInviteSpanUtil
-				.apply(body, parsed.text)) {
-			body.setText(parsed.text);
-		}
-		time.setText(tsFmt.format(new Date(p.getTimestamp())));
-		postsContainer.addView(row);
-	}
-
-	private void appendVoicePost(LayoutInflater inf, GroupTrPost p,
-			GroupTrBody.Parsed parsed, boolean mine) {
-		View row;
-		if (mine) {
-			row = inf.inflate(R.layout.list_item_grouptr_voice_out,
-					postsContainer, false);
-		} else {
-			row = inf.inflate(R.layout.list_item_grouptr_voice_in,
-					postsContainer, false);
-			TextView sender = row.findViewById(R.id.senderName);
-			bindSender(sender, p);
-		}
-		TextView dur = row.findViewById(R.id.voiceDuration);
-		TextView time = row.findViewById(R.id.voiceTime);
-		final AppCompatImageButton playBtn =
-				row.findViewById(R.id.voicePlayButton);
-		dur.setText(formatDuration(parsed.durationMs));
-		time.setText(tsFmt.format(new Date(p.getTimestamp())));
-		final byte[] audio = parsed.payload;
-		playBtn.setOnClickListener(v -> playVoice(playBtn, audio));
-		postsContainer.addView(row);
 	}
 
 	private void playVoice(AppCompatImageButton button, byte[] oggOpus) {
