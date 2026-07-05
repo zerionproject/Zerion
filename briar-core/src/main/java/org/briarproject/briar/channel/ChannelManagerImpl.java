@@ -232,7 +232,7 @@ class ChannelManagerImpl
 					lock.unlock();
 				}
 			}
-		} catch (DbException ignored) {
+		} catch (Throwable ignored) {
 		}
 	}
 
@@ -302,7 +302,7 @@ class ChannelManagerImpl
 				fireEvent(s.getChannelId(),
 						ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
 			}
-		} catch (DbException ignored) {
+		} catch (Throwable ignored) {
 		}
 	}
 
@@ -321,34 +321,10 @@ class ChannelManagerImpl
 			} else if (e instanceof TransportActiveEvent) {
 				TransportActiveEvent t = (TransportActiveEvent) e;
 				if (TorConstants.ID.equals(t.getTransportId())) {
-					ioExecutor.execute(
-							this::rebindAllPublisherServersForRecovery);
+					ioExecutor.execute(this::ensurePublisherServersBound);
 				}
 			}
 		} catch (java.util.concurrent.RejectedExecutionException ignored) {
-		}
-	}
-
-	private void rebindAllPublisherServersForRecovery() {
-		try {
-			for (ChannelState s : store.listChannels()) {
-				if (!s.weArePublisher()) continue;
-				java.util.concurrent.locks.ReentrantLock lock =
-						lockFor(s.getChannelId());
-				lock.lock();
-				try {
-					ChannelState fresh = store.getChannel(s.getChannelId());
-					if (fresh == null || !fresh.weArePublisher()) continue;
-					ChannelTransport.ChannelServer previous =
-							boundServers.remove(ChannelStore.hex(
-									fresh.getChannelId()));
-					if (previous != null) previous.close();
-					bindPublisherServer(fresh.getChannelId());
-				} finally {
-					lock.unlock();
-				}
-			}
-		} catch (DbException ignored) {
 		}
 	}
 
