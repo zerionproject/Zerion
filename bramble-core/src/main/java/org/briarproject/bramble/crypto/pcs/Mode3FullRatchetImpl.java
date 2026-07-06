@@ -17,6 +17,7 @@ import java.util.LinkedHashMap;
 import javax.inject.Inject;
 
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MLKEM_CIPHERTEXT_SIZE;
+import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_FULL_SEND_ROTATION_INTERVAL;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MLKEM_ENCAPSULATION_KEY_SIZE;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_FULL_MK_LABEL;
 
@@ -62,7 +63,8 @@ class Mode3FullRatchetImpl implements Mode3FullRatchet {
 			ct = enc.getCiphertext();
 			sharedSecret = enc.getSharedSecret().clone();
 			Arrays.fill(enc.getSharedSecret(), (byte) 0);
-			rotate = true;
+			rotate = state.getMessageCounter()
+					% MODE3_FULL_SEND_ROTATION_INTERVAL == 0;
 			kpIdUsed = KpId.of(theirPk);
 		}
 

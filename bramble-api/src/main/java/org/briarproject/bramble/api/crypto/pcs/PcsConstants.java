@@ -120,6 +120,8 @@ public interface PcsConstants {
 
 	int MODE3_FULL_RECV_SK_LRU_SIZE = 64;
 
+	int MODE3_FULL_SEND_ROTATION_INTERVAL = 32;
+
 	String MODE3_FULL_CK_DH_LABEL =
 			"org.briarproject.zerion/MODE3FULL_CK_DH";
 

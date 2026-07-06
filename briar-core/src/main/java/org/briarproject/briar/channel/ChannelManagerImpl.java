@@ -292,15 +292,7 @@ class ChannelManagerImpl
 		try {
 			for (ChannelState s : store.listChannels()) {
 				if (!s.weArePublisher()) continue;
-				if (boundServers.containsKey(
-						ChannelStore.hex(s.getChannelId()))) continue;
-				String onion = bindPublisherServer(s.getChannelId());
-				if (onion == null || onion.isEmpty()) continue;
-				if (onion.equals(s.getCurrentOnion())) continue;
-				ChannelState updated = withRotatedOnion(s, onion);
-				store.putChannel(updated);
-				fireEvent(s.getChannelId(),
-						ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+				bindPublisherServer(s.getChannelId());
 			}
 		} catch (Throwable ignored) {
 		}
@@ -425,29 +417,45 @@ class ChannelManagerImpl
 		try {
 			String key = ChannelStore.hex(channelId);
 			ChannelTransport.ChannelServer bound = boundServers.get(key);
-			if (bound != null) return bound.getOnionAddress();
-			ChannelState existing = store.getChannel(channelId);
-			String existingPriv = existing == null ? null
-					: existing.getOnionPrivateKey();
-			ChannelTransport.ChannelServer server =
-					transport.bindServer(channelId, existingPriv,
-							requestBytes -> handlePublisherRequest(
-									channelId, requestBytes));
-			boundServers.put(key, server);
-			String returnedPriv = server.getOnionPrivateKey();
-			if (returnedPriv != null && (existingPriv == null
-					|| !returnedPriv.equals(existingPriv))) {
-				if (existing != null) {
-					ChannelState withPriv = withOnionPrivateKey(
-							existing, returnedPriv);
-					store.putChannel(withPriv);
-				}
+			if (bound == null) {
+				ChannelState existing = store.getChannel(channelId);
+				String existingPriv = existing == null ? null
+						: existing.getOnionPrivateKey();
+				bound = transport.bindServer(channelId, existingPriv,
+						requestBytes -> handlePublisherRequest(
+								channelId, requestBytes));
+				boundServers.put(key, bound);
 			}
-			return server.getOnionAddress();
+			reconcilePublisherState(channelId, bound);
+			return bound.getOnionAddress();
 		} catch (IOException | DbException | RuntimeException e) {
 			return null;
 		} finally {
 			lock.unlock();
+		}
+	}
+
+	private void reconcilePublisherState(byte[] channelId,
+			ChannelTransport.ChannelServer server) throws DbException {
+		ChannelState s = store.getChannel(channelId);
+		if (s == null || !s.weArePublisher()) return;
+		ChannelState updated = s;
+		boolean changed = false;
+		String returnedPriv = server.getOnionPrivateKey();
+		if (returnedPriv != null
+				&& !returnedPriv.equals(updated.getOnionPrivateKey())) {
+			updated = withOnionPrivateKey(updated, returnedPriv);
+			changed = true;
+		}
+		String boundOnion = server.getOnionAddress();
+		if (!boundOnion.equals(updated.getCurrentOnion())) {
+			updated = withRotatedOnion(updated, boundOnion);
+			changed = true;
+		}
+		if (changed) {
+			store.putChannel(updated);
+			fireEvent(channelId,
+					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
 		}
 	}
 
@@ -982,17 +990,10 @@ class ChannelManagerImpl
 		ChannelState s = store.getChannel(channelId);
 		if (s == null) throw new DbException();
 		if (s.weArePublisher()) {
-			if (s.getCurrentOnion() == null
-					|| s.getCurrentOnion().isEmpty()) {
-				String onion = bindPublisherServer(channelId);
-				if (onion != null && !onion.isEmpty()) {
-					ChannelState updated = withOnion(s, onion);
-					store.putChannel(updated);
-					s = updated;
-				}
-			} else {
-				healPublisherServer(channelId);
-			}
+			bindPublisherServer(channelId);
+			ChannelState reconciled = store.getChannel(channelId);
+			if (reconciled != null) s = reconciled;
+			refreshChannelReachability(channelId);
 		}
 		if (s.getCurrentOnion() == null || s.getCurrentOnion().isEmpty()) {
 			throw new DbException();
