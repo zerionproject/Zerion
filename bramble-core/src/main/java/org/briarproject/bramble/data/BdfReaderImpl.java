@@ -37,10 +37,13 @@ final class BdfReaderImpl implements BdfReader {
 
 	private static final byte[] EMPTY_BUFFER = new byte[0];
 
+	private static final int MAX_OBJECTS = 1_000_000;
+
 	private final InputStream in;
 	private final int nestedLimit, maxBufferSize;
 	private final boolean canonical;
 
+	private int objectsRead = 0;
 	private boolean hasLookahead = false, eof = false;
 	private byte next;
 	private byte[] buf = new byte[8];
@@ -88,6 +91,7 @@ final class BdfReaderImpl implements BdfReader {
 	}
 
 	private Object readObject(int level) throws IOException {
+		if (++objectsRead > MAX_OBJECTS) throw new FormatException();
 		if (hasNull()) {
 			readNull();
 			return NULL_VALUE;

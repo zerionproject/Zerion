@@ -120,6 +120,7 @@ class SyncRecordReaderImpl implements SyncRecordReader {
 				| (p[LENGTH + 3] & 0xFF);
 		if (total == 0 || idx >= total) throw new FormatException();
 		int chunkLen = p.length - FRAGMENT_HEADER_LEN;
+		if (chunkLen == 0) throw new FormatException();
 		if ((long) total * chunkLen > MAX_MESSAGE_LENGTH + chunkLen) {
 			throw new FormatException();
 		}
