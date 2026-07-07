@@ -144,7 +144,7 @@ public class IntroduceeProtocolEngineTest extends BrambleMockTestCase {
 			oneOf(crypto).verifySignature(remoteSignature, session);
 
 			oneOf(contactManager).addContact(txn, remoteIntroducee,
-					localIntroducee.getId(), false);
+					localIntroducee.getId(), masterKey, false, (byte[]) null);
 			will(returnValue(contactId));
 			oneOf(keyManager).addRotationKeys(txn, contactId, masterKey,
 					remoteAcceptTimestamp, alice, false);

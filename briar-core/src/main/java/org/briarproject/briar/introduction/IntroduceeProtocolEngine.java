@@ -450,7 +450,9 @@ class IntroduceeProtocolEngine
 		Map<TransportId, KeySetId> keys = null;
 		try {
 			ContactId contactId = contactManager.addContact(txn,
-					s.getRemote().author, localAuthor.getId(), false);
+					s.getRemote().author, localAuthor.getId(),
+					new SecretKey(s.getMasterKey()), false,
+					s.getRemote().mlDsaPubKey);
 			keys = keyManager.addRotationKeys(txn, contactId,
 					new SecretKey(s.getMasterKey()), timestamp,
 					s.getLocal().alice, false);

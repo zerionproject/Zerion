@@ -48,6 +48,11 @@ public interface ContactManager {
 	ContactId addContact(Transaction txn, Author remote, AuthorId local,
 			boolean verified) throws DbException;
 
+	ContactId addContact(Transaction txn, Author remote, AuthorId local,
+			SecretKey rootKey, boolean verified,
+			@javax.annotation.Nullable byte[] peerMlDsaSigPublicKey)
+			throws DbException;
+
 	ContactId addContact(Author remote, AuthorId local, SecretKey rootKey,
 			long timestamp, boolean alice, boolean verified, boolean active)
 			throws DbException;

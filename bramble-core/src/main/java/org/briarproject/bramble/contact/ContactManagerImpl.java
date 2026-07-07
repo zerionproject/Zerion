@@ -113,6 +113,19 @@ class ContactManagerImpl implements ContactManager, EventListener {
 	}
 
 	@Override
+	public ContactId addContact(Transaction txn, Author remote, AuthorId local,
+			SecretKey rootKey, boolean verified,
+			@Nullable byte[] peerMlDsaSigPublicKey) throws DbException {
+		requireNotReserved(remote);
+		ContactId c = db.addContact(txn, remote, local, null, verified, false,
+				false, peerMlDsaSigPublicKey);
+		initializePcsState(txn, c, rootKey);
+		Contact contact = db.getContact(txn, c);
+		for (ContactHook hook : hooks) hook.addingContact(txn, contact);
+		return c;
+	}
+
+	@Override
 	public ContactId addContact(Transaction txn, PendingContactId p,
 			Author remote, AuthorId local, SecretKey rootKey, long timestamp,
 			boolean alice, boolean verified, boolean active)
