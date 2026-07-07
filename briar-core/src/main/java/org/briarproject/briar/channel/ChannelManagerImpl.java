@@ -199,12 +199,12 @@ class ChannelManagerImpl
 			java.util.concurrent.locks.ReentrantLock lock = lockFor(channelId);
 			lock.lock();
 			try {
-				ChannelTransport.ChannelServer current = boundServers.remove(key);
-				if (current != null) {
-					try {
-						current.close();
-					} catch (Exception ignored) {
-					}
+				ChannelTransport.ChannelServer current = boundServers.get(key);
+				if (current != bound) return;
+				boundServers.remove(key);
+				try {
+					current.close();
+				} catch (Exception ignored) {
 				}
 				bindPublisherServer(channelId);
 			} finally {

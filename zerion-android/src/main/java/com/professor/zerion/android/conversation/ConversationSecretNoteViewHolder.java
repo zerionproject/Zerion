@@ -42,6 +42,10 @@ class ConversationSecretNoteViewHolder extends ConversationItemViewHolder {
 
 	@Override
 	void bind(ConversationItem item, boolean selected) {
+		if (pendingBurnId != null && pendingStep != null
+				&& pendingBurnId.equals(item.getId())) {
+			return;
+		}
 		cancelCountdown();
 		burnPending();
 		super.bind(item, selected);
