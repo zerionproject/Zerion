@@ -18,6 +18,9 @@ public interface Mode3FullRatchet {
 	SecretKey deriveHybridMessageKey(SecretKey classicalMessageKey,
 			byte[] sharedSecret);
 
+	SecretKey absorbPqIntoRoot(SecretKey rootKey, byte[] sharedSecret,
+			byte[] pkAdvertise);
+
 	@NotNullByDefault
 	final class PqSendResult {
 

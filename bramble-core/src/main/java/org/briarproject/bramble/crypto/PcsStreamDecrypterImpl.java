@@ -313,6 +313,8 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 
 		byte[] decryptedPayload = null;
 		boolean stateLocked = false;
+		byte[] pqRootSecret = null;
+		byte[] pqRootPk = null;
 		try {
 		messageKey = classicalMK;
 		if (useMode3Full) {
@@ -398,6 +400,8 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 			if (sharedSecret != null) {
 				messageKey = mode3FullRatchet.deriveHybridMessageKey(
 						classicalMK, sharedSecret);
+				pqRootSecret = sharedSecret.clone();
+				pqRootPk = m3fHeaderEarly.getPkAdvertise();
 				java.util.Arrays.fill(sharedSecret, (byte) 0);
 			}
 
@@ -512,6 +516,13 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 				}
 			}
 		}
+		if (pqRootSecret != null && recvState != null
+				&& recvState.getRootKey() != null && mode3FullRatchet != null) {
+			SecretKey newRoot = mode3FullRatchet.absorbPqIntoRoot(
+					recvState.getRootKey(), pqRootSecret, pqRootPk);
+			recvState = recvState.afterPqRatchet(newRoot,
+					recvState.getPqEpoch());
+		}
 		if (mode3Enabled && !useMode3Full && pcsHeader != null
 				&& !pcsHeader.isPqEnabled()) {
 			throw new FormatException();
@@ -568,6 +579,9 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 		} finally {
 			if (stateLocked && directionLock != null) {
 				directionLock.unlock();
+			}
+			if (pqRootSecret != null) {
+				java.util.Arrays.fill(pqRootSecret, (byte) 0);
 			}
 			if (decryptedPayload != null) {
 				java.util.Arrays.fill(decryptedPayload, (byte) 0);

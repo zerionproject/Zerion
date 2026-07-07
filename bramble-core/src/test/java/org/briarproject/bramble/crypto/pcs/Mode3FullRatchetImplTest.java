@@ -159,6 +159,27 @@ public class Mode3FullRatchetImplTest {
 	}
 
 	@Test
+	public void testAbsorbPqIntoRootIsDeterministicAndBindsAdvertisedKey() {
+		SecretKey root = new SecretKey(new byte[SecretKey.LENGTH]);
+		byte[] secret = new byte[32];
+		Arrays.fill(secret, (byte) 7);
+		byte[] pk = mlKemProvider.generateKeyPair().getEncapsulationKey();
+
+		SecretKey a = ratchet.absorbPqIntoRoot(root, secret, pk);
+		SecretKey b = ratchet.absorbPqIntoRoot(root, secret, pk);
+		assertArrayEquals(a.getBytes(), b.getBytes());
+
+		byte[] otherPk = mlKemProvider.generateKeyPair().getEncapsulationKey();
+		SecretKey c = ratchet.absorbPqIntoRoot(root, secret, otherPk);
+		assertFalse(Arrays.equals(a.getBytes(), c.getBytes()));
+
+		byte[] otherSecret = new byte[32];
+		Arrays.fill(otherSecret, (byte) 9);
+		SecretKey d = ratchet.absorbPqIntoRoot(root, otherSecret, pk);
+		assertFalse(Arrays.equals(a.getBytes(), d.getBytes()));
+	}
+
+	@Test
 	public void testSenderRotatesActiveKeyPairPeriodically() {
 		Mode3FullState state = ratchet.createInitialState();
 		MlKemKeyPair peer = mlKemProvider.generateKeyPair();
