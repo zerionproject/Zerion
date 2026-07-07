@@ -156,7 +156,7 @@ public class VoiceMessageSendManager implements EventListener {
 				last = memo.nextIndex >= memo.laterParts.size();
 			}
 			try {
-				MessageId id = db.transactionWithResult(false, txn -> {
+				db.transactionWithResult(false, txn -> {
 					long timestamp = conversationManager
 						.getTimestampForOutgoingMessage(txn, contactId);
 					PrivateMessage pm;
@@ -167,15 +167,17 @@ public class VoiceMessageSendManager implements EventListener {
 						throw new DbException(fe);
 					}
 					messagingManager.addLocalMessage(txn, pm);
-					return pm.getMessage().getId();
+					MessageId id = pm.getMessage().getId();
+					if (!last) {
+						synchronized (lock) {
+							inFlight.put(id, memoId);
+						}
+					}
+					return id;
 				});
 				if (last) {
 					synchronized (lock) {
 						memos.remove(memoId);
-					}
-				} else {
-					synchronized (lock) {
-						inFlight.put(id, memoId);
 					}
 				}
 			} catch (DbException ex) {

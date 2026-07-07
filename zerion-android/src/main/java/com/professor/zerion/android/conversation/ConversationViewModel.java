@@ -771,6 +771,10 @@ public class ConversationViewModel extends DbViewModel
 				messagingManager.addLocalMessage(txn, pm);
 
 				Message message = pm.getMessage();
+				if (chunk && laterParts != null && !laterParts.isEmpty()) {
+					voiceSendManager.register(cId, groupId, memoId, laterParts,
+						message.getId());
+				}
 				PrivateMessageHeader header = new PrivateMessageHeader(
 					message.getId(), message.getGroupId(),
 					message.getTimestamp(), true, true, false, false,
@@ -779,11 +783,6 @@ public class ConversationViewModel extends DbViewModel
 
 				txn.attach(() -> addedHeader.postEvent(header));
 			});
-
-			if (chunk && laterParts != null && !laterParts.isEmpty()) {
-				voiceSendManager.register(cId, groupId, memoId, laterParts,
-					pm.getMessage().getId());
-			}
 
 		} catch (DbException e) {
 			handleException(e);
