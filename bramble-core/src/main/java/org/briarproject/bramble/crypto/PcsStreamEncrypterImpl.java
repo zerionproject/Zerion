@@ -299,13 +299,6 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 				if (ss != null) {
 					bodyMessageKey = mode3FullRatchet.deriveHybridMessageKey(
 							classicalMessageKey, ss);
-					if (sendState.getRootKey() != null) {
-						SecretKey newRoot = mode3FullRatchet.absorbPqIntoRoot(
-								sendState.getRootKey(), ss,
-								mode3FullSend.getPkAdvertise());
-						sendState = sendState.afterPqRatchet(newRoot,
-								sendState.getPqEpoch());
-					}
 					java.util.Arrays.fill(ss, (byte) 0);
 				}
 			}
