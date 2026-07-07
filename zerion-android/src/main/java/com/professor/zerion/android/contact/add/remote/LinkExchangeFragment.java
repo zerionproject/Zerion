@@ -188,7 +188,7 @@ public class LinkExchangeFragment extends BaseFragment {
 				return null;
 			}
 			linkInputLayout.setError(null);
-			return link.toString();
+			return "zerion://" + linkWithoutSchema;
 		}
 		linkInputLayout.setError(getString(R.string.invalid_link));
 		linkInput.requestFocus();
