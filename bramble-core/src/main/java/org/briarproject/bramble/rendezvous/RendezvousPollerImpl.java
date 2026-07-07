@@ -12,6 +12,8 @@ import org.briarproject.bramble.api.contact.event.PendingContactRemovedEvent;
 import org.briarproject.bramble.api.contact.event.PendingContactStateChangedEvent;
 import org.briarproject.bramble.api.crypto.CryptoComponent;
 import org.briarproject.bramble.api.crypto.KeyPair;
+import org.briarproject.bramble.api.crypto.KeyParser;
+import org.briarproject.bramble.api.crypto.PublicKey;
 import org.briarproject.bramble.api.crypto.SecretKey;
 import org.briarproject.bramble.api.crypto.TransportCrypto;
 import org.briarproject.bramble.api.db.DatabaseComponent;
@@ -63,8 +65,9 @@ import javax.inject.Inject;
 
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.briarproject.bramble.api.Bytes.compare;
+import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.HYBRID_COMMITMENT_BYTES;
 import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.HYBRID_COMMITMENT_LABEL;
+import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.HYBRID_RENDEZVOUS_X25519_BYTES;
 import static org.briarproject.bramble.api.contact.PendingContactState.ADDING_CONTACT;
 import static org.briarproject.bramble.api.contact.PendingContactState.FAILED;
 import static org.briarproject.bramble.api.contact.PendingContactState.OFFLINE;
@@ -182,10 +185,29 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 					broadcastState(p.getId(), FAILED);
 					return;
 				}
-				byte[] theirCommitment = p.getPublicKey().getEncoded();
-				rendezvousKey = rendezvousCrypto.deriveHybridRendezvousKey(
-						theirCommitment, ourHybridCommitment);
-				alice = compare(ourHybridCommitment, theirCommitment) < 0;
+				byte[] theirBlob = p.getPublicKey().getEncoded();
+				KeyParser parser = crypto.getAgreementKeyParser();
+				PublicKey theirX25519 = parser.parsePublicKey(
+						java.util.Arrays.copyOfRange(theirBlob,
+								HYBRID_COMMITMENT_BYTES,
+								HYBRID_COMMITMENT_BYTES
+										+ HYBRID_RENDEZVOUS_X25519_BYTES));
+				byte[] ourHybridPub =
+						hybridHandshakeKeyPair.getPublic().getEncoded();
+				byte[] ourHybridPriv =
+						hybridHandshakeKeyPair.getPrivate().getEncoded();
+				KeyPair ourX25519 = new KeyPair(
+						parser.parsePublicKey(java.util.Arrays.copyOfRange(
+								ourHybridPub, 0,
+								HYBRID_RENDEZVOUS_X25519_BYTES)),
+						parser.parsePrivateKey(java.util.Arrays.copyOfRange(
+								ourHybridPriv, 0,
+								HYBRID_RENDEZVOUS_X25519_BYTES)));
+				SecretKey staticMasterKey = transportCrypto
+						.deriveStaticMasterKey(theirX25519, ourX25519);
+				rendezvousKey = rendezvousCrypto
+						.deriveRendezvousKey(staticMasterKey);
+				alice = transportCrypto.isAlice(theirX25519, ourX25519);
 				final SecretKey finalRendezvousKey = rendezvousKey;
 				final boolean finalAlice = alice;
 				db.transaction(false, txn ->

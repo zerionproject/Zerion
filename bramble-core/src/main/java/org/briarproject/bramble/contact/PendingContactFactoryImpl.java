@@ -13,6 +13,7 @@ import org.briarproject.bramble.util.Base32;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.security.GeneralSecurityException;
+import java.util.Arrays;
 import java.util.Locale;
 import java.util.regex.Matcher;
 
@@ -22,7 +23,9 @@ import static java.lang.System.arraycopy;
 import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.FORMAT_VERSION;
 import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.FORMAT_VERSION_CLASSICAL;
 import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.FORMAT_VERSION_HYBRID;
+import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.HYBRID_COMMITMENT_BYTES;
 import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.HYBRID_COMMITMENT_LABEL;
+import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.HYBRID_RENDEZVOUS_X25519_BYTES;
 import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.ID_LABEL;
 import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.LINK_REGEX;
 import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.RAW_LINK_BYTES;
@@ -84,19 +87,26 @@ class PendingContactFactoryImpl implements PendingContactFactory {
 
 	private String createHybridHandshakeLink(PublicKey hybridKey) {
 		byte[] commitment = crypto.hash(HYBRID_COMMITMENT_LABEL, hybridKey.getEncoded());
-		if (commitment.length != 32) {
+		if (commitment.length != HYBRID_COMMITMENT_BYTES) {
 			throw new AssertionError("Unexpected commitment length");
 		}
+		byte[] rendezvousX25519 = Arrays.copyOfRange(hybridKey.getEncoded(),
+				0, HYBRID_RENDEZVOUS_X25519_BYTES);
 		byte[] raw = new byte[RAW_LINK_BYTES];
 		raw[0] = FORMAT_VERSION_HYBRID;
-		arraycopy(commitment, 0, raw, 1, commitment.length);
+		arraycopy(commitment, 0, raw, 1, HYBRID_COMMITMENT_BYTES);
+		arraycopy(rendezvousX25519, 0, raw, 1 + HYBRID_COMMITMENT_BYTES,
+				HYBRID_RENDEZVOUS_X25519_BYTES);
 		return "zerion://" + Base32.encode(raw).toLowerCase(Locale.US);
 	}
 
 	public boolean verifyHybridKeyCommitment(PublicKey receivedKey,
-			byte[] commitment) {
+			byte[] commitmentBlob) {
+		if (commitmentBlob.length < HYBRID_COMMITMENT_BYTES) return false;
 		byte[] expectedCommitment = crypto.hash(HYBRID_COMMITMENT_LABEL,
 				receivedKey.getEncoded());
+		byte[] commitment =
+				Arrays.copyOfRange(commitmentBlob, 0, HYBRID_COMMITMENT_BYTES);
 		return constantTimeEquals(expectedCommitment, commitment);
 	}
 

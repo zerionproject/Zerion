@@ -41,6 +41,7 @@ import static org.briarproject.bramble.contact.HandshakeConstants.PROTOCOL_MAJOR
 import static org.briarproject.bramble.contact.HandshakeConstants.PROTOCOL_MINOR_VERSION;
 import static org.briarproject.bramble.contact.HandshakeConstants.FS_MINOR_VERSION;
 import static org.briarproject.bramble.api.Bytes.compare;
+import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.HYBRID_COMMITMENT_BYTES;
 import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.HYBRID_COMMITMENT_LABEL;
 import static org.briarproject.bramble.contact.HandshakeRecordTypes.RECORD_TYPE_EPHEMERAL_PUBLIC_KEY;
 import static org.briarproject.bramble.contact.HandshakeRecordTypes.RECORD_TYPE_HYBRID_STATIC_KEY;
@@ -134,7 +135,9 @@ class HandshakeManagerImpl implements HandshakeManager {
 
 	private HandshakeResult performHybridHandshake(HandshakeContext ctx,
 			InputStream in, StreamWriter out) throws IOException {
-		byte[] theirCommitment = ctx.pendingContact.getPublicKey().getEncoded();
+		byte[] theirCommitment = Arrays.copyOfRange(
+				ctx.pendingContact.getPublicKey().getEncoded(), 0,
+				HYBRID_COMMITMENT_BYTES);
 		KeyPair ourHybridStaticKeyPair = ctx.hybridKeyPair;
 
 		RecordReader recordReader = recordReaderFactory.createRecordReader(in, false);

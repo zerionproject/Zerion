@@ -10,9 +10,6 @@ interface RendezvousCrypto {
 
 	SecretKey deriveRendezvousKey(SecretKey staticMasterKey);
 
-	SecretKey deriveHybridRendezvousKey(byte[] theirCommitment,
-			byte[] ourCommitment);
-
 	KeyMaterialSource createKeyMaterialSource(SecretKey rendezvousKey,
 			TransportId t);
 }

@@ -9,8 +9,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
 
-import static org.briarproject.bramble.api.Bytes.compare;
-import static org.briarproject.bramble.rendezvous.RendezvousConstants.HYBRID_RENDEZVOUS_KEY_LABEL;
 import static org.briarproject.bramble.rendezvous.RendezvousConstants.KEY_MATERIAL_LABEL;
 import static org.briarproject.bramble.rendezvous.RendezvousConstants.PROTOCOL_VERSION;
 import static org.briarproject.bramble.rendezvous.RendezvousConstants.RENDEZVOUS_KEY_LABEL;
@@ -31,21 +29,6 @@ class RendezvousCryptoImpl implements RendezvousCrypto {
 	public SecretKey deriveRendezvousKey(SecretKey staticMasterKey) {
 		return crypto.deriveKey(RENDEZVOUS_KEY_LABEL, staticMasterKey,
 				new byte[] {PROTOCOL_VERSION});
-	}
-
-	@Override
-	public SecretKey deriveHybridRendezvousKey(byte[] theirCommitment,
-			byte[] ourCommitment) {
-		byte[] first, second;
-		if (compare(ourCommitment, theirCommitment) < 0) {
-			first = ourCommitment;
-			second = theirCommitment;
-		} else {
-			first = theirCommitment;
-			second = ourCommitment;
-		}
-		byte[] hash = crypto.hash(HYBRID_RENDEZVOUS_KEY_LABEL, first, second);
-		return new SecretKey(hash);
 	}
 
 	@Override
