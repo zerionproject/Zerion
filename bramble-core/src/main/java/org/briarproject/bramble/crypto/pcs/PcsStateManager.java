@@ -257,9 +257,6 @@ public class PcsStateManager implements Service {
 		Mode3FullState mode3FullState = null;
 		if (mode3FullStateBlob != null) {
 			mode3FullState = Mode3FullStateCodec.decode(mode3FullStateBlob);
-			if (mode3FullState == null) {
-				return null;
-			}
 		}
 
 		return new PcsSessionState(chainKey, messageNumber, previousChainLength,

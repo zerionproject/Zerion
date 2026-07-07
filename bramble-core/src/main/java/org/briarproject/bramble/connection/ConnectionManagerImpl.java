@@ -25,7 +25,6 @@ import java.security.SecureRandom;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
@@ -36,7 +35,7 @@ class ConnectionManagerImpl implements ConnectionManager {
 
 	private static final int MAX_CONCURRENT_INCOMING_HANDSHAKES = 3;
 
-	private final ConcurrentMap<PendingContactId, AtomicInteger>
+	private final ConcurrentMap<PendingContactId, Integer>
 			incomingHandshakes = new ConcurrentHashMap<>();
 
 	private final Executor ioExecutor;
@@ -102,10 +101,7 @@ class ConnectionManagerImpl implements ConnectionManager {
 	@Override
 	public void manageIncomingConnection(PendingContactId p, TransportId t,
 			DuplexTransportConnection d, boolean classical) {
-		AtomicInteger inFlight =
-				incomingHandshakes.computeIfAbsent(p, k -> new AtomicInteger());
-		if (inFlight.incrementAndGet() > MAX_CONCURRENT_INCOMING_HANDSHAKES) {
-			inFlight.decrementAndGet();
+		if (!tryAdmitHandshake(p)) {
 			disposeQuietly(d);
 			return;
 		}
@@ -113,12 +109,38 @@ class ConnectionManagerImpl implements ConnectionManager {
 				connectionRegistry, streamReaderFactory, streamWriterFactory,
 				handshakeManager, contactExchangeManager, this, p, t, d,
 				classical);
-		ioExecutor.execute(() -> {
-			try {
-				conn.run();
-			} finally {
-				inFlight.decrementAndGet();
+		try {
+			ioExecutor.execute(() -> {
+				try {
+					conn.run();
+				} finally {
+					releaseHandshake(p);
+				}
+			});
+		} catch (RuntimeException e) {
+			releaseHandshake(p);
+			disposeQuietly(d);
+		}
+	}
+
+	private boolean tryAdmitHandshake(PendingContactId p) {
+		boolean[] admitted = new boolean[1];
+		incomingHandshakes.compute(p, (k, v) -> {
+			int current = v == null ? 0 : v;
+			if (current >= MAX_CONCURRENT_INCOMING_HANDSHAKES) {
+				admitted[0] = false;
+				return current;
 			}
+			admitted[0] = true;
+			return current + 1;
+		});
+		return admitted[0];
+	}
+
+	private void releaseHandshake(PendingContactId p) {
+		incomingHandshakes.compute(p, (k, v) -> {
+			if (v == null || v <= 1) return null;
+			return v - 1;
 		});
 	}
 
