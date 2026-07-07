@@ -3,6 +3,8 @@ package org.briarproject.bramble.db;
 import org.briarproject.bramble.api.contact.Contact;
 import org.briarproject.bramble.api.contact.ContactId;
 import org.briarproject.bramble.api.contact.PendingContact;
+import org.briarproject.bramble.api.contact.PendingContactId;
+import org.briarproject.bramble.api.crypto.HybridCommitmentPublicKey;
 import org.briarproject.bramble.api.crypto.PrivateKey;
 import org.briarproject.bramble.api.crypto.PublicKey;
 import org.briarproject.bramble.api.crypto.SecretKey;
@@ -81,6 +83,10 @@ import static org.briarproject.bramble.test.TestUtils.getGroup;
 import static org.briarproject.bramble.test.TestUtils.getIdentity;
 import static org.briarproject.bramble.test.TestUtils.getMessage;
 import static org.briarproject.bramble.test.TestUtils.getPendingContact;
+import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.FORMAT_VERSION_HYBRID;
+import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.HYBRID_COMMITMENT_BYTES;
+import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.HYBRID_RENDEZVOUS_X25519_BYTES;
+import static org.briarproject.bramble.test.TestUtils.getRandomBytes;
 import static org.briarproject.bramble.test.TestUtils.getRandomId;
 import static org.briarproject.bramble.test.TestUtils.getSecretKey;
 import static org.briarproject.bramble.test.TestUtils.getTestDirectory;
@@ -2017,6 +2023,32 @@ public abstract class JdbcDatabaseTest extends BrambleTestCase {
 		db.removePendingContact(txn, pendingContact.getId());
 		assertEquals(emptyList(), db.getPendingContacts(txn));
 
+		db.commitTransaction(txn);
+		db.close();
+	}
+
+	@Test
+	public void testHybridPendingContactRoundTrip() throws Exception {
+		byte[] blob = getRandomBytes(
+				HYBRID_COMMITMENT_BYTES + HYBRID_RENDEZVOUS_X25519_BYTES);
+		PublicKey commitmentKey = new HybridCommitmentPublicKey(blob);
+		PendingContact hybrid = new PendingContact(
+				new PendingContactId(getRandomId()), commitmentKey,
+				"hybrid", 1234567890L, FORMAT_VERSION_HYBRID);
+
+		Database<Connection> db = open(false);
+		Connection txn = db.startTransaction();
+
+		db.addPendingContact(txn, hybrid);
+		PendingContact retrieved = db.getPendingContact(txn, hybrid.getId());
+		assertPendingContactEquals(hybrid, retrieved);
+		assertEquals(FORMAT_VERSION_HYBRID, retrieved.getFormatVersion());
+
+		Collection<PendingContact> all = db.getPendingContacts(txn);
+		assertEquals(1, all.size());
+		assertPendingContactEquals(hybrid, all.iterator().next());
+
+		db.removePendingContact(txn, hybrid.getId());
 		db.commitTransaction(txn);
 		db.close();
 	}

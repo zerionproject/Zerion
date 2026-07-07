@@ -5,7 +5,9 @@ import org.briarproject.bramble.api.contact.ContactId;
 import org.briarproject.bramble.api.contact.PendingContact;
 import org.briarproject.bramble.api.contact.PendingContactId;
 import org.briarproject.bramble.api.crypto.AgreementPrivateKey;
+import org.briarproject.bramble.api.contact.HandshakeLinkConstants;
 import org.briarproject.bramble.api.crypto.AgreementPublicKey;
+import org.briarproject.bramble.api.crypto.HybridCommitmentPublicKey;
 import org.briarproject.bramble.api.crypto.HybridAgreementPrivateKey;
 import org.briarproject.bramble.api.crypto.HybridAgreementPublicKey;
 import org.briarproject.bramble.api.crypto.PrivateKey;
@@ -2737,6 +2739,13 @@ abstract class JdbcDatabase implements Database<Connection> {
 		}
 	}
 
+	private PublicKey parsePendingContactKey(byte[] encoded, int formatVersion) {
+		if (formatVersion == HandshakeLinkConstants.FORMAT_VERSION_CLASSICAL) {
+			return new AgreementPublicKey(encoded);
+		}
+		return new HybridCommitmentPublicKey(encoded);
+	}
+
 	@Override
 	public PendingContact getPendingContact(Connection txn, PendingContactId p)
 			throws DbException {
@@ -2750,10 +2759,12 @@ abstract class JdbcDatabase implements Database<Connection> {
 			ps.setBytes(1, p.getBytes());
 			rs = ps.executeQuery();
 			if (!rs.next()) throw new DbStateException();
-			PublicKey publicKey = new AgreementPublicKey(rs.getBytes(1));
+			byte[] publicKeyBytes = rs.getBytes(1);
 			String alias = rs.getString(2);
 			long timestamp = rs.getLong(3);
 			int formatVersion = rs.getInt(4);
+			PublicKey publicKey = parsePendingContactKey(publicKeyBytes,
+					formatVersion);
 			return new PendingContact(p, publicKey, alias, timestamp, formatVersion);
 		} catch (SQLException e) {
 			tryToClose(rs);
@@ -2775,10 +2786,12 @@ abstract class JdbcDatabase implements Database<Connection> {
 			List<PendingContact> pendingContacts = new ArrayList<>();
 			while (rs.next()) {
 				PendingContactId id = new PendingContactId(rs.getBytes(1));
-				PublicKey publicKey = new AgreementPublicKey(rs.getBytes(2));
+				byte[] publicKeyBytes = rs.getBytes(2);
 				String alias = rs.getString(3);
 				long timestamp = rs.getLong(4);
 				int formatVersion = rs.getInt(5);
+				PublicKey publicKey = parsePendingContactKey(publicKeyBytes,
+						formatVersion);
 				pendingContacts.add(new PendingContact(id, publicKey, alias,
 						timestamp, formatVersion));
 			}

@@ -5,6 +5,7 @@ import org.briarproject.bramble.api.UnsupportedVersionException;
 import org.briarproject.bramble.api.contact.PendingContact;
 import org.briarproject.bramble.api.contact.PendingContactId;
 import org.briarproject.bramble.api.crypto.CryptoComponent;
+import org.briarproject.bramble.api.crypto.HybridCommitmentPublicKey;
 import org.briarproject.bramble.api.crypto.KeyParser;
 import org.briarproject.bramble.api.crypto.PublicKey;
 import org.briarproject.bramble.api.identity.ReservedNames;
@@ -137,7 +138,8 @@ class PendingContactFactoryImpl implements PendingContactFactory {
 				if (raw.length != RAW_LINK_BYTES) {
 					throw new FormatException();
 				}
-				return new ParsedLink(version, new CommitmentKey(publicKeyBytes));
+				return new ParsedLink(version,
+						new HybridCommitmentPublicKey(publicKeyBytes));
 			} else {
 				throw new UnsupportedVersionException(true);
 			}
@@ -170,22 +172,4 @@ class PendingContactFactoryImpl implements PendingContactFactory {
 		}
 	}
 
-	private static class CommitmentKey implements PublicKey {
-		private static final String KEY_TYPE = "Hybrid-Commitment";
-		private final byte[] commitment;
-
-		CommitmentKey(byte[] commitment) {
-			this.commitment = commitment;
-		}
-
-		@Override
-		public String getKeyType() {
-			return KEY_TYPE;
-		}
-
-		@Override
-		public byte[] getEncoded() {
-			return commitment;
-		}
-	}
 }
