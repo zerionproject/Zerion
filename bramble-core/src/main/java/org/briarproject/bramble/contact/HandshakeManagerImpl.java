@@ -239,9 +239,9 @@ class HandshakeManagerImpl implements HandshakeManager {
 			theirProof = receiveProof(recordReader);
 			sendProof(recordWriter, ourProof);
 		}
-		sendMode3Capability(recordWriter);
+		sendMode3Capability(recordWriter, masterKey);
 		out.sendEndOfStream();
-		boolean mode3Capable = receiveMode3Capability(recordReader);
+		boolean mode3Capable = receiveMode3Capability(recordReader, masterKey);
 		recordReader.readRecord(r -> false, IGNORE);
 		boolean ownershipOk =
 				handshakeCrypto.verifyOwnership(masterKey, !alice, theirProof);
@@ -337,23 +337,40 @@ class HandshakeManagerImpl implements HandshakeManager {
 		w.flush();
 	}
 
-	private void sendMode3Capability(RecordWriter w) throws IOException {
+	private static final String MODE3_CAP_MAC_LABEL =
+			"org.briarproject.zerion/MODE3_CAPABILITY_MAC";
+
+	private void sendMode3Capability(RecordWriter w, SecretKey masterKey)
+			throws IOException {
+		byte[] cap = new byte[] {0x01};
+		byte[] mac = crypto.mac(MODE3_CAP_MAC_LABEL, masterKey, cap);
+		byte[] payload = new byte[cap.length + mac.length];
+		System.arraycopy(cap, 0, payload, 0, cap.length);
+		System.arraycopy(mac, 0, payload, cap.length, mac.length);
 		w.writeRecord(new Record(PROTOCOL_MAJOR_VERSION,
-				RECORD_TYPE_MODE3_CAPABILITY,
-				new byte[] {0x01}));
+				RECORD_TYPE_MODE3_CAPABILITY, payload));
 		w.flush();
 	}
 
-	private boolean receiveMode3Capability(RecordReader r) throws IOException {
+	private boolean receiveMode3Capability(RecordReader r, SecretKey masterKey)
+			throws IOException {
 		RecordPredicate accept = rec ->
 				rec.getProtocolVersion() == PROTOCOL_MAJOR_VERSION &&
 						rec.getRecordType() == RECORD_TYPE_MODE3_CAPABILITY;
 		Record rec = r.readRecord(accept, IGNORE);
 		if (rec == null) {
-			return false;
+			throw new FormatException();
 		}
 		byte[] payload = rec.getPayload();
-		return payload != null && payload.length == 1 && payload[0] == 0x01;
+		if (payload == null || payload.length < 1) {
+			throw new FormatException();
+		}
+		byte[] cap = new byte[] {payload[0]};
+		byte[] mac = Arrays.copyOfRange(payload, 1, payload.length);
+		if (!crypto.verifyMac(mac, MODE3_CAP_MAC_LABEL, masterKey, cap)) {
+			throw new FormatException();
+		}
+		return payload[0] == 0x01;
 	}
 
 	private Record readRecord(RecordReader r, List<Byte> expectedTypes)
