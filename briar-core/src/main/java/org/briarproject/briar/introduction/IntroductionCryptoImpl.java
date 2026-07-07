@@ -212,13 +212,17 @@ class IntroductionCryptoImpl implements IntroductionCrypto {
 				localAuthorId,
 				local.acceptTimestamp,
 				local.ephemeralPublicKey,
-				clientHelper.toDictionary(local.transportProperties)
+				clientHelper.toDictionary(local.transportProperties),
+				local.mlKemEphemeralPublicKey != null
+						? local.mlKemEphemeralPublicKey : new byte[0]
 		);
 		BdfList remoteInfo = BdfList.of(
 				remoteAuthorId,
 				remote.acceptTimestamp,
 				remote.ephemeralPublicKey,
-				clientHelper.toDictionary(remote.transportProperties)
+				clientHelper.toDictionary(remote.transportProperties),
+				remote.mlKemEphemeralPublicKey != null
+						? remote.mlKemEphemeralPublicKey : new byte[0]
 		);
 		BdfList macList = BdfList.of(
 				introducerId,
