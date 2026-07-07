@@ -188,13 +188,9 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 				alice = compare(ourHybridCommitment, theirCommitment) < 0;
 				final SecretKey finalRendezvousKey = rendezvousKey;
 				final boolean finalAlice = alice;
-				try {
-					db.transaction(false, txn ->
-							keyManager.addHybridPendingContact(txn, p.getId(),
-									finalRendezvousKey, finalAlice));
-				} catch (DbException e) {
-
-				}
+				db.transaction(false, txn ->
+						keyManager.addHybridPendingContact(txn, p.getId(),
+								finalRendezvousKey, finalAlice));
 			} else {
 				if (handshakeKeyPair == null) {
 					handshakeKeyPair = db.transactionWithResult(true,

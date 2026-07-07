@@ -6,6 +6,7 @@ import org.briarproject.bramble.api.connection.InterruptibleConnection;
 import org.briarproject.bramble.api.contact.ContactId;
 import org.briarproject.bramble.api.contact.PendingContactId;
 import org.briarproject.bramble.api.event.EventBus;
+import org.briarproject.bramble.api.event.EventListener;
 import org.briarproject.bramble.api.plugin.PluginConfig;
 import org.briarproject.bramble.api.plugin.TransportId;
 import org.briarproject.bramble.api.plugin.event.ConnectionClosedEvent;
@@ -65,6 +66,7 @@ public class ConnectionRegistryImplTest extends BrambleMockTestCase {
 	@Test
 	public void testRegisterMultipleConnections() {
 		context.checking(new Expectations() {{
+			allowing(eventBus).addListener(with(any(EventListener.class)));
 			allowing(pluginConfig).getTransportPreferences();
 			will(returnValue(emptyMap()));
 		}});
@@ -148,6 +150,7 @@ public class ConnectionRegistryImplTest extends BrambleMockTestCase {
 	@Test
 	public void testRegisterMultipleContacts() {
 		context.checking(new Expectations() {{
+			allowing(eventBus).addListener(with(any(EventListener.class)));
 			allowing(pluginConfig).getTransportPreferences();
 			will(returnValue(emptyMap()));
 		}});
@@ -195,6 +198,7 @@ public class ConnectionRegistryImplTest extends BrambleMockTestCase {
 	public void testConnectionsAreNotInterruptedUnlessPriorityIsSet() {
 
 		context.checking(new Expectations() {{
+			allowing(eventBus).addListener(with(any(EventListener.class)));
 			allowing(pluginConfig).getTransportPreferences();
 			will(returnValue(
 					singletonMap(transportId1, singletonList(transportId2))));
@@ -260,6 +264,7 @@ public class ConnectionRegistryImplTest extends BrambleMockTestCase {
 	public void testNewConnectionIsInterruptedIfOldConnectionUsesBetterTransport() {
 
 		context.checking(new Expectations() {{
+			allowing(eventBus).addListener(with(any(EventListener.class)));
 			allowing(pluginConfig).getTransportPreferences();
 			will(returnValue(
 					singletonMap(transportId2, singletonList(transportId1))));
@@ -347,6 +352,7 @@ public class ConnectionRegistryImplTest extends BrambleMockTestCase {
 	public void testOldConnectionIsInterruptedIfNewConnectionUsesBetterTransport() {
 
 		context.checking(new Expectations() {{
+			allowing(eventBus).addListener(with(any(EventListener.class)));
 			allowing(pluginConfig).getTransportPreferences();
 			will(returnValue(
 					singletonMap(transportId1, singletonList(transportId2))));
@@ -432,6 +438,7 @@ public class ConnectionRegistryImplTest extends BrambleMockTestCase {
 	@Test
 	public void testNewConnectionIsInterruptedIfOldConnectionHasHigherPriority() {
 		context.checking(new Expectations() {{
+			allowing(eventBus).addListener(with(any(EventListener.class)));
 			allowing(pluginConfig).getTransportPreferences();
 			will(returnValue(emptyMap()));
 		}});
@@ -489,6 +496,7 @@ public class ConnectionRegistryImplTest extends BrambleMockTestCase {
 	@Test
 	public void testOldConnectionIsInterruptedIfNewConnectionHasHigherPriority() {
 		context.checking(new Expectations() {{
+			allowing(eventBus).addListener(with(any(EventListener.class)));
 			allowing(pluginConfig).getTransportPreferences();
 			will(returnValue(emptyMap()));
 		}});
@@ -534,6 +542,7 @@ public class ConnectionRegistryImplTest extends BrambleMockTestCase {
 	@Test
 	public void testRegisterAndUnregisterPendingContacts() {
 		context.checking(new Expectations() {{
+			allowing(eventBus).addListener(with(any(EventListener.class)));
 			allowing(pluginConfig).getTransportPreferences();
 			will(returnValue(emptyMap()));
 		}});

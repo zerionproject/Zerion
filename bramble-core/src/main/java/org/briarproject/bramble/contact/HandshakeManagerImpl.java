@@ -179,6 +179,9 @@ class HandshakeManagerImpl implements HandshakeManager {
 		}
 
 		boolean useFs = theirMinorVersion >= FS_MINOR_VERSION;
+		if (!useFs) {
+			throw new FormatException();
+		}
 
 		byte[] kemCiphertext;
 		byte[] kemSecret;

@@ -148,9 +148,9 @@ class ContactManagerImpl implements ContactManager, EventListener {
 		return c;
 	}
 
-	private void requireNotReserved(Author remote) {
+	private void requireNotReserved(Author remote) throws DbException {
 		if (ReservedNames.isReserved(remote.getName())) {
-			throw new IllegalArgumentException("reserved name");
+			throw new DbException();
 		}
 	}
 
