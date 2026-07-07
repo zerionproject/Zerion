@@ -363,6 +363,10 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 			throw new RuntimeException(badCipher);
 		}
 
+		if (useMode3Full && (dhPublicKey == null || mode3FullSend == null)) {
+			throw new IOException(
+					"Mode3Full frame requires DH key and PQ send state");
+		}
 		if (useMode3Full && dhPublicKey != null && mode3FullSend != null) {
 			org.briarproject.bramble.api.crypto.pcs.KpId kpIdUsed =
 					mode3FullSend.getKpIdUsed();
@@ -436,6 +440,10 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 
 		out.write(frameCiphertext, 0, outOffset);
 		frameNumber++;
+		if (bodyMessageKey != null && bodyMessageKey != classicalMessageKey) {
+			bodyMessageKey.clear();
+		}
+		if (classicalMessageKey != null) classicalMessageKey.clear();
 	}
 
 	private void encodePcsHeader(byte[] dest, int messageNumber,

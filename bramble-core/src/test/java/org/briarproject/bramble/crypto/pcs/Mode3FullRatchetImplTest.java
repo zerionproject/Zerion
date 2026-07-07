@@ -18,11 +18,13 @@ import java.util.Arrays;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MLKEM_CIPHERTEXT_SIZE;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MLKEM_ENCAPSULATION_KEY_SIZE;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_FULL_RECV_SK_LRU_SIZE;
+import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_FULL_SEND_ROTATION_INTERVAL;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class Mode3FullRatchetImplTest {
 
@@ -157,18 +159,22 @@ public class Mode3FullRatchetImplTest {
 	}
 
 	@Test
-	public void testSenderAdvanceRotatesActiveKeyPair() {
+	public void testSenderRotatesActiveKeyPairPeriodically() {
 		Mode3FullState state = ratchet.createInitialState();
 		MlKemKeyPair peer = mlKemProvider.generateKeyPair();
 		state = state.withRecvAdvance(peer.getEncapsulationKey());
 		MlKemKeyPair before = state.getOurActiveKeyPair();
 
-		PqSendResult result = ratchet.pqEncapsulateSend(state);
+		Mode3FullState afterOne = ratchet.pqEncapsulateSend(state).getNewState();
+		assertTrue(Arrays.equals(before.getEncapsulationKey(),
+				afterOne.getOurActiveKeyPair().getEncapsulationKey()));
 
+		Mode3FullState s = state;
+		for (int i = 0; i < MODE3_FULL_SEND_ROTATION_INTERVAL; i++) {
+			s = ratchet.pqEncapsulateSend(s).getNewState();
+		}
 		assertFalse(Arrays.equals(before.getEncapsulationKey(),
-				result.getNewState().getOurActiveKeyPair()
-						.getEncapsulationKey()));
-		assertEquals(1, result.getNewState().getRecentKeyPairs().size());
+				s.getOurActiveKeyPair().getEncapsulationKey()));
 	}
 
 	@Test
@@ -177,7 +183,9 @@ public class Mode3FullRatchetImplTest {
 		MlKemKeyPair peer = mlKemProvider.generateKeyPair();
 		state = state.withRecvAdvance(peer.getEncapsulationKey());
 
-		for (int i = 0; i < MODE3_FULL_RECV_SK_LRU_SIZE + 2; i++) {
+		int sends = (MODE3_FULL_RECV_SK_LRU_SIZE + 2)
+				* MODE3_FULL_SEND_ROTATION_INTERVAL;
+		for (int i = 0; i < sends; i++) {
 			state = ratchet.pqEncapsulateSend(state).getNewState();
 		}
 

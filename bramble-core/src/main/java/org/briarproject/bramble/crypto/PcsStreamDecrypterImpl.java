@@ -99,8 +99,6 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 	private boolean mode3Enabled;
 	private boolean mode3FullEnabled;
 	private boolean streamHeaderRead;
-	@Nullable
-	private PublicKey lastReceivedDhKey;
 
 	PcsStreamDecrypterImpl(InputStream in, AuthenticatedCipher cipher,
 			PcsRatchet ratchet, SkippedKeyStore skippedKeyStore,
@@ -221,7 +219,6 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 		mode3Enabled = false;
 		mode3FullEnabled = false;
 		streamHeaderRead = false;
-		lastReceivedDhKey = null;
 		if (initialState != null) {
 			SecretKey rootKey = initialState.getRootKey();
 			if (rootKey == null) rootKey = initialState.getChainKey();
@@ -326,6 +323,7 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 			int actualPayloadLength = totalPayloadLength - pcsHdrSz;
 			int needBytes = FRAME_HEADER_LENGTH + pcsHdrSz + MAC_LENGTH
 					+ actualPayloadLength + paddingLength + MAC_LENGTH;
+			if (needBytes > frameCiphertext.length) throw new FormatException();
 			while (offset < needBytes) {
 				int read = in.read(frameCiphertext, offset,
 						needBytes - offset);
@@ -391,7 +389,9 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 					sharedSecret = pqResult.getSharedSecret();
 					recvState = recvState.withMode3FullState(
 							pqResult.getNewState());
-				} catch (PcsException e) {
+				} catch (PcsException | RuntimeException e) {
+					relearnPeerKeyForRecovery(m3fState,
+							m3fHeaderEarly.getPkAdvertise());
 					throw new FormatException();
 				}
 			}
@@ -416,6 +416,7 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 		} else {
 			int frameLength = FRAME_HEADER_LENGTH + totalPayloadLength
 					+ paddingLength + MAC_LENGTH;
+			if (frameLength > frameCiphertext.length) throw new FormatException();
 			while (offset < frameLength) {
 				int read = in.read(frameCiphertext, offset,
 						frameLength - offset);
@@ -482,22 +483,30 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 			throw new FormatException();
 		}
 
-		if (hasDhRatchet && dhKeyBytes != null) {
-			boolean isNewDhKey = true;
-			if (lastReceivedDhKey != null) {
-				byte[] lastKeyBytes = lastReceivedDhKey.getEncoded();
-				isNewDhKey = !Arrays.equals(dhKeyBytes, lastKeyBytes);
+		if (hasDhRatchet && dhKeyBytes != null && recvState != null
+				&& recvState.isMode2()) {
+			if (sessionStateRefresher != null) {
+				PcsSessionState freshSession = sessionStateRefresher.get();
+				if (freshSession != null) {
+					recvState = freshSession.withMode3FullState(
+							recvState.getMode3FullState());
+				}
 			}
-
-			if (isNewDhKey && recvState != null && recvState.isMode2()) {
+			org.briarproject.bramble.api.crypto.pcs.DhRatchetState dhs =
+					recvState.getDhState();
+			PublicKey persistedRemote = dhs != null
+					? dhs.getDhRemotePublicKey() : null;
+			boolean isNewDhKey = persistedRemote == null
+					|| !Arrays.equals(dhKeyBytes, persistedRemote.getEncoded());
+			if (isNewDhKey) {
 				PublicKey theirNewKey = parseDhPublicKey(dhKeyBytes);
 				if (theirNewKey != null) {
 					try {
 						DhRatchetResult dhResult = ratchet.performReceiveDhRatchet(
 								recvState, theirNewKey);
 						recvState = dhResult.getNewState();
-						lastReceivedDhKey = theirNewKey;
-					} catch (GeneralSecurityException | PcsException e) {
+					} catch (GeneralSecurityException | PcsException
+							| RuntimeException e) {
 						throw new FormatException();
 					}
 				}
@@ -570,6 +579,19 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 			java.util.Arrays.fill(frameCiphertext, (byte) 0);
 			java.util.Arrays.fill(frameHeader, (byte) 0);
 			java.util.Arrays.fill(frameNonce, (byte) 0);
+		}
+	}
+
+	private void relearnPeerKeyForRecovery(Mode3FullState m3fState,
+			byte[] theirAdvertisedPk) {
+		try {
+			Mode3FullState advanced = m3fState.withRecvAdvance(
+					theirAdvertisedPk);
+			if (recvState != null && stateCallback != null) {
+				recvState = recvState.withMode3FullState(advanced);
+				stateCallback.accept(recvState);
+			}
+		} catch (RuntimeException ignored) {
 		}
 	}
 
