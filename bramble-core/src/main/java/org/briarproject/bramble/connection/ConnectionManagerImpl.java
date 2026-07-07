@@ -20,15 +20,24 @@ import org.briarproject.bramble.api.transport.StreamReaderFactory;
 import org.briarproject.bramble.api.transport.StreamWriterFactory;
 import org.briarproject.nullsafety.NotNullByDefault;
 
+import java.io.IOException;
 import java.security.SecureRandom;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.annotation.concurrent.Immutable;
+import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
 
-@Immutable
+@ThreadSafe
 @NotNullByDefault
 class ConnectionManagerImpl implements ConnectionManager {
+
+	private static final int MAX_CONCURRENT_INCOMING_HANDSHAKES = 3;
+
+	private final ConcurrentMap<PendingContactId, AtomicInteger>
+			incomingHandshakes = new ConcurrentHashMap<>();
 
 	private final Executor ioExecutor;
 	private final KeyManager keyManager;
@@ -93,10 +102,35 @@ class ConnectionManagerImpl implements ConnectionManager {
 	@Override
 	public void manageIncomingConnection(PendingContactId p, TransportId t,
 			DuplexTransportConnection d, boolean classical) {
-		ioExecutor.execute(new IncomingHandshakeConnection(keyManager,
+		AtomicInteger inFlight =
+				incomingHandshakes.computeIfAbsent(p, k -> new AtomicInteger());
+		if (inFlight.incrementAndGet() > MAX_CONCURRENT_INCOMING_HANDSHAKES) {
+			inFlight.decrementAndGet();
+			disposeQuietly(d);
+			return;
+		}
+		Runnable conn = new IncomingHandshakeConnection(keyManager,
 				connectionRegistry, streamReaderFactory, streamWriterFactory,
 				handshakeManager, contactExchangeManager, this, p, t, d,
-				classical));
+				classical);
+		ioExecutor.execute(() -> {
+			try {
+				conn.run();
+			} finally {
+				inFlight.decrementAndGet();
+			}
+		});
+	}
+
+	private void disposeQuietly(DuplexTransportConnection d) {
+		try {
+			d.getReader().dispose(true, false);
+		} catch (IOException ignored) {
+		}
+		try {
+			d.getWriter().dispose(true);
+		} catch (IOException ignored) {
+		}
 	}
 
 	@Override
