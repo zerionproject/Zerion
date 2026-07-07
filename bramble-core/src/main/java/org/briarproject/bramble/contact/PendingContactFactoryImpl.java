@@ -104,7 +104,7 @@ class PendingContactFactoryImpl implements PendingContactFactory {
 		Matcher matcher = LINK_REGEX.matcher(link);
 		if (!matcher.matches()) throw new FormatException();
 		link = matcher.group(1);
-		byte[] raw = Base32.decode(link, false);
+		byte[] raw = Base32.decode(link, true);
 
 		if (raw.length < 1) throw new FormatException();
 		byte version = raw[0];

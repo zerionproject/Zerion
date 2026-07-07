@@ -403,12 +403,6 @@
 			android:windowSoftInputMode="adjustResize|stateHidden" />
 
 		<activity
-			android:name=".android.contact.add.remote.QrScannerActivity"
-			android:exported="false"
-			android:label="@string/scan_qr_button"
-			android:theme="@style/ZerionTheme.NoActionBar" />
-
-		<activity
 			android:name=".android.settings.TransferQrScannerActivity"
 			android:exported="false"
 			android:label="@string/scan_qr_button"
