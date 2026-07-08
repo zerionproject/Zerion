@@ -185,7 +185,7 @@
   <string name="you">Ön</string>
   <string name="save_image">Kép mentése</string>
   <string name="dialog_title_save_image">Kép mentése?</string>
-  <string name="dialog_message_save_image">A kép mentése lehetővé teszi, hogy más alkalmazások is elérjék.
+  <string name="dialog_message_save_image">A kép mentése lehetővé teszi, hogy más alkalmazások is elérjék.</string>
   <string name="save_image_success">Kép mentve</string>
   <string name="save_image_error">Sikertelen kép mentés</string>
   <string name="dialog_title_no_image_support">Képek nem elérhetők</string>
@@ -365,9 +365,7 @@ Kérjük frissítsen a legutolsó verzióra és próbálja újra.</string>
   
   <string name="read_more">olvasson tovább</string>
 
-A bejegyzések törlődni fognak az eszközödről, de a többi ember eszközéről nem .
 
-\n\nA bejegyzések törlődni fognak az Ön eszközéről, de nem a többi ember eszközéről.\n\nKapcsolatai, akivel megosztotta ezt a feed-et, lehet nem kapnak többé frissítést.</string>
   
   <string name="change_profile_picture">Koppintson a profilképe cseréjéhez</string>
   <string name="dialog_confirm_profile_picture_title">Profil kép cseréje</string>

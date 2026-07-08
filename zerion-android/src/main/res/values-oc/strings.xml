@@ -261,7 +261,7 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   <string name="groups_dissolved_dialog_message">Lo fondador d’aqueste grop l’a suprimit.\n\nPodètz pas mai escriure de messatges e benlèu qu’avètz pas recebuts totes los messatges.</string>
   
   <string name="groups_invitations_title">Convidacion de grop</string>
-  <string name="groups_invitations_invitation_sent">Avètz convidat %1$s a venir al grop « %2$vs»</string>
+  <string name="groups_invitations_invitation_sent">Avètz convidat %1$s a venir al grop « %2$s »</string>
   <string name="groups_invitations_invitation_received">%1$s vos a convidat a anar al grop « %2$s »</string>
   <string name="groups_invitations_joined">Ajustat al grop</string>
   <string name="groups_invitations_declined">Convidacion al grop refusada</string>
