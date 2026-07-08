@@ -11,7 +11,9 @@ import org.briarproject.bramble.api.contact.PendingContactId;
 import org.briarproject.bramble.api.contact.PendingContactState;
 import org.briarproject.bramble.api.contact.event.PendingContactStateChangedEvent;
 import org.briarproject.bramble.api.crypto.CryptoComponent;
+import org.briarproject.bramble.api.crypto.HybridCommitmentPublicKey;
 import org.briarproject.bramble.api.crypto.KeyPair;
+import org.briarproject.bramble.api.crypto.KeyParser;
 import org.briarproject.bramble.api.crypto.PublicKey;
 import org.briarproject.bramble.api.crypto.SecretKey;
 import org.briarproject.bramble.api.crypto.pcs.DhRatchetState;
@@ -36,6 +38,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -46,6 +49,8 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
 
+import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.HYBRID_COMMITMENT_BYTES;
+import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.HYBRID_RENDEZVOUS_X25519_BYTES;
 import static org.briarproject.bramble.api.contact.PendingContactState.WAITING_FOR_CONNECTION;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_FULL_ENABLED;
 import static org.briarproject.bramble.api.identity.AuthorConstants.MAX_AUTHOR_NAME_LENGTH;
@@ -147,12 +152,30 @@ class ContactManagerImpl implements ContactManager, EventListener {
 		db.removePendingContact(txn, p);
 		states.remove(p);
 		PublicKey theirPublicKey = pendingContact.getPublicKey();
+		KeyPair ourKeyPair;
+		if (theirPublicKey instanceof HybridCommitmentPublicKey) {
+			KeyParser parser = crypto.getAgreementKeyParser();
+			byte[] blob = theirPublicKey.getEncoded();
+			theirPublicKey = parser.parsePublicKey(Arrays.copyOfRange(blob,
+					HYBRID_COMMITMENT_BYTES,
+					HYBRID_COMMITMENT_BYTES + HYBRID_RENDEZVOUS_X25519_BYTES));
+			KeyPair hybrid = identityManager.getHybridHandshakeKeys(txn);
+			if (hybrid == null) throw new DbException();
+			byte[] pub = hybrid.getPublic().getEncoded();
+			byte[] priv = hybrid.getPrivate().getEncoded();
+			ourKeyPair = new KeyPair(
+					parser.parsePublicKey(Arrays.copyOfRange(pub, 0,
+							HYBRID_RENDEZVOUS_X25519_BYTES)),
+					parser.parsePrivateKey(Arrays.copyOfRange(priv, 0,
+							HYBRID_RENDEZVOUS_X25519_BYTES)));
+		} else {
+			ourKeyPair = identityManager.getHandshakeKeys(txn);
+		}
 		ContactId c = db.addContact(txn, remote, local, theirPublicKey,
 				verified, postQuantum, false,
 				peerMlDsaSigPublicKey);
 		String alias = pendingContact.getAlias();
 		if (!alias.equals(remote.getName())) db.setContactAlias(txn, c, alias);
-		KeyPair ourKeyPair = identityManager.getHandshakeKeys(txn);
 		keyManager.addContact(txn, c, theirPublicKey, ourKeyPair);
 		keyManager.addRotationKeys(txn, c, rootKey, timestamp, alice, active);
 		initializePcsState(txn, c, rootKey);
