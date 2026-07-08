@@ -173,6 +173,9 @@ public class PollerImplTest extends BrambleMockTestCase {
 		context.checking(new Expectations() {{
 			allowing(plugin).getId();
 			will(returnValue(transportId));
+
+			oneOf(clock).currentTimeMillis();
+			will(returnValue(now));
 		}});
 		expectReschedule(plugin);
 		expectReconnect(plugin, duplexConnection);
@@ -360,6 +363,10 @@ public class PollerImplTest extends BrambleMockTestCase {
 
 			oneOf(plugin).poll(with(collectionOf(
 					pairOf(equal(properties), any(ConnectionHandler.class)))));
+
+			oneOf(scheduler).schedule(with(any(Runnable.class)),
+					with(ioExecutor), with(5000L), with(MILLISECONDS));
+			will(returnValue(cancellable));
 		}});
 
 		poller.eventOccurred(new TransportActiveEvent(transportId));
@@ -400,6 +407,9 @@ public class PollerImplTest extends BrambleMockTestCase {
 			oneOf(connectionRegistry).getConnectedOrBetterContacts(transportId);
 			will(returnValue(singletonList(contactId)));
 
+			oneOf(scheduler).schedule(with(any(Runnable.class)),
+					with(ioExecutor), with(5000L), with(MILLISECONDS));
+			will(returnValue(cancellable));
 		}});
 
 		poller.eventOccurred(new TransportActiveEvent(transportId));
@@ -425,7 +435,11 @@ public class PollerImplTest extends BrambleMockTestCase {
 					with(ioExecutor), with(0L), with(MILLISECONDS));
 			will(returnValue(cancellable));
 
-			oneOf(cancellable).cancel();
+			oneOf(scheduler).schedule(with(any(Runnable.class)),
+					with(ioExecutor), with(5000L), with(MILLISECONDS));
+			will(returnValue(cancellable));
+
+			exactly(2).of(cancellable).cancel();
 		}});
 
 		poller.eventOccurred(new TransportActiveEvent(transportId));

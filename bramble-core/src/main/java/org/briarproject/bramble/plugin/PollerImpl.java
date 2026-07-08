@@ -101,7 +101,7 @@ class PollerImpl implements Poller, EventListener {
 		} else if (e instanceof ConnectionClosedEvent) {
 			ConnectionClosedEvent c = (ConnectionClosedEvent) e;
 			reschedule(c.getTransportId());
-			if (c.isException()) {
+			if (c.isException() && shouldConnectNow(c.getContactId())) {
 				connectToContact(c.getContactId(), c.getTransportId());
 			}
 		} else if (e instanceof ConnectionOpenedEvent) {
@@ -123,32 +123,29 @@ class PollerImpl implements Poller, EventListener {
 			MessageSharedEvent m = (MessageSharedEvent) e;
 			for (Entry<ContactId, Boolean> v :
 					m.getGroupVisibility().entrySet()) {
-				if (Boolean.TRUE.equals(v.getValue()))
-					connectToContactOnData(v.getKey());
+				if (Boolean.TRUE.equals(v.getValue())
+						&& shouldConnectNow(v.getKey()))
+					connectToContact(v.getKey());
 			}
 		} else if (e instanceof MessageToAckEvent) {
-			connectToContactOnData(((MessageToAckEvent) e).getContactId());
+			ContactId c = ((MessageToAckEvent) e).getContactId();
+			if (shouldConnectNow(c)) connectToContact(c);
 		}
 	}
 
-	private void connectToContactOnData(ContactId c) {
+	private boolean shouldConnectNow(ContactId c) {
 		long now = clock.currentTimeMillis();
 		lock.lock();
 		try {
 			Long last = lastDataConnect.get(c);
-			if (last != null && now - last < DATA_CONNECT_DEBOUNCE_MS) return;
+			if (last != null && now - last < DATA_CONNECT_DEBOUNCE_MS) {
+				return false;
+			}
 			lastDataConnect.put(c, now);
+			return true;
 		} finally {
 			lock.unlock();
 		}
-		connectToContact(c);
-	}
-
-	private void connectToContact(ContactId c) {
-		for (SimplexPlugin s : pluginManager.getSimplexPlugins())
-			if (s.shouldPoll()) connectToContact(c, s);
-		for (DuplexPlugin d : pluginManager.getDuplexPlugins())
-			if (d.shouldPoll()) connectToContact(c, d);
 	}
 
 	private void connectToContact(ContactId c, TransportId t) {
@@ -157,6 +154,13 @@ class PollerImpl implements Poller, EventListener {
 			connectToContact(c, (SimplexPlugin) p);
 		else if (p instanceof DuplexPlugin && p.shouldPoll())
 			connectToContact(c, (DuplexPlugin) p);
+	}
+
+	private void connectToContact(ContactId c) {
+		for (SimplexPlugin s : pluginManager.getSimplexPlugins())
+			if (s.shouldPoll()) connectToContact(c, s);
+		for (DuplexPlugin d : pluginManager.getDuplexPlugins())
+			if (d.shouldPoll()) connectToContact(c, d);
 	}
 
 	private void connectToContact(ContactId c, SimplexPlugin p) {
