@@ -110,7 +110,6 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	static final int PRIVATE_MESSAGE_NOTIFICATION_ID = 2;
 	private static final int GROUP_MESSAGE_NOTIFICATION_ID = 3;
 	private static final int CONTACT_ADDED_NOTIFICATION_ID = 4;
-	private static final int SIGN_IN_NOTIFICATION_ID = 5;
 	private static final int REMINDER_NOTIFICATION_ID = 6;
 	static final int CONTACT_NOTIFICATION_ID_BASE = 1000;
 	static final int GROUP_TR_NOTIFICATION_ID_BASE = 0x10000;

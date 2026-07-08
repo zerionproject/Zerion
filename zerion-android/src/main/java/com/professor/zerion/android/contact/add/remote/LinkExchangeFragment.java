@@ -49,7 +49,6 @@ public class LinkExchangeFragment extends BaseFragment {
 
 	private AddContactViewModel viewModel;
 
-	private static final long CLIPBOARD_CLEAR_DELAY_MS = 30_000;
 
 	private ClipboardManager clipboard;
 	private TextInputLayout linkInputLayout;

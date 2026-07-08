@@ -136,7 +136,6 @@ public class ConversationActivity extends ZerionActivity
 	public static final String CONTACT_ID = "zerion.CONTACT_ID";
 
 	private static final int TRANSITION_DURATION_MS = 500;
-	private static final int ONBOARDING_DELAY_MS = 250;
 	private static final java.util.regex.Pattern CALL_KEY_PATTERN =
 		java.util.regex.Pattern.compile("^[A-Za-z0-9+/=]{40,}$");
 
