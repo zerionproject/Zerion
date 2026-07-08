@@ -1,5 +1,7 @@
 package com.professor.zerion.android.backup;
 
+import com.professor.zerion.android.vault.utils.SecureMemory;
+
 import android.app.Application;
 
 import org.briarproject.bramble.account.AndroidAccountManager;
@@ -152,23 +154,6 @@ public class AccountBackupManager {
 	}
 
 	private void secureDelete(File f) {
-		if (!f.exists()) return;
-		try {
-			long len = f.length();
-			if (len > 0 && len < MAX_DB_BYTES) {
-				try (RandomAccessFile raf = new RandomAccessFile(f, "rw")) {
-					byte[] zeroes = new byte[8192];
-					long written = 0;
-					while (written < len) {
-						int chunk = (int) Math.min(zeroes.length, len - written);
-						raf.write(zeroes, 0, chunk);
-						written += chunk;
-					}
-					raf.getFD().sync();
-				}
-			}
-		} catch (IOException ignored) {
-		}
-		f.delete();
+		SecureMemory.secureDeleteFile(f, MAX_DB_BYTES, false);
 	}
 }

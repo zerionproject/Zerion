@@ -1,5 +1,7 @@
 package com.professor.zerion.android.conversation;
 
+import com.professor.zerion.android.vault.utils.SecureMemory;
+
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -268,26 +270,7 @@ public class ChatSettingsActivity extends ZerionActivity {
 			editor.commit();
 		}
 		oldPrefs.edit().clear().commit();
-		try {
-			if (oldFile.exists() && oldFile.canWrite()) {
-				long len = oldFile.length();
-				if (len > 0) {
-					try (java.io.RandomAccessFile raf =
-							new java.io.RandomAccessFile(oldFile, "rw")) {
-						byte[] zeros = new byte[(int) Math.min(len, 8192)];
-						long remaining = len;
-						while (remaining > 0) {
-							int w = (int) Math.min(remaining, zeros.length);
-							raf.write(zeros, 0, w);
-							remaining -= w;
-						}
-						raf.getFD().sync();
-					}
-				}
-			}
-		} catch (Exception e) {
-		}
-		oldFile.delete();
+		SecureMemory.secureDeleteFile(oldFile, 0L, false);
 	}
 
 	private void showAvatarFullScreen(com.professor.zerion.android.contact.ContactItem contactItem) {

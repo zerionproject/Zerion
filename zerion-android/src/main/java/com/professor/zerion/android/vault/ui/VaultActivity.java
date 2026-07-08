@@ -1,5 +1,7 @@
 package com.professor.zerion.android.vault.ui;
 
+import com.professor.zerion.android.vault.utils.SecureMemory;
+
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -282,25 +284,7 @@ public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFr
 	}
 
 	private static void secureDeleteFile(File f) {
-		if (f == null || !f.isFile()) return;
-		try {
-			long len = f.length();
-			if (len > 0 && len < 512L * 1024 * 1024) {
-				try (java.io.RandomAccessFile raf =
-						new java.io.RandomAccessFile(f, "rw")) {
-					byte[] zeros = new byte[8192];
-					long written = 0;
-					while (written < len) {
-						int chunk = (int) Math.min(zeros.length, len - written);
-						raf.write(zeros, 0, chunk);
-						written += chunk;
-					}
-					raf.getFD().sync();
-				}
-			}
-		} catch (java.io.IOException ignored) {
-		}
-		if (!f.delete()) f.deleteOnExit();
+		SecureMemory.secureDeleteFile(f, 512L * 1024 * 1024, true);
 	}
 
 	private void showSetupFragment() {

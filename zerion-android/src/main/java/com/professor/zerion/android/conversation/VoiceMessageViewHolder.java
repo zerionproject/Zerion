@@ -1,5 +1,7 @@
 package com.professor.zerion.android.conversation;
 
+import com.professor.zerion.android.vault.utils.SecureMemory;
+
 import android.media.MediaPlayer;
 import android.os.Handler;
 import android.os.Looper;
@@ -261,27 +263,8 @@ public class VoiceMessageViewHolder {
 	}
 
 	private void cleanupTempFile() {
-		if (currentTempFile != null && currentTempFile.exists()) {
-			try {
-				long len = currentTempFile.length();
-				if (len > 0 && len < 50L * 1024 * 1024) {
-					try (java.io.RandomAccessFile raf =
-							new java.io.RandomAccessFile(
-									currentTempFile, "rw")) {
-						byte[] zeroes = new byte[8192];
-						long written = 0;
-						while (written < len) {
-							int chunk = (int) Math.min(zeroes.length,
-									len - written);
-							raf.write(zeroes, 0, chunk);
-							written += chunk;
-						}
-						raf.getFD().sync();
-					}
-				}
-			} catch (java.io.IOException ignored) {
-			}
-			currentTempFile.delete();
+		if (currentTempFile != null) {
+			SecureMemory.secureDeleteFile(currentTempFile, 50L * 1024 * 1024, false);
 			currentTempFile = null;
 		}
 	}

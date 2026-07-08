@@ -1,5 +1,7 @@
 package com.professor.zerion.android.grouptr;
 
+import com.professor.zerion.android.vault.utils.SecureMemory;
+
 import android.Manifest;
 import android.content.ContentResolver;
 import android.content.Intent;
@@ -355,31 +357,8 @@ public class GroupTrConversationActivity extends ZerionActivity
 	}
 
 	private void wipeGroupTrViewCache() {
-		java.io.File dir = new java.io.File(getCacheDir(), "grouptr_view");
-		java.io.File[] kids = dir.listFiles();
-		if (kids == null) return;
-		for (java.io.File f : kids) {
-			try {
-				long len = f.length();
-				if (len > 0) {
-					try (java.io.RandomAccessFile raf =
-								new java.io.RandomAccessFile(f, "rw")) {
-						byte[] zeros = new byte[(int) Math.min(len,
-								64L * 1024L)];
-						long remaining = len;
-						raf.seek(0);
-						while (remaining > 0) {
-							int n = (int) Math.min(zeros.length, remaining);
-							raf.write(zeros, 0, n);
-							remaining -= n;
-						}
-						raf.getFD().sync();
-					}
-				}
-			} catch (java.io.IOException ignored) {
-			}
-			f.delete();
-		}
+		SecureMemory.secureDeleteDir(
+				new java.io.File(getCacheDir(), "grouptr_view"), 0L);
 	}
 
 	@Override

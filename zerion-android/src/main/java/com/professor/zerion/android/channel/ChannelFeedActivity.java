@@ -1,5 +1,7 @@
 package com.professor.zerion.android.channel;
 
+import com.professor.zerion.android.vault.utils.SecureMemory;
+
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -855,31 +857,7 @@ public class ChannelFeedActivity extends ZerionActivity
 	}
 
 	private void wipeAttachmentStagingDir() {
-		java.io.File dir = attachmentStagingDir();
-		java.io.File[] kids = dir.listFiles();
-		if (kids == null) return;
-		for (java.io.File f : kids) {
-			try {
-				long len = f.length();
-				if (len > 0) {
-					try (java.io.RandomAccessFile raf =
-								new java.io.RandomAccessFile(f, "rw")) {
-						byte[] zeros = new byte[(int) Math.min(len,
-								64L * 1024L)];
-						long remaining = len;
-						raf.seek(0);
-						while (remaining > 0) {
-							int n = (int) Math.min(zeros.length, remaining);
-							raf.write(zeros, 0, n);
-							remaining -= n;
-						}
-						raf.getFD().sync();
-					}
-				}
-			} catch (java.io.IOException ignored) {
-			}
-			f.delete();
-		}
+		SecureMemory.secureDeleteDir(attachmentStagingDir(), 0L);
 	}
 
 	private static String guessFileName(

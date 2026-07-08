@@ -1,5 +1,7 @@
 package com.professor.zerion.android.conversation;
 
+import com.professor.zerion.android.vault.utils.SecureMemory;
+
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -358,29 +360,7 @@ public class VideoPlayerActivity extends ZerionActivity {
 	@SuppressWarnings("ResultOfMethodCallIgnored")
 	private void cleanupTempFile() {
 		if (tempVideoFile != null) {
-			try {
-				if (tempVideoFile.exists()) {
-					long len = tempVideoFile.length();
-					if (len > 0 && len < 200L * 1024 * 1024) {
-						try (java.io.RandomAccessFile raf =
-								new java.io.RandomAccessFile(
-										tempVideoFile, "rw")) {
-							byte[] zeroes = new byte[8192];
-							long written = 0;
-							while (written < len) {
-								int chunk = (int) Math.min(zeroes.length,
-										len - written);
-								raf.write(zeroes, 0, chunk);
-								written += chunk;
-							}
-							raf.getFD().sync();
-						} catch (java.io.IOException ignored) {
-						}
-					}
-					tempVideoFile.delete();
-				}
-			} catch (SecurityException ignored) {
-			}
+			SecureMemory.secureDeleteFile(tempVideoFile, 200L * 1024 * 1024, false);
 			tempVideoFile = null;
 		}
 		preparedVideoUri = null;

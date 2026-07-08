@@ -2,6 +2,8 @@ package com.professor.zerion.android.vault.utils;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
+import java.io.File;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.security.SecureRandom;
@@ -14,8 +16,55 @@ public class SecureMemory {
 
 	private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 	private static final int SHRED_PASSES = 3;
+	private static final int SECURE_DELETE_BUFFER = 8192;
 	private static final Executor GC_EXECUTOR =
 			Executors.newSingleThreadExecutor();
+
+	public static void secureDeleteFile(File f) {
+		secureDeleteFile(f, 0L, true);
+	}
+
+	public static void secureDeleteFile(File f, long maxSizeBytes,
+			boolean deleteOnExitFallback) {
+		if (f == null || !f.exists() || !f.isFile()) return;
+		try {
+			long len = f.length();
+			if (len > 0 && (maxSizeBytes <= 0 || len <= maxSizeBytes)) {
+				try (RandomAccessFile raf = new RandomAccessFile(f, "rws")) {
+					byte[] zeros = new byte[(int)
+							Math.min(len, SECURE_DELETE_BUFFER)];
+					raf.seek(0);
+					long written = 0;
+					while (written < len) {
+						int chunk = (int) Math.min(zeros.length, len - written);
+						raf.write(zeros, 0, chunk);
+						written += chunk;
+					}
+					raf.getFD().sync();
+				}
+			}
+		} catch (Exception ignored) {
+		}
+		try {
+			if (!f.delete() && deleteOnExitFallback) f.deleteOnExit();
+		} catch (Exception ignored) {
+		}
+	}
+
+	public static void secureDeleteDir(File dir, long maxSizeBytes) {
+		if (dir == null || !dir.isDirectory()) return;
+		File[] files = dir.listFiles();
+		if (files != null) {
+			for (File f : files) {
+				if (f.isDirectory()) secureDeleteDir(f, maxSizeBytes);
+				else secureDeleteFile(f, maxSizeBytes, false);
+			}
+		}
+		try {
+			dir.delete();
+		} catch (Exception ignored) {
+		}
+	}
 
 	public static void shred(byte[] data) {
 		if (data == null || data.length == 0) return;

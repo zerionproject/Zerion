@@ -618,24 +618,7 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 		}
 
 		if (pdfTempFile != null) {
-			try {
-				if (pdfTempFile.exists()) {
-					long len = pdfTempFile.length();
-					try (java.io.RandomAccessFile raf =
-							new java.io.RandomAccessFile(pdfTempFile, "rw")) {
-						byte[] zero = new byte[4096];
-						long written = 0;
-						while (written < len) {
-							int n = (int) Math.min(zero.length, len - written);
-							raf.write(zero, 0, n);
-							written += n;
-						}
-						raf.getFD().sync();
-					}
-				}
-			} catch (Exception ignored) {
-			}
-			pdfTempFile.delete();
+			SecureMemory.secureDeleteFile(pdfTempFile, 0L, false);
 			pdfTempFile = null;
 		}
 

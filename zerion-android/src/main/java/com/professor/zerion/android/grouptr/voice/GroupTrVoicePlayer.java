@@ -1,5 +1,7 @@
 package com.professor.zerion.android.grouptr.voice;
 
+import com.professor.zerion.android.vault.utils.SecureMemory;
+
 import android.content.Context;
 import android.media.AudioAttributes;
 import android.media.MediaPlayer;
@@ -94,22 +96,6 @@ public class GroupTrVoicePlayer {
 	}
 
 	private static void secureWipe(java.io.File f) {
-		try {
-			if (!f.exists()) return;
-			long len = f.length();
-			if (len <= 0) return;
-			try (java.io.RandomAccessFile raf =
-					new java.io.RandomAccessFile(f, "rws")) {
-				byte[] zeros = new byte[(int) Math.min(len, 8192)];
-				long written = 0;
-				while (written < len) {
-					int chunk = (int) Math.min(zeros.length, len - written);
-					raf.write(zeros, 0, chunk);
-					written += chunk;
-				}
-				raf.getFD().sync();
-			}
-		} catch (java.io.IOException ignored) {
-		}
+		SecureMemory.secureDeleteFile(f, 0L, true);
 	}
 }

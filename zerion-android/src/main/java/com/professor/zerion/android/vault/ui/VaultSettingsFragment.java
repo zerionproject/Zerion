@@ -1,5 +1,7 @@
 package com.professor.zerion.android.vault.ui;
 
+import com.professor.zerion.android.vault.utils.SecureMemory;
+
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -106,24 +108,7 @@ public class VaultSettingsFragment extends BaseFragment {
 				this::onExportLocationPicked);
 		java.io.File legacy = new java.io.File(
 				requireContext().getFilesDir(), "vault_backup.vbk");
-		if (legacy.exists()) {
-			try (java.io.RandomAccessFile raf =
-						new java.io.RandomAccessFile(legacy, "rw")) {
-				long len = raf.length();
-				byte[] zeros = new byte[(int) Math.min(len,
-						64L * 1024L)];
-				raf.seek(0);
-				long remaining = len;
-				while (remaining > 0) {
-					int n = (int) Math.min(zeros.length, remaining);
-					raf.write(zeros, 0, n);
-					remaining -= n;
-				}
-				raf.getFD().sync();
-			} catch (java.io.IOException ignored) {
-			}
-			legacy.delete();
-		}
+		SecureMemory.secureDeleteFile(legacy, 0L, false);
 	}
 
 	@Override
