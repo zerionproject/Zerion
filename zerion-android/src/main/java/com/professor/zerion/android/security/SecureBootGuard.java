@@ -238,7 +238,7 @@ public final class SecureBootGuard {
 			case RESULT_OK:
 				return "OK";
 			case RESULT_VERIFIED_BOOT_NOT_GREEN:
-				return "Verified boot not in GREEN state — device firmware is not a stock signed image. An attacker with bootloader access could have modified the OS.";
+				return "Verified boot not in GREEN state. Device firmware is not a stock signed image. An attacker with bootloader access could have modified the OS.";
 			case RESULT_BOOTLOADER_UNLOCKED:
 				return "Bootloader is unlocked. A recovery-mode dump could bypass app-layer wipes.";
 			case RESULT_ROOT_BINARY_FOUND:

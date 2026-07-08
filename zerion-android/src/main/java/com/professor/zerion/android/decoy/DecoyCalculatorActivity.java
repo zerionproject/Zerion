@@ -20,9 +20,6 @@ import androidx.annotation.Nullable;
 @NotNullByDefault
 public class DecoyCalculatorActivity extends Activity {
 
-	public static final String EXTRA_DECOY_PASSED =
-			"com.professor.zerion.android.decoy.PASSED";
-
 	private static final java.util.concurrent.atomic.AtomicBoolean
 			DECOY_PASSED_TOKEN =
 			new java.util.concurrent.atomic.AtomicBoolean(false);

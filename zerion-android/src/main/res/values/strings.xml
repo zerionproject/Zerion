@@ -152,7 +152,7 @@
 	<string name="setup_name_explanation">Your nickname will be shown next to any content you post. You can\'t change it after creating your account.</string>
 	<string name="setup_next">Next</string>
 	<string name="setup_password_intro">Choose a Password</string>
-	<string name="setup_password_explanation">Your account stays on this device. There\'s no cloud and no recovery — if you forget your password or uninstall Zerion, the account is gone.\n\nPick something long and hard to guess. Four random words works, so does ten random letters, numbers, and symbols.</string>
+	<string name="setup_password_explanation">Your account stays on this device. There\'s no cloud and no recovery. If you forget your password or uninstall Zerion, the account is gone.\n\nPick something long and hard to guess. Four random words works, so does ten random letters, numbers, and symbols.</string>
 	<string name="dnkm_doze_title">Background Connections</string>
 	<string name="dnkm_doze_intro">To receive messages, Zerion needs to stay connected in the background.</string>
 	<string name="dnkm_doze_explanation">To receive messages, Zerion needs to stay connected in the background. Please disable battery optimizations so Zerion can stay connected.</string>
@@ -162,7 +162,7 @@
 	<string name="confirm_password">Confirm your password</string>
 	<string name="name_too_long">Name is too long</string>
 	<string name="name_invalid_characters">Name contains invalid characters</string>
-	<string name="name_reserved">This name is reserved — please choose another</string>
+	<string name="name_reserved">This name is reserved. Please choose another</string>
 	<string name="password_too_weak">Password is too weak</string>
 	<string name="password_quite_strong">Password is okay</string>
 	<string name="password_strong">Password is strong</string>
@@ -262,8 +262,8 @@
 	<string name="channels_create_title">Create a channel</string>
 	<string name="channels_create_name_hint">Channel name</string>
 	<string name="channels_create_description_hint">Description</string>
-	<string name="channels_create_public_label">Public — anyone with the link can join</string>
-	<string name="channels_create_closed_label">Private — only people you share the link with can join</string>
+	<string name="channels_create_public_label">Public: anyone with the link can join</string>
+	<string name="channels_create_closed_label">Private: only people you share the link with can join</string>
 	<string name="channels_create_action">Create</string>
 	<string name="channels_create_error_name">A channel needs a name.</string>
 	<string name="channels_create_failed">Couldn\'t create the channel. Please try again.</string>
@@ -275,7 +275,7 @@
 	<string name="channels_feed_empty_publisher">Your channel has no posts yet. Publish your first one.</string>
 	<string name="channels_feed_empty_subscriber">No posts yet. New posts will appear here.</string>
 	<string name="channels_feed_connecting">Connecting to the channel…</string>
-	<string name="channels_feed_connecting_slow">Still connecting. Make sure the person who shared this channel is online — this will update on its own.</string>
+	<string name="channels_feed_connecting_slow">Still connecting. Make sure the person who shared this channel is online. This will update on its own.</string>
 	<string name="channels_compose_hint">Write to your subscribers…</string>
 	<string name="channels_compose_send">Publish</string>
 	<string name="channels_compose_error_empty">Type something before publishing.</string>
@@ -349,7 +349,7 @@
 	<string name="channels_action_react">React</string>
 	<string name="channels_react_failed">Could not send reaction</string>
 	<string name="channels_announce_title">Announce yourself?</string>
-	<string name="channels_announce_message">The channel owner will see your chosen display name and your public key. You can stay anonymous instead — only the owner ever sees announced subscribers.</string>
+	<string name="channels_announce_message">The channel owner will see your chosen display name and your public key. You can stay anonymous instead. Only the owner ever sees announced subscribers.</string>
 	<string name="channels_announce_name_hint">Display name</string>
 	<string name="channels_announce_action">Announce</string>
 	<string name="channels_announce_skip">Stay anonymous</string>
@@ -396,7 +396,7 @@
 	<string name="hardened_block_disable_action">Turn off hardened mode</string>
 	<string name="hardened_block_quit_action">Quit</string>
 	<string name="hardened_block_disable_title">Turn off hardened mode?</string>
-	<string name="hardened_block_disable_message">Zerion will start on this device. The reason it refused is still there — only turn this off if you understand the risk.</string>
+	<string name="hardened_block_disable_message">Zerion will start on this device. The reason it refused is still there. Only turn this off if you understand the risk.</string>
 	<string name="hardened_block_disable_confirm">Turn off</string>
 	<string name="channels_comments_count">%1$d comments</string>
 	<string name="channels_comments_count_one">1 comment</string>
@@ -566,9 +566,9 @@
 	<string name="pref_rotate_onion_confirm_title">Rotate onion address?</string>
 	<string name="pref_rotate_onion_confirm_message">A new Tor address will be generated and shared with your contacts on their next connection. Your old address keeps working until every contact has migrated.</string>
 	<string name="pref_rotate_onion_confirm_action">Rotate</string>
-	<string name="pref_rotate_onion_started">Rotation started — contacts will migrate as they reconnect</string>
+	<string name="pref_rotate_onion_started">Rotation started. Contacts will migrate as they reconnect</string>
 	<string name="pref_rotate_onion_already_running">A rotation is already in progress</string>
-	<string name="pref_rotate_onion_failed">Rotation failed — check that Tor is running</string>
+	<string name="pref_rotate_onion_failed">Rotation failed. Check that Tor is running</string>
 	<string name="pref_rotate_onion_success_title">New address minted</string>
 	<string name="pref_rotate_onion_success_message">Your old address keeps working until every contact has connected on the new one.\n\nNew address:\n%1$s</string>
 	<string name="tor_rotation_in_progress">Rotating to new address</string>
@@ -592,7 +592,7 @@
 	<string name="video_calls_beta_warning_title">Video calls (Beta)</string>
 	<string name="video_calls_beta_warning_message">Video calling is in Beta. Audio quality may drop during video calls. Voice-only calls are not affected.</string>
 	<string name="video_calls_beta_enable">Enable</string>
-	<string name="pref_calls_footer">Voice calls are on by default. Turn off to hide call buttons and decline incoming calls — callers then see a \"calls disabled\" notice. Video calls (Beta) stay off until you enable them.</string>
+	<string name="pref_calls_footer">Voice calls are on by default. Turn off to hide call buttons and decline incoming calls. Callers then see a \"calls disabled\" notice. Video calls (Beta) stay off until you enable them.</string>
 	<string name="call_rejected_peer_disabled_calls">%s has calls disabled</string>
 	<string name="call_rejected_peer_disabled_calls_hint">Ask them to enable calls in Settings → Security</string>
 	<string name="call_rejected_peer_disabled_video">%s has video calls disabled</string>
@@ -711,7 +711,7 @@
 	<string name="grouptr_group_name_hint">Group name</string>
 	<string name="grouptr_invite_received_toast">You were added to a new group</string>
 	<string name="grouptr_removed_by_admin">You were removed from \"%1$s\"</string>
-	<string name="grouptr_pending_invite_title">%1$s — invited by %2$s</string>
+	<string name="grouptr_pending_invite_title">%1$s, invited by %2$s</string>
 	<string name="grouptr_pending_accept">Accept</string>
 	<string name="grouptr_pending_decline">Decline</string>
 	<string name="grouptr_invitation_received">%1$s added you to the group \"%2$s\". Tap to open.</string>
@@ -918,8 +918,8 @@
 	<string name="link_exchange_card_badge">Remote</string>
 	<string name="link_exchange_card_description">Copy your link and paste theirs</string>
 	<string name="qr_exchange_camera_hint">Point at contact\'s code</string>
-	<string name="qr_exchange_your_code">Your code — show this to your contact</string>
-	<string name="qr_link_detected">Link found — connecting…</string>
+	<string name="qr_exchange_your_code">Your code: show this to your contact</string>
+	<string name="qr_link_detected">Link found, connecting…</string>
 	<string name="qr_scanned_waiting">Scanned ✓</string>
 	<string name="qr_scanned_hint">Now let your contact scan your code</string>
 	<string name="qr_continue_button">Continue</string>

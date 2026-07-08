@@ -264,13 +264,13 @@ class VideoCameraManager {
 			case CameraDevice.StateCallback.ERROR_CAMERA_IN_USE:
 				return "Camera already in use by another app";
 			case CameraDevice.StateCallback.ERROR_MAX_CAMERAS_IN_USE:
-				return "Too many cameras open — close other apps";
+				return "Too many cameras open. Close other apps";
 			case CameraDevice.StateCallback.ERROR_CAMERA_DISABLED:
 				return "Camera disabled by device policy";
 			case CameraDevice.StateCallback.ERROR_CAMERA_DEVICE:
 				return "Camera hardware error";
 			case CameraDevice.StateCallback.ERROR_CAMERA_SERVICE:
-				return "Camera service error — restart the app";
+				return "Camera service error. Restart the app";
 			default:
 				return "Camera error (code " + error + ")";
 		}

@@ -82,7 +82,6 @@ public class ChannelFeedActivity extends ZerionActivity
 	private TextView emptyView;
 	private android.widget.ProgressBar feedProgress;
 	private TextView connectingText;
-	private boolean firstPublisherRefreshDone = false;
 	private boolean reachedPublisherAtLeastOnce = false;
 	private boolean showSlowConnectingHint = false;
 	private boolean feedRendered = false;
@@ -244,7 +243,6 @@ public class ChannelFeedActivity extends ZerionActivity
 				boolean finalReached = reached;
 				runOnUiThreadUnlessDestroyed(() -> {
 					if (finalReached) {
-						firstPublisherRefreshDone = true;
 						reachedPublisherAtLeastOnce = true;
 					}
 					loadChannel();

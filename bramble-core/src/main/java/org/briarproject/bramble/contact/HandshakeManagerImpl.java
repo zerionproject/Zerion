@@ -190,8 +190,7 @@ class HandshakeManagerImpl implements HandshakeManager {
 		byte[] kemSecret;
 		try {
 			if (alice) {
-				PublicKey kemTarget = useFs
-						? theirHybridEphemeralKey : theirHybridStaticKey;
+				PublicKey kemTarget = theirHybridEphemeralKey;
 				HybridEncapsulationResult encResult =
 						handshakeCrypto.hybridEncapsulate(kemTarget);
 				kemCiphertext = encResult.getCiphertext();
@@ -207,18 +206,11 @@ class HandshakeManagerImpl implements HandshakeManager {
 
 		SecretKey masterKey;
 		try {
-			if (useFs) {
-				masterKey = handshakeCrypto.deriveHybridMasterKeyFs(
-						theirHybridStaticKey, theirHybridEphemeralKey,
-						ourHybridStaticKeyPair, ourHybridEphemeralKeyPair,
-						kemCiphertext, kemSecret, alice,
-						PROTOCOL_MINOR_VERSION, (byte) theirMinorVersion);
-			} else {
-				masterKey = handshakeCrypto.deriveHybridMasterKey(
-						theirHybridStaticKey, theirHybridEphemeralKey,
-						ourHybridStaticKeyPair, ourHybridEphemeralKeyPair,
-						kemCiphertext, kemSecret, alice);
-			}
+			masterKey = handshakeCrypto.deriveHybridMasterKeyFs(
+					theirHybridStaticKey, theirHybridEphemeralKey,
+					ourHybridStaticKeyPair, ourHybridEphemeralKeyPair,
+					kemCiphertext, kemSecret, alice,
+					PROTOCOL_MINOR_VERSION, (byte) theirMinorVersion);
 		} catch (GeneralSecurityException e) {
 			throw new FormatException();
 		} finally {

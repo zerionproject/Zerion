@@ -75,7 +75,7 @@ public class ConversationCallEventItem extends ConversationItem {
 				return isOutgoing ? "Outgoing secure voice call" : "Incoming secure voice call";
 			case CALL_END:
 				if (durationMs != null && durationMs > 0) {
-					return "Secure voice call — " + getFormattedDuration();
+					return "Secure voice call · " + getFormattedDuration();
 				}
 				return "Secure voice call";
 			case CALL_REJECT:
