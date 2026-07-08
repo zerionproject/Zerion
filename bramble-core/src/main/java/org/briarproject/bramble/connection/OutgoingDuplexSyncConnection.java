@@ -89,7 +89,6 @@ class OutgoingDuplexSyncConnection extends DuplexSyncConnection
 		}
 		connectionRegistry.registerOutgoingConnection(contactId, transportId,
 				this, priority);
-		startCloseWatchdog();
 		try {
 			transportPropertyManager.addRemotePropertiesFromConnection(
 					contactId, transportId, remote);

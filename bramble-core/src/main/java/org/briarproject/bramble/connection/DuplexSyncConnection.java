@@ -40,8 +40,6 @@ abstract class DuplexSyncConnection extends SyncConnection
 	final TransportProperties remote;
 	private final TaskScheduler scheduler;
 
-	private static final long MAX_CONNECTION_LIFETIME_MS = 30L * 60L * 1000L;
-
 	private final Object watchdogLock = new Object();
 	@GuardedBy("watchdogLock")
 	@Nullable
@@ -97,14 +95,6 @@ abstract class DuplexSyncConnection extends SyncConnection
 		reader = connection.getReader();
 		writer = connection.getWriter();
 		remote = connection.getRemoteProperties();
-	}
-
-	void startCloseWatchdog() {
-		long jitter = MAX_CONNECTION_LIFETIME_MS / 4;
-		long lifetime = MAX_CONNECTION_LIFETIME_MS - jitter + (long)
-				(java.util.concurrent.ThreadLocalRandom.current().nextDouble()
-						* 2d * jitter);
-		armCloseWatchdog(lifetime);
 	}
 
 	void stopCloseWatchdog() {

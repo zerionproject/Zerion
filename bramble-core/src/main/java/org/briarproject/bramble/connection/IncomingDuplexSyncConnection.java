@@ -54,7 +54,6 @@ class IncomingDuplexSyncConnection extends DuplexSyncConnection
 		}
 		connectionRegistry.registerIncomingConnection(contactId, transportId,
 				this);
-		startCloseWatchdog();
 		ioExecutor.execute(() -> runOutgoingSession(contactId));
 		try {
 			transportPropertyManager.addRemotePropertiesFromConnection(
