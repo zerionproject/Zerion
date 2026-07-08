@@ -109,7 +109,6 @@ class TorPlugin implements DuplexPlugin, EventListener,
 
 	private static final long BRIDGE_FALLBACK_DELAY_MS = 45_000L;
 	private static final long BRIDGE_FALLBACK_DELAY_UNKNOWN_MS = 20_000L;
-	private static final int DEAD_PEER_TIMEOUT_MS = 20_000;
 	private final java.util.concurrent.ScheduledExecutorService bridgeWatchdog =
 			java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
 				Thread t = new Thread(r, "TorBridgeWatchdog");
@@ -177,7 +176,7 @@ class TorPlugin implements DuplexPlugin, EventListener,
 		if (maxIdleTime > Integer.MAX_VALUE / 2) {
 			socketTimeout = Integer.MAX_VALUE;
 		} else {
-			socketTimeout = Math.min(maxIdleTime * 2, DEAD_PEER_TIMEOUT_MS);
+			socketTimeout = maxIdleTime * 2;
 		}
 		connectionStatusExecutor =
 				new PoliteExecutor("TorPlugin", ioExecutor, 1);

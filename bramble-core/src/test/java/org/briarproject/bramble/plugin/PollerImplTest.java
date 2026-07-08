@@ -173,9 +173,6 @@ public class PollerImplTest extends BrambleMockTestCase {
 		context.checking(new Expectations() {{
 			allowing(plugin).getId();
 			will(returnValue(transportId));
-
-			oneOf(clock).currentTimeMillis();
-			will(returnValue(now));
 		}});
 		expectReschedule(plugin);
 		expectReconnect(plugin, duplexConnection);

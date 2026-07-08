@@ -101,7 +101,7 @@ class PollerImpl implements Poller, EventListener {
 		} else if (e instanceof ConnectionClosedEvent) {
 			ConnectionClosedEvent c = (ConnectionClosedEvent) e;
 			reschedule(c.getTransportId());
-			if (c.isException() && shouldConnectNow(c.getContactId())) {
+			if (c.isException()) {
 				connectToContact(c.getContactId(), c.getTransportId());
 			}
 		} else if (e instanceof ConnectionOpenedEvent) {
