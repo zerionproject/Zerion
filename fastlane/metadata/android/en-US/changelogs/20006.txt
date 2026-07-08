@@ -1,0 +1,5 @@
+v2.0.6: reliability and hardening
+
+Adding contacts is reliable again and crashes during pairing are fixed. Connections recover faster after a drop so contacts stay online more consistently, voice memos deliver reliably, and joining older channels works again. The per-message post-quantum encryption was audited and hardened, several security issues were fixed, and the app was cleaned up with clearer text and accessibility labels. Both people need this version to add each other. No database upgrade is required.
+
+Full notes: https://github.com/zerionproject/Zerion/releases/tag/v2.0.6
