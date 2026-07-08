@@ -7,7 +7,6 @@ import android.text.TextWatcher;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import com.google.android.material.appbar.MaterialToolbar;

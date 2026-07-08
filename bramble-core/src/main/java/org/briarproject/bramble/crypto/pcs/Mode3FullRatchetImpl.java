@@ -20,7 +20,6 @@ import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MLKEM_CIPHERT
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_FULL_SEND_ROTATION_INTERVAL;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MLKEM_ENCAPSULATION_KEY_SIZE;
 import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_FULL_MK_LABEL;
-import static org.briarproject.bramble.api.crypto.pcs.PcsConstants.MODE3_FULL_PQ_ABSORB_LABEL;
 
 @NotNullByDefault
 class Mode3FullRatchetImpl implements Mode3FullRatchet {
@@ -39,13 +38,6 @@ class Mode3FullRatchetImpl implements Mode3FullRatchet {
 			byte[] sharedSecret) {
 		return crypto.deriveKey(MODE3_FULL_MK_LABEL, classicalMessageKey,
 				sharedSecret);
-	}
-
-	@Override
-	public SecretKey absorbPqIntoRoot(SecretKey rootKey, byte[] sharedSecret,
-			byte[] pkAdvertise) {
-		return crypto.deriveKey(MODE3_FULL_PQ_ABSORB_LABEL, rootKey,
-				sharedSecret, pkAdvertise);
 	}
 
 	@Override
