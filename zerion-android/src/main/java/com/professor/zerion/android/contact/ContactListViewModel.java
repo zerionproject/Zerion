@@ -3,7 +3,6 @@ package com.professor.zerion.android.contact;
 import android.app.Application;
 
 import org.briarproject.bramble.api.connection.ConnectionRegistry;
-import org.briarproject.bramble.api.contact.ContactId;
 import org.briarproject.bramble.api.contact.ContactManager;
 import org.briarproject.bramble.api.contact.event.PendingContactAddedEvent;
 import org.briarproject.bramble.api.contact.event.PendingContactRemovedEvent;

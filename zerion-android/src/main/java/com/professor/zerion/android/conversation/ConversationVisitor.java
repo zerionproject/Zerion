@@ -19,7 +19,6 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-import androidx.annotation.UiThread;
 import androidx.lifecycle.LiveData;
 
 import static java.util.Collections.emptyList;

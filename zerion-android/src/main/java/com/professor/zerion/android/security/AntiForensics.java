@@ -6,7 +6,6 @@ import android.os.Build;
 import android.os.Environment;
 import android.os.FileObserver;
 import android.provider.Settings;
-import android.telephony.TelephonyManager;
 
 import java.io.BufferedReader;
 import java.io.File;

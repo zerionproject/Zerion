@@ -32,7 +32,6 @@ import java.util.concurrent.Executor;
 
 import javax.inject.Inject;
 
-import androidx.annotation.Nullable;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 

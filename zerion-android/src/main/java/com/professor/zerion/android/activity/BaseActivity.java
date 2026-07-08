@@ -41,12 +41,10 @@ import androidx.fragment.app.FragmentManager;
 
 import static android.os.Build.VERSION.SDK_INT;
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
-import static android.view.WindowManager.LayoutParams.FLAG_SECURE;
 
 import android.content.Intent;
 import static androidx.lifecycle.Lifecycle.State.STARTED;
 import static java.util.Collections.emptyList;
-import static com.professor.zerion.android.TestingConstants.PREVENT_SCREENSHOTS;
 import static com.professor.zerion.android.settings.DisplayFragment.PREF_THEME;
 import static com.professor.zerion.android.util.UiUtils.hideSoftKeyboard;
 import static com.professor.zerion.android.util.UiUtils.isAmoledTheme;

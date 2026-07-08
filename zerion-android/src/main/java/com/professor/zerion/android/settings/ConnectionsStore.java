@@ -9,7 +9,6 @@ import java.util.concurrent.Executor;
 
 import androidx.annotation.Nullable;
 
-import static org.briarproject.bramble.api.plugin.Plugin.PREF_PLUGIN_ENABLE;
 import static org.briarproject.bramble.api.plugin.TorConstants.PREF_TOR_MOBILE;
 import static org.briarproject.bramble.api.plugin.TorConstants.PREF_TOR_NETWORK;
 import static com.professor.zerion.android.settings.ConnectionsFragment.PREF_KEY_ORBOT_ENABLED;

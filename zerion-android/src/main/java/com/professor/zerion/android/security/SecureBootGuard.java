@@ -1,7 +1,6 @@
 package com.professor.zerion.android.security;
 
 import android.content.Context;
-import android.os.Build;
 import android.os.Debug;
 
 import org.briarproject.nullsafety.NotNullByDefault;

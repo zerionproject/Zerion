@@ -5,7 +5,6 @@ import com.professor.zerion.android.vault.utils.SecureMemory;
 import android.content.Context;
 import android.media.MediaRecorder;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 

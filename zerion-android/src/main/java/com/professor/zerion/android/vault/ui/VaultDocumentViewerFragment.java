@@ -2,7 +2,6 @@ package com.professor.zerion.android.vault.ui;
 
 import android.graphics.Bitmap;
 import android.graphics.pdf.PdfRenderer;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
 import android.view.LayoutInflater;
@@ -32,7 +31,6 @@ import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 import javax.inject.Inject;
 

@@ -1,7 +1,6 @@
 package com.professor.zerion.android.conversation.voice;
 
 import android.media.MediaCodec;
-import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 
 import org.briarproject.nullsafety.NotNullByDefault;

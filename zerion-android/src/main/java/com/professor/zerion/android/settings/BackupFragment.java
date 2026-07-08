@@ -17,7 +17,6 @@ import android.widget.Toast;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.professor.zerion.R;
 import com.professor.zerion.android.backup.AccountBackupManager;
-import com.professor.zerion.android.backup.BackupException;
 import com.professor.zerion.android.util.ActivityLaunchers.CreateDocumentAdvanced;
 import com.professor.zerion.android.util.ActivityLaunchers.OpenDocumentAdvanced;
 

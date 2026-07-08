@@ -7,18 +7,15 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.professor.zerion.R;
 import com.professor.zerion.android.test.TestDataActivity;
 import com.professor.zerion.android.util.ActivityLaunchers.GetImageAdvanced;
 import com.professor.zerion.android.util.ActivityLaunchers.OpenImageDocumentAdvanced;
-import com.professor.zerion.android.view.AuthorView;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.signature.ObjectKey;
-import com.google.android.material.card.MaterialCardView;
 
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
@@ -28,7 +25,6 @@ import javax.inject.Inject;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import com.google.android.material.imageview.ShapeableImageView;

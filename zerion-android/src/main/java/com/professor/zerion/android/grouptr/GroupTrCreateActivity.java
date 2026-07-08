@@ -21,7 +21,6 @@ import org.briarproject.bramble.api.lifecycle.IoExecutor;
 import org.briarproject.briar.api.grouptr.GroupTrManager;
 import org.briarproject.briar.api.grouptr.GroupTrState;
 
-import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 

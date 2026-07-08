@@ -1,7 +1,6 @@
 package com.professor.zerion.android.attachment.media;
 
 import android.graphics.Bitmap;
-import android.net.Uri;
 
 import java.io.IOException;
 import java.io.InputStream;

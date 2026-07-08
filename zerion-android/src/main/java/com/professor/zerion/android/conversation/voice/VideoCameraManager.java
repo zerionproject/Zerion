@@ -1,7 +1,6 @@
 package com.professor.zerion.android.conversation.voice;
 
 import android.content.Context;
-import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -14,7 +13,6 @@ import android.view.Surface;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
-import java.util.Arrays;
 
 import javax.annotation.Nullable;
 

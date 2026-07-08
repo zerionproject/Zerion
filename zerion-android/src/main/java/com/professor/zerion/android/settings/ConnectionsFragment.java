@@ -13,7 +13,6 @@ import android.widget.TextView;
 
 import android.widget.Toast;
 
-import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 import com.professor.zerion.R;
@@ -34,7 +33,6 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import static com.professor.zerion.android.AppModule.getAndroidComponent;
-import static org.briarproject.bramble.api.plugin.TorConstants.PREF_TOR_MOBILE;
 import static org.briarproject.bramble.api.plugin.TorConstants.PREF_TOR_CUSTOM_BRIDGES;
 import static org.briarproject.bramble.api.plugin.TorConstants.PREF_TOR_NETWORK;
 

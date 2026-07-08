@@ -3,7 +3,6 @@ package com.professor.zerion.android.vault.utils;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 @NotNullByDefault
 public class MimeUtils {

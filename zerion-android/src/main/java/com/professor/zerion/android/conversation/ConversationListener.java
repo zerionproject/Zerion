@@ -3,7 +3,6 @@ package com.professor.zerion.android.conversation;
 import android.view.View;
 
 import com.professor.zerion.android.attachment.AttachmentItem;
-import org.briarproject.briar.api.messaging.PrivateMessageHeader;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.List;

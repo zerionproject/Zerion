@@ -10,10 +10,7 @@ import com.professor.zerion.android.security.ZerionEncryptedPrefs;
 import com.vanniktech.emoji.RecentEmoji;
 
 import org.briarproject.bramble.api.FeatureFlags;
-import org.briarproject.bramble.api.FormatException;
-import org.briarproject.bramble.api.crypto.CryptoComponent;
 import org.briarproject.bramble.api.crypto.KeyStrengthener;
-import org.briarproject.bramble.api.crypto.PublicKey;
 import org.briarproject.bramble.api.db.DatabaseConfig;
 import org.briarproject.bramble.api.event.EventBus;
 import org.briarproject.bramble.api.lifecycle.LifecycleManager;
@@ -25,8 +22,6 @@ import org.briarproject.bramble.api.plugin.TransportId;
 import org.briarproject.bramble.api.plugin.duplex.DuplexPluginFactory;
 import org.briarproject.bramble.api.plugin.simplex.SimplexPluginFactory;
 import org.briarproject.bramble.plugin.tor.AndroidTorPluginFactory;
-import org.briarproject.bramble.util.AndroidUtils;
-import org.briarproject.bramble.util.StringUtils;
 import com.professor.zerion.android.account.DozeHelperModule;
 import com.professor.zerion.android.account.LockManagerImpl;
 import com.professor.zerion.android.account.SetupModule;
@@ -56,8 +51,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.File;
 import java.lang.annotation.Retention;
-import java.security.GeneralSecurityException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -75,8 +68,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static android.content.Context.MODE_PRIVATE;
 import static android.os.Build.VERSION.SDK_INT;
 import static java.util.Arrays.asList;
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
 import static com.professor.zerion.android.TestingConstants.IS_DEBUG_BUILD;
 
 @Module(includes = {

@@ -7,10 +7,8 @@ import org.briarproject.briar.api.attachment.Attachment;
 import org.briarproject.briar.api.attachment.AttachmentHeader;
 import org.briarproject.briar.api.attachment.AttachmentReader;
 import org.briarproject.briar.api.messaging.PrivateMessageHeader;
-import org.briarproject.briar.api.messaging.event.AttachmentReceivedEvent;
 import org.briarproject.nullsafety.NotNullByDefault;
 
-import java.io.InputStream;
 import java.util.List;
 
 import androidx.lifecycle.LiveData;

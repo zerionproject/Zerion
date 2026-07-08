@@ -10,7 +10,6 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.TextView;
 
-import com.google.android.material.card.MaterialCardView;
 
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;

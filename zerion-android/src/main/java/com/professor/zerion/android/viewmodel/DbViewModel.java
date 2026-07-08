@@ -6,7 +6,6 @@ import org.briarproject.bramble.api.db.DatabaseExecutor;
 import org.briarproject.bramble.api.db.DbCallable;
 import org.briarproject.bramble.api.db.DbException;
 import org.briarproject.bramble.api.db.DbRunnable;
-import org.briarproject.bramble.api.db.Transaction;
 import org.briarproject.bramble.api.db.TransactionManager;
 import org.briarproject.bramble.api.lifecycle.LifecycleManager;
 import org.briarproject.bramble.api.system.AndroidExecutor;
@@ -29,7 +28,6 @@ import androidx.core.util.Consumer;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
-import androidx.recyclerview.widget.RecyclerView;
 
 @Immutable
 @NotNullByDefault

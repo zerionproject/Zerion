@@ -1,7 +1,5 @@
 package com.professor.zerion.android.sharing;
 
-import com.professor.zerion.android.activity.ActivityScope;
-import com.professor.zerion.android.activity.BaseActivity;
 
 import dagger.Module;
 import dagger.Provides;

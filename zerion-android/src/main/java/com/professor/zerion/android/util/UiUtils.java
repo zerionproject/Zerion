@@ -1,8 +1,6 @@
 package com.professor.zerion.android.util;
 
 import android.app.Activity;
-import android.app.ActivityManager;
-import android.app.ActivityManager.MemoryInfo;
 import android.app.KeyguardManager;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
@@ -10,7 +8,6 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
-import android.os.Debug;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
@@ -37,7 +34,6 @@ import org.briarproject.bramble.api.system.AndroidExecutor;
 import org.briarproject.bramble.util.StringUtils;
 import com.professor.zerion.R;
 import com.professor.zerion.android.view.ArticleMovementMethod;
-import com.professor.zerion.android.api.MemoryStats;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
@@ -56,7 +52,6 @@ import androidx.core.hardware.fingerprint.FingerprintManagerCompat;
 import androidx.core.text.HtmlCompat;
 import androidx.core.util.Consumer;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.LifecycleOwner;
@@ -65,7 +60,6 @@ import androidx.lifecycle.Observer;
 import androidx.vectordrawable.graphics.drawable.VectorDrawableCompat;
 
 import static android.content.Context.KEYGUARD_SERVICE;
-import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.os.Build.MANUFACTURER;
 import static android.os.Build.VERSION.SDK_INT;
 import static android.text.format.DateUtils.DAY_IN_MILLIS;

@@ -40,7 +40,6 @@ import com.professor.zerion.R;
 
 import org.briarproject.bramble.api.contact.ContactId;
 
-import javax.inject.Inject;
 
 public class VoiceCallActivity extends AppCompatActivity {
 

@@ -1,29 +1,21 @@
 package com.professor.zerion.android.widget;
 
 import android.content.Context;
-import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.professor.zerion.R;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
-import java.util.List;
 
 import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
 
-import static android.content.Intent.ACTION_VIEW;
-import static android.content.pm.PackageManager.MATCH_DEFAULT_ONLY;
-import static android.widget.Toast.LENGTH_SHORT;
 import static java.util.Objects.requireNonNull;
 
 @MethodsNotNullByDefault

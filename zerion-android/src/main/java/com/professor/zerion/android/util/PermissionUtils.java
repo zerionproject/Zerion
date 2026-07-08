@@ -20,8 +20,6 @@ import androidx.fragment.app.FragmentActivity;
 import static android.content.Intent.CATEGORY_DEFAULT;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
-import static android.os.Build.VERSION.SDK_INT;
-import static android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS;
 import static androidx.core.content.ContextCompat.checkSelfPermission;
 import static java.lang.Boolean.TRUE;
 import static com.professor.zerion.BuildConfig.APPLICATION_ID;

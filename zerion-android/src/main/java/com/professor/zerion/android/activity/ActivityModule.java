@@ -1,7 +1,6 @@
 package com.professor.zerion.android.activity;
 
 import android.app.Activity;
-import android.content.Context;
 
 import com.professor.zerion.android.controller.ZerionController;
 import com.professor.zerion.android.controller.ZerionControllerImpl;

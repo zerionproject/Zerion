@@ -1,7 +1,6 @@
 package com.professor.zerion.android.conversation;
 
 import android.content.Context;
-import android.graphics.BitmapFactory;
 import android.text.util.Linkify;
 import android.view.View;
 import android.widget.ImageView;

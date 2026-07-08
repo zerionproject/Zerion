@@ -1,9 +1,7 @@
 package com.professor.zerion.android.splash;
 
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
-import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -16,7 +14,6 @@ import javax.inject.Inject;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import static android.content.Intent.ACTION_VIEW;
 import static android.os.Build.VERSION.SDK_INT;
 import static android.view.WindowManager.LayoutParams.FLAG_SECURE;
 

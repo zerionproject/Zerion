@@ -12,7 +12,6 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.os.Binder;
 import android.os.IBinder;
-import android.view.WindowManager;
 
 import com.bumptech.glide.Glide;
 
