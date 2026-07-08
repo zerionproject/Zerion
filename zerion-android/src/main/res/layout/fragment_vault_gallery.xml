@@ -91,7 +91,7 @@
         android:layout_marginEnd="24dp"
         android:layout_marginBottom="48dp"
         android:src="@drawable/ic_add_24dp"
-        android:contentDescription="Add image"
+        android:contentDescription="@string/vault_add_image"
         app:backgroundTint="@color/zerion_primary_accent"
         app:tint="@android:color/white"
         app:rippleColor="#FFFFFF" />

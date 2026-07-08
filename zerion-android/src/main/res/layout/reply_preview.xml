@@ -44,7 +44,7 @@
         android:layout_height="24dp"
         android:layout_gravity="center_vertical"
         android:background="?android:attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Cancel reply"
+        android:contentDescription="@string/cd_cancel_reply"
         app:srcCompat="@drawable/ic_close"
         app:tint="?android:attr/textColorSecondary" />
 

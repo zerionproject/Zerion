@@ -6,6 +6,7 @@
 
 	<com.google.android.material.floatingactionbutton.FloatingActionButton
 		android:id="@+id/fab"
+		android:contentDescription="@string/cd_scroll_to_unread"
 		style="@style/Zerion.FAB.Small"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
