@@ -149,7 +149,8 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 	}
 
 	private void setupToolbar() {
-		toolbar.setTitle(itemName != null ? itemName : "Document Viewer");
+		toolbar.setTitle(itemName != null ? itemName
+				: getString(R.string.vault_doc_viewer_title));
 		toolbar.setNavigationOnClickListener(v -> {
 			if (getActivity() != null) {
 				getActivity().getOnBackPressedDispatcher().onBackPressed();
@@ -168,13 +169,13 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 
 	private void editDocument() {
 		if (documentBytes == null) {
-			Toast.makeText(requireContext(), "Cannot edit this document", Toast.LENGTH_SHORT).show();
+			showSnackbar(getString(R.string.vault_doc_cannot_edit));
 			return;
 		}
 
 		MimeUtils.MimeType detectedType = MimeUtils.detectMimeType(documentBytes, itemName);
 		if (detectedType != MimeUtils.MimeType.TEXT && detectedType != MimeUtils.MimeType.MARKDOWN) {
-			Toast.makeText(requireContext(), "Only text documents can be edited", Toast.LENGTH_SHORT).show();
+			showSnackbar(getString(R.string.vault_doc_only_text_editable));
 			return;
 		}
 
@@ -208,7 +209,8 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 					}
 				}
 				showLoading(false);
-				showError("Document Not Found", "The document could not be found in the vault.");
+				showError(getString(R.string.vault_doc_not_found_title),
+						getString(R.string.vault_doc_not_found_message));
 			}
 		});
 	}
@@ -218,8 +220,8 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 		showLoading(false);
 
 		DocumentPasswordDialog dialog = DocumentPasswordDialog.newUnlockDialog(
-				"Password Required",
-				"This document is protected with an additional password. Please enter it to view."
+				getString(R.string.vault_password_required_title),
+				getString(R.string.vault_doc_password_message)
 		);
 
 		dialog.setCallback(new DocumentPasswordDialog.PasswordCallback() {
@@ -228,7 +230,8 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 				if (password != null) {
 					loadDocumentWithPassword(password);
 				} else {
-					showError("Password Required", "This document requires a password to view.");
+					showError(getString(R.string.vault_password_required_title),
+							getString(R.string.vault_doc_password_needed_message));
 				}
 			}
 
@@ -260,10 +263,10 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 				showLoading(false);
 
 				if (content.length > MAX_DOCUMENT_SIZE) {
-					showError("Document Too Large",
-							"This document is too large to safely open in memory inside the secure vault.\n\n" +
-							"Size: " + formatSize(content.length) + "\n" +
-							"Limit: " + formatSize(MAX_DOCUMENT_SIZE));
+					showError(getString(R.string.vault_doc_too_large_title),
+							getString(R.string.vault_doc_too_large_message,
+									formatSize(content.length),
+									formatSize(MAX_DOCUMENT_SIZE)));
 					return;
 				}
 
@@ -279,10 +282,11 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 				if (!canUpdateUi()) return;
 				showLoading(false);
 				if (error.contains("Incorrect password")) {
-					Toast.makeText(requireContext(), "Incorrect password", Toast.LENGTH_SHORT).show();
+					showSnackbar(getString(R.string.vault_incorrect_password));
 					showPasswordDialog();
 				} else {
-					showError("Failed to Load Document", error);
+					showError(getString(R.string.vault_doc_load_failed_title),
+							error);
 				}
 			}
 		});
@@ -303,10 +307,10 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 				showLoading(false);
 
 				if (content.length > MAX_DOCUMENT_SIZE) {
-					showError("Document Too Large",
-							"This document is too large to safely open in memory inside the secure vault.\n\n" +
-							"Size: " + formatSize(content.length) + "\n" +
-							"Limit: " + formatSize(MAX_DOCUMENT_SIZE));
+					showError(getString(R.string.vault_doc_too_large_title),
+							getString(R.string.vault_doc_too_large_message,
+									formatSize(content.length),
+									formatSize(MAX_DOCUMENT_SIZE)));
 					return;
 				}
 
@@ -321,7 +325,7 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 			public void onError(String error) {
 				if (!canUpdateUi()) return;
 				showLoading(false);
-				showError("Failed to Load Document", error);
+				showError(getString(R.string.vault_doc_load_failed_title), error);
 			}
 		});
 	}
@@ -344,9 +348,7 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 			case IMAGE_JPEG:
 			case IMAGE_GIF:
 			case IMAGE_WEBP:
-				Toast.makeText(requireContext(),
-						"Image files should be viewed in the Gallery tab",
-						Toast.LENGTH_SHORT).show();
+				showSnackbar(getString(R.string.vault_doc_image_in_gallery));
 				if (getActivity() != null) {
 					getActivity().getOnBackPressedDispatcher().onBackPressed();
 				}
@@ -384,8 +386,8 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 			renderPdfPage(currentPdfPage);
 
 		} catch (Exception e) {
-			showError("PDF Rendering Failed",
-					"Cannot render this PDF securely");
+			showError(getString(R.string.vault_doc_pdf_failed_title),
+					getString(R.string.vault_doc_pdf_failed_message));
 		}
 	}
 
@@ -428,8 +430,7 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 
 		} catch (Throwable e) {
 			if (isAdded()) {
-				Toast.makeText(requireContext(), "Failed to render page",
-						Toast.LENGTH_SHORT).show();
+				showSnackbar(getString(R.string.vault_doc_page_render_failed));
 			}
 		} finally {
 			if (page != null) {
@@ -460,7 +461,9 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 			textContentView.setText(text);
 
 		} catch (Exception e) {
-			showError("Text Rendering Failed", "Cannot decode text: " + e.getMessage());
+			showError(getString(R.string.vault_doc_text_failed_title),
+					getString(R.string.vault_doc_text_failed_message,
+							e.getMessage()));
 		}
 	}
 
@@ -482,7 +485,9 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 			markdownWebView.loadDataWithBaseURL(null, html, "text/html", "utf-8", null);
 
 		} catch (Exception e) {
-			showError("Markdown Rendering Failed", "Cannot render markdown: " + e.getMessage());
+			showError(getString(R.string.vault_doc_markdown_failed_title),
+					getString(R.string.vault_doc_markdown_failed_message,
+							e.getMessage()));
 		}
 	}
 
@@ -534,21 +539,14 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 				mimeType == MimeUtils.MimeType.OFFICE_XLS ||
 				mimeType == MimeUtils.MimeType.OFFICE_PPTX ||
 				mimeType == MimeUtils.MimeType.OFFICE_PPT) {
-			message = "Office documents cannot be viewed inside the secure vault.\n\n" +
-					"Opening these files requires external apps and temp files, " +
-					"which would compromise vault security.\n\n" +
-					"You may only store them, not open them.";
+			message = getString(R.string.vault_doc_unsupported_office);
 		} else if (mimeType == MimeUtils.MimeType.ARCHIVE_ZIP ||
 				mimeType == MimeUtils.MimeType.ARCHIVE_RAR ||
 				mimeType == MimeUtils.MimeType.ARCHIVE_7Z) {
-			message = "Archive files cannot be extracted inside the secure vault.\n\n" +
-					"Extraction would create plaintext files on disk, " +
-					"compromising vault security.\n\n" +
-					"You may only store them, not extract them.";
+			message = getString(R.string.vault_doc_unsupported_archive);
 		} else {
-			message = "This document type cannot be viewed inside the secure vault.\n\n" +
-					"File type: " + mimeType.displayName + "\n\n" +
-					"You may only store it, not open it.";
+			message = getString(R.string.vault_doc_unsupported_generic,
+					mimeType.displayName);
 		}
 
 		unsupportedMessage.setText(message);
@@ -633,6 +631,20 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 		}
 
 		System.gc();
+	}
+
+	private void showSnackbar(CharSequence message) {
+		View v = getView();
+		if (v != null) {
+			new com.professor.zerion.android.util.ZerionSnackbarBuilder()
+					.make(v, message,
+							com.google.android.material.snackbar.Snackbar
+									.LENGTH_SHORT)
+					.show();
+		} else if (getContext() != null) {
+			Toast.makeText(requireContext(), message,
+					Toast.LENGTH_SHORT).show();
+		}
 	}
 
 	@Override

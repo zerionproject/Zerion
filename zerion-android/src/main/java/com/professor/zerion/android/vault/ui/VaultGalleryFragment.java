@@ -191,9 +191,7 @@ public class VaultGalleryFragment extends BaseFragment {
 
 	private void openMediaViewer(VaultItem item) {
 		if (item == null || item.id == null) {
-			Toast.makeText(requireContext(),
-					"Failed to load media: Invalid item",
-					Toast.LENGTH_SHORT).show();
+			showSnackbar(getString(R.string.vault_gallery_load_invalid));
 			return;
 		}
 
@@ -209,7 +207,8 @@ public class VaultGalleryFragment extends BaseFragment {
 		TextView titleText = dialogView.findViewById(R.id.media_title);
 
 		if (titleText != null) {
-			titleText.setText(item.name != null ? item.name : "Media");
+			titleText.setText(item.name != null ? item.name
+					: getString(R.string.media));
 		}
 
 		if (imageView != null) {
@@ -246,7 +245,7 @@ public class VaultGalleryFragment extends BaseFragment {
 							a.runOnUiThread(() -> {
 								if (isAdded()) {
 									Toast.makeText(a,
-											"Failed to load media: Could not decode image",
+											getString(R.string.vault_gallery_decode_failed),
 											Toast.LENGTH_SHORT).show();
 								}
 								dialog.dismiss();
@@ -274,7 +273,7 @@ public class VaultGalleryFragment extends BaseFragment {
 			public void onError(String error) {
 				if (isAdded()) {
 					Toast.makeText(openActivity,
-							"Failed to load media: " + error,
+							getString(R.string.vault_gallery_load_failed, error),
 							Toast.LENGTH_SHORT).show();
 				}
 				dialog.dismiss();
@@ -306,7 +305,8 @@ public class VaultGalleryFragment extends BaseFragment {
 				.setMessage(R.string.vault_delete_confirm_message)
 				.setPositiveButton(android.R.string.yes, (dialog, which) -> {
 					viewModel.deleteItem(item.id);
-					Toast.makeText(requireContext(), "Deleted " + item.name, Toast.LENGTH_SHORT).show();
+					showSnackbar(getString(R.string.vault_gallery_deleted,
+							item.name));
 				})
 				.setNegativeButton(android.R.string.no, null)
 				.show();
@@ -316,7 +316,7 @@ public class VaultGalleryFragment extends BaseFragment {
 		String[] options = {"Take Photo", "Choose from Gallery"};
 
 		new MaterialAlertDialogBuilder(requireContext())
-				.setTitle("Add Image")
+				.setTitle(R.string.vault_add_image)
 				.setItems(options, (dialog, which) -> {
 					if (which == 0) {
 						checkCameraPermissionAndCapture();
@@ -377,9 +377,7 @@ public class VaultGalleryFragment extends BaseFragment {
 							String fileName = "photo_" + System.currentTimeMillis() + ".jpg";
 
 							viewModel.addMediaToVault(VaultItem.ItemType.IMAGE, fileName, content, "image/jpeg");
-							Toast.makeText(requireContext(),
-									"Photo saved securely",
-									Toast.LENGTH_SHORT).show();
+							showSnackbar(getString(R.string.vault_gallery_photo_saved));
 						} finally {
 							imageBitmap.recycle();
 							try {
@@ -418,14 +416,10 @@ public class VaultGalleryFragment extends BaseFragment {
 							}
 
 							viewModel.addMediaToVault(VaultItem.ItemType.IMAGE, fileName, content, "image/jpeg");
-							Toast.makeText(requireContext(),
-									"Image saved securely",
-									Toast.LENGTH_SHORT).show();
+							showSnackbar(getString(R.string.vault_gallery_image_saved));
 						}
 					} catch (Exception e) {
-						Toast.makeText(requireContext(),
-								"Failed to save image",
-								Toast.LENGTH_SHORT).show();
+						showSnackbar(getString(R.string.vault_gallery_image_save_failed));
 					} finally {
 						if (inputStream != null) {
 							try {
@@ -475,9 +469,7 @@ public class VaultGalleryFragment extends BaseFragment {
 					grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 				captureImage();
 			} else {
-				Toast.makeText(requireContext(),
-						"Camera permission required to take photos",
-						Toast.LENGTH_SHORT).show();
+				showSnackbar(getString(R.string.vault_gallery_camera_permission));
 			}
 		}
 	}
@@ -500,6 +492,20 @@ public class VaultGalleryFragment extends BaseFragment {
 		});
 
 		viewModel.loadVaultItems();
+	}
+
+	private void showSnackbar(CharSequence message) {
+		View v = getView();
+		if (v != null) {
+			new com.professor.zerion.android.util.ZerionSnackbarBuilder()
+					.make(v, message,
+							com.google.android.material.snackbar.Snackbar
+									.LENGTH_SHORT)
+					.show();
+		} else if (getContext() != null) {
+			Toast.makeText(requireContext(), message,
+					Toast.LENGTH_SHORT).show();
+		}
 	}
 
 	@Override

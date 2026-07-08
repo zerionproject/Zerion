@@ -75,7 +75,8 @@ public class DocumentPasswordDialog extends DialogFragment {
 			throw new IllegalStateException("Arguments not set");
 		}
 
-		String title = args.getString(ARG_TITLE, "Enter Password");
+		String title = args.getString(ARG_TITLE,
+				context.getString(R.string.vault_password_dialog_default_title));
 		String message = args.getString(ARG_MESSAGE, "");
 		boolean allowEmpty = args.getBoolean(ARG_ALLOW_EMPTY, false);
 		boolean confirmMode = args.getBoolean(ARG_CONFIRM_MODE, false);
@@ -115,7 +116,7 @@ public class DocumentPasswordDialog extends DialogFragment {
 		MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(context)
 				.setTitle(title)
 				.setView(view)
-				.setPositiveButton("OK", (dialog, which) -> {
+				.setPositiveButton(android.R.string.ok, (dialog, which) -> {
 					char[] password = readChars(passwordInput);
 					char[] confirmPassword = confirmMode
 							? readChars(confirmPasswordInput)
@@ -137,8 +138,10 @@ public class DocumentPasswordDialog extends DialogFragment {
 									confirmPassword)) {
 						java.util.Arrays.fill(password, '\0');
 						java.util.Arrays.fill(confirmPassword, '\0');
-						passwordInput.setError("Passwords do not match");
-						confirmPasswordInput.setError("Passwords do not match");
+						passwordInput.setError(context.getString(
+								R.string.vault_password_mismatch));
+						confirmPasswordInput.setError(context.getString(
+								R.string.vault_password_mismatch));
 						DocumentPasswordDialog newDialog = confirmMode
 								? newPasswordDialog(title, message)
 								: newUnlockDialog(title, message);
@@ -160,14 +163,15 @@ public class DocumentPasswordDialog extends DialogFragment {
 					passwordInput.setText("");
 					confirmPasswordInput.setText("");
 				})
-				.setNegativeButton("Cancel", (dialog, which) -> {
+				.setNegativeButton(android.R.string.cancel, (dialog, which) -> {
 					if (callback != null) {
 						callback.onPasswordCancelled();
 					}
 				});
 
 		if (allowEmpty) {
-			builder.setNeutralButton("No Password", (dialog, which) -> {
+			builder.setNeutralButton(R.string.vault_password_dialog_no_password,
+					(dialog, which) -> {
 				if (callback != null) {
 					callback.onPasswordEntered(null);
 				}

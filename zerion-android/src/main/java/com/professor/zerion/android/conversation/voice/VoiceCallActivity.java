@@ -188,7 +188,8 @@ public class VoiceCallActivity extends AppCompatActivity {
 		} else {
 			showActiveCallUI();
 			callStatusText.setText(autoVideo ?
-					"Video call connecting via Tor..." : "Connecting via Tor...");
+					getString(R.string.voice_call_status_video_connecting_tor)
+					: getString(R.string.voice_call_status_connecting_tor));
 			playDialTone();
 		}
 	}
@@ -351,7 +352,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 		showActiveCallUI();
 		if (isBound && voiceCallService != null) {
 			voiceCallService.acceptCall();
-			callStatusText.setText("Connecting...");
+			callStatusText.setText(R.string.call_connecting);
 		}
 	}
 
@@ -448,13 +449,13 @@ public class VoiceCallActivity extends AppCompatActivity {
 				case CONNECTING:
 					if (voiceCallService != null
 							&& voiceCallService.isReconnecting()) {
-						callStatusText.setText("Reconnecting...");
+						callStatusText.setText(R.string.voice_call_status_reconnecting);
 					} else {
-						callStatusText.setText("Connecting via Tor...");
+						callStatusText.setText(R.string.voice_call_status_connecting_tor);
 					}
 					break;
 				case RINGING:
-					callStatusText.setText("Ringing...");
+					callStatusText.setText(R.string.voice_call_status_ringing);
 					if (!isIncoming) {
 						stopRingtone();
 						stopDialTone();
@@ -468,7 +469,8 @@ public class VoiceCallActivity extends AppCompatActivity {
 					onCallDisconnected();
 					break;
 				case FAILED:
-					onCallFailed("Connection failed");
+					onCallFailed(getString(
+							R.string.voice_call_reason_connection_failed));
 					break;
 				default:
 					break;
@@ -480,7 +482,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 		runOnUiThread(() -> {
 			stopRingtone();
 			stopDialTone();
-			callStatusText.setText("Connected");
+			callStatusText.setText(R.string.voice_call_status_connected);
 			callDuration.setBase(SystemClock.elapsedRealtime());
 			callDuration.start();
 			callDuration.setVisibility(View.VISIBLE);
@@ -500,7 +502,8 @@ public class VoiceCallActivity extends AppCompatActivity {
 			long mins = secs / 60;
 			secs = secs % 60;
 			String duration = String.format("%d:%02d", mins, secs);
-			callStatusText.setText("Call ended \u00B7 " + duration);
+			callStatusText.setText(
+					getString(R.string.voice_call_status_ended, duration));
 			if (!isFinishing) {
 				isFinishing = true;
 				handler.postDelayed(this::finish, 1500);
@@ -512,7 +515,8 @@ public class VoiceCallActivity extends AppCompatActivity {
 		runOnUiThread(() -> {
 			stopRingtone();
 			stopDialTone();
-			callStatusText.setText("Call failed: " + reason);
+			callStatusText.setText(
+					getString(R.string.voice_call_status_failed, reason));
 			if (!isFinishing) {
 				isFinishing = true;
 				handler.postDelayed(this::finish, 2000);
@@ -561,13 +565,13 @@ public class VoiceCallActivity extends AppCompatActivity {
 				case CONNECTING:
 					if (voiceCallService != null
 							&& voiceCallService.isReconnecting()) {
-						callStatusText.setText("Reconnecting...");
+						callStatusText.setText(R.string.voice_call_status_reconnecting);
 					} else {
-						callStatusText.setText("Connecting via Tor...");
+						callStatusText.setText(R.string.voice_call_status_connecting_tor);
 					}
 					break;
 				case RINGING:
-					callStatusText.setText("Ringing...");
+					callStatusText.setText(R.string.voice_call_status_ringing);
 					if (!isIncoming) {
 						stopRingtone();
 						stopDialTone();
@@ -581,7 +585,8 @@ public class VoiceCallActivity extends AppCompatActivity {
 					onCallDisconnected();
 					break;
 				case FAILED:
-					onCallFailed("Connection failed");
+					onCallFailed(getString(
+							R.string.voice_call_reason_connection_failed));
 					break;
 			}
 		}
@@ -842,7 +847,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 						R.drawable.bg_call_control_button_active);
 			}
 			if (videoLabel != null) {
-				videoLabel.setText("Video On");
+				videoLabel.setText(R.string.voice_call_video_label_on);
 			}
 			if (switchCameraContainer != null) {
 				switchCameraContainer.setVisibility(View.VISIBLE);
@@ -884,7 +889,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 						R.drawable.bg_call_control_button);
 			}
 			if (videoLabel != null) {
-				videoLabel.setText("Video");
+				videoLabel.setText(R.string.video);
 			}
 			if (switchCameraContainer != null) {
 				switchCameraContainer.setVisibility(View.GONE);
@@ -962,7 +967,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 						R.drawable.bg_call_control_button);
 			}
 			if (videoLabel != null) {
-				videoLabel.setText("Video");
+				videoLabel.setText(R.string.video);
 			}
 			Toast.makeText(this, "Video request declined",
 					Toast.LENGTH_SHORT).show();
@@ -996,7 +1001,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 			if (grantResults.length > 0 &&
 					grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 			} else {
-				callStatusText.setText("Microphone permission required");
+				callStatusText.setText(R.string.voice_call_status_mic_permission);
 				handler.postDelayed(this::finish, 2000);
 			}
 		} else if (requestCode == REQUEST_CAMERA_PERMISSION) {

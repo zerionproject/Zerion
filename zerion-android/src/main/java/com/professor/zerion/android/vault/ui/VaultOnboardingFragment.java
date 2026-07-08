@@ -148,7 +148,7 @@ public class VaultOnboardingFragment extends BaseFragment {
 		confirmPasswordLayout.setError(null);
 
 		if (passwordLength > 0 && passwordLength < 8) {
-			passwordLayout.setError("Password must be at least 8 characters");
+			passwordLayout.setError(getString(R.string.password_min_8_chars));
 			createVaultButton.setEnabled(false);
 			return;
 		}
@@ -162,7 +162,7 @@ public class VaultOnboardingFragment extends BaseFragment {
 			java.util.Arrays.fill(confirmPwd, '\0');
 
 			if (!matches) {
-				confirmPasswordLayout.setError("Passwords don't match");
+				confirmPasswordLayout.setError(getString(R.string.vault_password_mismatch));
 				createVaultButton.setEnabled(false);
 				return;
 			}
@@ -178,22 +178,22 @@ public class VaultOnboardingFragment extends BaseFragment {
 		boolean submitted = false;
 		try {
 			if (password.length == 0) {
-				passwordLayout.setError("Password cannot be empty");
+				passwordLayout.setError(getString(R.string.vault_error_password_empty));
 				return;
 			}
 
 			if (password.length < 8) {
-				passwordLayout.setError("Password must be at least 8 characters");
+				passwordLayout.setError(getString(R.string.password_min_8_chars));
 				return;
 			}
 
 			if (!java.util.Arrays.equals(password, confirmPassword)) {
-				confirmPasswordLayout.setError("Passwords don't match");
+				confirmPasswordLayout.setError(getString(R.string.vault_password_mismatch));
 				return;
 			}
 
 			setInputsEnabled(false);
-			createVaultButton.setText("Creating Vault...");
+			createVaultButton.setText(getString(R.string.vault_onboarding_creating));
 
 			viewModel.createVault(password, confirmPassword);
 			submitted = true;
@@ -235,7 +235,9 @@ public class VaultOnboardingFragment extends BaseFragment {
 		try {
 			viewModel.getIsLoading().observe(getViewLifecycleOwner(), isLoading -> {
 				setInputsEnabled(!isLoading);
-				createVaultButton.setText(isLoading ? "Creating Vault..." : "Create Secure Vault");
+				createVaultButton.setText(isLoading
+						? getString(R.string.vault_onboarding_creating)
+						: getString(R.string.vault_onboarding_create_secure));
 			});
 		} catch (Exception e) {
 			throw e;
@@ -244,9 +246,20 @@ public class VaultOnboardingFragment extends BaseFragment {
 		try {
 			viewModel.getErrorMessage().observe(getViewLifecycleOwner(), error -> {
 				if (error != null && !error.isEmpty()) {
-					Toast.makeText(requireContext(), error, Toast.LENGTH_LONG).show();
+					View v = getView();
+					if (v != null) {
+						new com.professor.zerion.android.util.ZerionSnackbarBuilder()
+								.make(v, error,
+										com.google.android.material.snackbar
+												.Snackbar.LENGTH_LONG)
+								.show();
+					} else if (getContext() != null) {
+						Toast.makeText(requireContext(), error,
+								Toast.LENGTH_LONG).show();
+					}
 					setInputsEnabled(true);
-					createVaultButton.setText("Create Secure Vault");
+					createVaultButton.setText(getString(
+							R.string.vault_onboarding_create_secure));
 				}
 			});
 		} catch (Exception e) {

@@ -147,14 +147,17 @@ public class VaultSettingsFragment extends BaseFragment {
 									requireContext().getContentResolver()
 											.openOutputStream(dest)) {
 							if (os == null) {
-								showOnUiThread("Failed to open destination");
+								showOnUiThread(getString(
+										R.string.vault_settings_export_open_failed));
 								return;
 							}
 							os.write(exportData);
 							os.flush();
-							showOnUiThread("Vault backup saved");
+							showOnUiThread(getString(
+									R.string.vault_settings_export_saved));
 						} catch (Exception e) {
-							showOnUiThread("Failed to save backup");
+							showOnUiThread(getString(
+									R.string.vault_settings_export_save_failed));
 						} finally {
 							java.util.Arrays.fill(exportData, (byte) 0);
 						}
@@ -162,7 +165,8 @@ public class VaultSettingsFragment extends BaseFragment {
 
 					@Override
 					public void onExportError(String error) {
-						showOnUiThread("Export failed");
+						showOnUiThread(getString(
+								R.string.vault_settings_export_failed));
 					}
 				});
 	}
@@ -222,9 +226,10 @@ public class VaultSettingsFragment extends BaseFragment {
 		IncognitoInputHelper.configurePasswordField(confirmPasswordInput);
 
 		new MaterialAlertDialogBuilder(requireContext())
-				.setTitle("Change Master Password")
+				.setTitle(R.string.vault_settings_change_master)
 				.setView(dialogView)
-				.setPositiveButton("Change", (dialog, which) -> {
+				.setPositiveButton(R.string.vault_settings_change_action,
+						(dialog, which) -> {
 					char[] currentPassword = currentPasswordInput.getPasswordChars();
 					char[] newPassword = newPasswordInput.getPasswordChars();
 					char[] confirmPassword = confirmPasswordInput.getPasswordChars();
@@ -243,7 +248,7 @@ public class VaultSettingsFragment extends BaseFragment {
 						java.util.Arrays.fill(confirmPassword, '\0');
 					}
 				})
-				.setNegativeButton("Cancel", null)
+				.setNegativeButton(android.R.string.cancel, null)
 				.show();
 	}
 
@@ -252,7 +257,8 @@ public class VaultSettingsFragment extends BaseFragment {
 		boolean valid = true;
 
 		if (current.length == 0) {
-			currentLayout.setError("Enter current password");
+			currentLayout.setError(getString(
+					R.string.vault_settings_enter_current_password));
 			valid = false;
 		}
 
@@ -265,7 +271,7 @@ public class VaultSettingsFragment extends BaseFragment {
 		}
 
 		if (!java.util.Arrays.equals(newPass, confirm)) {
-			confirmLayout.setError("Passwords don't match");
+			confirmLayout.setError(getString(R.string.vault_password_mismatch));
 			valid = false;
 		}
 
@@ -277,7 +283,7 @@ public class VaultSettingsFragment extends BaseFragment {
 
 		viewModel.getSuccessMessage().observe(getViewLifecycleOwner(), success -> {
 			if (success != null && success.contains("Password changed")) {
-				showToast("Password changed successfully");
+				showToast(getString(R.string.vault_settings_password_changed));
 			}
 		});
 
@@ -301,7 +307,7 @@ public class VaultSettingsFragment extends BaseFragment {
 		}
 
 		new MaterialAlertDialogBuilder(requireContext())
-				.setTitle("Auto-lock Timeout")
+				.setTitle(R.string.vault_settings_autolock)
 				.setSingleChoiceItems(options, selectedIndex, (dialog, which) -> {
 					currentAutolockTimeout = values[which];
 					autolockValue.setText(options[which]);
@@ -325,7 +331,7 @@ public class VaultSettingsFragment extends BaseFragment {
 		}
 
 		new MaterialAlertDialogBuilder(requireContext())
-				.setTitle("Clipboard Clear Timeout")
+				.setTitle(R.string.vault_settings_clipboard_timeout_title)
 				.setSingleChoiceItems(options, selectedIndex, (dialog, which) -> {
 					currentClipboardTimeout = values[which];
 					updateClipboardTimeoutDisplay();
@@ -337,12 +343,13 @@ public class VaultSettingsFragment extends BaseFragment {
 
 	private void showExportDialog() {
 		new MaterialAlertDialogBuilder(requireContext())
-				.setTitle("Export Vault")
-				.setMessage("Create an encrypted backup of your vault. You'll need to set a password for the backup file.")
-				.setPositiveButton("Export", (dialog, which) -> {
+				.setTitle(R.string.vault_settings_export)
+				.setMessage(R.string.vault_export_message)
+				.setPositiveButton(R.string.vault_export_action,
+						(dialog, which) -> {
 					showExportPasswordDialog();
 				})
-				.setNegativeButton("Cancel", null)
+				.setNegativeButton(android.R.string.cancel, null)
 				.show();
 	}
 
@@ -356,30 +363,31 @@ public class VaultSettingsFragment extends BaseFragment {
 				dialogView.findViewById(R.id.export_password_confirm);
 
 		new MaterialAlertDialogBuilder(requireContext())
-				.setTitle("Set Export Password")
-				.setMessage("Enter a password to encrypt your vault backup")
+				.setTitle(R.string.vault_export_password_title)
+				.setMessage(R.string.vault_export_password_message)
 				.setView(dialogView)
-				.setPositiveButton("Export", (dialog, which) -> {
+				.setPositiveButton(R.string.vault_export_action,
+						(dialog, which) -> {
 					char[] password = readVaultChars(passwordInput);
 					char[] confirm = readVaultChars(confirmInput);
 
 					if (password.length == 0) {
 						java.util.Arrays.fill(confirm, '\0');
-						showToast("Password cannot be empty");
+						showToast(getString(R.string.vault_error_password_empty));
 						return;
 					}
 
 					if (!java.util.Arrays.equals(password, confirm)) {
 						java.util.Arrays.fill(password, '\0');
 						java.util.Arrays.fill(confirm, '\0');
-						showToast("Passwords do not match");
+						showToast(getString(R.string.vault_password_mismatch));
 						return;
 					}
 
 					java.util.Arrays.fill(confirm, '\0');
 					launchExportPicker(password);
 				})
-				.setNegativeButton("Cancel", null)
+				.setNegativeButton(android.R.string.cancel, null)
 				.show();
 	}
 
@@ -411,18 +419,18 @@ public class VaultSettingsFragment extends BaseFragment {
 		} catch (Exception e) {
 			java.util.Arrays.fill(pendingExportPassword, '\0');
 			pendingExportPassword = null;
-			showToast("No file picker available");
+			showToast(getString(R.string.vault_no_file_picker));
 		}
 	}
 
 	private void showWipeVaultDialog() {
 		new MaterialAlertDialogBuilder(requireContext())
-				.setTitle("WARNING: Wipe Vault")
-				.setMessage("This will permanently delete all vault data. This action cannot be undone!\n\nAre you absolutely sure?")
-				.setPositiveButton("WIPE VAULT", (dialog, which) -> {
+				.setTitle(R.string.vault_wipe_title)
+				.setMessage(R.string.vault_settings_wipe_message)
+				.setPositiveButton(R.string.vault_wipe_button, (dialog, which) -> {
 					showWipeConfirmationDialog();
 				})
-				.setNegativeButton("Cancel", null)
+				.setNegativeButton(android.R.string.cancel, null)
 				.show();
 	}
 
@@ -526,24 +534,24 @@ public class VaultSettingsFragment extends BaseFragment {
 			if (fingerprintManager != null && fingerprintManager.isHardwareDetected()) {
 				if (fingerprintManager.hasEnrolledFingerprints()) {
 					saveSetting("biometric_enabled", true);
-					showToast("Biometric authentication enabled");
+					showToast(getString(R.string.vault_biometric_enabled));
 				} else {
-					showToast("No fingerprints enrolled");
+					showToast(getString(R.string.vault_biometric_no_fingerprints));
 					biometricSwitch.setChecked(false);
 				}
 			} else {
-				showToast("Biometric hardware not available");
+				showToast(getString(R.string.vault_biometric_no_hardware));
 				biometricSwitch.setChecked(false);
 			}
 		} else {
-			showToast("Biometric authentication not supported on this device");
+			showToast(getString(R.string.vault_biometric_unsupported));
 			biometricSwitch.setChecked(false);
 		}
 	}
 
 	private void disableBiometricAuth() {
 		saveSetting("biometric_enabled", false);
-		showToast("Biometric authentication disabled");
+		showToast(getString(R.string.vault_biometric_disabled));
 	}
 
 	private void observeViewModel() {
@@ -556,8 +564,17 @@ public class VaultSettingsFragment extends BaseFragment {
 	}
 
 	private void showToast(String message) {
-		android.widget.Toast.makeText(requireContext(), message,
-				android.widget.Toast.LENGTH_SHORT).show();
+		View v = getView();
+		if (v != null) {
+			new com.professor.zerion.android.util.ZerionSnackbarBuilder()
+					.make(v, message,
+							com.google.android.material.snackbar.Snackbar
+									.LENGTH_SHORT)
+					.show();
+		} else if (getContext() != null) {
+			android.widget.Toast.makeText(requireContext(), message,
+					android.widget.Toast.LENGTH_SHORT).show();
+		}
 	}
 
 	@Override

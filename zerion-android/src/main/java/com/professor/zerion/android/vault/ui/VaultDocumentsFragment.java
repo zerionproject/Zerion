@@ -173,7 +173,8 @@ public class VaultDocumentsFragment extends BaseFragment {
 				if (isPickerMode) {
 					selectItemForPicker(item);
 				} else {
-					Toast.makeText(requireContext(), "Opening " + item.name + "...", Toast.LENGTH_SHORT).show();
+					showSnackbar(getString(R.string.vault_document_opening,
+							item.name));
 					openDocumentInSecureViewer(item);
 				}
 			}
@@ -204,9 +205,7 @@ public class VaultDocumentsFragment extends BaseFragment {
 		if (listener != null) {
 			listener.showNextFragment(viewerFragment);
 		} else {
-			Toast.makeText(requireContext(),
-					"Cannot open document: Activity not ready",
-					Toast.LENGTH_SHORT).show();
+			showSnackbar(getString(R.string.vault_document_open_error));
 		}
 	}
 
@@ -217,24 +216,21 @@ public class VaultDocumentsFragment extends BaseFragment {
 						java.util.Locale.getDefault()).format(new java.util.Date(item.modifiedTimestamp));
 
 		new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
-				.setTitle("Document Details")
+				.setTitle(R.string.vault_document_details_title)
 				.setMessage(message)
-				.setPositiveButton("OK", null)
+				.setPositiveButton(android.R.string.ok, null)
 				.show();
 	}
 
 	private void exportDocumentSecurely(VaultItem item) {
 		new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
-				.setTitle("⚠️ Security Warning")
-				.setMessage("Exporting will save an UNENCRYPTED copy to your Downloads folder.\n\n" +
-						"• File will NOT be encrypted\n" +
-						"• Other apps can access it\n" +
-						"• File persists after export\n\n" +
-						"Continue?")
-				.setPositiveButton("Export Anyway", (dialog, which) -> {
+				.setTitle(R.string.vault_document_export_warning_title)
+				.setMessage(R.string.vault_document_export_warning_message)
+				.setPositiveButton(R.string.vault_document_export_anyway,
+						(dialog, which) -> {
 					performDocumentExport(item);
 				})
-				.setNegativeButton("Cancel", null)
+				.setNegativeButton(android.R.string.cancel, null)
 				.show();
 	}
 
@@ -265,7 +261,8 @@ public class VaultDocumentsFragment extends BaseFragment {
 						a.runOnUiThread(() -> {
 							if (isAdded()) {
 								Toast.makeText(a,
-										"Document exported to: " + exportFile.getPath(),
+										getString(R.string.vault_document_exported_to,
+												exportFile.getPath()),
 										Toast.LENGTH_LONG).show();
 							}
 						});
@@ -273,7 +270,7 @@ public class VaultDocumentsFragment extends BaseFragment {
 						a.runOnUiThread(() -> {
 							if (isAdded()) {
 								Toast.makeText(a,
-										"Failed to export document",
+										getString(R.string.vault_document_export_failed),
 										Toast.LENGTH_SHORT).show();
 							}
 						});
@@ -285,7 +282,7 @@ public class VaultDocumentsFragment extends BaseFragment {
 			public void onError(String error) {
 				if (isAdded()) {
 					Toast.makeText(a,
-							"Failed to load document: " + error,
+							getString(R.string.vault_document_load_failed, error),
 							Toast.LENGTH_SHORT).show();
 				}
 			}
@@ -326,8 +323,8 @@ public class VaultDocumentsFragment extends BaseFragment {
 
 	private void exportAsEncryptedZenc(VaultItem item) {
 		DocumentPasswordDialog dialog = DocumentPasswordDialog.newPasswordDialog(
-				"Set Export Password",
-				"Set a password to encrypt the .zenc file. This file can be shared securely."
+				getString(R.string.vault_zenc_export_title),
+				getString(R.string.vault_zenc_export_message_download)
 		);
 
 		dialog.setCallback(new DocumentPasswordDialog.PasswordCallback() {
@@ -336,9 +333,7 @@ public class VaultDocumentsFragment extends BaseFragment {
 				if (password != null && password.length > 0) {
 					performEncryptedExport(item, password, false);
 				} else {
-					Toast.makeText(requireContext(),
-							"Password is required for .zenc export",
-							Toast.LENGTH_SHORT).show();
+					showSnackbar(getString(R.string.vault_zenc_password_required));
 				}
 			}
 
@@ -352,8 +347,8 @@ public class VaultDocumentsFragment extends BaseFragment {
 
 	private void shareAsEncryptedZenc(VaultItem item) {
 		DocumentPasswordDialog dialog = DocumentPasswordDialog.newPasswordDialog(
-				"Set Export Password",
-				"Set a password to encrypt the .zenc file. You'll need to share this password separately."
+				getString(R.string.vault_zenc_export_title),
+				getString(R.string.vault_zenc_export_message_share)
 		);
 
 		dialog.setCallback(new DocumentPasswordDialog.PasswordCallback() {
@@ -362,9 +357,7 @@ public class VaultDocumentsFragment extends BaseFragment {
 				if (password != null && password.length > 0) {
 					performEncryptedExport(item, password, true);
 				} else {
-					Toast.makeText(requireContext(),
-							"Password is required for .zenc export",
-							Toast.LENGTH_SHORT).show();
+					showSnackbar(getString(R.string.vault_zenc_password_required));
 				}
 			}
 
@@ -404,7 +397,7 @@ public class VaultDocumentsFragment extends BaseFragment {
 						a.runOnUiThread(() -> {
 							if (isAdded()) {
 								Toast.makeText(a,
-										"Failed to export",
+										getString(R.string.vault_document_export_generic_failed),
 										Toast.LENGTH_SHORT).show();
 							}
 						});
@@ -416,7 +409,7 @@ public class VaultDocumentsFragment extends BaseFragment {
 			public void onError(String error) {
 				if (isAdded()) {
 					Toast.makeText(a,
-							"Failed to load document: " + error,
+							getString(R.string.vault_document_load_failed, error),
 							Toast.LENGTH_SHORT).show();
 				}
 			}
@@ -452,9 +445,10 @@ public class VaultDocumentsFragment extends BaseFragment {
 			a.runOnUiThread(() -> {
 				if (isAdded()) {
 					expectChildResult();
-					startActivity(android.content.Intent.createChooser(shareIntent, "Share Encrypted File"));
+					startActivity(android.content.Intent.createChooser(shareIntent,
+							getString(R.string.vault_zenc_share_chooser)));
 					Toast.makeText(a,
-							"Sharing encrypted file. Remember to share the password separately!",
+							getString(R.string.vault_zenc_sharing_reminder),
 							Toast.LENGTH_LONG).show();
 				}
 			});
@@ -463,7 +457,7 @@ public class VaultDocumentsFragment extends BaseFragment {
 			a.runOnUiThread(() -> {
 				if (isAdded()) {
 					Toast.makeText(a,
-							"Failed to share",
+							getString(R.string.vault_zenc_share_failed),
 							Toast.LENGTH_SHORT).show();
 				}
 			});
@@ -491,7 +485,8 @@ public class VaultDocumentsFragment extends BaseFragment {
 			a.runOnUiThread(() -> {
 				if (isAdded()) {
 					Toast.makeText(a,
-							"Encrypted file saved to: " + exportFile.getPath(),
+							getString(R.string.vault_zenc_saved_to,
+									exportFile.getPath()),
 							Toast.LENGTH_LONG).show();
 				}
 			});
@@ -500,7 +495,7 @@ public class VaultDocumentsFragment extends BaseFragment {
 			a.runOnUiThread(() -> {
 				if (isAdded()) {
 					Toast.makeText(a,
-							"Failed to save",
+							getString(R.string.vault_zenc_save_failed),
 							Toast.LENGTH_SHORT).show();
 				}
 			});
@@ -509,11 +504,11 @@ public class VaultDocumentsFragment extends BaseFragment {
 
 	private void confirmDeleteDocument(VaultItem item) {
 		new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
-				.setTitle("Delete Document")
-				.setMessage("Are you sure you want to delete this document?")
+				.setTitle(R.string.vault_document_delete_title)
+				.setMessage(R.string.vault_document_delete_message)
 				.setPositiveButton(android.R.string.yes, (dialog, which) -> {
 					viewModel.deleteItem(item.id);
-					Toast.makeText(requireContext(), "Document deleted", Toast.LENGTH_SHORT).show();
+					showSnackbar(getString(R.string.vault_document_deleted));
 				})
 				.setNegativeButton(android.R.string.no, null)
 				.show();
@@ -531,7 +526,7 @@ public class VaultDocumentsFragment extends BaseFragment {
 		String[] options = {"Import Document", "New Text Document"};
 
 		new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
-				.setTitle("Add Document")
+				.setTitle(R.string.vault_document_add_action)
 				.setItems(options, (dialog, which) -> {
 					switch (which) {
 						case 0:
@@ -550,9 +545,7 @@ public class VaultDocumentsFragment extends BaseFragment {
 		if (listener != null) {
 			listener.showNextFragment(fragment);
 		} else {
-			Toast.makeText(requireContext(),
-					"Cannot open editor: Activity not ready",
-					Toast.LENGTH_SHORT).show();
+			showSnackbar(getString(R.string.vault_editor_open_error));
 		}
 	}
 
@@ -572,7 +565,8 @@ public class VaultDocumentsFragment extends BaseFragment {
 
 		expectChildResult();
 		startActivityForResult(
-				Intent.createChooser(intent, "Select Document"),
+				Intent.createChooser(intent,
+						getString(R.string.vault_select_document)),
 				REQUEST_FILE_PICK
 		);
 	}
@@ -655,9 +649,7 @@ public class VaultDocumentsFragment extends BaseFragment {
 							showPasswordDialogForImport(fileName, content);
 						}
 					} catch (Exception e) {
-						Toast.makeText(requireContext(),
-								"Failed to read document",
-								Toast.LENGTH_SHORT).show();
+						showSnackbar(getString(R.string.vault_document_read_failed));
 					}
 				}
 			}
@@ -666,26 +658,26 @@ public class VaultDocumentsFragment extends BaseFragment {
 
 	private void showPasswordDialogForImport(String fileName, byte[] content) {
 		DocumentPasswordDialog dialog = DocumentPasswordDialog.newPasswordDialog(
-				"Protect Document",
-				"Optionally set a password for this document. This adds an extra layer of encryption."
+				getString(R.string.vault_document_protect_title),
+				getString(R.string.vault_document_protect_message_optional)
 		);
 
 		dialog.setCallback(new DocumentPasswordDialog.PasswordCallback() {
 			@Override
 			public void onPasswordEntered(@Nullable char[] password) {
 				viewModel.addDocumentWithPassword(fileName, content, password);
-				Toast.makeText(requireContext(),
-						password != null
-								? "Document '" + fileName + "' saved with password protection"
-								: "Document '" + fileName + "' saved securely",
-						Toast.LENGTH_SHORT).show();
+				showSnackbar(password != null
+						? getString(R.string.vault_document_saved_with_password,
+								fileName)
+						: getString(R.string.vault_document_saved_securely,
+								fileName));
 
 				java.util.Arrays.fill(content, (byte) 0);
 			}
 
 			@Override
 			public void onPasswordCancelled() {
-				Toast.makeText(requireContext(), "Import cancelled", Toast.LENGTH_SHORT).show();
+				showSnackbar(getString(R.string.vault_import_cancelled));
 
 				java.util.Arrays.fill(content, (byte) 0);
 			}
@@ -736,6 +728,20 @@ public class VaultDocumentsFragment extends BaseFragment {
 				applyFilterAndSort();
 			}
 		});
+	}
+
+	private void showSnackbar(CharSequence message) {
+		View v = getView();
+		if (v != null) {
+			new com.professor.zerion.android.util.ZerionSnackbarBuilder()
+					.make(v, message,
+							com.google.android.material.snackbar.Snackbar
+									.LENGTH_SHORT)
+					.show();
+		} else if (getContext() != null) {
+			Toast.makeText(requireContext(), message,
+					Toast.LENGTH_SHORT).show();
+		}
 	}
 
 	@Override

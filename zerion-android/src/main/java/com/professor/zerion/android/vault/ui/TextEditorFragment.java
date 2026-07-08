@@ -150,7 +150,9 @@ public class TextEditorFragment extends BaseFragment {
 		ActionBar actionBar = ((AppCompatActivity) requireActivity()).getSupportActionBar();
 		if (actionBar != null) {
 			actionBar.setDisplayHomeAsUpEnabled(true);
-			actionBar.setTitle(isEditMode ? "Edit Document" : "New Document");
+			actionBar.setTitle(isEditMode
+					? getString(R.string.text_editor_title_edit)
+					: getString(R.string.text_editor_title_new));
 		}
 
 		toolbar.setNavigationOnClickListener(v -> {
@@ -245,7 +247,7 @@ public class TextEditorFragment extends BaseFragment {
 		String content = documentContentInput.getText().toString();
 
 		if (name.isEmpty()) {
-			documentNameLayout.setError("Document name is required");
+			documentNameLayout.setError(getString(R.string.text_editor_name_required));
 			documentNameInput.requestFocus();
 			return;
 		}
@@ -260,10 +262,10 @@ public class TextEditorFragment extends BaseFragment {
 
 		if (isEditMode && itemId != null) {
 			viewModel.updateDocument(itemId, name, contentBytes);
-			Toast.makeText(requireContext(), "Document updated", Toast.LENGTH_SHORT).show();
+			showSnackbar(getString(R.string.text_editor_document_updated));
 		} else {
 			viewModel.addDocumentWithPassword(name, contentBytes, null);
-			Toast.makeText(requireContext(), "Document saved", Toast.LENGTH_SHORT).show();
+			showSnackbar(getString(R.string.text_editor_document_saved));
 		}
 
 		hasUnsavedChanges = false;
@@ -278,7 +280,7 @@ public class TextEditorFragment extends BaseFragment {
 		String content = documentContentInput.getText().toString();
 
 		if (name.isEmpty()) {
-			documentNameLayout.setError("Document name is required");
+			documentNameLayout.setError(getString(R.string.text_editor_name_required));
 			documentNameInput.requestFocus();
 			return;
 		}
@@ -291,8 +293,8 @@ public class TextEditorFragment extends BaseFragment {
 
 		String finalName = name;
 		DocumentPasswordDialog dialog = DocumentPasswordDialog.newPasswordDialog(
-				"Protect Document",
-				"Set a password for this document. This adds an extra layer of encryption."
+				getString(R.string.vault_document_protect_title),
+				getString(R.string.text_editor_protect_message)
 		);
 
 		dialog.setCallback(new DocumentPasswordDialog.PasswordCallback() {
@@ -301,9 +303,8 @@ public class TextEditorFragment extends BaseFragment {
 				byte[] contentBytes = content.getBytes(java.nio.charset.StandardCharsets.UTF_8);
 				viewModel.addDocumentWithPassword(finalName, contentBytes, password);
 
-				Toast.makeText(requireContext(),
-						"Document saved with password protection",
-						Toast.LENGTH_SHORT).show();
+				showSnackbar(getString(
+						R.string.text_editor_saved_with_password));
 				hasUnsavedChanges = false;
 
 				if (getActivity() != null) {
@@ -321,17 +322,31 @@ public class TextEditorFragment extends BaseFragment {
 
 	private void showUnsavedChangesDialog() {
 		new MaterialAlertDialogBuilder(requireContext())
-				.setTitle("Unsaved Changes")
-				.setMessage("You have unsaved changes. Do you want to save before leaving?")
-				.setPositiveButton("Save", (dialog, which) -> saveDocument())
-				.setNegativeButton("Discard", (dialog, which) -> {
+				.setTitle(R.string.vault_unsaved_changes_title)
+				.setMessage(R.string.text_editor_unsaved_message)
+				.setPositiveButton(R.string.vault_button_save, (dialog, which) -> saveDocument())
+				.setNegativeButton(R.string.vault_button_discard, (dialog, which) -> {
 					hasUnsavedChanges = false;
 					if (getActivity() != null) {
 						getActivity().getOnBackPressedDispatcher().onBackPressed();
 					}
 				})
-				.setNeutralButton("Cancel", null)
+				.setNeutralButton(R.string.vault_button_cancel, null)
 				.show();
+	}
+
+	private void showSnackbar(CharSequence message) {
+		View v = getView();
+		if (v != null) {
+			new com.professor.zerion.android.util.ZerionSnackbarBuilder()
+					.make(v, message,
+							com.google.android.material.snackbar.Snackbar
+									.LENGTH_SHORT)
+					.show();
+		} else if (getContext() != null) {
+			Toast.makeText(requireContext(), message,
+					Toast.LENGTH_SHORT).show();
+		}
 	}
 
 	@Override

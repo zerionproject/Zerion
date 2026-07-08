@@ -86,26 +86,32 @@ public class VaultListAdapter extends RecyclerView.Adapter<VaultListAdapter.Vaul
 
 			lockIcon.setVisibility(item.name.startsWith("🔒 ") ? View.VISIBLE : View.GONE);
 
+			android.content.Context context = subtitleView.getContext();
 			switch (item.type) {
 				case NOTE:
 					iconView.setImageResource(R.drawable.ic_note);
-					subtitleView.setText("Secure Note");
+					subtitleView.setText(context.getString(
+							R.string.vault_item_secure_note));
 					break;
 				case IMAGE:
 					iconView.setImageResource(R.drawable.ic_photo);
-					subtitleView.setText("Image • " + formatFileSize(item.size));
+					subtitleView.setText(context.getString(
+							R.string.vault_item_image, formatFileSize(item.size)));
 					break;
 				case VIDEO:
 					iconView.setImageResource(R.drawable.ic_video);
-					subtitleView.setText("Video • " + formatFileSize(item.size));
+					subtitleView.setText(context.getString(
+							R.string.vault_item_video, formatFileSize(item.size)));
 					break;
 				case DOCUMENT:
 					iconView.setImageResource(R.drawable.ic_document);
-					subtitleView.setText("Document • " + formatFileSize(item.size));
+					subtitleView.setText(context.getString(
+							R.string.vault_item_document, formatFileSize(item.size)));
 					break;
 				case PASSWORD:
 					iconView.setImageResource(R.drawable.ic_key);
-					subtitleView.setText("Password Entry");
+					subtitleView.setText(context.getString(
+							R.string.vault_item_password_entry));
 					break;
 			}
 

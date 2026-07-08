@@ -1743,4 +1743,154 @@
 	<string name="recommended">Recommended</string>
 	<string name="contact_type_info">Choose Zerion for maximum security, or Classic Mode for backward compatibility.</string>
 
+	<string name="voice_call_status_reconnecting">Reconnecting…</string>
+	<string name="voice_call_status_connecting_tor">Connecting via Tor…</string>
+	<string name="voice_call_status_video_connecting_tor">Video call connecting via Tor…</string>
+	<string name="voice_call_status_ringing">Ringing…</string>
+	<string name="voice_call_status_connected">Connected</string>
+	<string name="voice_call_status_ended">Call ended · %1$s</string>
+	<string name="voice_call_status_failed">Call failed: %1$s</string>
+	<string name="voice_call_status_mic_permission">Microphone permission required</string>
+	<string name="voice_call_reason_connection_failed">Connection failed</string>
+	<string name="voice_call_video_label_on">Video on</string>
+
+	<string name="conversation_delete_title">Delete messages</string>
+	<string name="conversation_delete_message">Delete %1$d message(s)?</string>
+	<string name="conversation_delete_action">Delete</string>
+
+	<string name="vault_settings_export_open_failed">Failed to open destination</string>
+	<string name="vault_settings_export_saved">Vault backup saved</string>
+	<string name="vault_settings_export_save_failed">Failed to save backup</string>
+	<string name="vault_settings_export_failed">Export failed</string>
+	<string name="vault_settings_change_action">Change</string>
+	<string name="vault_settings_enter_current_password">Enter current password</string>
+	<string name="vault_settings_password_changed">Password changed successfully</string>
+	<string name="vault_settings_clipboard_timeout_title">Clipboard clear timeout</string>
+	<string name="vault_export_message">Create an encrypted backup of your vault. You\'ll need to set a password for the backup file.</string>
+	<string name="vault_export_action">Export</string>
+	<string name="vault_export_password_title">Set export password</string>
+	<string name="vault_export_password_message">Enter a password to encrypt your vault backup</string>
+	<string name="vault_no_file_picker">No file picker available</string>
+	<string name="vault_settings_wipe_message">This will permanently delete all vault data. This action cannot be undone. Are you absolutely sure?</string>
+	<string name="vault_wipe_button">Wipe vault</string>
+	<string name="vault_biometric_enabled">Biometric authentication enabled</string>
+	<string name="vault_biometric_no_fingerprints">No fingerprints enrolled</string>
+	<string name="vault_biometric_no_hardware">Biometric hardware not available</string>
+	<string name="vault_biometric_unsupported">Biometric authentication not supported on this device</string>
+	<string name="vault_biometric_disabled">Biometric authentication disabled</string>
+
+	<string name="vault_document_opening">Opening %1$s…</string>
+	<string name="vault_document_open_error">Cannot open document: activity not ready</string>
+	<string name="vault_document_details_title">Document details</string>
+	<string name="vault_document_export_warning_title">Security warning</string>
+	<string name="vault_document_export_warning_message">Exporting will save an UNENCRYPTED copy to your Downloads folder.\n\n• File will NOT be encrypted\n• Other apps can access it\n• File persists after export\n\nContinue?</string>
+	<string name="vault_document_export_anyway">Export anyway</string>
+	<string name="vault_document_exported_to">Document exported to: %1$s</string>
+	<string name="vault_document_export_failed">Failed to export document</string>
+	<string name="vault_document_load_failed">Failed to load document: %1$s</string>
+	<string name="vault_zenc_export_title">Set export password</string>
+	<string name="vault_zenc_export_message_download">Set a password to encrypt the .zenc file. This file can be shared securely.</string>
+	<string name="vault_zenc_export_message_share">Set a password to encrypt the .zenc file. You\'ll need to share this password separately.</string>
+	<string name="vault_zenc_password_required">Password is required for .zenc export</string>
+	<string name="vault_document_export_generic_failed">Failed to export</string>
+	<string name="vault_zenc_share_chooser">Share encrypted file</string>
+	<string name="vault_zenc_sharing_reminder">Sharing encrypted file. Remember to share the password separately.</string>
+	<string name="vault_zenc_share_failed">Failed to share</string>
+	<string name="vault_zenc_saved_to">Encrypted file saved to: %1$s</string>
+	<string name="vault_zenc_save_failed">Failed to save</string>
+	<string name="vault_document_delete_title">Delete document</string>
+	<string name="vault_document_delete_message">Are you sure you want to delete this document?</string>
+	<string name="vault_document_deleted">Document deleted</string>
+	<string name="vault_editor_open_error">Cannot open editor: activity not ready</string>
+	<string name="vault_document_read_failed">Failed to read document</string>
+	<string name="vault_document_protect_title">Protect document</string>
+	<string name="vault_document_protect_message_optional">Optionally set a password for this document. This adds an extra layer of encryption.</string>
+	<string name="vault_document_saved_with_password">Document \'%1$s\' saved with password protection</string>
+	<string name="vault_document_saved_securely">Document \'%1$s\' saved securely</string>
+	<string name="vault_import_cancelled">Import cancelled</string>
+	<string name="vault_document_added">Document added to vault</string>
+	<string name="vault_document_add_failed">Failed to add document</string>
+
+	<string name="vault_password_load_failed">Failed to load password entry</string>
+	<string name="vault_password_username_copied">Username copied</string>
+	<string name="vault_password_copied">Password copied</string>
+	<string name="vault_button_close">Close</string>
+	<string name="vault_password_delete_title">Delete password</string>
+	<string name="vault_password_delete_message">Are you sure you want to delete this password?</string>
+	<string name="vault_password_deleted">Password deleted</string>
+	<string name="vault_password_generated">Secure password generated</string>
+	<string name="vault_password_title_required">Title is required</string>
+	<string name="vault_password_required">Password is required</string>
+	<string name="vault_password_title_too_long">Title is too long (max 100 characters)</string>
+	<string name="vault_password_saved">Password saved securely</string>
+	<string name="vault_clipboard_cleared">Clipboard cleared for security</string>
+
+	<string name="vault_password_required_title">Password required</string>
+	<string name="vault_incorrect_password">Incorrect password</string>
+	<string name="secure_note_vault_locked">Vault temporarily locked</string>
+	<string name="secure_note_load_failed">Failed to load note</string>
+	<string name="secure_note_password_protected_message">This note is password protected.</string>
+
+	<string name="text_editor_title_edit">Edit document</string>
+	<string name="text_editor_title_new">New document</string>
+	<string name="text_editor_name_required">Document name is required</string>
+	<string name="text_editor_document_updated">Document updated</string>
+	<string name="text_editor_document_saved">Document saved</string>
+	<string name="text_editor_protect_message">Set a password for this document. This adds an extra layer of encryption.</string>
+	<string name="text_editor_saved_with_password">Document saved with password protection</string>
+	<string name="text_editor_unsaved_message">You have unsaved changes. Do you want to save before leaving?</string>
+
+	<string name="vault_gallery_load_invalid">Failed to load media: invalid item</string>
+	<string name="vault_gallery_decode_failed">Failed to load media: could not decode image</string>
+	<string name="vault_gallery_load_failed">Failed to load media: %1$s</string>
+	<string name="vault_gallery_deleted">Deleted %1$s</string>
+	<string name="vault_gallery_photo_saved">Photo saved securely</string>
+	<string name="vault_gallery_image_saved">Image saved securely</string>
+	<string name="vault_gallery_image_save_failed">Failed to save image</string>
+	<string name="vault_gallery_camera_permission">Camera permission required to take photos</string>
+	<string name="vault_image_added">Image added to vault</string>
+	<string name="vault_image_add_failed">Failed to add image</string>
+
+	<string name="vault_onboarding_creating">Creating vault…</string>
+	<string name="vault_onboarding_create_secure">Create secure vault</string>
+
+	<string name="vault_doc_viewer_title">Document viewer</string>
+	<string name="vault_doc_cannot_edit">Cannot edit this document</string>
+	<string name="vault_doc_only_text_editable">Only text documents can be edited</string>
+	<string name="vault_doc_not_found_title">Document not found</string>
+	<string name="vault_doc_not_found_message">The document could not be found in the vault.</string>
+	<string name="vault_doc_password_message">This document is protected with an additional password. Please enter it to view.</string>
+	<string name="vault_doc_password_needed_message">This document requires a password to view.</string>
+	<string name="vault_doc_too_large_title">Document too large</string>
+	<string name="vault_doc_too_large_message">This document is too large to safely open in memory inside the secure vault.\n\nSize: %1$s\nLimit: %2$s</string>
+	<string name="vault_doc_load_failed_title">Failed to load document</string>
+	<string name="vault_doc_image_in_gallery">Image files should be viewed in the Gallery tab</string>
+	<string name="vault_doc_pdf_failed_title">PDF rendering failed</string>
+	<string name="vault_doc_pdf_failed_message">Cannot render this PDF securely</string>
+	<string name="vault_doc_page_render_failed">Failed to render page</string>
+	<string name="vault_doc_text_failed_title">Text rendering failed</string>
+	<string name="vault_doc_text_failed_message">Cannot decode text: %1$s</string>
+	<string name="vault_doc_markdown_failed_title">Markdown rendering failed</string>
+	<string name="vault_doc_markdown_failed_message">Cannot render markdown: %1$s</string>
+	<string name="vault_doc_unsupported_office">Office documents cannot be viewed inside the secure vault.\n\nOpening these files requires external apps and temp files, which would compromise vault security.\n\nYou may only store them, not open them.</string>
+	<string name="vault_doc_unsupported_archive">Archive files cannot be extracted inside the secure vault.\n\nExtraction would create plaintext files on disk, compromising vault security.\n\nYou may only store them, not extract them.</string>
+	<string name="vault_doc_unsupported_generic">This document type cannot be viewed inside the secure vault.\n\nFile type: %1$s\n\nYou may only store it, not open it.</string>
+
+	<string name="vault_item_secure_note">Secure Note</string>
+	<string name="vault_item_password_entry">Password Entry</string>
+	<string name="vault_item_image">Image • %1$s</string>
+	<string name="vault_item_video">Video • %1$s</string>
+	<string name="vault_item_document">Document • %1$s</string>
+
+	<string name="vault_add_to_vault_title">Add to Vault</string>
+	<string name="vault_type_note">Note</string>
+	<string name="vault_type_image">Image</string>
+	<string name="vault_type_video">Video</string>
+	<string name="vault_type_document">Document</string>
+	<string name="vault_type_audio">Audio</string>
+	<string name="vault_type_file">File</string>
+
+	<string name="vault_password_dialog_default_title">Enter password</string>
+	<string name="vault_password_dialog_no_password">No password</string>
+
 </resources>

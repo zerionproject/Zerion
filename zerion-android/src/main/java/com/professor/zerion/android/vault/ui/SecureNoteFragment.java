@@ -265,7 +265,7 @@ public class SecureNoteFragment extends BaseFragment {
 							}
 						}, 500);
 					} else {
-						Toast.makeText(requireContext(), "Vault temporarily locked", Toast.LENGTH_SHORT).show();
+						showSnackbar(getString(R.string.secure_note_vault_locked));
 						if (isAdded() && getActivity() != null) {
 							requireActivity().getOnBackPressedDispatcher().onBackPressed();
 						}
@@ -279,7 +279,7 @@ public class SecureNoteFragment extends BaseFragment {
 					loadRetryCount = 0;
 				}
 			} else {
-				Toast.makeText(requireContext(), "Failed to load note", Toast.LENGTH_SHORT).show();
+				showSnackbar(getString(R.string.secure_note_load_failed));
 				if (isAdded() && getActivity() != null) {
 					requireActivity().getOnBackPressedDispatcher().onBackPressed();
 				}
@@ -289,14 +289,14 @@ public class SecureNoteFragment extends BaseFragment {
 
 	private void promptForPassword() {
 		android.widget.EditText passwordInput = new android.widget.EditText(requireContext());
-		passwordInput.setHint("Password");
+		passwordInput.setHint(getString(R.string.vault_onboarding_password_hint));
 		IncognitoInputHelper.configurePasswordField(passwordInput);
 
 		new MaterialAlertDialogBuilder(requireContext())
-				.setTitle("Password Required")
-				.setMessage("This note is password protected.")
+				.setTitle(R.string.vault_password_required_title)
+				.setMessage(R.string.secure_note_password_protected_message)
 				.setView(passwordInput)
-				.setPositiveButton("Unlock", (dialog, which) -> {
+				.setPositiveButton(R.string.vault_unlock_button, (dialog, which) -> {
 					char[] password = readChars(passwordInput);
 					if (password.length > 0) {
 						progressOverlay.setVisibility(View.VISIBLE);
@@ -306,8 +306,8 @@ public class SecureNoteFragment extends BaseFragment {
 									progressOverlay.setVisibility(View.GONE);
 
 									if (content == null) {
-										Toast.makeText(requireContext(), "Incorrect password",
-												Toast.LENGTH_SHORT).show();
+										showSnackbar(getString(
+												R.string.vault_incorrect_password));
 										promptForPassword();
 									} else {
 										removeTextWatchers();
@@ -319,7 +319,7 @@ public class SecureNoteFragment extends BaseFragment {
 								});
 					}
 				})
-				.setNegativeButton("Cancel", (dialog, which) -> {
+				.setNegativeButton(android.R.string.cancel, (dialog, which) -> {
 					if (isAdded() && getActivity() != null) {
 						requireActivity().getOnBackPressedDispatcher().onBackPressed();
 					}
@@ -339,19 +339,21 @@ public class SecureNoteFragment extends BaseFragment {
 				contentInput.getText().toString() : "";
 
 		if (title.isEmpty()) {
-			titleLayout.setError("Title cannot be empty");
+			titleLayout.setError(getString(R.string.vault_error_title_empty));
 			return;
 		}
 
 		if (lockNoteSwitch.isChecked()) {
 			char[] password = readChars(notePasswordInput);
 			if (password.length == 0) {
-				notePasswordLayout.setError("Password cannot be empty");
+				notePasswordLayout.setError(getString(
+						R.string.vault_error_password_empty));
 				return;
 			}
 			if (password.length < 4) {
 				java.util.Arrays.fill(password, '\0');
-				notePasswordLayout.setError("Password must be at least 4 characters");
+				notePasswordLayout.setError(getString(
+						R.string.vault_error_password_short));
 				return;
 			}
 			if (notePassword != null) {
@@ -417,7 +419,8 @@ public class SecureNoteFragment extends BaseFragment {
 				setInputsEnabled(true);
 				saveFab.setEnabled(true);
 
-				Toast.makeText(requireContext(), error, Toast.LENGTH_LONG).show();
+				showSnackbar(error, com.google.android.material.snackbar.Snackbar
+						.LENGTH_LONG);
 			}
 		});
 
@@ -510,24 +513,43 @@ public class SecureNoteFragment extends BaseFragment {
 		if (hasChanges) {
 			isShowingUnsavedDialog = true;
 			new MaterialAlertDialogBuilder(requireContext())
-					.setTitle("Unsaved Changes")
-					.setMessage("You have unsaved changes. Do you want to save them?")
-					.setPositiveButton("Save", (dialog, which) -> {
+					.setTitle(R.string.vault_unsaved_changes_title)
+					.setMessage(R.string.vault_unsaved_changes_message)
+					.setPositiveButton(R.string.vault_button_save, (dialog, which) -> {
 						isShowingUnsavedDialog = false;
 						saveNote();
 					})
-					.setNegativeButton("Discard", (dialog, which) -> {
+					.setNegativeButton(R.string.vault_button_discard, (dialog, which) -> {
 						isShowingUnsavedDialog = false;
 						if (isAdded() && getActivity() != null) {
 							requireActivity().getOnBackPressedDispatcher().onBackPressed();
 						}
 					})
-					.setNeutralButton("Cancel", (dialog, which) -> isShowingUnsavedDialog = false)
+					.setNeutralButton(R.string.vault_button_cancel, (dialog, which) -> isShowingUnsavedDialog = false)
 					.setOnCancelListener(dialog -> isShowingUnsavedDialog = false)
 					.show();
 			return true;
 		}
 		return false;
+	}
+
+	private void showSnackbar(CharSequence message, int duration) {
+		View v = getView();
+		if (v != null) {
+			new com.professor.zerion.android.util.ZerionSnackbarBuilder()
+					.make(v, message, duration)
+					.show();
+		} else if (getContext() != null) {
+			Toast.makeText(requireContext(), message,
+					duration == com.google.android.material.snackbar.Snackbar
+							.LENGTH_LONG
+							? Toast.LENGTH_LONG : Toast.LENGTH_SHORT).show();
+		}
+	}
+
+	private void showSnackbar(CharSequence message) {
+		showSnackbar(message, com.google.android.material.snackbar.Snackbar
+				.LENGTH_SHORT);
 	}
 
 	@Override

@@ -160,7 +160,7 @@ public class VaultListFragment extends BaseFragment {
 		};
 
 		new MaterialAlertDialogBuilder(requireContext())
-				.setTitle("Add to Vault")
+				.setTitle(R.string.vault_add_to_vault_title)
 				.setItems(options, (dialog, which) -> {
 					switch (which) {
 						case 0:
@@ -307,10 +307,10 @@ public class VaultListFragment extends BaseFragment {
 
 				viewModel.addMediaToVault(VaultItem.ItemType.IMAGE, fileName, imageData, mimeType);
 
-				showToast("Image added to vault");
+				showToast(getString(R.string.vault_image_added));
 			}
 		} catch (Exception e) {
-			showToast("Failed to add image");
+			showToast(getString(R.string.vault_image_add_failed));
 		}
 	}
 
@@ -327,10 +327,10 @@ public class VaultListFragment extends BaseFragment {
 
 				viewModel.addMediaToVault(VaultItem.ItemType.DOCUMENT, fileName, documentData, mimeType);
 
-				showToast("Document added to vault");
+				showToast(getString(R.string.vault_document_added));
 			}
 		} catch (Exception e) {
-			showToast("Failed to add document");
+			showToast(getString(R.string.vault_document_add_failed));
 		}
 	}
 
@@ -369,8 +369,17 @@ public class VaultListFragment extends BaseFragment {
 	}
 
 	private void showToast(String message) {
-		android.widget.Toast.makeText(requireContext(), message,
-				android.widget.Toast.LENGTH_SHORT).show();
+		View v = getView();
+		if (v != null) {
+			new com.professor.zerion.android.util.ZerionSnackbarBuilder()
+					.make(v, message,
+							com.google.android.material.snackbar.Snackbar
+									.LENGTH_SHORT)
+					.show();
+		} else if (getContext() != null) {
+			android.widget.Toast.makeText(requireContext(), message,
+					android.widget.Toast.LENGTH_SHORT).show();
+		}
 	}
 
 	@Override
@@ -466,17 +475,23 @@ public class VaultListFragment extends BaseFragment {
 			private String getTypeString(VaultItem.ItemType type) {
 				switch (type) {
 					case NOTE:
-						return "Note";
+						return itemView.getContext().getString(
+								R.string.vault_type_note);
 					case IMAGE:
-						return "Image";
+						return itemView.getContext().getString(
+								R.string.vault_type_image);
 					case VIDEO:
-						return "Video";
+						return itemView.getContext().getString(
+								R.string.vault_type_video);
 					case DOCUMENT:
-						return "Document";
+						return itemView.getContext().getString(
+								R.string.vault_type_document);
 					case AUDIO:
-						return "Audio";
+						return itemView.getContext().getString(
+								R.string.vault_type_audio);
 					default:
-						return "File";
+						return itemView.getContext().getString(
+								R.string.vault_type_file);
 				}
 			}
 		}

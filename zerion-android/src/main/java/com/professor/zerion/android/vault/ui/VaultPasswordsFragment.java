@@ -178,14 +178,14 @@ public class VaultPasswordsFragment extends BaseFragment {
 				if (!isAdded() || getContext() == null) {
 					return;
 				}
-				Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show();
+				showSnackbar(error);
 			}
 		});
 	}
 
 	private void showPasswordDialog(com.professor.zerion.android.vault.model.PasswordEntry entry) {
 		if (entry == null) {
-			Toast.makeText(requireContext(), "Failed to load password entry", Toast.LENGTH_SHORT).show();
+			showSnackbar(getString(R.string.vault_password_load_failed));
 			return;
 		}
 
@@ -218,7 +218,7 @@ public class VaultPasswordsFragment extends BaseFragment {
 			copyUsernameBtn.setOnClickListener(v -> {
 				if (entry.username != null && !entry.username.isEmpty()) {
 					copyToClipboard("Username", entry.username);
-					Toast.makeText(requireContext(), "Username copied", Toast.LENGTH_SHORT).show();
+					showSnackbar(getString(R.string.vault_password_username_copied));
 				}
 			});
 		}
@@ -228,7 +228,7 @@ public class VaultPasswordsFragment extends BaseFragment {
 			copyPasswordBtn.setOnClickListener(v -> {
 				if (entry.password != null && !entry.password.isEmpty()) {
 					copyToClipboard("Password", entry.password);
-					Toast.makeText(requireContext(), "Password copied", Toast.LENGTH_SHORT).show();
+					showSnackbar(getString(R.string.vault_password_copied));
 				}
 			});
 		}
@@ -239,7 +239,7 @@ public class VaultPasswordsFragment extends BaseFragment {
 		passwordDialog = new MaterialAlertDialogBuilder(requireContext())
 				.setTitle(entry.title)
 				.setView(dialogView)
-				.setPositiveButton("Close", null)
+				.setPositiveButton(R.string.vault_button_close, null)
 				.setOnDismissListener(d -> passwordDialog = null)
 				.create();
 		passwordDialog.getWindow().setFlags(
@@ -268,11 +268,11 @@ public class VaultPasswordsFragment extends BaseFragment {
 
 	private void confirmDeletePassword(com.professor.zerion.android.vault.model.VaultItem item) {
 		new MaterialAlertDialogBuilder(requireContext())
-				.setTitle("Delete Password")
-				.setMessage("Are you sure you want to delete this password?")
+				.setTitle(R.string.vault_password_delete_title)
+				.setMessage(R.string.vault_password_delete_message)
 				.setPositiveButton(android.R.string.yes, (dialog, which) -> {
 					viewModel.deleteItem(item.id);
-					Toast.makeText(requireContext(), "Password deleted", Toast.LENGTH_SHORT).show();
+					showSnackbar(getString(R.string.vault_password_deleted));
 				})
 				.setNegativeButton(android.R.string.no, null)
 				.show();
@@ -295,14 +295,13 @@ public class VaultPasswordsFragment extends BaseFragment {
 		dialogView.findViewById(R.id.generate_password_button).setOnClickListener(v -> {
 			String generated = generateSecurePassword();
 			passwordInput.setText(generated);
-			Toast.makeText(requireContext(), "Secure password generated",
-					Toast.LENGTH_SHORT).show();
+			showSnackbar(getString(R.string.vault_password_generated));
 		});
 
 		new MaterialAlertDialogBuilder(requireContext())
-				.setTitle("Add Password")
+				.setTitle(R.string.vault_password_add_action)
 				.setView(dialogView)
-				.setPositiveButton("Save", (dialog, which) -> {
+				.setPositiveButton(R.string.vault_button_save, (dialog, which) -> {
 					String title = titleInput.getText() != null ?
 							titleInput.getText().toString().replace("\n", " ").trim() : "";
 					String username = usernameInput.getText() != null ?
@@ -318,7 +317,7 @@ public class VaultPasswordsFragment extends BaseFragment {
 						savePassword(title, username, password, url, notes);
 					}
 				})
-				.setNegativeButton("Cancel", null)
+				.setNegativeButton(android.R.string.cancel, null)
 				.show();
 	}
 
@@ -405,7 +404,7 @@ public class VaultPasswordsFragment extends BaseFragment {
 							clipboard.setPrimaryClip(emptyClip);
 
 							Toast.makeText(requireContext(),
-									"Clipboard cleared for security",
+									getString(R.string.vault_clipboard_cleared),
 									Toast.LENGTH_SHORT).show();
 						}
 					}
@@ -427,18 +426,15 @@ public class VaultPasswordsFragment extends BaseFragment {
 
 	private boolean validatePasswordEntry(String title, String password) {
 		if (title == null || title.trim().isEmpty()) {
-			Toast.makeText(requireContext(), "Title is required",
-					Toast.LENGTH_SHORT).show();
+			showSnackbar(getString(R.string.vault_password_title_required));
 			return false;
 		}
 		if (password == null || password.isEmpty()) {
-			Toast.makeText(requireContext(), "Password is required",
-					Toast.LENGTH_SHORT).show();
+			showSnackbar(getString(R.string.vault_password_required));
 			return false;
 		}
 		if (title.length() > 100) {
-			Toast.makeText(requireContext(), "Title is too long (max 100 characters)",
-					Toast.LENGTH_SHORT).show();
+			showSnackbar(getString(R.string.vault_password_title_too_long));
 			return false;
 		}
 		return true;
@@ -447,9 +443,7 @@ public class VaultPasswordsFragment extends BaseFragment {
 	private void savePassword(String title, String username, String password,
 			String url, String notes) {
 		viewModel.savePassword(title, username, password, url, notes);
-		Toast.makeText(requireContext(),
-				"Password saved securely",
-				Toast.LENGTH_SHORT).show();
+		showSnackbar(getString(R.string.vault_password_saved));
 
 		new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
 			if (isAdded()) {
@@ -487,6 +481,20 @@ public class VaultPasswordsFragment extends BaseFragment {
 		if (pendingClipboardClear != null) {
 			clipboardClearHandler.removeCallbacks(pendingClipboardClear);
 			pendingClipboardClear = null;
+		}
+	}
+
+	private void showSnackbar(CharSequence message) {
+		View v = getView();
+		if (v != null) {
+			new com.professor.zerion.android.util.ZerionSnackbarBuilder()
+					.make(v, message,
+							com.google.android.material.snackbar.Snackbar
+									.LENGTH_SHORT)
+					.show();
+		} else if (getContext() != null) {
+			Toast.makeText(requireContext(), message,
+					Toast.LENGTH_SHORT).show();
 		}
 	}
 
