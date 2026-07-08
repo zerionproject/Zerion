@@ -640,19 +640,6 @@ public class ChannelListFragment extends BaseFragment
 				Toast.LENGTH_SHORT).show();
 	}
 
-	private static void markSensitive(ClipData clip) {
-		if (android.os.Build.VERSION.SDK_INT
-				>= android.os.Build.VERSION_CODES.TIRAMISU) {
-			android.os.PersistableBundle extras =
-					new android.os.PersistableBundle();
-			extras.putBoolean(
-					android.content.ClipDescription
-							.EXTRA_IS_SENSITIVE,
-					true);
-			clip.getDescription().setExtras(extras);
-		}
-	}
-
 	private void shareInviteViaSystemSheet(ChannelState s) {
 		toastPreparingInvite();
 		ioExecutor.execute(() -> {

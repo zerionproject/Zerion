@@ -71,15 +71,6 @@ public class VaultManager {
 		this.lastActivityTime = System.currentTimeMillis();
 	}
 
-	private void ensureHeaderLoaded() {
-		if (currentHeader == null && fileIO.exists(HEADER_FILE)) {
-			try {
-				loadVaultHeader();
-			} catch (Exception e) {
-			}
-		}
-	}
-
 	public boolean vaultExists() {
 		return fileIO.exists(HEADER_FILE);
 	}

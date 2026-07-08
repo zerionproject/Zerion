@@ -209,19 +209,6 @@ public class VaultDocumentsFragment extends BaseFragment {
 		}
 	}
 
-	private void showDocumentDetails(VaultItem item) {
-		String message = "Name: " + item.name + "\n" +
-				"Size: " + formatFileSize(item.size) + "\n" +
-				"Modified: " + new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm",
-						java.util.Locale.getDefault()).format(new java.util.Date(item.modifiedTimestamp));
-
-		new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
-				.setTitle(R.string.vault_document_details_title)
-				.setMessage(message)
-				.setPositiveButton(android.R.string.ok, null)
-				.show();
-	}
-
 	private void exportDocumentSecurely(VaultItem item) {
 		new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
 				.setTitle(R.string.vault_document_export_warning_title)

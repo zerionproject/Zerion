@@ -296,10 +296,6 @@ public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFr
 		showFragment(new VaultUnlockFragment(), "unlock");
 	}
 
-	private void showVaultListFragment() {
-		showFragment(new VaultListFragment(), "list");
-	}
-
 	private void showVaultDashboard() {
 		showFragment(VaultDashboardFragment.newInstance(), "dashboard");
 	}

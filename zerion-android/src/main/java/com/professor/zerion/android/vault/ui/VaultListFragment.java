@@ -152,33 +152,6 @@ public class VaultListFragment extends BaseFragment {
 		});
 	}
 
-	private void showAddMenu() {
-		String[] options = {
-				getString(R.string.vault_add_note),
-				getString(R.string.vault_add_image),
-				getString(R.string.vault_add_document)
-		};
-
-		new MaterialAlertDialogBuilder(requireContext())
-				.setTitle(R.string.vault_add_to_vault_title)
-				.setItems(options, (dialog, which) -> {
-					switch (which) {
-						case 0:
-							if (getActivity() instanceof VaultActivity) {
-								((VaultActivity) getActivity()).showNoteFragment(null);
-							}
-							break;
-						case 1:
-							openImagePicker();
-							break;
-						case 2:
-							openDocumentPicker();
-							break;
-					}
-				})
-				.show();
-	}
-
 	private void setupAdapter() {
 		adapter.setOnItemClickListener((item, position) -> {
 			long currentTime = System.currentTimeMillis();

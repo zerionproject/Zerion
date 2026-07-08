@@ -976,20 +976,6 @@ public class VaultViewModel extends AndroidViewModel {
 		void onExportError(String error);
 	}
 
-	private boolean isPasswordComplex(String password) {
-		boolean hasUpper = false;
-		boolean hasLower = false;
-		boolean hasDigit = false;
-
-		for (char c : password.toCharArray()) {
-			if (Character.isUpperCase(c)) hasUpper = true;
-			if (Character.isLowerCase(c)) hasLower = true;
-			if (Character.isDigit(c)) hasDigit = true;
-		}
-
-		return hasUpper && hasLower && hasDigit;
-	}
-
 	@Override
 	protected void onCleared() {
 		super.onCleared();

@@ -818,91 +818,6 @@ public class ConversationActivity extends ZerionActivity
 		startActivity(intent);
 	}
 
-	private void handleIncomingVoiceCallSignal(String signalMessage) {
-		com.professor.zerion.android.conversation.voice.VoiceCallSignal signal =
-				com.professor.zerion.android.conversation.voice.VoiceCallSignal.fromWireFormat(signalMessage);
-
-		if (signal == null) {
-			return;
-		}
-
-		switch (signal.getType()) {
-			case CALL_OFFER:
-				handleCallOffer(signal);
-				break;
-
-			case CALL_ANSWER:
-			case CALL_REJECT:
-			case CALL_END:
-				forwardSignalToService(signalMessage);
-				break;
-
-			default:
-				break;
-		}
-	}
-
-	private void handleCallOffer(com.professor.zerion.android.conversation.voice.VoiceCallSignal signal) {
-		String remoteCallId = signal.getCallId();
-		String voiceCallKey = signal.getVoiceCallKey();
-		String remoteEphemeralHex = signal.getEphemeralSecret();
-
-		if (!checkVoicePermission()) {
-			if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-				ActivityCompat.requestPermissions(this,
-						new String[]{
-								android.Manifest.permission.RECORD_AUDIO,
-								android.Manifest.permission.FOREGROUND_SERVICE_MICROPHONE
-						},
-						REQUEST_VOICE_CALL);
-			} else {
-				ActivityCompat.requestPermissions(this,
-						new String[]{android.Manifest.permission.RECORD_AUDIO},
-						REQUEST_VOICE_CALL);
-			}
-			return;
-		}
-
-		Intent intent = new Intent(this,
-				com.professor.zerion.android.conversation.voice.VoiceCallActivity.class);
-		intent.putExtra(com.professor.zerion.android.conversation.voice.VoiceCallActivity.EXTRA_CONTACT_ID,
-				contactId.getInt());
-		intent.putExtra(com.professor.zerion.android.conversation.voice.VoiceCallActivity.EXTRA_IS_INCOMING,
-				true);
-		intent.putExtra(com.professor.zerion.android.conversation.voice.VoiceCallActivity.EXTRA_CALL_ID,
-				remoteCallId);
-		if (voiceCallKey != null) {
-			try {
-				org.briarproject.bramble.api.crypto.SecretKey key =
-						new org.briarproject.bramble.api.crypto.SecretKey(
-								org.briarproject.bramble.util.StringUtils.fromHexString(voiceCallKey));
-				com.professor.zerion.android.conversation.voice.VoiceCallKeyHolder.setKey(key);
-			} catch (Exception ignored) {
-			}
-		}
-		if (remoteEphemeralHex != null) {
-			try {
-				com.professor.zerion.android.conversation.voice.VoiceCallKeyHolder
-						.setRemoteEphemeral(fromHexString(remoteEphemeralHex));
-			} catch (Exception ignored) {
-			}
-		}
-		intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-		startActivity(intent);
-	}
-
-	private void forwardSignalToService(String signalMessage) {
-		Intent serviceIntent = new Intent(this,
-				com.professor.zerion.android.conversation.voice.VoiceCallService.class);
-		serviceIntent.setAction("com.professor.zerion.VOICE_CALL_SIGNALING");
-		serviceIntent.putExtra("signaling_message", signalMessage);
-		try {
-			startService(serviceIntent);
-		} catch (Exception e) {
-			handleSecurityException(e);
-		}
-	}
-
 	@Override
 	public void onRequestPermissionsResult(int requestCode,
 			String[] permissions, int[] grantResults) {
@@ -1653,29 +1568,6 @@ public class ConversationActivity extends ZerionActivity
 		return item.getAttachments();
 	}
 
-	private void showAvatarFullScreen(com.professor.zerion.android.contact.ContactItem contactItem) {
-		android.app.Dialog dialog = new android.app.Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
-		dialog.setContentView(R.layout.dialog_avatar_fullscreen);
-
-		ImageView fullScreenAvatar = dialog.findViewById(R.id.fullscreen_avatar);
-		ImageView closeButton = dialog.findViewById(R.id.close_button);
-
-		setAvatar((com.google.android.material.imageview.ShapeableImageView) fullScreenAvatar, contactItem);
-
-		closeButton.setOnClickListener(v -> dialog.dismiss());
-
-		dialog.findViewById(R.id.dialog_background).setOnClickListener(v -> dialog.dismiss());
-
-		dialog.setOnDismissListener(d -> {
-			if (fullScreenAvatar != null) {
-				fullScreenAvatar.setImageBitmap(null);
-				fullScreenAvatar.setImageDrawable(null);
-			}
-		});
-
-		dialog.show();
-	}
-
 	private void startVoiceRecording() {
 		voiceRecordingController.startRecording();
 	}
@@ -2171,39 +2063,6 @@ public class ConversationActivity extends ZerionActivity
 		Intent intent = new Intent(this, ChatSettingsActivity.class);
 		intent.putExtra(CONTACT_ID, contactId.getInt());
 		startActivity(intent);
-	}
-
-	private String encodeSignal(String signal) {
-		try {
-			return android.util.Base64.encodeToString(
-				signal.getBytes(java.nio.charset.StandardCharsets.UTF_8),
-				android.util.Base64.NO_WRAP);
-		} catch (Exception e) {
-			return "";
-		}
-	}
-
-	private String decodeSignal(String encoded) {
-		try {
-			byte[] decoded = android.util.Base64.decode(encoded, android.util.Base64.NO_WRAP);
-			return new String(decoded, java.nio.charset.StandardCharsets.UTF_8);
-		} catch (Exception e) {
-			return null;
-		}
-	}
-
-	private boolean isVoiceCallSignal(String text) {
-		if (text == null || text.isEmpty()) {
-			return false;
-		}
-		return com.professor.zerion.android.conversation.voice.VoiceCallSignal.isSignal(text);
-	}
-
-	private boolean isValidCallKey(String key) {
-		if (key == null || key.isEmpty()) {
-			return false;
-		}
-		return CALL_KEY_PATTERN.matcher(key).matches();
 	}
 
 	private void handleSecurityException(Exception e) {

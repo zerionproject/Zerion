@@ -355,11 +355,6 @@ public class TorStatusMonitor {
         }
     }
 
-    private String getCurrentExitIp() {
-
-        return "Hidden";
-    }
-
     public LiveData<TorStatus> getTorStatus() {
         return torStatus;
     }

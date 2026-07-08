@@ -284,20 +284,8 @@ public class VoiceCallSignal {
 		if (value < Integer.MIN_VALUE || value > Integer.MAX_VALUE) return null;
 		return value.intValue();
 	}
-	private static void validateCallId(String callId) {
-		if (!isValidCallId(callId)) {
-			throw new IllegalArgumentException("Invalid call ID format");
-		}
-	}
-
 	private static boolean isValidCallId(String callId) {
 		return callId != null && callId.length() == 36 && UUID_PATTERN.matcher(callId).matches();
-	}
-
-	private static void validateVoiceCallKey(String key) {
-		if (!isValidVoiceCallKey(key)) {
-			throw new IllegalArgumentException("Invalid voice call key format");
-		}
 	}
 
 	private static boolean isValidVoiceCallKey(String key) {
@@ -305,20 +293,8 @@ public class VoiceCallSignal {
 				&& BASE64_PATTERN.matcher(key).matches();
 	}
 
-	private static void validateOnionAddress(String address) {
-		if (!isValidOnionAddress(address)) {
-			throw new IllegalArgumentException("Invalid onion address format");
-		}
-	}
-
 	private static boolean isValidOnionAddress(String address) {
 		return address != null && address.length() == 62 && ONION_PATTERN.matcher(address).matches();
-	}
-
-	private static void validatePort(int port) {
-		if (!isValidPort(port)) {
-			throw new IllegalArgumentException("Invalid port number");
-		}
 	}
 
 	private static boolean isValidPort(int port) {
@@ -360,29 +336,6 @@ public class VoiceCallSignal {
 		Arrays.fill(bBytes, (byte) 0);
 
 		return result == 0;
-	}
-
-	private static String escapeJson(String s) {
-		StringBuilder sb = new StringBuilder(s.length() + 16);
-		for (int i = 0; i < s.length(); i++) {
-			char c = s.charAt(i);
-			switch (c) {
-				case '"': sb.append("\\\""); break;
-				case '\\': sb.append("\\\\"); break;
-				case '\b': sb.append("\\b"); break;
-				case '\f': sb.append("\\f"); break;
-				case '\n': sb.append("\\n"); break;
-				case '\r': sb.append("\\r"); break;
-				case '\t': sb.append("\\t"); break;
-				default:
-					if (c < 0x20) {
-						sb.append(String.format("\\u%04x", (int) c));
-					} else {
-						sb.append(c);
-					}
-			}
-		}
-		return sb.toString();
 	}
 
 	private static String unescapeJson(String s) {
