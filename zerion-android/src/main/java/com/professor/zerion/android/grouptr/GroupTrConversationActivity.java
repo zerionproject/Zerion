@@ -30,6 +30,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import androidx.appcompat.widget.AppCompatImageButton;
 import androidx.core.content.ContextCompat;
 
@@ -620,7 +621,7 @@ public class GroupTrConversationActivity extends ZerionActivity
 				main.post(() -> {
 					if (isFinishing() || isDestroyed()) return;
 					if (current != null) editor.setText(current);
-					new AlertDialog.Builder(this)
+					new MaterialAlertDialogBuilder(this)
 							.setTitle(R.string.grouptr_stealth_name_set)
 							.setMessage(R.string.grouptr_stealth_name_msg)
 							.setView(editor)
@@ -898,7 +899,7 @@ public class GroupTrConversationActivity extends ZerionActivity
 				24L * 60 * 60 * 1000, 7L * 24 * 60 * 60 * 1000,
 				30L * 24L * 60 * 60 * 1000
 		};
-		new AlertDialog.Builder(this)
+		new MaterialAlertDialogBuilder(this)
 				.setTitle(R.string.grouptr_default_ttl_set)
 				.setItems(labels, (d, which) -> {
 					long v = values[which];

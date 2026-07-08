@@ -262,7 +262,8 @@ public class PasswordFragment extends BaseFragment implements TextWatcher {
 
 		switch (result.type) {
 			case NORMAL_FAILURE:
-				String msg = getString(R.string.login_failed_normal, result.attemptsRemaining);
+				String msg = getResources().getQuantityString(R.plurals.login_failed_normal,
+						result.attemptsRemaining, result.attemptsRemaining);
 				setError(input, msg, true);
 				password.setText(null);
 				showSoftKeyboard(password);
@@ -276,13 +277,15 @@ public class PasswordFragment extends BaseFragment implements TextWatcher {
 				break;
 
 			case FINAL_WARNING:
-				String warningMsg = getString(R.string.login_failed_final_warning, result.attemptsRemaining);
+				String warningMsg = getResources().getQuantityString(R.plurals.login_failed_final_warning,
+						result.attemptsRemaining, result.attemptsRemaining);
 				setError(input, warningMsg, true);
 
 				MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(
 						requireContext(), R.style.ZerionDialogTheme);
 				builder.setTitle(R.string.dialog_title_critical_warning);
-				builder.setMessage(getString(R.string.dialog_message_critical_warning, result.attemptsRemaining));
+				builder.setMessage(getResources().getQuantityString(R.plurals.dialog_message_critical_warning,
+						result.attemptsRemaining, result.attemptsRemaining));
 				builder.setPositiveButton(R.string.dialog_button_understand, null);
 				builder.show();
 

@@ -14,6 +14,7 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
@@ -319,7 +320,7 @@ public class GroupTrAdminActivity extends ZerionActivity {
 				: getString(R.string.grouptr_member_action_promote);
 		String removeAction =
 				getString(R.string.grouptr_member_action_remove);
-		new AlertDialog.Builder(this)
+		new MaterialAlertDialogBuilder(this)
 				.setTitle(m.getName())
 				.setItems(new String[]{roleAction, removeAction},
 						(d, which) -> {
@@ -382,7 +383,7 @@ public class GroupTrAdminActivity extends ZerionActivity {
 		for (int i = 0; i < candidates.size(); i++) {
 			names[i] = candidates.get(i).getAuthor().getName();
 		}
-		new AlertDialog.Builder(this)
+		new MaterialAlertDialogBuilder(this)
 				.setTitle(R.string.grouptr_add_member)
 				.setItems(names, (d, which) -> {
 					Contact picked = candidates.get(which);
@@ -422,7 +423,7 @@ public class GroupTrAdminActivity extends ZerionActivity {
 				24L * 60 * 60 * 1000, 7L * 24 * 60 * 60 * 1000,
 				30L * 24L * 60 * 60 * 1000
 		};
-		new AlertDialog.Builder(this)
+		new MaterialAlertDialogBuilder(this)
 				.setTitle(R.string.grouptr_default_ttl_set)
 				.setItems(labels, (d, which) -> {
 					long v = values[which];
@@ -442,7 +443,7 @@ public class GroupTrAdminActivity extends ZerionActivity {
 	}
 
 	private void confirmRemove(GroupTrState s, GroupTrMember m) {
-		new AlertDialog.Builder(this)
+		new MaterialAlertDialogBuilder(this)
 				.setMessage(getString(R.string.grouptr_confirm_remove,
 						m.getName()))
 				.setPositiveButton(android.R.string.ok, (d, w) -> {
@@ -462,7 +463,7 @@ public class GroupTrAdminActivity extends ZerionActivity {
 	}
 
 	private void confirmDissolve(GroupTrState s) {
-		new AlertDialog.Builder(this)
+		new MaterialAlertDialogBuilder(this)
 				.setMessage(R.string.grouptr_confirm_dissolve)
 				.setPositiveButton(android.R.string.ok, (d, w) -> {
 					ioExecutor.execute(() -> {
@@ -480,7 +481,7 @@ public class GroupTrAdminActivity extends ZerionActivity {
 	}
 
 	private void confirmLeave(GroupTrState s) {
-		new AlertDialog.Builder(this)
+		new MaterialAlertDialogBuilder(this)
 				.setMessage(R.string.grouptr_confirm_leave)
 				.setPositiveButton(android.R.string.ok, (d, w) -> {
 					ioExecutor.execute(() -> {

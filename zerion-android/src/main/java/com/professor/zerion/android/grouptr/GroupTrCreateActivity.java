@@ -8,6 +8,7 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
@@ -100,7 +101,7 @@ public class GroupTrCreateActivity extends ZerionActivity {
 				getString(R.string.grouptr_ttl_30days)
 		};
 		long[] values = new long[] { 0L, 3600L, 86400L, 7 * 86400L, 30 * 86400L };
-		new AlertDialog.Builder(this)
+		new MaterialAlertDialogBuilder(this)
 				.setTitle(R.string.grouptr_create_disappearing)
 				.setItems(labels, (d, w) -> {
 					ttlSeconds = values[w];

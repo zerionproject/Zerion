@@ -205,11 +205,20 @@
 	<string name="dialog_message_lost_password">Your Zerion account is stored encrypted on your device, not in the cloud, so we can\'t reset your password. Would you like to delete your account and start again?\n\nCaution: Your identities, contacts and messages will be permanently lost.</string>
 	<string name="password_missing">Please enter your password</string>
 	<string name="account_locked_try_again">Account locked. Please try again in %s</string>
-	<string name="login_failed_normal">Incorrect password. %d attempt(s) remaining before lockout.</string>
+	<plurals name="login_failed_normal">
+		<item quantity="one">Incorrect password. %d attempt remaining before lockout.</item>
+		<item quantity="other">Incorrect password. %d attempts remaining before lockout.</item>
+	</plurals>
 	<string name="login_failed_lockout">Account locked for 5 minutes after 3 failed attempts.</string>
-	<string name="login_failed_final_warning">WARNING: %d attempt(s) remaining before all data is wiped!</string>
+	<plurals name="login_failed_final_warning">
+		<item quantity="one">WARNING: %d attempt remaining before all data is wiped!</item>
+		<item quantity="other">WARNING: %d attempts remaining before all data is wiped!</item>
+	</plurals>
 	<string name="dialog_title_critical_warning">Critical Warning</string>
-	<string name="dialog_message_critical_warning">Only %d more failed login attempt(s) before all data is permanently deleted!</string>
+	<plurals name="dialog_message_critical_warning">
+		<item quantity="one">Only %d more failed login attempt before all data is permanently deleted!</item>
+		<item quantity="other">Only %d more failed login attempts before all data is permanently deleted!</item>
+	</plurals>
 	<string name="dialog_title_max_attempts">Maximum Attempts Exceeded</string>
 	<string name="dialog_message_max_attempts">Too many failed login attempts. All data will be deleted for security.</string>
 	<string name="dialog_button_understand">I Understand</string>
@@ -631,7 +640,7 @@
 	<string name="message_error">Error sending message</string>
 	<string name="image_caption_hint">Add a caption (optional)</string>
 	<string name="image_attach">Attach image</string>
-	<string name="image_attach_error">Could not attach image(s)</string>
+	<string name="image_attach_error">Could not attach images</string>
 	<string name="image_attach_error_too_big">Image too big. Limit is %d MB.</string>
 	<string name="image_attach_error_too_big_kb">Image too big. Limit is %d KB.</string>
 	<string name="image_attach_error_invalid_mime_type">Image format unsupported: %s</string>
@@ -1755,7 +1764,10 @@
 	<string name="voice_call_video_label_on">Video on</string>
 
 	<string name="conversation_delete_title">Delete messages</string>
-	<string name="conversation_delete_message">Delete %1$d message(s)?</string>
+	<plurals name="conversation_delete_message">
+		<item quantity="one">Delete %1$d message?</item>
+		<item quantity="other">Delete %1$d messages?</item>
+	</plurals>
 	<string name="conversation_delete_action">Delete</string>
 
 	<string name="vault_settings_export_open_failed">Failed to open destination</string>

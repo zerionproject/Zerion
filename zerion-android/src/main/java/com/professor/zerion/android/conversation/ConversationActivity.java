@@ -1947,8 +1947,8 @@ public class ConversationActivity extends ZerionActivity
 
 		new MaterialAlertDialogBuilder(this)
 				.setTitle(R.string.conversation_delete_title)
-				.setMessage(getString(R.string.conversation_delete_message,
-						selected.size()))
+				.setMessage(getResources().getQuantityString(R.plurals.conversation_delete_message,
+						selected.size(), selected.size()))
 				.setPositiveButton(R.string.conversation_delete_action,
 						(dialog, which) -> {
 					if (actionMode != null) actionMode.finish();
