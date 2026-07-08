@@ -6,7 +6,7 @@ Zerion is an end-to-end encrypted, peer-to-peer secure messaging application for
 
 **Post-Quantum Security**: Zerion implements **full hybrid post-quantum cryptography on every message** using NIST-standardized algorithms (ML-KEM-768 + X25519 for key exchange and the per-message transport ratchet, ML-DSA-65 + Ed25519 for signatures), providing defense-in-depth protection against both current and future quantum computing threats — including "harvest now, decrypt later" attacks. Since v1.7, every transport frame in both directions carries a fresh ML-KEM-768 encapsulation; the encapsulated shared secret is mixed into the per-frame body AEAD key via HKDF, producing a hybrid key that is secure as long as either X25519 or ML-KEM-768 is secure.
 
-**Current release**: v2.0.2 (versionCode 20002, June 2026). For an at-a-glance summary of everything shipped since v2.1 of this whitepaper (December 2025), see [§0 Updates since v2.1](#0-updates-since-v21).
+**Current release**: v2.0.6 (versionCode 20006, July 2026). For an at-a-glance summary of everything shipped since v2.1 of this whitepaper (December 2025), see [§0 Updates since v2.1](#0-updates-since-v21).
 
 ---
 
@@ -33,7 +33,7 @@ Zerion is an end-to-end encrypted, peer-to-peer secure messaging application for
 
 ## 0. UPDATES SINCE v2.1
 
-This section summarizes every protocol- or security-relevant change shipped between whitepaper v2.1 (December 16, 2025) and the current document version (June 2026, app release v2.0.2 / versionCode 20002). The rest of the document remains structurally correct; this section is the authoritative diff. Detailed designs live in the companion documents listed under each item.
+This section summarizes every protocol- or security-relevant change shipped between whitepaper v2.1 (December 16, 2025) and the current document version (July 2026, app release v2.0.6 / versionCode 20006). The rest of the document remains structurally correct; this section is the authoritative diff. Detailed designs live in the companion documents listed under each item.
 
 ### v1.5 (May 1, 2026) — B.3 pairing & B.4 onion rotation
 
@@ -146,6 +146,30 @@ These removals are intentional and final; Zerion's threat model treats every add
 
 - **Channel post / comment system notifications.** Subscribers now receive system notifications for new channel posts, and publishers for new discussion-thread comments, surfaced through the same `VISIBILITY_SECRET` notification path as 1:1 and group messages (no message body in the lock-screen preview). Notifications are generated locally from pull results — no push channel and no third party is involved.
 - **In-tree `EncryptedSharedPreferences` implementation.** The deprecated AndroidX `security-crypto` library (Google deprecated it in April 2025) is removed from the dependency set and replaced by an in-tree `EncryptedSharedPreferences` implementation that wraps the same Android Keystore master-key model (hardware-backed where available, non-exportable, device-bound). Behaviour and at-rest format are unchanged for callers; the app no longer ships a deprecated, unmaintained crypto dependency. This closes the migration item that earlier revisions tracked as a future v2.x maintenance task.
+
+### v2.0.3 (June 2026, versionCode 20003): reliability and maintenance
+
+- **ANR fix.** Binder IPC on network-state changes is moved off the main thread, removing an application-not-responding stall triggered by rapid connectivity transitions.
+- **Dependency bumps.** Routine dependency updates for maintenance and hygiene.
+- **Build reproducibility.** The build toolchain is pinned so release artifacts reproduce deterministically.
+
+### v2.0.4 (June 2026, versionCode 20004): reliability
+
+- **Create-profile keystore IV fix.** Profile creation now reads the keystore initialization vector strictly, fixing an intermittent create-profile failure.
+- **Tor improvements.** Special-use foreground service for the Tor process, a bridge auto-fallback watchdog, a custom-bridge configuration UI, and Tor 0.4.9.9.
+
+### v2.0.5 (June 2026, versionCode 20005): account-backup hotfix
+
+- **Backup key derivation lightened for memory headroom.** The account-backup key derivation was tuned down in memory pressure so backup and restore complete reliably across a wider range of devices. Error reporting on failure is clearer, and backups produced by earlier versions still open.
+
+### v2.0.6 (July 2026, versionCode 20006): contact-add, reliability, and hardening
+
+- **Contact-add hybrid rendezvous is now a real X25519 shared secret.** The version-1 contact-add link carries a 32-byte commitment plus a 32-byte X25519 rendezvous key, and the rendezvous key agreement is a real X25519 Diffie-Hellman. The earlier observer-derivable rendezvous (a hash of public commitments) was removed. See [§7 Contact Discovery & Addition](#7-contact-discovery--addition).
+- **Contact-add crash fixes and handshake hardening.** Fixed contact-add crashes (hybrid pending-contact database read; hybrid transport-key derivation) and hardened the add-contact handshake: fail-closed forward secrecy, MAC-authenticated post-quantum capability, strict link decoding, and per-pending-contact rate limiting.
+- **Post-quantum transport ratchet stabilized.** Fixed the message-delivery stall caused by ratchet desync. A brief per-frame root-absorption experiment was added and then removed; per-message post-quantum protection stays in the body key, and root-level post-quantum mixing stays in the acknowledged epoch mechanism. Corrupt post-compromise-security state now fails closed (keeps the classical ratchet) instead of dropping to an unratcheted stream. See [PCS_DESIGN.md](PCS_DESIGN.md).
+- **Connection reliability.** Removed a fixed 30-minute connection-recycle that churned healthy links; reconnect after a dropped connection is now immediate. Targeted zombie-connection defenses are retained.
+- **Voice memos.** Voice memos are chunked for reliable delivery and a delivery-stall race was fixed. Cover-traffic cadence is constant for metadata resistance.
+- **Decoder hardening and cleanup.** Bounded message-decoder memory (denial-of-service caps), consolidated secure file deletion, accessibility labels, and a large string, dead-code, and import cleanup.
 
 ---
 
@@ -785,7 +809,7 @@ STOPPING ← DISABLED ← INACTIVE (offline)
         ↓
 [Encode Payload] = {commitment_hash, transports}
         ↓
-[Display as QR/Link] (53 chars, commitment-based)
+[Display as QR/Link] (104 chars: 32-byte commitment + 32-byte X25519 rendezvous key)
 ```
 
 > **Note**: Hybrid public keys (1,216 bytes) are too large for QR codes.
@@ -1269,14 +1293,15 @@ User A                          User B
 - Protocol version
 - Ephemeral public key (32 bytes)
 - Commitment hash (32 bytes)
+- X25519 rendezvous key (32 bytes), used for the rendezvous key agreement
 - Transport descriptors (Tor .onion)
-- Encoded as Base64
+- Encoded as base32
 
 ### 7.2 Link-Based Addition
 
 **Link Format**:
 ```
-zerion://[base64-encoded-handshake-payload]
+zerion://[104 lowercase base32 chars: 32-byte commitment + 32-byte X25519 rendezvous key]
 ```
 
 **Example**:
@@ -1350,7 +1375,7 @@ Zerion implements automatic version negotiation to maintain backward compatibili
 | Version | Key Type | Security Level | Compatible With |
 |---------|----------|----------------|-----------------|
 | **0** | X25519 (32 bytes) | Classical (128-bit) | Briar, Zerion |
-| **1** | Hybrid commitment (32 bytes) | Post-Quantum (192-bit) | Zerion only |
+| **1** | Hybrid commitment (32 bytes) + X25519 rendezvous key (32 bytes) | Post-Quantum (192-bit) | Zerion only |
 
 **Version Detection Flow**:
 ```
@@ -3101,15 +3126,16 @@ Zerion provides military-grade security through:
 ---
 
 **Document Information**:
-- **Version**: 3.2
-- **Date**: June 2, 2026
+- **Version**: 3.3
+- **Date**: July 3, 2026
 - **Status**: Production
 - **Classification**: Public Technical Documentation
 - **Author**: Zerion Project
 - **Contact**: https://github.com/zerionproject/Zerion
-- **Corresponds to app release**: v2.0.2 (versionCode 20002)
+- **Corresponds to app release**: v2.0.6 (versionCode 20006)
 
 **Document History**:
+- **v3.3 (2026-07-03)**: Updated for app release v2.0.6 (versionCode 20006). Adds §0 entries for v2.0.3 through v2.0.6 (reliability, Tor, account-backup, and the v2.0.6 contact-add hybrid rendezvous, ratchet stabilization, connection-reliability, voice-memo, and hardening changes). Corrects the version-1 contact-add link description: the link carries a 32-byte commitment plus a 32-byte X25519 rendezvous key (104 base32 chars), and the rendezvous key agreement is a real X25519 Diffie-Hellman.
 - **v3.2 (2026-06-02)**: **Channels, Hardened Mode, forensic-defense tightening.** Adds full §2.5 Channels section (publisher → subscriber broadcast over a per-publisher Tor onion, hybrid-signed posts, closed-channel HMAC manifest gate, replay-resistant pull challenge, editor delegations, discussion threads, subscriber approvals, attachments, onion rotation, tombstones). Adds §11.4 Hardened Mode (strict boot verification, tamper detection, USB panic) and §11.5 Forensic-Defense Posture table mapping defenses against Cellebrite / GrayKey / Magnet AXIOM / MSAB XRY tiers. Corrects §9.1 (database is SQLCipher, not H2/HyperSQL — prior revisions had this wrong). Updates §5.3 to v1.7 per-message ML-KEM (was pre-v1.7 25-message epoch). Updates §11.1 threat-model table to include forensic-tool and tamper categories; moves "device compromise" from out-of-scope to partial-mitigation via Hardened Mode. Updates §12.4 protocol versions (schema v63, PCS Mode 3-Full). Updates §12.5 network parameters with channel-specific cadences. Updates §13.1 architecture diagram (Tor-only transport, no Bluetooth / LAN-TCP / removable-drive). Adds new §14 file-path subsections for channels, Hardened Mode, and forensic-defense helpers. Adds §0 v2.0 entry.
 - **v3.0 (2026-05-15)**: **Mode 3 PQ rotation, hybrid group signatures, native group invites, Tor-only transport.** Adds §0 "Updates since v2.1" covering everything shipped between Dec 2025 and May 2026: B.3 hybrid pairing and B.4 onion rotation (v1.5.0), PCS Mode 3 end-to-end completion + hybrid Ed25519+ML-DSA-65 signatures on every group record + real Argon2id vault KDF (v1.6.0), whole-app audit + GroupTr hardening (v1.6.1), native group-invite protocol replacing the legacy `privategroup.invitation` carrier + Tor-only transport (Bluetooth / Wi-Fi LAN / removable-drive / dev-reporting removed) + all `SharedPreferences` keystore-encrypted + extended hybrid signing + downgrade-lock token fix (v1.6.2). See §0 for the authoritative diff.
 - v2.1 (2025-12-16): **Version Negotiation & Security Hardening** - Added Briar compatibility via explicit contact type selection, downgrade attack prevention, contact security level tracking (postQuantum flag), UI security indicator in Chat Settings
@@ -3122,6 +3148,6 @@ Zerion provides military-grade security through:
 
 ---
 
-*This whitepaper is based on the Zerion codebase as of v2.0.2 (versionCode 20002, June 2026). For the most current information, please refer to the source code repository and the per-document amendments under [docs/](.).*
+*This whitepaper is based on the Zerion codebase as of v2.0.6 (versionCode 20006, July 2026). For the most current information, please refer to the source code repository and the per-document amendments under [docs/](.).*
 
 **End of Document**

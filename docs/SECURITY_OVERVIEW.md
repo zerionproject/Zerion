@@ -1,7 +1,7 @@
 # Zerion Security Overview
 
-**Version:** 2.0.2
-**Last reviewed:** June 2026 (v2.0.2)
+**Version:** 2.0.6
+**Last reviewed:** July 2026 (v2.0.6)
 
 ---
 
@@ -11,7 +11,7 @@ Zerion is a peer-to-peer encrypted messenger for Android with voice and video ca
 
 A comprehensive security audit covering 10 domains (cryptography, network, voice calls, Android platform, authentication, database, input validation, dependencies, logging, memory safety) was completed and all actionable findings have been resolved. Additional internal audits were run during the v1.6 cycle: the PCS Mode 3 rewrite and the hybrid-signing migration produced four findings (one critical, one high, two medium) caught and patched before the v1.6.0 tag; a follow-up audit during the v1.6.2 cycle covered password setup, settings, vault, biometric, deletion paths, and lock-screen exposure — see the version notes below.
 
-## v2.0 / v2.0.2 status (June 2026)
+## v2.0 / v2.0.6 status (July 2026)
 
 - **Channels (broadcast publishing).** Channels are a publisher → subscriber
   broadcast surface. A channel is public or private; private channels are

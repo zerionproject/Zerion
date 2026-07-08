@@ -436,12 +436,12 @@ For journalists, activists, whistleblowers, and privacy-conscious individuals, Z
 ---
 
 **Last Updated:** 2026-06-12
-**Version:** 2.0.2 — post-quantum signalling envelope (Mode 3-Full), full video pipeline, current as of v2.0.2
+**Version:** 2.0.6: post-quantum signalling envelope (Mode 3-Full), full video pipeline, current as of v2.0.6
 **License:** CC BY-SA 4.0
 
 ---
 
-## Implementation Status (v2.0.2)
+## Implementation Status (v2.0.6)
 
 ### Voice calls — shipped
 
