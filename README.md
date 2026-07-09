@@ -235,19 +235,12 @@ APK signing fingerprint: D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6
 
 Transparency on how Zerion is built.
 
-**Large language models are used in two specific areas during Zerion's development:**
+Large language models are used in two specific areas during Zerion's development:
 
-- **Security audits and bug detection.** Pre-release codebase reviews, static-analysis sweeps, lock-leak detection, race-condition hunts, dependency CVE checks, and adversarial reviews of new code paths. The LLM proposes findings; every finding is independently verified against the source by a human reviewer before any commit lands. Findings that turn out to be wrong are discarded, not committed.
-- **Tooling and routine work.** Validator scripts that pin invariants into static checks, release-note drafting, documentation, mechanical refactors. Minimal, scoped use.
+- **Internal audits and security testing.** Pre-release codebase reviews, static-analysis sweeps, lock-leak detection, race-condition hunts, dependency CVE checks, and adversarial reviews of new code paths. Any finding is subsequently reviewed by the project's pentesters and developers before it is acted on. Findings that turn out to be wrong are discarded.
+- **Tooling and routine work.** Validator scripts that pin invariants into static checks, release-note drafting, and documentation. Minimal, scoped use.
 
-**LLMs are NOT used to author:**
-
-- Cryptographic primitives (ML-KEM-768, ML-DSA-65, X25519, AES-256-GCM, HKDF, Argon2id, BLAKE2b, the IES engine)
-- Key management or session-state mutation logic
-- Wire-protocol framing, AEAD nonce derivation, or ratchet state machines
-- Anything that changes the on-wire bytes
-
-All security-critical code is human-authored and human-reviewed. The LLM is a tool for catching mistakes the human might miss; it is not a substitute for the human's judgment, and it does not have commit authority. Every commit, every change, every rationale is in this public git history.
+**LLMs are not used for the cryptography.** The cryptographic primitives, key management, session-state and ratchet logic, and wire-protocol framing are authored and owned by the project's developers and reviewed by pentesters. The low-level primitives come from established libraries (Bouncy Castle, the Tor daemon, SQLCipher). The LLM does not have commit authority. Every commit and rationale is in this public git history.
 
 Full statement: [zerion.chat/blog/llm-use-in-zerion.html](https://zerion.chat/blog/llm-use-in-zerion.html)
 
@@ -283,6 +276,15 @@ More details and copy-to-clipboard buttons: [zerion.chat/donate.html](https://ze
 
 ---
 
+## Built on Briar
+
+Zerion is a derivative work of [Briar](https://briarproject.org), the peer-to-peer messaging project by the Briar Project, and is built on Briar's Bramble transport protocol. Zerion would not exist without their work, and we are grateful for it.
+
+Zerion extends Briar with post-quantum cryptography, voice and video calls over Tor, an encrypted vault, channels, and other features, and has diverged from upstream Briar in both wire protocol and feature set. It is an independent project and is **not affiliated with, nor endorsed by, the Briar Project**.
+
+- Briar: https://briarproject.org
+- Briar source: https://code.briarproject.org/briar/briar
+
 ## License
 
-Zerion is free and open-source under the **GPLv3** license.
+Zerion is free and open-source under the **GNU General Public License v3.0 (GPLv3)** — the same license as Briar, the upstream project it is derived from. See [LICENSE.txt](LICENSE.txt) for the full text. Modifications to Briar's original files are recorded in this repository's public git history.
