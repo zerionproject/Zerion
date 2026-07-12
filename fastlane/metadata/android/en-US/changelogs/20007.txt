@@ -1,0 +1,5 @@
+v2.0.7: calculator display fix
+
+This release fixes the calculator screen so its keypad buttons fit and display correctly in portrait on all screen sizes. On some phones the keys could overflow the screen and appear blank; the keys now size to the available width. There is no protocol change and no database upgrade.
+
+Full notes: https://github.com/zerionproject/Zerion/releases/tag/v2.0.7
