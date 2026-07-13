@@ -123,6 +123,16 @@ android {
             shrinkResources true
             minifyEnabled true
             crunchPngs false
+            // Do not embed git VCS info in the release APK. The packaging
+            // resources exclude above does not catch it (AGP adds it as app
+            // metadata, not a merged resource), so a worktree build (no git
+            // found) and a clean-clone build differed in META-INF/
+            // version-control-info.textproto and broke F-Droid reproducibility.
+            // Disabling it here removes the file entirely, so the release APK is
+            // reproducible regardless of the build environment's git state.
+            vcsInfo {
+                include false
+            }
             ndk {
                 abiFilters 'arm64-v8a', 'armeabi-v7a'
             }
