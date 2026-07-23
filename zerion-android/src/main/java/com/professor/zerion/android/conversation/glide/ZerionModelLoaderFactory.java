@@ -5,7 +5,7 @@ import com.bumptech.glide.load.model.ModelLoaderFactory;
 import com.bumptech.glide.load.model.MultiModelLoaderFactory;
 
 import com.professor.zerion.android.ZerionApplication;
-import org.briarproject.briar.api.attachment.AttachmentHeader;
+import org.zerionproject.app.api.attachment.AttachmentHeader;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.InputStream;

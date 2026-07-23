@@ -1,9 +1,9 @@
 package com.professor.zerion.android.contact;
 
-import org.briarproject.bramble.api.contact.Contact;
-import org.briarproject.briar.api.attachment.AttachmentHeader;
-import org.briarproject.briar.api.client.MessageTracker.GroupCount;
-import org.briarproject.briar.api.identity.AuthorInfo;
+import org.zerionproject.core.api.contact.Contact;
+import org.zerionproject.app.api.attachment.AttachmentHeader;
+import org.zerionproject.app.api.client.MessageTracker.GroupCount;
+import org.zerionproject.app.api.identity.AuthorInfo;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.Nullable;

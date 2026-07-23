@@ -3,18 +3,18 @@ package com.professor.zerion.android.attachment;
 import android.app.Application;
 import android.net.Uri;
 
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.lifecycle.IoExecutor;
-import org.briarproject.bramble.api.sync.GroupId;
-import org.briarproject.bramble.api.sync.MessageId;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.lifecycle.IoExecutor;
+import org.zerionproject.core.api.sync.GroupId;
+import org.zerionproject.core.api.sync.MessageId;
 import com.professor.zerion.R;
 import com.professor.zerion.android.attachment.media.ImageCompressor;
 import com.professor.zerion.android.vault.utils.MetadataStripper;
-import org.briarproject.briar.api.attachment.Attachment;
-import org.briarproject.briar.api.attachment.AttachmentHeader;
-import org.briarproject.briar.api.attachment.FileTooBigException;
-import org.briarproject.briar.api.messaging.MessagingManager;
-import org.briarproject.briar.api.messaging.PrivateMessageFormat;
+import org.zerionproject.app.api.attachment.Attachment;
+import org.zerionproject.app.api.attachment.AttachmentHeader;
+import org.zerionproject.app.api.attachment.FileTooBigException;
+import org.zerionproject.app.api.messaging.MessagingManager;
+import org.zerionproject.app.api.messaging.PrivateMessageFormat;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.IOException;
@@ -147,7 +147,7 @@ class AttachmentCreatorImpl implements AttachmentCreator {
 			String type = ((UnsupportedMimeTypeException) t).getMimeType();
 			return app.getString(R.string.image_attach_error_invalid_mime_type, type);
 		} else if (t instanceof FileTooBigException) {
-			int mb = org.briarproject.briar.api.attachment.MediaConstants.MAX_ATTACHMENT_SIZE / 1024 / 1024;
+			int mb = org.zerionproject.app.api.attachment.MediaConstants.MAX_ATTACHMENT_SIZE / 1024 / 1024;
 			if (isVideo) {
 				return app.getString(R.string.video_attach_error_too_big, mb);
 			} else if (isAudio) {
@@ -167,7 +167,7 @@ class AttachmentCreatorImpl implements AttachmentCreator {
 			} else {
 				return app.getString(R.string.image_attach_error);
 			}
-		} else if (t instanceof org.briarproject.bramble.api.db.DbException) {
+		} else if (t instanceof org.zerionproject.core.api.db.DbException) {
 			if (isVideo) {
 				return app.getString(R.string.video_attach_error);
 			} else if (isAudio) {

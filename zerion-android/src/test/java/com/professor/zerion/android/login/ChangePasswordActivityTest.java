@@ -5,7 +5,7 @@ import android.widget.EditText;
 
 import com.google.android.material.textfield.TextInputLayout;
 
-import org.briarproject.bramble.api.crypto.DecryptionResult;
+import org.zerionproject.core.api.crypto.DecryptionResult;
 import com.professor.zerion.R;
 import com.professor.zerion.android.viewmodel.MutableLiveEvent;
 import org.junit.Assert;
@@ -22,12 +22,12 @@ import static android.os.Looper.getMainLooper;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertTrue;
-import static org.briarproject.bramble.api.crypto.DecryptionResult.SUCCESS;
-import static org.briarproject.bramble.api.crypto.PasswordStrengthEstimator.NONE;
-import static org.briarproject.bramble.api.crypto.PasswordStrengthEstimator.QUITE_STRONG;
-import static org.briarproject.bramble.api.crypto.PasswordStrengthEstimator.QUITE_WEAK;
-import static org.briarproject.bramble.api.crypto.PasswordStrengthEstimator.STRONG;
-import static org.briarproject.bramble.api.crypto.PasswordStrengthEstimator.WEAK;
+import static org.zerionproject.core.api.crypto.DecryptionResult.SUCCESS;
+import static org.zerionproject.core.api.crypto.PasswordStrengthEstimator.NONE;
+import static org.zerionproject.core.api.crypto.PasswordStrengthEstimator.QUITE_STRONG;
+import static org.zerionproject.core.api.crypto.PasswordStrengthEstimator.QUITE_WEAK;
+import static org.zerionproject.core.api.crypto.PasswordStrengthEstimator.STRONG;
+import static org.zerionproject.core.api.crypto.PasswordStrengthEstimator.WEAK;
 import static org.junit.Assert.assertNotEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;

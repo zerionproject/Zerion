@@ -56,7 +56,7 @@
 					android:layout_width="48dp"
 					android:layout_height="48dp"
 					android:src="@drawable/ic_shield_lock"
-					app:tint="#26B7F0"
+					app:tint="@color/zerion_cyan"
 					tools:ignore="ContentDescription" />
 
 				<LinearLayout
@@ -79,7 +79,7 @@
 						android:layout_height="wrap_content"
 						android:layout_marginTop="4dp"
 						android:text="@string/contact_type_zerion_badge"
-						android:textColor="#26B7F0"
+						android:textColor="@color/zerion_cyan"
 						android:textSize="12sp"
 						android:textStyle="bold" />
 
@@ -135,7 +135,7 @@
 					android:layout_width="48dp"
 					android:layout_height="48dp"
 					android:src="@drawable/ic_link"
-					app:tint="#80FFFFFF"
+					app:tint="@color/zerion_text_tertiary_inverse"
 					tools:ignore="ContentDescription" />
 
 				<LinearLayout
@@ -158,7 +158,7 @@
 						android:layout_height="wrap_content"
 						android:layout_marginTop="4dp"
 						android:text="@string/contact_type_classic_badge"
-						android:textColor="#80FFFFFF"
+						android:textColor="@color/zerion_text_tertiary_inverse"
 						android:textSize="12sp" />
 
 				</LinearLayout>
@@ -170,7 +170,7 @@
 				android:layout_height="wrap_content"
 				android:layout_marginTop="@dimen/margin_medium"
 				android:text="@string/contact_type_classic_description"
-				android:textColor="#80FFFFFF"
+				android:textColor="@color/zerion_text_tertiary_inverse"
 				android:textSize="14sp" />
 
 		</LinearLayout>

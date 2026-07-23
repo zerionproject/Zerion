@@ -26,6 +26,8 @@
 		<item name="android:textColorPrimary">@android:color/white</item>
 		<item name="android:textColorSecondary">#B3FFFFFF</item>
 		<item name="android:textColorLink">@color/zerion_cyan</item>
+		<item name="android:fontFamily">@font/plex_sans</item>
+		<item name="fontFamily">@font/plex_sans</item>
 		<item name="android:windowAnimationStyle">@style/ActivityAnimation</item>
 		<item name="windowActionModeOverlay">true</item>
 		<item name="toolbarStyle">@style/ZerionToolbar</item>
@@ -73,6 +75,8 @@
 		<item name="android:textColor">@android:color/white</item>
 		<item name="android:textColorPrimary">@android:color/white</item>
 		<item name="android:textColorLink">@color/zerion_cyan</item>
+		<item name="android:fontFamily">@font/plex_sans</item>
+		<item name="fontFamily">@font/plex_sans</item>
 		<item name="android:windowBackground">@color/zerion_card_bg</item>
 		<item name="android:windowAnimationStyle">@style/DialogAnimation</item>
 		<item name="android:filterTouchesWhenObscured">true</item>
@@ -159,6 +163,70 @@
 		<item name="android:windowBackground">@color/zerion_amoled_bg</item>
 		<item name="android:statusBarColor">@android:color/transparent</item>
 		<item name="android:navigationBarColor">@android:color/transparent</item>
+	</style>
+
+	<!-- Selectable accent overlays, applied over the base theme at runtime.
+	     Cyan is the default and needs no overlay. -->
+	<style name="AccentOverlay.Violet" parent="">
+		<item name="colorPrimary">@color/accent_violet</item>
+		<item name="colorControlActivated">@color/accent_violet</item>
+		<item name="colorControlNormal">@color/accent_violet</item>
+		<item name="colorOnTertiaryContainer">@color/accent_violet</item>
+		<item name="android:textColorLink">@color/accent_violet</item>
+		<item name="colorAccent">@color/accent_violet</item>
+	</style>
+
+	<style name="AccentOverlay.Emerald" parent="">
+		<item name="colorPrimary">@color/accent_emerald</item>
+		<item name="colorControlActivated">@color/accent_emerald</item>
+		<item name="colorControlNormal">@color/accent_emerald</item>
+		<item name="colorOnTertiaryContainer">@color/accent_emerald</item>
+		<item name="android:textColorLink">@color/accent_emerald</item>
+		<item name="colorAccent">@color/accent_emerald</item>
+	</style>
+
+	<style name="AccentOverlay.Amber" parent="">
+		<item name="colorPrimary">@color/accent_amber</item>
+		<item name="colorControlActivated">@color/accent_amber</item>
+		<item name="colorControlNormal">@color/accent_amber</item>
+		<item name="colorOnTertiaryContainer">@color/accent_amber</item>
+		<item name="android:textColorLink">@color/accent_amber</item>
+		<item name="colorAccent">@color/accent_amber</item>
+	</style>
+
+	<style name="AccentOverlay.Rose" parent="">
+		<item name="colorPrimary">@color/accent_rose</item>
+		<item name="colorControlActivated">@color/accent_rose</item>
+		<item name="colorControlNormal">@color/accent_rose</item>
+		<item name="colorOnTertiaryContainer">@color/accent_rose</item>
+		<item name="android:textColorLink">@color/accent_rose</item>
+		<item name="colorAccent">@color/accent_rose</item>
+	</style>
+
+	<style name="AccentOverlay.Blue" parent="">
+		<item name="colorPrimary">@color/accent_blue</item>
+		<item name="colorControlActivated">@color/accent_blue</item>
+		<item name="colorControlNormal">@color/accent_blue</item>
+		<item name="colorOnTertiaryContainer">@color/accent_blue</item>
+		<item name="android:textColorLink">@color/accent_blue</item>
+		<item name="colorAccent">@color/accent_blue</item>
+	</style>
+
+	<!-- Brand type system. Body defaults to IBM Plex Sans via the theme
+	     fontFamily above; these are for the distinctive display face
+	     (Bricolage Grotesque) on headings and the monospace face for keys and
+	     fingerprints. -->
+	<style name="TextAppearance.Zerion.Display" parent="TextAppearance.Material3.HeadlineMedium">
+		<item name="android:fontFamily">@font/bricolage_grotesque</item>
+		<item name="fontFamily">@font/bricolage_grotesque</item>
+		<!-- Medium, not bold: a lighter display weight reads modern and calm
+		     rather than heavy. -->
+		<item name="android:textFontWeight">500</item>
+	</style>
+
+	<style name="TextAppearance.Zerion.Mono" parent="TextAppearance.Material3.BodyMedium">
+		<item name="android:fontFamily">@font/plex_mono_regular</item>
+		<item name="fontFamily">@font/plex_mono_regular</item>
 	</style>
 
 </resources>

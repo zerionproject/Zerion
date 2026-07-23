@@ -351,12 +351,6 @@
   
   <string name="contacts_selected">არჩეული კონტაქტები</string>
   <string name="activity_share_toolbar_header">კონტაქტების არჩევა</string>
-  <string name="no_contacts_selector">საჩვენებელი კონტაქტები არ არის</string>
-  <string name="no_contacts_selector_action">გთხოვთ, დაბრუნდეთ კონტაქტის დამატების შემდეგ</string>
-  <string name="shared_by_format">გააზიარა %s-მ</string>
-  <string name="sharing_status">გაზიარების სტატუსი</string>
-  <string name="shared_with">გაუზიარდა %1$d-ის (%2$d ონლაინ)</string>
-  <string name="nobody">არავინ</string>
   
   <string name="read_more">წაიკითხეთ ვრცლად</string>
 

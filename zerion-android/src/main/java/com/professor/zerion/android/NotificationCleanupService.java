@@ -6,7 +6,7 @@ import android.net.Uri;
 
 import com.professor.zerion.android.api.AndroidNotificationManager;
 
-import org.briarproject.bramble.api.contact.ContactId;
+import org.zerionproject.core.api.contact.ContactId;
 
 import javax.inject.Inject;
 

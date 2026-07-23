@@ -1,0 +1,21 @@
+package org.zerionproject.core.api.db;
+
+import org.zerionproject.core.api.event.EventExecutor;
+
+public class TaskAction implements CommitAction {
+
+	private final Runnable task;
+
+	TaskAction(Runnable task) {
+		this.task = task;
+	}
+
+	public Runnable getTask() {
+		return task;
+	}
+
+	@Override
+	public void accept(Visitor visitor) {
+		visitor.visit(this);
+	}
+}

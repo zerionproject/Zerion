@@ -2,8 +2,8 @@ package com.professor.zerion.android.api;
 
 import android.app.Notification;
 
-import org.briarproject.bramble.api.contact.ContactId;
-import org.briarproject.bramble.api.sync.GroupId;
+import org.zerionproject.core.api.contact.ContactId;
+import org.zerionproject.core.api.sync.GroupId;
 
 public interface AndroidNotificationManager {
     String ONGOING_CHANNEL_ID = "ONGOING_CHANNEL_ID";

@@ -15,8 +15,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.professor.zerion.R;
 import com.professor.zerion.android.util.SafeImageDecoder;
 
-import org.briarproject.briar.api.grouptr.GroupTrBody;
-import org.briarproject.briar.api.grouptr.GroupTrPost;
+import org.zerionproject.app.api.grouptr.GroupTrBody;
+import org.zerionproject.app.api.grouptr.GroupTrPost;
 
 import java.util.ArrayList;
 import java.util.Arrays;

@@ -6,7 +6,7 @@ import android.view.View;
 import android.widget.TextView;
 
 import com.professor.zerion.R;
-import org.briarproject.bramble.api.sync.MessageId;
+import org.zerionproject.core.api.sync.MessageId;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.Nullable;

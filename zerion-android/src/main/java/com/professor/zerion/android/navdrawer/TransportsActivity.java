@@ -12,10 +12,10 @@ import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import org.briarproject.bramble.api.network.NetworkStatus;
-import org.briarproject.bramble.api.plugin.Plugin.State;
-import org.briarproject.bramble.api.plugin.TorConstants;
-import org.briarproject.bramble.api.plugin.TransportId;
+import org.zerionproject.core.api.network.NetworkStatus;
+import org.zerionproject.core.api.plugin.Plugin.State;
+import org.zerionproject.core.api.plugin.TorConstants;
+import org.zerionproject.core.api.plugin.TransportId;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
@@ -38,13 +38,13 @@ import androidx.lifecycle.ViewModelProvider;
 
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
-import static org.briarproject.bramble.api.plugin.Plugin.State.ACTIVE;
-import static org.briarproject.bramble.api.plugin.Plugin.State.DISABLED;
-import static org.briarproject.bramble.api.plugin.Plugin.State.ENABLING;
-import static org.briarproject.bramble.api.plugin.Plugin.State.STARTING_STOPPING;
-import static org.briarproject.bramble.api.plugin.TorConstants.REASON_BATTERY;
-import static org.briarproject.bramble.api.plugin.TorConstants.REASON_COUNTRY_BLOCKED;
-import static org.briarproject.bramble.api.plugin.TorConstants.REASON_MOBILE_DATA;
+import static org.zerionproject.core.api.plugin.Plugin.State.ACTIVE;
+import static org.zerionproject.core.api.plugin.Plugin.State.DISABLED;
+import static org.zerionproject.core.api.plugin.Plugin.State.ENABLING;
+import static org.zerionproject.core.api.plugin.Plugin.State.STARTING_STOPPING;
+import static org.zerionproject.core.api.plugin.TorConstants.REASON_BATTERY;
+import static org.zerionproject.core.api.plugin.TorConstants.REASON_COUNTRY_BLOCKED;
+import static org.zerionproject.core.api.plugin.TorConstants.REASON_MOBILE_DATA;
 import static com.professor.zerion.android.util.UiUtils.showOnboardingDialog;
 
 @MethodsNotNullByDefault
@@ -192,7 +192,7 @@ public class TransportsActivity extends ZerionActivity {
 
 	@ColorRes
 	private int getIconColor(State state) {
-		if (state == ACTIVE) return R.color.zerion_lime_400;
+		if (state == ACTIVE) return R.color.zerion_success;
 		else if (state == ENABLING) return R.color.zerion_orange_500;
 		else return android.R.color.tertiary_text_light;
 	}

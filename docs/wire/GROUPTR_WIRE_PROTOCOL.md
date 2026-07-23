@@ -44,6 +44,8 @@ sections below for the exact wire formats.
 
 All GroupTr records ride over the same pairwise messaging channel as private messages. No new sync-client, no new group-message group ID, no new transport. Each record is a BdfList whose first element is the msgType integer.
 
+In Zerion 3.0 these records are carried inside ZWF frames over the ZPP constant-rate transport, tagged by the ZMM record registry; the record format below is unchanged.
+
 ```
 Alice's pairwise messaging Group with Peter (Briar contact group)
                     |
@@ -79,9 +81,9 @@ Alice's pairwise messaging Group with Peter (Briar contact group)
 | 39 | `GROUP_MEMBER_KEY_ROTATED_RESERVED` | Reserved — not emitted or accepted on the wire. |
 | 40 | `GROUP_FORWARDED_RESERVED` | Reserved — not emitted or accepted on the wire. |
 | 41 | `GROUP_MEMBER_LIST_SNAPSHOT` | Full member-list snapshot at a given epoch (for repair / late joiners). |
-| 42 | `GROUPTR_INVITE_OFFER` | Creator offers a group invite to a contact. Signing label `org.briarproject.zerion/GROUPTR_INVITE_OFFER`. |
-| 43 | `GROUPTR_INVITE_ACCEPT` | Invitee accepts an offer. Signing label `org.briarproject.zerion/GROUPTR_INVITE_ACCEPT`. |
-| 44 | `GROUPTR_INVITE_DECLINE` | Invitee declines an offer. Signing label `org.briarproject.zerion/GROUPTR_INVITE_DECLINE`. |
+| 42 | `GROUPTR_INVITE_OFFER` | Creator offers a group invite to a contact. Signing label `org.zerionproject/GROUPTR_INVITE_OFFER`. |
+| 43 | `GROUPTR_INVITE_ACCEPT` | Invitee accepts an offer. Signing label `org.zerionproject/GROUPTR_INVITE_ACCEPT`. |
+| 44 | `GROUPTR_INVITE_DECLINE` | Invitee declines an offer. Signing label `org.zerionproject/GROUPTR_INVITE_DECLINE`. |
 
 `32`'s wire format is documented separately; this doc covers 33–38 + 41 (the
 membership records) and 42–44 (the invite handshake). msgTypes 39 and 40 are
@@ -167,7 +169,7 @@ BdfList.of(
 )
 ```
 
-Validator size: **6 slots**. Sent immediately after any record that changes the epoch (currently just msgType 34). The pqSeed is hashed under label `"org.briarproject.zerion/GROUP_EPOCH_SEED"` into the signed-input.
+Validator size: **6 slots**. Sent immediately after any record that changes the epoch (currently just msgType 34). The pqSeed is hashed under label `"org.zerionproject/GROUP_EPOCH_SEED"` into the signed-input.
 
 ### 38 — GROUP_MEMBER_ROLE_CHANGED
 
@@ -338,11 +340,11 @@ The two 32-byte key slots carry different roles depending on direction:
 
 - **OFFER (signer = creator):** `keyA = creatorPubKey`, `keyB = invitee's
   contactPubKey`. Signed with label
-  `org.briarproject.zerion/GROUPTR_INVITE_OFFER`.
+  `org.zerionproject/GROUPTR_INVITE_OFFER`.
 - **ACCEPT / DECLINE (signer = invitee):** `keyA = responder's own pubkey`,
   `keyB = creatorPubKey`. The creator re-builds the identical bytes with
   `keyA = responderPub`, `keyB = creatorPubKey` to verify. Signed with label
-  `org.briarproject.zerion/GROUPTR_INVITE_ACCEPT` or
+  `org.zerionproject/GROUPTR_INVITE_ACCEPT` or
   `.../GROUPTR_INVITE_DECLINE` respectively.
 
 Note the length fields are 4-byte big-endian (`ByteBuffer.putInt`) prefixes on
@@ -383,7 +385,7 @@ total: 45 bytes
 ### EPOCH_COMMIT (`epochCommitSignedInput`)
 
 ```
-[32B groupId][4B BE fromEpoch][4B BE toEpoch][32B BLAKE2b(label="org.briarproject.zerion/GROUP_EPOCH_SEED", pqSeed)][8B BE timestamp][0x05]
+[32B groupId][4B BE fromEpoch][4B BE toEpoch][32B BLAKE2b(label="org.zerionproject/GROUP_EPOCH_SEED", pqSeed)][8B BE timestamp][0x05]
 total: 89 bytes
 ```
 
@@ -399,7 +401,7 @@ total: 78 bytes
 ### LIST_SNAPSHOT (`snapshotSignedInput`)
 
 ```
-mlHash = BLAKE2b(label="org.briarproject.zerion/GROUP_MEMBER_LIST", memberCanonical)
+mlHash = BLAKE2b(label="org.zerionproject/GROUP_MEMBER_LIST", memberCanonical)
 signedInput = [32B groupId][4B BE epoch][8B BE timestamp][32B mlHash][0x07]
 total: 77 bytes
 ```
@@ -427,13 +429,13 @@ def signOrThrow(label, signed, ed25519PrivateKey):
 
 Labels used in GroupTr:
 
-- `"org.briarproject.zerion/GROUP_MEMBERSHIP"` for msgType 33, 34, 35, 36, 38
-- `"org.briarproject.zerion/GROUP_EPOCH_COMMIT"` for msgType 37
-- `"org.briarproject.zerion/GROUP_MEMBER_LIST_SNAPSHOT"` for msgType 41
-- `"org.briarproject.zerion/GROUPTR_INVITE_OFFER"` for msgType 42
-- `"org.briarproject.zerion/GROUPTR_INVITE_ACCEPT"` for msgType 43
-- `"org.briarproject.zerion/GROUPTR_INVITE_DECLINE"` for msgType 44
-- `"org.briarproject.zerion/GROUP_POST"` for msgType 32 (separate spec)
+- `"org.zerionproject/GROUP_MEMBERSHIP"` for msgType 33, 34, 35, 36, 38
+- `"org.zerionproject/GROUP_EPOCH_COMMIT"` for msgType 37
+- `"org.zerionproject/GROUP_MEMBER_LIST_SNAPSHOT"` for msgType 41
+- `"org.zerionproject/GROUPTR_INVITE_OFFER"` for msgType 42
+- `"org.zerionproject/GROUPTR_INVITE_ACCEPT"` for msgType 43
+- `"org.zerionproject/GROUPTR_INVITE_DECLINE"` for msgType 44
+- `"org.zerionproject/GROUP_POST"` for msgType 32 (separate spec)
 
 (Constants live in `briar-core/.../grouptr/GroupTrConstants.java`.)
 
@@ -495,8 +497,8 @@ Concrete checklist:
 
 ## What this does NOT cover
 
-- msgType 32 (`GROUP_POST`) — separate spec, see `GROUP_TRIPLE_RATCHET_PQ_DESIGN.md`.
-- Forward secrecy / post-compromise security ratcheting inside the group — that's a property of how the per-message keys are derived from the PCS root, also in the PQ design doc.
+- msgType 32 (`GROUP_POST`) content encryption: the per-message keys derive from the group ratchet on the Mode 3-Full primitives (see the Technical Whitepaper, group section).
+- Forward secrecy and post-compromise security ratcheting inside the group: a property of how the per-message keys are derived, described in the Technical Whitepaper.
 - Recovery from missing membership records — covered by msgType 41 snapshot and the "When to send a snapshot" section above (2026-06-09 update).
 
 ## Quick interop sanity test for iOS team

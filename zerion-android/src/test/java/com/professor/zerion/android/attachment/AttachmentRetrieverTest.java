@@ -1,15 +1,15 @@
 package com.professor.zerion.android.attachment;
 
-import org.briarproject.bramble.api.sync.GroupId;
-import org.briarproject.bramble.api.sync.MessageId;
-import org.briarproject.bramble.test.BrambleMockTestCase;
-import org.briarproject.bramble.test.ImmediateExecutor;
+import org.zerionproject.core.api.sync.GroupId;
+import org.zerionproject.core.api.sync.MessageId;
+import org.zerionproject.core.test.BrambleMockTestCase;
+import org.zerionproject.core.test.ImmediateExecutor;
 import com.professor.zerion.android.attachment.media.ImageHelper;
 import com.professor.zerion.android.attachment.media.ImageSizeCalculator;
 import com.professor.zerion.android.attachment.media.Size;
-import org.briarproject.briar.api.attachment.Attachment;
-import org.briarproject.briar.api.attachment.AttachmentHeader;
-import org.briarproject.briar.api.attachment.AttachmentReader;
+import org.zerionproject.app.api.attachment.Attachment;
+import org.zerionproject.app.api.attachment.AttachmentHeader;
+import org.zerionproject.app.api.attachment.AttachmentReader;
 import org.jmock.Expectations;
 import org.jmock.imposters.ByteBuddyClassImposteriser;
 import org.junit.Test;
@@ -18,8 +18,8 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.concurrent.Executor;
 
-import static org.briarproject.bramble.test.TestUtils.getRandomBytes;
-import static org.briarproject.bramble.test.TestUtils.getRandomId;
+import static org.zerionproject.core.test.TestUtils.getRandomBytes;
+import static org.zerionproject.core.test.TestUtils.getRandomId;
 import static com.professor.zerion.android.attachment.AttachmentItem.State.AVAILABLE;
 import static com.professor.zerion.android.attachment.AttachmentItem.State.ERROR;
 import static org.junit.Assert.assertEquals;

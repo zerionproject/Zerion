@@ -319,12 +319,6 @@
   
   <string name="contacts_selected">אנשי קשר נבחרו</string>
   <string name="activity_share_toolbar_header">בחר אנשי קשר</string>
-  <string name="no_contacts_selector">אין אנשי קשר להראות</string>
-  <string name="no_contacts_selector_action">אנא חזור לכאן לאחר הוספת איש קשר</string>
-  <string name="shared_by_format">שותף  על ידי %s</string>
-  <string name="sharing_status">מעמד שיתוף</string>
-  <string name="shared_with">משותף עם %1$d (%2$d מחוברים)</string>
-  <string name="nobody">אף אחד</string>
   
   <string name="read_more">קרא עוד</string>
 

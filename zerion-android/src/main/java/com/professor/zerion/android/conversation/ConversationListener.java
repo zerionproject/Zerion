@@ -28,9 +28,9 @@ interface ConversationListener {
 
 	void onReactionClicked(ConversationItem item);
 
-	void onSecretNoteOpened(org.briarproject.bramble.api.sync.MessageId messageId);
+	void onSecretNoteOpened(org.zerionproject.core.api.sync.MessageId messageId);
 
-	void onSecretNoteRevealed(org.briarproject.bramble.api.sync.MessageId messageId);
+	void onSecretNoteRevealed(org.zerionproject.core.api.sync.MessageId messageId);
 
 	void onSecretNoteRevealing(boolean revealing);
 

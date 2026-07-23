@@ -67,7 +67,7 @@ No STUN, no TURN, no VoIP servers — just private communication between devices
 
 ### Channels
 
-A one-to-many broadcast layer — one person writes, many people read — over the same Tor pull-mesh as everything else. There is no central server holding posts or the subscriber list.
+A one-to-many broadcast layer (one person writes, many people read) served from the publisher's own Tor onion. Subscribers pull posts directly over Tor and verify their signatures. There is no central server holding posts or the subscriber list.
 
 - **Public channels**: anyone with the invite link can subscribe
 - **Private channels**: subscribers request to join and the owner approves
@@ -219,15 +219,12 @@ APK signing fingerprint: D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6
 
 ## Documentation
 
-- [Technical Whitepaper](docs/ZERION_TECHNICAL_WHITEPAPER.md) — Complete architecture & crypto design
-- [Security Overview](docs/SECURITY_OVERVIEW.md) — Per-version security status and audit notes
-- [PCS Design](docs/PCS_DESIGN.md) — Post-Compromise Security (Triple Ratchet) specification
-- [Ratchet Modes](docs/RATCHET_MODES.md) — Mode 1 / 2 / 3 layered explainer
-- [Triple Ratchet Design](docs/TRIPLE_RATCHET_DESIGN.md) — Mode 3 ML-KEM-768 ratchet specification
-- [Group Triple Ratchet (PQ)](docs/GROUP_TRIPLE_RATCHET_PQ_DESIGN.md) — Hybrid-signed group records
-- [GroupTr Wire Protocol](docs/wire/GROUPTR_WIRE_PROTOCOL.md) — Native group-invite + membership messages
-- [P2P Voice & Video Calls](docs/P2P_Voice_Calls_Documentation.md) — Voice and video calling specification
-- [Channels Wire Protocol](docs/wire/CHANNELS_WIRE_PROTOCOL.md) — Publisher-to-subscriber broadcast pull protocol
+- [Overview](docs/ZERION_OVERVIEW.md): plain-language introduction and how Zerion compares
+- [Technical Whitepaper](docs/ZERION_TECHNICAL_WHITEPAPER.md): full architecture, crypto, transport, vault and anti-forensics
+- [Introduction / pairing signatures](docs/wire/F2_INTRODUCTION_HYBRID_SIG.md): hybrid-signed pairing record spec
+- [Contact-add record placement](docs/wire/B3_RECORD_PLACEMENT.md): hybrid pairing record layout
+- [GroupTr Wire Protocol](docs/wire/GROUPTR_WIRE_PROTOCOL.md): group invite and membership records
+- [Channels Wire Protocol](docs/wire/CHANNELS_WIRE_PROTOCOL.md): publisher-to-subscriber broadcast records
 
 ---
 

@@ -343,12 +343,6 @@
   
   <string name="contacts_selected">選択した連絡先</string>
   <string name="activity_share_toolbar_header">連絡先を選択</string>
-  <string name="no_contacts_selector">表示する連絡先がありません</string>
-  <string name="no_contacts_selector_action">連絡先を追加した後、ここに戻ってください</string>
-  <string name="shared_by_format">%sによって共有されました。</string>
-  <string name="sharing_status">共有状況</string>
-  <string name="shared_with">%1$dと共有（%2$d オンライン）</string>
-  <string name="nobody">誰もいません</string>
   
   <string name="read_more">続きを読む</string>
 

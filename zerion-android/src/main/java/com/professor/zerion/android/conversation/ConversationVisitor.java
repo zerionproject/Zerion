@@ -2,17 +2,17 @@ package com.professor.zerion.android.conversation;
 
 import android.content.Context;
 
-import org.briarproject.bramble.api.sync.MessageId;
+import org.zerionproject.core.api.sync.MessageId;
 import com.professor.zerion.R;
 import com.professor.zerion.android.attachment.AttachmentItem;
-import org.briarproject.briar.api.conversation.ConversationMessageVisitor;
-import org.briarproject.briar.api.grouptr.GroupTrInvitationHeader;
-import org.briarproject.briar.api.grouptr.GroupTrManager;
-import org.briarproject.briar.api.introduction.IntroductionRequest;
-import org.briarproject.briar.api.introduction.IntroductionResponse;
-import org.briarproject.briar.api.messaging.PrivateMessageHeader;
-import org.briarproject.briar.api.privategroup.invitation.GroupInvitationRequest;
-import org.briarproject.briar.api.privategroup.invitation.GroupInvitationResponse;
+import org.zerionproject.app.api.conversation.ConversationMessageVisitor;
+import org.zerionproject.app.api.grouptr.GroupTrInvitationHeader;
+import org.zerionproject.app.api.grouptr.GroupTrManager;
+import org.zerionproject.app.api.introduction.IntroductionRequest;
+import org.zerionproject.app.api.introduction.IntroductionResponse;
+import org.zerionproject.app.api.messaging.PrivateMessageHeader;
+import org.zerionproject.app.api.privategroup.invitation.GroupInvitationRequest;
+import org.zerionproject.app.api.privategroup.invitation.GroupInvitationResponse;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.List;
@@ -121,7 +121,7 @@ class ConversationVisitor implements
 		}
 
 		if (viewModel != null) {
-			org.briarproject.bramble.api.Pair<MessageId, String> replyContext =
+			org.zerionproject.core.api.Pair<MessageId, String> replyContext =
 					viewModel.getReplyContext(h.getId());
 			if (replyContext != null) {
 				item.setReplyToMessageId(replyContext.getFirst());

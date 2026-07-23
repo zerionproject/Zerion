@@ -7,7 +7,7 @@ import android.widget.TextView;
 
 import com.professor.zerion.R;
 import com.professor.zerion.android.view.TrustIndicatorView;
-import org.briarproject.briar.api.identity.AuthorInfo;
+import org.zerionproject.app.api.identity.AuthorInfo;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.Nullable;

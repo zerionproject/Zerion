@@ -44,13 +44,6 @@
 		<attr name="fillHeight" format="boolean" />
 	</declare-styleable>
 
-	<declare-styleable name="UnreadMessageButton">
-		<attr name="direction" format="enum">
-			<enum name="up" value="0" />
-			<enum name="down" value="1" />
-		</attr>
-	</declare-styleable>
-
 	<declare-styleable name="ZerionButton">
 		<attr name="text" format="string" />
 		<attr name="buttonStyle" format="reference" />

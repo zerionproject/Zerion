@@ -10,7 +10,7 @@ import android.widget.Toast;
 
 import com.google.android.material.snackbar.Snackbar;
 
-import org.briarproject.bramble.api.contact.ContactId;
+import org.zerionproject.core.api.contact.ContactId;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.contact.add.remote.PendingContactListActivity;

@@ -36,7 +36,12 @@ public final class SecurityManager {
 	}
 
 	public void applyScreenshotProtection(Activity activity) {
-		boolean enabled = uiPrefs.getBoolean(PREF_SCREENSHOT_PROTECTION, true);
+		applyScreenshotProtection(activity, false);
+	}
+
+	public void applyScreenshotProtection(Activity activity, boolean force) {
+		boolean enabled = force
+				|| uiPrefs.getBoolean(PREF_SCREENSHOT_PROTECTION, true);
 		if (enabled) {
 			activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
 		} else {

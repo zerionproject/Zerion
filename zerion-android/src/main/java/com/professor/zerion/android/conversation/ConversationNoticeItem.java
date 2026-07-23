@@ -1,8 +1,8 @@
 package com.professor.zerion.android.conversation;
 
-import org.briarproject.briar.api.conversation.ConversationMessageHeader;
-import org.briarproject.briar.api.conversation.ConversationRequest;
-import org.briarproject.briar.api.conversation.ConversationResponse;
+import org.zerionproject.app.api.conversation.ConversationMessageHeader;
+import org.zerionproject.app.api.conversation.ConversationRequest;
+import org.zerionproject.app.api.conversation.ConversationResponse;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.Nullable;

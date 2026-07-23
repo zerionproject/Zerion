@@ -3,7 +3,7 @@ package com.professor.zerion.android.view;
 import android.content.Context;
 import android.util.AttributeSet;
 
-import org.briarproject.briar.api.identity.AuthorInfo.Status;
+import org.zerionproject.app.api.identity.AuthorInfo.Status;
 import com.professor.zerion.R;
 
 import androidx.annotation.UiThread;

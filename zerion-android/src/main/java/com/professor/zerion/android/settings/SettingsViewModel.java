@@ -5,29 +5,29 @@ import android.content.ContentResolver;
 import android.net.Uri;
 import android.widget.Toast;
 
-import org.briarproject.bramble.api.FeatureFlags;
-import org.briarproject.bramble.api.db.DatabaseExecutor;
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.db.TransactionManager;
-import org.briarproject.bramble.api.event.Event;
-import org.briarproject.bramble.api.event.EventBus;
-import org.briarproject.bramble.api.event.EventListener;
-import org.briarproject.bramble.api.identity.IdentityManager;
-import org.briarproject.bramble.api.identity.LocalAuthor;
-import org.briarproject.bramble.api.lifecycle.IoExecutor;
-import org.briarproject.bramble.api.lifecycle.LifecycleManager;
-import org.briarproject.bramble.api.plugin.TorConstants;
-import org.briarproject.bramble.api.settings.Settings;
-import org.briarproject.bramble.api.settings.SettingsManager;
-import org.briarproject.bramble.api.settings.event.SettingsUpdatedEvent;
-import org.briarproject.bramble.api.system.AndroidExecutor;
+import org.zerionproject.core.api.FeatureFlags;
+import org.zerionproject.core.api.db.DatabaseExecutor;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.db.TransactionManager;
+import org.zerionproject.core.api.event.Event;
+import org.zerionproject.core.api.event.EventBus;
+import org.zerionproject.core.api.event.EventListener;
+import org.zerionproject.core.api.identity.IdentityManager;
+import org.zerionproject.core.api.identity.LocalAuthor;
+import org.zerionproject.core.api.lifecycle.IoExecutor;
+import org.zerionproject.core.api.lifecycle.LifecycleManager;
+import org.zerionproject.core.api.plugin.TorConstants;
+import org.zerionproject.core.api.settings.Settings;
+import org.zerionproject.core.api.settings.SettingsManager;
+import org.zerionproject.core.api.settings.event.SettingsUpdatedEvent;
+import org.zerionproject.core.api.system.AndroidExecutor;
 import com.professor.zerion.R;
 import com.professor.zerion.android.attachment.UnsupportedMimeTypeException;
 import com.professor.zerion.android.attachment.media.ImageCompressor;
 import com.professor.zerion.android.viewmodel.DbViewModel;
-import org.briarproject.briar.api.avatar.AvatarManager;
-import org.briarproject.briar.api.identity.AuthorInfo;
-import org.briarproject.briar.api.identity.AuthorManager;
+import org.zerionproject.app.api.avatar.AvatarManager;
+import org.zerionproject.app.api.identity.AuthorInfo;
+import org.zerionproject.app.api.identity.AuthorManager;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 import org.briarproject.onionwrapper.CircumventionProvider;
@@ -45,7 +45,7 @@ import androidx.lifecycle.MutableLiveData;
 
 import static android.widget.Toast.LENGTH_LONG;
 import static java.util.Arrays.asList;
-import static org.briarproject.bramble.util.AndroidUtils.getSupportedImageContentTypes;
+import static org.zerionproject.core.util.AndroidUtils.getSupportedImageContentTypes;
 import static com.professor.zerion.android.settings.SecurityFragment.PREF_SCREEN_LOCK;
 import static com.professor.zerion.android.settings.SecurityFragment.PREF_SCREEN_LOCK_TIMEOUT;
 import static com.professor.zerion.android.settings.SettingsFragment.SETTINGS_NAMESPACE;
@@ -253,7 +253,7 @@ class SettingsViewModel extends DbViewModel implements EventListener {
 				String fp = com.professor.zerion.android.contact.identity
 						.IdentityFingerprint.forSigningPub(localPub);
 				myFingerprint.postEvent(fp);
-			} catch (org.briarproject.bramble.api.db.DbException e) {
+			} catch (org.zerionproject.core.api.db.DbException e) {
 				handleException(e);
 			}
 		});

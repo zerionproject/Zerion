@@ -6,7 +6,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.PowerManager;
 
-import org.briarproject.bramble.api.lifecycle.Service;
+import org.zerionproject.core.api.lifecycle.Service;
 import com.professor.zerion.android.api.DozeWatchdog;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -18,7 +18,7 @@ import static android.os.Build.VERSION.SDK_INT;
 import static android.os.PowerManager.ACTION_DEVICE_IDLE_MODE_CHANGED;
 import static android.os.PowerManager.ACTION_DEVICE_LIGHT_IDLE_MODE_CHANGED;
 import static android.os.PowerManager.ACTION_LOW_POWER_STANDBY_ENABLED_CHANGED;
-import static org.briarproject.bramble.util.AndroidUtils.registerReceiver;
+import static org.zerionproject.core.util.AndroidUtils.registerReceiver;
 
 class DozeWatchdogImpl implements DozeWatchdog, Service {
 

@@ -7,7 +7,7 @@
 	android:layout_height="wrap_content"
 	android:background="@android:color/transparent"
 	android:padding="16dp"
-	android:textColor="#26B7F0"
+	android:textColor="@color/zerion_cyan"
 	android:textSize="14sp"
 	android:textStyle="bold"
 	tools:text="@string/security_settings_title" />

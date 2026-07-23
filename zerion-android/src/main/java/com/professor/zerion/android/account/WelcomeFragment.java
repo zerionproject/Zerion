@@ -23,7 +23,7 @@ import com.professor.zerion.android.backup.BackupException;
 import com.professor.zerion.android.settings.TransferReceiveFragment;
 import com.professor.zerion.android.util.ActivityLaunchers.OpenDocumentAdvanced;
 
-import org.briarproject.bramble.api.lifecycle.IoExecutor;
+import org.zerionproject.core.api.lifecycle.IoExecutor;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 

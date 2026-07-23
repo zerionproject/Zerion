@@ -1,8 +1,8 @@
 package com.professor.zerion.android;
 
-import org.briarproject.bramble.account.ProfileManager;
-import org.briarproject.bramble.api.crypto.KeyStrengthener;
-import org.briarproject.bramble.api.db.DatabaseConfig;
+import org.zerionproject.core.account.ProfileManager;
+import org.zerionproject.core.api.crypto.KeyStrengthener;
+import org.zerionproject.core.api.db.DatabaseConfig;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.File;

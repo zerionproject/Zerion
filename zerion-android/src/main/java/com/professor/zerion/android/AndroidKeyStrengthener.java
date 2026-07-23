@@ -2,8 +2,8 @@ package com.professor.zerion.android;
 
 import android.security.keystore.KeyGenParameterSpec;
 
-import org.briarproject.bramble.api.crypto.KeyStrengthener;
-import org.briarproject.bramble.api.crypto.SecretKey;
+import org.zerionproject.core.api.crypto.KeyStrengthener;
+import org.zerionproject.core.api.crypto.SecretKey;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.IOException;

@@ -1,6 +1,6 @@
 package com.professor.zerion.android.conversation;
 
-import org.briarproject.briar.api.conversation.ConversationMessageHeader;
+import org.zerionproject.app.api.conversation.ConversationMessageHeader;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import androidx.annotation.LayoutRes;

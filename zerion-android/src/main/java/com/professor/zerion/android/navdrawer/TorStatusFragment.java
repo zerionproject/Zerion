@@ -14,9 +14,9 @@ import com.google.android.material.button.MaterialButton;
 import com.professor.zerion.R;
 import com.professor.zerion.android.fragment.BaseFragment;
 
-import org.briarproject.bramble.api.plugin.TorConstants;
-import org.briarproject.bramble.api.plugin.TransportId;
-import org.briarproject.bramble.plugin.tor.B4OnionRotation;
+import org.zerionproject.core.api.plugin.TorConstants;
+import org.zerionproject.core.api.plugin.TransportId;
+import org.zerionproject.core.plugin.tor.B4OnionRotation;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
@@ -139,10 +139,10 @@ public class TorStatusFragment extends BaseFragment {
 	}
 
 	private void updateTorStatus(
-			org.briarproject.bramble.api.plugin.Plugin.State state) {
+			org.zerionproject.core.api.plugin.Plugin.State state) {
 		Context ctx = requireContext();
 		if (state == null
-				|| state == org.briarproject.bramble.api.plugin.Plugin.State.DISABLED) {
+				|| state == org.zerionproject.core.api.plugin.Plugin.State.DISABLED) {
 			torStatusText.setText(R.string.disabled);
 			torStatusText.setTextColor(
 					ContextCompat.getColor(ctx, R.color.zerion_destructive));
@@ -150,7 +150,7 @@ public class TorStatusFragment extends BaseFragment {
 			torStatusIcon.setColorFilter(
 					ContextCompat.getColor(ctx, R.color.zerion_destructive));
 		} else if (state
-				== org.briarproject.bramble.api.plugin.Plugin.State.ACTIVE) {
+				== org.zerionproject.core.api.plugin.Plugin.State.ACTIVE) {
 			torStatusText.setText(R.string.connected);
 			torStatusText.setTextColor(
 					ContextCompat.getColor(ctx, R.color.zerion_success));

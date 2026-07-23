@@ -2,15 +2,15 @@ package com.professor.zerion.android.settings;
 
 import android.app.Application;
 
-import org.briarproject.bramble.api.settings.SettingsManager;
+import org.zerionproject.core.api.settings.SettingsManager;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.concurrent.Executor;
 
 import androidx.annotation.Nullable;
 
-import static org.briarproject.bramble.api.plugin.TorConstants.PREF_TOR_MOBILE;
-import static org.briarproject.bramble.api.plugin.TorConstants.PREF_TOR_NETWORK;
+import static org.zerionproject.core.api.plugin.TorConstants.PREF_TOR_MOBILE;
+import static org.zerionproject.core.api.plugin.TorConstants.PREF_TOR_NETWORK;
 import static com.professor.zerion.android.settings.ConnectionsFragment.PREF_KEY_ORBOT_ENABLED;
 import static com.professor.zerion.android.settings.ConnectionsFragment.PREF_KEY_ORBOT_HOST;
 import static com.professor.zerion.android.settings.ConnectionsFragment.PREF_KEY_ORBOT_PORT;

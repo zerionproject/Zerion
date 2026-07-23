@@ -17,9 +17,9 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 import com.professor.zerion.R;
 
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.lifecycle.IoExecutor;
-import org.briarproject.bramble.plugin.tor.B4OnionRotation;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.lifecycle.IoExecutor;
+import org.zerionproject.core.plugin.tor.B4OnionRotation;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
@@ -33,8 +33,8 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import static com.professor.zerion.android.AppModule.getAndroidComponent;
-import static org.briarproject.bramble.api.plugin.TorConstants.PREF_TOR_CUSTOM_BRIDGES;
-import static org.briarproject.bramble.api.plugin.TorConstants.PREF_TOR_NETWORK;
+import static org.zerionproject.core.api.plugin.TorConstants.PREF_TOR_CUSTOM_BRIDGES;
+import static org.zerionproject.core.api.plugin.TorConstants.PREF_TOR_NETWORK;
 
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault

@@ -24,23 +24,23 @@ import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
 
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.event.Event;
-import org.briarproject.bramble.api.event.EventBus;
-import org.briarproject.bramble.api.event.EventListener;
-import org.briarproject.bramble.api.lifecycle.IoExecutor;
-import org.briarproject.briar.api.channel.ApplicationStatus;
-import org.briarproject.briar.api.channel.AttachmentBlob;
-import org.briarproject.briar.api.channel.AttachmentSpec;
-import org.briarproject.briar.api.channel.ChannelConstants;
-import org.briarproject.briar.api.channel.ChannelComment;
-import org.briarproject.briar.api.channel.ChannelManager;
-import org.briarproject.briar.api.channel.ChannelPost;
-import org.briarproject.briar.api.channel.ChannelReaction;
-import org.briarproject.briar.api.channel.ChannelState;
-import org.briarproject.briar.api.channel.event.ChannelPostReceivedEvent;
-import org.briarproject.briar.api.channel.event.ChannelCommentReceivedEvent;
-import org.briarproject.briar.api.channel.event.ChannelStateChangedEvent;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.event.Event;
+import org.zerionproject.core.api.event.EventBus;
+import org.zerionproject.core.api.event.EventListener;
+import org.zerionproject.core.api.lifecycle.IoExecutor;
+import org.zerionproject.app.api.channel.ApplicationStatus;
+import org.zerionproject.app.api.channel.AttachmentBlob;
+import org.zerionproject.app.api.channel.AttachmentSpec;
+import org.zerionproject.app.api.channel.ChannelConstants;
+import org.zerionproject.app.api.channel.ChannelComment;
+import org.zerionproject.app.api.channel.ChannelManager;
+import org.zerionproject.app.api.channel.ChannelPost;
+import org.zerionproject.app.api.channel.ChannelReaction;
+import org.zerionproject.app.api.channel.ChannelState;
+import org.zerionproject.app.api.channel.event.ChannelPostReceivedEvent;
+import org.zerionproject.app.api.channel.event.ChannelCommentReceivedEvent;
+import org.zerionproject.app.api.channel.event.ChannelStateChangedEvent;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
@@ -323,7 +323,7 @@ public class ChannelFeedActivity extends ZerionActivity
 				posts = new ArrayList<>();
 			}
 			java.util.Map<String, byte[]> thumbnails = new java.util.HashMap<>();
-			java.util.Map<Long, java.util.List<org.briarproject.briar.api
+			java.util.Map<Long, java.util.List<org.zerionproject.app.api
 					.channel.ChannelReaction>> reactions =
 					new java.util.HashMap<>();
 			java.util.Map<Long, Integer> commentCounts =
@@ -414,7 +414,7 @@ public class ChannelFeedActivity extends ZerionActivity
 	private void render(@Nullable ChannelState state,
 			List<ChannelPost> posts, ApplicationStatus appStatus,
 			java.util.Map<String, byte[]> thumbnails,
-			java.util.Map<Long, java.util.List<org.briarproject.briar.api
+			java.util.Map<Long, java.util.List<org.zerionproject.app.api
 					.channel.ChannelReaction>> reactions,
 			java.util.Map<Long, Integer> commentCounts,
 			boolean discussionsEnabled) {
@@ -1037,12 +1037,12 @@ public class ChannelFeedActivity extends ZerionActivity
 	}
 
 	private static String muteKey(byte[] channelId) {
-		return "mute_channel_" + org.briarproject.bramble.util.StringUtils
+		return "mute_channel_" + org.zerionproject.core.util.StringUtils
 				.toHexString(channelId);
 	}
 
 	private String draftKey() {
-		return "channel_draft_" + org.briarproject.bramble.util.StringUtils
+		return "channel_draft_" + org.zerionproject.core.util.StringUtils
 				.toHexString(channelId);
 	}
 
@@ -1162,7 +1162,7 @@ public class ChannelFeedActivity extends ZerionActivity
 		private List<ChannelPost> posts = new ArrayList<>();
 		private java.util.Map<String, byte[]> thumbnails =
 				java.util.Collections.emptyMap();
-		private java.util.Map<Long, java.util.List<org.briarproject.briar
+		private java.util.Map<Long, java.util.List<org.zerionproject.app
 				.api.channel.ChannelReaction>> reactions =
 				java.util.Collections.emptyMap();
 		private java.util.Map<Long, Integer> commentCounts =
@@ -1182,7 +1182,7 @@ public class ChannelFeedActivity extends ZerionActivity
 
 		void setPosts(List<ChannelPost> p,
 				java.util.Map<String, byte[]> thumbnails,
-				java.util.Map<Long, java.util.List<org.briarproject.briar
+				java.util.Map<Long, java.util.List<org.zerionproject.app
 						.api.channel.ChannelReaction>> reactions,
 				java.util.Map<Long, Integer> commentCounts,
 				boolean discussionsEnabled) {
@@ -1251,7 +1251,7 @@ public class ChannelFeedActivity extends ZerionActivity
 		void bind(ChannelPost p,
 				PostAdapter.OnAttachmentTap attachmentTapListener,
 				java.util.Map<String, byte[]> thumbnails,
-				java.util.Map<Long, java.util.List<org.briarproject.briar
+				java.util.Map<Long, java.util.List<org.zerionproject.app
 						.api.channel.ChannelReaction>> reactions,
 				int commentCount, boolean discussionsEnabled,
 				PostAdapter.OnCommentTap commentTapListener) {
@@ -1354,9 +1354,9 @@ public class ChannelFeedActivity extends ZerionActivity
 		}
 
 		private void bindReactions(ChannelPost p,
-				java.util.Map<Long, java.util.List<org.briarproject.briar
+				java.util.Map<Long, java.util.List<org.zerionproject.app
 						.api.channel.ChannelReaction>> reactions) {
-			java.util.List<org.briarproject.briar.api.channel
+			java.util.List<org.zerionproject.app.api.channel
 					.ChannelReaction> all = reactions.get(p.getSeqNum());
 			if (all == null || all.isEmpty()) {
 				reactionsView.setVisibility(View.GONE);
@@ -1364,7 +1364,7 @@ public class ChannelFeedActivity extends ZerionActivity
 			}
 			java.util.LinkedHashMap<String, Integer> counts =
 					new java.util.LinkedHashMap<>();
-			for (org.briarproject.briar.api.channel.ChannelReaction r
+			for (org.zerionproject.app.api.channel.ChannelReaction r
 					: all) {
 				Integer prev = counts.get(r.getEmoji());
 				counts.put(r.getEmoji(),

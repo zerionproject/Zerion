@@ -23,16 +23,16 @@ import android.widget.Toast;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
 
-import org.briarproject.bramble.api.FeatureFlags;
-import org.briarproject.bramble.api.FormatException;
-import org.briarproject.bramble.api.Pair;
-import org.briarproject.bramble.api.connection.ConnectionRegistry;
-import org.briarproject.bramble.api.contact.ContactId;
-import org.briarproject.bramble.api.db.DatabaseExecutor;
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.lifecycle.IoExecutor;
-import org.briarproject.bramble.api.sync.GroupId;
-import org.briarproject.bramble.api.sync.MessageId;
+import org.zerionproject.core.api.FeatureFlags;
+import org.zerionproject.core.api.FormatException;
+import org.zerionproject.core.api.Pair;
+import org.zerionproject.core.api.connection.ConnectionRegistry;
+import org.zerionproject.core.api.contact.ContactId;
+import org.zerionproject.core.api.db.DatabaseExecutor;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.lifecycle.IoExecutor;
+import org.zerionproject.core.api.sync.GroupId;
+import org.zerionproject.core.api.sync.MessageId;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
@@ -59,16 +59,16 @@ import com.professor.zerion.android.view.TextSendController.SendState;
 import com.professor.zerion.android.widget.LinkDialogFragment;
 import com.professor.zerion.android.api.AndroidNotificationManager;
 import java.util.concurrent.Executor;
-import org.briarproject.briar.api.attachment.AttachmentHeader;
-import org.briarproject.briar.api.identity.AuthorInfo;
-import org.briarproject.briar.api.conversation.ConversationMessageHeader;
-import org.briarproject.briar.api.conversation.ConversationRequest;
-import org.briarproject.briar.api.conversation.ConversationResponse;
-import org.briarproject.briar.api.client.SessionId;
-import org.briarproject.briar.api.introduction.IntroductionManager;
-import org.briarproject.briar.api.messaging.MessagingManager;
-import org.briarproject.briar.api.messaging.PrivateMessageFormat;
-import org.briarproject.briar.api.messaging.PrivateMessageHeader;
+import org.zerionproject.app.api.attachment.AttachmentHeader;
+import org.zerionproject.app.api.identity.AuthorInfo;
+import org.zerionproject.app.api.conversation.ConversationMessageHeader;
+import org.zerionproject.app.api.conversation.ConversationRequest;
+import org.zerionproject.app.api.conversation.ConversationResponse;
+import org.zerionproject.app.api.client.SessionId;
+import org.zerionproject.app.api.introduction.IntroductionManager;
+import org.zerionproject.app.api.messaging.MessagingManager;
+import org.zerionproject.app.api.messaging.PrivateMessageFormat;
+import org.zerionproject.app.api.messaging.PrivateMessageHeader;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
@@ -109,8 +109,8 @@ import static androidx.lifecycle.Lifecycle.State.STARTED;
 import static androidx.recyclerview.widget.SortedList.INVALID_POSITION;
 import static java.util.Collections.sort;
 import static java.util.Objects.requireNonNull;
-import static org.briarproject.bramble.util.StringUtils.fromHexString;
-import static org.briarproject.briar.api.autodelete.AutoDeleteConstants.NO_AUTO_DELETE_TIMER;
+import static org.zerionproject.core.util.StringUtils.fromHexString;
+import static org.zerionproject.app.api.autodelete.AutoDeleteConstants.NO_AUTO_DELETE_TIMER;
 import static com.professor.zerion.android.activity.RequestCodes.REQUEST_INTRODUCTION;
 import static com.professor.zerion.android.conversation.ImageActivity.ATTACHMENTS;
 import static com.professor.zerion.android.conversation.ImageActivity.ATTACHMENT_POSITION;
@@ -120,9 +120,9 @@ import static com.professor.zerion.android.conversation.ImageActivity.NAME;
 import static com.professor.zerion.android.util.UiUtils.launchActivityToOpenFile;
 import static com.professor.zerion.android.util.UiUtils.observeOnce;
 import static com.professor.zerion.android.view.AuthorView.setAvatar;
-import static org.briarproject.briar.api.messaging.MessagingConstants.MAX_ATTACHMENTS_PER_MESSAGE;
-import static org.briarproject.briar.api.messaging.MessagingConstants.MAX_PRIVATE_MESSAGE_TEXT_LENGTH;
-import static org.briarproject.briar.api.messaging.PrivateMessageFormat.TEXT_ONLY;
+import static org.zerionproject.app.api.messaging.MessagingConstants.MAX_ATTACHMENTS_PER_MESSAGE;
+import static org.zerionproject.app.api.messaging.MessagingConstants.MAX_PRIVATE_MESSAGE_TEXT_LENGTH;
+import static org.zerionproject.app.api.messaging.PrivateMessageFormat.TEXT_ONLY;
 
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
@@ -153,7 +153,7 @@ public class ConversationActivity extends ZerionActivity
 	Executor dbExecutor;
 
 	@Inject
-	org.briarproject.briar.api.grouptr.GroupTrManager groupTrManager;
+	org.zerionproject.app.api.grouptr.GroupTrManager groupTrManager;
 
 	@Inject
 	IntroductionManager introductionManager;
@@ -166,7 +166,7 @@ public class ConversationActivity extends ZerionActivity
 	MessagingManager messagingManager;
 
 	@Inject
-	org.briarproject.briar.api.conversation.ConversationManager conversationManager;
+	org.zerionproject.app.api.conversation.ConversationManager conversationManager;
 
 	@Inject
 	@com.professor.zerion.android.AppModule.UiPrefs
@@ -1521,7 +1521,7 @@ public class ConversationActivity extends ZerionActivity
 	@Override
 	public void onCustomStickerPicked(byte[] pngBytes) {
 
-		org.briarproject.bramble.api.sync.GroupId gid =
+		org.zerionproject.core.api.sync.GroupId gid =
 				viewModel.getMessagingGroupId().getValue();
 		if (gid == null) {
 			Toast.makeText(this, R.string.sticker_import_failed,
@@ -1535,7 +1535,7 @@ public class ConversationActivity extends ZerionActivity
 				new com.professor.zerion.android.sticker.StickerSendTask.Callback() {
 					@Override
 					public void onStickerHeaderReady(
-							org.briarproject.briar.api.attachment.AttachmentHeader h) {
+							org.zerionproject.app.api.attachment.AttachmentHeader h) {
 						Long t = viewModel.getAutoDeleteTimer().getValue();
 						long timer = t == null ? NO_AUTO_DELETE_TIMER : t;
 						viewModel.sendMessage(null,
@@ -1591,7 +1591,7 @@ public class ConversationActivity extends ZerionActivity
 	}
 
 	@Override
-	public org.briarproject.bramble.api.sync.GroupId getGroupIdForRecording() {
+	public org.zerionproject.core.api.sync.GroupId getGroupIdForRecording() {
 		return viewModel.prepareVoiceRecording();
 	}
 
@@ -1784,7 +1784,7 @@ public class ConversationActivity extends ZerionActivity
 		}
 		String rawText = sb.toString();
 
-		int maxLen = org.briarproject.briar.api.messaging
+		int maxLen = org.zerionproject.app.api.messaging
 				.MessagingConstants.MAX_PRIVATE_MESSAGE_TEXT_LENGTH;
 		String forwardText = rawText.length() > maxLen
 				? rawText.substring(0, maxLen) : rawText;
@@ -1963,11 +1963,11 @@ public class ConversationActivity extends ZerionActivity
 
 	@UiThread
 	private void applyLinkPreviewsToItems(
-			Map<MessageId, org.briarproject.briar.api.messaging.LinkPreview> previews) {
+			Map<MessageId, org.zerionproject.app.api.messaging.LinkPreview> previews) {
 		for (int i = 0; i < adapter.getItemCount(); i++) {
 			ConversationItem item = adapter.getItemAt(i);
 			if (item == null) continue;
-			org.briarproject.briar.api.messaging.LinkPreview preview =
+			org.zerionproject.app.api.messaging.LinkPreview preview =
 					previews.get(item.getId());
 			if (preview != null) {
 				item.setLinkPreview(preview);

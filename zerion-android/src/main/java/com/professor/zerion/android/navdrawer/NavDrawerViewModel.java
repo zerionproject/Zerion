@@ -2,17 +2,32 @@ package com.professor.zerion.android.navdrawer;
 
 import android.app.Application;
 
-import org.briarproject.bramble.api.db.DatabaseExecutor;
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.db.TransactionManager;
-import org.briarproject.bramble.api.identity.IdentityManager;
-import org.briarproject.bramble.api.identity.LocalAuthor;
-import org.briarproject.bramble.api.lifecycle.LifecycleManager;
-import org.briarproject.bramble.api.settings.Settings;
-import org.briarproject.bramble.api.settings.SettingsManager;
-import org.briarproject.bramble.api.system.AndroidExecutor;
-import org.briarproject.briar.api.identity.AuthorInfo;
-import org.briarproject.briar.api.identity.AuthorManager;
+import org.zerionproject.core.api.db.DatabaseExecutor;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.db.TransactionManager;
+import org.zerionproject.core.api.identity.IdentityManager;
+import org.zerionproject.core.api.identity.LocalAuthor;
+import org.zerionproject.core.api.lifecycle.LifecycleManager;
+import org.zerionproject.core.api.settings.Settings;
+import org.zerionproject.core.api.settings.SettingsManager;
+import org.zerionproject.core.api.system.AndroidExecutor;
+import org.zerionproject.core.api.contact.Contact;
+import org.zerionproject.core.api.contact.ContactManager;
+import org.zerionproject.core.api.event.Event;
+import org.zerionproject.core.api.event.EventBus;
+import org.zerionproject.core.api.event.EventListener;
+import org.zerionproject.core.api.plugin.event.ContactConnectedEvent;
+import org.zerionproject.app.api.autodelete.event.ConversationMessagesDeletedEvent;
+import org.zerionproject.app.api.channel.ChannelManager;
+import org.zerionproject.app.api.channel.ChannelState;
+import org.zerionproject.app.api.channel.event.ChannelCommentReceivedEvent;
+import org.zerionproject.app.api.channel.event.ChannelPostReceivedEvent;
+import org.zerionproject.app.api.conversation.ConversationManager;
+import org.zerionproject.app.api.conversation.event.ConversationMessageTrackedEvent;
+import org.zerionproject.app.api.grouptr.GroupTrManager;
+import org.zerionproject.app.api.grouptr.GroupTrState;
+import org.zerionproject.app.api.identity.AuthorInfo;
+import org.zerionproject.app.api.identity.AuthorManager;
 import com.professor.zerion.android.ZerionApplication;
 import com.professor.zerion.android.settings.OwnIdentityInfo;
 import com.professor.zerion.android.viewmodel.DbViewModel;
@@ -33,7 +48,8 @@ import static com.professor.zerion.android.controller.ZerionControllerImpl.DOZE_
 import static com.professor.zerion.android.settings.SettingsFragment.SETTINGS_NAMESPACE;
 
 @NotNullByDefault
-public class NavDrawerViewModel extends DbViewModel {
+public class NavDrawerViewModel extends DbViewModel
+		implements EventListener {
 
 	private static final String EXPIRY_DATE_WARNING = "expiryDateWarning";
 	private static final String SHOW_TRANSPORTS_ONBOARDING =
@@ -42,6 +58,18 @@ public class NavDrawerViewModel extends DbViewModel {
 	private final SettingsManager settingsManager;
 	private final IdentityManager identityManager;
 	private final AuthorManager authorManager;
+	private final ContactManager contactManager;
+	private final ConversationManager conversationManager;
+	private final GroupTrManager groupTrManager;
+	private final ChannelManager channelManager;
+	private final EventBus eventBus;
+
+	private final MutableLiveData<Integer> unreadContacts =
+			new MutableLiveData<>();
+	private final MutableLiveData<Integer> unreadGroups =
+			new MutableLiveData<>();
+	private final MutableLiveData<Integer> unreadChannels =
+			new MutableLiveData<>();
 
 	private final MutableLiveData<Boolean> showExpiryWarning =
 			new MutableLiveData<>();
@@ -60,12 +88,40 @@ public class NavDrawerViewModel extends DbViewModel {
 			AndroidExecutor androidExecutor,
 			SettingsManager settingsManager,
 			IdentityManager identityManager,
-			AuthorManager authorManager) {
+			AuthorManager authorManager,
+			ContactManager contactManager,
+			ConversationManager conversationManager,
+			GroupTrManager groupTrManager,
+			ChannelManager channelManager,
+			EventBus eventBus) {
 		super(app, dbExecutor, lifecycleManager, db, androidExecutor);
 		this.settingsManager = settingsManager;
 		this.identityManager = identityManager;
 		this.authorManager = authorManager;
+		this.contactManager = contactManager;
+		this.conversationManager = conversationManager;
+		this.groupTrManager = groupTrManager;
+		this.channelManager = channelManager;
+		this.eventBus = eventBus;
+		eventBus.addListener(this);
 		loadOwnIdentityInfo();
+	}
+
+	@Override
+	protected void onCleared() {
+		super.onCleared();
+		eventBus.removeListener(this);
+	}
+
+	@Override
+	public void eventOccurred(Event e) {
+		if (e instanceof ConversationMessageTrackedEvent
+				|| e instanceof ConversationMessagesDeletedEvent
+				|| e instanceof ChannelPostReceivedEvent
+				|| e instanceof ChannelCommentReceivedEvent
+				|| e instanceof ContactConnectedEvent) {
+			checkUnreadCounts();
+		}
 	}
 
 	LiveData<Boolean> showExpiryWarning() {
@@ -194,5 +250,48 @@ public class NavDrawerViewModel extends DbViewModel {
 
 	LiveData<OwnIdentityInfo> getOwnIdentityInfo() {
 		return ownIdentityInfo;
+	}
+
+	LiveData<Integer> getUnreadContacts() {
+		return unreadContacts;
+	}
+
+	LiveData<Integer> getUnreadGroups() {
+		return unreadGroups;
+	}
+
+	LiveData<Integer> getUnreadChannels() {
+		return unreadChannels;
+	}
+
+	/**
+	 * Recomputes the total unread count for each tab (summed across all
+	 * contacts, groups and channels) on the database thread and posts each to
+	 * its LiveData. Cheap enough to call on resume and on tab changes.
+	 */
+	@UiThread
+	void checkUnreadCounts() {
+		runOnDbThread(() -> {
+			try {
+				int contacts = 0;
+				for (Contact c : contactManager.getContacts()) {
+					contacts += conversationManager.getGroupCount(c.getId())
+							.getUnreadCount();
+				}
+				int groups = 0;
+				for (GroupTrState g : groupTrManager.getGroups()) {
+					groups += groupTrManager.getUnreadCount(g.getGroupId());
+				}
+				int channels = 0;
+				for (ChannelState ch : channelManager.getChannels()) {
+					channels += channelManager.getUnreadCount(ch.getChannelId());
+				}
+				unreadContacts.postValue(contacts);
+				unreadGroups.postValue(groups);
+				unreadChannels.postValue(channels);
+			} catch (DbException e) {
+				handleException(e);
+			}
+		});
 	}
 }

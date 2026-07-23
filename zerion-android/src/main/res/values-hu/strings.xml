@@ -356,12 +356,6 @@ Kérjük frissítsen a legutolsó verzióra és próbálja újra.</string>
   
   <string name="contacts_selected">Kiválasztott kapcsolatok</string>
   <string name="activity_share_toolbar_header">Kapcsolatok kiválasztása</string>
-  <string name="no_contacts_selector">Nincs megjeleníthető kapcsolat</string>
-  <string name="no_contacts_selector_action">Kérjük jöjjön vissza az után, ha hozzá adott néhány kapcsolatot</string>
-  <string name="shared_by_format">Megosztva %s által</string>
-  <string name="sharing_status">Állapot megosztása</string>
-  <string name="shared_with">Megosztva vele: %1$d (%2$d online)</string>
-  <string name="nobody">Senki</string>
   
   <string name="read_more">olvasson tovább</string>
 

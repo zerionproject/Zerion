@@ -2,20 +2,20 @@ package com.professor.zerion.android.contact;
 
 import android.app.Application;
 
-import org.briarproject.bramble.api.connection.ConnectionRegistry;
-import org.briarproject.bramble.api.contact.ContactManager;
-import org.briarproject.bramble.api.contact.event.PendingContactAddedEvent;
-import org.briarproject.bramble.api.contact.event.PendingContactRemovedEvent;
-import org.briarproject.bramble.api.db.DatabaseExecutor;
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.db.TransactionManager;
-import org.briarproject.bramble.api.event.Event;
-import org.briarproject.bramble.api.event.EventBus;
-import org.briarproject.bramble.api.lifecycle.LifecycleManager;
-import org.briarproject.bramble.api.system.AndroidExecutor;
+import org.zerionproject.core.api.connection.ConnectionRegistry;
+import org.zerionproject.core.api.contact.ContactManager;
+import org.zerionproject.core.api.contact.event.PendingContactAddedEvent;
+import org.zerionproject.core.api.contact.event.PendingContactRemovedEvent;
+import org.zerionproject.core.api.db.DatabaseExecutor;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.db.TransactionManager;
+import org.zerionproject.core.api.event.Event;
+import org.zerionproject.core.api.event.EventBus;
+import org.zerionproject.core.api.lifecycle.LifecycleManager;
+import org.zerionproject.core.api.system.AndroidExecutor;
 import com.professor.zerion.android.api.AndroidNotificationManager;
-import org.briarproject.briar.api.conversation.ConversationManager;
-import org.briarproject.briar.api.identity.AuthorManager;
+import org.zerionproject.app.api.conversation.ConversationManager;
+import org.zerionproject.app.api.identity.AuthorManager;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.concurrent.Executor;
@@ -43,7 +43,7 @@ class ContactListViewModel extends ContactsViewModel {
 			ConnectionRegistry connectionRegistry, EventBus eventBus,
 			AndroidNotificationManager notificationManager,
 			PinnedContactManager pinnedContactManager,
-			org.briarproject.briar.api.autodelete.AutoDeleteManager
+			org.zerionproject.app.api.autodelete.AutoDeleteManager
 					autoDeleteManager) {
 		super(application, dbExecutor, lifecycleManager, db, androidExecutor,
 				contactManager, authorManager, conversationManager,

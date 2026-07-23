@@ -65,7 +65,8 @@
 						android:maxLines="1"
 						android:textColor="@android:color/white"
 						android:textSize="17sp"
-						android:textStyle="bold"
+						android:fontFamily="@font/bricolage_grotesque"
+						android:textFontWeight="500"
 						tools:text="Family" />
 
 					<TextView
@@ -133,7 +134,7 @@
 			android:background="@drawable/bg_contact_card"
 			android:gravity="center"
 			android:padding="14dp"
-			android:textColor="@color/zerion_red_500_new"
+			android:textColor="@color/zerion_destructive"
 			android:textSize="13sp"
 			android:visibility="gone"
 			tools:text="You were removed from this group by Alice."
@@ -281,7 +282,7 @@
 					android:layout_height="wrap_content"
 					android:layout_marginStart="12dp"
 					android:layout_weight="1"
-					android:fontFamily="monospace"
+					android:fontFamily="@font/plex_mono_regular"
 					android:textColor="@color/zerion_text_primary"
 					android:textSize="15sp"
 					tools:text="0:04" />

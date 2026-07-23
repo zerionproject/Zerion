@@ -2,29 +2,29 @@ package com.professor.zerion.android.navdrawer;
 
 import android.app.Application;
 
-import org.briarproject.bramble.api.db.DatabaseExecutor;
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.db.TransactionManager;
-import org.briarproject.bramble.api.event.Event;
-import org.briarproject.bramble.api.event.EventBus;
-import org.briarproject.bramble.api.event.EventListener;
-import org.briarproject.bramble.api.lifecycle.LifecycleManager;
-import org.briarproject.bramble.api.network.NetworkManager;
-import org.briarproject.bramble.api.network.NetworkStatus;
-import org.briarproject.bramble.api.network.event.NetworkStatusEvent;
-import org.briarproject.bramble.api.plugin.Plugin;
-import org.briarproject.bramble.api.plugin.Plugin.State;
-import org.briarproject.bramble.api.plugin.PluginManager;
-import org.briarproject.bramble.api.plugin.TorConstants;
-import org.briarproject.bramble.api.plugin.TransportId;
-import org.briarproject.bramble.api.plugin.event.TransportStateEvent;
-import org.briarproject.bramble.api.properties.TransportProperties;
-import org.briarproject.bramble.api.properties.TransportPropertyManager;
-import org.briarproject.bramble.api.settings.Settings;
-import org.briarproject.bramble.api.settings.SettingsManager;
-import org.briarproject.bramble.api.settings.event.SettingsUpdatedEvent;
-import org.briarproject.bramble.api.system.AndroidExecutor;
-import org.briarproject.bramble.plugin.tor.B4OnionRotation;
+import org.zerionproject.core.api.db.DatabaseExecutor;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.db.TransactionManager;
+import org.zerionproject.core.api.event.Event;
+import org.zerionproject.core.api.event.EventBus;
+import org.zerionproject.core.api.event.EventListener;
+import org.zerionproject.core.api.lifecycle.LifecycleManager;
+import org.zerionproject.core.api.network.NetworkManager;
+import org.zerionproject.core.api.network.NetworkStatus;
+import org.zerionproject.core.api.network.event.NetworkStatusEvent;
+import org.zerionproject.core.api.plugin.Plugin;
+import org.zerionproject.core.api.plugin.Plugin.State;
+import org.zerionproject.core.api.plugin.PluginManager;
+import org.zerionproject.core.api.plugin.TorConstants;
+import org.zerionproject.core.api.plugin.TransportId;
+import org.zerionproject.core.api.plugin.event.TransportStateEvent;
+import org.zerionproject.core.api.properties.TransportProperties;
+import org.zerionproject.core.api.properties.TransportPropertyManager;
+import org.zerionproject.core.api.settings.Settings;
+import org.zerionproject.core.api.settings.SettingsManager;
+import org.zerionproject.core.api.settings.event.SettingsUpdatedEvent;
+import org.zerionproject.core.api.system.AndroidExecutor;
+import org.zerionproject.core.plugin.tor.B4OnionRotation;
 import com.professor.zerion.android.viewmodel.DbViewModel;
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -35,8 +35,8 @@ import javax.inject.Inject;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
-import static org.briarproject.bramble.api.plugin.Plugin.PREF_PLUGIN_ENABLE;
-import static org.briarproject.bramble.api.plugin.Plugin.State.STARTING_STOPPING;
+import static org.zerionproject.core.api.plugin.Plugin.PREF_PLUGIN_ENABLE;
+import static org.zerionproject.core.api.plugin.Plugin.State.STARTING_STOPPING;
 
 @NotNullByDefault
 public class PluginViewModel extends DbViewModel implements EventListener {

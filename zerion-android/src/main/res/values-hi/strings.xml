@@ -278,12 +278,6 @@
   
   <string name="contacts_selected">संपर्क चयनित</string>
   <string name="activity_share_toolbar_header">संपर्क चुनें</string>
-  <string name="no_contacts_selector">दिखाने के लिए कोई संपर्क नहीं है</string>
-  <string name="no_contacts_selector_action">संपर्क जोड़ने के बाद कृपया यहां वापस आएं</string>
-  <string name="shared_by_format">%s द्वारा साझा किया गया</string>
-  <string name="sharing_status">शेयरिंग स्थिति</string>
-  <string name="shared_with">%1$d (%2$d ऑनलाइन) के साथ साझा किया गया</string>
-  <string name="nobody">कोई भी नहीं</string>
   
   <string name="read_more">अधिक पढ़ें</string>
   

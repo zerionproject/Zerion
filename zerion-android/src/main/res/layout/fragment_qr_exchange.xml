@@ -97,7 +97,7 @@
 			android:layout_marginTop="16dp"
 			android:text="@string/qr_continue_button"
 			android:textColor="@android:color/white"
-			android:backgroundTint="#26B7F0"
+			android:backgroundTint="@color/zerion_cyan"
 			android:visibility="gone" />
 
 	</LinearLayout>

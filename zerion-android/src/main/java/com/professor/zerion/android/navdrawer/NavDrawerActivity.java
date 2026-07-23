@@ -8,12 +8,16 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.PopupMenu;
+import android.annotation.SuppressLint;
+import android.graphics.Color;
 import android.widget.TextView;
 
+import com.google.android.material.badge.BadgeDrawable;
+import com.google.android.material.badge.BadgeUtils;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
-import org.briarproject.bramble.api.lifecycle.LifecycleManager;
+import org.zerionproject.core.api.lifecycle.LifecycleManager;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.professor.zerion.R;
 import com.professor.zerion.android.AppModule;
@@ -21,7 +25,7 @@ import com.professor.zerion.android.ZerionApplication;
 import com.professor.zerion.android.StartupFailureActivity;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
-import com.professor.zerion.android.contact.ContactListFragment;
+import com.professor.zerion.android.chat.ChatsFragment;
 import com.professor.zerion.android.contact.add.remote.AddContactActivity;
 import com.professor.zerion.android.fragment.BaseFragment;
 import com.professor.zerion.android.fragment.BaseFragment.BaseFragmentListener;
@@ -49,7 +53,7 @@ import androidx.lifecycle.ViewModelProvider;
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
 import static androidx.lifecycle.Lifecycle.State.STARTED;
-import static org.briarproject.bramble.api.lifecycle.LifecycleManager.LifecycleState.RUNNING;
+import static org.zerionproject.core.api.lifecycle.LifecycleManager.LifecycleState.RUNNING;
 import static com.professor.zerion.android.ZerionService.EXTRA_STARTUP_FAILED;
 import static com.professor.zerion.android.ZerionService.EXTRA_START_RESULT;
 import static com.professor.zerion.android.TestingConstants.IS_DEBUG_BUILD;
@@ -95,7 +99,7 @@ public class NavDrawerActivity extends ZerionActivity implements
 	android.content.SharedPreferences uiPrefs;
 
 	@Inject
-	@org.briarproject.bramble.api.lifecycle.IoExecutor
+	@org.zerionproject.core.api.lifecycle.IoExecutor
 	java.util.concurrent.Executor ioExecutor;
 
 	private MaterialCardView profileIcon;
@@ -107,6 +111,12 @@ public class NavDrawerActivity extends ZerionActivity implements
 	private TextView tabContacts;
 	private TextView tabGroupChats;
 	private TextView tabChannels;
+	private BadgeDrawable badgeContacts;
+	private BadgeDrawable badgeGroups;
+	private BadgeDrawable badgeChannels;
+	private int lastUnreadContacts;
+	private int lastUnreadGroups;
+	private int lastUnreadChannels;
 	private FloatingActionButton fabCompose;
 
 	private int currentTab = TAB_CONTACTS;
@@ -142,6 +152,7 @@ public class NavDrawerActivity extends ZerionActivity implements
 
 		initializeViews();
 		setupClickListeners();
+		setupUnreadBadges();
 
 		lockManager.isLockable().observe(this, this::setLockMenuItemVisible);
 
@@ -149,6 +160,7 @@ public class NavDrawerActivity extends ZerionActivity implements
 			showSignOutFragment();
 		}
 		if (state == null) {
+			switchTab(TAB_CONTACTS, true);
 			onNewIntent(getIntent());
 		}
 		maybeShowPostUpdateNotice();
@@ -276,8 +288,8 @@ public class NavDrawerActivity extends ZerionActivity implements
 		BaseFragment fragment;
 		switch (tab) {
 			case TAB_CONTACTS:
-				toolbarTitle.setText(R.string.contact_list_button);
-				fragment = ContactListFragment.newInstance();
+				toolbarTitle.setText(R.string.chats_button);
+				fragment = ChatsFragment.newInstance();
 				break;
 			case TAB_GROUPS:
 				toolbarTitle.setText(R.string.groups_button);
@@ -443,9 +455,60 @@ public class NavDrawerActivity extends ZerionActivity implements
 		finish();
 	}
 
+	@SuppressLint("UnsafeOptInUsageError")
+	private void setupUnreadBadges() {
+		badgeContacts = BadgeDrawable.create(this);
+		badgeGroups = BadgeDrawable.create(this);
+		badgeChannels = BadgeDrawable.create(this);
+		int cyan = com.professor.zerion.android.settings.ChatPreferences
+				.getAccentColor(this);
+		BadgeDrawable[] badges = {badgeContacts, badgeGroups, badgeChannels};
+		for (BadgeDrawable b : badges) {
+			b.setBackgroundColor(cyan);
+			b.setBadgeTextColor(Color.WHITE);
+			b.setMaxCharacterCount(3);
+			b.setVisible(false);
+		}
+		attachBadge(badgeContacts, tabContacts);
+		attachBadge(badgeGroups, tabGroupChats);
+		attachBadge(badgeChannels, tabChannels);
+		navDrawerViewModel.getUnreadContacts().observe(this, c -> {
+			lastUnreadContacts = c == null ? 0 : c;
+			updateChatsBadge();
+		});
+		navDrawerViewModel.getUnreadGroups().observe(this, c -> {
+			lastUnreadGroups = c == null ? 0 : c;
+			updateBadge(badgeGroups, c);
+			updateChatsBadge();
+		});
+		navDrawerViewModel.getUnreadChannels().observe(this, c -> {
+			lastUnreadChannels = c == null ? 0 : c;
+			updateBadge(badgeChannels, c);
+			updateChatsBadge();
+		});
+	}
+
+	private void updateChatsBadge() {
+		updateBadge(badgeContacts,
+				lastUnreadContacts + lastUnreadGroups + lastUnreadChannels);
+	}
+
+	@SuppressLint("UnsafeOptInUsageError")
+	private void attachBadge(BadgeDrawable badge, TextView anchor) {
+		anchor.post(() -> BadgeUtils.attachBadgeDrawable(badge, anchor));
+	}
+
+	private void updateBadge(BadgeDrawable badge, Integer count) {
+		if (badge == null) return;
+		int c = count == null ? 0 : count;
+		badge.setNumber(c);
+		badge.setVisible(c > 0);
+	}
+
 	@Override
 	public void onStart() {
 		super.onStart();
+		navDrawerViewModel.checkUnreadCounts();
 		lockManager.checkIfLockable();
 		if (IS_DEBUG_BUILD) {
 			navDrawerViewModel.checkExpiryWarning();
@@ -532,7 +595,7 @@ public class NavDrawerActivity extends ZerionActivity implements
 		if (fm.findFragmentByTag(SignOutFragment.TAG) != null) {
 			finish();
 		} else if (fm.getBackStackEntryCount() == 0 &&
-				fm.findFragmentByTag(ContactListFragment.TAG) == null) {
+				fm.findFragmentByTag(ChatsFragment.TAG) == null) {
 			if (!getLifecycle().getCurrentState().isAtLeast(STARTED)) {
 				return;
 			}
@@ -559,7 +622,7 @@ public class NavDrawerActivity extends ZerionActivity implements
 	}
 
 	private void updateFabVisibilityForFragment(BaseFragment f) {
-		boolean isMainContacts = f instanceof ContactListFragment;
+		boolean isMainContacts = f instanceof ChatsFragment;
 		boolean isMainGroups = f instanceof GroupTrListFragment;
 		boolean isMainChannels = f instanceof
 				com.professor.zerion.android.channel.ChannelListFragment;

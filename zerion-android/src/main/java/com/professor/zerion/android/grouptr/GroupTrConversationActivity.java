@@ -41,19 +41,19 @@ import com.professor.zerion.android.api.AndroidNotificationManager;
 import com.professor.zerion.android.grouptr.voice.GroupTrVoicePlayer;
 import com.professor.zerion.android.grouptr.voice.GroupTrVoiceRecorder;
 
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.event.Event;
-import org.briarproject.bramble.api.event.EventBus;
-import org.briarproject.bramble.api.event.EventListener;
-import org.briarproject.bramble.api.identity.IdentityManager;
-import org.briarproject.bramble.api.identity.LocalAuthor;
-import org.briarproject.bramble.api.lifecycle.IoExecutor;
-import org.briarproject.bramble.util.StringUtils;
-import org.briarproject.briar.api.grouptr.GroupTrBody;
-import org.briarproject.briar.api.grouptr.GroupTrManager;
-import org.briarproject.briar.api.grouptr.GroupTrPost;
-import org.briarproject.briar.api.grouptr.GroupTrState;
-import org.briarproject.briar.api.messaging.event.GroupPostReceivedEvent;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.event.Event;
+import org.zerionproject.core.api.event.EventBus;
+import org.zerionproject.core.api.event.EventListener;
+import org.zerionproject.core.api.identity.IdentityManager;
+import org.zerionproject.core.api.identity.LocalAuthor;
+import org.zerionproject.core.api.lifecycle.IoExecutor;
+import org.zerionproject.core.util.StringUtils;
+import org.zerionproject.app.api.grouptr.GroupTrBody;
+import org.zerionproject.app.api.grouptr.GroupTrManager;
+import org.zerionproject.app.api.grouptr.GroupTrPost;
+import org.zerionproject.app.api.grouptr.GroupTrState;
+import org.zerionproject.app.api.messaging.event.GroupPostReceivedEvent;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -153,7 +153,7 @@ public class GroupTrConversationActivity extends ZerionActivity
 		}
 		try {
 			groupId = StringUtils.fromHexString(hex);
-		} catch (org.briarproject.bramble.api.FormatException ex) {
+		} catch (org.zerionproject.core.api.FormatException ex) {
 			finish();
 			return;
 		}
@@ -168,7 +168,7 @@ public class GroupTrConversationActivity extends ZerionActivity
 					runOnUiThread(() -> getWindow().clearFlags(
 							WindowManager.LayoutParams.FLAG_SECURE));
 				}
-			} catch (org.briarproject.bramble.api.db.DbException ex) {
+			} catch (org.zerionproject.core.api.db.DbException ex) {
 			}
 		});
 
@@ -292,7 +292,7 @@ public class GroupTrConversationActivity extends ZerionActivity
 		TextView banner = findViewById(R.id.removedBanner);
 		boolean stillMember = false;
 		if (localPub != null) {
-			for (org.briarproject.briar.api.grouptr.GroupTrMember m
+			for (org.zerionproject.app.api.grouptr.GroupTrMember m
 					: s.getMembers()) {
 				if (Arrays.equals(m.getPubKey(), localPub)) {
 					stillMember = true;
@@ -921,13 +921,13 @@ public class GroupTrConversationActivity extends ZerionActivity
 	}
 
 	private void bindSender(TextView sender,
-			org.briarproject.briar.api.grouptr.GroupTrPost p) {
+			org.zerionproject.app.api.grouptr.GroupTrPost p) {
 		sender.setText(decorateName(p));
 		sender.setOnClickListener(v -> showFingerprintDialog(p));
 	}
 
 	private void showFingerprintDialog(
-			org.briarproject.briar.api.grouptr.GroupTrPost p) {
+			org.zerionproject.app.api.grouptr.GroupTrPost p) {
 		String fp = com.professor.zerion.android.contact.identity
 				.IdentityFingerprint.forSigningPub(p.getSenderPubKey());
 		new com.google.android.material.dialog.MaterialAlertDialogBuilder(
@@ -939,7 +939,7 @@ public class GroupTrConversationActivity extends ZerionActivity
 	}
 
 	private static String decorateName(
-			org.briarproject.briar.api.grouptr.GroupTrPost p) {
+			org.zerionproject.app.api.grouptr.GroupTrPost p) {
 		String name = p.getSenderName();
 		String suffix = shortKeyId(p.getSenderPubKey());
 		return name == null || name.isEmpty()

@@ -9,16 +9,16 @@ import android.widget.ImageView;
 
 import com.bumptech.glide.load.Transformation;
 
-import org.briarproject.bramble.api.db.DatabaseExecutor;
-import org.briarproject.bramble.api.sync.MessageId;
+import org.zerionproject.core.api.db.DatabaseExecutor;
+import org.zerionproject.core.api.sync.MessageId;
 import com.professor.zerion.R;
 import com.professor.zerion.android.attachment.AttachmentItem;
 import com.professor.zerion.android.conversation.glide.ZerionImageTransformation;
 import com.bumptech.glide.Glide;
 import com.professor.zerion.android.conversation.glide.Radii;
-import org.briarproject.briar.api.attachment.Attachment;
-import org.briarproject.briar.api.attachment.AttachmentNotYetAvailableException;
-import org.briarproject.briar.api.attachment.AttachmentReader;
+import org.zerionproject.app.api.attachment.Attachment;
+import org.zerionproject.app.api.attachment.AttachmentNotYetAvailableException;
+import org.zerionproject.app.api.attachment.AttachmentReader;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.File;
@@ -251,7 +251,8 @@ public class ImageViewHolder extends ViewHolder {
 				showVideoFallback();
 			} finally {
 				if (tempFile != null) {
-					tempFile.delete();
+					com.professor.zerion.android.vault.utils.SecureMemory
+							.secureDeleteFile(tempFile, 0L, false);
 				}
 			}
 		});
@@ -282,7 +283,8 @@ public class ImageViewHolder extends ViewHolder {
 				} catch (Exception ignored) {
 				}
 			}
-			file.delete();
+			com.professor.zerion.android.vault.utils.SecureMemory
+					.secureDeleteFile(file, 0L, false);
 		}
 	}
 

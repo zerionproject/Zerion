@@ -22,13 +22,13 @@ import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
 
-import org.briarproject.bramble.api.contact.Contact;
-import org.briarproject.bramble.api.contact.ContactManager;
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.lifecycle.IoExecutor;
-import org.briarproject.bramble.util.StringUtils;
-import org.briarproject.briar.api.grouptr.GroupTrManager;
-import org.briarproject.briar.api.grouptr.GroupTrState;
+import org.zerionproject.core.api.contact.Contact;
+import org.zerionproject.core.api.contact.ContactManager;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.lifecycle.IoExecutor;
+import org.zerionproject.core.util.StringUtils;
+import org.zerionproject.app.api.grouptr.GroupTrManager;
+import org.zerionproject.app.api.grouptr.GroupTrState;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -157,7 +157,7 @@ public class GroupTrInviteMembersActivity extends ZerionActivity {
 	private void renderList(List<Contact> contacts, @Nullable GroupTrState s) {
 		existingPubKeys.clear();
 		if (s != null) {
-			for (org.briarproject.briar.api.grouptr.GroupTrMember m :
+			for (org.zerionproject.app.api.grouptr.GroupTrMember m :
 					s.getMembers()) {
 				existingPubKeys.add(m.getPubKey());
 			}

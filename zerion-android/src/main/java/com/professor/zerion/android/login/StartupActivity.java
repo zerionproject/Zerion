@@ -46,6 +46,11 @@ public class StartupActivity extends BaseActivity implements
 	}
 
 	@Override
+	protected boolean forceScreenshotProtection() {
+		return true;
+	}
+
+	@Override
 	public void onCreate(@Nullable Bundle state) {
 		super.onCreate(state);
 		com.professor.zerion.android.ZerionService.cancelPendingExit();

@@ -12,7 +12,7 @@ preferences. Please read these before opening a pull request.
 * `*-api` — public interfaces and shared types
 * `*-core` — cross-platform implementations
 * `*-android` — Android-specific implementations
-* `*-java` — desktop/headless implementations
+* `onionwrapper` / `onionwrapper-java` — Tor onion-service wrapper (shared / JVM)
 
 ## Non-negotiable rules
 
@@ -53,7 +53,7 @@ Use **JDK 21** — this is what the F-Droid build server uses; another JDK can
 produce a non-reproducible APK.
 
 ```
-./gradlew :zerion-android:assembleDebug      # build the debug APK
+./gradlew :zerion-android:assembleOfficialDebug   # build the debug APK
 ./gradlew :bramble-core:test                  # transport / crypto unit tests
 ./gradlew :briar-core:test                    # messaging / groups / channels tests
 ```

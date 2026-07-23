@@ -40,7 +40,7 @@
 	</style>
 
 	<style name="GroupTrAdminActionTextDanger" parent="GroupTrAdminActionText">
-		<item name="android:textColor">@color/zerion_red_500_new</item>
+		<item name="android:textColor">@color/zerion_destructive</item>
 	</style>
 
 	<style name="GroupTrAdminDivider">
@@ -78,8 +78,17 @@
 		<item name="android:background">@color/zerion_dark_bg</item>
 		<item name="titleTextColor">@color/zerion_text_secondary</item>
 		<item name="subtitleTextColor">@color/zerion_text_secondary</item>
+		<item name="titleTextAppearance">@style/TextAppearance.Zerion.ToolbarTitle</item>
 		<item name="android:theme">@style/ZerionToolbarTheme</item>
 		<item name="popupTheme">@style/PopupMenu</item>
+	</style>
+
+	<!-- Bricolage display face on the toolbar title, the most prominent heading
+	     on every standard-toolbar screen. Medium weight, not bold. -->
+	<style name="TextAppearance.Zerion.ToolbarTitle" parent="TextAppearance.Material3.TitleLarge">
+		<item name="android:fontFamily">@font/bricolage_grotesque</item>
+		<item name="fontFamily">@font/bricolage_grotesque</item>
+		<item name="android:textFontWeight">500</item>
 	</style>
 
 	<style name="ZerionToolbarTheme">
@@ -346,9 +355,11 @@
 	</style>
 
 	<style name="DecoyCalcKey" parent="@android:style/Widget.Button">
+		<item name="android:layout_width">0dp</item>
 		<item name="android:textSize">26sp</item>
 		<item name="android:textColor">#ffffff</item>
 		<item name="android:background">#333333</item>
+		<item name="android:minWidth">0dp</item>
 		<item name="android:minHeight">64dp</item>
 		<item name="android:fontFamily">sans-serif-light</item>
 	</style>

@@ -187,7 +187,7 @@
 					<TextView
 						android:id="@+id/orbot_proxy_value"
 						style="@style/Zerion.Settings.Row.Summary"
-						android:fontFamily="monospace"
+						android:fontFamily="@font/plex_mono_regular"
 						tools:text="127.0.0.1:9050" />
 
 				</LinearLayout>

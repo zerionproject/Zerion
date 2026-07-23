@@ -369,12 +369,6 @@
   
   <string name="contacts_selected">Contacte selectate</string>
   <string name="activity_share_toolbar_header">Alegeți contactele</string>
-  <string name="no_contacts_selector">Nu sunt contacte de afișat</string>
-  <string name="no_contacts_selector_action">Reveniți aici după adăugarea unui contact</string>
-  <string name="shared_by_format">Partajat de %s</string>
-  <string name="sharing_status">Starea partajării</string>
-  <string name="shared_with">Partajat cu %1$d (%2$d online)</string>
-  <string name="nobody">Nimeni</string>
   
   <string name="read_more">citiți mai multe</string>
 

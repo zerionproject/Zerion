@@ -158,6 +158,7 @@ public class SettingsFragment extends Fragment {
 		}
 	}
 
+
 	@Override
 	public void onStart() {
 		super.onStart();

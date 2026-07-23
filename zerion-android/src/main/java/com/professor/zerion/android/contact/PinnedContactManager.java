@@ -4,7 +4,7 @@ import android.content.SharedPreferences;
 
 import com.professor.zerion.android.AppModule;
 
-import org.briarproject.bramble.api.contact.ContactId;
+import org.zerionproject.core.api.contact.ContactId;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.HashSet;

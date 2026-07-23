@@ -292,12 +292,6 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   
   <string name="contacts_selected">Contactes seleccionats</string>
   <string name="activity_share_toolbar_header">Causissètz de contactes</string>
-  <string name="no_contacts_selector">Cap de contacte de mostrar</string>
-  <string name="no_contacts_selector_action">Tornatz aquí aprèp aver ajustat un contacte</string>
-  <string name="shared_by_format">Partejat per %s</string>
-  <string name="sharing_status">Estat del partatge</string>
-  <string name="shared_with">Partejat amb %1$d (%2$d en linha)</string>
-  <string name="nobody">Degun</string>
   
   <string name="read_more">Legir la seguida</string>
 

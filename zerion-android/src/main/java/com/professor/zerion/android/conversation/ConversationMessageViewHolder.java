@@ -6,8 +6,8 @@ import android.view.ViewGroup;
 
 import com.professor.zerion.R;
 import com.professor.zerion.android.attachment.AttachmentItem;
-import org.briarproject.bramble.api.db.DatabaseExecutor;
-import org.briarproject.briar.api.attachment.AttachmentReader;
+import org.zerionproject.core.api.db.DatabaseExecutor;
+import org.zerionproject.app.api.attachment.AttachmentReader;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.concurrent.Executor;
@@ -39,7 +39,7 @@ class ConversationMessageViewHolder extends ConversationItemViewHolder {
 	@Nullable
 	private VoiceMessageViewHolder voiceHolder;
 	@Nullable
-	private org.briarproject.bramble.api.sync.MessageId boundVoiceItemId;
+	private org.zerionproject.core.api.sync.MessageId boundVoiceItemId;
 	@Nullable
 	private String boundVoiceStateKey;
 	private final AttachmentReader attachmentReader;

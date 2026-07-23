@@ -5,12 +5,12 @@ import android.content.Intent;
 import android.os.IBinder;
 
 import org.briarproject.android.dontkillmelib.wakelock.AndroidWakeLockManager;
-import org.briarproject.bramble.api.account.AccountManager;
-import org.briarproject.bramble.api.db.DatabaseExecutor;
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.lifecycle.LifecycleManager;
-import org.briarproject.bramble.api.settings.Settings;
-import org.briarproject.bramble.api.settings.SettingsManager;
+import org.zerionproject.core.api.account.AccountManager;
+import org.zerionproject.core.api.db.DatabaseExecutor;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.lifecycle.LifecycleManager;
+import org.zerionproject.core.api.settings.Settings;
+import org.zerionproject.core.api.settings.SettingsManager;
 import com.professor.zerion.android.ZerionApplication;
 import com.professor.zerion.android.ZerionService;
 import com.professor.zerion.android.ZerionService.ZerionServiceConnection;
@@ -27,7 +27,7 @@ import javax.inject.Inject;
 import androidx.annotation.CallSuper;
 
 import static org.briarproject.android.dontkillmelib.DozeUtils.needsDozeWhitelisting;
-import static org.briarproject.bramble.api.lifecycle.LifecycleManager.LifecycleState.STARTING_SERVICES;
+import static org.zerionproject.core.api.lifecycle.LifecycleManager.LifecycleState.STARTING_SERVICES;
 import static com.professor.zerion.android.settings.SettingsFragment.SETTINGS_NAMESPACE;
 
 @NotNullByDefault

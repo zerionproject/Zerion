@@ -2,9 +2,9 @@ package com.professor.zerion.android.attachment;
 
 import android.content.Context;
 
-import org.briarproject.bramble.api.sync.MessageId;
-import org.briarproject.briar.api.attachment.AttachmentChunk;
-import org.briarproject.briar.api.attachment.AttachmentManifest;
+import org.zerionproject.core.api.sync.MessageId;
+import org.zerionproject.app.api.attachment.AttachmentChunk;
+import org.zerionproject.app.api.attachment.AttachmentManifest;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.ByteArrayOutputStream;
@@ -32,10 +32,10 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import static org.briarproject.briar.api.attachment.MediaConstants.CHUNK_SIZE;
-import static org.briarproject.briar.api.attachment.MediaConstants.MAX_ATTACHMENT_SIZE;
-import static org.briarproject.briar.api.attachment.MediaConstants.MAX_CHUNK_COUNT;
-import static org.briarproject.briar.api.attachment.MediaConstants.MAX_PARALLEL_CHUNKS;
+import static org.zerionproject.app.api.attachment.MediaConstants.CHUNK_SIZE;
+import static org.zerionproject.app.api.attachment.MediaConstants.MAX_ATTACHMENT_SIZE;
+import static org.zerionproject.app.api.attachment.MediaConstants.MAX_CHUNK_COUNT;
+import static org.zerionproject.app.api.attachment.MediaConstants.MAX_PARALLEL_CHUNKS;
 
 @Singleton
 @NotNullByDefault

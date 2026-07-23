@@ -25,8 +25,8 @@ tasks.matching { it.name == 'mergeDebugJniLibFolders' }.configureEach {
 }
 
 android {
-	compileSdkVersion 35
-	buildToolsVersion '35.0.0'
+	compileSdkVersion 36
+	buildToolsVersion '36.0.0'
 	packagingOptions {
 		jniLibs {
 			keepDebugSymbols += ['**/*.so']
@@ -35,17 +35,17 @@ android {
 
 	defaultConfig {
 		minSdkVersion 21
-		targetSdkVersion 35
+		targetSdkVersion 36
 		consumerProguardFiles 'proguard-rules.txt'
 		testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 		testInstrumentationRunnerArguments disableAnalytics: 'true'
 	}
 
 	compileOptions {
-		sourceCompatibility JavaVersion.VERSION_1_8
-		targetCompatibility JavaVersion.VERSION_1_8
+		sourceCompatibility JavaVersion.VERSION_17
+		targetCompatibility JavaVersion.VERSION_17
 	}
-	namespace 'org.briarproject.bramble'
+	namespace 'org.zerionproject.core'
 	lint {
 		warning 'LintError', 'InvalidPackage', 'MissingPermission', 'InlinedApi', 'ObsoleteSdkInt', 'Override', 'NewApi', 'UnusedAttribute'
 	}

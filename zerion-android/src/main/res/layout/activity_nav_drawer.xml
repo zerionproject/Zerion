@@ -5,6 +5,7 @@
 	android:id="@+id/constraintLayout"
 	android:layout_width="match_parent"
 	android:layout_height="match_parent"
+	android:clipChildren="false"
 	android:background="@drawable/bg_zerion_gradient"
 	android:fitsSystemWindows="true"
 	tools:context=".android.navdrawer.NavDrawerActivity">
@@ -62,7 +63,8 @@
 			android:text="@string/contact_list_button"
 			android:textColor="@color/zerion_text_primary"
 			android:textSize="22sp"
-			android:textStyle="bold"
+			android:fontFamily="@font/bricolage_grotesque"
+			android:textFontWeight="500"
 			android:letterSpacing="-0.01"
 			android:singleLine="true"
 			android:ellipsize="end"
@@ -180,6 +182,7 @@
 		android:id="@+id/bottomNavigation"
 		android:layout_width="0dp"
 		android:layout_height="56dp"
+		android:clipChildren="false"
 		android:background="@color/zerion_dark_bg"
 		android:orientation="horizontal"
 		android:elevation="0dp"
@@ -196,9 +199,13 @@
 			android:clickable="true"
 			android:focusable="true"
 			android:gravity="center"
-			android:text="@string/contact_list_button"
+			android:paddingTop="6dp"
+			android:drawableTop="@drawable/ic_chat"
+			android:drawablePadding="3dp"
+			android:drawableTint="@color/tab_icon_tint"
+			android:text="@string/chats_button"
 			android:textColor="@color/zerion_text_primary"
-			android:textSize="14sp"
+			android:textSize="11sp"
 			android:textStyle="bold"
 			android:letterSpacing="0.0" />
 
@@ -211,9 +218,13 @@
 			android:clickable="true"
 			android:focusable="true"
 			android:gravity="center"
+			android:paddingTop="6dp"
+			android:drawableTop="@drawable/ic_group"
+			android:drawablePadding="3dp"
+			android:drawableTint="@color/tab_icon_tint"
 			android:text="@string/groups_button"
 			android:textColor="@color/zerion_text_secondary"
-			android:textSize="14sp"
+			android:textSize="11sp"
 			android:letterSpacing="0.0" />
 
 		<TextView
@@ -225,9 +236,13 @@
 			android:clickable="true"
 			android:focusable="true"
 			android:gravity="center"
+			android:paddingTop="6dp"
+			android:drawableTop="@drawable/ic_channels"
+			android:drawablePadding="3dp"
+			android:drawableTint="@color/tab_icon_tint"
 			android:text="@string/channels_button"
 			android:textColor="@color/zerion_text_secondary"
-			android:textSize="14sp"
+			android:textSize="11sp"
 			android:letterSpacing="0.0" />
 
 	</LinearLayout>

@@ -2,23 +2,23 @@ package com.professor.zerion.android.contact.add.remote;
 
 import android.app.Application;
 
-import org.briarproject.bramble.api.Pair;
-import org.briarproject.bramble.api.contact.ContactManager;
-import org.briarproject.bramble.api.contact.PendingContact;
-import org.briarproject.bramble.api.contact.PendingContactId;
-import org.briarproject.bramble.api.contact.PendingContactState;
-import org.briarproject.bramble.api.contact.event.PendingContactRemovedEvent;
-import org.briarproject.bramble.api.contact.event.PendingContactStateChangedEvent;
-import org.briarproject.bramble.api.db.DatabaseExecutor;
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.db.TransactionManager;
-import org.briarproject.bramble.api.event.Event;
-import org.briarproject.bramble.api.event.EventBus;
-import org.briarproject.bramble.api.event.EventListener;
-import org.briarproject.bramble.api.lifecycle.LifecycleManager;
-import org.briarproject.bramble.api.rendezvous.RendezvousPoller;
-import org.briarproject.bramble.api.rendezvous.event.RendezvousPollEvent;
-import org.briarproject.bramble.api.system.AndroidExecutor;
+import org.zerionproject.core.api.Pair;
+import org.zerionproject.core.api.contact.ContactManager;
+import org.zerionproject.core.api.contact.PendingContact;
+import org.zerionproject.core.api.contact.PendingContactId;
+import org.zerionproject.core.api.contact.PendingContactState;
+import org.zerionproject.core.api.contact.event.PendingContactRemovedEvent;
+import org.zerionproject.core.api.contact.event.PendingContactStateChangedEvent;
+import org.zerionproject.core.api.db.DatabaseExecutor;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.db.TransactionManager;
+import org.zerionproject.core.api.event.Event;
+import org.zerionproject.core.api.event.EventBus;
+import org.zerionproject.core.api.event.EventListener;
+import org.zerionproject.core.api.lifecycle.LifecycleManager;
+import org.zerionproject.core.api.rendezvous.RendezvousPoller;
+import org.zerionproject.core.api.rendezvous.event.RendezvousPollEvent;
+import org.zerionproject.core.api.system.AndroidExecutor;
 import com.professor.zerion.android.viewmodel.DbViewModel;
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -32,7 +32,7 @@ import javax.inject.Inject;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
-import static org.briarproject.bramble.api.contact.PendingContactState.OFFLINE;
+import static org.zerionproject.core.api.contact.PendingContactState.OFFLINE;
 
 @NotNullByDefault
 public class PendingContactListViewModel extends DbViewModel

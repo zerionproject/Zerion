@@ -18,7 +18,7 @@
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
 			android:inputType="text"
-			android:fontFamily="monospace"
+			android:fontFamily="@font/plex_mono_regular"
 			android:importantForAutofill="no" />
 
 	</com.google.android.material.textfield.TextInputLayout>

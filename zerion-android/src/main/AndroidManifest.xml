@@ -33,7 +33,6 @@
 	<uses-permission-sdk-23 android:name="android.permission.FOREGROUND_SERVICE" />
 	<uses-permission-sdk-23 android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 	<uses-permission-sdk-23 android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
-	<uses-permission-sdk-23 android:name="android.permission.FOREGROUND_SERVICE_PHONE_CALL" />
 	<uses-permission-sdk-23 android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
 
 	<uses-permission
@@ -50,7 +49,7 @@
 		android:logo="@mipmap/ic_launcher_round"
 		android:networkSecurityConfig="@xml/network_security_config"
 		android:supportsRtl="true"
-		android:theme="@style/Theme.Zerion"
+		android:theme="@style/ZerionTheme.NoActionBar"
 		android:enableOnBackInvokedCallback="true"
 		android:extractNativeLibs="true"
 		tools:ignore="GoogleAppIndexingWarning,UnusedAttribute"

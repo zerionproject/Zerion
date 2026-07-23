@@ -37,7 +37,6 @@ import com.professor.zerion.android.panic.PanicResponderActivity;
 import com.professor.zerion.android.settings.ConfirmAvatarDialogFragment;
 import com.professor.zerion.android.settings.SettingsActivity;
 import com.professor.zerion.android.settings.SettingsFragment;
-import com.professor.zerion.android.sharing.SharingModule;
 import com.professor.zerion.android.splash.SplashScreenActivity;
 import com.professor.zerion.android.test.TestDataActivity;
 
@@ -45,8 +44,7 @@ import dagger.Component;
 
 @ActivityScope
 @Component(modules = {
-		ActivityModule.class,
-		SharingModule.SharingLegacyModule.class
+		ActivityModule.class
 }, dependencies = AndroidComponent.class)
 public interface ActivityComponent {
 
@@ -106,6 +104,8 @@ public interface ActivityComponent {
 	void inject(OpenDatabaseFragment activity);
 
 	void inject(ContactListFragment fragment);
+
+	void inject(com.professor.zerion.android.chat.ChatsFragment fragment);
 
 	void inject(com.professor.zerion.android.grouptr.GroupTrListFragment fragment);
 

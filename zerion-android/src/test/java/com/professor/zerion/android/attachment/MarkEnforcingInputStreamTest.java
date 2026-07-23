@@ -2,7 +2,7 @@ package com.professor.zerion.android.attachment;
 
 import com.bumptech.glide.util.MarkEnforcingInputStream;
 
-import org.briarproject.bramble.test.BrambleTestCase;
+import org.zerionproject.core.test.BrambleTestCase;
 import org.junit.Test;
 
 import java.io.BufferedInputStream;

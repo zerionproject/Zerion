@@ -16,7 +16,7 @@
 		android:gravity="center_vertical"
 		android:textColor="#FFFFFF"
 		app:drawableStartCompat="@drawable/ic_info_dark"
-		app:drawableTint="#26B7F0"
+		app:drawableTint="@color/zerion_cyan"
 		tools:text="Did you know that if you took all the veins out of your body and laid them out end to end, you would die?" />
 
 </merge>

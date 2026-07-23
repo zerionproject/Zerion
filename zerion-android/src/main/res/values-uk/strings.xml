@@ -376,12 +376,6 @@
   
   <string name="contacts_selected">Обрані контакти</string>
   <string name="activity_share_toolbar_header">Обрати контакти</string>
-  <string name="no_contacts_selector">Немає контактів для показу</string>
-  <string name="no_contacts_selector_action">Будь ласка, поверніться сюди після додання контакту</string>
-  <string name="shared_by_format">Поширено %s</string>
-  <string name="sharing_status">Поширення статусу</string>
-  <string name="shared_with">Поширено серед %1$d (%2$d онлайн)</string>
-  <string name="nobody">Нікого</string>
   
   <string name="read_more">дізнатися більше</string>
 

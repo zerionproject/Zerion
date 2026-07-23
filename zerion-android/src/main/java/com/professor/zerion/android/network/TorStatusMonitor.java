@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import org.briarproject.bramble.api.plugin.TorSocksPort;
+import org.zerionproject.core.api.plugin.TorSocksPort;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 @Singleton

@@ -4,12 +4,12 @@ import com.professor.zerion.android.vault.utils.SecureMemory;
 
 import android.app.Application;
 
-import org.briarproject.bramble.account.AndroidAccountManager;
-import org.briarproject.bramble.account.ProfileManager;
-import org.briarproject.bramble.api.crypto.SecretKey;
-import org.briarproject.bramble.api.db.DatabaseComponent;
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.identity.IdentityManager;
+import org.zerionproject.core.account.AndroidAccountManager;
+import org.zerionproject.core.account.ProfileManager;
+import org.zerionproject.core.api.crypto.SecretKey;
+import org.zerionproject.core.api.db.DatabaseComponent;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.identity.IdentityManager;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.File;

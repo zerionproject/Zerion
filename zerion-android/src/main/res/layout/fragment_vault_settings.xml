@@ -307,7 +307,7 @@
 				android:layout_height="wrap_content"
 				android:text="@string/vault_settings_info_encryption"
 				android:textSize="12sp"
-				android:fontFamily="monospace"
+				android:fontFamily="@font/plex_mono_regular"
 				android:textColor="@color/zerion_text_secondary" />
 
 			<TextView
@@ -317,7 +317,7 @@
 				android:layout_marginTop="4dp"
 				android:text="@string/vault_settings_info_keystore"
 				android:textSize="12sp"
-				android:fontFamily="monospace"
+				android:fontFamily="@font/plex_mono_regular"
 				android:textColor="@color/zerion_text_secondary" />
 
 			<TextView
@@ -326,7 +326,7 @@
 				android:layout_height="wrap_content"
 				android:layout_marginTop="4dp"
 				android:textSize="12sp"
-				android:fontFamily="monospace"
+				android:fontFamily="@font/plex_mono_regular"
 				android:textColor="@color/zerion_text_secondary"
 				tools:text="Total Items: 0" />
 

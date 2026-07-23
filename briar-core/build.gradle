@@ -1,6 +1,6 @@
 apply plugin: 'java-library'
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+sourceCompatibility = 17
+targetCompatibility = 17
 
 apply plugin: 'ru.vyarus.animalsniffer'
 apply plugin: 'idea'
@@ -22,6 +22,7 @@ dependencies {
 	testImplementation project(path: ':bramble-api', configuration: 'testOutput')
 	testImplementation project(path: ':bramble-core', configuration: 'testOutput')
 
+	testImplementation 'org.hsqldb:hsqldb:2.3.5' // The last version that supports Java 1.6
 	testImplementation 'net.jodah:concurrentunit:0.4.6'
 	testImplementation "junit:junit:$junit_version"
 	testImplementation "org.jmock:jmock:$jmock_version"

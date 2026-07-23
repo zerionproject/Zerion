@@ -5,9 +5,9 @@ import android.util.Log;
 
 import com.jraska.falcon.Falcon.UnableToTakeScreenshotException;
 
-import org.briarproject.bramble.api.connection.ConnectionRegistry;
-import org.briarproject.bramble.api.system.Clock;
-import org.briarproject.briar.api.test.TestDataCreator;
+import org.zerionproject.core.api.connection.ConnectionRegistry;
+import org.zerionproject.core.api.system.Clock;
+import org.zerionproject.app.api.test.TestDataCreator;
 import org.junit.ClassRule;
 
 import javax.inject.Inject;

@@ -219,12 +219,6 @@
   
   <string name="contacts_selected">Yhteystiedot valittu</string>
   <string name="activity_share_toolbar_header">Valitse yhteystiedot</string>
-  <string name="no_contacts_selector">Ei yhteystietoja</string>
-  <string name="no_contacts_selector_action">Tule takaisin kun olet lisännyt yhteystiedon</string>
-  <string name="shared_by_format">Jakanut %s</string>
-  <string name="sharing_status">Jaetaan tilaa</string>
-  <string name="shared_with">Jaettu %1$d kanssa (%2$d verkossa)</string>
-  <string name="nobody">Ei kukaan</string>
   
   <string name="read_more">lue lisää</string>
 

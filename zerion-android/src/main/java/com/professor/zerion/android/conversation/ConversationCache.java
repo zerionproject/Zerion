@@ -1,8 +1,8 @@
 package com.professor.zerion.android.conversation;
 
-import org.briarproject.bramble.api.contact.ContactId;
-import org.briarproject.bramble.api.sync.MessageId;
-import org.briarproject.briar.api.conversation.ConversationMessageHeader;
+import org.zerionproject.core.api.contact.ContactId;
+import org.zerionproject.core.api.sync.MessageId;
+import org.zerionproject.app.api.conversation.ConversationMessageHeader;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.ArrayList;

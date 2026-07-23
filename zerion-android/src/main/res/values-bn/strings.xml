@@ -359,12 +359,6 @@
   
   <string name="contacts_selected">নির্বাচিত পরিচিতি</string>
   <string name="activity_share_toolbar_header">পরিচিতি নির করুন</string>
-  <string name="no_contacts_selector">প্রদর্শন করার জন্য কোন যোগাযোগ নেই</string>
-  <string name="no_contacts_selector_action">একটি পরিচিতি যোগ করার পর দয়া করে এখানে ফিরে আসুন</string>
-  <string name="shared_by_format">শেয়ার করেছেন %s</string>
-  <string name="sharing_status">শেয়ারিং অবস্থা</string>
-  <string name="shared_with">শেয়ার করেছেন %1$d (%2$d অনলাইনে আছেন)</string>
-  <string name="nobody">কেউ না</string>
   
   <string name="read_more">আরো পড়ুন</string>
 

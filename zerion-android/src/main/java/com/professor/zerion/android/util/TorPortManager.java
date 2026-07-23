@@ -6,10 +6,10 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.IOException;
 import java.net.ServerSocket;
-import static org.briarproject.bramble.api.plugin.TorConstants.DEFAULT_CONTROL_PORT;
-import static org.briarproject.bramble.api.plugin.TorConstants.DEFAULT_SOCKS_PORT;
-import static org.briarproject.bramble.api.plugin.TorConstants.MAX_DYNAMIC_PORT;
-import static org.briarproject.bramble.api.plugin.TorConstants.MIN_DYNAMIC_PORT;
+import static org.zerionproject.core.api.plugin.TorConstants.DEFAULT_CONTROL_PORT;
+import static org.zerionproject.core.api.plugin.TorConstants.DEFAULT_SOCKS_PORT;
+import static org.zerionproject.core.api.plugin.TorConstants.MAX_DYNAMIC_PORT;
+import static org.zerionproject.core.api.plugin.TorConstants.MIN_DYNAMIC_PORT;
 
 @NotNullByDefault
 public class TorPortManager {

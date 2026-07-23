@@ -64,7 +64,8 @@
 					android:maxLines="2"
 					android:textColor="@android:color/white"
 					android:textSize="22sp"
-					android:textStyle="bold"
+					android:fontFamily="@font/bricolage_grotesque"
+					android:textFontWeight="500"
 					tools:text="Family" />
 
 				<TextView
@@ -214,7 +215,7 @@
 					android:layout_height="wrap_content"
 					android:padding="16dp"
 					android:text="@string/grouptr_admin_section_danger"
-					android:textColor="@color/zerion_red_500_new"
+					android:textColor="@color/zerion_destructive"
 					android:textSize="16sp"
 					android:textStyle="bold" />
 

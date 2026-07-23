@@ -349,12 +349,6 @@
   
   <string name="contacts_selected">အဆက်အသွယ်များ ရွေးထားသည်</string>
   <string name="activity_share_toolbar_header">အဆက်အသွယ်များ ရွေးမည်</string>
-  <string name="no_contacts_selector">ပြသစရာအဆက်အသွယ် မရှိပါ</string>
-  <string name="no_contacts_selector_action">အဆက်အသွယ်တစ်ခုထည့်ပြီးလျှင် ဤနေရာကို ပြန်လာပါ</string>
-  <string name="shared_by_format">%s မှ မျှဝေခဲ့သည်</string>
-  <string name="sharing_status">မျှဝေခြင်း အခြေအနေ</string>
-  <string name="shared_with">%1$d နှင့် မျှဝေပြီး (%2$d သည် အွန်လိုင်းပေါ်ရှိ)</string>
-  <string name="nobody">မည်သူမျှ</string>
   
   <string name="read_more">ထပ်မံဖတ်ရှုမည်</string>
 

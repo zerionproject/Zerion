@@ -305,12 +305,6 @@
   
   <string name="contacts_selected">Contacten geselecteerd</string>
   <string name="activity_share_toolbar_header">Kies contacten</string>
-  <string name="no_contacts_selector">Er zijn geen contacten om te tonen</string>
-  <string name="no_contacts_selector_action">Kom alsjeblieft hier terug na het toevoegen van een contact</string>
-  <string name="shared_by_format">Is gedeeld door %s</string>
-  <string name="sharing_status">Deelstatus</string>
-  <string name="shared_with">Is gedeeld met %1$d (%2$d online)</string>
-  <string name="nobody">Niemand</string>
   
   <string name="read_more">lees meer</string>
 

@@ -123,7 +123,7 @@
                         android:textColor="@android:color/black"
                         android:textSize="14sp"
                         android:textIsSelectable="true"
-                        android:fontFamily="monospace" />
+                        android:fontFamily="@font/plex_mono_regular" />
 
                 </com.google.android.material.card.MaterialCardView>
 

@@ -3,7 +3,7 @@ package com.professor.zerion.android.util;
 import android.content.Context;
 import android.content.res.Resources;
 
-import org.briarproject.bramble.test.BrambleMockTestCase;
+import org.zerionproject.core.test.BrambleMockTestCase;
 import com.professor.zerion.R;
 import org.jmock.Expectations;
 import org.jmock.imposters.ByteBuddyClassImposteriser;

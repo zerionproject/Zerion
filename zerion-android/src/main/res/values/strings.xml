@@ -131,8 +131,6 @@
 	<string name="test_data_contacts_label">Number of contacts</string>
 	<string name="test_data_messages_label">Number of messages per contact</string>
 	<string name="test_data_avatars_label">Percentage of contacts with profile pictures</string>
-	<string name="test_data_groups_label">Number of private groups</string>
-	<string name="test_data_group_messages_label">Number of private group messages</string>
 	<string name="test_data_zero_values">Zero values</string>
 	<string name="test_data_create">Create test data</string>
 	<plurals name="text_editor_word_count">
@@ -249,6 +247,10 @@
 	<string name="nav_drawer_open_description">Open the navigation drawer</string>
 	<string name="nav_drawer_close_description">Close the navigation drawer</string>
 	<string name="contact_list_button">Contacts</string>
+	<string name="chats_button">Chats</string>
+	<string name="chat_type_group">Group</string>
+	<string name="chat_type_channel">Channel</string>
+	<string name="no_chats">No conversations yet</string>
 	<string name="groups_button">Private Groups</string>
 	<string name="groups_button_add">Add new group</string>
 	<string name="channels_button">Channels</string>
@@ -1091,13 +1093,6 @@
 	<string name="share_message">Share with a message</string>
 	<string name="share_hint_short">Add a message (optional)</string>
 	<string name="invitation_exists">Invitation already sent</string>
-	<string name="invitation_already_sharing">Already sharing</string>
-	<string name="new_message_hint">New Post</string>
-	<string name="message_reply_hint">New Reply</string>
-	<string name="invitation_already_invited">Invitation already sent</string>
-	<string name="invitation_invite_received">Invitation already received</string>
-	<string name="invitation_not_supported">Not supported by this contact</string>
-	<string name="invitation_error">Error. This is a bug and not your fault</string>
 	<plurals name="posts">
 		<item quantity="one">%d post</item>
 		<item quantity="other">%d posts</item>
@@ -1107,13 +1102,7 @@
 
 	<string name="contacts_selected">Contacts selected</string>
 	<string name="activity_share_toolbar_header">Choose Contacts</string>
-	<string name="no_contacts_selector">No contacts to show</string>
-	<string name="no_contacts_selector_action">Please come back here after adding a contact</string>
-	<string name="shared_by_format">Shared by %s</string>
 
-	<string name="sharing_status">Sharing Status</string>
-	<string name="shared_with">Shared with %1$d (%2$d online)</string>
-	<string name="nobody">Nobody</string>
 
 	<string name="read_more">read more</string>
 
@@ -1175,6 +1164,13 @@
 	<string name="pref_bubble_color_orange">Orange</string>
 	<string name="pref_bubble_color_pink">Pink</string>
 	<string name="pref_bubble_color_cyan">Cyan</string>
+	<string name="pref_accent_title">Accent Color</string>
+	<string name="pref_accent_cyan">Cyan</string>
+	<string name="pref_accent_violet">Violet</string>
+	<string name="pref_accent_emerald">Emerald</string>
+	<string name="pref_accent_amber">Amber</string>
+	<string name="pref_accent_rose">Rose</string>
+	<string name="pref_accent_blue">Blue</string>
 	<string name="pref_theme_title">Theme</string>
 	<string name="pref_theme_light">Light</string>
 	<!-- ZERION FIX: Changed from "Dark" to "Zerion Dark" for branding -->

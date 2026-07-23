@@ -23,9 +23,9 @@ import com.professor.zerion.android.AppModule;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
 
-import org.briarproject.bramble.api.connection.ConnectionRegistry;
-import org.briarproject.bramble.api.contact.ContactId;
-import org.briarproject.briar.api.identity.AuthorInfo;
+import org.zerionproject.core.api.connection.ConnectionRegistry;
+import org.zerionproject.core.api.contact.ContactId;
+import org.zerionproject.app.api.identity.AuthorInfo;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 

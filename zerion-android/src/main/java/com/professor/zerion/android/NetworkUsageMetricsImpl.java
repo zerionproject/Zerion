@@ -3,7 +3,7 @@ package com.professor.zerion.android;
 import android.net.TrafficStats;
 import android.os.Process;
 
-import org.briarproject.bramble.api.lifecycle.Service;
+import org.zerionproject.core.api.lifecycle.Service;
 import com.professor.zerion.android.api.NetworkUsageMetrics;
 import org.briarproject.nullsafety.NotNullByDefault;
 @NotNullByDefault

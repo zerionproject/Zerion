@@ -1,11 +1,11 @@
 package com.professor.zerion.android.conversation;
 
-import org.briarproject.bramble.api.sync.GroupId;
-import org.briarproject.bramble.api.sync.MessageId;
-import org.briarproject.briar.api.conversation.ConversationMessageHeader;
+import org.zerionproject.core.api.sync.GroupId;
+import org.zerionproject.core.api.sync.MessageId;
+import org.zerionproject.app.api.conversation.ConversationMessageHeader;
 import org.briarproject.nullsafety.NotNullByDefault;
 
-import org.briarproject.briar.api.messaging.LinkPreview;
+import org.zerionproject.app.api.messaging.LinkPreview;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -16,7 +16,7 @@ import javax.annotation.concurrent.NotThreadSafe;
 import androidx.annotation.LayoutRes;
 import androidx.lifecycle.LiveData;
 
-import static org.briarproject.bramble.util.StringUtils.toHexString;
+import static org.zerionproject.core.util.StringUtils.toHexString;
 
 @NotThreadSafe
 @NotNullByDefault

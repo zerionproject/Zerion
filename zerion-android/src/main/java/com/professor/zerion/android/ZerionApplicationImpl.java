@@ -14,10 +14,10 @@ import com.google.android.material.color.DynamicColors;
 import com.vanniktech.emoji.EmojiManager;
 import com.vanniktech.emoji.google.GoogleEmojiProvider;
 
-import org.briarproject.bramble.BrambleAndroidEagerSingletons;
-import org.briarproject.bramble.BrambleAppComponent;
-import org.briarproject.bramble.BrambleCoreEagerSingletons;
-import org.briarproject.briar.BriarCoreEagerSingletons;
+import org.zerionproject.core.BrambleAndroidEagerSingletons;
+import org.zerionproject.core.BrambleAppComponent;
+import org.zerionproject.core.BrambleCoreEagerSingletons;
+import org.zerionproject.app.BriarCoreEagerSingletons;
 import com.professor.zerion.R;
 import com.professor.zerion.android.util.UiUtils;
 

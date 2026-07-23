@@ -33,7 +33,7 @@
 		android:id="@+id/recordingTimer"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
-		android:fontFamily="monospace"
+		android:fontFamily="@font/plex_mono_regular"
 		android:text="0:00"
 		android:textColor="?attr/colorPrimary"
 		android:textSize="18sp"

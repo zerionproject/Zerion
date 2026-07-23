@@ -1,7 +1,7 @@
 package com.professor.zerion.android.controller;
 
-import org.briarproject.bramble.api.db.DatabaseExecutor;
-import org.briarproject.bramble.api.lifecycle.LifecycleManager;
+import org.zerionproject.core.api.db.DatabaseExecutor;
+import org.zerionproject.core.api.lifecycle.LifecycleManager;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.concurrent.Executor;

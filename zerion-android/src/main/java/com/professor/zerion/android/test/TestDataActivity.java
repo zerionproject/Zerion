@@ -10,7 +10,7 @@ import android.widget.TextView;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
-import org.briarproject.briar.api.test.TestDataCreator;
+import org.zerionproject.app.api.test.TestDataCreator;
 
 import javax.inject.Inject;
 
@@ -24,9 +24,8 @@ public class TestDataActivity extends ZerionActivity {
 	@Inject
 	TestDataCreator testDataCreator;
 
-	private TextView contactsTextView, privateGroupsTextView;
-	private SeekBar contactsSeekBar, messagesSeekBar, avatarsSeekBar,
-			privateGroupsSeekBar, privateGroupPostsSeekBar;
+	private TextView contactsTextView;
+	private SeekBar contactsSeekBar, messagesSeekBar, avatarsSeekBar;
 
 	@Override
 	public void onCreate(Bundle bundle) {
@@ -42,15 +41,9 @@ public class TestDataActivity extends ZerionActivity {
 		contactsTextView = findViewById(R.id.textViewContactsSb);
 		TextView messagesTextView = findViewById(R.id.textViewMessagesSb);
 		TextView avatarsTextView = findViewById(R.id.textViewAvatarsSb);
-		privateGroupsTextView = findViewById(R.id.TextViewPrivateGroupsSb);
-		TextView privateGroupPostsTextView =
-				findViewById(R.id.TextViewPrivateGroupMessagesSb);
 		contactsSeekBar = findViewById(R.id.seekBarContacts);
 		messagesSeekBar = findViewById(R.id.seekBarMessages);
 		avatarsSeekBar = findViewById(R.id.seekBarAvatars);
-		privateGroupsSeekBar = findViewById(R.id.seekBarPrivateGroups);
-		privateGroupPostsSeekBar =
-				findViewById(R.id.seekBarPrivateGroupMessages);
 
 		contactsSeekBar.setOnSeekBarChangeListener(
 				new AbstractOnSeekBarChangeListener() {
@@ -65,24 +58,11 @@ public class TestDataActivity extends ZerionActivity {
 				new OnSeekBarChangeUpdateProgress(messagesTextView));
 		avatarsSeekBar.setOnSeekBarChangeListener(
 				new OnSeekBarChangeUpdateProgress(avatarsTextView));
-		privateGroupsSeekBar.setOnSeekBarChangeListener(
-				new AbstractOnSeekBarChangeListener() {
-					@Override
-					public void onProgressChanged(SeekBar seekBar, int progress,
-							boolean fromUser) {
-						privateGroupsTextView.setText(String.valueOf(progress));
-						privateGroupPostsSeekBar.setEnabled(progress > 0);
-					}
-				});
-		privateGroupPostsSeekBar.setOnSeekBarChangeListener(
-				new OnSeekBarChangeUpdateProgress(privateGroupPostsTextView));
 
 		findViewById(R.id.buttonZeroValues).setOnClickListener(v -> {
 			contactsSeekBar.setProgress(0);
 			messagesSeekBar.setProgress(0);
 			avatarsSeekBar.setProgress(0);
-			privateGroupsSeekBar.setProgress(0);
-			privateGroupPostsSeekBar.setProgress(0);
 		});
 
 		findViewById(R.id.buttonCreateTestData).setOnClickListener(
@@ -91,9 +71,7 @@ public class TestDataActivity extends ZerionActivity {
 
 	private void createTestData() {
 		testDataCreator.createTestData(contactsSeekBar.getProgress() + 1,
-				messagesSeekBar.getProgress(), avatarsSeekBar.getProgress(),
-				privateGroupsSeekBar.getProgress(),
-				privateGroupPostsSeekBar.getProgress());
+				messagesSeekBar.getProgress(), avatarsSeekBar.getProgress());
 		Intent intent = new Intent(this, ENTRY_ACTIVITY);
 		intent.addFlags(FLAG_ACTIVITY_CLEAR_TOP);
 		startActivity(intent);

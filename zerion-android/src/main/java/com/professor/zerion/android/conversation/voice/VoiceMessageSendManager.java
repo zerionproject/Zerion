@@ -1,21 +1,21 @@
 package com.professor.zerion.android.conversation.voice;
 
-import org.briarproject.bramble.api.FormatException;
-import org.briarproject.bramble.api.contact.ContactId;
-import org.briarproject.bramble.api.contact.event.ContactRemovedEvent;
-import org.briarproject.bramble.api.db.DatabaseExecutor;
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.db.TransactionManager;
-import org.briarproject.bramble.api.event.Event;
-import org.briarproject.bramble.api.event.EventBus;
-import org.briarproject.bramble.api.event.EventListener;
-import org.briarproject.bramble.api.sync.GroupId;
-import org.briarproject.bramble.api.sync.MessageId;
-import org.briarproject.bramble.api.sync.event.MessagesSentEvent;
-import org.briarproject.briar.api.conversation.ConversationManager;
-import org.briarproject.briar.api.messaging.MessagingManager;
-import org.briarproject.briar.api.messaging.PrivateMessage;
-import org.briarproject.briar.api.messaging.PrivateMessageFactory;
+import org.zerionproject.core.api.FormatException;
+import org.zerionproject.core.api.contact.ContactId;
+import org.zerionproject.core.api.contact.event.ContactRemovedEvent;
+import org.zerionproject.core.api.db.DatabaseExecutor;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.db.TransactionManager;
+import org.zerionproject.core.api.event.Event;
+import org.zerionproject.core.api.event.EventBus;
+import org.zerionproject.core.api.event.EventListener;
+import org.zerionproject.core.api.sync.GroupId;
+import org.zerionproject.core.api.sync.MessageId;
+import org.zerionproject.core.api.sync.event.MessagesSentEvent;
+import org.zerionproject.app.api.conversation.ConversationManager;
+import org.zerionproject.app.api.messaging.MessagingManager;
+import org.zerionproject.app.api.messaging.PrivateMessage;
+import org.zerionproject.app.api.messaging.PrivateMessageFactory;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.HashMap;

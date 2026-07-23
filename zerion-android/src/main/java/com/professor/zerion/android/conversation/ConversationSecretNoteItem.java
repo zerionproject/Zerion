@@ -1,7 +1,7 @@
 package com.professor.zerion.android.conversation;
 
 import com.professor.zerion.R;
-import org.briarproject.briar.api.messaging.PrivateMessageHeader;
+import org.zerionproject.app.api.messaging.PrivateMessageHeader;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.Nullable;

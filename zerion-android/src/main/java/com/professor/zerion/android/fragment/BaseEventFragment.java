@@ -1,7 +1,7 @@
 package com.professor.zerion.android.fragment;
 
-import org.briarproject.bramble.api.event.EventBus;
-import org.briarproject.bramble.api.event.EventListener;
+import org.zerionproject.core.api.event.EventBus;
+import org.zerionproject.core.api.event.EventListener;
 
 import javax.inject.Inject;
 

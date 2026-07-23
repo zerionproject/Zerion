@@ -1,6 +1,6 @@
 package com.professor.zerion.android.controller;
 
-import org.briarproject.bramble.api.system.Wakeful;
+import org.zerionproject.core.api.system.Wakeful;
 import com.professor.zerion.android.controller.handler.ResultHandler;
 import org.briarproject.nullsafety.NotNullByDefault;
 

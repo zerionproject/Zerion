@@ -15,7 +15,7 @@ import androidx.annotation.NonNull;
 import static android.content.Intent.EXTRA_MIME_TYPES;
 import static android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION;
 import static android.os.Build.VERSION.SDK_INT;
-import static org.briarproject.bramble.util.AndroidUtils.getSupportedImageContentTypes;
+import static org.zerionproject.core.util.AndroidUtils.getSupportedImageContentTypes;
 
 @NotNullByDefault
 public class ActivityLaunchers {

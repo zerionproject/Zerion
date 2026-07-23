@@ -2,87 +2,10 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
 
 	<!-- ================================================================== -->
-	<!-- ZERION MATERIAL 3 DESIGN SYSTEM                                    -->
-	<!-- Complete theme and component library for Zerion Android app        -->
+	<!-- ZERION MATERIAL 3 COMPONENT LIBRARY                                -->
+	<!-- Shared button/input/card/toolbar styles applied per-layout on top  -->
+	<!-- of the app theme (ZerionTheme).                                    -->
 	<!-- ================================================================== -->
-
-	<!-- ================================================================== -->
-	<!-- BASE THEME: Zerion Material 3 Dark                                 -->
-	<!-- ================================================================== -->
-
-	<style name="Theme.Zerion" parent="Theme.Material3.Dark.NoActionBar">
-		<!-- Primary Brand Colors -->
-		<item name="colorPrimary">@color/zerion_cyan</item>
-		<item name="colorOnPrimary">@android:color/white</item>
-		<item name="colorPrimaryContainer">@color/zerion_card_bg</item>
-		<item name="colorOnPrimaryContainer">@android:color/white</item>
-
-		<!-- Secondary Colors -->
-		<item name="colorSecondary">@color/zerion_deep_blue</item>
-		<item name="colorOnSecondary">@android:color/white</item>
-		<item name="colorSecondaryContainer">@color/zerion_card_bg</item>
-		<item name="colorOnSecondaryContainer">@android:color/white</item>
-
-		<!-- Tertiary Colors (Aqua accent) -->
-		<item name="colorTertiary">@color/zerion_aqua</item>
-		<item name="colorOnTertiary">@android:color/white</item>
-		<item name="colorTertiaryContainer">@color/zerion_card_bg</item>
-		<item name="colorOnTertiaryContainer">@color/zerion_cyan</item>
-
-		<!-- Surface & Background -->
-		<item name="android:colorBackground">@color/zerion_dark_bg</item>
-		<item name="colorOnBackground">@android:color/white</item>
-		<item name="colorSurface">@color/zerion_card_bg</item>
-		<item name="colorOnSurface">@android:color/white</item>
-		<item name="colorSurfaceDim">@color/zerion_dark_bg</item>
-		<item name="colorSurfaceVariant">@color/zerion_card_bg</item>
-		<item name="colorOnSurfaceVariant">#B3FFFFFF</item>
-
-		<!-- Error Colors -->
-		<item name="colorError">@color/zerion_red_500</item>
-		<item name="colorOnError">@android:color/white</item>
-
-		<!-- Outline & Border -->
-		<item name="colorOutline">@color/zerion_cyan</item>
-		<item name="colorOutlineVariant">#1AFFFFFF</item>
-
-		<!-- Window & Status Bar -->
-		<item name="android:windowBackground">@drawable/bg_zerion_gradient</item>
-		<item name="android:statusBarColor">@android:color/transparent</item>
-		<item name="android:navigationBarColor">@android:color/transparent</item>
-		<item name="android:windowLightStatusBar">false</item>
-
-		<!-- Typography -->
-		<item name="android:textColor">@android:color/white</item>
-		<item name="android:textColorPrimary">@android:color/white</item>
-		<item name="android:textColorSecondary">#B3FFFFFF</item>
-		<item name="android:textColorTertiary">#80FFFFFF</item>
-		<item name="android:textColorHint">#80FFFFFF</item>
-		<item name="android:textColorLink">@color/zerion_cyan</item>
-
-		<!-- Shapes -->
-		<item name="shapeAppearanceSmallComponent">@style/Zerion.Shape.Small</item>
-		<item name="shapeAppearanceMediumComponent">@style/Zerion.Shape.Medium</item>
-		<item name="shapeAppearanceLargeComponent">@style/Zerion.Shape.Large</item>
-
-		<!-- Component Styles -->
-		<item name="materialButtonStyle">@style/Zerion.Button.Primary</item>
-		<item name="textInputStyle">@style/Zerion.TextInput</item>
-		<item name="materialCardViewStyle">@style/Zerion.Card.Glass</item>
-		<item name="floatingActionButtonStyle">@style/Zerion.FAB</item>
-		<item name="toolbarStyle">@style/Zerion.Toolbar</item>
-		<item name="alertDialogTheme">@style/Zerion.Dialog</item>
-
-		<!-- Animations -->
-		<item name="android:windowAnimationStyle">@style/ActivityAnimation</item>
-		<item name="windowActionModeOverlay">true</item>
-
-		<!-- Preferences -->
-		<item name="preferenceTheme">@style/PreferenceThemeOverlay.v14</item>
-
-		<!-- Force dark mode off (we handle it ourselves) -->
-		<item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
-	</style>
 
 	<!-- ================================================================== -->
 	<!-- SHAPE TOKENS                                                       -->

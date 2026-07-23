@@ -16,15 +16,16 @@ import android.os.IBinder;
 import com.bumptech.glide.Glide;
 
 import org.briarproject.android.dontkillmelib.wakelock.AndroidWakeLockManager;
-import org.briarproject.bramble.api.account.AccountManager;
-import org.briarproject.bramble.api.crypto.SecretKey;
-import org.briarproject.bramble.api.lifecycle.LifecycleManager;
-import org.briarproject.bramble.api.lifecycle.LifecycleManager.StartResult;
-import org.briarproject.bramble.api.system.AndroidExecutor;
-import org.briarproject.bramble.api.system.Clock;
-import org.briarproject.bramble.util.AndroidUtils;
+import org.zerionproject.core.api.account.AccountManager;
+import org.zerionproject.core.api.crypto.SecretKey;
+import org.zerionproject.core.api.lifecycle.LifecycleManager;
+import org.zerionproject.core.api.lifecycle.LifecycleManager.StartResult;
+import org.zerionproject.core.api.system.AndroidExecutor;
+import org.zerionproject.core.api.system.Clock;
+import org.zerionproject.core.util.AndroidUtils;
 import com.professor.zerion.R;
 import com.professor.zerion.android.logout.HideUiActivity;
+import com.professor.zerion.android.util.CacheSweeper;
 import com.professor.zerion.android.api.AndroidNotificationManager;
 import com.professor.zerion.android.api.LockManager;
 
@@ -45,9 +46,9 @@ import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_NO_ANIMATION;
 import static android.os.Build.VERSION.SDK_INT;
 import static android.os.Process.myPid;
-import static org.briarproject.bramble.api.lifecycle.LifecycleManager.StartResult.ALREADY_RUNNING;
-import static org.briarproject.bramble.api.lifecycle.LifecycleManager.StartResult.SUCCESS;
-import static org.briarproject.bramble.util.AndroidUtils.isUiThread;
+import static org.zerionproject.core.api.lifecycle.LifecycleManager.StartResult.ALREADY_RUNNING;
+import static org.zerionproject.core.api.lifecycle.LifecycleManager.StartResult.SUCCESS;
+import static org.zerionproject.core.util.AndroidUtils.isUiThread;
 import static com.professor.zerion.android.ZerionApplication.ENTRY_ACTIVITY;
 import static com.professor.zerion.android.api.AndroidNotificationManager.ONGOING_CHANNEL_ID;
 import static com.professor.zerion.android.api.AndroidNotificationManager.ONGOING_CHANNEL_OLD_ID;
@@ -59,9 +60,9 @@ import static org.briarproject.nullsafety.NullSafety.requireNonNull;
 public class ZerionService extends Service {
 
 	public static String EXTRA_START_RESULT =
-			"org.briarproject.briar.START_RESULT";
+			"org.zerionproject.app.START_RESULT";
 	public static String EXTRA_STARTUP_FAILED =
-			"org.briarproject.briar.STARTUP_FAILED";
+			"org.zerionproject.app.STARTUP_FAILED";
 
 	private static final long MIN_GLIDE_CACHE_CLEAR_INTERVAL_MS = 5000;
 
@@ -123,6 +124,9 @@ public class ZerionService extends Service {
 			return;
 		}
 
+		Context sweepCtx = getApplicationContext();
+		new Thread(() -> CacheSweeper.sweep(sweepCtx), "CacheSweep").start();
+
 		wakeLockManager.runWakefully(() -> {
 				if (SDK_INT >= 26) {
 					NotificationManager nm = (NotificationManager)
@@ -159,8 +163,8 @@ public class ZerionService extends Service {
 					StartResult result = lifecycleManager.startServices(dbKey);
 					if (result == SUCCESS) {
 						if (accountManager instanceof
-								org.briarproject.bramble.account.AndroidAccountManager) {
-							((org.briarproject.bramble.account
+								org.zerionproject.core.account.AndroidAccountManager) {
+							((org.zerionproject.core.account
 									.AndroidAccountManager) accountManager)
 									.confirmAccountStarted();
 						}
@@ -181,8 +185,6 @@ public class ZerionService extends Service {
 				};
 				IntentFilter filter = new IntentFilter();
 				filter.addAction(ACTION_SHUTDOWN);
-				filter.addAction("android.intent.action.QUICKBOOT_POWEROFF");
-				filter.addAction("com.htc.intent.action.QUICKBOOT_POWEROFF");
 
 				AndroidUtils.registerReceiver(getApplicationContext(), receiver, filter);
 		}, "LifecycleStartup");

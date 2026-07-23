@@ -3,9 +3,9 @@ package com.professor.zerion.android.attachment;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-import org.briarproject.bramble.api.sync.GroupId;
-import org.briarproject.bramble.api.sync.MessageId;
-import org.briarproject.briar.api.attachment.AttachmentHeader;
+import org.zerionproject.core.api.sync.GroupId;
+import org.zerionproject.core.api.sync.MessageId;
+import org.zerionproject.app.api.attachment.AttachmentHeader;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.Immutable;
@@ -14,7 +14,7 @@ import androidx.annotation.Nullable;
 
 import static java.lang.System.arraycopy;
 import static java.util.Objects.requireNonNull;
-import static org.briarproject.bramble.util.StringUtils.toHexString;
+import static org.zerionproject.core.util.StringUtils.toHexString;
 import static com.professor.zerion.android.attachment.AttachmentItem.State.LOADING;
 import static com.professor.zerion.android.attachment.AttachmentItem.State.MISSING;
 

@@ -1,0 +1,81 @@
+package org.zerionproject.core.api.transport;
+
+import org.zerionproject.core.api.crypto.SecretKey;
+import org.zerionproject.core.api.plugin.TransportId;
+import org.briarproject.nullsafety.NotNullByDefault;
+
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
+
+@Immutable
+@NotNullByDefault
+public class TransportKeys {
+
+	private final TransportId transportId;
+	private final IncomingKeys inPrev, inCurr, inNext;
+	private final OutgoingKeys outCurr;
+	@Nullable
+	private final SecretKey rootKey;
+	private final boolean alice;
+
+	public TransportKeys(TransportId transportId, IncomingKeys inPrev,
+			IncomingKeys inCurr, IncomingKeys inNext, OutgoingKeys outCurr) {
+		this(transportId, inPrev, inCurr, inNext, outCurr, null, false);
+	}
+
+	public TransportKeys(TransportId transportId, IncomingKeys inPrev,
+			IncomingKeys inCurr, IncomingKeys inNext, OutgoingKeys outCurr,
+			@Nullable SecretKey rootKey, boolean alice) {
+		if (inPrev.getTimePeriod() != outCurr.getTimePeriod() - 1)
+			throw new IllegalArgumentException();
+		if (inCurr.getTimePeriod() != outCurr.getTimePeriod())
+			throw new IllegalArgumentException();
+		if (inNext.getTimePeriod() != outCurr.getTimePeriod() + 1)
+			throw new IllegalArgumentException();
+		this.transportId = transportId;
+		this.inPrev = inPrev;
+		this.inCurr = inCurr;
+		this.inNext = inNext;
+		this.outCurr = outCurr;
+		this.rootKey = rootKey;
+		this.alice = alice;
+	}
+
+	public TransportId getTransportId() {
+		return transportId;
+	}
+
+	public IncomingKeys getPreviousIncomingKeys() {
+		return inPrev;
+	}
+
+	public IncomingKeys getCurrentIncomingKeys() {
+		return inCurr;
+	}
+
+	public IncomingKeys getNextIncomingKeys() {
+		return inNext;
+	}
+
+	public OutgoingKeys getCurrentOutgoingKeys() {
+		return outCurr;
+	}
+
+	public long getTimePeriod() {
+		return outCurr.getTimePeriod();
+	}
+
+	public boolean isHandshakeMode() {
+		return rootKey != null;
+	}
+
+	public SecretKey getRootKey() {
+		if (rootKey == null) throw new UnsupportedOperationException();
+		return rootKey;
+	}
+
+	public boolean isAlice() {
+		if (rootKey == null) throw new UnsupportedOperationException();
+		return alice;
+	}
+}

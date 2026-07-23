@@ -355,12 +355,6 @@ Vänlige installera Zerion på en nyare enhet.</string>
   
   <string name="contacts_selected">Kontakter valda</string>
   <string name="activity_share_toolbar_header">Välj kontakter</string>
-  <string name="no_contacts_selector">Inga kontakter</string>
-  <string name="no_contacts_selector_action">Vänligen återvänd hit när du lagt till en kontakt</string>
-  <string name="shared_by_format">Delad av %s</string>
-  <string name="sharing_status">Delningsstatus</string>
-  <string name="shared_with">Delas med %1$d (%2$d uppkopplade)</string>
-  <string name="nobody">Ingen</string>
   
   <string name="read_more">läs mer</string>
 

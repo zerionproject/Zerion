@@ -51,6 +51,11 @@ public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFr
 	private String pickerType = null;
 
 	@Override
+	protected boolean forceScreenshotProtection() {
+		return true;
+	}
+
+	@Override
 	public void onCreate(@Nullable Bundle savedInstanceState) {
 
 		super.onCreate(savedInstanceState);

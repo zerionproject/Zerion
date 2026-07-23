@@ -6,23 +6,23 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.view.View;
 
-import org.briarproject.bramble.api.db.DatabaseExecutor;
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.db.TransactionManager;
-import org.briarproject.bramble.api.event.Event;
-import org.briarproject.bramble.api.event.EventBus;
-import org.briarproject.bramble.api.event.EventListener;
-import org.briarproject.bramble.api.lifecycle.IoExecutor;
-import org.briarproject.bramble.api.lifecycle.LifecycleManager;
-import org.briarproject.bramble.api.sync.MessageId;
-import org.briarproject.bramble.api.system.AndroidExecutor;
+import org.zerionproject.core.api.db.DatabaseExecutor;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.db.TransactionManager;
+import org.zerionproject.core.api.event.Event;
+import org.zerionproject.core.api.event.EventBus;
+import org.zerionproject.core.api.event.EventListener;
+import org.zerionproject.core.api.lifecycle.IoExecutor;
+import org.zerionproject.core.api.lifecycle.LifecycleManager;
+import org.zerionproject.core.api.sync.MessageId;
+import org.zerionproject.core.api.system.AndroidExecutor;
 import com.professor.zerion.android.attachment.AttachmentItem;
 import com.professor.zerion.android.viewmodel.DbViewModel;
 import com.professor.zerion.android.viewmodel.LiveEvent;
 import com.professor.zerion.android.viewmodel.MutableLiveEvent;
-import org.briarproject.briar.api.attachment.Attachment;
-import org.briarproject.briar.api.attachment.AttachmentReader;
-import org.briarproject.briar.api.messaging.event.AttachmentReceivedEvent;
+import org.zerionproject.app.api.attachment.Attachment;
+import org.zerionproject.app.api.attachment.AttachmentReader;
+import org.zerionproject.app.api.messaging.event.AttachmentReceivedEvent;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.File;
@@ -46,7 +46,7 @@ import static android.os.Environment.DIRECTORY_PICTURES;
 import static android.os.Environment.getExternalStoragePublicDirectory;
 import static java.util.Locale.US;
 import static java.util.Objects.requireNonNull;
-import static org.briarproject.bramble.util.IoUtils.copyAndClose;
+import static org.zerionproject.core.util.IoUtils.copyAndClose;
 
 @NotNullByDefault
 public class ImageViewModel extends DbViewModel implements EventListener {

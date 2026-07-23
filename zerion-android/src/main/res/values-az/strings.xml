@@ -274,11 +274,6 @@
   <!--Forum Sharing-->
   <string name="contacts_selected">Kontaktlar seçildi</string>
   <string name="activity_share_toolbar_header">Kontaktlar seçin</string>
-  <string name="no_contacts_selector">Göstərmək üçün əlaqə yoxdur</string>
-  <string name="no_contacts_selector_action">Kontakt əlavə etdikdən sonra bura qayıdın</string>
-  <string name="shared_by_format">Paylaşdı %silə</string>
-  <string name="sharing_status">Paylaşma statusu</string>
-  <string name="nobody">Heçkəs</string>
   <!--Blogs-->
   <string name="read_more">daha çox oxu</string>
   <!--Blog Sharing-->

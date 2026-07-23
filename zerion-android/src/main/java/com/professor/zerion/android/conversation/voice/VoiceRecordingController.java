@@ -13,7 +13,7 @@ import androidx.lifecycle.LifecycleOwner;
 
 import com.professor.zerion.R;
 
-import org.briarproject.bramble.api.sync.GroupId;
+import org.zerionproject.core.api.sync.GroupId;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.Arrays;

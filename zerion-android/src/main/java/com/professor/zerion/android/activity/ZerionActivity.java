@@ -10,7 +10,7 @@ import android.widget.Toast;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import org.briarproject.android.dontkillmelib.wakelock.AndroidWakeLockManager;
-import org.briarproject.bramble.api.system.Wakeful;
+import org.zerionproject.core.api.system.Wakeful;
 import com.professor.zerion.R;
 import com.professor.zerion.android.ZerionApplication;
 import com.professor.zerion.android.account.UnlockActivity;

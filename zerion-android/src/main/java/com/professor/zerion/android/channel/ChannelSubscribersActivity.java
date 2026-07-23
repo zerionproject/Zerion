@@ -20,10 +20,10 @@ import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
 
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.lifecycle.IoExecutor;
-import org.briarproject.briar.api.channel.ChannelManager;
-import org.briarproject.briar.api.channel.ChannelSubscriber;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.lifecycle.IoExecutor;
+import org.zerionproject.app.api.channel.ChannelManager;
+import org.zerionproject.app.api.channel.ChannelSubscriber;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
@@ -100,7 +100,7 @@ public class ChannelSubscribersActivity extends ZerionActivity {
 			List<ChannelSubscriber> subs;
 			try {
 				subs = channelManager.getAnnouncedSubscribers(channelId);
-				org.briarproject.briar.api.channel.ChannelState s =
+				org.zerionproject.app.api.channel.ChannelState s =
 						channelManager.getChannel(channelId);
 				channelIsClosed = s != null && !s.isPublicChannel();
 			} catch (DbException ex) {

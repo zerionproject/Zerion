@@ -1,6 +1,6 @@
 apply plugin: 'java-library'
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+sourceCompatibility = 17
+targetCompatibility = 17
 
 apply plugin: 'ru.vyarus.animalsniffer'
 apply plugin: 'idea'
@@ -8,6 +8,7 @@ apply from: '../dagger.gradle'
 
 dependencies {
 	api project(':bramble-api')
+	api project(':zerion-wire')
 
 	api "org.briarproject:onionwrapper-core:$onionwrapper_version"
 
@@ -44,7 +45,7 @@ animalsniffer {
 	ignore 'java.util.Objects'
 }
 
-// needed to make test output available to bramble-java
+// needed to make test output available to modules that depend on it
 configurations {
 	testOutput.extendsFrom(testCompile)
 }

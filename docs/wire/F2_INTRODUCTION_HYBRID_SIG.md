@@ -57,17 +57,17 @@ But `signature` length range is now `1 .. HYBRID_SIGNATURE_BYTES = 3373` (was `1
 ## 2. Signing (AuthMessage construction)
 
 ```
-nonce = HMAC(macKey, label="org.briarproject.briar.introduction/AUTH_NONCE")
+nonce = HMAC(macKey, label="org.zerionproject.app.introduction/AUTH_NONCE")
 ```
 (Unchanged — same label, same MAC.)
 
 ```
 IF localMlDsaPriv != nil AND remoteMlDsaPub != nil:
     hybridPriv = HybridSignaturePrivateKey(ed25519PrivateKey, localMlDsaPriv)   // 32 || 4032 = 4064 bytes
-    signature  = hybridSign(label="org.briarproject.briar.introduction/AUTH_SIGN", toSign=nonce, hybridPriv)
+    signature  = hybridSign(label="org.zerionproject.app.introduction/AUTH_SIGN", toSign=nonce, hybridPriv)
                  // = ed25519Sign(nonce) || mlDsa65Sign(nonce) = 64 || 3309 = 3373 bytes
 ELSE:
-    signature  = ed25519Sign(label="org.briarproject.briar.introduction/AUTH_SIGN", toSign=nonce, ed25519Priv)
+    signature  = ed25519Sign(label="org.zerionproject.app.introduction/AUTH_SIGN", toSign=nonce, ed25519Priv)
                  // = 64 bytes
 ```
 
@@ -76,8 +76,8 @@ Decision rule for `IF`:
 - `remoteMlDsaPub` was learned from the peer's AcceptMessage slot 7. If the peer is v1.5 and sent no slot 7, this is `nil` → Ed25519 only.
 
 Label binding (must match exactly):
-- `"org.briarproject.briar.introduction/AUTH_NONCE"`
-- `"org.briarproject.briar.introduction/AUTH_SIGN"`
+- `"org.zerionproject.app.introduction/AUTH_NONCE"`
+- `"org.zerionproject.app.introduction/AUTH_SIGN"`
 
 The hybrid `sign` and `verify` helpers must use the same label-binding rule we use elsewhere in v1.6 (label || 0x00 || toSign as the actual signing input for each component algorithm — same as `crypto.hybridSign` / `crypto.verifyHybridSignature` in Bramble).
 
@@ -178,8 +178,8 @@ KEY_TYPE_HYBRID_SIGNATURE    = "Hybrid-Ed25519-ML-DSA-65"
 
 Labels (UTF-8, no trailing 0):
 ```
-LABEL_AUTH_SIGN  = "org.briarproject.briar.introduction/AUTH_SIGN"
-LABEL_AUTH_NONCE = "org.briarproject.briar.introduction/AUTH_NONCE"
+LABEL_AUTH_SIGN  = "org.zerionproject.app.introduction/AUTH_SIGN"
+LABEL_AUTH_NONCE = "org.zerionproject.app.introduction/AUTH_NONCE"
 ```
 
 ---

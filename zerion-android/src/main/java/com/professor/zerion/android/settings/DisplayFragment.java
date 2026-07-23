@@ -62,6 +62,9 @@ public class DisplayFragment extends Fragment {
 	private View bubbleColorCard;
 	private TextView bubbleColorValue;
 	private View bubbleColorPreview;
+	private View accentCard;
+	private TextView accentValue;
+	private View accentPreview;
 
 	private String[] languageTags;
 	private CharSequence[] languageEntries;
@@ -71,6 +74,7 @@ public class DisplayFragment extends Fragment {
 	private int currentNavSize;
 	private int currentTextSize;
 	private int currentBubbleColor;
+	private int currentAccent;
 
 	@Override
 	public void onAttach(@NonNull Context context) {
@@ -102,6 +106,9 @@ public class DisplayFragment extends Fragment {
 		bubbleColorCard = view.findViewById(R.id.bubble_color_card);
 		bubbleColorValue = view.findViewById(R.id.bubble_color_value);
 		bubbleColorPreview = view.findViewById(R.id.bubble_color_preview);
+		accentCard = view.findViewById(R.id.accent_card);
+		accentValue = view.findViewById(R.id.accent_value);
+		accentPreview = view.findViewById(R.id.accent_preview);
 
 		loadCurrentSettings();
 		setupLanguageEntries();
@@ -116,6 +123,9 @@ public class DisplayFragment extends Fragment {
 		}
 		textSizeCard.setOnClickListener(v -> showTextSizeDialog());
 		bubbleColorCard.setOnClickListener(v -> showBubbleColorDialog());
+		if (accentCard != null) {
+			accentCard.setOnClickListener(v -> showAccentDialog());
+		}
 	}
 
 	private void loadCurrentSettings() {
@@ -141,6 +151,10 @@ public class DisplayFragment extends Fragment {
 
 		currentBubbleColor = securePrefs.getInt(PREF_BUBBLE_COLOR, BUBBLE_BLUE);
 		updateBubbleColorDisplay();
+
+		currentAccent = securePrefs.getInt(ChatPreferences.PREF_ACCENT,
+				ChatPreferences.ACCENT_CYAN);
+		updateAccentDisplay();
 	}
 
 	private void setupLanguageEntries() {
@@ -454,6 +468,67 @@ public class DisplayFragment extends Fragment {
 				})
 				.setNegativeButton(R.string.cancel, null)
 				.show();
+	}
+
+	private int[] accentLabels() {
+		return new int[]{
+				R.string.pref_accent_cyan,
+				R.string.pref_accent_violet,
+				R.string.pref_accent_emerald,
+				R.string.pref_accent_amber,
+				R.string.pref_accent_rose,
+				R.string.pref_accent_blue
+		};
+	}
+
+	private void updateAccentDisplay() {
+		int[] labels = accentLabels();
+		int idx = currentAccent;
+		if (idx < 0 || idx >= labels.length) idx = ChatPreferences.ACCENT_CYAN;
+		if (accentValue != null) accentValue.setText(labels[idx]);
+		if (accentPreview != null
+				&& accentPreview.getBackground() instanceof GradientDrawable) {
+			int color = requireContext().getResources().getColor(
+					ChatPreferences.getAccentColorRes(requireContext()),
+					requireContext().getTheme());
+			((GradientDrawable) accentPreview.getBackground()).setColor(color);
+		}
+	}
+
+	private void showAccentDialog() {
+		int[] labels = accentLabels();
+		String[] entries = new String[labels.length];
+		for (int i = 0; i < labels.length; i++) {
+			entries[i] = getString(labels[i]);
+		}
+
+		new MaterialAlertDialogBuilder(requireContext())
+				.setTitle(R.string.pref_accent_title)
+				.setSingleChoiceItems(entries, currentAccent, (dialog, which) -> {
+					if (which != currentAccent) {
+						onAccentChanged(which);
+					}
+					dialog.dismiss();
+				})
+				.setNegativeButton(R.string.cancel, null)
+				.show();
+	}
+
+	private void onAccentChanged(int which) {
+		getAndroidComponent(requireContext()).securePreferences().edit()
+				.putInt(ChatPreferences.PREF_ACCENT, which)
+				.commit();
+		currentAccent = which;
+
+		FragmentActivity activity = requireActivity();
+		Intent intent = new Intent(getActivity(), ENTRY_ACTIVITY);
+		intent.setFlags(FLAG_ACTIVITY_CLEAR_TASK | FLAG_ACTIVITY_NEW_TASK);
+		startActivity(intent);
+
+		intent = new Intent(getActivity(), activity.getClass());
+		intent.putExtra(EXTRA_THEME_CHANGE, true);
+		startActivity(intent);
+		activity.finish();
 	}
 
 	@Override

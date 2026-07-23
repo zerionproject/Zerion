@@ -3,35 +3,35 @@ package com.professor.zerion.android;
 import android.content.SharedPreferences;
 
 import org.briarproject.android.dontkillmelib.wakelock.AndroidWakeLockManager;
-import org.briarproject.bramble.BrambleAndroidEagerSingletons;
-import org.briarproject.bramble.BrambleAndroidModule;
-import org.briarproject.bramble.BrambleAppComponent;
-import org.briarproject.bramble.BrambleCoreEagerSingletons;
-import org.briarproject.bramble.BrambleCoreModule;
-import org.briarproject.bramble.db.AndroidDatabaseModule;
-import org.briarproject.bramble.api.FeatureFlags;
-import org.briarproject.bramble.api.account.AccountManager;
-import org.briarproject.bramble.api.connection.ConnectionRegistry;
-import org.briarproject.bramble.api.contact.ContactExchangeManager;
-import org.briarproject.bramble.api.contact.ContactManager;
-import org.briarproject.bramble.api.crypto.CryptoExecutor;
-import org.briarproject.bramble.api.crypto.PasswordStrengthEstimator;
-import org.briarproject.bramble.api.db.DatabaseExecutor;
-import org.briarproject.bramble.api.db.TransactionManager;
-import org.briarproject.bramble.api.event.EventBus;
-import org.briarproject.bramble.api.identity.IdentityManager;
-import org.briarproject.bramble.api.keyagreement.KeyAgreementTask;
-import org.briarproject.bramble.api.keyagreement.PayloadEncoder;
-import org.briarproject.bramble.api.keyagreement.PayloadParser;
-import org.briarproject.bramble.api.lifecycle.IoExecutor;
-import org.briarproject.bramble.api.lifecycle.LifecycleManager;
-import org.briarproject.bramble.api.plugin.PluginManager;
-import org.briarproject.bramble.api.settings.SettingsManager;
-import org.briarproject.bramble.api.system.AndroidExecutor;
-import org.briarproject.bramble.api.system.Clock;
-import org.briarproject.bramble.system.ClockModule;
-import org.briarproject.briar.BriarCoreEagerSingletons;
-import org.briarproject.briar.BriarCoreModule;
+import org.zerionproject.core.BrambleAndroidEagerSingletons;
+import org.zerionproject.core.BrambleAndroidModule;
+import org.zerionproject.core.BrambleAppComponent;
+import org.zerionproject.core.BrambleCoreEagerSingletons;
+import org.zerionproject.core.BrambleCoreModule;
+import org.zerionproject.core.db.AndroidDatabaseModule;
+import org.zerionproject.core.api.FeatureFlags;
+import org.zerionproject.core.api.account.AccountManager;
+import org.zerionproject.core.api.connection.ConnectionRegistry;
+import org.zerionproject.core.api.contact.ContactExchangeManager;
+import org.zerionproject.core.api.contact.ContactManager;
+import org.zerionproject.core.api.crypto.CryptoExecutor;
+import org.zerionproject.core.api.crypto.PasswordStrengthEstimator;
+import org.zerionproject.core.api.db.DatabaseExecutor;
+import org.zerionproject.core.api.db.TransactionManager;
+import org.zerionproject.core.api.event.EventBus;
+import org.zerionproject.core.api.identity.IdentityManager;
+import org.zerionproject.core.api.keyagreement.KeyAgreementTask;
+import org.zerionproject.core.api.keyagreement.PayloadEncoder;
+import org.zerionproject.core.api.keyagreement.PayloadParser;
+import org.zerionproject.core.api.lifecycle.IoExecutor;
+import org.zerionproject.core.api.lifecycle.LifecycleManager;
+import org.zerionproject.core.api.plugin.PluginManager;
+import org.zerionproject.core.api.settings.SettingsManager;
+import org.zerionproject.core.api.system.AndroidExecutor;
+import org.zerionproject.core.api.system.Clock;
+import org.zerionproject.core.system.ClockModule;
+import org.zerionproject.app.BriarCoreEagerSingletons;
+import org.zerionproject.app.BriarCoreModule;
 import com.professor.zerion.android.attachment.AttachmentModule;
 import com.professor.zerion.android.attachment.media.MediaModule;
 import com.professor.zerion.android.conversation.glide.ZerionModelLoader;
@@ -46,22 +46,17 @@ import com.professor.zerion.android.api.AndroidNotificationManager;
 import com.professor.zerion.android.api.DozeWatchdog;
 import com.professor.zerion.android.api.LockManager;
 import com.professor.zerion.android.api.ScreenFilterMonitor;
-import org.briarproject.briar.api.attachment.AttachmentReader;
-import org.briarproject.briar.api.autodelete.AutoDeleteManager;
-import org.briarproject.briar.api.client.MessageTracker;
-import org.briarproject.briar.api.conversation.ConversationManager;
-import org.briarproject.briar.api.identity.AuthorManager;
-import org.briarproject.briar.api.introduction.IntroductionManager;
-import org.briarproject.briar.api.messaging.MessagingManager;
-import org.briarproject.briar.api.messaging.PrivateMessageFactory;
-import org.briarproject.briar.api.messaging.VoiceSignalFactory;
-import org.briarproject.briar.api.privategroup.GroupMessageFactory;
-import org.briarproject.briar.api.privategroup.PrivateGroupFactory;
-import org.briarproject.briar.api.grouptr.GroupTrManager;
-import org.briarproject.briar.api.privategroup.PrivateGroupManager;
-import org.briarproject.briar.api.privategroup.invitation.GroupInvitationFactory;
-import org.briarproject.briar.api.privategroup.invitation.GroupInvitationManager;
-import org.briarproject.briar.api.test.TestDataCreator;
+import org.zerionproject.app.api.attachment.AttachmentReader;
+import org.zerionproject.app.api.autodelete.AutoDeleteManager;
+import org.zerionproject.app.api.client.MessageTracker;
+import org.zerionproject.app.api.conversation.ConversationManager;
+import org.zerionproject.app.api.identity.AuthorManager;
+import org.zerionproject.app.api.introduction.IntroductionManager;
+import org.zerionproject.app.api.messaging.MessagingManager;
+import org.zerionproject.app.api.messaging.PrivateMessageFactory;
+import org.zerionproject.app.api.messaging.VoiceSignalFactory;
+import org.zerionproject.app.api.grouptr.GroupTrManager;
+import org.zerionproject.app.api.test.TestDataCreator;
 import org.briarproject.onionwrapper.CircumventionProvider;
 import org.briarproject.onionwrapper.LocationUtils;
 
@@ -81,7 +76,10 @@ import dagger.Component;
 		AppModule.class,
 		AttachmentModule.class,
 		ClockModule.class,
-		MediaModule.class
+		MediaModule.class,
+		org.zerionproject.transport.ZerionTransportModule.class,
+		org.zerionproject.core.ZerionTorWrapperModule.class,
+		ZerionTorModule.class
 })
 public interface AndroidComponent
 		extends BrambleCoreEagerSingletons, BrambleAndroidEagerSingletons,
@@ -127,19 +125,9 @@ public interface AndroidComponent
 
 	VoiceSignalFactory voiceSignalFactory();
 
-	PrivateGroupManager privateGroupManager();
-
 	GroupTrManager groupTrManager();
 
-	org.briarproject.briar.api.channel.ChannelManager channelManager();
-
-	GroupInvitationFactory groupInvitationFactory();
-
-	GroupInvitationManager groupInvitationManager();
-
-	PrivateGroupFactory privateGroupFactory();
-
-	GroupMessageFactory groupMessageFactory();
+	org.zerionproject.app.api.channel.ChannelManager channelManager();
 
 	SettingsManager settingsManager();
 
@@ -182,9 +170,9 @@ public interface AndroidComponent
 
 	AutoDeleteManager autoDeleteManager();
 
-	org.briarproject.briar.conversation.voice.VoiceCallConnectionManager voiceCallConnectionManager();
+	org.zerionproject.app.conversation.voice.VoiceCallConnectionManager voiceCallConnectionManager();
 
-	org.briarproject.briar.conversation.voice.VoiceCallCrypto voiceCallCrypto();
+	org.zerionproject.app.conversation.voice.VoiceCallCrypto voiceCallCrypto();
 
 	com.professor.zerion.android.vault.VaultManager vaultManager();
 
@@ -192,7 +180,7 @@ public interface AndroidComponent
 
 	com.professor.zerion.android.network.TorStatusMonitor torStatusMonitor();
 
-	@org.briarproject.bramble.api.plugin.TorSocksPort
+	@org.zerionproject.core.api.plugin.TorSocksPort
 	int torSocksPort();
 
 	com.professor.zerion.android.donation.DonationManager donationManager();

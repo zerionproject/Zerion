@@ -13,7 +13,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.rule.ActivityTestRule;
 
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
-import static org.briarproject.briar.android.conversation.ConversationActivity.CONTACT_ID;
+import static org.zerionproject.app.android.conversation.ConversationActivity.CONTACT_ID;
 
 @RunWith(AndroidJUnit4.class)
 public class ConversationActivityScreenshotTest extends ScreenshotTest {

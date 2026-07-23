@@ -16,7 +16,7 @@ import android.widget.Toast;
 
 import com.google.android.material.textfield.TextInputLayout;
 
-import org.briarproject.bramble.api.crypto.DecryptionResult;
+import org.zerionproject.core.api.crypto.DecryptionResult;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
@@ -29,10 +29,10 @@ import androidx.lifecycle.ViewModelProvider;
 import static android.view.View.INVISIBLE;
 import static android.view.View.VISIBLE;
 import static android.widget.Toast.LENGTH_LONG;
-import static org.briarproject.bramble.api.crypto.DecryptionResult.KEY_STRENGTHENER_ERROR;
-import static org.briarproject.bramble.api.crypto.DecryptionResult.SUCCESS;
-import static org.briarproject.bramble.api.crypto.PasswordStrengthEstimator.QUITE_WEAK;
-import static org.briarproject.bramble.api.crypto.PasswordStrengthEstimator.STRONG;
+import static org.zerionproject.core.api.crypto.DecryptionResult.KEY_STRENGTHENER_ERROR;
+import static org.zerionproject.core.api.crypto.DecryptionResult.SUCCESS;
+import static org.zerionproject.core.api.crypto.PasswordStrengthEstimator.QUITE_WEAK;
+import static org.zerionproject.core.api.crypto.PasswordStrengthEstimator.STRONG;
 import static com.professor.zerion.android.login.LoginUtils.createKeyStrengthenerErrorDialog;
 import static com.professor.zerion.android.util.UiUtils.hideSoftKeyboard;
 import static com.professor.zerion.android.util.UiUtils.setError;
@@ -62,6 +62,11 @@ public class ChangePasswordActivity extends ZerionActivity
 		component.inject(this);
 		viewModel = new ViewModelProvider(this, viewModelFactory)
 				.get(ChangePasswordViewModel.class);
+	}
+
+	@Override
+	protected boolean forceScreenshotProtection() {
+		return true;
 	}
 
 	@Override

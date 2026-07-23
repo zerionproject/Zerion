@@ -21,15 +21,15 @@ import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
 
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.event.Event;
-import org.briarproject.bramble.api.event.EventBus;
-import org.briarproject.bramble.api.event.EventListener;
-import org.briarproject.bramble.api.lifecycle.IoExecutor;
-import org.briarproject.briar.api.channel.ChannelComment;
-import org.briarproject.briar.api.channel.ChannelManager;
-import org.briarproject.briar.api.channel.event.ChannelCommentReceivedEvent;
-import org.briarproject.briar.api.channel.event.ChannelStateChangedEvent;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.event.Event;
+import org.zerionproject.core.api.event.EventBus;
+import org.zerionproject.core.api.event.EventListener;
+import org.zerionproject.core.api.lifecycle.IoExecutor;
+import org.zerionproject.app.api.channel.ChannelComment;
+import org.zerionproject.app.api.channel.ChannelManager;
+import org.zerionproject.app.api.channel.event.ChannelCommentReceivedEvent;
+import org.zerionproject.app.api.channel.event.ChannelStateChangedEvent;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 

@@ -9,19 +9,19 @@ import com.professor.zerion.android.security.ZerionEncryptedPrefs;
 
 import com.vanniktech.emoji.RecentEmoji;
 
-import org.briarproject.bramble.api.FeatureFlags;
-import org.briarproject.bramble.api.crypto.KeyStrengthener;
-import org.briarproject.bramble.api.db.DatabaseConfig;
-import org.briarproject.bramble.api.event.EventBus;
-import org.briarproject.bramble.api.lifecycle.LifecycleManager;
-import org.briarproject.bramble.api.plugin.PluginConfig;
-import org.briarproject.bramble.api.plugin.TorControlPort;
-import org.briarproject.bramble.api.plugin.TorDirectory;
-import org.briarproject.bramble.api.plugin.TorSocksPort;
-import org.briarproject.bramble.api.plugin.TransportId;
-import org.briarproject.bramble.api.plugin.duplex.DuplexPluginFactory;
-import org.briarproject.bramble.api.plugin.simplex.SimplexPluginFactory;
-import org.briarproject.bramble.plugin.tor.AndroidTorPluginFactory;
+import org.zerionproject.core.api.FeatureFlags;
+import org.zerionproject.core.api.crypto.KeyStrengthener;
+import org.zerionproject.core.api.db.DatabaseConfig;
+import org.zerionproject.core.api.event.EventBus;
+import org.zerionproject.core.api.lifecycle.LifecycleManager;
+import org.zerionproject.core.api.plugin.PluginConfig;
+import org.zerionproject.core.api.plugin.TorControlPort;
+import org.zerionproject.core.api.plugin.TorDirectory;
+import org.zerionproject.core.api.plugin.TorSocksPort;
+import org.zerionproject.core.api.plugin.TransportId;
+import org.zerionproject.core.api.plugin.duplex.DuplexPluginFactory;
+import org.zerionproject.core.api.plugin.simplex.SimplexPluginFactory;
+import org.zerionproject.transport.ZtpDuplexPluginFactory;
 import com.professor.zerion.android.account.DozeHelperModule;
 import com.professor.zerion.android.account.LockManagerImpl;
 import com.professor.zerion.android.account.SetupModule;
@@ -29,15 +29,14 @@ import com.professor.zerion.android.contact.ContactListModule;
 import com.professor.zerion.android.introduction.IntroductionModule;
 import com.professor.zerion.android.login.LoginModule;
 import com.professor.zerion.android.navdrawer.NavDrawerModule;
-import org.briarproject.bramble.account.AndroidAccountManager;
-import org.briarproject.bramble.account.ProfileManager;
-import org.briarproject.bramble.api.account.AccountManager;
+import org.zerionproject.core.account.AndroidAccountManager;
+import org.zerionproject.core.account.ProfileManager;
+import org.zerionproject.core.api.account.AccountManager;
 import com.professor.zerion.android.vault.VaultManager;
 import com.professor.zerion.android.security.SecurityManager;
 import com.professor.zerion.android.security.AntiForensics;
 import com.professor.zerion.android.network.TorStatusMonitor;
 import com.professor.zerion.android.settings.SettingsModule;
-import com.professor.zerion.android.sharing.SharingModule;
 import com.professor.zerion.android.test.TestAvatarCreatorImpl;
 import com.professor.zerion.android.util.TorPortManager;
 import com.professor.zerion.android.viewmodel.ViewModelModule;
@@ -46,7 +45,7 @@ import com.professor.zerion.android.api.DozeWatchdog;
 import com.professor.zerion.android.api.LockManager;
 import com.professor.zerion.android.api.NetworkUsageMetrics;
 import com.professor.zerion.android.api.ScreenFilterMonitor;
-import org.briarproject.briar.api.test.TestAvatarCreator;
+import org.zerionproject.app.api.test.TestAvatarCreator;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.File;
@@ -79,7 +78,6 @@ import static com.professor.zerion.android.TestingConstants.IS_DEBUG_BUILD;
 		SettingsModule.class,
 		ContactListModule.class,
 		IntroductionModule.class,
-		SharingModule.class,
 })
 public class AppModule {
 
@@ -328,14 +326,14 @@ public class AppModule {
 
 	@Provides
 	@Singleton
-	PluginConfig providePluginConfig(AndroidTorPluginFactory tor,
+	PluginConfig providePluginConfig(ZtpDuplexPluginFactory ztp,
 			FeatureFlags featureFlags) {
 		@NotNullByDefault
 		PluginConfig pluginConfig = new PluginConfig() {
 
 			@Override
 			public Collection<DuplexPluginFactory> getDuplexFactories() {
-				return asList(tor);
+				return Collections.<DuplexPluginFactory>singletonList(ztp);
 			}
 
 			@Override
@@ -345,7 +343,7 @@ public class AppModule {
 
 			@Override
 			public boolean shouldPoll() {
-				return true;
+				return false;
 			}
 
 			@Override

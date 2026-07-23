@@ -16,7 +16,7 @@
 		android:layout_height="wrap_content"
 		android:ellipsize="middle"
 		android:maxLines="1"
-		android:fontFamily="monospace"
+		android:fontFamily="@font/plex_mono_regular"
 		android:textColor="@color/zerion_text_primary"
 		android:textSize="13sp"
 		app:layout_constraintEnd_toStartOf="@+id/delegationRevokeButton"

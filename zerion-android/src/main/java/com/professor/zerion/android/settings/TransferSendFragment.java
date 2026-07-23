@@ -19,7 +19,7 @@ import com.professor.zerion.android.backup.AccountTransferManager.Status;
 import com.professor.zerion.android.backup.TransferException;
 import com.professor.zerion.android.contact.add.remote.QrCodeUtils;
 
-import org.briarproject.bramble.api.lifecycle.IoExecutor;
+import org.zerionproject.core.api.lifecycle.IoExecutor;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 

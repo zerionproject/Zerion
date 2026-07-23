@@ -80,7 +80,7 @@
 						android:inputType="text|textNoSuggestions"
 						android:maxLines="1"
 						android:textColor="@android:color/white"
-						android:textColorHint="#80FFFFFF"
+						android:textColorHint="@color/zerion_text_tertiary_inverse"
 						android:textSize="16sp"
 						android:imeOptions="flagNoPersonalizedLearning|actionNext"
 						android:privateImeOptions="nm"
