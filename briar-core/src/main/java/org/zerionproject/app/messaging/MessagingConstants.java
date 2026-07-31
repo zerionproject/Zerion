@@ -21,6 +21,10 @@ interface MessagingConstants {
 
 	String MSG_KEY_REPLY_TO_ID = "replyToId";
 
+	String MSG_KEY_MESH = "mesh";
+
+	String MSG_KEY_MESH_STATE = "meshState";
+
 	String MSG_KEY_PREVIEW_URL = "previewUrl";
 	String MSG_KEY_PREVIEW_TITLE = "previewTitle";
 	String MSG_KEY_PREVIEW_DESCRIPTION = "previewDesc";

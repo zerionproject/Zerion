@@ -10,6 +10,7 @@ public interface MessageTypes {
 	int MESSAGE_REACTION = 7;
 	int TYPING_INDICATOR = 8;
 	int LINK_PREVIEW_MESSAGE = 9;
+	int MESH_PREKEY_BUNDLE = 10;
 
 	int GROUP_POST = 32;
 	int GROUP_MEMBER_ADDED = 33;

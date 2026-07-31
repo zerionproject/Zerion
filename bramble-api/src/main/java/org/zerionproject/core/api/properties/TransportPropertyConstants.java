@@ -4,7 +4,7 @@ public interface TransportPropertyConstants {
 
 	int MAX_PROPERTIES_PER_TRANSPORT = 100;
 
-	int MAX_PROPERTY_LENGTH = 100;
+	int MAX_PROPERTY_LENGTH = 1024;
 
 	String REFLECTED_PROPERTY_PREFIX = "u:";
 

@@ -19,6 +19,7 @@ import javax.inject.Inject;
 import static org.zerionproject.core.api.crypto.pcs.PcsConstants.MLKEM_CIPHERTEXT_SIZE;
 import static org.zerionproject.core.api.crypto.pcs.PcsConstants.MODE3_FULL_SEND_ROTATION_INTERVAL;
 import static org.zerionproject.core.api.crypto.pcs.PcsConstants.MLKEM_ENCAPSULATION_KEY_SIZE;
+import static org.zerionproject.core.api.crypto.pcs.PcsConstants.MODE3_FULL_CK_PQ_LABEL;
 import static org.zerionproject.core.api.crypto.pcs.PcsConstants.MODE3_FULL_MK_LABEL;
 
 @NotNullByDefault
@@ -38,6 +39,12 @@ class Mode3FullRatchetImpl implements Mode3FullRatchet {
 			byte[] sharedSecret) {
 		return crypto.deriveKey(MODE3_FULL_MK_LABEL, classicalMessageKey,
 				sharedSecret);
+	}
+
+	@Override
+	public SecretKey mixPqSecretIntoChainKey(SecretKey chainKey,
+			byte[] sharedSecret) {
+		return crypto.deriveKey(MODE3_FULL_CK_PQ_LABEL, chainKey, sharedSecret);
 	}
 
 	@Override

@@ -151,7 +151,13 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 		}
 
 		long timestamp = item.getTime();
-		time.setText(formatDate(time.getContext(), timestamp));
+		String timeText = formatDate(time.getContext(), timestamp);
+		if (item instanceof ConversationMessageItem
+				&& ((ConversationMessageItem) item).getHeader().isMesh()) {
+			timeText = timeText + " · "
+					+ time.getContext().getString(R.string.via_mesh);
+		}
+		time.setText(timeText);
 
 		boolean showBomb = item.getAutoDeleteTimer() != NO_AUTO_DELETE_TIMER;
 		bomb.setVisibility(showBomb ? VISIBLE : GONE);

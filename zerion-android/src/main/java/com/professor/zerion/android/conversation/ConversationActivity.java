@@ -191,6 +191,7 @@ public class ConversationActivity extends ZerionActivity
 	private Toolbar toolbar;
 	private ShapeableImageView toolbarAvatar;
 	private ImageView toolbarStatus;
+	private boolean meshOnline = false;
 	private TextView toolbarTitle;
 	private TextView toolbarSubtitle;
 	private ZerionRecyclerView list;
@@ -419,8 +420,15 @@ public class ConversationActivity extends ZerionActivity
 
 		viewModel.isContactConnected().observe(this, connected -> {
 			if (connected != null) {
-				updateConnectionStatusUI(connected);
+				updateConnectionStatusUI(connected || meshOnline);
 			}
+		});
+
+		viewModel.isMeshOnline().observe(this, online -> {
+			meshOnline = Boolean.TRUE.equals(online);
+			Boolean connected = viewModel.isContactConnected().getValue();
+			updateConnectionStatusUI(meshOnline
+					|| Boolean.TRUE.equals(connected));
 		});
 
 		viewModel.getNewMessageReceived().observeEvent(this, header -> {
@@ -1163,14 +1171,31 @@ public class ConversationActivity extends ZerionActivity
 	}
 
 	@UiThread
+	private int onlineSubtitleForTransport() {
+		ContactId c = contactId;
+		if (c != null) {
+			boolean tor = connectionRegistry.isConnected(c,
+					org.zerionproject.core.api.plugin.TorConstants.ID);
+			boolean i2p = connectionRegistry.isConnected(c,
+					org.zerionproject.core.api.plugin.I2pConstants.ID);
+			if (tor && i2p) return R.string.conversation_subtitle_online_both;
+			if (i2p) return R.string.conversation_subtitle_online_i2p;
+			if (tor) return R.string.conversation_subtitle_online_tor;
+			if (meshOnline) {
+				return R.string.conversation_subtitle_online_mesh;
+			}
+		}
+		return R.string.conversation_subtitle_online;
+	}
+
+	@UiThread
 	private void updateConnectionStatusUI(boolean connected) {
 		toolbarStatus.setImageDrawable(null);
 		if (connected) {
 			toolbarStatus.setBackgroundResource(R.drawable.bg_presence_online);
 			toolbarStatus.setContentDescription(getString(R.string.online));
 			if (toolbarSubtitle != null) {
-				toolbarSubtitle.setText(
-						R.string.conversation_subtitle_online);
+				toolbarSubtitle.setText(onlineSubtitleForTransport());
 			}
 		} else {
 			toolbarStatus.setBackgroundResource(R.drawable.bg_presence_offline);

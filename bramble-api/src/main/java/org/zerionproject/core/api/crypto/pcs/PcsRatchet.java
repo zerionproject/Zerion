@@ -34,6 +34,17 @@ public interface PcsRatchet {
 
 	SecretKey deriveStreamInitialChainKey(SecretKey rootKey, long streamNumber);
 
+	/**
+	 * Seeds a stream chain from the root key, the stream number and a
+	 * per-stream salt. The salt is the random stream-header nonce, which both
+	 * endpoints see, so the two sides agree while the chain no longer depends
+	 * on the stream number alone. Without it, a database snapshot restored
+	 * onto a second device would re-issue stream numbers that had already been
+	 * used under the same long-lived root key, repeating a (key, nonce) pair.
+	 */
+	SecretKey deriveStreamInitialChainKey(SecretKey rootKey, long streamNumber,
+			byte[] salt);
+
 	AdvanceResult advanceSendChain(PcsSessionState state);
 
 	AdvanceResult advanceReceiveChain(PcsSessionState state, int messageNumber,

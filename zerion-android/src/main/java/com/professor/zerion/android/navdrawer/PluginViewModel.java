@@ -14,6 +14,7 @@ import org.zerionproject.core.api.network.NetworkStatus;
 import org.zerionproject.core.api.network.event.NetworkStatusEvent;
 import org.zerionproject.core.api.plugin.Plugin;
 import org.zerionproject.core.api.plugin.Plugin.State;
+import org.zerionproject.core.api.plugin.I2pConstants;
 import org.zerionproject.core.api.plugin.PluginManager;
 import org.zerionproject.core.api.plugin.TorConstants;
 import org.zerionproject.core.api.plugin.TransportId;
@@ -53,6 +54,12 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 	private final MutableLiveData<Boolean> torEnabledSetting =
 			new MutableLiveData<>(false);
 
+	private final MutableLiveData<State> i2pPluginState =
+			new MutableLiveData<>();
+
+	private final MutableLiveData<Boolean> i2pEnabledSetting =
+			new MutableLiveData<>(false);
+
 	private final MutableLiveData<NetworkStatus> networkStatus =
 			new MutableLiveData<>();
 
@@ -86,6 +93,7 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 		eventBus.addListener(this);
 		networkStatus.setValue(networkManager.getNetworkStatus());
 		torPluginState.setValue(getTransportState(TorConstants.ID));
+		i2pPluginState.setValue(getTransportState(I2pConstants.ID));
 		loadSettings();
 		loadLocalOnion();
 		loadRotationState();
@@ -106,6 +114,10 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 				boolean enable = s.getSettings().getBoolean(PREF_PLUGIN_ENABLE,
 						TorConstants.DEFAULT_PREF_PLUGIN_ENABLE);
 				torEnabledSetting.setValue(enable);
+			} else if (s.getNamespace().equals(I2pConstants.ID.getString())) {
+				boolean enable = s.getSettings().getBoolean(PREF_PLUGIN_ENABLE,
+						I2pConstants.DEFAULT_PREF_PLUGIN_ENABLE);
+				i2pEnabledSetting.setValue(enable);
 			}
 		} else if (e instanceof TransportStateEvent) {
 			TransportStateEvent t = (TransportStateEvent) e;
@@ -114,6 +126,8 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 				if (t.getState() == State.ACTIVE) {
 					loadLocalOnion();
 				}
+			} else if (t.getTransportId().equals(I2pConstants.ID)) {
+				i2pPluginState.postValue(t.getState());
 			}
 		}
 	}
@@ -172,11 +186,13 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 
 	LiveData<State> getPluginState(TransportId id) {
 		if (id.equals(TorConstants.ID)) return torPluginState;
+		if (id.equals(I2pConstants.ID)) return i2pPluginState;
 		throw new IllegalArgumentException("Unknown transport: " + id);
 	}
 
-	LiveData<Boolean> getPluginEnabledSetting(TransportId id) {
+	public LiveData<Boolean> getPluginEnabledSetting(TransportId id) {
 		if (id.equals(TorConstants.ID)) return torEnabledSetting;
+		if (id.equals(I2pConstants.ID)) return i2pEnabledSetting;
 		throw new IllegalArgumentException("Unknown transport: " + id);
 	}
 
@@ -189,7 +205,11 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 		return plugin == null ? 0 : plugin.getReasonsDisabled();
 	}
 
-	void enableTransport(TransportId id, boolean enable) {
+	boolean isPluginRegistered(TransportId id) {
+		return pluginManager.getPlugin(id) != null;
+	}
+
+	public void enableTransport(TransportId id, boolean enable) {
 		Settings s = new Settings();
 		s.putBoolean(PREF_PLUGIN_ENABLE, enable);
 		mergeSettings(s, id.getString());
@@ -201,6 +221,9 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 				boolean tor = isPluginEnabled(TorConstants.ID,
 						TorConstants.DEFAULT_PREF_PLUGIN_ENABLE);
 				torEnabledSetting.postValue(tor);
+				boolean i2p = isPluginEnabled(I2pConstants.ID,
+						I2pConstants.DEFAULT_PREF_PLUGIN_ENABLE);
+				i2pEnabledSetting.postValue(i2p);
 			} catch (DbException e) {
 				handleException(e);
 			}

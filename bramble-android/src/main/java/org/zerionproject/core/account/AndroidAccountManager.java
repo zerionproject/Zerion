@@ -28,6 +28,7 @@ import javax.inject.Singleton;
 
 import static java.util.Arrays.asList;
 import static org.zerionproject.core.api.crypto.DecryptionResult.INVALID_CIPHERTEXT;
+import static org.zerionproject.core.api.crypto.DecryptionResult.KEY_STRENGTHENER_ERROR;
 import static org.zerionproject.core.util.IoUtils.deleteFileOrDir;
 import static org.zerionproject.core.util.StringUtils.UTF_8;
 import static org.zerionproject.core.util.StringUtils.fromHexString;
@@ -120,7 +121,11 @@ public class AndroidAccountManager extends AccountManagerImpl
 					setDatabaseKey(key);
 					decryptedId = id;
 					decryptCount++;
-				} catch (DecryptionException ignored) {
+				} catch (DecryptionException e) {
+					if (e.getDecryptionResult() == KEY_STRENGTHENER_ERROR) {
+						profileManager.setActiveProfileId(previousActive);
+						throw e;
+					}
 				} catch (org.zerionproject.core.api.FormatException
 						ignored) {
 				}

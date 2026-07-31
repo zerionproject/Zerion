@@ -114,9 +114,6 @@ public class NavDrawerActivity extends ZerionActivity implements
 	private BadgeDrawable badgeContacts;
 	private BadgeDrawable badgeGroups;
 	private BadgeDrawable badgeChannels;
-	private int lastUnreadContacts;
-	private int lastUnreadGroups;
-	private int lastUnreadChannels;
 	private FloatingActionButton fabCompose;
 
 	private int currentTab = TAB_CONTACTS;
@@ -472,25 +469,12 @@ public class NavDrawerActivity extends ZerionActivity implements
 		attachBadge(badgeContacts, tabContacts);
 		attachBadge(badgeGroups, tabGroupChats);
 		attachBadge(badgeChannels, tabChannels);
-		navDrawerViewModel.getUnreadContacts().observe(this, c -> {
-			lastUnreadContacts = c == null ? 0 : c;
-			updateChatsBadge();
-		});
-		navDrawerViewModel.getUnreadGroups().observe(this, c -> {
-			lastUnreadGroups = c == null ? 0 : c;
-			updateBadge(badgeGroups, c);
-			updateChatsBadge();
-		});
-		navDrawerViewModel.getUnreadChannels().observe(this, c -> {
-			lastUnreadChannels = c == null ? 0 : c;
-			updateBadge(badgeChannels, c);
-			updateChatsBadge();
-		});
-	}
-
-	private void updateChatsBadge() {
-		updateBadge(badgeContacts,
-				lastUnreadContacts + lastUnreadGroups + lastUnreadChannels);
+		navDrawerViewModel.getUnreadContacts().observe(this,
+				c -> updateBadge(badgeContacts, c));
+		navDrawerViewModel.getUnreadGroups().observe(this,
+				c -> updateBadge(badgeGroups, c));
+		navDrawerViewModel.getUnreadChannels().observe(this,
+				c -> updateBadge(badgeChannels, c));
 	}
 
 	@SuppressLint("UnsafeOptInUsageError")

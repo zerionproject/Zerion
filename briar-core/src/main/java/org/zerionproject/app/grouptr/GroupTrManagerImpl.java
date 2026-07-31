@@ -26,6 +26,7 @@ import org.zerionproject.core.api.system.Clock;
 import org.zerionproject.core.util.ByteUtils;
 import org.zerionproject.app.api.grouptr.GroupTrAuthException;
 import org.zerionproject.app.api.grouptr.GroupTrManager;
+import org.zerionproject.app.api.grouptr.GroupTrMeshSink;
 import org.zerionproject.app.api.grouptr.GroupTrMember;
 import org.zerionproject.app.api.grouptr.GroupTrPendingInvite;
 import org.zerionproject.app.api.grouptr.GroupTrPost;
@@ -101,6 +102,8 @@ class GroupTrManagerImpl
 	private final EventBus eventBus;
 	private final Clock clock;
 	private final SecureRandom random;
+	@Nullable
+	private volatile GroupTrMeshSink meshSink;
 	private final java.util.Map<String, java.util.ArrayDeque<GroupTrPost>>
 			postCache = new java.util.concurrent.ConcurrentHashMap<>();
 	private final java.util.Map<String,
@@ -482,14 +485,15 @@ class GroupTrManagerImpl
 		java.util.concurrent.locks.ReentrantLock lock = lockFor(groupId);
 		lock.lock();
 		try {
-			if (!historyLoaded.contains(key)) {
+			java.util.ArrayDeque<GroupTrPost> q = postCache.get(key);
+			if (!historyLoaded.contains(key) || q == null || q.isEmpty()) {
 				try {
 					loadHistoryIntoCache(groupId);
 					historyLoaded.add(key);
 				} catch (DbException ex) {
 				}
+				q = postCache.get(key);
 			}
-			java.util.ArrayDeque<GroupTrPost> q = postCache.get(key);
 			if (q == null) return java.util.Collections.emptyList();
 			synchronized (q) {
 				return new ArrayList<>(q);
@@ -497,6 +501,16 @@ class GroupTrManagerImpl
 		} finally {
 			lock.unlock();
 		}
+	}
+
+	private static boolean isMemberOrCreator(@Nullable GroupTrState s,
+			byte[] pubKey) {
+		if (s == null || s.isDissolved()) return false;
+		if (Arrays.equals(pubKey, s.getCreatorPubKey())) return true;
+		for (GroupTrMember m : s.getMembers()) {
+			if (Arrays.equals(m.getPubKey(), pubKey)) return true;
+		}
+		return false;
 	}
 
 	private void loadHistoryIntoCache(byte[] groupId) throws DbException {
@@ -572,6 +586,7 @@ class GroupTrManagerImpl
 				}
 			}
 		});
+		GroupTrState state = getGroup(groupId);
 		java.util.TreeMap<Long, GroupTrPost> ordered =
 				new java.util.TreeMap<>();
 		for (int idx = 0; idx < collected.size(); idx++) {
@@ -587,6 +602,7 @@ class GroupTrManagerImpl
 						signedInput, p.getSenderPubKey())) {
 					continue;
 				}
+				if (!isMemberOrCreator(state, p.getSenderPubKey())) continue;
 			}
 			ordered.put(p.getTimestamp() * 100_000L
 					+ (long) ordered.size(), p);
@@ -1376,7 +1392,7 @@ class GroupTrManagerImpl
 		}
 		if (!found) return;
 		s.setMembers(next);
-		s.setEpoch(e.getEpoch());
+		s.setEpoch(Math.min(e.getEpoch(), s.getEpoch() + 1));
 		persist(s);
 		drainFutureBuffer(s.getGroupId(), s.getEpoch());
 	}
@@ -1807,6 +1823,11 @@ class GroupTrManagerImpl
 	}
 
 	@Override
+	public void setMeshSink(GroupTrMeshSink sink) {
+		this.meshSink = sink;
+	}
+
+	@Override
 	public void setGroupAutoDeleteTimer(byte[] groupId, long ms)
 			throws DbException {
 		GroupTrState s = requireWritable(groupId);
@@ -2090,7 +2111,16 @@ class GroupTrManagerImpl
 					new org.zerionproject.core.api.sync.GroupId(
 							contactGroupId),
 					timestamp, bodyBytes);
-			clientHelper.addLocalMessage(txn, m, meta, true, false);
+			GroupTrMeshSink sink = meshSink;
+			boolean offline = sink != null && sink.isOfflineMode();
+			if (offline) {
+				meta.put(org.zerionproject.app.api.messaging.MessagingManager
+						.MSG_KEY_MESH_GROUP_PENDING, true);
+			}
+			clientHelper.addLocalMessage(txn, m, meta, !offline, false);
+			if (offline) {
+				sink.floodRecord(c.getId().getInt(), bodyBytes, timestamp);
+			}
 		} catch (FormatException ex) {
 			throw new DbException(ex);
 		}

@@ -11,6 +11,8 @@ import org.zerionproject.core.api.crypto.PublicKey;
 import org.zerionproject.core.api.crypto.SecretKey;
 import org.zerionproject.core.api.data.BdfDictionary;
 import org.zerionproject.core.api.data.BdfList;
+import org.zerionproject.core.api.contact.event.PendingContactAlreadyContactEvent;
+import org.zerionproject.core.api.db.ContactExistsException;
 import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.db.Transaction;
@@ -299,32 +301,47 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			boolean b3SlotPresent,
 			@Nullable byte[] peerMlDsaSigPubKey)
 			throws DbException, FormatException {
-		Transaction txn = db.startTransaction(false);
 		try {
-			ContactId contactId;
-			if (pendingContactId == null) {
-				contactId = contactManager.addContact(txn, remoteAuthor,
-						localAuthor.getId(), masterKey, timestamp, alice,
-						verified, true, peerMlDsaSigPubKey);
-			} else {
-				contactId = contactManager.addContact(txn, pendingContactId,
-						remoteAuthor, localAuthor.getId(), masterKey,
-						timestamp, alice, verified, true,
-						peerMlDsaSigPubKey);
+			Transaction txn = db.startTransaction(false);
+			try {
+				ContactId contactId;
+				if (pendingContactId == null) {
+					contactId = contactManager.addContact(txn, remoteAuthor,
+							localAuthor.getId(), masterKey, timestamp, alice,
+							verified, true, peerMlDsaSigPubKey);
+				} else {
+					contactId = contactManager.addContact(txn, pendingContactId,
+							remoteAuthor, localAuthor.getId(), masterKey,
+							timestamp, alice, verified, true,
+							peerMlDsaSigPubKey);
+				}
+				transportPropertyManager.addRemoteProperties(txn, contactId,
+						remoteProperties);
+				Settings b3 = new Settings();
+				b3.put(B3_SLOT_PRESENT_KEY_PREFIX + contactId.getInt(),
+						b3SlotPresent ? "1" : "0");
+				settingsManager.mergeSettings(txn, b3, B3_SETTINGS_NAMESPACE);
+				Contact contact = contactManager.getContact(txn, contactId);
+				db.commitTransaction(txn);
+				return contact;
+			} catch (GeneralSecurityException e) {
+				throw new FormatException();
+			} finally {
+				db.endTransaction(txn);
 			}
-			transportPropertyManager.addRemoteProperties(txn, contactId,
-					remoteProperties);
-			Settings b3 = new Settings();
-			b3.put(B3_SLOT_PRESENT_KEY_PREFIX + contactId.getInt(),
-					b3SlotPresent ? "1" : "0");
-			settingsManager.mergeSettings(txn, b3, B3_SETTINGS_NAMESPACE);
-			Contact contact = contactManager.getContact(txn, contactId);
-			db.commitTransaction(txn);
-			return contact;
-		} catch (GeneralSecurityException e) {
-			throw new FormatException();
-		} finally {
-			db.endTransaction(txn);
+		} catch (ContactExistsException e) {
+			if (pendingContactId != null) {
+				Transaction txn2 = db.startTransaction(false);
+				try {
+					db.removePendingContact(txn2, pendingContactId);
+					txn2.attach(new PendingContactAlreadyContactEvent(
+							pendingContactId));
+					db.commitTransaction(txn2);
+				} finally {
+					db.endTransaction(txn2);
+				}
+			}
+			throw e;
 		}
 	}
 

@@ -25,7 +25,11 @@ import dagger.Component;
 		BriarCoreModule.class,
 		BrambleAndroidModule.class,
 		BrambleCoreModule.class,
-		AndroidDatabaseModule.class
+		AndroidDatabaseModule.class,
+		org.zerionproject.transport.ZerionTransportModule.class,
+		org.zerionproject.core.ZerionTorWrapperModule.class,
+		ZerionTorModule.class,
+		com.professor.zerion.android.i2p.I2pStackModule.class
 })
 public interface BriarUiTestComponent extends AndroidComponent {
 

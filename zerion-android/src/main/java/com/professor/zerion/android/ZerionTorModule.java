@@ -3,6 +3,7 @@ package com.professor.zerion.android;
 import org.briarproject.onionwrapper.TorWrapper;
 import org.zerionproject.core.api.lifecycle.IoExecutor;
 import org.zerionproject.core.api.plugin.FastConnectSocketFactory;
+import org.zerionproject.transport.TorBridgeConfigurator;
 import org.zerionproject.transport.ZtpConnectionHandler;
 import org.zerionproject.transport.ZtpTorTransport;
 
@@ -22,8 +23,9 @@ public class ZerionTorModule {
 	ZtpTorTransport provideTorTransport(TorWrapper tor,
 			SocketFactory torSocketFactory,
 			@FastConnectSocketFactory SocketFactory fastSocketFactory,
-			@IoExecutor Executor ioExecutor, ZtpConnectionHandler handler) {
+			@IoExecutor Executor ioExecutor, ZtpConnectionHandler handler,
+			TorBridgeConfigurator bridgeConfigurator) {
 		return new ZtpTorTransport(tor, torSocketFactory, fastSocketFactory,
-				ioExecutor, handler);
+				ioExecutor, handler, bridgeConfigurator);
 	}
 }

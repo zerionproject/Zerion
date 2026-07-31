@@ -65,6 +65,9 @@ public class PendingContactListActivity extends ZerionActivity
 				.observe(this, this::onPendingContactsChanged);
 		viewModel.getHasInternetConnection()
 				.observe(this, this::onInternetConnectionChanged);
+		viewModel.getAlreadyContact().observeEvent(this, x ->
+				Snackbar.make(list, R.string.contact_already_exists_general,
+						Snackbar.LENGTH_LONG).show());
 
 		adapter = new PendingContactListAdapter(this, this,
 				PendingContactItem.class);

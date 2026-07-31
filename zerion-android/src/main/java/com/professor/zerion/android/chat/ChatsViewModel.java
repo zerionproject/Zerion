@@ -26,6 +26,8 @@ import org.zerionproject.app.api.conversation.event.ConversationMessageTrackedEv
 import org.zerionproject.app.api.identity.AuthorInfo;
 import org.zerionproject.app.api.identity.AuthorManager;
 import com.professor.zerion.android.contact.PinnedContactManager;
+import com.professor.zerion.android.mesh.MeshPresenceTracker;
+import com.professor.zerion.android.mesh.event.MeshPresenceChangedEvent;
 import com.professor.zerion.android.viewmodel.DbViewModel;
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -56,6 +58,7 @@ public class ChatsViewModel extends DbViewModel implements EventListener {
 	private final AuthorManager authorManager;
 	private final PinnedContactManager pinnedManager;
 	private final ConnectionRegistry connectionRegistry;
+	private final MeshPresenceTracker meshPresenceTracker;
 	private final EventBus eventBus;
 
 	private final MutableLiveData<List<ChatItem>> items =
@@ -70,13 +73,15 @@ public class ChatsViewModel extends DbViewModel implements EventListener {
 			ConversationManager conversationManager,
 			AuthorManager authorManager,
 			PinnedContactManager pinnedManager,
-			ConnectionRegistry connectionRegistry, EventBus eventBus) {
+			ConnectionRegistry connectionRegistry,
+			MeshPresenceTracker meshPresenceTracker, EventBus eventBus) {
 		super(app, dbExecutor, lifecycleManager, db, androidExecutor);
 		this.contactManager = contactManager;
 		this.conversationManager = conversationManager;
 		this.authorManager = authorManager;
 		this.pinnedManager = pinnedManager;
 		this.connectionRegistry = connectionRegistry;
+		this.meshPresenceTracker = meshPresenceTracker;
 		this.eventBus = eventBus;
 		eventBus.addListener(this);
 	}
@@ -120,7 +125,8 @@ public class ChatsViewModel extends DbViewModel implements EventListener {
 							c.getId().getInt(), null, name,
 							count.getLatestMsgTime(), count.getUnreadCount(),
 							pinnedManager.isPinned(c.getId()),
-							connectionRegistry.isConnected(c.getId()),
+							connectionRegistry.isConnected(c.getId())
+									|| meshPresenceTracker.isPresent(c.getId()),
 							info.getAvatarHeader()));
 				}
 				Collections.sort(list, (a, b) -> {
@@ -182,7 +188,8 @@ public class ChatsViewModel extends DbViewModel implements EventListener {
 				|| e instanceof ConversationMessagesDeletedEvent
 				|| e instanceof AvatarUpdatedEvent
 				|| e instanceof ContactConnectedEvent
-				|| e instanceof ContactDisconnectedEvent) {
+				|| e instanceof ContactDisconnectedEvent
+				|| e instanceof MeshPresenceChangedEvent) {
 			load();
 		} else if (e instanceof PendingContactAddedEvent
 				|| e instanceof PendingContactRemovedEvent) {

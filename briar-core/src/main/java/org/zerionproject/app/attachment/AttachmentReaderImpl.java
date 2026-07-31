@@ -110,8 +110,14 @@ public class AttachmentReaderImpl implements AttachmentReader {
 			throw new NoSuchMessageException();
 		}
 
+		long totalSize = manifestMeta.getLong("totalSize", -1L);
+		if (totalSize <= 0L || totalSize > 10L * 1024 * 1024) {
+			throw new NoSuchMessageException();
+		}
 		List<byte[]> chunkHashes = new ArrayList<>(chunkCount);
-		ByteArrayOutputStream assembledData = new ByteArrayOutputStream();
+		ByteArrayOutputStream assembledData =
+				new ByteArrayOutputStream((int) totalSize);
+		long assembledLength = 0L;
 
 		try {
 			for (int i = 0; i < chunkCount; i++) {
@@ -154,8 +160,16 @@ public class AttachmentReaderImpl implements AttachmentReader {
 					throw new NoSuchMessageException();
 				}
 
+				assembledLength += dataLength;
+				if (assembledLength > totalSize) {
+					throw new NoSuchMessageException();
+				}
 				chunkHashes.add(sha256(chunkData));
 				assembledData.write(chunkData);
+			}
+
+			if (assembledLength != totalSize) {
+				throw new NoSuchMessageException();
 			}
 
 			byte[] computedRootHash = computeMerkleRoot(chunkHashes);

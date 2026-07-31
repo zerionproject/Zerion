@@ -309,8 +309,11 @@ class AccountManagerImpl implements AccountManager, Service {
 		synchronized (stateChangeLock) {
 			SecretKey key = loadAndDecryptDatabaseKey(oldPassword);
 			encryptAndStoreDatabaseKey(key, newPassword);
-			if (databaseKey != null) databaseKey.clear();
-			databaseKey = key;
+			if (databaseKey == null) {
+				databaseKey = key;
+			} else {
+				key.clear();
+			}
 		}
 		java.util.Arrays.fill(oldPassword, '\0');
 		java.util.Arrays.fill(newPassword, '\0');

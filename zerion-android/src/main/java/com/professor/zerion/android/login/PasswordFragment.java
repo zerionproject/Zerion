@@ -203,9 +203,12 @@ public class PasswordFragment extends BaseFragment implements TextWatcher {
 			return;
 		}
 
-		char[] passwordChars = new char[editable.length()];
-		editable.getChars(0, editable.length(), passwordChars, 0);
+		char[] typed = new char[editable.length()];
+		editable.getChars(0, editable.length(), typed, 0);
 		password.setText(null);
+		char[] passwordChars = com.professor.zerion.android.account
+				.PasswordSanitizer.sanitize(typed);
+		java.util.Arrays.fill(typed, '\0');
 		viewModel.validatePassword(passwordChars);
 	}
 

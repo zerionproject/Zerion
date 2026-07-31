@@ -7,6 +7,7 @@ import org.zerionproject.core.api.contact.ContactManager;
 import org.zerionproject.core.api.contact.PendingContact;
 import org.zerionproject.core.api.contact.PendingContactId;
 import org.zerionproject.core.api.contact.PendingContactState;
+import org.zerionproject.core.api.contact.event.PendingContactAlreadyContactEvent;
 import org.zerionproject.core.api.contact.event.PendingContactRemovedEvent;
 import org.zerionproject.core.api.contact.event.PendingContactStateChangedEvent;
 import org.zerionproject.core.api.db.DatabaseExecutor;
@@ -32,6 +33,9 @@ import javax.inject.Inject;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import com.professor.zerion.android.viewmodel.LiveEvent;
+import com.professor.zerion.android.viewmodel.MutableLiveEvent;
+
 import static org.zerionproject.core.api.contact.PendingContactState.OFFLINE;
 
 @NotNullByDefault
@@ -46,6 +50,8 @@ public class PendingContactListViewModel extends DbViewModel
 			pendingContacts = new MutableLiveData<>();
 	private final MutableLiveData<Boolean> hasInternetConnection =
 			new MutableLiveData<>();
+	private final MutableLiveEvent<Boolean> alreadyContact =
+			new MutableLiveEvent<>();
 
 	@Inject
 	PendingContactListViewModel(Application application,
@@ -75,7 +81,10 @@ public class PendingContactListViewModel extends DbViewModel
 
 	@Override
 	public void eventOccurred(Event e) {
-		if (e instanceof PendingContactStateChangedEvent ||
+		if (e instanceof PendingContactAlreadyContactEvent) {
+			alreadyContact.postEvent(true);
+			loadPendingContacts();
+		} else if (e instanceof PendingContactStateChangedEvent ||
 				e instanceof PendingContactRemovedEvent ||
 				e instanceof RendezvousPollEvent) {
 			loadPendingContacts();
@@ -120,6 +129,10 @@ public class PendingContactListViewModel extends DbViewModel
 
 	LiveData<Boolean> getHasInternetConnection() {
 		return hasInternetConnection;
+	}
+
+	LiveEvent<Boolean> getAlreadyContact() {
+		return alreadyContact;
 	}
 
 }

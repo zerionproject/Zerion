@@ -182,12 +182,18 @@ public class ChangePasswordActivity extends ZerionActivity
 		changePasswordButton.setVisibility(INVISIBLE);
 		progress.setVisibility(VISIBLE);
 
-		char[] curPwd = new char[currentPassword.length()];
-		currentPassword.getText().getChars(0, curPwd.length, curPwd, 0);
-		char[] newPwd = new char[newPassword.length()];
-		newPassword.getText().getChars(0, newPwd.length, newPwd, 0);
+		char[] curTyped = new char[currentPassword.length()];
+		currentPassword.getText().getChars(0, curTyped.length, curTyped, 0);
+		char[] newTyped = new char[newPassword.length()];
+		newPassword.getText().getChars(0, newTyped.length, newTyped, 0);
 		currentPassword.setText("");
 		newPassword.setText("");
+		char[] curPwd = com.professor.zerion.android.account
+				.PasswordSanitizer.sanitize(curTyped);
+		char[] newPwd = com.professor.zerion.android.account
+				.PasswordSanitizer.sanitize(newTyped);
+		java.util.Arrays.fill(curTyped, '\0');
+		java.util.Arrays.fill(newTyped, '\0');
 		viewModel.changePassword(curPwd, newPwd).observeEvent(this, result -> {
 					if (result == SUCCESS) {
 						Toast.makeText(ChangePasswordActivity.this,

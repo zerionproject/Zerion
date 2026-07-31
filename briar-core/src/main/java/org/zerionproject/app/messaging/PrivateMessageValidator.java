@@ -113,6 +113,17 @@ class PrivateMessageValidator implements MessageValidator {
 	@Override
 	public MessageContext validateMessage(Message m, Group g)
 			throws InvalidMessageException {
+		BdfMessageContext context = validateToBdf(m, g);
+		try {
+			Metadata meta = metadataEncoder.encode(context.getDictionary());
+			return new MessageContext(meta, context.getDependencies());
+		} catch (FormatException e) {
+			throw new InvalidMessageException(e);
+		}
+	}
+
+	BdfMessageContext validateToBdf(Message m, Group g)
+			throws InvalidMessageException {
 		long now = clock.currentTimeMillis();
 		if (m.getTimestamp() - now > MAX_CLOCK_DIFFERENCE) {
 			throw new InvalidMessageException(
@@ -155,6 +166,9 @@ class PrivateMessageValidator implements MessageValidator {
 				} else if (messageType == LINK_PREVIEW_MESSAGE) {
 					if (!reader.eof()) throw new FormatException();
 					context = validateLinkPreviewMessage(m, list);
+				} else if (messageType == MessageTypes.MESH_PREKEY_BUNDLE) {
+					if (!reader.eof()) throw new FormatException();
+					context = validateMeshPrekeyBundle(m, list);
 				} else if (messageType == GROUP_POST) {
 					if (!reader.eof()) throw new FormatException();
 					context = validateGroupPost(m, list);
@@ -194,8 +208,7 @@ class PrivateMessageValidator implements MessageValidator {
 					throw new InvalidMessageException();
 				}
 			}
-			Metadata meta = metadataEncoder.encode(context.getDictionary());
-			return new MessageContext(meta, context.getDependencies());
+			return context;
 		} catch (IOException e) {
 			throw new InvalidMessageException(e);
 		}
@@ -412,6 +425,18 @@ class PrivateMessageValidator implements MessageValidator {
 		return new BdfMessageContext(meta);
 	}
 
+	private BdfMessageContext validateMeshPrekeyBundle(Message m, BdfList body)
+			throws FormatException {
+		checkSize(body, 2);
+		body.getRaw(1);
+
+		BdfDictionary meta = new BdfDictionary();
+		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
+		meta.put(MSG_KEY_LOCAL, false);
+		meta.put(MSG_KEY_MSG_TYPE, MessageTypes.MESH_PREKEY_BUNDLE);
+		return new BdfMessageContext(meta);
+	}
+
 	private BdfMessageContext validateLinkPreviewMessage(Message m,
 			BdfList body) throws FormatException {
 		checkSize(body, 5, 6);
@@ -584,6 +609,7 @@ class PrivateMessageValidator implements MessageValidator {
 		meta.put(MSG_KEY_GROUP_LEAVING_PUBKEY, leavingPubKey);
 		meta.put(MSG_KEY_GROUP_EPOCH, epoch);
 		meta.put(MSG_KEY_GROUP_RECORD_SIG, sig);
+		meta.put("groupMembershipSignedInput", signedInput);
 		return new BdfMessageContext(meta);
 	}
 

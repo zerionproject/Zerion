@@ -238,58 +238,7 @@ public class SetPasswordFragment extends SetupFragment {
 	}
 
 	private char[] sanitizePasswordChars(char[] password) {
-		if (password.length == 0) return new char[0];
-
-		boolean allAscii = true;
-		for (char c : password) {
-			if (c > 0x7F) {
-				allAscii = false;
-				break;
-			}
-		}
-
-		CharSequence normalized;
-		if (allAscii) {
-			normalized = new CharArraySequence(password);
-		} else {
-			normalized = Normalizer.normalize(
-					new CharArraySequence(password), Normalizer.Form.NFC);
-		}
-
-		char[] result = new char[normalized.length()];
-		int pos = 0;
-		for (int i = 0; i < normalized.length(); i++) {
-			char c = normalized.charAt(i);
-			int type = Character.getType(c);
-
-			if (type == Character.CONTROL ||
-				type == Character.FORMAT ||
-				type == Character.PRIVATE_USE ||
-				type == Character.SURROGATE ||
-				type == Character.UNASSIGNED ||
-				c == '\u200B' ||
-				c == '\u200C' ||
-				c == '\u200D' ||
-				c == '\u200E' ||
-				c == '\u200F' ||
-				c == '\u202A' ||
-				c == '\u202B' ||
-				c == '\u202C' ||
-				c == '\u202D' ||
-				c == '\u202E' ||
-				c == '\u2066' ||
-				c == '\u2067' ||
-				c == '\u2068' ||
-				c == '\u2069' ||
-				c == '\uFEFF') {
-				continue;
-			}
-			result[pos++] = c;
-		}
-
-		char[] trimmed = Arrays.copyOf(result, pos);
-		Arrays.fill(result, '\0');
-		return trimmed;
+		return PasswordSanitizer.sanitize(password);
 	}
 
 	private void clearPasswordFields() {

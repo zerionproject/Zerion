@@ -18,6 +18,14 @@ public interface Mode3FullRatchet {
 	SecretKey deriveHybridMessageKey(SecretKey classicalMessageKey,
 			byte[] sharedSecret);
 
+	/**
+	 * Absorbs a post-quantum shared secret into a stream chain key. Both
+	 * endpoints derive the same secret for the same frame, so applying this at
+	 * the same point in the chain keeps the two sides in step. Once absorbed,
+	 * the chain can no longer be recomputed from the contact root key alone.
+	 */
+	SecretKey mixPqSecretIntoChainKey(SecretKey chainKey, byte[] sharedSecret);
+
 	@NotNullByDefault
 	final class PqSendResult {
 

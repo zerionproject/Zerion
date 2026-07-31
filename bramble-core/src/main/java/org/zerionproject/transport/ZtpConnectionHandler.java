@@ -1,5 +1,6 @@
 package org.zerionproject.transport;
 
+import org.zerionproject.core.api.plugin.TransportId;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.IOException;
@@ -24,9 +25,10 @@ import java.io.OutputStream;
 public interface ZtpConnectionHandler {
 
 	/** Handles a connection this device dialled to {@code contactId}. */
-	void handleOutgoing(int contactId, InputStream in, OutputStream out)
-			throws IOException;
+	void handleOutgoing(TransportId transportId, int contactId, InputStream in,
+			OutputStream out) throws IOException;
 
 	/** Handles a connection the peer dialled to us (contact resolved via tag). */
-	void handleIncoming(InputStream in, OutputStream out) throws IOException;
+	void handleIncoming(TransportId transportId, InputStream in,
+			OutputStream out) throws IOException;
 }

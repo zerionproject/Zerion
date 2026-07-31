@@ -1,6 +1,7 @@
 package org.zerionproject.transport;
 
 import org.briarproject.onionwrapper.TorWrapper;
+import org.zerionproject.core.api.plugin.TransportId;
 import org.junit.Test;
 
 import java.io.File;
@@ -85,20 +86,20 @@ public class ZtpTorTransportTest {
 		AtomicInteger firstByte = new AtomicInteger(-1);
 		ZtpConnectionHandler handler = new ZtpConnectionHandler() {
 			@Override
-			public void handleOutgoing(int contactId, InputStream in,
-					OutputStream out) {
+			public void handleOutgoing(TransportId transportId, int contactId,
+					InputStream in, OutputStream out) {
 			}
 
 			@Override
-			public void handleIncoming(InputStream in, OutputStream out)
-					throws IOException {
+			public void handleIncoming(TransportId transportId, InputStream in,
+					OutputStream out) throws IOException {
 				firstByte.set(in.read());
 				incoming.countDown();
 			}
 		};
 		ZtpTorTransport t = new ZtpTorTransport(new StubTor(),
 				SocketFactory.getDefault(), SocketFactory.getDefault(), exec,
-				handler);
+				handler, null);
 		t.startAccepting(0);
 
 		Socket client = new Socket("127.0.0.1", t.getLocalPort());
@@ -145,18 +146,19 @@ public class ZtpTorTransportTest {
 		AtomicInteger gotContact = new AtomicInteger(-1);
 		ZtpConnectionHandler handler = new ZtpConnectionHandler() {
 			@Override
-			public void handleOutgoing(int contactId, InputStream in,
-					OutputStream out) {
+			public void handleOutgoing(TransportId transportId, int contactId,
+					InputStream in, OutputStream out) {
 				gotContact.set(contactId);
 				outgoing.countDown();
 			}
 
 			@Override
-			public void handleIncoming(InputStream in, OutputStream out) {
+			public void handleIncoming(TransportId transportId, InputStream in,
+					OutputStream out) {
 			}
 		};
 		ZtpTorTransport t = new ZtpTorTransport(new StubTor(), fakeFactory,
-				fakeFactory, exec, handler);
+				fakeFactory, exec, handler, null);
 		long sessionMs = t.dial(7, "somefakeonionaddress", false);
 
 		assertTrue(outgoing.await(10, TimeUnit.SECONDS));
@@ -194,17 +196,18 @@ public class ZtpTorTransportTest {
 		};
 		ZtpConnectionHandler handler = new ZtpConnectionHandler() {
 			@Override
-			public void handleOutgoing(int contactId, InputStream in,
-					OutputStream out) {
+			public void handleOutgoing(TransportId transportId, int contactId,
+					InputStream in, OutputStream out) {
 				throw new AssertionError("handler must not run");
 			}
 
 			@Override
-			public void handleIncoming(InputStream in, OutputStream out) {
+			public void handleIncoming(TransportId transportId, InputStream in,
+					OutputStream out) {
 			}
 		};
 		ZtpTorTransport t = new ZtpTorTransport(new StubTor(), failingFactory,
-				failingFactory, exec, handler);
+				failingFactory, exec, handler, null);
 		assertEquals(ZtpTorTransport.DIAL_NOT_CONNECTED,
 				t.dial(7, "somefakeonionaddress", true));
 		exec.shutdownNow();

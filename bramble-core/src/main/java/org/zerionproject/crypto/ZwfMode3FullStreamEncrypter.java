@@ -144,8 +144,8 @@ public class ZwfMode3FullStreamEncrypter {
 		this.writeStreamHeader = true;
 		SecretKey rootKey = initialState.getRootKey();
 		if (rootKey == null) rootKey = initialState.getChainKey();
-		this.streamChainKey =
-				ratchet.deriveStreamInitialChainKey(rootKey, streamId);
+		this.streamChainKey = ratchet.deriveStreamInitialChainKey(rootKey,
+				streamId, streamHeaderNonce);
 		this.streamMessageNumber = 0;
 	}
 
@@ -232,6 +232,10 @@ public class ZwfMode3FullStreamEncrypter {
 		if (ss != null) {
 			bodyMessageKey = mode3FullRatchet.deriveHybridMessageKey(
 					classicalMessageKey, ss);
+			SecretKey mixed = mode3FullRatchet.mixPqSecretIntoChainKey(
+					nextStreamChainKey, ss);
+			nextStreamChainKey.clear();
+			nextStreamChainKey = mixed;
 			Arrays.fill(ss, (byte) 0);
 		}
 

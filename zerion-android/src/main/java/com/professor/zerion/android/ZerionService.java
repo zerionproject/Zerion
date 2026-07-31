@@ -81,6 +81,12 @@ public class ZerionService extends Service {
 	LockManager lockManager;
 	@Inject
 	AndroidWakeLockManager wakeLockManager;
+	@Inject
+	com.professor.zerion.android.mesh.MeshController meshController;
+	@Inject
+	com.professor.zerion.android.mesh.MeshBundleManager meshBundleManager;
+	@Inject
+	com.professor.zerion.android.mesh.MeshGroupSender meshGroupSender;
 
 	@Inject
 	volatile LifecycleManager lifecycleManager;

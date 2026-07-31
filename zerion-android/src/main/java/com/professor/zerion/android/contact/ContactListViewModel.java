@@ -44,11 +44,13 @@ class ContactListViewModel extends ContactsViewModel {
 			AndroidNotificationManager notificationManager,
 			PinnedContactManager pinnedContactManager,
 			org.zerionproject.app.api.autodelete.AutoDeleteManager
-					autoDeleteManager) {
+					autoDeleteManager,
+			com.professor.zerion.android.mesh.MeshPresenceTracker
+					meshPresenceTracker) {
 		super(application, dbExecutor, lifecycleManager, db, androidExecutor,
 				contactManager, authorManager, conversationManager,
 				connectionRegistry, eventBus, pinnedContactManager,
-				autoDeleteManager);
+				autoDeleteManager, meshPresenceTracker);
 		this.notificationManager = notificationManager;
 	}
 

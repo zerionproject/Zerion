@@ -322,7 +322,11 @@ public class GroupTrConversationActivity extends ZerionActivity
 			notificationManager.blockGroupTrNotification(groupId);
 			notificationManager.clearGroupTrPostNotification(groupId);
 			byte[] gid = groupId;
-			ioExecutor.execute(() -> groupTrManager.markGroupRead(gid));
+			ioExecutor.execute(() -> {
+				groupTrManager.markGroupRead(gid);
+				List<GroupTrPost> posts = groupTrManager.getRecentPosts(gid);
+				main.post(() -> renderPosts(posts));
+			});
 		}
 	}
 

@@ -287,12 +287,47 @@ class ChannelPullCodec {
 		return d;
 	}
 
+	/**
+	 * Reads the optional capability challenge carried by a request. Returns
+	 * null when either field is absent, which the publisher treats as an
+	 * unauthenticated request.
+	 */
+	@javax.annotation.Nullable
+	Challenge peekChallenge(byte[] data) throws IOException {
+		BdfDictionary d = readDict(data);
+		byte[] nonce = d.getOptionalRaw("nonce");
+		byte[] hmac = d.getOptionalRaw("hmac");
+		if (nonce == null || hmac == null) return null;
+		return new Challenge(nonce, hmac);
+	}
+
+	static final class Challenge {
+		final byte[] nonce;
+		final byte[] hmac;
+
+		Challenge(byte[] nonce, byte[] hmac) {
+			this.nonce = nonce;
+			this.hmac = hmac;
+		}
+	}
+
+	private static void putChallenge(BdfDictionary d,
+			@javax.annotation.Nullable byte[] nonce,
+			@javax.annotation.Nullable byte[] hmac) {
+		if (nonce != null && hmac != null) {
+			d.put("nonce", nonce);
+			d.put("hmac", hmac);
+		}
+	}
+
 	byte[] encodeCommentRequest(byte[] channelId, long parentPostSeqNum,
 			long commentId, String body, String authorName,
 			long timestampHourMs, byte[] signerEd, byte[] signerMl,
-			byte[] signature) throws IOException {
+			byte[] signature, @javax.annotation.Nullable byte[] nonce,
+			@javax.annotation.Nullable byte[] hmac) throws IOException {
 		BdfDictionary d = new BdfDictionary();
 		d.put("type", ChannelConstants.WIRE_TYPE_POST_COMMENT);
+		putChallenge(d, nonce, hmac);
 		d.put("channelId", channelId);
 		d.put("seq", parentPostSeqNum);
 		d.put("id", commentId);
@@ -368,9 +403,11 @@ class ChannelPullCodec {
 
 	byte[] encodeAnnounceRequest(byte[] channelId, String displayName,
 			long timestampHourMs, byte[] signerEd, byte[] signerMl,
-			byte[] signature) throws IOException {
+			byte[] signature, @javax.annotation.Nullable byte[] nonce,
+			@javax.annotation.Nullable byte[] hmac) throws IOException {
 		BdfDictionary d = new BdfDictionary();
 		d.put("type", ChannelConstants.WIRE_TYPE_ANNOUNCE);
+		putChallenge(d, nonce, hmac);
 		d.put("channelId", channelId);
 		d.put("name", displayName);
 		d.put("ts", timestampHourMs);
@@ -424,10 +461,13 @@ class ChannelPullCodec {
 
 	byte[] encodeReactionRequest(byte[] channelId, long postSeqNum,
 			String emoji, long timestampHourMs,
-			byte[] signerEd25519, byte[] signerMlDsa, byte[] signature)
+			byte[] signerEd25519, byte[] signerMlDsa, byte[] signature,
+			@javax.annotation.Nullable byte[] nonce,
+			@javax.annotation.Nullable byte[] hmac)
 			throws IOException {
 		BdfDictionary d = new BdfDictionary();
 		d.put("type", ChannelConstants.WIRE_TYPE_POST_REACTION);
+		putChallenge(d, nonce, hmac);
 		d.put("channelId", channelId);
 		d.put("seq", postSeqNum);
 		d.put("emoji", emoji);
@@ -639,10 +679,13 @@ class ChannelPullCodec {
 		}
 	}
 
-	byte[] encodeAttachmentRequest(byte[] channelId, byte[] blobHash)
+	byte[] encodeAttachmentRequest(byte[] channelId, byte[] blobHash,
+			@javax.annotation.Nullable byte[] nonce,
+			@javax.annotation.Nullable byte[] hmac)
 			throws IOException {
 		BdfDictionary d = new BdfDictionary();
 		d.put("type", ChannelConstants.WIRE_TYPE_GET_ATTACHMENT);
+		putChallenge(d, nonce, hmac);
 		d.put("channelId", channelId);
 		d.put("blobHash", blobHash);
 		return writeDict(d);

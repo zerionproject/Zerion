@@ -14,6 +14,7 @@ import android.widget.TextView;
 
 import org.zerionproject.core.api.network.NetworkStatus;
 import org.zerionproject.core.api.plugin.Plugin.State;
+import org.zerionproject.core.api.plugin.I2pConstants;
 import org.zerionproject.core.api.plugin.TorConstants;
 import org.zerionproject.core.api.plugin.TransportId;
 import com.professor.zerion.R;
@@ -176,6 +177,15 @@ public class TransportsActivity extends ZerionActivity {
 				R.string.tor_plugin_status_inactive);
 		transports.add(tor);
 
+		if (viewModel.isPluginRegistered(I2pConstants.ID)) {
+			Transport i2p = createTransport(I2pConstants.ID,
+					R.drawable.transport_tor, R.string.transport_i2p,
+					R.string.i2p_enable_title, R.string.i2p_enable_summary,
+					R.string.i2p_device_status, R.string.tor_plugin_status_inactive);
+			i2p.showPluginStatus = true;
+			transports.add(i2p);
+		}
+
 		viewModel.getNetworkStatus().observe(this, status -> {
 			updateTorResources(tor, status);
 			transportsAdapter.notifyDataSetChanged();
@@ -215,6 +225,12 @@ public class TransportsActivity extends ZerionActivity {
 	private int getPluginStatus(TransportId id, State state) {
 		if (id.equals(TorConstants.ID)) {
 			return getTorPluginStatus(state);
+		}
+		if (id.equals(I2pConstants.ID)) {
+			if (state == ENABLING) return R.string.tor_plugin_status_enabling;
+			if (state == ACTIVE) return R.string.tor_plugin_status_active;
+			if (state == DISABLED) return R.string.tor_plugin_status_disabled;
+			return R.string.tor_plugin_status_inactive;
 		}
 		throw new AssertionError("Unknown transport: " + id);
 	}

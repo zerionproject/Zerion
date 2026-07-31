@@ -25,10 +25,16 @@ public final class CacheSweeper {
 			"grouptr_view",
 	};
 
+	private static final String[] FILES_DIRS = {
+			"camera",
+			"camera_photos",
+	};
+
 	private CacheSweeper() {
 	}
 
 	public static void sweep(Context ctx) {
+		sweepFilesDirs(ctx);
 		File cache = ctx.getCacheDir();
 		if (cache == null || !cache.isDirectory()) return;
 		try {
@@ -44,6 +50,14 @@ public final class CacheSweeper {
 		}
 		for (String dir : TEMP_DIRS) {
 			SecureMemory.secureDeleteDir(new File(cache, dir), 0L);
+		}
+	}
+
+	public static void sweepFilesDirs(Context ctx) {
+		File files = ctx.getFilesDir();
+		if (files == null) return;
+		for (String dir : FILES_DIRS) {
+			SecureMemory.secureDeleteDir(new File(files, dir), 0L);
 		}
 	}
 

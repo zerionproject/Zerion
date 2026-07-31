@@ -402,6 +402,13 @@
 			android:windowSoftInputMode="adjustResize|stateHidden" />
 
 		<activity
+			android:name=".android.contact.add.nearby.AddNearbyContactActivity"
+			android:exported="false"
+			android:label="@string/nearby_pairing_title"
+			android:theme="@style/ZerionTheme.NoActionBar"
+			android:windowSoftInputMode="adjustResize|stateHidden" />
+
+		<activity
 			android:name=".android.settings.TransferQrScannerActivity"
 			android:exported="false"
 			android:label="@string/scan_qr_button"

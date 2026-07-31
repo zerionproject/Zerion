@@ -244,14 +244,18 @@ public class ZtpConnectionHandlerTest {
 		List<Throwable> errors = Collections.synchronizedList(new ArrayList<>());
 		Thread aliceThread = new Thread(() -> {
 			try {
-				aliceHandler.handleOutgoing(2, aIn, aOut);
+				aliceHandler.handleOutgoing(
+						org.zerionproject.core.api.plugin.TorConstants.ID,
+						2, aIn, aOut);
 			} catch (Throwable t) {
 				errors.add(t);
 			}
 		});
 		Thread bobThread = new Thread(() -> {
 			try {
-				bobHandler.handleIncoming(bIn, bOut);
+				bobHandler.handleIncoming(
+						org.zerionproject.core.api.plugin.TorConstants.ID,
+						bIn, bOut);
 			} catch (Throwable t) {
 				errors.add(t);
 			}

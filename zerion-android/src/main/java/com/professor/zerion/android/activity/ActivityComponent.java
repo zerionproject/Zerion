@@ -127,6 +127,10 @@ public interface ActivityComponent {
 
 	void inject(QrExchangeFragment fragment);
 
+	void inject(com.professor.zerion.android.contact.add.nearby.AddNearbyContactActivity activity);
+
+	void inject(com.professor.zerion.android.contact.add.nearby.AddNearbyContactFragment fragment);
+
 	void inject(LinkExchangeFragment fragment);
 
 	void inject(NicknameFragment fragment);

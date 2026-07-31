@@ -208,6 +208,10 @@ dependencies {
     implementation project(':bramble-android')
     implementation project(':briar-core')
 
+    // Embedded I2P router (debug builds only) with its bundled crypto relocated
+    // so the Tor-only release build carries none of it.
+    debugImplementation project(path: ':i2p-embedded', configuration: 'shadow')
+
     implementation "org.bouncycastle:bcprov-jdk15to18:$bouncy_castle_version"
 
     // newer versions of the libraries below require compileSdk 35

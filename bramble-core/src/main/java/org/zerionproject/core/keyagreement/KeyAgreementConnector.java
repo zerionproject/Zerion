@@ -40,7 +40,9 @@ class KeyAgreementConnector {
 		void connectionWaiting();
 	}
 	private static final List<TransportId> PREFERRED_TRANSPORTS =
-			singletonList(LanTcpConstants.ID);
+			java.util.Arrays.asList(
+					org.zerionproject.core.api.plugin.BluetoothConstants.ID,
+					LanTcpConstants.ID);
 
 	private final Callbacks callbacks;
 	private final KeyAgreementCrypto keyAgreementCrypto;

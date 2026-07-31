@@ -14,6 +14,16 @@ import org.zerionproject.core.api.crypto.KeyStrengthener;
 import org.zerionproject.core.api.db.DatabaseConfig;
 import org.zerionproject.core.api.event.EventBus;
 import org.zerionproject.core.api.lifecycle.LifecycleManager;
+import org.zerionproject.core.api.crypto.CryptoComponent;
+import org.zerionproject.core.api.db.DatabaseComponent;
+import org.zerionproject.core.api.identity.IdentityManager;
+import org.zerionproject.core.api.settings.SettingsManager;
+import org.zerionproject.core.api.system.Clock;
+import org.zerionproject.core.api.lifecycle.IoExecutor;
+import com.professor.zerion.android.mesh.MeshController;
+import com.professor.zerion.android.mesh.MeshManager;
+import com.professor.zerion.android.mesh.MeshMessageRouter;
+import org.zerionproject.core.crypto.async.MeshBundleStore;
 import org.zerionproject.core.api.plugin.PluginConfig;
 import org.zerionproject.core.api.plugin.TorControlPort;
 import org.zerionproject.core.api.plugin.TorDirectory;
@@ -22,6 +32,7 @@ import org.zerionproject.core.api.plugin.TransportId;
 import org.zerionproject.core.api.plugin.duplex.DuplexPluginFactory;
 import org.zerionproject.core.api.plugin.simplex.SimplexPluginFactory;
 import org.zerionproject.transport.ZtpDuplexPluginFactory;
+import org.zerionproject.transport.i2p.I2pDuplexPluginFactory;
 import com.professor.zerion.android.account.DozeHelperModule;
 import com.professor.zerion.android.account.LockManagerImpl;
 import com.professor.zerion.android.account.SetupModule;
@@ -327,13 +338,22 @@ public class AppModule {
 	@Provides
 	@Singleton
 	PluginConfig providePluginConfig(ZtpDuplexPluginFactory ztp,
+			I2pDuplexPluginFactory i2p,
+			org.zerionproject.transport.lan.LanKeyAgreementPluginFactory lan,
+			com.professor.zerion.android.contact.add.nearby.ble
+					.BluetoothKeyAgreementPluginFactory bt,
 			FeatureFlags featureFlags) {
 		@NotNullByDefault
 		PluginConfig pluginConfig = new PluginConfig() {
 
 			@Override
 			public Collection<DuplexPluginFactory> getDuplexFactories() {
-				return Collections.<DuplexPluginFactory>singletonList(ztp);
+				if (featureFlags.shouldEnableI2p()) {
+					return java.util.Arrays.<DuplexPluginFactory>asList(ztp,
+							i2p, bt, lan);
+				}
+				return java.util.Arrays.<DuplexPluginFactory>asList(ztp, bt,
+						lan);
 			}
 
 			@Override
@@ -479,6 +499,45 @@ public class AppModule {
 	}
 
 	@Provides
+	@Singleton
+	MeshManager provideMeshManager(Context context, CryptoComponent crypto,
+			IdentityManager identityManager, DatabaseComponent db,
+			SettingsManager settingsManager, Clock clock,
+			MeshMessageRouter router) {
+		return new MeshManager(context, crypto, identityManager, db,
+				settingsManager, clock, router);
+	}
+
+	@Provides
+	@Singleton
+	MeshBundleStore provideMeshBundleStore(SettingsManager settingsManager) {
+		return new MeshBundleStore(settingsManager);
+	}
+
+	@Provides
+	@Singleton
+	org.zerionproject.core.crypto.async.MeshSeenStore provideMeshSeenStore(
+			SettingsManager settingsManager) {
+		return new org.zerionproject.core.crypto.async.MeshSeenStore(
+				settingsManager);
+	}
+
+	@Provides
+	@Singleton
+	MeshController provideMeshController(LifecycleManager lifecycleManager,
+			Context context, MeshManager meshManager,
+			SettingsManager settingsManager,
+			@IoExecutor java.util.concurrent.Executor ioExecutor,
+			javax.inject.Provider<com.professor.zerion.android.mesh
+					.MeshTextSender> textSenderProvider,
+			com.professor.zerion.android.mesh.MeshOutbox meshOutbox) {
+		MeshController controller = new MeshController(context, meshManager,
+				settingsManager, ioExecutor, textSenderProvider, meshOutbox);
+		lifecycleManager.registerOpenDatabaseHook(controller);
+		return controller;
+	}
+
+	@Provides
 	FeatureFlags provideFeatureFlags() {
 		return new FeatureFlags() {
 
@@ -500,6 +559,11 @@ public class AppModule {
 			@Override
 			public boolean shouldEnablePrivateGroupsInCore() {
 				return false;
+			}
+
+			@Override
+			public boolean shouldEnableI2p() {
+				return com.professor.zerion.BuildConfig.DEBUG;
 			}
 		};
 	}

@@ -10,6 +10,8 @@ public interface KeyAgreementConstants {
 
 	int TRANSPORT_ID_LAN = 1;
 
+	int TRANSPORT_ID_BLUETOOTH = 2;
+
 	String SHARED_SECRET_LABEL =
 			"org.zerionproject.core.keyagreement/SHARED_SECRET";
 

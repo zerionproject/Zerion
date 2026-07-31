@@ -56,6 +56,8 @@ public class ContactsViewModel extends DbViewModel implements EventListener {
 	private final AuthorManager authorManager;
 	protected final ConversationManager conversationManager;
 	private final ConnectionRegistry connectionRegistry;
+	private final com.professor.zerion.android.mesh.MeshPresenceTracker
+			meshPresenceTracker;
 	private final EventBus eventBus;
 	protected final PinnedContactManager pinnedContactManager;
 	private final AutoDeleteManager autoDeleteManager;
@@ -78,12 +80,15 @@ public class ContactsViewModel extends DbViewModel implements EventListener {
 			ConversationManager conversationManager,
 			ConnectionRegistry connectionRegistry, EventBus eventBus,
 			PinnedContactManager pinnedContactManager,
-			AutoDeleteManager autoDeleteManager) {
+			AutoDeleteManager autoDeleteManager,
+			com.professor.zerion.android.mesh.MeshPresenceTracker
+					meshPresenceTracker) {
 		super(application, dbExecutor, lifecycleManager, db, androidExecutor);
 		this.contactManager = contactManager;
 		this.authorManager = authorManager;
 		this.conversationManager = conversationManager;
 		this.connectionRegistry = connectionRegistry;
+		this.meshPresenceTracker = meshPresenceTracker;
 		this.eventBus = eventBus;
 		this.eventBus.addListener(this);
 		this.pinnedContactManager = pinnedContactManager;
@@ -115,7 +120,8 @@ public class ContactsViewModel extends DbViewModel implements EventListener {
 			AuthorInfo authorInfo = authorManager.getAuthorInfo(txn, c);
 			MessageTracker.GroupCount count =
 					conversationManager.getGroupCount(txn, id);
-			boolean connected = connectionRegistry.isConnected(c.getId());
+			boolean connected = connectionRegistry.isConnected(c.getId())
+					|| meshPresenceTracker.isPresent(c.getId());
 			boolean pinned = pinnedContactManager.isPinned(id);
 			contacts.add(new ContactListItem(c, authorInfo, connected, count,
 					pinned));
@@ -140,6 +146,18 @@ public class ContactsViewModel extends DbViewModel implements EventListener {
 			updateItem(cid, item -> new ContactListItem(item, true), false);
 		} else if (e instanceof ContactDisconnectedEvent) {
 			scheduleOffline(((ContactDisconnectedEvent) e).getContactId());
+		} else if (e instanceof com.professor.zerion.android.mesh.event
+				.MeshPresenceChangedEvent) {
+			com.professor.zerion.android.mesh.event.MeshPresenceChangedEvent m =
+					(com.professor.zerion.android.mesh.event
+							.MeshPresenceChangedEvent) e;
+			if (m.isPresent()) {
+				cancelPendingOffline(m.getContactId());
+				updateItem(m.getContactId(),
+						item -> new ContactListItem(item, true), false);
+			} else {
+				scheduleOffline(m.getContactId());
+			}
 		} else if (e instanceof ContactRemovedEvent) {
 			removeItem(((ContactRemovedEvent) e).getContactId());
 		} else if (e instanceof ConversationMessageTrackedEvent) {
@@ -201,6 +219,10 @@ public class ContactsViewModel extends DbViewModel implements EventListener {
 		cancelPendingOffline(cid);
 		Runnable r = () -> {
 			pendingOfflineCallbacks.remove(cid);
+			if (connectionRegistry.isConnected(cid)
+					|| meshPresenceTracker.isPresent(cid)) {
+				return;
+			}
 			updateItem(cid, item -> new ContactListItem(item, false), false);
 		};
 		pendingOfflineCallbacks.put(cid, r);
@@ -210,10 +232,13 @@ public class ContactsViewModel extends DbViewModel implements EventListener {
 	@UiThread
 	public void reconcileConnectionState() {
 		List<ContactListItem> list = getList(contactListItems);
-		if (list == null) return;
+		if (list == null) {
+			return;
+		}
 		for (ContactListItem item : list) {
 			ContactId id = item.getContact().getId();
-			boolean actual = connectionRegistry.isConnected(id);
+			boolean actual = connectionRegistry.isConnected(id)
+					|| meshPresenceTracker.isPresent(id);
 			if (actual && !item.isConnected()) {
 				cancelPendingOffline(id);
 				updateItem(id, it -> new ContactListItem(it, true), false);

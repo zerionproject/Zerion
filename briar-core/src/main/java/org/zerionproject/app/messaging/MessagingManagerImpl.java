@@ -24,6 +24,8 @@ import org.zerionproject.core.api.sync.GroupId;
 import org.zerionproject.core.api.sync.InvalidMessageException;
 import org.zerionproject.core.api.sync.Message;
 import org.zerionproject.core.api.sync.MessageId;
+import org.zerionproject.core.api.sync.event.MessagesSentEvent;
+import org.zerionproject.core.api.sync.event.MessagesAckedEvent;
 import org.zerionproject.core.api.sync.MessageStatus;
 import org.zerionproject.core.api.sync.validation.IncomingMessageHook;
 import org.zerionproject.core.api.versioning.ClientVersioningManager;
@@ -47,6 +49,7 @@ import org.zerionproject.app.api.messaging.VoiceSignal;
 import org.zerionproject.app.api.messaging.VoiceSignalHeader;
 import org.zerionproject.app.api.messaging.VoiceSignalType;
 import org.zerionproject.app.api.messaging.event.AttachmentReceivedEvent;
+import org.zerionproject.app.api.messaging.event.PrekeyBundleReceivedEvent;
 import org.zerionproject.app.api.messaging.event.PrivateMessageReceivedEvent;
 import org.zerionproject.app.api.messaging.event.ReactionReceivedEvent;
 import org.zerionproject.app.api.messaging.event.TypingIndicatorReceivedEvent;
@@ -67,6 +70,7 @@ import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static org.zerionproject.core.api.client.ContactGroupConstants.GROUP_KEY_CONTACT_ID;
 import static org.zerionproject.core.api.sync.SyncConstants.MAX_MESSAGE_BODY_LENGTH;
 import static org.zerionproject.core.api.sync.validation.IncomingMessageHook.DeliveryAction.ACCEPT_DO_NOT_SHARE;
@@ -89,6 +93,11 @@ import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_AUTO_DE
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_HAS_TEXT;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_IS_TYPING;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_LOCAL;
+import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_MESH;
+import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_MESH_STATE;
+import static org.zerionproject.app.api.messaging.MessagingManager.MESH_STATE_PENDING;
+import static org.zerionproject.app.api.messaging.MessagingManager.MESH_STATE_SENT;
+import static org.zerionproject.app.api.messaging.MessagingManager.MESH_STATE_DELIVERED;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_MSG_TYPE;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_HAS_PREVIEW_IMAGE;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_PREVIEW_DESCRIPTION;
@@ -114,6 +123,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 	private final AutoDeleteManager autoDeleteManager;
 	private final StreamingAttachmentWriter streamingAttachmentWriter;
 	private final IdentityManager identityManager;
+	private final PrivateMessageValidator privateMessageValidator;
 
 	@Inject
 	MessagingManagerImpl(
@@ -126,7 +136,8 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			ContactGroupFactory contactGroupFactory,
 			AutoDeleteManager autoDeleteManager,
 			StreamingAttachmentWriter streamingAttachmentWriter,
-			IdentityManager identityManager) {
+			IdentityManager identityManager,
+			PrivateMessageValidator privateMessageValidator) {
 		this.db = db;
 		this.clientHelper = clientHelper;
 		this.metadataParser = metadataParser;
@@ -137,6 +148,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		this.autoDeleteManager = autoDeleteManager;
 		this.streamingAttachmentWriter = streamingAttachmentWriter;
 		this.identityManager = identityManager;
+		this.privateMessageValidator = privateMessageValidator;
 	}
 
 	@Override
@@ -228,6 +240,17 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			Metadata meta) throws DbException, InvalidMessageException {
 		try {
 			BdfDictionary metaDict = metadataParser.parse(meta);
+			dispatchIncoming(txn, m, metaDict);
+		} catch (FormatException e) {
+			throw new InvalidMessageException(e);
+		}
+		return ACCEPT_DO_NOT_SHARE;
+	}
+
+	private void dispatchIncoming(Transaction txn, Message m,
+			BdfDictionary metaDict)
+			throws DbException, FormatException, InvalidMessageException {
+		{
 			Integer messageType = metaDict.getOptionalInt(MSG_KEY_MSG_TYPE);
 			if (messageType == null) {
 				incomingPrivateMessage(txn, m, metaDict, true, emptyList());
@@ -250,6 +273,8 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				incomingTypingIndicator(txn, m, metaDict);
 			} else if (messageType == MessageTypes.LINK_PREVIEW_MESSAGE) {
 				incomingLinkPreviewMessage(txn, m, metaDict);
+			} else if (messageType == MessageTypes.MESH_PREKEY_BUNDLE) {
+				incomingPrekeyBundle(txn, m);
 			} else if (messageType == MessageTypes.GROUP_POST) {
 				incomingGroupPost(txn, m, metaDict);
 			} else if (messageType == MessageTypes.GROUP_MEMBER_ADDED
@@ -272,10 +297,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			} else {
 				throw new InvalidMessageException();
 			}
-		} catch (FormatException e) {
-			throw new InvalidMessageException(e);
 		}
-		return ACCEPT_DO_NOT_SHARE;
 	}
 
 	private void incomingPrivateMessage(Transaction txn, Message m,
@@ -430,12 +452,32 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 	@Override
 	public void addLocalMessage(Transaction txn, PrivateMessage m)
 			throws DbException {
+		addLocalMessage(txn, m, true);
+	}
+
+	@Override
+	public void addLocalMeshMessage(Transaction txn, PrivateMessage m)
+			throws DbException {
+		addLocalMessage(txn, m, false, true);
+	}
+
+	private void addLocalMessage(Transaction txn, PrivateMessage m,
+			boolean shared) throws DbException {
+		addLocalMessage(txn, m, shared, false);
+	}
+
+	private void addLocalMessage(Transaction txn, PrivateMessage m,
+			boolean shared, boolean mesh) throws DbException {
 		try {
 			long timer = m.getAutoDeleteTimer();
 			BdfDictionary meta = new BdfDictionary();
 			meta.put(MSG_KEY_TIMESTAMP, m.getMessage().getTimestamp());
 			meta.put(MSG_KEY_LOCAL, true);
 			meta.put(MSG_KEY_READ, true);
+			if (mesh) {
+				meta.put(MSG_KEY_MESH, true);
+				meta.put(MSG_KEY_MESH_STATE, MESH_STATE_PENDING);
+			}
 			if (m.getFormat() != TEXT_ONLY) {
 				meta.put(MSG_KEY_MSG_TYPE, PRIVATE_MESSAGE);
 				meta.put(MSG_KEY_HAS_TEXT, m.hasText());
@@ -459,7 +501,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				db.setMessagePermanent(txn, a.getMessageId());
 				shareAttachmentChunks(txn, a.getMessageId());
 			}
-			clientHelper.addLocalMessage(txn, m.getMessage(), meta, true,
+			clientHelper.addLocalMessage(txn, m.getMessage(), meta, shared,
 					false);
 			if (timer != NO_AUTO_DELETE_TIMER) {
 				db.setCleanupTimerDuration(txn, m.getMessage().getId(), timer);
@@ -468,6 +510,210 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		} catch (FormatException e) {
 			throw new AssertionError(e);
 		}
+	}
+
+	@Override
+	public void receiveMeshMessage(ContactId contactId, String text,
+			long timestamp) throws DbException {
+		db.transaction(false,
+				txn -> receiveMeshMessage(txn, contactId, text, timestamp));
+	}
+
+	@Override
+	public void receiveMeshMessage(Transaction txn, ContactId contactId,
+			String text, long timestamp) throws DbException {
+		try {
+			GroupId groupId = getConversationId(txn, contactId);
+			Message m = clientHelper.createMessage(groupId, timestamp,
+					BdfList.of(text));
+			BdfDictionary meta = new BdfDictionary();
+			meta.put(MSG_KEY_TIMESTAMP, timestamp);
+			meta.put(MSG_KEY_LOCAL, false);
+			meta.put(MSG_KEY_READ, false);
+			meta.put(MSG_KEY_MESH, true);
+			clientHelper.addLocalMessage(txn, m, meta, false, false);
+			PrivateMessageHeader header = new PrivateMessageHeader(m.getId(),
+					groupId, timestamp, false, false, false, false, true,
+					emptyList(), NO_AUTO_DELETE_TIMER, null, true);
+			txn.attach(new PrivateMessageReceivedEvent(header, contactId));
+			conversationManager.trackIncomingMessage(txn, m);
+		} catch (FormatException e) {
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	public void receiveMeshGroupRecord(ContactId contactId, byte[] record,
+			long timestamp) throws DbException {
+		db.transaction(false, txn -> {
+			try {
+				Contact c = db.getContact(txn, contactId);
+				Group g = getContactGroup(c);
+				Message m = clientHelper.createMessage(g.getId(), timestamp,
+						record);
+				try {
+					clientHelper.getMessageMetadataAsDictionary(txn, m.getId());
+					return;
+				} catch (NoSuchMessageException expected) {
+				}
+				BdfDictionary meta;
+				try {
+					meta = privateMessageValidator.validateToBdf(m, g)
+							.getDictionary();
+					clientHelper.addLocalMessage(txn, m, meta, false, false);
+					dispatchIncoming(txn, m, meta);
+				} catch (InvalidMessageException e) {
+				}
+			} catch (FormatException e) {
+				throw new DbException(e);
+			}
+		});
+	}
+
+	@Override
+	public void setMeshMessageState(ContactId contactId, MessageId messageId,
+			int state) throws DbException {
+		db.transaction(false, txn -> {
+			BdfDictionary meta = new BdfDictionary();
+			meta.put(MSG_KEY_MESH_STATE, state);
+			try {
+				clientHelper.mergeMessageMetadata(txn, messageId, meta);
+			} catch (FormatException e) {
+				throw new DbException(e);
+			}
+			if (state >= MESH_STATE_DELIVERED) {
+				txn.attach(new MessagesAckedEvent(contactId,
+						singletonList(messageId)));
+			} else if (state >= MESH_STATE_SENT) {
+				txn.attach(new MessagesSentEvent(contactId,
+						singletonList(messageId), 0));
+			}
+		});
+	}
+
+	@Override
+	public java.util.List<UndeliveredMeshMessage> getUndeliveredMeshMessages()
+			throws DbException {
+		return db.transactionWithResult(true, txn -> {
+			java.util.List<UndeliveredMeshMessage> result =
+					new java.util.ArrayList<>();
+			try {
+				for (Contact contact : db.getContacts(txn)) {
+					GroupId g = getContactGroup(contact).getId();
+					Map<MessageId, BdfDictionary> messages =
+							clientHelper.getMessageMetadataAsDictionary(txn, g);
+					for (Map.Entry<MessageId, BdfDictionary> e :
+							messages.entrySet()) {
+						BdfDictionary meta = e.getValue();
+						if (!meta.getBoolean(MSG_KEY_MESH, false)) continue;
+						if (!meta.getBoolean(MSG_KEY_LOCAL, false)) continue;
+						long state = meta.getLong(MSG_KEY_MESH_STATE,
+								(long) MESH_STATE_PENDING);
+						if (state >= MESH_STATE_DELIVERED) continue;
+						String text = getMessageText(txn, e.getKey());
+						long ts = meta.getLong(MSG_KEY_TIMESTAMP, 0L);
+						result.add(new UndeliveredMeshMessage(contact.getId(),
+								e.getKey(), text, ts));
+					}
+				}
+			} catch (FormatException ex) {
+				throw new DbException(ex);
+			}
+			return result;
+		});
+	}
+
+	@Override
+	public java.util.List<UndeliveredMeshGroupRecord>
+			getUndeliveredMeshGroupRecords() throws DbException {
+		return db.transactionWithResult(true, txn -> {
+			java.util.List<UndeliveredMeshGroupRecord> result =
+					new java.util.ArrayList<>();
+			try {
+				for (Contact contact : db.getContacts(txn)) {
+					GroupId g = getContactGroup(contact).getId();
+					Map<MessageId, BdfDictionary> messages =
+							clientHelper.getMessageMetadataAsDictionary(txn, g);
+					for (Map.Entry<MessageId, BdfDictionary> e :
+							messages.entrySet()) {
+						BdfDictionary meta = e.getValue();
+						if (!meta.getBoolean(MSG_KEY_MESH_GROUP_PENDING,
+								false)) {
+							continue;
+						}
+						Message m = clientHelper.getMessage(txn, e.getKey());
+						if (m == null) continue;
+						result.add(new UndeliveredMeshGroupRecord(
+								contact.getId(), m.getBody(),
+								m.getTimestamp()));
+					}
+				}
+			} catch (FormatException ex) {
+				throw new DbException(ex);
+			}
+			return result;
+		});
+	}
+
+	@Override
+	public void shareUndeliveredMeshGroupRecords() throws DbException {
+		db.transaction(false, txn -> {
+			try {
+				for (Contact contact : db.getContacts(txn)) {
+					GroupId g = getContactGroup(contact).getId();
+					Map<MessageId, BdfDictionary> messages =
+							clientHelper.getMessageMetadataAsDictionary(txn, g);
+					for (Map.Entry<MessageId, BdfDictionary> e :
+							messages.entrySet()) {
+						if (!e.getValue().getBoolean(MSG_KEY_MESH_GROUP_PENDING,
+								false)) {
+							continue;
+						}
+						db.setMessageShared(txn, e.getKey());
+						BdfDictionary update = new BdfDictionary();
+						update.put(MSG_KEY_MESH_GROUP_PENDING, false);
+						clientHelper.mergeMessageMetadata(txn, e.getKey(),
+								update);
+					}
+				}
+			} catch (FormatException ex) {
+				throw new DbException(ex);
+			}
+		});
+	}
+
+	@Override
+	public void sendPrekeyBundle(ContactId contactId, byte[] bundle)
+			throws DbException {
+		db.transaction(false, txn -> {
+			try {
+				Contact contact = db.getContact(txn, contactId);
+				GroupId groupId = getContactGroup(contact).getId();
+				long timestamp = System.currentTimeMillis();
+				BdfList body = BdfList.of(
+						MessageTypes.MESH_PREKEY_BUNDLE, bundle);
+				Message m = clientHelper.createMessage(groupId, timestamp, body);
+				BdfDictionary meta = new BdfDictionary();
+				meta.put(MSG_KEY_TIMESTAMP, timestamp);
+				meta.put(MSG_KEY_LOCAL, true);
+				meta.put(MSG_KEY_READ, true);
+				meta.put(MSG_KEY_MSG_TYPE, MessageTypes.MESH_PREKEY_BUNDLE);
+				clientHelper.addLocalMessage(txn, m, meta, true, false);
+				db.setCleanupTimerDuration(txn, m.getId(),
+						7L * 24 * 3600 * 1000);
+				db.startCleanupTimer(txn, m.getId());
+			} catch (FormatException e) {
+				throw new DbException(e);
+			}
+		});
+	}
+
+	private void incomingPrekeyBundle(Transaction txn, Message m)
+			throws DbException, FormatException {
+		ContactId contactId = getContactId(txn, m.getGroupId());
+		BdfList body = clientHelper.toList(m.getBody());
+		byte[] bundle = body.getRaw(1);
+		txn.attach(new PrekeyBundleReceivedEvent(contactId, bundle));
 	}
 
 	private void shareAttachmentChunks(Transaction txn, MessageId attachmentId)
@@ -634,10 +880,17 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				long timestamp = meta.getLong(MSG_KEY_TIMESTAMP);
 				boolean local = meta.getBoolean(MSG_KEY_LOCAL);
 				boolean read = meta.getBoolean(MSG_KEY_READ);
+				boolean mesh = meta.getBoolean(MSG_KEY_MESH, false);
+				long meshState = mesh ?
+						meta.getLong(MSG_KEY_MESH_STATE,
+								(long) MESH_STATE_PENDING) : 0;
+				boolean sent = mesh ? meshState >= MESH_STATE_SENT : s.isSent();
+				boolean seen = mesh ? meshState >= MESH_STATE_DELIVERED
+						: s.isSeen();
 				if (messageType == null) {
 					headers.add(new PrivateMessageHeader(id, g, timestamp,
-							local, read, s.isSent(), s.isSeen(), true,
-							emptyList(), NO_AUTO_DELETE_TIMER));
+							local, read, sent, seen, true,
+							emptyList(), NO_AUTO_DELETE_TIMER, null, mesh));
 				} else {
 					boolean hasText = meta.getBoolean(MSG_KEY_HAS_TEXT);
 					long timer = meta.getLong(MSG_KEY_AUTO_DELETE_TIMER,
@@ -647,9 +900,9 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 					MessageId replyToId = replyToIdBytes != null ?
 							new MessageId(replyToIdBytes) : null;
 					headers.add(new PrivateMessageHeader(id, g, timestamp,
-							local, read, s.isSent(), s.isSeen(), hasText,
+							local, read, sent, seen, hasText,
 							parseAttachmentHeaders(g, meta), timer,
-							replyToId));
+							replyToId, mesh));
 				}
 			} catch (FormatException e) {
 				throw new DbException(e);
@@ -783,9 +1036,10 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 					clientHelper.getMessageMetadataAsDictionary(txn, m);
 			Integer messageType = meta.getOptionalInt(MSG_KEY_MSG_TYPE);
 			if (messageType != null && messageType == PRIVATE_MESSAGE) {
+				boolean local = meta.getBoolean(MSG_KEY_LOCAL, false);
 				for (AttachmentHeader h : parseAttachmentHeaders(g, meta)) {
 					try {
-						db.removeMessage(txn, h.getMessageId());
+						removeAttachmentMessage(txn, h.getMessageId(), local);
 					} catch (NoSuchMessageException e) {
 					}
 				}
@@ -796,6 +1050,32 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		} catch (FormatException e) {
 			throw new DbException(e);
 		}
+	}
+
+	private void removeAttachmentMessage(Transaction txn, MessageId id,
+			boolean local) throws DbException, FormatException {
+		BdfDictionary meta =
+				clientHelper.getMessageMetadataAsDictionary(txn, id);
+		Integer type = meta.getOptionalInt(MSG_KEY_MSG_TYPE);
+		if (type == null) return;
+		if (type != ATTACHMENT && type != ATTACHMENT_MANIFEST) return;
+		if (meta.getBoolean(MSG_KEY_LOCAL, false) != local) return;
+		if (type == ATTACHMENT_MANIFEST) {
+			try {
+				Message manifest = clientHelper.getMessage(txn, id);
+				BdfList chunkIds =
+						clientHelper.toList(manifest.getBody()).getList(5);
+				for (int i = 0; i < chunkIds.size(); i++) {
+					try {
+						db.removeMessage(txn,
+								new MessageId(chunkIds.getRaw(i)));
+					} catch (NoSuchMessageException e) {
+					}
+				}
+			} catch (NoSuchMessageException e) {
+			}
+		}
+		db.removeMessage(txn, id);
 	}
 
 	private void recalculateGroupCount(Transaction txn, GroupId g)

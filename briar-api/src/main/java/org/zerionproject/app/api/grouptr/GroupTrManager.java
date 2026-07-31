@@ -40,6 +40,8 @@ public interface GroupTrManager {
 	void sendGroupPost(byte[] groupId, byte[] body, long autoDeleteTimerMs)
 			throws DbException;
 
+	void setMeshSink(GroupTrMeshSink sink);
+
 	void addMember(byte[] groupId, byte[] addedPubKey, String addedName)
 			throws DbException;
 

@@ -23,6 +23,7 @@ import javax.inject.Inject;
 import static org.zerionproject.core.api.keyagreement.KeyAgreementConstants.COMMIT_LENGTH;
 import static org.zerionproject.core.api.keyagreement.KeyAgreementConstants.PROTOCOL_VERSION;
 import static org.zerionproject.core.api.keyagreement.KeyAgreementConstants.TRANSPORT_ID_LAN;
+import static org.zerionproject.core.api.keyagreement.KeyAgreementConstants.TRANSPORT_ID_BLUETOOTH;
 import static org.zerionproject.core.util.StringUtils.ISO_8859_1;
 
 @Immutable
@@ -65,8 +66,12 @@ class PayloadParserImpl implements PayloadParser {
 			BdfList descriptor = payload.getList(i);
 			int transportId = descriptor.getInt(0);
 			if (transportId == TRANSPORT_ID_LAN) {
-				TransportId id = LanTcpConstants.ID;
-				recognised.add(new TransportDescriptor(id, descriptor));
+				recognised.add(new TransportDescriptor(
+						LanTcpConstants.ID, descriptor));
+			} else if (transportId == TRANSPORT_ID_BLUETOOTH) {
+				recognised.add(new TransportDescriptor(
+						org.zerionproject.core.api.plugin.BluetoothConstants.ID,
+						descriptor));
 			}
 		}
 		return new Payload(commitment, recognised);

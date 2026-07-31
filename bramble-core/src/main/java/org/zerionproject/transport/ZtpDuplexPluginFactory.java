@@ -41,21 +41,21 @@ public class ZtpDuplexPluginFactory implements DuplexPluginFactory {
 	private final SocketFactory socketFactory;
 	private final TorWrapper tor;
 	private final Provider<ZtpTorTransport> transport;
-	private final Provider<ZtpPoller> poller;
+	private final Provider<ZtpPollerFactory> pollerFactory;
 	private final CryptoComponent crypto;
 
 	@Inject
 	public ZtpDuplexPluginFactory(@IoExecutor Executor ioExecutor,
 			@WakefulIoExecutor Executor wakefulIoExecutor,
 			SocketFactory socketFactory, TorWrapper tor,
-			Provider<ZtpTorTransport> transport, Provider<ZtpPoller> poller,
-			CryptoComponent crypto) {
+			Provider<ZtpTorTransport> transport,
+			Provider<ZtpPollerFactory> pollerFactory, CryptoComponent crypto) {
 		this.ioExecutor = ioExecutor;
 		this.wakefulIoExecutor = wakefulIoExecutor;
 		this.socketFactory = socketFactory;
 		this.tor = tor;
 		this.transport = transport;
-		this.poller = poller;
+		this.pollerFactory = pollerFactory;
 		this.crypto = crypto;
 	}
 
@@ -71,8 +71,10 @@ public class ZtpDuplexPluginFactory implements DuplexPluginFactory {
 
 	@Override
 	public DuplexPlugin createPlugin(PluginCallback callback) {
+		ZtpTorTransport torTransport = transport.get();
+		ZtpPoller poller = pollerFactory.get().create(torTransport);
 		return new ZtpDuplexPlugin(ioExecutor, wakefulIoExecutor, socketFactory,
-				tor, transport.get(), poller.get(),
+				tor, torTransport, poller,
 				new TorRendezvousCryptoImpl(crypto), callback);
 	}
 }

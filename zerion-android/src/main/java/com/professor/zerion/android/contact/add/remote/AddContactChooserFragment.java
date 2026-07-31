@@ -53,9 +53,13 @@ public class AddContactChooserFragment extends BaseFragment {
 
 		CardView qrCard = v.findViewById(R.id.qrExchangeCard);
 		CardView linkCard = v.findViewById(R.id.linkExchangeCard);
+		CardView nearbyCard = v.findViewById(R.id.nearbyPairCard);
 
 		qrCard.setOnClickListener(view -> viewModel.onQrExchangeChosen());
 		linkCard.setOnClickListener(view -> viewModel.onLinkExchangeChosen());
+		nearbyCard.setOnClickListener(view -> startActivity(new android.content.Intent(
+				requireContext(),
+				com.professor.zerion.android.contact.add.nearby.AddNearbyContactActivity.class)));
 
 		return v;
 	}

@@ -23,6 +23,7 @@ import org.zerionproject.core.api.crypto.pcs.PcsSessionState;
 import org.zerionproject.core.api.crypto.pcs.PqRatchetState;
 import org.zerionproject.core.crypto.pcs.PcsStateManager;
 import org.zerionproject.core.api.db.DatabaseComponent;
+import org.zerionproject.core.api.db.ContactExistsException;
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.db.NoSuchContactException;
 import org.zerionproject.core.api.db.SecurityDowngradeException;
@@ -146,6 +147,9 @@ class ContactManagerImpl implements ContactManager, EventListener {
 			@Nullable byte[] peerMlDsaSigPublicKey)
 			throws DbException, GeneralSecurityException {
 		requireNotReserved(remote);
+		if (db.containsContact(txn, remote.getId(), local)) {
+			throw new ContactExistsException(local, remote);
+		}
 		PendingContact pendingContact = db.getPendingContact(txn, p);
 		boolean postQuantum = pendingContact.isPostQuantum();
 		checkForSecurityDowngrade(txn, remote.getId(), postQuantum);

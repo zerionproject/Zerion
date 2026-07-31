@@ -236,18 +236,22 @@ class TransportPropertyManagerImpl implements TransportPropertyManager,
 	@Override
 	public Map<TransportId, TransportProperties> getLocalProperties(
 			Transaction txn) throws DbException {
+		Map<TransportId, TransportProperties> local = new HashMap<>();
+		Map<TransportId, LatestUpdate> latest;
 		try {
-			Map<TransportId, TransportProperties> local = new HashMap<>();
-			Map<TransportId, LatestUpdate> latest = findLatestLocal(txn);
-			for (Entry<TransportId, LatestUpdate> e : latest.entrySet()) {
-				BdfList message = clientHelper.getMessageAsList(txn,
-						e.getValue().messageId, false);
-				local.put(e.getKey(), parseProperties(message));
-			}
-			return local;
+			latest = findLatestLocal(txn);
 		} catch (FormatException e) {
 			throw new DbException(e);
 		}
+		for (Entry<TransportId, LatestUpdate> e : latest.entrySet()) {
+			try {
+				BdfList message = clientHelper.getMessageAsList(txn,
+						e.getValue().messageId, false);
+				local.put(e.getKey(), parseProperties(message));
+			} catch (FormatException fe) {
+			}
+		}
+		return local;
 	}
 
 	@Override

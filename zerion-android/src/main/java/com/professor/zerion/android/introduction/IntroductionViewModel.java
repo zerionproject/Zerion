@@ -54,11 +54,13 @@ class IntroductionViewModel extends ContactsViewModel {
 			IntroductionManager introductionManager,
 			PinnedContactManager pinnedContactManager,
 			org.zerionproject.app.api.autodelete.AutoDeleteManager
-					autoDeleteManager) {
+					autoDeleteManager,
+			com.professor.zerion.android.mesh.MeshPresenceTracker
+					meshPresenceTracker) {
 		super(application, dbExecutor, lifecycleManager, db, androidExecutor,
 				contactManager, authorManager, conversationManager,
 				connectionRegistry, eventBus, pinnedContactManager,
-				autoDeleteManager);
+				autoDeleteManager, meshPresenceTracker);
 		this.contactManager = contactManager;
 		this.authorManager = authorManager;
 		this.introductionManager = introductionManager;

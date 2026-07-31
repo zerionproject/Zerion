@@ -227,6 +227,11 @@ public class ZwfMode3FullStreamDecrypter {
 					if (ss != null) {
 						bodyMK = mode3FullRatchet.deriveHybridMessageKey(
 								classicalMK, ss);
+						SecretKey mixed =
+								mode3FullRatchet.mixPqSecretIntoChainKey(
+										nextStreamChainKey, ss);
+						nextStreamChainKey.clear();
+						nextStreamChainKey = mixed;
 						Arrays.fill(ss, (byte) 0);
 					}
 				}
@@ -341,7 +346,8 @@ public class ZwfMode3FullStreamDecrypter {
 
 		SecretKey rootKey = recvState.getRootKey();
 		if (rootKey == null) rootKey = recvState.getChainKey();
-		streamChainKey = ratchet.deriveStreamInitialChainKey(rootKey, streamId);
+		streamChainKey = ratchet.deriveStreamInitialChainKey(rootKey, streamId,
+				nonce);
 		streamStartRead = true;
 	}
 

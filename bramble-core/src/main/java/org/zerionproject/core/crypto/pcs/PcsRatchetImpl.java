@@ -47,7 +47,19 @@ public class PcsRatchetImpl implements PcsRatchet {
 
 	@Override
 	public SecretKey deriveStreamInitialChainKey(SecretKey rootKey,
+			long streamNumber, byte[] salt) {
+		return crypto.deriveKey(PCS_STREAM_CHAIN_LABEL, rootKey,
+				streamNumberBytes(streamNumber), salt);
+	}
+
+	@Override
+	public SecretKey deriveStreamInitialChainKey(SecretKey rootKey,
 			long streamNumber) {
+		return crypto.deriveKey(PCS_STREAM_CHAIN_LABEL, rootKey,
+				streamNumberBytes(streamNumber));
+	}
+
+	private static byte[] streamNumberBytes(long streamNumber) {
 		byte[] streamBytes = new byte[8];
 		streamBytes[0] = (byte) (streamNumber >> 56);
 		streamBytes[1] = (byte) (streamNumber >> 48);
@@ -57,7 +69,7 @@ public class PcsRatchetImpl implements PcsRatchet {
 		streamBytes[5] = (byte) (streamNumber >> 16);
 		streamBytes[6] = (byte) (streamNumber >> 8);
 		streamBytes[7] = (byte) streamNumber;
-		return crypto.deriveKey(PCS_STREAM_CHAIN_LABEL, rootKey, streamBytes);
+		return streamBytes;
 	}
 
 	@Override

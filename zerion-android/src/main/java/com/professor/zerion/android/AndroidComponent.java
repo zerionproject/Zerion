@@ -79,7 +79,8 @@ import dagger.Component;
 		MediaModule.class,
 		org.zerionproject.transport.ZerionTransportModule.class,
 		org.zerionproject.core.ZerionTorWrapperModule.class,
-		ZerionTorModule.class
+		ZerionTorModule.class,
+		com.professor.zerion.android.i2p.I2pStackModule.class
 })
 public interface AndroidComponent
 		extends BrambleCoreEagerSingletons, BrambleAndroidEagerSingletons,
@@ -126,6 +127,8 @@ public interface AndroidComponent
 	VoiceSignalFactory voiceSignalFactory();
 
 	GroupTrManager groupTrManager();
+
+	com.professor.zerion.android.mesh.MeshGroupSender meshGroupSender();
 
 	org.zerionproject.app.api.channel.ChannelManager channelManager();
 

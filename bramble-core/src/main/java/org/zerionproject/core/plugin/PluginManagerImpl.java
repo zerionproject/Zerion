@@ -3,7 +3,13 @@ package org.zerionproject.core.plugin;
 import org.zerionproject.core.api.connection.ConnectionManager;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.event.Event;
 import org.zerionproject.core.api.event.EventBus;
+import org.zerionproject.core.api.event.EventListener;
+import org.zerionproject.core.api.plugin.BluetoothConstants;
+import org.zerionproject.core.api.plugin.I2pConstants;
+import org.zerionproject.core.api.plugin.LanTcpConstants;
+import org.zerionproject.core.api.settings.event.SettingsUpdatedEvent;
 import org.zerionproject.core.api.lifecycle.IoExecutor;
 import org.zerionproject.core.api.lifecycle.Service;
 import org.zerionproject.core.api.lifecycle.ServiceException;
@@ -52,7 +58,7 @@ import static org.zerionproject.core.api.plugin.Plugin.State.STARTING_STOPPING;
 
 @ThreadSafe
 @NotNullByDefault
-class PluginManagerImpl implements PluginManager, Service {
+class PluginManagerImpl implements PluginManager, Service, EventListener {
 	private final Executor ioExecutor, wakefulIoExecutor;
 	private final EventBus eventBus;
 	private final PluginConfig pluginConfig;
@@ -64,6 +70,11 @@ class PluginManagerImpl implements PluginManager, Service {
 	private final List<DuplexPlugin> duplexPlugins;
 	private final Map<TransportId, CountDownLatch> startLatches;
 	private final AtomicBoolean used = new AtomicBoolean(false);
+	private final Object restartLock = new Object();
+	private volatile Boolean offlineModeCache;
+
+	private static final String OFFLINE_NS = "org.zerionproject.mode";
+	private static final String OFFLINE_KEY = "offline";
 
 	@Inject
 	PluginManagerImpl(@IoExecutor Executor ioExecutor,
@@ -89,6 +100,7 @@ class PluginManagerImpl implements PluginManager, Service {
 	@Override
 	public void startService() {
 		if (used.getAndSet(true)) throw new IllegalStateException();
+		eventBus.addListener(this);
 		for (SimplexPluginFactory f : pluginConfig.getSimplexFactories()) {
 			TransportId t = f.getId();
 			SimplexPlugin s = f.createPlugin(new Callback(t));
@@ -101,8 +113,11 @@ class PluginManagerImpl implements PluginManager, Service {
 				wakefulIoExecutor.execute(new PluginStarter(s, startLatch));
 			}
 		}
+		boolean offline = isOfflineMode();
 		for (DuplexPluginFactory f : pluginConfig.getDuplexFactories()) {
 			TransportId t = f.getId();
+			if (offline && !t.equals(LanTcpConstants.ID) &&
+					!t.equals(BluetoothConstants.ID)) continue;
 			DuplexPlugin d = f.createPlugin(new Callback(t));
 			if (d == null) {
 			} else {
@@ -117,6 +132,7 @@ class PluginManagerImpl implements PluginManager, Service {
 
 	@Override
 	public void stopService() throws ServiceException {
+		eventBus.removeListener(this);
 		CountDownLatch stopLatch = new CountDownLatch(plugins.size());
 		for (SimplexPlugin s : simplexPlugins) {
 			CountDownLatch startLatch = startLatches.get(s.getId());
@@ -179,6 +195,107 @@ class PluginManagerImpl implements PluginManager, Service {
 			settingsManager.mergeSettings(s, namespace);
 		} catch (DbException e) {
 		}
+	}
+
+	@Override
+	public boolean isOfflineMode() {
+		Boolean cached = offlineModeCache;
+		if (cached != null) return cached;
+		try {
+			boolean loaded = settingsManager.getSettings(OFFLINE_NS)
+					.getBoolean(OFFLINE_KEY, false);
+			offlineModeCache = loaded;
+			return loaded;
+		} catch (DbException e) {
+			return false;
+		}
+	}
+
+	@Override
+	public void setOfflineMode(boolean offline) {
+		offlineModeCache = offline;
+		ioExecutor.execute(() -> {
+			Settings s = new Settings();
+			s.putBoolean(OFFLINE_KEY, offline);
+			mergeSettings(s, OFFLINE_NS);
+			if (offline) stopAllDuplex();
+			else startAllDuplex();
+		});
+	}
+
+	private void stopAllDuplex() {
+		synchronized (restartLock) {
+			for (DuplexPluginFactory f : pluginConfig.getDuplexFactories()) {
+				if (f.getId().equals(LanTcpConstants.ID)) continue;
+				if (f.getId().equals(BluetoothConstants.ID)) continue;
+				Plugin old = plugins.remove(f.getId());
+				if (old instanceof DuplexPlugin) {
+					duplexPlugins.remove(old);
+				}
+				if (old != null) {
+					try {
+						old.stop();
+					} catch (PluginException ex) {
+					}
+				}
+			}
+		}
+	}
+
+	private void startAllDuplex() {
+		for (DuplexPluginFactory f : pluginConfig.getDuplexFactories()) {
+			restartPlugin(f.getId());
+		}
+	}
+
+	@Override
+	public void eventOccurred(Event e) {
+		if (e instanceof SettingsUpdatedEvent) {
+			SettingsUpdatedEvent s = (SettingsUpdatedEvent) e;
+			if (I2pConstants.ID.getString().equals(s.getNamespace())) {
+				restartPlugin(I2pConstants.ID);
+			}
+		}
+	}
+
+	private void restartPlugin(TransportId t) {
+		if (isOfflineMode()) return;
+		DuplexPluginFactory factory = null;
+		for (DuplexPluginFactory f : pluginConfig.getDuplexFactories()) {
+			if (f.getId().equals(t)) {
+				factory = f;
+				break;
+			}
+		}
+		if (factory == null) return;
+		DuplexPluginFactory f = factory;
+		wakefulIoExecutor.execute(() -> {
+			synchronized (restartLock) {
+				Plugin old = plugins.remove(t);
+				if (old instanceof DuplexPlugin) {
+					duplexPlugins.remove(old);
+				}
+				if (old != null) {
+					try {
+						old.stop();
+					} catch (PluginException ex) {
+					}
+				}
+				if (isOfflineMode()) return;
+				DuplexPlugin fresh = f.createPlugin(new Callback(t));
+				if (fresh == null) return;
+				plugins.put(t, fresh);
+				duplexPlugins.add(fresh);
+				CountDownLatch latch = new CountDownLatch(1);
+				startLatches.put(t, latch);
+				try {
+					fresh.start();
+				} catch (PluginException ex) {
+				} finally {
+					latch.countDown();
+				}
+			}
+		});
 	}
 
 	private static class PluginStarter implements Runnable {

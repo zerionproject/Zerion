@@ -9,7 +9,6 @@ import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.event.Event;
 import org.zerionproject.core.api.event.EventBus;
 import org.zerionproject.core.api.event.EventListener;
-import org.zerionproject.core.api.lifecycle.IoExecutor;
 import org.zerionproject.core.api.network.event.NetworkStatusEvent;
 import org.zerionproject.core.api.properties.TransportProperties;
 import org.zerionproject.core.api.properties.TransportPropertyManager;
@@ -27,17 +26,12 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 import static java.lang.Boolean.TRUE;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.zerionproject.core.api.plugin.TorConstants.PROP_ONION_V3;
-import static org.zerionproject.core.api.plugin.TorConstants.ID;
 
 @ThreadSafe
 @NotNullByDefault
-@Singleton
 public class ZtpPoller implements EventListener {
 
 	private static final long REPOLL_INTERVAL_MS = 5_000L;
@@ -51,7 +45,7 @@ public class ZtpPoller implements EventListener {
 	private final ContactManager contactManager;
 	private final TransportPropertyManager transportPropertyManager;
 	private final EventBus eventBus;
-	private final ZtpTorTransport transport;
+	private final OverlayTransport transport;
 
 	private final Set<Integer> connecting = ConcurrentHashMap.newKeySet();
 	private final Map<Integer, Long> nextDialAt = new ConcurrentHashMap<>();
@@ -60,15 +54,14 @@ public class ZtpPoller implements EventListener {
 	private final Random backoffJitter = new Random();
 	private volatile boolean running = false;
 	@Nullable
-	private volatile String ourOnion;
+	private volatile String ourAddress;
 	@Nullable
 	private volatile Cancellable repollTask;
 
-	@Inject
-	public ZtpPoller(@IoExecutor Executor ioExecutor,
+	public ZtpPoller(Executor ioExecutor,
 			TaskScheduler taskScheduler, ContactManager contactManager,
 			TransportPropertyManager transportPropertyManager, EventBus eventBus,
-			ZtpTorTransport transport) {
+			OverlayTransport transport) {
 		this.ioExecutor = ioExecutor;
 		this.taskScheduler = taskScheduler;
 		this.contactManager = contactManager;
@@ -101,7 +94,7 @@ public class ZtpPoller implements EventListener {
 		ioExecutor.execute(() -> {
 			if (!running) return;
 			clearAllBackoff();
-			refreshOurOnion();
+			refreshOurAddress();
 			try {
 				for (Contact c : contactManager.getContacts()) {
 					connect(c.getId().getInt(), false);
@@ -114,7 +107,7 @@ public class ZtpPoller implements EventListener {
 
 	private void pollAll() {
 		if (!running) return;
-		refreshOurOnion();
+		refreshOurAddress();
 		try {
 			for (Contact c : contactManager.getContacts()) {
 				connect(c.getId().getInt(), false);
@@ -131,11 +124,12 @@ public class ZtpPoller implements EventListener {
 		failStreak.clear();
 	}
 
-	private void refreshOurOnion() {
+	private void refreshOurAddress() {
 		try {
-			String o = transportPropertyManager.getLocalProperties(ID)
-					.get(PROP_ONION_V3);
-			if (o != null) ourOnion = o;
+			String a = transportPropertyManager
+					.getLocalProperties(transport.getTransportId())
+					.get(transport.getAddressPropertyKey());
+			if (a != null) ourAddress = a;
 		} catch (DbException e) {
 			// keep previous value
 		}
@@ -155,15 +149,15 @@ public class ZtpPoller implements EventListener {
 			if (!running) return;
 			if (!connecting.add(contactId)) return;
 			boolean dialed = false;
-			long sessionMs = ZtpTorTransport.DIAL_NOT_CONNECTED;
+			long sessionMs = OverlayTransport.DIAL_NOT_CONNECTED;
 			try {
-				String onion = getOnion(contactId);
-				if (onion == null) return;
-				if (!isDesignatedDialer(onion)) return;
+				String address = getPeerAddress(contactId);
+				if (address == null) return;
+				if (!isDesignatedDialer(address)) return;
 				dialed = true;
 				boolean fast = failStreak.getOrDefault(contactId, 0)
 						< FAST_DIAL_BURST;
-				sessionMs = transport.dial(contactId, onion, fast);
+				sessionMs = transport.dial(contactId, address, fast);
 			} catch (Exception e) {
 			} finally {
 				connecting.remove(contactId);
@@ -187,18 +181,19 @@ public class ZtpPoller implements EventListener {
 		}
 	}
 
-	private boolean isDesignatedDialer(String peerOnion) {
-		String mine = ourOnion;
-		return mine == null || mine.compareTo(peerOnion) < 0;
+	private boolean isDesignatedDialer(String peerAddress) {
+		String mine = ourAddress;
+		return mine == null || mine.compareTo(peerAddress) < 0;
 	}
 
 	@Nullable
-	private String getOnion(int contactId) {
+	private String getPeerAddress(int contactId) {
 		try {
 			TransportProperties props =
 					transportPropertyManager.getRemoteProperties(
-							new ContactId(contactId), ID);
-			return props.get(PROP_ONION_V3);
+							new ContactId(contactId),
+							transport.getTransportId());
+			return props.get(transport.getAddressPropertyKey());
 		} catch (DbException e) {
 			return null;
 		}

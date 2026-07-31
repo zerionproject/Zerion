@@ -2,6 +2,8 @@ package org.zerionproject.transport;
 
 import org.briarproject.onionwrapper.TorWrapper;
 import org.briarproject.onionwrapper.TorWrapper.HiddenServiceProperties;
+import org.zerionproject.core.api.plugin.TorConstants;
+import org.zerionproject.core.api.plugin.TransportId;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.IOException;
@@ -16,9 +18,7 @@ import javax.annotation.Nullable;
 import javax.net.SocketFactory;
 
 @NotNullByDefault
-public class ZtpTorTransport {
-
-	public static final long DIAL_NOT_CONNECTED = -1L;
+public class ZtpTorTransport implements OverlayTransport {
 
 	private static final int REMOTE_ONION_PORT = 80;
 	private static final int SOCKET_TIMEOUT_MS = 30_000;
@@ -30,6 +30,7 @@ public class ZtpTorTransport {
 	private final SocketFactory fastSocketFactory;
 	private final Executor ioExecutor;
 	private final ZtpConnectionHandler handler;
+	private final TorBridgeConfigurator bridgeConfigurator;
 	private final AtomicBoolean running = new AtomicBoolean(false);
 	private final Semaphore inboundLimiter =
 			new Semaphore(MAX_INBOUND_CONNECTIONS);
@@ -40,12 +41,24 @@ public class ZtpTorTransport {
 
 	public ZtpTorTransport(TorWrapper tor, SocketFactory socketFactory,
 			SocketFactory fastSocketFactory, Executor ioExecutor,
-			ZtpConnectionHandler handler) {
+			ZtpConnectionHandler handler,
+			TorBridgeConfigurator bridgeConfigurator) {
 		this.tor = tor;
 		this.socketFactory = socketFactory;
 		this.fastSocketFactory = fastSocketFactory;
 		this.ioExecutor = ioExecutor;
 		this.handler = handler;
+		this.bridgeConfigurator = bridgeConfigurator;
+	}
+
+	@Override
+	public TransportId getTransportId() {
+		return TorConstants.ID;
+	}
+
+	@Override
+	public String getAddressPropertyKey() {
+		return TorConstants.PROP_ONION_V3;
 	}
 
 	public HiddenServiceProperties start(@Nullable String privateKey)
@@ -54,6 +67,14 @@ public class ZtpTorTransport {
 			throw new IllegalStateException("already started");
 		}
 		tor.start();
+		if (!bridgeConfigurator.apply()) {
+			running.set(false);
+			try {
+				tor.stop();
+			} catch (IOException e) {
+			}
+			throw new IOException("bridge configuration failed");
+		}
 		tor.enableNetwork(true);
 		startAccepting(0);
 		HiddenServiceProperties hs = tor.publishHiddenService(localPort,
@@ -99,24 +120,16 @@ public class ZtpTorTransport {
 		}
 		try {
 			configureSocket(socket);
-			handler.handleIncoming(socket.getInputStream(),
+			handler.handleIncoming(TorConstants.ID, socket.getInputStream(),
 					socket.getOutputStream());
 		} catch (IOException e) {
-			// close below
 		} finally {
 			closeQuietly(socket);
 			inboundLimiter.release();
 		}
 	}
 
-	/**
-	 * Dials a contact's onion and runs the connection until it ends. Returns the
-	 * session duration in milliseconds, or {@link #DIAL_NOT_CONNECTED} if the
-	 * socket never connected. The connect phase is excluded from the duration.
-	 *
-	 * @param fast use the shorter burst connect timeout for a re-dial right after
-	 * a drop, rather than the full first-connect timeout.
-	 */
+	@Override
 	public long dial(int contactId, String peerOnion, boolean fast) {
 		SocketFactory factory = fast ? fastSocketFactory : socketFactory;
 		Socket socket;
@@ -129,8 +142,8 @@ public class ZtpTorTransport {
 		long connectedAt = System.currentTimeMillis();
 		try {
 			configureSocket(socket);
-			handler.handleOutgoing(contactId, socket.getInputStream(),
-					socket.getOutputStream());
+			handler.handleOutgoing(TorConstants.ID, contactId,
+					socket.getInputStream(), socket.getOutputStream());
 		} catch (IOException e) {
 		} finally {
 			closeQuietly(socket);
@@ -143,7 +156,6 @@ public class ZtpTorTransport {
 		try {
 			socket.setTcpNoDelay(true);
 		} catch (java.net.SocketException ignored) {
-			// best effort
 		}
 	}
 
@@ -151,12 +163,12 @@ public class ZtpTorTransport {
 		return localPort;
 	}
 
+	@Override
 	public void setNetworkEnabled(boolean enabled) {
 		if (!running.get()) return;
 		try {
 			tor.enableNetwork(enabled);
 		} catch (IOException e) {
-			// retried on the next network event or poll
 		}
 	}
 
@@ -171,7 +183,6 @@ public class ZtpTorTransport {
 		try {
 			c.close();
 		} catch (IOException ignored) {
-			// nothing to do
 		}
 	}
 }

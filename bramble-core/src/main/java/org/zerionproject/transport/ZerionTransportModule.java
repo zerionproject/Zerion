@@ -100,6 +100,7 @@ public class ZerionTransportModule {
 	}
 
 	@Provides
+	@Singleton
 	ZtpConnectionHandler provideConnectionHandler(
 			ZtpConnectionEstablisher establisher, ZtpSessionProvider provider,
 			ZppConnectionRunner runner, ConnectionRegistry connectionRegistry) {

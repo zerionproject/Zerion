@@ -113,6 +113,12 @@ public class ConversationViewModel extends DbViewModel
 
 	@Nullable
 	private ContactId contactId = null;
+	private final com.professor.zerion.android.mesh.MeshTextSender
+			meshTextSender;
+	private final com.professor.zerion.android.mesh.MeshPresenceTracker
+			meshPresenceTracker;
+	private final org.zerionproject.core.api.connection.ConnectionRegistry
+			connectionRegistry;
 	private final MutableLiveData<ContactItem> contactItem =
 			new MutableLiveData<>();
 	private final LiveData<String> contactName = map(contactItem, c ->
@@ -153,6 +159,8 @@ public class ConversationViewModel extends DbViewModel
 	private final MutableLiveEvent<MarkMessagesEvent> messagesMarked =
 			new MutableLiveEvent<>();
 	private final MutableLiveData<Boolean> contactConnected =
+			new MutableLiveData<>();
+	private final MutableLiveData<Boolean> meshOnline =
 			new MutableLiveData<>();
 
 	private static final long OFFLINE_DEBOUNCE_MS = 10_000L;
@@ -205,10 +213,18 @@ public class ConversationViewModel extends DbViewModel
 			com.professor.zerion.android.conversation.voice.VoiceMessageSendManager voiceSendManager,
 			com.professor.zerion.android.conversation.voice.VoiceChunkAssembler voiceAssembler,
 			org.zerionproject.core.api.versioning.ClientVersioningManager clientVersioningManager,
-			org.zerionproject.core.api.identity.IdentityManager identityManager) {
+			org.zerionproject.core.api.identity.IdentityManager identityManager,
+			com.professor.zerion.android.mesh.MeshTextSender meshTextSender,
+			com.professor.zerion.android.mesh.MeshPresenceTracker
+					meshPresenceTracker,
+			org.zerionproject.core.api.connection.ConnectionRegistry
+					connectionRegistry) {
 		super(application, dbExecutor, lifecycleManager, db, androidExecutor);
 		this.db = db;
 		this.eventBus = eventBus;
+		this.meshTextSender = meshTextSender;
+		this.meshPresenceTracker = meshPresenceTracker;
+		this.connectionRegistry = connectionRegistry;
 		this.messagingManager = messagingManager;
 		this.contactManager = contactManager;
 		this.authorManager = authorManager;
@@ -249,6 +265,11 @@ public class ConversationViewModel extends DbViewModel
 		cancelPendingOffline();
 		Runnable r = () -> {
 			pendingOfflineCallback = null;
+			ContactId c = contactId;
+			if (c != null && (connectionRegistry.isConnected(c)
+					|| meshPresenceTracker.isPresent(c))) {
+				return;
+			}
 			contactConnected.postValue(false);
 		};
 		pendingOfflineCallback = r;
@@ -307,6 +328,20 @@ public class ConversationViewModel extends DbViewModel
 			if (c.getContactId().equals(contactId)) {
 				scheduleOffline();
 			}
+		} else if (e instanceof com.professor.zerion.android.mesh.event
+				.MeshPresenceChangedEvent) {
+			com.professor.zerion.android.mesh.event.MeshPresenceChangedEvent m =
+					(com.professor.zerion.android.mesh.event
+							.MeshPresenceChangedEvent) e;
+			if (m.getContactId().equals(contactId)) {
+				meshOnline.postValue(m.isPresent());
+				if (m.isPresent()) {
+					cancelPendingOffline();
+					contactConnected.postValue(true);
+				} else {
+					scheduleOffline();
+				}
+			}
 		} else if (e instanceof ClientVersionUpdatedEvent) {
 			ClientVersionUpdatedEvent c = (ClientVersionUpdatedEvent) e;
 			if (c.getContactId().equals(contactId)) {
@@ -351,6 +386,9 @@ public class ConversationViewModel extends DbViewModel
 		if (this.contactId == null) {
 			this.contactId = contactId;
 			loadContact(contactId);
+			boolean present = meshPresenceTracker.isPresent(contactId);
+			meshOnline.postValue(present);
+			if (present) contactConnected.postValue(true);
 		} else if (!contactId.equals(this.contactId)) {
 			throw new IllegalStateException();
 		}
@@ -471,18 +509,30 @@ public class ConversationViewModel extends DbViewModel
 		}
 		runOnDbThread(() -> {
 			try {
+				boolean offline = hasText && !hasAttachments && contactId != null
+						&& meshTextSender.offlineTarget(contactId) != null;
 				db.transaction(false, txn -> {
 					MessageId replyToId = replyToItem != null ?
 							replyToItem.getId() : null;
 					PrivateMessage m = createMessage(txn, text, headers,
 							expectedTimer, replyToId);
-					messagingManager.addLocalMessage(txn, m);
+					if (offline) {
+						messagingManager.addLocalMeshMessage(txn, m);
+					} else {
+						messagingManager.addLocalMessage(txn, m);
+					}
 					Message message = m.getMessage();
-					PrivateMessageHeader h = new PrivateMessageHeader(
-							message.getId(), message.getGroupId(),
-							message.getTimestamp(), true, true, false, false,
-							m.hasText(), m.getAttachmentHeaders(),
-							m.getAutoDeleteTimer(), replyToId);
+					PrivateMessageHeader h = offline ?
+							new PrivateMessageHeader(message.getId(),
+									message.getGroupId(), message.getTimestamp(),
+									true, true, false, false, m.hasText(),
+									m.getAttachmentHeaders(),
+									m.getAutoDeleteTimer(), replyToId, true) :
+							new PrivateMessageHeader(message.getId(),
+									message.getGroupId(), message.getTimestamp(),
+									true, true, false, false, m.hasText(),
+									m.getAttachmentHeaders(),
+									m.getAutoDeleteTimer(), replyToId);
 					MessageId id = message.getId();
 
 					if (replyToItem != null) {
@@ -494,6 +544,10 @@ public class ConversationViewModel extends DbViewModel
 						attachmentCreator.onAttachmentsSent(id);
 						liveData.setValue(SENT);
 						addedHeader.setEvent(h);
+						if (offline && text != null && contactId != null) {
+							meshTextSender.sendOfflineText(contactId, id, text,
+									message.getTimestamp());
+						}
 					});
 				});
 			} catch (UnexpectedTimerException e) {
@@ -1124,6 +1178,10 @@ public class ConversationViewModel extends DbViewModel
 
 	LiveData<Boolean> isContactConnected() {
 		return contactConnected;
+	}
+
+	LiveData<Boolean> isMeshOnline() {
+		return meshOnline;
 	}
 
 	LiveEvent<ConversationMessageHeader> getNewMessageReceived() {

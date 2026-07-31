@@ -43,6 +43,13 @@ public abstract class ViewModelModule {
 
 	@Binds
 	@IntoMap
+	@ViewModelKey(
+			com.professor.zerion.android.contact.add.nearby.AddNearbyContactViewModel.class)
+	abstract ViewModel bindAddNearbyContactViewModel(
+			com.professor.zerion.android.contact.add.nearby.AddNearbyContactViewModel vm);
+
+	@Binds
+	@IntoMap
 	@ViewModelKey(PendingContactListViewModel.class)
 	abstract ViewModel bindPendingRequestsViewModel(
 			PendingContactListViewModel pendingContactListViewModel);

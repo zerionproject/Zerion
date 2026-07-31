@@ -34,6 +34,66 @@ public interface MessagingManager extends ConversationClient {
 
 	void addLocalMessage(Transaction txn, PrivateMessage m) throws DbException;
 
+	void addLocalMeshMessage(Transaction txn, PrivateMessage m)
+			throws DbException;
+
+	void sendPrekeyBundle(ContactId contactId, byte[] bundle)
+			throws DbException;
+
+	void receiveMeshMessage(ContactId contactId, String text, long timestamp)
+			throws DbException;
+
+	void receiveMeshMessage(Transaction txn, ContactId contactId, String text,
+			long timestamp) throws DbException;
+
+	void receiveMeshGroupRecord(ContactId contactId, byte[] record,
+			long timestamp) throws DbException;
+
+	int MESH_STATE_PENDING = 0;
+	int MESH_STATE_SENT = 1;
+	int MESH_STATE_DELIVERED = 2;
+
+	void setMeshMessageState(ContactId contactId, MessageId messageId, int state)
+			throws DbException;
+
+	java.util.List<UndeliveredMeshMessage> getUndeliveredMeshMessages()
+			throws DbException;
+
+	String MSG_KEY_MESH_GROUP_PENDING = "meshGroupPending";
+
+	java.util.List<UndeliveredMeshGroupRecord> getUndeliveredMeshGroupRecords()
+			throws DbException;
+
+	void shareUndeliveredMeshGroupRecords() throws DbException;
+
+	class UndeliveredMeshGroupRecord {
+		public final ContactId contactId;
+		public final byte[] record;
+		public final long timestamp;
+
+		public UndeliveredMeshGroupRecord(ContactId contactId, byte[] record,
+				long timestamp) {
+			this.contactId = contactId;
+			this.record = record;
+			this.timestamp = timestamp;
+		}
+	}
+
+	class UndeliveredMeshMessage {
+		public final ContactId contactId;
+		public final MessageId messageId;
+		public final String text;
+		public final long timestamp;
+
+		public UndeliveredMeshMessage(ContactId contactId, MessageId messageId,
+				String text, long timestamp) {
+			this.contactId = contactId;
+			this.messageId = messageId;
+			this.text = text;
+			this.timestamp = timestamp;
+		}
+	}
+
 	void addLocalVoiceSignal(VoiceSignal signal) throws DbException;
 
 	AttachmentHeader addLocalAttachment(GroupId groupId, long timestamp,

@@ -485,6 +485,10 @@ class ChannelManagerImpl
 		} catch (DbException ignored) {
 		}
 		String wireType = pullCodec().peekType(requestBytes);
+		if (requiresCapability(channelId, wireType)
+				&& !challengeAccepted(channelId, requestBytes)) {
+			return new byte[0];
+		}
 		if (ChannelConstants.WIRE_TYPE_GET_ATTACHMENT.equals(wireType)) {
 			return handleAttachmentFetch(channelId, requestBytes);
 		}
@@ -635,6 +639,60 @@ class ChannelManagerImpl
 			return signatures.signManifest(signedInput, priv);
 		} catch (DbException | GeneralSecurityException e) {
 			return new byte[0];
+		}
+	}
+
+	/**
+	 * Requests that write to or read from a private channel must prove they
+	 * hold the current join capability. Rotating the capability then actually
+	 * revokes access: an evicted holder can no longer comment, react, announce
+	 * or fetch attachments. Public channels and the join/approval handshake
+	 * itself are exempt, since a joiner has no capability yet.
+	 */
+	/**
+	 * Builds a capability proof for an outgoing request, or null when this
+	 * channel has no join capability (public, or not yet joined).
+	 * Element 0 is the nonce, element 1 the response.
+	 */
+	@Nullable
+	private byte[][] buildChallenge(ChannelState s, byte[] channelId) {
+		byte[] capability = s.getJoinCapability();
+		if (capability == null) return null;
+		byte[] nonce = hmacChallenge().freshNonce();
+		return new byte[][] {nonce,
+				hmacChallenge().respond(capability, nonce, channelId)};
+	}
+
+	private boolean requiresCapability(byte[] channelId, String wireType) {
+		if (!ChannelConstants.WIRE_TYPE_POST_COMMENT.equals(wireType)
+				&& !ChannelConstants.WIRE_TYPE_POST_REACTION.equals(wireType)
+				&& !ChannelConstants.WIRE_TYPE_ANNOUNCE.equals(wireType)
+				&& !ChannelConstants.WIRE_TYPE_GET_ATTACHMENT.equals(
+						wireType)) {
+			return false;
+		}
+		try {
+			ChannelState s = store.getChannel(channelId);
+			return s != null && !s.isPublicChannel()
+					&& s.getJoinCapability() != null;
+		} catch (DbException e) {
+			return true;
+		}
+	}
+
+	private boolean challengeAccepted(byte[] channelId, byte[] requestBytes) {
+		try {
+			ChannelState s = store.getChannel(channelId);
+			if (s == null) return false;
+			byte[] capability = s.getJoinCapability();
+			if (capability == null) return false;
+			ChannelPullCodec.Challenge c =
+					pullCodec().peekChallenge(requestBytes);
+			if (c == null) return false;
+			if (!recordFreshNonce(channelId, c.nonce)) return false;
+			return verifyChallenge(capability, c.nonce, channelId, c.hmac);
+		} catch (Exception e) {
+			return false;
 		}
 	}
 
@@ -1572,8 +1630,10 @@ class ChannelManagerImpl
 		}
 		byte[] blob = cachedBlob;
 		if (blob == null) {
+			byte[][] ch = buildChallenge(s, channelId);
 			byte[] reqBytes = pullCodec().encodeAttachmentRequest(
-					channelId, blobHash);
+					channelId, blobHash,
+					ch == null ? null : ch[0], ch == null ? null : ch[1]);
 			byte[] respBytes = transport.requestFromOnion(
 					s.getCurrentOnion(), reqBytes);
 			ChannelPullCodec.AttachmentResponse resp =
@@ -1640,9 +1700,11 @@ class ChannelManagerImpl
 			return;
 		}
 		try {
+			byte[][] ch = buildChallenge(s, channelId);
 			byte[] reqBytes = pullCodec().encodeCommentRequest(
 					channelId, parentPostSeqNum, commentId, trimmed,
-					authorName, ts, signerEd, signerMl, sig);
+					authorName, ts, signerEd, signerMl, sig,
+					ch == null ? null : ch[0], ch == null ? null : ch[1]);
 			byte[] ack = transport.requestFromOnion(
 					s.getCurrentOnion(), reqBytes);
 			if (!pullCodec().decodeCommentAck(ack)) {
@@ -2350,8 +2412,10 @@ class ChannelManagerImpl
 			return;
 		}
 		try {
+			byte[][] ch = buildChallenge(s, channelId);
 			byte[] reqBytes = pullCodec().encodeAnnounceRequest(
-					channelId, trimmed, ts, signerEd, signerMl, sig);
+					channelId, trimmed, ts, signerEd, signerMl, sig,
+					ch == null ? null : ch[0], ch == null ? null : ch[1]);
 			transport.requestFromOnion(s.getCurrentOnion(), reqBytes);
 			subscriberStore.putSubscriber(channelId, row);
 			fireEvent(channelId,
@@ -2474,9 +2538,11 @@ class ChannelManagerImpl
 			return;
 		}
 		try {
+			byte[][] ch = buildChallenge(s, channelId);
 			byte[] reqBytes = pullCodec().encodeReactionRequest(
 					channelId, postSeqNum, emoji, ts, signerEd,
-					signerMl, sig);
+					signerMl, sig,
+					ch == null ? null : ch[0], ch == null ? null : ch[1]);
 			byte[] ack = transport.requestFromOnion(
 					s.getCurrentOnion(), reqBytes);
 			if (!pullCodec().decodeReactionAck(ack)) {
