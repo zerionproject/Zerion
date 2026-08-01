@@ -2,21 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
 	xmlns:tools="http://schemas.android.com/tools">
 
-	<!--
-	  Offline mesh permissions, DEBUG builds only, so the shipped Tor-only
-	  release build's permission posture is unchanged. The mesh is Bluetooth Low
-	  Energy only (no Wi-Fi), so no Wi-Fi permission is requested. Mesh runs only
-	  on physical phones (emulators have no BLE radio). The Android 12+ permission
-	  model is used with neverForLocation so no location access is requested;
-	  supporting mesh below API 31 would need ACCESS_FINE_LOCATION and is a
-	  separate decision.
-	-->
-	<uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
-	<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
-	<uses-permission android:name="android.permission.BLUETOOTH_SCAN"
-		android:usesPermissionFlags="neverForLocation"
-		tools:targetApi="s" />
-
 	<!-- Debug-only activities -->
 	<application>
 		<activity

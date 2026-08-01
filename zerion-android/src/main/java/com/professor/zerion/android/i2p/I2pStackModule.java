@@ -7,7 +7,7 @@ import javax.inject.Singleton;
 import dagger.Binds;
 import dagger.Module;
 
-/** Binds the embedded, bundled I2P stack for debug builds. */
+/** Binds the embedded, bundled I2P stack. */
 @Module
 public abstract class I2pStackModule {
 

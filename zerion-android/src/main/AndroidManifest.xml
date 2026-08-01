@@ -27,6 +27,13 @@
 	<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 	<uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
+	<!-- Offline mesh (Bluetooth Low Energy only, Android 12+); neverForLocation, no location access -->
+	<uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
+	<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+	<uses-permission android:name="android.permission.BLUETOOTH_SCAN"
+		android:usesPermissionFlags="neverForLocation"
+		tools:targetApi="s" />
+
 	<!-- Location permission removed - not needed for Tor-only transport -->
 	<uses-permission-sdk-23 android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 	<!-- USE_BIOMETRIC is provided by androidx.biometric library -->

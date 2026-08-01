@@ -223,6 +223,19 @@
 -keep class org.whispersystems.curve25519.** { *; }
 
 # ============================================================================
+# EMBEDDED I2P ROUTER (net.i2p, shaded module)
+# ============================================================================
+# The bundled router loads its components dynamically (Class.forName, service
+# lookups, system properties), so the whole net.i2p tree and its relocated
+# dependencies must be kept intact in the minified release build.
+-keep class net.i2p.** { *; }
+-keep interface net.i2p.** { *; }
+-keep class org.zerionproject.i2pshaded.** { *; }
+-keep interface org.zerionproject.i2pshaded.** { *; }
+-dontwarn net.i2p.**
+-dontwarn org.zerionproject.i2pshaded.**
+
+# ============================================================================
 # LOGGING SWEEP — strip all logging from release APK
 # ============================================================================
 # java.util.logging.Logger calls in vendored upstream code (onionwrapper-*)

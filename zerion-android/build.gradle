@@ -67,6 +67,9 @@ android {
     // Signing configuration for release builds (skipped for F-Droid builds)
     signingConfigs {
         release {
+            enableV1Signing false
+            enableV2Signing true
+            enableV3Signing true
             if (!isFdroidBuild && keystorePropertiesFile.exists()) {
                 storeFile file(keystoreProperties['storeFile'])
                 storePassword keystoreProperties['storePassword']
@@ -208,9 +211,9 @@ dependencies {
     implementation project(':bramble-android')
     implementation project(':briar-core')
 
-    // Embedded I2P router (debug builds only) with its bundled crypto relocated
-    // so the Tor-only release build carries none of it.
-    debugImplementation project(path: ':i2p-embedded', configuration: 'shadow')
+    // Embedded I2P router with its bundled crypto relocated into an isolated
+    // namespace so it never collides with the app's own Bouncy Castle.
+    implementation project(path: ':i2p-embedded', configuration: 'shadow')
 
     implementation "org.bouncycastle:bcprov-jdk15to18:$bouncy_castle_version"
 
