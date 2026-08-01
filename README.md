@@ -110,7 +110,28 @@ APK signing fingerprint: D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6
 
 ## Changelog
 
-**v2.0.2 (Latest, June 2026):**
+**v2.0.7 (Latest, July 2026):**
+- Fixes a display bug where the decoy calculator keypad could render blank in portrait on some narrower screens (reported on HyperOS and GrapheneOS). No protocol change, no database upgrade, signing key unchanged
+
+**v2.0.6 (July 2026):**
+- Adding a contact is reliable again; connections recover immediately after a drop so contacts stay online more consistently; voice memos deliver reliably
+- Contact pairing and the per-message post-quantum encryption were audited and hardened, and the release went through a full code and security review
+- Both people need this version to add each other. No database upgrade
+
+**v2.0.5 (June 2026):**
+- Account backup reliability fix: backups work reliably across devices and report a clear error if anything goes wrong. No change to backup encryption, no protocol change, no database upgrade
+
+**v2.0.4 (June 2026):**
+- Back up your whole account to an encrypted file, or move it straight to a new phone over Tor
+- Faster, more reliable connections through bridges in censored regions; quicker message delivery; smoother group chats with Enter-to-send and a tappable key fingerprint; app lock can hold for up to 24 hours in the background
+- Full code and security review. No protocol change, no database upgrade
+
+**v2.0.3 (June 2026):**
+- Voice calls work cleanly in both directions and are on by default; opt-in video-calling beta
+- Mute a channel, search and sort the vault, save channel post drafts, set a default disappearing timer, see pending group invites
+- Lower battery and memory use, faster start, and a set of crash fixes. No protocol change, no database upgrade
+
+**v2.0.2 (June 2026):**
 - Channels now raise system notifications for new posts (subscribers) and new comments (owners), with a global Channels toggle and per-channel mute
 - Group chats are resilient under concurrent admin actions — adding a member while another is removed, or messaging during a membership change, no longer splits the member list; invitees see the current roster immediately on accept
 - At-rest encrypted preferences moved to an in-tree implementation, replacing the deprecated AndroidX `security-crypto` library (one-time settings reset on upgrade; conversations, channels, groups, contacts, and vault are unaffected)

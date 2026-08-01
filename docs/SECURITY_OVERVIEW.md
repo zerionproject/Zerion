@@ -1,7 +1,7 @@
 # Zerion Security Overview
 
-**Version:** 2.0.6
-**Last reviewed:** July 2026 (v2.0.6)
+**Version:** 2.0.7
+**Last reviewed:** July 2026 (v2.0.7)
 
 ---
 
@@ -9,7 +9,14 @@
 
 Zerion is a peer-to-peer encrypted messenger for Android with voice and video calls over Tor. All traffic routes exclusively through the Tor network. There are no central servers, no metadata collection, and no logging in production builds.
 
-A comprehensive security audit covering 10 domains (cryptography, network, voice calls, Android platform, authentication, database, input validation, dependencies, logging, memory safety) was completed and all actionable findings have been resolved. Additional internal audits were run during the v1.6 cycle: the PCS Mode 3 rewrite and the hybrid-signing migration produced four findings (one critical, one high, two medium) caught and patched before the v1.6.0 tag; a follow-up audit during the v1.6.2 cycle covered password setup, settings, vault, biometric, deletion paths, and lock-screen exposure — see the version notes below.
+Internal security reviews covering ten areas of the app (cryptography, network, voice calls, Android platform, authentication, database, input validation, dependencies, logging, and memory safety) have been completed, with all actionable findings resolved. Additional internal audits were run during the v1.6 cycle: the PCS Mode 3 rewrite and the hybrid-signing migration produced four findings (one critical, one high, two medium) caught and patched before the v1.6.0 tag; a follow-up audit during the v1.6.2 cycle covered password setup, settings, vault, biometric, deletion paths, and lock-screen exposure (see the version notes below).
+
+## v2.0.7 status (July 2026)
+
+- **Decoy-calculator display fix.** Resolved a layout bug where the disguised
+  calculator keypad could render blank in portrait on some narrower screens
+  (reported on HyperOS and GrapheneOS). No protocol, cryptography, or database
+  change; the signing key is unchanged.
 
 ## v2.0 / v2.0.6 status (July 2026)
 
