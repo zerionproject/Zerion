@@ -110,7 +110,34 @@ APK signing fingerprint: D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6
 
 ## Changelog
 
-**v2.0.2 (Latest, June 2026):**
+**v3.0 (in development):**
+- A network protocol written in-house: fixed-size 4096-byte frames, constant-rate cover traffic so idle and active connections look identical on the wire, and per-message hybrid post-quantum encryption, all over Tor with no servers
+- Keeps the post-quantum ratchet and the delivery database from the 2.x line
+- Two additional transports are in the tree and under test before release: a Bluetooth offline mesh (message with no internet at all) and an opt-in I2P path; Tor stays mandatory and always on
+- Launching soon; the 2.x line remains the current public release until then
+
+**v2.0.7 (Latest release, July 2026):**
+- Fixes a display bug where the decoy calculator keypad could render blank in portrait on some narrower screens (reported on HyperOS and GrapheneOS). No protocol change, no database upgrade, signing key unchanged
+
+**v2.0.6 (July 2026):**
+- Adding a contact is reliable again; connections recover immediately after a drop so contacts stay online more consistently; voice memos deliver reliably
+- Contact pairing and the per-message post-quantum encryption were audited and hardened, and the release went through a full code and security review
+- Both people need this version to add each other. No database upgrade
+
+**v2.0.5 (June 2026):**
+- Account backup reliability fix: backups work reliably across devices and report a clear error if anything goes wrong. No change to backup encryption, no protocol change, no database upgrade
+
+**v2.0.4 (June 2026):**
+- Back up your whole account to an encrypted file, or move it straight to a new phone over Tor
+- Faster, more reliable connections through bridges in censored regions; quicker message delivery; smoother group chats with Enter-to-send and a tappable key fingerprint; app lock can hold for up to 24 hours in the background
+- Full code and security review. No protocol change, no database upgrade
+
+**v2.0.3 (June 2026):**
+- Voice calls work cleanly in both directions and are on by default; opt-in video-calling beta
+- Mute a channel, search and sort the vault, save channel post drafts, set a default disappearing timer, see pending group invites
+- Lower battery and memory use, faster start, and a set of crash fixes. No protocol change, no database upgrade
+
+**v2.0.2 (June 2026):**
 - Channels now raise system notifications for new posts (subscribers) and new comments (owners), with a global Channels toggle and per-channel mute
 - Group chats are resilient under concurrent admin actions — adding a member while another is removed, or messaging during a membership change, no longer splits the member list; invitees see the current roster immediately on accept
 - At-rest encrypted preferences moved to an in-tree implementation, replacing the deprecated AndroidX `security-crypto` library (one-time settings reset on upgrade; conversations, channels, groups, contacts, and vault are unaffected)
