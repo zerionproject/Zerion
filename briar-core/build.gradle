@@ -12,8 +12,6 @@ dependencies {
 	implementation project(':bramble-core')
 
 	implementation 'net.i2p.crypto:eddsa:0.2.0'
-	implementation 'com.rometools:rome:1.18.0'
-	implementation 'org.jdom:jdom2:2.0.6.1'
 	implementation "org.jsoup:jsoup:$jsoup_version"
 	implementation "com.squareup.okhttp3:okhttp:$okhttp_version"
 
@@ -22,7 +20,7 @@ dependencies {
 	testImplementation project(path: ':bramble-api', configuration: 'testOutput')
 	testImplementation project(path: ':bramble-core', configuration: 'testOutput')
 
-	testImplementation 'org.hsqldb:hsqldb:2.3.5' // The last version that supports Java 1.6
+	testImplementation 'org.hsqldb:hsqldb:2.3.5' // test-only, not shipped; pinned for supply-chain verification
 	testImplementation 'net.jodah:concurrentunit:0.4.6'
 	testImplementation "junit:junit:$junit_version"
 	testImplementation "org.jmock:jmock:$jmock_version"

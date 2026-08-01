@@ -24,7 +24,7 @@ dependencies {
 
 	testImplementation project(path: ':bramble-api', configuration: 'testOutput')
 
-	testImplementation 'org.hsqldb:hsqldb:2.3.5' // The last version that supports Java 1.6
+	testImplementation 'org.hsqldb:hsqldb:2.3.5' // test-only, not shipped; pinned for supply-chain verification
 	testImplementation 'net.jodah:concurrentunit:0.4.6'
 	testImplementation "junit:junit:$junit_version"
 	testImplementation "org.jmock:jmock:$jmock_version"
