@@ -1,8 +1,6 @@
 package org.zerionproject.app.conversation.voice;
 
-import net.i2p.crypto.eddsa.spec.EdDSANamedCurveSpec;
-import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable;
-import net.i2p.crypto.eddsa.spec.EdDSAPrivateKeySpec;
+import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters;
 
 import org.zerionproject.core.api.crypto.CryptoComponent;
 import org.zerionproject.core.api.crypto.SecretKey;
@@ -42,8 +40,6 @@ class VoiceCallCryptoImpl implements VoiceCallCrypto {
 	private static final int GCM_NONCE_BYTES = 12;
 	private static final int GCM_TAG_BITS = 128;
 
-	private static final EdDSANamedCurveSpec CURVE_SPEC =
-			EdDSANamedCurveTable.getByName("Ed25519");
 
 	private static final ThreadLocal<Cipher> CIPHER_CACHE =
 			ThreadLocal.withInitial(() -> {
@@ -101,8 +97,8 @@ class VoiceCallCryptoImpl implements VoiceCallCrypto {
 		byte[] bobSeed = keyMaterial.getKeyMaterial(SEED_BYTES);
 		byte[] localSeed = alice ? aliceSeed : bobSeed;
 		try {
-			EdDSAPrivateKeySpec spec = new EdDSAPrivateKeySpec(localSeed, CURVE_SPEC);
-			byte[] publicKey = spec.getA().toByteArray();
+			byte[] publicKey = new Ed25519PrivateKeyParameters(localSeed, 0)
+					.generatePublicKey().getEncoded();
 			return crypto.encodeOnion(publicKey);
 		} finally {
 			java.util.Arrays.fill(aliceSeed, (byte) 0);

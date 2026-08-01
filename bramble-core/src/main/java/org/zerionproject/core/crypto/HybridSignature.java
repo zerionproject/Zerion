@@ -7,12 +7,8 @@ import org.zerionproject.core.api.crypto.SignaturePrivateKey;
 import org.zerionproject.core.api.crypto.SignaturePublicKey;
 import org.briarproject.nullsafety.NotNullByDefault;
 
-import net.i2p.crypto.eddsa.EdDSAPrivateKey;
-import net.i2p.crypto.eddsa.EdDSAPublicKey;
-import net.i2p.crypto.eddsa.KeyPairGenerator;
-import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable;
-import net.i2p.crypto.eddsa.spec.EdDSAParameterSpec;
-import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec;
+import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters;
+import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
 
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
@@ -25,33 +21,27 @@ import static org.zerionproject.core.api.crypto.PostQuantumConstants.ML_DSA_65_S
 @Immutable
 class HybridSignature {
 
-	private static final int SIGNATURE_KEY_PAIR_BITS = 256;
-	private static final EdDSAParameterSpec ED25519_SPEC =
-			EdDSANamedCurveTable.getByName("Ed25519");
-
 	private final SecureRandom secureRandom;
-	private final KeyPairGenerator ed25519KeyPairGenerator;
 	private final MlDsa65 mlDsa65;
 
 	HybridSignature(SecureRandom secureRandom) {
 		this.secureRandom = secureRandom;
-		this.ed25519KeyPairGenerator = new KeyPairGenerator();
-		this.ed25519KeyPairGenerator.initialize(SIGNATURE_KEY_PAIR_BITS, secureRandom);
 		this.mlDsa65 = new MlDsa65(secureRandom);
 	}
 
 	KeyPair generateKeyPair() {
-		java.security.KeyPair ed25519KeyPair = ed25519KeyPairGenerator.generateKeyPair();
-		EdDSAPublicKey edPublicKey = (EdDSAPublicKey) ed25519KeyPair.getPublic();
-		EdDSAPrivateKey edPrivateKey = (EdDSAPrivateKey) ed25519KeyPair.getPrivate();
+		Ed25519PrivateKeyParameters edPrivateKey =
+				new Ed25519PrivateKeyParameters(secureRandom);
+		Ed25519PublicKeyParameters edPublicKey =
+				edPrivateKey.generatePublicKey();
 		MlDsa65.MlDsaKeyPair mlDsaKeyPair = mlDsa65.generateKeyPair();
 		HybridSignaturePublicKey publicKey = new HybridSignaturePublicKey(
-				edPublicKey.getAbyte(),
+				edPublicKey.getEncoded(),
 				mlDsaKeyPair.getPublicKey()
 		);
 
 		HybridSignaturePrivateKey privateKey = new HybridSignaturePrivateKey(
-				edPrivateKey.getSeed(),
+				edPrivateKey.getEncoded(),
 				mlDsaKeyPair.getPrivateKey()
 		);
 
@@ -107,7 +97,7 @@ class HybridSignature {
 
 	boolean isValidPublicKey(HybridSignaturePublicKey publicKey) {
 		try {
-			new EdDSAPublicKeySpec(publicKey.getEd25519PublicKey(), ED25519_SPEC);
+			new Ed25519PublicKeyParameters(publicKey.getEd25519PublicKey(), 0);
 		} catch (Exception e) {
 			return false;
 		}

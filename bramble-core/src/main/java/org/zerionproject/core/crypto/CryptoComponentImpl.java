@@ -1,12 +1,10 @@
 package org.zerionproject.core.crypto;
 
-import net.i2p.crypto.eddsa.EdDSAPrivateKey;
-import net.i2p.crypto.eddsa.EdDSAPublicKey;
-import net.i2p.crypto.eddsa.KeyPairGenerator;
-
 import org.bouncycastle.crypto.Digest;
 import org.bouncycastle.crypto.digests.Blake2bDigest;
 import org.bouncycastle.crypto.digests.SHA3Digest;
+import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters;
+import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
 import org.zerionproject.core.api.UniqueId;
 import org.zerionproject.core.api.crypto.AgreementPrivateKey;
 import org.zerionproject.core.api.crypto.AgreementPublicKey;
@@ -54,7 +52,6 @@ import static org.zerionproject.core.util.StringUtils.US_ASCII;
 
 @NotNullByDefault
 class CryptoComponentImpl implements CryptoComponent {
-	private static final int SIGNATURE_KEY_PAIR_BITS = 256;
 	private static final int STORAGE_IV_BYTES = 24;
 	private static final int PBKDF_SALT_BYTES = 32;
 	private static final byte PBKDF_FORMAT_SCRYPT = 0;
@@ -68,7 +65,6 @@ class CryptoComponentImpl implements CryptoComponent {
 	private final PasswordBasedKdf scryptKdf;
 	private final PasswordBasedKdf argon2idKdf;
 	private final Curve25519 curve25519;
-	private final KeyPairGenerator signatureKeyPairGenerator;
 	private final KeyParser agreementKeyParser, signatureKeyParser;
 	private final HybridKeyAgreement hybridKeyAgreement;
 	private final HybridSignature hybridSignature;
@@ -95,9 +91,6 @@ class CryptoComponentImpl implements CryptoComponent {
 		this.scryptKdf = scryptKdf;
 		this.argon2idKdf = argon2idKdf;
 		curve25519 = Curve25519.getInstance("java");
-		signatureKeyPairGenerator = new KeyPairGenerator();
-		signatureKeyPairGenerator.initialize(SIGNATURE_KEY_PAIR_BITS,
-				secureRandom);
 		agreementKeyParser = new AgreementKeyParser();
 		signatureKeyParser = new SignatureKeyParser();
 
@@ -177,12 +170,11 @@ class CryptoComponentImpl implements CryptoComponent {
 
 	@Override
 	public KeyPair generateSignatureKeyPair() {
-		java.security.KeyPair keyPair =
-				signatureKeyPairGenerator.generateKeyPair();
-		EdDSAPublicKey edPublicKey = (EdDSAPublicKey) keyPair.getPublic();
-		PublicKey publicKey = new SignaturePublicKey(edPublicKey.getAbyte());
-		EdDSAPrivateKey edPrivateKey = (EdDSAPrivateKey) keyPair.getPrivate();
-		PrivateKey privateKey = new SignaturePrivateKey(edPrivateKey.getSeed());
+		Ed25519PrivateKeyParameters priv =
+				new Ed25519PrivateKeyParameters(secureRandom);
+		Ed25519PublicKeyParameters pub = priv.generatePublicKey();
+		PublicKey publicKey = new SignaturePublicKey(pub.getEncoded());
+		PrivateKey privateKey = new SignaturePrivateKey(priv.getEncoded());
 		return new KeyPair(publicKey, privateKey);
 	}
 
