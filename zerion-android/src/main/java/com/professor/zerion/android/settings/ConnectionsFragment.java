@@ -163,10 +163,6 @@ public class ConnectionsFragment extends Fragment {
 		i2pSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
 			if (buttonView.isPressed()) onI2pToggle(isChecked);
 		});
-		View i2pCard = view.findViewById(R.id.i2p_card);
-		if (i2pCard != null && !com.professor.zerion.BuildConfig.DEBUG) {
-			i2pCard.setVisibility(View.GONE);
-		}
 
 		meshSwitch = view.findViewById(R.id.mesh_switch);
 		meshSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {

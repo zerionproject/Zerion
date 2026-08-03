@@ -54,8 +54,8 @@ produce a non-reproducible APK.
 
 ```
 ./gradlew :zerion-android:assembleOfficialDebug   # build the debug APK
-./gradlew :bramble-core:test                  # transport / crypto unit tests
-./gradlew :briar-core:test                    # messaging / groups / channels tests
+./gradlew :zerion-core:test                  # transport / crypto unit tests
+./gradlew :zerion-app:test                    # messaging / groups / channels tests
 ```
 
 For any change to crypto, ratchet, or wire format: run the full unit suite,

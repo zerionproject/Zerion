@@ -1,6 +1,6 @@
 # GroupTr — Group Triple Ratchet wire protocol
 
-iOS parity for Zerion group chat. Android implementation: `briar-core/.../grouptr/GroupTrManagerImpl.java` plus the validator at `briar-core/.../messaging/PrivateMessageValidator.java`. Shipped on Android since 1.5; admin-signature verify path corrected in 1.6 (commit `06f95a7`).
+iOS parity for Zerion group chat. Android implementation: `zerion-app/.../grouptr/GroupTrManagerImpl.java` plus the validator at `zerion-app/.../messaging/PrivateMessageValidator.java`. Shipped on Android since 1.5; admin-signature verify path corrected in 1.6 (commit `06f95a7`).
 
 ## Two layers: silent membership fan-out + an explicit invite handshake
 
@@ -437,7 +437,7 @@ Labels used in GroupTr:
 - `"org.zerionproject/GROUPTR_INVITE_DECLINE"` for msgType 44
 - `"org.zerionproject/GROUP_POST"` for msgType 32 (separate spec)
 
-(Constants live in `briar-core/.../grouptr/GroupTrConstants.java`.)
+(Constants live in `zerion-app/.../grouptr/GroupTrConstants.java`.)
 
 ## Verification (receiver side, Android 1.6 path)
 

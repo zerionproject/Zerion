@@ -102,7 +102,8 @@ public class BundledI2pRouter implements I2pRouter {
 		p.setProperty("i2cp.disableInterface", "true");
 		p.setProperty("router.maxParticipatingTunnels", "0");
 		p.setProperty("router.floodfillParticipant", "false");
-		p.setProperty("i2np.udp.enable", "true");
+		p.setProperty("i2p.hiddenMode", "true");
+		p.setProperty("i2np.udp.enable", "false");
 		p.setProperty("i2np.ntcp2.enable", "true");
 		p.setProperty("i2np.inboundKBytesPerSecond", "128");
 		p.setProperty("i2np.outboundKBytesPerSecond", "64");

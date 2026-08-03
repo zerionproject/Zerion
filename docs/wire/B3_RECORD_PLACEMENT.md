@@ -24,7 +24,7 @@ Both platforms use the upstream Bramble two-stage handshake unchanged:
 
 ### Stage 1 — over-Tor handshake (record stream)
 
-`bramble-core/src/main/java/org/zerionproject/core/contact/HandshakeManagerImpl.java`
+`zerion-core/src/main/java/org/zerionproject/core/contact/HandshakeManagerImpl.java`
 `.performHybridHandshake()` (Android) ↔ iOS:
 `PendingContactView.swift:1830-1980`.
 
@@ -58,7 +58,7 @@ After this stage both sides hold:
 
 Runs over the master-key-encrypted channel.
 
-`bramble-core/.../contact/ContactExchangeManagerImpl.sendContactInfo()`
+`zerion-core/.../contact/ContactExchangeManagerImpl.sendContactInfo()`
 (Android: `ContactExchangeManagerImpl.java:181-190`) ↔ iOS:
 `PendingContactView.swift:2090-2091`.
 
@@ -128,7 +128,7 @@ CONTACT_INFO_v5 :=
 
 The `b3ProofSig` value comes from `B3PqProof.sign(signingPriv, ourEph,
 theirEph, ourStaticPqPub)` per the helper at
-`bramble-core/src/main/java/org/zerionproject/core/contact/B3PqProof.java` (Android) and
+`zerion-core/src/main/java/org/zerionproject/core/contact/B3PqProof.java` (Android) and
 `Packages/ZerionCrypto/.../B3PqKeyProof.swift` (iOS). Byte-identical
 across platforms — pinned by `docs/wire/test_vectors/B3_v1.txt`.
 
@@ -279,7 +279,7 @@ verify the slot[4] sig. Byte-identical against the canonical vector at
 
 ### Android
 
-`bramble-core/src/main/java/org/zerionproject/core/contact/B3PqProof.java`
+`zerion-core/src/main/java/org/zerionproject/core/contact/B3PqProof.java`
 
 ```java
 public static byte[] sign(byte[] signingPriv,
@@ -290,7 +290,7 @@ public static boolean verify(byte[] signingPub,
         byte[] pqPubKey, byte[] sig);
 ```
 
-Tests: `B3PqProofTest` in `bramble-core/src/test/java/org/zerionproject/core/contact/B3PqProofTest.java`, 13 cases
+Tests: `B3PqProofTest` in `zerion-core/src/test/java/org/zerionproject/core/contact/B3PqProofTest.java`, 13 cases
 including `canonicalVectorMatchesIOS`.
 
 ### iOS

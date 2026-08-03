@@ -58,10 +58,10 @@ ARGS=(
 )
 
 for p in \
-		"$ROOT_DIR/bramble-api/build/libs" \
-		"$ROOT_DIR/bramble-core/build/libs" \
-		"$ROOT_DIR/briar-api/build/libs" \
-		"$ROOT_DIR/briar-core/build/libs" \
+		"$ROOT_DIR/zerion-core-api/build/libs" \
+		"$ROOT_DIR/zerion-core/build/libs" \
+		"$ROOT_DIR/zerion-app-api/build/libs" \
+		"$ROOT_DIR/zerion-app/build/libs" \
 		"$ROOT_DIR/zerion-android/build/outputs/apk/official/debug"; do
 	if [ -d "$p" ] && [ "$(ls -A "$p" 2>/dev/null)" ]; then
 		ARGS+=(--scan "$p")

@@ -292,16 +292,16 @@ the two are contacts and can exchange prekeys and messages over the mesh.
 
 ## 14. Where the code lives
 
-- Flooding and frames: `bramble-core` `org.zerionproject.transport.mesh`
+- Flooding and frames: `zerion-core` `org.zerionproject.transport.mesh`
   (`MeshForwarder`, `MeshFrame`).
-- Async crypto: `bramble-core` `org.zerionproject.core.crypto.async`
+- Async crypto: `zerion-core` `org.zerionproject.core.crypto.async`
   (`AsyncMeshDelivery`, `AsyncSealedSender`, `AsyncPrekeyBundle`,
   `MeshBundleStore`, `MeshSeenStore`).
 - BLE radio, managers, routing, senders: `zerion-android`
   `com.professor.zerion.android.mesh` (`MeshManager`, `MeshController`,
   `BleMeshTransport`, `MeshMessageRouter`, `MeshTextSender`, `MeshGroupSender`,
   `MeshOutbox`, `MeshPresenceTracker`, `MeshPadding`).
-- Group sink: `briar-api` `GroupTrMeshSink`, wired through `GroupTrManagerImpl`.
+- Group sink: `zerion-app-api` `GroupTrMeshSink`, wired through `GroupTrManagerImpl`.
 - Receive into the app: `MessagingManagerImpl.receiveMeshMessage` and
   `receiveMeshGroupRecord`.
 - Offline pairing: `zerion-android`
@@ -405,7 +405,7 @@ capture, is required before I2P is promoted out of debug builds.
   `com.professor.zerion.android.i2p.BundledI2pRouter`.
 - Streaming transport and session: `com.professor.zerion.android.i2p`
   (`I2pStreamingTransport`, `BundledI2pStack`, `I2pStackModule`).
-- Plugin, factory, and enable gate: `bramble-core`
+- Plugin, factory, and enable gate: `zerion-core`
   `org.zerionproject.transport.i2p` (`I2pDuplexPlugin`,
-  `I2pDuplexPluginFactory`), with constants in `bramble-api`
+  `I2pDuplexPluginFactory`), with constants in `zerion-core-api`
   `org.zerionproject.core.api.plugin.I2pConstants`.

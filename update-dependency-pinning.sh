@@ -2,12 +2,11 @@
 set -e
 
 PROJECTS=(
-    'bramble-api'
-    'bramble-core'
-    'bramble-android'
-    'bramble-java'
-    'briar-api'
-    'briar-core'
+    'zerion-core-api'
+    'zerion-core'
+    'zerion-core-android'
+    'zerion-app-api'
+    'zerion-app'
     'zerion-android'
 )
 

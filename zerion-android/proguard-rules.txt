@@ -1,4 +1,4 @@
-# Android defaults and rules from ../bramble-android/proguard-rules.txt are also applied
+# Android defaults and rules from ../zerion-core-android/proguard-rules.txt are also applied
 
 # ============================================================================
 # F-DROID REPRODUCIBLE BUILD SUPPORT
@@ -184,7 +184,7 @@
 -keep class org.briarproject.bramble.api.crypto.** { *; }
 
 # ============================================================================
-# JDBC INTERFACES (used by bramble-android SQLCipher adapter)
+# JDBC INTERFACES (used by zerion-core-android SQLCipher adapter)
 # ============================================================================
 # SqlCipherConnection/Statement/PreparedStatement/ResultSet implement
 # java.sql interfaces. Keep them to prevent R8 from stripping or renaming.
@@ -265,4 +265,16 @@
     public static *** w(...);
     public static *** e(...);
     public static *** wtf(...);
+}
+# The embedded I2P router ships its own logger (net.i2p.util.Log). Combined with
+# the runtime logger.defaultLevel=CRIT and logRotationLimit=0 set in
+# BundledI2pRouter, removing these call sites means no router or transport
+# metadata strings survive in the decompiled release APK.
+-assumenosideeffects class net.i2p.util.Log {
+    public void debug(...);
+    public void info(...);
+    public void warn(...);
+    public void error(...);
+    public void log(...);
+    public void logAlways(...);
 }

@@ -42,7 +42,7 @@ public class MeshTextSender {
 			new java.security.SecureRandom();
 
 	private static final long PRESENCE_TTL_SECONDS = 180;
-	private static final int PRESENCE_BUCKET_MIN = 4;
+	private static final int PRESENCE_BUCKET_STEP = 8;
 	private static final long PRESENCE_INTERVAL_MS = 60_000;
 	private static final long PRESENCE_INITIAL_DELAY_MS = 4_000;
 	private static final long PEER_CONNECT_BEACON_DELAY_MS = 1_500;
@@ -118,8 +118,8 @@ public class MeshTextSender {
 				} catch (Exception e) {
 				}
 			}
-			int bucket = PRESENCE_BUCKET_MIN;
-			while (bucket < sent) bucket <<= 1;
+			int bucket = PRESENCE_BUCKET_STEP;
+			while (bucket < sent) bucket += PRESENCE_BUCKET_STEP;
 			for (int i = sent; sent > 0 && i < bucket; i++) {
 				try {
 					meshManager.sendCover(false, PRESENCE_TTL_SECONDS);

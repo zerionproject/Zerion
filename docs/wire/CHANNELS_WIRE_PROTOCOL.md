@@ -3,12 +3,12 @@
 Shipped on Android since v2.0.0.
 
 iOS parity for Zerion broadcast channels. Android implementation lives in
-`briar-core/.../channel/` — the orchestrator is `ChannelManagerImpl.java`,
+`zerion-app/.../channel/` — the orchestrator is `ChannelManagerImpl.java`,
 the wire codecs are `ChannelPullCodec.java` (request/response framing) and
 `ChannelCodec.java` (signed-input byte layouts + invite links), and the
 post-chain rules are in `ChannelPostValidator.java` /
 `ChannelChainVerifier.java`. Constants are in
-`briar-api/.../channel/ChannelConstants.java`
+`zerion-app-api/.../channel/ChannelConstants.java`
 (`CLIENT_ID = "org.zerionproject.channel"`, MAJOR 0 / MINOR 1).
 
 ## The one architectural fact

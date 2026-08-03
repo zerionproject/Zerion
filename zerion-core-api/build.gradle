@@ -1,0 +1,32 @@
+apply plugin: 'java-library'
+sourceCompatibility = 17
+targetCompatibility = 17
+
+apply plugin: 'ru.vyarus.animalsniffer'
+
+dependencies {
+	api 'org.briarproject:null-safety:0.1'
+	api 'com.google.code.findbugs:jsr305:3.0.2'
+	api 'javax.inject:javax.inject:1'
+	api "com.google.dagger:dagger:$dagger_version"
+
+	implementation "com.fasterxml.jackson.core:jackson-annotations:$jackson_version"
+
+	testImplementation "junit:junit:$junit_version"
+	testImplementation "org.jmock:jmock:$jmock_version"
+	testImplementation "org.jmock:jmock-junit4:$jmock_version"
+
+	signature 'org.codehaus.mojo.signature:java16:1.1@signature'
+}
+
+// needed to make test output available to zerion-core and zerion-app
+configurations {
+	testOutput.extendsFrom(testCompile)
+}
+task jarTest(type: Jar, dependsOn: testClasses) {
+	from sourceSets.test.output, sourceSets.main.output
+	archiveClassifier = 'test'
+}
+artifacts {
+	testOutput jarTest
+}

@@ -51,7 +51,7 @@
 	<string name="i2p_toggle_summary">Also route through the I2P network</string>
 	<string name="i2p_info_message">I2P is an alternative anonymity network to Tor, with a router built in. Tor stays on as your baseline; I2P is an optional extra.</string>
 	<string name="i2p_enable_warning_title">Enable I2P?</string>
-	<string name="i2p_enable_warning_message">I2P adds a second anonymity network alongside Tor. It hides who you are talking to, but a network observer may still be able to tell that you use I2P (as with Tor without bridges), because your device joins the I2P network directly. Zerion routes the initial connection through Tor to reduce this. Tor always stays on. Only enable I2P if you understand this trade-off.</string>
+	<string name="i2p_enable_warning_message">I2P is a second anonymity network you can use alongside Tor. Your messages stay encrypted, so no one can read what you send or who you talk to. But unlike Tor, I2P does not hide your IP address: your network or internet provider can see that this device uses I2P, only that you use it, never the contents. Tor always stays on. Only enable I2P if it is acceptable for your network to see that you use it.</string>
 	<string name="i2p_enable_warning_confirm">Enable I2P</string>
 	<string name="settings_section_mesh">OFFLINE MESH</string>
 	<string name="mesh_toggle_title">Offline mesh</string>

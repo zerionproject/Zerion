@@ -40,7 +40,7 @@ Signal is excellent and well audited, but it needs your phone number and runs on
 - Zerion is Android-only today.
 - Post-compromise "self-healing" comes from the post-quantum layer; the design deliberately relies on that rather than a second classical mechanism. The [Technical Whitepaper](ZERION_TECHNICAL_WHITEPAPER.md) documents this and the other trade-offs plainly.
 
-Security is about honest engineering, not marketing claims. Zerion's protocol, source, and this documentation are open for anyone to review.
+Zerion's protocol, source, and this documentation are open for anyone to review.
 
 ## Credits
 
