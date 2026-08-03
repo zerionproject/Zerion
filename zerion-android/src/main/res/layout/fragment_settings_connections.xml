@@ -207,7 +207,7 @@
 
 				<ImageView
 					style="@style/Zerion.Settings.Row.Icon"
-					android:src="@drawable/ic_settings"
+					android:src="@drawable/transport_i2p"
 					android:importantForAccessibility="no" />
 
 				<LinearLayout
@@ -278,7 +278,7 @@
 
 				<ImageView
 					style="@style/Zerion.Settings.Row.Icon"
-					android:src="@drawable/ic_settings"
+					android:src="@drawable/transport_bt"
 					android:importantForAccessibility="no" />
 
 				<LinearLayout

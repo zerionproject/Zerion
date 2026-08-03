@@ -8,8 +8,8 @@
 # Use deterministic source file attribute (removes non-deterministic R8 map ID)
 -renamesourcefileattribute SourceFile
 
-# Ensure deterministic class member ordering
--keepattributes SourceFile,LineNumberTable
+# Keep the deterministic renamed SourceFile only; drop LineNumberTable in release
+-keepattributes SourceFile
 
 # ============================================================================
 # SECURITY HARDENING

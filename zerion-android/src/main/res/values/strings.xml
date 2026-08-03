@@ -133,10 +133,10 @@
 	<string name="vault_settings_section_security">SECURITY</string>
 	<string name="vault_settings_section_privacy">PRIVACY</string>
 	<string name="vault_settings_section_data">DATA</string>
-	<string name="vault_settings_change_master">Change Master Password</string>
+	<string name="vault_settings_change_master">Change master password</string>
 	<string name="vault_settings_change_master_summary">Update your vault password</string>
-	<string name="vault_settings_autolock">Auto-lock Timeout</string>
-	<string name="vault_settings_biometric">Biometric Unlock</string>
+	<string name="vault_settings_autolock">Auto-lock timeout</string>
+	<string name="vault_settings_biometric">Biometric unlock</string>
 	<string name="vault_settings_biometric_summary">Use fingerprint or face unlock</string>
 	<string name="vault_settings_clear_clipboard">Clear Clipboard After</string>
 	<string name="vault_settings_hide_content">Hide Content in App Switcher</string>
@@ -185,7 +185,7 @@
 	<string name="vault_password_field_password">Password</string>
 	<string name="vault_password_field_website">Website</string>
 	<string name="vault_password_field_notes">Notes</string>
-	<string name="vault_password_generate_strong">Generate Strong Password</string>
+	<string name="vault_password_generate_strong">Generate strong password</string>
 	<string name="secure_note_extra_security">Extra Security</string>
 	<string name="secure_note_add_password">Add password to this note</string>
 	<string name="secure_note_save">Save</string>
@@ -511,7 +511,7 @@
 	<string name="network_status_label">Status:</string>
 	<string name="network_uptime_label">Uptime:</string>
 	<string name="network_hidden_service_label">Hidden Service:</string>
-	<string name="network_mode_title">Secure Network Mode</string>
+	<string name="network_mode_title">Secure network mode</string>
 	<string name="network_mode_description">All communication is routed through the Tor network for maximum privacy and security. Your connection is encrypted end-to-end and your identity remains anonymous.</string>
 
 	<!-- Notifications -->
@@ -1695,8 +1695,8 @@
 	<string name="call_action_decline">Decline call</string>
 	<string name="vault_rate_limit">Too many failed attempts. Please wait %d seconds.</string>
 	<string name="vault_change_password">Change Password</string>
-	<string name="vault_enable_biometric">Enable Biometric Unlock</string>
-	<string name="vault_auto_lock_timeout">Auto-lock Timeout</string>
+	<string name="vault_enable_biometric">Enable biometric unlock</string>
+	<string name="vault_auto_lock_timeout">Auto-lock timeout</string>
 	<string name="vault_select_image">Select Image</string>
 	<string name="vault_select_document">Select Document</string>
 	<string name="vault_export_error">Failed to export item</string>

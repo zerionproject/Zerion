@@ -647,31 +647,52 @@ public class BleMeshTransport implements MeshLink {
 	}
 
 	private static final class Reassembler {
-		private byte[] buffer = new byte[0];
+		private byte[] buf = new byte[512];
+		private int head = 0;
+		private int tail = 0;
 
 		synchronized void append(byte[] chunk) {
-			byte[] grown = new byte[buffer.length + chunk.length];
-			System.arraycopy(buffer, 0, grown, 0, buffer.length);
-			System.arraycopy(chunk, 0, grown, buffer.length, chunk.length);
-			buffer = grown;
+			ensureCapacity(chunk.length);
+			System.arraycopy(chunk, 0, buf, tail, chunk.length);
+			tail += chunk.length;
+		}
+
+		private void ensureCapacity(int extra) {
+			if (tail + extra <= buf.length) return;
+			int used = tail - head;
+			if (head > 0 && used + extra <= buf.length) {
+				System.arraycopy(buf, head, buf, 0, used);
+				head = 0;
+				tail = used;
+				return;
+			}
+			int newCap = Math.max(buf.length * 2, used + extra);
+			byte[] grown = new byte[newCap];
+			System.arraycopy(buf, head, grown, 0, used);
+			buf = grown;
+			head = 0;
+			tail = used;
 		}
 
 		@Nullable
 		synchronized byte[] poll() {
-			if (buffer.length < LENGTH_PREFIX) return null;
-			int len = ((buffer[0] & 0xFF) << 24) | ((buffer[1] & 0xFF) << 16)
-					| ((buffer[2] & 0xFF) << 8) | (buffer[3] & 0xFF);
+			int avail = tail - head;
+			if (avail < LENGTH_PREFIX) return null;
+			int len = ((buf[head] & 0xFF) << 24) | ((buf[head + 1] & 0xFF) << 16)
+					| ((buf[head + 2] & 0xFF) << 8) | (buf[head + 3] & 0xFF);
 			if (len < 0 || len > MAX_FRAME_BYTES) {
-				buffer = new byte[0];
+				head = 0;
+				tail = 0;
 				return null;
 			}
-			if (buffer.length < LENGTH_PREFIX + len) return null;
+			if (avail < LENGTH_PREFIX + len) return null;
 			byte[] frame = new byte[len];
-			System.arraycopy(buffer, LENGTH_PREFIX, frame, 0, len);
-			int rest = buffer.length - (LENGTH_PREFIX + len);
-			byte[] remainder = new byte[rest];
-			System.arraycopy(buffer, LENGTH_PREFIX + len, remainder, 0, rest);
-			buffer = remainder;
+			System.arraycopy(buf, head + LENGTH_PREFIX, frame, 0, len);
+			head += LENGTH_PREFIX + len;
+			if (head == tail) {
+				head = 0;
+				tail = 0;
+			}
 			return frame;
 		}
 	}

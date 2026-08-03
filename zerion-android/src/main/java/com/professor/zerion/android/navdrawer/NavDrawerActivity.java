@@ -105,7 +105,7 @@ public class NavDrawerActivity extends ZerionActivity implements
 	private MaterialCardView profileIcon;
 	private ShapeableImageView profileAvatar;
 	private TextView toolbarTitle;
-	private ImageButton searchButton;
+	private ImageButton networkStatusButton;
 	private ImageButton menuButton;
 	private ImageButton vaultShortcutButton;
 	private TextView tabContacts;
@@ -197,7 +197,7 @@ public class NavDrawerActivity extends ZerionActivity implements
 		profileIcon = findViewById(R.id.profileIcon);
 		profileAvatar = findViewById(R.id.profileAvatar);
 		toolbarTitle = findViewById(R.id.toolbarTitle);
-		searchButton = findViewById(R.id.searchButton);
+		networkStatusButton = findViewById(R.id.networkStatusButton);
 		menuButton = findViewById(R.id.menuButton);
 		vaultShortcutButton = findViewById(R.id.vaultShortcutButton);
 		tabContacts = findViewById(R.id.tabContacts);
@@ -230,7 +230,7 @@ public class NavDrawerActivity extends ZerionActivity implements
 			com.professor.zerion.android.util.Haptics.tap(v);
 			openSettings();
 		});
-		searchButton.setOnClickListener(v -> {
+		networkStatusButton.setOnClickListener(v -> {
 			com.professor.zerion.android.util.Haptics.tap(v);
 			toggleNetworkStatus();
 		});
@@ -318,20 +318,19 @@ public class NavDrawerActivity extends ZerionActivity implements
 	}
 
 	private void updateTabUI() {
-		tabContacts.setTextColor(currentTab == TAB_CONTACTS ?
-				0xFFFFFFFF : 0x80FFFFFF);
+		int selected = getColor(R.color.zerion_text_primary);
+		int unselected = getColor(R.color.zerion_text_secondary);
+		tabContacts.setTextColor(currentTab == TAB_CONTACTS ? selected : unselected);
 		tabContacts.setTypeface(null, currentTab == TAB_CONTACTS ?
 				Typeface.BOLD : Typeface.NORMAL);
 		tabContacts.setSelected(currentTab == TAB_CONTACTS);
 
-		tabGroupChats.setTextColor(currentTab == TAB_GROUPS ?
-				0xFFFFFFFF : 0x80FFFFFF);
+		tabGroupChats.setTextColor(currentTab == TAB_GROUPS ? selected : unselected);
 		tabGroupChats.setTypeface(null, currentTab == TAB_GROUPS ?
 				Typeface.BOLD : Typeface.NORMAL);
 		tabGroupChats.setSelected(currentTab == TAB_GROUPS);
 
-		tabChannels.setTextColor(currentTab == TAB_CHANNELS ?
-				0xFFFFFFFF : 0x80FFFFFF);
+		tabChannels.setTextColor(currentTab == TAB_CHANNELS ? selected : unselected);
 		tabChannels.setTypeface(null, currentTab == TAB_CHANNELS ?
 				Typeface.BOLD : Typeface.NORMAL);
 		tabChannels.setSelected(currentTab == TAB_CHANNELS);
