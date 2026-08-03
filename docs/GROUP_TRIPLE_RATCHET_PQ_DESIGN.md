@@ -2,14 +2,14 @@
 
 **Version:** 0.3
 **Date:** 2026-05-15
-**Status:** SHIPPED on Android (v1.6.2) — pending cross-platform alignment with iOS
+**Status:** SHIPPED on Android (v1.6.2) - pending cross-platform alignment with iOS
 **Author:** Zerion Project
 
 **Related documents**
-- [PCS_DESIGN.md](PCS_DESIGN.md) — pairwise PCS specification (Mode 1/2/3)
-- [TRIPLE_RATCHET_DESIGN.md](TRIPLE_RATCHET_DESIGN.md) — post-quantum ratchet specification
-- [RATCHET_MODES.md](RATCHET_MODES.md) — layered Mode 1 / 2 / 3 explainer
-- [wire/GROUPTR_WIRE_PROTOCOL.md](wire/GROUPTR_WIRE_PROTOCOL.md) — wire-level message catalog (including the native v1.6.2 invite protocol)
+- [PCS_DESIGN.md](PCS_DESIGN.md) - pairwise PCS specification (Mode 1/2/3)
+- [TRIPLE_RATCHET_DESIGN.md](TRIPLE_RATCHET_DESIGN.md) - post-quantum ratchet specification
+- [RATCHET_MODES.md](RATCHET_MODES.md) - layered Mode 1 / 2 / 3 explainer
+- [wire/GROUPTR_WIRE_PROTOCOL.md](wire/GROUPTR_WIRE_PROTOCOL.md) - wire-level message catalog (including the native v1.6.2 invite protocol)
 
 > **v1.6.2 amendment.** The legacy private-group invitation carrier
 > (`org.briarproject.briar.privategroup.invitation`) is removed from the
@@ -34,19 +34,19 @@
 > Local identities generate an ML-DSA-65 keypair at account creation;
 > existing accounts lazy-backfill on first sign-in after upgrade. The
 > Ed25519 portion of the hybrid identity is the same key bound to the
-> AuthorId — there is no Author-rotation. The verifier looks up the
+> AuthorId - there is no Author-rotation. The verifier looks up the
 > peer's ML-DSA-65 pubkey from the Contact row and assembles a
 > `HybridSignaturePublicKey` for `crypto.verifySignature`. For legacy
 > contacts paired before v1.6 (no ML-DSA pubkey persisted), the
 > verifier falls back to extracting the Ed25519 prefix of a hybrid
-> signature — same security as pre-upgrade, no regression. The UI tier
+> signature - same security as pre-upgrade, no regression. The UI tier
 > at Chat Settings shows three states: full PQ, post-quantum encryption
 > + legacy authentication, classical. Database schema bumps v62 → v63
 > with nullable ML-DSA columns on `localAuthors` and `contacts`.
 >
 > Audit findings closed in v1.6 (caught before tag): GROUP_POST hybrid
 > verification gap (validator only verified the Ed25519 prefix; manager
-> didn't re-verify — fixed by carrying `recordSig` in
+> didn't re-verify - fixed by carrying `recordSig` in
 > `GroupPostReceivedEvent` and re-verifying in `cachePost`);
 > GROUP_MEMBER_LEFT same fix at manager layer; TOCTOU race in PQ
 > cross-direction mix closed via atomic transaction in `PcsStateManager`.
@@ -65,7 +65,7 @@
 3. Why not MLS (yet)
 4. Architecture
 5. Wire Protocol
-6. State Machine — membership
+6. State Machine - membership
 7. Send / Receive Flows
 8. Member Add / Remove / Leave / Dissolve
 9. Security Properties
@@ -92,7 +92,7 @@ Bring group chat to the same security baseline as 1:1 chat:
 
 ### Approach
 
-Replace the existing Sender Keys architecture with **Pairwise Triple Ratchet**: for each group post, the sender encrypts the same plaintext N times — once per other member — through their existing 1:1 Triple Ratchet session with that member, then ships N records over their 1:1 contact channels with a `groupId` tag so receivers can re-assemble the group view.
+Replace the existing Sender Keys architecture with **Pairwise Triple Ratchet**: for each group post, the sender encrypts the same plaintext N times - once per other member - through their existing 1:1 Triple Ratchet session with that member, then ships N records over their 1:1 contact channels with a `groupId` tag so receivers can re-assemble the group view.
 
 Reuses the audited Mode-3 ratchet (`PcsRatchetImpl` + `PqRatchet`) from 1:1 chat verbatim. No new audited crypto.
 
@@ -126,7 +126,7 @@ The current `SenderKeyManagerImpl` + `EpochRotationManagerImpl` design provides:
 
 1. **No PCS within an epoch.** If a member's device is compromised, the attacker learns their current chain key and can decrypt every group message that member sends until the next epoch rotation. There is no per-message DH refresh.
 
-2. **Removal is cooperative, not cryptographic.** When the creator broadcasts a "remove member X" record, every remaining member is expected to start a new epoch and stop accepting X's messages. But the wire ciphertexts X already received remain decryptable by X. And if X is willing to forge — or if X colluded with another member who didn't rotate — X keeps a key derivable view.
+2. **Removal is cooperative, not cryptographic.** When the creator broadcasts a "remove member X" record, every remaining member is expected to start a new epoch and stop accepting X's messages. But the wire ciphertexts X already received remain decryptable by X. And if X is willing to forge - or if X colluded with another member who didn't rotate - X keeps a key derivable view.
 
 3. **PQ is epoch-granular, not per-message.** The B.3 hybrid-PQ handshake runs only at epoch rotation. Within an epoch, posts are only protected by the symmetric ratchet and the underlying ML-KEM-768 epoch seed. A future store-and-decrypt attacker who breaks symmetric crypto in 30 years gets every message inside one epoch.
 
@@ -138,7 +138,7 @@ Per-message FS + PCS + hybrid PQ + cryptographic removal enforcement, identical 
 
 ## 3. Why not MLS (yet)
 
-MLS (RFC 9420) is the obvious "correct" answer for groups — tree-based ratchet, O(log N) operations, cryptographically enforced membership, hybrid-PQ extension in IETF draft. We are NOT proposing MLS for this release because:
+MLS (RFC 9420) is the obvious "correct" answer for groups - tree-based ratchet, O(log N) operations, cryptographically enforced membership, hybrid-PQ extension in IETF draft. We are NOT proposing MLS for this release because:
 
 1. **No production-quality MLS implementation exists for our stack.** OpenMLS is Rust; mlspp is C++; jmls (Kotlin) is alpha. Each adds a foreign-language dependency plus its own audit obligation. None has shipped hybrid PQ yet.
 
@@ -148,7 +148,7 @@ MLS (RFC 9420) is the obvious "correct" answer for groups — tree-based ratchet
 
 4. **Group sizes are small.** O(N) per send is fine when N ≤ 100. The asymptotic benefit of MLS only shows past ~200 members, which we do not target.
 
-We MAY migrate to MLS in a future release once hybrid-PQ MLS is standardised and a JVM-grade implementation exists. (The original "≥ v2.0, 12+ months out" estimate has been overtaken by events — v2.0.2 has shipped and still runs the pairwise design; MLS adoption remains gated on a standardised hybrid-PQ MLS plus an audited JVM implementation, neither of which exists yet.) The pairwise design proposed here lives behind a wire-versioned record so the swap is cleanly possible.
+We MAY migrate to MLS in a future release once hybrid-PQ MLS is standardised and a JVM-grade implementation exists. (The original "≥ v2.0, 12+ months out" estimate has been overtaken by events - v2.0.2 has shipped and still runs the pairwise design; MLS adoption remains gated on a standardised hybrid-PQ MLS plus an audited JVM implementation, neither of which exists yet.) The pairwise design proposed here lives behind a wire-versioned record so the swap is cleanly possible.
 
 ---
 
@@ -180,7 +180,7 @@ The descriptor and groupId derivation are unchanged. The wire format above the A
 
 ### 4.4 Member representation
 
-Each member is identified by their Ed25519 signing public key (32 bytes). The local store maps `(groupId, pubKey) → contactId` so the fan-out send path can find each recipient's 1:1 channel. There is no Briar `authorId` (hash) in the wire format — only raw pubkeys — to remove an entire class of cross-platform encoding mismatches.
+Each member is identified by their Ed25519 signing public key (32 bytes). The local store maps `(groupId, pubKey) → contactId` so the fan-out send path can find each recipient's 1:1 channel. There is no Briar `authorId` (hash) in the wire format - only raw pubkeys - to remove an entire class of cross-platform encoding mismatches.
 
 ---
 
@@ -197,8 +197,8 @@ All records ride the existing private-message 1:1 channel (`org.briarproject.bri
 | 34 | `GROUP_MEMBER_REMOVED` | Signed by group creator |
 | 35 | `GROUP_MEMBER_LEFT` | Signed by the leaver |
 | 36 | `GROUP_DISSOLVED` | Signed by group creator |
-| 37 | `GROUP_EPOCH_COMMIT` | Signed by creator — announces the epoch a removal commits to (see §8.3) |
-| 38 | `GROUP_MEMBER_ROLE_CHANGED` | Signed by creator — promotes a member to admin or demotes back to member (multi-admin, see §8.5) |
+| 37 | `GROUP_EPOCH_COMMIT` | Signed by creator - announces the epoch a removal commits to (see §8.3) |
+| 38 | `GROUP_MEMBER_ROLE_CHANGED` | Signed by creator - promotes a member to admin or demotes back to member (multi-admin, see §8.5) |
 
 Numbers reserve a clear band (32–63) for group-over-private records. No conflicts with current Briar group BSP types (0–3).
 
@@ -206,30 +206,30 @@ Numbers reserve a clear band (32–63) for group-over-private records. No confli
 
 ```
 [
-  32,                  // int — msgType
+  32,                  // int - msgType
   groupId,             // raw 32B
-  epoch,               // int — current group epoch (see §8.3)
-  senderPubKey,        // raw 32B — Ed25519 signing pubkey of sender
-  senderName,          // string — sender's display name for this post,
+  epoch,               // int - current group epoch (see §8.3)
+  senderPubKey,        // raw 32B - Ed25519 signing pubkey of sender
+  senderName,          // string - sender's display name for this post,
                        //          substituted with stealth alias if set
-                       //          (see §8 — stealth name lives in the wire
+                       //          (see §8 - stealth name lives in the wire
                        //          so each post can carry a different name)
-  body,                // raw — payload bytes; the 1:1 stream-level
+  body,                // raw - payload bytes; the 1:1 stream-level
                        //       Triple Ratchet provides the actual ratchet
                        //       FS / PCS / hybrid-PQ. The body is plaintext
                        //       after stream-decrypt.
-  recordSig,           // raw 64B — Ed25519 sig over [groupId ‖ epoch(4 BE) ‖
+  recordSig,           // raw 64B - Ed25519 sig over [groupId ‖ epoch(4 BE) ‖
                        //                            senderPubKey ‖
                        //                            blake2b(senderName) ‖
                        //                            blake2b(body)]
                        //         under label "org.briarproject.zerion/GROUP_POST"
-  autoDeleteTimerMs    // int — OPTIONAL, omit for permanent messages
+  autoDeleteTimerMs    // int - OPTIONAL, omit for permanent messages
 ]
 ```
 
 Body size: **7 or 8 BDF elements** (8 when `autoDeleteTimerMs` is appended).
 
-The `body` is opaque to the group layer — the 1:1 stream-level Triple Ratchet (Mode 3: X25519 + ML-KEM-768 + symmetric chain) handles per-message FS + PCS + hybrid PQ for the bytes in transit. After the 1:1 decrypt, the `body` is the upper-layer payload (UTF-8 text in the current UI).
+The `body` is opaque to the group layer - the 1:1 stream-level Triple Ratchet (Mode 3: X25519 + ML-KEM-768 + symmetric chain) handles per-message FS + PCS + hybrid PQ for the bytes in transit. After the 1:1 decrypt, the `body` is the upper-layer payload (UTF-8 text in the current UI).
 
 The `recordSig` defends against the only attack the pairwise 1:1 ratchet does not cover: a malicious contact tampering with a forwarded record before re-broadcasting. It is signed AFTER 1:1 decrypt at the group layer, so the signature covers the body-and-context.
 
@@ -270,19 +270,19 @@ Sent by the creator atomically with `GROUP_MEMBER_REMOVED` (and bundled in the s
 ```
 [
   37, groupId, fromEpoch, toEpoch,
-  pqSeed,        // raw 32B — fresh randomness, ML-KEM-768-derived per-pair
+  pqSeed,        // raw 32B - fresh randomness, ML-KEM-768-derived per-pair
                  //          for each recipient via the existing PqRatchet
   timestamp, sig
 ]
 ```
 
-The `pqSeed` field is itself encrypted per-recipient through that pair's 1:1 Triple Ratchet — same construction as `GROUP_POST` ciphertext. This makes the new epoch's PQ rekey cryptographically inaccessible to the removed member.
+The `pqSeed` field is itself encrypted per-recipient through that pair's 1:1 Triple Ratchet - same construction as `GROUP_POST` ciphertext. This makes the new epoch's PQ rekey cryptographically inaccessible to the removed member.
 
 Signed under `"org.briarproject.zerion/GROUP_EPOCH_COMMIT"` over `groupId ‖ fromEpoch(4) ‖ toEpoch(4) ‖ blake2b(pqSeed) ‖ timestamp(8) ‖ 0x05`.
 
 ---
 
-## 6. State Machine — membership
+## 6. State Machine - membership
 
 ### 6.1 Per-group local state
 
@@ -372,7 +372,7 @@ onIncomingPrivateMessage(contactId, body):
     if body has element [6]: scheduleAutoDelete(plaintext.id, ttlMs)
 ```
 
-The decrypt path REUSES `PcsStreamDecrypterImpl` exactly as 1:1 messages do — no new code in the crypto core.
+The decrypt path REUSES `PcsStreamDecrypterImpl` exactly as 1:1 messages do - no new code in the crypto core.
 
 ---
 
@@ -380,7 +380,7 @@ The decrypt path REUSES `PcsStreamDecrypterImpl` exactly as 1:1 messages do — 
 
 ### 8.1 Add (creator unilateral, no invitee consent)
 
-iOS v2 modelled adds as unilateral creator action. This proposal keeps that model — the receiver of `GROUP_MEMBER_ADDED` accepts the membership change immediately. Anyone who does not want to be added can `LEAVE` immediately on first seeing themselves in the member list.
+iOS v2 modelled adds as unilateral creator action. This proposal keeps that model - the receiver of `GROUP_MEMBER_ADDED` accepts the membership change immediately. Anyone who does not want to be added can `LEAVE` immediately on first seeing themselves in the member list.
 
 Rationale: an invitation-with-consent flow doubles every membership round trip and we already have the 1:1 contact channel as the gate (you can only be added to a group by someone you have already accepted as a contact).
 
@@ -388,7 +388,7 @@ Rationale: an invitation-with-consent flow doubles every membership round trip a
 
 The leaver signs `GROUP_MEMBER_LEFT` and broadcasts it via every other member's 1:1 channel. They locally mark the group as `dissolved=true` after sending. They stop sending and accepting posts for that groupId.
 
-### 8.3 Remove (creator-initiated) — the load-bearing case
+### 8.3 Remove (creator-initiated) - the load-bearing case
 
 This is where Sender Keys is weak and Pairwise Triple Ratchet earns its keep. The creator:
 
@@ -396,14 +396,14 @@ This is where Sender Keys is weak and Pairwise Triple Ratchet earns its keep. Th
 2. Bumps `epoch` from `fromEpoch` to `toEpoch = fromEpoch + 1`.
 3. Builds `GROUP_MEMBER_REMOVED` (msgType=34) signed over the epoch transition.
 4. Builds `GROUP_EPOCH_COMMIT` (msgType=37) carrying a fresh `pqSeed`.
-5. Forces a DH ratchet step in EVERY remaining 1:1 pair (`PcsRatchetImpl.forceDhRatchetStep()`). This is the existing PCS-recovery primitive from B.3 — we just trigger it explicitly here.
+5. Forces a DH ratchet step in EVERY remaining 1:1 pair (`PcsRatchetImpl.forceDhRatchetStep()`). This is the existing PCS-recovery primitive from B.3 - we just trigger it explicitly here.
 6. Sends both records to every remaining member via their 1:1 channels. Does NOT send to the removed member.
 
 The removed peer:
 - Receives no `REMOVED` record on their channel.
-- Continues their own 1:1 Triple Ratchet sessions with each member (still valid for direct 1:1 chat — they were not blocked, only un-grouped).
+- Continues their own 1:1 Triple Ratchet sessions with each member (still valid for direct 1:1 chat - they were not blocked, only un-grouped).
 - Sees its own POSTs to the group rejected by every recipient via §6.3 invariant 6 (`epoch < toEpoch` is buffered, `senderPubKey` not in `toEpoch` member list).
-- Cannot decrypt any subsequent group POST because the next ratchet step on each pair was triggered AFTER the removal commit — the new sending chain key is derived from a fresh DH + PQ seed the removed peer never saw.
+- Cannot decrypt any subsequent group POST because the next ratchet step on each pair was triggered AFTER the removal commit - the new sending chain key is derived from a fresh DH + PQ seed the removed peer never saw.
 
 **This is the cryptographic enforcement Sender Keys lacks.** Forward-secret AND post-compromise-secure.
 
@@ -431,8 +431,8 @@ Creator signs `GROUP_DISSOLVED`. All members on receipt mark group dissolved, at
 
 ### 9.1 Out-of-scope threats
 
-- **Compromised member colluding with creator** — same as 1:1 chat: if Bob's device is fully compromised, Bob's group view is owned. Mitigated only by Bob's PCS recovery once the compromise ends.
-- **Server-side traffic correlation** — Tor onion service guarantees apply; no group-specific tagging on the wire (one of the wins of moving off BSP for group POSTs).
+- **Compromised member colluding with creator** - same as 1:1 chat: if Bob's device is fully compromised, Bob's group view is owned. Mitigated only by Bob's PCS recovery once the compromise ends.
+- **Server-side traffic correlation** - Tor onion service guarantees apply; no group-specific tagging on the wire (one of the wins of moving off BSP for group POSTs).
 
 ---
 
@@ -460,7 +460,7 @@ Each pairwise record traverses one Tor circuit (same as today's 1:1 messages). S
 
 ### 10.3 Battery and CPU
 
-Under the Mode 3-Full default (per-message ML-KEM on the underlying 1:1 pair), each group post costs N − 1 ML-KEM-768 encapsulations on the sender side — one per recipient pair, on every post — since the underlying pairwise ratchet encapsulates per frame. ML-KEM-768 encap is ~50 µs on modern ARM, so even a 100-member group is ~5 ms of encap per post — negligible relative to Tor circuit latency.
+Under the Mode 3-Full default (per-message ML-KEM on the underlying 1:1 pair), each group post costs N − 1 ML-KEM-768 encapsulations on the sender side - one per recipient pair, on every post - since the underlying pairwise ratchet encapsulates per frame. ML-KEM-768 encap is ~50 µs on modern ARM, so even a 100-member group is ~5 ms of encap per post - negligible relative to Tor circuit latency.
 
 Receive side: 1 ML-KEM decap per inbound frame per pair. Same order.
 
@@ -509,34 +509,34 @@ Existing Briar groups currently in flight on the network MUST keep working durin
 
 ## 12. Implementation Plan
 
-### Phase 1 — Wire format (1 week)
+### Phase 1 - Wire format (1 week)
 
 - Reserve msgType 32–37 in `briar-core/.../messaging/MessageTypes.java`
 - Extend `PrivateMessageValidator` to validate the new types
 - Persist metadata under new `KEY_*` constants
 - New event classes
-- No state changes yet — receive-only acceptance
+- No state changes yet - receive-only acceptance
 
-### Phase 2 — Receive path (1 week)
+### Phase 2 - Receive path (1 week)
 
 - `PrivateGroupManagerImpl` dispatches incoming msgType 32–37
 - State changes apply (member-list updates, epoch bump, dissolved flag)
 - Decrypt path connects to existing `PcsStreamDecrypterImpl` via the new `GroupRatchetGateway`
-- No send-side changes yet — Android can receive iOS posts at this point
+- No send-side changes yet - Android can receive iOS posts at this point
 
-### Phase 3 — Send path (1 week)
+### Phase 3 - Send path (1 week)
 
 - `GroupRatchetGateway` fan-out implementation
 - `sendGroupPost` integrated into the conversation send UI
 - Member add / remove / leave / dissolve user actions wired
 
-### Phase 4 — Sender-key migration cutover (1 week)
+### Phase 4 - Sender-key migration cutover (1 week)
 
 - Group descriptor gains the `cryptoMode` flag
 - Existing groups stay on Sender Keys; new groups default to Pairwise
 - Optional manual "re-create with new crypto" tool
 
-### Phase 5 — Audit + soak (2-4 weeks)
+### Phase 5 - Audit + soak (2-4 weeks)
 
 - External audit of the new wire layer (the crypto is already audited)
 - Cross-platform interop testing with iOS
@@ -586,21 +586,21 @@ NOT in audit scope (already audited):
 
 2. **Member-list authority during epoch gap.** If a member is offline when REMOVED is broadcast and comes back online after EPOCH_COMMIT has fully propagated, they need a "current state" refresh. Proposal: a periodic `GROUP_MEMBER_LIST_SNAPSHOT` record signed by the creator, sent every 24 h or on first contact after offline period.
 
-3. **Stealth name vs. signed sender pubkey.** Stealth names need to survive the per-post signature. Proposal: stealth name lives outside the signed input — only `senderPubKey` is signed, the displayed name is a hint the receiver can choose to honour or override locally.
+3. **Stealth name vs. signed sender pubkey.** Stealth names need to survive the per-post signature. Proposal: stealth name lives outside the signed input - only `senderPubKey` is signed, the displayed name is a hint the receiver can choose to honour or override locally.
 
 4. **MLS migration trigger.** What's the threshold to move? Proposal: when ≥ 30 % of active groups exceed 100 members, OR hybrid-PQ MLS stabilises with an audited JVM implementation.
 
-5. **TTL semantics under fan-out.** Today's iOS-style TTL is per-message. Should it be per-recipient (each pair can have its own auto-delete) or strictly uniform? Proposal: uniform — the sender picks one TTL, every recipient honours the same value. Per-recipient was never iOS's model anyway.
+5. **TTL semantics under fan-out.** Today's iOS-style TTL is per-message. Should it be per-recipient (each pair can have its own auto-delete) or strictly uniform? Proposal: uniform - the sender picks one TTL, every recipient honours the same value. Per-recipient was never iOS's model anyway.
 
 ---
 
 ## Repository pointers
 
-- `bramble-core/src/main/java/org/briarproject/bramble/crypto/pcs/` — Triple Ratchet implementation, reuse as-is
-- `bramble-core/src/main/java/org/briarproject/bramble/crypto/PqRatchet*` — ML-KEM-768 ratchet, reuse as-is
-- `briar-core/src/main/java/org/briarproject/briar/messaging/MessageTypes.java` — reserve 32–37 here
-- `briar-core/src/main/java/org/briarproject/briar/messaging/PrivateMessageValidator.java` — wire validators land here
-- `briar-core/src/main/java/org/briarproject/briar/privategroup/PrivateGroupManagerImpl.java` — dispatch + state machine
-- `zerion-android/src/main/java/com/professor/zerion/android/privategroup/` — UI changes (admin buttons, member list)
+- `bramble-core/src/main/java/org/briarproject/bramble/crypto/pcs/` - Triple Ratchet implementation, reuse as-is
+- `bramble-core/src/main/java/org/briarproject/bramble/crypto/PqRatchet*` - ML-KEM-768 ratchet, reuse as-is
+- `briar-core/src/main/java/org/briarproject/briar/messaging/MessageTypes.java` - reserve 32–37 here
+- `briar-core/src/main/java/org/briarproject/briar/messaging/PrivateMessageValidator.java` - wire validators land here
+- `briar-core/src/main/java/org/briarproject/briar/privategroup/PrivateGroupManagerImpl.java` - dispatch + state machine
+- `zerion-android/src/main/java/com/professor/zerion/android/privategroup/` - UI changes (admin buttons, member list)
 
-iOS source: `c:\Users\Iron\Desktop\Zerion App\Zerion Ios\Packages\ZerionMessaging\Sources\ZerionMessaging\Group\` — equivalent layer once both sides agree on this doc.
+iOS source: `c:\Users\Iron\Desktop\Zerion App\Zerion Ios\Packages\ZerionMessaging\Sources\ZerionMessaging\Group\` - equivalent layer once both sides agree on this doc.

@@ -2,7 +2,7 @@
 
 **Version:** 1.2
 **Date:** 2026-05-12
-**Status:** ACTIVE — Phase 5 (v1.6) fixes the latent bugs that prevented
+**Status:** ACTIVE - Phase 5 (v1.6) fixes the latent bugs that prevented
 Phase 4d from completing PQ epochs end-to-end; ML-KEM-768 rotation now
 actually runs on the wire, both directions per epoch
 **Author:** Zerion Project
@@ -15,21 +15,21 @@ actually runs on the wire, both directions per epoch
 > mixing, self-heal, and a pubkey-comparison tiebreak on simultaneous
 > epoch starts. See [PCS_DESIGN.md §v1.6 amendment](PCS_DESIGN.md) for
 > the full diff. Identity signing in v1.6 also goes hybrid Ed25519 +
-> ML-DSA-65 on every group record — see
+> ML-DSA-65 on every group record - see
 > [GROUP_TRIPLE_RATCHET_PQ_DESIGN.md](GROUP_TRIPLE_RATCHET_PQ_DESIGN.md).
 
 ---
 
-> **v1.7 amendment — Mode 3-Full is now the default (READ THIS FIRST).**
+> **v1.7 amendment - Mode 3-Full is now the default (READ THIS FIRST).**
 > This document describes per-epoch Mode 3 (one ML-KEM-768 rotation every
 > 25 messages or 24 hours). As of v1.7 (May 2026), that per-epoch path is
-> **no longer the default** — it is a **fallback**. The default on new 1:1
+> **no longer the default** - it is a **fallback**. The default on new 1:1
 > contacts is **Mode 3-Full**: a fresh ML-KEM-768 encapsulation on
 > **every outbound frame**, with the per-frame shared secret mixed into
 > the body AEAD key. Per-epoch Mode 3 is retained only for legacy/
 > mode-disabled paths and the cross-platform interop window. Wherever
 > this document says Mode 3 is "ACTIVE" or describes the 25-message /
-> 24-hour epoch as the live behaviour, read that as the fallback path —
+> 24-hour epoch as the live behaviour, read that as the fallback path - 
 > the live default is per-message ML-KEM-768. The authoritative
 > description of Mode 3-Full lives in
 > [PCS_DESIGN.md §v1.7 amendment](PCS_DESIGN.md) and

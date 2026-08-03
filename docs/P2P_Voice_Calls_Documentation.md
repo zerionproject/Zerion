@@ -443,22 +443,22 @@ For journalists, activists, whistleblowers, and privacy-conscious individuals, Z
 
 ## Implementation Status (v2.0.6)
 
-### Voice calls — shipped
+### Voice calls - shipped
 
 - P2P voice calling over Tor v3 hidden services
 - End-to-end encryption with AES-256-GCM (per-frame authenticated, counter-based nonces)
 - Per-call symmetric key (256-bit, fresh per call), delivered through the dedicated `VOICE_SIGNAL` message type
-- Signalling key delivery rides Mode 3-Full, the per-message ML-KEM-768 + X25519 hybrid ratchet that is the default since v1.7 — call keys travel inside a post-quantum-encrypted envelope, with a fresh ML-KEM-768 encapsulation on every frame
+- Signalling key delivery rides Mode 3-Full, the per-message ML-KEM-768 + X25519 hybrid ratchet that is the default since v1.7 - call keys travel inside a post-quantum-encrypted envelope, with a fresh ML-KEM-768 encapsulation on every frame
 - Opus codec at 24 kbps (VoIP mode with FEC/PLC), CRC32 integrity check, jitter buffer
 - Heartbeat for Tor circuit keepalive
 - Stream sync (SYNC / READY markers)
 - Audio routing to earpiece (`USAGE_VOICE_COMMUNICATION`), speakerphone toggle with optional gain
 - Mute, in-call UI bubbles, network-quality readouts (latency, packet loss, codec, bitrate)
-- `VOICE_SIGNAL` channel — `CALL_OFFER` / `CALL_ANSWER` / `CALL_REJECT` / `CALL_END` / `ICE_CANDIDATE` / `CALL_BUSY` — fully separated from text messaging, never rendered in conversation UI
+- `VOICE_SIGNAL` channel - `CALL_OFFER` / `CALL_ANSWER` / `CALL_REJECT` / `CALL_END` / `ICE_CANDIDATE` / `CALL_BUSY` - fully separated from text messaging, never rendered in conversation UI
 - `FLAG_SECURE` on active call activity (screenshot/recording prevention)
 - `VoiceSignalReceivedEvent` routing for incoming-call handling
 
-### Video calls — shipped
+### Video calls - shipped
 
 - H.264 Main Profile Level 3.1, 640x480 @ 24 fps / 600 kbps (primary mode)
 - Adaptive quality controller steps frame rate and bitrate down under load: 15 fps / 250 kbps → 10 fps / 150 kbps → 5 fps / 80 kbps → video off, recovering when conditions improve

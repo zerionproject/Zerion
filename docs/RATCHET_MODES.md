@@ -1,8 +1,8 @@
-# Zerion ratchet modes 1 / 2 / 3 / 3-Full — what each layer does
+# Zerion ratchet modes 1 / 2 / 3 / 3-Full - what each layer does
 
 **Version:** 1.2
 **Date:** 2026-05-20
-**Status:** ACTIVE — describes the v1.7 shipped 1:1 message ratchet
+**Status:** ACTIVE - describes the v1.7 shipped 1:1 message ratchet
 **Author:** Zerion Project
 
 > **v1.7 amendment.** Mode 3-Full ships as the default on new contacts.
@@ -63,7 +63,7 @@ frame instead of every 25 frames.
 
 ## What each layer does on every message
 
-### Mode 1 — symmetric chain-key ratchet
+### Mode 1 - symmetric chain-key ratchet
 
 Every outbound message takes the current chain key, derives a fresh per-message AEAD key from it, then advances the chain key one step:
 
@@ -76,7 +76,7 @@ Once the message is sent, `chain_key_i` is wiped from memory. **Forward secrecy 
 
 Mode 1 is Briar's original ratchet. It provides forward secrecy and replay resistance but **no post-compromise security**: if an attacker captures the live `chain_key_i`, they can decrypt all future messages on that chain until something else (Mode 2 or 3) rotates the chain.
 
-### Mode 2 — X25519 Diffie-Hellman ratchet
+### Mode 2 - X25519 Diffie-Hellman ratchet
 
 On top of Mode 1, every "chain start" (a new sending chain or a new receiving chain triggered by the peer's DH-step header) mixes a fresh X25519 DH agreement into the root key:
 
@@ -90,11 +90,11 @@ new_chain_key =  KDF(new_root_key, CHAIN_KEY_INPUT)
 
 The new DH public key rides in the next message's header. The peer sees it, runs the matching DH, and advances their root key the same way.
 
-**Post-compromise security:** if an attacker captured my state at time T, the next DH step (on the next chain start, typically within a few messages) injects fresh randomness the attacker does not know. After one round trip, the attacker is locked out again — even though they had my keys at T.
+**Post-compromise security:** if an attacker captured my state at time T, the next DH step (on the next chain start, typically within a few messages) injects fresh randomness the attacker does not know. After one round trip, the attacker is locked out again - even though they had my keys at T.
 
 Mode 2 = Signal's classic Double Ratchet (without the X3DH replacement). Forward secrecy + PCS. No quantum resistance.
 
-### Mode 3 — ML-KEM-768 post-quantum ratchet
+### Mode 3 - ML-KEM-768 post-quantum ratchet
 
 On top of Mode 2, every PQ epoch (default: every 25 sent messages OR every 24 hours, whichever fires first) mixes a fresh ML-KEM-768 encapsulation into the root key:
 
@@ -113,7 +113,7 @@ The encapsulated PQ shared secret is large (1088 bytes for ML-KEM-768 ciphertext
 
 Mode 3 = Mode 2 + per-epoch PQ-PCS. Retained as a fallback path.
 
-### Mode 3-Full — per-message ML-KEM-768 hybrid (current default)
+### Mode 3-Full - per-message ML-KEM-768 hybrid (current default)
 
 On top of Mode 2, **every single frame** carries a fresh ML-KEM-768
 encapsulation against the peer's currently advertised ML-KEM public
@@ -139,7 +139,7 @@ decapsulate cleanly. The frame header carries a 16-byte `kpId`
 **Per-message hybrid quantum-resistant PCS:** every body key includes
 fresh ML-KEM entropy. A quantum adversary who breaks past X25519 DH
 agreements still cannot derive any future body key without
-also breaking ML-KEM-768 — on a per-frame basis, not per-epoch.
+also breaking ML-KEM-768 - on a per-frame basis, not per-epoch.
 
 Mode 3-Full is the active default on new Zerion 1:1 contacts since v1.7.
 
@@ -153,7 +153,7 @@ Mode 3-Full is the active default on new Zerion 1:1 contacts since v1.7.
 | Mode 2 only | Removing the DH ratchet drops continuous classical PCS. Mode 3-Full's per-message PQ rotation still rotates the body key every frame, so post-compromise recovery happens every frame against quantum adversaries; classical PCS recovery would be lost. |
 | Mode 3 only | No-op when Mode 3-Full is active. Mode 3 is retained as a fallback for legacy code paths. |
 | Mode 3-Full only | Drops per-message hybrid PQ. Falls back to Mode 3 per-epoch PQ. Acceptable as a feature gate; not the v1.7 default. |
-| Modes 1+2 | See "Mode 1 only" — impossible. |
+| Modes 1+2 | See "Mode 1 only" - impossible. |
 | Modes 2+3+3-Full | Drops both classical PCS and hybrid PQ. Reverts to Briar's original Mode 1 (forward-secret per-message symmetric chain, no recovery from key compromise). |
 
 **Practical conclusion:** all layers are kept. Mode 3-Full is the active
@@ -164,7 +164,7 @@ path; Mode 1 + Mode 2 run as the foundation.
 
 ## What ships today
 
-### Android — Mode 3-Full active from message zero (v1.7)
+### Android - Mode 3-Full active from message zero (v1.7)
 
 New 1:1 contacts initialize directly into Mode 3-Full via
 `PcsSessionState.createInitialMode3Full` in `ContactManagerImpl`. Every
@@ -175,7 +175,7 @@ stream derives its own initial chain key from `HKDF(rootKey,
 PCS_STREAM_CHAIN, streamNumber_8B)` and advances it locally; the
 chain key is never persisted across streams.
 
-### iOS — parity tracked separately
+### iOS - parity tracked separately
 
 iOS parity for the Mode 3-Full per-message path is tracked separately
 against the wire spec in
@@ -187,7 +187,7 @@ fallback. On any cross-platform channel where one side has not enabled
 Mode 3-Full, that direction's ongoing transport ratchet runs at the
 fallback level rather than per-message PQ; the direction in which both
 sides have Mode 3-Full enabled runs per-message PQ. The initial contact
-handshake (B.4) and identity layer (B.3) are hybrid PQ on both sides —
+handshake (B.4) and identity layer (B.3) are hybrid PQ on both sides - 
 only the ongoing transport ratchet's PQ granularity depends on each
 side's Mode 3-Full state.
 
@@ -225,6 +225,6 @@ all group hops converge on Mode 3-Full across both platforms.
 
 ## References (design docs)
 
-- [`TRIPLE_RATCHET_DESIGN.md`](TRIPLE_RATCHET_DESIGN.md) — full key-schedule specification for the three layers
-- [`PCS_DESIGN.md`](PCS_DESIGN.md) — original pairwise PCS design
-- [`SECURITY_OVERVIEW.md`](SECURITY_OVERVIEW.md) — high-level summary
+- [`TRIPLE_RATCHET_DESIGN.md`](TRIPLE_RATCHET_DESIGN.md) - full key-schedule specification for the three layers
+- [`PCS_DESIGN.md`](PCS_DESIGN.md) - original pairwise PCS design
+- [`SECURITY_OVERVIEW.md`](SECURITY_OVERVIEW.md) - high-level summary

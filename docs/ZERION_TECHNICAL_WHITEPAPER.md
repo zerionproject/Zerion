@@ -4,7 +4,7 @@
 
 Zerion is an end-to-end encrypted, peer-to-peer secure messaging application for Android that provides anonymity through Tor integration and includes a built-in encrypted vault for secure file storage. Built on the Bramble protocol (originally developed by the Briar Project), Zerion independently expanded it with voice calls over Tor, encrypted vault storage, and post-quantum cryptography. The application emphasizes privacy, security, and metadata protection.
 
-**Post-Quantum Security**: Zerion implements **full hybrid post-quantum cryptography on every message** using NIST-standardized algorithms (ML-KEM-768 + X25519 for key exchange and the per-message transport ratchet, ML-DSA-65 + Ed25519 for signatures), providing defense-in-depth protection against both current and future quantum computing threats — including "harvest now, decrypt later" attacks. Since v1.7, every transport frame in both directions carries a fresh ML-KEM-768 encapsulation; the encapsulated shared secret is mixed into the per-frame body AEAD key via HKDF, producing a hybrid key that is secure as long as either X25519 or ML-KEM-768 is secure.
+**Post-Quantum Security**: Zerion implements **full hybrid post-quantum cryptography on every message** using NIST-standardized algorithms (ML-KEM-768 + X25519 for key exchange and the per-message transport ratchet, ML-DSA-65 + Ed25519 for signatures), providing defense-in-depth protection against both current and future quantum computing threats - including "harvest now, decrypt later" attacks. Since v1.7, every transport frame in both directions carries a fresh ML-KEM-768 encapsulation; the encapsulated shared secret is mixed into the per-frame body AEAD key via HKDF, producing a hybrid key that is secure as long as either X25519 or ML-KEM-768 is secure.
 
 **Current release**: v2.0.6 (versionCode 20006, July 2026). For an at-a-glance summary of everything shipped since v2.1 of this whitepaper (December 2025), see [§0 Updates since v2.1](#0-updates-since-v21).
 
@@ -14,7 +14,7 @@ Zerion is an end-to-end encrypted, peer-to-peer secure messaging application for
 
 0. [Updates since v2.1](#0-updates-since-v21)
 1. [Onboarding & Account Setup](#1-onboarding--account-setup)
-2. [Messaging Architecture](#2-messaging-architecture) — includes §2.5 Channels (publisher → subscriber broadcast)
+2. [Messaging Architecture](#2-messaging-architecture) - includes §2.5 Channels (publisher → subscriber broadcast)
 3. [Tor Integration](#3-tor-integration)
 4. [End-to-End Encryption](#4-end-to-end-encryption)
 5. [Post-Compromise Security](#5-post-compromise-security)
@@ -23,7 +23,7 @@ Zerion is an end-to-end encrypted, peer-to-peer secure messaging application for
 8. [P2P Voice Calling](#8-p2p-voice-calling)
 9. [Data Storage Security](#9-data-storage-security)
 10. [Feature Highlights](#10-feature-highlights)
-11. [Security Properties](#11-security-properties) — includes §11.4 Hardened Mode
+11. [Security Properties](#11-security-properties) - includes §11.4 Hardened Mode
 12. [Technical Specifications](#12-technical-specifications)
 13. [Architecture Diagrams](#13-architecture-diagrams)
 14. [File Path Reference](#14-file-path-reference)
@@ -35,52 +35,52 @@ Zerion is an end-to-end encrypted, peer-to-peer secure messaging application for
 
 This section summarizes every protocol- or security-relevant change shipped between whitepaper v2.1 (December 16, 2025) and the current document version (July 2026, app release v2.0.6 / versionCode 20006). The rest of the document remains structurally correct; this section is the authoritative diff. Detailed designs live in the companion documents listed under each item.
 
-### v1.5 (May 1, 2026) — B.3 pairing & B.4 onion rotation
+### v1.5 (May 1, 2026) - B.3 pairing & B.4 onion rotation
 
-- **B.3 — Hybrid post-quantum pairing.** The contact-add handshake now performs ML-KEM-768 alongside the existing X25519 KEM and binds the resulting hybrid shared secret to the peer's hybrid identity (Ed25519 + ML-DSA-65). See [docs/wire/B3_RECORD_PLACEMENT.md](wire/B3_RECORD_PLACEMENT.md) and [docs/wire/F2_INTRODUCTION_HYBRID_SIG.md](wire/F2_INTRODUCTION_HYBRID_SIG.md). Downgrade defense: once a contact is paired with the hybrid protocol, a re-pair attempt offering only the classical protocol is rejected.
-- **B.4 — Onion rotation.** Tor v3 onion addresses now rotate every 5–14 days (uniform-randomized per rotation) to defeat long-term linkability of an account to a single onion. The onion-management API lives in the upstream `onionwrapper` fork — see [docs/wire/B4_ONIONWRAPPER_API.md](wire/B4_ONIONWRAPPER_API.md).
+- **B.3 - Hybrid post-quantum pairing.** The contact-add handshake now performs ML-KEM-768 alongside the existing X25519 KEM and binds the resulting hybrid shared secret to the peer's hybrid identity (Ed25519 + ML-DSA-65). See [docs/wire/B3_RECORD_PLACEMENT.md](wire/B3_RECORD_PLACEMENT.md) and [docs/wire/F2_INTRODUCTION_HYBRID_SIG.md](wire/F2_INTRODUCTION_HYBRID_SIG.md). Downgrade defense: once a contact is paired with the hybrid protocol, a re-pair attempt offering only the classical protocol is rejected.
+- **B.4 - Onion rotation.** Tor v3 onion addresses now rotate every 5–14 days (uniform-randomized per rotation) to defeat long-term linkability of an account to a single onion. The onion-management API lives in the upstream `onionwrapper` fork - see [docs/wire/B4_ONIONWRAPPER_API.md](wire/B4_ONIONWRAPPER_API.md).
 
-### v1.6.0 (May 11, 2026) — Mode 3 PQ rotation completes; group records hybrid-signed
+### v1.6.0 (May 11, 2026) - Mode 3 PQ rotation completes; group records hybrid-signed
 
 - **PCS Mode 3 actually completes end-to-end.** Phase 4d (January 2026) shipped Mode 3 framing on the wire (the `0x2000` stream-header flag, the per-frame PCS header with `FLAG_PQ_ENABLED`, the chunk codec, the state machine) but three latent bugs prevented any post-quantum epoch from completing in production:
-  1. The responder's stream-decrypter had no chunk-type dispatch — peer `EK_SEED` chunks were silently absorbed in `PQ_READY` instead of transitioning into `PQ_RECEIVING_EK_VEC`.
+  1. The responder's stream-decrypter had no chunk-type dispatch - peer `EK_SEED` chunks were silently absorbed in `PQ_READY` instead of transitioning into `PQ_RECEIVING_EK_VEC`.
   2. The responder cloned its ML-KEM-768 ciphertext and immediately wiped the resulting shared secret, then tried to recover the secret at derive-time by re-encapsulating. Bouncy Castle's ML-KEM generator is randomized per call, so re-encapsulation produced a different ciphertext and the equality check failed.
   3. `StreamEncrypterFactoryImpl` and `StreamDecrypterFactoryImpl` passed `null` for their state callbacks. Every Mode 2 DH advance and every Mode 3 PQ-epoch completion was computed in memory and discarded on stream close.
 
   v1.6.0 fixes all three, plus adds cross-direction PQ mixing (one epoch now PQ-protects *both* directions atomically, not just the side that supplied the ciphertext), a self-heal path on database load that resets transient states to `PQ_READY` so a peer crash mid-epoch recovers on the next cycle, and a pubkey-comparison tiebreak for simultaneous-start races. ML-KEM-768 is now actually mixed into the root key every 25 messages or 24 hours, both directions, persisted across reconnects. See [PCS_DESIGN.md §v1.6 amendment](PCS_DESIGN.md).
 - **Hybrid identity signatures on every group record.** `GROUP_POST`, `GROUP_MEMBER_ADDED` / `REMOVED` / `LEFT`, `GROUP_DISSOLVED`, `GROUP_EPOCH_COMMIT`, `GROUP_MEMBER_ROLE_CHANGED`, `GROUP_MEMBER_LIST_SNAPSHOT` now carry an Ed25519 + ML-DSA-65 hybrid signature (3,373 bytes: 64 bytes Ed25519 + 3,309 bytes ML-DSA-65). The local identity carries a new ML-DSA-65 keypair alongside the existing Ed25519 keypair; the AuthorId (derived from the Ed25519 public key) is unchanged. See [GROUP_TRIPLE_RATCHET_PQ_DESIGN.md](GROUP_TRIPLE_RATCHET_PQ_DESIGN.md).
 - **`CONTACT_INFO` 6-slot extension.** Slot[5] carries the peer's ML-DSA-65 public key (1,952 bytes). Persisted on the `contacts` row. Lookup is cached by Ed25519-hex key with `ContactAddedEvent` / `ContactRemovedEvent` invalidation. New pairings exchange the ML-DSA half at handshake time; existing contacts paired before v1.6.0 fall back to Ed25519-prefix verification (no regression vs. v1.5) until both sides re-add.
-- **Vault — real Argon2id.** The vault password KDF was internally PBKDF2-HMAC-SHA256 in earlier releases (the class was called `Argon2`, with an acknowledged "placeholder pending future migration" comment). v1.6.0 routes the vault through the same Bouncy Castle `Argon2BytesGenerator` (`ARGON2_id` mode, 256 MB memory, 3 iterations) used by the database KDF. Existing vaults remain readable via an algorithm flag in the vault header; the export bundle format is bumped to v2. Changing the vault password migrates a legacy vault to Argon2id on the next save.
+- **Vault - real Argon2id.** The vault password KDF was internally PBKDF2-HMAC-SHA256 in earlier releases (the class was called `Argon2`, with an acknowledged "placeholder pending future migration" comment). v1.6.0 routes the vault through the same Bouncy Castle `Argon2BytesGenerator` (`ARGON2_id` mode, 256 MB memory, 3 iterations) used by the database KDF. Existing vaults remain readable via an algorithm flag in the vault header; the export bundle format is bumped to v2. Changing the vault password migrates a legacy vault to Argon2id on the next save.
 - **Database schema v62 → v63.** Three nullable columns added: two on `localAuthors` (`mlDsaPublicKey`, `mlDsaPrivateKey`) and one on `contacts` (`mlDsaPublicKey`). Lazy-backfill: the first time an existing account opens on v1.6.0, the identity manager generates an ML-DSA-65 keypair if one isn't present and persists it. No existing data is migrated or invalidated.
 - **v1.6.0 audit findings patched before tag.** Critical: GROUP_POST hybrid signature was only verified at the Ed25519-prefix level by the validator and never re-verified at the manager layer; fixed by carrying `recordSig` in `GroupPostReceivedEvent` and re-verifying in `cachePost`. High: TOCTOU race in cross-direction PQ mixing closed via single-transaction `PcsStateManager.mixPqSecretInto*Root`. Medium: GROUP_MEMBER_LEFT same pattern as GROUP_POST, now verified at manager layer; ML-KEM shared secret zeroed immediately after clone in `deriveEpochSecret`.
 
-### v1.6.1 (May 13, 2026) — Whole-app security audit + GroupTr hardening
+### v1.6.1 (May 13, 2026) - Whole-app security audit + GroupTr hardening
 
 - Whole-app security audit fixes (vault, biometric, settings, password setup, deletion paths, lock-screen exposure).
 - GroupTr security hardening: epoch monotonicity, creator-only writes on `MEMBER_ADDED` / `MEMBER_REMOVED` / `MEMBER_ROLE_CHANGED`, cleanup of pending invite-state on accept / decline.
 - `addMember` now sends to the target peer; receive auto-applies when target is self.
 
-### v1.6.2 (May 15, 2026) — Native group invites, Tor-only transport, at-rest hardening
+### v1.6.2 (May 15, 2026) - Native group invites, Tor-only transport, at-rest hardening
 
 - **Native GroupTr invite protocol.** The legacy `org.briarproject.briar.privategroup.invitation` client is removed from the shipped APK. Group invitations now use three native message types on the existing 1:1 channel between sender and recipient: `OFFER` (msgType 42), `ACCEPT` (43), `DECLINE` (44). The invite payload is a signed BDF dictionary carried inside the same Triple Ratchet envelope every other 1:1 message uses. One protocol now covers create, invite, join, role change, kick, leave, and dissolve. Wire format: [docs/wire/GROUPTR_WIRE_PROTOCOL.md](wire/GROUPTR_WIRE_PROTOCOL.md).
 - **Kick reliability.** Fixed an invitee-side epoch desync that silently dropped `MEMBER_REMOVED` records when the strict `toEpoch == localEpoch + 1` check failed because `applyMemberAdded` had short-circuited without bumping the local epoch. `applyMemberAdded` now updates the epoch unconditionally; the `MEMBER_REMOVED` check is relaxed from strict-successor to monotonic. When the local user is removed, the group is purged from the local device atomically with applying the change. Same logic on `leaveGroup` / `dissolveGroup`.
 - **Tor-only transport (final).** The last non-Tor transport code paths are removed: the Bluetooth plugin (assets, manifest entries, factory class), the Wi-Fi LAN TCP plugin (discovery code, `ACCESS_WIFI_STATE` permission, factory class), the removable-drive sync feature subtree, and the dev-reporting / crash-batching subsystem. The plugin registry has exactly one entry: Tor v3 onion. Manifest no longer requests `BLUETOOTH*` or `ACCESS_WIFI_STATE`.
-- **All `SharedPreferences` keystore-encrypted.** Every `SharedPreferences` read and write across the app is routed through `EncryptedSharedPreferences` with a master key generated and held in the Android Keystore (hardware-backed where available, non-exportable, device-bound). The only exception is a small early-init store for the launcher theme and language — values needed before the application context is available — documented in the codebase.
+- **All `SharedPreferences` keystore-encrypted.** Every `SharedPreferences` read and write across the app is routed through `EncryptedSharedPreferences` with a master key generated and held in the Android Keystore (hardware-backed where available, non-exportable, device-bound). The only exception is a small early-init store for the launcher theme and language - values needed before the application context is available - documented in the codebase.
 - **Hybrid signatures extended.** The Ed25519 + ML-DSA-65 hybrid signing path introduced in v1.6.0 for group records is now applied to the private-group and private-group invitation contexts that still carried Ed25519-only signatures, closing the last legacy signing path.
 - **Downgrade-lock token reconstruction.** v1.6.0's implementation reconstructed the downgrade-lock token from the wrong field set during a carry-forward re-pair, which would invalidate the lock on a clean re-pair. v1.6.2 reconstructs from the canonical input; the lock survives every re-pair on both sides.
 - **Supply chain.** `junit-bom-5.11.4` is now pinned by SHA-256 in `gradle/verification-metadata.xml`. Gradle dependency locking is enabled across all production modules.
 
 ### Discontinued / removed
 
-- **Legacy private-group invitation carrier** (`org.briarproject.briar.privategroup.invitation`) — removed in v1.6.2.
-- **Bluetooth transport plugin** — removed in v1.6.2.
-- **Wi-Fi LAN TCP transport plugin** — removed in v1.6.2.
-- **Removable-drive sync feature** — removed in v1.6.2.
-- **Dev-reporting / crash-batching subsystem** — removed in v1.6.2.
+- **Legacy private-group invitation carrier** (`org.briarproject.briar.privategroup.invitation`) - removed in v1.6.2.
+- **Bluetooth transport plugin** - removed in v1.6.2.
+- **Wi-Fi LAN TCP transport plugin** - removed in v1.6.2.
+- **Removable-drive sync feature** - removed in v1.6.2.
+- **Dev-reporting / crash-batching subsystem** - removed in v1.6.2.
 
 These removals are intentional and final; Zerion's threat model treats every additional transport as additional metadata surface and every additional reporting channel as a phone-home vector.
 
-### v1.7 (May 2026) — Per-message ML-KEM-768 hybrid ratchet (Mode 3-Full) shipped
+### v1.7 (May 2026) - Per-message ML-KEM-768 hybrid ratchet (Mode 3-Full) shipped
 
 - **Mode 3-Full is the default on new 1:1 contacts.** Every transport
   frame in both directions carries a fresh ML-KEM-768 encapsulation
@@ -117,7 +117,7 @@ These removals are intentional and final; Zerion's threat model treats every add
   shared secrets after derivation (H3), narrow the bare PQ-epoch
   exception catch (H6), defer chain-key advancement until all
   per-frame MACs verify (H1), remove the dev-only validation harness
-  (L2), KpId defensive copy of bytes (M1) — all patched before tag.
+  (L2), KpId defensive copy of bytes (M1) - all patched before tag.
   Detailed design and audit results live in
   [PCS_DESIGN.md §v1.7 amendment](PCS_DESIGN.md).
 - **Symmetric AEAD unchanged.** Transport AEAD remains XSalsa20-Poly1305
@@ -125,26 +125,26 @@ These removals are intentional and final; Zerion's threat model treats every add
   is built around those parameters; PQ defense lives in the per-message
   ML-KEM encapsulation, not in the symmetric primitive.
 
-### v2.0 (June 2026) — Channels, Hardened Mode, at-rest forensic-defense tightening
+### v2.0 (June 2026) - Channels, Hardened Mode, at-rest forensic-defense tightening
 
 - **Channels.** A new top-level messaging modality: publisher → subscriber broadcast with optional discussion threads. Public channels are joinable from an invite link; closed channels require explicit publisher approval. Posts are signed under the publisher's hybrid Ed25519+ML-DSA-65 identity and pulled by subscribers from the publisher's own Tor v3 onion (no third party, no Briar `PrivateGroup` client, no central server). Subscribers pull every ~5 seconds when foregrounded. Editor delegations let the publisher authorize co-publishers without sharing the publisher private key. See the new [§2.5 Channels](#25-channels--publisher--subscriber-broadcast) for the full design.
 - **Channel discussion threads (Telegram-style).** Subscribers can post comments under any channel post when the publisher has enabled discussions. The publisher gates the comment-request handler on its own boolean preference (stored encrypted via `ChannelDiscussionStore`) and propagates the gate to the UI; flipping it OFF immediately hides the comment composer on every subscriber's next poll. Comments are dual-signed (Ed25519 + ML-DSA-65) and carried as a separate wire type.
-- **Channel-pull replay protection.** The publisher now keeps a per-channel ring buffer of seen `(channelId, nonce)` pairs with a 5-minute TTL and a 4,096-entry bound, and rejects any pull request whose nonce is replayed. Prior versions accepted any `(nonce, HMAC)` pair indefinitely — a captured request could be replayed forever, useful for traffic analysis against the publisher's hidden service and for harvesting the wrapped content-key envelope after capability rotation.
-- **Closed-channel manifest gate.** The publisher now refuses to return *any* response (manifest, posts, delegations, content-key envelope) to a closed-channel pull request unless the request carries a valid HMAC challenge computed under the channel's join capability. Prior versions served the manifest — including `name`, `description`, `currentOnion`, `activeDelegations`, and the `joinCapability` itself when present — to anyone who could reach the onion address, which broke the closed-channel guarantee against any party who learned the onion (via leaked screenshot, mis-shared link, or Tor side-channel). Additionally, `joinCapability` is no longer serialised onto the wire even for legitimate holders: holders reconstruct it locally from their invite, and the manifest signature verifies against the local copy on both sides.
+- **Channel-pull replay protection.** The publisher now keeps a per-channel ring buffer of seen `(channelId, nonce)` pairs with a 5-minute TTL and a 4,096-entry bound, and rejects any pull request whose nonce is replayed. Prior versions accepted any `(nonce, HMAC)` pair indefinitely - a captured request could be replayed forever, useful for traffic analysis against the publisher's hidden service and for harvesting the wrapped content-key envelope after capability rotation.
+- **Closed-channel manifest gate.** The publisher now refuses to return *any* response (manifest, posts, delegations, content-key envelope) to a closed-channel pull request unless the request carries a valid HMAC challenge computed under the channel's join capability. Prior versions served the manifest - including `name`, `description`, `currentOnion`, `activeDelegations`, and the `joinCapability` itself when present - to anyone who could reach the onion address, which broke the closed-channel guarantee against any party who learned the onion (via leaked screenshot, mis-shared link, or Tor side-channel). Additionally, `joinCapability` is no longer serialised onto the wire even for legitimate holders: holders reconstruct it locally from their invite, and the manifest signature verifies against the local copy on both sides.
 - **Hardened Mode (opt-in).** Three new independently-toggleable protections defend against attack paths that lock-screen wipe tools (Wasted, Sentry, Zerion's own panic responder) cannot reach:
   - **Strict boot verification.** Refuse to start unless `ro.boot.verifiedbootstate = "green"`, `ro.boot.flash.locked = "1"`, and `ro.boot.veritymode ≠ "disabled"`. Closes the recovery-mode `/data` dump bypass.
   - **Tamper detection.** Refuse to start if a debugger is attached (`TracerPid ≠ 0`, `Debug.isDebuggerConnected`), if a root binary (`/system/bin/su`, `daemonsu`, `Superuser.apk`) is present, if Magisk artifacts exist (`/sbin/.magisk`, `/data/adb/magisk*`, `/proc/self/mounts` hooks), if Frida indicators appear in `/proc/self/maps` (`frida-agent`, `gum-js-loop`, `linjector`) or port 27042 is reachable, if Xposed / LSPosed / EdXposed artifacts are present, or if the ADB daemon is listening on `localhost:5555`.
-  - **USB panic.** When ADB or MTP/PTP is activated at runtime, fire a panic — either sign-out only (account locked, data preserved) or sign-out plus full account wipe (irreversible). Default scope is sign-out only; the destructive option requires a second confirmation dialog. The wipe action is now actually wired into the panic-response flow — in prior versions, `AntiForensics.handleForensicAttack` only zeroed memory and corrupted cache; the panic-wipe was never invoked.
+  - **USB panic.** When ADB or MTP/PTP is activated at runtime, fire a panic - either sign-out only (account locked, data preserved) or sign-out plus full account wipe (irreversible). Default scope is sign-out only; the destructive option requires a second confirmation dialog. The wipe action is now actually wired into the panic-response flow - in prior versions, `AntiForensics.handleForensicAttack` only zeroed memory and corrupted cache; the panic-wipe was never invoked.
   See the new [§11.4 Hardened Mode](#114-hardened-mode-opt-in-advanced-defenses) for full enumeration.
 - **Forensic at-rest tightening.**
   - **Cache wipe on logout.** `AntiForensics.wipeCachesOnLogout()` is now invoked from `ZerionControllerImpl.signOut` on every sign-out (not only the panic path). Cached decrypted media that materialised in `getCacheDir()` during video/voice playback is corruption-overwritten before the cache directory is unlinked.
   - **60-second clipboard auto-clear.** A new `SecureClipboard.copy` helper unifies every Zerion clipboard write: sets `EXTRA_IS_SENSITIVE` on Android 13+ (suppresses keyboard preview, strips from clipboard history) and schedules a 60-second auto-clear that replaces the entry with a zero-width space only if the clipboard still holds the same text. Channel feed copy-post, channel-invite copy, and inline-invite copy all route through it. Closes the pre-Android-13 gap where copied invite links and post bodies persisted in clipboard history until reboot.
-  - **No keyboard predictive-dictionary leak.** `textNoSuggestions` is now set on every Zerion message-class input — 1:1 composer, group composer, channel publish composer, channel comments composer, and channel-create description — so soft keyboards (Gboard, SwiftKey) cannot build a personal dictionary from typed message bodies.
-- **Recap of forensic defenses against logical / file-system / physical / cloud extraction tools** (Cellebrite UFED, GrayKey, Magnet AXIOM, MSAB XRY): everything sensitive is encrypted-at-rest (SQLCipher database with `cipher_memory_security=ON` and `secure_delete=ON`; `EncryptedSharedPreferences` for both UI and secure prefs; `MetadataStripper` strips JPEG EXIF and video metadata before any attachment is sent; `FLAG_SECURE` applied via `BaseActivity.applyScreenshotProtection` on every Zerion activity covering screenshots, screen recording, recents thumbnail, and casting; `VISIBILITY_SECRET` on every notification channel; `allowBackup=false` with `backup_rules.xml` and `data_extraction_rules.xml` excluding everything recursively; ProGuard/R8 minification on release). The single remaining gap categories — system-level usage-stats timeline and cache-file mtime/atime — are unfixable from inside any unprivileged Android app.
+  - **No keyboard predictive-dictionary leak.** `textNoSuggestions` is now set on every Zerion message-class input - 1:1 composer, group composer, channel publish composer, channel comments composer, and channel-create description - so soft keyboards (Gboard, SwiftKey) cannot build a personal dictionary from typed message bodies.
+- **Recap of forensic defenses against logical / file-system / physical / cloud extraction tools** (Cellebrite UFED, GrayKey, Magnet AXIOM, MSAB XRY): everything sensitive is encrypted-at-rest (SQLCipher database with `cipher_memory_security=ON` and `secure_delete=ON`; `EncryptedSharedPreferences` for both UI and secure prefs; `MetadataStripper` strips JPEG EXIF and video metadata before any attachment is sent; `FLAG_SECURE` applied via `BaseActivity.applyScreenshotProtection` on every Zerion activity covering screenshots, screen recording, recents thumbnail, and casting; `VISIBILITY_SECRET` on every notification channel; `allowBackup=false` with `backup_rules.xml` and `data_extraction_rules.xml` excluding everything recursively; ProGuard/R8 minification on release). The single remaining gap categories - system-level usage-stats timeline and cache-file mtime/atime - are unfixable from inside any unprivileged Android app.
 
-### v2.0.2 (June 2026, versionCode 20002) — Channel notifications, in-tree EncryptedSharedPreferences
+### v2.0.2 (June 2026, versionCode 20002) - Channel notifications, in-tree EncryptedSharedPreferences
 
-- **Channel post / comment system notifications.** Subscribers now receive system notifications for new channel posts, and publishers for new discussion-thread comments, surfaced through the same `VISIBILITY_SECRET` notification path as 1:1 and group messages (no message body in the lock-screen preview). Notifications are generated locally from pull results — no push channel and no third party is involved.
+- **Channel post / comment system notifications.** Subscribers now receive system notifications for new channel posts, and publishers for new discussion-thread comments, surfaced through the same `VISIBILITY_SECRET` notification path as 1:1 and group messages (no message body in the lock-screen preview). Notifications are generated locally from pull results - no push channel and no third party is involved.
 - **In-tree `EncryptedSharedPreferences` implementation.** The deprecated AndroidX `security-crypto` library (Google deprecated it in April 2025) is removed from the dependency set and replaced by an in-tree `EncryptedSharedPreferences` implementation that wraps the same Android Keystore master-key model (hardware-backed where available, non-exportable, device-bound). Behaviour and at-rest format are unchanged for callers; the app no longer ships a deprecated, unmaintained crypto dependency. This closes the migration item that earlier revisions tracked as a future v2.x maintenance task.
 
 ### v2.0.3 (June 2026, versionCode 20003): reliability and maintenance
@@ -278,14 +278,14 @@ Message {
 - **Read Receipts**: Optional read status
 - **Auto-Delete**: Timer-based disappearing messages
 
-### 2.2 Group Messaging — Pairwise Triple Ratchet over Hybrid PQ
+### 2.2 Group Messaging - Pairwise Triple Ratchet over Hybrid PQ
 
 Zerion does not use the legacy Briar `PrivateGroup` client (sender-key fan-out)
 for end-user group chats. Instead, each authored group post is fanned out as
 N-1 individually-encrypted messages, one per other member, over the same
 pairwise Triple-Ratchet channels that 1:1 conversations use (see §5.3
 Mode 3). This means group messages inherit the same security properties as
-1:1 messages — full hybrid post-quantum key agreement (X25519 +
+1:1 messages - full hybrid post-quantum key agreement (X25519 +
 ML-KEM-768), Ed25519 + ML-DSA-65 signatures, forward secrecy via the
 sending chain, post-compromise security via the DH ratchet step.
 
@@ -311,7 +311,7 @@ GroupTrMember {
 ```
 
 State is persisted via `SettingsManager` (encrypted at rest by SQLCipher);
-there is no shared group sync client and no on-disk group message table —
+there is no shared group sync client and no on-disk group message table - 
 group posts live in each pairwise contact group as ordinary 1:1 records
 tagged with the group ID.
 
@@ -358,7 +358,7 @@ posts are released on the next legitimate epoch advance. Posts older than
 - **Group-default auto-delete TTL**: Creator-settable; if a sender does
   not specify a per-post timer, the group default is applied.
 - **No mutual-contact assumption**: A group may include members who are
-  not 1:1 contacts of each other. Inviter delivery only — non-mutual
+  not 1:1 contacts of each other. Inviter delivery only - non-mutual
   members cannot derive private contact channels from group membership
   alone. Direct messaging between non-mutual members across a group is a
   future opt-in design (see internal relay-privacy design).
@@ -372,9 +372,9 @@ reconcile their local roster from the snapshot when the snapshot epoch
 ≥ local epoch, allowing late joiners and clients that missed
 intermediate `MEMBER_ADDED/REMOVED` records to recover canonical state.
 
-### 2.5 Channels — Publisher → Subscriber Broadcast
+### 2.5 Channels - Publisher → Subscriber Broadcast
 
-A Zerion **channel** is a one-to-many broadcast surface: a single publisher (or a delegated set of editors) posts; an unbounded set of subscribers reads. Channels are an independent messaging modality with their own data model, their own pull protocol, and their own onion endpoint per publisher. Channels do **not** reuse the Briar `forum` or `blog` clients, and they do **not** use the same pairwise Triple Ratchet that 1:1 and group messages use — they have a fundamentally different threat model (no per-pair forward secrecy because subscribers are not necessarily mutual contacts of one another).
+A Zerion **channel** is a one-to-many broadcast surface: a single publisher (or a delegated set of editors) posts; an unbounded set of subscribers reads. Channels are an independent messaging modality with their own data model, their own pull protocol, and their own onion endpoint per publisher. Channels do **not** reuse the Briar `forum` or `blog` clients, and they do **not** use the same pairwise Triple Ratchet that 1:1 and group messages use - they have a fundamentally different threat model (no per-pair forward secrecy because subscribers are not necessarily mutual contacts of one another).
 
 #### 2.5.1 Channel topology
 
@@ -402,7 +402,7 @@ A Zerion **channel** is a one-to-many broadcast surface: a single publisher (or 
    └────────┘  └────────┘         └────────┘
 ```
 
-Subscribers pull from the publisher; the publisher never pushes. Channels are inherently asynchronous — a subscriber that has been offline for a week catches up on the next pull. No subscriber-to-subscriber traffic exists in the channels protocol.
+Subscribers pull from the publisher; the publisher never pushes. Channels are inherently asynchronous - a subscriber that has been offline for a week catches up on the next pull. No subscriber-to-subscriber traffic exists in the channels protocol.
 
 #### 2.5.2 Channel state model
 
@@ -441,9 +441,9 @@ State is persisted via `SettingsManager` in dedicated SQLCipher namespaces (`zer
 | Invite link contents | onion + channelId | onion + channelId + 32-byte `joinCapability` |
 | Anyone with the link can | subscribe and read | subscribe and *request* approval |
 | Publisher approval required to read | no | yes (`requiresApproval = true`) |
-| Manifest visible to non-capability holders | yes (name, description, onion are public-by-design) | **no** — pull responses are gated on a valid HMAC challenge under the join capability (§2.5.6) |
+| Manifest visible to non-capability holders | yes (name, description, onion are public-by-design) | **no** - pull responses are gated on a valid HMAC challenge under the join capability (§2.5.6) |
 | Content key envelope returned to | every subscriber | only HMAC-verified capability holders |
-| `joinCapability` serialised on the wire | yes (it's already public) | **no** — holders reconstruct it locally from the invite (§2.5.6) |
+| `joinCapability` serialised on the wire | yes (it's already public) | **no** - holders reconstruct it locally from the invite (§2.5.6) |
 
 #### 2.5.4 Post structure and signatures
 
@@ -465,11 +465,11 @@ ChannelPost {
 
 Every post carries a full **hybrid Ed25519 + ML-DSA-65 signature** over the canonical signed input `(channelId || seqNum || prevHash || timestampHourMs || body || ttlMs || attachmentDigest)`. The subscriber-side validator (`ChannelChainVerifier`) re-derives `prevHash`, verifies signature continuity through the chain, and rejects any post whose seq is non-monotonic, whose `prevHash` doesn't match the previous post's signed-input hash, or whose hybrid signature does not verify. Delegate-signed posts carry the publisher-issued delegation certificate by reference (`delegationSeq`) and the verifier checks that the delegation has not been revoked.
 
-Channel posts are stored **encrypted at rest** in the publisher's local DB using a per-channel `contentKey` (AES-256-GCM with a deterministic body nonce derived from `(channelId, seqNum)`). Subscribers receive the content key only after a successful HMAC challenge — see §2.5.6.
+Channel posts are stored **encrypted at rest** in the publisher's local DB using a per-channel `contentKey` (AES-256-GCM with a deterministic body nonce derived from `(channelId, seqNum)`). Subscribers receive the content key only after a successful HMAC challenge - see §2.5.6.
 
 #### 2.5.5 Editor delegations
 
-The publisher can delegate posting authority to up to *N* editors without sharing the publisher private key. A `ChannelDelegationCert` is a publisher-signed structure binding an editor's Ed25519 + ML-DSA-65 public key to a validity interval and a monotonically increasing `delegationSeq`. Editors sign posts under their own keys; subscribers verify the post signature against the editor key and verify the delegation certificate against the publisher key. Revocation is achieved by adding `delegationSeq` to `revokedDelegationSeqs` in the next published manifest — the subscriber-side validator rejects any post signed under a revoked delegation, even if the delegation cert itself is still locally cached.
+The publisher can delegate posting authority to up to *N* editors without sharing the publisher private key. A `ChannelDelegationCert` is a publisher-signed structure binding an editor's Ed25519 + ML-DSA-65 public key to a validity interval and a monotonically increasing `delegationSeq`. Editors sign posts under their own keys; subscribers verify the post signature against the editor key and verify the delegation certificate against the publisher key. Revocation is achieved by adding `delegationSeq` to `revokedDelegationSeqs` in the next published manifest - the subscriber-side validator rejects any post signed under a revoked delegation, even if the delegation cert itself is still locally cached.
 
 #### 2.5.6 Pull protocol and replay-resistant HMAC challenge
 
@@ -501,11 +501,11 @@ Subscriber                                       Publisher (onion)
     │ ◄────────────────────────────────────────────────│
 ```
 
-**Replay protection.** The publisher maintains a per-channel ring buffer of seen `(channelId, nonce)` pairs with a **5-minute TTL** and a **4,096-entry bound**. Replayed nonces are rejected outright, before any response is built. Prior versions accepted any HMAC indefinitely — a captured request could be replayed to keep harvesting the wrapped content key, useful for traffic analysis against the publisher's onion and dangerous after capability rotation.
+**Replay protection.** The publisher maintains a per-channel ring buffer of seen `(channelId, nonce)` pairs with a **5-minute TTL** and a **4,096-entry bound**. Replayed nonces are rejected outright, before any response is built. Prior versions accepted any HMAC indefinitely - a captured request could be replayed to keep harvesting the wrapped content key, useful for traffic analysis against the publisher's onion and dangerous after capability rotation.
 
-**Closed-channel manifest gate.** When the channel is closed (`isPublicChannel = false`, `joinCapability ≠ null`), the publisher returns an **empty response** to any request that does not carry a fresh, valid HMAC. The manifest itself — name, description, current onion, delegations — is not disclosed to non-holders. Public channels return the manifest unconditionally because all of its fields are public-by-design.
+**Closed-channel manifest gate.** When the channel is closed (`isPublicChannel = false`, `joinCapability ≠ null`), the publisher returns an **empty response** to any request that does not carry a fresh, valid HMAC. The manifest itself - name, description, current onion, delegations - is not disclosed to non-holders. Public channels return the manifest unconditionally because all of its fields are public-by-design.
 
-**`joinCapability` is not on the wire for closed channels.** Capability holders already know it (it came from the invite link). The manifest signature is computed over `(..., joinCapability, ...)` on both sides — the publisher signs over its local copy, the subscriber verifies over its local copy. The capability never leaves either device once both sides have it.
+**`joinCapability` is not on the wire for closed channels.** Capability holders already know it (it came from the invite link). The manifest signature is computed over `(..., joinCapability, ...)` on both sides - the publisher signs over its local copy, the subscriber verifies over its local copy. The capability never leaves either device once both sides have it.
 
 **Subscriber poll cadence.** Foreground subscribers pull every **5 seconds** during the first few rounds after a hit, decaying to **12 seconds** when idle. Background pulls are gated on Tor circuit availability and battery state.
 
@@ -524,7 +524,7 @@ ContentKey (32 random bytes, generated at publisher creation)
                            returned in pull response after HMAC verification
 ```
 
-The content key is generated once at channel creation, encrypts every post in the local DB, and is delivered to each new capability holder exactly once per pull (wrapped under a KEK derived from their join capability). The wrapped envelope is *not* a long-term secret — the publisher returns it on every successful pull, and the subscriber may re-wrap or re-derive at any time.
+The content key is generated once at channel creation, encrypts every post in the local DB, and is delivered to each new capability holder exactly once per pull (wrapped under a KEK derived from their join capability). The wrapped envelope is *not* a long-term secret - the publisher returns it on every successful pull, and the subscriber may re-wrap or re-derive at any time.
 
 #### 2.5.8 Subscriber approval (closed-channel join gate)
 
@@ -582,10 +582,10 @@ All wire-level messages are BDF dictionaries with explicit `type` fields. All pu
 
 #### 2.5.15 What channels deliberately do NOT do
 
-- **No subscriber-to-subscriber traffic.** A subscriber knows the publisher's onion but does not learn other subscribers' onions or identities by participating. (The publisher does see each subscriber's hybrid pubkey when they apply or comment — this is required for signature verification.)
+- **No subscriber-to-subscriber traffic.** A subscriber knows the publisher's onion but does not learn other subscribers' onions or identities by participating. (The publisher does see each subscriber's hybrid pubkey when they apply or comment - this is required for signature verification.)
 - **No global discoverability.** There is no channel directory, no global index, no search. A channel exists only if someone shares its invite link out-of-band.
 - **No subscriber count or member list disclosure to subscribers.** Only the publisher knows the subscriber roster.
-- **No push notifications from publisher to subscriber.** Pull-only by design — pushing would require the publisher to know each subscriber's onion at the protocol layer, which would leak subscriber identities to anyone who controls the publisher.
+- **No push notifications from publisher to subscriber.** Pull-only by design - pushing would require the publisher to know each subscriber's onion at the protocol layer, which would leak subscriber identities to anyone who controls the publisher.
 
 ### 2.3 Transport Layer Encryption
 
@@ -969,7 +969,7 @@ The rotation period is calculated as: `MAX_LATENCY + MAX_CLOCK_DIFFERENCE`
 | Tor | 30 seconds | 24 hours | ~24 hours | `TorPluginFactory.java:42` |
 
 Tor v3 onion is the sole transport (Bluetooth, LAN TCP, WAN TCP, and
-removable-drive plugins were removed in v1.6.2 — see [§0](#v162-may-15-2026--native-group-invites-tor-only-transport-at-rest-hardening)).
+removable-drive plugins were removed in v1.6.2 - see [§0](#v162-may-15-2026--native-group-invites-tor-only-transport-at-rest-hardening)).
 
 **Constants Reference**:
 - `MAX_CLOCK_DIFFERENCE = 24 hours` (`TransportConstants.java:69`)
@@ -1095,7 +1095,7 @@ as fallbacks for compatibility; Mode 1 is symmetric-only.
 
 **Mode 3-Full is the default**: since v1.7, Zerion↔Zerion contacts default
 to the per-message ML-KEM-768 hybrid ratchet (a fresh encapsulation mixed
-into every transport frame's body AEAD key — see §5.3). The earlier
+into every transport frame's body AEAD key - see §5.3). The earlier
 per-epoch Mode 3 (PQ rotation every 25 messages / 24 hours) and Mode 2
 remain as fallbacks. Zerion↔Briar contacts continue using Mode 1/2 for
 compatibility.
@@ -1855,14 +1855,14 @@ The video sender continuously monitors connection quality (packet loss, jitter, 
    video off (audio-only fallback)
 ```
 
-There is no separate low-resolution capture mode — every tier captures and encodes at 640x480; the controller modulates frame rate and bitrate only.
+There is no separate low-resolution capture mode - every tier captures and encodes at 640x480; the controller modulates frame rate and bitrate only.
 
 **Call controls**:
 - **Camera switch**: toggle between front and rear cameras mid-call without tearing down the call or renegotiating keys.
 - **Video pause/resume**: the local user can suspend the outgoing camera stream (audio continues) and resume it later within the same call.
 - **Mute/speaker controls**: shared with the voice-call UI.
 
-**Security & transport properties**: identical to voice calls — direct P2P over Tor hidden services (no STUN/TURN, no relays, no IP exposure), per-call forward secrecy (keys generated per call, destroyed at call end), FLAG_SECURE screenshot protection during the call, and no recording or telemetry. The audio half of a video call remains Opus 24 kbps as described in §8.3.
+**Security & transport properties**: identical to voice calls - direct P2P over Tor hidden services (no STUN/TURN, no relays, no IP exposure), per-call forward secrecy (keys generated per call, destroyed at call end), FLAG_SECURE screenshot protection during the call, and no recording or telemetry. The audio half of a video call remains Opus 24 kbps as described in §8.3.
 
 ---
 
@@ -1900,7 +1900,7 @@ Encrypted Database Key File
      ├── PRAGMA cipher_memory_security = ON
      │   (zeros decrypted pages in memory after use)
      ├── PRAGMA secure_delete = ON
-     │   (zeros freed pages on row delete — defeats DB-page carving
+     │   (zeros freed pages on row delete - defeats DB-page carving
      │    of deleted rows by Cellebrite UFED FS extraction)
      └── PRAGMA busy_timeout = 5000
      ↓
@@ -2110,7 +2110,7 @@ Attachment File
 A built-in catalogue of expressive image stickers, shipped with the app
 (no external download, no network egress, no third-party CDN). Stickers
 are sent as standard image attachments encrypted under the conversation's
-Triple Ratchet — they carry no special wire type and inherit identical
+Triple Ratchet - they carry no special wire type and inherit identical
 confidentiality, forward secrecy, and PCS properties as any other image
 attachment. The catalogue is local-only; no per-user usage telemetry is
 collected or transmitted.
@@ -2185,7 +2185,7 @@ collected or transmitted.
 
 ### 10.6 Multi-Profile Isolation
 
-Zerion supports multiple, fully isolated identities on a single device — for users who need separate work / personal contexts, or who need plausible deniability that a secondary profile exists at all.
+Zerion supports multiple, fully isolated identities on a single device - for users who need separate work / personal contexts, or who need plausible deniability that a secondary profile exists at all.
 
 **Design choices**:
 
@@ -2264,24 +2264,24 @@ On signIn(password):
 | Replay Attacks | Per-frame nonces; channel-pull replay TTL ring (§2.5.6); group epoch monotonicity |
 | Forensic dump tools (logical / FS extraction) | At-rest encryption everywhere (SQLCipher DB + EncryptedSharedPreferences + AES-GCM attachment blobs + AES-GCM channel content); `allowBackup=false`; `FLAG_SECURE` on every activity; `VISIBILITY_SECRET` on every notification; ProGuard/R8 minification on release |
 | Forensic dump tools (physical / chip-off) | Same as above plus `secure_delete=ON` zeros freed DB pages |
-| Recovery-mode `/data` dump (bootloader-unlock bypass) | **Partial mitigation** via Hardened Mode strict-boot toggle (§11.4) — refuses to start if `verifiedbootstate ≠ "green"` |
+| Recovery-mode `/data` dump (bootloader-unlock bypass) | **Partial mitigation** via Hardened Mode strict-boot toggle (§11.4) - refuses to start if `verifiedbootstate ≠ "green"` |
 | ADB / USB exfiltration with debugging enabled | `allowBackup=false` blocks `adb backup`; Hardened Mode USB-panic toggle (§11.4) signs out and optionally wipes |
-| Frida / Xposed / LSPosed runtime instrumentation | **Partial mitigation** via Hardened Mode tamper toggle (§11.4) — refuses to start if hooks detected |
+| Frida / Xposed / LSPosed runtime instrumentation | **Partial mitigation** via Hardened Mode tamper toggle (§11.4) - refuses to start if hooks detected |
 | Root binary / Magisk presence | **Partial mitigation** via Hardened Mode tamper toggle (§11.4) |
 | Keyboard predictive-dictionary leak | `textNoSuggestions` on every message-class input |
 | Clipboard leak (post-copy persistence) | `EXTRA_IS_SENSITIVE` on Android 13+ plus universal 60 s auto-clear via `SecureClipboard.copy` |
 
 **Out of Scope**:
-- **Full device root with active malware in the same UID** — no app sandbox can defend against a hostile component running with the app's own privileges.
+- **Full device root with active malware in the same UID** - no app sandbox can defend against a hostile component running with the app's own privileges.
 - **Physical device access while unlocked.** If the screen is unlocked, an attacker with hands-on access can act as the user. Zerion's auto-lock timeout, FLAG_SECURE, and biometric/PIN re-prompt narrow this window; they do not eliminate it.
 - **User phishing / social engineering.**
-- **System-level usage-stats timeline** (`/data/system/usagestats/`) and **cache file mtime/atime** — these are OS-level artifacts that record *when* Zerion was foregrounded. No unprivileged Android app can suppress them. Zerion's cache-wipe-on-logout (§9.5, §0 v2.0) corrupts the *contents* of cache files; the directory timestamps remain.
+- **System-level usage-stats timeline** (`/data/system/usagestats/`) and **cache file mtime/atime** - these are OS-level artifacts that record *when* Zerion was foregrounded. No unprivileged Android app can suppress them. Zerion's cache-wipe-on-logout (§9.5, §0 v2.0) corrupts the *contents* of cache files; the directory timestamps remain.
 
 **Quantum Computer Protection** ✅:
 - **Key Exchange**: Hybrid ML-KEM-768 + X25519 (NIST Level 3)
 - **Signatures**: Hybrid ML-DSA-65 + Ed25519 (NIST Level 3)
 - **Defense-in-Depth**: Both classical AND PQ algorithms must be broken
-- **Per-message PQ ratchet (v1.7+)**: Every transport frame carries fresh ML-KEM-768 encapsulation — see §5.3 Mode 3-Full.
+- **Per-message PQ ratchet (v1.7+)**: Every transport frame carries fresh ML-KEM-768 encapsulation - see §5.3 Mode 3-Full.
 
 ### 11.2 Cryptographic Security
 
@@ -2319,9 +2319,9 @@ Hardened Mode is a user-opt-in bundle of three independently-toggleable refuse-t
 
 On every `BaseActivity.onCreate`, before Dagger graph construction and before the SQLCipher database is touched, the app reads Android's verified-boot properties via `android.os.SystemProperties` reflection (with a `/system/bin/getprop` fallback) and refuses to start if any of these hold:
 
-- `ro.boot.verifiedbootstate ≠ "green"` — the boot image is not OEM-signed; the OS may have been modified.
-- `ro.boot.flash.locked ≠ "1"` — the bootloader is unlocked; the device can be booted into a custom recovery to dump `/data`.
-- `ro.boot.veritymode = "disabled"` — dm-verity is off; on-disk modifications to system partitions are not detected.
+- `ro.boot.verifiedbootstate ≠ "green"` - the boot image is not OEM-signed; the OS may have been modified.
+- `ro.boot.flash.locked ≠ "1"` - the bootloader is unlocked; the device can be booted into a custom recovery to dump `/data`.
+- `ro.boot.veritymode = "disabled"` - dm-verity is off; on-disk modifications to system partitions are not detected.
 
 **Attack path closed.** An attacker who unlocks the bootloader and boots into a custom recovery to bypass Wasted/Sentry/Zerion's panic responder now hits a refuse-to-start on the next launch. The user re-locks the bootloader (or reflashes a stock image) to recover. The "Disable Hardened Mode" button on the block screen requires explicit confirmation.
 
@@ -2329,12 +2329,12 @@ On every `BaseActivity.onCreate`, before Dagger graph construction and before th
 
 Refuses to start if any of these are detected:
 
-- **Debugger attached** — `Debug.isDebuggerConnected()`, `Debug.waitingForDebugger()`, or `/proc/self/status` `TracerPid ≠ 0`.
-- **Root binary present** — `/system/bin/su`, `/system/xbin/su`, `/system/sbin/su`, `/sbin/su`, `/vendor/bin/su`, `/su/bin/su`, `/data/local/{,bin/,xbin/}su`, `/system/app/Superuser.apk`, `/system/etc/init.d/99SuperSUDaemon`, `/system/xbin/daemonsu`.
-- **Magisk artifacts** — `/sbin/.magisk`, `/cache/.disable_magisk`, `/dev/.magisk.unblock`, `/system/etc/init/magisk.rc`, `/data/adb/magisk{,.db}`, `/data/adb/modules`. Also checked: `/proc/self/maps` and `/proc/self/mounts` for the string `magisk` or `/data/adb`.
-- **Frida instrumentation** — `/data/local/tmp/{re.frida.server,frida-server}`. `/proc/self/maps` scanned for `frida-agent`, `frida-gadget`, `libfrida`, `gum-js-loop`, `gmain`, `linjector`. Probes TCP `127.0.0.1:27042` (default frida-server port) with a 250 ms timeout.
-- **Xposed / LSPosed / EdXposed framework** — `/system/framework/XposedBridge.jar`, `/system/lib{,64}/libxposed_art.so`, `/system/bin/app_process{32,64}_xposed`, app data dirs for `de.robv.android.xposed.installer`, `org.meowcat.edxposed.manager`, `io.va.exposed`, `org.lsposed.manager`. `/proc/self/maps` scanned for `XposedBridge`, `libxposed`, `LSPosed`, `EdXposed`.
-- **ADB daemon listening** — probes TCP `127.0.0.1:5555` with a 250 ms timeout. Catches both USB ADB and wireless-debugging configurations.
+- **Debugger attached** - `Debug.isDebuggerConnected()`, `Debug.waitingForDebugger()`, or `/proc/self/status` `TracerPid ≠ 0`.
+- **Root binary present** - `/system/bin/su`, `/system/xbin/su`, `/system/sbin/su`, `/sbin/su`, `/vendor/bin/su`, `/su/bin/su`, `/data/local/{,bin/,xbin/}su`, `/system/app/Superuser.apk`, `/system/etc/init.d/99SuperSUDaemon`, `/system/xbin/daemonsu`.
+- **Magisk artifacts** - `/sbin/.magisk`, `/cache/.disable_magisk`, `/dev/.magisk.unblock`, `/system/etc/init/magisk.rc`, `/data/adb/magisk{,.db}`, `/data/adb/modules`. Also checked: `/proc/self/maps` and `/proc/self/mounts` for the string `magisk` or `/data/adb`.
+- **Frida instrumentation** - `/data/local/tmp/{re.frida.server,frida-server}`. `/proc/self/maps` scanned for `frida-agent`, `frida-gadget`, `libfrida`, `gum-js-loop`, `gmain`, `linjector`. Probes TCP `127.0.0.1:27042` (default frida-server port) with a 250 ms timeout.
+- **Xposed / LSPosed / EdXposed framework** - `/system/framework/XposedBridge.jar`, `/system/lib{,64}/libxposed_art.so`, `/system/bin/app_process{32,64}_xposed`, app data dirs for `de.robv.android.xposed.installer`, `org.meowcat.edxposed.manager`, `io.va.exposed`, `org.lsposed.manager`. `/proc/self/maps` scanned for `XposedBridge`, `libxposed`, `LSPosed`, `EdXposed`.
+- **ADB daemon listening** - probes TCP `127.0.0.1:5555` with a 250 ms timeout. Catches both USB ADB and wireless-debugging configurations.
 
 **Attack path closed.** A device with active runtime instrumentation cannot launch Zerion. The user must remove the instrumentation (or disable the toggle) to recover.
 
@@ -2353,7 +2353,7 @@ The USB-panic action is bound by `ZerionControllerImpl.armUsbPanicIfConfigured`,
 
 When any strict-boot or tamper check trips, `BaseActivity` short-circuits before Dagger injection runs, and routes to `HardenedBlockActivity`. The block screen:
 
-- Has `FLAG_SECURE`, `excludeFromRecents`, isolated `taskAffinity=""` — leaks nothing in screenshots or recents.
+- Has `FLAG_SECURE`, `excludeFromRecents`, isolated `taskAffinity=""` - leaks nothing in screenshots or recents.
 - Explains the specific failure reason ("Verified boot not in GREEN state…", "Frida instrumentation detected…", etc.) via `SecureBootGuard.describe`.
 - Offers two buttons: **Disable Hardened Mode** (with confirmation; clears the toggles and finishes the task) or **Quit** (`finishAndRemoveTask`).
 
@@ -2367,10 +2367,10 @@ When any strict-boot or tamper check trips, `BaseActivity` short-circuits before
 
 | Forensic extraction tier | Defense in Zerion | Notes |
 |---|---|---|
-| **Cloud extraction** (UFED Cloud, GrayShift Premium cloud, AXIOM Cloud) | `allowBackup="false"`, `backup_rules.xml`, `data_extraction_rules.xml` exclude everything recursively. No account, no FCM/GCM token, no Google sync. | Nothing to extract from the cloud — Zerion is account-less. |
+| **Cloud extraction** (UFED Cloud, GrayShift Premium cloud, AXIOM Cloud) | `allowBackup="false"`, `backup_rules.xml`, `data_extraction_rules.xml` exclude everything recursively. No account, no FCM/GCM token, no Google sync. | Nothing to extract from the cloud - Zerion is account-less. |
 | **Logical extraction** (UFED logical, GrayKey unprivileged, AXIOM logical) | Everything sensitive is encrypted-at-rest: SQLCipher database, EncryptedSharedPreferences (AES-256-SIV keys / AES-256-GCM values), encrypted attachment blobs, encrypted channel content. | Logical extraction returns encrypted blobs requiring the user's password. |
-| **File-system extraction** (UFED FS, AFU GrayKey, AXIOM full FS) | Same as logical — at-rest encryption holds. `secure_delete=ON` zeros freed DB pages. `MetadataStripper` strips JPEG EXIF and video metadata before any attachment is sent. Cache wipe on logout corrupts any plaintext that materialised during media playback. | The only meaningful surface is cache-during-playback. Closing the app or signing out scrubs it. |
-| **Physical / chip-off extraction** | Same as logical+FS — SQLCipher + page-zeroed deletes + Argon2id-derived key. Requires brute-forcing the user's password. | Same encryption surface; no plaintext anywhere on disk. |
+| **File-system extraction** (UFED FS, AFU GrayKey, AXIOM full FS) | Same as logical - at-rest encryption holds. `secure_delete=ON` zeros freed DB pages. `MetadataStripper` strips JPEG EXIF and video metadata before any attachment is sent. Cache wipe on logout corrupts any plaintext that materialised during media playback. | The only meaningful surface is cache-during-playback. Closing the app or signing out scrubs it. |
+| **Physical / chip-off extraction** | Same as logical+FS - SQLCipher + page-zeroed deletes + Argon2id-derived key. Requires brute-forcing the user's password. | Same encryption surface; no plaintext anywhere on disk. |
 | **Recovery-mode `/data` dump** (bootloader-unlock bypass of app-layer wipes) | **Hardened Mode strict-boot toggle (§11.4.1)** refuses to launch on a device whose verified-boot state is not GREEN. | This is the only forensic tier that bypasses Wasted/Sentry/Zerion's own panic responder; Hardened Mode is the only way to defend. |
 | **System-level usage-stats / file mtime** | Out of scope. No unprivileged Android app can suppress these. | These leak *when* Zerion was used, never *what*. |
 
@@ -2499,7 +2499,7 @@ records; new numbers must be added monotonically and never reused.
 | 43     | GROUPTR_INVITE_ACCEPT         | invitee → inviter            |
 | 44     | GROUPTR_INVITE_DECLINE        | invitee → inviter            |
 
-Channel wire types live on a separate carrier (publisher's onion) and are not msgTyped — see §2.5.14.
+Channel wire types live on a separate carrier (publisher's onion) and are not msgTyped - see §2.5.14.
 
 ### 12.5 Network Parameters
 
@@ -3108,13 +3108,13 @@ Zerion provides military-grade security through:
 - **FIPS 204**: ML-DSA (Module-Lattice-Based Digital Signature Algorithm)
 
 **Libraries Used**:
-- Bouncy Castle 1.82 (cryptography: ML-KEM-768, ML-DSA-65, Argon2id, BLAKE2b). Upgrade to 1.84 is tracked as a supply-chain-verified follow-up — Zerion does not exercise the BC 2026 CVE code paths (no LDAP, no PGP, no FrodoKEM).
+- Bouncy Castle 1.82 (cryptography: ML-KEM-768, ML-DSA-65, Argon2id, BLAKE2b). Upgrade to 1.84 is tracked as a supply-chain-verified follow-up - Zerion does not exercise the BC 2026 CVE code paths (no LDAP, no PGP, no FrodoKEM).
 - i2p.crypto.eddsa (Ed25519)
 - Curve25519-java (X25519)
-- Tor Expert Bundle (anonymity) — `tor-android 0.4.8.22`, `lyrebird-android 0.6.2`, `onionwrapper 0.1.4`
+- Tor Expert Bundle (anonymity) - `tor-android 0.4.8.22`, `lyrebird-android 0.6.2`, `onionwrapper 0.1.4`
 - **SQLCipher for Android `net.zetetic:sqlcipher-android 4.13.0`** (encrypted database)
 - Concentus (pure-Java Opus codec for voice calls)
-- In-tree `EncryptedSharedPreferences` implementation over the Android Keystore master key (replaced the deprecated AndroidX `security-crypto 1.1.0` library in v2.0.2 — DONE; the deprecated dependency is no longer shipped)
+- In-tree `EncryptedSharedPreferences` implementation over the Android Keystore master key (replaced the deprecated AndroidX `security-crypto 1.1.0` library in v2.0.2 - DONE; the deprecated dependency is no longer shipped)
 
 **Dependency verification**: `gradle/verification-metadata.xml` pins SHA-256 + SHA-512 per artifact with `<verify-signatures>true</verify-signatures>`. New dependencies require a signature check against the publisher's PGP key before the hash entry is added.
 
@@ -3136,7 +3136,7 @@ Zerion provides military-grade security through:
 
 **Document History**:
 - **v3.3 (2026-07-03)**: Updated for app release v2.0.6 (versionCode 20006). Adds §0 entries for v2.0.3 through v2.0.6 (reliability, Tor, account-backup, and the v2.0.6 contact-add hybrid rendezvous, ratchet stabilization, connection-reliability, voice-memo, and hardening changes). Corrects the version-1 contact-add link description: the link carries a 32-byte commitment plus a 32-byte X25519 rendezvous key (104 base32 chars), and the rendezvous key agreement is a real X25519 Diffie-Hellman.
-- **v3.2 (2026-06-02)**: **Channels, Hardened Mode, forensic-defense tightening.** Adds full §2.5 Channels section (publisher → subscriber broadcast over a per-publisher Tor onion, hybrid-signed posts, closed-channel HMAC manifest gate, replay-resistant pull challenge, editor delegations, discussion threads, subscriber approvals, attachments, onion rotation, tombstones). Adds §11.4 Hardened Mode (strict boot verification, tamper detection, USB panic) and §11.5 Forensic-Defense Posture table mapping defenses against Cellebrite / GrayKey / Magnet AXIOM / MSAB XRY tiers. Corrects §9.1 (database is SQLCipher, not H2/HyperSQL — prior revisions had this wrong). Updates §5.3 to v1.7 per-message ML-KEM (was pre-v1.7 25-message epoch). Updates §11.1 threat-model table to include forensic-tool and tamper categories; moves "device compromise" from out-of-scope to partial-mitigation via Hardened Mode. Updates §12.4 protocol versions (schema v63, PCS Mode 3-Full). Updates §12.5 network parameters with channel-specific cadences. Updates §13.1 architecture diagram (Tor-only transport, no Bluetooth / LAN-TCP / removable-drive). Adds new §14 file-path subsections for channels, Hardened Mode, and forensic-defense helpers. Adds §0 v2.0 entry.
+- **v3.2 (2026-06-02)**: **Channels, Hardened Mode, forensic-defense tightening.** Adds full §2.5 Channels section (publisher → subscriber broadcast over a per-publisher Tor onion, hybrid-signed posts, closed-channel HMAC manifest gate, replay-resistant pull challenge, editor delegations, discussion threads, subscriber approvals, attachments, onion rotation, tombstones). Adds §11.4 Hardened Mode (strict boot verification, tamper detection, USB panic) and §11.5 Forensic-Defense Posture table mapping defenses against Cellebrite / GrayKey / Magnet AXIOM / MSAB XRY tiers. Corrects §9.1 (database is SQLCipher, not H2/HyperSQL - prior revisions had this wrong). Updates §5.3 to v1.7 per-message ML-KEM (was pre-v1.7 25-message epoch). Updates §11.1 threat-model table to include forensic-tool and tamper categories; moves "device compromise" from out-of-scope to partial-mitigation via Hardened Mode. Updates §12.4 protocol versions (schema v63, PCS Mode 3-Full). Updates §12.5 network parameters with channel-specific cadences. Updates §13.1 architecture diagram (Tor-only transport, no Bluetooth / LAN-TCP / removable-drive). Adds new §14 file-path subsections for channels, Hardened Mode, and forensic-defense helpers. Adds §0 v2.0 entry.
 - **v3.0 (2026-05-15)**: **Mode 3 PQ rotation, hybrid group signatures, native group invites, Tor-only transport.** Adds §0 "Updates since v2.1" covering everything shipped between Dec 2025 and May 2026: B.3 hybrid pairing and B.4 onion rotation (v1.5.0), PCS Mode 3 end-to-end completion + hybrid Ed25519+ML-DSA-65 signatures on every group record + real Argon2id vault KDF (v1.6.0), whole-app audit + GroupTr hardening (v1.6.1), native group-invite protocol replacing the legacy `privategroup.invitation` carrier + Tor-only transport (Bluetooth / Wi-Fi LAN / removable-drive / dev-reporting removed) + all `SharedPreferences` keystore-encrypted + extended hybrid signing + downgrade-lock token fix (v1.6.2). See §0 for the authoritative diff.
 - v2.1 (2025-12-16): **Version Negotiation & Security Hardening** - Added Briar compatibility via explicit contact type selection, downgrade attack prevention, contact security level tracking (postQuantum flag), UI security indicator in Chat Settings
 - v2.0 (2025-11-26): **Full hybrid post-quantum cryptography** - Phase 2 complete with ML-KEM-768 + X25519 key exchange and ML-DSA-65 + Ed25519 signatures (NIST FIPS 203/204)

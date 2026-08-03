@@ -1,4 +1,4 @@
-# GroupTr — Group Triple Ratchet wire protocol
+# GroupTr - Group Triple Ratchet wire protocol
 
 iOS parity for Zerion group chat. Android implementation: `briar-core/.../grouptr/GroupTrManagerImpl.java` plus the validator at `briar-core/.../messaging/PrivateMessageValidator.java`. Shipped on Android since 1.5; admin-signature verify path corrected in 1.6 (commit `06f95a7`).
 
@@ -15,8 +15,8 @@ GroupTr has **two** distinct wire layers, and iOS must implement both:
    invitee, who may accept or decline; only on ACCEPT does the creator fan out
    the corresponding membership records.
 
-So the earlier framing — "there is no group invite or accept wire message,
-GroupTr is fan-out-of-signed-records, not invitation-and-accept" — is no
+So the earlier framing - "there is no group invite or accept wire message,
+GroupTr is fan-out-of-signed-records, not invitation-and-accept" - is no
 longer accurate as of the 2026-05 invite layer. Both statements describe the
 membership records (33–41) correctly, but the 42/43/44 handshake layer now
 sits on top.
@@ -30,7 +30,7 @@ used after an ACCEPT, or for an admin-initiated add):
 3. On Peter's device, his private-message validator dispatches by the first
    BdfList element (`33L`), routes the record to the group-membership handler,
    fires a `GroupMembershipChangedEvent`, and the GroupTr manager applies it
-   locally — Peter's group list now shows the new group.
+   locally - Peter's group list now shows the new group.
 
 For the membership-record path, Peter does NOT see anything in his chat thread
 with Alice. The record carries `MSG_KEY_LOCAL=false` and is consumed silently
@@ -55,13 +55,13 @@ Alice's pairwise messaging Group with Peter (Briar contact group)
         PrivateMessageValidator dispatches by msgType
                     |
                     v
-        validateGroupMemberAdded() — parses + signs metadata
+        validateGroupMemberAdded() - parses + signs metadata
                     |
                     v
-        MessagingManagerImpl.incomingGroupMembership() — fires event
+        MessagingManagerImpl.incomingGroupMembership() - fires event
                     |
                     v
-        GroupTrManagerImpl.handleMembershipEvent() — verifies sig,
+        GroupTrManagerImpl.handleMembershipEvent() - verifies sig,
                                                      applies state
 ```
 
@@ -76,8 +76,8 @@ Alice's pairwise messaging Group with Peter (Briar contact group)
 | 36 | `GROUP_DISSOLVED` | Creator dissolves the group. |
 | 37 | `GROUP_EPOCH_COMMIT` | Confirms an epoch change with a PQ seed. Paired with 34. |
 | 38 | `GROUP_MEMBER_ROLE_CHANGED` | Creator promotes/demotes a member to/from admin. |
-| 39 | `GROUP_MEMBER_KEY_ROTATED_RESERVED` | Reserved — not emitted or accepted on the wire. |
-| 40 | `GROUP_FORWARDED_RESERVED` | Reserved — not emitted or accepted on the wire. |
+| 39 | `GROUP_MEMBER_KEY_ROTATED_RESERVED` | Reserved - not emitted or accepted on the wire. |
+| 40 | `GROUP_FORWARDED_RESERVED` | Reserved - not emitted or accepted on the wire. |
 | 41 | `GROUP_MEMBER_LIST_SNAPSHOT` | Full member-list snapshot at a given epoch (for repair / late joiners). |
 | 42 | `GROUPTR_INVITE_OFFER` | Creator offers a group invite to a contact. Signing label `org.briarproject.zerion/GROUPTR_INVITE_OFFER`. |
 | 43 | `GROUPTR_INVITE_ACCEPT` | Invitee accepts an offer. Signing label `org.briarproject.zerion/GROUPTR_INVITE_ACCEPT`. |
@@ -85,13 +85,13 @@ Alice's pairwise messaging Group with Peter (Briar contact group)
 
 `32`'s wire format is documented separately; this doc covers 33–38 + 41 (the
 membership records) and 42–44 (the invite handshake). msgTypes 39 and 40 are
-reserved constants only — no validator path encodes or accepts them.
+reserved constants only - no validator path encodes or accepts them.
 
-## Wire format — every membership record
+## Wire format - every membership record
 
 All BdfLists, encoded with the existing private-message BDF encoder. Byte counts assume Android's `BdfWriter`.
 
-### 33 — GROUP_MEMBER_ADDED
+### 33 - GROUP_MEMBER_ADDED
 
 ```
 BdfList.of(
@@ -101,13 +101,13 @@ BdfList.of(
     addedName,                 // UTF-8 string (1..256 bytes)
     newEpoch,                  // Long, range [0, 2^32-1]
     timestamp,                 // Long, signed
-    sig                        // signature, raw bytes (length 64 OR 3373 — see "Signing" below)
+    sig                        // signature, raw bytes (length 64 OR 3373 - see "Signing" below)
 )
 ```
 
 Validator size: exactly **7 slots**.
 
-### 34 — GROUP_MEMBER_REMOVED
+### 34 - GROUP_MEMBER_REMOVED
 
 ```
 BdfList.of(
@@ -125,7 +125,7 @@ Validator size: exactly **7 slots**. `toEpoch == fromEpoch + 1` is enforced.
 
 **Must be paired with msgType 37 (`GROUP_EPOCH_COMMIT`)** on the same outgoing send. Order doesn't matter for the receiver but Android dispatches both back-to-back inside the same DB transaction.
 
-### 35 — GROUP_MEMBER_LEFT
+### 35 - GROUP_MEMBER_LEFT
 
 ```
 BdfList.of(
@@ -140,7 +140,7 @@ BdfList.of(
 
 Validator size: **6 slots**. Signature is verified against the LEAVING member's pubkey (it's a self-attestation, not an admin action).
 
-### 36 — GROUP_DISSOLVED
+### 36 - GROUP_DISSOLVED
 
 ```
 BdfList.of(
@@ -148,13 +148,13 @@ BdfList.of(
     groupId,                   // 32 bytes
     newEpoch,                  // Long
     timestamp,                 // Long
-    sig                        // signature — must be the CREATOR's key
+    sig                        // signature - must be the CREATOR's key
 )
 ```
 
 Validator size: **5 slots**. Creator-only on Android receiver; admins cannot dissolve.
 
-### 37 — GROUP_EPOCH_COMMIT
+### 37 - GROUP_EPOCH_COMMIT
 
 ```
 BdfList.of(
@@ -169,23 +169,23 @@ BdfList.of(
 
 Validator size: **6 slots**. Sent immediately after any record that changes the epoch (currently just msgType 34). The pqSeed is hashed under label `"org.briarproject.zerion/GROUP_EPOCH_SEED"` into the signed-input.
 
-### 38 — GROUP_MEMBER_ROLE_CHANGED
+### 38 - GROUP_MEMBER_ROLE_CHANGED
 
 ```
 BdfList.of(
     38L,                       // msgType
     groupId,                   // 32 bytes
     targetPubKey,              // 32 bytes
-    newRole,                   // Long: 0 = MEMBER, 1 = ADMIN, 2 = CREATOR (never sent — creator role is fixed)
+    newRole,                   // Long: 0 = MEMBER, 1 = ADMIN, 2 = CREATOR (never sent - creator role is fixed)
     epoch,                     // Long
     timestamp,                 // Long
-    sig                        // signature — CREATOR ONLY
+    sig                        // signature - CREATOR ONLY
 )
 ```
 
 Validator size: **7 slots**. Creator-only on Android receiver. `newRole` must be in `[0, 2]`.
 
-### 41 — GROUP_MEMBER_LIST_SNAPSHOT
+### 41 - GROUP_MEMBER_LIST_SNAPSHOT
 
 ```
 BdfList.of(
@@ -217,7 +217,7 @@ Max 1000 members per snapshot.
 A creator MUST fan out a fresh `GROUP_MEMBER_LIST_SNAPSHOT` (msgType 41)
 in two cases:
 
-1. **Manual repair** — admin invokes `sendMemberListSnapshot(groupId)`
+1. **Manual repair** - admin invokes `sendMemberListSnapshot(groupId)`
    explicitly to recover members whose local state has diverged from
    the creator's.
 2. **Immediately after a successful `addMember` driven by an invite
@@ -237,7 +237,7 @@ to arrive over subsequent epochs.
 iOS clients receiving the snapshot apply it the same way as any other
 msgType 41: verify the snapshot signature, replace the local member
 list with the snapshot's, advance the local epoch to the snapshot's
-epoch. No new logic required on iOS for this case — only the trigger
+epoch. No new logic required on iOS for this case - only the trigger
 on the sender side is new.
 
 ## Invite handshake (msgTypes 42 / 43 / 44, added 2026-05)
@@ -267,7 +267,7 @@ Flow:
    `sendMemberListSnapshot(groupId)` (this is the snapshot trigger documented
    above). On DECLINE it simply clears the pending "invite sent" entry.
 
-### 42 — GROUPTR_INVITE_OFFER
+### 42 - GROUPTR_INVITE_OFFER
 
 ```
 BdfList.of(
@@ -288,7 +288,7 @@ groupId == 32 B, groupName 0..100, salt == 32 B, creatorName length in
 On the manager side the OFFER is rejected unless the pairwise sender's pubkey
 equals `creatorPubKey` and the locally-derived groupId matches.
 
-### 43 — GROUPTR_INVITE_ACCEPT
+### 43 - GROUPTR_INVITE_ACCEPT
 
 ```
 BdfList.of(
@@ -301,7 +301,7 @@ BdfList.of(
 
 Validator size: exactly **4 slots**. groupId == 32 B, sig length in `[1, 4096]`.
 
-### 44 — GROUPTR_INVITE_DECLINE
+### 44 - GROUPTR_INVITE_DECLINE
 
 Identical wire shape to ACCEPT, only the leading msgType differs:
 
@@ -328,7 +328,7 @@ creatorName)`:
 [32B groupId]
 [32B keyA]                 // BE-ordered as written by ByteBuffer.put
 [32B keyB]
-[8B BE timestamp]          // ByteBuffer.putLong — big-endian
+[8B BE timestamp]          // ByteBuffer.putLong - big-endian
 [4B BE groupName length][groupName UTF-8 bytes]
 [4B BE salt length][salt bytes]
 [4B BE creatorName length][creatorName UTF-8 bytes]
@@ -387,7 +387,7 @@ total: 45 bytes
 total: 89 bytes
 ```
 
-The pqSeed itself is NOT in the signed-input — its hash is. Label is the hash function's domain-separation prefix.
+The pqSeed itself is NOT in the signed-input - its hash is. Label is the hash function's domain-separation prefix.
 
 ### ROLE_CHANGED (`roleChangedSignedInput`)
 
@@ -464,14 +464,14 @@ For each membership record, after the validator's structural check, `GroupTrMana
 
 **The admin verify on items 33/34/37 was creator-only before commit `06f95a7`.** If your iOS receiver is still creator-only, admin-sent removes will silently fail there too. Mirror the verify-against-creator-OR-current-admin logic.
 
-## State machine — receive
+## State machine - receive
 
 Given a verified MEMBER_ADDED record:
 
 ```
 GroupTrManagerImpl.applyMemberAdded(state, event):
     if any existing member already has this pubKey: return (idempotent)
-    if state.epoch is not (event.epoch - 1): drop  (out-of-order — buffer for later)
+    if state.epoch is not (event.epoch - 1): drop  (out-of-order - buffer for later)
     state.members.append(new member with role MEMBER)
     state.epoch = event.epoch
     persist
@@ -485,7 +485,7 @@ Out-of-order future-epoch events are buffered (up to 5 epochs ahead, 500 events 
 
 Concrete checklist:
 
-1. **Do not reuse the legacy Briar private-group invitation carrier** (the upstream `privategroup.invitation` client). GroupTr replaced it. The invite layer GroupTr DOES use is the 42/43/44 handshake on the pairwise messaging channel documented above — implement that, not the upstream invitation client. The membership records (33–41) are still silent fan-out and must NOT appear as visible chat messages.
+1. **Do not reuse the legacy Briar private-group invitation carrier** (the upstream `privategroup.invitation` client). GroupTr replaced it. The invite layer GroupTr DOES use is the 42/43/44 handshake on the pairwise messaging channel documented above - implement that, not the upstream invitation client. The membership records (33–41) are still silent fan-out and must NOT appear as visible chat messages.
 2. **In the iOS group-create UI**: `createGroup(name)` must be purely local. Do NOT send anything over the wire when a group is created. The group is invisible to peers until the first `addMember` call.
 3. **In the iOS "add member" handler**: build the msgType-33 record exactly as specified above, sign with the hybrid key, and send it to the new member AND every other existing member over their pairwise messaging channels.
 4. **In the iOS private-message receive path**: when a record's first BdfList element is `33L`, route to a membership handler. Do NOT show it as a visible chat message. Do NOT require any user "accept" action. Just verify the signature and apply.
@@ -495,9 +495,9 @@ Concrete checklist:
 
 ## What this does NOT cover
 
-- msgType 32 (`GROUP_POST`) — separate spec, see `GROUP_TRIPLE_RATCHET_PQ_DESIGN.md`.
-- Forward secrecy / post-compromise security ratcheting inside the group — that's a property of how the per-message keys are derived from the PCS root, also in the PQ design doc.
-- Recovery from missing membership records — covered by msgType 41 snapshot and the "When to send a snapshot" section above (2026-06-09 update).
+- msgType 32 (`GROUP_POST`) - separate spec, see `GROUP_TRIPLE_RATCHET_PQ_DESIGN.md`.
+- Forward secrecy / post-compromise security ratcheting inside the group - that's a property of how the per-message keys are derived from the PCS root, also in the PQ design doc.
+- Recovery from missing membership records - covered by msgType 41 snapshot and the "When to send a snapshot" section above (2026-06-09 update).
 
 ## Quick interop sanity test for iOS team
 
@@ -507,6 +507,6 @@ When iOS is wired up, the smallest test that proves the protocol works end-to-en
 2. Alice calls `addMember(group.id, peter.pubkey, peter.name)`.
 3. Alice's app sends msgType-33 over the pairwise Tor channel with Peter.
 4. Peter's iOS Zerion receives, validates the signature, applies the state.
-5. **Peter sees the group "Test" appear in his Groups tab** — without ever opening his chat thread with Alice and without any "Accept group invite?" dialog.
+5. **Peter sees the group "Test" appear in his Groups tab** - without ever opening his chat thread with Alice and without any "Accept group invite?" dialog.
 
 If that flow fails on iOS, the bug is in steps 4–5 (receive routing or state apply). Send the BdfList bytes of the msgType-33 record from the wire dump and Android can verify byte-exact equality against what its validator expects.

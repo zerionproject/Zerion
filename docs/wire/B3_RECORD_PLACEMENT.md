@@ -2,7 +2,7 @@
 
 > **SHIPPED in v1.5.0; `B3_PROOF_ENABLED` permanently on. Historical design
 > record.** B.3 hybrid pairing shipped in v1.5.0; the proof-at-slot[4] layout
-> below is the production wire format. The feature gate is no longer a toggle —
+> below is the production wire format. The feature gate is no longer a toggle - 
 > it is permanently enabled. The future-tense rollout/flip steps in §5 and the
 > open follow-ups in §8 are retained for history and are marked completed or
 > superseded inline.
@@ -11,7 +11,7 @@
 behind `B3_PROOF_ENABLED` (BuildConfig boolean on Android, `static let`
 constant on iOS), which is now permanently on.
 **Replaces:** the fictional 4-slot `[majorVersion, minorVersion, signingPubKey,
-pqPubKey]` layout drafted in `B3_B4_SPEC_v1.5.0.md` §1 ("Wire — BDF slot in
+pqPubKey]` layout drafted in `B3_B4_SPEC_v1.5.0.md` §1 ("Wire - BDF slot in
 contact-info record"). That layout never existed on either platform.
 **Targets:** byte-identical wire format on iOS Zerion v1.5.0 ↔ Android
 Zerion v1.5.0 production (`com.professor.zerion`).
@@ -22,7 +22,7 @@ Zerion v1.5.0 production (`com.professor.zerion`).
 
 Both platforms use the upstream Bramble two-stage handshake unchanged:
 
-### Stage 1 — over-Tor handshake (record stream)
+### Stage 1 - over-Tor handshake (record stream)
 
 `bramble-core/.../contact/HandshakeManagerImpl.performHybridHandshake()`
 (Android: `HandshakeManagerImpl.java:201-294`) ↔ iOS:
@@ -41,7 +41,7 @@ Wire records, raw bytes (no BDF), 6 record types from
 | 0x05 | `RECORD_MODE3_CAPABILITY`      | 1 B PCS Mode 3 capability flag         |
 
 `RECORD_HYBRID_STATIC_KEY` (type 0x03) is reused for both static and ephemeral
-hybrid keys — same record type, same 1216-byte raw layout, position in the
+hybrid keys - same record type, same 1216-byte raw layout, position in the
 stream determines which is which. Encoded via `k.getEncoded()` straight out
 of `HybridAgreementPublicKey`, validated only by length on receive.
 
@@ -54,7 +54,7 @@ After this stage both sides hold:
 - `masterKey` (derived from KEM secret + key agreements)
 - `mode3Capable` (Mode 3 PCS capability)
 
-### Stage 2 — encrypted CONTACT_INFO record
+### Stage 2 - encrypted CONTACT_INFO record
 
 Runs over the master-key-encrypted channel.
 
@@ -66,10 +66,10 @@ Top-level record is a 4-slot BDF list:
 
 ```
 CONTACT_INFO :=
-  [ authorList,         // BdfList — slot 0
-    propsDict,          // BdfDictionary — slot 1
-    signature,          // 64-byte Ed25519 sig over (author ‖ props ‖ ts) — slot 2
-    timestamp ]         // i64 ms since epoch — slot 3
+  [ authorList,         // BdfList - slot 0
+    propsDict,          // BdfDictionary - slot 1
+    signature,          // 64-byte Ed25519 sig over (author ‖ props ‖ ts) - slot 2
+    timestamp ]         // i64 ms since epoch - slot 3
 ```
 
 Where `authorList` is itself:
@@ -88,7 +88,7 @@ channel **after** master-key derivation completes.
 They are in different records.**
 
 The spec's `[majorVersion, minorVersion, signingPubKey, pqPubKey]` layout
-was a fiction — no record on either platform looks like that.
+was a fiction - no record on either platform looks like that.
 
 ---
 
@@ -103,16 +103,16 @@ which only arrives in stage 2 over the master-key-encrypted channel.
 
 Repair attempts within Option C land at:
 
-- **C-1** — also add `RECORD_AUTHOR_SIGNING_KEY = 0x07` so the verifier
+- **C-1** - also add `RECORD_AUTHOR_SIGNING_KEY = 0x07` so the verifier
   has the pubkey before processing the proof. Two new wire record types.
-- **C-2** — defer verification to stage 2. But then there's no reason to
-  put the proof in stage 1 — we can just put it in `CONTACT_INFO` itself.
+- **C-2** - defer verification to stage 2. But then there's no reason to
+  put the proof in stage 1 - we can just put it in `CONTACT_INFO` itself.
 
 C-2 is what B-revised below is.
 
 ---
 
-## 3. Decision — B-revised: proof = `CONTACT_INFO` slot[4]
+## 3. Decision - B-revised: proof = `CONTACT_INFO` slot[4]
 
 `CONTACT_INFO` BDF list grows from 4 slots to 5 when
 `messaging.minorVersion >= 5`:
@@ -123,14 +123,14 @@ CONTACT_INFO_v5 :=
     propsDict,          // slot 1
     signature,          // slot 2 (existing Ed25519 sig over author+props+ts)
     timestamp,          // slot 3
-    b3ProofSig ]        // slot 4 — NEW, 64 bytes Ed25519 (B.3 proof)
+    b3ProofSig ]        // slot 4 - NEW, 64 bytes Ed25519 (B.3 proof)
 ```
 
 The `b3ProofSig` value comes from `B3PqProof.sign(signingPriv, ourEph,
 theirEph, ourStaticPqPub)` per the helper at
 `zerion-android/.../contact/identity/B3PqProof.java` (Android) and
 `Packages/ZerionCrypto/.../B3PqKeyProof.swift` (iOS). Byte-identical
-across platforms — pinned by `docs/wire/test_vectors/B3_v1.txt`.
+across platforms - pinned by `docs/wire/test_vectors/B3_v1.txt`.
 
 ### Why B-revised, not C-1
 
@@ -143,9 +143,9 @@ across platforms — pinned by `docs/wire/test_vectors/B3_v1.txt`.
 | Cost on verify-fail                  | None (no KEM done)          | One wasted KEM op + ~1.25 KB transient |
 | Cost on success                      | Same                        | Same                 |
 
-C-1's only advantage is fail-fast. The cost — one extra KEM operation
+C-1's only advantage is fail-fast. The cost - one extra KEM operation
 (~1 ms on Android, ~0.5 ms on iOS) and ~1.25 KB of transient memory per
-in-progress handshake — is trivially preferable to two new wire records
+in-progress handshake - is trivially preferable to two new wire records
 and a split verification pipeline.
 
 ### Single attachment covers both contact-add paths
@@ -189,7 +189,7 @@ fn onContactInfoReceived(record: BdfList, peerMinorVersion: int):
     if proofSig == null or proofSig.length != 64:
       reject("malformed slot[4]")
     if b3ReceiverState == null or b3ReceiverState.expired():
-      reject("no buffered handshake state — proof unverifiable")
+      reject("no buffered handshake state - proof unverifiable")
     authorSigningPub = record[0][2]                       # authorList.signingPubKey
     if !B3PqProof.verify(authorSigningPub,
                           b3ReceiverState.theirEphX25519,
@@ -201,7 +201,7 @@ fn onContactInfoReceived(record: BdfList, peerMinorVersion: int):
   elif peerMinorVersion <= 4:
     if record.length != 4:
       reject("unexpected slot[4] from v4 peer")           # malformed
-    # legacy path — no B.3 verification, accept as-is
+    # legacy path - no B.3 verification, accept as-is
   else:
     reject("unknown minor version")
 
@@ -211,7 +211,7 @@ fn onContactInfoReceived(record: BdfList, peerMinorVersion: int):
 **`reject()` behaviour:** zero the buffered state, tear down the encrypted
 channel, **do not** write any keychain / keystore entries, **do not** enter
 pending-contact state, surface a non-actionable user-facing error
-("contact verification failed"). Silently reject — **emit NO log** of any
+("contact verification failed"). Silently reject - **emit NO log** of any
 kind (no logger, no telemetry, no `android.util.Log`, no `System.err`), per
 the project's absolute no-logging policy. The rejection reason
 (`missing | malformed | verify_failed | state_expired`) MUST NOT be written
@@ -253,7 +253,7 @@ Behaviour symmetric; both sides' BDF readers use end-marker termination
   `CONTACT_INFO` with computed B.3 proof at slot[4]. On receive, enforce
   the receiver state machine above.
 
-### When to flip — COMPLETED (shipped v1.5.0)
+### When to flip - COMPLETED (shipped v1.5.0)
 
 This sequence was executed; `B3_PROOF_ENABLED = true` shipped in both v1.5.0
 release builds and is now permanently on. Retained for history:
@@ -268,7 +268,7 @@ release builds and is now permanently on. Retained for history:
 
 ---
 
-## 6. Helper API — already implemented both sides
+## 6. Helper API - already implemented both sides
 
 Both helpers are pure-crypto, no DB / no UI dependency, no network state.
 They take exactly the inputs the receiver state machine has and produce /
@@ -320,7 +320,7 @@ Once shipped on both sides:
   victim's static PQ pubkey for an attacker's during a fresh contact-add.
 - **Session binding.** The proof is bound to the specific session via
   the two ephemeral X25519 keys exchanged in stage 1. Replaying a proof
-  from one session in another is impossible — the role byte and
+  from one session in another is impossible - the role byte and
   sessionId differ.
 - **Domain separation.** Both labels (`ZERION_PQ_KEY_PROOF_v1` for the
   sig input, `ZERION_HANDSHAKE_SESSION_v1` as the BLAKE2b key for
@@ -334,7 +334,7 @@ What this **doesn't** fix:
   scope; that's full identity compromise.)
 - Pre-handshake QR-payload tampering on the face-to-face path. (Covered
   by the existing commitment binding in `RECORD_HYBRID_STATIC_KEY`'s
-  commitment check — not B.3's job.)
+  commitment check - not B.3's job.)
 - Forward secrecy or post-compromise security. (Handled by PCS Mode 2/3,
   not B.3.)
 
@@ -342,16 +342,16 @@ What this **doesn't** fix:
 
 ## 8. Open follow-ups (status as of v2.0.x)
 
-- **Field-level encryption on transport properties** (Android) — see
+- **Field-level encryption on transport properties** (Android) - see
   `B3_B4_SPEC_v1.5.0.md` Q2 / file-level audit findings.
-- ~~**Onion concurrent hidden services for B.4** — onionwrapper PR needed.~~
-  **DONE — shipped in v1.5.0.** B.4 onion rotation is live; the concurrent
+- ~~**Onion concurrent hidden services for B.4** - onionwrapper PR needed.~~
+  **DONE - shipped in v1.5.0.** B.4 onion rotation is live; the concurrent
   hidden-services API exists in the Zerion onionwrapper fork. Mode 3-Full
   per-message also shipped (default since v1.7), superseding the open PCS
   notes here.
 - **`messaging.minorVersion` floor bump to 5 and legacy 4-slot removal**
-  — still tracked; gated on adoption.
-- **Rotating the long-term Ed25519 key** — out of scope; would break
+ - still tracked; gated on adoption.
+- **Rotating the long-term Ed25519 key** - out of scope; would break
   the safety-number / fingerprint UI.
 
 ---

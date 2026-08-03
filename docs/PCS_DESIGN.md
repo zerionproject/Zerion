@@ -2,7 +2,7 @@
 
 **Version:** 1.5
 **Date:** 2026-05-20
-**Status:** IMPLEMENTED — v1.7 ships Mode 3-Full per-message ML-KEM-768
+**Status:** IMPLEMENTED - v1.7 ships Mode 3-Full per-message ML-KEM-768
 hybrid ratchet with a per-stream chain key as the default on new 1:1
 contacts
 **Author:** Zerion Project
@@ -14,7 +14,7 @@ contacts
 
 ---
 
-## v1.7 amendment — Mode 3-Full per-message ratchet + per-stream chain key
+## v1.7 amendment - Mode 3-Full per-message ratchet + per-stream chain key
 
 v1.7 (May 2026) ships Mode 3-Full as the default for new 1:1 contacts.
 The structural changes vs the v1.6 per-epoch Mode 3 design:
@@ -98,12 +98,12 @@ contact, and a quiet receive direction does not block outbound sends.
 
 `Mode3FullState` carries four fields per direction row in the database:
 
-- `theirActivePqPk` — RECV direction owns it; updated only when a peer
+- `theirActivePqPk` - RECV direction owns it; updated only when a peer
   frame is decapsulated and its `pkAdvertise` extracted
-- `ourActiveKeyPair` — SEND direction owns it; rotated by encapsulation
-- `recentKeyPairs` — SEND direction owns it; LRU of recently-rotated
+- `ourActiveKeyPair` - SEND direction owns it; rotated by encapsulation
+- `recentKeyPairs` - SEND direction owns it; LRU of recently-rotated
   sender keypairs
-- `messageCounter` — per-direction local counter, not synced
+- `messageCounter` - per-direction local counter, not synced
 
 `PcsStateManager.saveMode2State` field-merges incoming writes: when
 SEND saves, the RECV-owned `theirActivePqPk` from the current row is
@@ -132,7 +132,7 @@ encapsulation, not in the symmetric primitive.
 
 ---
 
-## v1.6 amendment — what changed since Phase 4d
+## v1.6 amendment - what changed since Phase 4d
 
 Phase 4d (January 2026) shipped Mode 3 *structurally*: the stream-header
 flag, the per-frame PCS header with `FLAG_PQ_ENABLED`, the chunk codec,
@@ -144,7 +144,7 @@ the post-quantum epoch rotation never **completed** end-to-end:
    absorbed instead of transitioning into `PQ_RECEIVING_EK_VEC`.
 2. When the responder did encapsulate, it cloned the ML-KEM-768
    ciphertext and immediately zeroed the resulting shared secret. At
-   epoch derive-time, the code re-encapsulated to recover the secret —
+   epoch derive-time, the code re-encapsulated to recover the secret - 
    but Bouncy Castle's ML-KEM generator is randomized per call, so the
    re-encapsulation produced a different ciphertext and the equality
    check always failed.
@@ -178,7 +178,7 @@ v1.6 (May 2026) fixes all three. Plus:
   thread's chain-key advance.
 - **Audit-found bug fixes** (caught and patched before v1.6 tag):
   GROUP_POST hybrid-signature verification gap (validator only verified
-  the Ed25519 prefix; manager never re-verified the ML-DSA half — fixed
+  the Ed25519 prefix; manager never re-verified the ML-DSA half - fixed
   by adding the recordSig to the event and re-verifying in cachePost);
   GROUP_MEMBER_LEFT same pattern, now verified at manager layer; ML-KEM
   shared secret zeroed immediately after clone in `deriveEpochSecret`
@@ -229,7 +229,7 @@ This document specifies the Post-Compromise Security (PCS) implementation for Ze
 ### Non-Goals
 
 - Group messaging PCS: out of scope for *this* document. Group PCS has
-  since shipped — group posts ride the pairwise Triple Ratchet over each
+  since shipped - group posts ride the pairwise Triple Ratchet over each
   member's 1:1 channel, inheriting the same FS + PCS + hybrid-PQ
   guarantees. See
   [GROUP_TRIPLE_RATCHET_PQ_DESIGN.md](GROUP_TRIPLE_RATCHET_PQ_DESIGN.md).
@@ -383,7 +383,7 @@ Zerion PCS implements a **Symmetric-Key Ratchet** with optional **DH Ratchet** e
 - Higher bandwidth (32-byte DH public key per message)
 - Now a fallback; no post-quantum protection on the ongoing ratchet
 
-**Mode 3: Triple Ratchet — per-epoch PQ (Phase 3, fallback)**
+**Mode 3: Triple Ratchet - per-epoch PQ (Phase 3, fallback)**
 - Mode 2 + ML-KEM-768 post-quantum ratchet mixed into the root key at
   epoch boundaries (every 25 messages OR 24 hours, whichever fires first)
 - Hybrid post-quantum PCS at per-epoch granularity
@@ -396,7 +396,7 @@ Zerion PCS implements a **Symmetric-Key Ratchet** with optional **DH Ratchet** e
 - Mode 2 + a fresh ML-KEM-768 encapsulation on **every** outbound frame,
   with the per-frame shared secret mixed into the body AEAD key via
   `HKDF(classicalMessageKey, ml_kem_shared_secret)`
-- Per-message hybrid post-quantum PCS — quantum recovery every frame,
+- Per-message hybrid post-quantum PCS - quantum recovery every frame,
   not every epoch
 - Per-stream chain key (`HKDF(rootKey, PCS_STREAM_CHAIN, streamNumber)`)
   advanced locally within the stream
@@ -1100,7 +1100,7 @@ Mode 3-Full (per-message ML-KEM-768) is the active default since v1.7; per-epoch
 - Phase 4b: Integration with PCS streams - COMPLETE
 - Phase 4c: Testing and verification - COMPLETE
 - Phase 4d: General release (MODE3_ENABLED = true) - COMPLETE (wire framing)
-- Phase 5 (v1.6): Production fixes — responder chunk dispatch, responder
+- Phase 5 (v1.6): Production fixes - responder chunk dispatch, responder
   shared-secret persistence, factory state callbacks wired, cross-direction
   PQ mixing per epoch, self-heal, pubkey-comparison tiebreak, atomic
   cross-direction mix. End-to-end PQ epoch completion verified. COMPLETE.

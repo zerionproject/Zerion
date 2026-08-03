@@ -1,10 +1,10 @@
 # B.4 onionwrapper concurrent-services API
 
-> **IMPLEMENTED — B.4 onion rotation shipped v1.5.0; the concurrent-services
+> **IMPLEMENTED - B.4 onion rotation shipped v1.5.0; the concurrent-services
 > API described here now exists in the Zerion onionwrapper fork.** This was
 > originally a forward-looking design note for the fork; it is retained as the
 > as-built reference. The future-tense "once the PR lands / once the fork is
-> published" passages below describe work that is now done — see the inline
+> published" passages below describe work that is now done - see the inline
 > "DONE" annotations.
 >
 > **Operational rotation cadence:** the Tor v3 onion address rotates every
@@ -23,32 +23,32 @@ concurrent-services API.)
 
 ---
 
-## 1 — Why
+## 1 - Why
 
-The current `onionwrapper` API exposes one onion service per Tor process — `tor.publishHiddenService(port, port, privKey)` returns a single `HiddenServiceProperties`, and `tor.removeHiddenService(onion)` clears it. B.4 needs **two** services running concurrently during the `announcing` rotation phase: the old `onion_current` (still listening for peers who haven't migrated yet) plus the new `onion_next` (listening for peers who have).
+The current `onionwrapper` API exposes one onion service per Tor process - `tor.publishHiddenService(port, port, privKey)` returns a single `HiddenServiceProperties`, and `tor.removeHiddenService(onion)` clears it. B.4 needs **two** services running concurrently during the `announcing` rotation phase: the old `onion_current` (still listening for peers who haven't migrated yet) plus the new `onion_next` (listening for peers who have).
 
-The Tor protocol itself (`ADD_ONION` / `DEL_ONION`) supports multiple concurrent services per controller connection — this is purely a wrapper-API gap.
+The Tor protocol itself (`ADD_ONION` / `DEL_ONION`) supports multiple concurrent services per controller connection - this is purely a wrapper-API gap.
 
 ---
 
-## 2 — Where the PR goes
+## 2 - Where the PR goes
 
 Upstream Briar at `org.briarproject:onionwrapper-core` (and the Android variant `:onionwrapper-android`). Per project decision, Zerion forked this library into the Zerion org rather than waiting on a Briar upstream review cycle. **DONE:** the fork is published and the `bramble-core` / `bramble-android` build coordinates already point at it (originally [bramble-core/build.gradle:12](../../bramble-core/build.gradle#L12) and [bramble-android/build.gradle:61](../../bramble-android/build.gradle#L61)).
 
 Today's call sites in this tree:
-- [TorPlugin.java:231](../../bramble-core/src/main/java/org/briarproject/bramble/plugin/tor/TorPlugin.java#L231) — `tor.publishHiddenService(port, port, privKey)`
-- [TorPlugin.java:405](../../bramble-core/src/main/java/org/briarproject/bramble/plugin/tor/TorPlugin.java#L405) — `tor.removeHiddenService(onion)`
+- [TorPlugin.java:231](../../bramble-core/src/main/java/org/briarproject/bramble/plugin/tor/TorPlugin.java#L231) - `tor.publishHiddenService(port, port, privKey)`
+- [TorPlugin.java:405](../../bramble-core/src/main/java/org/briarproject/bramble/plugin/tor/TorPlugin.java#L405) - `tor.removeHiddenService(onion)`
 
 These keep working as the v1 single-onion API. The PR adds a v2 concurrent-services API alongside.
 
 ---
 
-## 3 — Required additions
+## 3 - Required additions
 
 ```java
 /**
  * Add a hidden service at the given port using the given private key.
- * Safe to call multiple times against the same Tor process — each call
+ * Safe to call multiple times against the same Tor process - each call
  * registers an additional concurrent service.
  *
  * Idempotent on the (privKey, port) pair: if the service is already
@@ -59,7 +59,7 @@ These keep working as the v1 single-onion API. The PR adds a v2 concurrent-servi
  *                 expanded form expected by Tor's ADD_ONION).
  * @param port     onion-side virtual port.
  * @return the .onion address Tor assigned (56 chars base32, no scheme,
- *         no trailing ".onion" — caller appends).
+ *         no trailing ".onion" - caller appends).
  * @throws IOException on Tor controller error or descriptor publication
  *                     timeout (90s per Tor's HSDir convention).
  */
@@ -77,7 +77,7 @@ void removeHiddenService(String onion) throws IOException;
 
 /**
  * Snapshot of currently-registered hidden services. Useful for crash-
- * recovery — on next startup, the rotation state machine can compare
+ * recovery - on next startup, the rotation state machine can compare
  * its persisted "expected onions" against this set and reconcile.
  *
  * @return immutable set of .onion addresses currently bound.
@@ -87,19 +87,19 @@ Set<String> getRegisteredHiddenServices();
 
 ---
 
-## 4 — Semantic contract
+## 4 - Semantic contract
 
 | Invariant | Why it matters for B.4 |
 |---|---|
-| `addHiddenService` is concurrency-safe — two threads calling at once produce two distinct services, no race on the controller socket | The opportunistic trigger fires from the sync-session-start hook; multiple sessions can race the rotation begin path (single-flight guard prevents the *intent*, but the actual `ADD_ONION` should be safe regardless) |
+| `addHiddenService` is concurrency-safe - two threads calling at once produce two distinct services, no race on the controller socket | The opportunistic trigger fires from the sync-session-start hook; multiple sessions can race the rotation begin path (single-flight guard prevents the *intent*, but the actual `ADD_ONION` should be safe regardless) |
 | `removeHiddenService` does not affect other registered services | Retirement step retires `onion_current` while `onion_next` keeps listening. Cross-contamination here would drop active connections from migrated peers |
 | Adding the same `(privKey, port)` twice is idempotent and returns the same onion | Crash-recovery: on app restart with an in-progress rotation, replaying the publisher state machine must not produce a *different* onion than what was already published |
-| Removing a non-existent onion is a silent no-op | Same crash-recovery reason — re-running the retirement step after a crash mid-promotion must be safe |
+| Removing a non-existent onion is a silent no-op | Same crash-recovery reason - re-running the retirement step after a crash mid-promotion must be safe |
 | Existing single-onion API (`publishHiddenService` / `removeHiddenService(String)`) keeps its current behaviour byte-for-byte | Any existing Briar consumer of the library must not regress |
 
 ---
 
-## 5 — Implementation notes for whoever opens the fork PR
+## 5 - Implementation notes for whoever opens the fork PR
 
 The current single-onion implementation likely tracks a `HiddenServiceProperties` field as a singleton and clears it on `removeHiddenService`. Two ways to extend:
 
@@ -107,22 +107,22 @@ The current single-onion implementation likely tracks a `HiddenServiceProperties
 
 **(b) Add the multi-service map alongside the existing singleton.** The singleton field continues to track the v1-API service; the new map tracks v2-API services. Each API operates on its own state. Less invasive but doubles the bookkeeping.
 
-Recommend **(a)** — the underlying Tor socket has no concept of "the" onion, so the wrapper shouldn't either. Tests that assume singleton behaviour are probably testing wrapper behaviour rather than Tor behaviour and should be updated.
+Recommend **(a)** - the underlying Tor socket has no concept of "the" onion, so the wrapper shouldn't either. Tests that assume singleton behaviour are probably testing wrapper behaviour rather than Tor behaviour and should be updated.
 
 Threading: Tor controller socket is single-threaded, so `addHiddenService` / `removeHiddenService` calls need to serialize onto the controller's command queue. The current implementation likely already does this for `publishHiddenService`; the new methods reuse that mutex.
 
-Descriptor publication: `ADD_ONION` returns immediately, but the v3 onion isn't reachable until its descriptor is published to HSDir nodes (~30–90 seconds). The wrapper should expose this delay rather than hide it — the rotation receiver state machine needs to know "new onion isn't dialable yet, fall back to old" and that's easier if `addHiddenService` returns once `ADD_ONION` returns rather than blocking until first reachable.
+Descriptor publication: `ADD_ONION` returns immediately, but the v3 onion isn't reachable until its descriptor is published to HSDir nodes (~30–90 seconds). The wrapper should expose this delay rather than hide it - the rotation receiver state machine needs to know "new onion isn't dialable yet, fall back to old" and that's easier if `addHiddenService` returns once `ADD_ONION` returns rather than blocking until first reachable.
 
 ---
 
-## 6 — Verifying against the fork — DONE (shipped v1.5.0)
+## 6 - Verifying against the fork - DONE (shipped v1.5.0)
 
 This verification was completed; the concurrent-services API shipped in v1.5.0.
 Retained for history:
 
-1. ~~Bump `onionwrapper_version` in [build.gradle:38](../../build.gradle#L38) to the fork's first concurrent-services release.~~ Done — coordinates point at the Zerion fork.
+1. ~~Bump `onionwrapper_version` in [build.gradle:38](../../build.gradle#L38) to the fork's first concurrent-services release.~~ Done - coordinates point at the Zerion fork.
 2. ~~Smoke test in `TorPluginTest`: `addHiddenService(k1, 9001)`, `addHiddenService(k2, 9002)`, dial both from a second Tor process, both succeed, `removeHiddenService(o1)`, dial `o2` continues to work, dial `o1` fails.~~ Done.
-3. ~~Phase 4 implementation can then proceed — no further wrapper changes needed for B.4.~~ Done — B.4 onion rotation is live (5–14 day cadence).
+3. ~~Phase 4 implementation can then proceed - no further wrapper changes needed for B.4.~~ Done - B.4 onion rotation is live (5–14 day cadence).
 
 ---
 
