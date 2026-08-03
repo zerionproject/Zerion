@@ -8,9 +8,9 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import java.util.Arrays;
 
 /**
- * The opaque sealed-sender envelope carried by a relay, as specified in the
- * Phase 2 async crypto design (ZERION 3.2 ASYNC SEALED-SENDER PQ CRYPTO
- * DESIGN.md, section 5). This class is only the wire format: it holds and
+ * The opaque sealed-sender envelope carried by a relay, as specified in
+ * docs/protocol/ASYNC-SEALED-SENDER.md. This class is only the wire format:
+ * it holds and
  * (de)serialises the fields. Deriving the message key, sealing, and opening are
  * done elsewhere and are gated behind an external cryptographer review before
  * any use.
