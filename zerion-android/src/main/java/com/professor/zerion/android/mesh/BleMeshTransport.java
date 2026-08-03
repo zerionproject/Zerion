@@ -52,16 +52,6 @@ public class BleMeshTransport implements MeshLink {
 	private static final UUID FRAME_UUID =
 			UUID.fromString("9f2a7c14-6b38-4d0e-8a51-c3e7d924b6f9");
 
-	private static final byte[] MESH_DISCOVERY_SECRET = {
-			(byte) 0x3a, (byte) 0x91, (byte) 0xe7, (byte) 0x42,
-			(byte) 0xbc, (byte) 0x18, (byte) 0x6f, (byte) 0xd0,
-			(byte) 0x59, (byte) 0xa3, (byte) 0x2e, (byte) 0x87,
-			(byte) 0xf1, (byte) 0x4c, (byte) 0x9b, (byte) 0x60,
-			(byte) 0xd7, (byte) 0x25, (byte) 0x8e, (byte) 0x33,
-			(byte) 0xa9, (byte) 0x70, (byte) 0x1f, (byte) 0xc4,
-			(byte) 0x6b, (byte) 0xe2, (byte) 0x5d, (byte) 0x08,
-			(byte) 0x94, (byte) 0xbf, (byte) 0x71, (byte) 0x36};
-	private static final long EPOCH_MS = 10 * 60 * 1000L;
 
 	private static final int TARGET_MTU = 512;
 	private static final int DEFAULT_CHUNK = 20;
@@ -111,7 +101,7 @@ public class BleMeshTransport implements MeshLink {
 			new ConcurrentHashMap<>();
 	private final Map<String, Integer> mtuByDevice =
 			new ConcurrentHashMap<>();
-	private final Map<String, Reassembler> reassemblers =
+	private final Map<String, MeshFrameReassembler> reassemblers =
 			new ConcurrentHashMap<>();
 	private final Map<String, Long> lastConnectAttempt =
 			new ConcurrentHashMap<>();
@@ -149,7 +139,7 @@ public class BleMeshTransport implements MeshLink {
 					t.setDaemon(true);
 					return t;
 				});
-		rot.scheduleWithFixedDelay(this::rotate, EPOCH_MS, EPOCH_MS,
+		rot.scheduleWithFixedDelay(this::rotate, MeshDiscovery.EPOCH_MS, MeshDiscovery.EPOCH_MS,
 				TimeUnit.MILLISECONDS);
 		nonceRotator = rot;
 		BluetoothAdapter adapter = bluetoothManager.getAdapter();
@@ -406,40 +396,17 @@ public class BleMeshTransport implements MeshLink {
 		BluetoothLeScanner s = adapter.getBluetoothLeScanner();
 		if (s == null) return;
 		scanner = s;
-		long epoch = currentEpoch();
+		long epoch = MeshDiscovery.currentEpoch();
 		List<ScanFilter> filters = new java.util.ArrayList<>();
 		for (long e = epoch - 3; e <= epoch + 3; e++) {
 			filters.add(new ScanFilter.Builder()
-					.setServiceUuid(new ParcelUuid(discoveryUuid(e)))
+					.setServiceUuid(new ParcelUuid(MeshDiscovery.discoveryUuid(e, GATT_SERVICE_UUID)))
 					.build());
 		}
 		ScanSettings settings = new ScanSettings.Builder()
 				.setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
 				.build();
 		s.startScan(filters, settings, scanCallback);
-	}
-
-	private static long currentEpoch() {
-		return System.currentTimeMillis() / EPOCH_MS;
-	}
-
-	private static UUID discoveryUuid(long epoch) {
-		try {
-			java.security.MessageDigest md =
-					java.security.MessageDigest.getInstance("SHA-256");
-			md.update(MESH_DISCOVERY_SECRET);
-			byte[] e = new byte[8];
-			for (int i = 0; i < 8; i++) {
-				e[i] = (byte) (epoch >>> (8 * (7 - i)));
-			}
-			byte[] h = md.digest(e);
-			long msb = 0, lsb = 0;
-			for (int i = 0; i < 8; i++) msb = (msb << 8) | (h[i] & 0xFF);
-			for (int i = 8; i < 16; i++) lsb = (lsb << 8) | (h[i] & 0xFF);
-			return new UUID(msb, lsb);
-		} catch (java.security.NoSuchAlgorithmException ex) {
-			return GATT_SERVICE_UUID;
-		}
 	}
 
 	private final ScanCallback scanCallback = new ScanCallback() {
@@ -454,7 +421,7 @@ public class BleMeshTransport implements MeshLink {
 						.getManufacturerSpecificData(MANUFACTURER_ID);
 			}
 			if (peerNonce == null) return;
-			if (compareNonce(sessionNonce, peerNonce) <= 0) return;
+			if (MeshDiscovery.compareNonce(sessionNonce, peerNonce) <= 0) return;
 			long now = clock();
 			Long last = lastConnectAttempt.get(address);
 			if (last != null && now - last < CONNECT_COOLDOWN_MS) return;
@@ -470,15 +437,6 @@ public class BleMeshTransport implements MeshLink {
 
 	private static long clock() {
 		return android.os.SystemClock.elapsedRealtime();
-	}
-
-	private static int compareNonce(byte[] a, byte[] b) {
-		int n = Math.min(a.length, b.length);
-		for (int i = 0; i < n; i++) {
-			int d = (a[i] & 0xFF) - (b[i] & 0xFF);
-			if (d != 0) return d;
-		}
-		return a.length - b.length;
 	}
 
 	private final BluetoothGattCallback clientCallback =
@@ -548,7 +506,7 @@ public class BleMeshTransport implements MeshLink {
 				.build();
 		AdvertiseData data = new AdvertiseData.Builder()
 				.setIncludeDeviceName(false)
-				.addServiceUuid(new ParcelUuid(discoveryUuid(currentEpoch())))
+				.addServiceUuid(new ParcelUuid(MeshDiscovery.discoveryUuid(MeshDiscovery.currentEpoch(), GATT_SERVICE_UUID)))
 				.build();
 		AdvertiseData scanResponse = new AdvertiseData.Builder()
 				.setIncludeDeviceName(false)
@@ -563,8 +521,8 @@ public class BleMeshTransport implements MeshLink {
 
 	private void onBytes(String key, @Nullable byte[] value) {
 		if (value == null || value.length == 0) return;
-		Reassembler r = reassemblers.computeIfAbsent(key,
-				k -> new Reassembler());
+		MeshFrameReassembler r = reassemblers.computeIfAbsent(key,
+				k -> new MeshFrameReassembler(MAX_FRAME_BYTES));
 		r.append(value);
 		byte[] frame;
 		while ((frame = r.poll()) != null) {
@@ -643,57 +601,6 @@ public class BleMeshTransport implements MeshLink {
 			gatt.disconnect();
 			gatt.close();
 		} catch (RuntimeException ignored) {
-		}
-	}
-
-	private static final class Reassembler {
-		private byte[] buf = new byte[512];
-		private int head = 0;
-		private int tail = 0;
-
-		synchronized void append(byte[] chunk) {
-			ensureCapacity(chunk.length);
-			System.arraycopy(chunk, 0, buf, tail, chunk.length);
-			tail += chunk.length;
-		}
-
-		private void ensureCapacity(int extra) {
-			if (tail + extra <= buf.length) return;
-			int used = tail - head;
-			if (head > 0 && used + extra <= buf.length) {
-				System.arraycopy(buf, head, buf, 0, used);
-				head = 0;
-				tail = used;
-				return;
-			}
-			int newCap = Math.max(buf.length * 2, used + extra);
-			byte[] grown = new byte[newCap];
-			System.arraycopy(buf, head, grown, 0, used);
-			buf = grown;
-			head = 0;
-			tail = used;
-		}
-
-		@Nullable
-		synchronized byte[] poll() {
-			int avail = tail - head;
-			if (avail < LENGTH_PREFIX) return null;
-			int len = ((buf[head] & 0xFF) << 24) | ((buf[head + 1] & 0xFF) << 16)
-					| ((buf[head + 2] & 0xFF) << 8) | (buf[head + 3] & 0xFF);
-			if (len < 0 || len > MAX_FRAME_BYTES) {
-				head = 0;
-				tail = 0;
-				return null;
-			}
-			if (avail < LENGTH_PREFIX + len) return null;
-			byte[] frame = new byte[len];
-			System.arraycopy(buf, head + LENGTH_PREFIX, frame, 0, len);
-			head += LENGTH_PREFIX + len;
-			if (head == tail) {
-				head = 0;
-				tail = 0;
-			}
-			return frame;
 		}
 	}
 }
