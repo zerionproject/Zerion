@@ -1,5 +1,7 @@
 package org.zerionproject.transport;
 
+import org.zerionproject.core.crypto.pcs.PcsPersistenceException;
+
 import org.zerionproject.core.api.Bytes;
 import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactId;
@@ -123,7 +125,10 @@ public class ZtpSessionProviderImpl
 		ContactId cid = new ContactId(contactId);
 		PcsSessionState send = pcsStateManager.loadSendState(cid);
 		if (send == null) return;
-		pcsStateManager.saveSendState(cid, send.withMode3FullState(state));
+		try {
+			pcsStateManager.saveSendState(cid, send.withMode3FullState(state));
+		} catch (PcsPersistenceException ignored) {
+		}
 	}
 
 	@Override

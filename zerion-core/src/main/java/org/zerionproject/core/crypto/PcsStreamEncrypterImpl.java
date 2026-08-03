@@ -17,6 +17,7 @@ import org.zerionproject.core.util.ByteUtils;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.IOException;
+import org.zerionproject.core.crypto.pcs.PcsPersistenceException;
 import java.io.OutputStream;
 import java.security.GeneralSecurityException;
 import java.util.function.Consumer;
@@ -325,7 +326,11 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 						sendState = sendState.afterPqRatchet(newRootKey,
 								pqState.getCurrentEpoch());
 						if (pqCrossMixCallback != null) {
-							pqCrossMixCallback.accept(pqSecret);
+							try {
+								pqCrossMixCallback.accept(pqSecret);
+							} catch (PcsPersistenceException __pe) {
+								throw new IOException("Ratchet state persistence failed", __pe);
+							}
 						}
 						pqState = pqRatchet.completeEpoch(pqState,
 								System.currentTimeMillis());
@@ -334,12 +339,20 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 					}
 				}
 				if (pqStateCallback != null) {
-					pqStateCallback.accept(pqState);
+					try {
+						pqStateCallback.accept(pqState);
+					} catch (PcsPersistenceException __pe) {
+						throw new IOException("Ratchet state persistence failed", __pe);
+					}
 				}
 			}
 
 			if (stateCallback != null) {
-				stateCallback.accept(sendState);
+				try {
+					stateCallback.accept(sendState);
+				} catch (PcsPersistenceException __pe) {
+					throw new IOException("Ratchet state persistence failed", __pe);
+				}
 			}
 		} finally {
 			if (directionLock != null) directionLock.unlock();

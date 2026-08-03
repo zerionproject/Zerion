@@ -118,6 +118,7 @@ public class PcsStateManager implements Service {
 								recv.getPqEpoch() + 1));
 			});
 		} catch (DbException e) {
+			throw new PcsPersistenceException(e);
 		}
 	}
 
@@ -135,6 +136,7 @@ public class PcsStateManager implements Service {
 								send.getPqEpoch() + 1));
 			});
 		} catch (DbException e) {
+			throw new PcsPersistenceException(e);
 		}
 	}
 
@@ -269,6 +271,7 @@ public class PcsStateManager implements Service {
 			db.transaction(false, txn ->
 					saveState(txn, contactId, direction, state));
 		} catch (DbException e) {
+			throw new PcsPersistenceException(e);
 		}
 	}
 
@@ -414,6 +417,7 @@ public class PcsStateManager implements Service {
 		try {
 			db.transaction(false, txn -> savePqState(txn, contactId, state));
 		} catch (DbException e) {
+			throw new PcsPersistenceException(e);
 		}
 	}
 

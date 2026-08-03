@@ -24,6 +24,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.EOFException;
 import java.io.IOException;
+import org.zerionproject.core.crypto.pcs.PcsPersistenceException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
@@ -532,7 +533,11 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 					recvState = recvState.afterPqRatchet(newRootKey,
 							pqState.getCurrentEpoch());
 					if (pqCrossMixCallback != null) {
-						pqCrossMixCallback.accept(pqSecret);
+						try {
+							pqCrossMixCallback.accept(pqSecret);
+						} catch (PcsPersistenceException __pe) {
+							throw new IOException("Ratchet state persistence failed", __pe);
+						}
 					}
 					pqState = pqRatchet.completeEpoch(pqState,
 							System.currentTimeMillis());
@@ -541,7 +546,11 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 				}
 			}
 			if (pqStateCallback != null) {
-				pqStateCallback.accept(pqState);
+				try {
+					pqStateCallback.accept(pqState);
+				} catch (PcsPersistenceException __pe) {
+					throw new IOException("Ratchet state persistence failed", __pe);
+				}
 			}
 		}
 
@@ -561,7 +570,11 @@ class PcsStreamDecrypterImpl implements StreamDecrypter {
 		frameNumber++;
 
 		if (stateCallback != null) {
-			stateCallback.accept(recvState);
+			try {
+				stateCallback.accept(recvState);
+			} catch (PcsPersistenceException __pe) {
+				throw new IOException("Ratchet state persistence failed", __pe);
+			}
 		}
 
 		return actualPayloadLength;
