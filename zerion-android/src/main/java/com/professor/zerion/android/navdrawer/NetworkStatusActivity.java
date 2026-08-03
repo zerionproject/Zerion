@@ -47,6 +47,6 @@ public class NetworkStatusActivity extends ZerionActivity {
 			onBackPressed();
 			return true;
 		}
-		return false;
+		return super.onOptionsItemSelected(item);
 	}
 }
