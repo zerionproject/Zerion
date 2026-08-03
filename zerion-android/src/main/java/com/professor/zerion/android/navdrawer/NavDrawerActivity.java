@@ -78,9 +78,6 @@ public class NavDrawerActivity extends ZerionActivity implements
 	private static final int TAB_VAULT = 3;
 
 	private NavDrawerViewModel navDrawerViewModel;
-	private boolean isShowingNetworkStatus = false;
-	private int previousTab = TAB_CONTACTS;
-	private String previousTitle = null;
 
 	@Inject
 	ViewModelProvider.Factory viewModelFactory;
@@ -232,7 +229,8 @@ public class NavDrawerActivity extends ZerionActivity implements
 		});
 		networkStatusButton.setOnClickListener(v -> {
 			com.professor.zerion.android.util.Haptics.tap(v);
-			toggleNetworkStatus();
+			startActivity(new android.content.Intent(this,
+					NetworkStatusActivity.class));
 		});
 		menuButton.setOnClickListener(v -> {
 			com.professor.zerion.android.util.Haptics.tap(v);
@@ -263,13 +261,7 @@ public class NavDrawerActivity extends ZerionActivity implements
 	}
 
 	private void onTabClicked(int tab) {
-		if (isShowingNetworkStatus) {
-			isShowingNetworkStatus = false;
-			findViewById(R.id.bottomNavigation).setVisibility(VISIBLE);
-			switchTab(tab, true);
-		} else {
-			switchTab(tab);
-		}
+		switchTab(tab);
 	}
 
 	private void switchTab(int tab) {
@@ -338,34 +330,6 @@ public class NavDrawerActivity extends ZerionActivity implements
 
 	private void openSettings() {
 		startActivity(new Intent(this, SettingsActivity.class));
-	}
-
-	private void toggleNetworkStatus() {
-		if (isShowingNetworkStatus) {
-			isShowingNetworkStatus = false;
-			findViewById(R.id.bottomNavigation).setVisibility(VISIBLE);
-			switchTab(previousTab, true);
-			if (previousTab == TAB_CONTACTS || previousTab == TAB_GROUPS) {
-				fabCompose.setVisibility(VISIBLE);
-			}
-		} else {
-			previousTab = currentTab;
-			previousTitle = toolbarTitle.getText().toString();
-			isShowingNetworkStatus = true;
-			toolbarTitle.setText(R.string.network_status_title);
-			findViewById(R.id.bottomNavigation).setVisibility(GONE);
-			fabCompose.setVisibility(GONE);
-			showNetworkStatusFragment();
-		}
-	}
-
-	private void showNetworkStatusFragment() {
-		TorStatusFragment fragment = new TorStatusFragment();
-		getSupportFragmentManager()
-				.beginTransaction()
-				.setCustomAnimations(R.anim.fade_in, R.anim.fade_out)
-				.replace(R.id.fragmentContainer, fragment, TorStatusFragment.TAG)
-				.commit();
 	}
 
 	private void showOverflowMenu() {
@@ -570,11 +534,6 @@ public class NavDrawerActivity extends ZerionActivity implements
 	@Override
 	public void onBackPressed() {
 		FragmentManager fm = getSupportFragmentManager();
-		if (isShowingNetworkStatus) {
-			toggleNetworkStatus();
-			return;
-		}
-
 		if (fm.findFragmentByTag(SignOutFragment.TAG) != null) {
 			finish();
 		} else if (fm.getBackStackEntryCount() == 0 &&

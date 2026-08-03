@@ -339,6 +339,12 @@
 		</activity>
 
 		<activity
+			android:name="com.professor.zerion.android.navdrawer.NetworkStatusActivity"
+			android:exported="false"
+			android:parentActivityName="com.professor.zerion.android.navdrawer.NavDrawerActivity"
+			android:theme="@style/ZerionTheme.NoActionBar" />
+
+		<activity
 			android:name="com.professor.zerion.android.navdrawer.TransportsActivity"
 			android:exported="false"
 			android:label="@string/network_settings_title"

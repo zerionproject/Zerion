@@ -63,6 +63,8 @@ public interface ActivityComponent {
 
 	void inject(NavDrawerActivity activity);
 
+	void inject(com.professor.zerion.android.navdrawer.NetworkStatusActivity activity);
+
 	void inject(PanicResponderActivity activity);
 
 	void inject(PanicPreferencesActivity activity);
