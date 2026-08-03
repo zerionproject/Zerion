@@ -36,6 +36,8 @@ public class MeshMessageRouter implements MeshManager.OpenedHandler {
 	private final Provider<MeshTextSender> textSender;
 	private final MeshPresenceTracker presenceTracker;
 	private final Executor ioExecutor;
+	private final java.util.Map<Integer, byte[]> hybridPubCache =
+			new java.util.concurrent.ConcurrentHashMap<>();
 
 	@Inject
 	MeshMessageRouter(ContactManager contactManager,
@@ -171,11 +173,17 @@ public class MeshMessageRouter implements MeshManager.OpenedHandler {
 	private ContactId resolveContact(byte[] senderIdentitySigPub)
 			throws DbException {
 		for (Contact contact : contactManager.getContacts()) {
-			byte[] ed25519 = contact.getAuthor().getPublicKey().getEncoded();
-			byte[] mlDsa = contact.getMlDsaSigPublicKey();
-			if (mlDsa == null) continue;
-			byte[] hybrid =
-					new HybridSignaturePublicKey(ed25519, mlDsa).getEncoded();
+			int id = contact.getId().getInt();
+			byte[] hybrid = hybridPubCache.get(id);
+			if (hybrid == null) {
+				byte[] mlDsa = contact.getMlDsaSigPublicKey();
+				if (mlDsa == null) continue;
+				byte[] ed25519 =
+						contact.getAuthor().getPublicKey().getEncoded();
+				hybrid = new HybridSignaturePublicKey(ed25519, mlDsa)
+						.getEncoded();
+				hybridPubCache.put(id, hybrid);
+			}
 			if (Arrays.equals(hybrid, senderIdentitySigPub)) {
 				return contact.getId();
 			}

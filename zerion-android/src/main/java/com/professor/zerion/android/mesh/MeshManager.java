@@ -29,6 +29,9 @@ import javax.annotation.Nullable;
 public class MeshManager {
 
 	private static final int ONE_TIME_PREKEY_POOL = 50;
+	private static final long COVER_TTL_SECONDS = 7L * 24 * 3600;
+	private static final int COVER_ONE_TIME_KIND_ODDS = 4;
+	private static final int MAX_COVER_PAYLOAD_BYTES = 200;
 
 	public interface OpenedHandler {
 		boolean onOfflineMessage(byte[] senderIdentitySigPub, int messageType,
@@ -213,7 +216,8 @@ public class MeshManager {
 	}
 
 	public void sendCover() throws GeneralSecurityException {
-		sendCover(coverRandom.nextInt(4) == 0, 7L * 24 * 3600);
+		sendCover(coverRandom.nextInt(COVER_ONE_TIME_KIND_ODDS) == 0,
+				COVER_TTL_SECONDS);
 	}
 
 	public void sendCover(boolean oneTimeKind, long ttlSeconds)
@@ -221,7 +225,7 @@ public class MeshManager {
 		AsyncMeshDelivery d = delivery;
 		MeshForwarder f = forwarder;
 		if (d == null || f == null) return;
-		byte[] dummy = new byte[coverRandom.nextInt(200)];
+		byte[] dummy = new byte[coverRandom.nextInt(MAX_COVER_PAYLOAD_BYTES)];
 		coverRandom.nextBytes(dummy);
 		d.sendCover(f, MeshPadding.pad(dummy), ttlSeconds,
 				clock.currentTimeMillis() / 1000L, oneTimeKind);
