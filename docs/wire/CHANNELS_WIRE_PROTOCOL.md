@@ -1,9 +1,9 @@
-# Channels — wire protocol
+# Channels - wire protocol
 
 Shipped on Android since v2.0.0.
 
 iOS parity for Zerion broadcast channels. Android implementation lives in
-`zerion-app/.../channel/` — the orchestrator is `ChannelManagerImpl.java`,
+`zerion-app/.../channel/` - the orchestrator is `ChannelManagerImpl.java`,
 the wire codecs are `ChannelPullCodec.java` (request/response framing) and
 `ChannelCodec.java` (signed-input byte layouts + invite links), and the
 post-chain rules are in `ChannelPostValidator.java` /
@@ -16,7 +16,7 @@ post-chain rules are in `ChannelPostValidator.java` /
 **Channels are a single-publisher STAR over Tor, not a mesh.** Each channel
 has exactly one publisher (its creator). The publisher binds a dedicated
 v3 onion service and answers request/response RPCs on it. Subscribers do
-not gossip with each other — they **PULL** directly from the publisher's
+not gossip with each other - they **PULL** directly from the publisher's
 onion (`ChannelTransport.requestFromOnion(onion, requestBytes)`). There is
 no flooding, no store-and-forward between subscribers, no sync-client.
 
@@ -94,10 +94,10 @@ msgType numbers in this protocol.
 A `WIRE_TYPE_SUBSCRIPTION_HINT` constant
 (`ZERION_CHANNEL_SUBSCRIPTION_HINT_V1`) is also defined; the pull response
 carries a `neighbourHints` list of strings (Android currently always sends
-an empty list — see `handlePublisherRequest`). TODO: the hint list is
+an empty list - see `handlePublisherRequest`). TODO: the hint list is
 plumbed end-to-end but unused; iOS may ignore it for now.
 
-## 1. Pull request — `WIRE_TYPE_PULL_REQUEST`
+## 1. Pull request - `WIRE_TYPE_PULL_REQUEST`
 
 `ChannelPullCodec.encodePullRequest` / `decodePullRequest`.
 
@@ -111,10 +111,10 @@ plumbed end-to-end but unused; iOS may ignore it for now.
 
 Two request shapes (`ChannelPullProtocol`):
 
-- **Bootstrap** — `buildBootstrapRequest(channelId)` →
+- **Bootstrap** - `buildBootstrapRequest(channelId)` →
   `encodePullRequest(channelId, -1L, null, null)`. No HMAC, no nonce. Used
   by every public channel and by the first pull of any channel.
-- **Authenticated incremental** — `buildAuthenticatedRequest(channelId,
+- **Authenticated incremental** - `buildAuthenticatedRequest(channelId,
   sinceSeqNum, capability, publisherNonce)`. `sinceSeqNum` is the
   subscriber's `getHighestKnownPostSeq()`. `hmacResponse =
   ChannelHmacChallenge.respond(capability, publisherNonce, channelId)`,
@@ -127,13 +127,13 @@ In `handlePublisherRequest` (the default branch), for a channel that has a
 `joinCapability` (i.e. private):
 
 1. If `hmacResponse` and `nonce` are both present, the publisher first calls
-   `recordFreshNonce(channelId, nonce)` — an anti-replay LRU ring,
+   `recordFreshNonce(channelId, nonce)` - an anti-replay LRU ring,
    `PULL_NONCE_TTL_MS = 5 min`, `PULL_NONCE_MAX_PER_CHANNEL = 4096`. A nonce
    seen before (within TTL) is rejected (`return new byte[0]`).
 2. It then verifies the HMAC via `ChannelHmacChallenge.verify`. A bad MAC →
    empty response.
 3. If the channel is private with a capability and the challenge did not
-   pass, the publisher returns `new byte[0]` — no manifest, no posts. **A
+   pass, the publisher returns `new byte[0]` - no manifest, no posts. **A
    private channel only serves data to a holder of the capability.**
 
 > Note: the *nonce here is the subscriber's own random nonce*, not a
@@ -142,7 +142,7 @@ In `handlePublisherRequest` (the default branch), for a channel that has a
 > ring prevents reuse. TODO: there is no separate publisher→subscriber
 > challenge round-trip; iOS should generate a fresh 16-byte nonce per pull.
 
-## 2. Pull response — `WIRE_TYPE_PULL_RESPONSE`
+## 2. Pull response - `WIRE_TYPE_PULL_RESPONSE`
 
 `ChannelPullCodec.encodePullResponse` / `decodePullResponse`.
 
@@ -164,7 +164,7 @@ challenge passed **and** the channel has a content key
 approved subscriber learn the symmetric key without it ever appearing in the
 invite link.
 
-## 3. Manifest — `WIRE_TYPE_MANIFEST`
+## 3. Manifest - `WIRE_TYPE_MANIFEST`
 
 `ChannelPullCodec.encodeManifest`. This is the channel's signed metadata
 record. Subscribers verify and merge it in
@@ -201,7 +201,7 @@ is false:
 - `encodeManifest` does **not** emit the `discussionsEnabled` key, and
   `manifestSignedInput` does **not** include the discussions byte in the
   signed bytes (see the trailing `if (DISCUSSIONS_IN_MANIFEST)` in both).
-- The decoder reads `manifest.getBoolean("discussionsEnabled", true)` —
+- The decoder reads `manifest.getBoolean("discussionsEnabled", true)` - 
   absent ⇒ defaults to `true`.
 - The subscriber does **not** persist the wire value into its local
   `ChannelDiscussionStore` (`pullAndApply` only calls
@@ -321,7 +321,7 @@ after the delegation cert checks pass (see section 6).
   `n-1`. The canonical hash (`postCanonicalHash`) is
   `hash("org.zerionproject/CHANNEL_POST_CHAIN",
   channelId || seqNum || prevHash || timestampHourMs || UTF-8 body ||
-  attachmentsHash || ttlMs || signature)` — note this hashes the **wire**
+  attachmentsHash || ttlMs || signature)` - note this hashes the **wire**
   body and **includes the signature**, so the chain commits to the exact
   signed bytes.
 - `ChannelPostValidator` additionally enforces body length ≤ 4096 chars
@@ -331,9 +331,9 @@ after the delegation cert checks pass (see section 6).
 
 `ChannelPullProtocol.processSubscriberResponse`: `lastKnownSeq` is the
 seqNum of the last locally stored post (or `-1`). For each incoming post,
-**`if (incoming.getSeqNum() <= lastKnownSeq) continue;`** — already-known
+**`if (incoming.getSeqNum() <= lastKnownSeq) continue;`** - already-known
 posts are silently skipped. The first post that fails validation **breaks**
-the loop (the rest of the batch is discarded — the chain must be contiguous).
+the loop (the rest of the batch is discarded - the chain must be contiguous).
 `PULL_BATCH_MAX_POSTS = 100`.
 
 ### TTL / purge
@@ -348,7 +348,7 @@ the loop (the rest of the batch is discarded — the chain must be contiguous).
 A post delete is itself a published post whose body is a tombstone marker
 `ZRN_TOMBSTONE:<channelIdHex>:<seqNum>:D` (`TOMBSTONE_PREFIX`). Readers parse
 these markers (`parseTombstoneTarget`) and render the targeted post as
-`—deleted—`. This is distinct from the channel-level tombstone (section 8).
+` - deleted - `. This is distinct from the channel-level tombstone (section 8).
 
 ## 5. Comments and reactions
 
@@ -360,7 +360,7 @@ key. ML-DSA is mandatory for these user signatures: `ChannelSignatures.signUser`
 throws if the local ML-DSA private key is missing, and `verifyUser` returns
 false if the author's ML-DSA public key is absent.
 
-### Comment submit — `WIRE_TYPE_POST_COMMENT`
+### Comment submit - `WIRE_TYPE_POST_COMMENT`
 
 `encodeCommentRequest` keys: `type`, `channelId`, `seq` (parent post
 seqNum), `id` (commentId, a random `long`), `body`, `name` (author display
@@ -391,7 +391,7 @@ In the **comments** list of a pull response the keys are: `seq`, `id`,
 checks the author is not banned, then `putComment` (which dedups by
 `commentId`), and fires `ChannelCommentReceivedEvent`.
 
-### Reaction submit — `WIRE_TYPE_POST_REACTION`
+### Reaction submit - `WIRE_TYPE_POST_REACTION`
 
 `encodeReactionRequest` keys: `type`, `channelId`, `seq` (post seqNum),
 `emoji`, `ts`, `ed`, `ml`, `sig`. Response is `WIRE_TYPE_REACTION_ACK` =
@@ -406,17 +406,17 @@ Label `SIGNING_LABEL_REACTION = "org.zerionproject/CHANNEL_REACTION"`.
 `MAX_REACTION_EMOJI_BYTES = 32`, `MAX_REACTIONS_PER_POST = 256`.
 
 **Reaction identical-skip** (`ChannelReactionStore.putReaction`): a reaction
-is keyed by `(postSeqNum, signerEd25519)` — one reaction per user per post.
+is keyed by `(postSeqNum, signerEd25519)` - one reaction per user per post.
 A submission that matches an existing `(post, signer)` **replaces** it; but
 if the emoji and timestamp are unchanged the store returns `false` (no write,
-no event) — identical re-submits are no-ops. A different emoji from the same
+no event) - identical re-submits are no-ops. A different emoji from the same
 user overwrites their previous reaction.
 
 In the **reactions** list the keys are: `seq`, `emoji`, `ed`, `ml`, `ts`,
 `sig`. On receipt (`applyIncomingReactions`) the subscriber re-verifies,
 checks ban, then `putReaction` (identical-skip applies).
 
-### Announce — `WIRE_TYPE_ANNOUNCE`
+### Announce - `WIRE_TYPE_ANNOUNCE`
 
 A subscriber announces its display name so the publisher and other readers
 can attribute comments/reactions. `encodeAnnounceRequest` keys: `type`,
@@ -431,7 +431,7 @@ auto-announce once after a successful pull (`tryAutoAnnounceIfNeeded`).
 `setDiscussionsEnabled(channelId, enabled)` is publisher-only. It writes the
 local `ChannelDiscussionStore`. With discussions off the publisher returns
 `ok=false` to every comment RPC. (See the `DISCUSSIONS_IN_MANIFEST` note in
-section 3 for where the flag is — and is not — signed.)
+section 3 for where the flag is - and is not - signed.)
 
 ## 6. Public vs private channels; editor delegations
 
@@ -441,7 +441,7 @@ section 3 for where the flag is — and is not — signed.)
 wire. Anyone with the invite link (channelId + publisher Ed25519 + onion)
 can bootstrap-pull the whole chain. No HMAC challenge.
 
-### Private channels — open invite link
+### Private channels - open invite link
 
 `joinCapability != null` (32 bytes, `JOIN_CAPABILITY_BYTES`),
 `contentKey != null` (32 bytes, `CONTENT_KEY_BYTES`). The capability appears
@@ -451,12 +451,12 @@ joinCapability != null && !requiresApproval`). Holding the capability lets a
 subscriber answer the HMAC challenge and unwrap the `contentKeyEnvelope` to
 decrypt post bodies and attachment keys.
 
-### Private channels — request → owner-approve
+### Private channels - request → owner-approve
 
 When `requiresApproval` is set, the capability is **not** in the link
 (`p=1` flag instead). The join handshake (all over the publisher onion):
 
-1. **Apply** — `WIRE_TYPE_APPLY_TO_JOIN`. Keys: `type`, `channelId`, `name`,
+1. **Apply** - `WIRE_TYPE_APPLY_TO_JOIN`. Keys: `type`, `channelId`, `name`,
    `ts`, `ed`, `ml`, `eph` (an ephemeral **hybrid agreement** public key,
    `crypto.generateHybridAgreementKeyPair`), `sig`. Signed-input
    `applicationSignedInput` = `channelId || int32 nameLen || UTF-8 name ||
@@ -469,18 +469,18 @@ When `requiresApproval` is set, the capability is **not** in the link
    `deriveKey(APPROVAL_WRAP_LABEL, sharedSecret, channelId)`, and AES-GCM
    wraps the channel **capability** into an envelope. KEM ciphertext +
    envelope are stored on the application. (Deny just marks it DENIED.)
-3. **Poll** — `WIRE_TYPE_CHECK_APPROVAL`. Keys: `type`, `channelId`, `ts`,
+3. **Poll** - `WIRE_TYPE_CHECK_APPROVAL`. Keys: `type`, `channelId`, `ts`,
    `ed`, `ml`, `sig`. Signed-input `checkApprovalSignedInput = channelId ||
    int64 ts`, label `SIGNING_LABEL_CHECK_APPROVAL`. Throttled to once per
    30s per channel (`pollApprovalStatusIfPending`).
-4. **Approval response** — `WIRE_TYPE_APPROVAL_RESPONSE`. Keys: `type`,
+4. **Approval response** - `WIRE_TYPE_APPROVAL_RESPONSE`. Keys: `type`,
    `status` (`"PENDING"` / `"APPROVED"` / `"DENIED"`), `kemCt` (raw,
    optional), `envelope` (raw, optional). On `"APPROVED"` the applicant runs
    `deriveHybridSharedSecretAsResponder(APPROVAL_WRAP_LABEL, …, kemCt)`,
    unwraps the envelope to recover the capability, and stores it into local
-   `ChannelState` — it is now a full private subscriber.
+   `ChannelState` - it is now a full private subscriber.
 
-### Editor delegations — `WIRE_TYPE_DELEGATION`
+### Editor delegations - `WIRE_TYPE_DELEGATION`
 
 The publisher can delegate posting rights to other identities, up to
 `MAX_ACTIVE_DELEGATIONS_PER_CHANNEL = 8`. Each `ChannelDelegationCert`
@@ -524,7 +524,7 @@ treated as public.
   private key stored via `store.putPublisherPrivKey`). Subscribers sign
   comments, reactions, announces, applications, and approval-checks with
   their **personal** identity Ed25519 key + local ML-DSA-65 key. Personal
-  user signatures **require** ML-DSA — classical-only is refused.
+  user signatures **require** ML-DSA - classical-only is refused.
 - **Channel id binding**:
   `channelId = hash("org.zerionproject/CHANNEL_ID",
   HybridSignaturePublicKey(ed,mlDsa).getEncoded(), salt)`. Subscribers
@@ -550,7 +550,7 @@ treated as public.
 - **HMAC challenge** uses `crypto.mac` under
   `"org.zerionproject/CHANNEL_HMAC_CHALLENGE"` keyed by the capability.
 
-## 8. Channel tombstone — `WIRE_TYPE_CHANNEL_TOMBSTONE`
+## 8. Channel tombstone - `WIRE_TYPE_CHANNEL_TOMBSTONE`
 
 When the publisher deletes a channel (`deleteChannel`), it stores a signed
 tombstone (`publishTombstone`). Thereafter `handlePublisherRequest` returns
@@ -576,7 +576,7 @@ tombstone verifies it against the pinned publisher key
 - **`neighbourHints`** (`WIRE_TYPE_SUBSCRIPTION_HINT`) is plumbed but Android
   always sends an empty list. Unclear if it will be used; iOS can ignore.
 - **`WIRE_TYPE_POST`** is defined as a constant but posts are never sent as a
-  standalone top-level frame — they only appear inside the pull response
+  standalone top-level frame - they only appear inside the pull response
   `posts` list. The tag may be reserved for a future standalone post push.
 - **`discussionsEnabled` in the manifest** is gated off
   (`DISCUSSIONS_IN_MANIFEST = false`); today it is publisher-enforced only.

@@ -10,27 +10,27 @@ Zerion is a secure messaging app and encrypted vault designed for people who nee
 
 Unlike traditional messengers, Zerion uses no servers, no accounts, no phone numbers, and no cloud services. All communication flows directly between devices using the Tor network, protecting users from surveillance, metadata collection, and IP exposure.
 
-With hybrid post-quantum cryptography on **every message** (Mode 3-Full: per-frame ML-KEM-768 encapsulation mixed into the body AEAD key), post-compromise security via the Triple Ratchet, hardware-backed vault protection, and advanced anti-forensics features, Zerion provides strong security even against sophisticated adversaries — including "harvest now, decrypt later" attacks by future quantum adversaries.
+With hybrid post-quantum cryptography on **every message** (Mode 3-Full: per-frame ML-KEM-768 encapsulation mixed into the body AEAD key), post-compromise security via the Triple Ratchet, hardware-backed vault protection, and advanced anti-forensics features, Zerion provides strong security even against sophisticated adversaries - including "harvest now, decrypt later" attacks by future quantum adversaries.
 
 ---
 
 ## Why Zerion?
 
-- **Truly anonymous** — No phone number, email, or registration
+- **Truly anonymous** - No phone number, email, or registration
 - **End-to-end encrypted** messaging, groups, voice notes, P2P voice and video calls
-- **Per-message post-quantum hybrid ratchet (Mode 3-Full)** — Every frame in both directions carries a fresh ML-KEM-768 encapsulation against the peer's current ML-KEM public key; the shared secret is mixed into the body AEAD key on every frame
-- **Post-Compromise Security** — Triple Ratchet (X25519 DH + per-message ML-KEM-768 PQ) for per-message key evolution
-- **Tor-only networking** — Your IP address is never exposed to contacts
-- **Direct peer-to-peer architecture** — No central servers
+- **Per-message post-quantum hybrid ratchet (Mode 3-Full)** - Every frame in both directions carries a fresh ML-KEM-768 encapsulation against the peer's current ML-KEM public key; the shared secret is mixed into the body AEAD key on every frame
+- **Post-Compromise Security** - Triple Ratchet (X25519 DH + per-message ML-KEM-768 PQ) for per-message key evolution
+- **Tor-only networking** - Your IP address is never exposed to contacts
+- **Direct peer-to-peer architecture** - No central servers
 - **Encrypted Vault** for passwords, documents, media, and notes
-- **Channels** — one-to-many broadcast (public or private) with optional discussion threads, reactions, and editor delegations
-- **Post-quantum hardened end-to-end** — Hybrid ML-KEM-768 + X25519 at handshake, introductions, and on every transport frame; ML-DSA-65 + Ed25519 on every signed record
-- **Zerion-only** — Purpose-built for Zerion-to-Zerion communication with maximum security
-- **Downgrade attack protection** — PQ contacts stay PQ-secure forever
+- **Channels** - one-to-many broadcast (public or private) with optional discussion threads, reactions, and editor delegations
+- **Post-quantum hardened end-to-end** - Hybrid ML-KEM-768 + X25519 at handshake, introductions, and on every transport frame; ML-DSA-65 + Ed25519 on every signed record
+- **Zerion-only** - Purpose-built for Zerion-to-Zerion communication with maximum security
+- **Downgrade attack protection** - PQ contacts stay PQ-secure forever
 - **Anti-forensics protection** against mobile extraction tools
 - **Open-source and auditable**
 
-**Zerion collects zero personal data. Not by policy — by cryptographic design.**
+**Zerion collects zero personal data. Not by policy - by cryptographic design.**
 
 ---
 
@@ -53,17 +53,17 @@ Zerion implements a Triple Ratchet protocol for post-compromise security:
 **Ratchet Modes:**
 - **Mode 2 (Double Ratchet)**: X25519 DH ratchet for forward secrecy and classical post-compromise security.
 - **Mode 3 (Triple Ratchet, per-epoch PQ)**: Adds ML-KEM-768 post-quantum ratchet every 25 messages or 24 hours. Retained as a fallback path.
-- **Mode 3-Full (Triple Ratchet, per-message PQ — current default since v1.7)**: Every single frame in both directions carries a fresh ML-KEM-768 encapsulation. The per-stream chain key, the per-message body AEAD key, and the underlying X25519 ratchet all combine into a hybrid that requires breaking both X25519 and ML-KEM-768 — on every frame, not just at epoch boundaries.
+- **Mode 3-Full (Triple Ratchet, per-message PQ - current default since v1.7)**: Every single frame in both directions carries a fresh ML-KEM-768 encapsulation. The per-stream chain key, the per-message body AEAD key, and the underlying X25519 ratchet all combine into a hybrid that requires breaking both X25519 and ML-KEM-768 - on every frame, not just at epoch boundaries.
 
 ### P2P Voice & Video Calls
 
 Real peer-to-peer encrypted voice and video calls routed exclusively through Tor hidden services.
-No STUN, no TURN, no VoIP servers — just private communication between devices.
+No STUN, no TURN, no VoIP servers - just private communication between devices.
 
 - **Voice calls**: Opus codec at 24 kbps (16 kHz mono), AES-256-GCM encrypted
 - **Video calls**: H.264 Main Profile (Level 3.1) at 640×480, AES-256-GCM encrypted with padded frames; adaptive frame rate and bitrate that step down under poor network conditions
 - Camera switching, video pause/resume, and correct portrait orientation
-- All frame metadata encrypted inside the payload — zero plaintext metadata on wire
+- All frame metadata encrypted inside the payload - zero plaintext metadata on wire
 
 ### Channels
 
@@ -97,11 +97,11 @@ Any attempt to reconnect with weaker security is automatically blocked.
 
 ## Download Zerion
 
-**[Google Play](https://play.google.com/store/apps/details?id=com.professor.zerion)** — Get it on the Play Store
+**[Google Play](https://play.google.com/store/apps/details?id=com.professor.zerion)** - Get it on the Play Store
 
-**[Download APK](https://github.com/zerionproject/Zerion/releases/latest)** — latest release (direct from GitHub)
+**[Download APK](https://github.com/zerionproject/Zerion/releases/latest)** - latest release (direct from GitHub)
 
-**[F-Droid](https://f-droid.org/packages/com.professor.zerion/)** — Get it on F-Droid
+**[F-Droid](https://f-droid.org/packages/com.professor.zerion/)** - Get it on F-Droid
 ```
 APK signing fingerprint: D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6888F704C8
 ```
@@ -139,7 +139,7 @@ APK signing fingerprint: D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6
 
 **v2.0.2 (June 2026):**
 - Channels now raise system notifications for new posts (subscribers) and new comments (owners), with a global Channels toggle and per-channel mute
-- Group chats are resilient under concurrent admin actions — adding a member while another is removed, or messaging during a membership change, no longer splits the member list; invitees see the current roster immediately on accept
+- Group chats are resilient under concurrent admin actions - adding a member while another is removed, or messaging during a membership change, no longer splits the member list; invitees see the current roster immediately on accept
 - At-rest encrypted preferences moved to an in-tree implementation, replacing the deprecated AndroidX `security-crypto` library (one-time settings reset on upgrade; conversations, channels, groups, contacts, and vault are unaffected)
 - Exit from the foreground notification now reliably reopens cleanly on next launch
 
@@ -147,13 +147,13 @@ APK signing fingerprint: D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6
 - Build hygiene for F-Droid main-repo distribution: the PhotoView library moved from a vendored binary to source, keeping a single signing key across Play Store, GitHub, and F-Droid so users can switch channels without reinstalling
 
 **v2.0.0 (June 2026):**
-- **Channels** — a publisher-to-subscriber broadcast layer with optional discussion threads; public or private, owner-approved subscribers, reactions, pinned posts, attachments, and editor delegations (post without sharing your identity key); subscribers never see one another
-- **Hardened mode (opt-in)** — refuse to start on tampered devices, under a debugger/root/hooking framework, or when USB debugging/file transfer is enabled
+- **Channels** - a publisher-to-subscriber broadcast layer with optional discussion threads; public or private, owner-approved subscribers, reactions, pinned posts, attachments, and editor delegations (post without sharing your identity key); subscribers never see one another
+- **Hardened mode (opt-in)** - refuse to start on tampered devices, under a debugger/root/hooking framework, or when USB debugging/file transfer is enabled
 - Cache wipe on sign-out, 60-second clipboard auto-clear, plain-language copy throughout
 
 **v1.7.0 (May 2026):**
 - **Headline:** Mode 3-Full per-message hybrid ratchet is now the default. Every frame in both directions carries a fresh ML-KEM-768 encapsulation; the decapsulated secret is mixed into the body AEAD key on every message. A single compromised key cannot decrypt any other message in the conversation, past or future.
-- Group chat unread counter — Groups list now shows an unread badge per group (1, 2, 3, …, 99+); clears on open
+- Group chat unread counter - Groups list now shows an unread badge per group (1, 2, 3, …, 99+); clears on open
 - Multi-profile end-to-end polish: profile create, sign-in, switch and recovery paths reliable across the full lifecycle; profiles with missing display names heal automatically on next login
 - Internationalisation: vault confirmation keywords and dialog strings route through string resources; case-insensitive confirmation match
 - Accessibility: voice call control buttons (mute, speaker, video, switch camera, end, accept, decline) labelled for screen readers
@@ -164,7 +164,7 @@ APK signing fingerprint: D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6
 **v1.6.2 (May 2026):**
 - Native group-invite protocol replaces the legacy carrier (`OFFER`/`ACCEPT`/`DECLINE` on the 1:1 channel)
 - Kick reliability fix: invitee epoch desync that silently dropped `MEMBER_REMOVED` is closed; removed users are purged from the local device atomically
-- Tor-only transport — Bluetooth, Wi-Fi LAN, removable-drive sync, and dev-reporting subsystems removed
+- Tor-only transport - Bluetooth, Wi-Fi LAN, removable-drive sync, and dev-reporting subsystems removed
 - All `SharedPreferences` routed through Android Keystore-backed `EncryptedSharedPreferences`
 - Hybrid Ed25519 + ML-DSA-65 signatures extended to private-group and invitation contexts
 - Carry-forward downgrade-lock token reconstruction fix
@@ -311,4 +311,4 @@ Zerion extends Briar with post-quantum cryptography, voice and video calls over 
 
 ## License
 
-Zerion is free and open-source under the **GNU General Public License v3.0 (GPLv3)** — the same license as Briar, the upstream project it is derived from. See [LICENSE.txt](LICENSE.txt) for the full text. Modifications to Briar's original files are recorded in this repository's public git history.
+Zerion is free and open-source under the **GNU General Public License v3.0 (GPLv3)** - the same license as Briar, the upstream project it is derived from. See [LICENSE.txt](LICENSE.txt) for the full text. Modifications to Briar's original files are recorded in this repository's public git history.

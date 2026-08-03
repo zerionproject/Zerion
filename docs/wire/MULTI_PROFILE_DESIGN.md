@@ -1,11 +1,11 @@
-# Multi-Profile — Android design + iOS parity handoff (shipped; current as of v2.0.x)
+# Multi-Profile - Android design + iOS parity handoff (shipped; current as of v2.0.x)
 
 iOS parity for the SimpleX-style multi-profile feature shipped on Android (originally landed for v1.6; shipped and current as of v2.0.x) in commits `ebf1c01` (phase 1), `2c043c1` (phase 2), `46475b7` (phases 3–5).
 
 ## Design choices (decided with user, must match on iOS)
 
 1. **Password-only hidden profiles.** The login screen never shows profile names or a count. The user types one password; the app tries each stored profile in turn until one decrypts.
-2. **Restart-on-switch.** Switching profile is a clean logout + relaunch — services stop, DB closes, process exits, fresh launch picks the new profile via password match.
+2. **Restart-on-switch.** Switching profile is a clean logout + relaunch - services stop, DB closes, process exits, fresh launch picks the new profile via password match.
 3. **Secure wipe on delete.** Deleted profile data is overwritten with zeros + fsync'd before unlink (same pattern we use for voice/video cache).
 
 ## On-disk layout
@@ -58,7 +58,7 @@ On signIn(password):
 
 Three points worth re-reading:
 - **Lockout is global**, kept in `<filesDir>/login.lockout`, NOT inside any profile dir. This prevents an attacker resetting the counter by targeting different profiles in turn.
-- **No success signal indicates *which* profile matched** to anyone observing the screen — the UI just opens the home view of "the" profile.
+- **No success signal indicates *which* profile matched** to anyone observing the screen - the UI just opens the home view of "the" profile.
 - **Pending-identity materialisation** lets profile creation happen at the moment the user submits the create-profile dialog (no DB open required at that point), and defers the actual identity write to the first sign-in into the new profile, where the DB *is* open. This is what avoids dirty Dagger-graph state on Android.
 
 ## Create profile (no in-process restart needed)
@@ -81,7 +81,7 @@ scheduleProfileCreation(displayName, password):
 
 ## Switch profile
 
-Just a normal sign-out: `signOut(removeFromRecentApps=true, deleteAccount=false)`. On Android that runs Bramble's `LifecycleManager.stopServices()` → DB close → activity tear-down via the existing exit path. The user reopens the app and types the target profile's password. There's no special "switch profile" mode — the password-only login already handles it.
+Just a normal sign-out: `signOut(removeFromRecentApps=true, deleteAccount=false)`. On Android that runs Bramble's `LifecycleManager.stopServices()` → DB close → activity tear-down via the existing exit path. The user reopens the app and types the target profile's password. There's no special "switch profile" mode - the password-only login already handles it.
 
 iOS parity: present the same logout-and-relaunch path, no "live switch."
 
@@ -100,7 +100,7 @@ deleteActiveProfile():
 - `fd.sync()`
 - close + delete
 
-Cap at 200 MB per file (skip the zero-fill for anything larger; the regular delete still runs — files this big in a profile dir are unexpected). Match this cap on iOS or pick a similar one consistent with your storage layout.
+Cap at 200 MB per file (skip the zero-fill for anything larger; the regular delete still runs - files this big in a profile dir are unexpected). Match this cap on iOS or pick a similar one consistent with your storage layout.
 
 After wipe, sign out and relaunch. If it was the last profile, the next launch will see an empty `profiles/` directory and route to onboarding as a fresh install.
 
@@ -116,16 +116,16 @@ iOS should do the equivalent on its own data root and pick a stable "default" pr
 
 ## Files involved (Android, for reference)
 
-- `zerion-core-android/.../account/ProfileManager.java` — paths, listing, migration, secure wipe
-- `zerion-core-android/.../account/AndroidAccountManager.java` — multi-profile signIn, scheduleProfileCreation, deleteActiveProfile, pending-identity materialisation, global lockout
-- `zerion-core/.../account/AccountManagerImpl.java` — base class, no longer caches key-file paths; reads them fresh from `databaseConfig` each call
-- `zerion-android/.../AndroidDatabaseConfig.java` — delegates to ProfileManager on each `getDatabase*Directory()`
-- `zerion-android/.../AppModule.java` — provides ProfileManager + the path-aware DatabaseConfig + per-profile @TorDirectory
-- `zerion-android/.../settings/ProfilesFragment.java` + `SettingsActivity.requestProfileSignOut()` — Settings UI for create / switch / delete
+- `zerion-core-android/.../account/ProfileManager.java` - paths, listing, migration, secure wipe
+- `zerion-core-android/.../account/AndroidAccountManager.java` - multi-profile signIn, scheduleProfileCreation, deleteActiveProfile, pending-identity materialisation, global lockout
+- `zerion-core/.../account/AccountManagerImpl.java` - base class, no longer caches key-file paths; reads them fresh from `databaseConfig` each call
+- `zerion-android/.../AndroidDatabaseConfig.java` - delegates to ProfileManager on each `getDatabase*Directory()`
+- `zerion-android/.../AppModule.java` - provides ProfileManager + the path-aware DatabaseConfig + per-profile @TorDirectory
+- `zerion-android/.../settings/ProfilesFragment.java` + `SettingsActivity.requestProfileSignOut()` - Settings UI for create / switch / delete
 
 ## Threat-model notes (call these out in iOS code review)
 
-- Wrong-password feedback time scales with profile count (N × Argon2id per failed attempt). This is intentional — guessing is slow, and the time-leak of N is acceptable since the device's filesystem already reveals profile count to an attacker with root/forensic access.
+- Wrong-password feedback time scales with profile count (N × Argon2id per failed attempt). This is intentional - guessing is slow, and the time-leak of N is acceptable since the device's filesystem already reveals profile count to an attacker with root/forensic access.
 - Each profile's onion key is independent → contacts in profile A cannot correlate it with profile B's onion.
 - An attacker who briefly observes the unlocked phone screen sees only the active profile; no UI hint exists that other profiles are present (assuming the user is not on Settings → Profiles).
-- Deleting the active profile while logged in is supported. The wipe runs first, then the standard signOut path closes services. There is a brief window where the DB file is gone but services haven't yet finished shutting down — Bramble's DB layer treats this as a hard crash on next access, which is fine.
+- Deleting the active profile while logged in is supported. The wipe runs first, then the standard signOut path closes services. There is a brief window where the DB file is gone but services haven't yet finished shutting down - Bramble's DB layer treats this as a hard crash on next access, which is fine.
