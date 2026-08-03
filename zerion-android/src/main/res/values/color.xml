@@ -39,7 +39,7 @@
 	<color name="window_background">@color/zerion_dark_bg</color>
 	<color name="card_background">@color/zerion_card_bg</color>
 	<color name="item_background_highlight">@color/zerion_card_bg</color>
-	<color name="zerion_warning_background">@color/zerion_error_red</color>
+	<color name="zerion_warning_background">@color/zerion_warning</color>
 	<color name="action_bar_text">@android:color/white</color>
 	<color name="private_message_date_inverse">@android:color/white</color>
 	<color name="forum_avatar_shadow">#99000000</color>

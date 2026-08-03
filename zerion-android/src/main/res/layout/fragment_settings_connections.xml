@@ -349,7 +349,7 @@
 
 				<ImageView
 					style="@style/Zerion.Settings.Row.Icon"
-					android:src="@drawable/ic_settings"
+					android:src="@drawable/transport_tor"
 					android:importantForAccessibility="no" />
 
 				<LinearLayout
@@ -384,7 +384,7 @@
 
 				<ImageView
 					style="@style/Zerion.Settings.Row.Icon"
-					android:src="@drawable/ic_settings"
+					android:src="@drawable/transport_tor"
 					android:importantForAccessibility="no" />
 
 				<LinearLayout

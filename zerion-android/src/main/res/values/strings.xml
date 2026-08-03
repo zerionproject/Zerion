@@ -138,10 +138,10 @@
 	<string name="vault_settings_autolock">Auto-lock timeout</string>
 	<string name="vault_settings_biometric">Biometric unlock</string>
 	<string name="vault_settings_biometric_summary">Use fingerprint or face unlock</string>
-	<string name="vault_settings_clear_clipboard">Clear Clipboard After</string>
-	<string name="vault_settings_hide_content">Hide Content in App Switcher</string>
+	<string name="vault_settings_clear_clipboard">Clear clipboard after</string>
+	<string name="vault_settings_hide_content">Hide content in app switcher</string>
 	<string name="vault_settings_hide_content_summary">Blur vault content when switching apps</string>
-	<string name="vault_settings_export">Export Vault</string>
+	<string name="vault_settings_export">Export vault</string>
 	<string name="vault_settings_export_summary">Create encrypted backup</string>
 	<string name="vault_settings_wipe">Wipe Vault</string>
 	<string name="vault_settings_wipe_summary">Permanently delete all data</string>
@@ -196,7 +196,7 @@
 	<string name="dnkm_doze_title">Background Connections</string>
 	<string name="dnkm_doze_intro">To receive messages, Zerion needs to stay connected in the background.</string>
 	<string name="dnkm_doze_explanation">To receive messages, Zerion needs to stay connected in the background. Please disable battery optimizations so Zerion can stay connected.</string>
-	<string name="dnkm_doze_button">Allow Connections</string>
+	<string name="dnkm_doze_button">Allow connections</string>
 	<string name="choose_nickname">Choose your nickname</string>
 	<string name="choose_password">Choose your password</string>
 	<string name="confirm_password">Confirm your password</string>
@@ -207,7 +207,7 @@
 	<string name="password_quite_strong">Password is okay</string>
 	<string name="password_strong">Password is strong</string>
 	<string name="passwords_do_not_match">Passwords do not match</string>
-	<string name="create_account_button">Create Account</string>
+	<string name="create_account_button">Create account</string>
 	<string name="setup_failed_title">Setup Failed</string>
 	<string name="setup_failed_message">Something went wrong. Please try again.</string>
 	<string name="setup_failed_retry">Retry</string>
@@ -225,11 +225,11 @@
 	<string name="dnkm_xiaomi_dialog_body_old">1. Open the recent apps list (also called the app switcher)\n\n2. Swipe down on the image of Zerion to show the padlock icon\n\n3. If the padlock is not locked, tap to lock it</string>
 	<string name="dnkm_xiaomi_dialog_body_new">1. Open the recent apps list (also called the app switcher)\n\n2. If Zerion has a small image of a padlock next to its name then you don\'t need to do anything\n\n3. If there\'s no padlock, press and hold the image of Zerion until the padlock button appears, then tap it</string>
 	<string name="dnkm_xiaomi_lock_apps_text">Please tap the button below to open the security settings. Tap \"Boost speed\", then tap \"Lock apps\", and make sure Zerion is set to \"Locked\".</string>
-	<string name="dnkm_xiaomi_lock_apps_button">Open Security Settings</string>
+	<string name="dnkm_xiaomi_lock_apps_button">Open security settings</string>
 	<string name="dnkm_xiaomi_lock_apps_help">If Zerion is not set to \"Locked\" in the \"Lock apps\" screen, it will be unable to run in the background.</string>
 	<string name="dnkm_xiaomi_lock_apps_error_toast">Could not open security settings</string>
 	<string name="dnkm_huawei_protected_error_toast">Could not open protected apps settings</string>
-	<string name="dnkm_huawei_app_launch_button">Open App Launch Settings</string>
+	<string name="dnkm_huawei_app_launch_button">Open app launch settings</string>
 	<string name="dnkm_huawei_app_launch_error_toast">Could not open app launch settings</string>
 	<string name="dnkm_warning_dozed_1">Zerion was unable to run in the background</string>
 
@@ -280,7 +280,7 @@
 	<string name="expired_redirect_url" translatable="false">https://zerion.chat</string>
 	<string name="old_android_expiry_date_reached">Zerion no longer runs on Android 4.\nPlease install Zerion on a newer device.</string>
 	<string name="old_android_delete_account">You can tap the button below to delete your account from this device.</string>
-	<string name="delete_account_button">Delete Account</string>
+	<string name="delete_account_button">Delete account</string>
 	<string name="startup_open_database">Decrypting Database…</string>
 	<string name="startup_migrate_database">Upgrading Database…</string>
 	<string name="startup_compact_database">Compacting Database…</string>
@@ -563,9 +563,9 @@
 	<!-- Vault -->
 	<string name="vault_note_title_hint">Note Title</string>
 	<string name="vault_note_content_hint">Enter your secure note here...</string>
-	<string name="vault_delete_note">Delete Note</string>
+	<string name="vault_delete_note">Delete note</string>
 	<string name="vault_delete_confirm_message">Are you sure you want to delete this note? This action cannot be undone.</string>
-	<string name="vault_save_note">Save Note</string>
+	<string name="vault_save_note">Save note</string>
 	<string name="vault_lock_note">Password Protect</string>
 	<string name="vault_note_password_hint">Note Password (optional)</string>
 	<string name="vault_progress_saving">Saving...</string>
@@ -670,7 +670,7 @@
 	<string name="no_data">No data</string>
 	<string name="ellipsis">…</string>
 	<string name="text_too_long">The entered text is too long</string>
-	<string name="show_onboarding">Show Help Dialog</string>
+	<string name="show_onboarding">Show help dialog</string>
 	<string name="fix">Fix</string>
 	<string name="help">Help</string>
 	<string name="sorry">Sorry</string>
@@ -843,14 +843,14 @@
 	<string name="no_images">No images shared yet</string>
 	<string name="no_documents">No documents shared yet</string>
 	<string name="chat_settings">Chat Settings</string>
-	<string name="clear_chat">Clear Chat</string>
-	<string name="clear_chat_dialog_title">Clear Chat History?</string>
+	<string name="clear_chat">Clear chat</string>
+	<string name="clear_chat_dialog_title">Clear chat history?</string>
 	<string name="clear_chat_dialog_message">All messages in this conversation will be permanently deleted. This action cannot be undone.</string>
 	<string name="clear_chat_success">Chat cleared successfully</string>
 	<string name="delete_failed">Failed to delete messages</string>
 	<string name="group_clear_not_supported">Group messages cannot be individually deleted due to Zerion\'s protocol design</string>
 	<string name="group_attachments_not_supported">Attachments are not yet supported in group chats. You can send photos and videos in 1:1 conversations.</string>
-	<string name="block_user">Block User</string>
+	<string name="block_user">Block user</string>
 	<string name="sound_and_notifications">Sound &amp; Notifications</string>
 	<string name="mute_notifications">Mute Notifications</string>
 	<string name="vibration">Vibration</string>
@@ -918,7 +918,7 @@
 	<!-- This is shown in the action bar when opening an image in fullscreen that the user sent -->
 	<string name="you">You</string>
 	<string name="save_image">Save image</string>
-	<string name="dialog_title_save_image">Save Image?</string>
+	<string name="dialog_title_save_image">Save image?</string>
 	<string name="dialog_message_save_image">Saving this image will allow other apps to access it.\n\nAre you sure you want to save?</string>
 	<string name="save_image_success">Image was saved</string>
 	<string name="save_image_error">Could not save image</string>
@@ -931,7 +931,7 @@
 
 	<!-- Adding Contacts -->
 
-	<string name="add_contact_title">Add Contact Nearby</string>
+	<string name="add_contact_title">Add contact nearby</string>
 	<string name="add_contact_error_two_way">Did both contacts complete the exchange?</string>
 	<string name="continue_button">Continue</string>
 	<string name="try_again_button">Try Again</string>
@@ -985,7 +985,7 @@
 
 	<!-- Adding Contacts Remotely -->
 
-	<string name="add_contact_remotely_title_case">Add Contact</string>
+	<string name="add_contact_remotely_title_case">Add contact</string>
 	<string name="add_contact_nearby_title">Add contact nearby</string>
 	<string name="add_contact_remotely_title">Add contact at a distance</string>
 	<string name="contact_link_intro">Enter the link from your contact here</string>
@@ -999,7 +999,7 @@
 	<string name="copy_button">Copy</string>
 	<string name="share_button">Share</string>
 	<string name="send_link_title">Exchange links</string>
-	<string name="add_contact_choose_nickname">Choose Nickname</string>
+	<string name="add_contact_choose_nickname">Choose nickname</string>
 	<string name="add_contact_choose_a_nickname">Enter a nickname</string>
 	<string name="nickname_intro">Give your contact a nickname. Only you can see it.</string>
 	<string name="your_link">Give this link to the contact you want to add</string>
@@ -1059,7 +1059,7 @@
 	<string name="introduction_onboarding_title">Introduce your contacts</string>
 	<string name="introduction_onboarding_text">Introduce your contacts to each other so they can connect on Zerion.</string>
 	<string name="introduction_menu_item">Make Introduction</string>
-	<string name="introduction_activity_title">Select Contact</string>
+	<string name="introduction_activity_title">Select contact</string>
 	<string name="introduction_not_possible">You already have one introduction in progress with these contacts. Please allow for this to finish first. If you or your contacts are rarely online, this can take some time.</string>
 	<string name="introduction_message_title">Introduce Contacts</string>
 	<string name="introduction_message_hint">Add a message (optional)</string>
@@ -1090,9 +1090,9 @@
 	<string name="groups_group_is_empty">This group is empty</string>
 	<string name="groups_group_is_dissolved">This group has been dissolved</string>
 	<string name="groups_remove">Remove</string>
-	<string name="groups_create_group_title">Create Private Group</string>
-	<string name="groups_create_group_button">Create Group</string>
-	<string name="groups_create_group_invitation_button">Send Invitation</string>
+	<string name="groups_create_group_title">Create private group</string>
+	<string name="groups_create_group_button">Create group</string>
+	<string name="groups_create_group_invitation_button">Send invitation</string>
 	<string name="groups_create_group_hint">Choose a name for your private group</string>
 	<string name="groups_invitation_sent">Group invitation has been sent</string>
 	<string name="groups_member_list">Member List</string>
@@ -1149,7 +1149,7 @@
 	<string name="dialog_button_leave">Leave</string>
 
 	<string name="contacts_selected">Contacts selected</string>
-	<string name="activity_share_toolbar_header">Choose Contacts</string>
+	<string name="activity_share_toolbar_header">Choose contacts</string>
 
 
 	<string name="read_more">read more</string>
@@ -1171,7 +1171,7 @@
 	<string name="reg_lock_summary_pin">Protected with PIN</string>
 	<string name="reg_lock_summary_password">Protected with password</string>
 	<string name="reg_lock_set_pin">Set PIN (6 digits)</string>
-	<string name="reg_lock_set_password">Set Password</string>
+	<string name="reg_lock_set_password">Set password</string>
 	<string name="reg_lock_enter_pin">Enter PIN</string>
 	<string name="reg_lock_enter_password">Enter Password</string>
 	<string name="reg_lock_confirm">Confirm</string>
@@ -1180,8 +1180,8 @@
 	<string name="reg_lock_mismatch">Entries do not match</string>
 	<string name="reg_lock_enabled">Registration lock enabled</string>
 	<string name="reg_lock_disabled">Registration lock disabled</string>
-	<string name="reg_lock_change">Change Registration Lock</string>
-	<string name="reg_lock_disable">Disable Registration Lock</string>
+	<string name="reg_lock_change">Change registration lock</string>
+	<string name="reg_lock_disable">Disable registration lock</string>
 	<string name="reg_lock_disable_confirm">Are you sure you want to disable Registration Lock?</string>
 	<string name="reg_lock_choose_type">Choose protection type</string>
 	<string name="invite_friends_title">Invite Friends</string>
@@ -1404,7 +1404,7 @@
 	<string name="panic_setting_destructive_action">Destructive Actions</string>
 	<string name="panic_setting_signout_title">Sign Out</string>
 	<string name="panic_setting_signout_summary">Sign out of Zerion if a panic button is pressed</string>
-	<string name="purge_setting_title">Delete Account</string>
+	<string name="purge_setting_title">Delete account</string>
 	<string name="purge_setting_summary">Delete your Zerion account if a panic button is pressed. Caution: This will permanently delete your identities, contacts and messages</string>
 
 	<!-- Settings Notifications -->
@@ -1422,7 +1422,7 @@
 	<string name="notify_channel_posts_setting_summary_26">Configure alerts for new channel posts and comments</string>
 	<string name="post_update_notice_title">Reconfigure after update</string>
 	<string name="post_update_notice_message">This security update changed how Zerion stores your settings at rest. Your chats, contacts, channels, groups, and vault are intact, but some preferences were reset and need to be set again: decoy mode, the wipe password, notification and security toggles, theme, and language. Open Settings to reconfigure them.</string>
-	<string name="post_update_notice_open_settings">Open Settings</string>
+	<string name="post_update_notice_open_settings">Open settings</string>
 	<string name="nav_profile_content_description">Your profile and account</string>
 	<string name="cd_copy_username">Copy username</string>
 	<string name="cd_copy_password">Copy password</string>
@@ -1561,7 +1561,7 @@
 	<string name="link_warning_title">Link Warning</string>
 	<string name="link_warning_intro">You are about to open the following link with an external app.</string>
 	<string name="link_warning_text">This can be used to identify you. Think about whether you trust the person that sent you this link and consider opening it with Tor Browser.</string>
-	<string name="link_warning_open_link">Open Link</string>
+	<string name="link_warning_open_link">Open link</string>
 
 	<!-- Crash Reporter -->
 	<string name="crash_report_title">Zerion Crash Report</string>
@@ -1657,7 +1657,7 @@
 	<string name="vault_unlock_title">zVault</string>
 	<string name="vault_password_hint">Master password</string>
 	<string name="vault_confirm_password_hint">Confirm password</string>
-	<string name="vault_create_button">Create Vault</string>
+	<string name="vault_create_button">Create vault</string>
 	<string name="vault_unlock_button">Unlock</string>
 	<string name="vault_password_mismatch">Passwords do not match</string>
 	<string name="vault_password_too_short">Password must be at least 8 characters</string>
