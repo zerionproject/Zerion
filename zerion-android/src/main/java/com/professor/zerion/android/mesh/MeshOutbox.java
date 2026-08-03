@@ -5,9 +5,9 @@ import org.zerionproject.core.api.sync.MessageId;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -36,7 +36,14 @@ public class MeshOutbox {
 		}
 	}
 
-	private final Map<String, Entry> pending = new ConcurrentHashMap<>();
+	private final Map<String, Entry> pending =
+			new LinkedHashMap<String, Entry>() {
+				@Override
+				protected boolean removeEldestEntry(
+						Map.Entry<String, MeshOutbox.Entry> eldest) {
+					return size() > MAX_ENTRIES;
+				}
+			};
 
 	@Inject
 	MeshOutbox() {
@@ -44,41 +51,38 @@ public class MeshOutbox {
 
 	void add(ContactId contactId, MessageId messageId, String text,
 			long composeTimeMs) {
-		evictIfFull();
-		pending.putIfAbsent(key(messageId),
-				new Entry(contactId, messageId, text, composeTimeMs));
-	}
-
-	private void evictIfFull() {
-		while (pending.size() >= MAX_ENTRIES) {
-			String oldestKey = null;
-			long oldest = Long.MAX_VALUE;
-			for (Map.Entry<String, Entry> e : pending.entrySet()) {
-				if (e.getValue().firstSeenMs < oldest) {
-					oldest = e.getValue().firstSeenMs;
-					oldestKey = e.getKey();
-				}
+		synchronized (pending) {
+			if (!pending.containsKey(key(messageId))) {
+				pending.put(key(messageId),
+						new Entry(contactId, messageId, text, composeTimeMs));
 			}
-			if (oldestKey == null || pending.remove(oldestKey) == null) return;
 		}
 	}
 
 	boolean remove(ContactId contactId, MessageId messageId) {
-		Entry e = pending.get(key(messageId));
-		if (e == null || !e.contactId.equals(contactId)) return false;
-		return pending.remove(key(messageId), e);
+		synchronized (pending) {
+			Entry e = pending.get(key(messageId));
+			if (e == null || !e.contactId.equals(contactId)) return false;
+			return pending.remove(key(messageId)) != null;
+		}
 	}
 
 	List<Entry> snapshot() {
-		return new ArrayList<>(pending.values());
+		synchronized (pending) {
+			return new ArrayList<>(pending.values());
+		}
 	}
 
 	void drop(MessageId messageId) {
-		pending.remove(key(messageId));
+		synchronized (pending) {
+			pending.remove(key(messageId));
+		}
 	}
 
 	void clear() {
-		pending.clear();
+		synchronized (pending) {
+			pending.clear();
+		}
 	}
 
 	private static String key(MessageId messageId) {
