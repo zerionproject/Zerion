@@ -11,6 +11,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import java.util.ArrayList;
 import java.util.List;
 
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
 @NotNullByDefault
@@ -30,9 +31,43 @@ class ChatsAdapter extends RecyclerView.Adapter<ChatItemViewHolder> {
 	}
 
 	void submit(List<ChatItem> newItems) {
+		List<ChatItem> old = new ArrayList<>(items);
+		DiffUtil.DiffResult diff = DiffUtil.calculateDiff(new DiffUtil.Callback() {
+			@Override
+			public int getOldListSize() {
+				return old.size();
+			}
+
+			@Override
+			public int getNewListSize() {
+				return newItems.size();
+			}
+
+			@Override
+			public boolean areItemsTheSame(int oldPos, int newPos) {
+				ChatItem a = old.get(oldPos);
+				ChatItem b = newItems.get(newPos);
+				return a.getType() == b.getType()
+						&& a.getContactId() == b.getContactId()
+						&& java.util.Arrays.equals(a.getBlobId(), b.getBlobId());
+			}
+
+			@Override
+			public boolean areContentsTheSame(int oldPos, int newPos) {
+				ChatItem a = old.get(oldPos);
+				ChatItem b = newItems.get(newPos);
+				return a.getName().equals(b.getName())
+						&& a.getTime() == b.getTime()
+						&& a.getUnread() == b.getUnread()
+						&& a.isPinned() == b.isPinned()
+						&& a.isOnline() == b.isOnline()
+						&& java.util.Objects.equals(
+								a.getAvatarHeader(), b.getAvatarHeader());
+			}
+		});
 		items.clear();
 		items.addAll(newItems);
-		notifyDataSetChanged();
+		diff.dispatchUpdatesTo(this);
 	}
 
 	@Override
