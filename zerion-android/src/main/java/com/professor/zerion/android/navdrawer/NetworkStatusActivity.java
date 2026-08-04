@@ -11,13 +11,15 @@ import androidx.appcompat.widget.Toolbar;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
+import com.professor.zerion.android.fragment.BaseFragment.BaseFragmentListener;
 
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
-public class NetworkStatusActivity extends ZerionActivity {
+public class NetworkStatusActivity extends ZerionActivity
+		implements BaseFragmentListener {
 
 	@Override
 	public void injectActivity(ActivityComponent component) {
