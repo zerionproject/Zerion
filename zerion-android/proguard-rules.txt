@@ -223,6 +223,16 @@
 -keep class org.whispersystems.curve25519.** { *; }
 
 # ============================================================================
+# SECURERANDOM JCA PROVIDER (registered by name, instantiated via reflection)
+# ============================================================================
+# UnixSecureRandomSpi is registered as "SecureRandom.SHA1PRNG" and instantiated
+# reflectively by the JCA on new SecureRandom(). Without this keep, R8 strips its
+# constructor in release, the JCA falls back to another provider, and
+# CryptoComponentImpl aborts startup with a wrong-provider SecurityException.
+-keep class org.zerionproject.core.system.UnixSecureRandomSpi { *; }
+-keep class * extends java.security.SecureRandomSpi { *; }
+
+# ============================================================================
 # EMBEDDED I2P ROUTER (net.i2p, shaded module)
 # ============================================================================
 # The bundled router loads its components dynamically (Class.forName, service
