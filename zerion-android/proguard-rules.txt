@@ -180,8 +180,8 @@
 -dontwarn org.bouncycastle.**
 
 # Keep Zerion crypto classes that interact with BouncyCastle
--keep class org.briarproject.bramble.crypto.** { *; }
--keep class org.briarproject.bramble.api.crypto.** { *; }
+-keep class org.zerionproject.core.crypto.** { *; }
+-keep class org.zerionproject.core.api.crypto.** { *; }
 
 # ============================================================================
 # JDBC INTERFACES (used by zerion-core-android SQLCipher adapter)
@@ -193,13 +193,16 @@
 -keepnames class * implements java.sql.Driver
 
 # ============================================================================
-# BRAMBLE CORE CLASSES
+# ZERION FRAMEWORK CLASSES
 # ============================================================================
-# Keep all Bramble framework interfaces and implementations
--keep class org.briarproject.bramble.** { *; }
--keep class org.briarproject.briar.** { *; }
--keep interface org.briarproject.bramble.** { *; }
--keep interface org.briarproject.briar.** { *; }
+# The framework is loaded partly by reflection (Class.forName for the JDBC
+# driver, JCA SPIs, service lookups), so keep it intact. These packages were
+# org.briarproject.bramble/briar before the module rename; the stale names kept
+# nothing after the rename and let R8 strip reflectively-loaded classes.
+-keep class org.zerionproject.core.** { *; }
+-keep class org.zerionproject.app.** { *; }
+-keep interface org.zerionproject.core.** { *; }
+-keep interface org.zerionproject.app.** { *; }
 
 # ============================================================================
 # Dead clearnet TCP plugins (not registered in PluginConfig — Tor-only)
@@ -211,9 +214,9 @@
 -keep class com.professor.zerion.** { *; }
 
 # Keep eager singletons that are loaded at startup
--keep class org.briarproject.bramble.BrambleCoreEagerSingletons { *; }
--keep class org.briarproject.bramble.BrambleAndroidEagerSingletons { *; }
--keep class org.briarproject.briar.BriarCoreEagerSingletons { *; }
+-keep class org.zerionproject.core.BrambleCoreEagerSingletons { *; }
+-keep class org.zerionproject.core.BrambleAndroidEagerSingletons { *; }
+-keep class org.zerionproject.app.BriarCoreEagerSingletons { *; }
 
 # ============================================================================
 # ED25519 / CURVE25519 CRYPTOGRAPHY

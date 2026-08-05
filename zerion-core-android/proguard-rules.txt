@@ -3,7 +3,7 @@
 -dontwarn net.zetetic.database.sqlcipher.**
 
 # SQLCipher JDBC adapter dummy driver
--keep class org.briarproject.bramble.db.SqlCipherDriver { *; }
+-keep class org.zerionproject.core.db.SqlCipherDriver { *; }
 
 -keep class dagger.** { *; }
 -dontwarn dagger.**

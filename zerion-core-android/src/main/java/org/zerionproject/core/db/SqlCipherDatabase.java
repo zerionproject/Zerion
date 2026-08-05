@@ -199,7 +199,6 @@ class SqlCipherDatabase extends JdbcDatabase {
 				db = SQLiteDatabase.openOrCreateDatabase(
 								dbFile.getAbsolutePath(), hexKey,
 								null, null, null);
-				runPragma(db, "PRAGMA cipher_log_level = NONE");
 				runPragma(db, "PRAGMA cipher_memory_security = ON");
 				runPragma(db, "PRAGMA secure_delete = ON");
 				runPragma(db, "PRAGMA busy_timeout = " + BUSY_TIMEOUT_MS);
