@@ -45,6 +45,8 @@
 	<string name="offline_mode_confirm_title">Turn on Offline mode?</string>
 	<string name="offline_mode_confirm_message">This blocks all internet: Tor and I2P are stopped and the app makes no network connection. Only nearby, already-paired contacts are reachable, over the offline mesh. Turn off to go back online.</string>
 	<string name="offline_mode_confirm_button">Go offline</string>
+	<string name="network_status_off">Off</string>
+	<string name="offline_mode_transport_off">Stopped in offline mode</string>
 	<string name="offline_mode_banner">Offline mode · internet blocked · mesh only</string>
 	<string name="settings_section_overlay">OVERLAY NETWORKS</string>
 	<string name="i2p_toggle_title">I2P</string>

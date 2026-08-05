@@ -198,6 +198,14 @@ public class TorStatusFragment extends BaseFragment {
 
 	private void updateI2pStatus(Plugin.State state) {
 		Context ctx = requireContext();
+		if (pluginManager.isOfflineMode()) {
+			i2pStatusText.setText(R.string.network_status_off);
+			i2pStatusText.setTextColor(
+					ContextCompat.getColor(ctx, R.color.zerion_text_secondary));
+			i2pStatusIcon.setColorFilter(
+					ContextCompat.getColor(ctx, R.color.zerion_text_secondary));
+			return;
+		}
 		if (state == Plugin.State.DISABLED) {
 			i2pStatusText.setText(R.string.disabled);
 			i2pStatusText.setTextColor(
@@ -243,6 +251,15 @@ public class TorStatusFragment extends BaseFragment {
 	private void updateTorStatus(
 			org.zerionproject.core.api.plugin.Plugin.State state) {
 		Context ctx = requireContext();
+		if (pluginManager.isOfflineMode()) {
+			torStatusText.setText(R.string.network_status_off);
+			torStatusText.setTextColor(
+					ContextCompat.getColor(ctx, R.color.zerion_text_secondary));
+			torOnionAddress.setText(R.string.offline_mode_transport_off);
+			torStatusIcon.setColorFilter(
+					ContextCompat.getColor(ctx, R.color.zerion_text_secondary));
+			return;
+		}
 		if (state == null
 				|| state == org.zerionproject.core.api.plugin.Plugin.State.DISABLED) {
 			torStatusText.setText(R.string.disabled);
