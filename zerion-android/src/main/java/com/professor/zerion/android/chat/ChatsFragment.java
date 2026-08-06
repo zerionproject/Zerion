@@ -87,7 +87,10 @@ public class ChatsFragment extends BaseFragment
 		list.setEmptyText(getString(R.string.no_chats));
 
 		viewModel.getItems().observe(getViewLifecycleOwner(), items -> {
-			if (items != null) adapter.submit(items);
+			if (items != null) {
+				adapter.submit(items);
+				list.showData();
+			}
 		});
 		viewModel.getHasPendingContacts()
 				.observe(getViewLifecycleOwner(), hasPending -> {

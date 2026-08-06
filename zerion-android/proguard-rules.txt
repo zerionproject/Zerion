@@ -196,13 +196,12 @@
 # ZERION FRAMEWORK CLASSES
 # ============================================================================
 # The framework is loaded partly by reflection (Class.forName for the JDBC
-# driver, JCA SPIs, service lookups), so keep it intact. These packages were
-# org.briarproject.bramble/briar before the module rename; the stale names kept
-# nothing after the rename and let R8 strip reflectively-loaded classes.
--keep class org.zerionproject.core.** { *; }
--keep class org.zerionproject.app.** { *; }
--keep interface org.zerionproject.core.** { *; }
--keep interface org.zerionproject.app.** { *; }
+# driver, JCA SPIs, service lookups, plugin factories), so keep it intact. The
+# module rename spread the framework across org.zerionproject.core, .app,
+# .transport (Tor/I2P/mesh/LAN plugins), .crypto, .wire, .handshake, .message
+# and .sync; keep the whole namespace so no rename-orphan is exposed to R8.
+-keep class org.zerionproject.** { *; }
+-keep interface org.zerionproject.** { *; }
 
 # ============================================================================
 # Dead clearnet TCP plugins (not registered in PluginConfig — Tor-only)
