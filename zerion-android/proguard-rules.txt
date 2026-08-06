@@ -247,6 +247,28 @@
 -dontwarn net.i2p.**
 -dontwarn org.zerionproject.i2pshaded.**
 
+# net.i2p:router bundles these libraries under their ORIGINAL package names
+# (only bouncycastle + eddsa are relocated into i2pshaded). Under R8 full mode
+# they are optimized and the router breaks - e.g. the gnu.crypto Fortuna PRNG
+# fill thread is mangled and nextBytes throws "Random is shut down", killing the
+# key-precalc thread so the router never reaches running and I2P stays
+# connecting. com.southernstorm is the NTCP2 Noise protocol. Keep them intact.
+-keep class gnu.** { *; }
+-keep class freenet.** { *; }
+-keep class net.freehaven.** { *; }
+-keep class com.southernstorm.** { *; }
+-keep class com.nettgryppa.** { *; }
+-keep class org.cybergarage.** { *; }
+-keep class org.freenetproject.** { *; }
+-keep class org.minidns.** { *; }
+-keep class org.xlattice.** { *; }
+-keep class com.maxmind.** { *; }
+-dontwarn gnu.**
+-dontwarn freenet.**
+-dontwarn com.southernstorm.**
+-dontwarn org.cybergarage.**
+-dontwarn org.minidns.**
+
 # ============================================================================
 # LOGGING SWEEP — strip all logging from release APK
 # ============================================================================
