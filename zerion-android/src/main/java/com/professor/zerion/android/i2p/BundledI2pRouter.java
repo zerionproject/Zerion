@@ -48,6 +48,7 @@ public class BundledI2pRouter implements I2pRouter {
 			writeLoggerConfig(baseDir);
 			System.setProperty("i2p.dir.base", baseDir.getAbsolutePath());
 			System.setProperty("i2p.dir.config", baseDir.getAbsolutePath());
+			net.i2p.router.I2pGlobalContextReset.reset();
 			Router r = new Router(routerProperties());
 			r.setKillVMOnEnd(false);
 			r.runRouter();

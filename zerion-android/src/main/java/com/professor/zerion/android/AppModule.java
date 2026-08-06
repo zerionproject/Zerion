@@ -563,7 +563,7 @@ public class AppModule {
 
 			@Override
 			public boolean shouldEnableI2p() {
-				return com.professor.zerion.BuildConfig.DEBUG;
+				return true;
 			}
 		};
 	}

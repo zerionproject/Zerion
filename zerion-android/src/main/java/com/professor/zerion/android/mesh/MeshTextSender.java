@@ -44,8 +44,8 @@ public class MeshTextSender {
 	private static final long PRESENCE_TTL_SECONDS = 180;
 	private static final int PRESENCE_BUCKET_STEP = 8;
 	private static final long PRESENCE_INTERVAL_MS = 60_000;
-	private static final long PRESENCE_INITIAL_DELAY_MS = 4_000;
-	private static final long PEER_CONNECT_BEACON_DELAY_MS = 1_500;
+	private static final long PRESENCE_INITIAL_DELAY_MS = 1_500;
+	private static final long PEER_CONNECT_BEACON_DELAY_MS = 600;
 
 	private final PluginManager pluginManager;
 	private final MeshController meshController;
