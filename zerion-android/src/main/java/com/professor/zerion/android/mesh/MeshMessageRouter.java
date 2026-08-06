@@ -63,10 +63,7 @@ public class MeshMessageRouter implements MeshManager.OpenedHandler {
 			return false;
 		}
 		if (contactId == null) return false;
-		long age = System.currentTimeMillis() - sendTimestamp;
-		if (age <= MeshPresenceTracker.TTL_MS && age >= -60_000) {
-			presenceTracker.markPresent(contactId);
-		}
+		presenceTracker.markPresent(contactId);
 		byte[] body = MeshPadding.unpad(payload);
 		if (messageType == MESH_TEXT) {
 			handleText(contactId, body);

@@ -877,7 +877,9 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				if (messageType != null && messageType != PRIVATE_MESSAGE
 						&& messageType != MessageTypes.LINK_PREVIEW_MESSAGE)
 					continue;
-				long timestamp = meta.getLong(MSG_KEY_TIMESTAMP);
+				Long timestampOpt = meta.getOptionalLong(MSG_KEY_TIMESTAMP);
+				if (timestampOpt == null) continue;
+				long timestamp = timestampOpt;
 				boolean local = meta.getBoolean(MSG_KEY_LOCAL);
 				boolean read = meta.getBoolean(MSG_KEY_READ);
 				boolean mesh = meta.getBoolean(MSG_KEY_MESH, false);

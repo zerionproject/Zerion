@@ -300,15 +300,9 @@
     public static *** e(...);
     public static *** wtf(...);
 }
-# The embedded I2P router ships its own logger (net.i2p.util.Log). Combined with
-# the runtime logger.defaultLevel=CRIT and logRotationLimit=0 set in
-# BundledI2pRouter, removing these call sites means no router or transport
-# metadata strings survive in the decompiled release APK.
--assumenosideeffects class net.i2p.util.Log {
-    public void debug(...);
-    public void info(...);
-    public void warn(...);
-    public void error(...);
-    public void log(...);
-    public void logAlways(...);
-}
+# The embedded I2P router ships its own logger (net.i2p.util.Log). It is muted
+# at runtime by logger.defaultLevel=CRIT + logRotationLimit=0 in BundledI2pRouter,
+# so no router/transport metadata is written on device. Do NOT add
+# -assumenosideeffects for net.i2p.util.Log: R8 then deletes those call sites and
+# the router's logging is not cleanly side-effect-free, which breaks router
+# startup (I2P never reaches running) in the minified release build.
