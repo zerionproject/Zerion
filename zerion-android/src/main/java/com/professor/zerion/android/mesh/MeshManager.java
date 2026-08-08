@@ -124,6 +124,8 @@ public class MeshManager {
 	private static final String MASK_PREFIX = "BT-";
 
 	private void maskBluetoothName() {
+		if (android.os.Build.VERSION.SDK_INT
+				< android.os.Build.VERSION_CODES.S) return;
 		try {
 			android.bluetooth.BluetoothManager bm =
 					(android.bluetooth.BluetoothManager)
@@ -147,6 +149,8 @@ public class MeshManager {
 	}
 
 	private void restoreBluetoothName() {
+		if (android.os.Build.VERSION.SDK_INT
+				< android.os.Build.VERSION_CODES.S) return;
 		try {
 			android.bluetooth.BluetoothManager bm =
 					(android.bluetooth.BluetoothManager)

@@ -339,7 +339,6 @@ public class AppModule {
 	@Singleton
 	PluginConfig providePluginConfig(ZtpDuplexPluginFactory ztp,
 			I2pDuplexPluginFactory i2p,
-			org.zerionproject.transport.lan.LanKeyAgreementPluginFactory lan,
 			com.professor.zerion.android.contact.add.nearby.ble
 					.BluetoothKeyAgreementPluginFactory bt,
 			FeatureFlags featureFlags) {
@@ -350,10 +349,9 @@ public class AppModule {
 			public Collection<DuplexPluginFactory> getDuplexFactories() {
 				if (featureFlags.shouldEnableI2p()) {
 					return java.util.Arrays.<DuplexPluginFactory>asList(ztp,
-							i2p, bt, lan);
+							i2p, bt);
 				}
-				return java.util.Arrays.<DuplexPluginFactory>asList(ztp, bt,
-						lan);
+				return java.util.Arrays.<DuplexPluginFactory>asList(ztp, bt);
 			}
 
 			@Override

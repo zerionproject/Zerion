@@ -130,6 +130,8 @@ public class BleMeshTransport implements MeshLink {
 	}
 
 	public void start() {
+		if (android.os.Build.VERSION.SDK_INT
+				< android.os.Build.VERSION_CODES.S) return;
 		running = true;
 		registerStateReceiver();
 		forwarder.addLink(this);

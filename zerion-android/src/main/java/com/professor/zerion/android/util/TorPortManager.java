@@ -69,7 +69,8 @@ public class TorPortManager {
 		android.net.TrafficStats.setThreadStatsTag(0xFE);
 		ServerSocket socket = null;
 		try {
-			socket = new ServerSocket(port);
+			socket = new ServerSocket(port, 50,
+					java.net.InetAddress.getLoopbackAddress());
 			socket.setReuseAddress(true);
 			return true;
 		} catch (IOException e) {
