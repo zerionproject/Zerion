@@ -102,6 +102,9 @@ class SqlCipherDatabase extends JdbcDatabase {
 						}
 					}
 					dbFile.delete();
+					new File(dbFile.getPath() + "-wal").delete();
+					new File(dbFile.getPath() + "-shm").delete();
+					new File(dbFile.getPath() + "-journal").delete();
 					reopen = false;
 				}
 			}
@@ -202,6 +205,7 @@ class SqlCipherDatabase extends JdbcDatabase {
 				runPragma(db, "PRAGMA cipher_memory_security = ON");
 				runPragma(db, "PRAGMA secure_delete = ON");
 				runPragma(db, "PRAGMA busy_timeout = " + BUSY_TIMEOUT_MS);
+				runPragma(db, "PRAGMA journal_mode = WAL");
 				return new SqlCipherConnection(db);
 			} catch (android.database.sqlite.SQLiteDatabaseLockedException e) {
 				if (db != null) {
