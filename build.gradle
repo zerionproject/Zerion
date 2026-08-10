@@ -39,7 +39,7 @@ buildscript {
 		jackson_version = "2.15.3"
 		tor_version = "0.4.9.9"
 		lyrebird_version = "0.6.2"
-		jsoup_version = '1.15.3'
+		jsoup_version = '1.18.3'
 		bouncy_castle_version = '1.84'
 		junit_version = "4.13.2"
 		jmock_version = '2.12.0'

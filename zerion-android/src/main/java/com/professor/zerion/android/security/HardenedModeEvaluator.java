@@ -24,7 +24,7 @@ public final class HardenedModeEvaluator {
 			int r = SecureBootGuard.evaluateStrictBoot();
 			if (r != SecureBootGuard.RESULT_OK) return r;
 		}
-		if (uiPrefs.getBoolean(PREF_HARDENED_TAMPER, false)) {
+		if (uiPrefs.getBoolean(PREF_HARDENED_TAMPER, true)) {
 			int r = SecureBootGuard.evaluateAntiTamper();
 			if (r != SecureBootGuard.RESULT_OK) return r;
 		}

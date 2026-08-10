@@ -154,7 +154,8 @@
 -dontwarn org.conscrypt.Conscrypt
 
 # HTML sanitiser
--keep class org.jsoup.safety.Whitelist
+-keep class org.jsoup.safety.Safelist
+-dontwarn org.jsoup.**
 
 # KeyboardAwareLinearLayout uses reflection on android.View
 -dontnote org.thoughtcrime.securesms.components.KeyboardAwareLinearLayout
@@ -209,8 +210,26 @@
 # R8 minification with minifyEnabled=true automatically strips unreferenced
 # classes. No explicit rules needed — these classes have zero references.
 
-# Keep all Zerion Android classes
--keep class com.professor.zerion.** { *; }
+# Zerion Android app layer is now obfuscated (vault, security, panic, mesh,
+# conversation, etc.). Manifest components, Dagger @Inject members, ViewModel
+# and View(AttributeSet) constructors, and Parcelable CREATORs are preserved
+# by the generic rules earlier in this file. The remaining reflective app-code
+# surfaces are kept explicitly below:
+#
+# ApkSignaturePin subclasses are instantiated via getConstructor().newInstance()
+# in TrustedIntents (panic-responder signer verification); keep their no-arg
+# constructors (class may still be renamed).
+-keep class info.guardianproject.trustedintents.ApkSignaturePin
+-keepclassmembers class * extends info.guardianproject.trustedintents.ApkSignaturePin {
+    <init>();
+}
+# Enum constant names are persisted via name()/valueOf across Parcel/DB/Intent
+# boundaries (e.g. AttachmentItem.State); keep constant names for app enums.
+-keepclassmembers enum com.professor.zerion.** {
+    <fields>;
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
 
 # Keep eager singletons that are loaded at startup
 -keep class org.zerionproject.core.BrambleCoreEagerSingletons { *; }
