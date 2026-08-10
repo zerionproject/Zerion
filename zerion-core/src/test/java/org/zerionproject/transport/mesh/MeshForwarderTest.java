@@ -109,6 +109,37 @@ public class MeshForwarderTest {
 	}
 
 	@Test
+	public void relaysOnSameLinkExcludingSourcePeer() {
+		Collector cb = new Collector();
+		MeshForwarder node = new MeshForwarder(cb, random);
+		List<String> relayExcept = new ArrayList<>();
+		node.addLink(new MeshLink() {
+			@Override
+			public String getId() {
+				return "ble";
+			}
+
+			@Override
+			public void broadcast(byte[] frame) {
+				relayExcept.add("ALL");
+			}
+
+			@Override
+			public void broadcast(byte[] frame,
+					@javax.annotation.Nullable String exceptPeerId) {
+				relayExcept.add(exceptPeerId == null ? "ALL" : exceptPeerId);
+			}
+		});
+		byte[] id = new byte[MeshFrame.MESSAGE_ID_BYTES];
+		id[0] = 9;
+		byte[] frame = new MeshFrame(3, id, "hop".getBytes()).encode();
+		node.onReceive(frame, "ble", "c:AA:BB");
+		assertEquals(1, cb.delivered.size());
+		assertEquals(1, relayExcept.size());
+		assertEquals("c:AA:BB", relayExcept.get(0));
+	}
+
+	@Test
 	public void storeCarryForwardReachesALateNeighbour() {
 		MeshForwarder a = new MeshForwarder(p -> {}, random);
 		byte[] payload = "carried later".getBytes();

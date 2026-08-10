@@ -18,4 +18,12 @@ public interface MeshLink {
 	/** Broadcasts an encoded {@link MeshFrame} to every neighbour on this link.
 	 * Best-effort; delivery is not guaranteed. */
 	void broadcast(byte[] frame);
+
+	/** Broadcasts to every neighbour on this link except {@code exceptPeerId}
+	 * (the neighbour a relayed frame arrived from), so a relay does not echo a
+	 * frame straight back to its sender. A null id excludes nobody. */
+	default void broadcast(byte[] frame, @javax.annotation.Nullable
+			String exceptPeerId) {
+		broadcast(frame);
+	}
 }

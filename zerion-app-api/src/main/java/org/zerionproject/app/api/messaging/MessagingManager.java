@@ -40,11 +40,22 @@ public interface MessagingManager extends ConversationClient {
 	void sendPrekeyBundle(ContactId contactId, byte[] bundle)
 			throws DbException;
 
-	void receiveMeshMessage(ContactId contactId, String text, long timestamp)
+	void receiveMeshMessage(ContactId contactId, String text, long timestamp,
+			byte[] meshSenderId, @Nullable byte[] parentMeshSenderId)
 			throws DbException;
 
 	void receiveMeshMessage(Transaction txn, ContactId contactId, String text,
-			long timestamp) throws DbException;
+			long timestamp, byte[] meshSenderId,
+			@Nullable byte[] parentMeshSenderId) throws DbException;
+
+	byte[] getMeshCanonicalId(MessageId localId) throws DbException;
+
+	void receiveMeshAttachment(ContactId contactId, String contentType,
+			byte[] imageBytes, long timestamp) throws DbException;
+
+	PrivateMessageHeader addLocalMeshAttachment(ContactId contactId,
+			String contentType, byte[] imageBytes, long timestamp)
+			throws DbException;
 
 	void receiveMeshGroupRecord(ContactId contactId, byte[] record,
 			long timestamp) throws DbException;
@@ -84,13 +95,16 @@ public interface MessagingManager extends ConversationClient {
 		public final MessageId messageId;
 		public final String text;
 		public final long timestamp;
+		@Nullable
+		public final byte[] replyToId;
 
 		public UndeliveredMeshMessage(ContactId contactId, MessageId messageId,
-				String text, long timestamp) {
+				String text, long timestamp, @Nullable byte[] replyToId) {
 			this.contactId = contactId;
 			this.messageId = messageId;
 			this.text = text;
 			this.timestamp = timestamp;
+			this.replyToId = replyToId;
 		}
 	}
 

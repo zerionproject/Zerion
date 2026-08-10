@@ -115,6 +115,8 @@ public class ConversationViewModel extends DbViewModel
 	private ContactId contactId = null;
 	private final com.professor.zerion.android.mesh.MeshTextSender
 			meshTextSender;
+	private final com.professor.zerion.android.mesh.MeshAttachmentSender
+			meshAttachmentSender;
 	private final com.professor.zerion.android.mesh.MeshPresenceTracker
 			meshPresenceTracker;
 	private final org.zerionproject.core.api.connection.ConnectionRegistry
@@ -215,6 +217,8 @@ public class ConversationViewModel extends DbViewModel
 			org.zerionproject.core.api.versioning.ClientVersioningManager clientVersioningManager,
 			org.zerionproject.core.api.identity.IdentityManager identityManager,
 			com.professor.zerion.android.mesh.MeshTextSender meshTextSender,
+			com.professor.zerion.android.mesh.MeshAttachmentSender
+					meshAttachmentSender,
 			com.professor.zerion.android.mesh.MeshPresenceTracker
 					meshPresenceTracker,
 			org.zerionproject.core.api.connection.ConnectionRegistry
@@ -223,6 +227,7 @@ public class ConversationViewModel extends DbViewModel
 		this.db = db;
 		this.eventBus = eventBus;
 		this.meshTextSender = meshTextSender;
+		this.meshAttachmentSender = meshAttachmentSender;
 		this.meshPresenceTracker = meshPresenceTracker;
 		this.connectionRegistry = connectionRegistry;
 		this.messagingManager = messagingManager;
@@ -546,7 +551,7 @@ public class ConversationViewModel extends DbViewModel
 						addedHeader.setEvent(h);
 						if (offline && text != null && contactId != null) {
 							meshTextSender.sendOfflineText(contactId, id, text,
-									message.getTimestamp());
+									message.getTimestamp(), replyToId);
 						}
 					});
 				});
@@ -635,10 +640,16 @@ public class ConversationViewModel extends DbViewModel
 							NO_AUTO_DELETE_TIMER, null);
 					final String finalText = secretText;
 					final MessageId finalId = message.getId();
+					final long finalTimestamp = message.getTimestamp();
 					txn.attach(() -> {
 						messageTextLoaded.setEvent(
 								new Pair<>(finalId, finalText));
 						secretNoteAdded.setEvent(new Pair<>(h, finalText));
+						if (contactId != null && meshTextSender
+								.offlineTarget(contactId) != null) {
+							meshTextSender.sendOfflineText(contactId, finalId,
+									finalText, finalTimestamp, null);
+						}
 					});
 				});
 			} catch (DbException e) {
@@ -656,6 +667,32 @@ public class ConversationViewModel extends DbViewModel
 	@Nullable
 	Pair<MessageId, String> getReplyContext(MessageId messageId) {
 		return replyContextMap.get(messageId);
+	}
+
+	public boolean isOfflineMode() {
+		return meshTextSender.isOfflineMode();
+	}
+
+	public void sendMeshPhoto(byte[] jpeg, String contentType) {
+		ContactId c = contactId;
+		if (c == null || jpeg == null || jpeg.length == 0) return;
+		if (com.professor.zerion.android.mesh.MeshAttachmentSender
+				.tooLarge(jpeg.length)) {
+			return;
+		}
+		long ts = System.currentTimeMillis();
+		runOnDbThread(() -> {
+			try {
+				PrivateMessageHeader h =
+						messagingManager.addLocalMeshAttachment(c, contentType,
+								jpeg, ts);
+				addedHeader.postEvent(h);
+				meshAttachmentSender.sendOfflinePhoto(c, h.getId(), contentType,
+						jpeg, ts);
+			} catch (DbException e) {
+				handleException(e);
+			}
+		});
 	}
 	private final java.util.List<byte[]> encryptedVoiceChunks = new java.util.ArrayList<>();
 	private final java.util.List<byte[]> encryptedChunkTags = new java.util.ArrayList<>();

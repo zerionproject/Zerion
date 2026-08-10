@@ -485,7 +485,8 @@ public class ConversationActivity extends ZerionActivity
 
 			attachmentController.setOnAttachmentClickListener(v -> {
 				if (!requireVerifiedToSendMedia()) return;
-				AttachmentPickerDialog dialog = AttachmentPickerDialog.newInstance();
+				AttachmentPickerDialog dialog = AttachmentPickerDialog
+						.newInstance(viewModel.isOfflineMode());
 				dialog.show(getSupportFragmentManager(), "attachment_picker");
 			});
 
@@ -878,7 +879,10 @@ public class ConversationActivity extends ZerionActivity
 							Snackbar.LENGTH_SHORT)
 					.show();
 		} else if (request == REQUEST_TAKE_PHOTO && result == RESULT_OK) {
-			if (photoUri != null && sendController instanceof TextAttachmentController) {
+			if (photoUri != null && viewModel.isOfflineMode()) {
+				sendMeshImageAsync(photoUri, true);
+			} else if (photoUri != null
+					&& sendController instanceof TextAttachmentController) {
 				List<Uri> uris = new ArrayList<>();
 				uris.add(photoUri);
 				((TextAttachmentController) sendController).onImageReceived(uris);
@@ -1001,8 +1005,9 @@ public class ConversationActivity extends ZerionActivity
 			});
 		}
 
-		boolean voiceEnabled = voiceCallsEnabled;
-		boolean videoEnabled = videoCallsEnabled;
+		boolean mesh = viewModel != null && viewModel.isOfflineMode();
+		boolean voiceEnabled = voiceCallsEnabled && !mesh;
+		boolean videoEnabled = videoCallsEnabled && !mesh;
 		MenuItem voiceCallItem = menu.findItem(R.id.action_voice_call);
 		MenuItem videoCallItem = menu.findItem(R.id.action_video_call);
 		if (voiceCallItem != null) voiceCallItem.setVisible(voiceEnabled);
@@ -1865,9 +1870,6 @@ public class ConversationActivity extends ZerionActivity
 
 	private void onImagesChosen(@Nullable List<Uri> uris) {
 		if (uris == null || uris.isEmpty()) return;
-		if (!(sendController instanceof TextAttachmentController)) return;
-
-		TextAttachmentController controller = (TextAttachmentController) sendController;
 
 		if (uris.size() > MAX_ATTACHMENTS_PER_MESSAGE) {
 			new ZerionSnackbarBuilder()
@@ -1877,7 +1879,91 @@ public class ConversationActivity extends ZerionActivity
 			uris = uris.subList(0, MAX_ATTACHMENTS_PER_MESSAGE);
 		}
 
-		controller.onImageReceived(uris);
+		if (viewModel.isOfflineMode()) {
+			for (Uri uri : uris) {
+				sendMeshImageAsync(uri, false);
+			}
+			return;
+		}
+
+		if (!(sendController instanceof TextAttachmentController)) return;
+		((TextAttachmentController) sendController).onImageReceived(uris);
+	}
+
+	private void sendMeshImageAsync(Uri uri, boolean deleteSource) {
+		ioExecutor.execute(() -> {
+			byte[] jpeg = recompressForMesh(uri);
+			if (jpeg != null) {
+				viewModel.sendMeshPhoto(jpeg, "image/jpeg");
+			} else {
+				runOnUiThreadUnlessDestroyed(() -> new ZerionSnackbarBuilder()
+						.make(list, "Image could not be sent over mesh",
+								Snackbar.LENGTH_SHORT)
+						.show());
+			}
+			if (deleteSource) {
+				try {
+					getContentResolver().delete(uri, null, null);
+				} catch (Exception e) {
+				}
+			}
+		});
+	}
+
+	@Nullable
+	private android.graphics.Bitmap decodeBoundedForMesh(Uri uri, int maxDim) {
+		android.graphics.BitmapFactory.Options bounds =
+				new android.graphics.BitmapFactory.Options();
+		bounds.inJustDecodeBounds = true;
+		try (java.io.InputStream is =
+				getContentResolver().openInputStream(uri)) {
+			android.graphics.BitmapFactory.decodeStream(is, null, bounds);
+		} catch (Exception e) {
+			return null;
+		}
+		int longest = Math.max(bounds.outWidth, bounds.outHeight);
+		if (longest <= 0) return null;
+		int sample = 1;
+		while (longest / sample > maxDim * 2) sample *= 2;
+		android.graphics.BitmapFactory.Options opts =
+				new android.graphics.BitmapFactory.Options();
+		opts.inSampleSize = sample;
+		try (java.io.InputStream is =
+				getContentResolver().openInputStream(uri)) {
+			return android.graphics.BitmapFactory.decodeStream(is, null, opts);
+		} catch (Exception e) {
+			return null;
+		}
+	}
+
+	@Nullable
+	private byte[] recompressForMesh(Uri uri) {
+		int maxDim = 1280;
+		android.graphics.Bitmap bmp = decodeBoundedForMesh(uri, maxDim);
+		if (bmp == null) return null;
+		int cap = com.professor.zerion.android.mesh.MeshAttachmentSender
+				.MAX_MESH_PHOTO_BYTES;
+		for (int attempt = 0; attempt < 5 && maxDim >= 200; attempt++) {
+			int w = bmp.getWidth(), h = bmp.getHeight();
+			int longest = Math.max(w, h);
+			android.graphics.Bitmap scaled = bmp;
+			if (longest > maxDim) {
+				float s = (float) maxDim / longest;
+				scaled = android.graphics.Bitmap.createScaledBitmap(bmp,
+						Math.max(1, Math.round(w * s)),
+						Math.max(1, Math.round(h * s)), true);
+			}
+			for (int quality = 85; quality >= 30; quality -= 15) {
+				java.io.ByteArrayOutputStream bos =
+						new java.io.ByteArrayOutputStream();
+				scaled.compress(android.graphics.Bitmap.CompressFormat.JPEG,
+						quality, bos);
+				byte[] out = bos.toByteArray();
+				if (out.length <= cap) return out;
+			}
+			maxDim /= 2;
+		}
+		return null;
 	}
 
 	private void onAddedPrivateMessage(PrivateMessageHeader h) {

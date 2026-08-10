@@ -64,11 +64,16 @@ public class MeshForwarder {
 		markSeen(idHex);
 		byte[] encoded = frame.encode();
 		remember(idHex, encoded);
-		broadcast(encoded, null);
+		relay(encoded, null, null);
 		return messageId;
 	}
 
 	public void onReceive(byte[] frameBytes, @Nullable String fromLinkId) {
+		onReceive(frameBytes, fromLinkId, null);
+	}
+
+	public void onReceive(byte[] frameBytes, @Nullable String fromLinkId,
+			@Nullable String fromPeerId) {
 		if (!rateLimitOk()) return;
 		MeshFrame frame;
 		try {
@@ -83,16 +88,18 @@ public class MeshForwarder {
 		if (next != null) {
 			byte[] encoded = next.encode();
 			remember(idHex, encoded);
-			broadcast(encoded, fromLinkId);
+			relay(encoded, fromLinkId, fromPeerId);
 		}
 	}
 
-	private void broadcast(byte[] encoded, @Nullable String exceptLinkId) {
+	private void relay(byte[] encoded, @Nullable String fromLinkId,
+			@Nullable String fromPeerId) {
 		for (MeshLink link : links.values()) {
-			if (exceptLinkId != null && link.getId().equals(exceptLinkId)) {
-				continue;
+			if (fromLinkId != null && link.getId().equals(fromLinkId)) {
+				link.broadcast(encoded, fromPeerId);
+			} else {
+				link.broadcast(encoded);
 			}
-			link.broadcast(encoded);
 		}
 	}
 

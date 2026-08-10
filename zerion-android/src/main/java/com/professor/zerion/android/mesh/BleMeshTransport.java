@@ -28,6 +28,7 @@ import android.os.ParcelUuid;
 
 import org.zerionproject.transport.mesh.MeshForwarder;
 import org.zerionproject.transport.mesh.MeshLink;
+import org.zerionproject.core.util.StringUtils;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.List;
@@ -52,13 +53,17 @@ public class BleMeshTransport implements MeshLink {
 	private static final UUID FRAME_UUID =
 			UUID.fromString("9f2a7c14-6b38-4d0e-8a51-c3e7d924b6f9");
 
-
 	private static final int TARGET_MTU = 512;
 	private static final int DEFAULT_CHUNK = 20;
 	private static final int LENGTH_PREFIX = 4;
 	private static final int MAX_FRAME_BYTES = 128 * 1024;
 	private static final long OP_TIMEOUT_MS = 2000;
 	private static final int MAX_ATTR_LEN = 509;
+	private static final int GATT_BUSY_RETRIES = 100;
+	private static final long GATT_BUSY_BACKOFF_MS = 10;
+	private static final int MAX_CLIENTS = 6;
+	private static final long REAP_INTERVAL_MS = 10_000;
+	private static final long CLIENT_STALE_MS = 60_000;
 
 	private static final int MANUFACTURER_ID = 0xFFFF;
 	private static final int NONCE_BYTES = 8;
@@ -105,6 +110,10 @@ public class BleMeshTransport implements MeshLink {
 			new ConcurrentHashMap<>();
 	private final Map<String, Long> lastConnectAttempt =
 			new ConcurrentHashMap<>();
+	private final Map<String, String> clientNonce =
+			new ConcurrentHashMap<>();
+	private final java.util.Set<String> activeNonces =
+			ConcurrentHashMap.newKeySet();
 
 	public BleMeshTransport(Context context, MeshForwarder forwarder,
 			@Nullable Runnable onRadioUp, @Nullable Runnable onPeerConnected) {
@@ -143,6 +152,8 @@ public class BleMeshTransport implements MeshLink {
 				});
 		rot.scheduleWithFixedDelay(this::rotate, MeshDiscovery.EPOCH_MS, MeshDiscovery.EPOCH_MS,
 				TimeUnit.MILLISECONDS);
+		rot.scheduleWithFixedDelay(this::reap, REAP_INTERVAL_MS,
+				REAP_INTERVAL_MS, TimeUnit.MILLISECONDS);
 		nonceRotator = rot;
 		BluetoothAdapter adapter = bluetoothManager.getAdapter();
 		if (adapter != null && adapter.isEnabled()) {
@@ -210,7 +221,14 @@ public class BleMeshTransport implements MeshLink {
 			reassemblers.clear();
 			mtuByDevice.clear();
 			lastConnectAttempt.clear();
+			clientNonce.clear();
+			activeNonces.clear();
 		}
+	}
+
+	private void clearClientNonce(String address) {
+		String hex = clientNonce.remove(address);
+		if (hex != null) activeNonces.remove(hex);
 	}
 
 	private void firePeerConnected() {
@@ -300,15 +318,23 @@ public class BleMeshTransport implements MeshLink {
 
 	@Override
 	public void broadcast(byte[] frame) {
-		byte[] framed = withLengthPrefix(frame);
-		sendExecutor.execute(() -> doBroadcast(framed));
+		broadcast(frame, null);
 	}
 
-	private void doBroadcast(byte[] framed) {
+	@Override
+	public void broadcast(byte[] frame, @Nullable String exceptPeerId) {
+		byte[] framed = withLengthPrefix(frame);
+		sendExecutor.execute(() -> doBroadcast(framed, exceptPeerId));
+	}
+
+	private void doBroadcast(byte[] framed, @Nullable String exceptPeerId) {
 		BluetoothGattServer server = gattServer;
 		BluetoothGattCharacteristic ch = frameCharacteristic;
 		if (server != null && ch != null) {
 			for (BluetoothDevice central : connectedCentrals.values()) {
+				if (serverKey(central.getAddress()).equals(exceptPeerId)) {
+					continue;
+				}
 				try {
 					notifyInChunks(server, central, ch, framed);
 				} catch (Exception e) {
@@ -316,6 +342,7 @@ public class BleMeshTransport implements MeshLink {
 			}
 		}
 		for (Map.Entry<String, BluetoothGatt> e : connectedClients.entrySet()) {
+			if (clientKey(e.getKey()).equals(exceptPeerId)) continue;
 			try {
 				writeInChunks(e.getValue(), e.getKey(), framed);
 			} catch (Exception ex) {
@@ -424,15 +451,21 @@ public class BleMeshTransport implements MeshLink {
 			}
 			if (peerNonce == null) return;
 			if (MeshDiscovery.compareNonce(sessionNonce, peerNonce) <= 0) return;
+			String nonceHex = StringUtils.toHexString(peerNonce);
+			if (activeNonces.contains(nonceHex)) return;
 			long now = clock();
 			Long last = lastConnectAttempt.get(address);
 			if (last != null && now - last < CONNECT_COOLDOWN_MS) return;
+			if (connectedClients.size() >= MAX_CLIENTS) return;
 			lastConnectAttempt.put(address, now);
 			BluetoothGatt gatt = device.connectGatt(appContext, false,
 					clientCallback, BluetoothDevice.TRANSPORT_LE);
-			if (gatt != null
-					&& connectedClients.putIfAbsent(address, gatt) != null) {
+			if (gatt == null) return;
+			if (connectedClients.putIfAbsent(address, gatt) != null) {
 				closeQuietly(gatt);
+			} else {
+				clientNonce.put(address, nonceHex);
+				activeNonces.add(nonceHex);
 			}
 		}
 	};
@@ -449,13 +482,21 @@ public class BleMeshTransport implements MeshLink {
 					String address = gatt.getDevice().getAddress();
 					if (status == BluetoothGatt.GATT_SUCCESS
 							&& newState == BluetoothProfile.STATE_CONNECTED) {
+						lastConnectAttempt.put(address, clock());
 						gatt.requestMtu(TARGET_MTU);
-					} else if (newState != BluetoothProfile.STATE_CONNECTING) {
-						connectedClients.remove(address, gatt);
+					} else if (newState
+							== BluetoothProfile.STATE_DISCONNECTED) {
 						reassemblers.remove(clientKey(address));
 						mtuByDevice.remove(address);
-						lastConnectAttempt.remove(address);
-						closeQuietly(gatt);
+						if (running && radioUp
+								&& connectedClients.get(address) == gatt) {
+							try {
+								gatt.connect();
+							} catch (RuntimeException e) {
+							}
+						} else {
+							closeQuietly(gatt);
+						}
 					}
 				}
 
@@ -530,7 +571,8 @@ public class BleMeshTransport implements MeshLink {
 		while ((frame = r.poll()) != null) {
 			byte[] f = frame;
 			try {
-				receiveExecutor.execute(() -> forwarder.onReceive(f, LINK_ID));
+				receiveExecutor.execute(
+						() -> forwarder.onReceive(f, LINK_ID, key));
 			} catch (java.util.concurrent.RejectedExecutionException e) {
 			}
 		}
@@ -566,9 +608,7 @@ public class BleMeshTransport implements MeshLink {
 			ch.setValue(part);
 			ch.setWriteType(BluetoothGattCharacteristic
 					.WRITE_TYPE_NO_RESPONSE);
-			opComplete.drainPermits();
-			gatt.writeCharacteristic(ch);
-			if (!awaitOp()) break;
+			if (!dispatch(() -> gatt.writeCharacteristic(ch))) break;
 		}
 	}
 
@@ -581,10 +621,34 @@ public class BleMeshTransport implements MeshLink {
 			byte[] part = new byte[len];
 			System.arraycopy(framed, off, part, 0, len);
 			ch.setValue(part);
-			opComplete.drainPermits();
-			server.notifyCharacteristicChanged(central, ch, false);
-			if (!awaitOp()) break;
+			if (!dispatch(() ->
+					server.notifyCharacteristicChanged(central, ch, false))) {
+				break;
+			}
 		}
+	}
+
+	private boolean dispatch(java.util.concurrent.Callable<Boolean> op) {
+		for (int attempt = 0; attempt < GATT_BUSY_RETRIES; attempt++) {
+			opComplete.drainPermits();
+			boolean queued;
+			try {
+				queued = Boolean.TRUE.equals(op.call());
+			} catch (Exception e) {
+				return false;
+			}
+			if (queued) {
+				awaitOp();
+				return true;
+			}
+			try {
+				Thread.sleep(GATT_BUSY_BACKOFF_MS);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				return false;
+			}
+		}
+		return false;
 	}
 
 	private static byte[] withLengthPrefix(byte[] frame) {
@@ -596,6 +660,44 @@ public class BleMeshTransport implements MeshLink {
 		out[3] = (byte) len;
 		System.arraycopy(frame, 0, out, LENGTH_PREFIX, frame.length);
 		return out;
+	}
+
+	private void reap() {
+		if (!radioUp || !running) return;
+		long now = clock();
+		try {
+			for (Map.Entry<String, BluetoothGatt> e :
+					connectedClients.entrySet()) {
+				String addr = e.getKey();
+				BluetoothGatt g = e.getValue();
+				if (bluetoothManager.getConnectionState(g.getDevice(),
+						BluetoothProfile.GATT)
+						== BluetoothProfile.STATE_CONNECTED) {
+					continue;
+				}
+				Long since = lastConnectAttempt.get(addr);
+				if (since != null && now - since < CLIENT_STALE_MS) continue;
+				if (connectedClients.remove(addr, g)) {
+					closeQuietly(g);
+					clearClientNonce(addr);
+					reassemblers.remove(clientKey(addr));
+					mtuByDevice.remove(addr);
+					lastConnectAttempt.remove(addr);
+				}
+			}
+			for (BluetoothDevice dev :
+					new java.util.ArrayList<>(connectedCentrals.values())) {
+				if (bluetoothManager.getConnectionState(dev,
+						BluetoothProfile.GATT)
+						!= BluetoothProfile.STATE_CONNECTED) {
+					String addr = dev.getAddress();
+					connectedCentrals.remove(addr);
+					reassemblers.remove(serverKey(addr));
+					mtuByDevice.remove(addr);
+				}
+			}
+		} catch (Exception ignored) {
+		}
 	}
 
 	private static void closeQuietly(BluetoothGatt gatt) {

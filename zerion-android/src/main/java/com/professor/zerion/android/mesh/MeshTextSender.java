@@ -176,15 +176,22 @@ public class MeshTextSender {
 	}
 
 	public void sendOfflineText(ContactId contactId, MessageId messageId,
-			String text, long composeTimeMs) {
-		outbox.add(contactId, messageId, text, composeTimeMs);
+			String text, long composeTimeMs, @Nullable MessageId replyToId) {
 		ioExecutor.execute(() -> {
+			byte[] replyBytes = null;
+			if (replyToId != null) {
+				try {
+					replyBytes = messagingManager.getMeshCanonicalId(replyToId);
+				} catch (DbException e) {
+				}
+			}
+			outbox.add(contactId, messageId, text, composeTimeMs, replyBytes);
 			try {
 				AsyncPrekeyBundle bundle =
 						bundleStore.getContactBundle(contactId.getInt(), crypto);
 				if (bundle != null) {
 					sealAndFlood(bundle, contactId, messageId, text,
-							composeTimeMs, true, true);
+							composeTimeMs, true, true, replyBytes);
 				}
 			} catch (DbException e) {
 			}
@@ -219,16 +226,19 @@ public class MeshTextSender {
 
 	private void sealAndFlood(AsyncPrekeyBundle bundle, ContactId contactId,
 			MessageId messageId, String text, long composeTimeMs,
-			boolean withJitter, boolean preferOneTime) {
+			boolean withJitter, boolean preferOneTime,
+			@Nullable byte[] replyToId) {
 		try {
 			if (withJitter) Thread.sleep(jitterMs());
 			byte[] textBytes = text.getBytes(UTF_8);
-			if (HEADER_BYTES + textBytes.length > MeshPadding.MAX_DATA_BYTES) {
+			int replyLen = replyToId != null ? MESSAGE_ID_BYTES : 0;
+			if (HEADER_BYTES + 1 + replyLen + textBytes.length
+					> MeshPadding.MAX_DATA_BYTES) {
 				outbox.drop(messageId);
 				return;
 			}
 			byte[] inner = buildInner(messageId.getBytes(), composeTimeMs,
-					textBytes);
+					textBytes, replyToId);
 			byte[] padded = MeshPadding.pad(inner);
 			meshManager.sendOffline(bundle, MeshMessageRouter.MESH_TEXT, padded,
 					TTL_SECONDS, preferOneTime);
@@ -266,7 +276,7 @@ public class MeshTextSender {
 							e.contactId.getInt(), crypto);
 					if (bundle == null) return;
 					sealAndFlood(bundle, e.contactId, e.messageId, e.text,
-							e.firstSeenMs, true, false);
+							e.firstSeenMs, true, false, e.replyToId);
 				} catch (DbException ex) {
 				}
 			});
@@ -277,21 +287,28 @@ public class MeshTextSender {
 		try {
 			for (UndeliveredMeshMessage u :
 					messagingManager.getUndeliveredMeshMessages()) {
-				outbox.add(u.contactId, u.messageId, u.text, u.timestamp);
+				outbox.add(u.contactId, u.messageId, u.text, u.timestamp,
+						u.replyToId);
 			}
 		} catch (DbException e) {
 		}
 	}
 
 	private static byte[] buildInner(byte[] messageId, long composeTimeMs,
-			byte[] text) {
-		byte[] out = new byte[HEADER_BYTES + text.length];
+			byte[] text, @Nullable byte[] parentId) {
+		int parentLen = parentId != null ? MESSAGE_ID_BYTES : 0;
+		byte[] out = new byte[HEADER_BYTES + 1 + parentLen + text.length];
 		System.arraycopy(messageId, 0, out, 0, MESSAGE_ID_BYTES);
 		for (int i = 0; i < TIMESTAMP_BYTES; i++) {
 			out[MESSAGE_ID_BYTES + i] =
 					(byte) (composeTimeMs >>> (8 * (TIMESTAMP_BYTES - 1 - i)));
 		}
-		System.arraycopy(text, 0, out, HEADER_BYTES, text.length);
+		out[HEADER_BYTES] = (byte) parentLen;
+		if (parentId != null) {
+			System.arraycopy(parentId, 0, out, HEADER_BYTES + 1, parentLen);
+		}
+		System.arraycopy(text, 0, out, HEADER_BYTES + 1 + parentLen,
+				text.length);
 		return out;
 	}
 
