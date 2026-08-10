@@ -917,9 +917,23 @@ public class ConversationActivity extends ZerionActivity
 		invalidateOptionsMenu();
 	}
 
+	private void purgeCameraTemp() {
+		try {
+			java.io.File dir = new java.io.File(getFilesDir(), "camera");
+			java.io.File[] files = dir.listFiles();
+			if (files == null) return;
+			for (java.io.File f : files) {
+				if (f.isFile()) SecureMemory.secureDeleteFile(f);
+			}
+		} catch (Exception e) {
+		}
+	}
+
 	@Override
 	public void onStop() {
 		super.onStop();
+
+		purgeCameraTemp();
 
 		try {
 			Intent serviceIntent = new Intent(this,

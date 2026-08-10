@@ -185,7 +185,10 @@ class AttachmentCreationTask {
 					groupId, timestamp, contentType, is, fileSize, progressCallback);
 		} finally {
 			tryToClose(is);
-			if (strippedFile != null) strippedFile.delete();
+			if (strippedFile != null) {
+				com.professor.zerion.android.vault.utils.SecureMemory
+						.secureDeleteFile(strippedFile);
+			}
 		}
 	}
 

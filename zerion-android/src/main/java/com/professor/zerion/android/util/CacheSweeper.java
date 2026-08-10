@@ -18,6 +18,10 @@ public final class CacheSweeper {
 			"voice",
 			"grouptr_vid_thumb_",
 			"grouptr_voice_",
+			"jpg_meta",
+			"vid_in_",
+			"vid_clean_",
+			"vid_remux_",
 	};
 
 	private static final String[] TEMP_DIRS = {
