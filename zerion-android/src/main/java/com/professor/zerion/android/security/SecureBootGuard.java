@@ -83,8 +83,24 @@ public final class SecureBootGuard {
 		if (magiskArtifactsPresent()) return RESULT_MAGISK_FOUND;
 		if (fridaArtifactsPresent()) return RESULT_FRIDA_FOUND;
 		if (xposedArtifactsPresent()) return RESULT_XPOSED_FOUND;
-		if (adbDaemonListening()) return RESULT_ADB_DAEMON_LISTENING;
 		return RESULT_OK;
+	}
+
+	// USB or wireless debugging enabled. Read from Settings.Global, which an
+	// app can read directly; a socket probe of adbd is blocked by SELinux for
+	// untrusted apps on modern Android and misses USB debugging entirely.
+	public static boolean adbEnabled(Context ctx) {
+		try {
+			android.content.ContentResolver cr = ctx.getContentResolver();
+			if (android.provider.Settings.Global.getInt(cr,
+					android.provider.Settings.Global.ADB_ENABLED, 0) == 1) {
+				return true;
+			}
+			return android.provider.Settings.Global.getInt(cr,
+					"adb_wifi_enabled", 0) == 1;
+		} catch (Exception e) {
+			return false;
+		}
 	}
 
 	private static boolean debuggerAttached() {
@@ -198,16 +214,6 @@ public final class SecureBootGuard {
 		}
 		return procMapsContainsAny(new String[]{
 				"XposedBridge", "libxposed", "LSPosed", "EdXposed"});
-	}
-
-	private static boolean adbDaemonListening() {
-		try (java.net.Socket s = new java.net.Socket()) {
-			s.connect(new java.net.InetSocketAddress("127.0.0.1", 5555),
-					250);
-			return true;
-		} catch (Exception ignored) {
-		}
-		return false;
 	}
 
 	private static boolean procMapsContainsAny(String[] needles) {
