@@ -116,9 +116,9 @@ iOS should do the equivalent on its own data root and pick a stable "default" pr
 
 ## Files involved (Android, for reference)
 
-- `bramble-android/.../account/ProfileManager.java` - paths, listing, migration, secure wipe
-- `bramble-android/.../account/AndroidAccountManager.java` - multi-profile signIn, scheduleProfileCreation, deleteActiveProfile, pending-identity materialisation, global lockout
-- `bramble-core/.../account/AccountManagerImpl.java` - base class, no longer caches key-file paths; reads them fresh from `databaseConfig` each call
+- `zerion-core-android/.../account/ProfileManager.java` - paths, listing, migration, secure wipe
+- `zerion-core-android/.../account/AndroidAccountManager.java` - multi-profile signIn, scheduleProfileCreation, deleteActiveProfile, pending-identity materialisation, global lockout
+- `zerion-core/.../account/AccountManagerImpl.java` - base class, no longer caches key-file paths; reads them fresh from `databaseConfig` each call
 - `zerion-android/.../AndroidDatabaseConfig.java` - delegates to ProfileManager on each `getDatabase*Directory()`
 - `zerion-android/.../AppModule.java` - provides ProfileManager + the path-aware DatabaseConfig + per-profile @TorDirectory
 - `zerion-android/.../settings/ProfilesFragment.java` + `SettingsActivity.requestProfileSignOut()` - Settings UI for create / switch / delete

@@ -36,7 +36,7 @@ public class AudioLevelView extends View {
 		super(context, attrs, defStyleAttr);
 
 		paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-		paint.setColor(ContextCompat.getColor(context, R.color.zerion_lime_600));
+		paint.setColor(ContextCompat.getColor(context, R.color.zerion_success));
 		paint.setStyle(Paint.Style.FILL);
 		paint.setStrokeCap(Paint.Cap.ROUND);
 		for (int i = 0; i < BAR_COUNT; i++) {

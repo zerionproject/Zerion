@@ -31,7 +31,7 @@ import static android.view.inputmethod.EditorInfo.IME_ACTION_SEND;
 import static android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT;
 import static java.lang.Character.isWhitespace;
 import static java.util.Objects.requireNonNull;
-import static org.briarproject.bramble.util.StringUtils.utf8IsTooLong;
+import static org.zerionproject.core.util.StringUtils.utf8IsTooLong;
 import static com.professor.zerion.android.util.UiUtils.resolveColorAttribute;
 
 public class EmojiTextInputView extends LinearLayout implements

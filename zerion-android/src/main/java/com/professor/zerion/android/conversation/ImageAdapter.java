@@ -11,8 +11,8 @@ import android.view.WindowManager;
 import com.professor.zerion.R;
 import com.professor.zerion.android.attachment.AttachmentItem;
 import com.professor.zerion.android.conversation.glide.Radii;
-import org.briarproject.bramble.api.db.DatabaseExecutor;
-import org.briarproject.briar.api.attachment.AttachmentReader;
+import org.zerionproject.core.api.db.DatabaseExecutor;
+import org.zerionproject.app.api.attachment.AttachmentReader;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.ArrayList;

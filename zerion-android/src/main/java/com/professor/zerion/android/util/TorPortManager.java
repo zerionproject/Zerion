@@ -6,10 +6,10 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.IOException;
 import java.net.ServerSocket;
-import static org.briarproject.bramble.api.plugin.TorConstants.DEFAULT_CONTROL_PORT;
-import static org.briarproject.bramble.api.plugin.TorConstants.DEFAULT_SOCKS_PORT;
-import static org.briarproject.bramble.api.plugin.TorConstants.MAX_DYNAMIC_PORT;
-import static org.briarproject.bramble.api.plugin.TorConstants.MIN_DYNAMIC_PORT;
+import static org.zerionproject.core.api.plugin.TorConstants.DEFAULT_CONTROL_PORT;
+import static org.zerionproject.core.api.plugin.TorConstants.DEFAULT_SOCKS_PORT;
+import static org.zerionproject.core.api.plugin.TorConstants.MAX_DYNAMIC_PORT;
+import static org.zerionproject.core.api.plugin.TorConstants.MIN_DYNAMIC_PORT;
 
 @NotNullByDefault
 public class TorPortManager {
@@ -69,7 +69,8 @@ public class TorPortManager {
 		android.net.TrafficStats.setThreadStatsTag(0xFE);
 		ServerSocket socket = null;
 		try {
-			socket = new ServerSocket(port);
+			socket = new ServerSocket(port, 50,
+					java.net.InetAddress.getLoopbackAddress());
 			socket.setReuseAddress(true);
 			return true;
 		} catch (IOException e) {

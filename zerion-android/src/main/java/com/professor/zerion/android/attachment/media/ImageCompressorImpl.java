@@ -16,8 +16,8 @@ import javax.inject.Inject;
 
 import static android.graphics.Bitmap.CompressFormat.JPEG;
 import static android.graphics.BitmapFactory.decodeStream;
-import static org.briarproject.bramble.util.IoUtils.tryToClose;
-import static org.briarproject.briar.api.attachment.MediaConstants.MAX_IMAGE_SIZE;
+import static org.zerionproject.core.util.IoUtils.tryToClose;
+import static org.zerionproject.app.api.attachment.MediaConstants.MAX_IMAGE_SIZE;
 
 class ImageCompressorImpl implements ImageCompressor {
 

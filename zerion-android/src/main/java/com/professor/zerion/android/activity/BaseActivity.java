@@ -93,9 +93,15 @@ public abstract class BaseActivity extends AppCompatActivity
 			getTheme().applyStyle(R.style.AmoledOverlay, true);
 		}
 
+		int accentOverlay = com.professor.zerion.android.settings
+				.ChatPreferences.getAccentOverlayStyle(this);
+		if (accentOverlay != 0) {
+			getTheme().applyStyle(accentOverlay, true);
+		}
+
 		int hardenedResult =
 				com.professor.zerion.android.security
-						.HardenedModeEvaluator.evaluate(uiPrefs);
+						.HardenedModeEvaluator.evaluate(uiPrefs, this);
 		if (hardenedResult != com.professor.zerion.android.security
 				.SecureBootGuard.RESULT_OK
 				&& !(this instanceof com.professor.zerion.android.security
@@ -119,7 +125,7 @@ public abstract class BaseActivity extends AppCompatActivity
 
 		androidx.activity.EdgeToEdge.enable(this);
 
-		securityManager.applyScreenshotProtection(this);
+		securityManager.applyScreenshotProtection(this, forceScreenshotProtection());
 
 		if (SDK_INT >= 31) getWindow().setHideOverlayWindows(true);
 
@@ -145,7 +151,7 @@ public abstract class BaseActivity extends AppCompatActivity
 	@Override
 	protected void onStart() {
 		super.onStart();
-		securityManager.applyScreenshotProtection(this);
+		securityManager.applyScreenshotProtection(this, forceScreenshotProtection());
 		for (ActivityLifecycleController alc : lifecycleControllers) {
 			alc.onActivityStart();
 		}
@@ -170,6 +176,10 @@ public abstract class BaseActivity extends AppCompatActivity
 	private void enforceSecureInputs() {
 		View decorView = getWindow().getDecorView();
 		IncognitoInputHelper.enforceSecureInputsOnViewTree(decorView);
+	}
+
+	protected boolean forceScreenshotProtection() {
+		return false;
 	}
 
 	@Override

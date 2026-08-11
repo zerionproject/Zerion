@@ -1,18 +1,18 @@
 package com.professor.zerion.android.attachment;
 
-import org.briarproject.bramble.api.db.DatabaseExecutor;
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.db.NoSuchMessageException;
-import org.briarproject.bramble.api.sync.MessageId;
+import org.zerionproject.core.api.db.DatabaseExecutor;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.db.NoSuchMessageException;
+import org.zerionproject.core.api.sync.MessageId;
 import com.professor.zerion.android.attachment.AttachmentItem.State;
 import com.professor.zerion.android.attachment.media.ImageHelper;
 import com.professor.zerion.android.attachment.media.ImageSizeCalculator;
 import com.professor.zerion.android.attachment.media.Size;
-import org.briarproject.briar.api.attachment.Attachment;
-import org.briarproject.briar.api.attachment.AttachmentHeader;
-import org.briarproject.briar.api.attachment.AttachmentNotYetAvailableException;
-import org.briarproject.briar.api.attachment.AttachmentReader;
-import org.briarproject.briar.api.messaging.PrivateMessageHeader;
+import org.zerionproject.app.api.attachment.Attachment;
+import org.zerionproject.app.api.attachment.AttachmentHeader;
+import org.zerionproject.app.api.attachment.AttachmentNotYetAvailableException;
+import org.zerionproject.app.api.attachment.AttachmentReader;
+import org.zerionproject.app.api.messaging.PrivateMessageHeader;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.BufferedInputStream;
@@ -32,8 +32,8 @@ import java.util.Set;
 
 import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
-import static org.briarproject.bramble.util.AndroidUtils.getSupportedImageContentTypes;
-import static org.briarproject.bramble.util.IoUtils.tryToClose;
+import static org.zerionproject.core.util.AndroidUtils.getSupportedImageContentTypes;
+import static org.zerionproject.core.util.IoUtils.tryToClose;
 import static com.professor.zerion.android.attachment.AttachmentItem.State.AVAILABLE;
 import static com.professor.zerion.android.attachment.AttachmentItem.State.ERROR;
 import static com.professor.zerion.android.attachment.AttachmentItem.State.LOADING;

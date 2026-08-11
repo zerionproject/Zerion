@@ -14,7 +14,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
-import org.briarproject.bramble.api.crypto.DecryptionResult;
+import org.zerionproject.core.api.crypto.DecryptionResult;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.fragment.BaseFragment;
@@ -42,8 +42,8 @@ import static android.view.View.INVISIBLE;
 import static android.view.View.VISIBLE;
 import static android.view.inputmethod.EditorInfo.IME_ACTION_DONE;
 import static androidx.core.content.ContextCompat.checkSelfPermission;
-import static org.briarproject.bramble.api.crypto.DecryptionResult.KEY_STRENGTHENER_ERROR;
-import static org.briarproject.bramble.api.crypto.DecryptionResult.SUCCESS;
+import static org.zerionproject.core.api.crypto.DecryptionResult.KEY_STRENGTHENER_ERROR;
+import static org.zerionproject.core.api.crypto.DecryptionResult.SUCCESS;
 import static com.professor.zerion.android.login.LoginUtils.createKeyStrengthenerErrorDialog;
 import static com.professor.zerion.android.util.UiUtils.enterPressed;
 import static com.professor.zerion.android.util.UiUtils.hideSoftKeyboard;
@@ -203,9 +203,12 @@ public class PasswordFragment extends BaseFragment implements TextWatcher {
 			return;
 		}
 
-		char[] passwordChars = new char[editable.length()];
-		editable.getChars(0, editable.length(), passwordChars, 0);
+		char[] typed = new char[editable.length()];
+		editable.getChars(0, editable.length(), typed, 0);
 		password.setText(null);
+		char[] passwordChars = com.professor.zerion.android.account
+				.PasswordSanitizer.sanitize(typed);
+		java.util.Arrays.fill(typed, '\0');
 		viewModel.validatePassword(passwordChars);
 	}
 

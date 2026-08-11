@@ -15,7 +15,7 @@ import com.professor.zerion.android.fragment.BaseFragment;
 import com.professor.zerion.android.view.TextInputView;
 import com.professor.zerion.android.view.TextSendController;
 import com.professor.zerion.android.view.TextSendController.SendListener;
-import org.briarproject.briar.api.attachment.AttachmentHeader;
+import org.zerionproject.app.api.attachment.AttachmentHeader;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
@@ -38,7 +38,7 @@ import static com.professor.zerion.android.util.UiUtils.hideSoftKeyboard;
 import static com.professor.zerion.android.view.AuthorView.setAvatar;
 import static com.professor.zerion.android.view.TextSendController.SendState;
 import static com.professor.zerion.android.view.TextSendController.SendState.SENT;
-import static org.briarproject.briar.api.introduction.IntroductionConstants.MAX_INTRODUCTION_TEXT_LENGTH;
+import static org.zerionproject.app.api.introduction.IntroductionConstants.MAX_INTRODUCTION_TEXT_LENGTH;
 
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault

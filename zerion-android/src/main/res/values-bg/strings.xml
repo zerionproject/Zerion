@@ -357,12 +357,6 @@
   
   <string name="contacts_selected">Избрани контакти</string>
   <string name="activity_share_toolbar_header">Избиране на контакти</string>
-  <string name="no_contacts_selector">Няма контакти</string>
-  <string name="no_contacts_selector_action">Върнете се след като добавите контакти</string>
-  <string name="shared_by_format">Споделен от %s</string>
-  <string name="sharing_status">Състояние на споделяне</string>
-  <string name="shared_with">Споделено с %1$d (на линия %2$d)</string>
-  <string name="nobody">Никого</string>
   
   <string name="read_more">повече</string>
 

@@ -1,0 +1,7 @@
+v3.0.0: offline mesh, I2P, and hardening
+
+Zerion 3.0 adds offline messaging. When there is no internet, nearby devices connect directly over Bluetooth so you can send messages, replies, and photos, in both one to one and group chats. Online messaging continues to run over Tor, now with bridge support (obfs4, snowflake, meek) for harder to block connections, plus an optional embedded I2P transport.
+
+This release also strengthens the app: per message post-quantum encryption throughout, a hardened mode with tamper detection enabled by default, an app signature self check, and reproducible builds. Both people need this version to message each other.
+
+Full notes: https://github.com/zerionproject/Zerion/releases/tag/v3.0.0

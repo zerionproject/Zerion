@@ -1,13 +1,13 @@
 package com.professor.zerion.android.contact.add.remote;
 
-import org.briarproject.bramble.api.contact.PendingContact;
-import org.briarproject.bramble.api.contact.PendingContactState;
+import org.zerionproject.core.api.contact.PendingContact;
+import org.zerionproject.core.api.contact.PendingContactState;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.Immutable;
 
-import static org.briarproject.bramble.api.contact.PendingContactState.CONNECTING;
-import static org.briarproject.bramble.api.contact.PendingContactState.WAITING_FOR_CONNECTION;
+import static org.zerionproject.core.api.contact.PendingContactState.CONNECTING;
+import static org.zerionproject.core.api.contact.PendingContactState.WAITING_FOR_CONNECTION;
 
 @Immutable
 @NotNullByDefault

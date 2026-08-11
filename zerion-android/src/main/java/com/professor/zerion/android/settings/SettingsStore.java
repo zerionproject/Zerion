@@ -7,9 +7,9 @@ import android.widget.Toast;
 
 import com.professor.zerion.R;
 
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.settings.Settings;
-import org.briarproject.bramble.api.settings.SettingsManager;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.settings.Settings;
+import org.zerionproject.core.api.settings.SettingsManager;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.concurrent.Executor;

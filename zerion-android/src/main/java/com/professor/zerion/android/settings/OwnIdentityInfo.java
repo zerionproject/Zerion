@@ -1,7 +1,7 @@
 package com.professor.zerion.android.settings;
 
-import org.briarproject.bramble.api.identity.LocalAuthor;
-import org.briarproject.briar.api.identity.AuthorInfo;
+import org.zerionproject.core.api.identity.LocalAuthor;
+import org.zerionproject.app.api.identity.AuthorInfo;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.Immutable;

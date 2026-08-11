@@ -32,7 +32,7 @@
 		app:layout_constraintStart_toStartOf="parent"
 		app:layout_constraintTop_toTopOf="@+id/button"
 		app:srcCompat="@drawable/ic_check_white"
-		app:tint="#26B7F0"
+		app:tint="@color/zerion_cyan"
 		tools:ignore="ContentDescription" />
 
 	<Button
@@ -43,7 +43,7 @@
 		android:layout_margin="@dimen/margin_medium"
 		android:textColor="#FFFFFF"
 		android:backgroundTint="#33FFFFFF"
-		app:strokeColor="#26B7F0"
+		app:strokeColor="@color/zerion_cyan"
 		app:strokeWidth="1dp"
 		app:layout_constraintEnd_toStartOf="@+id/helpButton"
 		app:layout_constraintStart_toEndOf="@+id/checkImage"
@@ -61,6 +61,6 @@
 		app:layout_constraintEnd_toEndOf="parent"
 		app:layout_constraintTop_toTopOf="@+id/button"
 		app:srcCompat="@drawable/ic_info_white"
-		app:tint="#26B7F0" />
+		app:tint="@color/zerion_cyan" />
 
 </merge>

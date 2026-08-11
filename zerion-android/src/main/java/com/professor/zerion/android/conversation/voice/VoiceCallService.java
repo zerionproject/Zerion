@@ -28,28 +28,28 @@ import androidx.core.content.ContextCompat;
 
 import com.professor.zerion.R;
 
-import org.briarproject.bramble.api.contact.Contact;
-import org.briarproject.bramble.api.contact.ContactId;
-import org.briarproject.bramble.api.contact.ContactManager;
-import org.briarproject.bramble.api.crypto.SecretKey;
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.event.Event;
-import org.briarproject.bramble.api.event.EventBus;
-import org.briarproject.bramble.api.event.EventListener;
-import org.briarproject.briar.api.messaging.MessagingManager;
-import org.briarproject.briar.api.messaging.VoiceSignalFactory;
-import org.briarproject.briar.api.messaging.VoiceSignalHeader;
-import org.briarproject.briar.api.messaging.VoiceSignalType;
-import org.briarproject.briar.api.messaging.event.PrivateMessageReceivedEvent;
-import org.briarproject.briar.api.messaging.event.VoiceSignalReceivedEvent;
-import org.briarproject.bramble.api.plugin.PluginManager;
-import org.briarproject.bramble.api.plugin.duplex.DuplexTransportConnection;
-import org.briarproject.bramble.api.sync.Group;
-import org.briarproject.bramble.api.sync.GroupId;
-import org.briarproject.bramble.api.sync.MessageId;
-import org.briarproject.briar.conversation.voice.VoiceCallConnectionManager;
-import org.briarproject.briar.conversation.voice.VoiceCallConnectionHandler;
-import org.briarproject.briar.conversation.voice.VoiceCallCrypto;
+import org.zerionproject.core.api.contact.Contact;
+import org.zerionproject.core.api.contact.ContactId;
+import org.zerionproject.core.api.contact.ContactManager;
+import org.zerionproject.core.api.crypto.SecretKey;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.event.Event;
+import org.zerionproject.core.api.event.EventBus;
+import org.zerionproject.core.api.event.EventListener;
+import org.zerionproject.app.api.messaging.MessagingManager;
+import org.zerionproject.app.api.messaging.VoiceSignalFactory;
+import org.zerionproject.app.api.messaging.VoiceSignalHeader;
+import org.zerionproject.app.api.messaging.VoiceSignalType;
+import org.zerionproject.app.api.messaging.event.PrivateMessageReceivedEvent;
+import org.zerionproject.app.api.messaging.event.VoiceSignalReceivedEvent;
+import org.zerionproject.core.api.plugin.PluginManager;
+import org.zerionproject.core.api.plugin.duplex.DuplexTransportConnection;
+import org.zerionproject.core.api.sync.Group;
+import org.zerionproject.core.api.sync.GroupId;
+import org.zerionproject.core.api.sync.MessageId;
+import org.zerionproject.app.conversation.voice.VoiceCallConnectionManager;
+import org.zerionproject.app.conversation.voice.VoiceCallConnectionHandler;
+import org.zerionproject.app.conversation.voice.VoiceCallCrypto;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -78,8 +78,6 @@ import com.professor.zerion.android.ZerionApplication;
 
 public class VoiceCallService extends Service implements EventListener {
 
-	private static final String CHANNEL_ID = "voice_call_channel";
-	private static final String CHANNEL_ID_ONGOING = "voice_call_ongoing_channel";
 	private static final int NOTIFICATION_ID = 1001;
 
 	private static final int SAMPLE_RATE = 16000;
@@ -115,6 +113,7 @@ public class VoiceCallService extends Service implements EventListener {
 	}
 
 	private final IBinder binder = new LocalBinder();
+	private final CallNotification callNotification = new CallNotification(this);
 	private final Handler mainHandler = new Handler(Looper.getMainLooper());
 	private final Object streamLock = new Object();
 	private final Object torConnectionLock = new Object();
@@ -213,7 +212,7 @@ public class VoiceCallService extends Service implements EventListener {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		createNotificationChannel();
+		callNotification.createChannels();
 
 		ZerionApplication app = (ZerionApplication) getApplication();
 		AndroidComponent component = app.getApplicationComponent();
@@ -243,17 +242,17 @@ public class VoiceCallService extends Service implements EventListener {
 		if (intent != null) {
 			String action = intent.getAction();
 
-			if ("ACTION_ACCEPT_CALL".equals(action)) {
+			if (CallIntents.ACTION_ACCEPT_CALL.equals(action)) {
 				acceptCall();
 				launchCallActivity();
 				return START_NOT_STICKY;
-			} else if ("ACTION_DECLINE_CALL".equals(action)) {
+			} else if (CallIntents.ACTION_DECLINE_CALL.equals(action)) {
 				declineCall();
 				return START_NOT_STICKY;
 			}
 
-			if ("com.professor.zerion.VOICE_CALL_SIGNALING".equals(action)) {
-				String signalingMessage = intent.getStringExtra("signaling_message");
+			if (CallIntents.ACTION_SIGNALING.equals(action)) {
+				String signalingMessage = intent.getStringExtra(CallIntents.EXTRA_SIGNALING_MESSAGE);
 				if (signalingMessage != null) {
 					handleIncomingSignaling(signalingMessage);
 				}
@@ -1428,7 +1427,7 @@ public class VoiceCallService extends Service implements EventListener {
 		String encodedKey = voiceCallCrypto.encodeVoiceCallKey(voiceCallKey);
 		String payload = encodedKey;
 		if (localEphemeralSecret != null) {
-			payload = encodedKey + "|" + bytesToHex(localEphemeralSecret);
+			payload = encodedKey + "|" + CallHex.bytesToHex(localEphemeralSecret);
 		}
 		if (isVideoCall) {
 			payload = payload + "|VIDEO";
@@ -1439,7 +1438,7 @@ public class VoiceCallService extends Service implements EventListener {
 	private void sendCallAnswer() throws DbException {
 		String payload = onionAddress + ":" + onionPort;
 		if (localEphemeralSecret != null) {
-			payload = payload + "|" + bytesToHex(localEphemeralSecret);
+			payload = payload + "|" + CallHex.bytesToHex(localEphemeralSecret);
 		}
 		sendVoiceSignal(VoiceSignalType.CALL_ANSWER, payload);
 	}
@@ -1500,7 +1499,7 @@ public class VoiceCallService extends Service implements EventListener {
 				GroupId groupId = conversationGroup.getId();
 				long timestamp = System.currentTimeMillis();
 
-				org.briarproject.briar.api.messaging.VoiceSignal signal;
+				org.zerionproject.app.api.messaging.VoiceSignal signal;
 				switch (signalType) {
 					case CALL_OFFER:
 						signal = voiceSignalFactory.createCallOffer(
@@ -1594,7 +1593,7 @@ public class VoiceCallService extends Service implements EventListener {
 					String ephHex = signal.getEphemeralSecret();
 					if (ephHex != null) {
 						try {
-							remoteEphemeralSecret = hexToBytes(ephHex);
+							remoteEphemeralSecret = CallHex.hexToBytes(ephHex);
 						} catch (IllegalArgumentException e) {
 							return;
 						}
@@ -1688,84 +1687,12 @@ public class VoiceCallService extends Service implements EventListener {
 	}
 
 	private void launchCallActivity() {
-		Intent intent = new Intent(this, VoiceCallActivity.class);
-		intent.putExtra(VoiceCallActivity.EXTRA_CONTACT_ID, contactId.getInt());
-		intent.putExtra(VoiceCallActivity.EXTRA_IS_INCOMING, isIncoming);
-		intent.putExtra(VoiceCallActivity.EXTRA_CALL_ID, callId);
-		intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-		startActivity(intent);
+		CallIntents.launchCallActivity(this, contactId.getInt(), isIncoming, callId);
 	}
 
 	private Notification createNotification() {
-		Intent intent = new Intent(this, VoiceCallActivity.class);
-		intent.putExtra(VoiceCallActivity.EXTRA_CONTACT_ID, contactId.getInt());
-		intent.putExtra(VoiceCallActivity.EXTRA_IS_INCOMING, isIncoming);
-		intent.putExtra(VoiceCallActivity.EXTRA_CALL_ID, callId);
-		intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-
-		PendingIntent pendingIntent = PendingIntent.getActivity(this, 0,
-				intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-
-		boolean ringingIncoming = isIncoming && callState == CallState.RINGING;
-		String title = ringingIncoming ? "Incoming call" : "Ongoing call";
-		String text = videoEnabled || videoRequested || isVideoCall ?
-				"Secure video call" : "Secure voice call";
-
-		NotificationCompat.Builder builder = new NotificationCompat.Builder(this,
-				ringingIncoming ? CHANNEL_ID : CHANNEL_ID_ONGOING)
-				.setContentTitle(title)
-				.setContentText(text)
-				.setSmallIcon(R.drawable.ic_phone_white)
-				.setPriority(ringingIncoming ? NotificationCompat.PRIORITY_MAX
-						: NotificationCompat.PRIORITY_LOW)
-				.setCategory(NotificationCompat.CATEGORY_CALL)
-				.setOngoing(true)
-				.setAutoCancel(false)
-				.setContentIntent(pendingIntent);
-		if (ringingIncoming) {
-			builder.setFullScreenIntent(pendingIntent, true);
-			Intent acceptIntent = new Intent(this, VoiceCallService.class);
-			acceptIntent.setAction("ACTION_ACCEPT_CALL");
-			PendingIntent acceptPendingIntent = PendingIntent.getService(this, 1,
-					acceptIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-			builder.addAction(R.drawable.ic_phone_white, "Accept", acceptPendingIntent);
-			Intent declineIntent = new Intent(this, VoiceCallService.class);
-			declineIntent.setAction("ACTION_DECLINE_CALL");
-			PendingIntent declinePendingIntent = PendingIntent.getService(this, 2,
-					declineIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-			builder.addAction(R.drawable.ic_close, "Decline", declinePendingIntent);
-			builder.setVisibility(NotificationCompat.VISIBILITY_SECRET);
-		}
-
-		return builder.build();
-	}
-
-	private void createNotificationChannel() {
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-			NotificationManager manager = getSystemService(NotificationManager.class);
-			if (manager == null) return;
-
-			NotificationChannel incoming = new NotificationChannel(
-					CHANNEL_ID,
-					"Incoming Calls",
-					NotificationManager.IMPORTANCE_HIGH);
-			incoming.setDescription("Ringing alerts for incoming voice calls");
-			incoming.enableLights(true);
-			incoming.enableVibration(true);
-			incoming.setVibrationPattern(new long[]{0, 1000, 500, 1000});
-			incoming.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
-			manager.createNotificationChannel(incoming);
-
-			NotificationChannel ongoing = new NotificationChannel(
-					CHANNEL_ID_ONGOING,
-					"Ongoing Calls",
-					NotificationManager.IMPORTANCE_LOW);
-			ongoing.setDescription("Status of a voice call in progress");
-			ongoing.enableLights(false);
-			ongoing.enableVibration(false);
-			ongoing.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
-			manager.createNotificationChannel(ongoing);
-		}
+		return callNotification.build(contactId, isIncoming, callId, callState,
+				videoEnabled || videoRequested || isVideoCall);
 	}
 
 	private void updateNotification() {
@@ -1887,7 +1814,7 @@ public class VoiceCallService extends Service implements EventListener {
 								break;
 							}
 							if (ephemeralPart != null) {
-								remoteEphemeralSecret = hexToBytes(ephemeralPart);
+								remoteEphemeralSecret = CallHex.hexToBytes(ephemeralPart);
 							}
 							callState = CallState.CONNECTING;
 							updateCallActivity();
@@ -2374,28 +2301,4 @@ public class VoiceCallService extends Service implements EventListener {
 		}
 	}
 
-	private static String bytesToHex(byte[] bytes) {
-		StringBuilder hex = new StringBuilder(bytes.length * 2);
-		for (byte b : bytes) {
-			hex.append(String.format("%02x", b));
-		}
-		return hex.toString();
-	}
-
-	private static byte[] hexToBytes(String hex) {
-		int len = hex.length();
-		if (len % 2 != 0) {
-			throw new IllegalArgumentException("Invalid hex string length");
-		}
-		byte[] data = new byte[len / 2];
-		for (int i = 0; i < len; i += 2) {
-			int hi = Character.digit(hex.charAt(i), 16);
-			int lo = Character.digit(hex.charAt(i + 1), 16);
-			if (hi < 0 || lo < 0) {
-				throw new IllegalArgumentException("Invalid hex character");
-			}
-			data[i / 2] = (byte) ((hi << 4) + lo);
-		}
-		return data;
-	}
 }

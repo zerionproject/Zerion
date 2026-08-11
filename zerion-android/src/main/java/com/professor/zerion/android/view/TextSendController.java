@@ -9,7 +9,7 @@ import com.google.android.material.snackbar.Snackbar;
 
 import com.professor.zerion.R;
 import com.professor.zerion.android.view.EmojiTextInputView.TextInputListener;
-import org.briarproject.briar.api.attachment.AttachmentHeader;
+import org.zerionproject.app.api.attachment.AttachmentHeader;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.List;
@@ -27,7 +27,7 @@ import static java.util.Collections.emptyList;
 import static com.professor.zerion.android.view.TextSendController.SendState.ERROR;
 import static com.professor.zerion.android.view.TextSendController.SendState.SENT;
 import static com.professor.zerion.android.view.TextSendController.SendState.UNEXPECTED_TIMER;
-import static org.briarproject.briar.api.autodelete.AutoDeleteConstants.NO_AUTO_DELETE_TIMER;
+import static org.zerionproject.app.api.autodelete.AutoDeleteConstants.NO_AUTO_DELETE_TIMER;
 
 @UiThread
 @NotNullByDefault

@@ -55,7 +55,8 @@
                         android:maxLines="1"
                         android:textColor="@android:color/white"
                         android:textSize="17sp"
-                        android:textStyle="bold"
+                        android:fontFamily="@font/bricolage_grotesque"
+                        android:textFontWeight="500"
                         android:letterSpacing="0.01"
                         tools:text="Contact Name" />
 

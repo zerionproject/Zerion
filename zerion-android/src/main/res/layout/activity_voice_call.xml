@@ -144,7 +144,7 @@
             android:layout_height="20dp"
             android:src="@drawable/ic_signal_3"
             android:importantForAccessibility="no"
-            app:tint="@color/zerion_lime_500" />
+            app:tint="@color/zerion_success" />
 
         <TextView
             android:id="@+id/latency_badge"
@@ -152,7 +152,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:textSize="12sp"
-            android:textColor="@color/zerion_lime_500"
+            android:textColor="@color/zerion_success"
             tools:text="120ms" />
 
         <TextView

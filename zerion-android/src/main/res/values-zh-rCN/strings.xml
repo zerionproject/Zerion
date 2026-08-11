@@ -349,12 +349,6 @@
   
   <string name="contacts_selected">已选择联系人</string>
   <string name="activity_share_toolbar_header">选择联系人</string>
-  <string name="no_contacts_selector">尚无联系人可供显示</string>
-  <string name="no_contacts_selector_action">请添加联系人后再来</string>
-  <string name="shared_by_format">由 %s 分享</string>
-  <string name="sharing_status">分享状态</string>
-  <string name="shared_with">被 %1$d 人分享（%2$d 人在线）</string>
-  <string name="nobody">没有人</string>
   
   <string name="read_more">阅读全文</string>
 

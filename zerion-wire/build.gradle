@@ -1,0 +1,12 @@
+apply plugin: 'java-library'
+sourceCompatibility = 17
+targetCompatibility = 17
+
+// ZWF (Zerion Wire Format) — the native fixed-size framing layer for Zerion 3.0.
+// Intentionally dependency-free (only JUnit for tests) so the safety-critical
+// stream-counter and nonce logic can be fuzz-tested in isolation. The DB-backed
+// StreamCounterStore implementation lives in zerion-core/zerion-core-android and
+// maps ContactId.getInt() onto the int contactId used here.
+dependencies {
+	testImplementation "junit:junit:$junit_version"
+}

@@ -22,6 +22,11 @@ public class WelcomeActivity extends BaseActivity {
 	}
 
 	@Override
+	protected boolean forceScreenshotProtection() {
+		return true;
+	}
+
+	@Override
 	public void onCreate(@Nullable Bundle state) {
 		super.onCreate(state);
 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,

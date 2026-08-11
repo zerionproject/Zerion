@@ -9,8 +9,8 @@
 # deterministic per RFC 8032, so any divergence in expected_sig is upstream
 # of the signature itself — most likely sessionId or the key-proof input
 # layout. The Android pinning lives in
-# zerion-android/src/test/java/com/professor/zerion/android/contact/identity/
-# B3PqProofTest.canonicalVectorMatchesIOS.
+# zerion-core/src/test/java/org/zerionproject/core/contact/B3PqProofTest.java
+# (canonicalVectorMatchesIOS).
 
 alice_eph_x25519_pub  = 1112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f30
 bob_eph_x25519_pub    = c0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedf

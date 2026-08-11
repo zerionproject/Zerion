@@ -253,7 +253,7 @@
 							android:layout_height="22dp"
 							android:layout_gravity="center"
 							android:src="@drawable/ic_document"
-							app:tint="#F59E0B"
+							app:tint="@color/zerion_warning"
 							android:importantForAccessibility="no" />
 
 					</FrameLayout>

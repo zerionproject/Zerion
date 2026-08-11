@@ -4,11 +4,11 @@ import com.bumptech.glide.Priority;
 import com.bumptech.glide.load.DataSource;
 import com.bumptech.glide.load.data.DataFetcher;
 
-import org.briarproject.bramble.api.db.DatabaseExecutor;
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.briar.api.attachment.Attachment;
-import org.briarproject.briar.api.attachment.AttachmentHeader;
-import org.briarproject.briar.api.attachment.AttachmentReader;
+import org.zerionproject.core.api.db.DatabaseExecutor;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.app.api.attachment.Attachment;
+import org.zerionproject.app.api.attachment.AttachmentHeader;
+import org.zerionproject.app.api.attachment.AttachmentReader;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.InputStream;
@@ -19,7 +19,7 @@ import javax.inject.Inject;
 import androidx.annotation.Nullable;
 
 import static com.bumptech.glide.load.DataSource.LOCAL;
-import static org.briarproject.bramble.util.IoUtils.tryToClose;
+import static org.zerionproject.core.util.IoUtils.tryToClose;
 
 @NotNullByDefault
 class ZerionDataFetcher implements DataFetcher<InputStream> {

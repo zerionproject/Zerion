@@ -1,0 +1,23 @@
+# SQLCipher
+-keep class net.zetetic.database.sqlcipher.** { *; }
+-dontwarn net.zetetic.database.sqlcipher.**
+
+# SQLCipher JDBC adapter dummy driver
+-keep class org.zerionproject.core.db.SqlCipherDriver { *; }
+
+-keep class dagger.** { *; }
+-dontwarn dagger.**
+-dontnote dagger.**
+
+-keep class net.i2p.crypto.eddsa.** { *; }
+
+-keep class org.whispersystems.curve25519.** { *; }
+
+-dontwarn sun.misc.Unsafe
+-dontnote com.google.common.**
+
+-dontwarn com.fasterxml.jackson.databind.ext.Java7SupportImpl
+
+# Keep all Jackson-serialisable classes and their members
+-keep interface com.fasterxml.jackson.databind.annotation.JsonSerialize
+-keep @com.fasterxml.jackson.databind.annotation.JsonSerialize class * { *; }

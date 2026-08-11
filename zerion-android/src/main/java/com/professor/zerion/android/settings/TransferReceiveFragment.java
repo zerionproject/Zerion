@@ -22,7 +22,7 @@ import com.professor.zerion.android.backup.AccountTransferManager.Callback;
 import com.professor.zerion.android.backup.AccountTransferManager.Status;
 import com.professor.zerion.android.backup.TransferException;
 
-import org.briarproject.bramble.api.lifecycle.IoExecutor;
+import org.zerionproject.core.api.lifecycle.IoExecutor;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
@@ -196,7 +196,6 @@ public class TransferReceiveFragment extends Fragment implements Callback {
 
 	@Override
 	public void onPairingReady(String qrPayload) {
-		// receiver dials, it does not publish a pairing code
 	}
 
 	@Override

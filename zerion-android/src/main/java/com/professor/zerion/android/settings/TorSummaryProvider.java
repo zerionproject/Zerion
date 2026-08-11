@@ -10,7 +10,7 @@ import org.briarproject.onionwrapper.LocationUtils;
 import androidx.preference.ListPreference;
 import androidx.preference.Preference.SummaryProvider;
 
-import static org.briarproject.bramble.api.plugin.TorConstants.PREF_TOR_NETWORK_AUTOMATIC;
+import static org.zerionproject.core.api.plugin.TorConstants.PREF_TOR_NETWORK_AUTOMATIC;
 import static com.professor.zerion.android.util.UiUtils.getCountryDisplayName;
 
 @NotNullByDefault

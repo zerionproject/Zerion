@@ -34,7 +34,7 @@ import androidx.lifecycle.ViewModelProvider;
 import static android.content.Context.CLIPBOARD_SERVICE;
 import static android.widget.Toast.LENGTH_LONG;
 import static android.widget.Toast.LENGTH_SHORT;
-import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.LINK_REGEX;
+import static org.zerionproject.core.api.contact.HandshakeLinkConstants.LINK_REGEX;
 import static com.professor.zerion.android.util.UiUtils.hideViewOnSmallScreen;
 import static com.professor.zerion.android.util.UiUtils.observeOnce;
 

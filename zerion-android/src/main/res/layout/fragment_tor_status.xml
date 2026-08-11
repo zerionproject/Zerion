@@ -13,6 +13,20 @@
 		android:orientation="vertical"
 		android:padding="20dp">
 
+		<TextView
+			android:id="@+id/offlineModeBanner"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:background="@color/zerion_surface_elevated"
+			android:padding="14dp"
+			android:layout_marginBottom="12dp"
+			android:text="@string/offline_mode_banner"
+			android:textColor="@color/zerion_warning"
+			android:textSize="14sp"
+			android:textStyle="bold"
+			android:gravity="center"
+			android:visibility="gone" />
+
 		<LinearLayout
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
@@ -70,6 +84,119 @@
 		</LinearLayout>
 
 		<LinearLayout
+			android:id="@+id/i2pCard"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:background="@color/zerion_surface_elevated"
+			android:orientation="horizontal"
+			android:padding="16dp"
+			android:gravity="center_vertical"
+			android:layout_marginBottom="12dp"
+			android:visibility="gone"
+			tools:visibility="visible">
+
+			<ImageView
+				android:id="@+id/i2pStatusIcon"
+				android:layout_width="32dp"
+				android:layout_height="32dp"
+				android:src="@drawable/transport_i2p"
+				android:importantForAccessibility="no"
+				app:tint="@color/zerion_primary_accent" />
+
+			<LinearLayout
+				android:layout_width="0dp"
+				android:layout_height="wrap_content"
+				android:layout_weight="1"
+				android:layout_marginStart="14dp"
+				android:orientation="vertical">
+
+				<TextView
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:text="@string/transport_i2p"
+					android:textColor="@color/zerion_text_primary"
+					android:textSize="17sp"
+					android:textStyle="bold" />
+
+				<TextView
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:layout_marginTop="2dp"
+					android:text="@string/network_i2p_subtitle"
+					android:textColor="@color/zerion_text_secondary"
+					android:textSize="12sp" />
+
+			</LinearLayout>
+
+			<TextView
+				android:id="@+id/i2pStatusText"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:text="@string/connecting"
+				android:textColor="@color/zerion_warning"
+				android:textSize="14sp"
+				android:textStyle="bold" />
+
+		</LinearLayout>
+
+		<LinearLayout
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:background="@color/zerion_surface_elevated"
+			android:orientation="horizontal"
+			android:padding="16dp"
+			android:gravity="center_vertical"
+			android:layout_marginBottom="12dp">
+
+			<TextView
+				android:layout_width="0dp"
+				android:layout_height="wrap_content"
+				android:layout_weight="1"
+				android:text="@string/internet_status_label"
+				android:textColor="@color/zerion_text_primary"
+				android:textSize="15sp" />
+
+			<TextView
+				android:id="@+id/internetStatusText"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:text="@string/offline"
+				android:textColor="@color/zerion_text_secondary"
+				android:textSize="14sp"
+				android:textStyle="bold" />
+
+		</LinearLayout>
+
+		<LinearLayout
+			android:id="@+id/meshStatusCard"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:background="@color/zerion_surface_elevated"
+			android:orientation="horizontal"
+			android:padding="16dp"
+			android:gravity="center_vertical"
+			android:layout_marginBottom="12dp"
+			android:visibility="gone">
+
+			<TextView
+				android:layout_width="0dp"
+				android:layout_height="wrap_content"
+				android:layout_weight="1"
+				android:text="@string/mesh_status_label"
+				android:textColor="@color/zerion_text_primary"
+				android:textSize="15sp" />
+
+			<TextView
+				android:id="@+id/meshStatusText"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:textColor="@color/zerion_text_secondary"
+				android:textSize="14sp"
+				android:textStyle="bold" />
+
+		</LinearLayout>
+
+		<LinearLayout
 			android:id="@+id/onionCard"
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
@@ -93,7 +220,7 @@
 				android:layout_width="match_parent"
 				android:layout_height="wrap_content"
 				android:layout_marginTop="8dp"
-				android:fontFamily="monospace"
+				android:fontFamily="@font/plex_mono_regular"
 				android:textColor="@color/zerion_text_primary"
 				android:textIsSelectable="true"
 				android:textSize="13sp"
@@ -160,7 +287,7 @@
 				android:layout_width="match_parent"
 				android:layout_height="wrap_content"
 				android:layout_marginTop="8dp"
-				android:fontFamily="monospace"
+				android:fontFamily="@font/plex_mono_regular"
 				android:textColor="@color/zerion_text_primary"
 				android:textIsSelectable="true"
 				android:textSize="13sp"

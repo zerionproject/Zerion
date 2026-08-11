@@ -227,12 +227,6 @@
   <!--Forum Sharing-->
   <string name="contacts_selected">Kontakti selektovani</string>
   <string name="activity_share_toolbar_header">Izaberite kontakte</string>
-  <string name="no_contacts_selector">Nema kontakata za prikazivanje</string>
-  <string name="no_contacts_selector_action">Molim vas vratite se ovdje nakon dodavanja kontakta</string>
-  <string name="shared_by_format">Podijelio-la %s</string>
-  <string name="sharing_status">Status dijeljenja</string>
-  <string name="shared_with">Pdijeljeno sa %1$d (%2$d na vezi)</string>
-  <string name="nobody">Niko</string>
   <!--Blogs-->
   <string name="read_more">pročitaj ostalo</string>
 

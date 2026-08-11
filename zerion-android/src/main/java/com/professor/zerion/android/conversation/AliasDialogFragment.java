@@ -10,7 +10,7 @@ import android.widget.EditText;
 
 import com.google.android.material.textfield.TextInputLayout;
 
-import org.briarproject.bramble.api.contact.Contact;
+import org.zerionproject.core.api.contact.Contact;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.BaseActivity;
@@ -25,8 +25,8 @@ import androidx.lifecycle.ViewModelProvider;
 
 import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE;
 import static java.util.Objects.requireNonNull;
-import static org.briarproject.bramble.api.identity.AuthorConstants.MAX_AUTHOR_NAME_LENGTH;
-import static org.briarproject.bramble.util.StringUtils.toUtf8;
+import static org.zerionproject.core.api.identity.AuthorConstants.MAX_AUTHOR_NAME_LENGTH;
+import static org.zerionproject.core.util.StringUtils.toUtf8;
 import static com.professor.zerion.android.util.UiUtils.hideSoftKeyboard;
 import static com.professor.zerion.android.util.UiUtils.showSoftKeyboard;
 

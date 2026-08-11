@@ -23,16 +23,16 @@ import android.widget.Toast;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
 
-import org.briarproject.bramble.api.FeatureFlags;
-import org.briarproject.bramble.api.FormatException;
-import org.briarproject.bramble.api.Pair;
-import org.briarproject.bramble.api.connection.ConnectionRegistry;
-import org.briarproject.bramble.api.contact.ContactId;
-import org.briarproject.bramble.api.db.DatabaseExecutor;
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.lifecycle.IoExecutor;
-import org.briarproject.bramble.api.sync.GroupId;
-import org.briarproject.bramble.api.sync.MessageId;
+import org.zerionproject.core.api.FeatureFlags;
+import org.zerionproject.core.api.FormatException;
+import org.zerionproject.core.api.Pair;
+import org.zerionproject.core.api.connection.ConnectionRegistry;
+import org.zerionproject.core.api.contact.ContactId;
+import org.zerionproject.core.api.db.DatabaseExecutor;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.lifecycle.IoExecutor;
+import org.zerionproject.core.api.sync.GroupId;
+import org.zerionproject.core.api.sync.MessageId;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
@@ -59,16 +59,16 @@ import com.professor.zerion.android.view.TextSendController.SendState;
 import com.professor.zerion.android.widget.LinkDialogFragment;
 import com.professor.zerion.android.api.AndroidNotificationManager;
 import java.util.concurrent.Executor;
-import org.briarproject.briar.api.attachment.AttachmentHeader;
-import org.briarproject.briar.api.identity.AuthorInfo;
-import org.briarproject.briar.api.conversation.ConversationMessageHeader;
-import org.briarproject.briar.api.conversation.ConversationRequest;
-import org.briarproject.briar.api.conversation.ConversationResponse;
-import org.briarproject.briar.api.client.SessionId;
-import org.briarproject.briar.api.introduction.IntroductionManager;
-import org.briarproject.briar.api.messaging.MessagingManager;
-import org.briarproject.briar.api.messaging.PrivateMessageFormat;
-import org.briarproject.briar.api.messaging.PrivateMessageHeader;
+import org.zerionproject.app.api.attachment.AttachmentHeader;
+import org.zerionproject.app.api.identity.AuthorInfo;
+import org.zerionproject.app.api.conversation.ConversationMessageHeader;
+import org.zerionproject.app.api.conversation.ConversationRequest;
+import org.zerionproject.app.api.conversation.ConversationResponse;
+import org.zerionproject.app.api.client.SessionId;
+import org.zerionproject.app.api.introduction.IntroductionManager;
+import org.zerionproject.app.api.messaging.MessagingManager;
+import org.zerionproject.app.api.messaging.PrivateMessageFormat;
+import org.zerionproject.app.api.messaging.PrivateMessageHeader;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
@@ -109,8 +109,8 @@ import static androidx.lifecycle.Lifecycle.State.STARTED;
 import static androidx.recyclerview.widget.SortedList.INVALID_POSITION;
 import static java.util.Collections.sort;
 import static java.util.Objects.requireNonNull;
-import static org.briarproject.bramble.util.StringUtils.fromHexString;
-import static org.briarproject.briar.api.autodelete.AutoDeleteConstants.NO_AUTO_DELETE_TIMER;
+import static org.zerionproject.core.util.StringUtils.fromHexString;
+import static org.zerionproject.app.api.autodelete.AutoDeleteConstants.NO_AUTO_DELETE_TIMER;
 import static com.professor.zerion.android.activity.RequestCodes.REQUEST_INTRODUCTION;
 import static com.professor.zerion.android.conversation.ImageActivity.ATTACHMENTS;
 import static com.professor.zerion.android.conversation.ImageActivity.ATTACHMENT_POSITION;
@@ -120,9 +120,9 @@ import static com.professor.zerion.android.conversation.ImageActivity.NAME;
 import static com.professor.zerion.android.util.UiUtils.launchActivityToOpenFile;
 import static com.professor.zerion.android.util.UiUtils.observeOnce;
 import static com.professor.zerion.android.view.AuthorView.setAvatar;
-import static org.briarproject.briar.api.messaging.MessagingConstants.MAX_ATTACHMENTS_PER_MESSAGE;
-import static org.briarproject.briar.api.messaging.MessagingConstants.MAX_PRIVATE_MESSAGE_TEXT_LENGTH;
-import static org.briarproject.briar.api.messaging.PrivateMessageFormat.TEXT_ONLY;
+import static org.zerionproject.app.api.messaging.MessagingConstants.MAX_ATTACHMENTS_PER_MESSAGE;
+import static org.zerionproject.app.api.messaging.MessagingConstants.MAX_PRIVATE_MESSAGE_TEXT_LENGTH;
+import static org.zerionproject.app.api.messaging.PrivateMessageFormat.TEXT_ONLY;
 
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
@@ -153,7 +153,7 @@ public class ConversationActivity extends ZerionActivity
 	Executor dbExecutor;
 
 	@Inject
-	org.briarproject.briar.api.grouptr.GroupTrManager groupTrManager;
+	org.zerionproject.app.api.grouptr.GroupTrManager groupTrManager;
 
 	@Inject
 	IntroductionManager introductionManager;
@@ -166,7 +166,7 @@ public class ConversationActivity extends ZerionActivity
 	MessagingManager messagingManager;
 
 	@Inject
-	org.briarproject.briar.api.conversation.ConversationManager conversationManager;
+	org.zerionproject.app.api.conversation.ConversationManager conversationManager;
 
 	@Inject
 	@com.professor.zerion.android.AppModule.UiPrefs
@@ -191,6 +191,7 @@ public class ConversationActivity extends ZerionActivity
 	private Toolbar toolbar;
 	private ShapeableImageView toolbarAvatar;
 	private ImageView toolbarStatus;
+	private boolean meshOnline = false;
 	private TextView toolbarTitle;
 	private TextView toolbarSubtitle;
 	private ZerionRecyclerView list;
@@ -419,8 +420,15 @@ public class ConversationActivity extends ZerionActivity
 
 		viewModel.isContactConnected().observe(this, connected -> {
 			if (connected != null) {
-				updateConnectionStatusUI(connected);
+				updateConnectionStatusUI(connected || meshOnline);
 			}
+		});
+
+		viewModel.isMeshOnline().observe(this, online -> {
+			meshOnline = Boolean.TRUE.equals(online);
+			Boolean connected = viewModel.isContactConnected().getValue();
+			updateConnectionStatusUI(meshOnline
+					|| Boolean.TRUE.equals(connected));
 		});
 
 		viewModel.getNewMessageReceived().observeEvent(this, header -> {
@@ -477,7 +485,8 @@ public class ConversationActivity extends ZerionActivity
 
 			attachmentController.setOnAttachmentClickListener(v -> {
 				if (!requireVerifiedToSendMedia()) return;
-				AttachmentPickerDialog dialog = AttachmentPickerDialog.newInstance();
+				AttachmentPickerDialog dialog = AttachmentPickerDialog
+						.newInstance(viewModel.isOfflineMode());
 				dialog.show(getSupportFragmentManager(), "attachment_picker");
 			});
 
@@ -870,7 +879,10 @@ public class ConversationActivity extends ZerionActivity
 							Snackbar.LENGTH_SHORT)
 					.show();
 		} else if (request == REQUEST_TAKE_PHOTO && result == RESULT_OK) {
-			if (photoUri != null && sendController instanceof TextAttachmentController) {
+			if (photoUri != null && viewModel.isOfflineMode()) {
+				sendMeshImageAsync(photoUri, true);
+			} else if (photoUri != null
+					&& sendController instanceof TextAttachmentController) {
 				List<Uri> uris = new ArrayList<>();
 				uris.add(photoUri);
 				((TextAttachmentController) sendController).onImageReceived(uris);
@@ -905,9 +917,23 @@ public class ConversationActivity extends ZerionActivity
 		invalidateOptionsMenu();
 	}
 
+	private void purgeCameraTemp() {
+		try {
+			java.io.File dir = new java.io.File(getFilesDir(), "camera");
+			java.io.File[] files = dir.listFiles();
+			if (files == null) return;
+			for (java.io.File f : files) {
+				if (f.isFile()) SecureMemory.secureDeleteFile(f);
+			}
+		} catch (Exception e) {
+		}
+	}
+
 	@Override
 	public void onStop() {
 		super.onStop();
+
+		purgeCameraTemp();
 
 		try {
 			Intent serviceIntent = new Intent(this,
@@ -993,8 +1019,9 @@ public class ConversationActivity extends ZerionActivity
 			});
 		}
 
-		boolean voiceEnabled = voiceCallsEnabled;
-		boolean videoEnabled = videoCallsEnabled;
+		boolean mesh = viewModel != null && viewModel.isOfflineMode();
+		boolean voiceEnabled = voiceCallsEnabled && !mesh;
+		boolean videoEnabled = videoCallsEnabled && !mesh;
 		MenuItem voiceCallItem = menu.findItem(R.id.action_voice_call);
 		MenuItem videoCallItem = menu.findItem(R.id.action_video_call);
 		if (voiceCallItem != null) voiceCallItem.setVisible(voiceEnabled);
@@ -1163,14 +1190,31 @@ public class ConversationActivity extends ZerionActivity
 	}
 
 	@UiThread
+	private int onlineSubtitleForTransport() {
+		ContactId c = contactId;
+		if (c != null) {
+			boolean tor = connectionRegistry.isConnected(c,
+					org.zerionproject.core.api.plugin.TorConstants.ID);
+			boolean i2p = connectionRegistry.isConnected(c,
+					org.zerionproject.core.api.plugin.I2pConstants.ID);
+			if (tor && i2p) return R.string.conversation_subtitle_online_both;
+			if (i2p) return R.string.conversation_subtitle_online_i2p;
+			if (tor) return R.string.conversation_subtitle_online_tor;
+			if (meshOnline) {
+				return R.string.conversation_subtitle_online_mesh;
+			}
+		}
+		return R.string.conversation_subtitle_online;
+	}
+
+	@UiThread
 	private void updateConnectionStatusUI(boolean connected) {
 		toolbarStatus.setImageDrawable(null);
 		if (connected) {
 			toolbarStatus.setBackgroundResource(R.drawable.bg_presence_online);
 			toolbarStatus.setContentDescription(getString(R.string.online));
 			if (toolbarSubtitle != null) {
-				toolbarSubtitle.setText(
-						R.string.conversation_subtitle_online);
+				toolbarSubtitle.setText(onlineSubtitleForTransport());
 			}
 		} else {
 			toolbarStatus.setBackgroundResource(R.drawable.bg_presence_offline);
@@ -1521,7 +1565,7 @@ public class ConversationActivity extends ZerionActivity
 	@Override
 	public void onCustomStickerPicked(byte[] pngBytes) {
 
-		org.briarproject.bramble.api.sync.GroupId gid =
+		org.zerionproject.core.api.sync.GroupId gid =
 				viewModel.getMessagingGroupId().getValue();
 		if (gid == null) {
 			Toast.makeText(this, R.string.sticker_import_failed,
@@ -1535,7 +1579,7 @@ public class ConversationActivity extends ZerionActivity
 				new com.professor.zerion.android.sticker.StickerSendTask.Callback() {
 					@Override
 					public void onStickerHeaderReady(
-							org.briarproject.briar.api.attachment.AttachmentHeader h) {
+							org.zerionproject.app.api.attachment.AttachmentHeader h) {
 						Long t = viewModel.getAutoDeleteTimer().getValue();
 						long timer = t == null ? NO_AUTO_DELETE_TIMER : t;
 						viewModel.sendMessage(null,
@@ -1591,7 +1635,7 @@ public class ConversationActivity extends ZerionActivity
 	}
 
 	@Override
-	public org.briarproject.bramble.api.sync.GroupId getGroupIdForRecording() {
+	public org.zerionproject.core.api.sync.GroupId getGroupIdForRecording() {
 		return viewModel.prepareVoiceRecording();
 	}
 
@@ -1784,7 +1828,7 @@ public class ConversationActivity extends ZerionActivity
 		}
 		String rawText = sb.toString();
 
-		int maxLen = org.briarproject.briar.api.messaging
+		int maxLen = org.zerionproject.app.api.messaging
 				.MessagingConstants.MAX_PRIVATE_MESSAGE_TEXT_LENGTH;
 		String forwardText = rawText.length() > maxLen
 				? rawText.substring(0, maxLen) : rawText;
@@ -1840,9 +1884,6 @@ public class ConversationActivity extends ZerionActivity
 
 	private void onImagesChosen(@Nullable List<Uri> uris) {
 		if (uris == null || uris.isEmpty()) return;
-		if (!(sendController instanceof TextAttachmentController)) return;
-
-		TextAttachmentController controller = (TextAttachmentController) sendController;
 
 		if (uris.size() > MAX_ATTACHMENTS_PER_MESSAGE) {
 			new ZerionSnackbarBuilder()
@@ -1852,7 +1893,91 @@ public class ConversationActivity extends ZerionActivity
 			uris = uris.subList(0, MAX_ATTACHMENTS_PER_MESSAGE);
 		}
 
-		controller.onImageReceived(uris);
+		if (viewModel.isOfflineMode()) {
+			for (Uri uri : uris) {
+				sendMeshImageAsync(uri, false);
+			}
+			return;
+		}
+
+		if (!(sendController instanceof TextAttachmentController)) return;
+		((TextAttachmentController) sendController).onImageReceived(uris);
+	}
+
+	private void sendMeshImageAsync(Uri uri, boolean deleteSource) {
+		ioExecutor.execute(() -> {
+			byte[] jpeg = recompressForMesh(uri);
+			if (jpeg != null) {
+				viewModel.sendMeshPhoto(jpeg, "image/jpeg");
+			} else {
+				runOnUiThreadUnlessDestroyed(() -> new ZerionSnackbarBuilder()
+						.make(list, "Image could not be sent over mesh",
+								Snackbar.LENGTH_SHORT)
+						.show());
+			}
+			if (deleteSource) {
+				try {
+					getContentResolver().delete(uri, null, null);
+				} catch (Exception e) {
+				}
+			}
+		});
+	}
+
+	@Nullable
+	private android.graphics.Bitmap decodeBoundedForMesh(Uri uri, int maxDim) {
+		android.graphics.BitmapFactory.Options bounds =
+				new android.graphics.BitmapFactory.Options();
+		bounds.inJustDecodeBounds = true;
+		try (java.io.InputStream is =
+				getContentResolver().openInputStream(uri)) {
+			android.graphics.BitmapFactory.decodeStream(is, null, bounds);
+		} catch (Exception e) {
+			return null;
+		}
+		int longest = Math.max(bounds.outWidth, bounds.outHeight);
+		if (longest <= 0) return null;
+		int sample = 1;
+		while (longest / sample > maxDim * 2) sample *= 2;
+		android.graphics.BitmapFactory.Options opts =
+				new android.graphics.BitmapFactory.Options();
+		opts.inSampleSize = sample;
+		try (java.io.InputStream is =
+				getContentResolver().openInputStream(uri)) {
+			return android.graphics.BitmapFactory.decodeStream(is, null, opts);
+		} catch (Exception e) {
+			return null;
+		}
+	}
+
+	@Nullable
+	private byte[] recompressForMesh(Uri uri) {
+		int maxDim = 1280;
+		android.graphics.Bitmap bmp = decodeBoundedForMesh(uri, maxDim);
+		if (bmp == null) return null;
+		int cap = com.professor.zerion.android.mesh.MeshAttachmentSender
+				.MAX_MESH_PHOTO_BYTES;
+		for (int attempt = 0; attempt < 5 && maxDim >= 200; attempt++) {
+			int w = bmp.getWidth(), h = bmp.getHeight();
+			int longest = Math.max(w, h);
+			android.graphics.Bitmap scaled = bmp;
+			if (longest > maxDim) {
+				float s = (float) maxDim / longest;
+				scaled = android.graphics.Bitmap.createScaledBitmap(bmp,
+						Math.max(1, Math.round(w * s)),
+						Math.max(1, Math.round(h * s)), true);
+			}
+			for (int quality = 85; quality >= 30; quality -= 15) {
+				java.io.ByteArrayOutputStream bos =
+						new java.io.ByteArrayOutputStream();
+				scaled.compress(android.graphics.Bitmap.CompressFormat.JPEG,
+						quality, bos);
+				byte[] out = bos.toByteArray();
+				if (out.length <= cap) return out;
+			}
+			maxDim /= 2;
+		}
+		return null;
 	}
 
 	private void onAddedPrivateMessage(PrivateMessageHeader h) {
@@ -1963,11 +2088,11 @@ public class ConversationActivity extends ZerionActivity
 
 	@UiThread
 	private void applyLinkPreviewsToItems(
-			Map<MessageId, org.briarproject.briar.api.messaging.LinkPreview> previews) {
+			Map<MessageId, org.zerionproject.app.api.messaging.LinkPreview> previews) {
 		for (int i = 0; i < adapter.getItemCount(); i++) {
 			ConversationItem item = adapter.getItemAt(i);
 			if (item == null) continue;
-			org.briarproject.briar.api.messaging.LinkPreview preview =
+			org.zerionproject.app.api.messaging.LinkPreview preview =
 					previews.get(item.getId());
 			if (preview != null) {
 				item.setLinkPreview(preview);

@@ -10,7 +10,7 @@ import static android.content.Intent.ACTION_SEND;
 import static android.content.Intent.ACTION_VIEW;
 import static android.content.Intent.EXTRA_TEXT;
 import static android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP;
-import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.LINK_REGEX;
+import static org.zerionproject.core.api.contact.HandshakeLinkConstants.LINK_REGEX;
 
 class IntentRouter {
 

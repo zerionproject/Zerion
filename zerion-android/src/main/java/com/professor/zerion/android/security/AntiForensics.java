@@ -305,6 +305,11 @@ public class AntiForensics {
 			corruptTemporaryFiles();
 		} catch (Exception ignored) {
 		}
+		try {
+			com.professor.zerion.android.util.CacheSweeper
+					.sweepFilesDirs(context);
+		} catch (Exception ignored) {
+		}
 	}
 
 	public void armUsbPanic(Runnable wipeAction) {

@@ -4,10 +4,10 @@ import android.app.Application;
 import android.content.Context;
 
 import org.briarproject.android.dontkillmelib.DozeHelper;
-import org.briarproject.bramble.api.account.AccountManager;
-import org.briarproject.bramble.api.crypto.PasswordStrengthEstimator;
-import org.briarproject.bramble.test.BrambleMockTestCase;
-import org.briarproject.bramble.test.ImmediateExecutor;
+import org.zerionproject.core.api.account.AccountManager;
+import org.zerionproject.core.api.crypto.PasswordStrengthEstimator;
+import org.zerionproject.core.test.BrambleMockTestCase;
+import org.zerionproject.core.test.ImmediateExecutor;
 import com.professor.zerion.android.account.SetupViewModel.State;
 import org.jmock.Expectations;
 import org.jmock.imposters.ByteBuddyClassImposteriser;
@@ -17,8 +17,8 @@ import org.junit.Test;
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule;
 
 import static junit.framework.Assert.assertEquals;
-import static org.briarproject.bramble.api.identity.AuthorConstants.MAX_AUTHOR_NAME_LENGTH;
-import static org.briarproject.bramble.util.StringUtils.getRandomString;
+import static org.zerionproject.core.api.identity.AuthorConstants.MAX_AUTHOR_NAME_LENGTH;
+import static org.zerionproject.core.util.StringUtils.getRandomString;
 import static com.professor.zerion.android.account.SetupViewModel.State.CREATED;
 import static com.professor.zerion.android.viewmodel.LiveEventTestUtil.getOrAwaitValue;
 

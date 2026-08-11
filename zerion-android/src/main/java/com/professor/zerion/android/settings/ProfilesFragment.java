@@ -18,10 +18,10 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.professor.zerion.R;
 
-import org.briarproject.bramble.account.AndroidAccountManager;
-import org.briarproject.bramble.api.identity.IdentityManager;
-import org.briarproject.bramble.api.identity.ReservedNames;
-import org.briarproject.bramble.api.identity.LocalAuthor;
+import org.zerionproject.core.account.AndroidAccountManager;
+import org.zerionproject.core.api.identity.IdentityManager;
+import org.zerionproject.core.api.identity.ReservedNames;
+import org.zerionproject.core.api.identity.LocalAuthor;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 

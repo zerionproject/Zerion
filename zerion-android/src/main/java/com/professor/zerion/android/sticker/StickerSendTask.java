@@ -3,11 +3,11 @@ package com.professor.zerion.android.sticker;
 import android.os.Handler;
 import android.os.Looper;
 
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.lifecycle.IoExecutor;
-import org.briarproject.bramble.api.sync.GroupId;
-import org.briarproject.briar.api.attachment.AttachmentHeader;
-import org.briarproject.briar.api.messaging.MessagingManager;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.lifecycle.IoExecutor;
+import org.zerionproject.core.api.sync.GroupId;
+import org.zerionproject.app.api.attachment.AttachmentHeader;
+import org.zerionproject.app.api.messaging.MessagingManager;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.ByteArrayInputStream;

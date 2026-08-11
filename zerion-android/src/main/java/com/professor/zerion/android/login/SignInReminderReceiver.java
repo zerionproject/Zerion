@@ -5,7 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 
-import org.briarproject.bramble.api.account.AccountManager;
+import org.zerionproject.core.api.account.AccountManager;
 import com.professor.zerion.android.AndroidComponent;
 import com.professor.zerion.android.AppModule;
 import com.professor.zerion.android.ZerionApplication;

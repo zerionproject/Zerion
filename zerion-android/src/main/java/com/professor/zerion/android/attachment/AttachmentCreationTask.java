@@ -6,14 +6,14 @@ import android.net.Uri;
 import android.provider.OpenableColumns;
 import android.webkit.MimeTypeMap;
 
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.lifecycle.IoExecutor;
-import org.briarproject.bramble.api.sync.GroupId;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.lifecycle.IoExecutor;
+import org.zerionproject.core.api.sync.GroupId;
 import com.professor.zerion.android.attachment.media.ImageCompressor;
 import com.professor.zerion.android.vault.utils.MetadataStripper;
-import org.briarproject.briar.api.attachment.AttachmentHeader;
-import org.briarproject.briar.api.messaging.MessagingManager;
-import org.briarproject.briar.api.messaging.PrivateMessageFormat;
+import org.zerionproject.app.api.attachment.AttachmentHeader;
+import org.zerionproject.app.api.messaging.MessagingManager;
+import org.zerionproject.app.api.messaging.PrivateMessageFormat;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.File;
@@ -24,10 +24,10 @@ import java.util.Collection;
 import androidx.annotation.Nullable;
 
 import static java.util.Arrays.asList;
-import static org.briarproject.bramble.util.AndroidUtils.getSupportedImageContentTypes;
-import static org.briarproject.bramble.util.IoUtils.tryToClose;
+import static org.zerionproject.core.util.AndroidUtils.getSupportedImageContentTypes;
+import static org.zerionproject.core.util.IoUtils.tryToClose;
 import static com.professor.zerion.android.attachment.media.ImageCompressor.MIME_TYPE;
-import static org.briarproject.briar.api.attachment.MediaConstants.MAX_ATTACHMENT_SIZE;
+import static org.zerionproject.app.api.attachment.MediaConstants.MAX_ATTACHMENT_SIZE;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -152,7 +152,7 @@ class AttachmentCreationTask {
 			throw new IOException("Could not determine file size");
 		}
 		if (fileSize > MAX_ATTACHMENT_SIZE) {
-			throw new org.briarproject.briar.api.attachment.FileTooBigException();
+			throw new org.zerionproject.app.api.attachment.FileTooBigException();
 		}
 
 		File strippedFile = null;
@@ -185,7 +185,10 @@ class AttachmentCreationTask {
 					groupId, timestamp, contentType, is, fileSize, progressCallback);
 		} finally {
 			tryToClose(is);
-			if (strippedFile != null) strippedFile.delete();
+			if (strippedFile != null) {
+				com.professor.zerion.android.vault.utils.SecureMemory
+						.secureDeleteFile(strippedFile);
+			}
 		}
 	}
 

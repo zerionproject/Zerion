@@ -38,7 +38,7 @@ import androidx.core.content.ContextCompat;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.professor.zerion.R;
 
-import org.briarproject.bramble.api.contact.ContactId;
+import org.zerionproject.core.api.contact.ContactId;
 
 
 public class VoiceCallActivity extends AppCompatActivity {

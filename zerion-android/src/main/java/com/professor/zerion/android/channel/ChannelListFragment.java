@@ -21,16 +21,16 @@ import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.fragment.BaseFragment;
 
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.event.Event;
-import org.briarproject.bramble.api.event.EventBus;
-import org.briarproject.bramble.api.event.EventListener;
-import org.briarproject.bramble.api.lifecycle.IoExecutor;
-import org.briarproject.briar.api.channel.ChannelInviteLink;
-import org.briarproject.briar.api.channel.ChannelManager;
-import org.briarproject.briar.api.channel.ChannelState;
-import org.briarproject.briar.api.channel.event.ChannelPostReceivedEvent;
-import org.briarproject.briar.api.channel.event.ChannelStateChangedEvent;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.event.Event;
+import org.zerionproject.core.api.event.EventBus;
+import org.zerionproject.core.api.event.EventListener;
+import org.zerionproject.core.api.lifecycle.IoExecutor;
+import org.zerionproject.app.api.channel.ChannelInviteLink;
+import org.zerionproject.app.api.channel.ChannelManager;
+import org.zerionproject.app.api.channel.ChannelState;
+import org.zerionproject.app.api.channel.event.ChannelPostReceivedEvent;
+import org.zerionproject.app.api.channel.event.ChannelStateChangedEvent;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
@@ -176,11 +176,11 @@ public class ChannelListFragment extends BaseFragment
 					unread.put(idHex,
 							channelManager.getUnreadCount(s.getChannelId()));
 					try {
-						List<org.briarproject.briar.api.channel.ChannelPost>
+						List<org.zerionproject.app.api.channel.ChannelPost>
 								recent = channelManager.getRecentPosts(
 										s.getChannelId(), 1L);
 						if (!recent.isEmpty()) {
-							org.briarproject.briar.api.channel.ChannelPost
+							org.zerionproject.app.api.channel.ChannelPost
 									p = recent.get(recent.size() - 1);
 							latestPreview.put(idHex, summarisePost(p));
 							latestTs.put(idHex, p.getTimestampHourMs());
@@ -204,7 +204,7 @@ public class ChannelListFragment extends BaseFragment
 	}
 
 	private String summarisePost(
-			org.briarproject.briar.api.channel.ChannelPost p) {
+			org.zerionproject.app.api.channel.ChannelPost p) {
 		String body = p.getBody() == null ? "" : p.getBody().trim();
 		boolean hasAttachments = !p.getAttachments().isEmpty();
 		if (body.isEmpty() && hasAttachments) {

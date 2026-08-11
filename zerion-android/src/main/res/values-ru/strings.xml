@@ -379,12 +379,6 @@
   
   <string name="contacts_selected">Выбранные контакты</string>
   <string name="activity_share_toolbar_header">Выберите контакты</string>
-  <string name="no_contacts_selector">Нет контактов</string>
-  <string name="no_contacts_selector_action">Пожалуйста, вернитесь сюда после добавления контакта</string>
-  <string name="shared_by_format">Совместно %s</string>
-  <string name="sharing_status">Статус общего доступа</string>
-  <string name="shared_with">Совместно с %1$d (%2$d в сети)</string>
-  <string name="nobody">Никого</string>
   
   <string name="read_more">подробнее</string>
 

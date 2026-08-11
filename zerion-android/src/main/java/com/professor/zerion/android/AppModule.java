@@ -9,19 +9,30 @@ import com.professor.zerion.android.security.ZerionEncryptedPrefs;
 
 import com.vanniktech.emoji.RecentEmoji;
 
-import org.briarproject.bramble.api.FeatureFlags;
-import org.briarproject.bramble.api.crypto.KeyStrengthener;
-import org.briarproject.bramble.api.db.DatabaseConfig;
-import org.briarproject.bramble.api.event.EventBus;
-import org.briarproject.bramble.api.lifecycle.LifecycleManager;
-import org.briarproject.bramble.api.plugin.PluginConfig;
-import org.briarproject.bramble.api.plugin.TorControlPort;
-import org.briarproject.bramble.api.plugin.TorDirectory;
-import org.briarproject.bramble.api.plugin.TorSocksPort;
-import org.briarproject.bramble.api.plugin.TransportId;
-import org.briarproject.bramble.api.plugin.duplex.DuplexPluginFactory;
-import org.briarproject.bramble.api.plugin.simplex.SimplexPluginFactory;
-import org.briarproject.bramble.plugin.tor.AndroidTorPluginFactory;
+import org.zerionproject.core.api.FeatureFlags;
+import org.zerionproject.core.api.crypto.KeyStrengthener;
+import org.zerionproject.core.api.db.DatabaseConfig;
+import org.zerionproject.core.api.event.EventBus;
+import org.zerionproject.core.api.lifecycle.LifecycleManager;
+import org.zerionproject.core.api.crypto.CryptoComponent;
+import org.zerionproject.core.api.db.DatabaseComponent;
+import org.zerionproject.core.api.identity.IdentityManager;
+import org.zerionproject.core.api.settings.SettingsManager;
+import org.zerionproject.core.api.system.Clock;
+import org.zerionproject.core.api.lifecycle.IoExecutor;
+import com.professor.zerion.android.mesh.MeshController;
+import com.professor.zerion.android.mesh.MeshManager;
+import com.professor.zerion.android.mesh.MeshMessageRouter;
+import org.zerionproject.core.crypto.async.MeshBundleStore;
+import org.zerionproject.core.api.plugin.PluginConfig;
+import org.zerionproject.core.api.plugin.TorControlPort;
+import org.zerionproject.core.api.plugin.TorDirectory;
+import org.zerionproject.core.api.plugin.TorSocksPort;
+import org.zerionproject.core.api.plugin.TransportId;
+import org.zerionproject.core.api.plugin.duplex.DuplexPluginFactory;
+import org.zerionproject.core.api.plugin.simplex.SimplexPluginFactory;
+import org.zerionproject.transport.ZtpDuplexPluginFactory;
+import org.zerionproject.transport.i2p.I2pDuplexPluginFactory;
 import com.professor.zerion.android.account.DozeHelperModule;
 import com.professor.zerion.android.account.LockManagerImpl;
 import com.professor.zerion.android.account.SetupModule;
@@ -29,15 +40,14 @@ import com.professor.zerion.android.contact.ContactListModule;
 import com.professor.zerion.android.introduction.IntroductionModule;
 import com.professor.zerion.android.login.LoginModule;
 import com.professor.zerion.android.navdrawer.NavDrawerModule;
-import org.briarproject.bramble.account.AndroidAccountManager;
-import org.briarproject.bramble.account.ProfileManager;
-import org.briarproject.bramble.api.account.AccountManager;
+import org.zerionproject.core.account.AndroidAccountManager;
+import org.zerionproject.core.account.ProfileManager;
+import org.zerionproject.core.api.account.AccountManager;
 import com.professor.zerion.android.vault.VaultManager;
 import com.professor.zerion.android.security.SecurityManager;
 import com.professor.zerion.android.security.AntiForensics;
 import com.professor.zerion.android.network.TorStatusMonitor;
 import com.professor.zerion.android.settings.SettingsModule;
-import com.professor.zerion.android.sharing.SharingModule;
 import com.professor.zerion.android.test.TestAvatarCreatorImpl;
 import com.professor.zerion.android.util.TorPortManager;
 import com.professor.zerion.android.viewmodel.ViewModelModule;
@@ -46,7 +56,7 @@ import com.professor.zerion.android.api.DozeWatchdog;
 import com.professor.zerion.android.api.LockManager;
 import com.professor.zerion.android.api.NetworkUsageMetrics;
 import com.professor.zerion.android.api.ScreenFilterMonitor;
-import org.briarproject.briar.api.test.TestAvatarCreator;
+import org.zerionproject.app.api.test.TestAvatarCreator;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.File;
@@ -79,7 +89,6 @@ import static com.professor.zerion.android.TestingConstants.IS_DEBUG_BUILD;
 		SettingsModule.class,
 		ContactListModule.class,
 		IntroductionModule.class,
-		SharingModule.class,
 })
 public class AppModule {
 
@@ -328,14 +337,21 @@ public class AppModule {
 
 	@Provides
 	@Singleton
-	PluginConfig providePluginConfig(AndroidTorPluginFactory tor,
+	PluginConfig providePluginConfig(ZtpDuplexPluginFactory ztp,
+			I2pDuplexPluginFactory i2p,
+			com.professor.zerion.android.contact.add.nearby.ble
+					.BluetoothKeyAgreementPluginFactory bt,
 			FeatureFlags featureFlags) {
 		@NotNullByDefault
 		PluginConfig pluginConfig = new PluginConfig() {
 
 			@Override
 			public Collection<DuplexPluginFactory> getDuplexFactories() {
-				return asList(tor);
+				if (featureFlags.shouldEnableI2p()) {
+					return java.util.Arrays.<DuplexPluginFactory>asList(ztp,
+							i2p, bt);
+				}
+				return java.util.Arrays.<DuplexPluginFactory>asList(ztp, bt);
 			}
 
 			@Override
@@ -345,7 +361,7 @@ public class AppModule {
 
 			@Override
 			public boolean shouldPoll() {
-				return true;
+				return false;
 			}
 
 			@Override
@@ -481,6 +497,45 @@ public class AppModule {
 	}
 
 	@Provides
+	@Singleton
+	MeshManager provideMeshManager(Context context, CryptoComponent crypto,
+			IdentityManager identityManager, DatabaseComponent db,
+			SettingsManager settingsManager, Clock clock,
+			MeshMessageRouter router) {
+		return new MeshManager(context, crypto, identityManager, db,
+				settingsManager, clock, router);
+	}
+
+	@Provides
+	@Singleton
+	MeshBundleStore provideMeshBundleStore(SettingsManager settingsManager) {
+		return new MeshBundleStore(settingsManager);
+	}
+
+	@Provides
+	@Singleton
+	org.zerionproject.core.crypto.async.MeshSeenStore provideMeshSeenStore(
+			SettingsManager settingsManager) {
+		return new org.zerionproject.core.crypto.async.MeshSeenStore(
+				settingsManager);
+	}
+
+	@Provides
+	@Singleton
+	MeshController provideMeshController(LifecycleManager lifecycleManager,
+			Context context, MeshManager meshManager,
+			SettingsManager settingsManager,
+			@IoExecutor java.util.concurrent.Executor ioExecutor,
+			javax.inject.Provider<com.professor.zerion.android.mesh
+					.MeshTextSender> textSenderProvider,
+			com.professor.zerion.android.mesh.MeshOutbox meshOutbox) {
+		MeshController controller = new MeshController(context, meshManager,
+				settingsManager, ioExecutor, textSenderProvider, meshOutbox);
+		lifecycleManager.registerOpenDatabaseHook(controller);
+		return controller;
+	}
+
+	@Provides
 	FeatureFlags provideFeatureFlags() {
 		return new FeatureFlags() {
 
@@ -502,6 +557,11 @@ public class AppModule {
 			@Override
 			public boolean shouldEnablePrivateGroupsInCore() {
 				return false;
+			}
+
+			@Override
+			public boolean shouldEnableI2p() {
+				return true;
 			}
 		};
 	}

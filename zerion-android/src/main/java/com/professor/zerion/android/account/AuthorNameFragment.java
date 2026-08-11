@@ -22,9 +22,9 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import static org.briarproject.bramble.api.identity.AuthorConstants.MAX_AUTHOR_NAME_LENGTH;
-import org.briarproject.bramble.api.identity.ReservedNames;
-import static org.briarproject.bramble.util.StringUtils.toUtf8;
+import static org.zerionproject.core.api.identity.AuthorConstants.MAX_AUTHOR_NAME_LENGTH;
+import org.zerionproject.core.api.identity.ReservedNames;
+import static org.zerionproject.core.util.StringUtils.toUtf8;
 import static com.professor.zerion.android.util.UiUtils.hideViewOnSmallScreen;
 import static com.professor.zerion.android.util.UiUtils.setError;
 import static com.professor.zerion.android.util.UiUtils.showOnboardingDialog;

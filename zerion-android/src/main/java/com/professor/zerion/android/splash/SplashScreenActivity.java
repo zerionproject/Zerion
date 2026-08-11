@@ -12,8 +12,8 @@ import android.view.View;
 import android.view.WindowManager;
 import android.view.animation.AccelerateDecelerateInterpolator;
 
-import org.briarproject.bramble.api.account.AccountManager;
-import org.briarproject.bramble.api.system.AndroidExecutor;
+import org.zerionproject.core.api.account.AccountManager;
+import org.zerionproject.core.api.system.AndroidExecutor;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.BaseActivity;

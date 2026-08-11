@@ -361,12 +361,6 @@
   
   <string name="contacts_selected">Ausgewählte Kontakte</string>
   <string name="activity_share_toolbar_header">Kontakte auswählen</string>
-  <string name="no_contacts_selector">Keine Kontakte vorhanden</string>
-  <string name="no_contacts_selector_action">Komm zurück nachdem du einen Kontakt hinzugefügt hast</string>
-  <string name="shared_by_format">Geteilt durch %s</string>
-  <string name="sharing_status">Freigabestatus</string>
-  <string name="shared_with">Geteilt mit %1$d (%2$d online)</string>
-  <string name="nobody">Niemand</string>
   
   <string name="read_more">weiterlesen</string>
 

@@ -3,13 +3,13 @@ package com.professor.zerion.android.backup;
 import com.professor.zerion.android.contact.identity.ContactSafetyNumber;
 import com.professor.zerion.android.vault.crypto.VaultCrypto;
 
-import org.briarproject.bramble.api.crypto.CryptoComponent;
-import org.briarproject.bramble.api.crypto.KeyPair;
-import org.briarproject.bramble.api.crypto.PublicKey;
-import org.briarproject.bramble.api.crypto.SecretKey;
-import org.briarproject.bramble.util.Base32;
-import org.briarproject.briar.channel.OnionPublisher;
-import org.briarproject.briar.channel.OnionPublisher.OnionHandle;
+import org.zerionproject.core.api.crypto.CryptoComponent;
+import org.zerionproject.core.api.crypto.KeyPair;
+import org.zerionproject.core.api.crypto.PublicKey;
+import org.zerionproject.core.api.crypto.SecretKey;
+import org.zerionproject.core.util.Base32;
+import org.zerionproject.app.channel.OnionPublisher;
+import org.zerionproject.app.channel.OnionPublisher.OnionHandle;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.Closeable;

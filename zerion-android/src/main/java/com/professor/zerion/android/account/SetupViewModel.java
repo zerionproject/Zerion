@@ -3,9 +3,9 @@ package com.professor.zerion.android.account;
 import android.app.Application;
 
 import org.briarproject.android.dontkillmelib.DozeHelper;
-import org.briarproject.bramble.api.account.AccountManager;
-import org.briarproject.bramble.api.crypto.PasswordStrengthEstimator;
-import org.briarproject.bramble.api.lifecycle.IoExecutor;
+import org.zerionproject.core.api.account.AccountManager;
+import org.zerionproject.core.api.crypto.PasswordStrengthEstimator;
+import org.zerionproject.core.api.lifecycle.IoExecutor;
 import com.professor.zerion.android.viewmodel.LiveEvent;
 import com.professor.zerion.android.viewmodel.MutableLiveEvent;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
@@ -84,11 +84,7 @@ class SetupViewModel extends AndroidViewModel {
 			java.util.Arrays.fill(this.password, '\0');
 		}
 		this.password = password;
-		if (needToShowDozeFragment()) {
-			state.setEvent(DOZE);
-		} else {
-			createAccount();
-		}
+		createAccount();
 	}
 
 	float estimatePasswordStrength(char[] password) {

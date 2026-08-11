@@ -6,15 +6,15 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 
-import org.briarproject.bramble.api.FormatException;
-import org.briarproject.bramble.api.contact.ContactId;
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.db.TransactionManager;
-import org.briarproject.bramble.api.sync.GroupId;
-import org.briarproject.briar.api.conversation.ConversationManager;
-import org.briarproject.briar.api.messaging.MessagingManager;
-import org.briarproject.briar.api.messaging.PrivateMessage;
-import org.briarproject.briar.api.messaging.PrivateMessageFactory;
+import org.zerionproject.core.api.FormatException;
+import org.zerionproject.core.api.contact.ContactId;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.db.TransactionManager;
+import org.zerionproject.core.api.sync.GroupId;
+import org.zerionproject.app.api.conversation.ConversationManager;
+import org.zerionproject.app.api.messaging.MessagingManager;
+import org.zerionproject.app.api.messaging.PrivateMessage;
+import org.zerionproject.app.api.messaging.PrivateMessageFactory;
 
 import javax.inject.Inject;
 import javax.inject.Provider;

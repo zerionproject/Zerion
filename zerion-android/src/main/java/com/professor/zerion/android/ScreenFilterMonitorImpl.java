@@ -12,9 +12,9 @@ import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.pm.Signature;
 
-import org.briarproject.bramble.api.lifecycle.Service;
-import org.briarproject.bramble.api.system.AndroidExecutor;
-import org.briarproject.bramble.util.StringUtils;
+import org.zerionproject.core.api.lifecycle.Service;
+import org.zerionproject.core.api.system.AndroidExecutor;
+import org.zerionproject.core.util.StringUtils;
 import com.professor.zerion.android.api.ScreenFilterMonitor;
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -47,7 +47,7 @@ import static android.content.pm.PackageInfo.REQUESTED_PERMISSION_GRANTED;
 import static android.content.pm.PackageManager.GET_PERMISSIONS;
 import static android.content.pm.PackageManager.GET_SIGNATURES;
 import static android.os.Build.VERSION.SDK_INT;
-import static org.briarproject.bramble.util.AndroidUtils.registerReceiver;
+import static org.zerionproject.core.util.AndroidUtils.registerReceiver;
 @NotNullByDefault
 class ScreenFilterMonitorImpl implements ScreenFilterMonitor, Service {
 

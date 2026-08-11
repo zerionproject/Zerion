@@ -1,7 +1,7 @@
 package com.professor.zerion.android.contact;
 
-import org.briarproject.bramble.api.contact.Contact;
-import org.briarproject.briar.api.identity.AuthorInfo;
+import org.zerionproject.core.api.contact.Contact;
+import org.zerionproject.app.api.identity.AuthorInfo;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.Immutable;

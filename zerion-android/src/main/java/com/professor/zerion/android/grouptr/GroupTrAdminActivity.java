@@ -18,18 +18,18 @@ import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
 
-import org.briarproject.bramble.api.FormatException;
-import org.briarproject.bramble.api.contact.Contact;
-import org.briarproject.bramble.api.contact.ContactManager;
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.identity.IdentityManager;
-import org.briarproject.bramble.api.identity.LocalAuthor;
-import org.briarproject.bramble.api.lifecycle.IoExecutor;
-import org.briarproject.bramble.util.StringUtils;
-import org.briarproject.briar.api.grouptr.GroupTrManager;
-import org.briarproject.briar.api.grouptr.GroupTrMember;
-import org.briarproject.briar.api.grouptr.GroupTrState;
-import org.briarproject.briar.api.grouptr.MemberRole;
+import org.zerionproject.core.api.FormatException;
+import org.zerionproject.core.api.contact.Contact;
+import org.zerionproject.core.api.contact.ContactManager;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.identity.IdentityManager;
+import org.zerionproject.core.api.identity.LocalAuthor;
+import org.zerionproject.core.api.lifecycle.IoExecutor;
+import org.zerionproject.core.util.StringUtils;
+import org.zerionproject.app.api.grouptr.GroupTrManager;
+import org.zerionproject.app.api.grouptr.GroupTrMember;
+import org.zerionproject.app.api.grouptr.GroupTrState;
+import org.zerionproject.app.api.grouptr.MemberRole;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -250,7 +250,7 @@ public class GroupTrAdminActivity extends ZerionActivity {
 			TextView msg = new TextView(this);
 			msg.setText(R.string.grouptr_detail_status_dissolved);
 			msg.setTextColor(getResources().getColor(
-					R.color.zerion_red_500_new));
+					R.color.zerion_destructive));
 			msg.setTextSize(14);
 			int p = (int) (20 * getResources().getDisplayMetrics().density);
 			msg.setPadding(p, p / 2, p, p / 2);
@@ -270,7 +270,7 @@ public class GroupTrAdminActivity extends ZerionActivity {
 			TextView label = row.findViewById(R.id.memberName);
 			label.setText(R.string.grouptr_dissolve);
 			label.setTextColor(getResources().getColor(
-					R.color.zerion_red_500_new));
+					R.color.zerion_destructive));
 			row.findViewById(R.id.memberRole).setVisibility(View.GONE);
 			if (rippleRes != 0) row.setBackgroundResource(rippleRes);
 			row.setOnClickListener(v -> confirmDissolve(s));
@@ -283,7 +283,7 @@ public class GroupTrAdminActivity extends ZerionActivity {
 			TextView label = row.findViewById(R.id.memberName);
 			label.setText(R.string.grouptr_leave);
 			label.setTextColor(getResources().getColor(
-					R.color.zerion_red_500_new));
+					R.color.zerion_destructive));
 			row.findViewById(R.id.memberRole).setVisibility(View.GONE);
 			if (rippleRes != 0) row.setBackgroundResource(rippleRes);
 			row.setOnClickListener(v -> confirmLeave(s));
@@ -383,7 +383,7 @@ public class GroupTrAdminActivity extends ZerionActivity {
 				.setTitle(R.string.grouptr_add_member)
 				.setItems(names, (d, which) -> {
 					Contact picked = candidates.get(which);
-					org.briarproject.bramble.api.contact.ContactId pickedId =
+					org.zerionproject.core.api.contact.ContactId pickedId =
 							picked.getId();
 					byte[] pub = picked.getAuthor().getPublicKey()
 							.getEncoded();

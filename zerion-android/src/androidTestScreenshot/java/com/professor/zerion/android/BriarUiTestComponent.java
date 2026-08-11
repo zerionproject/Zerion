@@ -1,12 +1,12 @@
 package com.professor.zerion.android;
 
-import org.briarproject.bramble.BrambleAndroidModule;
-import org.briarproject.bramble.BrambleCoreModule;
-import org.briarproject.bramble.db.AndroidDatabaseModule;
-import org.briarproject.bramble.account.BriarAccountModule;
-import org.briarproject.bramble.plugin.file.RemovableDriveModule;
-import org.briarproject.bramble.system.ClockModule;
-import org.briarproject.briar.BriarCoreModule;
+import org.zerionproject.core.BrambleAndroidModule;
+import org.zerionproject.core.BrambleCoreModule;
+import org.zerionproject.core.db.AndroidDatabaseModule;
+import org.zerionproject.core.account.BriarAccountModule;
+import org.zerionproject.core.plugin.file.RemovableDriveModule;
+import org.zerionproject.core.system.ClockModule;
+import org.zerionproject.app.BriarCoreModule;
 import com.professor.zerion.android.attachment.AttachmentModule;
 import com.professor.zerion.android.attachment.media.MediaModule;
 import com.professor.zerion.android.conversation.ConversationActivityScreenshotTest;

@@ -13,10 +13,10 @@ import com.google.android.material.button.MaterialButton;
 import com.professor.zerion.R;
 import com.professor.zerion.android.attachment.AttachmentItem;
 
-import org.briarproject.bramble.api.db.DatabaseExecutor;
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.briar.api.attachment.Attachment;
-import org.briarproject.briar.api.attachment.AttachmentReader;
+import org.zerionproject.core.api.db.DatabaseExecutor;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.app.api.attachment.Attachment;
+import org.zerionproject.app.api.attachment.AttachmentReader;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.IOException;
@@ -101,8 +101,8 @@ public class VoiceMessageViewHolder {
 		});
 	}
 
-	public void bindEncryptedVoice(String messageText, org.briarproject.bramble.api.sync.GroupId groupId,
-	                                 org.briarproject.bramble.api.sync.MessageId messageId) {
+	public void bindEncryptedVoice(String messageText, org.zerionproject.core.api.sync.GroupId groupId,
+	                                 org.zerionproject.core.api.sync.MessageId messageId) {
 		released = false;
 		stop();
 		isPlaying = false;

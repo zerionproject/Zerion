@@ -7,7 +7,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.professor.zerion.R;
-import org.briarproject.briar.api.messaging.LinkPreview;
+import org.zerionproject.app.api.messaging.LinkPreview;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.net.URL;
@@ -21,11 +21,11 @@ import androidx.recyclerview.widget.RecyclerView.ViewHolder;
 
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
-import static org.briarproject.bramble.util.StringUtils.trim;
+import static org.zerionproject.core.util.StringUtils.trim;
 import static com.professor.zerion.android.util.UiUtils.formatDate;
 import static com.professor.zerion.android.util.UiUtils.formatDuration;
 import static com.professor.zerion.android.util.UiUtils.makeLinksClickable;
-import static org.briarproject.briar.api.autodelete.AutoDeleteConstants.NO_AUTO_DELETE_TIMER;
+import static org.zerionproject.app.api.autodelete.AutoDeleteConstants.NO_AUTO_DELETE_TIMER;
 
 @UiThread
 @NotNullByDefault
@@ -46,6 +46,9 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 	private TextView replyText;
 	@Nullable
 	private String itemKey = null;
+	private float lastTextSizeSp = -1f;
+	@Nullable
+	private Integer lastBubbleColor = null;
 	@Nullable
 	private final TextView reactionsView;
 	@Nullable
@@ -108,17 +111,24 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 
 		float textSizeSp = com.professor.zerion.android.settings.ChatPreferences
 				.getMessageTextSizeSp(text.getContext());
-		text.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, textSizeSp);
+		if (textSizeSp != lastTextSizeSp) {
+			text.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP,
+					textSizeSp);
+			lastTextSizeSp = textSizeSp;
+		}
 
 		if (outViewHolder != null) {
 			int bubbleColor = com.professor.zerion.android.settings.ChatPreferences
 					.getBubbleColor(layout.getContext());
-			android.graphics.drawable.Drawable bg = layout.getBackground();
-			if (bg != null) {
-				bg = bg.mutate();
-				bg.setColorFilter(bubbleColor,
-						android.graphics.PorterDuff.Mode.SRC_IN);
-				layout.setBackground(bg);
+			if (lastBubbleColor == null || lastBubbleColor != bubbleColor) {
+				android.graphics.drawable.Drawable bg = layout.getBackground();
+				if (bg != null) {
+					bg = bg.mutate();
+					bg.setColorFilter(bubbleColor,
+							android.graphics.PorterDuff.Mode.SRC_IN);
+					layout.setBackground(bg);
+				}
+				lastBubbleColor = bubbleColor;
 			}
 		}
 
@@ -132,14 +142,22 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 				if (!com.professor.zerion.android.channel
 						.ChannelInviteSpanUtil.apply(text, body)) {
 					text.setText(body);
-					Linkify.addLinks(text, Linkify.WEB_URLS);
-					makeLinksClickable(text, listener::onLinkClick);
+					if (body.indexOf('.') >= 0 || body.indexOf(':') >= 0) {
+						Linkify.addLinks(text, Linkify.WEB_URLS);
+						makeLinksClickable(text, listener::onLinkClick);
+					}
 				}
 			}
 		}
 
 		long timestamp = item.getTime();
-		time.setText(formatDate(time.getContext(), timestamp));
+		String timeText = formatDate(time.getContext(), timestamp);
+		if (item instanceof ConversationMessageItem
+				&& ((ConversationMessageItem) item).getHeader().isMesh()) {
+			timeText = timeText + " · "
+					+ time.getContext().getString(R.string.via_mesh);
+		}
+		time.setText(timeText);
 
 		boolean showBomb = item.getAutoDeleteTimer() != NO_AUTO_DELETE_TIMER;
 		bomb.setVisibility(showBomb ? VISIBLE : GONE);
@@ -208,17 +226,16 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 			}
 			if (linkPreviewImage != null) {
 				if (preview.hasImage()) {
-					byte[] data = preview.getImageData();
-					android.graphics.Bitmap bmp =
-							com.professor.zerion.android.util
-									.SafeImageDecoder.decode(data, 1024);
-					if (bmp != null) {
-						linkPreviewImage.setImageBitmap(bmp);
-						linkPreviewImage.setVisibility(VISIBLE);
-					} else {
-						linkPreviewImage.setVisibility(GONE);
-					}
+					linkPreviewImage.setVisibility(VISIBLE);
+					com.bumptech.glide.Glide.with(linkPreviewImage)
+							.asBitmap()
+							.load(preview.getImageData())
+							.diskCacheStrategy(com.bumptech.glide.load.engine
+									.DiskCacheStrategy.NONE)
+							.into(linkPreviewImage);
 				} else {
+					com.bumptech.glide.Glide.with(linkPreviewImage)
+							.clear(linkPreviewImage);
 					linkPreviewImage.setVisibility(GONE);
 				}
 			}

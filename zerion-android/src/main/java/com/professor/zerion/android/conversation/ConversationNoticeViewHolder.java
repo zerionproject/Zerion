@@ -12,8 +12,8 @@ import androidx.annotation.UiThread;
 
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
-import static org.briarproject.bramble.util.StringUtils.isNullOrEmpty;
-import static org.briarproject.bramble.util.StringUtils.trim;
+import static org.zerionproject.core.util.StringUtils.isNullOrEmpty;
+import static org.zerionproject.core.util.StringUtils.trim;
 import static com.professor.zerion.android.util.UiUtils.makeLinksClickable;
 
 @UiThread

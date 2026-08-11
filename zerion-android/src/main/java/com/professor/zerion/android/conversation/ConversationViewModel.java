@@ -3,33 +3,33 @@ package com.professor.zerion.android.conversation;
 import android.app.Application;
 import android.net.Uri;
 
-import org.briarproject.bramble.api.FormatException;
-import org.briarproject.bramble.api.Pair;
-import org.briarproject.bramble.api.contact.Contact;
-import org.briarproject.bramble.api.contact.ContactId;
-import org.briarproject.bramble.api.contact.ContactManager;
-import org.briarproject.bramble.api.db.DatabaseExecutor;
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.db.NoSuchContactException;
-import org.briarproject.bramble.api.db.Transaction;
-import org.briarproject.bramble.api.db.TransactionManager;
-import org.briarproject.bramble.api.event.Event;
-import org.briarproject.bramble.api.event.EventBus;
-import org.briarproject.bramble.api.event.EventListener;
-import org.briarproject.bramble.api.sync.event.MessagesAckedEvent;
-import org.briarproject.bramble.api.sync.event.MessagesSentEvent;
-import org.briarproject.bramble.api.contact.event.ContactRemovedEvent;
-import org.briarproject.bramble.api.plugin.event.ContactConnectedEvent;
-import org.briarproject.bramble.api.plugin.event.ContactDisconnectedEvent;
-import org.briarproject.bramble.api.versioning.event.ClientVersionUpdatedEvent;
-import org.briarproject.bramble.api.sync.ClientId;
-import org.briarproject.bramble.api.lifecycle.LifecycleManager;
-import org.briarproject.bramble.api.settings.Settings;
-import org.briarproject.bramble.api.settings.SettingsManager;
-import org.briarproject.bramble.api.sync.GroupId;
-import org.briarproject.bramble.api.sync.Message;
-import org.briarproject.bramble.api.sync.MessageId;
-import org.briarproject.bramble.api.system.AndroidExecutor;
+import org.zerionproject.core.api.FormatException;
+import org.zerionproject.core.api.Pair;
+import org.zerionproject.core.api.contact.Contact;
+import org.zerionproject.core.api.contact.ContactId;
+import org.zerionproject.core.api.contact.ContactManager;
+import org.zerionproject.core.api.db.DatabaseExecutor;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.db.NoSuchContactException;
+import org.zerionproject.core.api.db.Transaction;
+import org.zerionproject.core.api.db.TransactionManager;
+import org.zerionproject.core.api.event.Event;
+import org.zerionproject.core.api.event.EventBus;
+import org.zerionproject.core.api.event.EventListener;
+import org.zerionproject.core.api.sync.event.MessagesAckedEvent;
+import org.zerionproject.core.api.sync.event.MessagesSentEvent;
+import org.zerionproject.core.api.contact.event.ContactRemovedEvent;
+import org.zerionproject.core.api.plugin.event.ContactConnectedEvent;
+import org.zerionproject.core.api.plugin.event.ContactDisconnectedEvent;
+import org.zerionproject.core.api.versioning.event.ClientVersionUpdatedEvent;
+import org.zerionproject.core.api.sync.ClientId;
+import org.zerionproject.core.api.lifecycle.LifecycleManager;
+import org.zerionproject.core.api.settings.Settings;
+import org.zerionproject.core.api.settings.SettingsManager;
+import org.zerionproject.core.api.sync.GroupId;
+import org.zerionproject.core.api.sync.Message;
+import org.zerionproject.core.api.sync.MessageId;
+import org.zerionproject.core.api.system.AndroidExecutor;
 import com.professor.zerion.android.attachment.AttachmentCreator;
 import com.professor.zerion.android.attachment.AttachmentManager;
 import com.professor.zerion.android.attachment.AttachmentResult;
@@ -40,26 +40,26 @@ import com.professor.zerion.android.view.TextSendController.SendState;
 import com.professor.zerion.android.viewmodel.DbViewModel;
 import com.professor.zerion.android.viewmodel.LiveEvent;
 import com.professor.zerion.android.viewmodel.MutableLiveEvent;
-import org.briarproject.briar.api.attachment.AttachmentHeader;
-import org.briarproject.briar.api.autodelete.AutoDeleteManager;
-import org.briarproject.briar.api.autodelete.UnexpectedTimerException;
-import org.briarproject.briar.api.autodelete.event.AutoDeleteTimerMirroredEvent;
-import org.briarproject.briar.api.autodelete.event.ConversationMessagesDeletedEvent;
-import org.briarproject.briar.api.avatar.event.AvatarUpdatedEvent;
-import org.briarproject.briar.api.conversation.ConversationManager;
-import org.briarproject.briar.api.conversation.ConversationMessageHeader;
-import org.briarproject.briar.api.conversation.DeletionResult;
-import org.briarproject.briar.api.identity.AuthorInfo;
-import org.briarproject.briar.api.identity.AuthorManager;
-import org.briarproject.briar.api.messaging.MessagingManager;
-import org.briarproject.briar.api.messaging.PrivateMessage;
-import org.briarproject.briar.api.messaging.PrivateMessageFactory;
-import org.briarproject.briar.api.messaging.PrivateMessageFormat;
-import org.briarproject.briar.api.messaging.PrivateMessageHeader;
-import org.briarproject.briar.api.messaging.event.AttachmentReceivedEvent;
-import org.briarproject.briar.api.messaging.LinkPreview;
-import org.briarproject.briar.api.messaging.event.ReactionReceivedEvent;
-import org.briarproject.briar.api.messaging.event.TypingIndicatorReceivedEvent;
+import org.zerionproject.app.api.attachment.AttachmentHeader;
+import org.zerionproject.app.api.autodelete.AutoDeleteManager;
+import org.zerionproject.app.api.autodelete.UnexpectedTimerException;
+import org.zerionproject.app.api.autodelete.event.AutoDeleteTimerMirroredEvent;
+import org.zerionproject.app.api.autodelete.event.ConversationMessagesDeletedEvent;
+import org.zerionproject.app.api.avatar.event.AvatarUpdatedEvent;
+import org.zerionproject.app.api.conversation.ConversationManager;
+import org.zerionproject.app.api.conversation.ConversationMessageHeader;
+import org.zerionproject.app.api.conversation.DeletionResult;
+import org.zerionproject.app.api.identity.AuthorInfo;
+import org.zerionproject.app.api.identity.AuthorManager;
+import org.zerionproject.app.api.messaging.MessagingManager;
+import org.zerionproject.app.api.messaging.PrivateMessage;
+import org.zerionproject.app.api.messaging.PrivateMessageFactory;
+import org.zerionproject.app.api.messaging.PrivateMessageFormat;
+import org.zerionproject.app.api.messaging.PrivateMessageHeader;
+import org.zerionproject.app.api.messaging.event.AttachmentReceivedEvent;
+import org.zerionproject.app.api.messaging.LinkPreview;
+import org.zerionproject.app.api.messaging.event.ReactionReceivedEvent;
+import org.zerionproject.app.api.messaging.event.TypingIndicatorReceivedEvent;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.ArrayList;
@@ -82,10 +82,10 @@ import static com.professor.zerion.android.util.UiUtils.observeForeverOnce;
 import static com.professor.zerion.android.view.TextSendController.SendState.ERROR;
 import static com.professor.zerion.android.view.TextSendController.SendState.SENT;
 import static com.professor.zerion.android.view.TextSendController.SendState.UNEXPECTED_TIMER;
-import static org.briarproject.briar.api.autodelete.AutoDeleteConstants.NO_AUTO_DELETE_TIMER;
-import static org.briarproject.briar.api.autodelete.AutoDeleteManager.DEFAULT_TIMER_DURATION;
-import static org.briarproject.briar.api.messaging.PrivateMessageFormat.TEXT_IMAGES;
-import static org.briarproject.briar.api.messaging.PrivateMessageFormat.TEXT_ONLY;
+import static org.zerionproject.app.api.autodelete.AutoDeleteConstants.NO_AUTO_DELETE_TIMER;
+import static org.zerionproject.app.api.autodelete.AutoDeleteManager.DEFAULT_TIMER_DURATION;
+import static org.zerionproject.app.api.messaging.PrivateMessageFormat.TEXT_IMAGES;
+import static org.zerionproject.app.api.messaging.PrivateMessageFormat.TEXT_ONLY;
 
 @NotNullByDefault
 public class ConversationViewModel extends DbViewModel
@@ -109,10 +109,18 @@ public class ConversationViewModel extends DbViewModel
 	private final ConversationManager conversationManager;
 	private final com.professor.zerion.android.conversation.voice.VoiceMessageSendManager voiceSendManager;
 	private final com.professor.zerion.android.conversation.voice.VoiceChunkAssembler voiceAssembler;
-	private final org.briarproject.bramble.api.versioning.ClientVersioningManager clientVersioningManager;
+	private final org.zerionproject.core.api.versioning.ClientVersioningManager clientVersioningManager;
 
 	@Nullable
 	private ContactId contactId = null;
+	private final com.professor.zerion.android.mesh.MeshTextSender
+			meshTextSender;
+	private final com.professor.zerion.android.mesh.MeshAttachmentSender
+			meshAttachmentSender;
+	private final com.professor.zerion.android.mesh.MeshPresenceTracker
+			meshPresenceTracker;
+	private final org.zerionproject.core.api.connection.ConnectionRegistry
+			connectionRegistry;
 	private final MutableLiveData<ContactItem> contactItem =
 			new MutableLiveData<>();
 	private final LiveData<String> contactName = map(contactItem, c ->
@@ -154,6 +162,8 @@ public class ConversationViewModel extends DbViewModel
 			new MutableLiveEvent<>();
 	private final MutableLiveData<Boolean> contactConnected =
 			new MutableLiveData<>();
+	private final MutableLiveData<Boolean> meshOnline =
+			new MutableLiveData<>();
 
 	private static final long OFFLINE_DEBOUNCE_MS = 10_000L;
 	private final android.os.Handler offlineDebounceHandler =
@@ -184,7 +194,7 @@ public class ConversationViewModel extends DbViewModel
 		}
 	}
 
-	private final org.briarproject.bramble.api.identity.IdentityManager identityManager;
+	private final org.zerionproject.core.api.identity.IdentityManager identityManager;
 
 	@Inject
 	ConversationViewModel(Application application,
@@ -204,11 +214,22 @@ public class ConversationViewModel extends DbViewModel
 			ConversationManager conversationManager,
 			com.professor.zerion.android.conversation.voice.VoiceMessageSendManager voiceSendManager,
 			com.professor.zerion.android.conversation.voice.VoiceChunkAssembler voiceAssembler,
-			org.briarproject.bramble.api.versioning.ClientVersioningManager clientVersioningManager,
-			org.briarproject.bramble.api.identity.IdentityManager identityManager) {
+			org.zerionproject.core.api.versioning.ClientVersioningManager clientVersioningManager,
+			org.zerionproject.core.api.identity.IdentityManager identityManager,
+			com.professor.zerion.android.mesh.MeshTextSender meshTextSender,
+			com.professor.zerion.android.mesh.MeshAttachmentSender
+					meshAttachmentSender,
+			com.professor.zerion.android.mesh.MeshPresenceTracker
+					meshPresenceTracker,
+			org.zerionproject.core.api.connection.ConnectionRegistry
+					connectionRegistry) {
 		super(application, dbExecutor, lifecycleManager, db, androidExecutor);
 		this.db = db;
 		this.eventBus = eventBus;
+		this.meshTextSender = meshTextSender;
+		this.meshAttachmentSender = meshAttachmentSender;
+		this.meshPresenceTracker = meshPresenceTracker;
+		this.connectionRegistry = connectionRegistry;
 		this.messagingManager = messagingManager;
 		this.contactManager = contactManager;
 		this.authorManager = authorManager;
@@ -249,6 +270,11 @@ public class ConversationViewModel extends DbViewModel
 		cancelPendingOffline();
 		Runnable r = () -> {
 			pendingOfflineCallback = null;
+			ContactId c = contactId;
+			if (c != null && (connectionRegistry.isConnected(c)
+					|| meshPresenceTracker.isPresent(c))) {
+				return;
+			}
 			contactConnected.postValue(false);
 		};
 		pendingOfflineCallback = r;
@@ -307,6 +333,20 @@ public class ConversationViewModel extends DbViewModel
 			if (c.getContactId().equals(contactId)) {
 				scheduleOffline();
 			}
+		} else if (e instanceof com.professor.zerion.android.mesh.event
+				.MeshPresenceChangedEvent) {
+			com.professor.zerion.android.mesh.event.MeshPresenceChangedEvent m =
+					(com.professor.zerion.android.mesh.event
+							.MeshPresenceChangedEvent) e;
+			if (m.getContactId().equals(contactId)) {
+				meshOnline.postValue(m.isPresent());
+				if (m.isPresent()) {
+					cancelPendingOffline();
+					contactConnected.postValue(true);
+				} else {
+					scheduleOffline();
+				}
+			}
 		} else if (e instanceof ClientVersionUpdatedEvent) {
 			ClientVersionUpdatedEvent c = (ClientVersionUpdatedEvent) e;
 			if (c.getContactId().equals(contactId)) {
@@ -322,9 +362,9 @@ public class ConversationViewModel extends DbViewModel
 			if (t.getContactId().equals(contactId)) {
 				contactTyping.postValue(t.isTyping());
 			}
-		} else if (e instanceof org.briarproject.briar.api.conversation.event.ConversationMessageReceivedEvent) {
-			org.briarproject.briar.api.conversation.event.ConversationMessageReceivedEvent<?> p =
-					(org.briarproject.briar.api.conversation.event.ConversationMessageReceivedEvent<?>) e;
+		} else if (e instanceof org.zerionproject.app.api.conversation.event.ConversationMessageReceivedEvent) {
+			org.zerionproject.app.api.conversation.event.ConversationMessageReceivedEvent<?> p =
+					(org.zerionproject.app.api.conversation.event.ConversationMessageReceivedEvent<?>) e;
 			if (p.getContactId().equals(contactId)) {
 				newMessageReceived.postEvent(p.getMessageHeader());
 			}
@@ -351,6 +391,9 @@ public class ConversationViewModel extends DbViewModel
 		if (this.contactId == null) {
 			this.contactId = contactId;
 			loadContact(contactId);
+			boolean present = meshPresenceTracker.isPresent(contactId);
+			meshOnline.postValue(present);
+			if (present) contactConnected.postValue(true);
 		} else if (!contactId.equals(this.contactId)) {
 			throw new IllegalStateException();
 		}
@@ -471,18 +514,30 @@ public class ConversationViewModel extends DbViewModel
 		}
 		runOnDbThread(() -> {
 			try {
+				boolean offline = hasText && !hasAttachments && contactId != null
+						&& meshTextSender.offlineTarget(contactId) != null;
 				db.transaction(false, txn -> {
 					MessageId replyToId = replyToItem != null ?
 							replyToItem.getId() : null;
 					PrivateMessage m = createMessage(txn, text, headers,
 							expectedTimer, replyToId);
-					messagingManager.addLocalMessage(txn, m);
+					if (offline) {
+						messagingManager.addLocalMeshMessage(txn, m);
+					} else {
+						messagingManager.addLocalMessage(txn, m);
+					}
 					Message message = m.getMessage();
-					PrivateMessageHeader h = new PrivateMessageHeader(
-							message.getId(), message.getGroupId(),
-							message.getTimestamp(), true, true, false, false,
-							m.hasText(), m.getAttachmentHeaders(),
-							m.getAutoDeleteTimer(), replyToId);
+					PrivateMessageHeader h = offline ?
+							new PrivateMessageHeader(message.getId(),
+									message.getGroupId(), message.getTimestamp(),
+									true, true, false, false, m.hasText(),
+									m.getAttachmentHeaders(),
+									m.getAutoDeleteTimer(), replyToId, true) :
+							new PrivateMessageHeader(message.getId(),
+									message.getGroupId(), message.getTimestamp(),
+									true, true, false, false, m.hasText(),
+									m.getAttachmentHeaders(),
+									m.getAutoDeleteTimer(), replyToId);
 					MessageId id = message.getId();
 
 					if (replyToItem != null) {
@@ -494,6 +549,10 @@ public class ConversationViewModel extends DbViewModel
 						attachmentCreator.onAttachmentsSent(id);
 						liveData.setValue(SENT);
 						addedHeader.setEvent(h);
+						if (offline && text != null && contactId != null) {
+							meshTextSender.sendOfflineText(contactId, id, text,
+									message.getTimestamp(), replyToId);
+						}
 					});
 				});
 			} catch (UnexpectedTimerException e) {
@@ -581,10 +640,16 @@ public class ConversationViewModel extends DbViewModel
 							NO_AUTO_DELETE_TIMER, null);
 					final String finalText = secretText;
 					final MessageId finalId = message.getId();
+					final long finalTimestamp = message.getTimestamp();
 					txn.attach(() -> {
 						messageTextLoaded.setEvent(
 								new Pair<>(finalId, finalText));
 						secretNoteAdded.setEvent(new Pair<>(h, finalText));
+						if (contactId != null && meshTextSender
+								.offlineTarget(contactId) != null) {
+							meshTextSender.sendOfflineText(contactId, finalId,
+									finalText, finalTimestamp, null);
+						}
 					});
 				});
 			} catch (DbException e) {
@@ -602,6 +667,32 @@ public class ConversationViewModel extends DbViewModel
 	@Nullable
 	Pair<MessageId, String> getReplyContext(MessageId messageId) {
 		return replyContextMap.get(messageId);
+	}
+
+	public boolean isOfflineMode() {
+		return meshTextSender.isOfflineMode();
+	}
+
+	public void sendMeshPhoto(byte[] jpeg, String contentType) {
+		ContactId c = contactId;
+		if (c == null || jpeg == null || jpeg.length == 0) return;
+		if (com.professor.zerion.android.mesh.MeshAttachmentSender
+				.tooLarge(jpeg.length)) {
+			return;
+		}
+		long ts = System.currentTimeMillis();
+		runOnDbThread(() -> {
+			try {
+				PrivateMessageHeader h =
+						messagingManager.addLocalMeshAttachment(c, contentType,
+								jpeg, ts);
+				addedHeader.postEvent(h);
+				meshAttachmentSender.sendOfflinePhoto(c, h.getId(), contentType,
+						jpeg, ts);
+			} catch (DbException e) {
+				handleException(e);
+			}
+		});
 	}
 	private final java.util.List<byte[]> encryptedVoiceChunks = new java.util.ArrayList<>();
 	private final java.util.List<byte[]> encryptedChunkTags = new java.util.ArrayList<>();
@@ -733,10 +824,10 @@ public class ConversationViewModel extends DbViewModel
 
 			int peerMinor = db.transactionWithResult(true, txn ->
 				clientVersioningManager.getClientMinorVersion(txn, cId,
-					org.briarproject.briar.api.messaging.MessagingManager.CLIENT_ID, 0));
+					org.zerionproject.app.api.messaging.MessagingManager.CLIENT_ID, 0));
 			boolean chunk = com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat
 					.shouldChunk(messageText)
-				&& peerMinor >= org.briarproject.briar.api.messaging.MessagingManager.CHUNKED_VOICE_MIN_VERSION;
+				&& peerMinor >= org.zerionproject.app.api.messaging.MessagingManager.CHUNKED_VOICE_MIN_VERSION;
 
 			final String firstText;
 			final String memoId;
@@ -912,7 +1003,7 @@ public class ConversationViewModel extends DbViewModel
 				if (text != null) {
 					messageTextLoaded.postEvent(new Pair<>(messageId, text));
 				}
-			} catch (org.briarproject.bramble.api.db.NoSuchMessageException e) {
+			} catch (org.zerionproject.core.api.db.NoSuchMessageException e) {
 			} catch (DbException e) {
 				handleException(e);
 			}
@@ -1126,6 +1217,10 @@ public class ConversationViewModel extends DbViewModel
 		return contactConnected;
 	}
 
+	LiveData<Boolean> isMeshOnline() {
+		return meshOnline;
+	}
+
 	LiveEvent<ConversationMessageHeader> getNewMessageReceived() {
 		return newMessageReceived;
 	}
@@ -1134,7 +1229,7 @@ public class ConversationViewModel extends DbViewModel
 		return clientVersionUpdated;
 	}
 
-	void checkConnectionStatus(org.briarproject.bramble.api.connection.ConnectionRegistry registry) {
+	void checkConnectionStatus(org.zerionproject.core.api.connection.ConnectionRegistry registry) {
 		if (contactId != null) {
 			contactConnected.postValue(registry.isConnected(contactId));
 		}

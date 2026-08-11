@@ -3,7 +3,7 @@ package com.professor.zerion.android.contact.add.remote;
 import android.view.View;
 import android.widget.TextView;
 
-import org.briarproject.bramble.api.contact.PendingContact;
+import org.zerionproject.core.api.contact.PendingContact;
 import com.professor.zerion.R;
 import com.professor.zerion.android.view.TextAvatarView;
 import org.briarproject.nullsafety.NotNullByDefault;

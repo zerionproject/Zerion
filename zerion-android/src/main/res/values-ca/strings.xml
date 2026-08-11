@@ -356,12 +356,6 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
   
   <string name="contacts_selected">Contactes seleccionats</string>
   <string name="activity_share_toolbar_header">Trieu els contactes</string>
-  <string name="no_contacts_selector">No hi ha cap contacte per mostrar</string>
-  <string name="no_contacts_selector_action">Torneu aquí després d\'afegir un contacte</string>
-  <string name="shared_by_format">Compartit per %s</string>
-  <string name="sharing_status">Estat de la compartició</string>
-  <string name="shared_with">Compartit amb %1$d (%2$d en línia)</string>
-  <string name="nobody">Ningú</string>
   
   <string name="read_more">llegeix-ne més</string>
 

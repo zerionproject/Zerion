@@ -12,9 +12,4 @@
     </style>
 
     <!-- Disable splash for Zerion theme -->
-    <style name="Theme.Zerion" parent="Theme.Material3.Dark.NoActionBar">
-        <item name="android:windowSplashScreenAnimationDuration">0</item>
-        <item name="android:windowSplashScreenBackground">@color/zerion_dark_bg</item>
-        <item name="android:windowSplashScreenBrandingImage">@null</item>
-    </style>
 </resources>

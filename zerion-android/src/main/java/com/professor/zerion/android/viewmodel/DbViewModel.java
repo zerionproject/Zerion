@@ -2,13 +2,13 @@ package com.professor.zerion.android.viewmodel;
 
 import android.app.Application;
 
-import org.briarproject.bramble.api.db.DatabaseExecutor;
-import org.briarproject.bramble.api.db.DbCallable;
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.db.DbRunnable;
-import org.briarproject.bramble.api.db.TransactionManager;
-import org.briarproject.bramble.api.lifecycle.LifecycleManager;
-import org.briarproject.bramble.api.system.AndroidExecutor;
+import org.zerionproject.core.api.db.DatabaseExecutor;
+import org.zerionproject.core.api.db.DbCallable;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.db.DbRunnable;
+import org.zerionproject.core.api.db.TransactionManager;
+import org.zerionproject.core.api.lifecycle.LifecycleManager;
+import org.zerionproject.core.api.system.AndroidExecutor;
 import com.professor.zerion.android.util.UiUtils;
 import org.briarproject.nullsafety.NotNullByDefault;
 

@@ -352,12 +352,6 @@
   
   <string name="contacts_selected">Kontakter valgt</string>
   <string name="activity_share_toolbar_header">Velg kontakter</string>
-  <string name="no_contacts_selector">Ingen kontakter å vise</string>
-  <string name="no_contacts_selector_action">Vennligst kom tilbake hit etter at du har lagt til en kontakt</string>
-  <string name="shared_by_format">Delt av %s</string>
-  <string name="sharing_status">Delingsstatus</string>
-  <string name="shared_with">Delt med %1$d (%2$d pålogget)</string>
-  <string name="nobody">Ingen</string>
   
   <string name="read_more">les mer</string>
 

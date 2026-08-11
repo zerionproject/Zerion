@@ -2,29 +2,30 @@ package com.professor.zerion.android.navdrawer;
 
 import android.app.Application;
 
-import org.briarproject.bramble.api.db.DatabaseExecutor;
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.db.TransactionManager;
-import org.briarproject.bramble.api.event.Event;
-import org.briarproject.bramble.api.event.EventBus;
-import org.briarproject.bramble.api.event.EventListener;
-import org.briarproject.bramble.api.lifecycle.LifecycleManager;
-import org.briarproject.bramble.api.network.NetworkManager;
-import org.briarproject.bramble.api.network.NetworkStatus;
-import org.briarproject.bramble.api.network.event.NetworkStatusEvent;
-import org.briarproject.bramble.api.plugin.Plugin;
-import org.briarproject.bramble.api.plugin.Plugin.State;
-import org.briarproject.bramble.api.plugin.PluginManager;
-import org.briarproject.bramble.api.plugin.TorConstants;
-import org.briarproject.bramble.api.plugin.TransportId;
-import org.briarproject.bramble.api.plugin.event.TransportStateEvent;
-import org.briarproject.bramble.api.properties.TransportProperties;
-import org.briarproject.bramble.api.properties.TransportPropertyManager;
-import org.briarproject.bramble.api.settings.Settings;
-import org.briarproject.bramble.api.settings.SettingsManager;
-import org.briarproject.bramble.api.settings.event.SettingsUpdatedEvent;
-import org.briarproject.bramble.api.system.AndroidExecutor;
-import org.briarproject.bramble.plugin.tor.B4OnionRotation;
+import org.zerionproject.core.api.db.DatabaseExecutor;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.db.TransactionManager;
+import org.zerionproject.core.api.event.Event;
+import org.zerionproject.core.api.event.EventBus;
+import org.zerionproject.core.api.event.EventListener;
+import org.zerionproject.core.api.lifecycle.LifecycleManager;
+import org.zerionproject.core.api.network.NetworkManager;
+import org.zerionproject.core.api.network.NetworkStatus;
+import org.zerionproject.core.api.network.event.NetworkStatusEvent;
+import org.zerionproject.core.api.plugin.Plugin;
+import org.zerionproject.core.api.plugin.Plugin.State;
+import org.zerionproject.core.api.plugin.I2pConstants;
+import org.zerionproject.core.api.plugin.PluginManager;
+import org.zerionproject.core.api.plugin.TorConstants;
+import org.zerionproject.core.api.plugin.TransportId;
+import org.zerionproject.core.api.plugin.event.TransportStateEvent;
+import org.zerionproject.core.api.properties.TransportProperties;
+import org.zerionproject.core.api.properties.TransportPropertyManager;
+import org.zerionproject.core.api.settings.Settings;
+import org.zerionproject.core.api.settings.SettingsManager;
+import org.zerionproject.core.api.settings.event.SettingsUpdatedEvent;
+import org.zerionproject.core.api.system.AndroidExecutor;
+import org.zerionproject.core.plugin.tor.B4OnionRotation;
 import com.professor.zerion.android.viewmodel.DbViewModel;
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -35,8 +36,8 @@ import javax.inject.Inject;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
-import static org.briarproject.bramble.api.plugin.Plugin.PREF_PLUGIN_ENABLE;
-import static org.briarproject.bramble.api.plugin.Plugin.State.STARTING_STOPPING;
+import static org.zerionproject.core.api.plugin.Plugin.PREF_PLUGIN_ENABLE;
+import static org.zerionproject.core.api.plugin.Plugin.State.STARTING_STOPPING;
 
 @NotNullByDefault
 public class PluginViewModel extends DbViewModel implements EventListener {
@@ -51,6 +52,12 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 			new MutableLiveData<>();
 
 	private final MutableLiveData<Boolean> torEnabledSetting =
+			new MutableLiveData<>(false);
+
+	private final MutableLiveData<State> i2pPluginState =
+			new MutableLiveData<>();
+
+	private final MutableLiveData<Boolean> i2pEnabledSetting =
 			new MutableLiveData<>(false);
 
 	private final MutableLiveData<NetworkStatus> networkStatus =
@@ -86,6 +93,7 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 		eventBus.addListener(this);
 		networkStatus.setValue(networkManager.getNetworkStatus());
 		torPluginState.setValue(getTransportState(TorConstants.ID));
+		i2pPluginState.setValue(getTransportState(I2pConstants.ID));
 		loadSettings();
 		loadLocalOnion();
 		loadRotationState();
@@ -106,6 +114,10 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 				boolean enable = s.getSettings().getBoolean(PREF_PLUGIN_ENABLE,
 						TorConstants.DEFAULT_PREF_PLUGIN_ENABLE);
 				torEnabledSetting.setValue(enable);
+			} else if (s.getNamespace().equals(I2pConstants.ID.getString())) {
+				boolean enable = s.getSettings().getBoolean(PREF_PLUGIN_ENABLE,
+						I2pConstants.DEFAULT_PREF_PLUGIN_ENABLE);
+				i2pEnabledSetting.setValue(enable);
 			}
 		} else if (e instanceof TransportStateEvent) {
 			TransportStateEvent t = (TransportStateEvent) e;
@@ -114,6 +126,8 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 				if (t.getState() == State.ACTIVE) {
 					loadLocalOnion();
 				}
+			} else if (t.getTransportId().equals(I2pConstants.ID)) {
+				i2pPluginState.postValue(t.getState());
 			}
 		}
 	}
@@ -172,11 +186,13 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 
 	LiveData<State> getPluginState(TransportId id) {
 		if (id.equals(TorConstants.ID)) return torPluginState;
+		if (id.equals(I2pConstants.ID)) return i2pPluginState;
 		throw new IllegalArgumentException("Unknown transport: " + id);
 	}
 
-	LiveData<Boolean> getPluginEnabledSetting(TransportId id) {
+	public LiveData<Boolean> getPluginEnabledSetting(TransportId id) {
 		if (id.equals(TorConstants.ID)) return torEnabledSetting;
+		if (id.equals(I2pConstants.ID)) return i2pEnabledSetting;
 		throw new IllegalArgumentException("Unknown transport: " + id);
 	}
 
@@ -189,7 +205,11 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 		return plugin == null ? 0 : plugin.getReasonsDisabled();
 	}
 
-	void enableTransport(TransportId id, boolean enable) {
+	boolean isPluginRegistered(TransportId id) {
+		return pluginManager.getPlugin(id) != null;
+	}
+
+	public void enableTransport(TransportId id, boolean enable) {
 		Settings s = new Settings();
 		s.putBoolean(PREF_PLUGIN_ENABLE, enable);
 		mergeSettings(s, id.getString());
@@ -201,6 +221,9 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 				boolean tor = isPluginEnabled(TorConstants.ID,
 						TorConstants.DEFAULT_PREF_PLUGIN_ENABLE);
 				torEnabledSetting.postValue(tor);
+				boolean i2p = isPluginEnabled(I2pConstants.ID,
+						I2pConstants.DEFAULT_PREF_PLUGIN_ENABLE);
+				i2pEnabledSetting.postValue(i2p);
 			} catch (DbException e) {
 				handleException(e);
 			}

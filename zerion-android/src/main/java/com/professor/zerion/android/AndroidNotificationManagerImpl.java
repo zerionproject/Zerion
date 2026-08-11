@@ -10,25 +10,25 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 
-import org.briarproject.bramble.api.Multiset;
-import org.briarproject.bramble.api.contact.ContactId;
-import org.briarproject.bramble.api.contact.event.ContactAddedEvent;
-import org.briarproject.bramble.api.plugin.event.B4OwnRotationCompletedEvent;
-import org.briarproject.bramble.api.plugin.event.B4PeerOnionAnnouncedEvent;
-import org.briarproject.bramble.api.crypto.SecretKey;
+import org.zerionproject.core.api.Multiset;
+import org.zerionproject.core.api.contact.ContactId;
+import org.zerionproject.core.api.contact.event.ContactAddedEvent;
+import org.zerionproject.core.api.plugin.event.B4OwnRotationCompletedEvent;
+import org.zerionproject.core.api.plugin.event.B4PeerOnionAnnouncedEvent;
+import org.zerionproject.core.api.crypto.SecretKey;
 import com.professor.zerion.android.conversation.voice.VoiceCallKeyHolder;
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.event.Event;
-import org.briarproject.bramble.api.event.EventListener;
-import org.briarproject.bramble.api.lifecycle.Service;
-import org.briarproject.bramble.api.lifecycle.ServiceException;
-import org.briarproject.bramble.api.settings.Settings;
-import org.briarproject.bramble.api.settings.SettingsManager;
-import org.briarproject.bramble.api.settings.event.SettingsUpdatedEvent;
-import org.briarproject.bramble.api.sync.GroupId;
-import org.briarproject.bramble.api.system.AndroidExecutor;
-import org.briarproject.bramble.api.system.Clock;
-import org.briarproject.bramble.util.StringUtils;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.event.Event;
+import org.zerionproject.core.api.event.EventListener;
+import org.zerionproject.core.api.lifecycle.Service;
+import org.zerionproject.core.api.lifecycle.ServiceException;
+import org.zerionproject.core.api.settings.Settings;
+import org.zerionproject.core.api.settings.SettingsManager;
+import org.zerionproject.core.api.settings.event.SettingsUpdatedEvent;
+import org.zerionproject.core.api.sync.GroupId;
+import org.zerionproject.core.api.system.AndroidExecutor;
+import org.zerionproject.core.api.system.Clock;
+import org.zerionproject.core.util.StringUtils;
 import com.professor.zerion.R;
 import com.professor.zerion.android.conversation.ConversationActivity;
 import com.professor.zerion.android.login.SignInReminderReceiver;
@@ -36,22 +36,21 @@ import com.professor.zerion.android.navdrawer.NavDrawerActivity;
 import com.professor.zerion.android.splash.SplashScreenActivity;
 import com.professor.zerion.android.util.ZerionNotificationBuilder;
 import com.professor.zerion.android.api.AndroidNotificationManager;
-import org.briarproject.briar.api.conversation.ConversationResponse;
-import org.briarproject.briar.api.conversation.event.ConversationMessageReceivedEvent;
-import org.briarproject.briar.api.messaging.MessagingManager;
-import org.briarproject.briar.api.messaging.VoiceSignal;
-import org.briarproject.briar.api.messaging.VoiceSignalFactory;
-import org.briarproject.briar.api.messaging.VoiceSignalHeader;
-import org.briarproject.briar.api.messaging.VoiceSignalType;
-import org.briarproject.briar.api.channel.event.ChannelCommentReceivedEvent;
-import org.briarproject.briar.api.channel.event.ChannelPostReceivedEvent;
-import org.briarproject.briar.api.messaging.event.GroupPostReceivedEvent;
-import org.briarproject.briar.api.messaging.event.PrivateMessageReceivedEvent;
-import org.briarproject.briar.api.messaging.event.VoiceSignalReceivedEvent;
+import org.zerionproject.app.api.conversation.ConversationResponse;
+import org.zerionproject.app.api.conversation.event.ConversationMessageReceivedEvent;
+import org.zerionproject.app.api.messaging.MessagingManager;
+import org.zerionproject.app.api.messaging.VoiceSignal;
+import org.zerionproject.app.api.messaging.VoiceSignalFactory;
+import org.zerionproject.app.api.messaging.VoiceSignalHeader;
+import org.zerionproject.app.api.messaging.VoiceSignalType;
+import org.zerionproject.app.api.channel.event.ChannelCommentReceivedEvent;
+import org.zerionproject.app.api.channel.event.ChannelPostReceivedEvent;
+import org.zerionproject.app.api.messaging.event.GroupPostReceivedEvent;
+import org.zerionproject.app.api.messaging.event.PrivateMessageReceivedEvent;
+import org.zerionproject.app.api.messaging.event.VoiceSignalReceivedEvent;
 import com.professor.zerion.android.grouptr.GroupTrConversationActivity;
-import org.briarproject.bramble.api.contact.ContactManager;
-import org.briarproject.bramble.api.contact.Contact;
-import org.briarproject.briar.api.privategroup.event.GroupMessageAddedEvent;
+import org.zerionproject.core.api.contact.ContactManager;
+import org.zerionproject.core.api.contact.Contact;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
@@ -90,9 +89,10 @@ import static androidx.core.app.NotificationCompat.CATEGORY_MESSAGE;
 import static androidx.core.app.NotificationCompat.CATEGORY_SERVICE;
 import static androidx.core.app.NotificationCompat.CATEGORY_SOCIAL;
 import static androidx.core.app.NotificationCompat.PRIORITY_LOW;
+import static androidx.core.app.NotificationCompat.VISIBILITY_PRIVATE;
 import static androidx.core.app.NotificationCompat.VISIBILITY_SECRET;
 import static androidx.core.content.ContextCompat.getColor;
-import static org.briarproject.bramble.util.AndroidUtils.getImmutableFlags;
+import static org.zerionproject.core.util.AndroidUtils.getImmutableFlags;
 import static com.professor.zerion.android.conversation.ConversationActivity.CONTACT_ID;
 import static com.professor.zerion.android.navdrawer.NavDrawerActivity.CONTACT_ADDED_URI;
 import static com.professor.zerion.android.navdrawer.NavDrawerActivity.CONTACT_URI;
@@ -124,7 +124,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	private final NotificationManager notificationManager;
 	private final MessagingManager messagingManager;
 	private final ContactManager contactManager;
-	private final org.briarproject.briar.api.conversation.ConversationManager conversationManager;
+	private final org.zerionproject.app.api.conversation.ConversationManager conversationManager;
 	private final SharedPreferences uiPrefs;
 
 	private static final long MIN_CALL_LAUNCH_INTERVAL_MS = 3000L;
@@ -166,7 +166,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	AndroidNotificationManagerImpl(SettingsManager settingsManager,
 			AndroidExecutor androidExecutor, Application app, Clock clock,
 			MessagingManager messagingManager, ContactManager contactManager,
-			org.briarproject.briar.api.conversation.ConversationManager conversationManager,
+			org.zerionproject.app.api.conversation.ConversationManager conversationManager,
 			VoiceSignalFactory voiceSignalFactory,
 			@AppModule.UiPrefs SharedPreferences uiPrefs) {
 		this.settingsManager = settingsManager;
@@ -215,10 +215,10 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		NotificationChannel nc =
 				new NotificationChannel(channelId, appContext.getString(name),
 						IMPORTANCE_DEFAULT);
-		nc.setLockscreenVisibility(VISIBILITY_SECRET);
+		nc.setLockscreenVisibility(VISIBILITY_PRIVATE);
 		nc.enableVibration(true);
 		nc.enableLights(true);
-		nc.setLightColor(getColor(appContext, R.color.zerion_lime_400));
+		nc.setLightColor(getColor(appContext, R.color.zerion_success));
 		notificationManager.createNotificationChannel(nc);
 	}
 
@@ -309,9 +309,6 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 			} else {
 				showContactNotification(p.getContactId());
 			}
-		} else if (e instanceof GroupMessageAddedEvent) {
-			GroupMessageAddedEvent g = (GroupMessageAddedEvent) e;
-			if (!g.isLocal()) showGroupMessageNotification(g.getGroupId());
 		} else if (e instanceof GroupPostReceivedEvent) {
 			GroupPostReceivedEvent g = (GroupPostReceivedEvent) e;
 			showGroupTrPostNotification(g.getGroupId());

@@ -27,13 +27,19 @@
 	<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 	<uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
+	<!-- Offline mesh (Bluetooth Low Energy only, Android 12+); neverForLocation, no location access -->
+	<uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
+	<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+	<uses-permission android:name="android.permission.BLUETOOTH_SCAN"
+		android:usesPermissionFlags="neverForLocation"
+		tools:targetApi="s" />
+
 	<!-- Location permission removed - not needed for Tor-only transport -->
 	<uses-permission-sdk-23 android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 	<!-- USE_BIOMETRIC is provided by androidx.biometric library -->
 	<uses-permission-sdk-23 android:name="android.permission.FOREGROUND_SERVICE" />
 	<uses-permission-sdk-23 android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 	<uses-permission-sdk-23 android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
-	<uses-permission-sdk-23 android:name="android.permission.FOREGROUND_SERVICE_PHONE_CALL" />
 	<uses-permission-sdk-23 android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
 
 	<uses-permission
@@ -50,7 +56,7 @@
 		android:logo="@mipmap/ic_launcher_round"
 		android:networkSecurityConfig="@xml/network_security_config"
 		android:supportsRtl="true"
-		android:theme="@style/Theme.Zerion"
+		android:theme="@style/ZerionTheme.NoActionBar"
 		android:enableOnBackInvokedCallback="true"
 		android:extractNativeLibs="true"
 		tools:ignore="GoogleAppIndexingWarning,UnusedAttribute"
@@ -333,6 +339,12 @@
 		</activity>
 
 		<activity
+			android:name="com.professor.zerion.android.navdrawer.NetworkStatusActivity"
+			android:exported="false"
+			android:parentActivityName="com.professor.zerion.android.navdrawer.NavDrawerActivity"
+			android:theme="@style/ZerionTheme.NoActionBar" />
+
+		<activity
 			android:name="com.professor.zerion.android.navdrawer.TransportsActivity"
 			android:exported="false"
 			android:label="@string/network_settings_title"
@@ -399,6 +411,13 @@
 			android:name=".android.contact.add.remote.AddContactActivity"
 			android:exported="false"
 			android:label="@string/add_contact_remotely_title_case"
+			android:theme="@style/ZerionTheme.NoActionBar"
+			android:windowSoftInputMode="adjustResize|stateHidden" />
+
+		<activity
+			android:name=".android.contact.add.nearby.AddNearbyContactActivity"
+			android:exported="false"
+			android:label="@string/nearby_pairing_title"
 			android:theme="@style/ZerionTheme.NoActionBar"
 			android:windowSoftInputMode="adjustResize|stateHidden" />
 

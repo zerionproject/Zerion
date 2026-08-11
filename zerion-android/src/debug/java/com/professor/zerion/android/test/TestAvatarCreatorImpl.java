@@ -9,7 +9,7 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 
 import com.professor.zerion.android.attachment.media.ImageCompressor;
-import org.briarproject.briar.api.test.TestAvatarCreator;
+import org.zerionproject.app.api.test.TestAvatarCreator;
 
 import java.io.IOException;
 import java.io.InputStream;

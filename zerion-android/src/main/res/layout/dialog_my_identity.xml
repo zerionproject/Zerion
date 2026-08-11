@@ -28,7 +28,7 @@
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
 		android:layout_marginTop="6dp"
-		android:fontFamily="monospace"
+		android:fontFamily="@font/plex_mono_regular"
 		android:textColor="@color/zerion_text_primary"
 		android:textIsSelectable="true"
 		android:textSize="14sp"

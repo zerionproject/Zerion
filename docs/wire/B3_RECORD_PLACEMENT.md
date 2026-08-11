@@ -24,8 +24,8 @@ Both platforms use the upstream Bramble two-stage handshake unchanged:
 
 ### Stage 1 - over-Tor handshake (record stream)
 
-`bramble-core/.../contact/HandshakeManagerImpl.performHybridHandshake()`
-(Android: `HandshakeManagerImpl.java:201-294`) ↔ iOS:
+`zerion-core/src/main/java/org/zerionproject/core/contact/HandshakeManagerImpl.java`
+`.performHybridHandshake()` (Android) ↔ iOS:
 `PendingContactView.swift:1830-1980`.
 
 Wire records, raw bytes (no BDF), 6 record types from
@@ -58,7 +58,7 @@ After this stage both sides hold:
 
 Runs over the master-key-encrypted channel.
 
-`bramble-core/.../contact/ContactExchangeManagerImpl.sendContactInfo()`
+`zerion-core/.../contact/ContactExchangeManagerImpl.sendContactInfo()`
 (Android: `ContactExchangeManagerImpl.java:181-190`) ↔ iOS:
 `PendingContactView.swift:2090-2091`.
 
@@ -128,7 +128,7 @@ CONTACT_INFO_v5 :=
 
 The `b3ProofSig` value comes from `B3PqProof.sign(signingPriv, ourEph,
 theirEph, ourStaticPqPub)` per the helper at
-`zerion-android/.../contact/identity/B3PqProof.java` (Android) and
+`zerion-core/src/main/java/org/zerionproject/core/contact/B3PqProof.java` (Android) and
 `Packages/ZerionCrypto/.../B3PqKeyProof.swift` (iOS). Byte-identical
 across platforms - pinned by `docs/wire/test_vectors/B3_v1.txt`.
 
@@ -228,9 +228,9 @@ absorbed.
 
 | Component                  | v1.4 (pre-B.3) | v1.5.0 (shipped) |
 |----------------------------|--------------|------------------|
-| `messaging` clientId       | `org.briarproject.briar.messaging` | (unchanged) |
+| `messaging` clientId       | `org.zerionproject.app.messaging` | (unchanged) |
 | `messaging.majorVersion`   | 0            | 0 (unchanged)    |
-| `messaging.minorVersion`   | 4            | **5**            |
+| `messaging.minorVersion`   | 4            | **6** (current shipped; `B3_PROOF_ENABLED ? 6 : 5`) |
 | `CONTACT_INFO` BDF list    | 4 slots      | **5 slots**      |
 | Handshake record types     | 0x00..0x05   | (unchanged)      |
 
@@ -263,8 +263,10 @@ release builds and is now permanently on. Retained for history:
 3. ~~Confirm B.3 proof is present, verifies, contact-add succeeds.~~ Done.
 4. ~~Confirm 1.4 ↔ 1.5 cross-version still succeeds (legacy fall-through).~~ Done.
 5. ~~Ship `B3_PROOF_ENABLED = true` in both v1.5.0 release builds.~~ Done.
-6. Raising the `messaging.minorVersion` floor to 5 and removing legacy
-   4-slot acceptance remains tracked separately (see §8).
+
+The current shipped `messaging.minorVersion` is **6**
+(`MINOR_VERSION = B3_PROOF_ENABLED ? 6 : 5`); legacy 4-slot acceptance
+is retained for cross-version interop.
 
 ---
 
@@ -277,7 +279,7 @@ verify the slot[4] sig. Byte-identical against the canonical vector at
 
 ### Android
 
-`zerion-android/src/main/java/com/professor/zerion/android/contact/identity/B3PqProof.java`
+`zerion-core/src/main/java/org/zerionproject/core/contact/B3PqProof.java`
 
 ```java
 public static byte[] sign(byte[] signingPriv,
@@ -288,7 +290,7 @@ public static boolean verify(byte[] signingPub,
         byte[] pqPubKey, byte[] sig);
 ```
 
-Tests: `B3PqProofTest` in `zerion-android/src/test/...`, 13 cases
+Tests: `B3PqProofTest` in `zerion-core/src/test/java/org/zerionproject/core/contact/B3PqProofTest.java`, 13 cases
 including `canonicalVectorMatchesIOS`.
 
 ### iOS
@@ -349,8 +351,6 @@ What this **doesn't** fix:
   hidden-services API exists in the Zerion onionwrapper fork. Mode 3-Full
   per-message also shipped (default since v1.7), superseding the open PCS
   notes here.
-- **`messaging.minorVersion` floor bump to 5 and legacy 4-slot removal**
- - still tracked; gated on adoption.
 - **Rotating the long-term Ed25519 key** - out of scope; would break
   the safety-number / fingerprint UI.
 

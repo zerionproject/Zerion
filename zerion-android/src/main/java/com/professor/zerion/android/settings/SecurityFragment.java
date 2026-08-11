@@ -222,7 +222,7 @@ public class SecurityFragment extends Fragment {
 		if (uiPrefs.getBoolean(com.professor.zerion.android.security
 				.HardenedModeEvaluator.PREF_HARDENED_BOOT, false)) count++;
 		if (uiPrefs.getBoolean(com.professor.zerion.android.security
-				.HardenedModeEvaluator.PREF_HARDENED_TAMPER, false)) count++;
+				.HardenedModeEvaluator.PREF_HARDENED_TAMPER, true)) count++;
 		if (uiPrefs.getBoolean(com.professor.zerion.android.security
 				.HardenedModeEvaluator.PREF_HARDENED_USB_PANIC, false)) {
 			count++;
@@ -264,7 +264,7 @@ public class SecurityFragment extends Fragment {
 				uiPrefs.getBoolean(com.professor.zerion.android.security
 						.HardenedModeEvaluator.PREF_HARDENED_BOOT, false),
 				uiPrefs.getBoolean(com.professor.zerion.android.security
-						.HardenedModeEvaluator.PREF_HARDENED_TAMPER, false),
+						.HardenedModeEvaluator.PREF_HARDENED_TAMPER, true),
 				uiPrefs.getBoolean(com.professor.zerion.android.security
 						.HardenedModeEvaluator.PREF_HARDENED_USB_PANIC,
 						false)

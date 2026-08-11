@@ -359,12 +359,6 @@
   
   <string name="contacts_selected">Seçilmiş kişiler</string>
   <string name="activity_share_toolbar_header">Kişi seçin</string>
-  <string name="no_contacts_selector">Görüntülenebilecek bir kişi yok</string>
-  <string name="no_contacts_selector_action">Bir kişi ekledikten sonra lütfen buraya geri dönün</string>
-  <string name="shared_by_format">%s tarafından paylaşıldı</string>
-  <string name="sharing_status">Paylaşım durumu</string>
-  <string name="shared_with">%1$d ile paylaşıldı (%2$d çevrim içi)</string>
-  <string name="nobody">Hiç kimse</string>
   
   <string name="read_more">diğerlerini oku</string>
 

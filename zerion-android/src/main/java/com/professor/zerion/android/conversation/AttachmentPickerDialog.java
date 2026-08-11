@@ -33,8 +33,18 @@ public class AttachmentPickerDialog extends BottomSheetDialogFragment {
 
 	private AttachmentPickerListener listener;
 
+	private static final String ARG_MESH = "meshMode";
+
 	public static AttachmentPickerDialog newInstance() {
-		return new AttachmentPickerDialog();
+		return newInstance(false);
+	}
+
+	public static AttachmentPickerDialog newInstance(boolean meshMode) {
+		AttachmentPickerDialog d = new AttachmentPickerDialog();
+		Bundle args = new Bundle();
+		args.putBoolean(ARG_MESH, meshMode);
+		d.setArguments(args);
+		return d;
 	}
 
 	@Override
@@ -66,6 +76,9 @@ public class AttachmentPickerDialog extends BottomSheetDialogFragment {
 		});
 
 		LinearLayout video = view.findViewById(R.id.attachment_video);
+		boolean meshMode = getArguments() != null
+				&& getArguments().getBoolean(ARG_MESH);
+		if (meshMode) video.setVisibility(View.GONE);
 		video.setOnClickListener(v -> {
 			if (listener != null) {
 				listener.onVideoSelected();

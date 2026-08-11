@@ -144,7 +144,7 @@
 					android:layout_width="match_parent"
 					android:layout_height="match_parent"
 					android:textColor="@android:color/white"
-					android:textColorHint="#80FFFFFF"
+					android:textColorHint="@color/zerion_text_tertiary_inverse"
 					android:imeOptions="flagNoPersonalizedLearning"
 					android:privateImeOptions="nm"
 					android:importantForAutofill="no"

@@ -13,11 +13,11 @@ import android.widget.Toast;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
-import org.briarproject.bramble.api.UnsupportedVersionException;
-import org.briarproject.bramble.api.contact.PendingContact;
-import org.briarproject.bramble.api.db.ContactExistsException;
-import org.briarproject.bramble.api.db.PendingContactExistsException;
-import org.briarproject.bramble.api.identity.Author;
+import org.zerionproject.core.api.UnsupportedVersionException;
+import org.zerionproject.core.api.contact.PendingContact;
+import org.zerionproject.core.api.db.ContactExistsException;
+import org.zerionproject.core.api.db.PendingContactExistsException;
+import org.zerionproject.core.api.identity.Author;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.fragment.BaseFragment;
@@ -36,8 +36,8 @@ import androidx.lifecycle.ViewModelProvider;
 
 import static android.widget.Toast.LENGTH_LONG;
 import static java.util.Objects.requireNonNull;
-import static org.briarproject.bramble.api.identity.AuthorConstants.MAX_AUTHOR_NAME_LENGTH;
-import static org.briarproject.bramble.util.StringUtils.utf8IsTooLong;
+import static org.zerionproject.core.api.identity.AuthorConstants.MAX_AUTHOR_NAME_LENGTH;
+import static org.zerionproject.core.util.StringUtils.utf8IsTooLong;
 import static com.professor.zerion.android.util.UiUtils.getDialogIcon;
 import static com.professor.zerion.android.util.UiUtils.hideViewOnSmallScreen;
 

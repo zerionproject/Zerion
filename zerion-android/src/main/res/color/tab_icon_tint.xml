@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bottom-nav tab icon tint: the accent when the tab is selected, muted
+     otherwise. Driven by the tab's selected state, set by NavDrawerActivity. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="?attr/colorPrimary" android:state_selected="true" />
+    <item android:color="@color/zerion_text_secondary" />
+</selector>

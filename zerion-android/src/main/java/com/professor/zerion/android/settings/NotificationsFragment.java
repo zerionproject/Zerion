@@ -42,7 +42,7 @@ import static android.provider.Settings.EXTRA_APP_PACKAGE;
 import static android.provider.Settings.EXTRA_CHANNEL_ID;
 import static android.provider.Settings.System.DEFAULT_NOTIFICATION_URI;
 import static android.widget.Toast.LENGTH_SHORT;
-import static org.briarproject.bramble.util.StringUtils.isNullOrEmpty;
+import static org.zerionproject.core.util.StringUtils.isNullOrEmpty;
 import static com.professor.zerion.android.AppModule.getAndroidComponent;
 import static com.professor.zerion.android.activity.RequestCodes.REQUEST_RINGTONE;
 import static com.professor.zerion.android.api.AndroidNotificationManager.CHANNEL_CHANNEL_ID;

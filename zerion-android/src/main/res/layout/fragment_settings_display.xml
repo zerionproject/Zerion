@@ -241,6 +241,43 @@
 
 			</LinearLayout>
 
+			<LinearLayout
+				android:id="@+id/accent_card"
+				style="@style/Zerion.Settings.Row.Clickable">
+
+				<View
+					android:id="@+id/accent_preview"
+					android:layout_width="22dp"
+					android:layout_height="22dp"
+					android:layout_marginEnd="16dp"
+					android:background="@drawable/color_preview_circle" />
+
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:orientation="vertical">
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Title"
+						android:text="@string/pref_accent_title" />
+
+					<TextView
+						android:id="@+id/accent_value"
+						style="@style/Zerion.Settings.Row.Summary"
+						tools:text="Cyan" />
+
+				</LinearLayout>
+
+				<ImageView
+					android:layout_width="20dp"
+					android:layout_height="20dp"
+					android:src="@drawable/ic_chevron_right"
+					app:tint="@color/zerion_text_secondary"
+					android:importantForAccessibility="no" />
+
+			</LinearLayout>
+
 		</LinearLayout>
 
 	</LinearLayout>

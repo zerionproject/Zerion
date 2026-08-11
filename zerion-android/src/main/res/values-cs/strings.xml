@@ -379,12 +379,6 @@
   
   <string name="contacts_selected">Zvolené kontakty</string>
   <string name="activity_share_toolbar_header">Zvolit kontakty</string>
-  <string name="no_contacts_selector">Žádné kontakty k zobrazení</string>
-  <string name="no_contacts_selector_action">Prosím vraťte se sem po přidání kontaktu</string>
-  <string name="shared_by_format">Sdíleno %s</string>
-  <string name="sharing_status">Sdílet status</string>
-  <string name="shared_with">Sdíleno s %1$d (%2$d online)</string>
-  <string name="nobody">Nikdo</string>
   
   <string name="read_more">Číst dál</string>
 

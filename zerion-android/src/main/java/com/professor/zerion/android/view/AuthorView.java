@@ -12,13 +12,13 @@ import android.widget.TextView;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.signature.ObjectKey;
 
-import org.briarproject.bramble.api.identity.Author;
-import org.briarproject.bramble.api.identity.AuthorId;
+import org.zerionproject.core.api.identity.Author;
+import org.zerionproject.core.api.identity.AuthorId;
 import com.professor.zerion.R;
 import com.professor.zerion.android.contact.ContactItem;
 import com.bumptech.glide.Glide;
 import com.professor.zerion.android.util.UiUtils;
-import org.briarproject.briar.api.identity.AuthorInfo;
+import org.zerionproject.app.api.identity.AuthorInfo;
 
 import javax.annotation.Nullable;
 
@@ -34,8 +34,8 @@ import static android.util.TypedValue.COMPLEX_UNIT_PX;
 import static androidx.appcompat.content.res.AppCompatResources.getDrawable;
 import static com.professor.zerion.android.util.UiUtils.getContactDisplayName;
 import static com.professor.zerion.android.util.UiUtils.resolveAttribute;
-import static org.briarproject.briar.api.identity.AuthorInfo.Status.NONE;
-import static org.briarproject.briar.api.identity.AuthorInfo.Status.OURSELVES;
+import static org.zerionproject.app.api.identity.AuthorInfo.Status.NONE;
+import static org.zerionproject.app.api.identity.AuthorInfo.Status.OURSELVES;
 
 @UiThread
 public class AuthorView extends ConstraintLayout {

@@ -20,7 +20,7 @@ import com.professor.zerion.android.backup.AccountBackupManager;
 import com.professor.zerion.android.util.ActivityLaunchers.CreateDocumentAdvanced;
 import com.professor.zerion.android.util.ActivityLaunchers.OpenDocumentAdvanced;
 
-import org.briarproject.bramble.api.lifecycle.IoExecutor;
+import org.zerionproject.core.api.lifecycle.IoExecutor;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 

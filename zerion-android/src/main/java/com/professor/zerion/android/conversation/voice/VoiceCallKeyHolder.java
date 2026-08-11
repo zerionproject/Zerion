@@ -1,6 +1,6 @@
 package com.professor.zerion.android.conversation.voice;
 
-import org.briarproject.bramble.api.crypto.SecretKey;
+import org.zerionproject.core.api.crypto.SecretKey;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.Arrays;

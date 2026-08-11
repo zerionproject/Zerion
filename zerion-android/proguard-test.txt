@@ -1,5 +1,4 @@
--keep,includedescriptorclasses class org.briarproject.bramble.** { *; }
--keep,includedescriptorclasses class org.briarproject.briar.** { *; }
+-keep,includedescriptorclasses class org.zerionproject.** { *; }
 
 -dontwarn android.test.**
 -dontwarn android.support.test.**
@@ -15,4 +14,4 @@
 -keep class junit.** { *; }
 -dontwarn junit.**
 
--dontwarn org.briarproject.briar.android.**
+-dontwarn com.professor.zerion.android.**

@@ -2,7 +2,7 @@ package com.professor.zerion.android.attachment;
 
 import android.net.Uri;
 
-import org.briarproject.briar.api.attachment.AttachmentHeader;
+import org.zerionproject.app.api.attachment.AttachmentHeader;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.Collection;

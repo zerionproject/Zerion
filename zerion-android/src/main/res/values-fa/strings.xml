@@ -349,12 +349,6 @@
   
   <string name="contacts_selected">مخاطبان انتخاب شدند</string>
   <string name="activity_share_toolbar_header">انتخاب مخاطبان</string>
-  <string name="no_contacts_selector">هیچ مخاطبی برای نمایش وجود ندارد</string>
-  <string name="no_contacts_selector_action">لطفا بعد از افزودن یک مخاطب به اینجا برگردید</string>
-  <string name="shared_by_format">به اشتراک گذاشته شده توسط %s</string>
-  <string name="sharing_status">به اشتراک گذاری وضعیت</string>
-  <string name="shared_with">به اشتراک گذاشته شده با %1$d (%2$d نفر آنلاین)</string>
-  <string name="nobody">هیچکس</string>
   
   <string name="read_more">بیشتر بخوانید</string>
 

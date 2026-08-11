@@ -6,8 +6,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import org.briarproject.bramble.api.Pair;
-import org.briarproject.bramble.api.sync.MessageId;
+import org.zerionproject.core.api.Pair;
+import org.zerionproject.core.api.sync.MessageId;
 import com.professor.zerion.R;
 import com.professor.zerion.android.util.ZerionAdapter;
 import com.professor.zerion.android.util.ItemReturningAdapter;
@@ -25,7 +25,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView.RecycledViewPool;
 
 import static androidx.recyclerview.widget.RecyclerView.NO_POSITION;
-import static org.briarproject.briar.api.autodelete.AutoDeleteConstants.NO_AUTO_DELETE_TIMER;
+import static org.zerionproject.app.api.autodelete.AutoDeleteConstants.NO_AUTO_DELETE_TIMER;
 
 @NotNullByDefault
 class ConversationAdapter
@@ -35,7 +35,7 @@ class ConversationAdapter
 	private final ConversationListener listener;
 	private final RecycledViewPool imageViewPool;
 	private final ImageItemDecoration imageItemDecoration;
-	private final org.briarproject.briar.api.attachment.AttachmentReader attachmentReader;
+	private final org.zerionproject.app.api.attachment.AttachmentReader attachmentReader;
 	private final java.util.concurrent.Executor dbExecutor;
 	@Nullable
 	private SelectionTracker<String> tracker = null;
@@ -43,15 +43,14 @@ class ConversationAdapter
 
 	ConversationAdapter(Context ctx,
 			ConversationListener conversationListener,
-			org.briarproject.briar.api.attachment.AttachmentReader attachmentReader,
+			org.zerionproject.app.api.attachment.AttachmentReader attachmentReader,
 			java.util.concurrent.Executor dbExecutor) {
 		super(ctx, ConversationItem.class);
 		listener = conversationListener;
 		this.attachmentReader = attachmentReader;
 		this.dbExecutor = dbExecutor;
 		imageViewPool = new RecycledViewPool();
-		imageViewPool.setMaxRecycledViews(R.layout.list_item_conversation_msg_in, 15);
-		imageViewPool.setMaxRecycledViews(R.layout.list_item_conversation_msg_out, 15);
+		imageViewPool.setMaxRecycledViews(R.layout.list_item_image, 24);
 		imageItemDecoration = new ImageItemDecoration(ctx);
 		setHasStableIds(true);
 	}

@@ -1,15 +1,15 @@
 package com.professor.zerion.android.conversation;
 
-import org.briarproject.bramble.api.sync.GroupId;
-import org.briarproject.bramble.api.sync.MessageId;
-import org.briarproject.briar.api.attachment.AttachmentHeader;
+import org.zerionproject.core.api.sync.GroupId;
+import org.zerionproject.core.api.sync.MessageId;
+import org.zerionproject.app.api.attachment.AttachmentHeader;
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static org.briarproject.bramble.test.TestUtils.getRandomId;
+import static org.zerionproject.core.test.TestUtils.getRandomId;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 

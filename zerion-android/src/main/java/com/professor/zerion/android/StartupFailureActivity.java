@@ -14,7 +14,7 @@ import org.briarproject.nullsafety.ParametersNotNullByDefault;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import static org.briarproject.bramble.api.lifecycle.LifecycleManager.StartResult;
+import static org.zerionproject.core.api.lifecycle.LifecycleManager.StartResult;
 import static com.professor.zerion.android.ZerionService.EXTRA_START_RESULT;
 
 @MethodsNotNullByDefault

@@ -28,10 +28,10 @@ import android.widget.Toast;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputLayout;
 
-import org.briarproject.bramble.api.contact.Contact;
-import org.briarproject.bramble.api.identity.Author;
-import org.briarproject.bramble.api.system.AndroidExecutor;
-import org.briarproject.bramble.util.StringUtils;
+import org.zerionproject.core.api.contact.Contact;
+import org.zerionproject.core.api.identity.Author;
+import org.zerionproject.core.api.system.AndroidExecutor;
+import org.zerionproject.core.util.StringUtils;
 import com.professor.zerion.R;
 import com.professor.zerion.android.view.ArticleMovementMethod;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;

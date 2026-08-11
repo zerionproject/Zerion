@@ -6,9 +6,9 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.widget.Toast;
 
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.settings.Settings;
-import org.briarproject.bramble.api.settings.SettingsManager;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.settings.Settings;
+import org.zerionproject.core.api.settings.SettingsManager;
 import com.professor.zerion.R;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;

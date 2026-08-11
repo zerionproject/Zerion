@@ -3,13 +3,13 @@
 Shipped on Android since v2.0.0.
 
 iOS parity for Zerion broadcast channels. Android implementation lives in
-`briar-core/.../channel/` - the orchestrator is `ChannelManagerImpl.java`,
+`zerion-app/.../channel/` - the orchestrator is `ChannelManagerImpl.java`,
 the wire codecs are `ChannelPullCodec.java` (request/response framing) and
 `ChannelCodec.java` (signed-input byte layouts + invite links), and the
 post-chain rules are in `ChannelPostValidator.java` /
 `ChannelChainVerifier.java`. Constants are in
-`briar-api/.../channel/ChannelConstants.java`
-(`CLIENT_ID = "org.briarproject.zerion.channel"`, MAJOR 0 / MINOR 1).
+`zerion-app-api/.../channel/ChannelConstants.java`
+(`CLIENT_ID = "org.zerionproject.channel"`, MAJOR 0 / MINOR 1).
 
 ## The one architectural fact
 
@@ -51,6 +51,8 @@ Consequences:
 ```
 
 ## Transport framing
+
+In Zerion 3.0 these records are carried inside ZWF frames over the ZPP constant-rate transport, tagged by the ZMM record registry; the record format below is unchanged.
 
 Every RPC is a single **BdfDictionary** (not a BdfList), written with the
 Bramble `BdfWriter` and read with `BdfReader`. Each dictionary carries a
@@ -116,7 +118,7 @@ Two request shapes (`ChannelPullProtocol`):
   sinceSeqNum, capability, publisherNonce)`. `sinceSeqNum` is the
   subscriber's `getHighestKnownPostSeq()`. `hmacResponse =
   ChannelHmacChallenge.respond(capability, publisherNonce, channelId)`,
-  which is `crypto.mac("org.briarproject.zerion/CHANNEL_HMAC_CHALLENGE",
+  which is `crypto.mac("org.zerionproject/CHANNEL_HMAC_CHALLENGE",
   SecretKey(capability), channelId, nonce)`.
 
 ### Challenge handling on the publisher
@@ -250,7 +252,7 @@ int64 delegationSeq || signature`, hashed under
 each `int64 seq`, hashed under `…/CHANNEL_MANIFEST_REVOKED`.
 
 Signed with the publisher's hybrid key under label
-`SIGNING_LABEL_MANIFEST = "org.briarproject.zerion/CHANNEL_MANIFEST"`
+`SIGNING_LABEL_MANIFEST = "org.zerionproject/CHANNEL_MANIFEST"`
 (`ChannelSignatures.signManifest` → `crypto.hybridSign`). Verified with
 `verifyManifest` → `crypto.verifyHybridSignature`.
 
@@ -262,7 +264,7 @@ In order, a manifest is rejected (merge returns null ⇒ pull fails) if any of:
 2. local ML-DSA key is known and `publisherMlDsa` differs.
 3. `channelId` differs from local.
 4. the channelId is not reproducible:
-   `hash("org.briarproject.zerion/CHANNEL_ID",
+   `hash("org.zerionproject/CHANNEL_ID",
    HybridSignaturePublicKey(ed, mlDsa).getEncoded(), salt)` must equal the
    channelId. This binds the channel id to the publisher key + salt.
 5. the hybrid manifest signature fails to verify.
@@ -307,7 +309,7 @@ all concatenated then hashed. Note `body` here is the **wire** body (the
 base64 ciphertext for a private channel), so the signature covers exactly
 what is transmitted.
 
-Signed under `SIGNING_LABEL_POST = "org.briarproject.zerion/CHANNEL_POST"`.
+Signed under `SIGNING_LABEL_POST = "org.zerionproject/CHANNEL_POST"`.
 For a normal post the verifying key is the publisher hybrid key; for a
 delegate-signed post it is `HybridSignaturePublicKey(delegateEd, delegateMl)`
 after the delegation cert checks pass (see section 6).
@@ -317,7 +319,7 @@ after the delegation cert checks pass (see section 6).
 - `seqNum 0` must carry an all-zero `prevHash`.
 - For `seqNum n > 0`, `prevHash` must equal the canonical hash of post
   `n-1`. The canonical hash (`postCanonicalHash`) is
-  `hash("org.briarproject.zerion/CHANNEL_POST_CHAIN",
+  `hash("org.zerionproject/CHANNEL_POST_CHAIN",
   channelId || seqNum || prevHash || timestampHourMs || UTF-8 body ||
   attachmentsHash || ttlMs || signature)` - note this hashes the **wire**
   body and **includes the signature**, so the chain commits to the exact
@@ -371,7 +373,7 @@ channelId (32) || int64 parentPostSeqNum || int64 commentId
 || int32 bodyLen || UTF-8 body || int32 nameLen || UTF-8 name
 || int64 timestampHourMs
 ```
-Label `SIGNING_LABEL_COMMENT = "org.briarproject.zerion/CHANNEL_COMMENT"`.
+Label `SIGNING_LABEL_COMMENT = "org.zerionproject/CHANNEL_COMMENT"`.
 
 Publisher acceptance (`handleCommentRequest`), each returns `ok=false` on
 failure: channelId match; discussions enabled; body non-empty and ≤ 1024
@@ -400,7 +402,7 @@ Reaction signed-input (`ChannelCodec.reactionSignedInput`):
 channelId (32) || int64 postSeqNum || int32 emojiLen || UTF-8 emoji
 || int64 timestampHourMs
 ```
-Label `SIGNING_LABEL_REACTION = "org.briarproject.zerion/CHANNEL_REACTION"`.
+Label `SIGNING_LABEL_REACTION = "org.zerionproject/CHANNEL_REACTION"`.
 `MAX_REACTION_EMOJI_BYTES = 32`, `MAX_REACTIONS_PER_POST = 256`.
 
 **Reaction identical-skip** (`ChannelReactionStore.putReaction`): a reaction
@@ -490,7 +492,7 @@ The publisher can delegate posting rights to other identities, up to
 Delegation signed-input (`delegationSignedInput`): `channelId ||
 delegateeEd25519 || delegateeMlDsa || int64 validFrom || int64 validUntil ||
 int64 delegationSeq`, label `SIGNING_LABEL_DELEGATION =
-"org.briarproject.zerion/CHANNEL_DELEGATION"`, signed by the **publisher**
+"org.zerionproject/CHANNEL_DELEGATION"`, signed by the **publisher**
 hybrid key. A delegate-signed post (`post.signedByDelegate()`) is accepted
 only if the cert exists in `activeDelegations`, is not in
 `revokedDelegationSeqs`, covers `post.timestampHourMs`
@@ -524,7 +526,7 @@ treated as public.
   their **personal** identity Ed25519 key + local ML-DSA-65 key. Personal
   user signatures **require** ML-DSA - classical-only is refused.
 - **Channel id binding**:
-  `channelId = hash("org.briarproject.zerion/CHANNEL_ID",
+  `channelId = hash("org.zerionproject/CHANNEL_ID",
   HybridSignaturePublicKey(ed,mlDsa).getEncoded(), salt)`. Subscribers
   re-derive and reject any manifest that does not match.
 - **At-rest / content encryption is AES-256-GCM** (`ChannelContentKey`,
@@ -546,7 +548,7 @@ treated as public.
     `deriveKey(APPROVAL_WRAP_LABEL, SecretKey(KEM sharedSecret), channelId)`,
     AES-GCM with random IV.
 - **HMAC challenge** uses `crypto.mac` under
-  `"org.briarproject.zerion/CHANNEL_HMAC_CHALLENGE"` keyed by the capability.
+  `"org.zerionproject/CHANNEL_HMAC_CHALLENGE"` keyed by the capability.
 
 ## 8. Channel tombstone - `WIRE_TYPE_CHANNEL_TOMBSTONE`
 

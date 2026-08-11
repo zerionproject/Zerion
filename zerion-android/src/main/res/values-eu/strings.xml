@@ -295,12 +295,6 @@
   
   <string name="contacts_selected">Kontaktuak hautatuta</string>
   <string name="activity_share_toolbar_header">Aukeratu kontaktuak</string>
-  <string name="no_contacts_selector">Ez dago erakusteko kontakturik</string>
-  <string name="no_contacts_selector_action">Itzuli hona kontakturen bat gehitu eta gero</string>
-  <string name="shared_by_format">%s erabiltzaileak partekatuta</string>
-  <string name="sharing_status">Partekatze egoera</string>
-  <string name="shared_with">%1$d(r)ekin partekatuta (%2$d konektatuta)</string>
-  <string name="nobody">Inor ez</string>
   
   <string name="read_more">irakurri gehiago</string>
 

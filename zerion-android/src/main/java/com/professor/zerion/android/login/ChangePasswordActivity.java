@@ -16,7 +16,7 @@ import android.widget.Toast;
 
 import com.google.android.material.textfield.TextInputLayout;
 
-import org.briarproject.bramble.api.crypto.DecryptionResult;
+import org.zerionproject.core.api.crypto.DecryptionResult;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
@@ -29,10 +29,10 @@ import androidx.lifecycle.ViewModelProvider;
 import static android.view.View.INVISIBLE;
 import static android.view.View.VISIBLE;
 import static android.widget.Toast.LENGTH_LONG;
-import static org.briarproject.bramble.api.crypto.DecryptionResult.KEY_STRENGTHENER_ERROR;
-import static org.briarproject.bramble.api.crypto.DecryptionResult.SUCCESS;
-import static org.briarproject.bramble.api.crypto.PasswordStrengthEstimator.QUITE_WEAK;
-import static org.briarproject.bramble.api.crypto.PasswordStrengthEstimator.STRONG;
+import static org.zerionproject.core.api.crypto.DecryptionResult.KEY_STRENGTHENER_ERROR;
+import static org.zerionproject.core.api.crypto.DecryptionResult.SUCCESS;
+import static org.zerionproject.core.api.crypto.PasswordStrengthEstimator.QUITE_WEAK;
+import static org.zerionproject.core.api.crypto.PasswordStrengthEstimator.STRONG;
 import static com.professor.zerion.android.login.LoginUtils.createKeyStrengthenerErrorDialog;
 import static com.professor.zerion.android.util.UiUtils.hideSoftKeyboard;
 import static com.professor.zerion.android.util.UiUtils.setError;
@@ -62,6 +62,11 @@ public class ChangePasswordActivity extends ZerionActivity
 		component.inject(this);
 		viewModel = new ViewModelProvider(this, viewModelFactory)
 				.get(ChangePasswordViewModel.class);
+	}
+
+	@Override
+	protected boolean forceScreenshotProtection() {
+		return true;
 	}
 
 	@Override
@@ -177,12 +182,18 @@ public class ChangePasswordActivity extends ZerionActivity
 		changePasswordButton.setVisibility(INVISIBLE);
 		progress.setVisibility(VISIBLE);
 
-		char[] curPwd = new char[currentPassword.length()];
-		currentPassword.getText().getChars(0, curPwd.length, curPwd, 0);
-		char[] newPwd = new char[newPassword.length()];
-		newPassword.getText().getChars(0, newPwd.length, newPwd, 0);
+		char[] curTyped = new char[currentPassword.length()];
+		currentPassword.getText().getChars(0, curTyped.length, curTyped, 0);
+		char[] newTyped = new char[newPassword.length()];
+		newPassword.getText().getChars(0, newTyped.length, newTyped, 0);
 		currentPassword.setText("");
 		newPassword.setText("");
+		char[] curPwd = com.professor.zerion.android.account
+				.PasswordSanitizer.sanitize(curTyped);
+		char[] newPwd = com.professor.zerion.android.account
+				.PasswordSanitizer.sanitize(newTyped);
+		java.util.Arrays.fill(curTyped, '\0');
+		java.util.Arrays.fill(newTyped, '\0');
 		viewModel.changePassword(curPwd, newPwd).observeEvent(this, result -> {
 					if (result == SUCCESS) {
 						Toast.makeText(ChangePasswordActivity.this,

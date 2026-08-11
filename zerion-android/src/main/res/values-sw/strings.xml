@@ -300,12 +300,6 @@ Umepoteza nenosiri.</string>
   
   <string name="contacts_selected">Mawasiliano yalio chaguliwa </string>
   <string name="activity_share_toolbar_header">Chagua Mawasiliano </string>
-  <string name="no_contacts_selector">hakuna mawasiliano yakuonyesha </string>
-  <string name="no_contacts_selector_action">Tafathali rudi tena hapa baada ya kuongeza mawasiliano </string>
-  <string name="shared_by_format">Umetumwa na %s</string>
-  <string name="sharing_status">Tawanya hali </string>
-  <string name="shared_with">Umesabazwa na %1$d(%2$dmkondoni)</string>
-  <string name="nobody">Hakuna mtu </string>
   
   <string name="read_more">Soma zaidi </string>
 

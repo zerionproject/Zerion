@@ -5,7 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import org.briarproject.bramble.api.contact.PendingContact;
+import org.zerionproject.core.api.contact.PendingContact;
 import com.professor.zerion.R;
 import com.professor.zerion.android.util.ZerionAdapter;
 import org.briarproject.nullsafety.NotNullByDefault;

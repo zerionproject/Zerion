@@ -22,7 +22,7 @@
 			android:background="@android:color/transparent"
 			android:elevation="0dp"
 			app:titleTextColor="#FFFFFF"
-			app:navigationIconTint="#26B7F0" />
+			app:navigationIconTint="@color/zerion_cyan" />
 	</com.google.android.material.appbar.AppBarLayout>
 
 	<fragment

@@ -1,12 +1,12 @@
 package com.professor.zerion.android.attachment;
 
-import org.briarproject.bramble.api.db.DatabaseExecutor;
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.sync.MessageId;
-import org.briarproject.briar.api.attachment.Attachment;
-import org.briarproject.briar.api.attachment.AttachmentHeader;
-import org.briarproject.briar.api.attachment.AttachmentReader;
-import org.briarproject.briar.api.messaging.PrivateMessageHeader;
+import org.zerionproject.core.api.db.DatabaseExecutor;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.sync.MessageId;
+import org.zerionproject.app.api.attachment.Attachment;
+import org.zerionproject.app.api.attachment.AttachmentHeader;
+import org.zerionproject.app.api.attachment.AttachmentReader;
+import org.zerionproject.app.api.messaging.PrivateMessageHeader;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.List;

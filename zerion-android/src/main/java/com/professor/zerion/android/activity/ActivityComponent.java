@@ -37,7 +37,6 @@ import com.professor.zerion.android.panic.PanicResponderActivity;
 import com.professor.zerion.android.settings.ConfirmAvatarDialogFragment;
 import com.professor.zerion.android.settings.SettingsActivity;
 import com.professor.zerion.android.settings.SettingsFragment;
-import com.professor.zerion.android.sharing.SharingModule;
 import com.professor.zerion.android.splash.SplashScreenActivity;
 import com.professor.zerion.android.test.TestDataActivity;
 
@@ -45,8 +44,7 @@ import dagger.Component;
 
 @ActivityScope
 @Component(modules = {
-		ActivityModule.class,
-		SharingModule.SharingLegacyModule.class
+		ActivityModule.class
 }, dependencies = AndroidComponent.class)
 public interface ActivityComponent {
 
@@ -64,6 +62,8 @@ public interface ActivityComponent {
 	void inject(com.professor.zerion.android.account.WelcomeActivity activity);
 
 	void inject(NavDrawerActivity activity);
+
+	void inject(com.professor.zerion.android.navdrawer.NetworkStatusActivity activity);
 
 	void inject(PanicResponderActivity activity);
 
@@ -107,6 +107,8 @@ public interface ActivityComponent {
 
 	void inject(ContactListFragment fragment);
 
+	void inject(com.professor.zerion.android.chat.ChatsFragment fragment);
+
 	void inject(com.professor.zerion.android.grouptr.GroupTrListFragment fragment);
 
 	void inject(com.professor.zerion.android.channel.ChannelListFragment fragment);
@@ -126,6 +128,10 @@ public interface ActivityComponent {
 	void inject(AddContactChooserFragment fragment);
 
 	void inject(QrExchangeFragment fragment);
+
+	void inject(com.professor.zerion.android.contact.add.nearby.AddNearbyContactActivity activity);
+
+	void inject(com.professor.zerion.android.contact.add.nearby.AddNearbyContactFragment fragment);
 
 	void inject(LinkExchangeFragment fragment);
 

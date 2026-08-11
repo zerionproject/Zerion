@@ -13,6 +13,77 @@
 		android:paddingHorizontal="16dp"
 		android:paddingBottom="32dp">
 
+		<!-- ====== PRIVACY MODE ====== -->
+		<TextView
+			style="@style/Zerion.Settings.SectionHeader"
+			android:text="@string/settings_section_mode" />
+
+		<LinearLayout style="@style/Zerion.Settings.Group">
+
+			<LinearLayout
+				android:id="@+id/offline_mode_card"
+				style="@style/Zerion.Settings.Row">
+
+				<ImageView
+					style="@style/Zerion.Settings.Row.Icon"
+					android:src="@drawable/ic_settings"
+					android:importantForAccessibility="no" />
+
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:orientation="vertical">
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Title"
+						android:text="@string/offline_mode_title" />
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Summary"
+						android:text="@string/offline_mode_summary" />
+
+				</LinearLayout>
+
+				<com.google.android.material.switchmaterial.SwitchMaterial
+					android:id="@+id/offline_mode_switch"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:checked="false" />
+
+			</LinearLayout>
+
+		</LinearLayout>
+
+		<LinearLayout
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:orientation="horizontal"
+			android:gravity="center_vertical"
+			android:layout_marginTop="14dp"
+			android:background="@drawable/bg_settings_info_card"
+			android:paddingHorizontal="14dp"
+			android:paddingVertical="12dp">
+
+			<ImageView
+				android:layout_width="20dp"
+				android:layout_height="20dp"
+				android:layout_marginEnd="12dp"
+				android:src="@drawable/ic_info_dark"
+				app:tint="@color/zerion_primary_accent"
+				android:importantForAccessibility="no" />
+
+			<TextView
+				android:layout_width="0dp"
+				android:layout_height="wrap_content"
+				android:layout_weight="1"
+				android:text="@string/offline_mode_info"
+				android:textSize="13sp"
+				android:textColor="@color/zerion_text_secondary"
+				android:lineSpacingExtra="1dp" />
+
+		</LinearLayout>
+
 		<!-- ====== TOR NETWORK ====== -->
 		<TextView
 			style="@style/Zerion.Settings.SectionHeader"
@@ -123,6 +194,148 @@
 
 		</LinearLayout>
 
+		<!-- ====== OVERLAY NETWORKS (I2P) ====== -->
+		<TextView
+			style="@style/Zerion.Settings.SectionHeader"
+			android:text="@string/settings_section_overlay" />
+
+		<LinearLayout style="@style/Zerion.Settings.Group">
+
+			<LinearLayout
+				android:id="@+id/i2p_card"
+				style="@style/Zerion.Settings.Row">
+
+				<ImageView
+					style="@style/Zerion.Settings.Row.Icon"
+					android:src="@drawable/transport_i2p"
+					android:importantForAccessibility="no" />
+
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:orientation="vertical">
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Title"
+						android:text="@string/i2p_toggle_title" />
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Summary"
+						android:text="@string/i2p_toggle_summary" />
+
+				</LinearLayout>
+
+				<com.google.android.material.switchmaterial.SwitchMaterial
+					android:id="@+id/i2p_switch"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:checked="false" />
+
+			</LinearLayout>
+
+		</LinearLayout>
+
+		<LinearLayout
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:orientation="horizontal"
+			android:gravity="center_vertical"
+			android:layout_marginTop="14dp"
+			android:background="@drawable/bg_settings_info_card"
+			android:paddingHorizontal="14dp"
+			android:paddingVertical="12dp">
+
+			<ImageView
+				android:layout_width="20dp"
+				android:layout_height="20dp"
+				android:layout_marginEnd="12dp"
+				android:src="@drawable/ic_info_dark"
+				app:tint="@color/zerion_primary_accent"
+				android:importantForAccessibility="no" />
+
+			<TextView
+				android:layout_width="0dp"
+				android:layout_height="wrap_content"
+				android:layout_weight="1"
+				android:text="@string/i2p_info_message"
+				android:textSize="13sp"
+				android:textColor="@color/zerion_text_secondary"
+				android:lineSpacingExtra="1dp" />
+
+		</LinearLayout>
+
+		<!-- ====== OFFLINE MESH ====== -->
+		<TextView
+			style="@style/Zerion.Settings.SectionHeader"
+			android:text="@string/settings_section_mesh" />
+
+		<LinearLayout style="@style/Zerion.Settings.Group">
+
+			<LinearLayout
+				android:id="@+id/mesh_card"
+				style="@style/Zerion.Settings.Row">
+
+				<ImageView
+					style="@style/Zerion.Settings.Row.Icon"
+					android:src="@drawable/transport_bt"
+					android:importantForAccessibility="no" />
+
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:orientation="vertical">
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Title"
+						android:text="@string/mesh_toggle_title" />
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Summary"
+						android:text="@string/mesh_toggle_summary" />
+
+				</LinearLayout>
+
+				<com.google.android.material.switchmaterial.SwitchMaterial
+					android:id="@+id/mesh_switch"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:checked="false" />
+
+			</LinearLayout>
+
+		</LinearLayout>
+
+		<LinearLayout
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:orientation="horizontal"
+			android:gravity="center_vertical"
+			android:layout_marginTop="14dp"
+			android:background="@drawable/bg_settings_info_card"
+			android:paddingHorizontal="14dp"
+			android:paddingVertical="12dp">
+
+			<ImageView
+				android:layout_width="20dp"
+				android:layout_height="20dp"
+				android:layout_marginEnd="12dp"
+				android:src="@drawable/ic_info_dark"
+				app:tint="@color/zerion_primary_accent"
+				android:importantForAccessibility="no" />
+
+			<TextView
+				android:layout_width="0dp"
+				android:layout_height="wrap_content"
+				android:layout_weight="1"
+				android:text="@string/mesh_info_message"
+				android:textSize="13sp"
+				android:textColor="@color/zerion_text_secondary"
+				android:lineSpacingExtra="1dp" />
+
+		</LinearLayout>
+
 		<!-- ====== PROXY ====== -->
 		<TextView
 			style="@style/Zerion.Settings.SectionHeader"
@@ -136,7 +349,7 @@
 
 				<ImageView
 					style="@style/Zerion.Settings.Row.Icon"
-					android:src="@drawable/ic_settings"
+					android:src="@drawable/transport_tor"
 					android:importantForAccessibility="no" />
 
 				<LinearLayout
@@ -171,7 +384,7 @@
 
 				<ImageView
 					style="@style/Zerion.Settings.Row.Icon"
-					android:src="@drawable/ic_settings"
+					android:src="@drawable/transport_tor"
 					android:importantForAccessibility="no" />
 
 				<LinearLayout
@@ -187,7 +400,7 @@
 					<TextView
 						android:id="@+id/orbot_proxy_value"
 						style="@style/Zerion.Settings.Row.Summary"
-						android:fontFamily="monospace"
+						android:fontFamily="@font/plex_mono_regular"
 						tools:text="127.0.0.1:9050" />
 
 				</LinearLayout>

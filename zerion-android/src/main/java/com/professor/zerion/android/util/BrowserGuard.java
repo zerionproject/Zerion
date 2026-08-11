@@ -1,7 +1,5 @@
 package com.professor.zerion.android.util;
 
-import android.content.ClipData;
-import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -46,12 +44,8 @@ public final class BrowserGuard {
 	}
 
 	private static void copyToClipboard(Context ctx, String url) {
-		ClipboardManager cm = (ClipboardManager) ctx.getSystemService(
-				Context.CLIPBOARD_SERVICE);
-		if (cm != null) {
-			cm.setPrimaryClip(ClipData.newPlainText("link", url));
-			Toast.makeText(ctx, R.string.browser_warning_link_copied,
-					Toast.LENGTH_SHORT).show();
-		}
+		SecureClipboard.copy(ctx, "link", url);
+		Toast.makeText(ctx, R.string.browser_warning_link_copied,
+				Toast.LENGTH_SHORT).show();
 	}
 }

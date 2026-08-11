@@ -1,0 +1,39 @@
+plugins {
+	id 'java-library'
+	id 'com.gradleup.shadow'
+}
+
+// Re-bundles the I2P router and streaming library into a single jar with their
+// bundled Bouncy Castle and eddsa relocated into an isolated namespace, so the
+// embedded router carries its own crypto without colliding with the app's
+// Bouncy Castle or eddsa. Consumed only by the debug build; the release build
+// stays Tor-only and depends on none of this.
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+dependencies {
+	implementation 'net.i2p:router:2.13.0'
+	implementation 'net.i2p.client:streaming:2.13.0'
+}
+
+shadowJar {
+	archiveClassifier.set('')
+	// Keep the net.i2p router/streaming/data/util API the app calls; relocate
+	// only the bundled third-party crypto that would collide with the app.
+	relocate 'org.bouncycastle', 'org.zerionproject.i2pshaded.org.bouncycastle'
+	relocate 'net.i2p.crypto.eddsa',
+			'org.zerionproject.i2pshaded.net.i2p.crypto.eddsa'
+	mergeServiceFiles()
+}
+
+configurations {
+	shadow
+}
+
+artifacts {
+	shadow(shadowJar)
+}

@@ -2,34 +2,34 @@ package com.professor.zerion.android.contact;
 
 import android.app.Application;
 
-import org.briarproject.bramble.api.connection.ConnectionRegistry;
-import org.briarproject.bramble.api.contact.Contact;
-import org.briarproject.bramble.api.contact.ContactId;
-import org.briarproject.bramble.api.contact.ContactManager;
-import org.briarproject.bramble.api.contact.event.ContactAddedEvent;
-import org.briarproject.bramble.api.contact.event.ContactAliasChangedEvent;
-import org.briarproject.bramble.api.contact.event.ContactRemovedEvent;
-import org.briarproject.bramble.api.db.DatabaseExecutor;
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.db.Transaction;
-import org.briarproject.bramble.api.db.TransactionManager;
-import org.briarproject.bramble.api.event.Event;
-import org.briarproject.bramble.api.event.EventBus;
-import org.briarproject.bramble.api.event.EventListener;
-import org.briarproject.bramble.api.lifecycle.LifecycleManager;
-import org.briarproject.bramble.api.plugin.event.ContactConnectedEvent;
-import org.briarproject.bramble.api.plugin.event.ContactDisconnectedEvent;
-import org.briarproject.bramble.api.system.AndroidExecutor;
+import org.zerionproject.core.api.connection.ConnectionRegistry;
+import org.zerionproject.core.api.contact.Contact;
+import org.zerionproject.core.api.contact.ContactId;
+import org.zerionproject.core.api.contact.ContactManager;
+import org.zerionproject.core.api.contact.event.ContactAddedEvent;
+import org.zerionproject.core.api.contact.event.ContactAliasChangedEvent;
+import org.zerionproject.core.api.contact.event.ContactRemovedEvent;
+import org.zerionproject.core.api.db.DatabaseExecutor;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.db.Transaction;
+import org.zerionproject.core.api.db.TransactionManager;
+import org.zerionproject.core.api.event.Event;
+import org.zerionproject.core.api.event.EventBus;
+import org.zerionproject.core.api.event.EventListener;
+import org.zerionproject.core.api.lifecycle.LifecycleManager;
+import org.zerionproject.core.api.plugin.event.ContactConnectedEvent;
+import org.zerionproject.core.api.plugin.event.ContactDisconnectedEvent;
+import org.zerionproject.core.api.system.AndroidExecutor;
 import com.professor.zerion.android.viewmodel.DbViewModel;
 import com.professor.zerion.android.viewmodel.LiveResult;
-import org.briarproject.briar.api.autodelete.AutoDeleteManager;
-import org.briarproject.briar.api.avatar.event.AvatarUpdatedEvent;
-import org.briarproject.briar.api.client.MessageTracker;
-import org.briarproject.briar.api.autodelete.event.ConversationMessagesDeletedEvent;
-import org.briarproject.briar.api.conversation.ConversationManager;
-import org.briarproject.briar.api.conversation.event.ConversationMessageTrackedEvent;
-import org.briarproject.briar.api.identity.AuthorInfo;
-import org.briarproject.briar.api.identity.AuthorManager;
+import org.zerionproject.app.api.autodelete.AutoDeleteManager;
+import org.zerionproject.app.api.avatar.event.AvatarUpdatedEvent;
+import org.zerionproject.app.api.client.MessageTracker;
+import org.zerionproject.app.api.autodelete.event.ConversationMessagesDeletedEvent;
+import org.zerionproject.app.api.conversation.ConversationManager;
+import org.zerionproject.app.api.conversation.event.ConversationMessageTrackedEvent;
+import org.zerionproject.app.api.identity.AuthorInfo;
+import org.zerionproject.app.api.identity.AuthorManager;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.ArrayList;
@@ -56,6 +56,8 @@ public class ContactsViewModel extends DbViewModel implements EventListener {
 	private final AuthorManager authorManager;
 	protected final ConversationManager conversationManager;
 	private final ConnectionRegistry connectionRegistry;
+	private final com.professor.zerion.android.mesh.MeshPresenceTracker
+			meshPresenceTracker;
 	private final EventBus eventBus;
 	protected final PinnedContactManager pinnedContactManager;
 	private final AutoDeleteManager autoDeleteManager;
@@ -78,12 +80,15 @@ public class ContactsViewModel extends DbViewModel implements EventListener {
 			ConversationManager conversationManager,
 			ConnectionRegistry connectionRegistry, EventBus eventBus,
 			PinnedContactManager pinnedContactManager,
-			AutoDeleteManager autoDeleteManager) {
+			AutoDeleteManager autoDeleteManager,
+			com.professor.zerion.android.mesh.MeshPresenceTracker
+					meshPresenceTracker) {
 		super(application, dbExecutor, lifecycleManager, db, androidExecutor);
 		this.contactManager = contactManager;
 		this.authorManager = authorManager;
 		this.conversationManager = conversationManager;
 		this.connectionRegistry = connectionRegistry;
+		this.meshPresenceTracker = meshPresenceTracker;
 		this.eventBus = eventBus;
 		this.eventBus.addListener(this);
 		this.pinnedContactManager = pinnedContactManager;
@@ -115,7 +120,8 @@ public class ContactsViewModel extends DbViewModel implements EventListener {
 			AuthorInfo authorInfo = authorManager.getAuthorInfo(txn, c);
 			MessageTracker.GroupCount count =
 					conversationManager.getGroupCount(txn, id);
-			boolean connected = connectionRegistry.isConnected(c.getId());
+			boolean connected = connectionRegistry.isConnected(c.getId())
+					|| meshPresenceTracker.isPresent(c.getId());
 			boolean pinned = pinnedContactManager.isPinned(id);
 			contacts.add(new ContactListItem(c, authorInfo, connected, count,
 					pinned));
@@ -140,6 +146,18 @@ public class ContactsViewModel extends DbViewModel implements EventListener {
 			updateItem(cid, item -> new ContactListItem(item, true), false);
 		} else if (e instanceof ContactDisconnectedEvent) {
 			scheduleOffline(((ContactDisconnectedEvent) e).getContactId());
+		} else if (e instanceof com.professor.zerion.android.mesh.event
+				.MeshPresenceChangedEvent) {
+			com.professor.zerion.android.mesh.event.MeshPresenceChangedEvent m =
+					(com.professor.zerion.android.mesh.event
+							.MeshPresenceChangedEvent) e;
+			if (m.isPresent()) {
+				cancelPendingOffline(m.getContactId());
+				updateItem(m.getContactId(),
+						item -> new ContactListItem(item, true), false);
+			} else {
+				scheduleOffline(m.getContactId());
+			}
 		} else if (e instanceof ContactRemovedEvent) {
 			removeItem(((ContactRemovedEvent) e).getContactId());
 		} else if (e instanceof ConversationMessageTrackedEvent) {
@@ -201,6 +219,10 @@ public class ContactsViewModel extends DbViewModel implements EventListener {
 		cancelPendingOffline(cid);
 		Runnable r = () -> {
 			pendingOfflineCallbacks.remove(cid);
+			if (connectionRegistry.isConnected(cid)
+					|| meshPresenceTracker.isPresent(cid)) {
+				return;
+			}
 			updateItem(cid, item -> new ContactListItem(item, false), false);
 		};
 		pendingOfflineCallbacks.put(cid, r);
@@ -210,10 +232,13 @@ public class ContactsViewModel extends DbViewModel implements EventListener {
 	@UiThread
 	public void reconcileConnectionState() {
 		List<ContactListItem> list = getList(contactListItems);
-		if (list == null) return;
+		if (list == null) {
+			return;
+		}
 		for (ContactListItem item : list) {
 			ContactId id = item.getContact().getId();
-			boolean actual = connectionRegistry.isConnected(id);
+			boolean actual = connectionRegistry.isConnected(id)
+					|| meshPresenceTracker.isPresent(id);
 			if (actual && !item.isConnected()) {
 				cancelPendingOffline(id);
 				updateItem(id, it -> new ContactListItem(it, true), false);

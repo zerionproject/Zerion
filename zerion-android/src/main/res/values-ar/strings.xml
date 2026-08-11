@@ -400,12 +400,6 @@
   
   <string name="contacts_selected">جهات الاتصال المختارة</string>
   <string name="activity_share_toolbar_header">إختر جهات الاتصال</string>
-  <string name="no_contacts_selector">لا جهات إتصال للعرض</string>
-  <string name="no_contacts_selector_action">الرجاء العودة لاحقًا هنا بعد إضافة جهة إتصال</string>
-  <string name="shared_by_format">تمت المشاركة بواسطة %s</string>
-  <string name="sharing_status">حالة المشاركة</string>
-  <string name="shared_with">تمت المشاركة مع %1$d (%2$d متصل)</string>
-  <string name="nobody">لا أحد</string>
   
   <string name="read_more">قراءة المزيد</string>
 

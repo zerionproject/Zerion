@@ -3,9 +3,9 @@ package com.professor.zerion.android;
 import android.app.Activity;
 import android.content.Intent;
 
-import org.briarproject.bramble.api.account.AccountManager;
-import org.briarproject.bramble.api.lifecycle.LifecycleManager;
-import org.briarproject.bramble.api.settings.SettingsManager;
+import org.zerionproject.core.api.account.AccountManager;
+import org.zerionproject.core.api.lifecycle.LifecycleManager;
+import org.zerionproject.core.api.settings.SettingsManager;
 import com.professor.zerion.R;
 import org.briarproject.nullsafety.NotNullByDefault;
 import org.junit.ClassRule;

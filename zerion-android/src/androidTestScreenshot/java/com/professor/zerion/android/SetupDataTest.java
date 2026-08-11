@@ -2,8 +2,8 @@ package com.professor.zerion.android;
 
 import android.content.Context;
 
-import org.briarproject.bramble.api.contact.Contact;
-import org.briarproject.bramble.api.db.DbException;
+import org.zerionproject.core.api.contact.Contact;
+import org.zerionproject.core.api.db.DbException;
 import com.professor.zerion.R;
 import com.professor.zerion.android.account.SetupActivity;
 import org.junit.Rule;
@@ -27,8 +27,8 @@ import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 import static org.briarproject.android.dontkillmelib.DozeUtils.needsDozeWhitelisting;
-import static org.briarproject.bramble.api.plugin.LanTcpConstants.ID;
-import static org.briarproject.briar.android.ViewActions.waitUntilMatches;
+import static org.zerionproject.core.api.plugin.LanTcpConstants.ID;
+import static org.zerionproject.app.android.ViewActions.waitUntilMatches;
 import static org.hamcrest.Matchers.allOf;
 import static org.junit.Assert.assertTrue;
 

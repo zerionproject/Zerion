@@ -81,7 +81,7 @@
 			android:background="@drawable/bg_donation_url"
 			android:paddingHorizontal="14dp"
 			android:paddingVertical="12dp"
-			android:fontFamily="monospace"
+			android:fontFamily="@font/plex_mono_regular"
 			android:textColor="@color/zerion_primary_accent"
 			android:textIsSelectable="true"
 			android:textSize="13sp"

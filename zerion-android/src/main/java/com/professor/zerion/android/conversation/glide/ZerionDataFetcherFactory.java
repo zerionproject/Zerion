@@ -1,8 +1,8 @@
 package com.professor.zerion.android.conversation.glide;
 
-import org.briarproject.bramble.api.db.DatabaseExecutor;
-import org.briarproject.briar.api.attachment.AttachmentHeader;
-import org.briarproject.briar.api.attachment.AttachmentReader;
+import org.zerionproject.core.api.db.DatabaseExecutor;
+import org.zerionproject.app.api.attachment.AttachmentHeader;
+import org.zerionproject.app.api.attachment.AttachmentReader;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.concurrent.Executor;

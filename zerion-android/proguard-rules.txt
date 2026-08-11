@@ -1,4 +1,4 @@
-# Android defaults and rules from ../bramble-android/proguard-rules.txt are also applied
+# Android defaults and rules from ../zerion-core-android/proguard-rules.txt are also applied
 
 # ============================================================================
 # F-DROID REPRODUCIBLE BUILD SUPPORT
@@ -8,8 +8,8 @@
 # Use deterministic source file attribute (removes non-deterministic R8 map ID)
 -renamesourcefileattribute SourceFile
 
-# Ensure deterministic class member ordering
--keepattributes SourceFile,LineNumberTable
+# Keep the deterministic renamed SourceFile only; drop LineNumberTable in release
+-keepattributes SourceFile
 
 # ============================================================================
 # SECURITY HARDENING
@@ -154,7 +154,8 @@
 -dontwarn org.conscrypt.Conscrypt
 
 # HTML sanitiser
--keep class org.jsoup.safety.Whitelist
+-keep class org.jsoup.safety.Safelist
+-dontwarn org.jsoup.**
 
 # KeyboardAwareLinearLayout uses reflection on android.View
 -dontnote org.thoughtcrime.securesms.components.KeyboardAwareLinearLayout
@@ -180,11 +181,11 @@
 -dontwarn org.bouncycastle.**
 
 # Keep Zerion crypto classes that interact with BouncyCastle
--keep class org.briarproject.bramble.crypto.** { *; }
--keep class org.briarproject.bramble.api.crypto.** { *; }
+-keep class org.zerionproject.core.crypto.** { *; }
+-keep class org.zerionproject.core.api.crypto.** { *; }
 
 # ============================================================================
-# JDBC INTERFACES (used by bramble-android SQLCipher adapter)
+# JDBC INTERFACES (used by zerion-core-android SQLCipher adapter)
 # ============================================================================
 # SqlCipherConnection/Statement/PreparedStatement/ResultSet implement
 # java.sql interfaces. Keep them to prevent R8 from stripping or renaming.
@@ -193,13 +194,15 @@
 -keepnames class * implements java.sql.Driver
 
 # ============================================================================
-# BRAMBLE CORE CLASSES
+# ZERION FRAMEWORK CLASSES
 # ============================================================================
-# Keep all Bramble framework interfaces and implementations
--keep class org.briarproject.bramble.** { *; }
--keep class org.briarproject.briar.** { *; }
--keep interface org.briarproject.bramble.** { *; }
--keep interface org.briarproject.briar.** { *; }
+# The framework is loaded partly by reflection (Class.forName for the JDBC
+# driver, JCA SPIs, service lookups, plugin factories), so keep it intact. The
+# module rename spread the framework across org.zerionproject.core, .app,
+# .transport (Tor/I2P/mesh/LAN plugins), .crypto, .wire, .handshake, .message
+# and .sync; keep the whole namespace so no rename-orphan is exposed to R8.
+-keep class org.zerionproject.** { *; }
+-keep interface org.zerionproject.** { *; }
 
 # ============================================================================
 # Dead clearnet TCP plugins (not registered in PluginConfig — Tor-only)
@@ -207,13 +210,31 @@
 # R8 minification with minifyEnabled=true automatically strips unreferenced
 # classes. No explicit rules needed — these classes have zero references.
 
-# Keep all Zerion Android classes
--keep class com.professor.zerion.** { *; }
+# Zerion Android app layer is now obfuscated (vault, security, panic, mesh,
+# conversation, etc.). Manifest components, Dagger @Inject members, ViewModel
+# and View(AttributeSet) constructors, and Parcelable CREATORs are preserved
+# by the generic rules earlier in this file. The remaining reflective app-code
+# surfaces are kept explicitly below:
+#
+# ApkSignaturePin subclasses are instantiated via getConstructor().newInstance()
+# in TrustedIntents (panic-responder signer verification); keep their no-arg
+# constructors (class may still be renamed).
+-keep class info.guardianproject.trustedintents.ApkSignaturePin
+-keepclassmembers class * extends info.guardianproject.trustedintents.ApkSignaturePin {
+    <init>();
+}
+# Enum constant names are persisted via name()/valueOf across Parcel/DB/Intent
+# boundaries (e.g. AttachmentItem.State); keep constant names for app enums.
+-keepclassmembers enum com.professor.zerion.** {
+    <fields>;
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
 
 # Keep eager singletons that are loaded at startup
--keep class org.briarproject.bramble.BrambleCoreEagerSingletons { *; }
--keep class org.briarproject.bramble.BrambleAndroidEagerSingletons { *; }
--keep class org.briarproject.briar.BriarCoreEagerSingletons { *; }
+-keep class org.zerionproject.core.BrambleCoreEagerSingletons { *; }
+-keep class org.zerionproject.core.BrambleAndroidEagerSingletons { *; }
+-keep class org.zerionproject.app.BriarCoreEagerSingletons { *; }
 
 # ============================================================================
 # ED25519 / CURVE25519 CRYPTOGRAPHY
@@ -221,6 +242,51 @@
 # These are loaded via reflection
 -keep class net.i2p.crypto.eddsa.** { *; }
 -keep class org.whispersystems.curve25519.** { *; }
+
+# ============================================================================
+# SECURERANDOM JCA PROVIDER (registered by name, instantiated via reflection)
+# ============================================================================
+# UnixSecureRandomSpi is registered as "SecureRandom.SHA1PRNG" and instantiated
+# reflectively by the JCA on new SecureRandom(). Without this keep, R8 strips its
+# constructor in release, the JCA falls back to another provider, and
+# CryptoComponentImpl aborts startup with a wrong-provider SecurityException.
+-keep class org.zerionproject.core.system.UnixSecureRandomSpi { *; }
+-keep class * extends java.security.SecureRandomSpi { *; }
+
+# ============================================================================
+# EMBEDDED I2P ROUTER (net.i2p, shaded module)
+# ============================================================================
+# The bundled router loads its components dynamically (Class.forName, service
+# lookups, system properties), so the whole net.i2p tree and its relocated
+# dependencies must be kept intact in the minified release build.
+-keep class net.i2p.** { *; }
+-keep interface net.i2p.** { *; }
+-keep class org.zerionproject.i2pshaded.** { *; }
+-keep interface org.zerionproject.i2pshaded.** { *; }
+-dontwarn net.i2p.**
+-dontwarn org.zerionproject.i2pshaded.**
+
+# net.i2p:router bundles these libraries under their ORIGINAL package names
+# (only bouncycastle + eddsa are relocated into i2pshaded). Under R8 full mode
+# they are optimized and the router breaks - e.g. the gnu.crypto Fortuna PRNG
+# fill thread is mangled and nextBytes throws "Random is shut down", killing the
+# key-precalc thread so the router never reaches running and I2P stays
+# connecting. com.southernstorm is the NTCP2 Noise protocol. Keep them intact.
+-keep class gnu.** { *; }
+-keep class freenet.** { *; }
+-keep class net.freehaven.** { *; }
+-keep class com.southernstorm.** { *; }
+-keep class com.nettgryppa.** { *; }
+-keep class org.cybergarage.** { *; }
+-keep class org.freenetproject.** { *; }
+-keep class org.minidns.** { *; }
+-keep class org.xlattice.** { *; }
+-keep class com.maxmind.** { *; }
+-dontwarn gnu.**
+-dontwarn freenet.**
+-dontwarn com.southernstorm.**
+-dontwarn org.cybergarage.**
+-dontwarn org.minidns.**
 
 # ============================================================================
 # LOGGING SWEEP — strip all logging from release APK
@@ -253,3 +319,9 @@
     public static *** e(...);
     public static *** wtf(...);
 }
+# The embedded I2P router ships its own logger (net.i2p.util.Log). It is muted
+# at runtime by logger.defaultLevel=CRIT + logRotationLimit=0 in BundledI2pRouter,
+# so no router/transport metadata is written on device. Do NOT add
+# -assumenosideeffects for net.i2p.util.Log: R8 then deletes those call sites and
+# the router's logging is not cleanly side-effect-free, which breaks router
+# startup (I2P never reaches running) in the minified release build.

@@ -1,12 +1,12 @@
 package com.professor.zerion.android.attachment;
 
-import org.briarproject.bramble.api.UniqueId;
-import org.briarproject.bramble.api.sync.GroupId;
-import org.briarproject.bramble.api.sync.MessageId;
+import org.zerionproject.core.api.UniqueId;
+import org.zerionproject.core.api.sync.GroupId;
+import org.zerionproject.core.api.sync.MessageId;
 import com.professor.zerion.android.attachment.media.ImageHelper;
 import com.professor.zerion.android.attachment.media.ImageSizeCalculator;
-import org.briarproject.briar.api.attachment.Attachment;
-import org.briarproject.briar.api.attachment.AttachmentHeader;
+import org.zerionproject.app.api.attachment.Attachment;
+import org.zerionproject.app.api.attachment.AttachmentHeader;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 

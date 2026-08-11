@@ -7,7 +7,7 @@ import android.view.MenuItem;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
 
-import org.briarproject.bramble.api.contact.PendingContactId;
+import org.zerionproject.core.api.contact.PendingContactId;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
@@ -26,7 +26,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import static com.google.android.material.snackbar.Snackbar.LENGTH_INDEFINITE;
-import static org.briarproject.bramble.api.contact.PendingContactState.FAILED;
+import static org.zerionproject.core.api.contact.PendingContactState.FAILED;
 import static com.professor.zerion.android.contact.add.remote.PendingContactItem.POLL_DURATION_MS;
 
 @MethodsNotNullByDefault
@@ -65,6 +65,9 @@ public class PendingContactListActivity extends ZerionActivity
 				.observe(this, this::onPendingContactsChanged);
 		viewModel.getHasInternetConnection()
 				.observe(this, this::onInternetConnectionChanged);
+		viewModel.getAlreadyContact().observeEvent(this, x ->
+				Snackbar.make(list, R.string.contact_already_exists_general,
+						Snackbar.LENGTH_LONG).show());
 
 		adapter = new PendingContactListAdapter(this, this,
 				PendingContactItem.class);

@@ -5,14 +5,14 @@ import com.vanniktech.emoji.EmojiUtils;
 import com.vanniktech.emoji.RecentEmoji;
 import com.vanniktech.emoji.emoji.Emoji;
 
-import org.briarproject.bramble.api.db.DatabaseExecutor;
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.db.Transaction;
-import org.briarproject.bramble.api.lifecycle.LifecycleManager.OpenDatabaseHook;
-import org.briarproject.bramble.api.settings.Settings;
-import org.briarproject.bramble.api.settings.SettingsManager;
-import org.briarproject.bramble.api.system.AndroidExecutor;
-import org.briarproject.bramble.util.StringUtils;
+import org.zerionproject.core.api.db.DatabaseExecutor;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.db.Transaction;
+import org.zerionproject.core.api.lifecycle.LifecycleManager.OpenDatabaseHook;
+import org.zerionproject.core.api.settings.Settings;
+import org.zerionproject.core.api.settings.SettingsManager;
+import org.zerionproject.core.api.system.AndroidExecutor;
+import org.zerionproject.core.util.StringUtils;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 

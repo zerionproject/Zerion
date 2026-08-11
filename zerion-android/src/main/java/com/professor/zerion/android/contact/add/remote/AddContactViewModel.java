@@ -2,17 +2,17 @@ package com.professor.zerion.android.contact.add.remote;
 
 import android.app.Application;
 
-import org.briarproject.bramble.api.FormatException;
-import org.briarproject.bramble.api.UnsupportedVersionException;
-import org.briarproject.bramble.api.contact.ContactManager;
-import org.briarproject.bramble.api.contact.ContactType;
-import org.briarproject.bramble.api.contact.PendingContact;
-import org.briarproject.bramble.api.db.DatabaseExecutor;
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.db.NoSuchPendingContactException;
-import org.briarproject.bramble.api.db.TransactionManager;
-import org.briarproject.bramble.api.lifecycle.LifecycleManager;
-import org.briarproject.bramble.api.system.AndroidExecutor;
+import org.zerionproject.core.api.FormatException;
+import org.zerionproject.core.api.UnsupportedVersionException;
+import org.zerionproject.core.api.contact.ContactManager;
+import org.zerionproject.core.api.contact.ContactType;
+import org.zerionproject.core.api.contact.PendingContact;
+import org.zerionproject.core.api.db.DatabaseExecutor;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.db.NoSuchPendingContactException;
+import org.zerionproject.core.api.db.TransactionManager;
+import org.zerionproject.core.api.lifecycle.LifecycleManager;
+import org.zerionproject.core.api.system.AndroidExecutor;
 import com.professor.zerion.android.viewmodel.DbViewModel;
 import com.professor.zerion.android.viewmodel.LiveEvent;
 import com.professor.zerion.android.viewmodel.LiveResult;
@@ -28,7 +28,7 @@ import androidx.annotation.Nullable;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
-import static org.briarproject.bramble.api.contact.HandshakeLinkConstants.LINK_REGEX;
+import static org.zerionproject.core.api.contact.HandshakeLinkConstants.LINK_REGEX;
 
 @NotNullByDefault
 public class AddContactViewModel extends DbViewModel {

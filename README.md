@@ -10,7 +10,7 @@ Zerion is a secure messaging app and encrypted vault designed for people who nee
 
 Unlike traditional messengers, Zerion uses no servers, no accounts, no phone numbers, and no cloud services. All communication flows directly between devices using the Tor network, protecting users from surveillance, metadata collection, and IP exposure.
 
-Hybrid post-quantum cryptography protects **every message** (Mode 3-Full: a per-frame ML-KEM-768 encapsulation mixed into the body AEAD key), with post-compromise security via the Triple Ratchet, a hardware-backed vault, and anti-forensics features. Traffic recorded today stays safe against future quantum computers.
+With hybrid post-quantum cryptography on **every message** (Mode 3-Full: per-frame ML-KEM-768 encapsulation mixed into the body AEAD key), post-compromise security via the Triple Ratchet, hardware-backed vault protection, and advanced anti-forensics features, Zerion provides strong security even against sophisticated adversaries - including "harvest now, decrypt later" attacks by future quantum adversaries.
 
 ---
 
@@ -25,12 +25,12 @@ Hybrid post-quantum cryptography protects **every message** (Mode 3-Full: a per-
 - **Encrypted Vault** for passwords, documents, media, and notes
 - **Channels** - one-to-many broadcast (public or private) with optional discussion threads, reactions, and editor delegations
 - **Post-quantum hardened end-to-end** - Hybrid ML-KEM-768 + X25519 at handshake, introductions, and on every transport frame; ML-DSA-65 + Ed25519 on every signed record
-- **Zerion-only** - Purpose-built for Zerion-to-Zerion communication
+- **Zerion-only** - Purpose-built for Zerion-to-Zerion communication with maximum security
 - **Downgrade attack protection** - PQ contacts stay PQ-secure forever
 - **Anti-forensics protection** against mobile extraction tools
 - **Open-source and auditable**
 
-**Zerion collects zero personal data. Not by policy, but by cryptographic design.**
+**Zerion collects zero personal data. Not by policy - by cryptographic design.**
 
 ---
 
@@ -67,7 +67,7 @@ No STUN, no TURN, no VoIP servers - just private communication between devices.
 
 ### Channels
 
-A one-to-many broadcast layer - one person writes, many people read - over the same Tor pull-mesh as everything else. There is no central server holding posts or the subscriber list.
+A one-to-many broadcast layer (one person writes, many people read) served from the publisher's own Tor onion. Subscribers pull posts directly over Tor and verify their signatures. There is no central server holding posts or the subscriber list.
 
 - **Public channels**: anyone with the invite link can subscribe
 - **Private channels**: subscribers request to join and the owner approves
@@ -110,7 +110,13 @@ APK signing fingerprint: D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6
 
 ## Changelog
 
-**v2.0.7 (Latest, July 2026):**
+**v3.0 (in development):**
+- A network protocol written in-house: fixed-size 4096-byte frames, constant-rate cover traffic so idle and active connections look identical on the wire, and per-message hybrid post-quantum encryption, all over Tor with no servers
+- Keeps the post-quantum ratchet and the delivery database from the 2.x line
+- Two additional transports are in the tree and under test before release: a Bluetooth offline mesh (message with no internet at all) and an opt-in I2P path; Tor stays mandatory and always on
+- Launching soon; the 2.x line remains the current public release until then
+
+**v2.0.7 (Latest release, July 2026):**
 - Fixes a display bug where the decoy calculator keypad could render blank in portrait on some narrower screens (reported on HyperOS and GrapheneOS). No protocol change, no database upgrade, signing key unchanged
 
 **v2.0.6 (July 2026):**
@@ -240,15 +246,12 @@ APK signing fingerprint: D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6
 
 ## Documentation
 
-- [Technical Whitepaper](docs/ZERION_TECHNICAL_WHITEPAPER.md) - Complete architecture & crypto design
-- [Security Overview](docs/SECURITY_OVERVIEW.md) - Per-version security status and audit notes
-- [PCS Design](docs/PCS_DESIGN.md) - Post-Compromise Security (Triple Ratchet) specification
-- [Ratchet Modes](docs/RATCHET_MODES.md) - Mode 1 / 2 / 3 layered explainer
-- [Triple Ratchet Design](docs/TRIPLE_RATCHET_DESIGN.md) - Mode 3 ML-KEM-768 ratchet specification
-- [Group Triple Ratchet (PQ)](docs/GROUP_TRIPLE_RATCHET_PQ_DESIGN.md) - Hybrid-signed group records
-- [GroupTr Wire Protocol](docs/wire/GROUPTR_WIRE_PROTOCOL.md) - Native group-invite + membership messages
-- [P2P Voice & Video Calls](docs/P2P_Voice_Calls_Documentation.md) - Voice and video calling specification
-- [Channels Wire Protocol](docs/wire/CHANNELS_WIRE_PROTOCOL.md) - Publisher-to-subscriber broadcast pull protocol
+- [Overview](docs/ZERION_OVERVIEW.md): plain-language introduction and how Zerion compares
+- [Technical Whitepaper](docs/ZERION_TECHNICAL_WHITEPAPER.md): full architecture, crypto, transport, vault and anti-forensics
+- [Introduction / pairing signatures](docs/wire/F2_INTRODUCTION_HYBRID_SIG.md): hybrid-signed pairing record spec
+- [Contact-add record placement](docs/wire/B3_RECORD_PLACEMENT.md): hybrid pairing record layout
+- [GroupTr Wire Protocol](docs/wire/GROUPTR_WIRE_PROTOCOL.md): group invite and membership records
+- [Channels Wire Protocol](docs/wire/CHANNELS_WIRE_PROTOCOL.md): publisher-to-subscriber broadcast records
 
 ---
 

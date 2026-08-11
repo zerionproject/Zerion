@@ -38,6 +38,46 @@
 	<string name="settings_section_privacy">PRIVACY</string>
 	<string name="settings_section_emergency_wipe">EMERGENCY WIPE</string>
 	<string name="settings_section_tor_network">TOR NETWORK</string>
+	<string name="settings_section_mode">PRIVACY MODE</string>
+	<string name="offline_mode_title">Offline mode (Paranoia)</string>
+	<string name="offline_mode_summary">Block all internet. Talk only to nearby contacts over mesh</string>
+	<string name="offline_mode_info">Offline mode stops Tor and I2P completely, so the app makes no internet connection at all. You can reach only already-paired contacts who are nearby, over Bluetooth.</string>
+	<string name="offline_mode_confirm_title">Turn on Offline mode?</string>
+	<string name="offline_mode_confirm_message">This blocks all internet: Tor and I2P are stopped and the app makes no network connection. Only nearby, already-paired contacts are reachable, over the offline mesh. Turn off to go back online.</string>
+	<string name="offline_mode_confirm_button">Go offline</string>
+	<string name="network_status_off">Off</string>
+	<string name="offline_mode_transport_off">Stopped in offline mode</string>
+	<string name="offline_mode_banner">Offline mode · internet blocked · mesh only</string>
+	<string name="settings_section_overlay">OVERLAY NETWORKS</string>
+	<string name="i2p_toggle_title">I2P</string>
+	<string name="i2p_toggle_summary">Also route through the I2P network</string>
+	<string name="i2p_info_message">I2P is an alternative anonymity network to Tor, with a router built in. Tor stays on as your baseline; I2P is an optional extra.</string>
+	<string name="i2p_enable_warning_title">Enable I2P?</string>
+	<string name="i2p_enable_warning_message">I2P is a second anonymity network you can use alongside Tor. Your messages stay encrypted, so no one can read what you send or who you talk to. But unlike Tor, I2P does not hide your IP address: your network or internet provider can see that this device uses I2P, only that you use it, never the contents. Tor always stays on. Only enable I2P if it is acceptable for your network to see that you use it.</string>
+	<string name="i2p_enable_warning_confirm">Enable I2P</string>
+	<string name="settings_section_mesh">OFFLINE MESH</string>
+	<string name="mesh_toggle_title">Offline mesh</string>
+	<string name="mesh_toggle_summary">Reach nearby contacts with no internet, over Bluetooth</string>
+	<string name="mesh_info_message">Messages are sealed to the recipient and relayed from device to device. Turning this on requests Bluetooth and nearby-device permissions and broadcasts locally.</string>
+	<string name="mesh_unsupported">Offline mesh needs Android 12 or newer</string>
+	<string name="mesh_permission_denied">Offline mesh needs Bluetooth and nearby-device permissions</string>
+	<string name="via_mesh">via mesh</string>
+	<string name="nearby_pair_card_title">Pair nearby (offline)</string>
+	<string name="nearby_pair_card_description">Add someone right next to you with no internet, over Bluetooth. Scan each other\'s code.</string>
+	<string name="nearby_pairing_title">Add contact nearby</string>
+	<string name="nearby_pairing_hint">Show this code to the other person and scan theirs. No internet needed; keep both phones close.</string>
+	<string name="nearby_pairing_scan">Scan the other phone\'s code</string>
+	<string name="nearby_pairing_connecting">Connecting…</string>
+	<string name="nearby_pairing_exchanging">Exchanging keys…</string>
+	<string name="nearby_pairing_success">Added %1$s</string>
+	<string name="nearby_pairing_failed">Pairing failed. Move the phones closer and try again.</string>
+	<string name="nearby_pairing_no_bluetooth">Bluetooth is unavailable. Pairing works over the local network only.</string>
+	<string name="mesh_status_label">Offline mesh</string>
+	<string name="mesh_status_searching">Active · searching</string>
+	<plurals name="mesh_status_active">
+		<item quantity="one">Active · %d device in range</item>
+		<item quantity="other">Active · %d devices in range</item>
+	</plurals>
 	<string name="settings_section_alerts">ALERTS</string>
 	<string name="settings_section_sounds_vibration">SOUNDS &amp; VIBRATION</string>
 	<string name="settings_section_appearance">APPEARANCE</string>
@@ -52,6 +92,10 @@
 	<string name="settings_my_identity_summary">View your fingerprint to share with new contacts</string>
 	<string name="conversation_subtitle_encrypted">End-to-end encrypted</string>
 	<string name="conversation_subtitle_online">Online · End-to-end encrypted</string>
+	<string name="conversation_subtitle_online_tor">Online via Tor · End-to-end encrypted</string>
+	<string name="conversation_subtitle_online_mesh">Online via mesh · End-to-end encrypted</string>
+	<string name="conversation_subtitle_online_i2p">Online via I2P · End-to-end encrypted</string>
+	<string name="conversation_subtitle_online_both">Online via Tor + I2P · End-to-end encrypted</string>
 	<string name="unlock_subtitle">Use your fingerprint or device credentials</string>
 	<string name="splash_tagline">Private messaging over Tor</string>
 	<string name="setup_step_indicator">Step %1$d of %2$d</string>
@@ -91,15 +135,15 @@
 	<string name="vault_settings_section_security">SECURITY</string>
 	<string name="vault_settings_section_privacy">PRIVACY</string>
 	<string name="vault_settings_section_data">DATA</string>
-	<string name="vault_settings_change_master">Change Master Password</string>
+	<string name="vault_settings_change_master">Change master password</string>
 	<string name="vault_settings_change_master_summary">Update your vault password</string>
-	<string name="vault_settings_autolock">Auto-lock Timeout</string>
-	<string name="vault_settings_biometric">Biometric Unlock</string>
+	<string name="vault_settings_autolock">Auto-lock timeout</string>
+	<string name="vault_settings_biometric">Biometric unlock</string>
 	<string name="vault_settings_biometric_summary">Use fingerprint or face unlock</string>
-	<string name="vault_settings_clear_clipboard">Clear Clipboard After</string>
-	<string name="vault_settings_hide_content">Hide Content in App Switcher</string>
+	<string name="vault_settings_clear_clipboard">Clear clipboard after</string>
+	<string name="vault_settings_hide_content">Hide content in app switcher</string>
 	<string name="vault_settings_hide_content_summary">Blur vault content when switching apps</string>
-	<string name="vault_settings_export">Export Vault</string>
+	<string name="vault_settings_export">Export vault</string>
 	<string name="vault_settings_export_summary">Create encrypted backup</string>
 	<string name="vault_settings_wipe">Wipe Vault</string>
 	<string name="vault_settings_wipe_summary">Permanently delete all data</string>
@@ -131,8 +175,6 @@
 	<string name="test_data_contacts_label">Number of contacts</string>
 	<string name="test_data_messages_label">Number of messages per contact</string>
 	<string name="test_data_avatars_label">Percentage of contacts with profile pictures</string>
-	<string name="test_data_groups_label">Number of private groups</string>
-	<string name="test_data_group_messages_label">Number of private group messages</string>
 	<string name="test_data_zero_values">Zero values</string>
 	<string name="test_data_create">Create test data</string>
 	<plurals name="text_editor_word_count">
@@ -145,7 +187,7 @@
 	<string name="vault_password_field_password">Password</string>
 	<string name="vault_password_field_website">Website</string>
 	<string name="vault_password_field_notes">Notes</string>
-	<string name="vault_password_generate_strong">Generate Strong Password</string>
+	<string name="vault_password_generate_strong">Generate strong password</string>
 	<string name="secure_note_extra_security">Extra Security</string>
 	<string name="secure_note_add_password">Add password to this note</string>
 	<string name="secure_note_save">Save</string>
@@ -156,7 +198,7 @@
 	<string name="dnkm_doze_title">Background Connections</string>
 	<string name="dnkm_doze_intro">To receive messages, Zerion needs to stay connected in the background.</string>
 	<string name="dnkm_doze_explanation">To receive messages, Zerion needs to stay connected in the background. Please disable battery optimizations so Zerion can stay connected.</string>
-	<string name="dnkm_doze_button">Allow Connections</string>
+	<string name="dnkm_doze_button">Allow connections</string>
 	<string name="choose_nickname">Choose your nickname</string>
 	<string name="choose_password">Choose your password</string>
 	<string name="confirm_password">Confirm your password</string>
@@ -167,7 +209,7 @@
 	<string name="password_quite_strong">Password is okay</string>
 	<string name="password_strong">Password is strong</string>
 	<string name="passwords_do_not_match">Passwords do not match</string>
-	<string name="create_account_button">Create Account</string>
+	<string name="create_account_button">Create account</string>
 	<string name="setup_failed_title">Setup Failed</string>
 	<string name="setup_failed_message">Something went wrong. Please try again.</string>
 	<string name="setup_failed_retry">Retry</string>
@@ -185,11 +227,11 @@
 	<string name="dnkm_xiaomi_dialog_body_old">1. Open the recent apps list (also called the app switcher)\n\n2. Swipe down on the image of Zerion to show the padlock icon\n\n3. If the padlock is not locked, tap to lock it</string>
 	<string name="dnkm_xiaomi_dialog_body_new">1. Open the recent apps list (also called the app switcher)\n\n2. If Zerion has a small image of a padlock next to its name then you don\'t need to do anything\n\n3. If there\'s no padlock, press and hold the image of Zerion until the padlock button appears, then tap it</string>
 	<string name="dnkm_xiaomi_lock_apps_text">Please tap the button below to open the security settings. Tap \"Boost speed\", then tap \"Lock apps\", and make sure Zerion is set to \"Locked\".</string>
-	<string name="dnkm_xiaomi_lock_apps_button">Open Security Settings</string>
+	<string name="dnkm_xiaomi_lock_apps_button">Open security settings</string>
 	<string name="dnkm_xiaomi_lock_apps_help">If Zerion is not set to \"Locked\" in the \"Lock apps\" screen, it will be unable to run in the background.</string>
 	<string name="dnkm_xiaomi_lock_apps_error_toast">Could not open security settings</string>
 	<string name="dnkm_huawei_protected_error_toast">Could not open protected apps settings</string>
-	<string name="dnkm_huawei_app_launch_button">Open App Launch Settings</string>
+	<string name="dnkm_huawei_app_launch_button">Open app launch settings</string>
 	<string name="dnkm_huawei_app_launch_error_toast">Could not open app launch settings</string>
 	<string name="dnkm_warning_dozed_1">Zerion was unable to run in the background</string>
 
@@ -240,7 +282,7 @@
 	<string name="expired_redirect_url" translatable="false">https://zerion.chat</string>
 	<string name="old_android_expiry_date_reached">Zerion no longer runs on Android 4.\nPlease install Zerion on a newer device.</string>
 	<string name="old_android_delete_account">You can tap the button below to delete your account from this device.</string>
-	<string name="delete_account_button">Delete Account</string>
+	<string name="delete_account_button">Delete account</string>
 	<string name="startup_open_database">Decrypting Database…</string>
 	<string name="startup_migrate_database">Upgrading Database…</string>
 	<string name="startup_compact_database">Compacting Database…</string>
@@ -249,6 +291,10 @@
 	<string name="nav_drawer_open_description">Open the navigation drawer</string>
 	<string name="nav_drawer_close_description">Close the navigation drawer</string>
 	<string name="contact_list_button">Contacts</string>
+	<string name="chats_button">Chats</string>
+	<string name="chat_type_group">Group</string>
+	<string name="chat_type_channel">Channel</string>
+	<string name="no_chats">No conversations yet</string>
 	<string name="groups_button">Private Groups</string>
 	<string name="groups_button_add">Add new group</string>
 	<string name="channels_button">Channels</string>
@@ -432,6 +478,12 @@
 
 	<!-- Transports: Tor -->
 	<string name="transport_tor">Internet</string>
+	<string name="transport_i2p">I2P</string>
+	<string name="network_i2p_subtitle">Invisible Internet Project</string>
+	<string name="internet_status_label">Connectivity</string>
+	<string name="i2p_enable_title">Enable I2P</string>
+	<string name="i2p_enable_summary">Also connect over the Invisible Internet Project, a separate anonymity network. Tor and I2P can run at the same time.</string>
+	<string name="i2p_device_status">Requires an I2P router</string>
 	<string name="tor_device_status_online_wifi">Your phone has Internet access via Wi-Fi</string>
 	<string name="tor_device_status_online_mobile">Your phone has Internet access via mobile data</string>
 	<string name="tor_device_status_offline">Your phone does not have Internet access</string>
@@ -461,7 +513,7 @@
 	<string name="network_status_label">Status:</string>
 	<string name="network_uptime_label">Uptime:</string>
 	<string name="network_hidden_service_label">Hidden Service:</string>
-	<string name="network_mode_title">Secure Network Mode</string>
+	<string name="network_mode_title">Secure network mode</string>
 	<string name="network_mode_description">All communication is routed through the Tor network for maximum privacy and security. Your connection is encrypted end-to-end and your identity remains anonymous.</string>
 
 	<!-- Notifications -->
@@ -513,9 +565,9 @@
 	<!-- Vault -->
 	<string name="vault_note_title_hint">Note Title</string>
 	<string name="vault_note_content_hint">Enter your secure note here...</string>
-	<string name="vault_delete_note">Delete Note</string>
+	<string name="vault_delete_note">Delete note</string>
 	<string name="vault_delete_confirm_message">Are you sure you want to delete this note? This action cannot be undone.</string>
-	<string name="vault_save_note">Save Note</string>
+	<string name="vault_save_note">Save note</string>
 	<string name="vault_lock_note">Password Protect</string>
 	<string name="vault_note_password_hint">Note Password (optional)</string>
 	<string name="vault_progress_saving">Saving...</string>
@@ -620,7 +672,7 @@
 	<string name="no_data">No data</string>
 	<string name="ellipsis">…</string>
 	<string name="text_too_long">The entered text is too long</string>
-	<string name="show_onboarding">Show Help Dialog</string>
+	<string name="show_onboarding">Show help dialog</string>
 	<string name="fix">Fix</string>
 	<string name="help">Help</string>
 	<string name="sorry">Sorry</string>
@@ -793,14 +845,14 @@
 	<string name="no_images">No images shared yet</string>
 	<string name="no_documents">No documents shared yet</string>
 	<string name="chat_settings">Chat Settings</string>
-	<string name="clear_chat">Clear Chat</string>
-	<string name="clear_chat_dialog_title">Clear Chat History?</string>
+	<string name="clear_chat">Clear chat</string>
+	<string name="clear_chat_dialog_title">Clear chat history?</string>
 	<string name="clear_chat_dialog_message">All messages in this conversation will be permanently deleted. This action cannot be undone.</string>
 	<string name="clear_chat_success">Chat cleared successfully</string>
 	<string name="delete_failed">Failed to delete messages</string>
 	<string name="group_clear_not_supported">Group messages cannot be individually deleted due to Zerion\'s protocol design</string>
 	<string name="group_attachments_not_supported">Attachments are not yet supported in group chats. You can send photos and videos in 1:1 conversations.</string>
-	<string name="block_user">Block User</string>
+	<string name="block_user">Block user</string>
 	<string name="sound_and_notifications">Sound &amp; Notifications</string>
 	<string name="mute_notifications">Mute Notifications</string>
 	<string name="vibration">Vibration</string>
@@ -868,7 +920,7 @@
 	<!-- This is shown in the action bar when opening an image in fullscreen that the user sent -->
 	<string name="you">You</string>
 	<string name="save_image">Save image</string>
-	<string name="dialog_title_save_image">Save Image?</string>
+	<string name="dialog_title_save_image">Save image?</string>
 	<string name="dialog_message_save_image">Saving this image will allow other apps to access it.\n\nAre you sure you want to save?</string>
 	<string name="save_image_success">Image was saved</string>
 	<string name="save_image_error">Could not save image</string>
@@ -881,7 +933,7 @@
 
 	<!-- Adding Contacts -->
 
-	<string name="add_contact_title">Add Contact Nearby</string>
+	<string name="add_contact_title">Add contact nearby</string>
 	<string name="add_contact_error_two_way">Did both contacts complete the exchange?</string>
 	<string name="continue_button">Continue</string>
 	<string name="try_again_button">Try Again</string>
@@ -935,7 +987,7 @@
 
 	<!-- Adding Contacts Remotely -->
 
-	<string name="add_contact_remotely_title_case">Add Contact</string>
+	<string name="add_contact_remotely_title_case">Add contact</string>
 	<string name="add_contact_nearby_title">Add contact nearby</string>
 	<string name="add_contact_remotely_title">Add contact at a distance</string>
 	<string name="contact_link_intro">Enter the link from your contact here</string>
@@ -949,7 +1001,7 @@
 	<string name="copy_button">Copy</string>
 	<string name="share_button">Share</string>
 	<string name="send_link_title">Exchange links</string>
-	<string name="add_contact_choose_nickname">Choose Nickname</string>
+	<string name="add_contact_choose_nickname">Choose nickname</string>
 	<string name="add_contact_choose_a_nickname">Enter a nickname</string>
 	<string name="nickname_intro">Give your contact a nickname. Only you can see it.</string>
 	<string name="your_link">Give this link to the contact you want to add</string>
@@ -1009,7 +1061,7 @@
 	<string name="introduction_onboarding_title">Introduce your contacts</string>
 	<string name="introduction_onboarding_text">Introduce your contacts to each other so they can connect on Zerion.</string>
 	<string name="introduction_menu_item">Make Introduction</string>
-	<string name="introduction_activity_title">Select Contact</string>
+	<string name="introduction_activity_title">Select contact</string>
 	<string name="introduction_not_possible">You already have one introduction in progress with these contacts. Please allow for this to finish first. If you or your contacts are rarely online, this can take some time.</string>
 	<string name="introduction_message_title">Introduce Contacts</string>
 	<string name="introduction_message_hint">Add a message (optional)</string>
@@ -1040,9 +1092,9 @@
 	<string name="groups_group_is_empty">This group is empty</string>
 	<string name="groups_group_is_dissolved">This group has been dissolved</string>
 	<string name="groups_remove">Remove</string>
-	<string name="groups_create_group_title">Create Private Group</string>
-	<string name="groups_create_group_button">Create Group</string>
-	<string name="groups_create_group_invitation_button">Send Invitation</string>
+	<string name="groups_create_group_title">Create private group</string>
+	<string name="groups_create_group_button">Create group</string>
+	<string name="groups_create_group_invitation_button">Send invitation</string>
 	<string name="groups_create_group_hint">Choose a name for your private group</string>
 	<string name="groups_invitation_sent">Group invitation has been sent</string>
 	<string name="groups_member_list">Member List</string>
@@ -1091,13 +1143,6 @@
 	<string name="share_message">Share with a message</string>
 	<string name="share_hint_short">Add a message (optional)</string>
 	<string name="invitation_exists">Invitation already sent</string>
-	<string name="invitation_already_sharing">Already sharing</string>
-	<string name="new_message_hint">New Post</string>
-	<string name="message_reply_hint">New Reply</string>
-	<string name="invitation_already_invited">Invitation already sent</string>
-	<string name="invitation_invite_received">Invitation already received</string>
-	<string name="invitation_not_supported">Not supported by this contact</string>
-	<string name="invitation_error">Error. This is a bug and not your fault</string>
 	<plurals name="posts">
 		<item quantity="one">%d post</item>
 		<item quantity="other">%d posts</item>
@@ -1106,14 +1151,8 @@
 	<string name="dialog_button_leave">Leave</string>
 
 	<string name="contacts_selected">Contacts selected</string>
-	<string name="activity_share_toolbar_header">Choose Contacts</string>
-	<string name="no_contacts_selector">No contacts to show</string>
-	<string name="no_contacts_selector_action">Please come back here after adding a contact</string>
-	<string name="shared_by_format">Shared by %s</string>
+	<string name="activity_share_toolbar_header">Choose contacts</string>
 
-	<string name="sharing_status">Sharing Status</string>
-	<string name="shared_with">Shared with %1$d (%2$d online)</string>
-	<string name="nobody">Nobody</string>
 
 	<string name="read_more">read more</string>
 
@@ -1134,7 +1173,7 @@
 	<string name="reg_lock_summary_pin">Protected with PIN</string>
 	<string name="reg_lock_summary_password">Protected with password</string>
 	<string name="reg_lock_set_pin">Set PIN (6 digits)</string>
-	<string name="reg_lock_set_password">Set Password</string>
+	<string name="reg_lock_set_password">Set password</string>
 	<string name="reg_lock_enter_pin">Enter PIN</string>
 	<string name="reg_lock_enter_password">Enter Password</string>
 	<string name="reg_lock_confirm">Confirm</string>
@@ -1143,8 +1182,8 @@
 	<string name="reg_lock_mismatch">Entries do not match</string>
 	<string name="reg_lock_enabled">Registration lock enabled</string>
 	<string name="reg_lock_disabled">Registration lock disabled</string>
-	<string name="reg_lock_change">Change Registration Lock</string>
-	<string name="reg_lock_disable">Disable Registration Lock</string>
+	<string name="reg_lock_change">Change registration lock</string>
+	<string name="reg_lock_disable">Disable registration lock</string>
 	<string name="reg_lock_disable_confirm">Are you sure you want to disable Registration Lock?</string>
 	<string name="reg_lock_choose_type">Choose protection type</string>
 	<string name="invite_friends_title">Invite Friends</string>
@@ -1175,6 +1214,13 @@
 	<string name="pref_bubble_color_orange">Orange</string>
 	<string name="pref_bubble_color_pink">Pink</string>
 	<string name="pref_bubble_color_cyan">Cyan</string>
+	<string name="pref_accent_title">Accent Color</string>
+	<string name="pref_accent_cyan">Cyan</string>
+	<string name="pref_accent_violet">Violet</string>
+	<string name="pref_accent_emerald">Emerald</string>
+	<string name="pref_accent_amber">Amber</string>
+	<string name="pref_accent_rose">Rose</string>
+	<string name="pref_accent_blue">Blue</string>
 	<string name="pref_theme_title">Theme</string>
 	<string name="pref_theme_light">Light</string>
 	<!-- ZERION FIX: Changed from "Dark" to "Zerion Dark" for branding -->
@@ -1360,7 +1406,7 @@
 	<string name="panic_setting_destructive_action">Destructive Actions</string>
 	<string name="panic_setting_signout_title">Sign Out</string>
 	<string name="panic_setting_signout_summary">Sign out of Zerion if a panic button is pressed</string>
-	<string name="purge_setting_title">Delete Account</string>
+	<string name="purge_setting_title">Delete account</string>
 	<string name="purge_setting_summary">Delete your Zerion account if a panic button is pressed. Caution: This will permanently delete your identities, contacts and messages</string>
 
 	<!-- Settings Notifications -->
@@ -1378,7 +1424,7 @@
 	<string name="notify_channel_posts_setting_summary_26">Configure alerts for new channel posts and comments</string>
 	<string name="post_update_notice_title">Reconfigure after update</string>
 	<string name="post_update_notice_message">This security update changed how Zerion stores your settings at rest. Your chats, contacts, channels, groups, and vault are intact, but some preferences were reset and need to be set again: decoy mode, the wipe password, notification and security toggles, theme, and language. Open Settings to reconfigure them.</string>
-	<string name="post_update_notice_open_settings">Open Settings</string>
+	<string name="post_update_notice_open_settings">Open settings</string>
 	<string name="nav_profile_content_description">Your profile and account</string>
 	<string name="cd_copy_username">Copy username</string>
 	<string name="cd_copy_password">Copy password</string>
@@ -1517,7 +1563,7 @@
 	<string name="link_warning_title">Link Warning</string>
 	<string name="link_warning_intro">You are about to open the following link with an external app.</string>
 	<string name="link_warning_text">This can be used to identify you. Think about whether you trust the person that sent you this link and consider opening it with Tor Browser.</string>
-	<string name="link_warning_open_link">Open Link</string>
+	<string name="link_warning_open_link">Open link</string>
 
 	<!-- Crash Reporter -->
 	<string name="crash_report_title">Zerion Crash Report</string>
@@ -1613,7 +1659,7 @@
 	<string name="vault_unlock_title">zVault</string>
 	<string name="vault_password_hint">Master password</string>
 	<string name="vault_confirm_password_hint">Confirm password</string>
-	<string name="vault_create_button">Create Vault</string>
+	<string name="vault_create_button">Create vault</string>
 	<string name="vault_unlock_button">Unlock</string>
 	<string name="vault_password_mismatch">Passwords do not match</string>
 	<string name="vault_password_too_short">Password must be at least 8 characters</string>
@@ -1651,8 +1697,8 @@
 	<string name="call_action_decline">Decline call</string>
 	<string name="vault_rate_limit">Too many failed attempts. Please wait %d seconds.</string>
 	<string name="vault_change_password">Change Password</string>
-	<string name="vault_enable_biometric">Enable Biometric Unlock</string>
-	<string name="vault_auto_lock_timeout">Auto-lock Timeout</string>
+	<string name="vault_enable_biometric">Enable biometric unlock</string>
+	<string name="vault_auto_lock_timeout">Auto-lock timeout</string>
 	<string name="vault_select_image">Select Image</string>
 	<string name="vault_select_document">Select Document</string>
 	<string name="vault_export_error">Failed to export item</string>

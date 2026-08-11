@@ -379,12 +379,6 @@
   
   <string name="contacts_selected">Pasirinkti adresatai</string>
   <string name="activity_share_toolbar_header">Pasirinkite adresatus</string>
-  <string name="no_contacts_selector">Nėra rodytinų adresatų</string>
-  <string name="no_contacts_selector_action">Grįžkite čia po to, kai pridėsite adresatą</string>
-  <string name="shared_by_format">Bendrina %s</string>
-  <string name="sharing_status">Bendrinimo būsena</string>
-  <string name="shared_with">Bendrinama su %1$d (Prisijungę: %2$d)</string>
-  <string name="nobody">Niekas</string>
   
   <string name="read_more">skaityti daugiau</string>
 

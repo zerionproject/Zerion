@@ -56,7 +56,7 @@ docs/SECURITY_AUDIT_REPORT.md
 scripts/run-security-audit.*
 
 # Generated Tor binaries (extracted from dependencies during build)
-bramble-android/src/main/jniLibs/
+zerion-core-android/src/main/jniLibs/
 docs-internal/
 
 # Local-only validator / testing harness — keep off the public repo

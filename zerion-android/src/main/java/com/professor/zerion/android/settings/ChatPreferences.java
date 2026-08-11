@@ -16,6 +16,14 @@ public class ChatPreferences {
 	public static final String PREF_TEXT_SIZE = "pref_chat_text_size";
 	public static final String PREF_BUBBLE_COLOR = "pref_bubble_color";
 	public static final String PREF_NAV_SIZE = "pref_nav_size";
+	public static final String PREF_ACCENT = "pref_accent_color";
+
+	public static final int ACCENT_CYAN = 0;
+	public static final int ACCENT_VIOLET = 1;
+	public static final int ACCENT_EMERALD = 2;
+	public static final int ACCENT_AMBER = 3;
+	public static final int ACCENT_ROSE = 4;
+	public static final int ACCENT_BLUE = 5;
 
 	public static final int NAV_COMPACT = 0;
 	public static final int NAV_DEFAULT = 1;
@@ -44,6 +52,15 @@ public class ChatPreferences {
 			R.color.bubble_cyan,
 	};
 
+	private static final int[] ACCENT_COLORS = {
+			R.color.zerion_cyan,
+			R.color.accent_violet,
+			R.color.accent_emerald,
+			R.color.accent_amber,
+			R.color.accent_rose,
+			R.color.accent_blue,
+	};
+
 	public static float getMessageTextSizeSp(Context context) {
 		SharedPreferences prefs = AppModule.getAndroidComponent(context)
 				.securePreferences();
@@ -63,6 +80,40 @@ public class ChatPreferences {
 	public static int getBubbleColor(Context context) {
 		return context.getResources().getColor(getBubbleColorRes(context),
 				context.getTheme());
+	}
+
+	public static int getAccentIndex(Context context) {
+		SharedPreferences prefs = AppModule.getAndroidComponent(context)
+				.securePreferences();
+		int index = prefs.getInt(PREF_ACCENT, ACCENT_CYAN);
+		if (index < 0 || index >= ACCENT_COLORS.length) index = ACCENT_CYAN;
+		return index;
+	}
+
+	public static int getAccentColorRes(Context context) {
+		return ACCENT_COLORS[getAccentIndex(context)];
+	}
+
+	public static int getAccentColor(Context context) {
+		return context.getResources().getColor(getAccentColorRes(context),
+				context.getTheme());
+	}
+
+	public static int getAccentOverlayStyle(Context context) {
+		switch (getAccentIndex(context)) {
+			case ACCENT_VIOLET:
+				return R.style.AccentOverlay_Violet;
+			case ACCENT_EMERALD:
+				return R.style.AccentOverlay_Emerald;
+			case ACCENT_AMBER:
+				return R.style.AccentOverlay_Amber;
+			case ACCENT_ROSE:
+				return R.style.AccentOverlay_Rose;
+			case ACCENT_BLUE:
+				return R.style.AccentOverlay_Blue;
+			default:
+				return 0;
+		}
 	}
 
 	public static int getNavBarHeightDp(Context context) {

@@ -10,13 +10,14 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatImageButton;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.professor.zerion.R;
 import com.professor.zerion.android.util.SafeImageDecoder;
 
-import org.briarproject.briar.api.grouptr.GroupTrBody;
-import org.briarproject.briar.api.grouptr.GroupTrPost;
+import org.zerionproject.app.api.grouptr.GroupTrBody;
+import org.zerionproject.app.api.grouptr.GroupTrPost;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -56,14 +57,43 @@ class GroupTrPostAdapter
 	private final Callback cb;
 	private final List<GroupTrPost> posts = new ArrayList<>();
 
+	private static final java.util.concurrent.Executor DECODE_EXECUTOR =
+			java.util.concurrent.Executors.newFixedThreadPool(2, r -> {
+				Thread t = new Thread(r, "GroupTrDecode");
+				t.setDaemon(true);
+				return t;
+			});
+
 	GroupTrPostAdapter(Callback cb) {
 		this.cb = cb;
 	}
 
 	void setPosts(List<GroupTrPost> newPosts) {
+		List<GroupTrPost> old = new ArrayList<>(posts);
+		DiffUtil.DiffResult diff = DiffUtil.calculateDiff(new DiffUtil.Callback() {
+			@Override
+			public int getOldListSize() {
+				return old.size();
+			}
+
+			@Override
+			public int getNewListSize() {
+				return newPosts.size();
+			}
+
+			@Override
+			public boolean areItemsTheSame(int oldPos, int newPos) {
+				return samePost(old.get(oldPos), newPosts.get(newPos));
+			}
+
+			@Override
+			public boolean areContentsTheSame(int oldPos, int newPos) {
+				return true;
+			}
+		});
 		posts.clear();
 		posts.addAll(newPosts);
-		notifyDataSetChanged();
+		diff.dispatchUpdatesTo(this);
 	}
 
 	void addPost(GroupTrPost p) {
@@ -166,6 +196,8 @@ class GroupTrPostAdapter
 		private final int viewType;
 		@Nullable
 		private ImageView mediaImage;
+		@Nullable
+		private Object imageToken;
 
 		PostHolder(View v, int viewType) {
 			super(v);
@@ -223,12 +255,22 @@ class GroupTrPostAdapter
 			ImageView img = itemView.findViewById(R.id.imageView);
 			TextView time = itemView.findViewById(R.id.imageTime);
 			mediaImage = img;
-			Bitmap bmp = SafeImageDecoder.decode(parsed.payload, 1024);
-			if (bmp != null) img.setImageBitmap(bmp);
 			time.setText(cb.formatTime(p.getTimestamp()));
 			byte[] bytes = parsed.payload;
 			String mime = parsed.mime;
 			img.setOnClickListener(v -> cb.onImageClick(bytes, mime));
+			img.setImageDrawable(null);
+			Object token = new Object();
+			imageToken = token;
+			DECODE_EXECUTOR.execute(() -> {
+				Bitmap bmp = SafeImageDecoder.decode(bytes, 1024);
+				if (bmp == null) return;
+				img.post(() -> {
+					if (imageToken == token && mediaImage == img) {
+						img.setImageBitmap(bmp);
+					}
+				});
+			});
 		}
 
 		private void bindVideo(GroupTrPost p, GroupTrBody.Parsed parsed) {
@@ -247,6 +289,7 @@ class GroupTrPostAdapter
 		}
 
 		void recycle() {
+			imageToken = null;
 			if (mediaImage != null) {
 				mediaImage.setImageDrawable(null);
 				mediaImage = null;

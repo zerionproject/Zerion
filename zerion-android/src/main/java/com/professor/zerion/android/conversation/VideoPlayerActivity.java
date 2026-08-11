@@ -18,11 +18,11 @@ import androidx.media3.common.util.UnstableApi;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.ui.PlayerView;
 
-import org.briarproject.bramble.api.db.DatabaseExecutor;
-import org.briarproject.briar.api.attachment.Attachment;
-import org.briarproject.briar.api.attachment.AttachmentHeader;
-import org.briarproject.briar.api.attachment.AttachmentNotYetAvailableException;
-import org.briarproject.briar.api.attachment.AttachmentReader;
+import org.zerionproject.core.api.db.DatabaseExecutor;
+import org.zerionproject.app.api.attachment.Attachment;
+import org.zerionproject.app.api.attachment.AttachmentHeader;
+import org.zerionproject.app.api.attachment.AttachmentNotYetAvailableException;
+import org.zerionproject.app.api.attachment.AttachmentReader;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 

@@ -1,6 +1,6 @@
 package com.professor.zerion.android.backup;
 
-import org.briarproject.bramble.api.crypto.SecretKey;
+import org.zerionproject.core.api.crypto.SecretKey;
 
 import com.professor.zerion.android.BriarUiTestComponent;
 import com.professor.zerion.android.UiTest;
@@ -53,7 +53,7 @@ public class BackupRoundTripTest extends UiTest {
 			backupManager.importAccount(backup, backupPass.clone(),
 					newPass.clone());
 		} catch (BackupException e) {
-			String why = ((org.briarproject.bramble.account.AndroidAccountManager)
+			String why = ((org.zerionproject.core.account.AndroidAccountManager)
 					accountManager).getLastProfileCreationError();
 			throw new AssertionError("import failed: " + e.reason
 					+ " / cause=" + why, e);

@@ -16,7 +16,7 @@ import android.widget.TextView;
 
 import com.google.android.material.appbar.AppBarLayout;
 
-import org.briarproject.bramble.api.sync.MessageId;
+import org.zerionproject.core.api.sync.MessageId;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;

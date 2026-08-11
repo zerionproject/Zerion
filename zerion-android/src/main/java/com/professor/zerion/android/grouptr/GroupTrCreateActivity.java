@@ -17,9 +17,9 @@ import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
 
-import org.briarproject.bramble.api.lifecycle.IoExecutor;
-import org.briarproject.briar.api.grouptr.GroupTrManager;
-import org.briarproject.briar.api.grouptr.GroupTrState;
+import org.zerionproject.core.api.lifecycle.IoExecutor;
+import org.zerionproject.app.api.grouptr.GroupTrManager;
+import org.zerionproject.app.api.grouptr.GroupTrState;
 
 import android.widget.LinearLayout;
 import android.widget.TextView;

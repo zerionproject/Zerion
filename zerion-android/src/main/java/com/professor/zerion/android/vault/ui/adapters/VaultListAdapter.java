@@ -7,6 +7,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.card.MaterialCardView;
@@ -37,9 +38,39 @@ public class VaultListAdapter extends RecyclerView.Adapter<VaultListAdapter.Vaul
 		this.listener = listener;
 	}
 
-	public void setItems(List<VaultItem> items) {
-		this.items = new ArrayList<>(items);
-		notifyDataSetChanged();
+	public void setItems(List<VaultItem> newItems) {
+		List<VaultItem> old = this.items;
+		List<VaultItem> next = new ArrayList<>(newItems);
+		DiffUtil.DiffResult diff = DiffUtil.calculateDiff(new DiffUtil.Callback() {
+			@Override
+			public int getOldListSize() {
+				return old.size();
+			}
+
+			@Override
+			public int getNewListSize() {
+				return next.size();
+			}
+
+			@Override
+			public boolean areItemsTheSame(int oldPos, int newPos) {
+				return old.get(oldPos).id.equals(next.get(newPos).id);
+			}
+
+			@Override
+			public boolean areContentsTheSame(int oldPos, int newPos) {
+				VaultItem a = old.get(oldPos);
+				VaultItem b = next.get(newPos);
+				return a.name.equals(b.name)
+						&& a.type == b.type
+						&& a.size == b.size
+						&& a.modifiedTimestamp == b.modifiedTimestamp
+						&& a.hasExtraPassword == b.hasExtraPassword
+						&& a.version == b.version;
+			}
+		});
+		this.items = next;
+		diff.dispatchUpdatesTo(this);
 	}
 
 	@NonNull

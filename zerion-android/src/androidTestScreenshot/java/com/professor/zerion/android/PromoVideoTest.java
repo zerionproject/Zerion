@@ -2,11 +2,11 @@ package com.professor.zerion.android;
 
 import android.view.View;
 
-import org.briarproject.bramble.api.Pair;
-import org.briarproject.bramble.api.contact.Contact;
-import org.briarproject.bramble.api.contact.ContactManager;
-import org.briarproject.bramble.api.contact.PendingContact;
-import org.briarproject.bramble.api.contact.PendingContactState;
+import org.zerionproject.core.api.Pair;
+import org.zerionproject.core.api.contact.Contact;
+import org.zerionproject.core.api.contact.ContactManager;
+import org.zerionproject.core.api.contact.PendingContact;
+import org.zerionproject.core.api.contact.PendingContactState;
 import com.professor.zerion.R;
 import com.professor.zerion.android.account.SetupActivity;
 import com.professor.zerion.android.contact.add.remote.PendingContactListActivity;
@@ -40,10 +40,10 @@ import static androidx.test.espresso.matcher.ViewMatchers.withText;
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 import static java.lang.Thread.sleep;
 import static org.briarproject.android.dontkillmelib.DozeUtils.needsDozeWhitelisting;
-import static org.briarproject.bramble.api.plugin.LanTcpConstants.ID;
-import static org.briarproject.briar.android.OverlayTapViewAction.visualClick;
-import static org.briarproject.briar.android.ViewActions.waitFor;
-import static org.briarproject.briar.android.ViewActions.waitUntilMatches;
+import static org.zerionproject.core.api.plugin.LanTcpConstants.ID;
+import static org.zerionproject.app.android.OverlayTapViewAction.visualClick;
+import static org.zerionproject.app.android.ViewActions.waitFor;
+import static org.zerionproject.app.android.ViewActions.waitUntilMatches;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.junit.Assert.assertTrue;
 

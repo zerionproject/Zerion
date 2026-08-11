@@ -35,8 +35,8 @@ import static androidx.customview.view.AbsSavedState.EMPTY_STATE;
 import static androidx.lifecycle.Lifecycle.State.DESTROYED;
 import static com.professor.zerion.android.util.UiUtils.resolveColorAttribute;
 import static com.professor.zerion.android.view.TextSendController.SendState.SENT;
-import static org.briarproject.briar.api.autodelete.AutoDeleteConstants.NO_AUTO_DELETE_TIMER;
-import static org.briarproject.briar.api.messaging.MessagingConstants.MAX_ATTACHMENTS_PER_MESSAGE;
+import static org.zerionproject.app.api.autodelete.AutoDeleteConstants.NO_AUTO_DELETE_TIMER;
+import static org.zerionproject.app.api.messaging.MessagingConstants.MAX_ATTACHMENTS_PER_MESSAGE;
 
 @UiThread
 @NotNullByDefault

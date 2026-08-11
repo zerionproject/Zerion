@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content"
+	android:background="?attr/selectableItemBackground"
+	android:clickable="true"
+	android:focusable="true"
+	android:paddingStart="16dp"
+	android:paddingEnd="16dp"
+	android:paddingTop="12dp"
+	android:paddingBottom="12dp">
+
+	<FrameLayout
+		android:id="@+id/avatarFrame"
+		android:layout_width="52dp"
+		android:layout_height="52dp"
+		app:layout_constraintBottom_toBottomOf="parent"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toTopOf="parent">
+
+		<TextView
+			android:id="@+id/avatarView"
+			android:layout_width="match_parent"
+			android:layout_height="match_parent"
+			android:background="@drawable/bg_chat_avatar"
+			android:gravity="center"
+			android:textColor="#FFFFFF"
+			android:textSize="20sp"
+			android:textStyle="bold"
+			tools:text="A" />
+
+		<com.google.android.material.imageview.ShapeableImageView
+			android:id="@+id/avatarImage"
+			android:layout_width="match_parent"
+			android:layout_height="match_parent"
+			android:scaleType="centerCrop"
+			android:visibility="gone"
+			app:shapeAppearanceOverlay="@style/ShapeAppearance.Zerion.Circle" />
+
+		<View
+			android:id="@+id/presenceDot"
+			android:layout_width="14dp"
+			android:layout_height="14dp"
+			android:layout_gravity="bottom|end"
+			android:background="@drawable/bg_presence_offline"
+			android:visibility="gone"
+			tools:background="@drawable/bg_presence_online"
+			tools:visibility="visible" />
+
+	</FrameLayout>
+
+	<TextView
+		android:id="@+id/nameView"
+		android:layout_width="0dp"
+		android:layout_height="wrap_content"
+		android:layout_marginStart="14dp"
+		android:layout_marginEnd="8dp"
+		android:ellipsize="end"
+		android:maxLines="1"
+		android:textColor="@color/zerion_text_primary"
+		android:textSize="16sp"
+		android:textStyle="bold"
+		app:layout_constraintEnd_toStartOf="@+id/dateView"
+		app:layout_constraintStart_toEndOf="@+id/avatarFrame"
+		app:layout_constraintTop_toTopOf="@+id/avatarFrame"
+		tools:text="Conversation name" />
+
+	<TextView
+		android:id="@+id/dateView"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:textColor="@color/zerion_text_secondary"
+		android:textSize="12sp"
+		app:layout_constraintBaseline_toBaselineOf="@+id/nameView"
+		app:layout_constraintEnd_toEndOf="parent"
+		tools:text="14:32" />
+
+	<ImageView
+		android:id="@+id/pinIcon"
+		android:layout_width="14dp"
+		android:layout_height="14dp"
+		android:layout_marginTop="6dp"
+		android:src="@drawable/ic_pin"
+		android:visibility="gone"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintTop_toBottomOf="@+id/dateView"
+		app:tint="@color/zerion_text_secondary"
+		tools:ignore="ContentDescription"
+		tools:visibility="visible" />
+
+	<TextView
+		android:id="@+id/subtitleView"
+		android:layout_width="0dp"
+		android:layout_height="wrap_content"
+		android:layout_marginStart="14dp"
+		android:layout_marginTop="4dp"
+		android:layout_marginEnd="8dp"
+		android:ellipsize="end"
+		android:maxLines="1"
+		android:textColor="@color/zerion_text_secondary"
+		android:textSize="13sp"
+		app:layout_constraintBottom_toBottomOf="@+id/avatarFrame"
+		app:layout_constraintEnd_toStartOf="@+id/unreadCountView"
+		app:layout_constraintStart_toEndOf="@+id/avatarFrame"
+		app:layout_constraintTop_toBottomOf="@+id/nameView"
+		tools:text="Group" />
+
+	<TextView
+		android:id="@+id/unreadCountView"
+		android:layout_width="wrap_content"
+		android:layout_height="22dp"
+		android:background="@drawable/bg_unread_pill"
+		android:gravity="center"
+		android:minWidth="22dp"
+		android:paddingStart="7dp"
+		android:paddingEnd="7dp"
+		android:textColor="#FFFFFF"
+		android:textSize="12sp"
+		android:textStyle="bold"
+		android:visibility="gone"
+		app:layout_constraintBottom_toBottomOf="@+id/subtitleView"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintTop_toTopOf="@+id/subtitleView"
+		tools:text="3"
+		tools:visibility="visible" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

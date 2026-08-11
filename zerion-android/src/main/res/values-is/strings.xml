@@ -341,12 +341,6 @@
   
   <string name="contacts_selected">Tengiliðir valdir</string>
   <string name="activity_share_toolbar_header">Veldu tengiliði</string>
-  <string name="no_contacts_selector">Engir tengiliðir til að birta</string>
-  <string name="no_contacts_selector_action">Komdu aftur hingað eftir að þú hefur bætt við tengilið</string>
-  <string name="shared_by_format">Deilt af %s</string>
-  <string name="sharing_status">Staða deilingar</string>
-  <string name="shared_with">Deilt með %1$d (%2$d á netinu)</string>
-  <string name="nobody">Enginn</string>
   
   <string name="read_more">lesa meira</string>
 

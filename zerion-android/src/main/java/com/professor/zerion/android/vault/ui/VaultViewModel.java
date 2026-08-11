@@ -24,7 +24,7 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
-import org.briarproject.bramble.api.db.DatabaseExecutor;
+import org.zerionproject.core.api.db.DatabaseExecutor;
 
 @NotNullByDefault
 public class VaultViewModel extends AndroidViewModel {

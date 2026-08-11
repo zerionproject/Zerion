@@ -1,7 +1,7 @@
 package com.professor.zerion.android.conversation;
 
 import com.professor.zerion.android.attachment.AttachmentItem;
-import org.briarproject.briar.api.messaging.PrivateMessageHeader;
+import org.zerionproject.app.api.messaging.PrivateMessageHeader;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.ArrayList;

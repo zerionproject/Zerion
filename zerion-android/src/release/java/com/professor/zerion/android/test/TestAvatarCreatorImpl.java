@@ -1,6 +1,6 @@
 package com.professor.zerion.android.test;
 
-import org.briarproject.briar.api.test.TestAvatarCreator;
+import org.zerionproject.app.api.test.TestAvatarCreator;
 
 import java.io.InputStream;
 

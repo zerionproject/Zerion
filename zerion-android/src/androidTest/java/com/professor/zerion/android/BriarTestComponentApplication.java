@@ -1,8 +1,8 @@
 package com.professor.zerion.android;
 
-import org.briarproject.bramble.BrambleAndroidEagerSingletons;
-import org.briarproject.bramble.BrambleCoreEagerSingletons;
-import org.briarproject.briar.BriarCoreEagerSingletons;
+import org.zerionproject.core.BrambleAndroidEagerSingletons;
+import org.zerionproject.core.BrambleCoreEagerSingletons;
+import org.zerionproject.app.BriarCoreEagerSingletons;
 
 public class BriarTestComponentApplication extends ZerionApplicationImpl {
 

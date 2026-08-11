@@ -1,6 +1,6 @@
 package com.professor.zerion.android;
 
-import org.briarproject.bramble.api.system.AndroidExecutor;
+import org.zerionproject.core.api.system.AndroidExecutor;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;

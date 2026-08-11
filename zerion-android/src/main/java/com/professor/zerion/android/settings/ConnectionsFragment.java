@@ -17,24 +17,31 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 import com.professor.zerion.R;
 
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.lifecycle.IoExecutor;
-import org.briarproject.bramble.plugin.tor.B4OnionRotation;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.lifecycle.IoExecutor;
+import org.zerionproject.core.api.plugin.I2pConstants;
+import org.zerionproject.core.api.plugin.PluginManager;
+import org.zerionproject.core.plugin.tor.B4OnionRotation;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
+
+import com.professor.zerion.android.mesh.MeshController;
+import com.professor.zerion.android.navdrawer.PluginViewModel;
 
 import java.util.concurrent.Executor;
 
 import javax.inject.Inject;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import static com.professor.zerion.android.AppModule.getAndroidComponent;
-import static org.briarproject.bramble.api.plugin.TorConstants.PREF_TOR_CUSTOM_BRIDGES;
-import static org.briarproject.bramble.api.plugin.TorConstants.PREF_TOR_NETWORK;
+import static org.zerionproject.core.api.plugin.TorConstants.PREF_TOR_CUSTOM_BRIDGES;
+import static org.zerionproject.core.api.plugin.TorConstants.PREF_TOR_NETWORK;
 
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
@@ -59,8 +66,30 @@ public class ConnectionsFragment extends Fragment {
 	@IoExecutor
 	Executor ioExecutor;
 
+	@Inject
+	MeshController meshController;
+
+	@Inject
+	PluginManager pluginManager;
+
 	private SettingsViewModel viewModel;
 	private ConnectionsManager connectionsManager;
+	private PluginViewModel pluginViewModel;
+
+	private SwitchMaterial i2pSwitch;
+	private SwitchMaterial meshSwitch;
+	private SwitchMaterial offlineModeSwitch;
+	private boolean enableMeshForOffline = false;
+
+	private final ActivityResultLauncher<String[]> meshPermissionLauncher =
+			registerForActivityResult(new RequestMultiplePermissions(),
+					result -> {
+						boolean allGranted = !result.isEmpty();
+						for (Boolean granted : result.values()) {
+							if (granted == null || !granted) allGranted = false;
+						}
+						onMeshPermissionResult(allGranted);
+					});
 
 	private View torNetworkCard;
 	private TextView torNetworkValue;
@@ -84,6 +113,8 @@ public class ConnectionsFragment extends Fragment {
 		viewModel = new ViewModelProvider(requireActivity(), viewModelFactory)
 				.get(SettingsViewModel.class);
 		connectionsManager = viewModel.connectionsManager;
+		pluginViewModel = new ViewModelProvider(requireActivity(),
+				viewModelFactory).get(PluginViewModel.class);
 	}
 
 	@Nullable
@@ -128,7 +159,128 @@ public class ConnectionsFragment extends Fragment {
 		});
 		orbotSettingsCard.setOnClickListener(v -> showOrbotSettingsDialog());
 
+		i2pSwitch = view.findViewById(R.id.i2p_switch);
+		i2pSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+			if (buttonView.isPressed()) onI2pToggle(isChecked);
+		});
+
+		meshSwitch = view.findViewById(R.id.mesh_switch);
+		meshSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+			if (buttonView.isPressed()) onMeshToggle(isChecked);
+		});
+		refreshMeshSwitch();
+
+		offlineModeSwitch = view.findViewById(R.id.offline_mode_switch);
+		offlineModeSwitch.setChecked(pluginManager.isOfflineMode());
+		offlineModeSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+			if (buttonView.isPressed()) onOfflineModeToggle(isChecked);
+		});
+
 		observeSettings();
+	}
+
+	private void onI2pToggle(boolean enable) {
+		if (!enable) {
+			pluginViewModel.enableTransport(I2pConstants.ID, false);
+			return;
+		}
+		new MaterialAlertDialogBuilder(requireContext())
+				.setTitle(R.string.i2p_enable_warning_title)
+				.setMessage(R.string.i2p_enable_warning_message)
+				.setPositiveButton(R.string.i2p_enable_warning_confirm,
+						(d, w) -> pluginViewModel.enableTransport(
+								I2pConstants.ID, true))
+				.setNegativeButton(R.string.cancel,
+						(d, w) -> i2pSwitch.setChecked(false))
+				.setOnCancelListener(d -> i2pSwitch.setChecked(false))
+				.show();
+	}
+
+	private void onMeshToggle(boolean enable) {
+		if (!enable) {
+			meshController.setMeshEnabled(false);
+			return;
+		}
+		if (!MeshController.isSupported()) {
+			Toast.makeText(requireContext(), R.string.mesh_unsupported,
+					Toast.LENGTH_LONG).show();
+			meshSwitch.setChecked(false);
+			return;
+		}
+		if (MeshController.hasPermissions(requireContext())) {
+			meshController.setMeshEnabled(true);
+		} else {
+			meshPermissionLauncher.launch(MeshController.requiredPermissions());
+		}
+	}
+
+	private void onMeshPermissionResult(boolean allGranted) {
+		boolean forOffline = enableMeshForOffline;
+		enableMeshForOffline = false;
+		if (allGranted) {
+			meshController.setMeshEnabled(true);
+			if (meshSwitch != null) meshSwitch.setChecked(true);
+			if (forOffline) pluginManager.setOfflineMode(true);
+		} else {
+			Toast.makeText(requireContext(), R.string.mesh_permission_denied,
+					Toast.LENGTH_LONG).show();
+			meshSwitch.setChecked(false);
+			if (forOffline) offlineModeSwitch.setChecked(false);
+		}
+	}
+
+	private void onOfflineModeToggle(boolean enable) {
+		if (!enable) {
+			pluginManager.setOfflineMode(false);
+			return;
+		}
+		new MaterialAlertDialogBuilder(requireContext())
+				.setTitle(R.string.offline_mode_confirm_title)
+				.setMessage(R.string.offline_mode_confirm_message)
+				.setPositiveButton(R.string.offline_mode_confirm_button,
+						(d, w) -> enableOfflineMode())
+				.setNegativeButton(R.string.cancel,
+						(d, w) -> offlineModeSwitch.setChecked(false))
+				.setOnCancelListener(d -> offlineModeSwitch.setChecked(false))
+				.show();
+	}
+
+	private void enableOfflineMode() {
+		if (!MeshController.isSupported()) {
+			Toast.makeText(requireContext(), R.string.mesh_unsupported,
+					Toast.LENGTH_LONG).show();
+			offlineModeSwitch.setChecked(false);
+			return;
+		}
+		if (!MeshController.hasPermissions(requireContext())) {
+			enableMeshForOffline = true;
+			meshPermissionLauncher.launch(MeshController.requiredPermissions());
+			return;
+		}
+		meshController.setMeshEnabled(true);
+		if (meshSwitch != null) meshSwitch.setChecked(true);
+		pluginManager.setOfflineMode(true);
+	}
+
+	private void refreshMeshSwitch() {
+		ioExecutor.execute(() -> {
+			boolean enabled;
+			try {
+				enabled = meshController.isMeshEnabled();
+			} catch (DbException e) {
+				enabled = false;
+			}
+			boolean finalEnabled = enabled;
+			if (getActivity() == null) return;
+			requireActivity().runOnUiThread(() -> {
+				if (meshSwitch == null) return;
+				meshSwitch.setOnCheckedChangeListener(null);
+				meshSwitch.setChecked(finalEnabled);
+				meshSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+					if (buttonView.isPressed()) onMeshToggle(isChecked);
+				});
+			});
+		});
 	}
 
 	private void observeSettings() {
@@ -160,6 +312,18 @@ public class ConnectionsFragment extends Fragment {
 
 		connectionsManager.customBridges().observe(getViewLifecycleOwner(),
 				this::updateCustomBridgesDisplay);
+
+		pluginViewModel.getPluginEnabledSetting(I2pConstants.ID).observe(
+				getViewLifecycleOwner(), enabled -> {
+					i2pSwitch.setOnCheckedChangeListener(null);
+					i2pSwitch.setChecked(Boolean.TRUE.equals(enabled));
+					i2pSwitch.setOnCheckedChangeListener(
+							(buttonView, isChecked) -> {
+								if (buttonView.isPressed()) {
+									onI2pToggle(isChecked);
+								}
+							});
+				});
 	}
 
 	private void updateTorNetworkDisplay(String value) {

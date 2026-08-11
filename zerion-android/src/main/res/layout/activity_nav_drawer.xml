@@ -5,11 +5,12 @@
 	android:id="@+id/constraintLayout"
 	android:layout_width="match_parent"
 	android:layout_height="match_parent"
+	android:clipChildren="false"
 	android:background="@drawable/bg_zerion_gradient"
 	android:fitsSystemWindows="true"
 	tools:context=".android.navdrawer.NavDrawerActivity">
 
-	<!-- Top App Bar (56dp height + status bar insets) -->
+	<!-- Top App Bar (60dp height + status bar insets) -->
 	<androidx.constraintlayout.widget.ConstraintLayout
 		android:id="@+id/appBar"
 		android:layout_width="0dp"
@@ -25,14 +26,14 @@
 		<!-- Profile Icon (Left) - 48x48dp tap target -->
 		<com.google.android.material.card.MaterialCardView
 			android:id="@+id/profileIcon"
-			android:layout_width="40dp"
-			android:layout_height="40dp"
+			android:layout_width="48dp"
+			android:layout_height="48dp"
 			android:layout_marginStart="12dp"
 			android:clickable="true"
 			android:focusable="true"
 			android:contentDescription="@string/nav_profile_content_description"
 			android:foreground="?attr/selectableItemBackgroundBorderless"
-			app:cardCornerRadius="20dp"
+			app:cardCornerRadius="24dp"
 			app:cardElevation="0dp"
 			app:cardBackgroundColor="@color/zerion_primary_accent"
 			app:layout_constraintBottom_toBottomOf="parent"
@@ -62,23 +63,24 @@
 			android:text="@string/contact_list_button"
 			android:textColor="@color/zerion_text_primary"
 			android:textSize="22sp"
-			android:textStyle="bold"
+			android:fontFamily="@font/bricolage_grotesque"
+			android:textFontWeight="500"
 			android:letterSpacing="-0.01"
 			android:singleLine="true"
 			android:ellipsize="end"
 			app:layout_constraintBottom_toBottomOf="parent"
-			app:layout_constraintEnd_toStartOf="@+id/searchButton"
+			app:layout_constraintEnd_toStartOf="@+id/networkStatusButton"
 			app:layout_constraintStart_toEndOf="@+id/profileIcon"
 			app:layout_constraintTop_toTopOf="parent" />
 
 		<!-- Network Status Button -->
 		<ImageButton
-			android:id="@+id/searchButton"
-			android:layout_width="44dp"
-			android:layout_height="44dp"
+			android:id="@+id/networkStatusButton"
+			android:layout_width="48dp"
+			android:layout_height="48dp"
 			android:background="?attr/selectableItemBackgroundBorderless"
 			android:contentDescription="@string/network_status_title"
-			android:padding="10dp"
+			android:padding="12dp"
 			android:src="@drawable/transport_tor"
 			app:layout_constraintBottom_toBottomOf="parent"
 			app:layout_constraintEnd_toStartOf="@+id/vaultShortcutButton"
@@ -88,11 +90,11 @@
 		<!-- zVault shortcut -->
 		<ImageButton
 			android:id="@+id/vaultShortcutButton"
-			android:layout_width="44dp"
-			android:layout_height="44dp"
+			android:layout_width="48dp"
+			android:layout_height="48dp"
 			android:background="?attr/selectableItemBackgroundBorderless"
 			android:contentDescription="@string/vault_button"
-			android:padding="10dp"
+			android:padding="12dp"
 			android:src="@drawable/ic_vault"
 			app:layout_constraintBottom_toBottomOf="parent"
 			app:layout_constraintEnd_toStartOf="@+id/menuButton"
@@ -102,12 +104,12 @@
 		<!-- Menu Button (3-dot) -->
 		<ImageButton
 			android:id="@+id/menuButton"
-			android:layout_width="44dp"
-			android:layout_height="44dp"
+			android:layout_width="48dp"
+			android:layout_height="48dp"
 			android:layout_marginEnd="4dp"
 			android:background="?attr/selectableItemBackgroundBorderless"
 			android:contentDescription="@string/settings_button"
-			android:padding="10dp"
+			android:padding="12dp"
 			android:src="@drawable/ic_more_vert_accent"
 			app:layout_constraintBottom_toBottomOf="parent"
 			app:layout_constraintEnd_toEndOf="parent"
@@ -180,6 +182,7 @@
 		android:id="@+id/bottomNavigation"
 		android:layout_width="0dp"
 		android:layout_height="56dp"
+		android:clipChildren="false"
 		android:background="@color/zerion_dark_bg"
 		android:orientation="horizontal"
 		android:elevation="0dp"
@@ -196,9 +199,13 @@
 			android:clickable="true"
 			android:focusable="true"
 			android:gravity="center"
-			android:text="@string/contact_list_button"
+			android:paddingTop="6dp"
+			android:drawableTop="@drawable/ic_chat"
+			android:drawablePadding="3dp"
+			android:drawableTint="@color/tab_icon_tint"
+			android:text="@string/chats_button"
 			android:textColor="@color/zerion_text_primary"
-			android:textSize="14sp"
+			android:textSize="11sp"
 			android:textStyle="bold"
 			android:letterSpacing="0.0" />
 
@@ -211,9 +218,13 @@
 			android:clickable="true"
 			android:focusable="true"
 			android:gravity="center"
+			android:paddingTop="6dp"
+			android:drawableTop="@drawable/ic_group"
+			android:drawablePadding="3dp"
+			android:drawableTint="@color/tab_icon_tint"
 			android:text="@string/groups_button"
 			android:textColor="@color/zerion_text_secondary"
-			android:textSize="14sp"
+			android:textSize="11sp"
 			android:letterSpacing="0.0" />
 
 		<TextView
@@ -225,9 +236,13 @@
 			android:clickable="true"
 			android:focusable="true"
 			android:gravity="center"
+			android:paddingTop="6dp"
+			android:drawableTop="@drawable/ic_channels"
+			android:drawablePadding="3dp"
+			android:drawableTint="@color/tab_icon_tint"
 			android:text="@string/channels_button"
 			android:textColor="@color/zerion_text_secondary"
-			android:textSize="14sp"
+			android:textSize="11sp"
 			android:letterSpacing="0.0" />
 
 	</LinearLayout>

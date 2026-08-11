@@ -25,15 +25,15 @@ import com.professor.zerion.android.activity.ZerionActivity;
 import com.professor.zerion.android.attachment.AttachmentItem;
 import com.professor.zerion.android.attachment.AttachmentRetriever;
 
-import org.briarproject.bramble.api.contact.ContactId;
-import org.briarproject.bramble.api.db.DatabaseExecutor;
-import org.briarproject.bramble.api.db.DbException;
-import org.briarproject.bramble.api.sync.MessageId;
-import org.briarproject.briar.api.attachment.Attachment;
-import org.briarproject.briar.api.attachment.AttachmentHeader;
-import org.briarproject.briar.api.conversation.ConversationManager;
-import org.briarproject.briar.api.conversation.ConversationMessageHeader;
-import org.briarproject.briar.api.messaging.PrivateMessageHeader;
+import org.zerionproject.core.api.contact.ContactId;
+import org.zerionproject.core.api.db.DatabaseExecutor;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.sync.MessageId;
+import org.zerionproject.app.api.attachment.Attachment;
+import org.zerionproject.app.api.attachment.AttachmentHeader;
+import org.zerionproject.app.api.conversation.ConversationManager;
+import org.zerionproject.app.api.conversation.ConversationMessageHeader;
+import org.zerionproject.app.api.messaging.PrivateMessageHeader;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 

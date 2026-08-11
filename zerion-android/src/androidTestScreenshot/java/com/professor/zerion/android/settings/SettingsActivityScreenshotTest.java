@@ -24,8 +24,8 @@ import static androidx.test.espresso.matcher.ViewMatchers.isEnabled;
 import static androidx.test.espresso.matcher.ViewMatchers.withChild;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
-import static org.briarproject.briar.android.ViewActions.waitUntilMatches;
-import static org.briarproject.briar.android.util.UiUtils.hasScreenLock;
+import static org.zerionproject.app.android.ViewActions.waitUntilMatches;
+import static org.zerionproject.app.android.util.UiUtils.hasScreenLock;
 import static org.junit.Assume.assumeTrue;
 
 @RunWith(AndroidJUnit4.class)
