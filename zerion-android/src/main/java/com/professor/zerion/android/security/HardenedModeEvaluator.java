@@ -1,5 +1,6 @@
 package com.professor.zerion.android.security;
 
+import android.content.Context;
 import android.content.SharedPreferences;
 
 import org.briarproject.nullsafety.NotNullByDefault;
@@ -19,13 +20,15 @@ public final class HardenedModeEvaluator {
 	private HardenedModeEvaluator() {
 	}
 
-	public static int evaluate(SharedPreferences uiPrefs) {
+	public static int evaluate(SharedPreferences uiPrefs, Context ctx) {
 		if (uiPrefs.getBoolean(PREF_HARDENED_BOOT, false)) {
 			int r = SecureBootGuard.evaluateStrictBoot();
 			if (r != SecureBootGuard.RESULT_OK) return r;
 		}
 		if (uiPrefs.getBoolean(PREF_HARDENED_TAMPER, true)) {
 			int r = SecureBootGuard.evaluateAntiTamper();
+			if (r != SecureBootGuard.RESULT_OK) return r;
+			r = SecureBootGuard.verifyAppSignature(ctx);
 			if (r != SecureBootGuard.RESULT_OK) return r;
 		}
 		return SecureBootGuard.RESULT_OK;

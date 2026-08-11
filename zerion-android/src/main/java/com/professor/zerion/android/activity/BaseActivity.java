@@ -101,7 +101,7 @@ public abstract class BaseActivity extends AppCompatActivity
 
 		int hardenedResult =
 				com.professor.zerion.android.security
-						.HardenedModeEvaluator.evaluate(uiPrefs);
+						.HardenedModeEvaluator.evaluate(uiPrefs, this);
 		if (hardenedResult != com.professor.zerion.android.security
 				.SecureBootGuard.RESULT_OK
 				&& !(this instanceof com.professor.zerion.android.security

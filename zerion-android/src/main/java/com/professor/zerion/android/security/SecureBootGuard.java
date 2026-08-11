@@ -24,8 +24,41 @@ public final class SecureBootGuard {
 	public static final int RESULT_FRIDA_FOUND = 6;
 	public static final int RESULT_XPOSED_FOUND = 7;
 	public static final int RESULT_ADB_DAEMON_LISTENING = 8;
+	public static final int RESULT_SIGNATURE_MISMATCH = 9;
+
+	// SHA-256 of the release signing certificate (O=Zerion). The same key signs
+	// GitHub, Play and the F-Droid reproducible build, so a release build whose
+	// signer does not match this has been repackaged.
+	private static final String EXPECTED_CERT_SHA256 =
+			"d7fdb11125890d133ae89d8ba4f4331d9045e21ef01d9899a7cdee6888f704c8";
 
 	private SecureBootGuard() {
+	}
+
+	public static int verifyAppSignature(Context ctx) {
+		if (com.professor.zerion.BuildConfig.DEBUG) return RESULT_OK;
+		try {
+			android.content.pm.PackageInfo pi = ctx.getPackageManager()
+					.getPackageInfo(ctx.getPackageName(),
+							android.content.pm.PackageManager
+									.GET_SIGNING_CERTIFICATES);
+			android.content.pm.SigningInfo si = pi.signingInfo;
+			if (si == null) return RESULT_OK;
+			android.content.pm.Signature[] sigs = si.getApkContentsSigners();
+			if (sigs == null || sigs.length == 0) return RESULT_OK;
+			java.security.MessageDigest md =
+					java.security.MessageDigest.getInstance("SHA-256");
+			for (android.content.pm.Signature s : sigs) {
+				String hex = org.zerionproject.core.util.StringUtils
+						.toHexString(md.digest(s.toByteArray()));
+				if (EXPECTED_CERT_SHA256.equalsIgnoreCase(hex)) {
+					return RESULT_OK;
+				}
+			}
+			return RESULT_SIGNATURE_MISMATCH;
+		} catch (Exception e) {
+			return RESULT_OK;
+		}
 	}
 
 	public static int evaluateStrictBoot() {
