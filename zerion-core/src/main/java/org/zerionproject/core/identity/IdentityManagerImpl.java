@@ -106,6 +106,22 @@ class IdentityManagerImpl implements IdentityManager, OpenDatabaseHook {
 			db.setHybridHandshakeKeyPair(txn, cached.getId(), hybridPub,
 					hybridPriv);
 		}
+		if (!cached.hasHybridHandshakeKeyPair()) {
+			KeyPair hybridKeyPair = crypto.generateHybridAgreementKeyPair();
+			PublicKey newHybridPub = hybridKeyPair.getPublic();
+			PrivateKey newHybridPriv = hybridKeyPair.getPrivate();
+			db.setHybridHandshakeKeyPair(txn, cached.getId(), newHybridPub,
+					newHybridPriv);
+			cached = new Identity(
+					cached.getLocalAuthor(),
+					cached.getHandshakePublicKey(),
+					cached.getHandshakePrivateKey(),
+					newHybridPub, newHybridPriv,
+					cached.getMlDsaSigPublicKey(),
+					cached.getMlDsaSigPrivateKey(),
+					cached.getTimeCreated());
+			cachedIdentity = cached;
+		}
 		if (!cached.hasMlDsaSigKeyPair()) {
 			KeyPair hybridSigKeyPair = crypto.generateHybridSignatureKeyPair();
 			byte[] mlDsaPub = ((HybridSignaturePublicKey)
