@@ -25,12 +25,9 @@ public final class HardenedModeEvaluator {
 			int r = SecureBootGuard.evaluateStrictBoot();
 			if (r != SecureBootGuard.RESULT_OK) return r;
 		}
-		if (uiPrefs.getBoolean(PREF_HARDENED_TAMPER, true)) {
+		if (uiPrefs.getBoolean(PREF_HARDENED_TAMPER, false)) {
 			int r = SecureBootGuard.evaluateAntiTamper();
 			if (r != SecureBootGuard.RESULT_OK) return r;
-			if (SecureBootGuard.adbEnabled(ctx)) {
-				return SecureBootGuard.RESULT_ADB_DAEMON_LISTENING;
-			}
 			r = SecureBootGuard.verifyAppSignature(ctx);
 			if (r != SecureBootGuard.RESULT_OK) return r;
 		}

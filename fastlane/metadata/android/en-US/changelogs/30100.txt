@@ -1,0 +1,5 @@
+v3.0.1: startup fix
+
+Fixes a bug where the app could fail to start and show a black screen on some installs, including from Google Play. Optional hardened mode is now off by default; you can still turn it on under Security settings. No protocol change and no database upgrade from 3.0.0.
+
+Full notes: https://github.com/zerionproject/Zerion/releases/tag/v3.0.1

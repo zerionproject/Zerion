@@ -26,11 +26,14 @@ public final class SecureBootGuard {
 	public static final int RESULT_ADB_DAEMON_LISTENING = 8;
 	public static final int RESULT_SIGNATURE_MISMATCH = 9;
 
-	// SHA-256 of the release signing certificate (O=Zerion). The same key signs
-	// GitHub, Play and the F-Droid reproducible build, so a release build whose
-	// signer does not match this has been repackaged.
-	private static final String EXPECTED_CERT_SHA256 =
-			"d7fdb11125890d133ae89d8ba4f4331d9045e21ef01d9899a7cdee6888f704c8";
+	// Accepted SHA-256 signing certificates. The upload/release key (O=Zerion)
+	// signs the sideloaded APK on GitHub and the F-Droid reproducible build;
+	// Google Play re-signs the bundle with its own app-signing key on install,
+	// so both are trusted. Any other signer means the build was repackaged.
+	private static final String[] ACCEPTED_CERT_SHA256 = {
+			"d7fdb11125890d133ae89d8ba4f4331d9045e21ef01d9899a7cdee6888f704c8",
+			"b12ddf964ac59e3914984ec93e068768756bb0b917cb45c3fb2b65dc6c7940c6"
+	};
 
 	private SecureBootGuard() {
 	}
@@ -51,8 +54,10 @@ public final class SecureBootGuard {
 			for (android.content.pm.Signature s : sigs) {
 				String hex = org.zerionproject.core.util.StringUtils
 						.toHexString(md.digest(s.toByteArray()));
-				if (EXPECTED_CERT_SHA256.equalsIgnoreCase(hex)) {
-					return RESULT_OK;
+				for (String accepted : ACCEPTED_CERT_SHA256) {
+					if (accepted.equalsIgnoreCase(hex)) {
+						return RESULT_OK;
+					}
 				}
 			}
 			return RESULT_SIGNATURE_MISMATCH;
