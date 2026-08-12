@@ -244,6 +244,12 @@ class PluginManagerImpl implements PluginManager, Service, EventListener {
 
 	private void startAllDuplex() {
 		for (DuplexPluginFactory f : pluginConfig.getDuplexFactories()) {
+			// LAN + Bluetooth are kept running in offline mode (see
+			// stopAllDuplex), so don't tear them down and rebuild them when
+			// coming back online — that briefly kills the BLE pairing/mesh
+			// transport for no reason.
+			if (f.getId().equals(LanTcpConstants.ID)) continue;
+			if (f.getId().equals(BluetoothConstants.ID)) continue;
 			restartPlugin(f.getId());
 		}
 	}
