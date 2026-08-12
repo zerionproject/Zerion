@@ -20,8 +20,10 @@ With hybrid post-quantum cryptography on **every message** (Mode 3-Full: per-fra
 - **End-to-end encrypted** messaging, groups, voice notes, P2P voice and video calls
 - **Per-message post-quantum hybrid ratchet (Mode 3-Full)** - Every frame in both directions carries a fresh ML-KEM-768 encapsulation against the peer's current ML-KEM public key; the shared secret is mixed into the body AEAD key on every frame
 - **Post-Compromise Security** - Triple Ratchet (X25519 DH + per-message ML-KEM-768 PQ) for per-message key evolution
-- **Tor-only networking** - Your IP address is never exposed to contacts
+- **Tor-only online networking** - Your IP address is never exposed to contacts
 - **Direct peer-to-peer architecture** - No central servers
+- **Offline Bluetooth mesh** - Message nearby devices with no internet at all, sealed with the same post-quantum encryption so relays carry only ciphertext
+- **Optional I2P transport** - A second anonymity network alongside Tor, off by default
 - **Encrypted Vault** for passwords, documents, media, and notes
 - **Channels** - one-to-many broadcast (public or private) with optional discussion threads, reactions, and editor delegations
 - **Post-quantum hardened end-to-end** - Hybrid ML-KEM-768 + X25519 at handshake, introductions, and on every transport frame; ML-DSA-65 + Ed25519 on every signed record
@@ -110,13 +112,18 @@ APK signing fingerprint: D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6
 
 ## Changelog
 
-**v3.0 (in development):**
+**v3.0.1 (Latest release, August 2026):**
+- Fixes a startup bug where the app could fail to launch and show a black screen on some installs, including from Google Play, because a new integrity self-check did not recognise Google Play's app-signing key
+- Optional hardened mode is now off by default; it is still available under Security settings
+- No protocol change and no database upgrade from 3.0.0
+
+**v3.0.0 (August 2026):**
 - A network protocol written in-house: fixed-size 4096-byte frames, constant-rate cover traffic so idle and active connections look identical on the wire, and per-message hybrid post-quantum encryption, all over Tor with no servers
 - Keeps the post-quantum ratchet and the delivery database from the 2.x line
-- Two additional transports are in the tree and under test before release: a Bluetooth offline mesh (message with no internet at all) and an opt-in I2P path; Tor stays mandatory and always on
-- Launching soon; the 2.x line remains the current public release until then
+- Two new transports: a Bluetooth offline mesh for messaging with no internet at all (one-to-one and group, with replies and photos) and an opt-in embedded I2P transport; Tor stays mandatory and always on for online messaging
+- Both people need this version to message each other
 
-**v2.0.7 (Latest release, July 2026):**
+**v2.0.7 (July 2026):**
 - Fixes a display bug where the decoy calculator keypad could render blank in portrait on some narrower screens (reported on HyperOS and GrapheneOS). No protocol change, no database upgrade, signing key unchanged
 
 **v2.0.6 (July 2026):**
@@ -246,8 +253,20 @@ APK signing fingerprint: D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6
 
 ## Documentation
 
+**Overview**
 - [Overview](docs/ZERION_OVERVIEW.md): plain-language introduction and how Zerion compares
 - [Technical Whitepaper](docs/ZERION_TECHNICAL_WHITEPAPER.md): full architecture, crypto, transport, vault and anti-forensics
+- [Offline Mesh and I2P](docs/ZERION_MESH_AND_I2P.md): the Bluetooth mesh and I2P transports and their threat models
+
+**Protocol specifications (3.0)**
+- [Protocol index](docs/protocol/README.md): overview of the Zerion 3.0 protocol specifications
+- [ZTP and ZPP](docs/protocol/ZTP-ZPP.md): online transport and message-pull rhythm over Tor
+- [ZWF and Mode 3-Full](docs/protocol/ZWF-MODE3FULL.md): the wire format, fixed-size frames, cover traffic, and per-message post-quantum ratchet
+- [Async Sealed-Sender Envelope](docs/protocol/ASYNC-SEALED-SENDER.md): sender-anonymous store-and-forward messaging
+- [Mesh Transport](docs/protocol/MESH-TRANSPORT.md): flooding over Bluetooth Low Energy
+- [Embedded I2P Carrier](docs/protocol/EMBEDDED-I2P.md): the opt-in in-app I2P router
+
+**Wire formats**
 - [Introduction / pairing signatures](docs/wire/F2_INTRODUCTION_HYBRID_SIG.md): hybrid-signed pairing record spec
 - [Contact-add record placement](docs/wire/B3_RECORD_PLACEMENT.md): hybrid pairing record layout
 - [GroupTr Wire Protocol](docs/wire/GROUPTR_WIRE_PROTOCOL.md): group invite and membership records

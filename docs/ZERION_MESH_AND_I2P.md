@@ -391,13 +391,13 @@ how bytes are carried, not what is carried.
 
 I2P provides end-to-end tunnel anonymity: a peer you talk to does not learn your
 network address, and neither do the routers relaying your tunnels. The residual,
-and the reason I2P is debug-only for now, is participation visibility: a network
-observer positioned to watch your connection can tell that you *participate* in
-I2P, the same class of exposure as using Tor without bridges. The reseed step is
-routed through Tor and fails closed, so bootstrap does not reveal the device
-address, but steady-state I2P participation is observable at the "this device is
-an I2P node" level. Confirming exactly what an on-path observer sees, by packet
-capture, is required before I2P is promoted out of debug builds.
+and the reason I2P is opt-in and off by default, is participation visibility: a
+network observer positioned to watch your connection can tell that you
+*participate* in I2P, the same class of exposure as using Tor without bridges.
+The reseed step is routed through Tor and fails closed, so bootstrap does not
+reveal the device address, but steady-state I2P participation is observable at
+the "this device is an I2P node" level. This is why Tor stays mandatory and
+always on, and I2P is an extra you turn on deliberately.
 
 ## 21. Where the code lives
 
