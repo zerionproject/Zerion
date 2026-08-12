@@ -1,0 +1,5 @@
+v3.0.2: pairing and connection fixes
+
+Fixes remote contact adding, where an upgraded account could sit on "connecting" because its post-quantum handshake key was regenerated each start instead of saved. It is now stored once, so links stay stable. If a contact is still stuck, remove it and add it again with a fresh link. Nearby pairing now reports clearly when Bluetooth is off instead of hanging, and leaving Offline mode no longer briefly drops Bluetooth. No database upgrade from 3.0.1.
+
+Full notes: https://github.com/zerionproject/Zerion/releases/tag/v3.0.2
