@@ -95,9 +95,34 @@ public class AddNearbyContactViewModel extends DbViewModel
 
 	public void startListening() {
 		if (!started.compareAndSet(false, true)) return;
+		// Nearby pairing is Bluetooth-only. If Bluetooth is off / unsupported,
+		// fail fast so the UI can prompt the user instead of showing a QR that
+		// can never pair and hanging on "connecting" forever.
+		if (!isBluetoothReadyForPairing()) {
+			started.set(false);
+			state.postValue(PairingState.FAILED);
+			return;
+		}
 		KeyAgreementTask t = taskProvider.get();
 		task = t;
 		ioExecutor.execute(t::listen);
+	}
+
+	private boolean isBluetoothReadyForPairing() {
+		try {
+			if (android.os.Build.VERSION.SDK_INT
+					< android.os.Build.VERSION_CODES.S) return false;
+			android.bluetooth.BluetoothManager bm =
+					(android.bluetooth.BluetoothManager) getApplication()
+							.getSystemService(android.content.Context
+									.BLUETOOTH_SERVICE);
+			if (bm == null) return false;
+			android.bluetooth.BluetoothAdapter adapter = bm.getAdapter();
+			return adapter != null && adapter.isEnabled()
+					&& adapter.getBluetoothLeAdvertiser() != null;
+		} catch (RuntimeException e) {
+			return false;
+		}
 	}
 
 	@Override
