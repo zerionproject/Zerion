@@ -177,6 +177,7 @@ public class I2pStreamingTransport implements I2pOverlayTransport {
 	@Override
 	public void stop() {
 		running.set(false);
+		readyNotified.set(true);
 		I2PSocketManager mgr = manager;
 		if (mgr != null) mgr.destroySocketManager();
 		manager = null;

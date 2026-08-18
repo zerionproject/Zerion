@@ -608,7 +608,7 @@ public class GroupTrConversationActivity extends ZerionActivity
 		if (text.isEmpty()) return;
 		byte[] body = text.getBytes(StandardCharsets.UTF_8);
 		if (body.length > MAX_POST_BODY_BYTES) {
-			toast(R.string.grouptr_attach_video_too_large);
+			toast(R.string.grouptr_post_too_long);
 			return;
 		}
 		input.setText("");

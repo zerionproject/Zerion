@@ -107,7 +107,9 @@ class I2pDuplexPlugin implements DuplexPlugin {
 		callback.mergeLocalProperties(props);
 		poller.start();
 		setState(ENABLING);
-		transport.setOnSessionReady(() -> setState(ACTIVE));
+		transport.setOnSessionReady(() -> {
+			if (state == ENABLING) setState(ACTIVE);
+		});
 		poller.pollNow();
 	}
 

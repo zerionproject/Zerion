@@ -356,6 +356,13 @@ public class AllMediaActivity extends ZerionActivity {
 		}
 	}
 
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		com.professor.zerion.android.vault.utils.SecureMemory.secureDeleteDir(
+				new java.io.File(getCacheDir(), "media_docs"), 0L);
+	}
+
 	private void openMedia(MediaItem item) {
 		if (item.isDocument) {
 			openDocument(item);
@@ -387,7 +394,7 @@ public class AllMediaActivity extends ZerionActivity {
 				String mime = item.header.getContentType();
 				String ext = getExtensionFromMimeType(mime)
 						.toLowerCase(java.util.Locale.US);
-				java.io.File dir = new java.io.File(getCacheDir(), "documents");
+				java.io.File dir = new java.io.File(getCacheDir(), "media_docs");
 				if (!dir.exists()) dir.mkdirs();
 				java.io.File out = new java.io.File(dir,
 						"doc_" + item.messageId.hashCode() + "." + ext);
@@ -400,7 +407,7 @@ public class AllMediaActivity extends ZerionActivity {
 				}
 				android.net.Uri uri =
 						androidx.core.content.FileProvider.getUriForFile(this,
-								"com.professor.zerion.fileprovider", out);
+								getPackageName() + ".fileprovider", out);
 				runOnUiThread(() -> {
 					try {
 						Intent view = new Intent(Intent.ACTION_VIEW);

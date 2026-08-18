@@ -1341,6 +1341,7 @@ public class ChannelFeedActivity extends ZerionActivity
 					byte[] decrypted = thumbnails.get(ck);
 					android.graphics.Bitmap cached = FEED_THUMB_CACHE.get(ck);
 					if (cached != null && !cached.isRecycled()) {
+						thumb.setTag(new Object());
 						thumb.setImageBitmap(cached);
 						thumb.setVisibility(View.VISIBLE);
 					} else if (decrypted != null) {

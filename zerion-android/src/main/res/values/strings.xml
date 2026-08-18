@@ -769,6 +769,7 @@
 	<string name="grouptr_error_send">Could not send message.</string>
 	<string name="grouptr_error_save">Could not save setting.</string>
 	<string name="grouptr_error_respond">Could not respond to invitation.</string>
+	<string name="grouptr_post_too_long">Message is too long.</string>
 	<string name="settings_save_failed">Could not save setting.</string>
 	<string name="grouptr_open">Open</string>
 	<string name="grouptr_input_hint">Message</string>

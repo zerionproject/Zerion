@@ -18,4 +18,7 @@
 	<cache-path
 		name="channel_attach_view"
 		path="channel_attach_view/" />
+	<cache-path
+		name="media_docs"
+		path="media_docs/" />
 </paths>
