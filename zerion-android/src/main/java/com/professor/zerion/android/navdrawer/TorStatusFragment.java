@@ -70,6 +70,11 @@ public class TorStatusFragment extends BaseFragment {
 	private TextView meshStatusText;
 	private TextView offlineModeBanner;
 
+	@Nullable
+	private Plugin.State lastTorState;
+	@Nullable
+	private org.zerionproject.core.api.network.NetworkStatus lastNetworkStatus;
+
 	@Override
 	public void onAttach(@NonNull Context context) {
 		super.onAttach(context);
@@ -118,6 +123,7 @@ public class TorStatusFragment extends BaseFragment {
 		viewModel.getPluginState(TOR_ID).observe(getViewLifecycleOwner(),
 				state -> {
 					if (state != null) {
+						lastTorState = state;
 						updateTorStatus(state);
 					}
 				});
@@ -152,6 +158,7 @@ public class TorStatusFragment extends BaseFragment {
 
 		viewModel.getNetworkStatus().observe(getViewLifecycleOwner(),
 				status -> {
+					lastNetworkStatus = status;
 					Context ctx = requireContext();
 					boolean online = status != null && status.isConnected();
 					internetStatusText.setText(
@@ -159,6 +166,7 @@ public class TorStatusFragment extends BaseFragment {
 					internetStatusText.setTextColor(ContextCompat.getColor(ctx,
 							online ? R.color.zerion_success
 									: R.color.zerion_text_secondary));
+					if (lastTorState != null) updateTorStatus(lastTorState);
 				});
 
 		viewModel.refreshTorState();
@@ -260,6 +268,8 @@ public class TorStatusFragment extends BaseFragment {
 					ContextCompat.getColor(ctx, R.color.zerion_text_secondary));
 			return;
 		}
+		boolean online = lastNetworkStatus != null
+				&& lastNetworkStatus.isConnected();
 		if (state == null
 				|| state == org.zerionproject.core.api.plugin.Plugin.State.DISABLED) {
 			torStatusText.setText(R.string.disabled);
@@ -269,7 +279,8 @@ public class TorStatusFragment extends BaseFragment {
 			torStatusIcon.setColorFilter(
 					ContextCompat.getColor(ctx, R.color.zerion_destructive));
 		} else if (state
-				== org.zerionproject.core.api.plugin.Plugin.State.ACTIVE) {
+				== org.zerionproject.core.api.plugin.Plugin.State.ACTIVE
+				&& online) {
 			torStatusText.setText(R.string.connected);
 			torStatusText.setTextColor(
 					ContextCompat.getColor(ctx, R.color.zerion_success));
