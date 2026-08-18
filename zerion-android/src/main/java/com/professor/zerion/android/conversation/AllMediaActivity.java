@@ -393,8 +393,12 @@ public class AllMediaActivity extends ZerionActivity {
 						attachmentRetriever.getMessageAttachment(item.header);
 				String mime = item.header.getContentType();
 				String ext = getExtensionFromMimeType(mime)
-						.toLowerCase(java.util.Locale.US);
+						.toLowerCase(java.util.Locale.US)
+						.replaceAll("[^a-z0-9]", "");
+				if (ext.isEmpty()) ext = "bin";
 				java.io.File dir = new java.io.File(getCacheDir(), "media_docs");
+				com.professor.zerion.android.vault.utils.SecureMemory
+						.secureDeleteDir(dir, 0L);
 				if (!dir.exists()) dir.mkdirs();
 				java.io.File out = new java.io.File(dir,
 						"doc_" + item.messageId.hashCode() + "." + ext);
