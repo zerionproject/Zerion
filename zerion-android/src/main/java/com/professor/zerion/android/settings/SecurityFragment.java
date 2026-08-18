@@ -75,12 +75,23 @@ public class SecurityFragment extends Fragment {
 	private String[] timeoutEntries;
 	private String[] timeoutValues;
 
+	private final java.util.concurrent.ExecutorService kdfExecutor =
+			java.util.concurrent.Executors.newSingleThreadExecutor();
+	private final android.os.Handler mainHandler =
+			new android.os.Handler(android.os.Looper.getMainLooper());
+
 	@Override
 	public void onAttach(@NonNull Context context) {
 		super.onAttach(context);
 		getAndroidComponent(context).inject(this);
 		viewModel = new ViewModelProvider(requireActivity(), viewModelFactory)
 				.get(SettingsViewModel.class);
+	}
+
+	@Override
+	public void onDestroy() {
+		super.onDestroy();
+		kdfExecutor.shutdownNow();
 	}
 
 	@Nullable
@@ -531,29 +542,43 @@ public class SecurityFragment extends Fragment {
 						(d, w) -> {
 							char[] a = readChars(codeInput1);
 							char[] b = readChars(codeInput2);
-							try {
-								if (a.length == 0) {
-									Toast.makeText(requireContext(),
-											R.string.decoy_set_code_empty,
-											Toast.LENGTH_SHORT).show();
-									return;
-								}
-								if (!java.util.Arrays.equals(a, b)) {
-									Toast.makeText(requireContext(),
-											R.string.decoy_set_code_mismatch,
-											Toast.LENGTH_SHORT).show();
-									return;
-								}
-								com.professor.zerion.android.decoy.DecoyConfig
-										.setUnlockCode(requireContext(), a);
-								updateDecoyCodeSummary();
-								Toast.makeText(requireContext(),
-										R.string.decoy_set_code_saved,
-										Toast.LENGTH_SHORT).show();
-							} finally {
+							if (a.length == 0) {
 								java.util.Arrays.fill(a, '\0');
 								java.util.Arrays.fill(b, '\0');
+								Toast.makeText(requireContext(),
+										R.string.decoy_set_code_empty,
+										Toast.LENGTH_SHORT).show();
+								return;
 							}
+							if (!java.util.Arrays.equals(a, b)) {
+								java.util.Arrays.fill(a, '\0');
+								java.util.Arrays.fill(b, '\0');
+								Toast.makeText(requireContext(),
+										R.string.decoy_set_code_mismatch,
+										Toast.LENGTH_SHORT).show();
+								return;
+							}
+							java.util.Arrays.fill(b, '\0');
+							Context appContext =
+									requireContext().getApplicationContext();
+							Toast.makeText(requireContext(),
+									R.string.decoy_set_code_saving,
+									Toast.LENGTH_SHORT).show();
+							kdfExecutor.execute(() -> {
+								try {
+									com.professor.zerion.android.decoy.DecoyConfig
+											.setUnlockCode(appContext, a);
+									mainHandler.post(() -> {
+										if (!isAdded()) return;
+										updateDecoyCodeSummary();
+										Toast.makeText(requireContext(),
+												R.string.decoy_set_code_saved,
+												Toast.LENGTH_SHORT).show();
+									});
+								} finally {
+									java.util.Arrays.fill(a, '\0');
+								}
+							});
 						})
 				.setNegativeButton(android.R.string.cancel, null)
 				.show();
@@ -630,10 +655,12 @@ public class SecurityFragment extends Fragment {
 
 						WipePasswordManager mgr = getWipePasswordManager();
 						final char[] pwToSet = pw1;
-						new Thread(() -> {
-							boolean ok = mgr != null && mgr.setWipePassword(pwToSet);
+						kdfExecutor.execute(() -> {
+							boolean ok = mgr != null
+									&& mgr.setWipePassword(pwToSet);
 							java.util.Arrays.fill(pwToSet, '\0');
-							requireActivity().runOnUiThread(() -> {
+							mainHandler.post(() -> {
+								if (!isAdded()) return;
 								if (ok) {
 									showToast(R.string.wipe_password_set_success);
 									updateWipePasswordSummary();
@@ -641,7 +668,7 @@ public class SecurityFragment extends Fragment {
 									showToast(R.string.wipe_password_set_failed);
 								}
 							});
-						}).start();
+						});
 						pw1 = null;
 					} finally {
 						if (pw1 != null) java.util.Arrays.fill(pw1, '\0');

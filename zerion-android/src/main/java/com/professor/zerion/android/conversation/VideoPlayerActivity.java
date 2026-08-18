@@ -63,6 +63,9 @@ public class VideoPlayerActivity extends ZerionActivity {
 	@DatabaseExecutor
 	Executor dbExecutor;
 
+	private final android.os.Handler retryHandler =
+			new android.os.Handler(android.os.Looper.getMainLooper());
+
 	@Nullable
 	private ExoPlayer player;
 	@Nullable
@@ -142,6 +145,7 @@ public class VideoPlayerActivity extends ZerionActivity {
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
+		retryHandler.removeCallbacksAndMessages(null);
 		cleanupTempFile();
 	}
 
@@ -253,12 +257,8 @@ public class VideoPlayerActivity extends ZerionActivity {
 
 			} catch (AttachmentNotYetAvailableException e) {
 				if (attemptNumber < MAX_RETRY_ATTEMPTS) {
-					try {
-						Thread.sleep(RETRY_DELAY_MS);
-					} catch (InterruptedException ie) {
-						Thread.currentThread().interrupt();
-					}
-					loadVideoWithRetry(header, ext, attemptNumber + 1);
+					retryHandler.postDelayed(() -> loadVideoWithRetry(
+							header, ext, attemptNumber + 1), RETRY_DELAY_MS);
 				} else {
 					cleanupTempFile();
 					runOnUiThread(() -> {

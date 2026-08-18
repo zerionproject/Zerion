@@ -1744,6 +1744,7 @@
 	<string name="decoy_set_code_empty">Sequence cannot be empty</string>
 	<string name="decoy_set_code_mismatch">Sequences do not match</string>
 	<string name="decoy_set_code_saved">Unlock sequence saved</string>
+	<string name="decoy_set_code_saving">Saving…</string>
 
 	<!-- Wipe Password strings -->
 	<string name="wipe_password_title">Wipe Password</string>

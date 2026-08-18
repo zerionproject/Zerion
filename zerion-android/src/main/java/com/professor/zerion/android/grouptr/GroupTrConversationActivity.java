@@ -856,14 +856,9 @@ public class GroupTrConversationActivity extends ZerionActivity
 		ioExecutor.execute(() -> {
 			try {
 				groupTrManager.sendGroupPost(groupId, body, 0L);
-				main.post(() -> {
-					try {
-						List<GroupTrPost> posts =
-								groupTrManager.getRecentPosts(groupId);
-						renderPosts(posts);
-					} catch (Exception ignored) {
-					}
-				});
+				List<GroupTrPost> posts =
+						groupTrManager.getRecentPosts(groupId);
+				main.post(() -> renderPosts(posts));
 			} catch (DbException ex) {
 				main.post(() -> toast(R.string.grouptr_error_send));
 			}
