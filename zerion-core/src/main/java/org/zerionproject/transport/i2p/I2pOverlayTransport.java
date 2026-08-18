@@ -24,6 +24,14 @@ public interface I2pOverlayTransport extends OverlayTransport {
 	 */
 	I2pDestination start(@Nullable String privateKey) throws IOException;
 
+	/**
+	 * Registers a callback invoked once the transport's session is ready to
+	 * carry traffic. If the session is already ready when this is called, the
+	 * callback runs immediately. Used to report the plugin as active only once
+	 * it can actually connect, rather than as soon as start() returns.
+	 */
+	void setOnSessionReady(Runnable callback);
+
 	/** Stops the transport and the router it owns. */
 	void stop();
 }

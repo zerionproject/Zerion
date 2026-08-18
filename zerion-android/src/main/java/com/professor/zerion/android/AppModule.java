@@ -46,7 +46,6 @@ import org.zerionproject.core.api.account.AccountManager;
 import com.professor.zerion.android.vault.VaultManager;
 import com.professor.zerion.android.security.SecurityManager;
 import com.professor.zerion.android.security.AntiForensics;
-import com.professor.zerion.android.network.TorStatusMonitor;
 import com.professor.zerion.android.settings.SettingsModule;
 import com.professor.zerion.android.test.TestAvatarCreatorImpl;
 import com.professor.zerion.android.util.TorPortManager;
@@ -432,13 +431,6 @@ public class AppModule {
 	@Singleton
 	AntiForensics provideAntiForensics(Context context) {
 		return new AntiForensics(context);
-	}
-
-	@Provides
-	@Singleton
-	TorStatusMonitor provideTorStatusMonitor(Context context,
-			@TorSocksPort int torSocksPort) {
-		return new TorStatusMonitor(context, torSocksPort);
 	}
 
 	@Provides

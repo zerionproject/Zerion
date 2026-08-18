@@ -181,8 +181,6 @@ public interface AndroidComponent
 
 	com.professor.zerion.android.security.SecurityManager securityManager();
 
-	com.professor.zerion.android.network.TorStatusMonitor torStatusMonitor();
-
 	@org.zerionproject.core.api.plugin.TorSocksPort
 	int torSocksPort();
 

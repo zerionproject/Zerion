@@ -104,23 +104,24 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 
 	@Override
 	protected void onCleared() {
+		super.onCleared();
 		eventBus.removeListener(this);
 	}
 
 	@Override
 	public void eventOccurred(Event e) {
 		if (e instanceof NetworkStatusEvent) {
-			networkStatus.setValue(((NetworkStatusEvent) e).getStatus());
+			networkStatus.postValue(((NetworkStatusEvent) e).getStatus());
 		} else if (e instanceof SettingsUpdatedEvent) {
 			SettingsUpdatedEvent s = (SettingsUpdatedEvent) e;
 			if (s.getNamespace().equals(TorConstants.ID.getString())) {
 				boolean enable = s.getSettings().getBoolean(PREF_PLUGIN_ENABLE,
 						TorConstants.DEFAULT_PREF_PLUGIN_ENABLE);
-				torEnabledSetting.setValue(enable);
+				torEnabledSetting.postValue(enable);
 			} else if (s.getNamespace().equals(I2pConstants.ID.getString())) {
 				boolean enable = s.getSettings().getBoolean(PREF_PLUGIN_ENABLE,
 						I2pConstants.DEFAULT_PREF_PLUGIN_ENABLE);
-				i2pEnabledSetting.setValue(enable);
+				i2pEnabledSetting.postValue(enable);
 			}
 		} else if (e instanceof TransportStateEvent) {
 			TransportStateEvent t = (TransportStateEvent) e;

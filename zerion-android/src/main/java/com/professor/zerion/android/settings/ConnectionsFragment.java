@@ -544,6 +544,10 @@ public class ConnectionsFragment extends Fragment {
 		super.onStart();
 		requireActivity().setTitle(R.string.network_settings_title);
 		refreshForceCompleteVisibility();
+		if (offlineModeSwitch != null) {
+			offlineModeSwitch.setChecked(pluginManager.isOfflineMode());
+		}
+		refreshMeshSwitch();
 	}
 
 	private void refreshForceCompleteVisibility() {
