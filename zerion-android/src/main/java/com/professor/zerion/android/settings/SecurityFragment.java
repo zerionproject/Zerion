@@ -420,12 +420,13 @@ public class SecurityFragment extends Fragment {
 
 	private void updateDefaultTimerDisplay() {
 		long value = uiPrefs.getLong("default_disappearing_timer", -1L);
-		String text = "Off";
+		String[] labels = getResources().getStringArray(
+				R.array.default_timer_labels);
+		String text = labels[0];
 		if (value > 0) {
 			for (int i = 1; i < DEFAULT_TIMER_VALUES.length; i++) {
 				if (DEFAULT_TIMER_VALUES[i] == value) {
-					text = new String[]{"Off", "1 day", "1 week",
-							"4 weeks"}[i];
+					text = labels[i];
 					break;
 				}
 			}
@@ -434,7 +435,8 @@ public class SecurityFragment extends Fragment {
 	}
 
 	private void showDefaultTimerDialog() {
-		String[] entries = {"Off", "1 day", "1 week", "4 weeks"};
+		String[] entries = getResources().getStringArray(
+				R.array.default_timer_labels);
 		long stored = uiPrefs.getLong("default_disappearing_timer", -1L);
 		int selectedIndex = 0;
 		for (int i = 0; i < DEFAULT_TIMER_VALUES.length; i++) {
