@@ -411,6 +411,8 @@
 	<string name="channels_attach_too_many">Too many attachments (max 8)</string>
 	<string name="channels_action_react">React</string>
 	<string name="channels_react_failed">Could not send reaction</string>
+	<string name="channels_leave_failed">Could not leave the channel</string>
+	<string name="channels_ban_failed">Could not ban this subscriber</string>
 	<string name="channels_announce_title">Announce yourself?</string>
 	<string name="channels_announce_message">The channel owner will see your chosen display name and your public key. You can stay anonymous instead. Only the owner ever sees announced subscribers.</string>
 	<string name="channels_announce_name_hint">Display name</string>
@@ -760,6 +762,7 @@
 	<string name="grouptr_error_leave">Could not leave group.</string>
 	<string name="grouptr_error_send">Could not send message.</string>
 	<string name="grouptr_error_save">Could not save setting.</string>
+	<string name="grouptr_error_respond">Could not respond to invitation.</string>
 	<string name="settings_save_failed">Could not save setting.</string>
 	<string name="grouptr_open">Open</string>
 	<string name="grouptr_input_hint">Message</string>

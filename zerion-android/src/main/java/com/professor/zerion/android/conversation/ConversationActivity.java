@@ -1373,10 +1373,12 @@ public class ConversationActivity extends ZerionActivity
 	}
 
 	@UiThread
-	private void addConversationItem(ConversationItem item) {
+	private void addConversationItem(@Nullable ConversationItem item) {
+		if (item == null) return;
 		adapter.incrementRevision();
+		boolean atBottom = adapter.isScrolledToBottom(layoutManager);
 		adapter.add(item);
-		if (getLifecycle().getCurrentState().isAtLeast(STARTED))
+		if (atBottom && getLifecycle().getCurrentState().isAtLeast(STARTED))
 			scrollToBottom();
 	}
 

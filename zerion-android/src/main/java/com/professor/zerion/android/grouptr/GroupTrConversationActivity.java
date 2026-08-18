@@ -607,8 +607,28 @@ public class GroupTrConversationActivity extends ZerionActivity
 				: input.getText().toString().trim();
 		if (text.isEmpty()) return;
 		byte[] body = text.getBytes(StandardCharsets.UTF_8);
+		if (body.length > MAX_POST_BODY_BYTES) {
+			toast(R.string.grouptr_attach_video_too_large);
+			return;
+		}
 		input.setText("");
-		sendBodyAsync(body);
+		ioExecutor.execute(() -> {
+			try {
+				groupTrManager.sendGroupPost(groupId, body, 0L);
+				List<GroupTrPost> posts =
+						groupTrManager.getRecentPosts(groupId);
+				main.post(() -> renderPosts(posts));
+			} catch (DbException ex) {
+				main.post(() -> {
+					if (input.getText() == null
+							|| input.getText().length() == 0) {
+						input.setText(text);
+						input.setSelection(text.length());
+					}
+					toast(R.string.grouptr_error_send);
+				});
+			}
+		});
 	}
 
 	private void showStealthNameDialog() {

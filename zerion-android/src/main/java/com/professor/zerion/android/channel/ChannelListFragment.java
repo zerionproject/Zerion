@@ -431,15 +431,15 @@ public class ChannelListFragment extends BaseFragment
 					} catch (DbException ignored) {
 					}
 				});
-				if (!isAdded()) return;
 				runOnUiThreadUnlessDestroyed(() -> {
-					progress.dismiss();
+					try { progress.dismiss(); } catch (Exception ignored) { }
+					if (!isAdded()) return;
 					loadChannels();
 				});
 			} catch (DbException ex) {
-				if (!isAdded()) return;
 				runOnUiThreadUnlessDestroyed(() -> {
-					progress.dismiss();
+					try { progress.dismiss(); } catch (Exception ignored) { }
+					if (!isAdded()) return;
 					Toast.makeText(requireContext(),
 							R.string.channels_join_error_link,
 							Toast.LENGTH_SHORT).show();
@@ -496,15 +496,15 @@ public class ChannelListFragment extends BaseFragment
 					} catch (DbException ignored) {
 					}
 				});
-				if (!isAdded()) return;
 				runOnUiThreadUnlessDestroyed(() -> {
-					progress.dismiss();
+					try { progress.dismiss(); } catch (Exception ignored) { }
+					if (!isAdded()) return;
 					loadChannels();
 				});
 			} catch (DbException ex) {
-				if (!isAdded()) return;
 				runOnUiThreadUnlessDestroyed(() -> {
-					progress.dismiss();
+					try { progress.dismiss(); } catch (Exception ignored) { }
+					if (!isAdded()) return;
 					Toast.makeText(requireContext(),
 							R.string.channels_apply_failed,
 							Toast.LENGTH_SHORT).show();
@@ -712,7 +712,10 @@ public class ChannelListFragment extends BaseFragment
 				channelManager.leaveChannel(s.getChannelId());
 				if (!isAdded()) return;
 				runOnUiThreadUnlessDestroyed(this::loadChannels);
-			} catch (DbException ignored) {
+			} catch (DbException e) {
+				runOnUiThreadUnlessDestroyed(() -> Toast.makeText(
+						requireContext(), R.string.channels_leave_failed,
+						Toast.LENGTH_SHORT).show());
 			}
 		});
 	}
