@@ -515,8 +515,23 @@ public class SecurityFragment extends Fragment {
 		TextView warningText = dialogView.findViewById(R.id.warning_text);
 		codeLayout1.setHint(getString(R.string.decoy_set_code_hint));
 		codeLayout2.setHint(getString(R.string.decoy_set_code_confirm_hint));
-		codeInput1.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
-		codeInput2.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+		int maskedNumber = android.text.InputType.TYPE_CLASS_NUMBER
+				| android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD;
+		codeInput1.setInputType(maskedNumber);
+		codeInput2.setInputType(maskedNumber);
+		android.widget.CheckBox showCode =
+				dialogView.findViewById(R.id.show_password_checkbox);
+		if (showCode != null) {
+			showCode.setOnCheckedChangeListener((btn, checked) -> {
+				int type = checked
+						? android.text.InputType.TYPE_CLASS_NUMBER
+						: maskedNumber;
+				codeInput1.setInputType(type);
+				codeInput2.setInputType(type);
+				codeInput1.setSelection(codeInput1.length());
+				codeInput2.setSelection(codeInput2.length());
+			});
+		}
 		warningText.setText(R.string.decoy_set_code_warning);
 		new MaterialAlertDialogBuilder(requireContext())
 				.setTitle(R.string.decoy_set_code_title)
@@ -575,6 +590,22 @@ public class SecurityFragment extends Fragment {
 		if (warningText != null) {
 			warningText.setText(R.string.wipe_password_warning);
 			warningText.setVisibility(View.VISIBLE);
+		}
+
+		android.widget.CheckBox showWipePwd =
+				dialogView.findViewById(R.id.show_password_checkbox);
+		if (showWipePwd != null && passwordInput1 != null && passwordInput2 != null) {
+			showWipePwd.setOnCheckedChangeListener((btn, checked) -> {
+				int type = checked
+						? android.text.InputType.TYPE_CLASS_TEXT
+								| android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+						: android.text.InputType.TYPE_CLASS_TEXT
+								| android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD;
+				passwordInput1.setInputType(type);
+				passwordInput2.setInputType(type);
+				passwordInput1.setSelection(passwordInput1.length());
+				passwordInput2.setSelection(passwordInput2.length());
+			});
 		}
 
 		new MaterialAlertDialogBuilder(requireContext())
