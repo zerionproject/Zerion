@@ -60,6 +60,9 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 	private final MutableLiveData<Boolean> i2pEnabledSetting =
 			new MutableLiveData<>(false);
 
+	private final MutableLiveData<Boolean> i2pDirectReseedSetting =
+			new MutableLiveData<>(false);
+
 	private final MutableLiveData<NetworkStatus> networkStatus =
 			new MutableLiveData<>();
 
@@ -215,6 +218,17 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 		mergeSettings(s, id.getString());
 	}
 
+	public void setDirectReseed(boolean enable) {
+		i2pDirectReseedSetting.setValue(enable);
+		Settings s = new Settings();
+		s.putBoolean(I2pConstants.PREF_I2P_DIRECT_RESEED, enable);
+		mergeSettings(s, I2pConstants.ID.getString());
+	}
+
+	public LiveData<Boolean> getI2pDirectReseedSetting() {
+		return i2pDirectReseedSetting;
+	}
+
 	private void loadSettings() {
 		runOnDbThread(() -> {
 			try {
@@ -224,6 +238,11 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 				boolean i2p = isPluginEnabled(I2pConstants.ID,
 						I2pConstants.DEFAULT_PREF_PLUGIN_ENABLE);
 				i2pEnabledSetting.postValue(i2p);
+				boolean directReseed = settingsManager
+						.getSettings(I2pConstants.ID.getString())
+						.getBoolean(I2pConstants.PREF_I2P_DIRECT_RESEED,
+								I2pConstants.DEFAULT_PREF_I2P_DIRECT_RESEED);
+				i2pDirectReseedSetting.postValue(directReseed);
 			} catch (DbException e) {
 				handleException(e);
 			}

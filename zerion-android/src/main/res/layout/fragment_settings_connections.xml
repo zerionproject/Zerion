@@ -234,6 +234,40 @@
 
 			</LinearLayout>
 
+			<LinearLayout
+				android:id="@+id/i2p_direct_reseed_card"
+				style="@style/Zerion.Settings.Row"
+				android:visibility="gone">
+
+				<ImageView
+					style="@style/Zerion.Settings.Row.Icon"
+					android:src="@drawable/transport_i2p"
+					android:importantForAccessibility="no" />
+
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:orientation="vertical">
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Title"
+						android:text="@string/i2p_direct_reseed_title" />
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Summary"
+						android:text="@string/i2p_direct_reseed_summary" />
+
+				</LinearLayout>
+
+				<com.google.android.material.switchmaterial.SwitchMaterial
+					android:id="@+id/i2p_direct_reseed_switch"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:checked="false" />
+
+			</LinearLayout>
+
 		</LinearLayout>
 
 		<LinearLayout

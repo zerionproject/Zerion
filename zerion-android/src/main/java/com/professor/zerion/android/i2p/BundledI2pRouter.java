@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Properties;
+import java.util.function.BooleanSupplier;
 
 import javax.annotation.Nullable;
 
@@ -22,22 +23,40 @@ public class BundledI2pRouter implements I2pRouter {
 
 	private static final long RUNNING_TIMEOUT_MS = 240_000;
 	private static final long POLL_INTERVAL_MS = 5_000;
+	private static final long TOR_WAIT_MS = 90_000;
+	private static final long TOR_POLL_MS = 3_000;
 	private static final String ASSET_DIR = "i2p";
+
+	private static final String PINNED_RESEED_URLS =
+			"https://reseed.stormycloud.org/,"
+			+ "https://reseed.diva.exchange/,"
+			+ "https://i2p.novg.net/,"
+			+ "https://www2.mk16.de/,"
+			+ "https://spiral.likogan.dev/,"
+			+ "https://reseed.sahil.world/,"
+			+ "https://i2p.diyarciftci.xyz/,"
+			+ "https://i2pseed.creativecowpat.net:8443/";
 
 	private final Context appContext;
 	private final int torSocksPort;
+	private final BooleanSupplier directReseedAllowed;
+	private final BooleanSupplier torActive;
 	private final Object lock = new Object();
 
 	@Nullable
 	private Router router;
 
-	public BundledI2pRouter(Context context, int torSocksPort) {
+	public BundledI2pRouter(Context context, int torSocksPort,
+			BooleanSupplier directReseedAllowed, BooleanSupplier torActive) {
 		this.appContext = context.getApplicationContext();
 		this.torSocksPort = torSocksPort;
+		this.directReseedAllowed = directReseedAllowed;
+		this.torActive = torActive;
 	}
 
 	@Override
 	public void start() throws IOException {
+		boolean useDirect = shouldReseedDirect();
 		synchronized (lock) {
 			if (router != null) return;
 			File baseDir = new File(appContext.getFilesDir(), "i2p");
@@ -49,7 +68,7 @@ public class BundledI2pRouter implements I2pRouter {
 			System.setProperty("i2p.dir.base", baseDir.getAbsolutePath());
 			System.setProperty("i2p.dir.config", baseDir.getAbsolutePath());
 			net.i2p.router.I2pGlobalContextReset.reset();
-			Router r = new Router(routerProperties());
+			Router r = new Router(routerProperties(useDirect));
 			r.setKillVMOnEnd(false);
 			r.runRouter();
 			router = r;
@@ -98,7 +117,7 @@ public class BundledI2pRouter implements I2pRouter {
 		}
 	}
 
-	private Properties routerProperties() {
+	private Properties routerProperties(boolean useDirect) {
 		Properties p = new Properties();
 		p.setProperty("i2cp.disableInterface", "true");
 		p.setProperty("router.maxParticipatingTunnels", "0");
@@ -110,8 +129,36 @@ public class BundledI2pRouter implements I2pRouter {
 		p.setProperty("i2np.outboundKBytesPerSecond", "64");
 		p.setProperty("i2np.upnp.enable", "false");
 		p.setProperty("router.enableUPnP", "false");
-		applyReseedOverTor(p);
+		if (useDirect) {
+			applyDirectReseed(p);
+		} else {
+			applyReseedOverTor(p);
+		}
 		return p;
+	}
+
+	private boolean shouldReseedDirect() {
+		if (!directReseedAllowed.getAsBoolean()) return false;
+		return !awaitTorActive();
+	}
+
+	private boolean awaitTorActive() {
+		long deadline = System.currentTimeMillis() + TOR_WAIT_MS;
+		while (System.currentTimeMillis() < deadline) {
+			if (torActive.getAsBoolean()) return true;
+			try {
+				Thread.sleep(TOR_POLL_MS);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				return torActive.getAsBoolean();
+			}
+		}
+		return torActive.getAsBoolean();
+	}
+
+	private void applyDirectReseed(Properties p) {
+		p.setProperty("router.reseedSSLRequired", "true");
+		p.setProperty("i2p.reseedURL", PINNED_RESEED_URLS);
 	}
 
 	private void applyReseedOverTor(Properties p) {

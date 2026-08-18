@@ -55,6 +55,11 @@
 	<string name="i2p_enable_warning_title">Enable I2P?</string>
 	<string name="i2p_enable_warning_message">I2P is a second anonymity network you can use alongside Tor. Your messages stay encrypted, so no one can read what you send or who you talk to. But unlike Tor, I2P does not hide your IP address: your network or internet provider can see that this device uses I2P, only that you use it, never the contents. Tor always stays on. Only enable I2P if it is acceptable for your network to see that you use it.</string>
 	<string name="i2p_enable_warning_confirm">Enable I2P</string>
+	<string name="i2p_direct_reseed_title">Bootstrap without Tor</string>
+	<string name="i2p_direct_reseed_summary">Only if Tor is blocked where you are</string>
+	<string name="i2p_direct_reseed_warning_title">Start I2P without Tor?</string>
+	<string name="i2p_direct_reseed_warning_message">Turn this on only if Tor is blocked and cannot connect where you are. If Tor still fails to connect, Zerion will contact a small set of known I2P bootstrap servers directly, one time, over HTTPS with signature checks. That one connection reveals to those servers that your device uses I2P. After it succeeds, I2P runs on its own and Zerion keeps using Tor whenever Tor works. Leave this off if you are not being censored.</string>
+	<string name="i2p_direct_reseed_warning_confirm">Allow direct bootstrap</string>
 	<string name="settings_section_mesh">OFFLINE MESH</string>
 	<string name="mesh_toggle_title">Offline mesh</string>
 	<string name="mesh_toggle_summary">Reach nearby contacts with no internet, over Bluetooth</string>

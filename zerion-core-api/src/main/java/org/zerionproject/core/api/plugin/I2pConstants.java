@@ -31,4 +31,8 @@ public interface I2pConstants {
 	 * so it must be a conscious, warned opt-in and never start on its own. The
 	 * user turns it on with the I2P toggle. */
 	boolean DEFAULT_PREF_PLUGIN_ENABLE = false;
+
+	String PREF_I2P_DIRECT_RESEED = "directReseed";
+
+	boolean DEFAULT_PREF_I2P_DIRECT_RESEED = false;
 }
