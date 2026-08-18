@@ -66,8 +66,6 @@ public class SecurityFragment extends Fragment {
 	private View defaultTimerCard;
 	private TextView defaultTimerValue;
 	private View changePasswordCard;
-	private View registrationLockCard;
-	private TextView registrationLockSummary;
 	private View wipePasswordCard;
 	private TextView wipePasswordSummary;
 	private SwitchMaterial decoySwitch;
@@ -111,8 +109,6 @@ public class SecurityFragment extends Fragment {
 		defaultTimerCard = view.findViewById(R.id.default_timer_card);
 		defaultTimerValue = view.findViewById(R.id.default_timer_value);
 		changePasswordCard = view.findViewById(R.id.change_password_card);
-		registrationLockCard = view.findViewById(R.id.registration_lock_card);
-		registrationLockSummary = view.findViewById(R.id.reg_lock_summary);
 		wipePasswordCard = view.findViewById(R.id.wipe_password_card);
 		wipePasswordSummary = view.findViewById(R.id.wipe_password_summary);
 		decoySwitch = view.findViewById(R.id.decoy_switch);
@@ -188,11 +184,6 @@ public class SecurityFragment extends Fragment {
 			Intent intent = new Intent(requireContext(), ChangePasswordActivity.class);
 			startActivity(intent);
 		});
-
-		if (registrationLockCard != null) {
-			registrationLockCard.setOnClickListener(v -> showRegistrationLockDialog());
-			updateRegistrationLockSummary();
-		}
 
 		wipePasswordCard.setOnClickListener(v -> {
 			WipePasswordManager mgr = getWipePasswordManager();
@@ -682,142 +673,6 @@ public class SecurityFragment extends Fragment {
 	private void showToast(int messageResId) {
 		android.widget.Toast.makeText(requireContext(), messageResId,
 				android.widget.Toast.LENGTH_SHORT).show();
-	}
-
-	private void updateRegistrationLockSummary() {
-		if (registrationLockSummary == null) return;
-		if (!RegistrationLockManager.isEnabled(requireContext())) {
-			registrationLockSummary.setText(R.string.reg_lock_summary_off);
-		} else {
-			int type = RegistrationLockManager.getType(requireContext());
-			registrationLockSummary.setText(
-					type == RegistrationLockManager.TYPE_PIN
-							? R.string.reg_lock_summary_pin
-							: R.string.reg_lock_summary_password);
-		}
-	}
-
-	private void showRegistrationLockDialog() {
-		if (RegistrationLockManager.isEnabled(requireContext())) {
-			String[] options = {
-					getString(R.string.reg_lock_change),
-					getString(R.string.reg_lock_disable)
-			};
-			new MaterialAlertDialogBuilder(requireContext())
-					.setTitle(R.string.reg_lock_title)
-					.setItems(options, (dialog, which) -> {
-						if (which == 0) {
-							showRegLockTypeChooser();
-						} else {
-							new MaterialAlertDialogBuilder(requireContext())
-									.setTitle(R.string.reg_lock_disable)
-									.setMessage(R.string.reg_lock_disable_confirm)
-									.setPositiveButton(R.string.remove, (d, w) -> {
-										RegistrationLockManager.disable(requireContext());
-										updateRegistrationLockSummary();
-										showToast(R.string.reg_lock_disabled);
-									})
-									.setNegativeButton(R.string.cancel, null)
-									.show();
-						}
-					})
-					.setNegativeButton(R.string.cancel, null)
-					.show();
-		} else {
-			showRegLockTypeChooser();
-		}
-	}
-
-	private void showRegLockTypeChooser() {
-		String[] types = {
-				getString(R.string.reg_lock_set_pin),
-				getString(R.string.reg_lock_set_password)
-		};
-		new MaterialAlertDialogBuilder(requireContext())
-				.setTitle(R.string.reg_lock_choose_type)
-				.setItems(types, (dialog, which) -> {
-					if (which == 0) {
-						showRegLockPinEntry(RegistrationLockManager.TYPE_PIN);
-					} else {
-						showRegLockPinEntry(RegistrationLockManager.TYPE_PASSWORD);
-					}
-				})
-				.setNegativeButton(R.string.cancel, null)
-				.show();
-	}
-
-	private void showRegLockPinEntry(int type) {
-		boolean isPin = type == RegistrationLockManager.TYPE_PIN;
-		int inputType = isPin
-				? (android.text.InputType.TYPE_CLASS_NUMBER
-						| android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD)
-				: (android.text.InputType.TYPE_CLASS_TEXT
-						| android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
-		int hintRes = isPin ? R.string.reg_lock_enter_pin
-				: R.string.reg_lock_enter_password;
-		int minLength = 6;
-
-		android.widget.EditText input1 = new android.widget.EditText(requireContext());
-		input1.setHint(hintRes);
-		input1.setInputType(inputType);
-		input1.setTextColor(0xFFFFFFFF);
-		input1.setHintTextColor(0x80FFFFFF);
-
-		new MaterialAlertDialogBuilder(requireContext())
-				.setTitle(isPin ? R.string.reg_lock_set_pin
-						: R.string.reg_lock_set_password)
-				.setView(input1)
-				.setPositiveButton(R.string.continue_button, (d, w) -> {
-					String val = input1.getText().toString();
-					if (val.length() < minLength) {
-						showToast(isPin ? R.string.reg_lock_pin_too_short
-								: R.string.reg_lock_password_too_short);
-						return;
-					}
-					showRegLockConfirmEntry(type, val.toCharArray());
-				})
-				.setNegativeButton(R.string.cancel, null)
-				.show();
-	}
-
-	private void showRegLockConfirmEntry(int type, char[] firstEntry) {
-		boolean isPin = type == RegistrationLockManager.TYPE_PIN;
-		int inputType = isPin
-				? (android.text.InputType.TYPE_CLASS_NUMBER
-						| android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD)
-				: (android.text.InputType.TYPE_CLASS_TEXT
-						| android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
-
-		android.widget.EditText input2 = new android.widget.EditText(requireContext());
-		input2.setHint(R.string.reg_lock_confirm);
-		input2.setInputType(inputType);
-		input2.setTextColor(0xFFFFFFFF);
-		input2.setHintTextColor(0x80FFFFFF);
-
-		new MaterialAlertDialogBuilder(requireContext())
-				.setTitle(R.string.reg_lock_confirm)
-				.setView(input2)
-				.setPositiveButton(android.R.string.ok, (d, w) -> {
-					char[] confirm = input2.getText().toString().toCharArray();
-					try {
-						if (!java.util.Arrays.equals(firstEntry, confirm)) {
-							showToast(R.string.reg_lock_mismatch);
-							return;
-						}
-						if (RegistrationLockManager.setRegistrationLock(
-								requireContext(), firstEntry, type)) {
-							updateRegistrationLockSummary();
-							showToast(R.string.reg_lock_enabled);
-						}
-					} finally {
-						java.util.Arrays.fill(firstEntry, '\0');
-						java.util.Arrays.fill(confirm, '\0');
-					}
-				})
-				.setNegativeButton(R.string.cancel, (d, w) -> {
-					java.util.Arrays.fill(firstEntry, '\0');
-				})
-				.show();
 	}
 
 }

@@ -243,14 +243,11 @@ public class PasswordFragment extends BaseFragment implements TextWatcher {
 		signInButton.setVisibility(VISIBLE);
 		progress.setVisibility(INVISIBLE);
 
-		int minutes = lockStatus.getRemainingMinutes();
+		int minutes = (int) Math.ceil(lockStatus.remainingMs / 60000.0);
+		if (minutes < 1) minutes = 1;
 
-		String timeMsg;
-		if (minutes >= 1) {
-			timeMsg = (minutes + 1) + " minute(s)";
-		} else {
-			timeMsg = "1 minute";
-		}
+		String timeMsg = getResources().getQuantityString(
+				R.plurals.account_locked_minutes, minutes, minutes);
 
 		String errorMsg = getString(R.string.account_locked_try_again, timeMsg);
 		setError(input, errorMsg, true);

@@ -252,6 +252,10 @@
 	<string name="dialog_message_lost_password">Your Zerion account is stored encrypted on your device, not in the cloud, so we can\'t reset your password. Would you like to delete your account and start again?\n\nCaution: Your identities, contacts and messages will be permanently lost.</string>
 	<string name="password_missing">Please enter your password</string>
 	<string name="account_locked_try_again">Account locked. Please try again in %s</string>
+	<plurals name="account_locked_minutes">
+		<item quantity="one">%d minute</item>
+		<item quantity="other">%d minutes</item>
+	</plurals>
 	<plurals name="login_failed_normal">
 		<item quantity="one">Incorrect password. %d attempt remaining before lockout.</item>
 		<item quantity="other">Incorrect password. %d attempts remaining before lockout.</item>
@@ -1173,24 +1177,6 @@
 	<string name="pref_language_title">Language &amp; region</string>
 	<string name="pref_language_changed">The app will restart to apply the new language.</string>
 	<string name="pref_language_default">System default</string>
-	<string name="reg_lock_title">Registration Lock</string>
-	<string name="reg_lock_summary_off">Protect your account with a PIN or password</string>
-	<string name="reg_lock_summary_pin">Protected with PIN</string>
-	<string name="reg_lock_summary_password">Protected with password</string>
-	<string name="reg_lock_set_pin">Set PIN (6 digits)</string>
-	<string name="reg_lock_set_password">Set password</string>
-	<string name="reg_lock_enter_pin">Enter PIN</string>
-	<string name="reg_lock_enter_password">Enter Password</string>
-	<string name="reg_lock_confirm">Confirm</string>
-	<string name="reg_lock_pin_too_short">PIN must be at least 6 digits</string>
-	<string name="reg_lock_password_too_short">Password must be at least 6 characters</string>
-	<string name="reg_lock_mismatch">Entries do not match</string>
-	<string name="reg_lock_enabled">Registration lock enabled</string>
-	<string name="reg_lock_disabled">Registration lock disabled</string>
-	<string name="reg_lock_change">Change registration lock</string>
-	<string name="reg_lock_disable">Disable registration lock</string>
-	<string name="reg_lock_disable_confirm">Are you sure you want to disable Registration Lock?</string>
-	<string name="reg_lock_choose_type">Choose protection type</string>
 	<string name="invite_friends_title">Invite Friends</string>
 	<string name="invite_friends_summary">Share Zerion with people you trust</string>
 	<string name="invite_friends_message">Chat privately with Zerion \u2014 encrypted messaging and calls over Tor.\n\nDownload from Google Play:\nhttps://play.google.com/store/apps/details?id=com.professor.zerion\n\nOr visit: https://zerion.chat</string>
@@ -1276,11 +1262,17 @@
 	<string name="settings_section_account">Account</string>
 	<string name="backup_export_success">Backup saved</string>
 	<string name="backup_export_success_title">Backup saved</string>
-	<string name="backup_export_warning_after">Your backup is saved. It holds your entire account and is protected only by your passphrase. Keep it somewhere safe, and delete the file once you have moved your account to the other phone.</string>
+	<string name="backup_export_warning_after">Your backup is saved. It holds your account, contacts and messages, but not your Vault entries. Export the Vault separately from the Vault screen if you use it. The backup is protected only by your passphrase, so keep it somewhere safe and delete the file once you have moved your account to the other phone.</string>
 	<string name="backup_export_failed">Could not create the backup</string>
+	<string name="backup_export_not_signed_in">Sign in first, then create a backup.</string>
 	<string name="backup_import_in_progress">Importing account</string>
 	<string name="backup_import_success">Account imported</string>
 	<string name="backup_import_failed">Could not import this backup. Check the passphrase and try again.</string>
+	<string name="backup_import_wrong_passphrase">Wrong passphrase. Check it and try again.</string>
+	<string name="backup_import_not_a_backup">This file is not a Zerion backup.</string>
+	<string name="backup_import_unsupported">This backup was made by a newer version of Zerion. Update the app and try again.</string>
+	<string name="backup_import_corrupt">This backup file is damaged and cannot be read.</string>
+	<string name="backup_import_io_error">Could not read the backup file.</string>
 	<string name="backup_import_success_title">Account imported</string>
 	<string name="backup_import_success_message">Sign in with your new device password. If you moved this account from another phone, remove Zerion from that phone so the two do not run the same identity at once.</string>
 
