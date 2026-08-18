@@ -122,8 +122,6 @@ public class DecoyCalculatorActivity extends Activity {
 	private void onEquals() {
 		char[] candidate = toChars(rawInput);
 
-		// Show the arithmetic result immediately so the decoy behaves like a
-		// real calculator and never blocks the UI thread.
 		Double result = evaluate(input.toString());
 		input.setLength(0);
 		rawInput.clear();
@@ -134,9 +132,6 @@ public class DecoyCalculatorActivity extends Activity {
 		}
 		refresh();
 
-		// Verify the decoy PIN off the main thread; the derivation is a heavy
-		// Argon2id pass. Only one verification runs at a time so repeated
-		// presses cannot stack multiple 64 MB jobs.
 		if (verifying.compareAndSet(false, true)) {
 			decoyExecutor.execute(() -> {
 				boolean ok = false;
@@ -206,8 +201,6 @@ public class DecoyCalculatorActivity extends Activity {
 			}
 		}
 		if (nums.isEmpty()) return null;
-		// Reject malformed input (e.g. a trailing operator) so the reduction
-		// loops below never index past the operand list.
 		if (nums.size() != ops.size() + 1) return null;
 		for (int i = 0; i < ops.size(); i++) {
 			char op = ops.get(i);
