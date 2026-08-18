@@ -50,7 +50,7 @@ public class IntroductionActivity extends ZerionActivity
 
 		if (savedInstanceState == null) {
 			showInitialFragment(new ContactChooserFragment());
-		} else {
+		} else if (savedInstanceState.containsKey(BUNDLE_CONTACT2)) {
 			int contactId2 = savedInstanceState.getInt(BUNDLE_CONTACT2);
 			ContactId secondContactId = new ContactId(contactId2);
 			viewModel.setSecondContactId(secondContactId);

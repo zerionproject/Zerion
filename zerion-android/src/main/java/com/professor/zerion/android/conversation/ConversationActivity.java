@@ -1723,7 +1723,6 @@ public class ConversationActivity extends ZerionActivity
 		long minutes = seconds / 60;
 		long hours = minutes / 60;
 		long weeks = hours / 24 / 7;
-		if (seconds <= 30) return R.id.timer_30_seconds;
 		if (minutes <= 5) return R.id.timer_5_minutes;
 		if (minutes <= 30) return R.id.timer_30_minutes;
 		if (hours <= 1) return R.id.timer_1_hour;
@@ -1735,7 +1734,6 @@ public class ConversationActivity extends ZerionActivity
 	}
 
 	private long getTimerForRadioId(int radioId) {
-		if (radioId == R.id.timer_30_seconds) return 30 * 1000L;
 		if (radioId == R.id.timer_5_minutes) return 5 * 60 * 1000L;
 		if (radioId == R.id.timer_30_minutes) return 30 * 60 * 1000L;
 		if (radioId == R.id.timer_1_hour) return 60 * 60 * 1000L;
@@ -2113,7 +2111,10 @@ public class ConversationActivity extends ZerionActivity
 		dbExecutor.execute(() -> {
 			try {
 				if (type == ConversationRequestItem.RequestType.GROUPTR) {
-					if (grouptrGid == null) return;
+					if (grouptrGid == null) {
+						revertRequestAnswer(item);
+						return;
+					}
 					if (accept) {
 						groupTrManager.acceptInvite(grouptrGid);
 					} else {
@@ -2125,7 +2126,10 @@ public class ConversationActivity extends ZerionActivity
 					} catch (DbException ignored) {
 					}
 				} else if (type == ConversationRequestItem.RequestType.INTRODUCTION) {
-					if (sessionId == null) return;
+					if (sessionId == null) {
+						revertRequestAnswer(item);
+						return;
+					}
 					introductionManager.respondToIntroduction(contactId, sessionId, accept);
 				}
 				runOnUiThread(() -> {
@@ -2138,8 +2142,19 @@ public class ConversationActivity extends ZerionActivity
 					adapter.notifyDataSetChanged();
 				});
 			} catch (DbException e) {
-				runOnUiThread(() -> handleException(e));
+				runOnUiThread(() -> {
+					item.setAnswered(false);
+					adapter.notifyDataSetChanged();
+					handleException(e);
+				});
 			}
+		});
+	}
+
+	private void revertRequestAnswer(ConversationRequestItem item) {
+		runOnUiThread(() -> {
+			item.setAnswered(false);
+			adapter.notifyDataSetChanged();
 		});
 	}
 

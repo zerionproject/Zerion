@@ -165,7 +165,6 @@
 	<string name="vault_doc_next">Next</string>
 	<string name="vault_doc_page_indicator">Page %1$d of %2$d</string>
 	<string name="dialog_disappearing_off">Off</string>
-	<string name="dialog_disappearing_30_seconds">30 seconds</string>
 	<string name="dialog_disappearing_5_minutes">5 minutes</string>
 	<string name="dialog_disappearing_30_minutes">30 minutes</string>
 	<string name="dialog_disappearing_1_hour">1 hour</string>
@@ -851,6 +850,8 @@
 	<string name="scroll_to_bottom">Scroll to bottom</string>
 	<string name="all_media">All Media</string>
 	<string name="no_media">No media shared yet</string>
+	<string name="media_document_open_failed">Could not open this document</string>
+	<string name="media_document_no_app">No app available to open this file type</string>
 	<string name="no_images">No images shared yet</string>
 	<string name="no_documents">No documents shared yet</string>
 	<string name="chat_settings">Chat Settings</string>

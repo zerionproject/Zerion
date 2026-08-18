@@ -181,6 +181,7 @@ public class AddNearbyContactFragment extends BaseFragment {
 				break;
 			case FAILED:
 				statusText.setText(R.string.nearby_pairing_failed);
+				scanComplete.set(false);
 				break;
 		}
 	}

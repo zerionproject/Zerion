@@ -1136,6 +1136,8 @@ public class ConversationViewModel extends DbViewModel
 				autoDeleteTimer.postValue(timer);
 			} catch (DbException e) {
 				handleException(e);
+			} catch (IllegalArgumentException e) {
+				autoDeleteTimer.postValue(autoDeleteTimer.getValue());
 			}
 		});
 	}

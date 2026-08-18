@@ -50,6 +50,8 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 	@Nullable
 	private Integer lastBubbleColor = null;
 	@Nullable
+	private final android.graphics.drawable.Drawable defaultBubbleBackground;
+	@Nullable
 	private final TextView reactionsView;
 	@Nullable
 	private final View linkPreviewCard;
@@ -70,6 +72,7 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 		root = v;
 		topNotice = v.findViewById(R.id.topNotice);
 		layout = v.findViewById(R.id.layout);
+		defaultBubbleBackground = layout.getBackground();
 		text = v.findViewById(R.id.text);
 		time = v.findViewById(R.id.time);
 		bomb = v.findViewById(R.id.bomb);
@@ -100,6 +103,37 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 	void bindTimeOnly(ConversationItem item) {
 		setTopNotice(item);
 		time.setText(formatDate(time.getContext(), item.getTime()));
+	}
+
+	protected void applyStickerTextStyle() {
+		text.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 64f);
+		lastTextSizeSp = 64f;
+		layout.setBackground(null);
+		lastBubbleColor = null;
+	}
+
+	protected void applyDefaultTextStyle() {
+		float textSizeSp = com.professor.zerion.android.settings.ChatPreferences
+				.getMessageTextSizeSp(text.getContext());
+		text.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, textSizeSp);
+		lastTextSizeSp = textSizeSp;
+		if (layout.getBackground() == null && defaultBubbleBackground != null
+				&& defaultBubbleBackground.getConstantState() != null) {
+			layout.setBackground(defaultBubbleBackground.getConstantState()
+					.newDrawable().mutate());
+		}
+		if (outViewHolder != null) {
+			int bubbleColor = com.professor.zerion.android.settings.ChatPreferences
+					.getBubbleColor(layout.getContext());
+			android.graphics.drawable.Drawable bg = layout.getBackground();
+			if (bg != null) {
+				bg = bg.mutate();
+				bg.setColorFilter(bubbleColor,
+						android.graphics.PorterDuff.Mode.SRC_IN);
+				layout.setBackground(bg);
+			}
+			lastBubbleColor = bubbleColor;
+		}
 	}
 
 	@CallSuper

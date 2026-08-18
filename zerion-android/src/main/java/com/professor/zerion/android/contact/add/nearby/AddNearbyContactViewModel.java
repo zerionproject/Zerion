@@ -110,8 +110,6 @@ public class AddNearbyContactViewModel extends DbViewModel
 
 	private boolean isBluetoothReadyForPairing() {
 		try {
-			if (android.os.Build.VERSION.SDK_INT
-					< android.os.Build.VERSION_CODES.S) return false;
 			android.bluetooth.BluetoothManager bm =
 					(android.bluetooth.BluetoothManager) getApplication()
 							.getSystemService(android.content.Context
@@ -143,9 +141,14 @@ public class AddNearbyContactViewModel extends DbViewModel
 				KeyAgreementTask t = task;
 				if (t != null) t.connectAndRunProtocol(remote);
 			} catch (IOException | IllegalArgumentException e) {
-				state.postValue(PairingState.FAILED);
+				postFailed();
 			}
 		});
+	}
+
+	private void postFailed() {
+		scanned.set(false);
+		state.postValue(PairingState.FAILED);
 	}
 
 	@Override
@@ -161,9 +164,9 @@ public class AddNearbyContactViewModel extends DbViewModel
 			KeyAgreementResult r = ((KeyAgreementFinishedEvent) e).getResult();
 			ioExecutor.execute(() -> exchangeContacts(r));
 		} else if (e instanceof KeyAgreementFailedEvent) {
-			state.postValue(PairingState.FAILED);
+			postFailed();
 		} else if (e instanceof KeyAgreementAbortedEvent) {
-			state.postValue(PairingState.FAILED);
+			postFailed();
 		}
 	}
 

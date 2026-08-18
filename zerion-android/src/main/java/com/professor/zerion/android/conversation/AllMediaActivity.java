@@ -1,6 +1,7 @@
 package com.professor.zerion.android.conversation;
 
 import android.content.Intent;
+import android.widget.Toast;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -356,6 +357,10 @@ public class AllMediaActivity extends ZerionActivity {
 	}
 
 	private void openMedia(MediaItem item) {
+		if (item.isDocument) {
+			openDocument(item);
+			return;
+		}
 		if (item.attachmentItem == null) {
 			dbExecutor.execute(() -> {
 				try {
@@ -363,12 +368,56 @@ public class AllMediaActivity extends ZerionActivity {
 					AttachmentItem ai = attachmentRetriever.createAttachmentItem(att, true);
 					item.attachmentItem = ai;
 					runOnUiThread(() -> launchMediaViewer(item));
-				} catch (DbException ignored) {
+				} catch (DbException e) {
+					runOnUiThread(() -> Toast.makeText(this,
+							R.string.media_document_open_failed,
+							Toast.LENGTH_SHORT).show());
 				}
 			});
 		} else {
 			launchMediaViewer(item);
 		}
+	}
+
+	private void openDocument(MediaItem item) {
+		dbExecutor.execute(() -> {
+			try {
+				Attachment att =
+						attachmentRetriever.getMessageAttachment(item.header);
+				String mime = item.header.getContentType();
+				String ext = getExtensionFromMimeType(mime)
+						.toLowerCase(java.util.Locale.US);
+				java.io.File dir = new java.io.File(getCacheDir(), "documents");
+				if (!dir.exists()) dir.mkdirs();
+				java.io.File out = new java.io.File(dir,
+						"doc_" + item.messageId.hashCode() + "." + ext);
+				try (java.io.InputStream is = att.getStream();
+						java.io.FileOutputStream fos =
+								new java.io.FileOutputStream(out)) {
+					byte[] buf = new byte[8192];
+					int n;
+					while ((n = is.read(buf)) != -1) fos.write(buf, 0, n);
+				}
+				android.net.Uri uri =
+						androidx.core.content.FileProvider.getUriForFile(this,
+								"com.professor.zerion.fileprovider", out);
+				runOnUiThread(() -> {
+					try {
+						Intent view = new Intent(Intent.ACTION_VIEW);
+						view.setDataAndType(uri, mime);
+						view.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+						startActivity(view);
+					} catch (android.content.ActivityNotFoundException e) {
+						Toast.makeText(this, R.string.media_document_no_app,
+								Toast.LENGTH_SHORT).show();
+					}
+				});
+			} catch (Exception e) {
+				runOnUiThread(() -> Toast.makeText(this,
+						R.string.media_document_open_failed,
+						Toast.LENGTH_SHORT).show());
+			}
+		});
 	}
 
 	private void launchMediaViewer(MediaItem item) {

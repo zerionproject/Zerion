@@ -241,8 +241,9 @@ class ConversationMessageViewHolder extends ConversationItemViewHolder {
 		String body = item.getText();
 		if (com.professor.zerion.android.sticker.StickerUtils
 				.isSingleEmojiSticker(body)) {
-			text.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 64f);
-			layout.setBackground(null);
+			applyStickerTextStyle();
+		} else {
+			applyDefaultTextStyle();
 		}
 
 		if (voiceHolder != null) {

@@ -228,9 +228,6 @@ public class GroupTrConversationActivity extends ZerionActivity
 		ImageButton attachmentBtn = findViewById(R.id.attachmentButton);
 		attachmentBtn.setOnClickListener(v -> launchMediaPicker());
 
-		ImageButton emojiToggle = findViewById(R.id.emojiToggle);
-		emojiToggle.setOnClickListener(v -> input.requestFocus());
-
 		voiceButton = findViewById(R.id.voiceButton);
 		voiceButton.setOnClickListener(v -> onVoiceButton());
 
