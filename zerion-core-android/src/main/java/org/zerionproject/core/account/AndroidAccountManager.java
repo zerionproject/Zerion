@@ -318,7 +318,7 @@ public class AndroidAccountManager extends AccountManagerImpl
 					out.getFD().sync();
 				}
 				byte[] ciphertext = crypto.encryptWithPassword(dbKey, password,
-						databaseConfig.getKeyStrengthener());
+						null);
 				boolean ok = storeEncryptedDatabaseKey(
 						org.zerionproject.core.util.StringUtils.toHexString(
 								ciphertext));
