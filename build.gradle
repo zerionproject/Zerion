@@ -62,4 +62,3 @@ buildscript {
 // recommended CI invocation, and config/owasp-suppressions.xml for accepted
 // false-positives. The CLI is run against the assembled APK / module JARs
 // and reports HTML + JSON to build/reports/dependency-check/.
-

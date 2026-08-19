@@ -177,7 +177,7 @@ public class ChannelSubscribersActivity extends ZerionActivity {
 				runOnUiThread(this::refresh);
 			} catch (DbException ignored) {
 				runOnUiThread(() -> Toast.makeText(this,
-						R.string.channels_react_failed,
+						R.string.channels_ban_failed,
 						Toast.LENGTH_SHORT).show());
 			}
 		});

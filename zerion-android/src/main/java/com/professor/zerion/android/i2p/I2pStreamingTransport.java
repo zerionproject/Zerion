@@ -54,6 +54,11 @@ public class I2pStreamingTransport implements I2pOverlayTransport {
 	@Nullable
 	private volatile I2PSocketManager manager;
 
+	private final Object readyLock = new Object();
+	private final AtomicBoolean readyNotified = new AtomicBoolean(false);
+	@Nullable
+	private Runnable onSessionReady;
+
 	public I2pStreamingTransport(I2pRouter router, Executor ioExecutor,
 			ZtpConnectionHandler handler) {
 		this.router = router;
@@ -66,6 +71,10 @@ public class I2pStreamingTransport implements I2pOverlayTransport {
 			throws IOException {
 		if (!running.compareAndSet(false, true)) {
 			throw new IllegalStateException("already started");
+		}
+		synchronized (readyLock) {
+			readyNotified.set(false);
+			onSessionReady = null;
 		}
 		try {
 			byte[] keyBytes = privateKey != null
@@ -84,6 +93,28 @@ public class I2pStreamingTransport implements I2pOverlayTransport {
 		}
 	}
 
+	@Override
+	public void setOnSessionReady(Runnable callback) {
+		boolean runNow;
+		synchronized (readyLock) {
+			onSessionReady = callback;
+			runNow = manager != null && !readyNotified.get();
+		}
+		if (runNow && readyNotified.compareAndSet(false, true)) {
+			callback.run();
+		}
+	}
+
+	private void notifySessionReady() {
+		Runnable cb;
+		synchronized (readyLock) {
+			cb = onSessionReady;
+		}
+		if (cb != null && readyNotified.compareAndSet(false, true)) {
+			cb.run();
+		}
+	}
+
 	private void initSession(byte[] keyBytes) {
 		int attempt = 0;
 		while (running.get()) {
@@ -94,6 +125,7 @@ public class I2pStreamingTransport implements I2pOverlayTransport {
 				if (mgr != null) {
 					mgr.setAcceptTimeout(ACCEPT_TIMEOUT_MS);
 					manager = mgr;
+					notifySessionReady();
 					acceptLoop(mgr);
 					return;
 				}
@@ -149,6 +181,7 @@ public class I2pStreamingTransport implements I2pOverlayTransport {
 	@Override
 	public void stop() {
 		running.set(false);
+		readyNotified.set(true);
 		I2PSocketManager mgr = manager;
 		if (mgr != null) mgr.destroySocketManager();
 		manager = null;

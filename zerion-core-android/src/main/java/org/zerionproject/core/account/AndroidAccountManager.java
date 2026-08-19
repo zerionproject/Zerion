@@ -90,8 +90,6 @@ public class AndroidAccountManager extends AccountManagerImpl
 			} else {
 				order.addAll(profiles);
 			}
-			int decryptCount = 0;
-			String decryptedId = null;
 			for (String id : order) {
 				profileManager.setActiveProfileId(id);
 				String hex = loadEncryptedDatabaseKey();
@@ -103,12 +101,6 @@ public class AndroidAccountManager extends AccountManagerImpl
 					byte[] plaintext = crypto.decryptWithPassword(ciphertext,
 							password, strengthener);
 					SecretKey key = new SecretKey(plaintext);
-					if (decryptCount > 0) {
-						key.clear();
-						profileManager.setActiveProfileId(previousActive);
-						recordGlobalFailedAttempt();
-						throw new DecryptionException(INVALID_CIPHERTEXT);
-					}
 					boolean needsStrengthenerUpgrade = strengthener != null
 							&& !crypto.isEncryptedWithStrengthenedKey(
 									ciphertext);
@@ -119,8 +111,10 @@ public class AndroidAccountManager extends AccountManagerImpl
 					}
 					materializePendingIdentityIfPresent(id);
 					setDatabaseKey(key);
-					decryptedId = id;
-					decryptCount++;
+					profileManager.setActiveProfileId(id);
+					profileManager.writeLastActiveProfileId(id);
+					resetGlobalLockout();
+					return;
 				} catch (DecryptionException e) {
 					if (e.getDecryptionResult() == KEY_STRENGTHENER_ERROR) {
 						profileManager.setActiveProfileId(previousActive);
@@ -129,12 +123,6 @@ public class AndroidAccountManager extends AccountManagerImpl
 				} catch (org.zerionproject.core.api.FormatException
 						ignored) {
 				}
-			}
-			if (decryptCount == 1 && decryptedId != null) {
-				profileManager.setActiveProfileId(decryptedId);
-				profileManager.writeLastActiveProfileId(decryptedId);
-				resetGlobalLockout();
-				return;
 			}
 			profileManager.setActiveProfileId(previousActive);
 			recordGlobalFailedAttempt();
@@ -318,7 +306,7 @@ public class AndroidAccountManager extends AccountManagerImpl
 					out.getFD().sync();
 				}
 				byte[] ciphertext = crypto.encryptWithPassword(dbKey, password,
-						databaseConfig.getKeyStrengthener());
+						null);
 				boolean ok = storeEncryptedDatabaseKey(
 						org.zerionproject.core.util.StringUtils.toHexString(
 								ciphertext));

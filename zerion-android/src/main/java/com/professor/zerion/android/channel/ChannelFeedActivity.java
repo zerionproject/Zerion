@@ -768,6 +768,9 @@ public class ChannelFeedActivity extends ZerionActivity
 		});
 	}
 
+	private static final java.util.concurrent.Executor THUMB_DECODE_EXECUTOR =
+			java.util.concurrent.Executors.newSingleThreadExecutor();
+
 	private static final android.util.LruCache<String, android.graphics.Bitmap>
 			FEED_THUMB_CACHE = new android.util.LruCache<String,
 					android.graphics.Bitmap>(
@@ -1333,18 +1336,31 @@ public class ChannelFeedActivity extends ZerionActivity
 				spinner.setVisibility(View.GONE);
 				if (att.getThumbnail() != null
 						&& att.getMimeType().startsWith("video/")) {
-					byte[] decrypted = thumbnails.get(
-							ChannelFeedActivity.thumbnailKey(
-									p.getSeqNum(), att.getBlobHash()));
-					if (decrypted != null) {
-						android.graphics.Bitmap bmp =
-								com.professor.zerion.android.util
-										.SafeImageDecoder.decode(
-												decrypted, 1280);
-						if (bmp != null) {
-							thumb.setImageBitmap(bmp);
-							thumb.setVisibility(View.VISIBLE);
-						}
+					String ck = ChannelFeedActivity.thumbnailKey(
+							p.getSeqNum(), att.getBlobHash());
+					byte[] decrypted = thumbnails.get(ck);
+					android.graphics.Bitmap cached = FEED_THUMB_CACHE.get(ck);
+					if (cached != null && !cached.isRecycled()) {
+						thumb.setTag(new Object());
+						thumb.setImageBitmap(cached);
+						thumb.setVisibility(View.VISIBLE);
+					} else if (decrypted != null) {
+						Object token = new Object();
+						thumb.setTag(token);
+						THUMB_DECODE_EXECUTOR.execute(() -> {
+							android.graphics.Bitmap bmp =
+									com.professor.zerion.android.util
+											.SafeImageDecoder.decode(
+													decrypted, 1280);
+							if (bmp == null) return;
+							FEED_THUMB_CACHE.put(ck, bmp);
+							thumb.post(() -> {
+								if (thumb.getTag() == token) {
+									thumb.setImageBitmap(bmp);
+									thumb.setVisibility(View.VISIBLE);
+								}
+							});
+						});
 					}
 				}
 				row.setOnClickListener(v -> listener.onAttachmentTap(

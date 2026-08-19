@@ -106,6 +106,7 @@ public class AddContactActivity extends ZerionActivity implements
 			Toast.makeText(this, R.string.intent_own_link, LENGTH_LONG).show();
 		} else if (viewModel.isValidRemoteContactLink(link)) {
 			viewModel.setRemoteHandshakeLink(link);
+			showInitialFragment(new LinkExchangeFragment());
 		} else {
 			Toast.makeText(this, R.string.invalid_link, LENGTH_LONG).show();
 		}

@@ -74,12 +74,11 @@ public class ChannelInviteHandlerActivity extends ZerionActivity {
 			new MaterialAlertDialogBuilder(this)
 					.setTitle(R.string.channels_join_title)
 					.setMessage(data.toString())
+					.setCancelable(false)
 					.setPositiveButton(R.string.channels_join_action,
 							(d, w) -> handleJoin(link))
 					.setNegativeButton(android.R.string.cancel,
 							(d, w) -> finish())
-					.setOnDismissListener(d -> {
-					})
 					.show();
 		}
 	}
@@ -92,6 +91,7 @@ public class ChannelInviteHandlerActivity extends ZerionActivity {
 		new MaterialAlertDialogBuilder(this)
 				.setTitle(R.string.channels_apply_title)
 				.setView(view)
+				.setCancelable(false)
 				.setPositiveButton(R.string.channels_apply_action,
 						(d, w) -> handleApply(link, nameInput))
 				.setNegativeButton(android.R.string.cancel,

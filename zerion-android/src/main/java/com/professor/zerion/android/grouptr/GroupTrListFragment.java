@@ -310,6 +310,9 @@ public class GroupTrListFragment extends BaseFragment
 					groupTrManager.declineInvite(groupId);
 				}
 			} catch (DbException ex) {
+				runOnUiThreadUnlessDestroyed(() -> Toast.makeText(
+						requireContext(), R.string.grouptr_error_respond,
+						Toast.LENGTH_SHORT).show());
 			}
 			runOnUiThreadUnlessDestroyed(this::loadGroups);
 		});

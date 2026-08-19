@@ -77,6 +77,8 @@ public class ConnectionsFragment extends Fragment {
 	private PluginViewModel pluginViewModel;
 
 	private SwitchMaterial i2pSwitch;
+	private SwitchMaterial i2pDirectReseedSwitch;
+	private View i2pDirectReseedCard;
 	private SwitchMaterial meshSwitch;
 	private SwitchMaterial offlineModeSwitch;
 	private boolean enableMeshForOffline = false;
@@ -164,6 +166,12 @@ public class ConnectionsFragment extends Fragment {
 			if (buttonView.isPressed()) onI2pToggle(isChecked);
 		});
 
+		i2pDirectReseedCard = view.findViewById(R.id.i2p_direct_reseed_card);
+		i2pDirectReseedSwitch = view.findViewById(R.id.i2p_direct_reseed_switch);
+		i2pDirectReseedSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+			if (buttonView.isPressed()) onDirectReseedToggle(isChecked);
+		});
+
 		meshSwitch = view.findViewById(R.id.mesh_switch);
 		meshSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
 			if (buttonView.isPressed()) onMeshToggle(isChecked);
@@ -193,6 +201,22 @@ public class ConnectionsFragment extends Fragment {
 				.setNegativeButton(R.string.cancel,
 						(d, w) -> i2pSwitch.setChecked(false))
 				.setOnCancelListener(d -> i2pSwitch.setChecked(false))
+				.show();
+	}
+
+	private void onDirectReseedToggle(boolean enable) {
+		if (!enable) {
+			pluginViewModel.setDirectReseed(false);
+			return;
+		}
+		new MaterialAlertDialogBuilder(requireContext())
+				.setTitle(R.string.i2p_direct_reseed_warning_title)
+				.setMessage(R.string.i2p_direct_reseed_warning_message)
+				.setPositiveButton(R.string.i2p_direct_reseed_warning_confirm,
+						(d, w) -> pluginViewModel.setDirectReseed(true))
+				.setNegativeButton(R.string.cancel,
+						(d, w) -> i2pDirectReseedSwitch.setChecked(false))
+				.setOnCancelListener(d -> i2pDirectReseedSwitch.setChecked(false))
 				.show();
 	}
 
@@ -321,6 +345,22 @@ public class ConnectionsFragment extends Fragment {
 							(buttonView, isChecked) -> {
 								if (buttonView.isPressed()) {
 									onI2pToggle(isChecked);
+								}
+							});
+					i2pDirectReseedCard.setVisibility(
+							Boolean.TRUE.equals(enabled)
+									? View.VISIBLE : View.GONE);
+				});
+
+		pluginViewModel.getI2pDirectReseedSetting().observe(
+				getViewLifecycleOwner(), enabled -> {
+					i2pDirectReseedSwitch.setOnCheckedChangeListener(null);
+					i2pDirectReseedSwitch.setChecked(
+							Boolean.TRUE.equals(enabled));
+					i2pDirectReseedSwitch.setOnCheckedChangeListener(
+							(buttonView, isChecked) -> {
+								if (buttonView.isPressed()) {
+									onDirectReseedToggle(isChecked);
 								}
 							});
 				});
@@ -504,6 +544,10 @@ public class ConnectionsFragment extends Fragment {
 		super.onStart();
 		requireActivity().setTitle(R.string.network_settings_title);
 		refreshForceCompleteVisibility();
+		if (offlineModeSwitch != null) {
+			offlineModeSwitch.setChecked(pluginManager.isOfflineMode());
+		}
+		refreshMeshSwitch();
 	}
 
 	private void refreshForceCompleteVisibility() {

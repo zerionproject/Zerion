@@ -133,7 +133,10 @@ class IntroductionViewModel extends ContactsViewModel {
 		});
 	}
 
-	void makeIntroduction(@Nullable String text) {
+	LiveData<com.professor.zerion.android.view.TextSendController.SendState>
+			makeIntroduction(@Nullable String text) {
+		MutableLiveData<com.professor.zerion.android.view.TextSendController
+				.SendState> result = new MutableLiveData<>();
 		final IntroductionInfo info =
 				requireNonNull(introductionInfo.getValue());
 		runOnDbThread(() -> {
@@ -141,12 +144,17 @@ class IntroductionViewModel extends ContactsViewModel {
 				introductionManager.makeIntroduction(
 						info.getContact1().getContact(),
 						info.getContact2().getContact(), text);
+				result.postValue(com.professor.zerion.android.view
+						.TextSendController.SendState.SENT);
 			} catch (DbException e) {
 				androidExecutor.runOnUiThread(() -> Toast.makeText(
 						getApplication(), R.string.introduction_error,
 						LENGTH_SHORT).show());
+				result.postValue(com.professor.zerion.android.view
+						.TextSendController.SendState.ERROR);
 			}
 		});
+		return result;
 	}
 
 }

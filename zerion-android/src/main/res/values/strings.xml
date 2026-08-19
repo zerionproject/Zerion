@@ -55,6 +55,11 @@
 	<string name="i2p_enable_warning_title">Enable I2P?</string>
 	<string name="i2p_enable_warning_message">I2P is a second anonymity network you can use alongside Tor. Your messages stay encrypted, so no one can read what you send or who you talk to. But unlike Tor, I2P does not hide your IP address: your network or internet provider can see that this device uses I2P, only that you use it, never the contents. Tor always stays on. Only enable I2P if it is acceptable for your network to see that you use it.</string>
 	<string name="i2p_enable_warning_confirm">Enable I2P</string>
+	<string name="i2p_direct_reseed_title">Bootstrap without Tor</string>
+	<string name="i2p_direct_reseed_summary">Only if Tor is blocked where you are</string>
+	<string name="i2p_direct_reseed_warning_title">Start I2P without Tor?</string>
+	<string name="i2p_direct_reseed_warning_message">Turn this on only if Tor is blocked and cannot connect where you are. If Tor still fails to connect, Zerion will contact a small set of known I2P bootstrap servers directly, one time, over HTTPS with signature checks. That one connection reveals to those servers that your device uses I2P. After it succeeds, I2P runs on its own and Zerion keeps using Tor whenever Tor works. Leave this off if you are not being censored.</string>
+	<string name="i2p_direct_reseed_warning_confirm">Allow direct bootstrap</string>
 	<string name="settings_section_mesh">OFFLINE MESH</string>
 	<string name="mesh_toggle_title">Offline mesh</string>
 	<string name="mesh_toggle_summary">Reach nearby contacts with no internet, over Bluetooth</string>
@@ -160,8 +165,13 @@
 	<string name="vault_doc_next">Next</string>
 	<string name="vault_doc_page_indicator">Page %1$d of %2$d</string>
 	<string name="dialog_disappearing_off">Off</string>
-	<string name="dialog_disappearing_30_seconds">30 seconds</string>
 	<string name="dialog_disappearing_5_minutes">5 minutes</string>
+	<string-array name="default_timer_labels">
+		<item>Off</item>
+		<item>1 day</item>
+		<item>1 week</item>
+		<item>4 weeks</item>
+	</string-array>
 	<string name="dialog_disappearing_30_minutes">30 minutes</string>
 	<string name="dialog_disappearing_1_hour">1 hour</string>
 	<string name="dialog_disappearing_8_hours">8 hours</string>
@@ -247,6 +257,10 @@
 	<string name="dialog_message_lost_password">Your Zerion account is stored encrypted on your device, not in the cloud, so we can\'t reset your password. Would you like to delete your account and start again?\n\nCaution: Your identities, contacts and messages will be permanently lost.</string>
 	<string name="password_missing">Please enter your password</string>
 	<string name="account_locked_try_again">Account locked. Please try again in %s</string>
+	<plurals name="account_locked_minutes">
+		<item quantity="one">%d minute</item>
+		<item quantity="other">%d minutes</item>
+	</plurals>
 	<plurals name="login_failed_normal">
 		<item quantity="one">Incorrect password. %d attempt remaining before lockout.</item>
 		<item quantity="other">Incorrect password. %d attempts remaining before lockout.</item>
@@ -403,6 +417,8 @@
 	<string name="channels_attach_too_many">Too many attachments (max 8)</string>
 	<string name="channels_action_react">React</string>
 	<string name="channels_react_failed">Could not send reaction</string>
+	<string name="channels_leave_failed">Could not leave the channel</string>
+	<string name="channels_ban_failed">Could not ban this subscriber</string>
 	<string name="channels_announce_title">Announce yourself?</string>
 	<string name="channels_announce_message">The channel owner will see your chosen display name and your public key. You can stay anonymous instead. Only the owner ever sees announced subscribers.</string>
 	<string name="channels_announce_name_hint">Display name</string>
@@ -752,6 +768,8 @@
 	<string name="grouptr_error_leave">Could not leave group.</string>
 	<string name="grouptr_error_send">Could not send message.</string>
 	<string name="grouptr_error_save">Could not save setting.</string>
+	<string name="grouptr_error_respond">Could not respond to invitation.</string>
+	<string name="grouptr_post_too_long">Message is too long.</string>
 	<string name="settings_save_failed">Could not save setting.</string>
 	<string name="grouptr_open">Open</string>
 	<string name="grouptr_input_hint">Message</string>
@@ -842,6 +860,8 @@
 	<string name="scroll_to_bottom">Scroll to bottom</string>
 	<string name="all_media">All Media</string>
 	<string name="no_media">No media shared yet</string>
+	<string name="media_document_open_failed">Could not open this document</string>
+	<string name="media_document_no_app">No app available to open this file type</string>
 	<string name="no_images">No images shared yet</string>
 	<string name="no_documents">No documents shared yet</string>
 	<string name="chat_settings">Chat Settings</string>
@@ -1168,24 +1188,6 @@
 	<string name="pref_language_title">Language &amp; region</string>
 	<string name="pref_language_changed">The app will restart to apply the new language.</string>
 	<string name="pref_language_default">System default</string>
-	<string name="reg_lock_title">Registration Lock</string>
-	<string name="reg_lock_summary_off">Protect your account with a PIN or password</string>
-	<string name="reg_lock_summary_pin">Protected with PIN</string>
-	<string name="reg_lock_summary_password">Protected with password</string>
-	<string name="reg_lock_set_pin">Set PIN (6 digits)</string>
-	<string name="reg_lock_set_password">Set password</string>
-	<string name="reg_lock_enter_pin">Enter PIN</string>
-	<string name="reg_lock_enter_password">Enter Password</string>
-	<string name="reg_lock_confirm">Confirm</string>
-	<string name="reg_lock_pin_too_short">PIN must be at least 6 digits</string>
-	<string name="reg_lock_password_too_short">Password must be at least 6 characters</string>
-	<string name="reg_lock_mismatch">Entries do not match</string>
-	<string name="reg_lock_enabled">Registration lock enabled</string>
-	<string name="reg_lock_disabled">Registration lock disabled</string>
-	<string name="reg_lock_change">Change registration lock</string>
-	<string name="reg_lock_disable">Disable registration lock</string>
-	<string name="reg_lock_disable_confirm">Are you sure you want to disable Registration Lock?</string>
-	<string name="reg_lock_choose_type">Choose protection type</string>
 	<string name="invite_friends_title">Invite Friends</string>
 	<string name="invite_friends_summary">Share Zerion with people you trust</string>
 	<string name="invite_friends_message">Chat privately with Zerion \u2014 encrypted messaging and calls over Tor.\n\nDownload from Google Play:\nhttps://play.google.com/store/apps/details?id=com.professor.zerion\n\nOr visit: https://zerion.chat</string>
@@ -1271,11 +1273,17 @@
 	<string name="settings_section_account">Account</string>
 	<string name="backup_export_success">Backup saved</string>
 	<string name="backup_export_success_title">Backup saved</string>
-	<string name="backup_export_warning_after">Your backup is saved. It holds your entire account and is protected only by your passphrase. Keep it somewhere safe, and delete the file once you have moved your account to the other phone.</string>
+	<string name="backup_export_warning_after">Your backup is saved. It holds your account, contacts and messages, but not your Vault entries. Export the Vault separately from the Vault screen if you use it. The backup is protected only by your passphrase, so keep it somewhere safe and delete the file once you have moved your account to the other phone.</string>
 	<string name="backup_export_failed">Could not create the backup</string>
+	<string name="backup_export_not_signed_in">Sign in first, then create a backup.</string>
 	<string name="backup_import_in_progress">Importing account</string>
 	<string name="backup_import_success">Account imported</string>
 	<string name="backup_import_failed">Could not import this backup. Check the passphrase and try again.</string>
+	<string name="backup_import_wrong_passphrase">Wrong passphrase. Check it and try again.</string>
+	<string name="backup_import_not_a_backup">This file is not a Zerion backup.</string>
+	<string name="backup_import_unsupported">This backup was made by a newer version of Zerion. Update the app and try again.</string>
+	<string name="backup_import_corrupt">This backup file is damaged and cannot be read.</string>
+	<string name="backup_import_io_error">Could not read the backup file.</string>
 	<string name="backup_import_success_title">Account imported</string>
 	<string name="backup_import_success_message">Sign in with your new device password. If you moved this account from another phone, remove Zerion from that phone so the two do not run the same identity at once.</string>
 
@@ -1398,6 +1406,7 @@
 	<string name="panic_setting_title">Panic button</string>
 	<string name="panic_setting_hint">Configure how Zerion will react when you use a panic button app</string>
 	<string name="panic_app_setting_title">Panic Button App</string>
+	<string name="panic_app_none_installed">No panic trigger apps are currently installed. You can install Ripple (Panic Button) from F-Droid or other trusted sources to enable this feature.</string>
 	<string name="unknown_app">an unknown app</string>
 	<string name="panic_app_setting_summary">No app has been set</string>
 	<string name="panic_app_setting_none">None</string>
@@ -1747,6 +1756,7 @@
 	<string name="decoy_set_code_empty">Sequence cannot be empty</string>
 	<string name="decoy_set_code_mismatch">Sequences do not match</string>
 	<string name="decoy_set_code_saved">Unlock sequence saved</string>
+	<string name="decoy_set_code_saving">Saving…</string>
 
 	<!-- Wipe Password strings -->
 	<string name="wipe_password_title">Wipe Password</string>

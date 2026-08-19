@@ -72,7 +72,6 @@ dependencyVerification {
 		'androidx.test:core:1.5.0:core-1.5.0.aar:2c06715c0d0843cee2143ab8bb322bb3f34d5247630402fc8c1b6a0eafa15b9f',
 		'androidx.test:monitor:1.4.0:monitor-1.4.0.aar:46a912a1e175f27a97521af3f50e5af87c22c49275dd2c57c043740012806325',
 		'androidx.test:monitor:1.6.1:monitor-1.6.1.aar:2985ce8556989baf7c84342e7f687713c037a39a922e614d1a3ddf1ca3777079',
-		'androidx.test:orchestrator:1.3.0:orchestrator-1.3.0.apk:676f808d08a3d05050eae30c3b7d92ce5cef1e00a54d68355bb7e7d4b72366fe',
 		'androidx.test:rules:1.3.0:rules-1.3.0.aar:c1753946c498b0d5d7cf341cfed661f66915c4c9deb4ed10462a08ae33b2429a',
 		'androidx.test:runner:1.3.0:runner-1.3.0.aar:61d13f5a9fcbbd73ba18fa84e1d6a0111c6e1c665a89b418126966e61fffd93b',
 		'androidx.test:runner:1.5.0:runner-1.5.0.aar:b3c5aabd545b6c260528c8f4e7c98f73628614ea3d5df3a7a44af2136fd8720b',

@@ -29,6 +29,7 @@ import static org.zerionproject.core.api.plugin.I2pConstants.PROP_I2P_DEST;
 import static org.zerionproject.core.api.plugin.Plugin.PREF_PLUGIN_ENABLE;
 import static org.zerionproject.core.api.plugin.Plugin.State.ACTIVE;
 import static org.zerionproject.core.api.plugin.Plugin.State.DISABLED;
+import static org.zerionproject.core.api.plugin.Plugin.State.ENABLING;
 import static org.zerionproject.core.api.plugin.Plugin.State.INACTIVE;
 import static org.zerionproject.core.api.plugin.Plugin.State.STARTING_STOPPING;
 
@@ -105,13 +106,16 @@ class I2pDuplexPlugin implements DuplexPlugin {
 		props.put(PROP_I2P_DEST, dest.getDestination());
 		callback.mergeLocalProperties(props);
 		poller.start();
-		setState(ACTIVE);
+		setState(ENABLING);
+		transport.setOnSessionReady(() -> {
+			if (state == ENABLING) setState(ACTIVE);
+		});
 		poller.pollNow();
 	}
 
 	@Override
 	public void stop() {
-		if (state == ACTIVE) {
+		if (state == ACTIVE || state == ENABLING) {
 			poller.stop();
 			transport.stop();
 		}

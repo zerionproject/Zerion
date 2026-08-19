@@ -95,9 +95,32 @@ public class AddNearbyContactViewModel extends DbViewModel
 
 	public void startListening() {
 		if (!started.compareAndSet(false, true)) return;
+		// Nearby pairing is Bluetooth-only. If Bluetooth is off / unsupported,
+		// fail fast so the UI can prompt the user instead of showing a QR that
+		// can never pair and hanging on "connecting" forever.
+		if (!isBluetoothReadyForPairing()) {
+			started.set(false);
+			state.postValue(PairingState.FAILED);
+			return;
+		}
 		KeyAgreementTask t = taskProvider.get();
 		task = t;
 		ioExecutor.execute(t::listen);
+	}
+
+	private boolean isBluetoothReadyForPairing() {
+		try {
+			android.bluetooth.BluetoothManager bm =
+					(android.bluetooth.BluetoothManager) getApplication()
+							.getSystemService(android.content.Context
+									.BLUETOOTH_SERVICE);
+			if (bm == null) return false;
+			android.bluetooth.BluetoothAdapter adapter = bm.getAdapter();
+			return adapter != null && adapter.isEnabled()
+					&& adapter.getBluetoothLeAdvertiser() != null;
+		} catch (RuntimeException e) {
+			return false;
+		}
 	}
 
 	@Override
@@ -118,9 +141,14 @@ public class AddNearbyContactViewModel extends DbViewModel
 				KeyAgreementTask t = task;
 				if (t != null) t.connectAndRunProtocol(remote);
 			} catch (IOException | IllegalArgumentException e) {
-				state.postValue(PairingState.FAILED);
+				postFailed();
 			}
 		});
+	}
+
+	private void postFailed() {
+		scanned.set(false);
+		state.postValue(PairingState.FAILED);
 	}
 
 	@Override
@@ -136,9 +164,9 @@ public class AddNearbyContactViewModel extends DbViewModel
 			KeyAgreementResult r = ((KeyAgreementFinishedEvent) e).getResult();
 			ioExecutor.execute(() -> exchangeContacts(r));
 		} else if (e instanceof KeyAgreementFailedEvent) {
-			state.postValue(PairingState.FAILED);
+			postFailed();
 		} else if (e instanceof KeyAgreementAbortedEvent) {
-			state.postValue(PairingState.FAILED);
+			postFailed();
 		}
 	}
 

@@ -280,10 +280,20 @@ class GroupTrPostAdapter
 			mediaImage = thumb;
 			duration.setText(cb.formatDuration(parsed.durationMs));
 			time.setText(cb.formatTime(p.getTimestamp()));
-			Bitmap thumbBmp = cb.videoThumb(parsed.payload);
-			if (thumbBmp != null) thumb.setImageBitmap(thumbBmp);
+			thumb.setImageDrawable(null);
 			byte[] bytes = parsed.payload;
 			String mime = parsed.mime;
+			Object token = new Object();
+			imageToken = token;
+			DECODE_EXECUTOR.execute(() -> {
+				Bitmap thumbBmp = cb.videoThumb(bytes);
+				if (thumbBmp == null) return;
+				thumb.post(() -> {
+					if (imageToken == token && mediaImage == thumb) {
+						thumb.setImageBitmap(thumbBmp);
+					}
+				});
+			});
 			View bubble = itemView.findViewById(R.id.mediaBubble);
 			bubble.setOnClickListener(v -> cb.onVideoClick(bytes, mime));
 		}

@@ -128,14 +128,19 @@ public class IntroductionMessageFragment extends BaseFragment
 	public LiveData<SendState> onSendClick(@Nullable String text,
 			List<AttachmentHeader> headers, long expectedAutoDeleteTimer) {
 		ui.message.setReady(false);
-
-		viewModel.makeIntroduction(text);
-
 		hideSoftKeyboard(ui.message);
-		FragmentActivity activity = requireActivity();
-		activity.setResult(RESULT_OK);
-		activity.supportFinishAfterTransition();
-		return new MutableLiveData<>(SENT);
+
+		LiveData<SendState> result = viewModel.makeIntroduction(text);
+		result.observe(getViewLifecycleOwner(), state -> {
+			if (state == SENT) {
+				FragmentActivity activity = requireActivity();
+				activity.setResult(RESULT_OK);
+				activity.supportFinishAfterTransition();
+			} else if (state == SendState.ERROR) {
+				ui.message.setReady(true);
+			}
+		});
+		return result;
 	}
 
 	private static class ViewHolder {

@@ -36,6 +36,11 @@ public class DecoyCalculatorActivity extends Activity {
 	private final StringBuilder input = new StringBuilder();
 	private final List<Character> rawInput = new ArrayList<>();
 
+	private final java.util.concurrent.ExecutorService decoyExecutor =
+			java.util.concurrent.Executors.newSingleThreadExecutor();
+	private final java.util.concurrent.atomic.AtomicBoolean verifying =
+			new java.util.concurrent.atomic.AtomicBoolean(false);
+
 	@Override
 	protected void onCreate(@Nullable Bundle state) {
 		super.onCreate(state);
@@ -116,19 +121,7 @@ public class DecoyCalculatorActivity extends Activity {
 
 	private void onEquals() {
 		char[] candidate = toChars(rawInput);
-		try {
-			if (DecoyConfig.verify(this, candidate)) {
-				DECOY_PASSED_TOKEN.set(true);
-				Intent i = new Intent(this, SplashScreenActivity.class);
-				i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
-						| Intent.FLAG_ACTIVITY_CLEAR_TASK);
-				startActivity(i);
-				finish();
-				return;
-			}
-		} finally {
-			Arrays.fill(candidate, '\0');
-		}
+
 		Double result = evaluate(input.toString());
 		input.setLength(0);
 		rawInput.clear();
@@ -138,6 +131,31 @@ public class DecoyCalculatorActivity extends Activity {
 			input.append("0");
 		}
 		refresh();
+
+		if (verifying.compareAndSet(false, true)) {
+			decoyExecutor.execute(() -> {
+				boolean ok = false;
+				try {
+					ok = DecoyConfig.verify(this, candidate);
+				} finally {
+					Arrays.fill(candidate, '\0');
+					verifying.set(false);
+				}
+				if (ok) runOnUiThread(this::enterRealApp);
+			});
+		} else {
+			Arrays.fill(candidate, '\0');
+		}
+	}
+
+	private void enterRealApp() {
+		if (isFinishing() || isDestroyed()) return;
+		DECOY_PASSED_TOKEN.set(true);
+		Intent i = new Intent(this, SplashScreenActivity.class);
+		i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+				| Intent.FLAG_ACTIVITY_CLEAR_TASK);
+		startActivity(i);
+		finish();
 	}
 
 	private void refresh() {
@@ -183,6 +201,7 @@ public class DecoyCalculatorActivity extends Activity {
 			}
 		}
 		if (nums.isEmpty()) return null;
+		if (nums.size() != ops.size() + 1) return null;
 		for (int i = 0; i < ops.size(); i++) {
 			char op = ops.get(i);
 			if (op == OP_MUL || op == OP_DIV) {
@@ -216,6 +235,12 @@ public class DecoyCalculatorActivity extends Activity {
 		return String.format(java.util.Locale.US, "%.10g", v)
 				.replaceAll("0+$", "")
 				.replaceAll("\\.$", "");
+	}
+
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		decoyExecutor.shutdownNow();
 	}
 
 	@Override

@@ -86,6 +86,10 @@ class ConversationRequestItem extends ConversationNoticeItem {
 		this.answered = true;
 	}
 
+	void setAnswered(boolean answered) {
+		this.answered = answered;
+	}
+
 	boolean canBeOpened() {
 		return canBeOpened;
 	}

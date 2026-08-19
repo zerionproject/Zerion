@@ -133,6 +133,11 @@ public class I2pTransport implements I2pOverlayTransport {
 		// not toggled through SAM here.
 	}
 
+	@Override
+	public void setOnSessionReady(Runnable callback) {
+		callback.run();
+	}
+
 	public void stop() {
 		running.set(false);
 		ServerSocket ss = serverSocket;

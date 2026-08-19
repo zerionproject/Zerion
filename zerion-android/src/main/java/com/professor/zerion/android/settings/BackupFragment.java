@@ -17,6 +17,7 @@ import android.widget.Toast;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.professor.zerion.R;
 import com.professor.zerion.android.backup.AccountBackupManager;
+import com.professor.zerion.android.backup.BackupException;
 import com.professor.zerion.android.util.ActivityLaunchers.CreateDocumentAdvanced;
 import com.professor.zerion.android.util.ActivityLaunchers.OpenDocumentAdvanced;
 
@@ -186,6 +187,7 @@ public class BackupFragment extends Fragment {
 		toast(R.string.backup_export_in_progress);
 		ioExecutor.execute(() -> {
 			boolean ok = false;
+			int failMessage = R.string.backup_export_failed;
 			byte[] data = null;
 			try {
 				data = backupManager.exportAccount(passphrase);
@@ -196,21 +198,30 @@ public class BackupFragment extends Fragment {
 					os.flush();
 				}
 				ok = true;
+			} catch (BackupException e) {
+				failMessage = exportFailureMessage(e.reason);
 			} catch (Throwable e) {
-				ok = false;
+				failMessage = R.string.backup_export_failed;
 			} finally {
 				if (data != null) Arrays.fill(data, (byte) 0);
 				Arrays.fill(passphrase, '\0');
 			}
 			boolean success = ok;
-			mainHandler.post(() -> onExportFinished(success));
+			int message = failMessage;
+			mainHandler.post(() -> onExportFinished(success, message));
 		});
 	}
 
-	private void onExportFinished(boolean success) {
+	private int exportFailureMessage(BackupException.Reason reason) {
+		if (reason == BackupException.Reason.NOT_SIGNED_IN) {
+			return R.string.backup_export_not_signed_in;
+		}
+		return R.string.backup_export_failed;
+	}
+
+	private void onExportFinished(boolean success, int failMessage) {
 		if (!isAdded()) {
-			toast(success ? R.string.backup_export_success
-					: R.string.backup_export_failed);
+			toast(success ? R.string.backup_export_success : failMessage);
 			return;
 		}
 		if (success) {
@@ -221,7 +232,7 @@ public class BackupFragment extends Fragment {
 					.setPositiveButton(R.string.ok, null)
 					.show();
 		} else {
-			toast(R.string.backup_export_failed);
+			toast(failMessage);
 		}
 	}
 
@@ -230,6 +241,7 @@ public class BackupFragment extends Fragment {
 		toast(R.string.backup_import_in_progress);
 		ioExecutor.execute(() -> {
 			boolean ok = false;
+			int failMessage = R.string.backup_import_failed;
 			byte[] data = null;
 			try {
 				try (InputStream is =
@@ -239,22 +251,41 @@ public class BackupFragment extends Fragment {
 				}
 				backupManager.importAccount(data, passphrase, newPassword);
 				ok = true;
+			} catch (BackupException e) {
+				failMessage = importFailureMessage(e.reason);
 			} catch (Throwable e) {
-				ok = false;
+				failMessage = R.string.backup_import_failed;
 			} finally {
 				if (data != null) Arrays.fill(data, (byte) 0);
 				Arrays.fill(passphrase, '\0');
 				Arrays.fill(newPassword, '\0');
 			}
 			boolean success = ok;
-			mainHandler.post(() -> onImportFinished(success));
+			int message = failMessage;
+			mainHandler.post(() -> onImportFinished(success, message));
 		});
 	}
 
-	private void onImportFinished(boolean success) {
+	private int importFailureMessage(BackupException.Reason reason) {
+		switch (reason) {
+			case WRONG_PASSPHRASE:
+				return R.string.backup_import_wrong_passphrase;
+			case NOT_A_BACKUP:
+				return R.string.backup_import_not_a_backup;
+			case UNSUPPORTED_VERSION:
+				return R.string.backup_import_unsupported;
+			case CORRUPT:
+				return R.string.backup_import_corrupt;
+			case IO_ERROR:
+				return R.string.backup_import_io_error;
+			default:
+				return R.string.backup_import_failed;
+		}
+	}
+
+	private void onImportFinished(boolean success, int failMessage) {
 		if (!isAdded()) {
-			toast(success ? R.string.backup_import_success
-					: R.string.backup_import_failed);
+			toast(success ? R.string.backup_import_success : failMessage);
 			return;
 		}
 		if (success) {
@@ -264,7 +295,7 @@ public class BackupFragment extends Fragment {
 					.setPositiveButton(R.string.ok, null)
 					.show();
 		} else {
-			toast(R.string.backup_import_failed);
+			toast(failMessage);
 		}
 	}
 

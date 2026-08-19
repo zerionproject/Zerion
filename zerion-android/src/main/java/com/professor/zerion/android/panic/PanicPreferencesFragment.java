@@ -131,9 +131,7 @@ public class PanicPreferencesFragment extends PreferenceFragmentCompat {
 				new MaterialAlertDialogBuilder(requireContext(),
 						R.style.ZerionDialogTheme)
 						.setTitle(R.string.panic_app_setting_title)
-						.setMessage("No panic trigger apps are currently installed. " +
-								"You can install Ripple (Panic Button) from F-Droid or " +
-								"other trusted sources to enable this feature.")
+						.setMessage(R.string.panic_app_none_installed)
 						.setPositiveButton(android.R.string.ok, null)
 						.show();
 				return true;

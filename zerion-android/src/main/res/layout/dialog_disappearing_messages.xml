@@ -29,15 +29,6 @@
             android:orientation="vertical">
 
             <RadioButton
-                android:id="@+id/timer_30_seconds"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:text="@string/dialog_disappearing_30_seconds"
-                android:textColor="@android:color/white"
-                android:textSize="16sp"
-                android:buttonTint="@color/zerion_primary_accent" />
-
-            <RadioButton
                 android:id="@+id/timer_5_minutes"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"

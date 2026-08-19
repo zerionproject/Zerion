@@ -66,8 +66,6 @@ public class SecurityFragment extends Fragment {
 	private View defaultTimerCard;
 	private TextView defaultTimerValue;
 	private View changePasswordCard;
-	private View registrationLockCard;
-	private TextView registrationLockSummary;
 	private View wipePasswordCard;
 	private TextView wipePasswordSummary;
 	private SwitchMaterial decoySwitch;
@@ -77,12 +75,23 @@ public class SecurityFragment extends Fragment {
 	private String[] timeoutEntries;
 	private String[] timeoutValues;
 
+	private final java.util.concurrent.ExecutorService kdfExecutor =
+			java.util.concurrent.Executors.newSingleThreadExecutor();
+	private final android.os.Handler mainHandler =
+			new android.os.Handler(android.os.Looper.getMainLooper());
+
 	@Override
 	public void onAttach(@NonNull Context context) {
 		super.onAttach(context);
 		getAndroidComponent(context).inject(this);
 		viewModel = new ViewModelProvider(requireActivity(), viewModelFactory)
 				.get(SettingsViewModel.class);
+	}
+
+	@Override
+	public void onDestroy() {
+		super.onDestroy();
+		kdfExecutor.shutdownNow();
 	}
 
 	@Nullable
@@ -111,8 +120,6 @@ public class SecurityFragment extends Fragment {
 		defaultTimerCard = view.findViewById(R.id.default_timer_card);
 		defaultTimerValue = view.findViewById(R.id.default_timer_value);
 		changePasswordCard = view.findViewById(R.id.change_password_card);
-		registrationLockCard = view.findViewById(R.id.registration_lock_card);
-		registrationLockSummary = view.findViewById(R.id.reg_lock_summary);
 		wipePasswordCard = view.findViewById(R.id.wipe_password_card);
 		wipePasswordSummary = view.findViewById(R.id.wipe_password_summary);
 		decoySwitch = view.findViewById(R.id.decoy_switch);
@@ -188,11 +195,6 @@ public class SecurityFragment extends Fragment {
 			Intent intent = new Intent(requireContext(), ChangePasswordActivity.class);
 			startActivity(intent);
 		});
-
-		if (registrationLockCard != null) {
-			registrationLockCard.setOnClickListener(v -> showRegistrationLockDialog());
-			updateRegistrationLockSummary();
-		}
 
 		wipePasswordCard.setOnClickListener(v -> {
 			WipePasswordManager mgr = getWipePasswordManager();
@@ -418,12 +420,13 @@ public class SecurityFragment extends Fragment {
 
 	private void updateDefaultTimerDisplay() {
 		long value = uiPrefs.getLong("default_disappearing_timer", -1L);
-		String text = "Off";
+		String[] labels = getResources().getStringArray(
+				R.array.default_timer_labels);
+		String text = labels[0];
 		if (value > 0) {
 			for (int i = 1; i < DEFAULT_TIMER_VALUES.length; i++) {
 				if (DEFAULT_TIMER_VALUES[i] == value) {
-					text = new String[]{"Off", "1 day", "1 week",
-							"4 weeks"}[i];
+					text = labels[i];
 					break;
 				}
 			}
@@ -432,7 +435,8 @@ public class SecurityFragment extends Fragment {
 	}
 
 	private void showDefaultTimerDialog() {
-		String[] entries = {"Off", "1 day", "1 week", "4 weeks"};
+		String[] entries = getResources().getStringArray(
+				R.array.default_timer_labels);
 		long stored = uiPrefs.getLong("default_disappearing_timer", -1L);
 		int selectedIndex = 0;
 		for (int i = 0; i < DEFAULT_TIMER_VALUES.length; i++) {
@@ -515,8 +519,23 @@ public class SecurityFragment extends Fragment {
 		TextView warningText = dialogView.findViewById(R.id.warning_text);
 		codeLayout1.setHint(getString(R.string.decoy_set_code_hint));
 		codeLayout2.setHint(getString(R.string.decoy_set_code_confirm_hint));
-		codeInput1.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
-		codeInput2.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+		int maskedNumber = android.text.InputType.TYPE_CLASS_NUMBER
+				| android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD;
+		codeInput1.setInputType(maskedNumber);
+		codeInput2.setInputType(maskedNumber);
+		android.widget.CheckBox showCode =
+				dialogView.findViewById(R.id.show_password_checkbox);
+		if (showCode != null) {
+			showCode.setOnCheckedChangeListener((btn, checked) -> {
+				int type = checked
+						? android.text.InputType.TYPE_CLASS_NUMBER
+						: maskedNumber;
+				codeInput1.setInputType(type);
+				codeInput2.setInputType(type);
+				codeInput1.setSelection(codeInput1.length());
+				codeInput2.setSelection(codeInput2.length());
+			});
+		}
 		warningText.setText(R.string.decoy_set_code_warning);
 		new MaterialAlertDialogBuilder(requireContext())
 				.setTitle(R.string.decoy_set_code_title)
@@ -525,29 +544,43 @@ public class SecurityFragment extends Fragment {
 						(d, w) -> {
 							char[] a = readChars(codeInput1);
 							char[] b = readChars(codeInput2);
-							try {
-								if (a.length == 0) {
-									Toast.makeText(requireContext(),
-											R.string.decoy_set_code_empty,
-											Toast.LENGTH_SHORT).show();
-									return;
-								}
-								if (!java.util.Arrays.equals(a, b)) {
-									Toast.makeText(requireContext(),
-											R.string.decoy_set_code_mismatch,
-											Toast.LENGTH_SHORT).show();
-									return;
-								}
-								com.professor.zerion.android.decoy.DecoyConfig
-										.setUnlockCode(requireContext(), a);
-								updateDecoyCodeSummary();
-								Toast.makeText(requireContext(),
-										R.string.decoy_set_code_saved,
-										Toast.LENGTH_SHORT).show();
-							} finally {
+							if (a.length == 0) {
 								java.util.Arrays.fill(a, '\0');
 								java.util.Arrays.fill(b, '\0');
+								Toast.makeText(requireContext(),
+										R.string.decoy_set_code_empty,
+										Toast.LENGTH_SHORT).show();
+								return;
 							}
+							if (!java.util.Arrays.equals(a, b)) {
+								java.util.Arrays.fill(a, '\0');
+								java.util.Arrays.fill(b, '\0');
+								Toast.makeText(requireContext(),
+										R.string.decoy_set_code_mismatch,
+										Toast.LENGTH_SHORT).show();
+								return;
+							}
+							java.util.Arrays.fill(b, '\0');
+							Context appContext =
+									requireContext().getApplicationContext();
+							Toast.makeText(requireContext(),
+									R.string.decoy_set_code_saving,
+									Toast.LENGTH_SHORT).show();
+							kdfExecutor.execute(() -> {
+								try {
+									com.professor.zerion.android.decoy.DecoyConfig
+											.setUnlockCode(appContext, a);
+									mainHandler.post(() -> {
+										if (!isAdded()) return;
+										updateDecoyCodeSummary();
+										Toast.makeText(requireContext(),
+												R.string.decoy_set_code_saved,
+												Toast.LENGTH_SHORT).show();
+									});
+								} finally {
+									java.util.Arrays.fill(a, '\0');
+								}
+							});
 						})
 				.setNegativeButton(android.R.string.cancel, null)
 				.show();
@@ -575,6 +608,22 @@ public class SecurityFragment extends Fragment {
 		if (warningText != null) {
 			warningText.setText(R.string.wipe_password_warning);
 			warningText.setVisibility(View.VISIBLE);
+		}
+
+		android.widget.CheckBox showWipePwd =
+				dialogView.findViewById(R.id.show_password_checkbox);
+		if (showWipePwd != null && passwordInput1 != null && passwordInput2 != null) {
+			showWipePwd.setOnCheckedChangeListener((btn, checked) -> {
+				int type = checked
+						? android.text.InputType.TYPE_CLASS_TEXT
+								| android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+						: android.text.InputType.TYPE_CLASS_TEXT
+								| android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD;
+				passwordInput1.setInputType(type);
+				passwordInput2.setInputType(type);
+				passwordInput1.setSelection(passwordInput1.length());
+				passwordInput2.setSelection(passwordInput2.length());
+			});
 		}
 
 		new MaterialAlertDialogBuilder(requireContext())
@@ -608,10 +657,12 @@ public class SecurityFragment extends Fragment {
 
 						WipePasswordManager mgr = getWipePasswordManager();
 						final char[] pwToSet = pw1;
-						new Thread(() -> {
-							boolean ok = mgr != null && mgr.setWipePassword(pwToSet);
+						kdfExecutor.execute(() -> {
+							boolean ok = mgr != null
+									&& mgr.setWipePassword(pwToSet);
 							java.util.Arrays.fill(pwToSet, '\0');
-							requireActivity().runOnUiThread(() -> {
+							mainHandler.post(() -> {
+								if (!isAdded()) return;
 								if (ok) {
 									showToast(R.string.wipe_password_set_success);
 									updateWipePasswordSummary();
@@ -619,7 +670,7 @@ public class SecurityFragment extends Fragment {
 									showToast(R.string.wipe_password_set_failed);
 								}
 							});
-						}).start();
+						});
 						pw1 = null;
 					} finally {
 						if (pw1 != null) java.util.Arrays.fill(pw1, '\0');
@@ -651,142 +702,6 @@ public class SecurityFragment extends Fragment {
 	private void showToast(int messageResId) {
 		android.widget.Toast.makeText(requireContext(), messageResId,
 				android.widget.Toast.LENGTH_SHORT).show();
-	}
-
-	private void updateRegistrationLockSummary() {
-		if (registrationLockSummary == null) return;
-		if (!RegistrationLockManager.isEnabled(requireContext())) {
-			registrationLockSummary.setText(R.string.reg_lock_summary_off);
-		} else {
-			int type = RegistrationLockManager.getType(requireContext());
-			registrationLockSummary.setText(
-					type == RegistrationLockManager.TYPE_PIN
-							? R.string.reg_lock_summary_pin
-							: R.string.reg_lock_summary_password);
-		}
-	}
-
-	private void showRegistrationLockDialog() {
-		if (RegistrationLockManager.isEnabled(requireContext())) {
-			String[] options = {
-					getString(R.string.reg_lock_change),
-					getString(R.string.reg_lock_disable)
-			};
-			new MaterialAlertDialogBuilder(requireContext())
-					.setTitle(R.string.reg_lock_title)
-					.setItems(options, (dialog, which) -> {
-						if (which == 0) {
-							showRegLockTypeChooser();
-						} else {
-							new MaterialAlertDialogBuilder(requireContext())
-									.setTitle(R.string.reg_lock_disable)
-									.setMessage(R.string.reg_lock_disable_confirm)
-									.setPositiveButton(R.string.remove, (d, w) -> {
-										RegistrationLockManager.disable(requireContext());
-										updateRegistrationLockSummary();
-										showToast(R.string.reg_lock_disabled);
-									})
-									.setNegativeButton(R.string.cancel, null)
-									.show();
-						}
-					})
-					.setNegativeButton(R.string.cancel, null)
-					.show();
-		} else {
-			showRegLockTypeChooser();
-		}
-	}
-
-	private void showRegLockTypeChooser() {
-		String[] types = {
-				getString(R.string.reg_lock_set_pin),
-				getString(R.string.reg_lock_set_password)
-		};
-		new MaterialAlertDialogBuilder(requireContext())
-				.setTitle(R.string.reg_lock_choose_type)
-				.setItems(types, (dialog, which) -> {
-					if (which == 0) {
-						showRegLockPinEntry(RegistrationLockManager.TYPE_PIN);
-					} else {
-						showRegLockPinEntry(RegistrationLockManager.TYPE_PASSWORD);
-					}
-				})
-				.setNegativeButton(R.string.cancel, null)
-				.show();
-	}
-
-	private void showRegLockPinEntry(int type) {
-		boolean isPin = type == RegistrationLockManager.TYPE_PIN;
-		int inputType = isPin
-				? (android.text.InputType.TYPE_CLASS_NUMBER
-						| android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD)
-				: (android.text.InputType.TYPE_CLASS_TEXT
-						| android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
-		int hintRes = isPin ? R.string.reg_lock_enter_pin
-				: R.string.reg_lock_enter_password;
-		int minLength = 6;
-
-		android.widget.EditText input1 = new android.widget.EditText(requireContext());
-		input1.setHint(hintRes);
-		input1.setInputType(inputType);
-		input1.setTextColor(0xFFFFFFFF);
-		input1.setHintTextColor(0x80FFFFFF);
-
-		new MaterialAlertDialogBuilder(requireContext())
-				.setTitle(isPin ? R.string.reg_lock_set_pin
-						: R.string.reg_lock_set_password)
-				.setView(input1)
-				.setPositiveButton(R.string.continue_button, (d, w) -> {
-					String val = input1.getText().toString();
-					if (val.length() < minLength) {
-						showToast(isPin ? R.string.reg_lock_pin_too_short
-								: R.string.reg_lock_password_too_short);
-						return;
-					}
-					showRegLockConfirmEntry(type, val.toCharArray());
-				})
-				.setNegativeButton(R.string.cancel, null)
-				.show();
-	}
-
-	private void showRegLockConfirmEntry(int type, char[] firstEntry) {
-		boolean isPin = type == RegistrationLockManager.TYPE_PIN;
-		int inputType = isPin
-				? (android.text.InputType.TYPE_CLASS_NUMBER
-						| android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD)
-				: (android.text.InputType.TYPE_CLASS_TEXT
-						| android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
-
-		android.widget.EditText input2 = new android.widget.EditText(requireContext());
-		input2.setHint(R.string.reg_lock_confirm);
-		input2.setInputType(inputType);
-		input2.setTextColor(0xFFFFFFFF);
-		input2.setHintTextColor(0x80FFFFFF);
-
-		new MaterialAlertDialogBuilder(requireContext())
-				.setTitle(R.string.reg_lock_confirm)
-				.setView(input2)
-				.setPositiveButton(android.R.string.ok, (d, w) -> {
-					char[] confirm = input2.getText().toString().toCharArray();
-					try {
-						if (!java.util.Arrays.equals(firstEntry, confirm)) {
-							showToast(R.string.reg_lock_mismatch);
-							return;
-						}
-						if (RegistrationLockManager.setRegistrationLock(
-								requireContext(), firstEntry, type)) {
-							updateRegistrationLockSummary();
-							showToast(R.string.reg_lock_enabled);
-						}
-					} finally {
-						java.util.Arrays.fill(firstEntry, '\0');
-						java.util.Arrays.fill(confirm, '\0');
-					}
-				})
-				.setNegativeButton(R.string.cancel, (d, w) -> {
-					java.util.Arrays.fill(firstEntry, '\0');
-				})
-				.show();
 	}
 
 }
