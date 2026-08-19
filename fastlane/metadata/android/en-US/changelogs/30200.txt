@@ -1,5 +1,11 @@
-v3.0.2: pairing and connection fixes
+v3.0.2: reliability, I2P and translations
 
-Fixes remote contact adding, where an upgraded account could sit on "connecting" because its post-quantum handshake key was regenerated each start instead of saved. It is now stored once, so links stay stable. If a contact is still stuck, remove it and add it again with a fresh link. Nearby pairing now reports clearly when Bluetooth is off instead of hanging, and leaving Offline mode no longer briefly drops Bluetooth. No database upgrade from 3.0.1.
+A broad stability release. Remote contact adding over links is fixed: an upgraded account could sit on "connecting" because its post-quantum handshake key was regenerated on each start instead of stored once. If a contact is still stuck, remove it and add it again with a fresh link. The calculator decoy no longer freezes while you enter the code, and I2P now connects and reconnects reliably, with an optional off-by-default direct bootstrap for places where Tor is blocked.
+
+Dozens of smaller fixes across messaging, backups, groups and channels: signing in works correctly when profiles share a password, backup import shows clear error messages, documents open from the media gallery, and several stuck or dead-end screens now behave properly. The network status screen reflects real connectivity.
+
+Twelve languages are now fully translated: Simplified and Traditional Chinese, Spanish, German, French, Italian, Portuguese, Russian, Japanese, Korean, Arabic and Dutch.
+
+No database upgrade from 3.0.1.
 
 Full notes: https://github.com/zerionproject/Zerion/releases/tag/v3.0.2
