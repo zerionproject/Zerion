@@ -72,6 +72,10 @@ public class I2pStreamingTransport implements I2pOverlayTransport {
 		if (!running.compareAndSet(false, true)) {
 			throw new IllegalStateException("already started");
 		}
+		synchronized (readyLock) {
+			readyNotified.set(false);
+			onSessionReady = null;
+		}
 		try {
 			byte[] keyBytes = privateKey != null
 					? Base64.decode(privateKey) : generateKeys();
