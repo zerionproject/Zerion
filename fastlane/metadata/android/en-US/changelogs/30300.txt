@@ -1,0 +1,9 @@
+v3.0.3: safer account deletion and clearer contact status
+
+The lost-password screen can erase an account without the password, so it now asks you to type DELETE before the wipe can run. This prevents an irreversible deletion from being triggered by accident or by someone with brief physical access to an unlocked device.
+
+A contact added over a link is now labelled Cryptographically paired rather than Verified. Link pairing sets up an encrypted channel but does not confirm the person's identity in person, and the new wording reflects that.
+
+The disappearing-messages timer shown in a chat now updates immediately after you change it in the chat settings, instead of after leaving and reopening the chat.
+
+Full notes: https://github.com/zerionproject/Zerion/releases/tag/v3.0.3
