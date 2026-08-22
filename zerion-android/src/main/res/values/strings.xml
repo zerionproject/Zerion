@@ -255,6 +255,8 @@
 	<string name="forgotten_password">Forgot your password?</string>
 	<string name="dialog_title_lost_password">Lost Password</string>
 	<string name="dialog_message_lost_password">Your Zerion account is stored encrypted on your device, not in the cloud, so we can\'t reset your password. Would you like to delete your account and start again?\n\nCaution: Your identities, contacts and messages will be permanently lost.</string>
+	<string name="delete_confirm_word">DELETE</string>
+	<string name="delete_confirm_hint">Type %1$s to confirm</string>
 	<string name="password_missing">Please enter your password</string>
 	<string name="account_locked_try_again">Account locked. Please try again in %s</string>
 	<plurals name="account_locked_minutes">
@@ -876,7 +878,7 @@
 	<string name="sound_and_notifications">Sound &amp; Notifications</string>
 	<string name="mute_notifications">Mute Notifications</string>
 	<string name="vibration">Vibration</string>
-	<string name="verified_contact">Verified Contact</string>
+	<string name="verified_contact">Cryptographically paired</string>
 	<string name="verify_to_send_media_banner">Verify this contact to send stickers and attachments</string>
 	<string name="verify_to_send_media_title">Verify this contact first</string>
 	<string name="verify_to_send_media_message">For your security, attachments, stickers and voice messages can only be sent between contacts who have verified each other. Open contact info to compare safety numbers.</string>
@@ -1072,7 +1074,7 @@
 	<!-- Peer trust levels -->
 
 	<string name="peer_trust_level_unverified">Unverified contact</string>
-	<string name="peer_trust_level_verified">Verified contact</string>
+	<string name="peer_trust_level_verified">Cryptographically paired</string>
 	<string name="peer_trust_level_ourselves">Me</string>
 	<string name="peer_trust_level_stranger">Stranger</string>
 

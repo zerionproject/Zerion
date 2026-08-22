@@ -2,6 +2,7 @@ package com.professor.zerion.android.login;
 
 import android.os.Bundle;
 import android.text.Editable;
+import android.text.InputType;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -226,16 +227,46 @@ public class PasswordFragment extends BaseFragment implements TextWatcher {
 	}
 
 	private void onForgottenPasswordClick() {
+		String required = getString(R.string.delete_confirm_word);
+		TextInputLayout til = new TextInputLayout(requireContext());
+		TextInputEditText confirmInput = new TextInputEditText(til.getContext());
+		confirmInput.setHint(getString(R.string.delete_confirm_hint, required));
+		confirmInput.setInputType(InputType.TYPE_CLASS_TEXT
+				| InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+		til.addView(confirmInput);
+		int pad = Math.round(24 * getResources().getDisplayMetrics().density);
+		til.setPadding(pad, 0, pad, 0);
+
 		MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(
 				requireContext(), R.style.ZerionDialogTheme);
 		builder.setTitle(R.string.dialog_title_lost_password);
 		builder.setBackgroundInsetStart(25);
 		builder.setBackgroundInsetEnd(25);
 		builder.setMessage(R.string.dialog_message_lost_password);
+		builder.setView(til);
 		builder.setPositiveButton(R.string.cancel, null);
 		builder.setNegativeButton(R.string.delete,
 				(dialog, which) -> viewModel.deleteAccount());
 		AlertDialog dialog = builder.create();
+		dialog.setOnShowListener(d -> {
+			Button delete = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
+			delete.setEnabled(false);
+			confirmInput.addTextChangedListener(new TextWatcher() {
+				@Override
+				public void beforeTextChanged(CharSequence s, int st, int c, int a) {
+				}
+
+				@Override
+				public void onTextChanged(CharSequence s, int st, int b, int c) {
+				}
+
+				@Override
+				public void afterTextChanged(Editable s) {
+					delete.setEnabled(
+							s.toString().trim().equalsIgnoreCase(required));
+				}
+			});
+		});
 		dialog.show();
 	}
 
