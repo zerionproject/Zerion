@@ -427,6 +427,18 @@ public class ConversationViewModel extends DbViewModel
 		});
 	}
 
+	void reloadAutoDeleteTimer() {
+		runOnDbThread(() -> {
+			try {
+				long timer = db.transactionWithResult(true, txn ->
+						autoDeleteManager.getAutoDeleteTimer(txn, contactId));
+				autoDeleteTimer.postValue(timer);
+			} catch (DbException e) {
+				handleException(e);
+			}
+		});
+	}
+
 	void setContactAlias(String alias) {
 		runOnDbThread(() -> {
 			try {

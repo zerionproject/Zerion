@@ -908,6 +908,7 @@ public class ConversationActivity extends ZerionActivity
 		displayContactOnlineStatus();
 		list.startPeriodicUpdate();
 		loadMessages();
+		viewModel.reloadAutoDeleteTimer();
 		voiceCallsEnabled = uiPrefs.getBoolean(
 				com.professor.zerion.android.settings.SecurityFragment
 						.PREF_VOICE_CALLS_ENABLED, true);
