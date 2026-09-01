@@ -8,6 +8,6 @@
         android:title="Edit"
         android:icon="@drawable/ic_note"
         app:showAsAction="ifRoom"
-        app:iconTint="@android:color/white" />
+        app:iconTint="@color/zerion_text_primary" />
 
 </menu>

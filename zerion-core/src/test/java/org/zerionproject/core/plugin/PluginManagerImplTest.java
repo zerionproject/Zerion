@@ -2,6 +2,7 @@ package org.zerionproject.core.plugin;
 
 import org.zerionproject.core.api.connection.ConnectionManager;
 import org.zerionproject.core.api.event.EventBus;
+import org.zerionproject.core.api.event.EventListener;
 import org.zerionproject.core.api.plugin.PluginCallback;
 import org.zerionproject.core.api.plugin.PluginConfig;
 import org.zerionproject.core.api.plugin.PluginException;
@@ -11,6 +12,7 @@ import org.zerionproject.core.api.plugin.duplex.DuplexPluginFactory;
 import org.zerionproject.core.api.plugin.simplex.SimplexPlugin;
 import org.zerionproject.core.api.plugin.simplex.SimplexPluginFactory;
 import org.zerionproject.core.api.properties.TransportPropertyManager;
+import org.zerionproject.core.api.settings.Settings;
 import org.zerionproject.core.api.settings.SettingsManager;
 import org.zerionproject.core.test.BrambleMockTestCase;
 import org.jmock.Expectations;
@@ -64,6 +66,10 @@ public class PluginManagerImplTest extends BrambleMockTestCase {
 			allowing(pluginConfig).shouldPoll();
 			will(returnValue(false));
 
+			oneOf(eventBus).addListener(with(any(EventListener.class)));
+			oneOf(settingsManager).getSettings(with(any(String.class)));
+			will(returnValue(new Settings()));
+
 			oneOf(pluginConfig).getSimplexFactories();
 			will(returnValue(Arrays.asList(simplexFactory,
 					simplexFailFactory)));
@@ -95,9 +101,41 @@ public class PluginManagerImplTest extends BrambleMockTestCase {
 					PluginCallback.class)));
 			will(returnValue(null));
 
+			oneOf(eventBus).removeListener(with(any(EventListener.class)));
 			oneOf(simplexPlugin).stop();
 			oneOf(simplexFailPlugin).stop();
 			oneOf(duplexPlugin).stop();
+		}});
+
+		PluginManagerImpl p = new PluginManagerImpl(ioExecutor, ioExecutor,
+				eventBus, pluginConfig, connectionManager, settingsManager,
+				transportPropertyManager);
+
+		p.startService();
+		p.stopService();
+	}
+
+	@Test
+	public void testConnectionsPausedStartsNoPlugins() throws Exception {
+		Executor ioExecutor = Executors.newSingleThreadExecutor();
+		EventBus eventBus = context.mock(EventBus.class);
+		PluginConfig pluginConfig = context.mock(PluginConfig.class);
+		ConnectionManager connectionManager =
+				context.mock(ConnectionManager.class);
+		SettingsManager settingsManager =
+				context.mock(SettingsManager.class);
+		TransportPropertyManager transportPropertyManager =
+				context.mock(TransportPropertyManager.class);
+
+		Settings paused = new Settings();
+		paused.putBoolean("connectionsPaused", true);
+
+		context.checking(new Expectations() {{
+			oneOf(eventBus).addListener(with(any(EventListener.class)));
+			oneOf(settingsManager).getSettings(with(any(String.class)));
+			will(returnValue(paused));
+
+			oneOf(eventBus).removeListener(with(any(EventListener.class)));
 		}});
 
 		PluginManagerImpl p = new PluginManagerImpl(ioExecutor, ioExecutor,

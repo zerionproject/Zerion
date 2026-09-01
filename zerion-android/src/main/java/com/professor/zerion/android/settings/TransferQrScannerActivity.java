@@ -30,15 +30,18 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class TransferQrScannerActivity extends AppCompatActivity {
 
 	public static final String EXTRA_SCANNED_LINK = "scanned_link";
+	public static final String EXTRA_ACCEPT_ANY = "accept_any";
 	private static final int CAMERA_PERMISSION_REQUEST = 1002;
 
 	private PreviewView previewView;
 	private ExecutorService cameraExecutor;
+	private boolean acceptAny;
 	private final AtomicBoolean scanComplete = new AtomicBoolean(false);
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		acceptAny = getIntent().getBooleanExtra(EXTRA_ACCEPT_ANY, false);
 		getWindow().setFlags(
 				android.view.WindowManager.LayoutParams.FLAG_SECURE,
 				android.view.WindowManager.LayoutParams.FLAG_SECURE);
@@ -118,7 +121,7 @@ public class TransferQrScannerActivity extends AppCompatActivity {
 				String decoded = QrCodeUtils.decodeQrFromYuv(
 						yPlane, imageProxy.getWidth(), imageProxy.getHeight(),
 						0, 0, rotation);
-				if (decoded != null && isTransferLink(decoded)) {
+				if (decoded != null && (acceptAny || isTransferLink(decoded))) {
 					onLinkScanned(decoded);
 				}
 			}

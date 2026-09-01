@@ -20,7 +20,7 @@
             android:layout_height="?attr/actionBarSize"
             android:background="@android:color/transparent"
             app:navigationIcon="@drawable/ic_back"
-            app:titleTextColor="@android:color/white" />
+            app:titleTextColor="@color/zerion_text_primary" />
 
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -73,8 +73,8 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/vault_doc_previous"
-                            android:textColor="@android:color/white"
-                            app:strokeColor="@android:color/white" />
+                            android:textColor="@color/zerion_text_primary"
+                            app:strokeColor="@color/zerion_text_primary" />
 
                         <TextView
                             android:id="@+id/pdf_page_indicator"
@@ -82,7 +82,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginHorizontal="16dp"
                             tools:text="Page 1 of 1"
-                            android:textColor="@android:color/white"
+                            android:textColor="@color/zerion_text_primary"
                             android:textSize="14sp" />
 
                         <com.google.android.material.button.MaterialButton
@@ -91,8 +91,8 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/vault_doc_next"
-                            android:textColor="@android:color/white"
-                            app:strokeColor="@android:color/white" />
+                            android:textColor="@color/zerion_text_primary"
+                            app:strokeColor="@color/zerion_text_primary" />
 
                     </LinearLayout>
 
@@ -111,7 +111,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_margin="16dp"
-                    app:cardBackgroundColor="@android:color/white"
+                    app:cardBackgroundColor="@color/zerion_card_bg"
                     app:cardCornerRadius="12dp"
                     app:cardElevation="4dp">
 
@@ -120,7 +120,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:padding="16dp"
-                        android:textColor="@android:color/black"
+                        android:textColor="@color/zerion_text_primary"
                         android:textSize="14sp"
                         android:textIsSelectable="true"
                         android:fontFamily="@font/plex_mono_regular" />
@@ -152,7 +152,7 @@
                     android:layout_width="80dp"
                     android:layout_height="80dp"
                     android:src="@drawable/ic_warning"
-                    android:tint="@android:color/white"
+                    android:tint="@color/zerion_text_primary"
                     android:contentDescription="@string/cd_warning" />
 
                 <TextView
@@ -161,7 +161,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="24dp"
                     android:text="@string/vault_doc_preview_unavailable_title"
-                    android:textColor="@android:color/white"
+                    android:textColor="@color/zerion_text_primary"
                     android:textSize="20sp"
                     android:textStyle="bold"
                     android:gravity="center" />
@@ -172,7 +172,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
                     android:text="@string/vault_doc_preview_unavailable_message"
-                    android:textColor="@android:color/white"
+                    android:textColor="@color/zerion_text_primary"
                     android:textSize="14sp"
                     android:gravity="center"
                     android:alpha="0.9" />

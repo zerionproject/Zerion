@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+	<color name="zerion_dark_bg">#0F1014</color>
+	<color name="zerion_card_bg">#1C1D22</color>
+	<color name="zerion_text_primary">#FFFFFF</color>
+	<color name="zerion_text_secondary">#9CA3AF</color>
+	<color name="zerion_divider">#2D2E36</color>
+	<color name="zerion_surface_elevated">#252631</color>
+	<color name="zerion_surface_pressed">#2E3039</color>
+	<color name="zerion_ripple">#1AFFFFFF</color>
+	<color name="zerion_hint">#80FFFFFF</color>
 	<color name="zerion_primary">@color/zerion_night_800</color>
 	<!-- Commit to the cyan brand accent in night mode too (was lime, which gave
 	     OS dark mode a different, greenish identity). -->

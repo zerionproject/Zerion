@@ -72,6 +72,14 @@ public class AndroidAccountManagerTest extends BrambleMockTestCase {
 	}
 
 	@Test
+	public void testImportProfileRejectsEmptyPassword() {
+		org.junit.Assert.assertNull(accountManager.importProfile("Alice",
+				new char[0], new byte[10], new byte[32]));
+		org.junit.Assert.assertNull(accountManager.importProfile("Alice",
+				"   ".toCharArray(), new byte[10], new byte[32]));
+	}
+
+	@Test
 	public void testDeleteAccountClearsSharedPrefsAndDeletesFiles()
 			throws Exception {
 

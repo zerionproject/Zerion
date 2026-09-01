@@ -193,7 +193,8 @@ public class LockManagerImpl implements LockManager, Service, EventListener {
 	}
 
 	private boolean timeoutEnabled() {
-		return timeoutMinutes != timeoutNever && lockable.getValue();
+		Boolean b = lockable.getValue();
+		return timeoutMinutes != timeoutNever && b != null && b;
 	}
 
 	private boolean timedOut() {

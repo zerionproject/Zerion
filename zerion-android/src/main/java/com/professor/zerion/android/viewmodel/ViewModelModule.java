@@ -61,6 +61,12 @@ public abstract class ViewModelModule {
 			VaultViewModel vaultViewModel);
 
 	@Binds
+	@IntoMap
+	@ViewModelKey(com.professor.zerion.android.vault.ui.XmrViewModel.class)
+	abstract ViewModel bindXmrViewModel(
+			com.professor.zerion.android.vault.ui.XmrViewModel xmrViewModel);
+
+	@Binds
 	@Singleton
 	abstract ViewModelProvider.Factory bindViewModelFactory(
 			ViewModelFactory viewModelFactory);

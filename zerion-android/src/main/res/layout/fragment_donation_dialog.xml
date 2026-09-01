@@ -32,7 +32,7 @@
 			android:layout_marginTop="14dp"
 			android:gravity="center"
 			android:text="@string/donation_title"
-			android:textColor="@android:color/white"
+			android:textColor="@color/zerion_text_primary"
 			android:textSize="22sp"
 			android:textStyle="bold"
 			android:letterSpacing="0.005" />

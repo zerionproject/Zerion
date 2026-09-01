@@ -105,6 +105,9 @@ public class ZerionService extends Service {
 	public static final String ACTION_EXIT =
 			"com.professor.zerion.android.EXIT";
 
+	public static final String ACTION_PAUSE =
+			"com.professor.zerion.android.PAUSE";
+
 	public static void cancelPendingExit() {
 		Thread previousWatchdog = pendingKillWatchdog.getAndSet(null);
 		if (previousWatchdog != null) previousWatchdog.interrupt();
@@ -153,16 +156,21 @@ public class ZerionService extends Service {
 				}
 				Notification foregroundNotification =
 						notificationManager.getForegroundNotification();
-				if (SDK_INT >= 34) {
-					startForeground(ONGOING_NOTIFICATION_ID,
-							foregroundNotification,
-							android.content.pm.ServiceInfo
-									.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
-				} else {
-					startForeground(ONGOING_NOTIFICATION_ID,
-							foregroundNotification,
-							android.content.pm.ServiceInfo
-									.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
+				try {
+					if (SDK_INT >= 34) {
+						startForeground(ONGOING_NOTIFICATION_ID,
+								foregroundNotification,
+								android.content.pm.ServiceInfo
+										.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+					} else {
+						startForeground(ONGOING_NOTIFICATION_ID,
+								foregroundNotification,
+								android.content.pm.ServiceInfo
+										.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
+					}
+				} catch (RuntimeException e) {
+					stopSelf();
+					return;
 				}
 
 				wakeLockManager.executeWakefully(() -> {
@@ -218,7 +226,8 @@ public class ZerionService extends Service {
 			String action = intent.getAction();
 			if (ACTION_LOCK.equals(action)) {
 				int pid = intent.getIntExtra(EXTRA_PID, -1);
-				if (pid == myPid()) {
+				boolean sameProcess = pid == myPid();
+				if (sameProcess) {
 					lockManager.setLocked(true);
 					clearBitmapThumbnailCaches();
 				}
@@ -226,6 +235,8 @@ public class ZerionService extends Service {
 				if (exitInProgress.compareAndSet(false, true)) {
 					shutdownFromBackground();
 				}
+			} else if (ACTION_PAUSE.equals(action)) {
+				shutdown(true);
 			}
 		}
 		return START_NOT_STICKY;

@@ -30,7 +30,7 @@
 			android:layout_height="wrap_content"
 			android:layout_marginTop="20dp"
 			android:text="@string/splash_tagline"
-			android:textColor="#CCFFFFFF"
+			android:textColor="@color/zerion_text_secondary"
 			android:textSize="13sp"
 			android:letterSpacing="0.05"
 			android:alpha="0" />

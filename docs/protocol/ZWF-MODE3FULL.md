@@ -170,10 +170,16 @@ window with forged identifiers.
 
 ## Session resumption
 
-A connection does not re-handshake. The connection handler resumes the stored
-session for that contact: the root key, the role, and the Mode 3-Full state. Both
-directions of a connection share one Mode 3-Full state under a lock, so a peer key
-learned while receiving is available to the sender on the same connection.
+A connection does not re-handshake. The connection handler re-derives the ZWF
+session for that contact from the persisted **root key** and **role**, and starts
+a **fresh Mode 3-Full ratchet for each connection**: the Mode 3-Full state is
+*not* carried over from a previous connection. This matches the code
+(`ZtpConnectionEstablisher.resume()` calls `deriveSession(rootKey, alice)` and
+does not reuse a persisted Mode 3-Full state) and the security model, which
+specifies a fresh post-quantum ratchet per connection so a compromise of one
+connection's ratchet does not extend to the next. Within a single connection,
+both directions share one Mode 3-Full state under a lock, so a peer key learned
+while receiving is available to the sender on the same connection.
 
 ## Relationship to Briar
 

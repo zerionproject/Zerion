@@ -68,7 +68,7 @@ public class Mode3FullRatchetImplTest {
 	public void testFirstSendEmitsZeroSentinelAndNoSharedSecret() {
 		Mode3FullState state = ratchet.createInitialState();
 
-		PqSendResult result = ratchet.pqEncapsulateSend(state);
+		PqSendResult result = ratchet.pqEncapsulateSend(state, 0);
 
 		assertEquals(MLKEM_CIPHERTEXT_SIZE, result.getCiphertext().length);
 		for (byte b : result.getCiphertext()) assertEquals(0, b);
@@ -101,7 +101,7 @@ public class Mode3FullRatchetImplTest {
 		Mode3FullState aliceState = ratchet.createInitialState()
 				.withRecvAdvance(bobKp.getEncapsulationKey());
 
-		PqSendResult aliceSend = ratchet.pqEncapsulateSend(aliceState);
+		PqSendResult aliceSend = ratchet.pqEncapsulateSend(aliceState, 0);
 
 		Mode3FullState bobState = new Mode3FullState(
 				null, bobKp, new java.util.LinkedHashMap<>(), 0);
@@ -165,16 +165,133 @@ public class Mode3FullRatchetImplTest {
 		state = state.withRecvAdvance(peer.getEncapsulationKey());
 		MlKemKeyPair before = state.getOurActiveKeyPair();
 
-		Mode3FullState afterOne = ratchet.pqEncapsulateSend(state).getNewState();
+		Mode3FullState afterOne = ratchet.pqEncapsulateSend(state, 0).getNewState();
 		assertTrue(Arrays.equals(before.getEncapsulationKey(),
 				afterOne.getOurActiveKeyPair().getEncapsulationKey()));
 
 		Mode3FullState s = state;
+		long osr = 0;
 		for (int i = 0; i < MODE3_FULL_SEND_ROTATION_INTERVAL; i++) {
-			s = ratchet.pqEncapsulateSend(s).getNewState();
+			PqSendResult r = ratchet.pqEncapsulateSend(s, osr);
+			osr = r.isRotated() ? 0 : osr + 1;
+			s = r.getNewState();
 		}
 		assertFalse(Arrays.equals(before.getEncapsulationKey(),
 				s.getOurActiveKeyPair().getEncapsulationKey()));
+	}
+
+	@Test
+	public void testRotatesWithinBoundDespiteAlternatingReceives()
+			throws Exception {
+		Mode3FullState state = ratchet.createInitialState();
+		MlKemKeyPair peer = mlKemProvider.generateKeyPair();
+		state = state.withRecvAdvance(peer.getEncapsulationKey());
+		MlKemKeyPair before = state.getOurActiveKeyPair();
+
+		long osr = 0;
+		boolean rotatedWithinBound = false;
+		for (int ownSend = 1;
+				ownSend <= MODE3_FULL_SEND_ROTATION_INTERVAL; ownSend++) {
+			PqSendResult r = ratchet.pqEncapsulateSend(state, osr);
+			osr = r.isRotated() ? 0 : osr + 1;
+			state = r.getNewState();
+			if (r.isRotated()) rotatedWithinBound = true;
+			MlKemKeyPair peerNext = mlKemProvider.generateKeyPair();
+			state = state.withRecvAdvance(peerNext.getEncapsulationKey());
+		}
+
+		assertTrue("our ML-KEM key pair must rotate within the own-send bound "
+				+ "even when every send is interleaved with a receive",
+				rotatedWithinBound);
+		assertFalse(Arrays.equals(before.getEncapsulationKey(),
+				state.getOurActiveKeyPair().getEncapsulationKey()));
+	}
+
+	@Test
+	public void rotationBoundHoldsForArbitrarySendReceiveSchedules()
+			throws Exception {
+		long[] seeds = {1L, 2L, 7L, 42L, 1337L, 99991L};
+		for (long seed : seeds) {
+			java.util.Random rnd = new java.util.Random(seed);
+			Mode3FullState state = ratchet.createInitialState();
+			state = state.withRecvAdvance(
+					mlKemProvider.generateKeyPair().getEncapsulationKey());
+			long osr = 0;
+			byte[] activeKp =
+					state.getOurActiveKeyPair().getEncapsulationKey();
+			for (int step = 0; step < 300; step++) {
+				if (rnd.nextBoolean()) {
+					PqSendResult r = ratchet.pqEncapsulateSend(state, osr);
+					byte[] afterKp = r.getNewState().getOurActiveKeyPair()
+							.getEncapsulationKey();
+					assertEquals("rotated flag must equal keypair change",
+							r.isRotated(), !Arrays.equals(activeKp, afterKp));
+					osr = r.isRotated() ? 0 : osr + 1;
+					if (r.isRotated()) activeKp = afterKp;
+					assertTrue("a keypair is never used for more than the "
+							+ "interval of local sends regardless of receives",
+							osr <= MODE3_FULL_SEND_ROTATION_INTERVAL - 1);
+					state = r.getNewState();
+				} else {
+					Mode3FullState afterRecv = state.withRecvAdvance(
+							mlKemProvider.generateKeyPair()
+									.getEncapsulationKey());
+					assertArrayEquals("a receive must not rotate our keypair",
+							activeKp, afterRecv.getOurActiveKeyPair()
+									.getEncapsulationKey());
+					state = afterRecv;
+				}
+			}
+		}
+	}
+
+	@Test
+	public void rotationBoundaryIsExactlyTheInterval() throws Exception {
+		Mode3FullState state = ratchet.createInitialState()
+				.withRecvAdvance(
+						mlKemProvider.generateKeyPair().getEncapsulationKey());
+		byte[] kp = state.getOurActiveKeyPair().getEncapsulationKey();
+		for (long osr = 0; osr < MODE3_FULL_SEND_ROTATION_INTERVAL - 1; osr++) {
+			PqSendResult r = ratchet.pqEncapsulateSend(state, osr);
+			assertFalse("no rotation before the interval", r.isRotated());
+			state = r.getNewState();
+		}
+		PqSendResult atBound = ratchet.pqEncapsulateSend(state,
+				MODE3_FULL_SEND_ROTATION_INTERVAL - 1);
+		assertTrue("rotation occurs at the interval boundary",
+				atBound.isRotated());
+		assertFalse(Arrays.equals(kp, atBound.getNewState()
+				.getOurActiveKeyPair().getEncapsulationKey()));
+	}
+
+	@Test
+	public void attackerSnapshotCannotDeriveSecretAfterRotation()
+			throws Exception {
+		Mode3FullState state = ratchet.createInitialState();
+		byte[] attackerOldSk = state.getOurActiveKeyPair()
+				.getDecapsulationKey().clone();
+		state = state.withRecvAdvance(
+				mlKemProvider.generateKeyPair().getEncapsulationKey());
+
+		PqSendResult rotated = ratchet.pqEncapsulateSend(state,
+				MODE3_FULL_SEND_ROTATION_INTERVAL - 1);
+		assertTrue(rotated.isRotated());
+		byte[] newPk = rotated.getPkAdvertise();
+
+		org.zerionproject.core.api.crypto.pcs.MlKemEncapsulation enc =
+				mlKemProvider.encapsulate(newPk);
+		byte[] ct = enc.getCiphertext();
+		byte[] realSecret = enc.getSharedSecret().clone();
+
+		byte[] ourSecret = mlKemProvider.decapsulate(rotated.getNewState()
+				.getOurActiveKeyPair().getDecapsulationKey(), ct);
+		assertArrayEquals("we decapsulate to the real secret with the new key",
+				realSecret, ourSecret);
+
+		byte[] attackerSecret = mlKemProvider.decapsulate(attackerOldSk, ct);
+		assertFalse("a snapshot of the pre-rotation private key must not derive "
+				+ "the post-rotation secret", Arrays.equals(realSecret,
+				attackerSecret));
 	}
 
 	@Test
@@ -185,8 +302,11 @@ public class Mode3FullRatchetImplTest {
 
 		int sends = (MODE3_FULL_RECV_SK_LRU_SIZE + 2)
 				* MODE3_FULL_SEND_ROTATION_INTERVAL;
+		long osr = 0;
 		for (int i = 0; i < sends; i++) {
-			state = ratchet.pqEncapsulateSend(state).getNewState();
+			PqSendResult r = ratchet.pqEncapsulateSend(state, osr);
+			osr = r.isRotated() ? 0 : osr + 1;
+			state = r.getNewState();
 		}
 
 		assertEquals(MODE3_FULL_RECV_SK_LRU_SIZE,

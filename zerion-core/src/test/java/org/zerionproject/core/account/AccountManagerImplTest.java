@@ -285,6 +285,42 @@ public class AccountManagerImplTest extends BrambleMockTestCase {
 	}
 
 	@Test
+	public void testCreateAccountRejectsEmptyPassword() {
+		assertFalse(accountManager.createAccount(authorName, new char[0]));
+		assertFalse(accountManager.hasDatabaseKey());
+		assertFalse(keyFile.exists());
+		assertFalse(keyBackupFile.exists());
+	}
+
+	@Test
+	public void testCreateAccountRejectsWhitespaceOnlyPassword() {
+		assertFalse(accountManager.createAccount(authorName,
+				"    ".toCharArray()));
+		assertFalse(accountManager.hasDatabaseKey());
+		assertFalse(keyFile.exists());
+		assertFalse(keyBackupFile.exists());
+	}
+
+	@Test
+	public void testCreateAccountRejectsNullPassword() {
+		assertFalse(accountManager.createAccount(authorName, null));
+		assertFalse(accountManager.hasDatabaseKey());
+		assertFalse(keyFile.exists());
+		assertFalse(keyBackupFile.exists());
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void testChangePasswordRejectsEmptyNewPassword() throws Exception {
+		accountManager.changePassword(password, new char[0]);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void testChangePasswordRejectsWhitespaceNewPassword()
+			throws Exception {
+		accountManager.changePassword(password, "  ".toCharArray());
+	}
+
+	@Test
 	public void testChangePasswordThrowsExceptionIfDbKeyCannotBeLoaded() {
 		try {
 			accountManager.changePassword(password, newPassword);

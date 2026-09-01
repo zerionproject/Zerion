@@ -162,6 +162,18 @@ public class ZwfDuplexConnection {
 		return sharedM3f.get();
 	}
 
+	/**
+	 * True once this side has learned the peer's advertised ML-KEM key, so an
+	 * application frame it now sends carries a real post-quantum secret. The send
+	 * scheduler gates application records on this so the classical-only opening
+	 * sentinel is only ever a cover frame. The peer key is monotonic, so this
+	 * only ever transitions false to true within a connection.
+	 */
+	public boolean isPqReady() {
+		org.zerionproject.core.api.crypto.pcs.Mode3FullState s = sharedM3f.get();
+		return s != null && s.getTheirActivePqPk() != null;
+	}
+
 	private byte[] peekTag() throws IOException {
 		in.mark(TAG_LENGTH);
 		byte[] tag = new byte[TAG_LENGTH];

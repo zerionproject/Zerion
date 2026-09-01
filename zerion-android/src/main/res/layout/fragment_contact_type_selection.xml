@@ -15,7 +15,7 @@
 		android:layout_marginTop="@dimen/margin_large"
 		android:gravity="center"
 		android:text="@string/contact_type_selection_title"
-		android:textColor="@android:color/white"
+		android:textColor="@color/zerion_text_primary"
 		android:textSize="24sp"
 		android:textStyle="bold" />
 
@@ -27,7 +27,7 @@
 		android:layout_marginBottom="@dimen/margin_xlarge"
 		android:gravity="center"
 		android:text="@string/contact_type_selection_subtitle"
-		android:textColor="#B0FFFFFF"
+		android:textColor="@color/zerion_text_secondary"
 		android:textSize="16sp" />
 
 	<!-- Zerion (PQ) Option -->

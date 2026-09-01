@@ -83,14 +83,30 @@ public class VaultKeystore {
 				.setKeySize(256)
 				.setRandomizedEncryptionRequired(true);
 
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && hasStrongBox) {
+		boolean useStrongBox =
+				Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && hasStrongBox;
+		if (useStrongBox) {
 			builder.setIsStrongBoxBacked(true);
 		}
 
-		keyGenerator.init(builder.build());
-		SecretKey key = keyGenerator.generateKey();
+		try {
+			keyGenerator.init(builder.build());
+			return keyGenerator.generateKey();
+		} catch (Exception e) {
+			if (!useStrongBox) {
+				throw e;
+			}
+		}
 
-		return key;
+		KeyGenParameterSpec.Builder fallback = new KeyGenParameterSpec.Builder(
+				alias,
+				KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
+				.setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+				.setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+				.setKeySize(256)
+				.setRandomizedEncryptionRequired(true);
+		keyGenerator.init(fallback.build());
+		return keyGenerator.generateKey();
 	}
 
 	public SecretKey getOrCreateBiometricKey() throws NoSuchAlgorithmException,

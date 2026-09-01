@@ -70,7 +70,7 @@
 			app:layout_constraintStart_toEndOf="@+id/time"
 			app:layout_constraintTop_toBottomOf="@+id/text"
 			app:srcCompat="@drawable/ic_bomb"
-			app:tint="?android:attr/textColorSecondary"
+			app:tint="@color/zerion_text_secondary_inverse"
 			tools:ignore="ContentDescription"
 			tools:visibility="visible" />
 

@@ -114,7 +114,10 @@ public class ProfilesFragment extends Fragment {
 			} catch (Exception ignored) {
 			}
 			final String finalName = name;
-			if (finalName == null || finalName.isEmpty()) return;
+			if (finalName == null || finalName.isEmpty()
+					|| !isReadableText(finalName)) {
+				return;
+			}
 			accountManager.ensureActiveDisplayName(finalName);
 			android.app.Activity a = getActivity();
 			if (a != null) a.runOnUiThread(this::renderProfileRows);
@@ -134,6 +137,16 @@ public class ProfilesFragment extends Fragment {
 		}
 	}
 
+	private static boolean isReadableText(@Nullable String s) {
+		if (s == null || s.isEmpty()) return false;
+		for (int i = 0; i < s.length(); i++) {
+			char c = s.charAt(i);
+			if (c == 0xFFFD) return false;
+			if (c < 0x20 && c != '\t' && c != '\n' && c != '\r') return false;
+		}
+		return true;
+	}
+
 	private View buildProfileRow(@Nullable String name, boolean isActive,
 			String id) {
 		View row = getLayoutInflater().inflate(
@@ -142,7 +155,8 @@ public class ProfilesFragment extends Fragment {
 		TextView summaryView = row.findViewById(R.id.profile_row_summary);
 		android.widget.ImageView chevron =
 				row.findViewById(R.id.profile_row_chevron);
-		String display = (name == null || name.isEmpty())
+		String display = (name == null || name.isEmpty()
+				|| !isReadableText(name))
 				? getString(R.string.profiles_row_unknown_name) : name;
 		titleView.setText(display);
 		if (isActive) {

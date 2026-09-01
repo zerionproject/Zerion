@@ -2,12 +2,16 @@ package com.professor.zerion.android.vault.storage;
 
 import android.content.Context;
 import android.os.Build;
+import android.system.ErrnoException;
+import android.system.Os;
+import android.system.OsConstants;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -38,6 +42,16 @@ public class SecureFileIO {
 		} else {
 			this.vaultDir = new File(context.getFilesDir(), "vault");
 		}
+	}
+
+	/**
+	 * Test seam: an isolated vault directory so durability tests never touch the
+	 * real vault. Not used in production, where the directory is derived from the
+	 * app's no-backup files dir.
+	 */
+	SecureFileIO(Context context, File vaultDir) {
+		this.context = context;
+		this.vaultDir = vaultDir;
 	}
 
 	private void validateFilename(String filename) {
@@ -147,7 +161,7 @@ public class SecureFileIO {
 
 			normalizeFileTimestamp(file);
 
-			syncDirectory();
+			fsyncDir(file.getParentFile());
 
 		} finally {
 			if (bos != null) try { bos.close(); } catch (IOException ignored) {}
@@ -253,7 +267,7 @@ public class SecureFileIO {
 					+ file.getName());
 		}
 
-		syncDirectory();
+		fsyncDirQuiet(file.getParentFile());
 	}
 
 	public String[] listFiles(String subdirectory) {
@@ -282,6 +296,7 @@ public class SecureFileIO {
 				throw new IOException("Failed to create directory: " + path);
 			}
 			normalizeFileTimestamp(dir);
+			fsyncNewDirectoryChain(dir);
 		}
 	}
 
@@ -322,14 +337,66 @@ public class SecureFileIO {
 		}
 	}
 
-	private void syncDirectory() throws IOException {
-		FileOutputStream fos = null;
+	/**
+	 * Durably flush a directory's own namespace (the creation, rename or removal
+	 * of entries inside it), so the change survives power loss after this returns.
+	 * A directory cannot be opened for writing, so the previous FileOutputStream
+	 * approach silently failed and flushed nothing; a directory fsync requires an
+	 * O_RDONLY handle flushed with {@link Os#fsync}, available since API 21. A
+	 * failure propagates so a write can never be reported as durable when its
+	 * directory entry is not.
+	 */
+	void fsyncDir(File dir) throws IOException {
+		if (dir == null) return;
+		FileDescriptor fd = null;
 		try {
-			fos = new FileOutputStream(new File(vaultDir, "."));
-			fos.getFD().sync();
-		} catch (IOException e) {
+			fd = Os.open(dir.getPath(), OsConstants.O_RDONLY, 0);
+			Os.fsync(fd);
+		} catch (ErrnoException e) {
+			throw new IOException("Directory fsync failed: " + dir.getPath(), e);
 		} finally {
-			if (fos != null) try { fos.close(); } catch (IOException ignored) {}
+			if (fd != null) {
+				try {
+					Os.close(fd);
+				} catch (ErrnoException ignored) {
+				}
+			}
+		}
+	}
+
+	/**
+	 * Durably flush the vault root directory so that a rename, create or delete
+	 * of an entry directly under it (used by the rekey commit's item-set swap and
+	 * header replacement) survives power loss once this returns. A raw
+	 * {@code renameTo}/{@code Files.move} is atomic in program order but its
+	 * directory entry is not durable until the directory itself is fsynced.
+	 */
+	public void fsyncVaultDir() throws IOException {
+		fsyncDir(vaultDir);
+	}
+
+	/**
+	 * Fsync every directory from {@code dir}'s parent up to and including the
+	 * vault root, so a directory newly created at any level has a durable entry
+	 * in its own parent. Used only after a real {@code mkdirs}.
+	 */
+	private void fsyncNewDirectoryChain(File dir) throws IOException {
+		File cur = dir;
+		while (cur != null) {
+			File parent = cur.getParentFile();
+			if (parent == null) break;
+			fsyncDir(parent);
+			if (parent.equals(vaultDir) || cur.equals(vaultDir)) break;
+			cur = parent;
+		}
+	}
+
+	/** Best-effort directory flush for delete paths, which the durable
+	 *  write-before-relay contract does not depend on. */
+	private void fsyncDirQuiet(File dir) {
+		try {
+			fsyncDir(dir);
+		} catch (IOException ignored) {
 		}
 	}
 
@@ -358,7 +425,7 @@ public class SecureFileIO {
 			throw new IOException("Failed to delete directory: " + dir.getAbsolutePath());
 		}
 
-		syncDirectory();
+		fsyncDirQuiet(dir.getParentFile());
 	}
 
 	public void wipeVault() throws IOException {

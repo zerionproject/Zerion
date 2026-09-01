@@ -184,7 +184,68 @@ public class ConnectionsFragment extends Fragment {
 			if (buttonView.isPressed()) onOfflineModeToggle(isChecked);
 		});
 
+		setupBackgroundConnections(view);
+
 		observeSettings();
+	}
+
+	private void setupBackgroundConnections(View view) {
+		android.widget.RadioGroup group = view.findViewById(R.id.bg_mode_group);
+		View warning = view.findViewById(R.id.bg_conn_warning_card);
+		com.professor.zerion.android.settings.BackgroundConnections.Mode current =
+				com.professor.zerion.android.settings.BackgroundConnections.getMode(
+						com.professor.zerion.android.AppModule.getUiPrefs());
+		int checkedId;
+		switch (current) {
+			case WHILE_OPEN:
+				checkedId = R.id.bg_mode_open;
+				break;
+			case PAUSED:
+				checkedId = R.id.bg_mode_paused;
+				break;
+			default:
+				checkedId = R.id.bg_mode_always;
+		}
+		group.check(checkedId);
+		warning.setVisibility(current ==
+				com.professor.zerion.android.settings.BackgroundConnections
+						.Mode.ALWAYS ? View.GONE : View.VISIBLE);
+		group.setOnCheckedChangeListener((g, id) -> {
+			com.professor.zerion.android.settings.BackgroundConnections.Mode mode;
+			if (id == R.id.bg_mode_open) {
+				mode = com.professor.zerion.android.settings
+						.BackgroundConnections.Mode.WHILE_OPEN;
+			} else if (id == R.id.bg_mode_paused) {
+				mode = com.professor.zerion.android.settings
+						.BackgroundConnections.Mode.PAUSED;
+			} else {
+				mode = com.professor.zerion.android.settings
+						.BackgroundConnections.Mode.ALWAYS;
+			}
+			com.professor.zerion.android.settings.BackgroundConnections.setMode(
+					com.professor.zerion.android.AppModule.getUiPrefs(), mode);
+			warning.setVisibility(mode ==
+					com.professor.zerion.android.settings.BackgroundConnections
+							.Mode.ALWAYS ? View.GONE : View.VISIBLE);
+			applyBackgroundMode(mode);
+		});
+	}
+
+	private void applyBackgroundMode(
+			com.professor.zerion.android.settings.BackgroundConnections.Mode mode) {
+		boolean paused = mode == com.professor.zerion.android.settings
+				.BackgroundConnections.Mode.PAUSED;
+		pluginManager.setConnectionsPaused(paused);
+		if (paused) {
+			return;
+		}
+		android.content.Context ctx = requireContext().getApplicationContext();
+		android.content.Intent i = new android.content.Intent(ctx,
+				com.professor.zerion.android.ZerionService.class);
+		try {
+			ctx.startService(i);
+		} catch (Exception ignored) {
+		}
 	}
 
 	private void onI2pToggle(boolean enable) {

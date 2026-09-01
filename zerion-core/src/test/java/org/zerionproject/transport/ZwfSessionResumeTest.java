@@ -32,11 +32,17 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
 /**
- * Proves that resuming an ongoing contact carries the post-quantum ratchet state
- * across a reconnection: after a first connection engages per-message ML-KEM, a
- * second connection built with {@link ZwfSessionFactory#resumeSession} starts
- * already knowing the peer's key (a fresh session would not), keeps a distinct
- * stream space via the persistent counter, and continues to carry messages.
+ * Exercises the {@link ZwfSessionFactory#resumeSession} factory capability: a
+ * session seeded with a persisted Mode 3-Full state starts already knowing the
+ * peer's key, keeps a distinct stream space via the persistent counter, and
+ * continues to carry messages.
+ *
+ * <p><b>This is not the production resume path.</b> Production reconnection
+ * ({@code ZtpConnectionEstablisher.resume()}) deliberately starts a
+ * <em>fresh</em> Mode 3-Full ratchet per connection via {@code deriveSession} and
+ * does not reuse a persisted Mode 3-Full state, per the security model. This test
+ * covers only the retained factory method and the persisted-state round-trip, not
+ * the behaviour of a resumed production connection.
  */
 public class ZwfSessionResumeTest {
 

@@ -1,0 +1,75 @@
+// Supply-chain gate for the Payjoin native library.
+// Verifies every packaged libpayjoin_ffi.so against the pinned SHA-256 in
+// MANIFEST.txt and rejects any unexpected native artifact in the Payjoin ABI
+// directories. Wired into release/bundle assembly so an unpinned or unexpected
+// binary fails the build. Inert until the .so are actually packaged.
+
+def payjoinJniDir = { -> file("${projectDir}/src/main/jniLibs") }
+def payjoinManifest = { -> file("${rootDir}/zerion-android/native/payjoin/MANIFEST.txt") }
+def payjoinExpectedLib = 'libpayjoin_ffi.so'
+
+def parseManifestHashes = { File manifest ->
+    def map = [:]
+    if (!manifest.exists()) return map
+    manifest.eachLine { line ->
+        def m = (line =~ /^sha256\s+(\S+)\s+([0-9a-fA-F]{64})\s*$/)
+        if (m.matches()) { map[m.group(1)] = m.group(2).toLowerCase() }
+    }
+    return map
+}
+
+def sha256Of = { File f ->
+    def md = java.security.MessageDigest.getInstance('SHA-256')
+    f.withInputStream { is ->
+        byte[] buf = new byte[65536]; int n
+        while ((n = is.read(buf)) != -1) md.update(buf, 0, n)
+    }
+    md.digest().collect { String.format('%02x', it) }.join()
+}
+
+tasks.register('verifyPayjoinNativeArtifacts') {
+    group = 'verification'
+    description = 'Verifies packaged Payjoin native libraries against pinned SHA-256.'
+    doLast {
+        def jni = payjoinJniDir()
+        def supportedAbis = ['arm64-v8a', 'armeabi-v7a']
+        def expected = parseManifestHashes(payjoinManifest())
+        def anyPresent = supportedAbis.any { abi ->
+            new File(jni, "${abi}/${payjoinExpectedLib}").exists()
+        }
+        if (!anyPresent) {
+            return
+        }
+        if (expected.isEmpty()) {
+            throw new GradleException('Payjoin native libs present but MANIFEST.txt has no pinned hashes.')
+        }
+        supportedAbis.each { abi ->
+            def abiDir = new File(jni, abi)
+            def lib = new File(abiDir, payjoinExpectedLib)
+            if (!lib.exists()) {
+                throw new GradleException("Missing Payjoin native lib for ABI ${abi}: ${lib}")
+            }
+            def want = expected["${abi}/${payjoinExpectedLib}".toString()]
+            if (want == null) {
+                throw new GradleException("MANIFEST.txt has no pinned hash for ${abi}/${payjoinExpectedLib}")
+            }
+            def got = sha256Of(lib)
+            if (got != want) {
+                throw new GradleException("Payjoin native lib SHA-256 mismatch for ${abi}: expected ${want}, got ${got}")
+            }
+            def stray = (abiDir.listFiles() ?: []).findAll {
+                it.name.startsWith('libpayjoin') && it.name != payjoinExpectedLib
+            } + (abiDir.listFiles() ?: []).findAll { it.name.startsWith('libbitcoin_ffi') }
+            if (!stray.isEmpty()) {
+                throw new GradleException("Unexpected Payjoin native artifact in ${abi}: ${stray*.name}")
+            }
+        }
+    }
+}
+
+tasks.matching {
+    (it.name.startsWith('assemble') || it.name.startsWith('bundle')) &&
+            it.name.toLowerCase().contains('release')
+}.configureEach {
+    it.dependsOn('verifyPayjoinNativeArtifacts')
+}

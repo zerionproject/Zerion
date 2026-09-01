@@ -359,7 +359,7 @@
   <string name="change_profile_picture_failed_message">ဝမ်းနည်းပါသည်၊ သင့် ပရိုဖိုင်းပုံကို အပ်ဒိတ်ပြုလုပ်တုန်း တစ်ခုခု မှားယွင်းသွားပါသည်။</string>
   
   <string name="pref_language_title">ဘာသာစကား &amp; ဒေသ</string>
-  <string name="pref_language_changed">Zerion အား ပြန်လည်စတင်လျှင် ဤအပြင်အဆင်သည် အကျိုးသက်ရောက်ပါမည်။ အကောင့်မှ ထွက်ခွာ၍ Zerion အား ပြန်လည်စတင်ပေးပါ။</string>
+  <string name="pref_language_changed">ဘာသာစကားအသစ်ကို အသုံးပြုရန် အက်ပ်ကို ပြန်လည်စတင်ပါမည်။</string>
   <string name="pref_language_default">နဂိုမူလ စနစ်</string>
   <string name="display_settings_title">ရုပ်ထင်မှန်သား</string>
   <string name="pref_theme_title">ပြသမှု အပြင်အဆင်</string>

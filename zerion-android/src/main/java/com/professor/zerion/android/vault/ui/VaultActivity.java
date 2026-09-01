@@ -134,6 +134,13 @@ public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFr
 	}
 
 	private boolean expectingChildResult = false;
+	private static final long CHILD_RESULT_GRACE_MS = 60_000L;
+	private final android.os.Handler lockHandler =
+			new android.os.Handler(android.os.Looper.getMainLooper());
+	private final Runnable childResultLockWatchdog = () -> {
+		expectingChildResult = false;
+		viewModel.lockIfUnlocked();
+	};
 
 	public void setExpectingChildResult() {
 		expectingChildResult = true;
@@ -142,6 +149,7 @@ public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFr
 	@Override
 	public void onResume() {
 		super.onResume();
+		lockHandler.removeCallbacks(childResultLockWatchdog);
 		expectingChildResult = false;
 		viewModel.refreshVaultState();
 	}
@@ -149,9 +157,19 @@ public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFr
 	@Override
 	protected void onStop() {
 		super.onStop();
-		if (!expectingChildResult) {
+		if (expectingChildResult) {
+			lockHandler.removeCallbacks(childResultLockWatchdog);
+			lockHandler.postDelayed(childResultLockWatchdog,
+					CHILD_RESULT_GRACE_MS);
+		} else {
 			viewModel.lockIfUnlocked();
 		}
+	}
+
+	@Override
+	protected void onDestroy() {
+		lockHandler.removeCallbacks(childResultLockWatchdog);
+		super.onDestroy();
 	}
 
 	@Override
@@ -324,7 +342,11 @@ public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFr
 			transaction.addToBackStack(tag);
 		}
 
-		transaction.commit();
+		if (getSupportFragmentManager().isStateSaved()) {
+			transaction.commitAllowingStateLoss();
+		} else {
+			transaction.commit();
+		}
 
 		invalidateOptionsMenu();
 	}

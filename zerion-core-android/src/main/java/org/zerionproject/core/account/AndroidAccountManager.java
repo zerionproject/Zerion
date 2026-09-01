@@ -289,6 +289,10 @@ public class AndroidAccountManager extends AccountManagerImpl
 	@Nullable
 	public String importProfile(String displayName, char[] password,
 			byte[] dbBytes, byte[] dbKey) {
+		if (isEmptyPassword(password)) {
+			lastProfileCreationError = "password must not be empty";
+			return null;
+		}
 		synchronized (stateChangeLock) {
 			String newId = profileManager.generateProfileId();
 			if (!profileManager.createProfileDir(newId)) {

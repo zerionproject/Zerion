@@ -420,6 +420,32 @@ public class AppModule {
 		}
 	}
 
+	/**
+	 * One application-scoped Monero wallet authority. Every hosting activity
+	 * resolves this same instance, so a wallet can never have two native
+	 * sessions through two surfaces. The instance owns no secret beyond the
+	 * vault lock boundary: the vault lock listener it registers closes the
+	 * native session and wipes buffers exactly as before.
+	 */
+	@Provides
+	@Singleton
+	com.professor.zerion.android.vault.wallet.xmr.XmrWalletManager
+			provideXmrWalletManager(Context context, VaultManager vaultManager,
+			com.professor.zerion.android.vault.wallet.WalletStore walletStore,
+			@TorSocksPort int torSocksPort) {
+		com.professor.zerion.android.vault.wallet.xmr.XmrWalletManager m =
+				new com.professor.zerion.android.vault.wallet.xmr.XmrWalletManager(
+						context, vaultManager, walletStore,
+						new com.professor.zerion.android.vault.wallet.xmr
+								.NativeMoneroEngine());
+		m.setTorSocksPort(torSocksPort);
+		m.reloadNodeConfig();
+		vaultManager.addLockListener(() ->
+				com.professor.zerion.android.util.SecureClipboard
+						.clearIfOurs(context.getApplicationContext()));
+		return m;
+	}
+
 	@Provides
 	@Singleton
 	SecurityManager provideSecurityManager(Application app,
@@ -561,7 +587,18 @@ public class AppModule {
 	@Provides
 	@Singleton
 	Thread.UncaughtExceptionHandler provideUncaughtExceptionHandler() {
+		Thread.UncaughtExceptionHandler previous =
+				Thread.getDefaultUncaughtExceptionHandler();
 		return (thread, throwable) -> {
+			if (IS_DEBUG_BUILD && previous != null) {
+				previous.uncaughtException(thread, throwable);
+				return;
+			}
+			try {
+				android.os.Process.killProcess(android.os.Process.myPid());
+			} finally {
+				System.exit(10);
+			}
 		};
 	}
 

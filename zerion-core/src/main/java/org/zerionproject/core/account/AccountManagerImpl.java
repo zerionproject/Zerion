@@ -162,6 +162,7 @@ class AccountManagerImpl implements AccountManager, Service {
 		synchronized (stateChangeLock) {
 			if (hasDatabaseKey())
 				throw new AssertionError("Already have a database key");
+			if (isEmptyPassword(password)) return false;
 			Identity identity = identityManager.createIdentity(name);
 			identityManager.registerIdentity(identity);
 			SecretKey key = crypto.generateSecretKey();
@@ -169,6 +170,14 @@ class AccountManagerImpl implements AccountManager, Service {
 			databaseKey = key;
 			return true;
 		}
+	}
+
+	protected static boolean isEmptyPassword(char[] password) {
+		if (password == null || password.length == 0) return true;
+		for (char c : password) {
+			if (!Character.isWhitespace(c)) return false;
+		}
+		return true;
 	}
 
 	@GuardedBy("stateChangeLock")
@@ -306,6 +315,10 @@ class AccountManagerImpl implements AccountManager, Service {
 	@Override
 	public void changePassword(char[] oldPassword, char[] newPassword)
 			throws DecryptionException {
+		if (isEmptyPassword(newPassword)) {
+			throw new IllegalArgumentException(
+					"New account password must not be empty");
+		}
 		synchronized (stateChangeLock) {
 			SecretKey key = loadAndDecryptDatabaseKey(oldPassword);
 			encryptAndStoreDatabaseKey(key, newPassword);

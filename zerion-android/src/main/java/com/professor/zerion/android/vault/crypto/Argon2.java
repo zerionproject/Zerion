@@ -24,6 +24,9 @@ public class Argon2 {
 	public static final int LOW_ITERATIONS = 2;
 	public static final int BACKUP_ITERATIONS = 8;
 
+	public static final int WALLET_MEMORY_KB = 64 * 1024;
+	public static final int WALLET_ITERATIONS = 3;
+
 	private final SecureRandom secureRandom = new SecureRandom();
 
 	public byte[] deriveKey(char[] password, byte[] salt, Argon2Params params) {
@@ -41,22 +44,39 @@ public class Argon2 {
 		byte[] passwordBytes = new byte[byteBuffer.remaining()];
 		byteBuffer.get(passwordBytes);
 		try {
-			Argon2Parameters bcParams =
-					new Argon2Parameters.Builder(Argon2Parameters.ARGON2_id)
-							.withMemoryAsKB(params.memoryKb)
-							.withIterations(params.iterations)
-							.withParallelism(params.parallelism)
-							.withSalt(salt)
-							.build();
-			Argon2BytesGenerator generator = new Argon2BytesGenerator();
-			generator.init(bcParams);
-			byte[] output = new byte[params.hashLength];
-			generator.generateBytes(passwordBytes, output);
+			byte[] nativeOut = NativeArgon2.deriveOrNull(passwordBytes, salt,
+					params.memoryKb, params.iterations, params.parallelism,
+					params.hashLength);
+			if (nativeOut != null) {
+				return nativeOut;
+			}
+			byte[] output = deriveKeyBouncyCastle(passwordBytes, salt, params);
 			return output;
 		} finally {
 			Arrays.fill(passwordBytes, (byte) 0);
 			Arrays.fill(byteBuffer.array(), (byte) 0);
 		}
+	}
+
+	/**
+	 * Argon2id via Bouncy Castle. This is the fail-closed fallback used when the
+	 * native library is unavailable, and the reference the equivalence tests
+	 * compare the native output against. Same parameters, same version (v1.3).
+	 */
+	public static byte[] deriveKeyBouncyCastle(byte[] passwordBytes, byte[] salt,
+			Argon2Params params) {
+		Argon2Parameters bcParams =
+				new Argon2Parameters.Builder(Argon2Parameters.ARGON2_id)
+						.withMemoryAsKB(params.memoryKb)
+						.withIterations(params.iterations)
+						.withParallelism(params.parallelism)
+						.withSalt(salt)
+						.build();
+		Argon2BytesGenerator generator = new Argon2BytesGenerator();
+		generator.init(bcParams);
+		byte[] output = new byte[params.hashLength];
+		generator.generateBytes(passwordBytes, output);
+		return output;
 	}
 
 	public byte[] generateSalt() {
@@ -128,6 +148,15 @@ public class Argon2 {
 			return new Argon2Params(
 					LOW_MEMORY_KB,
 					BACKUP_ITERATIONS,
+					DEFAULT_PARALLELISM,
+					DEFAULT_HASH_LENGTH
+			);
+		}
+
+		public static Argon2Params getWalletPassword() {
+			return new Argon2Params(
+					WALLET_MEMORY_KB,
+					WALLET_ITERATIONS,
 					DEFAULT_PARALLELISM,
 					DEFAULT_HASH_LENGTH
 			);

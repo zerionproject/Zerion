@@ -49,7 +49,7 @@
 			android:layout_weight="1"
 			android:ellipsize="end"
 			android:maxLines="2"
-			android:textColor="?android:attr/textColorSecondary"
+			android:textColor="@color/zerion_text_secondary_inverse"
 			android:textSize="12sp"
 			android:textStyle="italic" />
 
@@ -92,7 +92,7 @@
 		android:layout_marginTop="@dimen/message_bubble_padding_top_inner"
 		android:layout_marginRight="@dimen/message_bubble_padding_sides_inner"
 		android:layout_marginBottom="@dimen/message_bubble_padding_bottom_inner"
-		android:textColor="?android:attr/textColorPrimary"
+		android:textColor="@color/zerion_text_primary_inverse"
 		android:textColorLink="@color/zerion_text_link"
 		app:layout_constrainedWidth="true"
 		app:layout_constraintBottom_toTopOf="@+id/statusLayout"
@@ -142,7 +142,7 @@
 			android:layout_marginStart="4dp"
 			android:layout_marginLeft="4dp"
 			app:srcCompat="@drawable/ic_bomb"
-			app:tint="?android:attr/textColorSecondary"
+			app:tint="@color/zerion_text_secondary_inverse"
 			tools:ignore="ContentDescription"
 			tools:visibility="visible" />
 

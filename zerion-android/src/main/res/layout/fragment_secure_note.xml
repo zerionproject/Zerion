@@ -29,7 +29,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="text|textNoSuggestions"
-                android:textColor="@android:color/white"
+                android:textColor="@color/zerion_text_primary"
                 android:imeOptions="flagNoPersonalizedLearning"
                 android:privateImeOptions="nm"
                 android:importantForAutofill="no"
@@ -75,14 +75,14 @@
                         android:text="@string/secure_note_extra_security"
                         android:textSize="14sp"
                         android:textStyle="bold"
-                        android:textColor="@android:color/white" />
+                        android:textColor="@color/zerion_text_primary" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/secure_note_add_password"
                         android:textSize="12sp"
-                        android:textColor="#B3FFFFFF" />
+                        android:textColor="@color/zerion_text_secondary" />
 
                 </LinearLayout>
 
@@ -116,7 +116,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textPassword"
-                android:textColor="@android:color/white"
+                android:textColor="@color/zerion_text_primary"
                 android:imeOptions="flagNoPersonalizedLearning"
                 android:privateImeOptions="nm"
                 android:importantForAutofill="no"
@@ -134,7 +134,7 @@
             android:layout_marginBottom="16dp"
             app:cardCornerRadius="8dp"
             app:cardElevation="2dp"
-            app:cardBackgroundColor="@android:color/white">
+            app:cardBackgroundColor="@color/zerion_card_bg">
 
             <EditText
                 android:id="@+id/note_content_input"
@@ -142,14 +142,14 @@
                 android:layout_height="match_parent"
                 android:padding="16dp"
                 android:hint="Start typing your secure note..."
-                android:textColorHint="#80000000"
+                android:textColorHint="@color/zerion_hint"
                 android:inputType="textMultiLine"
                 android:imeOptions="flagNoPersonalizedLearning"
                 android:privateImeOptions="nm"
                 android:gravity="top"
                 android:scrollbars="vertical"
                 android:background="@android:color/transparent"
-                android:textColor="@android:color/black"
+                android:textColor="@color/zerion_text_primary"
                 android:textSize="15sp"
                 android:saveEnabled="false" />
 

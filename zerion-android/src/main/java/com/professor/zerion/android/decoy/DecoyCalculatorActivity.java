@@ -151,6 +151,7 @@ public class DecoyCalculatorActivity extends Activity {
 	private void enterRealApp() {
 		if (isFinishing() || isDestroyed()) return;
 		DECOY_PASSED_TOKEN.set(true);
+		DecoyGate.markPassed();
 		Intent i = new Intent(this, SplashScreenActivity.class);
 		i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
 				| Intent.FLAG_ACTIVITY_CLEAR_TASK);

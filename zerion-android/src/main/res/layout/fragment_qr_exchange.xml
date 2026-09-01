@@ -59,7 +59,7 @@
 	<View
 		android:layout_width="match_parent"
 		android:layout_height="1dp"
-		android:background="#33FFFFFF" />
+		android:background="@color/zerion_divider" />
 
 	<!-- Bottom half: user's own QR code -->
 	<LinearLayout
@@ -87,7 +87,7 @@
 			android:layout_marginTop="12dp"
 			android:gravity="center"
 			android:text="@string/qr_exchange_your_code"
-			android:textColor="#B0FFFFFF"
+			android:textColor="@color/zerion_text_secondary"
 			android:textSize="13sp" />
 
 		<com.google.android.material.button.MaterialButton

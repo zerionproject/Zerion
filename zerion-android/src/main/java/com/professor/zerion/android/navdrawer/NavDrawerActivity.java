@@ -112,6 +112,7 @@ public class NavDrawerActivity extends ZerionActivity implements
 	private BadgeDrawable badgeGroups;
 	private BadgeDrawable badgeChannels;
 	private FloatingActionButton fabCompose;
+	private View bottomNavigation;
 
 	private int currentTab = TAB_CONTACTS;
 
@@ -202,7 +203,8 @@ public class NavDrawerActivity extends ZerionActivity implements
 		tabChannels = findViewById(R.id.tabChannels);
 		fabCompose = findViewById(R.id.fabCompose);
 
-		View bottomNav = findViewById(R.id.bottomNavigation);
+		bottomNavigation = findViewById(R.id.bottomNavigation);
+		View bottomNav = bottomNavigation;
 		if (bottomNav != null) {
 			int heightDp = com.professor.zerion.android.settings.ChatPreferences
 					.getNavBarHeightDp(this);
@@ -220,6 +222,30 @@ public class NavDrawerActivity extends ZerionActivity implements
 			tabChannels.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP,
 					textSizeSp);
 		}
+
+		getSupportFragmentManager().addOnBackStackChangedListener(() ->
+				applyBottomNavForFragment(getSupportFragmentManager()
+						.findFragmentById(R.id.fragmentContainer)));
+	}
+
+	/**
+	 * The ZVault section (its dashboard, lists, and the BTC/XMR wallet screens) is
+	 * a self-contained secure context entered from the vault shortcut and navigated
+	 * with the toolbar. Hide the messenger bottom navigation while any vault
+	 * fragment is shown so a stray Chats/Groups/Channels tap cannot tear down a
+	 * wallet screen mid-flow (which would leave the wallet session alive and the
+	 * back stack inconsistent). It is restored the moment a messenger tab fragment
+	 * is shown again. Driven from every entry point that changes the container
+	 * fragment: {@code showNextFragment} (vault sub-navigation, pushed), {@code
+	 * showTabFragment} (bottom-tab replace), and the back-stack-changed listener
+	 * (pops).
+	 */
+	private void applyBottomNavForFragment(androidx.fragment.app.Fragment f) {
+		if (bottomNavigation == null) {
+			return;
+		}
+		boolean vault = f != null && f.getClass().getName().contains(".vault.");
+		bottomNavigation.setVisibility(vault ? View.GONE : View.VISIBLE);
 	}
 
 	private void setupClickListeners() {
@@ -307,6 +333,7 @@ public class NavDrawerActivity extends ZerionActivity implements
 				.commit();
 
 		updateFabVisibilityForFragment(f);
+		applyBottomNavForFragment(f);
 	}
 
 	private void updateTabUI() {
@@ -561,6 +588,16 @@ public class NavDrawerActivity extends ZerionActivity implements
 				.commit();
 
 		updateFabVisibilityForFragment(f);
+	}
+
+	@Override
+	public void showNextFragment(BaseFragment f) {
+		super.showNextFragment(f);
+		updateFabVisibilityForFragment(f);
+		applyBottomNavForFragment(f);
+		if (f.getClass().getName().contains(".vault.")) {
+			toolbarTitle.setText(R.string.vault_button);
+		}
 	}
 
 	private void updateFabVisibilityForFragment(BaseFragment f) {

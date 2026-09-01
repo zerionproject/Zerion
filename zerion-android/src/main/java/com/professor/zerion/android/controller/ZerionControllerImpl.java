@@ -90,6 +90,13 @@ public class ZerionControllerImpl implements ZerionController {
 
 	@Override
 	public void startAndBindService() {
+		com.professor.zerion.android.settings.BackgroundConnections.Mode mode =
+				com.professor.zerion.android.settings.BackgroundConnections.getMode(
+						com.professor.zerion.android.AppModule.getUiPrefs());
+		if (!com.professor.zerion.android.settings.BackgroundConnections
+				.allowStart(mode, accountManager.hasDatabaseKey(), true)) {
+			return;
+		}
 		activity.startService(new Intent(activity, ZerionService.class));
 		bound = activity.bindService(new Intent(activity, ZerionService.class),
 				serviceConnection, 0);

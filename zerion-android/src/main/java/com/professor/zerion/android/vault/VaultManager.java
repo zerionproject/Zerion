@@ -25,9 +25,13 @@ import com.professor.zerion.android.vault.utils.MetadataStripper;
 import com.professor.zerion.android.vault.utils.SecureMemory;
 
 @NotNullByDefault
-public class VaultManager {
+public class VaultManager
+		implements com.professor.zerion.android.vault.wallet.xmr.VaultGate {
 	private static final String HEADER_FILE = "vault.header";
+	private static final String HEADER_NEW_FILE = "vault.header.new";
 	private static final String ITEMS_DIR = "items";
+	private static final String ITEMS_BACKUP_DIR = "items_rekey_backup";
+	private static final String ITEMS_TEMP_DIR = "items_rekey_temp";
 	private static final byte[] EXPORT_META_AAD =
 			"zerion-vault-export-meta".getBytes(
 					java.nio.charset.StandardCharsets.UTF_8);
@@ -46,6 +50,8 @@ public class VaultManager {
 	private volatile boolean isUnlocked = false;
 	private volatile int failedAttempts = 0;
 	private volatile long backoffUntil = 0;
+	private volatile long lockGeneration = 0;
+	private volatile Runnable onLockListener = null;
 
 	private volatile List<VaultItem> cachedItems = null;
 	private volatile long cacheTimestamp = 0;
@@ -121,6 +127,8 @@ public class VaultManager {
 			throw new IllegalStateException("No vault exists");
 		}
 
+		reconcileRekeyIfNeeded();
+
 		long unlockStartRealtime = android.os.SystemClock.elapsedRealtime();
 		try {
 			long now = System.currentTimeMillis();
@@ -164,7 +172,7 @@ public class VaultManager {
 					Arrays.fill(passwordKey, (byte) 0);
 					Arrays.fill(randomSecret, (byte) 0);
 					Arrays.fill(combined, (byte) 0);
-					return false;
+					return registerFailedUnlock();
 				}
 			} else {
 				if (!fileIO.exists(ITEMS_DIR)) {
@@ -227,7 +235,7 @@ public class VaultManager {
 							Arrays.fill(passwordKey, (byte) 0);
 							Arrays.fill(randomSecret, (byte) 0);
 							Arrays.fill(combined, (byte) 0);
-							return false;
+							return registerFailedUnlock();
 						}
 					} else {
 						Arrays.fill(derivedKey, (byte) 0);
@@ -275,13 +283,26 @@ public class VaultManager {
 		} catch (SecurityException e) {
 			throw e;
 		} catch (Exception e) {
-			failedAttempts++;
-			long backoffMs = INITIAL_BACKOFF_MS * (2L * failedAttempts - 1L);
-			backoffUntil = System.currentTimeMillis() + backoffMs;
-			return false;
+			return registerFailedUnlock();
 		} finally {
 			enforceUnlockTimeFloor(unlockStartRealtime);
 		}
+	}
+
+	/**
+	 * Record a failed vault unlock (wrong password, or a keystore/IO error) and
+	 * arm the exponential backoff that {@code unlockVault} checks up front. Every
+	 * non-successful unlock funnels through here, so an ordinary wrong password
+	 * is throttled exactly like a keystore failure; before this, only the latter
+	 * incremented the counter and the primary guessing vector was unthrottled.
+	 * {@code MAX_FAILED_ATTEMPTS} caps the exponent so the delay cannot overflow.
+	 */
+	private boolean registerFailedUnlock() {
+		failedAttempts++;
+		int n = Math.min(failedAttempts, MAX_FAILED_ATTEMPTS);
+		long backoffMs = INITIAL_BACKOFF_MS * (2L * n - 1L);
+		backoffUntil = System.currentTimeMillis() + backoffMs;
+		return false;
 	}
 
 	private static final long UNLOCK_TIME_FLOOR_MS = 1500L;
@@ -305,9 +326,43 @@ public class VaultManager {
 		}
 		cachedItems = null;
 		cacheTimestamp = 0;
+		if (isUnlocked) {
+			lockGeneration++;
+		}
 		isUnlocked = false;
 
 		SecureMemory.forceGarbageCollection();
+
+		Runnable listener = onLockListener;
+		if (listener != null) {
+			try {
+				listener.run();
+			} catch (Throwable ignored) {
+			}
+		}
+		for (Runnable r : lockListeners) {
+			try {
+				r.run();
+			} catch (Throwable ignored) {
+			}
+		}
+	}
+
+	public void setOnLockListener(Runnable listener) {
+		onLockListener = listener;
+	}
+
+	private final java.util.List<Runnable> lockListeners =
+			new java.util.concurrent.CopyOnWriteArrayList<>();
+
+	/** Additive lock hook (used by the XMR layer). Fires on every vault lock in
+	 *  addition to {@link #setOnLockListener}; does not affect the BTC path. */
+	public void addLockListener(Runnable listener) {
+		lockListeners.add(listener);
+	}
+
+	public long getLockGeneration() {
+		return lockGeneration;
 	}
 
 	public synchronized void checkAutoLock() {
@@ -358,6 +413,7 @@ public class VaultManager {
 		byte[] passwordKey = null;
 		byte[] passwordSalt = null;
 		byte[] contentToEncrypt = content;
+		Argon2.Argon2Params walletParams = extraPasswordParams();
 
 		try {
 			itemKey = crypto.generateKey();
@@ -368,7 +424,7 @@ public class VaultManager {
 				new SecureRandom().nextBytes(passwordSalt);
 
 				passwordKey = argon2.deriveKey(extraPassword, passwordSalt,
-						extraPasswordParams());
+						walletParams);
 
 				VaultCrypto.EncryptedData passwordEncrypted = crypto.encrypt(
 						content, passwordKey, name.getBytes(StandardCharsets.UTF_8)
@@ -388,7 +444,9 @@ public class VaultManager {
 			if (passwordSalt != null) {
 				item = VaultItem.createNewWithPassword(
 						type, name, content.length,
-						encryptedKey.toBytes(), nonce, passwordSalt
+						encryptedKey.toBytes(), nonce, passwordSalt,
+						walletParams.memoryKb, walletParams.iterations,
+						walletParams.parallelism
 				);
 			} else {
 				item = VaultItem.createNew(
@@ -404,13 +462,6 @@ public class VaultManager {
 			String itemDir = ITEMS_DIR + "/" + item.id;
 			fileIO.createDirectory(itemDir);
 
-			byte[] metadataPlain = item.serializeMetadata();
-			VaultCrypto.EncryptedData encryptedMetadata = crypto.encrypt(
-					metadataPlain, vaultMasterKey, item.id.getBytes()
-			);
-
-			fileIO.writeSecure(itemDir + "/header.bin", encryptedMetadata.toBytes());
-
 			byte[] contentBytes = encryptedContent.toBytes();
 			int padSize = 4096;
 			while (padSize < contentBytes.length + 4) padSize *= 2;
@@ -424,6 +475,12 @@ public class VaultManager {
 			fileIO.writeSecure(itemDir + "/content.bin", paddedContent);
 			Arrays.fill(paddedContent, (byte) 0);
 
+			byte[] metadataPlain = item.serializeMetadata();
+			VaultCrypto.EncryptedData encryptedMetadata = crypto.encrypt(
+					metadataPlain, vaultMasterKey, item.id.getBytes()
+			);
+			fileIO.writeSecure(itemDir + "/header.bin", encryptedMetadata.toBytes());
+
 			invalidateCache();
 
 			return item;
@@ -434,6 +491,80 @@ public class VaultManager {
 			if (contentToEncrypt != content && contentToEncrypt != null) {
 				SecureMemory.shred(contentToEncrypt);
 			}
+		}
+	}
+
+	private synchronized VaultItem importProtectedItem(VaultItem src,
+			byte[] innerBlob) throws Exception {
+		requireUnlocked();
+
+		byte[] itemKey = null;
+		try {
+			itemKey = crypto.generateKey();
+			byte[] nonce = crypto.generateNonce();
+
+			VaultCrypto.EncryptedData encryptedContent = crypto.encrypt(
+					innerBlob, itemKey,
+					src.name.getBytes(StandardCharsets.UTF_8));
+			VaultCrypto.EncryptedData encryptedKey = crypto.encrypt(
+					itemKey, vaultMasterKey, new byte[0]);
+
+			VaultItem item = VaultItem.createNewWithPassword(
+					src.type, src.name, src.size,
+					encryptedKey.toBytes(), nonce, src.extraPasswordSalt,
+					src.extraPasswordMemoryKb, src.extraPasswordIterations,
+					src.extraPasswordParallelism);
+
+			if (!fileIO.exists(ITEMS_DIR)) {
+				fileIO.createDirectory(ITEMS_DIR);
+			}
+			String itemDir = ITEMS_DIR + "/" + item.id;
+			fileIO.createDirectory(itemDir);
+
+			byte[] metadataPlain = item.serializeMetadata();
+			VaultCrypto.EncryptedData encryptedMetadata = crypto.encrypt(
+					metadataPlain, vaultMasterKey, item.id.getBytes());
+			SecureMemory.shred(metadataPlain);
+			fileIO.writeSecure(itemDir + "/header.bin",
+					encryptedMetadata.toBytes());
+
+			byte[] contentBytes = encryptedContent.toBytes();
+			int padSize = 4096;
+			while (padSize < contentBytes.length + 4) padSize *= 2;
+			byte[] paddedContent = new byte[padSize];
+			new SecureRandom().nextBytes(paddedContent);
+			paddedContent[0] = (byte) (contentBytes.length >> 24);
+			paddedContent[1] = (byte) (contentBytes.length >> 16);
+			paddedContent[2] = (byte) (contentBytes.length >> 8);
+			paddedContent[3] = (byte) contentBytes.length;
+			System.arraycopy(contentBytes, 0, paddedContent, 4,
+					contentBytes.length);
+			fileIO.writeSecure(itemDir + "/content.bin", paddedContent);
+			Arrays.fill(paddedContent, (byte) 0);
+
+			invalidateCache();
+
+			return item;
+		} finally {
+			if (itemKey != null) SecureMemory.shred(itemKey);
+		}
+	}
+
+	public synchronized boolean itemHasExtraPassword(String itemId)
+			throws Exception {
+		requireUnlocked();
+		String itemDir = ITEMS_DIR + "/" + itemId;
+		byte[] metadataPlain = null;
+		try {
+			byte[] encryptedMetadata = fileIO.readSecure(itemDir + "/header.bin");
+			VaultCrypto.EncryptedData metadataWrapper =
+					VaultCrypto.EncryptedData.fromBytes(encryptedMetadata);
+			metadataPlain = crypto.decrypt(
+					metadataWrapper, vaultMasterKey, itemId.getBytes());
+			VaultItem item = VaultItem.deserializeMetadata(metadataPlain);
+			return item.hasExtraPassword;
+		} finally {
+			if (metadataPlain != null) SecureMemory.shred(metadataPlain);
 		}
 	}
 
@@ -523,6 +654,13 @@ public class VaultManager {
 		return getItemContent(itemId);
 	}
 
+	/**
+	 * Decrypt a password-protected item's content. Ownership contract: the caller
+	 * owns {@code extraPassword} and must wipe it in its own {@code finally}. This
+	 * method does NOT consume or mutate the caller's buffer; it derives a key from
+	 * a private copy and wipes only that copy and its own intermediates. Callers
+	 * therefore never need to clone the password before calling.
+	 */
 	public synchronized byte[] getItemContentWithPassword(String itemId, char[] extraPassword) throws Exception {
 		requireUnlocked();
 
@@ -564,7 +702,9 @@ public class VaultManager {
 			nestedContent = crypto.decrypt(contentWrapper, itemKey, item.name.getBytes(StandardCharsets.UTF_8));
 
 			passwordKey = argon2.deriveKey(extraPassword, item.extraPasswordSalt,
-					extraPasswordParams());
+					new Argon2.Argon2Params(item.extraPasswordMemoryKb,
+							item.extraPasswordIterations,
+							item.extraPasswordParallelism, 32));
 
 			VaultCrypto.EncryptedData passwordWrapper =
 					VaultCrypto.EncryptedData.fromBytes(nestedContent);
@@ -591,7 +731,6 @@ public class VaultManager {
 			if (itemKey != null) SecureMemory.shred(itemKey);
 			if (passwordKey != null) SecureMemory.shred(passwordKey);
 			if (nestedContent != null) SecureMemory.shred(nestedContent);
-			if (extraPassword != null) java.util.Arrays.fill(extraPassword, '\0');
 		}
 	}
 
@@ -688,6 +827,14 @@ public class VaultManager {
 		return ok;
 	}
 
+	public synchronized boolean verifyMasterPassword(char[] candidate) {
+		try {
+			return verifyPassword(candidate);
+		} catch (Exception e) {
+			return false;
+		}
+	}
+
 	public synchronized void changePassword(char[] oldPassword,
 			char[] newPassword) throws Exception {
 		if (!verifyPassword(oldPassword)) {
@@ -708,8 +855,6 @@ public class VaultManager {
 
 		byte[] newPasswordVerificationMac = crypto.computePasswordVerificationMac(newMasterKey);
 
-		rekeyVault(vaultMasterKey, newMasterKey);
-
 		VaultHeader newHeader = VaultHeader.createNew(
 				newSalt,
 				params.memoryKb,
@@ -719,7 +864,7 @@ public class VaultManager {
 				newPasswordVerificationMac
 		);
 
-		fileIO.writeSecure(HEADER_FILE, newHeader.toBytes());
+		commitRekey(vaultMasterKey, newMasterKey, newHeader);
 
 		this.currentHeader = newHeader;
 		this.vaultMasterKey = newMasterKey;
@@ -730,18 +875,96 @@ public class VaultManager {
 
 	}
 
-	private void rekeyVault(byte[] oldKey, byte[] newKey) throws Exception {
+	/**
+	 * Switch the vault to a new master key and header atomically. The new item
+	 * keys are staged into a temp set, the new header is written to a marker, the
+	 * item set is swapped, and the marker is then renamed onto the live header as
+	 * the single commit point. A crash before that rename rolls back to the old
+	 * header and old items; after it, forward to the new. See
+	 * {@link #reconcileRekeyIfNeeded()}. On any failure here the vault is left on
+	 * the old password with the old items intact.
+	 */
+	private void commitRekey(byte[] oldKey, byte[] newKey, VaultHeader newHeader)
+			throws Exception {
+		boolean staged = prepareRekeyTemp(oldKey, newKey);
+
+		java.io.File vaultDir = fileIO.getVaultDir();
+		java.io.File items = new java.io.File(vaultDir, ITEMS_DIR);
+		java.io.File backupDir = new java.io.File(vaultDir, ITEMS_BACKUP_DIR);
+		java.io.File tempDir = new java.io.File(vaultDir, ITEMS_TEMP_DIR);
+		java.io.File headerNew = new java.io.File(vaultDir, HEADER_NEW_FILE);
+		java.io.File header = new java.io.File(vaultDir, HEADER_FILE);
+
+		if (fileIO.exists(ITEMS_BACKUP_DIR)) {
+			fileIO.deleteDirectory(ITEMS_BACKUP_DIR);
+		}
+		fileIO.writeSecure(HEADER_NEW_FILE, newHeader.toBytes());
+
+		try {
+			if (staged) {
+				if (items.exists() && !items.renameTo(backupDir)) {
+					throw new IOException("rekey: could not stage current items");
+				}
+				if (!tempDir.renameTo(items)) {
+					if (backupDir.exists()) {
+						backupDir.renameTo(items);
+					}
+					throw new IOException(
+							"rekey: could not activate re-encrypted items");
+				}
+				fileIO.fsyncVaultDir();
+			}
+			atomicReplace(headerNew, header);
+			fileIO.fsyncVaultDir();
+		} catch (Exception commitFailed) {
+			if (staged && backupDir.exists()) {
+				if (items.exists()) {
+					fileIO.deleteDirectory(ITEMS_DIR);
+				}
+				backupDir.renameTo(items);
+			}
+			if (fileIO.exists(ITEMS_TEMP_DIR)) {
+				fileIO.deleteDirectory(ITEMS_TEMP_DIR);
+			}
+			if (fileIO.exists(HEADER_NEW_FILE)) {
+				fileIO.secureDelete(HEADER_NEW_FILE);
+			}
+			throw commitFailed;
+		}
+
+		if (fileIO.exists(ITEMS_BACKUP_DIR)) {
+			fileIO.deleteDirectory(ITEMS_BACKUP_DIR);
+		}
+	}
+
+	private void atomicReplace(java.io.File src, java.io.File dst)
+			throws IOException {
+		if (!src.renameTo(dst)) {
+			java.nio.file.Files.move(src.toPath(), dst.toPath(),
+					java.nio.file.StandardCopyOption.ATOMIC_MOVE,
+					java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+		}
+	}
+
+	/**
+	 * Re-encrypt every item's wrapped key under the new master key into a fresh
+	 * {@link #ITEMS_TEMP_DIR}, without touching the live item set. The atomic swap
+	 * and header commit are performed by {@link #changePassword} so that a crash
+	 * at any point rolls forward or back to a consistent state (see
+	 * {@link #reconcileRekeyIfNeeded()}). Returns true when a temp set was staged,
+	 * false when there was nothing to rekey.
+	 */
+	private boolean prepareRekeyTemp(byte[] oldKey, byte[] newKey)
+			throws Exception {
 		if (!fileIO.exists(ITEMS_DIR)) {
-			return;
+			return false;
 		}
 
 		String[] itemDirs = fileIO.listFiles(ITEMS_DIR);
-		final String ITEMS_TEMP_DIR = "items_rekey_temp";
-		final String ITEMS_BACKUP_DIR = "items_rekey_backup";
 
 		try {
 			if (fileIO.exists(ITEMS_TEMP_DIR)) {
-				fileIO.secureDelete(ITEMS_TEMP_DIR);
+				fileIO.deleteDirectory(ITEMS_TEMP_DIR);
 			}
 			fileIO.createDirectory(ITEMS_TEMP_DIR);
 
@@ -784,6 +1007,9 @@ public class VaultManager {
 							item.thumbnailKey,
 							item.hasExtraPassword,
 							item.extraPasswordSalt,
+							item.extraPasswordMemoryKb,
+							item.extraPasswordIterations,
+							item.extraPasswordParallelism,
 							newEncryptedKey.toBytes(),
 							item.nonce,
 							item.version
@@ -816,34 +1042,69 @@ public class VaultManager {
 			}
 
 			if (!failedItems.isEmpty()) {
-				fileIO.secureDelete(ITEMS_TEMP_DIR);
+				fileIO.deleteDirectory(ITEMS_TEMP_DIR);
 				throw new Exception("Failed to rekey " + failedItems.size() + " items. Rekey aborted, vault unchanged.");
 			}
 
-			if (fileIO.exists(ITEMS_BACKUP_DIR)) {
-				fileIO.secureDelete(ITEMS_BACKUP_DIR);
-			}
-
-			java.io.File itemsDir = new java.io.File(fileIO.getVaultDir(), ITEMS_DIR);
-			java.io.File backupDir = new java.io.File(fileIO.getVaultDir(), ITEMS_BACKUP_DIR);
-			java.io.File tempDir = new java.io.File(fileIO.getVaultDir(), ITEMS_TEMP_DIR);
-
-			if (!itemsDir.renameTo(backupDir)) {
-				throw new IOException("Failed to backup current items directory");
-			}
-
-			if (!tempDir.renameTo(itemsDir)) {
-				backupDir.renameTo(itemsDir);
-				throw new IOException("Failed to activate re-encrypted items directory");
-			}
-
-			fileIO.secureDelete(ITEMS_BACKUP_DIR);
+			return true;
 
 		} catch (Exception e) {
 			if (fileIO.exists(ITEMS_TEMP_DIR)) {
-				fileIO.secureDelete(ITEMS_TEMP_DIR);
+				fileIO.deleteDirectory(ITEMS_TEMP_DIR);
 			}
 			throw e;
+		}
+	}
+
+	/**
+	 * Recover from a vault password change interrupted by a crash or power loss.
+	 * The new header is written to {@link #HEADER_NEW_FILE} and only renamed onto
+	 * {@link #HEADER_FILE} as the single atomic commit point, after the item set
+	 * has been swapped. This runs before every unlock and is a no-op unless a
+	 * password change was in flight, so it can never affect a healthy vault.
+	 *
+	 * <ul>
+	 * <li>{@code HEADER_NEW_FILE} present = not yet committed: roll the item set
+	 * back to the old-key {@link #ITEMS_BACKUP_DIR} so it matches the still-live
+	 * old header, then drop the marker and any temp set.</li>
+	 * <li>Only {@link #ITEMS_BACKUP_DIR} present = committed but not cleaned up:
+	 * the new header is already live, so drop the stale old-key backup.</li>
+	 * <li>Only {@link #ITEMS_TEMP_DIR} present = aborted before any swap: discard
+	 * the half-written temp set.</li>
+	 * </ul>
+	 */
+	private void reconcileRekeyIfNeeded() {
+		try {
+			boolean headerNew = fileIO.exists(HEADER_NEW_FILE);
+			boolean backup = fileIO.exists(ITEMS_BACKUP_DIR);
+			boolean temp = fileIO.exists(ITEMS_TEMP_DIR);
+			if (!headerNew && !backup && !temp) {
+				return;
+			}
+			java.io.File vaultDir = fileIO.getVaultDir();
+			java.io.File items = new java.io.File(vaultDir, ITEMS_DIR);
+			java.io.File backupDir = new java.io.File(vaultDir, ITEMS_BACKUP_DIR);
+			if (headerNew) {
+				if (backup) {
+					if (items.exists()) {
+						fileIO.deleteDirectory(ITEMS_DIR);
+					}
+					backupDir.renameTo(items);
+				}
+				if (fileIO.exists(ITEMS_TEMP_DIR)) {
+					fileIO.deleteDirectory(ITEMS_TEMP_DIR);
+				}
+				fileIO.secureDelete(HEADER_NEW_FILE);
+			} else if (backup) {
+				fileIO.deleteDirectory(ITEMS_BACKUP_DIR);
+				if (temp) {
+					fileIO.deleteDirectory(ITEMS_TEMP_DIR);
+				}
+			} else {
+				fileIO.deleteDirectory(ITEMS_TEMP_DIR);
+			}
+			fileIO.fsyncVaultDir();
+		} catch (Exception ignored) {
 		}
 	}
 
@@ -896,7 +1157,7 @@ public class VaultManager {
 	}
 
 	private Argon2.Argon2Params extraPasswordParams() {
-		return Argon2.Argon2Params.getDefault();
+		return Argon2.Argon2Params.getWalletPassword();
 	}
 
 	public byte[] exportVault(char[] exportPassword) throws Exception {
@@ -1031,7 +1292,11 @@ public class VaultManager {
 					VaultCrypto.EncryptedData.fromBytes(encryptedBytes);
 			byte[] content = crypto.decrypt(encryptedContent, exportKey, item.id.getBytes());
 
-			addItem(item.type, item.name, content);
+			if (item.hasExtraPassword) {
+				importProtectedItem(item, content);
+			} else {
+				addItem(item.type, item.name, content);
+			}
 			imported++;
 
 			SecureMemory.shred(content);

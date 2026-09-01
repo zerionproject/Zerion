@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
 
-	<style name="ZerionTheme" parent="Theme.Material3.Dark">
+	<style name="ZerionTheme" parent="Theme.Material3.DayNight">
 		<item name="colorPrimary">@color/zerion_cyan</item>
 		<item name="colorOnPrimary">@android:color/white</item>
 		<item name="colorPrimaryContainer">@color/zerion_card_bg</item>
-		<item name="colorOnPrimaryContainer">@android:color/white</item>
+		<item name="colorOnPrimaryContainer">@color/zerion_text_primary</item>
 		<item name="colorSecondary">@color/zerion_deep_blue</item>
 		<item name="colorOnSecondary">@android:color/white</item>
 		<item name="colorTertiary">@color/zerion_aqua</item>
@@ -13,18 +13,18 @@
 		<item name="colorTertiaryContainer">@color/zerion_card_bg</item>
 		<item name="colorOnTertiaryContainer">@color/zerion_cyan</item>
 		<item name="android:colorBackground">@color/zerion_dark_bg</item>
-		<item name="colorOnBackground">@android:color/white</item>
+		<item name="colorOnBackground">@color/zerion_text_primary</item>
 		<item name="colorSurface">@color/zerion_card_bg</item>
-		<item name="colorOnSurface">@android:color/white</item>
+		<item name="colorOnSurface">@color/zerion_text_primary</item>
 		<item name="colorSurfaceDim">@color/zerion_dark_bg</item>
 		<item name="colorError">@color/zerion_error_red</item>
 		<item name="android:statusBarColor">@android:color/transparent</item>
 		<item name="android:navigationBarColor">@android:color/transparent</item>
 
 		<item name="android:windowBackground">@color/zerion_dark_bg</item>
-		<item name="android:textColor">@android:color/white</item>
-		<item name="android:textColorPrimary">@android:color/white</item>
-		<item name="android:textColorSecondary">#B3FFFFFF</item>
+		<item name="android:textColor">@color/zerion_text_primary</item>
+		<item name="android:textColorPrimary">@color/zerion_text_primary</item>
+		<item name="android:textColorSecondary">@color/zerion_text_secondary</item>
 		<item name="android:textColorLink">@color/zerion_cyan</item>
 		<item name="android:fontFamily">@font/plex_sans</item>
 		<item name="fontFamily">@font/plex_sans</item>
@@ -34,17 +34,13 @@
 		<item name="alertDialogTheme">@style/ZerionDialogTheme.Neutral</item>
 		<item name="preferenceTheme">@style/PreferenceThemeOverlay.v14</item>
 
-		<!-- Set toolbar icon colors to Zerion cyan for unified look -->
 		<item name="colorControlNormal">@color/zerion_cyan</item>
 		<item name="colorControlActivated">@color/zerion_cyan</item>
-		<!-- Use subtle gray ripple instead of blue for list items -->
-		<item name="colorControlHighlight">#1AFFFFFF</item>
+		<item name="colorControlHighlight">@color/zerion_ripple</item>
 		<item name="selectableItemBackground">?android:attr/selectableItemBackground</item>
 		<item name="android:editTextStyle">@style/Zerion.EditText</item>
 		<item name="android:listDivider">@android:color/transparent</item>
 		<item name="android:divider">@android:color/transparent</item>
-
-		<item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
 	</style>
 
 	<style name="ZerionTheme.NoActionBar" parent="ZerionTheme">
@@ -64,16 +60,16 @@
 		<item name="android:activityCloseExitAnimation">@anim/screen_new_out</item>
 	</style>
 
-	<style name="ZerionDialogTheme" parent="Theme.Material3.Dark.Dialog">
+	<style name="ZerionDialogTheme" parent="Theme.Material3.DayNight.Dialog">
 		<item name="colorPrimary">@color/zerion_cyan</item>
 		<item name="colorSurface">@color/zerion_card_bg</item>
-		<item name="colorOnSurface">@android:color/white</item>
+		<item name="colorOnSurface">@color/zerion_text_primary</item>
 		<item name="android:colorBackground">@color/zerion_card_bg</item>
 		<item name="buttonBarPositiveButtonStyle">@style/ZerionButtonFlat.Positive</item>
 		<item name="buttonBarNeutralButtonStyle">@style/ZerionButtonFlat.Neutral</item>
 		<item name="buttonBarNegativeButtonStyle">@style/ZerionButtonFlat.Negative</item>
-		<item name="android:textColor">@android:color/white</item>
-		<item name="android:textColorPrimary">@android:color/white</item>
+		<item name="android:textColor">@color/zerion_text_primary</item>
+		<item name="android:textColorPrimary">@color/zerion_text_primary</item>
 		<item name="android:textColorLink">@color/zerion_cyan</item>
 		<item name="android:fontFamily">@font/plex_sans</item>
 		<item name="fontFamily">@font/plex_sans</item>
@@ -111,7 +107,7 @@
 
 	<style name="OnboardingDialogTheme" parent="ZerionDialogTheme">
 		<item name="android:background">@color/zerion_card_bg</item>
-		<item name="android:textColorPrimary">@android:color/white</item>
+		<item name="android:textColorPrimary">@color/zerion_text_primary</item>
 		<item name="colorSurface">@color/zerion_card_bg</item>
 	</style>
 
@@ -126,12 +122,12 @@
 
 	<!-- Preference text colors for Settings -->
 	<style name="Preference.Zerion" parent="Preference">
-		<item name="android:textColor">#FFFFFF</item>
+		<item name="android:textColor">@color/zerion_text_primary</item>
 	</style>
 
 	<style name="PreferenceThemeOverlay.v14" parent="PreferenceThemeOverlay.v14.Material">
-		<item name="android:textColorPrimary">#FFFFFF</item>
-		<item name="android:textColorSecondary">#8A8FA6</item>
+		<item name="android:textColorPrimary">@color/zerion_text_primary</item>
+		<item name="android:textColorSecondary">@color/zerion_text_secondary</item>
 		<item name="colorAccent">@color/zerion_text_secondary</item>
 		<item name="colorControlNormal">@android:color/transparent</item>
 		<item name="colorControlActivated">@android:color/transparent</item>

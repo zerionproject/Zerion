@@ -164,9 +164,21 @@ public class ProfileManager {
 		File f = getDisplayNameFile(profileId);
 		if (!f.exists()) return null;
 		String decrypted = metadataCrypto.readEncrypted(f);
-		if (decrypted != null) return decrypted.isEmpty() ? null : decrypted;
+		if (decrypted != null) {
+			return isReadableText(decrypted) ? decrypted : null;
+		}
 		String migrated = migratePlaintextDisplayName(f, profileId);
-		return migrated == null || migrated.isEmpty() ? null : migrated;
+		return isReadableText(migrated) ? migrated : null;
+	}
+
+	static boolean isReadableText(@javax.annotation.Nullable String s) {
+		if (s == null || s.isEmpty()) return false;
+		for (int i = 0; i < s.length(); i++) {
+			char c = s.charAt(i);
+			if (c == 0xFFFD) return false;
+			if (c < 0x20 && c != '\t' && c != '\n' && c != '\r') return false;
+		}
+		return true;
 	}
 
 	public void writeEncryptedMetaFile(String profileId, String fileName,
@@ -205,7 +217,7 @@ public class ProfileManager {
 				new java.io.InputStreamReader(new java.io.FileInputStream(f),
 						java.nio.charset.StandardCharsets.UTF_8))) {
 			String line = r.readLine();
-			return line == null || line.isEmpty() ? null : line;
+			return isReadableText(line) ? line : null;
 		} catch (java.io.IOException e) {
 			return null;
 		}
@@ -221,7 +233,7 @@ public class ProfileManager {
 		} catch (java.io.IOException e) {
 			return null;
 		}
-		if (legacy == null || legacy.isEmpty()) return null;
+		if (!isReadableText(legacy)) return null;
 		writeDisplayName(profileId, legacy);
 		return legacy;
 	}

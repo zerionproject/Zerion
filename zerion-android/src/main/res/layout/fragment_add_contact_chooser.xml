@@ -14,7 +14,7 @@
 		android:layout_height="wrap_content"
 		android:gravity="center"
 		android:text="@string/add_contact_method_subtitle"
-		android:textColor="#CCFFFFFF"
+		android:textColor="@color/zerion_text_secondary"
 		android:textSize="16sp"
 		android:letterSpacing="0.01" />
 

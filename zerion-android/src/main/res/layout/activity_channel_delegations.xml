@@ -5,14 +5,14 @@
 	xmlns:tools="http://schemas.android.com/tools"
 	android:layout_width="match_parent"
 	android:layout_height="match_parent"
-	android:background="@color/window_background"
+	android:background="@color/zerion_dark_bg"
 	android:fitsSystemWindows="true">
 
 	<androidx.appcompat.widget.Toolbar
 		android:id="@+id/delegationsToolbar"
 		android:layout_width="match_parent"
 		android:layout_height="?attr/actionBarSize"
-		android:background="@color/window_background"
+		android:background="@color/zerion_dark_bg"
 		app:layout_constraintTop_toTopOf="parent"
 		app:title="@string/channels_delegations_title"
 		app:titleTextColor="@color/zerion_text_primary" />

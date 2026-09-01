@@ -6,7 +6,7 @@ Zerion is an end-to-end encrypted, peer-to-peer messenger for Android that runs 
 
 Zerion is a fork of, and is built on, the Briar Project and its Bramble framework (GPLv3). The transport, wire format and ratchet described here are Zerion's own; the debt to Briar for the identity, database and Tor-integration foundations is gratefully acknowledged.
 
-This document describes the protocol as implemented in the 3.0 source tree. Where the implementation makes a deliberate trade-off or falls short of an idealised design, this document says so plainly (see [§11, Security Properties and Limitations](#11-security-properties-and-limitations)).
+This document describes the protocol as implemented in the 3.0 source tree, current as of 3.0.4. As of 3.0.4 the vault also hosts optional, self-custodial Bitcoin and Monero wallets, described in [§9](#9-the-encrypted-vault-and-non-custodial-wallets). Where the implementation makes a deliberate trade-off or falls short of an idealised design, this document says so plainly (see [§11, Security Properties and Limitations](#11-security-properties-and-limitations)).
 
 ---
 
@@ -20,7 +20,7 @@ This document describes the protocol as implemented in the 3.0 source tree. Wher
 6. [The Mode 3-Full ratchet](#6-the-mode-3-full-ratchet)
 7. [Authenticated encryption and nonces](#7-authenticated-encryption-and-nonces)
 8. [1:1 chat, group chat, channels and voice](#8-11-chat-group-chat-channels-and-voice)
-9. [The encrypted vault](#9-the-encrypted-vault)
+9. [The encrypted vault and non-custodial wallets](#9-the-encrypted-vault-and-non-custodial-wallets)
 10. [Anti-forensics and device hardening](#10-anti-forensics-and-device-hardening)
 11. [Security properties and limitations](#11-security-properties-and-limitations)
 12. [Cryptographic parameters](#12-cryptographic-parameters)
@@ -144,7 +144,7 @@ Key material and plaintext buffers are zeroised after use on every code path, in
 - **Channels** are single-publisher, many-subscriber broadcast (announcements, feeds). The publisher signs each post with its hybrid identity and serves posts from a dedicated channel onion; subscribers pull over Tor and verify the signature chain, so a subscriber needs no trust in any third party and the publisher learns nothing about who is subscribed beyond a connecting Tor circuit. Posts, comments and reactions are content-addressed and tamper-evident.
 - **Voice calls** are peer-to-peer over Tor: Opus audio (16 kHz mono, ~24 kbit/s) in fixed 20 ms / 640-byte frames, each frame encrypted with AES-256-GCM under a call key negotiated over the authenticated messaging channel. The fixed frame size and cadence avoid leaking speech patterns through packet timing.
 
-## 9. The encrypted vault
+## 9. The encrypted vault and non-custodial wallets
 
 The vault is an on-device encrypted store for passwords, secure notes, documents and images, separate from messaging and protected by its **own** password.
 
@@ -153,6 +153,21 @@ The vault is an on-device encrypted store for passwords, secure notes, documents
 - **No recovery.** There is no password-reset or recovery path, a forgotten vault password means the data is unrecoverable by design, so there is no backdoor to coerce.
 - **Locks when idle** and on app lock; decrypted content is never persisted outside the vault. When the vault renders a document (for example a PDF), any decrypted temporary file is securely overwritten and deleted immediately after use, and a startup sweep removes any that a crash left behind.
 - **Screen protection.** Vault screens are unconditionally `FLAG_SECURE` (excluded from screenshots and the recents thumbnail) and use an incognito keyboard on entry fields.
+
+### 9.1 Non-custodial Bitcoin and Monero wallets
+
+Zerion 3.0.4 adds optional non-custodial Bitcoin and Monero wallets that live inside the vault. They are **self-custodial and device-local**: the wallet seed is generated on the device, sealed as a vault item, and never leaves it. There is no custodian, no account, and no server that can move, freeze or see the funds. A wallet is reached only after the vault is unlocked, and each wallet carries its **own** password, distinct from the vault master password.
+
+- **Seed sealing and spend-authority derivation.** Each wallet's seed is stored as a vault item under authenticated encryption. Obtaining spend authority requires the wallet password stretched with **Argon2id** (memory-hard) combined with an Android keystore factor, so decrypting the vault tier alone never yields spending power.
+- **Bitcoin.** A BIP84 native-SegWit wallet (bitcoinj, mainnet): a fresh address per receive, fresh change addresses, coin control with per-output freezing and labels, and a cluster-aware privacy analyser. A send is authorised by reviewing the exact transaction; the reviewed plan is fingerprinted, the credential is re-checked, and only that same plan is signed and broadcast, so what the user reviews is what is broadcast (per-input value is bound by the SegWit signature, so a tampered input voids the signature rather than moving funds).
+- **Monero.** A wallet built on Monero's own `wallet2` (pinned upstream source, built reproducibly, see below). At runtime it runs as a **spend-keyless, view-only** wallet, so day-to-day balance and history never bring the spend key into memory; the spend key is derived from the wallet password and held only for the moment a transaction is signed, then wiped. Receiving uses fresh subaddresses, never the primary address.
+- **Tor by default.** All wallet network traffic (the Electrum client for Bitcoin, Monero nodes, broadcast, and price lookups) is carried over Tor through the local SOCKS proxy, with distinct stream isolation per wallet and per purpose, and no silent fallback to a direct connection. A non-Tor path exists only as an explicit, opt-in choice behind a warning.
+- **Transaction-time authorisation.** Spending, revealing a seed, deleting or rescanning a wallet each require the wallet password at the moment of the action and are re-validated against the live lock state, so a screen left open cannot authorise a spend after the vault has locked. The displayed spendable balance never counts funds already committed to an unconfirmed send.
+- **No forensic residue.** Wallet screens are `FLAG_SECURE`, the production build writes no logs from the wallet code, and secret buffers (passwords, seeds, derived keys) are zeroised after use on every path, including error paths.
+
+**Reproducible native provenance.** The wallets rely on native libraries (Monero's `wallet2`, and Argon2 for key derivation). These are built from **pinned upstream source** inside a pinned container, never downloaded as opaque prebuilt binaries: the Monero commit and every dependency archive are hash-pinned and verified at build time, and each shipped library's per-ABI SHA-256 is published so that anyone can reproduce the build and confirm the bytes. The libraries ship inside the signed application package.
+
+**Review.** The wallet foundation (the vault and its cryptography, the Bitcoin and Monero wallets, and the native boundary) has been through extensive internal security and code review across multiple independent adversarial passes, with the findings addressed in the shipping code.
 
 ## 10. Anti-forensics and device hardening
 
@@ -186,6 +201,8 @@ Zerion is designed to resist not only the network adversary but also examination
 - **Group messaging has no shared group ratchet.** As described in [§8](#8-11-chat-group-chat-channels-and-voice), group content rides the members' pairwise post-quantum ratchets and group membership is authenticated by the creator's hybrid signature, but there is no group-wide key. Removing a member is enforced by the remaining members no longer relaying to them, not by re-keying a shared secret, so forward secrecy against a removed member depends on the honest members and a member who kept relaying could still reach an excluded party. A group is only as confidential as its members choose to keep it.
 - **Channels: reading is anonymous, reacting and commenting are not.** Subscribing to and pulling a channel reveals nothing to the publisher beyond a connecting Tor circuit. Posting a reaction or a comment is an explicit user action that signs and sends the user's own identity key to the publisher, so those actions are attributable by design; a user who wishes to stay anonymous to a publisher should read only.
 - **Channel publishers can equivocate.** Because subscribers do not gossip with each other, a malicious publisher could serve a different post history to different subscribers (a fork). The signature chain guarantees that each subscriber's view is internally consistent, gap-free and authentically signed by the publisher, but not that all subscribers see the same view. This is inherent to single-publisher broadcast without a shared consistency oracle.
+- **The Bitcoin wallet uses a lightweight (Electrum) client, not full SPV.** Balances and confirmation counts are server assertions, checked against local structural and signature validation but not against proof-of-work. A malicious server cannot derive keys, sign, redirect a signed transaction, or make the wallet spend more than the reviewed plan (the signature commits every input and output); it can, however, withhold data or misreport confirmations, so a receiver should treat a single server's confirmation count with appropriate caution. Independent header/merkle verification is possible future work.
+- **Monero balance reconciliation is view-based.** Because the runtime wallet is view-only, a spend made from the same seed in a different wallet is reconciled into the displayed balance the next time the wallet is opened with its password, not continuously. A Zerion send always opens the spend wallet first, so it can never select an already-spent output; the reconciliation concerns display, not fund safety.
 - Endpoint compromise, Tor traffic-confirmation, and coercion are out of scope.
 
 ## 12. Cryptographic parameters
@@ -201,6 +218,8 @@ Zerion is designed to resist not only the network adversary but also examination
 | Transport padding rate | ZPP | one frame per ~750 ms slot ±1/3 jitter, real-or-cover |
 | Voice | Opus + AES-256-GCM | 16 kHz mono ~24 kbit/s, 20 ms / 640-byte frames |
 | Database | SQLCipher (AES-256) | schema version 66; StrongBox-wrapped key where available |
+| Wallet key derivation | Argon2id | vault master 256 MiB / t=3; per-wallet 64 MiB / t=3; combined with a keystore factor |
+| Wallet at-rest / native | AES-256-GCM; reproducible native build | random-nonce AEAD; Monero `wallet2` and Argon2 built from pinned source, per-ABI SHA-256 published |
 
 ---
 

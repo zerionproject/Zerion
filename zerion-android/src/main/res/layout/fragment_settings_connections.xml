@@ -84,6 +84,96 @@
 
 		</LinearLayout>
 
+		<TextView
+			style="@style/Zerion.Settings.SectionHeader"
+			android:text="@string/settings_bg_conn_header" />
+
+		<LinearLayout style="@style/Zerion.Settings.Group">
+
+			<RadioGroup
+				android:id="@+id/bg_mode_group"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:orientation="vertical"
+				android:paddingHorizontal="16dp"
+				android:paddingVertical="8dp">
+
+				<RadioButton
+					android:id="@+id/bg_mode_always"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:paddingVertical="10dp"
+					android:textColor="?android:attr/textColorPrimary"
+					android:text="@string/bg_conn_always_title" />
+
+				<TextView
+					style="@style/Zerion.Settings.Row.Summary"
+					android:paddingStart="32dp"
+					android:paddingBottom="6dp"
+					android:text="@string/bg_conn_always_summary" />
+
+				<RadioButton
+					android:id="@+id/bg_mode_open"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:paddingVertical="10dp"
+					android:textColor="?android:attr/textColorPrimary"
+					android:text="@string/bg_conn_open_title" />
+
+				<TextView
+					style="@style/Zerion.Settings.Row.Summary"
+					android:paddingStart="32dp"
+					android:paddingBottom="6dp"
+					android:text="@string/bg_conn_open_summary" />
+
+				<RadioButton
+					android:id="@+id/bg_mode_paused"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:paddingVertical="10dp"
+					android:textColor="?android:attr/textColorPrimary"
+					android:text="@string/bg_conn_paused_title" />
+
+				<TextView
+					style="@style/Zerion.Settings.Row.Summary"
+					android:paddingStart="32dp"
+					android:text="@string/bg_conn_paused_summary" />
+
+			</RadioGroup>
+
+		</LinearLayout>
+
+		<LinearLayout
+			android:id="@+id/bg_conn_warning_card"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:orientation="horizontal"
+			android:gravity="center_vertical"
+			android:visibility="gone"
+			android:layout_marginTop="14dp"
+			android:background="@drawable/bg_settings_info_card"
+			android:paddingHorizontal="14dp"
+			android:paddingVertical="12dp">
+
+			<ImageView
+				android:layout_width="20dp"
+				android:layout_height="20dp"
+				android:layout_marginEnd="12dp"
+				android:src="@drawable/ic_info_dark"
+				app:tint="@color/zerion_primary_accent"
+				android:importantForAccessibility="no" />
+
+			<TextView
+				android:layout_width="0dp"
+				android:layout_height="wrap_content"
+				android:layout_weight="1"
+				android:text="@string/bg_conn_warning"
+				android:textSize="13sp"
+				android:textColor="@color/zerion_text_secondary"
+				android:lineSpacingExtra="1dp" />
+
+		</LinearLayout>
+
 		<!-- ====== TOR NETWORK ====== -->
 		<TextView
 			style="@style/Zerion.Settings.SectionHeader"

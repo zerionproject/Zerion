@@ -12,7 +12,7 @@
         android:text="@string/menu_item_disappearing_messages"
         android:textSize="20sp"
         android:textStyle="bold"
-        android:textColor="@android:color/white"
+        android:textColor="@color/zerion_text_primary"
         android:paddingBottom="16dp" />
 
     <ScrollView
@@ -33,7 +33,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
                 android:text="@string/dialog_disappearing_5_minutes"
-                android:textColor="@android:color/white"
+                android:textColor="@color/zerion_text_primary"
                 android:textSize="16sp"
                 android:buttonTint="@color/zerion_primary_accent" />
 
@@ -42,7 +42,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
                 android:text="@string/dialog_disappearing_30_minutes"
-                android:textColor="@android:color/white"
+                android:textColor="@color/zerion_text_primary"
                 android:textSize="16sp"
                 android:buttonTint="@color/zerion_primary_accent" />
 
@@ -51,7 +51,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
                 android:text="@string/dialog_disappearing_1_hour"
-                android:textColor="@android:color/white"
+                android:textColor="@color/zerion_text_primary"
                 android:textSize="16sp"
                 android:buttonTint="@color/zerion_primary_accent" />
 
@@ -60,7 +60,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
                 android:text="@string/dialog_disappearing_8_hours"
-                android:textColor="@android:color/white"
+                android:textColor="@color/zerion_text_primary"
                 android:textSize="16sp"
                 android:buttonTint="@color/zerion_primary_accent" />
 
@@ -69,7 +69,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
                 android:text="@string/dialog_disappearing_12_hours"
-                android:textColor="@android:color/white"
+                android:textColor="@color/zerion_text_primary"
                 android:textSize="16sp"
                 android:buttonTint="@color/zerion_primary_accent" />
 
@@ -78,7 +78,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
                 android:text="@string/dialog_disappearing_24_hours"
-                android:textColor="@android:color/white"
+                android:textColor="@color/zerion_text_primary"
                 android:textSize="16sp"
                 android:buttonTint="@color/zerion_primary_accent" />
 
@@ -87,7 +87,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
                 android:text="@string/dialog_disappearing_1_week"
-                android:textColor="@android:color/white"
+                android:textColor="@color/zerion_text_primary"
                 android:textSize="16sp"
                 android:buttonTint="@color/zerion_primary_accent" />
 
@@ -96,7 +96,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
                 android:text="@string/dialog_disappearing_4_weeks"
-                android:textColor="@android:color/white"
+                android:textColor="@color/zerion_text_primary"
                 android:textSize="16sp"
                 android:buttonTint="@color/zerion_primary_accent" />
 
@@ -105,7 +105,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
                 android:text="@string/dialog_disappearing_off"
-                android:textColor="@android:color/white"
+                android:textColor="@color/zerion_text_primary"
                 android:textSize="16sp"
                 android:buttonTint="@color/zerion_primary_accent"
                 android:checked="true" />

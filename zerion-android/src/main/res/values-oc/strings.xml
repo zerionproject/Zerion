@@ -200,12 +200,12 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   <string name="duplicate_link_dialog_text_1">Avètz ja una demanda en espèra amb aqueste ligam : %s</string>
   <string name="duplicate_link_dialog_text_1_contact">Avètz ja un contacte amb aqueste ligam : %s</string>
   
-  <string name="duplicate_link_dialog_text_2">Son %s e %s la meteissa persona ?</string>
+  <string name="duplicate_link_dialog_text_2">Son %1$s e %2$s la meteissa persona ?</string>
   
   <string name="same_person_button">Meteissa persona</string>
   
   <string name="different_person_button">Persona diferenta</string>
-  <string name="duplicate_link_dialog_text_3">%s e %s vos envia lo meteis ligam.\n\nUn d’eles poiriá ensajar de descobrir quines son vòstres contactes.\n\n Digatz-los pas qu’avètz recebut lo meteis ligam de qualqu’un mai.</string>
+  <string name="duplicate_link_dialog_text_3">%1$s e %2$s vos envia lo meteis ligam.\n\nUn d’eles poiriá ensajar de descobrir quines son vòstres contactes.\n\n Digatz-los pas qu’avètz recebut lo meteis ligam de qualqu’un mai.</string>
   <string name="pending_contact_updated_toast">Contact en espèra actualizat</string>
   
   <string name="introduction_onboarding_title">Presentatz vòstres contactes</string>
@@ -298,7 +298,7 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   
   
   <string name="pref_language_title">Lenga &amp; region</string>
-  <string name="pref_language_changed">Aquel paramètre serà pres en compte aprèp una reaviada de Zerion. Desconnectatz-vos e reaviatz Zerion.</string>
+  <string name="pref_language_changed">L\'aplicacion se reaviarà per aplicar la lenga novèla.</string>
   <string name="pref_language_default">Sistèma per defaut</string>
   <string name="display_settings_title">Afichatge</string>
   <string name="pref_theme_title">Tèma</string>

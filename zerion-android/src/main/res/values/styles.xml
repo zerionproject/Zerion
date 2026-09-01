@@ -47,7 +47,7 @@
 		<item name="android:layout_width">match_parent</item>
 		<item name="android:layout_height">0.5dp</item>
 		<item name="android:layout_marginStart">60dp</item>
-		<item name="android:background">#1AFFFFFF</item>
+		<item name="android:background">@color/zerion_divider</item>
 	</style>
 
 	<style name="GroupTrAdminDetailRow">
@@ -92,21 +92,21 @@
 	</style>
 
 	<style name="ZerionToolbarTheme">
-		<item name="colorControlNormal">@android:color/white</item>
+		<item name="colorControlNormal">@color/zerion_text_primary</item>
 		<item name="actionOverflowButtonStyle">@style/OverflowButtonStyle</item>
 	</style>
 
 	<style name="OverflowButtonStyle" parent="Widget.AppCompat.ActionButton.Overflow">
-		<item name="android:tint">@android:color/white</item>
+		<item name="android:tint">@color/zerion_text_primary</item>
 	</style>
 
-	<style name="PopupMenu" parent="Theme.Material3.Dark">
+	<style name="PopupMenu" parent="Theme.Material3.DayNight">
 		<item name="android:colorBackground">@color/zerion_card_bg</item>
-		<item name="android:textColor">@android:color/white</item>
-		<item name="android:textColorPrimary">@android:color/white</item>
-		<item name="android:textColorSecondary">#B3FFFFFF</item>
+		<item name="android:textColor">@color/zerion_text_primary</item>
+		<item name="android:textColorPrimary">@color/zerion_text_primary</item>
+		<item name="android:textColorSecondary">@color/zerion_text_secondary</item>
 		<item name="colorSurface">@color/zerion_card_bg</item>
-		<item name="colorOnSurface">@android:color/white</item>
+		<item name="colorOnSurface">@color/zerion_text_primary</item>
 	</style>
 
 	<style name="ZerionButton" parent="Widget.Material3.Button">
@@ -168,8 +168,8 @@
 	<!-- Borderless EditText style for professional look -->
 	<style name="Zerion.EditText" parent="Widget.AppCompat.EditText">
 		<item name="android:background">@android:color/transparent</item>
-		<item name="android:textColor">@android:color/white</item>
-		<item name="android:textColorHint">#80FFFFFF</item>
+		<item name="android:textColor">@color/zerion_text_primary</item>
+		<item name="android:textColorHint">@color/zerion_hint</item>
 		<item name="android:padding">12dp</item>
 	</style>
 
@@ -217,20 +217,20 @@
 	<style name="TextMessage">
 		<item name="android:textIsSelectable">true</item>
 		<item name="android:textSize">@dimen/text_size_medium</item>
-		<item name="android:textColor">?android:attr/textColorPrimary</item>
+		<item name="android:textColor">@color/zerion_text_primary_inverse</item>
 	</style>
 
 	<style name="TextMessage.Notice">
 		<item name="android:textIsSelectable">true</item>
 		<item name="android:textSize">@dimen/text_size_small</item>
-		<item name="android:textColor">?android:attr/textColorSecondary</item>
+		<item name="android:textColor">@color/zerion_text_secondary_inverse</item>
 		<item name="android:textStyle">italic</item>
 	</style>
 
 	<style name="TextMessage.Timestamp">
 		<item name="android:textIsSelectable">false</item>
 		<item name="android:textSize">@dimen/text_size_tiny</item>
-		<item name="android:textColor">?android:attr/textColorTertiary</item>
+		<item name="android:textColor">@color/zerion_text_tertiary_inverse</item>
 		<item name="android:maxLines">1</item>
 	</style>
 

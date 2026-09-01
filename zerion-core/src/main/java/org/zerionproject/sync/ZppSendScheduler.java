@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BooleanSupplier;
 
 import javax.annotation.concurrent.ThreadSafe;
 
@@ -31,12 +32,28 @@ public class ZppSendScheduler {
 	}
 
 	private final FrameSink sink;
+	private final BooleanSupplier pqReady;
 	private final Queue<byte[]> outgoing = new ConcurrentLinkedQueue<>();
 	private final AtomicLong realFrames = new AtomicLong();
 	private final AtomicLong coverFrames = new AtomicLong();
 
 	public ZppSendScheduler(FrameSink sink) {
+		this(sink, () -> true);
+	}
+
+	/**
+	 * @param pqReady true once this side has learned the peer's ML-KEM public key,
+	 *                so an application record it sends will carry a real
+	 *                post-quantum secret rather than the classical-only opening
+	 *                sentinel. While it is false the scheduler emits cover only,
+	 *                even when application records are queued, so no application
+	 *                frame is ever sent before the post-quantum bootstrap
+	 *                completes. Cover frames still flow (and advertise our own
+	 *                key), which is what lets the bootstrap complete.
+	 */
+	public ZppSendScheduler(FrameSink sink, BooleanSupplier pqReady) {
 		this.sink = sink;
+		this.pqReady = pqReady;
 	}
 
 	/** Queues an application record to be sent on a future slot. */
@@ -54,11 +71,17 @@ public class ZppSendScheduler {
 	}
 
 	/**
-	 * Emits one frame for this slot: the next queued record, or cover if idle.
-	 * Call once per constant-rate clock tick.
+	 * Emits one frame for this slot: the next queued record, or cover if idle or
+	 * if the post-quantum bootstrap has not completed. Call once per constant-rate
+	 * clock tick. No application record is dequeued until {@code pqReady} is true,
+	 * so an application frame always carries a real post-quantum secret and the
+	 * classical-only opening sentinel is only ever a cover frame — a structural
+	 * guarantee, not a timing coincidence. Because the peer's key is monotonic
+	 * (once learned it never becomes unknown again), a record released after the
+	 * check is still encrypted with the post-quantum secret present.
 	 */
 	public void tick() throws IOException {
-		byte[] record = outgoing.poll();
+		byte[] record = pqReady.getAsBoolean() ? outgoing.poll() : null;
 		if (record != null) {
 			sink.send(record);
 			realFrames.incrementAndGet();

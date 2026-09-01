@@ -36,7 +36,7 @@ import static org.mockito.Mockito.when;
 import static org.robolectric.Shadows.shadowOf;
 
 @RunWith(RobolectricTestRunner.class)
-@Config(sdk = 21)
+@Config(sdk = 29)
 public class ChangePasswordActivityTest {
 
 	private ChangePasswordActivity changePasswordActivity;
@@ -52,6 +52,7 @@ public class ChangePasswordActivityTest {
 
 	@Before
 	public void setUp() {
+		com.professor.zerion.android.security.TestAndroidKeyStore.register();
 		MockitoAnnotations.initMocks(this);
 		changePasswordActivity =
 				Robolectric.setupActivity(ChangePasswordActivity.class);

@@ -10,7 +10,7 @@ Zerion is a secure messaging app and encrypted vault designed for people who nee
 
 Unlike traditional messengers, Zerion uses no servers, no accounts, no phone numbers, and no cloud services. All communication flows directly between devices using the Tor network, protecting users from surveillance, metadata collection, and IP exposure.
 
-With hybrid post-quantum cryptography on **every message** (Mode 3-Full: per-frame ML-KEM-768 encapsulation mixed into the body AEAD key), post-compromise security via the Triple Ratchet, hardware-backed vault protection, and advanced anti-forensics features, Zerion provides strong security even against sophisticated adversaries - including "harvest now, decrypt later" attacks by future quantum adversaries.
+With hybrid post-quantum cryptography on **every message** (Mode 3-Full: per-frame ML-KEM-768 encapsulation mixed into the body AEAD key), post-compromise security via a per-message ML-KEM-768 ratchet, hardware-backed vault protection, and advanced anti-forensics features, Zerion provides strong security even against sophisticated adversaries - including "harvest now, decrypt later" attacks by future quantum adversaries.
 
 ---
 
@@ -19,12 +19,13 @@ With hybrid post-quantum cryptography on **every message** (Mode 3-Full: per-fra
 - **Truly anonymous** - No phone number, email, or registration
 - **End-to-end encrypted** messaging, groups, voice notes, P2P voice and video calls
 - **Per-message post-quantum hybrid ratchet (Mode 3-Full)** - Every frame in both directions carries a fresh ML-KEM-768 encapsulation against the peer's current ML-KEM public key; the shared secret is mixed into the body AEAD key on every frame
-- **Post-Compromise Security** - Triple Ratchet (X25519 DH + per-message ML-KEM-768 PQ) for per-message key evolution
+- **Post-Compromise Security** - per-message ML-KEM-768 post-quantum ratchet for per-message key evolution (the classical X25519 DH ratchet is carried and authenticated but inert in this build; see whitepaper §6.3)
 - **Tor-only online networking** - Your IP address is never exposed to contacts
 - **Direct peer-to-peer architecture** - No central servers
 - **Offline Bluetooth mesh** - Message nearby devices with no internet at all, sealed with the same post-quantum encryption so relays carry only ciphertext
 - **Optional I2P transport** - A second anonymity network alongside Tor, off by default
 - **Encrypted Vault** for passwords, documents, media, and notes
+- **Non-custodial Bitcoin & Monero wallets** inside the vault - self-custodial, keys never leave the device, network only over Tor
 - **Channels** - one-to-many broadcast (public or private) with optional discussion threads, reactions, and editor delegations
 - **Post-quantum hardened end-to-end** - Hybrid ML-KEM-768 + X25519 at handshake, introductions, and on every transport frame; ML-DSA-65 + Ed25519 on every signed record
 - **Zerion-only** - Purpose-built for Zerion-to-Zerion communication with maximum security
@@ -46,16 +47,16 @@ Photos, videos, voice notes, documents, and stickers; securely introduce two of 
 
 ### Post-Compromise Security (PCS)
 
-Zerion implements a Triple Ratchet protocol for post-compromise security:
+Zerion's post-compromise security rests on a per-message post-quantum (ML-KEM-768) ratchet:
 
 - **Forward secrecy**: Past messages stay private even if your device is later compromised
-- **Post-compromise recovery**: If an attacker compromises your device, security is restored after one message round-trip
+- **Post-compromise recovery**: After a device compromise, security is re-established as the post-quantum ratchet advances on subsequent frames; each side rotates its ML-KEM-768 key pair at least once every 16 of its own sends
 - **Per-message keys**: Every message uses a unique encryption key derived from the current chain state
 
 **Ratchet Modes:**
-- **Mode 2 (Double Ratchet)**: X25519 DH ratchet for forward secrecy and classical post-compromise security.
+- **Mode 2 (Double Ratchet)**: legacy classical mode. In this build the classical X25519 DH ratchet does not run (whitepaper §6.3), so this mode provides forward secrecy but no active post-compromise ratchet.
 - **Mode 3 (Triple Ratchet, per-epoch PQ)**: Adds ML-KEM-768 post-quantum ratchet every 25 messages or 24 hours. Retained as a fallback path.
-- **Mode 3-Full (Triple Ratchet, per-message PQ - current default since v1.7)**: Every single frame in both directions carries a fresh ML-KEM-768 encapsulation. The per-stream chain key, the per-message body AEAD key, and the underlying X25519 ratchet all combine into a hybrid that requires breaking both X25519 and ML-KEM-768 - on every frame, not just at epoch boundaries.
+- **Mode 3-Full (Triple Ratchet, per-message PQ - current default since v1.7)**: Every single frame in both directions carries a fresh ML-KEM-768 encapsulation. The per-stream chain key and the per-message body AEAD key combine a one-way classical symmetric chain (forward secrecy) with a fresh ML-KEM-768 encapsulation (post-compromise security) on every frame. A classical X25519 public key is carried and AEAD-authenticated in each frame but, in this build, drives no active DH ratchet (whitepaper §6.3), so post-compromise security rests on the post-quantum layer.
 
 ### P2P Voice & Video Calls
 
@@ -83,12 +84,21 @@ A one-to-many broadcast layer (one person writes, many people read) served from 
 A hardware-backed encrypted vault for passwords, notes, photos, videos, and documents.
 Uses Argon2id, AES-256-GCM, and StrongBox/Keystore integration for strong protection.
 
+### Non-custodial Wallets
+
+Optional self-custodial Bitcoin and Monero wallets that live inside the vault (since 3.0.4). The seed is generated on the device, sealed as a vault item under its own Argon2id-derived password, and never leaves the phone; there is no custodian, account, or server.
+
+- **Bitcoin**: BIP84 native SegWit (bitcoinj, mainnet), fresh address per receive, coin control with per-output freezing and labels, a cluster-aware privacy analyser, and review-then-sign authorisation (the reviewed transaction is fingerprinted and is exactly what gets broadcast).
+- **Monero**: built on Monero's own `wallet2`, run view-only at rest so the spend key is in memory only for the instant a payment is signed; fresh subaddresses on receive.
+- **Tor by default**: the Electrum client, Monero nodes, broadcast, and price lookups all go over Tor with per-wallet and per-purpose stream isolation, and no silent clearnet fallback.
+- **Reproducible native provenance**: the Monero and Argon2 native libraries are built from pinned upstream source with published, per-ABI SHA-256 hashes, verified by build-time gates.
+
 ### Post-Quantum Security
 
 All Zerion contacts use full post-quantum security:
 - **ML-KEM-768 + X25519** hybrid key encapsulation for quantum-resistant key exchange
 - **ML-DSA-65 + Ed25519** hybrid signatures for quantum-resistant authentication
-- **PCS Mode 3-Full (Triple Ratchet, per-message ML-KEM-768)** for per-message key evolution with quantum-resistant post-compromise security
+- **PCS Mode 3-Full (per-message ML-KEM-768 post-quantum ratchet)** for per-message key evolution with quantum-resistant post-compromise security
 
 ### Downgrade Attack Protection
 
@@ -112,7 +122,17 @@ APK signing fingerprint: D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6
 
 ## Changelog
 
-**v3.0.1 (Latest release, August 2026):**
+**v3.0.4 (Latest release, September 2026):**
+- Optional non-custodial Bitcoin and Monero wallets inside the vault: self-custodial (the seed is generated on-device and never leaves it), each with its own Argon2id-derived password. The Monero wallet runs view-only at rest so the spend key is in memory only while a payment is signed. All wallet traffic (Electrum, Monero nodes, broadcast, price) is Tor-only with per-wallet and per-purpose stream isolation
+- The native wallet libraries (Monero `wallet2`, Argon2) are built reproducibly from pinned upstream source with published per-ABI hashes and build-time verification gates
+- The wallet foundation (vault, Bitcoin and Monero wallets, and the native boundary) went through extensive internal security and code review across multiple independent adversarial passes, with the findings fixed
+- Play Store review fixes: a complete Light theme option, user control over background connections, and localisation updates
+- Both people still need matching versions to message; no messaging protocol or database change
+
+**v3.0.3 (August 2026):**
+- Require a typed confirmation before wiping an account, and clearer contact-trust labelling; the disappearing-messages timer refreshes correctly on returning to a conversation. No protocol change, no database upgrade
+
+**v3.0.1 (August 2026):**
 - Fixes a startup bug where the app could fail to launch and show a black screen on some installs, including from Google Play, because a new integrity self-check did not recognise Google Play's app-signing key
 - Optional hardened mode is now off by default; it is still available under Security settings
 - No protocol change and no database upgrade from 3.0.0
@@ -255,7 +275,7 @@ APK signing fingerprint: D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6
 
 **Overview**
 - [Overview](docs/ZERION_OVERVIEW.md): plain-language introduction and how Zerion compares
-- [Technical Whitepaper](docs/ZERION_TECHNICAL_WHITEPAPER.md): full architecture, crypto, transport, vault and anti-forensics
+- [Technical Whitepaper](docs/ZERION_TECHNICAL_WHITEPAPER.md): full architecture, crypto, transport, vault, non-custodial wallets and anti-forensics
 - [Offline Mesh and I2P](docs/ZERION_MESH_AND_I2P.md): the Bluetooth mesh and I2P transports and their threat models
 
 **Protocol specifications (3.0)**

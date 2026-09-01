@@ -15,7 +15,8 @@ public class VaultItem {
 		VIDEO(3),
 		DOCUMENT(4),
 		AUDIO(5),
-		PASSWORD(6);
+		PASSWORD(6),
+		WALLET(7);
 
 		private final int value;
 
@@ -47,6 +48,14 @@ public class VaultItem {
 	public final boolean hasExtraPassword;
 	public final byte[] extraPasswordSalt;
 
+	public static final int DEFAULT_EXTRA_MEMORY_KB = 256 * 1024;
+	public static final int DEFAULT_EXTRA_ITERATIONS = 3;
+	public static final int DEFAULT_EXTRA_PARALLELISM = 1;
+
+	public final int extraPasswordMemoryKb;
+	public final int extraPasswordIterations;
+	public final int extraPasswordParallelism;
+
 	public final byte[] encryptedKey;
 	public final byte[] nonce;
 	public final int version;
@@ -54,6 +63,8 @@ public class VaultItem {
 	public VaultItem(String id, ItemType type, String name, long createdTimestamp,
 			long modifiedTimestamp, long size, byte[] thumbnailKey,
 			boolean hasExtraPassword, byte[] extraPasswordSalt,
+			int extraPasswordMemoryKb, int extraPasswordIterations,
+			int extraPasswordParallelism,
 			byte[] encryptedKey, byte[] nonce, int version) {
 		this.id = id;
 		this.type = type;
@@ -64,6 +75,9 @@ public class VaultItem {
 		this.thumbnailKey = thumbnailKey;
 		this.hasExtraPassword = hasExtraPassword;
 		this.extraPasswordSalt = extraPasswordSalt;
+		this.extraPasswordMemoryKb = extraPasswordMemoryKb;
+		this.extraPasswordIterations = extraPasswordIterations;
+		this.extraPasswordParallelism = extraPasswordParallelism;
 		this.encryptedKey = encryptedKey;
 		this.nonce = nonce;
 		this.version = version;
@@ -78,12 +92,16 @@ public class VaultItem {
 				new byte[0],
 				false,
 				new byte[0],
+				DEFAULT_EXTRA_MEMORY_KB, DEFAULT_EXTRA_ITERATIONS,
+				DEFAULT_EXTRA_PARALLELISM,
 				encryptedKey, nonce, 1
 		);
 	}
 
 	public static VaultItem createNewWithPassword(ItemType type, String name, long size,
-			byte[] encryptedKey, byte[] nonce, byte[] extraPasswordSalt) {
+			byte[] encryptedKey, byte[] nonce, byte[] extraPasswordSalt,
+			int extraPasswordMemoryKb, int extraPasswordIterations,
+			int extraPasswordParallelism) {
 		String id = UUID.randomUUID().toString();
 		long now = System.currentTimeMillis();
 		return new VaultItem(
@@ -91,7 +109,9 @@ public class VaultItem {
 				new byte[0],
 				true,
 				extraPasswordSalt,
-				encryptedKey, nonce, 1
+				extraPasswordMemoryKb, extraPasswordIterations,
+				extraPasswordParallelism,
+				encryptedKey, nonce, 2
 		);
 	}
 
@@ -109,7 +129,8 @@ public class VaultItem {
 				4 + extraPasswordSalt.length +
 				4 + encryptedKey.length +
 				4 + nonce.length +
-				4;
+				4 +
+				(version >= 2 ? 12 : 0);
 
 		ByteBuffer buffer = ByteBuffer.allocate(totalSize);
 
@@ -138,6 +159,11 @@ public class VaultItem {
 		buffer.putInt(nonce.length);
 		buffer.put(nonce);
 		buffer.putInt(version);
+		if (version >= 2) {
+			buffer.putInt(extraPasswordMemoryKb);
+			buffer.putInt(extraPasswordIterations);
+			buffer.putInt(extraPasswordParallelism);
+		}
 
 		return buffer.array();
 	}
@@ -180,9 +206,19 @@ public class VaultItem {
 
 		int version = buffer.getInt();
 
+		int extraMemoryKb = DEFAULT_EXTRA_MEMORY_KB;
+		int extraIterations = DEFAULT_EXTRA_ITERATIONS;
+		int extraParallelism = DEFAULT_EXTRA_PARALLELISM;
+		if (version >= 2 && buffer.remaining() >= 12) {
+			extraMemoryKb = buffer.getInt();
+			extraIterations = buffer.getInt();
+			extraParallelism = buffer.getInt();
+		}
+
 		return new VaultItem(
 				id, type, name, createdTimestamp, modifiedTimestamp, size,
 				thumbnailKey, hasExtraPassword, extraPasswordSalt,
+				extraMemoryKb, extraIterations, extraParallelism,
 				encryptedKey, nonce, version
 		);
 	}
@@ -200,6 +236,8 @@ public class VaultItem {
 		return new VaultItem(
 				id, type, name, createdTimestamp, System.currentTimeMillis(), size,
 				thumbnailKey, hasExtraPassword, extraPasswordSalt,
+				extraPasswordMemoryKb, extraPasswordIterations,
+				extraPasswordParallelism,
 				encryptedKey, nonce, version
 		);
 	}
@@ -208,6 +246,8 @@ public class VaultItem {
 		return new VaultItem(
 				id, type, newName, createdTimestamp, System.currentTimeMillis(), size,
 				thumbnailKey, hasExtraPassword, extraPasswordSalt,
+				extraPasswordMemoryKb, extraPasswordIterations,
+				extraPasswordParallelism,
 				encryptedKey, nonce, version
 		);
 	}

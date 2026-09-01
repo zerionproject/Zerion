@@ -19,9 +19,9 @@
 			android:layout_width="match_parent"
 			android:layout_height="?attr/actionBarSize"
 			app:navigationIcon="@drawable/ic_arrow_back"
-			app:navigationIconTint="@android:color/white"
+			app:navigationIconTint="@color/zerion_text_primary"
 			app:title="@string/grouptr_group_settings"
-			app:titleTextColor="@android:color/white" />
+			app:titleTextColor="@color/zerion_text_primary" />
 
 	</com.google.android.material.appbar.AppBarLayout>
 
@@ -62,7 +62,7 @@
 					android:ellipsize="end"
 					android:gravity="center"
 					android:maxLines="2"
-					android:textColor="@android:color/white"
+					android:textColor="@color/zerion_text_primary"
 					android:textSize="22sp"
 					android:fontFamily="@font/bricolage_grotesque"
 					android:textFontWeight="500"
@@ -96,7 +96,7 @@
 					android:layout_width="match_parent"
 					android:layout_height="wrap_content"
 					android:padding="16dp"
-					android:textColor="@android:color/white"
+					android:textColor="@color/zerion_text_primary"
 					android:textSize="16sp"
 					android:textStyle="bold"
 					tools:text="Members (4)" />
@@ -125,7 +125,7 @@
 					android:layout_height="wrap_content"
 					android:padding="16dp"
 					android:text="@string/grouptr_admin_section_group_settings"
-					android:textColor="@android:color/white"
+					android:textColor="@color/zerion_text_primary"
 					android:textSize="16sp"
 					android:textStyle="bold" />
 
@@ -182,7 +182,7 @@
 							android:layout_width="wrap_content"
 							android:layout_height="wrap_content"
 							android:text="@string/grouptr_default_ttl_set"
-							android:textColor="@android:color/white"
+							android:textColor="@color/zerion_text_primary"
 							android:textSize="16sp" />
 
 						<TextView

@@ -360,7 +360,7 @@
   <string name="change_profile_picture_failed_message">სამწუხაროდ, პროფილის სურათის განახლებისას რაღაც ხარვეზი წარმოიშვა </string>
   
   <string name="pref_language_title">ენა &amp; რეგიონი</string>
-  <string name="pref_language_changed">ეს პარამეტრი ამოქმედდება Zerion-ის გადატვირთვისას. გთხოვთ, გამოხვიდეთ და გადატვირთოთ Zerion.</string>
+  <string name="pref_language_changed">აპლიკაცია გადაიტვირთება ახალი ენის გამოსაყენებლად.</string>
   <string name="pref_language_default">სისტემის ნაგულისხმევი დანაყენები</string>
   <string name="display_settings_title">ჩვენება</string>
   <string name="pref_theme_title">თემა</string>

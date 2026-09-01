@@ -1,0 +1,57 @@
+// Supply-chain gate for the fund-critical Monero native library.
+// Verifies every packaged jniLibs/<abi>/libzmonero.so against the accepted
+// per-ABI SHA-256 recorded in packaging/monero-android/PROVENANCE.md, and rejects
+// any stray libzmonero* artifact. This is a build/release integrity gate that runs
+// on every assemble/bundle (debug included), so a changed native build input can
+// never be packaged unnoticed. It does not replace the APK signature (the runtime
+// package-integrity boundary); it catches a mismatch before an APK is produced.
+//
+// On a deliberate native rebuild, update these hashes together with PROVENANCE.md
+// and jniLibs; a forgotten update fails the build rather than shipping silently.
+
+def moneroJniDir = { -> file("${projectDir}/src/main/jniLibs") }
+def moneroExpectedLib = 'libzmonero.so'
+def moneroAccepted = [
+    'arm64-v8a'  : '6b5458bd33cc21b0ad7d2b329bc4b265b37b9c2852b90bfb1b2da0e290dea037',
+    'armeabi-v7a': 'c45bf4c949ba43fa43272f3b202531b74d5af45ad86fd3568109e1226ef8f151',
+]
+
+def moneroSha256Of = { File f ->
+    def md = java.security.MessageDigest.getInstance('SHA-256')
+    f.withInputStream { is ->
+        byte[] buf = new byte[65536]; int n
+        while ((n = is.read(buf)) != -1) md.update(buf, 0, n)
+    }
+    md.digest().collect { String.format('%02x', it) }.join()
+}
+
+tasks.register('verifyMoneroNativeArtifacts') {
+    group = 'verification'
+    description = 'Verifies packaged Monero native libraries against pinned SHA-256.'
+    doLast {
+        def jni = moneroJniDir()
+        moneroAccepted.each { abi, want ->
+            def abiDir = new File(jni, abi)
+            def lib = new File(abiDir, moneroExpectedLib)
+            if (!lib.exists()) {
+                throw new GradleException("Missing Monero native lib for ABI ${abi}: ${lib}")
+            }
+            def got = moneroSha256Of(lib)
+            if (got != want) {
+                throw new GradleException("Monero native lib SHA-256 mismatch for ${abi}: expected ${want}, got ${got} (update jniLibs + PROVENANCE.md + this gate together on a deliberate rebuild)")
+            }
+            def stray = (abiDir.listFiles() ?: []).findAll {
+                it.name.startsWith('libzmonero') && it.name != moneroExpectedLib
+            }
+            if (!stray.isEmpty()) {
+                throw new GradleException("Unexpected Monero native artifact in ${abi}: ${stray*.name}")
+            }
+        }
+    }
+}
+
+tasks.matching {
+    it.name.startsWith('assemble') || it.name.startsWith('bundle')
+}.configureEach {
+    it.dependsOn('verifyMoneroNativeArtifacts')
+}

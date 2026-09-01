@@ -1,4 +1,4 @@
-﻿<?xml version='1.0' encoding='UTF-8'?>
+<?xml version='1.0' encoding='UTF-8'?>
 <resources>
 	<!--Setup-->
 	<string name="setup_title">Dobrodošli u Zerion</string>
@@ -168,7 +168,7 @@
   <string name="duplicate_link_dialog_title">Duliciran Link</string>
   <string name="duplicate_link_dialog_text_1">Već imate kontakta na čekanju sa ovim linkom: %s</string>
   <!--This is a question asking whether two nicknames refer to the same person-->
-  <string name="duplicate_link_dialog_text_2">Da li su %s i %s ista osoba?</string>
+  <string name="duplicate_link_dialog_text_2">Da li su %1$s i %2$s ista osoba?</string>
   <!--This is a button for answering that two nicknames do indeed refer to the same person. This
 	string will be used in a dialog button, so if the translation of this string is longer than 20
 	characters, please use "Yes" instead, and use "No" for the "Different Person" button-->
@@ -177,7 +177,7 @@
 	will be used in a dialog button, so if the translation of this string longer than 20 characters,
 	please use "No" instead, and use "Yes" for the "Same Person" button-->
   <string name="different_person_button">Različita osoba</string>
-  <string name="duplicate_link_dialog_text_3">%s i %s poslsli su vam isti link.\n\nJedan od njih moguće da pokušava otkriti ko su vaši kontakti.\n\nNemojte im reći da ste primili isti link od druge osobe.</string>
+  <string name="duplicate_link_dialog_text_3">%1$s i %2$s poslsli su vam isti link.\n\nJedan od njih moguće da pokušava otkriti ko su vaši kontakti.\n\nNemojte im reći da ste primili isti link od druge osobe.</string>
   <string name="pending_contact_updated_toast">Ažuriranje kontakta je na čekanju</string>
   <!--Introductions-->
   <string name="introduction_onboarding_title">Upoznajte vaše kontakte</string>
@@ -259,7 +259,7 @@
   <!--Settings Profile Picture-->
   <!--Settings Display-->
   <string name="pref_language_title">Jezik i regija</string>
-  <string name="pref_language_changed">Ovo podešavanje će stupiti na snagu kada restartujete Zerion. Molim vas da se odjavite i restartujete Zerion.</string>
+  <string name="pref_language_changed">Aplikacija će se ponovo pokrenuti kako bi se primijenio novi jezik.</string>
   <string name="pref_language_default">Podrazumjevane postavke sistema</string>
   <string name="display_settings_title">Ekran</string>
   <string name="pref_theme_title">Tema</string>
@@ -384,4 +384,134 @@
   <string name="screenshot_message_2">Zdravo Fato! Hvala što mi govoriš o Zerion-u!</string>
   <!--This is a message to be used in screenshots.-->
   <string name="screenshot_message_3">Nema problema, nadam se da ti se sviđa 😀</string>
+	<string name="wallet_card_title">Novčanik</string>
+	<string name="wallet_card_summary">Bitcoin preko Tor mreže</string>
+	<string name="wallet_empty">Još nema novčanika</string>
+	<string name="wallet_add">Dodaj novčanik</string>
+	<string name="wallet_create_new">Kreiraj novi novčanik</string>
+	<string name="wallet_import_existing">Uvezi frazu za oporavak</string>
+	<string name="wallet_name_hint">Naziv novčanika</string>
+	<string name="wallet_recovery_phrase_hint">Fraza za oporavak (12 ili 24 riječi)</string>
+	<string name="wallet_optional_password_hint">Lozinka novčanika (opcionalno)</string>
+	<string name="wallet_create">Kreiraj</string>
+	<string name="wallet_import">Uvezi</string>
+	<string name="wallet_delete">Obriši novčanik</string>
+	<string name="wallet_delete_confirm">Trajno ukloniti ovaj novčanik iz Sefa? Provjerite da imate zapisanu frazu za oporavak. Sredstva neće biti pogođena.</string>
+	<string name="wallet_password_prompt">Unesite lozinku ovog novčanika</string>
+	<string name="wallet_balance">Stanje</string>
+	<string name="wallet_receive">Primi</string>
+	<string name="wallet_send">Pošalji</string>
+	<string name="wallet_refresh">Osvježi</string>
+	<string name="wallet_receive_title">Primi Bitcoin</string>
+	<string name="wallet_receive_hint">Podijelite ovu adresu da primite Bitcoin. Radi privatnosti svaki put se koristi nova adresa.</string>
+	<string name="wallet_send_title">Pošalji Bitcoin</string>
+	<string name="wallet_send_address_hint">Adresa primaoca (bc1…)</string>
+	<string name="wallet_send_amount_hint">Iznos (BTC)</string>
+	<string name="wallet_send_max">Pošalji maksimum</string>
+	<string name="wallet_send_fee">Naknada: %1$s sat/vB</string>
+	<string name="wallet_send_broadcast">Pošalji</string>
+	<string name="wallet_history">Nedavne transakcije</string>
+	<string name="wallet_history_empty">Još nema transakcija</string>
+	<string name="wallet_sent">Transakcija poslana: %1$s</string>
+	<string name="wallet_copy_address">Kopiraj adresu</string>
+	<string name="wallet_address_copied">Adresa kopirana</string>
+	<string name="wallet_load_failed">Nije moguće učitati vaše novčanike</string>
+	<string name="wallet_create_failed">Nije moguće kreirati novčanik</string>
+	<string name="wallet_import_invalid">Ta fraza za oporavak nije važeća</string>
+	<string name="wallet_delete_failed">Nije moguće obrisati novčanik</string>
+	<string name="wallet_open_failed">Nije moguće otvoriti novčanik</string>
+	<string name="wallet_send_failed">Transakciju nije bilo moguće poslati</string>
+	<string name="wallet_network_failed">Nije moguće pristupiti Bitcoin mreži preko Tor mreže</string>
+	<string name="wallet_amount_invalid">Unesite važeći iznos</string>
+	<string name="wallet_pending">Na čekanju</string>
+	<string name="wallet_confirmations">%1$d potvrda</string>
+	<string name="wallet_received">Primljeno</string>
+	<string name="wallet_sent_label">Poslano</string>
+	<string name="wallet_backup">Prikaži frazu za oporavak</string>
+	<string name="wallet_backup_title">Fraza za oporavak</string>
+	<string name="wallet_backup_warning">Zapišite ove riječi i čuvajte ih van mreže. Svako ko ih vidi može uzeti vaša sredstva.</string>
+	<string name="wallet_password_required">Lozinka novčanika je obavezna</string>
+	<string name="wallet_password_confirm_hint">Potvrdite lozinku</string>
+	<string name="wallet_password_mismatch">Lozinke se ne podudaraju</string>
+	<string name="wallet_send_fee_label">Mrežna naknada</string>
+	<string name="wallet_fee_economy">Ekonomično</string>
+	<string name="wallet_fee_normal">Normalno</string>
+	<string name="wallet_fee_priority">Prioritetno</string>
+	<string name="wallet_copy_phrase">Kopiraj</string>
+	<string name="wallet_phrase_copied">Fraza za oporavak kopirana</string>
+	<string name="wallet_wrong_password">Netačna lozinka</string>
+	<string name="wallet_send_available">Dostupno</string>
+	<string name="wallet_send_recipient">Adresa primaoca</string>
+	<string name="wallet_send_amount">Iznos</string>
+	<string name="wallet_send_paste">Zalijepi</string>
+	<string name="wallet_send_review">Pregledaj</string>
+	<string name="wallet_send_confirm_title">Potvrdi slanje</string>
+	<string name="wallet_send_to">Za</string>
+	<string name="wallet_send_amount_label">Iznos</string>
+	<string name="wallet_send_fee_estimate">Mrežna naknada (procjena)</string>
+	<string name="wallet_send_total">Ukupno</string>
+	<string name="wallet_send_all">Sva dostupna sredstva</string>
+	<string name="wallet_fee_economy_eta">~1 sat</string>
+	<string name="wallet_fee_normal_eta">~30 min</string>
+	<string name="wallet_fee_priority_eta">~10 min</string>
+	<string name="wallet_send_no_recipient">Unesite adresu primaoca</string>
+	<string name="wallet_gate_title">Novčanik zaključan</string>
+	<string name="wallet_gate_message">Unesite lozinku sefa da otvorite novčanik.</string>
+	<string name="wallet_gate_hint">Lozinka sefa</string>
+	<string name="wallet_verifying">Provjeravanje…</string>
+	<string name="wallet_scan">Skeniraj QR</string>
+	<string name="wallet_scan_label">Skeniraj</string>
+	<string name="wallet_balance_fiat">≈ %1$s</string>
+	<string name="wallet_send_switch_currency">Promijeni valutu</string>
+	<string name="wallet_connecting_tor">Povezivanje preko Tor mreže…</string>
+	<string name="wallet_auth_setup_title">Postavite PIN ili lozinku novčanika</string>
+	<string name="wallet_auth_setup_message">Ovo štiti vaše novčanike i mora se razlikovati od lozinke sefa.</string>
+	<string name="wallet_auth_verify_title">Unesite PIN ili lozinku novčanika</string>
+	<string name="wallet_auth_verify_hint">PIN ili lozinka novčanika</string>
+	<string name="wallet_auth_pin">PIN kod</string>
+	<string name="wallet_auth_password">Lozinka</string>
+	<string name="wallet_auth_enter">Novi PIN ili lozinka</string>
+	<string name="wallet_auth_confirm">Potvrdi</string>
+	<string name="wallet_auth_set">Postavi</string>
+	<string name="wallet_auth_same_as_vault">Ovo se mora razlikovati od lozinke sefa</string>
+	<string name="wallet_auth_too_short">Prekratko</string>
+	<string name="wallet_auth_mismatch">Unosi se ne podudaraju</string>
+	<string name="wallet_settings_title">Postavke novčanika</string>
+	<string name="wallet_settings_currency">Valuta prikaza</string>
+	<string name="wallet_settings_nodes">Bitcoin server</string>
+	<string name="wallet_settings_rename">Preimenuj novčanik</string>
+	<string name="wallet_settings_change_pw">Promijeni lozinku novčanika</string>
+	<string name="wallet_node_add">Dodaj server</string>
+	<string name="wallet_node_test">Testiraj vezu</string>
+	<string name="wallet_node_remove">Ukloni</string>
+	<string name="wallet_node_options">Odabrani server</string>
+	<string name="wallet_node_host">Host</string>
+	<string name="wallet_node_port">Port</string>
+	<string name="wallet_node_default">Zadano</string>
+	<string name="wallet_node_reachable">Server dostupan</string>
+	<string name="wallet_node_unreachable">Server nije odgovorio</string>
+	<string name="wallet_node_testing">Testiranje preko Tor mreže…</string>
+	<string name="wallet_node_invalid">Unesite host i port</string>
+	<string name="wallet_rename_title">Preimenuj novčanik</string>
+	<string name="wallet_rename_hint">Novi naziv novčanika</string>
+	<string name="wallet_change_pw_title">Promijeni lozinku novčanika</string>
+	<string name="wallet_change_pw_old">Trenutna lozinka</string>
+	<string name="wallet_change_pw_new">Nova lozinka</string>
+	<string name="wallet_renamed">Novčanik preimenovan</string>
+	<string name="wallet_pw_changed">Lozinka promijenjena</string>
+	<string name="wallet_send_bad_address">Nevažeća Bitcoin adresa</string>
+	<string name="wallet_receive_new">Nova adresa</string>
+	<string name="wallet_node_hint">Dodirnite server da ga koristite. Dugo pritisnite prilagođeni server da ga uklonite.</string>
+	<string name="wallet_settings_sp">Silent Payments</string>
+	<string name="wallet_sp_intro">Adresa za višekratnu privatnu upotrebu. Plaćanja prema njoj nisu povezljiva na blokčejnu. Detekcija skenira javne podatke preko Tor mreže; vaši ključevi nikada ne napuštaju uređaj.</string>
+	<string name="wallet_sp_balance">Detektovano: %1$s</string>
+	<string name="wallet_sp_scanned">Skenirano do bloka %1$d</string>
+	<string name="wallet_sp_set_oracle">Izvor skeniranja</string>
+	<string name="wallet_sp_scan">Skeniraj sada</string>
+	<string name="wallet_sp_move">Premjesti sredstva</string>
+	<string name="wallet_sp_no_oracle">Prvo postavite izvor skeniranja</string>
+	<string name="wallet_sp_oracle_hint">URL izvora skeniranja (BIP352 backend)</string>
+	<string name="wallet_sp_birthday_hint">Početni blok (opcionalno)</string>
+	<string name="wallet_sp_scanning">Skeniranje preko Tor mreže…</string>
+	<string name="wallet_sp_move_hint">Bitcoin adresa na koju se premještaju sredstva</string>
 </resources>

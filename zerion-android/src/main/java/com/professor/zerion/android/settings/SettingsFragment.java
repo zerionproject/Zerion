@@ -109,9 +109,14 @@ public class SettingsFragment extends Fragment {
 
 		if (viewModel.shouldEnableProfilePictures()) {
 			View changeAvatarButton = view.findViewById(R.id.change_avatar_button);
-			changeAvatarButton.setOnClickListener(v ->
+			View.OnClickListener pickAvatar = v ->
 					launchActivityToOpenFile(requireContext(),
-							docLauncher, contentLauncher, "image/*"));
+							docLauncher, contentLauncher, "image/*");
+			changeAvatarButton.setOnClickListener(pickAvatar);
+			avatarCard.setOnClickListener(pickAvatar);
+		} else {
+			avatarCard.setClickable(false);
+			avatarCard.setFocusable(false);
 		}
 
 		viewModel.getOwnIdentityInfo().observe(getViewLifecycleOwner(),

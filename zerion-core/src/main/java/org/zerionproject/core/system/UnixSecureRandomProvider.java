@@ -8,6 +8,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.security.Provider;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 @Immutable
 @NotNullByDefault
@@ -26,7 +27,9 @@ class UnixSecureRandomProvider extends AbstractSecureRandomProvider {
 	}
 
 	@Override
+	@Nullable
 	public Provider getProvider() {
+		if (!RANDOM_DEVICE.exists()) return null;
 		if (!seeded.getAndSet(true)) writeSeed();
 		return new UnixProvider();
 	}

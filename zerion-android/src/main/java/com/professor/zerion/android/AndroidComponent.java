@@ -179,6 +179,8 @@ public interface AndroidComponent
 
 	com.professor.zerion.android.vault.VaultManager vaultManager();
 
+	com.professor.zerion.android.vault.wallet.xmr.XmrWalletManager xmrWalletManager();
+
 	com.professor.zerion.android.security.SecurityManager securityManager();
 
 	@org.zerionproject.core.api.plugin.TorSocksPort

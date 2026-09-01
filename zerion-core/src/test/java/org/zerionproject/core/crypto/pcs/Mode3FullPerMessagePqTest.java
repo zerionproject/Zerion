@@ -46,10 +46,12 @@ public class Mode3FullPerMessagePqTest {
 
 	private static final class Peer {
 		Mode3FullState state;
+		long osr = 0;
 	}
 
 	private byte[] send(Peer from, Peer to) {
-		PqSendResult r = ratchet.pqEncapsulateSend(from.state);
+		PqSendResult r = ratchet.pqEncapsulateSend(from.state, from.osr);
+		from.osr = r.isRotated() ? 0 : from.osr + 1;
 		from.state = r.getNewState();
 		assertNotNull("every send must carry fresh ML-KEM material once the "
 				+ "peer PK is known", r.getSharedSecret());
@@ -93,7 +95,8 @@ public class Mode3FullPerMessagePqTest {
 		alice.state = ratchet.createInitialState();
 		bob.state = ratchet.createInitialState();
 
-		PqSendResult aOpen = ratchet.pqEncapsulateSend(alice.state);
+		PqSendResult aOpen = ratchet.pqEncapsulateSend(alice.state, alice.osr);
+		alice.osr = aOpen.isRotated() ? 0 : alice.osr + 1;
 		alice.state = aOpen.getNewState();
 		assertNull(aOpen.getSharedSecret());
 		bob.state = ratchet.pqDecapsulateRecv(bob.state, aOpen.getKpIdUsed(),

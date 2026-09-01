@@ -1,6 +1,8 @@
 package org.zerionproject.core.identity;
 
 import org.zerionproject.core.api.crypto.CryptoComponent;
+import org.zerionproject.core.api.crypto.HybridAgreementPrivateKey;
+import org.zerionproject.core.api.crypto.HybridAgreementPublicKey;
 import org.zerionproject.core.api.crypto.HybridSignaturePrivateKey;
 import org.zerionproject.core.api.crypto.HybridSignaturePublicKey;
 import org.zerionproject.core.api.crypto.KeyPair;
@@ -22,6 +24,8 @@ import org.junit.Test;
 import static java.util.Collections.emptyList;
 import static org.zerionproject.core.api.crypto.PostQuantumConstants.ML_DSA_65_PRIVATE_KEY_BYTES;
 import static org.zerionproject.core.api.crypto.PostQuantumConstants.ML_DSA_65_PUBLIC_KEY_BYTES;
+import static org.zerionproject.core.api.crypto.PostQuantumConstants.ML_KEM_768_PRIVATE_KEY_BYTES;
+import static org.zerionproject.core.api.crypto.PostQuantumConstants.ML_KEM_768_PUBLIC_KEY_BYTES;
 import static org.zerionproject.core.test.TestUtils.getRandomBytes;
 import static org.junit.Assert.assertEquals;
 
@@ -45,6 +49,12 @@ public class IdentityManagerImplTest extends BrambleMockTestCase {
 	private final KeyPair mlDsaKeyPair =
 			new KeyPair(mlDsaPublicKey, mlDsaPrivateKey);
 
+	private final KeyPair hybridAgreementKeyPair = new KeyPair(
+			new HybridAgreementPublicKey(getRandomBytes(32),
+					getRandomBytes(ML_KEM_768_PUBLIC_KEY_BYTES)),
+			new HybridAgreementPrivateKey(getRandomBytes(32),
+					getRandomBytes(ML_KEM_768_PRIVATE_KEY_BYTES)));
+
 	private final IdentityManagerImpl identityManager =
 			new IdentityManagerImpl(db, crypto, authorFactory, clock);
 
@@ -56,6 +66,11 @@ public class IdentityManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(emptyList()));
 			oneOf(db).addIdentity(with(any(Transaction.class)),
 					with(any(Identity.class)));
+			oneOf(crypto).generateHybridAgreementKeyPair();
+			will(returnValue(hybridAgreementKeyPair));
+			oneOf(db).setHybridHandshakeKeyPair(with(any(Transaction.class)),
+					with(any(AuthorId.class)),
+					with(any(PublicKey.class)), with(any(PrivateKey.class)));
 			oneOf(crypto).generateHybridSignatureKeyPair();
 			will(returnValue(mlDsaKeyPair));
 			oneOf(db).setMlDsaSigKeyPair(with(any(Transaction.class)),

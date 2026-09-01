@@ -20,7 +20,7 @@
             android:text="@string/sticker_tab_standard"
             android:textSize="16sp"
             android:textStyle="bold"
-            android:textColor="@android:color/white"
+            android:textColor="@color/zerion_text_primary"
             android:padding="8dp"
             android:clickable="true"
             android:focusable="true" />
@@ -33,7 +33,7 @@
             android:text="@string/sticker_tab_mine"
             android:textSize="16sp"
             android:textStyle="bold"
-            android:textColor="@android:color/white"
+            android:textColor="@color/zerion_text_primary"
             android:padding="8dp"
             android:clickable="true"
             android:focusable="true" />
@@ -51,7 +51,7 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/sticker_import"
             android:visibility="gone"
-            app:tint="@android:color/white"
+            app:tint="@color/zerion_text_primary"
             xmlns:app="http://schemas.android.com/apk/res-auto" />
     </LinearLayout>
 

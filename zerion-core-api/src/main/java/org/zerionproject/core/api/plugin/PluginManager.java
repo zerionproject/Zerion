@@ -33,4 +33,14 @@ public interface PluginManager {
 
 	boolean isOfflineMode();
 
+	/**
+	 * Connections paused: when on, no transport plugins are started at all,
+	 * including the offline mesh, so the app opens no connections of any kind.
+	 * Persisted, so a restart that brings the service back up still starts no
+	 * transports until this is cleared.
+	 */
+	void setConnectionsPaused(boolean paused);
+
+	boolean isConnectionsPaused();
+
 }

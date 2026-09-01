@@ -84,6 +84,7 @@ public class ZwfMode3FullStreamEncrypter {
 	private final boolean originatorIsAlice;
 
 	private PcsSessionState sendState;
+	private long ownSendsSinceRotation = 0;
 	private SecretKey streamChainKey;
 	private int streamMessageNumber;
 	private long frameNumber;
@@ -219,7 +220,10 @@ public class ZwfMode3FullStreamEncrypter {
 					sendState = sendState.withMode3FullState(m3fState);
 				}
 			}
-			mode3FullSend = mode3FullRatchet.pqEncapsulateSend(m3fState);
+			mode3FullSend = mode3FullRatchet.pqEncapsulateSend(m3fState,
+					ownSendsSinceRotation);
+				ownSendsSinceRotation = mode3FullSend.isRotated() ? 0
+						: ownSendsSinceRotation + 1;
 			sendState = sendState.withMode3FullState(mode3FullSend.getNewState());
 			if (m3fCallback != null) {
 				m3fCallback.accept(mode3FullSend.getNewState());

@@ -34,12 +34,12 @@
 
 	<!-- Primary: Fully transparent with cyan border (main action buttons) -->
 	<style name="Zerion.Button.Primary" parent="Widget.Material3.Button">
-		<item name="android:textColor">@android:color/white</item>
+		<item name="android:textColor">@color/zerion_text_primary</item>
 		<item name="backgroundTint">@android:color/transparent</item>
 		<item name="strokeColor">@color/zerion_cyan</item>
 		<item name="strokeWidth">2dp</item>
 		<item name="cornerRadius">8dp</item>
-		<item name="rippleColor">#1AFFFFFF</item>
+		<item name="rippleColor">@color/zerion_ripple</item>
 		<item name="android:textAllCaps">false</item>
 		<item name="android:textSize">16sp</item>
 		<item name="android:textStyle">bold</item>
@@ -67,7 +67,7 @@
 	<!-- Text: Cyan text only (tertiary actions) -->
 	<style name="Zerion.Button.Text" parent="Widget.Material3.Button.TextButton">
 		<item name="android:textColor">@color/zerion_cyan</item>
-		<item name="rippleColor">#1AFFFFFF</item>
+		<item name="rippleColor">@color/zerion_ripple</item>
 		<item name="android:textAllCaps">false</item>
 		<item name="android:textSize">14sp</item>
 		<item name="android:textStyle">bold</item>
@@ -75,11 +75,11 @@
 
 	<!-- Outlined: White text with cyan border (secondary actions) -->
 	<style name="Zerion.Button.Outlined" parent="Widget.Material3.Button.OutlinedButton">
-		<item name="android:textColor">@android:color/white</item>
+		<item name="android:textColor">@color/zerion_text_primary</item>
 		<item name="strokeColor">@color/zerion_cyan</item>
 		<item name="strokeWidth">2dp</item>
 		<item name="cornerRadius">8dp</item>
-		<item name="rippleColor">#1AFFFFFF</item>
+		<item name="rippleColor">@color/zerion_ripple</item>
 		<item name="android:textAllCaps">false</item>
 		<item name="android:textSize">16sp</item>
 		<item name="backgroundTint">@android:color/transparent</item>
@@ -88,7 +88,7 @@
 	<!-- Icon Button: For toolbar and FAB menu items -->
 	<style name="Zerion.Button.Icon" parent="Widget.Material3.Button.IconButton">
 		<item name="iconTint">@color/zerion_cyan</item>
-		<item name="rippleColor">#1AFFFFFF</item>
+		<item name="rippleColor">@color/zerion_ripple</item>
 	</style>
 
 	<!-- Negative Button: Red text for destructive actions -->
@@ -114,7 +114,7 @@
 		<item name="boxCornerRadiusBottomStart">12dp</item>
 		<item name="boxCornerRadiusBottomEnd">12dp</item>
 		<item name="hintTextColor">@color/zerion_cyan</item>
-		<item name="android:textColorHint">#80FFFFFF</item>
+		<item name="android:textColorHint">@color/zerion_hint</item>
 		<item name="endIconTint">@color/zerion_cyan</item>
 		<item name="startIconTint">@color/zerion_cyan</item>
 		<item name="errorTextColor">@color/zerion_error_red</item>
@@ -131,7 +131,7 @@
 		<item name="boxCornerRadiusBottomStart">12dp</item>
 		<item name="boxCornerRadiusBottomEnd">12dp</item>
 		<item name="hintTextColor">@color/zerion_cyan</item>
-		<item name="android:textColorHint">#80FFFFFF</item>
+		<item name="android:textColorHint">@color/zerion_hint</item>
 		<item name="errorTextColor">@color/zerion_error_red</item>
 		<item name="errorIconTint">@color/zerion_error_red</item>
 		<item name="endIconTint">@color/zerion_cyan</item>
@@ -139,7 +139,7 @@
 
 	<!-- Login screen variant - Enhanced readability with semi-transparent background -->
 	<style name="Zerion.TextInput.Login" parent="Widget.Material3.TextInputLayout.OutlinedBox">
-		<item name="boxBackgroundColor">#B31A1A1A</item>
+		<item name="boxBackgroundColor">@color/zerion_card_bg</item>
 		<item name="boxStrokeColor">@color/zerion_cyan</item>
 		<item name="boxStrokeWidth">1.5dp</item>
 		<item name="boxCornerRadiusTopStart">14dp</item>
@@ -147,7 +147,7 @@
 		<item name="boxCornerRadiusBottomStart">14dp</item>
 		<item name="boxCornerRadiusBottomEnd">14dp</item>
 		<item name="hintTextColor">@color/zerion_cyan</item>
-		<item name="android:textColorHint">#99FFFFFF</item>
+		<item name="android:textColorHint">@color/zerion_hint</item>
 		<item name="errorTextColor">@color/zerion_error_red</item>
 		<item name="errorIconTint">@color/zerion_error_red</item>
 		<item name="endIconTint">@color/zerion_cyan</item>
@@ -166,7 +166,7 @@
 		<item name="boxCornerRadiusBottomStart">12dp</item>
 		<item name="boxCornerRadiusBottomEnd">12dp</item>
 		<item name="hintTextColor">@color/zerion_cyan</item>
-		<item name="android:textColorHint">#80FFFFFF</item>
+		<item name="android:textColorHint">@color/zerion_hint</item>
 		<item name="errorTextColor">@color/zerion_error_red</item>
 		<item name="errorIconTint">@color/zerion_error_red</item>
 	</style>
@@ -177,12 +177,12 @@
 
 	<!-- Glass Card: Transparent with cyan border -->
 	<style name="Zerion.Card.Glass" parent="Widget.Material3.CardView.Elevated">
-		<item name="cardBackgroundColor">#33FFFFFF</item>
+		<item name="cardBackgroundColor">@color/zerion_card_bg</item>
 		<item name="strokeColor">@color/zerion_cyan</item>
 		<item name="strokeWidth">1dp</item>
 		<item name="cardCornerRadius">16dp</item>
 		<item name="cardElevation">0dp</item>
-		<item name="rippleColor">#1AFFFFFF</item>
+		<item name="rippleColor">@color/zerion_ripple</item>
 	</style>
 
 	<!-- Solid Card: Dark background with cyan border -->
@@ -231,8 +231,8 @@
 
 	<style name="Zerion.Toolbar" parent="Widget.Material3.Toolbar">
 		<item name="android:background">@drawable/bg_toolbar_gradient</item>
-		<item name="titleTextColor">@android:color/white</item>
-		<item name="subtitleTextColor">#B3FFFFFF</item>
+		<item name="titleTextColor">@color/zerion_text_primary</item>
+		<item name="subtitleTextColor">@color/zerion_text_secondary</item>
 		<item name="navigationIconTint">@color/zerion_cyan</item>
 		<item name="android:elevation">4dp</item>
 	</style>
@@ -246,11 +246,11 @@
 	<!-- DIALOG COMPONENTS                                                  -->
 	<!-- ================================================================== -->
 
-	<style name="Zerion.Dialog" parent="Theme.Material3.Dark.Dialog">
+	<style name="Zerion.Dialog" parent="Theme.Material3.DayNight.Dialog">
 		<item name="android:windowBackground">@android:color/transparent</item>
 		<item name="android:backgroundDimAmount">0.6</item>
 		<item name="colorSurface">@color/zerion_card_bg</item>
-		<item name="colorOnSurface">@android:color/white</item>
+		<item name="colorOnSurface">@color/zerion_text_primary</item>
 		<item name="buttonBarPositiveButtonStyle">@style/Zerion.Button.Text</item>
 		<item name="buttonBarNegativeButtonStyle">@style/Zerion.Button.Text</item>
 		<item name="buttonBarNeutralButtonStyle">@style/Zerion.Button.Text</item>
@@ -284,27 +284,27 @@
 
 	<style name="Zerion.NavigationView" parent="Widget.Material3.NavigationView">
 		<item name="android:background">@drawable/bg_zerion_gradient</item>
-		<item name="itemTextColor">@android:color/white</item>
+		<item name="itemTextColor">@color/zerion_text_primary</item>
 		<item name="itemIconTint">@color/zerion_cyan</item>
-		<item name="itemShapeFillColor">#1AFFFFFF</item>
-		<item name="itemRippleColor">#1AFFFFFF</item>
+		<item name="itemShapeFillColor">@color/zerion_ripple</item>
+		<item name="itemRippleColor">@color/zerion_ripple</item>
 	</style>
 
 	<style name="Zerion.BottomNavigation" parent="Widget.Material3.BottomNavigationView">
 		<item name="android:background">@color/zerion_card_bg</item>
-		<item name="itemTextColor">@android:color/white</item>
+		<item name="itemTextColor">@color/zerion_text_primary</item>
 		<item name="itemIconTint">@color/zerion_cyan</item>
-		<item name="itemRippleColor">#1AFFFFFF</item>
+		<item name="itemRippleColor">@color/zerion_ripple</item>
 		<item name="labelVisibilityMode">labeled</item>
 	</style>
 
 	<style name="Zerion.TabLayout" parent="Widget.Material3.TabLayout">
 		<item name="android:background">@color/zerion_card_bg</item>
-		<item name="tabTextColor">#B3FFFFFF</item>
-		<item name="tabSelectedTextColor">@android:color/white</item>
+		<item name="tabTextColor">@color/zerion_text_secondary</item>
+		<item name="tabSelectedTextColor">@color/zerion_text_primary</item>
 		<item name="tabIndicatorColor">@color/zerion_cyan</item>
 		<item name="tabIndicatorHeight">3dp</item>
-		<item name="tabRippleColor">#1AFFFFFF</item>
+		<item name="tabRippleColor">@color/zerion_ripple</item>
 		<item name="tabTextAppearance">@style/Zerion.TabLayout.TextAppearance</item>
 	</style>
 
@@ -322,10 +322,10 @@
 		<item name="chipBackgroundColor">@color/zerion_card_bg</item>
 		<item name="chipStrokeColor">@color/zerion_cyan</item>
 		<item name="chipStrokeWidth">1dp</item>
-		<item name="android:textColor">@android:color/white</item>
+		<item name="android:textColor">@color/zerion_text_primary</item>
 		<item name="chipIconTint">@color/zerion_cyan</item>
 		<item name="closeIconTint">@color/zerion_cyan</item>
-		<item name="rippleColor">#1AFFFFFF</item>
+		<item name="rippleColor">@color/zerion_ripple</item>
 	</style>
 
 	<!-- ================================================================== -->
@@ -340,7 +340,7 @@
 
 	<style name="Zerion.CheckBox" parent="Widget.Material3.CompoundButton.CheckBox">
 		<item name="buttonTint">@color/zerion_cyan</item>
-		<item name="android:textColor">@android:color/white</item>
+		<item name="android:textColor">@color/zerion_text_primary</item>
 	</style>
 
 	<!-- Alias for lowercase compatibility -->
@@ -354,7 +354,7 @@
 		<item name="trackColor">@color/zerion_cyan</item>
 		<item name="trackColorInactive">@color/zerion_card_bg</item>
 		<item name="thumbColor">@android:color/white</item>
-		<item name="haloColor">#1AFFFFFF</item>
+		<item name="haloColor">@color/zerion_ripple</item>
 		<item name="tickColor">@color/zerion_cyan</item>
 	</style>
 

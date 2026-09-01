@@ -64,6 +64,67 @@ public class ZerionApplicationImpl extends Application
 		Thread.setDefaultUncaughtExceptionHandler(exceptionHandler);
 
 		EmojiManager.install(new GoogleEmojiProvider());
+
+		registerActivityLifecycleCallbacks(new ForegroundTracker());
+	}
+
+	private final java.util.concurrent.atomic.AtomicInteger startedActivities =
+			new java.util.concurrent.atomic.AtomicInteger(0);
+
+	private final class ForegroundTracker
+			implements ActivityLifecycleCallbacks {
+		@Override
+		public void onActivityStarted(@NonNull android.app.Activity a) {
+			if (startedActivities.getAndIncrement() == 0) {
+				applyWhileOpenMode(true);
+			}
+		}
+
+		@Override
+		public void onActivityStopped(@NonNull android.app.Activity a) {
+			if (startedActivities.decrementAndGet() == 0) {
+				applyWhileOpenMode(false);
+			}
+		}
+
+		@Override
+		public void onActivityCreated(@NonNull android.app.Activity a,
+				android.os.Bundle b) {
+		}
+
+		@Override
+		public void onActivityResumed(@NonNull android.app.Activity a) {
+		}
+
+		@Override
+		public void onActivityPaused(@NonNull android.app.Activity a) {
+		}
+
+		@Override
+		public void onActivitySaveInstanceState(@NonNull android.app.Activity a,
+				@NonNull android.os.Bundle b) {
+		}
+
+		@Override
+		public void onActivityDestroyed(@NonNull android.app.Activity a) {
+		}
+	}
+
+	private void applyWhileOpenMode(boolean appInForeground) {
+		com.professor.zerion.android.settings.BackgroundConnections.Mode mode =
+				com.professor.zerion.android.settings.BackgroundConnections
+						.getMode(AppModule.getUiPrefs());
+		if (mode != com.professor.zerion.android.settings.BackgroundConnections
+				.Mode.WHILE_OPEN) {
+			return;
+		}
+		android.content.Intent i =
+				new android.content.Intent(this, ZerionService.class);
+		if (!appInForeground) i.setAction(ZerionService.ACTION_PAUSE);
+		try {
+			startService(i);
+		} catch (Exception ignored) {
+		}
 	}
 
 	protected AndroidComponent createApplicationComponent() {

@@ -13,7 +13,7 @@
         android:text="@string/add_attachment"
         android:textSize="20sp"
         android:textStyle="bold"
-        android:textColor="@android:color/white"
+        android:textColor="@color/zerion_text_primary"
         android:paddingBottom="16dp" />
 
     <!-- Take Photo -->
@@ -41,7 +41,7 @@
             android:layout_weight="1"
             android:layout_marginStart="16dp"
             android:text="@string/attachment_take_photo"
-            android:textColor="@android:color/white"
+            android:textColor="@color/zerion_text_primary"
             android:textSize="16sp" />
     </LinearLayout>
 
@@ -70,7 +70,7 @@
             android:layout_weight="1"
             android:layout_marginStart="16dp"
             android:text="@string/attachment_record_video"
-            android:textColor="@android:color/white"
+            android:textColor="@color/zerion_text_primary"
             android:textSize="16sp" />
     </LinearLayout>
 
@@ -100,7 +100,7 @@
             android:layout_weight="1"
             android:layout_marginStart="16dp"
             android:text="@string/attachment_stickers"
-            android:textColor="@android:color/white"
+            android:textColor="@color/zerion_text_primary"
             android:textSize="16sp" />
     </LinearLayout>
 
@@ -129,7 +129,7 @@
             android:layout_weight="1"
             android:layout_marginStart="16dp"
             android:text="@string/attachment_from_phone_gallery"
-            android:textColor="@android:color/white"
+            android:textColor="@color/zerion_text_primary"
             android:textSize="16sp" />
     </LinearLayout>
 
@@ -158,7 +158,7 @@
             android:layout_weight="1"
             android:layout_marginStart="16dp"
             android:text="@string/attachment_from_vault_gallery"
-            android:textColor="@android:color/white"
+            android:textColor="@color/zerion_text_primary"
             android:textSize="16sp" />
     </LinearLayout>
 
@@ -187,7 +187,7 @@
             android:layout_weight="1"
             android:layout_marginStart="16dp"
             android:text="@string/attachment_from_phone_documents"
-            android:textColor="@android:color/white"
+            android:textColor="@color/zerion_text_primary"
             android:textSize="16sp" />
     </LinearLayout>
 
@@ -216,7 +216,7 @@
             android:layout_weight="1"
             android:layout_marginStart="16dp"
             android:text="@string/attachment_from_vault_documents"
-            android:textColor="@android:color/white"
+            android:textColor="@color/zerion_text_primary"
             android:textSize="16sp" />
     </LinearLayout>
 

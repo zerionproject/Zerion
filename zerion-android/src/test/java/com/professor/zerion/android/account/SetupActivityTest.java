@@ -1,6 +1,7 @@
 package com.professor.zerion.android.account;
 
 import com.professor.zerion.R;
+import com.professor.zerion.android.security.TestAndroidKeyStore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -24,8 +25,12 @@ import static androidx.test.espresso.matcher.ViewMatchers.withText;
 import static org.hamcrest.Matchers.not;
 
 @RunWith(AndroidJUnit4.class)
-@Config(sdk = 21)
+@Config(sdk = 29)
 public class SetupActivityTest {
+
+	static {
+		TestAndroidKeyStore.register();
+	}
 
 	@Rule
 	public ActivityScenarioRule<SetupActivity> rule =
@@ -53,6 +58,7 @@ public class SetupActivityTest {
 
 	private void moveToSetPasswordFragment() {
 		onView(withId(R.id.nickname_entry)).perform(typeText("test"));
+		onView(withId(R.id.next)).perform(scrollTo());
 		onView(withId(R.id.next)).perform(click());
 		onView(withId(R.id.password_entry)).check(matches(isDisplayed()));
 	}

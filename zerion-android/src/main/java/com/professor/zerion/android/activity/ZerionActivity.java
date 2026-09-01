@@ -83,6 +83,7 @@ public abstract class ZerionActivity extends BaseActivity {
 	@Override
 	public void onResume() {
 		super.onResume();
+		com.professor.zerion.android.util.SecureClipboard.onAppFocused(this);
 		if (briarController
 				instanceof com.professor.zerion.android.controller
 						.ZerionControllerImpl) {

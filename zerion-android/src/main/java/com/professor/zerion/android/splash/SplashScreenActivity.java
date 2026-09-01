@@ -50,20 +50,11 @@ public class SplashScreenActivity extends BaseActivity {
 
 		com.professor.zerion.android.ZerionService.cancelPendingExit();
 
-		boolean decoyPassed = com.professor.zerion.android.decoy
-				.DecoyCalculatorActivity.consumeDecoyPassed();
-		if (!decoyPassed
-				&& com.professor.zerion.android.decoy.DecoyConfig
-						.isEnabled(this)
-				&& com.professor.zerion.android.decoy.DecoyConfig
-						.hasUnlockCode(this)) {
-			android.content.Intent i = new android.content.Intent(this,
-					com.professor.zerion.android.decoy
-							.DecoyCalculatorActivity.class);
-			i.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK
-					| android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK);
-			startActivity(i);
-			finish();
+		com.professor.zerion.android.decoy.DecoyCalculatorActivity
+				.consumeDecoyPassed();
+		if (com.professor.zerion.android.decoy.DecoyGate.required(this)) {
+			com.professor.zerion.android.decoy.DecoyGate
+					.redirectToCalculator(this);
 			return;
 		}
 

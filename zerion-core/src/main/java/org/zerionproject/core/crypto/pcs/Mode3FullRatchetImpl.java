@@ -54,7 +54,8 @@ class Mode3FullRatchetImpl implements Mode3FullRatchet {
 	}
 
 	@Override
-	public PqSendResult pqEncapsulateSend(Mode3FullState state) {
+	public PqSendResult pqEncapsulateSend(Mode3FullState state,
+			long ownSendsSinceRotation) {
 		byte[] theirPk = state.getTheirActivePqPk();
 		byte[] ct;
 		byte[] sharedSecret;
@@ -70,8 +71,8 @@ class Mode3FullRatchetImpl implements Mode3FullRatchet {
 			ct = enc.getCiphertext();
 			sharedSecret = enc.getSharedSecret().clone();
 			Arrays.fill(enc.getSharedSecret(), (byte) 0);
-			rotate = state.getMessageCounter()
-					% MODE3_FULL_SEND_ROTATION_INTERVAL == 0;
+			rotate = ownSendsSinceRotation
+					>= MODE3_FULL_SEND_ROTATION_INTERVAL - 1;
 			kpIdUsed = KpId.of(theirPk);
 		}
 
@@ -85,7 +86,7 @@ class Mode3FullRatchetImpl implements Mode3FullRatchet {
 				: state.withSendAdvanceNoRotate();
 
 		return new PqSendResult(pkAdvertise, ct, kpIdUsed, sharedSecret,
-				newState);
+				newState, rotate);
 	}
 
 	@Override

@@ -180,6 +180,15 @@
 -keep class org.bouncycastle.pqc.crypto.mldsa.** { *; }
 -dontwarn org.bouncycastle.**
 
+# Bitcoin wallet (bitcoinj key/tx primitives and its protobuf serialization
+# rely on reflection, so keep both and silence optional-dependency warnings)
+-keep class org.bitcoinj.** { *; }
+-dontwarn org.bitcoinj.**
+-keep class com.google.protobuf.** { *; }
+-dontwarn com.google.protobuf.**
+-dontwarn javax.annotation.**
+-dontwarn org.slf4j.**
+
 # Keep Zerion crypto classes that interact with BouncyCastle
 -keep class org.zerionproject.core.crypto.** { *; }
 -keep class org.zerionproject.core.api.crypto.** { *; }

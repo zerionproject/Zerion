@@ -372,7 +372,7 @@ Por favor, instala Zerion en un dispositivo más nuevo.</string>
   <string name="change_profile_picture_failed_message">Lo sentimos, pero algo falló mientras se estaba actualizando la imagen de tu perfil</string>
   
   <string name="pref_language_title">Idioma &amp; región</string>
-  <string name="pref_language_changed">Esta configuración se aplicará cuando reinicies Zerion. Por favor, cierra sesión y reinicia Zerion.</string>
+  <string name="pref_language_changed">La aplicación se reiniciará para aplicar el nuevo idioma.</string>
   <string name="pref_language_default">Predeterminado del sistema</string>
   <string name="display_settings_title">Pantalla</string>
   <string name="pref_theme_title">Tema</string>

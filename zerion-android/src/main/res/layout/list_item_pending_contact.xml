@@ -58,7 +58,7 @@
 			android:layout_marginEnd="8dp"
 			android:ellipsize="end"
 			android:maxLines="1"
-			android:textColor="#FFFFFF"
+			android:textColor="@color/zerion_text_primary"
 			android:textSize="17sp"
 			android:textStyle="bold"
 			app:layout_constraintBottom_toTopOf="@+id/status_container"

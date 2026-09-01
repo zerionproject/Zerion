@@ -48,7 +48,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="0:00"
-            android:textColor="@android:color/white"
+            android:textColor="@color/zerion_text_primary"
             android:textSize="16sp"
             android:textStyle="bold"
             android:gravity="start" />

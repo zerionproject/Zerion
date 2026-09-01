@@ -10,7 +10,18 @@ public interface Mode3FullRatchet {
 
 	Mode3FullState createInitialState();
 
-	PqSendResult pqEncapsulateSend(Mode3FullState state);
+	/**
+	 * Encapsulate a post-quantum secret for the next outgoing frame. Rotation of
+	 * our own ML-KEM key pair is driven by {@code ownSendsSinceRotation}, the
+	 * number of our own sends since our key pair was last rotated, so a key pair
+	 * is never advertised for more than {@link
+	 * org.zerionproject.core.api.crypto.pcs.PcsConstants#MODE3_FULL_SEND_ROTATION_INTERVAL}
+	 * of our sends regardless of how the peer interleaves its traffic. The caller
+	 * (the send side) owns this counter and resets it whenever
+	 * {@link PqSendResult#isRotated()} is true.
+	 */
+	PqSendResult pqEncapsulateSend(Mode3FullState state,
+			long ownSendsSinceRotation);
 
 	PqRecvResult pqDecapsulateRecv(Mode3FullState state, KpId kpId,
 			byte[] ciphertext, byte[] theirNewPqPk) throws PcsException;
@@ -36,15 +47,23 @@ public interface Mode3FullRatchet {
 		@Nullable
 		private final byte[] sharedSecret;
 		private final Mode3FullState newState;
+		private final boolean rotated;
 
 		public PqSendResult(byte[] pkAdvertise, byte[] ciphertext,
 				@Nullable KpId kpIdUsed, @Nullable byte[] sharedSecret,
-				Mode3FullState newState) {
+				Mode3FullState newState, boolean rotated) {
 			this.pkAdvertise = pkAdvertise;
 			this.ciphertext = ciphertext;
 			this.kpIdUsed = kpIdUsed;
 			this.sharedSecret = sharedSecret;
 			this.newState = newState;
+			this.rotated = rotated;
+		}
+
+		/** Whether our own ML-KEM key pair was rotated on this send; the send
+		 *  side resets its own-send counter when this is true. */
+		public boolean isRotated() {
+			return rotated;
 		}
 
 		public byte[] getPkAdvertise() {

@@ -151,6 +151,13 @@ public abstract class BaseActivity extends AppCompatActivity
 	@Override
 	protected void onStart() {
 		super.onStart();
+		if (enforceDecoyGate()
+				&& com.professor.zerion.android.decoy.DecoyGate.required(this)
+				&& !isFinishing()) {
+			com.professor.zerion.android.decoy.DecoyGate
+					.redirectToCalculator(this);
+			return;
+		}
 		securityManager.applyScreenshotProtection(this, forceScreenshotProtection());
 		for (ActivityLifecycleController alc : lifecycleControllers) {
 			alc.onActivityStart();
@@ -158,6 +165,10 @@ public abstract class BaseActivity extends AppCompatActivity
 		protectToolbar();
 		ScreenFilterDialogFragment f = findDialogFragment();
 		if (f != null) f.setDismissListener(this::protectToolbar);
+	}
+
+	protected boolean enforceDecoyGate() {
+		return true;
 	}
 
 	@Nullable
@@ -170,6 +181,13 @@ public abstract class BaseActivity extends AppCompatActivity
 	@Override
 	protected void onResume() {
 		super.onResume();
+		if (enforceDecoyGate()
+				&& com.professor.zerion.android.decoy.DecoyGate.required(this)
+				&& !isFinishing()) {
+			com.professor.zerion.android.decoy.DecoyGate
+					.redirectToCalculator(this);
+			return;
+		}
 		enforceSecureInputs();
 	}
 

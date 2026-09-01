@@ -16,6 +16,8 @@ This is the plain-language overview. For the cryptographic detail, see the [Tech
 
 **A vault for your secrets.** Zerion includes an encrypted vault for passwords, notes, documents and photos, locked with its own password and hardware-backed key. It never leaves your device and has no recovery backdoor.
 
+**Non-custodial crypto wallets.** Zerion 3.0.4 adds optional Bitcoin and Monero wallets inside the vault. They are self-custodial: the keys are generated on your phone, sealed in the vault under their own password, and never leave the device, so no company or server can move, freeze, or see your funds. Like everything else in Zerion the wallets reach the network only over Tor, and the Monero wallet keeps its spending key out of memory except for the instant a payment is signed. The native wallet code is built from pinned upstream source with published, reproducible hashes.
+
 **Built to survive a seized phone.** Zerion can disguise itself as a calculator, wipe on a panic signal, refuse to run on a tampered device, and it writes no logs. Screenshots are blocked, attachments are stripped of hidden metadata, and deleted files are securely overwritten.
 
 ## How Zerion compares
@@ -29,6 +31,7 @@ This is the plain-language overview. For the cryptographic detail, see the [Tech
 | **Post-quantum on every message** | **Yes** | No | No | No | No |
 | Constant-rate traffic shaping | Yes | No | No | No | No |
 | Built-in encrypted vault | Yes | No | No | No | No |
+| Built-in non-custodial BTC/XMR wallet | Yes | No | No | No | No |
 | Anti-forensics (decoy, panic, no logs) | Yes | Partial | No | No | Partial |
 | Open source | Yes | Yes | Yes | Yes | Yes |
 
@@ -44,4 +47,4 @@ Zerion's protocol, source, and this documentation are open for anyone to review.
 
 ## Credits
 
-Zerion is built on the [Briar Project](https://briarproject.org) and its Bramble framework, and is released under the GPLv3. Zerion adds its own native post-quantum transport and ratchet, voice calls over Tor, the encrypted vault, and the anti-forensics features described above. Our thanks to the Briar and Tor projects for the foundations this work stands on.
+Zerion is built on the [Briar Project](https://briarproject.org) and its Bramble framework, and is released under the GPLv3. Zerion adds its own native post-quantum transport and ratchet, voice calls over Tor, the encrypted vault, optional non-custodial Bitcoin and Monero wallets, and the anti-forensics features described above. Our thanks to the Briar and Tor projects for the foundations this work stands on.

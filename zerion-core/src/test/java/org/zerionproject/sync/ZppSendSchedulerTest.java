@@ -75,6 +75,33 @@ public class ZppSendSchedulerTest {
 	}
 
 	@Test
+	public void holdsAllApplicationRecordsUntilPqReady() throws Exception {
+		RecordingSink sink = new RecordingSink();
+		java.util.concurrent.atomic.AtomicBoolean ready =
+				new java.util.concurrent.atomic.AtomicBoolean(false);
+		ZppSendScheduler s = new ZppSendScheduler(sink, ready::get);
+		s.enqueue(ZmmConstants.TYPE_TEXT,
+				"one".getBytes(StandardCharsets.UTF_8));
+		s.enqueue(ZmmConstants.TYPE_TEXT,
+				"two".getBytes(StandardCharsets.UTF_8));
+		// not ready: every frame is cover, no application record leaves, queue kept
+		for (int i = 0; i < 4; i++) s.tick();
+		assertEquals(4, sink.sent.size());
+		for (byte[] rec : sink.sent) assertTrue(ZmmRecord.isCover(rec));
+		assertEquals(0, s.getRealFrameCount());
+		assertEquals(2, s.getQueueDepth());
+		// once ready: the queued application records go out in order
+		ready.set(true);
+		s.tick();
+		s.tick();
+		assertEquals("one", new String(ZmmRecord.getPayload(sink.sent.get(4)),
+				StandardCharsets.UTF_8));
+		assertEquals("two", new String(ZmmRecord.getPayload(sink.sent.get(5)),
+				StandardCharsets.UTF_8));
+		assertEquals(2, s.getRealFrameCount());
+	}
+
+	@Test
 	public void surplusWaitsForNextSlotNoBurst() throws Exception {
 		RecordingSink sink = new RecordingSink();
 		ZppSendScheduler s = new ZppSendScheduler(sink);

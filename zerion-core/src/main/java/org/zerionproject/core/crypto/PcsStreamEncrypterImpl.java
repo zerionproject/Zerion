@@ -84,6 +84,7 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 	private final PcsHeaderCodec headerCodec;
 
 	private PcsSessionState sendState;
+	private long ownSendsSinceRotation = 0;
 	@Nullable
 	private PqRatchetState pqState;
 	private long frameNumber;
@@ -293,7 +294,10 @@ class PcsStreamEncrypterImpl implements StreamEncrypter {
 						sendState = sendState.withMode3FullState(m3fState);
 					}
 				}
-				mode3FullSend = mode3FullRatchet.pqEncapsulateSend(m3fState);
+				mode3FullSend = mode3FullRatchet.pqEncapsulateSend(m3fState,
+					ownSendsSinceRotation);
+				ownSendsSinceRotation = mode3FullSend.isRotated() ? 0
+						: ownSendsSinceRotation + 1;
 				sendState = sendState.withMode3FullState(
 						mode3FullSend.getNewState());
 				byte[] ss = mode3FullSend.getSharedSecret();

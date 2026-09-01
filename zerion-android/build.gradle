@@ -1,4 +1,5 @@
 apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
 
 // Load keystore properties for signing (skip for F-Droid builds)
 // Supports environment variables (ZERION_STORE_FILE, ZERION_STORE_PASSWORD,
@@ -34,10 +35,24 @@ def getStdout = { command, defaultValue ->
 android {
     compileSdk 36
     buildToolsVersion '36.0.0'
+    ndkVersion '27.1.12297006'
+    externalNativeBuild {
+        cmake {
+            path 'src/main/cpp/CMakeLists.txt'
+            version '3.22.1'
+        }
+    }
     packaging {
         jniLibs {
             useLegacyPackaging = true
             keepDebugSymbols += ['**/*.so']
+            // Payjoin is build-gated OFF (PayjoinFeature.PRODUCTION_ENABLED = false,
+            // no runtime override) and no production code loads its native library,
+            // so the Rust libpayjoin_ffi.so is dormant attack surface and dead weight
+            // in the shipped APK. Exclude it from packaging until a variant actually
+            // enables the feature; the UniFFI bindings still compile, and the .so
+            // stays in src/main/jniLibs so re-enabling is a one-line change here.
+            excludes += ['**/libpayjoin_ffi.so']
         }
         // Always strip the embedded VCS info so the release APK stays byte-reproducible
         // regardless of which commit it was built from (removes F-Droid repro commit-fragility).
@@ -82,8 +97,8 @@ android {
     defaultConfig {
         minSdkVersion 29
         targetSdkVersion 36
-        versionCode 30300
-        versionName "3.0.3"
+        versionCode 30400
+        versionName "3.0.4"
         applicationId "com.professor.zerion"
         buildConfigField "String", "TorVersion", "\"$tor_version\""
 
@@ -110,6 +125,12 @@ android {
         testInstrumentationRunner 'com.professor.zerion.android.BriarTestRunner'
         testInstrumentationRunnerArguments disableAnalytics: 'true'
         multiDexEnabled true
+        externalNativeBuild {
+            cmake {
+                arguments '-DANDROID_STL=none'
+                abiFilters 'arm64-v8a', 'armeabi-v7a'
+            }
+        }
     }
 
     buildTypes {
@@ -171,9 +192,28 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
+    sourceSets {
+        main.kotlin.srcDirs += "$projectDir/native/payjoin/bindings"
+    }
+
     testOptions {
         unitTests {
             includeAndroidResources = true
+            all {
+                // Mockito 5.1.1 bundles Byte Buddy 1.12.22, which rejects Java 21
+                // (class file major 65) bytecode when instrumenting a mock's type
+                // hierarchy on the JDK 21 test runtime. Enable Byte Buddy's
+                // experimental support so it can instrument the newer class files.
+                it.systemProperty 'net.bytebuddy.experimental', 'true'
+                // Robolectric has no AndroidKeyStore shadow, so activity tests
+                // register an in-memory test keystore provider. Marking it JCE
+                // verified needs reflective access into java.base/javax.crypto.
+                it.jvmArgs '--add-opens=java.base/javax.crypto=ALL-UNNAMED'
+            }
         }
     }
     namespace 'com.professor.zerion'
@@ -201,6 +241,34 @@ if (isFdroidBuild) {
     }
 }
 
+// Pin slf4j-api to the version already used and verified, so bitcoinj's
+// transitive slf4j-api does not pull a different version into the graph.
+// Exclude the legacy bcprov-jdk15on packaging so only the app's
+// bcprov-jdk15to18 provides the org.bouncycastle classes (bitcoinj needs the
+// app's Bouncy Castle, not a duplicate on the test classpath).
+configurations.all {
+    resolutionStrategy {
+        force 'org.slf4j:slf4j-api:1.7.32'
+    }
+    exclude group: 'org.bouncycastle', module: 'bcprov-jdk15on'
+}
+
+// Robolectric 4.8.2 bundles ASM 9.2 (max Java 18 bytecode). The unit-test task runs on
+// JDK 21, so instrumentation reads major-version-65 core classes and ASM 9.2 aborts with
+// "Unsupported class file major version 65". Force ASM 9.6 on the unit-test classpaths so
+// the sandbox class loader can parse JDK 21 bytecode.
+configurations.configureEach { config ->
+    if (config.name.toLowerCase().contains('unittest')) {
+        config.resolutionStrategy {
+            force 'org.ow2.asm:asm:9.6'
+            force 'org.ow2.asm:asm-commons:9.6'
+            force 'org.ow2.asm:asm-tree:9.6'
+            force 'org.ow2.asm:asm-util:9.6'
+            force 'org.ow2.asm:asm-analysis:9.6'
+        }
+    }
+}
+
 
 dependencies {
     //
@@ -215,6 +283,12 @@ dependencies {
     implementation project(path: ':i2p-embedded', configuration: 'shadow')
 
     implementation "org.bouncycastle:bcprov-jdk15to18:$bouncy_castle_version"
+
+    // Bitcoin key derivation and transaction signing (BIP32/39/84, P2WPKH).
+    // Used only for its crypto/tx primitives; Electrum traffic is routed over
+    // Tor by the wallet, not by bitcoinj's own networking. slf4j-api is present
+    // with no binding, so bitcoinj's logging is a no-op.
+    implementation "org.bitcoinj:bitcoinj-core:0.16.3"
 
     // newer versions of the libraries below require compileSdk 35
     implementation 'androidx.activity:activity:1.10.1'
@@ -231,6 +305,8 @@ dependencies {
 
     // force kotlin standard lib to latest version to prevent jetifier issues
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+    // JNA runtime for the Payjoin native library UniFFI bindings
+    implementation 'net.java.dev.jna:jna:5.14.0@aar'
     implementation "com.squareup.okhttp3:okhttp:$okhttp_version"
     implementation "org.jsoup:jsoup:$jsoup_version"
     implementation 'info.guardianproject.panic:panic:1.0'
@@ -267,6 +343,7 @@ dependencies {
     testImplementation "androidx.test.espresso:espresso-core:3.5.0"
     testImplementation 'org.robolectric:robolectric:4.8.2' // newer versions have SecureRandom issue
     testImplementation 'org.mockito:mockito-core:5.1.1'
+    testImplementation 'org.json:json:20180813' // real org.json for plain JVM unit tests (android.jar stub is not mocked)
     testImplementation "junit:junit:$junit_version"
     testImplementation "org.jmock:jmock:$jmock_version"
     testImplementation "org.jmock:jmock-junit4:$jmock_version"
@@ -305,8 +382,9 @@ task enforceNoLogs {
         }
         def srcDir = file("src/main/java")
         def banned = ['Log.d(', 'Log.i(', 'Log.w(', 'Log.e(', 'Log.v(',
+                       'Log.wtf(', 'Log.println(', 'android.util.Log.println(',
                        'System.out.print', 'System.err.print',
-                       '.printStackTrace()', 'Timber.']
+                       '.printStackTrace(', 'Timber.']
         def violations = []
         srcDir.eachFileRecurse(groovy.io.FileType.FILES) { f ->
             if (f.name.endsWith('.java')) {
@@ -371,9 +449,38 @@ project.afterEvaluate {
     preBuild.dependsOn.add(verifyTranslations)
     preBuild.dependsOn.add(enforceNoLogs)
 
+    // Wallet-critical logic and crypto must pass before any shippable
+    // artifact is produced. A dedicated task runs only the wallet and crypto
+    // regression tests (BIP vectors, coin selection, fail-closed behaviour,
+    // fee bounds, isolation tags, malformed-response handling, Silent Payments
+    // cursor, durable broadcast state, AES-GCM and Argon2id), and release and
+    // bundle assembly depend on it.
+    def unitTest = tasks.named('testOfficialDebugUnitTest').get()
+    tasks.register('walletRegressionTest', Test) {
+        group = 'verification'
+        description = 'Runs the wallet-logic and crypto regression suite.'
+        testClassesDirs = unitTest.testClassesDirs
+        classpath = unitTest.classpath
+        dependsOn 'compileOfficialDebugUnitTestJavaWithJavac'
+        useJUnit()
+        filter {
+            includeTestsMatching 'com.professor.zerion.android.vault.wallet.btc.*'
+            includeTestsMatching 'com.professor.zerion.android.vault.crypto.*'
+        }
+    }
+    tasks.matching {
+        (it.name.startsWith('assemble') || it.name.startsWith('bundle')) &&
+                it.name.toLowerCase().contains('release')
+    }.configureEach {
+        it.dependsOn('walletRegressionTest')
+    }
+
     // Disable ART/Baseline profile tasks for F-Droid reproducible builds
     if (isFdroidBuild) {
         tasks.matching { it.name.toLowerCase().contains("artprofile") }.configureEach { it.enabled = false }
         tasks.matching { it.name.toLowerCase().contains("baselineprofile") }.configureEach { it.enabled = false }
     }
 }
+
+apply from: "${projectDir}/native/payjoin/verify-payjoin-native.gradle"
+apply from: "${projectDir}/native/monero/verify-monero-native.gradle"

@@ -46,7 +46,8 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 			throws IOException {
 		AtomicBoolean running = new AtomicBoolean(true);
 		ZppSendScheduler scheduler =
-				new ZppSendScheduler(connection::sendMessage);
+				new ZppSendScheduler(connection::sendMessage,
+						connection::isPqReady);
 		registry.onConnectionOpened(contactId, scheduler,
 				connection.getMaxMessageLength());
 		Thread ticker = new Thread(() -> tickLoop(scheduler, running),

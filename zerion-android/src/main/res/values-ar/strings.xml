@@ -1,13 +1,13 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
   
-  <string name="setup_title">مرحبًا بك في Zerion (براير)</string>
+  <string name="setup_title">مرحبًا بك في Zerion</string>
   <string name="setup_name_explanation">سيتم إظهار اسمك المستعار بجانب كل ما تنشره من محتوى. لا يمكنك تغيير الاسم بعد إنشاء حسابك.</string>
   <string name="setup_next">التالي</string>
   <string name="setup_password_intro">اختيار كلمة السر</string>
-  <string name="setup_password_explanation">سيتم تخزين حسابك على Zerion (براير) مشفرا على جهازك، وليس على الإنترنت. لذا في حالة نسيان كلمة السر الخاصة بك أو إلغاء تثبيت Zerion (براير) لا توجد طريقه لاسترجاع حسابك.\n\nالرجاء اختيار كلمة سر طويلة يصعب تخمينها مثل أربع كلمات عشوائية أو عشرة حروف عشوائية مع أرقام ورموز.</string>
-  <string name="dnkm_doze_intro">لاستقبال الرسائل، يحتاج براير أن يبقى متصلاً في الخلفية.</string>
-  <string name="dnkm_doze_explanation">لاستقبال الرسائل، يحتاج براير أن يبقى متصلاً في الخلفية. الرجاء تعطيل تحسين البطارية حتى يتمكن براير من البقاء متصلاً.</string>
+  <string name="setup_password_explanation">سيتم تخزين حسابك على Zerion مشفرا على جهازك، وليس على الإنترنت. لذا في حالة نسيان كلمة السر الخاصة بك أو إلغاء تثبيت Zerion لا توجد طريقه لاسترجاع حسابك.\n\nالرجاء اختيار كلمة سر طويلة يصعب تخمينها مثل أربع كلمات عشوائية أو عشرة حروف عشوائية مع أرقام ورموز.</string>
+  <string name="dnkm_doze_intro">لاستقبال الرسائل، يحتاج Zerion أن يبقى متصلاً في الخلفية.</string>
+  <string name="dnkm_doze_explanation">لاستقبال الرسائل، يحتاج Zerion أن يبقى متصلاً في الخلفية. الرجاء تعطيل تحسين البطارية حتى يتمكن Zerion من البقاء متصلاً.</string>
   <string name="choose_nickname">اختيار اسمك المستعار</string>
   <string name="choose_password">اختيار كلمة السر</string>
   <string name="confirm_password">تأكيد كلمة السر</string>
@@ -19,48 +19,48 @@
   <string name="create_account_button">إنشاء الحساب</string>
   <string name="more_info">معلومات أكثر</string>
   <string name="don_t_ask_again">عدم الطلب مرة أخرى</string>
-  <string name="dnkm_huawei_protected_text">الرجاء النقر على الزر في الأسفل والتأكد من أن براير محمي في شاشة \"التطبيقات المحمية\".</string>
-  <string name="dnkm_huawei_protected_button">احمِ براير</string>
-  <string name="dnkm_huawei_protected_help">إذا لم يتم إضافة براير في قائمة التطبيقات المحمية، فلن يتمكن من العمل في الخلفية.</string>
-  <string name="dnkm_huawei_app_launch_text">يُرجى النقر على الزر أدناه، وفتح شاشة \"تشغيل التطبيق\" والتأكد من ضبط براير على \"الإدارة يدويًا\".</string>
-  <string name="dnkm_huawei_app_launch_help">إذا لم يتم ضبط براير على \"الإدارة يدويًا\" في شاشة \"تشغيل التطبيق\"، فلن يتمكن من العمل في الخلفية.</string>
-  <string name="dnkm_xiaomi_text">للتشغيل في الخلفية، يجب أن يكون براير مقفلاً بقائمة التطبيقات الحديثة.</string>
-  <string name="dnkm_xiaomi_button">احمِ براير</string>
-  <string name="dnkm_xiaomi_help">إذا لم يكن براير مقفلاً لقائمة التطبيقات الحديثة، فلن يتمكن من العمل في الخلفية.</string>
-  <string name="dnkm_xiaomi_dialog_body_old">1. افتح قائمة التطبيقات الحديثة (وتسمى أيضًا مبدل التطبيقات)\n\n2. مرّر سريعًا للأسفل على صورة براير لإظهار رمز القفل\n\n3. إذا لم يكن القفل مقفلاً، فانقر فوق لقفله</string>
-  <string name="dnkm_xiaomi_dialog_body_new">1. افتح قائمة التطبيقات الحديثة (وتسمى أيضًا مبدل التطبيقات)\n\n2. إذا كان لدى براير صورة صغيرة لقفل بجوار اسمه، فلن تحتاج إلى القيام بأي شيء\n\n3. إذا لم يكن هناك قفل، فاضغط مطولاً على صورة براير حتى يظهر زر القفل، ثم انقر عليه</string>
-  <string name="dnkm_xiaomi_lock_apps_text">الرجاء النقر على الزر أدناه لفتح إعدادات الأمان. انقر على \"تعزيز السرعة\"، ثم انقر على \"قفل التطبيقات\"، وتأكد من ضبط براير على \"مقفل\".</string>
-  <string name="dnkm_xiaomi_lock_apps_help">إذا لم يُضبط براير على \"مقفل\" في شاشة \"قفل التطبيقات\"، فلن يتمكن من العمل في الخلفية.</string>
-  <string name="dnkm_warning_dozed_1">لم يتمكن براير من العمل في الخلفية</string>
+  <string name="dnkm_huawei_protected_text">الرجاء النقر على الزر في الأسفل والتأكد من أن Zerion محمي في شاشة \"التطبيقات المحمية\".</string>
+  <string name="dnkm_huawei_protected_button">احمِ Zerion</string>
+  <string name="dnkm_huawei_protected_help">إذا لم يتم إضافة Zerion في قائمة التطبيقات المحمية، فلن يتمكن من العمل في الخلفية.</string>
+  <string name="dnkm_huawei_app_launch_text">يُرجى النقر على الزر أدناه، وفتح شاشة \"تشغيل التطبيق\" والتأكد من ضبط Zerion على \"الإدارة يدويًا\".</string>
+  <string name="dnkm_huawei_app_launch_help">إذا لم يتم ضبط Zerion على \"الإدارة يدويًا\" في شاشة \"تشغيل التطبيق\"، فلن يتمكن من العمل في الخلفية.</string>
+  <string name="dnkm_xiaomi_text">للتشغيل في الخلفية، يجب أن يكون Zerion مقفلاً بقائمة التطبيقات الحديثة.</string>
+  <string name="dnkm_xiaomi_button">احمِ Zerion</string>
+  <string name="dnkm_xiaomi_help">إذا لم يكن Zerion مقفلاً لقائمة التطبيقات الحديثة، فلن يتمكن من العمل في الخلفية.</string>
+  <string name="dnkm_xiaomi_dialog_body_old">1. افتح قائمة التطبيقات الحديثة (وتسمى أيضًا مبدل التطبيقات)\n\n2. مرّر سريعًا للأسفل على صورة Zerion لإظهار رمز القفل\n\n3. إذا لم يكن القفل مقفلاً، فانقر فوق لقفله</string>
+  <string name="dnkm_xiaomi_dialog_body_new">1. افتح قائمة التطبيقات الحديثة (وتسمى أيضًا مبدل التطبيقات)\n\n2. إذا كان لدى Zerion صورة صغيرة لقفل بجوار اسمه، فلن تحتاج إلى القيام بأي شيء\n\n3. إذا لم يكن هناك قفل، فاضغط مطولاً على صورة Zerion حتى يظهر زر القفل، ثم انقر عليه</string>
+  <string name="dnkm_xiaomi_lock_apps_text">الرجاء النقر على الزر أدناه لفتح إعدادات الأمان. انقر على \"تعزيز السرعة\"، ثم انقر على \"قفل التطبيقات\"، وتأكد من ضبط Zerion على \"مقفل\".</string>
+  <string name="dnkm_xiaomi_lock_apps_help">إذا لم يُضبط Zerion على \"مقفل\" في شاشة \"قفل التطبيقات\"، فلن يتمكن من العمل في الخلفية.</string>
+  <string name="dnkm_warning_dozed_1">لم يتمكن Zerion من العمل في الخلفية</string>
   
   <string name="enter_password">‮كلمة السّر</string>
   <string name="try_again">كلمة السرّ خاطئة, الرجاء المحاولة مجدّدا</string>
   <string name="dialog_title_cannot_check_password">لا يمكن التحقق من كلمة السر</string>
-  <string name="dialog_message_cannot_check_password">لم يتمكن براير من التحقق من كلمة اسرّ. الرجاء إعادة تشغيل جهازك لحل المشكلة.</string>
-  <string name="sign_in_title">تسجيل الدخول إلى براير</string>
+  <string name="dialog_message_cannot_check_password">لم يتمكن Zerion من التحقق من كلمة اسرّ. الرجاء إعادة تشغيل جهازك لحل المشكلة.</string>
+  <string name="sign_in_title">تسجيل الدخول إلى Zerion</string>
   <string name="sign_in_button">تسجيل الدخول</string>
   <string name="forgotten_password">نسيت كلمة سرّك؟</string>
   <string name="dialog_title_lost_password">فقدت كلمة السر</string>
-  <string name="dialog_message_lost_password">حسابك على Zerion (براير) سيتم تخزينه مشفرا على جهازك، وليس على الإنترنت. لذا فلا يمكننا إعادة تعيين كلمة السر الخاصة بك. فهل تودّ/ين حذف حسابك والبدء من جديد؟\n\nتحذير: سيتمّ حذف هويّاتك وجهات اتصالك ورسائلك الى الأبد.</string>
-  <string name="startup_failed_activity_title">فشل تشغيل Zerion (براير)</string>
-  <string name="startup_failed_clock_error">تعذر بدء تشغيل تطبيق براير لأن ساعة جهازك خاطئة.\n\nيُرجى ضبط ساعة جهازك على الوقت الصحيح والمحاولة مرة أخرى.</string>
-  <string name="startup_failed_db_error">لم يتمكن براير من فتح قاعدة البيانات التي تحتوي على حسابك وجهات اتصالك ورسائلك.\n\nيُرجى الترقية إلى أحدث إصدار من التطبيق والمحاولة مرة أخرى، أو إعداد حساب جديد عن طريق اختيار \"نسيتُ كلمة السر\" في مطالبة كلمة السر.</string>
+  <string name="dialog_message_lost_password">حسابك على Zerion سيتم تخزينه مشفرا على جهازك، وليس على الإنترنت. لذا فلا يمكننا إعادة تعيين كلمة السر الخاصة بك. فهل تودّ/ين حذف حسابك والبدء من جديد؟\n\nتحذير: سيتمّ حذف هويّاتك وجهات اتصالك ورسائلك الى الأبد.</string>
+  <string name="startup_failed_activity_title">فشل تشغيل Zerion</string>
+  <string name="startup_failed_clock_error">تعذر بدء تشغيل تطبيق Zerion لأن ساعة جهازك خاطئة.\n\nيُرجى ضبط ساعة جهازك على الوقت الصحيح والمحاولة مرة أخرى.</string>
+  <string name="startup_failed_db_error">لم يتمكن Zerion من فتح قاعدة البيانات التي تحتوي على حسابك وجهات اتصالك ورسائلك.\n\nيُرجى الترقية إلى أحدث إصدار من التطبيق والمحاولة مرة أخرى، أو إعداد حساب جديد عن طريق اختيار \"نسيتُ كلمة السر\" في مطالبة كلمة السر.</string>
   <string name="startup_failed_data_too_old_error">أُنشئ حسابك باستخدام إصدار قديم من هذا التطبيق ولا يمكن فتحه باستخدام هذا الإصدار.\n\nيجب عليك إما إعادة تثبيت الإصدار القديم أو إعداد حساب جديد عن طريق اختيار \"نسيتُ كلمة السر\" في مطالبة كلمة السر.</string>
   <string name="startup_failed_data_too_new_error">أُنشئ حسابك باستخدام إصدار أحدث من هذا التطبيق ولا يمكن فتحه باستخدام هذا الإصدار.\n\nيُرجى الترقية إلى احدث إصدار والمحاولة مرة أخرى.</string>
-  <string name="startup_failed_service_error">تعذر على براير بدء تشغيل المكون المطلوب.\n\nيُرجى الترقية إلى أحدث إصدار من التطبيق والمحاولة مرة أخرى.</string>
+  <string name="startup_failed_service_error">تعذر على Zerion بدء تشغيل المكون المطلوب.\n\nيُرجى الترقية إلى أحدث إصدار من التطبيق والمحاولة مرة أخرى.</string>
   <plurals name="expiry_warning">
-    <item quantity="zero">هذا إصدار تجريبي من Zerion (براير). حسابك سينتهي اليوم ولن يمكن تجديده.</item>
-    <item quantity="one">هذا إصدار تجريبي من Zerion (براير). حسابك سينتهي خلال يوم ولن يمكن تجديده.</item>
-    <item quantity="two">هذا إصدار تجريبي من Zerion (براير). حسابك سينتهي خلال يومين ولن يمكن تجديده.</item>
-    <item quantity="few">هذا إصدار تجريبي من Zerion (براير). حسابك سينتهي خلال %d أيام ولن يمكن تجديده.</item>
-    <item quantity="many">هذا إصدار تجريبي من Zerion (براير). حسابك سينتهي خلال %d يوم ولن يمكن تجديده.</item>
-    <item quantity="other">هذا إصدار تجريبي من Zerion (براير). حسابك سينتهي خلال %d يوم ولن يمكن تجديده.</item>
+    <item quantity="zero">هذا إصدار تجريبي من Zerion. حسابك سينتهي اليوم ولن يمكن تجديده.</item>
+    <item quantity="one">هذا إصدار تجريبي من Zerion. حسابك سينتهي خلال يوم ولن يمكن تجديده.</item>
+    <item quantity="two">هذا إصدار تجريبي من Zerion. حسابك سينتهي خلال يومين ولن يمكن تجديده.</item>
+    <item quantity="few">هذا إصدار تجريبي من Zerion. حسابك سينتهي خلال %d أيام ولن يمكن تجديده.</item>
+    <item quantity="many">هذا إصدار تجريبي من Zerion. حسابك سينتهي خلال %d يوم ولن يمكن تجديده.</item>
+    <item quantity="other">هذا إصدار تجريبي من Zerion. حسابك سينتهي خلال %d يوم ولن يمكن تجديده.</item>
   </plurals>
   <string name="expiry_date_reached">هذا البرنامج قد انتهت مدته.\nشكرا لك للتجربة!</string>
-  <string name="download_zerion">لمتابعة استخدام Zerion (براير)، يرجى تنزيل آخر إصدار. </string>
+  <string name="download_zerion">لمتابعة استخدام Zerion، يرجى تنزيل آخر إصدار. </string>
   <string name="create_new_account">انت في حاجة لانشاء حساب جديد، لكن يمكنك استعمال نفس الاسم المستعار.</string>
   <string name="download_zerion_button">تنزيل آخر أصدار</string>
-  <string name="old_android_expiry_date_reached">لم يعد براير يعمل على نظام التشغيل Android 4.\nيُرجى تثبيت براير على جهاز أحدث.</string>
+  <string name="old_android_expiry_date_reached">لم يعد Zerion يعمل على نظام التشغيل Android 4.\nيُرجى تثبيت Zerion على جهاز أحدث.</string>
   <string name="old_android_delete_account">يمكنك النقر على الزر أدناه لحذف حسابك من هذا الجهاز.</string>
   <string name="delete_account_button">حذف الحساب</string>
   <string name="startup_open_database">جارِ فك تشفير قاعدة البيانات...</string>
@@ -75,7 +75,7 @@
   <string name="lock_button">قفل التطبيق</string>
   <string name="settings_button">الإعدادات</string>
   <string name="sign_out_button">تسجيل الخروج</string>
-  <string name="transports_onboarding_text">انقر هنا للتحكم في كيفية اتصال براير بجهات اتصالك.</string>
+  <string name="transports_onboarding_text">انقر هنا للتحكم في كيفية اتصال Zerion بجهات اتصالك.</string>
   
   <string name="transport_tor">إنترنت</string>
   <string name="tor_device_status_online_wifi">جهازك لديه ولوج لشبكة الانترنت عبر ال Wi-Fi </string>
@@ -83,20 +83,20 @@
   <string name="tor_device_status_offline">جهازك ليس متصل بالانترنت</string>
   <string name="tor_plugin_status_enabling">جاري اتصال Zerion  بالانترنت</string>
   <string name="tor_plugin_status_active">Zerion متصل بالانترنت</string>
-  <string name="tor_plugin_status_inactive">لم يتمكن براير من الاتصال بالانترنت </string>
+  <string name="tor_plugin_status_inactive">لم يتمكن Zerion من الاتصال بالانترنت </string>
   <string name="tor_plugin_status_disabled">ضُبط Zerion على عدم استخدام الإنترنت</string>
   <string name="tor_plugin_status_disabled_mobile_data">ضُبط Zerion على عدم استخدام بيانات الهاتف المحمول</string>
-  <string name="tor_plugin_status_disabled_battery">ضُبط براير على عدم استخدام الإنترنت عند التشغيل على البطارية</string>
-  <string name="tor_plugin_status_disabled_country_blocked">ضُبط براير على عدم استخدام الإنترنت في هذا البلد</string>
+  <string name="tor_plugin_status_disabled_battery">ضُبط Zerion على عدم استخدام الإنترنت عند التشغيل على البطارية</string>
+  <string name="tor_plugin_status_disabled_country_blocked">ضُبط Zerion على عدم استخدام الإنترنت في هذا البلد</string>
   
   <string name="transport_lan_long">نفس شبكة الWi-Fi </string>
 
-  <string name="reminder_notification_title">تم تسجيل الخروج من Zerion (براير)</string>
+  <string name="reminder_notification_title">تم تسجيل الخروج من Zerion</string>
   <string name="reminder_notification_text">الرجاء اللمس لإعادة الدخول</string>
-  <string name="reminder_notification_channel_title">التذكير بتسجيل الدخول إلى Zerion (براير)</string>
+  <string name="reminder_notification_channel_title">التذكير بتسجيل الدخول إلى Zerion</string>
   <string name="reminder_notification_dismiss">رفض</string>
-  <string name="ongoing_notification_title">تم تسجيل الدخول إلى Zerion (براير)</string>
-  <string name="ongoing_notification_text">الرجاء اللمس لفتح Zerion (براير).</string>
+  <string name="ongoing_notification_title">تم تسجيل الدخول إلى Zerion</string>
+  <string name="ongoing_notification_text">الرجاء اللمس لفتح Zerion.</string>
   <plurals name="private_message_notification_text">
     <item quantity="zero">لا رسائل خاصة جديدة.</item>
     <item quantity="one"> رسالة خاصة جديدة.</item>
@@ -217,7 +217,7 @@
   <string name="save_image_success">تم حفظ الصورة</string>
   <string name="save_image_error">لم نتمكن من حفظ الصورة </string>
   <string name="dialog_title_no_image_support">الصور غير متوفرة</string>
-  <string name="dialog_message_no_image_support">Zerion (براير) لدى جهة الاتصال لا يدعم إرفاق الصور. فور تحديثهم للبرنامج ستظهر لكم أيفونة مختلفة. </string>
+  <string name="dialog_message_no_image_support">Zerion لدى جهة الاتصال لا يدعم إرفاق الصور. فور تحديثهم للبرنامج ستظهر لكم أيفونة مختلفة. </string>
   <string name="dialog_title_image_support">يمكنم الآن إرسال الصور لجهة الاتصال هذه</string>
   <string name="dialog_message_image_support">الضغط على هذه الأيقونة لإرفاق الصور.</string>
   <string name="messaging_too_many_attachments_toast">تمكّنا من إرسال %d من الصورة فقط</string>
@@ -252,7 +252,7 @@
   <string name="add_contact_choose_a_nickname">إدخال اسم مستعار</string>
   <string name="nickname_intro">إعطاء اسم مستعار لجهة الاتصال بإمكانكم رؤيته فقط. </string>
   <string name="your_link">أرسلوا هذا الرّابط لجهة الاتصال التي تودّون إضافتها </string>
-  <string name="link_clip_label">رابط Zerion (براير)</string>
+  <string name="link_clip_label">رابط Zerion</string>
   <string name="link_copied_toast">تمّ نسخ الرّابط</string>
   <string name="adding_contact_error">حصل خطأ عند إضافة جهة الاتصال.</string>
   <string name="pending_contact_requests_snackbar">هناك طلبات للاتصال بكم في الانتظار  </string>
@@ -267,7 +267,7 @@
   <string name="own_link_error">يرجى إخال رابط جهة الاتصال، وليس رابطكم</string>
   <string name="nickname_missing">يرجى إدخال اسم مستعار</string>
   <string name="invalid_link">الرّابط غير صالح</string>
-  <string name="unsupported_link">هذا الرّابط قادم من إصدار أحدث من Zerion (براير). يرجى التحديث لآخر إصدار والمحاولة من جديد. </string>
+  <string name="unsupported_link">هذا الرّابط قادم من إصدار أحدث من Zerion. يرجى التحديث لآخر إصدار والمحاولة من جديد. </string>
   <string name="intent_own_link">لقد فتحتم الرابط الخاص بكم. يرجى استخدام رابط جهة الاتصال التي تودّون إضافتها! </string>
   <string name="missing_link">يرجى إدخال رابط</string>
   
@@ -409,7 +409,7 @@
   <string name="change_profile_picture_failed_message">عذرًا، ولكن حدث خطأ ما أثناء تحديث صورة ملفك الشخصي</string>
   
   <string name="pref_language_title">اللغة &amp; المنطقة</string>
-  <string name="pref_language_changed">هذا الإعداد سيتفعل بعد إعادة تشغيل Zerion (براير). الرجاء تسجيل الخروج ثم اعادة تشغيل Zerion (براير).</string>
+  <string name="pref_language_changed">سيتم إعادة تشغيل التطبيق لتطبيق اللغة الجديدة.</string>
   <string name="pref_language_default">النظام الإفتراضي</string>
   <string name="display_settings_title">العرض</string>
   <string name="pref_theme_title">السمة</string>
@@ -434,11 +434,11 @@
   
   <string name="security_settings_title">الأمان</string>
   <string name="pref_lock_title">قفل التطبيق</string>
-  <string name="pref_lock_summary">الرجاء استخدام قفل شاشة الجهاز لحماية Zerion (براير) في حال تسجيل الدخول</string>
+  <string name="pref_lock_summary">الرجاء استخدام قفل شاشة الجهاز لحماية Zerion في حال تسجيل الدخول</string>
   <string name="pref_lock_disabled_summary">لاستخدام هذه الميزة، الرجاء إعداد قفل شاشة لجهازك</string>
   <string name="pref_lock_timeout_title">قفل التطبيق لعدم النّشاط </string>
   
-  <string name="pref_lock_timeout_summary">في حالة عدم استعمال Zerion (براير)، يقفل تلقائيا بعد %s</string>
+  <string name="pref_lock_timeout_summary">في حالة عدم استعمال Zerion، يقفل تلقائيا بعد %s</string>
   
   <string name="pref_lock_timeout_1">1 دقيقة</string>
   
@@ -450,7 +450,7 @@
   
   <string name="pref_lock_timeout_60">ساعة</string>
   <string name="pref_lock_timeout_never">أبدًا</string>
-  <string name="pref_lock_timeout_never_summary">لا تقم أبدًا بقفل Zerion (براير) تلقائيًا</string>
+  <string name="pref_lock_timeout_never_summary">لا تقم أبدًا بقفل Zerion تلقائيًا</string>
   <string name="change_password">تغيير كلمة السرّ</string>
   <string name="current_password">كلمة السر الحالية</string>
   <string name="choose_new_password">كلمة السر الجديدة</string>
@@ -458,7 +458,7 @@
   <string name="password_changed">تم تغيير كلمة السر</string>
   <string name="panic_setting">إعداد زر الذعر</string>
   <string name="panic_setting_title">زر الذعر</string>
-  <string name="panic_setting_hint">اضبط كيف يتصرف Zerion (براير) عندما تضغط زر الذعر</string>
+  <string name="panic_setting_hint">اضبط كيف يتصرف Zerion عندما تضغط زر الذعر</string>
   <string name="panic_app_setting_title">تطبيق زر الذعر</string>
   <string name="unknown_app">تطبيق غير معروف</string>
   <string name="panic_app_setting_summary">لا تطبيق قد تم إعداده</string>
@@ -467,9 +467,9 @@
   <string name="dialog_message_connect_panic_app">هل متأكد أنك تريد السماح ل %1$s أن يقوم بتفعيل إجراءات زر الذعر؟</string>
   <string name="panic_setting_destructive_action">إجراءات الخطر </string>
   <string name="panic_setting_signout_title">تسجيل الخروج</string>
-  <string name="panic_setting_signout_summary">تسجيل الخروج من Zerion (براير) عند ضغط زر الذعر</string>
+  <string name="panic_setting_signout_summary">تسجيل الخروج من Zerion عند ضغط زر الذعر</string>
   <string name="purge_setting_title">حذف الحساب</string>
-  <string name="purge_setting_summary">احذف حساب Zerion (براير) إذا تم ضغط زر الذعر. انتبه: هذا سيسبب حذف دائم لكل معرفات وحساباتك ورسائلك.</string>
+  <string name="purge_setting_summary">احذف حساب Zerion إذا تم ضغط زر الذعر. انتبه: هذا سيسبب حذف دائم لكل معرفات وحساباتك ورسائلك.</string>
   
   <string name="notification_settings_title">الإشعارات</string>
   <string name="notify_sign_in_title">ذكرني لتسجيل الدخول</string>
@@ -491,7 +491,7 @@
   <string name="mailbox_setup_title">إعداد صندوق البريد</string>
   <string name="mailbox_setup_intro">يتيح صندوق البريد (Mailbox) لجهات اتصالك إرسال رسائل إليك أثناء عدم الاتصال بالإنترنت. سيتلقى صندوق البريد رسائلك ويخزنها حتى تتصل بالإنترنت.\n
 \nيمكنك تثبيت تطبيق Zerion Mailbox على جهاز احتياطي. أبقِ جهازك متصلاً بمصدر الطاقة وشبكة Wi-Fi حتى يكون متصلاً بالإنترنت دائمًا.</string>
-  <string name="mailbox_setup_download">أولاً، ثبّت تطبيق Mailbox على جهاز آخر من خلال البحث عن \"Zerion Mailbox\" على متجر Google أو في أي مكان قمت فيه بتنزيل براير.\n
+  <string name="mailbox_setup_download">أولاً، ثبّت تطبيق Mailbox على جهاز آخر من خلال البحث عن \"Zerion Mailbox\" على متجر Google أو في أي مكان قمت فيه بتنزيل Zerion.\n
 \nثم اربط صندوق البريد (Mailbox) الخاص بك مع Zerion عن طريق مسح رمز QR الذي يظهر في تطبيق Mailbox.</string>
   <string name="mailbox_setup_download_link">مشاركة رابط التنزيل</string>
   <string name="mailbox_setup_connecting">جارِ الاتصال بصندوق البريد…</string>
@@ -502,19 +502,19 @@
   <string name="mailbox_setup_io_error_title">تعذر الاتصال</string>
   <string name="mailbox_setup_io_error_description">تأكد من أن كلا الجهازين متصلان بالإنترنت وحاول مرة أخرى.</string>
   <string name="mailbox_setup_assertion_error_title">خطأ في صندوق البريد</string>
-  <string name="mailbox_setup_assertion_error_description">يُرجى إرسال الملاحظات (مع بيانات مجهولة المصدر) عبر تطبيق براير إذا استمرت المشكلة.</string>
+  <string name="mailbox_setup_assertion_error_description">يُرجى إرسال الملاحظات (مع بيانات مجهولة المصدر) عبر تطبيق Zerion إذا استمرت المشكلة.</string>
   <string name="mailbox_setup_camera_error_description">تعذر الوصول إلى الكاميرا. حاول مرة أخرى، ربما بعد إعادة تشغيل الجهاز.</string>
   <string name="mailbox_setup_paired_title">متصل</string>
-  <string name="mailbox_setup_paired_description">لقد ربطت صندوق بريدك بـبراير بنجاح.\n
+  <string name="mailbox_setup_paired_description">لقد ربطت صندوق بريدك بـ Zerion بنجاح.\n
 \nحافظ على اتصال صندوق بريدك بمصدر الطاقة وشبكة Wi-Fi حتى يكون متصلاً بالإنترنت دائمًا.</string>
   <string name="tor_offline_title">غير متصل</string>
   <string name="tor_offline_description">\nبعد ذلك، انتظر حتى يتحول لون رمز الكرة الأرضية في شاشة إعدادات الاتصال إلى اللون الأخضر.</string>
   <string name="tor_offline_button_check">تحقق من إعدادات الاتصال</string>
   <string name="mailbox_status_title">حالة صندوق البريد</string>
   <string name="mailbox_status_connected_title">صندوق البريد قيد التشغيل</string>
-  <string name="mailbox_status_problem_title">يواجه براير مشكلة في الاتصال بصندوق البريد</string>
+  <string name="mailbox_status_problem_title">يواجه Zerion مشكلة في الاتصال بصندوق البريد</string>
   <string name="mailbox_status_failure_title">صندوق البريد غير متاح</string>
-  <string name="mailbox_status_app_too_old_title">براير قديم جداً</string>
+  <string name="mailbox_status_app_too_old_title">Zerion قديم جداً</string>
   <string name="mailbox_status_app_too_old_message">حدّث بريار إلى أحدث إصدار من التطبيق وحاول مرة أخرى.</string>
   <string name="mailbox_status_mailbox_too_old_title">صندوق البريد قديم جدًا</string>
   <string name="mailbox_status_mailbox_too_old_message">قم بتحديث صندوق البريد  Mailbox الخاص بك إلى أحدث إصدار من التطبيق وحاول مرة أخرى.</string>
@@ -526,12 +526,12 @@
   <string name="mailbox_status_unlink_button">فك الارتباط</string>
   <string name="mailbox_status_unlink_dialog_title">هل تريد إلغاء ارتباط صندوق البريد؟</string>
   <string name="mailbox_status_unlink_dialog_question">هل أنت متأكد أنك تريد إلغاء ربط صندوق بريدك؟</string>
-  <string name="mailbox_status_unlink_dialog_warning">إذا قمت بإلغاء ربط صندوق بريدك، فلن تتمكن من تلقي الرسائل عندما يكون براير غير متصل.</string>
+  <string name="mailbox_status_unlink_dialog_warning">إذا قمت بإلغاء ربط صندوق بريدك، فلن تتمكن من تلقي الرسائل عندما يكون Zerion غير متصل.</string>
   <string name="mailbox_status_unlink_no_wipe_title">ألغيت ربط صندوق بريدك</string>
   <string name="mailbox_status_unlink_no_wipe_message">في المرة القادمة التي يمكنك فيها الوصول إلى جهاز Mailbox الخاص بك، يُرجى فتح تطبيق Mailbox والنقر على الزر \"Unlink\" لإكمال العملية.\n\nإذا لم يعد بإمكانك الوصول إلى جهاز Mailbox الخاص بك، فلا تقلق. يتم تعمية بياناتك بحيث تظل آمنة حتى لو لم تكمل العملية.</string>
   <string name="mailbox_status_unlink_success">ألغيت ربط صندوق بريدك</string>
-  <string name="mailbox_error_notification_channel_title">مشكلة صندوق بريد براير</string>
-  <string name="mailbox_error_notification_title">صندوق بريد براير غير متوفر</string>
+  <string name="mailbox_error_notification_channel_title">مشكلة صندوق بريد Zerion</string>
+  <string name="mailbox_error_notification_title">صندوق بريد Zerion غير متوفر</string>
   <string name="mailbox_error_notification_text">انقر لإصلاح المشكلة.</string>
   <string name="mailbox_error_wizard_button">اصلح المشكلة</string>
   <string name="mailbox_error_wizard_title">معالج استكشاف أخطاء صندوق البريد وإصلاحها</string>
@@ -547,16 +547,16 @@
   <string name="mailbox_error_wizard_answer1_4">أرى \"الجهاز غير متصل بالإنترنت\"</string>
   <string name="mailbox_error_wizard_info1_1_1">يُرجى إلغاء ربط  صندوق البريد Mailbox الخاص بك باستخدام الزر أدناه، ثم اتباع الإرشادات الموجودة على جهاز Mailbox لربطه مرة أخرى.</string>
   <string name="mailbox_error_wizard_info_1_1_2">يُرجى إلغاء ربط صندوق البريد Mailbox الخاص بك باستخدام الزر أدناه، ثم مسح رمز الاستجابة السريعة QR للربط مرة أخرى</string>
-  <string name="mailbox_error_wizard_info1_1_3">الرجاء استخدام الزر أدناه للتحقق من الاتصال بين براير وصندوق البريد.\n\n
+  <string name="mailbox_error_wizard_info1_1_3">الرجاء استخدام الزر أدناه للتحقق من الاتصال بين Zerion وصندوق البريد.\n\n
 إذا فشل الاتصال مرة أخرى:\n
-\u2022 تأكد من تحديث تطبيقي Mailbox وبراير إلى الإصدار الأحدث.\n
-\u2022 أعد تشغيل أجهزة Mailbox وبراير وحاول مرة أخرى.</string>
-  <string name="mailbox_error_wizard_info1_1_4">تأكد من أن جهاز صندوق البريد متصل بالإنترنت بشكل صحيح.\n\nتأكد من أن الساعة الموجودة على جهاز صندوق البريد تعرض الوقت والتاريخ والمنطقة الزمنية الصحيحة.\n\nتأكد من تحديث تطبيقات صندوق البريد و براير إلى الإصدار الأحدث.\ n\nأعِد تشغيل أجهزة صندوق البريد و براير وحاول مرة أخرى.</string>
+\u2022 تأكد من تحديث تطبيقي Mailbox و Zerion إلى الإصدار الأحدث.\n
+\u2022 أعد تشغيل أجهزة Mailbox و Zerion وحاول مرة أخرى.</string>
+  <string name="mailbox_error_wizard_info1_1_4">تأكد من أن جهاز صندوق البريد متصل بالإنترنت بشكل صحيح.\n\nتأكد من أن الساعة الموجودة على جهاز صندوق البريد تعرض الوقت والتاريخ والمنطقة الزمنية الصحيحة.\n\nتأكد من تحديث تطبيقات صندوق البريد و Zerion إلى الإصدار الأحدث.\ n\nأعِد تشغيل أجهزة صندوق البريد و Zerion وحاول مرة أخرى.</string>
   <string name="mailbox_error_wizard_info2">يرجى العودة إلى هذه الشاشة عندما يكون لديك حق الوصول إلى الجهاز.</string>
   <string name="mailbox_error_wizard_info3">الرجاء إلغاء ربط صندوق بريك باستخدام الزر أدناه.\n\nبعد إلغاء ربط صندوق البريد القديم، يمكنك إعداد صندوق بريد جديد في أي وقت.</string>
   
   <string name="about_title">عن </string>
-  <string name="zerion_version">إصدار براير: %s</string>
+  <string name="zerion_version">إصدار Zerion: %s</string>
   <string name="tor_version">إصدار تور: %s</string>
   <string name="links">روابط</string>
   <string name="zerion_website">\u2022 <a href="">الموقع إلكتروني</a></string>
@@ -581,7 +581,7 @@
   
   <string name="pref_category_actions">الإجراءات</string>
   <string name="share_app_link">مشاركة رابط التنزيل</string>
-  <string name="share_app_link_text">نزّل براير في %s</string>
+  <string name="share_app_link_text">نزّل Zerion في %s</string>
   <string name="send_feedback">أرسل ملاحظاتك</string>
   
   <string name="link_warning_title">تنبيه بوجود رابط</string>
@@ -589,10 +589,10 @@
   <string name="link_warning_text">يمكن لهذا كشف هويّتك. تأكّدوا من ثقتكم بالشخص الذي أرسل لكم هذا الرّابط خذوا بعين الاعتبار فتح الرّابط في متصفّح تور (Tor).</string>
   <string name="link_warning_open_link">افتح الرابط</string>
   
-  <string name="crash_report_title">تقرير إنهيار Zerion (براير)</string>
-  <string name="zerion_crashed">آسف، لقد تحطم براير</string>
+  <string name="crash_report_title">تقرير إنهيار Zerion</string>
+  <string name="zerion_crashed">آسف، لقد تحطم Zerion</string>
   <string name="not_your_fault">هذا ليس خطؤك.</string>
-  <string name="please_send_report">الرجاء مساعدتنا في تحسين Zerion (براير) عبر إرسال تقرير الإنهيار.</string>
+  <string name="please_send_report">الرجاء مساعدتنا في تحسين Zerion عبر إرسال تقرير الإنهيار.</string>
   <string name="report_is_encrypted">نعدك بأن التقرير سيرسل مشفرًا وبشكل آمن.</string>
   <string name="feedback_title">الإفادة حول التطبيق</string>
   <string name="describe_crash">وصف ما حدث (إختياري)</string>
@@ -617,34 +617,34 @@
   <string name="close">إغلاق</string>
   <string name="dev_report_sending">ارسال التعليقات</string>
   <string name="dev_report_sent">أرسلت ملاحظات</string>
-  <string name="dev_report_saved">تم حفظ التقرير. سيتم إرساله عند تسجيل الدخول إلى Zerion (براير) في المرة القادمة.</string>
+  <string name="dev_report_saved">تم حفظ التقرير. سيتم إرساله عند تسجيل الدخول إلى Zerion في المرة القادمة.</string>
   <string name="dev_report_error">خطأ: فشل إرسال التقرير</string>
   
-  <string name="progress_title_logout">تسجيل الخروج من Zerion (براير)...</string>
+  <string name="progress_title_logout">تسجيل الخروج من Zerion...</string>
   
   <string name="screen_filter_title">تم إكتشاف غلاف شاشة</string>
-  <string name="screen_filter_body">تطبيق آخر يعمل كغلاف فوق Zerion (براير). لحماية أمنك فإن Zerion (براير) لن يستجيب للمس طالما كان تطبيق آخر فوقه.\n\nيحتمل أن تكون أحد هذه التطبيقات التي تعمل بالفوق:\n\n %1$s</string>
-  <string name="screen_filter_body_api_30">تطبيق آخر يعمل كغلاف فوق براير. لحماية أمنك فإن براير لن يستجيب للمس طالما كان تطبيق آخر فوقه.\n\nراجع التطبيقات أدناه للعثور على التطبيق المسؤول.</string>
+  <string name="screen_filter_body">تطبيق آخر يعمل كغلاف فوق Zerion. لحماية أمنك فإن Zerion لن يستجيب للمس طالما كان تطبيق آخر فوقه.\n\nيحتمل أن تكون أحد هذه التطبيقات التي تعمل بالفوق:\n\n %1$s</string>
+  <string name="screen_filter_body_api_30">تطبيق آخر يعمل كغلاف فوق Zerion. لحماية أمنك فإن Zerion لن يستجيب للمس طالما كان تطبيق آخر فوقه.\n\nراجع التطبيقات أدناه للعثور على التطبيق المسؤول.</string>
   <string name="screen_filter_allow">السماح لهذه التطبيقات بالعمل فوق غيرها</string>
   <string name="screen_filter_review_apps">راجعْ التطبيقات</string>
   
   <string name="permission_camera_title">إذن الكاميرا</string>
-  <string name="permission_camera_request_body">للتمكن من مسح رمز QR، يحتاج Zerion (براير) إلى إستعمال الكاميرا.</string>
+  <string name="permission_camera_request_body">للتمكن من مسح رمز QR، يحتاج Zerion إلى إستعمال الكاميرا.</string>
   <string name="permission_location_title">إذن معرفة الموقع </string>
   <string name="permission_nearby_devices_title">إذن الأجهزة القريبة</string>
-  <string name="permission_location_request_body">لاكتشاف أجهزة بلوتوث، يحتاج Zerion (براير) لإذن بالوصول إلى موقعكم.\n\n لا يخزّن Zerion (براير) موقعكم ولا يشاركه مع أي شخص. </string>
+  <string name="permission_location_request_body">لاكتشاف أجهزة بلوتوث، يحتاج Zerion لإذن بالوصول إلى موقعكم.\n\n لا يخزّن Zerion موقعكم ولا يشاركه مع أي شخص. </string>
   <string name="permission_camera_location_title">الكاميرا والموقع</string>
-  <string name="permission_camera_location_request_body">لمسح رمز الاستجابة السّريعة أو QR، يحتاج Zerion (براير) للوصول إلى الكاميرا. \n\n لاكتشاف أجهزة بلوتوث، يحتاج Zerion (براير) لإذن بالوصول إلى موقعكم. \n\n لا يخزّن Zerion (براير) موقعكم ولا يشاركه مع أي شخص. </string>
+  <string name="permission_camera_location_request_body">لمسح رمز الاستجابة السّريعة أو QR، يحتاج Zerion للوصول إلى الكاميرا. \n\n لاكتشاف أجهزة بلوتوث، يحتاج Zerion لإذن بالوصول إلى موقعكم. \n\n لا يخزّن Zerion موقعكم ولا يشاركه مع أي شخص. </string>
   <string name="permission_camera_denied_body">قد رفضت إعطاء إذن الكاميرا، لكن إضافة جهات إتصال يتطلب إستعمال الكاميرا.\n\nالرجاء منح الإذن.</string>
-  <string name="permission_location_denied_body">لقد رفضت الوصول إلى موقعك، لكن براير يحتاج إلى هذا الإذن لاكتشاف أجهزة البلوتوث.\n\nالرجاء التفكير في منح حق الوصول.</string>
+  <string name="permission_location_denied_body">لقد رفضت الوصول إلى موقعك، لكن Zerion يحتاج إلى هذا الإذن لاكتشاف أجهزة البلوتوث.\n\nالرجاء التفكير في منح حق الوصول.</string>
   <string name="permission_location_setting_title">إعداد الموقع</string>
   <string name="permission_location_setting_body">يجب تشغيل إعداد الموقع بجهازك للعثور على أجهزة أخرى عبر البلوتوث. الرجاء تفعيل الموقع للمتابعة. ويمكنك تعطيله مرة أخرى بعد ذلك.</string>
   <string name="permission_location_setting_button">تفعيل الموقع</string>
-  <string name="lock_unlock">فك قفل Zerion (براير)</string>
-  <string name="lock_unlock_verbose">ادخال رمز، نمط أو كلمة سر جهازك لإلغاء قفل Zerion (براير)</string>
+  <string name="lock_unlock">فك قفل Zerion</string>
+  <string name="lock_unlock_verbose">ادخال رمز، نمط أو كلمة سر جهازك لإلغاء قفل Zerion</string>
   <string name="lock_unlock_fingerprint_description">لمس حساس البصمة ببصمتك المسجلة للإستمرار</string>
   <string name="lock_unlock_password">استخدام كلمة السر</string>
-  <string name="lock_is_locked">Zerion (براير) مقفل</string>
+  <string name="lock_is_locked">Zerion مقفل</string>
   <string name="lock_tap_to_unlock">الرجاء اللمس لفك القفل</string>
   
   <string name="transports_help_text">يمكن ل Zerion التواصل مع جهات الاتصال عن طريق الانترنت, شكبة ال Wi-Fi أو البلوتوث.n\n\كل وسائل الاتصال عن طريق الانترنت تمر عبر شبكة تور من أجل الخصوصية.n\n\إذا كان من الممكن الوصول إلى شبكة إتصال بعدة طرق فإن Zerion سوف يستعملهم جميعاً بالتوازي.</string>
@@ -657,7 +657,7 @@
   
   <string name="screenshot_message_1">مرحبا بوب! </string>
   
-  <string name="screenshot_message_2">مرحبا أليس! شكراً لأنّك أخبرتني عن Zerion (براير) !</string>
+  <string name="screenshot_message_2">مرحبا أليس! شكراً لأنّك أخبرتني عن Zerion !</string>
   
   <string name="screenshot_message_3">أهلاً وسهلاً، أتمنى أن يعجبك 😀</string>
 
@@ -1841,4 +1841,134 @@
 	<string name="vault_type_file">ملف</string>
 	<string name="vault_password_dialog_default_title">أدخل كلمة المرور</string>
 	<string name="vault_password_dialog_no_password">بلا كلمة مرور</string>
+	<string name="wallet_card_title">المحفظة</string>
+	<string name="wallet_card_summary">Bitcoin عبر Tor</string>
+	<string name="wallet_empty">لا توجد محافظ بعد</string>
+	<string name="wallet_add">إضافة محفظة</string>
+	<string name="wallet_create_new">إنشاء محفظة جديدة</string>
+	<string name="wallet_import_existing">استيراد عبارة الاسترداد</string>
+	<string name="wallet_name_hint">اسم المحفظة</string>
+	<string name="wallet_recovery_phrase_hint">عبارة الاسترداد (12 أو 24 كلمة)</string>
+	<string name="wallet_optional_password_hint">كلمة مرور المحفظة (اختياري)</string>
+	<string name="wallet_create">إنشاء</string>
+	<string name="wallet_import">استيراد</string>
+	<string name="wallet_delete">حذف المحفظة</string>
+	<string name="wallet_delete_confirm">إزالة هذه المحفظة نهائيًا من الخزنة؟ تأكد من أنك دوّنت عبارة الاسترداد الخاصة بها. لن تتأثر العملات.</string>
+	<string name="wallet_password_prompt">أدخل كلمة مرور هذه المحفظة</string>
+	<string name="wallet_balance">الرصيد</string>
+	<string name="wallet_receive">استلام</string>
+	<string name="wallet_send">إرسال</string>
+	<string name="wallet_refresh">تحديث</string>
+	<string name="wallet_receive_title">استلام Bitcoin</string>
+	<string name="wallet_receive_hint">شارك هذا العنوان لاستلام Bitcoin. يُستخدم عنوان جديد في كل مرة للحفاظ على الخصوصية.</string>
+	<string name="wallet_send_title">إرسال Bitcoin</string>
+	<string name="wallet_send_address_hint">عنوان المستلم (bc1…)</string>
+	<string name="wallet_send_amount_hint">المبلغ (BTC)</string>
+	<string name="wallet_send_max">إرسال الحد الأقصى</string>
+	<string name="wallet_send_fee">معدل الرسوم: %1$s sat/vB</string>
+	<string name="wallet_send_broadcast">إرسال</string>
+	<string name="wallet_history">المعاملات الأخيرة</string>
+	<string name="wallet_history_empty">لا توجد معاملات بعد</string>
+	<string name="wallet_sent">تم إرسال المعاملة: %1$s</string>
+	<string name="wallet_copy_address">نسخ العنوان</string>
+	<string name="wallet_address_copied">تم نسخ العنوان</string>
+	<string name="wallet_load_failed">تعذّر تحميل محافظك</string>
+	<string name="wallet_create_failed">تعذّر إنشاء المحفظة</string>
+	<string name="wallet_import_invalid">عبارة الاسترداد هذه غير صالحة</string>
+	<string name="wallet_delete_failed">تعذّر حذف المحفظة</string>
+	<string name="wallet_open_failed">تعذّر فتح المحفظة</string>
+	<string name="wallet_send_failed">تعذّر إرسال المعاملة</string>
+	<string name="wallet_network_failed">تعذّر الوصول إلى شبكة Bitcoin عبر Tor</string>
+	<string name="wallet_amount_invalid">أدخل مبلغًا صالحًا</string>
+	<string name="wallet_pending">قيد الانتظار</string>
+	<string name="wallet_confirmations">%1$d تأكيد</string>
+	<string name="wallet_received">مستلَم</string>
+	<string name="wallet_sent_label">مُرسَل</string>
+	<string name="wallet_backup">إظهار عبارة الاسترداد</string>
+	<string name="wallet_backup_title">عبارة الاسترداد</string>
+	<string name="wallet_backup_warning">دوّن هذه الكلمات واحتفظ بها دون اتصال بالإنترنت. أي شخص يراها يمكنه الاستيلاء على أموالك.</string>
+	<string name="wallet_password_required">كلمة مرور المحفظة مطلوبة</string>
+	<string name="wallet_password_confirm_hint">تأكيد كلمة المرور</string>
+	<string name="wallet_password_mismatch">كلمتا المرور غير متطابقتين</string>
+	<string name="wallet_send_fee_label">رسوم الشبكة</string>
+	<string name="wallet_fee_economy">اقتصادي</string>
+	<string name="wallet_fee_normal">عادي</string>
+	<string name="wallet_fee_priority">أولوية</string>
+	<string name="wallet_copy_phrase">نسخ</string>
+	<string name="wallet_phrase_copied">تم نسخ عبارة الاسترداد</string>
+	<string name="wallet_wrong_password">كلمة المرور غير صحيحة</string>
+	<string name="wallet_send_available">المتاح</string>
+	<string name="wallet_send_recipient">عنوان المستلم</string>
+	<string name="wallet_send_amount">المبلغ</string>
+	<string name="wallet_send_paste">لصق</string>
+	<string name="wallet_send_review">مراجعة</string>
+	<string name="wallet_send_confirm_title">تأكيد الإرسال</string>
+	<string name="wallet_send_to">إلى</string>
+	<string name="wallet_send_amount_label">المبلغ</string>
+	<string name="wallet_send_fee_estimate">رسوم الشبكة (تقديرية)</string>
+	<string name="wallet_send_total">الإجمالي</string>
+	<string name="wallet_send_all">كل الأموال المتاحة</string>
+	<string name="wallet_fee_economy_eta">~ ساعة واحدة</string>
+	<string name="wallet_fee_normal_eta">~ 30 دقيقة</string>
+	<string name="wallet_fee_priority_eta">~ 10 دقائق</string>
+	<string name="wallet_send_no_recipient">أدخل عنوان المستلم</string>
+	<string name="wallet_gate_title">المحفظة مقفلة</string>
+	<string name="wallet_gate_message">أدخل كلمة مرور الخزنة لفتح المحفظة.</string>
+	<string name="wallet_gate_hint">كلمة مرور الخزنة</string>
+	<string name="wallet_verifying">جارٍ التحقق…</string>
+	<string name="wallet_scan">مسح رمز QR</string>
+	<string name="wallet_scan_label">مسح</string>
+	<string name="wallet_balance_fiat">≈ %1$s</string>
+	<string name="wallet_send_switch_currency">تبديل العملة</string>
+	<string name="wallet_connecting_tor">جارٍ الاتصال عبر Tor…</string>
+	<string name="wallet_auth_setup_title">عيّن رمز PIN أو كلمة مرور للمحفظة</string>
+	<string name="wallet_auth_setup_message">هذا يحمي محافظك ويجب أن يكون مختلفًا عن كلمة مرور الخزنة.</string>
+	<string name="wallet_auth_verify_title">أدخل رمز PIN أو كلمة مرور المحفظة</string>
+	<string name="wallet_auth_verify_hint">رمز PIN أو كلمة مرور المحفظة</string>
+	<string name="wallet_auth_pin">رمز PIN</string>
+	<string name="wallet_auth_password">كلمة المرور</string>
+	<string name="wallet_auth_enter">رمز PIN أو كلمة مرور جديدة</string>
+	<string name="wallet_auth_confirm">تأكيد</string>
+	<string name="wallet_auth_set">تعيين</string>
+	<string name="wallet_auth_same_as_vault">يجب أن يكون هذا مختلفًا عن كلمة مرور الخزنة</string>
+	<string name="wallet_auth_too_short">قصير جدًا</string>
+	<string name="wallet_auth_mismatch">الإدخالان غير متطابقين</string>
+	<string name="wallet_settings_title">إعدادات المحفظة</string>
+	<string name="wallet_settings_currency">عملة العرض</string>
+	<string name="wallet_settings_nodes">خادم Bitcoin</string>
+	<string name="wallet_settings_rename">إعادة تسمية المحفظة</string>
+	<string name="wallet_settings_change_pw">تغيير كلمة مرور المحفظة</string>
+	<string name="wallet_node_add">إضافة خادم</string>
+	<string name="wallet_node_test">اختبار الاتصال</string>
+	<string name="wallet_node_remove">إزالة</string>
+	<string name="wallet_node_options">الخادم المحدد</string>
+	<string name="wallet_node_host">المضيف</string>
+	<string name="wallet_node_port">المنفذ</string>
+	<string name="wallet_node_default">افتراضي</string>
+	<string name="wallet_node_reachable">الخادم قابل للوصول</string>
+	<string name="wallet_node_unreachable">لم يستجب الخادم</string>
+	<string name="wallet_node_testing">جارٍ الاختبار عبر Tor…</string>
+	<string name="wallet_node_invalid">أدخل المضيف والمنفذ</string>
+	<string name="wallet_rename_title">إعادة تسمية المحفظة</string>
+	<string name="wallet_rename_hint">اسم المحفظة الجديد</string>
+	<string name="wallet_change_pw_title">تغيير كلمة مرور المحفظة</string>
+	<string name="wallet_change_pw_old">كلمة المرور الحالية</string>
+	<string name="wallet_change_pw_new">كلمة المرور الجديدة</string>
+	<string name="wallet_renamed">تمت إعادة تسمية المحفظة</string>
+	<string name="wallet_pw_changed">تم تغيير كلمة المرور</string>
+	<string name="wallet_send_bad_address">عنوان Bitcoin غير صالح</string>
+	<string name="wallet_receive_new">عنوان جديد</string>
+	<string name="wallet_node_hint">انقر على خادم لاستخدامه. اضغط مطولًا على خادم مخصص لإزالته.</string>
+	<string name="wallet_settings_sp">Silent Payments</string>
+	<string name="wallet_sp_intro">عنوان خاص قابل لإعادة الاستخدام. لا يمكن ربط المدفوعات إليه على السلسلة. يفحص الاكتشاف البيانات العامة عبر Tor؛ ولا تغادر مفاتيحك الجهاز أبدًا.</string>
+	<string name="wallet_sp_balance">تم اكتشاف: %1$s</string>
+	<string name="wallet_sp_scanned">تم الفحص حتى الكتلة %1$d</string>
+	<string name="wallet_sp_set_oracle">مصدر الفحص</string>
+	<string name="wallet_sp_scan">افحص الآن</string>
+	<string name="wallet_sp_move">نقل الأموال</string>
+	<string name="wallet_sp_no_oracle">عيّن مصدر فحص أولاً</string>
+	<string name="wallet_sp_oracle_hint">URL مصدر الفحص (خادم BIP352)</string>
+	<string name="wallet_sp_birthday_hint">كتلة البداية (اختياري)</string>
+	<string name="wallet_sp_scanning">جارٍ الفحص عبر Tor…</string>
+	<string name="wallet_sp_move_hint">عنوان Bitcoin لنقل الأموال إليه</string>
 </resources>

@@ -1,0 +1,22 @@
+# Payjoin native library — authoritative pinned inputs and artifact hashes.
+# The Gradle gate parses the "sha256 <abi>/<lib> <hex>" lines below.
+
+# --- pinned inputs ---
+# upstream_crate       payjoin/payjoin-ffi @ c07a35f3d99cd5e02e27bfe7faf1b519828a8ee2 (payjoin_ffi 0.22.1)
+# payjoin_protocol     payjoin/rust-payjoin @ 53a3187887e82925fc3f999fb73ab08caf8d1832 (via Cargo.lock, --locked)
+# bitcoin_ffi          bitcoindevkit/bitcoin-ffi @ 6b1d131
+# hpke                 bitcoin-hpke 0.13.0 (DHKEM secp256k1 + HKDF-SHA256 + ChaCha20Poly1305)
+# ohttp                bitcoin-ohttp 0.6.0
+# uniffi               0.29.1
+# rust_toolchain       1.91.1 (rust-toolchain.toml, exact)
+# cargo_ndk            4.1.2
+# android_ndk          27.1.12297006
+# platform_min_api     29
+# abis                 arm64-v8a, armeabi-v7a
+# profile              release, --locked
+# determinism_flags    -C codegen-units=1 -C strip=symbols -C debuginfo=0 + --remap-path-prefix (crate, CARGO_HOME, RUSTUP_HOME)
+# cargo_lock_crates    416
+
+# --- artifact hashes (reproducible, from two independent build directories) ---
+sha256 arm64-v8a/libpayjoin_ffi.so b20966aa8eb2de8fc3ed9d20bb10c7ffd9c2332446d38372682a5f4b38ef931d
+sha256 armeabi-v7a/libpayjoin_ffi.so c279aee79c6ead04af7cea611caecaa4f959a2580e696e1a90f7ade589e94939
