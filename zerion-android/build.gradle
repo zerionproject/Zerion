@@ -97,8 +97,8 @@ android {
     defaultConfig {
         minSdkVersion 29
         targetSdkVersion 36
-        versionCode 30500
-        versionName "3.0.5"
+        versionCode 30600
+        versionName "3.0.6"
         applicationId "com.professor.zerion"
         buildConfigField "String", "TorVersion", "\"$tor_version\""
 
@@ -306,7 +306,7 @@ dependencies {
     // force kotlin standard lib to latest version to prevent jetifier issues
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
     // JNA runtime for the Payjoin native library UniFFI bindings
-    implementation 'net.java.dev.jna:jna:5.14.0@aar'
+    implementation 'net.java.dev.jna:jna:5.17.0@aar'
     implementation "com.squareup.okhttp3:okhttp:$okhttp_version"
     implementation "org.jsoup:jsoup:$jsoup_version"
     implementation 'info.guardianproject.panic:panic:1.0'

@@ -1,0 +1,3 @@
+Maintenance release.
+
+Updates a bundled native library (JNA) so the app is robust on devices that use 16 KB memory pages. No functional changes.
