@@ -1,0 +1,3 @@
+Maintenance release.
+
+All native libraries are now built entirely from source, which lets Zerion be built and distributed by F-Droid. No functional changes: messaging, calls, the vault, and the wallets work exactly as in 3.0.4.
