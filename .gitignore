@@ -64,3 +64,16 @@ scripts/android_validators/
 scripts/protocol_validators/
 scripts/*_validators/
 
+
+# Native libraries are built from source, never committed (F-Droid requires
+# every binary to be buildable from source). Produced into jniLibs by the
+# reproducible build: libzmonero.so via packaging/monero-android (pinned
+# Monero), libpayjoin_ffi.so via zerion-android/native/payjoin. The
+# verify-*-native.gradle gates fail the build if a shipped ABI is missing.
+zerion-android/src/main/jniLibs/*/libzmonero.so
+zerion-android/src/main/jniLibs/*/libpayjoin_ffi.so
+# Orphaned desktop binaries (the desktop app lives in the Zerion-Desktop repo)
+zerion-desktop-ui/appResources/*/monero/monero-wallet-rpc
+zerion-desktop-ui/appResources/*/monero/monero-wallet-rpc.exe
+# Signing sidecar artifacts
+*.idsig
