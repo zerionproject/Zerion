@@ -285,7 +285,6 @@
   
   
   <string name="pref_language_title">भाषा और amp; क्षेत्र</string>
-  <string name="pref_language_changed">नई भाषा लागू करने के लिए ऐप पुनः आरंभ होगा।</string>
   <string name="pref_language_default">प्रणालीगत चूक</string>
   <string name="display_settings_title">प्रदर्शन</string>
   <string name="pref_theme_title">विषय</string>

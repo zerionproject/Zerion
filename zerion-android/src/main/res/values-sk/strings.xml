@@ -388,7 +388,6 @@
   <string name="change_profile_picture_failed_message">Je nám ľúto, ale pri aktualizácii vašej profilovej fotografie sa niečo pokazilo</string>
   
   <string name="pref_language_title">Jazyk a región</string>
-  <string name="pref_language_changed">Aplikácia sa reštartuje, aby sa použil nový jazyk.</string>
   <string name="pref_language_default">Predvolené systémom</string>
   <string name="display_settings_title">Zobrazenie</string>
   <string name="pref_theme_title">Téma</string>

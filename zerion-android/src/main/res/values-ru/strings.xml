@@ -388,7 +388,6 @@
   <string name="change_profile_picture_failed_message">Нам очень жаль, но что-то пошло не так во время обновления изображения вашего профиля.</string>
   
   <string name="pref_language_title">Язык и регион</string>
-  <string name="pref_language_changed">Приложение перезапустится, чтобы применить новый язык.</string>
   <string name="pref_language_default">По умолчанию</string>
   <string name="display_settings_title">Вид</string>
   <string name="pref_theme_title">Тема</string>

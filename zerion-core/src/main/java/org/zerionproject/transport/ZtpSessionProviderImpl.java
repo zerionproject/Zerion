@@ -26,6 +26,7 @@ import org.zerionproject.wire.ZwfStreamCounter;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.concurrent.Executor;
 
 import javax.annotation.Nullable;
@@ -125,8 +126,12 @@ public class ZtpSessionProviderImpl
 		ContactId cid = new ContactId(contactId);
 		PcsSessionState send = pcsStateManager.loadSendState(cid);
 		if (send == null) return;
+		Mode3FullState stripped = new Mode3FullState(
+				state.getTheirActivePqPk(), state.getOurActiveKeyPair(),
+				new LinkedHashMap<>(), state.getMessageCounter());
 		try {
-			pcsStateManager.saveSendState(cid, send.withMode3FullState(state));
+			pcsStateManager.saveSendState(cid,
+					send.withMode3FullState(stripped));
 		} catch (PcsPersistenceException ignored) {
 		}
 	}

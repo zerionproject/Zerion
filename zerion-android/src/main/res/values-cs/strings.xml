@@ -388,7 +388,6 @@
   <string name="change_profile_picture_failed_message">Omlouváme se, ale něco se pokazilo při aktualizaci vašeho profilového obrázku</string>
   
   <string name="pref_language_title">Jazyk a oblast</string>
-  <string name="pref_language_changed">Aplikace se restartuje, aby se použil nový jazyk.</string>
   <string name="pref_language_default">Podle systému</string>
   <string name="display_settings_title">Zobrazení</string>
   <string name="pref_theme_title">Motiv</string>

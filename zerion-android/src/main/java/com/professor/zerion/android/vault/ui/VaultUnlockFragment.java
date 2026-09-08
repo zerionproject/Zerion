@@ -142,7 +142,9 @@ public class VaultUnlockFragment extends BaseFragment {
 		viewModel.getVaultState().observe(getViewLifecycleOwner(), state -> {
 			if (state == VaultViewModel.VaultState.UNLOCKED) {
 				VaultDashboardFragment fragment = VaultDashboardFragment.newInstance();
-				((BaseFragment.BaseFragmentListener) requireActivity()).showNextFragment(fragment);
+				com.professor.zerion.android.util.UiUtils.showFragment(
+						getParentFragmentManager(), fragment,
+						fragment.getUniqueTag(), false);
 			}
 		});
 	}

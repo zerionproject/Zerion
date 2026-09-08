@@ -36,6 +36,7 @@ public class ZwfStreamCounter {
 	private final Object lock = new Object();
 	private final Map<Long, Long> cache = new HashMap<>();
 	private final Map<Integer, NavigableSet<Long>> recvSeen = new HashMap<>();
+	private final Map<Integer, Long> startupRecvFloor = new HashMap<>();
 
 	public ZwfStreamCounter(StreamCounterStore store) {
 		if (store == null) throw new NullPointerException();
@@ -87,6 +88,8 @@ public class ZwfStreamCounter {
 			long key = key(contactId, DIRECTION_RECV);
 			long hw = current(key, contactId, DIRECTION_RECV);
 			if (streamId <= hw - REPLAY_WINDOW_SIZE) return false;
+			Long floor = startupRecvFloor.get(contactId);
+			if (floor != null && streamId <= floor) return false;
 			NavigableSet<Long> seen = recvSeen.get(contactId);
 			if (seen == null) {
 				seen = new TreeSet<>();
@@ -119,6 +122,9 @@ public class ZwfStreamCounter {
 		if (cached != null) return cached;
 		long loaded = store.loadHighWater(contactId, direction);
 		cache.put(key, loaded);
+		if (direction == DIRECTION_RECV && loaded > 0) {
+			startupRecvFloor.put(contactId, loaded);
+		}
 		return loaded;
 	}
 

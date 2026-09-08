@@ -378,7 +378,6 @@
   <string name="change_profile_picture_failed_message">Spiacenti, qualcosa è andato storto aggiornando la tua foto del profilo.</string>
   
   <string name="pref_language_title">Lingua &amp; regione</string>
-  <string name="pref_language_changed">L\'app si riavvierà per applicare la nuova lingua.</string>
   <string name="pref_language_default">Default del sistema</string>
   <string name="display_settings_title">Visualizza</string>
   <string name="pref_theme_title">Tema</string>

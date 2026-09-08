@@ -10,6 +10,7 @@ import org.zerionproject.core.api.plugin.TransportId;
 import org.zerionproject.core.api.plugin.duplex.DuplexPlugin;
 import org.zerionproject.core.api.plugin.duplex.DuplexPluginFactory;
 import org.zerionproject.core.api.system.WakefulIoExecutor;
+import org.zerionproject.core.plugin.tor.B4OnionRotation;
 import org.zerionproject.core.plugin.tor.TorRendezvousCryptoImpl;
 
 import java.util.concurrent.Executor;
@@ -43,13 +44,15 @@ public class ZtpDuplexPluginFactory implements DuplexPluginFactory {
 	private final Provider<ZtpTorTransport> transport;
 	private final Provider<ZtpPollerFactory> pollerFactory;
 	private final CryptoComponent crypto;
+	private final Provider<B4OnionRotation> b4OnionRotation;
 
 	@Inject
 	public ZtpDuplexPluginFactory(@IoExecutor Executor ioExecutor,
 			@WakefulIoExecutor Executor wakefulIoExecutor,
 			SocketFactory socketFactory, TorWrapper tor,
 			Provider<ZtpTorTransport> transport,
-			Provider<ZtpPollerFactory> pollerFactory, CryptoComponent crypto) {
+			Provider<ZtpPollerFactory> pollerFactory, CryptoComponent crypto,
+			Provider<B4OnionRotation> b4OnionRotation) {
 		this.ioExecutor = ioExecutor;
 		this.wakefulIoExecutor = wakefulIoExecutor;
 		this.socketFactory = socketFactory;
@@ -57,6 +60,7 @@ public class ZtpDuplexPluginFactory implements DuplexPluginFactory {
 		this.transport = transport;
 		this.pollerFactory = pollerFactory;
 		this.crypto = crypto;
+		this.b4OnionRotation = b4OnionRotation;
 	}
 
 	@Override
@@ -75,6 +79,7 @@ public class ZtpDuplexPluginFactory implements DuplexPluginFactory {
 		ZtpPoller poller = pollerFactory.get().create(torTransport);
 		return new ZtpDuplexPlugin(ioExecutor, wakefulIoExecutor, socketFactory,
 				tor, torTransport, poller,
-				new TorRendezvousCryptoImpl(crypto), callback);
+				new TorRendezvousCryptoImpl(crypto), callback,
+				b4OnionRotation.get());
 	}
 }

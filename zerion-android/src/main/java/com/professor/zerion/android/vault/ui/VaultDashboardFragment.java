@@ -14,6 +14,7 @@ import android.widget.TextView;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.fragment.BaseFragment;
+import com.professor.zerion.android.util.UiUtils;
 
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
@@ -77,22 +78,36 @@ public class VaultDashboardFragment extends BaseFragment {
 		viewModel = new ViewModelProvider(requireActivity(), viewModelFactory)
 				.get(VaultViewModel.class);
 
-		checkVaultState();
-
 		setupClickListeners();
 		observeViewModel();
 
 		animateCardsEntrance();
 	}
 
+	@Override
+	public void onResume() {
+		super.onResume();
+		checkVaultState();
+	}
+
 	private void checkVaultState() {
 		viewModel.refreshVaultState();
 		VaultViewModel.VaultState currentState = viewModel.getVaultState().getValue();
 
+		boolean gated = currentState == VaultViewModel.VaultState.NOT_CREATED
+				|| currentState == VaultViewModel.VaultState.LOCKED;
+		View root = getView();
+		if (root != null) {
+			root.setVisibility(gated ? View.INVISIBLE : View.VISIBLE);
+		}
 		if (currentState == VaultViewModel.VaultState.NOT_CREATED) {
-			showNextFragment(VaultOnboardingFragment.newInstance());
+			VaultOnboardingFragment f = VaultOnboardingFragment.newInstance();
+			UiUtils.showFragment(getParentFragmentManager(), f,
+					f.getUniqueTag(), false);
 		} else if (currentState == VaultViewModel.VaultState.LOCKED) {
-			showNextFragment(VaultUnlockFragment.newInstance());
+			VaultUnlockFragment f = VaultUnlockFragment.newInstance();
+			UiUtils.showFragment(getParentFragmentManager(), f,
+					f.getUniqueTag(), false);
 		}
 	}
 

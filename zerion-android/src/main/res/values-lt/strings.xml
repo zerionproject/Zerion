@@ -388,7 +388,6 @@
   <string name="change_profile_picture_failed_message">Atleiskite, bet atnaujinant jūsų profilio paveikslą kažkas nutiko</string>
   
   <string name="pref_language_title">Kalba ir regionas</string>
-  <string name="pref_language_changed">Programa bus paleista iš naujo, kad būtų pritaikyta nauja kalba.</string>
   <string name="pref_language_default">Sistemos numatytoji</string>
   <string name="display_settings_title">Rodinys</string>
   <string name="pref_theme_title">Apipavidalinimas</string>

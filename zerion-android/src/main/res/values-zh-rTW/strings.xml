@@ -357,7 +357,6 @@
   <string name="change_profile_picture_failed_message">抱歉，更新個人圖像時出了一點問題</string>
   
   <string name="pref_language_title">語言 &amp; 區域</string>
-  <string name="pref_language_changed">應用程式將重新啟動以套用新語言。</string>
   <string name="pref_language_default">系統默認</string>
   <string name="display_settings_title">顯示</string>
   <string name="pref_theme_title">主題</string>

@@ -224,7 +224,6 @@
 
   
   <string name="pref_language_title">Kieli &amp; alue</string>
-  <string name="pref_language_changed">Sovellus käynnistyy uudelleen ottaakseen uuden kielen käyttöön.</string>
   <string name="pref_language_default">Järjestelmäoletus</string>
   <string name="display_settings_title">Näytä</string>
   <string name="pref_theme_title">Teema</string>

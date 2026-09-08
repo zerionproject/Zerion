@@ -378,7 +378,6 @@
   <string name="change_profile_picture_failed_message">Ne pare rău, dar ceva nu a funcționat în momentul actualizării pozei de profil</string>
   
   <string name="pref_language_title">Limbă și regiune</string>
-  <string name="pref_language_changed">Aplicația va reporni pentru a aplica noua limbă.</string>
   <string name="pref_language_default">Setări implicite sistem</string>
   <string name="display_settings_title">Afișaj</string>
   <string name="pref_theme_title">Temă</string>

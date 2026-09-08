@@ -21,7 +21,10 @@ import org.junit.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.lang.reflect.Constructor;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.zerionproject.wire.ZwfConstants.FRAME_LENGTH;
 import static org.zerionproject.wire.ZwfConstants.STREAM_HEADER_LENGTH;
@@ -313,5 +316,128 @@ public class ZwfMode3FullStreamIntegrationTest {
 		} catch (FormatException expected) {
 			// good
 		}
+	}
+
+	/**
+	 * Once the receive direction has accepted a frame carrying a real ML-KEM
+	 * contribution, a later frame with the all-zero sentinel ciphertext must be
+	 * rejected: an attacker holding the symmetric chain state must not be able
+	 * to keep the receiver on a branch that never absorbs fresh PQ entropy.
+	 */
+	@Test
+	public void postBootstrapZeroKemCiphertextIsRejected() throws Exception {
+		SecretKey rootKey = randomKey();
+		SecretKey streamHeaderKey = randomKey();
+		byte[] tag = randomBytes(TAG_LENGTH);
+		Mode3FullState receiverM3f = mode3FullRatchet.createInitialState();
+		Mode3FullState senderWithKey = mode3FullRatchet.createInitialState()
+				.withRecvAdvance(
+						receiverM3f.getOurActiveKeyPair().getEncapsulationKey());
+		AtomicReference<Mode3FullState> injected = new AtomicReference<>();
+
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		ZwfMode3FullStreamEncrypter enc = new ZwfMode3FullStreamEncrypter(
+				out, cipher(), ratchet, mode3FullRatchet, 1L, tag,
+				randomBytes(24), streamHeaderKey,
+				stateWith(rootKey, senderWithKey), null,
+				injected::get, null, null, true);
+		enc.writeFrame("real pq frame".getBytes(), 13, false);
+		injected.set(mode3FullRatchet.createInitialState());
+		enc.writeFrame("sentinel frame".getBytes(), 14, true);
+
+		ZwfMode3FullStreamDecrypter dec = new ZwfMode3FullStreamDecrypter(
+				new ByteArrayInputStream(out.toByteArray()), cipher(), ratchet,
+				mode3FullRatchet, null, tag, 0L, streamHeaderKey,
+				stateWith(rootKey, receiverM3f), null);
+		byte[] buf = new byte[FRAME_LENGTH];
+		assertTrue(dec.readFrame(buf) > 0);
+		try {
+			dec.readFrame(buf);
+			fail("expected FormatException on post-bootstrap zero sentinel");
+		} catch (FormatException expected) {
+			// good
+		}
+	}
+
+	/**
+	 * The sentinel is legitimate only during bootstrap: it is accepted before
+	 * the first real ML-KEM contribution, and permanently rejected afterwards.
+	 */
+	@Test
+	public void pqConfirmationIsMonotonicPerReceiveDirection() throws Exception {
+		SecretKey rootKey = randomKey();
+		SecretKey streamHeaderKey = randomKey();
+		byte[] tag = randomBytes(TAG_LENGTH);
+		Mode3FullState receiverM3f = mode3FullRatchet.createInitialState();
+		Mode3FullState senderNoKey = mode3FullRatchet.createInitialState();
+		Mode3FullState senderWithKey = senderNoKey.withRecvAdvance(
+				receiverM3f.getOurActiveKeyPair().getEncapsulationKey());
+		AtomicReference<Mode3FullState> injected = new AtomicReference<>();
+
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		ZwfMode3FullStreamEncrypter enc = new ZwfMode3FullStreamEncrypter(
+				out, cipher(), ratchet, mode3FullRatchet, 1L, tag,
+				randomBytes(24), streamHeaderKey,
+				stateWith(rootKey, senderNoKey), null,
+				injected::get, null, null, true);
+		enc.writeFrame("bootstrap sentinel".getBytes(), 18, false);
+		injected.set(senderWithKey);
+		enc.writeFrame("first real pq".getBytes(), 13, false);
+		injected.set(mode3FullRatchet.createInitialState());
+		enc.writeFrame("late sentinel".getBytes(), 13, true);
+
+		ZwfMode3FullStreamDecrypter dec = new ZwfMode3FullStreamDecrypter(
+				new ByteArrayInputStream(out.toByteArray()), cipher(), ratchet,
+				mode3FullRatchet, null, tag, 0L, streamHeaderKey,
+				stateWith(rootKey, receiverM3f), null);
+		byte[] buf = new byte[FRAME_LENGTH];
+		assertTrue("bootstrap sentinel accepted", dec.readFrame(buf) > 0);
+		assertTrue("first real PQ frame accepted", dec.readFrame(buf) > 0);
+		try {
+			dec.readFrame(buf);
+			fail("expected FormatException on sentinel after PQ confirmation");
+		} catch (FormatException expected) {
+			// good
+		}
+	}
+
+	/**
+	 * A frame whose body fails authentication must not publish the candidate
+	 * Mode 3-Full state to the shared cell: only fully committed frames may
+	 * advance what the send side and close-time persistence can observe.
+	 */
+	@Test
+	public void rejectedFrameDoesNotPublishMode3FullState() throws Exception {
+		SecretKey rootKey = randomKey();
+		SecretKey streamHeaderKey = randomKey();
+		byte[] tag = randomBytes(TAG_LENGTH);
+		Pair p = hybridPair(rootKey);
+
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		ZwfMode3FullStreamEncrypter enc = new ZwfMode3FullStreamEncrypter(
+				out, cipher(), ratchet, mode3FullRatchet, 1L, tag,
+				randomBytes(24), streamHeaderKey, p.sender, null);
+		enc.writeFrame("good frame".getBytes(), 10, false);
+		enc.writeFrame("bad frame".getBytes(), 9, true);
+		byte[] bytes = out.toByteArray();
+		bytes[bytes.length - 100] ^= 0x01;
+
+		List<Mode3FullState> published = new ArrayList<>();
+		ZwfMode3FullStreamDecrypter dec = new ZwfMode3FullStreamDecrypter(
+				new ByteArrayInputStream(bytes), cipher(), ratchet,
+				mode3FullRatchet, null, tag, 0L, streamHeaderKey, p.receiver,
+				null, null, published::add, null, true);
+		byte[] buf = new byte[FRAME_LENGTH];
+		assertTrue(dec.readFrame(buf) > 0);
+		assertEquals("the accepted frame publishes exactly once", 1,
+				published.size());
+		try {
+			dec.readFrame(buf);
+			fail("expected FormatException on tampered body");
+		} catch (FormatException expected) {
+			// good
+		}
+		assertEquals("the rejected frame must not publish state", 1,
+				published.size());
 	}
 }

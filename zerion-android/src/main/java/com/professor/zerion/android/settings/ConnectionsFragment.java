@@ -686,7 +686,7 @@ public class ConnectionsFragment extends Fragment {
 			try {
 				b4OnionRotation.forceRotate();
 				newOnion = b4OnionRotation.getAliceNextOnion();
-				success = true;
+				success = newOnion != null;
 			} catch (DbException ignored) {
 			}
 			boolean ok = success;

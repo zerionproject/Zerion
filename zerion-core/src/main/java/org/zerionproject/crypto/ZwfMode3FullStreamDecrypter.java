@@ -85,6 +85,7 @@ public class ZwfMode3FullStreamDecrypter {
 	private long frameNumber;
 	private boolean finalFrame;
 	private boolean streamStartRead;
+	private boolean pqConfirmedRecv;
 
 	public ZwfMode3FullStreamDecrypter(InputStream in, AuthenticatedCipher cipher,
 			PcsRatchet ratchet, Mode3FullRatchet mode3FullRatchet,
@@ -139,6 +140,7 @@ public class ZwfMode3FullStreamDecrypter {
 		this.frameNumber = 0;
 		this.finalFrame = false;
 		this.streamStartRead = false;
+		this.pqConfirmedRecv = false;
 	}
 
 	/**
@@ -195,6 +197,8 @@ public class ZwfMode3FullStreamDecrypter {
 
 			KpId kpId = parseKpId(m3fHeader.getKpId());
 			bodyMK = classicalMK;
+			Mode3FullState pendingM3f = null;
+			boolean pqSecretMixed = false;
 			if (directionLock != null) directionLock.lock();
 			try {
 				Mode3FullState m3fState = recvState.getMode3FullState();
@@ -207,7 +211,6 @@ public class ZwfMode3FullStreamDecrypter {
 								m3fState.getTheirActivePqPk(),
 								fresh.getOurActiveKeyPair(),
 								fresh.getRecentKeyPairs(), mergedCounter);
-						recvState = recvState.withMode3FullState(m3fState);
 					}
 				}
 				if (m3fState != null) {
@@ -217,14 +220,14 @@ public class ZwfMode3FullStreamDecrypter {
 								m3fState, kpId, m3fHeader.getKemCiphertext(),
 								m3fHeader.getPkAdvertise());
 						ss = pq.getSharedSecret();
-						recvState = recvState.withMode3FullState(pq.getNewState());
-						if (m3fCallback != null) {
-							m3fCallback.accept(pq.getNewState());
-						}
+						pendingM3f = pq.getNewState();
 					} catch (PcsException | RuntimeException e) {
 						throw new FormatException();
 					}
+					if (ss == null && pqConfirmedRecv)
+						throw new FormatException();
 					if (ss != null) {
+						pqSecretMixed = true;
 						bodyMK = mode3FullRatchet.deriveHybridMessageKey(
 								classicalMK, ss);
 						SecretKey mixed =
@@ -246,6 +249,17 @@ public class ZwfMode3FullStreamDecrypter {
 			for (int i = 0; i < paddingLength; i++) {
 				if (bodyPlain[actualPayloadLength + i] != 0)
 					throw new FormatException();
+			}
+
+			if (pendingM3f != null) {
+				if (directionLock != null) directionLock.lock();
+				try {
+					recvState = recvState.withMode3FullState(pendingM3f);
+					if (m3fCallback != null) m3fCallback.accept(pendingM3f);
+				} finally {
+					if (directionLock != null) directionLock.unlock();
+				}
+				if (pqSecretMixed) pqConfirmedRecv = true;
 			}
 
 			// Does not affect this frame's key, which comes from the stream chain.

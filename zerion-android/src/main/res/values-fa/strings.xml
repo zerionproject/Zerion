@@ -360,7 +360,6 @@
   <string name="change_profile_picture_failed_message">تاسفیم اما هنگام بروزرسانی تصویر نمایه شما مشکلی رخ داد.</string>
   
   <string name="pref_language_title">زبان و منطقه</string>
-  <string name="pref_language_changed">برنامه برای اعمال زبان جدید مجدداً راه‌اندازی می‌شود.</string>
   <string name="pref_language_default">پیش فرض سیستم</string>
   <string name="display_settings_title">نمایش</string>
   <string name="pref_theme_title">قالب</string>

@@ -369,7 +369,6 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   <string name="change_profile_picture_failed_message">Na ndjeni, por diç shkoi ters me përditësimin e fotos së profilit tuaj</string>
   
   <string name="pref_language_title">Gjuhë &amp; rajon</string>
-  <string name="pref_language_changed">Aplikacioni do të riniset për të zbatuar gjuhën e re.</string>
   <string name="pref_language_default">Parazgjedhje sistemi</string>
   <string name="display_settings_title">Shfaqje</string>
   <string name="pref_theme_title">Temë</string>

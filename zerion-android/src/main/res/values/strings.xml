@@ -66,7 +66,7 @@
 	<string name="i2p_direct_reseed_title">Bootstrap without Tor</string>
 	<string name="i2p_direct_reseed_summary">Only if Tor is blocked where you are</string>
 	<string name="i2p_direct_reseed_warning_title">Start I2P without Tor?</string>
-	<string name="i2p_direct_reseed_warning_message">Turn this on only if Tor is blocked and cannot connect where you are. If Tor still fails to connect, Zerion will contact a small set of known I2P bootstrap servers directly, one time, over HTTPS with signature checks. That one connection reveals to those servers that your device uses I2P. After it succeeds, I2P runs on its own and Zerion keeps using Tor whenever Tor works. Leave this off if you are not being censored.</string>
+	<string name="i2p_direct_reseed_warning_message">Turn this on only if Tor is blocked and cannot connect where you are. While this stays on, whenever Tor cannot connect at I2P startup, Zerion will contact a small set of known I2P bootstrap servers directly over HTTPS with signature checks. Each such connection reveals to those servers that your device uses I2P. After a successful bootstrap, I2P runs on its own and Zerion keeps using Tor whenever Tor works. This permission stays on until you turn it off. Leave it off if you are not being censored.</string>
 	<string name="i2p_direct_reseed_warning_confirm">Allow direct bootstrap</string>
 	<string name="settings_section_mesh">OFFLINE MESH</string>
 	<string name="mesh_toggle_title">Offline mesh</string>
@@ -1196,7 +1196,7 @@
 
 	<!-- Settings Display -->
 	<string name="pref_language_title">Language &amp; region</string>
-	<string name="pref_language_changed">The app will restart to apply the new language.</string>
+	<string name="pref_language_changed">The app will reload to apply the new language.</string>
 	<string name="pref_language_default">System default</string>
 	<string name="invite_friends_title">Invite Friends</string>
 	<string name="invite_friends_summary">Share Zerion with people you trust</string>

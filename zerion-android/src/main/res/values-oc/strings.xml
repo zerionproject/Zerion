@@ -298,7 +298,6 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   
   
   <string name="pref_language_title">Lenga &amp; region</string>
-  <string name="pref_language_changed">L\'aplicacion se reaviarà per aplicar la lenga novèla.</string>
   <string name="pref_language_default">Sistèma per defaut</string>
   <string name="display_settings_title">Afichatge</string>
   <string name="pref_theme_title">Tèma</string>

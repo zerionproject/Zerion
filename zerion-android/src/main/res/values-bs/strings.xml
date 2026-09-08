@@ -259,7 +259,6 @@
   <!--Settings Profile Picture-->
   <!--Settings Display-->
   <string name="pref_language_title">Jezik i regija</string>
-  <string name="pref_language_changed">Aplikacija će se ponovo pokrenuti kako bi se primijenio novi jezik.</string>
   <string name="pref_language_default">Podrazumjevane postavke sistema</string>
   <string name="display_settings_title">Ekran</string>
   <string name="pref_theme_title">Tema</string>

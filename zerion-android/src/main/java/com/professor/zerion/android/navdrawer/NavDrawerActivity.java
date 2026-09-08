@@ -37,6 +37,8 @@ import com.professor.zerion.android.settings.SettingsActivity;
 import com.professor.zerion.android.donation.DonationManager;
 import com.professor.zerion.android.vault.VaultManager;
 import com.professor.zerion.android.vault.ui.VaultDashboardFragment;
+import com.professor.zerion.android.vault.ui.VaultOnboardingFragment;
+import com.professor.zerion.android.vault.ui.VaultUnlockFragment;
 import com.professor.zerion.android.view.AuthorView;
 import com.professor.zerion.android.widget.DonationDialogFragment;
 import com.google.android.material.imageview.ShapeableImageView;
@@ -297,6 +299,10 @@ public class NavDrawerActivity extends ZerionActivity implements
 	private void switchTab(int tab, boolean forceSwitch) {
 		if (currentTab == tab && !forceSwitch) return;
 
+		if (currentTab == TAB_VAULT && tab != TAB_VAULT
+				&& vaultManager.isUnlocked()) {
+			vaultManager.lockVault();
+		}
 		currentTab = tab;
 		updateTabUI();
 
@@ -317,7 +323,13 @@ public class NavDrawerActivity extends ZerionActivity implements
 				break;
 			case TAB_VAULT:
 				toolbarTitle.setText(R.string.vault_button);
-				fragment = VaultDashboardFragment.newInstance();
+				if (!vaultManager.vaultExists()) {
+					fragment = VaultOnboardingFragment.newInstance();
+				} else if (!vaultManager.isUnlocked()) {
+					fragment = VaultUnlockFragment.newInstance();
+				} else {
+					fragment = VaultDashboardFragment.newInstance();
+				}
 				break;
 			default:
 				return;

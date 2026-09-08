@@ -309,7 +309,6 @@
   
   
   <string name="pref_language_title">Language &amp; region</string>
-  <string name="pref_language_changed">새 언어를 적용하기 위해 앱이 다시 시작됩니다.</string>
   <string name="pref_language_default">기본 설정</string>
   <string name="display_settings_title">화면</string>
   <string name="pref_theme_title">테마</string>

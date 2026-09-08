@@ -350,7 +350,6 @@
   <string name="change_profile_picture_failed_message">Því miður, eitthvað fór úrskeiðis við að uppfæra auðkennismyndina þína.</string>
   
   <string name="pref_language_title">Tungumál og landsvæði</string>
-  <string name="pref_language_changed">Forritið mun endurræsast til að beita nýja tungumálinu.</string>
   <string name="pref_language_default">Sjálfgefið í kerfinu</string>
   <string name="display_settings_title">Birting</string>
   <string name="pref_theme_title">Þema</string>

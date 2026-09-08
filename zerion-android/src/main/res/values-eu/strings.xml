@@ -301,7 +301,6 @@
   
   
   <string name="pref_language_title">Hizkuntza eta eskualdea</string>
-  <string name="pref_language_changed">Aplikazioa berrabiaraziko da hizkuntza berria aplikatzeko.</string>
   <string name="pref_language_default">Sistemak lehenetsitakoa</string>
   <string name="display_settings_title">Bistaratzea</string>
   <string name="pref_theme_title">Gaia</string>

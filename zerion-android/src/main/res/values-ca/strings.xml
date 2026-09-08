@@ -365,7 +365,6 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
   <string name="change_profile_picture_failed_message">Alguna cosa ha fallat a l\'actualitzar la vostra foto de perfil</string>
   
   <string name="pref_language_title">Llengua i regió</string>
-  <string name="pref_language_changed">L\'aplicació es reiniciarà per aplicar el nou idioma.</string>
   <string name="pref_language_default">Valor per defecte del sistema</string>
   <string name="display_settings_title">Visualització</string>
   <string name="pref_theme_title">Tema</string>

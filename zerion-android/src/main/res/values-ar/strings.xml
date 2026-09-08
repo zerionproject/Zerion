@@ -409,7 +409,6 @@
   <string name="change_profile_picture_failed_message">عذرًا، ولكن حدث خطأ ما أثناء تحديث صورة ملفك الشخصي</string>
   
   <string name="pref_language_title">اللغة &amp; المنطقة</string>
-  <string name="pref_language_changed">سيتم إعادة تشغيل التطبيق لتطبيق اللغة الجديدة.</string>
   <string name="pref_language_default">النظام الإفتراضي</string>
   <string name="display_settings_title">العرض</string>
   <string name="pref_theme_title">السمة</string>

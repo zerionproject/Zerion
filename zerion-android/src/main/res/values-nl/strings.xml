@@ -314,7 +314,6 @@
   <string name="change_profile_picture_failed_message">Excuses, maar er is iets misgegaan met het updaten van je profielfoto</string>
   
   <string name="pref_language_title">Taal &amp; regio</string>
-  <string name="pref_language_changed">De app wordt opnieuw opgestart om de nieuwe taal toe te passen.</string>
   <string name="pref_language_default">Systeemstandaard</string>
   <string name="display_settings_title">Weergeven</string>
   <string name="pref_theme_title">Thema</string>

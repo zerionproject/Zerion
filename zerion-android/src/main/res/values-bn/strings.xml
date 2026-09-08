@@ -368,7 +368,6 @@
   <string name="change_profile_picture_failed_message">আমরা দুঃখিত, তবে আপনার প্রোফাইল ছবি আপডেট করার সময় কিছু সমস্যা হয়েছে</string>
   
   <string name="pref_language_title">ভাষা &amp; অঞ্চল</string>
-  <string name="pref_language_changed">নতুন ভাষা প্রয়োগ করতে অ্যাপটি পুনরায় চালু হবে।</string>
   <string name="pref_language_default">সিস্টেমের ডিফল্ট</string>
   <string name="display_settings_title">প্রদর্শন</string>
   <string name="pref_theme_title">বিষয়</string>

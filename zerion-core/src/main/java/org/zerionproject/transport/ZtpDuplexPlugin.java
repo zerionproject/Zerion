@@ -21,6 +21,7 @@ import org.zerionproject.core.api.properties.TransportProperties;
 import org.zerionproject.core.api.rendezvous.KeyMaterialSource;
 import org.zerionproject.core.api.rendezvous.RendezvousEndpoint;
 import org.zerionproject.core.api.settings.Settings;
+import org.zerionproject.core.plugin.tor.B4OnionRotation;
 import org.zerionproject.core.plugin.tor.ChannelOnionAdapter;
 import org.zerionproject.core.plugin.tor.TorRendezvousCrypto;
 
@@ -81,6 +82,7 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter {
 	private final ZtpPoller poller;
 	private final TorRendezvousCrypto torRendezvousCrypto;
 	private final PluginCallback callback;
+	private final B4OnionRotation b4OnionRotation;
 	private final AtomicBoolean used = new AtomicBoolean(false);
 
 	@Nullable
@@ -89,7 +91,8 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter {
 	ZtpDuplexPlugin(Executor ioExecutor, Executor wakefulIoExecutor,
 			SocketFactory socketFactory, TorWrapper tor,
 			ZtpTorTransport transport, ZtpPoller poller,
-			TorRendezvousCrypto torRendezvousCrypto, PluginCallback callback) {
+			TorRendezvousCrypto torRendezvousCrypto, PluginCallback callback,
+			B4OnionRotation b4OnionRotation) {
 		this.ioExecutor = ioExecutor;
 		this.wakefulIoExecutor = wakefulIoExecutor;
 		this.socketFactory = socketFactory;
@@ -98,6 +101,7 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter {
 		this.poller = poller;
 		this.torRendezvousCrypto = torRendezvousCrypto;
 		this.callback = callback;
+		this.b4OnionRotation = b4OnionRotation;
 		tor.setObserver(new Observer() {
 
 			@Override
@@ -174,11 +178,38 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter {
 		TransportProperties props = new TransportProperties();
 		props.put(PROP_ONION_V3, hs.onion);
 		callback.mergeLocalProperties(props);
+		b4OnionRotation.bindAdapter(new B4OnionRotation.B4TorAdapter() {
+			@Override
+			public HiddenServiceProperties publishHiddenService(
+					@Nullable String privKey) throws IOException {
+				return tor.publishHiddenService(transport.getLocalPort(),
+						REMOTE_ONION_PORT, privKey);
+			}
+
+			@Override
+			public void removeHiddenService(String onion) throws IOException {
+				tor.removeHiddenService(onion);
+			}
+
+			@Override
+			public void updateTorCurrentPrivKey(String newPrivKey) {
+				Settings updated = new Settings();
+				updated.put(HS_PRIVATE_KEY_V3, newPrivKey);
+				callback.mergeSettings(updated);
+			}
+
+			@Override
+			public void mergeTorLocalProperties(TransportProperties p) {
+				callback.mergeLocalProperties(p);
+			}
+		});
+		b4OnionRotation.startPeriodicEvaluation();
 		poller.start();
 	}
 
 	@Override
 	public void stop() throws PluginException {
+		b4OnionRotation.shutdown();
 		poller.stop();
 		try {
 			transport.stop();

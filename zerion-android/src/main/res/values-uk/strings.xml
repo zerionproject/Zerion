@@ -385,7 +385,6 @@
   <string name="change_profile_picture_failed_message">Перепрошуємо, щось пішло не так при оновленні вашого зображення профілю</string>
   
   <string name="pref_language_title">Мова &amp; регіон</string>
-  <string name="pref_language_changed">Додаток перезапуститься, щоб застосувати нову мову.</string>
   <string name="pref_language_default">Усталені в системі</string>
   <string name="display_settings_title">Дисплей</string>
   <string name="pref_theme_title">Тема</string>

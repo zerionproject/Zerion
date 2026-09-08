@@ -281,7 +281,6 @@
   <!--Settings Profile Picture-->
   <!--Settings Display-->
   <string name="pref_language_title">Dil və region</string>
-  <string name="pref_language_changed">Yeni dili tətbiq etmək üçün tətbiq yenidən başladılacaq.</string>
   <string name="pref_language_default">Sistemdə olduğu kimi </string>
   <string name="display_settings_title">Görüntü</string>
   <string name="pref_theme_title">Tema</string>

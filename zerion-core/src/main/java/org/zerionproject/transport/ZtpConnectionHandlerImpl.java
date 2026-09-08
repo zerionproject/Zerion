@@ -16,6 +16,7 @@ import java.io.OutputStream;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.zerionproject.wire.ZwfConstants.TAG_LENGTH;
 
@@ -48,9 +49,10 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 	 * The transport currently running a ratchet-resuming session for each
 	 * contact. The Mode 3-Full ratchet is keyed per contact, not per transport,
 	 * so two connections on <em>different</em> transports must never resume it
-	 * at once. Connections on the <em>same</em> transport are allowed through
-	 * unchanged (glare there is handled by the designated dialer), so for a
-	 * single-transport configuration this guard never triggers.
+	 * at once. Connections on the <em>same</em> transport are capped at two —
+	 * one dialled and one accepted, which is the honest-glare maximum — so an
+	 * authenticated peer cannot multiply sessions, schedulers and cover traffic
+	 * by opening further connections.
 	 */
 	private final Map<Integer, TransportSession> liveSessions =
 			new ConcurrentHashMap<>();
@@ -75,8 +77,9 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 		}
 	}
 
-	/** Reserves the contact's single live session for {@code transportId}.
-	 * Returns false if a different transport already holds it. */
+	/** Reserves a live session slot for {@code transportId}. Returns false if a
+	 * different transport already holds the contact's session, or if the
+	 * same-transport concurrency cap is reached. */
 	boolean acquireSession(int contactId, TransportId transportId) {
 		synchronized (liveSessions) {
 			TransportSession s = liveSessions.get(contactId);
@@ -84,7 +87,7 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 				liveSessions.put(contactId, new TransportSession(transportId));
 				return true;
 			}
-			if (s.transportId.equals(transportId)) {
+			if (s.transportId.equals(transportId) && s.count < 2) {
 				s.count++;
 				return true;
 			}
@@ -137,13 +140,24 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 					stored.getRootKey(), stored.isAlice(),
 					stored.getMode3FullState(), in, out);
 			ContactId c = new ContactId(contactId);
+			AtomicBoolean closed = new AtomicBoolean(false);
 			InterruptibleConnection ic = new InterruptibleConnection() {
 				@Override
 				public void interruptOutgoingSession() {
+					forceClose();
 				}
 
 				@Override
 				public void forceClose() {
+					if (!closed.compareAndSet(false, true)) return;
+					try {
+						in.close();
+					} catch (IOException ignored) {
+					}
+					try {
+						out.close();
+					} catch (IOException ignored) {
+					}
 				}
 			};
 			if (incoming) {

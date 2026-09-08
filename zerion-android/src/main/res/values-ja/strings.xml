@@ -352,7 +352,6 @@
   <string name="change_profile_picture_failed_message">申し訳ありませんが、あなたのプロフィール画像の更新中に何か過ちが発生しました</string>
   
   <string name="pref_language_title">言語 &amp; 地域</string>
-  <string name="pref_language_changed">新しい言語を適用するためにアプリが再起動します。</string>
   <string name="pref_language_default">システムのデフォルト</string>
   <string name="display_settings_title">表示</string>
   <string name="pref_theme_title">テーマ</string>

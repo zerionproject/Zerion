@@ -367,7 +367,6 @@ Kérjük frissítsen a legutolsó verzióra és próbálja újra.</string>
   <string name="change_profile_picture_failed_message">Sajnáljuk, de valami hiba történt a profil kép frissítése során</string>
   
   <string name="pref_language_title">Nyelv és régió</string>
-  <string name="pref_language_changed">Az alkalmazás újraindul az új nyelv alkalmazásához.</string>
   <string name="pref_language_default">Rendszer alapértelmezett</string>
   <string name="display_settings_title">Megjelenítés</string>
   <string name="pref_theme_title">Téma</string>

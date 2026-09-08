@@ -132,6 +132,17 @@ public class B4OnionRotation {
 		this.adapter = adapter;
 	}
 
+	public void startPeriodicEvaluation() {
+		scheduler.scheduleWithFixedDelay(() -> {
+			try {
+				resumeIfPromotionInterrupted();
+				evaluateTrigger();
+				evaluateForceExpire();
+			} catch (DbException | RuntimeException ignored) {
+			}
+		}, 60, 6 * 60 * 60, TimeUnit.SECONDS);
+	}
+
 	public void evaluateTrigger() throws DbException {
 		if (!B4_ROTATION_ENABLED) return;
 		if (adapter == null) {

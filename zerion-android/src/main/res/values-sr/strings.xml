@@ -235,7 +235,6 @@
 
   <!--Settings Display-->
   <string name="pref_language_title">Jezik i regija</string>
-  <string name="pref_language_changed">Aplikacija će se ponovo pokrenuti da bi se primenio novi jezik.</string>
   <string name="pref_language_default">Default sistema</string>
   <string name="display_settings_title">Displej</string>
   <string name="pref_theme_title">Tema</string>

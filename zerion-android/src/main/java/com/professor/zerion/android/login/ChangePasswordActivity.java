@@ -186,6 +186,7 @@ public class ChangePasswordActivity extends ZerionActivity
 		currentPassword.getText().getChars(0, curTyped.length, curTyped, 0);
 		char[] newTyped = new char[newPassword.length()];
 		newPassword.getText().getChars(0, newTyped.length, newTyped, 0);
+		newPasswordConfirmation.setText("");
 		currentPassword.setText("");
 		newPassword.setText("");
 		char[] curPwd = com.professor.zerion.android.account

@@ -380,7 +380,6 @@
   <string name="change_profile_picture_failed_message">Lamentamos, mas houve um problema ao atualizar a tua fotografia do perfil</string>
   
   <string name="pref_language_title">Idioma e região</string>
-  <string name="pref_language_changed">A aplicação será reiniciada para aplicar o novo idioma.</string>
   <string name="pref_language_default">Predefinição do sistema</string>
   <string name="display_settings_title">Visualização</string>
   <string name="pref_theme_title">Tema</string>

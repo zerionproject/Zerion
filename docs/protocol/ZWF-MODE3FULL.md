@@ -84,8 +84,10 @@ Frame-header plaintext (4 bytes):
 Segments 0 and 1 are sealed with the classical message key. Segment 2, the body,
 is sealed with the hybrid body key when a post-quantum shared secret is present
 for that message. The maximum payload in one frame is
-`4096 - 20 - 2362 - 16 = 1698` bytes. Larger records fragment across frames and
-are reassembled by the final-frame flag.
+`4096 - 20 - 2362 - 16 = 1698` bytes. Larger records fragment across frames; in
+production, reassembly is performed by the ZMM message layer, which scopes
+fragments by message id, fragment index and count. The final-frame flag marks
+the end of a stream, not the general reassembly mechanism.
 
 ## Frame nonce
 

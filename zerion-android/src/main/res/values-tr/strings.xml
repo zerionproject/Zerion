@@ -368,7 +368,6 @@
   <string name="change_profile_picture_failed_message">Üzgünüz. Profil görseliniz güncellenirken bir sorun çıktı</string>
   
   <string name="pref_language_title">Dil ve bölge</string>
-  <string name="pref_language_changed">Yeni dili uygulamak için uygulama yeniden başlatılacak.</string>
   <string name="pref_language_default">Sistem varsayılanı</string>
   <string name="display_settings_title">Görünüm</string>
   <string name="pref_theme_title">Tema</string>

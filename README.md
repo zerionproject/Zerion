@@ -138,7 +138,7 @@ APK signing fingerprint: D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6
 - No protocol change and no database upgrade from 3.0.0
 
 **v3.0.0 (August 2026):**
-- A network protocol written in-house: fixed-size 4096-byte frames, constant-rate cover traffic so idle and active connections look identical on the wire, and per-message hybrid post-quantum encryption, all over Tor with no servers
+- A network protocol written in-house: fixed-size 4096-byte frames, paced cover traffic so active use is indistinguishable from idle within a live connection, and per-message hybrid post-quantum encryption, all over Tor with no servers
 - Keeps the post-quantum ratchet and the delivery database from the 2.x line
 - Two new transports: a Bluetooth offline mesh for messaging with no internet at all (one-to-one and group, with replies and photos) and an opt-in embedded I2P transport; Tor stays mandatory and always on for online messaging
 - Both people need this version to message each other

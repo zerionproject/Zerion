@@ -313,7 +313,6 @@
   
   
   <string name="pref_language_title">Јазик &amp; регион</string>
-  <string name="pref_language_changed">Апликацијата ќе се рестартира за да се примени новиот јазик.</string>
   <string name="pref_language_default">Систем стандардно поставен</string>
   <string name="display_settings_title">Екран</string>
   <string name="pref_theme_title">Тема</string>

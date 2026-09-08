@@ -137,13 +137,49 @@ public class ZwfStreamCounterTest {
 		for (long id = 1; id <= 2L * w; id++) {
 			assertTrue(before.acceptRecvStreamId(CONTACT_A, id));
 		}
-		// After restart the persistent high-water still bars anything older than
-		// the window (the in-memory seen-set inside the window is intentionally
-		// not persisted - a bounded duplicate window the message layer dedups).
+		// After restart the persistent high-water bars anything older than the
+		// window, and the startup floor bars everything at or below the
+		// persisted high-water (the in-memory seen-set is not persisted, so the
+		// floor is what prevents cross-restart re-acceptance).
 		ZwfStreamCounter after = new ZwfStreamCounter(store);
 		assertFalse("stale id below the window rejected after restart",
 				after.acceptRecvStreamId(CONTACT_A, w / 2));
 		assertTrue(after.acceptRecvStreamId(CONTACT_A, 2L * w + 1));
+	}
+
+	@Test
+	public void restartDoesNotReacceptCommittedOldStreamId() {
+		int w = REPLAY_WINDOW_SIZE;
+		DurableInMemoryStore store = new DurableInMemoryStore();
+		ZwfStreamCounter before = new ZwfStreamCounter(store);
+		for (long id = 1; id <= 2L * w; id++) {
+			assertTrue(before.acceptRecvStreamId(CONTACT_A, id));
+		}
+		ZwfStreamCounter after = new ZwfStreamCounter(store);
+		assertFalse("an id accepted before the restart must stay rejected "
+						+ "even though the seen-set was lost",
+				after.acceptRecvStreamId(CONTACT_A, 2L * w));
+		assertFalse("every id at or below the persisted high-water is barred",
+				after.acceptRecvStreamId(CONTACT_A, 2L * w - w / 2));
+		assertTrue("fresh ids above the persisted high-water are accepted",
+				after.acceptRecvStreamId(CONTACT_A, 2L * w + 1));
+		assertFalse("the floor applies only to the restart boundary, replay "
+						+ "of a post-restart id is caught by the seen-set",
+				after.acceptRecvStreamId(CONTACT_A, 2L * w + 1));
+		assertTrue(after.acceptRecvStreamId(CONTACT_A, 2L * w + 5));
+	}
+
+	@Test
+	public void startupFloorIsPerContact() {
+		DurableInMemoryStore store = new DurableInMemoryStore();
+		ZwfStreamCounter before = new ZwfStreamCounter(store);
+		assertTrue(before.acceptRecvStreamId(CONTACT_A, 10));
+		ZwfStreamCounter after = new ZwfStreamCounter(store);
+		assertFalse(after.acceptRecvStreamId(CONTACT_A, 10));
+		assertFalse(after.acceptRecvStreamId(CONTACT_A, 5));
+		assertTrue("a contact with no history has no floor",
+				after.acceptRecvStreamId(CONTACT_B, 1));
+		assertTrue(after.acceptRecvStreamId(CONTACT_A, 11));
 	}
 
 	@Test

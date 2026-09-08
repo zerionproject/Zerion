@@ -364,7 +364,6 @@ Vänlige installera Zerion på en nyare enhet.</string>
   <string name="change_profile_picture_failed_message">Tyvärr, något gick fel när din profilbild skulle ändras</string>
   
   <string name="pref_language_title">Språk &amp; region</string>
-  <string name="pref_language_changed">Appen startas om för att tillämpa det nya språket.</string>
   <string name="pref_language_default">Systemets förval</string>
   <string name="display_settings_title">Visa</string>
   <string name="pref_theme_title">Tema</string>

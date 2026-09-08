@@ -366,7 +366,6 @@
   <string name="change_profile_picture_failed_message">Грешка при смяна на профилната снимка</string>
   
   <string name="pref_language_title">Език и регион</string>
-  <string name="pref_language_changed">Приложението ще се рестартира, за да приложи новия език.</string>
   <string name="pref_language_default">Спрямо системата</string>
   <string name="display_settings_title">Външен вид</string>
   <string name="pref_theme_title">Тема</string>

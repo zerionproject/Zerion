@@ -362,7 +362,6 @@
   <string name="change_profile_picture_failed_message">Vi beklager, men noe gikk galt under oppdateringen av ditt profilbilde</string>
   
   <string name="pref_language_title">Språk &amp; region</string>
-  <string name="pref_language_changed">Appen starter på nytt for å ta i bruk det nye språket.</string>
   <string name="pref_language_default">Systemforvalg</string>
   <string name="display_settings_title">Vis</string>
   <string name="pref_theme_title">Tema</string>

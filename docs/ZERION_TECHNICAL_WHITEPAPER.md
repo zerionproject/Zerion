@@ -2,7 +2,7 @@
 
 ## Abstract
 
-Zerion is an end-to-end encrypted, peer-to-peer messenger for Android that runs entirely over Tor, with no servers and no accounts. Zerion 3.0 replaces the inherited Bramble transport and synchronisation layers with a native protocol stack, ZTP, ZWF, ZPP and ZMM, carrying a hybrid post-quantum ratchet (Mode 3-Full) in which every message is protected by a fresh ML-KEM-768 key encapsulation layered over a classical symmetric chain. Traffic is shaped into fixed-size frames sent at a constant rate, so a network observer cannot distinguish messages from cover traffic or infer message sizes or timing.
+Zerion is an end-to-end encrypted, peer-to-peer messenger for Android that runs entirely over Tor, with no servers and no accounts. Zerion 3.0 replaces the inherited Bramble transport and synchronisation layers with a native protocol stack, ZTP, ZWF, ZPP and ZMM, carrying a hybrid post-quantum ratchet (Mode 3-Full) in which every message is protected by a fresh ML-KEM-768 key encapsulation layered over a classical symmetric chain. While a connection is live, traffic is shaped into fixed-size frames sent at a paced, jittered cadence, so an observer of an established connection cannot distinguish messages from cover traffic or infer message sizes or timing within it; the existence and lifetime of connections is outside this property.
 
 Zerion is a fork of, and is built on, the Briar Project and its Bramble framework (GPLv3). The transport, wire format and ratchet described here are Zerion's own; the debt to Briar for the identity, database and Tor-integration foundations is gratefully acknowledged.
 
@@ -31,7 +31,7 @@ This document describes the protocol as implemented in the 3.0 source tree, curr
 
 - **Post-quantum by default.** Every message key incorporates ML-KEM-768 in addition to X25519, so recorded traffic is not decryptable by a future quantum adversary ("harvest now, decrypt later").
 - **No servers, no accounts.** Peers connect directly to each other's Tor hidden services. There is no central relay, directory, or push service.
-- **Metadata minimisation.** Fixed-size frames sent at a constant rate hide who is talking, when, and how much.
+- **Metadata minimisation.** While a connection is open, fixed-size frames at a paced, jittered cadence make application traffic indistinguishable from cover, hiding message sizes, counts and timing within that connection. Connection existence and lifetime are not hidden.
 - **Fail closed.** Any authentication or format failure drops the stream rather than degrading to a weaker mode.
 - **Forward secrecy and post-compromise security** on the message stream.
 
@@ -39,7 +39,7 @@ This document describes the protocol as implemented in the 3.0 source tree, curr
 
 Zerion aims to protect against:
 
-- A **global passive network adversary** observing all Tor traffic: it should learn neither the content nor the size, count, or precise timing of messages, and Tor conceals the network location of both peers.
+- A **passive network adversary** observing a peer's Tor traffic: within an established connection it learns neither the content nor the size, count, or precise timing of messages, and Tor conceals the network location of both peers. Connection lifecycle remains observable, and global traffic-confirmation attacks against Tor itself are out of scope (see below).
 - An **active network adversary** that can drop, delay, reorder, or inject frames: it cannot forge or alter authenticated content, and any tampering drops the stream.
 - A **future quantum adversary** with recorded ciphertext: the post-quantum layer keeps recorded traffic confidential.
 - **Device seizure of a peer** after the fact: forward secrecy protects earlier messages, and the post-quantum ratchet heals the session after a transient key compromise.
@@ -48,7 +48,7 @@ Out of scope: a fully compromised endpoint (malware with the screen unlocked), t
 
 ## 3. System architecture
 
-Zerion 3.0 is Android-only. Each device runs an embedded Tor process (via the `onionwrapper` library) and publishes a persistent v3 onion service. A contact is reached by dialling its onion address through Tor's SOCKS proxy. In the shipped release Tor is the only transport (the inherited Bluetooth, LAN and Internet-TCP plugins were removed), and it is mandatory and always on: it is the anonymity floor and cannot be disabled.
+Zerion 3.0 is Android-only. Each device runs an embedded Tor process (via the `onionwrapper` library) and publishes a persistent v3 onion service. A contact is reached by dialling its onion address through Tor's SOCKS proxy. In the shipped release Tor is the only always-on, mandatory transport for online messaging (the inherited Bluetooth, LAN and Internet-TCP plugins were removed): it is the anonymity floor and cannot be disabled. The additional transports below are present in the release but are off by default (I2P) or serve offline scenarios (mesh).
 
 > **Additional transports (shipped in 3.0).** Two additional transports ship in 3.0; neither weakens the Tor-only guarantee of online messaging. (1) **I2P**: an opt-in extra, off by default, over an embedded in-process Java router using I2P's streaming library. I2P provides end-to-end tunnel anonymity (a peer does not learn your address); the residual is that a network observer can tell you *participate* in I2P, the same class of exposure as using Tor without bridges. The one clearnet bootstrap step (reseed) is routed through Tor's SOCKS proxy and fails closed, so joining I2P does not reveal the device address. It is off by default with Tor mandatory. (2) **Offline mesh**: a **Bluetooth-only** (no Wi-Fi) store-carry-forward transport for scenarios with no internet at all (disasters, blackouts, protests). It carries 1:1 messages and full group chat over the same hybrid post-quantum identities, using async sealed-sender encryption to a recipient's published post-quantum prekey (ML-KEM-768 + X25519 → XSalsa20-Poly1305, inner Ed25519 + ML-DSA-65 signature) flooded across nearby phones, which relay only opaque ciphertext. An earlier Wi-Fi Direct radio was **removed entirely** because it leaked the OS device name and a second MAC and connected indiscriminately, so the mesh is pure BLE. The mesh has a deliberately different threat model from Tor/I2P: it hides *content* but not *physical proximity*, so a co-located adversary can tell that a device is transmitting. It is "communicate when there is no internet," not "hide that you are communicating from someone standing next to you." Both transports are documented in full in [ZERION_MESH_AND_I2P.md](ZERION_MESH_AND_I2P.md).
 
@@ -56,7 +56,7 @@ The protocol stack, from the socket up:
 
 - **ZTP** (Zerion Tor Protocol), runs Tor, publishes the onion service, dials peer onions, accepts inbound connections, and hands each connected socket to the connection handler.
 - **ZWF** (Zerion Wire Format), the fixed-size, authenticated framing on each connection.
-- **ZPP** (Zerion Pull Protocol), the constant-rate send scheduler that makes real traffic indistinguishable from cover traffic.
+- **ZPP** (Zerion Pull Protocol), the paced send scheduler that makes real traffic indistinguishable from cover traffic within a live connection.
 - **ZMM** (Zerion Message Module), application message records and fragmentation over the frame stream.
 
 Identity, contacts, the message database and the pairing handshake are retained from the Briar/Bramble foundation but re-homed under the `org.zerionproject` namespace; the ratchet and the four protocols above are new in 3.0.
@@ -88,9 +88,9 @@ A connection begins with a 16-byte **stream tag** and an encrypted **stream head
 
 The **stream id** is a persistent, strictly-monotonic 64-bit counter that is never reused across reconnects, restarts or key rotations. It seeds both the ratchet chain and the AEAD nonce, so reusing it would repeat keystream, the counter is therefore persisted before any frame is sent. On receive, a stream id is validated against a sliding replay/reorder window of 256; within a stream, frames are strictly in order and any gap drops the stream.
 
-### 5.2 ZPP, constant-rate traffic
+### 5.2 ZPP, paced cover traffic
 
-The send side emits **exactly one frame per fixed time slot** through a scheduler: the next queued record if there is one, or a **cover frame** if the queue is empty. The slot interval is jittered by ±1/3 around a base cadence (about 750 ms) with zero mean, so the average rate is unchanged but the exact-interval fingerprint is removed. Cover and real frames are indistinguishable on the wire, which is what defeats statistical-disclosure and timing correlation: an observer sees a steady stream of identical frames whether the user is chatting or idle.
+While a connection is live, the send side emits one frame per iteration through a scheduler: the next queued record if there is one, or a **cover frame** if the queue is empty. Pacing is self-paced rather than slotted: after each frame the sender waits a uniformly jittered delay around a base cadence (about 750 ms, ±1/3), so the exact-interval fingerprint is removed and a stall lengthens the cadence instead of producing a catch-up burst. Cover and real frames are indistinguishable on the wire within the connection: an observer of an established connection sees a stream of identical frames whether the user is chatting or idle. This property is per live connection; it does not conceal when connections open or close, reconnects, or the number of live sessions.
 
 Because cover frames flow continuously, they also bootstrap the ratchet: the two peers exchange their ML-KEM public keys within the first slot or two of a connection, before any human-typed message is sent.
 
@@ -113,7 +113,7 @@ For each frame the sender:
 
 The receiver mirrors this: it authenticates the Mode 3-Full header, decapsulates with the matching private key (looked up by key-pair id), and derives the same hybrid key.
 
-**Post-quantum coverage is per message.** The only exception is the very first frame a side sends before it has learned the peer's ML-KEM public key: that frame carries an all-zero "sentinel" ciphertext and is classical-only. Because the constant-rate cover traffic exchanges public keys within the first slot, this sentinel only ever applies to an opening cover frame and never to a user message.
+**Post-quantum coverage is per message.** The only exception is the very first frame a side sends before it has learned the peer's ML-KEM public key: that frame carries an all-zero "sentinel" ciphertext and is classical-only. Because the cover traffic exchanges public keys within the first frame or two, this sentinel only ever applies to an opening cover frame and never to a user message, and once a direction has accepted a real ML-KEM ciphertext the receiver rejects any later sentinel on that direction.
 
 ### 6.2 Key rotation and post-compromise security
 

@@ -21,9 +21,24 @@ public class ZtpSessionGuardTest {
 	@Test
 	public void sameTransportIsAlwaysAllowed() {
 		ZtpConnectionHandlerImpl h = newHandler();
-		// Two concurrent Tor connections to the same contact both proceed,
-		// exactly as before the guard existed (a single-transport config).
+		// Two concurrent Tor connections to the same contact both proceed:
+		// one dialled and one accepted, the honest-glare maximum.
 		assertTrue(h.acquireSession(1, TorConstants.ID));
+		assertTrue(h.acquireSession(1, TorConstants.ID));
+		h.releaseSession(1, TorConstants.ID);
+		h.releaseSession(1, TorConstants.ID);
+	}
+
+	@Test
+	public void thirdSameTransportConnectionIsRefused() {
+		ZtpConnectionHandlerImpl h = newHandler();
+		assertTrue(h.acquireSession(1, TorConstants.ID));
+		assertTrue(h.acquireSession(1, TorConstants.ID));
+		// An authenticated peer opening further connections on the same
+		// transport must not multiply live sessions beyond the glare pair.
+		assertFalse(h.acquireSession(1, TorConstants.ID));
+		h.releaseSession(1, TorConstants.ID);
+		// Dropping back below the cap frees a slot again.
 		assertTrue(h.acquireSession(1, TorConstants.ID));
 		h.releaseSession(1, TorConstants.ID);
 		h.releaseSession(1, TorConstants.ID);

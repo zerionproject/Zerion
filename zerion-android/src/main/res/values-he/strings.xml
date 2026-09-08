@@ -329,7 +329,6 @@
   <string name="change_profile_picture_failed_message">אנו מצטערים משהו השתבש בעת עדכון תמונת הפרופיל שלך</string>
   
   <string name="pref_language_title">שפה ואזור</string>
-  <string name="pref_language_changed">היישום יופעל מחדש כדי להחיל את השפה החדשה.</string>
   <string name="pref_language_default">ברירת מחדל של מערכת</string>
   <string name="display_settings_title">תצוגה</string>
   <string name="pref_theme_title">ערכת נושא</string>
