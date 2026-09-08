@@ -439,7 +439,12 @@ class CryptoComponentImpl implements CryptoComponent {
 				java.util.Arrays.fill(kdfKey.getBytes(), (byte) 0);
 				throw new DecryptionException(KEY_STRENGTHENER_ERROR);
 			}
-			key = keyStrengthener.strengthenKey(kdfKey);
+			try {
+				key = keyStrengthener.strengthenKey(kdfKey);
+			} catch (RuntimeException e) {
+				java.util.Arrays.fill(kdfKey.getBytes(), (byte) 0);
+				throw new DecryptionException(KEY_STRENGTHENER_ERROR);
+			}
 		}
 		try {
 			cipher.init(false, key, iv);

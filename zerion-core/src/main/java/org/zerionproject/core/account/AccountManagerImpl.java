@@ -166,7 +166,13 @@ class AccountManagerImpl implements AccountManager, Service {
 			Identity identity = identityManager.createIdentity(name);
 			identityManager.registerIdentity(identity);
 			SecretKey key = crypto.generateSecretKey();
-			if (!encryptAndStoreDatabaseKey(key, password)) return false;
+			boolean stored;
+			try {
+				stored = encryptAndStoreDatabaseKey(key, password);
+			} catch (RuntimeException e) {
+				stored = false;
+			}
+			if (!stored) return false;
 			databaseKey = key;
 			return true;
 		}

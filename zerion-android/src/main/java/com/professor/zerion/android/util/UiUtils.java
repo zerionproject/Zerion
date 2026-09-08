@@ -125,6 +125,11 @@ public class UiUtils {
 
 	public static void showFragment(FragmentManager fm, Fragment f,
 			@Nullable String tag, boolean addToBackStack) {
+		showFragment(fm, f, tag, addToBackStack, R.id.fragmentContainer);
+	}
+
+	public static void showFragment(FragmentManager fm, Fragment f,
+			@Nullable String tag, boolean addToBackStack, int containerId) {
 		Fragment fragment = fm.findFragmentByTag(tag);
 		if (fragment != null && fragment.isAdded()) return;
 
@@ -132,7 +137,7 @@ public class UiUtils {
 				.setCustomAnimations(R.anim.step_next_in,
 						R.anim.step_previous_out, R.anim.step_previous_in,
 						R.anim.step_next_out)
-				.replace(R.id.fragmentContainer, f, tag);
+				.replace(containerId, f, tag);
 		if (addToBackStack) ta.addToBackStack(tag);
 		ta.commit();
 	}

@@ -102,11 +102,25 @@ class AndroidKeyStrengthener implements KeyStrengthener {
 				KeyGenerator kg = KeyGenerator.getInstance(
 						KEY_ALGORITHM_HMAC_SHA256, PROVIDER_NAME);
 				kg.init(spec);
-				storedKey = kg.generateKey();
+				javax.crypto.SecretKey candidate = kg.generateKey();
+				Mac probe = Mac.getInstance(KEY_ALGORITHM_HMAC_SHA256);
+				probe.init(candidate);
+				probe.doFinal(new byte[1]);
+				storedKey = candidate;
 				return;
 			} catch (Exception e) {
+				deleteKey();
 			}
 		}
 		throw new GeneralSecurityException("Could not generate key");
+	}
+
+	private void deleteKey() {
+		try {
+			KeyStore ks = KeyStore.getInstance(KEY_STORE_TYPE);
+			ks.load(null);
+			ks.deleteEntry(KEY_ALIAS);
+		} catch (GeneralSecurityException | IOException ignored) {
+		}
 	}
 }

@@ -100,14 +100,20 @@ public class VaultDashboardFragment extends BaseFragment {
 		if (root != null) {
 			root.setVisibility(gated ? View.INVISIBLE : View.VISIBLE);
 		}
+		if (!gated) return;
+		int containerId = View.NO_ID;
+		if (root != null && root.getParent() instanceof android.view.ViewGroup) {
+			containerId = ((android.view.ViewGroup) root.getParent()).getId();
+		}
+		if (containerId == View.NO_ID) return;
 		if (currentState == VaultViewModel.VaultState.NOT_CREATED) {
 			VaultOnboardingFragment f = VaultOnboardingFragment.newInstance();
 			UiUtils.showFragment(getParentFragmentManager(), f,
-					f.getUniqueTag(), false);
-		} else if (currentState == VaultViewModel.VaultState.LOCKED) {
+					f.getUniqueTag(), false, containerId);
+		} else {
 			VaultUnlockFragment f = VaultUnlockFragment.newInstance();
 			UiUtils.showFragment(getParentFragmentManager(), f,
-					f.getUniqueTag(), false);
+					f.getUniqueTag(), false, containerId);
 		}
 	}
 
