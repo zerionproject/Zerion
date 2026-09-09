@@ -266,7 +266,7 @@ public class NavDrawerActivity extends ZerionActivity implements
 		});
 		vaultShortcutButton.setOnClickListener(v -> {
 			com.professor.zerion.android.util.Haptics.tap(v);
-			switchTab(TAB_VAULT);
+			switchTab(currentTab == TAB_VAULT ? TAB_CONTACTS : TAB_VAULT);
 		});
 
 		tabContacts.setOnClickListener(v -> {
@@ -302,6 +302,11 @@ public class NavDrawerActivity extends ZerionActivity implements
 		if (currentTab == TAB_VAULT && tab != TAB_VAULT
 				&& vaultManager.isUnlocked()) {
 			vaultManager.lockVault();
+		}
+		FragmentManager fm = getSupportFragmentManager();
+		if (fm.getBackStackEntryCount() > 0) {
+			fm.popBackStackImmediate(null,
+					FragmentManager.POP_BACK_STACK_INCLUSIVE);
 		}
 		currentTab = tab;
 		updateTabUI();
@@ -365,6 +370,12 @@ public class NavDrawerActivity extends ZerionActivity implements
 		tabChannels.setTypeface(null, currentTab == TAB_CHANNELS ?
 				Typeface.BOLD : Typeface.NORMAL);
 		tabChannels.setSelected(currentTab == TAB_CHANNELS);
+
+		boolean inVault = currentTab == TAB_VAULT;
+		vaultShortcutButton.setImageResource(
+				inVault ? R.drawable.ic_chat : R.drawable.ic_vault);
+		vaultShortcutButton.setContentDescription(getString(
+				inVault ? R.string.chats_button : R.string.vault_button));
 	}
 
 	private void openSettings() {
