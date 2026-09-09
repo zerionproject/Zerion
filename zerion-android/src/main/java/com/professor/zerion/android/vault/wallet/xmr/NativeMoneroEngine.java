@@ -108,6 +108,8 @@ public final class NativeMoneroEngine implements MoneroEngine {
 		private final long h;
 		private final java.util.concurrent.atomic.AtomicBoolean closed =
 				new java.util.concurrent.atomic.AtomicBoolean(false);
+		private final java.util.concurrent.locks.ReentrantLock interruptLock =
+				new java.util.concurrent.locks.ReentrantLock();
 
 		NativeSession(long h) {
 			this.h = h;
@@ -198,8 +200,13 @@ public final class NativeMoneroEngine implements MoneroEngine {
 
 		@Override
 		public void pauseRefresh() {
-			if (closed.get()) return;
-			NativeMonero.nPauseRefresh(h);
+			if (!interruptLock.tryLock()) return;
+			try {
+				if (closed.get()) return;
+				NativeMonero.nPauseRefresh(h);
+			} finally {
+				interruptLock.unlock();
+			}
 		}
 
 		@Override
@@ -222,8 +229,13 @@ public final class NativeMoneroEngine implements MoneroEngine {
 
 		@Override
 		public void stopRefresh() {
-			if (closed.get()) return;
-			NativeMonero.nStop(h);
+			if (!interruptLock.tryLock()) return;
+			try {
+				if (closed.get()) return;
+				NativeMonero.nStop(h);
+			} finally {
+				interruptLock.unlock();
+			}
 		}
 
 		@Override
@@ -366,16 +378,26 @@ public final class NativeMoneroEngine implements MoneroEngine {
 		@Override
 		public void closePersisting() {
 			if (closed.compareAndSet(false, true)) {
-				quiesce();
-				NativeMonero.nClose(h, true);
+				interruptLock.lock();
+				try {
+					quiesce();
+					NativeMonero.nClose(h, true);
+				} finally {
+					interruptLock.unlock();
+				}
 			}
 		}
 
 		@Override
 		public void close() {
 			if (closed.compareAndSet(false, true)) {
-				quiesce();
-				NativeMonero.nClose(h, false);
+				interruptLock.lock();
+				try {
+					quiesce();
+					NativeMonero.nClose(h, false);
+				} finally {
+					interruptLock.unlock();
+				}
 			}
 		}
 
@@ -383,6 +405,14 @@ public final class NativeMoneroEngine implements MoneroEngine {
 		 * Disable the refresh thread, interrupt any refresh in flight, then join
 		 * the thread. Pausing first means a refresh that started after the
 		 * caller's interrupt cannot run a whole catch-up before the join returns.
+		 *
+		 * The interrupt lock held by the closing caller excludes the cross-thread
+		 * refresh interrupts issued by XmrSyncManager.stop(): an interrupt that
+		 * already borrowed the native pointer completes before nClose destroys
+		 * the wallet, and one that arrives later skips via tryLock or sees the
+		 * closed flag inside the lock. Interrupts never block on the lock, so
+		 * the ability to cancel a refresh that occupies the session executor is
+		 * preserved and the refresh thread joined here never takes this lock.
 		 */
 		private void quiesce() {
 			NativeMonero.nPauseRefresh(h);

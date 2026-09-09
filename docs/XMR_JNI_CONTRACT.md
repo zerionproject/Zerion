@@ -113,13 +113,20 @@ raw JNI is `NativeMoneroEngine` — every other component (`XmrSyncManager`,
 `NativeMonero` only for the `LONG_ERR` constant. Every free is routed onto the
 single session executor after the sync loop has yielded (`closeCurrentSession`
 runs there once `stop()` drops the loop; tx disposal is deferred via
-`disposeOnExecutor`), so no accessor is in flight when a free runs. The only
-deliberately cross-thread native calls are `stop()`'s `pauseRefresh`/
-`stopRefresh` refresh-signals, which free nothing and are covered by wallet2's
-own refresh locking — which is also why a naive same-thread assertion is not
-added (it would false-positive on those safe signals). A refcounted/`shared_ptr`
-registry that held lifetime across the dereference is available as future
-hardening; it is not required while no free can race an accessor.
+`disposeOnExecutor`), so no executor-serialized accessor is in flight when a
+free runs. The one exception to executor serialization is deliberate:
+`stop()`'s `pauseRefresh`/`stopRefresh` refresh-signals are issued cross-thread
+so a refresh that occupies the executor can still be interrupted. Those signals
+free nothing, but they do dereference the wallet pointer, so they are excluded
+from a concurrent free by a per-session interrupt lock in `NativeSession`: the
+signals take the lock with `tryLock` (never blocking, preserving the
+cancellation property) and re-check the closed flag inside it, while
+`close`/`closePersisting` hold the lock across `nClose`. A signal that has
+borrowed the pointer therefore completes before destruction, and one that
+arrives during or after close skips. A refcounted/`shared_ptr` registry that
+held lifetime across every dereference natively remains available as future
+hardening; the current guarantee combines executor serialization for all other
+calls with the interrupt lock for the cross-thread signals.
 
 ## Refresh-height accessors
 

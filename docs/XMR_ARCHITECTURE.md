@@ -42,9 +42,11 @@ the vault master key without the wallet password cannot spend XMR.
 `w.background`, `w.background.keys`) are the wallet2 scan cache and keys, stored
 in the wallet's live directory keyed by the immutable wallet id. They are bound
 to the wallet identity (address fingerprint), so a cache that does not match the
-opened wallet is rejected rather than trusted. Deleting a wallet erases these
-files (secure delete), so wallet deletion is a true erasure, not just a
-de-listing. The cache is derived state: it can always be rebuilt from the seed,
+opened wallet is rejected rather than trusted. Deleting a wallet overwrites and
+removes these files (application-level secure delete), so deletion is more than
+a de-listing. This is a logical erasure: it does not guarantee physical flash
+erasure beneath the filesystem, nor removal from any backup or export made
+earlier. The cache is derived state: it can always be rebuilt from the seed,
 which is why a rescan can discard and rebuild it without risk.
 
 ## Runtime model
@@ -63,7 +65,10 @@ for this operation.
 On vault lock, the session is invalidated: the sync loop is stopped, the pending
 recovery-phrase hand-off is wiped, any in-flight send authorization is
 invalidated, and the native handles are closed on the session executor. A lock
-wins every race with an in-flight scan or send.
+wins every race at the state and authorization level: no scan result is
+published and no send is authorized after the lock. Native teardown ordering is
+governed separately by the session executor and the interrupt lock described in
+the JNI contract.
 
 ## Send
 
@@ -228,6 +233,15 @@ delay, withhold responses, and lie about tip/availability, producing stale or
 incomplete state; against that the wallet fails closed for correctness and
 preserves the last known good balance/history rather than replacing it with an
 empty or degraded one on a transient error.
+
+Tor and TLS are separate properties. The Tor path uses SOCKS4a remote hostname
+resolution, so the connector never resolves the daemon hostname locally, and a
+proxy failure fails the connection rather than downgrading to a direct socket.
+Tor hides the client origin from the daemon; it does not authenticate the
+daemon. For an explicit DIRECT clearnet node the effective TLS behavior of the
+underlying wallet library is opportunistic/autodetected, not a strict
+certificate-and-hostname policy, which is part of why DIRECT is labeled reduced
+privacy and kept opt-in behind a warning.
 
 ## Fiat display
 
