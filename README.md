@@ -339,11 +339,11 @@ More details and copy-to-clipboard buttons: [zerion.chat/donate.html](https://ze
 
 ---
 
-## Built on Briar
+## Origins
 
-Zerion is a derivative work of [Briar](https://briarproject.org), the peer-to-peer messaging project by the Briar Project, and is built on Briar's Bramble transport protocol. Zerion would not exist without their work, and we are grateful for it.
+Zerion began as a fork of [Briar](https://briarproject.org), the peer-to-peer messaging project by the Briar Project, and would not exist without their work. We are grateful for it.
 
-Zerion extends Briar with post-quantum cryptography, voice and video calls over Tor, an encrypted vault, channels, and other features, and has diverged from upstream Briar in both wire protocol and feature set. It is an independent project and is **not affiliated with, nor endorsed by, the Briar Project**.
+Since version 3.0 the transport and synchronisation stack has been replaced with Zerion's own protocols (ZTP, ZWF, ZPP, ZMM) carrying a hybrid post-quantum ratchet; Briar is credited for the identity, storage and Tor-integration foundations the project grew from. Zerion has diverged from upstream Briar in both wire protocol and feature set. It is an independent project and is **not affiliated with, nor endorsed by, the Briar Project**.
 
 - Briar: https://briarproject.org
 - Briar source: https://code.briarproject.org/briar/briar
