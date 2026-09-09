@@ -113,26 +113,57 @@ class SqlCipherDatabase extends JdbcDatabase {
 		if (!reopen) dir.mkdirs();
 		super.open(DRIVER_CLASS, reopen, key, listener);
 
-		if (needsCompaction) {
-			needsCompaction = false;
-			Connection vc = null;
-			try {
-				vc = createConnection();
-				SQLiteDatabase vacuumDb = ((SqlCipherConnection) vc).getDatabase();
+		boolean compactNow = needsCompaction;
+		needsCompaction = false;
+		Connection vc = null;
+		try {
+			vc = createConnection();
+			SQLiteDatabase vacuumDb = ((SqlCipherConnection) vc).getDatabase();
+			if (!compactNow) compactNow = freeSpaceExceedsThreshold(vacuumDb);
+			if (compactNow) {
 				vacuumDb.execSQL("VACUUM");
 				File dbFile = new File(config.getDatabaseDirectory(), SQLCIPHER_FILE);
 				try (java.io.RandomAccessFile raf = new java.io.RandomAccessFile(dbFile, "rw")) {
 					raf.getFD().sync();
 				}
-				vc.close();
-			} catch (SQLException | java.io.IOException e) {
-				if (vc != null) {
-					try { vc.close(); } catch (SQLException ignored) {}
-				}
+			}
+			vc.close();
+		} catch (SQLException | java.io.IOException e) {
+			if (vc != null) {
+				try { vc.close(); } catch (SQLException ignored) {}
 			}
 		}
 
 		return reopen;
+	}
+
+	private static final long VACUUM_FREE_BYTES_THRESHOLD = 10L * 1024 * 1024;
+	private static final long VACUUM_FREE_BYTES_FLOOR = 1024L * 1024;
+	private static final int VACUUM_FREE_PERCENT_THRESHOLD = 25;
+
+	private boolean freeSpaceExceedsThreshold(SQLiteDatabase db) {
+		long freelist = queryLong(db, "PRAGMA freelist_count");
+		long pageSize = queryLong(db, "PRAGMA page_size");
+		long pageCount = queryLong(db, "PRAGMA page_count");
+		if (freelist <= 0 || pageSize <= 0 || pageCount <= 0) return false;
+		long freeBytes = freelist * pageSize;
+		if (freeBytes >= VACUUM_FREE_BYTES_THRESHOLD) return true;
+		return freeBytes >= VACUUM_FREE_BYTES_FLOOR
+				&& freelist * 100 >= pageCount * VACUUM_FREE_PERCENT_THRESHOLD;
+	}
+
+	private long queryLong(SQLiteDatabase db, String sql) {
+		try {
+			Cursor c = db.rawQuery(sql, null);
+			try {
+				if (c.moveToFirst()) return c.getLong(0);
+				return -1;
+			} finally {
+				c.close();
+			}
+		} catch (RuntimeException e) {
+			return -1;
+		}
 	}
 
 	/**

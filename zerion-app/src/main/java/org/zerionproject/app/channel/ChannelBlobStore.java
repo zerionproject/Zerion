@@ -131,6 +131,27 @@ class ChannelBlobStore {
 		}
 	}
 
+	void pruneOrphans(byte[] channelId,
+			java.util.Collection<byte[]> referencedHashes, long minAgeMs) {
+		File dir;
+		try {
+			dir = channelDir(channelId);
+		} catch (IOException ignored) {
+			return;
+		}
+		File[] children = dir.listFiles();
+		if (children == null) return;
+		java.util.Set<String> keep = new java.util.HashSet<>();
+		for (byte[] h : referencedHashes) keep.add(hex(h) + ".bin");
+		long cutoff = System.currentTimeMillis() - minAgeMs;
+		for (File f : children) {
+			if (!f.getName().endsWith(".bin")) continue;
+			if (keep.contains(f.getName())) continue;
+			if (f.lastModified() > cutoff) continue;
+			f.delete();
+		}
+	}
+
 	void removeAllForChannel(byte[] channelId) {
 		File dir;
 		try {

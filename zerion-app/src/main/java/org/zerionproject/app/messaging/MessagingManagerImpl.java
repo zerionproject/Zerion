@@ -168,6 +168,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				MAJOR_VERSION);
 		if (db.containsGroup(txn, localGroup.getId())) {
 			purgeStaleEphemeralMessages(txn);
+			startOrphanAttachmentTimers(txn);
 			return;
 		}
 		db.addGroup(txn, localGroup);
@@ -187,6 +188,62 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			}
 		} catch (FormatException e) {
 			throw new DbException(e);
+		}
+	}
+
+	private void startOrphanAttachmentTimers(Transaction txn)
+			throws DbException {
+		try {
+			for (Contact c : db.getContacts(txn)) {
+				GroupId g = getContactGroup(c).getId();
+				BdfDictionary queryPm = BdfDictionary.of(
+						new BdfEntry(MSG_KEY_MSG_TYPE, PRIVATE_MESSAGE));
+				Set<MessageId> owned = new HashSet<>();
+				Map<MessageId, BdfDictionary> pms = clientHelper
+						.getMessageMetadataAsDictionary(txn, g, queryPm);
+				for (BdfDictionary meta : pms.values()) {
+					for (AttachmentHeader h :
+							parseAttachmentHeaders(g, meta)) {
+						owned.add(h.getMessageId());
+					}
+				}
+				Set<MessageId> ownedChunks = new HashSet<>();
+				BdfDictionary queryManifest = BdfDictionary.of(
+						new BdfEntry(MSG_KEY_MSG_TYPE, ATTACHMENT_MANIFEST));
+				for (MessageId manifestId :
+						clientHelper.getMessageIds(txn, g, queryManifest)) {
+					if (owned.contains(manifestId)) {
+						ownedChunks.addAll(
+								getManifestChunkIds(txn, manifestId));
+					} else {
+						startOrphanTimer(txn, manifestId);
+					}
+				}
+				BdfDictionary queryLegacy = BdfDictionary.of(
+						new BdfEntry(MSG_KEY_MSG_TYPE, ATTACHMENT));
+				for (MessageId id :
+						clientHelper.getMessageIds(txn, g, queryLegacy)) {
+					if (!owned.contains(id)) startOrphanTimer(txn, id);
+				}
+				BdfDictionary queryChunk = BdfDictionary.of(
+						new BdfEntry(MSG_KEY_MSG_TYPE, ATTACHMENT_CHUNK));
+				for (MessageId id :
+						clientHelper.getMessageIds(txn, g, queryChunk)) {
+					if (!ownedChunks.contains(id)) startOrphanTimer(txn, id);
+				}
+			}
+		} catch (FormatException e) {
+			throw new DbException(e);
+		}
+	}
+
+	private void startOrphanTimer(Transaction txn, MessageId id)
+			throws DbException {
+		try {
+			db.setCleanupTimerDuration(txn, id,
+					MISSING_ATTACHMENT_CLEANUP_DURATION_MS);
+			db.startCleanupTimer(txn, id);
+		} catch (NoSuchMessageException e) {
 		}
 	}
 
@@ -357,11 +414,13 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		BdfDictionary queryManifest = BdfDictionary.of(
 				new BdfEntry(MSG_KEY_MSG_TYPE, ATTACHMENT_MANIFEST),
 				new BdfEntry(MSG_KEY_LOCAL, false));
-		results.addAll(
-				clientHelper.getMessageIds(txn, m.getGroupId(), queryManifest));
+		Collection<MessageId> manifests =
+				clientHelper.getMessageIds(txn, m.getGroupId(), queryManifest);
+		results.addAll(manifests);
 		for (AttachmentHeader h : headers) {
 			MessageId id = h.getMessageId();
 			if (results.contains(id)) db.stopCleanupTimer(txn, id);
+			if (manifests.contains(id)) stopChunkCleanupTimers(txn, id);
 		}
 	}
 
@@ -404,7 +463,10 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				List<AttachmentHeader> headers =
 						parseAttachmentHeaders(m.getGroupId(), meta);
 				for (AttachmentHeader h : headers) {
-					if (h.getMessageId().equals(m.getId())) return;
+					if (h.getMessageId().equals(m.getId())) {
+						stopChunkCleanupTimers(txn, m.getId());
+						return;
+					}
 				}
 			}
 			db.setCleanupTimerDuration(txn, m.getId(),
@@ -415,10 +477,58 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		}
 	}
 
+	private void stopChunkCleanupTimers(Transaction txn, MessageId manifestId)
+			throws DbException, FormatException {
+		for (MessageId c : getManifestChunkIds(txn, manifestId)) {
+			try {
+				db.stopCleanupTimer(txn, c);
+			} catch (NoSuchMessageException e) {
+			}
+		}
+	}
+
 	private void incomingAttachmentChunk(Transaction txn, Message m)
 			throws DbException {
 		ContactId contactId = getContactId(txn, m.getGroupId());
 		txn.attach(new AttachmentReceivedEvent(m.getId(), contactId));
+		try {
+			if (!isChunkReferencedByOwnedManifest(txn, m.getGroupId(),
+					m.getId())) {
+				db.setCleanupTimerDuration(txn, m.getId(),
+						MISSING_ATTACHMENT_CLEANUP_DURATION_MS);
+				db.startCleanupTimer(txn, m.getId());
+			}
+		} catch (FormatException e) {
+			throw new DbException(e);
+		}
+	}
+
+	private boolean isChunkReferencedByOwnedManifest(Transaction txn,
+			GroupId g, MessageId chunkId)
+			throws DbException, FormatException {
+		BdfDictionary queryPm = BdfDictionary.of(
+				new BdfEntry(MSG_KEY_MSG_TYPE, PRIVATE_MESSAGE),
+				new BdfEntry(MSG_KEY_LOCAL, false));
+		Set<MessageId> owned = new HashSet<>();
+		Map<MessageId, BdfDictionary> pms = clientHelper
+				.getMessageMetadataAsDictionary(txn, g, queryPm);
+		for (BdfDictionary meta : pms.values()) {
+			for (AttachmentHeader h : parseAttachmentHeaders(g, meta)) {
+				owned.add(h.getMessageId());
+			}
+		}
+		if (owned.isEmpty()) return false;
+		BdfDictionary queryManifest = BdfDictionary.of(
+				new BdfEntry(MSG_KEY_MSG_TYPE, ATTACHMENT_MANIFEST),
+				new BdfEntry(MSG_KEY_LOCAL, false));
+		for (MessageId manifestId :
+				clientHelper.getMessageIds(txn, g, queryManifest)) {
+			if (!owned.contains(manifestId)) continue;
+			for (MessageId c : getManifestChunkIds(txn, manifestId)) {
+				if (c.equals(chunkId)) return true;
+			}
+		}
+		return false;
 	}
 
 	private void incomingVoiceSignal(Transaction txn, Message m,
@@ -502,6 +612,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			for (AttachmentHeader a : m.getAttachmentHeaders()) {
 				db.setMessageShared(txn, a.getMessageId());
 				db.setMessagePermanent(txn, a.getMessageId());
+				db.stopCleanupTimer(txn, a.getMessageId());
 				shareAttachmentChunks(txn, a.getMessageId());
 			}
 			clientHelper.addLocalMessage(txn, m.getMessage(), meta, shared,
@@ -889,6 +1000,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			MessageId chunkId = new MessageId(chunkIdBytes);
 			db.setMessageShared(txn, chunkId);
 			db.setMessagePermanent(txn, chunkId);
+			db.stopCleanupTimer(txn, chunkId);
 		}
 	}
 
@@ -929,8 +1041,12 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		meta.put(MSG_KEY_CONTENT_TYPE, contentType);
 		meta.put(MSG_KEY_DESCRIPTOR_LENGTH, descriptor.length);
 		Message m = clientHelper.createMessage(groupId, timestamp, body);
-		db.transaction(false, txn ->
-				clientHelper.addLocalMessage(txn, m, meta, false, true));
+		db.transaction(false, txn -> {
+			clientHelper.addLocalMessage(txn, m, meta, false, true);
+			db.setCleanupTimerDuration(txn, m.getId(),
+					MISSING_ATTACHMENT_CLEANUP_DURATION_MS);
+			db.startCleanupTimer(txn, m.getId());
+		});
 		return new AttachmentHeader(groupId, m.getId(), contentType);
 	}
 
@@ -945,7 +1061,52 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 	@Override
 	public void removeAttachment(AttachmentHeader header) throws DbException {
 		db.transaction(false,
-				txn -> db.removeMessage(txn, header.getMessageId()));
+				txn -> removeAttachmentTree(txn, header.getMessageId()));
+	}
+
+	private void removeAttachmentTree(Transaction txn, MessageId id)
+			throws DbException {
+		try {
+			BdfDictionary meta =
+					clientHelper.getMessageMetadataAsDictionary(txn, id);
+			Integer type = meta.getOptionalInt(MSG_KEY_MSG_TYPE);
+			if (type != null && type == ATTACHMENT_MANIFEST) {
+				removeManifestChunks(txn, id);
+			}
+			db.removeMessage(txn, id);
+		} catch (NoSuchMessageException e) {
+		} catch (FormatException e) {
+			throw new DbException(e);
+		}
+	}
+
+	private void removeManifestChunks(Transaction txn, MessageId manifestId)
+			throws DbException {
+		try {
+			for (MessageId chunkId : getManifestChunkIds(txn, manifestId)) {
+				try {
+					db.removeMessage(txn, chunkId);
+				} catch (NoSuchMessageException e) {
+				}
+			}
+		} catch (FormatException e) {
+			throw new DbException(e);
+		}
+	}
+
+	private List<MessageId> getManifestChunkIds(Transaction txn,
+			MessageId manifestId) throws DbException, FormatException {
+		List<MessageId> ids = new ArrayList<>();
+		try {
+			Message manifest = clientHelper.getMessage(txn, manifestId);
+			BdfList chunkIds =
+					clientHelper.toList(manifest.getBody()).getList(5);
+			for (int i = 0; i < chunkIds.size(); i++) {
+				ids.add(new MessageId(chunkIds.getRaw(i)));
+			}
+		} catch (NoSuchMessageException e) {
+		}
+		return ids;
 	}
 
 	private ContactId getContactId(Transaction txn, GroupId g)
@@ -1202,6 +1363,9 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 					} catch (NoSuchMessageException e) {
 					}
 				}
+			} else if (messageType != null
+					&& messageType == ATTACHMENT_MANIFEST) {
+				removeManifestChunks(txn, m);
 			}
 			db.removeMessage(txn, m);
 		} catch (NoSuchMessageException e) {
@@ -1220,19 +1384,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		if (type != ATTACHMENT && type != ATTACHMENT_MANIFEST) return;
 		if (meta.getBoolean(MSG_KEY_LOCAL, false) != local) return;
 		if (type == ATTACHMENT_MANIFEST) {
-			try {
-				Message manifest = clientHelper.getMessage(txn, id);
-				BdfList chunkIds =
-						clientHelper.toList(manifest.getBody()).getList(5);
-				for (int i = 0; i < chunkIds.size(); i++) {
-					try {
-						db.removeMessage(txn,
-								new MessageId(chunkIds.getRaw(i)));
-					} catch (NoSuchMessageException e) {
-					}
-				}
-			} catch (NoSuchMessageException e) {
-			}
+			removeManifestChunks(txn, id);
 		}
 		db.removeMessage(txn, id);
 	}

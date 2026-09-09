@@ -90,6 +90,7 @@ class ChannelManagerImpl
 	private static final long APPROVAL_POLL_MIN_INTERVAL_MS =
 			30L * 1000L;
 	private static final long PULL_NONCE_TTL_MS = 5L * 60L * 1000L;
+	private static final long BLOB_ORPHAN_GRACE_MS = 24L * 60L * 60L * 1000L;
 	private static final int PULL_NONCE_MAX_PER_CHANNEL = 4096;
 	private final java.util.Map<String,
 			java.util.LinkedHashMap<String, Long>> seenPullNonces =
@@ -2755,6 +2756,16 @@ class ChannelManagerImpl
 					reactionStore.removeForPost(channelId, seq);
 					commentStore.removeForParent(channelId, seq);
 				}
+				java.util.List<byte[]> referenced =
+						new java.util.ArrayList<>();
+				for (ChannelPost p : kept) {
+					for (ChannelPost.ChannelAttachment a
+							: p.getAttachments()) {
+						referenced.add(a.getBlobHash());
+					}
+				}
+				blobStore.pruneOrphans(channelId, referenced,
+						BLOB_ORPHAN_GRACE_MS);
 			} finally {
 				lock.unlock();
 			}

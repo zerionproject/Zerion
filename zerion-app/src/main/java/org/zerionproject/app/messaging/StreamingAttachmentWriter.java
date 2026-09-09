@@ -29,6 +29,7 @@ import static org.zerionproject.app.api.attachment.MediaConstants.MAX_CHUNK_COUN
 import static org.zerionproject.app.messaging.MessageTypes.ATTACHMENT;
 import static org.zerionproject.app.messaging.MessageTypes.ATTACHMENT_CHUNK;
 import static org.zerionproject.app.messaging.MessageTypes.ATTACHMENT_MANIFEST;
+import static org.zerionproject.app.messaging.MessagingConstants.MISSING_ATTACHMENT_CLEANUP_DURATION_MS;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_CHUNK_COUNT;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_CHUNK_INDEX;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_LOCAL;
@@ -116,8 +117,12 @@ public class StreamingAttachmentWriter {
 			meta.put(MSG_KEY_DESCRIPTOR_LENGTH, descriptor.length);
 
 			Message m = clientHelper.createMessage(groupId, timestamp, body);
-			db.transaction(false, txn ->
-					clientHelper.addLocalMessage(txn, m, meta, false, true));
+			db.transaction(false, txn -> {
+				clientHelper.addLocalMessage(txn, m, meta, false, true);
+				db.setCleanupTimerDuration(txn, m.getId(),
+						MISSING_ATTACHMENT_CLEANUP_DURATION_MS);
+				db.startCleanupTimer(txn, m.getId());
+			});
 
 			if (progressCallback != null) {
 				progressCallback.onProgress(1.0f);
@@ -221,8 +226,12 @@ public class StreamingAttachmentWriter {
 			meta.put(MSG_KEY_DESCRIPTOR_LENGTH, header.length);
 
 			Message m = clientHelper.createMessage(groupId, timestamp + chunkIndex, body);
-			db.transaction(false, txn ->
-					clientHelper.addLocalMessage(txn, m, meta, false, true));
+			db.transaction(false, txn -> {
+				clientHelper.addLocalMessage(txn, m, meta, false, true);
+				db.setCleanupTimerDuration(txn, m.getId(),
+						MISSING_ATTACHMENT_CLEANUP_DURATION_MS);
+				db.startCleanupTimer(txn, m.getId());
+			});
 
 			return m.getId();
 		} catch (FormatException e) {
@@ -256,8 +265,12 @@ public class StreamingAttachmentWriter {
 			meta.put(MSG_KEY_ROOT_HASH, rootHash);
 
 			Message m = clientHelper.createMessage(groupId, timestamp, body);
-			db.transaction(false, txn ->
-					clientHelper.addLocalMessage(txn, m, meta, false, true));
+			db.transaction(false, txn -> {
+				clientHelper.addLocalMessage(txn, m, meta, false, true);
+				db.setCleanupTimerDuration(txn, m.getId(),
+						MISSING_ATTACHMENT_CLEANUP_DURATION_MS);
+				db.startCleanupTimer(txn, m.getId());
+			});
 
 			return m.getId();
 		} catch (FormatException e) {
