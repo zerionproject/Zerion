@@ -266,9 +266,11 @@
 	<!-- ================================================================== -->
 
 	<style name="Zerion.Progress.Circular" parent="Widget.Material3.CircularProgressIndicator">
+		<item name="android:indeterminate">true</item>
 		<item name="indicatorColor">@color/zerion_cyan</item>
-		<item name="trackColor">@color/zerion_card_bg</item>
+		<item name="trackColor">@android:color/transparent</item>
 		<item name="trackThickness">4dp</item>
+		<item name="trackCornerRadius">2dp</item>
 	</style>
 
 	<style name="Zerion.Progress.Linear" parent="Widget.Material3.LinearProgressIndicator">
