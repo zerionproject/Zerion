@@ -57,7 +57,12 @@ class ConversationAdapter
 
 	@Override
 	public long getItemId(int position) {
-		return items.get(position).getId().hashCode();
+		byte[] b = items.get(position).getId().getBytes();
+		long id = 0;
+		for (int i = 0; i < 8 && i < b.length; i++) {
+			id = (id << 8) | (b[i] & 0xFF);
+		}
+		return id;
 	}
 
 	@LayoutRes

@@ -121,28 +121,36 @@ public class BackupFragment extends Fragment {
 				passwordField(context, R.string.backup_password_confirm_hint);
 		layout.addView(pass);
 		layout.addView(confirm);
-		new MaterialAlertDialogBuilder(context)
-				.setTitle(R.string.backup_export_title)
-				.setMessage(R.string.backup_export_warning)
-				.setView(layout)
-				.setPositiveButton(R.string.ok, (d, w) -> {
-					char[] p1 = chars(pass);
-					char[] p2 = chars(confirm);
-					try {
-						if (p1.length < 1) {
-							toast(R.string.backup_password_empty);
-						} else if (!Arrays.equals(p1, p2)) {
-							toast(R.string.backup_passwords_mismatch);
-						} else {
-							runExport(dest, p1.clone());
+		androidx.appcompat.app.AlertDialog dlg =
+				new MaterialAlertDialogBuilder(context)
+						.setTitle(R.string.backup_export_title)
+						.setMessage(R.string.backup_export_warning)
+						.setView(layout)
+						.setPositiveButton(R.string.ok, null)
+						.setNegativeButton(R.string.cancel, null)
+						.create();
+		dlg.setOnShowListener(dd -> dlg.getButton(
+				androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)
+				.setOnClickListener(x -> {
+						char[] p1 = peekChars(pass);
+						char[] p2 = peekChars(confirm);
+						try {
+							if (p1.length < 1) {
+								toast(R.string.backup_password_empty);
+							} else if (!Arrays.equals(p1, p2)) {
+								toast(R.string.backup_passwords_mismatch);
+							} else {
+								pass.getText().clear();
+								confirm.getText().clear();
+								runExport(dest, p1.clone());
+								dlg.dismiss();
+							}
+						} finally {
+							Arrays.fill(p1, '\0');
+							Arrays.fill(p2, '\0');
 						}
-					} finally {
-						Arrays.fill(p1, '\0');
-						Arrays.fill(p2, '\0');
-					}
-				})
-				.setNegativeButton(R.string.cancel, null)
-				.show();
+				}));
+		dlg.show();
 	}
 
 	private void showImportPasswordDialog(Uri src) {
@@ -156,30 +164,39 @@ public class BackupFragment extends Fragment {
 		layout.addView(pass);
 		layout.addView(newPass);
 		layout.addView(confirm);
-		new MaterialAlertDialogBuilder(context)
-				.setTitle(R.string.backup_import_title)
-				.setMessage(R.string.backup_import_warning)
-				.setView(layout)
-				.setPositiveButton(R.string.ok, (d, w) -> {
-					char[] p = chars(pass);
-					char[] np1 = chars(newPass);
-					char[] np2 = chars(confirm);
-					try {
-						if (p.length < 1 || np1.length < 1) {
-							toast(R.string.backup_password_empty);
-						} else if (!Arrays.equals(np1, np2)) {
-							toast(R.string.backup_passwords_mismatch);
-						} else {
-							runImport(src, p.clone(), np1.clone());
+		androidx.appcompat.app.AlertDialog dlg =
+				new MaterialAlertDialogBuilder(context)
+						.setTitle(R.string.backup_import_title)
+						.setMessage(R.string.backup_import_warning)
+						.setView(layout)
+						.setPositiveButton(R.string.ok, null)
+						.setNegativeButton(R.string.cancel, null)
+						.create();
+		dlg.setOnShowListener(dd -> dlg.getButton(
+				androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)
+				.setOnClickListener(x -> {
+						char[] p = peekChars(pass);
+						char[] np1 = peekChars(newPass);
+						char[] np2 = peekChars(confirm);
+						try {
+							if (p.length < 1 || np1.length < 1) {
+								toast(R.string.backup_password_empty);
+							} else if (!Arrays.equals(np1, np2)) {
+								toast(R.string.backup_passwords_mismatch);
+							} else {
+								pass.getText().clear();
+								newPass.getText().clear();
+								confirm.getText().clear();
+								runImport(src, p.clone(), np1.clone());
+								dlg.dismiss();
+							}
+						} finally {
+							Arrays.fill(p, '\0');
+							Arrays.fill(np1, '\0');
+							Arrays.fill(np2, '\0');
 						}
-					} finally {
-						Arrays.fill(p, '\0');
-						Arrays.fill(np1, '\0');
-						Arrays.fill(np2, '\0');
-					}
-				})
-				.setNegativeButton(R.string.cancel, null)
-				.show();
+				}));
+		dlg.show();
 	}
 
 	private void runExport(Uri dest, char[] passphrase) {
@@ -338,6 +355,13 @@ public class BackupFragment extends Fragment {
 		char[] out = new char[e.length()];
 		e.getChars(0, e.length(), out, 0);
 		e.clear();
+		return out;
+	}
+
+	private char[] peekChars(EditText field) {
+		android.text.Editable e = field.getText();
+		char[] out = new char[e.length()];
+		e.getChars(0, e.length(), out, 0);
 		return out;
 	}
 

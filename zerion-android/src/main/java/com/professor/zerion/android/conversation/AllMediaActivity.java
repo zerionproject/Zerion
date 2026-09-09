@@ -326,8 +326,13 @@ public class AllMediaActivity extends ZerionActivity {
 					documentOverlay.setVisibility(View.VISIBLE);
 
 					String contentType = item.header.getContentType();
-					String extension = getExtensionFromMimeType(contentType);
-					documentName.setText(extension.toUpperCase());
+					if (contentType.startsWith("audio/")) {
+						documentName.setText(R.string.voice_message);
+					} else {
+						String extension =
+								getExtensionFromMimeType(contentType);
+						documentName.setText(extension.toUpperCase());
+					}
 				}
 
 				itemView.setOnClickListener(v -> openMedia(item));
@@ -441,7 +446,8 @@ public class AllMediaActivity extends ZerionActivity {
 			Intent intent = new Intent(this, ImageActivity.class);
 			intent.putParcelableArrayListExtra(ImageActivity.ATTACHMENTS, attachments);
 			intent.putExtra(ImageActivity.ATTACHMENT_POSITION, 0);
-			intent.putExtra(ImageActivity.NAME, "");
+			intent.putExtra(ImageActivity.NAME,
+					getString(R.string.media));
 			intent.putExtra(ImageActivity.DATE, item.timestamp);
 			intent.putExtra(ImageActivity.ITEM_ID, item.messageId.getBytes());
 			startActivity(intent);

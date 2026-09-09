@@ -45,6 +45,17 @@ class GroupTrPostAdapter
 		String formatDuration(long ms);
 	}
 
+	private static void showLinkDialog(android.view.View v, String url) {
+		android.content.Context c = v.getContext();
+		if (c instanceof androidx.fragment.app.FragmentActivity) {
+			com.professor.zerion.android.widget.LinkDialogFragment f =
+					com.professor.zerion.android.widget.LinkDialogFragment
+							.newInstance(url);
+			f.show(((androidx.fragment.app.FragmentActivity) c)
+					.getSupportFragmentManager(), f.getUniqueTag());
+		}
+	}
+
 	private static final int TEXT_IN = 0;
 	private static final int TEXT_OUT = 1;
 	private static final int VOICE_IN = 2;
@@ -116,6 +127,27 @@ class GroupTrPostAdapter
 				return;
 			}
 		}
+	}
+
+	private static final androidx.collection.LruCache<String, Bitmap>
+			MEDIA_CACHE = new androidx.collection.LruCache<String, Bitmap>(
+					16 * 1024 * 1024) {
+		@Override
+		protected int sizeOf(String key, Bitmap value) {
+			return value.getByteCount();
+		}
+	};
+
+	private static String mediaKey(GroupTrPost p, String kind) {
+		byte[] pk = p.getSenderPubKey();
+		StringBuilder sb = new StringBuilder();
+		sb.append(kind).append('_').append(p.getEpoch()).append('_')
+				.append(p.getTimestamp()).append('_');
+		int n = Math.min(8, pk == null ? 0 : pk.length);
+		for (int i = 0; i < n; i++) {
+			sb.append(String.format(java.util.Locale.US, "%02x", pk[i]));
+		}
+		return sb.toString();
 	}
 
 	static boolean samePost(GroupTrPost a, GroupTrPost b) {
@@ -235,6 +267,14 @@ class GroupTrPostAdapter
 			if (!com.professor.zerion.android.channel.ChannelInviteSpanUtil
 					.apply(body, parsed.text)) {
 				body.setText(parsed.text);
+				if (parsed.text != null && (parsed.text.indexOf('.') >= 0
+						|| parsed.text.indexOf(':') >= 0)) {
+					android.text.util.Linkify.addLinks(body,
+							android.text.util.Linkify.WEB_URLS);
+					com.professor.zerion.android.util.UiUtils
+							.makeLinksClickable(body,
+									url -> showLinkDialog(body, url));
+				}
 			}
 			time.setText(cb.formatTime(p.getTimestamp()));
 		}
@@ -259,12 +299,19 @@ class GroupTrPostAdapter
 			byte[] bytes = parsed.payload;
 			String mime = parsed.mime;
 			img.setOnClickListener(v -> cb.onImageClick(bytes, mime));
+			String cacheKey = mediaKey(p, "i");
+			Bitmap cached = MEDIA_CACHE.get(cacheKey);
+			if (cached != null && !cached.isRecycled()) {
+				img.setImageBitmap(cached);
+				return;
+			}
 			img.setImageDrawable(null);
 			Object token = new Object();
 			imageToken = token;
 			DECODE_EXECUTOR.execute(() -> {
 				Bitmap bmp = SafeImageDecoder.decode(bytes, 1024);
 				if (bmp == null) return;
+				MEDIA_CACHE.put(cacheKey, bmp);
 				img.post(() -> {
 					if (imageToken == token && mediaImage == img) {
 						img.setImageBitmap(bmp);
@@ -280,20 +327,27 @@ class GroupTrPostAdapter
 			mediaImage = thumb;
 			duration.setText(cb.formatDuration(parsed.durationMs));
 			time.setText(cb.formatTime(p.getTimestamp()));
-			thumb.setImageDrawable(null);
 			byte[] bytes = parsed.payload;
 			String mime = parsed.mime;
-			Object token = new Object();
-			imageToken = token;
-			DECODE_EXECUTOR.execute(() -> {
-				Bitmap thumbBmp = cb.videoThumb(bytes);
-				if (thumbBmp == null) return;
-				thumb.post(() -> {
-					if (imageToken == token && mediaImage == thumb) {
-						thumb.setImageBitmap(thumbBmp);
-					}
+			String cacheKey = mediaKey(p, "v");
+			Bitmap cachedThumb = MEDIA_CACHE.get(cacheKey);
+			if (cachedThumb != null && !cachedThumb.isRecycled()) {
+				thumb.setImageBitmap(cachedThumb);
+			} else {
+				thumb.setImageDrawable(null);
+				Object token = new Object();
+				imageToken = token;
+				DECODE_EXECUTOR.execute(() -> {
+					Bitmap thumbBmp = cb.videoThumb(bytes);
+					if (thumbBmp == null) return;
+					MEDIA_CACHE.put(cacheKey, thumbBmp);
+					thumb.post(() -> {
+						if (imageToken == token && mediaImage == thumb) {
+							thumb.setImageBitmap(thumbBmp);
+						}
+					});
 				});
-			});
+			}
 			View bubble = itemView.findViewById(R.id.mediaBubble);
 			bubble.setOnClickListener(v -> cb.onVideoClick(bytes, mime));
 		}

@@ -788,12 +788,16 @@ public class VaultWalletFragment extends BaseFragment {
 		dlg.setOnShowListener(dd -> dlg.getButton(
 				androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)
 				.setOnClickListener(x -> {
-					char[] pw = chars(pass);
+					char[] pw = peekChars(pass);
 					if (pw.length == 0) {
 						toast(getString(R.string.wallet_password_required));
 						return;
 					}
-					if (!java.util.Arrays.equals(pw, chars(confirm))) {
+					char[] pw2 = peekChars(confirm);
+					boolean match = java.util.Arrays.equals(pw, pw2);
+					java.util.Arrays.fill(pw2, ' ');
+					if (!match) {
+						java.util.Arrays.fill(pw, ' ');
 						toast(getString(R.string.wallet_password_mismatch));
 						return;
 					}
@@ -801,6 +805,8 @@ public class VaultWalletFragment extends BaseFragment {
 					if (n.isEmpty()) {
 						n = getString(R.string.wallet_card_title);
 					}
+					clearField(pass);
+					clearField(confirm);
 					viewModel.createBtcWallet(n, pw);
 					dlg.dismiss();
 				}));
@@ -841,17 +847,23 @@ public class VaultWalletFragment extends BaseFragment {
 		dlg.setOnShowListener(dd -> dlg.getButton(
 				androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)
 				.setOnClickListener(x -> {
-					char[] ph = chars(phrase);
+					char[] ph = peekChars(phrase);
 					if (ph.length == 0) {
 						toast(getString(R.string.wallet_import_invalid));
 						return;
 					}
-					char[] pw = chars(pass);
+					char[] pw = peekChars(pass);
 					if (pw.length == 0) {
+						java.util.Arrays.fill(ph, ' ');
 						toast(getString(R.string.wallet_password_required));
 						return;
 					}
-					if (!java.util.Arrays.equals(pw, chars(confirm))) {
+					char[] pw2 = peekChars(confirm);
+					boolean match = java.util.Arrays.equals(pw, pw2);
+					java.util.Arrays.fill(pw2, ' ');
+					if (!match) {
+						java.util.Arrays.fill(ph, ' ');
+						java.util.Arrays.fill(pw, ' ');
 						toast(getString(R.string.wallet_password_mismatch));
 						return;
 					}
@@ -859,6 +871,9 @@ public class VaultWalletFragment extends BaseFragment {
 					if (n.isEmpty()) {
 						n = getString(R.string.wallet_card_title);
 					}
+					clearField(phrase);
+					clearField(pass);
+					clearField(confirm);
 					viewModel.importBtcWallet(n, ph, pw);
 					dlg.dismiss();
 				}));
@@ -2412,6 +2427,21 @@ public class VaultWalletFragment extends BaseFragment {
 		return out;
 	}
 
+	private static char[] peekChars(TextInputEditText e) {
+		android.text.Editable ed = e.getText();
+		int n = ed == null ? 0 : ed.length();
+		char[] out = new char[n];
+		if (n > 0) {
+			ed.getChars(0, n, out, 0);
+		}
+		return out;
+	}
+
+	private static void clearField(TextInputEditText e) {
+		android.text.Editable ed = e.getText();
+		if (ed != null) ed.clear();
+	}
+
 	private void renderBalance() {
 		Long sat = viewModel.getBtcBalanceSat().getValue();
 		long s = sat == null ? -1L : sat;
@@ -2474,8 +2504,10 @@ public class VaultWalletFragment extends BaseFragment {
 				return "A$";
 			case "CHF":
 				return "CHF ";
-			default:
+			case "EUR":
 				return "€";
+			default:
+				return cur + " ";
 		}
 	}
 

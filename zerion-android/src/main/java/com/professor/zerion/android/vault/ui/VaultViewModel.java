@@ -1169,6 +1169,16 @@ public class VaultViewModel extends AndroidViewModel {
 		});
 	}
 
+	public boolean isWalletAuthPin() {
+		try {
+			synchronized (walletStore.settingsLock) {
+				return "PIN".equals(settingsObject().optString("authType"));
+			}
+		} catch (Throwable e) {
+			return false;
+		}
+	}
+
 	private volatile int walletGateFailures = 0;
 	private volatile long walletGateBackoffUntil = 0;
 

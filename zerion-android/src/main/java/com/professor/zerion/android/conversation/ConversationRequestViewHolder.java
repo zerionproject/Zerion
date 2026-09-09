@@ -43,19 +43,22 @@ class ConversationRequestViewHolder extends ConversationNoticeViewHolder {
 			acceptButton.setVisibility(VISIBLE);
 			acceptButton.setText(R.string.accept);
 			acceptButton.setOnClickListener(v -> {
+				request.setAnswered();
 				acceptButton.setEnabled(false);
 				declineButton.setEnabled(false);
 				listener.respondToRequest(request, true);
 			});
 			declineButton.setVisibility(VISIBLE);
 			declineButton.setOnClickListener(v -> {
+				request.setAnswered();
 				acceptButton.setEnabled(false);
 				declineButton.setEnabled(false);
 				listener.respondToRequest(request, false);
 			});
 		}
-		acceptButton.setEnabled(true);
-		declineButton.setEnabled(true);
+		boolean answered = request.wasAnswered();
+		acceptButton.setEnabled(!answered);
+		declineButton.setEnabled(!answered);
 	}
 
 }

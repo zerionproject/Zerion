@@ -238,27 +238,66 @@ public class NotificationsFragment extends Fragment {
 	@TargetApi(NOTIFICATION_CHANNEL_API)
 	private void setupAndroidOAndLaterNotifications() {
 		notifyPrivateMessagesSwitch.setClickable(false);
-		notifyPrivateMessagesSwitch.setChecked(true);
+		notifyPrivateMessagesSwitch.setChecked(
+				isChannelEnabled(CONTACT_CHANNEL_ID));
 		notifyPrivateMessagesCard.setOnClickListener(v ->
 				openChannelSettings(CONTACT_CHANNEL_ID));
 		notifyGroupMessagesSwitch.setClickable(false);
-		notifyGroupMessagesSwitch.setChecked(true);
+		notifyGroupMessagesSwitch.setChecked(
+				isChannelEnabled(GROUP_CHANNEL_ID));
 		notifyGroupMessagesCard.setOnClickListener(v ->
 				openChannelSettings(GROUP_CHANNEL_ID));
 		notifyChannelPostsSwitch.setClickable(false);
-		notifyChannelPostsSwitch.setChecked(true);
+		notifyChannelPostsSwitch.setChecked(
+				isChannelEnabled(CHANNEL_CHANNEL_ID));
 		notifyChannelPostsCard.setOnClickListener(v ->
 				openChannelSettings(CHANNEL_CHANNEL_ID));
 		notifyVoiceCallsSwitch.setClickable(false);
-		notifyVoiceCallsSwitch.setChecked(true);
+		notifyVoiceCallsSwitch.setChecked(
+				isChannelEnabled(CONTACT_CHANNEL_ID));
 		notifyVoiceCallsCard.setOnClickListener(v ->
 				openChannelSettings(CONTACT_CHANNEL_ID));
 		notifyVibrationSwitch.setClickable(false);
-		notifyVibrationSwitch.setChecked(true);
+		notifyVibrationSwitch.setChecked(areAppNotificationsEnabled());
 		notifyVibrationCard.setOnClickListener(v -> openAppNotificationSettings());
 
 		notifySoundValue.setText(R.string.notify_sound_setting_system);
 		notifySoundCard.setOnClickListener(v -> openAppNotificationSettings());
+	}
+
+	@TargetApi(NOTIFICATION_CHANNEL_API)
+	private boolean isChannelEnabled(String channelId) {
+		if (!areAppNotificationsEnabled()) return false;
+		android.app.NotificationManager nm = (android.app.NotificationManager)
+				requireContext().getSystemService(
+						android.content.Context.NOTIFICATION_SERVICE);
+		if (nm == null) return true;
+		android.app.NotificationChannel ch =
+				nm.getNotificationChannel(channelId);
+		if (ch == null) return true;
+		return ch.getImportance()
+				!= android.app.NotificationManager.IMPORTANCE_NONE;
+	}
+
+	private boolean areAppNotificationsEnabled() {
+		return androidx.core.app.NotificationManagerCompat
+				.from(requireContext()).areNotificationsEnabled();
+	}
+
+	@Override
+	public void onResume() {
+		super.onResume();
+		if (android.os.Build.VERSION.SDK_INT >= NOTIFICATION_CHANNEL_API) {
+			notifyPrivateMessagesSwitch.setChecked(
+					isChannelEnabled(CONTACT_CHANNEL_ID));
+			notifyGroupMessagesSwitch.setChecked(
+					isChannelEnabled(GROUP_CHANNEL_ID));
+			notifyChannelPostsSwitch.setChecked(
+					isChannelEnabled(CHANNEL_CHANNEL_ID));
+			notifyVoiceCallsSwitch.setChecked(
+					isChannelEnabled(CONTACT_CHANNEL_ID));
+			notifyVibrationSwitch.setChecked(areAppNotificationsEnabled());
+		}
 	}
 
 	@TargetApi(NOTIFICATION_CHANNEL_API)

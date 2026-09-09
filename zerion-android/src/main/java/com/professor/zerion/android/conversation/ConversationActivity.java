@@ -995,7 +995,13 @@ public class ConversationActivity extends ZerionActivity
 			searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
 				@Override
 				public boolean onQueryTextSubmit(String query) {
-					navigateSearchNext();
+					searchFromSubmit = true;
+					if (searchMatchPositions.isEmpty()) {
+						performMessageSearch(query);
+					} else {
+						navigateSearchNext();
+					}
+					searchFromSubmit = false;
 					return true;
 				}
 
@@ -2214,6 +2220,9 @@ public class ConversationActivity extends ZerionActivity
 		}
 	}
 
+	private boolean lastSearchHadResults = false;
+	private boolean searchFromSubmit = false;
+
 	@UiThread
 	private void performMessageSearch(String query) {
 		searchMatchPositions.clear();
@@ -2237,9 +2246,13 @@ public class ConversationActivity extends ZerionActivity
 		if (!searchMatchPositions.isEmpty()) {
 			searchMatchIndex = 0;
 			scrollToSearchMatch();
+			lastSearchHadResults = true;
 		} else {
-			Toast.makeText(this, R.string.search_no_results,
-					Toast.LENGTH_SHORT).show();
+			if (lastSearchHadResults || searchFromSubmit) {
+				Toast.makeText(this, R.string.search_no_results,
+						Toast.LENGTH_SHORT).show();
+			}
+			lastSearchHadResults = false;
 		}
 	}
 

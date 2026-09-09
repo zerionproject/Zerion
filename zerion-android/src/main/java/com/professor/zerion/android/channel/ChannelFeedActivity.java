@@ -1272,6 +1272,27 @@ public class ChannelFeedActivity extends ZerionActivity
 				commentBadge.setOnClickListener(null);
 			}
 			body.setText(p.getBody());
+			String bodyText = p.getBody();
+			if (bodyText.indexOf('.') >= 0 || bodyText.indexOf(':') >= 0) {
+				android.text.util.Linkify.addLinks(body,
+						android.text.util.Linkify.WEB_URLS);
+				com.professor.zerion.android.util.UiUtils.makeLinksClickable(
+						body, url -> {
+							android.content.Context bc = body.getContext();
+							if (!(bc instanceof
+									androidx.fragment.app.FragmentActivity)) {
+								return;
+							}
+							com.professor.zerion.android.widget
+									.LinkDialogFragment f =
+									com.professor.zerion.android.widget
+											.LinkDialogFragment
+											.newInstance(url);
+							f.show(((androidx.fragment.app.FragmentActivity)
+									bc).getSupportFragmentManager(),
+									f.getUniqueTag());
+						});
+			}
 			body.setVisibility(p.getBody().trim().isEmpty()
 					? View.GONE : View.VISIBLE);
 			bindAttachments(p, attachmentTapListener, thumbnails);

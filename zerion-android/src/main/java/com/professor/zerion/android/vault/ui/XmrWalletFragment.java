@@ -87,6 +87,10 @@ public class XmrWalletFragment extends BaseFragment {
 
 	private void observe() {
 		viewModel.getWallets().observe(getViewLifecycleOwner(), this::render);
+		viewModel.getBusy().observe(getViewLifecycleOwner(), busy -> {
+			if (busy != null && busy) showOpening();
+			else dismissOpening();
+		});
 		viewModel.getError().observe(getViewLifecycleOwner(), ev -> {
 			XmrError e = ev == null ? null : ev.getIfNotHandled();
 			if (e != null) {
@@ -214,7 +218,7 @@ public class XmrWalletFragment extends BaseFragment {
 			((TextView) row.findViewById(R.id.wallet_row_name)).setText(w.name);
 			((TextView) row.findViewById(R.id.wallet_row_coin))
 					.setText(w.coin.getLabel());
-			row.setOnClickListener(x -> showUnlockDialog(w));
+			row.setOnClickListener(x -> openWallet(w));
 			row.setOnLongClickListener(x -> {
 				confirmDelete(w);
 				return true;
@@ -305,6 +309,21 @@ public class XmrWalletFragment extends BaseFragment {
 				})
 				.setNegativeButton(android.R.string.cancel, null)
 				.create()).show();
+	}
+
+	private void openWallet(WalletRecord w) {
+		boolean needsPw;
+		try {
+			needsPw = viewModel.needsPasswordToOpen(w.id);
+		} catch (RuntimeException e) {
+			needsPw = true;
+		}
+		if (needsPw) {
+			showUnlockDialog(w);
+		} else {
+			showOpening();
+			viewModel.openWalletForView(w.id);
+		}
 	}
 
 	private void showUnlockDialog(WalletRecord w) {

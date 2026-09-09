@@ -511,10 +511,14 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 				"<meta charset=\"utf-8\">" +
 				"<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" +
 				"<style>" +
-				"body { font-family: sans-serif; padding: 16px; line-height: 1.6; }" +
-				"h1, h2, h3 { color: #333; }" +
-				"code { background: #f4f4f4; padding: 2px 6px; border-radius: 3px; }" +
-				"pre { background: #f4f4f4; padding: 12px; border-radius: 6px; overflow-x: auto; }" +
+				"body { font-family: sans-serif; padding: 16px;" +
+				" line-height: 1.6; background: #101418; color: #E4E7EB; }" +
+				"h1, h2, h3 { color: #FFFFFF; }" +
+				"a { color: #22D3EE; }" +
+				"code { background: #1D242B; padding: 2px 6px;" +
+				" border-radius: 3px; }" +
+				"pre { background: #1D242B; padding: 12px;" +
+				" border-radius: 6px; overflow-x: auto; }" +
 				"</style>" +
 				"</head>" +
 				"<body>" +

@@ -500,7 +500,14 @@ public class GroupTrConversationActivity extends ZerionActivity
 
 		@Override
 		public String formatTime(long ts) {
-			return tsFmt.format(new Date(ts));
+			long now = System.currentTimeMillis();
+			if (now - ts < 24L * 60L * 60L * 1000L
+					&& android.text.format.DateUtils.isToday(ts)) {
+				return tsFmt.format(new Date(ts));
+			}
+			return com.professor.zerion.android.util.UiUtils
+					.formatDate(GroupTrConversationActivity.this, ts)
+					+ " " + tsFmt.format(new Date(ts));
 		}
 
 		@Override

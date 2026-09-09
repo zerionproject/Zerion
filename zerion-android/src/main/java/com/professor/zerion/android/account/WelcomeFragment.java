@@ -141,30 +141,39 @@ public class WelcomeFragment extends Fragment {
 		layout.addView(pass);
 		layout.addView(newPass);
 		layout.addView(confirm);
-		new MaterialAlertDialogBuilder(context)
-				.setTitle(R.string.welcome_import_file)
-				.setMessage(R.string.backup_import_warning)
-				.setView(layout)
-				.setPositiveButton(R.string.ok, (d, w) -> {
-					char[] p = chars(pass);
-					char[] np1 = chars(newPass);
-					char[] np2 = chars(confirm);
+		androidx.appcompat.app.AlertDialog dlg =
+				new MaterialAlertDialogBuilder(context)
+						.setTitle(R.string.welcome_import_file)
+						.setMessage(R.string.backup_import_warning)
+						.setView(layout)
+						.setPositiveButton(R.string.ok, null)
+						.setNegativeButton(R.string.cancel, null)
+						.create();
+		dlg.setOnShowListener(dd -> dlg.getButton(
+				androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)
+				.setOnClickListener(x -> {
+					char[] p = peekChars(pass);
+					char[] np1 = peekChars(newPass);
+					char[] np2 = peekChars(confirm);
 					try {
 						if (p.length < 1 || np1.length < 1) {
 							toast(R.string.backup_password_empty);
 						} else if (!Arrays.equals(np1, np2)) {
 							toast(R.string.backup_passwords_mismatch);
 						} else {
+							clearField(pass);
+							clearField(newPass);
+							clearField(confirm);
 							runImport(src, p.clone(), np1.clone());
+							dlg.dismiss();
 						}
 					} finally {
 						Arrays.fill(p, '\0');
 						Arrays.fill(np1, '\0');
 						Arrays.fill(np2, '\0');
 					}
-				})
-				.setNegativeButton(R.string.cancel, null)
-				.show();
+				}));
+		dlg.show();
 	}
 
 	private void runImport(Uri src, char[] passphrase, char[] newPassword) {
@@ -241,11 +250,20 @@ public class WelcomeFragment extends Fragment {
 	}
 
 	private char[] chars(EditText field) {
+		char[] out = peekChars(field);
+		clearField(field);
+		return out;
+	}
+
+	private char[] peekChars(EditText field) {
 		android.text.Editable e = field.getText();
 		char[] out = new char[e.length()];
 		e.getChars(0, e.length(), out, 0);
-		e.clear();
 		return out;
+	}
+
+	private void clearField(EditText field) {
+		field.getText().clear();
 	}
 
 	private void setStatus(String s) {

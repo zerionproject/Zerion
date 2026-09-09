@@ -91,6 +91,10 @@ public class NavDrawerActivity extends ZerionActivity implements
 	VaultManager vaultManager;
 
 	@Inject
+	@com.professor.zerion.android.AppModule.SecurePrefs
+	android.content.SharedPreferences securePrefs;
+
+	@Inject
 	DonationManager donationManager;
 
 	@Inject
@@ -502,9 +506,37 @@ public class NavDrawerActivity extends ZerionActivity implements
 		badge.setVisible(c > 0);
 	}
 
+	private final android.os.Handler vaultAutolockHandler =
+			new android.os.Handler(android.os.Looper.getMainLooper());
+	private final Runnable vaultAutolockRunnable = () -> {
+		if (vaultManager.isUnlocked()) vaultManager.lockVault();
+	};
+
+	@Override
+	protected void onStop() {
+		super.onStop();
+		if (!vaultManager.isUnlocked()) return;
+		if (isFinishing()) {
+			vaultManager.lockVault();
+			return;
+		}
+		int timeoutSeconds = securePrefs.getInt("autolock_timeout", 60);
+		if (timeoutSeconds < 0) return;
+		if (timeoutSeconds == 0) {
+			vaultManager.lockVault();
+			return;
+		}
+		vaultAutolockHandler.postDelayed(vaultAutolockRunnable,
+				timeoutSeconds * 1000L);
+	}
+
 	@Override
 	public void onStart() {
 		super.onStart();
+		vaultAutolockHandler.removeCallbacks(vaultAutolockRunnable);
+		if (currentTab == TAB_VAULT && !vaultManager.isUnlocked()) {
+			switchTab(TAB_VAULT, true);
+		}
 		navDrawerViewModel.checkUnreadCounts();
 		lockManager.checkIfLockable();
 		if (IS_DEBUG_BUILD) {

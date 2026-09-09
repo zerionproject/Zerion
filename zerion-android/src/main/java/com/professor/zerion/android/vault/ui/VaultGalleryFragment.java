@@ -6,6 +6,8 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import androidx.core.content.FileProvider;
+import com.professor.zerion.android.vault.utils.SecureMemory;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.text.Editable;
@@ -347,8 +349,44 @@ public class VaultGalleryFragment extends BaseFragment {
 	private void captureImage() {
 		Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 		if (intent.resolveActivity(requireActivity().getPackageManager()) != null) {
+			try {
+				java.io.File dir = new java.io.File(
+						requireContext().getCacheDir(), "camera_photos");
+				if (!dir.exists() && !dir.mkdirs()) return;
+				java.io.File photo = new java.io.File(dir,
+						"capture_" + System.currentTimeMillis() + ".jpg");
+				pendingCaptureFile = photo;
+				Uri uri = FileProvider.getUriForFile(requireContext(),
+						requireContext().getPackageName() + ".fileprovider",
+						photo);
+				intent.putExtra(MediaStore.EXTRA_OUTPUT, uri);
+				intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+			} catch (RuntimeException e) {
+				pendingCaptureFile = null;
+			}
 			expectChildResult();
 			startActivityForResult(intent, REQUEST_IMAGE_CAPTURE);
+		}
+	}
+
+	@Nullable
+	private java.io.File pendingCaptureFile;
+
+	@Nullable
+	private byte[] readFileFully(java.io.File f) {
+		try (java.io.FileInputStream in = new java.io.FileInputStream(f)) {
+			long len = f.length();
+			if (len <= 0 || len > 64L * 1024L * 1024L) return null;
+			byte[] out = new byte[(int) len];
+			int read = 0;
+			while (read < out.length) {
+				int n = in.read(out, read, out.length - read);
+				if (n < 0) return null;
+				read += n;
+			}
+			return out;
+		} catch (java.io.IOException e) {
+			return null;
 		}
 	}
 
@@ -363,31 +401,32 @@ public class VaultGalleryFragment extends BaseFragment {
 	public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
 		super.onActivityResult(requestCode, resultCode, data);
 
-		if (resultCode == Activity.RESULT_OK && data != null) {
-			if (requestCode == REQUEST_IMAGE_CAPTURE) {
-				android.os.Bundle extras = data.getExtras();
-				if (extras != null) {
-					android.graphics.Bitmap imageBitmap = (android.graphics.Bitmap) extras.get("data");
-					if (imageBitmap != null) {
-						java.io.ByteArrayOutputStream outputStream = new java.io.ByteArrayOutputStream();
-						try {
-							imageBitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, outputStream);
-							byte[] content = outputStream.toByteArray();
-
-							String fileName = "photo_" + System.currentTimeMillis() + ".jpg";
-
-							viewModel.addMediaToVault(VaultItem.ItemType.IMAGE, fileName, content, "image/jpeg");
-							showSnackbar(getString(R.string.vault_gallery_photo_saved));
-						} finally {
-							imageBitmap.recycle();
-							try {
-								outputStream.close();
-							} catch (Exception e) {
-							}
-						}
+		if (requestCode == REQUEST_IMAGE_CAPTURE) {
+			java.io.File photo = pendingCaptureFile;
+			pendingCaptureFile = null;
+			if (resultCode == Activity.RESULT_OK && photo != null
+					&& photo.exists() && photo.length() > 0) {
+				try {
+					byte[] content = readFileFully(photo);
+					if (content != null && content.length > 0) {
+						String fileName =
+								"photo_" + System.currentTimeMillis() + ".jpg";
+						viewModel.addMediaToVault(VaultItem.ItemType.IMAGE,
+								fileName, content, "image/jpeg");
+						showSnackbar(getString(
+								R.string.vault_gallery_photo_saved));
 					}
+				} finally {
+					SecureMemory.secureDeleteFile(photo, 0L, false);
 				}
-			} else if (requestCode == REQUEST_IMAGE_PICK) {
+			} else if (photo != null) {
+				SecureMemory.secureDeleteFile(photo, 0L, false);
+			}
+			return;
+		}
+
+		if (resultCode == Activity.RESULT_OK && data != null) {
+			if (requestCode == REQUEST_IMAGE_PICK) {
 				Uri imageUri = data.getData();
 				if (imageUri != null) {
 					java.io.InputStream inputStream = null;

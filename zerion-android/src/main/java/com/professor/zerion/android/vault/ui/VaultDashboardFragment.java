@@ -267,22 +267,34 @@ public class VaultDashboardFragment extends BaseFragment {
 				new com.google.android.material.textfield.TextInputEditText(
 						til.getContext());
 		input.setHint(R.string.wallet_auth_verify_hint);
-		input.setInputType(android.text.InputType.TYPE_CLASS_TEXT
-				| android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+		input.setInputType(viewModel.isWalletAuthPin()
+				? (android.text.InputType.TYPE_CLASS_NUMBER
+						| android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD)
+				: (android.text.InputType.TYPE_CLASS_TEXT
+						| android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD));
 		til.addView(input);
 		int pad = dp(20);
 		til.setPadding(pad, 0, pad, 0);
-		new com.google.android.material.dialog.MaterialAlertDialogBuilder(ctx)
-				.setTitle(R.string.wallet_auth_verify_title)
-				.setView(til)
-				.setPositiveButton(android.R.string.ok, (d, w) -> {
+		androidx.appcompat.app.AlertDialog dlg =
+				new com.google.android.material.dialog.MaterialAlertDialogBuilder(ctx)
+						.setTitle(R.string.wallet_auth_verify_title)
+						.setView(til)
+						.setPositiveButton(android.R.string.ok, null)
+						.setNegativeButton(android.R.string.cancel, null)
+						.create();
+		dlg.setOnShowListener(dd -> dlg.getButton(
+				androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)
+				.setOnClickListener(x -> {
 					char[] c = authChars(input);
-					if (c.length > 0) {
-						viewModel.verifyWalletAuth(c);
+					if (c.length == 0) {
+						til.setError(getString(
+								R.string.vault_password_required));
+						return;
 					}
-				})
-				.setNegativeButton(android.R.string.cancel, null)
-				.show();
+					viewModel.verifyWalletAuth(c);
+					dlg.dismiss();
+				}));
+		dlg.show();
 	}
 
 	private void showGateProgress() {

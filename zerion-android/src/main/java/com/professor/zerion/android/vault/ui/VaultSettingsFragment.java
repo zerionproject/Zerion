@@ -83,6 +83,9 @@ public class VaultSettingsFragment extends BaseFragment {
 		changePasswordCard = view.findViewById(R.id.change_password_card);
 		autolockCard = view.findViewById(R.id.autolock_card);
 		biometricSwitch = view.findViewById(R.id.biometric_switch);
+		view.findViewById(R.id.biometric_card)
+				.setVisibility(android.view.View.GONE);
+		observeResults();
 		autolockValue = view.findViewById(R.id.autolock_value);
 		clipboardSwitch = view.findViewById(R.id.clipboard_switch);
 		hideContentSwitch = view.findViewById(R.id.hide_content_switch);
@@ -280,13 +283,21 @@ public class VaultSettingsFragment extends BaseFragment {
 
 	private void changePassword(char[] currentPassword, char[] newPassword) {
 		viewModel.changePassword(currentPassword, newPassword);
+	}
 
-		viewModel.getSuccessMessage().observe(getViewLifecycleOwner(), success -> {
-			if (success != null && success.contains("Password changed")) {
+	private void observeResults() {
+		viewModel.getSuccessMessage().observe(getViewLifecycleOwner(),
+				success -> {
+			if (success == null) return;
+			if (success.contains("Password changed")) {
 				showToast(getString(R.string.vault_settings_password_changed));
+			} else if (success.contains("wiped")) {
+				if (getActivity() instanceof VaultActivity) {
+					((VaultActivity) getActivity()).showFragment(
+							new VaultSetupFragment(), "vault_setup", false);
+				}
 			}
 		});
-
 		viewModel.getErrorMessage().observe(getViewLifecycleOwner(), error -> {
 			if (error != null && !error.isEmpty()) {
 				showToast(error);
@@ -464,15 +475,6 @@ public class VaultSettingsFragment extends BaseFragment {
 	private void wipeVault() {
 		viewModel.wipeVault();
 		viewModel.clearSensitiveMemory();
-
-		viewModel.getSuccessMessage().observe(getViewLifecycleOwner(), success -> {
-			if (success != null && success.contains("wiped")) {
-				if (getActivity() instanceof VaultActivity) {
-					((VaultActivity) getActivity()).showFragment(
-						new VaultSetupFragment(), "vault_setup", false);
-				}
-			}
-		});
 	}
 
 	private void loadSettings() {

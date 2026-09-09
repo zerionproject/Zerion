@@ -16,6 +16,9 @@ import com.professor.zerion.R;
 @NotNullByDefault
 class SwipeToReplyCallback extends ItemTouchHelper.Callback {
 
+	@androidx.annotation.Nullable
+	private Drawable replyIcon;
+
 	private static final float TRIGGER_THRESHOLD = 0.3f;
 
 	private final OnSwipeReplyListener listener;
@@ -83,8 +86,11 @@ class SwipeToReplyCallback extends ItemTouchHelper.Callback {
 				}
 			}
 
-			Drawable icon = ContextCompat.getDrawable(rv.getContext(),
-					R.drawable.ic_reply);
+			if (replyIcon == null) {
+				replyIcon = ContextCompat.getDrawable(rv.getContext(),
+						R.drawable.ic_reply);
+			}
+			Drawable icon = replyIcon;
 			if (icon != null) {
 				float density = rv.getContext().getResources()
 						.getDisplayMetrics().density;

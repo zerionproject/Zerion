@@ -7,7 +7,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.WindowManager;
 import android.widget.Toast;
 
 import com.professor.zerion.R;
@@ -45,6 +44,10 @@ public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFr
 	@Inject
 	ViewModelProvider.Factory viewModelFactory;
 
+	@Inject
+	@com.professor.zerion.android.AppModule.SecurePrefs
+	android.content.SharedPreferences securePrefs;
+
 	private VaultViewModel viewModel;
 	private VaultViewModel.VaultState currentState = null;
 	private boolean isPickerMode = false;
@@ -52,7 +55,8 @@ public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFr
 
 	@Override
 	protected boolean forceScreenshotProtection() {
-		return true;
+		return securePrefs == null
+				|| securePrefs.getBoolean("hide_content_enabled", true);
 	}
 
 	@Override
@@ -60,10 +64,6 @@ public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFr
 
 		super.onCreate(savedInstanceState);
 
-		getWindow().setFlags(
-				WindowManager.LayoutParams.FLAG_SECURE,
-				WindowManager.LayoutParams.FLAG_SECURE
-		);
 		if (android.os.Build.VERSION.SDK_INT
 				>= android.os.Build.VERSION_CODES.S) {
 			getWindow().setHideOverlayWindows(true);
@@ -141,6 +141,19 @@ public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFr
 		expectingChildResult = false;
 		viewModel.lockIfUnlocked();
 	};
+	private final Runnable autolockRunnable =
+			() -> viewModel.lockIfUnlocked();
+
+	private void scheduleAutolock() {
+		int timeoutSeconds = securePrefs == null ? 60
+				: securePrefs.getInt("autolock_timeout", 60);
+		if (timeoutSeconds < 0) return;
+		if (timeoutSeconds == 0) {
+			viewModel.lockIfUnlocked();
+			return;
+		}
+		lockHandler.postDelayed(autolockRunnable, timeoutSeconds * 1000L);
+	}
 
 	public void setExpectingChildResult() {
 		expectingChildResult = true;
@@ -150,6 +163,7 @@ public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFr
 	public void onResume() {
 		super.onResume();
 		lockHandler.removeCallbacks(childResultLockWatchdog);
+		lockHandler.removeCallbacks(autolockRunnable);
 		expectingChildResult = false;
 		viewModel.refreshVaultState();
 	}
@@ -161,8 +175,10 @@ public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFr
 			lockHandler.removeCallbacks(childResultLockWatchdog);
 			lockHandler.postDelayed(childResultLockWatchdog,
 					CHILD_RESULT_GRACE_MS);
-		} else {
+		} else if (isFinishing()) {
 			viewModel.lockIfUnlocked();
+		} else {
+			scheduleAutolock();
 		}
 	}
 
@@ -197,7 +213,7 @@ public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFr
 				showFragment(fragment, "settings", true);
 			} else {
 				android.widget.Toast.makeText(this,
-					"Please unlock the vault first to access settings",
+					R.string.vault_unlock_first_settings,
 					android.widget.Toast.LENGTH_SHORT).show();
 			}
 			return true;

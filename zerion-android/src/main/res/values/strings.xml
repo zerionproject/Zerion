@@ -944,6 +944,7 @@
 	<string name="block_contact_error">Failed to block contact</string>
 	<string name="contact_blocked">Contact has been blocked</string>
 	<string name="unknown_contact">Unknown Contact</string>
+	<string name="vault_unlock_first_settings">Unlock the vault first to access settings</string>
 	<string name="dialog_password_hint">Password</string>
 	<string name="dialog_password_confirm_hint">Confirm password</string>
 	<string name="my_identity_loading">Loading…</string>

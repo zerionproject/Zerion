@@ -196,11 +196,12 @@ public class VoiceMessageViewHolder {
 				try {
 					mediaPlayer = new MediaPlayer();
 					mediaPlayer.setDataSource(tempFile.getAbsolutePath());
-					mediaPlayer.prepare();
-
-					duration = mediaPlayer.getDuration();
-					updateDurationText(duration);
-					showReadyState();
+					mediaPlayer.setOnPreparedListener(mp -> {
+						duration = mp.getDuration();
+						updateDurationText(duration);
+						showReadyState();
+					});
+					mediaPlayer.prepareAsync();
 
 					mediaPlayer.setOnCompletionListener(mp -> {
 						isPlaying = false;
@@ -208,6 +209,13 @@ public class VoiceMessageViewHolder {
 						progressBar.setProgress(0);
 						updateDurationText(duration);
 						cleanupTempFile();
+					});
+
+					mediaPlayer.setOnErrorListener((mp, what, extra) -> {
+						showErrorState(durationText.getContext()
+								.getString(R.string.voice_msg_failed_to_load));
+						cleanupTempFile();
+						return true;
 					});
 
 				} catch (IOException e) {

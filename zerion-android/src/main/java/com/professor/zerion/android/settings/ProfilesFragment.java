@@ -211,18 +211,26 @@ public class ProfilesFragment extends Fragment {
 		if (pwConfirmLayout != null) pwConfirmLayout.setHint(
 				getString(R.string.profiles_add_password_confirm_hint));
 
-		new MaterialAlertDialogBuilder(requireContext())
-				.setTitle(R.string.profiles_add_dialog_title)
-				.setMessage(R.string.profiles_add_dialog_message)
-				.setView(dialogView)
-				.setPositiveButton(R.string.profiles_add_title,
-						(dialog, which) -> handleAddProfileSubmit(
-								nameInput, pwInput, pwConfirmInput))
-				.setNegativeButton(R.string.cancel, null)
-				.show();
+		androidx.appcompat.app.AlertDialog dlg =
+				new MaterialAlertDialogBuilder(requireContext())
+						.setTitle(R.string.profiles_add_dialog_title)
+						.setMessage(R.string.profiles_add_dialog_message)
+						.setView(dialogView)
+						.setPositiveButton(R.string.profiles_add_title, null)
+						.setNegativeButton(R.string.cancel, null)
+						.create();
+		dlg.setOnShowListener(dd -> dlg.getButton(
+				androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)
+				.setOnClickListener(x -> {
+					if (handleAddProfileSubmit(nameInput, pwInput,
+							pwConfirmInput)) {
+						dlg.dismiss();
+					}
+				}));
+		dlg.show();
 	}
 
-	private void handleAddProfileSubmit(@Nullable EditText nameInput,
+	private boolean handleAddProfileSubmit(@Nullable EditText nameInput,
 			@Nullable EditText pwInput, @Nullable EditText pwConfirmInput) {
 		String name = nameInput == null
 				? "" : nameInput.getText().toString().trim();
@@ -231,22 +239,22 @@ public class ProfilesFragment extends Fragment {
 				pwConfirmInput == null ? "" : pwConfirmInput.getText();
 		if (name.isEmpty()) {
 			toast(R.string.profiles_name_too_short);
-			return;
+			return false;
 		}
 		if (ReservedNames.isReserved(name)) {
 			toast(R.string.name_reserved);
-			return;
+			return false;
 		}
 		char[] pw = charsOf(pwSeq);
 		char[] pwConfirm = charsOf(pwConfirmSeq);
 		try {
 			if (pw.length < 8) {
 				toast(R.string.profiles_password_too_short);
-				return;
+				return false;
 			}
 			if (!Arrays.equals(pw, pwConfirm)) {
 				toast(R.string.profiles_password_mismatch);
-				return;
+				return false;
 			}
 			final char[] pwToUse = pw;
 			io.execute(() -> {
@@ -280,6 +288,7 @@ public class ProfilesFragment extends Fragment {
 			if (pw != null) Arrays.fill(pw, '\0');
 			Arrays.fill(pwConfirm, '\0');
 		}
+			return true;
 	}
 
 	private void showSwitchProfileDialog() {

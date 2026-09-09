@@ -537,11 +537,16 @@ public class SecurityFragment extends Fragment {
 			});
 		}
 		warningText.setText(R.string.decoy_set_code_warning);
-		new MaterialAlertDialogBuilder(requireContext())
-				.setTitle(R.string.decoy_set_code_title)
-				.setView(dialogView)
-				.setPositiveButton(R.string.decoy_set_code_save,
-						(d, w) -> {
+		androidx.appcompat.app.AlertDialog dlg =
+				new MaterialAlertDialogBuilder(requireContext())
+						.setTitle(R.string.decoy_set_code_title)
+						.setView(dialogView)
+						.setPositiveButton(R.string.decoy_set_code_save, null)
+						.setNegativeButton(android.R.string.cancel, null)
+						.create();
+		dlg.setOnShowListener(dd -> dlg.getButton(
+				androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)
+				.setOnClickListener(x -> {
 							char[] a = readChars(codeInput1);
 							char[] b = readChars(codeInput2);
 							if (a.length == 0) {
@@ -566,6 +571,9 @@ public class SecurityFragment extends Fragment {
 							Toast.makeText(requireContext(),
 									R.string.decoy_set_code_saving,
 									Toast.LENGTH_SHORT).show();
+							if (codeInput1.getText() != null) codeInput1.getText().clear();
+							if (codeInput2.getText() != null) codeInput2.getText().clear();
+							dlg.dismiss();
 							kdfExecutor.execute(() -> {
 								try {
 									com.professor.zerion.android.decoy.DecoyConfig
@@ -581,9 +589,8 @@ public class SecurityFragment extends Fragment {
 									java.util.Arrays.fill(a, '\0');
 								}
 							});
-						})
-				.setNegativeButton(android.R.string.cancel, null)
-				.show();
+				}));
+		dlg.show();
 	}
 
 	private static char[] readChars(TextInputEditText input) {
@@ -626,11 +633,17 @@ public class SecurityFragment extends Fragment {
 			});
 		}
 
-		new MaterialAlertDialogBuilder(requireContext())
-				.setTitle(R.string.wipe_password_dialog_title)
-				.setMessage(R.string.wipe_password_dialog_message)
-				.setView(dialogView)
-				.setPositiveButton(R.string.set, (dialog, which) -> {
+		androidx.appcompat.app.AlertDialog wdlg =
+				new MaterialAlertDialogBuilder(requireContext())
+						.setTitle(R.string.wipe_password_dialog_title)
+						.setMessage(R.string.wipe_password_dialog_message)
+						.setView(dialogView)
+						.setPositiveButton(R.string.set, null)
+						.setNegativeButton(R.string.cancel, null)
+						.create();
+		wdlg.setOnShowListener(dd -> wdlg.getButton(
+				androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)
+				.setOnClickListener(x -> {
 					char[] pw1 = null;
 					char[] pw2 = null;
 					try {
@@ -655,6 +668,9 @@ public class SecurityFragment extends Fragment {
 							return;
 						}
 
+						if (passwordInput1 != null && passwordInput1.getText() != null) passwordInput1.getText().clear();
+						if (passwordInput2 != null && passwordInput2.getText() != null) passwordInput2.getText().clear();
+						wdlg.dismiss();
 						WipePasswordManager mgr = getWipePasswordManager();
 						final char[] pwToSet = pw1;
 						kdfExecutor.execute(() -> {
@@ -676,9 +692,8 @@ public class SecurityFragment extends Fragment {
 						if (pw1 != null) java.util.Arrays.fill(pw1, '\0');
 						if (pw2 != null) java.util.Arrays.fill(pw2, '\0');
 					}
-				})
-				.setNegativeButton(R.string.cancel, null)
-				.show();
+				}));
+		wdlg.show();
 	}
 
 	private void showWipePasswordRemoveDialog() {
