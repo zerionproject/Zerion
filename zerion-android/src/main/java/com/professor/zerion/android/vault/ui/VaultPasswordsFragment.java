@@ -387,13 +387,11 @@ public class VaultPasswordsFragment extends BaseFragment {
 		if (pendingClipboardClear != null) {
 			clipboardClearHandler.removeCallbacks(pendingClipboardClear);
 		}
+		android.content.Context appCtx =
+				requireContext().getApplicationContext();
 		pendingClipboardClear = () -> {
 			pendingClipboardClear = null;
 			try {
-				if (!isAdded() || getContext() == null) {
-					return;
-				}
-
 				if (clipboard.hasPrimaryClip()) {
 					ClipData currentClip = clipboard.getPrimaryClip();
 					if (currentClip != null && currentClip.getItemCount() > 0) {
@@ -402,8 +400,9 @@ public class VaultPasswordsFragment extends BaseFragment {
 							ClipData emptyClip = ClipData.newPlainText("", "\u200B");
 							clipboard.setPrimaryClip(emptyClip);
 
-							Toast.makeText(requireContext(),
-									getString(R.string.vault_clipboard_cleared),
+							Toast.makeText(appCtx,
+									appCtx.getString(
+											R.string.vault_clipboard_cleared),
 									Toast.LENGTH_SHORT).show();
 						}
 					}
@@ -477,10 +476,6 @@ public class VaultPasswordsFragment extends BaseFragment {
 			passwordDialog.dismiss();
 		}
 		passwordDialog = null;
-		if (pendingClipboardClear != null) {
-			clipboardClearHandler.removeCallbacks(pendingClipboardClear);
-			pendingClipboardClear = null;
-		}
 	}
 
 	private void showSnackbar(CharSequence message) {

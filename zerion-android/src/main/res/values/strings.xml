@@ -834,7 +834,6 @@
 	<string name="grouptr_remove_local_active_msg">Removes the group from your list and clears messages stored on this device. Other members are NOT notified and your row in their list does not change. Use Leave first if you want them to know.</string>
 	<string name="grouptr_remove_local_confirm">Remove from device</string>
 	<string name="grouptr_invite_sent">Invitation sent.</string>
-	<string name="grouptr_attachments_coming_soon">Attachments coming soon.</string>
 	<string name="grouptr_record_permission_required">Microphone permission is needed to record voice memos.</string>
 	<string name="grouptr_voice_start_failed">Could not start recording.</string>
 	<string name="grouptr_voice_send_failed">Voice memo too short.</string>
@@ -881,7 +880,6 @@
 	<string name="clear_chat_success">Chat cleared successfully</string>
 	<string name="delete_failed">Failed to delete messages</string>
 	<string name="group_clear_not_supported">Group messages cannot be individually deleted due to Zerion\'s protocol design</string>
-	<string name="group_attachments_not_supported">Attachments are not yet supported in group chats. You can send photos and videos in 1:1 conversations.</string>
 	<string name="block_user">Block user</string>
 	<string name="sound_and_notifications">Sound &amp; Notifications</string>
 	<string name="mute_notifications">Mute Notifications</string>
@@ -946,6 +944,28 @@
 	<string name="block_contact_error">Failed to block contact</string>
 	<string name="contact_blocked">Contact has been blocked</string>
 	<string name="unknown_contact">Unknown Contact</string>
+	<string name="dialog_password_hint">Password</string>
+	<string name="dialog_password_confirm_hint">Confirm password</string>
+	<string name="my_identity_loading">Loading…</string>
+	<string name="call_video_setting_up">Setting up video…</string>
+	<string name="call_video_declined">Video request declined</string>
+	<string name="wallet_xmr_generic_error">Something went wrong. Check the connection and try again.</string>
+	<string name="voice_msg_receiving">Receiving…</string>
+	<string name="voice_msg_decrypting">Decrypting…</string>
+	<string name="voice_msg_failed_to_load">Failed to load</string>
+	<string name="voice_msg_verification_failed">Verification failed</string>
+	<string name="max_attachments_allowed">Maximum %d attachments allowed</string>
+	<string name="image_mesh_not_supported">Image could not be sent over mesh</string>
+	<string name="call_event_outgoing">Outgoing secure voice call</string>
+	<string name="call_event_incoming">Incoming secure voice call</string>
+	<string name="call_event_generic">Secure voice call</string>
+	<string name="call_event_declined">Call declined</string>
+	<string name="call_event_missed">Missed secure voice call</string>
+	<string name="call_duration_sec">%d sec</string>
+	<string name="call_duration_min_sec">%1$d min %2$d sec</string>
+	<string name="delete_account_failed">Could not delete the account. Please try again.</string>
+	<string name="reply_prefix_you">You</string>
+	<string name="reply_original_unavailable">Original message unavailable</string>
 	<string name="contact_deleted_toast">Contact deleted</string>
 	<!-- This is shown in the action bar when opening an image in fullscreen that the user sent -->
 	<string name="you">You</string>

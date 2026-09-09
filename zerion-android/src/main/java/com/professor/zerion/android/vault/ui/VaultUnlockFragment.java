@@ -97,7 +97,7 @@ public class VaultUnlockFragment extends BaseFragment {
 
 	private void unlockVault() {
 		if (passwordInput.isPasswordEmpty()) {
-			passwordLayout.setError("Please enter password");
+			passwordLayout.setError(getString(R.string.vault_password_required));
 			return;
 		}
 
@@ -118,6 +118,7 @@ public class VaultUnlockFragment extends BaseFragment {
 
 		viewModel.getErrorMessage().observe(getViewLifecycleOwner(), error -> {
 			if (error != null && !error.isEmpty()) {
+				passwordLayout.setError(error);
 				passwordInput.clearPassword();
 				passwordInput.requestFocus();
 				passwordLayout.animate()

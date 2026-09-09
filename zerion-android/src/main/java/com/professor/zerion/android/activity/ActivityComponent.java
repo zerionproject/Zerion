@@ -34,7 +34,6 @@ import com.professor.zerion.android.navdrawer.NavDrawerActivity;
 import com.professor.zerion.android.navdrawer.TransportsActivity;
 import com.professor.zerion.android.panic.PanicPreferencesActivity;
 import com.professor.zerion.android.panic.PanicResponderActivity;
-import com.professor.zerion.android.settings.ConfirmAvatarDialogFragment;
 import com.professor.zerion.android.settings.SettingsActivity;
 import com.professor.zerion.android.settings.SettingsFragment;
 import com.professor.zerion.android.splash.SplashScreenActivity;
@@ -149,7 +148,6 @@ public interface ActivityComponent {
 
 	void inject(ImageFragment imageFragment);
 
-	void inject(ConfirmAvatarDialogFragment fragment);
 
 	void inject(ConversationSettingsDialog dialog);
 

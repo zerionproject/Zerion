@@ -61,7 +61,13 @@ public class StartupActivity extends BaseActivity implements
 		setContentView(R.layout.activity_fragment_container);
 
 		viewModel.getAccountDeleted().observeEvent(this, deleted -> {
-			if (deleted) onAccountDeleted();
+			if (deleted) {
+				onAccountDeleted();
+			} else {
+				android.widget.Toast.makeText(this,
+						R.string.delete_account_failed,
+						android.widget.Toast.LENGTH_LONG).show();
+			}
 		});
 		viewModel.getState().observe(this, this::onStateChanged);
 		viewModel.checkAccountExistsAsync(exists -> {

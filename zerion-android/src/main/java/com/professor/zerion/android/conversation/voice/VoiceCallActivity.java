@@ -727,7 +727,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 				requestCameraPermission();
 				return;
 			}
-			Toast.makeText(this, "Setting up video...",
+			Toast.makeText(this, getString(R.string.call_video_setting_up),
 					Toast.LENGTH_SHORT).show();
 			if (videoButton != null) {
 				videoButton.setBackgroundResource(
@@ -968,7 +968,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 			if (videoLabel != null) {
 				videoLabel.setText(R.string.video);
 			}
-			Toast.makeText(this, "Video request declined",
+			Toast.makeText(this, getString(R.string.call_video_declined),
 					Toast.LENGTH_SHORT).show();
 		});
 	}

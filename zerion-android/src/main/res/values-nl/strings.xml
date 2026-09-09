@@ -1183,7 +1183,6 @@
 	<string name="grouptr_remove_local_active_msg">Verwijdert de groep uit je lijst en wist de op dit apparaat opgeslagen berichten. Andere leden worden NIET op de hoogte gesteld en jouw rij in hun lijst verandert niet. Gebruik eerst Verlaten als je wilt dat ze het weten.</string>
 	<string name="grouptr_remove_local_confirm">Van apparaat verwijderen</string>
 	<string name="grouptr_invite_sent">Uitnodiging verzonden.</string>
-	<string name="grouptr_attachments_coming_soon">Bijlagen komen binnenkort.</string>
 	<string name="grouptr_record_permission_required">Microfoontoestemming is nodig om spraakmemo\'s op te nemen.</string>
 	<string name="grouptr_voice_start_failed">Kan opname niet starten.</string>
 	<string name="grouptr_voice_send_failed">Spraakmemo te kort.</string>
@@ -1230,7 +1229,6 @@
 	<string name="clear_chat_success">Chat succesvol gewist</string>
 	<string name="delete_failed">Verwijderen van berichten mislukt</string>
 	<string name="group_clear_not_supported">Groepsberichten kunnen niet afzonderlijk worden verwijderd vanwege het protocolontwerp van Zerion</string>
-	<string name="group_attachments_not_supported">Bijlagen worden nog niet ondersteund in groepschats. Je kunt foto\'s en video\'s versturen in 1-op-1-gesprekken.</string>
 	<string name="block_user">Gebruiker blokkeren</string>
 	<string name="sound_and_notifications">Geluid &amp; meldingen</string>
 	<string name="mute_notifications">Meldingen dempen</string>

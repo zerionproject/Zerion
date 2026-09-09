@@ -1278,7 +1278,6 @@
 	<string name="grouptr_remove_local_active_msg">Удаляет группу из вашего списка и очищает сообщения, сохранённые на этом устройстве. Другие участники НЕ уведомляются, и ваша строка в их списке не меняется. Сначала используйте «Покинуть», если хотите, чтобы они узнали.</string>
 	<string name="grouptr_remove_local_confirm">Удалить с устройства</string>
 	<string name="grouptr_invite_sent">Приглашение отправлено.</string>
-	<string name="grouptr_attachments_coming_soon">Вложения скоро появятся.</string>
 	<string name="grouptr_record_permission_required">Для записи голосовых заметок требуется разрешение на использование микрофона.</string>
 	<string name="grouptr_voice_start_failed">Не удалось начать запись.</string>
 	<string name="grouptr_voice_send_failed">Голосовая заметка слишком короткая.</string>
@@ -1325,7 +1324,6 @@
 	<string name="clear_chat_success">Чат успешно очищен</string>
 	<string name="delete_failed">Не удалось удалить сообщения</string>
 	<string name="group_clear_not_supported">Групповые сообщения нельзя удалять по отдельности из-за особенностей протокола Zerion</string>
-	<string name="group_attachments_not_supported">Вложения пока не поддерживаются в групповых чатах. Вы можете отправлять фото и видео в личных разговорах.</string>
 	<string name="block_user">Заблокировать пользователя</string>
 	<string name="sound_and_notifications">Звук и уведомления</string>
 	<string name="mute_notifications">Отключить уведомления</string>

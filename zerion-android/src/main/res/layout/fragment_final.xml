@@ -42,8 +42,7 @@
 				app:layout_constraintBottom_toTopOf="@+id/textView"
 				app:layout_constraintEnd_toEndOf="parent"
 				app:layout_constraintStart_toStartOf="parent"
-				app:layout_constraintTop_toBottomOf="@+id/iconView"
-				tools:text="@string/removable_drive_error_send_title" />
+				app:layout_constraintTop_toBottomOf="@+id/iconView" />
 
 			<TextView
 				android:id="@+id/textView"
@@ -54,8 +53,7 @@
 				app:layout_constraintBottom_toBottomOf="parent"
 				app:layout_constraintEnd_toEndOf="parent"
 				app:layout_constraintStart_toStartOf="parent"
-				app:layout_constraintTop_toBottomOf="@+id/titleView"
-				tools:text="@string/removable_drive_error_send_text" />
+				app:layout_constraintTop_toBottomOf="@+id/titleView" />
 
 		</androidx.constraintlayout.widget.ConstraintLayout>
 

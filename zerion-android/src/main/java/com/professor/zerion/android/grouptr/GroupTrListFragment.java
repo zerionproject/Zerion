@@ -131,6 +131,7 @@ public class GroupTrListFragment extends BaseFragment
 				|| e instanceof GroupTrSelfRemovedEvent
 				|| e instanceof GroupPostReceivedEvent) {
 			runOnUiThreadUnlessDestroyed(() -> {
+				if (!isAdded()) return;
 				if (e instanceof GroupMembershipChangedEvent) {
 					GroupMembershipChangedEvent ev =
 							(GroupMembershipChangedEvent) e;
@@ -218,7 +219,7 @@ public class GroupTrListFragment extends BaseFragment
 		TextView subtitle = row.findViewById(R.id.subtitleView);
 		TextView unreadView = row.findViewById(R.id.unreadCountView);
 
-		avatar.setText(name.substring(0, 1).toUpperCase());
+		avatar.setText(name.isEmpty() ? "?" : new String(Character.toChars(name.codePointAt(0))).toUpperCase());
 		nameView.setText(name);
 
 		if (unreadCount > 0) {
@@ -310,9 +311,12 @@ public class GroupTrListFragment extends BaseFragment
 					groupTrManager.declineInvite(groupId);
 				}
 			} catch (DbException ex) {
-				runOnUiThreadUnlessDestroyed(() -> Toast.makeText(
-						requireContext(), R.string.grouptr_error_respond,
-						Toast.LENGTH_SHORT).show());
+				runOnUiThreadUnlessDestroyed(() -> {
+					if (!isAdded()) return;
+					Toast.makeText(requireContext(),
+							R.string.grouptr_error_respond,
+							Toast.LENGTH_SHORT).show();
+				});
 			}
 			runOnUiThreadUnlessDestroyed(this::loadGroups);
 		});

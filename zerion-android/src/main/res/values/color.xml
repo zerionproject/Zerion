@@ -136,7 +136,9 @@
 	<color name="zerion_message_received_pressed">#32343C</color> <!-- Received pressed -->
 
 	<!-- Interactive Elements -->
-	<color name="zerion_destructive">#EF4444</color> <!-- Delete, errors - standard red -->
+	<color name="zerion_destructive">#EF4444</color>
+	<color name="zerion_destructive_muted">#CCEF4444</color>
+	<color name="zerion_white_12">#33FFFFFF</color> <!-- Delete, errors - standard red -->
 	<color name="zerion_success">#22C55E</color> <!-- Success states - clear green -->
 	<color name="zerion_warning">#F59E0B</color> <!-- Warning states -->
 

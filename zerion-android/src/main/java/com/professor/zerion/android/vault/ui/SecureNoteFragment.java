@@ -110,6 +110,19 @@ public class SecureNoteFragment extends BaseFragment {
 	@Override
 	public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
 		super.onViewCreated(view, savedInstanceState);
+		requireActivity().getOnBackPressedDispatcher().addCallback(
+				getViewLifecycleOwner(),
+				new androidx.activity.OnBackPressedCallback(true) {
+					@Override
+					public void handleOnBackPressed() {
+						if (!onBackPressed()) {
+							setEnabled(false);
+							requireActivity().getOnBackPressedDispatcher()
+									.onBackPressed();
+							setEnabled(true);
+						}
+					}
+				});
 
 		viewModel = new ViewModelProvider(requireActivity())
 				.get(VaultViewModel.class);
@@ -222,7 +235,7 @@ public class SecureNoteFragment extends BaseFragment {
 					if (item.id.equals(noteId)) {
 						currentNote = item;
 						String displayTitle = item.name.startsWith("🔒 ") ?
-							item.name.substring(2) : item.name;
+							item.name.substring("🔒 ".length()) : item.name;
 
 						removeTextWatchers();
 						titleInput.setText(displayTitle);
@@ -518,6 +531,7 @@ public class SecureNoteFragment extends BaseFragment {
 					})
 					.setNegativeButton(R.string.vault_button_discard, (dialog, which) -> {
 						isShowingUnsavedDialog = false;
+						hasChanges = false;
 						if (isAdded() && getActivity() != null) {
 							requireActivity().getOnBackPressedDispatcher().onBackPressed();
 						}

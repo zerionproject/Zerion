@@ -12,7 +12,6 @@ import android.widget.ProgressBar;
 
 import androidx.annotation.Nullable;
 
-import static android.graphics.Color.BLACK;
 import static android.graphics.Paint.Style.FILL;
 import static android.graphics.Paint.Style.STROKE;
 import static android.graphics.drawable.ClipDrawable.HORIZONTAL;
@@ -26,11 +25,11 @@ import static org.zerionproject.core.api.crypto.PasswordStrengthEstimator.WEAK;
 public class StrengthMeter extends ProgressBar {
 
 	private static final int MAX = 100;
-	public static final int RED = Color.rgb(255, 0, 0);
-	public static final int ORANGE = Color.rgb(255, 160, 0);
-	public static final int YELLOW = Color.rgb(255, 255, 0);
-	public static final int LIME = Color.rgb(180, 255, 0);
-	public static final int GREEN = Color.rgb(0, 255, 0);
+	public static final int RED = Color.rgb(239, 68, 68);
+	public static final int ORANGE = Color.rgb(245, 158, 11);
+	public static final int YELLOW = Color.rgb(234, 179, 8);
+	public static final int LIME = Color.rgb(132, 204, 22);
+	public static final int GREEN = Color.rgb(34, 197, 94);
 
 	private final ShapeDrawable bar;
 
@@ -49,7 +48,7 @@ public class StrengthMeter extends ProgressBar {
 		p.setColor(getResources().getColor(android.R.color.transparent));
 		p.setStyle(STROKE);
 		p.setStrokeWidth(1);
-		p.setColor(BLACK);
+		p.setColor(Color.argb(51, 255, 255, 255));
 		Drawable[] layers = new Drawable[] { clip, background };
 		setProgressDrawable(new LayerDrawable(layers));
 		setIndeterminate(false);

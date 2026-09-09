@@ -675,7 +675,7 @@ public class VaultDocumentsFragment extends BaseFragment {
 
 	private String getFileName(Uri uri) {
 		String result = null;
-		if (uri.getScheme().equals("content")) {
+		if ("content".equals(uri.getScheme())) {
 			android.database.Cursor cursor = requireContext().getContentResolver()
 					.query(uri, null, null, null, null);
 			try {
@@ -692,6 +692,7 @@ public class VaultDocumentsFragment extends BaseFragment {
 		}
 		if (result == null) {
 			result = uri.getPath();
+			if (result == null) return "";
 			int cut = result.lastIndexOf('/');
 			if (cut != -1) {
 				result = result.substring(cut + 1);

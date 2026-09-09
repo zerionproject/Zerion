@@ -74,6 +74,9 @@ public class DozeFragment extends SetupFragment
 					if (isCreatingAccount) {
 						next.setVisibility(INVISIBLE);
 						progressBar.setVisibility(VISIBLE);
+					} else {
+						next.setVisibility(VISIBLE);
+						progressBar.setVisibility(INVISIBLE);
 					}
 				});
 

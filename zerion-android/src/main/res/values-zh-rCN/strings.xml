@@ -1256,7 +1256,6 @@
 	<string name="grouptr_remove_local_active_msg">将该群组从你的列表中移除，并清除存储在此设备上的消息。其他成员不会收到通知，你在他们列表中的一行也不会改变。如果想让他们知道，请先使用\"退出\"。</string>
 	<string name="grouptr_remove_local_confirm">从设备移除</string>
 	<string name="grouptr_invite_sent">邀请已发送。</string>
-	<string name="grouptr_attachments_coming_soon">附件功能即将推出。</string>
 	<string name="grouptr_record_permission_required">录制语音备忘需要麦克风权限。</string>
 	<string name="grouptr_voice_start_failed">无法开始录制。</string>
 	<string name="grouptr_voice_send_failed">语音备忘太短。</string>
@@ -1303,7 +1302,6 @@
 	<string name="clear_chat_success">聊天已成功清空</string>
 	<string name="delete_failed">删除消息失败</string>
 	<string name="group_clear_not_supported">由于 Zerion 的协议设计，群组消息无法单独删除</string>
-	<string name="group_attachments_not_supported">群聊尚不支持附件。你可以在一对一会话中发送照片和视频。</string>
 	<string name="block_user">屏蔽用户</string>
 	<string name="sound_and_notifications">声音与通知</string>
 	<string name="mute_notifications">静音通知</string>

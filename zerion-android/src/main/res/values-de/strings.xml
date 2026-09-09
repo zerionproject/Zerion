@@ -1313,7 +1313,6 @@
 	<string name="grouptr_remove_local_active_msg">Entfernt die Gruppe aus deiner Liste und löscht die auf diesem Gerät gespeicherten Nachrichten. Andere Mitglieder werden NICHT benachrichtigt und dein Eintrag in ihrer Liste ändert sich nicht. Verwende zuerst \"Verlassen\", wenn sie es erfahren sollen.</string>
 	<string name="grouptr_remove_local_confirm">Vom Gerät entfernen</string>
 	<string name="grouptr_invite_sent">Einladung gesendet.</string>
-	<string name="grouptr_attachments_coming_soon">Anhänge folgen bald.</string>
 	<string name="grouptr_record_permission_required">Zum Aufnehmen von Sprachmemos ist die Mikrofonberechtigung erforderlich.</string>
 	<string name="grouptr_voice_start_failed">Aufnahme konnte nicht gestartet werden.</string>
 	<string name="grouptr_voice_send_failed">Sprachmemo zu kurz.</string>
@@ -1360,7 +1359,6 @@
 	<string name="clear_chat_success">Chat erfolgreich geleert</string>
 	<string name="delete_failed">Nachrichten konnten nicht gelöscht werden</string>
 	<string name="group_clear_not_supported">Gruppennachrichten können aufgrund des Protokolldesigns von Zerion nicht einzeln gelöscht werden</string>
-	<string name="group_attachments_not_supported">Anhänge werden in Gruppenchats noch nicht unterstützt. In 1:1-Unterhaltungen kannst du Fotos und Videos senden.</string>
 	<string name="block_user">Benutzer blockieren</string>
 	<string name="sound_and_notifications">Ton &amp; Benachrichtigungen</string>
 	<string name="mute_notifications">Benachrichtigungen stummschalten</string>

@@ -35,10 +35,16 @@ class ConversationCallEventViewHolder extends ConversationItemViewHolder {
 	void bind(ConversationItem item, boolean selected) {
 		ConversationCallEventItem callEvent = (ConversationCallEventItem) item;
 
-		String eventText = callEvent.getCallEventText();
+		String eventText =
+				callEvent.getCallEventText(callEventText.getContext());
 		callEventText.setText(eventText);
 
 		String formattedTime = timeFormat.format(new Date(callEvent.getTime()));
 		timeView.setText(formattedTime);
+	}
+
+	@Override
+	void bindTimeOnly(ConversationItem item) {
+		timeView.setText(timeFormat.format(new Date(item.getTime())));
 	}
 }

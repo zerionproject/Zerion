@@ -452,6 +452,7 @@ public class VaultGalleryFragment extends BaseFragment {
 		}
 		if (result == null) {
 			result = uri.getPath();
+			if (result == null) return "";
 			int cut = result.lastIndexOf('/');
 			if (cut != -1) {
 				result = result.substring(cut + 1);

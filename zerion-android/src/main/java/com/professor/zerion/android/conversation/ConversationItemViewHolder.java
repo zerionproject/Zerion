@@ -285,10 +285,17 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 			if (item.hasReplyContext()) {
 				String replyTextContent = item.getReplyToText();
 				if (replyTextContent != null) {
-					String prefix = item.isIncoming() ? "You: " :
-							(item.getContactName() != null ?
-									item.getContactName().getValue() + ": " : "");
-					replyText.setText(prefix + replyTextContent);
+					Context ctx = replyText.getContext();
+					String prefix;
+					if (item.isIncoming()) {
+						prefix = ctx.getString(R.string.reply_prefix_you);
+					} else {
+						String name = item.getContactName() != null ?
+								item.getContactName().getValue() : null;
+						prefix = name != null ? name :
+								ctx.getString(R.string.unknown_contact);
+					}
+					replyText.setText(prefix + ": " + replyTextContent);
 				}
 				replyPreviewContainer.setVisibility(VISIBLE);
 			} else {
@@ -307,6 +314,7 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 	}
 
 	private void setTopNotice(ConversationItem item) {
+		if (topNotice == null) return;
 		if (item.isTimerNoticeVisible()) {
 			Context ctx = itemView.getContext();
 			topNotice.setVisibility(VISIBLE);

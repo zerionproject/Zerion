@@ -101,6 +101,8 @@ public class TransferSendFragment extends Fragment implements Callback {
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
+		android.app.Activity activity = getActivity();
+		if (activity != null && activity.isChangingConfigurations()) return;
 		transferManager.cancel();
 		sasResult.offer(false);
 	}

@@ -96,11 +96,20 @@ public class TransferReceiveFragment extends Fragment implements Callback {
 		requireActivity().getWindow().addFlags(
 				android.view.WindowManager.LayoutParams.FLAG_SECURE);
 		statusText = view.findViewById(R.id.transfer_status);
+		if (savedInstanceState != null) {
+			started = savedInstanceState.getBoolean("transfer_started", started);
+		}
 		if (!started) {
 			started = true;
 			scanLauncher.launch(new Intent(requireContext(),
 					TransferQrScannerActivity.class));
 		}
+	}
+
+	@Override
+	public void onSaveInstanceState(@NonNull Bundle outState) {
+		super.onSaveInstanceState(outState);
+		outState.putBoolean("transfer_started", started);
 	}
 
 	@Override
@@ -118,6 +127,8 @@ public class TransferReceiveFragment extends Fragment implements Callback {
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
+		android.app.Activity activity = getActivity();
+		if (activity != null && activity.isChangingConfigurations()) return;
 		transferManager.cancel();
 		sasResult.offer(false);
 	}

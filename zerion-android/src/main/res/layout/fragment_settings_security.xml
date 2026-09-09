@@ -455,7 +455,7 @@
 						android:layout_marginTop="2dp"
 						android:text="@string/wipe_password_summary_disabled"
 						android:textSize="12sp"
-						android:textColor="#CCEF4444" />
+						android:textColor="@color/zerion_destructive_muted" />
 
 				</LinearLayout>
 

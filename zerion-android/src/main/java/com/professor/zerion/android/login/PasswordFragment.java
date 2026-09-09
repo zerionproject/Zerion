@@ -87,10 +87,7 @@ public class PasswordFragment extends BaseFragment implements TextWatcher {
 
 		LifecycleOwner owner = getViewLifecycleOwner();
 		viewModel.getPasswordValidated().observeEvent(owner, result -> {
-			if (result == SUCCESS) {
-			} else {
-				onPasswordInvalid(result);
-			}
+			if (result != SUCCESS) onPasswordInvalid(result);
 		});
 
 		viewModel.getLockoutStatus().observeEvent(owner, this::onAccountLocked);

@@ -422,7 +422,7 @@ public class XmrWalletFragment extends BaseFragment {
 			case SESSION_INVALIDATED:
 				return getString(R.string.wallet_xmr_open_failed);
 			default:
-				return getString(R.string.wallet_xmr_node_invalid);
+				return getString(R.string.wallet_xmr_generic_error);
 		}
 	}
 }

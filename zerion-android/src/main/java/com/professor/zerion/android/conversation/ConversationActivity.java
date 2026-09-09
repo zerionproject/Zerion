@@ -1440,7 +1440,7 @@ public class ConversationActivity extends ZerionActivity
 	@Override
 	public void onTooManyAttachments() {
 		new ZerionSnackbarBuilder()
-				.make(list, "Maximum " + MAX_ATTACHMENTS_PER_MESSAGE + " attachments allowed",
+				.make(list, getString(R.string.max_attachments_allowed, MAX_ATTACHMENTS_PER_MESSAGE),
 						Snackbar.LENGTH_SHORT)
 				.show();
 	}
@@ -1888,7 +1888,7 @@ public class ConversationActivity extends ZerionActivity
 
 		if (uris.size() > MAX_ATTACHMENTS_PER_MESSAGE) {
 			new ZerionSnackbarBuilder()
-					.make(list, "Maximum " + MAX_ATTACHMENTS_PER_MESSAGE + " attachments allowed",
+					.make(list, getString(R.string.max_attachments_allowed, MAX_ATTACHMENTS_PER_MESSAGE),
 							Snackbar.LENGTH_SHORT)
 					.show();
 			uris = uris.subList(0, MAX_ATTACHMENTS_PER_MESSAGE);
@@ -1912,7 +1912,7 @@ public class ConversationActivity extends ZerionActivity
 				viewModel.sendMeshPhoto(jpeg, "image/jpeg");
 			} else {
 				runOnUiThreadUnlessDestroyed(() -> new ZerionSnackbarBuilder()
-						.make(list, "Image could not be sent over mesh",
+						.make(list, getString(R.string.image_mesh_not_supported),
 								Snackbar.LENGTH_SHORT)
 						.show());
 			}

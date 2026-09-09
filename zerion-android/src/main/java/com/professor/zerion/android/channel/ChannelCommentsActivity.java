@@ -138,7 +138,8 @@ public class ChannelCommentsActivity extends ZerionActivity
 
 	private String commentDraftKey() {
 		StringBuilder sb = new StringBuilder("channel_comment_draft_");
-		for (byte b : channelId) sb.append(String.format("%02x", b & 0xFF));
+		for (byte b : channelId) sb.append(String.format(
+				java.util.Locale.US, "%02x", b & 0xFF));
 		return sb.append('_').append(parentSeq).toString();
 	}
 

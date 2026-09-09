@@ -269,7 +269,8 @@ public class GroupTrConversationActivity extends ZerionActivity
 				: s.getName();
 		titleView.setText(name);
 		String initial = name.isEmpty() ? "?"
-				: name.substring(0, 1).toUpperCase();
+				: new String(Character.toChars(name.codePointAt(0)))
+						.toUpperCase();
 		avatarView.setText(initial);
 		int memberCount = s.getMembers().size();
 		String subtitle = getResources().getQuantityString(

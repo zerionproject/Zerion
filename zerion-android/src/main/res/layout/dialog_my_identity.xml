@@ -32,6 +32,7 @@
 		android:textColor="@color/zerion_text_primary"
 		android:textIsSelectable="true"
 		android:textSize="14sp"
+		android:text="@string/my_identity_loading"
 		tools:text="12345 67890 12345 67890 12345 67890" />
 
 </LinearLayout>

@@ -222,7 +222,7 @@ public class XmrWalletDetailFragment extends BaseFragment {
 			case BUSY:
 				return getString(R.string.wallet_xmr_busy);
 			default:
-				return getString(R.string.wallet_xmr_node_invalid);
+				return getString(R.string.wallet_xmr_generic_error);
 		}
 	}
 
@@ -261,6 +261,7 @@ public class XmrWalletDetailFragment extends BaseFragment {
 				return getString(R.string.wallet_xmr_synced_block,
 						formatCount(s.walletHeight));
 			case OFFLINE:
+			case ERROR:
 				return getString(R.string.wallet_xmr_offline_retry);
 			default:
 				return "";
@@ -1124,7 +1125,7 @@ public class XmrWalletDetailFragment extends BaseFragment {
 		height.setSingleLine(true);
 		final android.widget.EditText pw =
 				new android.widget.EditText(requireContext());
-		pw.setHint(R.string.wallet_settings_title);
+		pw.setHint(R.string.wallet_password_prompt);
 		pw.setInputType(android.text.InputType.TYPE_CLASS_TEXT
 				| android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
 		pw.setSaveEnabled(false);
@@ -1199,7 +1200,7 @@ public class XmrWalletDetailFragment extends BaseFragment {
 		name.setSingleLine(true);
 		final android.widget.EditText pw =
 				new android.widget.EditText(requireContext());
-		pw.setHint(R.string.wallet_settings_title);
+		pw.setHint(R.string.wallet_password_prompt);
 		pw.setInputType(android.text.InputType.TYPE_CLASS_TEXT
 				| android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
 		pw.setSaveEnabled(false);

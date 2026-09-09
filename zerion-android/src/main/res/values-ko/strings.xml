@@ -1117,7 +1117,6 @@
 	<string name="grouptr_remove_local_active_msg">목록에서 그룹을 제거하고 이 기기에 저장된 메시지를 지웁니다. 다른 구성원에게는 알림이 가지 않으며 그들의 목록에서 회원님의 항목은 변경되지 않습니다. 그들에게 알리려면 먼저 나가기를 사용하세요.</string>
 	<string name="grouptr_remove_local_confirm">기기에서 제거</string>
 	<string name="grouptr_invite_sent">초대를 보냈습니다.</string>
-	<string name="grouptr_attachments_coming_soon">첨부 파일 기능이 곧 제공됩니다.</string>
 	<string name="grouptr_record_permission_required">음성 메모를 녹음하려면 마이크 권한이 필요합니다.</string>
 	<string name="grouptr_voice_start_failed">녹음을 시작할 수 없습니다.</string>
 	<string name="grouptr_voice_send_failed">음성 메모가 너무 짧습니다.</string>
@@ -1164,7 +1163,6 @@
 	<string name="clear_chat_success">채팅이 지워졌습니다</string>
 	<string name="delete_failed">메시지 삭제에 실패했습니다</string>
 	<string name="group_clear_not_supported">Zerion의 프로토콜 설계로 인해 그룹 메시지는 개별적으로 삭제할 수 없습니다</string>
-	<string name="group_attachments_not_supported">그룹 채팅에서는 아직 첨부 파일이 지원되지 않습니다. 1:1 대화에서는 사진과 동영상을 보낼 수 있습니다.</string>
 	<string name="block_user">사용자 차단</string>
 	<string name="sound_and_notifications">소리 &amp; 알림</string>
 	<string name="mute_notifications">알림 음소거</string>

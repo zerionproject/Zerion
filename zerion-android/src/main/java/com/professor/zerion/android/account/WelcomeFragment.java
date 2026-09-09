@@ -62,6 +62,9 @@ public class WelcomeFragment extends Fragment {
 
 	@Nullable
 	private TextView statusText;
+	private android.view.View createButton;
+	private android.view.View importButton;
+	private android.view.View receiveButton;
 
 	private final ActivityResultLauncher<String[]> importLauncher =
 			registerForActivityResult(new OpenDocumentAdvanced(),
@@ -86,16 +89,24 @@ public class WelcomeFragment extends Fragment {
 			@Nullable Bundle savedInstanceState) {
 		super.onViewCreated(view, savedInstanceState);
 		statusText = view.findViewById(R.id.welcome_status);
-		view.findViewById(R.id.create_button).setOnClickListener(v ->
-				startCreate());
-		view.findViewById(R.id.import_button).setOnClickListener(v ->
+		createButton = view.findViewById(R.id.create_button);
+		importButton = view.findViewById(R.id.import_button);
+		receiveButton = view.findViewById(R.id.receive_button);
+		createButton.setOnClickListener(v -> startCreate());
+		importButton.setOnClickListener(v ->
 				importLauncher.launch(new String[] {"*/*"}));
-		view.findViewById(R.id.receive_button).setOnClickListener(v ->
+		receiveButton.setOnClickListener(v ->
 				requireActivity().getSupportFragmentManager().beginTransaction()
 						.replace(R.id.fragmentContainer,
 								TransferReceiveFragment.newInstance(true))
 						.addToBackStack(null)
 						.commit());
+	}
+
+	private void setButtonsEnabled(boolean enabled) {
+		if (createButton != null) createButton.setEnabled(enabled);
+		if (importButton != null) importButton.setEnabled(enabled);
+		if (receiveButton != null) receiveButton.setEnabled(enabled);
 	}
 
 	@Override
@@ -158,6 +169,7 @@ public class WelcomeFragment extends Fragment {
 
 	private void runImport(Uri src, char[] passphrase, char[] newPassword) {
 		Context appContext = requireContext().getApplicationContext();
+		setButtonsEnabled(false);
 		setStatus(getString(R.string.backup_import_in_progress));
 		ioExecutor.execute(() -> {
 			boolean ok = false;
@@ -187,6 +199,7 @@ public class WelcomeFragment extends Fragment {
 		if (success) {
 			goToSignIn();
 		} else {
+			setButtonsEnabled(true);
 			setStatus("");
 			toast(R.string.backup_import_failed);
 		}

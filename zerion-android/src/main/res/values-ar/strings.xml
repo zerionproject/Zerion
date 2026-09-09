@@ -1304,7 +1304,6 @@
 	<string name="grouptr_remove_local_active_msg">تزيل المجموعة من قائمتك وتمسح الرسائل المخزّنة على هذا الجهاز. لا يتم إشعار الأعضاء الآخرين ولا يتغير سطرك في قائمتهم. استخدم خيار المغادرة أولًا إذا أردت أن يعرفوا.</string>
 	<string name="grouptr_remove_local_confirm">إزالة من الجهاز</string>
 	<string name="grouptr_invite_sent">تم إرسال الدعوة.</string>
-	<string name="grouptr_attachments_coming_soon">المرفقات قريبًا.</string>
 	<string name="grouptr_record_permission_required">إذن الميكروفون مطلوب لتسجيل المذكرات الصوتية.</string>
 	<string name="grouptr_voice_start_failed">تعذّر بدء التسجيل.</string>
 	<string name="grouptr_voice_send_failed">المذكرة الصوتية قصيرة جدًا.</string>
@@ -1351,7 +1350,6 @@
 	<string name="clear_chat_success">تم مسح المحادثة بنجاح</string>
 	<string name="delete_failed">فشل حذف الرسائل</string>
 	<string name="group_clear_not_supported">لا يمكن حذف رسائل المجموعة بشكل فردي بسبب تصميم بروتوكول Zerion</string>
-	<string name="group_attachments_not_supported">المرفقات غير مدعومة بعد في محادثات المجموعة. يمكنك إرسال الصور ومقاطع الفيديو في المحادثات الفردية.</string>
 	<string name="block_user">حظر المستخدم</string>
 	<string name="sound_and_notifications">الصوت والإشعارات</string>
 	<string name="mute_notifications">كتم الإشعارات</string>

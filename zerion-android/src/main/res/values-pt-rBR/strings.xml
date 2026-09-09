@@ -1323,7 +1323,6 @@
 	<string name="grouptr_remove_local_active_msg">Remove o grupo da sua lista e apaga as mensagens armazenadas neste dispositivo. Os outros membros NÃO são notificados e sua entrada na lista deles não muda. Use Sair primeiro se quiser que eles saibam.</string>
 	<string name="grouptr_remove_local_confirm">Remover do dispositivo</string>
 	<string name="grouptr_invite_sent">Convite enviado.</string>
-	<string name="grouptr_attachments_coming_soon">Anexos em breve.</string>
 	<string name="grouptr_record_permission_required">A permissão de microfone é necessária para gravar memorandos de voz.</string>
 	<string name="grouptr_voice_start_failed">Não foi possível iniciar a gravação.</string>
 	<string name="grouptr_voice_send_failed">Memorando de voz muito curto.</string>
@@ -1370,7 +1369,6 @@
 	<string name="clear_chat_success">Conversa limpa com sucesso</string>
 	<string name="delete_failed">Falha ao excluir as mensagens</string>
 	<string name="group_clear_not_supported">As mensagens de grupo não podem ser excluídas individualmente devido ao design do protocolo do Zerion</string>
-	<string name="group_attachments_not_supported">Os anexos ainda não são suportados em conversas de grupo. Você pode enviar fotos e vídeos em conversas individuais.</string>
 	<string name="block_user">Bloquear usuário</string>
 	<string name="sound_and_notifications">Som &amp; notificações</string>
 	<string name="mute_notifications">Silenciar notificações</string>

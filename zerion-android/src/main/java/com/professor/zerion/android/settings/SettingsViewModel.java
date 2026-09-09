@@ -66,7 +66,6 @@ class SettingsViewModel extends DbViewModel implements EventListener {
 	private final FeatureFlags featureFlags;
 
 	final SettingsStore settingsStore;
-	final TorSummaryProvider torSummaryProvider;
 	final ConnectionsManager connectionsManager;
 	final NotificationsManager notificationsManager;
 
@@ -106,8 +105,6 @@ class SettingsViewModel extends DbViewModel implements EventListener {
 		this.featureFlags = featureFlags;
 		settingsStore = new SettingsStore(getApplication(), settingsManager,
 				dbExecutor, SETTINGS_NAMESPACE);
-		torSummaryProvider = new TorSummaryProvider(getApplication(),
-				locationUtils, circumventionProvider);
 		connectionsManager =
 				new ConnectionsManager(getApplication(), settingsManager,
 						dbExecutor);

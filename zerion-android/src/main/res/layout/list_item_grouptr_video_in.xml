@@ -53,7 +53,7 @@
 			android:id="@+id/videoPlayIcon"
 			android:layout_width="32dp"
 			android:layout_height="32dp"
-			android:contentDescription="@string/voice_message"
+			android:contentDescription="@string/grouptr_video"
 			android:scaleType="center"
 			app:layout_constraintBottom_toBottomOf="@+id/playCircleBg"
 			app:layout_constraintEnd_toEndOf="@+id/playCircleBg"

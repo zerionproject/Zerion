@@ -262,7 +262,7 @@ public class ChannelListFragment extends BaseFragment
 		TextView subtitle = row.findViewById(R.id.channelSubtitleView);
 		TextView unreadView = row.findViewById(R.id.channelUnreadCountView);
 
-		avatar.setText(name.substring(0, 1).toUpperCase(Locale.ROOT));
+		avatar.setText(name.isEmpty() ? "?" : new String(Character.toChars(name.codePointAt(0))).toUpperCase(Locale.ROOT));
 		if (latestTs != null) {
 			CharSequence rel = android.text.format.DateUtils
 					.getRelativeTimeSpanString(latestTs,
@@ -713,9 +713,12 @@ public class ChannelListFragment extends BaseFragment
 				if (!isAdded()) return;
 				runOnUiThreadUnlessDestroyed(this::loadChannels);
 			} catch (DbException e) {
-				runOnUiThreadUnlessDestroyed(() -> Toast.makeText(
-						requireContext(), R.string.channels_leave_failed,
-						Toast.LENGTH_SHORT).show());
+				runOnUiThreadUnlessDestroyed(() -> {
+					if (!isAdded()) return;
+					Toast.makeText(requireContext(),
+							R.string.channels_leave_failed,
+							Toast.LENGTH_SHORT).show();
+				});
 			}
 		});
 	}

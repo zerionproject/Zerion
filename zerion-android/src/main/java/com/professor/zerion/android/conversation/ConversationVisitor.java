@@ -129,14 +129,14 @@ class ConversationVisitor implements
 			} else if (h.getReplyToId() != null) {
 				item.setReplyToMessageId(h.getReplyToId());
 				String replyText = textCache.getText(h.getReplyToId());
-				item.setReplyToText(
-						replyText != null ? replyText : "[message]");
+				item.setReplyToText(replyText != null ? replyText :
+						ctx.getString(R.string.reply_original_unavailable));
 			}
 		} else if (h.getReplyToId() != null) {
 			item.setReplyToMessageId(h.getReplyToId());
 			String replyText = textCache.getText(h.getReplyToId());
-			item.setReplyToText(
-					replyText != null ? replyText : "[message]");
+			item.setReplyToText(replyText != null ? replyText :
+					ctx.getString(R.string.reply_original_unavailable));
 		}
 
 		return item;

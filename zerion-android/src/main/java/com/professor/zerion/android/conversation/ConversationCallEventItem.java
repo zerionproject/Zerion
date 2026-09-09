@@ -50,38 +50,47 @@ public class ConversationCallEventItem extends ConversationItem {
 		return durationMs;
 	}
 
-	public String getFormattedDuration() {
+	public String getFormattedDuration(android.content.Context ctx) {
 		if (durationMs == null) {
 			return "";
 		}
 
 		long seconds = durationMs / 1000;
 		if (seconds < 60) {
-			return seconds + " sec";
+			return ctx.getString(com.professor.zerion.R.string
+					.call_duration_sec, seconds);
 		}
 
 		long minutes = seconds / 60;
 		long remainingSeconds = seconds % 60;
-		return minutes + " min " + remainingSeconds + " sec";
+		return ctx.getString(com.professor.zerion.R.string
+				.call_duration_min_sec, minutes, remainingSeconds);
 	}
 
-	public String getCallEventText() {
+	public String getCallEventText(android.content.Context ctx) {
 		boolean isOutgoing = !isIncoming();
 
 		switch (eventType) {
 			case CALL_OFFER:
-				return isOutgoing ? "Outgoing secure voice call" : "Incoming secure voice call";
 			case CALL_ANSWER:
-				return isOutgoing ? "Outgoing secure voice call" : "Incoming secure voice call";
+				return ctx.getString(isOutgoing
+						? com.professor.zerion.R.string.call_event_outgoing
+						: com.professor.zerion.R.string.call_event_incoming);
 			case CALL_END:
 				if (durationMs != null && durationMs > 0) {
-					return "Secure voice call · " + getFormattedDuration();
+					return ctx.getString(com.professor.zerion.R.string
+							.call_event_generic) + " · "
+							+ getFormattedDuration(ctx);
 				}
-				return "Secure voice call";
+				return ctx.getString(com.professor.zerion.R.string
+						.call_event_generic);
 			case CALL_REJECT:
-				return isOutgoing ? "Call declined" : "Missed secure voice call";
+				return ctx.getString(isOutgoing
+						? com.professor.zerion.R.string.call_event_declined
+						: com.professor.zerion.R.string.call_event_missed);
 			default:
-				return "Voice call";
+				return ctx.getString(com.professor.zerion.R.string
+						.call_event_generic);
 		}
 	}
 }

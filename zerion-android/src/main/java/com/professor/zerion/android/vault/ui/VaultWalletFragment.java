@@ -636,11 +636,21 @@ public class VaultWalletFragment extends BaseFragment {
 				: "—";
 		String amount = tx.netKnown
 				? (tx.netSat >= 0 ? "+" + formatBtc(tx.netSat)
-						: "-" + formatBtc(-tx.netSat)) + " BTC"
+						: "-" + formatBtc(-tx.netSat))
 				: "—";
-		String statusLine = tx.isPending()
-				? getString(R.string.wallet_pending)
-				: getString(R.string.wallet_confirmations, tx.confirmations);
+		String statusLine;
+		if (BtcWallet.STATE_BROADCASTING.equals(tx.state)) {
+			statusLine = getString(R.string.wallet_tx_state_broadcasting);
+		} else if (BtcWallet.STATE_POSSIBLY_SENT.equals(tx.state)) {
+			statusLine = getString(R.string.wallet_tx_state_possibly_sent);
+		} else if (BtcWallet.STATE_FAILED.equals(tx.state)) {
+			statusLine = getString(R.string.wallet_tx_state_failed);
+		} else if (tx.isPending()) {
+			statusLine = getString(R.string.wallet_pending);
+		} else {
+			statusLine = getString(R.string.wallet_confirmations,
+					tx.confirmations);
+		}
 		StringBuilder msg = new StringBuilder();
 		msg.append(getString(R.string.wallet_tx_amount_label)).append(": ")
 				.append(amount).append('\n');
@@ -1247,7 +1257,7 @@ public class VaultWalletFragment extends BaseFragment {
 
 		TextView summary = new TextView(ctx);
 		String amountLine = review.sweep ? getString(R.string.wallet_send_all)
-				: formatBtc(review.amountSat) + " BTC";
+				: formatBtc(review.amountSat);
 		summary.setText(getString(R.string.wallet_send_to) + ":\n"
 				+ review.toAddress + "\n\n"
 				+ getString(R.string.wallet_send_amount_label) + ":  "
@@ -1655,7 +1665,7 @@ public class VaultWalletFragment extends BaseFragment {
 			if (m.frozen) {
 				meta.append("  ·  ").append(getString(R.string.wallet_coin_frozen));
 			}
-			info.setText(formatBtc(m.valueSat) + " BTC\n" + meta);
+			info.setText(formatBtc(m.valueSat) + "\n" + meta);
 			info.setTextColor(colorRes(R.color.zerion_text_primary));
 			info.setTextSize(13);
 
@@ -2486,6 +2496,7 @@ public class VaultWalletFragment extends BaseFragment {
 	}
 
 	private void toast(String msg) {
+		if (!isAdded()) return;
 		Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show();
 	}
 

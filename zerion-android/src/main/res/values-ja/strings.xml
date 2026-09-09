@@ -1248,7 +1248,6 @@
 	<string name="grouptr_remove_local_active_msg">グループをリストから削除し、この端末に保存されているメッセージを消去します。他のメンバーには通知されず、相手のリストのあなたの表示も変わりません。相手に知らせたい場合は先に「退出」を使用してください。</string>
 	<string name="grouptr_remove_local_confirm">端末から削除</string>
 	<string name="grouptr_invite_sent">招待を送信しました。</string>
-	<string name="grouptr_attachments_coming_soon">添付ファイルは近日対応予定です。</string>
 	<string name="grouptr_record_permission_required">ボイスメモの録音にはマイクの権限が必要です。</string>
 	<string name="grouptr_voice_start_failed">録音を開始できませんでした。</string>
 	<string name="grouptr_voice_send_failed">ボイスメモが短すぎます。</string>
@@ -1295,7 +1294,6 @@
 	<string name="clear_chat_success">チャットを消去しました</string>
 	<string name="delete_failed">メッセージの削除に失敗しました</string>
 	<string name="group_clear_not_supported">Zerion のプロトコル設計上、グループメッセージは個別に削除できません</string>
-	<string name="group_attachments_not_supported">グループチャットではまだ添付ファイルに対応していません。写真や動画は 1 対 1 の会話で送信できます。</string>
 	<string name="block_user">ユーザーをブロック</string>
 	<string name="sound_and_notifications">サウンドと通知</string>
 	<string name="mute_notifications">通知をミュート</string>

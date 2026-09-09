@@ -71,6 +71,9 @@ public class UnlockActivity extends BaseActivity {
 		if (!hasUsableFingerprint(this)) {
 			getWindow().setBackgroundDrawable(null);
 			findViewById(R.id.image).setVisibility(INVISIBLE);
+			findViewById(R.id.lockBadge).setVisibility(INVISIBLE);
+			findViewById(R.id.unlockText).setVisibility(INVISIBLE);
+			findViewById(R.id.unlockSubtext).setVisibility(INVISIBLE);
 		}
 		keyguardShown = state != null && state.getBoolean(KEYGUARD_SHOWN);
 

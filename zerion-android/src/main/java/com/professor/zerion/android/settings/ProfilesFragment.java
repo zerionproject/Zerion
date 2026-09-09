@@ -43,8 +43,14 @@ public class ProfilesFragment extends Fragment {
 	@Inject
 	IdentityManager identityManager;
 
-	private final Executor io = java.util.concurrent.Executors
-			.newSingleThreadExecutor();
+	private final java.util.concurrent.ExecutorService io =
+			java.util.concurrent.Executors.newSingleThreadExecutor();
+
+	@Override
+	public void onDestroy() {
+		super.onDestroy();
+		io.shutdown();
+	}
 
 	@Nullable
 	private TextView profileCountSummary;
@@ -247,14 +253,17 @@ public class ProfilesFragment extends Fragment {
 				String newId = accountManager.scheduleProfileCreation(name,
 						pwToUse);
 				Arrays.fill(pwToUse, '\0');
-				requireActivity().runOnUiThread(() -> {
+				android.app.Activity activity = getActivity();
+				if (activity == null) return;
+				activity.runOnUiThread(() -> {
+					if (!isAdded()) return;
 					if (newId != null) {
 						toast(R.string.profiles_created_success);
 						refreshProfileCount();
 					} else {
 						String reason =
 								accountManager.getLastProfileCreationError();
-						if (com.professor.zerion.BuildConfig.DEBUG
+						if (com.professor.zerion.android.TestingConstants.IS_DEBUG_BUILD
 								&& reason != null && !reason.isEmpty()) {
 							Toast.makeText(requireContext(),
 									getString(R.string.profiles_create_failed)

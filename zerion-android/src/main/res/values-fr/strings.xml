@@ -1231,7 +1231,6 @@ copies des messages que vous envoyez.
 	<string name="grouptr_remove_local_active_msg">Retire le groupe de votre liste et efface les messages stockés sur cet appareil. Les autres membres ne sont PAS notifiés et votre entrée dans leur liste ne change pas. Utilisez d\'abord Quitter si vous voulez qu\'ils le sachent.</string>
 	<string name="grouptr_remove_local_confirm">Retirer de l\'appareil</string>
 	<string name="grouptr_invite_sent">Invitation envoyée.</string>
-	<string name="grouptr_attachments_coming_soon">Les pièces jointes arrivent bientôt.</string>
 	<string name="grouptr_record_permission_required">L\'autorisation du microphone est nécessaire pour enregistrer des mémos vocaux.</string>
 	<string name="grouptr_voice_start_failed">Impossible de démarrer l\'enregistrement.</string>
 	<string name="grouptr_voice_send_failed">Mémo vocal trop court.</string>
@@ -1278,7 +1277,6 @@ copies des messages que vous envoyez.
 	<string name="clear_chat_success">Discussion effacée avec succès</string>
 	<string name="delete_failed">Échec de la suppression des messages</string>
 	<string name="group_clear_not_supported">Les messages de groupe ne peuvent pas être supprimés individuellement en raison de la conception du protocole de Zerion</string>
-	<string name="group_attachments_not_supported">Les pièces jointes ne sont pas encore prises en charge dans les discussions de groupe. Vous pouvez envoyer des photos et des vidéos dans les conversations en tête-à-tête.</string>
 	<string name="block_user">Bloquer l\'utilisateur</string>
 	<string name="sound_and_notifications">Son &amp; notifications</string>
 	<string name="mute_notifications">Couper les notifications</string>

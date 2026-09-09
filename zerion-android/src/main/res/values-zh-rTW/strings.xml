@@ -1221,7 +1221,6 @@
 	<string name="grouptr_remove_local_active_msg">這會將群組從您的清單移除，並清除儲存在此裝置上的訊息。其他成員不會收到通知，您在他們清單中的項目也不會改變。如果您希望讓他們知道，請先使用「離開」。</string>
 	<string name="grouptr_remove_local_confirm">從裝置移除</string>
 	<string name="grouptr_invite_sent">已傳送邀請。</string>
-	<string name="grouptr_attachments_coming_soon">附件功能即將推出。</string>
 	<string name="grouptr_record_permission_required">錄製語音留言需要麥克風權限。</string>
 	<string name="grouptr_voice_start_failed">無法開始錄製。</string>
 	<string name="grouptr_voice_send_failed">語音留言太短。</string>
@@ -1268,7 +1267,6 @@
 	<string name="clear_chat_success">已成功清除聊天</string>
 	<string name="delete_failed">刪除訊息失敗</string>
 	<string name="group_clear_not_supported">由於 Zerion 的協定設計，群組訊息無法個別刪除</string>
-	<string name="group_attachments_not_supported">群組聊天尚不支援附件。您可以在 1 對 1 的對話中傳送相片與影片。</string>
 	<string name="block_user">封鎖使用者</string>
 	<string name="sound_and_notifications">音效與通知</string>
 	<string name="mute_notifications">靜音通知</string>

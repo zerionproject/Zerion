@@ -96,7 +96,7 @@ public class VoiceMessageViewHolder {
 				InputStream audioStream = attachment.getStream();
 				prepareMediaPlayer(audioStream, ".3gp");
 			} catch (DbException e) {
-				uiHandler.post(() -> showErrorState("Failed to load"));
+				uiHandler.post(() -> showErrorState(durationText.getContext().getString(R.string.voice_msg_failed_to_load)));
 			}
 		});
 	}
@@ -113,7 +113,7 @@ public class VoiceMessageViewHolder {
 				com.professor.zerion.android.conversation.voice.VoiceMessageFormat.parse(messageText);
 
 			if (parsed == null) {
-				uiHandler.post(() -> showErrorState("Verification failed"));
+				uiHandler.post(() -> showErrorState(durationText.getContext().getString(R.string.voice_msg_verification_failed)));
 				return;
 			}
 
@@ -142,7 +142,7 @@ public class VoiceMessageViewHolder {
 				java.util.Arrays.fill(wavData, (byte) 0);
 
 			} catch (Exception e) {
-				uiHandler.post(() -> showErrorState("Verification failed"));
+				uiHandler.post(() -> showErrorState(durationText.getContext().getString(R.string.voice_msg_verification_failed)));
 			}
 		});
 	}
@@ -156,14 +156,14 @@ public class VoiceMessageViewHolder {
 		playPauseButton.setIconResource(R.drawable.ic_play_arrow_24dp);
 		progressBar.setProgress(0);
 		progressBar.setEnabled(false);
-		durationText.setText("Receiving...");
+		durationText.setText(R.string.voice_msg_receiving);
 	}
 
 	public void bindFailed() {
 		released = false;
 		stop();
 		isPlaying = false;
-		showErrorState("Verification failed");
+		showErrorState(durationText.getContext().getString(R.string.voice_msg_verification_failed));
 	}
 
 	private void prepareMediaPlayer(InputStream audioStream, String extension) {
@@ -211,13 +211,13 @@ public class VoiceMessageViewHolder {
 					});
 
 				} catch (IOException e) {
-					showErrorState("Failed to load");
+					showErrorState(durationText.getContext().getString(R.string.voice_msg_failed_to_load));
 					cleanupTempFile();
 				}
 			});
 
 		} catch (IOException e) {
-			uiHandler.post(() -> showErrorState("Failed to load"));
+			uiHandler.post(() -> showErrorState(durationText.getContext().getString(R.string.voice_msg_failed_to_load)));
 		}
 	}
 
@@ -298,7 +298,7 @@ public class VoiceMessageViewHolder {
 		int seconds = milliseconds / 1000;
 		int minutes = seconds / 60;
 		int secs = seconds % 60;
-		durationText.setText(String.format("%d:%02d", minutes, secs));
+		durationText.setText(String.format(java.util.Locale.US, "%d:%02d", minutes, secs));
 	}
 
 	private void showLoadingState() {
@@ -307,7 +307,7 @@ public class VoiceMessageViewHolder {
 		playPauseButton.setIconResource(R.drawable.ic_play_arrow_24dp);
 		progressBar.setProgress(0);
 		progressBar.setEnabled(false);
-		durationText.setText("Decrypting...");
+		durationText.setText(R.string.voice_msg_decrypting);
 	}
 
 	private void showReadyState() {

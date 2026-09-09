@@ -708,8 +708,7 @@ public class ConnectionsFragment extends Fragment {
 							.show();
 				} else {
 					Toast.makeText(appContext,
-							ok ? R.string.pref_rotate_onion_started
-									: R.string.pref_rotate_onion_failed,
+							R.string.pref_rotate_onion_failed,
 							Toast.LENGTH_LONG).show();
 				}
 				refreshForceCompleteVisibility();
