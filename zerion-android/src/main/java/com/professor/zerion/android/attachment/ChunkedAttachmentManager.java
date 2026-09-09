@@ -628,6 +628,31 @@ public class ChunkedAttachmentManager {
 		}
 		completedTransfers.entrySet().removeIf(entry ->
 				now - entry.getValue() > 60 * 60 * 1000L);
+		purgeOrphanFiles(now);
+	}
+
+	private void purgeOrphanFiles(long now) {
+		java.util.Set<String> activeIds = new java.util.HashSet<>();
+		for (MessageId id : activeTransfers.keySet()) {
+			activeIds.add(toHex(id.getBytes()));
+		}
+		purgeOrphansIn(chunksDir, activeIds, now);
+		purgeOrphansIn(stateDir, activeIds, now);
+	}
+
+	private void purgeOrphansIn(File dir, java.util.Set<String> activeIds,
+			long now) {
+		File[] files = dir.listFiles();
+		if (files == null) return;
+		for (File f : files) {
+			if (!f.isFile()) continue;
+			if (now - f.lastModified() < STALE_TRANSFER_TTL_MS) continue;
+			String name = f.getName();
+			int cut = name.indexOf('_');
+			if (cut < 0) cut = name.indexOf('.');
+			String id = cut > 0 ? name.substring(0, cut) : name;
+			if (!activeIds.contains(id)) f.delete();
+		}
 	}
 
 	public ResourceStats getResourceStats() {

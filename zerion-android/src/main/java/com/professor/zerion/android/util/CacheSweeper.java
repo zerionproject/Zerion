@@ -22,6 +22,7 @@ public final class CacheSweeper {
 			"vid_in_",
 			"vid_clean_",
 			"vid_remux_",
+			"zbk-",
 	};
 
 	private static final String[] TEMP_DIRS = {
