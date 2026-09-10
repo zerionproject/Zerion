@@ -2050,6 +2050,43 @@ public abstract class JdbcDatabaseTest extends BrambleTestCase {
 	}
 
 	@Test
+	public void migration66To67RunsAgainstRealSchemaAndBackfills()
+			throws Exception {
+		byte[] hybridPub = getRandomBytes(32 + 1184);
+		byte[] hybridPriv = getRandomBytes(32 + 2400);
+		Identity hybridIdentity = new Identity(
+				org.zerionproject.core.test.TestUtils.getLocalAuthor(),
+				getAgreementPublicKey(), getAgreementPrivateKey(),
+				new org.zerionproject.core.api.crypto
+						.HybridAgreementPublicKey(hybridPub),
+				new org.zerionproject.core.api.crypto
+						.HybridAgreementPrivateKey(hybridPriv),
+				System.currentTimeMillis());
+		Database<Connection> db = open(false);
+		Connection txn = db.startTransaction();
+		db.addIdentity(txn, hybridIdentity);
+		db.addPendingContact(txn, pendingContact);
+		java.sql.Statement st = txn.createStatement();
+		st.execute("ALTER TABLE pendingContacts DROP COLUMN ourPublicKey");
+		st.execute("ALTER TABLE pendingContacts DROP COLUMN ourPrivateKey");
+		st.execute("UPDATE settings SET value = '66'"
+				+ " WHERE namespace = 'db' AND settingKey = 'schemaVersion'");
+		st.close();
+		db.commitTransaction(txn);
+		db.close();
+
+		db = open(true);
+		txn = db.startTransaction();
+		byte[][] snapshot =
+				db.getPendingContactOurKeys(txn, pendingContact.getId());
+		assertNotNull(snapshot);
+		assertArrayEquals(hybridPub, snapshot[0]);
+		assertArrayEquals(hybridPriv, snapshot[1]);
+		db.commitTransaction(txn);
+		db.close();
+	}
+
+	@Test
 	public void testPendingContactOurKeySnapshotRoundTrip() throws Exception {
 		Database<Connection> db = open(false);
 		Connection txn = db.startTransaction();
