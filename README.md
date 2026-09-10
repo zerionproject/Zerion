@@ -122,7 +122,32 @@ APK signing fingerprint: D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6
 
 ## Changelog
 
-**v3.0.4 (Latest release, September 2026):**
+**v3.0.9 (Latest release, September 2026):**
+- Rotating pairing links: the handshake key behind your pairing link rotates after every successful contact addition, so a previously shared link stops identifying you once its pairings resolve; pairings in flight are bound to the key they started with and are unaffected (database schema v67)
+- Fixes from an independent Bitcoin wallet security review: strict custom-node classification so a hostile hostname can never bypass the selected Tor routing policy (enforced again at the socket boundary), pending payments keep their coins reserved through every reconciliation state with node responses verified against the requested transaction, and the reviewed fee now always equals the exact final fee
+- Devices with unreliable secure-element firmware no longer crash-loop until a phone restart: key store failures are handled safely everywhere, transient failures no longer discard keys, and a clear explanation screen appears when the device key store is unresponsive; there is never a fallback to unencrypted storage
+- Separate text size settings for chats and for the rest of the interface
+- Fixes: password dots invisible on the light-theme sign-in screen, a stale "Invalid password" message after successfully unlocking the vault
+
+**v3.0.8 (September 2026):**
+- Idle data usage cut by five to ten times: the constant-rate cover traffic now has an active and an idle rate (slower still on mobile data, with a setting to control it); within each rate real and cover frames remain indistinguishable and sending never bursts
+- Storage cleanup: cancelled or failed media uploads no longer leave data behind, orphaned attachment chunks are reclaimed automatically including space leaked by older versions, channel attachment caches are garbage collected, and the encrypted database compacts itself when deletions free significant space
+- Vault: auto-lock timeout and hide-content settings now work as configured, photos taken into the vault save at full resolution, and unsaved note changes warn before closing
+- A full-app hygiene pass: fixed a crash in chats containing voice-call history, password dialogs keep your input when validation fails, notification switches reflect the real system state, dates on older group messages, tappable links in groups and channels, smoother media scrolling in group chats, and more texts moved to translations
+
+**v3.0.7 (September 2026):**
+- Security hardening from protocol review: stream replay protection across restarts, stricter post-quantum ratchet state handling, connection session caps with real socket teardown, onion address rotation wired end to end, and retained ratchet keys stripped from persisted state
+- Vault: asks for the password every time you enter it, locks when you leave, and gains a chat button to return to the messaging environment
+- Fixed a crash after account creation on devices whose key store accepts generating a hardware-backed key but fails when using it; candidate keys are now probed before selection
+- Fixed in a Monero wallet security review: a native wallet lifetime race between refresh interruption and wallet destruction, plus documentation claims rescoped to what the code enforces
+- Fixes: sign-in visibility in light theme, language changes apply immediately, password change no longer succeeds with a mismatched confirmation
+
+**v3.0.6 (September 2026):**
+- F-Droid buildability: all native libraries now build from pinned upstream source with published per-ABI hashes; no prebuilt binaries remain in the repository
+- 16 KB memory-page compatibility: updated the one bundled library that was not aligned for Android devices with 16 KB pages
+- No protocol change and no database upgrade
+
+**v3.0.4 (September 2026):**
 - Optional non-custodial Bitcoin and Monero wallets inside the vault: self-custodial (the seed is generated on-device and never leaves it), each with its own Argon2id-derived password. The Monero wallet runs view-only at rest so the spend key is in memory only while a payment is signed. All wallet traffic (Electrum, Monero nodes, broadcast, price) is Tor-only with per-wallet and per-purpose stream isolation
 - The native wallet libraries (Monero `wallet2`, Argon2) are built reproducibly from pinned upstream source with published per-ABI hashes and build-time verification gates
 - The wallet foundation (vault, Bitcoin and Monero wallets, and the native boundary) went through extensive internal security and code review across multiple independent adversarial passes, with the findings fixed
