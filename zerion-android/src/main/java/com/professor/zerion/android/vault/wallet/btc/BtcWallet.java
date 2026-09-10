@@ -450,6 +450,11 @@ public class BtcWallet {
 			if (Boolean.TRUE.equals(onChain) || !anyInputStillLive) {
 				pendingMisses.remove(p.txid);
 				safePut(p.withState(PendingTx.SENT));
+				for (String op : p.outpoints) {
+					if (liveOutpoints.contains(op)) {
+						reserved.add(op);
+					}
+				}
 				continue;
 			}
 			if (Boolean.FALSE.equals(onChain)) {
@@ -462,6 +467,11 @@ public class BtcWallet {
 					if (Boolean.TRUE.equals(onBroadcast)) {
 						pendingMisses.remove(p.txid);
 						safePut(p.withState(PendingTx.SENT));
+						for (String op : p.outpoints) {
+							if (liveOutpoints.contains(op)) {
+								reserved.add(op);
+							}
+						}
 						continue;
 					}
 					if (Boolean.FALSE.equals(onBroadcast)) {
@@ -824,6 +834,7 @@ public class BtcWallet {
 				outputs.add(new BtcTx.Output(scan.changeAddress, changeSat));
 				recordChangeIsolation(scan, inputs);
 			} else {
+				feeSat += changeSat;
 				changeSat = 0;
 			}
 		}

@@ -146,6 +146,8 @@ public final class PayjoinFinalTx {
 	public String buildSignedHex() {
 		NetworkParameters params = BtcKeys.PARAMS;
 		Transaction tx = new Transaction(params);
+		tx.setVersion(version);
+		tx.setLockTime(locktime);
 		for (BtcTx.Output o : outputs) {
 			tx.addOutput(Coin.valueOf(o.valueSat),
 					Address.fromString(params, o.address));

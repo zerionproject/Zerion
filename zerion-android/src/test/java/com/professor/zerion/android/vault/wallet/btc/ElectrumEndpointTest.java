@@ -74,7 +74,13 @@ public class ElectrumEndpointTest {
 		assertTrue(ElectrumEndpoint.isLanHost("10.0.0.9"));
 		assertTrue(ElectrumEndpoint.isLanHost("172.16.0.1"));
 		assertTrue(ElectrumEndpoint.isLanHost("172.31.255.1"));
-		assertTrue(ElectrumEndpoint.isLanHost("mynode.local"));
+		assertFalse(ElectrumEndpoint.isLanHost("mynode.local"));
+		assertFalse(ElectrumEndpoint.isLanHost("10.evil.example.com"));
+		assertFalse(ElectrumEndpoint.isLanHost("192.168.attacker.net"));
+		assertFalse(ElectrumEndpoint.isLanHost("172.20.evil.example"));
+		assertFalse(ElectrumEndpoint.isLanHost("010.0.0.1"));
+		assertTrue(ElectrumEndpoint.isLanHost("127.0.0.1"));
+		assertTrue(ElectrumEndpoint.isLanHost("::1"));
 		assertTrue(ElectrumEndpoint.isLanHost("localhost"));
 		assertFalse(ElectrumEndpoint.isLanHost("172.32.0.1"));
 		assertFalse(ElectrumEndpoint.isLanHost("8.8.8.8"));

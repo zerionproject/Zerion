@@ -91,27 +91,41 @@ public final class ElectrumEndpoint {
 		return port == 50002 ? Mode.TLS : Mode.PLAINTEXT;
 	}
 
+	/**
+	 * A host is treated as local only when it is the literal loopback name or
+	 * a strictly parsed loopback or RFC 1918 IPv4 literal, or the IPv6
+	 * loopback literal. Named hosts are never classified as local, so a
+	 * public hostname that merely starts with a private-range prefix cannot
+	 * be resolved or connected outside the selected routing policy; reaching
+	 * a named machine on the LAN requires the explicit Direct choice.
+	 */
 	public static boolean isLanHost(String host) {
 		String h = host.toLowerCase().trim();
-		if (h.equals("localhost") || h.equals("127.0.0.1")
-				|| h.endsWith(".local")) {
-			return true;
-		}
-		if (h.startsWith("10.") || h.startsWith("192.168.")) {
-			return true;
-		}
-		if (h.startsWith("172.")) {
-			int dot = h.indexOf('.', 4);
-			if (dot > 4) {
-				try {
-					int second = Integer.parseInt(h.substring(4, dot));
-					return second >= 16 && second <= 31;
-				} catch (NumberFormatException ignored) {
-					return false;
-				}
+		if (h.equals("localhost")) return true;
+		if (h.equals("::1") || h.equals("[::1]")) return true;
+		return isPrivateOrLoopbackIpv4Literal(h);
+	}
+
+	private static boolean isPrivateOrLoopbackIpv4Literal(String h) {
+		String[] parts = h.split("\\.", -1);
+		if (parts.length != 4) return false;
+		int[] octets = new int[4];
+		for (int i = 0; i < 4; i++) {
+			String p = parts[i];
+			if (p.isEmpty() || p.length() > 3) return false;
+			if (p.length() > 1 && p.charAt(0) == '0') return false;
+			for (int j = 0; j < p.length(); j++) {
+				char c = p.charAt(j);
+				if (c < '0' || c > '9') return false;
 			}
+			int v = Integer.parseInt(p);
+			if (v > 255) return false;
+			octets[i] = v;
 		}
-		return false;
+		if (octets[0] == 127) return true;
+		if (octets[0] == 10) return true;
+		if (octets[0] == 192 && octets[1] == 168) return true;
+		return octets[0] == 172 && octets[1] >= 16 && octets[1] <= 31;
 	}
 
 	public static String preferredDefaultSpec(@Nullable String onionSpec,
@@ -142,7 +156,11 @@ public final class ElectrumEndpoint {
 		String[] parts = s.split("\\|", -1);
 		if (parts.length >= 3) {
 			Mode mode = Mode.valueOf(parts[0].trim().toUpperCase());
-			boolean local = "1".equals(parts[1].trim());
+			int colonForHost = parts[2].lastIndexOf(':');
+			String hostForCheck = colonForHost < 0 ? parts[2].trim()
+					: parts[2].substring(0, colonForHost).trim();
+			boolean local = "1".equals(parts[1].trim())
+					&& isLanHost(hostForCheck);
 			int colon = parts[2].lastIndexOf(':');
 			if (colon < 0) {
 				throw new IllegalArgumentException("bad host:port");

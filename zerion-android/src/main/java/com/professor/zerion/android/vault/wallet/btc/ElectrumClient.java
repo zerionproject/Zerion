@@ -93,6 +93,10 @@ public class ElectrumClient implements ElectrumRpc {
 			socks5Connect(base, ep.host, ep.port, "zw-" + isolationTag,
 					isolationTag);
 		} else {
+			if (!ep.direct && !ElectrumEndpoint.isLanHost(ep.host)) {
+				throw new IOException(
+						"Refusing non-Tor connection to non-local endpoint");
+			}
 			base.connect(new InetSocketAddress(ep.host, ep.port),
 					HANDSHAKE_TIMEOUT_MS);
 			base.setSoTimeout(HANDSHAKE_TIMEOUT_MS);
@@ -392,6 +396,17 @@ public class ElectrumClient implements ElectrumRpc {
 		String result = strField(r, "result");
 		if (result == null) {
 			throw new IOException("no tx");
+		}
+		String computed;
+		try {
+			byte[] raw = org.bitcoinj.core.Utils.HEX.decode(result.trim());
+			computed = new org.bitcoinj.core.Transaction(
+					BtcKeys.PARAMS, raw).getTxId().toString();
+		} catch (RuntimeException e) {
+			throw new IOException("invalid tx");
+		}
+		if (!computed.equalsIgnoreCase(txid.trim())) {
+			throw new IOException("tx identity mismatch");
 		}
 		return result;
 	}
