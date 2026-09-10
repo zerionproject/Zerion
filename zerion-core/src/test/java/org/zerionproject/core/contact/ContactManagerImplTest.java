@@ -4,6 +4,7 @@ import org.zerionproject.core.api.Pair;
 import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.contact.PendingContact;
+import org.zerionproject.core.api.contact.PendingContactId;
 import org.zerionproject.core.api.contact.PendingContactState;
 import org.zerionproject.core.api.crypto.CryptoComponent;
 import org.zerionproject.core.api.crypto.KeyPair;
@@ -97,6 +98,53 @@ public class ContactManagerImplTest extends BrambleMockTestCase {
 		contactManager = new ContactManagerImpl(db, keyManager, identityManager,
 				pendingContactFactory, crypto, pcsStateManager,
 				mode3FullRatchet);
+	}
+
+	@Test
+	public void convertingPendingContactRotatesHandshakeKeys()
+			throws Exception {
+		Transaction txn = new Transaction(null, false);
+		Mode3FullState mode3FullState = context.mock(Mode3FullState.class);
+		PendingContactId p = pendingContact.getId();
+
+		context.checking(new DbExpectations() {{
+			oneOf(db).containsContact(txn, remote.getId(), local);
+			will(returnValue(false));
+			oneOf(db).getPendingContact(txn, p);
+			will(returnValue(pendingContact));
+			oneOf(db).getContactsByAuthorId(txn, remote.getId());
+			will(returnValue(java.util.Collections.emptyList()));
+			oneOf(db).getPendingContactOurKeys(txn, p);
+			will(returnValue(null));
+			oneOf(db).removePendingContact(txn, p);
+			oneOf(identityManager).getHandshakeKeys(txn);
+			will(returnValue(handshakeKeyPair));
+			oneOf(db).addContact(txn, remote, local,
+					pendingContact.getPublicKey(), verified, false, false,
+					(byte[]) null);
+			will(returnValue(contactId));
+			oneOf(db).setContactAlias(txn, contactId,
+					pendingContact.getAlias());
+			oneOf(keyManager).addContact(txn, contactId,
+					pendingContact.getPublicKey(), handshakeKeyPair);
+			oneOf(keyManager).addRotationKeys(txn, contactId, rootKey,
+					timestamp, alice, active);
+			oneOf(crypto).generateAgreementKeyPair();
+			will(returnValue(handshakeKeyPair));
+			oneOf(mode3FullRatchet).createInitialState();
+			will(returnValue(mode3FullState));
+			oneOf(pcsStateManager).initializeMode2State(with(txn),
+					with(contactId), with(any(PcsSessionState.class)),
+					with(any(PcsSessionState.class)));
+			oneOf(pcsStateManager).savePqState(with(txn), with(contactId),
+					with(any(PqRatchetState.class)));
+			oneOf(db).getContact(txn, contactId);
+			will(returnValue(contact));
+			oneOf(identityManager).rotateHybridHandshakeKeys(txn);
+		}});
+
+		assertEquals(contactId, contactManager.addContact(txn, p, remote,
+				local, rootKey, timestamp, alice, verified, active, null));
 	}
 
 	@Test
