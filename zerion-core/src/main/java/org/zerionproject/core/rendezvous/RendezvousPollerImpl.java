@@ -173,18 +173,32 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 			boolean alice;
 
 			if (p.isPostQuantum()) {
-				if (hybridHandshakeKeyPair == null) {
-					hybridHandshakeKeyPair = db.transactionWithResult(true,
-							identityManager::getHybridHandshakeKeys);
-					if (hybridHandshakeKeyPair != null) {
-						ourHybridCommitment = crypto.hash(HYBRID_COMMITMENT_LABEL,
-								hybridHandshakeKeyPair.getPublic().getEncoded());
-					}
+				KeyPair pendingKeyPair = null;
+				byte[][] snapshot = null;
+				try {
+					snapshot = db.transactionWithResult(true, txn ->
+							db.getPendingContactOurKeys(txn, p.getId()));
+				} catch (DbException e) {
 				}
-				if (hybridHandshakeKeyPair == null || ourHybridCommitment == null) {
+				if (snapshot != null) {
+					pendingKeyPair = new KeyPair(
+							new org.zerionproject.core.api.crypto
+									.HybridAgreementPublicKey(snapshot[0]),
+							new org.zerionproject.core.api.crypto
+									.HybridAgreementPrivateKey(snapshot[1]));
+				} else {
+					if (hybridHandshakeKeyPair == null) {
+						hybridHandshakeKeyPair = db.transactionWithResult(true,
+								identityManager::getHybridHandshakeKeys);
+					}
+					pendingKeyPair = hybridHandshakeKeyPair;
+				}
+				if (pendingKeyPair == null) {
 					broadcastState(p.getId(), FAILED);
 					return;
 				}
+				ourHybridCommitment = crypto.hash(HYBRID_COMMITMENT_LABEL,
+						pendingKeyPair.getPublic().getEncoded());
 				byte[] theirBlob = p.getPublicKey().getEncoded();
 				KeyParser parser = crypto.getAgreementKeyParser();
 				PublicKey theirX25519 = parser.parsePublicKey(
@@ -193,9 +207,9 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 								HYBRID_COMMITMENT_BYTES
 										+ HYBRID_RENDEZVOUS_X25519_BYTES));
 				byte[] ourHybridPub =
-						hybridHandshakeKeyPair.getPublic().getEncoded();
+						pendingKeyPair.getPublic().getEncoded();
 				byte[] ourHybridPriv =
-						hybridHandshakeKeyPair.getPrivate().getEncoded();
+						pendingKeyPair.getPrivate().getEncoded();
 				KeyPair ourX25519 = new KeyPair(
 						parser.parsePublicKey(java.util.Arrays.copyOfRange(
 								ourHybridPub, 0,

@@ -105,7 +105,16 @@ class HandshakeManagerImpl implements HandshakeManager {
 			KeyPair hybridKeyPair = null;
 
 			if (pendingContact.isPostQuantum()) {
-				hybridKeyPair = identityManager.getHybridHandshakeKeys(txn);
+				byte[][] snapshot = contactManager.getPendingContactOurKeys(txn, p);
+				if (snapshot != null) {
+					hybridKeyPair = new KeyPair(
+							new org.zerionproject.core.api.crypto
+									.HybridAgreementPublicKey(snapshot[0]),
+							new org.zerionproject.core.api.crypto
+									.HybridAgreementPrivateKey(snapshot[1]));
+				} else {
+					hybridKeyPair = identityManager.getHybridHandshakeKeys(txn);
+				}
 				if (hybridKeyPair == null) {
 					keyPair = identityManager.getHandshakeKeys(txn);
 				} else {

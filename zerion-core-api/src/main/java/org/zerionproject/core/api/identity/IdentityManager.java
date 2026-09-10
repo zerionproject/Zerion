@@ -27,6 +27,8 @@ public interface IdentityManager {
 	@Nullable
 	KeyPair getHybridHandshakeKeys(Transaction txn) throws DbException;
 
+	void rotateHybridHandshakeKeys(Transaction txn) throws DbException;
+
 	@Nullable
 	byte[] getLocalMlDsaSigPublicKey() throws DbException;
 

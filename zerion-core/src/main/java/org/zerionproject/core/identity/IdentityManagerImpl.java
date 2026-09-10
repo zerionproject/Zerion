@@ -181,6 +181,21 @@ class IdentityManagerImpl implements IdentityManager, OpenDatabaseHook {
 	}
 
 	@Override
+	public void rotateHybridHandshakeKeys(Transaction txn) throws DbException {
+		Identity cached = getCachedIdentity(txn);
+		KeyPair fresh = crypto.generateHybridAgreementKeyPair();
+		db.setHybridHandshakeKeyPair(txn, cached.getId(), fresh.getPublic(),
+				fresh.getPrivate());
+		cachedIdentity = new Identity(cached.getLocalAuthor(),
+				cached.getHandshakePublicKey(),
+				cached.getHandshakePrivateKey(),
+				fresh.getPublic(), fresh.getPrivate(),
+				cached.getMlDsaSigPublicKey(),
+				cached.getMlDsaSigPrivateKey(),
+				cached.getTimeCreated());
+	}
+
+	@Override
 	@Nullable
 	public byte[] getLocalMlDsaSigPublicKey() throws DbException {
 		Identity cached = cachedIdentity;

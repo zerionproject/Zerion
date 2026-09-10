@@ -2050,6 +2050,28 @@ public abstract class JdbcDatabaseTest extends BrambleTestCase {
 	}
 
 	@Test
+	public void testPendingContactOurKeySnapshotRoundTrip() throws Exception {
+		Database<Connection> db = open(false);
+		Connection txn = db.startTransaction();
+
+		db.addPendingContact(txn, pendingContact);
+		assertNull(db.getPendingContactOurKeys(txn, pendingContact.getId()));
+
+		byte[] ourPub = getRandomBytes(64);
+		byte[] ourPriv = getRandomBytes(96);
+		db.setPendingContactOurKeys(txn, pendingContact.getId(), ourPub,
+				ourPriv);
+		byte[][] snapshot =
+				db.getPendingContactOurKeys(txn, pendingContact.getId());
+		assertNotNull(snapshot);
+		assertArrayEquals(ourPub, snapshot[0]);
+		assertArrayEquals(ourPriv, snapshot[1]);
+
+		db.commitTransaction(txn);
+		db.close();
+	}
+
+	@Test
 	public void testHybridPendingContactRoundTrip() throws Exception {
 		byte[] blob = getRandomBytes(
 				HYBRID_COMMITMENT_BYTES + HYBRID_RENDEZVOUS_X25519_BYTES);

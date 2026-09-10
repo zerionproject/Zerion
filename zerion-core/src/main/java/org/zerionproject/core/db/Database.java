@@ -233,6 +233,13 @@ interface Database<T> {
 	PendingContact getPendingContact(T txn, PendingContactId p)
 			throws DbException;
 
+	@Nullable
+	byte[][] getPendingContactOurKeys(T txn, PendingContactId p)
+			throws DbException;
+
+	void setPendingContactOurKeys(T txn, PendingContactId p, byte[] publicKey,
+			byte[] privateKey) throws DbException;
+
 	Collection<PendingContact> getPendingContacts(T txn) throws DbException;
 
 	Collection<MessageId> getRequestedMessagesToSend(T txn, ContactId c,

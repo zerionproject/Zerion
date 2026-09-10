@@ -79,6 +79,10 @@ public interface ContactManager {
 	PendingContact getPendingContact(Transaction txn, PendingContactId p)
 			throws DbException;
 
+	@Nullable
+	byte[][] getPendingContactOurKeys(Transaction txn, PendingContactId p)
+			throws DbException;
+
 	Collection<Pair<PendingContact, PendingContactState>> getPendingContacts()
 			throws DbException;
 

@@ -91,7 +91,7 @@ import static org.zerionproject.core.db.JdbcUtils.tryToClose;
 @NotNullByDefault
 abstract class JdbcDatabase implements Database<Connection> {
 
-	static final int CODE_SCHEMA_VERSION = 66;
+	static final int CODE_SCHEMA_VERSION = 67;
 
 	private static final int MAX_CONNECTION_POOL_SIZE = 8;
 	private static final int OFFSET_PREV = -1;
@@ -274,6 +274,8 @@ abstract class JdbcDatabase implements Database<Connection> {
 					+ " alias _STRING NOT NULL,"
 					+ " timestamp BIGINT NOT NULL,"
 					+ " formatVersion INT DEFAULT 0 NOT NULL,"
+					+ " ourPublicKey _BINARY,"
+					+ " ourPrivateKey _BINARY,"
 					+ " PRIMARY KEY (pendingContactId))";
 
 	private static final String CREATE_OUTGOING_KEYS =
@@ -585,7 +587,8 @@ abstract class JdbcDatabase implements Database<Connection> {
 				new Migration62_63(),
 				new Migration63_64(),
 				new Migration64_65(dbTypes),
-				new Migration65_66()
+				new Migration65_66(),
+				new Migration66_67(dbTypes)
 		);
 	}
 
@@ -2794,6 +2797,53 @@ abstract class JdbcDatabase implements Database<Connection> {
 			return new PendingContact(p, publicKey, alias, timestamp, formatVersion);
 		} catch (SQLException e) {
 			tryToClose(rs);
+			tryToClose(ps);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	@Nullable
+	public byte[][] getPendingContactOurKeys(Connection txn, PendingContactId p)
+			throws DbException {
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			String sql = "SELECT ourPublicKey, ourPrivateKey"
+					+ " FROM pendingContacts WHERE pendingContactId = ?";
+			ps = txn.prepareStatement(sql);
+			ps.setBytes(1, p.getBytes());
+			rs = ps.executeQuery();
+			if (!rs.next()) throw new DbStateException();
+			byte[] pub = rs.getBytes(1);
+			byte[] priv = rs.getBytes(2);
+			rs.close();
+			ps.close();
+			if (pub == null || priv == null) return null;
+			return new byte[][] {pub, priv};
+		} catch (SQLException e) {
+			tryToClose(rs);
+			tryToClose(ps);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	public void setPendingContactOurKeys(Connection txn, PendingContactId p,
+			byte[] publicKey, byte[] privateKey) throws DbException {
+		PreparedStatement ps = null;
+		try {
+			String sql = "UPDATE pendingContacts"
+					+ " SET ourPublicKey = ?, ourPrivateKey = ?"
+					+ " WHERE pendingContactId = ?";
+			ps = txn.prepareStatement(sql);
+			ps.setBytes(1, publicKey);
+			ps.setBytes(2, privateKey);
+			ps.setBytes(3, p.getBytes());
+			int affected = ps.executeUpdate();
+			if (affected != 1) throw new DbStateException();
+			ps.close();
+		} catch (SQLException e) {
 			tryToClose(ps);
 			throw new DbException(e);
 		}

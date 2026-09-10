@@ -865,6 +865,27 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 	}
 
 	@Override
+	@Nullable
+	public byte[][] getPendingContactOurKeys(Transaction transaction,
+			PendingContactId p) throws DbException {
+		T txn = unbox(transaction);
+		if (!db.containsPendingContact(txn, p))
+			throw new NoSuchPendingContactException();
+		return db.getPendingContactOurKeys(txn, p);
+	}
+
+	@Override
+	public void setPendingContactOurKeys(Transaction transaction,
+			PendingContactId p, byte[] publicKey, byte[] privateKey)
+			throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		T txn = unbox(transaction);
+		if (!db.containsPendingContact(txn, p))
+			throw new NoSuchPendingContactException();
+		db.setPendingContactOurKeys(txn, p, publicKey, privateKey);
+	}
+
+	@Override
 	public Collection<PendingContact> getPendingContacts(
 			Transaction transaction) throws DbException {
 		T txn = unbox(transaction);

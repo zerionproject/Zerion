@@ -228,6 +228,13 @@ public interface DatabaseComponent extends TransactionManager {
 	PendingContact getPendingContact(Transaction txn, PendingContactId p)
 			throws DbException;
 
+	@Nullable
+	byte[][] getPendingContactOurKeys(Transaction txn, PendingContactId p)
+			throws DbException;
+
+	void setPendingContactOurKeys(Transaction txn, PendingContactId p,
+			byte[] publicKey, byte[] privateKey) throws DbException;
+
 	Collection<PendingContact> getPendingContacts(Transaction txn)
 			throws DbException;
 

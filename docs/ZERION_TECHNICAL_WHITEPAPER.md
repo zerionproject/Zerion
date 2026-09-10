@@ -74,6 +74,8 @@ Pairing happens out of band (QR code or a rendezvous link) and runs a hybrid aut
 
 The handshake output is a long-lived per-contact **root key** from which every subsequent connection derives its session state.
 
+**Rotating pairing links.** The public key a pairing link carries is not a permanent identifier: after every successful contact addition the local handshake key pair is rotated, so the next link shared is new. A pairing that is still in flight is unaffected, because each pending pairing is bound at creation to the key pair that was current when it was created and completes with that pair. A link captured from an earlier exchange therefore stops being answerable once the pairings created under it have resolved or expired, and two links shared at different times do not reveal a common key. This property is scoped to the pairing identifier: contacts who complete pairing still learn the durable identity keys described above, which are shared across all of a user's contacts.
+
 ## 5. Transport stack: ZTP, ZWF, ZPP, ZMM
 
 ### 5.1 ZWF, fixed-size authenticated frames

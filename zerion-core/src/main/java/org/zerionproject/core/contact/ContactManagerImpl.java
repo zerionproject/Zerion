@@ -11,6 +11,8 @@ import org.zerionproject.core.api.contact.PendingContactId;
 import org.zerionproject.core.api.contact.PendingContactState;
 import org.zerionproject.core.api.contact.event.PendingContactStateChangedEvent;
 import org.zerionproject.core.api.crypto.CryptoComponent;
+import org.zerionproject.core.api.crypto.HybridAgreementPrivateKey;
+import org.zerionproject.core.api.crypto.HybridAgreementPublicKey;
 import org.zerionproject.core.api.crypto.HybridCommitmentPublicKey;
 import org.zerionproject.core.api.crypto.KeyPair;
 import org.zerionproject.core.api.crypto.KeyParser;
@@ -153,6 +155,7 @@ class ContactManagerImpl implements ContactManager, EventListener {
 		PendingContact pendingContact = db.getPendingContact(txn, p);
 		boolean postQuantum = pendingContact.isPostQuantum();
 		checkForSecurityDowngrade(txn, remote.getId(), postQuantum);
+		byte[][] ourKeySnapshot = db.getPendingContactOurKeys(txn, p);
 		db.removePendingContact(txn, p);
 		states.remove(p);
 		PublicKey theirPublicKey = pendingContact.getPublicKey();
@@ -163,8 +166,7 @@ class ContactManagerImpl implements ContactManager, EventListener {
 			theirPublicKey = parser.parsePublicKey(Arrays.copyOfRange(blob,
 					HYBRID_COMMITMENT_BYTES,
 					HYBRID_COMMITMENT_BYTES + HYBRID_RENDEZVOUS_X25519_BYTES));
-			KeyPair hybrid = identityManager.getHybridHandshakeKeys(txn);
-			if (hybrid == null) throw new DbException();
+			KeyPair hybrid = hybridKeyPairFor(txn, ourKeySnapshot);
 			byte[] pub = hybrid.getPublic().getEncoded();
 			byte[] priv = hybrid.getPrivate().getEncoded();
 			ourKeyPair = new KeyPair(
@@ -185,7 +187,33 @@ class ContactManagerImpl implements ContactManager, EventListener {
 		initializePcsState(txn, c, rootKey);
 		Contact contact = db.getContact(txn, c);
 		for (ContactHook hook : hooks) hook.addingContact(txn, contact);
+		identityManager.rotateHybridHandshakeKeys(txn);
 		return c;
+	}
+
+	/**
+	 * Returns the local hybrid handshake key pair to use for a pending
+	 * contact: the pair that was snapshotted when the pending contact was
+	 * created, so that identity key rotation after each successful addition
+	 * never breaks a pairing that is still in flight, or the current
+	 * identity keys for rows created before snapshots existed.
+	 */
+	private KeyPair hybridKeyPairFor(Transaction txn,
+			@Nullable byte[][] snapshot) throws DbException {
+		if (snapshot != null) {
+			return new KeyPair(new HybridAgreementPublicKey(snapshot[0]),
+					new HybridAgreementPrivateKey(snapshot[1]));
+		}
+		KeyPair hybrid = identityManager.getHybridHandshakeKeys(txn);
+		if (hybrid == null) throw new DbException();
+		return hybrid;
+	}
+
+	@Override
+	@Nullable
+	public byte[][] getPendingContactOurKeys(Transaction txn,
+			PendingContactId p) throws DbException {
+		return db.getPendingContactOurKeys(txn, p);
 	}
 
 	private void requireNotReserved(Author remote) throws DbException {
@@ -270,6 +298,14 @@ class ContactManagerImpl implements ContactManager, EventListener {
 		}
 		AuthorId local = identityManager.getLocalAuthor(txn).getId();
 		db.addPendingContact(txn, p, local);
+		if (p.isPostQuantum()) {
+			KeyPair hybridSnapshot = identityManager.getHybridHandshakeKeys(txn);
+			if (hybridSnapshot != null) {
+				db.setPendingContactOurKeys(txn, p.getId(),
+						hybridSnapshot.getPublic().getEncoded(),
+						hybridSnapshot.getPrivate().getEncoded());
+			}
+		}
 		if (p.isClassical()) {
 			KeyPair ourKeyPair = identityManager.getHandshakeKeys(txn);
 			keyManager.addPendingContact(txn, p.getId(), p.getPublicKey(),
