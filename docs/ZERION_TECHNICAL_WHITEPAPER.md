@@ -2,7 +2,7 @@
 
 ## Abstract
 
-Zerion is an end-to-end encrypted, peer-to-peer messenger for Android that runs entirely over Tor, with no servers and no accounts. Zerion 3.0 replaces the inherited Bramble transport and synchronisation layers with a native protocol stack, ZTP, ZWF, ZPP and ZMM, carrying a hybrid post-quantum ratchet (Mode 3-Full) in which every message is protected by a fresh ML-KEM-768 key encapsulation layered over a classical symmetric chain. While a connection is live, traffic is shaped into fixed-size frames sent at a paced, jittered cadence, so an observer of an established connection cannot distinguish messages from cover traffic or infer message sizes or timing within it; the existence and lifetime of connections is outside this property.
+Zerion is an end-to-end encrypted, peer-to-peer messenger for Android that runs entirely over Tor, with no servers and no accounts. Zerion 3.0 replaces the inherited Bramble transport and synchronisation layers with a native protocol stack, ZTP, ZWF, ZPP and ZMM, carrying a hybrid post-quantum ratchet (Mode 3-Full) in which every message is protected by a fresh ML-KEM-768 key encapsulation layered over a classical symmetric chain. While a connection is live, traffic is shaped into fixed-size frames sent at a paced, jittered cadence with two constant rates: an active rate while messages flow and a slower idle rate once the connection has carried only cover for a while, so an observer of an established connection cannot distinguish messages from cover traffic or infer message sizes or timing within a rate regime; the regime transitions reveal at most the coarse onset and end of activity, and the existence and lifetime of connections is outside this property.
 
 Zerion is a fork of, and is built on, the Briar Project and its Bramble framework (GPLv3). The transport, wire format and ratchet described here are Zerion's own; the debt to Briar for the identity, database and Tor-integration foundations is gratefully acknowledged.
 
@@ -31,7 +31,7 @@ This document describes the protocol as implemented in the 3.0 source tree, curr
 
 - **Post-quantum by default.** Every message key incorporates ML-KEM-768 in addition to X25519, so recorded traffic is not decryptable by a future quantum adversary ("harvest now, decrypt later").
 - **No servers, no accounts.** Peers connect directly to each other's Tor hidden services. There is no central relay, directory, or push service.
-- **Metadata minimisation.** While a connection is open, fixed-size frames at a paced, jittered cadence make application traffic indistinguishable from cover, hiding message sizes, counts and timing within that connection. Connection existence and lifetime are not hidden.
+- **Metadata minimisation.** While a connection is open, fixed-size frames at a paced, jittered cadence make application traffic indistinguishable from cover, hiding message sizes, counts and timing within each rate regime. The cadence idles to a slower constant rate when no messages have flowed recently, so the transition between the active and idle rates reveals the coarse onset and end of activity but nothing finer. Connection existence and lifetime are not hidden.
 - **Fail closed.** Any authentication or format failure drops the stream rather than degrading to a weaker mode.
 - **Forward secrecy and post-compromise security** on the message stream.
 

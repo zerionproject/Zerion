@@ -33,8 +33,6 @@ import dagger.Provides;
 @Module
 public class ZerionTransportModule {
 
-	/** The Zerion Pull Protocol send cadence: one frame per slot, per direction. */
-	private static final long ZPP_SLOT_INTERVAL_MS = 750L;
 
 	public static class EagerSingletons {
 		@Inject
@@ -85,10 +83,25 @@ public class ZerionTransportModule {
 	}
 
 	@Provides
+	@Singleton
+	org.zerionproject.sync.ZppPacingPolicy providePacingPolicy(
+			org.zerionproject.core.api.network.NetworkManager networkManager,
+			org.zerionproject.core.api.settings.SettingsManager settingsManager,
+			@org.zerionproject.core.api.db.DatabaseExecutor
+					java.util.concurrent.Executor dbExecutor,
+			org.zerionproject.core.api.event.EventBus eventBus) {
+		org.zerionproject.sync.ZppPacingPolicy policy =
+				new org.zerionproject.sync.ZppPacingPolicy(networkManager,
+						settingsManager, dbExecutor);
+		eventBus.addListener(policy);
+		return policy;
+	}
+
+	@Provides
 	ZppConnectionRunner provideConnectionRunner(ZppRecordSink recordSink,
-			ZppConnectionRegistry registry) {
-		return new ZppConnectionRunnerImpl(recordSink, registry,
-				ZPP_SLOT_INTERVAL_MS);
+			ZppConnectionRegistry registry,
+			org.zerionproject.sync.ZppPacingPolicy pacingPolicy) {
+		return new ZppConnectionRunnerImpl(recordSink, registry, pacingPolicy);
 	}
 
 	@Provides

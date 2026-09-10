@@ -37,6 +37,19 @@ public class ZppSendScheduler {
 	private final AtomicLong realFrames = new AtomicLong();
 	private final AtomicLong coverFrames = new AtomicLong();
 
+	@javax.annotation.Nullable
+	private volatile Runnable wakeListener;
+
+	/**
+	 * Registers a listener invoked whenever a record is queued, so the slot
+	 * clock can shorten an idle-regime gap to the active cadence. The listener
+	 * never causes a frame to be sent early relative to the active cadence, so
+	 * queueing remains unobservable beyond the regime change itself.
+	 */
+	public void setWakeListener(@javax.annotation.Nullable Runnable listener) {
+		wakeListener = listener;
+	}
+
 	public ZppSendScheduler(FrameSink sink) {
 		this(sink, () -> true);
 	}
@@ -68,6 +81,8 @@ public class ZppSendScheduler {
 	 */
 	public void enqueueRecord(byte[] record) {
 		outgoing.add(record);
+		Runnable listener = wakeListener;
+		if (listener != null) listener.run();
 	}
 
 	/**
@@ -80,14 +95,16 @@ public class ZppSendScheduler {
 	 * (once learned it never becomes unknown again), a record released after the
 	 * check is still encrypted with the post-quantum secret present.
 	 */
-	public void tick() throws IOException {
+	public boolean tick() throws IOException {
 		byte[] record = pqReady.getAsBoolean() ? outgoing.poll() : null;
 		if (record != null) {
 			sink.send(record);
 			realFrames.incrementAndGet();
+			return true;
 		} else {
 			sink.send(ZmmRecord.cover());
 			coverFrames.incrementAndGet();
+			return false;
 		}
 	}
 

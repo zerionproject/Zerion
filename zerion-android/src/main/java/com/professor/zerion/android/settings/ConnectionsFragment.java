@@ -68,6 +68,11 @@ public class ConnectionsFragment extends Fragment {
 
 	@Inject
 	MeshController meshController;
+	@Inject
+	org.zerionproject.core.api.settings.SettingsManager settingsManager;
+	@Inject
+	@org.zerionproject.core.api.db.DatabaseExecutor
+	java.util.concurrent.Executor dbExecutor;
 
 	@Inject
 	PluginManager pluginManager;
@@ -182,6 +187,49 @@ public class ConnectionsFragment extends Fragment {
 		offlineModeSwitch.setChecked(pluginManager.isOfflineMode());
 		offlineModeSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
 			if (buttonView.isPressed()) onOfflineModeToggle(isChecked);
+		});
+
+		SwitchMaterial reduceDataSwitch =
+				view.findViewById(R.id.reduce_data_switch);
+		dbExecutor.execute(() -> {
+			boolean reduce;
+			try {
+				reduce = settingsManager.getSettings(
+						org.zerionproject.core.api.sync.ZppPacingConstants
+								.SETTINGS_NAMESPACE)
+						.getBoolean(
+								org.zerionproject.core.api.sync
+										.ZppPacingConstants
+										.PREF_REDUCE_MOBILE_DATA,
+								org.zerionproject.core.api.sync
+										.ZppPacingConstants
+										.DEFAULT_REDUCE_MOBILE_DATA);
+			} catch (org.zerionproject.core.api.db.DbException e) {
+				return;
+			}
+			boolean finalReduce = reduce;
+			android.app.Activity activity = getActivity();
+			if (activity == null) return;
+			activity.runOnUiThread(() -> {
+				if (!isAdded()) return;
+				reduceDataSwitch.setChecked(finalReduce);
+			});
+		});
+		reduceDataSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+			if (!buttonView.isPressed()) return;
+			dbExecutor.execute(() -> {
+				try {
+					org.zerionproject.core.api.settings.Settings out =
+							new org.zerionproject.core.api.settings.Settings();
+					out.putBoolean(
+							org.zerionproject.core.api.sync.ZppPacingConstants
+									.PREF_REDUCE_MOBILE_DATA, isChecked);
+					settingsManager.mergeSettings(out,
+							org.zerionproject.core.api.sync.ZppPacingConstants
+									.SETTINGS_NAMESPACE);
+				} catch (org.zerionproject.core.api.db.DbException e) {
+				}
+			});
 		});
 
 		setupBackgroundConnections(view);
