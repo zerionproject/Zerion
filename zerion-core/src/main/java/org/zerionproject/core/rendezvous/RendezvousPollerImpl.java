@@ -66,7 +66,6 @@ import javax.inject.Inject;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.zerionproject.core.api.contact.HandshakeLinkConstants.HYBRID_COMMITMENT_BYTES;
-import static org.zerionproject.core.api.contact.HandshakeLinkConstants.HYBRID_COMMITMENT_LABEL;
 import static org.zerionproject.core.api.contact.HandshakeLinkConstants.HYBRID_RENDEZVOUS_X25519_BYTES;
 import static org.zerionproject.core.api.contact.PendingContactState.ADDING_CONTACT;
 import static org.zerionproject.core.api.contact.PendingContactState.FAILED;
@@ -106,8 +105,6 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 	private KeyPair handshakeKeyPair = null;
 	@Nullable
 	private KeyPair hybridHandshakeKeyPair = null;
-	@Nullable
-	private byte[] ourHybridCommitment = null;
 	@Nullable
 	private Cancellable pollTask = null;
 
@@ -174,11 +171,16 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 
 			if (p.isPostQuantum()) {
 				KeyPair pendingKeyPair = null;
-				byte[][] snapshot = null;
+				byte[][] snapshot;
 				try {
 					snapshot = db.transactionWithResult(true, txn ->
 							db.getPendingContactOurKeys(txn, p.getId()));
+				} catch (org.zerionproject.core.api.db
+						.NoSuchPendingContactException e) {
+					return;
 				} catch (DbException e) {
+					broadcastState(p.getId(), FAILED);
+					return;
 				}
 				if (snapshot != null) {
 					pendingKeyPair = new KeyPair(
@@ -197,8 +199,6 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 					broadcastState(p.getId(), FAILED);
 					return;
 				}
-				ourHybridCommitment = crypto.hash(HYBRID_COMMITMENT_LABEL,
-						pendingKeyPair.getPublic().getEncoded());
 				byte[] theirBlob = p.getPublicKey().getEncoded();
 				KeyParser parser = crypto.getAgreementKeyParser();
 				PublicKey theirX25519 = parser.parsePublicKey(

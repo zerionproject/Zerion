@@ -107,7 +107,9 @@ public class AppModule {
 	}
 
 	public static boolean isSecureStorageFailed() {
-		return SecurePrefsHolder.initFailed;
+		return SecurePrefsHolder.initFailed
+				|| com.professor.zerion.android.security.ZerionEncryptedPrefs
+						.isStorageFailed();
 	}
 
 	static class SecurePrefsHolder {

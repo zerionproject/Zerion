@@ -253,6 +253,7 @@ public class ZerionService extends Service {
 
 	@Override
 	public IBinder onBind(Intent intent) {
+		if (app == null) return null;
 		return binder;
 	}
 
@@ -272,6 +273,7 @@ public class ZerionService extends Service {
 
 	@Override
 	public void onLowMemory() {
+		if (app == null) return;
 		super.onLowMemory();
 		maybeClearGlideCache();
 		clearBitmapThumbnailCaches();
@@ -280,6 +282,7 @@ public class ZerionService extends Service {
 
 	@Override
 	public void onTrimMemory(int level) {
+		if (app == null) return;
 		super.onTrimMemory(level);
 
 		if (level >= TRIM_MEMORY_RUNNING_LOW) {

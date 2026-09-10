@@ -945,7 +945,7 @@
 	<string name="contact_blocked">Contact has been blocked</string>
 	<string name="unknown_contact">Unknown Contact</string>
 	<string name="keystore_unavailable_title">Secure storage unavailable</string>
-	<string name="keystore_unavailable_message">The secure key store on this device is not responding, so Zerion cannot run safely right now. No data has been lost. Restart your phone and open Zerion again.</string>
+	<string name="keystore_unavailable_message">The secure key store on this device is not responding, so nothing can run safely right now. Restart the device and try again.</string>
 	<string name="keystore_unavailable_close">Close</string>
 	<string name="reduce_mobile_data_title">Reduce data on mobile networks</string>
 	<string name="reduce_mobile_data_summary">Slows the idle cover-traffic rate on mobile data. Messages still send at full speed.</string>

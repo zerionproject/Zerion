@@ -17,11 +17,17 @@ public final class EarlyPrefs {
 	private EarlyPrefs() {
 	}
 
+	private static volatile SharedPreferences cached;
+
 	public static SharedPreferences get(Context ctx) {
+		SharedPreferences c = cached;
+		if (c != null) return c;
 		try {
-			return ZerionEncryptedPrefs.createBootReadable(ctx, FILE);
+			c = ZerionEncryptedPrefs.createBootReadable(ctx, FILE);
 		} catch (Throwable fallback) {
-			return ctx.getSharedPreferences(FILE, MODE_PRIVATE);
+			c = ctx.getSharedPreferences(FILE, MODE_PRIVATE);
 		}
+		cached = c;
+		return c;
 	}
 }

@@ -2317,8 +2317,14 @@ public class VaultViewModel extends AndroidViewModel {
 	}
 
 	public void clearMessages() {
-		successMessage.postValue(null);
-		errorMessage.postValue(null);
+		if (android.os.Looper.myLooper()
+				== android.os.Looper.getMainLooper()) {
+			successMessage.setValue(null);
+			errorMessage.setValue(null);
+		} else {
+			successMessage.postValue(null);
+			errorMessage.postValue(null);
+		}
 	}
 
 	public void clearSensitiveMemory() {

@@ -409,9 +409,21 @@ public class DisplayFragment extends Fragment {
 								.get(requireContext()).edit()
 								.putInt(ChatPreferences.PREF_GUI_TEXT_SIZE,
 										which)
-								.apply();
+								.commit();
+						ChatPreferences.invalidateGuiFontScale();
 						updateGuiTextSizeDisplay();
-						requireActivity().recreate();
+						dialog.dismiss();
+						FragmentActivity activity = requireActivity();
+						Intent intent =
+								new Intent(getActivity(), ENTRY_ACTIVITY);
+						intent.setFlags(FLAG_ACTIVITY_CLEAR_TASK
+								| FLAG_ACTIVITY_NEW_TASK);
+						startActivity(intent);
+						intent = new Intent(getActivity(),
+								activity.getClass());
+						startActivity(intent);
+						activity.finish();
+						return;
 					}
 					dialog.dismiss();
 				})

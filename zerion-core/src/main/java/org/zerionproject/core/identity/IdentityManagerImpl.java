@@ -180,19 +180,22 @@ class IdentityManagerImpl implements IdentityManager, OpenDatabaseHook {
 		return new KeyPair(hybridPub, hybridPriv);
 	}
 
+	/**
+	 * Generates a fresh hybrid handshake key pair and stores it in this
+	 * transaction, then invalidates the identity cache rather than updating
+	 * it. The next read reloads from the database, so the cache always
+	 * reflects the transaction's actual fate: within this transaction the
+	 * reload sees the new keys, after a commit it sees them too, and after a
+	 * rollback it sees the old keys, never a key pair whose private half was
+	 * discarded with the transaction.
+	 */
 	@Override
 	public void rotateHybridHandshakeKeys(Transaction txn) throws DbException {
 		Identity cached = getCachedIdentity(txn);
 		KeyPair fresh = crypto.generateHybridAgreementKeyPair();
 		db.setHybridHandshakeKeyPair(txn, cached.getId(), fresh.getPublic(),
 				fresh.getPrivate());
-		cachedIdentity = new Identity(cached.getLocalAuthor(),
-				cached.getHandshakePublicKey(),
-				cached.getHandshakePrivateKey(),
-				fresh.getPublic(), fresh.getPrivate(),
-				cached.getMlDsaSigPublicKey(),
-				cached.getMlDsaSigPrivateKey(),
-				cached.getTimeCreated());
+		cachedIdentity = null;
 	}
 
 	@Override

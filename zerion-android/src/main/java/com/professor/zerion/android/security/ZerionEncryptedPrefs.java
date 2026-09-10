@@ -66,7 +66,15 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 	 * storage.
 	 */
 	public static boolean isStorageFailed() {
-		return storageFailed;
+		if (!storageFailed) return false;
+		for (ZerionEncryptedPrefs p : INSTANCES.values()) {
+			if (p.hmacMac() != null) {
+				storageFailed = false;
+				return false;
+			}
+			break;
+		}
+		return true;
 	}
 
 	private final SharedPreferences delegate;

@@ -80,11 +80,21 @@ public class ChatPreferences {
 	 * divides this scale back out, so the two settings stay independent while
 	 * the system accessibility font scale continues to apply to both.
 	 */
+	private static volatile float cachedGuiScale = -1f;
+
 	public static float getGuiFontScale(Context context) {
+		float cached = cachedGuiScale;
+		if (cached > 0f) return cached;
 		int index = com.professor.zerion.android.EarlyPrefs.get(context)
 				.getInt(PREF_GUI_TEXT_SIZE, TEXT_SIZE_MEDIUM);
 		if (index < 0 || index >= GUI_SCALES.length) index = TEXT_SIZE_MEDIUM;
-		return GUI_SCALES[index];
+		float scale = GUI_SCALES[index];
+		cachedGuiScale = scale;
+		return scale;
+	}
+
+	public static void invalidateGuiFontScale() {
+		cachedGuiScale = -1f;
 	}
 
 	public static Context applyGuiFontScale(Context base) {
