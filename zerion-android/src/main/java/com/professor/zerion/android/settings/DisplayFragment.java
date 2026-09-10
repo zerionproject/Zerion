@@ -58,6 +58,9 @@ public class DisplayFragment extends Fragment {
 	private View navSizeCard;
 	private TextView navSizeValue;
 	private View textSizeCard;
+	private View guiTextSizeCard;
+	private android.widget.TextView guiTextSizeValue;
+	private int currentGuiTextSize;
 	private TextView textSizeValue;
 	private View bubbleColorCard;
 	private TextView bubbleColorValue;
@@ -102,6 +105,8 @@ public class DisplayFragment extends Fragment {
 		navSizeCard = view.findViewById(R.id.nav_size_card);
 		navSizeValue = view.findViewById(R.id.nav_size_value);
 		textSizeCard = view.findViewById(R.id.text_size_card);
+		guiTextSizeCard = view.findViewById(R.id.gui_text_size_card);
+		guiTextSizeValue = view.findViewById(R.id.gui_text_size_value);
 		textSizeValue = view.findViewById(R.id.text_size_value);
 		bubbleColorCard = view.findViewById(R.id.bubble_color_card);
 		bubbleColorValue = view.findViewById(R.id.bubble_color_value);
@@ -122,6 +127,7 @@ public class DisplayFragment extends Fragment {
 			navSizeCard.setOnClickListener(v -> showNavSizeDialog());
 		}
 		textSizeCard.setOnClickListener(v -> showTextSizeDialog());
+		guiTextSizeCard.setOnClickListener(v -> showGuiTextSizeDialog());
 		bubbleColorCard.setOnClickListener(v -> showBubbleColorDialog());
 		if (accentCard != null) {
 			accentCard.setOnClickListener(v -> showAccentDialog());
@@ -147,7 +153,11 @@ public class DisplayFragment extends Fragment {
 		updateNavSizeDisplay();
 
 		currentTextSize = securePrefs.getInt(PREF_TEXT_SIZE, TEXT_SIZE_MEDIUM);
+		currentGuiTextSize = com.professor.zerion.android.EarlyPrefs
+				.get(requireContext())
+				.getInt(ChatPreferences.PREF_GUI_TEXT_SIZE, TEXT_SIZE_MEDIUM);
 		updateTextSizeDisplay();
+		updateGuiTextSizeDisplay();
 
 		currentBubbleColor = securePrefs.getInt(PREF_BUBBLE_COLOR, BUBBLE_BLUE);
 		updateBubbleColorDisplay();
@@ -379,6 +389,46 @@ public class DisplayFragment extends Fragment {
 				})
 				.setNegativeButton(R.string.cancel, null)
 				.show();
+	}
+
+	private void showGuiTextSizeDialog() {
+		String[] entries = {
+				getString(R.string.pref_text_size_small),
+				getString(R.string.pref_text_size_medium),
+				getString(R.string.pref_text_size_large),
+				getString(R.string.pref_text_size_extra_large)
+		};
+
+		new MaterialAlertDialogBuilder(requireContext())
+				.setTitle(R.string.pref_gui_text_size_title)
+				.setSingleChoiceItems(entries, currentGuiTextSize,
+						(dialog, which) -> {
+					if (which != currentGuiTextSize) {
+						currentGuiTextSize = which;
+						com.professor.zerion.android.EarlyPrefs
+								.get(requireContext()).edit()
+								.putInt(ChatPreferences.PREF_GUI_TEXT_SIZE,
+										which)
+								.apply();
+						updateGuiTextSizeDisplay();
+						requireActivity().recreate();
+					}
+					dialog.dismiss();
+				})
+				.setNegativeButton(R.string.cancel, null)
+				.show();
+	}
+
+	private void updateGuiTextSizeDisplay() {
+		int[] labels = {
+				R.string.pref_text_size_small,
+				R.string.pref_text_size_medium,
+				R.string.pref_text_size_large,
+				R.string.pref_text_size_extra_large
+		};
+		int idx = currentGuiTextSize;
+		if (idx < 0 || idx >= labels.length) idx = TEXT_SIZE_MEDIUM;
+		guiTextSizeValue.setText(labels[idx]);
 	}
 
 	private void updateTextSizeDisplay() {

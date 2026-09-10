@@ -1240,7 +1240,8 @@
 	<string name="pref_nav_size_default">Default</string>
 	<string name="pref_nav_size_large">Large</string>
 	<string name="pref_chat_section">CHAT</string>
-	<string name="pref_text_size_title">Text Size</string>
+	<string name="pref_text_size_title">Chat Text Size</string>
+	<string name="pref_gui_text_size_title">Interface Text Size</string>
 	<string name="pref_text_size_small">Small</string>
 	<string name="pref_text_size_medium">Medium</string>
 	<string name="pref_text_size_large">Large</string>

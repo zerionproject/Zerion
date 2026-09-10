@@ -146,8 +146,9 @@ public abstract class BaseActivity extends AppCompatActivity
 
 	@Override
 	protected void attachBaseContext(Context base) {
-		super.attachBaseContext(
-				Localizer.getInstance().applyLocaleToContext(base));
+		super.attachBaseContext(com.professor.zerion.android.settings
+				.ChatPreferences.applyGuiFontScale(
+						Localizer.getInstance().applyLocaleToContext(base)));
 	}
 
 	public ActivityComponent getActivityComponent() {

@@ -43,6 +43,10 @@ public class ChatPreferences {
 
 	private static final float[] TEXT_SIZES_SP = {14f, 16f, 18f, 22f};
 
+	public static final String PREF_GUI_TEXT_SIZE = "pref_gui_text_size";
+
+	private static final float[] GUI_SCALES = {0.85f, 1f, 1.15f, 1.3f};
+
 	private static final int[] BUBBLE_COLORS = {
 			R.color.bubble_blue,
 			R.color.bubble_purple,
@@ -66,7 +70,31 @@ public class ChatPreferences {
 				.securePreferences();
 		int index = prefs.getInt(PREF_TEXT_SIZE, TEXT_SIZE_MEDIUM);
 		if (index < 0 || index >= TEXT_SIZES_SP.length) index = TEXT_SIZE_MEDIUM;
-		return TEXT_SIZES_SP[index];
+		return TEXT_SIZES_SP[index] / getGuiFontScale(context);
+	}
+
+	/**
+	 * The interface font scale chosen in display settings, independent of the
+	 * chat text size. Stored in the early preferences so it can be read when
+	 * an activity context is created, before injection. Chat message text
+	 * divides this scale back out, so the two settings stay independent while
+	 * the system accessibility font scale continues to apply to both.
+	 */
+	public static float getGuiFontScale(Context context) {
+		int index = com.professor.zerion.android.EarlyPrefs.get(context)
+				.getInt(PREF_GUI_TEXT_SIZE, TEXT_SIZE_MEDIUM);
+		if (index < 0 || index >= GUI_SCALES.length) index = TEXT_SIZE_MEDIUM;
+		return GUI_SCALES[index];
+	}
+
+	public static Context applyGuiFontScale(Context base) {
+		float scale = getGuiFontScale(base);
+		if (scale == 1f) return base;
+		android.content.res.Configuration conf =
+				new android.content.res.Configuration(
+						base.getResources().getConfiguration());
+		conf.fontScale = conf.fontScale * scale;
+		return base.createConfigurationContext(conf);
 	}
 
 	public static int getBubbleColorRes(Context context) {
