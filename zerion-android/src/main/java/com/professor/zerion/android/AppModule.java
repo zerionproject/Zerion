@@ -106,9 +106,14 @@ public class AppModule {
 		return SecurePrefsHolder.getUiPrefs();
 	}
 
+	public static boolean isSecureStorageFailed() {
+		return SecurePrefsHolder.initFailed;
+	}
+
 	static class SecurePrefsHolder {
 		private static volatile SharedPreferences securePrefs;
 		private static volatile SharedPreferences uiPrefs;
+		private static volatile boolean initFailed = false;
 		private static final Object lock = new Object();
 
 		static void initialize(Application app) {
@@ -140,8 +145,15 @@ public class AppModule {
 		private static void initializeInternal(Application app) {
 			Context ctx = app.getApplicationContext();
 			boolean upgradedFromAndroidX = androidXMasterKeyExists();
-			securePrefs = ZerionEncryptedPrefs.create(ctx, "secure_prefs");
-			uiPrefs = ZerionEncryptedPrefs.create(ctx, "ui_prefs");
+			try {
+				securePrefs = ZerionEncryptedPrefs.create(ctx, "secure_prefs");
+				uiPrefs = ZerionEncryptedPrefs.create(ctx, "ui_prefs");
+			} catch (RuntimeException e) {
+				initFailed = true;
+				securePrefs = new FailClosedPrefs();
+				uiPrefs = new FailClosedPrefs();
+				return;
+			}
 			if (upgradedFromAndroidX
 					&& !uiPrefs.contains(PREF_POST_UPDATE_NOTICE_PENDING)) {
 				uiPrefs.edit()
@@ -173,6 +185,118 @@ public class AppModule {
 				throw new IllegalStateException("UiPrefs not initialized");
 			}
 			return uiPrefs;
+		}
+	}
+
+	private static final class FailClosedPrefs implements SharedPreferences {
+		@Override
+		public java.util.Map<String, ?> getAll() {
+			return java.util.Collections.emptyMap();
+		}
+
+		@Override
+		@javax.annotation.Nullable
+		public String getString(String key,
+				@javax.annotation.Nullable String defValue) {
+			return defValue;
+		}
+
+		@Override
+		@javax.annotation.Nullable
+		public java.util.Set<String> getStringSet(String key,
+				@javax.annotation.Nullable java.util.Set<String> defValues) {
+			return defValues;
+		}
+
+		@Override
+		public int getInt(String key, int defValue) {
+			return defValue;
+		}
+
+		@Override
+		public long getLong(String key, long defValue) {
+			return defValue;
+		}
+
+		@Override
+		public float getFloat(String key, float defValue) {
+			return defValue;
+		}
+
+		@Override
+		public boolean getBoolean(String key, boolean defValue) {
+			return defValue;
+		}
+
+		@Override
+		public boolean contains(String key) {
+			return false;
+		}
+
+		@Override
+		public Editor edit() {
+			return new Editor() {
+				@Override
+				public Editor putString(String k,
+						@javax.annotation.Nullable String v) {
+					return this;
+				}
+
+				@Override
+				public Editor putStringSet(String k,
+						@javax.annotation.Nullable java.util.Set<String> v) {
+					return this;
+				}
+
+				@Override
+				public Editor putInt(String k, int v) {
+					return this;
+				}
+
+				@Override
+				public Editor putLong(String k, long v) {
+					return this;
+				}
+
+				@Override
+				public Editor putFloat(String k, float v) {
+					return this;
+				}
+
+				@Override
+				public Editor putBoolean(String k, boolean v) {
+					return this;
+				}
+
+				@Override
+				public Editor remove(String k) {
+					return this;
+				}
+
+				@Override
+				public Editor clear() {
+					return this;
+				}
+
+				@Override
+				public boolean commit() {
+					return false;
+				}
+
+				@Override
+				public void apply() {
+				}
+			};
+		}
+
+		@Override
+		public void registerOnSharedPreferenceChangeListener(
+				OnSharedPreferenceChangeListener listener) {
+		}
+
+		@Override
+		public void unregisterOnSharedPreferenceChangeListener(
+				OnSharedPreferenceChangeListener listener) {
 		}
 	}
 

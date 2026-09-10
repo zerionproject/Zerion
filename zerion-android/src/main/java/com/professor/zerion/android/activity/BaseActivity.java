@@ -77,6 +77,16 @@ public abstract class BaseActivity extends AppCompatActivity
 
 	@Override
 	public void onCreate(@Nullable Bundle state) {
+		if (com.professor.zerion.android.AppModule.isSecureStorageFailed()) {
+			super.onCreate(state);
+			Intent gate = new Intent(this, com.professor.zerion.android
+					.security.KeystoreUnavailableActivity.class);
+			gate.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+					| Intent.FLAG_ACTIVITY_CLEAR_TASK);
+			startActivity(gate);
+			finish();
+			return;
+		}
 		AndroidComponent applicationComponent =
 				((ZerionApplication) getApplication()).getApplicationComponent();
 		activityComponent = DaggerActivityComponent.builder()
@@ -151,6 +161,7 @@ public abstract class BaseActivity extends AppCompatActivity
 	@Override
 	protected void onStart() {
 		super.onStart();
+		if (securityManager == null) return;
 		if (enforceDecoyGate()
 				&& com.professor.zerion.android.decoy.DecoyGate.required(this)
 				&& !isFinishing()) {

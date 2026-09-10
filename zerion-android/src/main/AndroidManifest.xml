@@ -149,6 +149,11 @@
 			android:label="@string/app_name" />
 
 		<activity
+			android:name="com.professor.zerion.android.security.KeystoreUnavailableActivity"
+			android:exported="false"
+			android:excludeFromRecents="true" />
+
+		<activity
 			android:name="com.professor.zerion.android.security.HardenedBlockActivity"
 			android:exported="false"
 			android:excludeFromRecents="true"

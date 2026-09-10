@@ -365,16 +365,24 @@ class CryptoComponentImpl implements CryptoComponent {
 		secureRandom.nextBytes(salt);
 		int cost = argon2idKdf.chooseCostParameter();
 		SecretKey kdfKey = argon2idKdf.deriveKey(password, salt, cost);
-		SecretKey key = keyStrengthener != null
-				? keyStrengthener.strengthenKey(kdfKey) : kdfKey;
+		SecretKey key = kdfKey;
+		boolean strengthened = false;
+		if (keyStrengthener != null) {
+			try {
+				key = keyStrengthener.strengthenKey(kdfKey);
+				strengthened = true;
+			} catch (RuntimeException e) {
+				key = kdfKey;
+			}
+		}
 		byte[] iv = new byte[STORAGE_IV_BYTES];
 		secureRandom.nextBytes(iv);
 		int outputLen = 1 + salt.length + INT_32_BYTES + iv.length
 				+ input.length + macBytes;
 		byte[] output = new byte[outputLen];
 		int outputOff = 0;
-		byte formatVersion = keyStrengthener == null
-				? PBKDF_FORMAT_ARGON2ID : PBKDF_FORMAT_ARGON2ID_STRENGTHENED;
+		byte formatVersion = strengthened
+				? PBKDF_FORMAT_ARGON2ID_STRENGTHENED : PBKDF_FORMAT_ARGON2ID;
 		output[outputOff] = formatVersion;
 		outputOff++;
 		arraycopy(salt, 0, output, outputOff, salt.length);

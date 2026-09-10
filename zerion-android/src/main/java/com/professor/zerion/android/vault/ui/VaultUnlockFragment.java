@@ -68,6 +68,7 @@ public class VaultUnlockFragment extends BaseFragment {
 		viewModel = new ViewModelProvider(requireActivity(), viewModelFactory)
 				.get(VaultViewModel.class);
 
+		viewModel.clearMessages();
 		setupUnlockButton();
 		setupPasswordInput();
 		observeViewModel();

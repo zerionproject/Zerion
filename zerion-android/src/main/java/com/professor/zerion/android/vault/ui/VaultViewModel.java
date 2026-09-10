@@ -109,7 +109,10 @@ public class VaultViewModel extends AndroidViewModel {
 		this.dbExecutor = dbExecutor;
 		this.walletStore = walletStore;
 		this.torSocksPort = torSocksPort;
-		vaultManager.setOnLockListener(this::resetWalletSession);
+		vaultManager.setOnLockListener(() -> {
+			resetWalletSession();
+			vaultState.postValue(VaultState.LOCKED);
+		});
 		refreshVaultState();
 	}
 
@@ -2375,6 +2378,7 @@ public class VaultViewModel extends AndroidViewModel {
 			try {
 				boolean success = vaultManager.unlockVault(password);
 				if (success) {
+					errorMessage.postValue(null);
 					vaultState.postValue(VaultState.UNLOCKED);
 					loadVaultItems();
 				} else {

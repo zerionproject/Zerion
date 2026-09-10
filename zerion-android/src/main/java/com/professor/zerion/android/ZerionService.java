@@ -118,6 +118,11 @@ public class ZerionService extends Service {
 	public void onCreate() {
 		super.onCreate();
 
+		if (com.professor.zerion.android.AppModule.isSecureStorageFailed()) {
+			stopSelf();
+			return;
+		}
+
 		app = (ZerionApplication) getApplication();
 		app.getApplicationComponent().inject(this);
 
@@ -222,6 +227,10 @@ public class ZerionService extends Service {
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
+		if (com.professor.zerion.android.AppModule.isSecureStorageFailed()) {
+			stopSelf();
+			return START_NOT_STICKY;
+		}
 		if (intent != null) {
 			String action = intent.getAction();
 			if (ACTION_LOCK.equals(action)) {
@@ -250,6 +259,7 @@ public class ZerionService extends Service {
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
+		if (app == null) return;
 		shutdown(false);
 		stopForeground(true);
 		if (receiver != null) {
