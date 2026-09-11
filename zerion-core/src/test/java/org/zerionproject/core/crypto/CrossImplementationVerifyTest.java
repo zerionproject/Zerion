@@ -54,6 +54,17 @@ public class CrossImplementationVerifyTest {
 		assertTrue("ML-DSA-65 signature from the peer does not verify",
 				dsa.verify(dsaPub, dsaMsg, dsaSig));
 
+		// The direction no shipping flow has ever exercised: encapsulating to a
+		// key the peer generated. A steady-state connection needs this as soon
+		// as it learns the key the peer advertises, so a format or validation
+		// mismatch here would close every connection shortly after it opened.
+		byte[] peerEk = hex(section(json, "locallyGeneratedKem", "publicKey"));
+		byte[] peerDk = hex(section(json, "locallyGeneratedKem", "privateKey"));
+		MlKem768.MlKemEncapsulation toPeer = kem.encapsulate(peerEk);
+		assertArrayEquals("encapsulating to a peer-generated key must agree",
+				toPeer.getSharedSecret(),
+				kem.decapsulate(peerDk, toPeer.getCiphertext()));
+
 		String label = section(json, "hybridSignature", "label");
 		byte[] hybridPub = hex(section(json, "hybridSignature", "publicKey"));
 		byte[] hybridMsg = hex(section(json, "hybridSignature", "message"));
