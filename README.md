@@ -122,7 +122,10 @@ APK signing fingerprint: D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6
 
 ## Changelog
 
-**v3.0.9 (Latest release, September 2026):**
+**v3.0.10 (Latest release, September 2026):**
+- Fixes a bug where updating to 3.0.9 could show a database error after signing in. No data was affected: the failed database upgrade rolled back and left the account, contacts, messages and wallets intact, and installing this version opens the account normally. The database upgrade step is now idempotent and self-healing, and is covered by a regression test that runs it against a real database. Functionally identical to 3.0.9 otherwise
+
+**v3.0.9 (September 2026):**
 - Rotating pairing links: the handshake key behind your pairing link rotates after every successful contact addition, so a previously shared link stops identifying you once its pairings resolve; pairings in flight are bound to the key they started with and are unaffected (database schema v67)
 - Fixes from an independent Bitcoin wallet security review: strict custom-node classification so a hostile hostname can never bypass the selected Tor routing policy (enforced again at the socket boundary), pending payments keep their coins reserved through every reconciliation state with node responses verified against the requested transaction, and the reviewed fee now always equals the exact final fee
 - Devices with unreliable secure-element firmware no longer crash-loop until a phone restart: key store failures are handled safely everywhere, transient failures no longer discard keys, and a clear explanation screen appears when the device key store is unresponsive; there is never a fallback to unencrypted storage
