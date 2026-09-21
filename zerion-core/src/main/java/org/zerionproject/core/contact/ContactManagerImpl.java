@@ -105,13 +105,18 @@ class ContactManagerImpl implements ContactManager, EventListener {
 				verified, active, (byte[]) null);
 	}
 
+	/**
+	 * Adds a contact paired nearby. The root key comes from the hybrid
+	 * nearby pairing protocol (X25519 and ML-KEM-768), so the contact is
+	 * recorded as post-quantum like a contact paired over a link.
+	 */
 	@Override
 	public ContactId addContact(Transaction txn, Author remote, AuthorId local,
 			SecretKey rootKey, long timestamp, boolean alice, boolean verified,
 			boolean active,
 			@Nullable byte[] peerMlDsaSigPublicKey) throws DbException {
 		requireNotReserved(remote);
-		ContactId c = db.addContact(txn, remote, local, null, verified, false,
+		ContactId c = db.addContact(txn, remote, local, null, verified, true,
 				false, peerMlDsaSigPublicKey);
 		keyManager.addRotationKeys(txn, c, rootKey, timestamp, alice, active);
 		initializePcsState(txn, c, rootKey);

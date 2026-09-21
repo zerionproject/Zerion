@@ -1,6 +1,7 @@
 package org.zerionproject.core.keyagreement;
 
 import org.zerionproject.core.api.crypto.CryptoComponent;
+import org.zerionproject.core.api.crypto.HybridEncapsulationResult;
 import org.zerionproject.core.api.crypto.KeyAgreementCrypto;
 import org.zerionproject.core.api.crypto.KeyPair;
 import org.zerionproject.core.api.crypto.KeyParser;
@@ -14,9 +15,10 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 
+import static org.zerionproject.core.api.crypto.PostQuantumConstants.ML_KEM_768_CIPHERTEXT_BYTES;
+import static org.zerionproject.core.api.keyagreement.KeyAgreementConstants.HYBRID_SHARED_SECRET_LABEL;
 import static org.zerionproject.core.api.keyagreement.KeyAgreementConstants.MASTER_KEY_LABEL;
 import static org.zerionproject.core.api.keyagreement.KeyAgreementConstants.PROTOCOL_VERSION;
-import static org.zerionproject.core.api.keyagreement.KeyAgreementConstants.SHARED_SECRET_LABEL;
 
 @NotNullByDefault
 class KeyAgreementProtocol {
@@ -53,18 +55,40 @@ class KeyAgreementProtocol {
 		this.alice = alice;
 	}
 
+	/**
+	 * Runs the nearby pairing protocol with hybrid X25519 and ML-KEM-768
+	 * keys. After the key exchange Alice encapsulates an ML-KEM secret to
+	 * Bob's key and sends the ciphertext; both sides then derive the shared
+	 * secret from the X25519 agreement and the ML-KEM secret, so the master
+	 * key that every contact key descends from is post-quantum.
+	 */
 	SecretKey perform() throws AbortException, IOException {
 		try {
 			PublicKey theirPublicKey;
-			if (alice) {
-				sendKey();
-				callbacks.connectionWaiting();
-				theirPublicKey = receiveKey();
-			} else {
-				theirPublicKey = receiveKey();
-				sendKey();
+			byte[] kemCiphertext;
+			byte[] kemSecret = new byte[0];
+			SecretKey s;
+			try {
+				if (alice) {
+					sendKey();
+					callbacks.connectionWaiting();
+					theirPublicKey = receiveKey();
+					HybridEncapsulationResult enc = encapsulate(theirPublicKey);
+					kemCiphertext = enc.getCiphertext();
+					kemSecret = enc.getSharedSecret();
+					transport.sendKemCiphertext(kemCiphertext);
+					s = deriveSharedSecretAsEncapsulator(theirPublicKey,
+							kemCiphertext, kemSecret);
+				} else {
+					theirPublicKey = receiveKey();
+					sendKey();
+					kemCiphertext = receiveKemCiphertext();
+					s = deriveSharedSecretAsDecapsulator(theirPublicKey,
+							kemCiphertext);
+				}
+			} finally {
+				java.util.Arrays.fill(kemSecret, (byte) 0);
 			}
-			SecretKey s = deriveSharedSecret(theirPublicKey);
 			if (alice) {
 				sendConfirm(s, theirPublicKey);
 				receiveConfirm(s, theirPublicKey);
@@ -89,7 +113,7 @@ class KeyAgreementProtocol {
 	private PublicKey receiveKey() throws AbortException {
 		byte[] publicKeyBytes = transport.receiveKey();
 		callbacks.initialRecordReceived();
-		KeyParser keyParser = crypto.getAgreementKeyParser();
+		KeyParser keyParser = crypto.getHybridAgreementKeyParser();
 		try {
 			PublicKey publicKey = keyParser.parsePublicKey(publicKeyBytes);
 			byte[] expected = keyAgreementCrypto.deriveKeyCommitment(publicKey);
@@ -102,19 +126,56 @@ class KeyAgreementProtocol {
 		}
 	}
 
-	private SecretKey deriveSharedSecret(PublicKey theirPublicKey)
+	private HybridEncapsulationResult encapsulate(PublicKey theirPublicKey)
 			throws AbortException {
 		try {
-			byte[] ourPublicKeyBytes = ourKeyPair.getPublic().getEncoded();
-			byte[] theirPublicKeyBytes = theirPublicKey.getEncoded();
-			byte[][] inputs = {
-					new byte[] {PROTOCOL_VERSION},
-					alice ? ourPublicKeyBytes : theirPublicKeyBytes,
-					alice ? theirPublicKeyBytes : ourPublicKeyBytes
-			};
-			return crypto.deriveSharedSecret(SHARED_SECRET_LABEL,
-					theirPublicKey, ourKeyPair, inputs);
-		} catch (GeneralSecurityException e) {
+			return crypto.hybridEncapsulate(theirPublicKey);
+		} catch (GeneralSecurityException | IllegalArgumentException e) {
+			throw new AbortException(e);
+		}
+	}
+
+	private byte[] receiveKemCiphertext() throws AbortException {
+		byte[] ciphertext = transport.receiveKemCiphertext();
+		if (ciphertext.length != ML_KEM_768_CIPHERTEXT_BYTES) {
+			throw new AbortException();
+		}
+		return ciphertext;
+	}
+
+	private byte[][] sharedSecretInputs(PublicKey theirPublicKey,
+			byte[] kemCiphertext) {
+		byte[] ourPublicKeyBytes = ourKeyPair.getPublic().getEncoded();
+		byte[] theirPublicKeyBytes = theirPublicKey.getEncoded();
+		return new byte[][] {
+				new byte[] {PROTOCOL_VERSION},
+				alice ? ourPublicKeyBytes : theirPublicKeyBytes,
+				alice ? theirPublicKeyBytes : ourPublicKeyBytes,
+				kemCiphertext
+		};
+	}
+
+	private SecretKey deriveSharedSecretAsEncapsulator(
+			PublicKey theirPublicKey, byte[] kemCiphertext, byte[] kemSecret)
+			throws AbortException {
+		try {
+			return crypto.deriveHybridSharedSecretAsResponder(
+					HYBRID_SHARED_SECRET_LABEL, theirPublicKey, ourKeyPair,
+					kemSecret, sharedSecretInputs(theirPublicKey,
+							kemCiphertext));
+		} catch (GeneralSecurityException | IllegalArgumentException e) {
+			throw new AbortException(e);
+		}
+	}
+
+	private SecretKey deriveSharedSecretAsDecapsulator(
+			PublicKey theirPublicKey, byte[] kemCiphertext)
+			throws AbortException {
+		try {
+			return crypto.deriveHybridSharedSecret(HYBRID_SHARED_SECRET_LABEL,
+					theirPublicKey, ourKeyPair, kemCiphertext,
+					sharedSecretInputs(theirPublicKey, kemCiphertext));
+		} catch (GeneralSecurityException | IllegalArgumentException e) {
 			throw new AbortException(e);
 		}
 	}

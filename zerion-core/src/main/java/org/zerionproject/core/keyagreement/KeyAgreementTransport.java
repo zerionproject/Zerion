@@ -18,6 +18,7 @@ import java.io.OutputStream;
 import static org.zerionproject.core.api.keyagreement.KeyAgreementConstants.PROTOCOL_VERSION;
 import static org.zerionproject.core.api.keyagreement.RecordTypes.ABORT;
 import static org.zerionproject.core.api.keyagreement.RecordTypes.CONFIRM;
+import static org.zerionproject.core.api.keyagreement.RecordTypes.KEM_CIPHERTEXT;
 import static org.zerionproject.core.api.keyagreement.RecordTypes.KEY;
 
 @NotNullByDefault
@@ -30,7 +31,8 @@ class KeyAgreementTransport {
 					!isKnownRecordType(r.getRecordType());
 
 	private static boolean isKnownRecordType(byte type) {
-		return type == KEY || type == CONFIRM || type == ABORT;
+		return type == KEY || type == CONFIRM || type == ABORT
+				|| type == KEM_CIPHERTEXT;
 	}
 
 	private final KeyAgreementConnection kac;
@@ -61,6 +63,14 @@ class KeyAgreementTransport {
 
 	byte[] receiveKey() throws AbortException {
 		return readRecord(KEY);
+	}
+
+	void sendKemCiphertext(byte[] ciphertext) throws IOException {
+		writeRecord(KEM_CIPHERTEXT, ciphertext);
+	}
+
+	byte[] receiveKemCiphertext() throws AbortException {
+		return readRecord(KEM_CIPHERTEXT);
 	}
 
 	void sendConfirm(byte[] confirm) throws IOException {
