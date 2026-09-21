@@ -37,10 +37,16 @@ if [ ! -d "$RAT_DIR" ]; then
 		https://github.com/obfusk/reproducible-apk-tools.git "$RAT_DIR"
 fi
 
-# Mirror the F-Droid recipe: these files are removed for the build. They affect
-# only build-time dependency verification, never the APK bytes.
-rm -f libs/gradle-witness.jar gradle/verification-metadata.xml
+# Mirror the F-Droid recipe: only the unused witness jar is removed. The Gradle
+# dependency verification metadata stays in place so every artifact resolved
+# for the shipped build is checksum- and signature-verified; a mismatch fails
+# the build instead of silently building an unverified dependency in.
+rm -f libs/gradle-witness.jar
 sed -i "/include ':bramble-java'/d" settings.gradle || true
+if [ ! -f gradle/verification-metadata.xml ]; then
+	echo "ERROR: gradle/verification-metadata.xml is missing; refusing to build without dependency verification." >&2
+	exit 1
+fi
 
 echo "==> assembleOfficialRelease -Pfdroid"
 ./gradlew clean :zerion-android:assembleOfficialRelease -Pfdroid

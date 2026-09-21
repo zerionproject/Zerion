@@ -92,7 +92,6 @@ that produces `libzmonero.so` for both ABIs before Gradle runs. Replace
       - reproducible-apk-tools@v0.3.0
     rm:
       - libs/gradle-witness.jar
-      - gradle/verification-metadata.xml
     prebuild: sed -i "/include ':bramble-java'/d" ../settings.gradle
     build: ANDROID_NDK_HOME=$$NDK$$ ../packaging/monero-android/fdroid-build.sh
     ndk: r27b
@@ -105,6 +104,14 @@ that produces `libzmonero.so` for both ABIs before Gradle runs. Replace
       - $$reproducible-apk-tools$$/zipalign.py --page-size 4 --pad-like-apksigner
         --replace unaligned.apk $$OUT$$
 ```
+
+`gradle/verification-metadata.xml` is deliberately kept for the F-Droid build.
+Gradle dependency verification only checks the checksums and signatures of the
+artifacts it resolves, so it never changes the APK bytes and cannot affect
+reproducibility; removing it would build the published APK from unverified
+dependencies. If F-Droid's resolver ever needs an artifact the metadata does
+not list, the build fails with the missing coordinate and the entry is added by
+hand (the metadata is never regenerated wholesale).
 
 `fdroid-build.sh` fetches every dependency archive with a pinned SHA-256 and
 clones Monero at the pinned commit. If the F-Droid maintainers prefer declared
