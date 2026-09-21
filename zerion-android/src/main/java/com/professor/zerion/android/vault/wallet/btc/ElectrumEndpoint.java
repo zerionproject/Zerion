@@ -43,6 +43,10 @@ public final class ElectrumEndpoint {
 		if (mode != Mode.TLS && pinSha256 != null) {
 			throw new IllegalArgumentException("pin only applies to TLS");
 		}
+		if (mode == Mode.PLAINTEXT && !local) {
+			throw new IllegalArgumentException(
+					"plaintext is only allowed on the local network");
+		}
 		if (direct && mode != Mode.TLS) {
 			throw new IllegalArgumentException(
 					"direct routing requires verified TLS");
@@ -84,11 +88,20 @@ public final class ElectrumEndpoint {
 		return pinSha256 != null && !pinSha256.isEmpty();
 	}
 
+	/**
+	 * A .onion host is reached inside Tor; a host on the local network may
+	 * speak plaintext on any port but 50002; every other host is spoken to
+	 * over TLS whatever its port, because its traffic would otherwise leave a
+	 * Tor exit in the clear.
+	 */
 	public static Mode inferMode(String host, int port) {
 		if (host.toLowerCase().endsWith(".onion")) {
 			return Mode.ONION;
 		}
-		return port == 50002 ? Mode.TLS : Mode.PLAINTEXT;
+		if (isLanHost(host)) {
+			return port == 50002 ? Mode.TLS : Mode.PLAINTEXT;
+		}
+		return Mode.TLS;
 	}
 
 	/**
@@ -141,7 +154,7 @@ public final class ElectrumEndpoint {
 			return new ElectrumEndpoint(h, port, Mode.ONION, false, null);
 		}
 		boolean local = isLanHost(h);
-		Mode mode = port == 50002 ? Mode.TLS : Mode.PLAINTEXT;
+		Mode mode = inferMode(h, port);
 		return new ElectrumEndpoint(h, port, mode, local,
 				mode == Mode.TLS ? pinSha256 : null);
 	}
@@ -169,6 +182,9 @@ public final class ElectrumEndpoint {
 			int port = Integer.parseInt(parts[2].substring(colon + 1).trim());
 			String pin = parts.length >= 4 && !parts[3].trim().isEmpty()
 					? parts[3].trim() : null;
+			if (mode == Mode.PLAINTEXT && !local) {
+				mode = Mode.TLS;
+			}
 			return new ElectrumEndpoint(host, port, mode, local, pin);
 		}
 		int colon = s.lastIndexOf(':');

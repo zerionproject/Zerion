@@ -10,11 +10,11 @@ import org.junit.Test;
 public class ElectrumEndpointTest {
 
 	@Test
-	public void legacyHostPortInfersPlaintext() {
+	public void legacyHostPortOnAnyClearnetPortInfersTls() {
 		ElectrumEndpoint e = ElectrumEndpoint.parse("electrum.example.org:50001");
-		assertEquals(ElectrumEndpoint.Mode.PLAINTEXT, e.mode);
+		assertEquals(ElectrumEndpoint.Mode.TLS, e.mode);
 		assertTrue(e.viaTor());
-		assertFalse(e.tls());
+		assertTrue(e.tls());
 	}
 
 	@Test
@@ -105,8 +105,9 @@ public class ElectrumEndpointTest {
 		String pin = "ab".repeat(32);
 		assertTrue(ElectrumEndpoint.fromUserInput("host.example.org", 50002, pin)
 				.pinned());
-		assertFalse(ElectrumEndpoint.fromUserInput("host.example.org", 50001,
-				pin).pinned());
+		assertTrue("a clearnet host is TLS on every port, so its pin applies",
+				ElectrumEndpoint.fromUserInput("host.example.org", 50001,
+						pin).pinned());
 		assertFalse(ElectrumEndpoint.fromUserInput("abc.onion", 50001, pin)
 				.pinned());
 		ElectrumEndpoint lanPinned = ElectrumEndpoint.fromUserInput(
@@ -133,5 +134,45 @@ public class ElectrumEndpointTest {
 		assertEquals(ElectrumEndpoint.Mode.TLS, remote.mode);
 		assertFalse(remote.local);
 		assertTrue(remote.viaTor());
+	}
+
+	@Test
+	public void clearnetHostOnAnyPortIsTls() {
+		ElectrumEndpoint e = ElectrumEndpoint.fromUserInput(
+				"electrum.example.org", 50001, null);
+		assertEquals(ElectrumEndpoint.Mode.TLS, e.mode);
+		assertTrue(e.viaTor());
+		assertFalse(e.local);
+		assertEquals(ElectrumEndpoint.Mode.TLS,
+				ElectrumEndpoint.inferMode("203.0.113.7", 60001));
+	}
+
+	@Test
+	public void localHostMaySpeakPlaintext() {
+		ElectrumEndpoint e = ElectrumEndpoint.fromUserInput("192.168.1.10",
+				50001, null);
+		assertEquals(ElectrumEndpoint.Mode.PLAINTEXT, e.mode);
+		assertTrue(e.local);
+		assertFalse(e.viaTor());
+		assertEquals(ElectrumEndpoint.Mode.TLS,
+				ElectrumEndpoint.inferMode("10.0.0.5", 50002));
+	}
+
+	@Test
+	public void storedPlaintextForANonLocalHostIsUpgradedToTls() {
+		ElectrumEndpoint e = ElectrumEndpoint.parse(
+				"plaintext|0|electrum.example.org:50001|");
+		assertEquals(ElectrumEndpoint.Mode.TLS, e.mode);
+		ElectrumEndpoint lan = ElectrumEndpoint.parse(
+				"plaintext|1|192.168.1.10:50001|");
+		assertEquals(ElectrumEndpoint.Mode.PLAINTEXT, lan.mode);
+		assertTrue(lan.local);
+	}
+
+	@Test
+	public void plaintextToANonLocalHostCannotBeConstructed() {
+		assertThrows(IllegalArgumentException.class, () -> new ElectrumEndpoint(
+				"electrum.example.org", 50001,
+				ElectrumEndpoint.Mode.PLAINTEXT, false, null));
 	}
 }

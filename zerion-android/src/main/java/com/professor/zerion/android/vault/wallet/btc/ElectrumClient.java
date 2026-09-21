@@ -102,6 +102,10 @@ public class ElectrumClient implements ElectrumRpc {
 			base.setSoTimeout(HANDSHAKE_TIMEOUT_MS);
 		}
 		socket = base;
+		if (ep.mode == ElectrumEndpoint.Mode.PLAINTEXT && !ep.local) {
+			throw new IOException(
+					"Refusing a plaintext connection to a non-local endpoint");
+		}
 		Socket stream = ep.tls() ? wrapTls(base, ep) : base;
 		writer = stream.getOutputStream();
 		reader = new BufferedReader(new InputStreamReader(
