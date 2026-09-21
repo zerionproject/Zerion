@@ -254,8 +254,9 @@ public class ZwfMode3FullStreamDecrypter {
 			if (pendingM3f != null) {
 				if (directionLock != null) directionLock.lock();
 				try {
-					recvState = recvState.withMode3FullState(pendingM3f);
-					if (m3fCallback != null) m3fCallback.accept(pendingM3f);
+					Mode3FullState published = mergeOnCommit(pendingM3f);
+					recvState = recvState.withMode3FullState(published);
+					if (m3fCallback != null) m3fCallback.accept(published);
 				} finally {
 					if (directionLock != null) directionLock.unlock();
 				}
@@ -282,6 +283,26 @@ public class ZwfMode3FullStreamDecrypter {
 			Arrays.fill(frame, (byte) 0);
 			Arrays.fill(frameNonce, (byte) 0);
 		}
+	}
+
+	/**
+	 * Builds the state to publish from the receive-owned part of the pending
+	 * state (the peer's newly advertised key and the receive advance) and the
+	 * send-owned part of the newest shared state (our active key pair and
+	 * the recent key pairs). The body was opened outside the lock, so the send
+	 * side may have rotated in between; publishing the pending state as it is
+	 * would put the retired key pair back and discard the one the peer was
+	 * just told to use. Must be called with the direction lock held.
+	 */
+	private Mode3FullState mergeOnCommit(Mode3FullState pending) {
+		if (m3fRefresher == null) return pending;
+		Mode3FullState fresh = m3fRefresher.get();
+		if (fresh == null) return pending;
+		long counter = Math.max(fresh.getMessageCounter(),
+				pending.getMessageCounter() - 1) + 1;
+		return new Mode3FullState(pending.getTheirActivePqPk(),
+				fresh.getOurActiveKeyPair(), fresh.getRecentKeyPairs(),
+				counter);
 	}
 
 	private void applyReceiveDhRatchet(byte[] dhKeyBytes) throws FormatException {
