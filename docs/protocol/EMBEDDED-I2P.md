@@ -1,8 +1,10 @@
 # Embedded I2P Carrier
 
-I2P is an optional carrier. It lets Zerion reach the I2P network as a second
-overlay alongside Tor. It is off by default and is enabled by the user behind a
-consent screen, because I2P has a different privacy property from Tor that the
+I2P is an optional carrier of development builds only: the router, the plugin
+and the setting are compiled into debug builds and absent from the published
+release, which is Tor-only. In a development build it lets Zerion reach the I2P
+network as a second overlay alongside Tor. It is off by default and is enabled
+by the user behind a consent screen, because I2P has a different privacy property from Tor that the
 user should understand before turning it on.
 
 Below the transport seam, I2P is identical to Tor: an I2P stream carries the same

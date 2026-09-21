@@ -705,7 +705,7 @@ public class AppModule {
 
 			@Override
 			public boolean shouldEnableI2p() {
-				return true;
+				return IS_DEBUG_BUILD;
 			}
 		};
 	}

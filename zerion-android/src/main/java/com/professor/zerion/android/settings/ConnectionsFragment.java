@@ -39,6 +39,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
+import static com.professor.zerion.android.TestingConstants.IS_DEBUG_BUILD;
 import static com.professor.zerion.android.AppModule.getAndroidComponent;
 import static org.zerionproject.core.api.plugin.TorConstants.PREF_TOR_CUSTOM_BRIDGES;
 import static org.zerionproject.core.api.plugin.TorConstants.PREF_TOR_NETWORK;
@@ -176,6 +177,10 @@ public class ConnectionsFragment extends Fragment {
 		i2pDirectReseedSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
 			if (buttonView.isPressed()) onDirectReseedToggle(isChecked);
 		});
+		if (!IS_DEBUG_BUILD) {
+			view.findViewById(R.id.i2p_card).setVisibility(View.GONE);
+			i2pDirectReseedCard.setVisibility(View.GONE);
+		}
 
 		meshSwitch = view.findViewById(R.id.mesh_switch);
 		meshSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
@@ -457,7 +462,7 @@ public class ConnectionsFragment extends Fragment {
 								}
 							});
 					i2pDirectReseedCard.setVisibility(
-							Boolean.TRUE.equals(enabled)
+							IS_DEBUG_BUILD && Boolean.TRUE.equals(enabled)
 									? View.VISIBLE : View.GONE);
 				});
 

@@ -23,7 +23,7 @@ With hybrid post-quantum cryptography on **every message** (Mode 3-Full: per-fra
 - **Tor-only online networking** - Your IP address is never exposed to contacts
 - **Direct peer-to-peer architecture** - No central servers
 - **Offline Bluetooth mesh** - Message nearby devices with no internet at all, sealed with the same post-quantum encryption so relays carry only ciphertext
-- **Optional I2P transport** - A second anonymity network alongside Tor, off by default
+- **Tor only in release builds** - The embedded I2P transport exists in development builds only and is not compiled into the published app
 - **Encrypted Vault** for passwords, documents, media, and notes
 - **Non-custodial Bitcoin & Monero wallets** inside the vault - self-custodial, keys never leave the device, network only over Tor
 - **Channels** - one-to-many broadcast (public or private) with optional discussion threads, reactions, and editor delegations
@@ -173,7 +173,7 @@ APK signing fingerprint: D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6
 **v3.0.0 (August 2026):**
 - A network protocol written in-house: fixed-size 4096-byte frames, paced cover traffic so active use is indistinguishable from idle within a live connection, and per-message hybrid post-quantum encryption, all over Tor with no servers
 - Keeps the post-quantum ratchet and the delivery database from the 2.x line
-- Two new transports: a Bluetooth offline mesh for messaging with no internet at all (one-to-one and group, with replies and photos) and an opt-in embedded I2P transport; Tor stays mandatory and always on for online messaging
+- Two new transports: a Bluetooth offline mesh for messaging with no internet at all (one-to-one and group, with replies and photos) and an embedded I2P transport for development builds only (not part of the published app); Tor stays mandatory and always on for online messaging
 - Both people need this version to message each other
 
 **v2.0.7 (July 2026):**
@@ -317,7 +317,7 @@ APK signing fingerprint: D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6
 - [ZWF and Mode 3-Full](docs/protocol/ZWF-MODE3FULL.md): the wire format, fixed-size frames, cover traffic, and per-message post-quantum ratchet
 - [Async Sealed-Sender Envelope](docs/protocol/ASYNC-SEALED-SENDER.md): sender-anonymous store-and-forward messaging
 - [Mesh Transport](docs/protocol/MESH-TRANSPORT.md): flooding over Bluetooth Low Energy
-- [Embedded I2P Carrier](docs/protocol/EMBEDDED-I2P.md): the opt-in in-app I2P router
+- [Embedded I2P Carrier](docs/protocol/EMBEDDED-I2P.md): the in-app I2P router of development builds
 
 **Wire formats**
 - [Introduction / pairing signatures](docs/wire/F2_INTRODUCTION_HYBRID_SIG.md): hybrid-signed pairing record spec
