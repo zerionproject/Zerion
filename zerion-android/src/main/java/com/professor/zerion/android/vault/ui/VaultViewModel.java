@@ -1182,51 +1182,62 @@ public class VaultViewModel extends AndroidViewModel {
 		}
 	}
 
-	private volatile int walletGateFailures = 0;
-	private volatile long walletGateBackoffUntil = 0;
+	private final com.professor.zerion.android.vault.wallet.btc
+			.WalletCredentialThrottle credentialThrottle =
+			new com.professor.zerion.android.vault.wallet.btc
+					.WalletCredentialThrottle(
+					android.os.SystemClock::elapsedRealtime);
+	private volatile boolean credentialFailuresRestored = false;
+
+	private static final String KEY_AUTH_FAILURES = "authFailures";
 
 	public void verifyWalletAuth(char[] credential) {
 		walletGateBusy.postValue(true);
 		CRYPTO_EXECUTOR.execute(() -> {
-			if (System.currentTimeMillis() < walletGateBackoffUntil) {
-				SecureMemory.shred(credential);
-				walletError.postValue(new Event<>(getApplication().getString(
-						R.string.wallet_auth_too_many)));
-				walletGateGranted.postValue(false);
-				walletGateBusy.postValue(false);
-				return;
-			}
-			boolean ok = false;
-			try {
-				org.json.JSONObject o = settingsObject();
-				byte[] salt = android.util.Base64.decode(
-						o.getString("authSalt"), android.util.Base64.NO_WRAP);
-				int iter = o.getInt("authIter");
-				byte[] expected = android.util.Base64.decode(
-						o.getString("authHash"), android.util.Base64.NO_WRAP);
-				byte[] hash = pbkdf2(credential, salt, iter, expected.length);
-				ok = java.security.MessageDigest.isEqual(hash, expected);
-			} catch (Throwable ignored) {
-			} finally {
-				SecureMemory.shred(credential);
-			}
+			boolean ok = verifyWalletCredential(credential);
 			if (ok) {
-				walletGateFailures = 0;
-				walletGateBackoffUntil = 0;
 				walletSectionUnlocked = true;
 				walletAuthGeneration = vaultManager.getLockGeneration();
-			} else {
-				walletGateFailures++;
-				if (walletGateFailures >= 3) {
-					long delay = Math.min(300_000L,
-							1000L << Math.min(walletGateFailures - 3, 8));
-					walletGateBackoffUntil =
-							System.currentTimeMillis() + delay;
-				}
+			} else if (credentialThrottle.isThrottled()) {
+				walletError.postValue(new Event<>(getApplication().getString(
+						R.string.wallet_auth_too_many)));
 			}
 			walletGateGranted.postValue(ok);
 			walletGateBusy.postValue(false);
 		});
+	}
+
+	/**
+	 * Settings read for a credential check: it must not refresh the vault's
+	 * inactivity timer, otherwise a guessing run would keep the vault open.
+	 */
+	private org.json.JSONObject settingsObjectQuiet() throws Exception {
+		String json = walletStore.readSettingsQuiet();
+		return json == null ? new org.json.JSONObject()
+				: new org.json.JSONObject(json);
+	}
+
+	private void restoreCredentialFailures() {
+		if (credentialFailuresRestored) return;
+		try {
+			credentialThrottle.restoreFailures(
+					settingsObjectQuiet().optInt(KEY_AUTH_FAILURES, 0));
+		} catch (Throwable ignored) {
+		}
+		credentialFailuresRestored = true;
+	}
+
+	private void persistCredentialFailures(int failures) {
+		try {
+			synchronized (walletStore.settingsLock) {
+				org.json.JSONObject o = settingsObjectQuiet();
+				if (o.optInt(KEY_AUTH_FAILURES, 0) != failures) {
+					o.put(KEY_AUTH_FAILURES, failures);
+					walletStore.writeSettingsQuiet(o.toString());
+				}
+			}
+		} catch (Throwable ignored) {
+		}
 	}
 
 	private org.json.JSONObject settingsObject() throws Exception {
@@ -2173,10 +2184,21 @@ public class VaultViewModel extends AndroidViewModel {
 		}
 	}
 
+	/**
+	 * The one credential check behind the section gate and every
+	 * transaction authorisation. A wrong credential counts against the shared
+	 * throttle, drops any reviewed transaction, and after three failures locks
+	 * the wallet section again; the check itself never counts as activity.
+	 */
 	private boolean verifyWalletCredential(char[] credential) {
+		restoreCredentialFailures();
+		if (credentialThrottle.isThrottled()) {
+			SecureMemory.shred(credential);
+			return false;
+		}
 		boolean ok = false;
 		try {
-			org.json.JSONObject o = settingsObject();
+			org.json.JSONObject o = settingsObjectQuiet();
 			byte[] salt = android.util.Base64.decode(
 					o.getString("authSalt"), android.util.Base64.NO_WRAP);
 			int iter = o.getInt("authIter");
@@ -2187,6 +2209,15 @@ public class VaultViewModel extends AndroidViewModel {
 		} catch (Throwable ignored) {
 		} finally {
 			SecureMemory.shred(credential);
+		}
+		if (ok) {
+			credentialThrottle.recordSuccess();
+			persistCredentialFailures(0);
+		} else {
+			boolean relock = credentialThrottle.recordFailure();
+			persistCredentialFailures(credentialThrottle.failures());
+			sendGate.clear();
+			if (relock) resetWalletSession();
 		}
 		return ok;
 	}

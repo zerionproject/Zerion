@@ -375,6 +375,21 @@ public class VaultManager
 		lastActivityTime = System.currentTimeMillis();
 	}
 
+	/**
+	 * Runs a vault access that must not count as user activity, such as a
+	 * credential check, and restores the inactivity timer afterwards so a
+	 * guessing run cannot keep the vault unlocked.
+	 */
+	public synchronized <T> T withoutActivityRefresh(
+			java.util.concurrent.Callable<T> access) throws Exception {
+		long saved = lastActivityTime;
+		try {
+			return access.call();
+		} finally {
+			lastActivityTime = saved;
+		}
+	}
+
 	public synchronized boolean isUnlocked() {
 		if (this.isUnlocked && System.currentTimeMillis() - lastActivityTime > AUTO_LOCK_TIMEOUT_MS) {
 			lockVault();

@@ -190,6 +190,19 @@ public class WalletStore
 	}
 
 	@Nullable
+	/** Reads the settings without counting the read as user activity. */
+	public String readSettingsQuiet() throws Exception {
+		return vaultManager.withoutActivityRefresh(this::readSettings);
+	}
+
+	/** Writes the settings without counting the write as user activity. */
+	public void writeSettingsQuiet(String json) throws Exception {
+		vaultManager.withoutActivityRefresh(() -> {
+			writeSettings(json);
+			return null;
+		});
+	}
+
 	public String readSettings() throws Exception {
 		synchronized (settingsLock) {
 			VaultItem newest = null;
