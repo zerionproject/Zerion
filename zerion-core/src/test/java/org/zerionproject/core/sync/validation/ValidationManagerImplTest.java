@@ -764,4 +764,135 @@ public class ValidationManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(asList(ids)));
 		}});
 	}
+
+	@Test
+	public void testValidatorThrowingUncheckedExceptionInvalidatesMessage()
+			throws Exception {
+		Transaction txn = new Transaction(null, true);
+		Transaction txn1 = new Transaction(null, false);
+
+		expectGetMessagesToValidate(messageId);
+
+		context.checking(new DbExpectations() {{
+			oneOf(db).transactionWithResult(with(true), withDbCallable(txn));
+			oneOf(db).getMessage(txn, messageId);
+			will(returnValue(message));
+			oneOf(db).getGroup(txn, groupId);
+			will(returnValue(group));
+
+			oneOf(validator).validateMessage(message, group);
+			will(throwException(new IllegalArgumentException()));
+
+			oneOf(db).transaction(with(false), withDbRunnable(txn1));
+			oneOf(db).getMessageState(txn1, messageId);
+			will(returnValue(UNKNOWN));
+			oneOf(db).setMessageState(txn1, messageId, INVALID);
+			oneOf(db).deleteMessage(txn1, messageId);
+			oneOf(db).deleteMessageMetadata(txn1, messageId);
+			oneOf(db).getMessageDependents(txn1, messageId);
+			will(returnValue(emptyMap()));
+		}});
+
+		expectGetPendingMessages();
+		expectGetMessagesToShare();
+
+		vm.startService();
+	}
+
+	@Test
+	public void testHookThrowingUncheckedExceptionRollsBackAndInvalidates()
+			throws Exception {
+		Transaction txn = new Transaction(null, true);
+		Transaction txn1 = new Transaction(null, false);
+		Transaction txn2 = new Transaction(null, false);
+
+		expectGetMessagesToValidate(messageId);
+
+		context.checking(new DbExpectations() {{
+			oneOf(db).transactionWithResult(with(true), withDbCallable(txn));
+			oneOf(db).getMessage(txn, messageId);
+			will(returnValue(message));
+			oneOf(db).getGroup(txn, groupId);
+			will(returnValue(group));
+
+			oneOf(validator).validateMessage(message, group);
+			will(returnValue(validResult));
+
+			oneOf(db).transaction(with(false), withDbRunnable(txn1));
+			oneOf(db).mergeMessageMetadata(txn1, messageId, metadata);
+			oneOf(hook).incomingMessage(txn1, message, metadata);
+			will(throwException(new IllegalStateException()));
+
+			oneOf(db).transaction(with(false), withDbRunnable(txn2));
+			oneOf(db).getMessageState(txn2, messageId);
+			will(returnValue(UNKNOWN));
+			oneOf(db).setMessageState(txn2, messageId, INVALID);
+			oneOf(db).deleteMessage(txn2, messageId);
+			oneOf(db).deleteMessageMetadata(txn2, messageId);
+			oneOf(db).getMessageDependents(txn2, messageId);
+			will(returnValue(emptyMap()));
+		}});
+
+		expectGetPendingMessages();
+		expectGetMessagesToShare();
+
+		vm.startService();
+	}
+
+	@Test
+	public void testPendingHookThrowingUncheckedExceptionInvalidatesAndContinues()
+			throws Exception {
+		Transaction txn = new Transaction(null, false);
+		Transaction txn1 = new Transaction(null, false);
+		Transaction txn2 = new Transaction(null, false);
+
+		expectGetMessagesToValidate();
+		expectGetPendingMessages(messageId, messageId2);
+
+		context.checking(new DbExpectations() {{
+			oneOf(db).transaction(with(false), withDbRunnable(txn));
+			oneOf(db).getMessageState(txn, messageId);
+			will(returnValue(PENDING));
+			oneOf(db).getMessageDependencies(txn, messageId);
+			will(returnValue(singletonMap(messageId1, DELIVERED)));
+			oneOf(db).getMessage(txn, messageId);
+			will(returnValue(message));
+			oneOf(db).getGroup(txn, groupId);
+			will(returnValue(group));
+			oneOf(db).getMessageMetadataForValidator(txn, messageId);
+			will(returnValue(metadata));
+			oneOf(hook).incomingMessage(txn, message, metadata);
+			will(throwException(new IllegalStateException()));
+
+			oneOf(db).transaction(with(false), withDbRunnable(txn1));
+			oneOf(db).getMessageState(txn1, messageId);
+			will(returnValue(PENDING));
+			oneOf(db).setMessageState(txn1, messageId, INVALID);
+			oneOf(db).deleteMessage(txn1, messageId);
+			oneOf(db).deleteMessageMetadata(txn1, messageId);
+			oneOf(db).getMessageDependents(txn1, messageId);
+			will(returnValue(emptyMap()));
+
+			oneOf(db).transaction(with(false), withDbRunnable(txn2));
+			oneOf(db).getMessageState(txn2, messageId2);
+			will(returnValue(PENDING));
+			oneOf(db).getMessageDependencies(txn2, messageId2);
+			will(returnValue(singletonMap(messageId1, DELIVERED)));
+			oneOf(db).getMessage(txn2, messageId2);
+			will(returnValue(message2));
+			oneOf(db).getGroup(txn2, groupId);
+			will(returnValue(group));
+			oneOf(db).getMessageMetadataForValidator(txn2, messageId2);
+			will(returnValue(metadata));
+			oneOf(hook).incomingMessage(txn2, message2, metadata);
+			will(returnValue(ACCEPT_DO_NOT_SHARE));
+			oneOf(db).setMessageState(txn2, messageId2, DELIVERED);
+			oneOf(db).getMessageDependents(txn2, messageId2);
+			will(returnValue(emptyMap()));
+		}});
+
+		expectGetMessagesToShare();
+
+		vm.startService();
+	}
 }
