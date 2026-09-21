@@ -63,3 +63,65 @@ Local / release build:
   gate + PROVENANCE.md to the F-Droid-reproducible values (the source is the
   integrity boundary for the F-Droid build).
 - `libzargon2.so` needs nothing extra — Gradle builds it from `src/main/cpp`.
+
+## fdroiddata recipe
+
+The recipe below is what the F-Droid build needs on top of the 3.0.3 entry:
+the Debian packages the native build uses, a writable `/build` (the build
+runs as `vagrant` and the path is part of the reproducible output, because
+Monero's logging macros embed source paths), NDK r27b, and a `build:` step
+that produces `libzmonero.so` for both ABIs before Gradle runs. Replace
+`commit` with the release tag being published.
+
+```yaml
+  - versionName: 3.0.11
+    versionCode: 31100
+    commit: v3.0.11
+    subdir: zerion-android
+    submodules: true
+    sudo:
+      - apt-get update
+      - apt-get install -y --no-install-recommends ca-certificates curl unzip git
+        build-essential cmake pkg-config libtool automake autoconf gperf python3
+        file xz-utils
+      - mkdir -p /build
+      - chown vagrant:vagrant /build
+    gradle:
+      - official
+    srclibs:
+      - reproducible-apk-tools@v0.3.0
+    rm:
+      - libs/gradle-witness.jar
+      - gradle/verification-metadata.xml
+    prebuild: sed -i "/include ':bramble-java'/d" ../settings.gradle
+    build: ANDROID_NDK_HOME=$$NDK$$ ../packaging/monero-android/fdroid-build.sh
+    ndk: r27b
+    gradleprops:
+      - fdroid
+    postbuild:
+      - $$reproducible-apk-tools$$/inplace-fix.py --zipalign fix-newlines $$OUT$$
+        'assets/i2p/certificates/reseed/*.crt' 'assets/i2p/certificates/ssl/*.crt'
+      - mv $$OUT$$ unaligned.apk
+      - $$reproducible-apk-tools$$/zipalign.py --page-size 4 --pad-like-apksigner
+        --replace unaligned.apk $$OUT$$
+```
+
+`fdroid-build.sh` fetches every dependency archive with a pinned SHA-256 and
+clones Monero at the pinned commit. If the F-Droid maintainers prefer declared
+inputs, the same archives can be supplied as srclibs; note that git checkouts
+of Boost, OpenSSL and libsodium are not byte-identical to the release
+tarballs, so the pinned hashes would have to be re-recorded from that build.
+
+## Reproducibility of the shipped library
+
+The pinned hashes are only meaningful if the shipped `.so` was built by the
+committed recipe from a clean tree. 3.0.10 shipped a `libzmonero.so` that had
+been relinked against dependency archives cached from an earlier revision of
+the build script; a clean run of the committed recipe, in both the pinned
+Debian image and F-Droid's own `buildserver-trixie` image, deterministically
+produces different bytes, so F-Droid cannot verify 3.0.10 against the
+published APK. From 3.0.11 on, the build script refuses a cache that was not
+produced by the current script, the hashes in PROVENANCE.md and the Gradle
+gate are the clean-build values, and a release must ship exactly those bytes.
+To check a candidate before tagging, run the build in
+`registry.gitlab.com/fdroid/fdroidserver:buildserver-trixie` and compare.

@@ -25,6 +25,15 @@ esac
 export CXX=${TC}/bin/${TRIPLE}${API}-clang++
 STRIP=${TC}/bin/llvm-strip
 
+# Refuse to relink against cached inputs that were not produced by the current
+# build-monero-android.sh: a relink over a stale cache is how the 3.0.10
+# library came to differ from what the committed recipe builds.
+RECIPE_SHA="$(sha256sum /build/build-monero-android.sh | awk '{print $1}')"
+for stamp in "${DEPS}/.recipe.sha256" "${MONERO}/.recipe.sha256"; do
+  [ -f "${stamp}" ] && [ "$(cat "${stamp}")" = "${RECIPE_SHA}" ] \
+    || { echo "relink refused: cached inputs in $(dirname "${stamp}") were not built by the current recipe" >&2; exit 4; }
+done
+
 LIBS=$(find ${MB} -name '*.a' | tr '\n' ' ')
 echo "=== relink ${ABI} (PAGE=${PAGE}) ==="
 ${CXX} -shared -fPIC -O2 -fvisibility=hidden -std=c++17 \

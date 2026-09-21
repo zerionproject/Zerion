@@ -15,6 +15,29 @@ OUT=/build/out/${ABI};   mkdir -p "${OUT}"
 DEPS=/build/deps/${ABI}; mkdir -p "${DEPS}/lib" "${DEPS}/include"
 SRC=/build/src/${ABI};   mkdir -p "${SRC}"
 
+# The dependency and Monero build trees are reused between runs only when they
+# were produced by this exact script. A cache left behind by an earlier revision
+# of the recipe once produced a library that the committed recipe could not
+# reproduce (the 3.0.10 libzmonero.so), so a cache without a matching stamp now
+# aborts the build instead of being relinked silently. Remove /build/deps and
+# /build/monero to rebuild from clean.
+RECIPE_SHA="$(sha256sum "$0" | awk '{print $1}')"
+check_recipe_stamp() {
+  local dir="$1" stamp="$1/.recipe.sha256"
+  if [ -f "${stamp}" ]; then
+    [ "$(cat "${stamp}")" = "${RECIPE_SHA}" ] && return 0
+    echo "STALE BUILD CACHE in ${dir}: built by a different revision of $(basename "$0"); remove it and rebuild from clean" >&2
+    exit 4
+  fi
+  if [ -n "$(find "${dir}" -mindepth 1 -maxdepth 2 \( -name '*.a' -o -name '.git' \) -print -quit 2>/dev/null)" ]; then
+    echo "UNSTAMPED BUILD CACHE in ${dir}: its recipe revision is unknown; remove it and rebuild from clean" >&2
+    exit 4
+  fi
+  return 0
+}
+check_recipe_stamp "${DEPS}"
+echo "${RECIPE_SHA}" > "${DEPS}/.recipe.sha256"
+
 case "${ABI}" in
   arm64-v8a)   TRIPLE=aarch64-linux-android;    OSSL_ARCH=android-arm64;
                SODIUM_SCRIPT=android-armv8-a.sh; PAGE=16384 ;;
@@ -193,11 +216,13 @@ fi
 echo "=== [4/5] Monero ${MONERO_TAG} (${MONERO_COMMIT}) (${ABI}) ==="
 cd /build
 mkdir -p monero
+check_recipe_stamp /build/monero
 if [ ! -d monero/.git ]; then
   find monero -mindepth 1 -delete 2>/dev/null || true
   git clone --recursive --branch ${MONERO_TAG} --depth 1 \
     https://github.com/monero-project/monero.git monero
 fi
+echo "${RECIPE_SHA}" > /build/monero/.recipe.sha256
 cd monero
 GOT_COMMIT="$(git rev-parse HEAD)"
 echo "monero HEAD=${GOT_COMMIT} expected=${MONERO_COMMIT}"
