@@ -231,9 +231,19 @@ public class ZppConnectionRunnerTest {
 				aliceScheduler.getCoverFrameCount() > 0);
 	}
 
+	/**
+	 * Waits for a condition until the deadline that leaves the test timeout
+	 * a margin. The handshake behind the first real frame runs an ML-KEM key
+	 * exchange, whose cost under a loaded build host is not bounded by a
+	 * fixed iteration count, so the waits are bounded by wall-clock deadline
+	 * only and the test still fails if the records never arrive.
+	 */
+	private static final long WAIT_DEADLINE_MS = 20_000;
+
 	private static ZppSendScheduler awaitScheduler(CapturingRegistry registry,
 			int contactId) throws InterruptedException {
-		for (int i = 0; i < 2000; i++) {
+		long deadline = System.currentTimeMillis() + WAIT_DEADLINE_MS;
+		while (System.currentTimeMillis() < deadline) {
 			ZppSendScheduler s = registry.schedulers.get(contactId);
 			if (s != null) return s;
 			Thread.sleep(2);
@@ -244,7 +254,8 @@ public class ZppConnectionRunnerTest {
 	private static void awaitReceived(CollectingSink sink, int contactId,
 			int n) throws InterruptedException {
 		String prefix = contactId + "|";
-		for (int i = 0; i < 2000; i++) {
+		long deadline = System.currentTimeMillis() + WAIT_DEADLINE_MS;
+		while (System.currentTimeMillis() < deadline) {
 			long count;
 			synchronized (sink.received) {
 				count = sink.received.stream().filter(s -> s.startsWith(prefix))
