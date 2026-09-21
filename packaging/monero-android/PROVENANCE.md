@@ -142,6 +142,17 @@ a cache that was not produced by the current revision (`.recipe.sha256`
 stamps under `/build/deps/<abi>` and `/build/monero`), and `relink.sh` refuses
 to relink over such a cache.
 
+The link step consumes the Monero archives in a fixed, explicit order. Until
+3.0.11 the script enumerated them with an unsorted `find`, whose order is a
+property of the host filesystem, and lld lays the output out in input order:
+F-Droid's runner and a local build produced byte-identical dependency and
+Monero archives (every input hashed the same on both sides) yet different
+`libzmonero.so` bytes, and relinking the same archives in sorted or reversed
+order gave two further hashes. The pinned list is the order that produced the
+accepted hashes above, so they remain valid; the script fails if the set of
+archives ever differs from the list. For 3.0.11 itself the F-Droid recipe
+applies the same order to the tagged script in a `prebuild` step.
+
 ## Recorded hashes (first observed, arm64-v8a build 2026-08-27; superseded)
 
 - OpenSSL 1.1.1w tarball SHA-256: `cf3098950cb4d853ad95c0841f1f9c6d3dc102dccfcacd521d93925208b76ac8`

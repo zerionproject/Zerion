@@ -298,7 +298,33 @@ cd /build
 echo "=== [5/5] link libzmonero.so (${ABI}) ==="
 export CXX=${TC}/bin/${TRIPLE}${API}-clang++
 MONERO=/build/monero
-LIBS=$(find ${MB} -name '*.a' | tr '\n' ' ')
+# The Monero archives are linked in a fixed order. Directory enumeration order
+# is a property of the host filesystem, and lld lays the output out in input
+# order, so an unsorted find gave a different libzmonero.so on every host even
+# with byte-identical inputs. The list below is the order that produced the
+# published hashes; a Monero upgrade that adds or removes an archive must
+# update it, which the set comparison enforces.
+LIBS=""
+for lib in \
+  lib/libwallet_api.a lib/libwallet.a \
+  external/db_drivers/liblmdb/liblmdb.a external/easylogging++/libeasylogging.a \
+  external/randomx/librandomx.a contrib/epee/src/libepee.a \
+  src/multisig/libmultisig.a src/cryptonote_basic/libcryptonote_format_utils_basic.a \
+  src/cryptonote_basic/libcryptonote_basic.a src/mnemonics/libmnemonics.a \
+  src/libversion.a src/cryptonote_core/libcryptonote_core.a \
+  src/blockchain_db/libblockchain_db.a src/ringct/libringct_basic.a \
+  src/ringct/libringct.a src/blocks/libblocks.a src/checkpoints/libcheckpoints.a \
+  src/crypto/libcncrypto.a src/hardforks/libhardforks.a \
+  src/device_trezor/libdevice_trezor.a src/rpc/librpc_base.a \
+  src/device/libdevice.a src/net/libnet.a src/common/libcommon.a; do
+  [ -f "${MB}/${lib}" ] || { echo "pinned Monero archive missing: ${lib}"; exit 3; }
+  LIBS="${LIBS} ${MB}/${lib}"
+done
+FOUND=$(find ${MB} -name '*.a' | sort | tr '\n' ' ')
+PINNED=$(echo ${LIBS} | tr ' ' '\n' | sort | tr '\n' ' ')
+[ "${FOUND}" = "${PINNED}" ] || {
+  echo "Monero archive set changed; update the pinned link order"
+  echo "found:  ${FOUND}"; echo "pinned: ${PINNED}"; exit 3; }
 ${CXX} -shared -fPIC -O2 -fvisibility=hidden -std=c++17 \
   -Wl,-z,max-page-size=${PAGE} -Wl,-z,common-page-size=${PAGE} \
   -I${MONERO}/src -I${MONERO}/src/wallet/api \

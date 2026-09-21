@@ -125,3 +125,20 @@ produced by the current script, the hashes in PROVENANCE.md and the Gradle
 gate are the clean-build values, and a release must ship exactly those bytes.
 To check a candidate before tagging, run the build in
 `registry.gitlab.com/fdroid/fdroidserver:buildserver-trixie` and compare.
+
+Two further rules follow from the 3.0.11 investigation:
+
+- The Monero archives are linked in the explicit order pinned in
+  `build-monero-android.sh`. An unsorted directory enumeration is not
+  reproducible across hosts even with identical inputs, because lld lays the
+  output out in input order. The 3.0.11 fdroiddata recipe pins the same order
+  with a `prebuild` edit of the tagged script; later tags carry it in the
+  script itself.
+- The release APK that goes on GitHub as the F-Droid reference binary must be
+  built on Linux, in F-Droid's build layout, not on a Windows host. The Gradle
+  native library `libzargon2.so` keeps debug sections, so a Windows build
+  embeds Windows source paths and the Windows-host clang ident string; the
+  machine code is identical, but F-Droid compares whole files. The practical
+  procedure is to run `fdroid build --test` for the version in the
+  `buildserver-trixie` image, sign the resulting unsigned APK with the release
+  key, and publish that signed file as the release asset.
