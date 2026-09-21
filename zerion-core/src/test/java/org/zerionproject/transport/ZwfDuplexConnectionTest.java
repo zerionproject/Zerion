@@ -28,6 +28,8 @@ import java.util.function.Supplier;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * End-to-end plumbing test: two duplex connections over crossed pipes exchange
@@ -199,5 +201,76 @@ public class ZwfDuplexConnectionTest {
 				alice.currentMode3FullState().getTheirActivePqPk());
 		assertNotNull("bob should have learned alice's ML-KEM key",
 				bob.currentMode3FullState().getTheirActivePqPk());
+	}
+
+	private ZwfDuplexConnection[] pairWithSenderAhead(long senderSendHighWater)
+			throws Exception {
+		byte[] rootBytes = new byte[SecretKey.LENGTH];
+		crypto.getSecureRandom().nextBytes(rootBytes);
+		SecretKey rootKey = new SecretKey(rootBytes);
+		ZwfSession aliceSession = sessionFactory.deriveSession(rootKey, true);
+		ZwfSession bobSession = sessionFactory.deriveSession(rootKey, false);
+		PipedOutputStream aOut = new PipedOutputStream();
+		PipedInputStream bIn = new PipedInputStream(aOut, 1 << 20);
+		PipedOutputStream bOut = new PipedOutputStream();
+		PipedInputStream aIn = new PipedInputStream(bOut, 1 << 20);
+		MemStore aliceStore = new MemStore();
+		aliceStore.storeHighWater(1, org.zerionproject.wire.ZwfConstants.DIRECTION_SEND,
+				senderSendHighWater);
+		ZwfDuplexConnection alice = new ZwfDuplexConnection(1, aliceSession,
+				new ZwfStreamCounter(aliceStore), crypto, ratchet,
+				mode3FullRatchet, cipherFactory(), aIn, aOut);
+		ZwfDuplexConnection bob = new ZwfDuplexConnection(2, bobSession,
+				new ZwfStreamCounter(new MemStore()), crypto, ratchet,
+				mode3FullRatchet, cipherFactory(), bIn, bOut);
+		return new ZwfDuplexConnection[] {alice, bob};
+	}
+
+	/**
+	 * The peer burned far more stream ids on failed attempts than the receive
+	 * window covers. On a connection to a known contact the receiver searches
+	 * beyond the window, accepts the stream, and the direction is usable again.
+	 */
+	@Test(timeout = 60_000)
+	public void recoversFromAPeerCounterFarBeyondTheReceiveWindow()
+			throws Exception {
+		ZwfDuplexConnection[] c = pairWithSenderAhead(5000);
+		ZwfDuplexConnection alice = c[0], bob = c[1];
+		List<Throwable> errors = Collections.synchronizedList(new ArrayList<>());
+		Thread sender = new Thread(() -> {
+			try {
+				alice.sendMessage("first".getBytes(StandardCharsets.UTF_8));
+				alice.sendMessage("second".getBytes(StandardCharsets.UTF_8));
+			} catch (Throwable t) {
+				errors.add(t);
+			}
+		});
+		sender.start();
+		assertEquals("first", new String(bob.receiveMessage(),
+				StandardCharsets.UTF_8));
+		assertEquals("second", new String(bob.receiveMessage(),
+				StandardCharsets.UTF_8));
+		sender.join(10_000);
+		assertTrue(errors.isEmpty());
+	}
+
+	@Test(timeout = 60_000)
+	public void refusesAPeerCounterBeyondTheRecoveryBound() throws Exception {
+		ZwfDuplexConnection[] c = pairWithSenderAhead(
+				ZwfDuplexConnection.MAX_RECV_STREAM_GAP + 10_000);
+		ZwfDuplexConnection alice = c[0], bob = c[1];
+		Thread sender = new Thread(() -> {
+			try {
+				alice.sendMessage("first".getBytes(StandardCharsets.UTF_8));
+			} catch (Throwable ignored) {
+			}
+		});
+		sender.start();
+		try {
+			bob.receiveMessage();
+			fail("a stream beyond the recovery bound must be refused");
+		} catch (org.zerionproject.core.api.FormatException expected) {
+		}
+		sender.join(10_000);
 	}
 }

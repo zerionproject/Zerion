@@ -115,4 +115,29 @@ public class ZwfTagRecogniserTest {
 		r.remove(1);
 		assertNull(r.recognise(ZwfTag.computeTag(crypto, keyA, 1)));
 	}
+
+	@Test
+	public void recognisesBeyondTheWindowForAKnownContactOnly() {
+		SecretKey keyA = randomKey();
+		SecretKey keyB = randomKey();
+		ZwfTagRecogniser r = new ZwfTagRecogniser(crypto, 8);
+		r.register(1, keyA, 0);
+		r.register(2, keyB, 0);
+
+		byte[] farA = ZwfTag.computeTag(crypto, keyA, 300);
+		assertNull("outside the window", r.recognise(farA));
+		ZwfTagRecogniser.Match m = r.recogniseBeyondWindow(1, farA, 1000);
+		assertNotNull(m);
+		assertEquals(1, m.contactId);
+		assertEquals(300, m.streamId);
+		assertNull("another contact's key never matches",
+				r.recogniseBeyondWindow(2, farA, 1000));
+		assertNull("beyond the bound",
+				r.recogniseBeyondWindow(1, farA, 200));
+		assertNull("unknown contact",
+				r.recogniseBeyondWindow(3, farA, 1000));
+		byte[] insideWindow = ZwfTag.computeTag(crypto, keyA, 5);
+		assertNull("ids inside the window are the normal lookup's job",
+				r.recogniseBeyondWindow(1, insideWindow, 1000));
+	}
 }

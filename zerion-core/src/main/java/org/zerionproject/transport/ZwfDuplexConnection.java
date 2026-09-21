@@ -62,6 +62,14 @@ public class ZwfDuplexConnection {
 	private final java.util.concurrent.locks.Lock directionLock =
 			new java.util.concurrent.locks.ReentrantLock();
 
+	/**
+	 * How far past the receive window a known contact's stream id may lie and
+	 * still be recognised. Each id costs one keyed hash, so the bound keeps a
+	 * recovery search to a fraction of a second while covering many more
+	 * failed connection attempts than a peer can plausibly accumulate.
+	 */
+	static final long MAX_RECV_STREAM_GAP = 1L << 16;
+
 	private ZwfMode3FullStreamEncrypter encrypter;
 	private ZwfMode3FullStreamDecrypter decrypter;
 	private long pendingStreamId;
@@ -123,6 +131,10 @@ public class ZwfDuplexConnection {
 		if (decrypter == null) {
 			byte[] tag = peekTag();
 			ZwfTagRecogniser.Match match = recogniser.recognise(tag);
+			if (match == null) {
+				match = recogniser.recogniseBeyondWindow(contactId, tag,
+						MAX_RECV_STREAM_GAP);
+			}
 			if (match == null) {
 				throw new FormatException();
 			}

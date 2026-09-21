@@ -4,6 +4,7 @@ import org.zerionproject.core.api.crypto.CryptoComponent;
 import org.zerionproject.core.api.crypto.SecretKey;
 import org.briarproject.nullsafety.NotNullByDefault;
 
+import java.security.MessageDigest;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -81,6 +82,37 @@ public class ZwfTagRecogniser {
 		synchronized (lock) {
 			return tagIndex.get(hex(tag));
 		}
+	}
+
+	/**
+	 * Searches for the tag among the stream ids beyond the contact's window,
+	 * up to {@code maxGap} ids past its high-water mark. A contact burns a
+	 * send id on every connection attempt that never delivered a frame, so
+	 * its counter can run ahead of the receive window; this search lets a
+	 * connection whose peer is already known recover from such a gap. The
+	 * cost is bounded to one contact and is never spent on an anonymous
+	 * connection, whose tag must fall inside the precomputed window.
+	 */
+	@Nullable
+	public Match recogniseBeyondWindow(int contactId, byte[] tag,
+			long maxGap) {
+		SecretKey key;
+		long hw;
+		synchronized (lock) {
+			key = tagKeys.get(contactId);
+			Long h = highWater.get(contactId);
+			if (key == null || h == null) return null;
+			hw = h;
+		}
+		long first = hw + window + 1;
+		long last = hw + maxGap;
+		for (long s = first; s <= last && s > 0; s++) {
+			byte[] candidate = ZwfTag.computeTag(crypto, key, s);
+			if (MessageDigest.isEqual(candidate, tag)) {
+				return new Match(contactId, s);
+			}
+		}
+		return null;
 	}
 
 	// Must hold lock.
