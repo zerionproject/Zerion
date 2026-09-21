@@ -106,6 +106,7 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter {
 
 			@Override
 			public void onState(TorState torState) {
+				transport.onTorState(torState);
 				State s = mapState(torState);
 				if (s != lastReportedState) {
 					lastReportedState = s;
