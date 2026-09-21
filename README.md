@@ -122,7 +122,12 @@ APK signing fingerprint: D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6
 
 ## Changelog
 
-**v3.0.10 (Latest release, September 2026):**
+**v3.0.11 (Latest release, September 2026):**
+- Fixes a bug where the app could stay offline to contacts after a spell without signal, such as in an elevator or a garage, until it was force closed. The app now notices when a link that stayed attached stops or resumes passing traffic, and it restarts Tor's network when Tor is stuck reconnecting, so contacts can reach you again without a restart
+- Upgrades Tor to 0.4.9.12
+- Builds the Monero wallet library from a clean tree on every release and records the resulting hashes, so the F-Droid build can be verified against the published APK
+
+**v3.0.10 (September 2026):**
 - Fixes a bug where updating to 3.0.9 could show a database error after signing in. No data was affected: the failed database upgrade rolled back and left the account, contacts, messages and wallets intact, and installing this version opens the account normally. The database upgrade step is now idempotent and self-healing, and is covered by a regression test that runs it against a real database. Functionally identical to 3.0.9 otherwise
 
 **v3.0.9 (September 2026):**

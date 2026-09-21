@@ -37,4 +37,20 @@ public interface OverlayTransport {
 
 	/** Enables or disables this transport's network on a connectivity change. */
 	void setNetworkEnabled(boolean enabled);
+
+	/**
+	 * True when the transport was reachable earlier in this run but has had
+	 * no working connection to its network for longer than its grace period,
+	 * so a restart of its network is warranted.
+	 */
+	default boolean isNetworkDegraded() {
+		return false;
+	}
+
+	/**
+	 * Restarts the transport's network so it drops stale state and
+	 * reconnects; implementations rate limit this themselves.
+	 */
+	default void restartNetwork() {
+	}
 }

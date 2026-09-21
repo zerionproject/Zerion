@@ -10,6 +10,7 @@ import android.net.ConnectivityManager;
 import android.net.LinkAddress;
 import android.net.LinkProperties;
 import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.net.NetworkInfo;
 
 import org.zerionproject.core.api.Cancellable;
@@ -61,6 +62,8 @@ class AndroidNetworkManager implements NetworkManager, Service {
 	private final AtomicBoolean used = new AtomicBoolean(false);
 
 	private volatile BroadcastReceiver networkStateReceiver = null;
+	@Nullable
+	private volatile ConnectivityManager.NetworkCallback networkCallback = null;
 
 	@Inject
 	AndroidNetworkManager(TaskScheduler scheduler, EventBus eventBus,
@@ -83,12 +86,39 @@ class AndroidNetworkManager implements NetworkManager, Service {
 		filter.addAction(ACTION_SCREEN_OFF);
 		if (SDK_INT >= 23) filter.addAction(ACTION_DEVICE_IDLE_MODE_CHANGED);
 		registerReceiver(app, networkStateReceiver, filter);
+		if (SDK_INT >= 24) registerDefaultNetworkCallback();
 	}
 
 	@Override
 	public void stopService() {
 		if (networkStateReceiver != null)
 			app.unregisterReceiver(networkStateReceiver);
+		ConnectivityManager.NetworkCallback callback = networkCallback;
+		if (callback != null) {
+			networkCallback = null;
+			try {
+				connectivityManager.unregisterNetworkCallback(callback);
+			} catch (RuntimeException ignored) {
+			}
+		}
+	}
+
+	/**
+	 * The legacy connectivity broadcast is silent when a link stays attached
+	 * but stops passing traffic, and again when it starts working. The
+	 * default network callback reports both: the network being lost or
+	 * replaced, and the system's own validation of it flipping, which is the
+	 * signal that lets the transports restart Tor after a dead spell.
+	 */
+	@TargetApi(24)
+	private void registerDefaultNetworkCallback() {
+		ConnectivityManager.NetworkCallback callback =
+				new DefaultNetworkCallback();
+		try {
+			connectivityManager.registerDefaultNetworkCallback(callback);
+			networkCallback = callback;
+		} catch (RuntimeException ignored) {
+		}
 	}
 
 	@Override
@@ -177,6 +207,39 @@ class AndroidNetworkManager implements NetworkManager, Service {
 		Cancellable oldConnectivityCheck =
 				connectivityCheck.getAndSet(newConnectivityCheck);
 		if (oldConnectivityCheck != null) oldConnectivityCheck.cancel();
+	}
+
+	@TargetApi(24)
+	private class DefaultNetworkCallback
+			extends ConnectivityManager.NetworkCallback {
+
+		@Nullable
+		private volatile Network current = null;
+		private volatile boolean validated = false;
+
+		@Override
+		public void onAvailable(Network network) {
+			current = network;
+			validated = false;
+			eventExecutor.execute(() -> updateConnectionStatus());
+		}
+
+		@Override
+		public void onLost(Network network) {
+			if (network.equals(current)) current = null;
+			validated = false;
+			eventExecutor.execute(() -> updateConnectionStatus());
+		}
+
+		@Override
+		public void onCapabilitiesChanged(Network network,
+				NetworkCapabilities capabilities) {
+			boolean nowValidated = capabilities.hasCapability(
+					NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+			if (nowValidated == validated) return;
+			validated = nowValidated;
+			eventExecutor.execute(() -> updateConnectionStatus());
+		}
 	}
 
 	private class NetworkStateReceiver extends BroadcastReceiver {

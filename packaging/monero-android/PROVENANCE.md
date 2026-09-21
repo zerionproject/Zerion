@@ -118,7 +118,31 @@ Notes recorded during bring-up:
   NDK cross compilers are unset before the Monero configure) so the cross build
   never runs a target binary.
 
-## Recorded hashes (first observed, arm64-v8a build 2026-08-27)
+## Accepted hashes (clean rebuild from the committed recipe, 2026-09-21)
+
+These are the values the Gradle gate enforces. They were produced by running
+`build-monero-android.sh` exactly as committed, from an empty `/build`, in two
+independent environments that agree byte for byte: the pinned
+`debian:bookworm-20250630-slim` image of this directory's Dockerfile and
+F-Droid's `registry.gitlab.com/fdroid/fdroidserver:buildserver-trixie`. Each
+was run twice in the trixie image with identical results.
+
+- **libzmonero.so arm64-v8a SHA-256:
+  `6c59b64b5ae06c1189fdf27c4e5551c6c3f8bad83016c9b6311d0fff5ed0f2a3`**
+- **libzmonero.so armeabi-v7a SHA-256:
+  `4e6df1748fbb1aeb4ac6baac7562218cec0d339ac6e9227229b27916d660920b`**
+
+They supersede `6b5458bd…` / `c45bf4c9…` (the libraries shipped in 3.0.10).
+Those were relinked with `relink.sh` against dependency archives cached from
+a build of an earlier revision of this script; the committed recipe cannot
+reproduce them from a clean tree, which is why F-Droid could not verify
+3.0.10. Only the dependency inputs differ: a fresh build's `libboost_thread.a`
+pulls one more `boost::exception` object into the link. The script now refuses
+a cache that was not produced by the current revision (`.recipe.sha256`
+stamps under `/build/deps/<abi>` and `/build/monero`), and `relink.sh` refuses
+to relink over such a cache.
+
+## Recorded hashes (first observed, arm64-v8a build 2026-08-27; superseded)
 
 - OpenSSL 1.1.1w tarball SHA-256: `cf3098950cb4d853ad95c0841f1f9c6d3dc102dccfcacd521d93925208b76ac8`
 - libsodium 1.0.19 tarball SHA-256: `018d79fe0a045cca07331d37bd0cb57b2e838c51bc48fd837a1472e50068bbea`

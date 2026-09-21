@@ -2,6 +2,7 @@ package org.zerionproject.transport;
 
 import org.briarproject.onionwrapper.TorWrapper;
 import org.briarproject.onionwrapper.TorWrapper.HiddenServiceProperties;
+import org.briarproject.onionwrapper.TorWrapper.TorState;
 import org.zerionproject.core.api.plugin.TorConstants;
 import org.zerionproject.core.api.plugin.TransportId;
 import org.briarproject.nullsafety.NotNullByDefault;
@@ -13,6 +14,7 @@ import java.net.Socket;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.LongSupplier;
 
 import javax.annotation.Nullable;
 import javax.net.SocketFactory;
@@ -24,6 +26,11 @@ public class ZtpTorTransport implements OverlayTransport {
 	private static final int SOCKET_TIMEOUT_MS = 30_000;
 	private static final long ACCEPT_RETRY_DELAY_MS = 500;
 	private static final int MAX_INBOUND_CONNECTIONS = 64;
+	/** How long Tor may sit without a working connection, after having had
+	 * one, before the transport counts as degraded. */
+	static final long DEGRADED_GRACE_MS = 45_000;
+	/** Two network restarts are never closer together than this. */
+	static final long MIN_RESTART_INTERVAL_MS = 60_000;
 
 	private final TorWrapper tor;
 	private final SocketFactory socketFactory;
@@ -34,6 +41,11 @@ public class ZtpTorTransport implements OverlayTransport {
 	private final AtomicBoolean running = new AtomicBoolean(false);
 	private final Semaphore inboundLimiter =
 			new Semaphore(MAX_INBOUND_CONNECTIONS);
+	private final AtomicBoolean everConnected = new AtomicBoolean(false);
+	private final Object restartLock = new Object();
+	volatile LongSupplier clock = System::currentTimeMillis;
+	private volatile long degradedSinceMs = 0;
+	private long lastRestartMs = 0;
 
 	@Nullable
 	private volatile ServerSocket serverSocket;
@@ -163,13 +175,73 @@ public class ZtpTorTransport implements OverlayTransport {
 		return localPort;
 	}
 
+	/**
+	 * Tor's state as reported by the wrapper. Once Tor has been connected in
+	 * this run, a fall back to connecting marks the moment the network
+	 * degraded; a connected report or a deliberate disable clears it.
+	 */
+	void onTorState(TorState state) {
+		if (state == TorState.CONNECTED) {
+			everConnected.set(true);
+			degradedSinceMs = 0;
+		} else if (state == TorState.CONNECTING) {
+			if (everConnected.get() && degradedSinceMs == 0) {
+				degradedSinceMs = clock.getAsLong();
+			}
+		} else {
+			degradedSinceMs = 0;
+		}
+	}
+
+	@Override
+	public boolean isNetworkDegraded() {
+		long since = degradedSinceMs;
+		return running.get() && since != 0
+				&& clock.getAsLong() - since >= DEGRADED_GRACE_MS;
+	}
+
+	/**
+	 * A connectivity report that the network is up while Tor is still
+	 * stuck without a working connection is the signal the wrapper's
+	 * idempotent enable cannot carry: Tor is told the network went away and
+	 * came back, which makes it retry its guards at once and republish the
+	 * hidden service instead of waiting out its own retry schedule.
+	 */
 	@Override
 	public void setNetworkEnabled(boolean enabled) {
 		if (!running.get()) return;
+		if (enabled && degradedSinceMs != 0 && restartNetworkNow()) return;
 		try {
 			tor.enableNetwork(enabled);
 		} catch (IOException e) {
 		}
+	}
+
+	@Override
+	public void restartNetwork() {
+		if (!running.get()) return;
+		restartNetworkNow();
+	}
+
+	/**
+	 * The wrapper's current state is read at the moment of the restart, so a
+	 * network that was deliberately disabled, or a Tor that is stopping, in
+	 * the instant before the state event reaches this transport is never
+	 * re-enabled by a restart.
+	 */
+	private boolean restartNetworkNow() {
+		synchronized (restartLock) {
+			if (tor.getTorState() != TorState.CONNECTING) return false;
+			long now = clock.getAsLong();
+			if (now - lastRestartMs < MIN_RESTART_INTERVAL_MS) return false;
+			lastRestartMs = now;
+		}
+		try {
+			tor.enableNetwork(false);
+			tor.enableNetwork(true);
+		} catch (IOException e) {
+		}
+		return true;
 	}
 
 	public void stop() throws IOException, InterruptedException {

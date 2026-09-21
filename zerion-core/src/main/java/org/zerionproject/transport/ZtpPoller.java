@@ -39,6 +39,8 @@ public class ZtpPoller implements EventListener {
 	private static final long MAX_BACKOFF_MS = 60_000L;
 	private static final long MIN_CONNECTED_MS = 10_000L;
 	private static final int FAST_DIAL_BURST = 3;
+	private static final long MIN_RESTART_BACKOFF_MS = 60_000L;
+	private static final long MAX_RESTART_BACKOFF_MS = 10 * 60_000L;
 
 	private final Executor ioExecutor;
 	private final TaskScheduler taskScheduler;
@@ -51,6 +53,8 @@ public class ZtpPoller implements EventListener {
 	private final Map<Integer, Long> nextDialAt = new ConcurrentHashMap<>();
 	private final Map<Integer, Integer> failStreak = new ConcurrentHashMap<>();
 	private final AtomicLong backoffEpoch = new AtomicLong();
+	private volatile long nextRestartAt = 0;
+	private volatile long restartBackoffMs = MIN_RESTART_BACKOFF_MS;
 	private final Random backoffJitter = new Random();
 	private volatile boolean running = false;
 	@Nullable
@@ -94,6 +98,8 @@ public class ZtpPoller implements EventListener {
 		ioExecutor.execute(() -> {
 			if (!running) return;
 			clearAllBackoff();
+			nextRestartAt = 0;
+			restartBackoffMs = MIN_RESTART_BACKOFF_MS;
 			refreshOurAddress();
 			try {
 				for (Contact c : contactManager.getContacts()) {
@@ -105,8 +111,23 @@ public class ZtpPoller implements EventListener {
 		});
 	}
 
+	/**
+	 * The sweep doubles as the watchdog: a transport that has stayed
+	 * degraded is restarted, with a doubling interval between restarts so a
+	 * network that is genuinely down is not hammered. A recovery, which
+	 * arrives as {@link #pollNow()}, resets the interval.
+	 */
 	private void pollAll() {
 		if (!running) return;
+		if (transport.isNetworkDegraded()) {
+			long now = System.currentTimeMillis();
+			if (now >= nextRestartAt) {
+				nextRestartAt = now + restartBackoffMs;
+				restartBackoffMs =
+						Math.min(restartBackoffMs * 2, MAX_RESTART_BACKOFF_MS);
+				transport.restartNetwork();
+			}
+		}
 		refreshOurAddress();
 		try {
 			for (Contact c : contactManager.getContacts()) {
