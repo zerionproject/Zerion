@@ -43,6 +43,7 @@ public class ZtpTorTransportRecoveryTest {
 	private static class RecordingTor implements TorWrapper {
 		final List<Boolean> enableCalls =
 				Collections.synchronizedList(new ArrayList<>());
+		volatile TorState state = TorState.CONNECTING;
 
 		public void start() {
 		}
@@ -54,7 +55,7 @@ public class ZtpTorTransportRecoveryTest {
 		}
 
 		public TorState getTorState() {
-			return TorState.CONNECTING;
+			return state;
 		}
 
 		public boolean isTorRunning() {
@@ -227,6 +228,25 @@ public class ZtpTorTransportRecoveryTest {
 		assertFalse(t.isNetworkDegraded());
 		t.setNetworkEnabled(true);
 		assertEquals(asList(true), tor.enableCalls);
+	}
+
+	@Test
+	public void restartNeverReEnablesADeliberatelyDisabledOrStoppingTor()
+			throws Exception {
+		ZtpTorTransport t = started();
+		t.onTorState(TorState.CONNECTED);
+		t.onTorState(TorState.CONNECTING);
+		now.addAndGet(ZtpTorTransport.DEGRADED_GRACE_MS);
+		assertTrue(t.isNetworkDegraded());
+		tor.state = TorState.DISABLED;
+		t.restartNetwork();
+		assertTrue(tor.enableCalls.isEmpty());
+		tor.state = TorState.STOPPING;
+		t.setNetworkEnabled(true);
+		assertEquals(asList(true), tor.enableCalls);
+		tor.state = TorState.CONNECTING;
+		t.restartNetwork();
+		assertEquals(asList(true, false, true), tor.enableCalls);
 	}
 
 	@Test

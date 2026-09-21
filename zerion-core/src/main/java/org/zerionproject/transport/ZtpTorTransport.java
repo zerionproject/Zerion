@@ -223,8 +223,15 @@ public class ZtpTorTransport implements OverlayTransport {
 		restartNetworkNow();
 	}
 
+	/**
+	 * The wrapper's current state is read at the moment of the restart, so a
+	 * network that was deliberately disabled, or a Tor that is stopping, in
+	 * the instant before the state event reaches this transport is never
+	 * re-enabled by a restart.
+	 */
 	private boolean restartNetworkNow() {
 		synchronized (restartLock) {
+			if (tor.getTorState() != TorState.CONNECTING) return false;
 			long now = clock.getAsLong();
 			if (now - lastRestartMs < MIN_RESTART_INTERVAL_MS) return false;
 			lastRestartMs = now;
