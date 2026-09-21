@@ -515,6 +515,11 @@
 	<string name="login_data_wiped_message">Alle gegevens zijn permanent verwijderd vanwege herhaalde mislukte inlogpogingen. Dit is een beveiligingsfunctie om uw gegevens te beschermen.</string>
 
 	<string name="wipe_password_title">Wiswachtwoord</string>
+	<string name="pref_wipe_on_failed_logins_title">Wissen na herhaald verkeerde wachtwoorden</string>
+	<string name="pref_wipe_on_failed_logins_summary">Wis dit account, de kluis en de walletsleutels na zes verkeerde wachtwoorden op rij. Standaard uit: een verkeerd wachtwoord vergrendelt de app dan alleen steeds langer.</string>
+	<string name="pref_wipe_on_failed_logins_confirm_title">Wissen na zes verkeerde wachtwoorden?</string>
+	<string name="pref_wipe_on_failed_logins_confirm_message">Iedereen die zes keer op rij een verkeerd wachtwoord invoert, ook jijzelf, wist dit account, de kluis en de walletsleutels. Herstel is daarna niet mogelijk.</string>
+	<string name="pref_wipe_on_failed_logins_confirm_button">Inschakelen</string>
 	<string name="wipe_password_summary">Stel een wachtwoord in dat alle gegevens onmiddellijk wist bij invoer</string>
 	<string name="wipe_password_summary_enabled">Wiswachtwoord is actief</string>
 	<string name="wipe_password_summary_disabled">Geen wiswachtwoord ingesteld</string>

@@ -53,6 +53,10 @@ public class SecurityFragment extends Fragment {
 	@Inject
 	com.professor.zerion.android.security.SecurityManager securityManager;
 
+	@Inject
+	com.professor.zerion.android.login.BruteForceProtection
+			bruteForceProtection;
+
 	private SettingsViewModel viewModel;
 	private WipePasswordManager wipePasswordManager;
 
@@ -61,6 +65,7 @@ public class SecurityFragment extends Fragment {
 	private SwitchMaterial typingIndicatorsSwitch;
 	private SwitchMaterial voiceCallsSwitch;
 	private SwitchMaterial videoCallsSwitch;
+	private SwitchMaterial wipeOnFailedLoginsSwitch;
 	private View lockTimeoutCard;
 	private TextView lockTimeoutValue;
 	private View defaultTimerCard;
@@ -196,6 +201,22 @@ public class SecurityFragment extends Fragment {
 			startActivity(intent);
 		});
 
+		wipeOnFailedLoginsSwitch =
+				view.findViewById(R.id.wipe_on_failed_logins_switch);
+		if (wipeOnFailedLoginsSwitch != null) {
+			wipeOnFailedLoginsSwitch.setChecked(
+					bruteForceProtection.isWipeOnRepeatedFailures());
+			wipeOnFailedLoginsSwitch.setOnCheckedChangeListener(
+					(buttonView, isChecked) -> {
+				if (!buttonView.isPressed()) return;
+				if (isChecked) {
+					showWipeOnFailedLoginsDialog();
+				} else {
+					bruteForceProtection.setWipeOnRepeatedFailures(false);
+				}
+			});
+		}
+
 		wipePasswordCard.setOnClickListener(v -> {
 			WipePasswordManager mgr = getWipePasswordManager();
 			if (mgr != null && mgr.isWipePasswordEnabled()) {
@@ -230,6 +251,22 @@ public class SecurityFragment extends Fragment {
 			count++;
 		}
 		return getString(R.string.hardened_mode_summary_format, count);
+	}
+
+	private void showWipeOnFailedLoginsDialog() {
+		new com.google.android.material.dialog.MaterialAlertDialogBuilder(
+				requireContext())
+				.setTitle(R.string.pref_wipe_on_failed_logins_confirm_title)
+				.setMessage(R.string.pref_wipe_on_failed_logins_confirm_message)
+				.setPositiveButton(
+						R.string.pref_wipe_on_failed_logins_confirm_button,
+						(d, w) -> bruteForceProtection
+								.setWipeOnRepeatedFailures(true))
+				.setNegativeButton(android.R.string.cancel,
+						(d, w) -> wipeOnFailedLoginsSwitch.setChecked(false))
+				.setOnCancelListener(
+						d -> wipeOnFailedLoginsSwitch.setChecked(false))
+				.show();
 	}
 
 	private void showVideoCallsBetaDialog() {

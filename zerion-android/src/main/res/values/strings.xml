@@ -1797,6 +1797,11 @@
 
 	<!-- Wipe Password strings -->
 	<string name="wipe_password_title">Wipe Password</string>
+	<string name="pref_wipe_on_failed_logins_title">Erase after repeated wrong passwords</string>
+	<string name="pref_wipe_on_failed_logins_summary">Erase this account, the vault and the wallet keys after six wrong passwords in a row. Off by default: a wrong password then only locks the app for a growing time.</string>
+	<string name="pref_wipe_on_failed_logins_confirm_title">Erase after six wrong passwords?</string>
+	<string name="pref_wipe_on_failed_logins_confirm_message">Anyone who enters six wrong passwords in a row, including you, erases this account, the vault and the wallet keys. There is no way to recover them afterwards.</string>
+	<string name="pref_wipe_on_failed_logins_confirm_button">Enable</string>
 	<string name="wipe_password_summary">Set a password that immediately wipes all data when entered</string>
 	<string name="wipe_password_summary_enabled">Wipe password is active</string>
 	<string name="wipe_password_summary_disabled">No wipe password set</string>
