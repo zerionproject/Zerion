@@ -192,7 +192,6 @@ public class ZerionService extends Service {
 						shutdownFromBackground();
 					} else {
 						showStartupFailure(result);
-						stopSelf();
 					}
 				}, "LifecycleStartup");
 
@@ -214,15 +213,26 @@ public class ZerionService extends Service {
 		super.attachBaseContext(Localizer.getInstance().applyLocaleToContext(base));
 	}
 
+	/**
+	 * The failure screen runs in its own process and is not exported, so the
+	 * signal never travels through an intent that another app could send to
+	 * the exported entry activity. The main process ends itself afterwards,
+	 * on its own decision, so that a later launch starts from a clean state.
+	 */
 	private void showStartupFailure(StartResult result) {
 		androidExecutor.runOnUiThread(() -> {
-			Intent i = new Intent(ZerionService.this, ENTRY_ACTIVITY);
-			i.setFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TOP);
-			i.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
-			i.putExtra(EXTRA_STARTUP_FAILED, true);
-			i.putExtra(EXTRA_START_RESULT, result.name());
-			startActivity(i);
+			startActivity(startupFailureIntent(ZerionService.this, result));
+			stopSelf();
+			System.exit(0);
 		});
+	}
+
+	static Intent startupFailureIntent(Context context, StartResult result) {
+		Intent i = new Intent(context, StartupFailureActivity.class);
+		i.setFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TOP);
+		i.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
+		i.putExtra(EXTRA_START_RESULT, result.name());
+		return i;
 	}
 
 	@Override
