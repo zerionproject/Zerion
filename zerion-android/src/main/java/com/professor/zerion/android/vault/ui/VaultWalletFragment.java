@@ -390,6 +390,13 @@ public class VaultWalletFragment extends BaseFragment {
 				showAuthSendDialog(r);
 			}
 		});
+		viewModel.getSpSweepReview().observe(getViewLifecycleOwner(), ev -> {
+			VaultViewModel.SpSweepReview r = ev == null ? null
+					: ev.getIfNotHandled();
+			if (r != null) {
+				showSpSweepReviewDialog(r);
+			}
+		});
 		viewModel.getWalletPreparing().observe(getViewLifecycleOwner(), p -> {
 			if (p != null && p) {
 				showPreparing();
@@ -2296,6 +2303,46 @@ public class VaultWalletFragment extends BaseFragment {
 		TextInputEditText addr = field(ctx, box, R.string.wallet_sp_move_hint,
 				InputType.TYPE_CLASS_TEXT
 						| InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+		track(new MaterialAlertDialogBuilder(ctx)
+				.setTitle(R.string.wallet_sp_move)
+				.setView(box)
+				.setPositiveButton(R.string.wallet_send_review, (d, w) -> {
+					String to = text(addr);
+					if (!com.professor.zerion.android.vault.wallet.btc.BtcKeys
+							.isValidAddress(to)) {
+						toast(getString(R.string.wallet_send_bad_address));
+						return;
+					}
+					double rate = feeOptions != null
+							&& feeChoice < feeOptions.length
+							? feeOptions[feeChoice] : feeRate;
+					viewModel.prepareSpSweep(to, rate);
+				})
+				.setNegativeButton(android.R.string.cancel, null)
+				.show());
+	}
+
+	private void showSpSweepReviewDialog(
+			@Nullable VaultViewModel.SpSweepReview review) {
+		if (review == null) {
+			return;
+		}
+		Context ctx = requireContext();
+		LinearLayout box = new LinearLayout(ctx);
+		box.setOrientation(LinearLayout.VERTICAL);
+		int p = dp(20);
+		box.setPadding(p, dp(8), p, 0);
+		TextView summary = new TextView(ctx);
+		summary.setText(getString(R.string.wallet_send_to) + ":\n"
+				+ review.toAddress + "\n\n"
+				+ getString(R.string.wallet_send_amount_label) + ":  "
+				+ formatBtc(review.amountSat) + "\n"
+				+ getString(R.string.wallet_send_fee_label) + ":  "
+				+ review.feeSat + " sats\n\n"
+				+ getString(R.string.wallet_auth_send_message));
+		summary.setTextColor(colorRes(R.color.zerion_text_primary));
+		summary.setTextSize(13);
+		box.addView(summary);
 		TextInputEditText pin = field(ctx, box, R.string.wallet_auth_send_hint,
 				InputType.TYPE_CLASS_TEXT
 						| InputType.TYPE_TEXT_VARIATION_PASSWORD);
@@ -2303,22 +2350,20 @@ public class VaultWalletFragment extends BaseFragment {
 				.setTitle(R.string.wallet_sp_move)
 				.setView(box)
 				.setPositiveButton(R.string.wallet_auth_send_button, (d, w) -> {
-					String to = text(addr);
-					if (!com.professor.zerion.android.vault.wallet.btc.BtcKeys
-							.isValidAddress(to)) {
-						toast(getString(R.string.wallet_send_bad_address));
+					CharSequence cs = pin.getText();
+					if (cs == null || cs.length() == 0) {
+						viewModel.cancelSpSweep();
 						return;
 					}
-					String s = text(pin);
-					if (s.isEmpty()) {
-						return;
+					char[] cred = new char[cs.length()];
+					for (int i = 0; i < cs.length(); i++) {
+						cred[i] = cs.charAt(i);
 					}
-					double rate = feeOptions != null
-							&& feeChoice < feeOptions.length
-							? feeOptions[feeChoice] : feeRate;
-					viewModel.sweepSp(to, rate, s.toCharArray());
+					viewModel.authorizeSpSweep(cred, review.fingerprint);
 				})
-				.setNegativeButton(android.R.string.cancel, null)
+				.setNegativeButton(android.R.string.cancel,
+						(d, w) -> viewModel.cancelSpSweep())
+				.setOnCancelListener(d -> viewModel.cancelSpSweep())
 				.show());
 	}
 

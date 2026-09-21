@@ -997,7 +997,62 @@ public class VaultViewModel extends AndroidViewModel {
 		});
 	}
 
-	public void sweepSp(String toAddress, double feeRate, char[] credential) {
+	public static final class SpSweepReview {
+		public final String toAddress;
+		public final long amountSat;
+		public final long feeSat;
+		public final int inputCount;
+		public final String fingerprint;
+
+		SpSweepReview(BtcWallet.SpSweepPlan p) {
+			this.toAddress = p.toAddress;
+			this.amountSat = p.amountSat;
+			this.feeSat = p.feeSat;
+			this.inputCount = p.outpoints.size();
+			this.fingerprint = p.fingerprint;
+		}
+	}
+
+	private final com.professor.zerion.android.vault.wallet.btc.SpSweepGate
+			spSweepGate =
+			new com.professor.zerion.android.vault.wallet.btc.SpSweepGate();
+	private final MutableLiveData<Event<SpSweepReview>> spSweepReview =
+			new MutableLiveData<>();
+
+	public LiveData<Event<SpSweepReview>> getSpSweepReview() {
+		return spSweepReview;
+	}
+
+	/**
+	 * Plans the sweep and hands the destination, amount and fee to the user
+	 * for review; nothing is signed until {@link #authorizeSpSweep} receives
+	 * the credential together with the reviewed fingerprint.
+	 */
+	public void prepareSpSweep(String toAddress, double feeRate) {
+		BtcWallet w = openBtc;
+		if (w == null) return;
+		spBusy.postValue(true);
+		WALLET_EXECUTOR.execute(() -> {
+			try {
+				BtcWallet.SpSweepPlan plan = w.planSweepSilentPayments(
+						new java.util.ArrayList<>(spUtxos), toAddress, feeRate);
+				spSweepGate.prepare(plan);
+				spSweepReview.postValue(new Event<>(new SpSweepReview(plan)));
+			} catch (Throwable e) {
+				walletError.postValue(new Event<>(e.getMessage() != null
+						? e.getMessage()
+						: getApplication().getString(R.string.wallet_send_failed)));
+			} finally {
+				spBusy.postValue(false);
+			}
+		});
+	}
+
+	public void cancelSpSweep() {
+		WALLET_EXECUTOR.execute(spSweepGate::clear);
+	}
+
+	public void authorizeSpSweep(char[] credential, String reviewedFingerprint) {
 		if (!sending.compareAndSet(false, true)) {
 			SecureMemory.shred(credential);
 			return;
@@ -1011,14 +1066,24 @@ public class VaultViewModel extends AndroidViewModel {
 		spBusy.postValue(true);
 		WALLET_EXECUTOR.execute(() -> {
 			try {
-				if (!verifyWalletCredential(credential)) {
+				boolean authed = verifyWalletCredential(credential);
+				BtcWallet.SpSweepPlan plan;
+				try {
+					plan = spSweepGate.authorize(reviewedFingerprint, authed);
+				} catch (com.professor.zerion.android.vault.wallet.btc.SendGate
+						.AuthorizationException e) {
 					walletError.postValue(new Event<>(getApplication()
 							.getString(R.string.wallet_auth_send_failed)));
 					return;
 				}
+				if (!walletSessionValid()) {
+					spSweepGate.clear();
+					walletError.postValue(new Event<>(getApplication()
+							.getString(R.string.wallet_send_failed)));
+					return;
+				}
 				String id = currentWalletId;
-				String txid = w.sweepSilentPayments(
-						new java.util.ArrayList<>(spUtxos), toAddress, feeRate);
+				String txid = w.signSpSweep(plan);
 				spUtxos.clear();
 				if (id != null) {
 					mutateWalletPrivacy(id, wp ->

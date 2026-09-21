@@ -1044,8 +1044,50 @@ public class BtcWallet {
 		return new SpScanResult(scannedTo, found);
 	}
 
+	/**
+	 * A Silent Payments sweep that has been planned but not signed: what the
+	 * user reviews (destination, amount, fee, inputs) is bound by the
+	 * fingerprint to what {@link #signSpSweep} signs and broadcasts.
+	 */
+	public static final class SpSweepPlan {
+		public final String toAddress;
+		public final long amountSat;
+		public final long feeSat;
+		public final List<String> outpoints;
+		public final String fingerprint;
+		final List<BtcTx.TaprootInput> inputs;
+		final List<BtcTx.Output> outputs;
+		final long spNetSat;
+
+		SpSweepPlan(String toAddress, long amountSat, long feeSat,
+				List<String> outpoints, String fingerprint,
+				List<BtcTx.TaprootInput> inputs, List<BtcTx.Output> outputs,
+				long spNetSat) {
+			this.toAddress = toAddress;
+			this.amountSat = amountSat;
+			this.feeSat = feeSat;
+			this.outpoints = outpoints;
+			this.fingerprint = fingerprint;
+			this.inputs = inputs;
+			this.outputs = outputs;
+			this.spNetSat = spNetSat;
+		}
+	}
+
 	public String sweepSilentPayments(List<SilentPaymentScanner.Found> found,
 			String toAddress, double feeRate) throws IOException {
+		return signSpSweep(planSweepSilentPayments(found, toAddress, feeRate));
+	}
+
+	/** Signs and broadcasts exactly the reviewed sweep plan. */
+	public String signSpSweep(SpSweepPlan plan) throws IOException {
+		String rawHex = BtcTx.buildAndSignTaproot(plan.inputs, plan.outputs);
+		return broadcastTracked(rawHex, plan.outpoints, plan.spNetSat);
+	}
+
+	public SpSweepPlan planSweepSilentPayments(
+			List<SilentPaymentScanner.Found> found, String toAddress,
+			double feeRate) throws IOException {
 		if (!BtcKeys.isValidAddress(toAddress)) {
 			throw new IOException("Not a valid Bitcoin address");
 		}
@@ -1056,9 +1098,7 @@ public class BtcWallet {
 				BtcKeys.silentSpendPriv(mnemonic, account);
 		java.math.BigInteger curveN = org.bitcoinj.core.ECKey.CURVE.getN();
 		double rate = Math.max(feeRate, 1.0);
-		String rawHex;
 		List<String> outpoints = new ArrayList<>();
-		long spNetSat = 0;
 		try (ElectrumRpc c = openScan()) {
 			List<BtcTx.TaprootInput> inputs = new ArrayList<>();
 			long sumIn = 0;
@@ -1096,9 +1136,9 @@ public class BtcWallet {
 			}
 			List<BtcTx.Output> outputs = new ArrayList<>();
 			outputs.add(new BtcTx.Output(toAddress, swept));
-			rawHex = BtcTx.buildAndSignTaproot(inputs, outputs);
-			spNetSat = -sumIn;
+			return new SpSweepPlan(toAddress, swept, fee, outpoints,
+					planFingerprint(outpoints, outputs), inputs, outputs,
+					-sumIn);
 		}
-		return broadcastTracked(rawHex, outpoints, spNetSat);
 	}
 }
