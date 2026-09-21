@@ -21,7 +21,6 @@ import java.sql.SQLException;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 
-import static org.zerionproject.core.util.IoUtils.isNonEmptyDirectory;
 
 @NotNullByDefault
 class SqlCipherDatabase extends JdbcDatabase {
@@ -77,40 +76,58 @@ class SqlCipherDatabase extends JdbcDatabase {
 		}
 
 		File dir = config.getDatabaseDirectory();
-		boolean reopen = isNonEmptyDirectory(dir);
+		File dbFile = new File(dir, SQLCIPHER_FILE);
+		boolean reopen = false;
 
-		if (reopen) {
-			File dbFile = new File(dir, SQLCIPHER_FILE);
-			if (!dbFile.exists()) {
-				reopen = false;
+		if (dbFile.exists()) {
+			Connection c = null;
+			SqlCipherOpenPolicy.Probe probe;
+			Throwable failure = null;
+			try {
+				c = createConnection();
+				probe = hasValidSchema(c)
+						? SqlCipherOpenPolicy.Probe.OPENED_WITH_IDENTITY
+						: SqlCipherOpenPolicy.Probe.OPENED_WITHOUT_IDENTITY;
+			} catch (SQLException | DbException | RuntimeException e) {
+				probe = SqlCipherOpenPolicy.Probe.FAILED;
+				failure = e;
+			}
+			boolean marker = SqlCipherRecoveryFiles.setupMarker(dir).exists();
+			SqlCipherOpenPolicy.Action action =
+					SqlCipherOpenPolicy.decide(marker, probe);
+			if (action == SqlCipherOpenPolicy.Action.REOPEN) {
+				seedPooledConnection(c);
+				SqlCipherRecoveryFiles.markSetupComplete(dir);
+				reopen = true;
 			} else {
-				Connection c = null;
-				boolean valid = false;
-				try {
-					c = createConnection();
-					valid = hasValidSchema(c);
-				} catch (SQLException | DbException e) {
-					valid = false;
-				}
-				if (valid) {
-					seedPooledConnection(c);
-				} else {
-					if (c != null) {
-						try {
-							c.close();
-						} catch (SQLException ignored) {
-						}
+				if (c != null) {
+					try {
+						c.close();
+					} catch (SQLException ignored) {
 					}
-					dbFile.delete();
-					new File(dbFile.getPath() + "-wal").delete();
-					new File(dbFile.getPath() + "-shm").delete();
-					new File(dbFile.getPath() + "-journal").delete();
-					reopen = false;
+				}
+				if (action == SqlCipherOpenPolicy.Action.RESET_EMPTY) {
+					SqlCipherRecoveryFiles.deleteEmpty(dbFile);
+				} else if (action ==
+						SqlCipherOpenPolicy.Action.QUARANTINE_INCOMPLETE) {
+					if (!SqlCipherRecoveryFiles.quarantine(dbFile,
+							System.currentTimeMillis())) {
+						throw new DbOpenFailureException(
+								SqlCipherOpenPolicy.classify(failure),
+								failure);
+					}
+					SqlCipherRecoveryFiles.markSetupComplete(dir);
+				} else {
+					throw new DbOpenFailureException(
+							SqlCipherOpenPolicy.classify(failure), failure);
 				}
 			}
 		}
 
-		if (!reopen) dir.mkdirs();
+		if (!reopen) {
+			dir.mkdirs();
+			SqlCipherRecoveryFiles.markSetupIncomplete(dir);
+		}
 		super.open(DRIVER_CLASS, reopen, key, listener);
 
 		boolean compactNow = needsCompaction;
@@ -122,8 +139,8 @@ class SqlCipherDatabase extends JdbcDatabase {
 			if (!compactNow) compactNow = freeSpaceExceedsThreshold(vacuumDb);
 			if (compactNow) {
 				vacuumDb.execSQL("VACUUM");
-				File dbFile = new File(config.getDatabaseDirectory(), SQLCIPHER_FILE);
-				try (java.io.RandomAccessFile raf = new java.io.RandomAccessFile(dbFile, "rw")) {
+				File vacuumFile = new File(config.getDatabaseDirectory(), SQLCIPHER_FILE);
+				try (java.io.RandomAccessFile raf = new java.io.RandomAccessFile(vacuumFile, "rw")) {
 					raf.getFD().sync();
 				}
 			}
@@ -167,27 +184,29 @@ class SqlCipherDatabase extends JdbcDatabase {
 	}
 
 	/**
-	 * Validates an existing database on a real connection: it must have the
-	 * settings table and at least one local identity, otherwise it is treated
-	 * as incomplete (e.g. account setup was interrupted) and wiped. Running the
-	 * check on the connection that {@link #open} will reuse avoids a second key
-	 * derivation on cold start.
+	 * Probes an existing database on a real connection: it must have the
+	 * settings table and at least one local identity. What happens when it
+	 * does not is decided by {@link SqlCipherOpenPolicy}; a probe that throws
+	 * never leads to deletion. Running the check on the connection that
+	 * {@link #open} will reuse avoids a second key derivation on cold start.
 	 */
-	private boolean hasValidSchema(Connection c) {
-		try {
-			try (java.sql.PreparedStatement ps = c.prepareStatement(
-					"SELECT count(*) FROM sqlite_master"
-							+ " WHERE type='table' AND name='settings'");
-					java.sql.ResultSet rs = ps.executeQuery()) {
-				if (!rs.next() || rs.getInt(1) == 0) return false;
-			}
-			try (java.sql.PreparedStatement ps = c.prepareStatement(
-					"SELECT count(*) FROM localAuthors");
-					java.sql.ResultSet rs = ps.executeQuery()) {
-				return rs.next() && rs.getInt(1) > 0;
-			}
-		} catch (SQLException e) {
-			return false;
+	private boolean hasValidSchema(Connection c) throws SQLException {
+		try (java.sql.PreparedStatement ps = c.prepareStatement(
+				"SELECT count(*) FROM sqlite_master"
+						+ " WHERE type='table' AND name='settings'");
+				java.sql.ResultSet rs = ps.executeQuery()) {
+			if (!rs.next() || rs.getInt(1) == 0) return false;
+		}
+		try (java.sql.PreparedStatement ps = c.prepareStatement(
+				"SELECT count(*) FROM sqlite_master"
+						+ " WHERE type='table' AND name='localAuthors'");
+				java.sql.ResultSet rs = ps.executeQuery()) {
+			if (!rs.next() || rs.getInt(1) == 0) return false;
+		}
+		try (java.sql.PreparedStatement ps = c.prepareStatement(
+				"SELECT count(*) FROM localAuthors");
+				java.sql.ResultSet rs = ps.executeQuery()) {
+			return rs.next() && rs.getInt(1) > 0;
 		}
 	}
 
@@ -262,6 +281,13 @@ class SqlCipherDatabase extends JdbcDatabase {
 			}
 		}
 		throw new SQLException("Failed to open database");
+	}
+
+	@Override
+	public void addIdentity(Connection txn, org.zerionproject.core.api.identity.Identity i)
+			throws DbException {
+		super.addIdentity(txn, i);
+		SqlCipherRecoveryFiles.markSetupComplete(config.getDatabaseDirectory());
 	}
 
 	@Override
