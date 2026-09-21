@@ -32,6 +32,10 @@ import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.lang.reflect.Constructor;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.Nullable;
 
@@ -39,6 +43,8 @@ import static org.zerionproject.core.api.Bytes.compare;
 import static org.zerionproject.core.api.contact.HandshakeLinkConstants.HYBRID_COMMITMENT_LABEL;
 import static org.zerionproject.core.contact.HandshakeConstants.PROTOCOL_MAJOR_VERSION;
 import static org.zerionproject.core.contact.HandshakeRecordTypes.RECORD_TYPE_HYBRID_STATIC_KEY;
+import static org.zerionproject.core.contact.HandshakeRecordTypes.RECORD_TYPE_KEM_CIPHERTEXT;
+import static org.zerionproject.core.contact.HandshakeRecordTypes.RECORD_TYPE_PROOF_OF_OWNERSHIP;
 import static org.zerionproject.core.contact.HandshakeRecordTypes.RECORD_TYPE_MINOR_VERSION;
 import static org.zerionproject.core.contact.HandshakeRecordTypes.RECORD_TYPE_STATIC_KEM_CIPHERTEXT;
 import static org.junit.Assert.assertArrayEquals;
@@ -330,5 +336,232 @@ public class HandshakePqAuthenticationTest {
 		}
 		assertEquals(3, HandshakeConstants.PROTOCOL_MINOR_VERSION);
 		assertEquals(3, HandshakeConstants.PQ_AUTH_MINOR_VERSION);
+	}
+
+	/** Rewrites the records of one direction; index counts records seen. */
+	private interface Mutator {
+		List<Record> apply(Record record, int index);
+	}
+
+	private static final Mutator PASS = (r, i) -> java.util.Collections
+			.singletonList(r);
+
+	private void relay(InputStream from, OutputStream to, Mutator mutator) {
+		try {
+			RecordReader r = recordReaderFactory.createRecordReader(from, false);
+			RecordWriter w = recordWriterFactory.createRecordWriter(to, false);
+			Record rec;
+			int i = 0;
+			while ((rec = r.readRecord()) != null) {
+				for (Record out : mutator.apply(rec, i++)) {
+					w.writeRecord(out);
+					w.flush();
+				}
+			}
+		} catch (IOException ignored) {
+		} finally {
+			try {
+				to.close();
+			} catch (IOException ignored) {
+			}
+		}
+	}
+
+	/**
+	 * Runs both real parties through a record-level man in the middle. The
+	 * first mutator sees the records of the party in the Alice role, the
+	 * second the records of the party in the Bob role.
+	 */
+	private Outcome runThroughRelay(Party alice, Party bob,
+			Mutator fromAliceRole, Mutator fromBobRole) throws Exception {
+		byte[] aliceCommitment = crypto.hash(HYBRID_COMMITMENT_LABEL,
+				alice.keys.getPublic().getEncoded());
+		byte[] bobCommitment = crypto.hash(HYBRID_COMMITMENT_LABEL,
+				bob.keys.getPublic().getEncoded());
+		boolean aliceHasAliceRole = compare(aliceCommitment, bobCommitment) < 0;
+		Mutator fromAlice = aliceHasAliceRole ? fromAliceRole : fromBobRole;
+		Mutator fromBob = aliceHasAliceRole ? fromBobRole : fromAliceRole;
+
+		PipedOutputStream aliceOut = new PipedOutputStream();
+		PipedInputStream relayInFromAlice =
+				new PipedInputStream(aliceOut, 1 << 20);
+		PipedOutputStream relayToBob = new PipedOutputStream();
+		PipedInputStream bobIn = new PipedInputStream(relayToBob, 1 << 20);
+		PipedOutputStream bobOut = new PipedOutputStream();
+		PipedInputStream relayInFromBob = new PipedInputStream(bobOut, 1 << 20);
+		PipedOutputStream relayToAlice = new PipedOutputStream();
+		PipedInputStream aliceIn = new PipedInputStream(relayToAlice, 1 << 20);
+
+		Outcome o = new Outcome();
+		Thread ta = new Thread(() -> {
+			try {
+				o.first = alice.manager.handshake(alice.peer, aliceIn,
+						new TestStreamWriter(aliceOut));
+			} catch (Throwable t) {
+				o.firstError = t;
+			}
+		});
+		Thread tb = new Thread(() -> {
+			try {
+				o.second = bob.manager.handshake(bob.peer, bobIn,
+						new TestStreamWriter(bobOut));
+			} catch (Throwable t) {
+				o.secondError = t;
+			}
+		});
+		Thread r1 = new Thread(() -> relay(relayInFromAlice, relayToBob,
+				fromAlice));
+		Thread r2 = new Thread(() -> relay(relayInFromBob, relayToAlice,
+				fromBob));
+		ta.start();
+		tb.start();
+		r1.start();
+		r2.start();
+		ta.join(60_000);
+		tb.join(60_000);
+		r1.join(10_000);
+		r2.join(10_000);
+		assertTrue(!ta.isAlive() && !tb.isAlive());
+		return o;
+	}
+
+	private static Record withPayload(Record r, byte[] payload) {
+		return new Record(r.getProtocolVersion(), r.getRecordType(), payload);
+	}
+
+	private static Record flipByte(Record r, int position) {
+		byte[] p = r.getPayload().clone();
+		p[position] ^= 0x01;
+		return withPayload(r, p);
+	}
+
+	private void assertNoKeyAndFormatErrorOnAtLeastOneSide(Outcome o) {
+		assertNull(o.first);
+		assertNull(o.second);
+		assertTrue("both sides must fail, got " + o.firstError + " / "
+				+ o.secondError, o.firstError instanceof IOException
+				&& o.secondError instanceof IOException);
+		assertTrue("an honest side must reject with a format error, got "
+				+ o.firstError + " / " + o.secondError,
+				o.firstError instanceof FormatException
+						|| o.secondError instanceof FormatException);
+	}
+
+	@Test(timeout = 120_000)
+	public void testHonestPartiesThroughAPassiveRelayAgree() throws Exception {
+		KeyPair aliceKeys = crypto.generateHybridAgreementKeyPair();
+		KeyPair bobKeys = crypto.generateHybridAgreementKeyPair();
+		Outcome o = runThroughRelay(party(aliceKeys, bobKeys.getPublic(), "a"),
+				party(bobKeys, aliceKeys.getPublic(), "b"), PASS, PASS);
+		assertNull(o.firstError);
+		assertNull(o.secondError);
+		assertArrayEquals(o.first.getMasterKey().getBytes(),
+				o.second.getMasterKey().getBytes());
+	}
+
+	@Test(timeout = 120_000)
+	public void testSwappedKemCiphertextsAreRejected() throws Exception {
+		KeyPair aliceKeys = crypto.generateHybridAgreementKeyPair();
+		KeyPair bobKeys = crypto.generateHybridAgreementKeyPair();
+		AtomicReference<Record> held = new AtomicReference<>();
+		Mutator swap = (r, i) -> {
+			if (r.getRecordType() == RECORD_TYPE_KEM_CIPHERTEXT) {
+				held.set(r);
+				return new ArrayList<>();
+			}
+			if (r.getRecordType() == RECORD_TYPE_STATIC_KEM_CIPHERTEXT
+					&& held.get() != null) {
+				Record ephemeral = held.getAndSet(null);
+				return Arrays.asList(withPayload(ephemeral, r.getPayload()),
+						withPayload(r, ephemeral.getPayload()));
+			}
+			return java.util.Collections.singletonList(r);
+		};
+		Outcome o = runThroughRelay(party(aliceKeys, bobKeys.getPublic(), "a"),
+				party(bobKeys, aliceKeys.getPublic(), "b"), swap, PASS);
+		assertNoKeyAndFormatErrorOnAtLeastOneSide(o);
+	}
+
+	@Test(timeout = 120_000)
+	public void testModifiedTranscriptIsRejected() throws Exception {
+		for (int direction = 0; direction < 2; direction++) {
+			KeyPair aliceKeys = crypto.generateHybridAgreementKeyPair();
+			KeyPair bobKeys = crypto.generateHybridAgreementKeyPair();
+			int[] staticKeysSeen = {0};
+			Mutator flipEphemeral = (r, i) -> {
+				if (r.getRecordType() == RECORD_TYPE_HYBRID_STATIC_KEY
+						&& ++staticKeysSeen[0] == 2) {
+					return java.util.Collections.singletonList(
+							flipByte(r, 40));
+				}
+				return java.util.Collections.singletonList(r);
+			};
+			Outcome o = runThroughRelay(
+					party(aliceKeys, bobKeys.getPublic(), "a"),
+					party(bobKeys, aliceKeys.getPublic(), "b"),
+					direction == 0 ? flipEphemeral : PASS,
+					direction == 0 ? PASS : flipEphemeral);
+			assertNoKeyAndFormatErrorOnAtLeastOneSide(o);
+		}
+	}
+
+	@Test(timeout = 120_000)
+	public void testSubstitutedStaticMlKemKeyIsRejected() throws Exception {
+		KeyPair aliceKeys = crypto.generateHybridAgreementKeyPair();
+		KeyPair bobKeys = crypto.generateHybridAgreementKeyPair();
+		KeyPair attacker = crypto.generateHybridAgreementKeyPair();
+		Mutator substitute = (r, i) -> {
+			if (r.getRecordType() == RECORD_TYPE_HYBRID_STATIC_KEY && i == 0) {
+				byte[] p = r.getPayload().clone();
+				byte[] attackerKey = attacker.getPublic().getEncoded();
+				System.arraycopy(attackerKey, 32, p, 32, p.length - 32);
+				return java.util.Collections.singletonList(withPayload(r, p));
+			}
+			return java.util.Collections.singletonList(r);
+		};
+		Outcome o = runThroughRelay(party(aliceKeys, bobKeys.getPublic(), "a"),
+				party(bobKeys, aliceKeys.getPublic(), "b"), substitute, PASS);
+		assertNull(o.first);
+		assertNull(o.second);
+		assertTrue("the receiver must reject the key against the link, got "
+				+ o.firstError + " / " + o.secondError,
+				o.firstError instanceof FormatException
+						|| o.secondError instanceof FormatException);
+	}
+
+	@Test(timeout = 120_000)
+	public void testReflectedProofFailsRoleSeparation() throws Exception {
+		KeyPair aliceKeys = crypto.generateHybridAgreementKeyPair();
+		KeyPair bobKeys = crypto.generateHybridAgreementKeyPair();
+		AtomicReference<byte[]> aliceProof = new AtomicReference<>();
+		Mutator capture = (r, i) -> {
+			if (r.getRecordType() == RECORD_TYPE_PROOF_OF_OWNERSHIP) {
+				aliceProof.set(r.getPayload());
+			}
+			return java.util.Collections.singletonList(r);
+		};
+		Mutator reflect = (r, i) -> {
+			if (r.getRecordType() == RECORD_TYPE_PROOF_OF_OWNERSHIP
+					&& aliceProof.get() != null) {
+				return java.util.Collections.singletonList(
+						withPayload(r, aliceProof.get()));
+			}
+			return java.util.Collections.singletonList(r);
+		};
+		Party alice = party(aliceKeys, bobKeys.getPublic(), "a");
+		Party bob = party(bobKeys, aliceKeys.getPublic(), "b");
+		Outcome o = runThroughRelay(alice, bob, capture, reflect);
+		boolean aliceHasAliceRole = compare(
+				crypto.hash(HYBRID_COMMITMENT_LABEL,
+						aliceKeys.getPublic().getEncoded()),
+				crypto.hash(HYBRID_COMMITMENT_LABEL,
+						bobKeys.getPublic().getEncoded())) < 0;
+		HandshakeResult reflectedTo = aliceHasAliceRole ? o.first : o.second;
+		Throwable reflectedError =
+				aliceHasAliceRole ? o.firstError : o.secondError;
+		assertNull("a proof under the other role must never verify",
+				reflectedTo);
+		assertTrue("expected a format error, got " + reflectedError,
+				reflectedError instanceof FormatException);
 	}
 }

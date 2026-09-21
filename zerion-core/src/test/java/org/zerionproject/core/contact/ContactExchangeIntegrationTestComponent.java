@@ -35,6 +35,18 @@ interface ContactExchangeIntegrationTestComponent
 
 	ConnectionManager getConnectionManager();
 
+	org.zerionproject.core.api.client.ClientHelper getClientHelper();
+
+	ContactExchangeCrypto getContactExchangeCrypto();
+
+	org.zerionproject.core.api.record.RecordReaderFactory getRecordReaderFactory();
+
+	org.zerionproject.core.api.record.RecordWriterFactory getRecordWriterFactory();
+
+	org.zerionproject.core.api.transport.StreamReaderFactory getStreamReaderFactory();
+
+	org.zerionproject.core.api.transport.StreamWriterFactory getStreamWriterFactory();
+
 	ContactExchangeManager getContactExchangeManager();
 
 	ContactManager getContactManager();
