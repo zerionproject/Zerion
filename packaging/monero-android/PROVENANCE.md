@@ -118,7 +118,29 @@ Notes recorded during bring-up:
   NDK cross compilers are unset before the Monero configure) so the cross build
   never runs a target binary.
 
-## Accepted hashes (clean rebuild from the committed recipe, 2026-09-21)
+## Accepted hashes (clean rebuild with the history patch, 2026-09-21)
+
+These are the values the Gradle gate enforces since the transaction history
+race fix (JNI-01). `build-monero-android.sh` gained a second documented
+patch: the wallet API refresh thread no longer refreshes the transaction
+history when it finds it empty (`WalletImpl::doRefresh` in
+`src/wallet/api/wallet.cpp`), because the JNI shim refreshes and reads the
+history itself and the two rebuilt the same objects concurrently, which let
+the shim dereference objects the refresh thread had just deleted. The build
+verifies that the patch is present exactly once. Produced by
+`docker build -t zerion-monero-build:r2 .` from this directory and one fresh
+container per ABI, each from an empty `/build`; a second fresh arm64 build
+reproduced the same bytes.
+
+- **libzmonero.so arm64-v8a SHA-256:
+  `d02388a85912a57126af3ab6a76aa1698e55d4674d53dd678de34b55777e6c75`**
+- **libzmonero.so armeabi-v7a SHA-256:
+  `79e72e60551730c6a95757d9a81b51388b43a99efaff84624e3df7698f9dbc99`**
+
+They supersede `6c59b64b…` / `4e6df174…` (3.0.11), listed below for the
+record.
+
+## Previous hashes (clean rebuild from the committed recipe, 2026-09-21, 3.0.11)
 
 These are the values the Gradle gate enforces. They were produced by running
 `build-monero-android.sh` exactly as committed, from an empty `/build`, in two

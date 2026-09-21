@@ -186,6 +186,8 @@ public final class NativeMoneroEngine implements MoneroEngine {
 			return NativeMonero.nRefresh(h);
 		}
 
+		private final Object historyLock = new Object();
+
 		@Override
 		public void setAutoRefreshInterval(int millis) {
 			if (closed.get()) return;
@@ -256,11 +258,20 @@ public final class NativeMoneroEngine implements MoneroEngine {
 			return NativeMonero.nUnlockedBalance(h, account);
 		}
 
+		/**
+		 * The native history is refreshed and read by this call alone (the
+		 * wallet's refresh thread no longer touches it), so two readers must
+		 * not run at once.
+		 */
 		@Override
 		public java.util.List<XmrTxInfo> history() {
 			java.util.List<XmrTxInfo> out = new java.util.ArrayList<>();
 			if (closed.get()) return out;
-			String snapshot = NativeMonero.nHistory(h);
+			String snapshot;
+			synchronized (historyLock) {
+				if (closed.get()) return out;
+				snapshot = NativeMonero.nHistory(h);
+			}
 
 			if (snapshot == null) {
 				throw new IllegalStateException("xmr history unavailable");

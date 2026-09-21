@@ -12,8 +12,8 @@
 def moneroJniDir = { -> file("${projectDir}/src/main/jniLibs") }
 def moneroExpectedLib = 'libzmonero.so'
 def moneroAccepted = [
-    'arm64-v8a'  : '6c59b64b5ae06c1189fdf27c4e5551c6c3f8bad83016c9b6311d0fff5ed0f2a3',
-    'armeabi-v7a': '4e6df1748fbb1aeb4ac6baac7562218cec0d339ac6e9227229b27916d660920b',
+    'arm64-v8a'  : 'd02388a85912a57126af3ab6a76aa1698e55d4674d53dd678de34b55777e6c75',
+    'armeabi-v7a': '79e72e60551730c6a95757d9a81b51388b43a99efaff84624e3df7698f9dbc99',
 ]
 
 def moneroSha256Of = { File f ->

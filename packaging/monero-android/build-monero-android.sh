@@ -254,6 +254,23 @@ if grep -q 'jit_compiler_a64' "${RANDOMX_CMAKE}"; then
   echo "RandomX a64 JIT sources still in CMake source list"; exit 4;
 fi
 echo "RandomX interpreter patches verified (common.hpp + CMakeLists)"
+# Documented minimal patch (JNI-01): the wallet API refresh thread refreshes
+# the transaction history whenever it finds it empty, while the API caller
+# refreshes it explicitly before reading it. Both rebuild the same
+# TransactionInfo objects under the history lock, so a caller iterating the
+# objects it just obtained could dereference objects the refresh thread had
+# deleted in between. The refresh thread no longer touches the history; the
+# API caller (the JNI shim) is its only reader and its only writer.
+WALLET_API_CPP=/build/monero/src/wallet/api/wallet.cpp
+if grep -q 'if (m_history->count() == 0) {' "${WALLET_API_CPP}"; then
+  sed -i 's|if (m_history->count() == 0) {|if (false) { // Zerion: history is refreshed only by the API caller|' "${WALLET_API_CPP}"
+fi
+PATCH_COUNT=$(grep -c 'Zerion: history is refreshed only by the API caller' "${WALLET_API_CPP}")
+[ "${PATCH_COUNT}" = "1" ] || { echo "wallet.cpp history patch count=${PATCH_COUNT} (expected 1)"; exit 4; }
+if grep -q 'if (m_history->count() == 0) {' "${WALLET_API_CPP}"; then
+  echo "unpatched refresh-thread history refresh still present"; exit 4;
+fi
+echo "wallet.cpp refresh-thread history patch verified"
 MB=/build/monero/build/${ABI}
 # Dependencies are built; drop the cross compilers from the environment so
 # Monero's translations ExternalProject (which has no toolchain file) builds its
