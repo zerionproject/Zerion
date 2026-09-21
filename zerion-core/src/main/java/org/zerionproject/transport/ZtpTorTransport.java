@@ -79,6 +79,7 @@ public class ZtpTorTransport implements OverlayTransport {
 			throw new IllegalStateException("already started");
 		}
 		tor.start();
+		tor.enableConnectionPadding(true);
 		if (!bridgeConfigurator.apply()) {
 			running.set(false);
 			try {

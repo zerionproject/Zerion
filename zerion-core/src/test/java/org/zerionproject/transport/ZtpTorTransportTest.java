@@ -1,7 +1,14 @@
 package org.zerionproject.transport;
 
+import org.briarproject.onionwrapper.CircumventionProvider;
+import org.briarproject.onionwrapper.LocationUtils;
 import org.briarproject.onionwrapper.TorWrapper;
+import org.zerionproject.core.api.event.EventBus;
+import org.zerionproject.core.api.event.EventListener;
 import org.zerionproject.core.api.plugin.TransportId;
+import org.zerionproject.core.api.settings.SettingsManager;
+import org.jmock.Expectations;
+import org.jmock.Mockery;
 import org.junit.Test;
 
 import java.io.File;
@@ -11,6 +18,7 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -23,6 +31,7 @@ import javax.net.SocketFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Exercises the testable part of the Tor transport - the accept loop and dial
@@ -68,7 +77,8 @@ public class ZtpTorTransportTest {
 		public void disableBridges() {
 		}
 
-		public void enableConnectionPadding(boolean enable) {
+		public void enableConnectionPadding(boolean enable)
+				throws IOException {
 		}
 
 		public void enableIpv6(boolean ipv6Only) {
@@ -210,6 +220,111 @@ public class ZtpTorTransportTest {
 				failingFactory, exec, handler, null);
 		assertEquals(ZtpTorTransport.DIAL_NOT_CONNECTED,
 				t.dial(7, "somefakeonionaddress", true));
+		exec.shutdownNow();
+	}
+
+	/** Records the wrapper calls in order so the start sequence can be checked. */
+	private static class RecordingTor extends StubTor {
+		final List<String> calls = new ArrayList<>();
+		boolean failPadding = false;
+
+		@Override
+		public void start() {
+			calls.add("start");
+		}
+
+		@Override
+		public void enableConnectionPadding(boolean enable)
+				throws IOException {
+			calls.add("padding:" + enable);
+			if (failPadding) throw new IOException("control connection lost");
+		}
+
+		@Override
+		public void enableNetwork(boolean enable) {
+			calls.add("network:" + enable);
+		}
+
+		@Override
+		public void stop() {
+			calls.add("stop");
+		}
+	}
+
+	private TorBridgeConfigurator acceptingBridgeConfigurator(TorWrapper tor) {
+		Mockery context = new Mockery();
+		SettingsManager settingsManager = context.mock(SettingsManager.class);
+		CircumventionProvider circumvention =
+				context.mock(CircumventionProvider.class);
+		LocationUtils locationUtils = context.mock(LocationUtils.class);
+		EventBus eventBus = context.mock(EventBus.class);
+		context.checking(new Expectations() {{
+			allowing(eventBus).addListener(with(any(EventListener.class)));
+		}});
+		return new TorBridgeConfigurator(settingsManager, circumvention,
+				locationUtils, tor, eventBus, Runnable::run) {
+			@Override
+			public boolean apply() {
+				return true;
+			}
+		};
+	}
+
+	@Test(timeout = 15_000)
+	public void startEnablesTorConnectionPaddingBeforeTheNetwork()
+			throws Exception {
+		ExecutorService exec = Executors.newCachedThreadPool();
+		RecordingTor tor = new RecordingTor();
+		ZtpConnectionHandler handler = new ZtpConnectionHandler() {
+			@Override
+			public void handleOutgoing(TransportId transportId, int contactId,
+					InputStream in, OutputStream out) {
+			}
+
+			@Override
+			public void handleIncoming(TransportId transportId, InputStream in,
+					OutputStream out) {
+			}
+		};
+		ZtpTorTransport t = new ZtpTorTransport(tor,
+				SocketFactory.getDefault(), SocketFactory.getDefault(), exec,
+				handler, acceptingBridgeConfigurator(tor));
+		t.start(null);
+		assertEquals("start", tor.calls.get(0));
+		assertEquals("padding:true", tor.calls.get(1));
+		assertEquals("network:true", tor.calls.get(2));
+		t.stop();
+		exec.shutdownNow();
+	}
+
+	@Test(timeout = 15_000)
+	public void startFailsClosedWhenPaddingCannotBeEnabled()
+			throws Exception {
+		ExecutorService exec = Executors.newCachedThreadPool();
+		RecordingTor tor = new RecordingTor();
+		tor.failPadding = true;
+		ZtpConnectionHandler handler = new ZtpConnectionHandler() {
+			@Override
+			public void handleOutgoing(TransportId transportId, int contactId,
+					InputStream in, OutputStream out) {
+			}
+
+			@Override
+			public void handleIncoming(TransportId transportId, InputStream in,
+					OutputStream out) {
+			}
+		};
+		ZtpTorTransport t = new ZtpTorTransport(tor,
+				SocketFactory.getDefault(), SocketFactory.getDefault(), exec,
+				handler, acceptingBridgeConfigurator(tor));
+		try {
+			t.start(null);
+			fail("start must not succeed without padding");
+		} catch (IOException expected) {
+		}
+		assertTrue(tor.calls.contains("padding:true"));
+		assertTrue("the network must not be enabled without padding",
+				!tor.calls.contains("network:true"));
 		exec.shutdownNow();
 	}
 }

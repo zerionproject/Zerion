@@ -2,9 +2,9 @@ package org.zerionproject.core.socks;
 
 import org.zerionproject.core.api.plugin.FastConnectSocketFactory;
 import org.zerionproject.core.api.plugin.TorSocksPort;
-import org.briarproject.socks.SocksSocketFactory;
 
 import java.net.InetSocketAddress;
+import java.security.SecureRandom;
 
 import javax.net.SocketFactory;
 
@@ -23,8 +23,8 @@ public class SocksModule {
 	SocketFactory provideTorSocketFactory(@TorSocksPort int torSocksPort) {
 		InetSocketAddress proxy = new InetSocketAddress("127.0.0.1",
 				torSocksPort);
-		return new SocksSocketFactory(proxy, CONNECT_TO_PROXY_TIMEOUT,
-				EXTRA_CONNECT_TIMEOUT, EXTRA_SOCKET_TIMEOUT);
+		return new IsolatingSocksSocketFactory(proxy, CONNECT_TO_PROXY_TIMEOUT,
+				EXTRA_CONNECT_TIMEOUT, EXTRA_SOCKET_TIMEOUT, new SecureRandom());
 	}
 
 	@Provides
@@ -32,7 +32,7 @@ public class SocksModule {
 	SocketFactory provideFastTorSocketFactory(@TorSocksPort int torSocksPort) {
 		InetSocketAddress proxy = new InetSocketAddress("127.0.0.1",
 				torSocksPort);
-		return new SocksSocketFactory(proxy, CONNECT_TO_PROXY_TIMEOUT,
-				FAST_CONNECT_TIMEOUT, EXTRA_SOCKET_TIMEOUT);
+		return new IsolatingSocksSocketFactory(proxy, CONNECT_TO_PROXY_TIMEOUT,
+				FAST_CONNECT_TIMEOUT, EXTRA_SOCKET_TIMEOUT, new SecureRandom());
 	}
 }
