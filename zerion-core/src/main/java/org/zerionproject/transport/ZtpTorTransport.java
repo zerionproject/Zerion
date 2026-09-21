@@ -8,11 +8,14 @@ import org.zerionproject.core.api.plugin.TransportId;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Semaphore;
+
+import static org.zerionproject.wire.ZwfConstants.TAG_LENGTH;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.LongSupplier;
 
@@ -26,6 +29,20 @@ public class ZtpTorTransport implements OverlayTransport {
 	private static final int SOCKET_TIMEOUT_MS = 30_000;
 	private static final long ACCEPT_RETRY_DELAY_MS = 500;
 	private static final int MAX_INBOUND_CONNECTIONS = 64;
+
+	/**
+	 * A connection that has not delivered its stream tag holds a slot for at
+	 * most this long. The tag is the first thing an honest peer writes, so a
+	 * silent connection is not a peer waiting for us but a slot being held.
+	 */
+	static final int TAG_READ_TIMEOUT_MS = 5_000;
+
+	/**
+	 * Slots for connections that have not yet delivered a tag, separate from
+	 * and smaller than the total, so silent connections cannot take every
+	 * slot away from authenticated sessions.
+	 */
+	static final int MAX_PRE_TAG_CONNECTIONS = 16;
 	/** How long Tor may sit without a working connection, after having had
 	 * one, before the transport counts as degraded. */
 	static final long DEGRADED_GRACE_MS = 45_000;
@@ -42,6 +59,8 @@ public class ZtpTorTransport implements OverlayTransport {
 	private final AtomicBoolean running = new AtomicBoolean(false);
 	private final Semaphore inboundLimiter =
 			new Semaphore(MAX_INBOUND_CONNECTIONS);
+	private final Semaphore preTagLimiter =
+			new Semaphore(MAX_PRE_TAG_CONNECTIONS);
 	private final AtomicBoolean everConnected = new AtomicBoolean(false);
 	private final Object restartLock = new Object();
 	volatile LongSupplier clock = System::currentTimeMillis;
@@ -144,14 +163,82 @@ public class ZtpTorTransport implements OverlayTransport {
 			closeQuietly(socket);
 			return;
 		}
+		if (!preTagLimiter.tryAcquire()) {
+			closeQuietly(socket);
+			inboundLimiter.release();
+			return;
+		}
+		java.util.concurrent.atomic.AtomicBoolean tagDelivered =
+				new java.util.concurrent.atomic.AtomicBoolean(false);
+		Runnable onTagDelivered = () -> {
+			if (tagDelivered.compareAndSet(false, true)) {
+				preTagLimiter.release();
+				try {
+					socket.setSoTimeout(SOCKET_TIMEOUT_MS);
+				} catch (java.net.SocketException ignored) {
+				}
+			}
+		};
 		try {
-			configureSocket(socket);
-			handler.handleIncoming(TorConstants.ID, socket.getInputStream(),
+			socket.setSoTimeout(TAG_READ_TIMEOUT_MS);
+			try {
+				socket.setTcpNoDelay(true);
+			} catch (java.net.SocketException ignored) {
+			}
+			InputStream in = new PreambleDeadlineInputStream(
+					socket.getInputStream(), TAG_LENGTH, onTagDelivered);
+			handler.handleIncoming(TorConstants.ID, in,
 					socket.getOutputStream());
 		} catch (IOException e) {
 		} finally {
 			closeQuietly(socket);
+			if (tagDelivered.compareAndSet(false, true)) {
+				preTagLimiter.release();
+			}
 			inboundLimiter.release();
+		}
+	}
+
+	/**
+	 * Counts the bytes delivered to the reader and runs the callback once the
+	 * preamble length has been reached, so the accept path can move a
+	 * connection from the short pre-tag budget to the session budget.
+	 */
+	static final class PreambleDeadlineInputStream
+			extends java.io.FilterInputStream {
+
+		private final int preambleLength;
+		private final Runnable onPreambleDelivered;
+		private long delivered = 0;
+		private boolean signalled = false;
+
+		PreambleDeadlineInputStream(InputStream in, int preambleLength,
+				Runnable onPreambleDelivered) {
+			super(in);
+			this.preambleLength = preambleLength;
+			this.onPreambleDelivered = onPreambleDelivered;
+		}
+
+		@Override
+		public int read() throws IOException {
+			int b = in.read();
+			if (b >= 0) count(1);
+			return b;
+		}
+
+		@Override
+		public int read(byte[] b, int off, int len) throws IOException {
+			int n = in.read(b, off, len);
+			if (n > 0) count(n);
+			return n;
+		}
+
+		private void count(int n) {
+			delivered += n;
+			if (!signalled && delivered >= preambleLength) {
+				signalled = true;
+				onPreambleDelivered.run();
+			}
 		}
 	}
 

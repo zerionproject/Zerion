@@ -63,13 +63,18 @@ public class ZtpSessionProviderImpl
 	private final Executor dbExecutor;
 
 	private final ZwfTagRecogniser recogniser;
+	private final javax.inject.Provider<org.zerionproject.core.plugin.tor
+			.B4OnionRotation> onionRotation;
 
 	@Inject
 	public ZtpSessionProviderImpl(CryptoComponent crypto,
 			ContactManager contactManager,
 			PcsStateManager pcsStateManager, ZwfSessionFactory sessionFactory,
 			ZwfStreamCounter counter, DatabaseComponent db, EventBus eventBus,
-			@DatabaseExecutor Executor dbExecutor) {
+			@DatabaseExecutor Executor dbExecutor,
+			javax.inject.Provider<org.zerionproject.core.plugin.tor
+					.B4OnionRotation> onionRotation) {
+		this.onionRotation = onionRotation;
 		this.contactManager = contactManager;
 		this.pcsStateManager = pcsStateManager;
 		this.sessionFactory = sessionFactory;
@@ -144,6 +149,19 @@ public class ZtpSessionProviderImpl
 		} else if (e instanceof ContactRemovedEvent) {
 			ContactId cid = ((ContactRemovedEvent) e).getContactId();
 			recogniser.remove(cid.getInt());
+			dbExecutor.execute(this::rotateOnionAfterContactRemoval);
+		}
+	}
+
+	/**
+	 * A removed contact keeps our current onion address and could hold its
+	 * inbound slots until the address rotates on its own, so removal rotates
+	 * the address right away.
+	 */
+	private void rotateOnionAfterContactRemoval() {
+		try {
+			onionRotation.get().forceRotate();
+		} catch (DbException | RuntimeException ignored) {
 		}
 	}
 

@@ -369,4 +369,111 @@ public class ZtpTorTransportTest {
 				!tor.calls.contains("network:true"));
 		exec.shutdownNow();
 	}
+
+	private static ZtpConnectionHandler tagReadingHandler(
+			CountDownLatch tagsRead) {
+		return new ZtpConnectionHandler() {
+			@Override
+			public void handleOutgoing(TransportId transportId, int contactId,
+					InputStream in, OutputStream out) {
+			}
+
+			@Override
+			public void handleIncoming(TransportId transportId, InputStream in,
+					OutputStream out) throws IOException {
+				byte[] tag = new byte[org.zerionproject.wire.ZwfConstants
+						.TAG_LENGTH];
+				int off = 0;
+				while (off < tag.length) {
+					int r = in.read(tag, off, tag.length - off);
+					if (r < 0) throw new IOException("eof");
+					off += r;
+				}
+				tagsRead.countDown();
+				while (in.read() >= 0) {
+				}
+			}
+		};
+	}
+
+	@Test(timeout = 30_000)
+	public void silentInboundConnectionIsClosedAtTheTagDeadline()
+			throws Exception {
+		ExecutorService exec = Executors.newCachedThreadPool();
+		ZtpTorTransport t = new ZtpTorTransport(new StubTor(),
+				SocketFactory.getDefault(), SocketFactory.getDefault(), exec,
+				tagReadingHandler(new CountDownLatch(1)), null, () -> {
+		});
+		t.startAccepting(0);
+		Socket silent = new Socket("127.0.0.1", t.getLocalPort());
+		silent.setSoTimeout(ZtpTorTransport.TAG_READ_TIMEOUT_MS + 10_000);
+		long start = System.currentTimeMillis();
+		assertEquals("the server must close a silent connection", -1,
+				silent.getInputStream().read());
+		long held = System.currentTimeMillis() - start;
+		assertTrue("closed after the deadline, held " + held + " ms",
+				held >= ZtpTorTransport.TAG_READ_TIMEOUT_MS - 500);
+		assertTrue("closed near the deadline, held " + held + " ms",
+				held < ZtpTorTransport.TAG_READ_TIMEOUT_MS + 5_000);
+		silent.close();
+		exec.shutdownNow();
+	}
+
+	@Test(timeout = 30_000)
+	public void silentConnectionsAreCappedBelowTheSessionSlots()
+			throws Exception {
+		ExecutorService exec = Executors.newCachedThreadPool();
+		CountDownLatch tagsRead = new CountDownLatch(1);
+		ZtpTorTransport t = new ZtpTorTransport(new StubTor(),
+				SocketFactory.getDefault(), SocketFactory.getDefault(), exec,
+				tagReadingHandler(tagsRead), null, () -> {
+		});
+		t.startAccepting(0);
+		List<Socket> silent = new ArrayList<>();
+		for (int i = 0; i < ZtpTorTransport.MAX_PRE_TAG_CONNECTIONS; i++) {
+			silent.add(new Socket("127.0.0.1", t.getLocalPort()));
+		}
+		Thread.sleep(500);
+		Socket oneTooMany = new Socket("127.0.0.1", t.getLocalPort());
+		oneTooMany.setSoTimeout(3_000);
+		assertEquals("a silent connection beyond the pre-tag budget is "
+				+ "refused at once", -1, oneTooMany.getInputStream().read());
+		oneTooMany.close();
+		for (Socket s : silent) {
+			s.setSoTimeout(ZtpTorTransport.TAG_READ_TIMEOUT_MS + 10_000);
+			assertEquals("silent connections are closed at the deadline",
+					-1, s.getInputStream().read());
+			s.close();
+		}
+		Socket talking = new Socket("127.0.0.1", t.getLocalPort());
+		talking.getOutputStream().write(
+				new byte[org.zerionproject.wire.ZwfConstants.TAG_LENGTH]);
+		talking.getOutputStream().flush();
+		assertTrue("a connection that delivers its tag once the budget is "
+				+ "free again is served", tagsRead.await(10_000,
+				TimeUnit.MILLISECONDS));
+		talking.close();
+		exec.shutdownNow();
+	}
+
+	@Test
+	public void preambleStreamSignalsOnceWhenTheTagIsComplete()
+			throws Exception {
+		AtomicInteger signals = new AtomicInteger();
+		byte[] data = new byte[40];
+		ZtpTorTransport.PreambleDeadlineInputStream in =
+				new ZtpTorTransport.PreambleDeadlineInputStream(
+						new java.io.ByteArrayInputStream(data), 16,
+						signals::incrementAndGet);
+		byte[] buf = new byte[10];
+		assertEquals(10, in.read(buf, 0, 10));
+		assertEquals(0, signals.get());
+		assertEquals(5, in.read(buf, 0, 5));
+		assertEquals(0, signals.get());
+		assertTrue(in.read() >= 0);
+		assertEquals(1, signals.get());
+		while (in.read() >= 0) {
+		}
+		assertEquals(1, signals.get());
+	}
 }
