@@ -33,7 +33,6 @@ public interface VoiceCallCrypto {
 
 	byte[] decryptAudioFrame(byte[] ciphertext, SecretKey key);
 
-	VideoKeys deriveVideoKeys(SecretKey voiceCallKey, boolean alice);
 
 	VideoKeys deriveEphemeralVideoKeys(SecretKey voiceCallKey,
 			byte[] localEphemeral, byte[] remoteEphemeral, boolean alice);

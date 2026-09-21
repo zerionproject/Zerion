@@ -26,6 +26,8 @@ import android.os.PowerManager;
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 
+import javax.annotation.Nullable;
+
 import com.professor.zerion.R;
 
 import org.zerionproject.core.api.contact.Contact;
@@ -198,7 +200,18 @@ public class VoiceCallService extends Service implements EventListener {
 
 	private volatile boolean isVideoCall = false;
 	private volatile boolean videoEnabled = false;
-	private volatile boolean videoRequested = false;
+	private final VideoConsentGate consentGate = new VideoConsentGate();
+	@Nullable
+	private volatile byte[] localVideoNonce;
+	@Nullable
+	private volatile byte[] remoteVideoNonce;
+	@Nullable
+	private volatile Runnable remoteOfferTimeoutRunnable;
+	private static final long REMOTE_OFFER_TIMEOUT_MS = 60_000;
+	private static final int VIDEO_NONCE_BYTES = 16;
+	private static final String VIDEO_OFFER_PREFIX = "REQUEST:";
+	private static final String VIDEO_ACCEPT_PREFIX = "ACCEPT:";
+	private android.content.SharedPreferences uiPrefs;
 	private VoiceCallCrypto.VideoKeys videoKeys;
 	private VideoStreamManager videoStreamManager;
 	private DuplexTransportConnection videoTorConnection;
@@ -224,6 +237,7 @@ public class VoiceCallService extends Service implements EventListener {
 		pluginManager = component.pluginManager();
 		dbExecutor = component.databaseExecutor();
 		ioExecutor = component.ioExecutor();
+		uiPrefs = component.uiPreferences();
 		connectionManager = component.voiceCallConnectionManager();
 		voiceCallCrypto = component.voiceCallCrypto();
 
@@ -494,13 +508,21 @@ public class VoiceCallService extends Service implements EventListener {
 			VoiceCallConnectionHandler handler = new VoiceCallConnectionHandler() {
 				@Override
 				public void handleConnection(DuplexTransportConnection conn) {
-					if (callState == CallState.CONNECTED && videoRequested) {
-
+					if (callState == CallState.CONNECTED
+							&& consentGate.mayStartCapture(true,
+							videoAllowedLocally())
+							&& videoKeys == null && videoStreamManager == null) {
 						videoTorConnection = conn;
-						deriveVideoEncryptionKeys();
+						if (!deriveVideoEncryptionKeys()) {
+							disposeConnection(conn);
+							handleVideoSetupFailure();
+							return;
+						}
 						startVideoStreamingOnConnection();
 						videoEnabled = true;
 						updateNotification();
+					} else if (callState == CallState.CONNECTED) {
+						disposeConnection(conn);
 					} else if (callState == CallState.CONNECTING ||
 							callState == CallState.RINGING) {
 						torConnection = conn;
@@ -1692,7 +1714,7 @@ public class VoiceCallService extends Service implements EventListener {
 
 	private Notification createNotification() {
 		return callNotification.build(contactId, isIncoming, callId, callState,
-				videoEnabled || videoRequested || isVideoCall);
+				videoEnabled || consentGate.isCaptureArmed() || isVideoCall);
 	}
 
 	private void updateNotification() {
@@ -1890,7 +1912,8 @@ public class VoiceCallService extends Service implements EventListener {
 				if (callId == null || !callId.equals(signalCallId)) {
 					return;
 				}
-				videoRequested = false;
+				consentGate.onRemoteReject();
+				clearVideoNonces();
 				if (callActivity != null) {
 					callActivity.onVideoRejected();
 				}
@@ -1909,9 +1932,24 @@ public class VoiceCallService extends Service implements EventListener {
 	}
 
 	private void handleVideoOffer(VoiceSignalHeader header) {
-		String payload = header.getPayload();
-		if (payload == null || callState != CallState.CONNECTED) return;
-		videoRequested = true;
+		byte[] nonce = parseVideoNonce(header.getPayload(), VIDEO_OFFER_PREFIX);
+		if (nonce == null) {
+			sendVoiceSignal(VoiceSignalType.VIDEO_REJECT, null);
+			return;
+		}
+		VideoConsentGate.OfferDecision decision = consentGate.onRemoteOffer(
+				callState == CallState.CONNECTED, videoAllowedLocally());
+		if (decision == VideoConsentGate.OfferDecision.REJECT_NOT_ALLOWED) {
+			sendVoiceSignal(VoiceSignalType.VIDEO_REJECT, null);
+			return;
+		}
+		if (decision != VideoConsentGate.OfferDecision.PROMPT_USER) return;
+		remoteVideoNonce = nonce;
+		scheduleRemoteOfferTimeout();
+		if (isVideoCall) {
+			acceptVideoOffer();
+			return;
+		}
 		mainHandler.post(() -> {
 			if (callActivity != null) {
 				callActivity.onVideoOfferReceived();
@@ -1920,12 +1958,91 @@ public class VoiceCallService extends Service implements EventListener {
 	}
 
 	private void handleVideoAccept(VoiceSignalHeader header) {
+		if (!consentGate.onRemoteAccept()) return;
 		if (callState != CallState.CONNECTED) return;
-
+		byte[] nonce = parseVideoNonce(header.getPayload(),
+				VIDEO_ACCEPT_PREFIX);
+		if (nonce == null) {
+			handleVideoSetupFailure();
+			return;
+		}
+		remoteVideoNonce = nonce;
 		if (!isIncoming && lastRemoteOnion != null) {
 			connectVideoToRemote(lastRemoteOnion);
 		}
+	}
 
+	private boolean videoAllowedLocally() {
+		boolean enabled = uiPrefs != null && uiPrefs.getBoolean(
+				com.professor.zerion.android.settings.SecurityFragment
+						.PREF_VIDEO_CALLS_ENABLED, false);
+		boolean permitted = ContextCompat.checkSelfPermission(this,
+				Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
+		return enabled && permitted;
+	}
+
+	private static byte[] newVideoNonce() {
+		byte[] nonce = new byte[VIDEO_NONCE_BYTES];
+		new java.security.SecureRandom().nextBytes(nonce);
+		return nonce;
+	}
+
+	@Nullable
+	private static byte[] parseVideoNonce(@Nullable String payload,
+			String prefix) {
+		if (payload == null || !payload.startsWith(prefix)) return null;
+		String hex = payload.substring(prefix.length());
+		if (hex.length() != VIDEO_NONCE_BYTES * 2) return null;
+		try {
+			byte[] nonce = org.zerionproject.core.util.StringUtils
+					.fromHexString(hex);
+			return nonce.length == VIDEO_NONCE_BYTES ? nonce : null;
+		} catch (org.zerionproject.core.api.FormatException
+				| IllegalArgumentException e) {
+			return null;
+		}
+	}
+
+	private void clearVideoNonces() {
+		byte[] l = localVideoNonce;
+		if (l != null) java.util.Arrays.fill(l, (byte) 0);
+		localVideoNonce = null;
+		byte[] r = remoteVideoNonce;
+		if (r != null) java.util.Arrays.fill(r, (byte) 0);
+		remoteVideoNonce = null;
+	}
+
+	private void scheduleRemoteOfferTimeout() {
+		cancelRemoteOfferTimeout();
+		remoteOfferTimeoutRunnable = () -> {
+			remoteOfferTimeoutRunnable = null;
+			if (consentGate.isRemoteOfferPending()) {
+				consentGate.onLocalRejectOrTimeout();
+				clearVideoNonces();
+				sendVoiceSignal(VoiceSignalType.VIDEO_REJECT, null);
+			}
+		};
+		mainHandler.postDelayed(remoteOfferTimeoutRunnable,
+				REMOTE_OFFER_TIMEOUT_MS);
+	}
+
+	private void cancelRemoteOfferTimeout() {
+		Runnable r = remoteOfferTimeoutRunnable;
+		if (r != null) {
+			mainHandler.removeCallbacks(r);
+			remoteOfferTimeoutRunnable = null;
+		}
+	}
+
+	private void disposeConnection(DuplexTransportConnection conn) {
+		try {
+			conn.getReader().dispose(true, true);
+		} catch (Exception ignored) {
+		}
+		try {
+			conn.getWriter().dispose(true);
+		} catch (Exception ignored) {
+		}
 	}
 
 	private volatile Runnable videoSetupTimeoutRunnable;
@@ -1933,7 +2050,7 @@ public class VoiceCallService extends Service implements EventListener {
 	private void scheduleVideoSetupTimeout(long timeoutMs) {
 		cancelVideoSetupTimeout();
 		videoSetupTimeoutRunnable = () -> {
-			if (videoRequested && !videoEnabled) {
+			if (consentGate.isCaptureArmed() && !videoEnabled) {
 				handleVideoSetupFailure();
 			}
 		};
@@ -1948,7 +2065,8 @@ public class VoiceCallService extends Service implements EventListener {
 	}
 
 	private void handleVideoSetupFailure() {
-		videoRequested = false;
+		consentGate.reset();
+		clearVideoNonces();
 		videoEnabled = false;
 		executorService.execute(() -> {
 			try {
@@ -1997,7 +2115,10 @@ public class VoiceCallService extends Service implements EventListener {
 					return;
 				}
 
-				deriveVideoEncryptionKeys();
+				if (!deriveVideoEncryptionKeys()) {
+					handleVideoSetupFailure();
+					return;
+				}
 				startVideoStreamingOnConnection();
 				cancelVideoSetupTimeout();
 				videoEnabled = true;
@@ -2009,19 +2130,17 @@ public class VoiceCallService extends Service implements EventListener {
 	}
 
 	private void autoStartVideoIfNeeded() {
-		if (!isVideoCall || videoEnabled || videoRequested) return;
-		videoRequested = true;
-		updateNotification();
-
-		if (!isIncoming && lastRemoteOnion != null) {
-
-			mainHandler.postDelayed(() -> {
-				if (callState == CallState.CONNECTED && !videoEnabled) {
-					connectVideoToRemote(lastRemoteOnion);
-				}
-			}, 1500);
+		if (!isVideoCall || videoEnabled || isIncoming) return;
+		if (consentGate.isCaptureArmed()) return;
+		if (!consentGate.onLocalRequest(callState == CallState.CONNECTED,
+				videoAllowedLocally())) {
+			return;
 		}
-
+		byte[] nonce = newVideoNonce();
+		localVideoNonce = nonce;
+		updateNotification();
+		sendVoiceSignal(VoiceSignalType.VIDEO_OFFER, VIDEO_OFFER_PREFIX
+				+ org.zerionproject.core.util.StringUtils.toHexString(nonce));
 	}
 
 	public void requestVideoUpgrade() {
@@ -2033,26 +2152,47 @@ public class VoiceCallService extends Service implements EventListener {
 			});
 			return;
 		}
-		videoRequested = true;
+		if (!consentGate.onLocalRequest(true, videoAllowedLocally())) {
+			mainHandler.post(() -> {
+				if (callActivity != null) {
+					callActivity.showVideoError(
+							"Cannot start video: video calls are disabled");
+				}
+			});
+			return;
+		}
+		byte[] nonce = newVideoNonce();
+		localVideoNonce = nonce;
 		updateNotification();
 
-		sendVoiceSignal(VoiceSignalType.VIDEO_OFFER, "REQUEST");
+		sendVoiceSignal(VoiceSignalType.VIDEO_OFFER, VIDEO_OFFER_PREFIX
+				+ org.zerionproject.core.util.StringUtils.toHexString(nonce));
 	}
 
 	public void acceptVideoOffer() {
-		if (callState != CallState.CONNECTED) return;
-		videoRequested = true;
+		cancelRemoteOfferTimeout();
+		if (!consentGate.onLocalAccept(callState == CallState.CONNECTED,
+				videoAllowedLocally())) {
+			clearVideoNonces();
+			sendVoiceSignal(VoiceSignalType.VIDEO_REJECT, null);
+			return;
+		}
+		byte[] nonce = newVideoNonce();
+		localVideoNonce = nonce;
+		scheduleVideoSetupTimeout(25_000);
 
-		sendVoiceSignal(VoiceSignalType.VIDEO_ACCEPT, "ACCEPT");
+		sendVoiceSignal(VoiceSignalType.VIDEO_ACCEPT, VIDEO_ACCEPT_PREFIX
+				+ org.zerionproject.core.util.StringUtils.toHexString(nonce));
 
 		if (!isIncoming && lastRemoteOnion != null) {
 			connectVideoToRemote(lastRemoteOnion);
 		}
-
 	}
 
 	public void rejectVideoOffer() {
-		videoRequested = false;
+		cancelRemoteOfferTimeout();
+		consentGate.onLocalRejectOrTimeout();
+		clearVideoNonces();
 		sendVoiceSignal(VoiceSignalType.VIDEO_REJECT, null);
 	}
 
@@ -2106,10 +2246,25 @@ public class VoiceCallService extends Service implements EventListener {
 		}
 	}
 
-	private void deriveVideoEncryptionKeys() {
-		if (voiceCallKey == null) return;
+	/**
+	 * Derives the keys of one video session from the call key and the fresh
+	 * random contributions both peers exchanged in this session's offer and
+	 * accept signals, then consumes those contributions so that no second
+	 * connection can obtain the same keys. Returns false if either
+	 * contribution is missing, in which case no video session may start.
+	 */
+	private synchronized boolean deriveVideoEncryptionKeys() {
+		byte[] local = localVideoNonce;
+		byte[] remote = remoteVideoNonce;
+		if (voiceCallKey == null || local == null || remote == null
+				|| videoKeys != null) {
+			return false;
+		}
 		boolean alice = !isIncoming;
-		videoKeys = voiceCallCrypto.deriveVideoKeys(voiceCallKey, alice);
+		videoKeys = voiceCallCrypto.deriveEphemeralVideoKeys(voiceCallKey,
+				local, remote, alice);
+		clearVideoNonces();
+		return true;
 	}
 
 	private void upgradeForegroundForVideo() {
@@ -2219,7 +2374,9 @@ public class VoiceCallService extends Service implements EventListener {
 
 	private void stopVideoStreaming() {
 		videoEnabled = false;
-		videoRequested = false;
+		consentGate.reset();
+		clearVideoNonces();
+		cancelRemoteOfferTimeout();
 
 		if (videoStreamManager != null) {
 			videoStreamManager.setStateCallback(null);
@@ -2257,7 +2414,7 @@ public class VoiceCallService extends Service implements EventListener {
 	}
 
 	public boolean isVideoRequested() {
-		return videoRequested;
+		return consentGate.isCaptureArmed();
 	}
 
 	public void switchCamera() {
