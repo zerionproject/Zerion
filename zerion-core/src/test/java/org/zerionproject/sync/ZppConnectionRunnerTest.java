@@ -196,7 +196,7 @@ public class ZppConnectionRunnerTest {
 
 		// Bob receives them (delivered under bob's contact id 2), while idle
 		// slots keep emitting cover in both directions.
-		awaitReceived(sink, 2, n);
+		awaitReceived(sink, 2, n, errors);
 		Thread.sleep(60);
 
 		// Stop both runners by closing the pipes.
@@ -251,8 +251,12 @@ public class ZppConnectionRunnerTest {
 		throw new AssertionError("scheduler not registered for " + contactId);
 	}
 
+	/**
+	 * A runner that threw can never deliver, so its exception is reported as
+	 * the cause instead of a bare timeout.
+	 */
 	private static void awaitReceived(CollectingSink sink, int contactId,
-			int n) throws InterruptedException {
+			int n, List<Throwable> runnerErrors) throws InterruptedException {
 		String prefix = contactId + "|";
 		long deadline = System.currentTimeMillis() + WAIT_DEADLINE_MS;
 		while (System.currentTimeMillis() < deadline) {
@@ -262,6 +266,13 @@ public class ZppConnectionRunnerTest {
 						.count();
 			}
 			if (count >= n) return;
+			synchronized (runnerErrors) {
+				if (!runnerErrors.isEmpty()) {
+					throw new AssertionError("runner threw before delivering "
+							+ n + " records: " + runnerErrors.get(0),
+							runnerErrors.get(0));
+				}
+			}
 			Thread.sleep(2);
 		}
 		throw new AssertionError("did not receive " + n + " records");
