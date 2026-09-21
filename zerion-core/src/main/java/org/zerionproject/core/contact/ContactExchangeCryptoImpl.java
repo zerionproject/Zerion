@@ -15,6 +15,7 @@ import static org.zerionproject.core.contact.ContactExchangeConstants.ALICE_NONC
 import static org.zerionproject.core.contact.ContactExchangeConstants.BOB_KEY_LABEL;
 import static org.zerionproject.core.contact.ContactExchangeConstants.BOB_NONCE_LABEL;
 import static org.zerionproject.core.contact.ContactExchangeConstants.PROTOCOL_VERSION;
+import static org.zerionproject.core.contact.ContactExchangeConstants.HYBRID_SIGNING_LABEL;
 import static org.zerionproject.core.contact.ContactExchangeConstants.SIGNING_LABEL;
 
 @NotNullByDefault
@@ -55,6 +56,36 @@ class ContactExchangeCryptoImpl implements ContactExchangeCrypto {
 			return crypto.verifySignature(signature, SIGNING_LABEL, nonce,
 					publicKey);
 		} catch (GeneralSecurityException e) {
+			return false;
+		}
+	}
+
+	@Override
+	public byte[] hybridSign(PrivateKey ed25519PrivateKey,
+			byte[] mlDsaPrivateKey, SecretKey masterKey, boolean alice) {
+		byte[] nonce = deriveNonce(masterKey, alice);
+		try {
+			return crypto.hybridSign(HYBRID_SIGNING_LABEL, nonce,
+					new org.zerionproject.core.api.crypto
+							.HybridSignaturePrivateKey(
+							ed25519PrivateKey.getEncoded(), mlDsaPrivateKey));
+		} catch (GeneralSecurityException e) {
+			throw new AssertionError();
+		}
+	}
+
+	@Override
+	public boolean verifyHybrid(PublicKey ed25519PublicKey,
+			byte[] mlDsaPublicKey, SecretKey masterKey, boolean alice,
+			byte[] signature) {
+		byte[] nonce = deriveNonce(masterKey, alice);
+		try {
+			return crypto.verifyHybridSignature(signature,
+					HYBRID_SIGNING_LABEL, nonce,
+					new org.zerionproject.core.api.crypto
+							.HybridSignaturePublicKey(
+							ed25519PublicKey.getEncoded(), mlDsaPublicKey));
+		} catch (GeneralSecurityException | IllegalArgumentException e) {
 			return false;
 		}
 	}

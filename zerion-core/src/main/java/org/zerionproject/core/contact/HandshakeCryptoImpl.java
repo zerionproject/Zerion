@@ -16,6 +16,7 @@ import static org.zerionproject.core.contact.HandshakeConstants.ALICE_PROOF_LABE
 import static org.zerionproject.core.contact.HandshakeConstants.BOB_PROOF_LABEL;
 import static org.zerionproject.core.contact.HandshakeConstants.MASTER_KEY_LABEL_HYBRID;
 import static org.zerionproject.core.contact.HandshakeConstants.MASTER_KEY_LABEL_HYBRID_FS;
+import static org.zerionproject.core.contact.HandshakeConstants.MASTER_KEY_LABEL_HYBRID_PQ_AUTH;
 
 @Immutable
 @NotNullByDefault
@@ -109,6 +110,42 @@ class HandshakeCryptoImpl implements HandshakeCrypto {
 					ourStaticKeyPair, ourEphemeralKeyPair,
 					kemCiphertext, inputs);
 		}
+	}
+
+	@Override
+	public byte[] hybridDecapsulate(KeyPair ourKeyPair, byte[] kemCiphertext)
+			throws GeneralSecurityException {
+		return crypto.hybridDecapsulate(ourKeyPair, kemCiphertext);
+	}
+
+	@Override
+	public SecretKey deriveHybridMasterKeyPqAuth(PublicKey theirStaticPublicKey,
+			PublicKey theirEphemeralPublicKey, KeyPair ourStaticKeyPair,
+			KeyPair ourEphemeralKeyPair, byte[] ephemeralKemCiphertext,
+			byte[] ephemeralKemSecret, byte[] staticKemCiphertextToAlice,
+			byte[] kemSecretToAlice, byte[] staticKemCiphertextToBob,
+			byte[] kemSecretToBob, boolean alice, byte ourMinor,
+			byte theirMinor) throws GeneralSecurityException {
+		byte[] theirStatic = theirStaticPublicKey.getEncoded();
+		byte[] theirEphemeral = theirEphemeralPublicKey.getEncoded();
+		byte[] ourStatic = ourStaticKeyPair.getPublic().getEncoded();
+		byte[] ourEphemeral = ourEphemeralKeyPair.getPublic().getEncoded();
+		byte[][] inputs = {
+				alice ? ourStatic : theirStatic,
+				alice ? theirStatic : ourStatic,
+				alice ? ourEphemeral : theirEphemeral,
+				alice ? theirEphemeral : ourEphemeral,
+				ephemeralKemCiphertext,
+				staticKemCiphertextToAlice,
+				staticKemCiphertextToBob,
+				new byte[] {alice ? ourMinor : theirMinor},
+				new byte[] {alice ? theirMinor : ourMinor}
+		};
+		return crypto.deriveHybridSharedSecretPqAuth(
+				MASTER_KEY_LABEL_HYBRID_PQ_AUTH, theirStaticPublicKey,
+				theirEphemeralPublicKey, ourStaticKeyPair,
+				ourEphemeralKeyPair, ephemeralKemSecret, kemSecretToAlice,
+				kemSecretToBob, inputs);
 	}
 
 	@Override

@@ -62,6 +62,31 @@ public interface CryptoComponent {
 			byte[] kemSecret, byte[]... inputs)
 			throws GeneralSecurityException;
 
+	/**
+	 * Recovers the ML-KEM shared secret that a peer encapsulated to the
+	 * ML-KEM half of our hybrid agreement key. A ciphertext that was not
+	 * made for this key yields an unrelated pseudo-random secret rather than
+	 * an error, so a mismatch surfaces only in later key confirmation.
+	 */
+	byte[] hybridDecapsulate(KeyPair ourKeyPair, byte[] kemCiphertext)
+			throws GeneralSecurityException;
+
+	/**
+	 * Derives a mutually authenticated hybrid shared secret from the static
+	 * and ephemeral X25519 agreements, the ephemeral ML-KEM secret and the
+	 * two ML-KEM secrets encapsulated to the static ML-KEM key of each
+	 * party. Only the holder of a static ML-KEM private key can recover the
+	 * secret encapsulated to it, so both parties are authenticated against
+	 * the static keys committed to out of band without relying on the
+	 * classical agreement.
+	 */
+	SecretKey deriveHybridSharedSecretPqAuth(String label,
+			PublicKey theirStaticPublicKey, PublicKey theirEphemeralPublicKey,
+			KeyPair ourStaticKeyPair, KeyPair ourEphemeralKeyPair,
+			byte[] ephemeralKemSecret, byte[] kemSecretToAlice,
+			byte[] kemSecretToBob, byte[]... inputs)
+			throws GeneralSecurityException;
+
 	SecretKey deriveKey(String label, SecretKey k, byte[]... inputs);
 
 	SecretKey deriveSharedSecret(String label, PublicKey theirPublicKey,

@@ -181,17 +181,27 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 		}
 
 		byte[] localMlDsaSigPub = identityManager.getLocalMlDsaSigPublicKey();
+		byte[] localMlDsaSigPriv =
+				identityManager.getLocalMlDsaSigPrivateKey();
+		byte[] localHybridSignature = null;
+		if (localMlDsaSigPub != null && localMlDsaSigPriv != null) {
+			localHybridSignature = contactExchangeCrypto.hybridSign(
+					localAuthor.getPrivateKey(), localMlDsaSigPriv, masterKey,
+					alice);
+		} else {
+			localMlDsaSigPub = null;
+		}
 		ContactInfo remoteInfo;
 		if (alice) {
 			sendContactInfo(recordWriter, localAuthor, localProperties,
 					localSignature, localTimestamp, localB3ProofSig,
-					localMlDsaSigPub);
+					localMlDsaSigPub, localHybridSignature);
 			remoteInfo = receiveContactInfo(recordReader);
 		} else {
 			remoteInfo = receiveContactInfo(recordReader);
 			sendContactInfo(recordWriter, localAuthor, localProperties,
 					localSignature, localTimestamp, localB3ProofSig,
-					localMlDsaSigPub);
+					localMlDsaSigPub, localHybridSignature);
 		}
 		streamWriter.sendEndOfStream();
 		recordReader.readRecord(r -> false, IGNORE);
@@ -200,6 +210,13 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 				masterKey, !alice, remoteInfo.signature);
 		if (!sigOk) {
 			throw new FormatException();
+		}
+		if (remoteInfo.mlDsaSigPubKey != null) {
+			boolean hybridOk = remoteInfo.hybridSignature != null
+					&& contactExchangeCrypto.verifyHybrid(remotePublicKey,
+					remoteInfo.mlDsaSigPubKey, masterKey, !alice,
+					remoteInfo.hybridSignature);
+			if (!hybridOk) throw new FormatException();
 		}
 
 		boolean hybridExchange = B3_PROOF_ENABLED
@@ -238,14 +255,15 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 	private void sendContactInfo(RecordWriter recordWriter, Author author,
 			Map<TransportId, TransportProperties> properties, byte[] signature,
 			long timestamp, @Nullable byte[] b3ProofSig,
-			@Nullable byte[] mlDsaSigPub) throws IOException {
+			@Nullable byte[] mlDsaSigPub, @Nullable byte[] hybridSignature)
+			throws IOException {
 		BdfList authorList = clientHelper.toList(author);
 		BdfDictionary props = clientHelper.toDictionary(properties);
 		BdfList payload;
-		if (mlDsaSigPub != null) {
+		if (mlDsaSigPub != null && hybridSignature != null) {
 			byte[] safeB3 = b3ProofSig != null ? b3ProofSig : new byte[0];
 			payload = BdfList.of(authorList, props, signature, timestamp,
-					safeB3, mlDsaSigPub);
+					safeB3, mlDsaSigPub, hybridSignature);
 		} else if (b3ProofSig != null) {
 			payload = BdfList.of(authorList, props, signature, timestamp,
 					b3ProofSig);
@@ -263,7 +281,7 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 		if (record == null) throw new EOFException();
 		BdfList payload = clientHelper.toList(record.getPayload());
 		int size = payload.size();
-		if (size != 4 && size != 5 && size != 6) throw new FormatException();
+		if (size != 4 && size != 5 && size != 7) throw new FormatException();
 		Author author = clientHelper.parseAndValidateAuthor(payload.getList(0));
 		BdfDictionary props = payload.getDictionary(1);
 		Map<TransportId, TransportProperties> properties =
@@ -274,6 +292,7 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 		if (timestamp < 0) throw new FormatException();
 		byte[] b3ProofSig = null;
 		byte[] mlDsaSigPub = null;
+		byte[] hybridSignature = null;
 		if (size >= 5) {
 			byte[] slot4 = payload.getRaw(4);
 			if (slot4.length == B3_SIG_LEN) {
@@ -282,16 +301,22 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 				throw new FormatException();
 			}
 		}
-		if (size == 6) {
+		if (size == 7) {
 			mlDsaSigPub = payload.getRaw(5);
 			checkLength(mlDsaSigPub,
 					org.zerionproject.core.api.crypto.PostQuantumConstants
 							.ML_DSA_65_PUBLIC_KEY_BYTES,
 					org.zerionproject.core.api.crypto.PostQuantumConstants
 							.ML_DSA_65_PUBLIC_KEY_BYTES);
+			hybridSignature = payload.getRaw(6);
+			checkLength(hybridSignature,
+					org.zerionproject.core.api.crypto.PostQuantumConstants
+							.HYBRID_SIGNATURE_BYTES,
+					org.zerionproject.core.api.crypto.PostQuantumConstants
+							.HYBRID_SIGNATURE_BYTES);
 		}
 		return new ContactInfo(author, properties, signature, timestamp,
-				b3ProofSig, mlDsaSigPub);
+				b3ProofSig, mlDsaSigPub, hybridSignature);
 	}
 
 	private Contact addContact(@Nullable PendingContactId pendingContactId,
@@ -356,18 +381,22 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 		private final byte[] b3ProofSig;
 		@Nullable
 		private final byte[] mlDsaSigPubKey;
+		@Nullable
+		private final byte[] hybridSignature;
 
 		private ContactInfo(Author author,
 				Map<TransportId, TransportProperties> properties,
 				byte[] signature, long timestamp,
 				@Nullable byte[] b3ProofSig,
-				@Nullable byte[] mlDsaSigPubKey) {
+				@Nullable byte[] mlDsaSigPubKey,
+				@Nullable byte[] hybridSignature) {
 			this.author = author;
 			this.properties = properties;
 			this.signature = signature;
 			this.timestamp = timestamp;
 			this.b3ProofSig = b3ProofSig;
 			this.mlDsaSigPubKey = mlDsaSigPubKey;
+			this.hybridSignature = hybridSignature;
 		}
 	}
 }

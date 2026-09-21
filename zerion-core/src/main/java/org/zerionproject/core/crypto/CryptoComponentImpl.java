@@ -648,6 +648,31 @@ class CryptoComponentImpl implements CryptoComponent {
 				ourStaticKeyPair, ourEphemeralKeyPair, kemSecret, inputs);
 	}
 
+	@Override
+	public byte[] hybridDecapsulate(KeyPair ourKeyPair, byte[] kemCiphertext)
+			throws GeneralSecurityException {
+		requireHybridAgreementKey(ourKeyPair.getPublic());
+		return hybridKeyAgreement.decapsulate(ourKeyPair, kemCiphertext);
+	}
+
+	@Override
+	public SecretKey deriveHybridSharedSecretPqAuth(String label,
+			PublicKey theirStaticPublicKey, PublicKey theirEphemeralPublicKey,
+			KeyPair ourStaticKeyPair, KeyPair ourEphemeralKeyPair,
+			byte[] ephemeralKemSecret, byte[] kemSecretToAlice,
+			byte[] kemSecretToBob, byte[]... inputs)
+			throws GeneralSecurityException {
+		requireHybridAgreementKey(theirStaticPublicKey);
+		requireHybridAgreementKey(theirEphemeralPublicKey);
+		requireHybridAgreementKey(ourStaticKeyPair.getPublic());
+		requireHybridAgreementKey(ourEphemeralKeyPair.getPublic());
+		return hybridKeyAgreement.deriveSharedSecretPqAuth(label,
+				(HybridAgreementPublicKey) theirStaticPublicKey,
+				(HybridAgreementPublicKey) theirEphemeralPublicKey,
+				ourStaticKeyPair, ourEphemeralKeyPair, ephemeralKemSecret,
+				kemSecretToAlice, kemSecretToBob, inputs);
+	}
+
 	private byte[] createLabeledMessage(String label, byte[] message) {
 		byte[] labelBytes = StringUtils.toUtf8(label);
 		byte[] result = new byte[INT_32_BYTES + labelBytes.length + INT_32_BYTES + message.length];

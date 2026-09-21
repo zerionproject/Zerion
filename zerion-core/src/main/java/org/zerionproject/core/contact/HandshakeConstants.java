@@ -6,15 +6,20 @@ interface HandshakeConstants {
 
 	byte PROTOCOL_MAJOR_VERSION = 0;
 
-	byte PROTOCOL_MINOR_VERSION = 2;
+	byte PROTOCOL_MINOR_VERSION = 3;
 
 	byte FS_MINOR_VERSION = 2;
+
+	byte PQ_AUTH_MINOR_VERSION = 3;
 
 	String MASTER_KEY_LABEL_HYBRID =
 			"org.zerionproject.core.handshake/HYBRID_MASTER_KEY_V1";
 
 	String MASTER_KEY_LABEL_HYBRID_FS =
 			"org.zerionproject.core.handshake/HYBRID_MASTER_KEY_FS_V2";
+
+	String MASTER_KEY_LABEL_HYBRID_PQ_AUTH =
+			"org.zerionproject.core.handshake/HYBRID_MASTER_KEY_PQ_AUTH_V3";
 
 	String ALICE_PROOF_LABEL = "org.zerionproject.core.handshake/ALICE_PROOF";
 

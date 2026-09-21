@@ -67,10 +67,11 @@ Each account has a **hybrid identity**: an Ed25519 key and an ML-DSA-65 key for 
 
 Pairing happens out of band (QR code or a rendezvous link) and runs a hybrid authenticated key-agreement handshake:
 
-1. Both sides exchange hybrid public keys and perform X25519 and ML-KEM-768 key agreement, combining the two shared secrets through a keyed BLAKE2b KDF with domain separation.
-2. Each side signs the transcript with its hybrid (Ed25519 + ML-DSA-65) identity key; the peer verifies both signatures.
-3. The result is bound to a short out-of-band commitment exchanged via the QR/link, so a man-in-the-middle who relays the handshake cannot match the commitment.
-4. The handshake is **downgrade-resistant**: once a contact is paired with the hybrid protocol, a later attempt that offers only the classical protocol is rejected.
+1. Both sides exchange hybrid static and ephemeral public keys and perform static and ephemeral X25519 agreements plus an ML-KEM-768 encapsulation to the peer's ephemeral key, combining the shared secrets through a keyed BLAKE2b KDF with domain separation.
+2. Both sides are authenticated post-quantum: each side also encapsulates an ML-KEM-768 secret to the other side's *static* ML-KEM key, the one committed to in the link, and the master key is derived from both static secrets together with the agreements above. Only the holder of the committed static keys can derive the master key, and each side proves that derivation with a keyed MAC before anything else is sent, so recovering the classical key from the link does not let an attacker complete the handshake.
+3. In the contact exchange that follows, each side signs the session nonce with its hybrid (Ed25519 + ML-DSA-65) identity key; the peer verifies both halves before it stores the identity.
+4. The result is bound to a short out-of-band commitment exchanged via the QR/link, so a man-in-the-middle who relays the handshake cannot match the commitment.
+5. The handshake is **downgrade-resistant**: once a contact is paired with the hybrid protocol, a later attempt that offers only the classical protocol is rejected, and a peer that offers the earlier, classically authenticated handshake version is refused.
 
 The handshake output is a long-lived per-contact **root key** from which every subsequent connection derives its session state.
 
@@ -190,7 +191,7 @@ Zerion is designed to resist not only the network adversary but also examination
 - **Confidentiality and integrity** end-to-end, with post-quantum protection on every user message.
 - **Forward secrecy**: the one-way classical chain and a fresh per-connection root mean a compromised current key does not expose past messages.
 - **Post-compromise security**: healing via ML-KEM key rotation (every 16 messages) plus a fresh ratchet on every reconnection.
-- **Mutual authentication**: hybrid signatures at pairing and per-frame AEAD thereafter; the post-quantum public key and ciphertext are authenticated before use.
+- **Mutual authentication**: post-quantum key confirmation against the committed static ML-KEM keys and hybrid identity signatures at pairing, per-frame AEAD thereafter; the post-quantum public key and ciphertext are authenticated before use.
 - **Metadata resistance**: fixed 4096-byte frames at a constant, cover-filled rate over Tor hide content, size, count and timing.
 - **Replay and reorder protection**: strictly-monotonic persistent stream ids, a 256-wide receive window, strict in-order framing per stream, and message-id deduplication at the database layer.
 - **Fail-closed**: any authentication or format failure drops the stream.

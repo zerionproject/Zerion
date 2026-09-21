@@ -39,7 +39,7 @@ import static org.zerionproject.core.api.crypto.PostQuantumConstants.ML_KEM_768_
 import static org.zerionproject.core.contact.HandshakeConstants.PROOF_BYTES;
 import static org.zerionproject.core.contact.HandshakeConstants.PROTOCOL_MAJOR_VERSION;
 import static org.zerionproject.core.contact.HandshakeConstants.PROTOCOL_MINOR_VERSION;
-import static org.zerionproject.core.contact.HandshakeConstants.FS_MINOR_VERSION;
+import static org.zerionproject.core.contact.HandshakeConstants.PQ_AUTH_MINOR_VERSION;
 import static org.zerionproject.core.api.Bytes.compare;
 import static org.zerionproject.core.api.contact.HandshakeLinkConstants.HYBRID_COMMITMENT_BYTES;
 import static org.zerionproject.core.api.contact.HandshakeLinkConstants.HYBRID_COMMITMENT_LABEL;
@@ -49,6 +49,7 @@ import static org.zerionproject.core.contact.HandshakeRecordTypes.RECORD_TYPE_KE
 import static org.zerionproject.core.contact.HandshakeRecordTypes.RECORD_TYPE_MINOR_VERSION;
 import static org.zerionproject.core.contact.HandshakeRecordTypes.RECORD_TYPE_MODE3_CAPABILITY;
 import static org.zerionproject.core.contact.HandshakeRecordTypes.RECORD_TYPE_PROOF_OF_OWNERSHIP;
+import static org.zerionproject.core.contact.HandshakeRecordTypes.RECORD_TYPE_STATIC_KEM_CIPHERTEXT;
 import static org.zerionproject.core.util.ValidationUtils.checkLength;
 
 @Immutable
@@ -64,7 +65,8 @@ class HandshakeManagerImpl implements HandshakeManager {
 				type == RECORD_TYPE_MINOR_VERSION ||
 				type == RECORD_TYPE_HYBRID_STATIC_KEY ||
 				type == RECORD_TYPE_KEM_CIPHERTEXT ||
-				type == RECORD_TYPE_MODE3_CAPABILITY;
+				type == RECORD_TYPE_MODE3_CAPABILITY ||
+				type == RECORD_TYPE_STATIC_KEM_CIPHERTEXT;
 	}
 
 	private final TransactionManager db;
@@ -190,40 +192,62 @@ class HandshakeManagerImpl implements HandshakeManager {
 			sendHybridStaticKey(recordWriter, ourHybridEphemeralKeyPair.getPublic());
 		}
 
-		boolean useFs = theirMinorVersion >= FS_MINOR_VERSION;
-		if (!useFs) {
+		if (theirMinorVersion < PQ_AUTH_MINOR_VERSION) {
 			throw new FormatException();
 		}
 
-		byte[] kemCiphertext;
-		byte[] kemSecret;
-		try {
-			if (alice) {
-				PublicKey kemTarget = theirHybridEphemeralKey;
-				HybridEncapsulationResult encResult =
-						handshakeCrypto.hybridEncapsulate(kemTarget);
-				kemCiphertext = encResult.getCiphertext();
-				kemSecret = encResult.getSharedSecret();
-				sendKemCiphertext(recordWriter, kemCiphertext);
-			} else {
-				kemCiphertext = receiveKemCiphertext(recordReader);
-				kemSecret = new byte[0];
-			}
-		} catch (GeneralSecurityException e) {
-			throw new FormatException();
-		}
-
+		byte[] ephemeralKemCiphertext;
+		byte[] ephemeralKemSecret = new byte[0];
+		byte[] staticKemCiphertextToAlice;
+		byte[] staticKemCiphertextToBob;
+		byte[] kemSecretToAlice = new byte[0];
+		byte[] kemSecretToBob = new byte[0];
 		SecretKey masterKey;
 		try {
-			masterKey = handshakeCrypto.deriveHybridMasterKeyFs(
+			if (alice) {
+				HybridEncapsulationResult ephemeral =
+						handshakeCrypto.hybridEncapsulate(
+								theirHybridEphemeralKey);
+				ephemeralKemCiphertext = ephemeral.getCiphertext();
+				ephemeralKemSecret = ephemeral.getSharedSecret();
+				HybridEncapsulationResult toBob =
+						handshakeCrypto.hybridEncapsulate(theirHybridStaticKey);
+				staticKemCiphertextToBob = toBob.getCiphertext();
+				kemSecretToBob = toBob.getSharedSecret();
+				sendKemCiphertext(recordWriter, ephemeralKemCiphertext);
+				sendStaticKemCiphertext(recordWriter, staticKemCiphertextToBob);
+				staticKemCiphertextToAlice =
+						receiveStaticKemCiphertext(recordReader);
+				kemSecretToAlice = handshakeCrypto.hybridDecapsulate(
+						ourHybridStaticKeyPair, staticKemCiphertextToAlice);
+			} else {
+				ephemeralKemCiphertext = receiveKemCiphertext(recordReader);
+				staticKemCiphertextToBob =
+						receiveStaticKemCiphertext(recordReader);
+				ephemeralKemSecret = handshakeCrypto.hybridDecapsulate(
+						ourHybridEphemeralKeyPair, ephemeralKemCiphertext);
+				kemSecretToBob = handshakeCrypto.hybridDecapsulate(
+						ourHybridStaticKeyPair, staticKemCiphertextToBob);
+				HybridEncapsulationResult toAlice =
+						handshakeCrypto.hybridEncapsulate(theirHybridStaticKey);
+				staticKemCiphertextToAlice = toAlice.getCiphertext();
+				kemSecretToAlice = toAlice.getSharedSecret();
+				sendStaticKemCiphertext(recordWriter,
+						staticKemCiphertextToAlice);
+			}
+			masterKey = handshakeCrypto.deriveHybridMasterKeyPqAuth(
 					theirHybridStaticKey, theirHybridEphemeralKey,
 					ourHybridStaticKeyPair, ourHybridEphemeralKeyPair,
-					kemCiphertext, kemSecret, alice,
+					ephemeralKemCiphertext, ephemeralKemSecret,
+					staticKemCiphertextToAlice, kemSecretToAlice,
+					staticKemCiphertextToBob, kemSecretToBob, alice,
 					PROTOCOL_MINOR_VERSION, (byte) theirMinorVersion);
 		} catch (GeneralSecurityException e) {
 			throw new FormatException();
 		} finally {
-			Arrays.fill(kemSecret, (byte) 0);
+			Arrays.fill(ephemeralKemSecret, (byte) 0);
+			Arrays.fill(kemSecretToAlice, (byte) 0);
+			Arrays.fill(kemSecretToBob, (byte) 0);
 			org.zerionproject.core.api.crypto.PrivateKey ephPriv =
 					ourHybridEphemeralKeyPair.getPrivate();
 			if (ephPriv instanceof
@@ -314,6 +338,23 @@ class HandshakeManagerImpl implements HandshakeManager {
 
 	private byte[] receiveKemCiphertext(RecordReader r) throws IOException {
 		Record rec = readRecord(r, singletonList(RECORD_TYPE_KEM_CIPHERTEXT));
+		byte[] ciphertext = rec.getPayload();
+		checkLength(ciphertext, ML_KEM_768_CIPHERTEXT_BYTES,
+				ML_KEM_768_CIPHERTEXT_BYTES);
+		return ciphertext;
+	}
+
+	private void sendStaticKemCiphertext(RecordWriter w, byte[] ciphertext)
+			throws IOException {
+		w.writeRecord(new Record(PROTOCOL_MAJOR_VERSION,
+				RECORD_TYPE_STATIC_KEM_CIPHERTEXT, ciphertext));
+		w.flush();
+	}
+
+	private byte[] receiveStaticKemCiphertext(RecordReader r)
+			throws IOException {
+		Record rec = readRecord(r,
+				singletonList(RECORD_TYPE_STATIC_KEM_CIPHERTEXT));
 		byte[] ciphertext = rec.getPayload();
 		checkLength(ciphertext, ML_KEM_768_CIPHERTEXT_BYTES,
 				ML_KEM_768_CIPHERTEXT_BYTES);
