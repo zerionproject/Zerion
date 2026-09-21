@@ -116,9 +116,13 @@ public class IsolatingSocksSocketFactoryTest {
 	}
 
 	private IsolatingSocksSocketFactory factory() {
+		return factory(new SocksIsolationSecret(new SecureRandom()));
+	}
+
+	private IsolatingSocksSocketFactory factory(SocksIsolationSecret secret) {
 		return new IsolatingSocksSocketFactory(
 				new InetSocketAddress("127.0.0.1", server.getLocalPort()),
-				2000, 2000, 2000, new SecureRandom());
+				2000, 2000, 2000, new SecureRandom(), secret);
 	}
 
 	private Credentials connect(IsolatingSocksSocketFactory f, String host)
@@ -150,12 +154,26 @@ public class IsolatingSocksSocketFactoryTest {
 	}
 
 	@Test(timeout = 20_000)
-	public void separateFactoriesUseSeparatePasswords() throws Exception {
+	public void freshProcessSecretMeansFreshCircuits() throws Exception {
 		Credentials a = connect(factory(), "cccccccccccccccc.onion");
 		Credentials b = connect(factory(), "cccccccccccccccc.onion");
 		assertEquals(a.username, b.username);
 		assertNotEquals("a new process must not share circuits with the old",
 				a.password, b.password);
+	}
+
+	@Test(timeout = 20_000)
+	public void factoriesOfOneProcessShareTheIsolationIdentity()
+			throws Exception {
+		SocksIsolationSecret secret =
+				new SocksIsolationSecret(new SecureRandom());
+		Credentials normal = connect(factory(secret), "eeeeeeeeeeeeeeee.onion");
+		Credentials fast = connect(factory(secret), "eeeeeeeeeeeeeeee.onion");
+		assertEquals(normal.username, fast.username);
+		assertEquals("same destination in one process reuses one circuit",
+				normal.password, fast.password);
+		assertEquals("the secret never leaks through toString",
+				"SocksIsolationSecret", secret.toString());
 	}
 
 	@Test(timeout = 20_000)

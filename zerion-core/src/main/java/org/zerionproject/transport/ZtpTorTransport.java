@@ -38,6 +38,7 @@ public class ZtpTorTransport implements OverlayTransport {
 	private final Executor ioExecutor;
 	private final ZtpConnectionHandler handler;
 	private final TorBridgeConfigurator bridgeConfigurator;
+	private final TorPrivacyConfigurator privacyConfigurator;
 	private final AtomicBoolean running = new AtomicBoolean(false);
 	private final Semaphore inboundLimiter =
 			new Semaphore(MAX_INBOUND_CONNECTIONS);
@@ -54,13 +55,15 @@ public class ZtpTorTransport implements OverlayTransport {
 	public ZtpTorTransport(TorWrapper tor, SocketFactory socketFactory,
 			SocketFactory fastSocketFactory, Executor ioExecutor,
 			ZtpConnectionHandler handler,
-			TorBridgeConfigurator bridgeConfigurator) {
+			TorBridgeConfigurator bridgeConfigurator,
+			TorPrivacyConfigurator privacyConfigurator) {
 		this.tor = tor;
 		this.socketFactory = socketFactory;
 		this.fastSocketFactory = fastSocketFactory;
 		this.ioExecutor = ioExecutor;
 		this.handler = handler;
 		this.bridgeConfigurator = bridgeConfigurator;
+		this.privacyConfigurator = privacyConfigurator;
 	}
 
 	@Override
@@ -79,7 +82,17 @@ public class ZtpTorTransport implements OverlayTransport {
 			throw new IllegalStateException("already started");
 		}
 		tor.start();
-		tor.enableConnectionPadding(true);
+		try {
+			tor.enableConnectionPadding(true);
+			privacyConfigurator.applyAndVerify();
+		} catch (IOException e) {
+			running.set(false);
+			try {
+				tor.stop();
+			} catch (IOException | InterruptedException ignored) {
+			}
+			throw e;
+		}
 		if (!bridgeConfigurator.apply()) {
 			running.set(false);
 			try {

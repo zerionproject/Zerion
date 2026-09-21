@@ -157,7 +157,8 @@ public class ZtpTorTransportRecoveryTest {
 				new NoEvents(), exec);
 		ZtpTorTransport t = new ZtpTorTransport(tor,
 				SocketFactory.getDefault(), SocketFactory.getDefault(), exec,
-				handler, bridges);
+				handler, bridges, () -> {
+				});
 		t.clock = now::get;
 		t.start(null);
 		assertEquals(asList(true), tor.enableCalls);

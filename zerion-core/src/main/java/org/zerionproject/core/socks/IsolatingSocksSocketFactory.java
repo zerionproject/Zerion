@@ -22,13 +22,14 @@ import javax.net.SocketFactory;
  * different destinations never do, and a socket created without a
  * destination receives a fresh random username so that it is isolated on its
  * own. The credentials carry no secret: Tor ignores their value and only
- * compares them, so they are an isolation key, not an authentication.
+ * compares them, so they are an isolation key, not an authentication. They
+ * only take effect on a SOCKS listener with IsolateSOCKSAuth, which
+ * {@link org.zerionproject.transport.TorPrivacyConfigurator} enforces.
  */
 @NotNullByDefault
 public class IsolatingSocksSocketFactory extends SocketFactory {
 
 	private static final int RANDOM_USERNAME_BYTES = 16;
-	private static final int PASSWORD_BYTES = 16;
 
 	private final InetSocketAddress proxy;
 	private final int connectToProxyTimeout;
@@ -39,13 +40,14 @@ public class IsolatingSocksSocketFactory extends SocketFactory {
 
 	public IsolatingSocksSocketFactory(InetSocketAddress proxy,
 			int connectToProxyTimeout, int extraConnectTimeout,
-			int extraSocketTimeout, SecureRandom random) {
+			int extraSocketTimeout, SecureRandom random,
+			SocksIsolationSecret secret) {
 		this.proxy = proxy;
 		this.connectToProxyTimeout = connectToProxyTimeout;
 		this.extraConnectTimeout = extraConnectTimeout;
 		this.extraSocketTimeout = extraSocketTimeout;
 		this.random = random;
-		this.password = randomToken(PASSWORD_BYTES);
+		this.password = secret.value();
 	}
 
 	/**

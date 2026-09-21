@@ -8,6 +8,8 @@ import java.security.SecureRandom;
 
 import javax.net.SocketFactory;
 
+import javax.inject.Singleton;
+
 import dagger.Module;
 import dagger.Provides;
 
@@ -20,19 +22,29 @@ import static org.zerionproject.core.api.plugin.TorConstants.FAST_CONNECT_TIMEOU
 public class SocksModule {
 
 	@Provides
-	SocketFactory provideTorSocketFactory(@TorSocksPort int torSocksPort) {
+	@Singleton
+	SocksIsolationSecret provideSocksIsolationSecret() {
+		return new SocksIsolationSecret(new SecureRandom());
+	}
+
+	@Provides
+	SocketFactory provideTorSocketFactory(@TorSocksPort int torSocksPort,
+			SocksIsolationSecret secret) {
 		InetSocketAddress proxy = new InetSocketAddress("127.0.0.1",
 				torSocksPort);
 		return new IsolatingSocksSocketFactory(proxy, CONNECT_TO_PROXY_TIMEOUT,
-				EXTRA_CONNECT_TIMEOUT, EXTRA_SOCKET_TIMEOUT, new SecureRandom());
+				EXTRA_CONNECT_TIMEOUT, EXTRA_SOCKET_TIMEOUT, new SecureRandom(),
+				secret);
 	}
 
 	@Provides
 	@FastConnectSocketFactory
-	SocketFactory provideFastTorSocketFactory(@TorSocksPort int torSocksPort) {
+	SocketFactory provideFastTorSocketFactory(@TorSocksPort int torSocksPort,
+			SocksIsolationSecret secret) {
 		InetSocketAddress proxy = new InetSocketAddress("127.0.0.1",
 				torSocksPort);
 		return new IsolatingSocksSocketFactory(proxy, CONNECT_TO_PROXY_TIMEOUT,
-				FAST_CONNECT_TIMEOUT, EXTRA_SOCKET_TIMEOUT, new SecureRandom());
+				FAST_CONNECT_TIMEOUT, EXTRA_SOCKET_TIMEOUT, new SecureRandom(),
+				secret);
 	}
 }

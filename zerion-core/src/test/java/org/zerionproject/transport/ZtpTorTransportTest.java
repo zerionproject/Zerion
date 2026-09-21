@@ -109,7 +109,8 @@ public class ZtpTorTransportTest {
 		};
 		ZtpTorTransport t = new ZtpTorTransport(new StubTor(),
 				SocketFactory.getDefault(), SocketFactory.getDefault(), exec,
-				handler, null);
+				handler, null, () -> {
+		});
 		t.startAccepting(0);
 
 		Socket client = new Socket("127.0.0.1", t.getLocalPort());
@@ -168,7 +169,8 @@ public class ZtpTorTransportTest {
 			}
 		};
 		ZtpTorTransport t = new ZtpTorTransport(new StubTor(), fakeFactory,
-				fakeFactory, exec, handler, null);
+				fakeFactory, exec, handler, null, () -> {
+		});
 		long sessionMs = t.dial(7, "somefakeonionaddress", false);
 
 		assertTrue(outgoing.await(10, TimeUnit.SECONDS));
@@ -217,7 +219,8 @@ public class ZtpTorTransportTest {
 			}
 		};
 		ZtpTorTransport t = new ZtpTorTransport(new StubTor(), failingFactory,
-				failingFactory, exec, handler, null);
+				failingFactory, exec, handler, null, () -> {
+		});
 		assertEquals(ZtpTorTransport.DIAL_NOT_CONNECTED,
 				t.dial(7, "somefakeonionaddress", true));
 		exec.shutdownNow();
@@ -288,12 +291,50 @@ public class ZtpTorTransportTest {
 		};
 		ZtpTorTransport t = new ZtpTorTransport(tor,
 				SocketFactory.getDefault(), SocketFactory.getDefault(), exec,
-				handler, acceptingBridgeConfigurator(tor));
+				handler, acceptingBridgeConfigurator(tor), () -> {
+		});
 		t.start(null);
 		assertEquals("start", tor.calls.get(0));
 		assertEquals("padding:true", tor.calls.get(1));
 		assertEquals("network:true", tor.calls.get(2));
 		t.stop();
+		exec.shutdownNow();
+	}
+
+	@Test(timeout = 15_000)
+	public void startFailsClosedWhenTorDoesNotConfirmIsolation()
+			throws Exception {
+		ExecutorService exec = Executors.newCachedThreadPool();
+		RecordingTor tor = new RecordingTor();
+		ZtpConnectionHandler handler = new ZtpConnectionHandler() {
+			@Override
+			public void handleOutgoing(TransportId transportId, int contactId,
+					InputStream in, OutputStream out) {
+			}
+
+			@Override
+			public void handleIncoming(TransportId transportId, InputStream in,
+					OutputStream out) {
+			}
+		};
+		List<String> verifications = new ArrayList<>();
+		TorPrivacyConfigurator refusing = () -> {
+			verifications.add("verify");
+			throw new IOException("Tor SOCKS isolation is not active");
+		};
+		ZtpTorTransport t = new ZtpTorTransport(tor,
+				SocketFactory.getDefault(), SocketFactory.getDefault(), exec,
+				handler, acceptingBridgeConfigurator(tor), refusing);
+		try {
+			t.start(null);
+			fail("start must not succeed without verified isolation");
+		} catch (IOException expected) {
+		}
+		assertEquals(1, verifications.size());
+		assertTrue(tor.calls.contains("padding:true"));
+		assertTrue("Tor must be stopped again", tor.calls.contains("stop"));
+		assertTrue("the network must stay disabled",
+				!tor.calls.contains("network:true"));
 		exec.shutdownNow();
 	}
 
@@ -316,7 +357,8 @@ public class ZtpTorTransportTest {
 		};
 		ZtpTorTransport t = new ZtpTorTransport(tor,
 				SocketFactory.getDefault(), SocketFactory.getDefault(), exec,
-				handler, acceptingBridgeConfigurator(tor));
+				handler, acceptingBridgeConfigurator(tor), () -> {
+		});
 		try {
 			t.start(null);
 			fail("start must not succeed without padding");

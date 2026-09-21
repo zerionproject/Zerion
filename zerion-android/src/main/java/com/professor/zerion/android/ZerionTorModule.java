@@ -24,8 +24,10 @@ public class ZerionTorModule {
 			SocketFactory torSocketFactory,
 			@FastConnectSocketFactory SocketFactory fastSocketFactory,
 			@IoExecutor Executor ioExecutor, ZtpConnectionHandler handler,
-			TorBridgeConfigurator bridgeConfigurator) {
+			TorBridgeConfigurator bridgeConfigurator,
+			org.zerionproject.transport.TorPrivacyConfiguratorImpl
+					privacyConfigurator) {
 		return new ZtpTorTransport(tor, torSocketFactory, fastSocketFactory,
-				ioExecutor, handler, bridgeConfigurator);
+				ioExecutor, handler, bridgeConfigurator, privacyConfigurator);
 	}
 }
