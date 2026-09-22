@@ -265,14 +265,6 @@ public class VoiceCallService extends Service implements EventListener {
 				return START_NOT_STICKY;
 			}
 
-			if (CallIntents.ACTION_SIGNALING.equals(action)) {
-				String signalingMessage = intent.getStringExtra(CallIntents.EXTRA_SIGNALING_MESSAGE);
-				if (signalingMessage != null) {
-					handleIncomingSignaling(signalingMessage);
-				}
-				return START_NOT_STICKY;
-			}
-
 			boolean alreadyActive = callState != CallState.IDLE
 					&& callState != CallState.DISCONNECTED
 					&& callState != CallState.FAILED;
@@ -1587,66 +1579,6 @@ public class VoiceCallService extends Service implements EventListener {
 		});
 	}
 
-	public void handleIncomingSignaling(String message) {
-		VoiceCallSignal signal;
-		if (voiceCallKey != null) {
-			signal = VoiceCallSignal.fromWireFormat(message,
-					voiceCallCrypto.encodeVoiceCallKey(voiceCallKey)
-							.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-		} else {
-			signal = VoiceCallSignal.fromWireFormat(message);
-		}
-		if (signal == null) {
-			return;
-		}
-		if (callId == null) {
-			return;
-		}
-
-		if (!callId.equals(signal.getCallId())) {
-			return;
-		}
-
-		switch (signal.getType()) {
-			case CALL_ANSWER:
-				if (!CallSignalGate.answerAccepted(!isIncoming,
-						callState == CallState.RINGING
-								|| callState == CallState.CONNECTING)) {
-					return;
-				}
-				String remoteOnion = signal.getOnionAddress();
-				Integer remotePort = signal.getOnionPort();
-				if (remoteOnion != null && remotePort != null) {
-					String ephHex = signal.getEphemeralSecret();
-					if (ephHex != null) {
-						try {
-							remoteEphemeralSecret = CallHex.hexToBytes(ephHex);
-						} catch (IllegalArgumentException e) {
-							return;
-						}
-					}
-					callState = CallState.CONNECTING;
-					updateCallActivity();
-					connectToRemoteOnion(remoteOnion, remotePort);
-				}
-				break;
-
-			case CALL_REJECT:
-				callState = CallState.DISCONNECTED;
-				zeroizeKeyMaterial();
-				updateCallActivity();
-				stopSelf();
-				break;
-
-			case CALL_END:
-				endCall();
-				break;
-
-			default:
-				break;
-		}
-	}
-
 	private void updateCallActivity() {
 		final CallState snapshot = callState;
 		mainHandler.post(() -> {
@@ -1788,26 +1720,6 @@ public class VoiceCallService extends Service implements EventListener {
 			if (contactId != null && event.getContactId().equals(contactId)) {
 				VoiceSignalHeader header = event.getSignalHeader();
 				mainHandler.post(() -> handleIncomingVoiceSignal(header));
-			}
-		}
-		else if (e instanceof PrivateMessageReceivedEvent) {
-			PrivateMessageReceivedEvent event = (PrivateMessageReceivedEvent) e;
-
-			if (contactId != null && event.getContactId().equals(contactId)) {
-				dbExecutor.execute(() -> {
-					try {
-						MessageId messageId = event.getMessageHeader().getId();
-						String text = messagingManager.getMessageText(messageId);
-
-						if (text != null && (text.startsWith("VOICE_CALL:") ||
-								VoiceCallSignal.isSignal(text))) {
-							new Handler(Looper.getMainLooper()).post(() ->
-								handleIncomingSignaling(text)
-							);
-						}
-					} catch (DbException ex) {
-					}
-				});
 			}
 		}
 	}

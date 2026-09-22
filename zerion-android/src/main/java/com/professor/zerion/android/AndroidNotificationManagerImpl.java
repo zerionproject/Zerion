@@ -127,11 +127,6 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	private final org.zerionproject.app.api.conversation.ConversationManager conversationManager;
 	private final SharedPreferences uiPrefs;
 
-	private static final long MIN_CALL_LAUNCH_INTERVAL_MS = 3000L;
-	private final Object callLaunchLock = new Object();
-	private long lastCallLaunchMs = 0L;
-	@Nullable
-	private String lastLaunchedCallId = null;
 	private final com.professor.zerion.android.conversation.voice
 			.CallSignalGate callSignalGate;
 	private final VoiceSignalFactory voiceSignalFactory;
@@ -947,9 +942,6 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 						event.getMessageHeader().getId());
 			} catch (DbException e) {
 			}
-			if (text != null && isVoiceCallSignal(text)) {
-				launchIncomingCall(event, text);
-			}
 			com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat.Part p =
 					com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat
 							.parse(text);
@@ -964,79 +956,6 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 			}
 			androidExecutor.runOnUiThread(() -> showContactNotification(c));
 		});
-	}
-
-	private void launchIncomingCall(PrivateMessageReceivedEvent event,
-			String messageText) {
-		String decoded = decodeVoiceCallSignal(messageText);
-		if (decoded == null) return;
-		String[] parts = decoded.split(":");
-		if (parts.length < 2) return;
-		if (!"CALL_OFFER".equals(parts[1])) return;
-		if (!uiPrefs.getBoolean(
-				com.professor.zerion.android.settings.SecurityFragment
-						.PREF_VOICE_CALLS_ENABLED, true)) {
-			return;
-		}
-		String remoteCallId = parts.length > 2 ? parts[2] : null;
-		if (!callSignalGate.admitOffer(
-				String.valueOf(event.getContactId().getInt()),
-				remoteCallId == null ? "" : remoteCallId,
-				event.getMessageHeader().getTimestamp())) {
-			return;
-		}
-		synchronized (callLaunchLock) {
-			long now = clock.currentTimeMillis();
-			if (remoteCallId != null &&
-					remoteCallId.equals(lastLaunchedCallId)) return;
-			if (now - lastCallLaunchMs < MIN_CALL_LAUNCH_INTERVAL_MS) return;
-			lastCallLaunchMs = now;
-			lastLaunchedCallId = remoteCallId;
-		}
-		ContactId contactId = event.getContactId();
-		try {
-			contactManager.getContact(contactId);
-		} catch (DbException e) {
-			return;
-		}
-		androidExecutor.runOnUiThread(() -> {
-			Intent intent = new Intent(appContext,
-					com.professor.zerion.android.conversation.voice.VoiceCallActivity.class);
-			intent.putExtra("contact_id", contactId.getInt());
-			intent.putExtra("is_incoming", true);
-			if (remoteCallId != null) {
-				intent.putExtra("call_id", remoteCallId);
-			}
-			intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-			appContext.startActivity(intent);
-		});
-	}
-
-	private boolean isVoiceCallSignal(String text) {
-		if (text == null || text.isEmpty()) {
-			return false;
-		}
-		try {
-			byte[] decodedBytes = android.util.Base64.decode(text, android.util.Base64.NO_WRAP);
-			String decoded = new String(decodedBytes, java.nio.charset.StandardCharsets.UTF_8);
-			boolean isSignal = decoded.startsWith("VOICE_CALL:");
-			java.util.Arrays.fill(decodedBytes, (byte) 0);
-			return isSignal;
-		} catch (Exception e) {
-			return false;
-		}
-	}
-
-	@Nullable
-	private String decodeVoiceCallSignal(String text) {
-		try {
-			byte[] decodedBytes = android.util.Base64.decode(text, android.util.Base64.NO_WRAP);
-			String decoded = new String(decodedBytes, java.nio.charset.StandardCharsets.UTF_8);
-			java.util.Arrays.fill(decodedBytes, (byte) 0);
-			return decoded;
-		} catch (Exception e) {
-			return null;
-		}
 	}
 
 	private void handleIncomingVoiceCall(ContactId contactId,
