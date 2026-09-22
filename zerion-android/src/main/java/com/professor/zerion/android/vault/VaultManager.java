@@ -1244,7 +1244,9 @@ public class VaultManager
 		int memoryKb = dis.readInt();
 		int iterations = dis.readInt();
 		int parallelism = dis.readInt();
-		if (memoryKb < 1024 || iterations < 1 || parallelism < 1) {
+		try {
+			Argon2.requireSaneParams(memoryKb, iterations, parallelism);
+		} catch (IllegalArgumentException e) {
 			throw new IOException("Invalid Argon2 params in export header");
 		}
 		Argon2.Argon2Params params = new Argon2.Argon2Params(memoryKb,
