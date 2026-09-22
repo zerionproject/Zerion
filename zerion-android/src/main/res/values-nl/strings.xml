@@ -339,7 +339,7 @@
   
   <string name="security_settings_title">Beveiliging</string>
   <string name="pref_lock_title">App-vergrendeling</string>
-  <string name="pref_lock_summary">Gebruik de schermvergrendeling van het apparaat om Zerion te beschermen terwijl je bent ingelogd</string>
+  <string name="pref_lock_summary">Gebruik de schermvergrendeling van het apparaat om Zerion te beschermen terwijl je bent ingelogd. Vergrendeld blijft Zerion op de achtergrond ingelogd en verbonden; meld je af om het account volledig te sluiten.</string>
   <string name="pref_lock_disabled_summary">Stel een schermvergrendeling in op je apparaat om deze feature te gebruiken</string>
   <string name="pref_lock_timeout_title">App-vergrendeling inactiviteitstime-out</string>
   

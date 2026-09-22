@@ -803,9 +803,9 @@ public class VaultWalletFragment extends BaseFragment {
 					}
 					char[] pw2 = peekChars(confirm);
 					boolean match = java.util.Arrays.equals(pw, pw2);
-					java.util.Arrays.fill(pw2, ' ');
+					java.util.Arrays.fill(pw2, '\0');
 					if (!match) {
-						java.util.Arrays.fill(pw, ' ');
+						java.util.Arrays.fill(pw, '\0');
 						toast(getString(R.string.wallet_password_mismatch));
 						return;
 					}
@@ -864,16 +864,16 @@ public class VaultWalletFragment extends BaseFragment {
 					}
 					char[] pw = peekChars(pass);
 					if (pw.length == 0) {
-						java.util.Arrays.fill(ph, ' ');
+						java.util.Arrays.fill(ph, '\0');
 						toast(getString(R.string.wallet_password_required));
 						return;
 					}
 					char[] pw2 = peekChars(confirm);
 					boolean match = java.util.Arrays.equals(pw, pw2);
-					java.util.Arrays.fill(pw2, ' ');
+					java.util.Arrays.fill(pw2, '\0');
 					if (!match) {
-						java.util.Arrays.fill(ph, ' ');
-						java.util.Arrays.fill(pw, ' ');
+						java.util.Arrays.fill(ph, '\0');
+						java.util.Arrays.fill(pw, '\0');
 						toast(getString(R.string.wallet_password_mismatch));
 						return;
 					}

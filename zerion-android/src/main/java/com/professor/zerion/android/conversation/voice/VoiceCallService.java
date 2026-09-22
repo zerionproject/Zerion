@@ -66,7 +66,6 @@ import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 import java.nio.ByteBuffer;
 
@@ -122,7 +121,8 @@ public class VoiceCallService extends Service implements EventListener {
 	private final Object mediaWriteLock = new Object();
 	private volatile boolean isShuttingDown = false;
 	private volatile boolean endpointsClosed = false;
-	private ExecutorService executorService = Executors.newCachedThreadPool();
+	private final ExecutorService executorService =
+			VoiceCallExecutors.bounded();
 
 	private ContactId contactId;
 	private String contactName;

@@ -1414,7 +1414,7 @@
 	<!-- Settings Security and Panic -->
 	<string name="security_settings_title">Security</string>
 	<string name="pref_lock_title">App lock</string>
-	<string name="pref_lock_summary">Optional. Adds an extra device-level lock when you reopen Zerion, using your device screen lock or biometrics. This is separate from your account encryption password and does not change how your data is encrypted.</string>
+	<string name="pref_lock_summary">Optional. Adds an extra device-level lock when you reopen Zerion, using your device screen lock or biometrics. This is separate from your account encryption password and does not change how your data is encrypted. While locked, Zerion stays signed in and connected in the background; sign out to close the account completely.</string>
 	<string name="pref_lock_disabled_summary">To use this feature, set up a screen lock for your device</string>
 	<string name="pref_lock_timeout_title">App lock inactivity timeout</string>
 	<string name="pref_default_disappearing_title">Default disappearing timer</string>
