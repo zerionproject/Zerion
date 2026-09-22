@@ -1,14 +1,37 @@
 # Reproducible Monero wallet2_api build for Android (XMR-P0).
 # Pinned base + NDK + Monero source; builds official Monero from source only,
 # no prebuilt Monero binary. Produces libzmonero.so per ABI.
-FROM debian:bookworm-20250630-slim
+# The base image is pinned by content digest (the tag alone can be moved),
+# and the host toolchain comes from a dated Debian snapshot at exact package
+# versions, so the image cannot change under the recipe.
+FROM debian:bookworm-20250630-slim@sha256:6ac2c08566499cc2415926653cf2ed7c3aedac445675a013cc09469c9e118fdd
 
 ENV DEBIAN_FRONTEND=noninteractive
+ENV DEBIAN_SNAPSHOT=20260921T000000Z
 
-# Toolchain + Monero build dependencies (host side).
+RUN printf 'Types: deb\nURIs: http://snapshot.debian.org/archive/debian/%s\nSuites: bookworm bookworm-updates\nComponents: main\nSigned-By: /usr/share/keyrings/debian-archive-keyring.gpg\n\nTypes: deb\nURIs: http://snapshot.debian.org/archive/debian-security/%s\nSuites: bookworm-security\nComponents: main\nSigned-By: /usr/share/keyrings/debian-archive-keyring.gpg\n' \
+        "${DEBIAN_SNAPSHOT}" "${DEBIAN_SNAPSHOT}" > /etc/apt/sources.list.d/debian.sources \
+    && echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99snapshot \
+    && echo 'Acquire::Retries "5";' >> /etc/apt/apt.conf.d/99snapshot
+
+# Toolchain + Monero build dependencies (host side), at the versions the
+# accepted hashes were produced with.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        ca-certificates curl unzip git build-essential cmake pkg-config \
-        libtool automake autoconf ccache gperf python3 file xz-utils \
+        ca-certificates=20250419~deb12u1 \
+        curl=7.88.1-10+deb12u15 \
+        unzip=6.0-28+deb12u1 \
+        git=1:2.39.5-0+deb12u3 \
+        build-essential=12.9 \
+        cmake=3.25.1-1 \
+        pkg-config=1.8.1-1 \
+        libtool=2.4.7-7~deb12u1 \
+        automake=1:1.16.5-1.3 \
+        autoconf=2.71-3 \
+        ccache=4.8+really4.7.5-1 \
+        gperf=3.1-1 \
+        python3=3.11.2-1+b1 \
+        file=1:5.44-3 \
+        xz-utils=5.4.1-1+deb12u1 \
     && rm -rf /var/lib/apt/lists/*
 
 # --- Pinned Android NDK r27b (== Android Studio ndkVersion 27.1.12297006) ---

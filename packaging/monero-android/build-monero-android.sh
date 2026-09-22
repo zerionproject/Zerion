@@ -11,6 +11,11 @@ API=24
 NDK="${ANDROID_NDK_HOME}"
 TC="${NDK}/toolchains/llvm/prebuilt/linux-x86_64"
 JOBS="$(nproc)"
+# Every build embeds the same clock: OpenSSL writes its build date into
+# libcrypto unless SOURCE_DATE_EPOCH is set, and the F-Droid build server
+# sets a per-commit value, so the recipe pins one value of its own; two
+# builds of the same inputs then produce the same bytes on every host.
+export SOURCE_DATE_EPOCH=1735689600
 OUT=/build/out/${ABI};   mkdir -p "${OUT}"
 DEPS=/build/deps/${ABI}; mkdir -p "${DEPS}/lib" "${DEPS}/include"
 SRC=/build/src/${ABI};   mkdir -p "${SRC}"
@@ -271,6 +276,21 @@ if grep -q 'if (m_history->count() == 0) {' "${WALLET_API_CPP}"; then
   echo "unpatched refresh-thread history refresh still present"; exit 4;
 fi
 echo "wallet.cpp refresh-thread history patch verified"
+# Documented minimal patch (JNI-07): the shim reads two private members of
+# the wallet API, the refresh mutex the history gate serialises on and the
+# constructed transactions whose change it reports. Instead of redefining
+# the access specifier around the headers, both classes declare the shim's
+# accessor struct a friend, so every translation unit compiles the same
+# class definition. Each patch must apply exactly once.
+WALLET_API_H=/build/monero/src/wallet/api/wallet.h
+PENDING_TX_H=/build/monero/src/wallet/api/pending_transaction.h
+sed -i '/^class WalletImpl : public Wallet$/{n;s/^{$/{\n    friend struct ZerionWalletAccess;/}' "${WALLET_API_H}"
+sed -i '/^class PendingTransactionImpl : public PendingTransaction$/{n;s/^{$/{\n    friend struct ZerionWalletAccess;/}' "${PENDING_TX_H}"
+for H in "${WALLET_API_H}" "${PENDING_TX_H}"; do
+  PATCH_COUNT=$(grep -c 'friend struct ZerionWalletAccess;' "${H}")
+  [ "${PATCH_COUNT}" = "1" ] || { echo "friend patch count=${PATCH_COUNT} in ${H} (expected 1)"; exit 4; }
+done
+echo "wallet API friend patches verified (wallet.h + pending_transaction.h)"
 MB=/build/monero/build/${ABI}
 # Dependencies are built; drop the cross compilers from the environment so
 # Monero's translations ExternalProject (which has no toolchain file) builds its

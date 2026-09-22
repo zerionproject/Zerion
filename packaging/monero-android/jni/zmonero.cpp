@@ -13,11 +13,8 @@
 #include <limits>
 #include "wallet2_api.h"
 
-#define private public
 #include "wallet.h"
-
 #include "pending_transaction.h"
-#undef private
 
 using Monero::WalletManagerFactory;
 using Monero::WalletManager;
@@ -25,6 +22,31 @@ using Monero::Wallet;
 using Monero::PendingTransaction;
 using Monero::TransactionHistory;
 using Monero::TransactionInfo;
+
+namespace Monero {
+/*
+ * The two wallet API members the shim needs that the API keeps private: the
+ * refresh mutex the history gate serialises on, and the constructed
+ * transactions whose change the shim reports. Both classes declare this
+ * struct a friend through the documented header patch in the build script,
+ * so the accesses are ordinary C++ and every translation unit sees the same
+ * class definition.
+ */
+struct ZerionWalletAccess {
+    static boost::mutex &refreshMutex(WalletImpl *w) {
+        return w->m_refreshMutex2;
+    }
+
+    static const std::vector<tools::wallet2::pending_tx> &pendingTx(
+            PendingTransactionImpl *t) {
+        return t->m_pending_tx;
+    }
+
+    static void stopRefresh(WalletImpl *w) { w->stopRefresh(); }
+
+    static tools::wallet2 *wallet2(WalletImpl *w) { return w->m_wallet.get(); }
+};
+}
 
 namespace {
 
@@ -119,14 +141,14 @@ struct RefreshGuard {
             : wi(static_cast<Monero::WalletImpl *>(w)), held(false) {
         if (!wi) return;
         if (waitMs < 0) {
-            wi->m_refreshMutex2.lock();
+            Monero::ZerionWalletAccess::refreshMutex(wi).lock();
             held = true;
             return;
         }
         auto deadline = std::chrono::steady_clock::now()
                 + std::chrono::milliseconds(waitMs);
         for (;;) {
-            if (wi->m_refreshMutex2.try_lock()) {
+            if (Monero::ZerionWalletAccess::refreshMutex(wi).try_lock()) {
                 held = true;
                 return;
             }
@@ -136,7 +158,7 @@ struct RefreshGuard {
     }
 
     ~RefreshGuard() {
-        if (held) wi->m_refreshMutex2.unlock();
+        if (held) Monero::ZerionWalletAccess::refreshMutex(wi).unlock();
     }
 };
 
@@ -747,7 +769,10 @@ Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_nStopRefreshThre
         JNIEnv *, jclass, jlong h) {
     JNI_GUARD_VOID({
         Wallet *w = asWallet(h);
-        if (w) static_cast<Monero::WalletImpl *>(w)->stopRefresh();
+        if (w) {
+            Monero::ZerionWalletAccess::stopRefresh(
+                    static_cast<Monero::WalletImpl *>(w));
+        }
     })
 }
 
@@ -888,7 +913,9 @@ Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_nTxChange(
         Monero::PendingTransactionImpl *ti =
                 static_cast<Monero::PendingTransactionImpl *>(t);
         uint64_t change = 0;
-        for (const auto &ptx : ti->m_pending_tx) change += ptx.change_dts.amount;
+        for (const auto &ptx : Monero::ZerionWalletAccess::pendingTx(ti)) {
+            change += ptx.change_dts.amount;
+        }
         return (jlong) change;
     })
 }
@@ -920,8 +947,8 @@ Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_nWaitRefreshIdle
         auto deadline = std::chrono::steady_clock::now()
                 + std::chrono::milliseconds(timeoutMs);
         for (;;) {
-            if (wi->m_refreshMutex2.try_lock()) {
-                wi->m_refreshMutex2.unlock();
+            if (Monero::ZerionWalletAccess::refreshMutex(wi).try_lock()) {
+                Monero::ZerionWalletAccess::refreshMutex(wi).unlock();
                 return JNI_TRUE;
             }
             if (std::chrono::steady_clock::now() >= deadline) return JNI_FALSE;
@@ -969,7 +996,7 @@ Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_nLookupTxs(
         }
         if (!req.txs_hashes.empty()) {
             Monero::WalletImpl *wi = static_cast<Monero::WalletImpl *>(w);
-            tools::wallet2 *w2 = wi->m_wallet.get();
+            tools::wallet2 *w2 = Monero::ZerionWalletAccess::wallet2(wi);
             if (timeoutMs < 1000) timeoutMs = 1000;
             if (timeoutMs > 30000) timeoutMs = 30000;
             bool r = w2 && w2->invoke_http_json("/get_transactions", req, res,

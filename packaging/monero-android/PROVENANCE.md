@@ -131,9 +131,40 @@ Notes recorded during bring-up:
   NDK cross compilers are unset before the Monero configure) so the cross build
   never runs a target binary.
 
-## Accepted hashes (clean rebuild on OpenSSL 3.5.8 and expat 2.8.5, 2026-09-22)
+## Accepted hashes (friend accessors and pinned build image, 2026-09-22)
 
-These are the values the Gradle gate enforces since the dependency pins moved
+These are the values the Gradle gate enforces since two changes to the
+recipe. The shim no longer redefines the access specifier around the wallet
+API headers: the build script's third documented patch makes `WalletImpl`
+and `PendingTransactionImpl` declare the shim's `ZerionWalletAccess` struct
+a friend, and the shim reaches the refresh mutex, the constructed
+transactions, `stopRefresh` and the underlying `wallet2` through that struct,
+so every translation unit compiles one class definition (JNI-07). The build
+image is pinned by the base image's content digest and installs its host
+toolchain from a dated Debian snapshot at exact package versions (SC-10);
+the package versions are the ones the previous hashes were produced with.
+The recipe also pins the build clock: OpenSSL writes its build date into
+libcrypto unless `SOURCE_DATE_EPOCH` is set, and two builds of the previous
+recipe differed by exactly that string (which shifts the read-only data
+after it), so `build-monero-android.sh` exports one fixed value on every
+host, including the F-Droid build server, which otherwise sets a per-commit
+value of its own. Nothing else changed: the dependency pins, the Monero
+commit, the NDK and the other two patches are the same. Produced by
+`docker build -t zerion-monero-build:r5 .` from this directory and one fresh
+container per ABI, each from an empty `/build`; a second arm64-v8a build from
+another fresh container produced the same bytes.
+
+- **libzmonero.so arm64-v8a SHA-256:
+  `36fef47d05ec6274f9db7d60c4f3187636dea73cc0c741deea66423f820a66c5`**
+- **libzmonero.so armeabi-v7a SHA-256:
+  `f382b1190f4a9744157ce2041d89cc78fb7c3b459211b3e8abf713d301a4a66c`**
+
+They supersede `7358be68…` / `c4e19ca0…` (OpenSSL 3.5.8 build), listed
+below for the record.
+
+## Previous hashes (clean rebuild on OpenSSL 3.5.8 and expat 2.8.5, 2026-09-22)
+
+These were the values the Gradle gate enforced since the dependency pins moved
 from OpenSSL 1.1.1w (end of life) to OpenSSL 3.5.8 LTS and from expat 2.6.4 to
 expat 2.8.5 (SC-04). Nothing else in the recipe changed: the shim, the build
 script's two documented patches, unbound 1.22.0, the Monero commit and the
