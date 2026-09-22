@@ -123,6 +123,9 @@ class ChannelPullCodec {
 		}
 		BdfDictionary manifest = d.getDictionary("manifest");
 		BdfList postList = d.getList("posts");
+		if (postList.size() > ChannelConstants.PULL_BATCH_MAX_POSTS) {
+			throw new FormatException();
+		}
 		List<ChannelPost> posts = new ArrayList<>(postList.size());
 		for (Object o : postList) {
 			if (!(o instanceof BdfDictionary)) continue;
@@ -131,12 +134,19 @@ class ChannelPullCodec {
 		byte[] envelope = d.getOptionalRaw("contentKeyEnvelope");
 		List<String> hints = new ArrayList<>();
 		BdfList hintList = d.getList("neighbourHints", new BdfList());
+		if (hintList.size() > ChannelConstants.MAX_ANNOUNCED_SUBSCRIBERS) {
+			throw new FormatException();
+		}
 		for (Object o : hintList) {
 			if (o instanceof String) hints.add((String) o);
 		}
 		List<org.zerionproject.app.api.channel.ChannelReaction>
 				reactions = new ArrayList<>();
 		BdfList reactionList = d.getList("reactions", new BdfList());
+		if (reactionList.size() > (long) ChannelConstants.MAX_REACTIONS_PER_POST
+				* ChannelConstants.PULL_BATCH_MAX_POSTS) {
+			throw new FormatException();
+		}
 		for (Object o : reactionList) {
 			if (!(o instanceof BdfDictionary)) continue;
 			BdfDictionary rd = (BdfDictionary) o;
@@ -153,6 +163,9 @@ class ChannelPullCodec {
 		List<org.zerionproject.app.api.channel.ChannelComment>
 				comments = new ArrayList<>();
 		BdfList commentList = d.getList("comments", new BdfList());
+		if (commentList.size() > ChannelConstants.MAX_COMMENTS_PER_CHANNEL) {
+			throw new FormatException();
+		}
 		for (Object o : commentList) {
 			if (!(o instanceof BdfDictionary)) continue;
 			BdfDictionary cd = (BdfDictionary) o;
@@ -253,6 +266,9 @@ class ChannelPullCodec {
 			throws FormatException {
 		List<ChannelPost.ChannelAttachment> atts = new ArrayList<>();
 		BdfList rawAtts = d.getList("attachments", new BdfList());
+		if (rawAtts.size() > ChannelConstants.MAX_ATTACHMENTS_PER_POST) {
+			throw new FormatException();
+		}
 		for (Object o : rawAtts) {
 			if (!(o instanceof BdfDictionary)) continue;
 			BdfDictionary ad = (BdfDictionary) o;
