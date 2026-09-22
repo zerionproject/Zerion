@@ -25,7 +25,7 @@ RUN curl -fsSL -o /tmp/ndk.zip \
 ENV ANDROID_NDK_HOME=/opt/android-ndk-${NDK_VERSION}
 
 # --- Pinned dependency + Monero versions (recorded in PROVENANCE.md) ---
-ENV OPENSSL_VERSION=1.1.1w
+ENV OPENSSL_VERSION=3.5.8
 ENV BOOST_VERSION=1.84.0
 ENV BOOST_UNDERSCORE=1_84_0
 ENV SODIUM_VERSION=1.0.19

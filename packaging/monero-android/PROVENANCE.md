@@ -23,7 +23,9 @@ hashes, and never replaced by an opaque prebuilt download.
 | Component | Pin |
 |---|---|
 | Monero | tag `v0.18.5.1`, commit `4f92268d7c16741cfb41e5bbe2aa46cc260a9ea5` |
-| OpenSSL | `1.1.1w` (openssl.org source tarball) |
+| OpenSSL | `3.5.8` (LTS; openssl.org source tarball, SHA-256 `a8f84a39918ec6415ce765d9b429d313ba97b8143169c172e734b9514464f5b2`, identical on openssl.org and the GitHub release asset with its published `.sha256`) |
+| expat | `2.8.5` (SHA-256 `952c03c33a6b337f12dae7a9b0f9dee86f867550d35c994d6bdaaddd37dc8454`, identical from the GitHub release asset and the SourceForge mirror) |
+| unbound | `1.22.0` (SHA-256 `c5dd1bdef5d5685b2cedb749158dd152c52d44f65529a34ac15cd88d4b1b3d43`) |
 | Boost | `1.84.0` (archives.boost.io) |
 | libsodium | `1.0.19` |
 | Android NDK | r27b (== Android Studio `ndkVersion 27.1.12297006`) |
@@ -40,8 +42,15 @@ become the expected gate on subsequent builds.
 
 ## Build flags relevant to security / compatibility
 
-- `-DUNBOUND_ENABLED=OFF` and `-DUSE_DEVICE_TREZOR=OFF`: no bundled DNS resolver
-  and no hardware-wallet transport. Every Tor-mode daemon address (the vetted
+- `-DUSE_DEVICE_TREZOR=OFF`: no hardware-wallet transport. Monero's build has
+  no switch to leave unbound out: `wallet2` links `libunbound` (and through it
+  expat) for OpenAlias resolution, so both are compiled from the pinned
+  tarballs above and linked statically; the app never calls the OpenAlias
+  path, because every daemon address is validated as an onion or IP literal
+  (or, in Direct mode, resolved by the device) before it reaches the wallet,
+  and `use_ssl=false` keeps TLS out of reach, so the residual exposure of
+  OpenSSL, unbound and expat is their internal use by the wallet library,
+  which is why all three are kept at maintained versions. Every Tor-mode daemon address (the vetted
   set, custom nodes and the own node) is handed to the SOCKS proxy unresolved,
   so Tor resolves it remotely and no local DNS query is made. The one exception
   is the explicit Direct mode, which the user must acknowledge as
@@ -122,9 +131,28 @@ Notes recorded during bring-up:
   NDK cross compilers are unset before the Monero configure) so the cross build
   never runs a target binary.
 
-## Accepted hashes (clean rebuild with the gated shim, 2026-09-22)
+## Accepted hashes (clean rebuild on OpenSSL 3.5.8 and expat 2.8.5, 2026-09-22)
 
-These are the values the Gradle gate enforces since the JNI shim gained
+These are the values the Gradle gate enforces since the dependency pins moved
+from OpenSSL 1.1.1w (end of life) to OpenSSL 3.5.8 LTS and from expat 2.6.4 to
+expat 2.8.5 (SC-04). Nothing else in the recipe changed: the shim, the build
+script's two documented patches, unbound 1.22.0, the Monero commit and the
+NDK are the same as for the previous hashes. Produced by
+`docker build -t zerion-monero-build:r4 .` from this directory and one fresh
+container per ABI, each from an empty `/build`. The arm64 library embeds the
+string `OpenSSL 3.5.8` and no `1.1.1w`.
+
+- **libzmonero.so arm64-v8a SHA-256:
+  `7358be68861ce806770422dcd2b3e68396e60a84e4461ee2b0eae1a64f2c7a5d`**
+- **libzmonero.so armeabi-v7a SHA-256:
+  `c4e19ca0cb36699ff9c0a0ec550119400488a9dd68eb7c08d6754d2212dc4a32`**
+
+They supersede `62471e48…` / `07296eae…` (gated shim build), listed below
+for the record.
+
+## Previous hashes (clean rebuild with the gated shim, 2026-09-22)
+
+These were the values the Gradle gate enforced after the JNI shim gained
 wallet-level synchronisation and the remaining shim findings of the 3.0.11
 assessment were fixed (JNI-02, JNI-03, JNI-04, JNI-06 and the asynchronous
 rescan used by XMR-10). Only `jni/zmonero.cpp` changed; the build script,

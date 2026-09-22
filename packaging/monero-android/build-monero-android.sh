@@ -77,7 +77,7 @@ if [ -f "${DEPS}/lib/libcrypto.a" ] && [ -f "${DEPS}/lib/libssl.a" ]; then
 else
   cd ${SRC}
   [ -f openssl.tar.gz ] || curl -fsSL -o openssl.tar.gz https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz
-  verify_sha256 openssl.tar.gz cf3098950cb4d853ad95c0841f1f9c6d3dc102dccfcacd521d93925208b76ac8
+  verify_sha256 openssl.tar.gz a8f84a39918ec6415ce765d9b429d313ba97b8143169c172e734b9514464f5b2
   rm -rf openssl-${OPENSSL_VERSION}; tar xf openssl.tar.gz
   cd openssl-${OPENSSL_VERSION}
   ANDROID_NDK_ROOT=${NDK} ./Configure ${OSSL_ARCH} -D__ANDROID_API__=${API} \
@@ -150,7 +150,7 @@ EOF
 fi
 [ -f "${DEPS}/lib/libboost_locale.a" ] || { echo "Boost locale build failed"; exit 3; }
 
-EXPAT_VERSION=2.6.4
+EXPAT_VERSION=2.8.5
 UNBOUND_VERSION=1.22.0
 echo "=== [3a] expat ${EXPAT_VERSION} (${ABI}) ==="
 if [ -f "${DEPS}/lib/libexpat.a" ]; then
@@ -160,7 +160,7 @@ else
   EXPAT_TAG=R_$(echo ${EXPAT_VERSION} | tr . _)
   [ -f expat.tar.bz2 ] || curl -fsSL -o expat.tar.bz2 \
     https://github.com/libexpat/libexpat/releases/download/${EXPAT_TAG}/expat-${EXPAT_VERSION}.tar.bz2
-  verify_sha256 expat.tar.bz2 8dc480b796163d4436e6f1352e71800a774f73dbae213f1860b60607d2a83ada
+  verify_sha256 expat.tar.bz2 952c03c33a6b337f12dae7a9b0f9dee86f867550d35c994d6bdaaddd37dc8454
   rm -rf expat-${EXPAT_VERSION}; tar xf expat.tar.bz2
   cd expat-${EXPAT_VERSION}
   ./configure --host=${BINTRIPLE} --prefix=${DEPS} --disable-shared \
