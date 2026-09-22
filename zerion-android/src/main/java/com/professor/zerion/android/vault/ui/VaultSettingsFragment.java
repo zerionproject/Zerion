@@ -47,7 +47,6 @@ public class VaultSettingsFragment extends BaseFragment {
 
 	private View changePasswordCard;
 	private View autolockCard;
-	private SwitchMaterial biometricSwitch;
 	private TextView autolockValue;
 
 	private SwitchMaterial clipboardSwitch;
@@ -82,9 +81,6 @@ public class VaultSettingsFragment extends BaseFragment {
 
 		changePasswordCard = view.findViewById(R.id.change_password_card);
 		autolockCard = view.findViewById(R.id.autolock_card);
-		biometricSwitch = view.findViewById(R.id.biometric_switch);
-		view.findViewById(R.id.biometric_card)
-				.setVisibility(android.view.View.GONE);
 		observeResults();
 		autolockValue = view.findViewById(R.id.autolock_value);
 		clipboardSwitch = view.findViewById(R.id.clipboard_switch);
@@ -185,15 +181,6 @@ public class VaultSettingsFragment extends BaseFragment {
 		autolockCard.setOnClickListener(v -> showAutolockDialog());
 
 		clipboardCard.setOnClickListener(v -> showClipboardTimeoutDialog());
-
-		biometricSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-			if (isChecked) {
-				enableBiometricAuth();
-			} else {
-				disableBiometricAuth();
-			}
-			saveSetting("biometric_enabled", isChecked);
-		});
 
 		clipboardSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
 			saveSetting("clipboard_clear_enabled", isChecked);
@@ -484,7 +471,6 @@ public class VaultSettingsFragment extends BaseFragment {
 		currentClipboardTimeout = securePrefs.getInt("clipboard_timeout", 30);
 		updateClipboardTimeoutDisplay();
 
-		biometricSwitch.setChecked(securePrefs.getBoolean("biometric_enabled", false));
 		clipboardSwitch.setChecked(securePrefs.getBoolean("clipboard_clear_enabled", true));
 		hideContentSwitch.setChecked(securePrefs.getBoolean("hide_content_enabled", true));
 	}
@@ -525,35 +511,6 @@ public class VaultSettingsFragment extends BaseFragment {
 		}
 
 		editor.apply();
-	}
-
-	private void enableBiometricAuth() {
-		if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-			android.hardware.fingerprint.FingerprintManager fingerprintManager =
-				(android.hardware.fingerprint.FingerprintManager) requireContext()
-					.getSystemService(android.content.Context.FINGERPRINT_SERVICE);
-
-			if (fingerprintManager != null && fingerprintManager.isHardwareDetected()) {
-				if (fingerprintManager.hasEnrolledFingerprints()) {
-					saveSetting("biometric_enabled", true);
-					showToast(getString(R.string.vault_biometric_enabled));
-				} else {
-					showToast(getString(R.string.vault_biometric_no_fingerprints));
-					biometricSwitch.setChecked(false);
-				}
-			} else {
-				showToast(getString(R.string.vault_biometric_no_hardware));
-				biometricSwitch.setChecked(false);
-			}
-		} else {
-			showToast(getString(R.string.vault_biometric_unsupported));
-			biometricSwitch.setChecked(false);
-		}
-	}
-
-	private void disableBiometricAuth() {
-		saveSetting("biometric_enabled", false);
-		showToast(getString(R.string.vault_biometric_disabled));
 	}
 
 	private void observeViewModel() {

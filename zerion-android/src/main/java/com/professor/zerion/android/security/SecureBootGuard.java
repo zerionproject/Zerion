@@ -117,9 +117,11 @@ public final class SecureBootGuard {
 		return RESULT_OK;
 	}
 
-	// USB or wireless debugging enabled. Read from Settings.Global, which an
-	// app can read directly; a socket probe of adbd is blocked by SELinux for
-	// untrusted apps on modern Android and misses USB debugging entirely.
+	/**
+	 * USB or wireless debugging enabled, read from Settings.Global, which an
+	 * app can read directly; a socket probe of adbd is blocked by SELinux
+	 * for untrusted apps on modern Android and misses USB debugging.
+	 */
 	public static boolean adbEnabled(Context ctx) {
 		try {
 			android.content.ContentResolver cr = ctx.getContentResolver();
@@ -211,18 +213,9 @@ public final class SecureBootGuard {
 			} catch (Exception ignored) {
 			}
 		}
-		if (procMapsContainsAny(new String[]{
+		return procMapsContainsAny(new String[]{
 				"frida-agent", "frida-gadget", "libfrida", "gum-js-loop",
-				"gmain", "linjector"})) {
-			return true;
-		}
-		try (java.net.Socket s = new java.net.Socket()) {
-			s.connect(new java.net.InetSocketAddress("127.0.0.1", 27042),
-					250);
-			return true;
-		} catch (Exception ignored) {
-		}
-		return false;
+				"gmain", "linjector"});
 	}
 
 	private static boolean xposedArtifactsPresent() {

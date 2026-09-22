@@ -40,10 +40,13 @@ public class DecoyCalculatorActivity extends Activity {
 			java.util.concurrent.Executors.newSingleThreadExecutor();
 	private final java.util.concurrent.atomic.AtomicBoolean verifying =
 			new java.util.concurrent.atomic.AtomicBoolean(false);
+	private DecoyUnlockThrottle unlockThrottle;
 
 	@Override
 	protected void onCreate(@Nullable Bundle state) {
 		super.onCreate(state);
+		unlockThrottle = new DecoyUnlockThrottle(
+				new java.io.File(getFilesDir(), "decoy.lockout"));
 		setContentView(R.layout.activity_decoy_calculator);
 		display = findViewById(R.id.decoyDisplay);
 		bindDigit(R.id.btn0, '0');
@@ -136,7 +139,11 @@ public class DecoyCalculatorActivity extends Activity {
 			decoyExecutor.execute(() -> {
 				boolean ok = false;
 				try {
-					ok = DecoyConfig.verify(this, candidate);
+					if (unlockThrottle.allow()) {
+						ok = DecoyConfig.verify(this, candidate);
+						if (ok) unlockThrottle.passed();
+						else unlockThrottle.failed();
+					}
 				} finally {
 					Arrays.fill(candidate, '\0');
 					verifying.set(false);

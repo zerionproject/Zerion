@@ -312,7 +312,16 @@ public class ProfilesFragment extends Fragment {
 				.setMessage(msg)
 				.setIcon(R.drawable.ic_warning)
 				.setPositiveButton(R.string.profiles_delete_action,
-						(d, w) -> doDeleteActiveProfile())
+						(d, w) -> AccountPasswordGate.prompt(requireContext(),
+								accountManager, io,
+								new android.os.Handler(
+										android.os.Looper.getMainLooper()),
+								R.string.settings_password_required_title,
+								R.string.settings_password_required_message,
+								() -> {
+									if (isAdded()) doDeleteActiveProfile();
+								}, () -> {
+								}))
 				.setNegativeButton(R.string.cancel, null)
 				.show();
 	}

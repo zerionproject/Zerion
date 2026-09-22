@@ -9,6 +9,7 @@ public class TransferException extends Exception {
 		CONNECT_FAILED,
 		CANCELLED,
 		PROTOCOL,
+		CODE_MISMATCH,
 		IMPORT_FAILED,
 		IO_ERROR
 	}

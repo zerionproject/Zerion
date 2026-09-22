@@ -690,8 +690,6 @@
 	<string name="vault_settings_change_master">Hoofdwachtwoord wijzigen</string>
 	<string name="vault_settings_change_master_summary">Werk je kluiswachtwoord bij</string>
 	<string name="vault_settings_autolock">Time-out voor automatisch vergrendelen</string>
-	<string name="vault_settings_biometric">Biometrisch ontgrendelen</string>
-	<string name="vault_settings_biometric_summary">Gebruik vingerafdruk- of gezichtsontgrendeling</string>
 	<string name="vault_settings_clear_clipboard">Klembord wissen na</string>
 	<string name="vault_settings_hide_content">Inhoud verbergen in app-overzicht</string>
 	<string name="vault_settings_hide_content_summary">Vervaag kluisinhoud bij het wisselen van apps</string>
@@ -934,6 +932,9 @@
 	<string name="hardened_block_disable_title">Verstevigde modus uitschakelen?</string>
 	<string name="hardened_block_disable_message">Zerion zal op dit apparaat starten. De reden waarom het weigerde is er nog steeds. Schakel dit alleen uit als je het risico begrijpt.</string>
 	<string name="hardened_block_disable_confirm">Uitschakelen</string>
+	<string name="settings_password_required_title">Bevestig je accountwachtwoord</string>
+	<string name="settings_password_required_message">Deze instelling beschermt je account. Voer je accountwachtwoord in om die te wijzigen.</string>
+	<string name="settings_password_wrong">Verkeerd wachtwoord. De instelling is niet gewijzigd.</string>
 	<string name="hardened_block_password_hint">Accountwachtwoord</string>
 	<string name="hardened_block_password_wrong">Verkeerd wachtwoord. Hardened mode blijft aan.</string>
 	<string name="hardened_block_password_locked">Te veel verkeerde wachtwoorden. Probeer het over %1$d minuten opnieuw.</string>
@@ -1402,9 +1403,11 @@
 	<string name="transfer_send_title">Naar een nieuwe telefoon sturen</string>
 	<string name="transfer_receive_password_message">Stel een wachtwoord in om het ontvangen account op deze telefoon te beschermen. Je logt hiermee in.</string>
 	<string name="transfer_receive_show_qr">Scan deze code met de oude telefoon</string>
-	<string name="transfer_sas_title">Controleer het veiligheidsnummer</string>
-	<string name="transfer_sas_message">Beide telefoons moeten hetzelfde nummer tonen:\n\n%1$s\n\nKomt het overeen op de andere telefoon?</string>
-	<string name="transfer_sas_matches">Het komt overeen</string>
+	<string name="transfer_code_title">Voer de code van de nieuwe telefoon in</string>
+	<string name="transfer_code_message">De nieuwe telefoon toont nu een code van 6 cijfers. Typ die hier. Het account wordt alleen naar de telefoon gestuurd die deze code toont.</string>
+	<string name="transfer_code_hint">Code van 6 cijfers</string>
+	<string name="transfer_code_confirm">Account versturen</string>
+	<string name="transfer_code_show">Voer deze code in op de oude telefoon:\n\n%1$s</string>
 	<string name="transfer_done_title">Klaar</string>
 	<string name="transfer_failed_title">Overdracht mislukt</string>
 	<string name="transfer_failed_message">De overdracht is niet voltooid. Zorg dat beide telefoons met Tor verbonden zijn en probeer opnieuw.</string>
@@ -1419,6 +1422,7 @@
 	<string name="transfer_status_working">Bezig</string>
 	<string name="transfer_send_show_qr">Scan deze code met de nieuwe telefoon</string>
 	<string name="backup_password_empty">Voer een wachtwoordzin in</string>
+	<string name="backup_password_too_short">De wachtwoordzin moet minimaal 8 tekens bevatten. Het bestand bevat je databasesleutel, dus iedereen met het bestand kan offline wachtwoordzinnen proberen.</string>
 	<string name="backup_passwords_mismatch">Wachtwoorden komen niet overeen</string>
 	<string name="welcome_title">Welkom bij Zerion</string>
 	<string name="welcome_subtitle">Maak een nieuw account aan of breng een bestaand account over van een andere telefoon.</string>
@@ -1660,11 +1664,6 @@
 	<string name="vault_no_file_picker">Geen bestandskiezer beschikbaar</string>
 	<string name="vault_settings_wipe_message">Hiermee worden alle kluisgegevens permanent verwijderd. Dit kan niet ongedaan worden gemaakt. Weet je het heel zeker?</string>
 	<string name="vault_wipe_button">Kluis wissen</string>
-	<string name="vault_biometric_enabled">Biometrische authenticatie ingeschakeld</string>
-	<string name="vault_biometric_no_fingerprints">Geen vingerafdrukken geregistreerd</string>
-	<string name="vault_biometric_no_hardware">Biometrische hardware niet beschikbaar</string>
-	<string name="vault_biometric_unsupported">Biometrische authenticatie wordt niet ondersteund op dit apparaat</string>
-	<string name="vault_biometric_disabled">Biometrische authenticatie uitgeschakeld</string>
 	<string name="vault_document_opening">%1$s openen…</string>
 	<string name="vault_document_open_error">Kan document niet openen: activiteit niet gereed</string>
 	<string name="vault_document_details_title">Documentdetails</string>

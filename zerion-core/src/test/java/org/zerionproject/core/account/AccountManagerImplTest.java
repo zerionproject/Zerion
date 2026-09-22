@@ -430,6 +430,44 @@ public class AccountManagerImplTest extends BrambleMockTestCase {
 		assertFalse(new File(keyDir, "login.lockout").exists());
 	}
 
+	/**
+	 * A2-AND-02: a password change verifies the old password through the
+	 * same throttle as sign-in, so it is not an unthrottled oracle for the
+	 * account password on an unlocked device.
+	 */
+	@Test
+	public void changePasswordIsThrottledLikeSignIn() throws Exception {
+		java.util.concurrent.atomic.AtomicLong mono =
+				new java.util.concurrent.atomic.AtomicLong(1_000);
+		AccountManagerImpl m = throttled(mono);
+		context.checking(new Expectations() {{
+			exactly(3).of(crypto).decryptWithPassword(encryptedKey, password,
+					keyStrengthener);
+			will(throwException(new DecryptionException(INVALID_PASSWORD)));
+		}});
+		storeDatabaseKey(keyFile, encryptedKeyHex);
+		storeDatabaseKey(keyBackupFile, encryptedKeyHex);
+		for (int i = 0; i < 3; i++) {
+			try {
+				m.changePassword(password, newPassword);
+				fail();
+			} catch (DecryptionException expected) {
+				assertEquals(INVALID_PASSWORD, expected.getDecryptionResult());
+			}
+		}
+		assertEquals("each wrong old password counts", 3,
+				m.failedSignInAttempts());
+		assertTrue(m.signInLockoutRemainingMs() > 0);
+		try {
+			m.changePassword(password, newPassword);
+			fail("a locked account refuses without a decryption");
+		} catch (DecryptionException expected) {
+			assertEquals(org.zerionproject.core.api.crypto.DecryptionResult
+					.INVALID_CIPHERTEXT, expected.getDecryptionResult());
+		}
+		assertEquals(encryptedKeyHex, loadDatabaseKey(keyFile));
+	}
+
 	private AccountManagerImpl throttled(
 			java.util.concurrent.atomic.AtomicLong mono) {
 		return new AccountManagerImpl(databaseConfig, crypto,

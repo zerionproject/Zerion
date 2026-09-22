@@ -151,8 +151,6 @@
 	<string name="vault_settings_change_master">Change master password</string>
 	<string name="vault_settings_change_master_summary">Update your vault password</string>
 	<string name="vault_settings_autolock">Auto-lock timeout</string>
-	<string name="vault_settings_biometric">Biometric unlock</string>
-	<string name="vault_settings_biometric_summary">Use fingerprint or face unlock</string>
 	<string name="vault_settings_clear_clipboard">Clear clipboard after</string>
 	<string name="vault_settings_hide_content">Hide content in app switcher</string>
 	<string name="vault_settings_hide_content_summary">Blur vault content when switching apps</string>
@@ -479,6 +477,9 @@
 	<string name="hardened_block_disable_title">Turn off hardened mode?</string>
 	<string name="hardened_block_disable_message">Zerion will start on this device. The reason it refused is still there. Only turn this off if you understand the risk.</string>
 	<string name="hardened_block_disable_confirm">Turn off</string>
+	<string name="settings_password_required_title">Confirm your account password</string>
+	<string name="settings_password_required_message">This setting protects your account. Enter your account password to change it.</string>
+	<string name="settings_password_wrong">Wrong password. The setting was not changed.</string>
 	<string name="hardened_block_password_hint">Account password</string>
 	<string name="hardened_block_password_wrong">Wrong password. Hardened mode stays on.</string>
 	<string name="hardened_block_password_locked">Too many wrong passwords. Try again in %1$d minutes.</string>
@@ -1336,9 +1337,11 @@
 	<string name="transfer_send_title">Send to a new phone</string>
 	<string name="transfer_receive_password_message">Set a password to protect the received account on this phone. You will sign in with it.</string>
 	<string name="transfer_receive_show_qr">Scan this code with the old phone</string>
-	<string name="transfer_sas_title">Check the safety number</string>
-	<string name="transfer_sas_message">Both phones must show the same number:\n\n%1$s\n\nDoes it match on the other phone?</string>
-	<string name="transfer_sas_matches">It matches</string>
+	<string name="transfer_code_title">Enter the code from the new phone</string>
+	<string name="transfer_code_message">The new phone now shows a 6-digit code. Type it here. The account is sent only to the phone that shows this code.</string>
+	<string name="transfer_code_hint">6-digit code</string>
+	<string name="transfer_code_confirm">Send account</string>
+	<string name="transfer_code_show">Enter this code on the old phone:\n\n%1$s</string>
 	<string name="transfer_done_title">Done</string>
 	<string name="transfer_failed_title">Transfer failed</string>
 	<string name="transfer_failed_message">The transfer did not complete. Make sure both phones are connected to Tor and try again.</string>
@@ -1353,6 +1356,7 @@
 	<string name="transfer_status_working">Working</string>
 	<string name="transfer_send_show_qr">Scan this code with the new phone</string>
 	<string name="backup_password_empty">Enter a passphrase</string>
+	<string name="backup_password_too_short">The passphrase must be at least 8 characters. The file contains your database key, so anyone with the file can try passphrases offline.</string>
 	<string name="backup_passwords_mismatch">Passwords do not match</string>
 
 	<!-- First-run welcome -->
@@ -1878,11 +1882,6 @@
 	<string name="vault_no_file_picker">No file picker available</string>
 	<string name="vault_settings_wipe_message">This will permanently delete all vault data. This action cannot be undone. Are you absolutely sure?</string>
 	<string name="vault_wipe_button">Wipe vault</string>
-	<string name="vault_biometric_enabled">Biometric authentication enabled</string>
-	<string name="vault_biometric_no_fingerprints">No fingerprints enrolled</string>
-	<string name="vault_biometric_no_hardware">Biometric hardware not available</string>
-	<string name="vault_biometric_unsupported">Biometric authentication not supported on this device</string>
-	<string name="vault_biometric_disabled">Biometric authentication disabled</string>
 
 	<string name="vault_document_opening">Opening %1$s…</string>
 	<string name="vault_document_open_error">Cannot open document: activity not ready</string>

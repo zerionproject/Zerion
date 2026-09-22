@@ -465,7 +465,7 @@ public class VaultWalletFragment extends BaseFragment {
 			}
 		});
 		viewModel.getWalletSeedReveal().observe(getViewLifecycleOwner(), seed -> {
-			if (seed != null && !seed.isEmpty()) {
+			if (seed != null && seed.length > 0) {
 				viewModel.clearSeedReveal();
 				showSeedDialog(seed);
 			}
@@ -1543,7 +1543,7 @@ public class VaultWalletFragment extends BaseFragment {
 				.show());
 	}
 
-	private void showSeedDialog(String seed) {
+	private void showSeedDialog(char[] seed) {
 		Context ctx = requireContext();
 		LinearLayout box = new LinearLayout(ctx);
 		box.setOrientation(LinearLayout.VERTICAL);
@@ -1551,23 +1551,30 @@ public class VaultWalletFragment extends BaseFragment {
 		box.setPadding(p, dp(8), p, 0);
 
 		TextView words = new TextView(ctx);
-		words.setText(seed);
+		words.setText(seed, 0, seed.length);
 		words.setTextIsSelectable(true);
 		words.setTextSize(16);
 		words.setLineSpacing(dp(4), 1f);
 		words.setTextColor(colorRes(R.color.zerion_text_primary));
 		box.addView(words);
 
-		track(new SecureAlertDialogBuilder(ctx)
+		androidx.appcompat.app.AlertDialog dialog =
+				new SecureAlertDialogBuilder(ctx)
 				.setTitle(R.string.wallet_backup_title)
 				.setMessage(R.string.wallet_backup_warning)
 				.setView(box)
 				.setPositiveButton(android.R.string.ok, null)
 				.setNeutralButton(R.string.wallet_copy_phrase, (d, w) -> {
-					copySensitiveToClipboard(seed);
+					copySensitiveToClipboard(new String(seed));
 					toast(getString(R.string.wallet_phrase_copied));
 				})
-				.show());
+				.create();
+		dialog.setOnDismissListener(d -> {
+			words.setText("");
+			java.util.Arrays.fill(seed, '\0');
+		});
+		track(dialog);
+		dialog.show();
 	}
 
 	private void showWalletSettings() {

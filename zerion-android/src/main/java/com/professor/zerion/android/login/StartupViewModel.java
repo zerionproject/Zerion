@@ -175,18 +175,50 @@ public class StartupViewModel extends AndroidViewModel
 		notificationManager.clearSignInNotification();
 	}
 
+	/** Whether a password is the duress password, when one is set. */
+	interface DuressCheck {
+		boolean matches(char[] password);
+	}
+
+	private volatile DuressCheck duressCheck = password -> {
+		try {
+			WipePasswordManager wpm =
+					WipePasswordManager.getInstance(getApplication());
+			return wpm != null && wpm.isWipePasswordEnabled()
+					&& wpm.verifyWipePassword(password);
+		} catch (Exception e) {
+			return false;
+		}
+	};
+
+	void setDuressCheck(DuressCheck check) {
+		duressCheck = check;
+	}
+
+	/**
+	 * The duress password is honoured on every path that does not sign in:
+	 * a wrong password, an unavailable key strengthener and, above all, an
+	 * active lockout, which is exactly when a coerced user needs it after a
+	 * coercer's own guesses.
+	 */
 	void validatePassword(char[] password) {
 		ioExecutor.execute(() -> {
 			synchronized (bruteForceProtection) {
 				LockStatus lockStatus = bruteForceProtection.checkLockStatus();
 				if (lockStatus.isLocked) {
-					lockoutStatus.postEvent(lockStatus);
+					boolean duress = duressCheck.matches(password);
 					Arrays.fill(password, '\0');
+					if (duress) {
+						wipeForDuress();
+					} else {
+						lockoutStatus.postEvent(lockStatus);
+					}
 					return;
 				}
 			}
 
 			boolean cryptographicFailure = false;
+			boolean strengthenerFailure = false;
 			DecryptionResult decryptionResult = null;
 
 			try {
@@ -212,7 +244,7 @@ public class StartupViewModel extends AndroidViewModel
 			} catch (DecryptionException e) {
 				decryptionResult = e.getDecryptionResult();
 				if (decryptionResult == DecryptionResult.KEY_STRENGTHENER_ERROR) {
-					operationalFailure.postEvent(true);
+					strengthenerFailure = true;
 				} else {
 					cryptographicFailure = true;
 				}
@@ -220,37 +252,34 @@ public class StartupViewModel extends AndroidViewModel
 				operationalFailure.postEvent(true);
 			}
 
-			boolean duressMatch = false;
-			if (cryptographicFailure) {
-				try {
-					WipePasswordManager wpm =
-							WipePasswordManager.getInstance(getApplication());
-					if (wpm != null && wpm.isWipePasswordEnabled()
-							&& wpm.verifyWipePassword(password)) {
-						duressMatch = true;
-					}
-				} catch (Exception ignored) {
-				}
-			}
+			boolean duressMatch = (cryptographicFailure || strengthenerFailure)
+					&& duressCheck.matches(password);
 			Arrays.fill(password, '\0');
 
 			if (duressMatch) {
-				try {
-					AccountWipeCleanup.wipe(getApplication(), vaultManager);
-					accountManager.deleteAccount();
-				} catch (Exception ignored) {
-				}
-				synchronized (bruteForceProtection) {
-					bruteForceProtection.clear();
-				}
-				triggerWipe.postEvent(true);
+				wipeForDuress();
 				return;
 			}
-
+			if (strengthenerFailure) {
+				operationalFailure.postEvent(true);
+				return;
+			}
 			if (cryptographicFailure && decryptionResult != null) {
 				handleCryptographicFailure(decryptionResult);
 			}
 		});
+	}
+
+	private void wipeForDuress() {
+		try {
+			AccountWipeCleanup.wipe(getApplication(), vaultManager);
+			accountManager.deleteAccount();
+		} catch (Exception ignored) {
+		}
+		synchronized (bruteForceProtection) {
+			bruteForceProtection.clear();
+		}
+		triggerWipe.postEvent(true);
 	}
 
 	private void handleCryptographicFailure(DecryptionResult result) {

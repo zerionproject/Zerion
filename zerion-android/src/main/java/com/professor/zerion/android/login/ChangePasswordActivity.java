@@ -214,6 +214,12 @@ public class ChangePasswordActivity extends ZerionActivity
 		progress.setVisibility(INVISIBLE);
 		if (result == KEY_STRENGTHENER_ERROR) {
 			createKeyStrengthenerErrorDialog(this).show();
+		} else if (viewModel.lockoutRemainingMs() > 0) {
+			setError(currentPasswordEntryWrapper, getString(
+					R.string.hardened_block_password_locked,
+					(int) Math.ceil(viewModel.lockoutRemainingMs() / 60000.0)),
+					true);
+			currentPassword.setText("");
 		} else {
 			setError(currentPasswordEntryWrapper,
 					getString(R.string.try_again), true);

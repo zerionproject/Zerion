@@ -34,6 +34,27 @@ public class SqlCipherOpenPolicyTest {
 		return new SQLException("Failed to configure database", inner);
 	}
 
+	/**
+	 * A file missing one of the expected tables is not provably empty: it
+	 * is a failed probe, which never deletes, instead of an empty database
+	 * that would be reset.
+	 */
+	@Test
+	public void aMissingTableIsAFailedProbeNotAnEmptyDatabase() {
+		assertEquals(Probe.FAILED, SqlCipherOpenPolicy.probe(false, true, 0));
+		assertEquals(Probe.FAILED, SqlCipherOpenPolicy.probe(true, false, 0));
+		assertEquals(Probe.FAILED, SqlCipherOpenPolicy.probe(true, false, 5));
+		assertEquals(Probe.OPENED_WITHOUT_IDENTITY,
+				SqlCipherOpenPolicy.probe(true, true, 0));
+		assertEquals(Probe.OPENED_WITH_IDENTITY,
+				SqlCipherOpenPolicy.probe(true, true, 1));
+		assertEquals("never a reset for a missing table",
+				Action.FAIL_CLOSED, decide(false,
+						SqlCipherOpenPolicy.probe(true, false, 0)));
+		assertEquals(Action.QUARANTINE_INCOMPLETE, decide(true,
+				SqlCipherOpenPolicy.probe(false, false, 0)));
+	}
+
 	@Test
 	public void testOpenedWithIdentityIsReusedWhateverTheMarkerSays() {
 		assertEquals(Action.REOPEN, decide(false, Probe.OPENED_WITH_IDENTITY));

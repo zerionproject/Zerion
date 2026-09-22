@@ -78,7 +78,7 @@ public class VaultManager
 				org.zerionproject.core.account.LoginThrottle.linuxBootId(),
 				org.zerionproject.core.account.LoginThrottle.VAULT);
 
-		this.lastActivityTime = System.currentTimeMillis();
+		this.lastActivityTime = android.os.SystemClock.elapsedRealtime();
 	}
 
 	public boolean vaultExists() {
@@ -361,13 +361,14 @@ public class VaultManager
 	}
 
 	public synchronized void checkAutoLock() {
-		if (isUnlocked && System.currentTimeMillis() - lastActivityTime > AUTO_LOCK_TIMEOUT_MS) {
+		if (isUnlocked && android.os.SystemClock.elapsedRealtime()
+				- lastActivityTime > AUTO_LOCK_TIMEOUT_MS) {
 			lockVault();
 		}
 	}
 
 	public synchronized void updateActivity() {
-		lastActivityTime = System.currentTimeMillis();
+		lastActivityTime = android.os.SystemClock.elapsedRealtime();
 	}
 
 	/**
@@ -386,7 +387,8 @@ public class VaultManager
 	}
 
 	public synchronized boolean isUnlocked() {
-		if (this.isUnlocked && System.currentTimeMillis() - lastActivityTime > AUTO_LOCK_TIMEOUT_MS) {
+		if (this.isUnlocked && android.os.SystemClock.elapsedRealtime()
+				- lastActivityTime > AUTO_LOCK_TIMEOUT_MS) {
 			lockVault();
 			return false;
 		}
@@ -808,7 +810,30 @@ public class VaultManager
 		currentHeader = null;
 	}
 
+	/**
+	 * Every check of the master password outside an unlock goes through the
+	 * unlock throttle and its time floor as well, so a password change or
+	 * a verification prompt on an unlocked vault is not a faster oracle
+	 * than the unlock screen.
+	 */
 	private synchronized boolean verifyPassword(char[] candidate)
+			throws Exception {
+		if (unlockThrottle.remainingLockoutMs() > 0) {
+			throw new SecurityException("Too many failed attempts");
+		}
+		long start = android.os.SystemClock.elapsedRealtime();
+		boolean ok = false;
+		try {
+			ok = verifyPasswordUnthrottled(candidate);
+			return ok;
+		} finally {
+			if (ok) unlockThrottle.reset();
+			else unlockThrottle.recordFailure();
+			enforceUnlockTimeFloor(start);
+		}
+	}
+
+	private boolean verifyPasswordUnthrottled(char[] candidate)
 			throws Exception {
 		if (currentHeader == null) loadVaultHeader();
 		if (currentHeader.passwordVerificationMac == null

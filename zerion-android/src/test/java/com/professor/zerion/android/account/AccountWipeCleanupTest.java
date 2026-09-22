@@ -50,6 +50,8 @@ public class AccountWipeCleanupTest {
 		String defaultPrefs = app.getPackageName() + "_preferences";
 		for (String name : PREFS) write(app, name);
 		write(app, defaultPrefs);
+		app.getSharedPreferences("chat_settings", MODE_PRIVATE).edit()
+				.putBoolean("mute_7", true).commit();
 		app.getSharedPreferences("unrelated", MODE_PRIVATE).edit()
 				.putString("keep", "y").commit();
 		for (String alias : ALIASES) generateAesKey(alias);
@@ -69,8 +71,16 @@ public class AccountWipeCleanupTest {
 		for (String alias : ALIASES) {
 			assertFalse(alias, keyStore.containsAlias(alias));
 		}
-		assertEquals("y", app.getSharedPreferences("unrelated", MODE_PRIVATE)
-				.getString("keep", null));
+		assertTrue("A2-AND-05: no preferences file survives a wipe",
+				app.getSharedPreferences("chat_settings", MODE_PRIVATE)
+						.getAll().isEmpty());
+		assertTrue(app.getSharedPreferences("unrelated", MODE_PRIVATE)
+				.getAll().isEmpty());
+		java.io.File dir = new java.io.File(app.getApplicationInfo().dataDir,
+				"shared_prefs");
+		java.io.File[] left = dir.listFiles();
+		assertTrue("files left: " + java.util.Arrays.toString(left),
+				left == null || left.length == 0);
 	}
 
 	private static void write(Context app, String name) {

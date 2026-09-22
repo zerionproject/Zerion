@@ -146,6 +146,11 @@ public class LockManagerImpl implements LockManager, Service, EventListener {
 		}
 	}
 
+	/**
+	 * The app lock rides on the device screen lock: when the device lock is
+	 * removed there is no credential left to ask for, so a pending app lock
+	 * is released and the setting is hidden until a screen lock exists.
+	 */
 	@Override
 	public boolean isLocked() {
 		if (locked && !hasScreenLock(appContext)) {

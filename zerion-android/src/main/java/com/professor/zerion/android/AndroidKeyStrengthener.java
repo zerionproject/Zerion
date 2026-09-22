@@ -64,10 +64,15 @@ class AndroidKeyStrengthener implements KeyStrengthener {
 	@GuardedBy("this")
 	@Nullable
 	private javax.crypto.SecretKey storedKey = null;
+	/** The last lookup threw: the key may exist but cannot be read now. */
+	@GuardedBy("this")
+	@Nullable
+	private GeneralSecurityException lookupFailure = null;
 
 	@Override
 	public synchronized boolean isInitialised() {
 		if (storedKey != null) return true;
+		lookupFailure = null;
 		try {
 			KeyStore ks = KeyStore.getInstance(KEY_STORE_TYPE);
 			ks.load(null);
@@ -78,21 +83,50 @@ class AndroidKeyStrengthener implements KeyStrengthener {
 			}
 			return false;
 		} catch (GeneralSecurityException e) {
+			lookupFailure = e;
 			return false;
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
+	/**
+	 * A key is generated only when the alias is provably absent. A lookup
+	 * that threw, or an alias that exists but cannot be read, is a
+	 * temporary failure: generating a new key under the alias would make
+	 * every profile's stored key undecryptable for good.
+	 */
 	@Override
 	public synchronized SecretKey strengthenKey(SecretKey k) {
 		try {
-			if (!isInitialised()) initialise();
+			if (!isInitialised()) {
+				if (lookupFailure != null) {
+					throw new org.zerionproject.core.api.crypto
+							.KeyStrengthenerException(lookupFailure);
+				}
+				if (aliasMayExist()) {
+					throw new org.zerionproject.core.api.crypto
+							.KeyStrengthenerException(
+							new GeneralSecurityException(
+									"key entry present but unreadable"));
+				}
+				initialise();
+			}
 			Mac mac = Mac.getInstance(KEY_ALGORITHM_HMAC_SHA256);
 			mac.init(storedKey);
 			return new SecretKey(mac.doFinal(k.getBytes()));
 		} catch (GeneralSecurityException e) {
 			throw new RuntimeException(e);
+		}
+	}
+
+	private boolean aliasMayExist() {
+		try {
+			KeyStore ks = KeyStore.getInstance(KEY_STORE_TYPE);
+			ks.load(null);
+			return ks.containsAlias(KEY_ALIAS);
+		} catch (GeneralSecurityException | IOException e) {
+			return true;
 		}
 	}
 

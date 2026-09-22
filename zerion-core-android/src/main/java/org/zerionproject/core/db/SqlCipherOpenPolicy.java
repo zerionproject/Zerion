@@ -47,6 +47,22 @@ final class SqlCipherOpenPolicy {
 	private SqlCipherOpenPolicy() {
 	}
 
+	/**
+	 * What a successful connection to an existing file tells us. Only a
+	 * database that has both expected tables and no identity row is
+	 * provably empty; a file missing a table is not a Zerion database of
+	 * this schema (a downgrade, a foreign file) and must be treated as a
+	 * failed probe so it is never deleted as empty.
+	 */
+	static Probe probe(boolean settingsTablePresent,
+			boolean identityTablePresent, long identityRows) {
+		if (!settingsTablePresent || !identityTablePresent) {
+			return Probe.FAILED;
+		}
+		return identityRows > 0 ? Probe.OPENED_WITH_IDENTITY
+				: Probe.OPENED_WITHOUT_IDENTITY;
+	}
+
 	static Action decide(boolean setupMarkerPresent, Probe probe) {
 		switch (probe) {
 			case OPENED_WITH_IDENTITY:

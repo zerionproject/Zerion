@@ -57,6 +57,9 @@ public class SecurityFragment extends Fragment {
 	com.professor.zerion.android.login.BruteForceProtection
 			bruteForceProtection;
 
+	@Inject
+	org.zerionproject.core.api.account.AccountManager accountManager;
+
 	private SettingsViewModel viewModel;
 	private WipePasswordManager wipePasswordManager;
 
@@ -210,21 +213,25 @@ public class SecurityFragment extends Fragment {
 					(buttonView, isChecked) -> {
 				if (!buttonView.isPressed()) return;
 				if (isChecked) {
-					showWipeOnFailedLoginsDialog();
+					withAccountPassword(this::showWipeOnFailedLoginsDialog,
+							() -> wipeOnFailedLoginsSwitch.setChecked(false));
 				} else {
-					bruteForceProtection.setWipeOnRepeatedFailures(false);
+					withAccountPassword(() -> bruteForceProtection
+									.setWipeOnRepeatedFailures(false),
+							() -> wipeOnFailedLoginsSwitch.setChecked(true));
 				}
 			});
 		}
 
-		wipePasswordCard.setOnClickListener(v -> {
+		wipePasswordCard.setOnClickListener(v -> withAccountPassword(() -> {
 			WipePasswordManager mgr = getWipePasswordManager();
 			if (mgr != null && mgr.isWipePasswordEnabled()) {
 				showWipePasswordRemoveDialog();
 			} else {
 				showWipePasswordSetDialog();
 			}
-		});
+		}, () -> {
+		}));
 
 		View hardenedCard = view.findViewById(R.id.hardened_mode_card);
 		if (hardenedCard != null) {
@@ -238,6 +245,23 @@ public class SecurityFragment extends Fragment {
 
 		observeSettings();
 		updateWipePasswordSummary();
+	}
+
+	/**
+	 * Runs {@code granted} only after the account password is re-entered
+	 * through the sign-in throttle; {@code refused} restores the control.
+	 */
+	private void withAccountPassword(Runnable granted, Runnable refused) {
+		if (!isAdded()) return;
+		AccountPasswordGate.prompt(requireContext(), accountManager,
+				kdfExecutor, mainHandler,
+				R.string.settings_password_required_title,
+				R.string.settings_password_required_message,
+				() -> {
+					if (isAdded()) granted.run();
+				}, () -> {
+					if (isAdded()) refused.run();
+				});
 	}
 
 	private String buildHardenedSummary() {
@@ -527,10 +551,13 @@ public class SecurityFragment extends Fragment {
 						Toast.LENGTH_LONG).show();
 				return;
 			}
-			com.professor.zerion.android.decoy.DecoyConfig
-					.setEnabled(requireContext(), isChecked);
+			withAccountPassword(() -> com.professor.zerion.android.decoy
+							.DecoyConfig.setEnabled(requireContext(), isChecked),
+					() -> decoySwitch.setChecked(!isChecked));
 		});
-		decoySetCodeCard.setOnClickListener(v -> showDecoySetCodeDialog());
+		decoySetCodeCard.setOnClickListener(v ->
+				withAccountPassword(this::showDecoySetCodeDialog, () -> {
+				}));
 		updateDecoyCodeSummary();
 	}
 

@@ -84,7 +84,7 @@ public class VaultViewModel extends AndroidViewModel {
 	private final MutableLiveData<double[]> btcFeeOptions = new MutableLiveData<>();
 	private final MutableLiveData<com.professor.zerion.android.vault.wallet.btc
 			.BtcPrice.Rates> btcRates = new MutableLiveData<>();
-	private final MutableLiveData<String> walletSeedReveal = new MutableLiveData<>();
+	private final MutableLiveData<char[]> walletSeedReveal = new MutableLiveData<>();
 	private final MutableLiveData<Boolean> walletGateGranted = new MutableLiveData<>();
 	private final MutableLiveData<Boolean> walletGateBusy = new MutableLiveData<>(false);
 	private final MutableLiveData<String> walletAuthState = new MutableLiveData<>();
@@ -188,7 +188,7 @@ public class VaultViewModel extends AndroidViewModel {
 				mnemonic = generateMnemonic();
 				walletStore.createWallet(WalletCoin.BTC, name, mnemonic, password);
 				postBtcWallets();
-				walletSeedReveal.postValue(new String(mnemonic));
+				walletSeedReveal.postValue(mnemonic.clone());
 			} catch (Throwable e) {
 				walletError.postValue(new Event<>(
 						getApplication().getString(R.string.wallet_create_failed)));
@@ -1244,11 +1244,6 @@ public class VaultViewModel extends AndroidViewModel {
 		walletGateBusy.postValue(true);
 		CRYPTO_EXECUTOR.execute(() -> {
 			try {
-				if (vaultManager.verifyMasterPassword(credential)) {
-					walletError.postValue(new Event<>(getApplication().getString(
-							R.string.wallet_auth_same_as_vault)));
-					return;
-				}
 				byte[] salt = new byte[16];
 				new SecureRandom().nextBytes(salt);
 				int iter = 120_000;
@@ -1758,7 +1753,11 @@ public class VaultViewModel extends AndroidViewModel {
 		}
 	}
 
-	public LiveData<String> getWalletSeedReveal() {
+	/**
+	 * The phrase is handed to the screen as characters the dialog wipes on
+	 * dismissal; no String copy of a mnemonic is created on this path.
+	 */
+	public LiveData<char[]> getWalletSeedReveal() {
 		return walletSeedReveal;
 	}
 
@@ -1771,7 +1770,7 @@ public class VaultViewModel extends AndroidViewModel {
 			char[] mnemonic = null;
 			try {
 				mnemonic = walletStore.loadMnemonicChars(walletId, password);
-				walletSeedReveal.postValue(new String(mnemonic));
+				walletSeedReveal.postValue(mnemonic.clone());
 			} catch (Exception e) {
 				walletError.postValue(new Event<>(getApplication().getString(
 						isWrongPassword(e) ? R.string.wallet_wrong_password
@@ -3324,7 +3323,8 @@ public class VaultViewModel extends AndroidViewModel {
 				vaultManager.changePassword(currentPassword, newPassword);
 				successMessage.postValue("Password changed successfully");
 			} catch (SecurityException e) {
-				errorMessage.postValue("Invalid current password");
+				errorMessage.postValue(e.getMessage() != null
+						? e.getMessage() : "Invalid current password");
 			} catch (Exception e) {
 				errorMessage.postValue("Failed to change password");
 			} finally {

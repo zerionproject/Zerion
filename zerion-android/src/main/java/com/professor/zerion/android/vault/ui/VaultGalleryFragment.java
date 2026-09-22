@@ -198,8 +198,9 @@ public class VaultGalleryFragment extends BaseFragment {
 		}
 
 		Activity openActivity = requireActivity();
-		android.app.Dialog dialog = new android.app.Dialog(openActivity,
-				android.R.style.Theme_Black_NoTitleBar_Fullscreen);
+		android.app.Dialog dialog = com.professor.zerion.android.security
+				.SecureDialogs.protectSecret(new android.app.Dialog(openActivity,
+						android.R.style.Theme_Black_NoTitleBar_Fullscreen));
 
 		View dialogView = LayoutInflater.from(openActivity)
 				.inflate(R.layout.dialog_media_viewer, null);

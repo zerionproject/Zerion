@@ -273,7 +273,9 @@ public class ChatSettingsActivity extends ZerionActivity {
 	}
 
 	private void showAvatarFullScreen(com.professor.zerion.android.contact.ContactItem contactItem) {
-		android.app.Dialog dialog = new android.app.Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
+		android.app.Dialog dialog = com.professor.zerion.android.security
+				.SecureDialogs.protectSecret(new android.app.Dialog(this,
+						android.R.style.Theme_Black_NoTitleBar_Fullscreen));
 		dialog.setContentView(R.layout.dialog_avatar_fullscreen);
 
 		ImageView fullScreenAvatar = dialog.findViewById(R.id.fullscreen_avatar);

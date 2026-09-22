@@ -13,7 +13,6 @@ import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.professor.zerion.R;
 import com.professor.zerion.android.AppModule;
 import com.professor.zerion.android.activity.ActivityComponent;
-import com.professor.zerion.android.activity.ZerionActivity;
 
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
@@ -22,7 +21,8 @@ import javax.inject.Inject;
 
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
-public class HardenedBlockActivity extends ZerionActivity {
+public class HardenedBlockActivity
+		extends com.professor.zerion.android.activity.BaseActivity {
 
 	public static final String EXTRA_RESULT_CODE =
 			"com.professor.zerion.android.security.RESULT_CODE";

@@ -137,6 +137,9 @@ public class BackupFragment extends Fragment {
 						try {
 							if (p1.length < 1) {
 								toast(R.string.backup_password_empty);
+							} else if (!com.professor.zerion.android.backup
+									.BackupPassphrase.longEnough(p1)) {
+								toast(R.string.backup_password_too_short);
 							} else if (!Arrays.equals(p1, p2)) {
 								toast(R.string.backup_passwords_mismatch);
 							} else {
@@ -181,6 +184,9 @@ public class BackupFragment extends Fragment {
 						try {
 							if (p.length < 1 || np1.length < 1) {
 								toast(R.string.backup_password_empty);
+							} else if (!com.professor.zerion.android.backup
+									.BackupPassphrase.longEnough(np1)) {
+								toast(R.string.profiles_password_too_short);
 							} else if (!Arrays.equals(np1, np2)) {
 								toast(R.string.backup_passwords_mismatch);
 							} else {

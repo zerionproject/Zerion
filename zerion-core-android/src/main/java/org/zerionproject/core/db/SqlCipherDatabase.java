@@ -87,9 +87,10 @@ class SqlCipherDatabase extends JdbcDatabase {
 			Throwable failure = null;
 			try {
 				c = createConnection();
-				probe = hasValidSchema(c)
-						? SqlCipherOpenPolicy.Probe.OPENED_WITH_IDENTITY
-						: SqlCipherOpenPolicy.Probe.OPENED_WITHOUT_IDENTITY;
+				probe = probeSchema(c);
+				if (probe == SqlCipherOpenPolicy.Probe.FAILED) {
+					failure = new SQLException("expected tables are missing");
+				}
 			} catch (SQLException | DbException | RuntimeException e) {
 				probe = SqlCipherOpenPolicy.Probe.FAILED;
 				failure = e;
@@ -188,28 +189,36 @@ class SqlCipherDatabase extends JdbcDatabase {
 
 	/**
 	 * Probes an existing database on a real connection: it must have the
-	 * settings table and at least one local identity. What happens when it
-	 * does not is decided by {@link SqlCipherOpenPolicy}; a probe that throws
-	 * never leads to deletion. Running the check on the connection that
-	 * {@link #open} will reuse avoids a second key derivation on cold start.
+	 * settings and identity tables, and is empty only when it has both and
+	 * no identity row. What happens next is decided by
+	 * {@link SqlCipherOpenPolicy}; a probe that throws or finds a table
+	 * missing never leads to deletion. Running the check on the connection
+	 * that {@link #open} will reuse avoids a second key derivation.
 	 */
-	private boolean hasValidSchema(Connection c) throws SQLException {
+	private SqlCipherOpenPolicy.Probe probeSchema(Connection c)
+			throws SQLException {
+		boolean settings = tableExists(c, "settings");
+		boolean identities = tableExists(c, "localAuthors");
+		long rows = 0;
+		if (settings && identities) {
+			try (java.sql.PreparedStatement ps = c.prepareStatement(
+					"SELECT count(*) FROM localAuthors");
+					java.sql.ResultSet rs = ps.executeQuery()) {
+				rows = rs.next() ? rs.getLong(1) : 0;
+			}
+		}
+		return SqlCipherOpenPolicy.probe(settings, identities, rows);
+	}
+
+	private static boolean tableExists(Connection c, String table)
+			throws SQLException {
 		try (java.sql.PreparedStatement ps = c.prepareStatement(
 				"SELECT count(*) FROM sqlite_master"
-						+ " WHERE type='table' AND name='settings'");
-				java.sql.ResultSet rs = ps.executeQuery()) {
-			if (!rs.next() || rs.getInt(1) == 0) return false;
-		}
-		try (java.sql.PreparedStatement ps = c.prepareStatement(
-				"SELECT count(*) FROM sqlite_master"
-						+ " WHERE type='table' AND name='localAuthors'");
-				java.sql.ResultSet rs = ps.executeQuery()) {
-			if (!rs.next() || rs.getInt(1) == 0) return false;
-		}
-		try (java.sql.PreparedStatement ps = c.prepareStatement(
-				"SELECT count(*) FROM localAuthors");
-				java.sql.ResultSet rs = ps.executeQuery()) {
-			return rs.next() && rs.getInt(1) > 0;
+						+ " WHERE type='table' AND name=?")) {
+			ps.setString(1, table);
+			try (java.sql.ResultSet rs = ps.executeQuery()) {
+				return rs.next() && rs.getInt(1) > 0;
+			}
 		}
 	}
 
@@ -265,8 +274,7 @@ class SqlCipherDatabase extends JdbcDatabase {
 		if (key == null) throw new DbClosedException();
 		File dbFile = new File(config.getDatabaseDirectory(),
 				SQLCIPHER_FILE);
-		byte[] passphrase = StringUtils.toHexString(key.getBytes())
-				.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+		byte[] passphrase = hexPassphrase(key.getBytes());
 		try {
 			return openWithPassphrase(dbFile, passphrase);
 		} finally {
@@ -274,13 +282,26 @@ class SqlCipherDatabase extends JdbcDatabase {
 		}
 	}
 
+	private static final byte[] HEX_UPPER = {
+			'0', '1', '2', '3', '4', '5', '6', '7',
+			'8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+
 	/**
-	 * The passphrase is the same hex text the string overload used to
-	 * take, handed over as bytes: the library derives the same key from
-	 * either (its string overload encodes to UTF-8 bytes first), so every
-	 * existing database opens unchanged, and the bytes can be wiped once
-	 * the connection exists instead of living on as an immutable string.
+	 * The passphrase is the upper-case hex text of the key, as the string
+	 * overload used to take it, encoded straight into a byte array: no
+	 * String ever holds the key, and the bytes are wiped once the
+	 * connection exists. Every existing database opens unchanged because
+	 * the library derives the same key from the same UTF-8 bytes.
 	 */
+	static byte[] hexPassphrase(byte[] keyBytes) {
+		byte[] hex = new byte[keyBytes.length * 2];
+		for (int i = 0, j = 0; i < keyBytes.length; i++) {
+			hex[j++] = HEX_UPPER[(keyBytes[i] >> 4) & 0xF];
+			hex[j++] = HEX_UPPER[keyBytes[i] & 0xF];
+		}
+		return hex;
+	}
+
 	private Connection openWithPassphrase(File dbFile, byte[] passphrase)
 			throws DbException, SQLException {
 		for (int attempt = 1; attempt <= OPEN_RETRY_MAX; attempt++) {

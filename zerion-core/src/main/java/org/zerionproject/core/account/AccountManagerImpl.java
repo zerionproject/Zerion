@@ -315,7 +315,15 @@ class AccountManagerImpl implements AccountManager, Service {
 					"New account password must not be empty");
 		}
 		synchronized (stateChangeLock) {
-			SecretKey key = loadAndDecryptDatabaseKey(oldPassword);
+			checkLockout();
+			SecretKey key;
+			try {
+				key = loadAndDecryptDatabaseKey(oldPassword);
+			} catch (DecryptionException e) {
+				recordFailedAttempt();
+				throw e;
+			}
+			resetLockout();
 			try {
 				encryptAndStoreDatabaseKey(key, newPassword);
 			} catch (org.zerionproject.core.api.crypto
