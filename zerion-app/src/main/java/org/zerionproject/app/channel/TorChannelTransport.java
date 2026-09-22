@@ -28,6 +28,13 @@ public class TorChannelTransport implements ChannelTransport {
 	private static final int MAX_CONCURRENT_HANDLERS = 16;
 	private static final long SERVER_READ_DEADLINE_MS = READ_TIMEOUT_MS;
 	private static final long CLIENT_READ_DEADLINE_MS = 20L * 60L * 1000L;
+	private static final long EGRESS_WINDOW_MS = 60L * 1000L;
+	private static final long MAX_EGRESS_BYTES_PER_WINDOW =
+			256L * 1024 * 1024;
+
+	private final EgressBudget egressBudget = new EgressBudget(
+			EGRESS_WINDOW_MS, MAX_EGRESS_BYTES_PER_WINDOW,
+			System::currentTimeMillis);
 
 	private final OnionPublisher onionPublisher;
 	private final SocketFactory torSocketFactory;
@@ -181,6 +188,11 @@ public class TorChannelTransport implements ChannelTransport {
 			if (response == null) response = new byte[0];
 			DataOutputStream out = new DataOutputStream(
 					client.getOutputStream());
+			if (!egressBudget.tryCharge(response.length)) {
+				out.writeInt(0);
+				out.flush();
+				return;
+			}
 			out.writeInt(response.length);
 			out.write(response);
 			out.flush();
