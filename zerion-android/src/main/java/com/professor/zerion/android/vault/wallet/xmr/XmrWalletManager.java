@@ -122,8 +122,8 @@ public final class XmrWalletManager {
 			XmrStore walletStore, MoneroEngine engine) {
 		this(new File(context.getApplicationContext().getNoBackupFilesDir(),
 				"xmr"), vaultManager, walletStore, engine,
-				Executors.newSingleThreadExecutor(),
-				Executors.newSingleThreadExecutor());
+				XmrSessionThreads.singleThread("XmrCrypto"),
+				XmrSessionThreads.singleThread("XmrSession"));
 	}
 
 	XmrWalletManager(File noBackupBase, VaultGate vaultManager,

@@ -83,15 +83,41 @@ public final class NativeMoneroEngine implements MoneroEngine {
 		}
 	}
 
+	/** The longest string any native parser is handed: an address with room. */
+	static final int MAX_ADDRESS_CHARS = 256;
+	/** A daemon or proxy address: scheme, credentials, host, port. */
+	static final int MAX_ENDPOINT_CHARS = 512;
+	/** A subaddress label, user text kept short before it reaches the wallet. */
+	static final int MAX_LABEL_CHARS = 256;
+
+	/**
+	 * Whether a string may be handed to the native parsers: present, no
+	 * longer than {@code max}, and printable ASCII only. Addresses and
+	 * endpoints are base58 and URL text, so anything else is refused here on
+	 * the JVM side rather than being decoded by native code.
+	 */
+	static boolean acceptableJniString(@Nullable String s, int max) {
+		if (s == null || s.length() > max) return false;
+		for (int i = 0; i < s.length(); i++) {
+			char c = s.charAt(i);
+			if (c < 0x20 || c > 0x7E) return false;
+		}
+		return true;
+	}
+
 	@Override
 	public boolean validateAddress(String address) {
 		return NativeMonero.isAvailable()
+				&& acceptableJniString(address, MAX_ADDRESS_CHARS)
 				&& NativeMonero.nValidateAddress(address);
 	}
 
 	@Override
 	public AddressKind addressKind(String address) {
 		if (!NativeMonero.isAvailable()) return AddressKind.INVALID;
+		if (!acceptableJniString(address, MAX_ADDRESS_CHARS)) {
+			return AddressKind.INVALID;
+		}
 		switch (NativeMonero.nAddressKind(address)) {
 			case 1:
 				return AddressKind.STANDARD;
@@ -151,6 +177,7 @@ public final class NativeMoneroEngine implements MoneroEngine {
 		@Override
 		public void addSubaddress(long account, String label) {
 			if (closed.get()) return;
+			if (label == null || label.length() > MAX_LABEL_CHARS) return;
 			NativeMonero.nAddSubaddress(h, account, label);
 		}
 
@@ -164,6 +191,10 @@ public final class NativeMoneroEngine implements MoneroEngine {
 		public boolean init(String daemonAddress, String proxyAddress,
 				boolean trustedDaemon) {
 			if (closed.get()) return false;
+			if (!acceptableJniString(daemonAddress, MAX_ENDPOINT_CHARS)
+					|| !acceptableJniString(proxyAddress, MAX_ENDPOINT_CHARS)) {
+				return false;
+			}
 			return NativeMonero.nInit(h, daemonAddress, proxyAddress,
 					trustedDaemon);
 		}
@@ -319,6 +350,7 @@ public final class NativeMoneroEngine implements MoneroEngine {
 		public Prepared prepare(String address, long amountAtomic, int priority,
 				long account) {
 			if (closed.get()) return null;
+			if (!acceptableJniString(address, MAX_ADDRESS_CHARS)) return null;
 			long tx = NativeMonero.nPrepare(h, address, amountAtomic, priority,
 					account);
 			if (tx == 0) return null;
