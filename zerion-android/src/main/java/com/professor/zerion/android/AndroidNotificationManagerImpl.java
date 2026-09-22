@@ -376,11 +376,24 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		return b.build();
 	}
 
+	private volatile boolean appLocked = false;
+
+	/**
+	 * The app lock also governs the notification shade: while locked, the
+	 * contact notifications are re-posted without their reply action, and
+	 * they get it back when the lock is lifted.
+	 */
 	@UiThread
 	@Override
 	public void updateForegroundNotification(boolean locked) {
 		Notification n = getForegroundNotification(locked);
 		notificationManager.notify(ONGOING_NOTIFICATION_ID, n);
+		if (appLocked == locked) return;
+		appLocked = locked;
+		for (int id : new java.util.ArrayList<>(activeContactNotificationIds)) {
+			postContactNotification(
+					new ContactId(id - CONTACT_NOTIFICATION_ID_BASE), false);
+		}
 	}
 
 	@Override
@@ -442,7 +455,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		boolean quickReplyEnabled = uiPrefs.getBoolean(
 				com.professor.zerion.android.settings.NotificationsFragment
 						.PREF_NOTIFY_QUICK_REPLY, true);
-		if (quickReplyEnabled) {
+		if (quickReplyEnabled && !appLocked) {
 			RemoteInput remoteInput = new RemoteInput.Builder(
 					NotificationQuickReplyReceiver.KEY_REPLY_TEXT)
 					.setLabel(appContext.getString(
