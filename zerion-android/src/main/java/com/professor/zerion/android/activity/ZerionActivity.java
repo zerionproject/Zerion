@@ -61,6 +61,8 @@ public abstract class ZerionActivity extends BaseActivity {
 	protected LockManager lockManager;
 	@Inject
 	AndroidWakeLockManager wakeLockManager;
+	@Inject
+	com.professor.zerion.android.security.AntiForensics antiForensics;
 
 	@Override
 	public void onStart() {
@@ -94,12 +96,9 @@ public abstract class ZerionActivity extends BaseActivity {
 								getApplication())
 								.getApplicationComponent()
 								.uiPreferences();
-				com.professor.zerion.android.security.AntiForensics af =
-						new com.professor.zerion.android.security
-								.AntiForensics(this);
 				((com.professor.zerion.android.controller
 						.ZerionControllerImpl) briarController)
-						.armUsbPanicIfConfigured(af, uiPrefs);
+						.armUsbPanicIfConfigured(antiForensics, uiPrefs);
 			} catch (Exception ignored) {
 			}
 		}

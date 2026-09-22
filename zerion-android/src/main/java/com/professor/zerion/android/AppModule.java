@@ -636,8 +636,8 @@ public class AppModule {
 
 	@Provides
 	@Singleton
-	AntiForensics provideAntiForensics(Context context) {
-		return new AntiForensics(context);
+	AntiForensics provideAntiForensics(Application app) {
+		return new AntiForensics(app);
 	}
 
 	@Provides
