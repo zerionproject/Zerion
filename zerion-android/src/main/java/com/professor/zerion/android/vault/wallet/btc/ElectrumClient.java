@@ -52,6 +52,10 @@ public class ElectrumClient implements ElectrumRpc {
 
 	private static final Pattern OBJECT = Pattern.compile("\\{[^{}]*\\}");
 	private static final Pattern TXID = Pattern.compile("^[0-9a-fA-F]{64}$");
+	/** Entries a server may return for one script hash before the rest is dropped. */
+	static final int MAX_LIST_ITEMS = 5000;
+	/** A transaction larger than a block cannot be real; hex doubles the size. */
+	static final int MAX_TX_HEX_CHARS = 2 * 1_000_000;
 
 	private static final int MAX_RESPONSE_CHARS = 8 * 1024 * 1024;
 
@@ -359,13 +363,25 @@ public class ElectrumClient implements ElectrumRpc {
 		List<HistItem> out = new ArrayList<>();
 		for (String o : objects(r)) {
 			String h = strField(o, "tx_hash");
-			if (h == null) {
+			if (h == null || !isTxid(h)) {
 				continue;
 			}
 			Long height = numField(o, "height");
 			out.add(new HistItem(h, height == null ? 0 : height.intValue()));
+			if (out.size() >= MAX_LIST_ITEMS) break;
 		}
 		return out;
+	}
+
+	/** Whether {@code s} is a transaction id: exactly 64 hex characters. */
+	static boolean isTxid(String s) {
+		return TXID.matcher(s).matches();
+	}
+
+	private static String requireTxid(String txid) throws IOException {
+		String t = txid.trim();
+		if (!isTxid(t)) throw new IOException("invalid txid");
+		return t;
 	}
 
 	public List<Utxo> listUnspent(String scriptHash) throws IOException {
@@ -377,24 +393,32 @@ public class ElectrumClient implements ElectrumRpc {
 		List<Utxo> out = new ArrayList<>();
 		for (String o : objects(r)) {
 			String h = strField(o, "tx_hash");
-			if (h == null) {
+			if (h == null || !isTxid(h)) {
 				continue;
 			}
 			Long pos = numField(o, "tx_pos");
 			Long height = numField(o, "height");
 			Long value = numField(o, "value");
-			out.add(new Utxo(h, pos == null ? 0 : pos.intValue(),
-					height == null ? 0 : height.intValue(),
-					value == null ? 0 : value));
+			if (pos == null || pos < 0 || pos > 0xFFFF) continue;
+			if (value == null || value < 0 || value > 21_000_000L * 100_000_000L) {
+				continue;
+			}
+			out.add(new Utxo(h, pos.intValue(),
+					height == null ? 0 : height.intValue(), value));
+			if (out.size() >= MAX_LIST_ITEMS) break;
 		}
 		return out;
 	}
 
 	public String getTransaction(String txid) throws IOException {
-		String r = call("blockchain.transaction.get", "[\"" + txid + "\"]");
+		String wanted = requireTxid(txid);
+		String r = call("blockchain.transaction.get", "[\"" + wanted + "\"]");
 		String result = strField(r, "result");
 		if (result == null) {
 			throw new IOException("no tx");
+		}
+		if (result.length() > MAX_TX_HEX_CHARS) {
+			throw new IOException("tx too large");
 		}
 		String computed;
 		try {

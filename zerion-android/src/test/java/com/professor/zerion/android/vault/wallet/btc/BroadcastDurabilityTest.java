@@ -4,6 +4,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -52,6 +54,48 @@ public class BroadcastDurabilityTest {
 
 	private static String outpoint0() {
 		return TX0 + ":0";
+	}
+
+	/**
+	 * BTC-12: when no connection to any broadcast server can be opened, no
+	 * byte of the transaction left the device, so the send is a plain
+	 * failure with its inputs still spendable, not an uncertain broadcast.
+	 */
+	@Test
+	public void connectionFailureBeforeSendingIsFailedNotPossiblySent()
+			throws IOException {
+		FakeElectrum e = new FakeElectrum();
+		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		MemLog log = new MemLog();
+		final boolean[] refuse = {false};
+		FakeElectrum.RecordingFactory scanFactory =
+				new FakeElectrum.RecordingFactory(e);
+		ElectrumRpc.Factory factory = (ep, port, tag) -> {
+			if (refuse[0] && tag.endsWith("-b")) {
+				throw new IOException("Tor is down");
+			}
+			return scanFactory.open(ep, port, tag);
+		};
+		BtcWallet w = new BtcWallet(MNEMONIC, 0, 9999, "host", 50001,
+				"walletA", factory, (url, tag) -> null);
+		w.setPendingLog(log);
+		BtcWallet.SendPlan plan = w.planSend(DEST, 40000, 2.0, false, null,
+				false);
+		refuse[0] = true;
+		try {
+			w.signPlan(plan);
+			fail();
+		} catch (BroadcastUncertainException uncertain) {
+			fail("an unopened connection is not an uncertain broadcast");
+		} catch (IOException expected) {
+		}
+		assertEquals(PendingTx.FAILED, log.only().state);
+		assertFalse(log.stateHistory.contains(PendingTx.BROADCASTING));
+		assertFalse(log.stateHistory.contains(PendingTx.POSSIBLY_SENT));
+		assertTrue(e.broadcasts.isEmpty());
+		refuse[0] = false;
+		BtcWallet.ScanResult r = w.scan();
+		assertEquals("inputs stay spendable", 100000, r.balanceSat);
 	}
 
 	@Test

@@ -28,6 +28,17 @@ import java.util.Set;
 public class BtcWallet {
 
 	public static final int GAP_LIMIT = 20;
+	/**
+	 * The most addresses probed on one chain in a full scan. The gap limit
+	 * ends an honest scan long before this; a server answering non-empty
+	 * history for every script hash would otherwise keep the scan running
+	 * forever.
+	 */
+	static final int MAX_CHAIN_INDEX = 2000;
+	/** Parsed transactions kept between scans. */
+	static final int MAX_TX_CACHE = 512;
+	/** Transactions the history view fetches, newest first. */
+	static final int MAX_HISTORY_TXS = 1000;
 
 	private volatile int minReceiveProbe = -1;
 
@@ -140,7 +151,14 @@ public class BtcWallet {
 	private final ElectrumRpc.Factory electrumFactory;
 	private final SilentPaymentScanner.Fetcher spFetcher;
 	private final Map<String, Transaction> txCache =
-			new java.util.concurrent.ConcurrentHashMap<>();
+			java.util.Collections.synchronizedMap(
+					new LinkedHashMap<String, Transaction>(64, 0.75f, true) {
+				@Override
+				protected boolean removeEldestEntry(
+						Map.Entry<String, Transaction> eldest) {
+					return size() > MAX_TX_CACHE;
+				}
+			});
 	@Nullable
 	private volatile ScanResult lastScan;
 	private PendingLog pendingLog = PendingLog.NONE;
@@ -360,9 +378,9 @@ public class BtcWallet {
 		int probed = 0;
 		int maxUsed = -1;
 		int gap = 0;
-		for (int i = 0; bound < 0
+		for (int i = 0; i < MAX_CHAIN_INDEX && (bound < 0
 				? (gap < GAP_LIMIT || (!change && i <= minReceiveProbe))
-				: i <= bound; i++) {
+				: i <= bound); i++) {
 			probed = i + 1;
 			String sh = change ? BtcKeys.changeScriptHash(mnemonic, account, i)
 					: BtcKeys.scriptHash(mnemonic, account, i);
@@ -550,6 +568,7 @@ public class BtcWallet {
 				}
 			}
 
+			heights = newestFirst(heights, MAX_HISTORY_TXS);
 			Map<String, Transaction> parsed = new HashMap<>();
 			Map<String, Long> ownedOutputs = new HashMap<>();
 			for (String txid : heights.keySet()) {
@@ -638,6 +657,34 @@ public class BtcWallet {
 		}
 		out.addAll(electrum);
 		return out;
+	}
+
+	/**
+	 * Keeps the {@code limit} newest transactions (unconfirmed first, then
+	 * by height) in their original order, so a server cannot make the
+	 * history view fetch without bound.
+	 */
+	static LinkedHashMap<String, Integer> newestFirst(
+			LinkedHashMap<String, Integer> heights, int limit) {
+		if (heights.size() <= limit) return heights;
+		List<Map.Entry<String, Integer>> entries =
+				new ArrayList<>(heights.entrySet());
+		entries.sort((a, b) -> {
+			long ha = a.getValue() <= 0 ? Long.MAX_VALUE : a.getValue();
+			long hb = b.getValue() <= 0 ? Long.MAX_VALUE : b.getValue();
+			return Long.compare(hb, ha);
+		});
+		Set<String> keep = new java.util.HashSet<>();
+		for (int i = 0; i < limit; i++) keep.add(entries.get(i).getKey());
+		LinkedHashMap<String, Integer> out = new LinkedHashMap<>();
+		for (Map.Entry<String, Integer> e : heights.entrySet()) {
+			if (keep.contains(e.getKey())) out.put(e.getKey(), e.getValue());
+		}
+		return out;
+	}
+
+	int cachedTxCount() {
+		return txCache.size();
 	}
 
 	private Transaction fetchTx(ElectrumRpc c, String txid)
@@ -999,17 +1046,33 @@ public class BtcWallet {
 		}
 	}
 
+	/**
+	 * The connection to the broadcast server, including its version
+	 * handshake, is opened before anything is journaled: a failure there
+	 * means no byte of the transaction reached any server, so it is a plain
+	 * failure whose inputs stay spendable, not an uncertain broadcast that
+	 * reserves them until the network answers again.
+	 */
 	private String broadcastTracked(String rawHex, List<String> outpoints,
 			long netSat) throws IOException {
 		String localTxid = txidOf(rawHex);
+		ElectrumRpc c;
+		try {
+			c = openWithFallback(broadcastEndpoint, broadcastFallbacks,
+					TorIsolation.broadcast(isolationTag));
+		} catch (IOException e) {
+			safePut(new PendingTx(java.util.UUID.randomUUID().toString(),
+					localTxid, rawHex, outpoints, PendingTx.FAILED,
+					System.currentTimeMillis(), netSat));
+			throw e;
+		}
 		PendingTx pending = new PendingTx(
 				java.util.UUID.randomUUID().toString(), localTxid, rawHex,
 				outpoints, PendingTx.BROADCASTING, System.currentTimeMillis(),
 				netSat);
 		pendingLog.put(pending);
-		try (ElectrumRpc c = openWithFallback(broadcastEndpoint,
-				broadcastFallbacks, TorIsolation.broadcast(isolationTag))) {
-			String accepted = c.broadcast(rawHex);
+		try (ElectrumRpc conn = c) {
+			String accepted = conn.broadcast(rawHex);
 			if (!localTxid.equalsIgnoreCase(accepted)) {
 				safePut(pending.withState(PendingTx.POSSIBLY_SENT));
 				throw new BroadcastUncertainException(localTxid,
