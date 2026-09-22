@@ -19,22 +19,22 @@ public final class SpSweepGate {
 	@Nullable
 	private volatile String pendingWalletId;
 
-	public void prepare(BtcWallet.SpSweepPlan plan, String walletId) {
+	public synchronized void prepare(BtcWallet.SpSweepPlan plan, String walletId) {
 		this.pendingWalletId = walletId;
 		this.pending = plan;
 	}
 
-	public void clear() {
+	public synchronized void clear() {
 		this.pending = null;
 		this.pendingWalletId = null;
 	}
 
 	@Nullable
-	public BtcWallet.SpSweepPlan pending() {
+	public synchronized BtcWallet.SpSweepPlan pending() {
 		return pending;
 	}
 
-	public BtcWallet.SpSweepPlan authorize(String reviewedFingerprint,
+	public synchronized BtcWallet.SpSweepPlan authorize(String reviewedFingerprint,
 			boolean authenticated, @Nullable String walletId)
 			throws SendGate.AuthorizationException {
 		BtcWallet.SpSweepPlan p = pending;

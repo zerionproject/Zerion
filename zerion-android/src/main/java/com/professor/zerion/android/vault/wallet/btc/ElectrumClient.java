@@ -60,10 +60,10 @@ public class ElectrumClient implements ElectrumRpc {
 	private static final int MAX_RESPONSE_CHARS = 8 * 1024 * 1024;
 
 	/**
-	 * The server answered with a protocol-level error: the request reached it
-	 * and was definitively refused. Distinct from transport failures, where
-	 * the outcome is unknown; broadcast handling relies on this distinction
-	 * to mark a rejected transaction FAILED instead of possibly-sent.
+	 * The server answered a request with an error object. For lookups this
+	 * is a definitive negative answer from that server; for a broadcast it
+	 * is only the server's claim, which the wallet does not trust to free
+	 * the inputs. The server's own text is never carried in the message.
 	 */
 	public static final class ServerRejectedException extends IOException {
 		ServerRejectedException(String message) {
@@ -84,6 +84,12 @@ public class ElectrumClient implements ElectrumRpc {
 
 	private static final int HANDSHAKE_TIMEOUT_MS = 15_000;
 	private static final int READ_TIMEOUT_MS = 40_000;
+	/**
+	 * Lines with another id or no JSON object that one call skips before
+	 * it gives up, so a server streaming notifications cannot hold the
+	 * calling thread for as long as it keeps the stream alive.
+	 */
+	static final int MAX_SKIPPED_LINES = 64;
 
 	public ElectrumClient(ElectrumEndpoint ep, int socksPort,
 			String isolationTag) throws IOException {
@@ -103,35 +109,116 @@ public class ElectrumClient implements ElectrumRpc {
 					HANDSHAKE_TIMEOUT_MS);
 			base.setSoTimeout(HANDSHAKE_TIMEOUT_MS);
 		}
-		socket = base;
-		if (ep.mode == ElectrumEndpoint.Mode.PLAINTEXT && !ep.local) {
-			throw new IOException(
-					"Refusing a plaintext connection to a non-local endpoint");
+		try {
+			if (ep.mode == ElectrumEndpoint.Mode.PLAINTEXT && !ep.local) {
+				throw new IOException(
+						"Refusing a plaintext connection to a non-local endpoint");
+			}
+			Socket stream = ep.tls() ? wrapTls(base, ep) : base;
+			socket = base;
+			writer = stream.getOutputStream();
+			reader = new BufferedReader(new InputStreamReader(
+					stream.getInputStream(), StandardCharsets.UTF_8));
+			call("server.version", "[\"\",\"1.4\"]");
+			base.setSoTimeout(READ_TIMEOUT_MS);
+		} catch (IOException | RuntimeException e) {
+			try {
+				base.close();
+			} catch (IOException ignored) {
+			}
+			throw e;
 		}
-		Socket stream = ep.tls() ? wrapTls(base, ep) : base;
-		writer = stream.getOutputStream();
-		reader = new BufferedReader(new InputStreamReader(
-				stream.getInputStream(), StandardCharsets.UTF_8));
-		call("server.version", "[\"\",\"1.4\"]");
-		base.setSoTimeout(READ_TIMEOUT_MS);
 	}
 
-	public static String captureCertSha256(ElectrumEndpoint ep, int socksPort)
+	/** What a certificate capture learned about the server. */
+	public static final class CapturedCert {
+		public final String sha256;
+		/**
+		 * True when the certificate chained to a trusted authority and
+		 * matched the host name, so pinning it adds to the checks the
+		 * connection already passes; false when it was captured without
+		 * validation and only an out-of-band comparison can vouch for it.
+		 */
+		public final boolean caValid;
+
+		CapturedCert(String sha256, boolean caValid) {
+			this.sha256 = sha256;
+			this.caValid = caValid;
+		}
+	}
+
+	/** The certificate did not pass the platform's authority and name checks. */
+	private static final class NotCaValid extends IOException {
+		NotCaValid(Throwable cause) {
+			super("certificate not trusted by any CA", cause);
+		}
+	}
+
+	/**
+	 * Reads the server's leaf certificate for pinning. The certificate is
+	 * first checked the way an unpinned connection checks it; only when
+	 * that fails is it read without validation, and the result says which
+	 * of the two happened so the user can be told. Each capture uses its
+	 * own circuit.
+	 */
+	public static CapturedCert captureCert(ElectrumEndpoint ep, int socksPort)
 			throws IOException {
 		if (!ep.tls()) {
 			throw new IOException("not a TLS endpoint");
 		}
+		String tag = TorIsolation.ephemeral("tofu");
+		try {
+			return new CapturedCert(handshakeAndCapture(ep, socksPort, tag,
+					true), true);
+		} catch (NotCaValid selfSigned) {
+			return new CapturedCert(handshakeAndCapture(ep, socksPort, tag,
+					false), false);
+		}
+	}
+
+	private static String handshakeAndCapture(ElectrumEndpoint ep,
+			int socksPort, String tag, boolean validate) throws IOException {
 		Socket base = null;
 		try {
 			if (ep.viaTor()) {
 				base = com.professor.zerion.android.vault.net.TorSockets.open(
 						socksPort, HANDSHAKE_TIMEOUT_MS);
-				socks5Connect(base, ep.host, ep.port, "zw-tofu", "tofu");
+				socks5Connect(base, ep.host, ep.port,
+						TorIsolation.socksUser(tag),
+						TorIsolation.socksPassword(tag));
 			} else {
+				if (!ep.direct && !ElectrumEndpoint.isLanHost(ep.host)) {
+					throw new IOException(
+							"Refusing non-Tor connection to non-local endpoint");
+				}
 				base = new Socket();
 				base.connect(new InetSocketAddress(ep.host, ep.port),
 						HANDSHAKE_TIMEOUT_MS);
 				base.setSoTimeout(HANDSHAKE_TIMEOUT_MS);
+			}
+			if (validate) {
+				SSLSocketFactory f = (SSLSocketFactory)
+						SSLSocketFactory.getDefault();
+				SSLSocket ssl = (SSLSocket) f.createSocket(base, ep.host,
+						ep.port, true);
+				restrictProtocols(ssl);
+				try {
+					ssl.startHandshake();
+				} catch (javax.net.ssl.SSLHandshakeException e) {
+					throw new NotCaValid(e);
+				}
+				if (!HttpsURLConnection.getDefaultHostnameVerifier()
+						.verify(ep.host, ssl.getSession())) {
+					throw new NotCaValid(null);
+				}
+				java.security.cert.Certificate[] chain =
+						ssl.getSession().getPeerCertificates();
+				if (chain == null || chain.length == 0) {
+					throw new IOException("no server certificate");
+				}
+				String fp = TlsTrust.sha256Hex(chain[0].getEncoded());
+				ssl.close();
+				return fp;
 			}
 			final java.security.cert.X509Certificate[] captured =
 					new java.security.cert.X509Certificate[1];
@@ -164,6 +251,7 @@ public class ElectrumClient implements ElectrumRpc {
 					}}, null);
 			SSLSocket ssl = (SSLSocket) ctx.getSocketFactory()
 					.createSocket(base, ep.host, ep.port, true);
+			restrictProtocols(ssl);
 			ssl.startHandshake();
 			String fp = TlsTrust.sha256Hex(captured[0].getEncoded());
 			ssl.close();
@@ -178,6 +266,17 @@ public class ElectrumClient implements ElectrumRpc {
 		}
 	}
 
+	/** Only TLS 1.2 and 1.3 are offered, whatever the platform default. */
+	static void restrictProtocols(SSLSocket ssl) {
+		java.util.List<String> keep = new java.util.ArrayList<>();
+		for (String p : ssl.getSupportedProtocols()) {
+			if ("TLSv1.3".equals(p) || "TLSv1.2".equals(p)) keep.add(p);
+		}
+		if (!keep.isEmpty()) {
+			ssl.setEnabledProtocols(keep.toArray(new String[0]));
+		}
+	}
+
 	private static Socket wrapTls(Socket base, ElectrumEndpoint ep)
 			throws IOException {
 		try {
@@ -185,6 +284,7 @@ public class ElectrumClient implements ElectrumRpc {
 			if (ep.pinned()) {
 				SSLSocketFactory f = TlsTrust.pinnedFactory(ep.pinSha256);
 				ssl = (SSLSocket) f.createSocket(base, ep.host, ep.port, true);
+				restrictProtocols(ssl);
 				try {
 					ssl.startHandshake();
 				} catch (javax.net.ssl.SSLHandshakeException e) {
@@ -195,6 +295,7 @@ public class ElectrumClient implements ElectrumRpc {
 				SSLSocketFactory f = (SSLSocketFactory)
 						SSLSocketFactory.getDefault();
 				ssl = (SSLSocket) f.createSocket(base, ep.host, ep.port, true);
+				restrictProtocols(ssl);
 				try {
 					ssl.startHandshake();
 				} catch (javax.net.ssl.SSLHandshakeException e) {
@@ -299,6 +400,7 @@ public class ElectrumClient implements ElectrumRpc {
 				+ "\",\"params\":" + params + "}\n";
 		writer.write(line.getBytes(StandardCharsets.UTF_8));
 		writer.flush();
+		int skipped = 0;
 		while (true) {
 			String resp = readLineBounded();
 			if (resp == null) {
@@ -308,26 +410,22 @@ public class ElectrumClient implements ElectrumRpc {
 			try {
 				reply = new org.json.JSONObject(resp);
 			} catch (org.json.JSONException notAReply) {
+				if (++skipped > MAX_SKIPPED_LINES) {
+					throw new IOException("no reply from server");
+				}
 				continue;
 			}
 			if (reply.optLong("id", -1L) != reqId) {
+				if (++skipped > MAX_SKIPPED_LINES) {
+					throw new IOException("no reply from server");
+				}
 				continue;
 			}
 			if (reply.has("error") && !reply.isNull("error")) {
-				throw new ServerRejectedException(errorMessage(reply));
+				throw new ServerRejectedException("server refused the request");
 			}
 			return resp;
 		}
-	}
-
-	private static String errorMessage(org.json.JSONObject reply) {
-		Object error = reply.opt("error");
-		if (error instanceof org.json.JSONObject) {
-			String message = ((org.json.JSONObject) error)
-					.optString("message", "");
-			return message.isEmpty() ? "Electrum error" : message;
-		}
-		return error == null ? "Electrum error" : String.valueOf(error);
 	}
 
 	private String readLineBounded() throws IOException {
@@ -454,7 +552,7 @@ public class ElectrumClient implements ElectrumRpc {
 			throw new IOException("broadcast failed");
 		}
 		if (!TXID.matcher(result).matches()) {
-			throw new IOException("Broadcast rejected: " + result);
+			throw new IOException("broadcast reply was not a transaction id");
 		}
 		return result;
 	}

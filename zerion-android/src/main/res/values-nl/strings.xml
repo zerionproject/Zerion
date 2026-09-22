@@ -1806,6 +1806,11 @@
 	<string name="wallet_import_invalid">Die herstelzin is ongeldig</string>
 	<string name="wallet_delete_failed">Kon de portemonnee niet verwijderen</string>
 	<string name="wallet_open_failed">Kon de portemonnee niet openen</string>
+	<string name="wallet_pin_confirm_ca_valid">Het certificaat is uitgegeven door een vertrouwde autoriteit en komt overeen met de servernaam. Vastpinnen voegt een controle toe en vervangt er geen.</string>
+	<string name="wallet_pin_confirm_self_signed">Het certificaat is niet uitgegeven door een vertrouwde autoriteit. Vergelijk de vingerafdruk via een ander kanaal met je server voordat je bevestigt; een aanvaller op de route kan een eigen certificaat aanbieden.</string>
+	<string name="wallet_scan_unsupported">Dit betaalverzoek vereist een functie die de wallet niet ondersteunt</string>
+	<string name="wallet_server_inconsistent">De server meldde een lege wallet waar geschiedenis bestond. De laatst geverifieerde toestand blijft behouden.</string>
+	<string name="wallet_sp_oracle_https">Het orakeladres moet https gebruiken</string>
 	<string name="wallet_send_failed">De transactie kon niet worden verzonden</string>
 	<string name="wallet_network_failed">Kon het Bitcoin-netwerk niet bereiken via Tor</string>
 	<string name="wallet_amount_invalid">Voer een geldig bedrag in</string>

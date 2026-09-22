@@ -36,10 +36,20 @@ public class BtcWallet {
 	 * forever.
 	 */
 	static final int MAX_CHAIN_INDEX = 2000;
+	/**
+	 * History items and unspent outputs a single scan accepts in total,
+	 * over both chains; a server answering the per-call maximum for every
+	 * index would otherwise make the scan build millions of objects.
+	 */
+	static final int MAX_SCAN_ITEMS = 50_000;
 	/** Parsed transactions kept between scans. */
 	static final int MAX_TX_CACHE = 512;
+	/** A transaction larger than this is parsed but not kept in the cache. */
+	static final int MAX_CACHED_TX_BYTES = 64 * 1024;
 	/** Transactions the history view fetches, newest first. */
 	static final int MAX_HISTORY_TXS = 1000;
+	/** Raw transaction bytes one history fetch parses before it stops. */
+	static final long MAX_HISTORY_BYTES = 8L * 1024 * 1024;
 
 	private volatile int minReceiveProbe = -1;
 	private volatile int minChangeProbe = -1;
@@ -456,21 +466,28 @@ public class BtcWallet {
 				maxUsed = i;
 				if (usedOut != null) usedOut.add(i);
 				if (hist != null) {
+					if (hist.size() + h.size() > MAX_SCAN_ITEMS) {
+						throw new IOException("Server returned too much history");
+					}
 					hist.addAll(h);
 				}
 				String addr = change
 						? keys.changeAddress(i)
 						: keys.address(i);
+				DeterministicKey key = change ? keys.changeKey(i)
+						: keys.receiveKey(i);
 				com.professor.zerion.android.vault.wallet.btc.privacy.UtxoOrigin
 						origin = change
 						? com.professor.zerion.android.vault.wallet.btc.privacy
 								.UtxoOrigin.CHANGE
 						: com.professor.zerion.android.vault.wallet.btc.privacy
 								.UtxoOrigin.RECEIVE;
-				for (ElectrumClient.Utxo u : c.listUnspent(sh)) {
-					utxos.add(new OwnedUtxo(u.txHash, u.txPos, u.value,
-							change ? keys.changeKey(i)
-									: keys.receiveKey(i),
+				List<ElectrumClient.Utxo> unspent = c.listUnspent(sh);
+				if (utxos.size() + unspent.size() > MAX_SCAN_ITEMS) {
+					throw new IOException("Server returned too many outputs");
+				}
+				for (ElectrumClient.Utxo u : unspent) {
+					utxos.add(new OwnedUtxo(u.txHash, u.txPos, u.value, key,
 							addr, origin));
 					balance[0] += u.value;
 				}
@@ -518,9 +535,9 @@ public class BtcWallet {
 				continue;
 			}
 			if (!anyInputStillLive) {
-				if (!PendingTx.SENT.equals(p.state)) {
+				if (!PendingTx.SETTLED.equals(p.state)) {
 					pendingMisses.remove(p.txid);
-					safePut(p.withState(PendingTx.SENT));
+					safePut(p.withState(PendingTx.SETTLED));
 				}
 				continue;
 			}
@@ -630,8 +647,14 @@ public class BtcWallet {
 			heights = newestFirst(heights, MAX_HISTORY_TXS);
 			Map<String, Transaction> parsed = new HashMap<>();
 			Map<String, Long> ownedOutputs = new HashMap<>();
-			for (String txid : heights.keySet()) {
+			long parsedBytes = 0;
+			for (String txid : new ArrayList<>(heights.keySet())) {
+				if (parsedBytes > MAX_HISTORY_BYTES) {
+					heights.remove(txid);
+					continue;
+				}
 				Transaction t = fetchTx(c, txid);
+				parsedBytes += t.getMessageSize();
 				parsed.put(txid, t);
 				List<TransactionOutput> outs = t.getOutputs();
 				for (int i = 0; i < outs.size(); i++) {
@@ -690,7 +713,8 @@ public class BtcWallet {
 				state = STATE_BROADCASTING;
 			} else if (PendingTx.POSSIBLY_SENT.equals(p.state)) {
 				state = STATE_POSSIBLY_SENT;
-			} else if (PendingTx.SENT.equals(p.state)) {
+			} else if (PendingTx.SENT.equals(p.state)
+					|| PendingTx.SETTLED.equals(p.state)) {
 				state = STATE_PENDING;
 			} else if (PendingTx.FAILED.equals(p.state)) {
 				state = STATE_FAILED;
@@ -752,9 +776,23 @@ public class BtcWallet {
 		if (t == null) {
 			t = new Transaction(BtcKeys.PARAMS,
 					Utils.HEX.decode(c.getTransaction(txid)));
-			txCache.put(txid, t);
+			if (t.getMessageSize() <= MAX_CACHED_TX_BYTES) {
+				txCache.put(txid, t);
+			}
 		}
 		return t;
+	}
+
+	/**
+	 * True when a scan reports no history at all for a wallet that had
+	 * history earlier in this session: a wallet's history never shrinks to
+	 * nothing, so the reply is a hidden or broken view and must not replace
+	 * the last verified state.
+	 */
+	public static boolean emptiedAfterHistory(@Nullable Set<String> previousTxids,
+			Set<String> nowTxids) {
+		return previousTxids != null && !previousTxids.isEmpty()
+				&& nowTxids.isEmpty();
 	}
 
 	@Nullable
@@ -918,6 +956,8 @@ public class BtcWallet {
 			throw new IOException("Amount out of range");
 		}
 		double rate = sanitizeRate(feeRate);
+		int destVBytes = BtcTx.outputVBytes(toAddress);
+		long destDust = BtcTx.dustThresholdSat(toAddress);
 		List<OwnedUtxo> sorted =
 				orderedCandidates(scan.utxos, amountSat, manualOutpoints);
 
@@ -938,14 +978,14 @@ public class BtcWallet {
 				throw new IOException("No spendable coins");
 			}
 			feeSat = (long) Math.ceil(
-					BtcTx.estimateVBytes(inputs.size(), 1) * rate);
+					(11 + inputs.size() * 68 + destVBytes) * rate);
 			externalSat = inSat - feeSat;
-			if (externalSat <= DUST) {
+			if (externalSat <= destDust) {
 				throw new IOException("Balance is too low to send after the fee");
 			}
 			outputs.add(new BtcTx.Output(toAddress, externalSat));
 		} else {
-			if (amountSat <= DUST) {
+			if (amountSat <= destDust) {
 				throw new IOException("Amount is below the dust limit");
 			}
 			externalSat = amountSat;
@@ -956,8 +996,8 @@ public class BtcWallet {
 					inputs.add(toInput(u));
 					inSat += u.value;
 				}
-				feeSat = (long) Math.ceil(
-						BtcTx.estimateVBytes(inputs.size(), 2) * rate);
+				feeSat = (long) Math.ceil((11 + inputs.size() * 68
+						+ destVBytes + BtcTx.CHANGE_OUTPUT_VBYTES) * rate);
 				if (inSat < amountSat + feeSat) {
 					throw new IOException(
 							"Insufficient balance for amount plus fee");
@@ -966,8 +1006,8 @@ public class BtcWallet {
 				feeSat = 0;
 				while (true) {
 					int numInputs = Math.max(inputs.size(), 1);
-					feeSat = (long) Math.ceil(
-							BtcTx.estimateVBytes(numInputs, 2) * rate);
+					feeSat = (long) Math.ceil((11 + numInputs * 68
+							+ destVBytes + BtcTx.CHANGE_OUTPUT_VBYTES) * rate);
 					if (inSat >= amountSat + feeSat) {
 						break;
 					}
@@ -1001,7 +1041,7 @@ public class BtcWallet {
 			}
 		}
 
-		int planVBytes = BtcTx.estimateVBytes(inputs.size(), outputs.size());
+		int planVBytes = BtcTx.estimateVBytes(inputs.size(), outputs);
 		if (feeSat < minimumFeeSat(planVBytes)) {
 			throw new IOException("Fee below the relay minimum");
 		}
@@ -1120,13 +1160,19 @@ public class BtcWallet {
 	}
 
 	/**
-	 * The connection to the broadcast server, including its version
-	 * handshake, is opened before anything is journaled: a failure there
-	 * means no byte of the transaction reached any server, so it is a plain
-	 * failure whose inputs stay spendable, not an uncertain broadcast that
-	 * reserves them until the network answers again.
+	 * Journals the transaction, then broadcasts it. Only a connection that
+	 * could not be opened at all is a plain failure: no byte of the
+	 * transaction reached any server, so its inputs stay spendable. Once
+	 * the transaction has been written to a server, every outcome other
+	 * than the server echoing the local txid is uncertain, including a
+	 * server that answers with an error: a server can relay a transaction
+	 * and still claim to have refused it, so a claimed rejection keeps the
+	 * inputs reserved until the definitive-miss protocol in
+	 * {@link #reconcilePending} releases them. The journal entry is written
+	 * inside the connection scope so a persist failure closes the
+	 * connection and nothing is broadcast without a record.
 	 */
-	private String broadcastTracked(String rawHex, List<String> outpoints,
+		private String broadcastTracked(String rawHex, List<String> outpoints,
 			long netSat) throws IOException {
 		String localTxid = txidOf(rawHex);
 		ElectrumRpc c;
@@ -1143,8 +1189,8 @@ public class BtcWallet {
 				java.util.UUID.randomUUID().toString(), localTxid, rawHex,
 				outpoints, PendingTx.BROADCASTING, System.currentTimeMillis(),
 				netSat);
-		pendingLog.put(pending);
 		try (ElectrumRpc conn = c) {
+			pendingLog.put(pending);
 			String accepted = conn.broadcast(rawHex);
 			if (!localTxid.equalsIgnoreCase(accepted)) {
 				safePut(pending.withState(PendingTx.POSSIBLY_SENT));
@@ -1153,9 +1199,6 @@ public class BtcWallet {
 			}
 			safePut(pending.withState(PendingTx.SENT));
 			return localTxid;
-		} catch (ElectrumClient.ServerRejectedException e) {
-			safePut(pending.withState(PendingTx.FAILED));
-			throw e;
 		} catch (IOException e) {
 			safePut(pending.withState(PendingTx.POSSIBLY_SENT));
 			throw new BroadcastUncertainException(localTxid, e);
@@ -1302,10 +1345,11 @@ public class BtcWallet {
 			if (inputs.isEmpty()) {
 				throw new IOException("No unspent silent payments found");
 			}
-			int vbytes = 11 + inputs.size() * 58 + 31;
+			int vbytes = 11 + inputs.size() * 58
+					+ BtcTx.outputVBytes(toAddress);
 			long fee = (long) Math.ceil(vbytes * rate);
 			long swept = sumIn - fee;
-			if (swept <= DUST) {
+			if (swept <= BtcTx.dustThresholdSat(toAddress)) {
 				throw new IOException("Amount is too low to send after the fee");
 			}
 			List<BtcTx.Output> outputs = new ArrayList<>();

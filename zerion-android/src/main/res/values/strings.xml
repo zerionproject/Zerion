@@ -2316,6 +2316,11 @@
 	<string name="wallet_pin_not_tls">This server does not use TLS, so there is no certificate to pin.</string>
 	<string name="wallet_pin_read_failed">Could not read the server certificate over Tor.</string>
 	<string name="wallet_pin_confirm_title">Confirm certificate</string>
+	<string name="wallet_pin_confirm_ca_valid">The certificate is issued by a trusted authority and matches the server name. Pinning it adds a check; it does not replace one.</string>
+	<string name="wallet_pin_confirm_self_signed">The certificate is not issued by a trusted authority. Compare the fingerprint with your server through another channel before confirming; an attacker on the path could present their own certificate.</string>
+	<string name="wallet_scan_unsupported">This payment request requires a feature the wallet does not support</string>
+	<string name="wallet_server_inconsistent">The server reported an empty wallet where history existed. The last verified state is kept.</string>
+	<string name="wallet_sp_oracle_https">The oracle address must use https</string>
 	<string name="wallet_pin_confirm_msg">Pin this certificate for %1$s? Only confirm if the fingerprint matches your server. Future connections will be rejected if it changes.\n\n%2$s</string>
 	<string name="wallet_pin_confirm_button">Pin</string>
 	<string name="wallet_pin_saved">Certificate pinned</string>

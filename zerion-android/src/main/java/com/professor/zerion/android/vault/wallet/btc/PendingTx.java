@@ -12,6 +12,13 @@ public final class PendingTx {
 	public static final String POSSIBLY_SENT = "possibly_sent";
 	public static final String SENT = "sent";
 	public static final String FAILED = "failed";
+	/**
+	 * Sent and its inputs are no longer unspent: the transaction, or a
+	 * replacement of it, was mined. Only a settled or failed record may be
+	 * pruned from the journal; a sent record whose inputs are still unspent
+	 * keeps them reserved however old it is.
+	 */
+	public static final String SETTLED = "settled";
 
 	public final String id;
 	public final String txid;
@@ -39,5 +46,11 @@ public final class PendingTx {
 
 	public boolean isUnresolved() {
 		return BROADCASTING.equals(state) || POSSIBLY_SENT.equals(state);
+	}
+
+	/** Whether the journal may drop this record at the given cutoff. */
+	public boolean prunableAt(long cutoff) {
+		return (SETTLED.equals(state) || FAILED.equals(state))
+				&& createdAt < cutoff;
 	}
 }

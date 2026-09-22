@@ -496,8 +496,10 @@ public class VaultViewModel extends AndroidViewModel {
 					walletPinPrompt.postValue(node + "|none");
 					return;
 				}
-				String fp = ElectrumClient.captureCertSha256(ep, torSocksPort);
-				walletPinPrompt.postValue(node + "|" + fp);
+				ElectrumClient.CapturedCert cert =
+						ElectrumClient.captureCert(ep, torSocksPort);
+				walletPinPrompt.postValue(node + "|"
+						+ (cert.caValid ? "ca" : "self") + "|" + cert.sha256);
 			} catch (Throwable e) {
 				walletPinPrompt.postValue(node + "|error");
 			}
@@ -797,7 +799,8 @@ public class VaultViewModel extends AndroidViewModel {
 			try {
 				try (ElectrumClient c = new ElectrumClient(
 						endpointFromNodeString(node), torSocksPort,
-						"nodecheck")) {
+						com.professor.zerion.android.vault.wallet.btc
+								.TorIsolation.ephemeral("nodecheck"))) {
 					ok = c.blockHeight() > 0;
 				}
 			} catch (Throwable ignored) {
@@ -959,6 +962,11 @@ public class VaultViewModel extends AndroidViewModel {
 	public void saveSpConfig(String oracle, int birthday) {
 		String id = currentWalletId;
 		if (id == null) {
+			return;
+		}
+		if (oracle.trim().regionMatches(true, 0, "http://", 0, 7)) {
+			walletError.postValue(new Event<>(getApplication()
+					.getString(R.string.wallet_sp_oracle_https)));
 			return;
 		}
 		WALLET_EXECUTOR.execute(() -> {
@@ -1664,8 +1672,9 @@ public class VaultViewModel extends AndroidViewModel {
 									continue;
 								}
 								String st = r.optString("state");
-								boolean resolved = "sent".equals(st)
-										|| "failed".equals(st);
+								boolean resolved = com.professor.zerion.android
+										.vault.wallet.btc.PendingTx.SETTLED
+										.equals(st) || "failed".equals(st);
 								if (resolved && r.optLong("createdAt") < cutoff) {
 									continue;
 								}
@@ -1914,7 +1923,7 @@ public class VaultViewModel extends AndroidViewModel {
 					walletBusy.postValue(false);
 					return;
 				}
-				sendGate.clear();
+				dropReviewedPlans();
 				BtcWallet previous = openBtc;
 				openBtc = w;
 				if (previous != null && previous != w) previous.close();
@@ -1959,9 +1968,20 @@ public class VaultViewModel extends AndroidViewModel {
 		WALLET_EXECUTOR.execute(() -> scanOpenBtc(false));
 	}
 
+	/**
+	 * Drops every reviewed plan. Called wherever the send gate was already
+	 * cleared: a failed credential, a section relock, a wallet close. The
+	 * sweep plan carries spend-capable keys, so it must not outlive any of
+	 * those events either.
+	 */
+	void dropReviewedPlans() {
+		sendGate.clear();
+		spSweepGate.clear();
+	}
+
 	public void closeBtcWallet() {
 		scanEpoch++;
-		sendGate.clear();
+		dropReviewedPlans();
 		spUtxos.clear();
 		BtcWallet previous = openBtc;
 		openBtc = null;
@@ -2308,7 +2328,7 @@ public class VaultViewModel extends AndroidViewModel {
 	 * throttle, drops any reviewed transaction, and after three failures locks
 	 * the wallet section again; the check itself never counts as activity.
 	 */
-	private boolean verifyWalletCredential(char[] credential) {
+	private synchronized boolean verifyWalletCredential(char[] credential) {
 		restoreCredentialFailures();
 		if (credentialThrottle.isThrottled()) {
 			SecureMemory.shred(credential);
@@ -2334,7 +2354,7 @@ public class VaultViewModel extends AndroidViewModel {
 		} else {
 			boolean relock = credentialThrottle.recordFailure();
 			persistCredentialFailures(credentialThrottle.failures());
-			sendGate.clear();
+			dropReviewedPlans();
 			if (relock) resetWalletSession();
 		}
 		return ok;
@@ -2359,6 +2379,16 @@ public class VaultViewModel extends AndroidViewModel {
 			if (scanEpoch != epoch || openBtc != w) {
 				return;
 			}
+			java.util.Set<String> txids = new java.util.HashSet<>();
+			for (ElectrumClient.HistItem h : r.history) {
+				txids.add(h.txHash);
+			}
+			if (BtcWallet.emptiedAfterHistory(lastTxids, txids)) {
+				walletOnline.postValue(false);
+				walletError.postValue(new Event<>(getApplication()
+						.getString(R.string.wallet_server_inconsistent)));
+				return;
+			}
 			lastBalance = r.balanceSat;
 			btcBalanceSat.postValue(r.balanceSat);
 
@@ -2377,10 +2407,6 @@ public class VaultViewModel extends AndroidViewModel {
 				}
 			}
 
-			java.util.Set<String> txids = new java.util.HashSet<>();
-			for (ElectrumClient.HistItem h : r.history) {
-				txids.add(h.txHash);
-			}
 			if (force || lastSummaries == null || !txids.equals(lastTxids)) {
 				List<BtcWallet.TxSummary> summaries = BtcWallet.mergePending(
 						w.history(r), w.pendingSummaries());

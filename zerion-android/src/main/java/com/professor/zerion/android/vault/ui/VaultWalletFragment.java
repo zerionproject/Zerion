@@ -195,26 +195,15 @@ public class VaultWalletFragment extends BaseFragment {
 	}
 
 	private void handleScanned(String raw) {
-		String addr = raw.trim();
-		String amt = null;
-		if (addr.toLowerCase(java.util.Locale.US).startsWith("bitcoin:")) {
-			addr = addr.substring("bitcoin:".length());
-			int q = addr.indexOf('?');
-			String query = "";
-			if (q >= 0) {
-				query = addr.substring(q + 1);
-				addr = addr.substring(0, q);
-			}
-			for (String param : query.split("&")) {
-				int eq = param.indexOf('=');
-				if (eq > 0 && param.substring(0, eq)
-						.equalsIgnoreCase("amount")) {
-					amt = android.net.Uri.decode(param.substring(eq + 1));
-				}
-			}
+		com.professor.zerion.android.vault.wallet.btc.Bip21Request request =
+				com.professor.zerion.android.vault.wallet.btc.Bip21Request
+						.parse(raw);
+		if (request == null) {
+			toast(getString(R.string.wallet_scan_unsupported));
+			return;
 		}
-		pendingScanAddress = addr;
-		pendingScanAmount = amt;
+		pendingScanAddress = request.address;
+		pendingScanAmount = request.amount;
 		pendingPayjoinUri = com.professor.zerion.android.vault.wallet.btc.payjoin
 				.PayjoinAvailability.canOffer(raw) ? raw : null;
 		showSendDialog();
@@ -369,7 +358,12 @@ public class VaultWalletFragment extends BaseFragment {
 			} else if ("error".equals(fp)) {
 				toast(getString(R.string.wallet_pin_read_failed));
 			} else {
-				showPinConfirmDialog(node, fp);
+				int status = node.lastIndexOf('|');
+				if (status < 0) {
+					return;
+				}
+				boolean caValid = "ca".equals(node.substring(status + 1));
+				showPinConfirmDialog(node.substring(0, status), fp, caValid);
 			}
 		});
 		viewModel.getWalletCoins().observe(getViewLifecycleOwner(), list -> {
@@ -2083,11 +2077,14 @@ public class VaultWalletFragment extends BaseFragment {
 		return sb.toString().toUpperCase();
 	}
 
-	private void showPinConfirmDialog(String node, String fp) {
+	private void showPinConfirmDialog(String node, String fp,
+			boolean caValid) {
 		track(new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.wallet_pin_confirm_title)
 				.setMessage(getString(R.string.wallet_pin_confirm_msg, node,
-						groupFingerprint(fp)))
+						groupFingerprint(fp)) + "\n\n" + getString(caValid
+						? R.string.wallet_pin_confirm_ca_valid
+						: R.string.wallet_pin_confirm_self_signed))
 				.setPositiveButton(R.string.wallet_pin_confirm_button,
 						(d, w) -> {
 							viewModel.confirmNodePin(node, fp);

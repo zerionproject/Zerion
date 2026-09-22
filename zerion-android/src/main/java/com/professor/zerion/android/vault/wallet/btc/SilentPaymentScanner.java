@@ -145,7 +145,10 @@ public final class SilentPaymentScanner {
 		while (b.endsWith("/")) {
 			b = b.substring(0, b.length() - 1);
 		}
-		String full = (b.startsWith("http://") || b.startsWith("https://"))
+		if (b.regionMatches(true, 0, "http://", 0, 7)) {
+			b = b.substring(7);
+		}
+		String full = b.regionMatches(true, 0, "https://", 0, 8)
 				? b : "https://" + b;
 		return full + "/" + path;
 	}

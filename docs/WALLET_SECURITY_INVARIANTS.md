@@ -58,7 +58,11 @@ release blocker, not a refactor.
 5. **Last-known-good over empty.** A valid, complete update is published; an
    invalid, error, or transient update retains the last known good state plus a
    degraded status indication. A hostile or broken endpoint must never be able to
-   turn a wallet with history into an empty wallet.
+   turn a wallet with history into an empty wallet. For Bitcoin the baseline is
+   the history seen earlier in the same session (`BtcWallet.emptiedAfterHistory`);
+   a scan that reports no history where history existed is refused and the last
+   verified state stays on screen. The first scan after opening a wallet has no
+   baseline and is published as received.
 
 6. **Secret buffers have consistent, non-consuming ownership.** A `char[]`/
    `byte[]` secret is owned by the top-level caller, which wipes it in its own

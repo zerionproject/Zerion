@@ -25,22 +25,22 @@ public final class SendGate {
 	@Nullable
 	private volatile String pendingWalletId;
 
-	public void prepare(BtcWallet.SendPlan plan, String walletId) {
+	public synchronized void prepare(BtcWallet.SendPlan plan, String walletId) {
 		this.pendingWalletId = walletId;
 		this.pending = plan;
 	}
 
-	public void clear() {
+	public synchronized void clear() {
 		this.pending = null;
 		this.pendingWalletId = null;
 	}
 
 	@Nullable
-	public BtcWallet.SendPlan pending() {
+	public synchronized BtcWallet.SendPlan pending() {
 		return pending;
 	}
 
-	public BtcWallet.SendPlan authorize(String reviewedFingerprint,
+	public synchronized BtcWallet.SendPlan authorize(String reviewedFingerprint,
 			boolean authenticated, @Nullable String walletId)
 			throws AuthorizationException {
 		BtcWallet.SendPlan p = pending;

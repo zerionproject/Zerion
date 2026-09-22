@@ -48,6 +48,8 @@ public class ElectrumClientFramingTest {
 		private final ServerSocket ss;
 		private final Thread thread;
 		private volatile Socket client;
+		final java.util.concurrent.CountDownLatch clientGone =
+				new java.util.concurrent.CountDownLatch(1);
 
 		FakeServer(Script script) throws IOException {
 			ss = new ServerSocket(0, 1, InetAddress.getLoopbackAddress());
@@ -73,6 +75,8 @@ public class ElectrumClientFramingTest {
 						}
 					}
 				} catch (IOException | InterruptedException ignored) {
+				} finally {
+					clientGone.countDown();
 				}
 			}, "fake-electrum");
 			thread.setDaemon(true);
@@ -175,8 +179,38 @@ public class ElectrumClientFramingTest {
 			client.broadcast("00");
 			fail();
 		} catch (ElectrumClient.ServerRejectedException expected) {
-			assertEquals("nope", expected.getMessage());
+			assertEquals("the server's text is not carried",
+					"server refused the request", expected.getMessage());
 		}
+	}
+
+	/**
+	 * A2-BTC-02: a server that streams lines with another id forever holds
+	 * the call only for a bounded number of lines, and when that happens
+	 * during construction the connected stream is closed rather than leaked:
+	 * the server sees its client go away.
+	 */
+	@Test(timeout = 30_000)
+	public void anUnansweredCallIsCutOffAndAFailedConstructionCloses()
+			throws Exception {
+		FakeServer server = server((id, request) -> {
+			List<byte[]> chunks = new ArrayList<>();
+			for (int i = 0; i < ElectrumClient.MAX_SKIPPED_LINES + 2; i++) {
+				chunks.add(bytes("{\"id\":999,\"result\":1}\n"));
+			}
+			return chunks;
+		});
+		ElectrumEndpoint ep = new ElectrumEndpoint("127.0.0.1", server.port(),
+				ElectrumEndpoint.Mode.PLAINTEXT, true, null);
+		try {
+			new ElectrumClient(ep, 0, "w");
+			fail();
+		} catch (IOException expected) {
+			assertEquals("no reply from server", expected.getMessage());
+		}
+		assertTrue("the stream was closed on failure",
+				server.clientGone.await(10, java.util.concurrent.TimeUnit
+						.SECONDS));
 	}
 
 	@Test(timeout = 30_000)

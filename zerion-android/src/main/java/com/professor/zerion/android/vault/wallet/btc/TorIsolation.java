@@ -38,6 +38,22 @@ public final class TorIsolation {
 		return walletId + "-pj";
 	}
 
+	/**
+	 * A tag used once, for a connection that belongs to no wallet, such as
+	 * a node health check or a certificate capture: each such connection
+	 * gets its own circuit instead of sharing one across wallets.
+	 */
+	public static String ephemeral(String purpose) {
+		byte[] nonce = new byte[4];
+		new java.security.SecureRandom().nextBytes(nonce);
+		StringBuilder sb = new StringBuilder(purpose).append('-');
+		for (byte b : nonce) {
+			sb.append(Character.forDigit((b >> 4) & 0xF, 16));
+			sb.append(Character.forDigit(b & 0xF, 16));
+		}
+		return sb.toString();
+	}
+
 	public static String socksUser(String tag) {
 		return "zw-" + tag;
 	}

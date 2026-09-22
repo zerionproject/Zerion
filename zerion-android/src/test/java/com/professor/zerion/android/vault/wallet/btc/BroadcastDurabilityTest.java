@@ -192,8 +192,63 @@ public class BroadcastDurabilityTest {
 		assertEquals(PendingTx.SENT, log.map.get("p1").state);
 	}
 
+	/**
+	 * A2-BTC-01: a server that relays the transaction and still answers
+	 * with an error must not free the inputs. The claimed rejection is an
+	 * uncertain broadcast: the record stays possibly sent, the inputs stay
+	 * reserved while the server shows them as unspent, a retry cannot pick
+	 * them, and once the server hides the inputs the record settles and the
+	 * payment stays visible as pending instead of vanishing as failed.
+	 */
 	@Test
-	public void reconcileMarksSentWhenInputsNoLongerUnspent()
+	public void aClaimedRejectionIsUncertainAndKeepsInputsReserved()
+			throws IOException {
+		FakeElectrum e = new FakeElectrum();
+		String sh = TestKeys.scriptHash(MNEMONIC, 0, 0);
+		e.addUtxo(sh, TX0, 0, 100000);
+		e.rejectBroadcast = true;
+		MemLog log = new MemLog();
+		assertThrows(BroadcastUncertainException.class,
+				() -> wallet(e, log).send(DEST, 50000, 1.0, false));
+		assertEquals(1, e.broadcasts.size());
+		assertEquals(PendingTx.POSSIBLY_SENT, log.only().state);
+		assertFalse("never a false failure once bytes reached a server",
+				log.stateHistory.contains(PendingTx.FAILED));
+
+		e.rejectBroadcast = false;
+		BtcWallet.ScanResult r = wallet(e, log).scan();
+		assertEquals("inputs stay reserved", 0L, r.balanceSat);
+		assertThrows(IOException.class,
+				() -> wallet(e, log).send(DEST, 50000, 1.0, false));
+		assertEquals("a retry sent nothing", 1, e.broadcasts.size());
+
+		e.unspent.remove(sh);
+		wallet(e, log).scan();
+		assertEquals(PendingTx.SETTLED, log.only().state);
+		BtcWallet w = wallet(e, log);
+		assertEquals("the payment stays visible", 1,
+				w.pendingSummaries().size());
+		assertEquals(BtcWallet.STATE_PENDING,
+				w.pendingSummaries().get(0).state);
+	}
+
+	/** A2-BTC-13: only settled or failed records may leave the journal. */
+	@Test
+	public void onlySettledOrFailedRecordsArePrunable() {
+		long cutoff = 1_000L;
+		PendingTx sent = new PendingTx("p", "t", "00", Arrays.asList(outpoint0()),
+				PendingTx.SENT, 0L, -1L);
+		assertFalse("live inputs keep the record", sent.prunableAt(cutoff));
+		assertFalse(sent.withState(PendingTx.POSSIBLY_SENT).prunableAt(cutoff));
+		assertTrue(sent.withState(PendingTx.SETTLED).prunableAt(cutoff));
+		assertTrue(sent.withState(PendingTx.FAILED).prunableAt(cutoff));
+		assertFalse("not before the cutoff", new PendingTx("p", "t", "00",
+				Arrays.asList(outpoint0()), PendingTx.SETTLED, cutoff, -1L)
+				.prunableAt(cutoff));
+	}
+
+	@Test
+	public void reconcileMarksSettledWhenInputsNoLongerUnspent()
 			throws IOException {
 		FakeElectrum e = new FakeElectrum();
 		MemLog log = new MemLog();
@@ -201,7 +256,7 @@ public class BroadcastDurabilityTest {
 				Arrays.asList(outpoint0()), PendingTx.POSSIBLY_SENT,
 				System.currentTimeMillis(), -50000L));
 		wallet(e, log).scan();
-		assertEquals(PendingTx.SENT, log.map.get("p1").state);
+		assertEquals(PendingTx.SETTLED, log.map.get("p1").state);
 	}
 
 	@Test
