@@ -144,6 +144,7 @@ public class ZerionControllerImpl implements ZerionController {
 	@Override
 	public void signOut(ResultHandler<Void> handler, boolean deleteAccount) {
 		wakeLockManager.executeWakefully(() -> {
+			if (deleteAccount) accountManager.shredDatabaseKey();
 			try {
 				IBinder binder = serviceConnection.waitForBinder();
 				ZerionService service =

@@ -197,6 +197,17 @@ class AccountManagerImpl implements AccountManager, Service {
 	}
 
 	@Override
+	public void shredDatabaseKey() {
+		synchronized (stateChangeLock) {
+			IoUtils.deleteFileOrDir(databaseConfig.getDatabaseKeyDirectory());
+			if (databaseKey != null) {
+				databaseKey.clear();
+				databaseKey = null;
+			}
+		}
+	}
+
+	@Override
 	public void signIn(char[] password) throws DecryptionException {
 		synchronized (stateChangeLock) {
 			checkLockout();

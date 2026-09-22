@@ -90,33 +90,37 @@ public class AndroidAccountManager extends AccountManagerImpl
 			} else {
 				order.addAll(profiles);
 			}
+			SecretKey matchedKey = null;
+			String matchedId = null;
+			boolean matchedNeedsUpgrade = false;
+			int attempts = 0;
 			for (String id : order) {
 				profileManager.setActiveProfileId(id);
 				String hex = loadEncryptedDatabaseKey();
 				if (hex == null) continue;
+				attempts++;
 				try {
 					byte[] ciphertext = fromHexString(hex);
 					KeyStrengthener strengthener =
 							databaseConfig.getKeyStrengthener();
 					byte[] plaintext = crypto.decryptWithPassword(ciphertext,
 							password, strengthener);
-					SecretKey key = new SecretKey(plaintext);
+					if (matchedKey != null) {
+						java.util.Arrays.fill(plaintext, (byte) 0);
+						continue;
+					}
+					matchedKey = new SecretKey(plaintext);
+					matchedId = id;
 					boolean needsStrengthenerUpgrade = strengthener != null
 							&& !crypto.isEncryptedWithStrengthenedKey(
 									ciphertext);
 					boolean needsKdfUpgrade =
 							crypto.isEncryptedWithLegacyKdf(ciphertext);
-					if (needsStrengthenerUpgrade || needsKdfUpgrade) {
-						encryptAndReplaceDatabaseKey(key, password);
-					}
-					materializePendingIdentityIfPresent(id);
-					setDatabaseKey(key);
-					profileManager.setActiveProfileId(id);
-					profileManager.writeLastActiveProfileId(id);
-					resetGlobalLockout();
-					return;
+					matchedNeedsUpgrade =
+							needsStrengthenerUpgrade || needsKdfUpgrade;
 				} catch (DecryptionException e) {
 					if (e.getDecryptionResult() == KEY_STRENGTHENER_ERROR) {
+						if (matchedKey != null) matchedKey.clear();
 						profileManager.setActiveProfileId(previousActive);
 						throw e;
 					}
@@ -124,9 +128,52 @@ public class AndroidAccountManager extends AccountManagerImpl
 						ignored) {
 				}
 			}
+			padSignInAttempts(attempts, order, password);
+			if (matchedKey != null) {
+				profileManager.setActiveProfileId(matchedId);
+				if (matchedNeedsUpgrade) {
+					encryptAndReplaceDatabaseKey(matchedKey, password);
+				}
+				materializePendingIdentityIfPresent(matchedId);
+				setDatabaseKey(matchedKey);
+				profileManager.writeLastActiveProfileId(matchedId);
+				resetGlobalLockout();
+				return;
+			}
 			profileManager.setActiveProfileId(previousActive);
 			recordGlobalFailedAttempt();
 			throw new DecryptionException(INVALID_CIPHERTEXT);
+		}
+	}
+
+	/**
+	 * The password is tried against every profile, so the work does not
+	 * reveal which profile matched; and once a second profile has ever
+	 * existed the derivation runs at least this many times, so a device with
+	 * one visible profile and a device that also holds a hidden one take the
+	 * same time to sign in.
+	 */
+	static final int MIN_TIMED_ATTEMPTS = 2;
+
+	@GuardedBy("stateChangeLock")
+	private void padSignInAttempts(int attempts, List<String> order,
+			char[] password) {
+		if (order.isEmpty()) return;
+		int minimum = profileManager.hasEverHadMultipleProfiles()
+				? MIN_TIMED_ATTEMPTS : 1;
+		if (attempts >= minimum) return;
+		profileManager.setActiveProfileId(order.get(0));
+		String hex = loadEncryptedDatabaseKey();
+		if (hex == null) return;
+		for (int i = attempts; i < minimum; i++) {
+			try {
+				byte[] plaintext = crypto.decryptWithPassword(
+						fromHexString(hex), password,
+						databaseConfig.getKeyStrengthener());
+				java.util.Arrays.fill(plaintext, (byte) 0);
+			} catch (DecryptionException
+					| org.zerionproject.core.api.FormatException ignored) {
+			}
 		}
 	}
 

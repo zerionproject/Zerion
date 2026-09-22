@@ -212,6 +212,10 @@ public class BruteForceProtectionTest {
 		}
 
 		@Override
+		public void shredDatabaseKey() {
+		}
+
+		@Override
 		public void signIn(char[] password) throws DecryptionException {
 			if (throttle.remainingLockoutMs() > 0) {
 				throw new DecryptionException(

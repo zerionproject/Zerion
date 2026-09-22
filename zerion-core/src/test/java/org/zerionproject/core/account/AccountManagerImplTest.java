@@ -519,6 +519,38 @@ public class AccountManagerImplTest extends BrambleMockTestCase {
 		assertEquals(encryptedKeyHex, loadDatabaseKey(keyBackupFile));
 	}
 
+	@Test
+	public void testShreddingTheKeyRemovesBothFilesAndTheLoadedKey()
+			throws Exception {
+		context.checking(new Expectations() {{
+			oneOf(crypto).decryptWithPassword(encryptedKey, password,
+					keyStrengthener);
+			will(returnValue(key.getBytes()));
+			oneOf(crypto).isEncryptedWithStrengthenedKey(encryptedKey);
+			will(returnValue(true));
+			oneOf(crypto).isEncryptedWithLegacyKdf(encryptedKey);
+			will(returnValue(false));
+		}});
+
+		storeDatabaseKey(keyFile, encryptedKeyHex);
+		storeDatabaseKey(keyBackupFile, encryptedKeyHex);
+		accountManager.signIn(password);
+		assertTrue(accountManager.hasDatabaseKey());
+
+		accountManager.shredDatabaseKey();
+
+		assertFalse(keyFile.exists());
+		assertFalse(keyBackupFile.exists());
+		assertFalse(keyDir.exists());
+		assertFalse(accountManager.hasDatabaseKey());
+		assertNull(accountManager.loadEncryptedDatabaseKey());
+		assertFalse(accountManager.accountExists());
+
+		accountManager.deleteAccount();
+		accountManager.shredDatabaseKey();
+		assertFalse(accountManager.hasDatabaseKey());
+	}
+
 	private void storeDatabaseKey(File f, String hex) throws IOException {
 		f.getParentFile().mkdirs();
 		FileOutputStream out = new FileOutputStream(f);

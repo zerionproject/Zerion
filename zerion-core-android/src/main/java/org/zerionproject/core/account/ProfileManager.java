@@ -245,11 +245,32 @@ public class ProfileManager {
 	public boolean createProfileDir(String profileId) {
 		File root = getProfileRoot(profileId);
 		if (root.exists()) return false;
+		boolean another = !listProfileIds().isEmpty();
 		if (!root.mkdirs()) return false;
 		getDbDir(profileId);
 		getKeyDir(profileId);
 		getTorDir(profileId);
+		if (another) markMultipleProfiles();
 		return true;
+	}
+
+	private static final String MULTI_PROFILE_MARKER = ".multi";
+
+	/**
+	 * True once a second profile has ever existed on this device. The mark
+	 * is never cleared, so deleting a hidden profile does not change the
+	 * sign-in timing either.
+	 */
+	public boolean hasEverHadMultipleProfiles() {
+		return new File(getProfilesRoot(), MULTI_PROFILE_MARKER).exists();
+	}
+
+	private void markMultipleProfiles() {
+		File mark = new File(getProfilesRoot(), MULTI_PROFILE_MARKER);
+		try {
+			if (!mark.exists() && !mark.createNewFile()) return;
+		} catch (java.io.IOException ignored) {
+		}
 	}
 
 	public void secureWipeProfile(String profileId) {
