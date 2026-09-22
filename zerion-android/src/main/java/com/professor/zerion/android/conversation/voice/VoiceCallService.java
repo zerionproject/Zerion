@@ -1609,6 +1609,11 @@ public class VoiceCallService extends Service implements EventListener {
 
 		switch (signal.getType()) {
 			case CALL_ANSWER:
+				if (!CallSignalGate.answerAccepted(!isIncoming,
+						callState == CallState.RINGING
+								|| callState == CallState.CONNECTING)) {
+					return;
+				}
 				String remoteOnion = signal.getOnionAddress();
 				Integer remotePort = signal.getOnionPort();
 				if (remoteOnion != null && remotePort != null) {
@@ -1816,6 +1821,11 @@ public class VoiceCallService extends Service implements EventListener {
 
 			case CALL_ANSWER:
 				if (callId == null || !callId.equals(signalCallId)) {
+					return;
+				}
+				if (!CallSignalGate.answerAccepted(!isIncoming,
+						callState == CallState.RINGING
+								|| callState == CallState.CONNECTING)) {
 					return;
 				}
 				String payload = header.getPayload();

@@ -132,6 +132,8 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	private long lastCallLaunchMs = 0L;
 	@Nullable
 	private String lastLaunchedCallId = null;
+	private final com.professor.zerion.android.conversation.voice
+			.CallSignalGate callSignalGate;
 	private final VoiceSignalFactory voiceSignalFactory;
 	private final AtomicBoolean used = new AtomicBoolean(false);
 
@@ -177,6 +179,8 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		this.conversationManager = conversationManager;
 		this.voiceSignalFactory = voiceSignalFactory;
 		this.uiPrefs = uiPrefs;
+		this.callSignalGate = new com.professor.zerion.android.conversation
+				.voice.CallSignalGate(clock::currentTimeMillis);
 		appContext = app.getApplicationContext();
 		notificationManager = (NotificationManager)
 				appContext.getSystemService(NOTIFICATION_SERVICE);
@@ -975,6 +979,12 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 			return;
 		}
 		String remoteCallId = parts.length > 2 ? parts[2] : null;
+		if (!callSignalGate.admitOffer(
+				String.valueOf(event.getContactId().getInt()),
+				remoteCallId == null ? "" : remoteCallId,
+				event.getMessageHeader().getTimestamp())) {
+			return;
+		}
 		synchronized (callLaunchLock) {
 			long now = clock.currentTimeMillis();
 			if (remoteCallId != null &&
@@ -1035,6 +1045,12 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 			try {
 				Contact contact = contactManager.getContact(contactId);
 				String callId = header.getCallId();
+				if (!callSignalGate.admitOffer(
+						String.valueOf(contactId.getInt()),
+						callId == null ? "" : callId,
+						header.getTimestamp())) {
+					return;
+				}
 				String rawPayload = header.getPayload();
 
 				boolean isVideoCall = false;
