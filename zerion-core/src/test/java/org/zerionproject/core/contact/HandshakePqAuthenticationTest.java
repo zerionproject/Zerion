@@ -252,6 +252,16 @@ public class HandshakePqAuthenticationTest {
 
 	@Test(timeout = 120_000)
 	public void testPeerSpeakingMinorVersionTwoIsRefused() throws Exception {
+		assertMinorVersionRefused((byte) 2);
+	}
+
+	/** CRY-07: a peer without the static-ephemeral terms is refused. */
+	@Test
+	public void testPeerSpeakingMinorVersionThreeIsRefused() throws Exception {
+		assertMinorVersionRefused((byte) 3);
+	}
+
+	private void assertMinorVersionRefused(byte minor) throws Exception {
 		KeyPair aliceKeys = crypto.generateHybridAgreementKeyPair();
 		KeyPair bobKeys = crypto.generateHybridAgreementKeyPair();
 		KeyPair bobEphemeral = crypto.generateHybridAgreementKeyPair();
@@ -285,14 +295,14 @@ public class HandshakePqAuthenticationTest {
 					bobKeys.getPublic().getEncoded());
 			expectRecord(r, RECORD_TYPE_MINOR_VERSION);
 			expectRecord(r, RECORD_TYPE_HYBRID_STATIC_KEY);
-			write(w, RECORD_TYPE_MINOR_VERSION, new byte[] {2});
+			write(w, RECORD_TYPE_MINOR_VERSION, new byte[] {minor});
 			write(w, RECORD_TYPE_HYBRID_STATIC_KEY,
 					bobEphemeral.getPublic().getEncoded());
 		} else {
 			write(w, RECORD_TYPE_HYBRID_STATIC_KEY,
 					bobKeys.getPublic().getEncoded());
 			expectRecord(r, RECORD_TYPE_HYBRID_STATIC_KEY);
-			write(w, RECORD_TYPE_MINOR_VERSION, new byte[] {2});
+			write(w, RECORD_TYPE_MINOR_VERSION, new byte[] {minor});
 			write(w, RECORD_TYPE_HYBRID_STATIC_KEY,
 					bobEphemeral.getPublic().getEncoded());
 		}
@@ -334,8 +344,9 @@ public class HandshakePqAuthenticationTest {
 				assertTrue(types[i] != types[j]);
 			}
 		}
-		assertEquals(3, HandshakeConstants.PROTOCOL_MINOR_VERSION);
+		assertEquals(4, HandshakeConstants.PROTOCOL_MINOR_VERSION);
 		assertEquals(3, HandshakeConstants.PQ_AUTH_MINOR_VERSION);
+		assertEquals(4, HandshakeConstants.KCI_MINOR_VERSION);
 	}
 
 	/** Rewrites the records of one direction; index counts records seen. */

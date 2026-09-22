@@ -39,7 +39,7 @@ import static org.zerionproject.core.api.crypto.PostQuantumConstants.ML_KEM_768_
 import static org.zerionproject.core.contact.HandshakeConstants.PROOF_BYTES;
 import static org.zerionproject.core.contact.HandshakeConstants.PROTOCOL_MAJOR_VERSION;
 import static org.zerionproject.core.contact.HandshakeConstants.PROTOCOL_MINOR_VERSION;
-import static org.zerionproject.core.contact.HandshakeConstants.PQ_AUTH_MINOR_VERSION;
+import static org.zerionproject.core.contact.HandshakeConstants.KCI_MINOR_VERSION;
 import static org.zerionproject.core.api.Bytes.compare;
 import static org.zerionproject.core.api.contact.HandshakeLinkConstants.HYBRID_COMMITMENT_BYTES;
 import static org.zerionproject.core.api.contact.HandshakeLinkConstants.HYBRID_COMMITMENT_LABEL;
@@ -192,7 +192,7 @@ class HandshakeManagerImpl implements HandshakeManager {
 			sendHybridStaticKey(recordWriter, ourHybridEphemeralKeyPair.getPublic());
 		}
 
-		if (theirMinorVersion < PQ_AUTH_MINOR_VERSION) {
+		if (theirMinorVersion < KCI_MINOR_VERSION) {
 			throw new FormatException();
 		}
 

@@ -68,6 +68,54 @@ public class HybridCryptographyTest extends BrambleMockTestCase {
 		assertTrue(keyPair.getPrivate() instanceof HybridAgreementPrivateKey);
 	}
 
+	/**
+	 * CRY-07: the static-ephemeral X25519 terms are computed by both sides in
+	 * the same canonical order, and each term needs one party's static private
+	 * key together with the other party's ephemeral private key, so a holder
+	 * of only one static private key cannot produce the pair.
+	 */
+	@Test
+	public void testStaticEphemeralTermsAgreeAcrossRoles() throws Exception {
+		HybridKeyAgreement agreement = new HybridKeyAgreement(
+				new SecureRandom());
+		KeyPair aliceStatic = crypto.generateHybridAgreementKeyPair();
+		KeyPair aliceEph = crypto.generateHybridAgreementKeyPair();
+		KeyPair bobStatic = crypto.generateHybridAgreementKeyPair();
+		KeyPair bobEph = crypto.generateHybridAgreementKeyPair();
+		byte[][] fromAlice = agreement.staticEphemeralTerms(
+				(HybridAgreementPublicKey) bobStatic.getPublic(),
+				(HybridAgreementPublicKey) bobEph.getPublic(),
+				aliceStatic.getPublic(),
+				((HybridAgreementPrivateKey) aliceStatic.getPrivate())
+						.getX25519PrivateKey(),
+				((HybridAgreementPrivateKey) aliceEph.getPrivate())
+						.getX25519PrivateKey());
+		byte[][] fromBob = agreement.staticEphemeralTerms(
+				(HybridAgreementPublicKey) aliceStatic.getPublic(),
+				(HybridAgreementPublicKey) aliceEph.getPublic(),
+				bobStatic.getPublic(),
+				((HybridAgreementPrivateKey) bobStatic.getPrivate())
+						.getX25519PrivateKey(),
+				((HybridAgreementPrivateKey) bobEph.getPrivate())
+						.getX25519PrivateKey());
+		assertArrayEquals(fromAlice[0], fromBob[0]);
+		assertArrayEquals(fromAlice[1], fromBob[1]);
+		assertFalse(java.util.Arrays.equals(fromAlice[0], fromAlice[1]));
+		KeyPair malloryEph = crypto.generateHybridAgreementKeyPair();
+		byte[][] impostor = agreement.staticEphemeralTerms(
+				(HybridAgreementPublicKey) aliceStatic.getPublic(),
+				(HybridAgreementPublicKey) aliceEph.getPublic(),
+				bobStatic.getPublic(),
+				((HybridAgreementPrivateKey) aliceStatic.getPrivate())
+						.getX25519PrivateKey(),
+				((HybridAgreementPrivateKey) malloryEph.getPrivate())
+						.getX25519PrivateKey());
+		assertFalse("an impostor holding Alice's static key and posing as Bob"
+				+ " cannot reproduce both terms",
+				java.util.Arrays.equals(impostor[0], fromAlice[0])
+						&& java.util.Arrays.equals(impostor[1], fromAlice[1]));
+	}
+
 	@Test
 	public void testHybridKeyAgreementRoundTrip() throws GeneralSecurityException {
 

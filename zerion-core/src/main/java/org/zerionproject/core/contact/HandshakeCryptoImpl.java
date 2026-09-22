@@ -16,7 +16,7 @@ import static org.zerionproject.core.contact.HandshakeConstants.ALICE_PROOF_LABE
 import static org.zerionproject.core.contact.HandshakeConstants.BOB_PROOF_LABEL;
 import static org.zerionproject.core.contact.HandshakeConstants.MASTER_KEY_LABEL_HYBRID;
 import static org.zerionproject.core.contact.HandshakeConstants.MASTER_KEY_LABEL_HYBRID_FS;
-import static org.zerionproject.core.contact.HandshakeConstants.MASTER_KEY_LABEL_HYBRID_PQ_AUTH;
+import static org.zerionproject.core.contact.HandshakeConstants.MASTER_KEY_LABEL_HYBRID_KCI;
 
 @Immutable
 @NotNullByDefault
@@ -142,7 +142,7 @@ class HandshakeCryptoImpl implements HandshakeCrypto {
 				new byte[] {alice ? theirMinor : ourMinor}
 		};
 		return crypto.deriveHybridSharedSecretPqAuth(
-				MASTER_KEY_LABEL_HYBRID_PQ_AUTH, theirStaticPublicKey,
+				MASTER_KEY_LABEL_HYBRID_KCI, theirStaticPublicKey,
 				theirEphemeralPublicKey, ourStaticKeyPair,
 				ourEphemeralKeyPair, ephemeralKemSecret, kemSecretToAlice,
 				kemSecretToBob, inputs);
