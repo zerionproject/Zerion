@@ -220,6 +220,7 @@ class PrivateMessageValidator implements MessageValidator {
 		checkSize(body, 1);
 		String text = body.getString(0);
 		checkLength(text, 0, MAX_PRIVATE_MESSAGE_TEXT_LENGTH);
+		VoiceMemoFormatCheck.requireCurrentFormat(text);
 		BdfDictionary meta = new BdfDictionary();
 		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
 		meta.put(MSG_KEY_LOCAL, false);
@@ -232,6 +233,7 @@ class PrivateMessageValidator implements MessageValidator {
 		checkSize(body, 3, 5);
 		String text = body.getOptionalString(1);
 		checkLength(text, 0, MAX_PRIVATE_MESSAGE_TEXT_LENGTH);
+		VoiceMemoFormatCheck.requireCurrentFormat(text);
 		BdfList headers = body.getList(2);
 		if (text == null) checkSize(headers, 1, MAX_ATTACHMENTS_PER_MESSAGE);
 		else checkSize(headers, 0, MAX_ATTACHMENTS_PER_MESSAGE);

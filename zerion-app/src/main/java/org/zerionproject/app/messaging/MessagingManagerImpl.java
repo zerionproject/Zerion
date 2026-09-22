@@ -719,6 +719,11 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			String text, long timestamp, byte[] meshSenderId,
 			@Nullable byte[] parentMeshSenderId) throws DbException {
 		try {
+			VoiceMemoFormatCheck.requireCurrentFormat(text);
+		} catch (FormatException e) {
+			return;
+		}
+		try {
 			GroupId groupId = getConversationId(txn, contactId);
 			Message m = clientHelper.createMessage(groupId, timestamp,
 					BdfList.of(text));

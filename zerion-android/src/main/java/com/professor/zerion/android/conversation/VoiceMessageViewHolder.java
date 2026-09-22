@@ -49,8 +49,14 @@ public class VoiceMessageViewHolder {
 	private int loadingState = STATE_LOADING;
 	private volatile boolean released = false;
 
+	private final com.professor.zerion.android.conversation.voice.VoiceMemoKeys
+			voiceMemoKeys;
+
 	public VoiceMessageViewHolder(View view, AttachmentReader attachmentReader,
-			@DatabaseExecutor Executor dbExecutor) {
+			@DatabaseExecutor Executor dbExecutor,
+			com.professor.zerion.android.conversation.voice.VoiceMemoKeys
+					voiceMemoKeys) {
+		this.voiceMemoKeys = voiceMemoKeys;
 		this.playPauseButton = view.findViewById(R.id.playPauseButton);
 		this.progressBar = view.findViewById(R.id.voiceProgress);
 		this.durationText = view.findViewById(R.id.voiceDuration);
@@ -101,8 +107,14 @@ public class VoiceMessageViewHolder {
 		});
 	}
 
-	public void bindEncryptedVoice(String messageText, org.zerionproject.core.api.sync.GroupId groupId,
-	                                 org.zerionproject.core.api.sync.MessageId messageId) {
+	/**
+	 * Decrypts and prepares a memo. The memo is opened under the identity of
+	 * the message that carries it: its timestamp, and the sender and recipient
+	 * author ids as seen from this device.
+	 */
+	public void bindEncryptedVoice(String messageText,
+			org.zerionproject.core.api.sync.GroupId groupId, long timestamp,
+			boolean incoming) {
 		released = false;
 		stop();
 		isPlaying = false;
@@ -120,13 +132,13 @@ public class VoiceMessageViewHolder {
 			try {
 				com.professor.zerion.android.conversation.voice.VoiceMessagePayloadParser.ParsedPayload payload =
 					com.professor.zerion.android.conversation.voice.VoiceMessagePayloadParser.parse(parsed.getPayload());
-				byte[] formatVersion = new byte[]{1};
-				byte[] groupIdBytes = groupId.getBytes();
-				byte[] emptyMessageId = new byte[0];
+				byte[] senderId = incoming ? voiceMemoKeys.remoteAuthorId()
+						: voiceMemoKeys.localAuthorId();
+				byte[] recipientId = incoming ? voiceMemoKeys.localAuthorId()
+						: voiceMemoKeys.remoteAuthorId();
 				byte[] decryptedMuLaw = com.professor.zerion.android.conversation.voice.StreamingAudioDecryptor.decryptAll(
-					payload.wrappedKey, payload.iv, payload.chunks, payload.tags,
-					payload.chunks.size(), payload.durationMs, payload.globalMAC,
-					formatVersion, groupIdBytes, emptyMessageId);
+					payload, groupId.getBytes(), timestamp, senderId,
+					recipientId, voiceMemoKeys);
 
 				payload.zeroize();
 				byte[] decryptedPcm = com.professor.zerion.android.conversation.voice.AudioCodec.muLawToPcm(decryptedMuLaw);

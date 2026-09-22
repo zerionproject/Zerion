@@ -327,4 +327,39 @@ public class ContactManagerImplTest extends BrambleMockTestCase {
 		assertEquals(WAITING_FOR_CONNECTION, pair.getSecond());
 	}
 
+
+	@Test
+	public void deriveContactKeyUsesTheSharedPairingSecret() throws Exception {
+		Transaction txn = new Transaction(null, true);
+		byte[] salt = getRandomId();
+		SecretKey derived = getSecretKey();
+		PcsSessionState state = new PcsSessionState(getSecretKey(), 0, 0,
+				rootKey, null, false, 0, null);
+
+		context.checking(new DbExpectations() {{
+			oneOf(db).transactionWithResult(with(true), withDbCallable(txn));
+			oneOf(pcsStateManager).loadSendState(txn, contactId);
+			will(returnValue(state));
+			oneOf(crypto).deriveKey("org.zerionproject.voice/MEMO_WRAP_KEY",
+					rootKey, salt);
+			will(returnValue(derived));
+		}});
+
+		assertEquals(derived, contactManager.deriveContactKey(contactId,
+				"org.zerionproject.voice/MEMO_WRAP_KEY", salt));
+	}
+
+	@Test(expected = NoSuchContactException.class)
+	public void deriveContactKeyFailsWithoutAPairingSecret() throws Exception {
+		Transaction txn = new Transaction(null, true);
+
+		context.checking(new DbExpectations() {{
+			oneOf(db).transactionWithResult(with(true), withDbCallable(txn));
+			oneOf(pcsStateManager).loadSendState(txn, contactId);
+			will(returnValue(null));
+		}});
+
+		contactManager.deriveContactKey(contactId,
+				"org.zerionproject.voice/MEMO_WRAP_KEY", getRandomId());
+	}
 }

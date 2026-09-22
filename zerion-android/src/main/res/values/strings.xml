@@ -961,6 +961,7 @@
 	<string name="voice_msg_decrypting">Decrypting…</string>
 	<string name="voice_msg_failed_to_load">Failed to load</string>
 	<string name="voice_msg_verification_failed">Verification failed</string>
+	<string name="voice_msg_peer_update_required">This contact\'s app must be updated before it can receive voice messages.</string>
 	<string name="max_attachments_allowed">Maximum %d attachments allowed</string>
 	<string name="image_mesh_not_supported">Image could not be sent over mesh</string>
 	<string name="call_event_outgoing">Outgoing secure voice call</string>

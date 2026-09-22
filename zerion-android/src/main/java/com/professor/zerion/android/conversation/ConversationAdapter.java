@@ -37,6 +37,8 @@ class ConversationAdapter
 	private final ImageItemDecoration imageItemDecoration;
 	private final org.zerionproject.app.api.attachment.AttachmentReader attachmentReader;
 	private final java.util.concurrent.Executor dbExecutor;
+	private final com.professor.zerion.android.conversation.voice.VoiceMemoKeys
+			voiceMemoKeys;
 	@Nullable
 	private SelectionTracker<String> tracker = null;
 	private int highlightedPosition = -1;
@@ -44,11 +46,14 @@ class ConversationAdapter
 	ConversationAdapter(Context ctx,
 			ConversationListener conversationListener,
 			org.zerionproject.app.api.attachment.AttachmentReader attachmentReader,
-			java.util.concurrent.Executor dbExecutor) {
+			java.util.concurrent.Executor dbExecutor,
+			com.professor.zerion.android.conversation.voice.VoiceMemoKeys
+					voiceMemoKeys) {
 		super(ctx, ConversationItem.class);
 		listener = conversationListener;
 		this.attachmentReader = attachmentReader;
 		this.dbExecutor = dbExecutor;
+		this.voiceMemoKeys = voiceMemoKeys;
 		imageViewPool = new RecycledViewPool();
 		imageViewPool.setMaxRecycledViews(R.layout.list_item_image, 24);
 		imageItemDecoration = new ImageItemDecoration(ctx);
@@ -98,10 +103,12 @@ class ConversationAdapter
 				type, viewGroup, false);
 		if (type == R.layout.list_item_conversation_msg_in) {
 			return new ConversationMessageViewHolder(v, listener, true,
-					imageViewPool, imageItemDecoration, attachmentReader, dbExecutor);
+					imageViewPool, imageItemDecoration, attachmentReader, dbExecutor,
+					voiceMemoKeys);
 		} else if (type == R.layout.list_item_conversation_msg_out) {
 			return new ConversationMessageViewHolder(v, listener, false,
-					imageViewPool, imageItemDecoration, attachmentReader, dbExecutor);
+					imageViewPool, imageItemDecoration, attachmentReader, dbExecutor,
+					voiceMemoKeys);
 		} else if (type == R.layout.list_item_conversation_secret_in) {
 			return new ConversationSecretNoteViewHolder(v, listener, true);
 		} else if (type == R.layout.list_item_conversation_secret_out) {

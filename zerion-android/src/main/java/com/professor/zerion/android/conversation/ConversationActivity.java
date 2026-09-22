@@ -302,7 +302,8 @@ public class ConversationActivity extends ZerionActivity
 		visitor = new ConversationVisitor(this, this, this,
 				viewModel.getContactDisplayName(), viewModel, groupTrManager);
 		adapter = new ConversationAdapter(this, this,
-				attachmentRetriever.getAttachmentReader(), dbExecutor);
+				attachmentRetriever.getAttachmentReader(), dbExecutor,
+				viewModel.voiceMemoKeys());
 		list = findViewById(R.id.conversationView);
 		layoutManager = new LinearLayoutManager(this);
 		list.setLayoutManager(layoutManager);
@@ -1649,8 +1650,15 @@ public class ConversationActivity extends ZerionActivity
 	}
 
 	@Override
-	public void onEncryptionInit(byte[] iv, byte[] sessionKey) {
-		viewModel.onEncryptionInit(iv, sessionKey);
+	public com.professor.zerion.android.conversation.voice.VoiceMemoKeys
+			getVoiceMemoKeys() {
+		return viewModel.voiceMemoKeys();
+	}
+
+	@Override
+	public void onEncryptionInit(byte[] iv, byte[] sessionKey,
+			long timestamp) {
+		viewModel.onEncryptionInit(iv, sessionKey, timestamp);
 	}
 
 	@Override

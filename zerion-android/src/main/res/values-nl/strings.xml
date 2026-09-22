@@ -988,6 +988,7 @@
 	<string name="slide_to_cancel">← Schuif om te annuleren</string>
 	<string name="voice_message_too_short">Spraakbericht te kort</string>
 	<string name="voice_message_too_long">Spraakbericht te lang. Houd het onder 30 seconden.</string>
+	<string name="voice_msg_peer_update_required">De app van dit contact moet worden bijgewerkt voordat die spraakberichten kan ontvangen.</string>
 	<string name="microphone_permission_required">Microfoontoestemming is vereist voor spraakberichten</string>
 	<string name="hold_to_record">Ingedrukt houden om op te nemen, loslaten om te verzenden</string>
 	<string name="voice_message_loading">Laden…</string>

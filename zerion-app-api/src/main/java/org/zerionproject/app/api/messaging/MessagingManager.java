@@ -26,9 +26,16 @@ public interface MessagingManager extends ConversationClient {
 
 	int MINOR_VERSION =
 			org.zerionproject.core.api.contact.B3Constants.B3_PROOF_ENABLED
-					? 6 : 5;
+					? 7 : 5;
 
-	int CHUNKED_VOICE_MIN_VERSION = 6;
+	/**
+	 * The peer's minor version from which voice memos are exchanged in the
+	 * current format: wrap key derived from the pairing secret, message
+	 * identity bound into the associated data, long memos chunked. Memos are
+	 * not sent to older peers, and memos in the earlier format are refused
+	 * on receipt.
+	 */
+	int VOICE_MEMO_V2_MIN_VERSION = 7;
 
 	void addLocalMessage(PrivateMessage m) throws DbException;
 

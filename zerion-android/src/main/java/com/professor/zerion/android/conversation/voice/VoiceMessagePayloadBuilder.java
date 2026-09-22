@@ -11,7 +11,7 @@ import java.util.List;
 @NotNullByDefault
 public class VoiceMessagePayloadBuilder {
 
-	private static final byte FORMAT_VERSION = 1;
+	private static final byte FORMAT_VERSION = VoiceMemoCrypto.FORMAT_VERSION;
 	private static final int IV_LENGTH = 12;
 	private static final int WRAPPED_KEY_LENGTH = 80;
 	private static final int TAG_LENGTH = 16;

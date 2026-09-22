@@ -44,15 +44,20 @@ class ConversationMessageViewHolder extends ConversationItemViewHolder {
 	private String boundVoiceStateKey;
 	private final AttachmentReader attachmentReader;
 	private final Executor dbExecutor;
+	private final com.professor.zerion.android.conversation.voice.VoiceMemoKeys
+			voiceMemoKeys;
 
 	ConversationMessageViewHolder(View v, ConversationListener listener,
 			boolean isIncoming, RecycledViewPool imageViewPool,
 			ImageItemDecoration imageItemDecoration,
 			AttachmentReader attachmentReader,
-			@DatabaseExecutor Executor dbExecutor) {
+			@DatabaseExecutor Executor dbExecutor,
+			com.professor.zerion.android.conversation.voice.VoiceMemoKeys
+					voiceMemoKeys) {
 		super(v, listener, isIncoming);
 		this.attachmentReader = attachmentReader;
 		this.dbExecutor = dbExecutor;
+		this.voiceMemoKeys = voiceMemoKeys;
 		statusLayout = v.findViewById(R.id.statusLayout);
 		voiceMessageView = v.findViewById(R.id.voiceMessageView);
 
@@ -204,11 +209,12 @@ class ConversationMessageViewHolder extends ConversationItemViewHolder {
 				voiceHolder.onRecycled();
 			}
 			voiceHolder = new VoiceMessageViewHolder(voiceMessageView,
-					attachmentReader, dbExecutor);
+					attachmentReader, dbExecutor, voiceMemoKeys);
 			if (part != null) {
 				if (reassembled != null) {
 					voiceHolder.bindEncryptedVoice(reassembled,
-							item.getGroupId(), item.getId());
+							item.getGroupId(), item.getTime(),
+							item.isIncoming());
 				} else if (stateKey.equals("failed")) {
 					voiceHolder.bindFailed();
 				} else {
@@ -216,7 +222,7 @@ class ConversationMessageViewHolder extends ConversationItemViewHolder {
 				}
 			} else if (stateKey.equals("msg")) {
 				voiceHolder.bindEncryptedVoice(messageText, item.getGroupId(),
-						item.getId());
+						item.getTime(), item.isIncoming());
 			} else {
 				voiceHolder.bind(item.getAttachments().get(0));
 			}

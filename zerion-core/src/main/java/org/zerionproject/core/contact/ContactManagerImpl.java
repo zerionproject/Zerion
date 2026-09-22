@@ -490,4 +490,20 @@ class ContactManagerImpl implements ContactManager, EventListener {
 				System.currentTimeMillis());
 		pcsStateManager.savePqState(txn, contactId, pqState);
 	}
+
+	@Override
+	public SecretKey deriveContactKey(ContactId c, String label,
+			byte[]... inputs) throws DbException {
+		return db.transactionWithResult(true, txn ->
+				deriveContactKey(txn, c, label, inputs));
+	}
+
+	@Override
+	public SecretKey deriveContactKey(Transaction txn, ContactId c,
+			String label, byte[]... inputs) throws DbException {
+		PcsSessionState state = pcsStateManager.loadSendState(txn, c);
+		SecretKey rootKey = state == null ? null : state.getRootKey();
+		if (rootKey == null) throw new NoSuchContactException();
+		return crypto.deriveKey(label, rootKey, inputs);
+	}
 }

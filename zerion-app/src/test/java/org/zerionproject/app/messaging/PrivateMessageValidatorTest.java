@@ -606,4 +606,29 @@ public class PrivateMessageValidatorTest extends BrambleMockTestCase {
 		return BdfList.of(new MessageId(getRandomId()),
 				getRandomString(MAX_CONTENT_TYPE_BYTES));
 	}
+
+	@Test(expected = InvalidMessageException.class)
+	public void testRejectsLegacyMessageCarryingARetiredVoiceMemoFormat()
+			throws Exception {
+		testRejectsLegacyMessage(BdfList.of(voiceMemoText(1)));
+	}
+
+	@Test
+	public void testAcceptsLegacyMessageCarryingACurrentVoiceMemo()
+			throws Exception {
+		testAcceptsLegacyMessage(BdfList.of(voiceMemoText(2)));
+	}
+
+	@Test(expected = InvalidMessageException.class)
+	public void testRejectsPrivateMessageCarryingARetiredVoiceMemoFormat()
+			throws Exception {
+		testRejectsPrivateMessage(BdfList.of(PRIVATE_MESSAGE, voiceMemoText(1),
+				new BdfList()));
+	}
+
+	private static String voiceMemoText(int formatVersion) {
+		return "[VOICE:1200:" + java.util.Base64.getEncoder().withoutPadding()
+				.encodeToString(new byte[] {(byte) formatVersion, 1, 2, 3, 4})
+				+ "]";
+	}
 }

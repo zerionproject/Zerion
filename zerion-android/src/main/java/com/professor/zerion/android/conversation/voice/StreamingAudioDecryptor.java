@@ -5,7 +5,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.List;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
@@ -44,21 +43,17 @@ public class StreamingAudioDecryptor {
 		this.aadContext = new byte[0];
 	}
 
-	private static byte[] unwrapSessionKey(byte[] wrappedKey, byte[] iv, byte[] groupId) throws Exception {
-		if (wrappedKey.length == 80) {
-			byte[] wrapKeyBytes = Arrays.copyOfRange(wrappedKey, 0, 32);
-			try {
-				byte[] encryptedSessionKey = Arrays.copyOfRange(wrappedKey, 32, 80);
-				SecretKeySpec wrapKey = new SecretKeySpec(wrapKeyBytes, "AES");
-				Cipher cipher = CIPHER_CACHE.get();
-				cipher.init(Cipher.DECRYPT_MODE, wrapKey, new GCMParameterSpec(GCM_TAG_LENGTH, iv));
-				return cipher.doFinal(encryptedSessionKey);
-			} finally {
-				Arrays.fill(wrapKeyBytes, (byte) 0);
-			}
+	private static byte[] unwrapSessionKey(byte[] wrapKeyBytes, byte[] iv,
+			byte[] sealedSessionKey) throws Exception {
+		if (wrapKeyBytes.length != VoiceMemoCrypto.WRAP_KEY_LENGTH) {
+			throw new SecurityException("Wrap key must be "
+					+ VoiceMemoCrypto.WRAP_KEY_LENGTH + " bytes");
 		}
-		throw new SecurityException(
-				"Insecure voice message format rejected: wrap key must not be derived from public groupId");
+		SecretKeySpec wrapKey = new SecretKeySpec(wrapKeyBytes, "AES");
+		Cipher cipher = CIPHER_CACHE.get();
+		cipher.init(Cipher.DECRYPT_MODE, wrapKey,
+				new GCMParameterSpec(GCM_TAG_LENGTH, iv));
+		return cipher.doFinal(sealedSessionKey);
 	}
 
 	public void setAADContext(byte[] formatVersion, byte[] conversationId, byte[] messageId) {
@@ -142,31 +137,60 @@ public class StreamingAudioDecryptor {
 		Arrays.fill(metadata.array(), (byte) 0);
 	}
 
-	public static byte[] decryptAll(byte[] wrappedKey, byte[] iv,
-	                                 List<byte[]> chunks, List<byte[]> tags,
-	                                 int chunkCount, int durationMs, byte[] globalMAC,
-	                                 byte[] formatVersion, byte[] groupId, byte[] messageId) throws Exception {
-		if (formatVersion.length != 1) {
-			throw new IllegalArgumentException("formatVersion must be 1 byte, got " + formatVersion.length);
-		}
+	/**
+	 * Opens a memo for playback. A format 2 memo derives its wrap key from the
+	 * pairing secret and the memo's salt and verifies only under the identity
+	 * of the message it was recorded for. A format 1 memo, which carried its
+	 * wrap key in the payload and bound no message identity, is opened only
+	 * because it may already be stored from before the format changed; the
+	 * validator refuses that format on receipt, so no such memo arrives now.
+	 */
+	public static byte[] decryptAll(
+			VoiceMessagePayloadParser.ParsedPayload payload, byte[] groupId,
+			long timestamp, byte[] senderId, byte[] recipientId,
+			VoiceMemoKeys keys) throws Exception {
 		if (groupId.length != 32) {
 			throw new IllegalArgumentException("groupId must be 32 bytes, got " + groupId.length);
 		}
-		byte[] sessionKey = unwrapSessionKey(wrappedKey, iv, groupId);
+		byte[] wrapKey;
+		byte[] binding;
+		if (payload.formatVersion == VoiceMemoCrypto.FORMAT_VERSION) {
+			wrapKey = keys.deriveWrapKey(
+					VoiceMemoCrypto.fieldPrefix(payload.wrappedKey));
+			binding = VoiceMemoCrypto.messageBinding(timestamp, senderId,
+					recipientId);
+		} else if (payload.formatVersion
+				== VoiceMemoCrypto.LEGACY_FORMAT_VERSION) {
+			wrapKey = VoiceMemoCrypto.fieldPrefix(payload.wrappedKey);
+			binding = new byte[0];
+		} else {
+			throw new SecurityException("Unsupported voice memo format");
+		}
+		byte[] sessionKey;
+		try {
+			sessionKey = unwrapSessionKey(wrapKey, payload.iv,
+					VoiceMemoCrypto.sealedSessionKey(payload.wrappedKey));
+		} finally {
+			Arrays.fill(wrapKey, (byte) 0);
+		}
 
-		StreamingAudioDecryptor decryptor = new StreamingAudioDecryptor(sessionKey, iv);
-		decryptor.setAADContext(formatVersion, groupId, new byte[0]);
+		StreamingAudioDecryptor decryptor =
+				new StreamingAudioDecryptor(sessionKey, payload.iv);
+		decryptor.setAADContext(new byte[] {payload.formatVersion}, groupId,
+				binding);
 
 		ByteArrayOutputStream plaintext = new ByteArrayOutputStream();
 
 		try {
-			for (int i = 0; i < chunks.size(); i++) {
-				byte[] decryptedChunk = decryptor.decryptChunk(chunks.get(i), tags.get(i));
+			for (int i = 0; i < payload.chunks.size(); i++) {
+				byte[] decryptedChunk = decryptor.decryptChunk(
+						payload.chunks.get(i), payload.tags.get(i));
 				plaintext.write(decryptedChunk);
 				Arrays.fill(decryptedChunk, (byte) 0);
 			}
 
-			decryptor.verifyGlobalMAC(chunkCount, durationMs, globalMAC);
+			decryptor.verifyGlobalMAC(payload.chunks.size(),
+					payload.durationMs, payload.globalMAC);
 
 			return plaintext.toByteArray();
 		} finally {

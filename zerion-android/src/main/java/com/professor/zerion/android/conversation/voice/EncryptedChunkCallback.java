@@ -6,7 +6,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 @SuppressWarnings("ArrayParameter")
 public interface EncryptedChunkCallback {
 	void onRecordingStarted();
-	void onEncryptionInit(byte[] iv, byte[] encryptedKey);
+	void onEncryptionInit(byte[] iv, byte[] encryptedKey, long timestamp);
 	void onEncryptedChunk(byte[] encrypted, int len, byte[] tagPart);
 	void onEncryptionFinal(byte[] globalMAC, int totalDurationMs, int chunkCount);
 	void onRecordingProgress(int durationMs, int amplitudeDb);
