@@ -200,15 +200,17 @@ class KeyManagerImpl implements KeyManager, Service, EventListener {
 		return m != null && m.canSendOutgoingStreams(p);
 	}
 
+	/**
+	 * An established contact never gets a rotation-key stream context: every
+	 * contact session runs over the ZWF ratchet, and the classical sync
+	 * connections that used these contexts have no caller. Handing one out
+	 * would let a future caller move contact traffic to classical keys
+	 * without a ratchet, so the request is refused rather than served.
+	 */
 	@Override
-	public StreamContext getStreamContext(ContactId c, TransportId t)
-			throws DbException {
-		return withManager(t, m ->
-				db.transactionWithNullableResult(false, txn -> {
-					Contact contact = db.getContact(txn, c);
-					boolean classical = contact.isClassical();
-					return m.getStreamContext(txn, c, classical);
-				}));
+	@Nullable
+	public StreamContext getStreamContext(ContactId c, TransportId t) {
+		return null;
 	}
 
 	@Override
@@ -233,9 +235,7 @@ class KeyManagerImpl implements KeyManager, Service, EventListener {
 
 					boolean classical;
 					if (tempCtx.getContactId() != null) {
-						org.zerionproject.core.api.contact.Contact contact =
-								db.getContact(txn, tempCtx.getContactId());
-						classical = contact.isClassical();
+						return null;
 					} else if (tempCtx.getPendingContactId() != null) {
 						org.zerionproject.core.api.contact.PendingContact pending =
 								db.getPendingContact(txn, tempCtx.getPendingContactId());

@@ -43,9 +43,13 @@ public class IntroductionValidatorTest extends ValidatorTestCase {
 
 	private final MessageEncoder messageEncoder =
 			context.mock(MessageEncoder.class);
+	private final byte[] rejectedMlKemPubKey = new byte[
+			org.zerionproject.app.api.introduction.IntroductionConstants
+					.INTRODUCTION_ML_KEM_PUBLIC_KEY_BYTES];
 	private final IntroductionValidator validator =
 			new IntroductionValidator(messageEncoder, clientHelper,
-					metadataEncoder, clock);
+					metadataEncoder, clock,
+					k -> !java.util.Arrays.equals(k, rejectedMlKemPubKey));
 
 	private final SessionId sessionId = new SessionId(getRandomId());
 	private final MessageId previousMsgId = new MessageId(getRandomId());
@@ -266,6 +270,22 @@ public class IntroductionValidatorTest extends ValidatorTestCase {
 		BdfList body = BdfList.of(ACCEPT.getValue(), sessionId.getBytes(), 1,
 				ephemeralPublicKey.getEncoded(), acceptTimestamp,
 				transportProperties, null, mlDsaPubKey, mlKemPubKey);
+		validator.validateMessage(message, group, body);
+	}
+
+	/**
+	 * A2-CRY-01: an accept whose ML-KEM key the encapsulation would reject
+	 * is an invalid message, refused by the validator before it reaches the
+	 * protocol engine.
+	 */
+	@Test(expected = FormatException.class)
+	public void testRejectsAcceptWithRejectedMlKemKey() throws Exception {
+		BdfList body = BdfList.of(ACCEPT.getValue(), sessionId.getBytes(),
+				previousMsgId.getBytes(), ephemeralPublicKey.getEncoded(),
+				acceptTimestamp, transportProperties, null, mlDsaPubKey,
+				rejectedMlKemPubKey);
+		expectParsePublicKey();
+		expectParseTransportProperties();
 		validator.validateMessage(message, group, body);
 	}
 

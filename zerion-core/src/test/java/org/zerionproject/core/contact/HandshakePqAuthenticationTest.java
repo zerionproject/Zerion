@@ -24,6 +24,7 @@ import org.zerionproject.core.test.TestStreamWriter;
 import org.jmock.Mockery;
 import org.jmock.lib.concurrent.Synchroniser;
 import org.junit.Before;
+import org.zerionproject.core.api.crypto.HybridAgreementPublicKey;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -174,6 +175,8 @@ public class HandshakePqAuthenticationTest {
 						new TestStreamWriter(firstOut));
 			} catch (Throwable t) {
 				o.firstError = t;
+			} finally {
+				closeQuietly(firstOut);
 			}
 		});
 		Thread t2 = new Thread(() -> {
@@ -182,6 +185,8 @@ public class HandshakePqAuthenticationTest {
 						new TestStreamWriter(secondOut));
 			} catch (Throwable t) {
 				o.secondError = t;
+			} finally {
+				closeQuietly(secondOut);
 			}
 		});
 		t1.start();
@@ -192,6 +197,17 @@ public class HandshakePqAuthenticationTest {
 		return o;
 	}
 
+	/**
+	 * A real connection is disposed when either side's handshake ends, so a
+	 * peer left waiting sees end of stream rather than blocking forever.
+	 */
+	private static void closeQuietly(OutputStream out) {
+		try {
+			out.close();
+		} catch (IOException ignored) {
+		}
+	}
+
 	private static KeyPair withoutStaticMlKemPrivateKey(KeyPair real,
 			KeyPair unrelated) {
 		HybridAgreementPrivateKey realPriv =
@@ -200,6 +216,34 @@ public class HandshakePqAuthenticationTest {
 				(HybridAgreementPrivateKey) unrelated.getPrivate();
 		return new KeyPair(real.getPublic(), new HybridAgreementPrivateKey(
 				realPriv.getX25519PrivateKey(), otherPriv.getMlKemPrivateKey()));
+	}
+
+	/**
+	 * A2-CRY-01: a peer whose committed static key carries an ML-KEM half
+	 * the library rejects is refused as a format error at receipt, on the
+	 * handshake thread, instead of ending it with an unchecked exception
+	 * and leaving the pending contact registered.
+	 */
+	@Test(timeout = 120_000)
+	public void testPeerWithARejectedMlKemStaticKeyIsRefusedCleanly()
+			throws Exception {
+		KeyPair aliceKeys = crypto.generateHybridAgreementKeyPair();
+		KeyPair bobReal = crypto.generateHybridAgreementKeyPair();
+		HybridAgreementPublicKey bobPub =
+				(HybridAgreementPublicKey) bobReal.getPublic();
+		byte[] bad = new byte[bobPub.getMlKemPublicKey().length];
+		Arrays.fill(bad, (byte) 0xFF);
+		KeyPair bobUsed = new KeyPair(new HybridAgreementPublicKey(
+				bobPub.getX25519PublicKey(), bad), bobReal.getPrivate());
+		Party alice = party(aliceKeys, bobUsed.getPublic(), "alice");
+		Party bob = party(bobUsed, aliceKeys.getPublic(), "bob");
+		Outcome o = run(alice, bob);
+		assertNull(o.first);
+		assertNull(o.second);
+		assertTrue("alice must refuse with a format error, got "
+				+ o.firstError, o.firstError instanceof FormatException);
+		assertTrue("bob must fail with an I/O error, got " + o.secondError,
+				o.secondError instanceof IOException);
 	}
 
 	@Test(timeout = 120_000)

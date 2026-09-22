@@ -35,10 +35,12 @@ public class IntroductionModule {
 	@Singleton
 	IntroductionValidator provideValidator(ValidationManager validationManager,
 			MessageEncoder messageEncoder, MetadataEncoder metadataEncoder,
-			ClientHelper clientHelper, Clock clock) {
+			ClientHelper clientHelper, Clock clock,
+			IntroductionCrypto introductionCrypto) {
 		IntroductionValidator introductionValidator =
 				new IntroductionValidator(messageEncoder, clientHelper,
-						metadataEncoder, clock);
+						metadataEncoder, clock,
+						introductionCrypto::isValidMlKemPublicKey);
 		validationManager.registerMessageValidator(CLIENT_ID, MAJOR_VERSION,
 				introductionValidator);
 		return introductionValidator;

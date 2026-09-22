@@ -56,6 +56,17 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 	private final org.zerionproject.core.api.system.Clock clock;
 	private final SecureRandom random = new SecureRandom();
 
+	/**
+	 * One-time prekeys this sender has already sealed to, by recipient and
+	 * key id. The recipient deletes a one-time key after its first use, so
+	 * a second envelope to the same key is silently lost; a sender that
+	 * remembers what it used picks another key or falls back to the signed
+	 * prekey. Bounded, and only as durable as the process.
+	 */
+	private static final int MAX_USED_ONE_TIME_KEYS = 4096;
+	private final java.util.LinkedHashSet<String> usedOneTimeKeys =
+			new java.util.LinkedHashSet<>();
+
 	public AsyncMeshDelivery(CryptoComponent crypto, AsyncSealedSender sealer,
 			AsyncPrekeyStore store, OpenedListener listener,
 			Identity identity,
@@ -85,11 +96,13 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 			byte[] payload, long ttlSeconds, long sendTimestamp,
 			boolean preferOneTime) throws GeneralSecurityException {
 		AsyncSealedSender.SealRequest r = new AsyncSealedSender.SealRequest();
-		List<AsyncPrekeyBundle.OneTimePrekey> otks =
-				recipientBundle.getOneTimePrekeys();
-		if (preferOneTime && !otks.isEmpty()) {
-			AsyncPrekeyBundle.OneTimePrekey otk =
-					otks.get(random.nextInt(otks.size()));
+		long nowSeconds = clock.currentTimeMillis() / 1000L;
+		if (recipientBundle.getSignedPrekeyExpiry() <= nowSeconds) {
+			throw new GeneralSecurityException("recipient signed prekey expired");
+		}
+		AsyncPrekeyBundle.OneTimePrekey otk = preferOneTime
+				? pickUnusedOneTimePrekey(recipientBundle) : null;
+		if (otk != null) {
 			r.prekeyKind = AsyncEnvelope.PREKEY_KIND_ONE_TIME;
 			r.prekeyId = otk.id;
 			r.recipientAgreementPub = parseAgreement(otk.pub);
@@ -112,6 +125,33 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 		r.sendTimestamp = sendTimestamp;
 		byte[] envelope = sealer.seal(r);
 		return forwarder.originate(envelope);
+	}
+
+	@javax.annotation.Nullable
+	private AsyncPrekeyBundle.OneTimePrekey pickUnusedOneTimePrekey(
+			AsyncPrekeyBundle bundle) {
+		List<AsyncPrekeyBundle.OneTimePrekey> otks = bundle.getOneTimePrekeys();
+		if (otks.isEmpty()) return null;
+		String recipient = org.zerionproject.core.util.StringUtils.toHexString(
+				bundle.getIdentitySigPub());
+		int start = random.nextInt(otks.size());
+		synchronized (usedOneTimeKeys) {
+			for (int i = 0; i < otks.size(); i++) {
+				AsyncPrekeyBundle.OneTimePrekey otk =
+						otks.get((start + i) % otks.size());
+				String key = recipient + ":" + org.zerionproject.core.util
+						.StringUtils.toHexString(otk.id);
+				if (usedOneTimeKeys.contains(key)) continue;
+				if (usedOneTimeKeys.size() >= MAX_USED_ONE_TIME_KEYS) {
+					java.util.Iterator<String> it = usedOneTimeKeys.iterator();
+					it.next();
+					it.remove();
+				}
+				usedOneTimeKeys.add(key);
+				return otk;
+			}
+		}
+		return null;
 	}
 
 	public void sendCover(MeshForwarder forwarder, byte[] payload,

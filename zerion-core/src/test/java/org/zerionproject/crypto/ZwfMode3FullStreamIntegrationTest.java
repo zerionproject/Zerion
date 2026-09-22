@@ -16,6 +16,7 @@ import org.zerionproject.core.crypto.XSalsa20Poly1305AuthenticatedCipher;
 import org.zerionproject.core.crypto.pcs.PcsRatchetImpl;
 import org.zerionproject.core.test.TestSecureRandomProvider;
 import org.junit.Before;
+import org.zerionproject.core.api.crypto.pcs.MlKemKeyPair;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
@@ -132,6 +133,52 @@ public class ZwfMode3FullStreamIntegrationTest {
 						receiverM3f.getOurActiveKeyPair().getEncapsulationKey());
 		return new Pair(stateWith(rootKey, senderM3f),
 				stateWith(rootKey, receiverM3f));
+	}
+
+	/**
+	 * A2-CRY-01: a peer that advertises an encapsulation key the library
+	 * rejects (every coefficient at the modulus) is refused at the frame
+	 * that carries it, as a format error; the key is never stored, so the
+	 * receiver's own next send cannot fail on it.
+	 */
+	@Test
+	public void aFrameAdvertisingARejectedKeyIsAFormatError()
+			throws Exception {
+		SecretKey rootKey = randomKey();
+		SecretKey streamHeaderKey = randomKey();
+		byte[] tag = randomBytes(TAG_LENGTH);
+		byte[] streamHeaderNonce = randomBytes(24);
+		Mode3FullState receiverM3f = mode3FullRatchet.createInitialState();
+		byte[] bad = new byte[org.zerionproject.core.api.crypto.pcs.PcsConstants
+				.MLKEM_ENCAPSULATION_KEY_SIZE];
+		Arrays.fill(bad, (byte) 0xFF);
+		MlKemKeyPair honest = mode3FullRatchet.createInitialState()
+				.getOurActiveKeyPair();
+		MlKemKeyPair advertisingBad = new MlKemKeyPair(bad,
+				honest.getDecapsulationKey(), Arrays.copyOf(bad,
+				org.zerionproject.core.api.crypto.pcs.PcsConstants
+						.MLKEM_EK_SEED_SIZE), Arrays.copyOfRange(bad,
+				org.zerionproject.core.api.crypto.pcs.PcsConstants
+						.MLKEM_EK_SEED_SIZE, bad.length));
+		Mode3FullState senderM3f = new Mode3FullState(
+				receiverM3f.getOurActiveKeyPair().getEncapsulationKey(),
+				advertisingBad, new java.util.LinkedHashMap<>(), 0);
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		ZwfMode3FullStreamEncrypter enc = new ZwfMode3FullStreamEncrypter(
+				out, cipher(), ratchet, mode3FullRatchet, 1L, tag,
+				streamHeaderNonce, streamHeaderKey,
+				stateWith(rootKey, senderM3f), null);
+		byte[] msg = "poison".getBytes();
+		enc.writeFrame(msg, msg.length, true);
+		ZwfMode3FullStreamDecrypter dec = new ZwfMode3FullStreamDecrypter(
+				new ByteArrayInputStream(out.toByteArray()), cipher(), ratchet,
+				mode3FullRatchet, null, tag, 0L, streamHeaderKey,
+				stateWith(rootKey, receiverM3f), null);
+		try {
+			dec.readFrame(new byte[FRAME_LENGTH]);
+			fail("the rejected key must not be accepted");
+		} catch (org.zerionproject.core.api.FormatException expected) {
+		}
 	}
 
 	@Test

@@ -117,7 +117,16 @@ class IntroductionCryptoImpl implements IntroductionCrypto {
 	}
 
 	@Override
-	public byte[][] encapsulateMlKem(byte[] peerMlKemPub) {
+	public boolean isValidMlKemPublicKey(byte[] peerMlKemPub) {
+		return mlKemProvider.isValidEncapsulationKey(peerMlKemPub);
+	}
+
+	@Override
+	public byte[][] encapsulateMlKem(byte[] peerMlKemPub)
+			throws GeneralSecurityException {
+		if (!mlKemProvider.isValidEncapsulationKey(peerMlKemPub)) {
+			throw new GeneralSecurityException("ML-KEM public key rejected");
+		}
 		MlKemEncapsulation enc = mlKemProvider.encapsulate(peerMlKemPub);
 		byte[] ct = enc.getCiphertext();
 		byte[] ss = enc.getSharedSecret().clone();

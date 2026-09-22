@@ -52,6 +52,18 @@ public class MlKemKeyPair {
 		return ekVector;
 	}
 
+	/**
+	 * True once the decapsulation key has been zeroized. A pair is shared
+	 * between immutable state snapshots, so a lookup must never hand out a
+	 * pair another snapshot already retired.
+	 */
+	public boolean isDestroyed() {
+		for (byte b : decapsulationKey) {
+			if (b != 0) return false;
+		}
+		return true;
+	}
+
 	public static MlKemKeyPair fromComponents(byte[] ekSeed, byte[] ekVector,
 			byte[] decapsulationKey) {
 		byte[] encapsulationKey = new byte[MLKEM_ENCAPSULATION_KEY_SIZE];

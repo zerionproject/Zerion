@@ -39,12 +39,25 @@ import static org.zerionproject.app.util.ValidationUtils.validateAutoDeleteTimer
 class IntroductionValidator extends BdfMessageValidator {
 
 	private final MessageEncoder messageEncoder;
+	private final java.util.function.Predicate<byte[]> mlKemKeyCheck;
 
 	IntroductionValidator(MessageEncoder messageEncoder,
 			ClientHelper clientHelper, MetadataEncoder metadataEncoder,
 			Clock clock) {
+		this(messageEncoder, clientHelper, metadataEncoder, clock, k -> true);
+	}
+
+	/**
+	 * The ML-KEM key an introducee sends in its accept message is checked
+	 * with the same rule the encapsulation applies, so a malformed key is
+	 * an invalid message rather than a failure inside the protocol engine.
+	 */
+	IntroductionValidator(MessageEncoder messageEncoder,
+			ClientHelper clientHelper, MetadataEncoder metadataEncoder,
+			Clock clock, java.util.function.Predicate<byte[]> mlKemKeyCheck) {
 		super(clientHelper, metadataEncoder, clock);
 		this.messageEncoder = messageEncoder;
+		this.mlKemKeyCheck = mlKemKeyCheck;
 	}
 
 	@Override
@@ -127,6 +140,9 @@ class IntroductionValidator extends BdfMessageValidator {
 		byte[] mlKemEphemeralPublicKey = body.getRaw(8);
 		checkLength(mlKemEphemeralPublicKey,
 				INTRODUCTION_ML_KEM_PUBLIC_KEY_BYTES);
+		if (!mlKemKeyCheck.test(mlKemEphemeralPublicKey)) {
+			throw new FormatException();
+		}
 
 		SessionId sessionId = new SessionId(sessionIdBytes);
 		BdfDictionary meta = messageEncoder.encodeMetadata(ACCEPT, sessionId,

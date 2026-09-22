@@ -59,6 +59,13 @@ class HandshakeManagerImpl implements HandshakeManager {
 			r.getProtocolVersion() == PROTOCOL_MAJOR_VERSION &&
 					!isKnownRecordType(r.getRecordType());
 
+	/**
+	 * The largest handshake record is a hybrid public key of 1216 bytes;
+	 * an unauthenticated peer may not make this side allocate more per
+	 * record than that order of magnitude.
+	 */
+	static final int HANDSHAKE_MAX_RECORD_PAYLOAD_BYTES = 4096;
+
 	private static boolean isKnownRecordType(byte type) {
 		return type == RECORD_TYPE_EPHEMERAL_PUBLIC_KEY ||
 				type == RECORD_TYPE_PROOF_OF_OWNERSHIP ||
@@ -151,7 +158,8 @@ class HandshakeManagerImpl implements HandshakeManager {
 				HYBRID_COMMITMENT_BYTES);
 		KeyPair ourHybridStaticKeyPair = ctx.hybridKeyPair;
 
-		RecordReader recordReader = recordReaderFactory.createRecordReader(in, false);
+		RecordReader recordReader = recordReaderFactory.createRecordReader(in,
+				HANDSHAKE_MAX_RECORD_PAYLOAD_BYTES);
 		RecordWriter recordWriter = recordWriterFactory
 				.createRecordWriter(out.getOutputStream(), false);
 
@@ -267,15 +275,15 @@ class HandshakeManagerImpl implements HandshakeManager {
 			theirProof = receiveProof(recordReader);
 			sendProof(recordWriter, ourProof);
 		}
-		sendMode3Capability(recordWriter, masterKey);
-		out.sendEndOfStream();
-		boolean mode3Capable = receiveMode3Capability(recordReader, masterKey);
-		recordReader.readRecord(r -> false, IGNORE);
 		boolean ownershipOk =
 				handshakeCrypto.verifyOwnership(masterKey, !alice, theirProof);
 		if (!ownershipOk) {
 			throw new FormatException();
 		}
+		sendMode3Capability(recordWriter, masterKey);
+		out.sendEndOfStream();
+		boolean mode3Capable = receiveMode3Capability(recordReader, masterKey);
+		recordReader.readRecord(r -> false, IGNORE);
 
 		byte[] ourStaticHybridPub =
 				ourHybridStaticKeyPair.getPublic().getEncoded();
@@ -303,7 +311,20 @@ class HandshakeManagerImpl implements HandshakeManager {
 		byte[] key = rec.getPayload();
 		checkLength(key, HYBRID_AGREEMENT_PUBLIC_KEY_BYTES,
 				HYBRID_AGREEMENT_PUBLIC_KEY_BYTES);
-		return new HybridAgreementPublicKey(key);
+		return parseHybridKey(key);
+	}
+
+	/**
+	 * A peer's hybrid key is parsed, not just measured: the ML-KEM half
+	 * must pass the same checks the encapsulation performs, so a malformed
+	 * key is a format error here rather than an unchecked failure later.
+	 */
+	private PublicKey parseHybridKey(byte[] key) throws FormatException {
+		try {
+			return crypto.getHybridAgreementKeyParser().parsePublicKey(key);
+		} catch (GeneralSecurityException e) {
+			throw new FormatException();
+		}
 	}
 
 	private EphemeralExchange receiveHybridEphemeral(RecordReader r)
@@ -325,8 +346,7 @@ class HandshakeManagerImpl implements HandshakeManager {
 		byte[] key = keyRecord.getPayload();
 		checkLength(key, HYBRID_AGREEMENT_PUBLIC_KEY_BYTES,
 				HYBRID_AGREEMENT_PUBLIC_KEY_BYTES);
-		return new EphemeralExchange(new HybridAgreementPublicKey(key),
-				minorVersion);
+		return new EphemeralExchange(parseHybridKey(key), minorVersion);
 	}
 
 	private void sendKemCiphertext(RecordWriter w, byte[] ciphertext)

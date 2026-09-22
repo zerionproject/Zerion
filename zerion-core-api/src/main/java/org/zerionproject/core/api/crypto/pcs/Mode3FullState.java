@@ -104,8 +104,10 @@ public class Mode3FullState {
 	@Nullable
 	public MlKemKeyPair findKeypairById(KpId kpId) {
 		KpId currentId = KpId.of(ourActiveKeyPair.getEncapsulationKey());
-		if (currentId.equals(kpId)) return ourActiveKeyPair;
-		return recentKeyPairs.get(kpId);
+		MlKemKeyPair found = currentId.equals(kpId) ? ourActiveKeyPair
+				: recentKeyPairs.get(kpId);
+		if (found == null || found.isDestroyed()) return null;
+		return found;
 	}
 
 	public Mode3FullState withSendAdvance(MlKemKeyPair newOurKp) {

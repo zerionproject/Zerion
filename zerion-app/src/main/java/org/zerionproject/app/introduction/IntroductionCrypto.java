@@ -33,7 +33,11 @@ interface IntroductionCrypto {
 	 * {@code [ciphertext, sharedSecret]} where ciphertext is 1088 B and
 	 * sharedSecret is 32 B.
 	 */
-	byte[][] encapsulateMlKem(byte[] peerMlKemPub);
+	byte[][] encapsulateMlKem(byte[] peerMlKemPub)
+			throws GeneralSecurityException;
+
+	/** Whether a peer's ML-KEM key would be accepted by the encapsulation. */
+	boolean isValidMlKemPublicKey(byte[] peerMlKemPub);
 
 	/**
 	 * Decapsulate a per-introduction ML-KEM-768 shared

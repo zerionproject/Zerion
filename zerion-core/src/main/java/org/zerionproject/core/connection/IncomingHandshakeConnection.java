@@ -83,7 +83,7 @@ class IncomingHandshakeConnection extends HandshakeConnection
 			cancelTimeout();
 			connectionRegistry.unregisterConnection(pendingContactId, true);
 			runPairedSession(contact.getId(), true);
-		} catch (IOException | DbException e) {
+		} catch (IOException | DbException | RuntimeException e) {
 			onError(true);
 			connectionRegistry.unregisterConnection(pendingContactId, false);
 		}

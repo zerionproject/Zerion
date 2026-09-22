@@ -35,6 +35,13 @@ class KeyAgreementTransport {
 				|| type == KEM_CIPHERTEXT;
 	}
 
+	/**
+	 * The largest key agreement record is a hybrid key plus ciphertext of
+	 * under 2.5 KiB; nothing an unauthenticated nearby peer sends may make
+	 * this side allocate more per record than a small multiple of that.
+	 */
+	static final int MAX_RECORD_PAYLOAD_BYTES = 8192;
+
 	private final KeyAgreementConnection kac;
 	private final RecordReader reader;
 	private final RecordWriter writer;
@@ -44,7 +51,8 @@ class KeyAgreementTransport {
 			throws IOException {
 		this.kac = kac;
 		InputStream in = kac.getConnection().getReader().getInputStream();
-		reader = recordReaderFactory.createRecordReader(in);
+		reader = recordReaderFactory.createRecordReader(in,
+				MAX_RECORD_PAYLOAD_BYTES);
 		OutputStream out = kac.getConnection().getWriter().getOutputStream();
 		writer = recordWriterFactory.createRecordWriter(out);
 	}

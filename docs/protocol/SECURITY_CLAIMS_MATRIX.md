@@ -37,6 +37,16 @@ not the (inert) classical DH ratchet. For each compromised state:
 by the own-send rotation interval** — not the classical "PCS after one
 round-trip". Do not restate the one-round-trip claim.
 
+## Label discipline for hybrid signatures
+
+The Ed25519 half of a hybrid signature is the classical signature over the same
+framed message, so a hybrid signature truncated to its classical half verifies
+as a classical signature under the same label. Every hybrid label is therefore
+distinct from every classical label (for example `EXCHANGE` against
+`EXCHANGE_HYBRID`), and a new signature use must keep that rule: a label shared
+between a classical and a hybrid use would let a hybrid signature stand in for a
+classical one.
+
 ## Not current guarantees (future work)
 
 - An independent, actively-ratcheting classical X25519 PCS layer (the DH ratchet

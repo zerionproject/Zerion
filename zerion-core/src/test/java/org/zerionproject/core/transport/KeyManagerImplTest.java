@@ -228,19 +228,14 @@ public class KeyManagerImplTest extends BrambleMockTestCase {
 				unknownTransportId));
 	}
 
+	/**
+	 * A2-CRY-05: an established contact never receives a rotation-key
+	 * stream context; every contact session runs over the ZWF ratchet and
+	 * the classical sync path that used these contexts is refused.
+	 */
 	@Test
-	public void testGetStreamContextForContact() throws Exception {
-		context.checking(new DbExpectations() {{
-			oneOf(db).transactionWithNullableResult(with(false),
-					withNullableDbCallable(txn));
-			oneOf(db).getContact(txn, contactId);
-			will(returnValue(contact));
-			oneOf(transportKeyManager).getStreamContext(txn, contactId, true);
-			will(returnValue(contactStreamContext));
-		}});
-
-		assertEquals(contactStreamContext,
-				keyManager.getStreamContext(contactId, transportId));
+	public void testGetStreamContextForContactIsRefused() throws Exception {
+		assertNull(keyManager.getStreamContext(contactId, transportId));
 	}
 
 	@Test
@@ -265,26 +260,18 @@ public class KeyManagerImplTest extends BrambleMockTestCase {
 		assertNull(keyManager.getStreamContext(unknownTransportId, tag));
 	}
 
+	/** A2-CRY-05: a tag that resolves to an established contact is refused. */
 	@Test
-	public void testGetStreamContextForTag() throws Exception {
-
+	public void testGetStreamContextForTagOfAContactIsRefused()
+			throws Exception {
 		context.checking(new DbExpectations() {{
 			oneOf(db).transactionWithNullableResult(with(false),
 					withNullableDbCallable(txn));
-
 			oneOf(transportKeyManager).getStreamContextOnly(txn, tag, false);
 			will(returnValue(contactStreamContext));
-
-			oneOf(db).getContact(txn, contactId);
-			will(returnValue(contact));
-
-			oneOf(transportKeyManager).getStreamContext(txn, tag, true);
-			will(returnValue(contactStreamContext));
-
 		}});
 
-		assertEquals(contactStreamContext,
-				keyManager.getStreamContext(transportId, tag));
+		assertNull(keyManager.getStreamContext(transportId, tag));
 	}
 
 	@Test

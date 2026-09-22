@@ -11,6 +11,7 @@ import org.zerionproject.core.system.SystemClock;
 import org.zerionproject.transport.mesh.MeshForwarder;
 import org.zerionproject.transport.mesh.MeshLink;
 import org.junit.Before;
+import static org.junit.Assert.fail;
 import org.junit.Test;
 
 import java.security.SecureRandom;
@@ -265,6 +266,63 @@ public class AsyncMeshIntegrationTest {
 		assertEquals(0, r.opened.size());
 		assertFalse(r.store.isSeen(AsyncEnvelope.decode(env).getDedupId()));
 		assertEquals(Long.MIN_VALUE, r.store.seenFloor(sender.sigPub));
+	}
+
+	/**
+	 * A2-CRY-04: a sender remembers which one-time keys it has used, so a
+	 * second envelope to the same recipient picks another key or the signed
+	 * prekey instead of a key the recipient has already deleted; every
+	 * envelope opens.
+	 */
+	@Test
+	public void repeatedSendsNeverReuseAConsumedOneTimeKey() throws Exception {
+		Recipient r = new Recipient(new SystemClock());
+		AsyncPrekeyStore sStore = new AsyncPrekeyStore(crypto,
+				new InMemorySettingsManager(), new SystemClock());
+		AsyncMeshDelivery sDelivery = new AsyncMeshDelivery(crypto, sealer,
+				sStore, (a, b, c, d) -> true, sender, new SystemClock());
+		MeshForwarder sForwarder = new MeshForwarder(sDelivery, random);
+		List<byte[]> captured = new ArrayList<>();
+		MeshForwarder relay = new MeshForwarder(captured::add, random);
+		connect(sForwarder, "s-r", relay, "r-s");
+		long now = System.currentTimeMillis();
+		int sends = 8;
+		for (int i = 0; i < sends; i++) {
+			sDelivery.send(sForwarder, r.bundle, 9, ("m" + i).getBytes(),
+					3600L, now + i, true);
+		}
+		assertEquals(sends, captured.size());
+		for (byte[] envelope : captured) r.delivery.onFrame(envelope);
+		assertEquals("every envelope opened, five on one-time keys and the"
+				+ " rest on the signed prekey", sends, r.opened.size());
+	}
+
+	/** A2-CRY-04: a bundle whose signed prekey has expired is not sealed to. */
+	@Test
+	public void anExpiredSignedPrekeyRefusesTheSend() throws Exception {
+		Recipient r = new Recipient(new SystemClock());
+		AsyncPrekeyStore sStore = new AsyncPrekeyStore(crypto,
+				new InMemorySettingsManager(), new SystemClock());
+		long farFuture = r.bundle.getSignedPrekeyExpiry() * 1000L + 1000L;
+		AsyncMeshDelivery sDelivery = new AsyncMeshDelivery(crypto, sealer,
+				sStore, (a, b, c, d) -> true, sender,
+				new org.zerionproject.core.api.system.Clock() {
+					@Override
+					public long currentTimeMillis() {
+						return farFuture;
+					}
+
+					@Override
+					public void sleep(long ms) {
+					}
+				});
+		MeshForwarder sForwarder = new MeshForwarder(sDelivery, random);
+		try {
+			sDelivery.send(sForwarder, r.bundle, 9, "late".getBytes(), 3600L,
+					farFuture, false);
+			fail();
+		} catch (java.security.GeneralSecurityException expected) {
+		}
 	}
 
 	/** Seals a message to {@code r} and returns the raw envelope bytes. */

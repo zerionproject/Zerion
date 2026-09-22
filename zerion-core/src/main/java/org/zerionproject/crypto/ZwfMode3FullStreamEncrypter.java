@@ -220,10 +220,14 @@ public class ZwfMode3FullStreamEncrypter {
 					sendState = sendState.withMode3FullState(m3fState);
 				}
 			}
-			mode3FullSend = mode3FullRatchet.pqEncapsulateSend(m3fState,
-					ownSendsSinceRotation);
-				ownSendsSinceRotation = mode3FullSend.isRotated() ? 0
-						: ownSendsSinceRotation + 1;
+			try {
+				mode3FullSend = mode3FullRatchet.pqEncapsulateSend(m3fState,
+						ownSendsSinceRotation);
+			} catch (RuntimeException e) {
+				throw new IOException("Mode 3-Full peer key rejected");
+			}
+			ownSendsSinceRotation = mode3FullSend.isRotated() ? 0
+					: ownSendsSinceRotation + 1;
 			sendState = sendState.withMode3FullState(mode3FullSend.getNewState());
 			if (m3fCallback != null) {
 				m3fCallback.accept(mode3FullSend.getNewState());
