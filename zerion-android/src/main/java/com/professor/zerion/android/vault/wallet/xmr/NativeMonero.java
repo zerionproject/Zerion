@@ -99,6 +99,16 @@ public final class NativeMonero {
 	 *  get_refresh_from_block_height); {@link #LONG_ERR} on an invalid handle. */
 	static native long nGetRefreshFromHeight(long wallet);
 
+	/** Whether the daemon set by the last init is trusted (read back). */
+	static native boolean nTrustedDaemon(long wallet);
+
+	/**
+	 * Requests a rescan from the refresh-from height; the refresh thread
+	 * discards and rebuilds the scanned cache on its next start. The caller
+	 * quiesces the refresh thread first and starts it after.
+	 */
+	static native boolean nRescanBlockchain(long wallet);
+
 	/**
 	 * Mark the wallet as recovering from seed. This keeps wallet2's init from
 	 * fast-forwarding an unscanned background wallet's refresh height to the

@@ -54,6 +54,12 @@ public final class FakeMoneroEngine implements MoneroEngine {
 	@Nullable
 	public volatile FakeSession lastSpendOpened;
 
+	/** Daemon height every session opened from now on reports. */
+	public volatile long daemonHeightForNewSessions = 0;
+	/** Outgoing history every spend session opened from now on reports. */
+	@Nullable
+	public volatile java.util.List<XmrTxInfo> spendOutgoingForNewSessions;
+
 	@Nullable
 	@Override
 	public Session open(String path, char[] password) {
@@ -61,6 +67,9 @@ public final class FakeMoneroEngine implements MoneroEngine {
 		openCount++;
 		boolean bg = path.endsWith(".background");
 		FakeSession s = new FakeSession(0, path, bg);
+		s.daemonHeightValue = daemonHeightForNewSessions;
+		java.util.List<XmrTxInfo> spent = spendOutgoingForNewSessions;
+		if (!bg && spent != null) s.outgoing = new java.util.ArrayList<>(spent);
 		if (bg) lastBackgroundOpened = s;
 		else lastSpendOpened = s;
 		return s;
@@ -261,14 +270,31 @@ public final class FakeMoneroEngine implements MoneroEngine {
 
 		@Nullable
 		public String lastProxy;
+		public boolean lastTrusted;
+		public volatile long daemonHeightValue = 0;
+		public volatile long refreshFromHeight = -1;
+		public final java.util.concurrent.atomic.AtomicInteger pauseCalls =
+				new java.util.concurrent.atomic.AtomicInteger();
+		public final java.util.concurrent.atomic.AtomicInteger startCalls =
+				new java.util.concurrent.atomic.AtomicInteger();
+		public final java.util.concurrent.atomic.AtomicInteger interruptCalls =
+				new java.util.concurrent.atomic.AtomicInteger();
+		public final java.util.concurrent.atomic.AtomicInteger rescanCalls =
+				new java.util.concurrent.atomic.AtomicInteger();
+		public final java.util.List<String> refreshLog =
+				java.util.Collections.synchronizedList(
+						new java.util.ArrayList<>());
+		public java.util.List<XmrTxInfo> outgoing = new java.util.ArrayList<>();
 		@Override
 		public boolean init(String d, String p, boolean t) {
 			lastProxy = p;
+			lastTrusted = t;
 			return background || !failSpendInit;
 		}
 
 		@Override
 		public void setRefreshFromHeight(long height) {
+			refreshFromHeight = height;
 		}
 
 		@Override
@@ -282,10 +308,32 @@ public final class FakeMoneroEngine implements MoneroEngine {
 
 		@Override
 		public void startRefresh() {
+			startCalls.incrementAndGet();
+			refreshLog.add("start");
 		}
 
 		@Override
 		public void pauseRefresh() {
+			pauseCalls.incrementAndGet();
+			refreshLog.add("pause");
+		}
+
+		@Override
+		public void interruptRefresh() {
+			interruptCalls.incrementAndGet();
+			refreshLog.add("interrupt");
+		}
+
+		@Override
+		public boolean rescanBlockchain() {
+			rescanCalls.incrementAndGet();
+			refreshLog.add("rescan@" + refreshFromHeight);
+			return true;
+		}
+
+		@Override
+		public boolean trustedDaemon() {
+			return lastTrusted;
 		}
 
 		@Override
@@ -295,7 +343,7 @@ public final class FakeMoneroEngine implements MoneroEngine {
 
 		@Override
 		public long daemonHeight() {
-			return 0;
+			return daemonHeightValue;
 		}
 
 		@Override
@@ -324,7 +372,7 @@ public final class FakeMoneroEngine implements MoneroEngine {
 
 		@Override
 		public java.util.List<XmrTxInfo> history() {
-			return new java.util.ArrayList<>();
+			return new java.util.ArrayList<>(outgoing);
 		}
 
 		@Nullable
@@ -349,8 +397,11 @@ public final class FakeMoneroEngine implements MoneroEngine {
 			return fakeLookup(txids);
 		}
 
+		public volatile int storeCalls = 0;
+
 		@Override
 		public boolean store(String path) {
+			storeCalls++;
 			touch(path);
 			touch(path + ".keys");
 			return true;
@@ -398,10 +449,13 @@ public final class FakeMoneroEngine implements MoneroEngine {
 			return true;
 		}
 
+		public boolean persistFails = false;
+
 		@Override
-		public void closePersisting() {
+		public boolean closePersisting() {
 			closed = true;
 			closeCount++;
+			return !persistFails;
 		}
 
 		@Override

@@ -202,13 +202,42 @@ public final class NativeMoneroEngine implements MoneroEngine {
 
 		@Override
 		public void pauseRefresh() {
-			if (!interruptLock.tryLock()) return;
+			interruptLock.lock();
 			try {
 				if (closed.get()) return;
 				NativeMonero.nPauseRefresh(h);
 			} finally {
 				interruptLock.unlock();
 			}
+		}
+
+		@Override
+		public void interruptRefresh() {
+			if (!interruptLock.tryLock()) return;
+			try {
+				if (closed.get()) return;
+				NativeMonero.nPauseRefresh(h);
+				NativeMonero.nStop(h);
+			} finally {
+				interruptLock.unlock();
+			}
+		}
+
+		@Override
+		public boolean rescanBlockchain() {
+			interruptLock.lock();
+			try {
+				if (closed.get()) return false;
+				return NativeMonero.nRescanBlockchain(h);
+			} finally {
+				interruptLock.unlock();
+			}
+		}
+
+		@Override
+		public boolean trustedDaemon() {
+			if (closed.get()) return false;
+			return NativeMonero.nTrustedDaemon(h);
 		}
 
 		@Override
@@ -231,7 +260,7 @@ public final class NativeMoneroEngine implements MoneroEngine {
 
 		@Override
 		public void stopRefresh() {
-			if (!interruptLock.tryLock()) return;
+			interruptLock.lock();
 			try {
 				if (closed.get()) return;
 				NativeMonero.nStop(h);
@@ -387,16 +416,17 @@ public final class NativeMoneroEngine implements MoneroEngine {
 		}
 
 		@Override
-		public void closePersisting() {
+		public boolean closePersisting() {
 			if (closed.compareAndSet(false, true)) {
 				interruptLock.lock();
 				try {
 					quiesce();
-					NativeMonero.nClose(h, true);
+					return NativeMonero.nClose(h, true);
 				} finally {
 					interruptLock.unlock();
 				}
 			}
+			return false;
 		}
 
 		@Override
@@ -418,12 +448,15 @@ public final class NativeMoneroEngine implements MoneroEngine {
 		 * caller's interrupt cannot run a whole catch-up before the join returns.
 		 *
 		 * The interrupt lock held by the closing caller excludes the cross-thread
-		 * refresh interrupts issued by XmrSyncManager.stop(): an interrupt that
-		 * already borrowed the native pointer completes before nClose destroys
-		 * the wallet, and one that arrives later skips via tryLock or sees the
-		 * closed flag inside the lock. Interrupts never block on the lock, so
-		 * the ability to cancel a refresh that occupies the session executor is
-		 * preserved and the refresh thread joined here never takes this lock.
+		 * refresh interrupts issued by XmrSyncManager.stop() through
+		 * interruptRefresh(): an interrupt that already borrowed the native
+		 * pointer completes before nClose destroys the wallet, and one that
+		 * arrives later skips via tryLock or sees the closed flag inside the
+		 * lock. Only that cross-thread interrupt skips; the executor-side pause
+		 * and stop that precede a store, a prepare or a failover take the lock
+		 * and are never skipped, so a store can never run into a refresh that a
+		 * skipped pause left running. The refresh thread joined here never
+		 * takes this lock.
 		 */
 		private void quiesce() {
 			NativeMonero.nPauseRefresh(h);
