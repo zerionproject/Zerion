@@ -73,8 +73,10 @@ public class XmrSyncManagerTest {
 				|| st.state == XmrSyncState.SYNCHRONIZING, 3000);
 		assertTrue(s.initCalls.size() >= 1);
 		for (String[] call : s.initCalls) {
-			assertEquals("Tor node must be given the SOCKS proxy",
-					"127.0.0.1:9050", call[1]);
+			assertEquals("Tor node must be given the isolated SOCKS5 proxy",
+					XmrTorIsolation.syncProxy(9050, "A"), call[1]);
+			assertTrue(call[1].startsWith("socks5://zx-")
+					&& call[1].endsWith("@127.0.0.1:9050"));
 		}
 	}
 

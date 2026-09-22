@@ -2576,7 +2576,8 @@ public final class XmrWalletManager {
 				if (s != null) s.close();
 				throw new XmrError.XmrException(XmrError.WRONG_PASSWORD);
 			}
-			String proxy = node.usesTor() ? "127.0.0.1:" + torSocksPort : "";
+			String proxy = node.usesTor()
+					? XmrTorIsolation.relayProxy(torSocksPort, walletId) : "";
 			boolean connected;
 			try {
 				connected = s.init(node.address(), proxy, node.trusted)

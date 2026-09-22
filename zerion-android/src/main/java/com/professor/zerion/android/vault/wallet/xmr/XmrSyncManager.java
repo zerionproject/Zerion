@@ -495,7 +495,8 @@ public final class XmrSyncManager {
 				continue;
 			}
 			publish(t, connectingStatus(t, node));
-			String proxy = node.usesTor() ? "127.0.0.1:" + t.torSocksPort : "";
+			String proxy = node.usesTor()
+					? XmrTorIsolation.syncProxy(t.torSocksPort, t.walletId) : "";
 			boolean ok;
 			try {
 

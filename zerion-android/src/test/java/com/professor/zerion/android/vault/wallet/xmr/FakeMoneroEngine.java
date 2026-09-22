@@ -50,12 +50,20 @@ public final class FakeMoneroEngine implements MoneroEngine {
 	}
 
 	@Nullable
+	public volatile FakeSession lastBackgroundOpened;
+	@Nullable
+	public volatile FakeSession lastSpendOpened;
+
+	@Nullable
 	@Override
 	public Session open(String path, char[] password) {
 		if (!available) return null;
 		openCount++;
 		boolean bg = path.endsWith(".background");
-		return new FakeSession(0, path, bg);
+		FakeSession s = new FakeSession(0, path, bg);
+		if (bg) lastBackgroundOpened = s;
+		else lastSpendOpened = s;
+		return s;
 	}
 
 	private static void touch(String path) {
@@ -243,8 +251,11 @@ public final class FakeMoneroEngine implements MoneroEngine {
 			return subaddresses;
 		}
 
+		@Nullable
+		public String lastProxy;
 		@Override
 		public boolean init(String d, String p, boolean t) {
+			lastProxy = p;
 			return true;
 		}
 

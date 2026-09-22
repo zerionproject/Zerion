@@ -548,6 +548,62 @@ public class XmrWalletManagerTest {
 		assertEquals("lock generation tracks the vault", 5, g.lockGeneration());
 	}
 
+	private static final String NODE =
+			"2chk3x3x2iyreog6y2vhljpraqmwiqdmmafhiiab443t7xyfeadqfuad.onion:18089";
+	private static final String DEST =
+			"42ey1afDFnn4886T7196doS9GPMzexD9gXpsZJDwVjeRVdFCSoHnv7KPbBeGpzJBzHRCAs9UxqeoyFQMYbqSWYTfJJQAWDm";
+
+	private static void awaitTrue(java.util.function.BooleanSupplier c,
+			long timeoutMs) throws InterruptedException {
+		long deadline = System.currentTimeMillis() + timeoutMs;
+		while (!c.getAsBoolean()) {
+			if (System.currentTimeMillis() > deadline) {
+				fail("condition not met within " + timeoutMs + " ms");
+			}
+			Thread.sleep(20);
+		}
+	}
+
+	/**
+	 * XMR-04: the view-only sync session and the spend-capable relay session
+	 * of one wallet must each be initialised with their own SOCKS5 isolation
+	 * credential, so a node cannot link syncing to relaying over one circuit.
+	 */
+	@Test(timeout = 20_000)
+	public void syncAndRelaySessionsCarryDistinctIsolationCredentials()
+			throws Exception {
+		java.util.concurrent.ExecutorService session =
+				java.util.concurrent.Executors.newSingleThreadExecutor();
+		XmrWalletManager m = new XmrWalletManager(tmpBase, vault, store,
+				engine, Runnable::run, session);
+		try {
+			m.createWallet("w", "pass".toCharArray());
+			Event<String> reveal = m.getSeedReveal().getValue();
+			String id = reveal == null ? null : reveal.getIfNotHandled();
+			assertNotNull(id);
+			m.setTorSocksPort(9050);
+			m.setSyncNodes(java.util.Collections.singletonList(
+					XmrNode.parse(NODE, XmrNode.Source.VETTED, false)));
+			m.openWalletForView(id);
+			awaitTrue(m::isSessionValid, 10_000);
+			FakeMoneroEngine.FakeSession view = engine.lastBackgroundOpened;
+			assertNotNull(view);
+			awaitTrue(() -> view.lastProxy != null, 10_000);
+			assertEquals(XmrTorIsolation.syncProxy(9050, id), view.lastProxy);
+
+			m.prepareSend(id, "w", DEST, 1000, 0, "pass".toCharArray());
+			awaitTrue(() -> engine.lastSpendOpened != null
+					&& engine.lastSpendOpened.lastProxy != null, 10_000);
+			FakeMoneroEngine.FakeSession spend = engine.lastSpendOpened;
+			assertEquals(XmrTorIsolation.relayProxy(9050, id), spend.lastProxy);
+			assertFalse("relay and sync credentials must differ",
+					spend.lastProxy.equals(view.lastProxy));
+		} finally {
+			m.closeSession();
+			session.shutdownNow();
+		}
+	}
+
 	private static final class FakeVaultGate implements VaultGate {
 		boolean unlocked = true;
 		long generation = 5;
