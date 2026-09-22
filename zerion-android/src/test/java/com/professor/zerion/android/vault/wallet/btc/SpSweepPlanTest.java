@@ -104,27 +104,40 @@ public class SpSweepPlanTest {
 	public void gateReleasesOnlyTheReviewedPlanExactlyOnce() throws Exception {
 		SpSweepGate g = new SpSweepGate();
 		assertThrows(SendGate.AuthorizationException.class,
-				() -> g.authorize("A", true));
+				() -> g.authorize("A", true, "w1"));
 		BtcWallet.SpSweepPlan a = plan("A");
-		g.prepare(a);
+		g.prepare(a, "w1");
 		assertThrows(SendGate.AuthorizationException.class,
-				() -> g.authorize("A", false));
-		assertSame(a, g.authorize("A", true));
+				() -> g.authorize("A", false, "w1"));
+		assertSame(a, g.authorize("A", true, "w1"));
 		assertThrows(SendGate.AuthorizationException.class,
-				() -> g.authorize("A", true));
+				() -> g.authorize("A", true, "w1"));
 	}
 
 	@Test
 	public void gateRefusesAChangedOrClearedPlan() {
 		SpSweepGate g = new SpSweepGate();
-		g.prepare(plan("A"));
-		g.prepare(plan("B"));
+		g.prepare(plan("A"), "w1");
+		g.prepare(plan("B"), "w1");
 		assertThrows(SendGate.AuthorizationException.class,
-				() -> g.authorize("A", true));
+				() -> g.authorize("A", true, "w1"));
 		assertNull(g.pending());
-		g.prepare(plan("C"));
+		g.prepare(plan("C"), "w1");
 		g.clear();
 		assertThrows(SendGate.AuthorizationException.class,
-				() -> g.authorize("C", true));
+				() -> g.authorize("C", true, "w1"));
+	}
+
+	@Test
+	public void aSweepPlannedForAnotherWalletIsRefusedAndCleared() {
+		SpSweepGate g = new SpSweepGate();
+		g.prepare(plan("A"), "w1");
+		assertThrows(SendGate.AuthorizationException.class,
+				() -> g.authorize("A", true, "w2"));
+		assertNull(g.pending());
+		g.prepare(plan("A"), "w1");
+		assertThrows(SendGate.AuthorizationException.class,
+				() -> g.authorize("A", true, null));
+		assertNull(g.pending());
 	}
 }

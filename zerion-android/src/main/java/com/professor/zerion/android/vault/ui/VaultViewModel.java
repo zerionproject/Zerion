@@ -1066,7 +1066,7 @@ public class VaultViewModel extends AndroidViewModel {
 			try {
 				BtcWallet.SpSweepPlan plan = w.planSweepSilentPayments(
 						new java.util.ArrayList<>(spUtxos), toAddress, feeRate);
-				spSweepGate.prepare(plan);
+				spSweepGate.prepare(plan, w.walletId());
 				spSweepReview.postValue(new Event<>(new SpSweepReview(plan)));
 			} catch (Throwable e) {
 				walletError.postValue(new Event<>(e.getMessage() != null
@@ -1099,7 +1099,8 @@ public class VaultViewModel extends AndroidViewModel {
 				boolean authed = verifyWalletCredential(credential);
 				BtcWallet.SpSweepPlan plan;
 				try {
-					plan = spSweepGate.authorize(reviewedFingerprint, authed);
+					plan = spSweepGate.authorize(reviewedFingerprint, authed,
+							w.walletId());
 				} catch (com.professor.zerion.android.vault.wallet.btc.SendGate
 						.AuthorizationException e) {
 					walletError.postValue(new Event<>(getApplication()
