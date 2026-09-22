@@ -1904,6 +1904,7 @@
 	<string name="wallet_sp_birthday_hint">Startblok (optioneel)</string>
 	<string name="wallet_sp_scanning">Scannen via Tor…</string>
 	<string name="wallet_sp_move_hint">Bitcoin-adres om geld naartoe te verplaatsen</string>
+	<string name="wallet_xmr_tx_state_unresolved">Onopgelost: controleer status</string>
 	<string name="wallet_xmr_check_relay">Status controleren</string>
 	<string name="wallet_xmr_release_unresolved">Onafgeronde verzending vrijgeven</string>
 	<string name="wallet_xmr_release_unresolved_body">Zerion kon niet bevestigen of je laatste transactie het Monero-netwerk heeft bereikt. Als die minstens drie dagen niet op het netwerk is gezien, kun je haar vrijgeven en opnieuw verzenden. Slechts een van beide transacties kan ooit worden uitbetaald, dus er kan geen geld verloren gaan, maar controleer daarna je geschiedenis om te zien welke is doorgegaan.</string>

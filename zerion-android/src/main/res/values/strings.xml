@@ -2069,6 +2069,7 @@
 	<string name="wallet_xmr_tx_state_pending">Pending</string>
 	<string name="wallet_xmr_tx_state_confirmed">Confirmed</string>
 	<string name="wallet_xmr_tx_state_failed">Failed</string>
+	<string name="wallet_xmr_tx_state_unresolved">Unresolved: check status</string>
 	<string name="wallet_xmr_tx_confirmations">Confirmations</string>
 	<string name="wallet_xmr_tx_id">Transaction ID</string>
 	<string name="wallet_xmr_tx_date">Date</string>

@@ -231,7 +231,7 @@ public final class XmrPendingSend {
 	 *  when the send was accepted. Not built from guessed data. */
 	public XmrTxInfo pendingRow(String txid) {
 		return XmrTxInfo.pendingOutgoing(txid, amountAtomic, feeAtomic,
-				createdAtMs / 1000L);
+				createdAtMs / 1000L, uncertain);
 	}
 
 	/**

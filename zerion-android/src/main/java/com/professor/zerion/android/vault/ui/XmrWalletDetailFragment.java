@@ -306,8 +306,14 @@ public class XmrWalletDetailFragment extends BaseFragment {
 					in ? R.color.zerion_success : R.color.zerion_text_primary,
 					null));
 			txid.setText(tx.txid.substring(0, 12) + "…");
-			status.setText(tx.pending ? getString(R.string.wallet_tx_pending)
+			status.setText(tx.uncertain
+					? getString(R.string.wallet_xmr_tx_state_unresolved)
+					: tx.pending ? getString(R.string.wallet_tx_pending)
 					: tx.confirmations + " conf");
+			if (tx.uncertain) {
+				status.setTextColor(getResources().getColor(
+						R.color.zerion_warning, null));
+			}
 			final String rowTxid = tx.txid;
 			row.setOnClickListener(x -> showTxDetails(rowTxid));
 			historyContainer.addView(row);
@@ -351,6 +357,10 @@ public class XmrWalletDetailFragment extends BaseFragment {
 			state.setText(R.string.wallet_xmr_tx_state_failed);
 			state.setTextColor(getResources().getColor(
 					R.color.zerion_red_500, null));
+		} else if (tx.uncertain) {
+			state.setText(R.string.wallet_xmr_tx_state_unresolved);
+			state.setTextColor(getResources().getColor(
+					R.color.zerion_warning, null));
 		} else if (tx.pending) {
 			state.setText(R.string.wallet_xmr_tx_state_pending);
 			state.setTextColor(getResources().getColor(

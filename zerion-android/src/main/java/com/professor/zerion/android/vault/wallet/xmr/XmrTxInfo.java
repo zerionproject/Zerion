@@ -27,10 +27,24 @@ public final class XmrTxInfo {
 	public final long unlockTime;
 	public final boolean pending;
 	public final boolean failed;
+	/**
+	 * True for an outgoing row whose relay outcome is unknown: the daemon
+	 * neither accepted nor definitively refused it. Such a row is never
+	 * shown as an ordinary pending send.
+	 */
+	public final boolean uncertain;
 
 	private XmrTxInfo(String txid, Direction direction, long amountAtomic,
 			long feeAtomic, long height, long timestamp, long confirmations,
 			long unlockTime, boolean pending, boolean failed) {
+		this(txid, direction, amountAtomic, feeAtomic, height, timestamp,
+				confirmations, unlockTime, pending, failed, false);
+	}
+
+	private XmrTxInfo(String txid, Direction direction, long amountAtomic,
+			long feeAtomic, long height, long timestamp, long confirmations,
+			long unlockTime, boolean pending, boolean failed,
+			boolean uncertain) {
 		this.txid = txid;
 		this.direction = direction;
 		this.amountAtomic = amountAtomic;
@@ -41,6 +55,7 @@ public final class XmrTxInfo {
 		this.unlockTime = unlockTime;
 		this.pending = pending;
 		this.failed = failed;
+		this.uncertain = uncertain;
 	}
 
 	/**
@@ -51,8 +66,15 @@ public final class XmrTxInfo {
 	 */
 	public static XmrTxInfo pendingOutgoing(String txid, long amountAtomic,
 			long feeAtomic, long timestampSec) {
+		return pendingOutgoing(txid, amountAtomic, feeAtomic, timestampSec,
+				false);
+	}
+
+	/** As above, marked uncertain when the relay outcome is unknown. */
+	public static XmrTxInfo pendingOutgoing(String txid, long amountAtomic,
+			long feeAtomic, long timestampSec, boolean uncertain) {
 		return new XmrTxInfo(txid, Direction.OUT, amountAtomic, feeAtomic, 0,
-				timestampSec, 0, 0, true, false);
+				timestampSec, 0, 0, true, false, uncertain);
 	}
 
 	/**
