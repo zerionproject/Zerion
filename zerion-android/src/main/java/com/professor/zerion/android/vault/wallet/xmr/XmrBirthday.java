@@ -28,7 +28,7 @@ public final class XmrBirthday {
 
 	private static final long BLOCK_MS = 120_000L;
 	private static final long DAY_MS = 86_400_000L;
-	private static final long BASE_MARGIN_BLOCKS = 1440L;
+	static final long BASE_MARGIN_BLOCKS = 1440L;
 	private static final long DRIFT_MARGIN_BLOCKS_PER_DAY = 24L;
 
 	/**

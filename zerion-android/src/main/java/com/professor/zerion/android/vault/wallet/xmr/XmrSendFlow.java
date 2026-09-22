@@ -287,6 +287,11 @@ public final class XmrSendFlow {
 		disposePrepared();
 	}
 
+	/** The wallet this flow was created for. */
+	public String walletId() {
+		return walletId;
+	}
+
 	private void resumeRefresh() {
 		try {
 			session.startRefresh();

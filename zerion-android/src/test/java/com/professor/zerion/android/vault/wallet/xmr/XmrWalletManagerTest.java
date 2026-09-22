@@ -268,6 +268,27 @@ public class XmrWalletManagerTest {
 		assertTrue(engine.closeCount > before);
 	}
 
+	/** JNI-03: a persisting close whose cache write fails still frees the
+	 *  native wallet and invalidates the session; nothing stays open. */
+	@Test
+	public void closeStillInvalidatesWhenThePersistingCloseFails() {
+		mgr.createWallet("w", "pass".toCharArray());
+		Event<String> reveal = mgr.getSeedReveal().getValue();
+		String id = reveal == null ? null : reveal.getIfNotHandled();
+		assertNotNull(id);
+		mgr.openWalletForView(id);
+		assertTrue(mgr.isSessionValid());
+		FakeMoneroEngine.FakeSession bg = engine.lastBackgroundOpened;
+		assertNotNull(bg);
+		bg.persistFails = true;
+		int before = engine.closeCount;
+		mgr.closeSession();
+		assertFalse(mgr.isSessionValid());
+		assertTrue("the native wallet is closed despite the failed store",
+				bg.closed);
+		assertTrue(engine.closeCount > before);
+	}
+
 	@Test
 	public void switchingWalletsClosesOldHandle() {
 		store.secret = FakeMoneroEngine.FAKE_SEED.toCharArray();
@@ -795,6 +816,119 @@ public class XmrWalletManagerTest {
 
 	private static final long MINED = 2_500_000L;
 	private static final long DAY_MS = 24L * 60 * 60 * 1000;
+
+	/** XMR-07: the spend wallet opened for a later send is the first place
+	 *  a spend the view-only cache cannot see becomes visible; a reservation
+	 *  it reports as spent converges there, and the view is rebuilt from the
+	 *  spend wallet's state when the send is abandoned. */
+	@Test(timeout = 30_000)
+	public void laterSendConvergesAnObservedSpendAndRebuildsTheView()
+			throws Exception {
+		try (Live live = new Live()) {
+			engine.lookupCodes = new long[] {XmrTxLookup.CODE_MISSED};
+			relay(live, false, XmrSendUiState.Kind.RELAY_UNCERTAIN);
+			engine.lookupCodes = new long[] {XmrTxLookup.CODE_IN_POOL};
+			live.m.refreshNow();
+			awaitTrue(() -> !live.m.isSpendQuarantined(live.id), 10_000);
+			assertEquals(XmrPendingSend.ReservationState.RELAY_UNCERTAIN,
+					live.m.pendingSendsFor(live.id).get(0).reservationState());
+			assertTrue(live.m.pendingSendsFor(live.id).get(0)
+					.reservationDebit() > 0);
+			FakeMoneroEngine.FakeSession firstView = engine.lastBackgroundOpened;
+			assertNotNull(firstView);
+
+			engine.spendOutgoingForNewSessions = java.util.Collections
+					.singletonList(XmrTxInfo.parse(T1 + ",1,1000000000000,"
+							+ "30000000,3750000,1700000500,6,0,0,0"));
+			FakeMoneroEngine.FakePrepared p2 = new FakeMoneroEngine.FakePrepared();
+			p2.ids.add("2222222222222222222222222222222222222222222222222222222222222222");
+			p2.count = 1;
+			p2.amount = 1_000_000L;
+			p2.fee = 30_000_000L;
+			p2.change = 0;
+			engine.preparedForNewSessions = p2;
+			live.m.prepareSend(live.id, "w", DEST, p2.amount, 0,
+					"pass".toCharArray());
+			awaitTrue(() -> live.kind() == XmrSendUiState.Kind.REVIEW, 10_000);
+			assertEquals("the spend wallet's report converges the send",
+					XmrPendingSend.ReservationState.CONVERGED,
+					live.m.pendingSendsFor(live.id).get(0).reservationState());
+			assertEquals(0, live.m.pendingSendsFor(live.id).get(0)
+					.reservationDebit());
+			FakeMoneroEngine.FakeSession spend = engine.lastSpendOpened;
+			assertNotNull(spend);
+			int storesBefore = spend.storeCalls;
+
+			live.m.cancelSend();
+			awaitTrue(() -> live.kind() == XmrSendUiState.Kind.CANCELLED,
+					10_000);
+			awaitTrue(() -> engine.lastBackgroundOpened != firstView, 10_000);
+			assertTrue("the spend state was written to the cache",
+					spend.storeCalls > storesBefore);
+			assertTrue("the old view is closed", firstView.closed);
+			awaitTrue(live.m::isSessionValid, 10_000);
+			assertFalse("the rebuilt view is live",
+					engine.lastBackgroundOpened.closed);
+			assertFalse(live.m.isExclusiveBusy());
+			assertTrue(p2.disposed);
+		}
+	}
+
+	/** XMR-10: a wallet created while the clock ran ahead persists a restore
+	 *  height above the chain tip; the first daemon height caps it below the
+	 *  tip and rescans, once, and the marker never survives the correction. */
+	@Test(timeout = 30_000)
+	public void clockAheadRestoreHeightIsCappedByTheFirstDaemonHeight()
+			throws Exception {
+		long daemon = 1_000_000L;
+		long cap = daemon - XmrBirthday.BASE_MARGIN_BLOCKS;
+		engine.daemonHeightForNewSessions = daemon;
+		try (Live live = new Live()) {
+			live.openView();
+			assertTrue("the clock estimate is far above the fake tip",
+					XmrBirthday.estimateHeight(System.currentTimeMillis())
+							> daemon);
+			FakeMoneroEngine.FakeSession view = engine.lastBackgroundOpened;
+			assertNotNull(view);
+			awaitTrue(() -> view.rescanCalls.get() > 0, 10_000);
+			assertEquals(cap, view.refreshFromHeight);
+			assertTrue(view.refreshLog.contains("rescan@" + cap));
+			org.json.JSONObject w = new org.json.JSONObject(store.settings)
+					.getJSONObject("xmr").getJSONObject(live.id);
+			assertEquals(cap, w.getLong("h"));
+			assertFalse("the clock marker is consumed", w.has("hEst"));
+			Thread.sleep(700);
+			assertEquals("the correction runs once", 1, view.rescanCalls.get());
+		}
+	}
+
+	/** XMR-10 contrast: a height the user chose is never capped. */
+	@Test(timeout = 30_000)
+	public void importedRestoreHeightIsNeverCappedByTheDaemon()
+			throws Exception {
+		engine.daemonHeightForNewSessions = 1_000_000L;
+		try (Live live = new Live()) {
+			live.m.importWallet("w", FakeMoneroEngine.FAKE_SEED.toCharArray(),
+					3_000_000L, "pass".toCharArray());
+			String id = null;
+			for (com.professor.zerion.android.vault.wallet.WalletRecord r
+					: store.records) {
+				if (r.id.startsWith("id-")) id = r.id;
+			}
+			assertNotNull(id);
+			openExisting(live, id);
+			awaitTrue(() -> live.m.getSyncStatus().getValue() != null
+					&& live.m.getSyncStatus().getValue().daemonHeight
+					== 1_000_000L, 10_000);
+			Thread.sleep(700);
+			FakeMoneroEngine.FakeSession view = engine.lastBackgroundOpened;
+			assertNotNull(view);
+			assertEquals(0, view.rescanCalls.get());
+			org.json.JSONObject w = new org.json.JSONObject(store.settings)
+					.getJSONObject("xmr").getJSONObject(id);
+			assertEquals(3_000_000L, w.getLong("h"));
+		}
+	}
 
 	private void openExisting(Live live, String id) throws Exception {
 		live.id = id;

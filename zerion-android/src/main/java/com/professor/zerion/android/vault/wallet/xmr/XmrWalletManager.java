@@ -408,6 +408,7 @@ public final class XmrWalletManager {
 	 * transactions.
 	 */
 	private void publishStatusWithOverlay(XmrSyncStatus s) {
+		correctClockHeightOnce(openWalletId, s.daemonHeight);
 		long reserved = reservedFor(openWalletId);
 		if (reserved > 0) {
 			long bal = Math.max(s.balanceAtomic - reserved, 0);
@@ -592,6 +593,68 @@ public final class XmrWalletManager {
 	 * resolves a stale spend-quarantine, so an uncertain relay that in fact
 	 * reached the network can never leave the wallet permanently unable to send.
 	 */
+	/**
+	 * The same reconciliation on a spend session that is already open, which
+	 * is the point in the shipped flow where the wallet password is
+	 * available: every send opens the spend wallet, whose open replays the
+	 * background cache with the spend key and marks externally spent outputs.
+	 * The pending sends and the spend journal converge on what that wallet
+	 * reports, and the view is rebuilt from the spend wallet's state once the
+	 * send ends, whether it relayed, failed or was cancelled.
+	 */
+	private void reconcileExternalSpendsOn(String walletId,
+			MoneroEngine.Session spend) {
+		try {
+			java.util.Set<String> spent = outgoingHistoryTxids(spend);
+			convergeObservedSends(walletId, spent);
+			try {
+				reconcileSpendJournal(walletId, XmrSpendReconciler.acceptedFrom(
+						java.util.Collections.emptyList(), spent));
+			} catch (Exception ignored) {
+			}
+			viewRebuildFromSpend = true;
+		} catch (Throwable ignored) {
+		}
+	}
+
+	/** Set once a spend session has reconciled; cleared when the view is rebuilt. */
+	private volatile boolean viewRebuildFromSpend = false;
+
+	/**
+	 * Ends a send that did not converge: when the spend session reconciled
+	 * external spends, its state is written to the background cache and the
+	 * view session is reopened from it, so the balance excludes what another
+	 * wallet with the same seed has spent; otherwise sync simply resumes.
+	 */
+	private void finishSendView(String walletId) {
+		boolean rebuild = viewRebuildFromSpend;
+		viewRebuildFromSpend = false;
+		if (rebuild) rebuild = propagateSpendStateToBackground();
+		closeSpendSession();
+		endExclusive();
+		if (!rebuild) {
+			rearmSyncIfIdle();
+			return;
+		}
+		final long epoch = sessionEpoch;
+		MoneroEngine.Session bg = openSession;
+		openSession = null;
+		if (bg != null) {
+			try {
+				bg.close();
+			} catch (Throwable ignored) {
+			}
+		}
+		if (epoch < 0 || !vaultManager.isUnlocked()
+				|| epoch != vaultManager.getLockGeneration()) {
+			return;
+		}
+		try {
+			activateBackgroundSession(walletId, epoch);
+		} catch (Throwable reopenFailed) {
+		}
+	}
+
 	private void reconcileExternalSpends(String walletId, char[] walletPassword) {
 		if (walletCv(walletId) < WALLET_V2) return;
 		byte[] salt = loadKekSalt(walletId);
@@ -809,6 +872,7 @@ public final class XmrWalletManager {
 							relayNode);
 					final MoneroEngine.Session sp = spend;
 					spendSession = sp;
+					reconcileExternalSpendsOn(walletId, sp);
 					XmrSendGate gate = new XmrSendGate(walletStore, sendGuard(),
 							sendClock);
 					XmrSendFlow flow = new XmrSendFlow(engine, sp, 0, walletId,
@@ -931,10 +995,13 @@ public final class XmrWalletManager {
 				java.util.Arrays.fill(walletPassword, '\0');
 				if (terminal) {
 					clearSendFlow();
-					closeSpendSession();
-					endExclusive();
-
-					if (!converged[0]) rearmSyncIfIdle();
+					if (converged[0]) {
+						viewRebuildFromSpend = false;
+						closeSpendSession();
+						endExclusive();
+					} else {
+						finishSendView(flow.walletId());
+					}
 				}
 				busy.postValue(false);
 			}
@@ -947,11 +1014,15 @@ public final class XmrWalletManager {
 		syncManager.submit(() -> {
 			XmrSendFlow flow = sendFlow;
 			if (flow != null) flow.cancel();
+			String id = flow != null ? flow.walletId() : openWalletId;
 			clearSendFlow();
-			closeSpendSession();
-			endExclusive();
 			sendState.postValue(XmrSendUiState.cancelled());
-			rearmSyncIfIdle();
+			if (id != null) finishSendView(id);
+			else {
+				closeSpendSession();
+				endExclusive();
+				rearmSyncIfIdle();
+			}
 		});
 	}
 
@@ -1505,6 +1576,7 @@ public final class XmrWalletManager {
 						System.currentTimeMillis());
 				try {
 					persistRestoreHeight(id, height);
+					persistHeightFromClock(id, true);
 				} catch (Throwable ignored) {
 				}
 				File live = liveDir(id);
@@ -2896,6 +2968,77 @@ public final class XmrWalletManager {
 				}
 			}
 		} catch (Throwable ignored) {
+		}
+	}
+
+	/**
+	 * A wallet created while the device clock ran ahead persists a restore
+	 * height above the real chain tip, and the scan then waits for that
+	 * height and never sees payments made in between. The first daemon
+	 * height seen for such a wallet caps the persisted height a safety margin
+	 * below the tip and rescans the freshly created wallet from there; the
+	 * marker is cleared so this runs once per creation.
+	 */
+	private void correctClockHeightOnce(@Nullable String walletId,
+			long daemonHeight) {
+		if (walletId == null || daemonHeight <= 0) return;
+		if (!heightFromClock(walletId)) return;
+		long cap = Math.max(0, daemonHeight - XmrBirthday.BASE_MARGIN_BLOCKS);
+		long persisted = readRestoreHeight(walletId);
+		try {
+			persistHeightFromClock(walletId, false);
+			if (persisted <= cap) return;
+			persistRestoreHeight(walletId, cap);
+		} catch (Throwable ignored) {
+			return;
+		}
+		syncManager.submit(() -> {
+			MoneroEngine.Session s = openSession;
+			if (s == null || !walletId.equals(openWalletId)
+					|| !isSessionValid()) {
+				return;
+			}
+			try {
+				s.pauseRefresh();
+				s.stopRefresh();
+				s.waitRefreshIdle(SEND_REFRESH_IDLE_TIMEOUT_MS);
+				s.setRefreshFromHeight(cap);
+				s.rescanBlockchain();
+			} catch (Throwable ignored) {
+			} finally {
+				try {
+					s.startRefresh();
+				} catch (Throwable ignored) {
+				}
+			}
+		});
+	}
+
+	private boolean heightFromClock(String walletId) {
+		try {
+			org.json.JSONObject xmr = settingsObject().optJSONObject("xmr");
+			if (xmr != null) {
+				org.json.JSONObject w = xmr.optJSONObject(walletId);
+				if (w != null) return w.optBoolean("hEst", false);
+			}
+		} catch (Throwable ignored) {
+		}
+		return false;
+	}
+
+	private void persistHeightFromClock(String walletId, boolean fromClock)
+			throws Exception {
+		synchronized (walletStore.settingsMonitor()) {
+			org.json.JSONObject o = settingsObject();
+			org.json.JSONObject xmr = o.optJSONObject("xmr");
+			if (xmr == null) xmr = new org.json.JSONObject();
+			org.json.JSONObject w = xmr.optJSONObject(walletId);
+			if (w == null) w = new org.json.JSONObject();
+			if (fromClock) w.put("hEst", true);
+			else w.remove("hEst");
+			xmr.put(walletId, w);
+			o.put("xmr", xmr);
+			walletStore.writeSettings(o.toString());
 		}
 	}
 
