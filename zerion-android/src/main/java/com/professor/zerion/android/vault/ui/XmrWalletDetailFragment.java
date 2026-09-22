@@ -1269,6 +1269,11 @@ public class XmrWalletDetailFragment extends BaseFragment {
 
 	@Override
 	public void onDestroyView() {
+		if (sendFlowActive) {
+			sendFlowActive = false;
+			lastReview = null;
+			viewModel.cancelSend();
+		}
 		dismissSendDialog();
 		dismissTrackedDialogs();
 		super.onDestroyView();

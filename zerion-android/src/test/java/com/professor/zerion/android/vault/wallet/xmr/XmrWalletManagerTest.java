@@ -604,6 +604,142 @@ public class XmrWalletManagerTest {
 		}
 	}
 
+	private static final String T1 =
+			"1111111111111111111111111111111111111111111111111111111111111111";
+
+	/** A live manager with a real session thread so the sync loop and the send
+	 *  flow run as in production; the test observes through LiveData. */
+	private final class Live implements AutoCloseable {
+		final java.util.concurrent.ExecutorService session =
+				java.util.concurrent.Executors.newSingleThreadExecutor();
+		final XmrWalletManager m;
+		final java.util.concurrent.atomic.AtomicLong clock =
+				new java.util.concurrent.atomic.AtomicLong(1_000_000L);
+		String id;
+
+		Live() {
+			m = new XmrWalletManager(tmpBase, vault, store, engine,
+					Runnable::run, session);
+			m.setSendClock(clock::get);
+		}
+
+		void openView() throws Exception {
+			m.createWallet("w", "pass".toCharArray());
+			Event<String> reveal = m.getSeedReveal().getValue();
+			id = reveal == null ? null : reveal.getIfNotHandled();
+			assertNotNull(id);
+			m.setTorSocksPort(9050);
+			m.setSyncNodes(java.util.Collections.singletonList(
+					XmrNode.parse(NODE, XmrNode.Source.VETTED, false)));
+			m.openWalletForView(id);
+			awaitTrue(m::isSessionValid, 10_000);
+		}
+
+		FakeMoneroEngine.FakePrepared reachReview() throws Exception {
+			openView();
+			FakeMoneroEngine.FakePrepared p = new FakeMoneroEngine.FakePrepared();
+			p.ids.add(T1);
+			p.count = 1;
+			p.amount = 1_000_000_000_000L;
+			p.fee = 30_000_000L;
+			p.dust = 0;
+			p.change = 500_000_000L;
+			engine.preparedForNewSessions = p;
+			m.prepareSend(id, "w", DEST, p.amount, 0, "pass".toCharArray());
+			awaitTrue(() -> kind() == XmrSendUiState.Kind.REVIEW, 10_000);
+			return p;
+		}
+
+		@Nullable
+		XmrSendUiState.Kind kind() {
+			XmrSendUiState st = m.getSendState().getValue();
+			return st == null ? null : st.kind;
+		}
+
+		@Override
+		public void close() {
+			m.closeSession();
+			session.shutdownNow();
+		}
+	}
+
+	/** XMR-03: a review nobody answers must not hold the spend session, the
+	 *  signed transaction and the exclusive slot for the process lifetime. */
+	@Test(timeout = 20_000)
+	public void orphanedReviewIsReleasedByTheWatchdog() throws Exception {
+		try (Live live = new Live()) {
+			FakeMoneroEngine.FakePrepared p = live.reachReview();
+			assertTrue("review holds the exclusive slot", live.m.isExclusiveBusy());
+			assertNotNull(engine.lastSpendOpened);
+			assertFalse("spend session stays open at review",
+					engine.lastSpendOpened.closed);
+
+			live.m.expireStaleSendFlow();
+			assertTrue("the watchdog must not fire before the TTL",
+					live.m.isExclusiveBusy());
+
+			live.clock.addAndGet(XmrWalletManager.SPEND_SESSION_TTL_MS);
+			live.m.expireStaleSendFlow();
+			awaitTrue(() -> !live.m.isExclusiveBusy(), 10_000);
+			awaitTrue(() -> engine.lastSpendOpened.closed, 10_000);
+			assertTrue("the signed transaction is freed", p.disposed);
+			assertEquals(XmrSendUiState.Kind.CANCELLED, live.kind());
+
+			live.m.confirmSend("pass".toCharArray());
+			awaitTrue(() -> live.kind() == XmrSendUiState.Kind.FAILED, 10_000);
+			assertEquals("a cancelled flow never relays", 0, p.commits);
+		}
+	}
+
+	/** XMR-03: while a review is orphaned every other XMR wallet is blocked. */
+	@Test(timeout = 20_000)
+	public void orphanedReviewBlocksOtherWalletsUntilReleased() throws Exception {
+		try (Live live = new Live()) {
+			live.reachReview();
+			live.m.openWalletForView("A");
+			awaitTrue(() -> {
+				Event<XmrError> e = live.m.getError().getValue();
+				return e != null && !e.isHandled();
+			}, 10_000);
+			Event<XmrError> busy = live.m.getError().getValue();
+			assertNotNull(busy);
+			assertEquals(XmrError.BUSY, busy.getIfNotHandled());
+			live.clock.addAndGet(XmrWalletManager.SPEND_SESSION_TTL_MS);
+			live.m.expireStaleSendFlow();
+			awaitTrue(() -> !live.m.isExclusiveBusy(), 10_000);
+		}
+	}
+
+	/** XMR-03: an explicit session close tears down an active flow. */
+	@Test(timeout = 20_000)
+	public void explicitCloseTearsDownAnActiveReview() throws Exception {
+		Live live = new Live();
+		try {
+			FakeMoneroEngine.FakePrepared p = live.reachReview();
+			live.m.closeSession();
+			awaitTrue(() -> !live.m.isExclusiveBusy(), 10_000);
+			awaitTrue(() -> engine.lastSpendOpened.closed, 10_000);
+			assertTrue(p.disposed);
+		} finally {
+			live.session.shutdownNow();
+		}
+	}
+
+	/** XMR-03: the vault lock always wins over an active review. */
+	@Test(timeout = 20_000)
+	public void vaultLockDestroysSpendCapabilityDuringReview() throws Exception {
+		try (Live live = new Live()) {
+			FakeMoneroEngine.FakePrepared p = live.reachReview();
+			vault.fireLock();
+			awaitTrue(() -> !live.m.isExclusiveBusy(), 10_000);
+			awaitTrue(() -> engine.lastSpendOpened.closed, 10_000);
+			assertTrue("lock frees the signed transaction", p.disposed);
+			live.m.confirmSend("pass".toCharArray());
+			awaitTrue(() -> live.kind() == XmrSendUiState.Kind.FAILED, 10_000);
+			assertEquals("no relay after lock", 0, p.commits);
+		}
+	}
+
 	private static final class FakeVaultGate implements VaultGate {
 		boolean unlocked = true;
 		long generation = 5;

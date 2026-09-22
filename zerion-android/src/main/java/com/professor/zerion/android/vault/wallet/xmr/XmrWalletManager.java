@@ -534,6 +534,52 @@ public final class XmrWalletManager {
 
 	private static final long SEND_REFRESH_IDLE_TIMEOUT_MS = 5000;
 
+	/**
+	 * Bound on how long a reviewed-but-unconfirmed send may hold the spend
+	 * session, the signed transaction and the exclusive slot. A review that the
+	 * user never answers (the screen was re-created, the app went to the
+	 * background, the process kept running) previously kept the spend key in
+	 * memory and every other XMR wallet blocked until the vault locked.
+	 */
+	static final long SPEND_SESSION_TTL_MS = 180_000L;
+	private volatile long spendSessionTtlMs = SPEND_SESSION_TTL_MS;
+	private volatile long reviewReadyAtMs = -1L;
+	private final java.util.concurrent.ScheduledExecutorService sendWatchdog =
+			java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
+				Thread t = new Thread(r, "XmrSendWatchdog");
+				t.setDaemon(true);
+				return t;
+			});
+
+	void setSpendSessionTtlMs(long ttlMs) {
+		this.spendSessionTtlMs = ttlMs;
+	}
+
+	/**
+	 * Cancel a send that has sat at review for longer than the TTL. Runs the
+	 * ordinary cancel path, so the native transaction is freed, the
+	 * authorization killed, the spend session closed and the slot released on
+	 * the session executor. A flow that has moved past review (authorizing or
+	 * relaying) is never interrupted here; a flow that already ended is a no-op.
+	 */
+	void expireStaleSendFlow() {
+		XmrSendFlow flow = sendFlow;
+		long at = reviewReadyAtMs;
+		if (flow == null || at < 0) return;
+		if (flow.state() != XmrSendFlow.State.REVIEW_READY) return;
+		if (sendClock.nowMonotonicMs() - at < spendSessionTtlMs) return;
+		cancelSend();
+	}
+
+	private void armSendWatchdog() {
+		reviewReadyAtMs = sendClock.nowMonotonicMs();
+		try {
+			sendWatchdog.schedule(this::expireStaleSendFlow,
+					spendSessionTtlMs, java.util.concurrent.TimeUnit.MILLISECONDS);
+		} catch (RuntimeException ignored) {
+		}
+	}
+
 	@Nullable
 	private volatile XmrSendFlow sendFlow;
 	private final MutableLiveData<XmrSendUiState> sendState =
@@ -622,6 +668,7 @@ public final class XmrWalletManager {
 					if (snap == null) throw new XmrError.XmrException(
 							XmrError.UNKNOWN);
 					keepOpen = true;
+					armSendWatchdog();
 					sendState.postValue(XmrSendUiState.review(
 							reviewFrom(snap, walletLabel)));
 				} catch (XmrError.XmrException e) {
@@ -747,6 +794,23 @@ public final class XmrWalletManager {
 
 	private void clearSendFlow() {
 		sendFlow = null;
+		reviewReadyAtMs = -1L;
+	}
+
+	/**
+	 * Tear down any active send on the session executor: free the native
+	 * transaction, drop the flow, release the exclusive slot and close the
+	 * transient spend session. Shared by the vault-lock path and the explicit
+	 * session close, so an orphaned flow can never outlive either.
+	 */
+	private void teardownSendFlowOnExecutor() {
+		XmrSendFlow flow = sendFlow;
+		if (flow != null) {
+			flow.disposeOnExecutor();
+			clearSendFlow();
+			endExclusive();
+		}
+		closeSpendSession();
 	}
 
 	private void invalidateSendFlow() {
@@ -2145,7 +2209,11 @@ public final class XmrWalletManager {
 
 	public void closeSession() {
 		syncManager.stop();
-		sessionExecutor.execute(this::closeCurrentSession);
+		invalidateSendFlow();
+		sessionExecutor.execute(() -> {
+			teardownSendFlowOnExecutor();
+			closeCurrentSession();
+		});
 	}
 
 	private void invalidateSession() {
@@ -2153,13 +2221,7 @@ public final class XmrWalletManager {
 		wipePendingSeed();
 		invalidateSendFlow();
 		sessionExecutor.execute(() -> {
-			XmrSendFlow flow = sendFlow;
-			if (flow != null) {
-				flow.disposeOnExecutor();
-				clearSendFlow();
-				endExclusive();
-			}
-			closeSpendSession();
+			teardownSendFlowOnExecutor();
 			closeCurrentSession();
 		});
 	}

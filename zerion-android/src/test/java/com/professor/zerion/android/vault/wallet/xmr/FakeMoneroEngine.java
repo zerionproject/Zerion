@@ -184,6 +184,10 @@ public final class FakeMoneroEngine implements MoneroEngine {
 	}
 
 	volatile boolean refreshIdle = true;
+	/** Used by sessions the manager opens itself (the spend session of a send)
+	 *  when the test cannot reach the session object before prepare runs. */
+	@Nullable
+	public volatile Prepared preparedForNewSessions;
 	@Nullable
 	volatile long[] lookupCodes;
 
@@ -327,7 +331,7 @@ public final class FakeMoneroEngine implements MoneroEngine {
 		@Override
 		public Prepared prepare(String a, long amt, int pri, long acc) {
 			prepareCalls++;
-			return nextPrepared;
+			return nextPrepared != null ? nextPrepared : preparedForNewSessions;
 		}
 
 		@Override
