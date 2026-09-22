@@ -210,7 +210,8 @@ public class ZwfMode3FullStreamDecrypter {
 						m3fState = new Mode3FullState(
 								m3fState.getTheirActivePqPk(),
 								fresh.getOurActiveKeyPair(),
-								fresh.getRecentKeyPairs(), mergedCounter);
+								fresh.getRecentKeyPairs(), mergedCounter)
+								.withPeerUsedKpId(m3fState.getPeerUsedKpId());
 					}
 				}
 				if (m3fState != null) {
@@ -302,7 +303,7 @@ public class ZwfMode3FullStreamDecrypter {
 				pending.getMessageCounter() - 1) + 1;
 		return new Mode3FullState(pending.getTheirActivePqPk(),
 				fresh.getOurActiveKeyPair(), fresh.getRecentKeyPairs(),
-				counter);
+				counter).withPeerUsedKpId(pending.getPeerUsedKpId());
 	}
 
 	private void applyReceiveDhRatchet(byte[] dhKeyBytes) throws FormatException {

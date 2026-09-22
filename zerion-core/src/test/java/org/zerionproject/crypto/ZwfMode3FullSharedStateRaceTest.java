@@ -449,8 +449,15 @@ public class ZwfMode3FullSharedStateRaceTest {
 	 * previous key pair: it is accepted while that pair sits in the recent
 	 * window and refused once the window has evicted it.
 	 */
+	/**
+	 * R2-N1: a sender whose peer has not been heard from stops rotating at
+	 * the retention bound instead of evicting a key pair the peer may still
+	 * be using; a stale stream for the oldest retained key pair still opens.
+	 * Once the peer is heard from again, every key pair older than the one
+	 * it used is pruned, rotation resumes and the stale stream is refused.
+	 */
 	@Test(timeout = 300_000)
-	public void retiredKeyPairsAreAcceptedOnlyInsideTheRecentWindow()
+	public void rotationPausesAtTheBoundInsteadOfEvictingAUsableKeyPair()
 			throws Exception {
 		Peer[] p = connectedPair();
 		Peer a = p[0], b = p[1];
@@ -462,16 +469,57 @@ public class ZwfMode3FullSharedStateRaceTest {
 		assertNotNull(b.shared.get().findKeypairById(idOf(old)));
 		assertEquals("one rotation back is inside the window",
 				stale.roundTrip("one rotation back is inside the window"));
-		for (int i = 0; i < MODE3_FULL_RECV_SK_LRU_SIZE + 1; i++) {
+		for (int i = 1; i < MODE3_FULL_RECV_SK_LRU_SIZE; i++) {
 			rotateOnce(b, a);
 		}
-		assertNull("evicted after the window filled",
+		assertEquals(MODE3_FULL_RECV_SK_LRU_SIZE,
+				b.shared.get().getRecentKeyPairs().size());
+		assertFalse(b.shared.get().canRotate());
+		MlKemKeyPair paused = b.activeKeyPair();
+		for (int i = 0; i < 3 * MODE3_FULL_SEND_ROTATION_INTERVAL; i++) {
+			b.send("paused " + i);
+			assertEquals("paused " + i, a.receive());
+		}
+		assertSame("no rotation while the peer has not been heard from",
+				paused, b.activeKeyPair());
+		assertNotNull("the oldest retained key pair is still usable",
 				b.shared.get().findKeypairById(idOf(old)));
+		assertEquals("still open at the bound",
+				stale.roundTrip("still open at the bound"));
+
+		a.send("heard from again");
+		assertEquals("heard from again", b.receive());
+		assertNull("pruned once the peer used the newest key pair",
+				b.shared.get().findKeypairById(idOf(old)));
+		assertTrue(b.shared.get().canRotate());
 		try {
-			stale.roundTrip("after eviction");
-			fail("a ciphertext for an evicted key pair must be refused");
+			stale.roundTrip("after pruning");
+			fail("a ciphertext for a pruned key pair must be refused");
 		} catch (FormatException expected) {
 		}
+		rotateOnce(b, a);
+	}
+
+	/**
+	 * R2-N1 as observed in production: a frame queued while the receiver's
+	 * own send side rotates more than the retention bound must still open
+	 * once the receiver reads it. Before the pause it was dropped with a
+	 * format error and the connection with it.
+	 */
+	@Test(timeout = 300_000)
+	public void frameQueuedAcrossManyOwnRotationsStillOpens()
+			throws Exception {
+		Peer[] p = connectedPair();
+		Peer a = p[0], b = p[1];
+		a.send("queued while the reader stalls");
+		int batches = MODE3_FULL_RECV_SK_LRU_SIZE + 8;
+		for (int i = 0; i < batches * MODE3_FULL_SEND_ROTATION_INTERVAL; i++) {
+			b.send("own send " + i);
+			assertEquals("own send " + i, a.receive());
+		}
+		assertEquals("queued while the reader stalls", b.receive());
+		a.send("and the next one");
+		assertEquals("and the next one", b.receive());
 	}
 
 	/**

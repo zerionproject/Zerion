@@ -216,7 +216,7 @@ public class ZwfMode3FullStreamEncrypter {
 							m3fState.getMessageCounter());
 					m3fState = new Mode3FullState(fresh.getTheirActivePqPk(),
 							fresh.getOurActiveKeyPair(), fresh.getRecentKeyPairs(),
-							mergedCounter);
+							mergedCounter, fresh.getPeerUsedKpId());
 					sendState = sendState.withMode3FullState(m3fState);
 				}
 			}
