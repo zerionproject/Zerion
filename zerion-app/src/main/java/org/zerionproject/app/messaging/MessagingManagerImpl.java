@@ -911,6 +911,10 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				try {
 					meta = privateMessageValidator.validateToBdf(m, g)
 							.getDictionary();
+					if (!isMeshGroupRecordType(
+							meta.getOptionalInt(MSG_KEY_MSG_TYPE))) {
+						return;
+					}
 					clientHelper.addLocalMessage(txn, m, meta, false, false);
 					dispatchIncoming(txn, m, meta);
 				} catch (InvalidMessageException e) {
@@ -919,6 +923,19 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				throw new DbException(e);
 			}
 		});
+	}
+
+	/**
+	 * The mesh group-record path carries group records only. Every other
+	 * private-message type (a call offer, a typing indicator, a prekey
+	 * bundle, a legacy text with no type) has its own online ordering,
+	 * acknowledgement and freshness rules that this store-and-forward path
+	 * does not provide, so it is refused here rather than dispatched.
+	 */
+	static boolean isMeshGroupRecordType(@Nullable Integer messageType) {
+		return messageType != null
+				&& messageType >= MessageTypes.GROUP_POST
+				&& messageType <= MessageTypes.GROUPTR_INVITE_DECLINE;
 	}
 
 	@Override
