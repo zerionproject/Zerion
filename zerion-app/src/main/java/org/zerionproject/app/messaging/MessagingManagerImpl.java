@@ -722,6 +722,11 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			GroupId groupId = getConversationId(txn, contactId);
 			Message m = clientHelper.createMessage(groupId, timestamp,
 					BdfList.of(text));
+			try {
+				clientHelper.getMessageMetadataAsDictionary(txn, m.getId());
+				return;
+			} catch (NoSuchMessageException expected) {
+			}
 			BdfDictionary meta = new BdfDictionary();
 			meta.put(MSG_KEY_TIMESTAMP, timestamp);
 			meta.put(MSG_KEY_LOCAL, false);
