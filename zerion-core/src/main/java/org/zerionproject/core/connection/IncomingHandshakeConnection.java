@@ -50,7 +50,8 @@ class IncomingHandshakeConnection extends HandshakeConnection
 			return;
 		}
 		PendingContactId inPendingContactId = ctxIn.getPendingContactId();
-		if (inPendingContactId == null) {
+		if (inPendingContactId == null
+				|| !inPendingContactId.equals(pendingContactId)) {
 			onError(true);
 			return;
 		}

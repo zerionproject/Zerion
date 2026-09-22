@@ -14,7 +14,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
-import java.util.Random;
+import java.security.SecureRandom;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -44,7 +44,7 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 	private final ZtpSessionProvider sessionProvider;
 	private final ZppConnectionRunner connectionRunner;
 	private final ConnectionRegistry connectionRegistry;
-	private final Random random = new Random();
+	private final SecureRandom random = new SecureRandom();
 
 	/**
 	 * The transport currently running a ratchet-resuming session for each

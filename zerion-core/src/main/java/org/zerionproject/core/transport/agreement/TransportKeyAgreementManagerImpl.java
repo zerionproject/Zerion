@@ -182,11 +182,11 @@ class TransportKeyAgreementManagerImpl extends BdfIncomingMessageHook
 			if (haveKeys) {
 				return handleKeyMessageForNewSession(txn, c, t, m, meta);
 			} else {
-				throw new IllegalStateException();
+				return REJECT;
 			}
 		} else if (ss.session.getState() == AWAIT_KEY) {
 			if (haveKeys) {
-				throw new IllegalStateException();
+				return REJECT;
 			} else {
 				return handleKeyMessageForExistingSession(txn, c, t, m, meta,
 						ss);

@@ -16,7 +16,6 @@ import org.zerionproject.core.api.plugin.TorConstants;
 import org.zerionproject.core.api.plugin.TransportId;
 import org.zerionproject.core.api.sync.Priority;
 import org.zerionproject.core.api.system.Clock;
-import org.zerionproject.core.contact.HandshakeCrypto;
 import org.zerionproject.core.crypto.AuthenticatedCipher;
 import org.zerionproject.core.crypto.XSalsa20Poly1305AuthenticatedCipher;
 import org.zerionproject.core.crypto.pcs.PcsRatchetImpl;
@@ -302,9 +301,8 @@ public class ZtpConnectionHandlerTest {
 	private ZtpConnectionHandlerImpl handler(ZtpSessionProvider provider,
 			ZppConnectionRunner runner) {
 		ZtpConnectionEstablisher establisher = new ZtpConnectionEstablisher(
-				crypto, (HandshakeCrypto) null, ratchet, mode3FullRatchet,
-				sessionFactory, new ZwfStreamCounter(new MemStore()),
-				cipherFactory());
+				crypto, ratchet, mode3FullRatchet, sessionFactory,
+				new ZwfStreamCounter(new MemStore()), cipherFactory());
 		return new ZtpConnectionHandlerImpl(establisher, provider, runner,
 				noOpConnectionRegistry());
 	}

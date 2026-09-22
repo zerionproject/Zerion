@@ -187,6 +187,25 @@ public class HandshakeConnectionHandOffTest extends BrambleMockTestCase {
 				pendingContactId, transportId, connection, false).run();
 	}
 
+	@Test
+	public void aTagRecognisedToAnotherPendingContactIsRefusedBeforeTheHandshake()
+			throws Exception {
+		StreamContext foreign = new StreamContext(null,
+				new PendingContactId(getRandomId()), transportId,
+				getSecretKey(), getSecretKey(), 0L, true, false, false, null,
+				null);
+		context.checking(new Expectations() {{
+			oneOf(keyManager).getStreamContext(with(transportId),
+					with(equal(tag)));
+			will(returnValue(foreign));
+		}});
+
+		new IncomingHandshakeConnection(keyManager, connectionRegistry,
+				streamReaderFactory, streamWriterFactory, handshakeManager,
+				contactExchangeManager, connectionHandler, Runnable::run,
+				pendingContactId, transportId, connection, false).run();
+	}
+
 	private StreamContext handshakeContext() {
 		return new StreamContext(null, pendingContactId, transportId,
 				getSecretKey(), getSecretKey(), 0L, true, false, false, null,

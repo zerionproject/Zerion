@@ -18,12 +18,6 @@ public interface HandshakeCrypto {
 	HybridEncapsulationResult hybridEncapsulate(PublicKey theirPublicKey)
 			throws GeneralSecurityException;
 
-	SecretKey deriveHybridMasterKey(PublicKey theirStaticPublicKey,
-			PublicKey theirEphemeralPublicKey, KeyPair ourStaticKeyPair,
-			KeyPair ourEphemeralKeyPair, byte[] kemCiphertext,
-			byte[] kemSecret, boolean alice)
-			throws GeneralSecurityException;
-
 	SecretKey deriveHybridMasterKeyFs(PublicKey theirStaticPublicKey,
 			PublicKey theirEphemeralPublicKey, KeyPair ourStaticKeyPair,
 			KeyPair ourEphemeralKeyPair, byte[] kemCiphertext,

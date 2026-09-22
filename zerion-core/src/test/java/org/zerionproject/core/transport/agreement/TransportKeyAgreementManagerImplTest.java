@@ -327,6 +327,38 @@ public class TransportKeyAgreementManagerImplTest extends BrambleMockTestCase {
 	}
 
 	@Test
+	public void testRejectsKeyMessageWithNoSessionAndNoTransportKeys()
+			throws Exception {
+		Transaction txn = new Transaction(null, false);
+
+		expectSessionDoesNotExist(txn);
+
+		expectLoadContactId(txn);
+
+		expectKeysExist(txn, false);
+
+		assertEquals(REJECT, manager.incomingMessage(txn, remoteKeyMessage,
+				remoteMessageBody, remoteKeyMeta));
+	}
+
+	@Test
+	public void testRejectsKeyMessageInAwaitKeyStateWhenKeysAlreadyExist()
+			throws Exception {
+		Transaction txn = new Transaction(null, false);
+		Session loadedSession = new Session(AWAIT_KEY,
+				localKeyMessage.getId(), localKeyPair, localTimestamp, null);
+
+		expectLoadSession(txn, loadedSession);
+
+		expectLoadContactId(txn);
+
+		expectKeysExist(txn, true);
+
+		assertEquals(REJECT, manager.incomingMessage(txn, remoteKeyMessage,
+				remoteMessageBody, remoteKeyMeta));
+	}
+
+	@Test
 	public void testRejectsKeyMessageInAwaitActivateState() throws Exception {
 		Session loadedSession = new Session(AWAIT_ACTIVATE,
 				localActivateMessage.getId(), null, null, keySetId);

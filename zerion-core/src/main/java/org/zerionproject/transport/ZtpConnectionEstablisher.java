@@ -1,18 +1,13 @@
 package org.zerionproject.transport;
 
 import org.zerionproject.core.api.crypto.CryptoComponent;
-import org.zerionproject.core.api.crypto.KeyPair;
 import org.zerionproject.core.api.crypto.SecretKey;
 import org.zerionproject.core.api.crypto.pcs.Mode3FullRatchet;
 import org.zerionproject.core.api.crypto.pcs.PcsRatchet;
-import org.zerionproject.core.contact.HandshakeCrypto;
 import org.zerionproject.core.crypto.AuthenticatedCipher;
 import org.briarproject.nullsafety.NotNullByDefault;
-import org.zerionproject.handshake.ZwfHandshake;
-import org.zerionproject.handshake.ZwfHandshakeResult;
 import org.zerionproject.wire.ZwfStreamCounter;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.function.Supplier;
@@ -30,43 +25,22 @@ import java.util.function.Supplier;
 public class ZtpConnectionEstablisher {
 
 	private final CryptoComponent crypto;
-	private final HandshakeCrypto handshakeCrypto;
 	private final PcsRatchet ratchet;
 	private final Mode3FullRatchet mode3FullRatchet;
 	private final ZwfSessionFactory sessionFactory;
 	private final ZwfStreamCounter counter;
 	private final Supplier<AuthenticatedCipher> cipherFactory;
 
-	public ZtpConnectionEstablisher(CryptoComponent crypto,
-			HandshakeCrypto handshakeCrypto, PcsRatchet ratchet,
+	public ZtpConnectionEstablisher(CryptoComponent crypto, PcsRatchet ratchet,
 			Mode3FullRatchet mode3FullRatchet, ZwfSessionFactory sessionFactory,
 			ZwfStreamCounter counter,
 			Supplier<AuthenticatedCipher> cipherFactory) {
 		this.crypto = crypto;
-		this.handshakeCrypto = handshakeCrypto;
 		this.ratchet = ratchet;
 		this.mode3FullRatchet = mode3FullRatchet;
 		this.sessionFactory = sessionFactory;
 		this.counter = counter;
 		this.cipherFactory = cipherFactory;
-	}
-
-	/**
-	 * Runs the handshake and returns a live connection over the same streams.
-	 *
-	 * @param contactId the local contact id.
-	 * @param ourStaticKeyPair our hybrid handshake identity key pair.
-	 * @param peerCommitment the peer's key commitment from the pairing link.
-	 */
-	public ZwfDuplexConnection establish(int contactId,
-			KeyPair ourStaticKeyPair, byte[] peerCommitment, InputStream in,
-			OutputStream out) throws IOException {
-		ZwfHandshakeResult result = new ZwfHandshake(crypto, handshakeCrypto)
-				.run(ourStaticKeyPair, peerCommitment, in, out);
-		ZwfSession session = sessionFactory.deriveSession(result.getRootKey(),
-				result.isAlice());
-		return new ZwfDuplexConnection(contactId, session, counter, crypto,
-				ratchet, mode3FullRatchet, cipherFactory, in, out);
 	}
 
 	/**

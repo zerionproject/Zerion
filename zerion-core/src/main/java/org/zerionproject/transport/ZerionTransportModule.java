@@ -4,7 +4,6 @@ import org.zerionproject.core.api.crypto.CryptoComponent;
 import org.zerionproject.core.api.crypto.pcs.Mode3FullRatchet;
 import org.zerionproject.core.api.crypto.pcs.PcsRatchet;
 import org.zerionproject.core.api.lifecycle.LifecycleManager;
-import org.zerionproject.core.contact.HandshakeCrypto;
 import org.zerionproject.core.crypto.AuthenticatedCipher;
 import org.zerionproject.crypto.SettingsStreamCounterStore;
 import org.zerionproject.core.crypto.XSalsa20Poly1305AuthenticatedCipher;
@@ -63,12 +62,11 @@ public class ZerionTransportModule {
 
 	@Provides
 	ZtpConnectionEstablisher provideConnectionEstablisher(CryptoComponent crypto,
-			HandshakeCrypto handshakeCrypto, PcsRatchet ratchet,
-			Mode3FullRatchet mode3FullRatchet, ZwfSessionFactory sessionFactory,
-			ZwfStreamCounter counter,
+			PcsRatchet ratchet, Mode3FullRatchet mode3FullRatchet,
+			ZwfSessionFactory sessionFactory, ZwfStreamCounter counter,
 			Supplier<AuthenticatedCipher> cipherFactory) {
-		return new ZtpConnectionEstablisher(crypto, handshakeCrypto, ratchet,
-				mode3FullRatchet, sessionFactory, counter, cipherFactory);
+		return new ZtpConnectionEstablisher(crypto, ratchet, mode3FullRatchet,
+				sessionFactory, counter, cipherFactory);
 	}
 
 	@Provides

@@ -15,8 +15,6 @@ interface HandshakeConstants {
 	/** Adds the static-ephemeral X25519 terms (key-compromise impersonation resistance). */
 	byte KCI_MINOR_VERSION = 4;
 
-	String MASTER_KEY_LABEL_HYBRID =
-			"org.zerionproject.core.handshake/HYBRID_MASTER_KEY_V1";
 
 	String MASTER_KEY_LABEL_HYBRID_FS =
 			"org.zerionproject.core.handshake/HYBRID_MASTER_KEY_FS_V2";

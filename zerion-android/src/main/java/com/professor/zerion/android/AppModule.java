@@ -775,6 +775,10 @@ public class AppModule {
 				previous.uncaughtException(thread, throwable);
 				return;
 			}
+			if (!UncaughtExceptionPolicy.endsProcess(thread,
+					android.os.Looper.getMainLooper().getThread())) {
+				return;
+			}
 			try {
 				android.os.Process.killProcess(android.os.Process.myPid());
 			} finally {
