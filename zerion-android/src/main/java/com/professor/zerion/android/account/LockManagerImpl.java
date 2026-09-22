@@ -162,6 +162,9 @@ public class LockManagerImpl implements LockManager, Service, EventListener {
 	public void setLocked(boolean locked) {
 		this.locked = locked;
 		notificationManager.updateForegroundNotification(locked);
+		if (locked) {
+			com.professor.zerion.android.util.CacheSweeper.sweepAsync(appContext);
+		}
 	}
 
 	@Override

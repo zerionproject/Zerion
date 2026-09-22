@@ -154,9 +154,16 @@ public class ZerionControllerImpl implements ZerionController {
 			} catch (InterruptedException e) {
 			} finally {
 				try {
-					new com.professor.zerion.android.security
-							.AntiForensics(activity)
-							.wipeCachesOnLogout();
+					android.content.Context app =
+							activity.getApplicationContext();
+					com.professor.zerion.android.util.CacheSweeper.sweep(app);
+					com.professor.zerion.android.vault.utils.SecureMemory
+							.secureDeleteDir(app.getCacheDir(), 0L);
+					java.io.File external = app.getExternalCacheDir();
+					if (external != null) {
+						com.professor.zerion.android.vault.utils.SecureMemory
+								.secureDeleteDir(external, 0L);
+					}
 				} catch (Exception ignored) {
 				}
 				if (deleteAccount) fullAccountWipe();
