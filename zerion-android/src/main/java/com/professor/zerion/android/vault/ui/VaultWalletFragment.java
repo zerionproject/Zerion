@@ -837,6 +837,8 @@ public class VaultWalletFragment extends BaseFragment {
 						| InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
 						| InputType.TYPE_TEXT_FLAG_MULTI_LINE);
 		phrase.setMinLines(2);
+		phrase.setSaveEnabled(false);
+		IncognitoInputHelper.configureIncognitoInput(phrase, false);
 		TextInputEditText pass = field(ctx, box, R.string.wallet_password_prompt,
 				InputType.TYPE_CLASS_TEXT
 						| InputType.TYPE_TEXT_VARIATION_PASSWORD);
