@@ -3,8 +3,10 @@ package com.professor.zerion.android.vault.wallet.btc.payjoin;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Nullable;
@@ -33,8 +35,13 @@ public final class PayjoinValidator {
 		WRONG_NETWORK,
 		FEE_TOO_HIGH,
 		FEERATE_OUT_OF_BOUNDS,
-		BAD_VERSION_OR_LOCKTIME
+		BAD_VERSION_OR_LOCKTIME,
+		OUR_INPUT_SEQUENCE_CHANGED
 	}
+
+	/** The sequence every input of our own transactions carries. */
+	public static final long RBF_SEQUENCE = 0xfffffffdL;
+	public static final int DEFAULT_VERSION = 2;
 
 	@NotNullByDefault
 	public static final class TxOut {
@@ -61,15 +68,40 @@ public final class PayjoinValidator {
 		public final String changeAddress;
 		public final long changeSat;
 
+		public final int version;
+		public final long locktime;
+		public final Map<String, Long> ourInputSequences;
+
 		public OriginalTx(List<String> ourInputOutpoints,
 				String recipientAddress, long recipientAmountSat,
 				@Nullable String changeAddress, long changeSat) {
+			this(ourInputOutpoints, recipientAddress, recipientAmountSat,
+					changeAddress, changeSat, DEFAULT_VERSION, 0L,
+					allSequences(ourInputOutpoints, RBF_SEQUENCE));
+		}
+
+		public OriginalTx(List<String> ourInputOutpoints,
+				String recipientAddress, long recipientAmountSat,
+				@Nullable String changeAddress, long changeSat, int version,
+				long locktime, Map<String, Long> ourInputSequences) {
 			this.ourInputOutpoints = ourInputOutpoints;
 			this.recipientAddress = recipientAddress;
 			this.recipientAmountSat = recipientAmountSat;
 			this.changeAddress = changeAddress;
 			this.changeSat = changeSat;
+			this.version = version;
+			this.locktime = locktime;
+			this.ourInputSequences = ourInputSequences;
 		}
+	}
+
+	static Map<String, Long> allSequences(List<String> outpoints,
+			long sequence) {
+		Map<String, Long> out = new HashMap<>();
+		if (outpoints != null) {
+			for (String op : outpoints) out.put(op, sequence);
+		}
+		return out;
 	}
 
 	@NotNullByDefault
@@ -80,16 +112,25 @@ public final class PayjoinValidator {
 		public final long vsize;
 		public final int version;
 		public final long locktime;
+		public final Map<String, Long> inputSequences;
 
 		public ProposedTx(List<String> inputOutpoints, List<TxOut> outputs,
 				long totalInputValueSat, long vsize, int version,
 				long locktime) {
+			this(inputOutpoints, outputs, totalInputValueSat, vsize, version,
+					locktime, allSequences(inputOutpoints, RBF_SEQUENCE));
+		}
+
+		public ProposedTx(List<String> inputOutpoints, List<TxOut> outputs,
+				long totalInputValueSat, long vsize, int version,
+				long locktime, Map<String, Long> inputSequences) {
 			this.inputOutpoints = inputOutpoints;
 			this.outputs = outputs;
 			this.totalInputValueSat = totalInputValueSat;
 			this.vsize = vsize;
 			this.version = version;
 			this.locktime = locktime;
+			this.inputSequences = inputSequences;
 		}
 	}
 
@@ -146,11 +187,22 @@ public final class PayjoinValidator {
 			if (prop.locktime < 0 || prop.locktime > 0xFFFFFFFFL) {
 				return reject(Reason.BAD_VERSION_OR_LOCKTIME);
 			}
+			if (prop.version != orig.version || prop.locktime != orig.locktime) {
+				return reject(Reason.BAD_VERSION_OR_LOCKTIME);
+			}
 
 			Set<String> proposedInputs = new HashSet<>(prop.inputOutpoints);
 			for (String op : orig.ourInputOutpoints) {
 				if (!proposedInputs.contains(op)) {
 					return reject(Reason.OUR_INPUT_MISSING);
+				}
+			}
+			for (String op : orig.ourInputOutpoints) {
+				Long ours = orig.ourInputSequences.get(op);
+				Long theirs = prop.inputSequences == null ? null
+						: prop.inputSequences.get(op);
+				if (ours == null || theirs == null || !ours.equals(theirs)) {
+					return reject(Reason.OUR_INPUT_SEQUENCE_CHANGED);
 				}
 			}
 

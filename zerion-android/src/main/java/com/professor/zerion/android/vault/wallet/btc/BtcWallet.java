@@ -877,19 +877,24 @@ public class BtcWallet {
 		}
 	}
 
-	public String send(String toAddress, long amountSat, double feeRate,
+	/**
+	 * Plans and signs in one step without the review gate. Production code
+	 * goes through {@link #planSend} and the gate; these entry points exist
+	 * for the wallet tests and are package private for that reason.
+	 */
+	String send(String toAddress, long amountSat, double feeRate,
 			boolean sweep) throws IOException {
 		return send(toAddress, amountSat, feeRate, sweep, null, false);
 	}
 
-	public String send(String toAddress, long amountSat, double feeRate,
+	String send(String toAddress, long amountSat, double feeRate,
 			boolean sweep, @Nullable Set<String> manualOutpoints)
 			throws IOException {
 		return send(toAddress, amountSat, feeRate, sweep, manualOutpoints,
 				false);
 	}
 
-	public String send(String toAddress, long amountSat, double feeRate,
+	String send(String toAddress, long amountSat, double feeRate,
 			boolean sweep, @Nullable Set<String> manualOutpoints,
 			boolean allowClusterMerge) throws IOException {
 		return signPlan(planSend(toAddress, amountSat, feeRate, sweep,
@@ -908,6 +913,9 @@ public class BtcWallet {
 			boolean allowClusterMerge) throws IOException {
 		if (!BtcKeys.isValidAddress(toAddress)) {
 			throw new IOException("Not a valid Bitcoin address");
+		}
+		if (!sweep && !BtcAmounts.sendable(amountSat)) {
+			throw new IOException("Amount out of range");
 		}
 		double rate = sanitizeRate(feeRate);
 		List<OwnedUtxo> sorted =

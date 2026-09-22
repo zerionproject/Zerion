@@ -304,21 +304,30 @@ public class ElectrumClient implements ElectrumRpc {
 			if (resp == null) {
 				throw new IOException("connection closed");
 			}
-			if (!matchesId(resp, reqId)) {
+			org.json.JSONObject reply;
+			try {
+				reply = new org.json.JSONObject(resp);
+			} catch (org.json.JSONException notAReply) {
 				continue;
 			}
-			if (resp.contains("\"error\":") && !resp.contains("\"error\":null")) {
-				String msg = strField(resp, "message");
-				throw new ServerRejectedException(
-						msg != null ? msg : "Electrum error");
+			if (reply.optLong("id", -1L) != reqId) {
+				continue;
+			}
+			if (reply.has("error") && !reply.isNull("error")) {
+				throw new ServerRejectedException(errorMessage(reply));
 			}
 			return resp;
 		}
 	}
 
-	private static boolean matchesId(String resp, int reqId) {
-		Long got = numField(resp, "id");
-		return got != null && got == (long) reqId;
+	private static String errorMessage(org.json.JSONObject reply) {
+		Object error = reply.opt("error");
+		if (error instanceof org.json.JSONObject) {
+			String message = ((org.json.JSONObject) error)
+					.optString("message", "");
+			return message.isEmpty() ? "Electrum error" : message;
+		}
+		return error == null ? "Electrum error" : String.valueOf(error);
 	}
 
 	private String readLineBounded() throws IOException {

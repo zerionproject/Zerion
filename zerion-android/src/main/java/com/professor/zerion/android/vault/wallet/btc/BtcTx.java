@@ -45,6 +45,8 @@ public final class BtcTx {
 	}
 
 	private static final long RBF_SEQUENCE = 0xfffffffdL;
+	private static final java.security.SecureRandom AUX_RANDOM =
+			new java.security.SecureRandom();
 
 	private BtcTx() {
 	}
@@ -167,8 +169,10 @@ public final class BtcTx {
 		}
 		for (int i = 0; i < inputs.size(); i++) {
 			byte[] sighash = TaprootSign.keyPathSigHash(tx, prevouts, i, 0);
+			byte[] aux = new byte[32];
+			AUX_RANDOM.nextBytes(aux);
 			byte[] sig = TaprootSign.schnorrSign(inputs.get(i).privKey, sighash,
-					new byte[32]);
+					aux);
 			byte[] spk = inputs.get(i).scriptPubKey;
 			byte[] xonly = java.util.Arrays.copyOfRange(spk, 2, 34);
 			if (!TaprootSign.schnorrVerify(xonly, sighash, sig)) {

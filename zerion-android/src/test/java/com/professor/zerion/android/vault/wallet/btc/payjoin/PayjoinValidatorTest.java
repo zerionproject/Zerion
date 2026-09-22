@@ -153,6 +153,59 @@ public class PayjoinValidatorTest {
 	}
 
 	@Test
+	public void changedVersionRejectedEvenWhenValid() {
+		PayjoinValidator.OriginalTx v1 = new PayjoinValidator.OriginalTx(
+				Arrays.asList("a:0"), RECIP, 40000, CHANGE, 55000, 1, 0,
+				PayjoinValidator.allSequences(Arrays.asList("a:0"),
+						PayjoinValidator.RBF_SEQUENCE));
+		PayjoinValidator.Result r = PayjoinValidator.validate(v1,
+				validProposed(), policy());
+		assertEquals(PayjoinValidator.Reason.BAD_VERSION_OR_LOCKTIME, r.reason);
+	}
+
+	@Test
+	public void changedLocktimeRejected() {
+		PayjoinValidator.Result r = run(proposed(Arrays.asList("a:0", "b:0"),
+				new ArrayList<>(Arrays.asList(out(RECIP, 60000),
+						out(CHANGE, 54000))), 120000, 200, 2, 5));
+		assertEquals(PayjoinValidator.Reason.BAD_VERSION_OR_LOCKTIME, r.reason);
+	}
+
+	@Test
+	public void ourInputSequenceChangedRejected() {
+		java.util.Map<String, Long> seqs = PayjoinValidator.allSequences(
+				Arrays.asList("a:0", "b:0"), PayjoinValidator.RBF_SEQUENCE);
+		seqs.put("a:0", 0xffffffffL);
+		PayjoinValidator.Result r = run(new PayjoinValidator.ProposedTx(
+				Arrays.asList("a:0", "b:0"),
+				new ArrayList<>(Arrays.asList(out(RECIP, 60000),
+						out(CHANGE, 54000))), 120000, 200, 2, 0, seqs));
+		assertEquals(PayjoinValidator.Reason.OUR_INPUT_SEQUENCE_CHANGED,
+				r.reason);
+
+		java.util.Map<String, Long> theirsOnly = PayjoinValidator.allSequences(
+				Arrays.asList("b:0"), PayjoinValidator.RBF_SEQUENCE);
+		PayjoinValidator.Result missing = run(new PayjoinValidator.ProposedTx(
+				Arrays.asList("a:0", "b:0"),
+				new ArrayList<>(Arrays.asList(out(RECIP, 60000),
+						out(CHANGE, 54000))), 120000, 200, 2, 0, theirsOnly));
+		assertEquals(PayjoinValidator.Reason.OUR_INPUT_SEQUENCE_CHANGED,
+				missing.reason);
+	}
+
+	@Test
+	public void theReceiversOwnInputMayUseAnySequence() {
+		java.util.Map<String, Long> seqs = PayjoinValidator.allSequences(
+				Arrays.asList("a:0", "b:0"), PayjoinValidator.RBF_SEQUENCE);
+		seqs.put("b:0", 0xffffffffL);
+		PayjoinValidator.Result r = run(new PayjoinValidator.ProposedTx(
+				Arrays.asList("a:0", "b:0"),
+				new ArrayList<>(Arrays.asList(out(RECIP, 60000),
+						out(CHANGE, 54000))), 120000, 200, 2, 0, seqs));
+		assertEquals(PayjoinValidator.Reason.OK, r.reason);
+	}
+
+	@Test
 	public void badVersionRejected() {
 		PayjoinValidator.Result r = run(proposed(Arrays.asList("a:0", "b:0"),
 				new ArrayList<>(Arrays.asList(out(RECIP, 60000),

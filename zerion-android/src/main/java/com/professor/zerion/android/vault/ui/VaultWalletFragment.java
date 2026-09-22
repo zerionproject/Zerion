@@ -1344,16 +1344,20 @@ public class VaultWalletFragment extends BaseFragment {
 
 	private long computeSats(int unit, String s) {
 		try {
-			BigDecimal v = new BigDecimal(s.trim());
 			if (unit == 0) {
-				return v.movePointRight(8).setScale(0, RoundingMode.DOWN)
-						.longValueExact();
+				return com.professor.zerion.android.vault.wallet.btc
+						.BtcAmounts.parseBtc(s);
+			}
+			BigDecimal v = new BigDecimal(s.trim());
+			if (v.signum() < 0) {
+				return -1;
 			}
 			double price = priceForUnit(unit);
 			if (price <= 0) {
 				return -1;
 			}
-			return (long) Math.floor(v.doubleValue() / price * 1e8);
+			return com.professor.zerion.android.vault.wallet.btc.BtcAmounts
+					.bounded((long) Math.floor(v.doubleValue() / price * 1e8));
 		} catch (Exception e) {
 			return -1;
 		}
