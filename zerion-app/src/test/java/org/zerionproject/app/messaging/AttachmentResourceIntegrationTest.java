@@ -23,6 +23,7 @@ import org.zerionproject.core.test.TestDatabaseConfigModule;
 
 import org.zerionproject.app.api.messaging.MessagingManager;
 import org.zerionproject.app.api.messaging.event.AttachmentReceivedEvent;
+import org.zerionproject.app.api.messaging.event.TypingIndicatorReceivedEvent;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 import org.junit.After;
@@ -37,6 +38,7 @@ import java.util.concurrent.CountDownLatch;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.zerionproject.app.messaging.MessageTypes.ATTACHMENT_CHUNK;
 import static org.zerionproject.app.messaging.MessageTypes.ATTACHMENT_MANIFEST;
+import static org.zerionproject.app.messaging.MessageTypes.TYPING_INDICATOR;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_MANIFEST_ID;
 import static org.zerionproject.core.api.db.DatabaseComponent.NO_CLEANUP_DEADLINE;
 import static org.zerionproject.core.test.TestUtils.deleteTestDirectory;
@@ -191,6 +193,21 @@ public class AttachmentResourceIntegrationTest extends BrambleTestCase {
 				deadline != NO_CLEANUP_DEADLINE);
 	}
 
+	@Test
+	public void remoteTypingIndicatorGetsACleanupTimer() throws Exception {
+		Message typing = create(BdfList.of(TYPING_INDICATOR, true));
+		TypingLatch latch = new TypingLatch();
+		eventBus.addListener(latch);
+		deliver(typing);
+		latch.await();
+		eventBus.removeListener(latch);
+
+		long deadline = db.transactionWithResult(true,
+				db::getNextCleanupDeadline);
+		assertTrue("a remote typing indicator must self-expire",
+				deadline != NO_CLEANUP_DEADLINE);
+	}
+
 	private List<MessageId> deliverChunks(int count, int dataLength)
 			throws Exception {
 		List<MessageId> ids = new ArrayList<>(count);
@@ -293,4 +310,18 @@ public class AttachmentResourceIntegrationTest extends BrambleTestCase {
 		}
 	}
 
+	@NotNullByDefault
+	private static class TypingLatch implements EventListener {
+		private final CountDownLatch latch = new CountDownLatch(1);
+
+		@Override
+		public void eventOccurred(Event e) {
+			if (e instanceof TypingIndicatorReceivedEvent) latch.countDown();
+		}
+
+		void await() throws InterruptedException {
+			assertTrue("timed out waiting for typing indicator delivery",
+					latch.await(TIMEOUT_MS, MILLISECONDS));
+		}
+	}
 }

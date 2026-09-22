@@ -179,6 +179,22 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 
 	private static final long EPHEMERAL_PURGE_AGE_MS = 5 * 60 * 1000;
 
+	/**
+	 * Bounds how long a received ephemeral record (typing indicator, voice
+	 * signal, mesh prekey bundle) survives. Without a cleanup timer these rows
+	 * were only removed on the next database open, so a contact could grow the
+	 * database at the connection cadence. The timer caps accumulation at the
+	 * records delivered within this window.
+	 */
+	private void startEphemeralCleanupTimer(Transaction txn, MessageId id)
+			throws DbException {
+		try {
+			db.setCleanupTimerDuration(txn, id, EPHEMERAL_PURGE_AGE_MS);
+			db.startCleanupTimer(txn, id);
+		} catch (NoSuchMessageException e) {
+		}
+	}
+
 	private void purgeStaleEphemeralMessages(Transaction txn)
 			throws DbException {
 		try {
@@ -618,7 +634,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		VoiceSignalReceivedEvent event =
 				new VoiceSignalReceivedEvent(header, contactId);
 		txn.attach(event);
-
+		if (!local) startEphemeralCleanupTimer(txn, m.getId());
 	}
 
 	@Override
@@ -1046,6 +1062,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		BdfList body = clientHelper.toList(m.getBody());
 		byte[] bundle = body.getRaw(1);
 		txn.attach(new PrekeyBundleReceivedEvent(contactId, bundle));
+		startEphemeralCleanupTimer(txn, m.getId());
 	}
 
 	private void shareAttachmentChunks(Transaction txn, MessageId attachmentId)
@@ -1516,7 +1533,9 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		TypingIndicatorReceivedEvent event =
 				new TypingIndicatorReceivedEvent(contactId, isTyping);
 		txn.attach(event);
-
+		if (!meta.getBoolean(MSG_KEY_LOCAL, false)) {
+			startEphemeralCleanupTimer(txn, m.getId());
+		}
 	}
 
 	private void incomingLinkPreviewMessage(Transaction txn, Message m,
