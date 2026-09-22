@@ -44,14 +44,20 @@ seconds for the router to become ready, and stop performs a hard shutdown.
 ## Reseed over Tor
 
 An I2P router must reseed once to learn its first peers. Zerion forces that reseed
-through Tor. When a Tor SOCKS port is available, the router is configured with:
+through Tor. Tor's own SOCKS listener is a Unix domain socket that no other
+process can open; the router reaches it through the app's authenticated loopback
+relay, which accepts only the process secret it is handed. The router is
+configured with:
 
 | Property | Value |
 | --- | --- |
 | `router.reseedSSLProxyEnable` | true |
 | `router.reseedSSLProxyType` | SOCKS5 |
 | `router.reseedSSLProxyHost` | 127.0.0.1 |
-| `router.reseedSSLProxyPort` | the Tor SOCKS port |
+| `router.reseedSSLProxyPort` | the loopback relay port |
+| `router.reseedSSLProxy.authEnable` | true |
+| `router.reseedSSLProxy.username` | `zi2p-reseed` |
+| `router.reseedSSLProxy.password` | the relay's per-process secret |
 | `router.reseedSSLRequired` | true |
 
 Reseed is required to use SSL through the proxy, so it fails closed rather than

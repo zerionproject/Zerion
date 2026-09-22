@@ -3,7 +3,7 @@ package org.zerionproject.transport;
 import org.briarproject.nullsafety.NotNullByDefault;
 import org.zerionproject.core.api.plugin.TorControlPort;
 import org.zerionproject.core.api.plugin.TorDirectory;
-import org.zerionproject.core.api.plugin.TorSocksPort;
+import org.zerionproject.core.api.plugin.TorSocksPath;
 import org.zerionproject.core.util.StringUtils;
 
 import java.io.BufferedReader;
@@ -26,11 +26,15 @@ import javax.inject.Inject;
 
 /**
  * Talks to the Tor control port over its own cookie-authenticated
- * connection, sets the SOCKS listener flags and connection padding with
- * SETCONF, then reads the effective configuration back with GETCONF and
- * refuses to accept anything but a listener that carries every required
- * isolation flag and padding switched on. The check is made against what
- * Tor reports, not against what was requested.
+ * connection, moves the SOCKS listener from the loopback TCP port the
+ * shipped configuration opens to a Unix domain socket inside the app's
+ * private directory, sets the listener's isolation flags and connection
+ * padding with SETCONF, then reads the effective configuration back with
+ * GETCONF and refuses to accept anything but that single listener carrying
+ * every required isolation flag, no TCP listener left beside it, and
+ * padding switched on. The check is made against what Tor reports, not
+ * against what was requested. With the listener on a Unix socket no other
+ * process on the device can use, probe or hijack this app's Tor client.
  */
 @NotNullByDefault
 public class TorPrivacyConfiguratorImpl implements TorPrivacyConfigurator {
@@ -62,21 +66,30 @@ public class TorPrivacyConfiguratorImpl implements TorPrivacyConfigurator {
 	}
 
 	private final File torDirectory;
-	private final int socksPort;
+	private final String listener;
 	private final ControlConnectionFactory connectionFactory;
 
 	@Inject
 	public TorPrivacyConfiguratorImpl(@TorDirectory File torDirectory,
-			@TorSocksPort int socksPort, @TorControlPort int controlPort) {
-		this(torDirectory, socksPort,
+			@TorSocksPath File socksPath, @TorControlPort int controlPort) {
+		this(torDirectory, socksPath,
 				() -> new SocketControlConnection(controlPort));
 	}
 
-	TorPrivacyConfiguratorImpl(File torDirectory, int socksPort,
+	TorPrivacyConfiguratorImpl(File torDirectory, File socksPath,
 			ControlConnectionFactory connectionFactory) {
 		this.torDirectory = torDirectory;
-		this.socksPort = socksPort;
+		this.listener = listenerFor(socksPath);
 		this.connectionFactory = connectionFactory;
+	}
+
+	/** Tor's spelling of a Unix domain socket listener. */
+	static String listenerFor(File socksPath) {
+		String path = socksPath.getAbsolutePath();
+		if (path.indexOf(' ') >= 0 || path.indexOf('"') >= 0) {
+			throw new IllegalArgumentException("socket path");
+		}
+		return "unix:" + path;
 	}
 
 	@Override
@@ -85,11 +98,15 @@ public class TorPrivacyConfiguratorImpl implements TorPrivacyConfigurator {
 		try (ControlConnection c = connectionFactory.open()) {
 			requireOk(c.send("AUTHENTICATE "
 					+ StringUtils.toHexString(cookie)), "authentication");
-			requireOk(c.send("SETCONF SocksPort=\"" + socksPort + " "
+			requireOk(c.send("SETCONF SocksPort=\"" + listener + " "
 					+ String.join(" ", REQUIRED_SOCKS_FLAGS)
 					+ "\" ConnectionPadding=1"), "configuration");
-			if (!socksIsolationActive(c.send("GETCONF SocksPort"), socksPort)) {
+			List<String> socks = c.send("GETCONF SocksPort");
+			if (!socksIsolationActive(socks, listener)) {
 				throw new IOException("Tor SOCKS isolation is not active");
+			}
+			if (otherSocksListener(socks, listener)) {
+				throw new IOException("Tor keeps another SOCKS listener");
 			}
 			if (!paddingActive(c.send("GETCONF ConnectionPadding"))) {
 				throw new IOException("Tor connection padding is not active");
@@ -126,21 +143,13 @@ public class TorPrivacyConfiguratorImpl implements TorPrivacyConfigurator {
 	}
 
 	/**
-	 * True only if Tor reports a SocksPort line for our port that carries
-	 * every required flag and no flag that negates one of them.
+	 * True only if Tor reports a SocksPort line for our listener that
+	 * carries every required flag and no flag that negates one of them.
 	 */
-	static boolean socksIsolationActive(List<String> reply, int socksPort) {
+	static boolean socksIsolationActive(List<String> reply, String listener) {
 		for (String line : reply) {
-			String body = stripStatus(line);
-			if (!body.startsWith("SocksPort=")) continue;
-			String[] tokens = body.substring("SocksPort=".length()).trim()
-					.split("\\s+");
-			if (tokens.length == 0) continue;
-			String port = tokens[0];
-			if (!port.equals(String.valueOf(socksPort))
-					&& !port.endsWith(":" + socksPort)) {
-				continue;
-			}
+			String[] tokens = socksTokens(line);
+			if (tokens == null || !sameListener(tokens[0], listener)) continue;
 			boolean allPresent = true;
 			for (String required : REQUIRED_SOCKS_FLAGS) {
 				boolean present = false;
@@ -155,6 +164,36 @@ public class TorPrivacyConfiguratorImpl implements TorPrivacyConfigurator {
 			if (allPresent) return true;
 		}
 		return false;
+	}
+
+	/**
+	 * True if Tor reports any SocksPort line for a listener other than ours,
+	 * such as the loopback TCP port of the shipped configuration.
+	 */
+	static boolean otherSocksListener(List<String> reply, String listener) {
+		for (String line : reply) {
+			String[] tokens = socksTokens(line);
+			if (tokens == null) continue;
+			if (!sameListener(tokens[0], listener)) return true;
+		}
+		return false;
+	}
+
+	@javax.annotation.Nullable
+	private static String[] socksTokens(String line) {
+		String body = stripStatus(line);
+		if (!body.startsWith("SocksPort=")) return null;
+		String value = body.substring("SocksPort=".length()).trim();
+		if (value.isEmpty()) return null;
+		return value.split("\\s+");
+	}
+
+	private static boolean sameListener(String reported, String listener) {
+		String r = reported;
+		if (r.startsWith("unix:\"") && r.endsWith("\"")) {
+			r = "unix:" + r.substring(6, r.length() - 1);
+		}
+		return r.equals(listener);
 	}
 
 	static boolean paddingActive(List<String> reply) {

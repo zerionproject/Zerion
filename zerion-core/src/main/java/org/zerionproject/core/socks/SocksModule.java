@@ -1,9 +1,7 @@
 package org.zerionproject.core.socks;
 
 import org.zerionproject.core.api.plugin.FastConnectSocketFactory;
-import org.zerionproject.core.api.plugin.TorSocksPort;
 
-import java.net.InetSocketAddress;
 import java.security.SecureRandom;
 
 import javax.net.SocketFactory;
@@ -18,6 +16,11 @@ import static org.zerionproject.core.api.plugin.TorConstants.EXTRA_CONNECT_TIMEO
 import static org.zerionproject.core.api.plugin.TorConstants.EXTRA_SOCKET_TIMEOUT;
 import static org.zerionproject.core.api.plugin.TorConstants.FAST_CONNECT_TIMEOUT;
 
+/**
+ * Socket factories for the local Tor SOCKS listener. The platform binds the
+ * {@link TorSocksConnector} that reaches the listener; everything above it
+ * only speaks SOCKS over whatever stream the connector opens.
+ */
 @Module
 public class SocksModule {
 
@@ -28,23 +31,19 @@ public class SocksModule {
 	}
 
 	@Provides
-	SocketFactory provideTorSocketFactory(@TorSocksPort int torSocksPort,
+	SocketFactory provideTorSocketFactory(TorSocksConnector connector,
 			SocksIsolationSecret secret) {
-		InetSocketAddress proxy = new InetSocketAddress("127.0.0.1",
-				torSocksPort);
-		return new IsolatingSocksSocketFactory(proxy, CONNECT_TO_PROXY_TIMEOUT,
-				EXTRA_CONNECT_TIMEOUT, EXTRA_SOCKET_TIMEOUT, new SecureRandom(),
-				secret);
+		return new IsolatingSocksSocketFactory(connector,
+				CONNECT_TO_PROXY_TIMEOUT, EXTRA_CONNECT_TIMEOUT,
+				EXTRA_SOCKET_TIMEOUT, new SecureRandom(), secret);
 	}
 
 	@Provides
 	@FastConnectSocketFactory
-	SocketFactory provideFastTorSocketFactory(@TorSocksPort int torSocksPort,
+	SocketFactory provideFastTorSocketFactory(TorSocksConnector connector,
 			SocksIsolationSecret secret) {
-		InetSocketAddress proxy = new InetSocketAddress("127.0.0.1",
-				torSocksPort);
-		return new IsolatingSocksSocketFactory(proxy, CONNECT_TO_PROXY_TIMEOUT,
-				FAST_CONNECT_TIMEOUT, EXTRA_SOCKET_TIMEOUT, new SecureRandom(),
-				secret);
+		return new IsolatingSocksSocketFactory(connector,
+				CONNECT_TO_PROXY_TIMEOUT, FAST_CONNECT_TIMEOUT,
+				EXTRA_SOCKET_TIMEOUT, new SecureRandom(), secret);
 	}
 }

@@ -43,6 +43,14 @@ public class ZerionTorWrapperModule {
 				torControlPort, processWatch);
 	}
 
+	@Provides
+	@Singleton
+	org.zerionproject.core.socks.TorSocksConnector provideTorSocksConnector(
+			@org.zerionproject.core.api.plugin.TorSocksPath File socksPath) {
+		return new org.zerionproject.core.socks.UnixTorSocksConnector(
+				socksPath);
+	}
+
 	private static String architecture() {
 		for (String abi : getSupportedArchitectures()) {
 			if (abi.startsWith("x86_64")) return "x86_64_pie";

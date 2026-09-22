@@ -37,8 +37,11 @@ public class BundledI2pRouter implements I2pRouter {
 			+ "https://i2p.diyarciftci.xyz/,"
 			+ "https://i2pseed.creativecowpat.net:8443/";
 
+	private static final String RESEED_PROXY_USER = "zi2p-reseed";
+
 	private final Context appContext;
 	private final int torSocksPort;
+	private final String torSocksPassword;
 	private final BooleanSupplier directReseedAllowed;
 	private final BooleanSupplier torActive;
 	private final Object lock = new Object();
@@ -47,9 +50,11 @@ public class BundledI2pRouter implements I2pRouter {
 	private Router router;
 
 	public BundledI2pRouter(Context context, int torSocksPort,
-			BooleanSupplier directReseedAllowed, BooleanSupplier torActive) {
+			String torSocksPassword, BooleanSupplier directReseedAllowed,
+			BooleanSupplier torActive) {
 		this.appContext = context.getApplicationContext();
 		this.torSocksPort = torSocksPort;
+		this.torSocksPassword = torSocksPassword;
 		this.directReseedAllowed = directReseedAllowed;
 		this.torActive = torActive;
 	}
@@ -169,6 +174,9 @@ public class BundledI2pRouter implements I2pRouter {
 		p.setProperty("router.reseedSSLProxyType", "SOCKS5");
 		p.setProperty("router.reseedSSLProxyHost", host);
 		p.setProperty("router.reseedSSLProxyPort", port);
+		p.setProperty("router.reseedSSLProxy.authEnable", "true");
+		p.setProperty("router.reseedSSLProxy.username", RESEED_PROXY_USER);
+		p.setProperty("router.reseedSSLProxy.password", torSocksPassword);
 		p.setProperty("router.reseedSSLRequired", "true");
 	}
 

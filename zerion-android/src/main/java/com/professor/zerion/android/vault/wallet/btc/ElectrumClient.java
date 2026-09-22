@@ -83,16 +83,14 @@ public class ElectrumClient implements ElectrumRpc {
 
 	public ElectrumClient(ElectrumEndpoint ep, int socksPort,
 			String isolationTag) throws IOException {
-		Socket base = new Socket();
+		Socket base;
 		if (ep.viaTor()) {
-			if (socksPort <= 0) {
-				throw new IOException("Tor is not ready");
-			}
-			base.connect(new InetSocketAddress("127.0.0.1", socksPort), 10_000);
-			base.setSoTimeout(HANDSHAKE_TIMEOUT_MS);
+			base = com.professor.zerion.android.vault.net.TorSockets.open(
+					socksPort, HANDSHAKE_TIMEOUT_MS);
 			socks5Connect(base, ep.host, ep.port, "zw-" + isolationTag,
 					isolationTag);
 		} else {
+			base = new Socket();
 			if (!ep.direct && !ElectrumEndpoint.isLanHost(ep.host)) {
 				throw new IOException(
 						"Refusing non-Tor connection to non-local endpoint");
@@ -119,17 +117,14 @@ public class ElectrumClient implements ElectrumRpc {
 		if (!ep.tls()) {
 			throw new IOException("not a TLS endpoint");
 		}
-		Socket base = new Socket();
+		Socket base = null;
 		try {
 			if (ep.viaTor()) {
-				if (socksPort <= 0) {
-					throw new IOException("Tor is not ready");
-				}
-				base.connect(new InetSocketAddress("127.0.0.1", socksPort),
-						10_000);
-				base.setSoTimeout(HANDSHAKE_TIMEOUT_MS);
+				base = com.professor.zerion.android.vault.net.TorSockets.open(
+						socksPort, HANDSHAKE_TIMEOUT_MS);
 				socks5Connect(base, ep.host, ep.port, "zw-tofu", "tofu");
 			} else {
+				base = new Socket();
 				base.connect(new InetSocketAddress(ep.host, ep.port),
 						HANDSHAKE_TIMEOUT_MS);
 				base.setSoTimeout(HANDSHAKE_TIMEOUT_MS);
@@ -173,7 +168,7 @@ public class ElectrumClient implements ElectrumRpc {
 			throw new IOException("could not read certificate", e);
 		} finally {
 			try {
-				base.close();
+				if (base != null) base.close();
 			} catch (IOException ignored) {
 			}
 		}

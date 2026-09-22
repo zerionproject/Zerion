@@ -103,12 +103,12 @@ public class VaultViewModel extends AndroidViewModel {
 	@Inject
 	public VaultViewModel(Application application, VaultManager vaultManager,
 			@DatabaseExecutor Executor dbExecutor, WalletStore walletStore,
-			@TorSocksPort int torSocksPort) {
+			com.professor.zerion.android.vault.net.TorSocksGate torGate) {
 		super(application);
 		this.vaultManager = vaultManager;
 		this.dbExecutor = dbExecutor;
 		this.walletStore = walletStore;
-		this.torSocksPort = torSocksPort;
+		this.torSocksPort = torGate.port();
 		vaultManager.setOnLockListener(() -> {
 			resetWalletSession();
 			vaultState.postValue(VaultState.LOCKED);

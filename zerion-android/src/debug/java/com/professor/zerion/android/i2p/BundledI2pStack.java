@@ -7,7 +7,6 @@ import org.zerionproject.core.api.plugin.I2pConstants;
 import org.zerionproject.core.api.plugin.Plugin;
 import org.zerionproject.core.api.plugin.PluginManager;
 import org.zerionproject.core.api.plugin.TorConstants;
-import org.zerionproject.core.api.plugin.TorSocksPort;
 import org.zerionproject.core.api.settings.SettingsManager;
 import org.zerionproject.transport.ZtpConnectionHandler;
 import org.zerionproject.transport.i2p.I2pOverlayTransport;
@@ -24,16 +23,17 @@ import javax.inject.Provider;
 public class BundledI2pStack implements I2pStack {
 
 	private final Context context;
-	private final int torSocksPort;
+	private final com.professor.zerion.android.vault.net.TorSocksGate torGate;
 	private final Provider<PluginManager> pluginManagerProvider;
 	private final SettingsManager settingsManager;
 
 	@Inject
-	public BundledI2pStack(Context context, @TorSocksPort int torSocksPort,
+	public BundledI2pStack(Context context,
+			com.professor.zerion.android.vault.net.TorSocksGate torGate,
 			Provider<PluginManager> pluginManagerProvider,
 			SettingsManager settingsManager) {
 		this.context = context;
-		this.torSocksPort = torSocksPort;
+		this.torGate = torGate;
 		this.pluginManagerProvider = pluginManagerProvider;
 		this.settingsManager = settingsManager;
 	}
@@ -54,8 +54,9 @@ public class BundledI2pStack implements I2pStack {
 			Plugin p = pluginManagerProvider.get().getPlugin(TorConstants.ID);
 			return p != null && p.getState() == Plugin.State.ACTIVE;
 		};
-		BundledI2pRouter router = new BundledI2pRouter(context, torSocksPort,
-				directReseedAllowed, torActive);
+		BundledI2pRouter router = new BundledI2pRouter(context,
+				torGate.port(), torGate.processSecret(), directReseedAllowed,
+				torActive);
 		return new I2pStreamingTransport(router, ioExecutor, handler);
 	}
 }

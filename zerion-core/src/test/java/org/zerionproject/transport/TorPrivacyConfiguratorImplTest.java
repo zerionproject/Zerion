@@ -41,6 +41,8 @@ import static org.junit.Assert.fail;
 public class TorPrivacyConfiguratorImplTest {
 
 	private static final int SOCKS_PORT = 59050;
+	private File socketFile;
+	private String LISTENER;
 
 	private ServerSocket server;
 	private ExecutorService exec;
@@ -49,12 +51,15 @@ public class TorPrivacyConfiguratorImplTest {
 	private volatile boolean honourSocksFlags = true;
 	private volatile boolean honourPadding = true;
 	private volatile boolean acceptCookie = true;
+	private volatile boolean keepTcpListener = false;
 	private final List<String> setconfs =
 			Collections.synchronizedList(new ArrayList<>());
 
 	@Before
 	public void setUp() throws IOException {
 		torDir = Files.createTempDirectory("tor-privacy").toFile();
+		socketFile = new File(torDir, "socks");
+		LISTENER = "unix:" + socketFile.getAbsolutePath();
 		File dataDir = new File(torDir, ".tor");
 		assertTrue(dataDir.mkdirs());
 		cookie = new byte[32];
@@ -118,7 +123,12 @@ public class TorPrivacyConfiguratorImplTest {
 					}
 					reply = "250 OK";
 				} else if (line.equals("GETCONF SocksPort")) {
-					reply = "250 SocksPort=" + socksLine;
+					if (keepTcpListener) {
+						out.write("250-SocksPort=" + socksLine + "\r\n");
+						reply = "250 SocksPort=" + SOCKS_PORT;
+					} else {
+						reply = "250 SocksPort=" + socksLine;
+					}
 				} else if (line.equals("GETCONF ConnectionPadding")) {
 					reply = "250 ConnectionPadding=" + padding;
 				} else if (line.equals("QUIT")) {
@@ -136,7 +146,7 @@ public class TorPrivacyConfiguratorImplTest {
 	}
 
 	private TorPrivacyConfiguratorImpl configurator() {
-		return new TorPrivacyConfiguratorImpl(torDir, SOCKS_PORT,
+		return new TorPrivacyConfiguratorImpl(torDir, socketFile,
 				server.getLocalPort());
 	}
 
@@ -146,9 +156,24 @@ public class TorPrivacyConfiguratorImplTest {
 		configurator().applyAndVerify();
 		assertEquals(1, setconfs.size());
 		String applied = setconfs.get(0);
-		assertTrue(applied.contains("SocksPort=\"" + SOCKS_PORT
+		assertTrue(applied.contains("SocksPort=\"" + LISTENER
 				+ " IsolateSOCKSAuth IsolateClientAddr IsolateDestAddr\""));
 		assertTrue(applied.contains("ConnectionPadding=1"));
+	}
+
+	/**
+	 * NET-09: the loopback TCP listener of the shipped configuration must
+	 * be gone. A Tor that reports it beside the Unix socket is refused.
+	 */
+	@Test(timeout = 20_000)
+	public void testFailsClosedWhenATcpListenerRemains() {
+		keepTcpListener = true;
+		try {
+			configurator().applyAndVerify();
+			fail();
+		} catch (IOException expected) {
+			assertTrue(expected.getMessage().contains("another"));
+		}
 	}
 
 	@Test(timeout = 20_000)
@@ -198,28 +223,35 @@ public class TorPrivacyConfiguratorImplTest {
 
 	@Test
 	public void testEffectiveSocksLineParsing() {
-		List<String> ok = Arrays.asList("250 SocksPort=59050 IsolateSOCKSAuth"
-				+ " IsolateClientAddr IsolateDestAddr");
-		assertTrue(TorPrivacyConfiguratorImpl.socksIsolationActive(ok, 59050));
-		List<String> withAddress = Arrays.asList(
-				"250-SocksPort=127.0.0.1:59050 isolatesocksauth"
-						+ " IsolateClientAddr IsolateDestAddr",
-				"250 SocksPort=9999");
-		assertTrue(TorPrivacyConfiguratorImpl.socksIsolationActive(
-				withAddress, 59050));
-		assertFalse("other port", TorPrivacyConfiguratorImpl
-				.socksIsolationActive(ok, 59051));
-		assertFalse("bare port", TorPrivacyConfiguratorImpl
-				.socksIsolationActive(Arrays.asList("250 SocksPort=59050"),
-						59050));
+		List<String> ok = Arrays.asList("250 SocksPort=" + LISTENER
+				+ " IsolateSOCKSAuth IsolateClientAddr IsolateDestAddr");
+		assertTrue(TorPrivacyConfiguratorImpl.socksIsolationActive(ok,
+				LISTENER));
+		assertFalse(TorPrivacyConfiguratorImpl.otherSocksListener(ok,
+				LISTENER));
+		List<String> quoted = Arrays.asList("250 SocksPort=unix:\""
+				+ socketFile.getAbsolutePath()
+				+ "\" isolatesocksauth IsolateClientAddr IsolateDestAddr");
+		assertTrue("quoted path", TorPrivacyConfiguratorImpl
+				.socksIsolationActive(quoted, LISTENER));
+		List<String> withTcp = Arrays.asList(ok.get(0).replace("250 ", "250-"),
+				"250 SocksPort=59050");
+		assertTrue(TorPrivacyConfiguratorImpl.socksIsolationActive(withTcp,
+				LISTENER));
+		assertTrue("tcp listener beside ours", TorPrivacyConfiguratorImpl
+				.otherSocksListener(withTcp, LISTENER));
+		assertFalse("other socket", TorPrivacyConfiguratorImpl
+				.socksIsolationActive(ok, "unix:/elsewhere"));
+		assertFalse("bare listener", TorPrivacyConfiguratorImpl
+				.socksIsolationActive(Arrays.asList("250 SocksPort="
+						+ LISTENER), LISTENER));
 		assertFalse("missing flag", TorPrivacyConfiguratorImpl
-				.socksIsolationActive(Arrays.asList(
-						"250 SocksPort=59050 IsolateClientAddr IsolateDestAddr"),
-						59050));
+				.socksIsolationActive(Arrays.asList("250 SocksPort=" + LISTENER
+						+ " IsolateClientAddr IsolateDestAddr"), LISTENER));
 		assertFalse("negated flag", TorPrivacyConfiguratorImpl
-				.socksIsolationActive(Arrays.asList("250 SocksPort=59050"
+				.socksIsolationActive(Arrays.asList("250 SocksPort=" + LISTENER
 						+ " IsolateSOCKSAuth IsolateClientAddr IsolateDestAddr"
-						+ " NoIsolateSOCKSAuth"), 59050));
+						+ " NoIsolateSOCKSAuth"), LISTENER));
 		assertTrue(TorPrivacyConfiguratorImpl.paddingActive(
 				Arrays.asList("250 ConnectionPadding=1")));
 		assertFalse(TorPrivacyConfiguratorImpl.paddingActive(

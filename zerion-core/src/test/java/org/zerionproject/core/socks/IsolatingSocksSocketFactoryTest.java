@@ -120,8 +120,8 @@ public class IsolatingSocksSocketFactoryTest {
 	}
 
 	private IsolatingSocksSocketFactory factory(SocksIsolationSecret secret) {
-		return new IsolatingSocksSocketFactory(
-				new InetSocketAddress("127.0.0.1", server.getLocalPort()),
+		return new IsolatingSocksSocketFactory(new TcpTorSocksConnector(
+				new InetSocketAddress("127.0.0.1", server.getLocalPort())),
 				2000, 2000, 2000, new SecureRandom(), secret);
 	}
 

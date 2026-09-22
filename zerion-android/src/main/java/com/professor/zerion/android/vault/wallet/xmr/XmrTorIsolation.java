@@ -34,6 +34,16 @@ public final class XmrTorIsolation {
 	private XmrTorIsolation() {
 	}
 
+	/**
+	 * Whether {@code candidate} is this process's SOCKS password, compared
+	 * in constant time. The loopback relay the native wallet reaches Tor
+	 * through accepts only this password.
+	 */
+	public static boolean isProcessSecret(String candidate) {
+		return com.professor.zerion.android.vault.net.TorSocksGate
+				.constantTimeEquals(PROCESS_SECRET, candidate);
+	}
+
 	/** Proxy string for the view-only sync session of a wallet. */
 	public static String syncProxy(int socksPort, String walletId) {
 		return proxy(socksPort, walletId, PURPOSE_SYNC);
