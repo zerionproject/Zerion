@@ -847,7 +847,7 @@ public class ConversationViewModel extends DbViewModel
 			if (chunk) {
 				memoId = voiceSendManager.newMemoId();
 				java.util.List<String> parts =
-					voiceSendManager.split(messageText, memoId);
+					voiceSendManager.split(cId, messageText, memoId);
 				firstText = parts.get(0);
 				laterParts = new java.util.ArrayList<>(
 					parts.subList(1, parts.size()));
@@ -931,16 +931,22 @@ public class ConversationViewModel extends DbViewModel
 	}
 
 	public void feedVoicePart(@Nullable String text) {
-		voiceAssembler.addPartText(text);
+		ContactId c = contactId;
+		if (c == null) return;
+		voiceAssembler.addPartText(c, text);
 	}
 
 	@Nullable
 	public String getReassembledVoiceMessage(String memoId) {
-		return voiceAssembler.getReassembled(memoId);
+		ContactId c = contactId;
+		if (c == null) return null;
+		return voiceAssembler.getReassembled(c, memoId);
 	}
 
 	public boolean isVoiceMemoFailed(String memoId) {
-		return voiceAssembler.isFailed(memoId);
+		ContactId c = contactId;
+		if (c == null) return false;
+		return voiceAssembler.isFailed(c, memoId);
 	}
 
 	public void rebuildVoiceMemo(String memoId) {
@@ -955,10 +961,10 @@ public class ConversationViewModel extends DbViewModel
 							com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat
 									.parse(t);
 					if (p != null && p.memoId.equals(memoId)) {
-						voiceAssembler.addPartText(t);
+						voiceAssembler.addPartText(c, t);
 					}
 				}
-				if (voiceAssembler.getReassembled(memoId) != null) {
+				if (voiceAssembler.getReassembled(c, memoId) != null) {
 					voiceMemoRebuilt.postEvent(memoId);
 				}
 			} catch (DbException ignored) {
@@ -981,7 +987,7 @@ public class ConversationViewModel extends DbViewModel
 				}
 				for (Map.Entry<MessageId, String> e : texts.entrySet()) {
 					String t = e.getValue();
-					voiceAssembler.addPartText(t);
+					voiceAssembler.addPartText(c, t);
 					GroupId g = unread.get(e.getKey());
 					if (g != null) {
 						com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat.Part p =
