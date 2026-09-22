@@ -131,6 +131,55 @@ public class WalletStore
 		vaultManager.deleteItem(walletId);
 	}
 
+	private static final String SECRET_CODE = "SEC";
+
+	private static String secretName(String walletId, String name) {
+		return SECRET_CODE + NAME_SEP + walletId + NAME_SEP + name;
+	}
+
+	@Override
+	@Nullable
+	public byte[] readWalletSecret(String walletId, String name)
+			throws Exception {
+		String wanted = secretName(walletId, name);
+		for (VaultItem item : vaultManager.listItems()) {
+			if (item.type == VaultItem.ItemType.WALLET
+					&& wanted.equals(item.name)) {
+				return vaultManager.getItemContent(item.id);
+			}
+		}
+		return null;
+	}
+
+	@Override
+	public void writeWalletSecret(String walletId, String name, byte[] value)
+			throws Exception {
+		String wanted = secretName(walletId, name);
+		List<VaultItem> stale = new ArrayList<>();
+		for (VaultItem item : vaultManager.listItems()) {
+			if (item.type == VaultItem.ItemType.WALLET
+					&& wanted.equals(item.name)) {
+				stale.add(item);
+			}
+		}
+		vaultManager.addItem(VaultItem.ItemType.WALLET, wanted, value);
+		for (VaultItem item : stale) {
+			vaultManager.deleteItem(item.id);
+		}
+	}
+
+	@Override
+	public void removeWalletSecret(String walletId, String name)
+			throws Exception {
+		String wanted = secretName(walletId, name);
+		for (VaultItem item : vaultManager.listItems()) {
+			if (item.type == VaultItem.ItemType.WALLET
+					&& wanted.equals(item.name)) {
+				vaultManager.deleteItem(item.id);
+			}
+		}
+	}
+
 	private static final String CONFIG_CODE = "CFG";
 
 	/**

@@ -2064,6 +2064,11 @@ public final class XmrWalletManager {
 				removeMetadata(walletId);
 				walletStore.deleteWallet(walletId);
 				try {
+					walletStore.removeWalletSecret(walletId,
+							BACKGROUND_PASSWORD_SECRET);
+				} catch (Throwable ignored) {
+				}
+				try {
 					postXmrWallets();
 				} catch (Throwable ignored) {
 				}
@@ -2241,6 +2246,11 @@ public final class XmrWalletManager {
 				}
 				if (fromExists && toExists) {
 					walletStore.deleteWallet(from);
+					try {
+						walletStore.removeWalletSecret(from,
+								BACKGROUND_PASSWORD_SECRET);
+					} catch (Throwable ignored) {
+					}
 					removeMetadata(from);
 				}
 			}
@@ -2735,20 +2745,75 @@ public final class XmrWalletManager {
 		return walletCv(walletId) < WALLET_V2;
 	}
 
+	private static final String BACKGROUND_PASSWORD_SECRET = "bgp";
+
 	@Nullable
 	private char[] loadBackgroundPassword(String walletId) {
 		try {
-			org.json.JSONObject xmr = settingsObject().optJSONObject("xmr");
-			if (xmr != null) {
-				org.json.JSONObject w = xmr.optJSONObject(walletId);
-				if (w != null) {
-					String bgp = w.optString("bgp", "");
-					if (!bgp.isEmpty()) return bgp.toCharArray();
+			byte[] stored = walletStore.readWalletSecret(walletId,
+					BACKGROUND_PASSWORD_SECRET);
+			if (stored != null) {
+				try {
+					return utf8ToChars(stored);
+				} finally {
+					java.util.Arrays.fill(stored, (byte) 0);
 				}
 			}
+			return moveBackgroundPasswordOutOfSettings(walletId);
 		} catch (Throwable ignored) {
 		}
 		return null;
+	}
+
+	/**
+	 * Wallets built before the background credential had its own vault item
+	 * carried it inside the settings JSON. On first use it is moved to its
+	 * item and removed from the JSON, so no later settings read or write
+	 * copies it into a String again.
+	 */
+	@Nullable
+	private char[] moveBackgroundPasswordOutOfSettings(String walletId)
+			throws Exception {
+		synchronized (walletStore.settingsMonitor()) {
+			org.json.JSONObject o = settingsObject();
+			org.json.JSONObject xmr = o.optJSONObject("xmr");
+			if (xmr == null) return null;
+			org.json.JSONObject w = xmr.optJSONObject(walletId);
+			if (w == null) return null;
+			String legacy = w.optString(BACKGROUND_PASSWORD_SECRET, "");
+			if (legacy.isEmpty()) return null;
+			char[] chars = legacy.toCharArray();
+			byte[] bytes = charsToUtf8(chars);
+			try {
+				walletStore.writeWalletSecret(walletId,
+						BACKGROUND_PASSWORD_SECRET, bytes);
+			} finally {
+				java.util.Arrays.fill(bytes, (byte) 0);
+			}
+			w.remove(BACKGROUND_PASSWORD_SECRET);
+			xmr.put(walletId, w);
+			o.put("xmr", xmr);
+			walletStore.writeSettings(o.toString());
+			return chars;
+		}
+	}
+
+	private static byte[] charsToUtf8(char[] chars) {
+		java.nio.ByteBuffer bb = java.nio.charset.StandardCharsets.UTF_8
+				.encode(java.nio.CharBuffer.wrap(chars));
+		byte[] out = new byte[bb.remaining()];
+		bb.get(out);
+		java.util.Arrays.fill(bb.array(), (byte) 0);
+		return out;
+	}
+
+	private static char[] utf8ToChars(byte[] bytes) {
+		java.nio.CharBuffer cb = java.nio.charset.StandardCharsets.UTF_8
+				.decode(java.nio.ByteBuffer.wrap(bytes));
+		char[] out = new char[cb.remaining()];
+		cb.get(out);
+		java.util.Arrays.fill(cb.array(), '\0');
+		return out;
 	}
 
 	@Nullable
@@ -2784,7 +2849,14 @@ public final class XmrWalletManager {
 			if (xmr == null) xmr = new org.json.JSONObject();
 			org.json.JSONObject w = xmr.optJSONObject(walletId);
 			if (w == null) w = new org.json.JSONObject();
-			w.put("bgp", new String(backgroundPw));
+			byte[] bgpBytes = charsToUtf8(backgroundPw);
+			try {
+				walletStore.writeWalletSecret(walletId,
+						BACKGROUND_PASSWORD_SECRET, bgpBytes);
+			} finally {
+				java.util.Arrays.fill(bgpBytes, (byte) 0);
+			}
+			w.remove(BACKGROUND_PASSWORD_SECRET);
 			w.put("ks", java.util.Base64.getEncoder()
 					.encodeToString(kekSalt));
 			w.put("kv", XmrWalletKek.VERSION);
