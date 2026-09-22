@@ -10,7 +10,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.professor.zerion.R;
 import com.professor.zerion.android.AppModule;
 import com.professor.zerion.android.EarlyPrefs;
@@ -240,7 +240,7 @@ public class DisplayFragment extends Fragment {
 			}
 		}
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.pref_language_title)
 				.setSingleChoiceItems(languageEntries, selectedIndex, (dialog, which) -> {
 					String newLanguage = languageTags[which];
@@ -254,7 +254,7 @@ public class DisplayFragment extends Fragment {
 	}
 
 	private void showLanguageChangeConfirmation(String newLanguage) {
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.pref_language_title)
 				.setMessage(R.string.pref_language_changed)
 				.setPositiveButton(android.R.string.ok, (d, i) -> {
@@ -286,7 +286,7 @@ public class DisplayFragment extends Fragment {
 			}
 		}
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.pref_theme_title)
 				.setSingleChoiceItems(themeEntries, selectedIndex, (dialog, which) -> {
 					String newTheme = themeValues[which];
@@ -337,7 +337,7 @@ public class DisplayFragment extends Fragment {
 				getString(R.string.pref_app_icon_weather)
 		};
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.pref_app_icon_title)
 				.setSingleChoiceItems(entries, currentAppIcon, (dialog, which) -> {
 					if (which != currentAppIcon) {
@@ -372,7 +372,7 @@ public class DisplayFragment extends Fragment {
 				getString(R.string.pref_nav_size_large)
 		};
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.pref_nav_size_title)
 				.setSingleChoiceItems(entries, currentNavSize, (dialog, which) -> {
 					if (which != currentNavSize) {
@@ -399,7 +399,7 @@ public class DisplayFragment extends Fragment {
 				getString(R.string.pref_text_size_extra_large)
 		};
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.pref_gui_text_size_title)
 				.setSingleChoiceItems(entries, currentGuiTextSize,
 						(dialog, which) -> {
@@ -490,7 +490,7 @@ public class DisplayFragment extends Fragment {
 				getString(R.string.pref_text_size_extra_large)
 		};
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.pref_text_size_title)
 				.setSingleChoiceItems(entries, currentTextSize, (dialog, which) -> {
 					if (which != currentTextSize) {
@@ -516,7 +516,7 @@ public class DisplayFragment extends Fragment {
 				getString(R.string.pref_bubble_color_cyan)
 		};
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.pref_bubble_color_title)
 				.setSingleChoiceItems(entries, currentBubbleColor, (dialog, which) -> {
 					if (which != currentBubbleColor) {
@@ -564,7 +564,7 @@ public class DisplayFragment extends Fragment {
 			entries[i] = getString(labels[i]);
 		}
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.pref_accent_title)
 				.setSingleChoiceItems(entries, currentAccent, (dialog, which) -> {
 					if (which != currentAccent) {

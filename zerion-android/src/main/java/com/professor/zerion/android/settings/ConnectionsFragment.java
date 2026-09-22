@@ -13,7 +13,7 @@ import android.widget.TextView;
 
 import android.widget.Toast;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 import com.professor.zerion.R;
 
@@ -306,7 +306,7 @@ public class ConnectionsFragment extends Fragment {
 			pluginViewModel.enableTransport(I2pConstants.ID, false);
 			return;
 		}
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.i2p_enable_warning_title)
 				.setMessage(R.string.i2p_enable_warning_message)
 				.setPositiveButton(R.string.i2p_enable_warning_confirm,
@@ -323,7 +323,7 @@ public class ConnectionsFragment extends Fragment {
 			pluginViewModel.setDirectReseed(false);
 			return;
 		}
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.i2p_direct_reseed_warning_title)
 				.setMessage(R.string.i2p_direct_reseed_warning_message)
 				.setPositiveButton(R.string.i2p_direct_reseed_warning_confirm,
@@ -372,7 +372,7 @@ public class ConnectionsFragment extends Fragment {
 			pluginManager.setOfflineMode(false);
 			return;
 		}
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.offline_mode_confirm_title)
 				.setMessage(R.string.offline_mode_confirm_message)
 				.setPositiveButton(R.string.offline_mode_confirm_button,
@@ -509,7 +509,7 @@ public class ConnectionsFragment extends Fragment {
 			}
 		}
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.tor_network_setting)
 				.setSingleChoiceItems(torNetworkEntries, selectedIndex, (dialog, which) -> {
 					String newValue = torNetworkValues[which];
@@ -552,7 +552,7 @@ public class ConnectionsFragment extends Fragment {
 		input.setLayoutParams(lp);
 		layout.addView(input);
 
-		new MaterialAlertDialogBuilder(context)
+		new SecureAlertDialogBuilder(context)
 				.setTitle(R.string.tor_custom_bridges_title)
 				.setView(layout)
 				.setPositiveButton(R.string.ok, (dialog, which) -> {
@@ -628,7 +628,7 @@ public class ConnectionsFragment extends Fragment {
 		portInput.setHint(String.valueOf(DEFAULT_ORBOT_PORT));
 		layout.addView(portInput);
 
-		new MaterialAlertDialogBuilder(context)
+		new SecureAlertDialogBuilder(context)
 				.setTitle(R.string.orbot_proxy_settings)
 				.setView(layout)
 				.setPositiveButton(R.string.ok, (dialog, which) -> {
@@ -685,7 +685,7 @@ public class ConnectionsFragment extends Fragment {
 	}
 
 	private void showRotateOnionDialog() {
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.pref_rotate_onion_confirm_title)
 				.setMessage(R.string.pref_rotate_onion_confirm_message)
 				.setPositiveButton(R.string.pref_rotate_onion_confirm_action,
@@ -695,7 +695,7 @@ public class ConnectionsFragment extends Fragment {
 	}
 
 	private void showForceCompleteRotationDialog() {
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.pref_force_complete_rotation_confirm_title)
 				.setMessage(
 						R.string.pref_force_complete_rotation_confirm_message)
@@ -752,7 +752,7 @@ public class ConnectionsFragment extends Fragment {
 							.get(com.professor.zerion.android.navdrawer
 									.PluginViewModel.class)
 							.refreshTorState();
-					new MaterialAlertDialogBuilder(requireContext())
+					new SecureAlertDialogBuilder(requireContext())
 							.setTitle(R.string.pref_rotate_onion_success_title)
 							.setMessage(getString(
 									R.string.pref_rotate_onion_success_message,

@@ -13,7 +13,7 @@ import android.widget.TextView;
 import androidx.fragment.app.Fragment;
 
 import com.google.android.material.color.MaterialColors;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.professor.zerion.R;
 import com.professor.zerion.android.vault.wallet.xmr.XmrNode;
 import com.professor.zerion.android.vault.wallet.xmr.XmrNodeConfig;
@@ -113,7 +113,7 @@ final class XmrNodeSettings {
 		scroll.addView(list);
 
 		String active = cfg.activeNodeLabel();
-		new MaterialAlertDialogBuilder(ctx)
+		new SecureAlertDialogBuilder(ctx)
 				.setTitle(R.string.wallet_xmr_node_title)
 				.setMessage(active == null ? null
 						: f.getString(R.string.wallet_xmr_node_active, active))
@@ -146,7 +146,7 @@ final class XmrNodeSettings {
 						});
 				break;
 			case DIRECT:
-				new MaterialAlertDialogBuilder(f.requireContext())
+				new SecureAlertDialogBuilder(f.requireContext())
 						.setTitle(R.string.wallet_xmr_node_direct)
 						.setMessage(R.string.wallet_xmr_node_direct_ack)
 						.setPositiveButton(R.string.wallet_xmr_node_direct_accept,
@@ -175,7 +175,7 @@ final class XmrNodeSettings {
 		FrameLayout box = new FrameLayout(f.requireContext());
 		box.setPadding(p, p / 2, p, 0);
 		box.addView(input);
-		new MaterialAlertDialogBuilder(f.requireContext())
+		new SecureAlertDialogBuilder(f.requireContext())
 				.setTitle(R.string.wallet_xmr_node_address)
 				.setView(box)
 				.setPositiveButton(android.R.string.ok, (d, w) -> {

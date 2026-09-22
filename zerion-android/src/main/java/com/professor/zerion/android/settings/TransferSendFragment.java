@@ -11,7 +11,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.professor.zerion.R;
 import com.professor.zerion.android.backup.AccountTransferManager;
 import com.professor.zerion.android.backup.AccountTransferManager.Callback;
@@ -156,7 +156,7 @@ public class TransferSendFragment extends Fragment implements Callback {
 			sasResult.offer(false);
 			return;
 		}
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.transfer_sas_title)
 				.setMessage(getString(R.string.transfer_sas_message, sas))
 				.setCancelable(false)
@@ -169,7 +169,7 @@ public class TransferSendFragment extends Fragment implements Callback {
 
 	private void finishResult(boolean success) {
 		if (!isAdded()) return;
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(success ? R.string.transfer_done_title
 						: R.string.transfer_failed_title)
 				.setMessage(success ? R.string.transfer_send_done_message

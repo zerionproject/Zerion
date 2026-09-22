@@ -137,6 +137,7 @@ public abstract class BaseActivity extends AppCompatActivity
 		androidx.activity.EdgeToEdge.enable(this);
 
 		securityManager.applyScreenshotProtection(this, forceScreenshotProtection());
+		com.professor.zerion.android.security.SecureDialogs.install(this);
 
 		if (SDK_INT >= 31) getWindow().setHideOverlayWindows(true);
 

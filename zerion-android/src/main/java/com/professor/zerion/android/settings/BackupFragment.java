@@ -14,7 +14,7 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.professor.zerion.R;
 import com.professor.zerion.android.backup.AccountBackupManager;
 import com.professor.zerion.android.backup.BackupException;
@@ -122,7 +122,7 @@ public class BackupFragment extends Fragment {
 		layout.addView(pass);
 		layout.addView(confirm);
 		androidx.appcompat.app.AlertDialog dlg =
-				new MaterialAlertDialogBuilder(context)
+				new SecureAlertDialogBuilder(context)
 						.setTitle(R.string.backup_export_title)
 						.setMessage(R.string.backup_export_warning)
 						.setView(layout)
@@ -165,7 +165,7 @@ public class BackupFragment extends Fragment {
 		layout.addView(newPass);
 		layout.addView(confirm);
 		androidx.appcompat.app.AlertDialog dlg =
-				new MaterialAlertDialogBuilder(context)
+				new SecureAlertDialogBuilder(context)
 						.setTitle(R.string.backup_import_title)
 						.setMessage(R.string.backup_import_warning)
 						.setView(layout)
@@ -242,7 +242,7 @@ public class BackupFragment extends Fragment {
 			return;
 		}
 		if (success) {
-			new MaterialAlertDialogBuilder(requireContext())
+			new SecureAlertDialogBuilder(requireContext())
 					.setTitle(R.string.backup_export_success_title)
 					.setMessage(R.string.backup_export_warning_after)
 					.setCancelable(false)
@@ -306,7 +306,7 @@ public class BackupFragment extends Fragment {
 			return;
 		}
 		if (success) {
-			new MaterialAlertDialogBuilder(requireContext())
+			new SecureAlertDialogBuilder(requireContext())
 					.setTitle(R.string.backup_import_success_title)
 					.setMessage(R.string.backup_import_success_message)
 					.setPositiveButton(R.string.ok, null)

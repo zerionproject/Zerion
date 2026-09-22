@@ -16,7 +16,7 @@ import androidx.activity.result.PickVisualMediaRequest;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -180,7 +180,7 @@ public class StickerPickerDialog extends BottomSheetDialogFragment {
 	private void confirmDelete(String id) {
 		Context ctx = getContext();
 		if (ctx == null || storage == null || myAdapter == null) return;
-		new MaterialAlertDialogBuilder(ctx)
+		new SecureAlertDialogBuilder(ctx)
 				.setMessage(R.string.sticker_delete_confirm)
 				.setPositiveButton(R.string.delete, (d, w) -> {
 					ioExecutor.execute(() -> {

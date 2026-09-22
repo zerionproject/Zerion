@@ -27,6 +27,7 @@ import androidx.activity.OnBackPressedCallback;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
@@ -551,7 +552,7 @@ public class VaultWalletFragment extends BaseFragment {
 		int p = dp(20);
 		til.setPadding(p, 0, p, 0);
 		androidx.appcompat.app.AlertDialog dlg =
-				new MaterialAlertDialogBuilder(ctx)
+				new SecureAlertDialogBuilder(ctx)
 						.setTitle(R.string.wallet_password_prompt)
 						.setView(til)
 						.setCancelable(false)
@@ -672,7 +673,7 @@ public class VaultWalletFragment extends BaseFragment {
 		msg.append("\n\n").append(getString(R.string.wallet_tx_id_label))
 				.append(":\n").append(tx.txid);
 
-		track(new MaterialAlertDialogBuilder(ctx)
+		track(new SecureAlertDialogBuilder(ctx)
 				.setTitle(R.string.wallet_tx_detail_title)
 				.setMessage(msg.toString())
 				.setPositiveButton(R.string.wallet_tx_copy_id, (d, w) -> {
@@ -755,7 +756,7 @@ public class VaultWalletFragment extends BaseFragment {
 				getString(R.string.wallet_create_new),
 				getString(R.string.wallet_import_existing)
 		};
-		track(new MaterialAlertDialogBuilder(requireContext())
+		track(new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.wallet_add)
 				.setItems(options, (d, which) -> {
 					if (which == 0) {
@@ -786,7 +787,7 @@ public class VaultWalletFragment extends BaseFragment {
 						| InputType.TYPE_TEXT_VARIATION_PASSWORD);
 
 		androidx.appcompat.app.AlertDialog dlg =
-				new MaterialAlertDialogBuilder(ctx)
+				new SecureAlertDialogBuilder(ctx)
 						.setTitle(R.string.wallet_create_new)
 						.setView(box)
 						.setPositiveButton(R.string.wallet_create, null)
@@ -845,7 +846,7 @@ public class VaultWalletFragment extends BaseFragment {
 						| InputType.TYPE_TEXT_VARIATION_PASSWORD);
 
 		androidx.appcompat.app.AlertDialog dlg =
-				new MaterialAlertDialogBuilder(ctx)
+				new SecureAlertDialogBuilder(ctx)
 						.setTitle(R.string.wallet_import_existing)
 						.setView(box)
 						.setPositiveButton(R.string.wallet_import, null)
@@ -927,7 +928,7 @@ public class VaultWalletFragment extends BaseFragment {
 			box.addView(offline);
 		}
 
-		track(new MaterialAlertDialogBuilder(ctx)
+		track(new SecureAlertDialogBuilder(ctx)
 				.setTitle(R.string.wallet_receive_title)
 				.setMessage(R.string.wallet_receive_hint)
 				.setView(box)
@@ -1043,7 +1044,7 @@ public class VaultWalletFragment extends BaseFragment {
 		viewModel.loadFeeOptions();
 
 		androidx.appcompat.app.AlertDialog dlg =
-				new MaterialAlertDialogBuilder(ctx)
+				new SecureAlertDialogBuilder(ctx)
 						.setTitle(R.string.wallet_send_title)
 						.setView(form)
 						.setPositiveButton(R.string.wallet_send_review, null)
@@ -1144,7 +1145,7 @@ public class VaultWalletFragment extends BaseFragment {
 			return;
 		}
 		dismissPayjoinProgress();
-		payjoinProgressDialog = track(new MaterialAlertDialogBuilder(ctx)
+		payjoinProgressDialog = track(new SecureAlertDialogBuilder(ctx)
 				.setCancelable(false)
 				.setMessage(message)
 				.setNegativeButton(android.R.string.cancel,
@@ -1165,7 +1166,7 @@ public class VaultWalletFragment extends BaseFragment {
 			return;
 		}
 		dismissPreparing();
-		preparingDialog = track(new MaterialAlertDialogBuilder(ctx)
+		preparingDialog = track(new SecureAlertDialogBuilder(ctx)
 				.setCancelable(false)
 				.setMessage(R.string.wallet_preparing_tx)
 				.show());
@@ -1184,7 +1185,7 @@ public class VaultWalletFragment extends BaseFragment {
 			return;
 		}
 		dismissUnlocking();
-		unlockingDialog = track(new MaterialAlertDialogBuilder(ctx)
+		unlockingDialog = track(new SecureAlertDialogBuilder(ctx)
 				.setCancelable(false)
 				.setMessage(R.string.wallet_unlocking)
 				.show());
@@ -1203,7 +1204,7 @@ public class VaultWalletFragment extends BaseFragment {
 		if (ctx == null || failure == null) {
 			return;
 		}
-		MaterialAlertDialogBuilder b = new MaterialAlertDialogBuilder(ctx)
+		MaterialAlertDialogBuilder b = new SecureAlertDialogBuilder(ctx)
 				.setTitle(R.string.payjoin_unavailable_title)
 				.setMessage(failure.message);
 		if (failure.offerNormalFallback && lastPjTo != null) {
@@ -1234,7 +1235,7 @@ public class VaultWalletFragment extends BaseFragment {
 		final android.widget.EditText pin = new android.widget.EditText(ctx);
 		pin.setInputType(android.text.InputType.TYPE_CLASS_TEXT
 				| android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
-		track(new MaterialAlertDialogBuilder(ctx)
+		track(new SecureAlertDialogBuilder(ctx)
 				.setTitle(R.string.payjoin_review_title)
 				.setMessage(body)
 				.setView(pin)
@@ -1293,7 +1294,7 @@ public class VaultWalletFragment extends BaseFragment {
 		TextInputEditText pin = field(ctx, box, R.string.wallet_auth_send_hint,
 				InputType.TYPE_CLASS_TEXT
 						| InputType.TYPE_TEXT_VARIATION_PASSWORD);
-		track(new MaterialAlertDialogBuilder(ctx)
+		track(new SecureAlertDialogBuilder(ctx)
 				.setTitle(R.string.wallet_auth_send_title)
 				.setView(box)
 				.setPositiveButton(R.string.wallet_auth_send_button, (d, w) -> {
@@ -1394,7 +1395,7 @@ public class VaultWalletFragment extends BaseFragment {
 
 	private void confirmDelete(WalletRecord w) {
 		androidx.appcompat.app.AlertDialog dlg =
-				new MaterialAlertDialogBuilder(requireContext())
+				new SecureAlertDialogBuilder(requireContext())
 						.setTitle(R.string.wallet_delete)
 						.setMessage(R.string.wallet_delete_warning_strong)
 						.setPositiveButton(R.string.wallet_delete_continue,
@@ -1428,7 +1429,7 @@ public class VaultWalletFragment extends BaseFragment {
 			}
 		}
 		final int[] sel = {checked};
-		track(new MaterialAlertDialogBuilder(requireContext())
+		track(new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.wallet_settings_routing)
 				.setSingleChoiceItems(labels, checked, (d, which) -> sel[0] = which)
 				.setPositiveButton(android.R.string.ok, (d, w) -> {
@@ -1446,7 +1447,7 @@ public class VaultWalletFragment extends BaseFragment {
 	}
 
 	private void confirmDirectRouting(String id, String mode) {
-		track(new MaterialAlertDialogBuilder(requireContext())
+		track(new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.wallet_routing_direct)
 				.setMessage(R.string.wallet_routing_direct_warning)
 				.setPositiveButton(R.string.wallet_routing_enable_direct,
@@ -1463,7 +1464,7 @@ public class VaultWalletFragment extends BaseFragment {
 		if (id == null) {
 			return;
 		}
-		track(new MaterialAlertDialogBuilder(requireContext())
+		track(new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.wallet_delete)
 				.setMessage(R.string.wallet_delete_warning_strong)
 				.setPositiveButton(R.string.wallet_delete_continue,
@@ -1483,7 +1484,7 @@ public class VaultWalletFragment extends BaseFragment {
 		int p = dp(20);
 		til.setPadding(p, 0, p, 0);
 		androidx.appcompat.app.AlertDialog dlg =
-				new MaterialAlertDialogBuilder(ctx)
+				new SecureAlertDialogBuilder(ctx)
 						.setTitle(R.string.wallet_delete)
 						.setMessage(R.string.wallet_delete_auth_hint)
 						.setView(til)
@@ -1519,7 +1520,7 @@ public class VaultWalletFragment extends BaseFragment {
 		til.addView(input);
 		int p = dp(20);
 		til.setPadding(p, 0, p, 0);
-		track(new MaterialAlertDialogBuilder(ctx)
+		track(new SecureAlertDialogBuilder(ctx)
 				.setTitle(R.string.wallet_backup_title)
 				.setView(til)
 				.setPositiveButton(android.R.string.ok, (d, w) ->
@@ -1543,7 +1544,7 @@ public class VaultWalletFragment extends BaseFragment {
 		words.setTextColor(colorRes(R.color.zerion_text_primary));
 		box.addView(words);
 
-		track(new MaterialAlertDialogBuilder(ctx)
+		track(new SecureAlertDialogBuilder(ctx)
 				.setTitle(R.string.wallet_backup_title)
 				.setMessage(R.string.wallet_backup_warning)
 				.setView(box)
@@ -1583,7 +1584,7 @@ public class VaultWalletFragment extends BaseFragment {
 			acts.add(8);
 		}
 		viewModel.loadNodes();
-		track(new MaterialAlertDialogBuilder(requireContext())
+		track(new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.wallet_settings_title)
 				.setItems(labels.toArray(new CharSequence[0]), (d, which) -> {
 					switch (acts.get(which)) {
@@ -1717,7 +1718,7 @@ public class VaultWalletFragment extends BaseFragment {
 		}
 		ScrollView sv = new ScrollView(ctx);
 		sv.addView(container);
-		track(new MaterialAlertDialogBuilder(ctx)
+		track(new SecureAlertDialogBuilder(ctx)
 				.setTitle(R.string.wallet_settings_coincontrol)
 				.setMessage(R.string.wallet_coincontrol_hint)
 				.setView(sv)
@@ -1811,7 +1812,7 @@ public class VaultWalletFragment extends BaseFragment {
 	}
 
 	private void showExtremeModeDialog() {
-		track(new MaterialAlertDialogBuilder(requireContext())
+		track(new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.wallet_epm_title)
 				.setMessage(R.string.wallet_epm_explain)
 				.setPositiveButton(extremeMode ? R.string.wallet_epm_disable
@@ -1826,7 +1827,7 @@ public class VaultWalletFragment extends BaseFragment {
 		if (prompt == null) {
 			return;
 		}
-		track(new MaterialAlertDialogBuilder(requireContext())
+		track(new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.wallet_merge_title)
 				.setMessage(getString(R.string.wallet_merge_msg,
 						prompt.clusterCount))
@@ -1939,7 +1940,7 @@ public class VaultWalletFragment extends BaseFragment {
 
 		ScrollView sv = new ScrollView(ctx);
 		sv.addView(container);
-		track(new MaterialAlertDialogBuilder(ctx)
+		track(new SecureAlertDialogBuilder(ctx)
 				.setTitle(R.string.wallet_settings_nodes)
 				.setMessage(R.string.wallet_node_hint)
 				.setView(sv)
@@ -1966,7 +1967,7 @@ public class VaultWalletFragment extends BaseFragment {
 		if (removable) {
 			labels.add(getString(R.string.wallet_node_remove));
 		}
-		track(new MaterialAlertDialogBuilder(requireContext())
+		track(new SecureAlertDialogBuilder(requireContext())
 				.setTitle(node)
 				.setItems(labels.toArray(new CharSequence[0]), (d, which) -> {
 					CharSequence chosen = labels.get(which);
@@ -1996,7 +1997,7 @@ public class VaultWalletFragment extends BaseFragment {
 						| InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
 		TextInputEditText port = field(ctx, box, R.string.wallet_node_port,
 				InputType.TYPE_CLASS_NUMBER);
-		track(new MaterialAlertDialogBuilder(ctx)
+		track(new SecureAlertDialogBuilder(ctx)
 				.setTitle(R.string.wallet_node_add)
 				.setMessage(R.string.wallet_node_add_hint)
 				.setView(box)
@@ -2063,7 +2064,7 @@ public class VaultWalletFragment extends BaseFragment {
 	}
 
 	private void showPinConfirmDialog(String node, String fp) {
-		track(new MaterialAlertDialogBuilder(requireContext())
+		track(new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.wallet_pin_confirm_title)
 				.setMessage(getString(R.string.wallet_pin_confirm_msg, node,
 						groupFingerprint(fp)))
@@ -2091,7 +2092,7 @@ public class VaultWalletFragment extends BaseFragment {
 		TextInputEditText pw = field(ctx, box, R.string.wallet_password_prompt,
 				InputType.TYPE_CLASS_TEXT
 						| InputType.TYPE_TEXT_VARIATION_PASSWORD);
-		track(new MaterialAlertDialogBuilder(ctx)
+		track(new SecureAlertDialogBuilder(ctx)
 				.setTitle(R.string.wallet_rename_title)
 				.setView(box)
 				.setPositiveButton(R.string.wallet_settings_rename, (d, w) -> {
@@ -2129,7 +2130,7 @@ public class VaultWalletFragment extends BaseFragment {
 				InputType.TYPE_CLASS_TEXT
 						| InputType.TYPE_TEXT_VARIATION_PASSWORD);
 		androidx.appcompat.app.AlertDialog dlg =
-				new MaterialAlertDialogBuilder(ctx)
+				new SecureAlertDialogBuilder(ctx)
 						.setTitle(R.string.wallet_change_pw_title)
 						.setView(box)
 						.setPositiveButton(R.string.wallet_settings_change_pw,
@@ -2167,7 +2168,7 @@ public class VaultWalletFragment extends BaseFragment {
 				break;
 			}
 		}
-		track(new MaterialAlertDialogBuilder(requireContext())
+		track(new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.wallet_settings_currency)
 				.setSingleChoiceItems(currencies, checked, (d, which) -> {
 					String cur = currencies[which];
@@ -2249,7 +2250,7 @@ public class VaultWalletFragment extends BaseFragment {
 			box.addView(move);
 		}
 
-		track(new MaterialAlertDialogBuilder(ctx)
+		track(new SecureAlertDialogBuilder(ctx)
 				.setTitle(R.string.wallet_settings_sp)
 				.setView(box)
 				.setPositiveButton(R.string.wallet_sp_scan, (d, w) -> {
@@ -2278,7 +2279,7 @@ public class VaultWalletFragment extends BaseFragment {
 		oracle.setText(VaultViewModel.DEFAULT_SP_ORACLE);
 		TextInputEditText birthday = field(ctx, box,
 				R.string.wallet_sp_birthday_hint, InputType.TYPE_CLASS_NUMBER);
-		track(new MaterialAlertDialogBuilder(ctx)
+		track(new SecureAlertDialogBuilder(ctx)
 				.setTitle(R.string.wallet_sp_set_oracle)
 				.setView(box)
 				.setPositiveButton(android.R.string.ok, (d, w) -> {
@@ -2303,7 +2304,7 @@ public class VaultWalletFragment extends BaseFragment {
 		TextInputEditText addr = field(ctx, box, R.string.wallet_sp_move_hint,
 				InputType.TYPE_CLASS_TEXT
 						| InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
-		track(new MaterialAlertDialogBuilder(ctx)
+		track(new SecureAlertDialogBuilder(ctx)
 				.setTitle(R.string.wallet_sp_move)
 				.setView(box)
 				.setPositiveButton(R.string.wallet_send_review, (d, w) -> {
@@ -2346,7 +2347,7 @@ public class VaultWalletFragment extends BaseFragment {
 		TextInputEditText pin = field(ctx, box, R.string.wallet_auth_send_hint,
 				InputType.TYPE_CLASS_TEXT
 						| InputType.TYPE_TEXT_VARIATION_PASSWORD);
-		track(new MaterialAlertDialogBuilder(ctx)
+		track(new SecureAlertDialogBuilder(ctx)
 				.setTitle(R.string.wallet_sp_move)
 				.setView(box)
 				.setPositiveButton(R.string.wallet_auth_send_button, (d, w) -> {

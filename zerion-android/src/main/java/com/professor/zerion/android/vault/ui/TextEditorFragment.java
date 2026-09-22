@@ -23,7 +23,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputLayout;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
@@ -320,7 +320,7 @@ public class TextEditorFragment extends BaseFragment {
 	}
 
 	private void showUnsavedChangesDialog() {
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.vault_unsaved_changes_title)
 				.setMessage(R.string.text_editor_unsaved_message)
 				.setPositiveButton(R.string.vault_button_save, (dialog, which) -> saveDocument())

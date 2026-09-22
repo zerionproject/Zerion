@@ -19,7 +19,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.button.MaterialButtonToggleGroup;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.professor.zerion.R;
@@ -382,7 +382,7 @@ public class XmrWalletDetailFragment extends BaseFragment {
 		((TextView) v.findViewById(R.id.detail_id)).setText(tx.txid);
 
 		final String copyTxid = tx.txid;
-		track(new MaterialAlertDialogBuilder(requireContext())
+		track(new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.wallet_xmr_tx_details)
 				.setView(v)
 				.setPositiveButton(R.string.wallet_xmr_copy,
@@ -509,7 +509,7 @@ public class XmrWalletDetailFragment extends BaseFragment {
 		});
 
 		androidx.appcompat.app.AlertDialog dlg =
-				new MaterialAlertDialogBuilder(requireContext())
+				new SecureAlertDialogBuilder(requireContext())
 						.setTitle(R.string.wallet_xmr_send_title)
 						.setView(form)
 						.setPositiveButton(R.string.wallet_xmr_send_continue,
@@ -752,7 +752,7 @@ public class XmrWalletDetailFragment extends BaseFragment {
 		pw.setSaveEnabled(false);
 
 		androidx.appcompat.app.AlertDialog dlg =
-				new MaterialAlertDialogBuilder(requireContext())
+				new SecureAlertDialogBuilder(requireContext())
 						.setTitle(R.string.wallet_xmr_send_review)
 						.setView(v)
 						.setPositiveButton(R.string.wallet_xmr_send_confirm,
@@ -805,7 +805,7 @@ public class XmrWalletDetailFragment extends BaseFragment {
 				R.color.zerion_text_secondary, null));
 		box.addView(label);
 		androidx.appcompat.app.AlertDialog dlg =
-				new MaterialAlertDialogBuilder(requireContext())
+				new SecureAlertDialogBuilder(requireContext())
 						.setView(box)
 						.setCancelable(false)
 						.create();
@@ -857,7 +857,7 @@ public class XmrWalletDetailFragment extends BaseFragment {
 	}
 
 	private void showReleaseUnresolved() {
-		track(new MaterialAlertDialogBuilder(requireContext())
+		track(new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.wallet_xmr_release_unresolved)
 				.setMessage(R.string.wallet_xmr_release_unresolved_body)
 				.setPositiveButton(R.string.wallet_xmr_release_unresolved,
@@ -943,7 +943,7 @@ public class XmrWalletDetailFragment extends BaseFragment {
 		}
 
 		androidx.appcompat.app.AlertDialog dlg =
-				new MaterialAlertDialogBuilder(requireContext())
+				new SecureAlertDialogBuilder(requireContext())
 						.setView(v)
 						.setCancelable(true)
 						.setOnCancelListener(d -> {
@@ -1067,7 +1067,7 @@ public class XmrWalletDetailFragment extends BaseFragment {
 		addr.setPadding(0, dp(12), 0, dp(4));
 		box.addView(addr);
 
-		track(new MaterialAlertDialogBuilder(requireContext())
+		track(new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.wallet_xmr_receive_title)
 				.setView(box)
 				.setPositiveButton(R.string.wallet_xmr_copy,
@@ -1097,7 +1097,7 @@ public class XmrWalletDetailFragment extends BaseFragment {
 			String label = a.label == null ? "" : " · " + a.label;
 			items[i] = "#" + a.index + label + "\n" + a.shortPreview();
 		}
-		track(new MaterialAlertDialogBuilder(requireContext())
+		track(new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.wallet_xmr_previous_addresses)
 				.setMessage(R.string.wallet_xmr_reuse_note)
 				.setItems(items, (d, which) -> showReceive(list.get(which)))
@@ -1134,7 +1134,7 @@ public class XmrWalletDetailFragment extends BaseFragment {
 		}
 		list.add(getString(R.string.wallet_delete));
 		String[] items = list.toArray(new String[0]);
-		track(new MaterialAlertDialogBuilder(requireContext())
+		track(new SecureAlertDialogBuilder(requireContext())
 				.setTitle(walletName)
 				.setItems(items, (d, which) -> {
 					if (which == 0) showNodeSettings();
@@ -1188,7 +1188,7 @@ public class XmrWalletDetailFragment extends BaseFragment {
 		box.addView(pickDate);
 		box.addView(height);
 		box.addView(pw);
-		track(new MaterialAlertDialogBuilder(requireContext())
+		track(new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.wallet_xmr_rescan)
 				.setView(box)
 				.setPositiveButton(android.R.string.ok, (d, w) -> {
@@ -1240,7 +1240,7 @@ public class XmrWalletDetailFragment extends BaseFragment {
 		box.setPadding(p, dp(8), p, 0);
 		box.addView(name);
 		box.addView(pw);
-		track(new MaterialAlertDialogBuilder(requireContext())
+		track(new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.wallet_rename)
 				.setView(box)
 				.setPositiveButton(android.R.string.ok, (d, w) -> {
@@ -1258,7 +1258,7 @@ public class XmrWalletDetailFragment extends BaseFragment {
 
 	private void showDelete() {
 		if (viewModel.isSpendQuarantined(walletId)) {
-			track(new MaterialAlertDialogBuilder(requireContext())
+			track(new SecureAlertDialogBuilder(requireContext())
 					.setTitle(R.string.wallet_delete)
 					.setMessage(R.string.wallet_xmr_delete_unresolved_body)
 					.setPositiveButton(R.string.wallet_delete, (d, w) ->
@@ -1289,7 +1289,7 @@ public class XmrWalletDetailFragment extends BaseFragment {
 		LinearLayout box = new LinearLayout(requireContext());
 		box.setPadding(p, dp(8), p, 0);
 		box.addView(pw);
-		track(new MaterialAlertDialogBuilder(requireContext())
+		track(new SecureAlertDialogBuilder(requireContext())
 				.setTitle(titleRes)
 				.setView(box)
 				.setPositiveButton(android.R.string.ok, (d, w) -> {

@@ -21,7 +21,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 
 import com.professor.zerion.R;
 import com.professor.zerion.android.AppModule;
@@ -286,7 +286,7 @@ public class VaultGalleryFragment extends BaseFragment {
 	private void showItemOptions(VaultItem item) {
 		String[] options = {"View", "Delete"};
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(item.name)
 				.setItems(options, (dialog, which) -> {
 					switch (which) {
@@ -302,7 +302,7 @@ public class VaultGalleryFragment extends BaseFragment {
 	}
 
 	private void confirmDelete(VaultItem item) {
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.vault_delete_confirm)
 				.setMessage(R.string.vault_delete_confirm_message)
 				.setPositiveButton(android.R.string.yes, (dialog, which) -> {
@@ -317,7 +317,7 @@ public class VaultGalleryFragment extends BaseFragment {
 	private void showAddImageDialog() {
 		String[] options = {"Take Photo", "Choose from Gallery"};
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.vault_add_image)
 				.setItems(options, (dialog, which) -> {
 					if (which == 0) {

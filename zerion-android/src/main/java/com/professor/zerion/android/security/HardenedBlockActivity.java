@@ -9,7 +9,7 @@ import android.widget.TextView;
 import androidx.annotation.Nullable;
 
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.professor.zerion.R;
 import com.professor.zerion.android.AppModule;
 import com.professor.zerion.android.activity.ActivityComponent;
@@ -62,7 +62,7 @@ public class HardenedBlockActivity extends ZerionActivity {
 	}
 
 	private void promptDisableHardenedMode(int result) {
-		new MaterialAlertDialogBuilder(this)
+		new SecureAlertDialogBuilder(this)
 				.setTitle(R.string.hardened_block_disable_title)
 				.setMessage(R.string.hardened_block_disable_message)
 				.setPositiveButton(

@@ -9,7 +9,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
@@ -228,7 +228,7 @@ public class VaultSettingsFragment extends BaseFragment {
 		IncognitoInputHelper.configurePasswordField(newPasswordInput);
 		IncognitoInputHelper.configurePasswordField(confirmPasswordInput);
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.vault_settings_change_master)
 				.setView(dialogView)
 				.setPositiveButton(R.string.vault_settings_change_action,
@@ -317,7 +317,7 @@ public class VaultSettingsFragment extends BaseFragment {
 			}
 		}
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.vault_settings_autolock)
 				.setSingleChoiceItems(options, selectedIndex, (dialog, which) -> {
 					currentAutolockTimeout = values[which];
@@ -341,7 +341,7 @@ public class VaultSettingsFragment extends BaseFragment {
 			}
 		}
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.vault_settings_clipboard_timeout_title)
 				.setSingleChoiceItems(options, selectedIndex, (dialog, which) -> {
 					currentClipboardTimeout = values[which];
@@ -353,7 +353,7 @@ public class VaultSettingsFragment extends BaseFragment {
 	}
 
 	private void showExportDialog() {
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.vault_settings_export)
 				.setMessage(R.string.vault_export_message)
 				.setPositiveButton(R.string.vault_export_action,
@@ -373,7 +373,7 @@ public class VaultSettingsFragment extends BaseFragment {
 		com.google.android.material.textfield.TextInputEditText confirmInput =
 				dialogView.findViewById(R.id.export_password_confirm);
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.vault_export_password_title)
 				.setMessage(R.string.vault_export_password_message)
 				.setView(dialogView)
@@ -435,7 +435,7 @@ public class VaultSettingsFragment extends BaseFragment {
 	}
 
 	private void showWipeVaultDialog() {
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.vault_wipe_title)
 				.setMessage(R.string.vault_settings_wipe_message)
 				.setPositiveButton(R.string.vault_wipe_button, (dialog, which) -> {
@@ -452,7 +452,7 @@ public class VaultSettingsFragment extends BaseFragment {
 				R.string.vault_wipe_confirm_hint, keyword));
 		IncognitoInputHelper.configureForVault(confirmInput);
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.vault_wipe_confirm_title)
 				.setMessage(getString(
 						R.string.vault_wipe_confirm_message, keyword))

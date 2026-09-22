@@ -210,7 +210,7 @@ public class VaultDocumentsFragment extends BaseFragment {
 	}
 
 	private void exportDocumentSecurely(VaultItem item) {
-		new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+		new com.professor.zerion.android.security.SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.vault_document_export_warning_title)
 				.setMessage(R.string.vault_document_export_warning_message)
 				.setPositiveButton(R.string.vault_document_export_anyway,
@@ -287,7 +287,7 @@ public class VaultDocumentsFragment extends BaseFragment {
 	private void showDocumentOptions(VaultItem item) {
 		String[] options = {"Export (Unencrypted)", "Export as .zenc (Encrypted)", "Share .zenc File", "Delete"};
 
-		new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+		new com.professor.zerion.android.security.SecureAlertDialogBuilder(requireContext())
 				.setTitle(item.name)
 				.setItems(options, (dialog, which) -> {
 					switch (which) {
@@ -490,7 +490,7 @@ public class VaultDocumentsFragment extends BaseFragment {
 	}
 
 	private void confirmDeleteDocument(VaultItem item) {
-		new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+		new com.professor.zerion.android.security.SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.vault_document_delete_title)
 				.setMessage(R.string.vault_document_delete_message)
 				.setPositiveButton(android.R.string.yes, (dialog, which) -> {
@@ -512,7 +512,7 @@ public class VaultDocumentsFragment extends BaseFragment {
 	private void showAddDocumentOptions() {
 		String[] options = {"Import Document", "New Text Document"};
 
-		new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+		new com.professor.zerion.android.security.SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.vault_document_add_action)
 				.setItems(options, (dialog, which) -> {
 					switch (which) {

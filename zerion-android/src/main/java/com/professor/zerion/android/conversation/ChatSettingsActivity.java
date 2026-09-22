@@ -16,7 +16,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.widget.Toolbar;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 import com.professor.zerion.R;
 import com.professor.zerion.android.AppModule;
@@ -299,7 +299,7 @@ public class ChatSettingsActivity extends ZerionActivity {
 			radioGroup.check(getRadioIdForTimer(currentTimer));
 		}
 
-		new MaterialAlertDialogBuilder(this)
+		new SecureAlertDialogBuilder(this)
 				.setView(dialogView)
 				.setPositiveButton(android.R.string.ok, (dialog, which) -> {
 					viewModel.setAutoDeleteTimer(getTimerForRadioId(

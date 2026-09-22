@@ -10,7 +10,7 @@ import android.widget.FrameLayout;
 import android.widget.PopupMenu;
 import android.widget.Toast;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
@@ -204,7 +204,7 @@ public class ChatsFragment extends BaseFragment
 		container.setPadding(pad, pad / 2, pad, 0);
 		container.addView(input);
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.set_contact_alias)
 				.setView(container)
 				.setPositiveButton(android.R.string.ok, (d, w) ->
@@ -215,7 +215,7 @@ public class ChatsFragment extends BaseFragment
 	}
 
 	private void showDeleteDialog(int contactId) {
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.dialog_title_delete_contact)
 				.setMessage(R.string.dialog_message_delete_contact)
 				.setPositiveButton(R.string.delete_contact, (d, w) -> {

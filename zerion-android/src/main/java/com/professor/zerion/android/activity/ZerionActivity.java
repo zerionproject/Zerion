@@ -8,6 +8,7 @@ import android.widget.CheckBox;
 import android.widget.Toast;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 
 import org.briarproject.android.dontkillmelib.wakelock.AndroidWakeLockManager;
 import org.zerionproject.core.api.system.Wakeful;
@@ -155,7 +156,7 @@ public abstract class ZerionActivity extends BaseActivity {
 
 	protected void showDozeDialog(@StringRes int message) {
 		MaterialAlertDialogBuilder b =
-				new MaterialAlertDialogBuilder(this, R.style.ZerionDialogTheme);
+				new SecureAlertDialogBuilder(this, R.style.ZerionDialogTheme);
 		b.setMessage(message);
 		b.setView(R.layout.checkbox);
 		b.setPositiveButton(R.string.fix,

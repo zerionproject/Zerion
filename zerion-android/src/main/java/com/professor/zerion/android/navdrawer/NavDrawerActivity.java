@@ -18,7 +18,7 @@ import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import org.zerionproject.core.api.lifecycle.LifecycleManager;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.professor.zerion.R;
 import com.professor.zerion.android.AppModule;
 import com.professor.zerion.android.ZerionApplication;
@@ -172,7 +172,7 @@ public class NavDrawerActivity extends ZerionActivity implements
 			if (isFinishing() || isDestroyed()) return;
 			if (!getLifecycle().getCurrentState().isAtLeast(
 					androidx.lifecycle.Lifecycle.State.RESUMED)) return;
-			new MaterialAlertDialogBuilder(this)
+			new SecureAlertDialogBuilder(this)
 					.setTitle(R.string.post_update_notice_title)
 					.setMessage(R.string.post_update_notice_message)
 					.setCancelable(false)

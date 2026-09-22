@@ -15,7 +15,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.professor.zerion.R;
 import com.professor.zerion.android.backup.AccountTransferManager;
 import com.professor.zerion.android.backup.AccountTransferManager.Callback;
@@ -157,7 +157,7 @@ public class TransferReceiveFragment extends Fragment implements Callback {
 				R.string.backup_new_password_confirm_hint);
 		layout.addView(pass);
 		layout.addView(confirm);
-		new MaterialAlertDialogBuilder(context)
+		new SecureAlertDialogBuilder(context)
 				.setTitle(R.string.transfer_receive_title)
 				.setMessage(R.string.transfer_receive_password_message)
 				.setView(layout)
@@ -227,7 +227,7 @@ public class TransferReceiveFragment extends Fragment implements Callback {
 			sasResult.offer(false);
 			return;
 		}
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.transfer_sas_title)
 				.setMessage(getString(R.string.transfer_sas_message, sas))
 				.setCancelable(false)
@@ -252,7 +252,7 @@ public class TransferReceiveFragment extends Fragment implements Callback {
 			requireActivity().finish();
 			return;
 		}
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(success ? R.string.transfer_done_title
 						: R.string.transfer_failed_title)
 				.setMessage(success ? R.string.transfer_receive_done_message

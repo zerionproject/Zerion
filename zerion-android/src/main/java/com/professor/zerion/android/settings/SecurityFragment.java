@@ -10,7 +10,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
@@ -254,7 +254,7 @@ public class SecurityFragment extends Fragment {
 	}
 
 	private void showWipeOnFailedLoginsDialog() {
-		new com.google.android.material.dialog.MaterialAlertDialogBuilder(
+		new com.professor.zerion.android.security.SecureAlertDialogBuilder(
 				requireContext())
 				.setTitle(R.string.pref_wipe_on_failed_logins_confirm_title)
 				.setMessage(R.string.pref_wipe_on_failed_logins_confirm_message)
@@ -270,7 +270,7 @@ public class SecurityFragment extends Fragment {
 	}
 
 	private void showVideoCallsBetaDialog() {
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.video_calls_beta_warning_title)
 				.setMessage(R.string.video_calls_beta_warning_message)
 				.setCancelable(false)
@@ -308,7 +308,7 @@ public class SecurityFragment extends Fragment {
 						.HardenedModeEvaluator.PREF_HARDENED_USB_PANIC,
 						false)
 		};
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.hardened_mode_dialog_title)
 				.setMultiChoiceItems(labels, checked,
 						(d, which, isChecked) -> checked[which] = isChecked)
@@ -324,7 +324,7 @@ public class SecurityFragment extends Fragment {
 						.HardenedModeEvaluator.PREF_HARDENED_USB_PANIC,
 						false);
 		if (enablingDestructive) {
-			new MaterialAlertDialogBuilder(requireContext())
+			new SecureAlertDialogBuilder(requireContext())
 					.setTitle(R.string.hardened_mode_usb_confirm_title)
 					.setMessage(R.string.hardened_mode_usb_confirm_message)
 					.setPositiveButton(
@@ -342,7 +342,7 @@ public class SecurityFragment extends Fragment {
 				getString(R.string.hardened_mode_usb_scope_signout),
 				getString(R.string.hardened_mode_usb_scope_wipe)
 		};
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.hardened_mode_usb_scope_title)
 				.setSingleChoiceItems(scope, 0, null)
 				.setPositiveButton(android.R.string.ok, (d, w) -> {
@@ -440,7 +440,7 @@ public class SecurityFragment extends Fragment {
 			}
 		}
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.pref_lock_timeout_title)
 				.setSingleChoiceItems(timeoutEntries, selectedIndex, (dialog, which) -> {
 					String newValue = timeoutValues[which];
@@ -483,7 +483,7 @@ public class SecurityFragment extends Fragment {
 			}
 		}
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.pref_default_disappearing_title)
 				.setSingleChoiceItems(entries, selectedIndex,
 						(dialog, which) -> {
@@ -575,7 +575,7 @@ public class SecurityFragment extends Fragment {
 		}
 		warningText.setText(R.string.decoy_set_code_warning);
 		androidx.appcompat.app.AlertDialog dlg =
-				new MaterialAlertDialogBuilder(requireContext())
+				new SecureAlertDialogBuilder(requireContext())
 						.setTitle(R.string.decoy_set_code_title)
 						.setView(dialogView)
 						.setPositiveButton(R.string.decoy_set_code_save, null)
@@ -671,7 +671,7 @@ public class SecurityFragment extends Fragment {
 		}
 
 		androidx.appcompat.app.AlertDialog wdlg =
-				new MaterialAlertDialogBuilder(requireContext())
+				new SecureAlertDialogBuilder(requireContext())
 						.setTitle(R.string.wipe_password_dialog_title)
 						.setMessage(R.string.wipe_password_dialog_message)
 						.setView(dialogView)
@@ -734,7 +734,7 @@ public class SecurityFragment extends Fragment {
 	}
 
 	private void showWipePasswordRemoveDialog() {
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.wipe_password_remove_title)
 				.setMessage(R.string.wipe_password_remove_message)
 				.setIcon(R.drawable.ic_warning)

@@ -16,7 +16,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
@@ -154,7 +154,7 @@ public class ChannelDelegationsActivity extends ZerionActivity {
 		}
 		labels[contacts.size()] = getString(
 				R.string.channels_delegations_paste_key);
-		new MaterialAlertDialogBuilder(this)
+		new SecureAlertDialogBuilder(this)
 				.setTitle(R.string.channels_delegations_add)
 				.setItems(labels, (d, which) -> {
 					if (which == contacts.size()) {
@@ -200,7 +200,7 @@ public class ChannelDelegationsActivity extends ZerionActivity {
 				R.layout.dialog_add_delegation, null);
 		TextInputEditText pubKeyInput = dialogView.findViewById(
 				R.id.delegationPubKeyInput);
-		new MaterialAlertDialogBuilder(this)
+		new SecureAlertDialogBuilder(this)
 				.setTitle(R.string.channels_delegations_add)
 				.setView(dialogView)
 				.setPositiveButton(R.string.channels_delegations_add,
@@ -285,7 +285,7 @@ public class ChannelDelegationsActivity extends ZerionActivity {
 	}
 
 	private void confirmRevoke(ChannelDelegationCert cert) {
-		new MaterialAlertDialogBuilder(this)
+		new SecureAlertDialogBuilder(this)
 				.setTitle(R.string.channels_delegations_revoke)
 				.setPositiveButton(R.string.channels_delegations_revoke,
 						(d, w) -> doRevoke(cert))

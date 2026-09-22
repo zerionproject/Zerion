@@ -29,7 +29,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -778,7 +778,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 
 	public void onVideoOfferReceived() {
 		runOnUiThread(() -> {
-			new MaterialAlertDialogBuilder(this)
+			new SecureAlertDialogBuilder(this)
 					.setTitle(R.string.video_call)
 					.setMessage(R.string.video_offer_received)
 					.setPositiveButton(R.string.video_offer_accept,
